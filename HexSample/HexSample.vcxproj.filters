@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="HexCtrl">
+      <UniqueIdentifier>{a019b676-4319-4bdb-87c2-0cb6bee39ee9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HexCtrl\res">
+      <UniqueIdentifier>{eca1e90a-6d14-4292-b486-bd1145ca78a3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="HexSample.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HexSampleDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\HexCtrl\HexCtrl.h">
+      <Filter>HexCtrl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\HexCtrl\HexCtrlDlgAbout.h">
+      <Filter>HexCtrl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\HexCtrl\HexCtrlDlgSearch.h">
+      <Filter>HexCtrl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\HexCtrl\ScrollEx.h">
+      <Filter>HexCtrl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\HexCtrl\res\HexCtrlRes.h">
+      <Filter>HexCtrl\res</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="HexSample.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HexSampleDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\HexCtrl\HexCtrl.cpp">
+      <Filter>HexCtrl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\HexCtrl\HexCtrlDlgAbout.cpp">
+      <Filter>HexCtrl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\HexCtrl\HexCtrlDlgSearch.cpp">
+      <Filter>HexCtrl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\HexCtrl\ScrollEx.cpp">
+      <Filter>HexCtrl</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="HexSample.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+    <ResourceCompile Include="..\HexCtrl\res\HexCtrl.rc">
+      <Filter>HexCtrl\res</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\HexSample.rc2">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\HexSample.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\HexCtrl\res\ScrollExH.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\HexCtrl\res\ScrollExV.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+  </ItemGroup>
+</Project>
