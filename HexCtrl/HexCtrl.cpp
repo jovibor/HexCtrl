@@ -57,6 +57,7 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_NCCALCSIZE()
 	ON_WM_NCPAINT()
 	ON_WM_CHAR()
+	ON_WM_GETDLGCODE()
 END_MESSAGE_MAP()
 
 CHexCtrl::CHexCtrl()
@@ -761,6 +762,11 @@ void CHexCtrl::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 
 		SetByteData(m_ullCursorPos, 1, chByte, false, m_fCursorHigh);
 	}
+}
+
+UINT CHexCtrl::OnGetDlgCode()
+{
+	return DLGC_WANTALLKEYS;
 }
 
 void CHexCtrl::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)

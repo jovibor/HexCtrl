@@ -3,9 +3,9 @@
 ### Table of Contents
 * [Introduction](#introduction)
 * [Implementation](#implementation)
-* [Using the Code](#using-the-code)
+* [Using the Code](#using-the-control)
 * [Create](#create)
-  * [In Dialog](#control-in-dialog)
+  * [Control In Dialog](#control-in-dialog)
 * [SetData](#setdata)
 * [Virtual Mode](#virtual-mode)
 * [OnDestroy](#ondestroy)
@@ -25,15 +25,16 @@ This HEX control is a tiny attempt to expand standard MFC functionality, because
 ### [](#)Implementation
 This HEX control is implemented as `CWnd` derived class, and can be used as a child or float window in any place of your existing MFC application. Control was build and tested in Visual Studio 2017 under Windows 10.
 
-### [](#)Using the Code
-The usage of this control is quite simple:
+### [](#)Using the Control
+The usage is quite simple:
 1. Copy `HexCtrl` folder into your project subfolder.
 2. Add all files from `HexCtrl` folder into your project.
-3. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use control.
-4. Declare `CHexCtrl` member variable - `CHexCtrl myHex;`.
+3. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the control.
+4. Declare `CHexCtrl` member variable: `CHexCtrl myHex;`
 5. Call `myHex.Create` method to create control instance.
 6. Call `myHex.SetData` method to set the actual data to display as hex.
-Control uses its own namespace — `HEXCTRL`. So it's up to you, to use namespace prefix - `HEXCTRL::`, or define namespace in the file's beginning - `using namespace HEXCTRL;`.
+
+Control uses its own namespace - `HEXCTRL`. So it's up to you, to use namespace prefix, `HEXCTRL::`, or to define namespace in the file's beginning: `using namespace HEXCTRL;`.
 
 ### [](#)Create
 `CHexCtrl::Create` method - the first method you call - takes `HEXCREATESTRUCT` as its argument. This is the main initialization struct which fields are described below:
@@ -78,17 +79,18 @@ using PHEXCOLORSTRUCT = HEXCOLORSTRUCT * ;
 ```
 This struct is also used in `CHexCtrl::SetColor` method.
 
-### [](#)Control In Dialog
-To use `HexCtrl` within modal dialog you can create it with the standard routine - call `Create` method and provide all the necessary information.
-But there is another approach you can use.
-1. Put `Custom control` control from the Toolbox in Visual Studio dialog designer into your Dialog template, and make it desired size.<br>
+### [](#)Create In Dialog
+To use `HexCtrl` within `Dialog` you can create it with the standard routine: call `Create` method and provide all the necessary information.
+But there is another approach you can use:
+1. Put **Custom Control** control from the Toolbox in Visual Studio dialog designer into your dialog template and make it desired size.<br>
 ![](docs/img/VSToolboxCustomCtrl.jpg)
-2. Then go to the "Properties" of that control, and in the Class field, in the Misc section, write `HexCtrl`. Give the control appropriate 
-ID of your choise as well (`IDC_MY_HEX` in this example). Also, here you can set the control's Dynamic Layout properties, so that control behaves appropriately when dialog is being resized.
+2. Then go to the **Properties** of that control, and in the **Class** field, within the **Misc** section, write _HexCtrl_. Give the control appropriate 
+**ID** of your choise (`IDC_MY_HEX` in this example). Also, here you can set the control's **Dynamic Layout** properties, so that control behaves appropriately when dialog is being resized.
 ![](docs/img/VSCustomCtrlProperties.jpg)
 3. Declare `CHexCtrl` member varable within your dialog class: `CHexCtrl m_myhex;`
-4. Add the folowing code to the `DoDataExchange` method of your Dialog:
-`DDX_Control(pDX, IDC_MY_HEX, m_myhex);`, so that it looks like in the example below:
+4. Add the folowing code to the `DoDataExchange` method of your dialog class:<br>
+`DDX_Control(pDX, IDC_MY_HEX, m_myhex);`<br>
+So, that it looks like in the example below:
 ```cpp
 void CMyDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -97,7 +99,7 @@ void CMyDlg::DoDataExchange(CDataExchange* pDX)
 }
 ```
 5. Last but not the least, declare `HEXCREATESTRUCT` object and set its `fCustomCtrl` member to true, and `uId` to `IDC_MY_HEX` (Id of your control). 
-Call `m_myhex.Create` method.
+Finally, call `m_myhex.Create` method.
 
 ### [](#)SetData
 `SetData` method takes `HEXDATASTRUCT` reference as argument. This struct's fields are described below:
@@ -114,10 +116,10 @@ struct HEXDATASTRUCT
 };
 ```
 ### [](#)Virtual Mode
-The `fVirtual` member of `HEXDATASTRUCT` shows whether `HexControl` works in Virtual Mode.
+The `fVirtual` member of `HEXDATASTRUCT` shows whether `HexControl` works in Virtual Mode.<br>
 What it means is that when control is about to display next byte, it will first ask for this byte's value from `HEXDATASTRUCT::pwndMsg` window, 
-in the form of `WM_NOTIFY` message. This is pretty much the same as the standard `MFC List Control` works when it's created with `LVS_OWNERDATA` flag. 
-This mode can be quite useful, for instance, in cases where you need to display a very large amount of data, that can't fit in memory all at once.
+in the form of `WM_NOTIFY` message. This is pretty much the same as the standard `MFC List Control` works when it's created with `LVS_OWNERDATA` flag.<br> 
+This mode can be quite useful, for instance, in cases where you need to display a very large amount of data that can't fit in memory all at once.<br>
 `void SetData(const HEXDATASTRUCT& hds);`
 
 In control's parent window, process `WM_NOTIFY` message as follows:
@@ -125,7 +127,6 @@ In control's parent window, process `WM_NOTIFY` message as follows:
 BOOL CMyWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
     PHEXNOTIFYSTRUCT pHexNtfy = (PHEXNOTIFYSTRUCT)lParam;
-
     if (pHexNtfy->hdr.idFrom == IDC_MY_HEX_CTRL)
     {
         switch (pHexNtfy->hdr.code)
@@ -143,7 +144,7 @@ struct HEXNOTIFYSTRUCT
 {
 	NMHDR			hdr;			//Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
 	ULONGLONG		ullByteIndex;	//Index of the start byte to get/send.
-	ULONGLONG		ullSize;		//Index of the last byte to get/send.
+	ULONGLONG		ullSize;		//Size of the bytes to send.
 	unsigned char	chByte;			//Value of the byte to get/send.
 };
 using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT * ;
@@ -163,7 +164,7 @@ It could be some workarounds and crutches involved to overcome this, but frankly
 That's why HexControl uses its own scrollbars. They work with unsigned long long values, which is way bigger than standard signed ints. 
 These scrollbars behave as normal Windows scrollbars, and even reside in the non client area, as the latter do.
 ### [](#)Methods
-CHexCtrl class has a set of methods, that you can use to customize your control's appearance. These methods' usage is pretty straightforward and clean from their naming.
+CHexCtrl class has a set of methods, that you can use to customize your control's appearance. These methods' usage is pretty straightforward and clean from their naming:
 ```cpp
 void SetData(const HEXDATASTRUCT& hds); //Main method for setting data to display (and edit).
 void ClearData();           //Clears all data from HexCtrl's view (not touching data itself).
@@ -196,7 +197,7 @@ hds.ullDataSize = str.size();
 myHex.SetData(hds);
 ```
 ### [](#)Positioning and Sizing
-To properly resize and position `CHexCtrl` control, you should handle `WM_SIZE` message in its parent window, in something like this way:
+To properly resize and position your `HexControl`'s window you may have to handle `WM_SIZE` message in its parent window, in something like this way:
 ```cpp
 void CMyWnd::OnSize(UINT nType, int cx, int cy)
 {

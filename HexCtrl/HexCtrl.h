@@ -68,8 +68,8 @@ namespace HEXCTRL {
 	struct HEXNOTIFYSTRUCT
 	{
 		NMHDR			hdr;			//Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
-		ULONGLONG		ullByteIndex;	//Index of the start byte to get/send.
-		ULONGLONG		ullSize;		//Index of the last byte to get/send.
+		ULONGLONG		ullByteIndex;	//Index of the byte to get/send.
+		ULONGLONG		ullSize;		//Size of the bytes to send.
 		unsigned char	chByte;			//Value of the byte to get/send.
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT * ;
@@ -114,6 +114,7 @@ namespace HEXCTRL {
 		afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 		afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 		afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
+		afx_msg UINT OnGetDlgCode(); //To properly work in dialogs.
 		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 		afx_msg void OnPaint();
 		afx_msg void OnSize(UINT nType, int cx, int cy);
@@ -194,7 +195,7 @@ namespace HEXCTRL {
 		ULONGLONG m_ullCursorPos { };		//Current cursor position.
 		bool m_fCursorHigh { true };		//Cursor's High or Low bits position (first or last digit in hex chunk).
 		bool m_fCursorAscii { false };		//Whether cursor at Ascii or Hex chunks area.
-	};
+};
 
 	/********************************************************************************************
 	* WM_NOTIFY message codes (NMHDR.code values).												*

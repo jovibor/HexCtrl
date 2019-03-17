@@ -16,7 +16,6 @@ CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/)
 void CHexSampleDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-
 	DDX_Control(pDX, IDC_MY_HEX, m_myHex);
 }
 
@@ -35,6 +34,12 @@ BOOL CHexSampleDlg::OnInitDialog()
 	HEXCREATESTRUCT hcs;
 	hcs.fCustomCtrl = true;
 	m_myHex.Create(hcs);
+
+	HEXDATASTRUCT hds;
+	hds.pData = m_data;
+	hds.ullDataSize = sizeof(m_data);
+	hds.fMutable = true;
+	m_myHex.SetData(hds);
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
