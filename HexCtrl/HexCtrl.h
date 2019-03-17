@@ -17,7 +17,8 @@ namespace HEXCTRL {
 	/********************************************************************************************
 	* HEXCOLORSTRUCT - All HexCtrl colors.														*
 	********************************************************************************************/
-	struct HEXCOLORSTRUCT {
+	struct HEXCOLORSTRUCT 
+	{
 		COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };		//Hex chunks color.
 		COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };	//Ascii text color.
 		COLORREF clrTextSelected { GetSysColor(COLOR_WINDOWTEXT) }; //Selected text color.
@@ -50,7 +51,8 @@ namespace HEXCTRL {
 	/********************************************************************************************
 	* HEXDATASTRUCT - for CHexCtrl::SetData method.												*
 	********************************************************************************************/
-	struct HEXDATASTRUCT {
+	struct HEXDATASTRUCT 
+	{
 		ULONGLONG		ullDataSize { };		//Size of the data to display, in bytes.
 		ULONGLONG		ullSelectionStart { };	//Set selection at this position. Works only if ullSelectionSize > 0.
 		ULONGLONG		ullSelectionSize { };	//How many bytes to set as selected.
