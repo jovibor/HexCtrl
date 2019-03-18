@@ -17,6 +17,7 @@ protected:
 
 protected:
 	CHexCtrl m_myHex;
+	HEXDATASTRUCT m_hds;
 	UCHAR m_data[0xfff];
 	HICON m_hIcon;
 
@@ -25,4 +26,6 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnBnClickedOk();
 };

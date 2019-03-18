@@ -1,7 +1,7 @@
 /****************************************************************************************
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/						    *
 * This software is available under the "MIT License modified with The Commons Clause".  *
-* https://github.com/jovibor/Pepper/blob/master/LICENSE                                 *
+* https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                 *
 * This is a Hex control for MFC apps, implemented as CWnd derived class.			    *
 * The usage is quite simple:														    *
 * 1. Construct CHexCtrl object — HEXCTRL::CHexCtrl myHex;								*

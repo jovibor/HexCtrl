@@ -22,6 +22,7 @@ void CHexSampleDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_BN_CLICKED(IDOK, &CHexSampleDlg::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 BOOL CHexSampleDlg::OnInitDialog()
@@ -35,11 +36,9 @@ BOOL CHexSampleDlg::OnInitDialog()
 	hcs.fCustomCtrl = true;
 	m_myHex.Create(hcs);
 
-	HEXDATASTRUCT hds;
-	hds.pData = m_data;
-	hds.ullDataSize = sizeof(m_data);
-	hds.fMutable = true;
-	m_myHex.SetData(hds);
+	m_hds.pData = m_data;
+	m_hds.ullDataSize = sizeof(m_data);
+	m_hds.fMutable = true;
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -72,4 +71,9 @@ void CHexSampleDlg::OnPaint()
 HCURSOR CHexSampleDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
+}
+
+void CHexSampleDlg::OnBnClickedOk()
+{
+	m_myHex.SetData(m_hds);
 }

@@ -1,7 +1,7 @@
 /****************************************************************************************
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/						    *
 * This software is available under the "MIT License modified with The Commons Clause".  *
-* https://github.com/jovibor/Pepper/blob/master/LICENSE                                 *
+* https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                 *
 * This is a Hex control for MFC apps, implemented as CWnd derived class.			    *
 * The usage is quite simple:														    *
 * 1. Construct CHexCtrl object — HEXCTRL::CHexCtrl myHex;								*
@@ -24,10 +24,16 @@ namespace HEXCTRL {
 	********************************************/
 	namespace {
 		enum HEXCTRL_SHOWAS { ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8 };
-		enum HEXCTRL_CLIPBOARD { COPY_HEX, COPY_HEXFORMATTED, COPY_ASCII };
+		enum HEXCTRL_CLIPBOARD {
+			COPY_HEX, COPY_HEXFORMATTED, COPY_ASCII,
+			PASTE_HEX, PASTE_ASCII
+		};
 		enum HEXCTRL_MENU {
-			IDM_MAIN_SEARCH, IDM_MAIN_COPYASHEX, IDM_MAIN_COPYASHEXFORMATTED, IDM_MAIN_COPYASASCII, IDM_MAIN_ABOUT,
-			IDM_SUB_SHOWASBYTE, IDM_SUB_SHOWASWORD, IDM_SUB_SHOWASDWORD, IDM_SUB_SHOWASQWORD
+			IDM_MAIN_SEARCH,
+			IDM_SUB_SHOW_ASBYTE, IDM_SUB_SHOW_ASWORD, IDM_SUB_SHOW_ASDWORD, IDM_SUB_SHOW_ASQWORD,
+			IDM_MAIN_COPY_ASHEX, IDM_MAIN_COPY_ASHEXFORMATTED, IDM_MAIN_COPY_ASASCII,
+			IDM_MAIN_PASTE_HEX, IDM_MAIN_PASTE_ASCII,
+			IDM_MAIN_ABOUT,
 		};
 		constexpr auto HEXCTRL_WNDCLASS_WSTR = L"HexCtrl";
 	}
@@ -73,10 +79,10 @@ CHexCtrl::CHexCtrl()
 
 	//Submenu for data showing options:
 	m_menuSubShowAs.CreatePopupMenu();
-	m_menuSubShowAs.AppendMenuW(MF_STRING | MF_CHECKED, IDM_SUB_SHOWASBYTE, L"BYTE");
-	m_menuSubShowAs.AppendMenuW(MF_STRING, IDM_SUB_SHOWASWORD, L"WORD");
-	m_menuSubShowAs.AppendMenuW(MF_STRING, IDM_SUB_SHOWASDWORD, L"DWORD");
-	m_menuSubShowAs.AppendMenuW(MF_STRING, IDM_SUB_SHOWASQWORD, L"QWORD");
+	m_menuSubShowAs.AppendMenuW(MF_STRING | MF_CHECKED, IDM_SUB_SHOW_ASBYTE, L"BYTE");
+	m_menuSubShowAs.AppendMenuW(MF_STRING, IDM_SUB_SHOW_ASWORD, L"WORD");
+	m_menuSubShowAs.AppendMenuW(MF_STRING, IDM_SUB_SHOW_ASDWORD, L"DWORD");
+	m_menuSubShowAs.AppendMenuW(MF_STRING, IDM_SUB_SHOW_ASQWORD, L"QWORD");
 
 	//Main menu:
 	m_menuMain.CreatePopupMenu();
@@ -84,9 +90,12 @@ CHexCtrl::CHexCtrl()
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
 	m_menuMain.AppendMenuW(MF_POPUP, (DWORD_PTR)m_menuSubShowAs.m_hMenu, L"Show data as...");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_COPYASHEX, L"Copy as Hex...	Ctrl+C");
-	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_COPYASHEXFORMATTED, L"Copy as Formatted Hex...");
-	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_COPYASASCII, L"Copy as Ascii...");
+	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_COPY_ASHEX, L"Copy as Hex...	Ctrl+C");
+	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_COPY_ASHEXFORMATTED, L"Copy as Formatted Hex...");
+	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_COPY_ASASCII, L"Copy as Ascii...");
+	m_menuMain.AppendMenuW(MF_SEPARATOR);
+	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_PASTE_HEX, L"Paste Hex	Ctrl+V");
+	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_PASTE_ASCII, L"Paste Ascii");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
 	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_ABOUT, L"About");
 
@@ -296,7 +305,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	RecalcAll();
 }
 
-int CHexCtrl::GetDlgCtrlID()const
+UINT CHexCtrl::GetDlgCtrlID()const
 {
 	return m_dwCtrlId;
 }
@@ -405,7 +414,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 				ullStart = m_ullSelectionClick;
 				ullSize = ullHit - ullClick + 1;
 			}
-			SetSelection(ullClick, ullStart, ullSize);
+			SetSelection(ullClick, ullStart, ullSize, false, true);
 		}
 	}
 	else
@@ -500,23 +509,20 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 		else
 			m_pDlgSearch->ShowWindow(SW_SHOW);
 		break;
-	case IDM_MAIN_COPYASHEX:
-		if (m_fVirtual)
-			MessageBoxW(m_wstrErrVirtual.data(), L"Error", MB_ICONEXCLAMATION);
-		else
-			CopyToClipboard(HEXCTRL_CLIPBOARD::COPY_HEX);
+	case IDM_MAIN_COPY_ASHEX:
+		ClipboardCopy(HEXCTRL_CLIPBOARD::COPY_HEX);
 		break;
-	case IDM_MAIN_COPYASHEXFORMATTED:
-		if (m_fVirtual)
-			MessageBoxW(m_wstrErrVirtual.data(), L"Error", MB_ICONEXCLAMATION);
-		else
-			CopyToClipboard(HEXCTRL_CLIPBOARD::COPY_HEXFORMATTED);
+	case IDM_MAIN_COPY_ASHEXFORMATTED:
+		ClipboardCopy(HEXCTRL_CLIPBOARD::COPY_HEXFORMATTED);
 		break;
-	case IDM_MAIN_COPYASASCII:
-		if (m_fVirtual)
-			MessageBoxW(m_wstrErrVirtual.data(), L"Error", MB_ICONEXCLAMATION);
-		else
-			CopyToClipboard(HEXCTRL_CLIPBOARD::COPY_ASCII);
+	case IDM_MAIN_COPY_ASASCII:
+		ClipboardCopy(HEXCTRL_CLIPBOARD::COPY_ASCII);
+		break;
+	case IDM_MAIN_PASTE_HEX:
+		ClipboardPaste(HEXCTRL_CLIPBOARD::PASTE_HEX);
+		break;
+	case IDM_MAIN_PASTE_ASCII:
+		ClipboardPaste(HEXCTRL_CLIPBOARD::PASTE_ASCII);
 		break;
 	case IDM_MAIN_ABOUT:
 	{
@@ -524,16 +530,16 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 		m_dlgAbout.DoModal();
 	}
 	break;
-	case IDM_SUB_SHOWASBYTE:
+	case IDM_SUB_SHOW_ASBYTE:
 		SetShowAs(HEXCTRL_SHOWAS::ASBYTE);
 		break;
-	case IDM_SUB_SHOWASWORD:
+	case IDM_SUB_SHOW_ASWORD:
 		SetShowAs(HEXCTRL_SHOWAS::ASWORD);
 		break;
-	case IDM_SUB_SHOWASDWORD:
+	case IDM_SUB_SHOW_ASDWORD:
 		SetShowAs(HEXCTRL_SHOWAS::ASDWORD);
 		break;
-	case IDM_SUB_SHOWASQWORD:
+	case IDM_SUB_SHOW_ASQWORD:
 		SetShowAs(HEXCTRL_SHOWAS::ASQWORD);
 		break;
 	}
@@ -543,6 +549,20 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 
 void CHexCtrl::OnContextMenu(CWnd* pWnd, CPoint point)
 {
+	UINT uMenuStatus;
+	if (m_ullDataSize == 0 || m_ullSelectionSize == 0)
+		uMenuStatus = MF_GRAYED;
+	else
+		uMenuStatus = MF_ENABLED;
+	
+	//To not spread the efforts through code, all the checks are done here 
+	//instead of in WM_INITMENUPOPUP.
+	m_menuMain.EnableMenuItem(IDM_MAIN_COPY_ASHEX, uMenuStatus | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem(IDM_MAIN_COPY_ASHEXFORMATTED, uMenuStatus | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem(IDM_MAIN_COPY_ASASCII, uMenuStatus | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem(IDM_MAIN_PASTE_HEX, (m_fMutable && IsClipboardFormatAvailable(CF_TEXT)) ? uMenuStatus : MF_GRAYED | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem(IDM_MAIN_PASTE_ASCII, (m_fMutable && IsClipboardFormatAvailable(CF_TEXT)) ? uMenuStatus : MF_GRAYED | MF_BYCOMMAND);
+
 	m_menuMain.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
 }
 
@@ -557,7 +577,10 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 			m_pDlgSearch->ShowWindow(SW_SHOW);
 			break;
 		case 'C':
-			CopyToClipboard(HEXCTRL_CLIPBOARD::COPY_HEX);
+			ClipboardCopy(HEXCTRL_CLIPBOARD::COPY_HEX);
+			break;
+		case 'V':
+			ClipboardPaste(HEXCTRL_CLIPBOARD::PASTE_HEX);
 			break;
 		case 'A':
 			SelectAll();;
@@ -746,7 +769,13 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 
 void CHexCtrl::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
-	if (m_fCursorAscii)
+	if (!m_fMutable)
+		return;
+
+	if (GetKeyState(VK_CONTROL) < 0)
+		return;
+
+	if (m_fCursorAscii) //If cursor at Ascii area.
 		SetByteData(m_ullCursorPos, 1, nChar);	//Set single byte.
 	else
 	{
@@ -1210,14 +1239,28 @@ void CHexCtrl::HexPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy)
 		ullCy = (ullChunk / m_dwCapacity) * m_sizeLetter.cy;
 }
 
-void CHexCtrl::CopyToClipboard(UINT nType)
+void CHexCtrl::ClipboardCopy(DWORD dwType)
 {
 	if (!m_ullSelectionSize)
 		return;
 
+	//If in Virtual mode, just send clipboard copy notification.
+	if (m_fVirtual)
+	{
+		HEXNOTIFYSTRUCT hns;
+		hns.hdr.code = HEXCTRL_MSG_CLIPBOARDCOPY;
+		hns.hdr.hwndFrom = m_hWnd;
+		hns.hdr.idFrom = GetDlgCtrlID();
+		hns.ullByteIndex = m_ullSelectionStart;
+		hns.ullSize = m_ullSelectionSize;
+		ParentNotify(hns);
+
+		return;
+	}
+
 	const char* const pszHexMap { "0123456789ABCDEF" };
 	std::string strToClipboard;
-	switch (nType)
+	switch (dwType)
 	{
 	case COPY_HEX:
 	{
@@ -1292,6 +1335,81 @@ void CHexCtrl::CopyToClipboard(UINT nType)
 	EmptyClipboard();
 	SetClipboardData(CF_TEXT, hMem);
 	CloseClipboard();
+}
+
+void CHexCtrl::ClipboardPaste(DWORD dwType)
+{
+	if (!m_fMutable || m_ullSelectionSize == 0)
+		return;
+
+	//If in Virtual mode, just send clipboard paste notification.
+	if (m_fVirtual)
+	{
+		HEXNOTIFYSTRUCT hns;
+		hns.hdr.code = HEXCTRL_MSG_CLIPBOARDPASTE;
+		hns.hdr.hwndFrom = m_hWnd;
+		hns.hdr.idFrom = GetDlgCtrlID();
+		hns.ullByteIndex = m_ullCursorPos;
+		ParentNotify(hns);
+
+		return;
+	}
+	else
+	{
+		if (!OpenClipboard())
+			return;
+
+		HANDLE hClipboard = GetClipboardData(CF_TEXT);
+		if (!hClipboard)
+			return;
+
+		LPSTR pszData = (LPSTR)GlobalLock(hClipboard);
+		if (!pszData)
+			return;
+
+		ULONGLONG ullSizeData = strlen(pszData);
+		if (m_ullSelectionStart + ullSizeData > m_ullDataSize)
+			ullSizeData = m_ullDataSize - m_ullSelectionStart;
+
+		switch (dwType)
+		{
+		case HEXCTRL_CLIPBOARD::PASTE_HEX:
+		{
+			DWORD dwIterations = DWORD(ullSizeData / 2 + ullSizeData % 2);
+			char chToUL[3] { }; //Array for actual letters to convert from.
+			char* pEndPtr { };
+
+			for (size_t i = 0; i < dwIterations; i++)
+			{
+				if (i + 2 <= ullSizeData)
+				{
+					chToUL[0] = pszData[i * 2];
+					chToUL[1] = pszData[i * 2 + 1];
+				}
+				else
+				{
+					chToUL[0] = pszData[i * 2];
+					chToUL[1] = '\0';
+				}
+				unsigned long ulNumber = strtoul(chToUL, &pEndPtr, 16);
+				if (ulNumber == 0 && (pEndPtr == chToUL || *pEndPtr != '\0'))
+					return;
+
+				m_pData[m_ullSelectionStart + i] = (unsigned char)ulNumber;
+			}
+		}
+		break;
+		case HEXCTRL_CLIPBOARD::PASTE_ASCII:
+			for (size_t i = 0; i < ullSizeData; i++)
+				m_pData[m_ullSelectionStart + i] = pszData[i];
+			break;
+		}
+
+		GlobalUnlock(hClipboard);
+		CloseClipboard();
+	}
+
+	RedrawWindow();
 }
 
 void CHexCtrl::UpdateInfoText()
@@ -1537,7 +1655,7 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 	case HEXCTRL_SEARCH::SEARCH_HEX:
 	{
 		DWORD dwIterations = DWORD(strSearchAscii.size() / 2 + strSearchAscii.size() % 2);
-		std::string strToUL;
+		std::string strToUL; //String to hold currently extracted two letters.
 		char* pEndPtr { };
 
 		for (size_t i = 0; i < dwIterations; i++)
@@ -1726,7 +1844,7 @@ End:
 	}
 }
 
-void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight)
+void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight, bool fMouse)
 {
 	if (ullClick >= m_ullDataSize || ullStart >= m_ullDataSize || !ullSize)
 		return;
@@ -1802,9 +1920,12 @@ void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ul
 	m_ullSelectionEnd = ullEnd;
 	m_ullSelectionSize = ullEnd - ullStart;
 
-	m_pstScrollV->SetScrollPos(ullNewScrollV);
-	if (m_pstScrollH->IsVisible())
-		m_pstScrollH->SetScrollPos(ullNewScrollH);
+	if (!fMouse) //Don't need to scroll if it's Mouse selection.
+	{
+		m_pstScrollV->SetScrollPos(ullNewScrollV);
+		if (m_pstScrollH->IsVisible())
+			m_pstScrollH->SetScrollPos(ullNewScrollH);
+	}
 
 	UpdateInfoText();
 

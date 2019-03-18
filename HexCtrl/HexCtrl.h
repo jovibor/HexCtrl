@@ -1,7 +1,7 @@
 /****************************************************************************************
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/						    *
 * This software is available under the "MIT License modified with The Commons Clause".  *
-* https://github.com/jovibor/Pepper/blob/master/LICENSE                                 *
+* https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                 *
 * This is a Hex control for MFC apps, implemented as CWnd derived class.				*
 * The usage is quite simple:														    *
 * 1. Construct CHexCtrl object — HEXCTRL::CHexCtrl myHex;							    *
@@ -17,7 +17,7 @@ namespace HEXCTRL {
 	/********************************************************************************************
 	* HEXCOLORSTRUCT - All HexCtrl colors.														*
 	********************************************************************************************/
-	struct HEXCOLORSTRUCT 
+	struct HEXCOLORSTRUCT
 	{
 		COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };		//Hex chunks color.
 		COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };	//Ascii text color.
@@ -51,7 +51,7 @@ namespace HEXCTRL {
 	/********************************************************************************************
 	* HEXDATASTRUCT - for CHexCtrl::SetData method.												*
 	********************************************************************************************/
-	struct HEXDATASTRUCT 
+	struct HEXDATASTRUCT
 	{
 		ULONGLONG		ullDataSize { };		//Size of the data to display, in bytes.
 		ULONGLONG		ullSelectionStart { };	//Set selection at this position. Works only if ullSelectionSize > 0.
@@ -95,7 +95,7 @@ namespace HEXCTRL {
 		UINT GetFontSize();						 //Gets the control's font size.
 		void SetColor(const HEXCOLORSTRUCT& clr);//Sets all the colors for the control.
 		void SetCapacity(DWORD dwCapacity);		 //Sets the control's current capacity.
-		int GetDlgCtrlID()const;
+		UINT GetDlgCtrlID()const;
 		CWnd* GetParent()const;
 	protected:
 		DECLARE_MESSAGE_MAP()
@@ -129,9 +129,10 @@ namespace HEXCTRL {
 		ULONGLONG GetCurrentLineV();
 		ULONGLONG HitTest(LPPOINT); //Is any hex chunk withing given point?
 		void HexPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy);
-		void CopyToClipboard(UINT nType);
+		void ClipboardCopy(DWORD dwType);
+		void ClipboardPaste(DWORD dwType);
 		void Search(HEXSEARCHSTRUCT& rSearch);
-		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false);
+		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
 		void SelectAll();
 		void UpdateInfoText();
 		void ToWchars(ULONGLONG ull, wchar_t* pwsz, DWORD dwSize = 4);
@@ -195,15 +196,17 @@ namespace HEXCTRL {
 		ULONGLONG m_ullCursorPos { };		//Current cursor position.
 		bool m_fCursorHigh { true };		//Cursor's High or Low bits position (first or last digit in hex chunk).
 		bool m_fCursorAscii { false };		//Whether cursor at Ascii or Hex chunks area.
-};
+	};
 
 	/********************************************************************************************
 	* WM_NOTIFY message codes (NMHDR.code values).												*
 	* These codes are used to notify m_pwndMsg window about control's current states.			*
 	********************************************************************************************/
 
-	constexpr auto HEXCTRL_MSG_DESTROY = 0x00FF;	//Inicates that HexCtrl is being destroyed.
-	constexpr auto HEXCTRL_MSG_GETDATA = 0x0100;	//Used in Virtual mode to demand the next byte to display.
-	constexpr auto HEXCTRL_MSG_SETDATA = 0x0101;	//Indicates that the byte in memory has changed, used in edit mode.
-	constexpr auto HEXCTRL_MSG_SETSELECTION = 0x0102;	//Selection has been made for some bytes.
+	constexpr auto HEXCTRL_MSG_DESTROY = 0x00FF;		//Inicates that HexCtrl is being destroyed.
+	constexpr auto HEXCTRL_MSG_GETDATA = 0x0100;		//Used in Virtual mode to demand the next byte to display.
+	constexpr auto HEXCTRL_MSG_SETDATA = 0x0101;		//Indicates that the byte in memory has changed, used in edit mode.
+	constexpr auto HEXCTRL_MSG_SETSELECTION = 0x0102;	//A selection has been made for some bytes.
+	constexpr auto HEXCTRL_MSG_CLIPBOARDCOPY = 0x0103;	//Clipboard copying.
+	constexpr auto HEXCTRL_MSG_CLIPBOARDPASTE = 0x0104;	//Clipboard pasting.
 };
