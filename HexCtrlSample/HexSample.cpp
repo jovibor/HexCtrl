@@ -1,7 +1,3 @@
-
-// HexSample.cpp : Defines the class behaviors for the application.
-//
-
 #include "stdafx.h"
 #include "HexSample.h"
 #include "HexSampleDlg.h"
@@ -10,29 +6,15 @@
 #define new DEBUG_NEW
 #endif
 
-
-// CHexSampleApp
-
 BEGIN_MESSAGE_MAP(CHexSampleApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
-
-// CHexSampleApp construction
-
 CHexSampleApp::CHexSampleApp()
 {
-	// TODO: add construction code here,
-	// Place all significant initialization in InitInstance
 }
 
-
-// The one and only CHexSampleApp object
-
 CHexSampleApp theApp;
-
-
-// CHexSampleApp initialization
 
 BOOL CHexSampleApp::InitInstance()
 {
@@ -48,7 +30,6 @@ BOOL CHexSampleApp::InitInstance()
 
 	CWinApp::InitInstance();
 
-
 	// Create the shell manager, in case the dialog contains
 	// any shell tree view or shell list view controls.
 	CShellManager *pShellManager = new CShellManager;
@@ -63,7 +44,7 @@ BOOL CHexSampleApp::InitInstance()
 	// Change the registry key under which our settings are stored
 	// TODO: You should modify this string to be something appropriate
 	// such as the name of your company or organization
-	SetRegistryKey(_T("Local AppWizard-Generated Applications"));
+	SetRegistryKey(_T("HexCtrl Sample Project"));
 
 	CHexSampleDlg dlg;
 	m_pMainWnd = &dlg;
@@ -98,4 +79,3 @@ BOOL CHexSampleApp::InitInstance()
 	//  application, rather than start the application's message pump.
 	return FALSE;
 }
-

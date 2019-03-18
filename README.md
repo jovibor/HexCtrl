@@ -5,7 +5,7 @@
 * [Implementation](#implementation)
 * [Using the Code](#using-the-control)
 * [Create](#create)
-  * [Control In Dialog](#control-in-dialog)
+  * [In Dialog](#in-dialog)
 * [SetData](#setdata)
 * [Virtual Mode](#virtual-mode)
 * [OnDestroy](#ondestroy)
@@ -79,17 +79,19 @@ using PHEXCOLORSTRUCT = HEXCOLORSTRUCT * ;
 ```
 This struct is also used in `CHexCtrl::SetColor` method.
 
-### [](#)Create In Dialog
+### [](#)In Dialog
 To use `HexCtrl` within `Dialog` you can create it with the standard routine: call `Create` method and provide all the necessary information.
 But there is another approach you can use:
 1. Put **Custom Control** control from the Toolbox in Visual Studio dialog designer into your dialog template and make it desired size.<br>
-![](docs/img/VSToolboxCustomCtrl.jpg)
+![](docs/img/VSToolboxCustomCtrl.jpg) ![](docs/img/VSCustomCtrlOnDlg.jpg)
 2. Then go to the **Properties** of that control, and in the **Class** field, within the **Misc** section, write _HexCtrl_. Give the control appropriate 
 **ID** of your choise (`IDC_MY_HEX` in this example). Also, here you can set the control's **Dynamic Layout** properties, so that control behaves appropriately when dialog is being resized.
 ![](docs/img/VSCustomCtrlProperties.jpg)
 3. Declare `CHexCtrl` member varable within your dialog class: `CHexCtrl m_myhex;`
 4. Add the folowing code to the `DoDataExchange` method of your dialog class:<br>
-`DDX_Control(pDX, IDC_MY_HEX, m_myhex);`<br>
+```cpp
+DDX_Control(pDX, IDC_MY_HEX, m_myhex);
+```
 So, that it looks like in the example below:
 ```cpp
 void CMyDlg::DoDataExchange(CDataExchange* pDX)
@@ -98,11 +100,10 @@ void CMyDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_MY_HEX, m_myhex);
 }
 ```
-5. Last but not the least, declare `HEXCREATESTRUCT` object and set its `fCustomCtrl` member to true, and `uId` to `IDC_MY_HEX` (Id of your control). 
-Finally, call `m_myhex.Create` method.
+5. Declare `HEXCREATESTRUCT` variable, set its `fCustomCtrl` field to true, and call `m_myhex.Create` method.
 
 ### [](#)SetData
-`SetData` method takes `HEXDATASTRUCT` reference as argument. This struct's fields are described below:
+`SetData` method takes `HEXDATASTRUCT` reference as argument. This struct fields are described below:
 ```cpp
 struct HEXDATASTRUCT 
 {
