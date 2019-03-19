@@ -25,14 +25,14 @@ namespace HEXCTRL {
 	namespace {
 		enum HEXCTRL_SHOWAS { ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8 };
 		enum HEXCTRL_CLIPBOARD {
-			COPY_HEX, COPY_HEXFORMATTED, COPY_ASCII,
-			PASTE_HEX, PASTE_ASCII
+			COPY_ASHEX, COPY_ASHEXFORMATTED, COPY_ASASCII,
+			PASTE_ASHEX, PASTE_ASASCII
 		};
 		enum HEXCTRL_MENU {
 			IDM_MAIN_SEARCH,
 			IDM_SUB_SHOW_ASBYTE, IDM_SUB_SHOW_ASWORD, IDM_SUB_SHOW_ASDWORD, IDM_SUB_SHOW_ASQWORD,
 			IDM_MAIN_COPY_ASHEX, IDM_MAIN_COPY_ASHEXFORMATTED, IDM_MAIN_COPY_ASASCII,
-			IDM_MAIN_PASTE_HEX, IDM_MAIN_PASTE_ASCII,
+			IDM_MAIN_PASTE_ASHEX, IDM_MAIN_PASTE_ASASCII,
 			IDM_MAIN_ABOUT,
 		};
 		constexpr auto HEXCTRL_WNDCLASS_WSTR = L"HexCtrl";
@@ -94,8 +94,8 @@ CHexCtrl::CHexCtrl()
 	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_COPY_ASHEXFORMATTED, L"Copy as Formatted Hex...");
 	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_COPY_ASASCII, L"Copy as Ascii...");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_PASTE_HEX, L"Paste Hex	Ctrl+V");
-	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_PASTE_ASCII, L"Paste Ascii");
+	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_PASTE_ASHEX, L"Paste as Hex	Ctrl+V");
+	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_PASTE_ASASCII, L"Paste as Ascii");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
 	m_menuMain.AppendMenuW(MF_STRING, IDM_MAIN_ABOUT, L"About");
 
@@ -510,19 +510,19 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 			m_pDlgSearch->ShowWindow(SW_SHOW);
 		break;
 	case IDM_MAIN_COPY_ASHEX:
-		ClipboardCopy(HEXCTRL_CLIPBOARD::COPY_HEX);
+		ClipboardCopy(HEXCTRL_CLIPBOARD::COPY_ASHEX);
 		break;
 	case IDM_MAIN_COPY_ASHEXFORMATTED:
-		ClipboardCopy(HEXCTRL_CLIPBOARD::COPY_HEXFORMATTED);
+		ClipboardCopy(HEXCTRL_CLIPBOARD::COPY_ASHEXFORMATTED);
 		break;
 	case IDM_MAIN_COPY_ASASCII:
-		ClipboardCopy(HEXCTRL_CLIPBOARD::COPY_ASCII);
+		ClipboardCopy(HEXCTRL_CLIPBOARD::COPY_ASASCII);
 		break;
-	case IDM_MAIN_PASTE_HEX:
-		ClipboardPaste(HEXCTRL_CLIPBOARD::PASTE_HEX);
+	case IDM_MAIN_PASTE_ASHEX:
+		ClipboardPaste(HEXCTRL_CLIPBOARD::PASTE_ASHEX);
 		break;
-	case IDM_MAIN_PASTE_ASCII:
-		ClipboardPaste(HEXCTRL_CLIPBOARD::PASTE_ASCII);
+	case IDM_MAIN_PASTE_ASASCII:
+		ClipboardPaste(HEXCTRL_CLIPBOARD::PASTE_ASASCII);
 		break;
 	case IDM_MAIN_ABOUT:
 	{
@@ -560,8 +560,8 @@ void CHexCtrl::OnContextMenu(CWnd* pWnd, CPoint point)
 	m_menuMain.EnableMenuItem(IDM_MAIN_COPY_ASHEX, uMenuStatus | MF_BYCOMMAND);
 	m_menuMain.EnableMenuItem(IDM_MAIN_COPY_ASHEXFORMATTED, uMenuStatus | MF_BYCOMMAND);
 	m_menuMain.EnableMenuItem(IDM_MAIN_COPY_ASASCII, uMenuStatus | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem(IDM_MAIN_PASTE_HEX, (m_fMutable && IsClipboardFormatAvailable(CF_TEXT)) ? uMenuStatus : MF_GRAYED | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem(IDM_MAIN_PASTE_ASCII, (m_fMutable && IsClipboardFormatAvailable(CF_TEXT)) ? uMenuStatus : MF_GRAYED | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem(IDM_MAIN_PASTE_ASHEX, (m_fMutable && IsClipboardFormatAvailable(CF_TEXT)) ? uMenuStatus : MF_GRAYED | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem(IDM_MAIN_PASTE_ASASCII, (m_fMutable && IsClipboardFormatAvailable(CF_TEXT)) ? uMenuStatus : MF_GRAYED | MF_BYCOMMAND);
 
 	m_menuMain.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
 }
@@ -577,10 +577,10 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 			m_pDlgSearch->ShowWindow(SW_SHOW);
 			break;
 		case 'C':
-			ClipboardCopy(HEXCTRL_CLIPBOARD::COPY_HEX);
+			ClipboardCopy(HEXCTRL_CLIPBOARD::COPY_ASHEX);
 			break;
 		case 'V':
-			ClipboardPaste(HEXCTRL_CLIPBOARD::PASTE_HEX);
+			ClipboardPaste(HEXCTRL_CLIPBOARD::PASTE_ASHEX);
 			break;
 		case 'A':
 			SelectAll();;
@@ -1262,7 +1262,7 @@ void CHexCtrl::ClipboardCopy(DWORD dwType)
 	std::string strToClipboard;
 	switch (dwType)
 	{
-	case COPY_HEX:
+	case COPY_ASHEX:
 	{
 		for (unsigned i = 0; i < m_ullSelectionSize; i++) {
 			strToClipboard += pszHexMap[((unsigned char)m_pData[m_ullSelectionStart + i] & 0xF0) >> 4];
@@ -1270,7 +1270,7 @@ void CHexCtrl::ClipboardCopy(DWORD dwType)
 		}
 		break;
 	}
-	case COPY_HEXFORMATTED:
+	case COPY_ASHEXFORMATTED:
 	{
 		//How many spaces are needed to be inserted at the beginnig.
 		DWORD dwModStart = m_ullSelectionStart % m_dwCapacity;
@@ -1305,7 +1305,7 @@ void CHexCtrl::ClipboardCopy(DWORD dwType)
 		}
 		break;
 	}
-	case COPY_ASCII:
+	case COPY_ASASCII:
 	{
 		for (unsigned i = 0; i < m_ullSelectionSize; i++)
 		{
@@ -1373,7 +1373,7 @@ void CHexCtrl::ClipboardPaste(DWORD dwType)
 
 		switch (dwType)
 		{
-		case HEXCTRL_CLIPBOARD::PASTE_HEX:
+		case HEXCTRL_CLIPBOARD::PASTE_ASHEX:
 		{
 			DWORD dwIterations = DWORD(ullSizeData / 2 + ullSizeData % 2);
 			char chToUL[3] { }; //Array for actual letters to convert from.
@@ -1399,7 +1399,7 @@ void CHexCtrl::ClipboardPaste(DWORD dwType)
 			}
 		}
 		break;
-		case HEXCTRL_CLIPBOARD::PASTE_ASCII:
+		case HEXCTRL_CLIPBOARD::PASTE_ASASCII:
 			for (size_t i = 0; i < ullSizeData; i++)
 				m_pData[m_ullSelectionStart + i] = pszData[i];
 			break;
