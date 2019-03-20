@@ -11,6 +11,7 @@
 #pragma once
 #include <memory>			//std::unique_ptr and related.
 #include <unordered_map>	//std::unordered_map and related.
+#include <deque>			//std::deque and related.
 #include <afxwin.h>			//MFC core and standard components.
 
 namespace HEXCTRL {
@@ -77,8 +78,16 @@ namespace HEXCTRL {
 	/********************************************
 	* CHexCtrl class definition.				*
 	********************************************/
-	class CScrollEx64;	//Forward declaration.
-	struct HEXSEARCHSTRUCT;	//Forward declaration.
+	//Forward declaration.
+	namespace HEXCTRL_INTERNAL {
+		struct HEXSEARCH;
+		struct HEXMODIFYDATA;
+		struct HEXUNDO;
+	}
+	namespace SCROLLEX64 {
+		class CScrollEx64;
+	}
+
 	class CHexCtrl : public CWnd
 	{
 	public:
@@ -131,21 +140,23 @@ namespace HEXCTRL {
 		void HexPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy);
 		void ClipboardCopy(DWORD dwType);
 		void ClipboardPaste(DWORD dwType);
-		void Search(HEXSEARCHSTRUCT& rSearch);
+		void Search(HEXCTRL_INTERNAL::HEXSEARCH& rSearch);
 		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
 		void SelectAll();
 		void UpdateInfoText();
 		void ToWchars(ULONGLONG ull, wchar_t* pwsz, DWORD dwSize = 4);
-		UCHAR GetByte(ULONGLONG ullIndex); //Get the actual byte data by index.
+		BYTE GetByte(ULONGLONG ullIndex); //Get the actual byte data by index.
 		void SetShowAs(DWORD dwShowAs);
-		void SetByteData(ULONGLONG ullIndex, ULONGLONG ullSize, BYTE chData, bool fWhole = true, bool fHighPart = true, bool fMoveNext = true);
-		void ParentNotify(HEXNOTIFYSTRUCT& hns);
+		void ModifyData(const HEXCTRL_INTERNAL::HEXMODIFYDATA& hmd); //Main routine to modify data in fMutable mode.
+		void ParentNotify(const HEXNOTIFYSTRUCT& hns);
 		void SetCursorPos(ULONGLONG ullPos, bool fHighPart); //Sets the cursor position when in Edit mode.
 		void CursorMoveRight();
 		void CursorMoveLeft();
 		void CursorMoveUp();
 		void CursorMoveDown();
 		void CursorScroll();
+		void Undo();
+		void Redo();
 	private:
 		bool m_fCreated { false };			//Is control created or not yet.
 		bool m_fFloat { false };			//Is control window float or not.
@@ -163,8 +174,8 @@ namespace HEXCTRL {
 		CFont m_fontHexView;				//Main Hex chunks font.
 		CFont m_fontBottomRect;				//Font for bottom Info rect.
 		std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() }; //Search dialog.
-		std::unique_ptr<CScrollEx64> m_pstScrollV { std::make_unique<CScrollEx64>() }; //Vertical scroll object.
-		std::unique_ptr<CScrollEx64> m_pstScrollH { std::make_unique<CScrollEx64>() }; //Horizontal scroll object.
+		std::unique_ptr<SCROLLEX64::CScrollEx64> m_pstScrollV { std::make_unique<SCROLLEX64::CScrollEx64>() }; //Vertical scroll object.
+		std::unique_ptr<SCROLLEX64::CScrollEx64> m_pstScrollH { std::make_unique<SCROLLEX64::CScrollEx64>() }; //Horizontal scroll object.
 		CMenu m_menuMain;					//Main popup menu.
 		CMenu m_menuSubShowAs;				//Submenu "Show as..."
 		HEXCOLORSTRUCT m_stColor;			//All control related colors.
@@ -196,6 +207,9 @@ namespace HEXCTRL {
 		ULONGLONG m_ullCursorPos { };		//Current cursor position.
 		bool m_fCursorHigh { true };		//Cursor's High or Low bits position (first or last digit in hex chunk).
 		bool m_fCursorAscii { false };		//Whether cursor at Ascii or Hex chunks area.
+		std::deque<std::unique_ptr<HEXCTRL_INTERNAL::HEXUNDO>> m_deqUndo; //Undo deque.
+		DWORD m_dwUndoSize { 50 };			//How many Undo states to keep.
+		std::deque<std::unique_ptr<HEXCTRL_INTERNAL::HEXUNDO>> m_deqRedo; //Redo deque.
 	};
 
 	/********************************************************************************************
@@ -205,7 +219,7 @@ namespace HEXCTRL {
 
 	constexpr auto HEXCTRL_MSG_DESTROY = 0x00FF;		//Inicates that HexCtrl is being destroyed.
 	constexpr auto HEXCTRL_MSG_GETDATA = 0x0100;		//Used in Virtual mode to demand the next byte to display.
-	constexpr auto HEXCTRL_MSG_SETDATA = 0x0101;		//Indicates that the byte in memory has changed, used in edit mode.
+	constexpr auto HEXCTRL_MSG_MODIFYDATA = 0x0101;		//Indicates that the byte in memory has changed, used in edit mode.
 	constexpr auto HEXCTRL_MSG_SETSELECTION = 0x0102;	//A selection has been made for some bytes.
 	constexpr auto HEXCTRL_MSG_CLIPBOARDCOPY = 0x0103;	//Clipboard copying.
 	constexpr auto HEXCTRL_MSG_CLIPBOARDPASTE = 0x0104;	//Clipboard pasting.

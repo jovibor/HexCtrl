@@ -14,7 +14,7 @@
 using namespace HEXCTRL;
 
 namespace HEXCTRL {
-	namespace {
+	namespace HEXCTRL_INTERNAL {
 		constexpr auto HEXCTRL_VERSION_WSTR = L"Hex Control for MFC, v2.2.3";
 		constexpr auto HEXCTRL_LINKGITHUB_WSTR = L"https://github.com/jovibor/HexCtrl";
 	};
@@ -48,8 +48,8 @@ BOOL CHexDlgAbout::OnInitDialog()
 	m_curHand = LoadCursor(nullptr, IDC_HAND);
 	m_curArrow = LoadCursor(nullptr, IDC_ARROW);
 
-	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(HEXCTRL_VERSION_WSTR);
-	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_LINKGITHUB)->SetWindowTextW(HEXCTRL_LINKGITHUB_WSTR);
+	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(HEXCTRL_INTERNAL::HEXCTRL_VERSION_WSTR);
+	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_LINKGITHUB)->SetWindowTextW(HEXCTRL_INTERNAL::HEXCTRL_LINKGITHUB_WSTR);
 
 	return TRUE;
 }
@@ -78,7 +78,7 @@ void CHexDlgAbout::OnLButtonDown(UINT nFlags, CPoint point)
 		return;
 
 	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_ABOUT_STATIC_LINKGITHUB)
-		ShellExecute(nullptr, L"open", HEXCTRL_LINKGITHUB_WSTR, nullptr, nullptr, NULL);
+		ShellExecute(nullptr, L"open", HEXCTRL_INTERNAL::HEXCTRL_LINKGITHUB_WSTR, nullptr, nullptr, NULL);
 
 	CDialogEx::OnLButtonDown(nFlags, point);
 }

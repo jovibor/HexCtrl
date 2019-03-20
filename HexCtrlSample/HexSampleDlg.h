@@ -6,19 +6,19 @@ using namespace HEXCTRL;
 class CHexSampleDlg : public CDialogEx
 {
 public:
-	CHexSampleDlg(CWnd* pParent = nullptr);	// standard constructor
+	explicit CHexSampleDlg(CWnd* pParent = nullptr);
 
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_HEXSAMPLE_DIALOG };
 #endif
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
+	virtual void DoDataExchange(CDataExchange* pDX); // DDX/DDV support
 
 protected:
 	CHexCtrl m_myHex;
 	HEXDATASTRUCT m_hds;
-	UCHAR m_data[0xfff];
+	UCHAR m_data[0xfff] { };
 	HICON m_hIcon;
 
 	// Generated message map functions
