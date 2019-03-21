@@ -34,13 +34,11 @@ BOOL CHexSampleDlg::OnInitDialog()
 
 	HEXCREATESTRUCT hcs;
 	hcs.fCustomCtrl = true;
-//	hcs.pwndMsg = this;
 	m_myHex.Create(hcs);
 
 	m_hds.pData = m_data;
 	m_hds.ullDataSize = sizeof(m_data);
 	m_hds.fMutable = true;
-//	m_hds.fVirtual = true; 
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }

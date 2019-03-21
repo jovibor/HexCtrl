@@ -16,16 +16,16 @@
 * [Appearance](#appearance)
 * [Licensing](#licensing)
 
-### [](#)Introduction
+## [](#)Introduction
 Being good low level wrapper library for Windows API in general, MFC was always lacking a good native controls support.
 This always forced people to implement their own common stuff for everyday needs.
 
 This HEX control is a tiny attempt to expand standard MFC functionality, because at the moment, MFC doesn't have native support for such feature.
 
-### [](#)Implementation
+## [](#)Implementation
 This HEX control is implemented as `CWnd` derived class, and can be used as a child or float window in any place of your existing MFC application. Control was build and tested in Visual Studio 2017 under Windows 10.
 
-### [](#)Using the Control
+## [](#)Using the Control
 The usage is quite simple:
 1. Copy `HexCtrl` folder into your project subfolder.
 2. Add all files from `HexCtrl` folder into your project.
@@ -36,7 +36,7 @@ The usage is quite simple:
 
 Control uses its own namespace - `HEXCTRL`. So it's up to you, to use namespace prefix, `HEXCTRL::`, or to define namespace in the file's beginning: `using namespace HEXCTRL;`.
 
-### [](#)Create
+## [](#)Create
 `CHexCtrl::Create` method - the first method you call - takes `HEXCREATESTRUCT` as its argument. This is the main initialization struct which fields are described below:
 
 ```cpp
@@ -79,7 +79,7 @@ using PHEXCOLORSTRUCT = HEXCOLORSTRUCT * ;
 ```
 This struct is also used in `CHexCtrl::SetColor` method.
 
-### [](#)In Dialog
+## [](#)In Dialog
 To use `HexCtrl` within `Dialog` you can create it with the standard routine: call `Create` method and provide all the necessary information.
 But there is another approach you can use:
 1. Put **Custom Control** control from the Toolbox in Visual Studio dialog designer into your dialog template and make it desired size.<br>
@@ -102,7 +102,7 @@ void CMyDlg::DoDataExchange(CDataExchange* pDX)
 ```
 5. Declare `HEXCREATESTRUCT` variable, set its `fCustomCtrl` field to true, and call `m_myhex.Create` method.
 
-### [](#)SetData
+## [](#)SetData
 `SetData` method takes `HEXDATASTRUCT` reference as argument. This struct fields are described below:
 ```cpp
 struct HEXDATASTRUCT 
@@ -111,29 +111,31 @@ struct HEXDATASTRUCT
 	ULONGLONG		ullSelectionStart { };	//Set selection at this position. Works only if ullSelectionSize > 0.
 	ULONGLONG		ullSelectionSize { };	//How many bytes to set as selected.
 	CWnd*			pwndMsg { };			//Window to send the control messages to. If nullptr then the parent window is used.
-	unsigned char*	pData { };				//Pointer to the data. Not used if it's virtual control.
+	PBYTE*			pData { };				//Pointer to the data. Not used if it's virtual control.
 	bool			fMutable { false };		//Will data be mutable (editable) or just read mode.
 	bool			fVirtual { false };		//Is Virtual data mode?.
 };
 ```
-### [](#)Virtual Mode
+## [](#)Virtual Mode
 The `fVirtual` member of `HEXDATASTRUCT` shows whether `HexControl` works in Virtual Mode.<br>
-What it means is that when control is about to display next byte, it will first ask for this byte's value from `HEXDATASTRUCT::pwndMsg` window, 
-in the form of `WM_NOTIFY` message. This is pretty much the same as the standard `MFC List Control` works when it's created with `LVS_OWNERDATA` flag.<br> 
+What it means is that when control is about to display next byte, it will first ask for this byte from the `pwndMsg` window, 
+in the form of `WM_NOTIFY` message. This is pretty much the same as the standard **MFC** List Control works when created with `LVS_OWNERDATA` flag.<br>
+This `pwndMsg` window pointer can be set in either `HEXCREATESTRUCT::pwndMsg` — in control's `Create` method,
+or in `HEXDATASTRUCT::pwndMsg` — in `SetData` method. The difference is that in former case you set the pointer once for the whole control's lifetime,
+and in the latter you set its own notify handler windows for every `SetData` call.<br>
 This mode can be quite useful, for instance, in cases where you need to display a very large amount of data that can't fit in memory all at once.<br>
-`void SetData(const HEXDATASTRUCT& hds);`
-
-In control's parent window, process `WM_NOTIFY` message as follows:
+In `pwndMsg` window process `WM_NOTIFY` message as follows:
 ```cpp
 BOOL CMyWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
     PHEXNOTIFYSTRUCT pHexNtfy = (PHEXNOTIFYSTRUCT)lParam;
-    if (pHexNtfy->hdr.idFrom == IDC_MY_HEX_CTRL)
+    if (pHexNtfy->hdr.idFrom == IDC_MY_HEX)
     {
         switch (pHexNtfy->hdr.code)
         {
         case HEXCTRL_MSG_GETDATA:
-            pHexNtfy->chByte = /*code for set given byte data*/;
+			pHexNtfy->chByte = /*code for set the byte, if pHexNtfy->ullSize=1*/;
+            pHexNtfy->pData =  /*or code to set the pointer to data*/;
             break;
         }
    }
@@ -146,25 +148,26 @@ struct HEXNOTIFYSTRUCT
 	NMHDR			hdr;			//Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
 	ULONGLONG		ullByteIndex;	//Index of the start byte to get/send.
 	ULONGLONG		ullSize;		//Size of the bytes to send.
-	unsigned char	chByte;			//Value of the byte to get/send.
+	PBYTE			pData { };		//Pointer to a data to get/send.
+	BYTE			chByte { };		//Single byte data - used for simplicity, when ullSize==1.
 };
 using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT * ;
 ```
 Its first member is a standard Windows' `NMHDR` structure. It will have its code member equal to `HEXCTRL_MSG_GETDATA` indicating that HexControl's byte request has arrived.
 The second member is the index of the byte be displayed. And the third is the actual byte, that you have to set in response.
 
-### [](#)OnDestroy
+## [](#)OnDestroy
 When `HexControl` window, floating or child, is destroyed, it sends `WM_NOTIFY` message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
 So, it basically indicates to its parent that the user clicked close button, or closed window in some other way.
 
-### [](#)Scroll Bars
+## [](#)Scroll Bars
 When I started to work with very big files, I immediately faced one very nasty inconvenience:
 The standard Windows scrollbars can hold only signed integer value, which is too little to scroll through many gigabytes of data. 
 It could be some workarounds and crutches involved to overcome this, but frankly saying i'm not a big fan of this kind of approach.
 
 That's why HexControl uses its own scrollbars. They work with unsigned long long values, which is way bigger than standard signed ints. 
 These scrollbars behave as normal Windows scrollbars, and even reside in the non client area, as the latter do.
-### [](#)Methods
+## [](#)Methods
 CHexCtrl class has a set of methods, that you can use to customize your control's appearance. These methods' usage is pretty straightforward and clean from their naming:
 ```cpp
 void SetData(const HEXDATASTRUCT& hds); //Main method for setting data to display (and edit).
@@ -175,7 +178,7 @@ void SetFontSize(UINT nSize);
 void SetColor(const HEXCOLORSTRUCT& clr);
 void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1);
 ```
-### [](#)Example
+## [](#)Example
 The function you use to set a data to display as hex is `CHexCtrl::SetData`. 
 The code below constructs `CHexCtrl` object and displays first `0x1FF` bytes of your app's memory:
 ```cpp
@@ -197,7 +200,7 @@ hds.pData = (unsigned char*)str.data();
 hds.ullDataSize = str.size();
 myHex.SetData(hds);
 ```
-### [](#)Positioning and Sizing
+## [](#)Positioning and Sizing
 To properly resize and position your `HexControl`'s window you may have to handle `WM_SIZE` message in its parent window, in something like this way:
 ```cpp
 void CMyWnd::OnSize(UINT nType, int cx, int cy)
@@ -207,10 +210,10 @@ void CMyWnd::OnSize(UINT nType, int cx, int cy)
     myHex.SetWindowPos(this, 0, 0, cx, cy, SWP_NOACTIVATE | SWP_NOZORDER);
 }
 ```
-### [](#)Appearance
+## [](#)Appearance
 To change control's font size - **«Ctrl+MouseWheel»**  
 To change control's capacity - **«Ctrl+Shift+MouseWheel»**
 
-### [](#)Licensing
+## [](#)Licensing
 This software is available under the **"MIT License modified with The Commons Clause".**
 [https://github.com/jovibor/HexCtrl/blob/master/LICENSE](https://github.com/jovibor/HexCtrl/blob/master/LICENSE)

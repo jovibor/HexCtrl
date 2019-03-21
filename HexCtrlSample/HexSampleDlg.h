@@ -18,7 +18,7 @@ protected:
 protected:
 	CHexCtrl m_myHex;
 	HEXDATASTRUCT m_hds;
-	UCHAR m_data[0xfff] { };
+	UCHAR m_data[0xfff];
 	HICON m_hIcon;
 
 	// Generated message map functions

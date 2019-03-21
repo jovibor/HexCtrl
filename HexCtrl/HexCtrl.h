@@ -58,7 +58,7 @@ namespace HEXCTRL {
 		ULONGLONG		ullSelectionStart { };	//Set selection at this position. Works only if ullSelectionSize > 0.
 		ULONGLONG		ullSelectionSize { };	//How many bytes to set as selected.
 		CWnd*			pwndMsg { };			//Window to send the control messages to. If nullptr then the parent window is used.
-		unsigned char*	pData { };				//Pointer to the data. Not used if it's virtual control.
+		PBYTE			pData { };				//Pointer to the data. Not used if it's virtual control.
 		bool			fMutable { false };		//Will data be mutable (editable) or just read mode.
 		bool			fVirtual { false };		//Is Virtual data mode?.
 	};
@@ -68,17 +68,18 @@ namespace HEXCTRL {
 	********************************************************************************************/
 	struct HEXNOTIFYSTRUCT
 	{
-		NMHDR			hdr;			//Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
-		ULONGLONG		ullByteIndex;	//Index of the byte to get/send.
-		ULONGLONG		ullSize;		//Size of the bytes to send.
-		unsigned char	chByte;			//Value of the byte to get/send.
+		NMHDR			hdr { };		//Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
+		ULONGLONG		ullIndex { };	//Index of the start byte to get/send.
+		ULONGLONG		ullSize { };	//Size of the bytes to get/send.
+		PBYTE			pData { };		//Pointer to a data to get/send.
+		BYTE			chByte { };		//Single byte data - used for simplicity, when ullSize==1.
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT * ;
 
 	/********************************************
 	* CHexCtrl class definition.				*
 	********************************************/
-	//Forward declaration.
+	//Forward declarations.
 	namespace HEXCTRL_INTERNAL {
 		struct HEXSEARCH;
 		struct HEXMODIFYDATA;
@@ -162,7 +163,7 @@ namespace HEXCTRL {
 		bool m_fFloat { false };			//Is control window float or not.
 		bool m_fVirtual { false };			//Is control works in "Virtual" mode.
 		bool m_fMutable { false };			//Is control works in Edit mode.
-		unsigned char* m_pData { };			//Modifiable in "Edit" mode.
+		PBYTE m_pData { };					//Main data pointer. Modifiable in "Edit" mode.
 		ULONGLONG m_ullDataSize { };		//Size of the displayed data in bytes.
 		DWORD m_dwCapacity { 16 };			//How many bytes displayed in one row
 		const DWORD m_dwCapacityMax { 64 }; //Maximum capacity.
@@ -177,7 +178,7 @@ namespace HEXCTRL {
 		std::unique_ptr<SCROLLEX64::CScrollEx64> m_pstScrollV { std::make_unique<SCROLLEX64::CScrollEx64>() }; //Vertical scroll object.
 		std::unique_ptr<SCROLLEX64::CScrollEx64> m_pstScrollH { std::make_unique<SCROLLEX64::CScrollEx64>() }; //Horizontal scroll object.
 		CMenu m_menuMain;					//Main popup menu.
-		CMenu m_menuSubShowAs;				//Submenu "Show as..."
+		CMenu m_menuShowAs;					//Submenu "Show as..."
 		HEXCOLORSTRUCT m_stColor;			//All control related colors.
 		CBrush m_stBrushBkSelected;			//Brush for "selected" background.
 		CPen m_penLines { PS_SOLID, 1, RGB(200, 200, 200) };
@@ -187,7 +188,7 @@ namespace HEXCTRL {
 		int m_iIndentFirstHexChunk { };	    //First hex chunk indent.
 		int m_iIndentTextCapacityY { };	    //Caption text (0 1 2... D E F...) vertical offset.
 		int m_iIndentBottomLine { 1 };	    //Bottom line indent from window's bottom.
-		int m_iDistanceBetweenHexChunks { };//Distance between begining of two hex chunks.
+		int m_iDistanceBetweenHexChunks { };//Distance between begining of the two hex chunks.
 		int m_iSpaceBetweenHexChunks { };   //Space between Hex chunks.
 		int m_iSpaceBetweenAscii { };	    //Space between two Ascii chars.
 		int m_iSpaceBetweenBlocks { };	    //Additional space between hex chunks after half of capacity.
@@ -198,7 +199,7 @@ namespace HEXCTRL {
 		int m_iFirstVertLine { }, m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
 		ULONGLONG m_ullSelectionStart { }, m_ullSelectionEnd { }, m_ullSelectionClick { }, m_ullSelectionSize { };
 		const wchar_t* const m_pwszHexMap { L"0123456789ABCDEF" };
-		std::unordered_map<unsigned, std::wstring> m_umapCapacity;
+		std::unordered_map<unsigned, std::wstring> m_umapCapacityWstr; //"Capacity" letters for fast lookup.
 		std::wstring m_wstrBottomText { };  //Info text (bottom rect).
 		const std::wstring m_wstrErrVirtual { L"This function isn't supported in Virtual mode!" };
 		bool m_fLMousePressed { false };
@@ -207,8 +208,8 @@ namespace HEXCTRL {
 		ULONGLONG m_ullCursorPos { };		//Current cursor position.
 		bool m_fCursorHigh { true };		//Cursor's High or Low bits position (first or last digit in hex chunk).
 		bool m_fCursorAscii { false };		//Whether cursor at Ascii or Hex chunks area.
+		DWORD m_dwUndoMax { 50 };			//How many Undo states to preserve.
 		std::deque<std::unique_ptr<HEXCTRL_INTERNAL::HEXUNDO>> m_deqUndo; //Undo deque.
-		DWORD m_dwUndoSize { 50 };			//How many Undo states to keep.
 		std::deque<std::unique_ptr<HEXCTRL_INTERNAL::HEXUNDO>> m_deqRedo; //Redo deque.
 	};
 
@@ -221,6 +222,4 @@ namespace HEXCTRL {
 	constexpr auto HEXCTRL_MSG_GETDATA = 0x0100;		//Used in Virtual mode to demand the next byte to display.
 	constexpr auto HEXCTRL_MSG_MODIFYDATA = 0x0101;		//Indicates that the byte in memory has changed, used in edit mode.
 	constexpr auto HEXCTRL_MSG_SETSELECTION = 0x0102;	//A selection has been made for some bytes.
-	constexpr auto HEXCTRL_MSG_CLIPBOARDCOPY = 0x0103;	//Clipboard copying.
-	constexpr auto HEXCTRL_MSG_CLIPBOARDPASTE = 0x0104;	//Clipboard pasting.
 };
