@@ -98,5 +98,11 @@
     <Image Include="..\HexCtrl\res\ScrollExV.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
+    <Image Include="..\HexCtrl\res\MenuCopy.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\HexCtrl\res\MenuPaste.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
   </ItemGroup>
 </Project>

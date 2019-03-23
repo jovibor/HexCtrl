@@ -211,6 +211,7 @@ namespace HEXCTRL {
 		DWORD m_dwUndoMax { 50 };			//How many Undo states to preserve.
 		std::deque<std::unique_ptr<HEXCTRL_INTERNAL::HEXUNDO>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<HEXCTRL_INTERNAL::HEXUNDO>> m_deqRedo; //Redo deque.
+		std::unordered_map<int, HBITMAP> m_umapHBITMAP; //Images for the Menu.
 	};
 
 	/********************************************************************************************

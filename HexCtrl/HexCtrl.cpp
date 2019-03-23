@@ -13,6 +13,7 @@
 #include "ScrollEx.h"
 #include "HexCtrlDlgAbout.h"
 #include "HexCtrlDlgSearch.h"
+#include "res\HexCtrlRes.h"
 #include "strsafe.h"
 #pragma comment(lib, "Dwmapi.lib")
 
@@ -98,30 +99,41 @@ CHexCtrl::CHexCtrl()
 		m_umapCapacityWstr[i] = wstr;
 	}
 
-	//Submenu for data showing options:
+	//Submenu for data showing options.
 	m_menuShowAs.CreatePopupMenu();
 	m_menuShowAs.AppendMenuW(MF_STRING | MF_CHECKED, HEXCTRL_INTERNAL::IDM_SHOWAS_ASBYTE, L"BYTE");
-	m_menuShowAs.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::IDM_SHOWAS_ASWORD, L"WORD");
-	m_menuShowAs.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::IDM_SHOWAS_ASDWORD, L"DWORD");
-	m_menuShowAs.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::IDM_SHOWAS_ASQWORD, L"QWORD");
+	m_menuShowAs.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_SHOWAS_ASWORD, L"WORD");
+	m_menuShowAs.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_SHOWAS_ASDWORD, L"DWORD");
+	m_menuShowAs.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_SHOWAS_ASQWORD, L"QWORD");
 
-	//Main menu:
+	//Main menu.
 	m_menuMain.CreatePopupMenu();
-	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::IDM_MAIN_SEARCH, L"Search...	Ctrl+F");
+	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_MAIN_SEARCH, L"Search...	Ctrl+F");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
 	m_menuMain.AppendMenuW(MF_POPUP, (DWORD_PTR)m_menuShowAs.m_hMenu, L"Show data as...");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::IDM_EDIT_UNDO, L"Undo	Ctrl+Z");
-	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::IDM_EDIT_REDO, L"Redo	Ctrl+Y");
+	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_EDIT_UNDO, L"Undo	Ctrl+Z");
+	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_EDIT_REDO, L"Redo	Ctrl+Y");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::IDM_EDIT_COPY_ASHEX, L"Copy as Hex...	Ctrl+C");
-	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::IDM_EDIT_COPY_ASHEXFORMATTED, L"Copy as Formatted Hex...");
-	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::IDM_EDIT_COPY_ASASCII, L"Copy as Ascii...");
+	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_EDIT_COPY_ASHEX, L"Copy as Hex...	Ctrl+C");
+
+	//Menu icons.
+	MENUITEMINFOW mii { };
+	mii.cbSize = sizeof(MENUITEMINFOW);
+	mii.fMask = MIIM_BITMAP;
+	mii.hbmpItem = m_umapHBITMAP[HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_EDIT_COPY_ASHEX] =
+		(HBITMAP)LoadImageW(GetModuleHandleW(0), MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+	m_menuMain.SetMenuItemInfoW(HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_EDIT_COPY_ASHEX, &mii);
+	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_EDIT_COPY_ASHEXFORMATTED, L"Copy as Formatted Hex...");
+	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_EDIT_COPY_ASASCII, L"Copy as Ascii...");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::IDM_EDIT_PASTE_ASHEX, L"Paste as Hex	Ctrl+V");
-	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::IDM_EDIT_PASTE_ASASCII, L"Paste as Ascii");
+	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_EDIT_PASTE_ASHEX, L"Paste as Hex	Ctrl+V");
+	mii.hbmpItem = m_umapHBITMAP[HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_EDIT_PASTE_ASHEX] =
+		(HBITMAP)LoadImageW(GetModuleHandleW(0), MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+	m_menuMain.SetMenuItemInfoW(HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_EDIT_PASTE_ASHEX, &mii);
+	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_EDIT_PASTE_ASASCII, L"Paste as Ascii");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::IDM_MAIN_ABOUT, L"About");
+	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEXCTRL_MENU::IDM_MAIN_ABOUT, L"About");
 
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this);
 
@@ -130,6 +142,9 @@ CHexCtrl::CHexCtrl()
 
 CHexCtrl::~CHexCtrl()
 {
+	//Deleting all loaded bitmaps.
+	for (auto const& i : m_umapHBITMAP)
+		DeleteObject(i.second);
 }
 
 bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)

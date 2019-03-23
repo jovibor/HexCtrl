@@ -225,6 +225,8 @@
     <None Include="res\HexSample.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="..\HexCtrl\res\MenuCopy.bmp" />
+    <Image Include="..\HexCtrl\res\MenuPaste.bmp" />
     <Image Include="..\HexCtrl\res\ScrollExH.bmp" />
     <Image Include="..\HexCtrl\res\ScrollExV.bmp" />
     <Image Include="res\HexSample.ico" />

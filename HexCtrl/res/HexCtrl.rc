@@ -116,6 +116,10 @@ IDB_HEXCTRL_SCROLL_V    BITMAP                  "ScrollExV.bmp"
 
 IDB_HEXCTRL_SCROLL_H    BITMAP                  "ScrollExH.bmp"
 
+IDB_HEXCTRL_MENU_COPY   BITMAP                  "MenuCopy.bmp"
+
+IDB_HEXCTRL_MENU_PASTE  BITMAP                  "MenuPaste.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
