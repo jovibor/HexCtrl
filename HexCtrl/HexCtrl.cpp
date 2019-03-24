@@ -1,7 +1,7 @@
 /****************************************************************************************
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/						    *
 * This software is available under the "MIT License modified with The Commons Clause".  *
-* https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                 *
+* https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 * This is a Hex control for MFC apps, implemented as CWnd derived class.			    *
 * The usage is quite simple:														    *
 * 1. Construct CHexCtrl object — HEXCTRL::CHexCtrl myHex;								*
@@ -9,12 +9,13 @@
 * 3. Call myHex.SetData method to set the data and its size to display as hex.	        *
 ****************************************************************************************/
 #include "stdafx.h"
+#include "strsafe.h"
+#include "res\HexCtrlRes.h"
+#include "Dialogs/HexCtrlDlgAbout.h"
+#include "Dialogs/HexCtrlDlgSearch.h"
 #include "HexCtrl.h"
 #include "ScrollEx.h"
-#include "HexCtrlDlgAbout.h"
-#include "HexCtrlDlgSearch.h"
-#include "res\HexCtrlRes.h"
-#include "strsafe.h"
+#include "Helper.h"
 #pragma comment(lib, "Dwmapi.lib")
 
 using namespace HEXCTRL;
@@ -1053,9 +1054,10 @@ void CHexCtrl::OnPaint()
 			{
 				//Hex chunk to print.
 				unsigned char chByteToPrint = GetByte(ullIndexByteToPrint);
+				const wchar_t* const pwszHexMap { L"0123456789ABCDEF" };
 				wchar_t pwszHexToPrint[2];
-				pwszHexToPrint[0] = m_pwszHexMap[(chByteToPrint & 0xF0) >> 4];
-				pwszHexToPrint[1] = m_pwszHexMap[(chByteToPrint & 0x0F)];
+				pwszHexToPrint[0] = pwszHexMap[(chByteToPrint & 0xF0) >> 4];
+				pwszHexToPrint[1] = pwszHexMap[(chByteToPrint & 0x0F)];
 
 				//Selection draw with different BK color.
 				COLORREF clrBk, clrBkAscii, clrTextHex, clrTextAscii;
@@ -1438,7 +1440,6 @@ void CHexCtrl::ClipboardPaste(DWORD dwType)
 	{
 		DWORD dwIterations = DWORD(ullSize / 2 + ullSize % 2);
 		char chToUL[3] { }; //Array for actual Ascii chars to convert from.
-		char* pEndPtr { };
 		for (size_t i = 0; i < dwIterations; i++)
 		{
 			if (i + 2 <= ullSize)
@@ -1451,8 +1452,9 @@ void CHexCtrl::ClipboardPaste(DWORD dwType)
 				chToUL[0] = pClipboardData[i * 2];
 				chToUL[1] = '\0';
 			}
-			unsigned long ulNumber = strtoul(chToUL, &pEndPtr, 16);
-			if (ulNumber == 0 && (pEndPtr == chToUL || *pEndPtr != '\0'))
+
+			unsigned long ulNumber;
+			if (!ToUl(chToUL, ulNumber))
 				return;
 
 			strData += (unsigned char)ulNumber;
@@ -1485,16 +1487,6 @@ void CHexCtrl::UpdateInfoText()
 			m_wstrBottomText.resize(swprintf_s(&m_wstrBottomText[0], 128, L"Bytes total: 0x%llX(%llu)", m_ullDataSize, m_ullDataSize));
 	}
 	RedrawWindow();
-}
-
-void CHexCtrl::ToWchars(ULONGLONG ull, wchar_t* pwsz, DWORD dwSize)
-{
-	//Converts dwSize bytes of ull to wchar_t*.
-	for (unsigned i = 0; i < dwSize; i++)
-	{
-		pwsz[i * 2] = m_pwszHexMap[((ull >> ((dwSize - 1 - i) << 3)) & 0xF0) >> 4];
-		pwsz[i * 2 + 1] = m_pwszHexMap[(ull >> ((dwSize - 1 - i) << 3)) & 0x0F];
-	}
 }
 
 BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)
@@ -1781,7 +1773,6 @@ void CHexCtrl::Search(HEXCTRL_INTERNAL::HEXSEARCH& rSearch)
 	{
 		DWORD dwIterations = DWORD(strSearchAscii.size() / 2 + strSearchAscii.size() % 2);
 		std::string strToUL; //String to hold currently extracted two letters.
-		char* pEndPtr { };
 
 		for (size_t i = 0; i < dwIterations; i++)
 		{
@@ -1790,8 +1781,8 @@ void CHexCtrl::Search(HEXCTRL_INTERNAL::HEXSEARCH& rSearch)
 			else
 				strToUL = strSearchAscii.substr(i * 2, 1);
 
-			unsigned long ulNumber = strtoul(strToUL.data(), &pEndPtr, 16);
-			if (ulNumber == 0 && (pEndPtr == strToUL.data() || *pEndPtr != '\0'))
+			unsigned long ulNumber;
+			if (!ToUl(strToUL.data(), ulNumber))
 			{
 				rSearch.fFound = false;
 				m_pDlgSearch->SearchCallback();

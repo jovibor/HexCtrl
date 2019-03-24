@@ -145,7 +145,6 @@ namespace HEXCTRL {
 		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
 		void SelectAll();
 		void UpdateInfoText();
-		void ToWchars(ULONGLONG ull, wchar_t* pwsz, DWORD dwSize = 4);
 		BYTE GetByte(ULONGLONG ullIndex); //Get the actual byte data by index.
 		void SetShowAs(DWORD dwShowAs);
 		void ModifyData(const HEXCTRL_INTERNAL::HEXMODIFYDATA& hmd); //Main routine to modify data in fMutable mode.
@@ -198,7 +197,6 @@ namespace HEXCTRL {
 		int m_iHeightWorkArea { };		    //Needed for mouse selection point.y calculation.
 		int m_iFirstVertLine { }, m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
 		ULONGLONG m_ullSelectionStart { }, m_ullSelectionEnd { }, m_ullSelectionClick { }, m_ullSelectionSize { };
-		const wchar_t* const m_pwszHexMap { L"0123456789ABCDEF" };
 		std::unordered_map<unsigned, std::wstring> m_umapCapacityWstr; //"Capacity" letters for fast lookup.
 		std::wstring m_wstrBottomText { };  //Info text (bottom rect).
 		const std::wstring m_wstrErrVirtual { L"This function isn't supported in Virtual mode!" };

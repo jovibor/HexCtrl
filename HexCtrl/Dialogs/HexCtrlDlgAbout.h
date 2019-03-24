@@ -10,7 +10,7 @@
 ****************************************************************************************/
 #pragma once
 #include <afxcontrolbars.h>  //Standard MFC's controls header.
-#include "res/HexCtrlRes.h"
+#include "../res/HexCtrlRes.h"
 
 namespace HEXCTRL {
 	/********************************************

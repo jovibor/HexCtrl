@@ -73,11 +73,12 @@ CAPTION "About"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,154,63,50,14
-    LTEXT           "<--link Github-->",IDC_HEXCTRL_ABOUT_STATIC_LINKGITHUB,30,46,112,8
-    LTEXT           "<--Version-->",IDC_HEXCTRL_ABOUT_STATIC_VERSION,29,10,143,8
-    LTEXT           "Author: Jovibor (C), 2018-2019.",IDC_STATIC,29,19,105,8
-    LTEXT           "To increase font size:         Ctrl+MouseWheel",IDC_STATIC,29,28,163,8
-    LTEXT           "To increase grid capacity:  Ctrl+Shift+MouseWheel",IDC_STATIC,29,37,167,8
+    LTEXT           "<--link Github-->",IDC_HEXCTRL_ABOUT_STATIC_LINKGITHUB,39,46,112,8
+    LTEXT           "<--Version-->",IDC_HEXCTRL_ABOUT_STATIC_VERSION,38,10,143,8
+    LTEXT           "Author: Jovibor (C), 2018-2019.",IDC_STATIC,38,19,105,8
+    LTEXT           "To increase font size:         Ctrl+MouseWheel",IDC_STATIC,38,28,163,8
+    LTEXT           "To increase grid capacity:  Ctrl+Shift+MouseWheel",IDC_STATIC,38,37,167,8
+    CONTROL         IDB_HEXCTRL_ICON,IDB_HEXCTRL_ICON,"Static",SS_BITMAP | SS_CENTERIMAGE,13,10,20,20
 END
 
 
@@ -119,6 +120,8 @@ IDB_HEXCTRL_SCROLL_H    BITMAP                  "ScrollExH.bmp"
 IDB_HEXCTRL_MENU_COPY   BITMAP                  "MenuCopy.bmp"
 
 IDB_HEXCTRL_MENU_PASTE  BITMAP                  "MenuPaste.bmp"
+
+IDB_HEXCTRL_ICON        BITMAP                  "HexCtrlIcon.bmp"
 
 
 /////////////////////////////////////////////////////////////////////////////

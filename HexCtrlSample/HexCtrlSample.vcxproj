@@ -192,9 +192,10 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\HexCtrl\Dialogs\HexCtrlDlgAbout.h" />
+    <ClInclude Include="..\HexCtrl\Dialogs\HexCtrlDlgSearch.h" />
+    <ClInclude Include="..\HexCtrl\Helper.h" />
     <ClInclude Include="..\HexCtrl\HexCtrl.h" />
-    <ClInclude Include="..\HexCtrl\HexCtrlDlgAbout.h" />
-    <ClInclude Include="..\HexCtrl\HexCtrlDlgSearch.h" />
     <ClInclude Include="..\HexCtrl\res\HexCtrlRes.h" />
     <ClInclude Include="..\HexCtrl\ScrollEx.h" />
     <ClInclude Include="HexSample.h" />
@@ -204,9 +205,10 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\HexCtrl\Dialogs\HexCtrlDlgAbout.cpp" />
+    <ClCompile Include="..\HexCtrl\Dialogs\HexCtrlDlgSearch.cpp" />
+    <ClCompile Include="..\HexCtrl\Helper.cpp" />
     <ClCompile Include="..\HexCtrl\HexCtrl.cpp" />
-    <ClCompile Include="..\HexCtrl\HexCtrlDlgAbout.cpp" />
-    <ClCompile Include="..\HexCtrl\HexCtrlDlgSearch.cpp" />
     <ClCompile Include="..\HexCtrl\ScrollEx.cpp" />
     <ClCompile Include="HexSample.cpp" />
     <ClCompile Include="HexSampleDlg.cpp" />
@@ -225,6 +227,7 @@
     <None Include="res\HexSample.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="..\HexCtrl\res\HexCtrlIcon.bmp" />
     <Image Include="..\HexCtrl\res\MenuCopy.bmp" />
     <Image Include="..\HexCtrl\res\MenuPaste.bmp" />
     <Image Include="..\HexCtrl\res\ScrollExH.bmp" />

@@ -7,7 +7,7 @@
 #define new DEBUG_NEW
 #endif
 
-CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/)
+CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/) //-V730
 	: CDialogEx(IDD_HEXSAMPLE_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
