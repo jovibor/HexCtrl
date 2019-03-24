@@ -2,6 +2,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by HexSample.rc
 //
+#define IDOK2                           3
 #define IDD_HEXSAMPLE_DIALOG            102
 #define IDR_MAINFRAME                   128
 #define IDC_CUSTOM1                     1000

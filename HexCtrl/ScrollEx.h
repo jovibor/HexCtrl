@@ -11,14 +11,14 @@
 #include <afxwin.h>
 
 namespace HEXCTRL {
-	namespace SCROLLEX64 {
-		class CScrollEx64 : public CWnd
+	namespace SCROLLEX {
+		class CScrollEx : public CWnd
 		{
 		public:
-			CScrollEx64() {}
-			~CScrollEx64() {}
+			CScrollEx() {}
+			~CScrollEx() {}
 			bool Create(CWnd* pWnd, int iScrollType, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
-			void AddSibling(CScrollEx64* pSibling);
+			void AddSibling(CScrollEx* pSibling);
 			bool IsSiblingVisible();
 			bool IsVisible() { return m_fVisible; }
 			CWnd* GetParent() { return m_pwndParent; }
@@ -71,7 +71,7 @@ namespace HEXCTRL {
 			void SendParentScrollMsg();
 		protected:
 			CWnd* m_pwndParent { };
-			CScrollEx64* m_pSibling { };
+			CScrollEx* m_pSibling { };
 			UINT m_uiScrollBarSizeWH { };
 			int m_iScrollType { };
 			int m_iScrollBarState { };

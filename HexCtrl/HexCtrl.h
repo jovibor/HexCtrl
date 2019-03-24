@@ -85,8 +85,8 @@ namespace HEXCTRL {
 		struct HEXMODIFYDATA;
 		struct HEXUNDO;
 	}
-	namespace SCROLLEX64 {
-		class CScrollEx64;
+	namespace SCROLLEX {
+		class CScrollEx;
 	}
 
 	class CHexCtrl : public CWnd
@@ -99,6 +99,7 @@ namespace HEXCTRL {
 		bool IsCreated();						 //Shows whether control created or not.
 		void SetData(const HEXDATASTRUCT& hds);  //Main method for setting data to display (and edit).																
 		void ClearData();						 //Clears all data from HexCtrl's view (not touching data itself).
+		void EditEnable(bool fEnable);
 		void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1); //Shows (selects) given offset.
 		void SetFont(const LOGFONT* pLogFontNew);//Sets the control's font.
 		void SetFontSize(UINT uiSize);			 //Sets the control's font size.
@@ -154,9 +155,10 @@ namespace HEXCTRL {
 		void CursorMoveLeft();
 		void CursorMoveUp();
 		void CursorMoveDown();
-		void CursorScroll();
+		void CursorScroll(); //Replicates SetSelection, but for cursor.
 		void Undo();
 		void Redo();
+		void SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize); //Takes currently modifiable data snapshot.
 	private:
 		bool m_fCreated { false };			//Is control created or not yet.
 		bool m_fFloat { false };			//Is control window float or not.
@@ -174,8 +176,8 @@ namespace HEXCTRL {
 		CFont m_fontHexView;				//Main Hex chunks font.
 		CFont m_fontBottomRect;				//Font for bottom Info rect.
 		std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() }; //Search dialog.
-		std::unique_ptr<SCROLLEX64::CScrollEx64> m_pstScrollV { std::make_unique<SCROLLEX64::CScrollEx64>() }; //Vertical scroll object.
-		std::unique_ptr<SCROLLEX64::CScrollEx64> m_pstScrollH { std::make_unique<SCROLLEX64::CScrollEx64>() }; //Horizontal scroll object.
+		std::unique_ptr<SCROLLEX::CScrollEx> m_pstScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll object.
+		std::unique_ptr<SCROLLEX::CScrollEx> m_pstScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll object.
 		CMenu m_menuMain;					//Main popup menu.
 		CMenu m_menuShowAs;					//Submenu "Show as..."
 		HEXCOLORSTRUCT m_stColor;			//All control related colors.

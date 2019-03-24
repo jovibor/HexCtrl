@@ -123,6 +123,8 @@ IDB_HEXCTRL_MENU_PASTE  BITMAP                  "MenuPaste.bmp"
 
 IDB_HEXCTRL_ICON        BITMAP                  "HexCtrlIcon.bmp"
 
+IDB_HEXCTRL_MENU_FILL_ZEROS BITMAP                  "MenuFillZeros.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //

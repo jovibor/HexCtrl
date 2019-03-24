@@ -23,6 +23,7 @@ BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDOK, &CHexSampleDlg::OnBnClickedOk)
+	ON_BN_CLICKED(IDOK2, &CHexSampleDlg::OnBnClickedOk2)
 END_MESSAGE_MAP()
 
 BOOL CHexSampleDlg::OnInitDialog()
@@ -76,4 +77,12 @@ HCURSOR CHexSampleDlg::OnQueryDragIcon()
 void CHexSampleDlg::OnBnClickedOk()
 {
 	m_myHex.SetData(m_hds);
+	m_myHex.EditEnable(true);
+}
+
+
+void CHexSampleDlg::OnBnClickedOk2()
+{
+	m_myHex.SetData(m_hds);
+	m_myHex.EditEnable(false);
 }

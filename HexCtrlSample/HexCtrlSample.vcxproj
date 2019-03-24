@@ -229,9 +229,11 @@
   <ItemGroup>
     <Image Include="..\HexCtrl\res\HexCtrlIcon.bmp" />
     <Image Include="..\HexCtrl\res\MenuCopy.bmp" />
+    <Image Include="..\HexCtrl\res\MenuFillZeros.bmp" />
     <Image Include="..\HexCtrl\res\MenuPaste.bmp" />
     <Image Include="..\HexCtrl\res\ScrollExH.bmp" />
     <Image Include="..\HexCtrl\res\ScrollExV.bmp" />
+    <Image Include="MenuFillZeros.bmp" />
     <Image Include="res\HexSample.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

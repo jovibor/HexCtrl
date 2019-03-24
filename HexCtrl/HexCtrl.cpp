@@ -39,17 +39,15 @@ namespace HEXCTRL {
 			IDM_SHOWAS_ASBYTE, IDM_SHOWAS_ASWORD, IDM_SHOWAS_ASDWORD, IDM_SHOWAS_ASQWORD,
 			IDM_EDIT_UNDO, IDM_EDIT_REDO, IDM_EDIT_COPY_ASHEX, IDM_EDIT_COPY_ASHEXFORMATTED, IDM_EDIT_COPY_ASASCII,
 			IDM_EDIT_PASTE_ASHEX, IDM_EDIT_PASTE_ASASCII,
-			IDM_EDIT_FILL_ZERO,
+			IDM_EDIT_FILL_ZEROS,
 			IDM_MAIN_ABOUT,
 		};
 
-		enum HEX_MODIFYAS
-		{
-			AS_STANDARD, AS_FILL, AS_UNDO
+		enum HEX_MODIFYAS {
+			AS_MODIFY, AS_FILL, AS_UNDO, AS_REDO
 		};
 
-		struct HEXUNDO
-		{
+		struct HEXUNDO {
 			ULONGLONG ullIndex;
 			std::string strData;
 		};
@@ -58,7 +56,7 @@ namespace HEXCTRL {
 			ULONGLONG		ullIndex { };		//Index of the start byte to modify.
 			ULONGLONG		ullModifySize { };	//Size in bytes.
 			PBYTE			pData { };			//Pointer to data to be set.
-			HEX_MODIFYAS	enType { HEX_MODIFYAS::AS_STANDARD }; //Modify type.
+			HEX_MODIFYAS	enType { HEX_MODIFYAS::AS_MODIFY }; //Modify type.
 			DWORD			dwFillDataSize { }; //Size of pData if enType==AS_FILL.
 			bool			fWhole { true };	//Is a whole byte or just a part of it to be modified.
 			bool			fHighPart { true };	//Shows whether High or Low part of byte should be modified (If fWhole is false).
@@ -67,7 +65,7 @@ namespace HEXCTRL {
 
 		constexpr auto HEXCTRL_WNDCLASS_WSTR = L"HexCtrl";
 	}
-};
+}
 
 /************************************************************************
 * CHexCtrl implementation.												*
@@ -132,6 +130,7 @@ CHexCtrl::CHexCtrl()
 	mii.hbmpItem = m_umapHBITMAP[HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_COPY_ASHEX] =
 		(HBITMAP)LoadImageW(GetModuleHandleW(0), MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
 	m_menuMain.SetMenuItemInfoW(HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_COPY_ASHEX, &mii);
+
 	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_COPY_ASHEXFORMATTED, L"Copy as Formatted Hex...");
 	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_COPY_ASASCII, L"Copy as Ascii...");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
@@ -139,9 +138,15 @@ CHexCtrl::CHexCtrl()
 	mii.hbmpItem = m_umapHBITMAP[HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_PASTE_ASHEX] =
 		(HBITMAP)LoadImageW(GetModuleHandleW(0), MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
 	m_menuMain.SetMenuItemInfoW(HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_PASTE_ASHEX, &mii);
+
 	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_PASTE_ASASCII, L"Paste as Ascii");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_FILL_ZERO, L"Fill with zeros");
+	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_FILL_ZEROS, L"Fill with zeros");
+
+	mii.hbmpItem = m_umapHBITMAP[HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_FILL_ZEROS] =
+		(HBITMAP)LoadImageW(GetModuleHandleW(0), MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+	m_menuMain.SetMenuItemInfoW(HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_FILL_ZEROS, &mii);
+
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
 	m_menuMain.AppendMenuW(MF_STRING, HEXCTRL_INTERNAL::HEX_MENU::IDM_MAIN_ABOUT, L"About");
 
@@ -292,6 +297,15 @@ void CHexCtrl::ClearData()
 	m_pstScrollH->SetScrollPos(0);
 	m_pstScrollV->SetScrollSizes(0, 0, 0);
 	UpdateInfoText();
+}
+
+void CHexCtrl::EditEnable(bool fEnable)
+{
+	if (!IsCreated())
+		return;
+
+	m_fMutable = fEnable;
+	RedrawWindow();
 }
 
 void CHexCtrl::ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize)
@@ -584,7 +598,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	case HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_PASTE_ASASCII:
 		ClipboardPaste(HEXCTRL_INTERNAL::HEX_CLIPBOARD::PASTE_ASASCII);
 		break;
-	case HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_FILL_ZERO:
+	case HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_FILL_ZEROS:
 	{
 		HEXCTRL_INTERNAL::HEXMODIFYDATA hmd;
 		hmd.enType = HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_FILL;
@@ -641,7 +655,7 @@ void CHexCtrl::OnContextMenu(CWnd* pWnd, CPoint point)
 		uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
 	m_menuMain.EnableMenuItem(HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_PASTE_ASASCII, ((m_fMutable && fFormatAvail) ?
 		uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem(HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_FILL_ZERO,
+	m_menuMain.EnableMenuItem(HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_FILL_ZEROS,
 		(m_fMutable ? uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
 
 	m_menuMain.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
@@ -863,7 +877,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 		return;
 
 	HEXCTRL_INTERNAL::HEXMODIFYDATA hmd;
-	hmd.enType = HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_STANDARD;
+	hmd.enType = HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_MODIFY;
 	hmd.ullIndex = m_ullCursorPos;
 	hmd.ullModifySize = 1;
 	hmd.fMoveNext = true;
@@ -1449,7 +1463,7 @@ void CHexCtrl::ClipboardPaste(DWORD dwType)
 		ullSize = m_ullDataSize - m_ullCursorPos;
 
 	HEXCTRL_INTERNAL::HEXMODIFYDATA hmd;
-	hmd.enType = HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_STANDARD;
+	hmd.enType = HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_MODIFY;
 	hmd.ullIndex = m_ullCursorPos;
 	hmd.fWhole = true;
 	hmd.fMoveNext = false;
@@ -1561,38 +1575,18 @@ void CHexCtrl::SetShowAs(DWORD dwShowAs)
 }
 
 void CHexCtrl::ModifyData(const HEXCTRL_INTERNAL::HEXMODIFYDATA& hmd)
-{
-	//Changes byte(s) in memory, High or Low part, depending on hmd.fHighPart.
+{	//Changes byte(s) in memory. High or Low part, depending on hmd.fHighPart.
 	if (!m_fMutable || hmd.ullIndex >= m_ullDataSize)
 		return;
 
-	if (hmd.enType != HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_UNDO)
-	{
-		m_deqRedo.clear(); //No Redo unless we make Undo.
-
-		//If Undo size is exceeding max limit,
-		//remove first snapshot from the beginning (the ildest one).
-		if (m_deqUndo.size() > m_dwUndoMax)
-			m_deqUndo.pop_front();
-
-		//Making new Undo data snapshot.
-		auto& refUndo = m_deqUndo.emplace_back(std::make_unique<HEXCTRL_INTERNAL::HEXUNDO>());
-		refUndo->ullIndex = hmd.ullIndex;
-		for (unsigned i = 0; i < hmd.ullModifySize; i++)
-			refUndo->strData += GetByte(hmd.ullIndex + i);
-	}
-
 	if (!m_fVirtual) //Modify only in non Virtual mode.
 	{
-		if (hmd.enType == HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_FILL)
+		switch (hmd.enType)
 		{
-			ULONGLONG ullChunks = hmd.ullModifySize / hmd.dwFillDataSize;
-			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
-				for (ULONGLONG iterData = 0; iterData < hmd.dwFillDataSize; iterData++)
-					m_pData[hmd.ullIndex + hmd.dwFillDataSize * iterChunk + iterData] = hmd.pData[iterData];
-		}
-		else //All the other data modifications: paste, undo, redo, keyboard input...
+		case HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_MODIFY:
 		{
+			SnapshotUndo(hmd.ullIndex, hmd.ullModifySize);
+
 			if (hmd.fWhole)
 				for (ULONGLONG i = 0; i < hmd.ullModifySize; i++)
 					m_pData[hmd.ullIndex + i] = hmd.pData[i];
@@ -1606,6 +1600,58 @@ void CHexCtrl::ModifyData(const HEXCTRL_INTERNAL::HEXMODIFYDATA& hmd)
 
 				m_pData[hmd.ullIndex] = chByte;
 			}
+		}
+		break;
+		case HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_FILL:
+		{
+			SnapshotUndo(hmd.ullIndex, hmd.ullModifySize);
+
+			ULONGLONG ullChunks = hmd.ullModifySize / hmd.dwFillDataSize;
+			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
+				for (ULONGLONG iterData = 0; iterData < hmd.dwFillDataSize; iterData++)
+					m_pData[hmd.ullIndex + hmd.dwFillDataSize * iterChunk + iterData] = hmd.pData[iterData];
+		}
+		break;
+		case HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_UNDO:
+		{
+			if (m_deqUndo.empty())
+				return;
+
+			auto& refUndo = m_deqUndo.back();
+			auto& refStr = refUndo->strData;
+
+			//Making new Redo data snapshot.
+			auto& refRedo = m_deqRedo.emplace_back(std::make_unique<HEXCTRL_INTERNAL::HEXUNDO>());
+			refRedo->ullIndex = refUndo->ullIndex;
+			for (unsigned i = 0; i < refStr.size(); i++)
+				refRedo->strData += GetByte(refUndo->ullIndex + i);
+
+			for (size_t i = 0; i < refStr.size(); i++)
+				m_pData[refUndo->ullIndex + i] = refStr[i];
+
+			m_deqUndo.pop_back();
+		}
+		break;
+		case HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_REDO:
+		{
+			if (m_deqRedo.empty())
+				return;
+
+			auto& refRedo = m_deqRedo.back();
+			auto& refStr = refRedo->strData;
+
+			//Making new Undo data snapshot.
+			auto& refUndo = m_deqUndo.emplace_back(std::make_unique<HEXCTRL_INTERNAL::HEXUNDO>());
+			refUndo->ullIndex = refRedo->ullIndex;
+			for (unsigned i = 0; i < refStr.size(); i++)
+				refUndo->strData += GetByte(refRedo->ullIndex + i);
+
+			for (size_t i = 0; i < refStr.size(); i++)
+				m_pData[refUndo->ullIndex + i] = refStr[i];
+
+			m_deqRedo.pop_back();
+		}
+		break;
 		}
 	}
 
@@ -1681,7 +1727,7 @@ void CHexCtrl::CursorMoveLeft()
 void CHexCtrl::CursorMoveUp()
 {
 	ULONGLONG ull = m_ullCursorPos;
-	if (ull > m_dwCapacity)
+	if (ull >= m_dwCapacity)
 		ull -= m_dwCapacity;
 	SetCursorPos(ull, m_fCursorHigh);
 }
@@ -1735,56 +1781,34 @@ void CHexCtrl::CursorScroll()
 
 void CHexCtrl::Undo()
 {
-	if (m_deqUndo.empty())
-		return;
-
-	auto& refUndo = m_deqUndo.back();
-	auto& refStr = refUndo->strData;
-
-	//Making new Redo data snapshot.
-	auto& refRedo = m_deqRedo.emplace_back(std::make_unique<HEXCTRL_INTERNAL::HEXUNDO>());
-	refRedo->ullIndex = refUndo->ullIndex;
-	for (unsigned i = 0; i < refStr.size(); i++)
-		refRedo->strData += GetByte(refUndo->ullIndex + i);
-
-	//Extracting Undo data and forward it to ModifyData.
 	HEXCTRL_INTERNAL::HEXMODIFYDATA hmd;
 	hmd.enType = HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_UNDO;
-	hmd.ullIndex = refUndo->ullIndex;
-	hmd.ullModifySize = refStr.size();
-	hmd.pData = (PBYTE)refStr.data();
-	hmd.fWhole = true;
 	hmd.fMoveNext = false;
-
 	ModifyData(hmd);
-	m_deqUndo.pop_back();
 }
 
 void CHexCtrl::Redo()
 {
-	if (m_deqRedo.empty())
-		return;
+	HEXCTRL_INTERNAL::HEXMODIFYDATA hmd;
+	hmd.enType = HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_REDO;
+	hmd.fMoveNext = false;
+	ModifyData(hmd);
+}
 
-	auto& refRedo = m_deqRedo.back();
-	auto& refStr = refRedo->strData;
+void CHexCtrl::SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize)
+{
+	m_deqRedo.clear(); //No Redo unless we make Undo.
+
+	//If Undo size is exceeding max limit,
+	//remove first snapshot from the beginning (the oldest one).
+	if (m_deqUndo.size() > m_dwUndoMax)
+		m_deqUndo.pop_front();
 
 	//Making new Undo data snapshot.
 	auto& refUndo = m_deqUndo.emplace_back(std::make_unique<HEXCTRL_INTERNAL::HEXUNDO>());
-	refUndo->ullIndex = refRedo->ullIndex;
-	for (unsigned i = 0; i < refStr.size(); i++)
-		refUndo->strData += GetByte(refRedo->ullIndex + i);
-
-	//Extracting Redo data and forward it to ModifyData.
-	HEXCTRL_INTERNAL::HEXMODIFYDATA hmd;
-	hmd.enType = HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_UNDO;
-	hmd.ullIndex = refRedo->ullIndex;
-	hmd.ullModifySize = refStr.size();
-	hmd.pData = (PBYTE)refStr.data();
-	hmd.fWhole = true;
-	hmd.fMoveNext = false;
-
-	ModifyData(hmd);
-	m_deqRedo.pop_back();
+	refUndo->ullIndex = ullIndex;
+	for (size_t i = 0; i < ullSize; i++)
+		refUndo->strData += GetByte(ullIndex + i);
 }
 
 void CHexCtrl::Search(HEXCTRL_INTERNAL::HEXSEARCH& rSearch)

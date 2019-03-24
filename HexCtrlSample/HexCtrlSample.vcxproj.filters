@@ -116,5 +116,11 @@
     <Image Include="..\HexCtrl\res\HexCtrlIcon.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
+    <Image Include="MenuFillZeros.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\HexCtrl\res\MenuFillZeros.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>
