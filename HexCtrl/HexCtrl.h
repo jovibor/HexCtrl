@@ -96,10 +96,11 @@ namespace HEXCTRL {
 		CHexCtrl();
 		virtual ~CHexCtrl();
 		bool Create(const HEXCREATESTRUCT& hcs); //Main initialization method, CHexCtrl::Create.
-		bool IsCreated();						 //Shows whether control created or not.
-		void SetData(const HEXDATASTRUCT& hds);  //Main method for setting data to display (and edit).																
+		bool IsCreated();						 //Shows whether control is created or not.
+		void SetData(const HEXDATASTRUCT& hds);  //Main method for setting data to display (and edit).	
+		bool IsDataSet();						 //Is data set or not.
 		void ClearData();						 //Clears all data from HexCtrl's view (not touching data itself).
-		void EditEnable(bool fEnable);
+		void EditEnable(bool fEnable);			 //Enable or disable edit mode.
 		void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1); //Shows (selects) given offset.
 		void SetFont(const LOGFONT* pLogFontNew);//Sets the control's font.
 		void SetFontSize(UINT uiSize);			 //Sets the control's font size.
@@ -161,6 +162,7 @@ namespace HEXCTRL {
 		void SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize); //Takes currently modifiable data snapshot.
 	private:
 		bool m_fCreated { false };			//Is control created or not yet.
+		bool m_fDataSet { false };			//Is data set or not.
 		bool m_fFloat { false };			//Is control window float or not.
 		bool m_fVirtual { false };			//Is control works in "Virtual" mode.
 		bool m_fMutable { false };			//Is control works in Edit mode.

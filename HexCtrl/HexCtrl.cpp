@@ -266,6 +266,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 		return;
 	}
 
+	m_fDataSet = true;
 	m_pData = hds.pData;
 	m_ullDataSize = hds.ullDataSize;
 	m_fVirtual = hds.fVirtual;
@@ -287,8 +288,14 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	}
 }
 
+bool CHexCtrl::IsDataSet()
+{
+	return m_fDataSet;
+}
+
 void CHexCtrl::ClearData()
 {
+	m_fDataSet = false;
 	m_ullDataSize = 0;
 	m_pData = nullptr;
 	m_ullSelectionClick = m_ullSelectionStart = m_ullSelectionEnd = m_ullSelectionSize = 0;
@@ -829,28 +836,16 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		switch (nChar)
 		{
 		case VK_RIGHT:
-			if (m_fMutable)
-				CursorMoveRight();
-			else
-				SetSelection(m_ullSelectionClick + 1, m_ullSelectionClick + 1, 1);
+			CursorMoveRight();
 			break;
 		case VK_LEFT:
-			if (m_fMutable)
-				CursorMoveLeft();
-			else
-				SetSelection(m_ullSelectionClick - 1, m_ullSelectionClick - 1, 1);
+			CursorMoveLeft();
 			break;
 		case VK_DOWN:
-			if (m_fMutable)
-				CursorMoveDown();
-			else
-				SetSelection(m_ullSelectionClick + m_dwCapacity, m_ullSelectionClick + m_dwCapacity, 1);
+			CursorMoveDown();
 			break;
 		case VK_UP:
-			if (m_fMutable)
-				CursorMoveUp();
-			else
-				SetSelection(m_ullSelectionClick - m_dwCapacity, m_ullSelectionClick - m_dwCapacity, 1);
+			CursorMoveUp();
 			break;
 		case VK_PRIOR: //Page-Up
 			m_pstScrollV->ScrollPageUp();
@@ -1690,51 +1685,71 @@ void CHexCtrl::SetCursorPos(ULONGLONG ullPos, bool fHighPart)
 
 void CHexCtrl::CursorMoveRight()
 {
-	if (m_fCursorAscii)
-		SetCursorPos(m_ullCursorPos + 1, m_fCursorHigh);
-	else if (m_fCursorHigh)
-		SetCursorPos(m_ullCursorPos, false);
+	if (m_fMutable)
+	{
+		if (m_fCursorAscii)
+			SetCursorPos(m_ullCursorPos + 1, m_fCursorHigh);
+		else if (m_fCursorHigh)
+			SetCursorPos(m_ullCursorPos, false);
+		else
+			SetCursorPos(m_ullCursorPos + 1, true);
+	}
 	else
-		SetCursorPos(m_ullCursorPos + 1, true);
+		SetSelection(m_ullSelectionClick + 1, m_ullSelectionClick + 1, 1);
 }
 
 void CHexCtrl::CursorMoveLeft()
 {
-	if (m_fCursorAscii)
+	if (m_fMutable)
 	{
-		ULONGLONG ull = m_ullCursorPos;
-		if (ull > 0) //To avoid overflow.
-			ull--;
-		else
-			return; //Zero index byte.
+		if (m_fCursorAscii)
+		{
+			ULONGLONG ull = m_ullCursorPos;
+			if (ull > 0) //To avoid overflow.
+				ull--;
+			else
+				return; //Zero index byte.
 
-		SetCursorPos(ull, m_fCursorHigh);
-	}
-	else if (m_fCursorHigh)
-	{
-		ULONGLONG ull = m_ullCursorPos;
-		if (ull > 0) //To avoid overflow.
-			ull--;
-		else
-			return; //Zero index byte.
+			SetCursorPos(ull, m_fCursorHigh);
+		}
+		else if (m_fCursorHigh)
+		{
+			ULONGLONG ull = m_ullCursorPos;
+			if (ull > 0) //To avoid overflow.
+				ull--;
+			else
+				return; //Zero index byte.
 
-		SetCursorPos(ull, false);
+			SetCursorPos(ull, false);
+		}
+		else
+			SetCursorPos(m_ullCursorPos, true);
 	}
 	else
-		SetCursorPos(m_ullCursorPos, true);
+		SetSelection(m_ullSelectionClick - 1, m_ullSelectionClick - 1, 1);
 }
 
 void CHexCtrl::CursorMoveUp()
 {
-	ULONGLONG ull = m_ullCursorPos;
-	if (ull >= m_dwCapacity)
-		ull -= m_dwCapacity;
-	SetCursorPos(ull, m_fCursorHigh);
+	ULONGLONG ullNewPos = m_fMutable ? m_ullCursorPos : m_ullSelectionClick;
+	if (ullNewPos >= m_dwCapacity)
+		ullNewPos -= m_dwCapacity;
+
+	if (m_fMutable)
+		SetCursorPos(ullNewPos, m_fCursorHigh);
+	else
+		SetSelection(ullNewPos, ullNewPos, 1);
 }
 
 void CHexCtrl::CursorMoveDown()
 {
-	SetCursorPos(m_ullCursorPos + m_dwCapacity, m_fCursorHigh);
+	ULONGLONG ullNewPos = m_fMutable ? m_ullCursorPos : m_ullSelectionClick;
+	ullNewPos += m_dwCapacity;
+
+	if (m_fMutable)
+		SetCursorPos(ullNewPos, m_fCursorHigh);
+	else
+		SetSelection(ullNewPos, ullNewPos, 1);
 }
 
 void CHexCtrl::CursorScroll()

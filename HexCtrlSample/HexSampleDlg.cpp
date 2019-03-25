@@ -22,8 +22,8 @@ void CHexSampleDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDOK, &CHexSampleDlg::OnBnClickedOk)
-	ON_BN_CLICKED(IDOK2, &CHexSampleDlg::OnBnClickedOk2)
+	ON_BN_CLICKED(IDOK, &CHexSampleDlg::OnBnRW)
+	ON_BN_CLICKED(IDOK2, &CHexSampleDlg::OnBnRO)
 END_MESSAGE_MAP()
 
 BOOL CHexSampleDlg::OnInitDialog()
@@ -50,7 +50,7 @@ void CHexSampleDlg::OnPaint()
 	{
 		CPaintDC dc(this); // device context for painting
 
-		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
+		SendMessageW(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
 
 		// Center icon in client rectangle
 		int cxIcon = GetSystemMetrics(SM_CXICON);
@@ -74,15 +74,17 @@ HCURSOR CHexSampleDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-void CHexSampleDlg::OnBnClickedOk()
+void CHexSampleDlg::OnBnRO()
 {
-	m_myHex.SetData(m_hds);
+	if (!m_myHex.IsDataSet())
+		m_myHex.SetData(m_hds);
+	m_myHex.EditEnable(false);
+}
+
+void CHexSampleDlg::OnBnRW()
+{
+	if (!m_myHex.IsDataSet())
+		m_myHex.SetData(m_hds);
 	m_myHex.EditEnable(true);
 }
 
-
-void CHexSampleDlg::OnBnClickedOk2()
-{
-	m_myHex.SetData(m_hds);
-	m_myHex.EditEnable(false);
-}

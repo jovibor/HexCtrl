@@ -27,6 +27,6 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
-	afx_msg void OnBnClickedOk();
-	afx_msg void OnBnClickedOk2();
+	afx_msg void OnBnRW();
+	afx_msg void OnBnRO();
 };
