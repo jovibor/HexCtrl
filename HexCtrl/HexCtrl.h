@@ -76,14 +76,32 @@ namespace HEXCTRL {
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT * ;
 
-	/********************************************
-	* CHexCtrl class definition.				*
-	********************************************/
+	/********************************************************************************************
+	* HEXSEARCHSTRUCT - used for search routines.												*
+	********************************************************************************************/
+	struct HEXSEARCHSTRUCT
+	{
+		std::wstring	wstrSearch { };			//String search for.
+		DWORD			dwSearchType { };		//Hex, Ascii, Unicode, etc...
+		ULONGLONG		ullStartAt { };			//An offset, search should start at.
+		int				iDirection { };			//Search direction: Forward <-> Backward.
+		bool			fWrap { false };		//Was search wrapped?
+		int				iWrap { };				//Wrap direction.
+		bool			fSecondMatch { false }; //First or subsequent match. 
+		bool			fFound { false };
+		bool			fCount { true };		//Do we count matches or just print "Found".
+	};
+
+	/********************************************************************************************
+	* CHexCtrl class declaration.																*
+	********************************************************************************************/
 	//Forward declarations.
+	class CHexDlgSearch;
 	namespace HEXCTRL_INTERNAL {
-		struct HEXSEARCH;
-		struct HEXMODIFYDATA;
+		struct HEXMODIFY;
 		struct HEXUNDO;
+		enum HEX_CLIPBOARD;
+		enum HEX_SHOWAS;
 	}
 	namespace SCROLLEX {
 		class CScrollEx;
@@ -92,7 +110,6 @@ namespace HEXCTRL {
 	class CHexCtrl : public CWnd
 	{
 	public:
-		friend class CHexDlgSearch;
 		CHexCtrl();
 		virtual ~CHexCtrl();
 		bool Create(const HEXCREATESTRUCT& hcs); //Main initialization method, CHexCtrl::Create.
@@ -109,6 +126,7 @@ namespace HEXCTRL {
 		void SetCapacity(DWORD dwCapacity);		 //Sets the control's current capacity.
 		UINT GetDlgCtrlID()const;
 		CWnd* GetParent()const;
+		void Search(HEXSEARCHSTRUCT& rSearch); //Search through currently set data.
 	protected:
 		DECLARE_MESSAGE_MAP()
 		bool RegisterWndClass();
@@ -134,6 +152,7 @@ namespace HEXCTRL {
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
 		afx_msg void OnDestroy();
+	protected:
 		void RecalcAll();
 		void RecalcWorkAreaHeight(int iClientHeight);
 		void RecalcScrollSizes(int iClientHeight = 0, int iClientWidth = 0);
@@ -141,15 +160,14 @@ namespace HEXCTRL {
 		ULONGLONG GetCurrentLineV();
 		ULONGLONG HitTest(LPPOINT); //Is any hex chunk withing given point?
 		void HexPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy);
-		void ClipboardCopy(DWORD dwType);
-		void ClipboardPaste(DWORD dwType);
-		void Search(HEXCTRL_INTERNAL::HEXSEARCH& rSearch);
+		void ClipboardCopy(HEXCTRL_INTERNAL::HEX_CLIPBOARD enType);
+		void ClipboardPaste(HEXCTRL_INTERNAL::HEX_CLIPBOARD enType);
 		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
 		void SelectAll();
 		void UpdateInfoText();
-		BYTE GetByte(ULONGLONG ullIndex); //Get the actual byte data by index.
-		void SetShowAs(DWORD dwShowAs);
-		void ModifyData(const HEXCTRL_INTERNAL::HEXMODIFYDATA& hmd); //Main routine to modify data in fMutable mode.
+		BYTE GetByte(ULONGLONG ullIndex); //Get the byte data by index.
+		void SetShowAs(HEXCTRL_INTERNAL::HEX_SHOWAS enShowAs);
+		void ModifyData(const HEXCTRL_INTERNAL::HEXMODIFY& hmd); //Main routine to modify data in fMutable mode.
 		void ParentNotify(const HEXNOTIFYSTRUCT& hns);
 		void SetCursorPos(ULONGLONG ullPos, bool fHighPart); //Sets the cursor position when in Edit mode.
 		void CursorMoveRight();

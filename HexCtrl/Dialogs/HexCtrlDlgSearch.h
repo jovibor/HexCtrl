@@ -11,6 +11,7 @@
 #pragma once
 #include <afxcontrolbars.h>  //Standard MFC's controls header.
 #include <string>
+#include "../HexCtrl.h"
 #include "../res/HexCtrlRes.h"
 
 namespace HEXCTRL {
@@ -21,19 +22,6 @@ namespace HEXCTRL {
 			SEARCH_NOTFOUND, SEARCH_FOUND,
 			SEARCH_BEGINNING, SEARCH_END
 		};
-
-		struct HEXSEARCH
-		{
-			std::wstring	wstrSearch { };			//String search for.
-			DWORD			dwSearchType { };		//Hex, Ascii, Unicode, etc...
-			ULONGLONG		ullStartAt { };			//An offset, search should start at.
-			int				iDirection { };			//Search direction: Forward <-> Backward.
-			bool			fWrap { false };		//Was search wrapped?
-			int				iWrap { };				//Wrap direction.
-			bool			fSecondMatch { false }; //First or subsequent match. 
-			bool			fFound { false };
-			bool			fCount { true };		//Do we count matches or just print "Found".
-		};
 	}
 
 	/********************************************
@@ -42,7 +30,6 @@ namespace HEXCTRL {
 	class CHexDlgSearch : public CDialogEx
 	{
 	public:
-		friend class CHexCtrl;
 		explicit CHexDlgSearch(CWnd* m_pParent = nullptr) {}
 		virtual ~CHexDlgSearch() {}
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pParentWnd);
@@ -62,7 +49,7 @@ namespace HEXCTRL {
 		DECLARE_MESSAGE_MAP()
 	private:
 		CHexCtrl* m_pParent { };
-		HEXCTRL_INTERNAL::HEXSEARCH m_stSearch { };
+		HEXSEARCHSTRUCT m_stSearch { };
 		DWORD m_dwOccurrences { };
 		int m_iRadioCurrent { };
 		COLORREF m_clrSearchFailed { RGB(200, 0, 0) };

@@ -52,7 +52,7 @@ namespace HEXCTRL {
 			std::string strData;
 		};
 
-		struct HEXMODIFYDATA {
+		struct HEXMODIFY {
 			ULONGLONG		ullIndex { };		//Index of the start byte to modify.
 			ULONGLONG		ullModifySize { };	//Size in bytes.
 			PBYTE			pData { };			//Pointer to data to be set.
@@ -607,7 +607,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 		break;
 	case HEXCTRL_INTERNAL::HEX_MENU::IDM_EDIT_FILL_ZEROS:
 	{
-		HEXCTRL_INTERNAL::HEXMODIFYDATA hmd;
+		HEXCTRL_INTERNAL::HEXMODIFY hmd;
 		hmd.enType = HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_FILL;
 		hmd.ullModifySize = m_ullSelectionSize;
 		hmd.ullIndex = m_ullSelectionStart;
@@ -871,7 +871,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 	if (GetKeyState(VK_CONTROL) < 0)
 		return;
 
-	HEXCTRL_INTERNAL::HEXMODIFYDATA hmd;
+	HEXCTRL_INTERNAL::HEXMODIFY hmd;
 	hmd.enType = HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_MODIFY;
 	hmd.ullIndex = m_ullCursorPos;
 	hmd.ullModifySize = 1;
@@ -1348,7 +1348,7 @@ void CHexCtrl::HexPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy)
 		ullCy = (ullChunk / m_dwCapacity) * m_sizeLetter.cy;
 }
 
-void CHexCtrl::ClipboardCopy(DWORD dwType)
+void CHexCtrl::ClipboardCopy(HEXCTRL_INTERNAL::HEX_CLIPBOARD enType)
 {
 	if (!m_ullSelectionSize)
 		return;
@@ -1356,7 +1356,7 @@ void CHexCtrl::ClipboardCopy(DWORD dwType)
 	const char* const pszHexMap { "0123456789ABCDEF" };
 	std::string strToClipboard;
 
-	switch (dwType)
+	switch (enType)
 	{
 	case HEXCTRL_INTERNAL::HEX_CLIPBOARD::COPY_ASHEX:
 	{
@@ -1437,7 +1437,7 @@ void CHexCtrl::ClipboardCopy(DWORD dwType)
 	CloseClipboard();
 }
 
-void CHexCtrl::ClipboardPaste(DWORD dwType)
+void CHexCtrl::ClipboardPaste(HEXCTRL_INTERNAL::HEX_CLIPBOARD enType)
 {
 	if (!m_fMutable || m_ullSelectionSize == 0)
 		return;
@@ -1457,14 +1457,14 @@ void CHexCtrl::ClipboardPaste(DWORD dwType)
 	if (m_ullCursorPos + ullSize > m_ullDataSize)
 		ullSize = m_ullDataSize - m_ullCursorPos;
 
-	HEXCTRL_INTERNAL::HEXMODIFYDATA hmd;
+	HEXCTRL_INTERNAL::HEXMODIFY hmd;
 	hmd.enType = HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_MODIFY;
 	hmd.ullIndex = m_ullCursorPos;
 	hmd.fWhole = true;
 	hmd.fMoveNext = false;
 
 	std::string strData;
-	switch (dwType)
+	switch (enType)
 	{
 	case HEXCTRL_INTERNAL::HEX_CLIPBOARD::PASTE_ASASCII:
 		hmd.pData = (PBYTE)pClipboardData;
@@ -1541,15 +1541,15 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)
 		return m_pData[ullIndex];
 }
 
-void CHexCtrl::SetShowAs(DWORD dwShowAs)
+void CHexCtrl::SetShowAs(HEXCTRL_INTERNAL::HEX_SHOWAS enShowAs)
 {
 	//Unchecking all menus and checking only the current needed.
-	m_dwShowAs = dwShowAs;
+	m_dwShowAs = enShowAs;
 	for (int i = 0; i < m_menuShowAs.GetMenuItemCount(); i++)
 		m_menuShowAs.CheckMenuItem(i, MF_UNCHECKED | MF_BYPOSITION);
 
 	int id { };
-	switch (dwShowAs)
+	switch (enShowAs)
 	{
 	case HEXCTRL_INTERNAL::HEX_SHOWAS::ASBYTE:
 		id = 0;
@@ -1569,7 +1569,7 @@ void CHexCtrl::SetShowAs(DWORD dwShowAs)
 	RecalcAll();
 }
 
-void CHexCtrl::ModifyData(const HEXCTRL_INTERNAL::HEXMODIFYDATA& hmd)
+void CHexCtrl::ModifyData(const HEXCTRL_INTERNAL::HEXMODIFY& hmd)
 {	//Changes byte(s) in memory. High or Low part, depending on hmd.fHighPart.
 	if (!m_fMutable || hmd.ullIndex >= m_ullDataSize)
 		return;
@@ -1580,6 +1580,7 @@ void CHexCtrl::ModifyData(const HEXCTRL_INTERNAL::HEXMODIFYDATA& hmd)
 		{
 		case HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_MODIFY:
 		{
+			m_deqRedo.clear(); //No Redo unless we make Undo.
 			SnapshotUndo(hmd.ullIndex, hmd.ullModifySize);
 
 			if (hmd.fWhole)
@@ -1599,6 +1600,7 @@ void CHexCtrl::ModifyData(const HEXCTRL_INTERNAL::HEXMODIFYDATA& hmd)
 		break;
 		case HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_FILL:
 		{
+			m_deqRedo.clear(); //No Redo unless we make Undo.
 			SnapshotUndo(hmd.ullIndex, hmd.ullModifySize);
 
 			ULONGLONG ullChunks = hmd.ullModifySize / hmd.dwFillDataSize;
@@ -1636,13 +1638,10 @@ void CHexCtrl::ModifyData(const HEXCTRL_INTERNAL::HEXMODIFYDATA& hmd)
 			auto& refStr = refRedo->strData;
 
 			//Making new Undo data snapshot.
-			auto& refUndo = m_deqUndo.emplace_back(std::make_unique<HEXCTRL_INTERNAL::HEXUNDO>());
-			refUndo->ullIndex = refRedo->ullIndex;
-			for (unsigned i = 0; i < refStr.size(); i++)
-				refUndo->strData += GetByte(refRedo->ullIndex + i);
+			SnapshotUndo(refRedo->ullIndex, refStr.size());
 
 			for (size_t i = 0; i < refStr.size(); i++)
-				m_pData[refUndo->ullIndex + i] = refStr[i];
+				m_pData[refRedo->ullIndex + i] = refStr[i];
 
 			m_deqRedo.pop_back();
 		}
@@ -1796,7 +1795,7 @@ void CHexCtrl::CursorScroll()
 
 void CHexCtrl::Undo()
 {
-	HEXCTRL_INTERNAL::HEXMODIFYDATA hmd;
+	HEXCTRL_INTERNAL::HEXMODIFY hmd;
 	hmd.enType = HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_UNDO;
 	hmd.fMoveNext = false;
 	ModifyData(hmd);
@@ -1804,7 +1803,7 @@ void CHexCtrl::Undo()
 
 void CHexCtrl::Redo()
 {
-	HEXCTRL_INTERNAL::HEXMODIFYDATA hmd;
+	HEXCTRL_INTERNAL::HEXMODIFY hmd;
 	hmd.enType = HEXCTRL_INTERNAL::HEX_MODIFYAS::AS_REDO;
 	hmd.fMoveNext = false;
 	ModifyData(hmd);
@@ -1812,8 +1811,6 @@ void CHexCtrl::Redo()
 
 void CHexCtrl::SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize)
 {
-	m_deqRedo.clear(); //No Redo unless we make Undo.
-
 	//If Undo size is exceeding max limit,
 	//remove first snapshot from the beginning (the oldest one).
 	if (m_deqUndo.size() > m_dwUndoMax)
@@ -1826,7 +1823,7 @@ void CHexCtrl::SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize)
 		refUndo->strData += GetByte(ullIndex + i);
 }
 
-void CHexCtrl::Search(HEXCTRL_INTERNAL::HEXSEARCH& rSearch)
+void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 {
 	rSearch.fFound = false;
 	ULONGLONG ullStartAt = rSearch.ullStartAt;
@@ -1835,7 +1832,7 @@ void CHexCtrl::Search(HEXCTRL_INTERNAL::HEXSEARCH& rSearch)
 	std::string strSearch { };
 
 	if (rSearch.wstrSearch.empty() || m_ullDataSize == 0 || rSearch.ullStartAt > (m_ullDataSize - 1))
-		return m_pDlgSearch->SearchCallback();
+		return;
 
 	int iSizeNeeded = WideCharToMultiByte(CP_UTF8, 0, &rSearch.wstrSearch[0], (int)rSearch.wstrSearch.size(), nullptr, 0, nullptr, nullptr);
 	std::string strSearchAscii(iSizeNeeded, 0);
@@ -1859,7 +1856,6 @@ void CHexCtrl::Search(HEXCTRL_INTERNAL::HEXSEARCH& rSearch)
 			if (!ToUl(strToUL.data(), ulNumber))
 			{
 				rSearch.fFound = false;
-				m_pDlgSearch->SearchCallback();
 				return;
 			}
 
@@ -1892,7 +1888,8 @@ void CHexCtrl::Search(HEXCTRL_INTERNAL::HEXSEARCH& rSearch)
 	}
 
 	///////////////Actual Search:////////////////////////////////////////////
-	switch (rSearch.dwSearchType) {
+	switch (rSearch.dwSearchType) 
+	{
 	case HEXCTRL_INTERNAL::HEX_SEARCH::SEARCH_HEX:
 	case HEXCTRL_INTERNAL::HEX_SEARCH::SEARCH_ASCII:
 	{
@@ -2028,7 +2025,6 @@ void CHexCtrl::Search(HEXCTRL_INTERNAL::HEXSEARCH& rSearch)
 
 End:
 	{
-		m_pDlgSearch->SearchCallback();
 		if (rSearch.fFound)
 			SetSelection(rSearch.ullStartAt, rSearch.ullStartAt, ullSizeBytes, true);
 	}

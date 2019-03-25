@@ -9,7 +9,6 @@
 * 3. Call myHex.SetData method to set the data and its size to display as hex.	        *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "../HexCtrl.h"
 #include "HexCtrlDlgSearch.h"
 
 using namespace HEXCTRL;
@@ -57,7 +56,6 @@ void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 void CHexDlgSearch::SearchCallback()
 {
 	WCHAR wstrSearch[128];
-
 	if (m_stSearch.fFound)
 	{
 		if (m_stSearch.fCount)
@@ -121,6 +119,7 @@ void CHexDlgSearch::OnButtonSearchF()
 
 	GetDlgItem(IDC_HEXCTRL_SEARCH_EDITSEARCH)->SetFocus();
 	GetParent()->Search(m_stSearch);
+	SearchCallback();
 }
 
 void CHexDlgSearch::OnButtonSearchB()
@@ -151,6 +150,7 @@ void CHexDlgSearch::OnButtonSearchB()
 
 	GetDlgItem(IDC_HEXCTRL_SEARCH_EDITSEARCH)->SetFocus();
 	GetParent()->Search(m_stSearch);
+	SearchCallback();
 }
 
 void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
