@@ -77,14 +77,20 @@ HCURSOR CHexSampleDlg::OnQueryDragIcon()
 void CHexSampleDlg::OnBnRO()
 {
 	if (!m_myHex.IsDataSet())
+	{
+		m_hds.fMutable = false;
 		m_myHex.SetData(m_hds);
-	m_myHex.EditEnable(false);
+	}
+	m_myHex.EnableEdit(false);
 }
 
 void CHexSampleDlg::OnBnRW()
 {
 	if (!m_myHex.IsDataSet())
+	{
+		m_hds.fMutable = true;
 		m_myHex.SetData(m_hds);
-	m_myHex.EditEnable(true);
+	}
+	m_myHex.EnableEdit(true);
 }
 

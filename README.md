@@ -5,9 +5,12 @@
 * [Implementation](#implementation)
 * [Using the Code](#using-the-control)
 * [Create](#create)
+  * [Classic Approach](#classic-approach)
   * [In Dialog](#in-dialog)
 * [SetData](#setdata)
 * [Virtual Mode](#virtual-mode)
+  * [Message Window](#message-window)
+  * [Custom Handler](#custom-handler)
 * [OnDestroy](#ondestroy)
 * [Scroll Bars](#scroll-bars)
 * [Methods](#methods)
@@ -37,18 +40,18 @@ The usage is quite simple:
 Control uses its own namespace - `HEXCTRL`. So it's up to you, to use namespace prefix, `HEXCTRL::`, or to define namespace in the file's beginning: `using namespace HEXCTRL;`.
 
 ## [](#)Create
+### [](#)Classic approach
 `CHexCtrl::Create` method - the first method you call - takes `HEXCREATESTRUCT` as its argument. This is the main initialization struct which fields are described below:
 
 ```cpp
 struct HEXCREATESTRUCT
 {
 	PHEXCOLORSTRUCT pstColor { };			//Pointer to HEXCOLORSTRUCT, if nullptr default colors are used.
-	CWnd*		    pwndParent { };			//Parent window's pointer.
+	CWnd*		    pParent { };			//Parent window's pointer.
 	UINT		    uId { };				//Hex control Id.
 	DWORD			dwExStyles { };			//Extended window styles.
 	CRect			rect { };				//Initial rect. If null, the window is screen centered.
 	const LOGFONTW* pLogFont { };			//Font to be used, nullptr for default.
-	CWnd*			pwndMsg { };			//Window ptr that is to recieve command messages, if nullptr parent window is used.
 	bool			fFloat { false };		//Is float or child (incorporated into another window)?.
 	bool			fCustomCtrl { false };	//It's a custom dialog control.
 };
@@ -79,8 +82,8 @@ using PHEXCOLORSTRUCT = HEXCOLORSTRUCT * ;
 ```
 This struct is also used in `CHexCtrl::SetColor` method.
 
-## [](#)In Dialog
-To use `HexCtrl` within `Dialog` you can create it with the standard routine: call `Create` method and provide all the necessary information.
+### [](#)In Dialog
+To use `HexCtrl` within `Dialog` you can, of course, create it with the classic approach: call `Create` method and provide all the necessary information.
 But there is another approach you can use:
 1. Put **Custom Control** control from the Toolbox in Visual Studio dialog designer into your dialog template and make it desired size.<br>
 ![](docs/img/VSToolboxCustomCtrl.jpg) ![](docs/img/VSCustomCtrlOnDlg.jpg)
@@ -105,26 +108,27 @@ void CMyDlg::DoDataExchange(CDataExchange* pDX)
 ## [](#)SetData
 `SetData` method takes `HEXDATASTRUCT` reference as argument. This struct fields are described below:
 ```cpp
-struct HEXDATASTRUCT 
+struct HEXDATASTRUCT
 {
-	ULONGLONG		ullDataSize { };		//Size of the data to display, in bytes.
-	ULONGLONG		ullSelectionStart { };	//Set selection at this position. Works only if ullSelectionSize > 0.
-	ULONGLONG		ullSelectionSize { };	//How many bytes to set as selected.
-	CWnd*			pwndMsg { };			//Window to send the control messages to. If nullptr then the parent window is used.
-	PBYTE*			pData { };				//Pointer to the data. Not used if it's virtual control.
-	bool			fMutable { false };		//Will data be mutable (editable) or just read mode.
-	bool			fVirtual { false };		//Is Virtual data mode?.
+	ULONGLONG		ullDataSize { };					//Size of the data to display, in bytes.
+	ULONGLONG		ullSelectionStart { };				//Set selection at this position. Works only if ullSelectionSize > 0.
+	ULONGLONG		ullSelectionSize { };				//How many bytes to set as selected.
+	CWnd*			pwndMsg { };						//Window to send the control messages to. If nullptr then the parent window is used.
+	CHexCustom*		pHexHandler { };					//Pointer to Virtual data handler class.
+	PBYTE			pData { };							//Pointer to the data. Not used if it's virtual control.
+	HEXDATAMODEEN	enMode { HEXDATAMODEEN::HEXNORMAL };//Working data mode of control.
+	bool			fMutable { false };					//Will data be mutable (editable) or just read mode.
 };
 ```
 ## [](#)Virtual Mode
-The `fVirtual` member of `HEXDATASTRUCT` shows whether `HexControl` works in Virtual Mode.<br>
-What it means is that when control is about to display next byte, it will first ask for this byte from the `pwndMsg` window, 
+### [](#)Message window
+The `enMode` member of `HEXDATASTRUCT` shows what data mode `HexControl` is working at. It is the `HEXDATAMODEEN` enum member.
+If it's set to `HEXMSG` the control works in so called *Virtual* mode.<br>
+What it means is that when control is about to display next byte, it will first ask for this byte from the `pwndMsg` window,
 in the form of `WM_NOTIFY` message. This is pretty much the same as the standard **MFC** List Control works when created with `LVS_OWNERDATA` flag.<br>
-This `pwndMsg` window pointer can be set in either `HEXCREATESTRUCT::pwndMsg` — in control's `Create` method,
-or in `HEXDATASTRUCT::pwndMsg` — in `SetData` method. The difference is that in former case you set the pointer once for the whole control's lifetime,
-and in the latter you set its own notify handler windows for every `SetData` call.<br>
+The `pwndMsg` window pointer can be set as `HEXDATASTRUCT::pwndMsg` in `SetData` method. By default it is equal to the control's parent window.<br>
 This mode can be quite useful, for instance, in cases where you need to display a very large amount of data that can't fit in memory all at once.<br>
-In `pwndMsg` window process `WM_NOTIFY` message as follows:
+To properly handle this mode process `WM_NOTIFY` messages, in `pwndMsg` window, as follows:
 ```cpp
 BOOL CMyWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
@@ -155,7 +159,20 @@ using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT * ;
 ```
 Its first member is a standard Windows' `NMHDR` structure. It will have its code member equal to `HEXCTRL_MSG_GETDATA` indicating that HexControl's byte request has arrived.
 The second member is the index of the byte be displayed. And the third is the actual byte, that you have to set in response.
-
+### [](#)Custom Handler
+If `enMode` member of `HEXDATASTRUCT` is set to `HEXDATAMODEEN::HEXCUSTOM` then all the data routine will be done through
+`HEXDATASTRUCT::pHexHandler` pointer.<br>
+This pointer is of type `CHexCustom` class, which is a base pure abstract class.
+You have to derive your own class from it and override its methods:
+```cpp
+class CHexCustom
+{
+public:
+	virtual BYTE GetByte(ULONGLONG ullIndex) = 0; //Gets the byte data by index.
+	virtual	void ModifyData(const HEXMODIFYSTRUCT& hmd) = 0; //Main routine to modify data, in fMutable=true mode.
+};
+```
+Then provide a pointer to created object of your derived class to `SetData` method in form of `HEXDATASTRUCT::pHexHandler=&yourDerivedClassObject`
 ## [](#)OnDestroy
 When `HexControl` window, floating or child, is destroyed, it sends `WM_NOTIFY` message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
 So, it basically indicates to its parent that the user clicked close button, or closed window in some other way.

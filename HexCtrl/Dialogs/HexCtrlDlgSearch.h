@@ -15,8 +15,8 @@
 #include "../res/HexCtrlRes.h"
 
 namespace HEXCTRL {
-	namespace HEXCTRL_INTERNAL {
-		enum HEX_SEARCH {
+	namespace INTERNAL {
+		enum ENSEARCH {
 			SEARCH_HEX, SEARCH_ASCII, SEARCH_UNICODE,
 			SEARCH_FORWARD, SEARCH_BACKWARD,
 			SEARCH_NOTFOUND, SEARCH_FOUND,

@@ -15,6 +15,51 @@
 #include <afxwin.h>			//MFC core and standard components.
 
 namespace HEXCTRL {
+	/************************************************
+	* Forward declarations.							*
+	************************************************/
+	class CHexDlgSearch;
+	struct HEXMODIFYSTRUCT;
+	namespace INTERNAL
+	{
+		struct STUNDO;
+		enum class ENCLIPBOARD : DWORD;
+		enum class ENSHOWAS : DWORD;
+	}
+	namespace SCROLLEX { class CScrollEx; }
+
+	/********************************************************************************************
+	* HEXDATAMODEEN - Enum to set the data working mode. Used in HEXDATASTRUCT in SetData.		*
+	********************************************************************************************/
+	enum class HEXDATAMODEEN : DWORD
+	{
+		HEXNORMAL, HEXMSG, HEXCUSTOM
+	};
+
+	/********************************************************************************************
+	* HEXMODIFYASEN - enum to represent data modification type.									*
+	********************************************************************************************/
+	enum class HEXMODIFYASEN : DWORD
+	{
+		AS_MODIFY, AS_FILL, AS_UNDO, AS_REDO
+	};
+
+	/********************************************************************************************
+	* CHexCustom - Pure abstract data handler class, that can be implemented by client,			*
+	* to set its own data handler routines.	Works in HEXDATAMODEEN::HEXCUSTOM mode.				*
+	* Pointer to this class can be set in SetData methods.										*
+	* Its usage is very similar to pwndMsg logic, where control sends WM_NOTIFY messages		*
+	* to CWnd* class to get/set data. But in this case it's just a pointer to a custom			*
+	* routines implementation.																	*
+	* All virtual functions must be defined in client derived class.							*
+	********************************************************************************************/
+	class CHexCustom
+	{
+	public:
+		virtual BYTE GetByte(ULONGLONG ullIndex) = 0; //Gets the byte data by index.
+		virtual	void ModifyData(const HEXMODIFYSTRUCT& hmd) = 0; //Main routine to modify data, in fMutable=true mode.
+	};
+
 	/********************************************************************************************
 	* HEXCOLORSTRUCT - All HexCtrl colors.														*
 	********************************************************************************************/
@@ -39,12 +84,11 @@ namespace HEXCTRL {
 	struct HEXCREATESTRUCT
 	{
 		PHEXCOLORSTRUCT pstColor { };			//Pointer to HEXCOLORSTRUCT, if nullptr default colors are used.
-		CWnd*		    pwndParent { };			//Parent window's pointer.
+		CWnd*		    pParent { };			//Parent window's pointer.
 		UINT		    uId { };				//Hex control Id.
 		DWORD			dwExStyles { };			//Extended window styles.
 		CRect			rect { };				//Initial rect. If null, the window is screen centered.
 		const LOGFONTW* pLogFont { };			//Font to be used, nullptr for default.
-		CWnd*			pwndMsg { };			//Window ptr that is to recieve command messages, if nullptr parent window is used.
 		bool			fFloat { false };		//Is float or child (incorporated into another window)?.
 		bool			fCustomCtrl { false };	//It's a custom dialog control.
 	};
@@ -54,13 +98,14 @@ namespace HEXCTRL {
 	********************************************************************************************/
 	struct HEXDATASTRUCT
 	{
-		ULONGLONG		ullDataSize { };		//Size of the data to display, in bytes.
-		ULONGLONG		ullSelectionStart { };	//Set selection at this position. Works only if ullSelectionSize > 0.
-		ULONGLONG		ullSelectionSize { };	//How many bytes to set as selected.
-		CWnd*			pwndMsg { };			//Window to send the control messages to. If nullptr then the parent window is used.
-		PBYTE			pData { };				//Pointer to the data. Not used if it's virtual control.
-		bool			fMutable { false };		//Will data be mutable (editable) or just read mode.
-		bool			fVirtual { false };		//Is Virtual data mode?.
+		ULONGLONG		ullDataSize { };					//Size of the data to display, in bytes.
+		ULONGLONG		ullSelectionStart { };				//Set selection at this position. Works only if ullSelectionSize > 0.
+		ULONGLONG		ullSelectionSize { };				//How many bytes to set as selected.
+		CWnd*			pwndMsg { };						//Window to send the control messages to. If nullptr then the parent window is used.
+		CHexCustom*		pHexHandler { };					//Pointer to Virtual data handler class.
+		PBYTE			pData { };							//Pointer to the data. Not used if it's virtual control.
+		HEXDATAMODEEN	enMode { HEXDATAMODEEN::HEXNORMAL };//Working mode of control.
+		bool			fMutable { false };					//Will data be mutable (editable) or just read mode.
 	};
 
 	/********************************************************************************************
@@ -75,6 +120,20 @@ namespace HEXCTRL {
 		BYTE			chByte { };		//Single byte data - used for simplicity, when ullModifySize==1.
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT * ;
+
+	/********************************************************************************************
+	* HEXMODIFYSTRUCT - used to represent data modification parameters.							*
+	********************************************************************************************/
+	struct HEXMODIFYSTRUCT {
+		ULONGLONG		ullIndex { };		//Index of the start byte to modify.
+		ULONGLONG		ullModifySize { };	//Size in bytes.
+		PBYTE			pData { };			//Pointer to data to be set.
+		HEXMODIFYASEN	enType { HEXMODIFYASEN::AS_MODIFY }; //Modification type.
+		DWORD			dwFillDataSize { }; //Size of pData if enType==AS_FILL.
+		bool			fWhole { true };	//Is a whole byte or just a part of it to be modified.
+		bool			fHighPart { true };	//Shows whether High or Low part of byte should be modified (If fWhole is false).
+		bool			fMoveNext { true };	//Should cursor be moved to the next byte.
+	};
 
 	/********************************************************************************************
 	* HEXSEARCHSTRUCT - used for search routines.												*
@@ -95,18 +154,6 @@ namespace HEXCTRL {
 	/********************************************************************************************
 	* CHexCtrl class declaration.																*
 	********************************************************************************************/
-	//Forward declarations.
-	class CHexDlgSearch;
-	namespace HEXCTRL_INTERNAL {
-		struct HEXMODIFY;
-		struct HEXUNDO;
-		enum HEX_CLIPBOARD;
-		enum HEX_SHOWAS;
-	}
-	namespace SCROLLEX {
-		class CScrollEx;
-	}
-
 	class CHexCtrl : public CWnd
 	{
 	public:
@@ -117,16 +164,16 @@ namespace HEXCTRL {
 		void SetData(const HEXDATASTRUCT& hds);  //Main method for setting data to display (and edit).	
 		bool IsDataSet();						 //Is data set or not.
 		void ClearData();						 //Clears all data from HexCtrl's view (not touching data itself).
-		void EditEnable(bool fEnable);			 //Enable or disable edit mode.
+		void EnableEdit(bool fEnable);			 //Enable or disable edit mode.
 		void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1); //Shows (selects) given offset.
 		void SetFont(const LOGFONT* pLogFontNew);//Sets the control's font.
 		void SetFontSize(UINT uiSize);			 //Sets the control's font size.
-		UINT GetFontSize();						 //Gets the control's font size.
+		long GetFontSize();						 //Gets the control's font size.
 		void SetColor(const HEXCOLORSTRUCT& clr);//Sets all the colors for the control.
 		void SetCapacity(DWORD dwCapacity);		 //Sets the control's current capacity.
 		UINT GetDlgCtrlID()const;
 		CWnd* GetParent()const;
-		void Search(HEXSEARCHSTRUCT& rSearch); //Search through currently set data.
+		void Search(HEXSEARCHSTRUCT& rSearch);	 //Search through currently set data.
 	protected:
 		DECLARE_MESSAGE_MAP()
 		bool RegisterWndClass();
@@ -153,22 +200,21 @@ namespace HEXCTRL {
 		afx_msg void OnNcPaint();
 		afx_msg void OnDestroy();
 	protected:
+		BYTE GetByte(ULONGLONG ullIndex); //Gets the byte data by index.
+		void ModifyData(const HEXMODIFYSTRUCT& hmd); //Main routine to modify data, in fMutable=true mode.
 		void RecalcAll();
 		void RecalcWorkAreaHeight(int iClientHeight);
 		void RecalcScrollSizes(int iClientHeight = 0, int iClientWidth = 0);
-		void RecalcScrollPageSize();
 		ULONGLONG GetCurrentLineV();
 		ULONGLONG HitTest(LPPOINT); //Is any hex chunk withing given point?
-		void HexPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy);
-		void ClipboardCopy(HEXCTRL_INTERNAL::HEX_CLIPBOARD enType);
-		void ClipboardPaste(HEXCTRL_INTERNAL::HEX_CLIPBOARD enType);
+		void ChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy); //Point of Hex chunk.
+		void ClipboardCopy(INTERNAL::ENCLIPBOARD enType);
+		void ClipboardPaste(INTERNAL::ENCLIPBOARD enType);
 		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
 		void SelectAll();
 		void UpdateInfoText();
-		BYTE GetByte(ULONGLONG ullIndex); //Get the byte data by index.
-		void SetShowAs(HEXCTRL_INTERNAL::HEX_SHOWAS enShowAs);
-		void ModifyData(const HEXCTRL_INTERNAL::HEXMODIFY& hmd); //Main routine to modify data in fMutable mode.
-		void ParentNotify(const HEXNOTIFYSTRUCT& hns);
+		void SetShowAs(INTERNAL::ENSHOWAS enShowAs);
+		void MsgNotify(const HEXNOTIFYSTRUCT& hns); //Notify routine use in HEXDATAMODEEN::HEXMSG.
 		void SetCursorPos(ULONGLONG ullPos, bool fHighPart); //Sets the cursor position when in Edit mode.
 		void CursorMoveRight();
 		void CursorMoveLeft();
@@ -182,16 +228,17 @@ namespace HEXCTRL {
 		bool m_fCreated { false };			//Is control created or not yet.
 		bool m_fDataSet { false };			//Is data set or not.
 		bool m_fFloat { false };			//Is control window float or not.
-		bool m_fVirtual { false };			//Is control works in "Virtual" mode.
 		bool m_fMutable { false };			//Is control works in Edit mode.
+		HEXDATAMODEEN m_enMode { HEXDATAMODEEN::HEXNORMAL }; //Control's mode.
 		PBYTE m_pData { };					//Main data pointer. Modifiable in "Edit" mode.
 		ULONGLONG m_ullDataSize { };		//Size of the displayed data in bytes.
 		DWORD m_dwCapacity { 16 };			//How many bytes displayed in one row
 		const DWORD m_dwCapacityMax { 64 }; //Maximum capacity.
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
-		DWORD m_dwShowAs { };				//Show data mode.
+		INTERNAL::ENSHOWAS m_enShowAs { };  //Show data mode.
 		CWnd* m_pwndParentOwner { };		//Parent or owner window pointer.
 		CWnd* m_pwndMsg { };				//Window the control messages will be sent to.
+		CHexCustom* m_pCustom { };			//Data handler pointer for HEXDATAMODEEN::HEXCUSTOM
 		SIZE m_sizeLetter { 1, 1 };			//Current font's letter size (width, height).
 		CFont m_fontHexView;				//Main Hex chunks font.
 		CFont m_fontBottomRect;				//Font for bottom Info rect.
@@ -229,8 +276,8 @@ namespace HEXCTRL {
 		bool m_fCursorHigh { true };		//Cursor's High or Low bits position (first or last digit in hex chunk).
 		bool m_fCursorAscii { false };		//Whether cursor at Ascii or Hex chunks area.
 		DWORD m_dwUndoMax { 50 };			//How many Undo states to preserve.
-		std::deque<std::unique_ptr<HEXCTRL_INTERNAL::HEXUNDO>> m_deqUndo; //Undo deque.
-		std::deque<std::unique_ptr<HEXCTRL_INTERNAL::HEXUNDO>> m_deqRedo; //Redo deque.
+		std::deque<std::unique_ptr<INTERNAL::STUNDO>> m_deqUndo; //Undo deque.
+		std::deque<std::unique_ptr<INTERNAL::STUNDO>> m_deqRedo; //Redo deque.
 		std::unordered_map<int, HBITMAP> m_umapHBITMAP; //Images for the Menu.
 	};
 
