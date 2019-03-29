@@ -15,7 +15,7 @@ using namespace HEXCTRL;
 
 namespace HEXCTRL {
 	namespace INTERNAL {
-		constexpr auto WSTR_VERSION = L"Hex Control for MFC, v2.2.5";
+		constexpr auto WSTR_VERSION = L"Hex Control for MFC, v2.2.7";
 		constexpr auto WSTR_URL_GITHUB = L"https://github.com/jovibor/HexCtrl";
 	};
 }

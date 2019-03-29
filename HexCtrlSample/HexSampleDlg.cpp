@@ -7,8 +7,8 @@
 #define new DEBUG_NEW
 #endif
 
-CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/) //-V730
-	: CDialogEx(IDD_HEXSAMPLE_DIALOG, pParent)
+CHexSampleDlg::CHexSampleDlg(CWnd* pwndParent /*=nullptr*/) //-V730
+	: CDialogEx(IDD_HEXSAMPLE_DIALOG, pwndParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -33,9 +33,12 @@ BOOL CHexSampleDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
-	HEXCREATESTRUCT hcs;
-	hcs.fCustomCtrl = true;
-	m_myHex.Create(hcs);
+//	HEXCREATESTRUCT hcs;
+//	hcs.dwExStyle = WS_EX_APPWINDOW;
+//	hcs.pwndParent = this;
+//	hcs.fFloat = true;
+//	m_myHex.Create(hcs);
+	m_myHex.CreateDialogCtrl();
 
 	m_hds.pData = m_data;
 	m_hds.ullDataSize = sizeof(m_data);
@@ -48,7 +51,7 @@ void CHexSampleDlg::OnPaint()
 {
 	if (IsIconic())
 	{
-		CPaintDC dc(this); // device context for painting
+		CPaintDC dc(this);
 
 		SendMessageW(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
 
@@ -81,7 +84,7 @@ void CHexSampleDlg::OnBnRO()
 		m_hds.fMutable = false;
 		m_myHex.SetData(m_hds);
 	}
-	m_myHex.EnableEdit(false);
+	m_myHex.EditEnable(false);
 }
 
 void CHexSampleDlg::OnBnRW()
@@ -91,6 +94,5 @@ void CHexSampleDlg::OnBnRW()
 		m_hds.fMutable = true;
 		m_myHex.SetData(m_hds);
 	}
-	m_myHex.EnableEdit(true);
+	m_myHex.EditEnable(true);
 }
-

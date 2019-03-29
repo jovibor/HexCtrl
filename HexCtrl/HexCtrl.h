@@ -84,9 +84,10 @@ namespace HEXCTRL {
 	struct HEXCREATESTRUCT
 	{
 		PHEXCOLORSTRUCT pstColor { };			//Pointer to HEXCOLORSTRUCT, if nullptr default colors are used.
-		CWnd*		    pParent { };			//Parent window's pointer.
+		CWnd*		    pwndParent { };			//Parent window's pointer.
 		UINT		    uId { };				//Hex control Id.
-		DWORD			dwExStyles { };			//Extended window styles.
+		DWORD			dwStyle { };			//Window styles. Null for default.
+		DWORD			dwExStyle { };			//Extended window styles. Null for default.
 		CRect			rect { };				//Initial rect. If null, the window is screen centered.
 		const LOGFONTW* pLogFont { };			//Font to be used, nullptr for default.
 		bool			fFloat { false };		//Is float or child (incorporated into another window)?.
@@ -104,7 +105,7 @@ namespace HEXCTRL {
 		CWnd*			pwndMsg { };						//Window to send the control messages to. If nullptr then the parent window is used.
 		CHexCustom*		pHexHandler { };					//Pointer to Virtual data handler class.
 		PBYTE			pData { };							//Pointer to the data. Not used if it's virtual control.
-		HEXDATAMODEEN	enMode { HEXDATAMODEEN::HEXNORMAL };//Working mode of control.
+		HEXDATAMODEEN	enMode { HEXDATAMODEEN::HEXNORMAL };//Working data mode of control.
 		bool			fMutable { false };					//Will data be mutable (editable) or just read mode.
 	};
 
@@ -160,19 +161,18 @@ namespace HEXCTRL {
 		CHexCtrl();
 		virtual ~CHexCtrl();
 		bool Create(const HEXCREATESTRUCT& hcs); //Main initialization method, CHexCtrl::Create.
+		bool CreateDialogCtrl();				 //Сreates custom dialog control.
 		bool IsCreated();						 //Shows whether control is created or not.
 		void SetData(const HEXDATASTRUCT& hds);  //Main method for setting data to display (and edit).	
 		bool IsDataSet();						 //Is data set or not.
 		void ClearData();						 //Clears all data from HexCtrl's view (not touching data itself).
-		void EnableEdit(bool fEnable);			 //Enable or disable edit mode.
+		void EditEnable(bool fEnable);			 //Enable or disable edit mode.
 		void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1); //Shows (selects) given offset.
 		void SetFont(const LOGFONT* pLogFontNew);//Sets the control's font.
 		void SetFontSize(UINT uiSize);			 //Sets the control's font size.
 		long GetFontSize();						 //Gets the control's font size.
 		void SetColor(const HEXCOLORSTRUCT& clr);//Sets all the colors for the control.
 		void SetCapacity(DWORD dwCapacity);		 //Sets the control's current capacity.
-		UINT GetDlgCtrlID()const;
-		CWnd* GetParent()const;
 		void Search(HEXSEARCHSTRUCT& rSearch);	 //Search through currently set data.
 	protected:
 		DECLARE_MESSAGE_MAP()
@@ -202,6 +202,7 @@ namespace HEXCTRL {
 	protected:
 		BYTE GetByte(ULONGLONG ullIndex); //Gets the byte data by index.
 		void ModifyData(const HEXMODIFYSTRUCT& hmd); //Main routine to modify data, in fMutable=true mode.
+		CWnd* GetMsgWindow();
 		void RecalcAll();
 		void RecalcWorkAreaHeight(int iClientHeight);
 		void RecalcScrollSizes(int iClientHeight = 0, int iClientWidth = 0);
@@ -214,7 +215,7 @@ namespace HEXCTRL {
 		void SelectAll();
 		void UpdateInfoText();
 		void SetShowAs(INTERNAL::ENSHOWAS enShowAs);
-		void MsgNotify(const HEXNOTIFYSTRUCT& hns); //Notify routine use in HEXDATAMODEEN::HEXMSG.
+		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns); //Notify routine use in HEXDATAMODEEN::HEXMSG.
 		void SetCursorPos(ULONGLONG ullPos, bool fHighPart); //Sets the cursor position when in Edit mode.
 		void CursorMoveRight();
 		void CursorMoveLeft();
@@ -230,13 +231,13 @@ namespace HEXCTRL {
 		bool m_fFloat { false };			//Is control window float or not.
 		bool m_fMutable { false };			//Is control works in Edit mode.
 		HEXDATAMODEEN m_enMode { HEXDATAMODEEN::HEXNORMAL }; //Control's mode.
+		HEXCOLORSTRUCT m_stColor;			//All control related colors.
 		PBYTE m_pData { };					//Main data pointer. Modifiable in "Edit" mode.
 		ULONGLONG m_ullDataSize { };		//Size of the displayed data in bytes.
 		DWORD m_dwCapacity { 16 };			//How many bytes displayed in one row
 		const DWORD m_dwCapacityMax { 64 }; //Maximum capacity.
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 		INTERNAL::ENSHOWAS m_enShowAs { };  //Show data mode.
-		CWnd* m_pwndParentOwner { };		//Parent or owner window pointer.
 		CWnd* m_pwndMsg { };				//Window the control messages will be sent to.
 		CHexCustom* m_pCustom { };			//Data handler pointer for HEXDATAMODEEN::HEXCUSTOM
 		SIZE m_sizeLetter { 1, 1 };			//Current font's letter size (width, height).
@@ -247,7 +248,6 @@ namespace HEXCTRL {
 		std::unique_ptr<SCROLLEX::CScrollEx> m_pstScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll object.
 		CMenu m_menuMain;					//Main popup menu.
 		CMenu m_menuShowAs;					//Submenu "Show as..."
-		HEXCOLORSTRUCT m_stColor;			//All control related colors.
 		CBrush m_stBrushBkSelected;			//Brush for "selected" background.
 		CPen m_penLines { PS_SOLID, 1, RGB(200, 200, 200) };
 		int m_iSizeFirstHalf { };		    //Size of first half of capacity.
@@ -270,7 +270,6 @@ namespace HEXCTRL {
 		std::wstring m_wstrBottomText { };  //Info text (bottom rect).
 		const std::wstring m_wstrErrVirtual { L"This function isn't supported in Virtual mode!" };
 		bool m_fLMousePressed { false };
-		UINT m_dwCtrlId { };				//Id of the control.
 		DWORD m_dwOffsetDigits { 8 };		//Amount of digits in "Offset", depends on data size set in SetData.
 		ULONGLONG m_ullCursorPos { };		//Current cursor position.
 		bool m_fCursorHigh { true };		//Cursor's High or Low bits position (first or last digit in hex chunk).

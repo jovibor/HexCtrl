@@ -152,19 +152,23 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	if (IsCreated()) //Already created.
 		return false;
 
-	m_dwCtrlId = hcs.uId;
 	m_fFloat = hcs.fFloat;
-	m_pwndParentOwner = m_pwndMsg = hcs.pParent;
+	m_pwndMsg = hcs.pwndParent;
 	if (hcs.pstColor)
 		m_stColor = *hcs.pstColor;
 
 	m_stBrushBkSelected.CreateSolidBrush(m_stColor.clrBkSelected);
 
-	DWORD dwStyle;
+	DWORD dwStyle = hcs.dwStyle;
+	//1. WS_POPUP style is vital for GetParent to work properly in m_fFloat mode.
+	//   Without this style GetParent/GetOwner always return 0, no matter whether pParentWnd is provided to CreateWindowEx or not.
+	//2. Created HexCtrl window will always overlap (be on top of) its parent, or owner, window 
+	//   if pParentWnd is set (not nullptr) in CreateWindowEx.
+	//3. To force HexCtrl window on taskbar the WS_EX_APPWINDOW extended window style must be set.
 	if (m_fFloat)
-		dwStyle = WS_VISIBLE | WS_OVERLAPPEDWINDOW;
+		dwStyle |= WS_VISIBLE | WS_POPUP | WS_OVERLAPPEDWINDOW;
 	else
-		dwStyle = WS_VISIBLE | WS_CHILD;
+		dwStyle |= WS_VISIBLE | WS_CHILD;
 
 	//Font related.//////////////////////////////////////////////
 	LOGFONTW lf { };
@@ -199,12 +203,12 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 		rc.SetRect(iPosX, iPosY, iPosCX, iPosCY);
 	}
 
-	//If it's custom dialog control then there is no need to create window.
-	if (!hcs.fCustomCtrl && !CWnd::CreateEx(hcs.dwExStyles, INTERNAL::WSTR_WNDCLASS_NAME, L"HexControl",
-		dwStyle, rc, m_pwndParentOwner, m_fFloat ? 0 : m_dwCtrlId))
+	//If it's a custom dialog control then there is no need to create a window.
+	if (!hcs.fCustomCtrl && !CWnd::CreateEx(hcs.dwExStyle, INTERNAL::WSTR_WNDCLASS_NAME, L"HexControl",
+		dwStyle, rc, hcs.pwndParent, m_fFloat ? 0 : hcs.uId))
 	{
 		CStringW ss;
-		ss.Format(L"CHexCtrl (Id:%u) CWnd::CreateEx failed.\r\nCheck HEXCREATESTRUCT filling correctness.", m_dwCtrlId);
+		ss.Format(L"CHexCtrl (Id:%u) CWnd::CreateEx failed.\r\nCheck HEXCREATESTRUCT filling correctness.", hcs.uId);
 		MessageBoxW(ss, L"Error", MB_ICONERROR);
 		return false;
 	}
@@ -226,6 +230,13 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	return true;
 }
 
+bool CHexCtrl::CreateDialogCtrl()
+{
+	HEXCREATESTRUCT hcs;
+	hcs.fCustomCtrl = true;
+	return Create(hcs);
+}
+
 bool CHexCtrl::IsCreated()
 {
 	return m_fCreated;
@@ -241,7 +252,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 		m_pwndMsg = hds.pwndMsg;
 
 	//Virtual mode is possible only when there is a msg window a data requests will be sent to.
-	if (hds.enMode == HEXDATAMODEEN::HEXMSG && !m_pwndMsg)
+	if (hds.enMode == HEXDATAMODEEN::HEXMSG && !GetMsgWindow())
 	{
 		MessageBoxW(L"HexCtrl HEXDATAMODEEN::HEXMSG mode requires HEXDATASTRUCT::pwndMsg to be not nullptr.", L"Error", MB_ICONWARNING);
 		return;
@@ -252,7 +263,6 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 		return;
 	}
 
-	m_pwndMsg = hds.pwndMsg;
 	m_fDataSet = true;
 	m_pData = hds.pData;
 	m_ullDataSize = hds.ullDataSize;
@@ -296,7 +306,7 @@ void CHexCtrl::ClearData()
 	UpdateInfoText();
 }
 
-void CHexCtrl::EnableEdit(bool fEnable)
+void CHexCtrl::EditEnable(bool fEnable)
 {
 	if (!IsCreated())
 		return;
@@ -372,16 +382,6 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	RecalcAll();
 }
 
-UINT CHexCtrl::GetDlgCtrlID()const
-{
-	return m_dwCtrlId;
-}
-
-CWnd* CHexCtrl::GetParent()const
-{
-	return m_pwndParentOwner;
-}
-
 bool CHexCtrl::RegisterWndClass()
 {
 	WNDCLASSEXW wc;
@@ -394,8 +394,7 @@ bool CHexCtrl::RegisterWndClass()
 		wc.lpfnWndProc = ::DefWindowProcW;
 		wc.cbClsExtra = wc.cbWndExtra = 0;
 		wc.hInstance = hInst;
-		wc.hIcon = NULL;
-		wc.hIconSm = NULL;
+		wc.hIcon = wc.hIconSm = NULL;
 		wc.hCursor = (HCURSOR)LoadImageW(0, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
 		wc.hbrBackground = NULL;
 		wc.lpszMenuName = nullptr;
@@ -1187,14 +1186,17 @@ void CHexCtrl::OnNcPaint()
 
 void CHexCtrl::OnDestroy()
 {
-	//Send messages to both, m_pwndMsg and m_pwndParentOwner.
+	//Send messages to both, m_pwndMsg and pwndParent.
 	NMHDR nmh { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_DESTROY };
-	if (m_pwndMsg)
-		m_pwndMsg->SendMessageW(WM_NOTIFY, nmh.idFrom, (LPARAM)&nmh);
-	if (m_pwndParentOwner)
+	CWnd* pwndMsg = GetMsgWindow();
+	if (pwndMsg)
+		pwndMsg->SendMessageW(WM_NOTIFY, nmh.idFrom, (LPARAM)&nmh);
+
+	CWnd* pwndParent = GetParent();
+	if (pwndParent)
 	{
-		m_pwndParentOwner->SendMessageW(WM_NOTIFY, nmh.idFrom, (LPARAM)&nmh);
-		m_pwndParentOwner->SetForegroundWindow();
+		pwndParent->SendMessageW(WM_NOTIFY, nmh.idFrom, (LPARAM)&nmh);
+		pwndParent->SetForegroundWindow();
 	}
 
 	ClearData();
@@ -1213,7 +1215,7 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)
 		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_GETDATA } };
 		hns.ullIndex = ullIndex;
 		hns.ullSize = 1;
-		MsgNotify(hns);
+		MsgWindowNotify(hns);
 		return hns.chByte;
 	}
 	else if (m_enMode == HEXDATAMODEEN::HEXCUSTOM)
@@ -1309,7 +1311,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hmd)
 		//In HEXDATAMODEEN::HEXMSG mode we send hmd pointer.
 		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_MODIFYDATA } };
 		hns.pData = (PBYTE)&hmd;
-		MsgNotify(hns);
+		MsgWindowNotify(hns);
 	}
 	else if (m_enMode == HEXDATAMODEEN::HEXCUSTOM)
 	{
@@ -1321,6 +1323,11 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hmd)
 		CursorMoveRight();
 
 	RedrawWindow();
+}
+
+CWnd* CHexCtrl::GetMsgWindow()
+{
+	return m_pwndMsg;
 }
 
 void CHexCtrl::RecalcAll()
@@ -1661,10 +1668,11 @@ void CHexCtrl::SetShowAs(INTERNAL::ENSHOWAS enShowAs)
 	RecalcAll();
 }
 
-void CHexCtrl::MsgNotify(const HEXNOTIFYSTRUCT& hns)
+void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)
 {
-	if (m_pwndMsg)
-		m_pwndMsg->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), (LPARAM)&hns);
+	CWnd* pwndMsg = GetMsgWindow();
+	if (pwndMsg)
+		pwndMsg->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), (LPARAM)&hns);
 }
 
 void CHexCtrl::SetCursorPos(ULONGLONG ullPos, bool fHighPart)
@@ -2118,7 +2126,7 @@ void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ul
 	HEXNOTIFYSTRUCT hns { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_SETSELECTION };
 	hns.ullIndex = m_ullSelectionStart;
 	hns.ullSize = m_ullSelectionSize;
-	MsgNotify(hns);
+	MsgWindowNotify(hns);
 }
 
 void CHexCtrl::SelectAll()

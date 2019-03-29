@@ -419,8 +419,8 @@ void CScrollEx::DrawScrollBar()
 	if (!IsVisible())
 		return;
 
-	CWnd* pParent = GetParent();
-	CWindowDC parentDC(pParent);
+	CWnd* pwndParent = GetParent();
+	CWindowDC parentDC(pwndParent);
 
 	CDC dcMem;
 	CBitmap bitmap;
@@ -500,10 +500,10 @@ CRect CScrollEx::GetScrollRect(bool fWithNCArea)
 	if (!m_fCreated)
 		return 0;
 
-	CWnd* pParent = GetParent();
+	CWnd* pwndParent = GetParent();
 	CRect rcClient = GetParentRect();
 	CRect rcWnd = GetParentRect(false);
-	pParent->MapWindowPoints(nullptr, &rcClient);
+	pwndParent->MapWindowPoints(nullptr, &rcClient);
 
 	m_iTopDelta = rcClient.top - rcWnd.top;
 	m_iLeftDelta = rcClient.left - rcWnd.left;
@@ -529,7 +529,7 @@ CRect CScrollEx::GetScrollRect(bool fWithNCArea)
 		else
 			rcScroll.right = rcScroll.left + rcClient.Width();
 	}
-	pParent->ScreenToClient(&rcScroll);
+	pwndParent->ScreenToClient(&rcScroll);
 
 	return rcScroll;
 }
