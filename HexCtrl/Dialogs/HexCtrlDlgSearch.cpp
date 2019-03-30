@@ -62,9 +62,9 @@ void CHexDlgSearch::SearchCallback()
 		{
 			if (!m_stSearch.fWrap)
 			{
-				if (m_stSearch.iDirection == INTERNAL::ENSEARCH::SEARCH_FORWARD)
+				if (m_stSearch.iDirection == 1)
 					m_dwOccurrences++;
-				else if (m_stSearch.iDirection == INTERNAL::ENSEARCH::SEARCH_BACKWARD)
+				else if (m_stSearch.iDirection == -1)
 					m_dwOccurrences--;
 			}
 			else
@@ -93,29 +93,29 @@ void CHexDlgSearch::SearchCallback()
 
 void CHexDlgSearch::OnButtonSearchF()
 {
-	CString strSearchText;
-	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDITSEARCH, strSearchText);
-	if (strSearchText.IsEmpty())
+	CStringW wstrSearchText;
+	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDITSEARCH, wstrSearchText);
+	if (wstrSearchText.IsEmpty())
 		return;
-	if (strSearchText.Compare(m_stSearch.wstrSearch.data()) != 0)
+	if (wstrSearchText.Compare(m_stSearch.wstrSearch.data()) != 0)
 	{
 		ClearAll();
-		m_stSearch.wstrSearch = strSearchText;
+		m_stSearch.wstrSearch = wstrSearchText;
 	}
 
 	switch (GetCheckedRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE))
 	{
 	case IDC_HEXCTRL_SEARCH_RADIO_HEX:
-		m_stSearch.dwSearchType = INTERNAL::ENSEARCH::SEARCH_HEX;
+		m_stSearch.enSearchType = HEXSEARCHTYPEEN::SEARCH_HEX;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_ASCII:
-		m_stSearch.dwSearchType = INTERNAL::ENSEARCH::SEARCH_ASCII;
+		m_stSearch.enSearchType = HEXSEARCHTYPEEN::SEARCH_ASCII;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_UNICODE:
-		m_stSearch.dwSearchType = INTERNAL::ENSEARCH::SEARCH_UNICODE;
+		m_stSearch.enSearchType = HEXSEARCHTYPEEN::SEARCH_UNICODE;
 		break;
 	}
-	m_stSearch.iDirection = INTERNAL::ENSEARCH::SEARCH_FORWARD;
+	m_stSearch.iDirection = 1;
 
 	GetDlgItem(IDC_HEXCTRL_SEARCH_EDITSEARCH)->SetFocus();
 	GetParent()->Search(m_stSearch);
@@ -137,16 +137,16 @@ void CHexDlgSearch::OnButtonSearchB()
 	switch (GetCheckedRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE))
 	{
 	case IDC_HEXCTRL_SEARCH_RADIO_HEX:
-		m_stSearch.dwSearchType = INTERNAL::ENSEARCH::SEARCH_HEX;
+		m_stSearch.enSearchType = HEXSEARCHTYPEEN::SEARCH_HEX;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_ASCII:
-		m_stSearch.dwSearchType = INTERNAL::ENSEARCH::SEARCH_ASCII;
+		m_stSearch.enSearchType = HEXSEARCHTYPEEN::SEARCH_ASCII;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_UNICODE:
-		m_stSearch.dwSearchType = INTERNAL::ENSEARCH::SEARCH_UNICODE;
+		m_stSearch.enSearchType = HEXSEARCHTYPEEN::SEARCH_UNICODE;
 		break;
 	}
-	m_stSearch.iDirection = INTERNAL::ENSEARCH::SEARCH_BACKWARD;
+	m_stSearch.iDirection = -1;
 
 	GetDlgItem(IDC_HEXCTRL_SEARCH_EDITSEARCH)->SetFocus();
 	GetParent()->Search(m_stSearch);

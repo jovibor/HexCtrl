@@ -3,7 +3,7 @@
 * This code is available under the "MIT License modified with The Commons Clause"		*
 * Scroll bar control class for MFC apps.												*
 * The main creation purpose of this control is the innate 32-bit range limitation		*
-* of the standard Windows's scrollbar control.											*
+* of the standard Windows' scrollbars.													*
 * This control works with unsigned long long data representation and thus can operate	*
 * with numbers in full 64-bit range.													*
 ****************************************************************************************/
@@ -12,6 +12,9 @@
 
 namespace HEXCTRL {
 	namespace SCROLLEX {
+		//Forward declaration.
+		enum class ENSTATE : DWORD;
+
 		class CScrollEx : public CWnd
 		{
 		public:
@@ -66,7 +69,6 @@ namespace HEXCTRL {
 			CRect GetParentRect(bool fClient = true);
 			bool IsVert();
 			bool IsThumbDragging();
-			void ResetTimers();
 			afx_msg void OnTimer(UINT_PTR nIDEvent);
 			void SendParentScrollMsg();
 		protected:
@@ -74,7 +76,7 @@ namespace HEXCTRL {
 			CScrollEx* m_pSibling { };
 			UINT m_uiScrollBarSizeWH { };
 			int m_iScrollType { };
-			int m_iScrollBarState { };
+			ENSTATE m_enState { };
 			COLORREF m_clrBkNC { GetSysColor(COLOR_3DFACE) };
 			COLORREF m_clrBkScrollBar { RGB(241, 241, 241) };
 			COLORREF m_clrThumb { RGB(192, 192, 192) };

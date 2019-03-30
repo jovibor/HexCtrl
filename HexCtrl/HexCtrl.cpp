@@ -10,7 +10,7 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "strsafe.h"
-#include "res/HexCtrlRes.h"
+#include "res/HexCtrlRes.h"		//Icons, for menu etc...
 #include "Dialogs/HexCtrlDlgAbout.h"
 #include "Dialogs/HexCtrlDlgSearch.h"
 #include "HexCtrl.h"
@@ -257,9 +257,9 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 		MessageBoxW(L"HexCtrl HEXDATAMODEEN::HEXMSG mode requires HEXDATASTRUCT::pwndMsg to be not nullptr.", L"Error", MB_ICONWARNING);
 		return;
 	}
-	else if (hds.enMode == HEXDATAMODEEN::HEXCUSTOM && !hds.pHexHandler)
+	else if (hds.enMode == HEXDATAMODEEN::HEXVIRTUAL && !hds.pHexVirtual)
 	{
-		MessageBoxW(L"HexCtrl HEXDATAMODEEN::HEXCUSTOM mode requires HEXDATASTRUCT::pHexHandler to be not nullptr.", L"Error", MB_ICONWARNING);
+		MessageBoxW(L"HexCtrl HEXDATAMODEEN::HEXVIRTUAL mode requires HEXDATASTRUCT::pHexVirtual to be not nullptr.", L"Error", MB_ICONWARNING);
 		return;
 	}
 
@@ -1218,7 +1218,7 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)
 		MsgWindowNotify(hns);
 		return hns.chByte;
 	}
-	else if (m_enMode == HEXDATAMODEEN::HEXCUSTOM)
+	else if (m_enMode == HEXDATAMODEEN::HEXVIRTUAL)
 	{
 		if (m_pCustom)
 			return m_pCustom->GetByte(ullIndex);
@@ -1313,7 +1313,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hmd)
 		hns.pData = (PBYTE)&hmd;
 		MsgWindowNotify(hns);
 	}
-	else if (m_enMode == HEXDATAMODEEN::HEXCUSTOM)
+	else if (m_enMode == HEXDATAMODEEN::HEXVIRTUAL)
 	{
 		if (m_pCustom)
 			m_pCustom->ModifyData(hmd);
@@ -1483,8 +1483,8 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 			strToClipboard += pszHexMap[(chByte & 0xF0) >> 4];
 			strToClipboard += pszHexMap[(chByte & 0x0F)];
 		}
-		break;
 	}
+	break;
 	case INTERNAL::ENCLIPBOARD::COPY_ASHEXFORMATTED:
 	{
 		//How many spaces are needed to be inserted at the beginnig.
@@ -1520,8 +1520,8 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 				dwTail = m_dwCapacity;
 			}
 		}
-		break;
 	}
+	break;
 	case INTERNAL::ENCLIPBOARD::COPY_ASASCII:
 	{
 		for (unsigned i = 0; i < m_ullSelectionSize; i++)
@@ -1532,8 +1532,10 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 				ch = ' ';
 			strToClipboard += ch;
 		}
-		break;
 	}
+	break;
+	default:
+		break;
 	}
 
 	HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, strToClipboard.length() + 1);
@@ -1837,7 +1839,7 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 	ULONGLONG ullStartAt = rSearch.ullStartAt;
 	ULONGLONG ullSizeBytes;
 	ULONGLONG ullUntil;
-	std::string strSearch { };
+	std::string strSearch;
 
 	if (rSearch.wstrSearch.empty() || m_ullDataSize == 0 || rSearch.ullStartAt > (m_ullDataSize - 1))
 		return;
@@ -1846,9 +1848,9 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 	std::string strSearchAscii(iSizeNeeded, 0);
 	WideCharToMultiByte(CP_UTF8, 0, &rSearch.wstrSearch[0], (int)rSearch.wstrSearch.size(), &strSearchAscii[0], iSizeNeeded, nullptr, nullptr);
 
-	switch (rSearch.dwSearchType)
+	switch (rSearch.enSearchType)
 	{
-	case INTERNAL::ENSEARCH::SEARCH_HEX:
+	case HEXSEARCHTYPEEN::SEARCH_HEX:
 	{
 		DWORD dwIterations = DWORD(strSearchAscii.size() / 2 + strSearchAscii.size() % 2);
 		std::string strToUL; //String to hold currently extracted two letters.
@@ -1864,6 +1866,7 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 			if (!ToUl(strToUL.data(), ulNumber))
 			{
 				rSearch.fFound = false;
+				rSearch.iWrap = 1;
 				return;
 			}
 
@@ -1876,7 +1879,7 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 
 		break;
 	}
-	case INTERNAL::ENSEARCH::SEARCH_ASCII:
+	case HEXSEARCHTYPEEN::SEARCH_ASCII:
 	{
 		ullSizeBytes = strSearchAscii.size();
 		if (ullSizeBytes > m_ullDataSize)
@@ -1885,7 +1888,7 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 		strSearch = std::move(strSearchAscii);
 		break;
 	}
-	case INTERNAL::ENSEARCH::SEARCH_UNICODE:
+	case HEXSEARCHTYPEEN::SEARCH_UNICODE:
 	{
 		ullSizeBytes = rSearch.wstrSearch.length() * sizeof(wchar_t);
 		if (ullSizeBytes > m_ullDataSize)
@@ -1896,12 +1899,12 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 	}
 
 	///////////////Actual Search:////////////////////////////////////////////
-	switch (rSearch.dwSearchType)
+	switch (rSearch.enSearchType)
 	{
-	case INTERNAL::ENSEARCH::SEARCH_HEX:
-	case INTERNAL::ENSEARCH::SEARCH_ASCII:
+	case HEXSEARCHTYPEEN::SEARCH_HEX:
+	case HEXSEARCHTYPEEN::SEARCH_ASCII:
 	{
-		if (rSearch.iDirection == INTERNAL::ENSEARCH::SEARCH_FORWARD)
+		if (rSearch.iDirection == 1)
 		{
 			ullUntil = m_ullDataSize - strSearch.size();
 			ullStartAt = rSearch.fSecondMatch ? rSearch.ullStartAt + 1 : 0;
@@ -1917,7 +1920,7 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 				}
 			}
 
-			ullStartAt = 0;
+			ullStartAt = 0; //Starting from the beginning.
 			for (ULONGLONG i = ullStartAt; i <= ullUntil; i++)
 			{
 				if (memcmp(m_pData + i, strSearch.data(), strSearch.size()) == 0)
@@ -1925,13 +1928,13 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 					rSearch.fFound = true;
 					rSearch.ullStartAt = i;
 					rSearch.fWrap = true;
-					rSearch.iWrap = INTERNAL::ENSEARCH::SEARCH_END;
 					rSearch.fCount = true;
 					goto End;
 				}
 			}
+			rSearch.iWrap = 1;
 		}
-		if (rSearch.iDirection == INTERNAL::ENSEARCH::SEARCH_BACKWARD)
+		else if (rSearch.iDirection == -1)
 		{
 			if (rSearch.fSecondMatch && ullStartAt > 0)
 			{
@@ -1956,7 +1959,7 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 					rSearch.fFound = true;
 					rSearch.ullStartAt = i;
 					rSearch.fWrap = true;
-					rSearch.iWrap = INTERNAL::ENSEARCH::SEARCH_BEGINNING;
+					rSearch.iWrap = -1;
 					rSearch.fCount = false;
 					goto End;
 				}
@@ -1964,9 +1967,9 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 		}
 		break;
 	}
-	case INTERNAL::ENSEARCH::SEARCH_UNICODE:
+	case HEXSEARCHTYPEEN::SEARCH_UNICODE:
 	{
-		if (rSearch.iDirection == INTERNAL::ENSEARCH::SEARCH_FORWARD)
+		if (rSearch.iDirection == 1)
 		{
 			ullUntil = m_ullDataSize - ullSizeBytes;
 			ullStartAt = rSearch.fSecondMatch ? rSearch.ullStartAt + 1 : 0;
@@ -1989,14 +1992,14 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 				{
 					rSearch.fFound = true;
 					rSearch.ullStartAt = i;
-					rSearch.iWrap = INTERNAL::ENSEARCH::SEARCH_END;
+					rSearch.iWrap = 1;
 					rSearch.fWrap = true;
 					rSearch.fCount = true;
 					goto End;
 				}
 			}
 		}
-		else if (rSearch.iDirection == INTERNAL::ENSEARCH::SEARCH_BACKWARD)
+		else if (rSearch.iDirection == -1)
 		{
 			if (rSearch.fSecondMatch && ullStartAt > 0)
 			{
@@ -2021,7 +2024,7 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 					rSearch.fFound = true;
 					rSearch.ullStartAt = i;
 					rSearch.fWrap = true;
-					rSearch.iWrap = INTERNAL::ENSEARCH::SEARCH_BEGINNING;
+					rSearch.iWrap = -1;
 					rSearch.fCount = false;
 					goto End;
 				}
@@ -2031,11 +2034,9 @@ void CHexCtrl::Search(HEXSEARCHSTRUCT& rSearch)
 	}
 	}
 
-End:
-	{
-		if (rSearch.fFound)
-			SetSelection(rSearch.ullStartAt, rSearch.ullStartAt, ullSizeBytes, true);
-	}
+End: //Label to get out of nested loops.
+	if (rSearch.fFound)
+		SetSelection(rSearch.ullStartAt, rSearch.ullStartAt, ullSizeBytes, true);
 }
 
 void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight, bool fMouse)

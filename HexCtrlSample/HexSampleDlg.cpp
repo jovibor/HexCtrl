@@ -7,8 +7,8 @@
 #define new DEBUG_NEW
 #endif
 
-CHexSampleDlg::CHexSampleDlg(CWnd* pwndParent /*=nullptr*/) //-V730
-	: CDialogEx(IDD_HEXSAMPLE_DIALOG, pwndParent)
+CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/) //-V730
+	: CDialogEx(IDD_HEXSAMPLE_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -30,19 +30,18 @@ BOOL CHexSampleDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	SetIcon(m_hIcon, TRUE);			// Set big icon
-	SetIcon(m_hIcon, FALSE);		// Set small icon
+	SetIcon(m_hIcon, TRUE);	 // Set big icon
+	SetIcon(m_hIcon, FALSE); // Set small icon
 
-//	HEXCREATESTRUCT hcs;
-//	hcs.dwExStyle = WS_EX_APPWINDOW;
-//	hcs.pwndParent = this;
-//	hcs.fFloat = true;
-//	m_myHex.Create(hcs);
+/*	HEXCREATESTRUCT hcs;
+	hcs.dwExStyle = WS_EX_APPWINDOW;
+	hcs.pwndParent = this;
+	hcs.fFloat = true;
+	m_myHex.Create(hcs);*/
 	m_myHex.CreateDialogCtrl();
 
 	m_hds.pData = m_data;
 	m_hds.ullDataSize = sizeof(m_data);
-	m_hds.fMutable = true;
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }

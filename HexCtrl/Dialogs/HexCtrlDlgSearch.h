@@ -15,15 +15,6 @@
 #include "../res/HexCtrlRes.h"
 
 namespace HEXCTRL {
-	namespace INTERNAL {
-		enum ENSEARCH {
-			SEARCH_HEX, SEARCH_ASCII, SEARCH_UNICODE,
-			SEARCH_FORWARD, SEARCH_BACKWARD,
-			SEARCH_NOTFOUND, SEARCH_FOUND,
-			SEARCH_BEGINNING, SEARCH_END
-		};
-	}
-
 	/********************************************
 	* CHexDlgSearch class definition.			*
 	********************************************/

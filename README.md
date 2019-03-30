@@ -10,7 +10,7 @@
 * [SetData](#setdata)
 * [Virtual Mode](#virtual-mode)
   * [Message Window](#message-window)
-  * [Custom Handler](#custom-handler)
+  * [Virtual Handler](#virtual-handler)
 * [OnDestroy](#ondestroy)
 * [Scroll Bars](#scroll-bars)
 * [Methods](#methods)
@@ -46,9 +46,10 @@ Control uses its own namespace - `HEXCTRL`. So it's up to you, to use namespace 
 struct HEXCREATESTRUCT
 {
 	PHEXCOLORSTRUCT pstColor { };			//Pointer to HEXCOLORSTRUCT, if nullptr default colors are used.
-	CWnd*		    pParent { };			//Parent window's pointer.
+	CWnd*		    pwndParent { };			//Parent window's pointer.
 	UINT		    uId { };				//Hex control Id.
-	DWORD			dwExStyles { };			//Extended window styles.
+	DWORD			dwStyle { };			//Window styles. Null for default.
+	DWORD			dwExStyle { };			//Extended window styles. Null for default.
 	CRect			rect { };				//Initial rect. If null, the window is screen centered.
 	const LOGFONTW* pLogFont { };			//Font to be used, nullptr for default.
 	bool			fFloat { false };		//Is float or child (incorporated into another window)?.
@@ -161,20 +162,20 @@ using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT * ;
 Its first member is a standard Windows' `NMHDR` structure. It will have its code member equal to `HEXCTRL_MSG_GETDATA` indicating that HexControl's byte request has arrived.
 The second member is the index of the byte be displayed. And the third is the actual byte, that you have to set in response.
 
-### [](#)Custom Handler
-If `enMode` member of `HEXDATASTRUCT` is set to `HEXDATAMODEEN::HEXCUSTOM` then all the data routine will be done through
-`HEXDATASTRUCT::pHexHandler` pointer.<br>
-This pointer is of type `CHexCustom` class, which is a base pure abstract class.
-You have to derive your own class from it and override its methods:
+### [](#)Virtual Handler
+If `enMode` member of `HEXDATASTRUCT` is set to `HEXDATAMODEEN::HEXVIRTUAL` then all the data routine will be done through
+`HEXDATASTRUCT::pHexVirtual` pointer.<br>
+This pointer is of type `CHexVirtual` class, which is a pure abstract base class.
+You have to derive your own class from it and override its public methods:
 ```cpp
-class CHexCustom
+class CHexVirtual
 {
 public:
 	virtual BYTE GetByte(ULONGLONG ullIndex) = 0; //Gets the byte data by index.
 	virtual	void ModifyData(const HEXMODIFYSTRUCT& hmd) = 0; //Main routine to modify data, in fMutable=true mode.
 };
 ```
-Then provide a pointer to created object of your derived class to `SetData` method in form of `HEXDATASTRUCT::pHexHandler=&yourDerivedClassObject`
+Then provide a pointer to created object of your derived class to `SetData` method in form of `HEXDATASTRUCT::pHexVirtual=&yourDerivedObject`
 
 ## [](#)OnDestroy
 When `HexControl` window, floating or child, is destroyed, it sends `WM_NOTIFY` message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
@@ -189,15 +190,23 @@ That's why HexControl uses its own scrollbars. They work with unsigned long long
 These scrollbars behave as normal Windows scrollbars, and even reside in the non client area, as the latter do.
 
 ## [](#)Methods
-CHexCtrl class has a set of methods, that you can use to customize your control's appearance. These methods' usage is pretty straightforward and clean from their naming:
+Control has plenty of methods that you can use to customize your control's appearance, and to manage control's behaviour.<br>
+These methods' usage is pretty straightforward, and clean, from their naming:
 ```cpp
-void SetData(const HEXDATASTRUCT& hds); //Main method for setting data to display (and edit).
-void ClearData();           //Clears all data from HexCtrl's view (not touching data itself).
-void SetCapacity(DWORD dwCapacity);
-void SetFont(const LOGFONT* pLogFontNew);
-void SetFontSize(UINT nSize);
-void SetColor(const HEXCOLORSTRUCT& clr);
-void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1);
+bool Create(const HEXCREATESTRUCT& hcs); //Main initialization method, CHexCtrl::Create.
+bool CreateDialogCtrl();				 //Сreates custom dialog control.
+bool IsCreated();						 //Shows whether control is created or not.
+void SetData(const HEXDATASTRUCT& hds);  //Main method for setting data to display (and edit).	
+bool IsDataSet();						 //Shows whether a data was set to control or not.
+void ClearData();						 //Clears all data from HexCtrl's view (not touching data itself).
+void EditEnable(bool fEnable);			 //Enable or disable edit mode.
+void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1); //Shows (selects) given offset.
+void SetFont(const LOGFONT* pLogFontNew);//Sets the control's font.
+void SetFontSize(UINT uiSize);			 //Sets the control's font size.
+long GetFontSize();						 //Gets the control's font size.
+void SetColor(const HEXCOLORSTRUCT& clr);//Sets all the colors for the control.
+void SetCapacity(DWORD dwCapacity);		 //Sets the control's current capacity.
+void Search(HEXSEARCHSTRUCT& rSearch);	 //Search through currently set data.
 ```
 
 ## [](#)Example
@@ -207,6 +216,7 @@ The code below constructs `CHexCtrl` object and displays first `0x1FF` bytes of 
 CHexCtrl myHex.
 HEXCREATESTRUCT hcs;
 hcs.pwndParent = this;
+hcs.rect = CRect(0, 0, 500, 300); //Control's rect.
 myHex.Create(hcs);
 
 HEXDATASTRUCT hds;
