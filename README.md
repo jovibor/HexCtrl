@@ -25,23 +25,27 @@ This forced people to implement their own common stuff for everyday needs.<br>
 This HEX control is a tiny attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't have native support for such feature.
 
 ## [](#)Implementation
-This HEX control is implemented as `CWnd` derived class, and can be used as a *child* or *float* window in any place of your existing **MFC** application.
-Control was build and tested in Visual Studio 2017, under Windows 10.
+This Hex control is implemented as a pure abstract class derived from `CWnd`, and can be used as a *child* or *float* window in any place
+of your existing **MFC** application. Control was build and tested in Visual Studio 2017, under Windows 10.
 
 ## [](#)Using the Control
 The usage is quite simple:
-1. Copy `HexCtrl` folder into your project subfolder.
+1. Copy `HexCtrl` folder into your project folder.
 2. Add all files from `HexCtrl` folder into your project.
-3. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the control.
-4. Declare `CHexCtrl` member variable: `CHexCtrl myHex;`
-5. Call `myHex.Create` method to create control instance.
-6. Call `myHex.SetData` method to set the actual data to display as hex.
+3. Add `#include "HexCtrl/IHexCtrl.h"` where you suppose to use the control.
+4. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { GetHexCtrl() };`
+5. Call `myHex->Create` method to create control instance.
+6. Call `myHex->SetData` method to set the actual data to display as hex.
 
-Control uses its own namespace - `HEXCTRL`. So it's up to you, to use namespace prefix, `HEXCTRL::`, or to define namespace in the file's beginning: `using namespace HEXCTRL;`.
+`IHexCtrlPtr` is, in fact, a pointer to the `IHexCtrl` pure abstract base class, wrapped in `std::shared_ptr`.
+This wrapper is used mainly for convenience, so you don't have to bother about object lifetime, it will be destroyed automatically.
+That's why there is a call to the factory function `GetHexCtrl()`, to properly initialize a pointer.<br>
+Control uses its own namespace - `HEXCTRL`. So it's up to you, to use namespace prefix - `HEXCTRL::`, or to define namespace in the source file's beginning:
+`using namespace HEXCTRL;`.
 
 ## [](#)Create
 ### [](#)Classic Approach
-`CHexCtrl::Create` method - the first method you call - takes `HEXCREATESTRUCT` as its argument. This is the main initialization struct which fields are described below:
+`IHexCtrl::Create` method - the first method you call - takes `HEXCREATESTRUCT` as its argument. This is the main initialization struct which fields are described below:
 ```cpp
 struct HEXCREATESTRUCT
 {
@@ -61,7 +65,7 @@ You can choose whether control will behave as a child or independent floating wi
 ```cpp
 HEXCREATESTRUCT hcs;
 hcs.fFloat = true;
-bool Create(hcs);
+bool IHexCtrl::Create(hcs);
 ```
 `PHEXCOLORSTRUCT pstColor` member of `HEXCREATESTRUCT` points to the `HEXCOLORSTRUCT` struct which fields are described below:
 ```cpp
@@ -80,31 +84,31 @@ struct HEXCOLORSTRUCT
 };
 using PHEXCOLORSTRUCT = HEXCOLORSTRUCT * ;
 ```
-This struct is also used in `CHexCtrl::SetColor` method.
+This struct is also used in `IHexCtrl::SetColor` method.
 
 ### [](#)In Dialog
-To use `HexCtrl` within `Dialog` you can, of course, create it with the [Classic Approach](#classic-approach): 
-call `Create` method and provide all the necessary information.<br>
+To use **HexCtrl** within `Dialog` you can, of course, create it with the [Classic Approach](#classic-approach): 
+call `IHexCtrl::Create` method and provide all the necessary information.<br>
 But there is another option you can use:
 1. Put **Custom Control** control from the Toolbox in Visual Studio dialog designer into your dialog template and make it desired size.<br>
 ![](docs/img/VSToolboxCustomCtrl.jpg) ![](docs/img/VSCustomCtrlOnDlg.jpg)
 2. Then go to the **Properties** of that control, and in the **Class** field, within the **Misc** section, write *HexCtrl*. Give the control appropriate 
 **ID** of your choise (`IDC_MY_HEX` in this example). Also, here you can set the control's **Dynamic Layout** properties, so that control behaves appropriately when dialog is being resized.
 ![](docs/img/VSCustomCtrlProperties.jpg)
-3. Declare `CHexCtrl` member varable within your dialog class: `CHexCtrl m_myHex;`
+3. Declare `IHexCtrlPtr` member varable within your dialog class: `IHexCtrlPtr m_myHex { GetHexCtrl() };`
 4. Add the folowing code to the `DoDataExchange` method of your dialog class:<br>
 ```cpp
-DDX_Control(pDX, IDC_MY_HEX, m_myHex);
+DDX_Control(pDX, IDC_MY_HEX, *m_myHex);
 ```
 So, that it looks like in the example below:
 ```cpp
 void CMyDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_MY_HEX, m_myHex);
+	DDX_Control(pDX, IDC_MY_HEX, *m_myHex);
 }
 ```
-5. Call `CHexCtrl::CreateDialogCtrl` function, `m_myHex.CreateDialogCtrl`.
+5. Call `IHexCtrl::CreateDialogCtrl` function, `m_myHex->CreateDialogCtrl()`.
 
 ## [](#)SetData
 `SetData` method takes `HEXDATASTRUCT` reference as argument. This struct fields are described below:
@@ -115,7 +119,7 @@ struct HEXDATASTRUCT
 	ULONGLONG		ullSelectionStart { };				//Set selection at this position. Works only if ullSelectionSize > 0.
 	ULONGLONG		ullSelectionSize { };				//How many bytes to set as selected.
 	CWnd*			pwndMsg { };						//Window to send the control messages to. If nullptr then the parent window is used.
-	CHexCustom*		pHexHandler { };					//Pointer to Virtual data handler class.
+	IHexVirtual*	pHexHandler { };					//Pointer to Virtual data handler class.
 	PBYTE			pData { };							//Pointer to the data. Not used if it's virtual control.
 	HEXDATAMODEEN	enMode { HEXDATAMODEEN::HEXNORMAL };//Working data mode of control.
 	bool			fMutable { false };					//Will data be mutable (editable) or just read mode.
@@ -165,20 +169,20 @@ The second member is the index of the byte be displayed. And the third is the ac
 ### [](#)Virtual Handler
 If `enMode` member of `HEXDATASTRUCT` is set to `HEXDATAMODEEN::HEXVIRTUAL` then all the data routine will be done through
 `HEXDATASTRUCT::pHexVirtual` pointer.<br>
-This pointer is of type `CHexVirtual` class, which is a pure abstract base class.
-You have to derive your own class from it and override its public methods:
+This pointer is of type `IHexVirtual` class, which is a pure abstract base class.
+You have to derive your own class from it and implement all its public methods:
 ```cpp
-class CHexVirtual
+class IHexVirtual
 {
 public:
 	virtual BYTE GetByte(ULONGLONG ullIndex) = 0; //Gets the byte data by index.
 	virtual	void ModifyData(const HEXMODIFYSTRUCT& hmd) = 0; //Main routine to modify data, in fMutable=true mode.
 };
 ```
-Then provide a pointer to created object of your derived class to `SetData` method in form of `HEXDATASTRUCT::pHexVirtual=&yourDerivedObject`
+Then provide a pointer to created object of this derived class to `SetData` method in form of `HEXDATASTRUCT::pHexVirtual=&yourDerivedObject`
 
 ## [](#)OnDestroy
-When `HexControl` window, floating or child, is destroyed, it sends `WM_NOTIFY` message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
+When **HexControl** window, floating or child, is destroyed, it sends `WM_NOTIFY` message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
 So, it basically indicates to its parent that the user clicked close button, or closed window in some other way.
 
 ## [](#)Scroll Bars
@@ -190,10 +194,10 @@ That's why HexControl uses its own scrollbars. They work with unsigned long long
 These scrollbars behave as normal Windows scrollbars, and even reside in the non client area, as the latter do.
 
 ## [](#)Methods
-Control has plenty of methods that you can use to customize your control's appearance, and to manage control's behaviour.<br>
+Hex control has plenty of methods that you can use to customize its appearance, and to manage its behaviour.<br>
 These methods' usage is pretty straightforward, and clean, from their naming:
 ```cpp
-bool Create(const HEXCREATESTRUCT& hcs); //Main initialization method, CHexCtrl::Create.
+bool Create(const HEXCREATESTRUCT& hcs); //Main initialization method.
 bool CreateDialogCtrl();				 //Сreates custom dialog control.
 bool IsCreated();						 //Shows whether control is created or not.
 void SetData(const HEXDATASTRUCT& hds);  //Main method for setting data to display (and edit).	
@@ -210,19 +214,19 @@ void Search(HEXSEARCHSTRUCT& rSearch);	 //Search through currently set data.
 ```
 
 ## [](#)Example
-The function you use to set a data to display as hex is `CHexCtrl::SetData`. 
-The code below constructs `CHexCtrl` object and displays first `0x1FF` bytes of your app's memory:
+The function you use to set a data to display as hex is `IHexCtrl::SetData`. 
+The code below constructs `IHexCtrlPtr` object and displays first `0x1FF` bytes of your app's memory:
 ```cpp
-CHexCtrl myHex.
+IHexCtrlPtr myHex { GetHexCtrl() };
 HEXCREATESTRUCT hcs;
 hcs.pwndParent = this;
 hcs.rect = CRect(0, 0, 500, 300); //Control's rect.
-myHex.Create(hcs);
+myHex->Create(hcs);
 
 HEXDATASTRUCT hds;
 hds.pData = (unsigned char*)GetModuleHandle(0);
 hds.ullDataSize = 0x1FF;
-myHex.SetData(hds);
+myHex->SetData(hds);
 ```
 The next example displays `std::string`'s text string as hex:
 ```cpp
@@ -230,7 +234,7 @@ std::string str = "My string";
 HEXDATASTRUCT hds;
 hds.pData = (unsigned char*)str.data();
 hds.ullDataSize = str.size();
-myHex.SetData(hds);
+myHex->SetData(hds);
 ```
 
 ## [](#)Positioning and Sizing
@@ -240,7 +244,7 @@ void CMyWnd::OnSize(UINT nType, int cx, int cy)
 {
     .
     .
-    myHex.SetWindowPos(this, 0, 0, cx, cy, SWP_NOACTIVATE | SWP_NOZORDER);
+    myHex->SetWindowPos(this, 0, 0, cx, cy, SWP_NOACTIVATE | SWP_NOZORDER);
 }
 ```
 

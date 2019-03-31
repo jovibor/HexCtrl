@@ -57,6 +57,9 @@
     <ClInclude Include="..\HexCtrl\Dialogs\HexCtrlDlgSearch.h">
       <Filter>HexCtrl\Dialogs</Filter>
     </ClInclude>
+    <ClInclude Include="..\HexCtrl\IHexCtrl.h">
+      <Filter>HexCtrl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HexSample.cpp">

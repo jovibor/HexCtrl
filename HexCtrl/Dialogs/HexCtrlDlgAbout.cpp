@@ -15,7 +15,7 @@ using namespace HEXCTRL;
 
 namespace HEXCTRL {
 	namespace INTERNAL {
-		constexpr auto WSTR_VERSION = L"Hex Control for MFC, v2.2.7";
+		constexpr auto WSTR_HEXCTRL_VERSION = L"Hex Control for MFC, v2.2.8";
 		constexpr auto WSTR_URL_GITHUB = L"https://github.com/jovibor/HexCtrl";
 	};
 }
@@ -48,7 +48,7 @@ BOOL CHexDlgAbout::OnInitDialog()
 	m_curHand = LoadCursorW(nullptr, IDC_HAND);
 	m_curArrow = LoadCursorW(nullptr, IDC_ARROW);
 
-	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(INTERNAL::WSTR_VERSION);
+	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(INTERNAL::WSTR_HEXCTRL_VERSION);
 	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_LINKGITHUB)->SetWindowTextW(INTERNAL::WSTR_URL_GITHUB);
 
 	return TRUE;

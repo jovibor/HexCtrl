@@ -23,8 +23,8 @@ namespace HEXCTRL {
 	public:
 		explicit CHexDlgSearch(CWnd* m_pParent = nullptr) {}
 		virtual ~CHexDlgSearch() {}
-		BOOL Create(UINT nIDTemplate, CHexCtrl* pParentWnd);
-		CHexCtrl* GetParent() const;
+		BOOL Create(UINT nIDTemplate, IHexCtrl* pParentWnd);
+		IHexCtrl* GetParent() const;
 	protected:
 		virtual void DoDataExchange(CDataExchange* pDX);
 		virtual BOOL OnInitDialog();
@@ -39,7 +39,7 @@ namespace HEXCTRL {
 		void ClearAll();
 		DECLARE_MESSAGE_MAP()
 	private:
-		CHexCtrl* m_pParent { };
+		IHexCtrl* m_pParent { };
 		HEXSEARCHSTRUCT m_stSearch { };
 		DWORD m_dwOccurrences { };
 		int m_iRadioCurrent { };

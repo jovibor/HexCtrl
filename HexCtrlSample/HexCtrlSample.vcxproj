@@ -198,6 +198,7 @@
     <ClInclude Include="..\HexCtrl\Dialogs\HexCtrlDlgSearch.h" />
     <ClInclude Include="..\HexCtrl\Helper.h" />
     <ClInclude Include="..\HexCtrl\HexCtrl.h" />
+    <ClInclude Include="..\HexCtrl\IHexCtrl.h" />
     <ClInclude Include="..\HexCtrl\res\HexCtrlRes.h" />
     <ClInclude Include="..\HexCtrl\ScrollEx.h" />
     <ClInclude Include="HexSample.h" />

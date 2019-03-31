@@ -10,13 +10,13 @@
 CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/) //-V730
 	: CDialogEx(IDD_HEXSAMPLE_DIALOG, pParent)
 {
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
 }
 
 void CHexSampleDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_MY_HEX, m_myHex);
+	DDX_Control(pDX, IDC_MY_HEX, *m_myHex);
 }
 
 BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
@@ -30,20 +30,20 @@ BOOL CHexSampleDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	SetIcon(m_hIcon, TRUE);	 // Set big icon
-	SetIcon(m_hIcon, FALSE); // Set small icon
+	SetIcon(m_hIcon, TRUE);	 //Set big icon
+	SetIcon(m_hIcon, FALSE); //Set small icon
 
 /*	HEXCREATESTRUCT hcs;
 	hcs.dwExStyle = WS_EX_APPWINDOW;
 	hcs.pwndParent = this;
 	hcs.fFloat = true;
-	m_myHex.Create(hcs);*/
-	m_myHex.CreateDialogCtrl();
+	m_myHex->Create(hcs);*/
+	m_myHex->CreateDialogCtrl();
 
 	m_hds.pData = m_data;
 	m_hds.ullDataSize = sizeof(m_data);
 
-	return TRUE;  // return TRUE  unless you set the focus to a control
+	return TRUE; //return TRUE  unless you set the focus to a control
 }
 
 void CHexSampleDlg::OnPaint()
@@ -78,20 +78,20 @@ HCURSOR CHexSampleDlg::OnQueryDragIcon()
 
 void CHexSampleDlg::OnBnRO()
 {
-	if (!m_myHex.IsDataSet())
+	if (!m_myHex->IsDataSet())
 	{
 		m_hds.fMutable = false;
-		m_myHex.SetData(m_hds);
+		m_myHex->SetData(m_hds);
 	}
-	m_myHex.EditEnable(false);
+	m_myHex->EditEnable(false);
 }
 
 void CHexSampleDlg::OnBnRW()
 {
-	if (!m_myHex.IsDataSet())
+	if (!m_myHex->IsDataSet())
 	{
 		m_hds.fMutable = true;
-		m_myHex.SetData(m_hds);
+		m_myHex->SetData(m_hds);
 	}
-	m_myHex.EditEnable(true);
+	m_myHex->EditEnable(true);
 }

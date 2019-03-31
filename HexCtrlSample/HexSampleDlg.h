@@ -16,7 +16,7 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX); // DDX/DDV support
 
 protected:
-	CHexCtrl m_myHex;
+	IHexCtrlPtr m_myHex { GetHexCtrl() };
 	HEXDATASTRUCT m_hds;
 	UCHAR m_data[0xfff];
 	HICON m_hIcon;

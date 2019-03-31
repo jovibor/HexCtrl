@@ -26,14 +26,14 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_COMMAND_RANGE(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE, &CHexDlgSearch::OnRadioBnRange)
 END_MESSAGE_MAP()
 
-BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pParent)
+BOOL CHexDlgSearch::Create(UINT nIDTemplate, IHexCtrl* pParent)
 {
 	m_pParent = pParent;
 
 	return CDialog::Create(nIDTemplate, m_pParent);
 }
 
-CHexCtrl* CHexDlgSearch::GetParent() const
+IHexCtrl* CHexDlgSearch::GetParent() const
 {
 	return m_pParent;
 }
