@@ -1,5 +1,5 @@
 ## **Hex control for MFC applications**
-![](docs/img/HexCtrl_main.jpg)
+![](docs/img/hexctrl_mainwnd.jpg)
 ### Table of Contents
 * [Introduction](#introduction)
 * [Implementation](#implementation)
@@ -22,11 +22,11 @@
 ## [](#)Introduction
 Being good low level wrapper library for Windows API in general, **MFC** was always lacking a good native controls support.
 This forced people to implement their own common stuff for everyday needs.<br>
-This HEX control is a tiny attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't have native support for such feature.
+This **HexControl** is a tiny attempt to expand standard **MFC** functionality, because at the moment, **MFC** doesn't have native support for such feature.
 
 ## [](#)Implementation
-This Hex control is implemented as a pure abstract class derived from `CWnd`, and can be used as a *child* or *float* window in any place
-of your existing **MFC** application. Control was build and tested in Visual Studio 2017, under Windows 10.
+This **HexControl** is implemented as a `CWnd` derived class, and can be used as a *child* or *float* window in any place
+of your existing **MFC** application. It was build and tested in Visual Studio 2017, under Windows 10.
 
 ## [](#)Using the Control
 The usage is quite simple:
@@ -40,8 +40,14 @@ The usage is quite simple:
 `IHexCtrlPtr` is, in fact, a pointer to the `IHexCtrl` pure abstract base class, wrapped in `std::shared_ptr`.
 This wrapper is used mainly for convenience, so you don't have to bother about object lifetime, it will be destroyed automatically.
 That's why there is a call to the factory function `GetHexCtrl()`, to properly initialize a pointer.<br>
-Control uses its own namespace - `HEXCTRL`. So it's up to you, to use namespace prefix - `HEXCTRL::`, or to define namespace in the source file's beginning:
-`using namespace HEXCTRL;`.
+Control also uses its own namespace - `HEXCTRL`. So it's up to you, whether to use namespace prefix before declarations: 
+```cpp
+HEXCTRL::
+```
+or to define namespace in the source file's beginning:
+```cpp
+using namespace HEXCTRL;
+```
 
 ## [](#)Create
 ### [](#)Classic Approach
@@ -49,19 +55,19 @@ Control uses its own namespace - `HEXCTRL`. So it's up to you, to use namespace 
 ```cpp
 struct HEXCREATESTRUCT
 {
-	PHEXCOLORSTRUCT pstColor { };			//Pointer to HEXCOLORSTRUCT, if nullptr default colors are used.
-	CWnd*		    pwndParent { };			//Parent window's pointer.
-	UINT		    uId { };				//Hex control Id.
-	DWORD			dwStyle { };			//Window styles. Null for default.
-	DWORD			dwExStyle { };			//Extended window styles. Null for default.
-	CRect			rect { };				//Initial rect. If null, the window is screen centered.
-	const LOGFONTW* pLogFont { };			//Font to be used, nullptr for default.
-	bool			fFloat { false };		//Is float or child (incorporated into another window)?.
-	bool			fCustomCtrl { false };	//It's a custom dialog control.
+	PHEXCOLORSTRUCT pstColor { }; //Pointer to HEXCOLORSTRUCT, if nullptr default colors are used.
+	CWnd*		    pwndParent { };     //Parent window's pointer.
+	UINT		    uId { };            //Hex control Id.
+	DWORD			dwStyle { };        //Window styles. Null for default.
+	DWORD			dwExStyle { };      //Extended window styles. Null for default.
+	CRect			rect { };           //Initial rect. If null, the window is screen centered.
+	const LOGFONTW* pLogFont { };       //Font to be used, nullptr for default.
+	bool			fFloat { false };   //Is float or child (incorporated into another window)?.
+	bool			fCustomCtrl { false }; //It's a custom dialog control.
 };
 ```
 
-You can choose whether control will behave as a child or independent floating window by setting `fFloat` member of this struct.
+You can choose whether control will behave as a *child* or independent *floating* window, by setting `fFloat` member of this struct.
 ```cpp
 HEXCREATESTRUCT hcs;
 hcs.fFloat = true;
@@ -90,11 +96,11 @@ This struct is also used in `IHexCtrl::SetColor` method.
 To use **HexCtrl** within `Dialog` you can, of course, create it with the [Classic Approach](#classic-approach): 
 call `IHexCtrl::Create` method and provide all the necessary information.<br>
 But there is another option you can use:
-1. Put **Custom Control** control from the Toolbox in Visual Studio dialog designer into your dialog template and make it desired size.<br>
-![](docs/img/VSToolboxCustomCtrl.jpg) ![](docs/img/VSCustomCtrlOnDlg.jpg)
+1. Put **Custom Control** control from the **Toolbox** in **Visual Studio** dialog designer into your dialog template and make it desired size.<br>
+![](docs/img/hexctrl_vstoolbox.jpg) ![](docs/img/hexctrl_vscustomctrl.jpg)
 2. Then go to the **Properties** of that control, and in the **Class** field, within the **Misc** section, write *HexCtrl*. Give the control appropriate 
 **ID** of your choise (`IDC_MY_HEX` in this example). Also, here you can set the control's **Dynamic Layout** properties, so that control behaves appropriately when dialog is being resized.
-![](docs/img/VSCustomCtrlProperties.jpg)
+![](docs/img/hexctrl_vsproperties.jpg)
 3. Declare `IHexCtrlPtr` member varable within your dialog class: `IHexCtrlPtr m_myHex { GetHexCtrl() };`
 4. Add the folowing code to the `DoDataExchange` method of your dialog class:<br>
 ```cpp
@@ -144,8 +150,8 @@ BOOL CMyWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
         switch (pHexNtfy->hdr.code)
         {
         case HEXCTRL_MSG_GETDATA:
-			pHexNtfy->chByte = /*code for set the byte, if pHexNtfy->ullSize=1*/;
-            pHexNtfy->pData =  /*or code to set the pointer to data*/;
+			pHexNtfy->chByte = /*code to set the byte, if pHexNtfy->ullSize=1*/;
+            pHexNtfy->pData =  /*or code to set the pointer to a data*/;
             break;
         }
    }
@@ -163,7 +169,7 @@ struct HEXNOTIFYSTRUCT
 };
 using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT * ;
 ```
-Its first member is a standard Windows' `NMHDR` structure. It will have its code member equal to `HEXCTRL_MSG_GETDATA` indicating that HexControl's byte request has arrived.
+Its first member is a standard Windows' `NMHDR` structure. It will have its code member equal to `HEXCTRL_MSG_GETDATA` indicating that **HexControl**'s byte request has arrived.
 The second member is the index of the byte be displayed. And the third is the actual byte, that you have to set in response.
 
 ### [](#)Virtual Handler
@@ -187,14 +193,14 @@ So, it basically indicates to its parent that the user clicked close button, or 
 
 ## [](#)Scroll Bars
 When I started to work with very big files, I immediately faced one very nasty inconvenience:
-The standard Windows scrollbars can hold only signed integer value, which is too little to scroll through many gigabytes of data. 
+The standard **Windows** scrollbars can hold only signed integer value, which is too little to scroll through many gigabytes of data. 
 It could be some workarounds and crutches involved to overcome this, but frankly saying i'm not a big fan of this kind of approach.
 
-That's why HexControl uses its own scrollbars. They work with unsigned long long values, which is way bigger than standard signed ints. 
-These scrollbars behave as normal Windows scrollbars, and even reside in the non client area, as the latter do.
+That's why **HexControl** uses its own scrollbars. They work with `unsigned long long` values, which is way bigger than standard signed ints. 
+These scrollbars behave as normal **Windows** scrollbars, and even reside in the non client area, as the latter do.
 
 ## [](#)Methods
-Hex control has plenty of methods that you can use to customize its appearance, and to manage its behaviour.<br>
+**HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.<br>
 These methods' usage is pretty straightforward, and clean, from their naming:
 ```cpp
 bool Create(const HEXCREATESTRUCT& hcs); //Main initialization method.
@@ -238,7 +244,7 @@ myHex->SetData(hds);
 ```
 
 ## [](#)Positioning and Sizing
-To properly resize and position your `HexControl`'s window you may have to handle `WM_SIZE` message in its parent window, in something like this way:
+To properly resize and position your **HexControl**'s window you may have to handle `WM_SIZE` message in its parent window, in something like this way:
 ```cpp
 void CMyWnd::OnSize(UINT nType, int cx, int cy)
 {

@@ -22,8 +22,8 @@ void CHexSampleDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDOK, &CHexSampleDlg::OnBnRW)
 	ON_BN_CLICKED(IDOK2, &CHexSampleDlg::OnBnRO)
+	ON_BN_CLICKED(IDOK, &CHexSampleDlg::OnBnRW)
 END_MESSAGE_MAP()
 
 BOOL CHexSampleDlg::OnInitDialog()
@@ -33,11 +33,6 @@ BOOL CHexSampleDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);	 //Set big icon
 	SetIcon(m_hIcon, FALSE); //Set small icon
 
-/*	HEXCREATESTRUCT hcs;
-	hcs.dwExStyle = WS_EX_APPWINDOW;
-	hcs.pwndParent = this;
-	hcs.fFloat = true;
-	m_myHex->Create(hcs);*/
 	m_myHex->CreateDialogCtrl();
 
 	m_hds.pData = m_data;

@@ -860,7 +860,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 	hmd.ullModifySize = 1;
 	hmd.fMoveNext = true;
 
-	if (m_fCursorAscii) //If cursor is at Ascii area.
+	if (IsCurTextArea()) //If cursor is in text area.
 	{
 		hmd.fWhole = true;
 		hmd.pData = (PBYTE)&nChar;
@@ -1408,7 +1408,7 @@ ULONGLONG CHexCtrl::HitTest(LPPOINT pPoint)
 	int iX = pPoint->x + (int)m_pstScrollH->GetScrollPos(); //To compensate horizontal scroll.
 	ULONGLONG ullCurLine = GetCurrentLineV();
 	ULONGLONG ullHexChunk;
-	m_fCursorAscii = false;
+	m_fCursorTextArea = false;
 
 	//Checking if cursor is within hex chunks area.
 	if ((iX >= m_iIndentFirstHexChunk) && (iX < m_iThirdVertLine) && (iY >= m_iHeightTopRect) && (iY <= m_iHeightWorkArea))
@@ -1442,7 +1442,7 @@ ULONGLONG CHexCtrl::HitTest(LPPOINT pPoint)
 		//Calculate ullHit Ascii symbol.
 		ullHexChunk = ((iX - m_iIndentAscii) / m_iSpaceBetweenAscii) +
 			((iY - m_iHeightTopRect) / m_sizeLetter.cy) * m_dwCapacity + (ullCurLine * m_dwCapacity);
-		m_fCursorAscii = true;
+		m_fCursorTextArea = true;
 	}
 	else
 		ullHexChunk = -1;
@@ -1704,7 +1704,7 @@ void CHexCtrl::CursorMoveRight()
 {
 	if (m_fMutable)
 	{
-		if (m_fCursorAscii)
+		if (IsCurTextArea())
 			SetCursorPos(m_ullCursorPos + 1, m_fCursorHigh);
 		else if (m_fCursorHigh)
 			SetCursorPos(m_ullCursorPos, false);
@@ -1719,7 +1719,7 @@ void CHexCtrl::CursorMoveLeft()
 {
 	if (m_fMutable)
 	{
-		if (m_fCursorAscii)
+		if (IsCurTextArea())
 		{
 			ULONGLONG ull = m_ullCursorPos;
 			if (ull > 0) //To avoid overflow.
@@ -1807,7 +1807,7 @@ void CHexCtrl::CursorScroll()
 	ullNewScrollV -= ullNewScrollV % m_sizeLetter.cy;
 
 	m_pstScrollV->SetScrollPos(ullNewScrollV);
-	if (m_pstScrollH->IsVisible())
+	if (m_pstScrollH->IsVisible() && !IsCurTextArea()) //Do not horz scroll when modifying text area (not Hex).
 		m_pstScrollH->SetScrollPos(ullNewScrollH);
 }
 
@@ -1839,6 +1839,11 @@ void CHexCtrl::SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize)
 	refUndo->ullIndex = ullIndex;
 	for (size_t i = 0; i < ullSize; i++)
 		refUndo->strData += GetByte(ullIndex + i);
+}
+
+bool CHexCtrl::IsCurTextArea()
+{
+	return m_fCursorTextArea;
 }
 
 void CHexCtrl::Search(HEXSEARCHSTRUCT& hss)
@@ -2126,7 +2131,7 @@ void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ul
 	if (!fMouse) //Don't need to scroll if it's Mouse selection.
 	{
 		m_pstScrollV->SetScrollPos(ullNewScrollV);
-		if (m_pstScrollH->IsVisible())
+		if (m_pstScrollH->IsVisible() && !IsCurTextArea())
 			m_pstScrollH->SetScrollPos(ullNewScrollH);
 	}
 

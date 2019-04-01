@@ -35,20 +35,20 @@ namespace HEXCTRL {
 	public:
 		CHexCtrl();
 		virtual ~CHexCtrl();
-		bool Create(const HEXCREATESTRUCT& hcs); //Main initialization method.
-		bool CreateDialogCtrl();				 //Сreates custom dialog control.
-		bool IsCreated();						 //Shows whether control is created or not.
-		void SetData(const HEXDATASTRUCT& hds);  //Main method for setting data to display (and edit).	
-		bool IsDataSet();						 //Shows whether a data was set to control or not.
-		void ClearData();						 //Clears all data from HexCtrl's view (not touching data itself).
-		void EditEnable(bool fEnable);			 //Enable or disable edit mode.
-		void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1); //Shows (selects) given offset.
-		void SetFont(const LOGFONT* pLogFontNew);//Sets the control's font.
-		void SetFontSize(UINT uiSize);			 //Sets the control's font size.
-		long GetFontSize();						 //Gets the control's font size.
-		void SetColor(const HEXCOLORSTRUCT& clr);//Sets all the colors for the control.
-		void SetCapacity(DWORD dwCapacity);		 //Sets the control's current capacity.
-		void Search(HEXSEARCHSTRUCT& hss);		 //Search through currently set data.
+		bool Create(const HEXCREATESTRUCT& hcs)override; //Main initialization method.
+		bool CreateDialogCtrl()override;				 //Сreates custom dialog control.
+		bool IsCreated()override;						 //Shows whether control is created or not.
+		void SetData(const HEXDATASTRUCT& hds)override;  //Main method for setting data to display (and edit).	
+		bool IsDataSet()override;						 //Shows whether a data was set to control or not.
+		void ClearData()override;						 //Clears all data from HexCtrl's view (not touching data itself).
+		void EditEnable(bool fEnable)override;			 //Enable or disable edit mode.
+		void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1)override; //Shows (selects) given offset.
+		void SetFont(const LOGFONT* pLogFontNew)override;//Sets the control's font.
+		void SetFontSize(UINT uiSize)override;			 //Sets the control's font size.
+		long GetFontSize()override;						 //Gets the control's font size.
+		void SetColor(const HEXCOLORSTRUCT& clr)override;//Sets all the colors for the control.
+		void SetCapacity(DWORD dwCapacity)override;		 //Sets the control's current capacity.
+		void Search(HEXSEARCHSTRUCT& hss)override;		 //Search through currently set data.
 	protected:
 		DECLARE_MESSAGE_MAP()
 		bool RegisterWndClass();
@@ -99,6 +99,7 @@ namespace HEXCTRL {
 		void Undo();
 		void Redo();
 		void SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize); //Takes currently modifiable data snapshot.
+		bool IsCurTextArea(); //Whether click was made in Text or Hex area.
 	private:
 		bool m_fCreated { false };			//Is control created or not yet.
 		bool m_fDataSet { false };			//Is data set or not.
@@ -147,8 +148,8 @@ namespace HEXCTRL {
 		DWORD m_dwOffsetDigits { 8 };		//Amount of digits in "Offset", depends on data size set in SetData.
 		ULONGLONG m_ullCursorPos { };		//Current cursor position.
 		bool m_fCursorHigh { true };		//Cursor's High or Low bits position (first or last digit in hex chunk).
-		bool m_fCursorAscii { false };		//Whether cursor at Ascii or Hex chunks area.
-		DWORD m_dwUndoMax { 50 };			//How many Undo states to preserve.
+		bool m_fCursorTextArea { false };	//Whether cursor at Ascii or Hex chunks area.
+		DWORD m_dwUndoMax { 500 };			//How many Undo states to preserve.
 		std::deque<std::unique_ptr<INTERNAL::STUNDO>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<INTERNAL::STUNDO>> m_deqRedo; //Redo deque.
 		std::unordered_map<int, HBITMAP> m_umapHBITMAP; //Images for the Menu.
