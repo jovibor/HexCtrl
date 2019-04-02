@@ -1,5 +1,6 @@
 /****************************************************************************************
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/						    *
+* Git repository is originating at: https://github.com/jovibor/HexCtrl/					*
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 * This is a Hex control for MFC apps, implemented as CWnd derived class.				*

@@ -10,7 +10,7 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "strsafe.h"
-#include "res/HexCtrlRes.h"		//Icons, for menu etc...
+#include "../res/HexCtrlRes.h" //Icons, for menu etc...
 #include "Dialogs/HexCtrlDlgAbout.h"
 #include "Dialogs/HexCtrlDlgSearch.h"
 #include "HexCtrl.h"

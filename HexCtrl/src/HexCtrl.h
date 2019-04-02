@@ -9,7 +9,7 @@
 * 3. Call myHex.SetData method to set the data and its size to display as hex.	        *
 ****************************************************************************************/
 #pragma once
-#include "IHexCtrl.h"
+#include "../IHexCtrl.h"
 #include <memory>			//std::unique_ptr and related.
 #include <unordered_map>	//std::unordered_map and related.
 #include <deque>			//std::deque and related.

@@ -55,15 +55,15 @@ using namespace HEXCTRL;
 ```cpp
 struct HEXCREATESTRUCT
 {
-	PHEXCOLORSTRUCT pstColor { }; //Pointer to HEXCOLORSTRUCT, if nullptr default colors are used.
-	CWnd*		    pwndParent { };     //Parent window's pointer.
-	UINT		    uId { };            //Hex control Id.
-	DWORD			dwStyle { };        //Window styles. Null for default.
-	DWORD			dwExStyle { };      //Extended window styles. Null for default.
-	CRect			rect { };           //Initial rect. If null, the window is screen centered.
-	const LOGFONTW* pLogFont { };       //Font to be used, nullptr for default.
-	bool			fFloat { false };   //Is float or child (incorporated into another window)?.
-	bool			fCustomCtrl { false }; //It's a custom dialog control.
+	PHEXCOLORSTRUCT pstColor { };			//Pointer to HEXCOLORSTRUCT, if nullptr default colors are used.
+	CWnd*		    pwndParent { };			//Parent window's pointer.
+	UINT		    uId { };				//Hex control Id.
+	DWORD			dwStyle { };			//Window styles. Null for default.
+	DWORD			dwExStyle { };			//Extended window styles. Null for default.
+	CRect			rect { };				//Initial rect. If null, the window is screen centered.
+	const LOGFONTW* pLogFont { };			//Font to be used, nullptr for default.
+	bool			fFloat { false };		//Is float or child (incorporated into another window)?.
+	bool			fCustomCtrl { false };	//It's a custom dialog control.
 };
 ```
 

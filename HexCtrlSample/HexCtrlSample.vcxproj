@@ -194,13 +194,13 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\HexCtrl\Dialogs\HexCtrlDlgAbout.h" />
-    <ClInclude Include="..\HexCtrl\Dialogs\HexCtrlDlgSearch.h" />
-    <ClInclude Include="..\HexCtrl\Helper.h" />
-    <ClInclude Include="..\HexCtrl\HexCtrl.h" />
     <ClInclude Include="..\HexCtrl\IHexCtrl.h" />
     <ClInclude Include="..\HexCtrl\res\HexCtrlRes.h" />
-    <ClInclude Include="..\HexCtrl\ScrollEx.h" />
+    <ClInclude Include="..\HexCtrl\src\Dialogs\HexCtrlDlgAbout.h" />
+    <ClInclude Include="..\HexCtrl\src\Dialogs\HexCtrlDlgSearch.h" />
+    <ClInclude Include="..\HexCtrl\src\Helper.h" />
+    <ClInclude Include="..\HexCtrl\src\HexCtrl.h" />
+    <ClInclude Include="..\HexCtrl\src\ScrollEx.h" />
     <ClInclude Include="HexSample.h" />
     <ClInclude Include="HexSampleDlg.h" />
     <ClInclude Include="Resource.h" />
@@ -208,11 +208,11 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\HexCtrl\Dialogs\HexCtrlDlgAbout.cpp" />
-    <ClCompile Include="..\HexCtrl\Dialogs\HexCtrlDlgSearch.cpp" />
-    <ClCompile Include="..\HexCtrl\Helper.cpp" />
-    <ClCompile Include="..\HexCtrl\HexCtrl.cpp" />
-    <ClCompile Include="..\HexCtrl\ScrollEx.cpp" />
+    <ClCompile Include="..\HexCtrl\src\Dialogs\HexCtrlDlgAbout.cpp" />
+    <ClCompile Include="..\HexCtrl\src\Dialogs\HexCtrlDlgSearch.cpp" />
+    <ClCompile Include="..\HexCtrl\src\Helper.cpp" />
+    <ClCompile Include="..\HexCtrl\src\HexCtrl.cpp" />
+    <ClCompile Include="..\HexCtrl\src\ScrollEx.cpp" />
     <ClCompile Include="HexSample.cpp" />
     <ClCompile Include="HexSampleDlg.cpp" />
     <ClCompile Include="stdafx.cpp">

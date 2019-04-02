@@ -10,41 +10,29 @@
 ****************************************************************************************/
 #pragma once
 #include <afxcontrolbars.h>  //Standard MFC's controls header.
-#include <string>
-#include "../HexCtrl.h"
-#include "../res/HexCtrlRes.h"
+#include "../../res/HexCtrlRes.h"
 
 namespace HEXCTRL {
 	/********************************************
-	* CHexDlgSearch class definition.			*
+	* CHexDlgAbout class definition.			*
 	********************************************/
-	class CHexDlgSearch : public CDialogEx
+	class CHexDlgAbout : public CDialogEx
 	{
 	public:
-		explicit CHexDlgSearch(CWnd* m_pParent = nullptr) {}
-		virtual ~CHexDlgSearch() {}
-		BOOL Create(UINT nIDTemplate, IHexCtrl* pParentWnd);
-		IHexCtrl* GetParent() const;
+		explicit CHexDlgAbout(CWnd* m_pParent = nullptr) : CDialogEx(IDD_HEXCTRL_ABOUT) {}
+		virtual ~CHexDlgAbout() {}
 	protected:
-		virtual void DoDataExchange(CDataExchange* pDX);
-		virtual BOOL OnInitDialog();
-		afx_msg void OnButtonSearchF();
-		afx_msg void OnButtonSearchB();
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		afx_msg void OnClose();
-		virtual BOOL PreTranslateMessage(MSG* pMsg);
+		virtual BOOL OnInitDialog() override;
+		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
-		void OnRadioBnRange(UINT nID);
-		void SearchCallback();
-		void ClearAll();
 		DECLARE_MESSAGE_MAP()
 	private:
-		IHexCtrl* m_pParent { };
-		HEXSEARCHSTRUCT m_stSearch { };
-		DWORD m_dwOccurrences { };
-		int m_iRadioCurrent { };
-		COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
-		COLORREF m_clrSearchFound { RGB(0, 200, 0) };
+		bool m_fGithubLink { true };
+		HCURSOR m_curHand { };
+		HCURSOR m_curArrow { };
+		CFont m_fontDefault;
+		CFont m_fontUnderline;
 		CBrush m_stBrushDefault;
 		COLORREF m_clrMenu { GetSysColor(COLOR_MENU) };
 	};
