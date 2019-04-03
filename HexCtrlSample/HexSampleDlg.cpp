@@ -76,6 +76,7 @@ void CHexSampleDlg::OnBnRO()
 	if (!m_myHex->IsDataSet())
 	{
 		m_hds.fMutable = false;
+		m_hds.pwndMsg = this;
 		m_myHex->SetData(m_hds);
 	}
 	m_myHex->EditEnable(false);

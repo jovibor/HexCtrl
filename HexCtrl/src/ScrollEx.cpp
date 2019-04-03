@@ -9,7 +9,7 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "ScrollEx.h"
-#include "res/HexCtrlRes.h"
+#include "../res/HexCtrlRes.h"
 #include <cmath>
 
 using namespace HEXCTRL;
@@ -251,7 +251,7 @@ BOOL CScrollEx::OnNcActivate(BOOL bActive)
 	return TRUE;
 }
 
-void CScrollEx::OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp)
+void CScrollEx::OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS * lpncsp)
 {
 	if (!m_fCreated)
 		return;
@@ -490,7 +490,7 @@ void CScrollEx::DrawArrows(CDC * pDC)
 		&compatDC, iLastBtnBmpOffsetX, iLastBtnBmpOffsetY, m_uiArrowSize, m_uiArrowSize, SRCCOPY);
 }
 
-void CScrollEx::DrawThumb(CDC* pDC)
+void CScrollEx::DrawThumb(CDC * pDC)
 {
 	CRect rcThumb = GetThumbRect();
 	if (!rcThumb.IsRectNull())

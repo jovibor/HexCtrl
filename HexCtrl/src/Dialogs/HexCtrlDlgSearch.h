@@ -1,7 +1,7 @@
 /****************************************************************************************
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/						    *
 * This software is available under the "MIT License modified with The Commons Clause".  *
-* https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                 *
+* https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 * This is a Hex control for MFC apps, implemented as CWnd derived class.			    *
 * The usage is quite simple:														    *
 * 1. Construct CHexCtrl object — HEXCTRL::CHexCtrl myHex;								*
@@ -11,7 +11,7 @@
 #pragma once
 #include <afxcontrolbars.h>  //Standard MFC's controls header.
 #include <string>
-#include "../HexCtrl.h"
+#include "../../IHexCtrl.h"
 #include "../../res/HexCtrlRes.h"
 
 namespace HEXCTRL {
@@ -21,11 +21,10 @@ namespace HEXCTRL {
 	class CHexDlgSearch : public CDialogEx
 	{
 	public:
-		explicit CHexDlgSearch(CWnd* m_pParent = nullptr) {}
+		explicit CHexDlgSearch(CWnd* m_pHexCtrl = nullptr) {}
 		virtual ~CHexDlgSearch() {}
-		BOOL Create(UINT nIDTemplate, IHexCtrl* pParentWnd);
-		IHexCtrl* GetParent() const;
-	protected:
+		BOOL Create(UINT nIDTemplate, IHexCtrl* pHexCtrl);
+protected:
 		virtual void DoDataExchange(CDataExchange* pDX);
 		virtual BOOL OnInitDialog();
 		afx_msg void OnButtonSearchF();
@@ -37,9 +36,10 @@ namespace HEXCTRL {
 		void OnRadioBnRange(UINT nID);
 		void SearchCallback();
 		void ClearAll();
+		IHexCtrl* GetHexCtrl();
 		DECLARE_MESSAGE_MAP()
 	private:
-		IHexCtrl* m_pParent { };
+		IHexCtrl* m_pHexCtrl { };
 		HEXSEARCHSTRUCT m_stSearch { };
 		DWORD m_dwOccurrences { };
 		int m_iRadioCurrent { };

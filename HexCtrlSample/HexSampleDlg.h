@@ -1,5 +1,5 @@
 #pragma once
-#include "../HexCtrl/HexCtrl.h"
+#include "../HexCtrl/IHexCtrl.h"
 
 using namespace HEXCTRL;
 
@@ -16,7 +16,7 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX); // DDX/DDV support
 
 protected:
-	IHexCtrlPtr m_myHex { GetHexCtrl() };
+	IHexCtrlPtr m_myHex { CreateHexCtrl() };
 	HEXDATASTRUCT m_hds;
 	UCHAR m_data[0xfff];
 	HICON m_hIcon;

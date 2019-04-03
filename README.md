@@ -33,13 +33,13 @@ The usage is quite simple:
 1. Copy `HexCtrl` folder into your project folder.
 2. Add all files from `HexCtrl` folder into your project.
 3. Add `#include "HexCtrl/IHexCtrl.h"` where you suppose to use the control.
-4. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { GetHexCtrl() };`
+4. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
 5. Call `myHex->Create` method to create control instance.
 6. Call `myHex->SetData` method to set the actual data to display as hex.
 
 `IHexCtrlPtr` is, in fact, a pointer to the `IHexCtrl` pure abstract base class, wrapped in `std::shared_ptr`.
 This wrapper is used mainly for convenience, so you don't have to bother about object lifetime, it will be destroyed automatically.
-That's why there is a call to the factory function `GetHexCtrl()`, to properly initialize a pointer.<br>
+That's why there is a call to the factory function `CreateHexCtrl()`, to properly initialize a pointer.<br>
 Control also uses its own namespace - `HEXCTRL`. So it's up to you, whether to use namespace prefix before declarations: 
 ```cpp
 HEXCTRL::
@@ -101,7 +101,7 @@ But there is another option you can use:
 2. Then go to the **Properties** of that control, and in the **Class** field, within the **Misc** section, write *HexCtrl*. Give the control appropriate 
 **ID** of your choise (`IDC_MY_HEX` in this example). Also, here you can set the control's **Dynamic Layout** properties, so that control behaves appropriately when dialog is being resized.
 ![](docs/img/hexctrl_vsproperties.jpg)
-3. Declare `IHexCtrlPtr` member varable within your dialog class: `IHexCtrlPtr m_myHex { GetHexCtrl() };`
+3. Declare `IHexCtrlPtr` member varable within your dialog class: `IHexCtrlPtr m_myHex { CreateHexCtrl() };`
 4. Add the folowing code to the `DoDataExchange` method of your dialog class:<br>
 ```cpp
 DDX_Control(pDX, IDC_MY_HEX, *m_myHex);
@@ -223,7 +223,7 @@ void Search(HEXSEARCHSTRUCT& rSearch);	 //Search through currently set data.
 The function you use to set a data to display as hex is `IHexCtrl::SetData`. 
 The code below constructs `IHexCtrlPtr` object and displays first `0x1FF` bytes of your app's memory:
 ```cpp
-IHexCtrlPtr myHex { GetHexCtrl() };
+IHexCtrlPtr myHex { CreateHexCtrl() };
 HEXCREATESTRUCT hcs;
 hcs.pwndParent = this;
 hcs.rect = CRect(0, 0, 500, 300); //Control's rect.

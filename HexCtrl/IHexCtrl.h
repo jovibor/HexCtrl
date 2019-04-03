@@ -10,6 +10,7 @@
 * 3. Call myHex.SetData method to set the data and its size to display as hex.	        *
 ****************************************************************************************/
 #pragma once
+#include <memory>	//std::shared_ptr and related
 #include <string>	//std::wstring and related.
 #include <afxwin.h>	//MFC core and standard components.
 
@@ -46,7 +47,7 @@ namespace HEXCTRL
 	* Forward declaration.							*
 	************************************************/
 	struct HEXMODIFYSTRUCT;
-	
+
 	/********************************************************************************************
 	* IHexVirtual - Pure abstract data handler class, that can be implemented by client,		*
 	* to set its own data handler routines.	Works in HEXDATAMODEEN::HEXVIRTUAL mode.			*
@@ -79,7 +80,7 @@ namespace HEXCTRL
 		COLORREF clrBkInfoRect { RGB(250, 250, 250) };				//Background color of the bottom "Info" rect.
 		COLORREF clrBkCursor { RGB(0, 0, 250) };					//Cursor background color.
 	};
-	using PHEXCOLORSTRUCT = HEXCOLORSTRUCT * ;
+	using PHEXCOLORSTRUCT = HEXCOLORSTRUCT *;
 
 	/********************************************************************************************
 	* HEXCREATESTRUCT - for CHexCtrl::Create method.											*
@@ -123,7 +124,7 @@ namespace HEXCTRL
 		PBYTE			pData { };		//Pointer to a data to get/send.
 		BYTE			chByte { };		//Single byte data - used for simplicity, when ullModifySize==1.
 	};
-	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT * ;
+	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
 
 	/********************************************************************************************
 	* HEXMODIFYSTRUCT - used to represent data modification parameters.							*
@@ -178,8 +179,8 @@ namespace HEXCTRL
 		virtual void Search(HEXSEARCHSTRUCT& hss) = 0;		 //Search through currently set data.
 	};
 	using IHexCtrlPtr = std::shared_ptr<IHexCtrl>;
-	
-	IHexCtrlPtr GetHexCtrl();
+
+	IHexCtrlPtr CreateHexCtrl();
 
 	/********************************************************************************************
 	* WM_NOTIFY message codes (NMHDR.code values).												*

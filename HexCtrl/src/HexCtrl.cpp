@@ -22,9 +22,9 @@ using namespace HEXCTRL;
 
 namespace HEXCTRL {
 	/********************************************
-	* GetHexCtrl function implementation.		*
+	* CreateHexCtrl function implementation.	*
 	********************************************/
-	IHexCtrlPtr GetHexCtrl()
+	IHexCtrlPtr CreateHexCtrl()
 	{
 		return std::make_shared<CHexCtrl>();
 	};
@@ -155,7 +155,7 @@ CHexCtrl::~CHexCtrl()
 		DeleteObject(i.second);
 }
 
-bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
+bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 {
 	if (IsCreated()) //Already created.
 		return false;
@@ -250,7 +250,7 @@ bool CHexCtrl::IsCreated()
 	return m_fCreated;
 }
 
-void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
+void CHexCtrl::SetData(const HEXDATASTRUCT & hds)
 {
 	if (!IsCreated())
 		return;
@@ -328,7 +328,7 @@ void CHexCtrl::ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize)
 	SetSelection(ullOffset, ullOffset, ullSize, true);
 }
 
-void CHexCtrl::SetFont(const LOGFONT* pLogFontNew)
+void CHexCtrl::SetFont(const LOGFONT * pLogFontNew)
 {
 	if (!pLogFontNew)
 		return;
@@ -362,7 +362,7 @@ long CHexCtrl::GetFontSize()
 	return lf.lfHeight;
 }
 
-void CHexCtrl::SetColor(const HEXCOLORSTRUCT& clr)
+void CHexCtrl::SetColor(const HEXCOLORSTRUCT & clr)
 {
 	m_stColor = clr;
 	RedrawWindow();
@@ -418,7 +418,7 @@ bool CHexCtrl::RegisterWndClass()
 	return true;
 }
 
-void CHexCtrl::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+void CHexCtrl::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)
 {
 	SetFocus();
 
@@ -562,10 +562,10 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	switch (uiId)
 	{
 	case (UINT_PTR)INTERNAL::ENMENU::IDM_MAIN_SEARCH:
-		if (m_enMode != HEXDATAMODEEN::HEXNORMAL)
-			MessageBoxW(m_wstrErrVirtual.data(), L"Error", MB_ICONEXCLAMATION);
-		else
+		if (m_enMode == HEXDATAMODEEN::HEXNORMAL)
 			m_pDlgSearch->ShowWindow(SW_SHOW);
+		else
+			MessageBoxW(m_wstrErrVirtual.data(), L"Error", MB_ICONEXCLAMATION);
 		break;
 	case (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_UNDO:
 		Undo();
@@ -624,7 +624,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	return CWnd::OnCommand(wParam, lParam);
 }
 
-void CHexCtrl::OnContextMenu(CWnd* pWnd, CPoint point)
+void CHexCtrl::OnContextMenu(CWnd * pWnd, CPoint point)
 {
 	UINT uMenuStatus;
 	if (m_ullDataSize == 0 || m_ullSelectionSize == 0)
@@ -863,7 +863,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 	if (IsCurTextArea()) //If cursor is in text area.
 	{
 		hmd.fWhole = true;
-		hmd.pData = (PBYTE)&nChar;
+		hmd.pData = (PBYTE)& nChar;
 	}
 	else
 	{
@@ -878,7 +878,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 
 		hmd.fWhole = false;
 		hmd.fHighPart = m_fCursorHigh;
-		hmd.pData = (PBYTE)&nChar;
+		hmd.pData = (PBYTE)& nChar;
 	}
 
 	ModifyData(hmd);
@@ -889,13 +889,13 @@ UINT CHexCtrl::OnGetDlgCode()
 	return DLGC_WANTALLKEYS;
 }
 
-void CHexCtrl::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+void CHexCtrl::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar * pScrollBar)
 {
 	if (m_pstScrollV->GetScrollPosDelta() != 0)
 		RedrawWindow();
 }
 
-void CHexCtrl::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+void CHexCtrl::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar * pScrollBar)
 {
 	if (m_pstScrollH->GetScrollPosDelta() != 0)
 		RedrawWindow();
@@ -1154,12 +1154,12 @@ void CHexCtrl::OnSize(UINT nType, int cx, int cy)
 	m_pstScrollV->SetScrollPageSize(m_iHeightWorkArea - m_iHeightTopRect);
 }
 
-BOOL CHexCtrl::OnEraseBkgnd(CDC* pDC)
+BOOL CHexCtrl::OnEraseBkgnd(CDC * pDC)
 {
 	return FALSE;
 }
 
-BOOL CHexCtrl::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
+BOOL CHexCtrl::OnSetCursor(CWnd * pWnd, UINT nHitTest, UINT message)
 {
 	m_pstScrollV->OnSetCursor(pWnd, nHitTest, message);
 	m_pstScrollH->OnSetCursor(pWnd, nHitTest, message);
@@ -1175,7 +1175,7 @@ BOOL CHexCtrl::OnNcActivate(BOOL bActive)
 	return CWnd::OnNcActivate(bActive);
 }
 
-void CHexCtrl::OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp)
+void CHexCtrl::OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS * lpncsp)
 {
 	CWnd::OnNcCalcSize(bCalcValidRects, lpncsp);
 
@@ -1198,12 +1198,12 @@ void CHexCtrl::OnDestroy()
 	NMHDR nmh { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_DESTROY };
 	CWnd* pwndMsg = GetMsgWindow();
 	if (pwndMsg)
-		pwndMsg->SendMessageW(WM_NOTIFY, nmh.idFrom, (LPARAM)&nmh);
+		pwndMsg->SendMessageW(WM_NOTIFY, nmh.idFrom, (LPARAM)& nmh);
 
 	CWnd* pwndParent = GetParent();
 	if (pwndParent)
 	{
-		pwndParent->SendMessageW(WM_NOTIFY, nmh.idFrom, (LPARAM)&nmh);
+		pwndParent->SendMessageW(WM_NOTIFY, nmh.idFrom, (LPARAM)& nmh);
 		pwndParent->SetForegroundWindow();
 	}
 
@@ -1235,7 +1235,7 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)
 	return 0;
 }
 
-void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hmd)
+void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hmd)
 {	//Changes byte(s) in memory. High or Low part, depending on hmd.fHighPart.
 	if (!m_fMutable || hmd.ullIndex >= m_ullDataSize)
 		return;
@@ -1318,7 +1318,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hmd)
 	{
 		//In HEXDATAMODEEN::HEXMSG mode we send hmd pointer.
 		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_MODIFYDATA } };
-		hns.pData = (PBYTE)&hmd;
+		hns.pData = (PBYTE)& hmd;
 		MsgWindowNotify(hns);
 	}
 	else if (m_enMode == HEXDATAMODEEN::HEXVIRTUAL)
@@ -1434,7 +1434,7 @@ ULONGLONG CHexCtrl::HitTest(LPPOINT pPoint)
 				break;
 			}
 		}
-		ullHexChunk = dwChunkX + ((iY - m_iHeightTopRect) / m_sizeLetter.cy) * m_dwCapacity + (ullCurLine  * m_dwCapacity);
+		ullHexChunk = dwChunkX + ((iY - m_iHeightTopRect) / m_sizeLetter.cy) * m_dwCapacity + (ullCurLine * m_dwCapacity);
 	}
 	else if ((iX >= m_iIndentAscii) && (iX < (m_iIndentAscii + m_iSpaceBetweenAscii * (int)m_dwCapacity))
 		&& (iY >= m_iHeightTopRect) && iY <= m_iHeightWorkArea)
@@ -1454,7 +1454,7 @@ ULONGLONG CHexCtrl::HitTest(LPPOINT pPoint)
 	return ullHexChunk;
 }
 
-void CHexCtrl::ChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy)
+void CHexCtrl::ChunkPoint(ULONGLONG ullChunk, ULONGLONG & ullCx, ULONGLONG & ullCy)
 {
 	//This func computes x and y pos of given hex chunk.
 
@@ -1678,11 +1678,11 @@ void CHexCtrl::SetShowAs(INTERNAL::ENSHOWAS enShowAs)
 	RecalcAll();
 }
 
-void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)
+void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT & hns)
 {
 	CWnd* pwndMsg = GetMsgWindow();
 	if (pwndMsg)
-		pwndMsg->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), (LPARAM)&hns);
+		pwndMsg->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), (LPARAM)& hns);
 }
 
 void CHexCtrl::SetCursorPos(ULONGLONG ullPos, bool fHighPart)
@@ -1846,7 +1846,7 @@ bool CHexCtrl::IsCurTextArea()
 	return m_fCursorTextArea;
 }
 
-void CHexCtrl::Search(HEXSEARCHSTRUCT& hss)
+void CHexCtrl::Search(HEXSEARCHSTRUCT & hss)
 {
 	hss.fFound = false;
 	ULONGLONG ullStartAt = hss.ullStartAt;
