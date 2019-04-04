@@ -18,12 +18,35 @@ namespace HEXCTRL {
 	/************************************************
 	* Forward declarations.							*
 	************************************************/
-	class CHexDlgSearch;
 	namespace INTERNAL
 	{
-		struct STUNDO;
+		struct UNDOSTRUCT;
 		enum class ENCLIPBOARD : DWORD;
 		enum class ENSHOWAS : DWORD;
+
+		/********************************************************************************************
+		* ENSEARCHTYPE - type of the search, enum.													*
+		********************************************************************************************/
+		enum class ENSEARCHTYPE : DWORD
+		{
+			SEARCH_HEX, SEARCH_ASCII, SEARCH_UNICODE
+		};
+
+		/********************************************************************************************
+		* SEARCHSTRUCT - used for search routines.														*
+		********************************************************************************************/
+		struct SEARCHSTRUCT
+		{
+			std::wstring	wstrSearch { };			//String search for.
+			ENSEARCHTYPE	enSearchType { };		//Hex, Ascii, Unicode, etc...
+			ULONGLONG		ullStartAt { };			//An offset, search should start at.
+			int				iDirection { };			//Search direction: 1 = Forward, -1 = Backward.
+			int				iWrap { };				//Wrap direction: -1 = Beginning, 1 = End.
+			bool			fWrap { false };		//Was search wrapped?
+			bool			fSecondMatch { false }; //First or subsequent match. 
+			bool			fFound { false };		//Found or not.
+			bool			fCount { true };		//Do we count matches or just print "Found".
+		};
 	}
 	namespace SCROLLEX { class CScrollEx; }
 
@@ -32,6 +55,7 @@ namespace HEXCTRL {
 	********************************************************************************************/
 	class CHexCtrl : public IHexCtrl
 	{
+		friend class CHexDlgSearch; //For private Search routine.
 	public:
 		CHexCtrl();
 		virtual ~CHexCtrl();
@@ -48,7 +72,6 @@ namespace HEXCTRL {
 		long GetFontSize()override;						 //Gets the control's font size.
 		void SetColor(const HEXCOLORSTRUCT& clr)override;//Sets all the colors for the control.
 		void SetCapacity(DWORD dwCapacity)override;		 //Sets the control's current capacity.
-		void Search(HEXSEARCHSTRUCT& hss)override;		 //Search through currently set data.
 	protected:
 		DECLARE_MESSAGE_MAP()
 		bool RegisterWndClass();
@@ -74,21 +97,22 @@ namespace HEXCTRL {
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
 	protected:
-		BYTE GetByte(ULONGLONG ullIndex); //Gets the byte data by index.
-		void ModifyData(const HEXMODIFYSTRUCT& hmd); //Main routine to modify data, in fMutable=true mode.
-		CWnd* GetMsgWindow();
-		void RecalcAll();
+		[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex); //Gets the byte data by index.
+		void ModifyData(const HEXMODIFYSTRUCT& hms); //Main routine to modify data, in fMutable=true mode.
+		[[nodiscard]] CWnd* GetMsgWindow(); //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
+		void Search(INTERNAL::SEARCHSTRUCT& rSearch); //Search through currently set data.
+		void RecalcAll(); //Recalcs all inner draw and data related values.
 		void RecalcWorkAreaHeight(int iClientHeight);
 		void RecalcScrollSizes(int iClientHeight = 0, int iClientWidth = 0);
-		ULONGLONG GetCurrentLineV();
-		ULONGLONG HitTest(LPPOINT); //Is any hex chunk withing given point?
+		[[nodiscard]] ULONGLONG GetTopLine(); //Returns current top line's number in view.
+		[[nodiscard]] ULONGLONG HitTest(LPPOINT); //Is any hex chunk withing given point?
 		void ChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy); //Point of Hex chunk.
 		void ClipboardCopy(INTERNAL::ENCLIPBOARD enType);
 		void ClipboardPaste(INTERNAL::ENCLIPBOARD enType);
 		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
 		void SelectAll();
-		void UpdateInfoText();
-		void SetShowAs(INTERNAL::ENSHOWAS enShowAs);
+		void UpdateInfoText(); //Updates text in the bottom "info" area according to currently selected data.
+		void SetShowAs(INTERNAL::ENSHOWAS enShowAs); //Current data representation type.
 		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns); //Notify routine use in HEXDATAMODEEN::HEXMSG.
 		void SetCursorPos(ULONGLONG ullPos, bool fHighPart); //Sets the cursor position when in Edit mode.
 		void CursorMoveRight();
@@ -99,7 +123,7 @@ namespace HEXCTRL {
 		void Undo();
 		void Redo();
 		void SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize); //Takes currently modifiable data snapshot.
-		bool IsCurTextArea(); //Whether click was made in Text or Hex area.
+		[[nodiscard]] bool IsCurTextArea(); //Whether click was made in Text or Hex area.
 	private:
 		bool m_fCreated { false };			//Is control created or not yet.
 		bool m_fDataSet { false };			//Is data set or not.
@@ -114,7 +138,7 @@ namespace HEXCTRL {
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 		INTERNAL::ENSHOWAS m_enShowAs { };  //Show data mode.
 		CWnd* m_pwndMsg { };				//Window the control messages will be sent to.
-		IHexVirtual* m_pCustom { };			//Data handler pointer for HEXDATAMODEEN::HEXVIRTUAL
+		IHexVirtual* m_pHexVirtual { };		//Data handler pointer for HEXDATAMODEEN::HEXVIRTUAL
 		SIZE m_sizeLetter { 1, 1 };			//Current font's letter size (width, height).
 		CFont m_fontHexView;				//Main Hex chunks font.
 		CFont m_fontBottomRect;				//Font for bottom Info rect.
@@ -150,8 +174,8 @@ namespace HEXCTRL {
 		bool m_fCursorHigh { true };		//Cursor's High or Low bits position (first or last digit in hex chunk).
 		bool m_fCursorTextArea { false };	//Whether cursor at Ascii or Hex chunks area.
 		DWORD m_dwUndoMax { 500 };			//How many Undo states to preserve.
-		std::deque<std::unique_ptr<INTERNAL::STUNDO>> m_deqUndo; //Undo deque.
-		std::deque<std::unique_ptr<INTERNAL::STUNDO>> m_deqRedo; //Redo deque.
+		std::deque<std::unique_ptr<INTERNAL::UNDOSTRUCT>> m_deqUndo; //Undo deque.
+		std::deque<std::unique_ptr<INTERNAL::UNDOSTRUCT>> m_deqRedo; //Redo deque.
 		std::unordered_map<int, HBITMAP> m_umapHBITMAP; //Images for the Menu.
 	};
 };

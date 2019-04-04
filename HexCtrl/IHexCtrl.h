@@ -17,17 +17,6 @@
 namespace HEXCTRL
 {
 	/********************************************************************************************
-	* HEXDATAMODEEN - Enum of the data working mode. Used in HEXDATASTRUCT in SetData.			*
-	* HEXNORMAL - Standard data mode.															*
-	* HEXMSG - Message data mode. Data is received through WM_NOTIFY messages to handler window	*
-	* HEXVIRTUAL - Data is handled in IHexVirtual derived class.								*
-	********************************************************************************************/
-	enum class HEXDATAMODEEN : DWORD
-	{
-		HEXNORMAL, HEXMSG, HEXVIRTUAL
-	};
-
-	/********************************************************************************************
 	* HEXMODIFYASEN - enum to represent data modification type.									*
 	********************************************************************************************/
 	enum class HEXMODIFYASEN : DWORD
@@ -36,17 +25,18 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* HEXSEARCHTYPEEN - type of the search, enum.												*
+	* HEXMODIFYSTRUCT - used to represent data modification parameters.							*
 	********************************************************************************************/
-	enum class HEXSEARCHTYPEEN : DWORD
+	struct HEXMODIFYSTRUCT
 	{
-		SEARCH_HEX, SEARCH_ASCII, SEARCH_UNICODE
+		ULONGLONG		ullIndex { };			//Index of the start byte to modify.
+		ULONGLONG		ullModifySize { };		//Size in bytes.
+		PBYTE			pData { };				//Pointer to a data to be set.
+		HEXMODIFYASEN	enType { HEXMODIFYASEN::AS_MODIFY }; //Modification type.
+		DWORD			dwFillDataSize { };		//Size of pData if enType==AS_FILL.
+		bool			fWhole { true };		//Is a whole byte or just a part of it to be modified.
+		bool			fHighPart { true };		//Shows whether High or Low part of byte should be modified (If fWhole is false).
 	};
-
-	/************************************************
-	* Forward declaration.							*
-	************************************************/
-	struct HEXMODIFYSTRUCT;
 
 	/********************************************************************************************
 	* IHexVirtual - Pure abstract data handler class, that can be implemented by client,		*
@@ -60,8 +50,9 @@ namespace HEXCTRL
 	class IHexVirtual
 	{
 	public:
+		virtual ~IHexVirtual() = default;
 		virtual BYTE GetByte(ULONGLONG ullIndex) = 0;			 //Gets the byte data by index.
-		virtual	void ModifyData(const HEXMODIFYSTRUCT& hmd) = 0; //Main routine to modify data, in fMutable=true mode.
+		virtual	void ModifyData(const HEXMODIFYSTRUCT& hms) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
 	};
 
 	/********************************************************************************************
@@ -99,6 +90,17 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
+	* HEXDATAMODEEN - Enum of the working data mode, used in HEXDATASTRUCT, in SetData.			*
+	* HEXNORMAL: Standard data mode.															*
+	* HEXMSG: Message data mode. Data is received through WM_NOTIFY messages to handler window	*
+	* HEXVIRTUAL: Data is handled in IHexVirtual derived class.									*
+	********************************************************************************************/
+	enum class HEXDATAMODEEN : DWORD
+	{
+		HEXNORMAL, HEXMSG, HEXVIRTUAL
+	};
+
+	/********************************************************************************************
 	* HEXDATASTRUCT - for CHexCtrl::SetData method.												*
 	********************************************************************************************/
 	struct HEXDATASTRUCT
@@ -127,37 +129,6 @@ namespace HEXCTRL
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
 
 	/********************************************************************************************
-	* HEXMODIFYSTRUCT - used to represent data modification parameters.							*
-	********************************************************************************************/
-	struct HEXMODIFYSTRUCT
-	{
-		ULONGLONG		ullIndex { };			//Index of the start byte to modify.
-		ULONGLONG		ullModifySize { };		//Size in bytes.
-		PBYTE			pData { };				//Pointer to data to be set.
-		HEXMODIFYASEN	enType { HEXMODIFYASEN::AS_MODIFY }; //Modification type.
-		DWORD			dwFillDataSize { };		//Size of pData if enType==AS_FILL.
-		bool			fWhole { true };		//Is a whole byte or just a part of it to be modified.
-		bool			fHighPart { true };		//Shows whether High or Low part of byte should be modified (If fWhole is false).
-		bool			fMoveNext { true };		//Should cursor be moved to the next byte.
-	};
-
-	/********************************************************************************************
-	* HEXSEARCHSTRUCT - used for search routines.												*
-	********************************************************************************************/
-	struct HEXSEARCHSTRUCT
-	{
-		std::wstring	wstrSearch { };			//String search for.
-		HEXSEARCHTYPEEN	enSearchType { };		//Hex, Ascii, Unicode, etc...
-		ULONGLONG		ullStartAt { };			//An offset, search should start at.
-		int				iDirection { };			//Search direction: 1 = Forward, -1 = Backward.
-		int				iWrap { };				//Wrap direction: -1 = Beginning, 1 = End.
-		bool			fWrap { false };		//Was search wrapped?
-		bool			fSecondMatch { false }; //First or subsequent match. 
-		bool			fFound { false };		//Found or not.
-		bool			fCount { true };		//Do we count matches or just print "Found".
-	};
-
-	/********************************************************************************************
 	* IHexCtrl - pure abstract base class.														*
 	********************************************************************************************/
 	class IHexCtrl : public CWnd
@@ -176,7 +147,6 @@ namespace HEXCTRL
 		virtual long GetFontSize() = 0;						 //Gets the control's font size.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;//Sets all the colors for the control.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;		 //Sets the control's current capacity.
-		virtual void Search(HEXSEARCHSTRUCT& hss) = 0;		 //Search through currently set data.
 	};
 	using IHexCtrlPtr = std::shared_ptr<IHexCtrl>;
 

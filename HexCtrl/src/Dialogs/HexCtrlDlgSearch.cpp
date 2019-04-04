@@ -26,7 +26,7 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_COMMAND_RANGE(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE, &CHexDlgSearch::OnRadioBnRange)
 END_MESSAGE_MAP()
 
-BOOL CHexDlgSearch::Create(UINT nIDTemplate, IHexCtrl* pHexCtrl)
+BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 {
 	m_pHexCtrl = pHexCtrl;
 
@@ -101,13 +101,13 @@ void CHexDlgSearch::OnButtonSearchF()
 	switch (GetCheckedRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE))
 	{
 	case IDC_HEXCTRL_SEARCH_RADIO_HEX:
-		m_stSearch.enSearchType = HEXSEARCHTYPEEN::SEARCH_HEX;
+		m_stSearch.enSearchType = INTERNAL::ENSEARCHTYPE::SEARCH_HEX;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_ASCII:
-		m_stSearch.enSearchType = HEXSEARCHTYPEEN::SEARCH_ASCII;
+		m_stSearch.enSearchType = INTERNAL::ENSEARCHTYPE::SEARCH_ASCII;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_UNICODE:
-		m_stSearch.enSearchType = HEXSEARCHTYPEEN::SEARCH_UNICODE;
+		m_stSearch.enSearchType = INTERNAL::ENSEARCHTYPE::SEARCH_UNICODE;
 		break;
 	}
 	m_stSearch.iDirection = 1;
@@ -132,13 +132,13 @@ void CHexDlgSearch::OnButtonSearchB()
 	switch (GetCheckedRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE))
 	{
 	case IDC_HEXCTRL_SEARCH_RADIO_HEX:
-		m_stSearch.enSearchType = HEXSEARCHTYPEEN::SEARCH_HEX;
+		m_stSearch.enSearchType = INTERNAL::ENSEARCHTYPE::SEARCH_HEX;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_ASCII:
-		m_stSearch.enSearchType = HEXSEARCHTYPEEN::SEARCH_ASCII;
+		m_stSearch.enSearchType = INTERNAL::ENSEARCHTYPE::SEARCH_ASCII;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_UNICODE:
-		m_stSearch.enSearchType = HEXSEARCHTYPEEN::SEARCH_UNICODE;
+		m_stSearch.enSearchType = INTERNAL::ENSEARCHTYPE::SEARCH_UNICODE;
 		break;
 	}
 	m_stSearch.iDirection = -1;
@@ -208,7 +208,7 @@ void CHexDlgSearch::ClearAll()
 	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)->SetWindowTextW(L"");
 }
 
-IHexCtrl* CHexDlgSearch::GetHexCtrl()
+CHexCtrl* CHexDlgSearch::GetHexCtrl()
 {
 	return m_pHexCtrl;
 }

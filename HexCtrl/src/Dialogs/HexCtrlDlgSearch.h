@@ -11,7 +11,7 @@
 #pragma once
 #include <afxcontrolbars.h>  //Standard MFC's controls header.
 #include <string>
-#include "../../IHexCtrl.h"
+#include "../HexCtrl.h"
 #include "../../res/HexCtrlRes.h"
 
 namespace HEXCTRL {
@@ -23,7 +23,7 @@ namespace HEXCTRL {
 	public:
 		explicit CHexDlgSearch(CWnd* m_pHexCtrl = nullptr) {}
 		virtual ~CHexDlgSearch() {}
-		BOOL Create(UINT nIDTemplate, IHexCtrl* pHexCtrl);
+		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 protected:
 		virtual void DoDataExchange(CDataExchange* pDX);
 		virtual BOOL OnInitDialog();
@@ -36,11 +36,11 @@ protected:
 		void OnRadioBnRange(UINT nID);
 		void SearchCallback();
 		void ClearAll();
-		IHexCtrl* GetHexCtrl();
+		CHexCtrl* GetHexCtrl();
 		DECLARE_MESSAGE_MAP()
 	private:
-		IHexCtrl* m_pHexCtrl { };
-		HEXSEARCHSTRUCT m_stSearch { };
+		CHexCtrl* m_pHexCtrl { };
+		INTERNAL::SEARCHSTRUCT m_stSearch { };
 		DWORD m_dwOccurrences { };
 		int m_iRadioCurrent { };
 		COLORREF m_clrSearchFailed { RGB(200, 0, 0) };

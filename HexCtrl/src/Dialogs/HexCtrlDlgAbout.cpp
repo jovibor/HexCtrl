@@ -16,7 +16,6 @@ using namespace HEXCTRL;
 namespace HEXCTRL {
 	namespace INTERNAL {
 		constexpr auto WSTR_HEXCTRL_VERSION = L"Hex Control for MFC, v2.2.10";
-		constexpr auto WSTR_URL_GITHUB = L"https://github.com/jovibor/HexCtrl";
 	};
 }
 
@@ -34,64 +33,7 @@ BOOL CHexDlgAbout::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	//To prevent cursor from blinking
-	SetClassLongPtrW(m_hWnd, GCLP_HCURSOR, 0);
-
-	m_fontDefault.CreateStockObject(DEFAULT_GUI_FONT);
-	LOGFONTW lf;
-	m_fontDefault.GetLogFont(&lf);
-	lf.lfUnderline = TRUE;
-	m_fontUnderline.CreateFontIndirectW(&lf);
-
-	m_stBrushDefault.CreateSolidBrush(m_clrMenu);
-
-	m_curHand = LoadCursorW(nullptr, IDC_HAND);
-	m_curArrow = LoadCursorW(nullptr, IDC_ARROW);
-
 	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(INTERNAL::WSTR_HEXCTRL_VERSION);
-	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_LINKGITHUB)->SetWindowTextW(INTERNAL::WSTR_URL_GITHUB);
 
 	return TRUE;
-}
-
-void CHexDlgAbout::OnMouseMove(UINT nFlags, CPoint point)
-{
-	CWnd* pWnd = ChildWindowFromPoint(point);
-	if (!pWnd)
-		return;
-
-	if (m_fGithubLink == (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_ABOUT_STATIC_LINKGITHUB))
-	{
-		m_fGithubLink = !m_fGithubLink;
-		GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_LINKGITHUB)->RedrawWindow();
-		SetCursor(m_fGithubLink ? m_curArrow : m_curHand);
-	}
-
-	CDialogEx::OnMouseMove(nFlags, point);
-}
-
-void CHexDlgAbout::OnLButtonDown(UINT nFlags, CPoint point)
-{
-	CWnd* pWnd = ChildWindowFromPoint(point);
-
-	if (!pWnd)
-		return;
-
-	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_ABOUT_STATIC_LINKGITHUB)
-		ShellExecute(nullptr, L"open", INTERNAL::WSTR_URL_GITHUB, nullptr, nullptr, NULL);
-
-	CDialogEx::OnLButtonDown(nFlags, point);
-}
-
-HBRUSH CHexDlgAbout::OnCtlColor(CDC * pDC, CWnd* pWnd, UINT nCtlColor)
-{
-	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_ABOUT_STATIC_LINKGITHUB)
-	{
-		pDC->SetBkColor(m_clrMenu);
-		pDC->SetTextColor(RGB(0, 0, 210));
-		pDC->SelectObject(m_fGithubLink ? &m_fontDefault : &m_fontUnderline);
-		return m_stBrushDefault;
-	}
-
-	return CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
 }

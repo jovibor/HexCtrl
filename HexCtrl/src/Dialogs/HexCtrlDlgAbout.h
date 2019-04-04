@@ -23,17 +23,6 @@ namespace HEXCTRL {
 		virtual ~CHexDlgAbout() {}
 	protected:
 		virtual BOOL OnInitDialog() override;
-		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		DECLARE_MESSAGE_MAP()
-	private:
-		bool m_fGithubLink { true };
-		HCURSOR m_curHand { };
-		HCURSOR m_curArrow { };
-		CFont m_fontDefault;
-		CFont m_fontUnderline;
-		CBrush m_stBrushDefault;
-		COLORREF m_clrMenu { GetSysColor(COLOR_MENU) };
 	};
 }
