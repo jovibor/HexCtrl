@@ -8,7 +8,7 @@
 * with numbers in full 64-bit range.													*
 ****************************************************************************************/
 #include "stdafx.h"
-#include "ScrollEx.h"
+#include "CScrollEx.h"
 #include "../res/HexCtrlRes.h"
 #include <cmath>
 
@@ -100,7 +100,7 @@ void CScrollEx::SetScrollSizes(ULONGLONG ullScrolline, ULONGLONG ullScrollPage, 
 	m_ullScrollSizeMax = ullScrollSizeMax;
 
 	CWnd* pWnd = GetParent();
-	if (pWnd)
+	if (pWnd) //To repaint NC area.
 		pWnd->SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 }
 
@@ -175,7 +175,6 @@ void CScrollEx::ScrollPageDown()
 	else
 		ullNew = ullCur + m_ullScrollPage;
 	SetScrollPos(ullNew);
-
 }
 
 void CScrollEx::ScrollPageLeft()

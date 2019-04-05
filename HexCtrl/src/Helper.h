@@ -8,6 +8,7 @@
 * These are some helper functions for HexCtrl.											*
 ****************************************************************************************/
 #pragma once
+#include <afxwin.h>
 
 namespace HEXCTRL {
 	//Converts dwSize bytes of ull to WCHAR string.

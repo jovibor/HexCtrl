@@ -10,8 +10,7 @@
 * 3. Call myHex.SetData method to set the data and its size to display as hex.	        *
 ****************************************************************************************/
 #pragma once
-#include <memory>	//std::shared_ptr and related
-#include <string>	//std::wstring and related.
+#include <memory>	//std::shared_ptr and related.
 #include <afxwin.h>	//MFC core and standard components.
 
 namespace HEXCTRL
@@ -60,16 +59,16 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXCOLORSTRUCT
 	{
-		COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };		//Hex chunks color.
+		COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };		//Hex chunks text color.
 		COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };	//Ascii text color.
 		COLORREF clrTextSelected { GetSysColor(COLOR_WINDOWTEXT) }; //Selected text color.
-		COLORREF clrTextCaption { RGB(0, 0, 180) };					//Caption color
+		COLORREF clrTextCaption { RGB(0, 0, 180) };					//Caption text color
 		COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };	//Text color of the bottom "Info" rect.
 		COLORREF clrTextCursor { RGB(255, 255, 255) };				//Cursor text color.
 		COLORREF clrBk { GetSysColor(COLOR_WINDOW) };				//Background color.
 		COLORREF clrBkSelected { RGB(200, 200, 255) };				//Background color of the selected Hex/Ascii.
 		COLORREF clrBkInfoRect { RGB(250, 250, 250) };				//Background color of the bottom "Info" rect.
-		COLORREF clrBkCursor { RGB(0, 0, 250) };					//Cursor background color.
+		COLORREF clrBkCursor { RGB(0, 0, 250) };					//Cursor's background color.
 	};
 	using PHEXCOLORSTRUCT = HEXCOLORSTRUCT *;
 
@@ -92,7 +91,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXDATAMODEEN - Enum of the working data mode, used in HEXDATASTRUCT, in SetData.			*
 	* HEXNORMAL: Standard data mode.															*
-	* HEXMSG: Message data mode. Data is received through WM_NOTIFY messages to handler window	*
+	* HEXMSG: Message data mode. Data is handled through WM_NOTIFY messages, in handler window.	*
 	* HEXVIRTUAL: Data is handled in IHexVirtual derived class.									*
 	********************************************************************************************/
 	enum class HEXDATAMODEEN : DWORD
@@ -116,7 +115,7 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* HEXNOTIFYSTRUCT - used in notifications routines.											*
+	* HEXNOTIFYSTRUCT - used in notifications routine.											*
 	********************************************************************************************/
 	struct HEXNOTIFYSTRUCT
 	{
@@ -138,14 +137,14 @@ namespace HEXCTRL
 		virtual bool CreateDialogCtrl() = 0;				 //Сreates custom dialog control.
 		virtual bool IsCreated() = 0;						 //Shows whether control is created or not.
 		virtual void SetData(const HEXDATASTRUCT& hds) = 0;  //Main method for setting data to display (and edit).	
-		virtual bool IsDataSet() = 0;						 //Shows whether a data was set to control or not.
+		virtual bool IsDataSet() = 0;						 //Shows whether a data was set to the control or not.
 		virtual void ClearData() = 0;						 //Clears all data from HexCtrl's view (not touching data itself).
 		virtual void EditEnable(bool fEnable) = 0;			 //Enable or disable edit mode.
 		virtual void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1) = 0; //Shows (selects) given offset.
 		virtual void SetFont(const LOGFONT* pLogFontNew) = 0;//Sets the control's font.
 		virtual void SetFontSize(UINT uiSize) = 0;			 //Sets the control's font size.
 		virtual long GetFontSize() = 0;						 //Gets the control's font size.
-		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;//Sets all the colors for the control.
+		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;//Sets all the control's colors.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;		 //Sets the control's current capacity.
 	};
 	using IHexCtrlPtr = std::shared_ptr<IHexCtrl>;

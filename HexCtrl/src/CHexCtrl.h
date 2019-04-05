@@ -9,17 +9,18 @@
 * 3. Call myHex.SetData method to set the data and its size to display as hex.	        *
 ****************************************************************************************/
 #pragma once
-#include "../IHexCtrl.h"
+#include "../HexCtrl.h"
 #include <memory>			//std::unique_ptr and related.
 #include <unordered_map>	//std::unordered_map and related.
 #include <deque>			//std::deque and related.
+#include <string>			//std::wstring and related.
 
 namespace HEXCTRL {
-	/************************************************
-	* Forward declarations.							*
-	************************************************/
 	namespace INTERNAL
 	{
+		/************************************************
+		* Forward declarations.							*
+		************************************************/
 		struct UNDOSTRUCT;
 		enum class ENCLIPBOARD : DWORD;
 		enum class ENSHOWAS : DWORD;
@@ -168,7 +169,7 @@ namespace HEXCTRL {
 		std::unordered_map<unsigned, std::wstring> m_umapCapacityWstr; //"Capacity" letters for fast lookup.
 		std::wstring m_wstrBottomText { };  //Info text (bottom rect).
 		const std::wstring m_wstrErrVirtual { L"This function isn't supported in Virtual mode!" };
-		bool m_fLMousePressed { false };
+		bool m_fLMousePressed { false };	//Whether left mouse button pressed.
 		DWORD m_dwOffsetDigits { 8 };		//Amount of digits in "Offset", depends on data size set in SetData.
 		ULONGLONG m_ullCursorPos { };		//Current cursor position.
 		bool m_fCursorHigh { true };		//Cursor's High or Low bits position (first or last digit in hex chunk).

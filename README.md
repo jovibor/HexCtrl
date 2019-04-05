@@ -32,7 +32,7 @@ of your existing **MFC** application. It was build and tested in Visual Studio 2
 The usage is quite simple:
 1. Copy `HexCtrl` folder into your project folder.
 2. Add all files from `HexCtrl` folder into your project.
-3. Add `#include "HexCtrl/IHexCtrl.h"` where you suppose to use the control.
+3. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the control.
 4. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
 5. Call `myHex->Create` method to create control instance.
 6. Call `myHex->SetData` method to set the actual data to display as hex.

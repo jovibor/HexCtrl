@@ -11,10 +11,10 @@
 #include "stdafx.h"
 #include "strsafe.h"
 #include "../res/HexCtrlRes.h" //Icons, for menu, etc...
-#include "Dialogs/HexCtrlDlgAbout.h"
-#include "Dialogs/HexCtrlDlgSearch.h"
-#include "HexCtrl.h"
-#include "ScrollEx.h"
+#include "Dialogs/CHexDlgAbout.h"
+#include "Dialogs/CHexDlgSearch.h"
+#include "CHexCtrl.h"
+#include "CScrollEx.h"
 #include "Helper.h"
 #pragma comment(lib, "Dwmapi.lib")
 

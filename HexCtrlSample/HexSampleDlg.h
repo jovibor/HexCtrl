@@ -1,5 +1,5 @@
 #pragma once
-#include "../HexCtrl/IHexCtrl.h"
+#include "../HexCtrl/HexCtrl.h"
 
 using namespace HEXCTRL;
 

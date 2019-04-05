@@ -9,7 +9,7 @@
 * 3. Call myHex.SetData method to set the data and its size to display as hex.	        *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "HexCtrlDlgAbout.h"
+#include "CHexDlgAbout.h"
 
 using namespace HEXCTRL;
 

@@ -9,7 +9,7 @@
 * 3. Call myHex.SetData method to set the data and its size to display as hex.	        *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "HexCtrlDlgSearch.h"
+#include "CHexDlgSearch.h"
 
 using namespace HEXCTRL;
 
@@ -180,7 +180,8 @@ void CHexDlgSearch::OnClose()
 
 HBRUSH CHexDlgSearch::OnCtlColor(CDC * pDC, CWnd * pWnd, UINT nCtlColor)
 {
-	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM) {
+	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)
+	{
 		pDC->SetBkColor(m_clrMenu);
 		pDC->SetTextColor(m_stSearch.fFound ? m_clrSearchFound : m_clrSearchFailed);
 		return m_stBrushDefault;

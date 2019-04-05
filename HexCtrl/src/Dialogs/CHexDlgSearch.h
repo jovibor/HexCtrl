@@ -10,8 +10,7 @@
 ****************************************************************************************/
 #pragma once
 #include <afxcontrolbars.h>  //Standard MFC's controls header.
-#include <string>
-#include "../HexCtrl.h"
+#include "../CHexCtrl.h"
 #include "../../res/HexCtrlRes.h"
 
 namespace HEXCTRL {
@@ -21,10 +20,10 @@ namespace HEXCTRL {
 	class CHexDlgSearch : public CDialogEx
 	{
 	public:
-		explicit CHexDlgSearch(CWnd* m_pHexCtrl = nullptr) {}
+		explicit CHexDlgSearch() : CDialogEx(IDD_HEXCTRL_SEARCH) {}
 		virtual ~CHexDlgSearch() {}
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
-protected:
+	protected:
 		virtual void DoDataExchange(CDataExchange* pDX);
 		virtual BOOL OnInitDialog();
 		afx_msg void OnButtonSearchF();
