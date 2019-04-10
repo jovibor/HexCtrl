@@ -23,6 +23,8 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_WM_CTLCOLOR()
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BUTTON_SEARCH_F, &CHexDlgSearch::OnButtonSearchF)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BUTTON_SEARCH_B, &CHexDlgSearch::OnButtonSearchB)
+	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE, &CHexDlgSearch::OnButtonReplace)
+	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE_ALL, &CHexDlgSearch::OnButtonReplaceAll)
 	ON_COMMAND_RANGE(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE, &CHexDlgSearch::OnRadioBnRange)
 END_MESSAGE_MAP()
 
@@ -50,100 +52,127 @@ void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 
 void CHexDlgSearch::SearchCallback()
 {
-	WCHAR wstrSearch[128];
+	std::wstring wstrInfo(128, 0);
 	if (m_stSearch.fFound)
 	{
-		if (m_stSearch.fCount)
+		if (m_stSearch.fReplace && m_stSearch.fAll)
 		{
-			if (!m_stSearch.fWrap)
-			{
-				if (m_stSearch.iDirection == 1)
-					m_dwOccurrences++;
-				else if (m_stSearch.iDirection == -1)
-					m_dwOccurrences--;
-			}
-			else
-				m_dwOccurrences = 1;
-
-			swprintf_s(wstrSearch, 127, L"Found occurrence \u2116 %lu from the beginning.", m_dwOccurrences);
+			swprintf_s(wstrInfo.data(), 127, L"%lu replaced.", m_stSearch.dwReplaced);
+			m_stSearch.dwReplaced = 0;
 		}
+		else if (m_stSearch.fDoCount)
+			swprintf_s(wstrInfo.data(), 127, L"Found occurrence \u2116 %lu from the beginning.", m_stSearch.dwCount);
 		else
-			swprintf_s(wstrSearch, 127, L"Search found occurrence.");
-
-		m_stSearch.fSecondMatch = true;
-		GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)->SetWindowTextW(wstrSearch);
+			wstrInfo = L"Search found occurrence.";
 	}
 	else
 	{
 		ClearAll();
-
 		if (m_stSearch.iWrap == 1)
-			swprintf_s(wstrSearch, 127, L"Didn't find any occurrence. The end is reached.");
+			wstrInfo = L"Didn't find any occurrence, the end is reached.";
 		else
-			swprintf_s(wstrSearch, 127, L"Didn't find any occurrence. The begining is reached.");
-
-		GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)->SetWindowTextW(wstrSearch);
+			wstrInfo = L"Didn't find any occurrence, the begining is reached.";
 	}
+
+	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)->SetWindowTextW(wstrInfo.data());
 }
 
 void CHexDlgSearch::OnButtonSearchF()
 {
-	CStringW wstrSearchText;
-	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDITSEARCH, wstrSearchText);
-	if (wstrSearchText.IsEmpty())
+	CStringW wstrTextSearch;
+	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDIT_SEARCH, wstrTextSearch);
+	if (wstrTextSearch.IsEmpty())
 		return;
-	if (wstrSearchText.Compare(m_stSearch.wstrSearch.data()) != 0)
+	if (wstrTextSearch.Compare(m_stSearch.wstrSearch.data()) != 0)
 	{
 		ClearAll();
-		m_stSearch.wstrSearch = wstrSearchText;
+		m_stSearch.wstrSearch = wstrTextSearch;
 	}
 
-	switch (GetCheckedRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE))
-	{
-	case IDC_HEXCTRL_SEARCH_RADIO_HEX:
-		m_stSearch.enSearchType = INTERNAL::ENSEARCHTYPE::SEARCH_HEX;
-		break;
-	case IDC_HEXCTRL_SEARCH_RADIO_ASCII:
-		m_stSearch.enSearchType = INTERNAL::ENSEARCHTYPE::SEARCH_ASCII;
-		break;
-	case IDC_HEXCTRL_SEARCH_RADIO_UNICODE:
-		m_stSearch.enSearchType = INTERNAL::ENSEARCHTYPE::SEARCH_UNICODE;
-		break;
-	}
 	m_stSearch.iDirection = 1;
+	m_stSearch.fReplace = false;
+	m_stSearch.fAll = false;
+	m_stSearch.enSearchType = GetSearchType();
 
-	GetDlgItem(IDC_HEXCTRL_SEARCH_EDITSEARCH)->SetFocus();
+	GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
 	GetHexCtrl()->Search(m_stSearch);
 	SearchCallback();
 }
 
 void CHexDlgSearch::OnButtonSearchB()
 {
-	CString strSearchText;
-	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDITSEARCH, strSearchText);
-	if (strSearchText.IsEmpty())
+	CString strTextSearch;
+	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDIT_SEARCH, strTextSearch);
+	if (strTextSearch.IsEmpty())
 		return;
-	if (strSearchText.Compare(m_stSearch.wstrSearch.data()) != 0)
+	if (strTextSearch.Compare(m_stSearch.wstrSearch.data()) != 0)
 	{
 		ClearAll();
-		m_stSearch.wstrSearch = strSearchText;
+		m_stSearch.wstrSearch = strTextSearch;
 	}
 
-	switch (GetCheckedRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE))
-	{
-	case IDC_HEXCTRL_SEARCH_RADIO_HEX:
-		m_stSearch.enSearchType = INTERNAL::ENSEARCHTYPE::SEARCH_HEX;
-		break;
-	case IDC_HEXCTRL_SEARCH_RADIO_ASCII:
-		m_stSearch.enSearchType = INTERNAL::ENSEARCHTYPE::SEARCH_ASCII;
-		break;
-	case IDC_HEXCTRL_SEARCH_RADIO_UNICODE:
-		m_stSearch.enSearchType = INTERNAL::ENSEARCHTYPE::SEARCH_UNICODE;
-		break;
-	}
 	m_stSearch.iDirection = -1;
+	m_stSearch.fReplace = false;
+	m_stSearch.fAll = false;
+	m_stSearch.enSearchType = GetSearchType();
 
-	GetDlgItem(IDC_HEXCTRL_SEARCH_EDITSEARCH)->SetFocus();
+	GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
+	GetHexCtrl()->Search(m_stSearch);
+	SearchCallback();
+}
+
+void CHexDlgSearch::OnButtonReplace()
+{
+	CStringW wstrTextSearch;
+	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDIT_SEARCH, wstrTextSearch);
+	if (wstrTextSearch.IsEmpty())
+		return;
+	if (wstrTextSearch.Compare(m_stSearch.wstrSearch.data()) != 0)
+	{
+		ClearAll();
+		m_stSearch.wstrSearch = wstrTextSearch;
+	}
+
+	CStringW wstrTextReplace;
+	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDIT_REPLACE, wstrTextReplace);
+	if (wstrTextReplace.IsEmpty())
+		return;
+
+	m_stSearch.wstrReplace = wstrTextReplace;
+	m_stSearch.iDirection = 1;
+	m_stSearch.fReplace = true;
+	m_stSearch.fAll = false;
+	m_stSearch.enSearchType = GetSearchType();
+
+	GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
+	GetHexCtrl()->Search(m_stSearch);
+	SearchCallback();
+}
+
+void CHexDlgSearch::OnButtonReplaceAll()
+{
+	CStringW wstrTextSearch;
+	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDIT_SEARCH, wstrTextSearch);
+	if (wstrTextSearch.IsEmpty())
+		return;
+	if (wstrTextSearch.Compare(m_stSearch.wstrSearch.data()) != 0)
+	{
+		ClearAll();
+		m_stSearch.wstrSearch = wstrTextSearch;
+	}
+
+	CStringW wstrTextReplace;
+	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDIT_REPLACE, wstrTextReplace);
+	if (wstrTextReplace.IsEmpty())
+		return;
+
+	m_stSearch.fReplace = true;
+	m_stSearch.fAll = true;
+	m_stSearch.wstrReplace = wstrTextReplace;
+	m_stSearch.iDirection = 1;
+	m_stSearch.enSearchType = GetSearchType();
+
+	GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
 	GetHexCtrl()->Search(m_stSearch);
 	SearchCallback();
 }
@@ -155,7 +184,7 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)
 	else
 	{
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
-		GetDlgItem(IDC_HEXCTRL_SEARCH_EDITSEARCH)->SetFocus();
+		GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
@@ -172,10 +201,12 @@ BOOL CHexDlgSearch::PreTranslateMessage(MSG * pMsg)
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
 
-void CHexDlgSearch::OnClose()
+void CHexDlgSearch::OnCancel()
 {
 	ClearAll();
-	CDialogEx::OnClose();
+	GetHexCtrl()->SetFocus();
+
+	CDialogEx::OnCancel();
 }
 
 HBRUSH CHexDlgSearch::OnCtlColor(CDC * pDC, CWnd * pWnd, UINT nCtlColor)
@@ -199,12 +230,7 @@ void CHexDlgSearch::OnRadioBnRange(UINT nID)
 
 void CHexDlgSearch::ClearAll()
 {
-	m_dwOccurrences = 0;
-	m_stSearch.ullStartAt = 0;
-	m_stSearch.fSecondMatch = false;
-	m_stSearch.wstrSearch = { };
-	m_stSearch.fWrap = false;
-	m_stSearch.fCount = true;
+	m_stSearch = { };
 
 	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)->SetWindowTextW(L"");
 }
@@ -212,4 +238,17 @@ void CHexDlgSearch::ClearAll()
 CHexCtrl* CHexDlgSearch::GetHexCtrl()
 {
 	return m_pHexCtrl;
+}
+
+INTERNAL::ENSEARCHTYPE CHexDlgSearch::GetSearchType()
+{
+	switch (GetCheckedRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE))
+	{
+	case IDC_HEXCTRL_SEARCH_RADIO_HEX:
+		return INTERNAL::ENSEARCHTYPE::SEARCH_HEX;
+	case IDC_HEXCTRL_SEARCH_RADIO_ASCII:
+		return INTERNAL::ENSEARCHTYPE::SEARCH_ASCII;
+	case IDC_HEXCTRL_SEARCH_RADIO_UNICODE:
+		return INTERNAL::ENSEARCHTYPE::SEARCH_UNICODE;
+	}
 }

@@ -28,19 +28,21 @@ namespace HEXCTRL {
 		virtual BOOL OnInitDialog();
 		afx_msg void OnButtonSearchF();
 		afx_msg void OnButtonSearchB();
+		afx_msg void OnButtonReplace();
+		afx_msg void OnButtonReplaceAll();
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		afx_msg void OnClose();
+		afx_msg void OnCancel();
 		virtual BOOL PreTranslateMessage(MSG* pMsg);
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		void OnRadioBnRange(UINT nID);
 		void SearchCallback();
 		void ClearAll();
 		CHexCtrl* GetHexCtrl();
+		INTERNAL::ENSEARCHTYPE GetSearchType(); //Gets selected search type.
 		DECLARE_MESSAGE_MAP()
 	private:
 		CHexCtrl* m_pHexCtrl { };
 		INTERNAL::SEARCHSTRUCT m_stSearch { };
-		DWORD m_dwOccurrences { };
 		int m_iRadioCurrent { };
 		COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
 		COLORREF m_clrSearchFound { RGB(0, 200, 0) };

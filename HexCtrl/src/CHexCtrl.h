@@ -34,19 +34,24 @@ namespace HEXCTRL {
 		};
 
 		/********************************************************************************************
-		* SEARCHSTRUCT - used for search routines.														*
+		* SEARCHSTRUCT - used for search routines.													*
 		********************************************************************************************/
 		struct SEARCHSTRUCT
 		{
 			std::wstring	wstrSearch { };			//String search for.
+			std::wstring	wstrReplace { };		//Replace with, string.
 			ENSEARCHTYPE	enSearchType { };		//Hex, Ascii, Unicode, etc...
-			ULONGLONG		ullStartAt { };			//An offset, search should start at.
+			ULONGLONG		ullIndex { };			//An offset search should start at.
+			DWORD			dwCount { };			//How many, or what account.
+			DWORD			dwReplaced { };			//Replaced amount;
 			int				iDirection { };			//Search direction: 1 = Forward, -1 = Backward.
 			int				iWrap { };				//Wrap direction: -1 = Beginning, 1 = End.
 			bool			fWrap { false };		//Was search wrapped?
 			bool			fSecondMatch { false }; //First or subsequent match. 
 			bool			fFound { false };		//Found or not.
-			bool			fCount { true };		//Do we count matches or just print "Found".
+			bool			fDoCount { true };		//Do we count matches or just print "Found".
+			bool			fReplace { false };		//Find or Find and Replace with...?
+			bool			fAll { false };			//Find/Replace one by one or all?
 		};
 	}
 	namespace SCROLLEX { class CScrollEx; }
@@ -125,6 +130,7 @@ namespace HEXCTRL {
 		void Redo();
 		void SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize); //Takes currently modifiable data snapshot.
 		[[nodiscard]] bool IsCurTextArea(); //Whether click was made in Text or Hex area.
+		bool Replace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplaced, bool fRedraw = true);
 	private:
 		bool m_fCreated { false };			//Is control created or not yet.
 		bool m_fDataSet { false };			//Is data set or not.

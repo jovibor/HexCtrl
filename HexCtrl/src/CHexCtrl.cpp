@@ -107,7 +107,7 @@ CHexCtrl::CHexCtrl()
 
 	//Main menu.
 	m_menuMain.CreatePopupMenu();
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_MAIN_SEARCH, L"Search...	Ctrl+F");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_MAIN_SEARCH, L"Search and Replace...	Ctrl+F/Ctrl+H");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
 	m_menuMain.AppendMenuW(MF_POPUP, (DWORD_PTR)m_menuShowAs.m_hMenu, L"Show data as...");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
@@ -658,6 +658,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		switch (nChar)
 		{
 		case 'F':
+		case 'H':
 			m_pDlgSearch->ShowWindow(SW_SHOW);
 			break;
 		case 'C':
@@ -1041,7 +1042,7 @@ void CHexCtrl::OnPaint()
 
 		//Left column offset printing (00000001...0000FFFF...).
 		wchar_t pwszOffset[16];
-		ToWchars(iterLines * m_dwCapacity, pwszOffset, m_dwOffsetDigits / 2);
+		UllToWchars(iterLines * m_dwCapacity, pwszOffset, m_dwOffsetDigits / 2);
 		rDC.SetTextColor(m_stColor.clrTextCaption);
 		ExtTextOutW(rDC.m_hDC, m_sizeLetter.cx - iScrollH, m_iHeightTopRect + (m_sizeLetter.cy * iLine),
 			NULL, nullptr, pwszOffset, m_dwOffsetDigits, nullptr);
@@ -1325,8 +1326,8 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms)
 		if (m_pHexVirtual)
 			m_pHexVirtual->ModifyData(hms);
 	}
-
-	RedrawWindow();
+	if (hms.fRedraw)
+		RedrawWindow();
 }
 
 CWnd* CHexCtrl::GetMsgWindow()
@@ -1610,7 +1611,7 @@ void CHexCtrl::ClipboardPaste(INTERNAL::ENCLIPBOARD enType)
 			}
 
 			unsigned long ulNumber;
-			if (!ToUl(chToUL, ulNumber))
+			if (!CharsToUl(chToUL, ulNumber))
 				return;
 
 			strData += (unsigned char)ulNumber;
@@ -1839,210 +1840,320 @@ bool CHexCtrl::IsCurTextArea()
 	return m_fCursorTextArea;
 }
 
+bool CHexCtrl::Replace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplaced, bool fRedraw)
+{
+	HEXMODIFYSTRUCT hms;
+	hms.enType = HEXMODIFYASEN::AS_FILL;
+	hms.ullModifySize = nSizeData;
+	hms.dwFillDataSize = nSizeData;
+	hms.ullIndex = ullIndex;
+	hms.pData = pData;
+	hms.fRedraw = fRedraw;
+	ModifyData(hms);
+
+	return true;
+}
+
 void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 {
 	rSearch.fFound = false;
-	ULONGLONG ullStartAt = rSearch.ullStartAt;
+	ULONGLONG ullIndex = rSearch.ullIndex;
 	ULONGLONG ullSizeBytes;
 	ULONGLONG ullUntil;
+	ULONGLONG ullSizeBytesReplaced;
 	std::string strSearch;
+	std::string strReplace;
+	std::string strSearchAscii;
+	std::string strReplaceAscii;
 
-	if (rSearch.wstrSearch.empty() || m_ullDataSize == 0 || rSearch.ullStartAt > (m_ullDataSize - 1))
+	if (rSearch.wstrSearch.empty() || m_ullDataSize == 0 || rSearch.ullIndex > (m_ullDataSize - 1))
 		return;
 
-	int iSizeNeeded = WideCharToMultiByte(CP_UTF8, 0, &rSearch.wstrSearch[0], (int)rSearch.wstrSearch.size(), nullptr, 0, nullptr, nullptr);
-	std::string strSearchAscii(iSizeNeeded, 0);
-	WideCharToMultiByte(CP_UTF8, 0, &rSearch.wstrSearch[0], (int)rSearch.wstrSearch.size(), &strSearchAscii[0], iSizeNeeded, nullptr, nullptr);
+	//Perform convertation only for non Unicode search.
+	if (rSearch.enSearchType == INTERNAL::ENSEARCHTYPE::SEARCH_HEX ||
+		rSearch.enSearchType == INTERNAL::ENSEARCHTYPE::SEARCH_ASCII)
+	{
+		strSearchAscii = WstrToStr(rSearch.wstrSearch);
+		if (rSearch.fReplace)
+			strReplaceAscii = WstrToStr(rSearch.wstrReplace);
+	}
 
 	switch (rSearch.enSearchType)
 	{
 	case INTERNAL::ENSEARCHTYPE::SEARCH_HEX:
 	{
-		DWORD dwIterations = DWORD(strSearchAscii.size() / 2 + strSearchAscii.size() % 2);
-		std::string strToUL; //String to hold currently extracted two letters.
-
-		for (size_t i = 0; i < dwIterations; i++)
+		if (!NumStrToHex(strSearchAscii, strSearch))
 		{
-			if (i + 2 <= strSearchAscii.size())
-				strToUL = strSearchAscii.substr(i * 2, 2);
-			else
-				strToUL = strSearchAscii.substr(i * 2, 1);
-
-			unsigned long ulNumber;
-			if (!ToUl(strToUL.data(), ulNumber))
-			{
-				rSearch.fFound = false;
-				rSearch.iWrap = 1;
-				return;
-			}
-
-			strSearch += (unsigned char)ulNumber;
+			rSearch.iWrap = 1;
+			return;
 		}
+		if (rSearch.fReplace && !NumStrToHex(strReplaceAscii, strReplace))
+			return;
 
 		ullSizeBytes = strSearch.size();
+		ullSizeBytesReplaced = strReplace.size();
 		if (ullSizeBytes > m_ullDataSize)
-			goto End;
+			return;
 
 		break;
 	}
 	case INTERNAL::ENSEARCHTYPE::SEARCH_ASCII:
 	{
-		ullSizeBytes = strSearchAscii.size();
-		if (ullSizeBytes > m_ullDataSize)
-			goto End;
-
 		strSearch = std::move(strSearchAscii);
+		strReplace = std::move(strReplaceAscii);
+
+		ullSizeBytes = strSearch.size();
+		ullSizeBytesReplaced = strReplace.size();
+		if (ullSizeBytes > m_ullDataSize)
+			return;
+
 		break;
 	}
 	case INTERNAL::ENSEARCHTYPE::SEARCH_UNICODE:
 	{
 		ullSizeBytes = rSearch.wstrSearch.length() * sizeof(wchar_t);
+		ullSizeBytesReplaced = rSearch.wstrReplace.length() * sizeof(wchar_t);
 		if (ullSizeBytes > m_ullDataSize)
-			goto End;
+			return;
 
 		break;
 	}
 	}
 
 	///////////////Actual Search:////////////////////////////////////////////
-	switch (rSearch.enSearchType)
+	if (rSearch.fReplace && rSearch.fAll) //Replace All
 	{
-	case INTERNAL::ENSEARCHTYPE::SEARCH_HEX:
-	case INTERNAL::ENSEARCHTYPE::SEARCH_ASCII:
-	{
-		if (rSearch.iDirection == 1)
+		switch (rSearch.enSearchType)
 		{
+		case INTERNAL::ENSEARCHTYPE::SEARCH_HEX:
+		case INTERNAL::ENSEARCHTYPE::SEARCH_ASCII:
 			ullUntil = m_ullDataSize - strSearch.size();
-			ullStartAt = rSearch.fSecondMatch ? rSearch.ullStartAt + 1 : 0;
-
-			for (ULONGLONG i = ullStartAt; i <= ullUntil; i++)
+			for (ULONGLONG i = 0; i <= ullUntil; ++i)
 			{
 				if (memcmp(m_pData + i, strSearch.data(), strSearch.size()) == 0)
-				{
-					rSearch.fFound = true;
-					rSearch.ullStartAt = i;
-					rSearch.fWrap = false;
-					goto End;
-				}
+					if (Replace(i, (PBYTE)strReplace.data(), strReplace.size(), strSearch.size(), false))
+					{
+						i += strReplace.size() - 1;
+						rSearch.fFound = true;
+						rSearch.dwReplaced++;
+					}
 			}
-
-			ullStartAt = 0; //Starting from the beginning.
-			for (ULONGLONG i = ullStartAt; i <= ullUntil; i++)
+			break;
+		case INTERNAL::ENSEARCHTYPE::SEARCH_UNICODE:
+			ullUntil = m_ullDataSize - ullSizeBytes;
+			for (ULONGLONG i = ullIndex; i <= ullUntil; i++)
 			{
-				if (memcmp(m_pData + i, strSearch.data(), strSearch.size()) == 0)
-				{
-					rSearch.fFound = true;
-					rSearch.ullStartAt = i;
-					rSearch.fWrap = true;
-					rSearch.fCount = true;
-					goto End;
-				}
+				if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
+					if (Replace(i, (PBYTE)rSearch.wstrReplace.data(), rSearch.wstrReplace.size() * 2,
+						rSearch.wstrReplace.size() * 2, false))
+					{
+						i += rSearch.wstrReplace.size() * 2 - 1; //To compensate i++ in loop.
+						rSearch.fFound = true;
+						rSearch.dwReplaced++;
+					}
 			}
-			rSearch.iWrap = 1;
+			break;
 		}
-		else if (rSearch.iDirection == -1)
+	}
+	else
+		switch (rSearch.enSearchType)
 		{
-			if (rSearch.fSecondMatch && ullStartAt > 0)
+		case INTERNAL::ENSEARCHTYPE::SEARCH_HEX:
+		case INTERNAL::ENSEARCHTYPE::SEARCH_ASCII:
+			if (rSearch.iDirection == 1)
 			{
-				ullStartAt--;
-				for (int i = (int)ullStartAt; i >= 0; i--)
+				if (rSearch.fReplace && rSearch.fSecondMatch)
+					if (Replace(rSearch.ullIndex, (PBYTE)strReplace.data(), strReplace.size(), strSearch.size()))
+					{
+						rSearch.ullIndex += strReplace.size();
+						rSearch.dwReplaced++;
+					}
+
+				ullUntil = m_ullDataSize - strSearch.size();
+				ullIndex = rSearch.fSecondMatch ? rSearch.ullIndex + 1 : 0;
+				for (ULONGLONG i = ullIndex; i <= ullUntil; i++)
 				{
 					if (memcmp(m_pData + i, strSearch.data(), strSearch.size()) == 0)
 					{
 						rSearch.fFound = true;
-						rSearch.ullStartAt = i;
+						rSearch.fSecondMatch = true;
 						rSearch.fWrap = false;
-						goto End;
+						rSearch.dwCount++;
+						rSearch.ullIndex = i;
+
+						break;
+					}
+				}
+				if (!rSearch.fFound && rSearch.fSecondMatch)
+				{
+					ullIndex = 0; //Starting from the beginning.
+					for (ULONGLONG i = ullIndex; i <= ullUntil; i++)
+					{
+						if (memcmp(m_pData + i, strSearch.data(), strSearch.size()) == 0)
+						{
+							rSearch.fFound = true;
+							rSearch.fSecondMatch = true;
+							rSearch.fWrap = true;
+							rSearch.fDoCount = true;
+							rSearch.dwCount = 1;
+
+							if (rSearch.fReplace)
+							{
+								if (Replace(i, (PBYTE)strReplace.data(), strReplace.size(), strSearch.size()))
+									rSearch.ullIndex = i + strReplace.size();
+								else
+									rSearch.ullIndex = i;
+							}
+							else
+								rSearch.ullIndex = i;
+
+							break;
+						}
+					}
+					rSearch.iWrap = 1;
+				}
+			}
+			else if (rSearch.iDirection == -1)
+			{
+				if (rSearch.fSecondMatch && ullIndex > 0)
+				{
+					ullIndex--;
+					for (int i = (int)ullIndex; i >= 0; i--)
+					{
+						if (memcmp(m_pData + i, strSearch.data(), strSearch.size()) == 0)
+						{
+							rSearch.fFound = true;
+							rSearch.fSecondMatch = true;
+							rSearch.ullIndex = i;
+							rSearch.fWrap = false;
+							rSearch.dwCount--;
+
+							break;
+						}
+					}
+				}
+				if (!rSearch.fFound)
+				{
+					ullIndex = m_ullDataSize - strSearch.size();
+					for (int i = (int)ullIndex; i >= 0; i--)
+					{
+						if (memcmp(m_pData + i, strSearch.data(), strSearch.size()) == 0)
+						{
+							rSearch.fFound = true;
+							rSearch.fSecondMatch = true;
+							rSearch.ullIndex = i;
+							rSearch.fWrap = true;
+							rSearch.iWrap = -1;
+							rSearch.fDoCount = false;
+							rSearch.dwCount = 1;
+
+							break;
+						}
 					}
 				}
 			}
-
-			ullStartAt = m_ullDataSize - strSearch.size();
-			for (int i = (int)ullStartAt; i >= 0; i--)
-			{
-				if (memcmp(m_pData + i, strSearch.data(), strSearch.size()) == 0)
-				{
-					rSearch.fFound = true;
-					rSearch.ullStartAt = i;
-					rSearch.fWrap = true;
-					rSearch.iWrap = -1;
-					rSearch.fCount = false;
-					goto End;
-				}
-			}
-		}
-		break;
-	}
-	case INTERNAL::ENSEARCHTYPE::SEARCH_UNICODE:
-	{
-		if (rSearch.iDirection == 1)
+			break;
+		case INTERNAL::ENSEARCHTYPE::SEARCH_UNICODE:
 		{
-			ullUntil = m_ullDataSize - ullSizeBytes;
-			ullStartAt = rSearch.fSecondMatch ? rSearch.ullStartAt + 1 : 0;
+			if (rSearch.iDirection == 1)
+			{
+				if (rSearch.fReplace && rSearch.fSecondMatch)
+					if (Replace(rSearch.ullIndex, (PBYTE)rSearch.wstrReplace.data(), rSearch.wstrReplace.size() * 2,
+						rSearch.wstrReplace.size() * 2))
+					{
+						rSearch.ullIndex += rSearch.wstrReplace.size() * 2;
+						rSearch.dwReplaced++;
+					}
 
-			for (ULONGLONG i = ullStartAt; i <= ullUntil; i++)
-			{
-				if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
-				{
-					rSearch.fFound = true;
-					rSearch.ullStartAt = i;
-					rSearch.fWrap = false;
-					goto End;
-				}
-			}
-
-			ullStartAt = 0;
-			for (ULONGLONG i = ullStartAt; i <= ullUntil; i++)
-			{
-				if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
-				{
-					rSearch.fFound = true;
-					rSearch.ullStartAt = i;
-					rSearch.iWrap = 1;
-					rSearch.fWrap = true;
-					rSearch.fCount = true;
-					goto End;
-				}
-			}
-		}
-		else if (rSearch.iDirection == -1)
-		{
-			if (rSearch.fSecondMatch && ullStartAt > 0)
-			{
-				ullStartAt--;
-				for (int i = (int)ullStartAt; i >= 0; i--)
+				ullUntil = m_ullDataSize - ullSizeBytes;
+				ullIndex = rSearch.fSecondMatch ? rSearch.ullIndex + 1 : 0;
+				for (ULONGLONG i = ullIndex; i <= ullUntil; i++)
 				{
 					if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
 					{
 						rSearch.fFound = true;
-						rSearch.ullStartAt = i;
+						rSearch.fSecondMatch = true;
+						rSearch.ullIndex = i;
 						rSearch.fWrap = false;
-						goto End;
+						rSearch.dwCount++;
+
+						break;
+					}
+				}
+				if (!rSearch.fFound && rSearch.fSecondMatch)
+				{
+					ullIndex = 0;
+					for (ULONGLONG i = ullIndex; i <= ullUntil; i++)
+					{
+						if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
+						{
+							rSearch.fFound = true;
+							rSearch.fSecondMatch = true;
+							rSearch.ullIndex = i;
+							rSearch.iWrap = 1;
+							rSearch.fWrap = true;
+							rSearch.fDoCount = true;
+							rSearch.dwCount = 1;
+
+							break;
+						}
 					}
 				}
 			}
-
-			ullStartAt = m_ullDataSize - ullSizeBytes;
-			for (int i = (int)ullStartAt; i >= 0; i--)
+			else if (rSearch.iDirection == -1)
 			{
-				if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
+				if (rSearch.fSecondMatch && ullIndex > 0)
 				{
-					rSearch.fFound = true;
-					rSearch.ullStartAt = i;
-					rSearch.fWrap = true;
-					rSearch.iWrap = -1;
-					rSearch.fCount = false;
-					goto End;
+					ullIndex--;
+					for (int i = (int)ullIndex; i >= 0; i--)
+					{
+						if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
+						{
+							rSearch.fFound = true;
+							rSearch.fSecondMatch = true;
+							rSearch.ullIndex = i;
+							rSearch.fWrap = false;
+							rSearch.dwCount--;
+
+							break;
+						}
+					}
+				}
+				if (!rSearch.fFound)
+				{
+					ullIndex = m_ullDataSize - ullSizeBytes;
+					for (int i = (int)ullIndex; i >= 0; i--)
+					{
+						if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
+						{
+							rSearch.fFound = true;
+							rSearch.fSecondMatch = true;
+							rSearch.ullIndex = i;
+							rSearch.fWrap = true;
+							rSearch.iWrap = -1;
+							rSearch.fDoCount = false;
+							rSearch.dwCount = 1;
+
+							break;
+						}
+					}
 				}
 			}
+			break;
 		}
-		break;
-	}
-	}
+		}
 
-End: //Label to get out of nested loops.
 	if (rSearch.fFound)
-		SetSelection(rSearch.ullStartAt, rSearch.ullStartAt, ullSizeBytes, true);
+	{
+		if (rSearch.fReplace && rSearch.fAll)
+			RedrawWindow();
+		else
+		{
+			ULONGLONG ullSelIndex = rSearch.ullIndex;
+			ULONGLONG ullSelSize = rSearch.fReplace ? ullSizeBytesReplaced : ullSizeBytes;
+			SetSelection(ullSelIndex, ullSelIndex, ullSelSize, true);
+		}
+	}
 }
 
 void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight, bool fMouse)

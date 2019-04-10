@@ -35,6 +35,7 @@ namespace HEXCTRL
 		DWORD			dwFillDataSize { };		//Size of pData if enType==AS_FILL.
 		bool			fWhole { true };		//Is a whole byte or just a part of it to be modified.
 		bool			fHighPart { true };		//Shows whether High or Low part of byte should be modified (If fWhole is false).
+		bool			fRedraw { true };		//Redraw view after modification.
 	};
 
 	/********************************************************************************************

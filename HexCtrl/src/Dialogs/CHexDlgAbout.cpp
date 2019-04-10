@@ -15,7 +15,7 @@ using namespace HEXCTRL;
 
 namespace HEXCTRL {
 	namespace INTERNAL {
-		constexpr auto WSTR_HEXCTRL_VERSION = L"Hex Control for MFC, v2.2.10";
+		constexpr auto WSTR_HEXCTRL_VERSION = L"Hex Control for MFC, v2.2.11";
 	};
 }
 
