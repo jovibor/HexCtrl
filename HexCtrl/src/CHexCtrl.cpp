@@ -1865,6 +1865,9 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 	std::string strReplace;
 	std::string strSearchAscii;
 	std::string strReplaceAscii;
+	std::wstring wstrReplaceWarning { L"Replacing string is longer than Find string."
+		"Do you want to overwrite the bytes following search occurrence?\r\n"
+		"Choosing \"No\" will cancel search." };
 
 	if (rSearch.wstrSearch.empty() || m_ullDataSize == 0 || rSearch.ullIndex > (m_ullDataSize - 1))
 		return;
@@ -1875,7 +1878,12 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 	{
 		strSearchAscii = WstrToStr(rSearch.wstrSearch);
 		if (rSearch.fReplace)
+		{
 			strReplaceAscii = WstrToStr(rSearch.wstrReplace);
+			if (strReplaceAscii.size() > strSearchAscii.size())
+				if (IDNO == MessageBoxW(wstrReplaceWarning.data(), L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST))
+					return;
+		}
 	}
 
 	switch (rSearch.enSearchType)

@@ -51,7 +51,7 @@ namespace HEXCTRL {
 			bool			fFound { false };		//Found or not.
 			bool			fDoCount { true };		//Do we count matches or just print "Found".
 			bool			fReplace { false };		//Find or Find and Replace with...?
-			bool			fAll { false };			//Find/Replace one by one or all?
+			bool			fAll { false };			//Find/Replace one by one, or all?
 		};
 	}
 	namespace SCROLLEX { class CScrollEx; }

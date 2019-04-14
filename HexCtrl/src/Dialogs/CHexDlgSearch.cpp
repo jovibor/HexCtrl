@@ -52,12 +52,14 @@ void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 
 void CHexDlgSearch::SearchCallback()
 {
+	SetActiveWindow();
+
 	std::wstring wstrInfo(128, 0);
 	if (m_stSearch.fFound)
 	{
 		if (m_stSearch.fReplace && m_stSearch.fAll)
 		{
-			swprintf_s(wstrInfo.data(), 127, L"%lu replaced.", m_stSearch.dwReplaced);
+			swprintf_s(wstrInfo.data(), 127, L"%lu occurrence(s) replaced.", m_stSearch.dwReplaced);
 			m_stSearch.dwReplaced = 0;
 		}
 		else if (m_stSearch.fDoCount)
