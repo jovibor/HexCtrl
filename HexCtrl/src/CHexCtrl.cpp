@@ -22,11 +22,11 @@ using namespace HEXCTRL;
 
 namespace HEXCTRL {
 	/********************************************
-	* CreateHexCtrl function implementation.	*
+	* CreateRawHexCtrl function implementation.	*
 	********************************************/
-	IHexCtrlPtr CreateHexCtrl()
+	IHexCtrl* CreateRawHexCtrl()
 	{
-		return std::make_shared<CHexCtrl>();
+		return new CHexCtrl();
 	};
 
 	/********************************************
@@ -276,10 +276,10 @@ void CHexCtrl::SetData(const HEXDATASTRUCT & hds)
 	m_ullDataSize = hds.ullDataSize;
 	m_enMode = hds.enMode;
 	m_fMutable = hds.fMutable;
-	m_dwOffsetDigits = hds.ullDataSize <= 0xfffffffful ? 8 :
-		(hds.ullDataSize <= 0xfffffffffful ? 10 :
-		(hds.ullDataSize <= 0xfffffffffffful ? 12 :
-			(hds.ullDataSize <= 0xfffffffffffffful ? 14 : 16)));
+	m_dwOffsetDigits = hds.ullDataSize <= 0xffffffffUL ? 8 :
+		(hds.ullDataSize <= 0xffffffffffUL ? 10 :
+		(hds.ullDataSize <= 0xffffffffffffUL ? 12 :
+			(hds.ullDataSize <= 0xffffffffffffffUL ? 14 : 16)));
 	RecalcAll();
 
 	if (hds.ullSelectionSize)
@@ -388,6 +388,11 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	m_dwCapacity = dwCapacity;
 	m_dwCapacityBlockSize = m_dwCapacity / 2;
 	RecalcAll();
+}
+
+void CHexCtrl::Destroy()
+{
+	delete this;
 }
 
 bool CHexCtrl::RegisterWndClass()
@@ -1399,7 +1404,7 @@ ULONGLONG CHexCtrl::GetTopLine()
 	return m_pstScrollV->GetScrollPos() / m_sizeLetter.cy;
 }
 
-ULONGLONG CHexCtrl::HitTest(LPPOINT pPoint)
+ULONGLONG CHexCtrl::HitTest(const POINT * pPoint)
 {
 	int iY = pPoint->y;
 	int iX = pPoint->x + (int)m_pstScrollH->GetScrollPos(); //To compensate horizontal scroll.
@@ -1539,7 +1544,7 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 		}
 	}
 	break;
-	default:
+	default: //default.
 		break;
 	}
 
@@ -1963,7 +1968,7 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 			break;
 		}
 	}
-	else
+	else //Search or Replace
 		switch (rSearch.enSearchType)
 		{
 		case INTERNAL::ENSEARCHTYPE::SEARCH_HEX:

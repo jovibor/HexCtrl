@@ -78,6 +78,7 @@ namespace HEXCTRL {
 		long GetFontSize()override;						 //Gets the control's font size.
 		void SetColor(const HEXCOLORSTRUCT& clr)override;//Sets all the colors for the control.
 		void SetCapacity(DWORD dwCapacity)override;		 //Sets the control's current capacity.
+		void Destroy();
 	protected:
 		DECLARE_MESSAGE_MAP()
 		bool RegisterWndClass();
@@ -111,7 +112,7 @@ namespace HEXCTRL {
 		void RecalcWorkAreaHeight(int iClientHeight);
 		void RecalcScrollSizes(int iClientHeight = 0, int iClientWidth = 0);
 		[[nodiscard]] ULONGLONG GetTopLine(); //Returns current top line's number in view.
-		[[nodiscard]] ULONGLONG HitTest(LPPOINT); //Is any hex chunk withing given point?
+		[[nodiscard]] ULONGLONG HitTest(const POINT*); //Is any hex chunk withing given point?
 		void ChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy); //Point of Hex chunk.
 		void ClipboardCopy(INTERNAL::ENCLIPBOARD enType);
 		void ClipboardPaste(INTERNAL::ENCLIPBOARD enType);

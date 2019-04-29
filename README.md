@@ -3,7 +3,7 @@
 ### Table of Contents
 * [Introduction](#introduction)
 * [Implementation](#implementation)
-* [Using the Code](#using-the-control)
+* [Using the Control](#using-the-control)
 * [Create](#create)
   * [Classic Approach](#classic-approach)
   * [In Dialog](#in-dialog)
@@ -29,18 +29,23 @@ This **HexControl** is implemented as a `CWnd` derived class, and can be used as
 of your existing **MFC** application. It was build and tested in Visual Studio 2017, under Windows 10.
 
 ## [](#)Using the Control
-The usage is quite simple:
-1. Copy `HexCtrl` folder into your project folder.
-2. Add all files from `HexCtrl` folder into your project.
+The usage of the control is quite simple:
+1. Copy **HexCtrl** folder into your project's folder.
+2. Add all files from **HexCtrl** folder into your project.
 3. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the control.
 4. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
 5. Call `myHex->Create` method to create control instance.
 6. Call `myHex->SetData` method to set the actual data to display as hex.
 
-`IHexCtrlPtr` is, in fact, a pointer to the `IHexCtrl` pure abstract base class, wrapped in `std::shared_ptr`.
+`IHexCtrlPtr` is, in fact, a pointer to the `IHexCtrl` pure abstract base class, wrapped either in `std::unique_ptr` or `std::shared_ptr`. You can choose whatever is best for you by comment/uncomment one of this alliases in `HexCtrl.h`:
+```cpp
+	//using IHexCtrlPtr = IHexCtrlUnPtr;
+	using IHexCtrlPtr = IHexCtrlShPtr;
+```
 This wrapper is used mainly for convenience, so you don't have to bother about object lifetime, it will be destroyed automatically.
 That's why there is a call to the factory function `CreateHexCtrl()`, to properly initialize a pointer.<br>
-Control also uses its own namespace - `HEXCTRL`. So it's up to you, whether to use namespace prefix before declarations: 
+
+**Control** also uses its own namespace - `HEXCTRL`. So it's up to you, whether to use namespace prefix before declarations: 
 ```cpp
 HEXCTRL::
 ```

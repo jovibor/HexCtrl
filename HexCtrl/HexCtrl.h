@@ -134,6 +134,7 @@ namespace HEXCTRL
 	class IHexCtrl : public CWnd
 	{
 	public:
+		virtual ~IHexCtrl() = default;
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0; //Main initialization method.
 		virtual bool CreateDialogCtrl() = 0;				 //Сreates custom dialog control.
 		virtual bool IsCreated() = 0;						 //Shows whether control is created or not.
@@ -147,10 +148,29 @@ namespace HEXCTRL
 		virtual long GetFontSize() = 0;						 //Gets the control's font size.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;//Sets all the control's colors.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;		 //Sets the control's current capacity.
+		virtual void Destroy() = 0;							 //Deleter.
 	};
-	using IHexCtrlPtr = std::shared_ptr<IHexCtrl>;
 
-	IHexCtrlPtr CreateHexCtrl();
+	/********************************************************************************************
+	* Factory function CreateHexCtrl returns IHexCtrlUnPtr - unique_ptr with custom deleter .	*
+	* In client code you should use IHexCtrlPtr type which is an alias to either IHexCtrlUnPtr	*
+	* - a unique_ptr, or IHexCtrlShPtr - a shared_ptr. Uncomment what serves best for you,		*
+	* and comment out the other.																*
+	* If you, for some reason, need raw pointer, you can directly call CreateRawHexCtrl			*
+	* function, which returns IHexCtrl interface pointer, but in this case you will need to		*
+	* call IHexCtrl::Destroy method	afterwards - to manually delete HexCtrl object.				*
+	********************************************************************************************/
+	IHexCtrl* CreateRawHexCtrl();
+	using IHexCtrlUnPtr = std::unique_ptr<IHexCtrl, void(*)(IHexCtrl*)>;
+	using IHexCtrlShPtr = std::shared_ptr<IHexCtrl>;
+	
+	inline IHexCtrlUnPtr CreateHexCtrl()
+	{
+		return IHexCtrlUnPtr(CreateRawHexCtrl(), [](IHexCtrl * p) { p->Destroy(); });
+	};
+
+	//using IHexCtrlPtr = IHexCtrlUnPtr;
+	using IHexCtrlPtr = IHexCtrlShPtr;
 
 	/********************************************************************************************
 	* WM_NOTIFY message codes (NMHDR.code values).												*

@@ -12,12 +12,12 @@
 
 namespace HEXCTRL {
 
-	void UllToWchars(ULONGLONG ull, wchar_t* pwsz, DWORD dwSize)
+	void UllToWchars(ULONGLONG ull, wchar_t* pwsz, size_t dwSize)
 	{
 		const wchar_t* const pwszHexMap { L"0123456789ABCDEF" };
 
 		//Converts dwSize bytes of ull to wchar_t*.
-		for (unsigned i = 0; i < dwSize; i++)
+		for (size_t i = 0; i < dwSize; i++)
 		{
 			pwsz[i * 2] = pwszHexMap[((ull >> ((dwSize - 1 - i) << 3)) & 0xF0) >> 4];
 			pwsz[i * 2 + 1] = pwszHexMap[(ull >> ((dwSize - 1 - i) << 3)) & 0x0F];
@@ -34,7 +34,7 @@ namespace HEXCTRL {
 		return true;
 	}
 
-	std::string WstrToStr(std::wstring & wstr)
+	std::string WstrToStr(const std::wstring & wstr)
 	{
 		int iSize = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
@@ -43,9 +43,10 @@ namespace HEXCTRL {
 		return str;
 	}
 
-	bool NumStrToHex(std::string & strNum, std::string & strHex)
+	bool NumStrToHex(const std::string & strNum, std::string & strHex)
 	{
-		DWORD dwIterations = DWORD(strNum.size() / 2 + strNum.size() % 2);
+		size_t dwIterations = strNum.size() / 2 + strNum.size() % 2;
+
 		for (size_t i = 0; i < dwIterations; i++)
 		{
 			std::string strToUL; //String to hold currently extracted two letters.

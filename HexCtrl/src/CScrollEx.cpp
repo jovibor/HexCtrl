@@ -806,6 +806,7 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 				if (pt.x > rc.right)
 					ScrollPageDown();
 			}
+			break;
 		}
 	}
 	break;
