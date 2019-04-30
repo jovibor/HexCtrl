@@ -60,7 +60,7 @@ using namespace HEXCTRL;
 ```cpp
 struct HEXCREATESTRUCT
 {
-	PHEXCOLORSTRUCT pstColor { };			//Pointer to HEXCOLORSTRUCT, if nullptr default colors are used.
+	HEXCOLORSTRUCT  stColor { };			//All the colors of the control.
 	CWnd*		    pwndParent { };			//Parent window's pointer.
 	UINT		    uId { };				//Hex control Id.
 	DWORD			dwStyle { };			//Window styles. Null for default.
@@ -93,7 +93,6 @@ struct HEXCOLORSTRUCT
 	COLORREF clrBkInfoRect { RGB(250, 250, 250) };				//Background color of the bottom "Info" rect.
 	COLORREF clrBkCursor { RGB(0, 0, 250) };					//Cursor background color.
 };
-using PHEXCOLORSTRUCT = HEXCOLORSTRUCT * ;
 ```
 This struct is also used in `IHexCtrl::SetColor` method.
 

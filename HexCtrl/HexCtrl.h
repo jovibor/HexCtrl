@@ -71,14 +71,13 @@ namespace HEXCTRL
 		COLORREF clrBkInfoRect { RGB(250, 250, 250) };				//Background color of the bottom "Info" rect.
 		COLORREF clrBkCursor { RGB(0, 0, 250) };					//Cursor's background color.
 	};
-	using PHEXCOLORSTRUCT = HEXCOLORSTRUCT *;
 
 	/********************************************************************************************
 	* HEXCREATESTRUCT - for CHexCtrl::Create method.											*
 	********************************************************************************************/
 	struct HEXCREATESTRUCT
 	{
-		PHEXCOLORSTRUCT pstColor { };			//Pointer to HEXCOLORSTRUCT, if nullptr default colors are used.
+		HEXCOLORSTRUCT  stColor { };			//Pointer to HEXCOLORSTRUCT, if nullptr default colors are used.
 		CWnd*		    pwndParent { };			//Parent window's pointer.
 		UINT		    uId { };				//Hex control Id.
 		DWORD			dwStyle { };			//Window styles. Null for default.

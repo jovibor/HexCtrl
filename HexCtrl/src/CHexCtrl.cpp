@@ -162,8 +162,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 
 	m_fFloat = hcs.fFloat;
 	m_pwndMsg = hcs.pwndParent;
-	if (hcs.pstColor)
-		m_stColor = *hcs.pstColor;
+	m_stColor = hcs.stColor;
 
 	m_stBrushBkSelected.CreateSolidBrush(m_stColor.clrBkSelected);
 
