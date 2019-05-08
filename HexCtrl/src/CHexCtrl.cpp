@@ -322,6 +322,11 @@ void CHexCtrl::EditEnable(bool fEnable)
 	RedrawWindow();
 }
 
+bool CHexCtrl::IsMutable()
+{
+	return m_fMutable;
+}
+
 void CHexCtrl::ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize)
 {
 	SetSelection(ullOffset, ullOffset, ullSize, true);

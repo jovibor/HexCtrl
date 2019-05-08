@@ -41,11 +41,11 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* IHexVirtual - Pure abstract data handler class, that can be implemented by client,		*
 	* to set its own data handler routines.	Works in HEXDATAMODEEN::HEXVIRTUAL mode.			*
-	* Pointer to this class can be set in SetData methods.										*
+	* Pointer to this class can be set in SetData method.										*
 	* Its usage is very similar to pwndMsg logic, where control sends WM_NOTIFY messages		*
 	* to CWnd* class to get/set data. But in this case it's just a pointer to a custom			*
-	* routines implementation.																	*
-	* All virtual functions must be defined in client derived class.							*
+	* routine's implementation.																	*
+	* All virtual functions must be defined in client's derived class.							*
 	********************************************************************************************/
 	class IHexVirtual
 	{
@@ -110,7 +110,7 @@ namespace HEXCTRL
 		CWnd*			pwndMsg { };						//Window to send the control messages to. If nullptr then the parent window is used.
 		IHexVirtual*	pHexVirtual { };					//Pointer to IHexVirtual data class for custom data handling.
 		PBYTE			pData { };							//Pointer to the data. Not used if it's virtual control.
-		HEXDATAMODEEN	enMode { HEXDATAMODEEN::HEXNORMAL };//Working data mode of control.
+		HEXDATAMODEEN	enMode { HEXDATAMODEEN::HEXNORMAL };//Working data mode of the control.
 		bool			fMutable { false };					//Will data be mutable (editable) or just read mode.
 	};
 
@@ -141,6 +141,7 @@ namespace HEXCTRL
 		virtual bool IsDataSet() = 0;						 //Shows whether a data was set to the control or not.
 		virtual void ClearData() = 0;						 //Clears all data from HexCtrl's view (not touching data itself).
 		virtual void EditEnable(bool fEnable) = 0;			 //Enable or disable edit mode.
+		virtual bool IsMutable() = 0;						 //Is edit mode enabled or not.
 		virtual void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1) = 0; //Shows (selects) given offset.
 		virtual void SetFont(const LOGFONT* pLogFontNew) = 0;//Sets the control's font.
 		virtual void SetFontSize(UINT uiSize) = 0;			 //Sets the control's font size.
@@ -162,7 +163,7 @@ namespace HEXCTRL
 	IHexCtrl* CreateRawHexCtrl();
 	using IHexCtrlUnPtr = std::unique_ptr<IHexCtrl, void(*)(IHexCtrl*)>;
 	using IHexCtrlShPtr = std::shared_ptr<IHexCtrl>;
-	
+
 	inline IHexCtrlUnPtr CreateHexCtrl()
 	{
 		return IHexCtrlUnPtr(CreateRawHexCtrl(), [](IHexCtrl * p) { p->Destroy(); });

@@ -1,7 +1,7 @@
 /****************************************************************************************
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/						    *
 * This software is available under the "MIT License modified with The Commons Clause".  *
-* https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                 *
+* https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 * This is a Hex control for MFC apps, implemented as CWnd derived class.			    *
 * The usage is quite simple:														    *
 * 1. Construct CHexCtrl object — HEXCTRL::CHexCtrl myHex;								*
@@ -187,6 +187,11 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)
 	{
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 		GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
+		
+		bool fMutable = GetHexCtrl()->IsMutable();
+		GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_REPLACE)->EnableWindow(fMutable);
+		GetDlgItem(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE)->EnableWindow(fMutable);
+		GetDlgItem(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE_ALL)->EnableWindow(fMutable);
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);

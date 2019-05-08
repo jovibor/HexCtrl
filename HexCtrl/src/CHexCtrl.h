@@ -65,19 +65,20 @@ namespace HEXCTRL {
 	public:
 		CHexCtrl();
 		virtual ~CHexCtrl();
-		bool Create(const HEXCREATESTRUCT& hcs)override; //Main initialization method.
-		bool CreateDialogCtrl()override;				 //Сreates custom dialog control.
-		bool IsCreated()override;						 //Shows whether control is created or not.
-		void SetData(const HEXDATASTRUCT& hds)override;  //Main method for setting data to display (and edit).	
-		bool IsDataSet()override;						 //Shows whether a data was set to control or not.
-		void ClearData()override;						 //Clears all data from HexCtrl's view (not touching data itself).
-		void EditEnable(bool fEnable)override;			 //Enable or disable edit mode.
-		void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1)override; //Shows (selects) given offset.
-		void SetFont(const LOGFONT* pLogFontNew)override;//Sets the control's font.
-		void SetFontSize(UINT uiSize)override;			 //Sets the control's font size.
-		long GetFontSize()override;						 //Gets the control's font size.
-		void SetColor(const HEXCOLORSTRUCT& clr)override;//Sets all the colors for the control.
-		void SetCapacity(DWORD dwCapacity)override;		 //Sets the control's current capacity.
+		bool Create(const HEXCREATESTRUCT& hcs)override;
+		bool CreateDialogCtrl()override;
+		bool IsCreated()override;
+		void SetData(const HEXDATASTRUCT& hds)override;
+		bool IsDataSet()override;
+		void ClearData()override;
+		void EditEnable(bool fEnable)override;
+		bool IsMutable()override;
+		void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1)override;
+		void SetFont(const LOGFONT* pLogFontNew)override;
+		void SetFontSize(UINT uiSize)override;
+		long GetFontSize()override;
+		void SetColor(const HEXCOLORSTRUCT& clr)override;
+		void SetCapacity(DWORD dwCapacity)override;
 		void Destroy();
 	protected:
 		DECLARE_MESSAGE_MAP()
