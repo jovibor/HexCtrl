@@ -86,7 +86,7 @@ namespace HEXCTRL {
 			ULONGLONG m_ullScrollLine { };
 			ULONGLONG m_ullScrollPage { };
 			ULONGLONG m_ullScrollSizeMax { };
-			const unsigned m_uiThumbSizeMin = 15;
+			const unsigned m_uiThumbSizeMin { 15 };
 
 			//Difference between parent window's Window and Client area.
 			//Needed and very important in hit testing.

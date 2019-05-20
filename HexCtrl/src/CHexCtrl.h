@@ -67,18 +67,15 @@ namespace HEXCTRL {
 		virtual ~CHexCtrl();
 		bool Create(const HEXCREATESTRUCT& hcs)override;
 		bool CreateDialogCtrl()override;
-		bool IsCreated()override;
 		void SetData(const HEXDATASTRUCT& hds)override;
-		bool IsDataSet()override;
 		void ClearData()override;
-		void EditEnable(bool fEnable)override;
-		bool IsMutable()override;
+		void SetEditMode(bool fEnable)override;
 		void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1)override;
 		void SetFont(const LOGFONT* pLogFontNew)override;
 		void SetFontSize(UINT uiSize)override;
-		long GetFontSize()override;
 		void SetColor(const HEXCOLORSTRUCT& clr)override;
 		void SetCapacity(DWORD dwCapacity)override;
+		HEXSTATUSSTRUCT GetStatus()override;
 		void Destroy();
 	protected:
 		DECLARE_MESSAGE_MAP()

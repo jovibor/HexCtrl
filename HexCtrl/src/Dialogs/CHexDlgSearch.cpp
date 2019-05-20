@@ -188,7 +188,7 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 		GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
 		
-		bool fMutable = GetHexCtrl()->IsMutable();
+		bool fMutable = GetHexCtrl()->GetStatus().fMutable;
 		GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_REPLACE)->EnableWindow(fMutable);
 		GetDlgItem(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE)->EnableWindow(fMutable);
 		GetDlgItem(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE_ALL)->EnableWindow(fMutable);

@@ -157,7 +157,7 @@ CHexCtrl::~CHexCtrl()
 
 bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 {
-	if (IsCreated()) //Already created.
+	if (m_fCreated) //Already created.
 		return false;
 
 	m_fFloat = hcs.fFloat;
@@ -244,21 +244,16 @@ bool CHexCtrl::CreateDialogCtrl()
 	return Create(hcs);
 }
 
-bool CHexCtrl::IsCreated()
-{
-	return m_fCreated;
-}
-
 void CHexCtrl::SetData(const HEXDATASTRUCT & hds)
 {
-	if (!IsCreated())
+	if (!m_fCreated)
 		return;
 
 	//m_pwndMsg was previously set in Create.
 	if (hds.pwndMsg)
 		m_pwndMsg = hds.pwndMsg;
 
-	//Virtual mode is possible only when there is a msg window a data requests will be sent to.
+	//Virtual mode is possible only when there is a MSG window, a data requests will be sent to.
 	if (hds.enMode == HEXDATAMODEEN::HEXMSG && !GetMsgWindow())
 	{
 		MessageBoxW(L"HexCtrl HEXDATAMODEEN::HEXMSG mode requires HEXDATASTRUCT::pwndMsg to be not nullptr.", L"Error", MB_ICONWARNING);
@@ -292,19 +287,15 @@ void CHexCtrl::SetData(const HEXDATASTRUCT & hds)
 	}
 }
 
-bool CHexCtrl::IsDataSet()
-{
-	return m_fDataSet;
-}
-
 void CHexCtrl::ClearData()
 {
-	if (!IsDataSet())
+	if (!m_fDataSet)
 		return;
 
 	m_fDataSet = false;
 	m_ullDataSize = 0;
 	m_pData = nullptr;
+	m_fMutable = false;
 	m_ullSelectionClick = m_ullSelectionStart = m_ullSelectionEnd = m_ullSelectionSize = 0;
 
 	m_pstScrollV->SetScrollPos(0);
@@ -313,18 +304,13 @@ void CHexCtrl::ClearData()
 	UpdateInfoText();
 }
 
-void CHexCtrl::EditEnable(bool fEnable)
+void CHexCtrl::SetEditMode(bool fEnable)
 {
-	if (!IsCreated())
+	if (!m_fCreated)
 		return;
 
 	m_fMutable = fEnable;
 	RedrawWindow();
-}
-
-bool CHexCtrl::IsMutable()
-{
-	return m_fMutable;
 }
 
 void CHexCtrl::ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize)
@@ -358,14 +344,6 @@ void CHexCtrl::SetFontSize(UINT uiSize)
 	RecalcAll();
 }
 
-long CHexCtrl::GetFontSize()
-{
-	LOGFONT lf;
-	m_fontHexView.GetLogFont(&lf);
-
-	return lf.lfHeight;
-}
-
 void CHexCtrl::SetColor(const HEXCOLORSTRUCT & clr)
 {
 	m_stColor = clr;
@@ -392,6 +370,27 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	m_dwCapacity = dwCapacity;
 	m_dwCapacityBlockSize = m_dwCapacity / 2;
 	RecalcAll();
+}
+
+HEXSTATUSSTRUCT CHexCtrl::GetStatus()
+{
+	HEXSTATUSSTRUCT	ss;
+	ss.fCreated = m_fCreated;
+	ss.fDataSet = m_fDataSet;
+	ss.fMutable = m_fMutable;
+	ss.ullSelOffset = m_ullSelectionStart;
+	ss.ullSelSize = m_ullSelectionSize;
+
+	LOGFONTW lf;
+	if (m_fCreated)
+	{
+		m_fontHexView.GetLogFont(&lf);
+		ss.lFontSize = lf.lfHeight;
+	}
+	else
+		ss.lFontSize = 0;
+
+	return ss;
 }
 
 void CHexCtrl::Destroy()
@@ -495,7 +494,7 @@ BOOL CHexCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
 	if (nFlags == MK_CONTROL)
 	{
-		SetFontSize(GetFontSize() + zDelta / WHEEL_DELTA * 2);
+		SetFontSize(GetStatus().lFontSize + zDelta / WHEEL_DELTA * 2);
 		return TRUE;
 	}
 	else if (nFlags & (MK_CONTROL | MK_SHIFT))
@@ -605,7 +604,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 		hmd.ullIndex = m_ullSelectionStart;
 		unsigned char chZero { 0 };
 		hmd.pData = &chZero;
-		hmd.dwFillDataSize = 1;
+		hmd.ullFillDataSize = 1;
 		ModifyData(hmd);
 	}
 	break;
@@ -913,7 +912,8 @@ void CHexCtrl::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar * pScrollBar)
 void CHexCtrl::OnPaint()
 {
 	CPaintDC dc(this);
-	if (!IsCreated()) {
+	if (!m_fCreated)
+	{
 		CRect rc;
 		dc.GetClipBox(rc);
 		dc.FillSolidRect(rc, RGB(250, 250, 250));
@@ -976,13 +976,15 @@ void CHexCtrl::OnPaint()
 	rDC.SetTextColor(m_stColor.clrTextCaption);
 	rDC.DrawTextW(L"Offset", 6, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
-	//«Bytes total:» text.
-	rc.left = m_iFirstVertLine + 5;	rc.top = iThirdHorizLine + 1;
+	//Info rect's text.
+	rc.left = m_iFirstVertLine;
+	rc.top = iThirdHorizLine + 1;
 	rc.right = rcClient.right > m_iFourthVertLine ? rcClient.right : m_iFourthVertLine;
 	rc.bottom = iFourthHorizLine;
 	rDC.FillSolidRect(&rc, m_stColor.clrBkInfoRect);
 	rDC.SetTextColor(m_stColor.clrTextInfoRect);
 	rDC.SelectObject(&m_fontBottomRect);
+	rc.left += 5; //Draw text with little indent.
 	rDC.DrawTextW(m_wstrBottomText.data(), (int)m_wstrBottomText.size(), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
 	rDC.SelectObject(&m_fontHexView);
@@ -1045,14 +1047,18 @@ void CHexCtrl::OnPaint()
 		//Drawing offset with bk color depending on selection range.
 		if (m_ullSelectionSize && (iterLines * m_dwCapacity + m_dwCapacity) > m_ullSelectionStart &&
 			(iterLines * m_dwCapacity) < m_ullSelectionEnd)
+		{
+			rDC.SetTextColor(m_stColor.clrTextSelected);
 			rDC.SetBkColor(m_stColor.clrBkSelected);
+		}
 		else
+		{
+			rDC.SetTextColor(m_stColor.clrTextCaption);
 			rDC.SetBkColor(m_stColor.clrBk);
-
+		}
 		//Left column offset printing (00000001...0000FFFF...).
 		wchar_t pwszOffset[16];
 		UllToWchars(iterLines * m_dwCapacity, pwszOffset, m_dwOffsetDigits / 2);
-		rDC.SetTextColor(m_stColor.clrTextCaption);
 		ExtTextOutW(rDC.m_hDC, m_sizeLetter.cx - iScrollH, m_iHeightTopRect + (m_sizeLetter.cy * iLine),
 			NULL, nullptr, pwszOffset, m_dwOffsetDigits, nullptr);
 
@@ -1278,10 +1284,10 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms)
 			m_deqRedo.clear(); //No Redo unless we make Undo.
 			SnapshotUndo(hms.ullIndex, hms.ullModifySize);
 
-			ULONGLONG ullChunks = hms.ullModifySize / hms.dwFillDataSize;
+			ULONGLONG ullChunks = hms.ullModifySize / hms.ullFillDataSize;
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
-				for (ULONGLONG iterData = 0; iterData < hms.dwFillDataSize; iterData++)
-					m_pData[hms.ullIndex + hms.dwFillDataSize * iterChunk + iterData] = hms.pData[iterData];
+				for (ULONGLONG iterData = 0; iterData < hms.ullFillDataSize; iterData++)
+					m_pData[hms.ullIndex + hms.ullFillDataSize * iterChunk + iterData] = hms.pData[iterData];
 		}
 		break;
 		case HEXMODIFYASEN::AS_UNDO:
@@ -1854,7 +1860,7 @@ bool CHexCtrl::Replace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t
 	HEXMODIFYSTRUCT hms;
 	hms.enType = HEXMODIFYASEN::AS_FILL;
 	hms.ullModifySize = nSizeData;
-	hms.dwFillDataSize = nSizeData;
+	hms.ullFillDataSize = nSizeData;
 	hms.ullIndex = ullIndex;
 	hms.pData = pData;
 	hms.fRedraw = fRedraw;

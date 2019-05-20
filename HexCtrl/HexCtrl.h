@@ -32,10 +32,10 @@ namespace HEXCTRL
 		ULONGLONG		ullModifySize { };		//Size in bytes.
 		PBYTE			pData { };				//Pointer to a data to be set.
 		HEXMODIFYASEN	enType { HEXMODIFYASEN::AS_MODIFY }; //Modification type.
-		DWORD			dwFillDataSize { };		//Size of pData if enType==AS_FILL.
+		ULONGLONG		ullFillDataSize { };	//Size of pData if enType==AS_FILL.
 		bool			fWhole { true };		//Is a whole byte or just a part of it to be modified.
 		bool			fHighPart { true };		//Shows whether High or Low part of byte should be modified (If fWhole is false).
-		bool			fRedraw { true };		//Redraw view after modification.
+		bool			fRedraw { true };		//Redraw view after modification or not.
 	};
 
 	/********************************************************************************************
@@ -60,16 +60,16 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXCOLORSTRUCT
 	{
-		COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };		//Hex chunks text color.
-		COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };	//Ascii text color.
-		COLORREF clrTextSelected { GetSysColor(COLOR_WINDOWTEXT) }; //Selected text color.
-		COLORREF clrTextCaption { RGB(0, 0, 180) };					//Caption text color
-		COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };	//Text color of the bottom "Info" rect.
-		COLORREF clrTextCursor { RGB(255, 255, 255) };				//Cursor text color.
-		COLORREF clrBk { GetSysColor(COLOR_WINDOW) };				//Background color.
-		COLORREF clrBkSelected { RGB(200, 200, 255) };				//Background color of the selected Hex/Ascii.
-		COLORREF clrBkInfoRect { RGB(250, 250, 250) };				//Background color of the bottom "Info" rect.
-		COLORREF clrBkCursor { RGB(0, 0, 250) };					//Cursor's background color.
+		COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };			//Hex chunks text color.
+		COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };		//Ascii text color.
+		COLORREF clrTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) };	//Selected text color.
+		COLORREF clrTextCaption { RGB(0, 0, 180) };						//Caption text color
+		COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };		//Text color of the bottom "Info" rect.
+		COLORREF clrTextCursor { RGB(255, 255, 255) };					//Cursor text color.
+		COLORREF clrBk { GetSysColor(COLOR_WINDOW) };					//Background color.
+		COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };		//Background color of the selected Hex/Ascii.
+		COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };			//Background color of the bottom "Info" rect.
+		COLORREF clrBkCursor { RGB(0, 0, 255) };						//Cursor's background color.
 	};
 
 	/********************************************************************************************
@@ -128,6 +128,19 @@ namespace HEXCTRL
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
 
 	/********************************************************************************************
+	* HEXSTATUSSTRUCT - control status structure.												*
+	********************************************************************************************/
+	struct HEXSTATUSSTRUCT
+	{
+		bool		fCreated;		 //Shows whether control is created or not.
+		bool		fDataSet;		 //Shows whether a data was set to the control or not.
+		bool		fMutable;		 //Is edit mode enabled or not.
+		long		lFontSize;		 //Current font size.
+		ULONGLONG	ullSelOffset;	 //Current selection offset.
+		ULONGLONG	ullSelSize;		 //Current selection size.
+	};
+
+	/********************************************************************************************
 	* IHexCtrl - pure abstract base class.														*
 	********************************************************************************************/
 	class IHexCtrl : public CWnd
@@ -136,23 +149,20 @@ namespace HEXCTRL
 		virtual ~IHexCtrl() = default;
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0; //Main initialization method.
 		virtual bool CreateDialogCtrl() = 0;				 //Сreates custom dialog control.
-		virtual bool IsCreated() = 0;						 //Shows whether control is created or not.
 		virtual void SetData(const HEXDATASTRUCT& hds) = 0;  //Main method for setting data to display (and edit).	
-		virtual bool IsDataSet() = 0;						 //Shows whether a data was set to the control or not.
 		virtual void ClearData() = 0;						 //Clears all data from HexCtrl's view (not touching data itself).
-		virtual void EditEnable(bool fEnable) = 0;			 //Enable or disable edit mode.
-		virtual bool IsMutable() = 0;						 //Is edit mode enabled or not.
+		virtual void SetEditMode(bool fEnable) = 0;			 //Enable or disable edit mode.
 		virtual void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1) = 0; //Shows (selects) given offset.
 		virtual void SetFont(const LOGFONT* pLogFontNew) = 0;//Sets the control's font.
 		virtual void SetFontSize(UINT uiSize) = 0;			 //Sets the control's font size.
-		virtual long GetFontSize() = 0;						 //Gets the control's font size.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;//Sets all the control's colors.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;		 //Sets the control's current capacity.
+		virtual	HEXSTATUSSTRUCT GetStatus() = 0;			 //Gets control's status information.
 		virtual void Destroy() = 0;							 //Deleter.
 	};
 
 	/********************************************************************************************
-	* Factory function CreateHexCtrl returns IHexCtrlUnPtr - unique_ptr with custom deleter .	*
+	* Factory function CreateHexCtrl returns IHexCtrlUnPtr - unique_ptr with custom deleter.	*
 	* In client code you should use IHexCtrlPtr type which is an alias to either IHexCtrlUnPtr	*
 	* - a unique_ptr, or IHexCtrlShPtr - a shared_ptr. Uncomment what serves best for you,		*
 	* and comment out the other.																*
@@ -177,7 +187,7 @@ namespace HEXCTRL
 	* These codes are used to notify m_pwndMsg window about control's current states.			*
 	********************************************************************************************/
 
-	constexpr auto HEXCTRL_MSG_DESTROY = 0x00FF;		//Inicates that HexCtrl is being destroyed.
+	constexpr auto HEXCTRL_MSG_DESTROY = 0x00FF;		//Indicates that HexCtrl is being destroyed.
 	constexpr auto HEXCTRL_MSG_GETDATA = 0x0100;		//Used in Virtual mode to demand the next byte to display.
 	constexpr auto HEXCTRL_MSG_MODIFYDATA = 0x0101;		//Indicates that the byte in memory has changed, used in edit mode.
 	constexpr auto HEXCTRL_MSG_SETSELECTION = 0x0102;	//A selection has been made for some bytes.

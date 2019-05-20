@@ -84,14 +84,14 @@ struct HEXCOLORSTRUCT
 {
 	COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };		//Hex chunks color.
 	COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };	//Ascii text color.
-	COLORREF clrTextSelected { GetSysColor(COLOR_WINDOWTEXT) }; //Selected text color.
+	COLORREF clrTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected text color.
 	COLORREF clrTextCaption { RGB(0, 0, 180) };					//Caption color
 	COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };	//Text color of the bottom "Info" rect.
 	COLORREF clrTextCursor { RGB(255, 255, 255) };				//Cursor text color.
 	COLORREF clrBk { GetSysColor(COLOR_WINDOW) };				//Background color.
-	COLORREF clrBkSelected { RGB(200, 200, 255) };				//Background color of the selected Hex/Ascii.
-	COLORREF clrBkInfoRect { RGB(250, 250, 250) };				//Background color of the bottom "Info" rect.
-	COLORREF clrBkCursor { RGB(0, 0, 250) };					//Cursor background color.
+	COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };		//Background color of the selected Hex/Ascii.
+	COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };			//Background color of the bottom "Info" rect.
+	COLORREF clrBkCursor { RGB(0, 0, 255) };					//Cursor background color.
 };
 ```
 This struct is also used in `IHexCtrl::SetColor` method.
@@ -185,6 +185,7 @@ You have to derive your own class from it and implement all its public methods:
 class IHexVirtual
 {
 public:
+	virtual ~IHexVirtual() = default;
 	virtual BYTE GetByte(ULONGLONG ullIndex) = 0; //Gets the byte data by index.
 	virtual	void ModifyData(const HEXMODIFYSTRUCT& hmd) = 0; //Main routine to modify data, in fMutable=true mode.
 };
@@ -207,20 +208,18 @@ These scrollbars behave as normal **Windows** scrollbars, and even reside in the
 **HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.<br>
 These methods' usage is pretty straightforward, and clean, from their naming:
 ```cpp
-bool Create(const HEXCREATESTRUCT& hcs); //Main initialization method.
-bool CreateDialogCtrl();				 //Сreates custom dialog control.
-bool IsCreated();						 //Shows whether control is created or not.
-void SetData(const HEXDATASTRUCT& hds);  //Main method for setting data to display (and edit).	
-bool IsDataSet();						 //Shows whether a data was set to control or not.
-void ClearData();						 //Clears all data from HexCtrl's view (not touching data itself).
-void EditEnable(bool fEnable);			 //Enable or disable edit mode.
-void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1); //Shows (selects) given offset.
-void SetFont(const LOGFONT* pLogFontNew);//Sets the control's font.
-void SetFontSize(UINT uiSize);			 //Sets the control's font size.
-long GetFontSize();						 //Gets the control's font size.
-void SetColor(const HEXCOLORSTRUCT& clr);//Sets all the colors for the control.
-void SetCapacity(DWORD dwCapacity);		 //Sets the control's current capacity.
-void Search(HEXSEARCHSTRUCT& rSearch);	 //Search through currently set data.
+virtual bool Create(const HEXCREATESTRUCT& hcs) = 0; //Main initialization method.
+virtual bool CreateDialogCtrl() = 0;				 //Сreates custom dialog control.
+virtual void SetData(const HEXDATASTRUCT& hds) = 0;  //Main method for setting data to display (and edit).	
+virtual void ClearData() = 0;						 //Clears all data from HexCtrl's view (not touching data itself).
+virtual void SetEditMode(bool fEnable) = 0;			 //Enable or disable edit mode.
+virtual void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1) = 0; //Shows (selects) given offset.
+virtual void SetFont(const LOGFONT* pLogFontNew) = 0;//Sets the control's font.
+virtual void SetFontSize(UINT uiSize) = 0;			 //Sets the control's font size.
+virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;//Sets all the control's colors.
+virtual void SetCapacity(DWORD dwCapacity) = 0;		 //Sets the control's current capacity.
+virtual const HEXSTATUSSTRUCT& GetStatus() = 0;		 //Gets control's status information.
+virtual void Destroy() = 0;							 //Deleter.
 ```
 
 ## [](#)Example
