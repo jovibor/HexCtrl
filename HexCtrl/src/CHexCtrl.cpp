@@ -372,25 +372,35 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	RecalcAll();
 }
 
-HEXSTATUSSTRUCT CHexCtrl::GetStatus()
+bool CHexCtrl::IsCreated()
 {
-	HEXSTATUSSTRUCT	ss;
-	ss.fCreated = m_fCreated;
-	ss.fDataSet = m_fDataSet;
-	ss.fMutable = m_fMutable;
-	ss.ullSelOffset = m_ullSelectionStart;
-	ss.ullSelSize = m_ullSelectionSize;
+	return m_fCreated;
+}
+
+bool CHexCtrl::IsDataSet()
+{
+	return m_fDataSet;
+}
+
+bool CHexCtrl::IsMutable()
+{
+	return m_fMutable;
+}
+
+long CHexCtrl::GetFontSize()
+{
+	if (!IsCreated())
+		return 0;
 
 	LOGFONTW lf;
-	if (m_fCreated)
-	{
-		m_fontHexView.GetLogFont(&lf);
-		ss.lFontSize = lf.lfHeight;
-	}
-	else
-		ss.lFontSize = 0;
+	m_fontHexView.GetLogFont(&lf);
+	return lf.lfHeight;
+}
 
-	return ss;
+void CHexCtrl::GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)
+{
+	ullOffset = m_ullSelectionStart;
+	ullSize = m_ullSelectionSize;
 }
 
 void CHexCtrl::Destroy()
@@ -494,7 +504,7 @@ BOOL CHexCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
 	if (nFlags == MK_CONTROL)
 	{
-		SetFontSize(GetStatus().lFontSize + zDelta / WHEEL_DELTA * 2);
+		SetFontSize(GetFontSize() + zDelta / WHEEL_DELTA * 2);
 		return TRUE;
 	}
 	else if (nFlags & (MK_CONTROL | MK_SHIFT))

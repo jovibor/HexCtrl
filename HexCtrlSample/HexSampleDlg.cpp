@@ -73,7 +73,7 @@ HCURSOR CHexSampleDlg::OnQueryDragIcon()
 
 void CHexSampleDlg::OnBnRO()
 {
-	if (!m_myHex->GetStatus().fDataSet)
+	if (!m_myHex->IsDataSet())
 	{
 		m_hds.fMutable = false;
 		m_hds.pwndMsg = this;
@@ -84,7 +84,7 @@ void CHexSampleDlg::OnBnRO()
 
 void CHexSampleDlg::OnBnRW()
 {
-	if (!m_myHex->GetStatus().fDataSet)
+	if (!m_myHex->IsDataSet())
 	{
 		m_hds.fMutable = true;
 		m_myHex->SetData(m_hds);

@@ -208,18 +208,22 @@ These scrollbars behave as normal **Windows** scrollbars, and even reside in the
 **HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.<br>
 These methods' usage is pretty straightforward, and clean, from their naming:
 ```cpp
-virtual bool Create(const HEXCREATESTRUCT& hcs) = 0; //Main initialization method.
-virtual bool CreateDialogCtrl() = 0;				 //Сreates custom dialog control.
-virtual void SetData(const HEXDATASTRUCT& hds) = 0;  //Main method for setting data to display (and edit).	
-virtual void ClearData() = 0;						 //Clears all data from HexCtrl's view (not touching data itself).
-virtual void SetEditMode(bool fEnable) = 0;			 //Enable or disable edit mode.
-virtual void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1) = 0; //Shows (selects) given offset.
-virtual void SetFont(const LOGFONT* pLogFontNew) = 0;//Sets the control's font.
-virtual void SetFontSize(UINT uiSize) = 0;			 //Sets the control's font size.
-virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;//Sets all the control's colors.
-virtual void SetCapacity(DWORD dwCapacity) = 0;		 //Sets the control's current capacity.
-virtual const HEXSTATUSSTRUCT& GetStatus() = 0;		 //Gets control's status information.
-virtual void Destroy() = 0;							 //Deleter.
+bool Create(const HEXCREATESTRUCT& hcs); //Main initialization method.
+bool CreateDialogCtrl() = 0;				 //Сreates custom dialog control.
+void SetData(const HEXDATASTRUCT& hds);  //Main method for setting data to display (and edit).	
+void ClearData();						 //Clears all data from HexCtrl's view (not touching data itself).
+void SetEditMode(bool fEnable);			 //Enable or disable edit mode.
+void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1); //Shows (selects) given offset.
+void SetFont(const LOGFONT* pLogFontNew); //Sets the control's font.
+void SetFontSize(UINT uiSize);			 //Sets the control's font size.
+void SetColor(const HEXCOLORSTRUCT& clr); //Sets all the control's colors.
+void SetCapacity(DWORD dwCapacity);		 //Sets the control's current capacity.
+bool IsCreated();						 //Shows whether control is created or not.
+bool IsDataSet();						 //Shows whether a data was set to the control or not.
+bool IsMutable();						 //Is edit mode enabled or not.
+long GetFontSize();						 //Current font size.
+void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize); //Current selection.
+void Destroy();							 //Deleter.
 ```
 
 ## [](#)Example

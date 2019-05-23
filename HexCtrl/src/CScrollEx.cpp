@@ -781,7 +781,8 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 			break;
 		case ENSTATE::FIRSTCHANNEL_CLICK:
 		{
-			CPoint pt;	GetCursorPos(&pt);
+			CPoint pt;
+			GetCursorPos(&pt);
 			CRect rc = GetThumbRect(true);
 			GetParent()->ClientToScreen(rc);
 			if (IsVert()) {
@@ -795,7 +796,8 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 		}
 		break;
 		case ENSTATE::LASTCHANNEL_CLICK:
-			CPoint pt;	GetCursorPos(&pt);
+			CPoint pt;
+			GetCursorPos(&pt);
 			CRect rc = GetThumbRect(true);
 			GetParent()->ClientToScreen(rc);
 			if (IsVert()) {

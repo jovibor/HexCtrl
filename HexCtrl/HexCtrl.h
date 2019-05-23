@@ -128,19 +128,6 @@ namespace HEXCTRL
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
 
 	/********************************************************************************************
-	* HEXSTATUSSTRUCT - control status structure.												*
-	********************************************************************************************/
-	struct HEXSTATUSSTRUCT
-	{
-		bool		fCreated;		 //Shows whether control is created or not.
-		bool		fDataSet;		 //Shows whether a data was set to the control or not.
-		bool		fMutable;		 //Is edit mode enabled or not.
-		long		lFontSize;		 //Current font size.
-		ULONGLONG	ullSelOffset;	 //Current selection offset.
-		ULONGLONG	ullSelSize;		 //Current selection size.
-	};
-
-	/********************************************************************************************
 	* IHexCtrl - pure abstract base class.														*
 	********************************************************************************************/
 	class IHexCtrl : public CWnd
@@ -157,7 +144,11 @@ namespace HEXCTRL
 		virtual void SetFontSize(UINT uiSize) = 0;			 //Sets the control's font size.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;//Sets all the control's colors.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;		 //Sets the control's current capacity.
-		virtual	HEXSTATUSSTRUCT GetStatus() = 0;			 //Gets control's status information.
+		virtual bool IsCreated() = 0;						 //Shows whether control is created or not.
+		virtual bool IsDataSet() = 0;						 //Shows whether a data was set to the control or not.
+		virtual bool IsMutable() = 0;						 //Is edit mode enabled or not.
+		virtual long GetFontSize() = 0;						 //Current font size.
+		virtual void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize) = 0; //Current selection.
 		virtual void Destroy() = 0;							 //Deleter.
 	};
 

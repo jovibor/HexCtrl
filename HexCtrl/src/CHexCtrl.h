@@ -75,7 +75,11 @@ namespace HEXCTRL {
 		void SetFontSize(UINT uiSize)override;
 		void SetColor(const HEXCOLORSTRUCT& clr)override;
 		void SetCapacity(DWORD dwCapacity)override;
-		HEXSTATUSSTRUCT GetStatus()override;
+		bool IsCreated()override;
+		bool IsDataSet()override;
+		bool IsMutable()override;
+		long GetFontSize()override;
+		void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)override;
 		void Destroy();
 	protected:
 		DECLARE_MESSAGE_MAP()

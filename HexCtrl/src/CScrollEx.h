@@ -53,10 +53,10 @@ namespace HEXCTRL {
 			void DrawScrollBar();
 			void DrawArrows(CDC* pDC);
 			void DrawThumb(CDC* pDC);
-			CRect GetScrollRect(bool fWithNCArea = false);
-			CRect GetScrollWorkAreaRect(bool fClientCoord = false);
-			UINT GetScrollSizeWH();
-			UINT GetScrollWorkAreaSizeWH(); //Scroll area size (WH) without arrow buttons.
+			CRect GetScrollRect(bool fWithNCArea = false);			//Scroll's whole rect.
+			CRect GetScrollWorkAreaRect(bool fClientCoord = false);	//Rect without arrows.
+			UINT GetScrollSizeWH();									//Scroll size in pixels, width or height.
+			UINT GetScrollWorkAreaSizeWH();							//Scroll size (WH) without arrows.
 			CRect GetThumbRect(bool fClientCoord = false);
 			UINT GetThumbSizeWH();
 			UINT GetThumbPos();
@@ -100,8 +100,9 @@ namespace HEXCTRL {
 			const unsigned m_uiFirstArrowOffset { 0 };
 			const unsigned m_uiLastArrowOffset { 18 };
 			const unsigned m_uiArrowSize { 17 };
-			bool m_fCreated { false };
-			bool m_fVisible { false };
+
+			bool m_fCreated { false };						//Is created or not.
+			bool m_fVisible { false };						//Is visible at the moment or not.
 		};
 	};
 };
