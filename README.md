@@ -1,4 +1,4 @@
-## **Hex control for MFC applications**
+## **Hex Control for MFC Applications**
 ![](docs/img/hexctrl_mainwnd.jpg)
 ### Table of Contents
 * [Introduction](#introduction)
@@ -14,6 +14,23 @@
 * [OnDestroy](#ondestroy)
 * [Scroll Bars](#scroll-bars)
 * [Methods](#methods)
+  * [Create](#createmethod)
+  * [CreateDialogCtrl](#createdialogctrl)
+  * [SetData](#setdatamethod)
+  * [ClearData](#cleardata)
+  * [SetEditMode](#seteditmode)
+  * [ShowOffset](#showoffset)
+  * [SetFont](#setfont)
+  * [SetFontSize](#setfontsize)
+  * [SetColor](#setcolor)
+  * [SetCapacity](#setcapacity)
+  * [IsCreated](#iscreated)
+  * [IsDataSet](#isdataset)
+  * [IsMutable](#ismutable)
+  * [GetFontSize](#getfontsize)
+  * [GetSelection](#getselection)
+  * [GetMenu](#getmenu)
+  * [Destroy](#destroy)
 * [Example](#example)
 * [Positioning and Sizing](#positioning-and-sizing)
 * [Appearance](#appearance)
@@ -45,7 +62,7 @@ The usage of the control is quite simple:
 This wrapper is used mainly for convenience, so you don't have to bother about object lifetime, it will be destroyed automatically.
 That's why there is a call to the factory function `CreateHexCtrl()`, to properly initialize a pointer.<br>
 
-**Control** also uses its own namespace - `HEXCTRL`. So it's up to you, whether to use namespace prefix before declarations: 
+**HexCtrl** also uses its own namespace - `HEXCTRL`. So it's up to you, whether to use namespace prefix before declarations: 
 ```cpp
 HEXCTRL::
 ```
@@ -91,7 +108,8 @@ struct HEXCOLORSTRUCT
 	COLORREF clrBk { GetSysColor(COLOR_WINDOW) };				//Background color.
 	COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };		//Background color of the selected Hex/Ascii.
 	COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };			//Background color of the bottom "Info" rect.
-	COLORREF clrBkCursor { RGB(0, 0, 255) };					//Cursor background color.
+	COLORREF clrBkCursor { RGB(0, 0, 255) };	    		//Cursor background color.
+	COLORREF clrBkCursorSelected { RGB(192, 192, 192) };			//Cursor's background color in selection.
 };
 ```
 This struct is also used in `IHexCtrl::SetColor` method.
@@ -206,10 +224,10 @@ These scrollbars behave as normal **Windows** scrollbars, and even reside in the
 
 ## [](#)Methods
 **HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.<br>
-These methods' usage is pretty straightforward, and clean, from their naming:
+These methods' usage is pretty straightforward and clean from their naming:
 ```cpp
 bool Create(const HEXCREATESTRUCT& hcs); //Main initialization method.
-bool CreateDialogCtrl() = 0;				 //Сreates custom dialog control.
+bool CreateDialogCtrl() = 0;			 //Сreates custom dialog control.
 void SetData(const HEXDATASTRUCT& hds);  //Main method for setting data to display (and edit).	
 void ClearData();						 //Clears all data from HexCtrl's view (not touching data itself).
 void SetEditMode(bool fEnable);			 //Enable or disable edit mode.
@@ -223,8 +241,70 @@ bool IsDataSet();						 //Shows whether a data was set to the control or not.
 bool IsMutable();						 //Is edit mode enabled or not.
 long GetFontSize();						 //Current font size.
 void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize); //Current selection.
+HMENU GetMenu();					     //Context menu handle.
 void Destroy();							 //Deleter.
 ```
+### Create <a id="createmethod"></a>
+**`bool Create(const HEXCREATESTRUCT& hcs)`**<br>
+Main initialization method.<br>
+It takes `HEXCREATESTRUCT`, that you fill first, as argument.
+Returns `true` if created successfully, `false` otherwise.
+
+### [](#)CreateDialogCtrl
+**`bool CreateDialogCtrl()`**<br>
+This method is used if you want to create a dialog based **HexCtrl** as a custom control. See [this section](#in-dialog) for more info.
+### SetData <a id="setdatamethod"></a>
+**`void SetData(const HEXDATASTRUCT& hds)`**<br>
+Main method to set a data to display and edit. It takes `HEXDATASTRUCT` as argument. See [this section](#set-data) for more info.
+### [](#)ClearData
+**`void ClearData()`**<br>
+Clears data from the **HexCtrl** view, not touching data itself.
+### [](#)SetEditMode
+**`void SetEditMode(bool fEnable)`**<br>
+Enables or disables edit mode. In edit mode data can be modified.
+### [](#)ShowOffset
+**`void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1)`**<br>
+Sets cursor to the `ullOffset` and selects `ullSize` bytes.
+### [](#)SetFont
+**`void SetFont(const LOGFONTW* pLogFontNew)`**<br>
+Sets a new font for the **HexCtrl**.
+### [](#)SetFontSize
+**`void SetFontSize(UINT uiSize)`**<br>
+Sets a new font size to the **HexCtrl**.
+### [](#)SetColor
+**`void SetColor(const HEXCOLORSTRUCT& clr)`**<br>
+Sets all the colors for the control. Takes `HEXCOLORSTRUCT` as the argument.
+### [](#)SetCapacity
+**`void SetCapacity(DWORD dwCapacity)`**<br>
+Sets the **HexCtrl** capacity.
+### [](#)IsCreated
+**`bool IsCreated()`**<br>
+Shows whether **HexCtrl** is created or not yet.
+### [](#)IsDataSet
+**`bool IsDataSet()`**<br>
+Shows whether a data was set to **HexCtrl** or not
+### [](#)IsMutable
+**`bool IsMutable()`**<br>
+Shows whether **HexCtrl** is currently in edit mode or not.
+### [](#)GetFontSize
+**`long GetFontSize()`**<br>
+Returns current font size.
+### [](#)GetSelection
+**`void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)`**<br>
+Gets current start position of the selection within **HexCtrl** as `ullOffset`, and its size as `ullSize`.
+### [](#)GetMenu
+**`HMENU GetMenu()`**<br>
+`GetMenu` method retrives the `HMENU` handle of the control's context menu. You can use this handle to customize menu for your needs.<br>
+Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu assign menu `ID` starting from `0x9000` to not interfere.<br>
+When user clicks custom menu control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to `HEXNOTIFYSTRUCT` with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `uMenuId` field of the `HEXNOTIFYSTRUCT` will be holding `ID` of the menu clicked.
+### [](#)Destroy
+**`void Destroy()`**<br>
+Destroys the control.<br>
+You only invoke this method if you use a raw `IHexCtrl` pointer obtained by the call to `CreateRawHexCtrl` function. Otherwise don't use it.<br>
+
+**Remarks**<br>
+You usually don't need to call this method unless you use **HexCtrl** through the raw pointer obtained by `CreateRawHexCtrl` factory function.<br>
+If you use **HexCtrl** in standard way through the `IHexCtrlPtr` pointer, obtained by `CreateHexCtrl` function, this method will be called automatically.
 
 ## [](#)Example
 The function you use to set a data to display as hex is `IHexCtrl::SetData`. 

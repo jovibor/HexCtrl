@@ -71,7 +71,7 @@ namespace HEXCTRL {
 		void ClearData()override;
 		void SetEditMode(bool fEnable)override;
 		void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1)override;
-		void SetFont(const LOGFONT* pLogFontNew)override;
+		void SetFont(const LOGFONTW* pLogFontNew)override;
 		void SetFontSize(UINT uiSize)override;
 		void SetColor(const HEXCOLORSTRUCT& clr)override;
 		void SetCapacity(DWORD dwCapacity)override;
@@ -80,6 +80,7 @@ namespace HEXCTRL {
 		bool IsMutable()override;
 		long GetFontSize()override;
 		void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)override;
+		HMENU GetMenu()override;
 		void Destroy();
 	protected:
 		DECLARE_MESSAGE_MAP()
@@ -122,7 +123,8 @@ namespace HEXCTRL {
 		void SelectAll();
 		void UpdateInfoText(); //Updates text in the bottom "info" area according to currently selected data.
 		void SetShowAs(INTERNAL::ENSHOWAS enShowAs); //Current data representation type.
-		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns); //Notify routine use in HEXDATAMODEEN::HEXMSG.
+		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns); //Notify routine used to send messages to Msg window.
+		void MsgWindowNotify(UINT uCode);				  //Same as above, but only for notifications.
 		void SetCursorPos(ULONGLONG ullPos, bool fHighPart); //Sets the cursor position when in Edit mode.
 		void CursorMoveRight();
 		void CursorMoveLeft();
@@ -147,7 +149,7 @@ namespace HEXCTRL {
 		const DWORD m_dwCapacityMax { 64 }; //Maximum capacity.
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 		INTERNAL::ENSHOWAS m_enShowAs { };  //Show data mode.
-		CWnd* m_pwndMsg { };				//Window the control messages will be sent to.
+		CWnd* m_pwndMsg { };				//Window, the control messages will be sent to.
 		IHexVirtual* m_pHexVirtual { };		//Data handler pointer for HEXDATAMODEEN::HEXVIRTUAL
 		SIZE m_sizeLetter { 1, 1 };			//Current font's letter size (width, height).
 		CFont m_fontHexView;				//Main Hex chunks font.
@@ -170,7 +172,7 @@ namespace HEXCTRL {
 		int m_iSpaceBetweenAscii { };	    //Space between two Ascii chars.
 		int m_iSpaceBetweenBlocks { };	    //Additional space between hex chunks after half of capacity.
 		int m_iHeightTopRect { };		    //Height of the header where offsets (0 1 2... D E F...) reside.
-		int m_iHeightBottomRect { 22 };	    //Height of bottom Info rect.
+		const int m_iHeightBottomRect { 22 }; //Height of bottom Info rect.
 		int m_iHeightBottomOffArea { m_iHeightBottomRect + m_iIndentBottomLine }; //Height of not visible rect from window's bottom to m_iThirdHorizLine.
 		int m_iHeightWorkArea { };		    //Needed for mouse selection point.y calculation.
 		int m_iFirstVertLine { }, m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
@@ -183,7 +185,7 @@ namespace HEXCTRL {
 		ULONGLONG m_ullCursorPos { };		//Current cursor position.
 		bool m_fCursorHigh { true };		//Cursor's High or Low bits position (first or last digit in hex chunk).
 		bool m_fCursorTextArea { false };	//Whether cursor at Ascii or Hex chunks area.
-		DWORD m_dwUndoMax { 500 };			//How many Undo states to preserve.
+		const DWORD m_dwUndoMax { 500 };	//How many Undo states to preserve.
 		std::deque<std::unique_ptr<INTERNAL::UNDOSTRUCT>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<INTERNAL::UNDOSTRUCT>> m_deqRedo; //Redo deque.
 		std::unordered_map<int, HBITMAP> m_umapHBITMAP; //Images for the Menu.

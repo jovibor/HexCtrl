@@ -70,6 +70,7 @@ namespace HEXCTRL
 		COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };		//Background color of the selected Hex/Ascii.
 		COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };			//Background color of the bottom "Info" rect.
 		COLORREF clrBkCursor { RGB(0, 0, 255) };						//Cursor's background color.
+		COLORREF clrBkCursorSelected { RGB(192, 192, 192) };			//Cursor's background color in selection.
 	};
 
 	/********************************************************************************************
@@ -120,6 +121,7 @@ namespace HEXCTRL
 	struct HEXNOTIFYSTRUCT
 	{
 		NMHDR			hdr { };		//Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
+		UINT_PTR		uMenuId { };	//User defined custom menu id.
 		ULONGLONG		ullIndex { };	//Index of the start byte to get/send.
 		ULONGLONG		ullSize { };	//Size of the bytes to get/send.
 		PBYTE			pData { };		//Pointer to a data to get/send.
@@ -140,7 +142,7 @@ namespace HEXCTRL
 		virtual void ClearData() = 0;						 //Clears all data from HexCtrl's view (not touching data itself).
 		virtual void SetEditMode(bool fEnable) = 0;			 //Enable or disable edit mode.
 		virtual void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1) = 0; //Shows (selects) given offset.
-		virtual void SetFont(const LOGFONT* pLogFontNew) = 0;//Sets the control's font.
+		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0;//Sets the control's font.
 		virtual void SetFontSize(UINT uiSize) = 0;			 //Sets the control's font size.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;//Sets all the control's colors.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;		 //Sets the control's current capacity.
@@ -149,6 +151,7 @@ namespace HEXCTRL
 		virtual bool IsMutable() = 0;						 //Is edit mode enabled or not.
 		virtual long GetFontSize() = 0;						 //Current font size.
 		virtual void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize) = 0; //Current selection.
+		virtual HMENU GetMenu() = 0;						 //Context menu handle.
 		virtual void Destroy() = 0;							 //Deleter.
 	};
 
@@ -178,8 +181,10 @@ namespace HEXCTRL
 	* These codes are used to notify m_pwndMsg window about control's current states.			*
 	********************************************************************************************/
 
-	constexpr auto HEXCTRL_MSG_DESTROY = 0x00FF;		//Indicates that HexCtrl is being destroyed.
-	constexpr auto HEXCTRL_MSG_GETDATA = 0x0100;		//Used in Virtual mode to demand the next byte to display.
-	constexpr auto HEXCTRL_MSG_MODIFYDATA = 0x0101;		//Indicates that the byte in memory has changed, used in edit mode.
-	constexpr auto HEXCTRL_MSG_SETSELECTION = 0x0102;	//A selection has been made for some bytes.
+	constexpr auto HEXCTRL_MSG_DESTROY { 0x00FF };			//Indicates that HexCtrl is being destroyed.
+	constexpr auto HEXCTRL_MSG_GETDATA { 0x0100 };			//Used in Virtual mode to demand the next byte to display.
+	constexpr auto HEXCTRL_MSG_MODIFYDATA { 0x0101 };		//Indicates that the byte in memory has changed, used in edit mode.
+	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0102 };		//Selection has been made.
+	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0103 };		//User defined custom menu clicked.
+	constexpr auto HEXCTRL_MSG_ONCONTEXTMENU { 0x0104 };	//OnContextMenu triggered.
 }

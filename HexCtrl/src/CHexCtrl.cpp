@@ -42,8 +42,9 @@ namespace HEXCTRL {
 			PASTE_ASHEX, PASTE_ASASCII
 		};
 
+		//Internal menu IDs, start from 0x8001.
 		enum class ENMENU : UINT_PTR {
-			IDM_MAIN_SEARCH,
+			IDM_MAIN_SEARCH = 0x8001,
 			IDM_SHOWAS_ASBYTE, IDM_SHOWAS_ASWORD, IDM_SHOWAS_ASDWORD, IDM_SHOWAS_ASQWORD,
 			IDM_EDIT_UNDO, IDM_EDIT_REDO, IDM_EDIT_COPY_ASHEX, IDM_EDIT_COPY_ASHEXFORMATTED, IDM_EDIT_COPY_ASASCII,
 			IDM_EDIT_PASTE_ASHEX, IDM_EDIT_PASTE_ASASCII,
@@ -91,10 +92,11 @@ CHexCtrl::CHexCtrl()
 {
 	RegisterWndClass();
 
+	//Filling capacity numbers.
 	for (unsigned i = 0; i < m_dwCapacityMax; i++)
 	{
-		WCHAR wstr[3];
-		swprintf_s(wstr, 3, L"%X", i);
+		WCHAR wstr[4];
+		swprintf_s(wstr, 4, L"%X", i);
 		m_umapCapacityWstr[i] = wstr;
 	}
 
@@ -318,7 +320,7 @@ void CHexCtrl::ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize)
 	SetSelection(ullOffset, ullOffset, ullSize, true);
 }
 
-void CHexCtrl::SetFont(const LOGFONT * pLogFontNew)
+void CHexCtrl::SetFont(const LOGFONTW * pLogFontNew)
 {
 	if (!pLogFontNew)
 		return;
@@ -401,6 +403,11 @@ void CHexCtrl::GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)
 {
 	ullOffset = m_ullSelectionStart;
 	ullSize = m_ullSelectionSize;
+}
+
+HMENU CHexCtrl::GetMenu()
+{
+	return m_menuMain.m_hMenu;
 }
 
 void CHexCtrl::Destroy()
@@ -556,6 +563,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	m_fCursorHigh = true;
 	m_fLMousePressed = true;
 	UpdateInfoText();
+	MsgWindowNotify(HEXCTRL_MSG_SETSELECTION);
 }
 
 void CHexCtrl::OnLButtonUp(UINT nFlags, CPoint point)
@@ -575,9 +583,9 @@ void CHexCtrl::OnMButtonDown(UINT nFlags, CPoint point)
 
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-	UINT uiId = LOWORD(wParam);
+	UINT_PTR uId = LOWORD(wParam);
 
-	switch (uiId)
+	switch (uId)
 	{
 	case (UINT_PTR)INTERNAL::ENMENU::IDM_MAIN_SEARCH:
 		if (m_enMode == HEXDATAMODEEN::HEXNORMAL)
@@ -636,6 +644,11 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	case (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASQWORD:
 		SetShowAs(INTERNAL::ENSHOWAS::ASQWORD);
 		break;
+	default:
+		//For user defined custom menu, we notify parent window.
+		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_MENUCLICK } };
+		hns.uMenuId = uId;
+		MsgWindowNotify(hns);
 	}
 
 	return CWnd::OnCommand(wParam, lParam);
@@ -664,6 +677,9 @@ void CHexCtrl::OnContextMenu(CWnd * pWnd, CPoint point)
 		uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
 	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_FILL_ZEROS,
 		(m_fMutable ? uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
+
+	//Notifying parent that we are about to display context menu.
+	MsgWindowNotify(HEXCTRL_MSG_ONCONTEXTMENU);
 
 	m_menuMain.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
 }
@@ -1101,13 +1117,15 @@ void CHexCtrl::OnPaint()
 				pwszHexToPrint[1] = pwszHexMap[(chByteToPrint & 0x0F)];
 
 				//Selection draw with different BK color.
-				COLORREF clrBk, clrBkAscii, clrTextHex, clrTextAscii;
+				COLORREF clrBk, clrBkAscii, clrTextHex, clrTextAscii, clrBkCursor;
 				if (m_ullSelectionSize && ullIndexByteToPrint >= m_ullSelectionStart && ullIndexByteToPrint < m_ullSelectionEnd)
 				{
 					clrBk = clrBkAscii = m_stColor.clrBkSelected;
 					clrTextHex = clrTextAscii = m_stColor.clrTextSelected;
+					clrBkCursor = m_stColor.clrBkCursorSelected;
 					//Space between hex chunks (excluding last hex in a row) filling with bk_selected color.
-					if (ullIndexByteToPrint < (m_ullSelectionEnd - 1) && (ullIndexByteToPrint + 1) % m_dwCapacity &&
+					if (ullIndexByteToPrint < (m_ullSelectionEnd - 1) &&
+						(ullIndexByteToPrint + 1) % m_dwCapacity &&
 						((ullIndexByteToPrint + 1) % (DWORD)m_enShowAs) == 0)
 					{	//Rect of the space between Hex chunks. Needed for proper selection drawing.
 						rc.left = iHexPosToPrintX + m_iSizeHexByte;
@@ -1125,14 +1143,15 @@ void CHexCtrl::OnPaint()
 					clrBk = clrBkAscii = m_stColor.clrBk;
 					clrTextHex = m_stColor.clrTextHex;
 					clrTextAscii = m_stColor.clrTextAscii;
+					clrBkCursor = m_stColor.clrBkCursor;
 				}
 				//Hex chunk printing.
-				if (m_fMutable && ullIndexByteToPrint == m_ullCursorPos)
+				if (m_fMutable && (ullIndexByteToPrint == m_ullCursorPos))
 				{
-					rDC.SetBkColor(m_fCursorHigh ? m_stColor.clrBkCursor : clrBk);
+					rDC.SetBkColor(m_fCursorHigh ? clrBkCursor : clrBk);
 					rDC.SetTextColor(m_fCursorHigh ? m_stColor.clrTextCursor : clrTextHex);
 					ExtTextOutW(rDC.m_hDC, iHexPosToPrintX, iHexPosToPrintY, 0, nullptr, &pwszHexToPrint[0], 1, nullptr);
-					rDC.SetBkColor(!m_fCursorHigh ? m_stColor.clrBkCursor : clrBk);
+					rDC.SetBkColor(!m_fCursorHigh ? clrBkCursor : clrBk);
 					rDC.SetTextColor(!m_fCursorHigh ? m_stColor.clrTextCursor : clrTextHex);
 					ExtTextOutW(rDC.m_hDC, iHexPosToPrintX + m_sizeLetter.cx, iHexPosToPrintY, 0, nullptr, &pwszHexToPrint[1], 1, nullptr);
 				}
@@ -1149,8 +1168,9 @@ void CHexCtrl::OnPaint()
 					wchAscii = '.';
 
 				//Ascii printing.
-				if (m_fMutable && ullIndexByteToPrint == m_ullCursorPos) {
-					clrBkAscii = m_stColor.clrBkCursor;
+				if (m_fMutable && (ullIndexByteToPrint == m_ullCursorPos))
+				{
+					clrBkAscii = clrBkCursor;
 					clrTextAscii = m_stColor.clrTextCursor;
 				}
 				rDC.SetBkColor(clrBkAscii);
@@ -1704,6 +1724,12 @@ void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT & hns)
 	CWnd* pwndMsg = GetMsgWindow();
 	if (pwndMsg)
 		pwndMsg->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), (LPARAM)& hns);
+}
+
+void CHexCtrl::MsgWindowNotify(UINT uCode)
+{
+	HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), uCode } };
+	MsgWindowNotify(hns);
 }
 
 void CHexCtrl::SetCursorPos(ULONGLONG ullPos, bool fHighPart)
@@ -2274,10 +2300,7 @@ void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ul
 
 	UpdateInfoText();
 
-	HEXNOTIFYSTRUCT hns { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_SETSELECTION };
-	hns.ullIndex = m_ullSelectionStart;
-	hns.ullSize = m_ullSelectionSize;
-	MsgWindowNotify(hns);
+	MsgWindowNotify(HEXCTRL_MSG_SETSELECTION);
 }
 
 void CHexCtrl::SelectAll()
