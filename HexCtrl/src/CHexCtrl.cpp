@@ -1721,9 +1721,14 @@ void CHexCtrl::SetShowAs(INTERNAL::ENSHOWAS enShowAs)
 
 void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT & hns)
 {
-	CWnd* pwndMsg = GetMsgWindow();
-	if (pwndMsg)
-		pwndMsg->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), (LPARAM)& hns);
+	//Send notification to the Message window if it was set.
+	//Otherwise send to Parent window.
+	CWnd* pwndSend = GetMsgWindow();
+	if (!pwndSend)
+		pwndSend = GetParent();
+	
+	if(pwndSend)
+		pwndSend->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), (LPARAM)& hns);
 }
 
 void CHexCtrl::MsgWindowNotify(UINT uCode)
