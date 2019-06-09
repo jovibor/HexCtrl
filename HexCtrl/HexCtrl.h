@@ -146,12 +146,12 @@ namespace HEXCTRL
 		virtual void SetFontSize(UINT uiSize) = 0;			 //Sets the control's font size.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;//Sets all the control's colors.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;		 //Sets the control's current capacity.
-		virtual bool IsCreated() = 0;						 //Shows whether control is created or not.
-		virtual bool IsDataSet() = 0;						 //Shows whether a data was set to the control or not.
-		virtual bool IsMutable() = 0;						 //Is edit mode enabled or not.
+		virtual bool IsCreated()const = 0;					 //Shows whether control is created or not.
+		virtual bool IsDataSet()const = 0;					 //Shows whether a data was set to the control or not.
+		virtual bool IsMutable()const = 0;					 //Is edit mode enabled or not.
 		virtual long GetFontSize() = 0;						 //Current font size.
-		virtual void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize) = 0; //Current selection.
-		virtual HMENU GetMenu() = 0;						 //Context menu handle.
+		virtual void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const = 0; //Current selection.
+		virtual HMENU GetMenuHandle()const = 0;				 //Context menu handle.
 		virtual void Destroy() = 0;							 //Deleter.
 	};
 

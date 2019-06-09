@@ -29,7 +29,7 @@
   * [IsMutable](#ismutable)
   * [GetFontSize](#getfontsize)
   * [GetSelection](#getselection)
-  * [GetMenu](#getmenu)
+  * [GetMenuHandle](#GetMenuHandle)
   * [Destroy](#destroy)
 * [Example](#example)
 * [Positioning and Sizing](#positioning-and-sizing)
@@ -54,13 +54,13 @@ The usage of the control is quite simple:
 5. Call `myHex->Create` method to create control instance.
 6. Call `myHex->SetData` method to set the actual data to display as hex.
 
-`IHexCtrlPtr` is, in fact, a pointer to the `IHexCtrl` pure abstract base class, wrapped either in `std::unique_ptr` or `std::shared_ptr`. You can choose whatever is best for you by comment/uncomment one of this alliases in `HexCtrl.h`:
+`IHexCtrlPtr` is, in fact, a pointer to a `IHexCtrl` pure abstract base class, wrapped either in `std::unique_ptr` or `std::shared_ptr`. You can choose whatever is best for your needs by comment/uncomment one of these alliases in `HexCtrl.h`:
 ```cpp
-	//using IHexCtrlPtr = IHexCtrlUnPtr;
-	using IHexCtrlPtr = IHexCtrlShPtr;
+//using IHexCtrlPtr = IHexCtrlUnPtr;
+using IHexCtrlPtr = IHexCtrlShPtr;
 ```
 This wrapper is used mainly for convenience, so you don't have to bother about object lifetime, it will be destroyed automatically.
-That's why there is a call to the factory function `CreateHexCtrl()`, to properly initialize a pointer.<br>
+That's why there is a call to the factory function `CreateHexCtrl()` - to properly initialize a pointer.<br>
 
 **HexCtrl** also uses its own namespace - `HEXCTRL`. So it's up to you, whether to use namespace prefix before declarations: 
 ```cpp
@@ -241,7 +241,7 @@ bool IsDataSet();						 //Shows whether a data was set to the control or not.
 bool IsMutable();						 //Is edit mode enabled or not.
 long GetFontSize();						 //Current font size.
 void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize); //Current selection.
-HMENU GetMenu();					     //Context menu handle.
+HMENU GetMenuHandle();				     //Context menu handle.
 void Destroy();							 //Deleter.
 ```
 ### Create <a id="createmethod"></a>
@@ -292,9 +292,9 @@ Returns current font size.
 ### [](#)GetSelection
 **`void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)`**<br>
 Gets current start position of the selection within **HexCtrl** as `ullOffset`, and its size as `ullSize`.
-### [](#)GetMenu
-**`HMENU GetMenu()`**<br>
-`GetMenu` method retrives the `HMENU` handle of the control's context menu. You can use this handle to customize menu for your needs.<br>
+### [](#)GetMenuHandle
+**`HMENU GetMenuHandle()`**<br>
+`GetMenuHandle` method retrives the `HMENU` handle of the control's context menu. You can use this handle to customize menu for your needs.<br>
 Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu assign menu `ID` starting from `0x9000` to not interfere.<br>
 When user clicks custom menu control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to `HEXNOTIFYSTRUCT` with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `uMenuId` field of the `HEXNOTIFYSTRUCT` will be holding `ID` of the menu clicked.
 ### [](#)Destroy

@@ -40,7 +40,7 @@ BOOL CHexDlgSearch::OnInitDialog()
 	CDialogEx::OnInitDialog();
 	m_iRadioCurrent = IDC_HEXCTRL_SEARCH_RADIO_HEX;
 	CheckRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE, m_iRadioCurrent);
-	m_stBrushDefault.CreateSolidBrush(m_clrMenu);
+	m_stBrushDefault.CreateSolidBrush(m_clrBkTextArea);
 
 	return TRUE;
 }
@@ -220,7 +220,7 @@ HBRUSH CHexDlgSearch::OnCtlColor(CDC * pDC, CWnd * pWnd, UINT nCtlColor)
 {
 	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)
 	{
-		pDC->SetBkColor(m_clrMenu);
+		pDC->SetBkColor(m_clrBkTextArea);
 		pDC->SetTextColor(m_stSearch.fFound ? m_clrSearchFound : m_clrSearchFailed);
 		return m_stBrushDefault;
 	}
@@ -242,7 +242,7 @@ void CHexDlgSearch::ClearAll()
 	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)->SetWindowTextW(L"");
 }
 
-CHexCtrl* CHexDlgSearch::GetHexCtrl()
+CHexCtrl* CHexDlgSearch::GetHexCtrl()const
 {
 	return m_pHexCtrl;
 }

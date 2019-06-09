@@ -54,7 +54,12 @@ namespace HEXCTRL {
 			bool			fAll { false };			//Find/Replace one by one, or all?
 		};
 	}
+
+	/************************************************
+	* Forward declarations.							*
+	************************************************/
 	namespace SCROLLEX { class CScrollEx; }
+	class CHexDlgSearch;
 
 	/********************************************************************************************
 	* CHexCtrl class declaration.																*
@@ -75,13 +80,13 @@ namespace HEXCTRL {
 		void SetFontSize(UINT uiSize)override;
 		void SetColor(const HEXCOLORSTRUCT& clr)override;
 		void SetCapacity(DWORD dwCapacity)override;
-		bool IsCreated()override;
-		bool IsDataSet()override;
-		bool IsMutable()override;
+		bool IsCreated()const override;
+		bool IsDataSet()const override;
+		bool IsMutable()const override;
 		long GetFontSize()override;
-		void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)override;
-		HMENU GetMenu()override;
-		void Destroy();
+		void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const override;
+		HMENU GetMenuHandle()const override;
+		void Destroy()override;
 	protected:
 		DECLARE_MESSAGE_MAP()
 		bool RegisterWndClass();
@@ -107,34 +112,33 @@ namespace HEXCTRL {
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
 	protected:
-		[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex); //Gets the byte data by index.
-		void ModifyData(const HEXMODIFYSTRUCT& hms); //Main routine to modify data, in fMutable=true mode.
-		[[nodiscard]] CWnd* GetMsgWindow(); //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
-		void Search(INTERNAL::SEARCHSTRUCT& rSearch); //Search through currently set data.
-		void RecalcAll(); //Recalcs all inner draw and data related values.
+		[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex)const; //Gets the byte data by index.
+		void ModifyData(const HEXMODIFYSTRUCT& hms);	//Main routine to modify data, in fMutable=true mode.
+		[[nodiscard]] CWnd* GetMsgWindow()const;		//Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
+		void Search(INTERNAL::SEARCHSTRUCT& rSearch);	//Search through currently set data.
+		void RecalcAll();								//Recalcs all inner draw and data related values.
 		void RecalcWorkAreaHeight(int iClientHeight);
 		void RecalcScrollSizes(int iClientHeight = 0, int iClientWidth = 0);
-		[[nodiscard]] ULONGLONG GetTopLine(); //Returns current top line's number in view.
-		[[nodiscard]] ULONGLONG HitTest(const POINT*); //Is any hex chunk withing given point?
-		void ChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy); //Point of Hex chunk.
+		[[nodiscard]] ULONGLONG GetTopLine()const; 		//Returns current top line's number in view.
+		[[nodiscard]] ULONGLONG HitTest(const POINT*);	//Is any hex chunk withing given point?
+		void ChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy)const; //Point of Hex chunk.
 		void ClipboardCopy(INTERNAL::ENCLIPBOARD enType);
 		void ClipboardPaste(INTERNAL::ENCLIPBOARD enType);
 		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
 		void SelectAll();
-		void UpdateInfoText(); //Updates text in the bottom "info" area according to currently selected data.
-		void SetShowAs(INTERNAL::ENSHOWAS enShowAs); //Current data representation type.
-		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns); //Notify routine used to send messages to Msg window.
-		void MsgWindowNotify(UINT uCode);				  //Same as above, but only for notifications.
-		void SetCursorPos(ULONGLONG ullPos, bool fHighPart); //Sets the cursor position when in Edit mode.
+		void UpdateInfoText();	//Updates text in the bottom "info" area according to currently selected data.
+		void SetShowAs(INTERNAL::ENSHOWAS enShowAs);		   //Current data representation type.
+		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
+		void MsgWindowNotify(UINT uCode)const;	    		   //Same as above, but only for notifications.
+		void SetCursorPos(ULONGLONG ullPos, bool fHighPart);   //Sets the cursor position when in Edit mode.
 		void CursorMoveRight();
 		void CursorMoveLeft();
 		void CursorMoveUp();
 		void CursorMoveDown();
-		void CursorScroll(); //Replicates SetSelection, but for cursor.
 		void Undo();
 		void Redo();
 		void SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize); //Takes currently modifiable data snapshot.
-		[[nodiscard]] bool IsCurTextArea(); //Whether click was made in Text or Hex area.
+		[[nodiscard]] bool IsCurTextArea()const; //Whether click was made in Text or Hex area.
 		bool Replace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplaced, bool fRedraw = true);
 	private:
 		bool m_fCreated { false };			//Is control created or not yet.
@@ -154,9 +158,9 @@ namespace HEXCTRL {
 		SIZE m_sizeLetter { 1, 1 };			//Current font's letter size (width, height).
 		CFont m_fontHexView;				//Main Hex chunks font.
 		CFont m_fontBottomRect;				//Font for bottom Info rect.
-		std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() }; //Search dialog.
-		std::unique_ptr<SCROLLEX::CScrollEx> m_pstScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll object.
-		std::unique_ptr<SCROLLEX::CScrollEx> m_pstScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll object.
+		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() }; //Search dialog.
+		const std::unique_ptr<SCROLLEX::CScrollEx> m_pstScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll bar.
+		const std::unique_ptr<SCROLLEX::CScrollEx> m_pstScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll bar.
 		CMenu m_menuMain;					//Main popup menu.
 		CMenu m_menuShowAs;					//Submenu "Show as..."
 		CBrush m_stBrushBkSelected;			//Brush for "selected" background.

@@ -37,16 +37,16 @@ namespace HEXCTRL {
 		void OnRadioBnRange(UINT nID);
 		void SearchCallback();
 		void ClearAll();
-		CHexCtrl* GetHexCtrl();
-		INTERNAL::ENSEARCHTYPE GetSearchType(); //Gets selected search type.
+		CHexCtrl* GetHexCtrl()const;
+		auto GetSearchType()->INTERNAL::ENSEARCHTYPE; //Gets selected search type.
 		DECLARE_MESSAGE_MAP()
 	private:
 		CHexCtrl* m_pHexCtrl { };
 		INTERNAL::SEARCHSTRUCT m_stSearch { };
 		int m_iRadioCurrent { };
-		COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
-		COLORREF m_clrSearchFound { RGB(0, 200, 0) };
+		const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
+		const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
+		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
 		CBrush m_stBrushDefault;
-		COLORREF m_clrMenu { GetSysColor(COLOR_MENU) };
 	};
 }
