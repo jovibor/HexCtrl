@@ -254,7 +254,7 @@ Returns `true` if created successfully, `false` otherwise.
 ### [](#)CreateDialogCtrl
 **`bool CreateDialogCtrl()`**<br>
 This method is used if you want to create a dialog based **HexCtrl** as a custom control. See [this section](#in-dialog) for more info.
-### <a id="setdatamethod"></a>SetData 
+### <a id="setdatamethod"></a>SetData
 **`void SetData(const HEXDATASTRUCT& hds)`**<br>
 Main method to set a data to display and edit. It takes `HEXDATASTRUCT` as argument. See [this section](#setdata) for more info.
 ### [](#)ClearData

@@ -41,17 +41,26 @@ namespace HEXCTRL {
 			ULONGLONG GetScrollLineSize()const;
 			ULONGLONG GetScrollPageSize()const;
 			void SetScrollPageSize(ULONGLONG ullSize);
+			
+			/************************************************************************
+			* CALLBACK METHODS:														*
+			* These methods below must be called in the corresponding methods		*
+			* of the parent window.													*
+			************************************************************************/
 			BOOL OnNcActivate(BOOL bActive)const;
 			void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 			void OnNcPaint()const;
 			void OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 			void OnMouseMove(UINT nFlags, CPoint point);
 			void OnLButtonUp(UINT nFlags, CPoint point);
+			/************************************************************************
+			* END OF THE CALLBACK METHODS.											*
+			************************************************************************/
 		protected:
 			DECLARE_MESSAGE_MAP()
-			void DrawScrollBar()const;
-			void DrawArrows(CDC* pDC)const;
-			void DrawThumb(CDC* pDC)const;
+			void DrawScrollBar()const;									//Draws the whole Scrollbar.
+			void DrawArrows(CDC* pDC)const;								//Draws arrows.
+			void DrawThumb(CDC* pDC)const;								//Draws the Scroll thumb.
 			CRect GetScrollRect(bool fWithNCArea = false)const;			//Scroll's whole rect.
 			CRect GetScrollWorkAreaRect(bool fClientCoord = false)const;//Rect without arrows.
 			UINT GetScrollSizeWH()const;								//Scroll size in pixels, width or height.
@@ -68,35 +77,35 @@ namespace HEXCTRL {
 			CRect GetParentRect(bool fClient = true)const;
 			int GetTopDelta()const;	//Difference between parent window's Window and Client area. Very important in hit testing.
 			int GetLeftDelta()const;
-			bool IsVert()const;
-			bool IsThumbDragging()const;
-			bool IsSiblingVisible()const;
-			void SendParentScrollMsg()const;
+			bool IsVert()const;											//Is vertical or horizontal scrollbar.
+			bool IsThumbDragging()const;								//Is the thumb currently dragged by mouse.
+			bool IsSiblingVisible()const;								//Is sibling scrollbar currently visible or not.
+			void SendParentScrollMsg()const;							//Sends the WM_(V/H)SCROLL to the parent window.
 			afx_msg void OnTimer(UINT_PTR nIDEvent);
 		protected:
-			CWnd* m_pwndParent { };
-			CScrollEx* m_pSibling { };
-			UINT m_uiScrollBarSizeWH { };
-			int m_iScrollType { };
-			ENSTATE m_enState { };
-			const COLORREF m_clrBkNC { GetSysColor(COLOR_3DFACE) };
-			const COLORREF m_clrBkScrollBar { RGB(241, 241, 241) };
-			const COLORREF m_clrThumb { RGB(192, 192, 192) };
-			CPoint m_ptCursorCur { };
-			ULONGLONG m_ullScrollPosCur { 0 };
-			ULONGLONG m_ullScrollPosPrev { };
-			ULONGLONG m_ullScrollLine { };
-			ULONGLONG m_ullScrollPage { };
-			ULONGLONG m_ullScrollSizeMax { };
-			const unsigned m_uiThumbSizeMin { 15 };
-			const int m_iTimerFirstClick { 200 };
-			const int m_iTimerRepeat { 50 };
-			CBitmap m_bmpArrows;
-			const unsigned m_uiFirstArrowOffset { 0 };
-			const unsigned m_uiLastArrowOffset { 18 };
-			const unsigned m_uiArrowSize { 17 };
-			bool m_fCreated { false };						//Is created or not.
-			bool m_fVisible { false };						//Is visible at the moment or not.
+			CWnd* m_pwndParent { };										//Parent window.
+			CScrollEx* m_pSibling { };									//Sibling scrollbar, added with AddSibling.
+			UINT m_uiScrollBarSizeWH { };								//Scrollbar size (width if vertical, height if horz).
+			int m_iScrollType { };										//Scrollbar type - horizontal or vertical.
+			ENSTATE m_enState { };										//Current state.
+			const COLORREF m_clrBkNC { GetSysColor(COLOR_3DFACE) };		//Bk color of the non client area. 
+			const COLORREF m_clrBkScrollBar { RGB(241, 241, 241) };		//Color of the scrollbar.
+			const COLORREF m_clrThumb { RGB(192, 192, 192) };			//Scroll thumb color.
+			CPoint m_ptCursorCur { };									//Cursor's current position.
+			ULONGLONG m_ullScrollPosCur { 0 };							//Current scroll position.
+			ULONGLONG m_ullScrollPosPrev { };							//Previous scroll position.
+			ULONGLONG m_ullScrollLine { };								//Size of one line scroll, when clicking arrow.
+			ULONGLONG m_ullScrollPage { };								//Size of page scroll, when clicking channel.
+			ULONGLONG m_ullScrollSizeMax { };							//Maximum scroll size (limit).
+			const unsigned m_uiThumbSizeMin { 15 };						//Minimum thumb size.
+			const int m_iTimerFirstClick { 200 };						//Millisec for WM_TIMER for first channel click.
+			const int m_iTimerRepeat { 50 };							//Millisec for repeat when click and hold on channel.
+			CBitmap m_bmpArrows;										//Bitmap of the arrows.
+			const unsigned m_uiFirstArrowOffset { 0 };					//Offset of the first arrow, in pixels, at arrows bitmap.
+			const unsigned m_uiLastArrowOffset { 18 };					//Offset of the last arrow, in pixels, at arrows bitmap.
+			const unsigned m_uiArrowSize { 17 };						//Arrow size in pixels.
+			bool m_fCreated { false };									//Is created or not.
+			bool m_fVisible { false };									//Is visible at the moment or not.
 		};
 	};
 };

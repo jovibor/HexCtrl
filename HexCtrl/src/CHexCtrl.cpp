@@ -116,7 +116,7 @@ CHexCtrl::CHexCtrl()
 	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_UNDO, L"Undo	Ctrl+Z");
 	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_REDO, L"Redo	Ctrl+Y");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASHEX, L"Copy as Hex...	Ctrl+C");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASHEX, L"Copy as Hex	Ctrl+C");
 
 	//Menu icons.
 	MENUITEMINFOW mii { };
@@ -126,8 +126,8 @@ CHexCtrl::CHexCtrl()
 		(HBITMAP)LoadImageW(GetModuleHandleW(0), MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
 	m_menuMain.SetMenuItemInfoW((UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASHEX, &mii);
 
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASHEXFORMATTED, L"Copy as Formatted Hex...");
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASASCII, L"Copy as Ascii...");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASHEXFORMATTED, L"Copy as Formatted Hex");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASASCII, L"Copy as Ascii");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
 	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_PASTE_ASHEX, L"Paste as Hex	Ctrl+V");
 	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_PASTE_ASHEX] =
@@ -514,7 +514,7 @@ BOOL CHexCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 		SetFontSize(GetFontSize() + zDelta / WHEEL_DELTA * 2);
 		return TRUE;
 	}
-	else if (nFlags & (MK_CONTROL | MK_SHIFT))
+	else if (nFlags == (MK_CONTROL | MK_SHIFT))
 	{
 		SetCapacity(m_dwCapacity + zDelta / WHEEL_DELTA);
 		return TRUE;
@@ -1005,12 +1005,13 @@ void CHexCtrl::OnPaint()
 	//Info rect's text.
 	rc.left = m_iFirstVertLine;
 	rc.top = iThirdHorizLine + 1;
-	rc.right = rcClient.right > m_iFourthVertLine ? rcClient.right : m_iFourthVertLine;
-	rc.bottom = iFourthHorizLine;
+	rc.right = m_iFourthVertLine;
+	rc.bottom = iFourthHorizLine;	//Fill bottom rect until iFourthHorizLine.
 	rDC.FillSolidRect(&rc, m_stColor.clrBkInfoRect);
 	rDC.SetTextColor(m_stColor.clrTextInfoRect);
 	rDC.SelectObject(&m_fontBottomRect);
-	rc.left += 5; //Draw text with little indent.
+	rc.left += 5;					//Draw text beginning with little indent.
+	rc.right = rcClient.right;		//Draw text to the end of the client area, even if it pass iFourthHorizLine.
 	rDC.DrawTextW(m_wstrBottomText.data(), (int)m_wstrBottomText.size(), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
 	rDC.SelectObject(&m_fontHexView);

@@ -369,37 +369,34 @@ void CScrollEx::OnSetCursor(CWnd * pWnd, UINT nHitTest, UINT message)
 
 void CScrollEx::OnMouseMove(UINT nFlags, CPoint point)
 {
-	if (!m_fCreated)
+	if (!m_fCreated || !IsThumbDragging())
 		return;
 
-	if (IsThumbDragging())
+	CRect rc = GetScrollWorkAreaRect(true);
+	int iNewPos;
+
+	if (IsVert())
 	{
-		CRect rc = GetScrollWorkAreaRect(true);
-		int iNewPos;
-
-		if (IsVert())
-		{
-			if (point.y < rc.top)
-				iNewPos = 0;
-			else if (point.y > rc.bottom)
-				iNewPos = 0x7FFFFFFF;
-			else
-				iNewPos = GetThumbPos() + (point.y - m_ptCursorCur.y);
-		}
+		if (point.y < rc.top)
+			iNewPos = 0;
+		else if (point.y > rc.bottom)
+			iNewPos = 0x7FFFFFFF;
 		else
-		{
-			if (point.x < rc.left)
-				iNewPos = 0;
-			else if (point.x > rc.right)
-				iNewPos = 0x7FFFFFFF;
-			else
-				iNewPos = GetThumbPos() + (point.x - m_ptCursorCur.x);
-		}
-
-		m_ptCursorCur = point;
-		SetThumbPos(iNewPos);
-		SendParentScrollMsg();
+			iNewPos = GetThumbPos() + (point.y - m_ptCursorCur.y);
 	}
+	else
+	{
+		if (point.x < rc.left)
+			iNewPos = 0;
+		else if (point.x > rc.right)
+			iNewPos = 0x7FFFFFFF;
+		else
+			iNewPos = GetThumbPos() + (point.x - m_ptCursorCur.x);
+	}
+
+	m_ptCursorCur = point;
+	SetThumbPos(iNewPos);
+	SendParentScrollMsg();
 }
 
 void CScrollEx::OnLButtonUp(UINT nFlags, CPoint point)
