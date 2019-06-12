@@ -35,6 +35,7 @@
 * [Positioning and Sizing](#positioning-and-sizing)
 * [Appearance](#appearance)
 * [Licensing](#licensing)
+* [History](#history)
 
 ## [](#)Introduction
 Being good low level wrapper library for Windows API in general, **MFC** was always lacking a good native controls support.
@@ -43,7 +44,7 @@ This **HexControl** is a tiny attempt to expand standard **MFC** functionality, 
 
 ## [](#)Implementation
 This **HexControl** is implemented as a `CWnd` derived class, and can be used as a *child* or *float* window in any place
-of your existing **MFC** application. It was build and tested in Visual Studio 2017, under Windows 10.
+of your existing **MFC** application. It was build and tested in Visual Studio 2019, under Windows 10.
 
 ## [](#)Using the Control
 The usage of the control is quite simple:
@@ -244,7 +245,7 @@ void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize); //Current selection
 HMENU GetMenuHandle();				     //Context menu handle.
 void Destroy();							 //Deleter.
 ```
-### Create <a id="createmethod"></a>
+### <a id="createmethod"></a>Create
 **`bool Create(const HEXCREATESTRUCT& hcs)`**<br>
 Main initialization method.<br>
 It takes `HEXCREATESTRUCT`, that you fill first, as argument.
@@ -253,9 +254,9 @@ Returns `true` if created successfully, `false` otherwise.
 ### [](#)CreateDialogCtrl
 **`bool CreateDialogCtrl()`**<br>
 This method is used if you want to create a dialog based **HexCtrl** as a custom control. See [this section](#in-dialog) for more info.
-### SetData <a id="setdatamethod"></a>
+### <a id="setdatamethod"></a>SetData 
 **`void SetData(const HEXDATASTRUCT& hds)`**<br>
-Main method to set a data to display and edit. It takes `HEXDATASTRUCT` as argument. See [this section](#set-data) for more info.
+Main method to set a data to display and edit. It takes `HEXDATASTRUCT` as argument. See [this section](#setdata) for more info.
 ### [](#)ClearData
 **`void ClearData()`**<br>
 Clears data from the **HexCtrl** view, not touching data itself.
@@ -291,7 +292,7 @@ Shows whether **HexCtrl** is currently in edit mode or not.
 Returns current font size.
 ### [](#)GetSelection
 **`void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)`**<br>
-Gets current start position of the selection within **HexCtrl** as `ullOffset`, and its size as `ullSize`.
+Returns current start position (offset) of the selection as `ullOffset`, and its size as `ullSize`.
 ### [](#)GetMenuHandle
 **`HMENU GetMenuHandle()`**<br>
 `GetMenuHandle` method retrives the `HMENU` handle of the control's context menu. You can use this handle to customize menu for your needs.<br>
@@ -348,3 +349,24 @@ To change control's capacity - **«Ctrl+Shift+MouseWheel»**
 ## [](#)Licensing
 This software is available under the **"MIT License modified with The Commons Clause".**
 [https://github.com/jovibor/HexCtrl/blob/master/LICENSE](https://github.com/jovibor/HexCtrl/blob/master/LICENSE)
+
+## [](#)History
+* 8th December, 2018: First version
+* 21st December, 2018 - v1.1: Some tweaks and fixes
+* 23rd December, 2018 - v1.2: C++17 obligation has been alleviated
+* 25th December, 2018 - v1.3: Added Bottom info bar, Ability to change capacity. Fixes: Some selection related bugs fixed.
+* 28th December, 2018 - v1.4: Added About box, Selection offset into info bar, Search support. Fixed some minor bugs.
+* 4th January, 2019 - v1.5: Further improvements and fixes
+* 7th January, 2019 - v1.5.1: Small fix
+* 12th February, 2019 - v1.7: Lots of reworks, improvements and fixes
+* 19th February, 2019 - v1.7.5: Fixed some regressions. HEXCTRLCREATE added
+* 26th February, 2019 - v1.8: Speed improvements in drawing routine. Other fixes
+* 3rd March, 2019 - v1.8.1: Minor fixes. Added sample project
+* 12th March, 2019 - v2.0: Edit mode added. Show data as BYTE, WORD,.. etc. Many improvements
+* 15th March, 2019 - v2.1: Fixed regressions. Code reworks and cleaning
+* 17th March, 2019 - v2.2.1: Added dialog Custom Control support
+* 23rd March, 2019 - v2.2.3: Added - Paste methods, Undo, Redo.
+* 2nd April, 2019 - v2.2.8: Internal reworking and expanding. Less client code dependencies. Many fixes.
+* 15th April, 2019 - v2.2.11: Visual Studio 2019 compatibility. Added "Find and Replace" ability.
+* 12th May, 2019 - v2.2.12: Search/Replace dialog behavior depending on edit mode.
+* 12th June, 2019 - v2.2.15: Minor fixes and improvements
