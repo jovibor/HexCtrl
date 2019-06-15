@@ -1,12 +1,10 @@
 /****************************************************************************************
-* Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/						    *
+* Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
+* This is a Hex Control for MFC applications.                                           *
+* Official git repository of the project: https://github.com/jovibor/HexCtrl/           *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
-* This is a Hex control for MFC apps, implemented as CWnd derived class.			    *
-* The usage is quite simple:														    *
-* 1. Construct CHexCtrl object — HEXCTRL::CHexCtrl myHex;								*
-* 2. Call myHex.Create member function to create an instance.   					    *
-* 3. Call myHex.SetData method to set the data and its size to display as hex.	        *
+* For more information, or any questions, visit the project's official repository.      *
 ****************************************************************************************/
 #pragma once
 #include <afxcontrolbars.h>  //Standard MFC's controls header.
