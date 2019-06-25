@@ -13,11 +13,11 @@
 namespace HEXCTRL
 {
 	/********************************************************************************************
-	* HEXMODIFYASEN - enum to represent data modification type.                                 *
+	* HEXMODIFYTYPE - enum to represent data modification type.                                 *
 	********************************************************************************************/
-	enum class HEXMODIFYASEN : DWORD
+	enum class HEXMODIFYTYPE : DWORD
 	{
-		AS_MODIFY, AS_FILL, AS_UNDO, AS_REDO
+		MODIFY_BYTE, MODIFY_FILL, MODIFY_UNDO, MODIFY_REDO
 	};
 
 	/********************************************************************************************
@@ -25,20 +25,19 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXMODIFYSTRUCT
 	{
-		ULONGLONG     ullIndex { };                        //Index of the start byte to modify.
-		ULONGLONG     ullModifySize { };                   //Size in bytes.
-		PBYTE         pData { };                           //Pointer to a data to be set.
-		HEXMODIFYASEN enType { HEXMODIFYASEN::AS_MODIFY }; //Modification type.
-		ULONGLONG     ullFillDataSize { };                 //Size of pData if enType == AS_FILL.
-		bool          fWhole { true };                     //Is a whole byte or just a part of it to be modified.
-		bool          fHighPart { true };                  //Shows whether high or low part of the byte should be modified
-														   //(if the fWhole flag is false).
-		bool          fRedraw { true };                    //Redraw view after modification or not.
+		ULONGLONG     ullIndex { };                          //Index of the start byte to modify.
+		ULONGLONG     ullModifySize { };                     //Size in bytes.
+		PBYTE         pData { };                             //Pointer to a data to be set.
+		HEXMODIFYTYPE enType { HEXMODIFYTYPE::MODIFY_BYTE }; //Modification type.
+		ULONGLONG     ullFillDataSize { };                   //Size of pData if enType == MODIFY_FILL.
+		bool          fWhole { true };                       //Is a whole byte or just a part of it to be modified.
+		bool          fHighPart { true };                    //Shows whether high or low part of the byte should be modified (if the fWhole flag is false).
+		bool          fRedraw { true };                      //Redraw view after modification or not.
 	};
 
 	/********************************************************************************************
 	* IHexVirtual - Pure abstract data handler class, that can be implemented by client,        *
-	* to set its own data handler routines.	Works in HEXDATAMODEEN::HEXVIRTUAL mode.            *
+	* to set its own data handler routines.	Works in HEXDATAMODE::DATA_VIRTUAL mode.            *
 	* Pointer to this class can be set in SetData method.                                       *
 	* Its usage is very similar to pwndMsg logic, where control sends WM_NOTIFY messages        *
 	* to CWnd* class to get/set data. But in this case it's just a pointer to a custom          *
@@ -58,21 +57,21 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXCOLORSTRUCT
 	{
-		COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };          //Hex chunks text color.
-		COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };        //Ascii text color.
-		COLORREF clrTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) };  //Selected text color.
-		COLORREF clrTextCaption { RGB(0, 0, 180) };                     //Caption text color
-		COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };     //Text color of the bottom "Info" rect.
-		COLORREF clrTextCursor { RGB(255, 255, 255) };                  //Cursor text color.
-		COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                   //Background color.
-		COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };        //Background color of the selected Hex/Ascii.
-		COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };          //Background color of the bottom "Info" rect.
-		COLORREF clrBkCursor { RGB(0, 0, 255) };                        //Cursor's background color.
-		COLORREF clrBkCursorSelected { RGB(192, 192, 192) };            //Cursor's background color in selection.
+		COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };         //Hex chunks text color.
+		COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };       //Ascii text color.
+		COLORREF clrTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected text color.
+		COLORREF clrTextCaption { RGB(0, 0, 180) };                    //Caption text color
+		COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };    //Text color of the bottom "Info" rect.
+		COLORREF clrTextCursor { RGB(255, 255, 255) };                 //Cursor text color.
+		COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                  //Background color.
+		COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };       //Background color of the selected Hex/Ascii.
+		COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };         //Background color of the bottom "Info" rect.
+		COLORREF clrBkCursor { RGB(0, 0, 255) };                       //Cursor's background color.
+		COLORREF clrBkCursorSelected { RGB(0, 0, 200) };               //Cursor's background color in selection.
 	};
 
 	/********************************************************************************************
-	* HEXCREATESTRUCT - for CHexCtrl::Create method.                                            *
+	* HEXCREATESTRUCT - for IHexCtrl::Create method.                                            *
 	********************************************************************************************/
 	struct HEXCREATESTRUCT
 	{
@@ -88,29 +87,29 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* HEXDATAMODEEN - Enum of the working data mode, used in HEXDATASTRUCT, in SetData.         *
-	* HEXNORMAL: Standard data mode.                                                            *
-	* HEXMSG: Message data mode. Data is handled through WM_NOTIFY messages, in handler window. *
-	* HEXVIRTUAL: Data is handled in IHexVirtual derived class.                                 *
+	* HEXDATAMODE - Enum of the working data mode, used in HEXDATASTRUCT in SetData.            *
+	* DATA_DEFAULT: Default, standard data mode.                                                *
+	* DATA_MSG: Data is handled through WM_NOTIFY messages to handler window.				    *
+	* DATA_VIRTUAL: Data is handled through IHexVirtual interface derived class.                *
 	********************************************************************************************/
-	enum class HEXDATAMODEEN : DWORD
+	enum class HEXDATAMODE : DWORD
 	{
-		HEXNORMAL, HEXMSG, HEXVIRTUAL
+		DATA_DEFAULT, DATA_MSG, DATA_VIRTUAL
 	};
 
 	/********************************************************************************************
-	* HEXDATASTRUCT - for CHexCtrl::SetData method.                                             *
+	* HEXDATASTRUCT - for IHexCtrl::SetData method.                                             *
 	********************************************************************************************/
 	struct HEXDATASTRUCT
 	{
-		ULONGLONG     ullDataSize { };                     //Size of the data to display, in bytes.
-		ULONGLONG     ullSelectionStart { };               //Set selection at this position. Works only if ullSelectionSize > 0.
-		ULONGLONG     ullSelectionSize { };                //How many bytes to set as selected.
-		CWnd*         pwndMsg { };                         //Window to send the control messages to. Parent window is used by default.
-		IHexVirtual*  pHexVirtual { };                     //Pointer to IHexVirtual data class for custom data handling.
-		PBYTE         pData { };                           //Pointer to the data. Not used if it's virtual control.
-		HEXDATAMODEEN enMode { HEXDATAMODEEN::HEXNORMAL }; //Working data mode of the control.
-		bool          fMutable { false };                  //Will data be mutable (editable) or just read mode.
+		ULONGLONG    ullDataSize { };                      //Size of the data to display, in bytes.
+		ULONGLONG    ullSelectionStart { };                //Set selection at this position. Works only if ullSelectionSize > 0.
+		ULONGLONG    ullSelectionSize { };                 //How many bytes to set as selected.
+		CWnd*        pwndMsg { };                          //Window to send the control messages to. Parent window is used by default.
+		IHexVirtual* pHexVirtual { };                      //Pointer to IHexVirtual data class for custom data handling.
+		PBYTE        pData { };                            //Pointer to the data. Not used if it's virtual control.
+		HEXDATAMODE  enMode { HEXDATAMODE::DATA_DEFAULT }; //Working data mode of the control.
+		bool         fMutable { false };                   //Will data be mutable (editable) or just read mode.
 	};
 
 	/********************************************************************************************
@@ -118,12 +117,12 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXNOTIFYSTRUCT
 	{
-		NMHDR      hdr { };      //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
-		UINT_PTR   uMenuId { };  //User defined custom menu id.
-		ULONGLONG  ullIndex { }; //Index of the start byte to get/send.
-		ULONGLONG  ullSize { };  //Size of the bytes to get/send.
-		PBYTE      pData { };    //Pointer to a data to get/send.
-		BYTE       chByte { };   //Single byte data - used for simplicity, when ullModifySize == 1.
+		NMHDR     hdr { };      //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
+		UINT_PTR  uMenuId { };  //User defined custom menu id.
+		ULONGLONG ullIndex { }; //Index of the start byte to get/send.
+		ULONGLONG ullSize { };  //Size of the bytes to get/send.
+		PBYTE     pData { };    //Pointer to a data to get/send.
+		BYTE      chByte { };   //Single byte data - used for simplicity, when ullModifySize == 1.
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
 

@@ -13,7 +13,7 @@ public:
 #endif
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX); // DDX/DDV support
+	virtual void DoDataExchange(CDataExchange* pDX);
 
 protected:
 	IHexCtrlPtr m_myHex { CreateHexCtrl() };
@@ -25,8 +25,7 @@ protected:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
-	DECLARE_MESSAGE_MAP()
-public:
 	afx_msg void OnBnRW();
 	afx_msg void OnBnRO();
+	DECLARE_MESSAGE_MAP()
 };

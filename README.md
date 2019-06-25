@@ -35,7 +35,7 @@
 * [Positioning and Sizing](#positioning-and-sizing)
 * [Appearance](#appearance)
 * [Licensing](#licensing)
-* [History](#history)
+* [Help Point](#help-point)
 
 ## [](#)Introduction
 Being good low level wrapper library for Windows API in general, **MFC** was always lacking a good native controls support.
@@ -144,14 +144,14 @@ void CMyDlg::DoDataExchange(CDataExchange* pDX)
 ```cpp
 struct HEXDATASTRUCT
 {
-	ULONGLONG     ullDataSize { };                     //Size of the data to display, in bytes.
-	ULONGLONG     ullSelectionStart { };               //Set selection at this position. Works only if ullSelectionSize > 0.
-	ULONGLONG     ullSelectionSize { };                //How many bytes to set as selected.
-	CWnd*         pwndMsg { };                         //Window to send the control messages to. If nullptr then the parent window is used.
-	IHexVirtual*  pHexVirtual { };                     //Pointer to IHexVirtual data class for custom data handling.
-	PBYTE         pData { };                           //Pointer to the data. Not used if it's virtual control.
-	HEXDATAMODEEN enMode { HEXDATAMODEEN::HEXNORMAL }; //Working data mode of the control.
-	bool          fMutable { false };                  //Will data be mutable (editable) or just read mode.
+	ULONGLONG    ullDataSize { };                      //Size of the data to display, in bytes.
+	ULONGLONG    ullSelectionStart { };                //Set selection at this position. Works only if ullSelectionSize > 0.
+	ULONGLONG    ullSelectionSize { };                 //How many bytes to set as selected.
+	CWnd*        pwndMsg { };                          //Window to send the control messages to. Parent window is used by default.
+	IHexVirtual* pHexVirtual { };                      //Pointer to IHexVirtual data class for custom data handling.
+	PBYTE        pData { };                            //Pointer to the data. Not used if it's virtual control.
+	HEXDATAMODE  enMode { HEXDATAMODE::DATA_DEFAULT }; //Working data mode of the control.
+	bool         fMutable { false };                   //Will data be mutable (editable) or just read mode.
 };
 ```
 
@@ -197,7 +197,7 @@ Its first member is a standard Windows' `NMHDR` structure. It will have its code
 The second member is the index of the byte be displayed. And the third is the actual byte, that you have to set in response.
 
 ### [](#)Virtual Handler
-If `enMode` member of `HEXDATASTRUCT` is set to `HEXDATAMODEEN::HEXVIRTUAL` then all the data routine will be done through
+If `enMode` member of `HEXDATASTRUCT` is set to `HEXDATAMODE::DATA_VIRTUAL` then all the data routine will be done through
 `HEXDATASTRUCT::pHexVirtual` pointer.<br>
 This pointer is of type `IHexVirtual` class, which is a pure abstract base class.
 You have to derive your own class from it and implement all its public methods:
@@ -351,23 +351,7 @@ To change control's capacity - **«Ctrl+Shift+MouseWheel»**
 This software is available under the **"MIT License modified with The Commons Clause".**
 [https://github.com/jovibor/HexCtrl/blob/master/LICENSE](https://github.com/jovibor/HexCtrl/blob/master/LICENSE)
 
-## [](#)History
-* 8th December, 2018: First version
-* 21st December, 2018 - v1.1: Some tweaks and fixes
-* 23rd December, 2018 - v1.2: C++17 obligation has been alleviated
-* 25th December, 2018 - v1.3: Added Bottom info bar, Ability to change capacity. Fixes: Some selection related bugs fixed.
-* 28th December, 2018 - v1.4: Added About box, Selection offset into info bar, Search support. Fixed some minor bugs.
-* 4th January, 2019 - v1.5: Further improvements and fixes
-* 7th January, 2019 - v1.5.1: Small fix
-* 12th February, 2019 - v1.7: Lots of reworks, improvements and fixes
-* 19th February, 2019 - v1.7.5: Fixed some regressions. HEXCTRLCREATE added
-* 26th February, 2019 - v1.8: Speed improvements in drawing routine. Other fixes
-* 3rd March, 2019 - v1.8.1: Minor fixes. Added sample project
-* 12th March, 2019 - v2.0: Edit mode added. Show data as BYTE, WORD,.. etc. Many improvements
-* 15th March, 2019 - v2.1: Fixed regressions. Code reworks and cleaning
-* 17th March, 2019 - v2.2.1: Added dialog Custom Control support
-* 23rd March, 2019 - v2.2.3: Added - Paste methods, Undo, Redo.
-* 2nd April, 2019 - v2.2.8: Internal reworking and expanding. Less client code dependencies. Many fixes.
-* 15th April, 2019 - v2.2.11: Visual Studio 2019 compatibility. Added "Find and Replace" ability.
-* 12th May, 2019 - v2.2.12: Search/Replace dialog behavior depending on edit mode.
-* 12th June, 2019 - v2.2.15: Minor fixes and improvements
+## [](#)Help Point
+If you would like to help the author of this project in further project's development you can do it in form of donation:
+<br><br>
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=M6CX4QH8FJJDL&currency_code=USD&source=url)
