@@ -13,26 +13,17 @@
 namespace HEXCTRL
 {
 	/********************************************************************************************
-	* HEXMODIFYTYPE - enum to represent data modification type.                                 *
-	********************************************************************************************/
-	enum class HEXMODIFYTYPE : DWORD
-	{
-		MODIFY_BYTE, MODIFY_FILL, MODIFY_UNDO, MODIFY_REDO
-	};
-
-	/********************************************************************************************
 	* HEXMODIFYSTRUCT - used to represent data modification parameters.                         *
 	********************************************************************************************/
 	struct HEXMODIFYSTRUCT
 	{
-		ULONGLONG     ullIndex { };                          //Index of the start byte to modify.
-		ULONGLONG     ullModifySize { };                     //Size in bytes.
-		PBYTE         pData { };                             //Pointer to a data to be set.
-		HEXMODIFYTYPE enType { HEXMODIFYTYPE::MODIFY_BYTE }; //Modification type.
-		ULONGLONG     ullFillDataSize { };                   //Size of pData if enType == MODIFY_FILL.
-		bool          fWhole { true };                       //Is a whole byte or just a part of it to be modified.
-		bool          fHighPart { true };                    //Shows whether high or low part of the byte should be modified (if the fWhole flag is false).
-		bool          fRedraw { true };                      //Redraw view after modification or not.
+		ULONGLONG ullIndex { };         //Index of the starting byte to modify.
+		ULONGLONG ullSize { };          //Size in bytes.
+		ULONGLONG ullpDataFillSize { }; //Size of pData if we want to fill ullSize of bytes with some pattern.
+		PBYTE     pData { };            //Pointer to a data to be set.
+		bool      fWhole { true };      //Is a whole byte or just a part of it to be modified.
+		bool      fHighPart { true };   //Shows whether high or low part of the byte should be modified (if the fWhole flag is false).
+		bool      fRedraw { true };     //Redraw view after modification or not.
 	};
 
 	/********************************************************************************************
@@ -50,6 +41,8 @@ namespace HEXCTRL
 		virtual ~IHexVirtual() = default;
 		virtual BYTE GetByte(ULONGLONG ullIndex) = 0;            //Gets the byte data by index.
 		virtual	void ModifyData(const HEXMODIFYSTRUCT& hms) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
+		virtual void Undo() = 0;                                 //Undo command, through menu or hotkey.
+		virtual void Redo() = 0;                                 //Redo command, through menu or hotkey.
 	};
 
 	/********************************************************************************************
@@ -122,7 +115,7 @@ namespace HEXCTRL
 		ULONGLONG ullIndex { }; //Index of the start byte to get/send.
 		ULONGLONG ullSize { };  //Size of the bytes to get/send.
 		PBYTE     pData { };    //Pointer to a data to get/send.
-		BYTE      chByte { };   //Single byte data - used for simplicity, when ullModifySize == 1.
+		BYTE      chByte { };   //Single byte data - used for simplicity, when ullSize == 1.
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
 
@@ -180,8 +173,10 @@ namespace HEXCTRL
 
 	constexpr auto HEXCTRL_MSG_DESTROY { 0xFFFF };       //Indicates that HexCtrl is being destroyed.
 	constexpr auto HEXCTRL_MSG_GETDATA { 0x0100 };       //Used in Virtual mode to demand the next byte to display.
-	constexpr auto HEXCTRL_MSG_MODIFYDATA { 0x0101 };    //Indicates that the byte in memory has changed, used in edit mode.
+	constexpr auto HEXCTRL_MSG_MODIFYDATA { 0x0101 };    //Indicates that the data in memory has changed, used in Edit mode.
 	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0102 };  //Selection has been made.
 	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0103 };     //User defined custom menu clicked.
 	constexpr auto HEXCTRL_MSG_ONCONTEXTMENU { 0x0104 }; //OnContextMenu triggered.
+	constexpr auto HEXCTRL_MSG_UNDO { 0x0105 };          //Undo command triggered.
+	constexpr auto HEXCTRL_MSG_REDO { 0x0106 };          //Redo command triggered.
 }

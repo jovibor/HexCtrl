@@ -617,12 +617,11 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	case (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_FILL_ZEROS:
 	{
 		HEXMODIFYSTRUCT hmd;
-		hmd.enType = HEXMODIFYTYPE::MODIFY_FILL;
-		hmd.ullModifySize = m_ullSelectionSize;
+		hmd.ullSize = m_ullSelectionSize;
 		hmd.ullIndex = m_ullSelectionStart;
+		hmd.ullpDataFillSize = 1;
 		unsigned char chZero { 0 };
 		hmd.pData = &chZero;
-		hmd.ullFillDataSize = 1;
 		ModifyData(hmd);
 	}
 	break;
@@ -889,9 +888,8 @@ void CHexCtrl::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 		return;
 
 	HEXMODIFYSTRUCT hmd;
-	hmd.enType = HEXMODIFYTYPE::MODIFY_BYTE;
 	hmd.ullIndex = m_ullCursorPos;
-	hmd.ullModifySize = 1;
+	hmd.ullSize = 1;
 
 	if (IsCurTextArea()) //If cursor is in text area.
 	{
@@ -1290,15 +1288,13 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms)
 	{
 	case HEXDATAMODE::DATA_DEFAULT: //Modify only in non Virtual mode.
 	{
-		switch (hms.enType)
-		{
-		case HEXMODIFYTYPE::MODIFY_BYTE:
+		if (hms.ullpDataFillSize == 0)
 		{
 			m_deqRedo.clear(); //No Redo unless we make Undo.
-			SnapshotUndo(hms.ullIndex, hms.ullModifySize);
+			SnapshotUndo(hms.ullIndex, hms.ullSize);
 
 			if (hms.fWhole)
-				for (ULONGLONG i = 0; i < hms.ullModifySize; i++)
+				for (ULONGLONG i = 0; i < hms.ullSize; i++)
 					m_pData[hms.ullIndex + i] = hms.pData[i];
 			else
 			{	//If just one part (High/Low) of byte must be changed.
@@ -1311,55 +1307,15 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms)
 				m_pData[hms.ullIndex] = chByte;
 			}
 		}
-		break;
-		case HEXMODIFYTYPE::MODIFY_FILL:
+		else //Fill ullSize bytes with ullpDataFillSize bytes of hms.pData (fill with zeroes for instance).
 		{
 			m_deqRedo.clear(); //No Redo unless we make Undo.
-			SnapshotUndo(hms.ullIndex, hms.ullModifySize);
+			SnapshotUndo(hms.ullIndex, hms.ullSize);
 
-			ULONGLONG ullChunks = hms.ullModifySize / hms.ullFillDataSize;
+			ULONGLONG ullChunks = hms.ullSize / hms.ullpDataFillSize;
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
-				for (ULONGLONG iterData = 0; iterData < hms.ullFillDataSize; iterData++)
-					m_pData[hms.ullIndex + hms.ullFillDataSize * iterChunk + iterData] = hms.pData[iterData];
-		}
-		break;
-		case HEXMODIFYTYPE::MODIFY_UNDO:
-		{
-			if (m_deqUndo.empty())
-				return;
-
-			const auto& refUndo = m_deqUndo.back();
-			const auto& refData = refUndo->vecData;
-
-			//Making new Redo data snapshot.
-			const auto& refRedo = m_deqRedo.emplace_back(std::make_unique<INTERNAL::UNDOSTRUCT>());
-			refRedo->ullIndex = refUndo->ullIndex;
-			for (unsigned i = 0; i < refData.size(); i++)
-				refRedo->vecData.push_back((std::byte)GetByte(refUndo->ullIndex + i));
-
-			for (size_t i = 0; i < refData.size(); i++)
-				m_pData[refUndo->ullIndex + i] = (BYTE)refData[i];
-
-			m_deqUndo.pop_back();
-		}
-		break;
-		case HEXMODIFYTYPE::MODIFY_REDO:
-		{
-			if (m_deqRedo.empty())
-				return;
-
-			const auto& refRedo = m_deqRedo.back();
-			const auto& refData = refRedo->vecData;
-
-			//Making new Undo data snapshot.
-			SnapshotUndo(refRedo->ullIndex, refData.size());
-
-			for (size_t i = 0; i < refData.size(); i++)
-				m_pData[refRedo->ullIndex + i] = (BYTE)refData[i];
-
-			m_deqRedo.pop_back();
-		}
-		break;
+				for (ULONGLONG iterData = 0; iterData < hms.ullpDataFillSize; iterData++)
+					m_pData[hms.ullIndex + hms.ullpDataFillSize * iterChunk + iterData] = hms.pData[iterData];
 		}
 	}
 	break;
@@ -1635,7 +1591,6 @@ void CHexCtrl::ClipboardPaste(INTERNAL::ENCLIPBOARD enType)
 		ullSize = m_ullDataSize - m_ullCursorPos;
 
 	HEXMODIFYSTRUCT hmd;
-	hmd.enType = HEXMODIFYTYPE::MODIFY_BYTE;
 	hmd.ullIndex = m_ullCursorPos;
 	hmd.fWhole = true;
 
@@ -1644,7 +1599,7 @@ void CHexCtrl::ClipboardPaste(INTERNAL::ENCLIPBOARD enType)
 	{
 	case INTERNAL::ENCLIPBOARD::PASTE_ASASCII:
 		hmd.pData = (PBYTE)pClipboardData;
-		hmd.ullModifySize = ullSize;
+		hmd.ullSize = ullSize;
 		break;
 	case INTERNAL::ENCLIPBOARD::PASTE_ASHEX:
 	{
@@ -1670,7 +1625,7 @@ void CHexCtrl::ClipboardPaste(INTERNAL::ENCLIPBOARD enType)
 			strData += (unsigned char)ulNumber;
 		}
 		hmd.pData = (PBYTE)strData.data();
-		hmd.ullModifySize = strData.size();
+		hmd.ullSize = strData.size();
 	}
 	break;
 	}
@@ -1868,16 +1823,82 @@ void CHexCtrl::CursorMoveDown()
 
 void CHexCtrl::Undo()
 {
-	HEXMODIFYSTRUCT hmd;
-	hmd.enType = HEXMODIFYTYPE::MODIFY_UNDO;
-	ModifyData(hmd);
+	switch (m_enMode)
+	{
+	case HEXDATAMODE::DATA_DEFAULT:
+	{
+		if (m_deqUndo.empty())
+			return;
+
+		const auto& refUndo = m_deqUndo.back();
+		const auto& refData = refUndo->vecData;
+
+		//Making new Redo data snapshot.
+		const auto& refRedo = m_deqRedo.emplace_back(std::make_unique<INTERNAL::UNDOSTRUCT>());
+		refRedo->ullIndex = refUndo->ullIndex;
+		for (unsigned i = 0; i < refData.size(); i++)
+		{
+			refRedo->vecData.push_back((std::byte)m_pData[refUndo->ullIndex + i]); //Fill Redo data with the next byte.
+			m_pData[refUndo->ullIndex + i] = (BYTE)refData[i];                     //Undo the next byte.
+		}
+		m_deqUndo.pop_back();
+	}
+	break;
+	case HEXDATAMODE::DATA_MSG:
+	{
+		//In HEXDATAMODE::DATA_MSG mode we send pointer to hms.
+		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_UNDO } };
+		MsgWindowNotify(hns);
+	}
+	break;
+	case HEXDATAMODE::DATA_VIRTUAL:
+	{
+		if (m_pHexVirtual)
+			m_pHexVirtual->Undo();
+	}
+	break;
+	}
+
+	RedrawWindow();
 }
 
 void CHexCtrl::Redo()
 {
-	HEXMODIFYSTRUCT hmd;
-	hmd.enType = HEXMODIFYTYPE::MODIFY_REDO;
-	ModifyData(hmd);
+	switch (m_enMode)
+	{
+	case HEXDATAMODE::DATA_DEFAULT:
+	{
+		if (m_deqRedo.empty())
+			return;
+
+		const auto& refRedo = m_deqRedo.back();
+		const auto& refData = refRedo->vecData;
+
+		//Making new Undo data snapshot.
+		SnapshotUndo(refRedo->ullIndex, refData.size());
+
+		for (size_t i = 0; i < refData.size(); i++)
+			m_pData[refRedo->ullIndex + i] = (BYTE)refData[i];
+
+		m_deqRedo.pop_back();
+	}
+	break;
+	case HEXDATAMODE::DATA_MSG:
+	{
+		//In HEXDATAMODE::DATA_MSG mode we send pointer to hms.
+		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_REDO } };
+		MsgWindowNotify(hns);
+	}
+	break;
+	case HEXDATAMODE::DATA_VIRTUAL:
+	{
+		if (m_pHexVirtual)
+			m_pHexVirtual->Redo();
+	}
+	break;
+	}
+
+	RedrawWindow();
 }
 
 void CHexCtrl::SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize)
@@ -2210,9 +2231,8 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 void CHexCtrl::SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplaced, bool fRedraw)
 {
 	HEXMODIFYSTRUCT hms;
-	hms.enType = HEXMODIFYTYPE::MODIFY_FILL;
-	hms.ullModifySize = nSizeData;
-	hms.ullFillDataSize = nSizeData;
+	hms.ullSize = nSizeData;
+	hms.ullpDataFillSize = nSizeData;
 	hms.ullIndex = ullIndex;
 	hms.pData = pData;
 	hms.fRedraw = fRedraw;
