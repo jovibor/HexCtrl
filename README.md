@@ -80,11 +80,11 @@ struct HEXCREATESTRUCT
 {
 	HEXCOLORSTRUCT  stColor { };           //All the control's colors.
 	CWnd*           pwndParent { };        //Parent window pointer.
+	const LOGFONTW* pLogFont { };          //Font to be used, nullptr for default.
+	CRect           rect { };              //Initial rect. If null, the window is screen centered.
 	UINT            uId { };               //HexCtrl Id.
 	DWORD           dwStyle { };           //Window styles, 0 for default.
 	DWORD           dwExStyle { };         //Extended window styles, 0 for default.
-	CRect           rect { };              //Initial rect. If null, the window is screen centered.
-	const LOGFONTW* pLogFont { };          //Font to be used, nullptr for default.
 	bool            fFloat { false };      //Is float or child (incorporated into another window)?
 	bool            fCustomCtrl { false }; //It's a custom dialog control.
 };
@@ -354,4 +354,4 @@ This software is available under the **"MIT License modified with The Commons Cl
 ## [](#)Help Point
 If you would like to help the author of this project in further project's development you can do it in form of donation:
 <br><br>
-[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=M6CX4QH8FJJDL&currency_code=USD&source=url)
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=M6CX4QH8FJJDL&item_name=Donation&currency_code=USD&source=url)

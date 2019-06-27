@@ -70,11 +70,11 @@ namespace HEXCTRL
 	{
 		HEXCOLORSTRUCT  stColor { };           //All the control's colors.
 		CWnd*           pwndParent { };        //Parent window pointer.
+		const LOGFONTW* pLogFont { };          //Font to be used, nullptr for default.
+		CRect           rect { };              //Initial rect. If null, the window is screen centered.
 		UINT            uId { };               //HexCtrl Id.
 		DWORD           dwStyle { };           //Window styles, 0 for default.
 		DWORD           dwExStyle { };         //Extended window styles, 0 for default.
-		CRect           rect { };              //Initial rect. If null, the window is screen centered.
-		const LOGFONTW* pLogFont { };          //Font to be used, nullptr for default.
 		bool            fFloat { false };      //Is float or child (incorporated into another window)?
 		bool            fCustomCtrl { false }; //It's a custom dialog control.
 	};

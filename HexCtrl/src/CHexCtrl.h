@@ -36,20 +36,20 @@ namespace HEXCTRL {
 		********************************************************************************************/
 		struct SEARCHSTRUCT
 		{
-			std::wstring	wstrSearch { };         //String search for.
-			std::wstring	wstrReplace { };        //SearchReplace with, string.
-			ENSEARCHTYPE	enSearchType { };       //Hex, Ascii, Unicode, etc...
-			ULONGLONG		ullIndex { };           //An offset search should start at.
-			DWORD			dwCount { };            //How many, or what account.
-			DWORD			dwReplaced { };         //Replaced amount;
-			int				iDirection { };         //Search direction: 1 = Forward, -1 = Backward.
-			int				iWrap { };              //Wrap direction: -1 = Beginning, 1 = End.
-			bool			fWrap { false };        //Was search wrapped?
-			bool			fSecondMatch { false }; //First or subsequent match. 
-			bool			fFound { false };       //Found or not.
-			bool			fDoCount { true };      //Do we count matches or just print "Found".
-			bool			fReplace { false };     //Find or Find and SearchReplace with...?
-			bool			fAll { false };         //Find/SearchReplace one by one, or all?
+			std::wstring wstrSearch { };         //String search for.
+			std::wstring wstrReplace { };        //SearchReplace with, string.
+			ENSEARCHTYPE enSearchType { };       //Hex, Ascii, Unicode, etc...
+			ULONGLONG	 ullIndex { };           //An offset search should start at.
+			DWORD		 dwCount { };            //How many, or what account.
+			DWORD		 dwReplaced { };         //Replaced amount;
+			int			 iDirection { };         //Search direction: 1 = Forward, -1 = Backward.
+			int			 iWrap { };              //Wrap direction: -1 = Beginning, 1 = End.
+			bool		 fWrap { false };        //Was search wrapped?
+			bool		 fSecondMatch { false }; //First or subsequent match. 
+			bool		 fFound { false };       //Found or not.
+			bool		 fDoCount { true };      //Do we count matches or just print "Found".
+			bool		 fReplace { false };     //Find or Find and SearchReplace with...?
+			bool		 fAll { false };         //Find/SearchReplace one by one, or all?
 		};
 	}
 
@@ -123,6 +123,8 @@ namespace HEXCTRL {
 		void ChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy)const; //Point of Hex chunk.
 		void ClipboardCopy(INTERNAL::ENCLIPBOARD enType);
 		void ClipboardPaste(INTERNAL::ENCLIPBOARD enType);
+		void OnKeyDownShift(UINT nChar);                     //Key pressed with the Shift.
+		void OnKeyDownCtrl(UINT nChar);                      //Key pressed with the Ctrl.
 		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
 		void SelectAll();
 		void UpdateInfoText();	//Updates text in the bottom "info" area according to currently selected data.

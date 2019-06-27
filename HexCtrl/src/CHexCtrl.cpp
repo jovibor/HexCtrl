@@ -55,11 +55,11 @@ namespace HEXCTRL {
 
 		struct UNDOSTRUCT
 		{
-			ULONGLONG ullIndex;             //Start byte to apply Undo to.
-			std::vector<std::byte> vecData; //Data for Undo.
+			ULONGLONG              ullIndex; //Start byte to apply Undo to.
+			std::vector<std::byte> vecData;  //Data for Undo.
 		};
 
-		constexpr auto WSTR_WNDCLASS_NAME = L"HexCtrl";
+		constexpr auto WSTR_HEXCTRL_CLASSNAME = L"HexCtrl";
 	}
 }
 
@@ -215,7 +215,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 	}
 
 	//If it's a custom dialog control then there is no need to create a window.
-	if (!hcs.fCustomCtrl && !CWnd::CreateEx(hcs.dwExStyle, INTERNAL::WSTR_WNDCLASS_NAME, L"HexControl",
+	if (!hcs.fCustomCtrl && !CWnd::CreateEx(hcs.dwExStyle, INTERNAL::WSTR_HEXCTRL_CLASSNAME, L"HexControl",
 		dwStyle, rc, hcs.pwndParent, m_fFloat ? 0 : hcs.uId))
 	{
 		CStringW ss;
@@ -417,22 +417,21 @@ void CHexCtrl::Destroy()
 
 bool CHexCtrl::RegisterWndClass()
 {
-	WNDCLASSEXW wc;
+	WNDCLASSEXW wc { };
 	HINSTANCE hInst = AfxGetInstanceHandle();
 
-	if (!(::GetClassInfoExW(hInst, INTERNAL::WSTR_WNDCLASS_NAME, &wc)))
+	if (!(::GetClassInfoExW(hInst, INTERNAL::WSTR_HEXCTRL_CLASSNAME, &wc)))
 	{
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
 		wc.lpfnWndProc = ::DefWindowProcW;
 		wc.cbClsExtra = wc.cbWndExtra = 0;
 		wc.hInstance = hInst;
-		wc.hIcon = wc.hIconSm = NULL;
+		wc.hIcon = wc.hIconSm = nullptr;
 		wc.hCursor = (HCURSOR)LoadImageW(0, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
-		wc.hbrBackground = NULL;
+		wc.hbrBackground = nullptr;
 		wc.lpszMenuName = nullptr;
-		wc.lpszClassName = INTERNAL::WSTR_WNDCLASS_NAME;
-
+		wc.lpszClassName = INTERNAL::WSTR_HEXCTRL_CLASSNAME;
 		if (!RegisterClassExW(&wc))
 		{
 			MessageBoxW(L"HexControl RegisterClassExW error.", L"Error");
@@ -685,168 +684,10 @@ void CHexCtrl::OnContextMenu(CWnd * pWnd, CPoint point)
 
 void CHexCtrl::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
-	ULONGLONG ullStart, ullSize;
 	if (GetKeyState(VK_CONTROL) < 0) //With Ctrl pressed.
-	{
-		switch (nChar)
-		{
-		case 'F':
-		case 'H':
-			m_pDlgSearch->ShowWindow(SW_SHOW);
-			break;
-		case 'C':
-			ClipboardCopy(INTERNAL::ENCLIPBOARD::COPY_ASHEX);
-			break;
-		case 'V':
-			ClipboardPaste(INTERNAL::ENCLIPBOARD::PASTE_ASHEX);
-			break;
-		case 'A':
-			SelectAll();;
-			break;
-		case 'Z':
-			Undo();
-			break;
-		case 'Y':
-			Redo();
-			break;
-		}
-	}
+		OnKeyDownCtrl(nChar);
 	else if (GetAsyncKeyState(VK_SHIFT) < 0) //With Shift pressed.
-	{
-		switch (nChar)
-		{
-		case VK_RIGHT:
-			if (m_fMutable)
-			{
-				if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
-					|| m_ullCursorPos == m_ullSelectionEnd)
-				{
-					if (m_ullSelectionStart == m_ullSelectionClick)
-						SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize + 1);
-					else
-						SetSelection(m_ullSelectionClick, m_ullSelectionStart + 1, m_ullSelectionSize - 1);
-				}
-				else
-					SetSelection(m_ullCursorPos, m_ullCursorPos, 1);
-			}
-			else if (m_ullSelectionSize)
-			{
-				if (m_ullSelectionStart == m_ullSelectionClick)
-					SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize + 1);
-				else
-					SetSelection(m_ullSelectionClick, m_ullSelectionStart + 1, m_ullSelectionSize - 1);
-			}
-			break;
-		case VK_LEFT:
-			if (m_fMutable)
-			{
-				if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
-					|| m_ullCursorPos == m_ullSelectionEnd)
-				{
-					if (m_ullSelectionStart == m_ullSelectionClick && m_ullSelectionSize > 1)
-						SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize - 1);
-					else
-						SetSelection(m_ullSelectionClick, m_ullSelectionStart - 1, m_ullSelectionSize + 1);
-				}
-				else
-					SetSelection(m_ullCursorPos, m_ullCursorPos, 1);
-			}
-			else if (m_ullSelectionSize)
-			{
-				if (m_ullSelectionStart == m_ullSelectionClick && m_ullSelectionSize > 1)
-					SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize - 1);
-				else
-					SetSelection(m_ullSelectionClick, m_ullSelectionStart - 1, m_ullSelectionSize + 1);
-			}
-			break;
-		case VK_DOWN:
-			if (m_fMutable)
-			{
-				if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
-					|| m_ullCursorPos == m_ullSelectionEnd)
-				{
-					if (m_ullSelectionStart == m_ullSelectionClick)
-						SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize + m_dwCapacity);
-					else if (m_ullSelectionStart < m_ullSelectionClick)
-					{
-						ullStart = m_ullSelectionSize > m_dwCapacity ? m_ullSelectionStart + m_dwCapacity : m_ullSelectionClick;
-						ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
-						SetSelection(m_ullSelectionClick, ullStart, ullSize ? ullSize : 1);
-					}
-				}
-				else
-					SetSelection(m_ullCursorPos, m_ullCursorPos, 1);
-			}
-			else if (m_ullSelectionSize)
-			{
-				if (m_ullSelectionStart == m_ullSelectionClick)
-					SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize + m_dwCapacity);
-				else if (m_ullSelectionStart < m_ullSelectionClick)
-				{
-					ullStart = m_ullSelectionSize > m_dwCapacity ? m_ullSelectionStart + m_dwCapacity : m_ullSelectionClick;
-					ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
-					SetSelection(m_ullSelectionClick, ullStart, ullSize ? ullSize : 1);
-				}
-			}
-			break;
-		case VK_UP:
-			if (m_fMutable)
-			{
-				if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
-					|| m_ullCursorPos == m_ullSelectionEnd)
-				{
-					if (m_ullSelectionStart == 0)
-						return;
-
-					if (m_ullSelectionStart < m_ullSelectionClick)
-					{
-						if (m_ullSelectionStart < m_dwCapacity) {
-							ullStart = 0;
-							ullSize = m_ullSelectionSize + m_ullSelectionStart;
-						}
-						else {
-							ullStart = m_ullSelectionStart - m_dwCapacity;
-							ullSize = m_ullSelectionSize + m_dwCapacity;
-						}
-						SetSelection(m_ullSelectionClick, ullStart, ullSize);
-					}
-					else
-					{
-						ullStart = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionClick : m_ullSelectionClick - m_dwCapacity + 1;
-						ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
-						SetSelection(m_ullSelectionClick, ullStart, ullSize ? ullSize : 1);
-					}
-				}
-				else
-					SetSelection(m_ullCursorPos, m_ullCursorPos, 1);
-			}
-			else if (m_ullSelectionSize)
-			{
-				if (m_ullSelectionStart == 0)
-					return;
-
-				if (m_ullSelectionStart < m_ullSelectionClick)
-				{
-					if (m_ullSelectionStart < m_dwCapacity) {
-						ullStart = 0;
-						ullSize = m_ullSelectionSize + m_ullSelectionStart;
-					}
-					else {
-						ullStart = m_ullSelectionStart - m_dwCapacity;
-						ullSize = m_ullSelectionSize + m_dwCapacity;
-					}
-					SetSelection(m_ullSelectionClick, ullStart, ullSize);
-				}
-				else
-				{
-					ullStart = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionClick : m_ullSelectionClick - m_dwCapacity + 1;
-					ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
-					SetSelection(m_ullSelectionClick, ullStart, ullSize ? ullSize : 1);
-				}
-			}
-			break;
-		}
-	}
+		OnKeyDownShift(nChar);
 	else
 	{
 		switch (nChar)
@@ -881,37 +722,35 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 
 void CHexCtrl::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
-	if (!m_fMutable)
-		return;
-
-	if (GetKeyState(VK_CONTROL) < 0)
+	if (!m_fMutable || (GetKeyState(VK_CONTROL) < 0))
 		return;
 
 	HEXMODIFYSTRUCT hmd;
 	hmd.ullIndex = m_ullCursorPos;
 	hmd.ullSize = 1;
 
+	BYTE chByte;
 	if (IsCurTextArea()) //If cursor is in text area.
 	{
 		hmd.fWhole = true;
-		hmd.pData = (PBYTE)& nChar;
+		chByte = nChar;
 	}
 	else
 	{
-		if (nChar >= 0x30 && nChar <= 0x39)		 //Digits.
-			nChar -= 0x30;
+		if (nChar >= 0x30 && nChar <= 0x39)      //Digits.
+			chByte = nChar - 0x30;
 		else if (nChar >= 0x41 && nChar <= 0x46) //Hex letters uppercase.
-			nChar -= 0x37;
+			chByte = nChar - 0x37;
 		else if (nChar >= 0x61 && nChar <= 0x66) //Hex letters lowercase.
-			nChar -= 0x57;
+			chByte = nChar - 0x57;
 		else
 			return;
 
 		hmd.fWhole = false;
 		hmd.fHighPart = m_fCursorHigh;
-		hmd.pData = (PBYTE)& nChar;
 	}
 
+	hmd.pData = &chByte;
 	ModifyData(hmd);
 	CursorMoveRight();
 }
@@ -1083,7 +922,7 @@ void CHexCtrl::OnPaint()
 		}
 		//Left column offset printing (00000001...0000FFFF...).
 		wchar_t pwszOffset[16];
-		UllToWchars(iterLines * m_dwCapacity, pwszOffset, m_dwOffsetDigits / 2);
+		UllToWchars(iterLines * m_dwCapacity, pwszOffset, (size_t)m_dwOffsetDigits / 2);
 		ExtTextOutW(rDC.m_hDC, m_sizeLetter.cx - iScrollH, m_iHeightTopRect + (m_sizeLetter.cy * iLine),
 			NULL, nullptr, pwszOffset, m_dwOffsetDigits, nullptr);
 
@@ -1371,7 +1210,7 @@ void CHexCtrl::RecalcAll()
 	m_iIndentFirstHexChunk = m_iSecondVertLine + m_sizeLetter.cx;
 	m_iSizeFirstHalf = m_iIndentFirstHexChunk + m_dwCapacityBlockSize * (m_sizeLetter.cx * 2) +
 		(m_dwCapacityBlockSize / (DWORD)m_enShowAs - 1) * m_iSpaceBetweenHexChunks;
-	m_iHeightTopRect = int(m_sizeLetter.cy * 1.5);
+	m_iHeightTopRect = std::lround(m_sizeLetter.cy * 1.5);
 	m_iIndentTextCapacityY = m_iHeightTopRect / 2 - (m_sizeLetter.cy / 2);
 
 	RecalcScrollSizes();
@@ -1511,10 +1350,10 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 		//If at least two rows are selected.
 		if (dwModStart + m_ullSelectionSize > m_dwCapacity)
 		{
-			size_t sCount = (dwModStart * 2) + (dwModStart / (DWORD)m_enShowAs);
+			DWORD dwCount = dwModStart * 2 + dwModStart / (DWORD)m_enShowAs;
 			//Additional spaces between halves. Only in ASBYTE's view mode.
-			sCount += m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
-			strToClipboard.insert(0, sCount, ' ');
+			dwCount += m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
+			strToClipboard.insert(0, (size_t)dwCount, ' ');
 		}
 
 		for (unsigned i = 0; i < m_ullSelectionSize; i++)
@@ -1603,7 +1442,7 @@ void CHexCtrl::ClipboardPaste(INTERNAL::ENCLIPBOARD enType)
 		break;
 	case INTERNAL::ENCLIPBOARD::PASTE_ASHEX:
 	{
-		DWORD dwIterations = DWORD(ullSize / 2 + ullSize % 2);
+		size_t dwIterations = size_t(ullSize / 2 + ullSize % 2);
 		char chToUL[3] { }; //Array for actual Ascii chars to convert from.
 		for (size_t i = 0; i < dwIterations; i++)
 		{
@@ -1636,6 +1475,167 @@ void CHexCtrl::ClipboardPaste(INTERNAL::ENCLIPBOARD enType)
 	CloseClipboard();
 
 	RedrawWindow();
+}
+
+void CHexCtrl::OnKeyDownShift(UINT nChar)
+{
+	ULONGLONG ullStart, ullSize;
+	if (m_fMutable)
+	{
+		switch (nChar)
+		{
+		case VK_RIGHT:
+			if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
+				|| m_ullCursorPos == m_ullSelectionEnd)
+			{
+				if (m_ullSelectionStart == m_ullSelectionClick)
+					SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize + 1);
+				else
+					SetSelection(m_ullSelectionClick, m_ullSelectionStart + 1, m_ullSelectionSize - 1);
+			}
+			else
+				SetSelection(m_ullCursorPos, m_ullCursorPos, 1);
+			break;
+		case VK_LEFT:
+			if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
+				|| m_ullCursorPos == m_ullSelectionEnd)
+			{
+				if (m_ullSelectionStart == m_ullSelectionClick && m_ullSelectionSize > 1)
+					SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize - 1);
+				else
+					SetSelection(m_ullSelectionClick, m_ullSelectionStart - 1, m_ullSelectionSize + 1);
+			}
+			else
+				SetSelection(m_ullCursorPos, m_ullCursorPos, 1);
+			break;
+		case VK_DOWN:
+			if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
+				|| m_ullCursorPos == m_ullSelectionEnd)
+			{
+				if (m_ullSelectionStart == m_ullSelectionClick)
+					SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize + m_dwCapacity);
+				else if (m_ullSelectionStart < m_ullSelectionClick)
+				{
+					ullStart = m_ullSelectionSize > m_dwCapacity ? m_ullSelectionStart + m_dwCapacity : m_ullSelectionClick;
+					ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
+					SetSelection(m_ullSelectionClick, ullStart, ullSize ? ullSize : 1);
+				}
+			}
+			else
+				SetSelection(m_ullCursorPos, m_ullCursorPos, 1);
+			break;
+		case VK_UP:
+			if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
+				|| m_ullCursorPos == m_ullSelectionEnd)
+			{
+				if (m_ullSelectionStart == 0)
+					return;
+
+				if (m_ullSelectionStart < m_ullSelectionClick)
+				{
+					if (m_ullSelectionStart < m_dwCapacity)
+					{
+						ullStart = 0;
+						ullSize = m_ullSelectionSize + m_ullSelectionStart;
+					}
+					else
+					{
+						ullStart = m_ullSelectionStart - m_dwCapacity;
+						ullSize = m_ullSelectionSize + m_dwCapacity;
+					}
+					SetSelection(m_ullSelectionClick, ullStart, ullSize);
+				}
+				else
+				{
+					ullStart = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionClick : m_ullSelectionClick - m_dwCapacity + 1;
+					ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
+					SetSelection(m_ullSelectionClick, ullStart, ullSize ? ullSize : 1);
+				}
+			}
+			else
+				SetSelection(m_ullCursorPos, m_ullCursorPos, 1);
+			break;
+		}
+	}
+	else if (m_ullSelectionSize)
+	{
+		switch (nChar)
+		{
+		case VK_RIGHT:
+			if (m_ullSelectionStart == m_ullSelectionClick)
+				SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize + 1);
+			else
+				SetSelection(m_ullSelectionClick, m_ullSelectionStart + 1, m_ullSelectionSize - 1);
+			break;
+		case VK_LEFT:
+			if (m_ullSelectionStart == m_ullSelectionClick && m_ullSelectionSize > 1)
+				SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize - 1);
+			else
+				SetSelection(m_ullSelectionClick, m_ullSelectionStart - 1, m_ullSelectionSize + 1);
+			break;
+		case VK_DOWN:
+			if (m_ullSelectionStart == m_ullSelectionClick)
+				SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize + m_dwCapacity);
+			else if (m_ullSelectionStart < m_ullSelectionClick)
+			{
+				ullStart = m_ullSelectionSize > m_dwCapacity ? m_ullSelectionStart + m_dwCapacity : m_ullSelectionClick;
+				ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
+				SetSelection(m_ullSelectionClick, ullStart, ullSize ? ullSize : 1);
+			}
+			break;
+		case VK_UP:
+			if (m_ullSelectionStart == 0)
+				return;
+
+			if (m_ullSelectionStart < m_ullSelectionClick)
+			{
+				if (m_ullSelectionStart < m_dwCapacity)
+				{
+					ullStart = 0;
+					ullSize = m_ullSelectionSize + m_ullSelectionStart;
+				}
+				else
+				{
+					ullStart = m_ullSelectionStart - m_dwCapacity;
+					ullSize = m_ullSelectionSize + m_dwCapacity;
+				}
+				SetSelection(m_ullSelectionClick, ullStart, ullSize);
+			}
+			else
+			{
+				ullStart = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionClick : m_ullSelectionClick - m_dwCapacity + 1;
+				ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
+				SetSelection(m_ullSelectionClick, ullStart, ullSize ? ullSize : 1);
+			}
+			break;
+		}
+	}
+}
+
+void CHexCtrl::OnKeyDownCtrl(UINT nChar)
+{
+	switch (nChar)
+	{
+	case 'F':
+	case 'H':
+		m_pDlgSearch->ShowWindow(SW_SHOW);
+		break;
+	case 'C':
+		ClipboardCopy(INTERNAL::ENCLIPBOARD::COPY_ASHEX);
+		break;
+	case 'V':
+		ClipboardPaste(INTERNAL::ENCLIPBOARD::PASTE_ASHEX);
+		break;
+	case 'A':
+		SelectAll();;
+		break;
+	case 'Z':
+		Undo();
+		break;
+	case 'Y':
+		Redo();
+		break;
+	}
 }
 
 void CHexCtrl::UpdateInfoText()
@@ -1836,7 +1836,7 @@ void CHexCtrl::Undo()
 		//Making new Redo data snapshot.
 		const auto& refRedo = m_deqRedo.emplace_back(std::make_unique<INTERNAL::UNDOSTRUCT>());
 		refRedo->ullIndex = refUndo->ullIndex;
-		for (unsigned i = 0; i < refData.size(); i++)
+		for (size_t i = 0; i < refData.size(); i++)
 		{
 			refRedo->vecData.push_back((std::byte)m_pData[refUndo->ullIndex + i]); //Fill Redo data with the next byte.
 			m_pData[refUndo->ullIndex + i] = (BYTE)refData[i];                     //Undo the next byte.
@@ -1905,7 +1905,7 @@ void CHexCtrl::SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize)
 {
 	//If Undo size is exceeding max limit,
 	//remove first snapshot from the beginning (the oldest one).
-	if (m_deqUndo.size() > m_dwUndoMax)
+	if (m_deqUndo.size() > (size_t)m_dwUndoMax)
 		m_deqUndo.pop_front();
 
 	//Making new Undo data snapshot.
@@ -1961,16 +1961,12 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 			rSearch.iWrap = 1;
 			return;
 		}
-		if (rSearch.fReplace && !NumStrToHex(strReplaceAscii, strReplace))
+		if ((rSearch.fReplace && !NumStrToHex(strReplaceAscii, strReplace)) || (ullSizeBytes = strSearch.size()) > m_ullDataSize)
 			return;
 
-		ullSizeBytes = strSearch.size();
 		ullSizeBytesReplaced = strReplace.size();
-		if (ullSizeBytes > m_ullDataSize)
-			return;
-
-		break;
 	}
+	break;
 	case INTERNAL::ENSEARCHTYPE::SEARCH_ASCII:
 	{
 		strSearch = std::move(strSearchAscii);
@@ -1980,21 +1976,19 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 		ullSizeBytesReplaced = strReplace.size();
 		if (ullSizeBytes > m_ullDataSize)
 			return;
-
-		break;
 	}
+	break;
 	case INTERNAL::ENSEARCHTYPE::SEARCH_UTF16:
 	{
 		ullSizeBytes = rSearch.wstrSearch.length() * sizeof(wchar_t);
 		ullSizeBytesReplaced = rSearch.wstrReplace.length() * sizeof(wchar_t);
 		if (ullSizeBytes > m_ullDataSize)
 			return;
-
-		break;
 	}
+	break;
 	}
 
-	///////////////Actual Search:////////////////////////////////////////////
+	///////////////Actual Search://///////////////////////////
 	if (rSearch.fReplace && rSearch.fAll) //SearchReplace All
 	{
 		switch (rSearch.enSearchType)
@@ -2030,11 +2024,12 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 		}
 	}
 	else //Search or SearchReplace
+	{
 		switch (rSearch.enSearchType)
 		{
 		case INTERNAL::ENSEARCHTYPE::SEARCH_HEX:
 		case INTERNAL::ENSEARCHTYPE::SEARCH_ASCII:
-			if (rSearch.iDirection == 1)
+			if (rSearch.iDirection == 1) //Forward direction
 			{
 				if (rSearch.fReplace && rSearch.fSecondMatch)
 				{
@@ -2085,12 +2080,12 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 					rSearch.iWrap = 1;
 				}
 			}
-			else if (rSearch.iDirection == -1)
+			else if (rSearch.iDirection == -1) //Backward direction
 			{
 				if (rSearch.fSecondMatch && ullIndex > 0)
 				{
 					ullIndex--;
-					for (int i = (int)ullIndex; i >= 0; i--)
+					for (INT_PTR i = (INT_PTR)ullIndex; i >= 0; i--)
 					{
 						if (memcmp(m_pData + i, strSearch.data(), strSearch.size()) == 0)
 						{
@@ -2107,7 +2102,7 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 				if (!rSearch.fFound)
 				{
 					ullIndex = m_ullDataSize - strSearch.size();
-					for (int i = (int)ullIndex; i >= 0; i--)
+					for (INT_PTR i = (INT_PTR)ullIndex; i >= 0; i--)
 					{
 						if (memcmp(m_pData + i, strSearch.data(), strSearch.size()) == 0)
 						{
@@ -2177,7 +2172,7 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 				if (rSearch.fSecondMatch && ullIndex > 0)
 				{
 					ullIndex--;
-					for (int i = (int)ullIndex; i >= 0; i--)
+					for (INT_PTR i = (INT_PTR)ullIndex; i >= 0; i--)
 					{
 						if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
 						{
@@ -2194,7 +2189,7 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 				if (!rSearch.fFound)
 				{
 					ullIndex = m_ullDataSize - ullSizeBytes;
-					for (int i = (int)ullIndex; i >= 0; i--)
+					for (INT_PTR i = (INT_PTR)ullIndex; i >= 0; i--)
 					{
 						if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
 						{
@@ -2214,6 +2209,7 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 			break;
 		}
 		}
+	}
 
 	if (rSearch.fFound)
 	{
