@@ -95,7 +95,7 @@ void CHexDlgSearch::OnButtonSearchF()
 	m_stSearch.enSearchType = GetSearchType();
 
 	GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
-	GetHexCtrl()->Search(m_stSearch);
+	GetHexCtrl()->SearchCallback(m_stSearch);
 	SearchCallback();
 }
 
@@ -117,7 +117,7 @@ void CHexDlgSearch::OnButtonSearchB()
 	m_stSearch.enSearchType = GetSearchType();
 
 	GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
-	GetHexCtrl()->Search(m_stSearch);
+	GetHexCtrl()->SearchCallback(m_stSearch);
 	SearchCallback();
 }
 
@@ -145,7 +145,7 @@ void CHexDlgSearch::OnButtonReplace()
 	m_stSearch.enSearchType = GetSearchType();
 
 	GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
-	GetHexCtrl()->Search(m_stSearch);
+	GetHexCtrl()->SearchCallback(m_stSearch);
 	SearchCallback();
 }
 
@@ -173,7 +173,7 @@ void CHexDlgSearch::OnButtonReplaceAll()
 	m_stSearch.enSearchType = GetSearchType();
 
 	GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
-	GetHexCtrl()->Search(m_stSearch);
+	GetHexCtrl()->SearchCallback(m_stSearch);
 	SearchCallback();
 }
 

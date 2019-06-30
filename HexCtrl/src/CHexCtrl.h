@@ -8,48 +8,48 @@
 ****************************************************************************************/
 #pragma once
 #include "../HexCtrl.h"
-#include <memory>			//std::unique_ptr and related.
-#include <unordered_map>	//std::unordered_map and related.
-#include <deque>			//std::deque and related.
-#include <string>			//std::wstring and related.
+#include <memory>        //std::unique_ptr and related.
+#include <unordered_map> //std::unordered_map and related.
+#include <deque>         //std::deque and related.
+#include <string>        //std::wstring and related.
 
 namespace HEXCTRL {
 	namespace INTERNAL
 	{
-		/************************************************
-		* Forward declarations.							*
-		************************************************/
+		/*********************************
+		* Forward declarations.          *
+		*********************************/
 		struct UNDOSTRUCT;
 		enum class ENCLIPBOARD : DWORD;
 		enum class ENSHOWAS : DWORD;
 
-		/********************************************************************************************
-		* ENSEARCHTYPE - type of the search, enum.													*
-		********************************************************************************************/
+		/***************************************************************************************
+		* ENSEARCHTYPE - type of the search, enum.                                             *
+		***************************************************************************************/
 		enum class ENSEARCHTYPE : DWORD
 		{
 			SEARCH_HEX, SEARCH_ASCII, SEARCH_UTF16
 		};
 
-		/********************************************************************************************
-		* SEARCHSTRUCT - used for search routines.													*
-		********************************************************************************************/
+		/****************************************************************************************
+		* SEARCHSTRUCT - used for search routines.                                              *
+		****************************************************************************************/
 		struct SEARCHSTRUCT
 		{
 			std::wstring wstrSearch { };         //String search for.
 			std::wstring wstrReplace { };        //SearchReplace with, string.
 			ENSEARCHTYPE enSearchType { };       //Hex, Ascii, Unicode, etc...
-			ULONGLONG	 ullIndex { };           //An offset search should start at.
-			DWORD		 dwCount { };            //How many, or what account.
-			DWORD		 dwReplaced { };         //Replaced amount;
-			int			 iDirection { };         //Search direction: 1 = Forward, -1 = Backward.
-			int			 iWrap { };              //Wrap direction: -1 = Beginning, 1 = End.
-			bool		 fWrap { false };        //Was search wrapped?
-			bool		 fSecondMatch { false }; //First or subsequent match. 
-			bool		 fFound { false };       //Found or not.
-			bool		 fDoCount { true };      //Do we count matches or just print "Found".
-			bool		 fReplace { false };     //Find or Find and SearchReplace with...?
-			bool		 fAll { false };         //Find/SearchReplace one by one, or all?
+			ULONGLONG    ullIndex { };           //An offset search should start from.
+			DWORD        dwCount { };            //How many, or what index number.
+			DWORD        dwReplaced { };         //Replaced amount;
+			int          iDirection { };         //Search direction: 1 = Forward, -1 = Backward.
+			int          iWrap { };              //Wrap direction: -1 = Beginning, 1 = End.
+			bool         fWrap { false };        //Was search wrapped?
+			bool         fSecondMatch { false }; //First or subsequent match. 
+			bool         fFound { false };       //Found or not.
+			bool         fDoCount { true };      //Do we count matches or just print "Found".
+			bool         fReplace { false };     //Find or Find and SearchReplace with...?
+			bool         fAll { false };         //Find/SearchReplace one by one, or all?
 		};
 	}
 
@@ -64,7 +64,7 @@ namespace HEXCTRL {
 	********************************************************************************************/
 	class CHexCtrl : public IHexCtrl
 	{
-		friend class CHexDlgSearch; //For private Search routine.
+		friend class CHexDlgSearch; //For private SearchCallback routine.
 	public:
 		CHexCtrl();
 		virtual ~CHexCtrl();
@@ -110,24 +110,24 @@ namespace HEXCTRL {
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
 	protected:
-		[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex)const; //Gets the byte data by index.
-		void ModifyData(const HEXMODIFYSTRUCT& hms);         //Main routine to modify data, in fMutable=true mode.
-		[[nodiscard]] CWnd* GetMsgWindow()const;             //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
-		void Search(INTERNAL::SEARCHSTRUCT& rSearch);        //Search through currently set data.
+		[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex)const;   //Gets the byte data by index.
+		void ModifyData(const HEXMODIFYSTRUCT& hms);           //Main routine to modify data, in fMutable=true mode.
+		[[nodiscard]] CWnd* GetMsgWindow()const;               //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
+		void SearchCallback(INTERNAL::SEARCHSTRUCT& rSearch);  //Search through currently set data.
 		void SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplaced, bool fRedraw = true);
-		void RecalcAll();                                    //Recalcs all inner draw and data related values.
+		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcWorkAreaHeight(int iClientHeight);
 		void RecalcScrollSizes(int iClientHeight = 0, int iClientWidth = 0);
-		[[nodiscard]] ULONGLONG GetTopLine()const;           //Returns current top line's number in view.
-		[[nodiscard]] ULONGLONG HitTest(const POINT*);       //Is any hex chunk withing given point?
+		[[nodiscard]] ULONGLONG GetTopLine()const;             //Returns current top line's number in view.
+		[[nodiscard]] ULONGLONG HitTest(const POINT*);         //Is any hex chunk withing given point?
 		void ChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy)const; //Point of Hex chunk.
 		void ClipboardCopy(INTERNAL::ENCLIPBOARD enType);
 		void ClipboardPaste(INTERNAL::ENCLIPBOARD enType);
-		void OnKeyDownShift(UINT nChar);                     //Key pressed with the Shift.
-		void OnKeyDownCtrl(UINT nChar);                      //Key pressed with the Ctrl.
+		void OnKeyDownShift(UINT nChar);                       //Key pressed with the Shift.
+		void OnKeyDownCtrl(UINT nChar);                        //Key pressed with the Ctrl.
 		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
 		void SelectAll();
-		void UpdateInfoText();	//Updates text in the bottom "info" area according to currently selected data.
+		void UpdateInfoText();                                 //Updates text in the bottom "info" area according to currently selected data.
 		void SetShowAs(INTERNAL::ENSHOWAS enShowAs);           //Current data representation type.
 		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notifications.

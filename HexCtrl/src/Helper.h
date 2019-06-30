@@ -25,6 +25,6 @@ namespace HEXCTRL {
 	//Wide string to Multibyte string convertion.
 	std::string WstrToStr(const std::wstring& wstr);
 
-	//Converts every two numbers from strNum to one respective character (56->V, 78->x).
-	bool NumStrToHex(const std::string& strNum, std::string& strHex);
+	//Converts every two numeric chars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
+	bool StrToHex(const std::string& strFrom, std::string& strToHex);
 };

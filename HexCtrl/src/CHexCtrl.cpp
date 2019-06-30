@@ -360,7 +360,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	//Setting capacity according to current m_enShowAs.
 	if (dwCapacity < m_dwCapacity)
 		dwCapacity -= dwCapacity % (DWORD)m_enShowAs;
-	else
+	else if (dwCapacity % (DWORD)m_enShowAs)
 		dwCapacity += (DWORD)m_enShowAs - (dwCapacity % (DWORD)m_enShowAs);
 
 	//To prevent under/over flow.
@@ -1920,7 +1920,7 @@ bool CHexCtrl::IsCurTextArea()const
 	return m_fCursorTextArea;
 }
 
-void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
+void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 {
 	rSearch.fFound = false;
 	ULONGLONG ullIndex = rSearch.ullIndex;
@@ -1929,9 +1929,7 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 	ULONGLONG ullSizeBytesReplaced;
 	std::string strSearch;
 	std::string strReplace;
-	std::string strSearchAscii;
-	std::string strReplaceAscii;
-	std::wstring wstrReplaceWarning { L"Replacing string is longer than Find string."
+	std::wstring wstrReplaceWarning { L"Replacing string is longer than Find string.\r\n"
 		"Do you want to overwrite the bytes following search occurrence?\r\n"
 		"Choosing \"No\" will cancel search." };
 
@@ -1942,11 +1940,11 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 	if (rSearch.enSearchType == INTERNAL::ENSEARCHTYPE::SEARCH_HEX ||
 		rSearch.enSearchType == INTERNAL::ENSEARCHTYPE::SEARCH_ASCII)
 	{
-		strSearchAscii = WstrToStr(rSearch.wstrSearch);
+		strSearch = WstrToStr(rSearch.wstrSearch);
 		if (rSearch.fReplace)
 		{
-			strReplaceAscii = WstrToStr(rSearch.wstrReplace);
-			if (strReplaceAscii.size() > strSearchAscii.size())
+			strReplace = WstrToStr(rSearch.wstrReplace);
+			if (strReplace.size() > strSearch.size())
 				if (IDNO == MessageBoxW(wstrReplaceWarning.data(), L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST))
 					return;
 		}
@@ -1956,12 +1954,12 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 	{
 	case INTERNAL::ENSEARCHTYPE::SEARCH_HEX:
 	{
-		if (!NumStrToHex(strSearchAscii, strSearch))
+		if (!StrToHex(strSearch, strSearch))
 		{
 			rSearch.iWrap = 1;
 			return;
 		}
-		if ((rSearch.fReplace && !NumStrToHex(strReplaceAscii, strReplace)) || (ullSizeBytes = strSearch.size()) > m_ullDataSize)
+		if ((rSearch.fReplace && !StrToHex(strReplace, strReplace)) || (ullSizeBytes = strSearch.size()) > m_ullDataSize)
 			return;
 
 		ullSizeBytesReplaced = strReplace.size();
@@ -1969,9 +1967,6 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 	break;
 	case INTERNAL::ENSEARCHTYPE::SEARCH_ASCII:
 	{
-		strSearch = std::move(strSearchAscii);
-		strReplace = std::move(strReplaceAscii);
-
 		ullSizeBytes = strSearch.size();
 		ullSizeBytesReplaced = strReplace.size();
 		if (ullSizeBytes > m_ullDataSize)
@@ -1988,7 +1983,7 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 	break;
 	}
 
-	///////////////Actual Search://///////////////////////////
+	///////////////Actual Search:////////////////////////////
 	if (rSearch.fReplace && rSearch.fAll) //SearchReplace All
 	{
 		switch (rSearch.enSearchType)
@@ -2046,10 +2041,9 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 					{
 						rSearch.fFound = true;
 						rSearch.fSecondMatch = true;
+						rSearch.ullIndex = i;
 						rSearch.fWrap = false;
 						rSearch.dwCount++;
-						rSearch.ullIndex = i;
-
 						break;
 					}
 				}
@@ -2094,7 +2088,6 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 							rSearch.ullIndex = i;
 							rSearch.fWrap = false;
 							rSearch.dwCount--;
-
 							break;
 						}
 					}
@@ -2113,7 +2106,6 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 							rSearch.iWrap = -1;
 							rSearch.fDoCount = false;
 							rSearch.dwCount = 1;
-
 							break;
 						}
 					}
@@ -2143,7 +2135,6 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 						rSearch.ullIndex = i;
 						rSearch.fWrap = false;
 						rSearch.dwCount++;
-
 						break;
 					}
 				}
@@ -2161,7 +2152,6 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 							rSearch.fWrap = true;
 							rSearch.fDoCount = true;
 							rSearch.dwCount = 1;
-
 							break;
 						}
 					}
@@ -2181,7 +2171,6 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 							rSearch.ullIndex = i;
 							rSearch.fWrap = false;
 							rSearch.dwCount--;
-
 							break;
 						}
 					}
@@ -2200,7 +2189,6 @@ void CHexCtrl::Search(INTERNAL::SEARCHSTRUCT & rSearch)
 							rSearch.iWrap = -1;
 							rSearch.fDoCount = false;
 							rSearch.dwCount = 1;
-
 							break;
 						}
 					}
@@ -2250,7 +2238,7 @@ void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ul
 	GetClientRect(&rcClient);
 
 	//New scroll depending on selection direction: top <-> bottom.
-	//fHighlight means centralize scroll position on the screen (used in Search()).
+	//fHighlight means centralize scroll position on the screen (used in SearchCallback()).
 	ULONGLONG ullEnd = ullStart + ullSize; //ullEnd is exclusive.
 	ULONGLONG ullMaxV = ullCurrScrollV + rcClient.Height() - m_iHeightBottomOffArea - m_iHeightTopRect -
 		((rcClient.Height() - m_iHeightTopRect - m_iHeightBottomOffArea) % m_sizeLetter.cy);

@@ -45,25 +45,26 @@ namespace HEXCTRL {
 		return str;
 	}
 
-	bool NumStrToHex(const std::string & strNum, std::string & strHex)
+	bool StrToHex(const std::string & strFrom, std::string & strToHex)
 	{
-		size_t dwIterations = strNum.size() / 2 + strNum.size() % 2;
-
+		size_t dwIterations = strFrom.size() / 2 + strFrom.size() % 2;
+		std::string strTmp;
 		for (size_t i = 0; i < dwIterations; i++)
 		{
 			std::string strToUL; //String to hold currently extracted two letters.
 
-			if (i + 2 <= strNum.size())
-				strToUL = strNum.substr(i * 2, 2);
+			if (i + 2 <= strFrom.size())
+				strToUL = strFrom.substr(i * 2, 2);
 			else
-				strToUL = strNum.substr(i * 2, 1);
+				strToUL = strFrom.substr(i * 2, 1);
 
 			unsigned long ulNumber;
 			if (!CharsToUl(strToUL.data(), ulNumber))
 				return false;
 
-			strHex += (unsigned char)ulNumber;
+			strTmp += (unsigned char)ulNumber;
 		}
+		strToHex = std::move(strTmp);
 
 		return true;
 	}
