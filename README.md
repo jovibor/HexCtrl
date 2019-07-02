@@ -100,17 +100,17 @@ bool IHexCtrl::Create(hcs);
 ```cpp
 struct HEXCOLORSTRUCT
 {
-	COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };          //Hex chunks text color.
-	COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };        //Ascii text color.
-	COLORREF clrTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) };  //Selected text color.
-	COLORREF clrTextCaption { RGB(0, 0, 180) };                     //Caption text color
-	COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };     //Text color of the bottom "Info" rect.
-	COLORREF clrTextCursor { RGB(255, 255, 255) };                  //Cursor text color.
-	COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                   //Background color.
-	COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };        //Background color of the selected Hex/Ascii.
-	COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };          //Background color of the bottom "Info" rect.
-	COLORREF clrBkCursor { RGB(0, 0, 255) };                        //Cursor's background color.
-	COLORREF clrBkCursorSelected { RGB(192, 192, 192) };            //Cursor's background color in selection.
+	COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };         //Hex chunks text color.
+	COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };       //Ascii text color.
+	COLORREF clrTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected text color.
+	COLORREF clrTextCaption { RGB(0, 0, 180) };                    //Caption text color
+	COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };    //Text color of the bottom "Info" rect.
+	COLORREF clrTextCursor { RGB(255, 255, 255) };                 //Cursor text color.
+	COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                  //Background color.
+	COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };       //Background color of the selected Hex/Ascii.
+	COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };         //Background color of the bottom "Info" rect.
+	COLORREF clrBkCursor { RGB(0, 0, 255) };                       //Cursor's background color.
+	COLORREF clrBkCursorSelected { RGB(0, 0, 200) };               //Cursor's background color in selection.
 };
 ```
 This struct is also used in [`IHexCtrl::SetColor`](#setcolor) method.
@@ -206,8 +206,10 @@ class IHexVirtual
 {
 public:
 	virtual ~IHexVirtual() = default;
-	virtual BYTE GetByte(ULONGLONG ullIndex) = 0; //Gets the byte data by index.
+	virtual BYTE GetByte(ULONGLONG ullIndex) = 0;            //Gets the byte data by index.
 	virtual	void ModifyData(const HEXMODIFYSTRUCT& hmd) = 0; //Main routine to modify data, in fMutable=true mode.
+	virtual void Undo() = 0;                                 //Undo command, through menu or hotkey.
+	virtual void Redo() = 0;                                 //Redo command, through menu or hotkey.
 };
 ```
 Then provide a pointer to created object of this derived class to `SetData` method in form of `HEXDATASTRUCT::pHexVirtual=&yourDerivedObject`
@@ -269,7 +271,7 @@ Enables or disables edit mode. In edit mode data can be modified.
 Sets cursor to the `ullOffset` and selects `ullSize` bytes.
 ### [](#)SetFont
 **`void SetFont(const LOGFONTW* pLogFontNew)`**<br>
-Sets a new font for the **HexCtrl**.
+Sets a new font for the **HexCtrl**. This font has to be monospaced.
 ### [](#)SetFontSize
 **`void SetFontSize(UINT uiSize)`**<br>
 Sets a new font size to the **HexCtrl**.
@@ -280,22 +282,22 @@ Sets all the colors for the control. Takes [`HEXCOLORSTRUCT`](#hexcolorstruct) a
 **`void SetCapacity(DWORD dwCapacity)`**<br>
 Sets the **HexCtrl** capacity.
 ### [](#)IsCreated
-**`bool IsCreated()`**<br>
+**`bool IsCreated()const`**<br>
 Shows whether **HexCtrl** is created or not yet.
 ### [](#)IsDataSet
-**`bool IsDataSet()`**<br>
+**`bool IsDataSet()const`**<br>
 Shows whether a data was set to **HexCtrl** or not
 ### [](#)IsMutable
-**`bool IsMutable()`**<br>
+**`bool IsMutable()const`**<br>
 Shows whether **HexCtrl** is currently in edit mode or not.
 ### [](#)GetFontSize
-**`long GetFontSize()`**<br>
+**`long GetFontSize()const`**<br>
 Returns current font size.
 ### [](#)GetSelection
-**`void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)`**<br>
+**`void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const`**<br>
 Returns current start position (offset) of the selection as `ullOffset`, and its size as `ullSize`.
 ### [](#)GetMenuHandle
-**`HMENU GetMenuHandle()`**<br>
+**`HMENU GetMenuHandle()const`**<br>
 `GetMenuHandle` method retrives the `HMENU` handle of the control's context menu. You can use this handle to customize menu for your needs.<br>
 Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu assign menu `ID` starting from `0x9000` to not interfere.<br>
 When user clicks custom menu control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to `HEXNOTIFYSTRUCT` with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `uMenuId` field of the `HEXNOTIFYSTRUCT` will be holding `ID` of the menu clicked.

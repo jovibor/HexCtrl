@@ -185,20 +185,15 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 	LOGFONTW lf { };
 	if (hcs.pLogFont)
 		lf = *hcs.pLogFont;
-	else {
+	else
+	{
 		StringCchCopyW(lf.lfFaceName, 9, L"Consolas");
 		lf.lfHeight = 18;
 	}
 
-	if (!m_fontHexView.CreateFontIndirectW(&lf))
-	{
-		NONCLIENTMETRICSW ncm { sizeof(NONCLIENTMETRICSW) };
-		SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, ncm.cbSize, &ncm, 0);
-		lf = ncm.lfMessageFont;
-		lf.lfHeight = 18; //For some reason above func returns lfHeight value as MAX_LONG.
+	m_fontHexView.CreateFontIndirectW(&lf);
+	m_lFontSize = lf.lfHeight;
 
-		m_fontHexView.CreateFontIndirectW(&lf);
-	}
 	lf.lfHeight = 16;
 	m_fontBottomRect.CreateFontIndirectW(&lf);
 	//End of font related.///////////////////////////////////////
@@ -337,9 +332,9 @@ void CHexCtrl::SetFontSize(UINT uiSize)
 	if (uiSize < 9 || uiSize > 75)
 		return;
 
-	LOGFONT lf;
+	LOGFONTW lf;
 	m_fontHexView.GetLogFont(&lf);
-	lf.lfHeight = uiSize;
+	m_lFontSize = lf.lfHeight = uiSize;
 	m_fontHexView.DeleteObject();
 	m_fontHexView.CreateFontIndirectW(&lf);
 
@@ -389,14 +384,12 @@ bool CHexCtrl::IsMutable()const
 	return m_fMutable;
 }
 
-long CHexCtrl::GetFontSize()
+long CHexCtrl::GetFontSize()const
 {
 	if (!IsCreated())
 		return 0;
 
-	LOGFONTW lf;
-	m_fontHexView.GetLogFont(&lf);
-	return lf.lfHeight;
+	return m_lFontSize;
 }
 
 void CHexCtrl::GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const
@@ -789,13 +782,13 @@ void CHexCtrl::OnPaint()
 	GetClientRect(rcClient);
 	//Drawing through CMemDC to avoid flickering.
 	CMemDC memDC(dc, rcClient);
-	CDC& rDC = memDC.GetDC();
+	CDC* pDC = &memDC.GetDC();
 
 	RECT rc; //Used for all local rect related drawing.
-	rDC.GetClipBox(&rc);
-	rDC.FillSolidRect(&rc, m_stColor.clrBk);
-	rDC.SelectObject(&m_penLines);
-	rDC.SelectObject(&m_fontHexView);
+	pDC->GetClipBox(&rc);
+	pDC->FillSolidRect(&rc, m_stColor.clrBk);
+	pDC->SelectObject(&m_penLines);
+	pDC->SelectObject(&m_fontHexView);
 
 	//To prevent drawing in too small window (can cause hangs).
 	if (rcClient.Height() < m_iHeightTopRect + m_iHeightBottomOffArea)
@@ -804,7 +797,8 @@ void CHexCtrl::OnPaint()
 	//Find the ullLineStart and ullLineEnd position, draw the visible portion.
 	const ULONGLONG ullLineStart = GetTopLine();
 	ULONGLONG ullLineEndtmp = 0;
-	if (m_ullDataSize) {
+	if (m_ullDataSize)
+	{
 		ullLineEndtmp = ullLineStart + (rcClient.Height() - m_iHeightTopRect - m_iHeightBottomOffArea) / m_sizeLetter.cy;
 		//If m_dwDataCount is really small we adjust dwLineEnd to be not bigger than maximum allowed.
 		if (ullLineEndtmp > (m_ullDataSize / m_dwCapacity))
@@ -818,42 +812,42 @@ void CHexCtrl::OnPaint()
 	const auto iFourthHorizLine = iThirdHorizLine + m_iHeightBottomRect;
 
 	//First horizontal line.
-	rDC.MoveTo(0, iFirstHorizLine);
-	rDC.LineTo(m_iFourthVertLine, iFirstHorizLine);
+	pDC->MoveTo(0, iFirstHorizLine);
+	pDC->LineTo(m_iFourthVertLine, iFirstHorizLine);
 
 	//Second horizontal line.
-	rDC.MoveTo(0, iSecondHorizLine);
-	rDC.LineTo(m_iFourthVertLine, iSecondHorizLine);
+	pDC->MoveTo(0, iSecondHorizLine);
+	pDC->LineTo(m_iFourthVertLine, iSecondHorizLine);
 
 	//Third horizontal line.
-	rDC.MoveTo(0, iThirdHorizLine);
-	rDC.LineTo(m_iFourthVertLine, iThirdHorizLine);
+	pDC->MoveTo(0, iThirdHorizLine);
+	pDC->LineTo(m_iFourthVertLine, iThirdHorizLine);
 
 	//Fourth horizontal line.
-	rDC.MoveTo(0, iFourthHorizLine);
-	rDC.LineTo(m_iFourthVertLine, iFourthHorizLine);
+	pDC->MoveTo(0, iFourthHorizLine);
+	pDC->LineTo(m_iFourthVertLine, iFourthHorizLine);
 
 	//«Offset» text.
 	rc.left = m_iFirstVertLine - iScrollH; rc.top = iFirstHorizLine;
 	rc.right = m_iSecondVertLine - iScrollH; rc.bottom = iSecondHorizLine;
-	rDC.SetTextColor(m_stColor.clrTextCaption);
-	rDC.DrawTextW(L"Offset", 6, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	pDC->SetTextColor(m_stColor.clrTextCaption);
+	pDC->DrawTextW(L"Offset", 6, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	//Info rect's text.
 	rc.left = m_iFirstVertLine;
 	rc.top = iThirdHorizLine + 1;
 	rc.right = m_iFourthVertLine;
 	rc.bottom = iFourthHorizLine;	//Fill bottom rect until iFourthHorizLine.
-	rDC.FillSolidRect(&rc, m_stColor.clrBkInfoRect);
-	rDC.SetTextColor(m_stColor.clrTextInfoRect);
-	rDC.SelectObject(&m_fontBottomRect);
+	pDC->FillSolidRect(&rc, m_stColor.clrBkInfoRect);
+	pDC->SetTextColor(m_stColor.clrTextInfoRect);
+	pDC->SelectObject(&m_fontBottomRect);
 	rc.left += 5;					//Draw text beginning with little indent.
 	rc.right = rcClient.right;		//Draw text to the end of the client area, even if it pass iFourthHorizLine.
-	rDC.DrawTextW(m_wstrBottomText.data(), (int)m_wstrBottomText.size(), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+	pDC->DrawTextW(m_wstrBottomText.data(), (int)m_wstrBottomText.size(), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
-	rDC.SelectObject(&m_fontHexView);
-	rDC.SetTextColor(m_stColor.clrTextCaption);
-	rDC.SetBkColor(m_stColor.clrBk);
+	pDC->SelectObject(&m_fontHexView);
+	pDC->SetTextColor(m_stColor.clrTextCaption);
+	pDC->SetBkColor(m_stColor.clrBk);
 
 	int iCapacityShowAs = 1;
 	int iIndentCapacityX = 0;
@@ -871,7 +865,7 @@ void CHexCtrl::OnPaint()
 			c = 2;
 			x -= m_sizeLetter.cx;
 		}
-		ExtTextOutW(rDC.m_hDC, x - iScrollH, iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
+		ExtTextOutW(pDC->m_hDC, x - iScrollH, iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
 			m_umapCapacityWstr.at(iterCapacity).data(), c, nullptr);
 
 		iIndentCapacityX += m_iSizeHexByte;
@@ -885,146 +879,201 @@ void CHexCtrl::OnPaint()
 	//"Ascii" text.
 	rc.left = m_iThirdVertLine - iScrollH; rc.top = iFirstHorizLine;
 	rc.right = m_iFourthVertLine - iScrollH; rc.bottom = iSecondHorizLine;
-	rDC.DrawTextW(L"Ascii", 5, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	pDC->DrawTextW(L"Ascii", 5, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	//First Vertical line.
-	rDC.MoveTo(m_iFirstVertLine - iScrollH, 0);
-	rDC.LineTo(m_iFirstVertLine - iScrollH, iFourthHorizLine);
+	pDC->MoveTo(m_iFirstVertLine - iScrollH, 0);
+	pDC->LineTo(m_iFirstVertLine - iScrollH, iFourthHorizLine);
 
 	//Second Vertical line.
-	rDC.MoveTo(m_iSecondVertLine - iScrollH, 0);
-	rDC.LineTo(m_iSecondVertLine - iScrollH, iThirdHorizLine);
+	pDC->MoveTo(m_iSecondVertLine - iScrollH, 0);
+	pDC->LineTo(m_iSecondVertLine - iScrollH, iThirdHorizLine);
 
 	//Third Vertical line.
-	rDC.MoveTo(m_iThirdVertLine - iScrollH, 0);
-	rDC.LineTo(m_iThirdVertLine - iScrollH, iThirdHorizLine);
+	pDC->MoveTo(m_iThirdVertLine - iScrollH, 0);
+	pDC->LineTo(m_iThirdVertLine - iScrollH, iThirdHorizLine);
 
 	//Fourth Vertical line.
-	rDC.MoveTo(m_iFourthVertLine - iScrollH, 0);
-	rDC.LineTo(m_iFourthVertLine - iScrollH, iFourthHorizLine);
+	pDC->MoveTo(m_iFourthVertLine - iScrollH, 0);
+	pDC->LineTo(m_iFourthVertLine - iScrollH, iFourthHorizLine);
 
-	//Current line to print.
-	int iLine = 0;
 	//Loop for printing hex and Ascii line by line.
+	int iLine = 0; //Current line to print.
+	std::wstring wstrHexToPrint { }, wstrAsciiToPrint { };      //Hex and Ascii string to print.
+	wstrHexToPrint.reserve(m_dwCapacity * 3);
+	wstrAsciiToPrint.reserve(m_dwCapacity);
+	std::wstring wstrHexSelToPrint { }, wstrAsciiSelToPrint { }; //Selected hex and Ascii string to print.
+	wstrHexSelToPrint.reserve(m_dwCapacity * 3);
+	wstrAsciiSelToPrint.reserve(m_dwCapacity);
 	for (ULONGLONG iterLines = ullLineStart; iterLines < ullLineEnd; iterLines++)
 	{
 		//Drawing offset with bk color depending on selection range.
 		if (m_ullSelectionSize && (iterLines * m_dwCapacity + m_dwCapacity) > m_ullSelectionStart &&
 			(iterLines * m_dwCapacity) < m_ullSelectionEnd)
 		{
-			rDC.SetTextColor(m_stColor.clrTextSelected);
-			rDC.SetBkColor(m_stColor.clrBkSelected);
+			pDC->SetTextColor(m_stColor.clrTextSelected);
+			pDC->SetBkColor(m_stColor.clrBkSelected);
 		}
 		else
 		{
-			rDC.SetTextColor(m_stColor.clrTextCaption);
-			rDC.SetBkColor(m_stColor.clrBk);
+			pDC->SetTextColor(m_stColor.clrTextCaption);
+			pDC->SetBkColor(m_stColor.clrBk);
 		}
 		//Left column offset printing (00000001...0000FFFF...).
 		wchar_t pwszOffset[16];
 		UllToWchars(iterLines * m_dwCapacity, pwszOffset, (size_t)m_dwOffsetDigits / 2);
-		ExtTextOutW(rDC.m_hDC, m_sizeLetter.cx - iScrollH, m_iHeightTopRect + (m_sizeLetter.cy * iLine),
+		ExtTextOutW(pDC->m_hDC, m_sizeLetter.cx - iScrollH, m_iHeightTopRect + (m_sizeLetter.cy * iLine),
 			NULL, nullptr, pwszOffset, m_dwOffsetDigits, nullptr);
 
-		int iIndentHexX = 0;
-		int iIndentAsciiX = 0;
-		int iShowAs = 1;
 		//Main loop for printing Hex chunks and Ascii chars.
+		wchar_t wchHexCursor, wchAsciiCursor;                        //WChars for cursor's bytes.
+		bool fHalf { false }, fSelHalf { false }, fCursor { false }; //Flags for one time execution.
+		int iSelHexPosToPrintX = 0, iSelAsciiPosToPrintX = 0;        //Selection Hex and Ascii X coords. Zeroing is important.
+		int iCursorHexPosToPrintX, iCursorAsciiPosToPrintX;          //Cursor X coords.
+		COLORREF clrBkCursor;                                        //Cursor color.
+		wstrHexToPrint.clear(); wstrAsciiToPrint.clear();
+		wstrHexSelToPrint.clear(); wstrAsciiSelToPrint.clear();
 		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
 		{
-			//Additional space between capacity halves. Only with BYTEs representation.
-			int iIndentBetweenBlocks = 0;
-			if (iterChunks >= m_dwCapacityBlockSize && m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE)
-				iIndentBetweenBlocks = m_iSpaceBetweenBlocks;
-
-			const UINT iHexPosToPrintX = m_iIndentFirstHexChunk + iIndentHexX + iIndentBetweenBlocks - iScrollH;
-			const UINT iHexPosToPrintY = m_iHeightTopRect + m_sizeLetter.cy * iLine;
-			const UINT iAsciiPosToPrintX = m_iIndentAscii + iIndentAsciiX - iScrollH;
-			const UINT iAsciiPosToPrintY = m_iHeightTopRect + m_sizeLetter.cy * iLine;
-
-			//Index of the next char (in m_pData) to draw.
+			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
+			if (ullIndexByteToPrint >= m_ullDataSize) //Draw until reaching the end of m_ullDataSize.
+				break;
 
-			if (ullIndexByteToPrint < m_ullDataSize) //Draw until reaching the end of m_dwDataCount.
+			//Hex chunk to print.
+			const auto chByteToPrint = GetByte(ullIndexByteToPrint);
+			const wchar_t* const pwszHexMap { L"0123456789ABCDEF" };
+			const wchar_t pwszHexToPrint[2] { pwszHexMap[(chByteToPrint & 0xF0) >> 4], pwszHexMap[(chByteToPrint & 0x0F)] };
+			wstrHexToPrint += pwszHexToPrint[0];
+			wstrHexToPrint += pwszHexToPrint[1];
+
+			//Additional space between grouped Hex chunks.
+			if (((iterChunks + 1) % (DWORD)m_enShowAs) == 0 && iterChunks < (m_dwCapacity - 1))
+				wstrHexToPrint += L" ";
+
+			//Additional space between capacity halves, only with ASBYTE representation.
+			if (m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE && iterChunks >= m_dwCapacityBlockSize - 1 && !fHalf)
 			{
-				//Hex chunk to print.
-				unsigned char chByteToPrint = GetByte(ullIndexByteToPrint);
-				const wchar_t* const pwszHexMap { L"0123456789ABCDEF" };
-				wchar_t pwszHexToPrint[2];
-				pwszHexToPrint[0] = pwszHexMap[(chByteToPrint & 0xF0) >> 4];
-				pwszHexToPrint[1] = pwszHexMap[(chByteToPrint & 0x0F)];
+				wstrHexToPrint += L"  ";
+				fHalf = true;
+			}
 
-				//Selection draw with different BK color.
-				COLORREF clrBk, clrBkAscii, clrTextHex, clrTextAscii, clrBkCursor;
-				if (m_ullSelectionSize && ullIndexByteToPrint >= m_ullSelectionStart && ullIndexByteToPrint < m_ullSelectionEnd)
+			//Ascii to print.
+			wchar_t wchAscii = chByteToPrint;
+			if (wchAscii < 32 || wchAscii >= 0x7f) //For non printable Ascii just print a dot.
+				wchAscii = '.';
+			wstrAsciiToPrint += wchAscii;
+
+			//Cursor position. 
+			if (m_fMutable && (ullIndexByteToPrint == m_ullCursorPos))
+			{
+				ULONGLONG ullCx, ullCy;
+				HexChunkPoint(m_ullCursorPos, ullCx, ullCy);
+				if (m_fCursorHigh)
+					wchHexCursor = pwszHexMap[(chByteToPrint & 0xF0) >> 4];
+				else
 				{
-					clrBk = clrBkAscii = m_stColor.clrBkSelected;
-					clrTextHex = clrTextAscii = m_stColor.clrTextSelected;
-					clrBkCursor = m_stColor.clrBkCursorSelected;
-					//Space between hex chunks (excluding last hex in a row) filling with bk_selected color.
-					if (ullIndexByteToPrint < (m_ullSelectionEnd - 1) &&
-						(ullIndexByteToPrint + 1) % m_dwCapacity &&
-						((ullIndexByteToPrint + 1) % (DWORD)m_enShowAs) == 0)
-					{	//Rect of the space between Hex chunks. Needed for proper selection drawing.
-						rc.left = iHexPosToPrintX + m_iSizeHexByte;
-						rc.right = rc.left + m_iSpaceBetweenHexChunks;
-						rc.top = iHexPosToPrintY;
-						rc.bottom = iHexPosToPrintY + m_sizeLetter.cy;
-						if (iterChunks == m_dwCapacityBlockSize - 1) //Space between capacity halves.
-							rc.right += m_iSpaceBetweenBlocks;
+					wchHexCursor = pwszHexMap[(chByteToPrint & 0x0F)];
+					ullCx += m_sizeLetter.cx;
+				}
+				iCursorHexPosToPrintX = (int)ullCx - iScrollH;
 
-						rDC.FillRect(&rc, &m_stBrushBkSelected);
+				AsciiChunkPoint(m_ullCursorPos, ullCx, ullCy);
+				iCursorAsciiPosToPrintX = (int)ullCx - iScrollH;
+				wchAsciiCursor = wchAscii;
+				clrBkCursor = m_stColor.clrBkCursor;
+				fCursor = true;
+			}
+
+			//If there is a selection.
+			if (m_ullSelectionSize && ullIndexByteToPrint >= m_ullSelectionStart && ullIndexByteToPrint < m_ullSelectionEnd)
+			{
+				if (iSelHexPosToPrintX == 0)
+				{
+					ULONGLONG ullCx, ullCy;
+					HexChunkPoint(ullIndexByteToPrint, ullCx, ullCy);
+					iSelHexPosToPrintX = (int)ullCx - iScrollH;
+					AsciiChunkPoint(ullIndexByteToPrint, ullCx, ullCy);
+					iSelAsciiPosToPrintX = (int)ullCx - iScrollH;
+				}
+
+				//Additional space between capacity halves, only with ASBYTE representation.
+				if (m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE && iterChunks > m_dwCapacityBlockSize - 1 && !fSelHalf)
+				{
+					if (!wstrHexSelToPrint.empty()) //Only adding spaces if there are chars beforehead.
+						wstrHexSelToPrint += L"  ";
+					fSelHalf = true;
+				}
+
+				wstrHexSelToPrint += pwszHexToPrint[0];
+				wstrHexSelToPrint += pwszHexToPrint[1];
+
+				if (((iterChunks + 1) % (DWORD)m_enShowAs) == 0 && iterChunks < (m_dwCapacity - 1))
+					wstrHexSelToPrint += L" ";
+
+				wstrAsciiSelToPrint += wchAscii;
+
+				//Cursor position. 
+				if (m_fMutable && (ullIndexByteToPrint == m_ullCursorPos))
+				{
+					ULONGLONG ullCx, ullCy;
+					HexChunkPoint(m_ullCursorPos, ullCx, ullCy);
+					if (m_fCursorHigh)
+						wchHexCursor = pwszHexMap[(chByteToPrint & 0xF0) >> 4];
+					else
+					{
+						wchHexCursor = pwszHexMap[(chByteToPrint & 0x0F)];
+						ullCx += m_sizeLetter.cx;
 					}
+					iCursorHexPosToPrintX = (int)ullCx - iScrollH;
+					AsciiChunkPoint(m_ullCursorPos, ullCx, ullCy);
+					iCursorAsciiPosToPrintX = (int)ullCx - iScrollH;
+					wchAsciiCursor = wchAscii;
+					clrBkCursor = m_stColor.clrBkCursorSelected;
+					fCursor = true;
 				}
-				else
-				{
-					clrBk = clrBkAscii = m_stColor.clrBk;
-					clrTextHex = m_stColor.clrTextHex;
-					clrTextAscii = m_stColor.clrTextAscii;
-					clrBkCursor = m_stColor.clrBkCursor;
-				}
-				//Hex chunk printing.
-				if (m_fMutable && (ullIndexByteToPrint == m_ullCursorPos))
-				{
-					rDC.SetBkColor(m_fCursorHigh ? clrBkCursor : clrBk);
-					rDC.SetTextColor(m_fCursorHigh ? m_stColor.clrTextCursor : clrTextHex);
-					ExtTextOutW(rDC.m_hDC, iHexPosToPrintX, iHexPosToPrintY, 0, nullptr, &pwszHexToPrint[0], 1, nullptr);
-					rDC.SetBkColor(!m_fCursorHigh ? clrBkCursor : clrBk);
-					rDC.SetTextColor(!m_fCursorHigh ? m_stColor.clrTextCursor : clrTextHex);
-					ExtTextOutW(rDC.m_hDC, iHexPosToPrintX + m_sizeLetter.cx, iHexPosToPrintY, 0, nullptr, &pwszHexToPrint[1], 1, nullptr);
-				}
-				else
-				{
-					rDC.SetBkColor(clrBk);
-					rDC.SetTextColor(clrTextHex);
-					ExtTextOutW(rDC.m_hDC, iHexPosToPrintX, iHexPosToPrintY, 0, nullptr, pwszHexToPrint, 2, nullptr);
-				}
-
-				//Ascii to print.
-				wchar_t wchAscii = chByteToPrint;
-				if (wchAscii < 32 || wchAscii >= 0x7f) //For non printable Ascii just print a dot.
-					wchAscii = '.';
-
-				//Ascii printing.
-				if (m_fMutable && (ullIndexByteToPrint == m_ullCursorPos))
-				{
-					clrBkAscii = clrBkCursor;
-					clrTextAscii = m_stColor.clrTextCursor;
-				}
-				rDC.SetBkColor(clrBkAscii);
-				rDC.SetTextColor(clrTextAscii);
-				ExtTextOutW(rDC.m_hDC, iAsciiPosToPrintX, iAsciiPosToPrintY, 0, nullptr, &wchAscii, 1, nullptr);
 			}
-			//Increasing indents for next print, for both - Hex and Ascii.
-			iIndentHexX += m_iSizeHexByte;
-			if (iShowAs == (DWORD)m_enShowAs) {
-				iIndentHexX += m_iSpaceBetweenHexChunks;
-				iShowAs = 1;
-			}
-			else
-				iShowAs++;
-			iIndentAsciiX += m_iSpaceBetweenAscii;
 		}
+
+		auto iHexPosToPrintX = m_iIndentFirstHexChunk - iScrollH;
+		auto iAsciiPosToPrintX = m_iIndentAscii - iScrollH;
+		const auto iPosToPrintY = m_iHeightTopRect + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
+
+		//Hex printing.
+		pDC->SetBkColor(m_stColor.clrBk);
+		pDC->SetTextColor(m_stColor.clrTextHex);
+		ExtTextOutW(pDC->m_hDC, iHexPosToPrintX, iPosToPrintY, 0, nullptr, wstrHexToPrint.data(), wstrHexToPrint.size(), nullptr);
+
+		//Ascii printing.
+		pDC->SetTextColor(m_stColor.clrTextAscii);
+		ExtTextOutW(pDC->m_hDC, iAsciiPosToPrintX, iPosToPrintY, 0, nullptr, wstrAsciiToPrint.data(), wstrAsciiToPrint.size(), nullptr);
+ 
+		//If there is a selection in the current string.
+		if (!wstrHexSelToPrint.empty())
+		{
+			//Hex selected printing.
+			UINT uSize;
+			if (wstrHexSelToPrint.back() == 0x20) //Don't print space in the selection (blue) at the end of a string.
+				uSize = wstrHexSelToPrint.size() - 1;
+			else
+				uSize = wstrHexSelToPrint.size();
+			pDC->SetBkColor(m_stColor.clrBkSelected);
+			pDC->SetTextColor(m_stColor.clrTextSelected);
+			ExtTextOutW(pDC->m_hDC, iSelHexPosToPrintX, iPosToPrintY, 0, nullptr, wstrHexSelToPrint.data(), uSize, nullptr);
+
+			//Ascii selected printing.
+			ExtTextOutW(pDC->m_hDC, iSelAsciiPosToPrintX, iPosToPrintY, 0, nullptr, wstrAsciiSelToPrint.data(),
+				wstrAsciiSelToPrint.size(), nullptr);
+		}
+
+		if (fCursor)
+		{
+			pDC->SetBkColor(clrBkCursor);
+			pDC->SetTextColor(m_stColor.clrTextCursor);
+			ExtTextOutW(pDC->m_hDC, iCursorHexPosToPrintX, iPosToPrintY, 0, nullptr, &wchHexCursor, 1, nullptr);
+			ExtTextOutW(pDC->m_hDC, iCursorAsciiPosToPrintX, iPosToPrintY, 0, nullptr, &wchAsciiCursor, 1, nullptr);
+		}
+
 		iLine++;
 	}
 }
@@ -1189,7 +1238,7 @@ void CHexCtrl::RecalcAll()
 
 	//Current font size related.
 	HDC hDC = ::GetDC(m_hWnd);
-	SelectObject(hDC, m_fontHexView.m_hObject);
+	SelectObject(hDC, m_fontHexView);
 	TEXTMETRICW tm { };
 	GetTextMetricsW(hDC, &tm);
 	m_sizeLetter.cx = tm.tmAveCharWidth;
@@ -1205,7 +1254,7 @@ void CHexCtrl::RecalcAll()
 	m_iThirdVertLine = m_iSecondVertLine + m_iDistanceBetweenHexChunks * (m_dwCapacity / (DWORD)m_enShowAs)
 		+ m_iSpaceBetweenBlocks + m_sizeLetter.cx;
 	m_iIndentAscii = m_iThirdVertLine + m_sizeLetter.cx;
-	m_iSpaceBetweenAscii = m_sizeLetter.cx + 1;
+	m_iSpaceBetweenAscii = m_sizeLetter.cx;
 	m_iFourthVertLine = m_iIndentAscii + (m_iSpaceBetweenAscii * m_dwCapacity) + m_sizeLetter.cx;
 	m_iIndentFirstHexChunk = m_iSecondVertLine + m_sizeLetter.cx;
 	m_iSizeFirstHalf = m_iIndentFirstHexChunk + m_dwCapacityBlockSize * (m_sizeLetter.cx * 2) +
@@ -1299,18 +1348,30 @@ ULONGLONG CHexCtrl::HitTest(const POINT * pPoint)
 	return ullHexChunk;
 }
 
-void CHexCtrl::ChunkPoint(ULONGLONG ullChunk, ULONGLONG & ullCx, ULONGLONG & ullCy)const
+void CHexCtrl::HexChunkPoint(ULONGLONG ullChunk, ULONGLONG & ullCx, ULONGLONG & ullCy)const
 {
 	//This func computes x and y pos of given hex chunk.
 
 	int iBetweenBlocks;
-	if (m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE && (ullChunk % m_dwCapacity) > m_dwCapacityBlockSize)
+	if (m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE && (ullChunk % m_dwCapacity) >= m_dwCapacityBlockSize)
 		iBetweenBlocks = m_iSpaceBetweenBlocks;
 	else
 		iBetweenBlocks = 0;
 
 	ullCx = m_iIndentFirstHexChunk + iBetweenBlocks + (ullChunk % m_dwCapacity) * m_iSizeHexByte;
 	ullCx += ((ullChunk % m_dwCapacity) / (DWORD)m_enShowAs) * m_iSpaceBetweenHexChunks;
+
+	if (ullChunk % m_dwCapacity)
+		ullCy = (ullChunk / m_dwCapacity) * m_sizeLetter.cy + m_sizeLetter.cy;
+	else
+		ullCy = (ullChunk / m_dwCapacity) * m_sizeLetter.cy;
+}
+
+void CHexCtrl::AsciiChunkPoint(ULONGLONG ullChunk, ULONGLONG & ullCx, ULONGLONG & ullCy) const
+{
+	//This func computes x and y pos of given Ascii chunk.
+
+	ullCx = m_iIndentAscii + (ullChunk % m_dwCapacity) * m_sizeLetter.cx;
 
 	if (ullChunk % m_dwCapacity)
 		ullCy = (ullChunk / m_dwCapacity) * m_sizeLetter.cy + m_sizeLetter.cy;
@@ -1714,7 +1775,7 @@ void CHexCtrl::SetCursorPos(ULONGLONG ullPos, bool fHighPart)
 	ULONGLONG ullCurrScrollV = m_pstScrollV->GetScrollPos();
 	ULONGLONG ullCurrScrollH = m_pstScrollH->GetScrollPos();
 	ULONGLONG ullCx, ullCy;
-	ChunkPoint(m_ullCursorPos, ullCx, ullCy);
+	HexChunkPoint(m_ullCursorPos, ullCx, ullCy);
 	CRect rcClient;
 	GetClientRect(&rcClient);
 
@@ -1722,7 +1783,7 @@ void CHexCtrl::SetCursorPos(ULONGLONG ullPos, bool fHighPart)
 	ULONGLONG ullMaxV = ullCurrScrollV + rcClient.Height() - m_iHeightBottomOffArea - m_iHeightTopRect -
 		((rcClient.Height() - m_iHeightTopRect - m_iHeightBottomOffArea) % m_sizeLetter.cy);
 	ULONGLONG ullNewStartV = m_ullCursorPos / m_dwCapacity * m_sizeLetter.cy;
-	ULONGLONG ullNewEndV = m_ullCursorPos / m_dwCapacity * m_sizeLetter.cy;
+	ULONGLONG ullNewEndV = ullNewStartV;
 
 	ULONGLONG ullNewScrollV { }, ullNewScrollH { };
 	if (ullNewEndV >= ullMaxV)
@@ -1731,7 +1792,7 @@ void CHexCtrl::SetCursorPos(ULONGLONG ullPos, bool fHighPart)
 	{
 		if (ullNewEndV >= ullCurrScrollV)
 			ullNewScrollV = ullCurrScrollV;
-		else if (ullNewStartV <= ullCurrScrollV)
+		else
 			ullNewScrollV = ullCurrScrollV - m_sizeLetter.cy;
 	}
 
@@ -2233,7 +2294,7 @@ void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ul
 	ULONGLONG ullCurrScrollV = m_pstScrollV->GetScrollPos();
 	ULONGLONG ullCurrScrollH = m_pstScrollH->GetScrollPos();
 	ULONGLONG ullCx, ullCy;
-	ChunkPoint(ullStart, ullCx, ullCy);
+	HexChunkPoint(ullStart, ullCx, ullCy);
 	CRect rcClient;
 	GetClientRect(&rcClient);
 

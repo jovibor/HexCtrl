@@ -132,14 +132,14 @@ namespace HEXCTRL
 		virtual void ClearData() = 0;                          //Clears all data from HexCtrl's view (not touching data itself).
 		virtual void SetEditMode(bool fEnable) = 0;            //Enable or disable edit mode.
 		virtual void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1) = 0; //Shows (selects) given offset.
-		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0; //Sets the control's font.
+		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0; //Sets the control's new font. This font has to be monospaced.
 		virtual void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;  //Sets all the control's colors.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
 		virtual bool IsCreated()const = 0;                     //Shows whether control is created or not.
 		virtual bool IsDataSet()const = 0;                     //Shows whether a data was set to the control or not.
 		virtual bool IsMutable()const = 0;                     //Is edit mode enabled or not.
-		virtual long GetFontSize() = 0;                        //Current font size.
+		virtual long GetFontSize()const = 0;                   //Current font size.
 		virtual void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const = 0; //Current selection.
 		virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
 		virtual void Destroy() = 0;                            //Deleter.

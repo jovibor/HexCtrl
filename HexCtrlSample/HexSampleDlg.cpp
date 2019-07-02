@@ -22,8 +22,9 @@ void CHexSampleDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDOK2, &CHexSampleDlg::OnBnRO)
-	ON_BN_CLICKED(IDOK, &CHexSampleDlg::OnBnRW)
+	ON_BN_CLICKED(IDC_SETDATARO, &CHexSampleDlg::OnBnSetDataRO)
+	ON_BN_CLICKED(IDC_SETDATARW, &CHexSampleDlg::OnBnSetDataRW)
+	ON_BN_CLICKED(IDC_CLEARDATA, &CHexSampleDlg::OnBnClearData)
 END_MESSAGE_MAP()
 
 BOOL CHexSampleDlg::OnInitDialog()
@@ -34,7 +35,6 @@ BOOL CHexSampleDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE); //Set small icon
 
 	m_myHex->CreateDialogCtrl();
-
 	m_hds.pData = m_data;
 	m_hds.ullDataSize = sizeof(m_data);
 
@@ -71,7 +71,7 @@ HCURSOR CHexSampleDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-void CHexSampleDlg::OnBnRO()
+void CHexSampleDlg::OnBnSetDataRO()
 {
 	if (!m_myHex->IsDataSet())
 	{
@@ -82,7 +82,7 @@ void CHexSampleDlg::OnBnRO()
 	m_myHex->SetEditMode(false);
 }
 
-void CHexSampleDlg::OnBnRW()
+void CHexSampleDlg::OnBnSetDataRW()
 {
 	if (!m_myHex->IsDataSet())
 	{
@@ -90,4 +90,9 @@ void CHexSampleDlg::OnBnRW()
 		m_myHex->SetData(m_hds);
 	}
 	m_myHex->SetEditMode(true);
+}
+
+void CHexSampleDlg::OnBnClearData()
+{
+	m_myHex->ClearData();
 }

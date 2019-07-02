@@ -81,7 +81,7 @@ namespace HEXCTRL {
 		bool IsCreated()const override;
 		bool IsDataSet()const override;
 		bool IsMutable()const override;
-		long GetFontSize()override;
+		long GetFontSize()const override;
 		void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const override;
 		HMENU GetMenuHandle()const override;
 		void Destroy()override;
@@ -120,7 +120,8 @@ namespace HEXCTRL {
 		void RecalcScrollSizes(int iClientHeight = 0, int iClientWidth = 0);
 		[[nodiscard]] ULONGLONG GetTopLine()const;             //Returns current top line's number in view.
 		[[nodiscard]] ULONGLONG HitTest(const POINT*);         //Is any hex chunk withing given point?
-		void ChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy)const; //Point of Hex chunk.
+		void HexChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy)const;   //Point of Hex chunk.
+		void AsciiChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy)const; //Point of Ascii chunk.
 		void ClipboardCopy(INTERNAL::ENCLIPBOARD enType);
 		void ClipboardPaste(INTERNAL::ENCLIPBOARD enType);
 		void OnKeyDownShift(UINT nChar);                       //Key pressed with the Shift.
@@ -150,7 +151,7 @@ namespace HEXCTRL {
 		PBYTE m_pData { };                  //Main data pointer. Modifiable in "Edit" mode.
 		ULONGLONG m_ullDataSize { };        //Size of the displayed data in bytes.
 		DWORD m_dwCapacity { 16 };          //How many bytes displayed in one row
-		const DWORD m_dwCapacityMax { 64 }; //Maximum capacity.
+		const DWORD m_dwCapacityMax { 128 };//Maximum capacity.
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 		INTERNAL::ENSHOWAS m_enShowAs { };  //Show data mode.
 		CWnd* m_pwndMsg { };                //Window, the control messages will be sent to.
@@ -165,6 +166,7 @@ namespace HEXCTRL {
 		CMenu m_menuShowAs;                 //Submenu "Show as..."
 		CBrush m_stBrushBkSelected;         //Brush for "selected" background.
 		CPen m_penLines { PS_SOLID, 1, RGB(200, 200, 200) };
+		long m_lFontSize { };               //Current font size.
 		int m_iSizeFirstHalf { };           //Size of first half of capacity.
 		int m_iSizeHexByte { };             //Size of two hex letters representing one byte.
 		int m_iIndentAscii { };             //Indent of Ascii text begining.

@@ -18,14 +18,15 @@ protected:
 protected:
 	IHexCtrlPtr m_myHex { CreateHexCtrl() };
 	HEXDATASTRUCT m_hds;
-	UCHAR m_data[0xfff];
+	UCHAR m_data[0xffff];
 	HICON m_hIcon;
 
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
-	afx_msg void OnBnRW();
-	afx_msg void OnBnRO();
+	afx_msg void OnBnSetDataRO();
+	afx_msg void OnBnSetDataRW();
+	afx_msg void OnBnClearData();
 	DECLARE_MESSAGE_MAP()
 };
