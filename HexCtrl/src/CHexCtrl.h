@@ -21,7 +21,14 @@ namespace HEXCTRL {
 		*********************************/
 		struct UNDOSTRUCT;
 		enum class ENCLIPBOARD : DWORD;
-		enum class ENSHOWAS : DWORD;
+
+		/***************************************************************************************
+		* ENSHOWMODE - current data mode representation.                                       *
+		***************************************************************************************/
+		enum class ENSHOWMODE : DWORD
+		{
+			ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
+		};
 
 		/***************************************************************************************
 		* ENSEARCHTYPE - type of the search, enum.                                             *
@@ -87,7 +94,6 @@ namespace HEXCTRL {
 		void Destroy()override;
 	protected:
 		DECLARE_MESSAGE_MAP()
-		bool RegisterWndClass();
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 		afx_msg void OnMButtonDown(UINT nFlags, CPoint point);
@@ -110,11 +116,10 @@ namespace HEXCTRL {
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
 	protected:
+		bool RegisterWndClass();                               //Registering HexCtrl window class.
 		[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex)const;   //Gets the byte data by index.
 		void ModifyData(const HEXMODIFYSTRUCT& hms);           //Main routine to modify data, in fMutable=true mode.
 		[[nodiscard]] CWnd* GetMsgWindow()const;               //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
-		void SearchCallback(INTERNAL::SEARCHSTRUCT& rSearch);  //Search through currently set data.
-		void SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplaced, bool fRedraw = true);
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcWorkAreaHeight(int iClientHeight);
 		void RecalcScrollSizes(int iClientHeight = 0, int iClientWidth = 0);
@@ -126,10 +131,8 @@ namespace HEXCTRL {
 		void ClipboardPaste(INTERNAL::ENCLIPBOARD enType);
 		void OnKeyDownShift(UINT nChar);                       //Key pressed with the Shift.
 		void OnKeyDownCtrl(UINT nChar);                        //Key pressed with the Ctrl.
-		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
-		void SelectAll();
 		void UpdateInfoText();                                 //Updates text in the bottom "info" area according to currently selected data.
-		void SetShowAs(INTERNAL::ENSHOWAS enShowAs);           //Current data representation type.
+		void SetShowMode(INTERNAL::ENSHOWMODE enShowMode);     //Set current data representation mode.
 		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notifications.
 		void SetCursorPos(ULONGLONG ullPos, bool fHighPart);   //Sets the cursor position when in Edit mode.
@@ -141,6 +144,11 @@ namespace HEXCTRL {
 		void Redo();
 		void SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize); //Takes currently modifiable data snapshot.
 		[[nodiscard]] bool IsCurTextArea()const;                  //Whether click was made in Text or Hex area.
+		void SearchCallback(INTERNAL::SEARCHSTRUCT& rSearch);     //Search through currently set data.
+		void SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplaced, bool fRedraw = true);
+		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
+		void SelectAll();
+		void FillCapacity();                                      //Fill m_wstrCapacity according to current m_dwCapacity.
 	private:
 		bool m_fCreated { false };          //Is control created or not yet.
 		bool m_fDataSet { false };          //Is data set or not.
@@ -153,7 +161,7 @@ namespace HEXCTRL {
 		DWORD m_dwCapacity { 16 };          //How many bytes displayed in one row
 		const DWORD m_dwCapacityMax { 128 };//Maximum capacity.
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
-		INTERNAL::ENSHOWAS m_enShowAs { };  //Show data mode.
+		INTERNAL::ENSHOWMODE m_enShowMode { INTERNAL::ENSHOWMODE::ASBYTE }; //Show data mode.
 		CWnd* m_pwndMsg { };                //Window, the control messages will be sent to.
 		IHexVirtual* m_pHexVirtual { };     //Data handler pointer for HEXDATAMODE::DATA_VIRTUAL
 		SIZE m_sizeLetter { 1, 1 };         //Current font's letter size (width, height).
@@ -183,7 +191,7 @@ namespace HEXCTRL {
 		int m_iHeightWorkArea { };          //Needed for mouse selection point.y calculation.
 		int m_iFirstVertLine { }, m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
 		ULONGLONG m_ullSelectionStart { }, m_ullSelectionEnd { }, m_ullSelectionClick { }, m_ullSelectionSize { };
-		std::unordered_map<unsigned, std::wstring> m_umapCapacityWstr; //"Capacity" letters for fast lookup.
+		std::wstring m_wstrCapacity { };    //Top Capacity string.
 		std::wstring m_wstrBottomText { };  //Info text (bottom rect).
 		const std::wstring m_wstrErrVirtual { L"This function isn't supported in Virtual mode!" };
 		bool m_fLMousePressed { false };    //Is left mouse button pressed.
@@ -194,6 +202,6 @@ namespace HEXCTRL {
 		const DWORD m_dwUndoMax { 500 };    //How many Undo states to preserve.
 		std::deque<std::unique_ptr<INTERNAL::UNDOSTRUCT>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<INTERNAL::UNDOSTRUCT>> m_deqRedo; //Redo deque.
-		std::unordered_map<int, HBITMAP> m_umapHBITMAP; //Images for the Menu.
+		std::unordered_map<int, HBITMAP> m_umapHBITMAP;              //Images for the Menu.
 	};
 };

@@ -31,11 +31,6 @@ namespace HEXCTRL {
 	* Internal enums and structs.				*
 	********************************************/
 	namespace INTERNAL {
-		enum class ENSHOWAS : DWORD
-		{
-			ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
-		};
-
 		enum class ENCLIPBOARD : DWORD
 		{
 			COPY_ASHEX, COPY_ASHEXFORMATTED, COPY_ASASCII,
@@ -94,14 +89,6 @@ CHexCtrl::CHexCtrl()
 {
 	RegisterWndClass();
 
-	//Filling capacity numbers.
-	for (unsigned i = 0; i < m_dwCapacityMax; i++)
-	{
-		WCHAR wstr[4];
-		swprintf_s(wstr, 4, L"%X", i);
-		m_umapCapacityWstr[i] = wstr;
-	}
-
 	//Submenu for data showing options.
 	m_menuShowAs.CreatePopupMenu();
 	m_menuShowAs.AppendMenuW(MF_STRING | MF_CHECKED, (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASBYTE, L"BYTE");
@@ -149,7 +136,7 @@ CHexCtrl::CHexCtrl()
 
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this);
 
-	m_enShowAs = INTERNAL::ENSHOWAS::ASBYTE;
+	FillCapacity();
 }
 
 CHexCtrl::~CHexCtrl()
@@ -352,20 +339,22 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	if (dwCapacity < 1 || dwCapacity > m_dwCapacityMax)
 		return;
 
-	//Setting capacity according to current m_enShowAs.
+	//Setting capacity according to current m_enShowMode.
 	if (dwCapacity < m_dwCapacity)
-		dwCapacity -= dwCapacity % (DWORD)m_enShowAs;
-	else if (dwCapacity % (DWORD)m_enShowAs)
-		dwCapacity += (DWORD)m_enShowAs - (dwCapacity % (DWORD)m_enShowAs);
+		dwCapacity -= dwCapacity % (DWORD)m_enShowMode;
+	else if (dwCapacity % (DWORD)m_enShowMode)
+		dwCapacity += (DWORD)m_enShowMode - (dwCapacity % (DWORD)m_enShowMode);
 
 	//To prevent under/over flow.
-	if (dwCapacity < (DWORD)m_enShowAs)
-		dwCapacity = (DWORD)m_enShowAs;
+	if (dwCapacity < (DWORD)m_enShowMode)
+		dwCapacity = (DWORD)m_enShowMode;
 	else if (dwCapacity > m_dwCapacityMax)
 		dwCapacity = m_dwCapacityMax;
 
 	m_dwCapacity = dwCapacity;
 	m_dwCapacityBlockSize = m_dwCapacity / 2;
+
+	FillCapacity();
 	RecalcAll();
 }
 
@@ -624,16 +613,16 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 	break;
 	case (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASBYTE:
-		SetShowAs(INTERNAL::ENSHOWAS::ASBYTE);
+		SetShowMode(INTERNAL::ENSHOWMODE::ASBYTE);
 		break;
 	case (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASWORD:
-		SetShowAs(INTERNAL::ENSHOWAS::ASWORD);
+		SetShowMode(INTERNAL::ENSHOWMODE::ASWORD);
 		break;
 	case (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASDWORD:
-		SetShowAs(INTERNAL::ENSHOWAS::ASDWORD);
+		SetShowMode(INTERNAL::ENSHOWMODE::ASDWORD);
 		break;
 	case (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASQWORD:
-		SetShowAs(INTERNAL::ENSHOWAS::ASQWORD);
+		SetShowMode(INTERNAL::ENSHOWMODE::ASQWORD);
 		break;
 	default:
 		//For user defined custom menu, we notify parent window.
@@ -780,6 +769,11 @@ void CHexCtrl::OnPaint()
 	int iScrollH = (int)m_pstScrollH->GetScrollPos();
 	CRect rcClient;
 	GetClientRect(rcClient);
+
+	//To prevent drawing in too small window (can cause hangs).
+	if (rcClient.Height() < m_iHeightTopRect + m_iHeightBottomOffArea)
+		return;
+
 	//Drawing through CMemDC to avoid flickering.
 	CMemDC memDC(dc, rcClient);
 	CDC* pDC = &memDC.GetDC();
@@ -789,10 +783,6 @@ void CHexCtrl::OnPaint()
 	pDC->FillSolidRect(&rc, m_stColor.clrBk);
 	pDC->SelectObject(&m_penLines);
 	pDC->SelectObject(&m_fontHexView);
-
-	//To prevent drawing in too small window (can cause hangs).
-	if (rcClient.Height() < m_iHeightTopRect + m_iHeightBottomOffArea)
-		return;
 
 	//Find the ullLineStart and ullLineEnd position, draw the visible portion.
 	const ULONGLONG ullLineStart = GetTopLine();
@@ -845,37 +835,13 @@ void CHexCtrl::OnPaint()
 	rc.right = rcClient.right;		//Draw text to the end of the client area, even if it pass iFourthHorizLine.
 	pDC->DrawTextW(m_wstrBottomText.data(), (int)m_wstrBottomText.size(), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
-	pDC->SelectObject(&m_fontHexView);
+	//Capacity numbers.
+	pDC->SelectObject(m_fontHexView);
 	pDC->SetTextColor(m_stColor.clrTextCaption);
 	pDC->SetBkColor(m_stColor.clrBk);
+	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunk - iScrollH, iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
+		m_wstrCapacity.data(), m_wstrCapacity.size(), nullptr);
 
-	int iCapacityShowAs = 1;
-	int iIndentCapacityX = 0;
-	//Loop for printing top Capacity numbers.
-	for (unsigned iterCapacity = 0; iterCapacity < m_dwCapacity; iterCapacity++)
-	{
-		int x = m_iIndentFirstHexChunk + m_sizeLetter.cx + iIndentCapacityX; //Top capacity numbers (0 1 2 3 4 5 6 7...)
-		//Top capacity numbers, second block (8 9 A B C D E F...).
-		if (iterCapacity >= m_dwCapacityBlockSize && m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE)
-			x = m_iIndentFirstHexChunk + m_sizeLetter.cx + iIndentCapacityX + m_iSpaceBetweenBlocks;
-
-		//If iterCapacity >= 16 (0xA), then two chars needed (10, 11,... 1F) to be printed.
-		int c = 1;
-		if (iterCapacity >= 16) {
-			c = 2;
-			x -= m_sizeLetter.cx;
-		}
-		ExtTextOutW(pDC->m_hDC, x - iScrollH, iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
-			m_umapCapacityWstr.at(iterCapacity).data(), c, nullptr);
-
-		iIndentCapacityX += m_iSizeHexByte;
-		if (iCapacityShowAs == (DWORD)m_enShowAs) {
-			iIndentCapacityX += m_iSpaceBetweenHexChunks;
-			iCapacityShowAs = 1;
-		}
-		else
-			iCapacityShowAs++;
-	}
 	//"Ascii" text.
 	rc.left = m_iThirdVertLine - iScrollH; rc.top = iFirstHorizLine;
 	rc.right = m_iFourthVertLine - iScrollH; rc.bottom = iSecondHorizLine;
@@ -897,15 +863,13 @@ void CHexCtrl::OnPaint()
 	pDC->MoveTo(m_iFourthVertLine - iScrollH, 0);
 	pDC->LineTo(m_iFourthVertLine - iScrollH, iFourthHorizLine);
 
-	//Loop for printing hex and Ascii line by line.
 	int iLine = 0; //Current line to print.
-	std::wstring wstrHexToPrint { }, wstrAsciiToPrint { };      //Hex and Ascii string to print.
-	wstrHexToPrint.reserve(m_dwCapacity * 3);
-	wstrAsciiToPrint.reserve(m_dwCapacity);
-	std::wstring wstrHexSelToPrint { }, wstrAsciiSelToPrint { }; //Selected hex and Ascii string to print.
-	wstrHexSelToPrint.reserve(m_dwCapacity * 3);
-	wstrAsciiSelToPrint.reserve(m_dwCapacity);
-	for (ULONGLONG iterLines = ullLineStart; iterLines < ullLineEnd; iterLines++)
+	std::vector<POLYTEXTW> vecPolyHex, vecPolyAscii, vecPolySelHex, vecPolySelAscii, vecPolyCursor;
+	std::list<std::wstring> listWstrHex, listWstrAscii, listWstrSelHex, listWstrSelAscii, listWstrCursor;
+	COLORREF clrBkCursor; //Cursor color.
+
+	//Loop for printing Hex chunks and Ascii chars line by line.
+	for (ULONGLONG iterLines = ullLineStart; iterLines < ullLineEnd; iterLines++, iLine++)
 	{
 		//Drawing offset with bk color depending on selection range.
 		if (m_ullSelectionSize && (iterLines * m_dwCapacity + m_dwCapacity) > m_ullSelectionStart &&
@@ -919,20 +883,22 @@ void CHexCtrl::OnPaint()
 			pDC->SetTextColor(m_stColor.clrTextCaption);
 			pDC->SetBkColor(m_stColor.clrBk);
 		}
+
 		//Left column offset printing (00000001...0000FFFF...).
 		wchar_t pwszOffset[16];
 		UllToWchars(iterLines * m_dwCapacity, pwszOffset, (size_t)m_dwOffsetDigits / 2);
 		ExtTextOutW(pDC->m_hDC, m_sizeLetter.cx - iScrollH, m_iHeightTopRect + (m_sizeLetter.cy * iLine),
 			NULL, nullptr, pwszOffset, m_dwOffsetDigits, nullptr);
 
+		//Hex, Ascii and Cursor strings to print.
+		std::wstring wstrHexToPrint { }, wstrAsciiToPrint { }, wstrHexCursorToPrint { }, wstrAsciiCursorToPrint { };
+		std::wstring wstrHexSelToPrint { }, wstrAsciiSelToPrint { }; //Selected Hex and Ascii strings to print.
+
+		bool fHalf { false }, fSelHalf { false };             //Flags for one time execution.
+		int iSelHexPosToPrintX = 0, iSelAsciiPosToPrintX = 0; //Selection Hex and Ascii X coords. Zeroing is important.
+		int iCursorHexPosToPrintX, iCursorAsciiPosToPrintX;   //Cursor X coords.
+
 		//Main loop for printing Hex chunks and Ascii chars.
-		wchar_t wchHexCursor, wchAsciiCursor;                        //WChars for cursor's bytes.
-		bool fHalf { false }, fSelHalf { false }, fCursor { false }; //Flags for one time execution.
-		int iSelHexPosToPrintX = 0, iSelAsciiPosToPrintX = 0;        //Selection Hex and Ascii X coords. Zeroing is important.
-		int iCursorHexPosToPrintX, iCursorAsciiPosToPrintX;          //Cursor X coords.
-		COLORREF clrBkCursor;                                        //Cursor color.
-		wstrHexToPrint.clear(); wstrAsciiToPrint.clear();
-		wstrHexSelToPrint.clear(); wstrAsciiSelToPrint.clear();
 		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
 		{
 			//Index of the next Byte to draw.
@@ -948,11 +914,11 @@ void CHexCtrl::OnPaint()
 			wstrHexToPrint += pwszHexToPrint[1];
 
 			//Additional space between grouped Hex chunks.
-			if (((iterChunks + 1) % (DWORD)m_enShowAs) == 0 && iterChunks < (m_dwCapacity - 1))
+			if (((iterChunks + 1) % (DWORD)m_enShowMode) == 0 && iterChunks < (m_dwCapacity - 1))
 				wstrHexToPrint += L" ";
 
 			//Additional space between capacity halves, only with ASBYTE representation.
-			if (m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE && iterChunks >= m_dwCapacityBlockSize - 1 && !fHalf)
+			if (m_enShowMode == INTERNAL::ENSHOWMODE::ASBYTE && iterChunks >= m_dwCapacityBlockSize - 1 && !fHalf)
 			{
 				wstrHexToPrint += L"  ";
 				fHalf = true;
@@ -970,19 +936,17 @@ void CHexCtrl::OnPaint()
 				ULONGLONG ullCx, ullCy;
 				HexChunkPoint(m_ullCursorPos, ullCx, ullCy);
 				if (m_fCursorHigh)
-					wchHexCursor = pwszHexMap[(chByteToPrint & 0xF0) >> 4];
+					wstrHexCursorToPrint = pwszHexMap[(chByteToPrint & 0xF0) >> 4];
 				else
 				{
-					wchHexCursor = pwszHexMap[(chByteToPrint & 0x0F)];
+					wstrHexCursorToPrint = pwszHexMap[(chByteToPrint & 0x0F)];
 					ullCx += m_sizeLetter.cx;
 				}
 				iCursorHexPosToPrintX = (int)ullCx - iScrollH;
-
 				AsciiChunkPoint(m_ullCursorPos, ullCx, ullCy);
 				iCursorAsciiPosToPrintX = (int)ullCx - iScrollH;
-				wchAsciiCursor = wchAscii;
+				wstrAsciiCursorToPrint = wchAscii;
 				clrBkCursor = m_stColor.clrBkCursor;
-				fCursor = true;
 			}
 
 			//If there is a selection.
@@ -997,20 +961,20 @@ void CHexCtrl::OnPaint()
 					iSelAsciiPosToPrintX = (int)ullCx - iScrollH;
 				}
 
-				//Additional space between capacity halves, only with ASBYTE representation.
-				if (m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE && iterChunks > m_dwCapacityBlockSize - 1 && !fSelHalf)
+				if (!wstrHexSelToPrint.empty()) //Only adding spaces if there are chars beforehead.
 				{
-					if (!wstrHexSelToPrint.empty()) //Only adding spaces if there are chars beforehead.
-						wstrHexSelToPrint += L"  ";
-					fSelHalf = true;
-				}
+					if ((iterChunks % (DWORD)m_enShowMode) == 0)
+						wstrHexSelToPrint += L" ";
 
+					//Additional space between capacity halves, only with ASBYTE representation.
+					if (m_enShowMode == INTERNAL::ENSHOWMODE::ASBYTE && iterChunks == m_dwCapacityBlockSize && !fSelHalf)
+					{
+						wstrHexSelToPrint += L"  ";
+						fSelHalf = true;
+					}
+				}
 				wstrHexSelToPrint += pwszHexToPrint[0];
 				wstrHexSelToPrint += pwszHexToPrint[1];
-
-				if (((iterChunks + 1) % (DWORD)m_enShowAs) == 0 && iterChunks < (m_dwCapacity - 1))
-					wstrHexSelToPrint += L" ";
-
 				wstrAsciiSelToPrint += wchAscii;
 
 				//Cursor position. 
@@ -1019,62 +983,84 @@ void CHexCtrl::OnPaint()
 					ULONGLONG ullCx, ullCy;
 					HexChunkPoint(m_ullCursorPos, ullCx, ullCy);
 					if (m_fCursorHigh)
-						wchHexCursor = pwszHexMap[(chByteToPrint & 0xF0) >> 4];
+						wstrHexCursorToPrint = pwszHexMap[(chByteToPrint & 0xF0) >> 4];
 					else
 					{
-						wchHexCursor = pwszHexMap[(chByteToPrint & 0x0F)];
+						wstrHexCursorToPrint = pwszHexMap[(chByteToPrint & 0x0F)];
 						ullCx += m_sizeLetter.cx;
 					}
 					iCursorHexPosToPrintX = (int)ullCx - iScrollH;
 					AsciiChunkPoint(m_ullCursorPos, ullCx, ullCy);
 					iCursorAsciiPosToPrintX = (int)ullCx - iScrollH;
-					wchAsciiCursor = wchAscii;
+					wstrAsciiCursorToPrint = wchAscii;
 					clrBkCursor = m_stColor.clrBkCursorSelected;
-					fCursor = true;
 				}
 			}
 		}
 
-		auto iHexPosToPrintX = m_iIndentFirstHexChunk - iScrollH;
-		auto iAsciiPosToPrintX = m_iIndentAscii - iScrollH;
+		const auto iHexPosToPrintX = m_iIndentFirstHexChunk - iScrollH;
+		const auto iAsciiPosToPrintX = m_iIndentAscii - iScrollH;
 		const auto iPosToPrintY = m_iHeightTopRect + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
-		//Hex printing.
-		pDC->SetBkColor(m_stColor.clrBk);
-		pDC->SetTextColor(m_stColor.clrTextHex);
-		ExtTextOutW(pDC->m_hDC, iHexPosToPrintX, iPosToPrintY, 0, nullptr, wstrHexToPrint.data(), wstrHexToPrint.size(), nullptr);
+		//Hex Poly.
+		listWstrHex.emplace_back(std::move(wstrHexToPrint));
+		vecPolyHex.emplace_back(POLYTEXTW { iHexPosToPrintX, iPosToPrintY,
+			listWstrHex.back().size(), listWstrHex.back().data(), 0, { }, nullptr });
 
-		//Ascii printing.
-		pDC->SetTextColor(m_stColor.clrTextAscii);
-		ExtTextOutW(pDC->m_hDC, iAsciiPosToPrintX, iPosToPrintY, 0, nullptr, wstrAsciiToPrint.data(), wstrAsciiToPrint.size(), nullptr);
- 
-		//If there is a selection in the current string.
+		//Ascii Poly.
+		listWstrAscii.emplace_back(std::move(wstrAsciiToPrint));
+		vecPolyAscii.emplace_back(POLYTEXTW { iAsciiPosToPrintX, iPosToPrintY,
+			listWstrAscii.back().size(), listWstrAscii.back().data(), 0, { }, nullptr });
+
+		//Selection.
 		if (!wstrHexSelToPrint.empty())
 		{
-			//Hex selected printing.
-			UINT uSize;
-			if (wstrHexSelToPrint.back() == 0x20) //Don't print space in the selection (blue) at the end of a string.
-				uSize = wstrHexSelToPrint.size() - 1;
-			else
-				uSize = wstrHexSelToPrint.size();
-			pDC->SetBkColor(m_stColor.clrBkSelected);
-			pDC->SetTextColor(m_stColor.clrTextSelected);
-			ExtTextOutW(pDC->m_hDC, iSelHexPosToPrintX, iPosToPrintY, 0, nullptr, wstrHexSelToPrint.data(), uSize, nullptr);
+			//Hex selected Poly.
+			listWstrSelHex.emplace_back(std::move(wstrHexSelToPrint));
+			vecPolySelHex.emplace_back(POLYTEXTW { iSelHexPosToPrintX, iPosToPrintY,
+				listWstrSelHex.back().size(), listWstrSelHex.back().data(), 0, { }, nullptr });
 
-			//Ascii selected printing.
-			ExtTextOutW(pDC->m_hDC, iSelAsciiPosToPrintX, iPosToPrintY, 0, nullptr, wstrAsciiSelToPrint.data(),
-				wstrAsciiSelToPrint.size(), nullptr);
+			//Ascii selected Poly.
+			listWstrSelAscii.emplace_back(std::move(wstrAsciiSelToPrint));
+			vecPolySelAscii.emplace_back(POLYTEXTW { iSelAsciiPosToPrintX, iPosToPrintY,
+				listWstrSelAscii.back().size(), listWstrSelAscii.back().data(), 0, { }, nullptr });
 		}
 
-		if (fCursor)
+		//Cursor Poly.
+		if (!wstrHexCursorToPrint.empty())
 		{
-			pDC->SetBkColor(clrBkCursor);
-			pDC->SetTextColor(m_stColor.clrTextCursor);
-			ExtTextOutW(pDC->m_hDC, iCursorHexPosToPrintX, iPosToPrintY, 0, nullptr, &wchHexCursor, 1, nullptr);
-			ExtTextOutW(pDC->m_hDC, iCursorAsciiPosToPrintX, iPosToPrintY, 0, nullptr, &wchAsciiCursor, 1, nullptr);
+			listWstrCursor.emplace_back(std::move(wstrHexCursorToPrint));
+			vecPolyCursor.emplace_back(POLYTEXTW { iCursorHexPosToPrintX, iPosToPrintY,
+				listWstrCursor.back().size(), listWstrCursor.back().data(), 0, { }, nullptr });
+			listWstrCursor.emplace_back(std::move(wstrAsciiCursorToPrint));
+			vecPolyCursor.emplace_back(POLYTEXTW { iCursorAsciiPosToPrintX, iPosToPrintY,
+				listWstrCursor.back().size(), listWstrCursor.back().data(), 0, { }, nullptr });
 		}
+	}
 
-		iLine++;
+	//Hex printing.
+	pDC->SetBkColor(m_stColor.clrBk);
+	pDC->SetTextColor(m_stColor.clrTextHex);
+	PolyTextOutW(pDC->m_hDC, vecPolyHex.data(), vecPolyHex.size());
+
+	//Ascii printing.
+	pDC->SetTextColor(m_stColor.clrTextAscii);
+	PolyTextOutW(pDC->m_hDC, vecPolyAscii.data(), vecPolyAscii.size());
+
+	//Hex selected printing.
+	pDC->SetBkColor(m_stColor.clrBkSelected);
+	pDC->SetTextColor(m_stColor.clrTextSelected);
+	PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), vecPolySelHex.size());
+
+	//Ascii selected printing.
+	PolyTextOutW(pDC->m_hDC, vecPolySelAscii.data(), vecPolySelAscii.size());
+
+	//Cursor printing.
+	if (!vecPolyCursor.empty())
+	{
+		pDC->SetBkColor(clrBkCursor);
+		pDC->SetTextColor(m_stColor.clrTextCursor);
+		PolyTextOutW(pDC->m_hDC, vecPolyCursor.data(), vecPolyCursor.size());
 	}
 }
 
@@ -1248,17 +1234,17 @@ void CHexCtrl::RecalcAll()
 	m_iFirstVertLine = 0;
 	m_iSecondVertLine = m_dwOffsetDigits * m_sizeLetter.cx + m_sizeLetter.cx * 2;
 	m_iSizeHexByte = m_sizeLetter.cx * 2;
-	m_iSpaceBetweenBlocks = m_sizeLetter.cx * 2;
+	m_iSpaceBetweenBlocks = m_enShowMode == INTERNAL::ENSHOWMODE::ASBYTE ? m_sizeLetter.cx * 2 : 0;
 	m_iSpaceBetweenHexChunks = m_sizeLetter.cx;
-	m_iDistanceBetweenHexChunks = m_iSizeHexByte * (DWORD)m_enShowAs + m_iSpaceBetweenHexChunks;
-	m_iThirdVertLine = m_iSecondVertLine + m_iDistanceBetweenHexChunks * (m_dwCapacity / (DWORD)m_enShowAs)
-		+ m_iSpaceBetweenBlocks + m_sizeLetter.cx;
+	m_iDistanceBetweenHexChunks = m_iSizeHexByte * (DWORD)m_enShowMode + m_iSpaceBetweenHexChunks;
+	m_iThirdVertLine = m_iSecondVertLine + m_iDistanceBetweenHexChunks * (m_dwCapacity / (DWORD)m_enShowMode)
+		+ m_sizeLetter.cx + m_iSpaceBetweenBlocks;
 	m_iIndentAscii = m_iThirdVertLine + m_sizeLetter.cx;
 	m_iSpaceBetweenAscii = m_sizeLetter.cx;
 	m_iFourthVertLine = m_iIndentAscii + (m_iSpaceBetweenAscii * m_dwCapacity) + m_sizeLetter.cx;
 	m_iIndentFirstHexChunk = m_iSecondVertLine + m_sizeLetter.cx;
 	m_iSizeFirstHalf = m_iIndentFirstHexChunk + m_dwCapacityBlockSize * (m_sizeLetter.cx * 2) +
-		(m_dwCapacityBlockSize / (DWORD)m_enShowAs - 1) * m_iSpaceBetweenHexChunks;
+		(m_dwCapacityBlockSize / (DWORD)m_enShowMode - 1) * m_iSpaceBetweenHexChunks;
 	m_iHeightTopRect = std::lround(m_sizeLetter.cy * 1.5);
 	m_iIndentTextCapacityY = m_iHeightTopRect / 2 - (m_sizeLetter.cy / 2);
 
@@ -1309,7 +1295,7 @@ ULONGLONG CHexCtrl::HitTest(const POINT * pPoint)
 	{
 		//Additional space between halves. Only in BYTE's view mode.
 		int iBetweenBlocks;
-		if (m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE && iX > m_iSizeFirstHalf)
+		if (m_enShowMode == INTERNAL::ENSHOWMODE::ASBYTE && iX > m_iSizeFirstHalf)
 			iBetweenBlocks = m_iSpaceBetweenBlocks;
 		else
 			iBetweenBlocks = 0;
@@ -1320,7 +1306,7 @@ ULONGLONG CHexCtrl::HitTest(const POINT * pPoint)
 		int iSpaceBetweenHexChunks = 0;
 		for (unsigned i = 1; i <= m_dwCapacity; i++)
 		{
-			if ((i % (DWORD)m_enShowAs) == 0)
+			if ((i % (DWORD)m_enShowMode) == 0)
 				iSpaceBetweenHexChunks += m_iSpaceBetweenHexChunks;
 			if ((m_iSizeHexByte * i + iSpaceBetweenHexChunks) > dwX)
 			{
@@ -1353,13 +1339,13 @@ void CHexCtrl::HexChunkPoint(ULONGLONG ullChunk, ULONGLONG & ullCx, ULONGLONG & 
 	//This func computes x and y pos of given hex chunk.
 
 	int iBetweenBlocks;
-	if (m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE && (ullChunk % m_dwCapacity) >= m_dwCapacityBlockSize)
+	if (m_enShowMode == INTERNAL::ENSHOWMODE::ASBYTE && (ullChunk % m_dwCapacity) >= m_dwCapacityBlockSize)
 		iBetweenBlocks = m_iSpaceBetweenBlocks;
 	else
 		iBetweenBlocks = 0;
 
 	ullCx = m_iIndentFirstHexChunk + iBetweenBlocks + (ullChunk % m_dwCapacity) * m_iSizeHexByte;
-	ullCx += ((ullChunk % m_dwCapacity) / (DWORD)m_enShowAs) * m_iSpaceBetweenHexChunks;
+	ullCx += ((ullChunk % m_dwCapacity) / (DWORD)m_enShowMode) * m_iSpaceBetweenHexChunks;
 
 	if (ullChunk % m_dwCapacity)
 		ullCy = (ullChunk / m_dwCapacity) * m_sizeLetter.cy + m_sizeLetter.cy;
@@ -1411,9 +1397,9 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 		//If at least two rows are selected.
 		if (dwModStart + m_ullSelectionSize > m_dwCapacity)
 		{
-			DWORD dwCount = dwModStart * 2 + dwModStart / (DWORD)m_enShowAs;
+			DWORD dwCount = dwModStart * 2 + dwModStart / (DWORD)m_enShowMode;
 			//Additional spaces between halves. Only in ASBYTE's view mode.
-			dwCount += m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
+			dwCount += m_enShowMode == INTERNAL::ENSHOWMODE::ASBYTE ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
 			strToClipboard.insert(0, (size_t)dwCount, ' ');
 		}
 
@@ -1424,9 +1410,9 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 			strToClipboard += pszHexMap[(chByte & 0x0F)];
 
 			if (i < (m_ullSelectionSize - 1) && (dwTail - 1) != 0)
-				if (m_enShowAs == INTERNAL::ENSHOWAS::ASBYTE && dwTail == dwNextBlock)
+				if (m_enShowMode == INTERNAL::ENSHOWMODE::ASBYTE && dwTail == dwNextBlock)
 					strToClipboard += "   "; //Additional spaces between halves. Only in BYTE's view mode.
-				else if (((m_dwCapacity - dwTail + 1) % (DWORD)m_enShowAs) == 0) //Add space after hex full chunk, ShowAs_size depending.
+				else if (((m_dwCapacity - dwTail + 1) % (DWORD)m_enShowMode) == 0) //Add space after hex full chunk, ShowAs_size depending.
 					strToClipboard += " ";
 			if (--dwTail == 0 && i < (m_ullSelectionSize - 1)) //Next row.
 			{
@@ -1715,32 +1701,31 @@ void CHexCtrl::UpdateInfoText()
 	RedrawWindow();
 }
 
-void CHexCtrl::SetShowAs(INTERNAL::ENSHOWAS enShowAs)
+void CHexCtrl::SetShowMode(INTERNAL::ENSHOWMODE enShowMode)
 {
 	//Unchecking all menus and checking only the current needed.
-	m_enShowAs = enShowAs;
+	m_enShowMode = enShowMode;
 	for (int i = 0; i < m_menuShowAs.GetMenuItemCount(); i++)
 		m_menuShowAs.CheckMenuItem(i, MF_UNCHECKED | MF_BYPOSITION);
 
 	int id { };
-	switch (enShowAs)
+	switch (enShowMode)
 	{
-	case INTERNAL::ENSHOWAS::ASBYTE:
+	case INTERNAL::ENSHOWMODE::ASBYTE:
 		id = 0;
 		break;
-	case INTERNAL::ENSHOWAS::ASWORD:
+	case INTERNAL::ENSHOWMODE::ASWORD:
 		id = 1;
 		break;
-	case INTERNAL::ENSHOWAS::ASDWORD:
+	case INTERNAL::ENSHOWMODE::ASDWORD:
 		id = 2;
 		break;
-	case INTERNAL::ENSHOWAS::ASQWORD:
+	case INTERNAL::ENSHOWMODE::ASQWORD:
 		id = 3;
 		break;
 	}
 	m_menuShowAs.CheckMenuItem(id, MF_CHECKED | MF_BYPOSITION);
 	SetCapacity(m_dwCapacity);
-	RecalcAll();
 }
 
 void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT & hns)const
@@ -2380,4 +2365,36 @@ void CHexCtrl::SelectAll()
 	m_ullSelectionClick = m_ullSelectionStart = 0;
 	m_ullSelectionEnd = m_ullSelectionSize = m_ullDataSize;
 	UpdateInfoText();
+}
+
+void CHexCtrl::FillCapacity()
+{
+	m_wstrCapacity.clear();
+	m_wstrCapacity.reserve(m_dwCapacity * 3);
+	bool fHalf { false };
+	for (unsigned iter = 0; iter < m_dwCapacity; iter++)
+	{
+		const wchar_t* const pwszHexMap { L"0123456789ABCDEF" };
+		if (iter < 0x10)
+		{
+			m_wstrCapacity += L" ";
+			m_wstrCapacity += pwszHexMap[iter];
+		}
+		else
+		{
+			m_wstrCapacity += pwszHexMap[(iter & 0xF0) >> 4];
+			m_wstrCapacity += pwszHexMap[iter & 0x0F];
+		}
+
+		//Additional space between hex chunk blocks.
+		if (((iter + 1) % (DWORD)m_enShowMode) == 0)
+			m_wstrCapacity += L" ";
+
+		//Additional space between hex halves.
+		if (!fHalf && iter >= m_dwCapacityBlockSize - 1 && m_enShowMode == INTERNAL::ENSHOWMODE::ASBYTE)
+		{
+			m_wstrCapacity += L"  ";
+			fHalf = true;
+		}
+	}
 }

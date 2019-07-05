@@ -59,8 +59,8 @@ namespace HEXCTRL
 		COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                  //Background color.
 		COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };       //Background color of the selected Hex/Ascii.
 		COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };         //Background color of the bottom "Info" rect.
-		COLORREF clrBkCursor { RGB(0, 0, 255) };                       //Cursor's background color.
-		COLORREF clrBkCursorSelected { RGB(0, 0, 200) };               //Cursor's background color in selection.
+		COLORREF clrBkCursor { RGB(0, 0, 255) };                       //Cursor background color.
+		COLORREF clrBkCursorSelected { RGB(0, 0, 200) };               //Cursor background color in selection.
 	};
 
 	/********************************************************************************************
