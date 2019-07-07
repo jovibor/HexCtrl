@@ -454,13 +454,13 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 		}
 		if (m_pstScrollV->IsVisible())
 		{
-			if (point.y < m_iHeightTopRect) {
+			if (point.y < m_iStartWorkArea) {
 				m_pstScrollV->ScrollLineUp();
-				point.y = m_iHeightTopRect;
+				point.y = m_iStartWorkArea;
 			}
-			else if (point.y >= m_iHeightWorkArea) {
+			else if (point.y >= m_iEndWorkArea) {
 				m_pstScrollV->ScrollLineDown();
-				point.y = m_iHeightWorkArea - 1;
+				point.y = m_iEndWorkArea - 1;
 			}
 		}
 
@@ -766,7 +766,7 @@ void CHexCtrl::OnPaint()
 		return;
 	}
 
-	int iScrollH = (int)m_pstScrollH->GetScrollPos();
+	const int iScrollH = (int)m_pstScrollH->GetScrollPos();
 	CRect rcClient;
 	GetClientRect(rcClient);
 
@@ -784,86 +784,85 @@ void CHexCtrl::OnPaint()
 	pDC->SelectObject(&m_penLines);
 	pDC->SelectObject(&m_fontHexView);
 
-	//Find the ullLineStart and ullLineEnd position, draw the visible portion.
+	//Find the ullLineStart and ullLineEnd position, draw the visible part.
 	const ULONGLONG ullLineStart = GetTopLine();
-	ULONGLONG ullLineEndtmp = 0;
+	ULONGLONG ullLineEnd { 0 };
 	if (m_ullDataSize)
 	{
-		ullLineEndtmp = ullLineStart + (rcClient.Height() - m_iHeightTopRect - m_iHeightBottomOffArea) / m_sizeLetter.cy;
+		ullLineEnd = ullLineStart + (rcClient.Height() - m_iStartWorkArea - m_iHeightBottomOffArea) / m_sizeLetter.cy;
 		//If m_dwDataCount is really small we adjust dwLineEnd to be not bigger than maximum allowed.
-		if (ullLineEndtmp > (m_ullDataSize / m_dwCapacity))
-			ullLineEndtmp = (m_ullDataSize % m_dwCapacity) ? m_ullDataSize / m_dwCapacity + 1 : m_ullDataSize / m_dwCapacity;
+		if (ullLineEnd > (m_ullDataSize / m_dwCapacity))
+			ullLineEnd = (m_ullDataSize % m_dwCapacity) ? m_ullDataSize / m_dwCapacity + 1 : m_ullDataSize / m_dwCapacity;
 	}
-	const ULONGLONG ullLineEnd = ullLineEndtmp;
 
-	const auto iFirstHorizLine = 0;
-	const auto iSecondHorizLine = iFirstHorizLine + m_iHeightTopRect - 1;
-	const auto iThirdHorizLine = iFirstHorizLine + rcClient.Height() - m_iHeightBottomOffArea;
+	const auto iThirdHorizLine = rcClient.Height() - m_iHeightBottomOffArea;
 	const auto iFourthHorizLine = iThirdHorizLine + m_iHeightBottomRect;
 
 	//First horizontal line.
-	pDC->MoveTo(0, iFirstHorizLine);
-	pDC->LineTo(m_iFourthVertLine, iFirstHorizLine);
+	pDC->MoveTo(m_iFirstVertLine - iScrollH, m_iFirstHorizLine);
+	pDC->LineTo(m_iFourthVertLine, m_iFirstHorizLine);
 
 	//Second horizontal line.
-	pDC->MoveTo(0, iSecondHorizLine);
-	pDC->LineTo(m_iFourthVertLine, iSecondHorizLine);
+	pDC->MoveTo(m_iFirstVertLine - iScrollH, m_iSecondHorizLine);
+	pDC->LineTo(m_iFourthVertLine, m_iSecondHorizLine);
 
 	//Third horizontal line.
-	pDC->MoveTo(0, iThirdHorizLine);
+	pDC->MoveTo(m_iFirstVertLine - iScrollH, iThirdHorizLine);
 	pDC->LineTo(m_iFourthVertLine, iThirdHorizLine);
 
 	//Fourth horizontal line.
-	pDC->MoveTo(0, iFourthHorizLine);
+	pDC->MoveTo(m_iFirstVertLine - iScrollH, iFourthHorizLine);
 	pDC->LineTo(m_iFourthVertLine, iFourthHorizLine);
 
 	//«Offset» text.
-	rc.left = m_iFirstVertLine - iScrollH; rc.top = iFirstHorizLine;
-	rc.right = m_iSecondVertLine - iScrollH; rc.bottom = iSecondHorizLine;
+	rc.left = m_iFirstVertLine - iScrollH;
+	rc.top = m_iFirstHorizLine;
+	rc.right = m_iSecondVertLine - iScrollH;
+	rc.bottom = m_iSecondHorizLine;
 	pDC->SetTextColor(m_stColor.clrTextCaption);
 	pDC->DrawTextW(L"Offset", 6, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	//Info rect's text.
-	rc.left = m_iFirstVertLine;
+	rc.left = m_iFirstVertLine - iScrollH;
 	rc.top = iThirdHorizLine + 1;
 	rc.right = m_iFourthVertLine;
 	rc.bottom = iFourthHorizLine;	//Fill bottom rect until iFourthHorizLine.
 	pDC->FillSolidRect(&rc, m_stColor.clrBkInfoRect);
-	pDC->SetTextColor(m_stColor.clrTextInfoRect);
-	pDC->SelectObject(&m_fontBottomRect);
-	rc.left += 5;					//Draw text beginning with little indent.
+	rc.left = m_iFirstVertLine + 5; //Draw text beginning with little indent.
 	rc.right = rcClient.right;		//Draw text to the end of the client area, even if it pass iFourthHorizLine.
+	pDC->SetTextColor(m_stColor.clrTextInfoRect);
+	pDC->SelectObject(m_fontBottomRect);
 	pDC->DrawTextW(m_wstrBottomText.data(), (int)m_wstrBottomText.size(), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
 	//Capacity numbers.
 	pDC->SelectObject(m_fontHexView);
 	pDC->SetTextColor(m_stColor.clrTextCaption);
 	pDC->SetBkColor(m_stColor.clrBk);
-	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunk - iScrollH, iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
+	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunk - iScrollH, m_iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
 		m_wstrCapacity.data(), m_wstrCapacity.size(), nullptr);
 
 	//"Ascii" text.
-	rc.left = m_iThirdVertLine - iScrollH; rc.top = iFirstHorizLine;
-	rc.right = m_iFourthVertLine - iScrollH; rc.bottom = iSecondHorizLine;
+	rc.left = m_iThirdVertLine - iScrollH; rc.top = m_iFirstHorizLine;
+	rc.right = m_iFourthVertLine - iScrollH; rc.bottom = m_iSecondHorizLine;
 	pDC->DrawTextW(L"Ascii", 5, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	//First Vertical line.
-	pDC->MoveTo(m_iFirstVertLine - iScrollH, 0);
+	pDC->MoveTo(m_iFirstVertLine - iScrollH, m_iFirstHorizLine);
 	pDC->LineTo(m_iFirstVertLine - iScrollH, iFourthHorizLine);
 
 	//Second Vertical line.
-	pDC->MoveTo(m_iSecondVertLine - iScrollH, 0);
+	pDC->MoveTo(m_iSecondVertLine - iScrollH, m_iFirstHorizLine);
 	pDC->LineTo(m_iSecondVertLine - iScrollH, iThirdHorizLine);
 
 	//Third Vertical line.
-	pDC->MoveTo(m_iThirdVertLine - iScrollH, 0);
+	pDC->MoveTo(m_iThirdVertLine - iScrollH, m_iFirstHorizLine);
 	pDC->LineTo(m_iThirdVertLine - iScrollH, iThirdHorizLine);
 
 	//Fourth Vertical line.
-	pDC->MoveTo(m_iFourthVertLine - iScrollH, 0);
+	pDC->MoveTo(m_iFourthVertLine - iScrollH, m_iFirstHorizLine);
 	pDC->LineTo(m_iFourthVertLine - iScrollH, iFourthHorizLine);
 
-	int iLine = 0; //Current line to print.
+	int iLine = 0;        //Current line to print.
 	std::vector<POLYTEXTW> vecPolyHex, vecPolyAscii, vecPolySelHex, vecPolySelAscii, vecPolyCursor;
 	std::list<std::wstring> listWstrHex, listWstrAscii, listWstrSelHex, listWstrSelAscii, listWstrCursor;
 	COLORREF clrBkCursor; //Cursor color.
@@ -884,10 +883,10 @@ void CHexCtrl::OnPaint()
 			pDC->SetBkColor(m_stColor.clrBk);
 		}
 
-		//Left column offset printing (00000001...0000FFFF...).
+		//Left column offset printing (00000001...0000FFFF).
 		wchar_t pwszOffset[16];
 		UllToWchars(iterLines * m_dwCapacity, pwszOffset, (size_t)m_dwOffsetDigits / 2);
-		ExtTextOutW(pDC->m_hDC, m_sizeLetter.cx - iScrollH, m_iHeightTopRect + (m_sizeLetter.cy * iLine),
+		ExtTextOutW(pDC->m_hDC, m_iFirstVertLine + m_sizeLetter.cx - iScrollH, m_iStartWorkArea + (m_sizeLetter.cy * iLine),
 			NULL, nullptr, pwszOffset, m_dwOffsetDigits, nullptr);
 
 		//Hex, Ascii and Cursor strings to print.
@@ -930,25 +929,6 @@ void CHexCtrl::OnPaint()
 				wchAscii = '.';
 			wstrAsciiToPrint += wchAscii;
 
-			//Cursor position. 
-			if (m_fMutable && (ullIndexByteToPrint == m_ullCursorPos))
-			{
-				ULONGLONG ullCx, ullCy;
-				HexChunkPoint(m_ullCursorPos, ullCx, ullCy);
-				if (m_fCursorHigh)
-					wstrHexCursorToPrint = pwszHexMap[(chByteToPrint & 0xF0) >> 4];
-				else
-				{
-					wstrHexCursorToPrint = pwszHexMap[(chByteToPrint & 0x0F)];
-					ullCx += m_sizeLetter.cx;
-				}
-				iCursorHexPosToPrintX = (int)ullCx - iScrollH;
-				AsciiChunkPoint(m_ullCursorPos, ullCx, ullCy);
-				iCursorAsciiPosToPrintX = (int)ullCx - iScrollH;
-				wstrAsciiCursorToPrint = wchAscii;
-				clrBkCursor = m_stColor.clrBkCursor;
-			}
-
 			//If there is a selection.
 			if (m_ullSelectionSize && ullIndexByteToPrint >= m_ullSelectionStart && ullIndexByteToPrint < m_ullSelectionEnd)
 			{
@@ -976,31 +956,35 @@ void CHexCtrl::OnPaint()
 				wstrHexSelToPrint += pwszHexToPrint[0];
 				wstrHexSelToPrint += pwszHexToPrint[1];
 				wstrAsciiSelToPrint += wchAscii;
+			}
 
-				//Cursor position. 
-				if (m_fMutable && (ullIndexByteToPrint == m_ullCursorPos))
+			//Cursor position. 
+			if (m_fMutable && (ullIndexByteToPrint == m_ullCursorPos))
+			{
+				ULONGLONG ullCx, ullCy;
+				HexChunkPoint(m_ullCursorPos, ullCx, ullCy);
+				if (m_fCursorHigh)
+					wstrHexCursorToPrint = pwszHexMap[(chByteToPrint & 0xF0) >> 4];
+				else
 				{
-					ULONGLONG ullCx, ullCy;
-					HexChunkPoint(m_ullCursorPos, ullCx, ullCy);
-					if (m_fCursorHigh)
-						wstrHexCursorToPrint = pwszHexMap[(chByteToPrint & 0xF0) >> 4];
-					else
-					{
-						wstrHexCursorToPrint = pwszHexMap[(chByteToPrint & 0x0F)];
-						ullCx += m_sizeLetter.cx;
-					}
-					iCursorHexPosToPrintX = (int)ullCx - iScrollH;
-					AsciiChunkPoint(m_ullCursorPos, ullCx, ullCy);
-					iCursorAsciiPosToPrintX = (int)ullCx - iScrollH;
-					wstrAsciiCursorToPrint = wchAscii;
-					clrBkCursor = m_stColor.clrBkCursorSelected;
+					wstrHexCursorToPrint = pwszHexMap[(chByteToPrint & 0x0F)];
+					ullCx += m_sizeLetter.cx;
 				}
+				iCursorHexPosToPrintX = (int)ullCx - iScrollH;
+				AsciiChunkPoint(m_ullCursorPos, ullCx, ullCy);
+				iCursorAsciiPosToPrintX = (int)ullCx - iScrollH;
+				wstrAsciiCursorToPrint = wchAscii;
+
+				if (m_ullSelectionSize && ullIndexByteToPrint >= m_ullSelectionStart && ullIndexByteToPrint < m_ullSelectionEnd)
+					clrBkCursor = m_stColor.clrBkCursorSelected;
+				else
+					clrBkCursor = m_stColor.clrBkCursor;
 			}
 		}
 
 		const auto iHexPosToPrintX = m_iIndentFirstHexChunk - iScrollH;
 		const auto iAsciiPosToPrintX = m_iIndentAscii - iScrollH;
-		const auto iPosToPrintY = m_iHeightTopRect + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
+		const auto iPosToPrintY = m_iStartWorkArea + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Hex Poly.
 		listWstrHex.emplace_back(std::move(wstrHexToPrint));
@@ -1069,7 +1053,7 @@ void CHexCtrl::OnSize(UINT nType, int cx, int cy)
 	CWnd::OnSize(nType, cx, cy);
 
 	RecalcWorkAreaHeight(cy);
-	m_pstScrollV->SetScrollPageSize(m_iHeightWorkArea - m_iHeightTopRect);
+	m_pstScrollV->SetScrollPageSize(m_iHeightWorkArea);
 }
 
 BOOL CHexCtrl::OnEraseBkgnd(CDC * pDC)
@@ -1231,8 +1215,7 @@ void CHexCtrl::RecalcAll()
 	m_sizeLetter.cy = tm.tmHeight + tm.tmExternalLeading;
 	::ReleaseDC(m_hWnd, hDC);
 
-	m_iFirstVertLine = 0;
-	m_iSecondVertLine = m_dwOffsetDigits * m_sizeLetter.cx + m_sizeLetter.cx * 2;
+	m_iSecondVertLine = m_iFirstVertLine + m_dwOffsetDigits * m_sizeLetter.cx + m_sizeLetter.cx * 2;
 	m_iSizeHexByte = m_sizeLetter.cx * 2;
 	m_iSpaceBetweenBlocks = m_enShowMode == INTERNAL::ENSHOWMODE::ASBYTE ? m_sizeLetter.cx * 2 : 0;
 	m_iSpaceBetweenHexChunks = m_sizeLetter.cx;
@@ -1246,6 +1229,8 @@ void CHexCtrl::RecalcAll()
 	m_iSizeFirstHalf = m_iIndentFirstHexChunk + m_dwCapacityBlockSize * (m_sizeLetter.cx * 2) +
 		(m_dwCapacityBlockSize / (DWORD)m_enShowMode - 1) * m_iSpaceBetweenHexChunks;
 	m_iHeightTopRect = std::lround(m_sizeLetter.cy * 1.5);
+	m_iStartWorkArea = m_iFirstHorizLine + m_iHeightTopRect;
+	m_iSecondHorizLine = m_iStartWorkArea - 1;
 	m_iIndentTextCapacityY = m_iHeightTopRect / 2 - (m_sizeLetter.cy / 2);
 
 	RecalcScrollSizes();
@@ -1256,8 +1241,9 @@ void CHexCtrl::RecalcAll()
 
 void CHexCtrl::RecalcWorkAreaHeight(int iClientHeight)
 {
-	m_iHeightWorkArea = iClientHeight - m_iHeightBottomOffArea -
-		((iClientHeight - m_iHeightTopRect - m_iHeightBottomOffArea) % m_sizeLetter.cy);
+	m_iEndWorkArea = iClientHeight - m_iHeightBottomOffArea -
+		((iClientHeight - m_iStartWorkArea - m_iHeightBottomOffArea) % m_sizeLetter.cy);
+	m_iHeightWorkArea = m_iEndWorkArea - m_iStartWorkArea;
 }
 
 void CHexCtrl::RecalcScrollSizes(int iClientHeight, int iClientWidth)
@@ -1272,8 +1258,8 @@ void CHexCtrl::RecalcScrollSizes(int iClientHeight, int iClientWidth)
 
 	RecalcWorkAreaHeight(iClientHeight);
 	//Scroll sizes according to current font size.
-	m_pstScrollV->SetScrollSizes(m_sizeLetter.cy, m_iHeightWorkArea - m_iHeightTopRect,
-		m_iHeightTopRect + m_iHeightBottomOffArea + m_sizeLetter.cy * (m_ullDataSize / m_dwCapacity + 2));
+	m_pstScrollV->SetScrollSizes(m_sizeLetter.cy, m_iHeightWorkArea,
+		m_iStartWorkArea + m_iHeightBottomOffArea + m_sizeLetter.cy * (m_ullDataSize / m_dwCapacity + 2));
 	m_pstScrollH->SetScrollSizes(m_sizeLetter.cx, iClientWidth, m_iFourthVertLine + 1);
 }
 
@@ -1291,7 +1277,7 @@ ULONGLONG CHexCtrl::HitTest(const POINT * pPoint)
 	m_fCursorTextArea = false;
 
 	//Checking if cursor is within hex chunks area.
-	if ((iX >= m_iIndentFirstHexChunk) && (iX < m_iThirdVertLine) && (iY >= m_iHeightTopRect) && (iY <= m_iHeightWorkArea))
+	if ((iX >= m_iIndentFirstHexChunk) && (iX < m_iThirdVertLine) && (iY >= m_iStartWorkArea) && (iY <= m_iEndWorkArea))
 	{
 		//Additional space between halves. Only in BYTE's view mode.
 		int iBetweenBlocks;
@@ -1314,14 +1300,14 @@ ULONGLONG CHexCtrl::HitTest(const POINT * pPoint)
 				break;
 			}
 		}
-		ullHexChunk = dwChunkX + ((iY - m_iHeightTopRect) / m_sizeLetter.cy) * m_dwCapacity + (ullCurLine * m_dwCapacity);
+		ullHexChunk = dwChunkX + ((iY - m_iStartWorkArea) / m_sizeLetter.cy) * m_dwCapacity + (ullCurLine * m_dwCapacity);
 	}
 	else if ((iX >= m_iIndentAscii) && (iX < (m_iIndentAscii + m_iSpaceBetweenAscii * (int)m_dwCapacity))
-		&& (iY >= m_iHeightTopRect) && iY <= m_iHeightWorkArea)
+		&& (iY >= m_iStartWorkArea) && iY <= m_iEndWorkArea)
 	{
 		//Calculate ullHit Ascii symbol.
 		ullHexChunk = ((iX - m_iIndentAscii) / m_iSpaceBetweenAscii) +
-			((iY - m_iHeightTopRect) / m_sizeLetter.cy) * m_dwCapacity + (ullCurLine * m_dwCapacity);
+			((iY - m_iStartWorkArea) / m_sizeLetter.cy) * m_dwCapacity + (ullCurLine * m_dwCapacity);
 		m_fCursorTextArea = true;
 	}
 	else
@@ -1765,8 +1751,8 @@ void CHexCtrl::SetCursorPos(ULONGLONG ullPos, bool fHighPart)
 	GetClientRect(&rcClient);
 
 	//New scroll depending on selection direction: top <-> bottom.
-	ULONGLONG ullMaxV = ullCurrScrollV + rcClient.Height() - m_iHeightBottomOffArea - m_iHeightTopRect -
-		((rcClient.Height() - m_iHeightTopRect - m_iHeightBottomOffArea) % m_sizeLetter.cy);
+	ULONGLONG ullMaxV = ullCurrScrollV + rcClient.Height() - m_iHeightBottomOffArea - m_iStartWorkArea -
+		((rcClient.Height() - m_iStartWorkArea - m_iHeightBottomOffArea) % m_sizeLetter.cy);
 	ULONGLONG ullNewStartV = m_ullCursorPos / m_dwCapacity * m_sizeLetter.cy;
 	ULONGLONG ullNewEndV = ullNewStartV;
 
@@ -2286,8 +2272,8 @@ void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ul
 	//New scroll depending on selection direction: top <-> bottom.
 	//fHighlight means centralize scroll position on the screen (used in SearchCallback()).
 	ULONGLONG ullEnd = ullStart + ullSize; //ullEnd is exclusive.
-	ULONGLONG ullMaxV = ullCurrScrollV + rcClient.Height() - m_iHeightBottomOffArea - m_iHeightTopRect -
-		((rcClient.Height() - m_iHeightTopRect - m_iHeightBottomOffArea) % m_sizeLetter.cy);
+	ULONGLONG ullMaxV = ullCurrScrollV + rcClient.Height() - m_iHeightBottomOffArea - m_iStartWorkArea -
+		((rcClient.Height() - m_iStartWorkArea - m_iHeightBottomOffArea) % m_sizeLetter.cy);
 	ULONGLONG ullNewStartV = ullStart / m_dwCapacity * m_sizeLetter.cy;
 	ULONGLONG ullNewEndV = (ullEnd - 1) / m_dwCapacity * m_sizeLetter.cy;
 

@@ -180,16 +180,21 @@ namespace HEXCTRL {
 		int m_iIndentAscii { };             //Indent of Ascii text begining.
 		int m_iIndentFirstHexChunk { };     //First hex chunk indent.
 		int m_iIndentTextCapacityY { };     //Caption text (0 1 2... D E F...) vertical offset.
-		int m_iIndentBottomLine { 1 };      //Bottom line indent from window's bottom.
+		const int m_iIndentBottomLine { 1 };//Bottom line indent from window's bottom.
 		int m_iDistanceBetweenHexChunks { };//Distance between begining of the two hex chunks.
 		int m_iSpaceBetweenHexChunks { };   //Space between Hex chunks.
 		int m_iSpaceBetweenAscii { };       //Space between two Ascii chars.
 		int m_iSpaceBetweenBlocks { };      //Additional space between hex chunks after half of capacity.
 		int m_iHeightTopRect { };           //Height of the header where offsets (0 1 2... D E F...) reside.
 		const int m_iHeightBottomRect { 22 }; //Height of bottom Info rect.
-		int m_iHeightBottomOffArea { m_iHeightBottomRect + m_iIndentBottomLine }; //Height of not visible rect from window's bottom to m_iThirdHorizLine.
-		int m_iHeightWorkArea { };          //Needed for mouse selection point.y calculation.
-		int m_iFirstVertLine { }, m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
+		const int m_iHeightBottomOffArea { m_iHeightBottomRect + m_iIndentBottomLine }; //Height of not visible rect from window's bottom to m_iThirdHorizLine.
+		int m_iStartWorkArea { };           //Beginning of the area where all drawing occurs.
+		int m_iEndWorkArea { };             //End of the area where all drawing occurs.
+		int m_iHeightWorkArea { };          //Height of the working area where all drawing occurs.
+		const int m_iFirstHorizLine { 0 };  //First horizontal line indent.
+		int m_iSecondHorizLine { };         //Second horizontal line indent.
+		const int m_iFirstVertLine { 0 };   //First vertical line indent.
+		int m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
 		ULONGLONG m_ullSelectionStart { }, m_ullSelectionEnd { }, m_ullSelectionClick { }, m_ullSelectionSize { };
 		std::wstring m_wstrCapacity { };    //Top Capacity string.
 		std::wstring m_wstrBottomText { };  //Info text (bottom rect).
