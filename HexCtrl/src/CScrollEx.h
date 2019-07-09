@@ -75,7 +75,7 @@ namespace HEXCTRL {
 			UINT GetScrollWorkAreaSizeWH()const;						//Scroll size (WH) without arrows.
 			CRect GetThumbRect(bool fClientCoord = false)const;
 			UINT GetThumbSizeWH()const;
-			UINT GetThumbPos()const;
+			int GetThumbPos()const;                                     //Current Thumb pos.
 			void SetThumbPos(int iPos);
 			long double GetThumbScrollingSize()const;
 			CRect GetFirstArrowRect(bool fClientCoord = false)const;

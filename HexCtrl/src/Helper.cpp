@@ -21,7 +21,7 @@ namespace HEXCTRL {
 		//Converts dwSize bytes of ull to wchar_t*.
 		for (size_t i = 0; i < dwSize; i++)
 		{
-			pwsz[i * 2] = pwszHexMap[((ull >> ((dwSize - 1 - i) << 3)) & 0xF0) >> 4];
+			pwsz[i * 2] = pwszHexMap[((ull >> ((dwSize - 1 - i) << 3)) >> 4) & 0x0F];
 			pwsz[i * 2 + 1] = pwszHexMap[(ull >> ((dwSize - 1 - i) << 3)) & 0x0F];
 		}
 	}

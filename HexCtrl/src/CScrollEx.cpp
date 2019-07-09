@@ -41,6 +41,8 @@ namespace HEXCTRL {
 			IDT_FIRSTCLICK = 0x7ff0,
 			IDT_CLICKREPEAT = 0x7ff1
 		};
+
+		constexpr auto THUMB_POS_MAX = 0x7fffffff;
 	}
 }
 
@@ -120,6 +122,9 @@ ULONGLONG CScrollEx::SetScrollPos(ULONGLONG ullNewPos)
 		return 0;
 
 	m_ullScrollPosPrev = m_ullScrollPosCur;
+	if (m_ullScrollPosCur == ullNewPos)
+		return m_ullScrollPosPrev;
+
 	m_ullScrollPosCur = ullNewPos;
 
 	CRect rc = GetParentRect();
@@ -381,30 +386,48 @@ void CScrollEx::OnMouseMove(UINT nFlags, CPoint point)
 		return;
 
 	CRect rc = GetScrollWorkAreaRect(true);
+	int iCurrPos = GetThumbPos();
 	int iNewPos;
 
 	if (IsVert())
 	{
 		if (point.y < rc.top)
+		{
 			iNewPos = 0;
+			m_ptCursorCur.y = rc.top;
+		}
 		else if (point.y > rc.bottom)
-			iNewPos = 0x7FFFFFFF;
+		{
+			iNewPos = THUMB_POS_MAX;
+			m_ptCursorCur.y = rc.bottom;
+		}
 		else
-			iNewPos = GetThumbPos() + (point.y - m_ptCursorCur.y);
+		{
+			iNewPos = iCurrPos + (point.y - m_ptCursorCur.y);
+			m_ptCursorCur.y = point.y;
+		}
 	}
 	else
 	{
 		if (point.x < rc.left)
+		{
 			iNewPos = 0;
+			m_ptCursorCur.x = rc.left;
+		}
 		else if (point.x > rc.right)
-			iNewPos = 0x7FFFFFFF;
+		{
+			iNewPos = THUMB_POS_MAX;
+			m_ptCursorCur.x = rc.right;
+		}
 		else
-			iNewPos = GetThumbPos() + (point.x - m_ptCursorCur.x);
+		{
+			iNewPos = iCurrPos + (point.x - m_ptCursorCur.x);
+			m_ptCursorCur.x = point.x;
+		}
 	}
 
-	m_ptCursorCur = point;
-	SetThumbPos(iNewPos);
-	SendParentScrollMsg();
+	if (iNewPos != iCurrPos)  //Set new thumb pos only if it has been changed.
+		SetThumbPos(iNewPos);
 }
 
 void CScrollEx::OnLButtonUp(UINT nFlags, CPoint point)
@@ -619,7 +642,6 @@ UINT CScrollEx::GetThumbSizeWH()const
 
 	UINT uiThumbSize;
 	if (IsVert())
-		//dDelta = (long double)uiScrollWorkAreaSizeWH / m_ullScrollSizeMax;
 		dDelta = (long double)rcParent.Height() / m_ullScrollSizeMax;
 	else
 		dDelta = (long double)rcParent.Width() / m_ullScrollSizeMax;
@@ -632,29 +654,32 @@ UINT CScrollEx::GetThumbSizeWH()const
 	return uiThumbSize;
 }
 
-UINT CScrollEx::GetThumbPos()const
+int CScrollEx::GetThumbPos()const
 {
 	ULONGLONG ullScrollPos = GetScrollPos();
 	long double dThumbScrollingSize = GetThumbScrollingSize();
 
-	UINT uiThumbPos;
+	int iThumbPos;
 	if (ullScrollPos < dThumbScrollingSize)
-		uiThumbPos = 0;
+		iThumbPos = 0;
 	else
-		uiThumbPos = (UINT)std::lroundl(ullScrollPos / dThumbScrollingSize);
+		iThumbPos = std::lroundl(ullScrollPos / dThumbScrollingSize);
 
-	return uiThumbPos;
+	return iThumbPos;
 }
 
 void CScrollEx::SetThumbPos(int iPos)
 {
+	if (iPos == GetThumbPos())
+		return;
+
 	CRect rcWorkArea = GetScrollWorkAreaRect();
 	UINT uiThumbSize = GetThumbSizeWH();
 	ULONGLONG ullNewScrollPos;
 
 	if (iPos < 0)
 		ullNewScrollPos = 0;
-	else if (iPos == 0x7FFFFFFF)
+	else if (iPos == THUMB_POS_MAX)
 		ullNewScrollPos = m_ullScrollSizeMax;
 	else
 	{
@@ -670,6 +695,7 @@ void CScrollEx::SetThumbPos(int iPos)
 		}
 		ullNewScrollPos = (ULONGLONG)std::llroundl(iPos * GetThumbScrollingSize());
 	}
+
 	SetScrollPos(ullNewScrollPos);
 }
 

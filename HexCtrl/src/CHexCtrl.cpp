@@ -908,7 +908,7 @@ void CHexCtrl::OnPaint()
 			//Hex chunk to print.
 			const auto chByteToPrint = GetByte(ullIndexByteToPrint);
 			const wchar_t* const pwszHexMap { L"0123456789ABCDEF" };
-			const wchar_t pwszHexToPrint[2] { pwszHexMap[(chByteToPrint & 0xF0) >> 4], pwszHexMap[(chByteToPrint & 0x0F)] };
+			const wchar_t pwszHexToPrint[2] { pwszHexMap[(chByteToPrint >> 4) & 0x0F], pwszHexMap[chByteToPrint & 0x0F] };
 			wstrHexToPrint += pwszHexToPrint[0];
 			wstrHexToPrint += pwszHexToPrint[1];
 
@@ -1353,9 +1353,11 @@ void CHexCtrl::AsciiChunkPoint(ULONGLONG ullChunk, ULONGLONG & ullCx, ULONGLONG 
 
 void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 {
-	if (!m_ullSelectionSize)
+	if (!m_ullSelectionSize || m_ullSelectionSize > 0x6400000) //>~100MB
+	{
+		MessageBoxW(L"Selection size is too big to copy.\r\nTry to select less.", L"Error", MB_ICONERROR);
 		return;
-
+	}
 	const char* const pszHexMap { "0123456789ABCDEF" };
 	std::string strToClipboard;
 
@@ -1363,6 +1365,7 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 	{
 	case INTERNAL::ENCLIPBOARD::COPY_ASHEX:
 	{
+		strToClipboard.reserve((size_t)m_ullSelectionSize * 2);
 		for (unsigned i = 0; i < m_ullSelectionSize; i++)
 		{
 			BYTE chByte = GetByte(m_ullSelectionStart + i);
@@ -1373,6 +1376,8 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 	break;
 	case INTERNAL::ENCLIPBOARD::COPY_ASHEXFORMATTED:
 	{
+		strToClipboard.reserve((size_t)m_ullSelectionSize * 3);
+
 		//How many spaces are needed to be inserted at the beginnig.
 		DWORD dwModStart = m_ullSelectionStart % m_dwCapacity;
 
@@ -1410,6 +1415,7 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 	break;
 	case INTERNAL::ENCLIPBOARD::COPY_ASASCII:
 	{
+		strToClipboard.reserve((size_t)m_ullSelectionSize);
 		for (unsigned i = 0; i < m_ullSelectionSize; i++)
 		{
 			char ch = GetByte(m_ullSelectionStart + i);
@@ -1424,7 +1430,7 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 		break;
 	}
 
-	HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, strToClipboard.length() + 1);
+	HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, strToClipboard.size() + 1);
 	if (!hMem) {
 		MessageBoxW(L"GlobalAlloc error.", L"Error", MB_ICONERROR);
 		return;
@@ -1434,7 +1440,7 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 		MessageBoxW(L"GlobalLock error.", L"Error", MB_ICONERROR);
 		return;
 	}
-	memcpy(hMemLock, strToClipboard.data(), strToClipboard.length() + 1);
+	memcpy(hMemLock, strToClipboard.data(), strToClipboard.size() + 1);
 	GlobalUnlock(hMem);
 	OpenClipboard();
 	EmptyClipboard();
