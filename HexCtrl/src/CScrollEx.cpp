@@ -28,7 +28,7 @@ namespace HEXCTRL {
 	* Internal enums.							*
 	********************************************/
 	namespace SCROLLEX {
-		enum class ENSTATE : DWORD
+		enum class EState : DWORD
 		{
 			STATE_DEFAULT,
 			FIRSTBUTTON_HOVER, FIRSTBUTTON_CLICK,
@@ -37,7 +37,7 @@ namespace HEXCTRL {
 			LASTCHANNEL_CLICK,
 			LASTBUTTON_CLICK, LASTBUTTON_HOVER
 		};
-		enum class ENTIMER : UINT_PTR {
+		enum class ETimer : UINT_PTR {
 			IDT_FIRSTCLICK = 0x7ff0,
 			IDT_CLICKREPEAT = 0x7ff1
 		};
@@ -343,36 +343,36 @@ void CScrollEx::OnSetCursor(CWnd * pWnd, UINT nHitTest, UINT message)
 			if (GetThumbRect(true).PtInRect(pt))
 			{
 				m_ptCursorCur = pt;
-				m_enState = ENSTATE::THUMB_CLICK;
+				m_enState = EState::THUMB_CLICK;
 				GetParent()->SetCapture();
 			}
 			else if (GetFirstArrowRect(true).PtInRect(pt))
 			{
 				ScrollLineUp();
-				m_enState = ENSTATE::FIRSTBUTTON_CLICK;
+				m_enState = EState::FIRSTBUTTON_CLICK;
 				GetParent()->SetCapture();
-				SetTimer((UINT_PTR)ENTIMER::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
+				SetTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
 			}
 			else if (GetLastArrowRect(true).PtInRect(pt))
 			{
 				ScrollLineDown();
-				m_enState = ENSTATE::LASTBUTTON_CLICK;
+				m_enState = EState::LASTBUTTON_CLICK;
 				GetParent()->SetCapture();
-				SetTimer((UINT_PTR)ENTIMER::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
+				SetTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
 			}
 			else if (GetFirstChannelRect(true).PtInRect(pt))
 			{
 				ScrollPageUp();
-				m_enState = ENSTATE::FIRSTCHANNEL_CLICK;
+				m_enState = EState::FIRSTCHANNEL_CLICK;
 				GetParent()->SetCapture();
-				SetTimer((UINT_PTR)ENTIMER::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
+				SetTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
 			}
 			else if (GetLastChannelRect(true).PtInRect(pt))
 			{
 				ScrollPageDown();
-				m_enState = ENSTATE::LASTCHANNEL_CLICK;
+				m_enState = EState::LASTCHANNEL_CLICK;
 				GetParent()->SetCapture();
-				SetTimer((UINT_PTR)ENTIMER::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
+				SetTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
 			}
 		}
 	}
@@ -435,11 +435,11 @@ void CScrollEx::OnLButtonUp(UINT nFlags, CPoint point)
 	if (!m_fCreated)
 		return;
 
-	if (m_enState != ENSTATE::STATE_DEFAULT)
+	if (m_enState != EState::STATE_DEFAULT)
 	{
-		m_enState = ENSTATE::STATE_DEFAULT;
-		KillTimer((UINT_PTR)ENTIMER::IDT_FIRSTCLICK);
-		KillTimer((UINT_PTR)ENTIMER::IDT_CLICKREPEAT);
+		m_enState = EState::STATE_DEFAULT;
+		KillTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK);
+		KillTimer((UINT_PTR)ETimer::IDT_CLICKREPEAT);
 		ReleaseCapture();
 		DrawScrollBar();
 	}
@@ -808,7 +808,7 @@ bool CScrollEx::IsVert()const
 
 bool CScrollEx::IsThumbDragging()const
 {
-	return m_enState == ENSTATE::THUMB_CLICK;
+	return m_enState == EState::THUMB_CLICK;
 }
 
 bool CScrollEx::IsSiblingVisible()const
@@ -832,21 +832,21 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 {
 	switch (nIDEvent)
 	{
-	case (UINT_PTR)ENTIMER::IDT_FIRSTCLICK:
-		KillTimer((UINT_PTR)ENTIMER::IDT_FIRSTCLICK);
-		SetTimer((UINT_PTR)ENTIMER::IDT_CLICKREPEAT, m_iTimerRepeat, nullptr);
+	case (UINT_PTR)ETimer::IDT_FIRSTCLICK:
+		KillTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK);
+		SetTimer((UINT_PTR)ETimer::IDT_CLICKREPEAT, m_iTimerRepeat, nullptr);
 		break;
-	case (UINT_PTR)ENTIMER::IDT_CLICKREPEAT:
+	case (UINT_PTR)ETimer::IDT_CLICKREPEAT:
 	{
 		switch (m_enState)
 		{
-		case ENSTATE::FIRSTBUTTON_CLICK:
+		case EState::FIRSTBUTTON_CLICK:
 			ScrollLineUp();
 			break;
-		case ENSTATE::LASTBUTTON_CLICK:
+		case EState::LASTBUTTON_CLICK:
 			ScrollLineDown();
 			break;
-		case ENSTATE::FIRSTCHANNEL_CLICK:
+		case EState::FIRSTCHANNEL_CLICK:
 		{
 			CPoint pt;
 			GetCursorPos(&pt);
@@ -862,7 +862,7 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 			}
 		}
 		break;
-		case ENSTATE::LASTCHANNEL_CLICK:
+		case EState::LASTCHANNEL_CLICK:
 			CPoint pt;
 			GetCursorPos(&pt);
 			CRect rc = GetThumbRect(true);

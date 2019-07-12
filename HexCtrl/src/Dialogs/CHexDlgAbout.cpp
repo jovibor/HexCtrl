@@ -13,7 +13,7 @@ using namespace HEXCTRL;
 
 namespace HEXCTRL {
 	namespace INTERNAL {
-		constexpr auto WSTR_HEXCTRL_VERSION = L"Hex Control for MFC, v2.3.1";
+		constexpr auto WSTR_HEXCTRL_VERSION = L"Hex Control for MFC, v2.3.2";
 	};
 }
 
@@ -22,9 +22,6 @@ namespace HEXCTRL {
 ****************************************************/
 
 BEGIN_MESSAGE_MAP(CHexDlgAbout, CDialogEx)
-	ON_WM_LBUTTONDOWN()
-	ON_WM_MOUSEMOVE()
-	ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
 
 BOOL CHexDlgAbout::OnInitDialog()

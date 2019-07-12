@@ -20,7 +20,7 @@ namespace HEXCTRL {
 		* Forward declarations.          *
 		*********************************/
 		struct UNDOSTRUCT;
-		enum class ENCLIPBOARD : DWORD;
+		enum class EClipboard : DWORD;
 
 		/***************************************************************************************
 		* ENSHOWMODE - current data mode representation.                                       *
@@ -118,7 +118,7 @@ namespace HEXCTRL {
 	protected:
 		bool RegisterWndClass();                               //Registering HexCtrl window class.
 		[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex)const;   //Gets the byte data by index.
-		void ModifyData(const HEXMODIFYSTRUCT& hms);           //Main routine to modify data, in fMutable=true mode.
+		void ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw = true); //Main routine to modify data, in m_fMutable==true mode.
 		[[nodiscard]] CWnd* GetMsgWindow()const;               //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcWorkAreaHeight(int iClientHeight);
@@ -127,8 +127,8 @@ namespace HEXCTRL {
 		[[nodiscard]] ULONGLONG HitTest(const POINT*);         //Is any hex chunk withing given point?
 		void HexChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy)const;   //Point of Hex chunk.
 		void AsciiChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy)const; //Point of Ascii chunk.
-		void ClipboardCopy(INTERNAL::ENCLIPBOARD enType);
-		void ClipboardPaste(INTERNAL::ENCLIPBOARD enType);
+		void ClipboardCopy(INTERNAL::EClipboard enType);
+		void ClipboardPaste(INTERNAL::EClipboard enType);
 		void OnKeyDownShift(UINT nChar);                       //Key pressed with the Shift.
 		void OnKeyDownCtrl(UINT nChar);                        //Key pressed with the Ctrl.
 		void UpdateInfoText();                                 //Updates text in the bottom "info" area according to currently selected data.
@@ -145,7 +145,7 @@ namespace HEXCTRL {
 		void SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize); //Takes currently modifiable data snapshot.
 		[[nodiscard]] bool IsCurTextArea()const;                  //Whether click was made in Text or Hex area.
 		void SearchCallback(INTERNAL::SEARCHSTRUCT& rSearch);     //Search through currently set data.
-		void SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplaced, bool fRedraw = true);
+		void SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw = true);
 		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
 		void SelectAll();
 		void FillCapacity();                                      //Fill m_wstrCapacity according to current m_dwCapacity.
@@ -154,7 +154,7 @@ namespace HEXCTRL {
 		bool m_fDataSet { false };          //Is data set or not.
 		bool m_fFloat { false };            //Is control window float or not.
 		bool m_fMutable { false };          //Is control works in Edit or Read mode.
-		HEXDATAMODE m_enMode { HEXDATAMODE::DATA_DEFAULT }; //Control's mode.
+		EHexDataMode m_enMode { EHexDataMode::DATA_DEFAULT }; //Control's mode.
 		HEXCOLORSTRUCT m_stColor;           //All control related colors.
 		PBYTE m_pData { };                  //Main data pointer. Modifiable in "Edit" mode.
 		ULONGLONG m_ullDataSize { };        //Size of the displayed data in bytes.
@@ -163,7 +163,7 @@ namespace HEXCTRL {
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 		INTERNAL::ENSHOWMODE m_enShowMode { INTERNAL::ENSHOWMODE::ASBYTE }; //Show data mode.
 		CWnd* m_pwndMsg { };                //Window, the control messages will be sent to.
-		IHexVirtual* m_pHexVirtual { };     //Data handler pointer for HEXDATAMODE::DATA_VIRTUAL
+		IHexVirtual* m_pHexVirtual { };     //Data handler pointer for EHexDataMode::DATA_VIRTUAL
 		SIZE m_sizeLetter { 1, 1 };         //Current font's letter size (width, height).
 		CFont m_fontHexView;                //Main Hex chunks font.
 		CFont m_fontBottomRect;             //Font for bottom Info rect.
@@ -208,5 +208,6 @@ namespace HEXCTRL {
 		std::deque<std::unique_ptr<INTERNAL::UNDOSTRUCT>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<INTERNAL::UNDOSTRUCT>> m_deqRedo; //Redo deque.
 		std::unordered_map<int, HBITMAP> m_umapHBITMAP;              //Images for the Menu.
+		bool m_fReplaceWarning { true };    //Show Replace string size exceeds Warning or not.
 	};
 };

@@ -14,6 +14,9 @@
 #include <string>
 
 namespace HEXCTRL {
+	//Fast lookup wchar_t array.
+	inline const wchar_t* const g_pwszHexMap { L"0123456789ABCDEF" };
+
 	//Converts dwSize bytes of ull to WCHAR string.
 	void UllToWchars(ULONGLONG ull, wchar_t* pwsz, size_t dwSize);
 

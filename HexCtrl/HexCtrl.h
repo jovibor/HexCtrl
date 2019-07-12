@@ -17,18 +17,17 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXMODIFYSTRUCT
 	{
-		ULONGLONG ullIndex { };         //Index of the starting byte to modify.
-		ULONGLONG ullSize { };          //Size in bytes.
-		ULONGLONG ullpDataFillSize { }; //Size of pData if we want to fill ullSize of bytes with some pattern.
-		PBYTE     pData { };            //Pointer to a data to be set.
-		bool      fWhole { true };      //Is a whole byte or just a part of it to be modified.
-		bool      fHighPart { true };   //Shows whether high or low part of the byte should be modified (if the fWhole flag is false).
-		bool      fRedraw { true };     //Redraw view after modification or not.
+		ULONGLONG ullIndex { };       //Index of the starting byte to modify.
+		ULONGLONG ullSize { };        //Size to be modified.
+		ULONGLONG ullDataSize { };    //Size of pData.
+		PBYTE     pData { };          //Pointer to a data to be set.
+		bool      fWhole { true };    //Is a whole byte or just a part of it to be modified.
+		bool      fHighPart { true }; //Shows whether high or low part of the byte should be modified (if the fWhole flag is false).
 	};
 
 	/********************************************************************************************
 	* IHexVirtual - Pure abstract data handler class, that can be implemented by client,        *
-	* to set its own data handler routines.	Works in HEXDATAMODE::DATA_VIRTUAL mode.            *
+	* to set its own data handler routines.	Works in EHexDataMode::DATA_VIRTUAL mode.            *
 	* Pointer to this class can be set in SetData method.                                       *
 	* Its usage is very similar to pwndMsg logic, where control sends WM_NOTIFY messages        *
 	* to CWnd* class to get/set data. But in this case it's just a pointer to a custom          *
@@ -70,9 +69,9 @@ namespace HEXCTRL
 	{
 		HEXCOLORSTRUCT  stColor { };           //All the control's colors.
 		CWnd*           pwndParent { };        //Parent window pointer.
-		const LOGFONTW* pLogFont { };          //Font to be used, nullptr for default.
+		const LOGFONTW* pLogFont { };          //Font to be used, nullptr for default. This font has to be monospaced.
 		CRect           rect { };              //Initial rect. If null, the window is screen centered.
-		UINT            uId { };               //HexCtrl Id.
+		UINT            uId { };               //Control Id.
 		DWORD           dwStyle { };           //Window styles, 0 for default.
 		DWORD           dwExStyle { };         //Extended window styles, 0 for default.
 		bool            fFloat { false };      //Is float or child (incorporated into another window)?
@@ -80,12 +79,12 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* HEXDATAMODE - Enum of the working data mode, used in HEXDATASTRUCT in SetData.            *
+	* EHexDataMode - Enum of the working data mode, used in HEXDATASTRUCT in SetData.            *
 	* DATA_DEFAULT: Default, standard data mode.                                                *
 	* DATA_MSG: Data is handled through WM_NOTIFY messages to handler window.				    *
 	* DATA_VIRTUAL: Data is handled through IHexVirtual interface derived class.                *
 	********************************************************************************************/
-	enum class HEXDATAMODE : DWORD
+	enum class EHexDataMode : DWORD
 	{
 		DATA_DEFAULT, DATA_MSG, DATA_VIRTUAL
 	};
@@ -101,7 +100,7 @@ namespace HEXCTRL
 		CWnd*        pwndMsg { };                          //Window to send the control messages to. Parent window is used by default.
 		IHexVirtual* pHexVirtual { };                      //Pointer to IHexVirtual data class for custom data handling.
 		PBYTE        pData { };                            //Pointer to the data. Not used if it's virtual control.
-		HEXDATAMODE  enMode { HEXDATAMODE::DATA_DEFAULT }; //Working data mode of the control.
+		EHexDataMode  enMode { EHexDataMode::DATA_DEFAULT }; //Working data mode of the control.
 		bool         fMutable { false };                   //Will data be mutable (editable) or just read mode.
 	};
 

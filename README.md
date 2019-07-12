@@ -3,20 +3,20 @@
 ### Table of Contents
 * [Introduction](#introduction)
 * [Implementation](#implementation)
-* [Using the Control](#using-the-control)
-* [Create](#create)
+* [Installing and Using the Control](#installing-and-using-the-control)
+* [Control Creation](#control-creation)
   * [Classic Approach](#classic-approach)
   * [In Dialog](#in-dialog)
-* [SetData](#setdata)
+* [Set the Data](#set-the-data)
 * [Virtual Mode](#virtual-mode)
   * [Message Window](#message-window)
   * [Virtual Handler](#virtual-handler)
 * [OnDestroy](#ondestroy)
 * [Scroll Bars](#scroll-bars)
-* [Methods](#methods)
-  * [Create](#createmethod)
+* [Methods](#methods) <details><summary>_Expand_</summary>
+  * [Create](#create)
   * [CreateDialogCtrl](#createdialogctrl)
-  * [SetData](#setdatamethod)
+  * [SetData](#setdata)
   * [ClearData](#cleardata)
   * [SetEditMode](#seteditmode)
   * [ShowOffset](#showoffset)
@@ -31,6 +31,15 @@
   * [GetSelection](#getselection)
   * [GetMenuHandle](#GetMenuHandle)
   * [Destroy](#destroy)
+   </details>
+* [Structures](#structures) <details><summary>_Expand_</summary>
+  * [HEXCREATESTRUCT](#hexcreatestruct)
+  * [HEXCOLORSTRUCT](#hexcolorstruct)
+  * [HEXDATASTRUCT](#hexdatastruct)
+  * [HEXMODIFYSTRUCT](#hexmodifystruct)
+  * [HEXNOTIFYSTRUCT](#hexnotifystruct)
+  * [EHexDataMode](#ehexdatamode)
+  </details>
 * [Example](#example)
 * [Positioning and Sizing](#positioning-and-sizing)
 * [Appearance](#appearance)
@@ -46,7 +55,7 @@ This **HexControl** is a tiny attempt to expand standard **MFC** functionality, 
 This **HexControl** is implemented as a `CWnd` derived class, and can be used as a *child* or *float* window in any place
 of your existing **MFC** application. It was build and tested in Visual Studio 2019, under Windows 10.
 
-## [](#)Using the Control
+## [](#)Installing and Using the Control
 The usage of the control is quite simple:
 1. Copy **HexCtrl** folder into your project's folder.
 2. Add all files from **HexCtrl** folder into your project.
@@ -72,48 +81,16 @@ or to define namespace in the source file's beginning:
 using namespace HEXCTRL;
 ```
 
-## [](#)Create
+## [](#)Control Creation
 ### [](#)Classic Approach
-`IHexCtrl::Create` method - the first method you call - takes `HEXCREATESTRUCT` as its argument. This is the main initialization struct which fields are described below:
-```cpp
-struct HEXCREATESTRUCT
-{
-	HEXCOLORSTRUCT  stColor { };           //All the control's colors.
-	CWnd*           pwndParent { };        //Parent window pointer.
-	const LOGFONTW* pLogFont { };          //Font to be used, nullptr for default.
-	CRect           rect { };              //Initial rect. If null, the window is screen centered.
-	UINT            uId { };               //HexCtrl Id.
-	DWORD           dwStyle { };           //Window styles, 0 for default.
-	DWORD           dwExStyle { };         //Extended window styles, 0 for default.
-	bool            fFloat { false };      //Is float or child (incorporated into another window)?
-	bool            fCustomCtrl { false }; //It's a custom dialog control.
-};
-```
+The `IHexCtrl::Create` method is the first method you call, it takes [`HEXCREATESTRUCT`](#hexcreatestruct) as its argument.  
 You can choose whether control will behave as a *child* or independent *floating* window, by setting `fFloat` member of this struct.
 ```cpp
 HEXCREATESTRUCT hcs;
 hcs.fFloat = true;
 bool IHexCtrl::Create(hcs);
 ```
-`stColor` member of `HEXCREATESTRUCT` has a type of `HEXCOLORSTRUCT`. This structure describes all the **HexCtrl**'s colors.
-<a id=hexcolorstruct></a>
-```cpp
-struct HEXCOLORSTRUCT
-{
-	COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };         //Hex chunks text color.
-	COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };       //Ascii text color.
-	COLORREF clrTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected text color.
-	COLORREF clrTextCaption { RGB(0, 0, 180) };                    //Caption text color
-	COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };    //Text color of the bottom "Info" rect.
-	COLORREF clrTextCursor { RGB(255, 255, 255) };                 //Cursor text color.
-	COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                  //Background color.
-	COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };       //Background color of the selected Hex/Ascii.
-	COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };         //Background color of the bottom "Info" rect.
-	COLORREF clrBkCursor { RGB(0, 0, 255) };                       //Cursor's background color.
-	COLORREF clrBkCursorSelected { RGB(0, 0, 200) };               //Cursor's background color in selection.
-};
-```
-This struct is also used in [`IHexCtrl::SetColor`](#setcolor) method.
+`stColor` member of [`HEXCREATESTRUCT`](#hexcreatestruct) has a type of [`HEXCOLORSTRUCT`](#hexcolorstruct). This structure describes all the **HexCtrl**'s colors, and is also used in [`IHexCtrl::SetColor`](#setcolor) method.
 
 ### [](#)In Dialog
 To use **HexCtrl** within `Dialog` you can, of course, create it with the [Classic Approach](#classic-approach): 
@@ -133,32 +110,18 @@ So, that it looks like in the example below:
 ```cpp
 void CMyDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_MY_HEX, *m_myHex);
+    CDialogEx::DoDataExchange(pDX);
+    DDX_Control(pDX, IDC_MY_HEX, *m_myHex);
 }
 ```
 5. Call `IHexCtrl::CreateDialogCtrl` function, `m_myHex->CreateDialogCtrl()`.
 
-## [](#)SetData
-`SetData` method takes `HEXDATASTRUCT` reference as argument. This struct fields are described below:
-```cpp
-struct HEXDATASTRUCT
-{
-	ULONGLONG    ullDataSize { };                      //Size of the data to display, in bytes.
-	ULONGLONG    ullSelectionStart { };                //Set selection at this position. Works only if ullSelectionSize > 0.
-	ULONGLONG    ullSelectionSize { };                 //How many bytes to set as selected.
-	CWnd*        pwndMsg { };                          //Window to send the control messages to. Parent window is used by default.
-	IHexVirtual* pHexVirtual { };                      //Pointer to IHexVirtual data class for custom data handling.
-	PBYTE        pData { };                            //Pointer to the data. Not used if it's virtual control.
-	HEXDATAMODE  enMode { HEXDATAMODE::DATA_DEFAULT }; //Working data mode of the control.
-	bool         fMutable { false };                   //Will data be mutable (editable) or just read mode.
-};
-```
-
+## [](#)Set the Data
+To set the data to display in the **HexControl** use [`IHexCtrl::SetData`](#setdata) method.
 ## [](#)Virtual Mode
 ### [](#)Message window
-The `enMode` member of `HEXDATASTRUCT` shows what data mode `HexControl` is working at. It is the `HEXDATAMODEEN` enum member.
-If it's set to `HEXMSG` the control works in so called *Virtual* mode.<br>
+The `enMode` member of [`HEXDATASTRUCT`](#hexdatastruct) shows what data mode `HexControl` is working in. It is of the [`EHexDataMode`](#ehexdatamode) enum type. If it's set to `DATA_MSG` the control works in so called *Message mode*.
+
 What it means is that when control is about to display next byte, it will first ask for this byte from the `pwndMsg` window,
 in the form of `WM_NOTIFY` message. This is pretty much the same as the standard **MFC** List Control works when created with `LVS_OWNERDATA` flag.<br>
 The `pwndMsg` window pointer can be set as `HEXDATASTRUCT::pwndMsg` in `SetData` method. By default it is equal to the control's parent window.<br>
@@ -180,39 +143,27 @@ BOOL CMyWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
    }
 }
 ```
-`lParam` will hold a pointer to a `HEXNOTIFYSTRUCT` structure, which is described below:
-```cpp
-struct HEXNOTIFYSTRUCT
-{
-	NMHDR      hdr { };      //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
-	UINT_PTR   uMenuId { };  //User defined custom menu id.
-	ULONGLONG  ullIndex { }; //Index of the start byte to get/send.
-	ULONGLONG  ullSize { };  //Size of the bytes to get/send.
-	PBYTE      pData { };    //Pointer to a data to get/send.
-	BYTE       chByte { };   //Single byte data - used for simplicity, when ullModifySize == 1.
-};
-using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
-```
+`lParam` will hold a pointer to the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) structure.
+
 Its first member is a standard Windows' `NMHDR` structure. It will have its code member equal to `HEXCTRL_MSG_GETDATA` indicating that **HexControl**'s byte request has arrived.
 The second member is the index of the byte be displayed. And the third is the actual byte, that you have to set in response.
 
 ### [](#)Virtual Handler
-If `enMode` member of `HEXDATASTRUCT` is set to `HEXDATAMODE::DATA_VIRTUAL` then all the data routine will be done through
-`HEXDATASTRUCT::pHexVirtual` pointer.<br>
-This pointer is of type `IHexVirtual` class, which is a pure abstract base class.
+If `enMode` member of [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_VIRTUAL` then all the data routine will be done through `HEXDATASTRUCT::pHexVirtual` pointer.  
+This pointer is of `IHexVirtual` class type, which is a pure abstract base class.
 You have to derive your own class from it and implement all its public methods:
 ```cpp
 class IHexVirtual
 {
 public:
-	virtual ~IHexVirtual() = default;
-	virtual BYTE GetByte(ULONGLONG ullIndex) = 0;            //Gets the byte data by index.
-	virtual	void ModifyData(const HEXMODIFYSTRUCT& hmd) = 0; //Main routine to modify data, in fMutable=true mode.
-	virtual void Undo() = 0;                                 //Undo command, through menu or hotkey.
-	virtual void Redo() = 0;                                 //Redo command, through menu or hotkey.
+    virtual ~IHexVirtual() = default;
+    virtual BYTE GetByte(ULONGLONG ullIndex) = 0;            //Gets the byte data by index.
+    virtual	void ModifyData(const HEXMODIFYSTRUCT& hmd) = 0; //Main routine to modify data, in fMutable=true mode.
+    virtual void Undo() = 0;                                 //Undo command, through menu or hotkey.
+    virtual void Redo() = 0;                                 //Redo command, through menu or hotkey.
 };
 ```
-Then provide a pointer to created object of this derived class to `SetData` method in form of `HEXDATASTRUCT::pHexVirtual=&yourDerivedObject`
+Then provide a pointer to created object of this derived class to `SetData` method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
 
 ## [](#)OnDestroy
 When **HexControl** window, floating or child, is destroyed, it sends `WM_NOTIFY` message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
@@ -227,28 +178,8 @@ That's why **HexControl** uses its own scrollbars. They work with `unsigned long
 These scrollbars behave as normal **Windows** scrollbars, and even reside in the non client area, as the latter do.
 
 ## [](#)Methods
-**HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.<br>
-These methods' usage is pretty straightforward and clean from their naming:
-```cpp
-bool Create(const HEXCREATESTRUCT& hcs) = 0;   //Main initialization method.
-bool CreateDialogCtrl() = 0;                   //Сreates custom dialog control.
-void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
-void ClearData() = 0;                          //Clears all data from HexCtrl's view (not touching data itself).
-void SetEditMode(bool fEnable) = 0;            //Enable or disable edit mode.
-void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1) = 0; //Shows (selects) given offset.
-void SetFont(const LOGFONTW* pLogFontNew) = 0; //Sets the control's font.
-void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
-void SetColor(const HEXCOLORSTRUCT& clr) = 0;  //Sets all the control's colors.
-void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
-bool IsCreated()const = 0;                     //Shows whether control is created or not.
-bool IsDataSet()const = 0;                     //Shows whether a data was set to the control or not.
-bool IsMutable()const = 0;                     //Is edit mode enabled or not.
-long GetFontSize() = 0;                        //Current font size.
-void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const = 0; //Current selection.
-HMENU GetMenuHandle()const = 0;                //Context menu handle.
-void Destroy() = 0;                            //Deleter.
-```
-### <a id="createmethod"></a>Create
+**HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
+### [](#)Create
 **`bool Create(const HEXCREATESTRUCT& hcs)`**<br>
 Main initialization method.<br>
 It takes `HEXCREATESTRUCT`, that you fill first, as argument.
@@ -257,9 +188,9 @@ Returns `true` if created successfully, `false` otherwise.
 ### [](#)CreateDialogCtrl
 **`bool CreateDialogCtrl()`**<br>
 This method is used if you want to create a dialog based **HexCtrl** as a custom control. See [this section](#in-dialog) for more info.
-### <a id="setdatamethod"></a>SetData
+### [](#)SetData
 **`void SetData(const HEXDATASTRUCT& hds)`**<br>
-Main method to set a data to display and edit. It takes `HEXDATASTRUCT` as argument. See [this section](#setdata) for more info.
+Main method to set data to display in read-only or edit modes. Takes [`HEXDATASTRUCT`](#hexdatastruct) as an  argument.
 ### [](#)ClearData
 **`void ClearData()`**<br>
 Clears data from the **HexCtrl** view, not touching data itself.
@@ -298,20 +229,110 @@ Returns current font size.
 Returns current start position (offset) of the selection as `ullOffset`, and its size as `ullSize`.
 ### [](#)GetMenuHandle
 **`HMENU GetMenuHandle()const`**<br>
-`GetMenuHandle` method retrives the `HMENU` handle of the control's context menu. You can use this handle to customize menu for your needs.<br>
-Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu assign menu `ID` starting from `0x9000` to not interfere.<br>
-When user clicks custom menu control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to `HEXNOTIFYSTRUCT` with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `uMenuId` field of the `HEXNOTIFYSTRUCT` will be holding `ID` of the menu clicked.
+`GetMenuHandle` method retrives the `HMENU` handle of the control's context menu. You can use this handle to customize menu for your needs.
+
+Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.<br>
+When user clicks custom menu control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to `HEXNOTIFYSTRUCT` with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `uMenuId` field of the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) will be holding `ID` of the menu clicked.
 ### [](#)Destroy
 **`void Destroy()`**<br>
 Destroys the control.<br>
-You only invoke this method if you use a raw `IHexCtrl` pointer obtained by the call to `CreateRawHexCtrl` function. Otherwise don't use it.<br>
+You only invoke this method if you use a raw `IHexCtrl` pointer obtained by the call to `CreateRawHexCtrl` function. Otherwise don't use it.
 
 **Remarks**<br>
 You usually don't need to call this method unless you use **HexCtrl** through the raw pointer obtained by `CreateRawHexCtrl` factory function.<br>
 If you use **HexCtrl** in standard way through the `IHexCtrlPtr` pointer, obtained by `CreateHexCtrl` function, this method will be called automatically.
 
+## [](#)Structures
+Below are listed all **HexCtrl** structures.
+### [](#)HEXCREATESTRUCT
+The main initialization struct used for control creation.
+```cpp
+struct HEXCREATESTRUCT
+{
+    HEXCOLORSTRUCT  stColor { };           //All the control's colors.
+    CWnd*           pwndParent { };        //Parent window pointer.
+    const LOGFONTW* pLogFont { };          //Font to be used, nullptr for default. This font has to be monospaced.
+    CRect           rect { };              //Initial rect. If null, the window is screen centered.
+    UINT            uId { };               //Control Id.
+    DWORD           dwStyle { };           //Window styles, 0 for default.
+    DWORD           dwExStyle { };         //Extended window styles, 0 for default.
+    bool            fFloat { false };      //Is float or child (incorporated into another window)?
+    bool            fCustomCtrl { false }; //It's a custom dialog control.
+};
+```
+### [](#)HEXCOLORSTRUCT
+This structure describes all control's colors. All theese colors have their default values.
+```cpp
+struct HEXCOLORSTRUCT
+{
+    COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };         //Hex chunks text color.
+    COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };       //Ascii text color.
+    COLORREF clrTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected text color.
+    COLORREF clrTextCaption { RGB(0, 0, 180) };                    //Caption text color
+    COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };    //Text color of the bottom "Info" rect.
+    COLORREF clrTextCursor { RGB(255, 255, 255) };                 //Cursor text color.
+    COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                  //Background color.
+    COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };       //Background color of the selected Hex/Ascii.
+    COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };         //Background color of the bottom "Info" rect.
+    COLORREF clrBkCursor { RGB(0, 0, 255) };                       //Cursor background color.
+    COLORREF clrBkCursorSelected { RGB(0, 0, 200) };               //Cursor background color in selection.
+};
+```
+### [](#)HEXDATASTRUCT
+Main struct to set a data to display in the control.
+```cpp
+struct HEXDATASTRUCT
+{
+    ULONGLONG    ullDataSize { };                      //Size of the data to display, in bytes.
+    ULONGLONG    ullSelectionStart { };                //Set selection at this position. Works only if ullSelectionSize > 0.
+    ULONGLONG    ullSelectionSize { };                 //How many bytes to set as selected.
+    CWnd*        pwndMsg { };                          //Window to send the control messages to. Parent window is used by default.
+    IHexVirtual* pHexVirtual { };                      //Pointer to IHexVirtual data class for custom data handling.
+    PBYTE        pData { };                            //Pointer to the data. Not used if it's virtual control.
+    HEXDATAMODE  enMode { HEXDATAMODE::DATA_DEFAULT }; //Working data mode of the control.
+    bool         fMutable { false };                   //Will data be mutable (editable) or just read mode.
+};
+```
+### [](#)HEXMODIFYSTRUCT
+This structure is used internally as well as in the external notifications routine, when working in [`DATA_MSG`](#hexdatamode) and [`DATA_VIRTUAL`](#hexdatamode) modes.
+```cpp
+struct HEXMODIFYSTRUCT
+{
+    ULONGLONG ullIndex { };       //Index of the starting byte to modify.
+    ULONGLONG ullSize { };        //Size to be modified.
+    ULONGLONG ullDataSize { };    //Size of pData.
+    PBYTE     pData { };          //Pointer to a data to be set.
+    bool      fWhole { true };    //Is a whole byte or just a part of it to be modified.
+    bool      fHighPart { true }; //Shows whether high or low part of the byte should be modified (if the fWhole flag is false).
+};
+```
+When `ullDataSize` is equal `ullSize`, bytes from `pData` just replace corresponding internal bytes as is.  
+If `ullDataSize` is less then `ullSize` then block by block replacement takes place.
+
+For example, if `ullSize` = 9, `ullDataSize` = 3, bytes in memory at `ullIndex` position are `123456789` and bytes pointed to by `pData` are `345`, then, after modification, bytes at `ullIndex` will be `345345345`.
+### [](#)HEXNOTIFYSTRUCT
+This struct is used in notifications routine, when data is set with the [`DATA_MSG`](#ehexdatamode) flag.
+```cpp
+struct HEXNOTIFYSTRUCT
+{
+    NMHDR     hdr { };      //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
+    UINT_PTR  uMenuId { };  //User defined custom menu id.
+    ULONGLONG ullIndex { }; //Index of the start byte to get/send.
+    ULONGLONG ullSize { };  //Size of the bytes to get/send.
+    PBYTE     pData { };    //Pointer to a data to get/send.
+    BYTE      chByte { };   //Single byte data - used for simplicity, when ullSize == 1.
+};
+using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
+```
+### [](#)EHexDataMode
+Enum that represents the current data mode **HexCtrl** works in. Used as [`HEXDATASTRUCT`](#hexdatastruct) member in [`SetData`](#setdata) method.
+```cpp
+enum class EHexDataMode : DWORD
+{
+    DATA_DEFAULT, DATA_MSG, DATA_VIRTUAL
+};
+```
 ## [](#)Example
-The function you use to set a data to display as hex is `IHexCtrl::SetData`. 
 The code below constructs `IHexCtrlPtr` object and displays first `0x1FF` bytes of your app's memory:
 ```cpp
 IHexCtrlPtr myHex { CreateHexCtrl() };
@@ -325,7 +346,7 @@ hds.pData = (unsigned char*)GetModuleHandle(0);
 hds.ullDataSize = 0x1FF;
 myHex->SetData(hds);
 ```
-The next example displays `std::string`'s text string as hex:
+The next example displays `std::string`'s text as hex:
 ```cpp
 std::string str = "My string";
 HEXDATASTRUCT hds;
@@ -352,6 +373,8 @@ To change control's capacity - **«Ctrl+Shift+MouseWheel»**
 ## [](#)Licensing
 This software is available under the **"MIT License modified with The Commons Clause".**
 [https://github.com/jovibor/HexCtrl/blob/master/LICENSE](https://github.com/jovibor/HexCtrl/blob/master/LICENSE)
+
+It is free for any non commercial use.
 
 ## [](#)Help Point
 If you would like to help the author of this project in further project's development you can do it in form of donation:

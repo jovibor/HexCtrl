@@ -16,13 +16,11 @@ namespace HEXCTRL {
 
 	void UllToWchars(ULONGLONG ull, wchar_t* pwsz, size_t dwSize)
 	{
-		const wchar_t* const pwszHexMap { L"0123456789ABCDEF" };
-
 		//Converts dwSize bytes of ull to wchar_t*.
 		for (size_t i = 0; i < dwSize; i++)
 		{
-			pwsz[i * 2] = pwszHexMap[((ull >> ((dwSize - 1 - i) << 3)) >> 4) & 0x0F];
-			pwsz[i * 2 + 1] = pwszHexMap[(ull >> ((dwSize - 1 - i) << 3)) & 0x0F];
+			pwsz[i * 2] = g_pwszHexMap[((ull >> ((dwSize - 1 - i) << 3)) >> 4) & 0x0F];
+			pwsz[i * 2 + 1] = g_pwszHexMap[(ull >> ((dwSize - 1 - i) << 3)) & 0x0F];
 		}
 	}
 

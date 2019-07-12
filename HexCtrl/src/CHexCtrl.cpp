@@ -31,14 +31,14 @@ namespace HEXCTRL {
 	* Internal enums and structs.				*
 	********************************************/
 	namespace INTERNAL {
-		enum class ENCLIPBOARD : DWORD
+		enum class EClipboard : DWORD
 		{
-			COPY_ASHEX, COPY_ASHEXFORMATTED, COPY_ASASCII,
-			PASTE_ASHEX, PASTE_ASASCII
+			COPY_HEX, COPY_HEXFORMATTED, COPY_ASCII,
+			PASTE_HEX, PASTE_ASCII
 		};
 
 		//Internal menu IDs, start from 0x8001.
-		enum class ENMENU : UINT_PTR
+		enum class EMenu : UINT_PTR
 		{
 			IDM_MAIN_SEARCH = 0x8001,
 			IDM_SHOWAS_ASBYTE, IDM_SHOWAS_ASWORD, IDM_SHOWAS_ASDWORD, IDM_SHOWAS_ASQWORD,
@@ -91,48 +91,48 @@ CHexCtrl::CHexCtrl()
 
 	//Submenu for data showing options.
 	m_menuShowAs.CreatePopupMenu();
-	m_menuShowAs.AppendMenuW(MF_STRING | MF_CHECKED, (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASBYTE, L"BYTE");
-	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASWORD, L"WORD");
-	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASDWORD, L"DWORD");
-	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASQWORD, L"QWORD");
+	m_menuShowAs.AppendMenuW(MF_STRING | MF_CHECKED, (UINT_PTR)INTERNAL::EMenu::IDM_SHOWAS_ASBYTE, L"BYTE");
+	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::EMenu::IDM_SHOWAS_ASWORD, L"WORD");
+	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::EMenu::IDM_SHOWAS_ASDWORD, L"DWORD");
+	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::EMenu::IDM_SHOWAS_ASQWORD, L"QWORD");
 
 	//Main menu.
 	m_menuMain.CreatePopupMenu();
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_MAIN_SEARCH, L"Search and Replace...	Ctrl+F/Ctrl+H");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::EMenu::IDM_MAIN_SEARCH, L"Search and Replace...	Ctrl+F/Ctrl+H");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
 	m_menuMain.AppendMenuW(MF_POPUP, (DWORD_PTR)m_menuShowAs.m_hMenu, L"Show data as...");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_UNDO, L"Undo	Ctrl+Z");
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_REDO, L"Redo	Ctrl+Y");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_UNDO, L"Undo	Ctrl+Z");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_REDO, L"Redo	Ctrl+Y");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASHEX, L"Copy as Hex	Ctrl+C");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_COPY_ASHEX, L"Copy as Hex	Ctrl+C");
 
 	//Menu icons.
 	MENUITEMINFOW mii { };
 	mii.cbSize = sizeof(MENUITEMINFOW);
 	mii.fMask = MIIM_BITMAP;
-	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASHEX] =
+	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)INTERNAL::EMenu::IDM_EDIT_COPY_ASHEX] =
 		(HBITMAP)LoadImageW(GetModuleHandleW(0), MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-	m_menuMain.SetMenuItemInfoW((UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASHEX, &mii);
+	m_menuMain.SetMenuItemInfoW((UINT_PTR)INTERNAL::EMenu::IDM_EDIT_COPY_ASHEX, &mii);
 
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASHEXFORMATTED, L"Copy as Formatted Hex");
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASASCII, L"Copy as Ascii");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_COPY_ASHEXFORMATTED, L"Copy as Formatted Hex");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_COPY_ASASCII, L"Copy as Ascii");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_PASTE_ASHEX, L"Paste as Hex	Ctrl+V");
-	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_PASTE_ASHEX] =
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_PASTE_ASHEX, L"Paste as Hex	Ctrl+V");
+	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)INTERNAL::EMenu::IDM_EDIT_PASTE_ASHEX] =
 		(HBITMAP)LoadImageW(GetModuleHandleW(0), MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-	m_menuMain.SetMenuItemInfoW((UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_PASTE_ASHEX, &mii);
+	m_menuMain.SetMenuItemInfoW((UINT_PTR)INTERNAL::EMenu::IDM_EDIT_PASTE_ASHEX, &mii);
 
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_PASTE_ASASCII, L"Paste as Ascii");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_PASTE_ASASCII, L"Paste as Ascii");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_FILL_ZEROS, L"Fill with zeros");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_FILL_ZEROS, L"Fill with zeros");
 
-	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_FILL_ZEROS] =
+	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)INTERNAL::EMenu::IDM_EDIT_FILL_ZEROS] =
 		(HBITMAP)LoadImageW(GetModuleHandleW(0), MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-	m_menuMain.SetMenuItemInfoW((UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_FILL_ZEROS, &mii);
+	m_menuMain.SetMenuItemInfoW((UINT_PTR)INTERNAL::EMenu::IDM_EDIT_FILL_ZEROS, &mii);
 
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::ENMENU::IDM_MAIN_ABOUT, L"About");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)INTERNAL::EMenu::IDM_MAIN_ABOUT, L"About");
 
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this);
 
@@ -240,12 +240,12 @@ void CHexCtrl::SetData(const HEXDATASTRUCT & hds)
 		m_pwndMsg = hds.pwndMsg;
 
 	//Virtual mode is possible only when there is a MSG window, a data requests will be sent to.
-	if (hds.enMode == HEXDATAMODE::DATA_MSG && !GetMsgWindow())
+	if (hds.enMode == EHexDataMode::DATA_MSG && !GetMsgWindow())
 	{
 		MessageBoxW(L"HexCtrl HEXDATAMODEEN::HEXMSG mode requires HEXDATASTRUCT::pwndMsg to be not nullptr.", L"Error", MB_ICONWARNING);
 		return;
 	}
-	else if (hds.enMode == HEXDATAMODE::DATA_VIRTUAL && !hds.pHexVirtual)
+	else if (hds.enMode == EHexDataMode::DATA_VIRTUAL && !hds.pHexVirtual)
 	{
 		MessageBoxW(L"HexCtrl HEXDATAMODEEN::HEXVIRTUAL mode requires HEXDATASTRUCT::pHexVirtual to be not nullptr.", L"Error", MB_ICONWARNING);
 		return;
@@ -568,60 +568,60 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	switch (uId)
 	{
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_MAIN_SEARCH:
-		if (m_enMode == HEXDATAMODE::DATA_DEFAULT)
+	case (UINT_PTR)INTERNAL::EMenu::IDM_MAIN_SEARCH:
+		if (m_enMode == EHexDataMode::DATA_DEFAULT)
 			m_pDlgSearch->ShowWindow(SW_SHOW);
 		else
 			MessageBoxW(m_wstrErrVirtual.data(), L"Error", MB_ICONEXCLAMATION);
 		break;
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_UNDO:
+	case (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_UNDO:
 		Undo();
 		break;
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_REDO:
+	case (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_REDO:
 		Redo();
 		break;
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASHEX:
-		ClipboardCopy(INTERNAL::ENCLIPBOARD::COPY_ASHEX);
+	case (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_COPY_ASHEX:
+		ClipboardCopy(INTERNAL::EClipboard::COPY_HEX);
 		break;
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASHEXFORMATTED:
-		ClipboardCopy(INTERNAL::ENCLIPBOARD::COPY_ASHEXFORMATTED);
+	case (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_COPY_ASHEXFORMATTED:
+		ClipboardCopy(INTERNAL::EClipboard::COPY_HEXFORMATTED);
 		break;
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASASCII:
-		ClipboardCopy(INTERNAL::ENCLIPBOARD::COPY_ASASCII);
+	case (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_COPY_ASASCII:
+		ClipboardCopy(INTERNAL::EClipboard::COPY_ASCII);
 		break;
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_PASTE_ASHEX:
-		ClipboardPaste(INTERNAL::ENCLIPBOARD::PASTE_ASHEX);
+	case (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_PASTE_ASHEX:
+		ClipboardPaste(INTERNAL::EClipboard::PASTE_HEX);
 		break;
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_PASTE_ASASCII:
-		ClipboardPaste(INTERNAL::ENCLIPBOARD::PASTE_ASASCII);
+	case (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_PASTE_ASASCII:
+		ClipboardPaste(INTERNAL::EClipboard::PASTE_ASCII);
 		break;
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_FILL_ZEROS:
+	case (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_FILL_ZEROS:
 	{
 		HEXMODIFYSTRUCT hmd;
 		hmd.ullSize = m_ullSelectionSize;
 		hmd.ullIndex = m_ullSelectionStart;
-		hmd.ullpDataFillSize = 1;
+		hmd.ullDataSize = 1;
 		unsigned char chZero { 0 };
 		hmd.pData = &chZero;
 		ModifyData(hmd);
 	}
 	break;
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_MAIN_ABOUT:
+	case (UINT_PTR)INTERNAL::EMenu::IDM_MAIN_ABOUT:
 	{
 		CHexDlgAbout m_dlgAbout;
 		m_dlgAbout.DoModal();
 	}
 	break;
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASBYTE:
+	case (UINT_PTR)INTERNAL::EMenu::IDM_SHOWAS_ASBYTE:
 		SetShowMode(INTERNAL::ENSHOWMODE::ASBYTE);
 		break;
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASWORD:
+	case (UINT_PTR)INTERNAL::EMenu::IDM_SHOWAS_ASWORD:
 		SetShowMode(INTERNAL::ENSHOWMODE::ASWORD);
 		break;
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASDWORD:
+	case (UINT_PTR)INTERNAL::EMenu::IDM_SHOWAS_ASDWORD:
 		SetShowMode(INTERNAL::ENSHOWMODE::ASDWORD);
 		break;
-	case (UINT_PTR)INTERNAL::ENMENU::IDM_SHOWAS_ASQWORD:
+	case (UINT_PTR)INTERNAL::EMenu::IDM_SHOWAS_ASQWORD:
 		SetShowMode(INTERNAL::ENSHOWMODE::ASQWORD);
 		break;
 	default:
@@ -644,18 +644,18 @@ void CHexCtrl::OnContextMenu(CWnd * pWnd, CPoint point)
 
 	//To not spread up the efforts through code, all the checks are done here 
 	//instead of WM_INITMENUPOPUP.
-	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASHEX, uMenuStatus | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASHEXFORMATTED, uMenuStatus | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_COPY_ASASCII, uMenuStatus | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_UNDO, (m_deqUndo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_REDO, (m_deqRedo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::EMenu::IDM_EDIT_COPY_ASHEX, uMenuStatus | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::EMenu::IDM_EDIT_COPY_ASHEXFORMATTED, uMenuStatus | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::EMenu::IDM_EDIT_COPY_ASASCII, uMenuStatus | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::EMenu::IDM_EDIT_UNDO, (m_deqUndo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::EMenu::IDM_EDIT_REDO, (m_deqRedo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
 
 	BOOL fFormatAvail = IsClipboardFormatAvailable(CF_TEXT);
-	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_PASTE_ASHEX, ((m_fMutable && fFormatAvail) ?
+	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::EMenu::IDM_EDIT_PASTE_ASHEX, ((m_fMutable && fFormatAvail) ?
 		uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_PASTE_ASASCII, ((m_fMutable && fFormatAvail) ?
+	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::EMenu::IDM_EDIT_PASTE_ASASCII, ((m_fMutable && fFormatAvail) ?
 		uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::ENMENU::IDM_EDIT_FILL_ZEROS,
+	m_menuMain.EnableMenuItem((UINT_PTR)INTERNAL::EMenu::IDM_EDIT_FILL_ZEROS,
 		(m_fMutable ? uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
 
 	//Notifying parent that we are about to display context menu.
@@ -709,7 +709,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 
 	HEXMODIFYSTRUCT hmd;
 	hmd.ullIndex = m_ullCursorPos;
-	hmd.ullSize = 1;
+	hmd.ullSize = hmd.ullDataSize = 1;
 
 	BYTE chByte;
 	if (IsCurTextArea()) //If cursor is in text area.
@@ -907,8 +907,7 @@ void CHexCtrl::OnPaint()
 
 			//Hex chunk to print.
 			const auto chByteToPrint = GetByte(ullIndexByteToPrint);
-			const wchar_t* const pwszHexMap { L"0123456789ABCDEF" };
-			const wchar_t pwszHexToPrint[2] { pwszHexMap[(chByteToPrint >> 4) & 0x0F], pwszHexMap[chByteToPrint & 0x0F] };
+			const wchar_t pwszHexToPrint[2] { g_pwszHexMap[(chByteToPrint >> 4) & 0x0F], g_pwszHexMap[chByteToPrint & 0x0F] };
 			wstrHexToPrint += pwszHexToPrint[0];
 			wstrHexToPrint += pwszHexToPrint[1];
 
@@ -964,10 +963,10 @@ void CHexCtrl::OnPaint()
 				ULONGLONG ullCx, ullCy;
 				HexChunkPoint(m_ullCursorPos, ullCx, ullCy);
 				if (m_fCursorHigh)
-					wstrHexCursorToPrint = pwszHexMap[(chByteToPrint & 0xF0) >> 4];
+					wstrHexCursorToPrint = g_pwszHexMap[(chByteToPrint & 0xF0) >> 4];
 				else
 				{
-					wstrHexCursorToPrint = pwszHexMap[(chByteToPrint & 0x0F)];
+					wstrHexCursorToPrint = g_pwszHexMap[(chByteToPrint & 0x0F)];
 					ullCx += m_sizeLetter.cx;
 				}
 				iCursorHexPosToPrintX = (int)ullCx - iScrollH;
@@ -1118,9 +1117,9 @@ void CHexCtrl::OnDestroy()
 BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)const
 {
 	//If it's virtual data control we aquire next byte_to_print from m_pwndMsg window.
-	if (m_enMode == HEXDATAMODE::DATA_DEFAULT)
+	if (m_enMode == EHexDataMode::DATA_DEFAULT)
 		return m_pData[ullIndex];
-	else if (m_enMode == HEXDATAMODE::DATA_MSG)
+	else if (m_enMode == EHexDataMode::DATA_MSG)
 	{
 		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_GETDATA } };
 		hns.ullIndex = ullIndex;
@@ -1128,7 +1127,7 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)const
 		MsgWindowNotify(hns);
 		return hns.chByte;
 	}
-	else if (m_enMode == HEXDATAMODE::DATA_VIRTUAL)
+	else if (m_enMode == EHexDataMode::DATA_VIRTUAL)
 	{
 		if (m_pHexVirtual)
 			return m_pHexVirtual->GetByte(ullIndex);
@@ -1137,16 +1136,17 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)const
 	return 0;
 }
 
-void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms)
+void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
 {	//Changes byte(s) in memory. High or Low part, depending on hms.fHighPart.
-	if (!m_fMutable || hms.ullIndex >= m_ullDataSize)
+	if (!m_fMutable || hms.ullIndex >= m_ullDataSize || (hms.ullIndex + hms.ullSize) > m_ullDataSize
+		|| (hms.ullIndex + hms.ullDataSize) > m_ullDataSize)
 		return;
 
 	switch (m_enMode)
 	{
-	case HEXDATAMODE::DATA_DEFAULT: //Modify only in non Virtual mode.
+	case EHexDataMode::DATA_DEFAULT: //Modify only in non Virtual mode.
 	{
-		if (hms.ullpDataFillSize == 0)
+		if (hms.ullSize == hms.ullDataSize)
 		{
 			m_deqRedo.clear(); //No Redo unless we make Undo.
 			SnapshotUndo(hms.ullIndex, hms.ullSize);
@@ -1165,27 +1165,27 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms)
 				m_pData[hms.ullIndex] = chByte;
 			}
 		}
-		else //Fill ullSize bytes with ullpDataFillSize bytes of hms.pData (fill with zeroes for instance).
+		else //Fill ullSize bytes with ullDataSize bytes of hms.pData (fill with zeroes for instance).
 		{
 			m_deqRedo.clear(); //No Redo unless we make Undo.
 			SnapshotUndo(hms.ullIndex, hms.ullSize);
 
-			ULONGLONG ullChunks = hms.ullSize / hms.ullpDataFillSize;
+			ULONGLONG ullChunks = hms.ullSize > hms.ullDataSize ? hms.ullSize / hms.ullDataSize : 1;
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
-				for (ULONGLONG iterData = 0; iterData < hms.ullpDataFillSize; iterData++)
-					m_pData[hms.ullIndex + hms.ullpDataFillSize * iterChunk + iterData] = hms.pData[iterData];
+				for (ULONGLONG iterData = 0; iterData < hms.ullDataSize; iterData++)
+					m_pData[hms.ullIndex + hms.ullDataSize * iterChunk + iterData] = hms.pData[iterData];
 		}
 	}
 	break;
-	case HEXDATAMODE::DATA_MSG:
+	case EHexDataMode::DATA_MSG:
 	{
-		//In HEXDATAMODE::DATA_MSG mode we send pointer to hms.
+		//In EHexDataMode::DATA_MSG mode we send pointer to hms.
 		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_MODIFYDATA } };
 		hns.pData = (PBYTE)& hms;
 		MsgWindowNotify(hns);
 	}
 	break;
-	case HEXDATAMODE::DATA_VIRTUAL:
+	case EHexDataMode::DATA_VIRTUAL:
 	{
 		if (m_pHexVirtual)
 			m_pHexVirtual->ModifyData(hms);
@@ -1193,7 +1193,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms)
 	break;
 	}
 
-	if (hms.fRedraw)
+	if (fRedraw)
 		RedrawWindow();
 }
 
@@ -1351,7 +1351,7 @@ void CHexCtrl::AsciiChunkPoint(ULONGLONG ullChunk, ULONGLONG & ullCx, ULONGLONG 
 		ullCy = (ullChunk / m_dwCapacity) * m_sizeLetter.cy;
 }
 
-void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
+void CHexCtrl::ClipboardCopy(INTERNAL::EClipboard enType)
 {
 	if (!m_ullSelectionSize || m_ullSelectionSize > 0x6400000) //>~100MB
 	{
@@ -1363,7 +1363,7 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 
 	switch (enType)
 	{
-	case INTERNAL::ENCLIPBOARD::COPY_ASHEX:
+	case INTERNAL::EClipboard::COPY_HEX:
 	{
 		strToClipboard.reserve((size_t)m_ullSelectionSize * 2);
 		for (unsigned i = 0; i < m_ullSelectionSize; i++)
@@ -1374,7 +1374,7 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 		}
 	}
 	break;
-	case INTERNAL::ENCLIPBOARD::COPY_ASHEXFORMATTED:
+	case INTERNAL::EClipboard::COPY_HEXFORMATTED:
 	{
 		strToClipboard.reserve((size_t)m_ullSelectionSize * 3);
 
@@ -1413,7 +1413,7 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 		}
 	}
 	break;
-	case INTERNAL::ENCLIPBOARD::COPY_ASASCII:
+	case INTERNAL::EClipboard::COPY_ASCII:
 	{
 		strToClipboard.reserve((size_t)m_ullSelectionSize);
 		for (unsigned i = 0; i < m_ullSelectionSize; i++)
@@ -1448,7 +1448,7 @@ void CHexCtrl::ClipboardCopy(INTERNAL::ENCLIPBOARD enType)
 	CloseClipboard();
 }
 
-void CHexCtrl::ClipboardPaste(INTERNAL::ENCLIPBOARD enType)
+void CHexCtrl::ClipboardPaste(INTERNAL::EClipboard enType)
 {
 	if (!m_fMutable || m_ullSelectionSize == 0)
 		return;
@@ -1475,11 +1475,11 @@ void CHexCtrl::ClipboardPaste(INTERNAL::ENCLIPBOARD enType)
 	std::string strData;
 	switch (enType)
 	{
-	case INTERNAL::ENCLIPBOARD::PASTE_ASASCII:
+	case INTERNAL::EClipboard::PASTE_ASCII:
 		hmd.pData = (PBYTE)pClipboardData;
-		hmd.ullSize = ullSize;
+		hmd.ullSize = hmd.ullDataSize = ullSize;
 		break;
-	case INTERNAL::ENCLIPBOARD::PASTE_ASHEX:
+	case INTERNAL::EClipboard::PASTE_HEX:
 	{
 		size_t dwIterations = size_t(ullSize / 2 + ullSize % 2);
 		char chToUL[3] { }; //Array for actual Ascii chars to convert from.
@@ -1503,7 +1503,7 @@ void CHexCtrl::ClipboardPaste(INTERNAL::ENCLIPBOARD enType)
 			strData += (unsigned char)ulNumber;
 		}
 		hmd.pData = (PBYTE)strData.data();
-		hmd.ullSize = strData.size();
+		hmd.ullSize = hmd.ullDataSize = strData.size();
 	}
 	break;
 	}
@@ -1660,10 +1660,10 @@ void CHexCtrl::OnKeyDownCtrl(UINT nChar)
 		m_pDlgSearch->ShowWindow(SW_SHOW);
 		break;
 	case 'C':
-		ClipboardCopy(INTERNAL::ENCLIPBOARD::COPY_ASHEX);
+		ClipboardCopy(INTERNAL::EClipboard::COPY_HEX);
 		break;
 	case 'V':
-		ClipboardPaste(INTERNAL::ENCLIPBOARD::PASTE_ASHEX);
+		ClipboardPaste(INTERNAL::EClipboard::PASTE_HEX);
 		break;
 	case 'A':
 		SelectAll();;
@@ -1863,7 +1863,7 @@ void CHexCtrl::Undo()
 {
 	switch (m_enMode)
 	{
-	case HEXDATAMODE::DATA_DEFAULT:
+	case EHexDataMode::DATA_DEFAULT:
 	{
 		if (m_deqUndo.empty())
 			return;
@@ -1882,14 +1882,14 @@ void CHexCtrl::Undo()
 		m_deqUndo.pop_back();
 	}
 	break;
-	case HEXDATAMODE::DATA_MSG:
+	case EHexDataMode::DATA_MSG:
 	{
-		//In HEXDATAMODE::DATA_MSG mode we send pointer to hms.
+		//In EHexDataMode::DATA_MSG mode we send pointer to hms.
 		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_UNDO } };
 		MsgWindowNotify(hns);
 	}
 	break;
-	case HEXDATAMODE::DATA_VIRTUAL:
+	case EHexDataMode::DATA_VIRTUAL:
 	{
 		if (m_pHexVirtual)
 			m_pHexVirtual->Undo();
@@ -1904,7 +1904,7 @@ void CHexCtrl::Redo()
 {
 	switch (m_enMode)
 	{
-	case HEXDATAMODE::DATA_DEFAULT:
+	case EHexDataMode::DATA_DEFAULT:
 	{
 		if (m_deqRedo.empty())
 			return;
@@ -1921,14 +1921,14 @@ void CHexCtrl::Redo()
 		m_deqRedo.pop_back();
 	}
 	break;
-	case HEXDATAMODE::DATA_MSG:
+	case EHexDataMode::DATA_MSG:
 	{
-		//In HEXDATAMODE::DATA_MSG mode we send pointer to hms.
+		//In EHexDataMode::DATA_MSG mode we send pointer to hms.
 		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_REDO } };
 		MsgWindowNotify(hns);
 	}
 	break;
-	case HEXDATAMODE::DATA_VIRTUAL:
+	case EHexDataMode::DATA_VIRTUAL:
 	{
 		if (m_pHexVirtual)
 			m_pHexVirtual->Redo();
@@ -1960,6 +1960,9 @@ bool CHexCtrl::IsCurTextArea()const
 
 void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 {
+	if (rSearch.wstrSearch.empty() || m_ullDataSize == 0 || rSearch.ullIndex >= m_ullDataSize)
+		return;
+
 	rSearch.fFound = false;
 	ULONGLONG ullIndex = rSearch.ullIndex;
 	ULONGLONG ullSizeBytes;
@@ -1967,12 +1970,9 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 	ULONGLONG ullSizeBytesReplaced;
 	std::string strSearch;
 	std::string strReplace;
-	std::wstring wstrReplaceWarning { L"Replacing string is longer than Find string.\r\n"
+	static const wchar_t* const wstrReplaceWarning { L"Replacing string is longer than Find string.\r\n"
 		"Do you want to overwrite the bytes following search occurrence?\r\n"
 		"Choosing \"No\" will cancel search." };
-
-	if (rSearch.wstrSearch.empty() || m_ullDataSize == 0 || rSearch.ullIndex > (m_ullDataSize - 1))
-		return;
 
 	//Perform convertation only for non Unicode search.
 	if (rSearch.enSearchType == INTERNAL::ENSEARCHTYPE::SEARCH_HEX ||
@@ -1982,9 +1982,19 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 		if (rSearch.fReplace)
 		{
 			strReplace = WstrToStr(rSearch.wstrReplace);
-			if (strReplace.size() > strSearch.size())
-				if (IDNO == MessageBoxW(wstrReplaceWarning.data(), L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST))
+
+			//Check replace string size out of bounds.
+			if ((strReplace.size() / 2 + rSearch.ullIndex) > m_ullDataSize)
+			{
+				rSearch.ullIndex = 0;
+				rSearch.fSecondMatch = false;
+				return;
+			}
+			if (strReplace.size() > strSearch.size() && m_fReplaceWarning)
+				if (IDNO == MessageBoxW(wstrReplaceWarning, L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST))
 					return;
+				else
+					m_fReplaceWarning = false;
 		}
 	}
 
@@ -2013,8 +2023,8 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 	break;
 	case INTERNAL::ENSEARCHTYPE::SEARCH_UTF16:
 	{
-		ullSizeBytes = rSearch.wstrSearch.length() * sizeof(wchar_t);
-		ullSizeBytesReplaced = rSearch.wstrReplace.length() * sizeof(wchar_t);
+		ullSizeBytes = rSearch.wstrSearch.size() * sizeof(wchar_t);
+		ullSizeBytesReplaced = rSearch.wstrReplace.size() * sizeof(wchar_t);
 		if (ullSizeBytes > m_ullDataSize)
 			return;
 	}
@@ -2033,7 +2043,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 			{
 				if (memcmp(m_pData + i, strSearch.data(), strSearch.size()) == 0)
 				{
-					SearchReplace(i, (PBYTE)strReplace.data(), strReplace.size(), strSearch.size(), false);
+					SearchReplace(i, (PBYTE)strReplace.data(), strSearch.size(), strReplace.size(), false);
 					i += strReplace.size() - 1;
 					rSearch.fFound = true;
 					rSearch.dwReplaced++;
@@ -2044,9 +2054,9 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 			ullUntil = m_ullDataSize - ullSizeBytes;
 			for (ULONGLONG i = ullIndex; i <= ullUntil; i++)
 			{
-				if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
+				if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.size()) == 0)
 				{
-					SearchReplace(i, (PBYTE)rSearch.wstrReplace.data(), rSearch.wstrReplace.size() * 2,
+					SearchReplace(i, (PBYTE)rSearch.wstrSearch.data(), rSearch.wstrSearch.size() * 2,
 						rSearch.wstrReplace.size() * 2, false);
 					i += rSearch.wstrReplace.size() * 2 - 1; //To compensate i++ in loop.
 					rSearch.fFound = true;
@@ -2066,7 +2076,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 			{
 				if (rSearch.fReplace && rSearch.fSecondMatch)
 				{
-					SearchReplace(rSearch.ullIndex, (PBYTE)strReplace.data(), strReplace.size(), strSearch.size());
+					SearchReplace(rSearch.ullIndex, (PBYTE)strReplace.data(), strSearch.size(), strReplace.size());
 					rSearch.ullIndex += strReplace.size();
 					rSearch.dwReplaced++;
 				}
@@ -2100,7 +2110,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 
 							if (rSearch.fReplace)
 							{
-								SearchReplace(i, (PBYTE)strReplace.data(), strReplace.size(), strSearch.size());
+								SearchReplace(i, (PBYTE)strReplace.data(), strSearch.size(), strReplace.size());
 								rSearch.ullIndex = i + strReplace.size();
 							}
 							else
@@ -2156,7 +2166,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 			{
 				if (rSearch.fReplace && rSearch.fSecondMatch)
 				{
-					SearchReplace(rSearch.ullIndex, (PBYTE)rSearch.wstrReplace.data(), rSearch.wstrReplace.size() * 2,
+					SearchReplace(rSearch.ullIndex, (PBYTE)rSearch.wstrReplace.data(), rSearch.wstrSearch.size() * 2,
 						rSearch.wstrReplace.size() * 2);
 					rSearch.ullIndex += rSearch.wstrReplace.size() * 2;
 					rSearch.dwReplaced++;
@@ -2166,7 +2176,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 				ullIndex = rSearch.fSecondMatch ? rSearch.ullIndex + 1 : 0;
 				for (ULONGLONG i = ullIndex; i <= ullUntil; i++)
 				{
-					if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
+					if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.size()) == 0)
 					{
 						rSearch.fFound = true;
 						rSearch.fSecondMatch = true;
@@ -2181,7 +2191,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 					ullIndex = 0;
 					for (ULONGLONG i = ullIndex; i <= ullUntil; i++)
 					{
-						if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
+						if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.size()) == 0)
 						{
 							rSearch.fFound = true;
 							rSearch.fSecondMatch = true;
@@ -2202,7 +2212,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 					ullIndex--;
 					for (INT_PTR i = (INT_PTR)ullIndex; i >= 0; i--)
 					{
-						if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
+						if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.size()) == 0)
 						{
 							rSearch.fFound = true;
 							rSearch.fSecondMatch = true;
@@ -2218,7 +2228,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 					ullIndex = m_ullDataSize - ullSizeBytes;
 					for (INT_PTR i = (INT_PTR)ullIndex; i >= 0; i--)
 					{
-						if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.length()) == 0)
+						if (wmemcmp((const wchar_t*)(m_pData + i), rSearch.wstrSearch.data(), rSearch.wstrSearch.size()) == 0)
 						{
 							rSearch.fFound = true;
 							rSearch.fSecondMatch = true;
@@ -2250,15 +2260,14 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 	}
 }
 
-void CHexCtrl::SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplaced, bool fRedraw)
+void CHexCtrl::SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw)
 {
 	HEXMODIFYSTRUCT hms;
 	hms.ullSize = nSizeData;
-	hms.ullpDataFillSize = nSizeData;
+	hms.ullDataSize = nSizeReplace;
 	hms.ullIndex = ullIndex;
 	hms.pData = pData;
-	hms.fRedraw = fRedraw;
-	ModifyData(hms);
+	ModifyData(hms, fRedraw);
 }
 
 void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight, bool fMouse)
@@ -2366,16 +2375,15 @@ void CHexCtrl::FillCapacity()
 	bool fHalf { false };
 	for (unsigned iter = 0; iter < m_dwCapacity; iter++)
 	{
-		const wchar_t* const pwszHexMap { L"0123456789ABCDEF" };
 		if (iter < 0x10)
 		{
 			m_wstrCapacity += L" ";
-			m_wstrCapacity += pwszHexMap[iter];
+			m_wstrCapacity += g_pwszHexMap[iter];
 		}
 		else
 		{
-			m_wstrCapacity += pwszHexMap[(iter & 0xF0) >> 4];
-			m_wstrCapacity += pwszHexMap[iter & 0x0F];
+			m_wstrCapacity += g_pwszHexMap[(iter & 0xF0) >> 4];
+			m_wstrCapacity += g_pwszHexMap[iter & 0x0F];
 		}
 
 		//Additional space between hex chunk blocks.

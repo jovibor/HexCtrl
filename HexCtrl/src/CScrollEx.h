@@ -21,7 +21,7 @@
 namespace HEXCTRL {
 	namespace SCROLLEX {
 		//Forward declaration.
-		enum class ENSTATE : DWORD;
+		enum class EState : DWORD;
 
 		class CScrollEx : public CWnd
 		{
@@ -95,7 +95,7 @@ namespace HEXCTRL {
 			CScrollEx* m_pSibling { };									//Sibling scrollbar, added with AddSibling.
 			UINT m_uiScrollBarSizeWH { };								//Scrollbar size (width if vertical, height if horz).
 			int m_iScrollType { };										//Scrollbar type - horizontal or vertical.
-			ENSTATE m_enState { };										//Current state.
+			EState m_enState { };										//Current state.
 			const COLORREF m_clrBkNC { GetSysColor(COLOR_3DFACE) };		//Bk color of the non client area. 
 			const COLORREF m_clrBkScrollBar { RGB(241, 241, 241) };		//Color of the scrollbar.
 			const COLORREF m_clrThumb { RGB(192, 192, 192) };			//Scroll thumb color.
