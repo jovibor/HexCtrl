@@ -148,6 +148,7 @@ namespace HEXCTRL {
 		void SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw = true);
 		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
 		void SelectAll();
+		void FillWithZeros();                                     //Fill selection with zeros.
 		void FillCapacity();                                      //Fill m_wstrCapacity according to current m_dwCapacity.
 	private:
 		bool m_fCreated { false };          //Is control created or not yet.

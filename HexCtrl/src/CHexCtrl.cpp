@@ -596,16 +596,8 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 		ClipboardPaste(INTERNAL::EClipboard::PASTE_ASCII);
 		break;
 	case (UINT_PTR)INTERNAL::EMenu::IDM_EDIT_FILL_ZEROS:
-	{
-		HEXMODIFYSTRUCT hmd;
-		hmd.ullSize = m_ullSelectionSize;
-		hmd.ullIndex = m_ullSelectionStart;
-		hmd.ullDataSize = 1;
-		unsigned char chZero { 0 };
-		hmd.pData = &chZero;
-		ModifyData(hmd);
-	}
-	break;
+		FillWithZeros();
+		break;
 	case (UINT_PTR)INTERNAL::EMenu::IDM_MAIN_ABOUT:
 	{
 		CHexDlgAbout m_dlgAbout;
@@ -1170,7 +1162,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
 			m_deqRedo.clear(); //No Redo unless we make Undo.
 			SnapshotUndo(hms.ullIndex, hms.ullSize);
 
-			ULONGLONG ullChunks = hms.ullSize > hms.ullDataSize ? hms.ullSize / hms.ullDataSize : 1;
+			ULONGLONG ullChunks = hms.ullSize > hms.ullDataSize ? (hms.fRepeat ? hms.ullSize / hms.ullDataSize : 1) : 1;
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
 				for (ULONGLONG iterData = 0; iterData < hms.ullDataSize; iterData++)
 					m_pData[hms.ullIndex + hms.ullDataSize * iterChunk + iterData] = hms.pData[iterData];
@@ -1968,6 +1960,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 	ULONGLONG ullSizeBytes;
 	ULONGLONG ullUntil;
 	ULONGLONG ullSizeBytesReplaced;
+	DWORD dwSizeNext; //Bytes to add to the next search beginning.
 	std::string strSearch;
 	std::string strReplace;
 	static const wchar_t* const wstrReplaceWarning { L"Replacing string is longer than Find string.\r\n"
@@ -2011,12 +2004,13 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 			return;
 
 		ullSizeBytesReplaced = strReplace.size();
+		dwSizeNext = strReplace.size() / 2;
 	}
 	break;
 	case INTERNAL::ENSEARCHTYPE::SEARCH_ASCII:
 	{
 		ullSizeBytes = strSearch.size();
-		ullSizeBytesReplaced = strReplace.size();
+		ullSizeBytesReplaced = dwSizeNext = strReplace.size();
 		if (ullSizeBytes > m_ullDataSize)
 			return;
 	}
@@ -2024,7 +2018,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 	case INTERNAL::ENSEARCHTYPE::SEARCH_UTF16:
 	{
 		ullSizeBytes = rSearch.wstrSearch.size() * sizeof(wchar_t);
-		ullSizeBytesReplaced = rSearch.wstrReplace.size() * sizeof(wchar_t);
+		ullSizeBytesReplaced = dwSizeNext = rSearch.wstrReplace.size() * sizeof(wchar_t);
 		if (ullSizeBytes > m_ullDataSize)
 			return;
 	}
@@ -2044,7 +2038,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 				if (memcmp(m_pData + i, strSearch.data(), strSearch.size()) == 0)
 				{
 					SearchReplace(i, (PBYTE)strReplace.data(), strSearch.size(), strReplace.size(), false);
-					i += strReplace.size() - 1;
+					i += dwSizeNext - 1;
 					rSearch.fFound = true;
 					rSearch.dwReplaced++;
 				}
@@ -2058,7 +2052,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 				{
 					SearchReplace(i, (PBYTE)rSearch.wstrSearch.data(), rSearch.wstrSearch.size() * 2,
 						rSearch.wstrReplace.size() * 2, false);
-					i += rSearch.wstrReplace.size() * 2 - 1; //To compensate i++ in loop.
+					i += dwSizeNext - 1; //To compensate i++ in loop.
 					rSearch.fFound = true;
 					rSearch.dwReplaced++;
 				}
@@ -2077,7 +2071,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 				if (rSearch.fReplace && rSearch.fSecondMatch)
 				{
 					SearchReplace(rSearch.ullIndex, (PBYTE)strReplace.data(), strSearch.size(), strReplace.size());
-					rSearch.ullIndex += strReplace.size();
+					rSearch.ullIndex += dwSizeNext;
 					rSearch.dwReplaced++;
 				}
 
@@ -2168,7 +2162,7 @@ void CHexCtrl::SearchCallback(INTERNAL::SEARCHSTRUCT & rSearch)
 				{
 					SearchReplace(rSearch.ullIndex, (PBYTE)rSearch.wstrReplace.data(), rSearch.wstrSearch.size() * 2,
 						rSearch.wstrReplace.size() * 2);
-					rSearch.ullIndex += rSearch.wstrReplace.size() * 2;
+					rSearch.ullIndex += dwSizeNext;
 					rSearch.dwReplaced++;
 				}
 
@@ -2366,6 +2360,18 @@ void CHexCtrl::SelectAll()
 	m_ullSelectionClick = m_ullSelectionStart = 0;
 	m_ullSelectionEnd = m_ullSelectionSize = m_ullDataSize;
 	UpdateInfoText();
+}
+
+void CHexCtrl::FillWithZeros()
+{
+	HEXMODIFYSTRUCT hms;
+	hms.ullSize = m_ullSelectionSize;
+	hms.ullIndex = m_ullSelectionStart;
+	hms.ullDataSize = 1;
+	hms.fRepeat = true;
+	unsigned char chZero { 0 };
+	hms.pData = &chZero;
+	ModifyData(hms);
 }
 
 void CHexCtrl::FillCapacity()

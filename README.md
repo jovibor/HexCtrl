@@ -304,12 +304,13 @@ struct HEXMODIFYSTRUCT
     PBYTE     pData { };          //Pointer to a data to be set.
     bool      fWhole { true };    //Is a whole byte or just a part of it to be modified.
     bool      fHighPart { true }; //Shows whether high or low part of the byte should be modified (if the fWhole flag is false).
+    bool      fRepeat { false };  //If ullDataSize < ullSize should data be replaced just one time or ullSize/ullDataSize times.
 };
 ```
-When `ullDataSize` is equal `ullSize`, bytes from `pData` just replace corresponding internal bytes as is.  
-If `ullDataSize` is less then `ullSize` then block by block replacement takes place.
+When `ullDataSize` is equal `ullSize`, bytes from `pData` just replace corresponding bytes as is.  
+If `ullDataSize` is less then `ullSize` only `ullDataSize` bytes are replaced if `fRepeat` flag is false. If `fRepeat` is true then block by block replacement takes place `ullSize / ullDataSize` times.
 
-For example, if `ullSize` = 9, `ullDataSize` = 3, bytes in memory at `ullIndex` position are `123456789` and bytes pointed to by `pData` are `345`, then, after modification, bytes at `ullIndex` will be `345345345`.
+For example, if `ullSize` = 9, `ullDataSize` = 3 and `fRepeat` is true, bytes in memory at `ullIndex` position are `123456789` and bytes pointed to by `pData` are `345`, then, after modification, bytes at `ullIndex` will be `345345345`.
 ### [](#)HEXNOTIFYSTRUCT
 This struct is used in notifications routine, when data is set with the [`DATA_MSG`](#ehexdatamode) flag.
 ```cpp
