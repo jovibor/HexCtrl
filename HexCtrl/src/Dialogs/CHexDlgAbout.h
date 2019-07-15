@@ -11,16 +11,18 @@
 #include "../../res/HexCtrlRes.h"
 
 namespace HEXCTRL {
-	/********************************************
-	* CHexDlgAbout class definition.			*
-	********************************************/
-	class CHexDlgAbout : public CDialogEx
-	{
-	public:
-		explicit CHexDlgAbout(CWnd* m_pHexCtrl = nullptr) : CDialogEx(IDD_HEXCTRL_ABOUT) {}
-		virtual ~CHexDlgAbout() {}
-	protected:
-		virtual BOOL OnInitDialog() override;
-		DECLARE_MESSAGE_MAP()
-	};
+	namespace INTERNAL {
+		/********************************************
+		* CHexDlgAbout class definition.			*
+		********************************************/
+		class CHexDlgAbout : public CDialogEx
+		{
+		public:
+			explicit CHexDlgAbout(CWnd* m_pHexCtrl = nullptr) : CDialogEx(IDD_HEXCTRL_ABOUT) {}
+			virtual ~CHexDlgAbout() {}
+		protected:
+			virtual BOOL OnInitDialog() override;
+			DECLARE_MESSAGE_MAP()
+		};
+	}
 }

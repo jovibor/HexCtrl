@@ -20,29 +20,27 @@
 #include "../res/HexCtrlRes.h"
 #include <cmath>
 
-using namespace HEXCTRL;
-using namespace SCROLLEX;
+using namespace HEXCTRL::INTERNAL::SCROLLEX;
 
 namespace HEXCTRL {
-	/********************************************
-	* Internal enums.							*
-	********************************************/
-	namespace SCROLLEX {
-		enum class EState : DWORD
-		{
-			STATE_DEFAULT,
-			FIRSTBUTTON_HOVER, FIRSTBUTTON_CLICK,
-			FIRSTCHANNEL_CLICK,
-			THUMB_HOVER, THUMB_CLICK,
-			LASTCHANNEL_CLICK,
-			LASTBUTTON_CLICK, LASTBUTTON_HOVER
-		};
-		enum class ETimer : UINT_PTR {
-			IDT_FIRSTCLICK = 0x7ff0,
-			IDT_CLICKREPEAT = 0x7ff1
-		};
+	namespace INTERNAL {
+		namespace SCROLLEX {
+			enum class EState : DWORD
+			{
+				STATE_DEFAULT,
+				FIRSTBUTTON_HOVER, FIRSTBUTTON_CLICK,
+				FIRSTCHANNEL_CLICK,
+				THUMB_HOVER, THUMB_CLICK,
+				LASTCHANNEL_CLICK,
+				LASTBUTTON_CLICK, LASTBUTTON_HOVER
+			};
+			enum class ETimer : UINT_PTR {
+				IDT_FIRSTCLICK = 0x7ff0,
+				IDT_CLICKREPEAT = 0x7ff1
+			};
 
-		constexpr auto THUMB_POS_MAX = 0x7fffffff;
+			constexpr auto THUMB_POS_MAX = 0x7fffffff;
+		}
 	}
 }
 

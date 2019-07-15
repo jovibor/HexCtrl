@@ -10,6 +10,7 @@
 #include "CHexDlgSearch.h"
 
 using namespace HEXCTRL;
+using namespace HEXCTRL::INTERNAL;
 
 /************************************************************
 * CHexDlgSearch class implementation.						*
@@ -245,20 +246,20 @@ CHexCtrl* CHexDlgSearch::GetHexCtrl()const
 	return m_pHexCtrl;
 }
 
-INTERNAL::ENSEARCHTYPE CHexDlgSearch::GetSearchType()
+ESearchType CHexDlgSearch::GetSearchType()
 {
-	INTERNAL::ENSEARCHTYPE enSearch { };
+	INTERNAL::ESearchType enSearch { };
 
 	switch (GetCheckedRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE))
 	{
 	case IDC_HEXCTRL_SEARCH_RADIO_HEX:
-		enSearch = INTERNAL::ENSEARCHTYPE::SEARCH_HEX;
+		enSearch = INTERNAL::ESearchType::SEARCH_HEX;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_ASCII:
-		enSearch = INTERNAL::ENSEARCHTYPE::SEARCH_ASCII;
+		enSearch = INTERNAL::ESearchType::SEARCH_ASCII;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_UNICODE:
-		enSearch = INTERNAL::ENSEARCHTYPE::SEARCH_UTF16;
+		enSearch = INTERNAL::ESearchType::SEARCH_UTF16;
 		break;
 	}
 

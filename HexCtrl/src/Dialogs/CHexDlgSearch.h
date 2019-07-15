@@ -12,39 +12,41 @@
 #include "../../res/HexCtrlRes.h"
 
 namespace HEXCTRL {
-	/********************************************
-	* CHexDlgSearch class definition.			*
-	********************************************/
-	class CHexDlgSearch : public CDialogEx
-	{
-	public:
-		explicit CHexDlgSearch() : CDialogEx(IDD_HEXCTRL_SEARCH) {}
-		virtual ~CHexDlgSearch() {}
-		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
-	protected:
-		virtual void DoDataExchange(CDataExchange* pDX);
-		virtual BOOL OnInitDialog();
-		afx_msg void OnButtonSearchF();
-		afx_msg void OnButtonSearchB();
-		afx_msg void OnButtonReplace();
-		afx_msg void OnButtonReplaceAll();
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		afx_msg void OnCancel();
-		virtual BOOL PreTranslateMessage(MSG* pMsg);
-		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
-		void OnRadioBnRange(UINT nID);
-		void SearchCallback();
-		void ClearAll();
-		CHexCtrl* GetHexCtrl()const;
-		auto GetSearchType()->INTERNAL::ENSEARCHTYPE; //Gets selected search type.
-		DECLARE_MESSAGE_MAP()
-	private:
-		CHexCtrl* m_pHexCtrl { };
-		INTERNAL::SEARCHSTRUCT m_stSearch { };
-		int m_iRadioCurrent { };
-		const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
-		const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
-		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
-		CBrush m_stBrushDefault;
-	};
+	namespace INTERNAL {
+		/********************************************
+		* CHexDlgSearch class definition.			*
+		********************************************/
+		class CHexDlgSearch : public CDialogEx
+		{
+		public:
+			explicit CHexDlgSearch() : CDialogEx(IDD_HEXCTRL_SEARCH) {}
+			virtual ~CHexDlgSearch() {}
+			BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
+		protected:
+			virtual void DoDataExchange(CDataExchange* pDX);
+			virtual BOOL OnInitDialog();
+			afx_msg void OnButtonSearchF();
+			afx_msg void OnButtonSearchB();
+			afx_msg void OnButtonReplace();
+			afx_msg void OnButtonReplaceAll();
+			afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+			afx_msg void OnCancel();
+			virtual BOOL PreTranslateMessage(MSG* pMsg);
+			HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+			void OnRadioBnRange(UINT nID);
+			void SearchCallback();
+			void ClearAll();
+			CHexCtrl* GetHexCtrl()const;
+			auto GetSearchType()->INTERNAL::ESearchType; //Gets selected search type.
+			DECLARE_MESSAGE_MAP()
+		private:
+			CHexCtrl* m_pHexCtrl { };
+			INTERNAL::SEARCHSTRUCT m_stSearch { };
+			int m_iRadioCurrent { };
+			const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
+			const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
+			const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
+			CBrush m_stBrushDefault;
+		};
+	}
 }

@@ -10,6 +10,7 @@
 #include "CHexDlgAbout.h"
 
 using namespace HEXCTRL;
+using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL {
 	namespace INTERNAL {
