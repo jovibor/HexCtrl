@@ -448,8 +448,8 @@ void CScrollEx::DrawScrollBar()const
 	if (!IsVisible())
 		return;
 
-	CWnd* pwndParent = GetParent();
-	CWindowDC parentDC(pwndParent);
+	CWnd* hwndParent = GetParent();
+	CWindowDC parentDC(hwndParent);
 
 	CDC dcMem;
 	CBitmap bitmap;
@@ -530,10 +530,10 @@ CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
 	if (!m_fCreated)
 		return 0;
 
-	CWnd* pwndParent = GetParent();
+	CWnd* hwndParent = GetParent();
 	CRect rcClient = GetParentRect();
 	CRect rcWnd = GetParentRect(false);
-	pwndParent->MapWindowPoints(nullptr, &rcClient);
+	hwndParent->MapWindowPoints(nullptr, &rcClient);
 
 	int iTopDelta = GetTopDelta();
 	int iLeftDelta = GetLeftDelta();
@@ -544,7 +544,7 @@ CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
 		rcScroll.left = rcClient.right + iLeftDelta;
 		rcScroll.top = rcClient.top + iTopDelta;
 		rcScroll.right = rcScroll.left + m_uiScrollBarSizeWH;
-		if (fWithNCArea) //Adding difference here to gain equality in coords when call to pwndParent->ScreenToClient below.
+		if (fWithNCArea) //Adding difference here to gain equality in coords when call to hwndParent->ScreenToClient below.
 			rcScroll.bottom = rcWnd.bottom + iTopDelta;
 		else
 			rcScroll.bottom = rcScroll.top + rcClient.Height();
@@ -559,7 +559,7 @@ CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
 		else
 			rcScroll.right = rcScroll.left + rcClient.Width();
 	}
-	pwndParent->ScreenToClient(&rcScroll);
+	hwndParent->ScreenToClient(&rcScroll);
 
 	return rcScroll;
 }

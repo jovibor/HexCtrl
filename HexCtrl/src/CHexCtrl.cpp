@@ -23,7 +23,7 @@ namespace HEXCTRL {
 	/********************************************
 	* CreateRawHexCtrl function implementation.	*
 	********************************************/
-	IHexCtrl* CreateRawHexCtrl()
+	HEXCTRLAPI CreateRawHexCtrl()
 	{
 		return new CHexCtrl();
 	};
@@ -49,7 +49,7 @@ namespace HEXCTRL {
 			IDM_EDIT_FILL_ZEROS,
 			IDM_MAIN_ABOUT,
 		};
-		
+
 		struct UNDOSTRUCT
 		{
 			ULONGLONG              ullIndex; //Start byte to apply Undo to.
@@ -97,7 +97,7 @@ CHexCtrl::CHexCtrl()
 	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_SHOWAS_WORD, L"WORD");
 	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_SHOWAS_DWORD, L"DWORD");
 	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_SHOWAS_QWORD, L"QWORD");
-	
+
 	//Main menu.
 	m_menuMain.CreatePopupMenu();
 	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_MAIN_SEARCH, L"Search and Replace...	Ctrl+F/Ctrl+H");
@@ -109,12 +109,13 @@ CHexCtrl::CHexCtrl()
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
 	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_COPY_HEX, L"Copy as Hex	Ctrl+C");
 
+	HINSTANCE hInst = AfxGetInstanceHandle();
 	//Menu icons.
 	MENUITEMINFOW mii { };
 	mii.cbSize = sizeof(MENUITEMINFOW);
 	mii.fMask = MIIM_BITMAP;
 	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)EMenu::IDM_EDIT_COPY_HEX] =
-		(HBITMAP)LoadImageW(GetModuleHandleW(0), MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
 	m_menuMain.SetMenuItemInfoW((UINT_PTR)EMenu::IDM_EDIT_COPY_HEX, &mii);
 
 	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_COPY_HEXFORMATTED, L"Copy as Formatted Hex");
@@ -122,7 +123,7 @@ CHexCtrl::CHexCtrl()
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
 	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_PASTE_HEX, L"Paste as Hex	Ctrl+V");
 	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)EMenu::IDM_EDIT_PASTE_HEX] =
-		(HBITMAP)LoadImageW(GetModuleHandleW(0), MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
 	m_menuMain.SetMenuItemInfoW((UINT_PTR)EMenu::IDM_EDIT_PASTE_HEX, &mii);
 
 	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_PASTE_ASCII, L"Paste as Ascii");
@@ -130,7 +131,7 @@ CHexCtrl::CHexCtrl()
 	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_FILL_ZEROS, L"Fill with zeros");
 
 	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)EMenu::IDM_EDIT_FILL_ZEROS] =
-		(HBITMAP)LoadImageW(GetModuleHandleW(0), MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
 	m_menuMain.SetMenuItemInfoW((UINT_PTR)EMenu::IDM_EDIT_FILL_ZEROS, &mii);
 
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
@@ -154,7 +155,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 		return false;
 
 	m_fFloat = hcs.fFloat;
-	m_pwndMsg = hcs.pwndParent;
+	m_hwndMsg = hcs.hwndParent;
 	m_stColor = hcs.stColor;
 
 	m_stBrushBkSelected.CreateSolidBrush(m_stColor.clrBkSelected);
@@ -198,14 +199,27 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 		rc.SetRect(iPosX, iPosY, iPosCX, iPosCY);
 	}
 
-	//If it's a custom dialog control then there is no need to create a window.
-	if (!hcs.fCustomCtrl && !CWnd::CreateEx(hcs.dwExStyle, WSTR_HEXCTRL_CLASSNAME, L"HexControl",
-		dwStyle, rc, hcs.pwndParent, m_fFloat ? 0 : hcs.uId))
+	//If it's a custom dialog control, there is no need to create a window.
+	if (!hcs.fCustomCtrl)
 	{
-		CStringW ss;
-		ss.Format(L"CHexCtrl (Id:%u) CWnd::CreateEx failed.\r\nCheck HEXCREATESTRUCT filling correctness.", hcs.uId);
-		MessageBoxW(ss, L"Error", MB_ICONERROR);
-		return false;
+		if (!CWnd::CreateEx(hcs.dwExStyle, WSTR_HEXCTRL_CLASSNAME, L"HexControl",
+			dwStyle, rc, CWnd::FromHandle(hcs.hwndParent), m_fFloat ? 0 : hcs.uId))
+		{
+			CStringW ss;
+			ss.Format(L"HexCtrl (Id:%u) CreateEx failed.\r\nCheck HEXCREATESTRUCT parameters.", hcs.uId);
+			MessageBoxW(ss, L"Error", MB_ICONERROR);
+			return false;
+		}
+	}
+	else
+	{
+		if (!SubclassDlgItem(hcs.uId, CWnd::FromHandle(hcs.hwndParent)))
+		{
+			CStringW ss;
+			ss.Format(L"HexCtrl (Id:%u) SubclassDlgItem failed.\r\nCheck CreateDialogCtrl parameters.", hcs.uId);
+			MessageBoxW(ss, L"Error", MB_ICONERROR);
+			return false;
+		}
 	}
 
 	//Removing window's border frame.
@@ -225,10 +239,13 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 	return true;
 }
 
-bool CHexCtrl::CreateDialogCtrl()
+bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)
 {
 	HEXCREATESTRUCT hcs;
+	hcs.hwndParent = hwndDlg;
+	hcs.uId = uCtrlID;
 	hcs.fCustomCtrl = true;
+
 	return Create(hcs);
 }
 
@@ -237,19 +254,19 @@ void CHexCtrl::SetData(const HEXDATASTRUCT & hds)
 	if (!m_fCreated)
 		return;
 
-	//m_pwndMsg was previously set in Create.
-	if (hds.pwndMsg)
-		m_pwndMsg = hds.pwndMsg;
+	//m_hwndMsg was previously set in IHexCtrl::Create.
+	if (hds.hwndMsg)
+		m_hwndMsg = hds.hwndMsg;
 
 	//Virtual mode is possible only when there is a MSG window, a data requests will be sent to.
 	if (hds.enMode == EHexDataMode::DATA_MSG && !GetMsgWindow())
 	{
-		MessageBoxW(L"HexCtrl HEXDATAMODEEN::HEXMSG mode requires HEXDATASTRUCT::pwndMsg to be not nullptr.", L"Error", MB_ICONWARNING);
+		MessageBoxW(L"HexCtrl EHexDataMode::DATA_MSG mode requires HEXDATASTRUCT::hwndMsg to be not null.", L"Error", MB_ICONWARNING);
 		return;
 	}
 	else if (hds.enMode == EHexDataMode::DATA_VIRTUAL && !hds.pHexVirtual)
 	{
-		MessageBoxW(L"HexCtrl HEXDATAMODEEN::HEXVIRTUAL mode requires HEXDATASTRUCT::pHexVirtual to be not nullptr.", L"Error", MB_ICONWARNING);
+		MessageBoxW(L"HexCtrl EHexDataMode::DATA_VIRTUAL mode requires HEXDATASTRUCT::pHexVirtual to be not nullptr.", L"Error", MB_ICONWARNING);
 		return;
 	}
 
@@ -389,6 +406,11 @@ void CHexCtrl::GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const
 	ullSize = m_ullSelectionSize;
 }
 
+HWND CHexCtrl::GetWindowHandle() const
+{
+	return m_hWnd;
+}
+
 HMENU CHexCtrl::GetMenuHandle()const
 {
 	return m_menuMain.m_hMenu;
@@ -401,8 +423,12 @@ void CHexCtrl::Destroy()
 
 bool CHexCtrl::RegisterWndClass()
 {
-	WNDCLASSEXW wc { };
+	//MFC initialization check, if Control is used outside MFC apps.
+	if (!AfxGetAppModuleState()->m_pCurrentWinApp)
+		AfxWinInit(::GetModuleHandleW(NULL), NULL, ::GetCommandLineW(), 0);
+
 	HINSTANCE hInst = AfxGetInstanceHandle();
+	WNDCLASSEXW wc { };
 
 	if (!(::GetClassInfoExW(hInst, WSTR_HEXCTRL_CLASSNAME, &wc)))
 	{
@@ -835,7 +861,7 @@ void CHexCtrl::OnPaint()
 	pDC->SetTextColor(m_stColor.clrTextCaption);
 	pDC->SetBkColor(m_stColor.clrBk);
 	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunk - iScrollH, m_iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
-		m_wstrCapacity.data(), m_wstrCapacity.size(), nullptr);
+		m_wstrCapacity.data(), (UINT)m_wstrCapacity.size(), nullptr);
 
 	//"Ascii" text.
 	rc.left = m_iThirdVertLine - iScrollH; rc.top = m_iFirstHorizLine;
@@ -984,12 +1010,12 @@ void CHexCtrl::OnPaint()
 		//Hex Poly.
 		listWstrHex.emplace_back(std::move(wstrHexToPrint));
 		vecPolyHex.emplace_back(POLYTEXTW { iHexPosToPrintX, iPosToPrintY,
-			listWstrHex.back().size(), listWstrHex.back().data(), 0, { }, nullptr });
+			(UINT)listWstrHex.back().size(), listWstrHex.back().data(), 0, { }, nullptr });
 
 		//Ascii Poly.
 		listWstrAscii.emplace_back(std::move(wstrAsciiToPrint));
 		vecPolyAscii.emplace_back(POLYTEXTW { iAsciiPosToPrintX, iPosToPrintY,
-			listWstrAscii.back().size(), listWstrAscii.back().data(), 0, { }, nullptr });
+			(UINT)listWstrAscii.back().size(), listWstrAscii.back().data(), 0, { }, nullptr });
 
 		//Selection.
 		if (!wstrHexSelToPrint.empty())
@@ -997,12 +1023,12 @@ void CHexCtrl::OnPaint()
 			//Hex selected Poly.
 			listWstrSelHex.emplace_back(std::move(wstrHexSelToPrint));
 			vecPolySelHex.emplace_back(POLYTEXTW { iSelHexPosToPrintX, iPosToPrintY,
-				listWstrSelHex.back().size(), listWstrSelHex.back().data(), 0, { }, nullptr });
+				(UINT)listWstrSelHex.back().size(), listWstrSelHex.back().data(), 0, { }, nullptr });
 
 			//Ascii selected Poly.
 			listWstrSelAscii.emplace_back(std::move(wstrAsciiSelToPrint));
 			vecPolySelAscii.emplace_back(POLYTEXTW { iSelAsciiPosToPrintX, iPosToPrintY,
-				listWstrSelAscii.back().size(), listWstrSelAscii.back().data(), 0, { }, nullptr });
+				(UINT)listWstrSelAscii.back().size(), listWstrSelAscii.back().data(), 0, { }, nullptr });
 		}
 
 		//Cursor Poly.
@@ -1010,36 +1036,36 @@ void CHexCtrl::OnPaint()
 		{
 			listWstrCursor.emplace_back(std::move(wstrHexCursorToPrint));
 			vecPolyCursor.emplace_back(POLYTEXTW { iCursorHexPosToPrintX, iPosToPrintY,
-				listWstrCursor.back().size(), listWstrCursor.back().data(), 0, { }, nullptr });
+				(UINT)listWstrCursor.back().size(), listWstrCursor.back().data(), 0, { }, nullptr });
 			listWstrCursor.emplace_back(std::move(wstrAsciiCursorToPrint));
 			vecPolyCursor.emplace_back(POLYTEXTW { iCursorAsciiPosToPrintX, iPosToPrintY,
-				listWstrCursor.back().size(), listWstrCursor.back().data(), 0, { }, nullptr });
+				(UINT)listWstrCursor.back().size(), listWstrCursor.back().data(), 0, { }, nullptr });
 		}
 	}
 
 	//Hex printing.
 	pDC->SetBkColor(m_stColor.clrBk);
 	pDC->SetTextColor(m_stColor.clrTextHex);
-	PolyTextOutW(pDC->m_hDC, vecPolyHex.data(), vecPolyHex.size());
+	PolyTextOutW(pDC->m_hDC, vecPolyHex.data(), (UINT)vecPolyHex.size());
 
 	//Ascii printing.
 	pDC->SetTextColor(m_stColor.clrTextAscii);
-	PolyTextOutW(pDC->m_hDC, vecPolyAscii.data(), vecPolyAscii.size());
+	PolyTextOutW(pDC->m_hDC, vecPolyAscii.data(), (UINT)vecPolyAscii.size());
 
 	//Hex selected printing.
 	pDC->SetBkColor(m_stColor.clrBkSelected);
 	pDC->SetTextColor(m_stColor.clrTextSelected);
-	PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), vecPolySelHex.size());
+	PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), (UINT)vecPolySelHex.size());
 
 	//Ascii selected printing.
-	PolyTextOutW(pDC->m_hDC, vecPolySelAscii.data(), vecPolySelAscii.size());
+	PolyTextOutW(pDC->m_hDC, vecPolySelAscii.data(), (UINT)vecPolySelAscii.size());
 
 	//Cursor printing.
 	if (!vecPolyCursor.empty())
 	{
 		pDC->SetBkColor(clrBkCursor);
 		pDC->SetTextColor(m_stColor.clrTextCursor);
-		PolyTextOutW(pDC->m_hDC, vecPolyCursor.data(), vecPolyCursor.size());
+		PolyTextOutW(pDC->m_hDC, vecPolyCursor.data(), (UINT)vecPolyCursor.size());
 	}
 }
 
@@ -1091,11 +1117,11 @@ void CHexCtrl::OnNcPaint()
 
 void CHexCtrl::OnDestroy()
 {
-	//Send messages to both, m_pwndMsg and pwndParent.
+	//Send messages to both, m_hwndMsg and pwndParent.
 	NMHDR nmh { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_DESTROY };
-	CWnd* pwndMsg = GetMsgWindow();
-	if (pwndMsg)
-		pwndMsg->SendMessageW(WM_NOTIFY, nmh.idFrom, (LPARAM)& nmh);
+	HWND hwndMsg = GetMsgWindow();
+	if (hwndMsg)
+		::SendMessageW(hwndMsg, WM_NOTIFY, nmh.idFrom, (LPARAM)& nmh);
 
 	CWnd* pwndParent = GetParent();
 	if (pwndParent)
@@ -1112,7 +1138,7 @@ void CHexCtrl::OnDestroy()
 
 BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)const
 {
-	//If it's virtual data control we aquire next byte_to_print from m_pwndMsg window.
+	//If it's virtual data control we aquire next byte_to_print from m_hwndMsg window.
 	if (m_enMode == EHexDataMode::DATA_DEFAULT)
 		return m_pData[ullIndex];
 	else if (m_enMode == EHexDataMode::DATA_MSG)
@@ -1193,9 +1219,9 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
 		RedrawWindow();
 }
 
-CWnd* CHexCtrl::GetMsgWindow()const
+HWND CHexCtrl::GetMsgWindow()const
 {
-	return m_pwndMsg;
+	return m_hwndMsg;
 }
 
 void CHexCtrl::RecalcAll()
@@ -1720,12 +1746,12 @@ void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT & hns)const
 {
 	//Send notification to the Message window if it was set.
 	//Otherwise send to Parent window.
-	CWnd* pwndSend = GetMsgWindow();
-	if (!pwndSend)
-		pwndSend = GetParent();
+	HWND hwndSend = GetMsgWindow();
+	if (!hwndSend)
+		hwndSend = GetParent()->GetSafeHwnd();
 
-	if (pwndSend)
-		pwndSend->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), (LPARAM)& hns);
+	if (hwndSend)
+		::SendMessageW(hwndSend, WM_NOTIFY, GetDlgCtrlID(), (LPARAM)& hns);
 }
 
 void CHexCtrl::MsgWindowNotify(UINT uCode)const
@@ -2008,13 +2034,13 @@ void CHexCtrl::SearchCallback(SEARCHSTRUCT & rSearch)
 			return;
 
 		ullSizeBytesReplaced = strReplace.size();
-		dwSizeNext = strReplace.size() / 2;
+		dwSizeNext = (DWORD)strReplace.size() / 2;
 	}
 	break;
 	case ESearchType::SEARCH_ASCII:
 	{
 		ullSizeBytes = strSearch.size();
-		ullSizeBytesReplaced = dwSizeNext = strReplace.size();
+		ullSizeBytesReplaced = dwSizeNext = (DWORD)strReplace.size();
 		if (ullSizeBytes > m_ullDataSize)
 			return;
 	}
@@ -2022,7 +2048,7 @@ void CHexCtrl::SearchCallback(SEARCHSTRUCT & rSearch)
 	case ESearchType::SEARCH_UTF16:
 	{
 		ullSizeBytes = rSearch.wstrSearch.size() * sizeof(wchar_t);
-		ullSizeBytesReplaced = dwSizeNext = rSearch.wstrReplace.size() * sizeof(wchar_t);
+		ullSizeBytesReplaced = dwSizeNext = DWORD(rSearch.wstrReplace.size() * sizeof(wchar_t));
 		if (ullSizeBytes > m_ullDataSize)
 			return;
 	}
@@ -2381,7 +2407,7 @@ void CHexCtrl::FillWithZeros()
 void CHexCtrl::FillCapacity()
 {
 	m_wstrCapacity.clear();
-	m_wstrCapacity.reserve(m_dwCapacity * 3);
+	m_wstrCapacity.reserve((size_t)m_dwCapacity * 3);
 	bool fHalf { false };
 	for (unsigned iter = 0; iter < m_dwCapacity; iter++)
 	{

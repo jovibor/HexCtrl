@@ -14,42 +14,27 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
     <Filter Include="HexCtrl">
-      <UniqueIdentifier>{a019b676-4319-4bdb-87c2-0cb6bee39ee9}</UniqueIdentifier>
+      <UniqueIdentifier>{eb7cd20c-0b62-4837-a47a-cb5120d36e09}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\res">
-      <UniqueIdentifier>{eca1e90a-6d14-4292-b486-bd1145ca78a3}</UniqueIdentifier>
+      <UniqueIdentifier>{4afc2d8b-adfd-49d1-b114-e9f209ebc6a4}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src">
-      <UniqueIdentifier>{cfb1d6e6-c87f-4f1e-880c-bddfba254356}</UniqueIdentifier>
+      <UniqueIdentifier>{d89197a7-599d-461f-9dcf-f1f64f75bb76}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src\Dialogs">
-      <UniqueIdentifier>{7ce252fb-6c63-4494-be63-7c19f6307aa6}</UniqueIdentifier>
+      <UniqueIdentifier>{52879e38-9694-4849-b0e0-2ec6a15331d4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="HexSample.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="HexSampleDlg.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Resource.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\HexCtrl\HexCtrl.h">
+      <Filter>HexCtrl</Filter>
     </ClInclude>
     <ClInclude Include="..\HexCtrl\res\HexCtrlRes.h">
       <Filter>HexCtrl\res</Filter>
     </ClInclude>
     <ClInclude Include="..\HexCtrl\src\Helper.h">
       <Filter>HexCtrl\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\HexCtrl\HexCtrl.h">
-      <Filter>HexCtrl</Filter>
     </ClInclude>
     <ClInclude Include="..\HexCtrl\src\CHexCtrl.h">
       <Filter>HexCtrl\src</Filter>
@@ -63,17 +48,11 @@
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgSearch.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
+    <ClInclude Include="..\HexCtrlSample\stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="HexSample.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="HexSampleDlg.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\HexCtrl\src\Helper.cpp">
       <Filter>HexCtrl\src</Filter>
     </ClCompile>
@@ -89,28 +68,17 @@
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
+    <ClCompile Include="..\HexCtrlSample\stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="HexSample.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
     <ResourceCompile Include="..\HexCtrl\res\HexCtrl.rc">
       <Filter>HexCtrl\res</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\HexSample.rc2">
-      <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="res\HexSample.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="..\HexCtrl\res\ScrollExH.bmp">
-      <Filter>HexCtrl\res</Filter>
-    </Image>
-    <Image Include="..\HexCtrl\res\ScrollExV.bmp">
+    <Image Include="..\HexCtrl\res\HexCtrlIcon.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
     <Image Include="..\HexCtrl\res\MenuCopy.bmp">
@@ -119,7 +87,10 @@
     <Image Include="..\HexCtrl\res\MenuPaste.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
-    <Image Include="..\HexCtrl\res\HexCtrlIcon.bmp">
+    <Image Include="..\HexCtrl\res\ScrollExH.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\HexCtrl\res\ScrollExV.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
     <Image Include="..\HexCtrl\res\MenuFillZeros.bmp">

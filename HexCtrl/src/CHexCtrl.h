@@ -12,6 +12,7 @@
 #include <unordered_map> //std::unordered_map and related.
 #include <deque>         //std::deque and related.
 #include <string>        //std::wstring and related.
+#include <afxwin.h>      //MFC core and standard components.
 
 namespace HEXCTRL {
 	namespace INTERNAL
@@ -64,14 +65,14 @@ namespace HEXCTRL {
 		/********************************************************************************************
 		* CHexCtrl class declaration.																*
 		********************************************************************************************/
-		class CHexCtrl : public IHexCtrl
+		class CHexCtrl : public CWnd, public IHexCtrl
 		{
 			friend class CHexDlgSearch; //For private SearchCallback routine.
 		public:
 			CHexCtrl();
 			virtual ~CHexCtrl();
 			bool Create(const HEXCREATESTRUCT& hcs)override;
-			bool CreateDialogCtrl()override;
+			bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)override;
 			void SetData(const HEXDATASTRUCT& hds)override;
 			void ClearData()override;
 			void SetEditMode(bool fEnable)override;
@@ -85,6 +86,7 @@ namespace HEXCTRL {
 			bool IsMutable()const override;
 			long GetFontSize()const override;
 			void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const override;
+			HWND GetWindowHandle()const override;
 			HMENU GetMenuHandle()const override;
 			void Destroy()override;
 		protected:
@@ -114,7 +116,7 @@ namespace HEXCTRL {
 			bool RegisterWndClass();                               //Registering HexCtrl window class.
 			[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex)const;   //Gets the byte data by index.
 			void ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw = true); //Main routine to modify data, in m_fMutable==true mode.
-			[[nodiscard]] CWnd* GetMsgWindow()const;               //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
+			[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 			void RecalcAll();                                      //Recalcs all inner draw and data related values.
 			void RecalcWorkAreaHeight(int iClientHeight);
 			void RecalcScrollSizes(int iClientHeight = 0, int iClientWidth = 0);
@@ -158,7 +160,7 @@ namespace HEXCTRL {
 			const DWORD m_dwCapacityMax { 128 };//Maximum capacity.
 			DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 			EShowMode m_enShowMode { EShowMode::ASBYTE }; //Show data mode.
-			CWnd* m_pwndMsg { };                //Window, the control messages will be sent to.
+			HWND m_hwndMsg { };                //Window, the control messages will be sent to.
 			IHexVirtual* m_pHexVirtual { };     //Data handler pointer for EHexDataMode::DATA_VIRTUAL
 			SIZE m_sizeLetter { 1, 1 };         //Current font's letter size (width, height).
 			CFont m_fontHexView;                //Main Hex chunks font.
@@ -207,3 +209,14 @@ namespace HEXCTRL {
 		};
 	}
 }
+
+/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
+#ifdef _UNICODE
+#if defined _M_IX86
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined _M_X64
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#else
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
+#endif

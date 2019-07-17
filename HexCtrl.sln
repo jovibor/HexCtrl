@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.421
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HexSample", "HexCtrlSample\HexCtrlSample.vcxproj", "{780C336D-23D1-4A79-A0DA-E6296E63C8A0}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HexCtrlSample", "HexCtrlSample\HexCtrlSample.vcxproj", "{780C336D-23D1-4A79-A0DA-E6296E63C8A0}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HexCtrlDll", "HexCtrlDll\HexCtrlDll.vcxproj", "{557B0ABE-E81A-4BD1-AD98-DC68F44D9A0D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{780C336D-23D1-4A79-A0DA-E6296E63C8A0}.Release|x64.Build.0 = Release|x64
 		{780C336D-23D1-4A79-A0DA-E6296E63C8A0}.Release|x86.ActiveCfg = Release|Win32
 		{780C336D-23D1-4A79-A0DA-E6296E63C8A0}.Release|x86.Build.0 = Release|Win32
+		{557B0ABE-E81A-4BD1-AD98-DC68F44D9A0D}.Debug|x64.ActiveCfg = Debug|x64
+		{557B0ABE-E81A-4BD1-AD98-DC68F44D9A0D}.Debug|x86.ActiveCfg = Debug|Win32
+		{557B0ABE-E81A-4BD1-AD98-DC68F44D9A0D}.Release|x64.ActiveCfg = Release|x64
+		{557B0ABE-E81A-4BD1-AD98-DC68F44D9A0D}.Release|x86.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -7,7 +7,7 @@
 #define new DEBUG_NEW
 #endif
 
-CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/) //-V730
+CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_HEXSAMPLE_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
@@ -16,7 +16,6 @@ CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/) //-V730
 void CHexSampleDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_MY_HEX, *m_myHex);
 }
 
 BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
@@ -25,6 +24,7 @@ BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_SETDATARO, &CHexSampleDlg::OnBnSetDataRO)
 	ON_BN_CLICKED(IDC_SETDATARW, &CHexSampleDlg::OnBnSetDataRW)
 	ON_BN_CLICKED(IDC_CLEARDATA, &CHexSampleDlg::OnBnClearData)
+	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 BOOL CHexSampleDlg::OnInitDialog()
@@ -34,7 +34,8 @@ BOOL CHexSampleDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);	 //Set big icon
 	SetIcon(m_hIcon, FALSE); //Set small icon
 
-	m_myHex->CreateDialogCtrl();
+	m_myHex->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
+	
 	m_hds.pData = m_data;
 	m_hds.ullDataSize = sizeof(m_data);
 
@@ -76,7 +77,6 @@ void CHexSampleDlg::OnBnSetDataRO()
 	if (!m_myHex->IsDataSet())
 	{
 		m_hds.fMutable = false;
-		m_hds.pwndMsg = this;
 		m_myHex->SetData(m_hds);
 	}
 	m_myHex->SetEditMode(false);
@@ -95,4 +95,9 @@ void CHexSampleDlg::OnBnSetDataRW()
 void CHexSampleDlg::OnBnClearData()
 {
 	m_myHex->ClearData();
+}
+
+void CHexSampleDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CDialogEx::OnSize(nType, cx, cy);
 }

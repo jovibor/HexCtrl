@@ -48,12 +48,12 @@
 
 ## [](#)Introduction
 Being good low level wrapper library for Windows API in general, **MFC** was always lacking a good native controls support.
-This forced people to implement their own common stuff for everyday needs.<br>
-This **HexControl** is a tiny attempt to expand standard **MFC** functionality, because at the moment, **MFC** doesn't have native support for such feature.
+This forced people to implement their own common stuff for everyday needs.  
+This **HexControl** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't have native support for such feature.
 
 ## [](#)Implementation
-This **HexControl** is implemented as a `CWnd` derived class, and can be used as a *child* or *float* window in any place
-of your existing **MFC** application. It was build and tested in Visual Studio 2019, under Windows 10.
+This **HexControl** is implemented as a pure abstract virtual class, and can be used as a *child* or *float* window in any place
+of your existing application. It was build and tested in Visual Studio 2019, under Windows 10.
 
 ## [](#)Installing and Using the Control
 The usage of the control is quite simple:
@@ -94,30 +94,28 @@ bool IHexCtrl::Create(hcs);
 
 ### [](#)In Dialog
 To use **HexCtrl** within `Dialog` you can, of course, create it with the [Classic Approach](#classic-approach): 
-call `IHexCtrl::Create` method and provide all the necessary information.<br>
+call `IHexCtrl::Create` method and provide all the necessary information.
+
 But there is another option you can use:
-1. Put **Custom Control** control from the **Toolbox** in **Visual Studio** dialog designer into your dialog template and make it desired size.<br>
+1. Put **Custom Control** control from the **Toolbox** in **Visual Studio** dialog designer into your dialog template and make it desirable size.  
 ![](docs/img/hexctrl_vstoolbox.jpg) ![](docs/img/hexctrl_vscustomctrl.jpg)
-2. Then go to the **Properties** of that control, and in the **Class** field, within the **Misc** section, write *HexCtrl*. Give the control appropriate 
+2. Then go to the **Properties** of that control, and in the **Class** field, within the **Misc** section, type **_HexCtrl_**.  
+Give the control appropriate 
 **ID** of your choise (`IDC_MY_HEX` in this example). Also, here you can set the control's **Dynamic Layout** properties, so that control behaves appropriately when dialog is being resized.
 ![](docs/img/hexctrl_vsproperties.jpg)
 3. Declare `IHexCtrlPtr` member varable within your dialog class: `IHexCtrlPtr m_myHex { CreateHexCtrl() };`
-4. Add the folowing code to the `DoDataExchange` method of your dialog class:<br>
+4. Call [`IHexCtrl::CreateDialogCtrl`](#createdialogctrl ) method from your dialog's `OnInitDialog` method.
 ```cpp
-DDX_Control(pDX, IDC_MY_HEX, *m_myHex);
-```
-So, that it looks like in the example below:
-```cpp
-void CMyDlg::DoDataExchange(CDataExchange* pDX)
+BOOL CMyDialog::OnInitDialog()
 {
-    CDialogEx::DoDataExchange(pDX);
-    DDX_Control(pDX, IDC_MY_HEX, *m_myHex);
+    CDialogEx::OnInitDialog();
+    
+    m_myHex->CreateDialogCtrl(IDC_MY_HEX, this);
 }
 ```
-5. Call `IHexCtrl::CreateDialogCtrl` function, `m_myHex->CreateDialogCtrl()`.
-
 ## [](#)Set the Data
-To set the data to display in the **HexControl** use [`IHexCtrl::SetData`](#setdata) method.
+To set the data to display in the **HexControl** use [`IHexCtrl::SetData`](#setdata) method.  
+See [examples](#example).
 ## [](#)Virtual Mode
 ### [](#)Message window
 The `enMode` member of [`HEXDATASTRUCT`](#hexdatastruct) shows what data mode `HexControl` is working in. It is of the [`EHexDataMode`](#ehexdatamode) enum type. If it's set to `DATA_MSG` the control works in so called *Message mode*.
@@ -186,8 +184,9 @@ It takes `HEXCREATESTRUCT`, that you fill first, as argument.
 Returns `true` if created successfully, `false` otherwise.
 
 ### [](#)CreateDialogCtrl
-**`bool CreateDialogCtrl()`**<br>
-This method is used if you want to create a dialog based **HexCtrl** as a custom control. See [this section](#in-dialog) for more info.
+**`bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)`**<br>
+Creates **HexCtrl** from custom control dialog template. Takes control id and dialog window handle as arguments.  
+See [Control Creation](#in-dialog) section for more info.
 ### [](#)SetData
 **`void SetData(const HEXDATASTRUCT& hds)`**<br>
 Main method to set data to display in read-only or edit modes. Takes [`HEXDATASTRUCT`](#hexdatastruct) as an  argument.
@@ -250,9 +249,9 @@ The main initialization struct used for control creation.
 struct HEXCREATESTRUCT
 {
     HEXCOLORSTRUCT  stColor { };           //All the control's colors.
-    CWnd*           pwndParent { };        //Parent window pointer.
+    HWND            hwndParent { };        //Parent window pointer.
     const LOGFONTW* pLogFont { };          //Font to be used, nullptr for default. This font has to be monospaced.
-    CRect           rect { };              //Initial rect. If null, the window is screen centered.
+    RECT            rect { };              //Initial rect. If null, the window is screen centered.
     UINT            uId { };               //Control Id.
     DWORD           dwStyle { };           //Window styles, 0 for default.
     DWORD           dwExStyle { };         //Extended window styles, 0 for default.
@@ -286,7 +285,7 @@ struct HEXDATASTRUCT
     ULONGLONG    ullDataSize { };                      //Size of the data to display, in bytes.
     ULONGLONG    ullSelectionStart { };                //Set selection at this position. Works only if ullSelectionSize > 0.
     ULONGLONG    ullSelectionSize { };                 //How many bytes to set as selected.
-    CWnd*        pwndMsg { };                          //Window to send the control messages to. Parent window is used by default.
+    HWND         pwndMsg { };                          //Window to send the control messages to. Parent window is used by default.
     IHexVirtual* pHexVirtual { };                      //Pointer to IHexVirtual data class for custom data handling.
     PBYTE        pData { };                            //Pointer to the data. Not used if it's virtual control.
     HEXDATAMODE  enMode { HEXDATAMODE::DATA_DEFAULT }; //Working data mode of the control.
@@ -361,9 +360,8 @@ To properly resize and position your **HexControl**'s window you may have to han
 ```cpp
 void CMyWnd::OnSize(UINT nType, int cx, int cy)
 {
-    .
-    .
-    myHex->SetWindowPos(this, 0, 0, cx, cy, SWP_NOACTIVATE | SWP_NOZORDER);
+    ...
+    ::SetWindowPos(m_myHex->GetWindowHandle(), this->m_hWnd, 0, 0, cx, cy, SWP_NOACTIVATE | SWP_NOZORDER);
 }
 ```
 
