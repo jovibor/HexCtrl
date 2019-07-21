@@ -23,7 +23,7 @@ namespace HEXCTRL
 		PBYTE     pData { };          //Pointer to a data to be set.
 		bool      fWhole { true };    //Is a whole byte or just a part of it to be modified.
 		bool      fHighPart { true }; //Shows whether high or low part of the byte should be modified (if the fWhole flag is false).
-		bool      fRepeat { false };  //If ullDataSize < ullSize should data be replaced just one time or ullSize/ullDataSize times.
+		bool      fRepeat { false };  //If ullDataSize < ullSize, should data be replaced only one time or ullSize/ullDataSize times.
 	};
 
 	/********************************************************************************************
@@ -115,7 +115,6 @@ namespace HEXCTRL
 		ULONGLONG ullIndex { }; //Index of the start byte to get/send.
 		ULONGLONG ullSize { };  //Size of the bytes to get/send.
 		PBYTE     pData { };    //Pointer to a data to get/send.
-		BYTE      chByte { };   //Single byte data - used for simplicity, when ullSize == 1.
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
 

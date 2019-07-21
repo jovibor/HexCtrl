@@ -122,8 +122,8 @@ namespace HEXCTRL {
 			void RecalcScrollSizes(int iClientHeight = 0, int iClientWidth = 0);
 			[[nodiscard]] ULONGLONG GetTopLine()const;             //Returns current top line's number in view.
 			[[nodiscard]] ULONGLONG HitTest(const POINT*);         //Is any hex chunk withing given point?
-			void HexChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy)const;   //Point of Hex chunk.
-			void AsciiChunkPoint(ULONGLONG ullChunk, ULONGLONG& ullCx, ULONGLONG& ullCy)const; //Point of Ascii chunk.
+			void HexChunkPoint(ULONGLONG ullChunk, int& iCx, int& iCy)const; //Point of Hex chunk.
+			void AsciiChunkPoint(ULONGLONG ullChunk, int& iCx, int& iCy)const; //Point of Ascii chunk.
 			void ClipboardCopy(EClipboard enType);
 			void ClipboardPaste(EClipboard enType);
 			void OnKeyDownShift(UINT nChar);                       //Key pressed with the Shift.
@@ -146,7 +146,7 @@ namespace HEXCTRL {
 			void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
 			void SelectAll();
 			void FillWithZeros();                                     //Fill selection with zeros.
-			void FillCapacity();                                      //Fill m_wstrCapacity according to current m_dwCapacity.
+			void FillWstrCapacity();                                      //Fill m_wstrCapacity according to current m_dwCapacity.
 		private:
 			bool m_fCreated { false };          //Is control created or not yet.
 			bool m_fDataSet { false };          //Is data set or not.
@@ -166,8 +166,8 @@ namespace HEXCTRL {
 			CFont m_fontHexView;                //Main Hex chunks font.
 			CFont m_fontBottomRect;             //Font for bottom Info rect.
 			const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };             //Search dialog.
-			const std::unique_ptr<SCROLLEX::CScrollEx> m_pstScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll bar.
-			const std::unique_ptr<SCROLLEX::CScrollEx> m_pstScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll bar.
+			const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll bar.
+			const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll bar.
 			CMenu m_menuMain;                   //Main popup menu.
 			CMenu m_menuShowAs;                 //Submenu "Show as..."
 			CBrush m_stBrushBkSelected;         //Brush for "selected" background.
@@ -186,7 +186,7 @@ namespace HEXCTRL {
 			int m_iHeightTopRect { };           //Height of the header where offsets (0 1 2... D E F...) reside.
 			const int m_iHeightBottomRect { 22 }; //Height of bottom Info rect.
 			const int m_iHeightBottomOffArea { m_iHeightBottomRect + m_iIndentBottomLine }; //Height of not visible rect from window's bottom to m_iThirdHorizLine.
-			int m_iStartWorkArea { };           //Beginning of the area where all drawing occurs.
+			int m_iStartWorkAreaY { };          //Start Y of the area where all drawing occurs.
 			int m_iEndWorkArea { };             //End of the area where all drawing occurs.
 			int m_iHeightWorkArea { };          //Height of the working area where all drawing occurs.
 			const int m_iFirstHorizLine { 0 };  //First horizontal line indent.

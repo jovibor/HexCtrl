@@ -40,7 +40,6 @@
   * [HEXNOTIFYSTRUCT](#hexnotifystruct)
   * [EHexDataMode](#ehexdatamode)
   </details>
-* [Example](#example)
 * [Positioning and Sizing](#positioning-and-sizing)
 * [Appearance](#appearance)
 * [Licensing](#licensing)
@@ -113,18 +112,44 @@ BOOL CMyDialog::OnInitDialog()
     m_myHex->CreateDialogCtrl(IDC_MY_HEX, this);
 }
 ```
+
 ## [](#)Set the Data
-To set the data to display in the **HexControl** use [`IHexCtrl::SetData`](#setdata) method.  
-See [examples](#example).
+To set a data to display in the **HexControl** use [`IHexCtrl::SetData`](#setdata) method.
+The code below shows how to construct `IHexCtrlPtr` object and display first `0x1FF` bytes of the current app's memory:
+```cpp
+IHexCtrlPtr myHex { CreateHexCtrl() };
+
+HEXCREATESTRUCT hcs;
+hcs.hwndParent = m_hWnd;
+hcs.rect = CRect(0, 0, 500, 300); //Control's rect.
+
+myHex->Create(hcs);
+
+HEXDATASTRUCT hds;
+hds.pData = (unsigned char*)GetModuleHandle(0);
+hds.ullDataSize = 0x1FF;
+
+myHex->SetData(hds);
+```
+The next example displays `std::string`'s text as hex:
+```cpp
+std::string str = "My string";
+HEXDATASTRUCT hds;
+hds.pData = (unsigned char*)str.data();
+hds.ullDataSize = str.size();
+
+myHex->SetData(hds);
+```
+
 ## [](#)Virtual Mode
 ### [](#)Message window
 The `enMode` member of [`HEXDATASTRUCT`](#hexdatastruct) shows what data mode `HexControl` is working in. It is of the [`EHexDataMode`](#ehexdatamode) enum type. If it's set to `DATA_MSG` the control works in so called *Message mode*.
 
-What it means is that when control is about to display next byte, it will first ask for this byte from the `pwndMsg` window,
-in the form of `WM_NOTIFY` message. This is pretty much the same as the standard **MFC** List Control works when created with `LVS_OWNERDATA` flag.<br>
-The `pwndMsg` window pointer can be set as `HEXDATASTRUCT::pwndMsg` in `SetData` method. By default it is equal to the control's parent window.<br>
+What it means is that when control is about to display next byte, it will first ask for this byte from the `hwndMsg` window,
+in the form of [`WM_NOTIFY`](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify) message. This is pretty much the same as the standard **MFC List Control** works when created with `LVS_OWNERDATA` flag.<br>
+The `hwndMsg` window pointer can be set as `HEXDATASTRUCT::hwndMsg` in [`SetData`](#setdata) method. By default it is equal to the control's parent window.<br>
 This mode can be quite useful, for instance, in cases where you need to display a very large amount of data that can't fit in memory all at once.<br>
-To properly handle this mode process `WM_NOTIFY` messages, in `pwndMsg` window, as follows:
+To properly handle this mode process `WM_NOTIFY` messages, in `hwndMsg` window, as follows:
 ```cpp
 BOOL CMyWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
@@ -134,8 +159,7 @@ BOOL CMyWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
         switch (pHexNtfy->hdr.code)
         {
         case HEXCTRL_MSG_GETDATA:
-            pHexNtfy->chByte = /*code to set the byte, if pHexNtfy->ullSize=1*/;
-            pHexNtfy->pData =  /*or code to set the pointer to a data*/;
+            pHexNtfy->pData =  /*Code to set the pointer to an actual data*/;
             break;
         }
    }
@@ -161,19 +185,19 @@ public:
     virtual void Redo() = 0;                                 //Redo command, through menu or hotkey.
 };
 ```
-Then provide a pointer to created object of this derived class to `SetData` method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
+Then provide a pointer to created object of this derived class to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
 
 ## [](#)OnDestroy
-When **HexControl** window, floating or child, is destroyed, it sends `WM_NOTIFY` message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
+When **HexControl** window, floating or child, is destroyed, it sends [`WM_NOTIFY`](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify) message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
 So, it basically indicates to its parent that the user clicked close button, or closed window in some other way.
 
 ## [](#)Scroll Bars
 When I started to work with very big files, I immediately faced one very nasty inconvenience:
-The standard **Windows** scrollbars can hold only signed integer value, which is too little to scroll through many gigabytes of data. 
+The standard Windows scrollbars can hold only signed integer value, which is too little to scroll through many gigabytes of data. 
 It could be some workarounds and crutches involved to overcome this, but frankly saying i'm not a big fan of this kind of approach.
 
 That's why **HexControl** uses its own scrollbars. They work with `unsigned long long` values, which is way bigger than standard signed ints. 
-These scrollbars behave as normal **Windows** scrollbars, and even reside in the non client area, as the latter do.
+These scrollbars behave as normal Windows scrollbars, and even reside in the non client area, as the latter do.
 
 ## [](#)Methods
 **HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
@@ -187,51 +211,66 @@ Returns `true` if created successfully, `false` otherwise.
 **`bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)`**<br>
 Creates **HexCtrl** from custom control dialog template. Takes control id and dialog window handle as arguments.  
 See [Control Creation](#in-dialog) section for more info.
+
 ### [](#)SetData
 **`void SetData(const HEXDATASTRUCT& hds)`**<br>
 Main method to set data to display in read-only or edit modes. Takes [`HEXDATASTRUCT`](#hexdatastruct) as an  argument.
+
 ### [](#)ClearData
 **`void ClearData()`**<br>
 Clears data from the **HexCtrl** view, not touching data itself.
+
 ### [](#)SetEditMode
 **`void SetEditMode(bool fEnable)`**<br>
 Enables or disables edit mode. In edit mode data can be modified.
+
 ### [](#)ShowOffset
 **`void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1)`**<br>
 Sets cursor to the `ullOffset` and selects `ullSize` bytes.
+
 ### [](#)SetFont
 **`void SetFont(const LOGFONTW* pLogFontNew)`**<br>
 Sets a new font for the **HexCtrl**. This font has to be monospaced.
+
 ### [](#)SetFontSize
 **`void SetFontSize(UINT uiSize)`**<br>
 Sets a new font size to the **HexCtrl**.
+
 ### [](#)SetColor
 **`void SetColor(const HEXCOLORSTRUCT& clr)`**<br>
 Sets all the colors for the control. Takes [`HEXCOLORSTRUCT`](#hexcolorstruct) as the argument.
+
 ### [](#)SetCapacity
 **`void SetCapacity(DWORD dwCapacity)`**<br>
 Sets the **HexCtrl** capacity.
+
 ### [](#)IsCreated
 **`bool IsCreated()const`**<br>
 Shows whether **HexCtrl** is created or not yet.
+
 ### [](#)IsDataSet
 **`bool IsDataSet()const`**<br>
 Shows whether a data was set to **HexCtrl** or not
+
 ### [](#)IsMutable
 **`bool IsMutable()const`**<br>
 Shows whether **HexCtrl** is currently in edit mode or not.
+
 ### [](#)GetFontSize
 **`long GetFontSize()const`**<br>
 Returns current font size.
+
 ### [](#)GetSelection
 **`void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const`**<br>
 Returns current start position (offset) of the selection as `ullOffset`, and its size as `ullSize`.
+
 ### [](#)GetMenuHandle
 **`HMENU GetMenuHandle()const`**<br>
 `GetMenuHandle` method retrives the `HMENU` handle of the control's context menu. You can use this handle to customize menu for your needs.
 
 Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.<br>
 When user clicks custom menu control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to `HEXNOTIFYSTRUCT` with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `uMenuId` field of the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) will be holding `ID` of the menu clicked.
+
 ### [](#)Destroy
 **`void Destroy()`**<br>
 Destroys the control.<br>
@@ -285,7 +324,7 @@ struct HEXDATASTRUCT
     ULONGLONG    ullDataSize { };                      //Size of the data to display, in bytes.
     ULONGLONG    ullSelectionStart { };                //Set selection at this position. Works only if ullSelectionSize > 0.
     ULONGLONG    ullSelectionSize { };                 //How many bytes to set as selected.
-    HWND         pwndMsg { };                          //Window to send the control messages to. Parent window is used by default.
+    HWND         hwndMsg { };                          //Window to send the control messages to. Parent window is used by default.
     IHexVirtual* pHexVirtual { };                      //Pointer to IHexVirtual data class for custom data handling.
     PBYTE        pData { };                            //Pointer to the data. Not used if it's virtual control.
     HEXDATAMODE  enMode { HEXDATAMODE::DATA_DEFAULT }; //Working data mode of the control.
@@ -303,7 +342,7 @@ struct HEXMODIFYSTRUCT
     PBYTE     pData { };          //Pointer to a data to be set.
     bool      fWhole { true };    //Is a whole byte or just a part of it to be modified.
     bool      fHighPart { true }; //Shows whether high or low part of the byte should be modified (if the fWhole flag is false).
-    bool      fRepeat { false };  //If ullDataSize < ullSize should data be replaced just one time or ullSize/ullDataSize times.
+    bool      fRepeat { false };  //If ullDataSize < ullSize, should data be replaced only one time or ullSize/ullDataSize times.
 };
 ```
 When `ullDataSize` is equal `ullSize`, bytes from `pData` just replace corresponding bytes as is.  
@@ -320,7 +359,6 @@ struct HEXNOTIFYSTRUCT
     ULONGLONG ullIndex { }; //Index of the start byte to get/send.
     ULONGLONG ullSize { };  //Size of the bytes to get/send.
     PBYTE     pData { };    //Pointer to a data to get/send.
-    BYTE      chByte { };   //Single byte data - used for simplicity, when ullSize == 1.
 };
 using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
 ```
@@ -331,28 +369,6 @@ enum class EHexDataMode : DWORD
 {
     DATA_DEFAULT, DATA_MSG, DATA_VIRTUAL
 };
-```
-## [](#)Example
-The code below constructs `IHexCtrlPtr` object and displays first `0x1FF` bytes of your app's memory:
-```cpp
-IHexCtrlPtr myHex { CreateHexCtrl() };
-HEXCREATESTRUCT hcs;
-hcs.pwndParent = this;
-hcs.rect = CRect(0, 0, 500, 300); //Control's rect.
-myHex->Create(hcs);
-
-HEXDATASTRUCT hds;
-hds.pData = (unsigned char*)GetModuleHandle(0);
-hds.ullDataSize = 0x1FF;
-myHex->SetData(hds);
-```
-The next example displays `std::string`'s text as hex:
-```cpp
-std::string str = "My string";
-HEXDATASTRUCT hds;
-hds.pData = (unsigned char*)str.data();
-hds.ullDataSize = str.size();
-myHex->SetData(hds);
 ```
 
 ## [](#)Positioning and Sizing
