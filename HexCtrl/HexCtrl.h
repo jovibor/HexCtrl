@@ -80,14 +80,14 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* EHexDataMode - Enum of the working data mode, used in HEXDATASTRUCT in SetData.            *
-	* DATA_DEFAULT: Default, standard data mode.                                                *
-	* DATA_MSG: Data is handled through WM_NOTIFY messages to handler window.				    *
-	* DATA_VIRTUAL: Data is handled through IHexVirtual interface derived class.                *
+	* EHexDataMode - Enum of the working data mode, used in HEXDATASTRUCT in SetData.           *
+	* DATA_MEMORY: Default standard data mode.                                                  *
+	* DATA_MSG: Data is handled through WM_NOTIFY messages in handler window.				    *
+	* DATA_VIRTUAL: Data is handled through IHexVirtual interface by derived class.             *
 	********************************************************************************************/
 	enum class EHexDataMode : DWORD
 	{
-		DATA_DEFAULT, DATA_MSG, DATA_VIRTUAL
+		DATA_MEMORY, DATA_MSG, DATA_VIRTUAL
 	};
 
 	/********************************************************************************************
@@ -101,7 +101,7 @@ namespace HEXCTRL
 		HWND         hwndMsg { };                           //Window to send the control messages to. Parent window is used by default.
 		IHexVirtual* pHexVirtual { };                       //Pointer to IHexVirtual data class for custom data handling.
 		PBYTE        pData { };                             //Pointer to the data. Not used if it's virtual control.
-		EHexDataMode enMode { EHexDataMode::DATA_DEFAULT }; //Working data mode of the control.
+		EHexDataMode enMode { EHexDataMode::DATA_MEMORY };  //Working data mode of the control.
 		bool         fMutable { false };                    //Will data be mutable (editable) or just read mode.
 	};
 

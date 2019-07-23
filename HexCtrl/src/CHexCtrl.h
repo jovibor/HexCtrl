@@ -152,7 +152,7 @@ namespace HEXCTRL {
 			bool m_fDataSet { false };          //Is data set or not.
 			bool m_fFloat { false };            //Is control window float or not.
 			bool m_fMutable { false };          //Is control works in Edit or Read mode.
-			EHexDataMode m_enMode { EHexDataMode::DATA_DEFAULT }; //Control's mode.
+			EHexDataMode m_enMode { EHexDataMode::DATA_MEMORY }; //Control's mode.
 			HEXCOLORSTRUCT m_stColor;           //All control related colors.
 			PBYTE m_pData { };                  //Main data pointer. Modifiable in "Edit" mode.
 			ULONGLONG m_ullDataSize { };        //Size of the displayed data in bytes.

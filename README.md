@@ -8,7 +8,8 @@
   * [Classic Approach](#classic-approach)
   * [In Dialog](#in-dialog)
 * [Set the Data](#set-the-data)
-* [Virtual Mode](#virtual-mode)
+* [Control Data Modes](#control-data-modes)
+  * [Memory Data](#memory-data)
   * [Message Window](#message-window)
   * [Virtual Handler](#virtual-handler)
 * [OnDestroy](#ondestroy)
@@ -81,12 +82,14 @@ using namespace HEXCTRL;
 ```
 
 ## [](#)Control Creation
+
 ### [](#)Classic Approach
 The `IHexCtrl::Create` method is the first method you call, it takes [`HEXCREATESTRUCT`](#hexcreatestruct) as its argument.  
 You can choose whether control will behave as a *child* or independent *floating* window, by setting `fFloat` member of this struct.
 ```cpp
 HEXCREATESTRUCT hcs;
 hcs.fFloat = true;
+hcs.hwndParent = m_hWnd;
 bool IHexCtrl::Create(hcs);
 ```
 `stColor` member of [`HEXCREATESTRUCT`](#hexcreatestruct) has a type of [`HEXCOLORSTRUCT`](#hexcolorstruct). This structure describes all the **HexCtrl**'s colors, and is also used in [`IHexCtrl::SetColor`](#setcolor) method.
@@ -109,7 +112,7 @@ BOOL CMyDialog::OnInitDialog()
 {
     CDialogEx::OnInitDialog();
     
-    m_myHex->CreateDialogCtrl(IDC_MY_HEX, this);
+    m_myHex->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
 }
 ```
 
@@ -141,15 +144,23 @@ hds.ullDataSize = str.size();
 myHex->SetData(hds);
 ```
 
-## [](#)Virtual Mode
-### [](#)Message window
-The `enMode` member of [`HEXDATASTRUCT`](#hexdatastruct) shows what data mode `HexControl` is working in. It is of the [`EHexDataMode`](#ehexdatamode) enum type. If it's set to `DATA_MSG` the control works in so called *Message mode*.
+## [](#)Control Data Modes
+Besides the standard classical mode, when **HexControl** just holds a pointer to some array of bytes in memory, it also has additional advanced modes it can be running in.  
+Theese modes can be quite useful for instance in cases where you need to display a very large amount of data that can't fit in memory all at once.
 
-What it means is that when control is about to display next byte, it will first ask for this byte from the `hwndMsg` window,
-in the form of [`WM_NOTIFY`](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify) message. This is pretty much the same as the standard **MFC List Control** works when created with `LVS_OWNERDATA` flag.<br>
-The `hwndMsg` window pointer can be set as `HEXDATASTRUCT::hwndMsg` in [`SetData`](#setdata) method. By default it is equal to the control's parent window.<br>
-This mode can be quite useful, for instance, in cases where you need to display a very large amount of data that can't fit in memory all at once.<br>
-To properly handle this mode process `WM_NOTIFY` messages, in `hwndMsg` window, as follows:
+These modes are ruled over through the [`EHexDataMode::enMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct).
+
+### [](#)Memory Data
+It's the default data mode control works in.  
+The [`EHexDataMode::enMode`](#ehexdatamode) of the [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_MEMORY`, and `pData` just points to some bytes in memory.
+
+### [](#)Message Window
+If [`EHexDataMode::enMode`](#ehexdatamode) of [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_MSG`, the control works in so called **Message Window mode**.
+
+What it means is that when control is about to display next byte, it will first ask for this byte from the [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) window, in the form of [`WM_NOTIFY`](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify) message. This is pretty much the same as the standard **MFC List Control** works when created with `LVS_OWNERDATA` flag.  
+By default the [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) is equal to the control's parent window.
+
+To properly handle this mode you must process `WM_NOTIFY` messages in `hwndMsg` window as follows:
 ```cpp
 BOOL CMyWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
@@ -167,11 +178,12 @@ BOOL CMyWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 ```
 `lParam` will hold a pointer to the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) structure.
 
-Its first member is a standard Windows' `NMHDR` structure. It will have its code member equal to `HEXCTRL_MSG_GETDATA` indicating that **HexControl**'s byte request has arrived.
-The second member is the index of the byte be displayed. And the third is the actual byte, that you have to set in response.
+The first member of this structure is a standard Windows [`NMHDR`](https://docs.microsoft.com/en-us/windows/win32/api/richedit/ns-richedit-_nmhdr) struct. It will have its `UINT code` member equal to `HEXCTRL_MSG_GETDATA`, indicating that **HexControl**'s byte request has arrived.  
+The `ullIndex` member of the structure is an index of the byte to be displayed. And the `pData` is the pointer to an actual byte that you have to set in response.
 
 ### [](#)Virtual Handler
-If `enMode` member of [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_VIRTUAL` then all the data routine will be done through `HEXDATASTRUCT::pHexVirtual` pointer.  
+If [`EHexDataMode::enMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_VIRTUAL` then all the data routine will be done through `HEXDATASTRUCT::pHexVirtual` pointer.
+
 This pointer is of `IHexVirtual` class type, which is a pure abstract base class.
 You have to derive your own class from it and implement all its public methods:
 ```cpp
@@ -185,22 +197,23 @@ public:
     virtual void Redo() = 0;                                 //Redo command, through menu or hotkey.
 };
 ```
-Then provide a pointer to created object of this derived class to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
+Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
 
 ## [](#)OnDestroy
-When **HexControl** window, floating or child, is destroyed, it sends [`WM_NOTIFY`](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify) message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
+When **HexControl** window, floating or child, is being destroyed it sends [`WM_NOTIFY`](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify) message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
 So, it basically indicates to its parent that the user clicked close button, or closed window in some other way.
 
 ## [](#)Scroll Bars
-When I started to work with very big files, I immediately faced one very nasty inconvenience:
-The standard Windows scrollbars can hold only signed integer value, which is too little to scroll through many gigabytes of data. 
-It could be some workarounds and crutches involved to overcome this, but frankly saying i'm not a big fan of this kind of approach.
+When I started to work with very big data files i immediately faced one very nasty inconvenience.
 
-That's why **HexControl** uses its own scrollbars. They work with `unsigned long long` values, which is way bigger than standard signed ints. 
-These scrollbars behave as normal Windows scrollbars, and even reside in the non client area, as the latter do.
+The standard Windows scrollbars can only hold `signed integer` values, which is too little to scroll through many gigabytes of data. It could be some workarounds and crutches involved to overcome this, but frankly saying i'm not a big fan of this kind of approach.
+
+That's why **HexControl** uses its own scrollbars. They work with `unsigned long long` values, which is way bigger than standard `signed ints`. 
+These scrollbars behave as normal Windows scrollbars, and even reside in the non client area as the latter do.
 
 ## [](#)Methods
 **HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
+
 ### [](#)Create
 **`bool Create(const HEXCREATESTRUCT& hcs)`**<br>
 Main initialization method.<br>
@@ -282,6 +295,7 @@ If you use **HexCtrl** in standard way through the `IHexCtrlPtr` pointer, obtain
 
 ## [](#)Structures
 Below are listed all **HexCtrl** structures.
+
 ### [](#)HEXCREATESTRUCT
 The main initialization struct used for control creation.
 ```cpp
@@ -298,6 +312,7 @@ struct HEXCREATESTRUCT
     bool            fCustomCtrl { false }; //It's a custom dialog control.
 };
 ```
+
 ### [](#)HEXCOLORSTRUCT
 This structure describes all control's colors. All theese colors have their default values.
 ```cpp
@@ -316,6 +331,7 @@ struct HEXCOLORSTRUCT
     COLORREF clrBkCursorSelected { RGB(0, 0, 200) };               //Cursor background color in selection.
 };
 ```
+
 ### [](#)HEXDATASTRUCT
 Main struct to set a data to display in the control.
 ```cpp
@@ -327,10 +343,11 @@ struct HEXDATASTRUCT
     HWND         hwndMsg { };                          //Window to send the control messages to. Parent window is used by default.
     IHexVirtual* pHexVirtual { };                      //Pointer to IHexVirtual data class for custom data handling.
     PBYTE        pData { };                            //Pointer to the data. Not used if it's virtual control.
-    HEXDATAMODE  enMode { HEXDATAMODE::DATA_DEFAULT }; //Working data mode of the control.
+    HEXDATAMODE  enMode { HEXDATAMODE::DATA_MEMORY };  //Working data mode of the control.
     bool         fMutable { false };                   //Will data be mutable (editable) or just read mode.
 };
 ```
+
 ### [](#)HEXMODIFYSTRUCT
 This structure is used internally as well as in the external notifications routine, when working in [`DATA_MSG`](#hexdatamode) and [`DATA_VIRTUAL`](#hexdatamode) modes.
 ```cpp
@@ -349,6 +366,7 @@ When `ullDataSize` is equal `ullSize`, bytes from `pData` just replace correspon
 If `ullDataSize` is less then `ullSize` only `ullDataSize` bytes are replaced if `fRepeat` flag is false. If `fRepeat` is true then block by block replacement takes place `ullSize / ullDataSize` times.
 
 For example, if `ullSize` = 9, `ullDataSize` = 3 and `fRepeat` is true, bytes in memory at `ullIndex` position are `123456789` and bytes pointed to by `pData` are `345`, then, after modification, bytes at `ullIndex` will be `345345345`.
+
 ### [](#)HEXNOTIFYSTRUCT
 This struct is used in notifications routine, when data is set with the [`DATA_MSG`](#ehexdatamode) flag.
 ```cpp
@@ -362,12 +380,13 @@ struct HEXNOTIFYSTRUCT
 };
 using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
 ```
+
 ### [](#)EHexDataMode
 Enum that represents the current data mode **HexCtrl** works in. Used as [`HEXDATASTRUCT`](#hexdatastruct) member in [`SetData`](#setdata) method.
 ```cpp
 enum class EHexDataMode : DWORD
 {
-    DATA_DEFAULT, DATA_MSG, DATA_VIRTUAL
+    DATA_MEMORY, DATA_MSG, DATA_VIRTUAL
 };
 ```
 
@@ -382,16 +401,15 @@ void CMyWnd::OnSize(UINT nType, int cx, int cy)
 ```
 
 ## [](#)Appearance
-To change control's font size - **«Ctrl+MouseWheel»**  
-To change control's capacity - **«Ctrl+Shift+MouseWheel»**
+To change control's font size — **Ctrl+MouseWheel**  
+To change control's capacity — **Ctrl+Shift+MouseWheel**
 
 ## [](#)Licensing
-This software is available under the **"MIT License modified with The Commons Clause".**
+This software is available under the **"MIT License modified with The Commons Clause".**  
+Briefly: It is free for any non commercial use.  
 [https://github.com/jovibor/HexCtrl/blob/master/LICENSE](https://github.com/jovibor/HexCtrl/blob/master/LICENSE)
 
-It is free for any non commercial use.
-
 ## [](#)Help Point
-If you would like to help the author of this project in further project's development you can do it in form of donation:
-<br><br>
+If you would like to help the author in further project's development you can do it in form of donation:
+
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=M6CX4QH8FJJDL&item_name=Donation&currency_code=USD&source=url)

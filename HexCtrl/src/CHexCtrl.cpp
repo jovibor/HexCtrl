@@ -599,7 +599,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	switch (uId)
 	{
 	case (UINT_PTR)EMenu::IDM_MAIN_SEARCH:
-		if (m_enMode == EHexDataMode::DATA_DEFAULT)
+		if (m_enMode == EHexDataMode::DATA_MEMORY)
 			m_pDlgSearch->ShowWindow(SW_SHOW);
 		else
 			MessageBoxW(pwszErrVirtual, L"Error", MB_ICONEXCLAMATION);
@@ -1131,7 +1131,7 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)const
 	//If it's virtual data control we aquire next byte_to_print from m_hwndMsg window.
 	switch (m_enMode)
 	{
-	case EHexDataMode::DATA_DEFAULT:
+	case EHexDataMode::DATA_MEMORY:
 	{
 		return m_pData[ullIndex];
 	}
@@ -1163,7 +1163,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
 
 	switch (m_enMode)
 	{
-	case EHexDataMode::DATA_DEFAULT: //Modify only in non Virtual mode.
+	case EHexDataMode::DATA_MEMORY: //Modify only in non Virtual mode.
 	{
 		if (hms.ullSize == hms.ullDataSize)
 		{
@@ -1875,7 +1875,7 @@ void CHexCtrl::Undo()
 {
 	switch (m_enMode)
 	{
-	case EHexDataMode::DATA_DEFAULT:
+	case EHexDataMode::DATA_MEMORY:
 	{
 		if (m_deqUndo.empty())
 			return;
@@ -1916,7 +1916,7 @@ void CHexCtrl::Redo()
 {
 	switch (m_enMode)
 	{
-	case EHexDataMode::DATA_DEFAULT:
+	case EHexDataMode::DATA_MEMORY:
 	{
 		if (m_deqRedo.empty())
 			return;
