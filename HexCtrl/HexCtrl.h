@@ -10,6 +10,12 @@
 #include <Windows.h> //Standard Windows header.
 #include <memory>    //std::shared/unique_ptr and related.
 
+/**********************************************************************
+* If HexCtrl is to be used as a .dll then #include this header,       *
+* and uncomment the line below.                                       *
+**********************************************************************/
+//#define HEXCTRL_SHARED_DLL
+
 namespace HEXCTRL
 {
 	/********************************************************************************************
@@ -205,4 +211,16 @@ namespace HEXCTRL
 	constexpr auto HEXCTRL_MSG_ONCONTEXTMENU { 0x0104 }; //OnContextMenu triggered.
 	constexpr auto HEXCTRL_MSG_UNDO { 0x0105 };          //Undo command triggered.
 	constexpr auto HEXCTRL_MSG_REDO { 0x0106 };          //Redo command triggered.
+
+
+/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
+#ifdef _UNICODE
+#if defined _M_IX86
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined _M_X64
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#else
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
+#endif
 }

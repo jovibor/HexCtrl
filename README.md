@@ -4,10 +4,13 @@
 * [Introduction](#introduction)
 * [Implementation](#implementation)
 * [Installing and Using the Control](#installing-and-using-the-control)
+  * [Building From The Sources](#building-from-the-sources)
+  * [Dynamic Link Library](#dynamic-link-library)
+  * [Explaining](#explaining)
 * [Control Creation](#control-creation)
   * [Classic Approach](#classic-approach)
   * [In Dialog](#in-dialog)
-* [Set the Data](#set-the-data)
+* [Set The Data](#set-the-data)
 * [Control Data Modes](#control-data-modes)
   * [Memory Data](#memory-data)
   * [Message Window](#message-window)
@@ -52,31 +55,50 @@ This forced people to implement their own common stuff for everyday needs.
 This **HexControl** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't have native support for such feature.
 
 ## [](#)Implementation
-This **HexControl** is implemented as a pure abstract virtual class, and can be used as a *child* or *float* window in any place
+The **HexCtrl** is implemented as a pure abstract virtual class, and can be used as a *child* or *float* window in any place
 of your existing application. It was build and tested in Visual Studio 2019, under Windows 10.
 
 ## [](#)Installing and Using the Control
-The usage of the control is quite simple:
+The **HexCtrl** can be used in your app by two different ways.  
+Building from the sources and using as .dll.
+### [](#)Building From The Sources
+The building process is quite simple:
 1. Copy **HexCtrl** folder into your project's folder.
 2. Add all files from **HexCtrl** folder into your project.
 3. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the control.
 4. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
-5. Call `myHex->Create` method to create control instance.
-6. Call `myHex->SetData` method to set the actual data to display as hex.
+5. [Create](#control-creation) control instance.
 
+### [](#)Dynamic Link Library
+To use **HexCtrl** as the .dll do the following:
+1. Copy `HexCtrl.h` file into your project's folder.
+2. Copy `HexCtrl.lib` file into your project's folder, so that linker can see it.
+3. Put `HexCtrl.dll` file next to your `.exe` file.
+4. Add the following code where you suppose to use the control:
+```cpp
+#define HEXCTRL_SHARED_DLL //You can alternatively uncomment this line in HexCtrl.h.
+#include "HexCtrl.h"` 
+```
+5. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
+5. [Create](#control-creation) control instance.
+
+Control's `.dll` is build with **MFC** static linking, so even if you are to use it in your own **MFC** project there should not be any interferences.
+
+### [](#)Explaining
 `IHexCtrlPtr` is, in fact, a pointer to a `IHexCtrl` pure abstract base class, wrapped either in `std::unique_ptr` or `std::shared_ptr`. You can choose whatever is best for your needs by comment/uncomment one of these alliases in `HexCtrl.h`:
 ```cpp
 //using IHexCtrlPtr = IHexCtrlUnPtr;
 using IHexCtrlPtr = IHexCtrlShPtr;
 ```
+
 This wrapper is used mainly for convenience, so you don't have to bother about object lifetime, it will be destroyed automatically.
 That's why there is a call to the factory function `CreateHexCtrl()` - to properly initialize a pointer.<br>
 
-**HexCtrl** also uses its own namespace - `HEXCTRL`. So it's up to you, whether to use namespace prefix before declarations: 
+**HexCtrl** also uses its own namespace `HEXCTRL`. So it's up to you, whether to use namespace prefix before declarations: 
 ```cpp
 HEXCTRL::
 ```
-or to define namespace in the source file's beginning:
+or to define namespace globally, in the source file's beginning:
 ```cpp
 using namespace HEXCTRL;
 ```
@@ -90,7 +112,7 @@ You can choose whether control will behave as a *child* or independent *floating
 HEXCREATESTRUCT hcs;
 hcs.fFloat = true;
 hcs.hwndParent = m_hWnd;
-bool IHexCtrl::Create(hcs);
+m_myHex->Create(hcs);
 ```
 `stColor` member of [`HEXCREATESTRUCT`](#hexcreatestruct) has a type of [`HEXCOLORSTRUCT`](#hexcolorstruct). This structure describes all the **HexCtrl**'s colors, and is also used in [`IHexCtrl::SetColor`](#setcolor) method.
 

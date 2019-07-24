@@ -14,6 +14,12 @@
 #include <string>        //std::wstring and related.
 #include <afxwin.h>      //MFC core and standard components.
 
+/****************************************************************
+* For manually initialize MFC.                                  *
+* It's used only for non MFC projects, with Shared MFC linking. *
+****************************************************************/
+//#define HEXCTRL_MANUAL_MFC_INIT
+
 namespace HEXCTRL {
 	namespace INTERNAL
 	{
@@ -34,7 +40,7 @@ namespace HEXCTRL {
 		};
 
 		/***************************************************************************************
-		* ESearchType - type of the search, enum.                                             *
+		* ESearchType - type of the search, enum.                                              *
 		***************************************************************************************/
 		enum class ESearchType : DWORD
 		{
@@ -165,7 +171,7 @@ namespace HEXCTRL {
 			SIZE m_sizeLetter { 1, 1 };         //Current font's letter size (width, height).
 			CFont m_fontHexView;                //Main Hex chunks font.
 			CFont m_fontBottomRect;             //Font for bottom Info rect.
-			const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };             //Search dialog.
+			const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };           //Search dialog.
 			const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll bar.
 			const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll bar.
 			CMenu m_menuMain;                   //Main popup menu.
@@ -209,14 +215,3 @@ namespace HEXCTRL {
 		};
 	}
 }
-
-/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
-#ifdef _UNICODE
-#if defined _M_IX86
-#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
-#elif defined _M_X64
-#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
-#else
-#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
-#endif
-#endif

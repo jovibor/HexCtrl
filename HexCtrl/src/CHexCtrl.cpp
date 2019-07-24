@@ -60,6 +60,10 @@ namespace HEXCTRL {
 	}
 }
 
+#if defined HEXCTRL_SHARED_DLL || defined HEXCTRL_MANUAL_MFC_INIT
+CWinApp theApp;
+#endif
+
 /************************************************************************
 * CHexCtrl implementation.												*
 ************************************************************************/
@@ -423,10 +427,10 @@ void CHexCtrl::Destroy()
 
 bool CHexCtrl::RegisterWndClass()
 {
-	//MFC initialization check, if Control is used outside MFC apps.
-	if (!AfxGetAppModuleState()->m_pCurrentWinApp)
-		AfxWinInit(::GetModuleHandleW(NULL), NULL, ::GetCommandLineW(), 0);
-
+	//MFC initialization, if HexCtrl is used in non MFC project, with Shared MFC linking.
+#if defined HEXCTRL_MANUAL_MFC_INIT
+	AfxWinInit(::GetModuleHandleW(NULL), NULL, ::GetCommandLineW(), 0);
+#endif
 	HINSTANCE hInst = AfxGetInstanceHandle();
 	WNDCLASSEXW wc { };
 
@@ -593,7 +597,6 @@ void CHexCtrl::OnMButtonDown(UINT nFlags, CPoint point)
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	static const wchar_t* const pwszErrVirtual { L"This function isn't supported in Virtual mode!" };
-
 	UINT_PTR uId = LOWORD(wParam);
 
 	switch (uId)

@@ -35,8 +35,9 @@ BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 }
 
 BOOL CHexDlgSearch::OnInitDialog()
-{
+{	
 	CDialogEx::OnInitDialog();
+
 	m_iRadioCurrent = IDC_HEXCTRL_SEARCH_RADIO_HEX;
 	CheckRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE, m_iRadioCurrent);
 	m_stBrushDefault.CreateSolidBrush(m_clrBkTextArea);
