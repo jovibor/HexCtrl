@@ -1,17 +1,17 @@
-## **Hex Control for MFC Applications**
+## **Hex Control for MFC/Win32 Applications**
 ![](docs/img/hexctrl_mainwnd.jpg)
 ### Table of Contents
 * [Introduction](#introduction)
 * [Implementation](#implementation)
-* [Installing and Using the Control](#installing-and-using-the-control)
+* [Installing and Using](#installing-and-using)
   * [Building From The Sources](#building-from-the-sources)
   * [Dynamic Link Library](#dynamic-link-library)
-  * [Explaining](#explaining)
-* [Control Creation](#control-creation)
+  * [Additional Info](#additional-info)
+* [Creating](#creating)
   * [Classic Approach](#classic-approach)
   * [In Dialog](#in-dialog)
 * [Set The Data](#set-the-data)
-* [Control Data Modes](#control-data-modes)
+* [Data Modes](#data-modes)
   * [Memory Data](#memory-data)
   * [Message Window](#message-window)
   * [Virtual Handler](#virtual-handler)
@@ -33,7 +33,7 @@
   * [IsMutable](#ismutable)
   * [GetFontSize](#getfontsize)
   * [GetSelection](#getselection)
-  * [GetMenuHandle](#GetMenuHandle)
+  * [GetMenuHandle](#getmenuhandle)
   * [Destroy](#destroy)
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
@@ -58,16 +58,21 @@ This **HexControl** is an attempt to expand standard **MFC** functionality, beca
 The **HexCtrl** is implemented as a pure abstract virtual class, and can be used as a *child* or *float* window in any place
 of your existing application. It was build and tested in Visual Studio 2019, under Windows 10.
 
-## [](#)Installing and Using the Control
+## [](#)Installing and Using
 The **HexCtrl** can be used in your app by two different ways.  
 Building from the sources and using as .dll.
+
 ### [](#)Building From The Sources
 The building process is quite simple:
 1. Copy **HexCtrl** folder into your project's folder.
 2. Add all files from **HexCtrl** folder into your project.
 3. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the control.
 4. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
-5. [Create](#control-creation) control instance.
+5. [Create](#creating) control instance.
+
+If you want to build **HexCtrl** from the sources in non MFC app you will have to:
+1. Add support for **Use MFC in a Shared DLL** in your project settings.
+2. Uncomment the line `//#define HEXCTRL_MANUAL_MFC_INIT` in `HexCtrl.h` header file.
 
 ### [](#)Dynamic Link Library
 To use **HexCtrl** as the .dll do the following:
@@ -80,11 +85,11 @@ To use **HexCtrl** as the .dll do the following:
 #include "HexCtrl.h"` 
 ```
 5. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
-5. [Create](#control-creation) control instance.
+5. [Create](#creating) control instance.
 
 Control's `.dll` is build with **MFC** static linking, so even if you are to use it in your own **MFC** project there should not be any interferences.
 
-### [](#)Explaining
+### [](#)Additional Info
 `IHexCtrlPtr` is, in fact, a pointer to a `IHexCtrl` pure abstract base class, wrapped either in `std::unique_ptr` or `std::shared_ptr`. You can choose whatever is best for your needs by comment/uncomment one of these alliases in `HexCtrl.h`:
 ```cpp
 //using IHexCtrlPtr = IHexCtrlUnPtr;
@@ -103,7 +108,7 @@ or to define namespace globally, in the source file's beginning:
 using namespace HEXCTRL;
 ```
 
-## [](#)Control Creation
+## [](#)Creating
 
 ### [](#)Classic Approach
 The `IHexCtrl::Create` method is the first method you call, it takes [`HEXCREATESTRUCT`](#hexcreatestruct) as its argument.  
@@ -146,7 +151,7 @@ IHexCtrlPtr myHex { CreateHexCtrl() };
 
 HEXCREATESTRUCT hcs;
 hcs.hwndParent = m_hWnd;
-hcs.rect = CRect(0, 0, 500, 300); //Control's rect.
+hcs.rect = {0, 0, 600, 400}; //Window rect.
 
 myHex->Create(hcs);
 
@@ -166,7 +171,7 @@ hds.ullDataSize = str.size();
 myHex->SetData(hds);
 ```
 
-## [](#)Control Data Modes
+## [](#)Data Modes
 Besides the standard classical mode, when **HexControl** just holds a pointer to some array of bytes in memory, it also has additional advanced modes it can be running in.  
 Theese modes can be quite useful for instance in cases where you need to display a very large amount of data that can't fit in memory all at once.
 
@@ -404,7 +409,7 @@ using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
 ```
 
 ### [](#)EHexDataMode
-Enum that represents the current data mode **HexCtrl** works in. Used as [`HEXDATASTRUCT`](#hexdatastruct) member in [`SetData`](#setdata) method.
+Enum that represents the current [data mode](#data-modes) **HexCtrl** works in. Used as [`HEXDATASTRUCT`](#hexdatastruct) member in [`SetData`](#setdata) method.
 ```cpp
 enum class EHexDataMode : DWORD
 {

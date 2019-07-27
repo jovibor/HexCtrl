@@ -11,10 +11,17 @@
 #include <memory>    //std::shared/unique_ptr and related.
 
 /**********************************************************************
-* If HexCtrl is to be used as a .dll then #include this header,       *
+* If HexCtrl is to be used as a .dll, then include this header,       *
 * and uncomment the line below.                                       *
 **********************************************************************/
 //#define HEXCTRL_SHARED_DLL
+
+/**********************************************************************
+* For manually initialize MFC.                                        *
+* This macro is used only for Win32 non MFC projects, built with      *
+* Use MFC in a Shared DLL option.                                     *
+**********************************************************************/
+//#define HEXCTRL_MANUAL_MFC_INIT
 
 namespace HEXCTRL
 {

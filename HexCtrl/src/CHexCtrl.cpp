@@ -60,10 +60,6 @@ namespace HEXCTRL {
 	}
 }
 
-#if defined HEXCTRL_SHARED_DLL || defined HEXCTRL_MANUAL_MFC_INIT
-CWinApp theApp;
-#endif
-
 /************************************************************************
 * CHexCtrl implementation.												*
 ************************************************************************/
@@ -91,9 +87,39 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_GETDLGCODE()
 END_MESSAGE_MAP()
 
+#if defined HEXCTRL_SHARED_DLL || defined HEXCTRL_MANUAL_MFC_INIT
+CWinApp theApp;
+#endif
+
 CHexCtrl::CHexCtrl()
 {
-	RegisterWndClass();
+	//MFC initialization, if HexCtrl is used in non MFC project, with Shared MFC linking.
+#if defined HEXCTRL_MANUAL_MFC_INIT
+	if (!AfxGetModuleState()->m_lpszCurrentAppName)
+		AfxWinInit(::GetModuleHandleW(NULL), NULL, ::GetCommandLineW(), 0);
+#endif
+
+	HINSTANCE hInst = AfxGetInstanceHandle();
+
+	WNDCLASSEXW wc { };
+	if (!(::GetClassInfoExW(hInst, WSTR_HEXCTRL_CLASSNAME, &wc)))
+	{
+		wc.cbSize = sizeof(WNDCLASSEXW);
+		wc.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
+		wc.lpfnWndProc = ::DefWindowProcW;
+		wc.cbClsExtra = wc.cbWndExtra = 0;
+		wc.hInstance = hInst;
+		wc.hIcon = wc.hIconSm = nullptr;
+		wc.hCursor = (HCURSOR)LoadImageW(0, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
+		wc.hbrBackground = nullptr;
+		wc.lpszMenuName = nullptr;
+		wc.lpszClassName = WSTR_HEXCTRL_CLASSNAME;
+		if (!RegisterClassExW(&wc))
+		{
+			MessageBoxW(L"HexControl RegisterClassExW error.", L"Error");
+			return;
+		}
+	}
 
 	//Submenu for data showing options.
 	m_menuShowAs.CreatePopupMenu();
@@ -113,7 +139,6 @@ CHexCtrl::CHexCtrl()
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
 	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_COPY_HEX, L"Copy as Hex	Ctrl+C");
 
-	HINSTANCE hInst = AfxGetInstanceHandle();
 	//Menu icons.
 	MENUITEMINFOW mii { };
 	mii.cbSize = sizeof(MENUITEMINFOW);
@@ -423,37 +448,6 @@ HMENU CHexCtrl::GetMenuHandle()const
 void CHexCtrl::Destroy()
 {
 	delete this;
-}
-
-bool CHexCtrl::RegisterWndClass()
-{
-	//MFC initialization, if HexCtrl is used in non MFC project, with Shared MFC linking.
-#if defined HEXCTRL_MANUAL_MFC_INIT
-	AfxWinInit(::GetModuleHandleW(NULL), NULL, ::GetCommandLineW(), 0);
-#endif
-	HINSTANCE hInst = AfxGetInstanceHandle();
-	WNDCLASSEXW wc { };
-
-	if (!(::GetClassInfoExW(hInst, WSTR_HEXCTRL_CLASSNAME, &wc)))
-	{
-		wc.cbSize = sizeof(WNDCLASSEXW);
-		wc.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
-		wc.lpfnWndProc = ::DefWindowProcW;
-		wc.cbClsExtra = wc.cbWndExtra = 0;
-		wc.hInstance = hInst;
-		wc.hIcon = wc.hIconSm = nullptr;
-		wc.hCursor = (HCURSOR)LoadImageW(0, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
-		wc.hbrBackground = nullptr;
-		wc.lpszMenuName = nullptr;
-		wc.lpszClassName = WSTR_HEXCTRL_CLASSNAME;
-		if (!RegisterClassExW(&wc))
-		{
-			MessageBoxW(L"HexControl RegisterClassExW error.", L"Error");
-			return false;
-		}
-	}
-
-	return true;
 }
 
 void CHexCtrl::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)

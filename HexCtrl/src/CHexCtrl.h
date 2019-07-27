@@ -14,12 +14,6 @@
 #include <string>        //std::wstring and related.
 #include <afxwin.h>      //MFC core and standard components.
 
-/****************************************************************
-* For manually initialize MFC.                                  *
-* It's used only for non MFC projects, with Shared MFC linking. *
-****************************************************************/
-//#define HEXCTRL_MANUAL_MFC_INIT
-
 namespace HEXCTRL {
 	namespace INTERNAL
 	{
@@ -119,7 +113,6 @@ namespace HEXCTRL {
 			afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 			afx_msg void OnNcPaint();
 		protected:
-			bool RegisterWndClass();                               //Registering HexCtrl window class.
 			[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex)const;   //Gets the byte data by index.
 			void ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw = true); //Main routine to modify data, in m_fMutable==true mode.
 			[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
