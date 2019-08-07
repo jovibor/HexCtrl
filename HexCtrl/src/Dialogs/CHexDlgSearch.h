@@ -4,7 +4,7 @@
 * Official git repository of the project: https://github.com/jovibor/HexCtrl/           *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
-* For more information, or any questions, visit the project's official repository.      *
+* For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
 #include <afxcontrolbars.h>  //Standard MFC's controls header.
@@ -37,11 +37,11 @@ namespace HEXCTRL {
 			void SearchCallback();
 			void ClearAll();
 			CHexCtrl* GetHexCtrl()const;
-			auto GetSearchType()->INTERNAL::ESearchType; //Gets selected search type.
+			ESearchType GetSearchType();                //Returns current search type.
 			DECLARE_MESSAGE_MAP()
 		private:
 			CHexCtrl* m_pHexCtrl { };
-			INTERNAL::SEARCHSTRUCT m_stSearch { };
+			SEARCHSTRUCT m_stSearch { };
 			int m_iRadioCurrent { };
 			const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
 			const COLORREF m_clrSearchFound { RGB(0, 200, 0) };

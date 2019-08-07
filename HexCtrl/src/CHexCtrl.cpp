@@ -4,7 +4,7 @@
 * Official git repository of the project: https://github.com/jovibor/HexCtrl/           *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
-* For more information, or any questions, visit the project's official repository.      *
+* For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
 #include "strsafe.h"
@@ -168,7 +168,7 @@ CHexCtrl::CHexCtrl()
 
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this);
 
-	FillWstrCapacity();
+	WstrCapacityFill();
 }
 
 CHexCtrl::~CHexCtrl()
@@ -183,11 +183,8 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 	if (m_fCreated) //Already created.
 		return false;
 
-	m_fFloat = hcs.fFloat;
 	m_hwndMsg = hcs.hwndParent;
 	m_stColor = hcs.stColor;
-
-	m_stBrushBkSelected.CreateSolidBrush(m_stColor.clrBkSelected);
 
 	DWORD dwStyle = hcs.dwStyle;
 	//1. WS_POPUP style is vital for GetParent to work properly in m_fFloat mode.
@@ -195,10 +192,40 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 	//2. Created HexCtrl window will always overlap (be on top of) its parent, or owner, window 
 	//   if pParentWnd is set (not nullptr) in CreateWindowEx.
 	//3. To force HexCtrl window on taskbar the WS_EX_APPWINDOW extended window style must be set.
-	if (m_fFloat)
+	if (hcs.fFloat)
 		dwStyle |= WS_VISIBLE | WS_POPUP | WS_OVERLAPPEDWINDOW;
 	else
 		dwStyle |= WS_VISIBLE | WS_CHILD;
+
+	CRect rc = hcs.rect;
+	if (rc.IsRectNull() && hcs.fFloat)
+	{	//If initial rect is null, and it's a float window HexCtrl, then place it at screen center.
+
+		int iPosX = GetSystemMetrics(SM_CXSCREEN) / 4;
+		int iPosY = GetSystemMetrics(SM_CYSCREEN) / 4;
+		int iPosCX = iPosX * 3;
+		int iPosCY = iPosY * 3;
+		rc.SetRect(iPosX, iPosY, iPosCX, iPosCY);
+	}
+
+	CStringW strError;
+	if (!hcs.fCustomCtrl)
+	{
+		if (!CWnd::CreateEx(hcs.dwExStyle, WSTR_HEXCTRL_CLASSNAME, L"HexControl",
+			dwStyle, rc, CWnd::FromHandle(hcs.hwndParent), hcs.fFloat ? 0 : hcs.uID))
+			strError.Format(L"HexCtrl (Id:%u) CreateEx failed.\r\nCheck HEXCREATESTRUCT parameters.", hcs.uID);
+	}
+	else //If it's a Custom Control in dialog, there is no need to create a window, just subclassing.
+	{
+		if (!SubclassDlgItem(hcs.uID, CWnd::FromHandle(hcs.hwndParent)))
+			strError.Format(L"HexCtrl (Id:%u) SubclassDlgItem failed.\r\nCheck CreateDialogCtrl parameters.", hcs.uID);
+	}
+
+	if (strError.GetLength()) //If there was some Creation error.
+	{
+		MessageBoxW(strError, L"Error", MB_ICONERROR);
+		return false;
+	}
 
 	//Font related.//////////////////////////////////////////////
 	LOGFONTW lf { };
@@ -209,47 +236,12 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 		StringCchCopyW(lf.lfFaceName, 9, L"Consolas");
 		lf.lfHeight = 18;
 	}
-
-	m_fontHexView.CreateFontIndirectW(&lf);
 	m_lFontSize = lf.lfHeight;
+	m_fontHexView.CreateFontIndirectW(&lf);
 
 	lf.lfHeight = 16;
 	m_fontBottomRect.CreateFontIndirectW(&lf);
 	//End of font related.///////////////////////////////////////
-
-	CRect rc = hcs.rect;
-	if (rc.IsRectNull() && m_fFloat)
-	{	//If initial rect is null, and it's a float window HexCtrl, then place it at screen center.
-
-		int iPosX = GetSystemMetrics(SM_CXSCREEN) / 4;
-		int iPosY = GetSystemMetrics(SM_CYSCREEN) / 4;
-		int iPosCX = iPosX * 3;
-		int iPosCY = iPosY * 3;
-		rc.SetRect(iPosX, iPosY, iPosCX, iPosCY);
-	}
-
-	//If it's a custom dialog control, there is no need to create a window.
-	if (!hcs.fCustomCtrl)
-	{
-		if (!CWnd::CreateEx(hcs.dwExStyle, WSTR_HEXCTRL_CLASSNAME, L"HexControl",
-			dwStyle, rc, CWnd::FromHandle(hcs.hwndParent), m_fFloat ? 0 : hcs.uId))
-		{
-			CStringW ss;
-			ss.Format(L"HexCtrl (Id:%u) CreateEx failed.\r\nCheck HEXCREATESTRUCT parameters.", hcs.uId);
-			MessageBoxW(ss, L"Error", MB_ICONERROR);
-			return false;
-		}
-	}
-	else
-	{
-		if (!SubclassDlgItem(hcs.uId, CWnd::FromHandle(hcs.hwndParent)))
-		{
-			CStringW ss;
-			ss.Format(L"HexCtrl (Id:%u) SubclassDlgItem failed.\r\nCheck CreateDialogCtrl parameters.", hcs.uId);
-			MessageBoxW(ss, L"Error", MB_ICONERROR);
-			return false;
-		}
-	}
 
 	//Removing window's border frame.
 	MARGINS marg { 0, 0, 0, 1 };
@@ -272,7 +264,7 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)
 {
 	HEXCREATESTRUCT hcs;
 	hcs.hwndParent = hwndDlg;
-	hcs.uId = uCtrlID;
+	hcs.uID = uCtrlID;
 	hcs.fCustomCtrl = true;
 
 	return Create(hcs);
@@ -402,7 +394,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	m_dwCapacity = dwCapacity;
 	m_dwCapacityBlockSize = m_dwCapacity / 2;
 
-	FillWstrCapacity();
+	WstrCapacityFill();
 	RecalcAll();
 }
 
@@ -800,8 +792,6 @@ void CHexCtrl::OnPaint()
 	RECT rc; //Used for all local rect related drawings.
 	pDC->GetClipBox(&rc);
 	pDC->FillSolidRect(&rc, m_stColor.clrBk);
-	pDC->SelectObject(m_penLines);
-	pDC->SelectObject(m_fontHexView);
 
 	//Find the ullLineStart and ullLineEnd position, draw the visible part.
 	const auto ullLineStart = GetTopLine();
@@ -814,16 +804,19 @@ void CHexCtrl::OnPaint()
 			ullLineEnd = (m_ullDataSize % m_dwCapacity) ? m_ullDataSize / m_dwCapacity + 1 : m_ullDataSize / m_dwCapacity;
 	}
 
+	const auto iSecondHorizLine = m_iStartWorkAreaY - 1;
 	const auto iThirdHorizLine = rcClient.Height() - m_iHeightBottomOffArea;
 	const auto iFourthHorizLine = iThirdHorizLine + m_iHeightBottomRect;
+
+	pDC->SelectObject(m_penLines);
 
 	//First horizontal line.
 	pDC->MoveTo(m_iFirstVertLine - iScrollH, m_iFirstHorizLine);
 	pDC->LineTo(m_iFourthVertLine, m_iFirstHorizLine);
 
 	//Second horizontal line.
-	pDC->MoveTo(m_iFirstVertLine - iScrollH, m_iSecondHorizLine);
-	pDC->LineTo(m_iFourthVertLine, m_iSecondHorizLine);
+	pDC->MoveTo(m_iFirstVertLine - iScrollH, iSecondHorizLine);
+	pDC->LineTo(m_iFourthVertLine, iSecondHorizLine);
 
 	//Third horizontal line.
 	pDC->MoveTo(m_iFirstVertLine - iScrollH, iThirdHorizLine);
@@ -832,38 +825,6 @@ void CHexCtrl::OnPaint()
 	//Fourth horizontal line.
 	pDC->MoveTo(m_iFirstVertLine - iScrollH, iFourthHorizLine);
 	pDC->LineTo(m_iFourthVertLine, iFourthHorizLine);
-
-	//«Offset» text.
-	rc.left = m_iFirstVertLine - iScrollH;
-	rc.top = m_iFirstHorizLine;
-	rc.right = m_iSecondVertLine - iScrollH;
-	rc.bottom = m_iSecondHorizLine;
-	pDC->SetTextColor(m_stColor.clrTextCaption);
-	pDC->DrawTextW(L"Offset", 6, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-
-	//Info rect's text.
-	rc.left = m_iFirstVertLine - iScrollH;
-	rc.top = iThirdHorizLine + 1;
-	rc.right = m_iFourthVertLine;
-	rc.bottom = iFourthHorizLine;	//Fill bottom rect until iFourthHorizLine.
-	pDC->FillSolidRect(&rc, m_stColor.clrBkInfoRect);
-	rc.left = m_iFirstVertLine + 5; //Draw text beginning with little indent.
-	rc.right = rcClient.right;		//Draw text to the end of the client area, even if it pass iFourthHorizLine.
-	pDC->SetTextColor(m_stColor.clrTextInfoRect);
-	pDC->SelectObject(m_fontBottomRect);
-	pDC->DrawTextW(m_wstrBottomText.data(), (int)m_wstrBottomText.size(), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-
-	//Capacity numbers.
-	pDC->SelectObject(m_fontHexView);
-	pDC->SetTextColor(m_stColor.clrTextCaption);
-	pDC->SetBkColor(m_stColor.clrBk);
-	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunk - iScrollH, m_iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
-		m_wstrCapacity.data(), (UINT)m_wstrCapacity.size(), nullptr);
-
-	//"Ascii" text.
-	rc.left = m_iThirdVertLine - iScrollH; rc.top = m_iFirstHorizLine;
-	rc.right = m_iFourthVertLine - iScrollH; rc.bottom = m_iSecondHorizLine;
-	pDC->DrawTextW(L"Ascii", 5, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	//First Vertical line.
 	pDC->MoveTo(m_iFirstVertLine - iScrollH, m_iFirstHorizLine);
@@ -881,7 +842,41 @@ void CHexCtrl::OnPaint()
 	pDC->MoveTo(m_iFourthVertLine - iScrollH, m_iFirstHorizLine);
 	pDC->LineTo(m_iFourthVertLine - iScrollH, iFourthHorizLine);
 
-	int iLine = 0;        //Current line to print.
+	//Bottom "Info" rect.
+	rc.left = m_iFirstVertLine + 1 - iScrollH;
+	rc.top = iThirdHorizLine + 1;
+	rc.right = m_iFourthVertLine;
+	rc.bottom = iFourthHorizLine;	//Fill bottom rect until iFourthHorizLine.
+	pDC->FillSolidRect(&rc, m_stColor.clrBkInfoRect);
+	rc.left = m_iFirstVertLine + 5; //Draw text beginning with little indent.
+	rc.right = rcClient.right;		//Draw text to the end of the client area, even if it pass iFourthHorizLine.
+	pDC->SelectObject(m_fontBottomRect);
+	pDC->SetTextColor(m_stColor.clrTextInfoRect);
+	pDC->SetBkColor(m_stColor.clrBkInfoRect);
+	pDC->DrawTextW(m_wstrBottomText.data(), (int)m_wstrBottomText.size(), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+
+	//«Offset» text.
+	rc.left = m_iFirstVertLine - iScrollH;
+	rc.top = m_iFirstHorizLine;
+	rc.right = m_iSecondVertLine - iScrollH;
+	rc.bottom = iSecondHorizLine;
+	pDC->SelectObject(m_fontHexView);
+	pDC->SetTextColor(m_stColor.clrTextCaption);
+	pDC->SetBkColor(m_stColor.clrBk);
+	pDC->DrawTextW(L"Offset", 6, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+	//Capacity numbers.
+	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunk - iScrollH, m_iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
+		m_wstrCapacity.data(), (UINT)m_wstrCapacity.size(), nullptr);
+
+	//"Ascii" text.
+	rc.left = m_iThirdVertLine - iScrollH;
+	rc.top = m_iFirstHorizLine;
+	rc.right = m_iFourthVertLine - iScrollH;
+	rc.bottom = iSecondHorizLine;
+	pDC->DrawTextW(L"Ascii", 5, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+	int iLine = 0; //Current line to print.
 	std::vector<POLYTEXTW> vecPolyHex, vecPolyAscii, vecPolySelHex, vecPolySelAscii, vecPolyCursor;
 	std::list<std::wstring> listWstrHex, listWstrAscii, listWstrSelHex, listWstrSelAscii, listWstrCursor;
 	COLORREF clrBkCursor; //Cursor color.
@@ -890,21 +885,24 @@ void CHexCtrl::OnPaint()
 	for (ULONGLONG iterLines = ullLineStart; iterLines < ullLineEnd; iterLines++, iLine++)
 	{
 		//Drawing offset with bk color depending on selection range.
-		if (m_ullSelectionSize && (iterLines * m_dwCapacity + m_dwCapacity) > m_ullSelectionStart &&
-			(iterLines * m_dwCapacity) < m_ullSelectionEnd)
+		COLORREF clrTextOffset, clrBkOffset;
+		if (m_ullSelectionSize && (iterLines * m_dwCapacity + m_dwCapacity) > m_ullSelectionStart
+			&& (iterLines * m_dwCapacity) < m_ullSelectionEnd)
 		{
-			pDC->SetTextColor(m_stColor.clrTextSelected);
-			pDC->SetBkColor(m_stColor.clrBkSelected);
+			clrTextOffset = m_stColor.clrTextSelected;
+			clrBkOffset = m_stColor.clrBkSelected;
 		}
 		else
 		{
-			pDC->SetTextColor(m_stColor.clrTextCaption);
-			pDC->SetBkColor(m_stColor.clrBk);
+			clrTextOffset = m_stColor.clrTextCaption;
+			clrBkOffset = m_stColor.clrBk;
 		}
 
 		//Left column offset printing (00000001...0000FFFF).
 		wchar_t pwszOffset[16];
 		UllToWchars(iterLines * m_dwCapacity, pwszOffset, (size_t)m_dwOffsetDigits / 2);
+		pDC->SetTextColor(clrTextOffset);
+		pDC->SetBkColor(clrBkOffset);
 		ExtTextOutW(pDC->m_hDC, m_iFirstVertLine + m_sizeLetter.cx - iScrollH, m_iStartWorkAreaY + (m_sizeLetter.cy * iLine),
 			NULL, nullptr, pwszOffset, m_dwOffsetDigits, nullptr);
 
@@ -1031,8 +1029,8 @@ void CHexCtrl::OnPaint()
 	}
 
 	//Hex printing.
-	pDC->SetBkColor(m_stColor.clrBk);
 	pDC->SetTextColor(m_stColor.clrTextHex);
+	pDC->SetBkColor(m_stColor.clrBk);
 	PolyTextOutW(pDC->m_hDC, vecPolyHex.data(), (UINT)vecPolyHex.size());
 
 	//Ascii printing.
@@ -1040,18 +1038,21 @@ void CHexCtrl::OnPaint()
 	PolyTextOutW(pDC->m_hDC, vecPolyAscii.data(), (UINT)vecPolyAscii.size());
 
 	//Hex selected printing.
-	pDC->SetBkColor(m_stColor.clrBkSelected);
-	pDC->SetTextColor(m_stColor.clrTextSelected);
-	PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), (UINT)vecPolySelHex.size());
+	if (!vecPolySelHex.empty())
+	{
+		pDC->SetTextColor(m_stColor.clrTextSelected);
+		pDC->SetBkColor(m_stColor.clrBkSelected);
+		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), (UINT)vecPolySelHex.size());
 
-	//Ascii selected printing.
-	PolyTextOutW(pDC->m_hDC, vecPolySelAscii.data(), (UINT)vecPolySelAscii.size());
+		//Ascii selected printing.
+		PolyTextOutW(pDC->m_hDC, vecPolySelAscii.data(), (UINT)vecPolySelAscii.size());
+	}
 
 	//Cursor printing.
 	if (!vecPolyCursor.empty())
 	{
-		pDC->SetBkColor(clrBkCursor);
 		pDC->SetTextColor(m_stColor.clrTextCursor);
+		pDC->SetBkColor(clrBkCursor);
 		PolyTextOutW(pDC->m_hDC, vecPolyCursor.data(), (UINT)vecPolyCursor.size());
 	}
 }
@@ -1237,7 +1238,7 @@ void CHexCtrl::RecalcAll()
 	m_iSpaceBetweenHexChunks = m_sizeLetter.cx;
 	m_iDistanceBetweenHexChunks = m_iSizeHexByte * (DWORD)m_enShowMode + m_iSpaceBetweenHexChunks;
 	m_iThirdVertLine = m_iSecondVertLine + m_iDistanceBetweenHexChunks * (m_dwCapacity / (DWORD)m_enShowMode)
-		+ m_sizeLetter.cx + m_iSpaceBetweenBlocks;
+		+ m_sizeLetter.cx + m_iSpaceBetweenBlocks + 1;
 	m_iIndentAscii = m_iThirdVertLine + m_sizeLetter.cx;
 	m_iSpaceBetweenAscii = m_sizeLetter.cx;
 	m_iFourthVertLine = m_iIndentAscii + (m_iSpaceBetweenAscii * m_dwCapacity) + m_sizeLetter.cx;
@@ -1246,7 +1247,6 @@ void CHexCtrl::RecalcAll()
 		(m_dwCapacityBlockSize / (DWORD)m_enShowMode - 1) * m_iSpaceBetweenHexChunks;
 	m_iHeightTopRect = std::lround(m_sizeLetter.cy * 1.5);
 	m_iStartWorkAreaY = m_iFirstHorizLine + m_iHeightTopRect;
-	m_iSecondHorizLine = m_iStartWorkAreaY - 1;
 	m_iIndentTextCapacityY = m_iHeightTopRect / 2 - (m_sizeLetter.cy / 2);
 
 	RecalcScrollSizes();
@@ -2392,7 +2392,7 @@ void CHexCtrl::FillWithZeros()
 	ModifyData(hms);
 }
 
-void CHexCtrl::FillWstrCapacity()
+void CHexCtrl::WstrCapacityFill()
 {
 	m_wstrCapacity.clear();
 	m_wstrCapacity.reserve((size_t)m_dwCapacity * 3);

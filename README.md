@@ -368,7 +368,7 @@ struct HEXCREATESTRUCT
     HWND            hwndParent { };        //Parent window pointer.
     const LOGFONTW* pLogFont { };          //Font to be used, nullptr for default. This font has to be monospaced.
     RECT            rect { };              //Initial rect. If null, the window is screen centered.
-    UINT            uId { };               //Control Id.
+    UINT            uID { };               //Control ID.
     DWORD           dwStyle { };           //Window styles, 0 for default.
     DWORD           dwExStyle { };         //Extended window styles, 0 for default.
     bool            fFloat { false };      //Is float or child (incorporated into another window)?
