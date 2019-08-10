@@ -34,7 +34,7 @@ namespace HEXCTRL {
 	namespace INTERNAL {
 		enum class EClipboard : DWORD
 		{
-			COPY_HEX, COPY_HEXFORMATTED, COPY_ASCII,
+			COPY_HEX, COPY_HEXFORMATTED, COPY_ASCII, COPY_BASE64,
 			PASTE_HEX, PASTE_ASCII
 		};
 
@@ -43,10 +43,10 @@ namespace HEXCTRL {
 		{
 			IDM_MAIN_SEARCH = 0x8001,
 			IDM_SHOWAS_BYTE, IDM_SHOWAS_WORD, IDM_SHOWAS_DWORD, IDM_SHOWAS_QWORD,
-			IDM_EDIT_UNDO, IDM_EDIT_REDO,
-			IDM_EDIT_COPY_HEX, IDM_EDIT_COPY_HEXFORMATTED, IDM_EDIT_COPY_ASCII,
-			IDM_EDIT_PASTE_HEX, IDM_EDIT_PASTE_ASCII,
-			IDM_EDIT_FILL_ZEROS,
+			IDM_CLIPBOARD_COPY_HEX, IDM_CLIPBOARD_COPY_HEXFORMATTED, IDM_CLIPBOARD_COPY_ASCII, IDM_CLIPBOARD_COPY_BASE64,
+			IDM_CLIPBOARD_PASTE_HEX, IDM_CLIPBOARD_PASTE_ASCII,
+			IDM_MAIN_UNDO, IDM_MAIN_REDO,
+			IDM_MAIN_FILL_ZEROS,
 			IDM_MAIN_ABOUT,
 		};
 
@@ -121,12 +121,35 @@ CHexCtrl::CHexCtrl()
 		}
 	}
 
-	//Submenu for data showing options.
+	/***************************************
+	* Menus                                *
+	***************************************/
+	MENUITEMINFOW mii { };
+
+	//"Show As..." Submenu.
 	m_menuShowAs.CreatePopupMenu();
 	m_menuShowAs.AppendMenuW(MF_STRING | MF_CHECKED, (UINT_PTR)EMenu::IDM_SHOWAS_BYTE, L"BYTE");
 	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_SHOWAS_WORD, L"WORD");
 	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_SHOWAS_DWORD, L"DWORD");
 	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_SHOWAS_QWORD, L"QWORD");
+
+	//"Clipboard" Submenu.
+	m_menuClipboard.CreatePopupMenu();
+	m_menuClipboard.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX, L"Copy as Hex	Ctrl+C");
+	mii.cbSize = sizeof(MENUITEMINFOW);
+	mii.fMask = MIIM_BITMAP;
+	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX] =
+		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+	m_menuClipboard.SetMenuItemInfoW((UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX, &mii);
+	m_menuClipboard.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEXFORMATTED, L"Copy as Formatted Hex");
+	m_menuClipboard.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_ASCII, L"Copy as Ascii");
+	m_menuClipboard.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_BASE64, L"Copy as Base64");
+	m_menuClipboard.AppendMenuW(MF_SEPARATOR);
+	m_menuClipboard.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_HEX, L"Paste as Hex	Ctrl+V");
+	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_HEX] =
+		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+	m_menuClipboard.SetMenuItemInfoW((UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_HEX, &mii);
+	m_menuClipboard.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_ASCII, L"Paste as Ascii");
 
 	//Main menu.
 	m_menuMain.CreatePopupMenu();
@@ -134,37 +157,18 @@ CHexCtrl::CHexCtrl()
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
 	m_menuMain.AppendMenuW(MF_POPUP, (DWORD_PTR)m_menuShowAs.m_hMenu, L"Show data as...");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_UNDO, L"Undo	Ctrl+Z");
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_REDO, L"Redo	Ctrl+Y");
+	m_menuMain.AppendMenuW(MF_POPUP, (DWORD_PTR)m_menuClipboard.m_hMenu, L"Clipboard...");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_COPY_HEX, L"Copy as Hex	Ctrl+C");
-
-	//Menu icons.
-	MENUITEMINFOW mii { };
-	mii.cbSize = sizeof(MENUITEMINFOW);
-	mii.fMask = MIIM_BITMAP;
-	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)EMenu::IDM_EDIT_COPY_HEX] =
-		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-	m_menuMain.SetMenuItemInfoW((UINT_PTR)EMenu::IDM_EDIT_COPY_HEX, &mii);
-
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_COPY_HEXFORMATTED, L"Copy as Formatted Hex");
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_COPY_ASCII, L"Copy as Ascii");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_MAIN_UNDO, L"Undo	Ctrl+Z");
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_MAIN_REDO, L"Redo	Ctrl+Y");
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_PASTE_HEX, L"Paste as Hex	Ctrl+V");
-	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)EMenu::IDM_EDIT_PASTE_HEX] =
-		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-	m_menuMain.SetMenuItemInfoW((UINT_PTR)EMenu::IDM_EDIT_PASTE_HEX, &mii);
-
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_PASTE_ASCII, L"Paste as Ascii");
-	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_EDIT_FILL_ZEROS, L"Fill with zeros");
-
-	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)EMenu::IDM_EDIT_FILL_ZEROS] =
+	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_MAIN_FILL_ZEROS, L"Fill with zeros");
+	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)EMenu::IDM_MAIN_FILL_ZEROS] =
 		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-	m_menuMain.SetMenuItemInfoW((UINT_PTR)EMenu::IDM_EDIT_FILL_ZEROS, &mii);
-
+	m_menuMain.SetMenuItemInfoW((UINT_PTR)EMenu::IDM_MAIN_FILL_ZEROS, &mii);
 	m_menuMain.AppendMenuW(MF_SEPARATOR);
 	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_MAIN_ABOUT, L"About");
+	/* Menus end. */
 
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this);
 
@@ -593,28 +597,31 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 		else
 			MessageBoxW(pwszErrVirtual, L"Error", MB_ICONEXCLAMATION);
 		break;
-	case (UINT_PTR)EMenu::IDM_EDIT_UNDO:
+	case (UINT_PTR)EMenu::IDM_MAIN_UNDO:
 		Undo();
 		break;
-	case (UINT_PTR)EMenu::IDM_EDIT_REDO:
+	case (UINT_PTR)EMenu::IDM_MAIN_REDO:
 		Redo();
 		break;
-	case (UINT_PTR)EMenu::IDM_EDIT_COPY_HEX:
+	case (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX:
 		ClipboardCopy(EClipboard::COPY_HEX);
 		break;
-	case (UINT_PTR)EMenu::IDM_EDIT_COPY_HEXFORMATTED:
+	case (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEXFORMATTED:
 		ClipboardCopy(EClipboard::COPY_HEXFORMATTED);
 		break;
-	case (UINT_PTR)EMenu::IDM_EDIT_COPY_ASCII:
+	case (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_ASCII:
 		ClipboardCopy(EClipboard::COPY_ASCII);
 		break;
-	case (UINT_PTR)EMenu::IDM_EDIT_PASTE_HEX:
+	case (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_BASE64:
+		ClipboardCopy(EClipboard::COPY_BASE64);
+		break;
+	case (UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_HEX:
 		ClipboardPaste(EClipboard::PASTE_HEX);
 		break;
-	case (UINT_PTR)EMenu::IDM_EDIT_PASTE_ASCII:
+	case (UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_ASCII:
 		ClipboardPaste(EClipboard::PASTE_ASCII);
 		break;
-	case (UINT_PTR)EMenu::IDM_EDIT_FILL_ZEROS:
+	case (UINT_PTR)EMenu::IDM_MAIN_FILL_ZEROS:
 		FillWithZeros();
 		break;
 	case (UINT_PTR)EMenu::IDM_MAIN_ABOUT:
@@ -653,20 +660,20 @@ void CHexCtrl::OnContextMenu(CWnd * pWnd, CPoint point)
 	else
 		uMenuStatus = MF_ENABLED;
 
-	//To not spread up the efforts through code, all the checks are done here 
-	//instead of WM_INITMENUPOPUP.
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_EDIT_COPY_HEX, uMenuStatus | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_EDIT_COPY_HEXFORMATTED, uMenuStatus | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_EDIT_COPY_ASCII, uMenuStatus | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_EDIT_UNDO, (m_deqUndo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_EDIT_REDO, (m_deqRedo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
+	//To not spread up the efforts through code, all the checks are done here instead of WM_INITMENUPOPUP.
+	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX, uMenuStatus | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEXFORMATTED, uMenuStatus | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_ASCII, uMenuStatus | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_BASE64, uMenuStatus | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_MAIN_UNDO, (m_deqUndo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_MAIN_REDO, (m_deqRedo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
 
 	BOOL fFormatAvail = IsClipboardFormatAvailable(CF_TEXT);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_EDIT_PASTE_HEX, ((m_fMutable && fFormatAvail) ?
+	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_HEX, ((m_fMutable && fFormatAvail) ?
 		uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_EDIT_PASTE_ASCII, ((m_fMutable && fFormatAvail) ?
+	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_ASCII, ((m_fMutable && fFormatAvail) ?
 		uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_EDIT_FILL_ZEROS,
+	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_MAIN_FILL_ZEROS,
 		(m_fMutable ? uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
 
 	//Notifying parent that we are about to display context menu.
@@ -1238,7 +1245,7 @@ void CHexCtrl::RecalcAll()
 	m_iSpaceBetweenHexChunks = m_sizeLetter.cx;
 	m_iDistanceBetweenHexChunks = m_iSizeHexByte * (DWORD)m_enShowMode + m_iSpaceBetweenHexChunks;
 	m_iThirdVertLine = m_iSecondVertLine + m_iDistanceBetweenHexChunks * (m_dwCapacity / (DWORD)m_enShowMode)
-		+ m_sizeLetter.cx + m_iSpaceBetweenBlocks + 1;
+		+ m_sizeLetter.cx + m_iSpaceBetweenBlocks;
 	m_iIndentAscii = m_iThirdVertLine + m_sizeLetter.cx;
 	m_iSpaceBetweenAscii = m_sizeLetter.cx;
 	m_iFourthVertLine = m_iIndentAscii + (m_iSpaceBetweenAscii * m_dwCapacity) + m_sizeLetter.cx;
@@ -1368,6 +1375,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 		MessageBoxW(L"Selection size is too big to copy.\r\nTry to select less.", L"Error", MB_ICONERROR);
 		return;
 	}
+
 	const char* const pszHexMap { "0123456789ABCDEF" };
 	std::string strToClipboard;
 
@@ -1400,7 +1408,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 		{
 			DWORD dwCount = dwModStart * 2 + dwModStart / (DWORD)m_enShowMode;
 			//Additional spaces between halves. Only in ASBYTE's view mode.
-			dwCount += m_enShowMode == EShowMode::ASBYTE ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
+			dwCount += (m_enShowMode == EShowMode::ASBYTE) ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
 			strToClipboard.insert(0, (size_t)dwCount, ' ');
 		}
 
@@ -1412,7 +1420,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 
 			if (i < (m_ullSelectionSize - 1) && (dwTail - 1) != 0)
 				if (m_enShowMode == EShowMode::ASBYTE && dwTail == dwNextBlock)
-					strToClipboard += "   "; //Additional spaces between halves. Only in BYTE's view mode.
+					strToClipboard += "   "; //Additional spaces between halves. Only in ASBYTE view mode.
 				else if (((m_dwCapacity - dwTail + 1) % (DWORD)m_enShowMode) == 0) //Add space after hex full chunk, ShowAs_size depending.
 					strToClipboard += " ";
 			if (--dwTail == 0 && i < (m_ullSelectionSize - 1)) //Next row.
@@ -1434,6 +1442,28 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 				ch = ' ';
 			strToClipboard += ch;
 		}
+	}
+	break;
+	case EClipboard::COPY_BASE64:
+	{
+		const char* const pszBase64Map { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
+		unsigned int uValA = 0;
+		int iValB = -6;
+		for (unsigned i = 0; i < m_ullSelectionSize; i++)
+		{
+			uValA = (uValA << 8) + GetByte(m_ullSelectionStart + i);
+			iValB += 8;
+			while (iValB >= 0)
+			{
+				strToClipboard += pszBase64Map[(uValA >> iValB) & 0x3F];
+				iValB -= 6;
+			}
+		}
+
+		if (iValB > -6)
+			strToClipboard += pszBase64Map[((uValA << 8) >> (iValB + 8)) & 0x3F];
+		while (strToClipboard.size() % 4)
+			strToClipboard += '=';
 	}
 	break;
 	default: //default.
@@ -2410,7 +2440,7 @@ void CHexCtrl::WstrCapacityFill()
 		}
 
 		//Additional space between hex chunk blocks.
-		if (((iter + 1) % (DWORD)m_enShowMode) == 0)
+		if ((((iter + 1) % (DWORD)m_enShowMode) == 0) && (iter < (m_dwCapacity - 1)))
 			m_wstrCapacity += L" ";
 
 		//Additional space between hex halves.

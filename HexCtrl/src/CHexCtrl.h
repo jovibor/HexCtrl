@@ -174,6 +174,7 @@ namespace HEXCTRL {
 			CFont m_fontBottomRect;               //Font for bottom Info rect.
 			CMenu m_menuMain;                     //Main popup menu.
 			CMenu m_menuShowAs;                   //Submenu "Show as..."
+			CMenu m_menuClipboard;                //Submenu "Clipboard"
 			CPen m_penLines { PS_SOLID, 1, RGB(200, 200, 200) }; //Pen for lines.
 			long m_lFontSize { };                 //Current font size.
 			int m_iSizeFirstHalf { };             //Size of first half of capacity.
