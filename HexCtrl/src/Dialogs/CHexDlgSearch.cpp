@@ -38,8 +38,8 @@ BOOL CHexDlgSearch::OnInitDialog()
 {	
 	CDialogEx::OnInitDialog();
 
-	m_iRadioCurrent = IDC_HEXCTRL_SEARCH_RADIO_HEX;
-	CheckRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE, m_iRadioCurrent);
+	m_uRadioCurrent = IDC_HEXCTRL_SEARCH_RADIO_HEX;
+	CheckRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE, m_uRadioCurrent);
 	m_stBrushDefault.CreateSolidBrush(m_clrBkTextArea);
 
 	return TRUE;
@@ -230,9 +230,9 @@ HBRUSH CHexDlgSearch::OnCtlColor(CDC * pDC, CWnd * pWnd, UINT nCtlColor)
 
 void CHexDlgSearch::OnRadioBnRange(UINT nID)
 {
-	if (nID != m_iRadioCurrent)
+	if (nID != m_uRadioCurrent)
 		ClearAll();
-	m_iRadioCurrent = nID;
+	m_uRadioCurrent = nID;
 }
 
 void CHexDlgSearch::ClearAll()

@@ -18,7 +18,7 @@ namespace HEXCTRL {
 		class CHexDlgAbout : public CDialogEx
 		{
 		public:
-			explicit CHexDlgAbout(CWnd* m_pHexCtrl = nullptr) : CDialogEx(IDD_HEXCTRL_ABOUT) {}
+			explicit CHexDlgAbout(CWnd* m_pHexCtrl) : CDialogEx(IDD_HEXCTRL_ABOUT, m_pHexCtrl) {}
 			virtual ~CHexDlgAbout() {}
 		protected:
 			virtual BOOL OnInitDialog() override;

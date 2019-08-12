@@ -81,7 +81,7 @@ BEGIN
     LTEXT           "<--Version-->",IDC_HEXCTRL_ABOUT_STATIC_VERSION,38,10,143,8
     LTEXT           "Author: Jovibor (C), 2018-2019.",IDC_STATIC,38,19,105,8
     LTEXT           "To increase font size:         Ctrl+MouseWheel",IDC_STATIC,38,28,163,8
-    LTEXT           "To increase grid capacity:  Ctrl+Shift+MouseWheel",IDC_STATIC,38,37,167,8
+    LTEXT           "To increase grid capacity:  Ctrl+Shift+MouseWheel",IDC_STATIC,38,37,166,8
     CONTROL         IDB_HEXCTRL_ICON,IDB_HEXCTRL_ICON,"Static",SS_BITMAP | SS_CENTERIMAGE,13,10,20,20
     CONTROL         "https://github.com/jovibor/HexCtrl",IDC_HEXCTRL_ABOUT_LINKGITHUB,
                     "MfcLink",WS_TABSTOP,38,45,111,11

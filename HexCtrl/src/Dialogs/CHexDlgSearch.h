@@ -42,7 +42,7 @@ namespace HEXCTRL {
 		private:
 			CHexCtrl* m_pHexCtrl { };
 			SEARCHSTRUCT m_stSearch { };
-			int m_iRadioCurrent { };
+			UINT m_uRadioCurrent { };
 			const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
 			const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
 			const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
