@@ -249,18 +249,18 @@ CHexCtrl* CHexDlgSearch::GetHexCtrl()const
 
 ESearchType CHexDlgSearch::GetSearchType()
 {
-	INTERNAL::ESearchType enSearch { };
+	ESearchType enSearch { };
 
 	switch (GetCheckedRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE))
 	{
 	case IDC_HEXCTRL_SEARCH_RADIO_HEX:
-		enSearch = INTERNAL::ESearchType::SEARCH_HEX;
+		enSearch = ESearchType::SEARCH_HEX;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_ASCII:
-		enSearch = INTERNAL::ESearchType::SEARCH_ASCII;
+		enSearch = ESearchType::SEARCH_ASCII;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_UNICODE:
-		enSearch = INTERNAL::ESearchType::SEARCH_UTF16;
+		enSearch = ESearchType::SEARCH_UTF16;
 		break;
 	}
 

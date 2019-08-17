@@ -26,7 +26,7 @@ namespace HEXCTRL {
 		namespace SCROLLEX { class CScrollEx; }
 
 		/***************************************************************************************
-		* EShowMode - current data mode representation.                                       *
+		* EShowMode - current data mode representation.                                        *
 		***************************************************************************************/
 		enum class EShowMode : DWORD
 		{
@@ -34,7 +34,7 @@ namespace HEXCTRL {
 		};
 
 		/***************************************************************************************
-		* ESearchType - type of the search, enum.                                              *
+		* ESearchType - type of the search, also used in CHexDlgSearch.                        *
 		***************************************************************************************/
 		enum class ESearchType : DWORD
 		{
@@ -159,7 +159,7 @@ namespace HEXCTRL {
 			const DWORD m_dwUndoMax { 500 };      //How many Undo states to preserve.
 			HEXCOLORSTRUCT m_stColor;             //All control related colors.
 			EHexDataMode m_enMode { EHexDataMode::DATA_MEMORY }; //Control's mode.
-			EShowMode m_enShowMode { EShowMode::ASBYTE }; //Show data mode.
+			EShowMode m_enShowMode { EShowMode::ASBYTE }; //Current "Show data" mode.
 			PBYTE m_pData { };                    //Main data pointer. Modifiable in "Edit" mode.
 			IHexVirtual* m_pHexVirtual { };       //Data handler pointer for EHexDataMode::DATA_VIRTUAL
 			HWND m_hwndMsg { };                   //Window handle the control messages will be sent to.
