@@ -13,6 +13,7 @@
 #include "Dialogs/CHexDlgSearch.h"
 #include "CHexCtrl.h"
 #include "CScrollEx.h"
+#include "CHexBookmarks.h"
 #include "Helper.h"
 #pragma comment(lib, "Dwmapi.lib")
 
@@ -38,18 +39,7 @@ namespace HEXCTRL {
 			PASTE_HEX, PASTE_ASCII
 		};
 
-		//Internal menu IDs, start from 0x8001.
-		enum class EMenu : UINT_PTR
-		{
-			IDM_MAIN_SEARCH = 0x8001,
-			IDM_SHOWAS_BYTE, IDM_SHOWAS_WORD, IDM_SHOWAS_DWORD, IDM_SHOWAS_QWORD,
-			IDM_CLIPBOARD_COPY_HEX, IDM_CLIPBOARD_COPY_HEX_LE, IDM_CLIPBOARD_COPY_HEX_FORMATTED, IDM_CLIPBOARD_COPY_ASCII, IDM_CLIPBOARD_COPY_BASE64,
-			IDM_CLIPBOARD_PASTE_HEX, IDM_CLIPBOARD_PASTE_ASCII,
-			IDM_MAIN_UNDO, IDM_MAIN_REDO,
-			IDM_MAIN_FILL_ZEROS,
-			IDM_MAIN_ABOUT,
-		};
-
+		//Structure for UNDO command routine.
 		struct UNDOSTRUCT
 		{
 			ULONGLONG              ullIndex; //Start byte to apply Undo to.
@@ -80,6 +70,7 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_KEYDOWN()
 	ON_WM_SIZE()
 	ON_WM_CONTEXTMENU()
+	ON_WM_INITMENUPOPUP()
 	ON_WM_NCACTIVATE()
 	ON_WM_NCCALCSIZE()
 	ON_WM_NCPAINT()
@@ -87,7 +78,9 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_GETDLGCODE()
 END_MESSAGE_MAP()
 
-#if defined HEXCTRL_SHARED_DLL || defined HEXCTRL_MANUAL_MFC_INIT
+//CWinApp object vital for manual MFC, and for in-.dll work,
+//to run properly (Resources handling and assertions.)
+#if defined HEXCTRL_MANUAL_MFC_INIT || defined HEXCTRL_SHARED_DLL
 CWinApp theApp;
 #endif
 
@@ -100,8 +93,8 @@ CHexCtrl::CHexCtrl()
 #endif
 
 	HINSTANCE hInst = AfxGetInstanceHandle();
-
 	WNDCLASSEXW wc { };
+
 	if (!(::GetClassInfoExW(hInst, WSTR_HEXCTRL_CLASSNAME, &wc)))
 	{
 		wc.cbSize = sizeof(WNDCLASSEXW);
@@ -121,57 +114,25 @@ CHexCtrl::CHexCtrl()
 		}
 	}
 
-	/***************************************
-	* Menus                                *
-	***************************************/
-	MENUITEMINFOW mii { };
-
-	//"Show As..." Submenu.
-	m_menuShowAs.CreatePopupMenu();
-	m_menuShowAs.AppendMenuW(MF_STRING | MF_CHECKED, (UINT_PTR)EMenu::IDM_SHOWAS_BYTE, L"BYTE");
-	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_SHOWAS_WORD, L"WORD");
-	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_SHOWAS_DWORD, L"DWORD");
-	m_menuShowAs.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_SHOWAS_QWORD, L"QWORD");
-
-	//"Clipboard" Submenu.
-	m_menuClipboard.CreatePopupMenu();
-	m_menuClipboard.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX, L"Copy as Hex	Ctrl+C");
-	m_menuClipboard.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX_LE, L"Copy as Hex (little-endian)");
-	mii.cbSize = sizeof(MENUITEMINFOW);
-	mii.fMask = MIIM_BITMAP;
-	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX] =
-		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-	m_menuClipboard.SetMenuItemInfoW((UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX, &mii);
-	m_menuClipboard.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX_FORMATTED, L"Copy as Formatted Hex");
-	m_menuClipboard.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_ASCII, L"Copy as Ascii");
-	m_menuClipboard.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_BASE64, L"Copy as Base64");
-	m_menuClipboard.AppendMenuW(MF_SEPARATOR);
-	m_menuClipboard.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_HEX, L"Paste as Hex	Ctrl+V");
-	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_HEX] =
-		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-	m_menuClipboard.SetMenuItemInfoW((UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_HEX, &mii);
-	m_menuClipboard.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_ASCII, L"Paste as Ascii");
-
-	//Main menu.
-	m_menuMain.CreatePopupMenu();
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_MAIN_SEARCH, L"Search and Replace...	Ctrl+F/Ctrl+H");
-	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_POPUP, (DWORD_PTR)m_menuShowAs.m_hMenu, L"Show data as...");
-	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_POPUP, (DWORD_PTR)m_menuClipboard.m_hMenu, L"Clipboard...");
-	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_MAIN_UNDO, L"Undo	Ctrl+Z");
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_MAIN_REDO, L"Redo	Ctrl+Y");
-	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_MAIN_FILL_ZEROS, L"Fill with zeros");
-	mii.hbmpItem = m_umapHBITMAP[(UINT_PTR)EMenu::IDM_MAIN_FILL_ZEROS] =
-		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-	m_menuMain.SetMenuItemInfoW((UINT_PTR)EMenu::IDM_MAIN_FILL_ZEROS, &mii);
-	m_menuMain.AppendMenuW(MF_SEPARATOR);
-	m_menuMain.AppendMenuW(MF_STRING, (UINT_PTR)EMenu::IDM_MAIN_ABOUT, L"About");
-	/* Menus end. */
+	//Menus
+	if (m_menuMain.LoadMenuW(MAKEINTRESOURCE(IDR_HEXCTRL_MENU)))
+	{
+		MENUITEMINFOW mii { };
+		mii.cbSize = sizeof(MENUITEMINFOW);
+		mii.fMask = MIIM_BITMAP;
+		mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_COPY_HEX] =
+			(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+		m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_COPY_HEX, &mii);
+		mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_PASTE_HEX] =
+			(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+		m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_PASTE_HEX, &mii);
+		mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_MAIN_FILL_ZEROS] =
+			(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+		m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MAIN_FILL_ZEROS, &mii);
+	}
 
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this);
+	m_pBookmarks->Attach(this);
 
 	WstrCapacityFill();
 }
@@ -253,13 +214,13 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 	DwmExtendFrameIntoClientArea(m_hWnd, &marg);
 	SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 
+	//ScrollBars should be created here, after main Window (to attach to) has already been created. To avoid assertions.
 	m_pScrollV->Create(this, SB_VERT, 0, 0, 0); //Actual sizes are set in RecalcAll().
 	m_pScrollH->Create(this, SB_HORZ, 0, 0, 0);
 	m_pScrollV->AddSibling(m_pScrollH.get());
 	m_pScrollH->AddSibling(m_pScrollV.get());
 
 	m_fCreated = true;
-
 	RecalcAll();
 
 	return true;
@@ -311,7 +272,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT & hds)
 	RecalcAll();
 
 	if (hds.ullSelectionSize)
-		ShowOffset(hds.ullSelectionStart, hds.ullSelectionSize);
+		SetSelection(hds.ullSelectionStart, hds.ullSelectionStart, hds.ullSelectionSize, true, true);
 }
 
 void CHexCtrl::ClearData()
@@ -330,6 +291,7 @@ void CHexCtrl::ClearData()
 	m_pScrollV->SetScrollPos(0);
 	m_pScrollH->SetScrollPos(0);
 	m_pScrollV->SetScrollSizes(0, 0, 0);
+	m_pBookmarks->ClearAll();
 	UpdateInfoText();
 }
 
@@ -342,9 +304,12 @@ void CHexCtrl::SetEditMode(bool fEnable)
 	RedrawWindow();
 }
 
-void CHexCtrl::ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize)
+void CHexCtrl::GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
 {
-	SetSelection(ullOffset, ullOffset, ullSize, true);
+	if (fSelect)
+		SetSelection(ullOffset, ullOffset, ullSize, true, true);
+	else
+		GoToOffset(ullOffset);
 }
 
 void CHexCtrl::SetFont(const LOGFONTW * pLogFontNew)
@@ -426,6 +391,11 @@ long CHexCtrl::GetFontSize()const
 	return m_lFontSize;
 }
 
+void CHexCtrl::SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
+{
+	SetSelection(ullOffset, ullOffset, ullSize, false);
+}
+
 void CHexCtrl::GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const
 {
 	ullOffset = m_ullSelectionStart;
@@ -447,6 +417,10 @@ void CHexCtrl::Destroy()
 	delete this;
 }
 
+
+/**************************************************************************
+* HexCtrl Private methods.
+**************************************************************************/
 void CHexCtrl::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)
 {
 	SetFocus();
@@ -503,7 +477,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 				ullStart = m_ullSelectionClick;
 				ullSize = ullHit - ullClick + 1;
 			}
-			SetSelection(ullClick, ullStart, ullSize, false, true);
+			SetSelection(ullClick, ullStart, ullSize, false);
 		}
 	}
 	else
@@ -595,59 +569,90 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	switch (uId)
 	{
-	case (UINT_PTR)EMenu::IDM_MAIN_SEARCH:
+	case IDM_HEXCTRL_MAIN_SEARCH:
 		if (m_enMode == EHexDataMode::DATA_MEMORY)
 			m_pDlgSearch->ShowWindow(SW_SHOW);
 		else
 			MessageBoxW(pwszErrVirtual, L"Error", MB_ICONEXCLAMATION);
 		break;
-	case (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX:
+	case IDM_HEXCTRL_SHOWAS_BYTE:
+		SetShowMode(EShowMode::ASBYTE);
+		break;
+	case IDM_HEXCTRL_SHOWAS_WORD:
+		SetShowMode(EShowMode::ASWORD);
+		break;
+	case IDM_HEXCTRL_SHOWAS_DWORD:
+		SetShowMode(EShowMode::ASDWORD);
+		break;
+	case IDM_HEXCTRL_SHOWAS_QWORD:
+		SetShowMode(EShowMode::ASQWORD);
+		break;
+	case IDM_HEXCTRL_BOOKMARKS_ADD:
+		m_pBookmarks->Add();
+		break;
+	case IDM_HEXCTRL_BOOKMARKS_REMOVE:
+		m_pBookmarks->Remove();
+		break;
+	case IDM_HEXCTRL_BOOKMARKS_NEXT:
+		m_pBookmarks->GoNext();
+		break;
+	case IDM_HEXCTRL_BOOKMARKS_PREV:
+		m_pBookmarks->GoPrev();
+		break;
+	case IDM_HEXCTRL_BOOKMARKS_CLEARALL:
+		m_pBookmarks->ClearAll();
+		break;
+	case IDM_HEXCTRL_CLIPBOARD_COPY_HEX:
 		ClipboardCopy(EClipboard::COPY_HEX);
-	case (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX_LE:
+		break;
+	case IDM_HEXCTRL_CLIPBOARD_COPY_HEX_LE:
 		ClipboardCopy(EClipboard::COPY_HEX_LE);
 		break;
-	case (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX_FORMATTED:
+	case IDM_HEXCTRL_CLIPBOARD_COPY_HEX_FORMATTED:
 		ClipboardCopy(EClipboard::COPY_HEX_FORMATTED);
 		break;
-	case (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_ASCII:
+	case IDM_HEXCTRL_CLIPBOARD_COPY_ASCII:
 		ClipboardCopy(EClipboard::COPY_ASCII);
 		break;
-	case (UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_BASE64:
+	case IDM_HEXCTRL_CLIPBOARD_COPY_BASE64:
 		ClipboardCopy(EClipboard::COPY_BASE64);
 		break;
-	case (UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_HEX:
+	case IDM_HEXCTRL_CLIPBOARD_PASTE_HEX:
 		ClipboardPaste(EClipboard::PASTE_HEX);
 		break;
-	case (UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_ASCII:
+	case IDM_HEXCTRL_CLIPBOARD_PASTE_ASCII:
 		ClipboardPaste(EClipboard::PASTE_ASCII);
 		break;
-	case (UINT_PTR)EMenu::IDM_MAIN_UNDO:
+	case IDM_HEXCTRL_MAIN_UNDO:
 		Undo();
 		break;
-	case (UINT_PTR)EMenu::IDM_MAIN_REDO:
+	case IDM_HEXCTRL_MAIN_REDO:
 		Redo();
 		break;
-	case (UINT_PTR)EMenu::IDM_MAIN_FILL_ZEROS:
+	case IDM_HEXCTRL_MAIN_FILL_ZEROS:
 		FillWithZeros();
 		break;
-	case (UINT_PTR)EMenu::IDM_MAIN_ABOUT:
+	case IDM_HEXCTRL_MAIN_SELECT_ALL:
+		SelectAll();
+		break;
+	case IDM_HEXCTRL_APPEARANCE_FONT_INCREASE:
+		SetFontSize(GetFontSize() + 2);
+		break;
+	case IDM_HEXCTRL_APPEARANCE_FONT_DECREASE:
+		SetFontSize(GetFontSize() - 2);
+		break;
+	case IDM_HEXCTRL_APPEARANCE_CAPACITY_INCREASE:
+		SetCapacity(m_dwCapacity + 1);
+		break;
+	case IDM_HEXCTRL_APPEARANCE_CAPACITY_DECREASE:
+		SetCapacity(m_dwCapacity - 1);
+		break;
+	case IDM_HEXCTRL_MAIN_ABOUT:
 	{
 		CHexDlgAbout m_dlgAbout(this);
 		m_dlgAbout.DoModal();
 	}
 	break;
-	case (UINT_PTR)EMenu::IDM_SHOWAS_BYTE:
-		SetShowMode(EShowMode::ASBYTE);
-		break;
-	case (UINT_PTR)EMenu::IDM_SHOWAS_WORD:
-		SetShowMode(EShowMode::ASWORD);
-		break;
-	case (UINT_PTR)EMenu::IDM_SHOWAS_DWORD:
-		SetShowMode(EShowMode::ASDWORD);
-		break;
-	case (UINT_PTR)EMenu::IDM_SHOWAS_QWORD:
-		SetShowMode(EShowMode::ASQWORD);
-		break;
 	default:
 		//For user defined custom menu, we notify parent window.
 		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_MENUCLICK } };
@@ -660,45 +665,75 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 
 void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 {
-	UINT uMenuStatus;
-	if (m_ullDataSize == 0 || m_ullSelectionSize == 0)
-		uMenuStatus = MF_GRAYED;
-	else
-		uMenuStatus = MF_ENABLED;
-
-	//To not spread up the efforts through code, all the checks are done here instead of WM_INITMENUPOPUP.
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX, uMenuStatus | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX_LE, uMenuStatus | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_HEX_FORMATTED, uMenuStatus | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_ASCII, uMenuStatus | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_CLIPBOARD_COPY_BASE64, uMenuStatus | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_MAIN_UNDO, (m_deqUndo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_MAIN_REDO, (m_deqRedo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
-
-	BOOL fFormatAvail = IsClipboardFormatAvailable(CF_TEXT);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_HEX, ((m_fMutable && fFormatAvail) ?
-		uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_CLIPBOARD_PASTE_ASCII, ((m_fMutable && fFormatAvail) ?
-		uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem((UINT_PTR)EMenu::IDM_MAIN_FILL_ZEROS,
-		(m_fMutable ? uMenuStatus : MF_GRAYED) | MF_BYCOMMAND);
+	POINT pp = point;
+	ScreenToClient(&pp);
+	m_ullRMouseHex = HitTest(&pp);
 
 	//Notifying parent that we are about to display context menu.
 	MsgWindowNotify(HEXCTRL_MSG_ONCONTEXTMENU);
+	m_menuMain.GetSubMenu(0)->TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
+}
 
-	m_menuMain.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
+void CHexCtrl::OnInitMenuPopup(CMenu* pPopupMenu, UINT /*nIndex*/, BOOL /*bSysMenu*/)
+{
+	UINT uStatusSelection;
+	if (!IsDataSet() || m_ullSelectionSize == 0)
+		uStatusSelection = MF_GRAYED;
+	else
+		uStatusSelection = MF_ENABLED;
+
+	if (pPopupMenu == m_menuMain.GetSubMenu(0)) //Main menu
+	{
+		BOOL fMenuFlag = IsDataSet();
+
+		//Main
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MAIN_SEARCH, (fMenuFlag ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MAIN_UNDO, (m_deqUndo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MAIN_REDO, (m_deqRedo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MAIN_FILL_ZEROS, (m_fMutable ? uStatusSelection : MF_GRAYED) | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MAIN_SELECT_ALL, (fMenuFlag ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+
+		//Bookmarks
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_ADD, uStatusSelection | MF_BYCOMMAND);
+		fMenuFlag = m_pBookmarks->HasBookmarks();
+		bool fHasRMBM = m_pBookmarks->HitTest(m_ullRMouseHex); //Is there a bookmark under R-mouse cursor?
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_REMOVE, (fMenuFlag && fHasRMBM ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_NEXT, (fMenuFlag ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_PREV, (fMenuFlag ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_CLEARALL, (fMenuFlag ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+
+		//Clipboard
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPY_HEX, uStatusSelection | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPY_HEX_LE, uStatusSelection | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPY_HEX_FORMATTED, uStatusSelection | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPY_ASCII, uStatusSelection | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPY_BASE64, uStatusSelection | MF_BYCOMMAND);
+		fMenuFlag = IsClipboardFormatAvailable(CF_TEXT);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTE_HEX, ((m_fMutable && fMenuFlag) ?
+			uStatusSelection : MF_GRAYED) | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTE_ASCII, ((m_fMutable && fMenuFlag) ?
+			uStatusSelection : MF_GRAYED) | MF_BYCOMMAND);
+	}
 }
 
 void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {
-	if (GetKeyState(VK_CONTROL) < 0) //With Ctrl pressed.
+	if (GetKeyState(VK_CONTROL) < 0)         //With Ctrl pressed.
 		OnKeyDownCtrl(nChar);
 	else if (GetAsyncKeyState(VK_SHIFT) < 0) //With Shift pressed.
 		OnKeyDownShift(nChar);
 	else
 	{
+		WPARAM wParam { };
+
 		switch (nChar)
 		{
+		case VK_F2:
+			wParam = IDM_HEXCTRL_BOOKMARKS_PREV;
+			break;
+		case VK_F3:
+			wParam = IDM_HEXCTRL_BOOKMARKS_NEXT;
+			break;
 		case VK_RIGHT:
 			CursorMoveRight();
 			break;
@@ -724,7 +759,244 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 			m_pScrollV->ScrollEnd();
 			break;
 		}
+		if (wParam)
+			SendMessageW(WM_COMMAND, wParam, 0);
 	}
+}
+
+void CHexCtrl::OnKeyDownCtrl(UINT nChar)
+{
+	//TranslateAccelerator doesn't work within .dll without client's code modification.
+	//So, this is the manual, kind of, implementation (translation).
+	WPARAM wParam { };
+	switch (nChar)
+	{
+	case 'F':
+	case 'H':
+		wParam = IDM_HEXCTRL_MAIN_SEARCH;
+		break;
+	case 'B':
+		wParam = IDM_HEXCTRL_BOOKMARKS_ADD;
+		break;
+	case 'N':
+		wParam = IDM_HEXCTRL_BOOKMARKS_REMOVE;
+		break;
+	case 'C':
+		wParam = IDM_HEXCTRL_CLIPBOARD_COPY_HEX;
+		break;
+	case 'V':
+		wParam = IDM_HEXCTRL_CLIPBOARD_PASTE_HEX;
+		break;
+	case 'A':
+		wParam = IDM_HEXCTRL_MAIN_SELECT_ALL;
+		break;
+	case 'Z':
+		wParam = IDM_HEXCTRL_MAIN_UNDO;
+		break;
+	case 'Y':
+		wParam = IDM_HEXCTRL_MAIN_REDO;
+		break;
+	}
+	if (wParam)
+		SendMessageW(WM_COMMAND, wParam, 0);
+}
+
+void CHexCtrl::OnKeyDownShift(UINT nChar)
+{
+	ULONGLONG ullClick { }, ullStart { }, ullSize = 0;
+	if (m_fMutable)
+	{
+		switch (nChar)
+		{
+		case VK_RIGHT:
+			if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
+				|| m_ullCursorPos == m_ullSelectionEnd)
+			{
+				if (m_ullSelectionStart == m_ullSelectionClick)
+				{
+					ullClick = m_ullSelectionClick;
+					ullStart = m_ullSelectionClick;
+					ullSize = m_ullSelectionSize + 1;
+				}
+				else
+				{
+					ullClick = m_ullSelectionClick;
+					ullStart = m_ullSelectionStart + 1;
+					ullSize = m_ullSelectionSize - 1;
+				}
+			}
+			else
+			{
+				ullClick = m_ullCursorPos;
+				ullStart = m_ullCursorPos;
+				ullSize = 1;
+			}
+			break;
+		case VK_LEFT:
+			if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
+				|| m_ullCursorPos == m_ullSelectionEnd)
+			{
+				if (m_ullSelectionStart == m_ullSelectionClick && m_ullSelectionSize > 1)
+				{
+					ullClick = m_ullSelectionClick;
+					ullStart = m_ullSelectionClick;
+					ullSize = m_ullSelectionSize - 1;
+				}
+				else
+				{
+					ullClick = m_ullSelectionClick;
+					ullStart = m_ullSelectionStart - 1;
+					ullSize = m_ullSelectionSize + 1;
+				}
+			}
+			else
+			{
+				ullClick = m_ullCursorPos;
+				ullStart = m_ullCursorPos;
+				ullSize = 1;
+			}
+			break;
+		case VK_DOWN:
+			if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
+				|| m_ullCursorPos == m_ullSelectionEnd)
+			{
+				if (m_ullSelectionStart == m_ullSelectionClick)
+				{
+					ullClick = m_ullSelectionClick;
+					ullStart = m_ullSelectionClick;
+					ullSize = m_ullSelectionSize + m_dwCapacity;
+				}
+				else if (m_ullSelectionStart < m_ullSelectionClick)
+				{
+					ullClick = m_ullSelectionClick;
+					ullStart = m_ullSelectionSize > m_dwCapacity ? m_ullSelectionStart + m_dwCapacity : m_ullSelectionClick;
+					ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
+					ullSize = ullSize ? ullSize : 1;
+				}
+			}
+			else
+			{
+				ullClick = m_ullCursorPos;
+				ullStart = m_ullCursorPos;
+				ullSize = 1;
+			}
+			break;
+		case VK_UP:
+			if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
+				|| m_ullCursorPos == m_ullSelectionEnd)
+			{
+				if (m_ullSelectionStart == 0)
+					return;
+
+				if (m_ullSelectionStart < m_ullSelectionClick)
+				{
+					ullClick = m_ullSelectionClick;
+					if (m_ullSelectionStart < m_dwCapacity)
+					{
+						ullStart = 0;
+						ullSize = m_ullSelectionSize + m_ullSelectionStart;
+					}
+					else
+					{
+						ullStart = m_ullSelectionStart - m_dwCapacity;
+						ullSize = m_ullSelectionSize + m_dwCapacity;
+					}
+				}
+				else
+				{
+					ullClick = m_ullSelectionClick;
+					ullStart = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionClick : m_ullSelectionClick - m_dwCapacity + 1;
+					ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
+					ullSize = ullSize ? ullSize : 1;
+				}
+			}
+			else
+			{
+				ullClick = m_ullCursorPos;
+				ullStart = m_ullCursorPos;
+				ullSize = 1;
+			}
+			break;
+		}
+	}
+	else if (m_ullSelectionSize)
+	{
+		switch (nChar)
+		{
+		case VK_RIGHT:
+			if (m_ullSelectionStart == m_ullSelectionClick)
+			{
+				ullClick = m_ullSelectionClick;
+				ullStart = m_ullSelectionClick;
+				ullSize = m_ullSelectionSize + 1;
+			}
+			else
+			{
+				ullClick = m_ullSelectionClick;
+				ullStart = m_ullSelectionStart + 1;
+				ullSize = m_ullSelectionSize - 1;
+			}
+			break;
+		case VK_LEFT:
+			if (m_ullSelectionStart == m_ullSelectionClick && m_ullSelectionSize > 1)
+			{
+				ullClick = m_ullSelectionClick;
+				ullStart = m_ullSelectionClick;
+				ullSize = m_ullSelectionSize - 1;
+			}
+			else
+			{
+				ullClick = m_ullSelectionClick;
+				ullStart = m_ullSelectionStart - 1;
+				ullSize = m_ullSelectionSize + 1;
+			}
+			break;
+		case VK_DOWN:
+			if (m_ullSelectionStart == m_ullSelectionClick)
+			{
+				ullClick = m_ullSelectionClick;
+				ullStart = m_ullSelectionClick;
+				ullSize = m_ullSelectionSize + m_dwCapacity;
+			}
+			else if (m_ullSelectionStart < m_ullSelectionClick)
+			{
+				ullClick = m_ullSelectionClick;
+				ullStart = m_ullSelectionSize > m_dwCapacity ? m_ullSelectionStart + m_dwCapacity : m_ullSelectionClick;
+				ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
+				ullSize = ullSize ? ullSize : 1;
+			}
+			break;
+		case VK_UP:
+			if (m_ullSelectionStart == 0)
+				return;
+
+			if (m_ullSelectionStart < m_ullSelectionClick)
+			{
+				ullClick = m_ullSelectionClick;
+				if (m_ullSelectionStart < m_dwCapacity)
+				{
+					ullStart = 0;
+					ullSize = m_ullSelectionSize + m_ullSelectionStart;
+				}
+				else
+				{
+					ullStart = m_ullSelectionStart - m_dwCapacity;
+					ullSize = m_ullSelectionSize + m_dwCapacity;
+				}
+			}
+			else
+			{
+				ullClick = m_ullSelectionClick;
+				ullStart = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionClick : m_ullSelectionClick - m_dwCapacity + 1;
+				ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
+				ullSize = ullSize ? ullSize : 1;
+			}
+			break;
+		}
+	}
+
+	if (ullSize > 0)
+		SetSelection(ullClick, ullStart, ullSize);
 }
 
 void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
@@ -888,8 +1160,10 @@ void CHexCtrl::OnPaint()
 	pDC->DrawTextW(L"Ascii", 5, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	int iLine = 0; //Current line to print.
-	std::vector<POLYTEXTW> vecPolyHex, vecPolyAscii, vecPolySelHex, vecPolySelAscii, vecPolyCursor;
-	std::list<std::wstring> listWstrHex, listWstrAscii, listWstrSelHex, listWstrSelAscii, listWstrCursor;
+	std::vector<POLYTEXTW> vecPolyHex, vecPolyAscii, vecPolyBookmarkHex, vecPolyBookmarkAscii,
+		vecPolySelHex, vecPolySelAscii, vecPolyCursor;
+	std::list<std::wstring> listWstrHex, listWstrAscii, listWstrBookmarkHex, listWstrBookmarkAscii,
+		listWstrSelHex, listWstrSelAscii, listWstrCursor;
 	COLORREF clrBkCursor { }; //Cursor color.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
@@ -919,11 +1193,18 @@ void CHexCtrl::OnPaint()
 
 		//Hex, Ascii and Cursor strings to print.
 		std::wstring wstrHexToPrint { }, wstrAsciiToPrint { }, wstrHexCursorToPrint { }, wstrAsciiCursorToPrint { };
-		std::wstring wstrHexSelToPrint { }, wstrAsciiSelToPrint { }; //Selected Hex and Ascii strings to print.
+		std::wstring wstrHexBookmarkToPrint { }, wstrAsciiBookmarkToPrint { }; //Bookmarks to print.
+		std::wstring wstrHexSelToPrint { }, wstrAsciiSelToPrint { };           //Selected Hex and Ascii strings to print.
 
 		//Selection Hex and Ascii X coords. 0x7FFFFFFF is important.
 		int iSelHexPosToPrintX = 0x7FFFFFFF, iSelAsciiPosToPrintX { };
+		int iBookmarkHexPosToPrintX = 0x7FFFFFFF, iBookmarkAsciiPosToPrintX { };
 		int iCursorHexPosToPrintX { }, iCursorAsciiPosToPrintX { }; //Cursor X coords.
+		bool fBookmark { false }; //Flag to show current Bookmark in current Hex presence.
+
+		const auto iHexPosToPrintX = m_iIndentFirstHexChunk - iScrollH;
+		const auto iAsciiPosToPrintX = m_iIndentAscii - iScrollH;
+		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
 		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
@@ -953,10 +1234,58 @@ void CHexCtrl::OnPaint()
 				wchAscii = '.';
 			wstrAsciiToPrint += wchAscii;
 
+			//If there is a Bookmark.
+			if (m_pBookmarks->HitTest(ullIndexByteToPrint))
+			{
+				if (iBookmarkHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
+				{
+					int iCy;
+					HexChunkPoint(ullIndexByteToPrint, iBookmarkHexPosToPrintX, iCy);
+					AsciiChunkPoint(ullIndexByteToPrint, iBookmarkAsciiPosToPrintX, iCy);
+				}
+
+				if (!wstrHexBookmarkToPrint.empty()) //Only adding spaces if there are chars beforehead.
+				{
+					if ((iterChunks % (DWORD)m_enShowMode) == 0)
+						wstrHexBookmarkToPrint += L" ";
+
+					//Additional space between capacity halves, only with ASBYTE representation.
+					if (m_enShowMode == EShowMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+						wstrHexBookmarkToPrint += L"  ";
+				}
+				wstrHexBookmarkToPrint += pwszHexToPrint[0];
+				wstrHexBookmarkToPrint += pwszHexToPrint[1];
+				wstrAsciiBookmarkToPrint += wchAscii;
+				fBookmark = true;
+			}
+			else if (fBookmark)
+			{
+				//There can be multiple bookmarks in one line. So if there already was bookmarked Hexes we Poly them.
+				//Same Poly mechanism presents at the end of the current (current-line) loop.
+
+				//Bookmarks Poly.
+				if (!wstrHexBookmarkToPrint.empty())
+				{
+					//Hex bookmarks Poly.
+					listWstrBookmarkHex.emplace_back(std::move(wstrHexBookmarkToPrint));
+					wstrHexBookmarkToPrint.clear();
+					vecPolyBookmarkHex.emplace_back(POLYTEXTW { iBookmarkHexPosToPrintX, iPosToPrintY,
+						(UINT)listWstrBookmarkHex.back().size(), listWstrBookmarkHex.back().data(), 0, { }, nullptr });
+
+					//Ascii bookmarks Poly.
+					listWstrBookmarkAscii.emplace_back(std::move(wstrAsciiBookmarkToPrint));
+					wstrAsciiBookmarkToPrint.clear();
+					vecPolyBookmarkAscii.emplace_back(POLYTEXTW { iBookmarkAsciiPosToPrintX, iPosToPrintY,
+						(UINT)listWstrBookmarkAscii.back().size(), listWstrBookmarkAscii.back().data(), 0, { }, nullptr });
+				}
+				iBookmarkHexPosToPrintX = 0x7FFFFFFF;
+				fBookmark = false;
+			}
+
 			//If there is a selection.
 			if (m_ullSelectionSize && (ullIndexByteToPrint >= m_ullSelectionStart) && (ullIndexByteToPrint < m_ullSelectionEnd))
 			{
-				if (iSelHexPosToPrintX == 0x7FFFFFFF)
+				if (iSelHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
 				{
 					int iCy;
 					HexChunkPoint(ullIndexByteToPrint, iSelHexPosToPrintX, iCy);
@@ -982,6 +1311,7 @@ void CHexCtrl::OnPaint()
 			{
 				int iCy;
 				HexChunkPoint(m_ullCursorPos, iCursorHexPosToPrintX, iCy);
+				AsciiChunkPoint(m_ullCursorPos, iCursorAsciiPosToPrintX, iCy);
 				if (m_fCursorHigh)
 					wstrHexCursorToPrint = g_pwszHexMap[(chByteToPrint & 0xF0) >> 4];
 				else
@@ -989,7 +1319,6 @@ void CHexCtrl::OnPaint()
 					wstrHexCursorToPrint = g_pwszHexMap[(chByteToPrint & 0x0F)];
 					iCursorHexPosToPrintX += m_sizeLetter.cx;
 				}
-				AsciiChunkPoint(m_ullCursorPos, iCursorAsciiPosToPrintX, iCy);
 				wstrAsciiCursorToPrint = wchAscii;
 
 				if (m_ullSelectionSize && ullIndexByteToPrint >= m_ullSelectionStart && ullIndexByteToPrint < m_ullSelectionEnd)
@@ -998,10 +1327,6 @@ void CHexCtrl::OnPaint()
 					clrBkCursor = m_stColor.clrBkCursor;
 			}
 		}
-
-		const auto iHexPosToPrintX = m_iIndentFirstHexChunk - iScrollH;
-		const auto iAsciiPosToPrintX = m_iIndentAscii - iScrollH;
-		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Hex Poly.
 		listWstrHex.emplace_back(std::move(wstrHexToPrint));
@@ -1012,6 +1337,20 @@ void CHexCtrl::OnPaint()
 		listWstrAscii.emplace_back(std::move(wstrAsciiToPrint));
 		vecPolyAscii.emplace_back(POLYTEXTW { iAsciiPosToPrintX, iPosToPrintY,
 			(UINT)listWstrAscii.back().size(), listWstrAscii.back().data(), 0, { }, nullptr });
+
+		//Bookmarks Poly.
+		if (!wstrHexBookmarkToPrint.empty())
+		{
+			//Hex bookmarks Poly.
+			listWstrBookmarkHex.emplace_back(std::move(wstrHexBookmarkToPrint));
+			vecPolyBookmarkHex.emplace_back(POLYTEXTW { iBookmarkHexPosToPrintX, iPosToPrintY,
+				(UINT)listWstrBookmarkHex.back().size(), listWstrBookmarkHex.back().data(), 0, { }, nullptr });
+
+			//Ascii bookmarks Poly.
+			listWstrBookmarkAscii.emplace_back(std::move(wstrAsciiBookmarkToPrint));
+			vecPolyBookmarkAscii.emplace_back(POLYTEXTW { iBookmarkAsciiPosToPrintX, iPosToPrintY,
+				(UINT)listWstrBookmarkAscii.back().size(), listWstrBookmarkAscii.back().data(), 0, { }, nullptr });
+		}
 
 		//Selection.
 		if (!wstrHexSelToPrint.empty())
@@ -1047,6 +1386,17 @@ void CHexCtrl::OnPaint()
 	//Ascii printing.
 	pDC->SetTextColor(m_stColor.clrTextAscii);
 	PolyTextOutW(pDC->m_hDC, vecPolyAscii.data(), (UINT)vecPolyAscii.size());
+
+	//Hex bookmark printing.
+	if (!vecPolyBookmarkHex.empty())
+	{
+		pDC->SetTextColor(m_stColor.clrTextBookmark);
+		pDC->SetBkColor(m_stColor.clrBkBookmark);
+		PolyTextOutW(pDC->m_hDC, vecPolyBookmarkHex.data(), (UINT)vecPolyBookmarkHex.size());
+
+		//Ascii bookmark printing.
+		PolyTextOutW(pDC->m_hDC, vecPolyBookmarkAscii.data(), (UINT)vecPolyBookmarkAscii.size());
+	}
 
 	//Hex selected printing.
 	if (!vecPolySelHex.empty())
@@ -1295,7 +1645,7 @@ ULONGLONG CHexCtrl::GetTopLine()const
 	return m_pScrollV->GetScrollPos() / m_sizeLetter.cy;
 }
 
-ULONGLONG CHexCtrl::HitTest(const POINT * pPoint)
+ULONGLONG CHexCtrl::HitTest(const POINT* pPoint)
 {
 	int iY = pPoint->y;
 	int iX = pPoint->x + (int)m_pScrollH->GetScrollPos(); //To compensate horizontal scroll.
@@ -1329,6 +1679,7 @@ ULONGLONG CHexCtrl::HitTest(const POINT * pPoint)
 		ullHexChunk = dwChunkX + ((iY - m_iStartWorkAreaY) / m_sizeLetter.cy) * m_dwCapacity + (ullCurLine * m_dwCapacity);
 		m_fCursorTextArea = false;
 	}
+	//Or within Ascii area.
 	else if ((iX >= m_iIndentAscii) && (iX < (m_iIndentAscii + m_iSpaceBetweenAscii * (int)m_dwCapacity))
 		&& (iY >= m_iStartWorkAreaY) && iY <= m_iEndWorkArea)
 	{
@@ -1571,167 +1922,6 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	RedrawWindow();
 }
 
-void CHexCtrl::OnKeyDownShift(UINT nChar)
-{
-	ULONGLONG ullStart, ullSize;
-	if (m_fMutable)
-	{
-		switch (nChar)
-		{
-		case VK_RIGHT:
-			if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
-				|| m_ullCursorPos == m_ullSelectionEnd)
-			{
-				if (m_ullSelectionStart == m_ullSelectionClick)
-					SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize + 1);
-				else
-					SetSelection(m_ullSelectionClick, m_ullSelectionStart + 1, m_ullSelectionSize - 1);
-			}
-			else
-				SetSelection(m_ullCursorPos, m_ullCursorPos, 1);
-			break;
-		case VK_LEFT:
-			if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
-				|| m_ullCursorPos == m_ullSelectionEnd)
-			{
-				if (m_ullSelectionStart == m_ullSelectionClick && m_ullSelectionSize > 1)
-					SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize - 1);
-				else
-					SetSelection(m_ullSelectionClick, m_ullSelectionStart - 1, m_ullSelectionSize + 1);
-			}
-			else
-				SetSelection(m_ullCursorPos, m_ullCursorPos, 1);
-			break;
-		case VK_DOWN:
-			if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
-				|| m_ullCursorPos == m_ullSelectionEnd)
-			{
-				if (m_ullSelectionStart == m_ullSelectionClick)
-					SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize + m_dwCapacity);
-				else if (m_ullSelectionStart < m_ullSelectionClick)
-				{
-					ullStart = m_ullSelectionSize > m_dwCapacity ? m_ullSelectionStart + m_dwCapacity : m_ullSelectionClick;
-					ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
-					SetSelection(m_ullSelectionClick, ullStart, ullSize ? ullSize : 1);
-				}
-			}
-			else
-				SetSelection(m_ullCursorPos, m_ullCursorPos, 1);
-			break;
-		case VK_UP:
-			if (m_ullCursorPos == m_ullSelectionClick || m_ullCursorPos == m_ullSelectionStart
-				|| m_ullCursorPos == m_ullSelectionEnd)
-			{
-				if (m_ullSelectionStart == 0)
-					return;
-
-				if (m_ullSelectionStart < m_ullSelectionClick)
-				{
-					if (m_ullSelectionStart < m_dwCapacity)
-					{
-						ullStart = 0;
-						ullSize = m_ullSelectionSize + m_ullSelectionStart;
-					}
-					else
-					{
-						ullStart = m_ullSelectionStart - m_dwCapacity;
-						ullSize = m_ullSelectionSize + m_dwCapacity;
-					}
-					SetSelection(m_ullSelectionClick, ullStart, ullSize);
-				}
-				else
-				{
-					ullStart = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionClick : m_ullSelectionClick - m_dwCapacity + 1;
-					ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
-					SetSelection(m_ullSelectionClick, ullStart, ullSize ? ullSize : 1);
-				}
-			}
-			else
-				SetSelection(m_ullCursorPos, m_ullCursorPos, 1);
-			break;
-		}
-	}
-	else if (m_ullSelectionSize)
-	{
-		switch (nChar)
-		{
-		case VK_RIGHT:
-			if (m_ullSelectionStart == m_ullSelectionClick)
-				SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize + 1);
-			else
-				SetSelection(m_ullSelectionClick, m_ullSelectionStart + 1, m_ullSelectionSize - 1);
-			break;
-		case VK_LEFT:
-			if (m_ullSelectionStart == m_ullSelectionClick && m_ullSelectionSize > 1)
-				SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize - 1);
-			else
-				SetSelection(m_ullSelectionClick, m_ullSelectionStart - 1, m_ullSelectionSize + 1);
-			break;
-		case VK_DOWN:
-			if (m_ullSelectionStart == m_ullSelectionClick)
-				SetSelection(m_ullSelectionClick, m_ullSelectionClick, m_ullSelectionSize + m_dwCapacity);
-			else if (m_ullSelectionStart < m_ullSelectionClick)
-			{
-				ullStart = m_ullSelectionSize > m_dwCapacity ? m_ullSelectionStart + m_dwCapacity : m_ullSelectionClick;
-				ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
-				SetSelection(m_ullSelectionClick, ullStart, ullSize ? ullSize : 1);
-			}
-			break;
-		case VK_UP:
-			if (m_ullSelectionStart == 0)
-				return;
-
-			if (m_ullSelectionStart < m_ullSelectionClick)
-			{
-				if (m_ullSelectionStart < m_dwCapacity)
-				{
-					ullStart = 0;
-					ullSize = m_ullSelectionSize + m_ullSelectionStart;
-				}
-				else
-				{
-					ullStart = m_ullSelectionStart - m_dwCapacity;
-					ullSize = m_ullSelectionSize + m_dwCapacity;
-				}
-				SetSelection(m_ullSelectionClick, ullStart, ullSize);
-			}
-			else
-			{
-				ullStart = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionClick : m_ullSelectionClick - m_dwCapacity + 1;
-				ullSize = m_ullSelectionSize >= m_dwCapacity ? m_ullSelectionSize - m_dwCapacity : m_dwCapacity;
-				SetSelection(m_ullSelectionClick, ullStart, ullSize ? ullSize : 1);
-			}
-			break;
-		}
-	}
-}
-
-void CHexCtrl::OnKeyDownCtrl(UINT nChar)
-{
-	switch (nChar)
-	{
-	case 'F':
-	case 'H':
-		m_pDlgSearch->ShowWindow(SW_SHOW);
-		break;
-	case 'C':
-		ClipboardCopy(EClipboard::COPY_HEX);
-		break;
-	case 'V':
-		ClipboardPaste(EClipboard::PASTE_HEX);
-		break;
-	case 'A':
-		SelectAll();;
-		break;
-	case 'Z':
-		Undo();
-		break;
-	case 'Y':
-		Redo();
-		break;
-	}
-}
-
 void CHexCtrl::UpdateInfoText()
 {
 	if (!m_ullDataSize)
@@ -1752,8 +1942,12 @@ void CHexCtrl::SetShowMode(EShowMode enShowMode)
 {
 	//Unchecking all menus and checking only the current needed.
 	m_enShowMode = enShowMode;
-	for (int i = 0; i < m_menuShowAs.GetMenuItemCount(); i++)
-		m_menuShowAs.CheckMenuItem(i, MF_UNCHECKED | MF_BYPOSITION);
+
+	//Getting the "Show data as..." menu.
+	auto pMenu = m_menuMain.GetSubMenu(0)->GetSubMenu(2); //Separators are also count as menu!!!
+
+	for (int i = 0; i < pMenu->GetMenuItemCount(); i++)
+		pMenu->CheckMenuItem(i, MF_UNCHECKED | MF_BYPOSITION);
 
 	int id { };
 	switch (enShowMode)
@@ -1771,7 +1965,7 @@ void CHexCtrl::SetShowMode(EShowMode enShowMode)
 		id = 3;
 		break;
 	}
-	m_menuShowAs.CheckMenuItem(id, MF_CHECKED | MF_BYPOSITION);
+	pMenu->CheckMenuItem(id, MF_CHECKED | MF_BYPOSITION);
 	SetCapacity(m_dwCapacity); //To recalc current representation.
 }
 
@@ -2312,7 +2506,7 @@ void CHexCtrl::SearchCallback(SEARCHSTRUCT & rSearch)
 		{
 			ULONGLONG ullSelIndex = rSearch.ullIndex;
 			ULONGLONG ullSelSize = rSearch.fReplace ? ullSizeBytesReplaced : ullSizeBytes;
-			SetSelection(ullSelIndex, ullSelIndex, ullSelSize, true);
+			SetSelection(ullSelIndex, ullSelIndex, ullSelSize, true, true);
 		}
 	}
 }
@@ -2327,97 +2521,116 @@ void CHexCtrl::SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, 
 	ModifyData(hms, fRedraw);
 }
 
-void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight, bool fMouse)
+void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fScroll, bool fGoToStart)
 {
 	if (ullClick >= m_ullDataSize || ullStart >= m_ullDataSize || !ullSize)
 		return;
+
 	if ((ullStart + ullSize) > m_ullDataSize)
 		ullSize = m_ullDataSize - ullStart;
 
-	ULONGLONG ullCurrScrollV = m_pScrollV->GetScrollPos();
-	ULONGLONG ullCurrScrollH = m_pScrollH->GetScrollPos();
-	int iCx, iCy;
-	HexChunkPoint(ullStart, iCx, iCy);
-	CRect rcClient;
-	GetClientRect(&rcClient);
-
-	//New scroll depending on selection direction: top <-> bottom.
-	//fHighlight means centralize scroll position on the screen (used in SearchCallback()).
-	ULONGLONG ullEnd = ullStart + ullSize; //ullEnd is exclusive.
-	ULONGLONG ullMaxV = ullCurrScrollV + rcClient.Height() - m_iHeightBottomOffArea - m_iStartWorkAreaY -
-		((rcClient.Height() - m_iStartWorkAreaY - m_iHeightBottomOffArea) % m_sizeLetter.cy);
-	ULONGLONG ullNewStartV = ullStart / m_dwCapacity * m_sizeLetter.cy;
-	ULONGLONG ullNewEndV = (ullEnd - 1) / m_dwCapacity * m_sizeLetter.cy;
-
-	ULONGLONG ullNewScrollV { }, ullNewScrollH { };
-	if (fHighlight)
-	{
-		//To prevent negative numbers.
-		if (ullNewStartV > m_iHeightWorkArea / 2)
-			ullNewScrollV = ullNewStartV - m_iHeightWorkArea / 2;
-		else
-			ullNewScrollV = 0;
-
-		ullNewScrollH = (ullStart % m_dwCapacity) * m_iSizeHexByte;
-		ullNewScrollH += (ullNewScrollH / m_iDistanceBetweenHexChunks) * m_iSpaceBetweenHexChunks;
-	}
-	else
-	{
-		if (ullStart == ullClick)
-		{
-			if (ullNewEndV >= ullMaxV)
-				ullNewScrollV = ullCurrScrollV + m_sizeLetter.cy;
-			else
-			{
-				if (ullNewEndV >= ullCurrScrollV)
-					ullNewScrollV = ullCurrScrollV;
-				else if (ullNewStartV <= ullCurrScrollV)
-					ullNewScrollV = ullCurrScrollV - m_sizeLetter.cy;
-			}
-		}
-		else
-		{
-			if (ullNewStartV < ullCurrScrollV)
-				ullNewScrollV = ullCurrScrollV - m_sizeLetter.cy;
-			else
-			{
-				if (ullNewStartV < ullMaxV)
-					ullNewScrollV = ullCurrScrollV;
-				else
-					ullNewScrollV = ullCurrScrollV + m_sizeLetter.cy;
-			}
-		}
-
-		int iMaxClientX = rcClient.Width() - m_iSizeHexByte;
-		if (iCx >= iMaxClientX)
-			ullNewScrollH = ullCurrScrollH + (iCx - iMaxClientX);
-		else if (iCx < 0)
-			ullNewScrollH = ullCurrScrollH + iCx;
-		else
-			ullNewScrollH = ullCurrScrollH;
-
-	}
-	ullNewScrollV -= ullNewScrollV % m_sizeLetter.cy;
-
+	ULONGLONG ullEnd = ullStart + ullSize; //ullEnd is exclusive - ).
 	m_ullSelectionClick = ullClick;
 	m_ullSelectionStart = m_ullCursorPos = ullStart;
 	m_ullSelectionEnd = ullEnd;
 	m_ullSelectionSize = ullEnd - ullStart;
 
-	if (!fMouse) //Don't need to scroll if it's Mouse selection.
-	{
-		m_pScrollV->SetScrollPos(ullNewScrollV);
-		if (m_pScrollH->IsVisible() && !IsCurTextArea())
-			m_pScrollH->SetScrollPos(ullNewScrollH);
-	}
-
 	UpdateInfoText();
 	MsgWindowNotify(HEXCTRL_MSG_SETSELECTION);
+
+	//Don't need to scroll if it's mouse selection, or just selection assignment.
+	//If fScroll is true then do scrolling according to the selection made.
+	if (fScroll)
+	{
+		if (fGoToStart)
+			GoToOffset(ullStart);
+		else
+		{
+			ULONGLONG ullCurrScrollV = m_pScrollV->GetScrollPos();
+			ULONGLONG ullCurrScrollH = m_pScrollH->GetScrollPos();
+			int iCx, iCy;
+			HexChunkPoint(ullStart, iCx, iCy);
+			CRect rcClient;
+			GetClientRect(&rcClient);
+
+			//New scroll depending on selection direction: top <-> bottom.
+			//fGoToStart means centralize scroll position on the screen (used in SearchCallback()).
+			ULONGLONG ullMaxV = ullCurrScrollV + rcClient.Height() - m_iHeightBottomOffArea - m_iStartWorkAreaY -
+				((rcClient.Height() - m_iStartWorkAreaY - m_iHeightBottomOffArea) % m_sizeLetter.cy);
+			ULONGLONG ullNewStartV = ullStart / m_dwCapacity * m_sizeLetter.cy;
+			ULONGLONG ullNewEndV = (ullEnd - 1) / m_dwCapacity * m_sizeLetter.cy;
+
+			ULONGLONG ullNewScrollV { }, ullNewScrollH { };
+
+			if (ullStart == ullClick)
+			{
+				if (ullNewEndV >= ullMaxV)
+					ullNewScrollV = ullCurrScrollV + m_sizeLetter.cy;
+				else
+				{
+					if (ullNewEndV >= ullCurrScrollV)
+						ullNewScrollV = ullCurrScrollV;
+					else if (ullNewStartV <= ullCurrScrollV)
+						ullNewScrollV = ullCurrScrollV - m_sizeLetter.cy;
+				}
+			}
+			else
+			{
+				if (ullNewStartV < ullCurrScrollV)
+					ullNewScrollV = ullCurrScrollV - m_sizeLetter.cy;
+				else
+				{
+					if (ullNewStartV < ullMaxV)
+						ullNewScrollV = ullCurrScrollV;
+					else
+						ullNewScrollV = ullCurrScrollV + m_sizeLetter.cy;
+				}
+			}
+
+			int iMaxClientX = rcClient.Width() - m_iSizeHexByte;
+			if (iCx >= iMaxClientX)
+				ullNewScrollH = ullCurrScrollH + (iCx - iMaxClientX);
+			else if (iCx < 0)
+				ullNewScrollH = ullCurrScrollH + iCx;
+			else
+				ullNewScrollH = ullCurrScrollH;
+
+			ullNewScrollV -= ullNewScrollV % m_sizeLetter.cy;
+			m_pScrollV->SetScrollPos(ullNewScrollV);
+			if (m_pScrollH->IsVisible() && !IsCurTextArea())
+				m_pScrollH->SetScrollPos(ullNewScrollH);
+		}
+	}
+}
+
+void CHexCtrl::GoToOffset(ULONGLONG ullOffset)
+{
+	if (!IsDataSet())
+		return;
+
+	ULONGLONG ullNewStartV = ullOffset / m_dwCapacity * m_sizeLetter.cy;
+	ULONGLONG ullNewScrollV { }, ullNewScrollH { };
+
+	//To prevent negative numbers.
+	if (ullNewStartV > m_iHeightWorkArea / 2)
+	{
+		ullNewScrollV = ullNewStartV - m_iHeightWorkArea / 2;
+		ullNewScrollV -= ullNewScrollV % m_sizeLetter.cy;
+	}
+	else
+		ullNewScrollV = 0;
+
+	ullNewScrollH = (ullOffset % m_dwCapacity) * m_iSizeHexByte;
+	ullNewScrollH += (ullNewScrollH / m_iDistanceBetweenHexChunks) * m_iSpaceBetweenHexChunks;
+
+	m_pScrollV->SetScrollPos(ullNewScrollV);
+	if (m_pScrollH->IsVisible() && !IsCurTextArea())
+		m_pScrollH->SetScrollPos(ullNewScrollH);
 }
 
 void CHexCtrl::SelectAll()
 {
-	if (!m_ullDataSize)
+	if (!IsDataSet())
 		return;
 
 	m_ullSelectionClick = m_ullSelectionStart = 0;
@@ -2427,6 +2640,9 @@ void CHexCtrl::SelectAll()
 
 void CHexCtrl::FillWithZeros()
 {
+	if (!IsDataSet())
+		return;
+
 	HEXMODIFYSTRUCT hms;
 	hms.ullSize = m_ullSelectionSize;
 	hms.ullIndex = m_ullSelectionStart;

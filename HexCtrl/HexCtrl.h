@@ -65,11 +65,13 @@ namespace HEXCTRL
 	{
 		COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };         //Hex chunks text color.
 		COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };       //Ascii text color.
+		COLORREF clrTextBookmark { RGB(0, 0, 0) };                     //Bookmark text color.
 		COLORREF clrTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected text color.
 		COLORREF clrTextCaption { RGB(0, 0, 180) };                    //Caption text color
 		COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };    //Text color of the bottom "Info" rect.
 		COLORREF clrTextCursor { RGB(255, 255, 255) };                 //Cursor text color.
 		COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                  //Background color.
+		COLORREF clrBkBookmark { RGB(240, 240, 0) };                   //Background color of the bookmarked Hex/Ascii.
 		COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };       //Background color of the selected Hex/Ascii.
 		COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };         //Background color of the bottom "Info" rect.
 		COLORREF clrBkCursor { RGB(0, 0, 255) };                       //Cursor background color.
@@ -143,7 +145,7 @@ namespace HEXCTRL
 		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
 		virtual void ClearData() = 0;                          //Clears all data from HexCtrl's view (not touching data itself).
 		virtual void SetEditMode(bool fEnable) = 0;            //Enable or disable edit mode.
-		virtual void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1) = 0; //Shows (selects) given offset.
+		virtual void GoToOffset(ULONGLONG ullOffset, bool fSelect = false, ULONGLONG ullSize = 1) = 0; //Scrolls to given offset.
 		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0; //Sets the control's new font. This font has to be monospaced.
 		virtual void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;  //Sets all the control's colors.
@@ -152,7 +154,8 @@ namespace HEXCTRL
 		virtual bool IsDataSet()const = 0;                     //Shows whether a data was set to the control or not.
 		virtual bool IsMutable()const = 0;                     //Is edit mode enabled or not.
 		virtual long GetFontSize()const = 0;                   //Current font size.
-		virtual void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const = 0; //Current selection.
+		virtual void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize) = 0;        //Sets current selection.
+		virtual void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const = 0; //Gets current selection.
 		virtual HWND GetWindowHandle()const = 0;               //Retrieves control's window handle.
 		virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
 		virtual void Destroy() = 0;                            //Deleter.

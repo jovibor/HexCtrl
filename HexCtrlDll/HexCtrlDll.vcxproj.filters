@@ -51,6 +51,9 @@
     <ClInclude Include="..\HexCtrlSample\stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\HexCtrl\src\CHexBookmarks.h">
+      <Filter>HexCtrl\src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\HexCtrl\src\Helper.cpp">
@@ -70,6 +73,9 @@
     </ClCompile>
     <ClCompile Include="..\HexCtrlSample\stdafx.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\HexCtrl\src\CHexBookmarks.cpp">
+      <Filter>HexCtrl\src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -23,7 +23,7 @@
   * [SetData](#setdata)
   * [ClearData](#cleardata)
   * [SetEditMode](#seteditmode)
-  * [ShowOffset](#showoffset)
+  * [GoToOffset](#gotooffset)
   * [SetFont](#setfont)
   * [SetFontSize](#setfontsize)
   * [SetColor](#setcolor)
@@ -32,7 +32,9 @@
   * [IsDataSet](#isdataset)
   * [IsMutable](#ismutable)
   * [GetFontSize](#getfontsize)
+  * [SetSelection](#setselection)
   * [GetSelection](#getselection)
+  * [GetWindowHandle](#getwindowhandle)
   * [GetMenuHandle](#getmenuhandle)
   * [Destroy](#destroy)
    </details>
@@ -275,11 +277,11 @@ void SetEditMode(bool fEnable);
 ```
 Enables or disables edit mode. In edit mode data can be modified.
 
-### [](#)ShowOffset
+### [](#)GoToOffset
 ```cpp
-void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1);
+void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
 ```
-Sets cursor to the `ullOffset` and selects `ullSize` bytes.
+Jumps to the `ullOffset` offset, and selects `ullSize` bytes if `fSelect` is `true`.
 
 ### [](#)SetFont
 ```cpp
@@ -329,11 +331,22 @@ long GetFontSize()const;
 ```
 Returns current font size.
 
+## [](#)SetSelection
+```cpp
+void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
+```
+Sets current selection.
 ### [](#)GetSelection
 ```cpp
 void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const;
 ```
 Returns offset of the current selection as `ullOffset`, and selection size as `ullSize`.
+
+### [](#)GetWindowHandle
+```cpp
+HWND GetWindowHandle()const
+```
+Retrieves control's window handle.
 
 ### [](#)GetMenuHandle
 ```cpp
@@ -383,16 +396,19 @@ struct HEXCOLORSTRUCT
 {
     COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };         //Hex chunks text color.
     COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };       //Ascii text color.
+    COLORREF clrTextBookmark { RGB(0, 0, 0) };                     //Bookmark text color.
     COLORREF clrTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected text color.
     COLORREF clrTextCaption { RGB(0, 0, 180) };                    //Caption text color
     COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };    //Text color of the bottom "Info" rect.
     COLORREF clrTextCursor { RGB(255, 255, 255) };                 //Cursor text color.
     COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                  //Background color.
+    COLORREF clrBkBookmark { RGB(240, 240, 0) };                   //Background color of the bookmarked Hex/Ascii.
     COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };       //Background color of the selected Hex/Ascii.
     COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };         //Background color of the bottom "Info" rect.
     COLORREF clrBkCursor { RGB(0, 0, 255) };                       //Cursor background color.
     COLORREF clrBkCursorSelected { RGB(0, 0, 200) };               //Cursor background color in selection.
 };
+
 ```
 
 ### [](#)HEXDATASTRUCT

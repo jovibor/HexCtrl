@@ -211,6 +211,7 @@
   <ItemGroup>
     <ClInclude Include="..\HexCtrl\HexCtrl.h" />
     <ClInclude Include="..\HexCtrl\res\HexCtrlRes.h" />
+    <ClInclude Include="..\HexCtrl\src\CHexBookmarks.h" />
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgAbout.h" />
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgSearch.h" />
     <ClInclude Include="..\HexCtrl\src\Helper.h" />
@@ -223,6 +224,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\HexCtrl\src\CHexBookmarks.cpp" />
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgAbout.cpp" />
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp" />
     <ClCompile Include="..\HexCtrl\src\Helper.cpp" />

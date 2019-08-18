@@ -21,6 +21,7 @@ namespace HEXCTRL {
 		* Forward declarations.          *
 		*********************************/
 		class CHexDlgSearch;
+		class CHexBookmarks;
 		struct UNDOSTRUCT;
 		enum class EClipboard : DWORD;
 		namespace SCROLLEX { class CScrollEx; }
@@ -68,6 +69,7 @@ namespace HEXCTRL {
 		class CHexCtrl : public CWnd, public IHexCtrl
 		{
 			friend class CHexDlgSearch; //For private SearchCallback routine.
+			friend class CHexBookmarks;
 		public:
 			CHexCtrl();
 			virtual ~CHexCtrl();
@@ -76,7 +78,7 @@ namespace HEXCTRL {
 			void SetData(const HEXDATASTRUCT& hds)override;
 			void ClearData()override;
 			void SetEditMode(bool fEnable)override;
-			void ShowOffset(ULONGLONG ullOffset, ULONGLONG ullSize = 1)override;
+			void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)override;
 			void SetFont(const LOGFONTW* pLogFontNew)override;
 			void SetFontSize(UINT uiSize)override;
 			void SetColor(const HEXCOLORSTRUCT& clr)override;
@@ -85,6 +87,7 @@ namespace HEXCTRL {
 			bool IsDataSet()const override;
 			bool IsMutable()const override;
 			long GetFontSize()const override;
+			void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)override;
 			void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const override;
 			HWND GetWindowHandle()const override;
 			HMENU GetMenuHandle()const override;
@@ -100,11 +103,14 @@ namespace HEXCTRL {
 			afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 			virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 			afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
+			afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
 			afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 			afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 			afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+			void OnKeyDownShift(UINT nChar); //Key pressed with the Shift.
+			void OnKeyDownCtrl(UINT nChar);  //Key pressed with the Ctrl.
 			afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
-			afx_msg UINT OnGetDlgCode(); //To properly work in dialogs.
+			afx_msg UINT OnGetDlgCode();     //To properly work in dialogs.
 			afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 			afx_msg void OnPaint();
 			afx_msg void OnSize(UINT nType, int cx, int cy);
@@ -125,8 +131,6 @@ namespace HEXCTRL {
 			void AsciiChunkPoint(ULONGLONG ullChunk, int& iCx, int& iCy)const; //Point of Ascii chunk.
 			void ClipboardCopy(EClipboard enType);
 			void ClipboardPaste(EClipboard enType);
-			void OnKeyDownShift(UINT nChar);                       //Key pressed with the Shift.
-			void OnKeyDownCtrl(UINT nChar);                        //Key pressed with the Ctrl.
 			void UpdateInfoText();                                 //Updates text in the bottom "info" area according to currently selected data.
 			void SetShowMode(EShowMode enShowMode);                //Set current data representation mode.
 			void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
@@ -142,13 +146,15 @@ namespace HEXCTRL {
 			[[nodiscard]] bool IsCurTextArea()const;                  //Whether click was made in Text or Hex area.
 			void SearchCallback(SEARCHSTRUCT& rSearch);               //Search through currently set data.
 			void SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw = true);
-			void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fHighlight = false, bool fMouse = false);
-			void SelectAll();
+			void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fScroll = true, bool fGoToStart = false);
+			void GoToOffset(ULONGLONG ullOffset);                     //Scrolls to given offfset.
+			void SelectAll();                                         //Selects all current bytes.
 			void FillWithZeros();                                     //Fill selection with zeros.
 			void WstrCapacityFill();                                  //Fill m_wstrCapacity according to current m_dwCapacity.
 		private:
 			const DWORD m_dwCapacityMax { 128 };  //Maximum capacity.
 			const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };           //Search dialog.
+			const std::unique_ptr<CHexBookmarks> m_pBookmarks { std::make_unique<CHexBookmarks>() };           //Bookmarks.
 			const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll bar.
 			const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll bar.
 			const int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
@@ -166,6 +172,7 @@ namespace HEXCTRL {
 			ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
 			ULONGLONG m_ullSelectionStart { }, m_ullSelectionEnd { }, m_ullSelectionClick { }, m_ullSelectionSize { };
 			ULONGLONG m_ullCursorPos { };         //Current cursor position.
+			ULONGLONG m_ullRMouseHex { 0xFFFFFFFFFFFFFFFFull }; //Right mouse clicked Hex index. Used in bookmarking.
 			DWORD m_dwCapacity { 16 };            //How many bytes displayed in one row
 			DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 			DWORD m_dwOffsetDigits { 8 };         //Amount of digits in "Offset", depends on data size set in SetData.
@@ -173,8 +180,6 @@ namespace HEXCTRL {
 			CFont m_fontHexView;                  //Main Hex chunks font.
 			CFont m_fontBottomRect;               //Font for bottom Info rect.
 			CMenu m_menuMain;                     //Main popup menu.
-			CMenu m_menuShowAs;                   //Submenu "Show as..."
-			CMenu m_menuClipboard;                //Submenu "Clipboard"
 			CPen m_penLines { PS_SOLID, 1, RGB(200, 200, 200) }; //Pen for lines.
 			long m_lFontSize { };                 //Current font size.
 			int m_iSizeFirstHalf { };             //Size of first half of capacity.

@@ -201,6 +201,7 @@
     <ClInclude Include="..\HexCtrlSample\stdafx.h" />
     <ClInclude Include="..\HexCtrl\HexCtrl.h" />
     <ClInclude Include="..\HexCtrl\res\HexCtrlRes.h" />
+    <ClInclude Include="..\HexCtrl\src\CHexBookmarks.h" />
     <ClInclude Include="..\HexCtrl\src\CHexCtrl.h" />
     <ClInclude Include="..\HexCtrl\src\CScrollEx.h" />
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgAbout.h" />
@@ -214,6 +215,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\HexCtrl\src\CHexBookmarks.cpp" />
     <ClCompile Include="..\HexCtrl\src\CHexCtrl.cpp" />
     <ClCompile Include="..\HexCtrl\src\CScrollEx.cpp" />
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgAbout.cpp" />
