@@ -25,7 +25,7 @@ BOOL CHexSampleApp::InitInstance()
 	InitCtrls.dwSize = sizeof(InitCtrls);
 	// Set this to include all the common control classes you want to use
 	// in your application.
-	InitCtrls.dwICC = ICC_WIN95_CLASSES;
+	InitCtrls.dwICC = ICC_WIN95_CLASSES | ICC_STANDARD_CLASSES | ICC_LINK_CLASS| ICC_COOL_CLASSES;
 	InitCommonControlsEx(&InitCtrls);
 
 	CWinApp::InitInstance();

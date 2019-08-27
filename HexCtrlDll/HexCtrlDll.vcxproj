@@ -205,6 +205,8 @@
     <ClInclude Include="..\HexCtrl\src\CHexCtrl.h" />
     <ClInclude Include="..\HexCtrl\src\CScrollEx.h" />
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgAbout.h" />
+    <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgFillWith.h" />
+    <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgOperations.h" />
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgSearch.h" />
     <ClInclude Include="..\HexCtrl\src\Helper.h" />
   </ItemGroup>
@@ -219,6 +221,8 @@
     <ClCompile Include="..\HexCtrl\src\CHexCtrl.cpp" />
     <ClCompile Include="..\HexCtrl\src\CScrollEx.cpp" />
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgAbout.cpp" />
+    <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgFillWith.cpp" />
+    <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgOperations.cpp" />
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp" />
     <ClCompile Include="..\HexCtrl\src\Helper.cpp" />
   </ItemGroup>

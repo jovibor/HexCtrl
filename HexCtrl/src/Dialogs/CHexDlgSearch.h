@@ -34,10 +34,13 @@ namespace HEXCTRL {
 			virtual BOOL PreTranslateMessage(MSG* pMsg);
 			HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 			void OnRadioBnRange(UINT nID);
+		private:
+			CHexCtrl* GetHexCtrl()const;
 			void SearchCallback();
 			void ClearAll();
-			CHexCtrl* GetHexCtrl()const;
-			ESearchType GetSearchType();                //Returns current search type.
+			ESearchMode GetSearchMode(); //Returns current search mode.
+			void ComboSearchFill(LPCWSTR pwsz);
+			void ComboReplaceFill(LPCWSTR pwsz);
 			DECLARE_MESSAGE_MAP()
 		private:
 			CHexCtrl* m_pHexCtrl { };

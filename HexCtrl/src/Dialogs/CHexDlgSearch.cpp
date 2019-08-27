@@ -35,7 +35,7 @@ BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 }
 
 BOOL CHexDlgSearch::OnInitDialog()
-{	
+{
 	CDialogEx::OnInitDialog();
 
 	m_uRadioCurrent = IDC_HEXCTRL_SEARCH_RADIO_HEX;
@@ -82,7 +82,7 @@ void CHexDlgSearch::SearchCallback()
 void CHexDlgSearch::OnButtonSearchF()
 {
 	CStringW wstrTextSearch;
-	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDIT_SEARCH, wstrTextSearch);
+	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_SEARCH, wstrTextSearch);
 	if (wstrTextSearch.IsEmpty())
 		return;
 	if (wstrTextSearch.Compare(m_stSearch.wstrSearch.data()) != 0)
@@ -94,31 +94,34 @@ void CHexDlgSearch::OnButtonSearchF()
 	m_stSearch.iDirection = 1;
 	m_stSearch.fReplace = false;
 	m_stSearch.fAll = false;
-	m_stSearch.enSearchType = GetSearchType();
+	m_stSearch.enSearchType = GetSearchMode();
 
-	GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
+	ComboSearchFill(wstrTextSearch);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH)->SetFocus();
 	GetHexCtrl()->SearchCallback(m_stSearch);
 	SearchCallback();
 }
 
 void CHexDlgSearch::OnButtonSearchB()
 {
-	CString strTextSearch;
-	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDIT_SEARCH, strTextSearch);
-	if (strTextSearch.IsEmpty())
+	CStringW wstrTextSearch;
+	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_SEARCH, wstrTextSearch);
+	if (wstrTextSearch.IsEmpty())
 		return;
-	if (strTextSearch.Compare(m_stSearch.wstrSearch.data()) != 0)
+
+	if (wstrTextSearch.Compare(m_stSearch.wstrSearch.data()) != 0)
 	{
 		ClearAll();
-		m_stSearch.wstrSearch = strTextSearch;
+		m_stSearch.wstrSearch = wstrTextSearch;
 	}
 
 	m_stSearch.iDirection = -1;
 	m_stSearch.fReplace = false;
 	m_stSearch.fAll = false;
-	m_stSearch.enSearchType = GetSearchType();
+	m_stSearch.enSearchType = GetSearchMode();
 
-	GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
+	ComboSearchFill(wstrTextSearch);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH)->SetFocus();
 	GetHexCtrl()->SearchCallback(m_stSearch);
 	SearchCallback();
 }
@@ -126,7 +129,7 @@ void CHexDlgSearch::OnButtonSearchB()
 void CHexDlgSearch::OnButtonReplace()
 {
 	CStringW wstrTextSearch;
-	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDIT_SEARCH, wstrTextSearch);
+	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_SEARCH, wstrTextSearch);
 	if (wstrTextSearch.IsEmpty())
 		return;
 	if (wstrTextSearch.Compare(m_stSearch.wstrSearch.data()) != 0)
@@ -136,7 +139,7 @@ void CHexDlgSearch::OnButtonReplace()
 	}
 
 	CStringW wstrTextReplace;
-	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDIT_REPLACE, wstrTextReplace);
+	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_REPLACE, wstrTextReplace);
 	if (wstrTextReplace.IsEmpty())
 		return;
 
@@ -144,9 +147,11 @@ void CHexDlgSearch::OnButtonReplace()
 	m_stSearch.iDirection = 1;
 	m_stSearch.fReplace = true;
 	m_stSearch.fAll = false;
-	m_stSearch.enSearchType = GetSearchType();
+	m_stSearch.enSearchType = GetSearchMode();
 
-	GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
+	ComboSearchFill(wstrTextSearch);
+	ComboReplaceFill(wstrTextReplace);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH)->SetFocus();
 	GetHexCtrl()->SearchCallback(m_stSearch);
 	SearchCallback();
 }
@@ -154,7 +159,7 @@ void CHexDlgSearch::OnButtonReplace()
 void CHexDlgSearch::OnButtonReplaceAll()
 {
 	CStringW wstrTextSearch;
-	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDIT_SEARCH, wstrTextSearch);
+	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_SEARCH, wstrTextSearch);
 	if (wstrTextSearch.IsEmpty())
 		return;
 	if (wstrTextSearch.Compare(m_stSearch.wstrSearch.data()) != 0)
@@ -164,7 +169,7 @@ void CHexDlgSearch::OnButtonReplaceAll()
 	}
 
 	CStringW wstrTextReplace;
-	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_EDIT_REPLACE, wstrTextReplace);
+	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_REPLACE, wstrTextReplace);
 	if (wstrTextReplace.IsEmpty())
 		return;
 
@@ -172,9 +177,11 @@ void CHexDlgSearch::OnButtonReplaceAll()
 	m_stSearch.fAll = true;
 	m_stSearch.wstrReplace = wstrTextReplace;
 	m_stSearch.iDirection = 1;
-	m_stSearch.enSearchType = GetSearchType();
+	m_stSearch.enSearchType = GetSearchMode();
 
-	GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
+	ComboSearchFill(wstrTextSearch);
+	ComboReplaceFill(wstrTextReplace);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH)->SetFocus();
 	GetHexCtrl()->SearchCallback(m_stSearch);
 	SearchCallback();
 }
@@ -186,10 +193,10 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)
 	else
 	{
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
-		GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_SEARCH)->SetFocus();
-		
+		GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH)->SetFocus();
+
 		bool fMutable = GetHexCtrl()->IsMutable();
-		GetDlgItem(IDC_HEXCTRL_SEARCH_EDIT_REPLACE)->EnableWindow(fMutable);
+		GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_REPLACE)->EnableWindow(fMutable);
 		GetDlgItem(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE)->EnableWindow(fMutable);
 		GetDlgItem(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE_ALL)->EnableWindow(fMutable);
 	}
@@ -238,7 +245,6 @@ void CHexDlgSearch::OnRadioBnRange(UINT nID)
 void CHexDlgSearch::ClearAll()
 {
 	m_stSearch = { };
-
 	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)->SetWindowTextW(L"");
 }
 
@@ -247,22 +253,53 @@ CHexCtrl* CHexDlgSearch::GetHexCtrl()const
 	return m_pHexCtrl;
 }
 
-ESearchType CHexDlgSearch::GetSearchType()
+ESearchMode CHexDlgSearch::GetSearchMode()
 {
-	ESearchType enSearch { };
-
+	ESearchMode enSearch { };
 	switch (GetCheckedRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE))
 	{
 	case IDC_HEXCTRL_SEARCH_RADIO_HEX:
-		enSearch = ESearchType::SEARCH_HEX;
+		enSearch = ESearchMode::SEARCH_HEX;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_ASCII:
-		enSearch = ESearchType::SEARCH_ASCII;
+		enSearch = ESearchMode::SEARCH_ASCII;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_UNICODE:
-		enSearch = ESearchType::SEARCH_UTF16;
+		enSearch = ESearchMode::SEARCH_UTF16;
 		break;
 	}
 
 	return enSearch;
+}
+
+void CHexDlgSearch::ComboSearchFill(LPCWSTR pwsz)
+{
+	CComboBox* pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH);
+	if (!pCombo)
+		return;
+
+	//Insert wstring into ComboBox only if it's not already presented.
+	if (pCombo->FindStringExact(0, pwsz) == CB_ERR)
+	{
+		//Keep max 50 strings in list.
+		if (pCombo->GetCount() == 50)
+			pCombo->DeleteString(49);
+		pCombo->InsertString(0, pwsz);
+	}
+}
+
+void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
+{
+	CComboBox* pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_REPLACE);
+	if (!pCombo)
+		return;
+
+	//Insert wstring into ComboBox only if it's not already presented.
+	if (pCombo->FindStringExact(0, pwsz) == CB_ERR)
+	{
+		//Keep max 50 strings in list.
+		if (pCombo->GetCount() == 50)
+			pCombo->DeleteString(49);
+		pCombo->InsertString(0, pwsz);
+	}
 }

@@ -23,16 +23,16 @@
   * [SetData](#setdata)
   * [ClearData](#cleardata)
   * [SetEditMode](#seteditmode)
-  * [GoToOffset](#gotooffset)
   * [SetFont](#setfont)
   * [SetFontSize](#setfontsize)
   * [SetColor](#setcolor)
   * [SetCapacity](#setcapacity)
+  * [GoToOffset](#gotooffset) 
+  * [SetSelection](#setselection)
   * [IsCreated](#iscreated)
   * [IsDataSet](#isdataset)
   * [IsMutable](#ismutable)
   * [GetFontSize](#getfontsize)
-  * [SetSelection](#setselection)
   * [GetSelection](#getselection)
   * [GetWindowHandle](#getwindowhandle)
   * [GetMenuHandle](#getmenuhandle)
@@ -42,8 +42,10 @@
   * [HEXCREATESTRUCT](#hexcreatestruct)
   * [HEXCOLORSTRUCT](#hexcolorstruct)
   * [HEXDATASTRUCT](#hexdatastruct)
+  * [HEXMODIFYMODESTRUCT](hexmodifymodestruct)
   * [HEXMODIFYSTRUCT](#hexmodifystruct)
   * [HEXNOTIFYSTRUCT](#hexnotifystruct)
+  * [EHexCreateMode](#ehexcreatemode)
   * [EHexDataMode](#ehexdatamode)
   </details>
 * [Positioning and Sizing](#positioning-and-sizing)
@@ -57,8 +59,7 @@ This forced people to implement their own common stuff for everyday needs.
 This **HexControl** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't have native support for such feature.
 
 ## [](#)Implementation
-The **HexCtrl** is implemented as a pure abstract virtual class, and can be used as a *child* or *float* window in any place
-of your existing application. It was build and tested in Visual Studio 2019, under Windows 10.
+The **HexCtrl** is implemented as a pure abstract virtual class, and can be used as a *child* or *float* window in any place of your existing application. It was build and tested in *Visual Studio 2019*, under *Windows 10*.
 
 ## [](#)Installing and Using
 The **HexCtrl** can be used in your app by two different ways.  
@@ -115,10 +116,10 @@ using namespace HEXCTRL;
 ### [](#)Classic Approach
 `Create` is the first method you call to create **HexCtrl** instance. It takes [`HEXCREATESTRUCT`](#hexcreatestruct) reference as an argument.
 
-You can choose whether control will behave as *child* or independent *floating* window, by setting `fFloat` member of this struct.
+You can choose whether control will behave as *child* or independent *floating* window, by setting `enMode` member of this struct to [`EHexCreateMode::CREATE_CHILD`](#ehexcreatemode) or [`EHexCreateMode::CREATE_FLOAT`](#ehexcreatemode) accordingly.
 ```cpp
 HEXCREATESTRUCT hcs;
-hcs.fFloat = true;
+hcs.enMode = EHexCreateMode::CREATE_FLOAT;
 hcs.hwndParent = m_hWnd;
 m_myHex->Create(hcs);
 ```
@@ -277,12 +278,6 @@ void SetEditMode(bool fEnable);
 ```
 Enables or disables edit mode. In edit mode data can be modified.
 
-### [](#)GoToOffset
-```cpp
-void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
-```
-Jumps to the `ullOffset` offset, and selects `ullSize` bytes if `fSelect` is `true`.
-
 ### [](#)SetFont
 ```cpp
 void SetFont(const LOGFONTW* pLogFontNew);
@@ -306,6 +301,18 @@ Sets all the colors for the control. Takes [`HEXCOLORSTRUCT`](#hexcolorstruct) a
 void SetCapacity(DWORD dwCapacity);
 ```
 Sets the **HexCtrl** capacity.
+
+### [](#)GoToOffset
+```cpp
+void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
+```
+Jumps to the `ullOffset` offset, and selects `ullSize` bytes if `fSelect` is `true`.
+
+## [](#)SetSelection
+```cpp
+void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
+```
+Sets current selection.
 
 ### [](#)IsCreated
 ```cpp
@@ -331,11 +338,6 @@ long GetFontSize()const;
 ```
 Returns current font size.
 
-## [](#)SetSelection
-```cpp
-void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
-```
-Sets current selection.
 ### [](#)GetSelection
 ```cpp
 void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const;
@@ -377,15 +379,14 @@ The main initialization struct used for control creation.
 ```cpp
 struct HEXCREATESTRUCT
 {
-    HEXCOLORSTRUCT  stColor { };           //All the control's colors.
-    HWND            hwndParent { };        //Parent window pointer.
-    const LOGFONTW* pLogFont { };          //Font to be used, nullptr for default. This font has to be monospaced.
-    RECT            rect { };              //Initial rect. If null, the window is screen centered.
-    UINT            uID { };               //Control ID.
-    DWORD           dwStyle { };           //Window styles, 0 for default.
-    DWORD           dwExStyle { };         //Extended window styles, 0 for default.
-    bool            fFloat { false };      //Is float or child (incorporated into another window)?
-    bool            fCustomCtrl { false }; //It's a custom dialog control.
+    EHexCreateMode  enMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
+    HEXCOLORSTRUCT  stColor { };    //All the control's colors.
+    HWND            hwndParent { }; //Parent window pointer.
+    const LOGFONTW* pLogFont { };   //Font to be used, nullptr for default. This font has to be monospaced.
+    RECT            rect { };       //Initial rect. If null, the window is screen centered.
+    UINT            uID { };        //Control ID.
+    DWORD           dwStyle { };    //Window styles, 0 for default.
+    DWORD           dwExStyle { };  //Extended window styles, 0 for default.
 };
 ```
 
@@ -415,36 +416,56 @@ struct HEXCOLORSTRUCT
 Main struct to set a data to display in the control.
 ```cpp
 struct HEXDATASTRUCT
+{	
+    EHexDataMode enMode { EHexDataMode::DATA_MEMORY };  //Working data mode.
+    ULONGLONG    ullDataSize { };                       //Size of the data to display, in bytes.
+    ULONGLONG    ullSelectionStart { };                 //Select this initial position. Works only if ullSelectionSize > 0.
+    ULONGLONG    ullSelectionSize { };                  //How many bytes to set as selected.
+    HWND         hwndMsg { };                           //Window for DATA_MSG mode. Parent is used by default.
+    IHexVirtual* pHexVirtual { };                       //Pointer for DATA_VIRTUAL mode.
+    PBYTE        pData { };                             //Data pointer for DATA_MEMORY mode. Not used in other modes.
+    bool         fMutable { false };                    //Is data mutable (editable) or read-only.
+};
+```
+
+### [](#)HEXMODIFYMODESTRUCT
+Structure that describes the data modification mode.  
+If `enMode` is set to `EModifyMode::MODIFY_OPERATION` then `enOper` member is showing the type of the operation the data should be changed with.
+```cpp
+struct HEXMODIFYMODESTRUCT
 {
-    ULONGLONG    ullDataSize { };                      //Size of the data to display, in bytes.
-    ULONGLONG    ullSelectionStart { };                //Set selection at this position. Works only if ullSelectionSize > 0.
-    ULONGLONG    ullSelectionSize { };                 //How many bytes to set as selected.
-    HWND         hwndMsg { };                          //Window to send the control messages to. Parent window is used by default.
-    IHexVirtual* pHexVirtual { };                      //Pointer to IHexVirtual data class for custom data handling.
-    PBYTE        pData { };                            //Pointer to the data. Not used if it's virtual control.
-    HEXDATAMODE  enMode { HEXDATAMODE::DATA_MEMORY };  //Working data mode of the control.
-    bool         fMutable { false };                   //Will data be mutable (editable) or just read mode.
+    enum class EModifyMode : DWORD
+    {
+    	MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
+    }
+    enMode;
+
+    enum class EModifyOper : DWORD
+    {
+    	OPER_OR, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
+    	OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
+    }
+    enOper;
 };
 ```
 
 ### [](#)HEXMODIFYSTRUCT
-This structure is used internally as well as in the external notifications routine, when working in [`DATA_MSG`](#hexdatamode) and [`DATA_VIRTUAL`](#hexdatamode) modes.
+This structure is used internally in [`DATA_MEMORY`](#ehexdatamode) mode, as well as in the external notification routines, when working in [`DATA_MSG`](#ehexdatamode) and [`DATA_VIRTUAL`](#ehexdatamode) modes.
 ```cpp
 struct HEXMODIFYSTRUCT
 {
-    ULONGLONG ullIndex { };       //Index of the starting byte to modify.
-    ULONGLONG ullSize { };        //Size to be modified.
-    ULONGLONG ullDataSize { };    //Size of pData.
-    PBYTE     pData { };          //Pointer to a data to be set.
-    bool      fWhole { true };    //Is a whole byte or just a part of it to be modified.
-    bool      fHighPart { true }; //Shows whether high or low part of the byte should be modified (if the fWhole flag is false).
-    bool      fRepeat { false };  //If ullDataSize < ullSize, should data be replaced only one time or ullSize/ullDataSize times.
+    HEXMODIFYMODESTRUCT stModifyMode { HEXMODIFYMODESTRUCT::EModifyMode::MODIFY_DEFAULT }; //Modify mode.
+    PBYTE               pData { };       //Pointer to a data to be set.
+    ULONGLONG           ullIndex { };    //Index of the starting byte to modify.
+    ULONGLONG           ullSize { };     //Size to be modified.
+    ULONGLONG           ullDataSize { }; //Size of the data pData is pointing to.
 };
 ```
-When `ullDataSize` is equal `ullSize`, bytes from `pData` just replace corresponding bytes as is.  
-If `ullDataSize` is less then `ullSize` only `ullDataSize` bytes are replaced if `fRepeat` flag is false. If `fRepeat` is true then block by block replacement takes place `ullSize / ullDataSize` times.
+When `stModifyMode.enModify` is set to [`EModifyMode::MODIFY_DEFAULT`](#ehexmodifymode), bytes from `pData` just replace corresponding data bytes as is.  
 
-For example, if `ullSize` = 9, `ullDataSize` = 3 and `fRepeat` is true, bytes in memory at `ullIndex` position are `123456789` and bytes pointed to by `pData` are `345`, then, after modification, bytes at `ullIndex` will be `345345345`.
+If `stModifyMode.enModify` is equal to [`EModifyMode::MODIFY_REPEAT`](#ehexmodifymode) then block by block replacement takes place `ullSize / ullDataSize` times.
+
+For example: if `ullSize` = 9, `ullDataSize` = 3 and `enModify` is set to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode), bytes in memory at `ullIndex` position are `123456789`, and bytes pointed to by `pData` are `345`, then, after modification, bytes at `ullIndex` will be `345345345`.
 
 ### [](#)HEXNOTIFYSTRUCT
 This struct is used in notifications routine, when data is set with the [`DATA_MSG`](#ehexdatamode) flag.
@@ -458,6 +479,15 @@ struct HEXNOTIFYSTRUCT
     PBYTE     pData { };    //Pointer to a data to get/send.
 };
 using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
+```
+
+### [](#)EHexCreateMode
+Enum that represents mode the **HexCtrl**'s window will be created in.
+```cpp
+enum class EHexCreateMode : DWORD
+{
+    CREATE_CHILD, CREATE_FLOAT, CREATE_CUSTOMCTRL
+};
 ```
 
 ### [](#)EHexDataMode
@@ -485,7 +515,7 @@ To change control's capacity — **Ctrl+Shift+MouseWheel**
 
 ## [](#)Licensing
 This software is available under the **"MIT License modified with The Commons Clause".**  
-Briefly: It is free for any non commercial use.  
+Briefly: It is free for any **non commercial** use.  
 [https://github.com/jovibor/HexCtrl/blob/master/LICENSE](https://github.com/jovibor/HexCtrl/blob/master/LICENSE)
 
 ## [](#)Help Point

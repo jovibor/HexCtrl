@@ -12,6 +12,8 @@
 #define _AFX_ALL_WARNINGS
 
 #include <afxcontrolbars.h> // MFC support for ribbons and control bars
+#include <afxcontrolbars.h>
+#include <afxcontrolbars.h>
 
 
 #ifdef _UNICODE

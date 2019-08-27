@@ -14,20 +14,22 @@
 #include <string>
 
 namespace HEXCTRL {
-	//Fast lookup wchar_t array.
-	inline const wchar_t* const g_pwszHexMap { L"0123456789ABCDEF" };
+	namespace INTERNAL {
+		//Fast lookup wchar_t array.
+		inline const wchar_t* const g_pwszHexMap { L"0123456789ABCDEF" };
 
-	//Converts dwSize bytes of ull to WCHAR string.
-	void UllToWchars(ULONGLONG ull, wchar_t* pwsz, size_t dwSize);
+		//Converts dwSize bytes of ull to WCHAR string.
+		void UllToWchars(ULONGLONG ull, wchar_t* pwsz, size_t dwSize);
 
-	//Converts char* string to unsigned long number.
-	//Basically it's a strtoul() wrapper.
-	//Returns false if conversion is imposible, true otherwise.
-	bool CharsToUl(const char* pcsz, unsigned long& ul);
+		//Converts char* string to unsigned long number.
+		//Basically it's a strtoul() wrapper.
+		//Returns false if conversion is imposible, true otherwise.
+		bool CharsToUl(const char* pcsz, unsigned long& ul);
 
-	//Wide string to Multibyte string convertion.
-	std::string WstrToStr(const std::wstring& wstr);
+		//Wide string to Multibyte string convertion.
+		std::string WstrToStr(const std::wstring& wstr);
 
-	//Converts every two numeric chars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
-	bool StrToHex(const std::string& strFrom, std::string& strToHex);
+		//Converts every two numeric chars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
+		bool StrToHex(const std::string& strFrom, std::string& strToHex);
+	}
 };

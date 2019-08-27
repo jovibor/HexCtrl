@@ -1,7 +1,7 @@
 /****************************************************************************************
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
-* This is a Hex Control for MFC applications.                                           *
-* Official git repository of the project: https://github.com/jovibor/HexCtrl/           *
+* This is a Hex Control for MFC/Win32 applications.                                     *
+* Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 * For more information visit the project's official repository.                         *
@@ -22,6 +22,8 @@ namespace HEXCTRL {
 		*********************************/
 		class CHexDlgSearch;
 		class CHexBookmarks;
+		class CHexDlgOperations;
+		class CHexDlgFillWith;
 		struct UNDOSTRUCT;
 		enum class EClipboard : DWORD;
 		namespace SCROLLEX { class CScrollEx; }
@@ -35,9 +37,9 @@ namespace HEXCTRL {
 		};
 
 		/***************************************************************************************
-		* ESearchType - type of the search, also used in CHexDlgSearch.                        *
+		* ESearchMode - type of the search, also used in CHexDlgSearch.                        *
 		***************************************************************************************/
-		enum class ESearchType : DWORD
+		enum class ESearchMode : DWORD
 		{
 			SEARCH_HEX, SEARCH_ASCII, SEARCH_UTF16
 		};
@@ -47,9 +49,9 @@ namespace HEXCTRL {
 		****************************************************************************************/
 		struct SEARCHSTRUCT
 		{
-			std::wstring wstrSearch { };         //String search for.
-			std::wstring wstrReplace { };        //SearchReplace with, string.
-			ESearchType  enSearchType { };       //Hex, Ascii, Unicode, etc...
+			std::wstring wstrSearch { };         //String to search for.
+			std::wstring wstrReplace { };        //Search "Replace with..." wstring.
+			ESearchMode  enSearchType { };       //Hex, Ascii, Unicode, etc...
 			ULONGLONG    ullIndex { };           //An offset search should start from.
 			DWORD        dwCount { };            //How many, or what index number.
 			DWORD        dwReplaced { };         //Replaced amount;
@@ -70,6 +72,8 @@ namespace HEXCTRL {
 		{
 			friend class CHexDlgSearch; //For private SearchCallback routine.
 			friend class CHexBookmarks;
+			friend class CHexDlgOperations;
+			friend class CHexDlgFillWith;
 		public:
 			CHexCtrl();
 			virtual ~CHexCtrl();
@@ -78,16 +82,16 @@ namespace HEXCTRL {
 			void SetData(const HEXDATASTRUCT& hds)override;
 			void ClearData()override;
 			void SetEditMode(bool fEnable)override;
-			void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)override;
 			void SetFont(const LOGFONTW* pLogFontNew)override;
 			void SetFontSize(UINT uiSize)override;
 			void SetColor(const HEXCOLORSTRUCT& clr)override;
 			void SetCapacity(DWORD dwCapacity)override;
+			void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)override;
+			void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)override;
 			bool IsCreated()const override;
 			bool IsDataSet()const override;
 			bool IsMutable()const override;
 			long GetFontSize()const override;
-			void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)override;
 			void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const override;
 			HWND GetWindowHandle()const override;
 			HMENU GetMenuHandle()const override;
@@ -119,7 +123,14 @@ namespace HEXCTRL {
 			afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 			afx_msg void OnNcPaint();
 		protected:
-			[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex)const;   //Gets the byte data by index.
+			[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex)const;   //Gets the BYTE data by index.
+			[[nodiscard]] WORD GetWord(ULONGLONG ullIndex)const;   //Gets the WORD data by index.
+			[[nodiscard]] DWORD GetDword(ULONGLONG ullIndex)const; //Gets the DWORD data by index.
+			[[nodiscard]] QWORD GetQword(ULONGLONG ullIndex)const; //Gets the QWORD data by index.
+			bool SetByte(ULONGLONG ullIndex, BYTE bData);          //Sets the BYTE data by index.
+			bool SetWord(ULONGLONG ullIndex, WORD wData);		   //Sets the WORD data by index.
+			bool SetDword(ULONGLONG ullIndex, DWORD dwData);	   //Sets the DWORD data by index.
+			bool SetQword(ULONGLONG ullIndex, QWORD qwData);	   //Sets the QWORD data by index.
 			void ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw = true); //Main routine to modify data, in m_fMutable==true mode.
 			[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 			void RecalcAll();                                      //Recalcs all inner draw and data related values.
@@ -153,8 +164,10 @@ namespace HEXCTRL {
 			void WstrCapacityFill();                                  //Fill m_wstrCapacity according to current m_dwCapacity.
 		private:
 			const DWORD m_dwCapacityMax { 128 };  //Maximum capacity.
-			const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };           //Search dialog.
+			const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };           //"Search..." dialog.
 			const std::unique_ptr<CHexBookmarks> m_pBookmarks { std::make_unique<CHexBookmarks>() };           //Bookmarks.
+			const std::unique_ptr<CHexDlgOperations> m_pDlgOpers { std::make_unique<CHexDlgOperations>() };    //"Operations" dialog.
+			const std::unique_ptr<CHexDlgFillWith> m_pDlgFillWith { std::make_unique<CHexDlgFillWith>() };     //"Fill with..." dialog.
 			const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll bar.
 			const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll bar.
 			const int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
