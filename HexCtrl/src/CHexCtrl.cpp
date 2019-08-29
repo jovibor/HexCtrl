@@ -1598,61 +1598,45 @@ QWORD CHexCtrl::GetQword(ULONGLONG ullIndex) const
 bool CHexCtrl::SetByte(ULONGLONG ullIndex, BYTE bData)
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(BYTE)) > m_ullDataSize)
+	if (ullIndex >= m_ullDataSize || m_enMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
-	if (m_enMode == EHexDataMode::DATA_MEMORY)
-	{
-		m_pData[ullIndex] = bData;
-		return true;
-	}
-	else
-		return false;
+	m_pData[ullIndex] = bData;
+
+	return true;
 }
 
 bool CHexCtrl::SetWord(ULONGLONG ullIndex, WORD wData)
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(WORD)) > m_ullDataSize)
+	if ((ullIndex + sizeof(WORD)) > m_ullDataSize || m_enMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
-	if (m_enMode == EHexDataMode::DATA_MEMORY)
-	{
-		*(PWORD)((DWORD_PTR)m_pData + ullIndex) = wData;
-		return true;
-	}
-	else
-		return false;
+	*(PWORD)((DWORD_PTR)m_pData + ullIndex) = wData;
+
+	return true;
 }
 
 bool CHexCtrl::SetDword(ULONGLONG ullIndex, DWORD dwData)
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(DWORD)) > m_ullDataSize)
+	if ((ullIndex + sizeof(DWORD)) > m_ullDataSize || m_enMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
-	if (m_enMode == EHexDataMode::DATA_MEMORY)
-	{
-		*(PDWORD)((DWORD_PTR)m_pData + ullIndex) = dwData;
-		return true;
-	}
-	else
-		return false;
+	*(PDWORD)((DWORD_PTR)m_pData + ullIndex) = dwData;
+
+	return true;
 }
 
 bool CHexCtrl::SetQword(ULONGLONG ullIndex, QWORD qwData)
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(QWORD)) > m_ullDataSize)
+	if ((ullIndex + sizeof(QWORD)) > m_ullDataSize || m_enMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
-	if (m_enMode == EHexDataMode::DATA_MEMORY)
-	{
-		*(PQWORD)((DWORD_PTR)m_pData + ullIndex) = qwData;
-		return true;
-	}
-	else
-		return false;
+	*(PQWORD)((DWORD_PTR)m_pData + ullIndex) = qwData;
+
+	return true;
 }
 
 void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
@@ -1662,22 +1646,22 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
 		|| (hms.ullIndex + hms.ullDataSize) > m_ullDataSize)
 		return;
 
+	m_deqRedo.clear(); //No Redo unless we make Undo.
+	SnapshotUndo(hms.ullIndex, hms.ullSize);
+
 	switch (m_enMode)
 	{
 	case EHexDataMode::DATA_MEMORY: //Modify only in non Virtual mode.
 	{
-		m_deqRedo.clear(); //No Redo unless we make Undo.
-		SnapshotUndo(hms.ullIndex, hms.ullSize);
-
-		switch (hms.stModifyMode.enMode)
+		switch (hms.enMode)
 		{
-		case HEXMODIFYMODESTRUCT::EModifyMode::MODIFY_DEFAULT:
+		case EHexModifyMode::MODIFY_DEFAULT:
 		{
 			for (ULONGLONG i = 0; i < hms.ullDataSize; i++)
 				m_pData[hms.ullIndex + i] = hms.pData[i];
 		}
 		break;
-		case HEXMODIFYMODESTRUCT::EModifyMode::MODIFY_REPEAT:
+		case EHexModifyMode::MODIFY_REPEAT:
 		{   //Fill hms.ullSize bytes with hms.ullDataSize bytes hms.ullSize/hms.ullDataSize times.
 			ULONGLONG ullChunks = (hms.ullSize >= hms.ullDataSize) ? hms.ullSize / hms.ullDataSize : 0;
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
@@ -1685,7 +1669,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
 					m_pData[hms.ullIndex + hms.ullDataSize * iterChunk + iterData] = hms.pData[iterData];
 		}
 		break;
-		case HEXMODIFYMODESTRUCT::EModifyMode::MODIFY_OPERATION:
+		case EHexModifyMode::MODIFY_OPERATION:
 		{
 			if (hms.ullDataSize > sizeof(QWORD))
 				return;
@@ -1693,7 +1677,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
 			ULONGLONG ullChunks = hms.ullSize / hms.ullDataSize;
 
 			ULONGLONG ullDataOper { };
-			if (hms.pData) //hms.pData might be null for, say, EModifyOper::OPER_NOT.
+			if (hms.pData) //hms.pData might be null for, say, EHexOperMode::OPER_NOT.
 			{
 				switch (hms.ullDataSize)
 				{
@@ -1712,7 +1696,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
 				};
 			}
 
-			for (unsigned i = 0; i < ullChunks; i++)
+			for (size_t i = 0; i < ullChunks; i++)
 			{
 				QWORD ullData { };
 				switch (hms.ullDataSize)
@@ -1731,36 +1715,36 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
 					break;
 				};
 
-				switch (hms.stModifyMode.enOper)
+				switch (hms.enOperMode)
 				{
-				case HEXMODIFYMODESTRUCT::EModifyOper::OPER_OR:
+				case EHexOperMode::OPER_OR:
 					ullData |= ullDataOper;
 					break;
-				case HEXMODIFYMODESTRUCT::EModifyOper::OPER_XOR:
+				case EHexOperMode::OPER_XOR:
 					ullData ^= ullDataOper;
 					break;
-				case HEXMODIFYMODESTRUCT::EModifyOper::OPER_AND:
+				case EHexOperMode::OPER_AND:
 					ullData &= ullDataOper;
 					break;
-				case HEXMODIFYMODESTRUCT::EModifyOper::OPER_NOT:
+				case EHexOperMode::OPER_NOT:
 					ullData = ~ullData;
 					break;
-				case HEXMODIFYMODESTRUCT::EModifyOper::OPER_SHL:
+				case EHexOperMode::OPER_SHL:
 					ullData <<= ullDataOper;
 					break;
-				case HEXMODIFYMODESTRUCT::EModifyOper::OPER_SHR:
+				case EHexOperMode::OPER_SHR:
 					ullData >>= ullDataOper;
 					break;
-				case HEXMODIFYMODESTRUCT::EModifyOper::OPER_ADD:
+				case EHexOperMode::OPER_ADD:
 					ullData += ullDataOper;
 					break;
-				case HEXMODIFYMODESTRUCT::EModifyOper::OPER_SUBTRACT:
+				case EHexOperMode::OPER_SUBTRACT:
 					ullData -= ullDataOper;
 					break;
-				case HEXMODIFYMODESTRUCT::EModifyOper::OPER_MULTIPLY:
+				case EHexOperMode::OPER_MULTIPLY:
 					ullData *= ullDataOper;
 					break;
-				case HEXMODIFYMODESTRUCT::EModifyOper::OPER_DIVIDE:
+				case EHexOperMode::OPER_DIVIDE:
 					ullData /= ullDataOper;
 					break;
 				}
@@ -2340,94 +2324,81 @@ void CHexCtrl::CursorMoveDown()
 
 void CHexCtrl::Undo()
 {
-	switch (m_enMode)
-	{
-	case EHexDataMode::DATA_MEMORY:
-	{
-		if (m_deqUndo.empty())
-			return;
+	if (m_deqUndo.empty())
+		return;
 
-		const auto& refUndo = m_deqUndo.back();
-		const auto& refData = refUndo->vecData;
+	const auto& refUndo = m_deqUndo.back();
+	const auto& refUndoData = refUndo->vecData;
 
-		//Making new Redo data snapshot.
-		const auto& refRedo = m_deqRedo.emplace_back(std::make_unique<UNDOSTRUCT>());
-		refRedo->ullIndex = refUndo->ullIndex;
-		for (size_t i = 0; i < refData.size(); i++)
-		{
-			refRedo->vecData.push_back((std::byte)m_pData[refUndo->ullIndex + i]); //Fill Redo data with the next byte.
-			m_pData[refUndo->ullIndex + i] = (BYTE)refData[i];                     //Undo the next byte.
-		}
-		m_deqUndo.pop_back();
-	}
-	break;
-	case EHexDataMode::DATA_MSG:
+	//Making new Redo data snapshot.
+	const auto& refRedo = m_deqRedo.emplace_back(std::make_unique<UNDOSTRUCT>());
+	refRedo->ullIndex = refUndo->ullIndex;
+
+	//Bad alloc may happen here!!!
+	//If there is no more free memory, just clear the vec and return.
+	try
 	{
-		//In EHexDataMode::DATA_MSG mode we send pointer to hms.
-		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_UNDO } };
-		MsgWindowNotify(hns);
+		refRedo->vecData.reserve(refUndoData.size());
 	}
-	break;
-	case EHexDataMode::DATA_VIRTUAL:
+	catch (const std::bad_alloc&)
 	{
-		if (m_pHexVirtual)
-			m_pHexVirtual->Undo();
+		m_deqRedo.clear();
+		return;
 	}
-	break;
+
+	for (size_t i = 0; i < refUndoData.size(); i++)
+	{
+		refRedo->vecData.push_back((std::byte)GetByte(refUndo->ullIndex + i)); //Fill Redo data with the next byte.
+		SetByte(refUndo->ullIndex + i, (BYTE)refUndoData[i]);                  //Undo the next byte.
 	}
+
+	m_deqUndo.pop_back();
 
 	RedrawWindow();
 }
 
 void CHexCtrl::Redo()
 {
-	switch (m_enMode)
-	{
-	case EHexDataMode::DATA_MEMORY:
-	{
-		if (m_deqRedo.empty())
-			return;
+	if (m_deqRedo.empty())
+		return;
 
-		const auto& refRedo = m_deqRedo.back();
-		const auto& refData = refRedo->vecData;
+	const auto& refRedo = m_deqRedo.back();
+	const auto& refData = refRedo->vecData;
 
-		//Making new Undo data snapshot.
-		SnapshotUndo(refRedo->ullIndex, refData.size());
+	//Making new Undo data snapshot.
+	SnapshotUndo(refRedo->ullIndex, refData.size());
 
-		for (size_t i = 0; i < refData.size(); i++)
-			m_pData[refRedo->ullIndex + i] = (BYTE)refData[i];
+	for (size_t i = 0; i < refData.size(); i++)
+		SetByte(refRedo->ullIndex + i, (BYTE)refData[i]);
 
-		m_deqRedo.pop_back();
-	}
-	break;
-	case EHexDataMode::DATA_MSG:
-	{
-		//In EHexDataMode::DATA_MSG mode we send pointer to hms.
-		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_REDO } };
-		MsgWindowNotify(hns);
-	}
-	break;
-	case EHexDataMode::DATA_VIRTUAL:
-	{
-		if (m_pHexVirtual)
-			m_pHexVirtual->Redo();
-	}
-	break;
-	}
+	m_deqRedo.pop_back();
 
 	RedrawWindow();
 }
 
 void CHexCtrl::SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize)
 {
-	//If Undo size is exceeding max limit,
+	//If Undo deque size is exceeding max limit,
 	//remove first snapshot from the beginning (the oldest one).
-	if (m_deqUndo.size() > (size_t)m_dwUndoMax)
+	if (m_deqUndo.size() > m_dwsUndoMax)
 		m_deqUndo.pop_front();
 
 	//Making new Undo data snapshot.
 	const auto& refUndo = m_deqUndo.emplace_back(std::make_unique<UNDOSTRUCT>());
 	refUndo->ullIndex = ullIndex;
+
+	//Bad alloc may happen here!!!
+	try
+	{
+		refUndo->vecData.reserve((size_t)ullSize);
+	}
+	catch (const std::bad_alloc&)
+	{
+		m_deqUndo.clear();
+		m_deqRedo.clear();
+		return;
+	}
+
 	for (size_t i = 0; i < ullSize; i++)
 		refUndo->vecData.push_back((std::byte)GetByte(ullIndex + i));
 }
@@ -2878,7 +2849,7 @@ void CHexCtrl::FillWithZeros()
 	hms.ullIndex = m_ullSelectionStart;
 	hms.ullSize = m_ullSelectionSize;
 	hms.ullDataSize = 1;
-	hms.stModifyMode.enMode = HEXMODIFYMODESTRUCT::EModifyMode::MODIFY_REPEAT;
+	hms.enMode = EHexModifyMode::MODIFY_REPEAT;
 	unsigned char chZero { 0 };
 	hms.pData = &chZero;
 	ModifyData(hms);

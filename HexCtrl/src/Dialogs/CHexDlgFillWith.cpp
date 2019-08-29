@@ -53,8 +53,10 @@ void CHexDlgFillWith::OnOK()
 	int iRadioType = GetCheckedRadioButton(IDC_HEXCTRL_FILLWITHDATA_RADIO_HEX, IDC_HEXCTRL_FILLWITHDATA_RADIO_UTF16);
 
 	HEXMODIFYSTRUCT hms;
-	hms.stModifyMode.enMode = HEXMODIFYMODESTRUCT::EModifyMode::MODIFY_REPEAT;
+	hms.enMode = EHexModifyMode::MODIFY_REPEAT;
 	pHex->GetSelection(hms.ullIndex, hms.ullSize);
+	if (hms.ullSize == 0)
+		return;
 
 	CComboBox* pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_FILLWITHDATA_COMBO_HEXTEXT);
 	if (!pCombo)
@@ -99,6 +101,7 @@ void CHexDlgFillWith::OnOK()
 	}
 
 	pHex->ModifyData(hms);
+	pHex->SetFocus();
 
 	CDialogEx::OnOK();
 }

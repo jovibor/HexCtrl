@@ -175,7 +175,7 @@ namespace HEXCTRL {
 			const int m_iHeightBottomOffArea { m_iHeightBottomRect + m_iIndentBottomLine }; //Height of not visible rect from window's bottom to m_iThirdHorizLine.
 			const int m_iFirstHorizLine { 0 };    //First horizontal line indent.
 			const int m_iFirstVertLine { 0 };     //First vertical line indent.
-			const DWORD m_dwUndoMax { 500 };      //How many Undo states to preserve.
+			const size_t m_dwsUndoMax { 500 };      //How many Undo states to preserve.
 			HEXCOLORSTRUCT m_stColor;             //All control related colors.
 			EHexDataMode m_enMode { EHexDataMode::DATA_MEMORY }; //Control's mode.
 			EShowMode m_enShowMode { EShowMode::ASBYTE }; //Current "Show data" mode.

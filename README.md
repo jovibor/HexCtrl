@@ -42,11 +42,12 @@
   * [HEXCREATESTRUCT](#hexcreatestruct)
   * [HEXCOLORSTRUCT](#hexcolorstruct)
   * [HEXDATASTRUCT](#hexdatastruct)
-  * [HEXMODIFYMODESTRUCT](hexmodifymodestruct)
   * [HEXMODIFYSTRUCT](#hexmodifystruct)
   * [HEXNOTIFYSTRUCT](#hexnotifystruct)
   * [EHexCreateMode](#ehexcreatemode)
   * [EHexDataMode](#ehexdatamode)
+  * [EHexModifyMode](#ehexmodifymode)
+  * [EHexOperMode](#ehexopermode)
   </details>
 * [Positioning and Sizing](#positioning-and-sizing)
 * [Appearance](#appearance)
@@ -56,14 +57,26 @@
 ## [](#)Introduction
 Being good low level wrapper library for Windows API in general, **MFC** was always lacking a good native controls support.
 This forced people to implement their own common stuff for everyday needs.  
-This **HexControl** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't have native support for such feature.
+This **Hex Control** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't have native support for such control.
+
+The main abilities this **Hex Control** possesses:
+* View and edit data up to **16EB** (exabyte)
+* Work in three different data modes: **Memory**, **Message**, **Virtual**.
+* **Bookmarks**
+* **Search and Replace...**
+* Many options to **Copy/Paste** to/from clipboard
+* **Undo/Redo**
+* Modify data with **Filling** and many predefined **Operations...** options
+* Cutomizable appearance
+* Written with **/std:c++17** standard
 
 ## [](#)Implementation
 The **HexCtrl** is implemented as a pure abstract virtual class, and can be used as a *child* or *float* window in any place of your existing application. It was build and tested in *Visual Studio 2019*, under *Windows 10*.
 
 ## [](#)Installing and Using
-The **HexCtrl** can be used in your app by two different ways.  
-Building from the sources or using as a *.dll*.
+The **HexCtrl** can be used in your app in two different ways.  
+* Building from the sources
+* Using as a *.dll*.
 
 ### [](#)Building From The Sources
 The building process is quite simple:
@@ -225,9 +238,7 @@ class IHexVirtual
 public:
     virtual ~IHexVirtual() = default;
     virtual BYTE GetByte(ULONGLONG ullIndex) = 0;            //Gets the byte data by index.
-    virtual	void ModifyData(const HEXMODIFYSTRUCT& hmd) = 0; //Main routine to modify data, in fMutable=true mode.
-    virtual void Undo() = 0;                                 //Undo command, through menu or hotkey.
-    virtual void Redo() = 0;                                 //Redo command, through menu or hotkey.
+    virtual void ModifyData(const HEXMODIFYSTRUCT& hmd) = 0; //Main routine to modify data, in fMutable=true mode.
 };
 ```
 Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
@@ -238,7 +249,6 @@ So, it basically indicates to its parent that the user clicked close button, or 
 
 ## [](#)Scroll Bars
 When I started to work with very big data files i immediately faced one very nasty inconvenience.
-
 The standard Windows scrollbars can only hold `signed integer` values, which is too little to scroll through many gigabytes of data. It could be some workarounds and crutches involved to overcome this, but frankly saying i'm not a big fan of this kind of approach.
 
 That's why **HexControl** uses its own scrollbars. They work with `unsigned long long` values, which is way bigger than standard `signed ints`. 
@@ -428,44 +438,27 @@ struct HEXDATASTRUCT
 };
 ```
 
-### [](#)HEXMODIFYMODESTRUCT
-Structure that describes the data modification mode.  
-If `enMode` is set to `EModifyMode::MODIFY_OPERATION` then `enOper` member is showing the type of the operation the data should be changed with.
-```cpp
-struct HEXMODIFYMODESTRUCT
-{
-    enum class EModifyMode : DWORD
-    {
-    	MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
-    }
-    enMode;
-
-    enum class EModifyOper : DWORD
-    {
-    	OPER_OR, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
-    	OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
-    }
-    enOper;
-};
-```
-
 ### [](#)HEXMODIFYSTRUCT
 This structure is used internally in [`DATA_MEMORY`](#ehexdatamode) mode, as well as in the external notification routines, when working in [`DATA_MSG`](#ehexdatamode) and [`DATA_VIRTUAL`](#ehexdatamode) modes.
 ```cpp
 struct HEXMODIFYSTRUCT
 {
-    HEXMODIFYMODESTRUCT stModifyMode { HEXMODIFYMODESTRUCT::EModifyMode::MODIFY_DEFAULT }; //Modify mode.
-    PBYTE               pData { };       //Pointer to a data to be set.
-    ULONGLONG           ullIndex { };    //Index of the starting byte to modify.
-    ULONGLONG           ullSize { };     //Size to be modified.
-    ULONGLONG           ullDataSize { }; //Size of the data pData is pointing to.
+    EHexModifyMode enMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
+    EHexOperMode   enOperMode { };  //Operation mode enum. Used only if enMode==MODIFY_OPERATION.
+    PBYTE          pData { };       //Pointer to a data to be set.
+    ULONGLONG      ullIndex { };    //Index of the starting byte to modify.
+    ULONGLONG      ullSize { };     //Size to be modified.
+    ULONGLONG      ullDataSize { }; //Size of the data pData is pointing to.
 };
 ```
-When `stModifyMode.enModify` is set to [`EModifyMode::MODIFY_DEFAULT`](#ehexmodifymode), bytes from `pData` just replace corresponding data bytes as is.  
+When `enMode` is set to [`EHexModifyMode::MODIFY_DEFAULT`](#ehexmodifymode), bytes from `pData` just replace corresponding data bytes as is.  
 
-If `stModifyMode.enModify` is equal to [`EModifyMode::MODIFY_REPEAT`](#ehexmodifymode) then block by block replacement takes place `ullSize / ullDataSize` times.
+If `enMode` is equal to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode) then block by block replacement takes place `ullSize / ullDataSize` times.
 
-For example: if `ullSize` = 9, `ullDataSize` = 3 and `enModify` is set to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode), bytes in memory at `ullIndex` position are `123456789`, and bytes pointed to by `pData` are `345`, then, after modification, bytes at `ullIndex` will be `345345345`.
+For example: if `ullSize` = 9, `ullDataSize` = 3 and `enMode` is set to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode), bytes in memory at `ullIndex` position are `123456789`, and bytes pointed to by `pData` are `345`, then, after modification, bytes at `ullIndex` will be `345345345`.
+
+If `enMode` is equal to [`EHexModifyMode::MODIFY_OPERATION`](#ehexmodifymode) then
+[`enOperMode`](#ehexopermode) comes into play, showing what kind of operation must be performed on data.
 
 ### [](#)HEXNOTIFYSTRUCT
 This struct is used in notifications routine, when data is set with the [`DATA_MSG`](#ehexdatamode) flag.
@@ -496,6 +489,25 @@ enum class EHexCreateMode : DWORD
 enum class EHexDataMode : DWORD
 {
     DATA_MEMORY, DATA_MSG, DATA_VIRTUAL
+};
+```
+
+### [](#)EHexModifyMode
+Enum represents current data modification type.
+```cpp
+enum class EHexModifyMode : WORD
+{
+    MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
+};
+```
+
+### [](#)EHexOperMode
+Enum describes type of bitwise and arithmetic operations that should be performed on the data.
+```cpp
+enum class EHexOperMode : WORD
+{
+    OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
+    OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
 };
 ```
 

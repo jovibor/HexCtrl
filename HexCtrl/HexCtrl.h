@@ -25,25 +25,22 @@
 
 namespace HEXCTRL
 {
-	struct HEXMODIFYMODESTRUCT
+	/********************************************************************************************
+	* EHexModifyMode - Enum of the data modification mode, used in HEXMODIFYSTRUCT.             *
+	********************************************************************************************/
+	enum class EHexModifyMode : WORD
 	{
-		/********************************************************************************************
-		* EModifyMode - Enum of the modification data mode, used in notification routines.          *
-		********************************************************************************************/
-		enum class EModifyMode : DWORD
-		{
-			MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
-		}
-		enMode;
-		/********************************************************************************************
-		* EModifyOper - Enum of the operation data mode, used when EModifyMode is MODIFY_OPERATION. *
-		********************************************************************************************/
-		enum class EModifyOper : DWORD
-		{
-			OPER_OR, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
-			OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
-		}
-		enOper;
+		MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
+	};
+
+	/********************************************************************************************
+	* EHexOperMode - Enum of the data operation mode, used in HEXMODIFYSTRUCT,                  *
+	* when HEXMODIFYSTRUCT::enMode is MODIFY_OPERATION.                                         *
+	********************************************************************************************/
+	enum class EHexOperMode : WORD
+	{
+		OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
+		OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
 	};
 
 	/********************************************************************************************
@@ -51,11 +48,12 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXMODIFYSTRUCT
 	{
-		HEXMODIFYMODESTRUCT stModifyMode { HEXMODIFYMODESTRUCT::EModifyMode::MODIFY_DEFAULT }; //Modify mode.
-		PBYTE               pData { };       //Pointer to a data to be set.
-		ULONGLONG           ullIndex { };    //Index of the starting byte to modify.
-		ULONGLONG           ullSize { };     //Size to be modified.
-		ULONGLONG           ullDataSize { }; //Size of the data pData is pointing to.
+		EHexModifyMode enMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
+		EHexOperMode   enOperMode { };  //Operation mode enum. Used only if enMode==MODIFY_OPERATION.
+		PBYTE          pData { };       //Pointer to a data to be set.
+		ULONGLONG      ullIndex { };    //Index of the starting byte to modify.
+		ULONGLONG      ullSize { };     //Size to be modified.
+		ULONGLONG      ullDataSize { }; //Size of the data pData is pointing to.
 	};
 
 	/********************************************************************************************
@@ -73,8 +71,6 @@ namespace HEXCTRL
 		virtual ~IHexVirtual() = default;
 		virtual BYTE GetByte(ULONGLONG ullIndex) = 0;            //Gets the byte data by index.
 		virtual	void ModifyData(const HEXMODIFYSTRUCT& hms) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
-		virtual void Undo() = 0;                                 //Undo command, through menu or hotkey.
-		virtual void Redo() = 0;                                 //Redo command, through menu or hotkey.
 	};
 
 	/********************************************************************************************
@@ -245,9 +241,6 @@ namespace HEXCTRL
 	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0102 };  //Selection has been made.
 	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0103 };     //User defined custom menu clicked.
 	constexpr auto HEXCTRL_MSG_ONCONTEXTMENU { 0x0104 }; //OnContextMenu triggered.
-	constexpr auto HEXCTRL_MSG_UNDO { 0x0105 };          //Undo command triggered.
-	constexpr auto HEXCTRL_MSG_REDO { 0x0106 };          //Redo command triggered.
-
 
 /*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #ifdef _UNICODE

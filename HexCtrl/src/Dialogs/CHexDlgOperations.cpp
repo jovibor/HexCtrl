@@ -96,49 +96,51 @@ void CHexDlgOperations::OnBnClickedOk()
 	int iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_BYTE, IDC_HEXCTRL_OPERATIONS_RADIO_QWORD);
 
 	HEXMODIFYSTRUCT hms;
-	hms.stModifyMode.enMode = HEXMODIFYMODESTRUCT::EModifyMode::MODIFY_OPERATION;
+	hms.enMode = EHexModifyMode::MODIFY_OPERATION;
 	pHex->GetSelection(hms.ullIndex, hms.ullSize);
+	if (hms.ullSize == 0)
+		return;
 
 	int iEditId = 0;
 	switch (iRadioOperation)
 	{
 	case IDC_HEXCTRL_OPERATIONS_RADIO_OR:
-		hms.stModifyMode.enOper = HEXMODIFYMODESTRUCT::EModifyOper::OPER_OR;
+		hms.enOperMode = EHexOperMode::OPER_OR;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_OR;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_XOR:
-		hms.stModifyMode.enOper = HEXMODIFYMODESTRUCT::EModifyOper::OPER_XOR;
+		hms.enOperMode = EHexOperMode::OPER_XOR;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_XOR;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_AND:
-		hms.stModifyMode.enOper = HEXMODIFYMODESTRUCT::EModifyOper::OPER_AND;
+		hms.enOperMode = EHexOperMode::OPER_AND;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_AND;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_NOT:
-		hms.stModifyMode.enOper = HEXMODIFYMODESTRUCT::EModifyOper::OPER_NOT;
+		hms.enOperMode = EHexOperMode::OPER_NOT;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_SHL:
-		hms.stModifyMode.enOper = HEXMODIFYMODESTRUCT::EModifyOper::OPER_SHL;
+		hms.enOperMode = EHexOperMode::OPER_SHL;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_SHL;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_SHR:
-		hms.stModifyMode.enOper = HEXMODIFYMODESTRUCT::EModifyOper::OPER_SHR;
+		hms.enOperMode = EHexOperMode::OPER_SHR;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_SHR;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_ADD:
-		hms.stModifyMode.enOper = HEXMODIFYMODESTRUCT::EModifyOper::OPER_ADD;
+		hms.enOperMode = EHexOperMode::OPER_ADD;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_ADD;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_SUBTRACT:
-		hms.stModifyMode.enOper = HEXMODIFYMODESTRUCT::EModifyOper::OPER_SUBTRACT;
+		hms.enOperMode = EHexOperMode::OPER_SUBTRACT;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_SUBTRACT;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_MULTIPLY:
-		hms.stModifyMode.enOper = HEXMODIFYMODESTRUCT::EModifyOper::OPER_MULTIPLY;
+		hms.enOperMode = EHexOperMode::OPER_MULTIPLY;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_MULTIPLY;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_DIVIDE:
-		hms.stModifyMode.enOper = HEXMODIFYMODESTRUCT::EModifyOper::OPER_DIVIDE;
+		hms.enOperMode = EHexOperMode::OPER_DIVIDE;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_DIVIDE;
 		break;
 	default:
@@ -186,6 +188,7 @@ void CHexDlgOperations::OnBnClickedOk()
 	}
 
 	pHex->ModifyData(hms);
+	pHex->SetFocus();
 
 	CDialogEx::OnOK();
 }
