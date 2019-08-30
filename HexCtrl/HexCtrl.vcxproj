@@ -22,8 +22,9 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{557B0ABE-E81A-4BD1-AD98-DC68F44D9A0D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>HexCtrlDll</RootNamespace>
+    <RootNamespace>HexCtrl</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>HexCtrl</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -123,7 +124,7 @@
       <AdditionalOptions>/NOCOFFGRPINFO /pdbaltpath:%_PDB% </AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>powershell.exe $(ProjectDir)\VerInfoRun.ps1 -versionFile $(SolutionDir)\HexCtrl\verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>
+      <Command>powershell.exe $(ProjectDir)verinfo\VerInfoRun.ps1 -versionFile  $(ProjectDir)verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -144,7 +145,7 @@
       <AdditionalOptions>/NOCOFFGRPINFO /pdbaltpath:%_PDB% </AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>powershell.exe $(ProjectDir)\VerInfoRun.ps1 -versionFile $(SolutionDir)\HexCtrl\verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>
+      <Command>powershell.exe $(ProjectDir)verinfo\VerInfoRun.ps1 -versionFile  $(ProjectDir)verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -165,7 +166,7 @@
       <AdditionalOptions>/NOCOFFGRPINFO /pdbaltpath:%_PDB% </AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>powershell.exe $(ProjectDir)\VerInfoRun.ps1 -versionFile $(SolutionDir)\HexCtrl\verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>
+      <Command>powershell.exe $(ProjectDir)verinfo\VerInfoRun.ps1 -versionFile  $(ProjectDir)verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -195,21 +196,21 @@
       <AdditionalOptions>/NOCOFFGRPINFO /pdbaltpath:%_PDB% </AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>powershell.exe $(ProjectDir)\VerInfoRun.ps1 -versionFile $(SolutionDir)\HexCtrl\verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>
+      <Command>powershell.exe $(ProjectDir)verinfo\VerInfoRun.ps1 -versionFile  $(ProjectDir)verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\HexCtrlSample\stdafx.h" />
-    <ClInclude Include="..\HexCtrl\HexCtrl.h" />
-    <ClInclude Include="..\HexCtrl\res\HexCtrlRes.h" />
-    <ClInclude Include="..\HexCtrl\src\CHexBookmarks.h" />
-    <ClInclude Include="..\HexCtrl\src\CHexCtrl.h" />
-    <ClInclude Include="..\HexCtrl\src\CScrollEx.h" />
-    <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgAbout.h" />
-    <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgFillWith.h" />
-    <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgOperations.h" />
-    <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgSearch.h" />
-    <ClInclude Include="..\HexCtrl\src\Helper.h" />
+    <ClInclude Include="HexCtrl.h" />
+    <ClInclude Include="res\HexCtrlRes.h" />
+    <ClInclude Include="src\CHexBookmarks.h" />
+    <ClInclude Include="src\CHexCtrl.h" />
+    <ClInclude Include="src\CScrollEx.h" />
+    <ClInclude Include="src\Dialogs\CHexDlgAbout.h" />
+    <ClInclude Include="src\Dialogs\CHexDlgFillWith.h" />
+    <ClInclude Include="src\Dialogs\CHexDlgOperations.h" />
+    <ClInclude Include="src\Dialogs\CHexDlgSearch.h" />
+    <ClInclude Include="src\Helper.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\HexCtrlSample\stdafx.cpp">
@@ -218,25 +219,25 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\HexCtrl\src\CHexBookmarks.cpp" />
-    <ClCompile Include="..\HexCtrl\src\CHexCtrl.cpp" />
-    <ClCompile Include="..\HexCtrl\src\CScrollEx.cpp" />
-    <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgAbout.cpp" />
-    <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgFillWith.cpp" />
-    <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgOperations.cpp" />
-    <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp" />
-    <ClCompile Include="..\HexCtrl\src\Helper.cpp" />
+    <ClCompile Include="src\CHexBookmarks.cpp" />
+    <ClCompile Include="src\CHexCtrl.cpp" />
+    <ClCompile Include="src\CScrollEx.cpp" />
+    <ClCompile Include="src\Dialogs\CHexDlgAbout.cpp" />
+    <ClCompile Include="src\Dialogs\CHexDlgFillWith.cpp" />
+    <ClCompile Include="src\Dialogs\CHexDlgOperations.cpp" />
+    <ClCompile Include="src\Dialogs\CHexDlgSearch.cpp" />
+    <ClCompile Include="src\Helper.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\HexCtrl\res\HexCtrl.rc" />
+    <ResourceCompile Include="res\HexCtrl.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\HexCtrl\res\HexCtrlIcon.bmp" />
-    <Image Include="..\HexCtrl\res\MenuCopy.bmp" />
-    <Image Include="..\HexCtrl\res\MenuFillZeros.bmp" />
-    <Image Include="..\HexCtrl\res\MenuPaste.bmp" />
-    <Image Include="..\HexCtrl\res\ScrollExH.bmp" />
-    <Image Include="..\HexCtrl\res\ScrollExV.bmp" />
+    <Image Include="res\HexCtrlIcon.bmp" />
+    <Image Include="res\MenuCopy.bmp" />
+    <Image Include="res\MenuFillZeros.bmp" />
+    <Image Include="res\MenuPaste.bmp" />
+    <Image Include="res\ScrollExH.bmp" />
+    <Image Include="res\ScrollExV.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

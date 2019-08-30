@@ -1,10 +1,10 @@
 /****************************************************************************************
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
-* This is a Hex Control for MFC applications.                                           *
-* Official git repository of the project: https://github.com/jovibor/HexCtrl/           *
+* This is a Hex Control for MFC/Win32 applications.                                     *
+* Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
-* For more information, or any questions, visit the project's official repository.      *
+* For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
 #include "CHexDlgAbout.h"

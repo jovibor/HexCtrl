@@ -3,7 +3,7 @@
 ### Table of Contents
 * [Introduction](#introduction)
 * [Implementation](#implementation)
-* [Installing and Using](#installing-and-using)
+* [Installation](#installation)
   * [Building From The Sources](#building-from-the-sources)
   * [Dynamic Link Library](#dynamic-link-library)
   * [Additional Info](#additional-info)
@@ -55,11 +55,9 @@
 * [Help Point](#help-point)
 
 ## [](#)Introduction
-Being good low level wrapper library for Windows API in general, **MFC** was always lacking a good native controls support.
-This forced people to implement their own common stuff for everyday needs.  
-This **Hex Control** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't have native support for such control.
+Being good low level wrapper library for Windows API in general, **MFC** was always lacking a good native controls support. This **Hex Control** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't have native support for such control.
 
-The main abilities this **Hex Control** possesses:
+#### The main features of the **Hex Control**:
 * View and edit data up to **16EB** (exabyte)
 * Work in three different data modes: **Memory**, **Message**, **Virtual**.
 * **Bookmarks**
@@ -71,27 +69,27 @@ The main abilities this **Hex Control** possesses:
 * Written with **/std:c++17** standard
 
 ## [](#)Implementation
-The **HexCtrl** is implemented as a pure abstract virtual class, and can be used as a *child* or *float* window in any place of your existing application. It was build and tested in *Visual Studio 2019*, under *Windows 10*.
+The **HexCtrl** is implemented as a pure abstract virtual interface, and can be used as a *child* or *float* window in any place of your existing application. It was build and tested in *Visual Studio 2019*, under *Windows 10*.
 
-## [](#)Installing and Using
-The **HexCtrl** can be used in your app in two different ways.  
-* Building from the sources
+## [](#)Installation
+The **HexCtrl** can be used in two different ways:  
+* Building from the sources as a part of your project 
 * Using as a *.dll*.
 
 ### [](#)Building From The Sources
 The building process is quite simple:
-1. Copy *HexCtrl* folder into your project's folder.
-2. Add all files from *HexCtrl* folder into your project.
+1. Copy *HexCtrl* folder and its content (except `.vcxproj` files) into your project's folder.
+2. Add all files from that *HexCtrl* folder into your project.
 3. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the control.
 4. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
 5. [Create](#creating) control instance.
 
-If you want to build **HexCtrl** from the sources in non MFC app you will have to:
+If you want to build **HexCtrl** from the sources in non **MFC** app you will have to:
 1. Add support for **Use MFC in a Shared DLL** in your project settings.
 2. Uncomment the line `//#define HEXCTRL_MANUAL_MFC_INIT` in `HexCtrl.h` header file.
 
 ### [](#)Dynamic Link Library
-To use **HexCtrl** as the .dll do the following:
+To use **HexCtrl** as the *.dll* do the following:
 1. Copy *HexCtrl.h* file into your project's folder.
 2. Copy *HexCtrl.lib* file into your project's folder, so that linker can see it.
 3. Put *HexCtrl.dll* file next to your *.exe* file.
@@ -103,7 +101,9 @@ To use **HexCtrl** as the .dll do the following:
 5. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
 5. [Create](#creating) control instance.
 
-Control's *.dll* is build with **MFC** static linking, so even if you are to use it in your own **MFC** project there should not be any interferences.
+To get *HexCtrl.dll* and *HexCtrl.lib* files you can either download it from the [official repository](https://github.com/jovibor/HexCtrl/releases/latest) or build it yourself from the *HexCtrl/HexCtrl.vcxproj* **Visual Studio** project file.
+
+**HexCtrl**'s *.dll* is built with **MFC** static linking, so even if you are to use it in your own **MFC** project, even with different **MFC** version, there should not be any interferences.
 
 ### [](#)Additional Info
 `IHexCtrlPtr` is, in fact, a pointer to a `IHexCtrl` pure abstract base class, wrapped either in `std::unique_ptr` or `std::shared_ptr`. You can choose whatever is best for your needs by comment/uncomment one of these alliases in *HexCtrl.h*:

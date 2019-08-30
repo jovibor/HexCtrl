@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HexCtrlSample", "HexCtrlSample\HexCtrlSample.vcxproj", "{780C336D-23D1-4A79-A0DA-E6296E63C8A0}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HexCtrlDll", "HexCtrlDll\HexCtrlDll.vcxproj", "{557B0ABE-E81A-4BD1-AD98-DC68F44D9A0D}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HexCtrl", "HexCtrl\HexCtrl.vcxproj", "{557B0ABE-E81A-4BD1-AD98-DC68F44D9A0D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
