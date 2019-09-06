@@ -28,11 +28,11 @@ namespace HEXCTRL {
 			enum class EState : DWORD
 			{
 				STATE_DEFAULT,
-				FIRSTBUTTON_HOVER, FIRSTBUTTON_CLICK,
+				FIRSTARROW_HOVER, FIRSTARROW_CLICK,
 				FIRSTCHANNEL_CLICK,
 				THUMB_HOVER, THUMB_CLICK,
 				LASTCHANNEL_CLICK,
-				LASTBUTTON_CLICK, LASTBUTTON_HOVER
+				LASTARROW_CLICK, LASTARROW_HOVER
 			};
 			enum class ETimer : UINT_PTR {
 				IDT_FIRSTCLICK = 0x7ff0,
@@ -86,8 +86,7 @@ bool CScrollEx::Create(CWnd * pWndParent, int iScrollType,
 
 void CScrollEx::AddSibling(CScrollEx* pSibling)
 {
-	if (pSibling)
-		m_pSibling = pSibling;
+	m_pSibling = pSibling;
 }
 
 bool CScrollEx::IsVisible() const
@@ -338,38 +337,41 @@ void CScrollEx::OnSetCursor(CWnd * /*pWnd*/, UINT nHitTest, UINT message)
 
 		if (IsVisible())
 		{
+			CWnd* pParent = GetParent();
+			pParent->SetFocus();
+
 			if (GetThumbRect(true).PtInRect(pt))
 			{
 				m_ptCursorCur = pt;
 				m_enState = EState::THUMB_CLICK;
-				GetParent()->SetCapture();
+				pParent->SetCapture();
 			}
 			else if (GetFirstArrowRect(true).PtInRect(pt))
 			{
 				ScrollLineUp();
-				m_enState = EState::FIRSTBUTTON_CLICK;
-				GetParent()->SetCapture();
+				m_enState = EState::FIRSTARROW_CLICK;
+				pParent->SetCapture();
 				SetTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
 			}
 			else if (GetLastArrowRect(true).PtInRect(pt))
 			{
 				ScrollLineDown();
-				m_enState = EState::LASTBUTTON_CLICK;
-				GetParent()->SetCapture();
+				m_enState = EState::LASTARROW_CLICK;
+				pParent->SetCapture();
 				SetTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
 			}
 			else if (GetFirstChannelRect(true).PtInRect(pt))
 			{
 				ScrollPageUp();
 				m_enState = EState::FIRSTCHANNEL_CLICK;
-				GetParent()->SetCapture();
+				pParent->SetCapture();
 				SetTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
 			}
 			else if (GetLastChannelRect(true).PtInRect(pt))
 			{
 				ScrollPageDown();
 				m_enState = EState::LASTCHANNEL_CLICK;
-				GetParent()->SetCapture();
+				pParent->SetCapture();
 				SetTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
 			}
 		}
@@ -528,7 +530,7 @@ void CScrollEx::DrawThumb(CDC * pDC)const
 CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
 {
 	if (!m_fCreated)
-		return 0;
+		return { };
 
 	CWnd* hwndParent = GetParent();
 	CRect rcClient = GetParentRect();
@@ -838,10 +840,10 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 	{
 		switch (m_enState)
 		{
-		case EState::FIRSTBUTTON_CLICK:
+		case EState::FIRSTARROW_CLICK:
 			ScrollLineUp();
 			break;
-		case EState::LASTBUTTON_CLICK:
+		case EState::LASTARROW_CLICK:
 			ScrollLineDown();
 			break;
 		case EState::FIRSTCHANNEL_CLICK:

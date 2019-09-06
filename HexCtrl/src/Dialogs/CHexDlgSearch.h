@@ -13,6 +13,14 @@
 
 namespace HEXCTRL {
 	namespace INTERNAL {
+		/***************************************************************************************
+		* ESearchMode - type of the search, also used in CHexDlgSearch.                        *
+		***************************************************************************************/
+		enum class ESearchMode : DWORD
+		{
+			SEARCH_HEX, SEARCH_ASCII, SEARCH_UTF16
+		};
+
 		/********************************************
 		* CHexDlgSearch class definition.			*
 		********************************************/
@@ -36,7 +44,10 @@ namespace HEXCTRL {
 			void OnRadioBnRange(UINT nID);
 		private:
 			CHexCtrl* GetHexCtrl()const;
-			void SearchCallback();
+			//ullStart will return index of found occurence, if any.
+			bool DoSearch(const unsigned char* pWhere, ULONGLONG& ullStart, ULONGLONG ullEnd, const unsigned char* pSearch, size_t nSize, bool fForward = true);
+			void Search();
+			void SearchReplace(ULONGLONG ullIndex, const BYTE* pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw = true);
 			void ClearAll();
 			ESearchMode GetSearchMode(); //Returns current search mode.
 			void ComboSearchFill(LPCWSTR pwsz);
@@ -44,12 +55,26 @@ namespace HEXCTRL {
 			DECLARE_MESSAGE_MAP()
 		private:
 			CHexCtrl* m_pHexCtrl { };
-			SEARCHSTRUCT m_stSearch { };
 			UINT m_uRadioCurrent { };
 			const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
 			const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
 			const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
 			CBrush m_stBrushDefault;
+			std::wstring wstrSearch { };     //String to search for.
+			std::wstring wstrReplace { };    //Search "Replace with..." wstring.
+			ESearchMode enSearchType { };    //Hex, Ascii, Unicode, etc...
+			ULONGLONG m_ullIndex { };        //An offset search should start from.
+			DWORD m_dwCount { };             //How many, or what index number.
+			DWORD m_dwReplaced { };          //Replaced amount;
+			int m_iDirection { };            //Search direction: 1 = Forward, -1 = Backward.
+			int m_iWrap { };                 //Wrap direction: -1 = Beginning, 1 = End.
+			bool m_fWrap { false };          //Was search wrapped?
+			bool m_fSecondMatch { false };   //First or subsequent match. 
+			bool m_fFound { false };         //Found or not.
+			bool m_fDoCount { true };        //Do we count matches or just print "Found".
+			bool m_fReplace { false };       //Find or Find and Replace with...?
+			bool m_fAll { false };           //Find/Replace one by one, or all?
+			bool m_fReplaceWarning { true }; //Show Replace string size exceeds Warning or not.
 		};
 	}
 }

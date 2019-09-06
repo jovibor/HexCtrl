@@ -17,37 +17,26 @@ void CHexBookmarks::Attach(CHexCtrl * pHex)
 	m_pHex = pHex;
 }
 
-void CHexBookmarks::Add()
+void CHexBookmarks::Add(ULONGLONG ullOffset, ULONGLONG ullSize)
 {
-	if (!m_pHex)
+	if (ullSize == 0)
 		return;
 
-	ULONGLONG ullOffset, ullSize;
-	m_pHex->GetSelection(ullOffset, ullSize);
 	m_vecBookmarks.emplace_back(BOOKMARKSTRUCT { ullOffset, ullSize });
 }
 
-void CHexBookmarks::Remove()
+void CHexBookmarks::Remove(ULONGLONG ullOffset)
 {
 	if (!m_pHex || m_vecBookmarks.empty() || !m_pHex->IsDataSet())
 		return;
 
-	ULONGLONG ullByte = m_pHex->m_ullRMouseHex;
-	if (ullByte == 0xFFFFFFFFFFFFFFFFull)
-		if (m_pHex->m_ullSelectionSize > 0)
-			ullByte = m_pHex->m_ullSelectionClick;
-		else
-			return;
-
 	auto iter = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
-		[ullByte](const BOOKMARKSTRUCT& r)
-	{return ullByte >= r.ullOffset && ullByte < (r.ullOffset + r.ullSize); });
+		[ullOffset](const BOOKMARKSTRUCT& r)
+	{return ullOffset >= r.ullOffset && ullOffset < (r.ullOffset + r.ullSize); });
 	if (iter != m_vecBookmarks.end()) {
 		m_vecBookmarks.erase(iter);
 		m_pHex->RedrawWindow();
 	}
-
-	m_pHex->m_ullRMouseHex = 0xFFFFFFFFFFFFFFFFull;
 }
 
 void CHexBookmarks::ClearAll()
@@ -86,8 +75,7 @@ bool CHexBookmarks::HitTest(ULONGLONG ullByte)
 		return false;
 
 	return std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
-		[ullByte](const BOOKMARKSTRUCT& r)
-	{return ullByte >= r.ullOffset && ullByte < (r.ullOffset + r.ullSize); })
+		[ullByte](const BOOKMARKSTRUCT& r) {return ullByte >= r.ullOffset && ullByte < (r.ullOffset + r.ullSize); })
 		!= m_vecBookmarks.end();
 }
 

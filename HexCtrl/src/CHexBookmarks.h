@@ -24,8 +24,8 @@ namespace HEXCTRL {
 		public:
 			CHexBookmarks() {}
 			void Attach(CHexCtrl* pHex);
-			void Add();
-			void Remove();
+			void Add(ULONGLONG ullOffset, ULONGLONG ullSize);
+			void Remove(ULONGLONG ullOffset);
 			void ClearAll();
 			void GoNext();
 			void GoPrev();

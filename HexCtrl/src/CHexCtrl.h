@@ -36,44 +36,11 @@ namespace HEXCTRL {
 			ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
 		};
 
-		/***************************************************************************************
-		* ESearchMode - type of the search, also used in CHexDlgSearch.                        *
-		***************************************************************************************/
-		enum class ESearchMode : DWORD
-		{
-			SEARCH_HEX, SEARCH_ASCII, SEARCH_UTF16
-		};
-
-		/****************************************************************************************
-		* SEARCHSTRUCT - used for search routines.                                              *
-		****************************************************************************************/
-		struct SEARCHSTRUCT
-		{
-			std::wstring wstrSearch { };         //String to search for.
-			std::wstring wstrReplace { };        //Search "Replace with..." wstring.
-			ESearchMode  enSearchType { };       //Hex, Ascii, Unicode, etc...
-			ULONGLONG    ullIndex { };           //An offset search should start from.
-			DWORD        dwCount { };            //How many, or what index number.
-			DWORD        dwReplaced { };         //Replaced amount;
-			int          iDirection { };         //Search direction: 1 = Forward, -1 = Backward.
-			int          iWrap { };              //Wrap direction: -1 = Beginning, 1 = End.
-			bool         fWrap { false };        //Was search wrapped?
-			bool         fSecondMatch { false }; //First or subsequent match. 
-			bool         fFound { false };       //Found or not.
-			bool         fDoCount { true };      //Do we count matches or just print "Found".
-			bool         fReplace { false };     //Find or Find and Replace with...?
-			bool         fAll { false };         //Find/Replace one by one, or all?
-		};
-
 		/********************************************************************************************
 		* CHexCtrl class declaration.																*
 		********************************************************************************************/
 		class CHexCtrl : public CWnd, public IHexCtrl
 		{
-			friend class CHexDlgSearch; //For private SearchCallback routine.
-			friend class CHexBookmarks;
-			friend class CHexDlgOperations;
-			friend class CHexDlgFillWith;
 		public:
 			CHexCtrl();
 			virtual ~CHexCtrl();
@@ -112,6 +79,10 @@ namespace HEXCTRL {
 			afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 			afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 			void OnKeyDownShift(UINT nChar); //Key pressed with the Shift.
+			void OnKeyDownShiftLeft();       //Left Key pressed with the Shift.
+			void OnKeyDownShiftRight();      //Right Key pressed with the Shift.
+			void OnKeyDownShiftUp();         //Up Key pressed with the Shift.
+			void OnKeyDownShiftDown();       //Down Key pressed with the Shift.
 			void OnKeyDownCtrl(UINT nChar);  //Key pressed with the Ctrl.
 			afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
 			afx_msg UINT OnGetDlgCode();     //To properly work in dialogs.
@@ -122,7 +93,8 @@ namespace HEXCTRL {
 			afx_msg BOOL OnNcActivate(BOOL bActive);
 			afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 			afx_msg void OnNcPaint();
-		protected:
+		public:
+			PBYTE GetData(ULONGLONG* pullSize = nullptr);          //Gets current data pointer and data size.
 			[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex)const;   //Gets the BYTE data by index.
 			[[nodiscard]] WORD GetWord(ULONGLONG ullIndex)const;   //Gets the WORD data by index.
 			[[nodiscard]] DWORD GetDword(ULONGLONG ullIndex)const; //Gets the DWORD data by index.
@@ -146,6 +118,7 @@ namespace HEXCTRL {
 			void SetShowMode(EShowMode enShowMode);                //Set current data representation mode.
 			void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
 			void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notifications.
+			[[nodiscard]] ULONGLONG GetCursorPos();                //Cursor or selection_click depending on edit mode.
 			void SetCursorPos(ULONGLONG ullPos, bool fHighPart);   //Sets the cursor position when in Edit mode.
 			void CursorMoveRight();
 			void CursorMoveLeft();
@@ -155,8 +128,6 @@ namespace HEXCTRL {
 			void Redo();
 			void SnapshotUndo(ULONGLONG ullIndex, ULONGLONG ullSize); //Takes currently modifiable data snapshot.
 			[[nodiscard]] bool IsCurTextArea()const;                  //Whether click was made in Text or Hex area.
-			void SearchCallback(SEARCHSTRUCT& rSearch);               //Search through currently set data.
-			void SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw = true);
 			void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, bool fScroll = true, bool fGoToStart = false);
 			void GoToOffset(ULONGLONG ullOffset);                     //Scrolls to given offfset.
 			void SelectAll();                                         //Selects all current bytes.
@@ -175,17 +146,17 @@ namespace HEXCTRL {
 			const int m_iHeightBottomOffArea { m_iHeightBottomRect + m_iIndentBottomLine }; //Height of not visible rect from window's bottom to m_iThirdHorizLine.
 			const int m_iFirstHorizLine { 0 };    //First horizontal line indent.
 			const int m_iFirstVertLine { 0 };     //First vertical line indent.
-			const size_t m_dwsUndoMax { 500 };      //How many Undo states to preserve.
+			const size_t m_dwsUndoMax { 500 };    //How many Undo states to preserve.
 			HEXCOLORSTRUCT m_stColor;             //All control related colors.
 			EHexDataMode m_enMode { EHexDataMode::DATA_MEMORY }; //Control's mode.
-			EShowMode m_enShowMode { EShowMode::ASBYTE }; //Current "Show data" mode.
+			EShowMode m_enShowMode { EShowMode::ASBYTE };        //Current "Show data" mode.
 			PBYTE m_pData { };                    //Main data pointer. Modifiable in "Edit" mode.
 			IHexVirtual* m_pHexVirtual { };       //Data handler pointer for EHexDataMode::DATA_VIRTUAL
 			HWND m_hwndMsg { };                   //Window handle the control messages will be sent to.
 			ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
 			ULONGLONG m_ullSelectionStart { }, m_ullSelectionEnd { }, m_ullSelectionClick { }, m_ullSelectionSize { };
 			ULONGLONG m_ullCursorPos { };         //Current cursor position.
-			ULONGLONG m_ullRMouseHex { 0xFFFFFFFFFFFFFFFFull }; //Right mouse clicked Hex index. Used in bookmarking.
+			ULONGLONG m_ullRMouseChunk { 0xFFFFFFFFFFFFFFFFull }; //Right mouse clicked chunk (hex or ascii) index. Used in bookmarking.
 			DWORD m_dwCapacity { 16 };            //How many bytes displayed in one row
 			DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 			DWORD m_dwOffsetDigits { 8 };         //Amount of digits in "Offset", depends on data size set in SetData.
@@ -220,7 +191,6 @@ namespace HEXCTRL {
 			bool m_fCursorHigh { true };          //Cursor's High or Low bits position (first or last digit in hex chunk).
 			bool m_fCursorTextArea { false };     //Whether cursor at Ascii or Hex chunks area.
 			bool m_fLMousePressed { false };      //Is left mouse button pressed.
-			bool m_fReplaceWarning { true };      //Show Replace string size exceeds Warning or not.
 		};
 	}
 }

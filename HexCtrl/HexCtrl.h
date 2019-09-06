@@ -50,7 +50,7 @@ namespace HEXCTRL
 	{
 		EHexModifyMode enMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
 		EHexOperMode   enOperMode { };  //Operation mode enum. Used only if enMode==MODIFY_OPERATION.
-		PBYTE          pData { };       //Pointer to a data to be set.
+		const BYTE*    pData { };       //Pointer to a data to be set.
 		ULONGLONG      ullIndex { };    //Index of the starting byte to modify.
 		ULONGLONG      ullSize { };     //Size to be modified.
 		ULONGLONG      ullDataSize { }; //Size of the data pData is pointing to.

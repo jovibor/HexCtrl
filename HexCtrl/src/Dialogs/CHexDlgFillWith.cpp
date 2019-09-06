@@ -87,7 +87,7 @@ void CHexDlgFillWith::OnOK()
 		break;
 	case IDC_HEXCTRL_FILLWITHDATA_RADIO_UTF16:
 		hms.pData = (PBYTE)wstrComboText.data();
-		hms.ullDataSize = wstrComboText.size() * sizeof(WCHAR);
+		hms.ullDataSize = (ULONGLONG)wstrComboText.size() * sizeof(WCHAR);
 		break;
 	}
 
