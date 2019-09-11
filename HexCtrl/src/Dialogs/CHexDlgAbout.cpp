@@ -8,18 +8,7 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "CHexDlgAbout.h"
-#include "../../verinfo/version.h"
-
-#define STR_HELPER(x) #x
-#define TO_STR(x) STR_HELPER(x)
-#define TO_WSTR_HELPER(x) L##x
-#define TO_WSTR(x) TO_WSTR_HELPER(x)
-
-#ifdef _WIN64
-#define HEXCTRL_VERSION_WSTR TO_WSTR(PRODUCT_DESC)", v" TO_STR(MAJOR_VERSION) "." TO_STR(MINOR_VERSION) "." TO_STR(MAINTENANCE_VERSION) " (x64)"
-#else
-#define HEXCTRL_VERSION_WSTR TO_WSTR(PRODUCT_DESC)", v" TO_STR(MAJOR_VERSION) "." TO_STR(MINOR_VERSION) "." TO_STR(MAINTENANCE_VERSION)
-#endif
+#include "../Helper.h"
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
@@ -34,8 +23,9 @@ END_MESSAGE_MAP()
 BOOL CHexDlgAbout::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
-
-	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(HEXCTRL_VERSION_WSTR);
+	std::wstring wstrVer = L"Hex Control for MFC/Win32 v";
+	wstrVer += HEXCTRL_VERSION_WSTR;
+	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(wstrVer.data());
 
 	return TRUE;
 }

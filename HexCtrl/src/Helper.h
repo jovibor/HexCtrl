@@ -4,7 +4,7 @@
 * Official git repository of the project: https://github.com/jovibor/HexCtrl/           *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
-* For more information visit the project's official repository.      *
+* For more information visit the project's official repository.                         *
 ****************************************************************************************/
 /****************************************************************************************
 * These are some helper functions for HexCtrl.											*
@@ -12,6 +12,7 @@
 #pragma once
 #include <afxwin.h>
 #include <string>
+#include "../verinfo/version.h"
 
 namespace HEXCTRL {
 	namespace INTERNAL {
@@ -31,5 +32,15 @@ namespace HEXCTRL {
 
 		//Converts every two numeric chars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
 		bool StrToHex(const std::string& strFrom, std::string& strToHex);
+
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+#ifdef _WIN64
+		constexpr auto HEXCTRL_VERSION_WSTR = L"" STR(MAJOR_VERSION) "." STR(MINOR_VERSION) "." STR(MAINTENANCE_VERSION) " (x64)";
+#else
+		constexpr auto HEXCTRL_VERSION_WSTR = L"" STR(MAJOR_VERSION) "." STR(MINOR_VERSION) "." STR(MAINTENANCE_VERSION);
+#endif
+		constexpr auto HEXCTRL_VERSION_ULONGLONG = ULONGLONG(((ULONGLONG)MAJOR_VERSION << 48) 
+			| ((ULONGLONG)MINOR_VERSION << 32) | ((ULONGLONG)MAINTENANCE_VERSION << 16) | (ULONGLONG)REVISION_VERSION);
 	}
 };

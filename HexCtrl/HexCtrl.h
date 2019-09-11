@@ -194,9 +194,9 @@ namespace HEXCTRL
 	********************************************************************************************/
 #ifdef HEXCTRL_SHARED_DLL
 #ifdef HEXCTRL_EXPORT
-#define HEXCTRLAPI extern "C" IHexCtrl __declspec(dllexport)* __cdecl
+#define HEXCTRLAPI __declspec(dllexport)
 #else
-#define HEXCTRLAPI extern "C" IHexCtrl __declspec(dllimport)* __cdecl
+#define HEXCTRLAPI __declspec(dllimport)
 
 #ifdef _WIN64
 #ifdef _DEBUG
@@ -215,10 +215,10 @@ namespace HEXCTRL
 #pragma comment(lib, LIBNAME_PROPER("HexCtrl"))
 #endif
 #else
-#define	HEXCTRLAPI IHexCtrl*
+#define	HEXCTRLAPI
 #endif
 
-	HEXCTRLAPI CreateRawHexCtrl();
+	extern "C" HEXCTRLAPI IHexCtrl* __cdecl CreateRawHexCtrl();
 	using IHexCtrlUnPtr = std::unique_ptr<IHexCtrl, void(*)(IHexCtrl*)>;
 	using IHexCtrlShPtr = std::shared_ptr<IHexCtrl>;
 
@@ -230,17 +230,41 @@ namespace HEXCTRL
 	//using IHexCtrlPtr = IHexCtrlUnPtr;
 	using IHexCtrlPtr = IHexCtrlShPtr;
 
+	/********************************************
+	* HEXCTRL_INFO: service info structure.     *
+	********************************************/
+	struct HEXCTRL_INFO
+	{
+		const wchar_t* pwszVersion { };        //WCHAR version string.
+		union {
+			unsigned long long ullVersion { }; //ULONGLONG version number.
+			struct {
+				short wMajor;
+				short wMinor;
+				short wMaintenance;
+				short wRevision;
+			}stVersion;
+		};
+	};
+	using PCHEXCTRL_INFO = const HEXCTRL_INFO*;
+
+	/*********************************************
+	* Service info export/import function.       *
+	* Returns pointer to PCHEXCTRL_INFO struct.  *
+	*********************************************/
+	extern "C" HEXCTRLAPI PCHEXCTRL_INFO __cdecl HexCtrlInfo();
+
 	/********************************************************************************************
 	* WM_NOTIFY message codes (NMHDR.code values).                                              *
 	* These codes are used to notify m_hwndMsg window about control's states.                   *
 	********************************************************************************************/
 
-	constexpr auto HEXCTRL_MSG_DESTROY { 0xFFFF };       //Indicates that HexCtrl is being destroyed.
-	constexpr auto HEXCTRL_MSG_GETDATA { 0x0100 };       //Used in Virtual mode to demand the next byte to display.
-	constexpr auto HEXCTRL_MSG_MODIFYDATA { 0x0101 };    //Indicates that the data in memory has changed, used in Edit mode.
-	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0102 };  //Selection has been made.
-	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0103 };     //User defined custom menu clicked.
-	constexpr auto HEXCTRL_MSG_ONCONTEXTMENU { 0x0104 }; //OnContextMenu triggered.
+	constexpr auto HEXCTRL_MSG_DESTROY { 0xFFFFu };       //Indicates that HexCtrl is being destroyed.
+	constexpr auto HEXCTRL_MSG_GETDATA { 0x0100u };       //Used in Virtual mode to demand the next byte to display.
+	constexpr auto HEXCTRL_MSG_MODIFYDATA { 0x0101u };    //Indicates that the data in memory has changed, used in Edit mode.
+	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0102u };  //Selection has been made.
+	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0103u };     //User defined custom menu clicked.
+	constexpr auto HEXCTRL_MSG_ONCONTEXTMENU { 0x0104u }; //OnContextMenu triggered.
 
 /*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #ifdef _UNICODE

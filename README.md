@@ -1,12 +1,12 @@
 ## **Hex Control for MFC/Win32 Applications**
 ![](docs/img/hexctrl_mainwnd.jpg)
-### Table of Contents
+## Table of Contents
 * [Introduction](#introduction)
 * [Implementation](#implementation)
 * [Installation](#installation)
   * [Building From The Sources](#building-from-the-sources)
   * [Dynamic Link Library](#dynamic-link-library)
-  * [Additional Info](#additional-info)
+  * [IHexCtrlPtr](#ihexctrlptr)
 * [Creating](#creating)
   * [Classic Approach](#classic-approach)
   * [In Dialog](#in-dialog)
@@ -49,6 +49,9 @@
   * [EHexModifyMode](#ehexmodifymode)
   * [EHexOperMode](#ehexopermode)
   </details>
+* [Exported Functions](#exported-functions)
+  * [CreateRawHexCtrl](#createrawhexctrl)
+  * [HexCtrlInfo](#hexctrlinfo)
 * [Positioning and Sizing](#positioning-and-sizing)
 * [Appearance](#appearance)
 * [Licensing](#licensing)
@@ -66,7 +69,7 @@ Being good low level wrapper library for Windows API in general, **MFC** was alw
 * **Undo/Redo**
 * Modify data with **Filling** and many predefined **Operations...** options
 * Cutomizable appearance
-* Written with **/std:c++17** standard
+* Written with **/std:c++17** standard conformance
 
 ## [](#)Implementation
 The **HexCtrl** is implemented as a pure abstract virtual interface, and can be used as a *child* or *float* window in any place of your existing application. It was build and tested in *Visual Studio 2019*, under *Windows 10*.
@@ -105,7 +108,7 @@ To get *HexCtrl.dll* and *HexCtrl.lib* files you can either download it from the
 
 **HexCtrl**'s *.dll* is built with **MFC** static linking, so even if you are to use it in your own **MFC** project, even with different **MFC** version, there should not be any interferences.
 
-### [](#)Additional Info
+### [](#)IHexCtrlPtr
 `IHexCtrlPtr` is, in fact, a pointer to a `IHexCtrl` pure abstract base class, wrapped either in `std::unique_ptr` or `std::shared_ptr`. You can choose whatever is best for your needs by comment/uncomment one of these alliases in *HexCtrl.h*:
 ```cpp
 //using IHexCtrlPtr = IHexCtrlUnPtr;
@@ -114,6 +117,8 @@ using IHexCtrlPtr = IHexCtrlShPtr;
 
 This wrapper is used mainly for convenience, so you don't have to bother about object lifetime, it will be destroyed automatically.
 That's why there is a call to the factory function `CreateHexCtrl()` - to properly initialize a pointer.
+
+If you, for some reason, need a raw interface pointer, you can directly call [`CreateRawHexCtrl`](#createrawhexctrl) function, which returns `IHexCtrl` interface pointer, but in this case you will need to call [`Destroy`](#destroy) method manually afterwards, to destroy `IHexCtrl` object.
 
 **HexCtrl** also uses its own namespace `HEXCTRL`. So it's up to you, whether to use namespace prefix before declarations:
 ```cpp
@@ -377,9 +382,9 @@ void Destroy();
 Destroys the control.  
 You only invoke this method if you use a raw `IHexCtrl` pointer obtained by the call to `CreateRawHexCtrl` function. Otherwise don't use it.
 
-**Remarks**<br>
-You usually don't need to call this method unless you use **HexCtrl** through the raw pointer obtained by `CreateRawHexCtrl` factory function.<br>
-If you use **HexCtrl** in standard way through the `IHexCtrlPtr` pointer, obtained by `CreateHexCtrl` function, this method will be called automatically.
+**Remarks**  
+You usually don't need to call this method unless you use **HexCtrl** through the raw pointer obtained by [`CreateRawHexCtrl`](#createrawhexctrl) factory function.  
+If you use **HexCtrl** in standard way, through the `IHexCtrlPtr` pointer, obtained by `CreateHexCtrl` function, this method will be called automatically.
 
 ## [](#)Structures
 Below are listed all **HexCtrl** structures.
@@ -509,6 +514,38 @@ enum class EHexOperMode : WORD
     OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
     OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
 };
+```
+
+## [](#)Exported Functions
+**HexCtrl** has few "C" interface functions which it exports when built as *.dll*.
+
+### [](#)CreateRawHexCtrl
+```cpp
+extern "C" HEXCTRLAPI IHexCtrl* __cdecl CreateRawHexCtrl();
+```
+Main function that creates raw `IHexCtrl` interface pointer. You barely need to use this function in your code.  
+See the [`IHexCtrlPtr`](#ihexctrlptr) section for more info.
+
+### [](#)HexCtrlInfo
+```cpp
+extern "C" HEXCTRLAPI PCHEXCTRL_INFO __cdecl HexCtrlInfo();
+```
+Returns pointer to `HEXCTRL_INFO`, which is the **HexCtrl**'s service information structure.
+```cpp
+struct HEXCTRL_INFO
+{
+    const wchar_t* pwszVersion { };        //WCHAR version string.
+    union {
+        unsigned long long ullVersion { }; //ULONGLONG version number.
+        struct {
+            short wMajor;
+            short wMinor;
+            short wMaintenance;
+            short wRevision;
+        }stVersion;
+    };
+};
+using PCHEXCTRL_INFO = const HEXCTRL_INFO*;
 ```
 
 ## [](#)Positioning and Sizing

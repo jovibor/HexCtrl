@@ -8,7 +8,6 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "CHexCtrl.h"
-#include "../res/HexCtrlRes.h" //Resources IDs.
 #include "Dialogs/CHexDlgAbout.h"
 #include "Dialogs/CHexDlgSearch.h"
 #include "Dialogs/CHexDlgOperations.h"
@@ -24,15 +23,22 @@ using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL {
 	/********************************************
-	* CreateRawHexCtrl function implementation.	*
+	* CreateRawHexCtrl function implementation. *
 	********************************************/
-	HEXCTRLAPI CreateRawHexCtrl()
+	extern "C" HEXCTRLAPI IHexCtrl* __cdecl CreateRawHexCtrl()
 	{
 		return new CHexCtrl();
 	};
+	
+	extern "C" HEXCTRLAPI PCHEXCTRL_INFO __cdecl HexCtrlInfo()
+	{	
+		static const HEXCTRL_INFO stVersion { HEXCTRL_VERSION_WSTR, HEXCTRL_VERSION_ULONGLONG };
+
+		return &stVersion;
+	};
 
 	/********************************************
-	* Internal enums and structs.				*
+	* Internal enums and structs.               *
 	********************************************/
 	namespace INTERNAL {
 		enum class EClipboard : DWORD
@@ -53,7 +59,7 @@ namespace HEXCTRL {
 }
 
 /************************************************************************
-* CHexCtrl implementation.												*
+* CHexCtrl implementation.                                              *
 ************************************************************************/
 BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_ACTIVATE()
