@@ -16,6 +16,7 @@
 #include "CHexBookmarks.h"
 #include "Helper.h"
 #include "strsafe.h"
+#include <cassert>
 #pragma comment(lib, "Dwmapi.lib")
 
 using namespace HEXCTRL;
@@ -29,9 +30,9 @@ namespace HEXCTRL {
 	{
 		return new CHexCtrl();
 	};
-	
+
 	extern "C" HEXCTRLAPI PCHEXCTRL_INFO __cdecl HexCtrlInfo()
-	{	
+	{
 		static const HEXCTRL_INFO stVersion { HEXCTRL_VERSION_WSTR, HEXCTRL_VERSION_ULONGLONG };
 
 		return &stVersion;
@@ -156,7 +157,8 @@ CHexCtrl::~CHexCtrl()
 
 bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 {
-	if (m_fCreated) //Already created.
+	assert(!IsCreated()); //Already created.
+	if (IsCreated())
 		return false;
 
 	m_hwndMsg = hcs.hwndParent;
@@ -249,6 +251,10 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
 
 bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)
 {
+	assert(!IsCreated()); //Already created.
+	if (IsCreated())
+		return false;
+
 	HEXCREATESTRUCT hcs;
 	hcs.hwndParent = hwndDlg;
 	hcs.uID = uCtrlID;
@@ -259,7 +265,8 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)
 
 void CHexCtrl::SetData(const HEXDATASTRUCT & hds)
 {
-	if (!m_fCreated)
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
 		return;
 
 	//m_hwndMsg was previously set in IHexCtrl::Create.
@@ -298,7 +305,8 @@ void CHexCtrl::SetData(const HEXDATASTRUCT & hds)
 
 void CHexCtrl::ClearData()
 {
-	if (!m_fDataSet)
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
 		return;
 
 	m_fDataSet = false;
@@ -318,7 +326,9 @@ void CHexCtrl::ClearData()
 
 void CHexCtrl::SetEditMode(bool fEnable)
 {
-	if (!m_fCreated)
+	assert(IsCreated()); //Not created.
+	assert(IsDataSet()); //Data is not set yet.
+	if (!IsCreated() || !IsDataSet())
 		return;
 
 	m_fMutable = fEnable;
@@ -327,7 +337,9 @@ void CHexCtrl::SetEditMode(bool fEnable)
 
 void CHexCtrl::SetFont(const LOGFONTW * pLogFontNew)
 {
-	if (!pLogFontNew)
+	assert(IsCreated()); //Not created.
+	assert(pLogFontNew); //Null font pointer.
+	if (!IsCreated() || !pLogFontNew)
 		return;
 
 	m_fontHexView.DeleteObject();
@@ -338,6 +350,10 @@ void CHexCtrl::SetFont(const LOGFONTW * pLogFontNew)
 
 void CHexCtrl::SetFontSize(UINT uiSize)
 {
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return;
+
 	//Prevent font size from being too small or too big.
 	if (uiSize < 9 || uiSize > 75)
 		return;
@@ -353,12 +369,20 @@ void CHexCtrl::SetFontSize(UINT uiSize)
 
 void CHexCtrl::SetColor(const HEXCOLORSTRUCT & clr)
 {
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return;
+
 	m_stColor = clr;
 	RedrawWindow();
 }
 
 void CHexCtrl::SetCapacity(DWORD dwCapacity)
 {
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return;
+
 	if (dwCapacity < 1 || dwCapacity > m_dwCapacityMax)
 		return;
 
@@ -383,6 +407,11 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 
 void CHexCtrl::GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
 {
+	assert(IsCreated());  //Not created.
+	assert(IsDataSet()); //Data is not set yet.
+	if (!IsCreated() || !IsDataSet())
+		return;
+
 	if (fSelect)
 		SetSelection(ullOffset, ullOffset, ullSize, true, true);
 	else
@@ -391,6 +420,11 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
 
 void CHexCtrl::SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
 {
+	assert(IsCreated()); //Not created.
+	assert(IsDataSet()); //Data is not set yet.
+	if (!IsCreated() || !IsDataSet())
+		return;
+
 	SetSelection(ullOffset, ullOffset, ullSize, false);
 }
 
@@ -401,16 +435,26 @@ bool CHexCtrl::IsCreated()const
 
 bool CHexCtrl::IsDataSet()const
 {
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return false;
+
 	return m_fDataSet;
 }
 
 bool CHexCtrl::IsMutable()const
 {
+	assert(IsCreated()); //Not created.
+	assert(IsDataSet()); //Data is not set yet.
+	if (!IsCreated() || !IsDataSet())
+		return false;
+
 	return m_fMutable;
 }
 
 long CHexCtrl::GetFontSize()const
 {
+	assert(IsCreated()); //Not created.
 	if (!IsCreated())
 		return 0;
 
@@ -419,17 +463,30 @@ long CHexCtrl::GetFontSize()const
 
 void CHexCtrl::GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const
 {
+	assert(IsCreated()); //Not created.
+	assert(IsDataSet()); //Data is not set yet.
+	if (!IsCreated() || !IsDataSet())
+		return;
+
 	ullOffset = m_ullSelectionStart;
 	ullSize = m_ullSelectionSize;
 }
 
 HWND CHexCtrl::GetWindowHandle() const
 {
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return nullptr;
+
 	return m_hWnd;
 }
 
 HMENU CHexCtrl::GetMenuHandle()const
 {
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return nullptr;
+
 	return m_menuMain.m_hMenu;
 }
 
@@ -1526,18 +1583,14 @@ void CHexCtrl::OnNcPaint()
 
 void CHexCtrl::OnDestroy()
 {
-	//Send messages to both, m_hwndMsg and pwndParent.
-	NMHDR nmh { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_DESTROY };
-	HWND hwndMsg = GetMsgWindow();
-	if (hwndMsg)
-		::SendMessageW(hwndMsg, WM_NOTIFY, nmh.idFrom, (LPARAM)& nmh);
+	if (m_enMode == EHexDataMode::DATA_MSG)
+		if (GetMsgWindow() != GetParent()->GetSafeHwnd()) //To avoid sending notify message twice to the same window.
+			MsgWindowNotify(HEXCTRL_MSG_DESTROY);
 
+	ParentNotify(HEXCTRL_MSG_DESTROY);
 	CWnd* pwndParent = GetParent();
 	if (pwndParent)
-	{
-		pwndParent->SendMessageW(WM_NOTIFY, nmh.idFrom, (LPARAM)& nmh);
 		pwndParent->SetForegroundWindow();
-	}
 
 	ClearData();
 	m_fCreated = false;
@@ -1545,10 +1598,11 @@ void CHexCtrl::OnDestroy()
 	CWnd::OnDestroy();
 }
 
-PBYTE CHexCtrl::GetData(ULONGLONG* pullSize)
+PBYTE CHexCtrl::GetData(ULONGLONG* pUllSize)
 {
-	if (pullSize)
-		*pullSize = m_ullDataSize;
+	if (pUllSize) //Optionally returns data size.
+		*pUllSize = m_ullDataSize;
+
 	return m_pData;
 }
 
@@ -1812,11 +1866,15 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
 		}
 		break;
 		}
+
+		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_MODIFYDATA } };
+		hns.pData = (PBYTE)& hms;
+		ParentNotify(hns);
 	}
 	break;
 	case EHexDataMode::DATA_MSG:
 	{
-		//In EHexDataMode::DATA_MSG mode we send pointer to hms.
+		//In EHexDataMode::DATA_MSG mode we send pointer to HEXMODIFYSTRUCT to Message window.
 		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_MODIFYDATA } };
 		hns.pData = (PBYTE)& hms;
 		MsgWindowNotify(hns);
@@ -2230,15 +2288,25 @@ void CHexCtrl::SetShowMode(EShowMode enShowMode)
 	SetCapacity(m_dwCapacity); //To recalc current representation.
 }
 
+void CHexCtrl::ParentNotify(const HEXNOTIFYSTRUCT & hns) const
+{
+	HWND hwndSendTo = GetParent()->GetSafeHwnd();
+	if (hwndSendTo)
+		::SendMessageW(hwndSendTo, WM_NOTIFY, GetDlgCtrlID(), (LPARAM)& hns);
+}
+
+void CHexCtrl::ParentNotify(UINT uCode) const
+{
+	HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), uCode } };
+}
+
 void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT & hns)const
 {
 	//Send notification to the Message window if it was set.
 	//Otherwise send to parent window.
-	HWND hwndSend = GetMsgWindow();
-	if (!hwndSend)
-		hwndSend = GetParent()->GetSafeHwnd();
-	if (hwndSend)
-		::SendMessageW(hwndSend, WM_NOTIFY, GetDlgCtrlID(), (LPARAM)& hns);
+	HWND hwndSendTo = GetMsgWindow();
+	if (hwndSendTo)
+		::SendMessageW(hwndSendTo, WM_NOTIFY, GetDlgCtrlID(), (LPARAM)& hns);
 }
 
 void CHexCtrl::MsgWindowNotify(UINT uCode)const

@@ -19,6 +19,7 @@
 #include "CScrollEx.h"
 #include "../res/HexCtrlRes.h"
 #include <cmath>
+#include <cassert>
 
 using namespace HEXCTRL::INTERNAL::SCROLLEX;
 
@@ -54,6 +55,8 @@ END_MESSAGE_MAP()
 bool CScrollEx::Create(CWnd * pWndParent, int iScrollType,
 	ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
 {
+	assert(!m_fCreated); //Already created
+	assert(pWndParent);
 	if (m_fCreated || !pWndParent || (iScrollType != SB_VERT && iScrollType != SB_HORZ))
 		return false;
 

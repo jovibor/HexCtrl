@@ -116,8 +116,10 @@ namespace HEXCTRL {
 			void ClipboardPaste(EClipboard enType);
 			void UpdateInfoText();                                 //Updates text in the bottom "info" area according to currently selected data.
 			void SetShowMode(EShowMode enShowMode);                //Set current data representation mode.
+			void ParentNotify(const HEXNOTIFYSTRUCT& hns)const;    //Notify routine used to send messages to Parent window.
+			void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 			void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
-			void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notifications.
+			void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
 			[[nodiscard]] ULONGLONG GetCursorPos();                //Cursor or selection_click depending on edit mode.
 			void SetCursorPos(ULONGLONG ullPos, bool fHighPart);   //Sets the cursor position when in Edit mode.
 			void CursorMoveRight();

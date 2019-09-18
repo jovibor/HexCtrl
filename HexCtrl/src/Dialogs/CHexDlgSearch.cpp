@@ -91,9 +91,9 @@ void CHexDlgSearch::Search()
 		return;
 
 	m_fFound = false;
-	size_t nSizeSearch;
+	size_t nSizeSearch { };
 	const BYTE* pSearch { };
-	size_t nSizeReplace;
+	size_t nSizeReplace { };
 	const BYTE* pReplace { };
 	std::string strSearch;
 	std::string strReplace;
@@ -394,11 +394,13 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)
 	{
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 		GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH)->SetFocus();
-
-		bool fMutable = GetHexCtrl()->IsMutable();
-		GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_REPLACE)->EnableWindow(fMutable);
-		GetDlgItem(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE)->EnableWindow(fMutable);
-		GetDlgItem(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE_ALL)->EnableWindow(fMutable);
+		if (GetHexCtrl()->IsCreated())
+		{
+			bool fMutable = GetHexCtrl()->IsMutable();
+			GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_REPLACE)->EnableWindow(fMutable);
+			GetDlgItem(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE)->EnableWindow(fMutable);
+			GetDlgItem(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE_ALL)->EnableWindow(fMutable);
+		}
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
