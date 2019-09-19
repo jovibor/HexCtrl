@@ -30,6 +30,7 @@ namespace HEXCTRL {
 			explicit CHexDlgSearch() : CDialogEx(IDD_HEXCTRL_SEARCH) {}
 			virtual ~CHexDlgSearch() {}
 			BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
+			void Search(bool fForward);
 		protected:
 			virtual void DoDataExchange(CDataExchange* pDX);
 			virtual BOOL OnInitDialog();

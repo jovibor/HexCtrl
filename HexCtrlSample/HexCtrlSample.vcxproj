@@ -78,25 +78,28 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <IntDir>$(SolutionDir)$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)bin\$(ProjectName)\</OutDir>
+    <TargetName>$(ProjectName)d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\</IntDir>
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)bin\$(ProjectName)\</OutDir>
     <TargetName>$(ProjectName)64d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <IntDir>$(SolutionDir)$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)bin\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <IntDir>$(SolutionDir)$(Configuration)\$(Platform)\</IntDir>
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)bin\$(ProjectName)\</OutDir>
     <TargetName>$(ProjectName)64</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -166,6 +169,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalOptions>/NOCOFFGRPINFO /pdbaltpath:%_PDB% %(AdditionalOptions)</AdditionalOptions>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -196,6 +200,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalOptions>/NOCOFFGRPINFO /pdbaltpath:%_PDB% %(AdditionalOptions)</AdditionalOptions>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>

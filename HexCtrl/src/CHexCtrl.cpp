@@ -644,7 +644,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	static const wchar_t* const pwszErrVirtual { L"This function isn't supported in Virtual mode!" };
 	UINT_PTR uId = LOWORD(wParam);
-
+	
 	switch (uId)
 	{
 	case IDM_HEXCTRL_MAIN_SEARCH:
@@ -762,7 +762,7 @@ void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 void CHexCtrl::OnInitMenuPopup(CMenu* pPopupMenu, UINT /*nIndex*/, BOOL /*bSysMenu*/)
 {
 	UINT uStatus;
-	bool fDataSet = IsDataSet();
+	bool fDataSet = IsDataSet() && m_ullDataSize; //To prevent menu on zero sized data.
 
 	if (!fDataSet || m_ullSelectionSize == 0)
 		uStatus = MF_GRAYED;
@@ -816,10 +816,10 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 		switch (nChar)
 		{
 		case VK_F2:
-			wParam = IDM_HEXCTRL_BOOKMARKS_PREV;
+			wParam = IDM_HEXCTRL_BOOKMARKS_NEXT;
 			break;
 		case VK_F3:
-			wParam = IDM_HEXCTRL_BOOKMARKS_NEXT;
+			m_pDlgSearch->Search(true);
 			break;
 		case VK_RIGHT:
 			CursorMoveRight();
@@ -890,6 +890,8 @@ void CHexCtrl::OnKeyDownCtrl(UINT nChar)
 
 void CHexCtrl::OnKeyDownShift(UINT nChar)
 {
+	WPARAM wParam { };
+
 	switch (nChar)
 	{
 	case VK_LEFT:
@@ -904,7 +906,15 @@ void CHexCtrl::OnKeyDownShift(UINT nChar)
 	case VK_DOWN:
 		OnKeyDownShiftDown();
 		break;
+	case VK_F2:
+		wParam = IDM_HEXCTRL_BOOKMARKS_PREV;
+		break;
+	case VK_F3:
+		m_pDlgSearch->Search(false);
+		break;
 	}
+	if (wParam)
+		SendMessageW(WM_COMMAND, wParam, 0);
 }
 
 void CHexCtrl::OnKeyDownShiftLeft()

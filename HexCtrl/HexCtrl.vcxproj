@@ -77,26 +77,28 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
     <TargetName>$(ProjectName)</TargetName>
     <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
+    <OutDir>$(SolutionDir)bin\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
     <TargetName>$(ProjectName)d</TargetName>
+    <OutDir>$(SolutionDir)bin\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)bin\$(ProjectName)\</OutDir>
     <TargetName>$(ProjectName)64d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IntDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
     <TargetName>$(ProjectName)64</TargetName>
-    <OutDir>$(SolutionDir)$(Configuration)\$(Platform)\</OutDir>
+    <OutDir>$(SolutionDir)bin\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -120,8 +122,8 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <ProgramDatabaseFile />
-      <AssemblyDebug>false</AssemblyDebug>
       <AdditionalOptions>/NOCOFFGRPINFO /pdbaltpath:%_PDB% </AdditionalOptions>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
       <Command>powershell.exe $(ProjectDir)verinfo\VerInfoRun.ps1 -versionFile  $(ProjectDir)verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>
@@ -157,7 +159,8 @@
       <PreprocessorDefinitions>HEXCTRL_SHARED_DLL;HEXCTRL_EXPORT;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <OmitFramePointers>
+      </OmitFramePointers>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -193,8 +196,8 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <ProgramDatabaseFile />
-      <AssemblyDebug>false</AssemblyDebug>
       <AdditionalOptions>/NOCOFFGRPINFO /pdbaltpath:%_PDB% </AdditionalOptions>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
       <Command>powershell.exe $(ProjectDir)verinfo\VerInfoRun.ps1 -versionFile  $(ProjectDir)verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>

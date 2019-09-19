@@ -35,6 +35,19 @@ BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 	return CDialog::Create(nIDTemplate, m_pHexCtrl);
 }
 
+void CHexDlgSearch::Search(bool fForward)
+{
+	if (fForward)
+		m_iDirection = 1;
+	else
+		m_iDirection = -1;
+
+	m_fReplace = false;
+	m_fAll = false;
+	enSearchType = GetSearchMode();
+	Search();
+}
+
 BOOL CHexDlgSearch::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -239,7 +252,6 @@ void CHexDlgSearch::Search()
 		}
 	}
 
-	SetActiveWindow();
 	std::wstring wstrInfo(128, 0);
 	if (m_fFound)
 	{
@@ -303,6 +315,7 @@ void CHexDlgSearch::OnButtonSearchF()
 	ComboSearchFill(wstrTextSearch);
 	GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH)->SetFocus();
 	Search();
+	SetActiveWindow();
 }
 
 void CHexDlgSearch::OnButtonSearchB()
@@ -326,6 +339,7 @@ void CHexDlgSearch::OnButtonSearchB()
 	ComboSearchFill(wstrTextSearch);
 	GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH)->SetFocus();
 	Search();
+	SetActiveWindow();
 }
 
 void CHexDlgSearch::OnButtonReplace()
@@ -355,6 +369,7 @@ void CHexDlgSearch::OnButtonReplace()
 	ComboReplaceFill(wstrTextReplace);
 	GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH)->SetFocus();
 	Search();
+	SetActiveWindow();
 }
 
 void CHexDlgSearch::OnButtonReplaceAll()
@@ -384,6 +399,7 @@ void CHexDlgSearch::OnButtonReplaceAll()
 	ComboReplaceFill(wstrTextReplace);
 	GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH)->SetFocus();
 	Search();
+	SetActiveWindow();
 }
 
 void CHexDlgSearch::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)
