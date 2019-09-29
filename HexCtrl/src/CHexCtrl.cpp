@@ -26,7 +26,7 @@ namespace HEXCTRL {
 	/********************************************
 	* CreateRawHexCtrl function implementation. *
 	********************************************/
-	extern "C" HEXCTRLAPI IHexCtrl* __cdecl CreateRawHexCtrl()
+	extern "C" HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl()
 	{
 		return new CHexCtrl();
 	};
@@ -155,7 +155,7 @@ CHexCtrl::~CHexCtrl()
 		DeleteObject(i.second);
 }
 
-bool CHexCtrl::Create(const HEXCREATESTRUCT & hcs)
+bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 {
 	assert(!IsCreated()); //Already created.
 	if (IsCreated())
@@ -263,7 +263,7 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)
 	return Create(hcs);
 }
 
-void CHexCtrl::SetData(const HEXDATASTRUCT & hds)
+void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 {
 	assert(IsCreated()); //Not created.
 	if (!IsCreated())
@@ -335,7 +335,7 @@ void CHexCtrl::SetEditMode(bool fEnable)
 	RedrawWindow();
 }
 
-void CHexCtrl::SetFont(const LOGFONTW * pLogFontNew)
+void CHexCtrl::SetFont(const LOGFONTW* pLogFontNew)
 {
 	assert(IsCreated()); //Not created.
 	assert(pLogFontNew); //Null font pointer.
@@ -367,7 +367,7 @@ void CHexCtrl::SetFontSize(UINT uiSize)
 	RecalcAll();
 }
 
-void CHexCtrl::SetColor(const HEXCOLORSTRUCT & clr)
+void CHexCtrl::SetColor(const HEXCOLORSTRUCT& clr)
 {
 	assert(IsCreated()); //Not created.
 	if (!IsCreated())
@@ -499,7 +499,7 @@ void CHexCtrl::Destroy()
 /**************************************************************************
 * HexCtrl Private methods.
 **************************************************************************/
-void CHexCtrl::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)
+void CHexCtrl::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
 	SetFocus();
 
@@ -644,7 +644,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	static const wchar_t* const pwszErrVirtual { L"This function isn't supported in Virtual mode!" };
 	UINT_PTR uId = LOWORD(wParam);
-	
+
 	switch (uId)
 	{
 	case IDM_HEXCTRL_MAIN_SEARCH:
@@ -873,6 +873,9 @@ void CHexCtrl::OnKeyDownCtrl(UINT nChar)
 		break;
 	case 'V':
 		wParam = IDM_HEXCTRL_CLIPBOARD_PASTEHEX;
+		break;
+	case 'O':
+		wParam = IDM_HEXCTRL_MODIFY_OPERATIONS;
 		break;
 	case 'A':
 		wParam = IDM_HEXCTRL_MAIN_SELECTALL;
@@ -1387,8 +1390,10 @@ void CHexCtrl::OnPaint()
 			}
 			else if (fBookmark)
 			{
-				//There can be multiple bookmarks in one line. So if there already was bookmarked Hexes we Poly them.
-				//Same Poly mechanism presents at the end of the current (current-line) loop.
+				//There can be multiple bookmarks in one line. 
+				//So, if there already were bookmarked Hexes in the current line we Poly them.
+				//Same Poly mechanism presents at the end of the current (line) loop,
+				//to Poly bookmarks that end at the line's end.
 
 				//Bookmarks Poly.
 				if (!wstrHexBookmarkToPrint.empty())
@@ -1558,7 +1563,7 @@ BOOL CHexCtrl::OnEraseBkgnd(CDC* /*pDC*/)
 	return FALSE;
 }
 
-BOOL CHexCtrl::OnSetCursor(CWnd * pWnd, UINT nHitTest, UINT message)
+BOOL CHexCtrl::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 {
 	m_pScrollV->OnSetCursor(pWnd, nHitTest, message);
 	m_pScrollH->OnSetCursor(pWnd, nHitTest, message);
@@ -1574,7 +1579,7 @@ BOOL CHexCtrl::OnNcActivate(BOOL bActive)
 	return CWnd::OnNcActivate(bActive);
 }
 
-void CHexCtrl::OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS * lpncsp)
+void CHexCtrl::OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp)
 {
 	CWnd::OnNcCalcSize(bCalcValidRects, lpncsp);
 
@@ -1746,7 +1751,7 @@ bool CHexCtrl::SetQword(ULONGLONG ullIndex, QWORD qwData)
 	return true;
 }
 
-void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
+void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 {
 	if (!m_fMutable || hms.ullIndex >= m_ullDataSize
 		|| (hms.ullIndex + hms.ullSize) > m_ullDataSize
@@ -1853,7 +1858,8 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
 					ullData *= ullDataOper;
 					break;
 				case EHexOperMode::OPER_DIVIDE:
-					ullData /= ullDataOper;
+					if (ullDataOper) //Division by Zero check.
+						ullData /= ullDataOper;
 					break;
 				}
 
@@ -1878,7 +1884,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
 		}
 
 		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_MODIFYDATA } };
-		hns.pData = (PBYTE)& hms;
+		hns.pData = (PBYTE)&hms;
 		ParentNotify(hns);
 	}
 	break;
@@ -1886,7 +1892,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT & hms, bool fRedraw)
 	{
 		//In EHexDataMode::DATA_MSG mode we send pointer to HEXMODIFYSTRUCT to Message window.
 		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_MODIFYDATA } };
-		hns.pData = (PBYTE)& hms;
+		hns.pData = (PBYTE)&hms;
 		MsgWindowNotify(hns);
 	}
 	break;
@@ -1972,7 +1978,7 @@ ULONGLONG CHexCtrl::GetTopLine()const
 	return m_pScrollV->GetScrollPos() / m_sizeLetter.cy;
 }
 
-ULONGLONG CHexCtrl::HitTest(const POINT * pPoint)
+ULONGLONG CHexCtrl::HitTest(const POINT* pPoint)
 {
 	int iY = pPoint->y;
 	int iX = pPoint->x + (int)m_pScrollH->GetScrollPos(); //To compensate horizontal scroll.
@@ -2041,7 +2047,7 @@ void CHexCtrl::HexChunkPoint(ULONGLONG ullChunk, int& iCx, int& iCy)const
 		iCy += m_sizeLetter.cy;
 }
 
-void CHexCtrl::AsciiChunkPoint(ULONGLONG ullChunk, int & iCx, int& iCy) const
+void CHexCtrl::AsciiChunkPoint(ULONGLONG ullChunk, int& iCx, int& iCy) const
 {	//This func computes x and y pos of given Ascii chunk.
 	DWORD dwMod = ullChunk % m_dwCapacity;
 	iCx = int((m_iIndentAscii + dwMod * m_sizeLetter.cx) - m_pScrollH->GetScrollPos());
@@ -2298,11 +2304,11 @@ void CHexCtrl::SetShowMode(EShowMode enShowMode)
 	SetCapacity(m_dwCapacity); //To recalc current representation.
 }
 
-void CHexCtrl::ParentNotify(const HEXNOTIFYSTRUCT & hns) const
+void CHexCtrl::ParentNotify(const HEXNOTIFYSTRUCT& hns) const
 {
 	HWND hwndSendTo = GetParent()->GetSafeHwnd();
 	if (hwndSendTo)
-		::SendMessageW(hwndSendTo, WM_NOTIFY, GetDlgCtrlID(), (LPARAM)& hns);
+		::SendMessageW(hwndSendTo, WM_NOTIFY, GetDlgCtrlID(), (LPARAM)&hns);
 }
 
 void CHexCtrl::ParentNotify(UINT uCode) const
@@ -2310,13 +2316,13 @@ void CHexCtrl::ParentNotify(UINT uCode) const
 	HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), uCode } };
 }
 
-void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT & hns)const
+void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const
 {
 	//Send notification to the Message window if it was set.
 	//Otherwise send to parent window.
 	HWND hwndSendTo = GetMsgWindow();
 	if (hwndSendTo)
-		::SendMessageW(hwndSendTo, WM_NOTIFY, GetDlgCtrlID(), (LPARAM)& hns);
+		::SendMessageW(hwndSendTo, WM_NOTIFY, GetDlgCtrlID(), (LPARAM)&hns);
 }
 
 void CHexCtrl::MsgWindowNotify(UINT uCode)const

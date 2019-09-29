@@ -79,7 +79,7 @@ bool CHexBookmarks::HitTest(ULONGLONG ullByte)
 		!= m_vecBookmarks.end();
 }
 
-bool CHexBookmarks::HasBookmarks()
+bool CHexBookmarks::HasBookmarks()const
 {
 	return !m_vecBookmarks.empty();
 }

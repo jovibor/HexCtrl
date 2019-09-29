@@ -168,6 +168,12 @@ void CHexDlgOperations::OnBnClickedOk()
 			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 			return;
 		}
+		if (hms.enOperMode == EHexOperMode::OPER_DIVIDE && ullData == 0) //Division by zero check.
+		{
+			MessageBoxW(L"Wrong number format!\r\nCan not divide by zero.", L"Format Error", MB_ICONERROR);
+			return;
+		}
+		
 		hms.pData = (PBYTE)& ullData;
 	}
 

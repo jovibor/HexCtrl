@@ -94,7 +94,7 @@ namespace HEXCTRL {
 			afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 			afx_msg void OnNcPaint();
 		public:
-			PBYTE GetData(ULONGLONG* pullSize = nullptr);          //Gets current data pointer and data size.
+			PBYTE GetData(ULONGLONG* pUllSize = nullptr);          //Gets current data pointer and data size.
 			[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex)const;   //Gets the BYTE data by index.
 			[[nodiscard]] WORD GetWord(ULONGLONG ullIndex)const;   //Gets the WORD data by index.
 			[[nodiscard]] DWORD GetDword(ULONGLONG ullIndex)const; //Gets the DWORD data by index.

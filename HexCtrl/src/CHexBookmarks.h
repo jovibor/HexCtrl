@@ -30,7 +30,7 @@ namespace HEXCTRL {
 			void GoNext();
 			void GoPrev();
 			bool HitTest(ULONGLONG ullByte);
-			bool HasBookmarks();
+			bool HasBookmarks()const;
 		private:
 			std::vector<BOOKMARKSTRUCT> m_vecBookmarks;
 			CHexCtrl* m_pHex { };

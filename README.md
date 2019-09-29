@@ -72,7 +72,7 @@ Being good low level wrapper library for Windows API in general, **MFC** was alw
 * Written with **/std:c++17** standard conformance
 
 ## [](#)Implementation
-The **HexCtrl** is implemented as a pure abstract virtual interface, and can be used as a *child* or *float* window in any place of your existing application. It was build and tested in *Visual Studio 2019*, under *Windows 10*.
+The **HexCtrl** is implemented as a pure abstract virtual interface, and can be used as a *child* or *popup* window in any place of your existing application. It is written in *C++17*, and was build and tested in *Visual Studio 2019*, under *Windows 10*.
 
 ## [](#)Installation
 The **HexCtrl** can be used in two different ways:  
@@ -81,7 +81,7 @@ The **HexCtrl** can be used in two different ways:
 
 ### [](#)Building From The Sources
 The building process is quite simple:
-1. Copy *HexCtrl* folder and its content (except `.vcxproj` files) into your project's folder.
+1. Copy *HexCtrl* folder and its content (except **.vcxproj* files) into your project's folder.
 2. Add all files from that *HexCtrl* folder into your project.
 3. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the control.
 4. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
@@ -96,7 +96,7 @@ To use **HexCtrl** as the *.dll* do the following:
 1. Copy *HexCtrl.h* file into your project's folder.
 2. Copy *HexCtrl.lib* file into your project's folder, so that linker can see it.
 3. Put *HexCtrl.dll* file next to your *.exe* file.
-4. Add the following code where you suppose to use the control:
+4. Add the following line where you suppose to use the control:
 ```cpp
 #define HEXCTRL_SHARED_DLL //You can alternatively uncomment this line in HexCtrl.h.
 #include "HexCtrl.h"` 
@@ -149,8 +149,8 @@ To use **HexCtrl** within *Dialog* you can, of course, create it with the [Class
 But there is another option you can use:
 1. Put **Custom Control** control from the **Toolbox** in **Visual Studio** dialog designer into your dialog template and make it desirable size.  
 ![](docs/img/hexctrl_vstoolbox.jpg) ![](docs/img/hexctrl_vscustomctrl.jpg)
-2. Go to the **Properties** of that control, and in the **Class** field, within the **Misc** section, type *HexCtrl*.  
-Give the control appropriate **ID** of your choise (`IDC_MY_HEX` in this example).  
+2. Go to the **Properties** of that control, and in the **Class** field, within the **Misc** section, type: <kbd>HexCtrl</kbd>.  
+Give the control appropriate **ID** of your choise (<kbd>IDC_MY_HEX</kbd> in this example).  
 Also, here you can set the control's **Dynamic Layout** properties, so that control behaves appropriately when dialog is being resized.  
 ![](docs/img/hexctrl_vsproperties.jpg)
 3. Declare `IHexCtrlPtr` member varable within your dialog class:
@@ -559,8 +559,8 @@ void CMyWnd::OnSize(UINT nType, int cx, int cy)
 ```
 
 ## [](#)Appearance
-To change control's font size — **Ctrl+MouseWheel**  
-To change control's capacity — **Ctrl+Shift+MouseWheel**
+To change control's font size — <kbd>Ctrl+MouseWheel</kbd>  
+To change control's capacity — <kbd>Ctrl+Shift+MouseWheel</kbd>
 
 ## [](#)Licensing
 This software is available under the **"MIT License modified with The Commons Clause".**  

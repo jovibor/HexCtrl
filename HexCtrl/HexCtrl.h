@@ -153,7 +153,7 @@ namespace HEXCTRL
 		ULONGLONG ullSize { };  //Size of the bytes to get/send.
 		PBYTE     pData { };    //Pointer to a data to get/send.
 	};
-	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
+	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
 
 	/********************************************************************************************
 	* IHexCtrl - pure abstract base class.                                                      *
@@ -218,13 +218,13 @@ namespace HEXCTRL
 #define	HEXCTRLAPI
 #endif
 
-	extern "C" HEXCTRLAPI IHexCtrl* __cdecl CreateRawHexCtrl();
+	extern "C" HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl();
 	using IHexCtrlUnPtr = std::unique_ptr<IHexCtrl, void(*)(IHexCtrl*)>;
 	using IHexCtrlShPtr = std::shared_ptr<IHexCtrl>;
 
 	inline IHexCtrlUnPtr CreateHexCtrl()
 	{
-		return IHexCtrlUnPtr(CreateRawHexCtrl(), [](IHexCtrl * p) { p->Destroy(); });
+		return IHexCtrlUnPtr(CreateRawHexCtrl(), [](IHexCtrl* p) { p->Destroy(); });
 	};
 
 	//using IHexCtrlPtr = IHexCtrlUnPtr;

@@ -32,7 +32,7 @@ BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 {
 	m_pHexCtrl = pHexCtrl;
 
-	return CDialog::Create(nIDTemplate, m_pHexCtrl);
+	return CDialogEx::Create(nIDTemplate, m_pHexCtrl);
 }
 
 void CHexDlgSearch::Search(bool fForward)
