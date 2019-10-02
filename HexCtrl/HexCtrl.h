@@ -231,9 +231,9 @@ namespace HEXCTRL
 	using IHexCtrlPtr = IHexCtrlShPtr;
 
 	/********************************************
-	* HEXCTRL_INFO: service info structure.     *
+	* HEXCTRLINFO: service info structure.      *
 	********************************************/
-	struct HEXCTRL_INFO
+	struct HEXCTRLINFO
 	{
 		const wchar_t* pwszVersion { };        //WCHAR version string.
 		union {
@@ -246,13 +246,12 @@ namespace HEXCTRL
 			}stVersion;
 		};
 	};
-	using PCHEXCTRL_INFO = const HEXCTRL_INFO*;
 
 	/*********************************************
 	* Service info export/import function.       *
 	* Returns pointer to PCHEXCTRL_INFO struct.  *
 	*********************************************/
-	extern "C" HEXCTRLAPI PCHEXCTRL_INFO __cdecl HexCtrlInfo();
+	extern "C" HEXCTRLAPI HEXCTRLINFO * __cdecl GetHexCtrlInfo();
 
 	/********************************************************************************************
 	* WM_NOTIFY message codes (NMHDR.code values).                                              *

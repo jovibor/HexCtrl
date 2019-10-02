@@ -31,9 +31,9 @@ namespace HEXCTRL {
 		return new CHexCtrl();
 	};
 
-	extern "C" HEXCTRLAPI PCHEXCTRL_INFO __cdecl HexCtrlInfo()
+	extern "C" HEXCTRLAPI HEXCTRLINFO * __cdecl GetHexCtrlInfo()
 	{
-		static const HEXCTRL_INFO stVersion { HEXCTRL_VERSION_WSTR, HEXCTRL_VERSION_ULONGLONG };
+		static HEXCTRLINFO stVersion { HEXCTRL_VERSION_WSTR, HEXCTRL_VERSION_ULL };
 
 		return &stVersion;
 	};

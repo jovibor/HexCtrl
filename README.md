@@ -51,7 +51,7 @@
   </details>
 * [Exported Functions](#exported-functions)
   * [CreateRawHexCtrl](#createrawhexctrl)
-  * [HexCtrlInfo](#hexctrlinfo)
+  * [GetHexCtrlInfo](#gethexctrlinfo)
 * [Positioning and Sizing](#positioning-and-sizing)
 * [Appearance](#appearance)
 * [Licensing](#licensing)
@@ -526,13 +526,13 @@ extern "C" HEXCTRLAPI IHexCtrl* __cdecl CreateRawHexCtrl();
 Main function that creates raw `IHexCtrl` interface pointer. You barely need to use this function in your code.  
 See the [`IHexCtrlPtr`](#ihexctrlptr) section for more info.
 
-### [](#)HexCtrlInfo
+### [](#)GetHexCtrlInfo
 ```cpp
-extern "C" HEXCTRLAPI PCHEXCTRL_INFO __cdecl HexCtrlInfo();
+extern "C" HEXCTRLAPI HEXCTRLINFO* __cdecl GetHexCtrlInfo();
 ```
 Returns pointer to `HEXCTRL_INFO`, which is the **HexCtrl**'s service information structure.
 ```cpp
-struct HEXCTRL_INFO
+struct HEXCTRLINFO
 {
     const wchar_t* pwszVersion { };        //WCHAR version string.
     union {
@@ -545,7 +545,6 @@ struct HEXCTRL_INFO
         }stVersion;
     };
 };
-using PCHEXCTRL_INFO = const HEXCTRL_INFO*;
 ```
 
 ## [](#)Positioning and Sizing
