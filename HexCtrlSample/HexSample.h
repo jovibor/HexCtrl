@@ -1,5 +1,6 @@
 #pragma once
 #include "resource.h" // main symbols
+#include <afxcontrolbars.h>
 
 class CHexSampleApp : public CWinApp
 {

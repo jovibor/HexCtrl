@@ -15,7 +15,7 @@ namespace HEXCTRL {
 		/********************************************
 		* CHexDlgAbout class definition.			*
 		********************************************/
-		class CHexDlgAbout : public CDialogEx
+		class CHexDlgAbout final : public CDialogEx
 		{
 		public:
 			explicit CHexDlgAbout(CWnd* pParent) : CDialogEx(IDD_HEXCTRL_ABOUT, pParent) {}

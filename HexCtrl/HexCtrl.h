@@ -7,8 +7,8 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include <Windows.h> //Standard Windows header.
 #include <memory>    //std::shared/unique_ptr and related.
+#include <Windows.h> //Standard Windows header.
 
 /**********************************************************************
 * If HexCtrl is to be used as a .dll, then include this header,       *

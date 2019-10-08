@@ -13,7 +13,7 @@
 
 namespace HEXCTRL {
 	namespace INTERNAL {
-		class CHexDlgOperations : public CDialogEx
+		class CHexDlgOperations final : public CDialogEx
 		{
 		public:
 			explicit CHexDlgOperations() : CDialogEx(IDD_HEXCTRL_OPERATIONS) {}

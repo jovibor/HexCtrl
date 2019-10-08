@@ -7,12 +7,11 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include "../HexCtrl.h"
-#include <memory>        //std::unique_ptr and related.
 #include <unordered_map> //std::unordered_map and related.
 #include <deque>         //std::deque and related.
 #include <string>        //std::wstring and related.
 #include <afxwin.h>      //MFC core and standard components.
+#include "../HexCtrl.h"
 
 namespace HEXCTRL {
 	namespace INTERNAL

@@ -16,10 +16,10 @@
 * with numbers in full 64-bit range.													*
 ****************************************************************************************/
 #include "stdafx.h"
-#include "CScrollEx.h"
-#include "../res/HexCtrlRes.h"
 #include <cmath>
 #include <cassert>
+#include "CScrollEx.h"
+#include "../res/HexCtrlRes.h"
 
 using namespace HEXCTRL::INTERNAL::SCROLLEX;
 

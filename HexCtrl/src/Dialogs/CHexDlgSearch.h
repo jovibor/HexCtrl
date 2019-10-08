@@ -24,7 +24,7 @@ namespace HEXCTRL {
 		/********************************************
 		* CHexDlgSearch class definition.			*
 		********************************************/
-		class CHexDlgSearch : public CDialogEx
+		class CHexDlgSearch final : public CDialogEx
 		{
 		public:
 			explicit CHexDlgSearch() : CDialogEx(IDD_HEXCTRL_SEARCH) {}

@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "HexSample.h"
 #include "HexSampleDlg.h"
-#include "afxdialogex.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

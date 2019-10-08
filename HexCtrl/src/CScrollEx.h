@@ -19,7 +19,8 @@
 #include <afxwin.h>
 
 namespace HEXCTRL::INTERNAL {
-	namespace SCROLLEX {
+	namespace SCROLLEX
+	{
 		//Forward declaration.
 		enum class EState : DWORD;
 
