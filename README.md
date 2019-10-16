@@ -58,9 +58,9 @@
 * [Help Point](#help-point)
 
 ## [](#)Introduction
-Being good low level library for **Windows API** in general, **MFC** was always lacking a good native controls support. This **Hex Control** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't have native support for such control.
+Being good low level library on top of Windows API in general, **MFC** was always lacking a good native controls support. This **Hex Control** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't provide support for such control.
 
-But this doesn't mean that **Hex Control** is limited to use only in **MFC** environment. Control is implemented as a pure abstract interface, and can be used as a *child* or *popup* window in any place of your application.  
+This doesn't mean that **Hex Control** is limited to use only in **MFC** environment. The control is implemented as a pure abstract interface, and can be used as a *child* or *popup* window in any place of your application.  
 It is written and tested with **/std:c++17** in *Visual Studio 2019*, under the *Windows 10*.
 
 ### The main features of the **Hex Control**:
@@ -170,7 +170,7 @@ BOOL CMyDialog::OnInitDialog()
 ```
 
 ## [](#)Set the Data
-To set a data to display in the **HexControl** use [`SetData`](#setdata) method.
+To set a data to display in the **Hex Control** use [`SetData`](#setdata) method.
 The code below shows how to construct [`IHexCtrlPtr`](#ihexctrlptr) object and display first `0x1FF` bytes of the current app's memory:
 ```cpp
 IHexCtrlPtr myHex { CreateHexCtrl() };
@@ -198,7 +198,7 @@ myHex->SetData(hds);
 ```
 
 ## [](#)Data Modes
-Besides the standard classical mode, when **HexControl** just holds a pointer to some array of bytes in memory, it also has additional advanced modes it can be running in.  
+Besides the standard classical mode, when **Hex Control** just holds a pointer to some array of bytes in memory, it also has additional advanced modes it can be running in.  
 Theese modes can be quite useful for instance in cases where you need to display a very large amount of data that can't fit in memory all at once.
 
 These modes are ruled over through the [`enMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct).
@@ -231,7 +231,7 @@ BOOL CMyWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 ```
 `lParam` will hold a pointer to the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) structure.
 
-The first member of this structure is a standard Windows' **[NMHDR](https://docs.microsoft.com/en-us/windows/win32/api/richedit/ns-richedit-nmhdr)** struct, it will have its `code` member equal to `HEXCTRL_MSG_GETDATA`, indicating that **HexControl**'s byte request has arrived.  
+The first member of this structure is a standard Windows' **[NMHDR](https://docs.microsoft.com/en-us/windows/win32/api/richedit/ns-richedit-nmhdr)** struct, it will have its `code` member equal to `HEXCTRL_MSG_GETDATA`, indicating that **Hex Control**'s byte request has arrived.  
 The `ullIndex` member of the structure is an index of the byte to be displayed. And the `pData` is the pointer to an actual byte that you have to set in response.
 
 ### [](#)Virtual Handler
@@ -251,18 +251,18 @@ public:
 Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
 
 ## [](#)OnDestroy
-When **HexControl** window, floating or child, is being destroyed it sends **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
+When **Hex Control** window, floating or child, is being destroyed it sends **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
 So, it basically indicates to its parent that the user clicked close button, or closed window in some other way.
 
 ## [](#)Scroll Bars
 When I started to work with very big data files i immediately faced one very nasty inconvenience.
 The standard Windows scrollbars can only hold `signed integer` values, which is too little to scroll through many gigabytes of data. It could be some workarounds and crutches involved to overcome this, but frankly saying i'm not a big fan of this kind of approach.
 
-That's why **HexControl** uses its own scrollbars. They work with `unsigned long long` values, which is way bigger than standard `signed ints`. 
+That's why **Hex Control** uses its own scrollbars. They work with `unsigned long long` values, which is way bigger than standard `signed ints`. 
 These scrollbars behave as normal Windows scrollbars, and even reside in the non client area as the latter do.
 
 ## [](#)Methods
-**HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
+The **Hex Control** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
 
 ### [](#)Create
 ```cpp
@@ -519,7 +519,7 @@ enum class EHexOperMode : WORD
 ```
 
 ## [](#)Exported Functions
-**Hex Control** has few "C" interface functions which it exports when built as *.dll*.
+**Hex Control** has few `"C"` interface functions which it exports when built as *.dll*.
 
 ### [](#)CreateRawHexCtrl
 ```cpp
@@ -550,11 +550,11 @@ struct HEXCTRLINFO
 ```
 
 ## [](#)Positioning and Sizing
-To properly resize and position your **HexControl**'s window you may have to handle `WM_SIZE` message in its parent window, in something like this way:
+To properly resize and position your **Hex Control**'s window you may have to handle `WM_SIZE` message in its parent window, in something like this way:
 ```cpp
 void CMyWnd::OnSize(UINT nType, int cx, int cy)
 {
-    ...
+    //...
     ::SetWindowPos(m_myHex->GetWindowHandle(), this->m_hWnd, 0, 0, cx, cy, SWP_NOACTIVATE | SWP_NOZORDER);
 }
 ```

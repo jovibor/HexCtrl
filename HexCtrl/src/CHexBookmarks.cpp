@@ -32,7 +32,7 @@ void CHexBookmarks::Remove(ULONGLONG ullOffset)
 
 	auto iter = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
 		[ullOffset](const BOOKMARKSTRUCT& r)
-	{return ullOffset >= r.ullOffset && ullOffset < (r.ullOffset + r.ullSize); });
+		{return ullOffset >= r.ullOffset && ullOffset < (r.ullOffset + r.ullSize); });
 	if (iter != m_vecBookmarks.end()) {
 		m_vecBookmarks.erase(iter);
 		m_pHex->RedrawWindow();
@@ -71,12 +71,8 @@ void CHexBookmarks::GoPrev()
 
 bool CHexBookmarks::HitTest(ULONGLONG ullByte)
 {
-	if (m_vecBookmarks.empty())
-		return false;
-
-	return std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
-		[ullByte](const BOOKMARKSTRUCT& r) {return ullByte >= r.ullOffset && ullByte < (r.ullOffset + r.ullSize); })
-		!= m_vecBookmarks.end();
+	return !m_vecBookmarks.empty() && std::any_of(m_vecBookmarks.begin(), m_vecBookmarks.end(),
+		[ullByte](const BOOKMARKSTRUCT& r) { return ullByte >= r.ullOffset && ullByte < (r.ullOffset + r.ullSize); });
 }
 
 bool CHexBookmarks::HasBookmarks()const
