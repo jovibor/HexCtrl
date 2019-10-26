@@ -8,6 +8,7 @@
 ****************************************************************************************/
 #pragma once
 #include <memory>    //std::shared/unique_ptr and related.
+#include <vector>
 #include <Windows.h> //Standard Windows header.
 
 /**********************************************************************
@@ -44,6 +45,15 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
+	* HEXSPANSTRUCT - Data offset and size. Used in some data/size related routines             *
+	********************************************************************************************/
+	struct HEXSPANSTRUCT
+	{
+		ULONGLONG ullOffset { };
+		ULONGLONG ullSize { };
+	};
+
+	/********************************************************************************************
 	* HEXMODIFYSTRUCT - used to represent data modification parameters.                         *
 	********************************************************************************************/
 	struct HEXMODIFYSTRUCT
@@ -51,9 +61,8 @@ namespace HEXCTRL
 		EHexModifyMode enMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
 		EHexOperMode   enOperMode { };  //Operation mode enum. Used only if enMode==MODIFY_OPERATION.
 		const BYTE*    pData { };       //Pointer to a data to be set.
-		ULONGLONG      ullIndex { };    //Index of the starting byte to modify.
-		ULONGLONG      ullSize { };     //Size to be modified.
 		ULONGLONG      ullDataSize { }; //Size of the data pData is pointing to.
+		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
 	};
 
 	/********************************************************************************************
@@ -177,7 +186,7 @@ namespace HEXCTRL
 		virtual bool IsDataSet()const = 0;                     //Shows whether a data was set to the control or not.
 		virtual bool IsMutable()const = 0;                     //Is edit mode enabled or not.
 		virtual long GetFontSize()const = 0;                   //Current font size.
-		virtual void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const = 0; //Gets current selection.
+		virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> & = 0; //Gets current selection.
 		virtual HWND GetWindowHandle()const = 0;               //Retrieves control's window handle.
 		virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
 		virtual void Destroy() = 0;                            //Deleter.

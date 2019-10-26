@@ -270,7 +270,7 @@ void CHexDlgSearch::Search()
 
 			ULONGLONG ullSelIndex = m_ullIndex;
 			ULONGLONG ullSelSize = m_fReplace ? nSizeReplace : nSizeSearch;
-			pHexCtrl->SetSelection(ullSelIndex, ullSelIndex, ullSelSize, true, true);
+			pHexCtrl->SetSelection(ullSelIndex, ullSelIndex, ullSelSize, 1, true, true);
 		}
 	}
 	else
@@ -288,9 +288,8 @@ void CHexDlgSearch::Search()
 void CHexDlgSearch::SearchReplace(ULONGLONG ullIndex, const BYTE* pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw)
 {
 	HEXMODIFYSTRUCT hms;
-	hms.ullSize = nSizeData;
+	hms.vecSpan.emplace_back(HEXSPANSTRUCT { ullIndex, nSizeData });
 	hms.ullDataSize = nSizeReplace;
-	hms.ullIndex = ullIndex;
 	hms.pData = pData;
 	GetHexCtrl()->ModifyData(hms, fRedraw);
 }

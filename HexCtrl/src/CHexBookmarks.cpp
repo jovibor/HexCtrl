@@ -10,6 +10,7 @@
 #include "CHexBookmarks.h"
 #include <algorithm>
 
+using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
 void CHexBookmarks::Attach(CHexCtrl * pHex)
@@ -17,31 +18,31 @@ void CHexBookmarks::Attach(CHexCtrl * pHex)
 	m_pHex = pHex;
 }
 
-void CHexBookmarks::Add(ULONGLONG ullOffset, ULONGLONG ullSize)
+void CHexBookmarks::Add(const std::vector<HEXSPANSTRUCT>& vecBookmarks)
 {
-	if (ullSize == 0)
-		return;
-
-	m_vecBookmarks.emplace_back(BOOKMARKSTRUCT { ullOffset, ullSize });
+	m_deqBookmarks.emplace_back(vecBookmarks);
 }
 
 void CHexBookmarks::Remove(ULONGLONG ullOffset)
 {
-	if (!m_pHex || m_vecBookmarks.empty() || !m_pHex->IsDataSet())
+	if (!m_pHex || m_deqBookmarks.empty() || !m_pHex->IsDataSet())
 		return;
 
-	auto iter = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
-		[ullOffset](const BOOKMARKSTRUCT& r)
-		{return ullOffset >= r.ullOffset && ullOffset < (r.ullOffset + r.ullSize); });
-	if (iter != m_vecBookmarks.end()) {
-		m_vecBookmarks.erase(iter);
+	auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(), [ullOffset](const std::vector<HEXSPANSTRUCT>& ref)
+	{return std::any_of(ref.begin(), ref.end(), [ullOffset](const HEXSPANSTRUCT& refV)
+	{return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
+	});
+
+	if (iter != m_deqBookmarks.end())
+	{
+		m_deqBookmarks.erase(iter);
 		m_pHex->RedrawWindow();
 	}
 }
 
 void CHexBookmarks::ClearAll()
 {
-	m_vecBookmarks.clear();
+	m_deqBookmarks.clear();
 
 	if (m_pHex)
 		m_pHex->RedrawWindow();
@@ -49,33 +50,35 @@ void CHexBookmarks::ClearAll()
 
 void CHexBookmarks::GoNext()
 {
-	if (!m_pHex || m_vecBookmarks.empty())
+	if (!m_pHex || m_deqBookmarks.empty())
 		return;
 
-	if (++m_iCurrent > int(m_vecBookmarks.size() - 1))
+	if (++m_iCurrent > int(m_deqBookmarks.size() - 1))
 		m_iCurrent = 0;
 
-	m_pHex->GoToOffset(m_vecBookmarks.at((size_t)m_iCurrent).ullOffset);
+	m_pHex->GoToOffset(m_deqBookmarks.at((size_t)m_iCurrent).front().ullOffset);
 }
 
 void CHexBookmarks::GoPrev()
 {
-	if (!m_pHex || m_vecBookmarks.empty())
+	if (!m_pHex || m_deqBookmarks.empty())
 		return;
 
 	if (--m_iCurrent < 0)
-		m_iCurrent = (int)m_vecBookmarks.size() - 1;
+		m_iCurrent = (int)m_deqBookmarks.size() - 1;
 
-	m_pHex->GoToOffset(m_vecBookmarks.at((size_t)m_iCurrent).ullOffset);
+	m_pHex->GoToOffset(m_deqBookmarks.at((size_t)m_iCurrent).front().ullOffset);
 }
 
 bool CHexBookmarks::HitTest(ULONGLONG ullByte)
 {
-	return !m_vecBookmarks.empty() && std::any_of(m_vecBookmarks.begin(), m_vecBookmarks.end(),
-		[ullByte](const BOOKMARKSTRUCT& r) { return ullByte >= r.ullOffset && ullByte < (r.ullOffset + r.ullSize); });
+	return std::any_of(m_deqBookmarks.begin(), m_deqBookmarks.end(), [ullByte](const std::vector<HEXSPANSTRUCT>& ref)
+	{return std::any_of(ref.begin(), ref.end(), [ullByte](const HEXSPANSTRUCT& refV)
+	{return ullByte >= refV.ullOffset && ullByte < (refV.ullOffset + refV.ullSize); });
+	});
 }
 
 bool CHexBookmarks::HasBookmarks()const
 {
-	return !m_vecBookmarks.empty();
+	return !m_deqBookmarks.empty();
 }

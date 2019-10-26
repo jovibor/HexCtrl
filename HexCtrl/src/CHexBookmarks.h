@@ -10,31 +10,23 @@
 #include "CHexCtrl.h"
 #include <vector>
 
-namespace HEXCTRL {
-	namespace INTERNAL
+namespace HEXCTRL::INTERNAL
+{
+	class CHexBookmarks
 	{
-		struct BOOKMARKSTRUCT
-		{
-			ULONGLONG ullOffset;
-			ULONGLONG ullSize;
-		};
-
-		class CHexBookmarks
-		{
-		public:
-			CHexBookmarks() {}
-			void Attach(CHexCtrl* pHex);
-			void Add(ULONGLONG ullOffset, ULONGLONG ullSize);
-			void Remove(ULONGLONG ullOffset);
-			void ClearAll();
-			void GoNext();
-			void GoPrev();
-			bool HitTest(ULONGLONG ullByte);
-			bool HasBookmarks()const;
-		private:
-			std::vector<BOOKMARKSTRUCT> m_vecBookmarks;
-			CHexCtrl* m_pHex { };
-			int m_iCurrent { };
-		};
-	}
+	public:
+		CHexBookmarks() {}
+		void Attach(CHexCtrl* pHex);
+		void Add(const std::vector<HEXSPANSTRUCT>& vecBookmarks);
+		void Remove(ULONGLONG ullOffset);
+		void ClearAll();
+		void GoNext();
+		void GoPrev();
+		bool HitTest(ULONGLONG ullByte);
+		bool HasBookmarks()const;
+	private:
+		std::deque<std::vector<HEXSPANSTRUCT>> m_deqBookmarks;
+		CHexCtrl* m_pHex { };
+		int m_iCurrent { };
+	};
 }

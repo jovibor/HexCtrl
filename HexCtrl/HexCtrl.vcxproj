@@ -209,6 +209,7 @@
     <ClInclude Include="res\HexCtrlRes.h" />
     <ClInclude Include="src\CHexBookmarks.h" />
     <ClInclude Include="src\CHexCtrl.h" />
+    <ClInclude Include="src\CHexSelect.h" />
     <ClInclude Include="src\CScrollEx.h" />
     <ClInclude Include="src\Dialogs\CHexDlgAbout.h" />
     <ClInclude Include="src\Dialogs\CHexDlgFillWith.h" />
@@ -225,6 +226,7 @@
     </ClCompile>
     <ClCompile Include="src\CHexBookmarks.cpp" />
     <ClCompile Include="src\CHexCtrl.cpp" />
+    <ClCompile Include="src\CHexSelect.cpp" />
     <ClCompile Include="src\CScrollEx.cpp" />
     <ClCompile Include="src\Dialogs\CHexDlgAbout.cpp" />
     <ClCompile Include="src\Dialogs\CHexDlgFillWith.cpp" />

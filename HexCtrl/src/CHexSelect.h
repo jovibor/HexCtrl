@@ -7,20 +7,25 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include <afxcontrolbars.h>  //Standard MFC's controls header.
-#include "../../res/HexCtrlRes.h"
+#include "CHexCtrl.h"
+#include <vector>
 
-namespace HEXCTRL::INTERNAL {
-	/********************************************
-	* CHexDlgAbout class definition.			*
-	********************************************/
-	class CHexDlgAbout final : public CDialogEx
+namespace HEXCTRL::INTERNAL
+{
+	class CHexSelect
 	{
 	public:
-		explicit CHexDlgAbout(CWnd* pParent) : CDialogEx(IDD_HEXCTRL_ABOUT, pParent) {}
-		virtual ~CHexDlgAbout() {}
-	protected:
-		virtual BOOL OnInitDialog() override;
-		DECLARE_MESSAGE_MAP()
+		bool HasSelection()const;
+		bool HitTest(ULONGLONG ullIndex)const;
+		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect);
+		ULONGLONG GetSelectionSize()const;
+		ULONGLONG GetSelectionStart()const;
+		ULONGLONG GetSelectionEnd()const;
+		ULONGLONG GetNextOffset(ULONGLONG ullIndex)const;
+		DWORD GetLineLength()const;
+		std::vector<HEXSPANSTRUCT>& GetVector();
+		void ClearAll();
+	private:
+		std::vector<HEXSPANSTRUCT> m_vecSelect { };
 	};
 }

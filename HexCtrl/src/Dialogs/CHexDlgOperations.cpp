@@ -97,8 +97,8 @@ void CHexDlgOperations::OnBnClickedOk()
 
 	HEXMODIFYSTRUCT hms;
 	hms.enMode = EHexModifyMode::MODIFY_OPERATION;
-	pHex->GetSelection(hms.ullIndex, hms.ullSize);
-	if (hms.ullSize == 0)
+	hms.vecSpan = pHex->GetSelection();
+	if (hms.vecSpan.empty())
 		return;
 
 	int iEditId = 0;

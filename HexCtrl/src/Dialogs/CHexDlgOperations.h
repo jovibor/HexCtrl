@@ -11,24 +11,22 @@
 #include "../CHexCtrl.h"
 #include "../../res/HexCtrlRes.h"
 
-namespace HEXCTRL {
-	namespace INTERNAL {
-		class CHexDlgOperations final : public CDialogEx
-		{
-		public:
-			explicit CHexDlgOperations() : CDialogEx(IDD_HEXCTRL_OPERATIONS) {}
-			virtual ~CHexDlgOperations() {}
-			BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
-		protected:
-			virtual void DoDataExchange(CDataExchange* pDX);
-			virtual BOOL OnInitDialog();
-			afx_msg void OnBnClickedOk();
-			DECLARE_MESSAGE_MAP()
-		private:
-			CHexCtrl* GetHexCtrl()const;
-		private:
-			CHexCtrl* m_pHexCtrl { };
-			virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
-		};
-	}
+namespace HEXCTRL::INTERNAL {
+	class CHexDlgOperations final : public CDialogEx
+	{
+	public:
+		explicit CHexDlgOperations() : CDialogEx(IDD_HEXCTRL_OPERATIONS) {}
+		virtual ~CHexDlgOperations() {}
+		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
+	protected:
+		virtual void DoDataExchange(CDataExchange* pDX);
+		virtual BOOL OnInitDialog();
+		afx_msg void OnBnClickedOk();
+		DECLARE_MESSAGE_MAP()
+	private:
+		CHexCtrl* GetHexCtrl()const;
+	private:
+		CHexCtrl* m_pHexCtrl { };
+		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+	};
 }

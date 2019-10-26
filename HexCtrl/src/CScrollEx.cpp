@@ -102,6 +102,7 @@ CWnd * CScrollEx::GetParent() const
 
 void CScrollEx::SetScrollSizes(ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
 {
+	assert(m_fCreated);
 	if (!m_fCreated)
 		return;
 
@@ -116,6 +117,7 @@ void CScrollEx::SetScrollSizes(ULONGLONG ullScrolline, ULONGLONG ullScrollPage, 
 
 ULONGLONG CScrollEx::SetScrollPos(ULONGLONG ullNewPos)
 {
+	assert(m_fCreated);
 	if (!m_fCreated)
 		return 0;
 

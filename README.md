@@ -42,6 +42,7 @@
   * [HEXCREATESTRUCT](#hexcreatestruct)
   * [HEXCOLORSTRUCT](#hexcolorstruct)
   * [HEXDATASTRUCT](#hexdatastruct)
+  * [HEXSPANSTRUCT](#hexspanstruct)
   * [HEXMODIFYSTRUCT](#hexmodifystruct)
   * [HEXNOTIFYSTRUCT](#hexnotifystruct)
   * [EHexCreateMode](#ehexcreatemode)
@@ -52,6 +53,7 @@
 * [Exported Functions](#exported-functions)
   * [CreateRawHexCtrl](#createrawhexctrl)
   * [GetHexCtrlInfo](#gethexctrlinfo)
+  * [HEXCTRLINFO](#hexctrlinfo)
 * [Positioning and Sizing](#positioning-and-sizing)
 * [Appearance](#appearance)
 * [Licensing](#licensing)
@@ -357,9 +359,9 @@ Returns current font size.
 
 ### [](#)GetSelection
 ```cpp
-void GetSelection(ULONGLONG& ullOffset, ULONGLONG& ullSize)const;
+auto GetSelection()const->std::vector<HEXSPANSTRUCT>&;
 ```
-Returns offset of the current selection as `ullOffset`, and selection size as `ullSize`.
+Returns `std::vector` of offsets and sizes of the current selection.
 
 ### [](#)GetWindowHandle
 ```cpp
@@ -445,6 +447,15 @@ struct HEXDATASTRUCT
 };
 ```
 
+### [](#)HEXSPANSTRUCT
+```cpp
+struct HEXSPANSTRUCT
+{
+    ULONGLONG ullOffset { };
+    ULONGLONG ullSize { };
+};
+```
+
 ### [](#)HEXMODIFYSTRUCT
 This structure is used internally in [`DATA_MEMORY`](#ehexdatamode) mode, as well as in the external notification routines, when working in [`DATA_MSG`](#ehexdatamode) and [`DATA_VIRTUAL`](#ehexdatamode) modes.
 ```cpp
@@ -453,16 +464,15 @@ struct HEXMODIFYSTRUCT
     EHexModifyMode enMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
     EHexOperMode   enOperMode { };  //Operation mode enum. Used only if enMode==MODIFY_OPERATION.
     const BYTE*    pData { };       //Pointer to a data to be set.
-    ULONGLONG      ullIndex { };    //Index of the starting byte to modify.
-    ULONGLONG      ullSize { };     //Size to be modified.
     ULONGLONG      ullDataSize { }; //Size of the data pData is pointing to.
+    std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
 };
 ```
 When `enMode` is set to [`EHexModifyMode::MODIFY_DEFAULT`](#ehexmodifymode), bytes from `pData` just replace corresponding data bytes as is.  
 
-If `enMode` is equal to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode) then block by block replacement takes place `ullSize / ullDataSize` times.
+If `enMode` is equal to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode) then block by block replacement takes place few times.
 
-For example: if `ullSize` = 9, `ullDataSize` = 3 and `enMode` is set to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode), bytes in memory at `ullIndex` position are `123456789`, and bytes pointed to by `pData` are `345`, then, after modification, bytes at `ullIndex` will be `345345345`.
+For example: if `SUM(vecSpan.ullSize)` = 9, `ullDataSize` = 3 and `enMode` is set to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode), bytes in memory at `vecSpan.ullOffset` position are `123456789`, and bytes pointed to by `pData` are `345`, then, after modification, bytes at `vecSpan.ullOffset` will be `345345345`.
 
 If `enMode` is equal to [`EHexModifyMode::MODIFY_OPERATION`](#ehexmodifymode) then
 [`enOperMode`](#ehexopermode) comes into play, showing what kind of operation must be performed on data.
@@ -532,7 +542,10 @@ See the [`IHexCtrlPtr`](#ihexctrlptr) section for more info.
 ```cpp
 extern "C" HEXCTRLAPI HEXCTRLINFO* __cdecl GetHexCtrlInfo();
 ```
-Returns pointer to `HEXCTRL_INFO`, which is the **Hex Control**'s service information structure.
+Returns pointer to [`HEXCTRLINFO`](#hexctrlinfo), which is the **Hex Control**'s service information structure.
+
+### [](#)HEXCTRLINFO
+Service structure, keeps **Hex Control**'s version information.
 ```cpp
 struct HEXCTRLINFO
 {

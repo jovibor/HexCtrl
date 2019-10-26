@@ -60,6 +60,9 @@
     <ClInclude Include="res\HexCtrlRes.h">
       <Filter>HexCtrl\res</Filter>
     </ClInclude>
+    <ClInclude Include="src\CHexSelect.h">
+      <Filter>HexCtrl\src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\HexCtrlSample\stdafx.cpp">
@@ -88,6 +91,9 @@
     </ClCompile>
     <ClCompile Include="src\Dialogs\CHexDlgSearch.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CHexSelect.cpp">
+      <Filter>HexCtrl\src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

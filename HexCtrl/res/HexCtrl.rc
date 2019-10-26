@@ -292,7 +292,7 @@ BEGIN
         BEGIN
             MENUITEM "Copy as Hex\tCtrl+C",         IDM_HEXCTRL_CLIPBOARD_COPYHEX
             MENUITEM "Copy as Hex (little-endian)", IDM_HEXCTRL_CLIPBOARD_COPYHEXLE
-            MENUITEM "Copy as Formatted Hex",       IDM_HEXCTRL_CLIPBOARD_COPYHEXFORMATTED
+            MENUITEM "Copy as Hex Formatted",       IDM_HEXCTRL_CLIPBOARD_COPYHEXFORMATTED
             MENUITEM "Copy as Ascii",               IDM_HEXCTRL_CLIPBOARD_COPYASCII
             MENUITEM "Copy as Base64",              IDM_HEXCTRL_CLIPBOARD_COPYBASE64
             MENUITEM SEPARATOR
