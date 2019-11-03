@@ -167,10 +167,10 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_stColor = hcs.stColor;
 
 	DWORD dwStyle = hcs.dwStyle;
-	//1. WS_POPUP style is vital for GetParent to work properly in hcs.fFloat mode.
+	//1. WS_POPUP style is vital for GetParent to work properly in EHexCreateMode::CREATE_FLOAT mode.
 	//   Without this style GetParent/GetOwner always return 0, no matter whether pParentWnd is provided to CreateWindowEx or not.
 	//2. Created HexCtrl window will always overlap (be on top of) its parent, or owner, window 
-	//   if pParentWnd is set (not nullptr) in CreateWindowEx.
+	//   if pParentWnd is set (is not nullptr) in CreateWindowEx.
 	//3. To force HexCtrl window on taskbar the WS_EX_APPWINDOW extended window style must be set.
 	CStringW strError;
 	CRect rc = hcs.rect;

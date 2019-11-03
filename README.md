@@ -57,15 +57,14 @@
 * [Positioning and Sizing](#positioning-and-sizing)
 * [Appearance](#appearance)
 * [Licensing](#licensing)
-* [Help Point](#help-point)
 
 ## [](#)Introduction
-Being good low level library on top of Windows API in general, **MFC** was always lacking a good native controls support. This **Hex Control** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't provide support for such control.
+Being good low level library on top of Windows API in general, **MFC** was always lacking a good native controls support. This **HexControl** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't provide support for such control.
 
-This doesn't mean that **Hex Control** is limited to use only in **MFC** environment. The control is implemented as a pure abstract interface, and can be used as a *child* or *popup* window in any place of your application.  
+This doesn't mean that **HexControl** is limited to use only in **MFC** environment. The control is implemented as a pure abstract interface, and can be used as a *child* or *popup* window in any place of your application.  
 It is written and tested with **/std:c++17** in *Visual Studio 2019*, under the *Windows 10*.
 
-### The main features of the **Hex Control**:
+### The main features of the **HexControl**:
 * View and edit data up to **16EB** (exabyte)
 * Work in three different data modes: **Memory**, **Message**, **Virtual**.
 * **Bookmarks** for any data parts
@@ -77,7 +76,7 @@ It is written and tested with **/std:c++17** in *Visual Studio 2019*, under the 
 * Written with **/std:c++17** standard conformance
 
 ## [](#)Installation
-The **Hex Control** can be used in two different ways:  
+The **HexControl** can be used in two different ways:  
 * Building from the sources as a part of your project 
 * Using as a *.dll*.
 
@@ -89,12 +88,12 @@ The building process is quite simple:
 4. Declare [`IHexCtrlPtr`](#ihexctrlptr) member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
 5. [Create](#creating) control instance.
 
-If you want to build **Hex Control** from the sources in non **MFC** app you will have to:
+If you want to build **HexControl** from the sources in non **MFC** app you will have to:
 1. Add support for **Use MFC in a Shared DLL** in your project settings.
 2. Uncomment the line `//#define HEXCTRL_MANUAL_MFC_INIT` in `HexCtrl.h` header file.
 
 ### [](#)Dynamic Link Library
-To use **Hex Control** as the *.dll* do the following:
+To use **HexControl** as the *.dll* do the following:
 1. Copy *HexCtrl.h* file into your project's folder.
 2. Copy *HexCtrl.lib* file into your project's folder, so that linker can see it.
 3. Put *HexCtrl.dll* file next to your *.exe* file.
@@ -108,7 +107,7 @@ To use **Hex Control** as the *.dll* do the following:
 
 To get *HexCtrl.dll* and *HexCtrl.lib* files you can either download it from the [official repository](https://github.com/jovibor/HexCtrl/releases/latest) or build it yourself from the *HexCtrl/HexCtrl.vcxproj* **Visual Studio** project file.
 
-**Hex Control**'s *.dll* is built with **MFC** static linking, so even if you are to use it in your own **MFC** project, even with different **MFC** version, there should not be any interferences.
+**HexControl**'s *.dll* is built with **MFC** static linking, so even if you are to use it in your own **MFC** project, even with different **MFC** version, there should not be any interferences.
 
 ### [](#)IHexCtrlPtr
 `IHexCtrlPtr` is, in fact, a pointer to a `IHexCtrl` pure abstract base class, wrapped either in `std::unique_ptr` or `std::shared_ptr`. You can choose whatever is best for your needs by comment/uncomment one of these alliases in *HexCtrl.h*:
@@ -123,7 +122,7 @@ That's why there is a call to the factory function `CreateHexCtrl()` - to proper
 If you, for some reason, need a raw interface pointer, you can directly call [`CreateRawHexCtrl`](#createrawhexctrl) function, which returns `IHexCtrl` interface pointer, but in this case you will need to call [`Destroy`](#destroy) method manually afterwards, to destroy `IHexCtrl` object.
 
 ### [](#)Namespace
-**Hex Control** uses its own namespace `HEXCTRL`.  
+**HexControl** uses its own namespace `HEXCTRL`.  
 So it's up to you, whether to use namespace prefix before declarations:
 ```cpp
 HEXCTRL::
@@ -136,7 +135,7 @@ using namespace HEXCTRL;
 ## [](#)Creating
 
 ### [](#)Classic Approach
-[`Create`](#create) is the first method you call to create **Hex Control** instance. It takes [`HEXCREATESTRUCT`](#hexcreatestruct) reference as an argument.
+[`Create`](#create) is the first method you call to create **HexControl** instance. It takes [`HEXCREATESTRUCT`](#hexcreatestruct) reference as an argument.
 
 You can choose whether control will behave as *child* or independent *popup* window, by setting `enMode` member of this struct to [`EHexCreateMode::CREATE_CHILD`](#ehexcreatemode) or [`EHexCreateMode::CREATE_FLOAT`](#ehexcreatemode) accordingly.
 ```cpp
@@ -148,7 +147,7 @@ m_myHex->Create(hcs);
 For all available options see [`HEXCREATESTRUCT`](#hexcreatestruct) description.
 
 ### [](#)In Dialog
-To use **Hex Control** within *Dialog* you can, of course, create it with the [Classic Approach](#classic-approach), call [`Create`](#create) method and provide all the necessary information.
+To use **HexControl** within *Dialog* you can, of course, create it with the [Classic Approach](#classic-approach), call [`Create`](#create) method and provide all the necessary information.
 
 But there is another option you can use:
 1. Put **Custom Control** control from the **Toolbox** in **Visual Studio** dialog designer into your dialog template and make it desirable size.  
@@ -172,7 +171,7 @@ BOOL CMyDialog::OnInitDialog()
 ```
 
 ## [](#)Set the Data
-To set a data to display in the **Hex Control** use [`SetData`](#setdata) method.
+To set a data to display in the **HexControl** use [`SetData`](#setdata) method.
 The code below shows how to construct [`IHexCtrlPtr`](#ihexctrlptr) object and display first `0x1FF` bytes of the current app's memory:
 ```cpp
 IHexCtrlPtr myHex { CreateHexCtrl() };
@@ -200,7 +199,7 @@ myHex->SetData(hds);
 ```
 
 ## [](#)Data Modes
-Besides the standard classical mode, when **Hex Control** just holds a pointer to some array of bytes in memory, it also has additional advanced modes it can be running in.  
+Besides the standard classical mode, when **HexControl** just holds a pointer to some array of bytes in memory, it also has additional advanced modes it can be running in.  
 Theese modes can be quite useful for instance in cases where you need to display a very large amount of data that can't fit in memory all at once.
 
 These modes are ruled over through the [`enMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct).
@@ -233,7 +232,7 @@ BOOL CMyWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 ```
 `lParam` will hold a pointer to the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) structure.
 
-The first member of this structure is a standard Windows' **[NMHDR](https://docs.microsoft.com/en-us/windows/win32/api/richedit/ns-richedit-nmhdr)** struct, it will have its `code` member equal to `HEXCTRL_MSG_GETDATA`, indicating that **Hex Control**'s byte request has arrived.  
+The first member of this structure is a standard Windows' **[NMHDR](https://docs.microsoft.com/en-us/windows/win32/api/richedit/ns-richedit-nmhdr)** struct, it will have its `code` member equal to `HEXCTRL_MSG_GETDATA`, indicating that **HexControl**'s byte request has arrived.  
 The `ullIndex` member of the structure is an index of the byte to be displayed. And the `pData` is the pointer to an actual byte that you have to set in response.
 
 ### [](#)Virtual Handler
@@ -253,18 +252,18 @@ public:
 Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
 
 ## [](#)OnDestroy
-When **Hex Control** window, floating or child, is being destroyed it sends **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
+When **HexControl** window, floating or child, is being destroyed it sends **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
 So, it basically indicates to its parent that the user clicked close button, or closed window in some other way.
 
 ## [](#)Scroll Bars
 When I started to work with very big data files i immediately faced one very nasty inconvenience.
 The standard Windows scrollbars can only hold `signed integer` values, which is too little to scroll through many gigabytes of data. It could be some workarounds and crutches involved to overcome this, but frankly saying i'm not a big fan of this kind of approach.
 
-That's why **Hex Control** uses its own scrollbars. They work with `unsigned long long` values, which is way bigger than standard `signed ints`. 
+That's why **HexControl** uses its own scrollbars. They work with `unsigned long long` values, which is way bigger than standard `signed ints`. 
 These scrollbars behave as normal Windows scrollbars, and even reside in the non client area as the latter do.
 
 ## [](#)Methods
-The **Hex Control** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
+The **HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
 
 ### [](#)Create
 ```cpp
@@ -277,7 +276,7 @@ Takes [`HEXCREATESTRUCT`](#hexcreatestruct) as argument. Returns `true` if creat
 ```cpp
 bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg);
 ```
-Creates **Hex Control** from **Custom Control** dialog's template. Takes control's **id**, and dialog's window **handle** as arguments. See **[Creating](#in-dialog)** section for more info.
+Creates **HexControl** from **Custom Control** dialog's template. Takes control's **id**, and dialog's window **handle** as arguments. See **[Creating](#in-dialog)** section for more info.
 
 ### [](#)SetData
 ```cpp
@@ -289,7 +288,7 @@ Main method to set data to display in read-only or edit modes. Takes [`HEXDATAST
 ```cpp
 void ClearData();
 ```
-Clears data from the **Hex Control** view, not touching data itself.
+Clears data from the **HexControl** view, not touching data itself.
 
 ### [](#)SetEditMode
 ```cpp
@@ -301,13 +300,13 @@ Enables or disables edit mode. In edit mode data can be modified.
 ```cpp
 void SetFont(const LOGFONTW* pLogFontNew);
 ```
-Sets a new font for the **Hex Control**. This font has to be monospaced.
+Sets a new font for the **HexControl**. This font has to be monospaced.
 
 ### [](#)SetFontSize
 ```cpp
 void SetFontSize(UINT uiSize);
 ```
-Sets a new font size to the **Hex Control**.
+Sets a new font size to the **HexControl**.
 
 ### [](#)SetColor
 ```cpp
@@ -319,7 +318,7 @@ Sets all the colors for the control. Takes [`HEXCOLORSTRUCT`](#hexcolorstruct) a
 ```cpp
 void SetCapacity(DWORD dwCapacity);
 ```
-Sets the **Hex Control** capacity.
+Sets the **HexControl** capacity.
 
 ### [](#)GoToOffset
 ```cpp
@@ -337,19 +336,19 @@ Sets current selection.
 ```cpp
 bool IsCreated()const;
 ```
-Shows whether **Hex Control** is created or not yet.
+Shows whether **HexControl** is created or not yet.
 
 ### [](#)IsDataSet
 ```cpp
 bool IsDataSet()const;
 ```
-Shows whether a data was set to **Hex Control** or not
+Shows whether a data was set to **HexControl** or not
 
 ### [](#)IsMutable
 ```cpp
 bool IsMutable()const;
 ```
-Shows whether **Hex Control** is currently in edit mode or not.
+Shows whether **HexControl** is currently in edit mode or not.
 
 ### [](#)GetFontSize
 ```cpp
@@ -387,11 +386,11 @@ Destroys the control.
 You only invoke this method if you use a raw `IHexCtrl` pointer obtained by the call to `CreateRawHexCtrl` function. Otherwise don't use it.
 
 **Remarks**  
-You usually don't need to call this method unless you use **Hex Control** through the raw pointer obtained by [`CreateRawHexCtrl`](#createrawhexctrl) factory function.  
-If you use **Hex Control** in standard way, through the [`IHexCtrlPtr`](#ihexctrlptr) pointer, obtained by `CreateHexCtrl` function, this method will be called automatically.
+You usually don't need to call this method unless you use **HexControl** through the raw pointer obtained by [`CreateRawHexCtrl`](#createrawhexctrl) factory function.  
+If you use **HexControl** in standard way, through the [`IHexCtrlPtr`](#ihexctrlptr) pointer, obtained by `CreateHexCtrl` function, this method will be called automatically.
 
 ## [](#)Structures
-Below are listed all **Hex Control**'s structures.
+Below are listed all **HexControl**'s structures.
 
 ### [](#)HEXCREATESTRUCT
 The main initialization struct used for control creation.
@@ -492,7 +491,7 @@ using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT *;
 ```
 
 ### [](#)EHexCreateMode
-Enum that represents mode the **Hex Control**'s window will be created in.
+Enum that represents mode the **HexControl**'s window will be created in.
 ```cpp
 enum class EHexCreateMode : DWORD
 {
@@ -501,7 +500,7 @@ enum class EHexCreateMode : DWORD
 ```
 
 ### [](#)EHexDataMode
-`Enum` that represents current data [mode](#data-modes) **Hex Control** works in. It's used as [`HEXDATASTRUCT`](#hexdatastruct) member in [`SetData`](#setdata) method.
+`Enum` that represents current data [mode](#data-modes) **HexControl** works in. It's used as [`HEXDATASTRUCT`](#hexdatastruct) member in [`SetData`](#setdata) method.
 ```cpp
 enum class EHexDataMode : DWORD
 {
@@ -529,7 +528,7 @@ enum class EHexOperMode : WORD
 ```
 
 ## [](#)Exported Functions
-**Hex Control** has few `"C"` interface functions which it exports when built as *.dll*.
+**HexControl** has few `"C"` interface functions which it exports when built as *.dll*.
 
 ### [](#)CreateRawHexCtrl
 ```cpp
@@ -542,10 +541,10 @@ See the [`IHexCtrlPtr`](#ihexctrlptr) section for more info.
 ```cpp
 extern "C" HEXCTRLAPI HEXCTRLINFO* __cdecl GetHexCtrlInfo();
 ```
-Returns pointer to [`HEXCTRLINFO`](#hexctrlinfo), which is the **Hex Control**'s service information structure.
+Returns pointer to [`HEXCTRLINFO`](#hexctrlinfo), which is the **HexControl**'s service information structure.
 
 ### [](#)HEXCTRLINFO
-Service structure, keeps **Hex Control**'s version information.
+Service structure, keeps **HexControl**'s version information.
 ```cpp
 struct HEXCTRLINFO
 {
@@ -563,7 +562,7 @@ struct HEXCTRLINFO
 ```
 
 ## [](#)Positioning and Sizing
-To properly resize and position your **Hex Control**'s window you may have to handle `WM_SIZE` message in its parent window, in something like this way:
+To properly resize and position your **HexControl**'s window you may have to handle `WM_SIZE` message in its parent window, in something like this way:
 ```cpp
 void CMyWnd::OnSize(UINT nType, int cx, int cy)
 {
@@ -580,8 +579,3 @@ To change control's capacity — <kbd>Ctrl+Shift+MouseWheel</kbd>
 This software is available under the **"MIT License modified with The Commons Clause".**  
 Briefly: It is free for any **non commercial** use.  
 [https://github.com/jovibor/HexCtrl/blob/master/LICENSE](https://github.com/jovibor/HexCtrl/blob/master/LICENSE)
-
-## [](#)Help Point
-If you would like to help the author in further project's development you can do it in form of donation:
-
-[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=M6CX4QH8FJJDL&item_name=Donation&currency_code=USD&source=url)
