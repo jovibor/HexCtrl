@@ -157,6 +157,28 @@ CHexCtrl::~CHexCtrl()
 		DeleteObject(i.second);
 }
 
+void CHexCtrl::ClearData()
+{
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return;
+
+	m_fDataSet = false;
+	m_ullDataSize = 0;
+	m_pData = nullptr;
+	m_fMutable = false;
+	m_ullSelectionClick = 0;
+
+	m_deqUndo.clear();
+	m_deqRedo.clear();
+	m_pScrollV->SetScrollPos(0);
+	m_pScrollH->SetScrollPos(0);
+	m_pScrollV->SetScrollSizes(0, 0, 0);
+	m_pBookmarks->ClearAll();
+	m_pSelect->ClearAll();
+	UpdateInfoText();
+}
+
 bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 {
 	assert(!IsCreated()); //Already created.
@@ -165,9 +187,10 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 
 	m_hwndMsg = hcs.hwndParent;
 	m_stColor = hcs.stColor;
+	m_dbWheelRatio = hcs.dbWheelRatio;
 
 	DWORD dwStyle = hcs.dwStyle;
-	//1. WS_POPUP style is vital for GetParent to work properly in EHexCreateMode::CREATE_FLOAT mode.
+	//1. WS_POPUP style is vital for GetParent to work properly in EHexCreateMode::CREATE_POPUP mode.
 	//   Without this style GetParent/GetOwner always return 0, no matter whether pParentWnd is provided to CreateWindowEx or not.
 	//2. Created HexCtrl window will always overlap (be on top of) its parent, or owner, window 
 	//   if pParentWnd is set (is not nullptr) in CreateWindowEx.
@@ -177,7 +200,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	UINT uID = 0;
 	switch (hcs.enMode)
 	{
-	case EHexCreateMode::CREATE_FLOAT:
+	case EHexCreateMode::CREATE_POPUP:
 	{
 		dwStyle |= WS_VISIBLE | WS_POPUP | WS_OVERLAPPEDWINDOW;
 		if (rc.IsRectNull())
@@ -265,6 +288,121 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)
 	return Create(hcs);
 }
 
+void CHexCtrl::Destroy()
+{
+	delete this;
+}
+
+long CHexCtrl::GetFontSize()const
+{
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return 0;
+
+	return m_lFontSize;
+}
+
+HMENU CHexCtrl::GetMenuHandle()const
+{
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return nullptr;
+
+	return m_menuMain.m_hMenu;
+}
+
+auto CHexCtrl::GetSelection()const->std::vector<HEXSPANSTRUCT>&
+{
+	assert(IsCreated()); //Not created.
+	assert(IsDataSet()); //Data is not set yet.
+
+	return m_pSelect->GetVector();
+}
+
+HWND CHexCtrl::GetWindowHandle() const
+{
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return nullptr;
+
+	return m_hWnd;
+}
+
+void CHexCtrl::GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
+{
+	assert(IsCreated());  //Not created.
+	assert(IsDataSet()); //Data is not set yet.
+	if (!IsCreated() || !IsDataSet())
+		return;
+
+	if (fSelect)
+		SetSelection(ullOffset, ullOffset, ullSize, 1, true, true);
+	else
+		GoToOffset(ullOffset);
+}
+
+bool CHexCtrl::IsCreated()const
+{
+	return m_fCreated;
+}
+
+bool CHexCtrl::IsDataSet()const
+{
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return false;
+
+	return m_fDataSet;
+}
+
+bool CHexCtrl::IsMutable()const
+{
+	assert(IsCreated()); //Not created.
+	assert(IsDataSet()); //Data is not set yet.
+	if (!IsCreated() || !IsDataSet())
+		return false;
+
+	return m_fMutable;
+}
+
+void CHexCtrl::SetCapacity(DWORD dwCapacity)
+{
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return;
+
+	if (dwCapacity < 1 || dwCapacity > m_dwCapacityMax)
+		return;
+
+	//Setting capacity according to current m_enShowMode.
+	if (dwCapacity < m_dwCapacity)
+		dwCapacity -= dwCapacity % (DWORD)m_enShowMode;
+	else if (dwCapacity % (DWORD)m_enShowMode)
+		dwCapacity += (DWORD)m_enShowMode - (dwCapacity % (DWORD)m_enShowMode);
+
+	//To prevent under/over flow.
+	if (dwCapacity < (DWORD)m_enShowMode)
+		dwCapacity = (DWORD)m_enShowMode;
+	else if (dwCapacity > m_dwCapacityMax)
+		dwCapacity = m_dwCapacityMax;
+
+	m_dwCapacity = dwCapacity;
+	m_dwCapacityBlockSize = m_dwCapacity / 2;
+
+	WstrCapacityFill();
+	RecalcAll();
+}
+
+void CHexCtrl::SetColor(const HEXCOLORSTRUCT& clr)
+{
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return;
+
+	m_stColor = clr;
+	RedrawWindow();
+}
+
 void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 {
 	assert(IsCreated()); //Not created.
@@ -305,39 +443,6 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 		SetSelection(hds.ullSelectionStart, hds.ullSelectionStart, hds.ullSelectionSize, 1, true, true);
 }
 
-void CHexCtrl::ClearData()
-{
-	assert(IsCreated()); //Not created.
-	if (!IsCreated())
-		return;
-
-	m_fDataSet = false;
-	m_ullDataSize = 0;
-	m_pData = nullptr;
-	m_fMutable = false;
-	m_ullSelectionClick = 0;
-
-	m_deqUndo.clear();
-	m_deqRedo.clear();
-	m_pScrollV->SetScrollPos(0);
-	m_pScrollH->SetScrollPos(0);
-	m_pScrollV->SetScrollSizes(0, 0, 0);
-	m_pBookmarks->ClearAll();
-	m_pSelect->ClearAll();
-	UpdateInfoText();
-}
-
-void CHexCtrl::SetEditMode(bool fEnable)
-{
-	assert(IsCreated()); //Not created.
-	assert(IsDataSet()); //Data is not set yet.
-	if (!IsCreated() || !IsDataSet())
-		return;
-
-	m_fMutable = fEnable;
-	RedrawWindow();
-}
-
 void CHexCtrl::SetFont(const LOGFONTW* pLogFontNew)
 {
 	assert(IsCreated()); //Not created.
@@ -350,6 +455,7 @@ void CHexCtrl::SetFont(const LOGFONTW* pLogFontNew)
 
 	RecalcAll();
 }
+
 
 void CHexCtrl::SetFontSize(UINT uiSize)
 {
@@ -370,55 +476,15 @@ void CHexCtrl::SetFontSize(UINT uiSize)
 	RecalcAll();
 }
 
-void CHexCtrl::SetColor(const HEXCOLORSTRUCT& clr)
+void CHexCtrl::SetMutable(bool fEnable)
 {
 	assert(IsCreated()); //Not created.
-	if (!IsCreated())
-		return;
-
-	m_stColor = clr;
-	RedrawWindow();
-}
-
-void CHexCtrl::SetCapacity(DWORD dwCapacity)
-{
-	assert(IsCreated()); //Not created.
-	if (!IsCreated())
-		return;
-
-	if (dwCapacity < 1 || dwCapacity > m_dwCapacityMax)
-		return;
-
-	//Setting capacity according to current m_enShowMode.
-	if (dwCapacity < m_dwCapacity)
-		dwCapacity -= dwCapacity % (DWORD)m_enShowMode;
-	else if (dwCapacity % (DWORD)m_enShowMode)
-		dwCapacity += (DWORD)m_enShowMode - (dwCapacity % (DWORD)m_enShowMode);
-
-	//To prevent under/over flow.
-	if (dwCapacity < (DWORD)m_enShowMode)
-		dwCapacity = (DWORD)m_enShowMode;
-	else if (dwCapacity > m_dwCapacityMax)
-		dwCapacity = m_dwCapacityMax;
-
-	m_dwCapacity = dwCapacity;
-	m_dwCapacityBlockSize = m_dwCapacity / 2;
-
-	WstrCapacityFill();
-	RecalcAll();
-}
-
-void CHexCtrl::GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
-{
-	assert(IsCreated());  //Not created.
 	assert(IsDataSet()); //Data is not set yet.
 	if (!IsCreated() || !IsDataSet())
 		return;
 
-	if (fSelect)
-		SetSelection(ullOffset, ullOffset, ullSize, 1, true, true);
-	else
-		GoToOffset(ullOffset);
+	m_fMutable = fEnable;
+	RedrawWindow();
 }
 
 void CHexCtrl::SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
@@ -431,68 +497,10 @@ void CHexCtrl::SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
 	SetSelection(ullOffset, ullOffset, ullSize, 1, false);
 }
 
-bool CHexCtrl::IsCreated()const
+void CHexCtrl::SetWheelRatio(double dbRatio)
 {
-	return m_fCreated;
-}
-
-bool CHexCtrl::IsDataSet()const
-{
-	assert(IsCreated()); //Not created.
-	if (!IsCreated())
-		return false;
-
-	return m_fDataSet;
-}
-
-bool CHexCtrl::IsMutable()const
-{
-	assert(IsCreated()); //Not created.
-	assert(IsDataSet()); //Data is not set yet.
-	if (!IsCreated() || !IsDataSet())
-		return false;
-
-	return m_fMutable;
-}
-
-long CHexCtrl::GetFontSize()const
-{
-	assert(IsCreated()); //Not created.
-	if (!IsCreated())
-		return 0;
-
-	return m_lFontSize;
-}
-
-auto CHexCtrl::GetSelection()const->std::vector<HEXSPANSTRUCT>&
-{
-	assert(IsCreated()); //Not created.
-	assert(IsDataSet()); //Data is not set yet.
-
-	return m_pSelect->GetVector();
-}
-
-HWND CHexCtrl::GetWindowHandle() const
-{
-	assert(IsCreated()); //Not created.
-	if (!IsCreated())
-		return nullptr;
-
-	return m_hWnd;
-}
-
-HMENU CHexCtrl::GetMenuHandle()const
-{
-	assert(IsCreated()); //Not created.
-	if (!IsCreated())
-		return nullptr;
-
-	return m_menuMain.m_hMenu;
-}
-
-void CHexCtrl::Destroy()
-{
-	delete this;
+	m_dbWheelRatio = dbRatio;
+	SendMessageW(WM_SIZE);   //To recalc ScrollPageSize (m_pScrollV->SetScrollPageSize(...);)
 }
 
 
@@ -1642,7 +1650,10 @@ void CHexCtrl::OnSize(UINT nType, int cx, int cy)
 	CWnd::OnSize(nType, cx, cy);
 
 	RecalcWorkAreaHeight(cy);
-	m_pScrollV->SetScrollPageSize(m_iHeightWorkArea / 2);
+	ULONGLONG ullPageSize = ULONGLONG(m_iHeightWorkArea * m_dbWheelRatio);
+	if (ullPageSize < m_sizeLetter.cy)
+		ullPageSize = m_sizeLetter.cy;
+	m_pScrollV->SetScrollPageSize(ullPageSize);
 }
 
 BOOL CHexCtrl::OnEraseBkgnd(CDC* /*pDC*/)
@@ -1878,12 +1889,12 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
 				for (ULONGLONG iterData = 0; iterData < hms.ullDataSize; iterData++)
 				{
-					if (ullTotalIndex >= vecRef.at(ullVecIndex).ullSize)
+					if (ullTotalIndex >= vecRef.at((size_t)ullVecIndex).ullSize)
 					{
 						++ullVecIndex;
 						ullTotalIndex = 0;
 					}
-					pData[vecRef.at(ullVecIndex).ullOffset + ullTotalIndex] = hms.pData[iterData];
+					pData[vecRef.at((size_t)ullVecIndex).ullOffset + ullTotalIndex] = hms.pData[iterData];
 					++ullTotalIndex;
 				}
 		}
@@ -2078,7 +2089,7 @@ void CHexCtrl::RecalcScrollSizes(int iClientHeight, int iClientWidth)
 
 	RecalcWorkAreaHeight(iClientHeight);
 	//Scroll sizes according to current font size.
-	m_pScrollV->SetScrollSizes(m_sizeLetter.cy, m_iHeightWorkArea / 2,
+	m_pScrollV->SetScrollSizes(m_sizeLetter.cy, ULONGLONG(m_iHeightWorkArea * m_dbWheelRatio),
 		(ULONGLONG)m_iStartWorkAreaY + m_iHeightBottomOffArea + m_sizeLetter.cy * (m_ullDataSize / m_dwCapacity + 2));
 	m_pScrollH->SetScrollSizes(m_sizeLetter.cx, iClientWidth, (ULONGLONG)m_iFourthVertLine + 1);
 }
@@ -2627,7 +2638,7 @@ void CHexCtrl::Undo()
 		auto& refUndoData = iter.vecData;
 		for (size_t i = 0; i < refUndoData.size(); i++)
 		{
-			refRedo->at(ullIndex).vecData.push_back((std::byte)GetByte(iter.ullOffset + i)); //Fill Redo data with the next byte.
+			refRedo->at((size_t)ullIndex).vecData.push_back((std::byte)GetByte(iter.ullOffset + i)); //Fill Redo data with the next byte.
 			SetByte(iter.ullOffset + i, (BYTE)refUndoData[i]);                  //Undo the next byte.
 		}
 		++ullIndex;
@@ -2655,7 +2666,7 @@ void CHexCtrl::Redo()
 	{
 		auto& refData = iter.vecData;
 		for (ULONGLONG i = 0; i < refData.size(); i++)
-			SetByte(iter.ullOffset + i, (BYTE)refData[i]);
+			SetByte(iter.ullOffset + i, (BYTE)refData[(size_t)i]);
 	}
 
 	m_deqRedo.pop_back();
@@ -2679,7 +2690,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 		for (auto& i : vecSpan)
 		{
 			refUndo->emplace_back(UNDOSTRUCT { i.ullOffset, { } });
-			refUndo->back().vecData.reserve(i.ullSize);
+			refUndo->back().vecData.reserve((size_t)i.ullSize);
 		}
 	}
 
@@ -2694,7 +2705,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 	for (auto& iter : vecSpan)
 	{
 		for (size_t i = 0; i < iter.ullSize; i++)
-			refUndo->at(ullIndex).vecData.push_back((std::byte)GetByte(iter.ullOffset + i));
+			refUndo->at((size_t)ullIndex).vecData.push_back((std::byte)GetByte(iter.ullOffset + i));
 		++ullIndex;
 	}
 }

@@ -42,26 +42,27 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		CHexCtrl();
-		virtual ~CHexCtrl();
-		bool Create(const HEXCREATESTRUCT& hcs)override;
-		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)override;
-		void SetData(const HEXDATASTRUCT& hds)override;
-		void ClearData()override;
-		void SetEditMode(bool fEnable)override;
-		void SetFont(const LOGFONTW* pLogFontNew)override;
-		void SetFontSize(UINT uiSize)override;
-		void SetColor(const HEXCOLORSTRUCT& clr)override;
-		void SetCapacity(DWORD dwCapacity)override;
-		void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)override;
-		void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)override;
-		bool IsCreated()const override;
-		bool IsDataSet()const override;
-		bool IsMutable()const override;
-		long GetFontSize()const override;
-		auto GetSelection()const->std::vector<HEXSPANSTRUCT> & override;
-		HWND GetWindowHandle()const override;
-		HMENU GetMenuHandle()const override;
-		void Destroy()override;
+		~CHexCtrl();
+		void ClearData() override;                          //Clears all data from HexCtrl's view (not touching data itself).
+		bool Create(const HEXCREATESTRUCT& hcs) override;   //Main initialization method.
+		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) override; //Сreates custom dialog control.
+		void Destroy() override;                            //Deleter.
+		long GetFontSize()const override;                   //Current font size.
+		HMENU GetMenuHandle()const override;                //Context menu handle.
+		auto GetSelection()const->std::vector<HEXSPANSTRUCT> & override; //Gets current selection.
+		HWND GetWindowHandle()const override;               //Retrieves control's window handle.
+		void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize) override; //Scrolls to given offset.
+		bool IsCreated()const override;                     //Shows whether control is created or not.
+		bool IsDataSet()const override;                     //Shows whether a data was set to the control or not.
+		bool IsMutable()const override;                     //Is edit mode enabled or not.
+		void SetCapacity(DWORD dwCapacity) override;        //Sets the control's current capacity.
+		void SetColor(const HEXCOLORSTRUCT& clr) override;  //Sets all the control's colors.
+		void SetData(const HEXDATASTRUCT& hds) override;    //Main method for setting data to display (and edit).	
+		void SetFont(const LOGFONTW* pLogFontNew) override; //Sets the control's new font. This font has to be monospaced.
+		void SetFontSize(UINT uiSize) override;             //Sets the control's font size.
+		void SetMutable(bool fEnable) override;            //Enable or disable edit mode.
+		void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize) override; //Sets current selection.
+		void SetWheelRatio(double dbRatio) override;        //Sets the ratio for how much to scroll with mouse-wheel.
 	protected:
 		DECLARE_MESSAGE_MAP()
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -156,6 +157,7 @@ namespace HEXCTRL::INTERNAL
 		PBYTE m_pData { };                    //Main data pointer. Modifiable in "Edit" mode.
 		IHexVirtual* m_pHexVirtual { };       //Data handler pointer for EHexDataMode::DATA_VIRTUAL
 		HWND m_hwndMsg { };                   //Window handle the control messages will be sent to.
+		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
 		ULONGLONG m_ullSelectionClick { };
 		ULONGLONG m_ullCursorPos { };         //Current cursor position.

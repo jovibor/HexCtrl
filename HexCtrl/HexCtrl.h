@@ -107,7 +107,7 @@ namespace HEXCTRL
 	********************************************************************************************/
 	enum class EHexCreateMode : DWORD
 	{
-		CREATE_CHILD, CREATE_FLOAT, CREATE_CUSTOMCTRL
+		CREATE_CHILD, CREATE_POPUP, CREATE_CUSTOMCTRL
 	};
 
 	/********************************************************************************************
@@ -116,13 +116,14 @@ namespace HEXCTRL
 	struct HEXCREATESTRUCT
 	{
 		EHexCreateMode  enMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
-		HEXCOLORSTRUCT  stColor { };    //All the control's colors.
-		HWND            hwndParent { }; //Parent window pointer.
-		const LOGFONTW* pLogFont { };   //Font to be used, nullptr for default. This font has to be monospaced.
-		RECT            rect { };       //Initial rect. If null, the window is screen centered.
-		UINT            uID { };        //Control ID.
-		DWORD           dwStyle { };    //Window styles, 0 for default.
-		DWORD           dwExStyle { };  //Extended window styles, 0 for default.
+		HEXCOLORSTRUCT  stColor { };          //All the control's colors.
+		HWND            hwndParent { };       //Parent window pointer.
+		const LOGFONTW* pLogFont { };         //Font to be used, nullptr for default. This font has to be monospaced.
+		RECT            rect { };             //Initial rect. If null, the window is screen centered.
+		UINT            uID { };              //Control ID.
+		DWORD           dwStyle { };          //Window styles, 0 for default.
+		DWORD           dwExStyle { };        //Extended window styles, 0 for default.
+		double          dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
 	};
 
 	/********************************************************************************************
@@ -171,25 +172,26 @@ namespace HEXCTRL
 	{
 	public:
 		virtual ~IHexCtrl() = default;
+		virtual void ClearData() = 0;                          //Clears all data from HexCtrl's view (not touching data itself).
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;   //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) = 0; //Сreates custom dialog control.
-		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
-		virtual void ClearData() = 0;                          //Clears all data from HexCtrl's view (not touching data itself).
-		virtual void SetEditMode(bool fEnable) = 0;            //Enable or disable edit mode.
-		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0; //Sets the control's new font. This font has to be monospaced.
-		virtual void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
-		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;  //Sets all the control's colors.
-		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
+		virtual void Destroy() = 0;                            //Deleter.
+		virtual long GetFontSize()const = 0;                   //Current font size.
+		virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
+		virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> & = 0; //Gets current selection.
+		virtual HWND GetWindowHandle()const = 0;               //Retrieves control's window handle.
 		virtual void GoToOffset(ULONGLONG ullOffset, bool fSelect = false, ULONGLONG ullSize = 1) = 0; //Scrolls to given offset.
-		virtual void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize) = 0; //Sets current selection.
 		virtual bool IsCreated()const = 0;                     //Shows whether control is created or not.
 		virtual bool IsDataSet()const = 0;                     //Shows whether a data was set to the control or not.
 		virtual bool IsMutable()const = 0;                     //Is edit mode enabled or not.
-		virtual long GetFontSize()const = 0;                   //Current font size.
-		virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> & = 0; //Gets current selection.
-		virtual HWND GetWindowHandle()const = 0;               //Retrieves control's window handle.
-		virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
-		virtual void Destroy() = 0;                            //Deleter.
+		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
+		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;  //Sets all the control's colors.
+		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
+		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0; //Sets the control's new font. This font has to be monospaced.
+		virtual void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
+		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/edit mode.
+		virtual void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize) = 0; //Sets current selection.
+		virtual void SetWheelRatio(double dbRatio) = 0;        //Sets the ratio for how much to scroll with mouse-wheel.
 	};
 
 	/********************************************************************************************

@@ -18,25 +18,26 @@
 * [OnDestroy](#ondestroy)
 * [Scroll Bars](#scroll-bars)
 * [Methods](#methods) <details><summary>_Expand_</summary>
+  * [ClearData](#cleardata)
   * [Create](#create)
   * [CreateDialogCtrl](#createdialogctrl)
-  * [SetData](#setdata)
-  * [ClearData](#cleardata)
-  * [SetEditMode](#seteditmode)
-  * [SetFont](#setfont)
-  * [SetFontSize](#setfontsize)
-  * [SetColor](#setcolor)
-  * [SetCapacity](#setcapacity)
+  * [Destroy](#destroy)
+  * [GetFontSize](#getfontsize)
+  * [GetMenuHandle](#getmenuhandle)
+  * [GetSelection](#getselection)
+  * [GetWindowHandle](#getwindowhandle)
   * [GoToOffset](#gotooffset) 
-  * [SetSelection](#setselection)
   * [IsCreated](#iscreated)
   * [IsDataSet](#isdataset)
   * [IsMutable](#ismutable)
-  * [GetFontSize](#getfontsize)
-  * [GetSelection](#getselection)
-  * [GetWindowHandle](#getwindowhandle)
-  * [GetMenuHandle](#getmenuhandle)
-  * [Destroy](#destroy)
+  * [SetCapacity](#setcapacity)
+  * [SetColor](#setcolor)
+  * [SetData](#setdata)
+  * [SetFont](#setfont)
+  * [SetFontSize](#setfontsize)
+  * [SetMutable](#setmutable)
+  * [SetSelection](#setselection)
+  * [SetWheelRatio](#setwheelratio)
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
   * [HEXCREATESTRUCT](#hexcreatestruct)
@@ -137,10 +138,10 @@ using namespace HEXCTRL;
 ### [](#)Classic Approach
 [`Create`](#create) is the first method you call to create **HexControl** instance. It takes [`HEXCREATESTRUCT`](#hexcreatestruct) reference as an argument.
 
-You can choose whether control will behave as *child* or independent *popup* window, by setting `enMode` member of this struct to [`EHexCreateMode::CREATE_CHILD`](#ehexcreatemode) or [`EHexCreateMode::CREATE_FLOAT`](#ehexcreatemode) accordingly.
+You can choose whether control will behave as *child* or independent *popup* window, by setting `enMode` member of this struct to [`EHexCreateMode::CREATE_CHILD`](#ehexcreatemode) or [`EHexCreateMode::CREATE_POPUP`](#ehexcreatemode) accordingly.
 ```cpp
 HEXCREATESTRUCT hcs;
-hcs.enMode = EHexCreateMode::CREATE_FLOAT;
+hcs.enMode = EHexCreateMode::CREATE_POPUP;
 hcs.hwndParent = m_hWnd;
 m_myHex->Create(hcs);
 ```
@@ -265,6 +266,12 @@ These scrollbars behave as normal Windows scrollbars, and even reside in the non
 ## [](#)Methods
 The **HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
 
+### [](#)ClearData
+```cpp
+void ClearData();
+```
+Clears data from the **HexControl** view, not touching data itself.
+
 ### [](#)Create
 ```cpp
 bool Create(const HEXCREATESTRUCT& hcs);
@@ -278,59 +285,50 @@ bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg);
 ```
 Creates **HexControl** from **Custom Control** dialog's template. Takes control's **id**, and dialog's window **handle** as arguments. See **[Creating](#in-dialog)** section for more info.
 
-### [](#)SetData
+### [](#)Destroy
 ```cpp
-void SetData(const HEXDATASTRUCT& hds);
+void Destroy();
 ```
-Main method to set data to display in read-only or edit modes. Takes [`HEXDATASTRUCT`](#hexdatastruct) as an  argument.
+Destroys the control.  
+You only invoke this method if you use a raw `IHexCtrl` pointer obtained by the call to `CreateRawHexCtrl` function. Otherwise don't use it.
 
-### [](#)ClearData
-```cpp
-void ClearData();
-```
-Clears data from the **HexControl** view, not touching data itself.
+**Remarks**  
+You usually don't need to call this method unless you use **HexControl** through the raw pointer obtained by [`CreateRawHexCtrl`](#createrawhexctrl) factory function.  
+If you use **HexControl** in standard way, through the [`IHexCtrlPtr`](#ihexctrlptr) pointer, obtained by `CreateHexCtrl` function, this method will be called automatically.
 
-### [](#)SetEditMode
+### [](#)GetFontSize
 ```cpp
-void SetEditMode(bool fEnable);
+long GetFontSize()const;
 ```
-Enables or disables edit mode. In edit mode data can be modified.
+Returns current font size.
 
-### [](#)SetFont
+### [](#)GetMenuHandle
 ```cpp
-void SetFont(const LOGFONTW* pLogFontNew);
+HMENU GetMenuHandle()const;
 ```
-Sets a new font for the **HexControl**. This font has to be monospaced.
+Retrives the `HMENU` handle of the control's context menu. You can use this handle to customize menu for your needs.
 
-### [](#)SetFontSize
-```cpp
-void SetFontSize(UINT uiSize);
-```
-Sets a new font size to the **HexControl**.
+Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.
 
-### [](#)SetColor
-```cpp
-void SetColor(const HEXCOLORSTRUCT& clr);
-```
-Sets all the colors for the control. Takes [`HEXCOLORSTRUCT`](#hexcolorstruct) as the argument.
+When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to `HEXNOTIFYSTRUCT` with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `uMenuId` field of the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) will be holding `ID` of the menu clicked.
 
-### [](#)SetCapacity
+### [](#)GetSelection
 ```cpp
-void SetCapacity(DWORD dwCapacity);
+auto GetSelection()const->std::vector<HEXSPANSTRUCT>&;
 ```
-Sets the **HexControl** capacity.
+Returns `std::vector` of offsets and sizes of the current selection.
+
+### [](#)GetWindowHandle
+```cpp
+HWND GetWindowHandle()const
+```
+Retrieves control's window handle.
 
 ### [](#)GoToOffset
 ```cpp
 void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
 ```
 Jumps to the `ullOffset` offset, and selects `ullSize` bytes if `fSelect` is `true`.
-
-## [](#)SetSelection
-```cpp
-void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
-```
-Sets current selection.
 
 ### [](#)IsCreated
 ```cpp
@@ -350,44 +348,53 @@ bool IsMutable()const;
 ```
 Shows whether **HexControl** is currently in edit mode or not.
 
-### [](#)GetFontSize
+### [](#)SetCapacity
 ```cpp
-long GetFontSize()const;
+void SetCapacity(DWORD dwCapacity);
 ```
-Returns current font size.
+Sets the **HexControl** capacity.
 
-### [](#)GetSelection
+### [](#)SetColor
 ```cpp
-auto GetSelection()const->std::vector<HEXSPANSTRUCT>&;
+void SetColor(const HEXCOLORSTRUCT& clr);
 ```
-Returns `std::vector` of offsets and sizes of the current selection.
+Sets all the colors for the control. Takes [`HEXCOLORSTRUCT`](#hexcolorstruct) as the argument.
 
-### [](#)GetWindowHandle
+### [](#)SetData
 ```cpp
-HWND GetWindowHandle()const
+void SetData(const HEXDATASTRUCT& hds);
 ```
-Retrieves control's window handle.
+Main method to set data to display in read-only or edit modes. Takes [`HEXDATASTRUCT`](#hexdatastruct) as an  argument.
 
-### [](#)GetMenuHandle
+### [](#)SetFont
 ```cpp
-HMENU GetMenuHandle()const;
+void SetFont(const LOGFONTW* pLogFontNew);
 ```
-Retrives the `HMENU` handle of the control's context menu. You can use this handle to customize menu for your needs.
+Sets a new font for the **HexControl**. This font has to be monospaced.
 
-Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.
-
-When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to `HEXNOTIFYSTRUCT` with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `uMenuId` field of the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) will be holding `ID` of the menu clicked.
-
-### [](#)Destroy
+### [](#)SetFontSize
 ```cpp
-void Destroy();
+void SetFontSize(UINT uiSize);
 ```
-Destroys the control.  
-You only invoke this method if you use a raw `IHexCtrl` pointer obtained by the call to `CreateRawHexCtrl` function. Otherwise don't use it.
+Sets a new font size to the **HexControl**.
 
-**Remarks**  
-You usually don't need to call this method unless you use **HexControl** through the raw pointer obtained by [`CreateRawHexCtrl`](#createrawhexctrl) factory function.  
-If you use **HexControl** in standard way, through the [`IHexCtrlPtr`](#ihexctrlptr) pointer, obtained by `CreateHexCtrl` function, this method will be called automatically.
+### [](#)SetMutable
+```cpp
+void SetMutable(bool fEnable);
+```
+Enables or disables mutable mode. In mutable mode all the data can be modified.
+
+### [](#)SetSelection
+```cpp
+void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
+```
+Sets current selection.
+
+### [](#)SetWheelRatio
+```cpp
+void SetWheelRatio(double dbRatio)
+```
+Sets the ratio for how much to scroll with mouse-wheel.
 
 ## [](#)Structures
 Below are listed all **HexControl**'s structures.
@@ -405,6 +412,7 @@ struct HEXCREATESTRUCT
     UINT            uID { };        //Control ID.
     DWORD           dwStyle { };    //Window styles, 0 for default.
     DWORD           dwExStyle { };  //Extended window styles, 0 for default.
+    double          dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
 };
 ```
 
@@ -495,7 +503,7 @@ Enum that represents mode the **HexControl**'s window will be created in.
 ```cpp
 enum class EHexCreateMode : DWORD
 {
-    CREATE_CHILD, CREATE_FLOAT, CREATE_CUSTOMCTRL
+    CREATE_CHILD, CREATE_POPUP, CREATE_CUSTOMCTRL
 };
 ```
 

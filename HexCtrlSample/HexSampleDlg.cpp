@@ -34,7 +34,8 @@ BOOL CHexSampleDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE); //Set small icon
 
 	m_myHex->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
-	
+	m_myHex->SetWheelRatio(0.5);
+
 	m_hds.pData = m_data;
 	m_hds.ullDataSize = sizeof(m_data);
 
@@ -78,7 +79,7 @@ void CHexSampleDlg::OnBnSetDataRO()
 		m_hds.fMutable = false;
 		m_myHex->SetData(m_hds);
 	}
-	m_myHex->SetEditMode(false);
+	m_myHex->SetMutable(false);
 }
 
 void CHexSampleDlg::OnBnSetDataRW()
@@ -88,7 +89,7 @@ void CHexSampleDlg::OnBnSetDataRW()
 		m_hds.fMutable = true;
 		m_myHex->SetData(m_hds);
 	}
-	m_myHex->SetEditMode(true);
+	m_myHex->SetMutable(true);
 }
 
 void CHexSampleDlg::OnBnClearData()
