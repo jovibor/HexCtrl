@@ -1,5 +1,6 @@
 ## **Hex Control, C++/MFC**
 ![](docs/img/hexctrl_mainwnd.jpg)
+![](docs/img/hexctrl_operationswnd.jpg)
 ## Table of Contents
 * [Introduction](#introduction)
 * [Installation](#installation)
@@ -22,9 +23,12 @@
   * [Create](#create)
   * [CreateDialogCtrl](#createdialogctrl)
   * [Destroy](#destroy)
+  * [GetCapacity](#getcapacity)
+  * [GetColor](#getcolor)
   * [GetFontSize](#getfontsize)
   * [GetMenuHandle](#getmenuhandle)
   * [GetSelection](#getselection)
+  * [GetShowMode](#getshowmode)
   * [GetWindowHandle](#getwindowhandle)
   * [GoToOffset](#gotooffset) 
   * [IsCreated](#iscreated)
@@ -37,6 +41,7 @@
   * [SetFontSize](#setfontsize)
   * [SetMutable](#setmutable)
   * [SetSelection](#setselection)
+  * [SetShowMode](#setshowmode)
   * [SetWheelRatio](#setwheelratio)
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
@@ -47,6 +52,7 @@
   * [HEXMODIFYSTRUCT](#hexmodifystruct)
   * [HEXNOTIFYSTRUCT](#hexnotifystruct)
   * [EHexCreateMode](#ehexcreatemode)
+  * [EHexShowMode](#ehexshowmode)
   * [EHexDataMode](#ehexdatamode)
   * [EHexModifyMode](#ehexmodifymode)
   * [EHexOperMode](#ehexopermode)
@@ -138,10 +144,10 @@ using namespace HEXCTRL;
 ### [](#)Classic Approach
 [`Create`](#create) is the first method you call to create **HexControl** instance. It takes [`HEXCREATESTRUCT`](#hexcreatestruct) reference as an argument.
 
-You can choose whether control will behave as *child* or independent *popup* window, by setting `enMode` member of this struct to [`EHexCreateMode::CREATE_CHILD`](#ehexcreatemode) or [`EHexCreateMode::CREATE_POPUP`](#ehexcreatemode) accordingly.
+You can choose whether control will behave as *child* or independent *popup* window, by setting `enCreateMode` member of this struct to [`EHexCreateMode::CREATE_CHILD`](#ehexcreatemode) or [`EHexCreateMode::CREATE_POPUP`](#ehexcreatemode) accordingly.
 ```cpp
 HEXCREATESTRUCT hcs;
-hcs.enMode = EHexCreateMode::CREATE_POPUP;
+hcs.enCreateMode = EHexCreateMode::CREATE_POPUP;
 hcs.hwndParent = m_hWnd;
 m_myHex->Create(hcs);
 ```
@@ -296,6 +302,18 @@ You only invoke this method if you use a raw `IHexCtrl` pointer obtained by the 
 You usually don't need to call this method unless you use **HexControl** through the raw pointer obtained by [`CreateRawHexCtrl`](#createrawhexctrl) factory function.  
 If you use **HexControl** in standard way, through the [`IHexCtrlPtr`](#ihexctrlptr) pointer, obtained by `CreateHexCtrl` function, this method will be called automatically.
 
+### [](#)GetCapacity
+```cpp
+DWORD GetCapacity()const
+```
+Returns current capacity.
+
+### [](#)GetColor
+```cpp
+auto GetColor()const->HEXCOLORSTRUCT
+```
+Returns current [`HEXCOLORSTRUCT`](#hexcolorstruct).
+
 ### [](#)GetFontSize
 ```cpp
 long GetFontSize()const;
@@ -317,6 +335,12 @@ When user clicks custom menu, control sends `WM_NOTIFY` message to its parent wi
 auto GetSelection()const->std::vector<HEXSPANSTRUCT>&;
 ```
 Returns `std::vector` of offsets and sizes of the current selection.
+
+### [](#)GetShowMode
+```cpp
+auto GetShowMode()const->EHexShowMode;
+```
+Retrieves current data show mode.
 
 ### [](#)GetWindowHandle
 ```cpp
@@ -390,6 +414,12 @@ void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
 ```
 Sets current selection.
 
+### [](#)SetShowMode
+```cpp
+void SetShowMode(EHexShowMode enShowMode);
+```
+Sets current data show mode. See [`EHexShowMode`](#ehexshowmode) for more info.
+
 ### [](#)SetWheelRatio
 ```cpp
 void SetWheelRatio(double dbRatio)
@@ -404,16 +434,18 @@ The main initialization struct used for control creation.
 ```cpp
 struct HEXCREATESTRUCT
 {
-    EHexCreateMode  enMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
-    HEXCOLORSTRUCT  stColor { };    //All the control's colors.
-    HWND            hwndParent { }; //Parent window pointer.
-    const LOGFONTW* pLogFont { };   //Font to be used, nullptr for default. This font has to be monospaced.
-    RECT            rect { };       //Initial rect. If null, the window is screen centered.
-    UINT            uID { };        //Control ID.
-    DWORD           dwStyle { };    //Window styles, 0 for default.
-    DWORD           dwExStyle { };  //Extended window styles, 0 for default.
+    EHexCreateMode  enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
+    EHexShowMode    enShowMode { EHexShowMode::ASBYTE };           //Data representation mode.
+    HEXCOLORSTRUCT  stColor { };          //All the control's colors.
+    HWND            hwndParent { };       //Parent window pointer.
+    const LOGFONTW* pLogFont { };         //Font to be used, nullptr for default. This font has to be monospaced.
+    RECT            rect { };             //Initial rect. If null, the window is screen centered.
+    UINT            uID { };              //Control ID.
+    DWORD           dwStyle { };          //Window styles, 0 for default.
+    DWORD           dwExStyle { };        //Extended window styles, 0 for default.
     double          dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
 };
+
 ```
 
 ### [](#)HEXCOLORSTRUCT
@@ -504,6 +536,15 @@ Enum that represents mode the **HexControl**'s window will be created in.
 enum class EHexCreateMode : DWORD
 {
     CREATE_CHILD, CREATE_POPUP, CREATE_CUSTOMCTRL
+};
+```
+
+### [](#)EHexShowMode
+Enum that represents available data show modes.
+```cpp
+enum class EHexShowMode : DWORD
+{
+    ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
 };
 ```
 

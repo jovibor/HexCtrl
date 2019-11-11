@@ -146,8 +146,6 @@ CHexCtrl::CHexCtrl()
 	m_pDlgOpers->Create(IDD_HEXCTRL_OPERATIONS, this);
 	m_pDlgFillWith->Create(IDD_HEXCTRL_FILLWITHDATA, this);
 	m_pBookmarks->Attach(this);
-
-	WstrCapacityFill();
 }
 
 CHexCtrl::~CHexCtrl()
@@ -187,6 +185,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 
 	m_hwndMsg = hcs.hwndParent;
 	m_stColor = hcs.stColor;
+	m_enShowMode = hcs.enShowMode;
 	m_dbWheelRatio = hcs.dbWheelRatio;
 
 	DWORD dwStyle = hcs.dwStyle;
@@ -198,7 +197,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	CStringW strError;
 	CRect rc = hcs.rect;
 	UINT uID = 0;
-	switch (hcs.enMode)
+	switch (hcs.enCreateMode)
 	{
 	case EHexCreateMode::CREATE_POPUP:
 	{
@@ -228,7 +227,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	}
 
 	//Creating window.
-	if (hcs.enMode != EHexCreateMode::CREATE_CUSTOMCTRL)
+	if (hcs.enCreateMode != EHexCreateMode::CREATE_CUSTOMCTRL)
 	{
 		if (!CWnd::CreateEx(hcs.dwExStyle, WSTR_HEXCTRL_CLASSNAME, L"HexControl",
 			dwStyle, rc, CWnd::FromHandle(hcs.hwndParent), uID))
@@ -269,6 +268,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_pScrollH->AddSibling(m_pScrollV.get());
 
 	m_fCreated = true;
+	SetShowMode(m_enShowMode);
 	RecalcAll();
 
 	return true;
@@ -283,7 +283,7 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)
 	HEXCREATESTRUCT hcs;
 	hcs.hwndParent = hwndDlg;
 	hcs.uID = uCtrlID;
-	hcs.enMode = EHexCreateMode::CREATE_CUSTOMCTRL;
+	hcs.enCreateMode = EHexCreateMode::CREATE_CUSTOMCTRL;
 
 	return Create(hcs);
 }
@@ -291,6 +291,24 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)
 void CHexCtrl::Destroy()
 {
 	delete this;
+}
+
+DWORD CHexCtrl::GetCapacity()const
+{
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return 0;
+
+	return m_dwCapacity;
+}
+
+auto CHexCtrl::GetColor()const->HEXCOLORSTRUCT
+{
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return { };
+
+	return m_stColor;
 }
 
 long CHexCtrl::GetFontSize()const
@@ -317,6 +335,15 @@ auto CHexCtrl::GetSelection()const->std::vector<HEXSPANSTRUCT>&
 	assert(IsDataSet()); //Data is not set yet.
 
 	return m_pSelect->GetVector();
+}
+
+auto CHexCtrl::GetShowMode() const -> EHexShowMode
+{
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return EHexShowMode { };
+
+	return m_enShowMode;
 }
 
 HWND CHexCtrl::GetWindowHandle() const
@@ -414,12 +441,12 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 		m_hwndMsg = hds.hwndMsg;
 
 	//Virtual mode is possible only when there is a MSG window, a data requests will be sent to.
-	if (hds.enMode == EHexDataMode::DATA_MSG && !GetMsgWindow())
+	if (hds.enCreateMode == EHexDataMode::DATA_MSG && !GetMsgWindow())
 	{
 		MessageBoxW(L"HexCtrl EHexDataMode::DATA_MSG mode requires HEXDATASTRUCT::hwndMsg to be set.", L"Error", MB_ICONWARNING);
 		return;
 	}
-	else if (hds.enMode == EHexDataMode::DATA_VIRTUAL && !hds.pHexVirtual)
+	else if (hds.enCreateMode == EHexDataMode::DATA_VIRTUAL && !hds.pHexVirtual)
 	{
 		MessageBoxW(L"HexCtrl EHexDataMode::DATA_VIRTUAL mode requires HEXDATASTRUCT::pHexVirtual to be set.", L"Error", MB_ICONWARNING);
 		return;
@@ -430,7 +457,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_fDataSet = true;
 	m_pData = hds.pData;
 	m_ullDataSize = hds.ullDataSize;
-	m_enMode = hds.enMode;
+	m_enCreateMode = hds.enCreateMode;
 	m_fMutable = hds.fMutable;
 	m_dwOffsetDigits = hds.ullDataSize <= 0xffffffffUL ? 8 :
 		(hds.ullDataSize <= 0xffffffffffUL ? 10 :
@@ -455,7 +482,6 @@ void CHexCtrl::SetFont(const LOGFONTW* pLogFontNew)
 
 	RecalcAll();
 }
-
 
 void CHexCtrl::SetFontSize(UINT uiSize)
 {
@@ -497,8 +523,49 @@ void CHexCtrl::SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
 	SetSelection(ullOffset, ullOffset, ullSize, 1, false);
 }
 
+void CHexCtrl::SetShowMode(EHexShowMode enShowMode)
+{
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return;
+
+	m_enShowMode = enShowMode;
+
+	//Getting the "Show data as..." menu.
+	auto pMenu = m_menuMain.GetSubMenu(0)->GetSubMenu(2); //Separators are also count as menu!!!
+	if (!pMenu)
+		return;
+
+	//Unchecking all menus and checking only the current needed.
+	for (int i = 0; i < pMenu->GetMenuItemCount(); i++)
+		pMenu->CheckMenuItem(i, MF_UNCHECKED | MF_BYPOSITION);
+
+	int iId { };
+	switch (enShowMode)
+	{
+	case EHexShowMode::ASBYTE:
+		iId = 0;
+		break;
+	case EHexShowMode::ASWORD:
+		iId = 1;
+		break;
+	case EHexShowMode::ASDWORD:
+		iId = 2;
+		break;
+	case EHexShowMode::ASQWORD:
+		iId = 3;
+		break;
+	}
+	pMenu->CheckMenuItem(iId, MF_CHECKED | MF_BYPOSITION);
+	SetCapacity(m_dwCapacity); //To recalc current representation.
+}
+
 void CHexCtrl::SetWheelRatio(double dbRatio)
 {
+	assert(IsCreated()); //Not created.
+	if (!IsCreated())
+		return;
+
 	m_dbWheelRatio = dbRatio;
 	SendMessageW(WM_SIZE);   //To recalc ScrollPageSize (m_pScrollV->SetScrollPageSize(...);)
 }
@@ -704,22 +771,22 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	switch (uId)
 	{
 	case IDM_HEXCTRL_MAIN_SEARCH:
-		if (m_enMode == EHexDataMode::DATA_MEMORY)
+		if (m_enCreateMode == EHexDataMode::DATA_MEMORY)
 			m_pDlgSearch->ShowWindow(SW_SHOW);
 		else
 			MessageBoxW(pwszErrVirtual, L"Error", MB_ICONEXCLAMATION);
 		break;
 	case IDM_HEXCTRL_SHOWAS_BYTE:
-		SetShowMode(EShowMode::ASBYTE);
+		SetShowMode(EHexShowMode::ASBYTE);
 		break;
 	case IDM_HEXCTRL_SHOWAS_WORD:
-		SetShowMode(EShowMode::ASWORD);
+		SetShowMode(EHexShowMode::ASWORD);
 		break;
 	case IDM_HEXCTRL_SHOWAS_DWORD:
-		SetShowMode(EShowMode::ASDWORD);
+		SetShowMode(EHexShowMode::ASDWORD);
 		break;
 	case IDM_HEXCTRL_SHOWAS_QWORD:
-		SetShowMode(EShowMode::ASQWORD);
+		SetShowMode(EHexShowMode::ASQWORD);
 		break;
 	case IDM_HEXCTRL_BOOKMARKS_ADD:
 		m_pBookmarks->Add(m_pSelect->GetVector());
@@ -1426,7 +1493,7 @@ void CHexCtrl::OnPaint()
 				wstrHexToPrint += L" ";
 
 			//Additional space between capacity halves, only with ASBYTE representation.
-			if (m_enShowMode == EShowMode::ASBYTE && iterChunks == (m_dwCapacityBlockSize - 1))
+			if (m_enShowMode == EHexShowMode::ASBYTE && iterChunks == (m_dwCapacityBlockSize - 1))
 				wstrHexToPrint += L"  ";
 
 			//Ascii to print.
@@ -1451,7 +1518,7 @@ void CHexCtrl::OnPaint()
 						wstrHexBookmarkToPrint += L" ";
 
 					//Additional space between capacity halves, only with ASBYTE representation.
-					if (m_enShowMode == EShowMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+					if (m_enShowMode == EHexShowMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
 						wstrHexBookmarkToPrint += L"  ";
 				}
 				wstrHexBookmarkToPrint += pwszHexToPrint[0];
@@ -1501,7 +1568,7 @@ void CHexCtrl::OnPaint()
 						wstrHexSelToPrint += L" ";
 
 					//Additional space between capacity halves, only with ASBYTE representation.
-					if (m_enShowMode == EShowMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+					if (m_enShowMode == EHexShowMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
 						wstrHexSelToPrint += L"  ";
 				}
 				wstrHexSelToPrint += pwszHexToPrint[0];
@@ -1696,7 +1763,7 @@ void CHexCtrl::OnNcPaint()
 
 void CHexCtrl::OnDestroy()
 {
-	if (m_enMode == EHexDataMode::DATA_MSG)
+	if (m_enCreateMode == EHexDataMode::DATA_MSG)
 		if (GetMsgWindow() != GetParent()->GetSafeHwnd()) //To avoid sending notify message twice to the same window.
 			MsgWindowNotify(HEXCTRL_MSG_DESTROY);
 
@@ -1725,7 +1792,7 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)const
 		return 0x00;
 
 	//If it's virtual data control we aquire next byte_to_print from m_hwndMsg window.
-	switch (m_enMode)
+	switch (m_enCreateMode)
 	{
 	case EHexDataMode::DATA_MEMORY:
 	{
@@ -1763,7 +1830,7 @@ WORD CHexCtrl::GetWord(ULONGLONG ullIndex) const
 		return 0;
 
 	WORD wData;
-	if (m_enMode == EHexDataMode::DATA_MEMORY)
+	if (m_enCreateMode == EHexDataMode::DATA_MEMORY)
 		wData = *(PWORD)((DWORD_PTR)m_pData + ullIndex);
 	else
 		wData = ((WORD)GetByte(ullIndex)) | ((WORD)GetByte(ullIndex + 1) << 8);
@@ -1778,7 +1845,7 @@ DWORD CHexCtrl::GetDword(ULONGLONG ullIndex) const
 		return 0;
 
 	DWORD dwData;
-	if (m_enMode == EHexDataMode::DATA_MEMORY)
+	if (m_enCreateMode == EHexDataMode::DATA_MEMORY)
 		dwData = *(PDWORD)((DWORD_PTR)m_pData + ullIndex);
 	else
 		dwData = ((DWORD)GetByte(ullIndex)) | ((DWORD)GetByte(ullIndex + 1) << 8)
@@ -1794,7 +1861,7 @@ QWORD CHexCtrl::GetQword(ULONGLONG ullIndex) const
 		return 0;
 
 	QWORD ullData;
-	if (m_enMode == EHexDataMode::DATA_MEMORY)
+	if (m_enCreateMode == EHexDataMode::DATA_MEMORY)
 		ullData = *(PQWORD)((DWORD_PTR)m_pData + ullIndex);
 	else
 		ullData = ((QWORD)GetByte(ullIndex)) | ((QWORD)GetByte(ullIndex + 1) << 8)
@@ -1808,7 +1875,7 @@ QWORD CHexCtrl::GetQword(ULONGLONG ullIndex) const
 bool CHexCtrl::SetByte(ULONGLONG ullIndex, BYTE bData)
 {
 	//Data overflow check.
-	if (ullIndex >= m_ullDataSize || m_enMode != EHexDataMode::DATA_MEMORY)
+	if (ullIndex >= m_ullDataSize || m_enCreateMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
 	m_pData[ullIndex] = bData;
@@ -1819,7 +1886,7 @@ bool CHexCtrl::SetByte(ULONGLONG ullIndex, BYTE bData)
 bool CHexCtrl::SetWord(ULONGLONG ullIndex, WORD wData)
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(WORD)) > m_ullDataSize || m_enMode != EHexDataMode::DATA_MEMORY)
+	if ((ullIndex + sizeof(WORD)) > m_ullDataSize || m_enCreateMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
 	*(PWORD)((DWORD_PTR)m_pData + ullIndex) = wData;
@@ -1830,7 +1897,7 @@ bool CHexCtrl::SetWord(ULONGLONG ullIndex, WORD wData)
 bool CHexCtrl::SetDword(ULONGLONG ullIndex, DWORD dwData)
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(DWORD)) > m_ullDataSize || m_enMode != EHexDataMode::DATA_MEMORY)
+	if ((ullIndex + sizeof(DWORD)) > m_ullDataSize || m_enCreateMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
 	*(PDWORD)((DWORD_PTR)m_pData + ullIndex) = dwData;
@@ -1841,7 +1908,7 @@ bool CHexCtrl::SetDword(ULONGLONG ullIndex, DWORD dwData)
 bool CHexCtrl::SetQword(ULONGLONG ullIndex, QWORD qwData)
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(QWORD)) > m_ullDataSize || m_enMode != EHexDataMode::DATA_MEMORY)
+	if ((ullIndex + sizeof(QWORD)) > m_ullDataSize || m_enCreateMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
 	*(PQWORD)((DWORD_PTR)m_pData + ullIndex) = qwData;
@@ -1853,6 +1920,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 {
 	if (!m_fMutable)
 		return;
+
 	const auto& vecRef = hms.vecSpan;
 	const auto& vecRefB = vecRef.back();
 	if (vecRefB.ullOffset >= m_ullDataSize || (vecRefB.ullOffset + vecRefB.ullSize) > m_ullDataSize
@@ -1866,12 +1934,12 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 	for (auto& i : vecRef)
 		ullTotalSize += i.ullSize;
 
-	switch (m_enMode)
+	switch (m_enCreateMode)
 	{
 	case EHexDataMode::DATA_MEMORY: //Modify only in non Virtual mode.
 	{
 		PBYTE pData = GetData();
-		switch (hms.enMode)
+		switch (hms.enCreateMode)
 		{
 		case EHexModifyMode::MODIFY_DEFAULT:
 		{
@@ -2049,7 +2117,7 @@ void CHexCtrl::RecalcAll()
 
 	m_iSecondVertLine = m_iFirstVertLine + m_dwOffsetDigits * m_sizeLetter.cx + m_sizeLetter.cx * 2;
 	m_iSizeHexByte = m_sizeLetter.cx * 2;
-	m_iSpaceBetweenBlocks = (m_enShowMode == EShowMode::ASBYTE && m_dwCapacity > 1) ? m_sizeLetter.cx * 2 : 0;
+	m_iSpaceBetweenBlocks = (m_enShowMode == EHexShowMode::ASBYTE && m_dwCapacity > 1) ? m_sizeLetter.cx * 2 : 0;
 	m_iSpaceBetweenHexChunks = m_sizeLetter.cx;
 	m_iDistanceBetweenHexChunks = m_iSizeHexByte * (DWORD)m_enShowMode + m_iSpaceBetweenHexChunks;
 	m_iThirdVertLine = m_iSecondVertLine + m_iDistanceBetweenHexChunks * (m_dwCapacity / (DWORD)m_enShowMode)
@@ -2111,7 +2179,7 @@ ULONGLONG CHexCtrl::HitTest(const POINT* pPoint)
 	{
 		//Additional space between halves. Only in BYTE's view mode.
 		int iBetweenBlocks;
-		if (m_enShowMode == EShowMode::ASBYTE && iX > m_iSizeFirstHalf)
+		if (m_enShowMode == EHexShowMode::ASBYTE && iX > m_iSizeFirstHalf)
 			iBetweenBlocks = m_iSpaceBetweenBlocks;
 		else
 			iBetweenBlocks = 0;
@@ -2249,7 +2317,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 			{
 				DWORD dwCount = dwModStart * 2 + dwModStart / (DWORD)m_enShowMode;
 				//Additional spaces between halves. Only in ASBYTE's view mode.
-				dwCount += (m_enShowMode == EShowMode::ASBYTE) ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
+				dwCount += (m_enShowMode == EHexShowMode::ASBYTE) ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
 				strToClipboard.insert(0, (size_t)dwCount, ' ');
 			}
 
@@ -2260,7 +2328,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 				strToClipboard += pszHexMap[(chByte & 0x0F)];
 
 				if (i < (m_pSelect->GetSelectionSize() - 1) && (dwTail - 1) != 0)
-					if (m_enShowMode == EShowMode::ASBYTE && dwTail == dwNextBlock)
+					if (m_enShowMode == EHexShowMode::ASBYTE && dwTail == dwNextBlock)
 						strToClipboard += "   "; //Additional spaces between halves. Only in ASBYTE view mode.
 					else if (((m_dwCapacity - dwTail + 1) % (DWORD)m_enShowMode) == 0) //Add space after hex full chunk, ShowAs_size depending.
 						strToClipboard += " ";
@@ -2418,39 +2486,6 @@ void CHexCtrl::UpdateInfoText()
 				m_ullDataSize, m_ullDataSize));
 	}
 	RedrawWindow();
-}
-
-void CHexCtrl::SetShowMode(EShowMode enShowMode)
-{
-	m_enShowMode = enShowMode;
-
-	//Getting the "Show data as..." menu.
-	auto pMenu = m_menuMain.GetSubMenu(0)->GetSubMenu(2); //Separators are also count as menu!!!
-	if (!pMenu)
-		return;
-
-	//Unchecking all menus and checking only the current needed.
-	for (int i = 0; i < pMenu->GetMenuItemCount(); i++)
-		pMenu->CheckMenuItem(i, MF_UNCHECKED | MF_BYPOSITION);
-
-	int iId { };
-	switch (enShowMode)
-	{
-	case EShowMode::ASBYTE:
-		iId = 0;
-		break;
-	case EShowMode::ASWORD:
-		iId = 1;
-		break;
-	case EShowMode::ASDWORD:
-		iId = 2;
-		break;
-	case EShowMode::ASQWORD:
-		iId = 3;
-		break;
-	}
-	pMenu->CheckMenuItem(iId, MF_CHECKED | MF_BYPOSITION);
-	SetCapacity(m_dwCapacity); //To recalc current representation.
 }
 
 void CHexCtrl::ParentNotify(const HEXNOTIFYSTRUCT& hns) const
@@ -2842,7 +2877,7 @@ void CHexCtrl::FillWithZeros()
 	HEXMODIFYSTRUCT hms;
 	hms.vecSpan = m_pSelect->GetVector();
 	hms.ullDataSize = 1;
-	hms.enMode = EHexModifyMode::MODIFY_REPEAT;
+	hms.enCreateMode = EHexModifyMode::MODIFY_REPEAT;
 	unsigned char chZero { 0 };
 	hms.pData = &chZero;
 	ModifyData(hms);
@@ -2870,7 +2905,7 @@ void CHexCtrl::WstrCapacityFill()
 			m_wstrCapacity += L" ";
 
 		//Additional space between hex halves.
-		if (m_enShowMode == EShowMode::ASBYTE && iter == (m_dwCapacityBlockSize - 1))
+		if (m_enShowMode == EHexShowMode::ASBYTE && iter == (m_dwCapacityBlockSize - 1))
 			m_wstrCapacity += L"  ";
 	}
 }

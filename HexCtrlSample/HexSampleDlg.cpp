@@ -35,6 +35,13 @@ BOOL CHexSampleDlg::OnInitDialog()
 
 	m_myHex->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
 	m_myHex->SetWheelRatio(0.5);
+	//Classical approach:
+	//HEXCREATESTRUCT hcs;
+	//hcs.hwndParent = m_hWnd;
+	//hcs.uID = IDC_MY_HEX;
+	//hcs.enCreateMode = EHexCreateMode::CREATE_CUSTOMCTRL;
+	//hcs.enShowMode = EHexShowMode::ASDWORD;
+	//m_myHex->Create(hcs);
 
 	m_hds.pData = m_data;
 	m_hds.ullDataSize = sizeof(m_data);

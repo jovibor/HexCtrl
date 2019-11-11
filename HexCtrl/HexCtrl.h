@@ -36,7 +36,7 @@ namespace HEXCTRL
 
 	/********************************************************************************************
 	* EHexOperMode - Enum of the data operation mode, used in HEXMODIFYSTRUCT,                  *
-	* when HEXMODIFYSTRUCT::enMode is MODIFY_OPERATION.                                         *
+	* when HEXMODIFYSTRUCT::enCreateMode is MODIFY_OPERATION.                                         *
 	********************************************************************************************/
 	enum class EHexOperMode : WORD
 	{
@@ -45,7 +45,7 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* HEXSPANSTRUCT - Data offset and size. Used in some data/size related routines             *
+	* HEXSPANSTRUCT - Data offset and size, used in some data/size related routines             *
 	********************************************************************************************/
 	struct HEXSPANSTRUCT
 	{
@@ -58,8 +58,8 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXMODIFYSTRUCT
 	{
-		EHexModifyMode enMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
-		EHexOperMode   enOperMode { };  //Operation mode enum. Used only if enMode==MODIFY_OPERATION.
+		EHexModifyMode enCreateMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
+		EHexOperMode   enOperMode { };  //Operation mode enum. Used only if enCreateMode==MODIFY_OPERATION.
 		const BYTE*    pData { };       //Pointer to a data to be set.
 		ULONGLONG      ullDataSize { }; //Size of the data pData is pointing to.
 		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
@@ -110,12 +110,21 @@ namespace HEXCTRL
 		CREATE_CHILD, CREATE_POPUP, CREATE_CUSTOMCTRL
 	};
 
+	/***************************************************************************************
+	* EHexShowMode - current data mode representation.                                        *
+	***************************************************************************************/
+	enum class EHexShowMode : DWORD
+	{
+		ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
+	};
+
 	/********************************************************************************************
 	* HEXCREATESTRUCT - for IHexCtrl::Create method.                                            *
 	********************************************************************************************/
 	struct HEXCREATESTRUCT
 	{
-		EHexCreateMode  enMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
+		EHexCreateMode  enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
+		EHexShowMode    enShowMode { EHexShowMode::ASBYTE };           //Data representation mode.
 		HEXCOLORSTRUCT  stColor { };          //All the control's colors.
 		HWND            hwndParent { };       //Parent window pointer.
 		const LOGFONTW* pLogFont { };         //Font to be used, nullptr for default. This font has to be monospaced.
@@ -142,7 +151,7 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXDATASTRUCT
 	{
-		EHexDataMode enMode { EHexDataMode::DATA_MEMORY };  //Working data mode.
+		EHexDataMode enCreateMode { EHexDataMode::DATA_MEMORY };  //Working data mode.
 		ULONGLONG    ullDataSize { };                       //Size of the data to display, in bytes.
 		ULONGLONG    ullSelectionStart { };                 //Select this initial position. Works only if ullSelectionSize > 0.
 		ULONGLONG    ullSelectionSize { };                  //How many bytes to set as selected.
@@ -176,9 +185,12 @@ namespace HEXCTRL
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;   //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) = 0; //Сreates custom dialog control.
 		virtual void Destroy() = 0;                            //Deleter.
+		virtual DWORD GetCapacity()const = 0;                  //Current capacity.
+		virtual auto GetColor()const->HEXCOLORSTRUCT = 0;      //Current colors.
 		virtual long GetFontSize()const = 0;                   //Current font size.
 		virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
 		virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> & = 0; //Gets current selection.
+		virtual auto GetShowMode()const->EHexShowMode = 0;     //Retrieves current show mode.
 		virtual HWND GetWindowHandle()const = 0;               //Retrieves control's window handle.
 		virtual void GoToOffset(ULONGLONG ullOffset, bool fSelect = false, ULONGLONG ullSize = 1) = 0; //Scrolls to given offset.
 		virtual bool IsCreated()const = 0;                     //Shows whether control is created or not.
@@ -191,6 +203,7 @@ namespace HEXCTRL
 		virtual void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/edit mode.
 		virtual void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize) = 0; //Sets current selection.
+		virtual void SetShowMode(EHexShowMode enMode) = 0;     //Sets current data show mode.
 		virtual void SetWheelRatio(double dbRatio) = 0;        //Sets the ratio for how much to scroll with mouse-wheel.
 	};
 
