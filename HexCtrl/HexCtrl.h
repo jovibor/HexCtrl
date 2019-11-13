@@ -36,7 +36,7 @@ namespace HEXCTRL
 
 	/********************************************************************************************
 	* EHexOperMode - Enum of the data operation mode, used in HEXMODIFYSTRUCT,                  *
-	* when HEXMODIFYSTRUCT::enCreateMode is MODIFY_OPERATION.                                         *
+	* when HEXMODIFYSTRUCT::enModifyMode is MODIFY_OPERATION.                                   *
 	********************************************************************************************/
 	enum class EHexOperMode : WORD
 	{
@@ -58,10 +58,10 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXMODIFYSTRUCT
 	{
-		EHexModifyMode enCreateMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
-		EHexOperMode   enOperMode { };  //Operation mode enum. Used only if enCreateMode==MODIFY_OPERATION.
-		const BYTE*    pData { };       //Pointer to a data to be set.
-		ULONGLONG      ullDataSize { }; //Size of the data pData is pointing to.
+		EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
+		EHexOperMode   enOperMode { };          //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
+		const BYTE*    pData { };               //Pointer to a data to be set.
+		ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
 		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
 	};
 
@@ -110,9 +110,9 @@ namespace HEXCTRL
 		CREATE_CHILD, CREATE_POPUP, CREATE_CUSTOMCTRL
 	};
 
-	/***************************************************************************************
-	* EHexShowMode - current data mode representation.                                        *
-	***************************************************************************************/
+	/********************************************************************************************
+	* EHexShowMode - current data mode representation.                                          *
+	********************************************************************************************/
 	enum class EHexShowMode : DWORD
 	{
 		ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
@@ -151,7 +151,7 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXDATASTRUCT
 	{
-		EHexDataMode enCreateMode { EHexDataMode::DATA_MEMORY };  //Working data mode.
+		EHexDataMode enDataMode { EHexDataMode::DATA_MEMORY }; //Working data mode.
 		ULONGLONG    ullDataSize { };                       //Size of the data to display, in bytes.
 		ULONGLONG    ullSelectionStart { };                 //Select this initial position. Works only if ullSelectionSize > 0.
 		ULONGLONG    ullSelectionSize { };                  //How many bytes to set as selected.

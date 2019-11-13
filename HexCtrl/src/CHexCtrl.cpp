@@ -19,6 +19,7 @@
 #include "strsafe.h"
 #include <cassert>
 #include <algorithm>
+#include <numeric>
 #pragma comment(lib, "Dwmapi.lib")
 
 using namespace HEXCTRL;
@@ -441,12 +442,12 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 		m_hwndMsg = hds.hwndMsg;
 
 	//Virtual mode is possible only when there is a MSG window, a data requests will be sent to.
-	if (hds.enCreateMode == EHexDataMode::DATA_MSG && !GetMsgWindow())
+	if (hds.enDataMode == EHexDataMode::DATA_MSG && !GetMsgWindow())
 	{
 		MessageBoxW(L"HexCtrl EHexDataMode::DATA_MSG mode requires HEXDATASTRUCT::hwndMsg to be set.", L"Error", MB_ICONWARNING);
 		return;
 	}
-	else if (hds.enCreateMode == EHexDataMode::DATA_VIRTUAL && !hds.pHexVirtual)
+	else if (hds.enDataMode == EHexDataMode::DATA_VIRTUAL && !hds.pHexVirtual)
 	{
 		MessageBoxW(L"HexCtrl EHexDataMode::DATA_VIRTUAL mode requires HEXDATASTRUCT::pHexVirtual to be set.", L"Error", MB_ICONWARNING);
 		return;
@@ -457,7 +458,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_fDataSet = true;
 	m_pData = hds.pData;
 	m_ullDataSize = hds.ullDataSize;
-	m_enCreateMode = hds.enCreateMode;
+	m_enDataMode = hds.enDataMode;
 	m_fMutable = hds.fMutable;
 	m_dwOffsetDigits = hds.ullDataSize <= 0xffffffffUL ? 8 :
 		(hds.ullDataSize <= 0xffffffffffUL ? 10 :
@@ -771,7 +772,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	switch (uId)
 	{
 	case IDM_HEXCTRL_MAIN_SEARCH:
-		if (m_enCreateMode == EHexDataMode::DATA_MEMORY)
+		if (m_enDataMode == EHexDataMode::DATA_MEMORY)
 			m_pDlgSearch->ShowWindow(SW_SHOW);
 		else
 			MessageBoxW(pwszErrVirtual, L"Error", MB_ICONEXCLAMATION);
@@ -1763,7 +1764,7 @@ void CHexCtrl::OnNcPaint()
 
 void CHexCtrl::OnDestroy()
 {
-	if (m_enCreateMode == EHexDataMode::DATA_MSG)
+	if (m_enDataMode == EHexDataMode::DATA_MSG)
 		if (GetMsgWindow() != GetParent()->GetSafeHwnd()) //To avoid sending notify message twice to the same window.
 			MsgWindowNotify(HEXCTRL_MSG_DESTROY);
 
@@ -1792,7 +1793,7 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)const
 		return 0x00;
 
 	//If it's virtual data control we aquire next byte_to_print from m_hwndMsg window.
-	switch (m_enCreateMode)
+	switch (m_enDataMode)
 	{
 	case EHexDataMode::DATA_MEMORY:
 	{
@@ -1830,7 +1831,7 @@ WORD CHexCtrl::GetWord(ULONGLONG ullIndex) const
 		return 0;
 
 	WORD wData;
-	if (m_enCreateMode == EHexDataMode::DATA_MEMORY)
+	if (m_enDataMode == EHexDataMode::DATA_MEMORY)
 		wData = *(PWORD)((DWORD_PTR)m_pData + ullIndex);
 	else
 		wData = ((WORD)GetByte(ullIndex)) | ((WORD)GetByte(ullIndex + 1) << 8);
@@ -1845,7 +1846,7 @@ DWORD CHexCtrl::GetDword(ULONGLONG ullIndex) const
 		return 0;
 
 	DWORD dwData;
-	if (m_enCreateMode == EHexDataMode::DATA_MEMORY)
+	if (m_enDataMode == EHexDataMode::DATA_MEMORY)
 		dwData = *(PDWORD)((DWORD_PTR)m_pData + ullIndex);
 	else
 		dwData = ((DWORD)GetByte(ullIndex)) | ((DWORD)GetByte(ullIndex + 1) << 8)
@@ -1861,7 +1862,7 @@ QWORD CHexCtrl::GetQword(ULONGLONG ullIndex) const
 		return 0;
 
 	QWORD ullData;
-	if (m_enCreateMode == EHexDataMode::DATA_MEMORY)
+	if (m_enDataMode == EHexDataMode::DATA_MEMORY)
 		ullData = *(PQWORD)((DWORD_PTR)m_pData + ullIndex);
 	else
 		ullData = ((QWORD)GetByte(ullIndex)) | ((QWORD)GetByte(ullIndex + 1) << 8)
@@ -1875,7 +1876,7 @@ QWORD CHexCtrl::GetQword(ULONGLONG ullIndex) const
 bool CHexCtrl::SetByte(ULONGLONG ullIndex, BYTE bData)
 {
 	//Data overflow check.
-	if (ullIndex >= m_ullDataSize || m_enCreateMode != EHexDataMode::DATA_MEMORY)
+	if (ullIndex >= m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
 	m_pData[ullIndex] = bData;
@@ -1886,7 +1887,7 @@ bool CHexCtrl::SetByte(ULONGLONG ullIndex, BYTE bData)
 bool CHexCtrl::SetWord(ULONGLONG ullIndex, WORD wData)
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(WORD)) > m_ullDataSize || m_enCreateMode != EHexDataMode::DATA_MEMORY)
+	if ((ullIndex + sizeof(WORD)) > m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
 	*(PWORD)((DWORD_PTR)m_pData + ullIndex) = wData;
@@ -1897,7 +1898,7 @@ bool CHexCtrl::SetWord(ULONGLONG ullIndex, WORD wData)
 bool CHexCtrl::SetDword(ULONGLONG ullIndex, DWORD dwData)
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(DWORD)) > m_ullDataSize || m_enCreateMode != EHexDataMode::DATA_MEMORY)
+	if ((ullIndex + sizeof(DWORD)) > m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
 	*(PDWORD)((DWORD_PTR)m_pData + ullIndex) = dwData;
@@ -1908,7 +1909,7 @@ bool CHexCtrl::SetDword(ULONGLONG ullIndex, DWORD dwData)
 bool CHexCtrl::SetQword(ULONGLONG ullIndex, QWORD qwData)
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(QWORD)) > m_ullDataSize || m_enCreateMode != EHexDataMode::DATA_MEMORY)
+	if ((ullIndex + sizeof(QWORD)) > m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
 	*(PQWORD)((DWORD_PTR)m_pData + ullIndex) = qwData;
@@ -1930,16 +1931,15 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 	m_deqRedo.clear(); //No Redo unless we make Undo.
 	SnapshotUndo(vecRef);
 
-	ULONGLONG ullTotalSize { };
-	for (auto& i : vecRef)
-		ullTotalSize += i.ullSize;
+	ULONGLONG ullTotalSize = std::accumulate(vecRef.begin(), vecRef.end(), ULONGLONG { },
+		[](ULONGLONG ullSumm, const HEXSPANSTRUCT& ref) {return ullSumm + ref.ullSize; });
 
-	switch (m_enCreateMode)
+	switch (m_enDataMode)
 	{
 	case EHexDataMode::DATA_MEMORY: //Modify only in non Virtual mode.
 	{
 		PBYTE pData = GetData();
-		switch (hms.enCreateMode)
+		switch (hms.enModifyMode)
 		{
 		case EHexModifyMode::MODIFY_DEFAULT:
 		{
@@ -2877,7 +2877,7 @@ void CHexCtrl::FillWithZeros()
 	HEXMODIFYSTRUCT hms;
 	hms.vecSpan = m_pSelect->GetVector();
 	hms.ullDataSize = 1;
-	hms.enCreateMode = EHexModifyMode::MODIFY_REPEAT;
+	hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 	unsigned char chZero { 0 };
 	hms.pData = &chZero;
 	ModifyData(hms);

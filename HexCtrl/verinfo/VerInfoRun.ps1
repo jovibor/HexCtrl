@@ -5,8 +5,7 @@ param(
     [string]$patchFile
 )
 
-$set_verinfoPath=[Environment]::GetEnvironmentVariable('SET_VERINFO','User')
-if($set_verinfoPath)
-{
-	&$set_verinfoPath -versionFile "$versionFile" -patchFile "$patchFile"
+$set_verinfoPath = [Environment]::GetEnvironmentVariable('SET_VERINFO', 'User')
+if ($set_verinfoPath) {
+    &$set_verinfoPath -versionFile "$versionFile" -patchFile "$patchFile"
 }

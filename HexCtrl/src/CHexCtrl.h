@@ -39,12 +39,12 @@ namespace HEXCTRL::INTERNAL
 		bool Create(const HEXCREATESTRUCT& hcs) override;   //Main initialization method.
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) override; //Сreates custom dialog control.
 		void Destroy() override;                            //Deleter.
-		DWORD GetCapacity()const;                           //Current capacity.
-		auto GetColor()const->HEXCOLORSTRUCT;               //Current colors.
+		DWORD GetCapacity()const override;                  //Current capacity.
+		auto GetColor()const->HEXCOLORSTRUCT override;      //Current colors.
 		long GetFontSize()const override;                   //Current font size.
 		HMENU GetMenuHandle()const override;                //Context menu handle.
 		auto GetSelection()const->std::vector<HEXSPANSTRUCT> & override; //Gets current selection.
-		auto GetShowMode()const->EHexShowMode;              //Retrieves current show mode.
+		auto GetShowMode()const->EHexShowMode override;     //Retrieves current show mode.
 		HWND GetWindowHandle()const override;               //Retrieves control's window handle.
 		void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize) override; //Scrolls to given offset.
 		bool IsCreated()const override;                     //Shows whether control is created or not.
@@ -57,7 +57,7 @@ namespace HEXCTRL::INTERNAL
 		void SetFontSize(UINT uiSize) override;             //Sets the control's font size.
 		void SetMutable(bool fEnable) override;             //Enable or disable edit mode.
 		void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize) override; //Sets current selection.
-		void SetShowMode(EHexShowMode enShowMode);          //Sets current data show mode.
+		void SetShowMode(EHexShowMode enShowMode) override; //Sets current data show mode.
 		void SetWheelRatio(double dbRatio) override;        //Sets the ratio for how much to scroll with mouse-wheel.
 	protected:
 		DECLARE_MESSAGE_MAP()
@@ -147,7 +147,7 @@ namespace HEXCTRL::INTERNAL
 		const int m_iFirstVertLine { 0 };     //First vertical line indent.
 		const size_t m_dwsUndoMax { 500 };    //How many Undo states to preserve.
 		HEXCOLORSTRUCT m_stColor;             //All control related colors.
-		EHexDataMode m_enCreateMode { EHexDataMode::DATA_MEMORY }; //Control's creation mode.
+		EHexDataMode m_enDataMode { EHexDataMode::DATA_MEMORY }; //Control's creation mode.
 		EHexShowMode m_enShowMode { };        //Current "Show data" mode.
 		PBYTE m_pData { };                    //Main data pointer. Modifiable in "Edit" mode.
 		IHexVirtual* m_pHexVirtual { };       //Data handler pointer for EHexDataMode::DATA_VIRTUAL

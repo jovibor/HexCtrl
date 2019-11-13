@@ -53,7 +53,7 @@ void CHexDlgFillWith::OnOK()
 	int iRadioType = GetCheckedRadioButton(IDC_HEXCTRL_FILLWITHDATA_RADIO_HEX, IDC_HEXCTRL_FILLWITHDATA_RADIO_UTF16);
 
 	HEXMODIFYSTRUCT hms;
-	hms.enCreateMode = EHexModifyMode::MODIFY_REPEAT;
+	hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 	hms.vecSpan = pHex->GetSelection();
 	if (hms.vecSpan.empty())
 		return;

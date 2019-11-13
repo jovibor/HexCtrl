@@ -1,6 +1,5 @@
 ## **Hex Control, C++/MFC**
 ![](docs/img/hexctrl_mainwnd.jpg)
-![](docs/img/hexctrl_operationswnd.jpg)
 ## Table of Contents
 * [Introduction](#introduction)
 * [Installation](#installation)
@@ -81,6 +80,8 @@ It is written and tested with **/std:c++17** in *Visual Studio 2019*, under the 
 * Modify data with **Filling** and many predefined **Operations** options
 * Cutomizable look and appearance
 * Written with **/std:c++17** standard conformance
+
+![](docs/img/hexctrl_operationswnd.jpg)
 
 ## [](#)Installation
 The **HexControl** can be used in two different ways:  
@@ -209,14 +210,14 @@ myHex->SetData(hds);
 Besides the standard classical mode, when **HexControl** just holds a pointer to some array of bytes in memory, it also has additional advanced modes it can be running in.  
 Theese modes can be quite useful for instance in cases where you need to display a very large amount of data that can't fit in memory all at once.
 
-These modes are ruled over through the [`enMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct).
+These modes are ruled over through the [`enDataMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct).
 
 ### [](#)Memory Data
 It's the default data mode the control works in.  
-The [`enMode`](#ehexdatamode) member of the [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_MEMORY`, and `pData` just points to bytes in memory.
+The [`enDataMode`](#ehexdatamode) member of the [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_MEMORY`, and `pData` just points to bytes in memory.
 
 ### [](#)Message Window
-If [`enMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_MSG`, the control works in so called **Message Window mode**.
+If [`enDataMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_MSG`, the control works in so called **Message Window mode**.
 
 What it means is that when control is about to display next byte, it will first ask for this byte from the [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) window, in the form of **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** Windows' message. This is pretty much the same as the standard **MFC List Control** works when created with `LVS_OWNERDATA` flag.  
 By default the [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) is equal to the control's parent window.
@@ -243,7 +244,7 @@ The first member of this structure is a standard Windows' **[NMHDR](https://docs
 The `ullIndex` member of the structure is an index of the byte to be displayed. And the `pData` is the pointer to an actual byte that you have to set in response.
 
 ### [](#)Virtual Handler
-If [`enMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_VIRTUAL` then all the data routine will be done through `HEXDATASTRUCT::pHexVirtual` pointer.
+If [`enDataMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_VIRTUAL` then all the data routine will be done through `HEXDATASTRUCT::pHexVirtual` pointer.
 
 This pointer is of `IHexVirtual` class type, which is a pure abstract base class.
 You have to derive your own class from it and implement all its public methods:
@@ -474,8 +475,8 @@ struct HEXCOLORSTRUCT
 Main struct to set a data to display in the control.
 ```cpp
 struct HEXDATASTRUCT
-{	
-    EHexDataMode enMode { EHexDataMode::DATA_MEMORY };  //Working data mode.
+{
+    EHexDataMode enDataMode { EHexDataMode::DATA_MEMORY }; //Working data mode.
     ULONGLONG    ullDataSize { };                       //Size of the data to display, in bytes.
     ULONGLONG    ullSelectionStart { };                 //Select this initial position. Works only if ullSelectionSize > 0.
     ULONGLONG    ullSelectionSize { };                  //How many bytes to set as selected.
@@ -484,9 +485,11 @@ struct HEXDATASTRUCT
     PBYTE        pData { };                             //Data pointer for DATA_MEMORY mode. Not used in other modes.
     bool         fMutable { false };                    //Is data mutable (editable) or read-only.
 };
+
 ```
 
 ### [](#)HEXSPANSTRUCT
+This struct is used mostly in selection and bookmarking routines. It shows offset and size of the data.
 ```cpp
 struct HEXSPANSTRUCT
 {
@@ -500,20 +503,20 @@ This structure is used internally in [`DATA_MEMORY`](#ehexdatamode) mode, as wel
 ```cpp
 struct HEXMODIFYSTRUCT
 {
-    EHexModifyMode enMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
-    EHexOperMode   enOperMode { };  //Operation mode enum. Used only if enMode==MODIFY_OPERATION.
-    const BYTE*    pData { };       //Pointer to a data to be set.
-    ULONGLONG      ullDataSize { }; //Size of the data pData is pointing to.
+    EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
+    EHexOperMode   enOperMode { };          //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
+    const BYTE*    pData { };               //Pointer to a data to be set.
+    ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
     std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
 };
 ```
-When `enMode` is set to [`EHexModifyMode::MODIFY_DEFAULT`](#ehexmodifymode), bytes from `pData` just replace corresponding data bytes as is.  
+When `enModifyMode` is set to [`EHexModifyMode::MODIFY_DEFAULT`](#ehexmodifymode), bytes from `pData` just replace corresponding data bytes as is.  
 
-If `enMode` is equal to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode) then block by block replacement takes place few times.
+If `enModifyMode` is equal to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode) then block by block replacement takes place few times.
 
-For example: if `SUM(vecSpan.ullSize)` = 9, `ullDataSize` = 3 and `enMode` is set to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode), bytes in memory at `vecSpan.ullOffset` position are `123456789`, and bytes pointed to by `pData` are `345`, then, after modification, bytes at `vecSpan.ullOffset` will be `345345345`.
+For example: if `SUM(vecSpan.ullSize)` = 9, `ullDataSize` = 3 and `enModifyMode` is set to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode), bytes in memory at `vecSpan.ullOffset` position are `123456789`, and bytes pointed to by `pData` are `345`, then, after modification, bytes at `vecSpan.ullOffset` will be `345345345`.
 
-If `enMode` is equal to [`EHexModifyMode::MODIFY_OPERATION`](#ehexmodifymode) then
+If `enModifyMode` is equal to [`EHexModifyMode::MODIFY_OPERATION`](#ehexmodifymode) then
 [`enOperMode`](#ehexopermode) comes into play, showing what kind of operation must be performed on data.
 
 ### [](#)HEXNOTIFYSTRUCT

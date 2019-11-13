@@ -96,7 +96,7 @@ void CHexDlgOperations::OnBnClickedOk()
 	int iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_BYTE, IDC_HEXCTRL_OPERATIONS_RADIO_QWORD);
 
 	HEXMODIFYSTRUCT hms;
-	hms.enCreateMode = EHexModifyMode::MODIFY_OPERATION;
+	hms.enModifyMode = EHexModifyMode::MODIFY_OPERATION;
 	hms.vecSpan = pHex->GetSelection();
 	if (hms.vecSpan.empty())
 		return;
