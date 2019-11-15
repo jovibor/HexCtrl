@@ -879,7 +879,7 @@ void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 	m_ullRMouseChunk = HitTest(&pp);
 
 	//Notifying parent that we are about to display context menu.
-	MsgWindowNotify(HEXCTRL_MSG_ONCONTEXTMENU);
+	MsgWindowNotify(HEXCTRL_MSG_CONTEXTMENU);
 	m_menuMain.GetSubMenu(0)->TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
 }
 

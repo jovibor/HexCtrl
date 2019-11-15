@@ -126,7 +126,7 @@ namespace HEXCTRL
 		EHexCreateMode  enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
 		EHexShowMode    enShowMode { EHexShowMode::ASBYTE };           //Data representation mode.
 		HEXCOLORSTRUCT  stColor { };          //All the control's colors.
-		HWND            hwndParent { };       //Parent window pointer.
+		HWND            hwndParent { };       //Parent window handle.
 		const LOGFONTW* pLogFont { };         //Font to be used, nullptr for default. This font has to be monospaced.
 		RECT            rect { };             //Initial rect. If null, the window is screen centered.
 		UINT            uID { };              //Control ID.
@@ -283,11 +283,11 @@ namespace HEXCTRL
 	********************************************************************************************/
 
 	constexpr auto HEXCTRL_MSG_DESTROY { 0xFFFFu };       //Indicates that HexCtrl is being destroyed.
-	constexpr auto HEXCTRL_MSG_GETDATA { 0x0100u };       //Used in Virtual mode to demand the next byte to display.
-	constexpr auto HEXCTRL_MSG_MODIFYDATA { 0x0101u };    //Indicates that the data in memory has changed, used in Edit mode.
+	constexpr auto HEXCTRL_MSG_GETDATA { 0x0100u };       //Used in DATA_MSG mode to acquire the next byte to display.
+	constexpr auto HEXCTRL_MSG_MODIFYDATA { 0x0101u };    //Indicates that the data is changed, used with the HEXMODIFYSTRUCT*.
 	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0102u };  //Selection has been made.
 	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0103u };     //User defined custom menu clicked.
-	constexpr auto HEXCTRL_MSG_ONCONTEXTMENU { 0x0104u }; //OnContextMenu triggered.
+	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0104u };   //OnContextMenu triggered.
 
 /*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #ifdef _UNICODE

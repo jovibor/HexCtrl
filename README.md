@@ -15,8 +15,6 @@
   * [Memory Data](#memory-data)
   * [Message Window](#message-window)
   * [Virtual Handler](#virtual-handler)
-* [OnDestroy](#ondestroy)
-* [Scroll Bars](#scroll-bars)
 * [Methods](#methods) <details><summary>_Expand_</summary>
   * [ClearData](#cleardata)
   * [Create](#create)
@@ -56,10 +54,19 @@
   * [EHexModifyMode](#ehexmodifymode)
   * [EHexOperMode](#ehexopermode)
   </details>
-* [Exported Functions](#exported-functions)
+* [Messages](#messages) <details><summary>_Expand_</summary>
+  * [HEXCTRL_MSG_DESTROY](#hexctrl_msg_destroy)
+  * [HEXCTRL_MSG_GETDATA](#hexctrl_msg_getdata)
+  * [HEXCTRL_MSG_MODIFYDATA](#modifydata)
+  * [HEXCTRL_MSG_SETSELECTION](#hexctrl_msg_setselection)
+  * [HEXCTRL_MSG_MENUCLICK](#hexctrl_msg_menuclick)
+  * [HEXCTRL_MSG_CONTEXTMENU](#hexctrl_msg_contextmenu)
+  </details>
+* [Exported Functions](#exported-functions) <details><summary>_Expand_</summary>
   * [CreateRawHexCtrl](#createrawhexctrl)
   * [GetHexCtrlInfo](#gethexctrlinfo)
   * [HEXCTRLINFO](#hexctrlinfo)
+  </details>
 * [Positioning and Sizing](#positioning-and-sizing)
 * [Appearance](#appearance)
 * [Licensing](#licensing)
@@ -259,17 +266,6 @@ public:
 ```
 Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
 
-## [](#)OnDestroy
-When **HexControl** window, floating or child, is being destroyed it sends **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** message to its parent window with `NMHDR::code` equal to `HEXCTRL_MSG_DESTROY`. 
-So, it basically indicates to its parent that the user clicked close button, or closed window in some other way.
-
-## [](#)Scroll Bars
-When I started to work with very big data files i immediately faced one very nasty inconvenience.
-The standard Windows scrollbars can only hold `signed integer` values, which is too little to scroll through many gigabytes of data. It could be some workarounds and crutches involved to overcome this, but frankly saying i'm not a big fan of this kind of approach.
-
-That's why **HexControl** uses its own scrollbars. They work with `unsigned long long` values, which is way bigger than standard `signed ints`. 
-These scrollbars behave as normal Windows scrollbars, and even reside in the non client area as the latter do.
-
 ## [](#)Methods
 The **HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
 
@@ -446,7 +442,6 @@ struct HEXCREATESTRUCT
     DWORD           dwExStyle { };        //Extended window styles, 0 for default.
     double          dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
 };
-
 ```
 
 ### [](#)HEXCOLORSTRUCT
@@ -468,7 +463,6 @@ struct HEXCOLORSTRUCT
     COLORREF clrBkCursor { RGB(0, 0, 255) };                       //Cursor background color.
     COLORREF clrBkCursorSelected { RGB(0, 0, 200) };               //Cursor background color in selection.
 };
-
 ```
 
 ### [](#)HEXDATASTRUCT
@@ -485,7 +479,6 @@ struct HEXDATASTRUCT
     PBYTE        pData { };                             //Data pointer for DATA_MEMORY mode. Not used in other modes.
     bool         fMutable { false };                    //Is data mutable (editable) or read-only.
 };
-
 ```
 
 ### [](#)HEXSPANSTRUCT
@@ -578,6 +571,27 @@ enum class EHexOperMode : WORD
     OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
 };
 ```
+
+## [](#)Messages
+In process of its work **HexControl** sends notification messages through **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** mechanism to indicate its states. Theese messages are sent either to [`HEXCREATESTRUCT::hwndParent`](#hexcreatestruct) or to [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) window, depending on whether the latter is set.
+
+### [](#)HEXCTRL_MSG_DESTROY
+Sent to indicate that **HexControl** window is about to be destroyed.
+
+### [](#)HEXCTRL_MSG_GETDATA
+Used in [`DATA_MSG`](#ehexdatamode) mode to acquire the next byte to display.
+
+### [](#)HEXCTRL_MSG_MODIFYDATA
+Sent to indicate that the data has changed, used together with the pointer to [`HEXMODIFYSTRUCT`](#hexmodifystruct).
+
+### [](#)HEXCTRL_MSG_SETSELECTION
+Sent when selection has been made.
+
+### [](#)HEXCTRL_MSG_MENUCLICK
+Sent when user defined custom menu has been clicked.
+
+### [](#)HEXCTRL_MSG_CONTEXTMENU
+Sent when context menu is about to be displayed.
 
 ## [](#)Exported Functions
 **HexControl** has few `"C"` interface functions which it exports when built as *.dll*.
