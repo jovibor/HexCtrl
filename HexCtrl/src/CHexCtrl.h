@@ -68,6 +68,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+		afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
 		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 		afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 		afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
@@ -104,6 +105,7 @@ namespace HEXCTRL::INTERNAL
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcWorkAreaHeight(int iClientHeight);
 		void RecalcScrollSizes(int iClientHeight = 0, int iClientWidth = 0);
+		void RecalcOffsetDigits();                             //How many digits in Offset (depends on Hex or Decimals).
 		[[nodiscard]] ULONGLONG GetTopLine()const;             //Returns current top line's number in view.
 		[[nodiscard]] ULONGLONG HitTest(const POINT*);         //Is any hex chunk withing given point?
 		void HexChunkPoint(ULONGLONG ullChunk, int& iCx, int& iCy)const; //Point of Hex chunk.
@@ -160,6 +162,7 @@ namespace HEXCTRL::INTERNAL
 		DWORD m_dwCapacity { 16 };            //How many bytes displayed in one row
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 		DWORD m_dwOffsetDigits { 8 };         //Amount of digits in "Offset", depends on data size set in SetData.
+		DWORD m_dwOffsetBytes { 4 };          //How many bytes posesses "Offset" number;
 		SIZE m_sizeLetter { 1, 1 };           //Current font's letter size (width, height).
 		CFont m_fontHexView;                  //Main Hex chunks font.
 		CFont m_fontBottomRect;               //Font for bottom Info rect.
@@ -192,5 +195,6 @@ namespace HEXCTRL::INTERNAL
 		bool m_fCursorTextArea { false };     //Whether cursor at Ascii or Hex chunks area.
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
+		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
 	};
 }

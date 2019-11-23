@@ -20,7 +20,7 @@ namespace HEXCTRL {
 		inline const wchar_t* const g_pwszHexMap { L"0123456789ABCDEF" };
 
 		//Converts dwSize bytes of ull to WCHAR string.
-		void UllToWchars(ULONGLONG ull, wchar_t* pwsz, size_t dwSize);
+		void UllToWchars(ULONGLONG ull, wchar_t* pwsz, size_t dwSize, bool fAsHex = true);
 
 		//Converts char* string to unsigned long number.
 		//Basically it's a strtoul() wrapper.
@@ -40,7 +40,7 @@ namespace HEXCTRL {
 #else
 		constexpr auto HEXCTRL_VERSION_WSTR = L"" STR(MAJOR_VERSION) "." STR(MINOR_VERSION) "." STR(MAINTENANCE_VERSION);
 #endif
-		constexpr auto HEXCTRL_VERSION_ULL = ULONGLONG(((ULONGLONG)MAJOR_VERSION << 48) 
+		constexpr auto HEXCTRL_VERSION_ULL = ULONGLONG(((ULONGLONG)MAJOR_VERSION << 48)
 			| ((ULONGLONG)MINOR_VERSION << 32) | ((ULONGLONG)MAINTENANCE_VERSION << 16) | (ULONGLONG)REVISION_VERSION);
 	}
 };

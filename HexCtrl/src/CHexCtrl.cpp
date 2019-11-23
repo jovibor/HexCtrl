@@ -88,6 +88,7 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_NCPAINT()
 	ON_WM_CHAR()
 	ON_WM_GETDLGCODE()
+	ON_WM_LBUTTONDBLCLK()
 END_MESSAGE_MAP()
 
 //CWinApp object vital for manual MFC, and for in-.dll work,
@@ -460,10 +461,6 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_ullDataSize = hds.ullDataSize;
 	m_enDataMode = hds.enDataMode;
 	m_fMutable = hds.fMutable;
-	m_dwOffsetDigits = hds.ullDataSize <= 0xffffffffUL ? 8 :
-		(hds.ullDataSize <= 0xffffffffffUL ? 10 :
-		(hds.ullDataSize <= 0xffffffffffffUL ? 12 :
-			(hds.ullDataSize <= 0xffffffffffffffUL ? 14 : 16)));
 
 	RecalcAll();
 
@@ -758,6 +755,15 @@ void CHexCtrl::OnLButtonUp(UINT nFlags, CPoint point)
 	m_pScrollH->OnLButtonUp(nFlags, point);
 
 	CWnd::OnLButtonUp(nFlags, point);
+}
+
+void CHexCtrl::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
+{
+	if (point.x < m_iSecondVertLine)
+	{
+		m_fOffsetAsHex = !m_fOffsetAsHex;
+		RecalcAll();
+	}
 }
 
 void CHexCtrl::OnMButtonDown(UINT /*nFlags*/, CPoint /*point*/)
@@ -1452,8 +1458,8 @@ void CHexCtrl::OnPaint()
 		}
 
 		//Left column offset printing (00000001...0000FFFF).
-		wchar_t pwszOffset[16];
-		UllToWchars(iterLines * m_dwCapacity, pwszOffset, (size_t)m_dwOffsetDigits / 2);
+		wchar_t pwszOffset[32]; //To be enough for max as Hex and as Decimals.
+		UllToWchars(iterLines * m_dwCapacity, pwszOffset, (size_t)m_dwOffsetBytes, m_fOffsetAsHex);
 		pDC->SetTextColor(clrTextOffset);
 		pDC->SetBkColor(clrBkOffset);
 		ExtTextOutW(pDC->m_hDC, m_iFirstVertLine + m_sizeLetter.cx - iScrollH, m_iStartWorkAreaY + (m_sizeLetter.cy * iLine),
@@ -2115,6 +2121,7 @@ void CHexCtrl::RecalcAll()
 	m_sizeLetter.cy = tm.tmHeight + tm.tmExternalLeading;
 	::ReleaseDC(m_hWnd, hDC);
 
+	RecalcOffsetDigits();
 	m_iSecondVertLine = m_iFirstVertLine + m_dwOffsetDigits * m_sizeLetter.cx + m_sizeLetter.cx * 2;
 	m_iSizeHexByte = m_sizeLetter.cx * 2;
 	m_iSpaceBetweenBlocks = (m_enShowMode == EHexShowMode::ASBYTE && m_dwCapacity > 1) ? m_sizeLetter.cx * 2 : 0;
@@ -2160,6 +2167,50 @@ void CHexCtrl::RecalcScrollSizes(int iClientHeight, int iClientWidth)
 	m_pScrollV->SetScrollSizes(m_sizeLetter.cy, ULONGLONG(m_iHeightWorkArea * m_dbWheelRatio),
 		(ULONGLONG)m_iStartWorkAreaY + m_iHeightBottomOffArea + m_sizeLetter.cy * (m_ullDataSize / m_dwCapacity + 2));
 	m_pScrollH->SetScrollSizes(m_sizeLetter.cx, iClientWidth, (ULONGLONG)m_iFourthVertLine + 1);
+}
+
+void CHexCtrl::RecalcOffsetDigits()
+{
+	if (m_ullDataSize <= 0xffffffffUL)
+	{
+		m_dwOffsetBytes = 4;
+		if (m_fOffsetAsHex)
+			m_dwOffsetDigits = 8;
+		else
+			m_dwOffsetDigits = 10;
+	}
+	else if (m_ullDataSize <= 0xffffffffffUL)
+	{
+		m_dwOffsetBytes = 5;
+		if (m_fOffsetAsHex)
+			m_dwOffsetDigits = 10;
+		else
+			m_dwOffsetDigits = 13;
+	}
+	else if (m_ullDataSize <= 0xffffffffffffUL)
+	{
+		m_dwOffsetBytes = 6;
+		if (m_fOffsetAsHex)
+			m_dwOffsetDigits = 12;
+		else
+			m_dwOffsetDigits = 15;
+	}
+	else if (m_ullDataSize <= 0xffffffffffffffUL)
+	{
+		m_dwOffsetBytes = 7;
+		if (m_fOffsetAsHex)
+			m_dwOffsetDigits = 14;
+		else
+			m_dwOffsetDigits = 17;
+	}
+	else
+	{
+		m_dwOffsetBytes = 8;
+		if (m_fOffsetAsHex)
+			m_dwOffsetDigits = 16;
+		else
+			m_dwOffsetDigits = 19;
+	}
 }
 
 ULONGLONG CHexCtrl::GetTopLine()const
