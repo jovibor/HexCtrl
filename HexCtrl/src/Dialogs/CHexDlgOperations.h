@@ -21,12 +21,12 @@ namespace HEXCTRL::INTERNAL {
 	protected:
 		virtual void DoDataExchange(CDataExchange* pDX);
 		virtual BOOL OnInitDialog();
+		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 		afx_msg void OnBnClickedOk();
 		DECLARE_MESSAGE_MAP()
 	private:
 		CHexCtrl* GetHexCtrl()const;
 	private:
 		CHexCtrl* m_pHexCtrl { };
-		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 	};
 }

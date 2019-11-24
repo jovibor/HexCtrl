@@ -21,8 +21,8 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG GetSelectionSize()const;
 		ULONGLONG GetSelectionStart()const;
 		ULONGLONG GetSelectionEnd()const;
-		ULONGLONG GetNextOffset(ULONGLONG ullIndex)const;
-		DWORD GetLineLength()const;
+		ULONGLONG GetOffsetByIndex(ULONGLONG ullIndex)const;  //Retrieves selection offset by index [0...selectionSize)
+		DWORD GetLineLength()const;  //Length of the selected line. Used in block selection (with Alt).
 		std::vector<HEXSPANSTRUCT>& GetVector();
 		void ClearAll();
 	private:

@@ -150,20 +150,10 @@ void CHexDlgOperations::OnBnClickedOk()
 	LONGLONG ullData;
 	if (iEditId)
 	{
-		WCHAR pwszEditText[9];
-		GetDlgItemTextW(iEditId, pwszEditText, 8);
-		std::wstring wstr;
-		STIF_FLAGS stifFlag = STIF_DEFAULT;
+		WCHAR pwszEditText[16];
+		GetDlgItemTextW(iEditId, pwszEditText, 16);
 
-		CButton* pCheck = (CButton*)GetDlgItem(IDC_HEXCTRL_OPERATIONS_CHECK_HEXDECIMAL);
-		if (pCheck && pCheck->GetCheck())
-		{
-			stifFlag = STIF_SUPPORT_HEX;
-			wstr = L"0x";
-		}
-		wstr += pwszEditText;
-
-		if (!StrToInt64ExW(wstr.data(), stifFlag, &ullData))
+		if (!StrToInt64ExW(pwszEditText, STIF_SUPPORT_HEX, &ullData))
 		{
 			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 			return;

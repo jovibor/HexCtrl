@@ -125,8 +125,7 @@ BEGIN
     LTEXT           "bits",IDC_STATIC,92,93,12,8
     LTEXT           "bits",IDC_STATIC,92,106,12,8
     GROUPBOX        "Operations:",IDC_STATIC,9,6,236,128
-    CONTROL         "Use Hex values as numbers:",IDC_HEXCTRL_OPERATIONS_CHECK_HEXDECIMAL,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,18,107,10
+    LTEXT           "To use Hex values prefix if with 0x.",IDC_STATIC,17,18,131,8
 END
 
 IDD_HEXCTRL_FILLWITHDATA DIALOGEX 0, 0, 269, 96
@@ -296,6 +295,8 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "Copy as Ascii",               IDM_HEXCTRL_CLIPBOARD_COPYASCII
             MENUITEM "Copy as Base64",              IDM_HEXCTRL_CLIPBOARD_COPYBASE64
+            MENUITEM "Copy as ""C"" Array",         IDM_HEXCTRL_CLIPBOARD_COPYCARRAY
+            MENUITEM "Copy as Grep Hex",            IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX
             MENUITEM SEPARATOR
             MENUITEM "Paste as Hex",                IDM_HEXCTRL_CLIPBOARD_PASTEHEX
             MENUITEM "Paste as Ascii",              IDM_HEXCTRL_CLIPBOARD_PASTEASCII

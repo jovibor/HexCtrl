@@ -53,7 +53,7 @@ ULONGLONG CHexSelect::GetSelectionEnd()const
 	return m_vecSelect.back().ullOffset + m_vecSelect.back().ullSize;
 }
 
-ULONGLONG CHexSelect::GetNextOffset(ULONGLONG ullIndex)const
+ULONGLONG CHexSelect::GetOffsetByIndex(ULONGLONG ullIndex)const
 {
 	ULONGLONG ullOffset { 0xFFFFFFFFFFFFFFFFull };
 
