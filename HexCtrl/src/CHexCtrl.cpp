@@ -90,6 +90,7 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_CHAR()
 	ON_WM_GETDLGCODE()
 	ON_WM_LBUTTONDBLCLK()
+	ON_WM_SYSKEYDOWN()
 END_MESSAGE_MAP()
 
 //CWinApp object vital for manual MFC, and for in-.dll work,
@@ -149,6 +150,7 @@ CHexCtrl::CHexCtrl()
 	m_pDlgOpers->Create(IDD_HEXCTRL_OPERATIONS, this);
 	m_pDlgFillWith->Create(IDD_HEXCTRL_FILLWITHDATA, this);
 	m_pBookmarks->Attach(this);
+	m_pSelect->Attach(this);
 }
 
 CHexCtrl::~CHexCtrl()
@@ -854,7 +856,15 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	case IDM_HEXCTRL_MODIFY_FILLWITHDATA:
 		m_pDlgFillWith->ShowWindow(SW_SHOW);
 		break;
-	case IDM_HEXCTRL_MAIN_SELECTALL:
+	case IDM_HEXCTRL_SELECTION_MARKSTART:
+		m_pSelect->SetSelectionStart(m_ullRMouseChunk != 0xFFFFFFFFFFFFFFFFull ? m_ullRMouseChunk : GetCursorPos());
+		m_ullRMouseChunk = 0xFFFFFFFFFFFFFFFFull;
+		break;
+	case IDM_HEXCTRL_SELECTION_MARKEND:
+		m_pSelect->SetSelectionEnd(m_ullRMouseChunk != 0xFFFFFFFFFFFFFFFFull ? m_ullRMouseChunk : GetCursorPos());
+		m_ullRMouseChunk = 0xFFFFFFFFFFFFFFFFull;
+		break;
+	case IDM_HEXCTRL_SELECTION_SELECTALL:
 		SelectAll();
 		break;
 	case IDM_HEXCTRL_APPEARANCE_FONTINCREASE:
@@ -915,7 +925,11 @@ void CHexCtrl::OnInitMenuPopup(CMenu* pPopupMenu, UINT /*nIndex*/, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, (m_fMutable ? uStatus : MF_GRAYED) | MF_BYCOMMAND);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLWITHDATA, (m_fMutable ? uStatus : MF_GRAYED) | MF_BYCOMMAND);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_OPERATIONS, (m_fMutable ? uStatus : MF_GRAYED) | MF_BYCOMMAND);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MAIN_SELECTALL, (fDataSet ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+		
+		//Selection
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_MARKSTART, (fDataSet ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_MARKEND, (fDataSet ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_SELECTALL, (fDataSet ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 
 		//Bookmarks
 		bool fBookmarks = m_pBookmarks->HasBookmarks();
@@ -990,6 +1004,22 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	}
 }
 
+void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
+{
+	WPARAM wParam { };
+	switch (nChar)
+	{
+	case '1':
+		wParam = IDM_HEXCTRL_SELECTION_MARKSTART;
+		break;
+	case '2':
+		wParam = IDM_HEXCTRL_SELECTION_MARKEND;
+		break;
+	}
+	if (wParam)
+		SendMessageW(WM_COMMAND, wParam, 0);
+}
+
 void CHexCtrl::OnKeyDownCtrl(UINT nChar)
 {
 	//TranslateAccelerator doesn't work within .dll without client's code modification.
@@ -1017,7 +1047,7 @@ void CHexCtrl::OnKeyDownCtrl(UINT nChar)
 		wParam = IDM_HEXCTRL_MODIFY_OPERATIONS;
 		break;
 	case 'A':
-		wParam = IDM_HEXCTRL_MAIN_SELECTALL;
+		wParam = IDM_HEXCTRL_SELECTION_SELECTALL;
 		break;
 	case 'Z':
 		wParam = IDM_HEXCTRL_MAIN_UNDO;

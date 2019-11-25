@@ -75,12 +75,13 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 		afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 		afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+		afx_msg void OnSysKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+		void OnKeyDownCtrl(UINT nChar);  //Key pressed with the Ctrl.
 		void OnKeyDownShift(UINT nChar); //Key pressed with the Shift.
 		void OnKeyDownShiftLeft();       //Left Key pressed with the Shift.
 		void OnKeyDownShiftRight();      //Right Key pressed with the Shift.
 		void OnKeyDownShiftUp();         //Up Key pressed with the Shift.
 		void OnKeyDownShiftDown();       //Down Key pressed with the Shift.
-		void OnKeyDownCtrl(UINT nChar);  //Key pressed with the Ctrl.
 		afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
 		afx_msg UINT OnGetDlgCode();     //To properly work in dialogs.
 		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
@@ -196,5 +197,5 @@ namespace HEXCTRL::INTERNAL
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
 		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
-	};
+};
 }

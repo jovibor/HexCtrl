@@ -125,7 +125,7 @@ BEGIN
     LTEXT           "bits",IDC_STATIC,92,93,12,8
     LTEXT           "bits",IDC_STATIC,92,106,12,8
     GROUPBOX        "Operations:",IDC_STATIC,9,6,236,128
-    LTEXT           "To use Hex values prefix if with 0x.",IDC_STATIC,17,18,131,8
+    LTEXT           "To use Hex values use 0x prefix.",IDC_STATIC,17,18,108,8
 END
 
 IDD_HEXCTRL_FILLWITHDATA DIALOGEX 0, 0, 269, 96
@@ -312,7 +312,13 @@ BEGIN
             MENUITEM "Fill with data...",           IDM_HEXCTRL_MODIFY_FILLWITHDATA
         END
         MENUITEM SEPARATOR
-        MENUITEM "Select all\tCtrl+A",          IDM_HEXCTRL_MAIN_SELECTALL
+        POPUP "Selection"
+        BEGIN
+            MENUITEM "Mark Selection Start\tAlt+1", IDM_HEXCTRL_SELECTION_MARKSTART
+            MENUITEM "Mark Selection End\tAlt+2",   IDM_HEXCTRL_SELECTION_MARKEND
+            MENUITEM SEPARATOR
+            MENUITEM "Select all\tCtrl+A",          IDM_HEXCTRL_SELECTION_SELECTALL
+        END
         MENUITEM SEPARATOR
         POPUP "Appearance"
         BEGIN
