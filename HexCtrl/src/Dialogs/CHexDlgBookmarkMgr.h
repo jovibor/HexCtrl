@@ -8,24 +8,32 @@
 ****************************************************************************************/
 #pragma once
 #include <afxcontrolbars.h>  //Standard MFC's controls header.
-#include "../CHexCtrl.h"
+#include "../CHexBookmarks.h"
+#include "CHexDlgBookmarkProps.h"
 #include "../../res/HexCtrlRes.h"
 
-namespace HEXCTRL::INTERNAL {
-	class CHexDlgFillWith final : public CDialogEx
+namespace HEXCTRL::INTERNAL
+{
+	class CHexDlgBookmarkMgr final : public CDialogEx
 	{
 	public:
-		explicit CHexDlgFillWith() : CDialogEx(IDD_HEXCTRL_FILLWITHDATA) {}
-		virtual ~CHexDlgFillWith() {}
-		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
+		explicit CHexDlgBookmarkMgr() : CDialogEx(IDD_HEXCTRL_BOOKMARKMGR) {}
+		virtual ~CHexDlgBookmarkMgr() {}
+		BOOL Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks);
 	protected:
 		virtual void DoDataExchange(CDataExchange* pDX);
 		virtual BOOL OnInitDialog();
+		virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 		DECLARE_MESSAGE_MAP()
 	private:
-		CHexCtrl* GetHexCtrl()const;
+		void UpdateList();
 	private:
-		CHexCtrl* m_pHexCtrl { };
-		virtual void OnOK();
+		CMFCListCtrl m_List;
+		CHexBookmarks* m_pBookmarks { };
+		CMenu m_stMenuList;
+		DWORD m_dwCurrBkmId { }; //Currently selected bookmark Id.
+		int m_iCurrListId { };   //Currently selected list Id.
 	};
 }

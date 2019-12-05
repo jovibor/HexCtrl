@@ -9,6 +9,7 @@
 #pragma once
 #include <memory>    //std::shared/unique_ptr and related.
 #include <vector>
+#include <string>
 #include <Windows.h> //Standard Windows header.
 
 /**********************************************************************
@@ -45,12 +46,24 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* HEXSPANSTRUCT - Data offset and size, used in some data/size related routines             *
+	* HEXSPANSTRUCT - Data offset and size, used in some data/size related routines.            *
 	********************************************************************************************/
 	struct HEXSPANSTRUCT
 	{
 		ULONGLONG ullOffset { };
 		ULONGLONG ullSize { };
+	};
+
+	/********************************************************************************************
+	* HEXBOOKMARKSTRUCT - Bookmarks.                                                            *
+	********************************************************************************************/
+	struct HEXBOOKMARKSTRUCT
+	{
+		std::vector<HEXSPANSTRUCT> vecSpan { };                //Vector of offsets and sizes.
+		std::wstring               wstrDesc { };               //Description.
+		COLORREF                   clrBk { RGB(240, 240, 0) }; //Bk color.
+		COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.
+		DWORD                      dwId { };                   //Bookmark id. Must be 0. Assigned internally by framework.
 	};
 
 	/********************************************************************************************
@@ -89,17 +102,17 @@ namespace HEXCTRL
 	{
 		COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };         //Hex chunks text color.
 		COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };       //Ascii text color.
-		COLORREF clrTextBookmark { RGB(0, 0, 0) };                     //Bookmark text color.
 		COLORREF clrTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected text color.
 		COLORREF clrTextCaption { RGB(0, 0, 180) };                    //Caption text color
 		COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };    //Text color of the bottom "Info" rect.
 		COLORREF clrTextCursor { RGB(255, 255, 255) };                 //Cursor text color.
+		COLORREF clrTextTooltip { GetSysColor(COLOR_INFOTEXT) };       //Tooltip text color.
 		COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                  //Background color.
-		COLORREF clrBkBookmark { RGB(240, 240, 0) };                   //Background color of the bookmarked Hex/Ascii.
 		COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };       //Background color of the selected Hex/Ascii.
 		COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };         //Background color of the bottom "Info" rect.
 		COLORREF clrBkCursor { RGB(0, 0, 255) };                       //Cursor background color.
 		COLORREF clrBkCursorSelected { RGB(0, 0, 200) };               //Cursor background color in selection.
+		COLORREF clrBkTooltip { GetSysColor(COLOR_INFOBK) };           //Tooltip text color.
 	};
 
 	/********************************************************************************************
@@ -181,6 +194,7 @@ namespace HEXCTRL
 	{
 	public:
 		virtual ~IHexCtrl() = default;
+		virtual DWORD AddBookmark(const HEXBOOKMARKSTRUCT& hbs) = 0; //Adds new bookmark.
 		virtual void ClearData() = 0;                          //Clears all data from HexCtrl's view (not touching data itself).
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;   //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) = 0; //Сreates custom dialog control.
@@ -196,12 +210,14 @@ namespace HEXCTRL
 		virtual bool IsCreated()const = 0;                     //Shows whether control is created or not.
 		virtual bool IsDataSet()const = 0;                     //Shows whether a data was set to the control or not.
 		virtual bool IsMutable()const = 0;                     //Is edit mode enabled or not.
+		virtual void RemoveBookmark(DWORD dwId) = 0;           //Removes bookmark by the given Id.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;  //Sets all the control's colors.
 		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
 		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0; //Sets the control's new font. This font has to be monospaced.
 		virtual void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/edit mode.
+		virtual void SetSectorSize(DWORD dwSize) = 0;          //Sets sector/page size to draw the line between.
 		virtual void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize) = 0; //Sets current selection.
 		virtual void SetShowMode(EHexShowMode enMode) = 0;     //Sets current data show mode.
 		virtual void SetWheelRatio(double dbRatio) = 0;        //Sets the ratio for how much to scroll with mouse-wheel.

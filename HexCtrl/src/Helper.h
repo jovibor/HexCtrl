@@ -2,7 +2,7 @@
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
 * This is a Hex Control for MFC applications.                                           *
 * Official git repository of the project: https://github.com/jovibor/HexCtrl/           *
-* This software is available under the "MIT License modified with The Commons Clause".  *
+* This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
@@ -26,6 +26,8 @@ namespace HEXCTRL {
 		//Basically it's a strtoul() wrapper.
 		//Returns false if conversion is imposible, true otherwise.
 		bool CharsToUl(const char* pcsz, unsigned long& ul);
+		//As above but for wchars*
+		bool WCharsToUll(const wchar_t* pwcsz, unsigned long long& ull);
 
 		//Wide string to Multibyte string convertion.
 		std::string WstrToStr(const std::wstring& wstr);

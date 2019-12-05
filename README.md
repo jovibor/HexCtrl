@@ -16,6 +16,7 @@
   * [Message Window](#message-window)
   * [Virtual Handler](#virtual-handler)
 * [Methods](#methods) <details><summary>_Expand_</summary>
+  * [AddBookmark](#addbookmark)
   * [ClearData](#cleardata)
   * [Create](#create)
   * [CreateDialogCtrl](#createdialogctrl)
@@ -31,12 +32,14 @@
   * [IsCreated](#iscreated)
   * [IsDataSet](#isdataset)
   * [IsMutable](#ismutable)
+  * [RemoveBookmark](#removebookmark)
   * [SetCapacity](#setcapacity)
   * [SetColor](#setcolor)
   * [SetData](#setdata)
   * [SetFont](#setfont)
   * [SetFontSize](#setfontsize)
   * [SetMutable](#setmutable)
+  * [SetSectorSize](#setsectorsize)
   * [SetSelection](#setselection)
   * [SetShowMode](#setshowmode)
   * [SetWheelRatio](#setwheelratio)
@@ -46,6 +49,7 @@
   * [HEXCOLORSTRUCT](#hexcolorstruct)
   * [HEXDATASTRUCT](#hexdatastruct)
   * [HEXSPANSTRUCT](#hexspanstruct)
+  * [HEXBOOKMARKSTRUCT](#hexbookmarkstruct)
   * [HEXMODIFYSTRUCT](#hexmodifystruct)
   * [HEXNOTIFYSTRUCT](#hexnotifystruct)
   * [EHexCreateMode](#ehexcreatemode)
@@ -80,11 +84,12 @@ It is written and tested with **/std:c++17** in *Visual Studio 2019*, under the 
 ### The main features of the **HexControl**:
 * View and edit data up to **16EB** (exabyte)
 * Work in three different data modes: **Memory**, **Message**, **Virtual**.
-* **Bookmarks** for any data parts
+* Fully featured **Bookmarks manager**
 * **Search and Replace...** for Hex, Ascii, UTF-16
 * Many options to **Copy/Paste** to/from clipboard
 * **Undo/Redo**
 * Modify data with **Filling** and many predefined **Operations** options
+* Ability to divide data into visual [Sectors](#setsectorsize)
 * Cutomizable look and appearance
 * Written with **/std:c++17** standard conformance
 
@@ -269,6 +274,22 @@ Then provide a pointer to created object of this derived class prior to call to 
 ## [](#)Methods
 The **HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
 
+### [](#)AddBookmark
+```cpp
+DWORD AddBookmark(const HEXBOOKMARKSTRUCT& hbs)
+```
+Adds new bookmark to the control. Uses [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) as an argument. Returns created bookmark's id.
+#### Example
+```cpp
+HEXBOOKMARKSTRUCT hbs;
+hbs.vecSpan.emplace_back(HEXSPANSTRUCT { 0x1, 10 });
+hbs.clrBk = RGB(0, 255, 0);
+hbs.clrText = RGB(255, 255, 255);
+hbs.wstrDesc = L"My first bookmark, with green bk and white text.";
+
+myHex.AddBookmark(hbs);
+```
+
 ### [](#)ClearData
 ```cpp
 void ClearData();
@@ -369,11 +390,17 @@ bool IsMutable()const;
 ```
 Shows whether **HexControl** is currently in edit mode or not.
 
+### [](#)RemoveBookmark
+```cpp
+void RemoveBookmark(DWORD dwId);
+```
+Removes bookmark by the given Id.
+
 ### [](#)SetCapacity
 ```cpp
 void SetCapacity(DWORD dwCapacity);
 ```
-Sets the **HexControl** capacity.
+Sets the **HexControl** current capacity.
 
 ### [](#)SetColor
 ```cpp
@@ -404,6 +431,13 @@ Sets a new font size to the **HexControl**.
 void SetMutable(bool fEnable);
 ```
 Enables or disables mutable mode. In mutable mode all the data can be modified.
+
+### [](#)SetSectorSize
+```cpp
+void SetSectorSize(DWORD dwSize);
+```
+Sets the size of the sector/page to draw the divider line between. This size should be multiple to the current [capacity](#setcapacity) size to take effect.  
+To remove it just set `dwSize` to 0.
 
 ### [](#)SetSelection
 ```cpp
@@ -451,17 +485,17 @@ struct HEXCOLORSTRUCT
 {
     COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };         //Hex chunks text color.
     COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };       //Ascii text color.
-    COLORREF clrTextBookmark { RGB(0, 0, 0) };                     //Bookmark text color.
     COLORREF clrTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected text color.
     COLORREF clrTextCaption { RGB(0, 0, 180) };                    //Caption text color
     COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };    //Text color of the bottom "Info" rect.
     COLORREF clrTextCursor { RGB(255, 255, 255) };                 //Cursor text color.
+    COLORREF clrTextTooltip { GetSysColor(COLOR_INFOTEXT) };       //Tooltip text color.
     COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                  //Background color.
-    COLORREF clrBkBookmark { RGB(240, 240, 0) };                   //Background color of the bookmarked Hex/Ascii.
     COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };       //Background color of the selected Hex/Ascii.
     COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };         //Background color of the bottom "Info" rect.
     COLORREF clrBkCursor { RGB(0, 0, 255) };                       //Cursor background color.
     COLORREF clrBkCursorSelected { RGB(0, 0, 200) };               //Cursor background color in selection.
+    COLORREF clrBkTooltip { GetSysColor(COLOR_INFOBK) };           //Tooltip text color.
 };
 ```
 
@@ -482,7 +516,7 @@ struct HEXDATASTRUCT
 ```
 
 ### [](#)HEXSPANSTRUCT
-This struct is used mostly in selection and bookmarking routines. It shows offset and size of the data.
+This struct is used mostly in selection and bookmarking routines. It holds offset and size of the data region.
 ```cpp
 struct HEXSPANSTRUCT
 {
@@ -490,6 +524,19 @@ struct HEXSPANSTRUCT
     ULONGLONG ullSize { };
 };
 ```
+
+### [](#)HEXBOOKMARKSTRUCT
+Structure for bookmarks, used in [`AddBookmark`](#addbookmark) method.  
+```cpp
+struct HEXBOOKMARKSTRUCT
+{
+    std::vector<HEXSPANSTRUCT> vecSpan { };                    //Vector of offsets and sizes.
+    std::wstring               wstrDesc { };                   //Description text.
+    COLORREF                   clrBk { RGB(240, 240, 0) };     //Bk color.
+    COLORREF                   clrText { RGB(250, 250, 250) }; //Text color.
+};
+```
+The member `vecSpan` being of a `std::vector` type is because a bookmark may have few non adjacent areas. For instance, when selection is made as a block, with <kbd>Alt</kbd> pressed.
 
 ### [](#)HEXMODIFYSTRUCT
 This structure is used internally in [`DATA_MEMORY`](#ehexdatamode) mode, as well as in the external notification routines, when working in [`DATA_MSG`](#ehexdatamode) and [`DATA_VIRTUAL`](#ehexdatamode) modes.

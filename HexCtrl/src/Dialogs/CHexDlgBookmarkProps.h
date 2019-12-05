@@ -8,24 +8,25 @@
 ****************************************************************************************/
 #pragma once
 #include <afxcontrolbars.h>  //Standard MFC's controls header.
-#include "../CHexCtrl.h"
+#include "../../HexCtrl.h"
 #include "../../res/HexCtrlRes.h"
 
-namespace HEXCTRL::INTERNAL {
-	class CHexDlgFillWith final : public CDialogEx
+namespace HEXCTRL::INTERNAL
+{
+	class CHexDlgBookmarkProps final : public CDialogEx
 	{
 	public:
-		explicit CHexDlgFillWith() : CDialogEx(IDD_HEXCTRL_FILLWITHDATA) {}
-		virtual ~CHexDlgFillWith() {}
-		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
+		CHexDlgBookmarkProps(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_BOOKMARKPROPS, pParent) {}
+		virtual ~CHexDlgBookmarkProps() {}
+		INT_PTR DoModal(HEXBOOKMARKSTRUCT* phbs);
 	protected:
 		virtual void DoDataExchange(CDataExchange* pDX);
 		virtual BOOL OnInitDialog();
+		virtual void OnOK();
 		DECLARE_MESSAGE_MAP()
 	private:
-		CHexCtrl* GetHexCtrl()const;
-	private:
-		CHexCtrl* m_pHexCtrl { };
-		virtual void OnOK();
+		HEXBOOKMARKSTRUCT* m_pHBS { };
+		ULONGLONG m_ullOffset { };  //Current offset to compare on exit.
+		ULONGLONG m_ullSize { };
 	};
 }

@@ -2,7 +2,7 @@
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
-* This software is available under the "MIT License modified with The Commons Clause".  *
+* This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
@@ -19,7 +19,7 @@ BOOL CHexDlgFillWith::Create(UINT nIDTemplate, CHexCtrl * pHexCtrl)
 {
 	m_pHexCtrl = pHexCtrl;
 
-	return CDialog::Create(nIDTemplate, m_pHexCtrl);
+	return CDialogEx::Create(nIDTemplate, m_pHexCtrl);
 }
 
 BOOL CHexDlgFillWith::OnInitDialog()

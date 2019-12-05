@@ -19,9 +19,10 @@ namespace HEXCTRL::INTERNAL
 	* Forward declarations.          *
 	*********************************/
 	class CHexDlgSearch;
-	class CHexBookmarks;
 	class CHexDlgOperations;
 	class CHexDlgFillWith;
+	class CHexDlgBookmarkMgr;
+	class CHexBookmarks;
 	class CHexSelect;
 	struct UNDOSTRUCT;
 	enum class EClipboard : DWORD;
@@ -35,6 +36,7 @@ namespace HEXCTRL::INTERNAL
 	public:
 		CHexCtrl();
 		~CHexCtrl();
+		DWORD AddBookmark(const HEXBOOKMARKSTRUCT& hbs)override; //Adds new bookmark.
 		void ClearData() override;                          //Clears all data from HexCtrl's view (not touching data itself).
 		bool Create(const HEXCREATESTRUCT& hcs) override;   //Main initialization method.
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) override; //Сreates custom dialog control.
@@ -50,12 +52,14 @@ namespace HEXCTRL::INTERNAL
 		bool IsCreated()const override;                     //Shows whether control is created or not.
 		bool IsDataSet()const override;                     //Shows whether a data was set to the control or not.
 		bool IsMutable()const override;                     //Is edit mode enabled or not.
+		void RemoveBookmark(DWORD dwId)override;            //Removes bookmark by the given Id.
 		void SetCapacity(DWORD dwCapacity) override;        //Sets the control's current capacity.
 		void SetColor(const HEXCOLORSTRUCT& clr) override;  //Sets all the control's colors.
 		void SetData(const HEXDATASTRUCT& hds) override;    //Main method for setting data to display (and edit).	
 		void SetFont(const LOGFONTW* pLogFontNew) override; //Sets the control's new font. This font has to be monospaced.
 		void SetFontSize(UINT uiSize) override;             //Sets the control's font size.
 		void SetMutable(bool fEnable) override;             //Enable or disable edit mode.
+		void SetSectorSize(DWORD dwSize) override;          //Sets sector/page size to draw the line between.
 		void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize) override; //Sets current selection.
 		void SetShowMode(EHexShowMode enShowMode) override; //Sets current data show mode.
 		void SetWheelRatio(double dbRatio) override;        //Sets the ratio for how much to scroll with mouse-wheel.
@@ -134,13 +138,16 @@ namespace HEXCTRL::INTERNAL
 		void SelectAll();                                         //Selects all current bytes.
 		void FillWithZeros();                                     //Fill selection with zeros.
 		void WstrCapacityFill();                                  //Fill m_wstrCapacity according to current m_dwCapacity.
+		[[nodiscard]] bool IsSectorVisible();                     //Returns m_fSectorsPrintable.
+		void UpdateSectorVisible();                               //Updates info about whether sectors lines printable atm or not.
 	private:
 		const DWORD m_dwCapacityMax { 128 };  //Maximum capacity.
 		const std::unique_ptr<CHexSelect> m_pSelect { std::make_unique<CHexSelect>() };                    //Selection class.
 		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };           //"Search..." dialog.
-		const std::unique_ptr<CHexBookmarks> m_pBookmarks { std::make_unique<CHexBookmarks>() };           //Bookmarks.
 		const std::unique_ptr<CHexDlgOperations> m_pDlgOpers { std::make_unique<CHexDlgOperations>() };    //"Operations" dialog.
 		const std::unique_ptr<CHexDlgFillWith> m_pDlgFillWith { std::make_unique<CHexDlgFillWith>() };     //"Fill with..." dialog.
+		const std::unique_ptr<CHexDlgBookmarkMgr> m_pDlgBookmarkMgr { std::make_unique<CHexDlgBookmarkMgr>() }; //Bookmark manager.
+		const std::unique_ptr<CHexBookmarks> m_pBookmarks { std::make_unique<CHexBookmarks>() };           //Bookmarks.
 		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll bar.
 		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll bar.
 		const int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
@@ -155,18 +162,22 @@ namespace HEXCTRL::INTERNAL
 		PBYTE m_pData { };                    //Main data pointer. Modifiable in "Edit" mode.
 		IHexVirtual* m_pHexVirtual { };       //Data handler pointer for EHexDataMode::DATA_VIRTUAL
 		HWND m_hwndMsg { };                   //Window handle the control messages will be sent to.
+		HWND m_hwndTt { };                    //Tooltip window.
+		TOOLINFO m_stToolInfo { };            //Tooltips struct.
+		HEXBOOKMARKSTRUCT* m_pBkmCurrTt { };  //Currently shown bookmark's tooltip;
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
-		ULONGLONG m_ullSelectionClick { };
+		ULONGLONG m_ullLMouseClick { 0xFFFFFFFFFFFFFFFFULL }; //Left mouse button clicked chunk.
+		ULONGLONG m_ullRMouseClick { 0xFFFFFFFFFFFFFFFFULL }; //Right mouse clicked chunk. Used in bookmarking.
 		ULONGLONG m_ullCursorPos { };         //Current cursor position.
-		ULONGLONG m_ullRMouseChunk { 0xFFFFFFFFFFFFFFFFull }; //Right mouse clicked chunk (hex or ascii) index. Used in bookmarking.
 		DWORD m_dwCapacity { 16 };            //How many bytes displayed in one row
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
-		DWORD m_dwOffsetDigits { 8 };         //Amount of digits in "Offset", depends on data size set in SetData.
-		DWORD m_dwOffsetBytes { 4 };          //How many bytes posesses "Offset" number;
+		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
+		DWORD m_dwOffsetBytes { };            //How many bytes "Offset" number posesses;
+		DWORD m_dwSectorSize { 0 };           //Size of a sector to print additional lines for.
 		SIZE m_sizeLetter { 1, 1 };           //Current font's letter size (width, height).
-		CFont m_fontHexView;                  //Main Hex chunks font.
-		CFont m_fontBottomRect;               //Font for bottom Info rect.
+		CFont m_fontMain;                     //Main Hex chunks font.
+		CFont m_fontInfo;                     //Font for bottom Info rect.
 		CMenu m_menuMain;                     //Main popup menu.
 		CPen m_penLines { PS_SOLID, 1, RGB(200, 200, 200) }; //Pen for lines.
 		long m_lFontSize { };                 //Current font size.
@@ -185,7 +196,7 @@ namespace HEXCTRL::INTERNAL
 		int m_iHeightWorkArea { };            //Height of the working area where all drawing occurs.
 		int m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
-		std::wstring m_wstrBottomText { };    //Info text (bottom rect).
+		std::wstring m_wstrInfo { };          //Info text (bottom rect).
 		std::deque<std::unique_ptr<std::vector<UNDOSTRUCT>>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<std::vector<UNDOSTRUCT>>> m_deqRedo; //Redo deque.
 		std::unordered_map<int, HBITMAP> m_umapHBITMAP;    //Images for the Menu.
@@ -197,5 +208,6 @@ namespace HEXCTRL::INTERNAL
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
 		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
-};
+		bool m_fSectorsPrintable { false };   //Print lines between sectors or not.
+	};
 }

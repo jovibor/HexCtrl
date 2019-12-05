@@ -1,8 +1,8 @@
 /****************************************************************************************
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
-* This is a Hex Control for MFC applications.                                           *
+* This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository of the project: https://github.com/jovibor/HexCtrl/           *
-* This software is available under the "MIT License modified with The Commons Clause".  *
+* This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/

@@ -2,7 +2,7 @@
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
-* This software is available under the "MIT License modified with The Commons Clause".  *
+* This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
@@ -17,15 +17,20 @@ namespace HEXCTRL::INTERNAL
 	public:
 		CHexBookmarks() {}
 		void Attach(CHexCtrl* pHex);
-		void Add(const std::vector<HEXSPANSTRUCT>& vecBookmarks);
+		DWORD Add(const HEXBOOKMARKSTRUCT& stBookmark); //Returns new bookmark's Id.
 		void Remove(ULONGLONG ullOffset);
+		void RemoveId(DWORD dwId);
 		void ClearAll();
+		auto GetVector()->std::deque<HEXBOOKMARKSTRUCT>&;
+		auto GetBookmark(DWORD dwId)->HEXBOOKMARKSTRUCT*;
+		void GoBookmark(DWORD nId);
 		void GoNext();
 		void GoPrev();
-		bool HitTest(ULONGLONG ullByte);
+		auto HitTest(ULONGLONG ullByte)->HEXBOOKMARKSTRUCT*;
 		bool HasBookmarks()const;
+		void Update(DWORD dwId, const HEXBOOKMARKSTRUCT& stBookmark);
 	private:
-		std::deque<std::vector<HEXSPANSTRUCT>> m_deqBookmarks;
+		std::deque<HEXBOOKMARKSTRUCT> m_deqBookmarks;
 		CHexCtrl* m_pHex { };
 		int m_iCurrent { };
 	};

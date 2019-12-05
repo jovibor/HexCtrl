@@ -63,6 +63,12 @@
     <ClInclude Include="src\CHexSelect.h">
       <Filter>HexCtrl\src</Filter>
     </ClInclude>
+    <ClInclude Include="src\Dialogs\CHexDlgBookmarkMgr.h">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Dialogs\CHexDlgBookmarkProps.h">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\HexCtrlSample\stdafx.cpp">
@@ -94,6 +100,12 @@
     </ClCompile>
     <ClCompile Include="src\CHexSelect.cpp">
       <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Dialogs\CHexDlgBookmarkMgr.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Dialogs\CHexDlgBookmarkProps.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

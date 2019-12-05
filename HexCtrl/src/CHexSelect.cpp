@@ -2,7 +2,7 @@
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
-* This software is available under the "MIT License modified with The Commons Clause".  *
+* This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
@@ -18,7 +18,7 @@ void CHexSelect::Attach(CHexCtrl* p)
 	m_pHex = p;
 }
 
-CHexCtrl* CHexSelect::GetHex()
+CHexCtrl* CHexSelect::GetHexCtrl()
 {
 	return m_pHex;
 }
@@ -50,7 +50,7 @@ void CHexSelect::SetSelectionStart(ULONGLONG ullOffset)
 		m_vecSelect.clear();
 		m_vecSelect.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
 
-		CHexCtrl* pHex = GetHex();
+		CHexCtrl* pHex = GetHexCtrl();
 		if (pHex)
 			pHex->UpdateInfoText();
 	}
@@ -67,7 +67,7 @@ void CHexSelect::SetSelectionEnd(ULONGLONG ullOffset)
 		m_vecSelect.clear();
 		m_vecSelect.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
 
-		CHexCtrl* pHex = GetHex();
+		CHexCtrl* pHex = GetHexCtrl();
 		if (pHex)
 			pHex->UpdateInfoText();
 	}

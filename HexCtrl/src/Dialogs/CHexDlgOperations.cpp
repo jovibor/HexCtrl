@@ -2,7 +2,7 @@
 * Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
-* This software is available under the "MIT License modified with The Commons Clause".  *
+* This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
@@ -20,7 +20,7 @@ BOOL CHexDlgOperations::Create(UINT nIDTemplate, CHexCtrl * pHexCtrl)
 {
 	m_pHexCtrl = pHexCtrl;
 
-	return CDialog::Create(nIDTemplate, m_pHexCtrl);
+	return CDialogEx::Create(nIDTemplate, m_pHexCtrl);
 }
 
 BOOL CHexDlgOperations::OnInitDialog()
@@ -147,24 +147,24 @@ void CHexDlgOperations::OnBnClickedOk()
 		break;
 	}
 
-	LONGLONG ullData;
+	LONGLONG llData;
 	if (iEditId)
 	{
 		WCHAR pwszEditText[16];
 		GetDlgItemTextW(iEditId, pwszEditText, 16);
 
-		if (!StrToInt64ExW(pwszEditText, STIF_SUPPORT_HEX, &ullData))
+		if (!StrToInt64ExW(pwszEditText, STIF_SUPPORT_HEX, &llData))
 		{
 			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 			return;
 		}
-		if (hms.enOperMode == EHexOperMode::OPER_DIVIDE && ullData == 0) //Division by zero check.
+		if (hms.enOperMode == EHexOperMode::OPER_DIVIDE && llData == 0) //Division by zero check.
 		{
 			MessageBoxW(L"Wrong number format!\r\nCan not divide by zero.", L"Format Error", MB_ICONERROR);
 			return;
 		}
 
-		hms.pData = (PBYTE)&ullData;
+		hms.pData = (PBYTE)&llData;
 	}
 
 	switch (iRadioDataSize)
