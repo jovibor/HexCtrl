@@ -218,6 +218,9 @@
     <ClInclude Include="src\Dialogs\CHexDlgOperations.h" />
     <ClInclude Include="src\Dialogs\CHexDlgSearch.h" />
     <ClInclude Include="src\Helper.h" />
+    <ClInclude Include="src\ListEx\ListEx.h" />
+    <ClInclude Include="src\ListEx\src\CListEx.h" />
+    <ClInclude Include="src\ListEx\src\CListExHdr.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\HexCtrlSample\stdafx.cpp">
@@ -237,6 +240,8 @@
     <ClCompile Include="src\Dialogs\CHexDlgOperations.cpp" />
     <ClCompile Include="src\Dialogs\CHexDlgSearch.cpp" />
     <ClCompile Include="src\Helper.cpp" />
+    <ClCompile Include="src\ListEx\src\CListEx.cpp" />
+    <ClCompile Include="src\ListEx\src\CListExHdr.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="res\HexCtrl.rc" />

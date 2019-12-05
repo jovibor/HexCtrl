@@ -25,6 +25,12 @@
     <Filter Include="HexCtrl\res">
       <UniqueIdentifier>{d62e219f-78a5-436a-8799-3095e9b8bd69}</UniqueIdentifier>
     </Filter>
+    <Filter Include="HexCtrl\src\ListEx">
+      <UniqueIdentifier>{70c222d5-5dcf-4131-b8ec-2c9f8fb9ff9c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HexCtrl\src\ListEx\src">
+      <UniqueIdentifier>{d11acfa3-eb2e-4c61-be7e-d5a570dad5f1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\HexCtrlSample\stdafx.h">
@@ -69,6 +75,15 @@
     <ClInclude Include="src\Dialogs\CHexDlgBookmarkProps.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
+    <ClInclude Include="src\ListEx\ListEx.h">
+      <Filter>HexCtrl\src\ListEx</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ListEx\src\CListEx.h">
+      <Filter>HexCtrl\src\ListEx\src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ListEx\src\CListExHdr.h">
+      <Filter>HexCtrl\src\ListEx\src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\HexCtrlSample\stdafx.cpp">
@@ -106,6 +121,12 @@
     </ClCompile>
     <ClCompile Include="src\Dialogs\CHexDlgBookmarkProps.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ListEx\src\CListEx.cpp">
+      <Filter>HexCtrl\src\ListEx\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ListEx\src\CListExHdr.cpp">
+      <Filter>HexCtrl\src\ListEx\src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

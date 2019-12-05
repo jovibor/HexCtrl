@@ -9,6 +9,7 @@
 #pragma once
 #include "CHexCtrl.h"
 #include <vector>
+#include <ctime>
 
 namespace HEXCTRL::INTERNAL
 {
@@ -23,6 +24,7 @@ namespace HEXCTRL::INTERNAL
 		void ClearAll();
 		auto GetVector()->std::deque<HEXBOOKMARKSTRUCT>&;
 		auto GetBookmark(DWORD dwId)->HEXBOOKMARKSTRUCT*;
+		auto GetTouchTime()const->std::time_t;
 		void GoBookmark(DWORD nId);
 		void GoNext();
 		void GoPrev();
@@ -33,5 +35,6 @@ namespace HEXCTRL::INTERNAL
 		std::deque<HEXBOOKMARKSTRUCT> m_deqBookmarks;
 		CHexCtrl* m_pHex { };
 		int m_iCurrent { };
+		std::time_t m_time { }; //Last modification time.
 	};
 }

@@ -33,7 +33,6 @@ BOOL CHexDlgBookmarkMgr::Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* 
 
 void CHexDlgBookmarkMgr::DoDataExchange(CDataExchange* pDX)
 {
-	DDX_Control(pDX, IDC_HEXCTRL_BOOKMARKMGR_LIST, m_List);
 	CDialogEx::DoDataExchange(pDX);
 }
 
@@ -41,11 +40,14 @@ BOOL CHexDlgBookmarkMgr::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_List.InsertColumn(0, L"\u2116", LVCFMT_RIGHT, 30);
-	m_List.InsertColumn(1, L"Offset", LVCFMT_RIGHT, 80);
-	m_List.InsertColumn(2, L"Size", LVCFMT_RIGHT, 80);
-	m_List.InsertColumn(3, L"Description", LVCFMT_LEFT, 230);
-	m_List.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER);
+	m_List->CreateDialogCtrl(IDC_HEXCTRL_BOOKMARKMGR_LIST, this);
+	m_List->InsertColumn(0, L"\u2116", LVCFMT_RIGHT, 30);
+	m_List->InsertColumn(1, L"Offset", LVCFMT_RIGHT, 80);
+	m_List->InsertColumn(2, L"Size", LVCFMT_RIGHT, 80);
+	m_List->InsertColumn(3, L"Description", LVCFMT_LEFT, 200);
+	m_List->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 80);
+	m_List->SetSortFunc(&CompareFunc);
+	//m_List->SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER);
 
 	m_stMenuList.CreatePopupMenu();
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, IDC_HEXCTRL_BOOKMARKMGR_MENU_NEW, L"New");
@@ -72,13 +74,13 @@ BOOL CHexDlgBookmarkMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult
 			else
 			{
 				fEnabled = true;
-				m_dwCurrBkmId = (DWORD)m_List.GetItemData(pNMI->iItem);
+				m_dwCurrBkmId = (DWORD)m_List->GetItemData(pNMI->iItem);
 				m_iCurrListId = pNMI->iItem;
 			}
 			m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 			m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 			m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_CLEARALL,
-				(m_List.GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+				(m_List->GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 
 			POINT pt;
 			GetCursorPos(&pt);
@@ -93,14 +95,14 @@ BOOL CHexDlgBookmarkMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult
 			if (pNMI->iItem == -1 || pNMI->iSubItem == -1 || !(pNMI->uNewState & LVIS_SELECTED))
 				break;
 
-			m_pBookmarks->GoBookmark((DWORD)m_List.GetItemData(pNMI->iItem));
+			m_pBookmarks->GoBookmark((DWORD)m_List->GetItemData(pNMI->iItem));
 		}
 		break;
 		case NM_DBLCLK:
 			if (pNMI->iItem == -1 || pNMI->iSubItem == -1)
 				break;
 
-			m_dwCurrBkmId = (DWORD)m_List.GetItemData(pNMI->iItem);
+			m_dwCurrBkmId = (DWORD)m_List->GetItemData(pNMI->iItem);
 			m_iCurrListId = pNMI->iItem;
 			SendMessageW(WM_COMMAND, IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT);
 			break;
@@ -117,7 +119,7 @@ void CHexDlgBookmarkMgr::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimize
 	else
 	{
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
-		if (m_List.GetItemCount() != m_pBookmarks->GetVector().size())
+		if (!m_time || m_time != m_pBookmarks->GetTouchTime())
 			UpdateList();
 	}
 
@@ -148,7 +150,7 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE:
 		m_pBookmarks->RemoveId(m_dwCurrBkmId);
-		m_List.DeleteItem(m_iCurrListId);
+		m_List->DeleteItem(m_iCurrListId);
 		UpdateList();
 		break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_CLEARALL:
@@ -162,15 +164,15 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 
 void CHexDlgBookmarkMgr::UpdateList()
 {
-	m_List.DeleteAllItems();
+	m_List->DeleteAllItems();
 	int listindex { };
 	WCHAR wstr[32];
 
-	m_List.SetRedraw(FALSE);
+	m_List->SetRedraw(FALSE);
 	for (const auto& iter : m_pBookmarks->GetVector())
 	{
 		swprintf_s(wstr, 8, L"%i", listindex + 1);
-		m_List.InsertItem(listindex, wstr);
+		m_List->InsertItem(listindex, wstr);
 
 		ULONGLONG ullOffset { 0 };
 		ULONGLONG ullSize { 0 };
@@ -181,14 +183,61 @@ void CHexDlgBookmarkMgr::UpdateList()
 				[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
 		}
 		swprintf_s(wstr, 32, L"0x%llX", ullOffset);
-		m_List.SetItemText(listindex, 1, wstr);
+		m_List->SetItemText(listindex, 1, wstr);
 		swprintf_s(wstr, 32, L"0x%llX", ullSize);
-		m_List.SetItemText(listindex, 2, wstr);
-		m_List.SetItemText(listindex, 3, iter.wstrDesc.data());
+		m_List->SetItemText(listindex, 2, wstr);
+		m_List->SetItemText(listindex, 3, iter.wstrDesc.data());
 
-		m_List.SetItemData(listindex, (DWORD_PTR)iter.dwId);
+		//Set cellID to current bookmarkID to get the right cell's color later in CListEx::HasCellColor.
+		m_List->SetCellColor((int)iter.dwId, 4, iter.clrBk);
+		m_List->SetItemData(listindex, (DWORD_PTR)iter.dwId);
 
 		++listindex;
 	}
-	m_List.SetRedraw(TRUE);
+	m_List->SetRedraw(TRUE);
+	m_time = m_pBookmarks->GetTouchTime();
+}
+
+int CHexDlgBookmarkMgr::CompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
+{
+	IListEx* pListCtrl = (IListEx*)lParamSort;
+	int iSortColumn = pListCtrl->GetSortColumn();
+	std::wstring wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn).GetBuffer();
+	std::wstring wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn).GetBuffer();
+
+	LONGLONG llData1 { }, llData2 { };
+
+	//№, Offset, Size.
+	if (iSortColumn == 0 || iSortColumn == 1 || iSortColumn == 2)
+	{
+		StrToInt64ExW(wstrItem1.data(), STIF_SUPPORT_HEX, &llData1);
+		StrToInt64ExW(wstrItem2.data(), STIF_SUPPORT_HEX, &llData2);
+	}
+	else if (iSortColumn == 3) //Description
+	{
+		llData1 = wstrItem1.size();
+		llData2 = wstrItem2.size();
+	}
+
+	int result = 0;
+	if (pListCtrl->GetSortAscending())
+	{
+		if ((llData1 - llData2) < 0)
+			result = -1;
+		else if ((llData1 - llData2) == 0)
+			result = 0;
+		else
+			result = 1;
+	}
+	else
+	{
+		if ((llData1 - llData2) < 0)
+			result = 1;
+		else if ((llData1 - llData2) == 0)
+			result = 0;
+		else
+			result = -1;
+	}
+
+	return result;
 }

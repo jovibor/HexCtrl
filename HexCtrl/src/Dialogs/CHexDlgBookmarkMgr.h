@@ -11,9 +11,11 @@
 #include "../CHexBookmarks.h"
 #include "CHexDlgBookmarkProps.h"
 #include "../../res/HexCtrlRes.h"
+#include "../ListEx/ListEx.h"
 
 namespace HEXCTRL::INTERNAL
 {
+	using namespace HEXCTRL::INTERNAL::LISTEX;
 	class CHexDlgBookmarkMgr final : public CDialogEx
 	{
 	public:
@@ -29,11 +31,14 @@ namespace HEXCTRL::INTERNAL
 		DECLARE_MESSAGE_MAP()
 	private:
 		void UpdateList();
+		static int CALLBACK CompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 	private:
-		CMFCListCtrl m_List;
+		//CMFCListCtrl m_List;
+		IListExPtr m_List { CreateListEx() };
 		CHexBookmarks* m_pBookmarks { };
 		CMenu m_stMenuList;
 		DWORD m_dwCurrBkmId { }; //Currently selected bookmark Id.
 		int m_iCurrListId { };   //Currently selected list Id.
+		std::time_t m_time { };
 	};
 }

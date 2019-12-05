@@ -33,6 +33,8 @@ DWORD CHexBookmarks::Add(const HEXBOOKMARKSTRUCT& stBookmark)
 	if (m_pHex)
 		m_pHex->RedrawWindow();
 
+	m_time = std::time(0);
+
 	return dwId;
 }
 
@@ -53,6 +55,8 @@ void CHexBookmarks::Remove(ULONGLONG ullOffset)
 		m_deqBookmarks.erase((iter + 1).base()); //Weird notation for reverse_iterator to work in erase() (acc to standard).
 		m_pHex->RedrawWindow();
 	}
+
+	m_time = std::time(0);
 }
 
 void CHexBookmarks::RemoveId(DWORD dwId)
@@ -69,6 +73,8 @@ void CHexBookmarks::RemoveId(DWORD dwId)
 		if (m_pHex)
 			m_pHex->RedrawWindow();
 	}
+
+	m_time = std::time(0);
 }
 
 void CHexBookmarks::ClearAll()
@@ -76,6 +82,8 @@ void CHexBookmarks::ClearAll()
 	m_deqBookmarks.clear();
 	if (m_pHex)
 		m_pHex->RedrawWindow();
+
+	m_time = std::time(0);
 }
 
 auto CHexBookmarks::GetVector()->std::deque<HEXBOOKMARKSTRUCT>&
@@ -97,6 +105,11 @@ auto CHexBookmarks::GetBookmark(DWORD dwId)->HEXBOOKMARKSTRUCT*
 	}
 	else
 		return nullptr;
+}
+
+auto CHexBookmarks::GetTouchTime() const -> std::time_t
+{
+	return m_time;
 }
 
 void CHexBookmarks::GoBookmark(DWORD dwId)
@@ -166,4 +179,6 @@ void CHexBookmarks::Update(DWORD dwId, const HEXBOOKMARKSTRUCT& stBookmark)
 		if (m_pHex)
 			m_pHex->RedrawWindow();
 	}
+
+	m_time = std::time(0);
 }
