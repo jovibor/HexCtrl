@@ -8,6 +8,7 @@
 * different aspects. For more info see official documentation on github.		*
 ********************************************************************************/
 #include "stdafx.h"
+#include "../ListEx.h"
 #include "CListExHdr.h"
 
 using namespace HEXCTRL::INTERNAL::LISTEX;
@@ -53,9 +54,9 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BO
 	if (bIsHighlighted)
 	{
 		if (bIsPressed)
-			clrBk = m_clrHighlightPressed;
+			clrBk = m_clrHglActive;
 		else
-			clrBk = m_clrHighlight;
+			clrBk = m_clrHglInactive;
 	}
 	else
 	{
@@ -138,10 +139,13 @@ void CListExHdr::SetHeight(DWORD dwHeight)
 	m_dwHeaderHeight = dwHeight;
 }
 
-void CListExHdr::SetColor(COLORREF clrText, COLORREF clrBk)
+void CListExHdr::SetColor(const LISTEXCOLORSTRUCT& lcs)
 {
-	m_clrText = clrText;
-	m_clrBk = clrBk;
+	m_clrText = lcs.clrHdrText;
+	m_clrBk = lcs.clrHdrBk;
+	m_clrBkNWA = lcs.clrBkNWA;
+	m_clrHglInactive = lcs.clrHdrHglInactive;
+	m_clrHglActive = lcs.clrHdrHglActive;
 
 	RedrawWindow();
 }

@@ -12,8 +12,10 @@
 
 namespace HEXCTRL::INTERNAL::LISTEX {
 	/********************************************
-	* CListExHdr class definition.				*
+	* CListExHdr class declaration.				*
 	********************************************/
+	struct LISTEXCOLORSTRUCT; //Forward declaration.
+
 	class CListExHdr : public CMFCHeaderCtrl
 	{
 	public:
@@ -21,7 +23,7 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		virtual ~CListExHdr() {}
 		void SetHeight(DWORD dwHeight);
 		void SetFont(const LOGFONTW* pLogFontNew);
-		void SetColor(COLORREF clrText, COLORREF clrBk);
+		void SetColor(const LISTEXCOLORSTRUCT& lcs);
 		void SetColumnColor(DWORD dwColumn, COLORREF clr);
 		void SetSortArrow(int iColumn, bool fAscending);
 	protected:
@@ -30,11 +32,11 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		DECLARE_MESSAGE_MAP()
 	private:
 		CFont m_fontHdr;
-		COLORREF m_clrBkNWA { GetSysColor(COLOR_WINDOW) }; //Bk of non working area.
-		COLORREF m_clrText { GetSysColor(COLOR_WINDOWTEXT) };
-		COLORREF m_clrBk { GetSysColor(COLOR_WINDOW) };
-		COLORREF m_clrHighlight { GetSysColor(COLOR_GRADIENTINACTIVECAPTION) };
-		COLORREF m_clrHighlightPressed { GetSysColor(COLOR_GRADIENTACTIVECAPTION) };
+		COLORREF m_clrBkNWA { }; //Bk of non working area.
+		COLORREF m_clrText { };
+		COLORREF m_clrBk { };
+		COLORREF m_clrHglInactive { };
+		COLORREF m_clrHglActive { };
 		CPen m_penGrid;
 		CPen m_penLight;
 		CPen m_penShadow;

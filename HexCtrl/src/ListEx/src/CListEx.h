@@ -24,6 +24,8 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		~CListEx() = default;
 		bool Create(const LISTEXCREATESTRUCT & lcs)override;
 		void CreateDialogCtrl(UINT uCtrlID, CWnd * pwndDlg)override;
+		BOOL DeleteAllItems()override;
+		BOOL DeleteItem(int nItem)override;
 		void Destroy()override;
 		DWORD_PTR GetCellData(int iItem, int iSubitem)override;
 		UINT GetFontSize()override;

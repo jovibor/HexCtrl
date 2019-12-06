@@ -44,10 +44,9 @@ BOOL CHexDlgBookmarkMgr::OnInitDialog()
 	m_List->InsertColumn(0, L"\u2116", LVCFMT_RIGHT, 30);
 	m_List->InsertColumn(1, L"Offset", LVCFMT_RIGHT, 80);
 	m_List->InsertColumn(2, L"Size", LVCFMT_RIGHT, 80);
-	m_List->InsertColumn(3, L"Description", LVCFMT_LEFT, 200);
+	m_List->InsertColumn(3, L"Description", LVCFMT_LEFT, 215);
 	m_List->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 80);
 	m_List->SetSortFunc(&CompareFunc);
-	//m_List->SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER);
 
 	m_stMenuList.CreatePopupMenu();
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, IDC_HEXCTRL_BOOKMARKMGR_MENU_NEW, L"New");
@@ -135,8 +134,10 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		HEXBOOKMARKSTRUCT hbkms;
 		CHexDlgBookmarkProps dlgBkmEdit;
 		if (dlgBkmEdit.DoModal(&hbkms) == IDOK)
+		{
 			m_pBookmarks->Add(hbkms);
-		UpdateList();
+			UpdateList();
+		}
 	}
 	break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT:
@@ -144,8 +145,10 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		HEXBOOKMARKSTRUCT hbkms = *m_pBookmarks->GetBookmark(m_dwCurrBkmId);
 		CHexDlgBookmarkProps dlgBkmEdit;
 		if (dlgBkmEdit.DoModal(&hbkms) == IDOK)
+		{
 			m_pBookmarks->Update(hbkms.dwId, hbkms);
-		UpdateList();
+			UpdateList();
+		}
 	}
 	break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE:
@@ -187,9 +190,7 @@ void CHexDlgBookmarkMgr::UpdateList()
 		swprintf_s(wstr, 32, L"0x%llX", ullSize);
 		m_List->SetItemText(listindex, 2, wstr);
 		m_List->SetItemText(listindex, 3, iter.wstrDesc.data());
-
-		//Set cellID to current bookmarkID to get the right cell's color later in CListEx::HasCellColor.
-		m_List->SetCellColor((int)iter.dwId, 4, iter.clrBk);
+		m_List->SetCellColor(listindex, 4, iter.clrBk);
 		m_List->SetItemData(listindex, (DWORD_PTR)iter.dwId);
 
 		++listindex;

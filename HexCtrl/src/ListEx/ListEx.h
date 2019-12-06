@@ -17,19 +17,21 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 	********************************************************************************************/
 	struct LISTEXCOLORSTRUCT
 	{
-		COLORREF clrListText { GetSysColor(COLOR_WINDOWTEXT) };				//List text color.
-		COLORREF clrListBkRow1 { GetSysColor(COLOR_WINDOW) };				//List Bk color of the odd rows.
-		COLORREF clrListBkRow2 { GetSysColor(COLOR_WINDOW) };				//List Bk color of the even rows.
-		COLORREF clrListGrid { RGB(220, 220, 220) };						//List grid color.
-		COLORREF clrListTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) };	//Selected item text color.
-		COLORREF clrListBkSelected { GetSysColor(COLOR_HIGHLIGHT) };		//Selected item bk color.
-		COLORREF clrTooltipText { GetSysColor(COLOR_INFOTEXT) };			//Tooltip window text color.
-		COLORREF clrTooltipBk { GetSysColor(COLOR_INFOBK) };				//Tooltip window bk color.
-		COLORREF clrListTextCellTt { GetSysColor(COLOR_WINDOWTEXT) };		//Text color of a cell that has tooltip.
-		COLORREF clrListBkCellTt { RGB(170, 170, 230) };					//Bk color of a cell that has tooltip.
-		COLORREF clrHeaderText { GetSysColor(COLOR_WINDOWTEXT) };			//List header text color.
-		COLORREF clrHeaderBk { GetSysColor(COLOR_WINDOW) };					//List header bk color.
-		COLORREF clrBkNWA { GetSysColor(COLOR_WINDOW) };					//Bk of non working area.
+		COLORREF clrListText { GetSysColor(COLOR_WINDOWTEXT) };            //List text color.
+		COLORREF clrListBkRow1 { GetSysColor(COLOR_WINDOW) };              //List Bk color of the odd rows.
+		COLORREF clrListBkRow2 { GetSysColor(COLOR_WINDOW) };              //List Bk color of the even rows.
+		COLORREF clrListGrid { RGB(220, 220, 220) };                       //List grid color.
+		COLORREF clrListTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected item text color.
+		COLORREF clrListBkSelected { GetSysColor(COLOR_HIGHLIGHT) };       //Selected item bk color.
+		COLORREF clrTooltipText { GetSysColor(COLOR_INFOTEXT) };           //Tooltip window text color.
+		COLORREF clrTooltipBk { GetSysColor(COLOR_INFOBK) };               //Tooltip window bk color.
+		COLORREF clrListTextCellTt { GetSysColor(COLOR_WINDOWTEXT) };      //Text color of a cell that has tooltip.
+		COLORREF clrListBkCellTt { RGB(170, 170, 230) };                   //Bk color of a cell that has tooltip.
+		COLORREF clrHdrText { GetSysColor(COLOR_WINDOWTEXT) };             //List header text color.
+		COLORREF clrHdrBk { GetSysColor(COLOR_WINDOW) };                   //List header bk color.
+		COLORREF clrHdrHglInactive { GetSysColor(COLOR_GRADIENTINACTIVECAPTION) };//Header highlight inactive.
+		COLORREF clrHdrHglActive { GetSysColor(COLOR_GRADIENTACTIVECAPTION) };    //Header highlight active.
+		COLORREF clrBkNWA { GetSysColor(COLOR_WINDOW) };                   //Bk of non working area.
 	};
 
 	/********************************************************************************************
@@ -58,6 +60,8 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		virtual ~IListEx() = default;
 		virtual bool Create(const LISTEXCREATESTRUCT& lcs) = 0;
 		virtual void CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg) = 0;
+		virtual BOOL DeleteAllItems() = 0;
+		virtual BOOL DeleteItem(int nItem) = 0;
 		virtual void Destroy() = 0;
 		virtual DWORD_PTR GetCellData(int iItem, int iSubitem) = 0;
 		virtual UINT GetFontSize() = 0;
