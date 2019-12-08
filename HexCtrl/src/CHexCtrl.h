@@ -37,10 +37,10 @@ namespace HEXCTRL::INTERNAL
 		CHexCtrl();
 		~CHexCtrl();
 		DWORD AddBookmark(const HEXBOOKMARKSTRUCT& hbs)override; //Adds new bookmark.
-		void ClearData() override;                          //Clears all data from HexCtrl's view (not touching data itself).
-		bool Create(const HEXCREATESTRUCT& hcs) override;   //Main initialization method.
-		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) override; //Сreates custom dialog control.
-		void Destroy() override;                            //Deleter.
+		void ClearData()override;                           //Clears all data from HexCtrl's view (not touching data itself).
+		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
+		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)override; //Сreates custom dialog control.
+		void Destroy()override;                             //Deleter.
 		DWORD GetCapacity()const override;                  //Current capacity.
 		auto GetColor()const->HEXCOLORSTRUCT override;      //Current colors.
 		long GetFontSize()const override;                   //Current font size.
@@ -53,16 +53,16 @@ namespace HEXCTRL::INTERNAL
 		bool IsDataSet()const override;                     //Shows whether a data was set to the control or not.
 		bool IsMutable()const override;                     //Is edit mode enabled or not.
 		void RemoveBookmark(DWORD dwId)override;            //Removes bookmark by the given Id.
-		void SetCapacity(DWORD dwCapacity) override;        //Sets the control's current capacity.
-		void SetColor(const HEXCOLORSTRUCT& clr) override;  //Sets all the control's colors.
-		void SetData(const HEXDATASTRUCT& hds) override;    //Main method for setting data to display (and edit).	
-		void SetFont(const LOGFONTW* pLogFontNew) override; //Sets the control's new font. This font has to be monospaced.
-		void SetFontSize(UINT uiSize) override;             //Sets the control's font size.
-		void SetMutable(bool fEnable) override;             //Enable or disable edit mode.
-		void SetSectorSize(DWORD dwSize) override;          //Sets sector/page size to draw the line between.
-		void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize) override; //Sets current selection.
-		void SetShowMode(EHexShowMode enShowMode) override; //Sets current data show mode.
-		void SetWheelRatio(double dbRatio) override;        //Sets the ratio for how much to scroll with mouse-wheel.
+		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
+		void SetColor(const HEXCOLORSTRUCT& clr)override;   //Sets all the control's colors.
+		void SetData(const HEXDATASTRUCT& hds)override;     //Main method for setting data to display (and edit).	
+		void SetFont(const LOGFONTW* pLogFontNew)override;  //Sets the control's new font. This font has to be monospaced.
+		void SetFontSize(UINT uiSize)override;              //Sets the control's font size.
+		void SetMutable(bool fEnable)override;              //Enable or disable edit mode.
+		void SetSectorSize(DWORD dwSize, const wchar_t* wstrName)override; //Sets sector/page size and name to draw the line between. override;          //Sets sector/page size to draw the line between.
+		void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)override; //Sets current selection.
+		void SetShowMode(EHexShowMode enShowMode)override;  //Sets current data show mode.
+		void SetWheelRatio(double dbRatio)override;         //Sets the ratio for how much to scroll with mouse-wheel.
 	protected:
 		DECLARE_MESSAGE_MAP()
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -141,7 +141,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsSectorVisible();                     //Returns m_fSectorsPrintable.
 		void UpdateSectorVisible();                               //Updates info about whether sectors lines printable atm or not.
 	private:
-		const DWORD m_dwCapacityMax { 128 };  //Maximum capacity.
+		const DWORD m_dwCapacityMax { 99 };   //Maximum capacity.
 		const std::unique_ptr<CHexSelect> m_pSelect { std::make_unique<CHexSelect>() };                    //Selection class.
 		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };           //"Search..." dialog.
 		const std::unique_ptr<CHexDlgOperations> m_pDlgOpers { std::make_unique<CHexDlgOperations>() };    //"Operations" dialog.
@@ -197,6 +197,7 @@ namespace HEXCTRL::INTERNAL
 		int m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfo { };          //Info text (bottom rect).
+		std::wstring m_wstrSectorName { };    //Name of the sector/page.
 		std::deque<std::unique_ptr<std::vector<UNDOSTRUCT>>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<std::vector<UNDOSTRUCT>>> m_deqRedo; //Redo deque.
 		std::unordered_map<int, HBITMAP> m_umapHBITMAP;    //Images for the Menu.

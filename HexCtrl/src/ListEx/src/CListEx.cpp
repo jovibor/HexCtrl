@@ -64,6 +64,7 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 		return false;
 
 	m_stColor = lcs.stColor;
+	m_fSortable = lcs.fSortable;
 
 	m_hwndTt = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
 		TTS_BALLOON | TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
@@ -100,8 +101,8 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 	}
 
 	GetHeaderCtrl().SetColor(m_stColor);
-	SetHeaderHeight(lcs.dwHeaderHeight);
-	SetHeaderFont(lcs.pHeaderLogFont);
+	SetHeaderHeight(lcs.dwHdrHeight);
+	SetHeaderFont(lcs.pHdrLogFont);
 
 	m_fontList.CreateFontIndirectW(&lf);
 	m_penGrid.CreatePen(PS_SOLID, m_dwGridWidth, m_stColor.clrListGrid);
@@ -378,6 +379,12 @@ void CListEx::SetHeaderColumnColor(DWORD nColumn, COLORREF clr)
 void CListEx::SetListMenu(CMenu * pMenu)
 {
 	m_pListMenu = pMenu;
+}
+
+void CListEx::SetSortable(bool fSortable)
+{
+	m_fSortable = fSortable;
+	GetHeaderCtrl().SetSortable(fSortable);
 }
 
 void CListEx::SetSortFunc(int(CALLBACK *pfCompareFunc)(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort))
@@ -800,12 +807,13 @@ void CListEx::OnDestroy()
 
 void CListEx::OnLvnColumnclick(NMHDR *pNMHDR, LRESULT *pResult)
 {
-	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
-
-	m_fSortAscending = pNMLV->iSubItem == m_iSortColumn ? !m_fSortAscending : true;
-	m_iSortColumn = pNMLV->iSubItem;
-	if (m_pfCompareFunc)
+	if (m_fSortable && m_pfCompareFunc)
 	{
+		LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+
+		m_fSortAscending = pNMLV->iSubItem == m_iSortColumn ? !m_fSortAscending : true;
+		m_iSortColumn = pNMLV->iSubItem;
+
 		GetHeaderCtrl().SetSortArrow(m_iSortColumn, m_fSortAscending);
 		SortItemsEx(m_pfCompareFunc, reinterpret_cast<DWORD_PTR>(this));
 	}

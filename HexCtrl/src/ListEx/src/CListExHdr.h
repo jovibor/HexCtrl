@@ -25,6 +25,7 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		void SetFont(const LOGFONTW* pLogFontNew);
 		void SetColor(const LISTEXCOLORSTRUCT& lcs);
 		void SetColumnColor(DWORD dwColumn, COLORREF clr);
+		void SetSortable(bool fSortable);
 		void SetSortArrow(int iColumn, bool fAscending);
 	protected:
 		afx_msg void OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BOOL bIsHighlighted) override;
@@ -45,7 +46,7 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		DWORD m_dwHeaderHeight { 19 }; //Standard (default) height.
 		std::unordered_map<DWORD, COLORREF> m_umapClrColumn { }; //Color of individual columns.
 		bool m_fSortable { false }; //Need to draw sortable triangle or not?
-		int m_iSortColumn { };      //Column to draw sorting triangle within.
+		int m_iSortColumn { -1 };   //Column to draw sorting triangle at. -1 is to avoid triangle before first clicking.
 		bool m_fSortAscending { };  //Sorting type.
 	};
 }

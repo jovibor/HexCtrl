@@ -41,12 +41,13 @@ BOOL CHexDlgBookmarkMgr::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	m_List->CreateDialogCtrl(IDC_HEXCTRL_BOOKMARKMGR_LIST, this);
+	m_List->SetSortable(true);
+	m_List->SetSortFunc(&CompareFunc);
 	m_List->InsertColumn(0, L"\u2116", LVCFMT_RIGHT, 30);
 	m_List->InsertColumn(1, L"Offset", LVCFMT_RIGHT, 80);
 	m_List->InsertColumn(2, L"Size", LVCFMT_RIGHT, 80);
 	m_List->InsertColumn(3, L"Description", LVCFMT_LEFT, 215);
 	m_List->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 80);
-	m_List->SetSortFunc(&CompareFunc);
 
 	m_stMenuList.CreatePopupMenu();
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, IDC_HEXCTRL_BOOKMARKMGR_MENU_NEW, L"New");
@@ -206,7 +207,7 @@ int CHexDlgBookmarkMgr::CompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPara
 	std::wstring wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn).GetBuffer();
 	std::wstring wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn).GetBuffer();
 
-	LONGLONG llData1 { }, llData2 { };
+	LONGLONG llData1 { }, llData2 { 0 };
 
 	//№, Offset, Size.
 	if (iSortColumn == 0 || iSortColumn == 1 || iSortColumn == 2)
@@ -215,28 +216,21 @@ int CHexDlgBookmarkMgr::CompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPara
 		StrToInt64ExW(wstrItem2.data(), STIF_SUPPORT_HEX, &llData2);
 	}
 	else if (iSortColumn == 3) //Description
-	{
-		llData1 = wstrItem1.size();
-		llData2 = wstrItem2.size();
-	}
+		llData1 = wstrItem1.compare(wstrItem2);
 
 	int result = 0;
 	if (pListCtrl->GetSortAscending())
 	{
 		if ((llData1 - llData2) < 0)
 			result = -1;
-		else if ((llData1 - llData2) == 0)
-			result = 0;
-		else
+		else if ((llData1 - llData2) > 0)
 			result = 1;
 	}
 	else
 	{
 		if ((llData1 - llData2) < 0)
 			result = 1;
-		else if ((llData1 - llData2) == 0)
-			result = 0;
-		else
+		else if ((llData1 - llData2) > 0)
 			result = -1;
 	}
 

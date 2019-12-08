@@ -65,6 +65,7 @@
   * [HEXCTRL_MSG_SETSELECTION](#hexctrl_msg_setselection)
   * [HEXCTRL_MSG_MENUCLICK](#hexctrl_msg_menuclick)
   * [HEXCTRL_MSG_CONTEXTMENU](#hexctrl_msg_contextmenu)
+  * [HEXCTRL_MSG_SETCURSOR](#hexctrl_msg_setcursor)
   </details>
 * [Exported Functions](#exported-functions) <details><summary>_Expand_</summary>
   * [CreateRawHexCtrl](#createrawhexctrl)
@@ -434,10 +435,10 @@ Enables or disables mutable mode. In mutable mode all the data can be modified.
 
 ### [](#)SetSectorSize
 ```cpp
-void SetSectorSize(DWORD dwSize);
+void SetSectorSize(DWORD dwSize, const wchar_t* wstrName = L"Sector");
 ```
-Sets the size of the sector/page to draw the divider line between. This size should be multiple to the current [capacity](#setcapacity) size to take effect.  
-To remove it just set `dwSize` to 0.
+Sets the size of the sector to draw the divider line between. This size should be multiple to the current [capacity](#setcapacity) size to take effect. The second argument sets the name to be displayed in the bottom info area of the **HexControl** ("Sector", "Page", "etc...").  
+To remove the divider just set `dwSize` to 0.
 
 ### [](#)SetSelection
 ```cpp
@@ -639,6 +640,9 @@ Sent when user defined custom menu has been clicked.
 
 ### [](#)HEXCTRL_MSG_CONTEXTMENU
 Sent when context menu is about to be displayed.
+
+### [](#)HEXCTRL_MSG_SETCURSOR
+Set when cursor position has changed.
 
 ## [](#)Exported Functions
 **HexControl** has few `"C"` interface functions which it exports when built as *.dll*.

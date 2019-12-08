@@ -42,11 +42,12 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		CRect             rect;                  //Initial rect.
 		CWnd*             pwndParent { };        //Parent window.
 		const LOGFONTW*   pListLogFont { };      //List font.
-		const LOGFONTW*   pHeaderLogFont { };    //List header font.
+		const LOGFONTW*   pHdrLogFont { };       //Header font.
 		DWORD             dwStyle { };           //Control's styles. Zero for default.
 		UINT              uID { };               //Control Id.
 		DWORD             dwListGridWidth { 1 }; //Width of the list grid.
-		DWORD             dwHeaderHeight { 20 }; //List header height.
+		DWORD             dwHdrHeight { 20 };    //Header height.
+		bool              fSortable { false };   //Is list sortable, by clicking on the header column?
 		bool              fDialogCtrl { false }; //If it's a list within dialog.
 	};
 
@@ -79,6 +80,7 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		virtual void SetHeaderFont(const LOGFONT* pLogFontNew) = 0;
 		virtual void SetHeaderColumnColor(DWORD nColumn, COLORREF clr) = 0;
 		virtual void SetListMenu(CMenu* pMenu) = 0;
+		virtual void SetSortable(bool fSortable) = 0;
 		virtual void SetSortFunc(int (CALLBACK *pfCompareFunc)(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)) = 0;
 	};
 

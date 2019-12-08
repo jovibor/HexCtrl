@@ -156,11 +156,16 @@ void CListExHdr::SetColumnColor(DWORD dwColumn, COLORREF clr)
 	RedrawWindow();
 }
 
+void CListExHdr::SetSortable(bool fSortable)
+{
+	m_fSortable = fSortable;
+	RedrawWindow();
+}
+
 void CListExHdr::SetSortArrow(int iColumn, bool fAscending)
 {
 	m_iSortColumn = iColumn;
 	m_fSortAscending = fAscending;
-	m_fSortable = true;
 }
 
 void CListExHdr::SetFont(const LOGFONTW* pLogFontNew)

@@ -217,7 +217,7 @@ namespace HEXCTRL
 		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0; //Sets the control's new font. This font has to be monospaced.
 		virtual void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/edit mode.
-		virtual void SetSectorSize(DWORD dwSize) = 0;          //Sets sector/page size to draw the line between.
+		virtual void SetSectorSize(DWORD dwSize, const wchar_t* wstrName = L"Sector") = 0; //Sets sector/page size and name to draw the line between.
 		virtual void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize) = 0; //Sets current selection.
 		virtual void SetShowMode(EHexShowMode enMode) = 0;     //Sets current data show mode.
 		virtual void SetWheelRatio(double dbRatio) = 0;        //Sets the ratio for how much to scroll with mouse-wheel.
@@ -304,6 +304,7 @@ namespace HEXCTRL
 	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0102u };  //Selection has been made.
 	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0103u };     //User defined custom menu clicked.
 	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0104u };   //OnContextMenu triggered.
+	constexpr auto HEXCTRL_MSG_SETCURSOR { 0x0105u };     //Cursor position changed.
 
 /*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #ifdef _UNICODE

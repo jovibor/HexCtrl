@@ -43,6 +43,7 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		void SetHeaderFont(const LOGFONT * pLogFontNew)override;
 		void SetHeaderColumnColor(DWORD nColumn, COLORREF clr)override;
 		void SetListMenu(CMenu * pMenu)override;
+		void SetSortable(bool fSortable)override;
 		void SetSortFunc(int (CALLBACK *pfCompareFunc)(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort))override;
 		DECLARE_MESSAGE_MAP()
 	protected:
@@ -91,8 +92,9 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		NMITEMACTIVATE m_stNMII { };
 		const ULONG_PTR ID_TIMER_TOOLTIP { 0x01 };
 		int m_iSortColumn { };
-		bool m_fSortAscending { };
 		int (CALLBACK *m_pfCompareFunc)(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) { nullptr };
+		bool m_fSortable { false };
+		bool m_fSortAscending { };
 	};
 
 	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
