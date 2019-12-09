@@ -498,11 +498,13 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_ullDataSize = hds.ullDataSize;
 	m_enDataMode = hds.enDataMode;
 	m_fMutable = hds.fMutable;
+	m_pHexVirtual = hds.pHexVirtual;
 
+	m_pBookmarks->SetVirtual(hds.pHexBkmVirtual);
 	RecalcAll();
 
-	if (hds.ullSelectionSize)
-		SetSelection(hds.ullSelectionStart, hds.ullSelectionStart, hds.ullSelectionSize, 1, true, true);
+	if (hds.stSelSpan.ullSize)
+		SetSelection(hds.stSelSpan.ullOffset, hds.stSelSpan.ullOffset, hds.stSelSpan.ullSize, 1, true, true);
 }
 
 void CHexCtrl::SetFont(const LOGFONTW* pLogFontNew)
@@ -727,7 +729,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 	if (ullHit != 0xFFFFFFFFFFFFFFFFull)
 	{
 		auto pBookmark = m_pBookmarks->HitTest(ullHit);
-		if (pBookmark)
+		if (pBookmark != nullptr)
 		{
 			if (m_pBkmCurrTt != pBookmark)
 			{
@@ -1006,12 +1008,13 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 	//Bookmarks
 	bool fBookmarks = m_pBookmarks->HasBookmarks();
 	bool fHasRMBM = m_pBookmarks->HitTest(m_ullRMouseClick); //Is there a bookmark under R-mouse cursor?
+	bool fBkmVirtual = m_pBookmarks->IsVirtual();
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_ADD, uStatus | MF_BYCOMMAND);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_REMOVE, (fBookmarks && fHasRMBM ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_NEXT, (fBookmarks ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_PREV, (fBookmarks ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_CLEARALL, (fBookmarks ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_MANAGER, (fDataSet ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_MANAGER, ((fDataSet && !fBkmVirtual) ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 
 	//Clipboard
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEX, uStatus | MF_BYCOMMAND);
@@ -1989,8 +1992,8 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)const
 	case EHexDataMode::DATA_MSG:
 	{
 		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_GETDATA } };
-		hns.ullIndex = ullIndex;
-		hns.ullSize = 1;
+		hns.stSpan.ullOffset = ullIndex;
+		hns.stSpan.ullSize = 1;
 		MsgWindowNotify(hns);
 		BYTE byte;
 		if (hns.pData)

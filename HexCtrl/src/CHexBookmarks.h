@@ -17,23 +17,26 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		CHexBookmarks() {}
+		DWORD Add(const HEXBOOKMARKSTRUCT& stBookmark); //Returns new bookmark Id.
 		void Attach(CHexCtrl* pHex);
-		DWORD Add(const HEXBOOKMARKSTRUCT& stBookmark); //Returns new bookmark's Id.
-		void Remove(ULONGLONG ullOffset);
-		void RemoveId(DWORD dwId);
 		void ClearAll();
-		auto GetVector()->std::deque<HEXBOOKMARKSTRUCT>&;
-		auto GetBookmark(DWORD dwId)->HEXBOOKMARKSTRUCT*;
+		auto GetBookmark(DWORD dwID)->HEXBOOKMARKSTRUCT*;
 		auto GetTouchTime()const->std::time_t;
-		void GoBookmark(DWORD nId);
+		auto GetVector()->std::deque<HEXBOOKMARKSTRUCT>&;
+		void GoBookmark(DWORD nID);
 		void GoNext();
 		void GoPrev();
-		auto HitTest(ULONGLONG ullByte)->HEXBOOKMARKSTRUCT*;
 		bool HasBookmarks()const;
-		void Update(DWORD dwId, const HEXBOOKMARKSTRUCT& stBookmark);
+		auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*;
+		bool IsVirtual();
+		void Remove(ULONGLONG ullOffset);
+		void RemoveId(DWORD dwID);
+		void SetVirtual(IHexBkmVirtual* pVirtual);
+		void Update(DWORD dwID, const HEXBOOKMARKSTRUCT& stBookmark);
 	private:
 		std::deque<HEXBOOKMARKSTRUCT> m_deqBookmarks;
 		CHexCtrl* m_pHex { };
+		IHexBkmVirtual* m_pVirtual { };
 		int m_iCurrent { };
 		std::time_t m_time { }; //Last modification time.
 	};

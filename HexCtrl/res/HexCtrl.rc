@@ -350,7 +350,7 @@ BEGIN
             MENUITEM "Copy as Grep Hex",            IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX
             MENUITEM "Copy as Print Screen",        IDM_HEXCTRL_CLIPBOARD_COPYPRINTSCREEN
             MENUITEM SEPARATOR
-            MENUITEM "Paste as Hex",                IDM_HEXCTRL_CLIPBOARD_PASTEHEX
+            MENUITEM "Paste as Hex\tCtrl+V",        IDM_HEXCTRL_CLIPBOARD_PASTEHEX
             MENUITEM "Paste as Ascii",              IDM_HEXCTRL_CLIPBOARD_PASTEASCII
         END
         MENUITEM SEPARATOR

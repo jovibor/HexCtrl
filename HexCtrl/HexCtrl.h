@@ -96,6 +96,23 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
+	* IHexBkmVirtual - Pure abstract class for virtual bookmarks.                               *
+	********************************************************************************************/
+	class IHexBkmVirtual
+	{
+	public:
+		virtual ~IHexBkmVirtual() = default;
+		virtual DWORD Add(const HEXBOOKMARKSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
+		virtual void ClearAll() = 0;                    //Clear all bookmarks.
+		virtual auto GetNext()->HEXBOOKMARKSTRUCT* = 0; //Get next bookmark.
+		virtual auto GetPrev()->HEXBOOKMARKSTRUCT* = 0; //Get previous bookmark.
+		virtual bool HasBookmarks() = 0;                //Returns true is there is at least one bookmark atm.
+		virtual auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0; //Has given offset the bookmark?
+		virtual void Remove(ULONGLONG ullOffset) = 0;   //Remove bookmark by the given offset.
+		virtual void RemoveId(DWORD dwId) = 0;          //Remove bookmark by given ID (returned by Add()).
+	};
+
+	/********************************************************************************************
 	* HEXCOLORSTRUCT - All HexCtrl colors.                                                      *
 	********************************************************************************************/
 	struct HEXCOLORSTRUCT
@@ -164,14 +181,14 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXDATASTRUCT
 	{
-		EHexDataMode enDataMode { EHexDataMode::DATA_MEMORY }; //Working data mode.
-		ULONGLONG    ullDataSize { };                       //Size of the data to display, in bytes.
-		ULONGLONG    ullSelectionStart { };                 //Select this initial position. Works only if ullSelectionSize > 0.
-		ULONGLONG    ullSelectionSize { };                  //How many bytes to set as selected.
-		HWND         hwndMsg { };                           //Window for DATA_MSG mode. Parent is used by default.
-		IHexVirtual* pHexVirtual { };                       //Pointer for DATA_VIRTUAL mode.
-		PBYTE        pData { };                             //Data pointer for DATA_MEMORY mode. Not used in other modes.
-		bool         fMutable { false };                    //Is data mutable (editable) or read-only.
+		EHexDataMode    enDataMode { EHexDataMode::DATA_MEMORY }; //Working data mode.
+		ULONGLONG       ullDataSize { };                       //Size of the data to display, in bytes.
+		HEXSPANSTRUCT   stSelSpan { };                         //Select .ullOffset initial position. Works only if .ullSize > 0.
+		HWND            hwndMsg { };                           //Window for DATA_MSG mode. Parent is used by default.
+		IHexVirtual*    pHexVirtual { };                       //Pointer for DATA_VIRTUAL mode.
+		IHexBkmVirtual* pHexBkmVirtual { };                    //Pointer for Virtual Bookmarks.
+		PBYTE           pData { };                             //Data pointer for DATA_MEMORY mode. Not used in other modes.
+		bool            fMutable { false };                    //Is data mutable (editable) or read-only.
 	};
 
 	/********************************************************************************************
@@ -179,11 +196,10 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXNOTIFYSTRUCT
 	{
-		NMHDR     hdr { };      //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
-		UINT_PTR  uMenuId { };  //User defined custom menu id.
-		ULONGLONG ullIndex { }; //Index of the start byte to get/send.
-		ULONGLONG ullSize { };  //Size of the bytes to get/send.
-		PBYTE     pData { };    //Pointer to a data to get/send.
+		NMHDR         hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
+		HEXSPANSTRUCT stSpan { };  //Offset and size of the bytes. 
+		UINT_PTR      uMenuId { }; //User defined custom menu id.
+		PBYTE         pData { };   //Pointer to a data to get/send.
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
 
