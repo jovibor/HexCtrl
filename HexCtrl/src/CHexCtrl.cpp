@@ -2321,7 +2321,14 @@ void CHexCtrl::RecalcAll()
 	m_iStartWorkAreaY = m_iFirstHorizLine + m_iHeightTopRect;
 	m_iIndentTextCapacityY = m_iHeightTopRect / 2 - (m_sizeLetter.cy / 2);
 
-	RecalcScrollSizes();
+	CRect rc;
+	GetClientRect(&rc);
+	RecalcWorkAreaHeight(rc.Height());
+
+	//Scroll sizes according to current font size.
+	m_pScrollV->SetScrollSizes(m_sizeLetter.cy, ULONGLONG(m_iHeightWorkArea * m_dbWheelRatio),
+		(ULONGLONG)m_iStartWorkAreaY + m_iHeightBottomOffArea + m_sizeLetter.cy * (m_ullDataSize / m_dwCapacity + 2));
+	m_pScrollH->SetScrollSizes(m_sizeLetter.cx, rc.Width(), (ULONGLONG)m_iFourthVertLine + 1);
 	m_pScrollV->SetScrollPos(ullCurLineV * m_sizeLetter.cy);
 
 	RedrawWindow();
@@ -2333,23 +2340,6 @@ void CHexCtrl::RecalcWorkAreaHeight(int iClientHeight)
 	m_iEndWorkArea = iClientHeight - m_iHeightBottomOffArea -
 		((iClientHeight - m_iStartWorkAreaY - m_iHeightBottomOffArea) % m_sizeLetter.cy);
 	m_iHeightWorkArea = m_iEndWorkArea - m_iStartWorkAreaY;
-}
-
-void CHexCtrl::RecalcScrollSizes(int iClientHeight, int iClientWidth)
-{
-	if (iClientHeight == 0 && iClientWidth == 0)
-	{
-		CRect rc;
-		GetClientRect(&rc);
-		iClientHeight = rc.Height();
-		iClientWidth = rc.Width();
-	}
-
-	RecalcWorkAreaHeight(iClientHeight);
-	//Scroll sizes according to current font size.
-	m_pScrollV->SetScrollSizes(m_sizeLetter.cy, ULONGLONG(m_iHeightWorkArea * m_dbWheelRatio),
-		(ULONGLONG)m_iStartWorkAreaY + m_iHeightBottomOffArea + m_sizeLetter.cy * (m_ullDataSize / m_dwCapacity + 2));
-	m_pScrollH->SetScrollSizes(m_sizeLetter.cx, iClientWidth, (ULONGLONG)m_iFourthVertLine + 1);
 }
 
 void CHexCtrl::RecalcOffsetDigits()

@@ -109,7 +109,6 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcWorkAreaHeight(int iClientHeight);
-		void RecalcScrollSizes(int iClientHeight = 0, int iClientWidth = 0);
 		void RecalcOffsetDigits();                             //How many digits in Offset (depends on Hex or Decimals).
 		[[nodiscard]] ULONGLONG GetTopLine()const;             //Returns current top line's number in view.
 		[[nodiscard]] ULONGLONG HitTest(const POINT*);         //Is any hex chunk withing given point?

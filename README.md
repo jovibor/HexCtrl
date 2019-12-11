@@ -58,21 +58,22 @@
   * [EHexDataMode](#ehexdatamode)
   * [EHexModifyMode](#ehexmodifymode)
   * [EHexOperMode](#ehexopermode)
-  </details>
-* [Messages](#messages) <details><summary>_Expand_</summary>
+   </details>
+* [Notification Messages](#notification-messages) <details><summary>_Expand_</summary>
   * [HEXCTRL_MSG_CONTEXTMENU](#hexctrl_msg_contextmenu)
+  * [HEXCTRL_MSG_DATACHANGE](#hexctrl_msg_datachange)
   * [HEXCTRL_MSG_DESTROY](#hexctrl_msg_destroy)
   * [HEXCTRL_MSG_GETDATA](#hexctrl_msg_getdata)
   * [HEXCTRL_MSG_MENUCLICK](#hexctrl_msg_menuclick)
-  * [HEXCTRL_MSG_MODIFYDATA](#hexctrl_msg_modifydata)
   * [HEXCTRL_MSG_SETCURSOR](#hexctrl_msg_setcursor)
   * [HEXCTRL_MSG_SETSELECTION](#hexctrl_msg_setselection)
-    </details>
+  * [HEXCTRL_MSG_VIEWCHANGE](#hexctrl_msg_viewchange)
+   </details>
 * [Exported Functions](#exported-functions) <details><summary>_Expand_</summary>
   * [CreateRawHexCtrl](#createrawhexctrl)
   * [GetHexCtrlInfo](#gethexctrlinfo)
   * [HEXCTRLINFO](#hexctrlinfo)
-  </details>
+   </details>
 * [Positioning and Sizing](#positioning-and-sizing)
 * [Appearance](#appearance)
 * [Licensing](#licensing)
@@ -585,14 +586,14 @@ If `enModifyMode` is equal to [`EHexModifyMode::MODIFY_OPERATION`](#ehexmodifymo
 [`enOperMode`](#ehexopermode) comes into play, showing what kind of operation must be performed on data.
 
 ### [](#)HEXNOTIFYSTRUCT
-This struct is used in notifications routine, when data is set with the [`DATA_MSG`](#ehexdatamode) flag.
+This struct is used in notification purposes, to notify parent window about **HexControl**'s states.
 ```cpp
 struct HEXNOTIFYSTRUCT
 {
     NMHDR         hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
     HEXSPANSTRUCT stSpan { };  //Offset and size of the bytes. 
     ULONGLONG     ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
-    PBYTE         pData { };   //Pointer to a data to get/send.
+    const BYTE*   pData { };   //Pointer to a data to get/send.
 };
 using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
 ```
@@ -643,11 +644,14 @@ enum class EHexOperMode : WORD
 };
 ```
 
-## [](#)Messages
+## [](#)Notification Messages
 In process of its work **HexControl** sends notification messages through **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** mechanism to indicate its states. Theese messages are sent either to [`HEXCREATESTRUCT::hwndParent`](#hexcreatestruct) or to [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) window, depending on whether the latter is set.
 
 ### [](#)HEXCTRL_MSG_CONTEXTMENU
 Sent when context menu is about to be displayed.
+
+### [](#)HEXCTRL_MSG_DATACHANGE
+Sent to indicate that the data has changed, used together with the pointer to [`HEXMODIFYSTRUCT`](#hexmodifystruct).
 
 ### [](#)HEXCTRL_MSG_DESTROY
 Sent to indicate that **HexControl** window is about to be destroyed.
@@ -658,14 +662,14 @@ Used in [`DATA_MSG`](#ehexdatamode) mode to acquire the next byte to display.
 ### [](#)HEXCTRL_MSG_MENUCLICK
 Sent when user defined custom menu has been clicked.
 
-### [](#)HEXCTRL_MSG_MODIFYDATA
-Sent to indicate that the data has changed, used together with the pointer to [`HEXMODIFYSTRUCT`](#hexmodifystruct).
-
 ### [](#)HEXCTRL_MSG_SETCURSOR
 Sent when cursor position has changed. [`HEXNOTIFYSTRUCT::ullData`](#hexnotifystruct) will have current cursor position.
 
 ### [](#)HEXCTRL_MSG_SETSELECTION
 Sent when selection has been made.
+
+### [](#)HEXCTRL_MSG_VIEWCHANGE
+Sent when **HexControl**'s view has changed. [`HEXNOTIFYSTRUCT::ullData`](#hexnotifystruct) will have current top line number.
 
 ## [](#)Exported Functions
 **HexControl** has few `"C"` interface functions which it exports when built as *.dll*.
