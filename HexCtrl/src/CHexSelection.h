@@ -12,23 +12,23 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	class CHexSelect
+	class CHexSelection
 	{
 	public:
 		void Attach(CHexCtrl* p);
+		void ClearAll();
 		CHexCtrl* GetHexCtrl();
+		ULONGLONG GetSelectionEnd()const;
+		ULONGLONG GetSelectionSize()const;
+		ULONGLONG GetSelectionStart()const;
+		DWORD GetLineLength()const;  //Length of the selected line. Used in block selection (with Alt).
+		ULONGLONG GetOffsetByIndex(ULONGLONG ullIndex)const;  //Retrieves selection's offset by index [0...selectionSize)
+		auto GetData()const ->std::vector<HEXSPANSTRUCT>;
 		bool HasSelection()const;
 		bool HitTest(ULONGLONG ullIndex)const;
 		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect);
-		void SetSelectionStart(ULONGLONG ullOffset);
 		void SetSelectionEnd(ULONGLONG ullOffset);
-		ULONGLONG GetSelectionSize()const;
-		ULONGLONG GetSelectionStart()const;
-		ULONGLONG GetSelectionEnd()const;
-		ULONGLONG GetOffsetByIndex(ULONGLONG ullIndex)const;  //Retrieves selection offset by index [0...selectionSize)
-		DWORD GetLineLength()const;  //Length of the selected line. Used in block selection (with Alt).
-		auto GetVector()->std::vector<HEXSPANSTRUCT>&;
-		void ClearAll();
+		void SetSelectionStart(ULONGLONG ullOffset);
 	private:
 		CHexCtrl* m_pHex { };
 		std::vector<HEXSPANSTRUCT> m_vecSelect { };

@@ -198,8 +198,8 @@ namespace HEXCTRL
 	{
 		NMHDR         hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
 		HEXSPANSTRUCT stSpan { };  //Offset and size of the bytes. 
-		UINT_PTR      uMenuId { }; //User defined custom menu id.
-		PBYTE         pData { };   //Pointer to a data to get/send.
+		ULONGLONG     ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
+		const BYTE*   pData { };   //Pointer to a data to get/send.
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
 
@@ -219,7 +219,7 @@ namespace HEXCTRL
 		virtual auto GetColor()const->HEXCOLORSTRUCT = 0;      //Current colors.
 		virtual long GetFontSize()const = 0;                   //Current font size.
 		virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
-		virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> & = 0; //Gets current selection.
+		virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> = 0; //Gets current selection.
 		virtual auto GetShowMode()const->EHexShowMode = 0;     //Retrieves current show mode.
 		virtual HWND GetWindowHandle()const = 0;               //Retrieves control's window handle.
 		virtual void GoToOffset(ULONGLONG ullOffset, bool fSelect = false, ULONGLONG ullSize = 1) = 0; //Scrolls to given offset.
@@ -314,15 +314,16 @@ namespace HEXCTRL
 	* These codes are used to notify m_hwndMsg window about control's states.                   *
 	********************************************************************************************/
 
-	constexpr auto HEXCTRL_MSG_DESTROY { 0xFFFFu };       //Indicates that HexCtrl is being destroyed.
-	constexpr auto HEXCTRL_MSG_GETDATA { 0x0100u };       //Used in DATA_MSG mode to acquire the next byte to display.
-	constexpr auto HEXCTRL_MSG_MODIFYDATA { 0x0101u };    //Indicates that the data is changed, used with the HEXMODIFYSTRUCT*.
-	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0102u };  //Selection has been made.
-	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0103u };     //User defined custom menu clicked.
-	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0104u };   //OnContextMenu triggered.
-	constexpr auto HEXCTRL_MSG_SETCURSOR { 0x0105u };     //Cursor position changed.
+	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0100u };  //OnContextMenu triggered.
+	constexpr auto HEXCTRL_MSG_DATACHANGE { 0x0101u };   //Indicates that the data has changed, used with the HEXMODIFYSTRUCT*.
+	constexpr auto HEXCTRL_MSG_DESTROY { 0x0102u };      //Indicates that HexCtrl is being destroyed.
+	constexpr auto HEXCTRL_MSG_GETDATA { 0x0103u };      //Used in DATA_MSG mode to acquire the next byte to display.
+	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0104u };    //User defined custom menu clicked.
+	constexpr auto HEXCTRL_MSG_SETCURSOR { 0x0105u };    //Cursor position changed.
+	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0106u }; //Selection has been made.
+	constexpr auto HEXCTRL_MSG_VIEWCHANGE { 0x0107u };   //View of the control has changed.
 
-/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
+	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #ifdef _UNICODE
 #if defined _M_IX86
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")

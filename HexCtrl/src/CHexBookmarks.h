@@ -21,8 +21,8 @@ namespace HEXCTRL::INTERNAL
 		void Attach(CHexCtrl* pHex);
 		void ClearAll();
 		auto GetBookmark(DWORD dwID)->HEXBOOKMARKSTRUCT*;
+		auto GetData()->std::deque<HEXBOOKMARKSTRUCT>&;
 		auto GetTouchTime()const->std::time_t;
-		auto GetVector()->std::deque<HEXBOOKMARKSTRUCT>&;
 		void GoBookmark(DWORD nID);
 		void GoNext();
 		void GoPrev();

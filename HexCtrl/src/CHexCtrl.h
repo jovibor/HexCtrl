@@ -23,7 +23,7 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgFillWith;
 	class CHexDlgBookmarkMgr;
 	class CHexBookmarks;
-	class CHexSelect;
+	class CHexSelection;
 	struct UNDOSTRUCT;
 	enum class EClipboard : DWORD;
 	namespace SCROLLEX { class CScrollEx; }
@@ -45,7 +45,7 @@ namespace HEXCTRL::INTERNAL
 		auto GetColor()const->HEXCOLORSTRUCT override;      //Current colors.
 		long GetFontSize()const override;                   //Current font size.
 		HMENU GetMenuHandle()const override;                //Context menu handle.
-		auto GetSelection()const->std::vector<HEXSPANSTRUCT> & override; //Gets current selection.
+		auto GetSelection()const->std::vector<HEXSPANSTRUCT> override; //Gets current selection.
 		auto GetShowMode()const->EHexShowMode override;     //Retrieves current show mode.
 		HWND GetWindowHandle()const override;               //Retrieves control's window handle.
 		void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize) override; //Scrolls to given offset.
@@ -122,7 +122,7 @@ namespace HEXCTRL::INTERNAL
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
-		[[nodiscard]] ULONGLONG GetCursorPos();                //Cursor or selection_click depending on edit mode.
+		[[nodiscard]] ULONGLONG GetCursorPos()const;                //Cursor or selection_click depending on edit mode.
 		void SetCursorPos(ULONGLONG ullPos, bool fHighPart);   //Sets the cursor position when in Edit mode.
 		void CursorMoveRight();
 		void CursorMoveLeft();
@@ -142,7 +142,7 @@ namespace HEXCTRL::INTERNAL
 		void UpdateSectorVisible();                               //Updates info about whether sectors lines printable atm or not.
 	private:
 		const DWORD m_dwCapacityMax { 99 };   //Maximum capacity.
-		const std::unique_ptr<CHexSelect> m_pSelect { std::make_unique<CHexSelect>() };                    //Selection class.
+		const std::unique_ptr<CHexSelection> m_pSelection { std::make_unique<CHexSelection>() };           //Selection class.
 		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };           //"Search..." dialog.
 		const std::unique_ptr<CHexDlgOperations> m_pDlgOpers { std::make_unique<CHexDlgOperations>() };    //"Operations" dialog.
 		const std::unique_ptr<CHexDlgFillWith> m_pDlgFillWith { std::make_unique<CHexDlgFillWith>() };     //"Fill with..." dialog.

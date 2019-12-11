@@ -15,6 +15,7 @@
   * [Memory Data](#memory-data)
   * [Message Window](#message-window)
   * [Virtual Handler](#virtual-handler)
+* [Virtual Bookmarks](#virtual-bookmarks)
 * [Methods](#methods) <details><summary>_Expand_</summary>
   * [AddBookmark](#addbookmark)
   * [ClearData](#cleardata)
@@ -59,14 +60,14 @@
   * [EHexOperMode](#ehexopermode)
   </details>
 * [Messages](#messages) <details><summary>_Expand_</summary>
+  * [HEXCTRL_MSG_CONTEXTMENU](#hexctrl_msg_contextmenu)
   * [HEXCTRL_MSG_DESTROY](#hexctrl_msg_destroy)
   * [HEXCTRL_MSG_GETDATA](#hexctrl_msg_getdata)
-  * [HEXCTRL_MSG_MODIFYDATA](#modifydata)
-  * [HEXCTRL_MSG_SETSELECTION](#hexctrl_msg_setselection)
   * [HEXCTRL_MSG_MENUCLICK](#hexctrl_msg_menuclick)
-  * [HEXCTRL_MSG_CONTEXTMENU](#hexctrl_msg_contextmenu)
+  * [HEXCTRL_MSG_MODIFYDATA](#hexctrl_msg_modifydata)
   * [HEXCTRL_MSG_SETCURSOR](#hexctrl_msg_setcursor)
-  </details>
+  * [HEXCTRL_MSG_SETSELECTION](#hexctrl_msg_setselection)
+    </details>
 * [Exported Functions](#exported-functions) <details><summary>_Expand_</summary>
   * [CreateRawHexCtrl](#createrawhexctrl)
   * [GetHexCtrlInfo](#gethexctrlinfo)
@@ -265,12 +266,35 @@ You have to derive your own class from it and implement all its public methods:
 class IHexVirtual
 {
 public:
-    virtual ~IHexVirtual() = default;
     virtual BYTE GetByte(ULONGLONG ullIndex) = 0;            //Gets the byte data by index.
     virtual void ModifyData(const HEXMODIFYSTRUCT& hmd) = 0; //Main routine to modify data, in fMutable=true mode.
 };
 ```
 Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
+
+## [](#)Virtual Bookmarks
+**HexControl** has innate functional to work with any amount of bookmarked regions. These regions can be assigned with individual background and text color, and description.
+
+But if you have some big and complicated data logic and want to handle all these regions yourself, you can do it.  
+For this you have to inherit your own class from the `IHexBkmVirtual` pure virtual interface and implement all the routines withing this class.
+You will have to assign then `pHexBkmVirtual` member of [`HEXDATASTRUCT`](#hexdatastruct) to instance of your class prior to [`SetData`](#setdata) call.  
+
+The main method of the `IHexBkmVirtual` interface is `HitTest`. It takes byte's offset and returns pointer to [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) if there is a bookmark withing this byte, or `nullptr` otherwise.
+
+```cpp
+class IHexBkmVirtual
+{
+    public:
+    virtual DWORD Add(const HEXBOOKMARKSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
+    virtual void ClearAll() = 0;                    //Clear all bookmarks.
+    virtual auto GetNext()->HEXBOOKMARKSTRUCT* = 0; //Get next bookmark.
+    virtual auto GetPrev()->HEXBOOKMARKSTRUCT* = 0; //Get previous bookmark.
+    virtual bool HasBookmarks() = 0;                //Returns true is there is at least one bookmark atm.
+    virtual auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0; //Has given offset the bookmark?
+    virtual void Remove(ULONGLONG ullOffset) = 0;   //Remove bookmark by the given offset.
+    virtual void RemoveId(DWORD dwId) = 0;          //Remove bookmark by given ID (returned by Add()).
+};
+```
 
 ## [](#)Methods
 The **HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
@@ -347,7 +371,7 @@ Retrives the `HMENU` handle of the control's context menu. You can use this hand
 
 Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.
 
-When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to `HEXNOTIFYSTRUCT` with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `uMenuId` field of the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) will be holding `ID` of the menu clicked.
+When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXNOTIFYSTRUCT`](#hexnotifystruct) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `ullData` field of the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) will be holding `ID` of the menu clicked.
 
 ### [](#)GetSelection
 ```cpp
@@ -567,7 +591,7 @@ struct HEXNOTIFYSTRUCT
 {
     NMHDR         hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
     HEXSPANSTRUCT stSpan { };  //Offset and size of the bytes. 
-    UINT_PTR      uMenuId { }; //User defined custom menu id.
+    ULONGLONG     ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
     PBYTE         pData { };   //Pointer to a data to get/send.
 };
 using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
@@ -622,26 +646,26 @@ enum class EHexOperMode : WORD
 ## [](#)Messages
 In process of its work **HexControl** sends notification messages through **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** mechanism to indicate its states. Theese messages are sent either to [`HEXCREATESTRUCT::hwndParent`](#hexcreatestruct) or to [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) window, depending on whether the latter is set.
 
+### [](#)HEXCTRL_MSG_CONTEXTMENU
+Sent when context menu is about to be displayed.
+
 ### [](#)HEXCTRL_MSG_DESTROY
 Sent to indicate that **HexControl** window is about to be destroyed.
 
 ### [](#)HEXCTRL_MSG_GETDATA
 Used in [`DATA_MSG`](#ehexdatamode) mode to acquire the next byte to display.
 
-### [](#)HEXCTRL_MSG_MODIFYDATA
-Sent to indicate that the data has changed, used together with the pointer to [`HEXMODIFYSTRUCT`](#hexmodifystruct).
-
-### [](#)HEXCTRL_MSG_SETSELECTION
-Sent when selection has been made.
-
 ### [](#)HEXCTRL_MSG_MENUCLICK
 Sent when user defined custom menu has been clicked.
 
-### [](#)HEXCTRL_MSG_CONTEXTMENU
-Sent when context menu is about to be displayed.
+### [](#)HEXCTRL_MSG_MODIFYDATA
+Sent to indicate that the data has changed, used together with the pointer to [`HEXMODIFYSTRUCT`](#hexmodifystruct).
 
 ### [](#)HEXCTRL_MSG_SETCURSOR
-Set when cursor position has changed.
+Sent when cursor position has changed. [`HEXNOTIFYSTRUCT::ullData`](#hexnotifystruct) will have current cursor position.
+
+### [](#)HEXCTRL_MSG_SETSELECTION
+Sent when selection has been made.
 
 ## [](#)Exported Functions
 **HexControl** has few `"C"` interface functions which it exports when built as *.dll*.

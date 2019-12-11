@@ -173,7 +173,7 @@ void CHexDlgBookmarkMgr::UpdateList()
 	WCHAR wstr[32];
 
 	m_List->SetRedraw(FALSE);
-	for (const auto& iter : m_pBookmarks->GetVector())
+	for (const auto& iter : m_pBookmarks->GetData())
 	{
 		swprintf_s(wstr, 8, L"%i", listindex + 1);
 		m_List->InsertItem(listindex, wstr);

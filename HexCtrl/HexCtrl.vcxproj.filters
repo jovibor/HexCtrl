@@ -66,9 +66,6 @@
     <ClInclude Include="res\HexCtrlRes.h">
       <Filter>HexCtrl\res</Filter>
     </ClInclude>
-    <ClInclude Include="src\CHexSelect.h">
-      <Filter>HexCtrl\src</Filter>
-    </ClInclude>
     <ClInclude Include="src\Dialogs\CHexDlgBookmarkMgr.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
@@ -83,6 +80,9 @@
     </ClInclude>
     <ClInclude Include="src\ListEx\src\CListExHdr.h">
       <Filter>HexCtrl\src\ListEx\src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CHexSelection.h">
+      <Filter>HexCtrl\src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -113,9 +113,6 @@
     <ClCompile Include="src\Dialogs\CHexDlgSearch.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
-    <ClCompile Include="src\CHexSelect.cpp">
-      <Filter>HexCtrl\src</Filter>
-    </ClCompile>
     <ClCompile Include="src\Dialogs\CHexDlgBookmarkMgr.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
@@ -127,6 +124,9 @@
     </ClCompile>
     <ClCompile Include="src\ListEx\src\CListExHdr.cpp">
       <Filter>HexCtrl\src\ListEx\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CHexSelection.cpp">
+      <Filter>HexCtrl\src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

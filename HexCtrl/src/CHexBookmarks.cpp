@@ -72,14 +72,14 @@ auto CHexBookmarks::GetBookmark(DWORD dwID)->HEXBOOKMARKSTRUCT*
 		return nullptr;
 }
 
+auto CHexBookmarks::GetData()->std::deque<HEXBOOKMARKSTRUCT>&
+{
+	return m_deqBookmarks;
+}
+
 auto CHexBookmarks::GetTouchTime() const -> std::time_t
 {
 	return m_time;
-}
-
-auto CHexBookmarks::GetVector()->std::deque<HEXBOOKMARKSTRUCT>&
-{
-	return m_deqBookmarks;
 }
 
 void CHexBookmarks::GoBookmark(DWORD dwID)
