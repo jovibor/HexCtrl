@@ -121,12 +121,13 @@ namespace HEXCTRL::INTERNAL
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
-		[[nodiscard]] ULONGLONG GetCursorPos()const;                //Cursor or selection_click depending on edit mode.
-		void SetCursorPos(ULONGLONG ullPos, bool fHighPart);   //Sets the cursor position when in Edit mode.
-		void CursorMoveRight();
-		void CursorMoveLeft();
-		void CursorMoveUp();
-		void CursorMoveDown();
+		[[nodiscard]] ULONGLONG GetCaretPos()const;            //Cursor or selection_click depending on edit mode.
+		void SetCaretPos(ULONGLONG ullPos, bool fHighPart);    //Sets the cursor position when in Edit mode.
+		void OnCaretPosChange(ULONGLONG ullPos);               //On changing caret position.
+		void CaretMoveRight();
+		void CaretMoveLeft();
+		void CaretMoveUp();
+		void CaretMoveDown();
 		void Undo();
 		void Redo();
 		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
@@ -168,7 +169,7 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
 		ULONGLONG m_ullLMouseClick { 0xFFFFFFFFFFFFFFFFULL }; //Left mouse button clicked chunk.
 		ULONGLONG m_ullRMouseClick { 0xFFFFFFFFFFFFFFFFULL }; //Right mouse clicked chunk. Used in bookmarking.
-		ULONGLONG m_ullCursorPos { };         //Current cursor position.
+		ULONGLONG m_ullCaretPos { };         //Current cursor position.
 		DWORD m_dwCapacity { 16 };            //How many bytes displayed in one row
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
