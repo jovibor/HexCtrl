@@ -223,9 +223,11 @@
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgAbout.h" />
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgBookmarkMgr.h" />
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgBookmarkProps.h" />
+    <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgDataInterpret.h" />
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgFillWith.h" />
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgOperations.h" />
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgSearch.h" />
+    <ClInclude Include="..\HexCtrl\src\Dialogs\CHexEdit.h" />
     <ClInclude Include="..\HexCtrl\src\Helper.h" />
     <ClInclude Include="..\HexCtrl\src\CHexCtrl.h" />
     <ClInclude Include="..\HexCtrl\src\CScrollEx.h" />
@@ -244,9 +246,11 @@
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgAbout.cpp" />
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgBookmarkMgr.cpp" />
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgBookmarkProps.cpp" />
+    <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgDataInterpret.cpp" />
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgFillWith.cpp" />
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgOperations.cpp" />
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp" />
+    <ClCompile Include="..\HexCtrl\src\Dialogs\CHexEdit.cpp" />
     <ClCompile Include="..\HexCtrl\src\Helper.cpp" />
     <ClCompile Include="..\HexCtrl\src\CHexCtrl.cpp" />
     <ClCompile Include="..\HexCtrl\src\CScrollEx.cpp" />

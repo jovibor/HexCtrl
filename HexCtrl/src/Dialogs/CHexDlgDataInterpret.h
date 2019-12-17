@@ -12,32 +12,48 @@
 #include "../../res/HexCtrlRes.h"
 #include "CHexEdit.h"
 
-namespace HEXCTRL::INTERNAL {
-	class CHexDlgOperations final : public CDialogEx
+namespace HEXCTRL::INTERNAL
+{
+	class CHexDlgDataInterpret final : public CDialogEx
 	{
 	public:
-		explicit CHexDlgOperations() : CDialogEx(IDD_HEXCTRL_OPERATIONS) {}
-		virtual ~CHexDlgOperations() {}
+		CHexDlgDataInterpret(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_DATAINTERPRET, pParent) {}
+		virtual ~CHexDlgDataInterpret() {}
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
+		ULONGLONG GetSize();
+		void InspectOffset(ULONGLONG ullOffset);
+		BOOL ShowWindow(int nCmdShow);
 	protected:
 		virtual void DoDataExchange(CDataExchange* pDX);
 		virtual BOOL OnInitDialog();
-		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+		afx_msg void OnClose();
+		virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+		void UpdateHexCtrl();
 		DECLARE_MESSAGE_MAP()
 	private:
-		CHexCtrl* GetHexCtrl()const;
-	private:
 		CHexCtrl* m_pHexCtrl { };
-		CHexEdit m_editOR;
-		CHexEdit m_editXOR;
-		CHexEdit m_editAND;
-		CHexEdit m_editSHL;
-		CHexEdit m_editSHR;
-		CHexEdit m_editAdd;
-		CHexEdit m_editSub;
-		CHexEdit m_editMul;
-		CHexEdit m_editDiv;
-		virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+		bool m_fVisible { false };
+		CHexEdit m_edit8sign;
+		CHexEdit m_edit8unsign;
+		CHexEdit m_edit16sign;
+		CHexEdit m_edit16unsign;
+		CHexEdit m_edit32sign;
+		CHexEdit m_edit32unsign;
+		CHexEdit m_edit64sign;
+		CHexEdit m_edit64unsign;
+		CHexEdit m_editFloat;
+		CHexEdit m_editDouble;
+		CHexEdit m_editTime32;
+		CHexEdit m_editTime64;
+		std::vector<CHexEdit*> m_vec16 { };
+		std::vector<CHexEdit*> m_vec32 { };
+		std::vector<CHexEdit*> m_vec64 { };
+		UINT_PTR m_dwCurrID { };
+		ULONGLONG m_ullOffset { };
+		ULONGLONG m_ullSize { };
+		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 		virtual void OnOK();
+	public:
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 	};
 }

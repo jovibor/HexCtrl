@@ -1,12 +1,10 @@
-/********************************************************************************
-* Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/					*
-* Github repository URL: https://github.com/jovibor/ListEx						*
-* This software is available under the "MIT License".							*
-* This is an extended and featured version of CMFCListCtrl class.				*
-* CListEx - list control class with the ability to set tooltips on arbitrary	*
-* cells, and also with a lots of other stuff to customize your control in many	*
-* different aspects. For more info see official documentation on github.		*
-********************************************************************************/
+/****************************************************************************************
+* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* This is very extended and featured version of CMFCListCtrl class.                     *
+* Official git repository: https://github.com/jovibor/ListEx/                           *
+* This class is available under the "MIT License".                                      *
+* For more information visit the project's official repository.                         *
+****************************************************************************************/
 #pragma once
 #include <unordered_map> //std::unordered_map and related.
 

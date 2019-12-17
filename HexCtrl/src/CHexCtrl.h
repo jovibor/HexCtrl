@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
+* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
@@ -18,10 +18,11 @@ namespace HEXCTRL::INTERNAL
 	/*********************************
 	* Forward declarations.          *
 	*********************************/
-	class CHexDlgSearch;
-	class CHexDlgOperations;
-	class CHexDlgFillWith;
 	class CHexDlgBookmarkMgr;
+	class CHexDlgDataInterpret;
+	class CHexDlgFillWith;
+	class CHexDlgOperations;
+	class CHexDlgSearch;
 	class CHexBookmarks;
 	class CHexSelection;
 	struct UNDOSTRUCT;
@@ -97,14 +98,14 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnNcPaint();
 	public:
 		PBYTE GetData(ULONGLONG* pUllSize = nullptr);          //Gets current data pointer and data size.
-		[[nodiscard]] BYTE GetByte(ULONGLONG ullIndex)const;   //Gets the BYTE data by index.
-		[[nodiscard]] WORD GetWord(ULONGLONG ullIndex)const;   //Gets the WORD data by index.
-		[[nodiscard]] DWORD GetDword(ULONGLONG ullIndex)const; //Gets the DWORD data by index.
-		[[nodiscard]] QWORD GetQword(ULONGLONG ullIndex)const; //Gets the QWORD data by index.
-		bool SetByte(ULONGLONG ullIndex, BYTE bData);          //Sets the BYTE data by index.
-		bool SetWord(ULONGLONG ullIndex, WORD wData);		   //Sets the WORD data by index.
-		bool SetDword(ULONGLONG ullIndex, DWORD dwData);	   //Sets the DWORD data by index.
-		bool SetQword(ULONGLONG ullIndex, QWORD qwData);	   //Sets the QWORD data by index.
+		[[nodiscard]] BYTE GetByte(ULONGLONG ullOffset)const;  //Gets the BYTE data by index.
+		[[nodiscard]] WORD GetWord(ULONGLONG ullOffset)const;  //Gets the WORD data by index.
+		[[nodiscard]] DWORD GetDword(ULONGLONG ullOffset)const;//Gets the DWORD data by index.
+		[[nodiscard]] QWORD GetQword(ULONGLONG ullOffset)const;//Gets the QWORD data by index.
+		bool SetByte(ULONGLONG ullOffset, BYTE bData);         //Sets the BYTE data by index.
+		bool SetWord(ULONGLONG ullOffset, WORD wData);		   //Sets the WORD data by index.
+		bool SetDword(ULONGLONG ullOffset, DWORD dwData);	   //Sets the DWORD data by index.
+		bool SetQword(ULONGLONG ullOffset, QWORD qwData);	   //Sets the QWORD data by index.
 		void ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw = true); //Main routine to modify data, in m_fMutable==true mode.
 		[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
@@ -123,7 +124,7 @@ namespace HEXCTRL::INTERNAL
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
 		[[nodiscard]] ULONGLONG GetCaretPos()const;            //Cursor or selection_click depending on edit mode.
 		void SetCaretPos(ULONGLONG ullPos, bool fHighPart);    //Sets the cursor position when in Edit mode.
-		void OnCaretPosChange(ULONGLONG ullPos);               //On changing caret position.
+		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		void CaretMoveRight();
 		void CaretMoveLeft();
 		void CaretMoveUp();
@@ -141,13 +142,13 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsSectorVisible();                     //Returns m_fSectorsPrintable.
 		void UpdateSectorVisible();                               //Updates info about whether sectors lines printable atm or not.
 	private:
-		const DWORD m_dwCapacityMax { 99 };   //Maximum capacity.
-		const std::unique_ptr<CHexSelection> m_pSelection { std::make_unique<CHexSelection>() };           //Selection class.
-		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };           //"Search..." dialog.
-		const std::unique_ptr<CHexDlgOperations> m_pDlgOpers { std::make_unique<CHexDlgOperations>() };    //"Operations" dialog.
-		const std::unique_ptr<CHexDlgFillWith> m_pDlgFillWith { std::make_unique<CHexDlgFillWith>() };     //"Fill with..." dialog.
 		const std::unique_ptr<CHexDlgBookmarkMgr> m_pDlgBookmarkMgr { std::make_unique<CHexDlgBookmarkMgr>() }; //Bookmark manager.
+		const std::unique_ptr<CHexDlgDataInterpret> m_pDlgDataInterpret { std::make_unique<CHexDlgDataInterpret>() }; //Data Interpreter.
+		const std::unique_ptr<CHexDlgFillWith> m_pDlgFillWith { std::make_unique<CHexDlgFillWith>() };     //"Fill with..." dialog.
+		const std::unique_ptr<CHexDlgOperations> m_pDlgOpers { std::make_unique<CHexDlgOperations>() };    //"Operations" dialog.
+		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };           //"Search..." dialog.
 		const std::unique_ptr<CHexBookmarks> m_pBookmarks { std::make_unique<CHexBookmarks>() };           //Bookmarks.
+		const std::unique_ptr<CHexSelection> m_pSelection { std::make_unique<CHexSelection>() };           //Selection class.
 		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll bar.
 		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll bar.
 		const int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
@@ -155,7 +156,8 @@ namespace HEXCTRL::INTERNAL
 		const int m_iHeightBottomOffArea { m_iHeightBottomRect + m_iIndentBottomLine }; //Height of not visible rect from window's bottom to m_iThirdHorizLine.
 		const int m_iFirstHorizLine { 0 };    //First horizontal line indent.
 		const int m_iFirstVertLine { 0 };     //First vertical line indent.
-		const size_t m_dwsUndoMax { 500 };    //How many Undo states to preserve.
+		const DWORD m_dwCapacityMax { 99 };   //Maximum capacity.
+		const DWORD m_dwUndoMax { 500 };      //How many Undo states to preserve.
 		HEXCOLORSTRUCT m_stColor;             //All control related colors.
 		EHexDataMode m_enDataMode { EHexDataMode::DATA_MEMORY }; //Control's creation mode.
 		EHexShowMode m_enShowMode { };        //Current "Show data" mode.

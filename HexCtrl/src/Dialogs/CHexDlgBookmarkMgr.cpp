@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
+* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
@@ -42,7 +42,6 @@ BOOL CHexDlgBookmarkMgr::OnInitDialog()
 
 	m_List->CreateDialogCtrl(IDC_HEXCTRL_BOOKMARKMGR_LIST, this);
 	m_List->SetSortable(true);
-	m_List->SetSortFunc(&CompareFunc);
 	m_List->InsertColumn(0, L"\u2116", LVCFMT_RIGHT, 30);
 	m_List->InsertColumn(1, L"Offset", LVCFMT_RIGHT, 80);
 	m_List->InsertColumn(2, L"Size", LVCFMT_RIGHT, 80);
@@ -198,41 +197,4 @@ void CHexDlgBookmarkMgr::UpdateList()
 	}
 	m_List->SetRedraw(TRUE);
 	m_time = m_pBookmarks->GetTouchTime();
-}
-
-int CHexDlgBookmarkMgr::CompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
-{
-	IListEx* pListCtrl = (IListEx*)lParamSort;
-	int iSortColumn = pListCtrl->GetSortColumn();
-	std::wstring wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn).GetBuffer();
-	std::wstring wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn).GetBuffer();
-
-	LONGLONG llData1 { }, llData2 { 0 };
-
-	//№, Offset, Size.
-	if (iSortColumn == 0 || iSortColumn == 1 || iSortColumn == 2)
-	{
-		StrToInt64ExW(wstrItem1.data(), STIF_SUPPORT_HEX, &llData1);
-		StrToInt64ExW(wstrItem2.data(), STIF_SUPPORT_HEX, &llData2);
-	}
-	else if (iSortColumn == 3) //Description
-		llData1 = wstrItem1.compare(wstrItem2);
-
-	int result = 0;
-	if (pListCtrl->GetSortAscending())
-	{
-		if ((llData1 - llData2) < 0)
-			result = -1;
-		else if ((llData1 - llData2) > 0)
-			result = 1;
-	}
-	else
-	{
-		if ((llData1 - llData2) < 0)
-			result = 1;
-		else if ((llData1 - llData2) > 0)
-			result = -1;
-	}
-
-	return result;
 }

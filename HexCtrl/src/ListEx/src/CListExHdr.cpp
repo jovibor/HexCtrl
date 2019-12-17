@@ -1,12 +1,10 @@
-/********************************************************************************
-* Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/					*
-* Github repository URL: https://github.com/jovibor/ListEx						*
-* This software is available under the "MIT License".							*
-* This is an extended and featured version of CMFCListCtrl class.				*
-* CListEx - list control class with the ability to set tooltips on arbitrary	*
-* cells, and also with a lots of other stuff to customize your control in many	*
-* different aspects. For more info see official documentation on github.		*
-********************************************************************************/
+/****************************************************************************************
+* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* This is very extended and featured version of CMFCListCtrl class.                     *
+* Official git repository: https://github.com/jovibor/ListEx/                           *
+* This class is available under the "MIT License".                                      *
+* For more information visit the project's official repository.                         *
+****************************************************************************************/
 #include "stdafx.h"
 #include "../ListEx.h"
 #include "CListExHdr.h"
@@ -88,9 +86,8 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BO
 	//Draw sortable triangle (arrow).
 	if (m_fSortable && iItem == m_iSortColumn)
 	{
-		// set up the pens to use for drawing the arrow.
 		rDC.SelectObject(m_penLight);
-		const int iOffset = (rect.bottom - rect.top) / 4;
+		const auto iOffset = rect.Height() / 4;
 
 		if (m_fSortAscending)
 		{

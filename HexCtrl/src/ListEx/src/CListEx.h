@@ -1,20 +1,25 @@
-/********************************************************************************
-* Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/					*
-* Github repository URL: https://github.com/jovibor/ListEx						*
-* This software is available under the "MIT License".							*
-* This is an extended and featured version of CMFCListCtrl class.				*
-* CListEx - list control class with the ability to set tooltips on arbitrary	*
-* cells, and also with a lots of other stuff to customize your control in many	*
-* different aspects. For more info see official documentation on github.		*
-********************************************************************************/
+/****************************************************************************************
+* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* This is very extended and featured version of CMFCListCtrl class.                     *
+* Official git repository: https://github.com/jovibor/ListEx/                           *
+* This class is available under the "MIT License".                                      *
+* For more information visit the project's official repository.                         *
+****************************************************************************************/
 #pragma once
 #include "../ListEx.h"
 #include "CListExHdr.h"
 #include <unordered_map>
 
 namespace HEXCTRL::INTERNAL::LISTEX {
+
+	struct CELLCOLOR
+	{
+		COLORREF clrBk;
+		COLORREF clrText;
+	};
+
 	/********************************************
-	* CListEx class definition.					*
+	* CListEx class declaration.                *
 	********************************************/
 	class CListEx : public IListEx
 	{
@@ -22,34 +27,34 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		DECLARE_DYNAMIC(CListEx)
 		CListEx() = default;
 		~CListEx() = default;
-		bool Create(const LISTEXCREATESTRUCT & lcs)override;
-		void CreateDialogCtrl(UINT uCtrlID, CWnd * pwndDlg)override;
+		bool Create(const LISTEXCREATESTRUCT& lcs)override;
+		void CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)override;
+		static int CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 		BOOL DeleteAllItems()override;
 		BOOL DeleteItem(int nItem)override;
 		void Destroy()override;
-		DWORD_PTR GetCellData(int iItem, int iSubitem)override;
+		ULONGLONG GetCellData(int iItem, int iSubitem)override;
 		UINT GetFontSize()override;
 		int GetSortColumn()const override;
 		bool GetSortAscending()const override;
 		bool IsCreated()const override;
-		void SetCellColor(int iItem, int iSubitem, COLORREF clr)override;
-		void SetCellData(int iItem, int iSubitem, DWORD_PTR dwData)override;
-		void SetCellMenu(int iItem, int iSubitem, CMenu * pMenu)override;
+		void SetCellColor(int iItem, int iSubitem, COLORREF clrBk, COLORREF clrText)override;
+		void SetCellData(int iItem, int iSubitem, ULONGLONG ullData)override;
+		void SetCellMenu(int iItem, int iSubitem, CMenu* pMenu)override;
 		void SetCellTooltip(int iItem, int iSubitem, const wchar_t* pwszTooltip, const wchar_t* pwszCaption = nullptr)override;
-		void SetColor(const LISTEXCOLORSTRUCT & lcs)override;
-		void SetFont(const LOGFONTW * pLogFontNew)override;
+		void SetColor(const LISTEXCOLORSTRUCT& lcs)override;
+		void SetFont(const LOGFONTW* pLogFontNew)override;
 		void SetFontSize(UINT uiSize)override;
 		void SetHeaderHeight(DWORD dwHeight)override;
-		void SetHeaderFont(const LOGFONT * pLogFontNew)override;
+		void SetHeaderFont(const LOGFONTW* pLogFontNew)override;
 		void SetHeaderColumnColor(DWORD nColumn, COLORREF clr)override;
-		void SetListMenu(CMenu * pMenu)override;
-		void SetSortable(bool fSortable)override;
-		void SetSortFunc(int (CALLBACK *pfCompareFunc)(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort))override;
+		void SetListMenu(CMenu* pMenu)override;
+		void SetSortable(bool fSortable, int (CALLBACK *pfCompareFunc)(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) = nullptr)override;
 		DECLARE_MESSAGE_MAP()
 	protected:
 		CListExHdr& GetHeaderCtrl() { return m_stListHeader; }
 		void InitHeader();
-		bool HasCellColor(int iItem, int iSubitem, COLORREF& clrBk);
+		bool HasCellColor(int iItem, int iSubitem, COLORREF& clrBk, COLORREF& clrText);
 		bool HasTooltip(int iItem, int iSubitem, std::wstring** ppwstrText = nullptr, std::wstring** ppwstrCaption = nullptr);
 		bool HasMenu(int iItem, int iSubitem, CMenu** ppMenu = nullptr);
 		void DrawItem(LPDRAWITEMSTRUCT);
@@ -87,8 +92,8 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		std::unordered_map<int, std::unordered_map<int,
 			std::tuple<std::wstring/*tip text*/, std::wstring/*caption text*/>>> m_umapCellTt { }; //Cell's tooltips.
 		std::unordered_map<int, std::unordered_map<int, CMenu*>> m_umapCellMenu { };			   //Cell's menus.
-		std::unordered_map<int, std::unordered_map<int, DWORD_PTR>> m_umapCellData { };            //Cell's custom data.
-		std::unordered_map<int, std::unordered_map<int, COLORREF>> m_umapCellColor { };            //Cell's colors.
+		std::unordered_map<int, std::unordered_map<int, ULONGLONG>> m_umapCellData { };            //Cell's custom data.
+		std::unordered_map<int, std::unordered_map<int, CELLCOLOR>> m_umapCellColor { };            //Cell's colors.
 		NMITEMACTIVATE m_stNMII { };
 		const ULONG_PTR ID_TIMER_TOOLTIP { 0x01 };
 		int m_iSortColumn { };

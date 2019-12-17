@@ -214,9 +214,11 @@
     <ClInclude Include="src\Dialogs\CHexDlgAbout.h" />
     <ClInclude Include="src\Dialogs\CHexDlgBookmarkProps.h" />
     <ClInclude Include="src\Dialogs\CHexDlgBookmarkMgr.h" />
+    <ClInclude Include="src\Dialogs\CHexDlgDataInterpret.h" />
     <ClInclude Include="src\Dialogs\CHexDlgFillWith.h" />
     <ClInclude Include="src\Dialogs\CHexDlgOperations.h" />
     <ClInclude Include="src\Dialogs\CHexDlgSearch.h" />
+    <ClInclude Include="src\Dialogs\CHexEdit.h" />
     <ClInclude Include="src\Helper.h" />
     <ClInclude Include="src\ListEx\ListEx.h" />
     <ClInclude Include="src\ListEx\src\CListEx.h" />
@@ -236,9 +238,11 @@
     <ClCompile Include="src\Dialogs\CHexDlgAbout.cpp" />
     <ClCompile Include="src\Dialogs\CHexDlgBookmarkProps.cpp" />
     <ClCompile Include="src\Dialogs\CHexDlgBookmarkMgr.cpp" />
+    <ClCompile Include="src\Dialogs\CHexDlgDataInterpret.cpp" />
     <ClCompile Include="src\Dialogs\CHexDlgFillWith.cpp" />
     <ClCompile Include="src\Dialogs\CHexDlgOperations.cpp" />
     <ClCompile Include="src\Dialogs\CHexDlgSearch.cpp" />
+    <ClCompile Include="src\Dialogs\CHexEdit.cpp" />
     <ClCompile Include="src\Helper.cpp" />
     <ClCompile Include="src\ListEx\src\CListEx.cpp" />
     <ClCompile Include="src\ListEx\src\CListExHdr.cpp" />

@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
+* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
@@ -39,9 +39,9 @@ BOOL CHexDlgBookmarkProps::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	CMFCColorButton* pClr;
-	pClr = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BOOKMARKMGR_DLGEDIT_COLOR_BK);
+	pClr = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_COLOR_BK);
 	pClr->SetColor(m_pHBS->clrBk);
-	pClr = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BOOKMARKMGR_DLGEDIT_COLOR_TEXT);
+	pClr = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_COLOR_TEXT);
 	pClr->SetColor(m_pHBS->clrText);
 
 	wchar_t pwszBuff[32];
@@ -58,13 +58,13 @@ BOOL CHexDlgBookmarkProps::OnInitDialog()
 		m_pHBS->vecSpan.emplace_back(HEXSPANSTRUCT { m_ullOffset, m_ullSize });
 	}
 	swprintf_s(pwszBuff, L"0x%llX", m_ullOffset);
-	CEdit* pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKMGR_DLGEDIT_EDIT_OFFSET);
+	CEdit* pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_OFFSET);
 	pEdit->SetWindowTextW(pwszBuff);
 
 	swprintf_s(pwszBuff, L"0x%llX", m_ullSize);
-	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKMGR_DLGEDIT_EDIT_LENGTH);
+	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_LENGTH);
 	pEdit->SetWindowTextW(pwszBuff);
-	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKMGR_DLGEDIT_EDIT_DESCR);
+	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_DESCR);
 	pEdit->SetWindowTextW(m_pHBS->wstrDesc.data());
 
 	return TRUE;
@@ -73,13 +73,13 @@ BOOL CHexDlgBookmarkProps::OnInitDialog()
 void CHexDlgBookmarkProps::OnOK()
 {
 	CMFCColorButton* pClrBtn;
-	pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BOOKMARKMGR_DLGEDIT_COLOR_BK);
+	pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_COLOR_BK);
 	m_pHBS->clrBk = pClrBtn->GetColor();
-	pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BOOKMARKMGR_DLGEDIT_COLOR_TEXT);
+	pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_COLOR_TEXT);
 	m_pHBS->clrText = pClrBtn->GetColor();
 
 	wchar_t pwszBuff[512];
-	CEdit* pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKMGR_DLGEDIT_EDIT_OFFSET);
+	CEdit* pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_OFFSET);
 	pEdit->GetWindowTextW(pwszBuff, 32);
 	ULONGLONG llOffset;
 	if (!WCharsToUll(pwszBuff, llOffset))
@@ -87,7 +87,7 @@ void CHexDlgBookmarkProps::OnOK()
 		MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 		return;
 	}
-	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKMGR_DLGEDIT_EDIT_LENGTH);
+	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_LENGTH);
 	pEdit->GetWindowTextW(pwszBuff, 32);
 	ULONGLONG llSize;
 	if (!WCharsToUll(pwszBuff, llSize))
@@ -106,7 +106,7 @@ void CHexDlgBookmarkProps::OnOK()
 		m_pHBS->vecSpan.emplace_back(HEXSPANSTRUCT { llOffset, llSize });
 	}
 
-	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKMGR_DLGEDIT_EDIT_DESCR);
+	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_DESCR);
 	pEdit->GetWindowTextW(pwszBuff, 512);
 	m_pHBS->wstrDesc = pwszBuff;
 

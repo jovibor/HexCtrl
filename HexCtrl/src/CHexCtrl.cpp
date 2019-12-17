@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
+* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
@@ -13,6 +13,7 @@
 #include "Dialogs/CHexDlgOperations.h"
 #include "Dialogs/CHexDlgFillWith.h"
 #include "Dialogs/CHexDlgBookmarkMgr.h"
+#include "Dialogs/CHexDlgDataInterpret.h"
 #include "CScrollEx.h"
 #include "CHexSelection.h"
 #include "CHexBookmarks.h"
@@ -136,6 +137,7 @@ CHexCtrl::CHexCtrl()
 		MENUITEMINFOW mii { };
 		mii.cbSize = sizeof(MENUITEMINFOW);
 		mii.fMask = MIIM_BITMAP;
+
 		mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_COPYHEX] =
 			(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
 		m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_COPYHEX, &mii);
@@ -297,12 +299,12 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_pDlgOpers->Create(IDD_HEXCTRL_OPERATIONS, this);
 	m_pDlgFillWith->Create(IDD_HEXCTRL_FILLWITHDATA, this);
 	m_pDlgBookmarkMgr->Create(IDD_HEXCTRL_BOOKMARKMGR, this, &*m_pBookmarks);
+	m_pDlgDataInterpret->Create(IDD_HEXCTRL_DATAINTERPRET, this);
 	m_pBookmarks->Attach(this);
 	m_pSelection->Attach(this);
 
 	m_fCreated = true;
 	SetShowMode(m_enShowMode);
-	RecalcAll();
 
 	return true;
 }
@@ -359,7 +361,7 @@ HMENU CHexCtrl::GetMenuHandle()const
 	if (!IsCreated())
 		return nullptr;
 
-	return m_menuMain.m_hMenu;
+	return m_menuMain.GetSubMenu(0)->GetSafeHmenu();
 }
 
 auto CHexCtrl::GetSelection()const->std::vector<HEXSPANSTRUCT>
@@ -370,7 +372,7 @@ auto CHexCtrl::GetSelection()const->std::vector<HEXSPANSTRUCT>
 	return m_pSelection->GetData();
 }
 
-auto CHexCtrl::GetShowMode() const -> EHexShowMode
+auto CHexCtrl::GetShowMode()const -> EHexShowMode
 {
 	assert(IsCreated()); //Not created.
 	if (!IsCreated())
@@ -379,7 +381,7 @@ auto CHexCtrl::GetShowMode() const -> EHexShowMode
 	return m_enShowMode;
 }
 
-HWND CHexCtrl::GetWindowHandle() const
+HWND CHexCtrl::GetWindowHandle()const
 {
 	assert(IsCreated()); //Not created.
 	if (!IsCreated())
@@ -581,32 +583,43 @@ void CHexCtrl::SetShowMode(EHexShowMode enShowMode)
 
 	m_enShowMode = enShowMode;
 
-	//Getting the "Show data as..." menu.
-	auto pMenu = m_menuMain.GetSubMenu(0)->GetSubMenu(2); //Separators are also count as menu!!!
-	if (!pMenu)
-		return;
-
-	//Unchecking all menus and checking only the current needed.
-	for (int i = 0; i < pMenu->GetMenuItemCount(); i++)
-		pMenu->CheckMenuItem(i, MF_UNCHECKED | MF_BYPOSITION);
-
-	int iId { };
-	switch (enShowMode)
+	//Getting the "Show data as..." menu pointer independent of position.
+	auto pMenuMain = m_menuMain.GetSubMenu(0);
+	CMenu* pMenuShowDataAs { };
+	for (int i = 0; i < pMenuMain->GetMenuItemCount(); i++)
 	{
-	case EHexShowMode::ASBYTE:
-		iId = 0;
-		break;
-	case EHexShowMode::ASWORD:
-		iId = 1;
-		break;
-	case EHexShowMode::ASDWORD:
-		iId = 2;
-		break;
-	case EHexShowMode::ASQWORD:
-		iId = 3;
-		break;
+		CStringW wstr;
+		if (pMenuMain->GetMenuStringW(i, wstr, MF_BYPOSITION) && wstr.Compare(L"Show data as...") == 0)
+		{
+			pMenuShowDataAs = pMenuMain->GetSubMenu(i);
+			break;
+		}
 	}
-	pMenu->CheckMenuItem(iId, MF_CHECKED | MF_BYPOSITION);
+
+	if (pMenuShowDataAs)
+	{
+		//Unchecking all menus and checking only the currently selected.
+		for (int i = 0; i < pMenuShowDataAs->GetMenuItemCount(); i++)
+			pMenuShowDataAs->CheckMenuItem(i, MF_UNCHECKED | MF_BYPOSITION);
+
+		UINT ID { };
+		switch (enShowMode)
+		{
+		case EHexShowMode::ASBYTE:
+			ID = IDM_HEXCTRL_SHOWAS_BYTE;
+			break;
+		case EHexShowMode::ASWORD:
+			ID = IDM_HEXCTRL_SHOWAS_WORD;
+			break;
+		case EHexShowMode::ASDWORD:
+			ID = IDM_HEXCTRL_SHOWAS_DWORD;
+			break;
+		case EHexShowMode::ASQWORD:
+			ID = IDM_HEXCTRL_SHOWAS_QWORD;
+			break;
+		}
+		pMenuShowDataAs->CheckMenuItem(ID, MF_CHECKED | MF_BYCOMMAND);
+	}
 	SetCapacity(m_dwCapacity); //To recalc current representation.
 }
 
@@ -852,7 +865,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	switch (uID)
 	{
-	case IDM_HEXCTRL_MAIN_SEARCH:
+	case IDM_HEXCTRL_SEARCH:
 		if (m_enDataMode == EHexDataMode::DATA_MEMORY)
 			m_pDlgSearch->ShowWindow(SW_SHOW);
 		else
@@ -919,10 +932,10 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	case IDM_HEXCTRL_CLIPBOARD_PASTEASCII:
 		ClipboardPaste(EClipboard::PASTE_ASCII);
 		break;
-	case IDM_HEXCTRL_MAIN_UNDO:
+	case IDM_HEXCTRL_MODIFY_UNDO:
 		Undo();
 		break;
-	case IDM_HEXCTRL_MAIN_REDO:
+	case IDM_HEXCTRL_MODIFY_REDO:
 		Redo();
 		break;
 	case IDM_HEXCTRL_MODIFY_OPERATIONS:
@@ -943,6 +956,9 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	case IDM_HEXCTRL_SELECTION_SELECTALL:
 		SelectAll();
 		break;
+	case IDM_HEXCTRL_DATAINTERPRET:
+		m_pDlgDataInterpret->ShowWindow(SW_SHOW);
+		break;
 	case IDM_HEXCTRL_APPEARANCE_FONTINCREASE:
 		SetFontSize(GetFontSize() + 2);
 		break;
@@ -955,7 +971,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	case IDM_HEXCTRL_APPEARANCE_CAPACITYDECREASE:
 		SetCapacity(m_dwCapacity - 1);
 		break;
-	case IDM_HEXCTRL_MAIN_ABOUT:
+	case IDM_HEXCTRL_ABOUT:
 	{
 		CHexDlgAbout dlgAbout(this);
 		dlgAbout.DoModal();
@@ -993,12 +1009,14 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 		uStatus = MF_ENABLED;
 
 	//Main
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MAIN_SEARCH, (fDataSet ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MAIN_UNDO, (m_deqUndo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MAIN_REDO, (m_deqRedo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH, (fDataSet ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+
+	//Modify
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, (m_fMutable ? uStatus : MF_GRAYED) | MF_BYCOMMAND);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLWITHDATA, (m_fMutable ? uStatus : MF_GRAYED) | MF_BYCOMMAND);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_OPERATIONS, (m_fMutable ? uStatus : MF_GRAYED) | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, (m_deqUndo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, (m_deqRedo.empty() ? MF_GRAYED : MF_ENABLED) | MF_BYCOMMAND);
 
 	//Selection
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_MARKSTART, (fDataSet ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
@@ -1105,7 +1123,7 @@ void CHexCtrl::OnKeyDownCtrl(UINT nChar)
 	{
 	case 'F':
 	case 'H':
-		wParam = IDM_HEXCTRL_MAIN_SEARCH;
+		wParam = IDM_HEXCTRL_SEARCH;
 		break;
 	case 'B':
 		wParam = IDM_HEXCTRL_BOOKMARKS_ADD;
@@ -1126,10 +1144,10 @@ void CHexCtrl::OnKeyDownCtrl(UINT nChar)
 		wParam = IDM_HEXCTRL_SELECTION_SELECTALL;
 		break;
 	case 'Z':
-		wParam = IDM_HEXCTRL_MAIN_UNDO;
+		wParam = IDM_HEXCTRL_MODIFY_UNDO;
 		break;
 	case 'Y':
-		wParam = IDM_HEXCTRL_MAIN_REDO;
+		wParam = IDM_HEXCTRL_MODIFY_REDO;
 		break;
 	}
 	if (wParam)
@@ -1264,7 +1282,7 @@ void CHexCtrl::OnKeyDownShiftRight()
 
 void CHexCtrl::OnKeyDownShiftUp()
 {
-	ULONGLONG ullClick { }, ullStart { }, ullSize = 0;
+	ULONGLONG ullClick { }, ullStart { 0 }, ullSize { 0 };
 	ULONGLONG ullSelStart = m_pSelection->GetSelectionStart();
 	ULONGLONG ullSelSize = m_pSelection->GetSelectionSize();
 
@@ -1281,7 +1299,6 @@ void CHexCtrl::OnKeyDownShiftUp()
 				ullClick = m_ullLMouseClick;
 				if (ullSelStart < m_dwCapacity)
 				{
-					ullStart = 0;
 					ullSize = ullSelSize + ullSelStart;
 				}
 				else
@@ -1314,7 +1331,6 @@ void CHexCtrl::OnKeyDownShiftUp()
 			ullClick = m_ullLMouseClick;
 			if (ullSelStart < m_dwCapacity)
 			{
-				ullStart = 0;
 				ullSize = ullSelSize + ullSelStart;
 			}
 			else
@@ -1547,7 +1563,8 @@ void CHexCtrl::OnPaint()
 	rc.bottom = iSecondHorizLine;
 	pDC->DrawTextW(L"Ascii", 5, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
-	std::vector<POLYTEXTW> vecPolyHex, vecPolyAscii, vecPolySelHex, vecPolySelAscii, vecPolyCursor;
+	std::vector<POLYTEXTW> vecPolyHex, vecPolyAscii, vecPolySelHex, vecPolySelAscii, vecPolyCursor,
+		vecPolyDataInterpretHex, vecPolyDataInterpretAscii;
 
 	//Struct for Bookmarks.
 	struct BOOKMARKS {
@@ -1566,7 +1583,7 @@ void CHexCtrl::OnPaint()
 	std::vector<SECTORLINES> vecSecLines;
 
 	std::list<std::wstring> listWstrHex, listWstrAscii, listWstrBookmarkHex, listWstrBookmarkAscii,
-		listWstrSelHex, listWstrSelAscii, listWstrCursor;
+		listWstrSelHex, listWstrSelAscii, listWstrCursor, listWstrDataInterpretHex, listWstrDataInterpretAscii;
 	COLORREF clrBkCursor { }; //Cursor color.
 
 	int iLine = 0; //Current line to print.
@@ -1600,11 +1617,13 @@ void CHexCtrl::OnPaint()
 		std::wstring wstrHexToPrint { }, wstrAsciiToPrint { }, wstrHexCursorToPrint { }, wstrAsciiCursorToPrint { };
 		std::wstring wstrHexBookmarkToPrint { }, wstrAsciiBookmarkToPrint { }; //Bookmarks to print.
 		std::wstring wstrHexSelToPrint { }, wstrAsciiSelToPrint { };           //Selected Hex and Ascii strings to print.
+		std::wstring wstrHexDataInterpretToPrint { }, wstrAsciiDataInterpretToPrint { }; //Data Interpreter Hex and Ascii strings to print.
 
 		//Selection Hex and Ascii X coords. 0x7FFFFFFF is important.
-		int iSelHexPosToPrintX = 0x7FFFFFFF, iSelAsciiPosToPrintX { };
-		int iBookmarkHexPosToPrintX = 0x7FFFFFFF, iBookmarkAsciiPosToPrintX { };
+		int iSelHexPosToPrintX { 0x7FFFFFFF }, iSelAsciiPosToPrintX { };
+		int iBookmarkHexPosToPrintX { 0x7FFFFFFF }, iBookmarkAsciiPosToPrintX { };
 		int iCursorHexPosToPrintX { }, iCursorAsciiPosToPrintX { }; //Cursor X coords.
+		int iDataInterpretHexPosToPrintX { 0x7FFFFFFF }, iDataInterpretAsciiPosToPrintX { }; //Data Interpreter X coords.
 		bool fBookmark { false };  //Flag to show current Bookmark in current Hex presence.
 		bool fSelection { false }; //Same as above but for selection.
 		HEXBOOKMARKSTRUCT* pBookmarkMain { };
@@ -1645,7 +1664,7 @@ void CHexCtrl::OnPaint()
 				wchAscii = '.';
 			wstrAsciiToPrint += wchAscii;
 
-			//If there is a Bookmark.
+			//Bookmarks.
 			auto pBookmark = m_pBookmarks->HitTest(ullIndexByteToPrint);
 			if (pBookmark != nullptr)
 			{
@@ -1727,7 +1746,7 @@ void CHexCtrl::OnPaint()
 				pBookmarkMain = nullptr;
 			}
 
-			//If there is a selection.
+			//Selection.
 			if (m_pSelection->HitTest(ullIndexByteToPrint))
 			{
 				if (iSelHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
@@ -1795,6 +1814,31 @@ void CHexCtrl::OnPaint()
 				else
 					clrBkCursor = m_stColor.clrBkCursor;
 			}
+
+			//Data Interpreter.
+			if (auto ullSize = m_pDlgDataInterpret->GetSize(); ullSize > 0
+				&& ullIndexByteToPrint >= m_ullCaretPos && ullIndexByteToPrint < m_ullCaretPos + ullSize)
+			{
+				if (iDataInterpretHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
+				{
+					int iCy;
+					HexChunkPoint(ullIndexByteToPrint, iDataInterpretHexPosToPrintX, iCy);
+					AsciiChunkPoint(ullIndexByteToPrint, iDataInterpretAsciiPosToPrintX, iCy);
+				}
+
+				if (!wstrHexDataInterpretToPrint.empty()) //Only adding spaces if there are chars beforehead.
+				{
+					if ((iterChunks % (DWORD)m_enShowMode) == 0)
+						wstrHexDataInterpretToPrint += L" ";
+
+					//Additional space between capacity halves, only with ASBYTE representation.
+					if (m_enShowMode == EHexShowMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+						wstrHexDataInterpretToPrint += L"  ";
+				}
+				wstrHexDataInterpretToPrint += pwszHexToPrint[0];
+				wstrHexDataInterpretToPrint += pwszHexToPrint[1];
+				wstrAsciiDataInterpretToPrint += wchAscii;
+			}
 		}
 
 		//Hex Poly.
@@ -1823,7 +1867,7 @@ void CHexCtrl::OnPaint()
 				pBookmarkMain->clrBk, pBookmarkMain->clrText });
 		}
 
-		//Selection.
+		//Selection Poly.
 		if (!wstrHexSelToPrint.empty())
 		{
 			//Hex selected Poly.
@@ -1847,6 +1891,20 @@ void CHexCtrl::OnPaint()
 			vecPolyCursor.emplace_back(POLYTEXTW { iCursorAsciiPosToPrintX, iPosToPrintY,
 				(UINT)listWstrCursor.back().size(), listWstrCursor.back().data(), 0, { }, nullptr });
 		}
+
+		//Data Interpreter.
+		if (!wstrHexDataInterpretToPrint.empty())
+		{
+			//Hex Data Interpreter Poly.
+			listWstrDataInterpretHex.emplace_back(std::move(wstrHexDataInterpretToPrint));
+			vecPolyDataInterpretHex.emplace_back(POLYTEXTW { iDataInterpretHexPosToPrintX, iPosToPrintY,
+				(UINT)listWstrDataInterpretHex.back().size(), listWstrDataInterpretHex.back().data(), 0, { }, nullptr });
+
+			//Ascii Data Interpreter Poly.
+			listWstrDataInterpretAscii.emplace_back(std::move(wstrAsciiDataInterpretToPrint));
+			vecPolyDataInterpretAscii.emplace_back(POLYTEXTW { iDataInterpretAsciiPosToPrintX, iPosToPrintY,
+				(UINT)listWstrDataInterpretAscii.back().size(), listWstrDataInterpretAscii.back().data(), 0, { }, nullptr });
+		}
 	}
 
 	//Hex printing.
@@ -1858,7 +1916,7 @@ void CHexCtrl::OnPaint()
 	pDC->SetTextColor(m_stColor.clrTextAscii);
 	PolyTextOutW(pDC->m_hDC, vecPolyAscii.data(), (UINT)vecPolyAscii.size());
 
-	//Hex bookmark printing.
+	//Bookmark printing.
 	if (!vecBookmarksHex.empty())
 	{
 		size_t index { 0 }; //Index for vecBookmarksAscii. Its size is always the same as the vecBookmarksHex.
@@ -1872,7 +1930,8 @@ void CHexCtrl::OnPaint()
 			PolyTextOutW(pDC->m_hDC, &vecBookmarksAscii[index++].stPoly, 1);
 		}
 	}
-	//Hex selected printing.
+
+	//Selection printing.
 	if (!vecPolySelHex.empty())
 	{
 		pDC->SetTextColor(m_stColor.clrTextSelected);
@@ -1889,6 +1948,17 @@ void CHexCtrl::OnPaint()
 		pDC->SetTextColor(m_stColor.clrTextCursor);
 		pDC->SetBkColor(clrBkCursor);
 		PolyTextOutW(pDC->m_hDC, vecPolyCursor.data(), (UINT)vecPolyCursor.size());
+	}
+
+	//Data Interpreter printing.
+	if (!vecPolyDataInterpretHex.empty())
+	{
+		pDC->SetTextColor(m_stColor.clrTextDataInterpret);
+		pDC->SetBkColor(m_stColor.clrBkDataInterpret);
+		PolyTextOutW(pDC->m_hDC, vecPolyDataInterpretHex.data(), (UINT)vecPolyDataInterpretHex.size());
+
+		//Ascii selected printing.
+		PolyTextOutW(pDC->m_hDC, vecPolyDataInterpretAscii.data(), (UINT)vecPolyDataInterpretAscii.size());
 	}
 
 	//Sector lines printong.
@@ -1975,9 +2045,9 @@ PBYTE CHexCtrl::GetData(ULONGLONG* pUllSize)
 	return m_pData;
 }
 
-BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)const
+BYTE CHexCtrl::GetByte(ULONGLONG ullOffset)const
 {
-	if (ullIndex >= m_ullDataSize)
+	if (ullOffset >= m_ullDataSize)
 		return 0x00;
 
 	//If it's virtual data control we aquire next byte_to_print from m_hwndMsg window.
@@ -1985,13 +2055,13 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)const
 	{
 	case EHexDataMode::DATA_MEMORY:
 	{
-		return m_pData[ullIndex];
+		return m_pData[ullOffset];
 	}
 	break;
 	case EHexDataMode::DATA_MSG:
 	{
 		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_GETDATA } };
-		hns.stSpan.ullOffset = ullIndex;
+		hns.stSpan.ullOffset = ullOffset;
 		hns.stSpan.ullSize = 1;
 		MsgWindowNotify(hns);
 		BYTE byte;
@@ -2005,102 +2075,102 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullIndex)const
 	case EHexDataMode::DATA_VIRTUAL:
 	{
 		if (m_pHexVirtual)
-			return m_pHexVirtual->GetByte(ullIndex);
+			return m_pHexVirtual->GetByte(ullOffset);
 	}
 	break;
 	}
 	return 0;
 }
 
-WORD CHexCtrl::GetWord(ULONGLONG ullIndex) const
+WORD CHexCtrl::GetWord(ULONGLONG ullOffset) const
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(WORD)) > m_ullDataSize)
+	if ((ullOffset + sizeof(WORD)) > m_ullDataSize)
 		return 0;
 
 	WORD wData;
 	if (m_enDataMode == EHexDataMode::DATA_MEMORY)
-		wData = *(PWORD)((DWORD_PTR)m_pData + ullIndex);
+		wData = *(PWORD)((DWORD_PTR)m_pData + ullOffset);
 	else
-		wData = ((WORD)GetByte(ullIndex)) | ((WORD)GetByte(ullIndex + 1) << 8);
+		wData = ((WORD)GetByte(ullOffset)) | ((WORD)GetByte(ullOffset + 1) << 8);
 
 	return wData;
 }
 
-DWORD CHexCtrl::GetDword(ULONGLONG ullIndex) const
+DWORD CHexCtrl::GetDword(ULONGLONG ullOffset) const
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(DWORD)) > m_ullDataSize)
+	if ((ullOffset + sizeof(DWORD)) > m_ullDataSize)
 		return 0;
 
 	DWORD dwData;
 	if (m_enDataMode == EHexDataMode::DATA_MEMORY)
-		dwData = *(PDWORD)((DWORD_PTR)m_pData + ullIndex);
+		dwData = *(PDWORD)((DWORD_PTR)m_pData + ullOffset);
 	else
-		dwData = ((DWORD)GetByte(ullIndex)) | ((DWORD)GetByte(ullIndex + 1) << 8)
-		| ((DWORD)GetByte(ullIndex + 2) << 16) | ((DWORD)GetByte(ullIndex + 3) << 24);
+		dwData = ((DWORD)GetByte(ullOffset)) | ((DWORD)GetByte(ullOffset + 1) << 8)
+		| ((DWORD)GetByte(ullOffset + 2) << 16) | ((DWORD)GetByte(ullOffset + 3) << 24);
 
 	return dwData;
 }
 
-QWORD CHexCtrl::GetQword(ULONGLONG ullIndex) const
+QWORD CHexCtrl::GetQword(ULONGLONG ullOffset) const
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(QWORD)) > m_ullDataSize)
+	if ((ullOffset + sizeof(QWORD)) > m_ullDataSize)
 		return 0;
 
 	QWORD ullData;
 	if (m_enDataMode == EHexDataMode::DATA_MEMORY)
-		ullData = *(PQWORD)((DWORD_PTR)m_pData + ullIndex);
+		ullData = *(PQWORD)((DWORD_PTR)m_pData + ullOffset);
 	else
-		ullData = ((QWORD)GetByte(ullIndex)) | ((QWORD)GetByte(ullIndex + 1) << 8)
-		| ((QWORD)GetByte(ullIndex + 2) << 16) | ((QWORD)GetByte(ullIndex + 3) << 24)
-		| ((QWORD)GetByte(ullIndex + 4) << 32) | ((QWORD)GetByte(ullIndex + 5) << 40)
-		| ((QWORD)GetByte(ullIndex + 6) << 48) | ((QWORD)GetByte(ullIndex + 7) << 56);
+		ullData = ((QWORD)GetByte(ullOffset)) | ((QWORD)GetByte(ullOffset + 1) << 8)
+		| ((QWORD)GetByte(ullOffset + 2) << 16) | ((QWORD)GetByte(ullOffset + 3) << 24)
+		| ((QWORD)GetByte(ullOffset + 4) << 32) | ((QWORD)GetByte(ullOffset + 5) << 40)
+		| ((QWORD)GetByte(ullOffset + 6) << 48) | ((QWORD)GetByte(ullOffset + 7) << 56);
 
 	return ullData;
 }
 
-bool CHexCtrl::SetByte(ULONGLONG ullIndex, BYTE bData)
+bool CHexCtrl::SetByte(ULONGLONG ullOffset, BYTE bData)
 {
 	//Data overflow check.
-	if (ullIndex >= m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
+	if (ullOffset >= m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
-	m_pData[ullIndex] = bData;
+	m_pData[ullOffset] = bData;
 
 	return true;
 }
 
-bool CHexCtrl::SetWord(ULONGLONG ullIndex, WORD wData)
+bool CHexCtrl::SetWord(ULONGLONG ullOffset, WORD wData)
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(WORD)) > m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
+	if ((ullOffset + sizeof(WORD)) > m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
-	*(PWORD)((DWORD_PTR)m_pData + ullIndex) = wData;
+	*(PWORD)((DWORD_PTR)m_pData + ullOffset) = wData;
 
 	return true;
 }
 
-bool CHexCtrl::SetDword(ULONGLONG ullIndex, DWORD dwData)
+bool CHexCtrl::SetDword(ULONGLONG ullOffset, DWORD dwData)
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(DWORD)) > m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
+	if ((ullOffset + sizeof(DWORD)) > m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
-	*(PDWORD)((DWORD_PTR)m_pData + ullIndex) = dwData;
+	*(PDWORD)((DWORD_PTR)m_pData + ullOffset) = dwData;
 
 	return true;
 }
 
-bool CHexCtrl::SetQword(ULONGLONG ullIndex, QWORD qwData)
+bool CHexCtrl::SetQword(ULONGLONG ullOffset, QWORD qwData)
 {
 	//Data overflow check.
-	if ((ullIndex + sizeof(QWORD)) > m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
+	if ((ullOffset + sizeof(QWORD)) > m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
-	*(PQWORD)((DWORD_PTR)m_pData + ullIndex) = qwData;
+	*(PQWORD)((DWORD_PTR)m_pData + ullOffset) = qwData;
 
 	return true;
 }
@@ -2752,7 +2822,10 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 
 	LPSTR pszClipboardData = (LPSTR)GlobalLock(hClipboard);
 	if (!pszClipboardData)
+	{
+		CloseClipboard();
 		return;
+	}
 
 	ULONGLONG ullSize = strlen(pszClipboardData);
 	if (m_ullCaretPos + ullSize > m_ullDataSize)
@@ -2787,8 +2860,11 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 
 			unsigned long ulNumber;
 			if (!CharsToUl(chToUL, ulNumber))
+			{
+				GlobalUnlock(hClipboard);
+				CloseClipboard();
 				return;
-
+			}
 			strData += (unsigned char)ulNumber;
 		}
 		hmd.pData = (PBYTE)strData.data();
@@ -2863,17 +2939,17 @@ void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const
 void CHexCtrl::MsgWindowNotify(UINT uCode)const
 {
 	HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), uCode } };
+	std::vector<HEXSPANSTRUCT> vecData { };
+
 	switch (uCode)
 	{
 	case HEXCTRL_MSG_CARETCHANGE:
 		hns.ullData = GetCaretPos();
 		break;
 	case HEXCTRL_MSG_SELECTION:
-	{
-		auto vecData = m_pSelection->GetData();
+		vecData = m_pSelection->GetData();
 		hns.pData = (PBYTE)&vecData;
-	}
-	break;
+		break;
 	case HEXCTRL_MSG_VIEWCHANGE:
 		hns.ullData = GetTopLine();
 		break;
@@ -2936,11 +3012,12 @@ void CHexCtrl::SetCaretPos(ULONGLONG ullPos, bool fHighPart)
 		m_pScrollH->SetScrollPos(ullNewScrollH);
 
 	RedrawWindow();
-	OnCaretPosChange(ullPos);
+	OnCaretPosChange(m_ullCaretPos);
 }
 
-void CHexCtrl::OnCaretPosChange(ULONGLONG ullPos)
+void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 {
+	m_pDlgDataInterpret->InspectOffset(ullOffset);
 	MsgWindowNotify(HEXCTRL_MSG_CARETCHANGE);
 }
 
@@ -2993,10 +3070,9 @@ void CHexCtrl::CaretMoveLeft()
 				return; //Zero index byte.
 			fHighPart = false;
 		}
-		else {
-			ull = m_ullCaretPos;
+		else
 			fHighPart = true;
-		}
+
 		SetCaretPos(ull, fHighPart);
 	}
 	else
@@ -3098,7 +3174,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 {
 	//If Undo deque size is exceeding max limit,
 	//remove first snapshot from the beginning (the oldest one).
-	if (m_deqUndo.size() > m_dwsUndoMax)
+	if (m_deqUndo.size() > (size_t)m_dwUndoMax)
 		m_deqUndo.pop_front();
 
 	//Making new Undo data snapshot.
@@ -3227,7 +3303,7 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset)
 		return;
 
 	ULONGLONG ullNewStartV = ullOffset / m_dwCapacity * m_sizeLetter.cy;
-	ULONGLONG ullNewScrollV { }, ullNewScrollH { };
+	ULONGLONG ullNewScrollV { 0 }, ullNewScrollH { };
 
 	//To prevent negative numbers.
 	if (ullNewStartV > m_iHeightWorkArea / 2)
@@ -3235,8 +3311,6 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset)
 		ullNewScrollV = ullNewStartV - m_iHeightWorkArea / 2;
 		ullNewScrollV -= ullNewScrollV % m_sizeLetter.cy;
 	}
-	else
-		ullNewScrollV = 0;
 
 	ullNewScrollH = (ullOffset % m_dwCapacity) * m_iSizeHexByte;
 	ullNewScrollH += (ullNewScrollH / m_iDistanceBetweenHexChunks) * m_iSpaceBetweenHexChunks;

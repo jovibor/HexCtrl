@@ -1,12 +1,10 @@
-/********************************************************************************
-* Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/					*
-* Github repository URL: https://github.com/jovibor/ListEx						*
-* This software is available under the "MIT License".							*
-* This is an extended and featured version of CMFCListCtrl class.				*
-* CListEx - list control class with the ability to set tooltips on arbitrary	*
-* cells, and also with a lots of other stuff to customize your control in many	*
-* different aspects. For more info see official documentation on github.		*
-********************************************************************************/
+/****************************************************************************************
+* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* This is very extended and featured version of CMFCListCtrl class.                     *
+* Official git repository: https://github.com/jovibor/ListEx/                           *
+* This class is available under the "MIT License".                                      *
+* For more information visit the project's official repository.                         *
+****************************************************************************************/
 #pragma once
 #include <afxwin.h>
 #include <memory>
@@ -64,13 +62,13 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		virtual BOOL DeleteAllItems() = 0;
 		virtual BOOL DeleteItem(int nItem) = 0;
 		virtual void Destroy() = 0;
-		virtual DWORD_PTR GetCellData(int iItem, int iSubitem) = 0;
+		virtual ULONGLONG GetCellData(int iItem, int iSubitem) = 0;
 		virtual UINT GetFontSize() = 0;
 		virtual int GetSortColumn()const = 0;
 		virtual bool GetSortAscending()const = 0;
 		virtual bool IsCreated()const = 0;
-		virtual void SetCellColor(int iItem, int iSubitem, COLORREF clr) = 0;
-		virtual void SetCellData(int iItem, int iSubitem, DWORD_PTR dwData) = 0;
+		virtual void SetCellColor(int iItem, int iSubitem, COLORREF clrBk, COLORREF clrText = -1) = 0;
+		virtual void SetCellData(int iItem, int iSubitem, ULONGLONG ullData) = 0;
 		virtual void SetCellMenu(int iItem, int iSubitem, CMenu* pMenu) = 0;
 		virtual void SetCellTooltip(int iItem, int iSubitem, const wchar_t* pwszTooltip, const wchar_t* pwszCaption = nullptr) = 0;
 		virtual void SetColor(const LISTEXCOLORSTRUCT& lcs) = 0;
@@ -80,8 +78,7 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		virtual void SetHeaderFont(const LOGFONT* pLogFontNew) = 0;
 		virtual void SetHeaderColumnColor(DWORD nColumn, COLORREF clr) = 0;
 		virtual void SetListMenu(CMenu* pMenu) = 0;
-		virtual void SetSortable(bool fSortable) = 0;
-		virtual void SetSortFunc(int (CALLBACK *pfCompareFunc)(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)) = 0;
+		virtual void SetSortable(bool fSortable, int (CALLBACK *pfCompareFunc)(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) = nullptr) = 0;
 	};
 
 	/********************************************************************************************

@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
+* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
@@ -15,11 +15,11 @@ using namespace HEXCTRL::INTERNAL;
 BEGIN_MESSAGE_MAP(CHexDlgFillWith, CDialogEx)
 END_MESSAGE_MAP()
 
-BOOL CHexDlgFillWith::Create(UINT nIDTemplate, CHexCtrl * pHexCtrl)
+BOOL CHexDlgFillWith::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 {
 	m_pHexCtrl = pHexCtrl;
 
-	return CDialogEx::Create(nIDTemplate, m_pHexCtrl);
+	return CDialogEx::Create(nIDTemplate, pHexCtrl);
 }
 
 BOOL CHexDlgFillWith::OnInitDialog()

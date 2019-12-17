@@ -84,6 +84,12 @@
     <ClInclude Include="src\CHexSelection.h">
       <Filter>HexCtrl\src</Filter>
     </ClInclude>
+    <ClInclude Include="src\Dialogs\CHexDlgDataInterpret.h">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Dialogs\CHexEdit.h">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\HexCtrlSample\stdafx.cpp">
@@ -127,6 +133,12 @@
     </ClCompile>
     <ClCompile Include="src\CHexSelection.cpp">
       <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Dialogs\CHexDlgDataInterpret.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Dialogs\CHexEdit.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright (C) 2018-2019, Jovibor: https://github.com/jovibor/                         *
+* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
@@ -13,7 +13,6 @@
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgOperations, CDialogEx)
-	ON_BN_CLICKED(IDOK, &CHexDlgOperations::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 BOOL CHexDlgOperations::Create(UINT nIDTemplate, CHexCtrl * pHexCtrl)
@@ -26,10 +25,10 @@ BOOL CHexDlgOperations::Create(UINT nIDTemplate, CHexCtrl * pHexCtrl)
 BOOL CHexDlgOperations::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
-	CheckRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_OR, IDC_HEXCTRL_OPERATIONS_RADIO_DIVIDE, IDC_HEXCTRL_OPERATIONS_RADIO_OR);
+	CheckRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_OR, IDC_HEXCTRL_OPERATIONS_RADIO_DIV, IDC_HEXCTRL_OPERATIONS_RADIO_OR);
 	CheckRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_BYTE, IDC_HEXCTRL_OPERATIONS_RADIO_QWORD, IDC_HEXCTRL_OPERATIONS_RADIO_BYTE);
 
-	return TRUE;  // return TRUE unless you set the focus to a control
+	return TRUE; // return TRUE unless you set the focus to a control
 }
 
 CHexCtrl* CHexDlgOperations::GetHexCtrl()const
@@ -40,6 +39,16 @@ CHexCtrl* CHexDlgOperations::GetHexCtrl()const
 void CHexDlgOperations::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+
+	DDX_Control(pDX, IDC_HEXCTRL_OPERATIONS_EDIT_OR, m_editOR);
+	DDX_Control(pDX, IDC_HEXCTRL_OPERATIONS_EDIT_XOR, m_editXOR);
+	DDX_Control(pDX, IDC_HEXCTRL_OPERATIONS_EDIT_AND, m_editAND);
+	DDX_Control(pDX, IDC_HEXCTRL_OPERATIONS_EDIT_SHL, m_editSHL);
+	DDX_Control(pDX, IDC_HEXCTRL_OPERATIONS_EDIT_SHR, m_editSHR);
+	DDX_Control(pDX, IDC_HEXCTRL_OPERATIONS_EDIT_ADD, m_editAdd);
+	DDX_Control(pDX, IDC_HEXCTRL_OPERATIONS_EDIT_SUB, m_editSub);
+	DDX_Control(pDX, IDC_HEXCTRL_OPERATIONS_EDIT_MUL, m_editMul);
+	DDX_Control(pDX, IDC_HEXCTRL_OPERATIONS_EDIT_DIV, m_editDiv);
 }
 
 BOOL CHexDlgOperations::OnCommand(WPARAM wParam, LPARAM lParam)
@@ -47,7 +56,7 @@ BOOL CHexDlgOperations::OnCommand(WPARAM wParam, LPARAM lParam)
 	//lParam holds HWND.
 	WORD wID = LOWORD(wParam);
 	WORD wMessage = HIWORD(wParam);
-	if (wID >= IDC_HEXCTRL_OPERATIONS_EDIT_OR && wID <= IDC_HEXCTRL_OPERATIONS_EDIT_DIVIDE && wMessage == EN_SETFOCUS)
+	if (wID >= IDC_HEXCTRL_OPERATIONS_EDIT_OR && wID <= IDC_HEXCTRL_OPERATIONS_EDIT_DIV && wMessage == EN_SETFOCUS)
 	{
 		int iRadioID { };
 		switch (wID)
@@ -70,29 +79,48 @@ BOOL CHexDlgOperations::OnCommand(WPARAM wParam, LPARAM lParam)
 		case IDC_HEXCTRL_OPERATIONS_EDIT_ADD:
 			iRadioID = IDC_HEXCTRL_OPERATIONS_RADIO_ADD;
 			break;
-		case IDC_HEXCTRL_OPERATIONS_EDIT_SUBTRACT:
-			iRadioID = IDC_HEXCTRL_OPERATIONS_RADIO_SUBTRACT;
+		case IDC_HEXCTRL_OPERATIONS_EDIT_SUB:
+			iRadioID = IDC_HEXCTRL_OPERATIONS_RADIO_SUB;
 			break;
-		case IDC_HEXCTRL_OPERATIONS_EDIT_MULTIPLY:
-			iRadioID = IDC_HEXCTRL_OPERATIONS_RADIO_MULTIPLY;
+		case IDC_HEXCTRL_OPERATIONS_EDIT_MUL:
+			iRadioID = IDC_HEXCTRL_OPERATIONS_RADIO_MUL;
 			break;
-		case IDC_HEXCTRL_OPERATIONS_EDIT_DIVIDE:
-			iRadioID = IDC_HEXCTRL_OPERATIONS_RADIO_DIVIDE;
+		case IDC_HEXCTRL_OPERATIONS_EDIT_DIV:
+			iRadioID = IDC_HEXCTRL_OPERATIONS_RADIO_DIV;
 			break;
 		}
-		CheckRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_OR, IDC_HEXCTRL_OPERATIONS_RADIO_DIVIDE, iRadioID);
+		CheckRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_OR, IDC_HEXCTRL_OPERATIONS_RADIO_DIV, iRadioID);
 	}
 
 	return CDialogEx::OnCommand(wParam, lParam);
 }
 
-void CHexDlgOperations::OnBnClickedOk()
+BOOL CHexDlgOperations::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+{
+	if (wParam == HEXCTRL_EDITCTRL)
+	{
+		NMHDR* pnmh = (NMHDR*)lParam;
+		switch (pnmh->code)
+		{
+		case VK_RETURN:
+			OnOK();
+			break;
+		case VK_ESCAPE:
+			OnCancel();
+			break;
+		}
+	}
+
+	return CDialogEx::OnNotify(wParam, lParam, pResult);
+}
+
+void CHexDlgOperations::OnOK()
 {
 	CHexCtrl* pHex = GetHexCtrl();
 	if (!pHex)
 		return;
 
-	int iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_OR, IDC_HEXCTRL_OPERATIONS_RADIO_DIVIDE);
+	int iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_OR, IDC_HEXCTRL_OPERATIONS_RADIO_DIV);
 	int iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_BYTE, IDC_HEXCTRL_OPERATIONS_RADIO_QWORD);
 
 	HEXMODIFYSTRUCT hms;
@@ -131,17 +159,17 @@ void CHexDlgOperations::OnBnClickedOk()
 		hms.enOperMode = EHexOperMode::OPER_ADD;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_ADD;
 		break;
-	case IDC_HEXCTRL_OPERATIONS_RADIO_SUBTRACT:
+	case IDC_HEXCTRL_OPERATIONS_RADIO_SUB:
 		hms.enOperMode = EHexOperMode::OPER_SUBTRACT;
-		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_SUBTRACT;
+		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_SUB;
 		break;
-	case IDC_HEXCTRL_OPERATIONS_RADIO_MULTIPLY:
+	case IDC_HEXCTRL_OPERATIONS_RADIO_MUL:
 		hms.enOperMode = EHexOperMode::OPER_MULTIPLY;
-		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_MULTIPLY;
+		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_MUL;
 		break;
-	case IDC_HEXCTRL_OPERATIONS_RADIO_DIVIDE:
+	case IDC_HEXCTRL_OPERATIONS_RADIO_DIV:
 		hms.enOperMode = EHexOperMode::OPER_DIVIDE;
-		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_DIVIDE;
+		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_DIV;
 		break;
 	default:
 		break;
