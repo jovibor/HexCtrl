@@ -6,8 +6,9 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include <afxwin.h>
+#include <afxcontrolbars.h>
 #include <memory>
+#include <any>
 
 namespace HEXCTRL::INTERNAL::LISTEX {
 	/********************************************************************************************
@@ -78,7 +79,7 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		virtual void SetHeaderFont(const LOGFONT* pLogFontNew) = 0;
 		virtual void SetHeaderColumnColor(DWORD nColumn, COLORREF clr) = 0;
 		virtual void SetListMenu(CMenu* pMenu) = 0;
-		virtual void SetSortable(bool fSortable, int (CALLBACK *pfCompareFunc)(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) = nullptr) = 0;
+		virtual void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare = nullptr) = 0;
 	};
 
 	/********************************************************************************************
@@ -106,5 +107,5 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 	* WM_NOTIFY codes (NMHDR.code values)										*
 	****************************************************************************/
 
-	constexpr auto LISTEX_MSG_MENUSELECTED = 0x00001000;
+	constexpr auto LISTEX_MSG_MENUSELECTED = 0x1000u;
 }

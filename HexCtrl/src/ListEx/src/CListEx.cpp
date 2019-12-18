@@ -52,15 +52,18 @@ END_MESSAGE_MAP()
 
 bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 {
+	LONG_PTR dwStyle = lcs.dwStyle;
 	if (lcs.fDialogCtrl)
 	{
 		SubclassDlgItem(lcs.uID, lcs.pwndParent);
-		SetWindowLongPtrW(m_hWnd, GWL_STYLE, GetWindowLongPtrW(m_hWnd, GWL_STYLE) | LVS_OWNERDRAWFIXED | LVS_REPORT);
+		dwStyle = GetWindowLongPtrW(m_hWnd, GWL_STYLE);
+		SetWindowLongPtrW(m_hWnd, GWL_STYLE, dwStyle | LVS_OWNERDRAWFIXED | LVS_REPORT);
 	}
 	else if (!CMFCListCtrl::Create(lcs.dwStyle | WS_CHILD | WS_VISIBLE | LVS_OWNERDRAWFIXED | LVS_REPORT,
 		lcs.rect, lcs.pwndParent, lcs.uID))
 		return false;
 
+	m_fVirtual = dwStyle & LVS_OWNERDATA;
 	m_stColor = lcs.stColor;
 	m_fSortable = lcs.fSortable;
 
@@ -159,9 +162,9 @@ BOOL CListEx::DeleteAllItems()
 	return CMFCListCtrl::DeleteAllItems();
 }
 
-BOOL CListEx::DeleteItem(int nItem)
+BOOL CListEx::DeleteItem(int iItem)
 {
-	UINT ID = MapIndexToID(nItem);
+	UINT ID = MapIndexToID(iItem);
 
 	if (auto iter = m_umapCellTt.find(ID); iter != m_umapCellTt.end())
 		m_umapCellTt.erase(iter);
@@ -172,7 +175,7 @@ BOOL CListEx::DeleteItem(int nItem)
 	if (auto iter = m_umapCellColor.find(ID); iter != m_umapCellColor.end())
 		m_umapCellColor.erase(iter);
 
-	return CMFCListCtrl::DeleteItem(nItem);
+	return CMFCListCtrl::DeleteItem(iItem);
 }
 
 void CListEx::Destroy()
@@ -180,14 +183,14 @@ void CListEx::Destroy()
 	delete this;
 }
 
-ULONGLONG CListEx::GetCellData(int iItem, int iSubitem)
+ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)
 {
 	UINT ID = MapIndexToID(iItem);
 	auto it = m_umapCellData.find(ID);
 
 	if (it != m_umapCellData.end())
 	{
-		auto itInner = it->second.find(iSubitem);
+		auto itInner = it->second.find(iSubItem);
 
 		//If subitem id found.
 		if (itInner != it->second.end())
@@ -220,7 +223,27 @@ bool CListEx::IsCreated()const
 	return m_fCreated;
 }
 
-void CListEx::SetCellColor(int iItem, int iSubitem, COLORREF clrBk, COLORREF clrText)
+UINT CListEx::MapIndexToID(UINT nItem)
+{
+	UINT ID;
+	//In case of virtual list the client code is responsible for
+	//mapping indexes to unique IDs.
+	//The unique ID is set in NMITEMACTIVATE::lParam by client.
+	if (m_fVirtual)
+	{
+		UINT uCtrlId = (UINT)GetDlgCtrlID();
+		NMITEMACTIVATE nmii { { m_hWnd, uCtrlId, LVM_MAPINDEXTOID } };
+		nmii.iItem = (int)nItem;
+		GetParent()->SendMessageW(WM_NOTIFY, uCtrlId, (LPARAM)&nmii);
+		ID = (UINT)nmii.lParam;
+	}
+	else
+		ID = CListCtrl::MapIndexToID(nItem);
+
+	return ID;
+}
+
+void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clrText)
 {
 	if (clrText == -1) //-1 for default color.
 		clrText = m_stColor.clrListText;
@@ -231,15 +254,15 @@ void CListEx::SetCellColor(int iItem, int iSubitem, COLORREF clrBk, COLORREF clr
 	//If there is no color for such item/subitem we just set it.
 	if (it == m_umapCellColor.end())
 	{	//Initializing inner map.
-		std::unordered_map<int, CELLCOLOR> umapInner { { iSubitem, CELLCOLOR { clrBk, clrText } } };
+		std::unordered_map<int, CELLCOLOR> umapInner { { iSubItem, CELLCOLOR { clrBk, clrText } } };
 		m_umapCellColor.insert({ ID, std::move(umapInner) });
 	}
 	else
 	{
-		auto itInner = it->second.find(iSubitem);
+		auto itInner = it->second.find(iSubItem);
 
 		if (itInner == it->second.end())
-			it->second.insert({ iSubitem, CELLCOLOR { clrBk, clrText } });
+			it->second.insert({ iSubItem, CELLCOLOR { clrBk, clrText } });
 		else //If there is already exist this cell's color -> changing.
 		{
 			itInner->second.clrBk = clrBk;
@@ -248,7 +271,7 @@ void CListEx::SetCellColor(int iItem, int iSubitem, COLORREF clrBk, COLORREF clr
 	}
 }
 
-void CListEx::SetCellData(int iItem, int iSubitem, ULONGLONG ullData)
+void CListEx::SetCellData(int iItem, int iSubItem, ULONGLONG ullData)
 {
 	UINT ID = MapIndexToID(iItem);
 	auto it = m_umapCellData.find(ID);
@@ -256,21 +279,21 @@ void CListEx::SetCellData(int iItem, int iSubitem, ULONGLONG ullData)
 	//If there is no data for such item/subitem we just set it.
 	if (it == m_umapCellData.end())
 	{	//Initializing inner map.
-		std::unordered_map<int, ULONGLONG> umapInner { { iSubitem, ullData } };
+		std::unordered_map<int, ULONGLONG> umapInner { { iSubItem, ullData } };
 		m_umapCellData.insert({ ID, std::move(umapInner) });
 	}
 	else
 	{
-		auto itInner = it->second.find(iSubitem);
+		auto itInner = it->second.find(iSubItem);
 
 		if (itInner == it->second.end())
-			it->second.insert({ iSubitem, ullData });
+			it->second.insert({ iSubItem, ullData });
 		else //If there is already exist this cell's data -> changing.
 			itInner->second = ullData;
 	}
 }
 
-void CListEx::SetCellMenu(int iItem, int iSubitem, CMenu* pMenu)
+void CListEx::SetCellMenu(int iItem, int iSubItem, CMenu* pMenu)
 {
 	UINT ID = MapIndexToID(iItem);
 	auto it = m_umapCellMenu.find(ID);
@@ -278,23 +301,23 @@ void CListEx::SetCellMenu(int iItem, int iSubitem, CMenu* pMenu)
 	//If there is no menu for such item/subitem we just set it.
 	if (it == m_umapCellMenu.end())
 	{	//Initializing inner map.
-		std::unordered_map<int, CMenu*> umapInner { { iSubitem, pMenu } };
+		std::unordered_map<int, CMenu*> umapInner { { iSubItem, pMenu } };
 		m_umapCellMenu.insert({ ID, std::move(umapInner) });
 	}
 	else
 	{
-		auto itInner = it->second.find(iSubitem);
+		auto itInner = it->second.find(iSubItem);
 
 		//If there is Item's menu but no Subitem's menu
 		//inserting new Subitem into inner map.
 		if (itInner == it->second.end())
-			it->second.insert({ iSubitem, pMenu });
+			it->second.insert({ iSubItem, pMenu });
 		else //If there is already exist this cell's menu -> changing.
 			itInner->second = pMenu;
 	}
 }
 
-void CListEx::SetCellTooltip(int iItem, int iSubitem, const wchar_t* pwszTooltip, const wchar_t* pwszCaption)
+void CListEx::SetCellTooltip(int iItem, int iSubItem, const wchar_t* pwszTooltip, const wchar_t* pwszCaption)
 {
 	//Checking for nullptr, and assign empty string in such case.
 	const wchar_t* pCaption = pwszCaption ? pwszCaption : L"";
@@ -309,20 +332,20 @@ void CListEx::SetCellTooltip(int iItem, int iSubitem, const wchar_t* pwszTooltip
 		if (pwszTooltip || pwszCaption)
 		{	//Initializing inner map.
 			std::unordered_map<int, std::tuple< std::wstring, std::wstring>> umapInner {
-				{ iSubitem, { pTooltip, pCaption } } };
+				{ iSubItem, { pTooltip, pCaption } } };
 			m_umapCellTt.insert({ ID, std::move(umapInner) });
 		}
 	}
 	else
 	{
-		auto itInner = it->second.find(iSubitem);
+		auto itInner = it->second.find(iSubItem);
 
 		//If there is Item's tooltip but no Subitem's tooltip
 		//inserting new Subitem into inner map.
 		if (itInner == it->second.end())
 		{
 			if (pwszTooltip || pwszCaption)
-				it->second.insert({ iSubitem, { pTooltip, pCaption } });
+				it->second.insert({ iSubItem, { pTooltip, pCaption } });
 		}
 		else
 		{	//If there is already exist this Item-Subitem's tooltip:
@@ -414,10 +437,10 @@ void CListEx::SetListMenu(CMenu* pMenu)
 	m_pListMenu = pMenu;
 }
 
-void CListEx::SetSortable(bool fSortable, int (CALLBACK *pfCompareFunc)(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort))
+void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare)
 {
 	m_fSortable = fSortable;
-	m_pfCompareFunc = pfCompareFunc;
+	m_pfnCompare = pfnCompare;
 
 	GetHeaderCtrl().SetSortable(fSortable);
 }
@@ -431,14 +454,17 @@ void CListEx::InitHeader()
 	GetHeaderCtrl().SubclassDlgItem(0, this);
 }
 
-bool CListEx::HasCellColor(int iItem, int iSubitem, COLORREF& clrBk, COLORREF& clrText)
+bool CListEx::HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& clrText)
 {
+	if (iItem < 0 || iSubItem < 0)
+		return false;
+
 	UINT ID = MapIndexToID((UINT)iItem);
 
 	auto it = m_umapCellColor.find(ID);
 	if (it != m_umapCellColor.end())
 	{
-		auto itInner = it->second.find(iSubitem);
+		auto itInner = it->second.find(iSubItem);
 
 		//If subitem id found.
 		if (itInner != it->second.end())
@@ -452,8 +478,11 @@ bool CListEx::HasCellColor(int iItem, int iSubitem, COLORREF& clrBk, COLORREF& c
 	return false;
 }
 
-bool CListEx::HasTooltip(int iItem, int iSubitem, std::wstring** ppwstrText, std::wstring** ppwstrCaption)
+bool CListEx::HasTooltip(int iItem, int iSubItem, std::wstring** ppwstrText, std::wstring** ppwstrCaption)
 {
+	if (iItem < 0 || iSubItem < 0)
+		return false;
+
 	//Can return true/false indicating if subitem has tooltip,
 	//or can return pointers to tooltip text as well, if poiters are not nullptr.
 	UINT ID = MapIndexToID(iItem);
@@ -461,7 +490,7 @@ bool CListEx::HasTooltip(int iItem, int iSubitem, std::wstring** ppwstrText, std
 
 	if (it != m_umapCellTt.end())
 	{
-		auto itInner = it->second.find(iSubitem);
+		auto itInner = it->second.find(iSubItem);
 
 		//If subitem id found and its text is not empty.
 		if (itInner != it->second.end() && !std::get<0>(itInner->second).empty())
@@ -480,9 +509,9 @@ bool CListEx::HasTooltip(int iItem, int iSubitem, std::wstring** ppwstrText, std
 	return false;
 }
 
-bool CListEx::HasMenu(int iItem, int iSubitem, CMenu** ppMenu)
+bool CListEx::HasMenu(int iItem, int iSubItem, CMenu** ppMenu)
 {
-	if (iItem < 0 || iSubitem < 0)
+	if (iItem < 0 || iSubItem < 0)
 		return false;
 
 	UINT ID = MapIndexToID(iItem);
@@ -490,7 +519,7 @@ bool CListEx::HasMenu(int iItem, int iSubitem, CMenu** ppMenu)
 
 	if (it != m_umapCellMenu.end())
 	{
-		auto itInner = it->second.find(iSubitem);
+		auto itInner = it->second.find(iSubItem);
 
 		//If subitem id found.
 		if (itInner != it->second.end())
@@ -644,9 +673,8 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 	hi.pt = pt;
 	ListView_SubItemHitTest(m_hWnd, &hi);
 	std::wstring  *pwstrTt { }, *pwstrCaption { };
-	bool fHasTooltip = HasTooltip(hi.iItem, hi.iSubItem, &pwstrTt, &pwstrCaption);
 
-	if (fHasTooltip)
+	if (HasTooltip(hi.iItem, hi.iSubItem, &pwstrTt, &pwstrCaption))
 	{
 		//Check if cursor is still in the same cell's rect. If so - just leave.
 		if (m_stCurrCell.iItem == hi.iItem && m_stCurrCell.iSubItem == hi.iSubItem)
@@ -838,7 +866,7 @@ void CListEx::OnLvnColumnclick(NMHDR* pNMHDR, LRESULT* pResult)
 		m_iSortColumn = pNMLV->iSubItem;
 
 		GetHeaderCtrl().SetSortArrow(m_iSortColumn, m_fSortAscending);
-		SortItemsEx(m_pfCompareFunc ? m_pfCompareFunc : DefCompareFunc, reinterpret_cast<DWORD_PTR>(this));
+		SortItemsEx(m_pfnCompare ? m_pfnCompare : DefCompareFunc, reinterpret_cast<DWORD_PTR>(this));
 	}
 
 	*pResult = 0;

@@ -88,7 +88,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	m_ullOffset = ullOffset;
 	WCHAR buff[32];
 
-	BYTE byte = m_pHexCtrl->GetByte(ullOffset);
+	const BYTE byte = m_pHexCtrl->GetByte(ullOffset);
 	swprintf_s(buff, 31, L"%hhi", (char)byte);
 	m_edit8sign.SetWindowTextW(buff);
 	swprintf_s(buff, 31, L"%hhu", byte);
@@ -109,7 +109,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 			i->EnableWindow(TRUE);
 	}
 
-	WORD word = m_pHexCtrl->GetWord(ullOffset);
+	const WORD word = m_pHexCtrl->GetWord(ullOffset);
 	swprintf_s(buff, 31, L"%hi", (short)word);
 	m_edit16sign.SetWindowTextW(buff);
 	swprintf_s(buff, 31, L"%hu", word);
@@ -130,7 +130,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 			i->EnableWindow(TRUE);
 	}
 
-	DWORD dword = m_pHexCtrl->GetDword(ullOffset);
+	const DWORD dword = m_pHexCtrl->GetDword(ullOffset);
 	swprintf_s(buff, 31, L"%i", (int)dword);
 	m_edit32sign.SetWindowTextW(buff);
 	swprintf_s(buff, 31, L"%u", dword);
@@ -166,7 +166,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 			i->EnableWindow(TRUE);
 	}
 
-	QWORD qword = m_pHexCtrl->GetQword(ullOffset);
+	const QWORD qword = m_pHexCtrl->GetQword(ullOffset);
 	swprintf_s(buff, 31, L"%lli", (long long)qword);
 	m_edit64sign.SetWindowTextW(buff);
 	swprintf_s(buff, 31, L"%llu", qword);

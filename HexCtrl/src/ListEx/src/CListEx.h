@@ -31,17 +31,18 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		void CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)override;
 		static int CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 		BOOL DeleteAllItems()override;
-		BOOL DeleteItem(int nItem)override;
+		BOOL DeleteItem(int iItem)override;
 		void Destroy()override;
-		ULONGLONG GetCellData(int iItem, int iSubitem)override;
+		ULONGLONG GetCellData(int iItem, int iSubItem)override;
 		UINT GetFontSize()override;
 		int GetSortColumn()const override;
 		bool GetSortAscending()const override;
 		bool IsCreated()const override;
-		void SetCellColor(int iItem, int iSubitem, COLORREF clrBk, COLORREF clrText)override;
-		void SetCellData(int iItem, int iSubitem, ULONGLONG ullData)override;
-		void SetCellMenu(int iItem, int iSubitem, CMenu* pMenu)override;
-		void SetCellTooltip(int iItem, int iSubitem, const wchar_t* pwszTooltip, const wchar_t* pwszCaption = nullptr)override;
+		UINT MapIndexToID(UINT nItem);
+		void SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clrText)override;
+		void SetCellData(int iItem, int iSubItem, ULONGLONG ullData)override;
+		void SetCellMenu(int iItem, int iSubItem, CMenu* pMenu)override;
+		void SetCellTooltip(int iItem, int iSubItem, const wchar_t* pwszTooltip, const wchar_t* pwszCaption = nullptr)override;
 		void SetColor(const LISTEXCOLORSTRUCT& lcs)override;
 		void SetFont(const LOGFONTW* pLogFontNew)override;
 		void SetFontSize(UINT uiSize)override;
@@ -49,14 +50,14 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		void SetHeaderFont(const LOGFONTW* pLogFontNew)override;
 		void SetHeaderColumnColor(DWORD nColumn, COLORREF clr)override;
 		void SetListMenu(CMenu* pMenu)override;
-		void SetSortable(bool fSortable, int (CALLBACK *pfCompareFunc)(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) = nullptr)override;
+		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare)override;
 		DECLARE_MESSAGE_MAP()
 	protected:
 		CListExHdr& GetHeaderCtrl() { return m_stListHeader; }
 		void InitHeader();
-		bool HasCellColor(int iItem, int iSubitem, COLORREF& clrBk, COLORREF& clrText);
-		bool HasTooltip(int iItem, int iSubitem, std::wstring** ppwstrText = nullptr, std::wstring** ppwstrCaption = nullptr);
-		bool HasMenu(int iItem, int iSubitem, CMenu** ppMenu = nullptr);
+		bool HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& clrText);
+		bool HasTooltip(int iItem, int iSubItem, std::wstring** ppwstrText = nullptr, std::wstring** ppwstrCaption = nullptr);
+		bool HasMenu(int iItem, int iSubItem, CMenu** ppMenu = nullptr);
 		void DrawItem(LPDRAWITEMSTRUCT);
 		afx_msg void OnPaint();
 		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
@@ -78,14 +79,12 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		afx_msg void OnDestroy();
 		afx_msg void OnLvnColumnclick(NMHDR *pNMHDR, LRESULT *pResult);
 	private:
-		bool m_fCreated { false };
 		CListExHdr m_stListHeader;
 		LISTEXCOLORSTRUCT m_stColor { };
 		CFont m_fontList;
 		CPen m_penGrid;
 		HWND m_hwndTt { };
 		TOOLINFO m_stToolInfo { };
-		bool m_fTtShown { false };
 		LVHITTESTINFO m_stCurrCell { };
 		DWORD m_dwGridWidth { 1 };		//Grid width.
 		CMenu* m_pListMenu { };			//List global menu, if set.
@@ -93,13 +92,16 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 			std::tuple<std::wstring/*tip text*/, std::wstring/*caption text*/>>> m_umapCellTt { }; //Cell's tooltips.
 		std::unordered_map<int, std::unordered_map<int, CMenu*>> m_umapCellMenu { };			   //Cell's menus.
 		std::unordered_map<int, std::unordered_map<int, ULONGLONG>> m_umapCellData { };            //Cell's custom data.
-		std::unordered_map<int, std::unordered_map<int, CELLCOLOR>> m_umapCellColor { };            //Cell's colors.
+		std::unordered_map<int, std::unordered_map<int, CELLCOLOR>> m_umapCellColor { };           //Cell's colors.
 		NMITEMACTIVATE m_stNMII { };
 		const ULONG_PTR ID_TIMER_TOOLTIP { 0x01 };
 		int m_iSortColumn { };
-		int (CALLBACK *m_pfCompareFunc)(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) { nullptr };
-		bool m_fSortable { false };
-		bool m_fSortAscending { };
+		PFNLVCOMPARE m_pfnCompare { nullptr };
+		bool m_fCreated { false };  //Is created.
+		bool m_fSortable { false }; //Is list sortable.
+		bool m_fSortAscending { };  //Sorting type (ascending, descending).
+		bool m_fVirtual { false };  //Whether list is virtual (LVS_OWNERDATA) or not.
+		bool m_fTtShown { false };  //Is tool-tip shown atm.
 	};
 
 	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
