@@ -212,6 +212,15 @@ BOOL CHexDlgDataInterpret::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResu
 		case VK_ESCAPE:
 			OnCancel();
 			break;
+		case VK_TAB:
+			PostMessageW(WM_NEXTDLGCTL);
+			break;
+		case VK_UP:
+			PostMessageW(WM_NEXTDLGCTL, TRUE);
+			break;
+		case VK_DOWN:
+			PostMessageW(WM_NEXTDLGCTL);
+			break;
 		}
 	}
 

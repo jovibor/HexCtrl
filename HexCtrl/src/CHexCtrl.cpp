@@ -58,7 +58,7 @@ namespace HEXCTRL {
 		struct UNDOSTRUCT
 		{
 			ULONGLONG              ullOffset { }; //Start byte to apply Undo to.
-			std::vector<std::byte> vecData { };  //Data for Undo.
+			std::vector<std::byte> vecData { };   //Data for Undo.
 		};
 
 		constexpr auto WSTR_HEXCTRL_CLASSNAME = L"HexCtrl";
@@ -93,6 +93,7 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_GETDLGCODE()
 	ON_WM_LBUTTONDBLCLK()
 	ON_WM_SYSKEYDOWN()
+	ON_WM_HELPINFO()
 END_MESSAGE_MAP()
 
 //CWinApp object vital for manual MFC, and for in-.dll work,
@@ -111,7 +112,6 @@ CHexCtrl::CHexCtrl()
 
 	HINSTANCE hInst = AfxGetInstanceHandle();
 	WNDCLASSEXW wc { };
-
 	if (!(::GetClassInfoExW(hInst, WSTR_HEXCTRL_CLASSNAME, &wc)))
 	{
 		wc.cbSize = sizeof(WNDCLASSEXW);
@@ -126,43 +126,45 @@ CHexCtrl::CHexCtrl()
 		wc.lpszClassName = WSTR_HEXCTRL_CLASSNAME;
 		if (!RegisterClassExW(&wc))
 		{
-			MessageBoxW(L"HexControl RegisterClassExW error.", L"Error");
+			MessageBoxW(L"HexControl RegisterClassExW error.", L"Error", MB_ICONERROR);
 			return;
 		}
 	}
 
 	//Menus
-	if (m_menuMain.LoadMenuW(MAKEINTRESOURCE(IDR_HEXCTRL_MENU)))
+	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCE(IDR_HEXCTRL_MENU)))
 	{
-		MENUITEMINFOW mii { };
-		mii.cbSize = sizeof(MENUITEMINFOW);
-		mii.fMask = MIIM_BITMAP;
-
-		mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_COPYHEX] =
-			(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-		m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_COPYHEX, &mii);
-		mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_PASTEHEX] =
-			(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-		m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, &mii);
-		mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_MODIFY_FILLZEROS] =
-			(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-		m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
+		MessageBoxW(L"HexControl LoadMenu(IDR_HEXCTRL_MENU) failed.", L"Error", MB_ICONERROR);
+		return;
 	}
+	MENUITEMINFOW mii { };
+	mii.cbSize = sizeof(MENUITEMINFOW);
+	mii.fMask = MIIM_BITMAP;
 
-	m_hwndTt = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
+	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_COPYHEX] =
+		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_COPYHEX, &mii);
+	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_PASTEHEX] =
+		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, &mii);
+	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_MODIFY_FILLZEROS] =
+		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
+
+	m_hwndTtBkm = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
 		/*TTS_BALLOON |*/ TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 		nullptr, nullptr, nullptr, nullptr);
 
-	SetWindowTheme(m_hwndTt, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
+	SetWindowTheme(m_hwndTtBkm, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
 
 	m_stToolInfo.cbSize = TTTOOLINFOW_V1_SIZE;
 	m_stToolInfo.uFlags = TTF_TRACK;
 	m_stToolInfo.uId = 0x01;
-	::SendMessageW(m_hwndTt, TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-	::SendMessageW(m_hwndTt, TTM_SETMAXTIPWIDTH, 0, (LPARAM)400); //to allow use of newline \n.
-	::SendMessageW(m_hwndTt, TTM_SETTIPTEXTCOLOR, (WPARAM)m_stColor.clrTextTooltip, 0);
-	::SendMessageW(m_hwndTt, TTM_SETTIPBKCOLOR, (WPARAM)m_stColor.clrBkTooltip, 0);
+	::SendMessageW(m_hwndTtBkm, TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+	::SendMessageW(m_hwndTtBkm, TTM_SETMAXTIPWIDTH, 0, (LPARAM)400); //to allow use of newline \n.
+	::SendMessageW(m_hwndTtBkm, TTM_SETTIPTEXTCOLOR, (WPARAM)m_stColor.clrTextTooltip, 0);
+	::SendMessageW(m_hwndTtBkm, TTM_SETTIPBKCOLOR, (WPARAM)m_stColor.clrBkTooltip, 0);
 }
 
 CHexCtrl::~CHexCtrl()
@@ -644,6 +646,11 @@ void CHexCtrl::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 	CWnd::OnActivate(nState, pWndOther, bMinimized);
 }
 
+BOOL CHexCtrl::OnHelpInfo(HELPINFO* /*pHelpInfo*/)
+{
+	return FALSE;
+}
+
 void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 {
 	const ULONGLONG ullHit = HitTest(&point);
@@ -751,14 +758,14 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 				ClientToScreen(&ptScreen);
 
 				m_stToolInfo.lpszText = pBookmark->wstrDesc.data();
-				::SendMessageW(m_hwndTt, TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(ptScreen.x, ptScreen.y));
-				::SendMessageW(m_hwndTt, TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-				::SendMessageW(m_hwndTt, TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+				::SendMessageW(m_hwndTtBkm, TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(ptScreen.x, ptScreen.y));
+				::SendMessageW(m_hwndTtBkm, TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+				::SendMessageW(m_hwndTtBkm, TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
 			}
 		}
 		else
 		{
-			::SendMessageW(m_hwndTt, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+			::SendMessageW(m_hwndTtBkm, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
 			m_pBkmCurrTt = nullptr;
 		}
 	}

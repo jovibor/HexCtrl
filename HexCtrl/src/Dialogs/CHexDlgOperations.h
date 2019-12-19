@@ -16,7 +16,7 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgOperations final : public CDialogEx
 	{
 	public:
-		explicit CHexDlgOperations() : CDialogEx(IDD_HEXCTRL_OPERATIONS) {}
+		explicit CHexDlgOperations(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_OPERATIONS, pParent) {}
 		virtual ~CHexDlgOperations() {}
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 	protected:

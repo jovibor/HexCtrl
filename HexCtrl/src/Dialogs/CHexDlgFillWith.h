@@ -15,7 +15,7 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgFillWith final : public CDialogEx
 	{
 	public:
-		explicit CHexDlgFillWith() : CDialogEx(IDD_HEXCTRL_FILLWITHDATA) {}
+		explicit CHexDlgFillWith(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_FILLWITHDATA, pParent) {}
 		virtual ~CHexDlgFillWith() {}
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 	protected:

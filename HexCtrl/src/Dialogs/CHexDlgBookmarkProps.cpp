@@ -38,12 +38,12 @@ BOOL CHexDlgBookmarkProps::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	CMFCColorButton* pClr;
-	pClr = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_COLOR_BK);
-	pClr->SetColor(m_pHBS->clrBk);
-	pClr = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_COLOR_TEXT);
-	pClr->SetColor(m_pHBS->clrText);
-
+	CMFCColorButton* pClrBtn;
+	pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_COLOR_BK);
+	pClrBtn->SetColor(m_pHBS->clrBk);
+	pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_COLOR_TEXT);
+	pClrBtn->SetColor(m_pHBS->clrText);
+	
 	wchar_t pwszBuff[32];
 	if (!m_pHBS->vecSpan.empty())
 	{

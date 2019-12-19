@@ -19,7 +19,7 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgBookmarkMgr final : public CDialogEx
 	{
 	public:
-		explicit CHexDlgBookmarkMgr() : CDialogEx(IDD_HEXCTRL_BOOKMARKMGR) {}
+		explicit CHexDlgBookmarkMgr(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_BOOKMARKMGR, pParent) {}
 		virtual ~CHexDlgBookmarkMgr() {}
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks);
 	protected:

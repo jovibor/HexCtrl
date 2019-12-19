@@ -44,7 +44,7 @@ BEGIN
 END
 
 #endif    // APSTUDIO_INVOKED
-
+	
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -466,8 +466,9 @@ END
 //
 // Generated from the TEXTINCLUDE 3 resource.
 //
-
+#if defined(HEXCTRL_SHARED_DLL)
+	#include "afxribbon.rc"  //Needed for CMFCColorButton to work properly in dll.
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
-

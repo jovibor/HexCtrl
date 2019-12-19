@@ -19,7 +19,7 @@ BOOL CHexDlgOperations::Create(UINT nIDTemplate, CHexCtrl * pHexCtrl)
 {
 	m_pHexCtrl = pHexCtrl;
 
-	return CDialogEx::Create(nIDTemplate, m_pHexCtrl);
+	return CDialogEx::Create(nIDTemplate, pHexCtrl);
 }
 
 BOOL CHexDlgOperations::OnInitDialog()
@@ -107,6 +107,15 @@ BOOL CHexDlgOperations::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 			break;
 		case VK_ESCAPE:
 			OnCancel();
+			break;
+		case VK_TAB:
+			PostMessageW(WM_NEXTDLGCTL);
+			break;
+		case VK_UP:
+			PostMessageW(WM_NEXTDLGCTL, TRUE);
+			break;
+		case VK_DOWN:
+			PostMessageW(WM_NEXTDLGCTL);
 			break;
 		}
 	}

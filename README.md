@@ -128,9 +128,12 @@ To use **HexControl** as the *.dll* do the following:
 5. Declare [`IHexCtrlPtr`](#ihexctrlptr) member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
 5. [Create](#creating) control instance.
 
-To get *HexCtrl.dll* and *HexCtrl.lib* files you can either download it from the [official repository](https://github.com/jovibor/HexCtrl/releases/latest) or build it yourself from the *HexCtrl/HexCtrl.vcxproj* **Visual Studio** project file.
+To build *HexCtrl.dll* and *HexCtrl.lib* use the *HexCtrl/HexCtrl.vcxproj* **Visual Studio** project.
 
-**HexControl**'s *.dll* is built with **MFC** static linking, so even if you are to use it in your own **MFC** project, even with different **MFC** version, there should not be any interferences.
+#### Remarks:
+**HexControl**'s *.dll* is built with **MFC Static Linking**. So even if you are to use it in your own **MFC** project, even with different **MFC** version, there should not be any interferences
+
+Building **HexControl** with **MFC Shared DLL** turned out to be a little tricky. Even with the help of `AFX_MANAGE_STATE(AfxGetStaticModuleState())` macro there always were **MFC** debug assertions, which origins quite hard to comprehend.
 
 ### [](#)IHexCtrlPtr
 `IHexCtrlPtr` is, in fact, a pointer to a `IHexCtrl` pure abstract base class, wrapped either in `std::unique_ptr` or `std::shared_ptr`. You can choose whatever is best for your needs by comment/uncomment one of these alliases in *HexCtrl.h*:

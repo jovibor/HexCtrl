@@ -26,7 +26,7 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgSearch final : public CDialogEx
 	{
 	public:
-		explicit CHexDlgSearch() : CDialogEx(IDD_HEXCTRL_SEARCH) {}
+		explicit CHexDlgSearch(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_SEARCH, pParent) {}
 		virtual ~CHexDlgSearch() {}
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		void Search(bool fForward);

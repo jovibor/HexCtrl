@@ -41,7 +41,7 @@ BEGIN_MESSAGE_MAP(CScrollEx, CWnd)
 	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
-bool CScrollEx::Create(CWnd * pWndParent, int iScrollType,
+bool CScrollEx::Create(CWnd* pWndParent, int iScrollType,
 	ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
 {
 	assert(!m_fCreated); //Already created
@@ -86,7 +86,7 @@ bool CScrollEx::IsVisible() const
 	return m_fVisible;
 }
 
-CWnd * CScrollEx::GetParent() const
+CWnd* CScrollEx::GetParent() const
 {
 	return m_pwndParent;
 }
@@ -466,7 +466,7 @@ void CScrollEx::DrawScrollBar()const
 	parentDC.BitBlt(rcSNC.left, rcSNC.top, rcSNC.Width(), rcSNC.Height(), &dcMem, rcSNC.left, rcSNC.top, SRCCOPY);
 }
 
-void CScrollEx::DrawArrows(CDC * pDC)const
+void CScrollEx::DrawArrows(CDC* pDC)const
 {
 	CRect rcScroll = GetScrollRect();
 	CDC compatDC;
@@ -514,7 +514,7 @@ void CScrollEx::DrawArrows(CDC * pDC)const
 		&compatDC, iLastBtnBmpOffsetX, iLastBtnBmpOffsetY, m_uiArrowSize, m_uiArrowSize, SRCCOPY);
 }
 
-void CScrollEx::DrawThumb(CDC * pDC)const
+void CScrollEx::DrawThumb(CDC* pDC)const
 {
 	CRect rcThumb = GetThumbRect();
 	if (!rcThumb.IsRectNull())
@@ -812,7 +812,6 @@ bool CScrollEx::IsSiblingVisible()const
 
 	return false;
 }
-
 
 void CScrollEx::SendParentScrollMsg()const
 {

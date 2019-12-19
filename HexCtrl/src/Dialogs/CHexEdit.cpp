@@ -25,15 +25,12 @@ void CHexEdit::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		uCode = VK_RETURN;
 		break;
 	case VK_TAB:
-		GetParent()->PostMessageW(WM_NEXTDLGCTL);
 		uCode = VK_TAB;
 		break;
 	case VK_UP:
 		uCode = VK_UP;
-		GetParent()->PostMessageW(WM_NEXTDLGCTL, TRUE);
 		break;
 	case VK_DOWN:
-		GetParent()->PostMessageW(WM_NEXTDLGCTL);
 		uCode = VK_DOWN;
 		break;
 	case VK_ESCAPE:

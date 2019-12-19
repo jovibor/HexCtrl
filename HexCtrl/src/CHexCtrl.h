@@ -67,6 +67,7 @@ namespace HEXCTRL::INTERNAL
 	protected:
 		DECLARE_MESSAGE_MAP()
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
 		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 		afx_msg void OnMButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
@@ -164,7 +165,7 @@ namespace HEXCTRL::INTERNAL
 		PBYTE m_pData { };                    //Main data pointer. Modifiable in "Edit" mode.
 		IHexVirtual* m_pHexVirtual { };       //Data handler pointer for EHexDataMode::DATA_VIRTUAL
 		HWND m_hwndMsg { };                   //Window handle the control messages will be sent to.
-		HWND m_hwndTt { };                    //Tooltip window.
+		HWND m_hwndTtBkm { };                 //Tooltip window for bookmarks description.
 		TOOLINFO m_stToolInfo { };            //Tooltips struct.
 		HEXBOOKMARKSTRUCT* m_pBkmCurrTt { };  //Currently shown bookmark's tooltip;
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
@@ -212,5 +213,5 @@ namespace HEXCTRL::INTERNAL
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
 		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
 		bool m_fSectorsPrintable { false };   //Print lines between sectors or not.
-	};
+};
 }
