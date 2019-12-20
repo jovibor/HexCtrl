@@ -38,5 +38,7 @@ namespace HEXCTRL::INTERNAL
 		DWORD m_dwCurrBkmId { }; //Currently selected bookmark Id.
 		int m_iCurrListId { };   //Currently selected list Id.
 		std::time_t m_time { };
+	public:
+		afx_msg void OnDestroy();
 	};
 }

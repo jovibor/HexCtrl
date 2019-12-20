@@ -82,25 +82,26 @@ namespace HEXCTRL::INTERNAL {
 			bool IsSiblingVisible()const;                               //Is sibling scrollbar currently visible or not.
 			void SendParentScrollMsg()const;                            //Sends the WM_(V/H)SCROLL to the parent window.
 			afx_msg void OnTimer(UINT_PTR nIDEvent);
+			afx_msg void OnDestroy();
 		protected:
 			CWnd* m_pwndParent { };                                     //Parent window.
 			CScrollEx* m_pSibling { };                                  //Sibling scrollbar, added with AddSibling.
+			CBitmap m_bmpArrows;                                        //Bitmap of the arrows.
 			UINT m_uiScrollBarSizeWH { };                               //Scrollbar size (width if vertical, height if horz).
-			int m_iScrollType { };                                      //Scrollbar type - horizontal or vertical.
 			EState m_enState { };                                       //Current state.
-			const COLORREF m_clrBkNC { GetSysColor(COLOR_3DFACE) };     //Bk color of the non client area. 
-			const COLORREF m_clrBkScrollBar { RGB(241, 241, 241) };     //Color of the scrollbar.
-			const COLORREF m_clrThumb { RGB(192, 192, 192) };           //Scroll thumb color.
 			CPoint m_ptCursorCur { };                                   //Cursor's current position.
 			ULONGLONG m_ullScrollPosCur { 0 };                          //Current scroll position.
 			ULONGLONG m_ullScrollPosPrev { };                           //Previous scroll position.
 			ULONGLONG m_ullScrollLine { };                              //Size of one line scroll, when clicking arrow.
 			ULONGLONG m_ullScrollPage { };                              //Size of page scroll, when clicking channel.
 			ULONGLONG m_ullScrollSizeMax { };                           //Maximum scroll size (limit).
+			int m_iScrollType { };                                      //Scrollbar type - horizontal or vertical.
+			const COLORREF m_clrBkNC { GetSysColor(COLOR_3DFACE) };     //Bk color of the non client area. 
+			const COLORREF m_clrBkScrollBar { RGB(241, 241, 241) };     //Color of the scrollbar.
+			const COLORREF m_clrThumb { RGB(192, 192, 192) };           //Scroll thumb color.
 			const unsigned m_uiThumbSizeMin { 15 };                     //Minimum thumb size.
 			const int m_iTimerFirstClick { 200 };                       //Millisec for WM_TIMER for first channel click.
 			const int m_iTimerRepeat { 50 };                            //Millisec for repeat when click and hold on channel.
-			CBitmap m_bmpArrows;                                        //Bitmap of the arrows.
 			const unsigned m_uiFirstArrowOffset { 0 };                  //Offset of the first arrow, in pixels, at arrows bitmap.
 			const unsigned m_uiLastArrowOffset { 18 };                  //Offset of the last arrow, in pixels, at arrows bitmap.
 			const unsigned m_uiArrowSize { 17 };                        //Arrow size in pixels.

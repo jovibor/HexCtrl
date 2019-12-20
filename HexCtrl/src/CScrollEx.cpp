@@ -39,6 +39,7 @@ namespace HEXCTRL::INTERNAL {
 ****************************************************/
 BEGIN_MESSAGE_MAP(CScrollEx, CWnd)
 	ON_WM_TIMER()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 bool CScrollEx::Create(CWnd* pWndParent, int iScrollType,
@@ -875,4 +876,12 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 	}
 
 	CWnd::OnTimer(nIDEvent);
+}
+
+void CScrollEx::OnDestroy()
+{
+	CWnd::OnDestroy();
+
+	m_bmpArrows.DeleteObject();
+	m_fCreated = false;
 }

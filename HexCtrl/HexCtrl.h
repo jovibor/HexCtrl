@@ -13,6 +13,12 @@
 #include <Windows.h> //Standard Windows header.
 
 /**********************************************************************
+* If HEXCTRL_IHEXCTRLPTR_UNIQUEPTR defined then IHexCtrlPtr is        * 
+* resolved to std::unique_ptr. Otherwise it's std::shared_ptr.        *
+**********************************************************************/
+#define HEXCTRL_IHEXCTRLPTR_UNIQUEPTR
+
+/**********************************************************************
 * If HexCtrl is to be used as a .dll, then include this header,       *
 * and uncomment the line below.                                       *
 **********************************************************************/
@@ -285,8 +291,11 @@ namespace HEXCTRL
 		return IHexCtrlUnPtr(CreateRawHexCtrl(), [](IHexCtrl* p) { p->Destroy(); });
 	};
 
-	//using IHexCtrlPtr = IHexCtrlUnPtr;
+#ifdef HEXCTRL_IHEXCTRLPTR_UNIQUEPTR
+	using IHexCtrlPtr = IHexCtrlUnPtr;
+#else
 	using IHexCtrlPtr = IHexCtrlShPtr;
+#endif
 
 	/********************************************
 	* HEXCTRLINFO: service info structure.      *

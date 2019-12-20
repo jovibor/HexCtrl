@@ -165,15 +165,15 @@ namespace HEXCTRL::INTERNAL
 		PBYTE m_pData { };                    //Main data pointer. Modifiable in "Edit" mode.
 		IHexVirtual* m_pHexVirtual { };       //Data handler pointer for EHexDataMode::DATA_VIRTUAL
 		HWND m_hwndMsg { };                   //Window handle the control messages will be sent to.
-		HWND m_hwndTtBkm { };                 //Tooltip window for bookmarks description.
+		CWnd m_wndTtBkm { };                  //Tooltip window for bookmarks description.
 		TOOLINFO m_stToolInfo { };            //Tooltips struct.
 		HEXBOOKMARKSTRUCT* m_pBkmCurrTt { };  //Currently shown bookmark's tooltip;
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
 		ULONGLONG m_ullLMouseClick { 0xFFFFFFFFFFFFFFFFULL }; //Left mouse button clicked chunk.
 		ULONGLONG m_ullRMouseClick { 0xFFFFFFFFFFFFFFFFULL }; //Right mouse clicked chunk. Used in bookmarking.
-		ULONGLONG m_ullCaretPos { };         //Current cursor position.
-		DWORD m_dwCapacity { 16 };            //How many bytes displayed in one row
+		ULONGLONG m_ullCaretPos { };          //Current cursor position.
+		DWORD m_dwCapacity { 0x10 };          //How many bytes displayed in one row
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
 		DWORD m_dwOffsetBytes { };            //How many bytes "Offset" number posesses;
@@ -182,7 +182,7 @@ namespace HEXCTRL::INTERNAL
 		CFont m_fontMain;                     //Main Hex chunks font.
 		CFont m_fontInfo;                     //Font for bottom Info rect.
 		CMenu m_menuMain;                     //Main popup menu.
-		CPen m_penLines { PS_SOLID, 1, RGB(200, 200, 200) }; //Pen for lines.
+		CPen m_penLines;                      //Pen for lines.
 		long m_lFontSize { };                 //Current font size.
 		int m_iSizeFirstHalf { };             //Size of first half of capacity.
 		int m_iSizeHexByte { };               //Size of two hex letters representing one byte.

@@ -39,6 +39,7 @@ namespace HEXCTRL::INTERNAL {
 		afx_msg void OnButtonReplaceAll();
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnCancel();
+		afx_msg void OnDestroy();
 		virtual BOOL PreTranslateMessage(MSG* pMsg);
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		void OnRadioBnRange(UINT nID);

@@ -22,6 +22,7 @@ namespace HEXCTRL::INTERNAL {
 
 BEGIN_MESSAGE_MAP(CHexDlgBookmarkMgr, CDialogEx)
 	ON_WM_ACTIVATE()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 BOOL CHexDlgBookmarkMgr::Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks)
@@ -197,4 +198,12 @@ void CHexDlgBookmarkMgr::UpdateList()
 	}
 	m_List->SetRedraw(TRUE);
 	m_time = m_pBookmarks->GetTouchTime();
+}
+
+void CHexDlgBookmarkMgr::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	m_List->DestroyWindow();
+	m_stMenuList.DestroyMenu();
 }

@@ -17,6 +17,7 @@ using namespace HEXCTRL::INTERNAL::LISTEX;
 BEGIN_MESSAGE_MAP(CListExHdr, CMFCHeaderCtrl)
 	ON_MESSAGE(HDM_LAYOUT, &CListExHdr::OnLayout)
 	ON_WM_HSCROLL()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 CListExHdr::CListExHdr()
@@ -175,12 +176,22 @@ void CListExHdr::SetFont(const LOGFONTW* pLogFontNew)
 
 	//If new font's height is higher than current height (m_dwHeaderHeight)
 	//we adjust current height as well.
-	TEXTMETRIC tm;
+	TEXTMETRICW tm;
 	CDC* pDC = GetDC();
-	pDC->SelectObject(&m_fontHdr);
-	GetTextMetricsW(pDC->m_hDC, &tm);
+	pDC->SelectObject(m_fontHdr);
+	pDC->GetTextMetricsW(&tm);
 	ReleaseDC(pDC);
 	DWORD dwHeightFont = tm.tmHeight + tm.tmExternalLeading + 1;
 	if (dwHeightFont > m_dwHeaderHeight)
 		SetHeight(dwHeightFont);
+}
+
+void CListExHdr::OnDestroy()
+{
+	CMFCHeaderCtrl::OnDestroy();
+
+	m_fontHdr.DeleteObject();
+	m_penGrid.DeleteObject();
+	m_penLight.DeleteObject();
+	m_penShadow.DeleteObject();
 }

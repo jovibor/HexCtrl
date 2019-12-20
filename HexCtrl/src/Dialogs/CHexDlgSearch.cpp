@@ -26,6 +26,7 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE, &CHexDlgSearch::OnButtonReplace)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BUTTON_REPLACE_ALL, &CHexDlgSearch::OnButtonReplaceAll)
 	ON_COMMAND_RANGE(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE, &CHexDlgSearch::OnRadioBnRange)
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
@@ -530,4 +531,11 @@ void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
 			pCombo->DeleteString(49);
 		pCombo->InsertString(0, pwsz);
 	}
+}
+
+void CHexDlgSearch::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	m_stBrushDefault.DeleteObject();
 }

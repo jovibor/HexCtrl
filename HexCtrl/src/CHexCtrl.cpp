@@ -130,48 +130,10 @@ CHexCtrl::CHexCtrl()
 			return;
 		}
 	}
-
-	//Menus
-	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCE(IDR_HEXCTRL_MENU)))
-	{
-		MessageBoxW(L"HexControl LoadMenu(IDR_HEXCTRL_MENU) failed.", L"Error", MB_ICONERROR);
-		return;
-	}
-	MENUITEMINFOW mii { };
-	mii.cbSize = sizeof(MENUITEMINFOW);
-	mii.fMask = MIIM_BITMAP;
-
-	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_COPYHEX] =
-		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_COPYHEX, &mii);
-	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_PASTEHEX] =
-		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, &mii);
-	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_MODIFY_FILLZEROS] =
-		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
-
-	m_hwndTtBkm = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
-		/*TTS_BALLOON |*/ TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-		nullptr, nullptr, nullptr, nullptr);
-
-	SetWindowTheme(m_hwndTtBkm, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
-
-	m_stToolInfo.cbSize = TTTOOLINFOW_V1_SIZE;
-	m_stToolInfo.uFlags = TTF_TRACK;
-	m_stToolInfo.uId = 0x01;
-	::SendMessageW(m_hwndTtBkm, TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-	::SendMessageW(m_hwndTtBkm, TTM_SETMAXTIPWIDTH, 0, (LPARAM)400); //to allow use of newline \n.
-	::SendMessageW(m_hwndTtBkm, TTM_SETTIPTEXTCOLOR, (WPARAM)m_stColor.clrTextTooltip, 0);
-	::SendMessageW(m_hwndTtBkm, TTM_SETTIPBKCOLOR, (WPARAM)m_stColor.clrBkTooltip, 0);
 }
 
 CHexCtrl::~CHexCtrl()
 {
-	//Deleting all loaded bitmaps.
-	for (auto const& i : m_umapHBITMAP)
-		DeleteObject(i.second);
 }
 
 DWORD CHexCtrl::AddBookmark(const HEXBOOKMARKSTRUCT& hbs)
@@ -211,6 +173,43 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	assert(!IsCreated()); //Already created.
 	if (IsCreated())
 		return false;
+
+	HINSTANCE hInst = AfxGetInstanceHandle();
+
+	//Menus
+	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCE(IDR_HEXCTRL_MENU)))
+	{
+		MessageBoxW(L"HexControl LoadMenu(IDR_HEXCTRL_MENU) failed.", L"Error", MB_ICONERROR);
+		return false;
+	}
+	MENUITEMINFOW mii { };
+	mii.cbSize = sizeof(MENUITEMINFOW);
+	mii.fMask = MIIM_BITMAP;
+
+	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_COPYHEX] =
+		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_COPYHEX, &mii);
+	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_PASTEHEX] =
+		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, &mii);
+	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_MODIFY_FILLZEROS] =
+		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
+
+	m_wndTtBkm.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
+		/*TTS_BALLOON |*/ TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+		nullptr, nullptr);
+
+	SetWindowTheme(m_wndTtBkm.m_hWnd, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
+
+	m_stToolInfo.cbSize = TTTOOLINFOW_V1_SIZE;
+	m_stToolInfo.uFlags = TTF_TRACK;
+	m_stToolInfo.uId = 0x01;
+	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, (LPARAM)400); //to allow use of newline \n.
+	m_wndTtBkm.SendMessageW(TTM_SETTIPTEXTCOLOR, (WPARAM)m_stColor.clrTextTooltip, 0);
+	m_wndTtBkm.SendMessageW(TTM_SETTIPBKCOLOR, (WPARAM)m_stColor.clrBkTooltip, 0);
 
 	m_hwndMsg = hcs.hwndParent;
 	m_stColor = hcs.stColor;
@@ -284,6 +283,8 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	lf.lfHeight = 16;
 	m_fontInfo.CreateFontIndirectW(&lf);
 	//End of font related.///////////////////////////////////////
+
+	m_penLines.CreatePen(PS_SOLID, 1, RGB(200, 200, 200));
 
 	//Removing window's border frame.
 	MARGINS marg { 0, 0, 0, 1 };
@@ -758,14 +759,14 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 				ClientToScreen(&ptScreen);
 
 				m_stToolInfo.lpszText = pBookmark->wstrDesc.data();
-				::SendMessageW(m_hwndTtBkm, TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(ptScreen.x, ptScreen.y));
-				::SendMessageW(m_hwndTtBkm, TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-				::SendMessageW(m_hwndTtBkm, TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+				m_wndTtBkm.SendMessageW(TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(ptScreen.x, ptScreen.y));
+				m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+				m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
 			}
 		}
 		else
 		{
-			::SendMessageW(m_hwndTtBkm, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+			m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
 			m_pBkmCurrTt = nullptr;
 		}
 	}
@@ -1544,7 +1545,7 @@ void CHexCtrl::OnPaint()
 	pDC->FillSolidRect(&rc, m_stColor.clrBkInfoRect);
 	rc.left = m_iFirstVertLine + 5; //Draw text beginning with little indent.
 	rc.right = rcClient.right;		//Draw text to the end of the client area, even if it pass iFourthHorizLine.
-	pDC->SelectObject(m_fontInfo);
+	auto pFontOld = pDC->SelectObject(m_fontInfo);
 	pDC->SetTextColor(m_stColor.clrTextInfoRect);
 	pDC->SetBkColor(m_stColor.clrBkInfoRect);
 	pDC->DrawTextW(m_wstrInfo.data(), (int)m_wstrInfo.size(), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
@@ -1977,6 +1978,7 @@ void CHexCtrl::OnPaint()
 			pDC->LineTo(iter.ptEnd.x, iter.ptEnd.y);
 		}
 	}
+	pDC->SelectObject(pFontOld);
 }
 
 void CHexCtrl::OnSize(UINT /*nType*/, int /*cx*/, int cy)
@@ -2039,6 +2041,26 @@ void CHexCtrl::OnDestroy()
 		pwndParent->SetForegroundWindow();
 
 	ClearData();
+
+	m_menuMain.DestroyMenu();
+	m_fontMain.DeleteObject();
+	m_fontInfo.DeleteObject();
+	m_penLines.DeleteObject();
+	m_pDlgBookmarkMgr->DestroyWindow();
+	m_pDlgDataInterpret->DestroyWindow();
+	m_pDlgFillWith->DestroyWindow();
+	m_pDlgOpers->DestroyWindow();
+	m_pDlgSearch->DestroyWindow();
+	m_pScrollV->DestroyWindow();
+	m_pScrollH->DestroyWindow();
+
+	//Deleting all loaded bitmaps.
+	for (auto const& i : m_umapHBITMAP)
+		DeleteObject(i.second);
+
+	::DestroyWindow(m_wndTtBkm);
+
+	m_dwCapacity = 0x10;
 	m_fCreated = false;
 
 	CWnd::OnDestroy();
@@ -2372,13 +2394,13 @@ void CHexCtrl::RecalcAll()
 	ULONGLONG ullCurLineV = GetTopLine();
 
 	//Current font size related.
-	HDC hDC = ::GetDC(m_hWnd);
-	SelectObject(hDC, m_fontMain);
+	CDC* pDC = GetDC();
+	pDC->SelectObject(m_fontMain);
 	TEXTMETRICW tm { };
-	GetTextMetricsW(hDC, &tm);
+	pDC->GetTextMetricsW(&tm);
 	m_sizeLetter.cx = tm.tmAveCharWidth;
 	m_sizeLetter.cy = tm.tmHeight + tm.tmExternalLeading;
-	::ReleaseDC(m_hWnd, hDC);
+	ReleaseDC(pDC);
 
 	RecalcOffsetDigits();
 	m_iSecondVertLine = m_iFirstVertLine + m_dwOffsetDigits * m_sizeLetter.cx + m_sizeLetter.cx * 2;
