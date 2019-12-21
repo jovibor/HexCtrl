@@ -2031,17 +2031,8 @@ void CHexCtrl::OnNcPaint()
 
 void CHexCtrl::OnDestroy()
 {
-	if (m_enDataMode == EHexDataMode::DATA_MSG)
-		if (GetMsgWindow() != GetParent()->GetSafeHwnd()) //To avoid sending notify message twice to the same window.
-			MsgWindowNotify(HEXCTRL_MSG_DESTROY);
-
-	ParentNotify(HEXCTRL_MSG_DESTROY);
-	CWnd* pwndParent = GetParent();
-	if (pwndParent)
-		pwndParent->SetForegroundWindow();
-
 	ClearData();
-
+	m_wndTtBkm.DestroyWindow();
 	m_menuMain.DestroyMenu();
 	m_fontMain.DeleteObject();
 	m_fontInfo.DeleteObject();
@@ -2054,14 +2045,16 @@ void CHexCtrl::OnDestroy()
 	m_pScrollV->DestroyWindow();
 	m_pScrollH->DestroyWindow();
 
-	//Deleting all loaded bitmaps.
-	for (auto const& i : m_umapHBITMAP)
+	for (auto const& i : m_umapHBITMAP) //Deleting all loaded bitmaps.
 		DeleteObject(i.second);
-
-	::DestroyWindow(m_wndTtBkm);
 
 	m_dwCapacity = 0x10;
 	m_fCreated = false;
+
+	if (m_enDataMode == EHexDataMode::DATA_MSG && GetMsgWindow() != GetParent()->GetSafeHwnd())
+		MsgWindowNotify(HEXCTRL_MSG_DESTROY); //To avoid sending notify message twice to the same window.
+
+	ParentNotify(HEXCTRL_MSG_DESTROY);
 
 	CWnd::OnDestroy();
 }

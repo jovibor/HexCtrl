@@ -8,6 +8,7 @@
 #include "stdafx.h"
 #include "CListEx.h"
 #include "strsafe.h"
+#include <cassert>
 
 using namespace HEXCTRL::INTERNAL::LISTEX;
 
@@ -52,6 +53,10 @@ END_MESSAGE_MAP()
 
 bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 {
+	assert(!IsCreated());
+	if (IsCreated())
+		return false;
+
 	LONG_PTR dwStyle = lcs.dwStyle;
 	if (lcs.fDialogCtrl)
 	{
@@ -101,14 +106,14 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 		lf = ncm.lfMessageFont;
 	}
 
+	m_fontList.CreateFontIndirectW(&lf);
+	m_penGrid.CreatePen(PS_SOLID, m_dwGridWidth, m_stColor.clrListGrid);
+	m_fCreated = true;
+
 	SetHeaderHeight(lcs.dwHdrHeight);
 	SetHeaderFont(lcs.pHdrLogFont);
 	GetHeaderCtrl().SetColor(lcs.stColor);
 	GetHeaderCtrl().SetSortable(lcs.fSortable);
-
-	m_fontList.CreateFontIndirectW(&lf);
-	m_penGrid.CreatePen(PS_SOLID, m_dwGridWidth, m_stColor.clrListGrid);
-	m_fCreated = true;
 	Update(0);
 
 	return true;
@@ -164,6 +169,10 @@ BOOL CListEx::DeleteAllItems()
 
 BOOL CListEx::DeleteItem(int iItem)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return FALSE;
+
 	UINT ID = MapIndexToID(iItem);
 
 	if (auto iter = m_umapCellTt.find(ID); iter != m_umapCellTt.end())
@@ -185,6 +194,10 @@ void CListEx::Destroy()
 
 ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return FALSE;
+
 	UINT ID = MapIndexToID(iItem);
 	auto it = m_umapCellData.find(ID);
 
@@ -202,6 +215,10 @@ ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)
 
 UINT CListEx::GetFontSize()
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return FALSE;
+
 	LOGFONTW lf;
 	m_fontList.GetLogFont(&lf);
 
@@ -245,6 +262,10 @@ UINT CListEx::MapIndexToID(UINT nItem)
 
 void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clrText)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
 	if (clrText == -1) //-1 for default color.
 		clrText = m_stColor.clrListText;
 
@@ -273,6 +294,10 @@ void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clr
 
 void CListEx::SetCellData(int iItem, int iSubItem, ULONGLONG ullData)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
 	UINT ID = MapIndexToID(iItem);
 	auto it = m_umapCellData.find(ID);
 
@@ -295,6 +320,10 @@ void CListEx::SetCellData(int iItem, int iSubItem, ULONGLONG ullData)
 
 void CListEx::SetCellMenu(int iItem, int iSubItem, CMenu* pMenu)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
 	UINT ID = MapIndexToID(iItem);
 	auto it = m_umapCellMenu.find(ID);
 
@@ -319,6 +348,10 @@ void CListEx::SetCellMenu(int iItem, int iSubItem, CMenu* pMenu)
 
 void CListEx::SetCellTooltip(int iItem, int iSubItem, const wchar_t* pwszTooltip, const wchar_t* pwszCaption)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
 	//Checking for nullptr, and assign empty string in such case.
 	const wchar_t* pCaption = pwszCaption ? pwszCaption : L"";
 	const wchar_t* pTooltip = pwszTooltip ? pwszTooltip : L"";
@@ -360,6 +393,10 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, const wchar_t* pwszTooltip
 
 void CListEx::SetColor(const LISTEXCOLORSTRUCT& lcs)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
 	m_stColor = lcs;
 	GetHeaderCtrl().SetColor(lcs);
 	RedrawWindow();
@@ -367,6 +404,11 @@ void CListEx::SetColor(const LISTEXCOLORSTRUCT& lcs)
 
 void CListEx::SetFont(const LOGFONTW* pLogFontNew)
 {
+	assert(IsCreated());
+	assert(pLogFontNew);
+	if (!IsCreated() || !pLogFontNew)
+		return;
+
 	if (!pLogFontNew)
 		return;
 
@@ -388,6 +430,10 @@ void CListEx::SetFont(const LOGFONTW* pLogFontNew)
 
 void CListEx::SetFontSize(UINT uiSize)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
 	//Prevent size from being too small or too big.
 	if (uiSize < 9 || uiSize > 75)
 		return;
@@ -413,6 +459,10 @@ void CListEx::SetFontSize(UINT uiSize)
 
 void CListEx::SetHeaderHeight(DWORD dwHeight)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
 	GetHeaderCtrl().SetHeight(dwHeight);
 	Update(0);
 	GetHeaderCtrl().RedrawWindow();
@@ -420,6 +470,10 @@ void CListEx::SetHeaderHeight(DWORD dwHeight)
 
 void CListEx::SetHeaderFont(const LOGFONTW* pLogFontNew)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
 	GetHeaderCtrl().SetFont(pLogFontNew);
 	Update(0);
 	GetHeaderCtrl().RedrawWindow();
@@ -427,6 +481,10 @@ void CListEx::SetHeaderFont(const LOGFONTW* pLogFontNew)
 
 void CListEx::SetHeaderColumnColor(DWORD nColumn, COLORREF clr)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
 	GetHeaderCtrl().SetColumnColor(nColumn, clr);
 	Update(0);
 	GetHeaderCtrl().RedrawWindow();
@@ -434,11 +492,20 @@ void CListEx::SetHeaderColumnColor(DWORD nColumn, COLORREF clr)
 
 void CListEx::SetListMenu(CMenu* pMenu)
 {
+	assert(IsCreated());
+	assert(pMenu);
+	if (!IsCreated() || !pMenu)
+		return;
+
 	m_pListMenu = pMenu;
 }
 
 void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
 	m_fSortable = fSortable;
 	m_pfnCompare = pfnCompare;
 
@@ -857,6 +924,8 @@ void CListEx::OnDestroy()
 	::DestroyWindow(m_hwndTt);
 	m_fontList.DeleteObject();
 	m_penGrid.DeleteObject();
+
+	m_fCreated = false;
 }
 
 void CListEx::OnLvnColumnclick(NMHDR* pNMHDR, LRESULT* pResult)
@@ -868,7 +937,8 @@ void CListEx::OnLvnColumnclick(NMHDR* pNMHDR, LRESULT* pResult)
 		m_iSortColumn = pNMLV->iSubItem;
 
 		GetHeaderCtrl().SetSortArrow(m_iSortColumn, m_fSortAscending);
-		SortItemsEx(m_pfnCompare ? m_pfnCompare : DefCompareFunc, reinterpret_cast<DWORD_PTR>(this));
+		if (!m_fVirtual)
+			SortItemsEx(m_pfnCompare ? m_pfnCompare : DefCompareFunc, reinterpret_cast<DWORD_PTR>(this));
 	}
 
 	*pResult = 0;

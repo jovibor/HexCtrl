@@ -8,7 +8,6 @@
 #pragma once
 #include <afxcontrolbars.h>
 #include <memory>
-#include <any>
 
 namespace HEXCTRL::INTERNAL::LISTEX {
 	/********************************************************************************************
