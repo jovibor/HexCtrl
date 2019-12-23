@@ -108,12 +108,10 @@ BOOL CHexDlgOperations::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 		case VK_ESCAPE:
 			OnCancel();
 			break;
-		case VK_TAB:
-			PostMessageW(WM_NEXTDLGCTL);
-			break;
 		case VK_UP:
 			PostMessageW(WM_NEXTDLGCTL, TRUE);
 			break;
+		case VK_TAB:
 		case VK_DOWN:
 			PostMessageW(WM_NEXTDLGCTL);
 			break;

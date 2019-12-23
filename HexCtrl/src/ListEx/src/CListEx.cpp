@@ -57,7 +57,7 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 	if (IsCreated())
 		return false;
 
-	LONG_PTR dwStyle = lcs.dwStyle;
+	LONG_PTR dwStyle = (LONG_PTR)lcs.dwStyle;
 	if (lcs.fDialogCtrl)
 	{
 		SubclassDlgItem(lcs.uID, lcs.pwndParent);
@@ -251,7 +251,7 @@ UINT CListEx::MapIndexToID(UINT nItem)
 		UINT uCtrlId = (UINT)GetDlgCtrlID();
 		NMITEMACTIVATE nmii { { m_hWnd, uCtrlId, LVM_MAPINDEXTOID } };
 		nmii.iItem = (int)nItem;
-		GetParent()->SendMessageW(WM_NOTIFY, uCtrlId, (LPARAM)&nmii);
+		GetParent()->SendMessageW(WM_NOTIFY, (WPARAM)uCtrlId, (LPARAM)&nmii);
 		ID = (UINT)nmii.lParam;
 	}
 	else
@@ -407,9 +407,6 @@ void CListEx::SetFont(const LOGFONTW* pLogFontNew)
 	assert(IsCreated());
 	assert(pLogFontNew);
 	if (!IsCreated() || !pLogFontNew)
-		return;
-
-	if (!pLogFontNew)
 		return;
 
 	m_fontList.DeleteObject();

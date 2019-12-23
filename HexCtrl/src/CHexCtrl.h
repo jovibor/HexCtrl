@@ -26,6 +26,7 @@ namespace HEXCTRL::INTERNAL
 	class CHexBookmarks;
 	class CHexSelection;
 	struct UNDOSTRUCT;
+	struct HBITMAPSTRUCT;
 	enum class EClipboard : DWORD;
 	namespace SCROLLEX { class CScrollEx; }
 
@@ -203,7 +204,7 @@ namespace HEXCTRL::INTERNAL
 		std::wstring m_wstrSectorName { };    //Name of the sector/page.
 		std::deque<std::unique_ptr<std::vector<UNDOSTRUCT>>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<std::vector<UNDOSTRUCT>>> m_deqRedo; //Redo deque.
-		std::unordered_map<int, HBITMAP> m_umapHBITMAP;    //Images for the Menu.
+		std::unordered_map<int, HBITMAPSTRUCT> m_umapHBITMAP;           //Images for the Menu.
 		bool m_fCreated { false };            //Is control created or not yet.
 		bool m_fDataSet { false };            //Is data set or not.
 		bool m_fMutable { false };            //Is control works in Edit or Read mode.

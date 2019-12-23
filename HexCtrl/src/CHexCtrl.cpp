@@ -54,11 +54,21 @@ namespace HEXCTRL {
 			PASTE_HEX, PASTE_ASCII
 		};
 
-		//Structure for UNDO command routine.
+		//Struct for UNDO command routine.
 		struct UNDOSTRUCT
 		{
 			ULONGLONG              ullOffset { }; //Start byte to apply Undo to.
 			std::vector<std::byte> vecData { };   //Data for Undo.
+		};
+
+		//Struct for resources auto deletion on destruction.
+		struct HBITMAPSTRUCT
+		{
+			HBITMAPSTRUCT() = default;
+			~HBITMAPSTRUCT() { ::DeleteObject(m_hBmp); }
+			HBITMAP operator=(const HBITMAP hBmp) { m_hBmp = hBmp; return hBmp; }
+			operator HBITMAP() { return m_hBmp; }
+			HBITMAP m_hBmp { };
 		};
 
 		constexpr auto WSTR_HEXCTRL_CLASSNAME = L"HexCtrl";
@@ -96,7 +106,7 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_HELPINFO()
 END_MESSAGE_MAP()
 
-//CWinApp object vital for manual MFC, and for in-.dll work,
+//CWinApp object is vital for manual MFC, and for in-.dll work,
 //to run properly (Resources handling and assertions.)
 #if defined HEXCTRL_MANUAL_MFC_INIT || defined HEXCTRL_SHARED_DLL
 CWinApp theApp;
@@ -188,6 +198,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_COPYHEX] =
 		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+	
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_COPYHEX, &mii);
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_PASTEHEX] =
 		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
@@ -2037,6 +2048,7 @@ void CHexCtrl::OnDestroy()
 	m_fontMain.DeleteObject();
 	m_fontInfo.DeleteObject();
 	m_penLines.DeleteObject();
+	m_umapHBITMAP.clear();
 	m_pDlgBookmarkMgr->DestroyWindow();
 	m_pDlgDataInterpret->DestroyWindow();
 	m_pDlgFillWith->DestroyWindow();
@@ -2044,9 +2056,6 @@ void CHexCtrl::OnDestroy()
 	m_pDlgSearch->DestroyWindow();
 	m_pScrollV->DestroyWindow();
 	m_pScrollH->DestroyWindow();
-
-	for (auto const& i : m_umapHBITMAP) //Deleting all loaded bitmaps.
-		DeleteObject(i.second);
 
 	m_dwCapacity = 0x10;
 	m_fCreated = false;

@@ -160,7 +160,7 @@ using namespace HEXCTRL;
 ### [](#)Classic Approach
 [`Create`](#create) is the first method you call to create **HexControl** instance. It takes [`HEXCREATESTRUCT`](#hexcreatestruct) reference as an argument.
 
-You can choose whether control will behave as *child* or independent *popup* window, by setting `enCreateMode` member of this struct to [`EHexCreateMode::CREATE_CHILD`](#ehexcreatemode) or [`EHexCreateMode::CREATE_POPUP`](#ehexcreatemode) accordingly.
+You can choose whether control will behave as a *child* or independent *popup* window, by setting `enCreateMode` member of this struct to [`EHexCreateMode::CREATE_CHILD`](#ehexcreatemode) or [`EHexCreateMode::CREATE_POPUP`](#ehexcreatemode) respectively.
 ```cpp
 HEXCREATESTRUCT hcs;
 hcs.enCreateMode = EHexCreateMode::CREATE_POPUP;
@@ -173,9 +173,9 @@ For all available options see [`HEXCREATESTRUCT`](#hexcreatestruct) description.
 To use **HexControl** within *Dialog* you can, of course, create it with the [Classic Approach](#classic-approach), call [`Create`](#create) method and provide all the necessary information.
 
 But there is another option you can use:
-1. Put **Custom Control** control from the **Toolbox** in **Visual Studio** dialog designer into your dialog template and make it desirable size.  
+1. Put **Custom Control** from the **Toolbox** in **Visual Studio** dialog designer into your dialog template and make it desirable size.  
 ![](docs/img/hexctrl_vstoolbox.jpg) ![](docs/img/hexctrl_vscustomctrl.jpg)
-2. Go to the **Properties** of that control, and in the **Class** field, within the **Misc** section, type: <kbd>HexCtrl</kbd>.  
+2. Go to the **Properties** of that control and in the **Class** field, within the **Misc** section, type: <kbd>HexCtrl</kbd>.  
 Give the control appropriate **ID** of your choise (<kbd>IDC_MY_HEX</kbd> in this example).  
 Also, here you can set the control's **Dynamic Layout** properties, so that control behaves appropriately when dialog is being resized.  
 ![](docs/img/hexctrl_vsproperties.jpg)
