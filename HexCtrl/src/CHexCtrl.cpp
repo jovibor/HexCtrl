@@ -71,6 +71,13 @@ namespace HEXCTRL {
 			HBITMAP m_hBmp { };
 		};
 
+		//Hit test structure.
+		struct HITTESTSTRUCT
+		{
+			ULONGLONG ullOffset { };      //Offset.
+			bool      fIsAscii { false }; //Is cursot at Ascii part or at Hex.
+		};
+
 		constexpr auto WSTR_HEXCTRL_CLASSNAME = L"HexCtrl";
 	}
 }
@@ -198,7 +205,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_COPYHEX] =
 		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-	
+
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_COPYHEX, &mii);
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_PASTEHEX] =
 		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
@@ -665,7 +672,7 @@ BOOL CHexCtrl::OnHelpInfo(HELPINFO* /*pHelpInfo*/)
 
 void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 {
-	const ULONGLONG ullHit = HitTest(&point);
+	const ULONGLONG ullHit = HitTest(&point).ullOffset;
 
 	if (m_fLMousePressed)
 	{
@@ -754,36 +761,36 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 		}
 
 		SetSelection(ullClick, ullStart, ullSize, ullLines, false);
-
-		return;
 	}
-
-	if (ullHit != 0xFFFFFFFFFFFFFFFFull)
+	else
 	{
-		auto pBookmark = m_pBookmarks->HitTest(ullHit);
-		if (pBookmark != nullptr)
+		if (ullHit != 0xFFFFFFFFFFFFFFFFull)
 		{
-			if (m_pBkmCurrTt != pBookmark)
+			auto pBookmark = m_pBookmarks->HitTest(ullHit);
+			if (pBookmark != nullptr)
 			{
-				m_pBkmCurrTt = pBookmark;
-				CPoint ptScreen = point;
-				ClientToScreen(&ptScreen);
+				if (m_pBkmCurrTt != pBookmark)
+				{
+					m_pBkmCurrTt = pBookmark;
+					CPoint ptScreen = point;
+					ClientToScreen(&ptScreen);
 
-				m_stToolInfo.lpszText = pBookmark->wstrDesc.data();
-				m_wndTtBkm.SendMessageW(TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(ptScreen.x, ptScreen.y));
-				m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-				m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+					m_stToolInfo.lpszText = pBookmark->wstrDesc.data();
+					m_wndTtBkm.SendMessageW(TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(ptScreen.x, ptScreen.y));
+					m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+					m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+				}
+			}
+			else
+			{
+				m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+				m_pBkmCurrTt = nullptr;
 			}
 		}
-		else
-		{
-			m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-			m_pBkmCurrTt = nullptr;
-		}
-	}
 
-	m_pScrollV->OnMouseMove(nFlags, point);
-	m_pScrollH->OnMouseMove(nFlags, point);
+		m_pScrollV->OnMouseMove(nFlags, point);
+		m_pScrollH->OnMouseMove(nFlags, point);
+	}
 }
 
 BOOL CHexCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
@@ -811,7 +818,10 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	SetFocus();
 
-	const ULONGLONG ullHit = HitTest(&point);
+	HITTESTSTRUCT stHit { HitTest(&point) };
+	const ULONGLONG ullHit = stHit.ullOffset;
+	m_fCursorTextArea = stHit.fIsAscii;
+
 	if (ullHit == 0xFFFFFFFFFFFFFFFFull)
 		return;
 
@@ -1010,7 +1020,7 @@ void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 {
 	POINT pp = point;
 	ScreenToClient(&pp);
-	m_ullRMouseClick = HitTest(&pp);
+	m_ullRMouseClick = HitTest(&pp).ullOffset;
 
 	//Notifying parent that we are about to display context menu.
 	MsgWindowNotify(HEXCTRL_MSG_CONTEXTMENU);
@@ -2492,12 +2502,12 @@ ULONGLONG CHexCtrl::GetTopLine()const
 	return m_pScrollV->GetScrollPos() / m_sizeLetter.cy;
 }
 
-ULONGLONG CHexCtrl::HitTest(const POINT* pPoint)
+HITTESTSTRUCT CHexCtrl::HitTest(const POINT* pPoint)
 {
+	HITTESTSTRUCT stHit;
 	int iY = pPoint->y;
 	int iX = pPoint->x + (int)m_pScrollH->GetScrollPos(); //To compensate horizontal scroll.
 	ULONGLONG ullCurLine = GetTopLine();
-	ULONGLONG ullHexChunk;
 
 	//Checking if cursor is within hex chunks area.
 	if ((iX >= m_iIndentFirstHexChunk) && (iX < m_iThirdVertLine) && (iY >= m_iStartWorkAreaY) && (iY <= m_iEndWorkArea))
@@ -2523,27 +2533,26 @@ ULONGLONG CHexCtrl::HitTest(const POINT* pPoint)
 				break;
 			}
 		}
-		ullHexChunk = (ULONGLONG)dwChunkX + ((iY - m_iStartWorkAreaY) / m_sizeLetter.cy) *
+		stHit.ullOffset = (ULONGLONG)dwChunkX + ((iY - m_iStartWorkAreaY) / m_sizeLetter.cy) *
 			m_dwCapacity + (ullCurLine * m_dwCapacity);
-		m_fCursorTextArea = false;
 	}
 	//Or within Ascii area.
 	else if ((iX >= m_iIndentAscii) && (iX < (m_iIndentAscii + m_iSpaceBetweenAscii * (int)m_dwCapacity))
 		&& (iY >= m_iStartWorkAreaY) && iY <= m_iEndWorkArea)
 	{
 		//Calculate ullHit Ascii symbol.
-		ullHexChunk = ((iX - (ULONGLONG)m_iIndentAscii) / m_iSpaceBetweenAscii) +
+		stHit.ullOffset = ((iX - (ULONGLONG)m_iIndentAscii) / m_iSpaceBetweenAscii) +
 			((iY - m_iStartWorkAreaY) / m_sizeLetter.cy) * m_dwCapacity + (ullCurLine * m_dwCapacity);
-		m_fCursorTextArea = true;
+		stHit.fIsAscii = true;
 	}
 	else
-		ullHexChunk = 0xFFFFFFFFFFFFFFFFull;
+		stHit.ullOffset = 0xFFFFFFFFFFFFFFFFull;
 
 	//If cursor is out of end-bound of hex chunks or Ascii chars.
-	if (ullHexChunk >= m_ullDataSize)
-		ullHexChunk = 0xFFFFFFFFFFFFFFFFull;
+	if (stHit.ullOffset >= m_ullDataSize)
+		stHit.ullOffset = 0xFFFFFFFFFFFFFFFFull;
 
-	return ullHexChunk;
+	return stHit;
 }
 
 void CHexCtrl::HexChunkPoint(ULONGLONG ullChunk, int& iCx, int& iCy)const

@@ -27,6 +27,7 @@ namespace HEXCTRL::INTERNAL
 	class CHexSelection;
 	struct UNDOSTRUCT;
 	struct HBITMAPSTRUCT;
+	struct HITTESTSTRUCT;
 	enum class EClipboard : DWORD;
 	namespace SCROLLEX { class CScrollEx; }
 
@@ -114,7 +115,7 @@ namespace HEXCTRL::INTERNAL
 		void RecalcWorkAreaHeight(int iClientHeight);
 		void RecalcOffsetDigits();                             //How many digits in Offset (depends on Hex or Decimals).
 		[[nodiscard]] ULONGLONG GetTopLine()const;             //Returns current top line's number in view.
-		[[nodiscard]] ULONGLONG HitTest(const POINT*);         //Is any hex chunk withing given point?
+		[[nodiscard]] HITTESTSTRUCT HitTest(const POINT*);     //Is any hex chunk withing given point?
 		void HexChunkPoint(ULONGLONG ullChunk, int& iCx, int& iCy)const; //Point of Hex chunk.
 		void AsciiChunkPoint(ULONGLONG ullChunk, int& iCx, int& iCy)const; //Point of Ascii chunk.
 		void ClipboardCopy(EClipboard enType);

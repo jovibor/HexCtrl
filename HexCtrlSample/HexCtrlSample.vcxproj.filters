@@ -26,10 +26,7 @@
       <UniqueIdentifier>{7ce252fb-6c63-4494-be63-7c19f6307aa6}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src\ListEx">
-      <UniqueIdentifier>{6912dca1-12d0-4d3c-a8e0-d9615a9c5cb4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="HexCtrl\src\ListEx\src">
-      <UniqueIdentifier>{b24d95cd-b5e8-4c73-81cd-655139d1ec8d}</UniqueIdentifier>
+      <UniqueIdentifier>{9a5e99da-ed6b-4f06-afd3-cd83a7abc08c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -84,15 +81,6 @@
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgBookmarkProps.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\HexCtrl\src\ListEx\ListEx.h">
-      <Filter>HexCtrl\src\ListEx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\HexCtrl\src\ListEx\src\CListEx.h">
-      <Filter>HexCtrl\src\ListEx\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\HexCtrl\src\ListEx\src\CListExHdr.h">
-      <Filter>HexCtrl\src\ListEx\src</Filter>
-    </ClInclude>
     <ClInclude Include="..\HexCtrl\src\CHexSelection.h">
       <Filter>HexCtrl\src</Filter>
     </ClInclude>
@@ -101,6 +89,15 @@
     </ClInclude>
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexEdit.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\HexCtrl\src\ListEx\ListEx.h">
+      <Filter>HexCtrl\src\ListEx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\HexCtrl\src\ListEx\src\CListEx.h">
+      <Filter>HexCtrl\src\ListEx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\HexCtrl\src\ListEx\src\CListExHdr.h">
+      <Filter>HexCtrl\src\ListEx</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -143,12 +140,6 @@
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgBookmarkProps.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
-    <ClCompile Include="..\HexCtrl\src\ListEx\src\CListEx.cpp">
-      <Filter>HexCtrl\src\ListEx\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\HexCtrl\src\ListEx\src\CListExHdr.cpp">
-      <Filter>HexCtrl\src\ListEx\src</Filter>
-    </ClCompile>
     <ClCompile Include="..\HexCtrl\src\CHexSelection.cpp">
       <Filter>HexCtrl\src</Filter>
     </ClCompile>
@@ -157,6 +148,12 @@
     </ClCompile>
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexEdit.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\HexCtrl\src\ListEx\src\CListEx.cpp">
+      <Filter>HexCtrl\src\ListEx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\HexCtrl\src\ListEx\src\CListExHdr.cpp">
+      <Filter>HexCtrl\src\ListEx</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
