@@ -72,22 +72,19 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 	m_stColor = lcs.stColor;
 	m_fSortable = lcs.fSortable;
 
-	m_hwndTt = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
-		TTS_BALLOON | TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-		nullptr, nullptr, nullptr, nullptr);
-	if (!m_hwndTt)
+	if (!m_wndTt.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_BALLOON | TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr))
 		return false;
 
-	SetWindowTheme(m_hwndTt, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
+	SetWindowTheme(m_wndTt, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
 
 	m_stToolInfo.cbSize = TTTOOLINFOW_V1_SIZE;
 	m_stToolInfo.uFlags = TTF_TRACK;
 	m_stToolInfo.uId = 0x1;
-	::SendMessageW(m_hwndTt, TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-	::SendMessageW(m_hwndTt, TTM_SETMAXTIPWIDTH, 0, (LPARAM)400); //to allow use of newline \n.
-	::SendMessageW(m_hwndTt, TTM_SETTIPTEXTCOLOR, (WPARAM)m_stColor.clrTooltipText, 0);
-	::SendMessageW(m_hwndTt, TTM_SETTIPBKCOLOR, (WPARAM)m_stColor.clrTooltipBk, 0);
+	m_wndTt.SendMessageW(TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+	m_wndTt.SendMessageW(TTM_SETMAXTIPWIDTH, 0, (LPARAM)400); //to allow use of newline \n.
+	m_wndTt.SendMessageW(TTM_SETTIPTEXTCOLOR, (WPARAM)m_stColor.clrTooltipText, 0);
+	m_wndTt.SendMessageW(TTM_SETTIPBKCOLOR, (WPARAM)m_stColor.clrTooltipBk, 0);
 
 	m_dwGridWidth = lcs.dwListGridWidth;
 	m_stNMII.hdr.code = LISTEX_MSG_MENUSELECTED;
@@ -133,10 +130,30 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 {
 	IListEx* pListCtrl = (IListEx*)lParamSort;
 	int iSortColumn = pListCtrl->GetSortColumn();
+	EnListExSortMode enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
+
 	std::wstring wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn).GetBuffer();
 	std::wstring wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn).GetBuffer();
 
-	auto iCompare = wstrItem1.compare(wstrItem2);
+	int iCompare { };
+	switch (enSortMode)
+	{
+	case EnListExSortMode::SORT_LEX:
+		iCompare = wstrItem1.compare(wstrItem2);
+		break;
+	case EnListExSortMode::SORT_NUMERIC:
+	{
+		LONGLONG llData1 { }, llData2 { };
+		StrToInt64ExW(wstrItem1.data(), STIF_SUPPORT_HEX, &llData1);
+		StrToInt64ExW(wstrItem2.data(), STIF_SUPPORT_HEX, &llData2);
+
+		if ((llData1 - llData2) < 0)
+			iCompare = -1;
+		else if ((llData1 - llData2) > 0)
+			iCompare = 1;
+	}
+	break;
+	}
 
 	int result = 0;
 	if (pListCtrl->GetSortAscending())
@@ -183,6 +200,8 @@ BOOL CListEx::DeleteItem(int iItem)
 		m_umapCellData.erase(iter);
 	if (auto iter = m_umapCellColor.find(ID); iter != m_umapCellColor.end())
 		m_umapCellColor.erase(iter);
+	if (auto iter = m_umapRowColor.find(ID); iter != m_umapRowColor.end())
+		m_umapRowColor.erase(iter);
 
 	return CMFCListCtrl::DeleteItem(iItem);
 }
@@ -211,6 +230,18 @@ ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)
 	}
 
 	return 0;
+}
+
+EnListExSortMode CListEx::GetColumnSortMode(int iColumn)
+{
+	EnListExSortMode enMode;
+	auto iter = m_umapColumnSortMode.find(iColumn);
+	if (iter != m_umapColumnSortMode.end())
+		enMode = iter->second;
+	else
+		enMode = m_enDefSortMode;
+
+	return enMode;
 }
 
 UINT CListEx::GetFontSize()
@@ -364,8 +395,8 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, const wchar_t* pwszTooltip
 	{
 		if (pwszTooltip || pwszCaption)
 		{	//Initializing inner map.
-			std::unordered_map<int, std::tuple< std::wstring, std::wstring>> umapInner {
-				{ iSubItem, { pTooltip, pCaption } } };
+			std::unordered_map<int, CELLTOOLTIP> umapInner {
+				{ iSubItem, { CELLTOOLTIP { pTooltip, pCaption } } } };
 			m_umapCellTt.insert({ ID, std::move(umapInner) });
 		}
 	}
@@ -400,6 +431,19 @@ void CListEx::SetColor(const LISTEXCOLORSTRUCT& lcs)
 	m_stColor = lcs;
 	GetHeaderCtrl().SetColor(lcs);
 	RedrawWindow();
+}
+
+void CListEx::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
+{
+	if (clrText == -1) //-1 for default color.
+		clrText = m_stColor.clrListText;
+
+	m_umapColumnColor[iColumn] = COLUMNCOLOR { clrBk, clrText, std::chrono::high_resolution_clock::now() };
+}
+
+void CListEx::SetColumnSortMode(int iColumn, EnListExSortMode enSortMode)
+{
+	m_umapColumnSortMode[iColumn] = enSortMode;
 }
 
 void CListEx::SetFont(const LOGFONTW* pLogFontNew)
@@ -476,13 +520,13 @@ void CListEx::SetHeaderFont(const LOGFONTW* pLogFontNew)
 	GetHeaderCtrl().RedrawWindow();
 }
 
-void CListEx::SetHeaderColumnColor(DWORD nColumn, COLORREF clr)
+void CListEx::SetHeaderColumnColor(int iColumn, COLORREF clr)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
-	GetHeaderCtrl().SetColumnColor(nColumn, clr);
+	GetHeaderCtrl().SetColumnColor(iColumn, clr);
 	Update(0);
 	GetHeaderCtrl().RedrawWindow();
 }
@@ -497,7 +541,15 @@ void CListEx::SetListMenu(CMenu* pMenu)
 	m_pListMenu = pMenu;
 }
 
-void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare)
+void CListEx::SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)
+{
+	if (clrText == -1) //-1 for default color.
+		clrText = m_stColor.clrListText;
+
+	m_umapRowColor[dwRow] = ROWCOLOR { clrBk, clrText, std::chrono::high_resolution_clock::now() };
+}
+
+void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EnListExSortMode enSortMode)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -505,6 +557,7 @@ void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare)
 
 	m_fSortable = fSortable;
 	m_pfnCompare = pfnCompare;
+	m_enDefSortMode = enSortMode;
 
 	GetHeaderCtrl().SetSortable(fSortable);
 }
@@ -523,9 +576,10 @@ bool CListEx::HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& c
 	if (iItem < 0 || iSubItem < 0)
 		return false;
 
+	bool fHasColor { false };
 	UINT ID = MapIndexToID((UINT)iItem);
-
 	auto it = m_umapCellColor.find(ID);
+
 	if (it != m_umapCellColor.end())
 	{
 		auto itInner = it->second.find(iSubItem);
@@ -535,11 +589,36 @@ bool CListEx::HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& c
 		{
 			clrBk = itInner->second.clrBk;
 			clrText = itInner->second.clrText;
-			return true;
+			fHasColor = true;
 		}
 	}
 
-	return false;
+	if (!fHasColor)
+	{
+		auto itColumn = m_umapColumnColor.find(iSubItem);
+		auto itRow = m_umapRowColor.find(ID);
+
+		if (itColumn != m_umapColumnColor.end() && itRow != m_umapRowColor.end())
+		{
+			clrBk = itColumn->second.time > itRow->second.time ? itColumn->second.clrBk : itRow->second.clrBk;
+			clrText = itColumn->second.time > itRow->second.time ? itColumn->second.clrText : itRow->second.clrText;
+			fHasColor = true;
+		}
+		else if (itColumn != m_umapColumnColor.end())
+		{
+			clrBk = itColumn->second.clrBk;
+			clrText = itColumn->second.clrText;
+			fHasColor = true;
+		}
+		else if (itRow != m_umapRowColor.end())
+		{
+			clrBk = itRow->second.clrBk;
+			clrText = itRow->second.clrText;
+			fHasColor = true;
+		}
+	}
+
+	return fHasColor;
 }
 
 bool CListEx::HasTooltip(int iItem, int iSubItem, std::wstring** ppwstrText, std::wstring** ppwstrCaption)
@@ -557,14 +636,14 @@ bool CListEx::HasTooltip(int iItem, int iSubItem, std::wstring** ppwstrText, std
 		auto itInner = it->second.find(iSubItem);
 
 		//If subitem id found and its text is not empty.
-		if (itInner != it->second.end() && !std::get<0>(itInner->second).empty())
+		if (itInner != it->second.end() && !itInner->second.wstrText.empty())
 		{
 			//If pointer for text is nullptr we just return true.
 			if (ppwstrText)
 			{
-				*ppwstrText = &std::get<0>(itInner->second);
+				*ppwstrText = &itInner->second.wstrText;
 				if (ppwstrCaption)
-					*ppwstrCaption = &std::get<1>(itInner->second);
+					*ppwstrCaption = &itInner->second.wstrCaption;
 			}
 			return true;
 		}
@@ -575,34 +654,43 @@ bool CListEx::HasTooltip(int iItem, int iSubItem, std::wstring** ppwstrText, std
 
 bool CListEx::HasMenu(int iItem, int iSubItem, CMenu** ppMenu)
 {
+	bool fHasMenu { false };
+
 	if (iItem < 0 || iSubItem < 0)
-		return false;
-
-	UINT ID = MapIndexToID(iItem);
-	auto it = m_umapCellMenu.find(ID);
-
-	if (it != m_umapCellMenu.end())
 	{
-		auto itInner = it->second.find(iSubItem);
-
-		//If subitem id found.
-		if (itInner != it->second.end())
+		if (m_pListMenu)
 		{
 			if (ppMenu)
-				*ppMenu = itInner->second;
+				*ppMenu = m_pListMenu;
+			fHasMenu = true;
+		}
+	}
+	else
+	{
+		UINT ID = MapIndexToID(iItem);
+		auto it = m_umapCellMenu.find(ID);
 
-			return true;
+		if (it != m_umapCellMenu.end())
+		{
+			auto itInner = it->second.find(iSubItem);
+
+			//If subitem id found.
+			if (itInner != it->second.end())
+			{
+				if (ppMenu)
+					*ppMenu = itInner->second;
+				fHasMenu = true;
+			}
+		}
+		else if (m_pListMenu) //If there is no menu for cell, then checking global menu for the list.
+		{
+			if (ppMenu)
+				*ppMenu = m_pListMenu;
+			fHasMenu = true;
 		}
 	}
 
-	//If there is no menu for cell, then checking global menu for the whole list.
-	if (m_pListMenu)
-	{
-		*ppMenu = m_pListMenu;
-		return true;
-	}
-
-	return false;
+	return fHasMenu;
 }
 
 void CListEx::MeasureItem(LPMEASUREITEMSTRUCT lpMIS)
@@ -631,57 +719,10 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 	case ODA_SELECT:
 	case ODA_DRAWENTIRE:
 	{
-		COLORREF clrText, clrBk;
-		CRect rc;
-		GetItemRect(pDIS->itemID, rc, LVIR_BOUNDS);
-
-		if (pDIS->itemState & ODS_SELECTED)
+		for (int i = 0; i < GetHeaderCtrl().GetItemCount(); i++)
 		{
-			pDIS->rcItem.left = rc.left;
-			clrText = m_stColor.clrListTextSelected;
-			clrBk = m_stColor.clrListBkSelected;
-		}
-		else
-		{
-			if (!HasCellColor(pDIS->itemID, 0, clrBk, clrText))
-			{
-				if (HasTooltip(pDIS->itemID, 0))
-				{
-					clrText = m_stColor.clrListTextCellTt;
-					clrBk = m_stColor.clrListBkCellTt;
-				}
-				else
-				{
-					clrText = m_stColor.clrListText;
-					clrBk = clrBkCurrRow;
-				}
-			}
-		}
-		pDC->FillSolidRect(&pDIS->rcItem, clrBk);
-
-		CStringW strItem = GetItemText(pDIS->itemID, 0);
-		rc.left += 3; //Drawing text +-3 px from rect bounds.
-		rc.top += 1;
-		pDC->SetTextColor(clrText);
-		ExtTextOutW(pDC->m_hDC, rc.left, rc.top, ETO_CLIPPED, rc, strItem, strItem.GetLength(), nullptr);
-		rc.left -= 3;
-		rc.top -= 1;
-
-		//Drawing Item's rect lines. 
-		pDC->MoveTo(rc.left, rc.top);
-		pDC->LineTo(rc.right, rc.top);
-		pDC->MoveTo(rc.left, rc.top);
-		pDC->LineTo(rc.left, rc.bottom);
-		pDC->MoveTo(rc.left, rc.bottom);
-		pDC->LineTo(rc.right, rc.bottom);
-		pDC->MoveTo(rc.right, rc.top);
-		pDC->LineTo(rc.right, rc.bottom);
-
-		for (int i = 1; i < GetHeaderCtrl().GetItemCount(); i++)
-		{
-			GetSubItemRect(pDIS->itemID, i, LVIR_BOUNDS, rc);
-
-			//Subitem's draw routine. Colors depending on whether subitem selected or not,
+			COLORREF clrText, clrBk;
+			//Subitems' draw routine. Colors depending on whether subitem selected or not,
 			//and has tooltip or not.
 			if (pDIS->itemState & ODS_SELECTED)
 			{
@@ -704,25 +745,27 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 					}
 				}
 			}
-			pDC->SetTextColor(clrText);
-			pDC->FillSolidRect(&rc, clrBk);
+			CRect rcBounds;
+			GetSubItemRect(pDIS->itemID, i, LVIR_BOUNDS, rcBounds);
+			pDC->FillSolidRect(&rcBounds, clrBk);
 
-			CString strSubitem = GetItemText(pDIS->itemID, i);
-			rc.left += 3; //Drawing text +-3 px from rect bounds
-			rc.top += 1;
-			ExtTextOutW(pDC->m_hDC, rc.left, rc.top, ETO_CLIPPED, rc, strSubitem, strSubitem.GetLength(), nullptr);
-			rc.left -= 3;
-			rc.top -= 1;
+			CRect rcText;
+			GetSubItemRect(pDIS->itemID, i, LVIR_LABEL, rcText);
+			if (i != 0) //Not needed for item itself (not subitem).
+				rcText.left += 4;
+			CStringW wstrSubitem = GetItemText(pDIS->itemID, i);
+			pDC->SetTextColor(clrText);
+			ExtTextOutW(pDC->m_hDC, rcText.left, rcText.top, ETO_CLIPPED, rcText, wstrSubitem, wstrSubitem.GetLength(), nullptr);
 
 			//Drawing Subitem's rect lines. 
-			pDC->MoveTo(rc.left, rc.top);
-			pDC->LineTo(rc.right, rc.top);
-			pDC->MoveTo(rc.left, rc.top);
-			pDC->LineTo(rc.left, rc.bottom);
-			pDC->MoveTo(rc.left, rc.bottom);
-			pDC->LineTo(rc.right, rc.bottom);
-			pDC->MoveTo(rc.right, rc.top);
-			pDC->LineTo(rc.right, rc.bottom);
+			pDC->MoveTo(rcBounds.left, rcBounds.top);
+			pDC->LineTo(rcBounds.right, rcBounds.top);
+			pDC->MoveTo(rcBounds.left, rcBounds.top);
+			pDC->LineTo(rcBounds.left, rcBounds.bottom);
+			pDC->MoveTo(rcBounds.left, rcBounds.bottom);
+			pDC->LineTo(rcBounds.right, rcBounds.bottom);
+			pDC->MoveTo(rcBounds.right, rcBounds.top);
+			pDC->LineTo(rcBounds.right, rcBounds.bottom);
 		}
 	}
 	break;
@@ -750,10 +793,10 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 		m_stToolInfo.lpszText = const_cast<LPWSTR>(pwstrTt->data());
 
 		ClientToScreen(&pt);
-		::SendMessage(m_hwndTt, TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(pt.x, pt.y));
-		::SendMessage(m_hwndTt, TTM_SETTITLE, (WPARAM)TTI_NONE, (LPARAM)pwstrCaption->data());
-		::SendMessage(m_hwndTt, TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-		::SendMessage(m_hwndTt, TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+		::SendMessage(m_wndTt, TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(pt.x, pt.y));
+		::SendMessage(m_wndTt, TTM_SETTITLE, (WPARAM)TTI_NONE, (LPARAM)pwstrCaption->data());
+		::SendMessage(m_wndTt, TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+		::SendMessage(m_wndTt, TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
 
 		//Timer to check whether mouse left subitem rect.
 		SetTimer(ID_TIMER_TOOLTIP, 200, 0);
@@ -767,7 +810,7 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 		if (m_fTtShown)
 		{
 			m_fTtShown = false;
-			::SendMessage(m_hwndTt, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+			::SendMessage(m_wndTt, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
 		}
 	}
 }
@@ -842,7 +885,7 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 		else
 		{	//If it left.
 			m_fTtShown = false;
-			::SendMessage(m_hwndTt, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+			::SendMessage(m_wndTt, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
 			KillTimer(ID_TIMER_TOOLTIP);
 			m_stCurrCell.iItem = hitInfo.iItem;
 			m_stCurrCell.iSubItem = hitInfo.iSubItem;
@@ -914,17 +957,6 @@ void CListEx::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	CMFCListCtrl::OnHScroll(nSBCode, nPos, pScrollBar);
 }
 
-void CListEx::OnDestroy()
-{
-	CMFCListCtrl::OnDestroy();
-
-	::DestroyWindow(m_hwndTt);
-	m_fontList.DeleteObject();
-	m_penGrid.DeleteObject();
-
-	m_fCreated = false;
-}
-
 void CListEx::OnLvnColumnclick(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	if (m_fSortable)
@@ -939,4 +971,23 @@ void CListEx::OnLvnColumnclick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 
 	*pResult = 0;
+}
+
+void CListEx::OnDestroy()
+{
+	CMFCListCtrl::OnDestroy();
+
+	m_wndTt.DestroyWindow();
+	m_fontList.DeleteObject();
+	m_penGrid.DeleteObject();
+
+	m_umapCellTt.clear();
+	m_umapCellMenu.clear();
+	m_umapCellData.clear();
+	m_umapCellColor.clear();
+	m_umapColumnSortMode.clear();
+	m_umapColumnColor.clear();
+	m_umapRowColor.clear();
+
+	m_fCreated = false;
 }

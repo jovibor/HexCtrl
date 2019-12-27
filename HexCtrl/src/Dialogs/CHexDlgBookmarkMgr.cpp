@@ -48,6 +48,7 @@ BOOL CHexDlgBookmarkMgr::OnInitDialog()
 	m_List->InsertColumn(2, L"Size", LVCFMT_RIGHT, 80);
 	m_List->InsertColumn(3, L"Description", LVCFMT_LEFT, 215);
 	m_List->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 80);
+	m_List->SetColumnSortMode(0, EnListExSortMode::SORT_NUMERIC);
 
 	m_stMenuList.CreatePopupMenu();
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, IDC_HEXCTRL_BOOKMARKMGR_MENU_NEW, L"New");
@@ -147,7 +148,7 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		CHexDlgBookmarkProps dlgBkmEdit;
 		if (dlgBkmEdit.DoModal(&hbkms) == IDOK)
 		{
-			m_pBookmarks->Update(hbkms.dwId, hbkms);
+			m_pBookmarks->Update(hbkms.dwID, hbkms);
 			UpdateList();
 		}
 	}
@@ -192,7 +193,7 @@ void CHexDlgBookmarkMgr::UpdateList()
 		m_List->SetItemText(listindex, 2, wstr);
 		m_List->SetItemText(listindex, 3, iter.wstrDesc.data());
 		m_List->SetCellColor(listindex, 4, iter.clrBk);
-		m_List->SetItemData(listindex, (DWORD_PTR)iter.dwId);
+		m_List->SetItemData(listindex, (DWORD_PTR)iter.dwID);
 
 		++listindex;
 	}

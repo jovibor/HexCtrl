@@ -69,7 +69,7 @@ namespace HEXCTRL
 		std::wstring               wstrDesc { };               //Description.
 		COLORREF                   clrBk { RGB(240, 240, 0) }; //Bk color.
 		COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.
-		DWORD                      dwId { };                   //Bookmark id. Must be 0. Assigned internally by framework.
+		DWORD                      dwID { };                   //Bookmark id. Must be 0. Assigned internally by framework.
 	};
 
 	/********************************************************************************************

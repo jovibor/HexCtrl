@@ -148,9 +148,9 @@ void CListExHdr::SetColor(const LISTEXCOLORSTRUCT& lcs)
 	RedrawWindow();
 }
 
-void CListExHdr::SetColumnColor(DWORD dwColumn, COLORREF clr)
+void CListExHdr::SetColumnColor(int iColumn, COLORREF clr)
 {
-	m_umapClrColumn[dwColumn] = clr;
+	m_umapClrColumn[iColumn] = clr;
 	RedrawWindow();
 }
 
@@ -194,4 +194,5 @@ void CListExHdr::OnDestroy()
 	m_penGrid.DeleteObject();
 	m_penLight.DeleteObject();
 	m_penShadow.DeleteObject();
+	m_umapClrColumn.clear();
 }

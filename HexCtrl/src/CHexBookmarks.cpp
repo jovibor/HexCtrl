@@ -28,11 +28,11 @@ DWORD CHexBookmarks::Add(const HEXBOOKMARKSTRUCT& hbs)
 
 	auto iter = std::max_element(m_deqBookmarks.begin(), m_deqBookmarks.end(), []
 	(const HEXBOOKMARKSTRUCT& ref1, const HEXBOOKMARKSTRUCT& ref2)
-	{return ref1.dwId < ref2.dwId; });
+	{return ref1.dwID < ref2.dwID; });
 
 	DWORD dwId { 1 }; //Bookmarks Id starts from 1.
 	if (iter != m_deqBookmarks.end())
-		dwId = iter->dwId + 1; //Increasing next bookmark's Id by 1.
+		dwId = iter->dwID + 1; //Increasing next bookmark's Id by 1.
 
 	m_deqBookmarks.emplace_back(HEXBOOKMARKSTRUCT
 		{ hbs.vecSpan, hbs.wstrDesc, hbs.clrBk, hbs.clrText, dwId });
@@ -62,7 +62,7 @@ auto CHexBookmarks::GetBookmark(DWORD dwID)->HEXBOOKMARKSTRUCT*
 		return nullptr;
 
 	auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-		[dwID](const HEXBOOKMARKSTRUCT& ref) {return dwID == ref.dwId; });
+		[dwID](const HEXBOOKMARKSTRUCT& ref) {return dwID == ref.dwID; });
 
 	if (iter != m_deqBookmarks.end())
 	{
@@ -88,7 +88,7 @@ void CHexBookmarks::GoBookmark(DWORD dwID)
 		return;
 
 	auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-		[dwID](const HEXBOOKMARKSTRUCT& ref) {return dwID == ref.dwId; });
+		[dwID](const HEXBOOKMARKSTRUCT& ref) {return dwID == ref.dwID; });
 
 	if (iter != m_deqBookmarks.end())
 		m_pHex->GoToOffset(iter->vecSpan.front().ullOffset);
@@ -195,7 +195,7 @@ void CHexBookmarks::RemoveId(DWORD dwID)
 		return;
 
 	auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-		[dwID](const HEXBOOKMARKSTRUCT& ref) {return dwID == ref.dwId; });
+		[dwID](const HEXBOOKMARKSTRUCT& ref) {return dwID == ref.dwID; });
 
 	if (iter != m_deqBookmarks.end())
 	{
@@ -218,7 +218,7 @@ void CHexBookmarks::Update(DWORD dwId, const HEXBOOKMARKSTRUCT& stBookmark)
 		return;
 
 	auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-		[dwId](const HEXBOOKMARKSTRUCT& ref) {return dwId == ref.dwId; });
+		[dwId](const HEXBOOKMARKSTRUCT& ref) {return dwId == ref.dwID; });
 
 	if (iter != m_deqBookmarks.end())
 	{

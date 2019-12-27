@@ -10,8 +10,17 @@
 #include <memory>
 
 namespace HEXCTRL::INTERNAL::LISTEX {
+
 	/********************************************************************************************
-	* LISTEXCOLORSTRUCT - All ListEx colors.													*
+	* EnListExSortMode - Sorting mode.                                                          *
+	********************************************************************************************/
+	enum class EnListExSortMode : short
+	{
+		SORT_LEX, SORT_NUMERIC
+	};
+
+	/********************************************************************************************
+	* LISTEXCOLORSTRUCT - All ListEx colors.                                                    *
 	********************************************************************************************/
 	struct LISTEXCOLORSTRUCT
 	{
@@ -63,6 +72,7 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		virtual BOOL DeleteItem(int nItem) = 0;
 		virtual void Destroy() = 0;
 		virtual ULONGLONG GetCellData(int iItem, int iSubitem) = 0;
+		virtual EnListExSortMode GetColumnSortMode(int iColumn) = 0;
 		virtual UINT GetFontSize() = 0;
 		virtual int GetSortColumn()const = 0;
 		virtual bool GetSortAscending()const = 0;
@@ -72,13 +82,16 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		virtual void SetCellMenu(int iItem, int iSubitem, CMenu* pMenu) = 0;
 		virtual void SetCellTooltip(int iItem, int iSubitem, const wchar_t* pwszTooltip, const wchar_t* pwszCaption = nullptr) = 0;
 		virtual void SetColor(const LISTEXCOLORSTRUCT& lcs) = 0;
+		virtual void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
+		virtual void SetColumnSortMode(int iColumn, EnListExSortMode enSortMode) = 0;
 		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0;
 		virtual void SetFontSize(UINT uiSize) = 0;
 		virtual void SetHeaderHeight(DWORD dwHeight) = 0;
 		virtual void SetHeaderFont(const LOGFONTW* pLogFontNew) = 0;
-		virtual void SetHeaderColumnColor(DWORD nColumn, COLORREF clr) = 0;
+		virtual void SetHeaderColumnColor(int iColumn, COLORREF clr) = 0;
 		virtual void SetListMenu(CMenu* pMenu) = 0;
-		virtual void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare = nullptr) = 0;
+		virtual void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText = -1) = 0;
+		virtual void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare = nullptr, EnListExSortMode enSortMode = EnListExSortMode::SORT_LEX) = 0;
 	};
 
 	/********************************************************************************************
