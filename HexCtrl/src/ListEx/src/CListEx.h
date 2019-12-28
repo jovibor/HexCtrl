@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <chrono>
 
-namespace HEXCTRL::INTERNAL::LISTEX {
+namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL {
 
 	/********************************************
 	* CELLTOOLTIP - tool-tips for the cell.     *
@@ -65,6 +65,7 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		void CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)override;
 		static int CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 		BOOL DeleteAllItems()override;
+		BOOL DeleteColumn(int nCol)override;
 		BOOL DeleteItem(int iItem)override;
 		void Destroy()override;
 		ULONGLONG GetCellData(int iItem, int iSubItem)override;
@@ -121,8 +122,8 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		LISTEXCOLORSTRUCT m_stColor { };
 		CFont m_fontList;
 		CPen m_penGrid;
-		CWnd m_wndTt;
-		TOOLINFO m_stToolInfo { };
+		CWnd m_wndTt;                   //Tool-tip window.
+		TOOLINFO m_stToolInfo { };      //Tool-tip info struct.
 		LVHITTESTINFO m_stCurrCell { };
 		DWORD m_dwGridWidth { 1 };		//Grid width.
 		CMenu* m_pListMenu { };			//List global menu, if set.
@@ -130,13 +131,12 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		std::unordered_map<int, std::unordered_map<int, CMenu*>> m_umapCellMenu { };	 //Cell's menus.
 		std::unordered_map<int, std::unordered_map<int, ULONGLONG>> m_umapCellData { };  //Cell's custom data.
 		std::unordered_map<int, std::unordered_map<int, CELLCOLOR>> m_umapCellColor { }; //Cell's colors.
-		std::unordered_map<int, COLUMNCOLOR> m_umapColumnColor { }; //Column colors.
 		std::unordered_map<DWORD, ROWCOLOR> m_umapRowColor { };     //Row colors.
+		std::unordered_map<int, COLUMNCOLOR> m_umapColumnColor { }; //Column colors.
 		std::unordered_map<int, EnListExSortMode> m_umapColumnSortMode { };              //Column sorting mode.
 		NMITEMACTIVATE m_stNMII { };
-		const ULONG_PTR ID_TIMER_TOOLTIP { 0x01 };
 		int m_iSortColumn { };
-		PFNLVCOMPARE m_pfnCompare { nullptr };
+		PFNLVCOMPARE m_pfnCompare { nullptr };  //Pointer to user provided compare func.
 		EnListExSortMode m_enDefSortMode { EnListExSortMode::SORT_LEX }; //Default sorting mode.
 		bool m_fCreated { false };  //Is created.
 		bool m_fSortable { false }; //Is list sortable.

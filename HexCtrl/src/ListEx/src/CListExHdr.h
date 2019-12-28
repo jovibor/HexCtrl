@@ -6,14 +6,13 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include <unordered_map> //std::unordered_map and related.
+#include <unordered_map>
 
-namespace HEXCTRL::INTERNAL::LISTEX {
+namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL {
+
 	/********************************************
 	* CListExHdr class declaration.				*
 	********************************************/
-	struct LISTEXCOLORSTRUCT; //Forward declaration.
-
 	class CListExHdr : public CMFCHeaderCtrl
 	{
 	public:

@@ -10,6 +10,7 @@
 #include "CListExHdr.h"
 
 using namespace HEXCTRL::INTERNAL::LISTEX;
+using namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL;
 
 /****************************************************
 * CListExHdr class implementation.					*

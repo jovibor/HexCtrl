@@ -11,6 +11,7 @@
 #include <cassert>
 
 using namespace HEXCTRL::INTERNAL::LISTEX;
+using namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL;
 
 namespace HEXCTRL::INTERNAL::LISTEX {
 	/********************************************
@@ -19,6 +20,10 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 	IListEx* CreateRawListEx()
 	{
 		return new CListEx();
+	}
+
+	namespace INTERNAL {
+		constexpr ULONG_PTR ID_TIMER_TOOLTIP { 0x01 }; //Timer ID.
 	}
 }
 
@@ -87,7 +92,6 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 	m_wndTt.SendMessageW(TTM_SETTIPBKCOLOR, (WPARAM)m_stColor.clrTooltipBk, 0);
 
 	m_dwGridWidth = lcs.dwListGridWidth;
-	m_stNMII.hdr.code = LISTEX_MSG_MENUSELECTED;
 	m_stNMII.hdr.idFrom = GetDlgCtrlID();
 	m_stNMII.hdr.hwndFrom = m_hWnd;
 
@@ -180,8 +184,19 @@ BOOL CListEx::DeleteAllItems()
 	m_umapCellMenu.clear();
 	m_umapCellData.clear();
 	m_umapCellColor.clear();
+	m_umapRowColor.clear();
 
 	return CMFCListCtrl::DeleteAllItems();
+}
+
+BOOL CListEx::DeleteColumn(int nCol)
+{
+	if (auto iter = m_umapColumnColor.find(nCol); iter != m_umapColumnColor.end())
+		m_umapColumnColor.erase(iter);
+	if (auto iter = m_umapColumnSortMode.find(nCol); iter != m_umapColumnSortMode.end())
+		m_umapColumnSortMode.erase(iter);
+
+	return CMFCListCtrl::DeleteColumn(nCol);
 }
 
 BOOL CListEx::DeleteItem(int iItem)
@@ -776,7 +791,7 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 
 void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 {
-	LVHITTESTINFO hi { };
+	LVHITTESTINFO hi;
 	hi.pt = pt;
 	ListView_SubItemHitTest(m_hWnd, &hi);
 	std::wstring  *pwstrTt { }, *pwstrCaption { };
@@ -793,10 +808,10 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 		m_stToolInfo.lpszText = const_cast<LPWSTR>(pwstrTt->data());
 
 		ClientToScreen(&pt);
-		::SendMessage(m_wndTt, TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(pt.x, pt.y));
-		::SendMessage(m_wndTt, TTM_SETTITLE, (WPARAM)TTI_NONE, (LPARAM)pwstrCaption->data());
-		::SendMessage(m_wndTt, TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-		::SendMessage(m_wndTt, TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+		m_wndTt.SendMessageW(TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(pt.x, pt.y));
+		m_wndTt.SendMessageW(TTM_SETTITLE, (WPARAM)TTI_NONE, (LPARAM)pwstrCaption->data());
+		m_wndTt.SendMessageW(TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+		m_wndTt.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
 
 		//Timer to check whether mouse left subitem rect.
 		SetTimer(ID_TIMER_TOOLTIP, 200, 0);
@@ -810,7 +825,7 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 		if (m_fTtShown)
 		{
 			m_fTtShown = false;
-			::SendMessage(m_wndTt, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+			m_wndTt.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
 		}
 	}
 }
@@ -845,23 +860,29 @@ void CListEx::OnRButtonDown(UINT nFlags, CPoint pt)
 
 void CListEx::OnContextMenu(CWnd* /*pWnd*/, CPoint pt)
 {
+	CPoint ptClient = pt;
+	ScreenToClient(&ptClient);
 	LVHITTESTINFO hi;
-	ScreenToClient(&pt);
-	hi.pt = pt;
+	hi.pt = ptClient;
 	ListView_SubItemHitTest(m_hWnd, &hi);
-	m_stNMII.iItem = hi.iItem;
-	m_stNMII.iSubItem = hi.iSubItem;
 
-	ClientToScreen(&pt);
 	CMenu* pMenu;
 	if (HasMenu(hi.iItem, hi.iSubItem, &pMenu))
+	{
+		m_stNMII.iItem = hi.iItem;
+		m_stNMII.iSubItem = hi.iSubItem;
 		pMenu->TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, pt.x, pt.y, this);
+	}
 }
 
 BOOL CListEx::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-	m_stNMII.lParam = LOWORD(wParam); //lParam holds uiMenuItemId.
-	GetParent()->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), (LPARAM)&m_stNMII);
+	if (HIWORD(wParam) == 0) //Message is from menu.
+	{
+		m_stNMII.hdr.code = LISTEX_MSG_MENUSELECTED;
+		m_stNMII.lParam = LOWORD(wParam); //LOWORD(wParam) holds uiMenuItemId.
+		GetParent()->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), (LPARAM)&m_stNMII);
+	}
 
 	return CMFCListCtrl::OnCommand(wParam, lParam);
 }
@@ -872,10 +893,10 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 	//if so — hiding tooltip and killing timer.
 	if (nIDEvent == ID_TIMER_TOOLTIP)
 	{
-		LVHITTESTINFO hitInfo { };
 		CPoint pt;
 		GetCursorPos(&pt);
 		ScreenToClient(&pt);
+		LVHITTESTINFO hitInfo;
 		hitInfo.pt = pt;
 		ListView_SubItemHitTest(m_hWnd, &hitInfo);
 
@@ -885,7 +906,7 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 		else
 		{	//If it left.
 			m_fTtShown = false;
-			::SendMessage(m_wndTt, TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+			m_wndTt.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
 			KillTimer(ID_TIMER_TOOLTIP);
 			m_stCurrCell.iItem = hitInfo.iItem;
 			m_stCurrCell.iSubItem = hitInfo.iSubItem;
@@ -985,9 +1006,9 @@ void CListEx::OnDestroy()
 	m_umapCellMenu.clear();
 	m_umapCellData.clear();
 	m_umapCellColor.clear();
+	m_umapRowColor.clear();
 	m_umapColumnSortMode.clear();
 	m_umapColumnColor.clear();
-	m_umapRowColor.clear();
 
 	m_fCreated = false;
 }

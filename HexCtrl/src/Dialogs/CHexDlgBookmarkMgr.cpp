@@ -49,6 +49,7 @@ BOOL CHexDlgBookmarkMgr::OnInitDialog()
 	m_List->InsertColumn(3, L"Description", LVCFMT_LEFT, 215);
 	m_List->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 80);
 	m_List->SetColumnSortMode(0, EnListExSortMode::SORT_NUMERIC);
+	m_List->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 
 	m_stMenuList.CreatePopupMenu();
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, IDC_HEXCTRL_BOOKMARKMGR_MENU_NEW, L"New");
