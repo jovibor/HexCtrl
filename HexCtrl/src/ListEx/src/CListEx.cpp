@@ -95,7 +95,7 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 	m_stNMII.hdr.idFrom = GetDlgCtrlID();
 	m_stNMII.hdr.hwndFrom = m_hWnd;
 
-	LOGFONTW lf { };
+	LOGFONTW lf;
 	if (lcs.pListLogFont)
 		lf = *lcs.pListLogFont;
 	else
@@ -107,12 +107,13 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 		lf = ncm.lfMessageFont;
 	}
 
+	m_lSizeFont = lf.lfHeight;
 	m_fontList.CreateFontIndirectW(&lf);
 	m_penGrid.CreatePen(PS_SOLID, m_dwGridWidth, m_stColor.clrListGrid);
 	m_fCreated = true;
 
-	SetHeaderHeight(lcs.dwHdrHeight);
-	SetHeaderFont(lcs.pHdrLogFont);
+	SetHdrHeight(lcs.dwHdrHeight);
+	SetHdrFont(lcs.pHdrLogFont);
 	GetHeaderCtrl().SetColor(lcs.stColor);
 	GetHeaderCtrl().SetSortable(lcs.fSortable);
 	Update(0);
@@ -180,6 +181,10 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 
 BOOL CListEx::DeleteAllItems()
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return FALSE;
+
 	m_umapCellTt.clear();
 	m_umapCellMenu.clear();
 	m_umapCellData.clear();
@@ -191,6 +196,10 @@ BOOL CListEx::DeleteAllItems()
 
 BOOL CListEx::DeleteColumn(int nCol)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return FALSE;
+
 	if (auto iter = m_umapColumnColor.find(nCol); iter != m_umapColumnColor.end())
 		m_umapColumnColor.erase(iter);
 	if (auto iter = m_umapColumnSortMode.find(nCol); iter != m_umapColumnSortMode.end())
@@ -226,11 +235,11 @@ void CListEx::Destroy()
 	delete this;
 }
 
-ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)
+ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)const
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return FALSE;
+		return 0;
 
 	UINT ID = MapIndexToID(iItem);
 	auto it = m_umapCellData.find(ID);
@@ -247,8 +256,10 @@ ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)
 	return 0;
 }
 
-EnListExSortMode CListEx::GetColumnSortMode(int iColumn)
+EnListExSortMode CListEx::GetColumnSortMode(int iColumn)const
 {
+	assert(IsCreated());
+
 	EnListExSortMode enMode;
 	auto iter = m_umapColumnSortMode.find(iColumn);
 	if (iter != m_umapColumnSortMode.end())
@@ -259,25 +270,30 @@ EnListExSortMode CListEx::GetColumnSortMode(int iColumn)
 	return enMode;
 }
 
-UINT CListEx::GetFontSize()
+UINT CListEx::GetFontSize()const
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return FALSE;
+		return 0;
 
-	LOGFONTW lf;
-	m_fontList.GetLogFont(&lf);
-
-	return lf.lfHeight;
+	return m_lSizeFont;
 }
 
 int CListEx::GetSortColumn()const
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return -1;
+
 	return m_iSortColumn;
 }
 
 bool CListEx::GetSortAscending()const
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return false;
+
 	return m_fSortAscending;
 }
 
@@ -286,7 +302,7 @@ bool CListEx::IsCreated()const
 	return m_fCreated;
 }
 
-UINT CListEx::MapIndexToID(UINT nItem)
+UINT CListEx::MapIndexToID(UINT nItem)const
 {
 	UINT ID;
 	//In case of virtual list the client code is responsible for
@@ -301,7 +317,7 @@ UINT CListEx::MapIndexToID(UINT nItem)
 		ID = (UINT)nmii.lParam;
 	}
 	else
-		ID = CListCtrl::MapIndexToID(nItem);
+		ID = CMFCListCtrl::MapIndexToID(nItem);
 
 	return ID;
 }
@@ -496,7 +512,7 @@ void CListEx::SetFontSize(UINT uiSize)
 
 	LOGFONTW lf;
 	m_fontList.GetLogFont(&lf);
-	lf.lfHeight = uiSize;
+	lf.lfHeight = m_lSizeFont = uiSize;
 	m_fontList.DeleteObject();
 	m_fontList.CreateFontIndirectW(&lf);
 
@@ -513,7 +529,7 @@ void CListEx::SetFontSize(UINT uiSize)
 	Update(0);
 }
 
-void CListEx::SetHeaderHeight(DWORD dwHeight)
+void CListEx::SetHdrHeight(DWORD dwHeight)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -524,7 +540,7 @@ void CListEx::SetHeaderHeight(DWORD dwHeight)
 	GetHeaderCtrl().RedrawWindow();
 }
 
-void CListEx::SetHeaderFont(const LOGFONTW* pLogFontNew)
+void CListEx::SetHdrFont(const LOGFONTW* pLogFontNew)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -535,13 +551,13 @@ void CListEx::SetHeaderFont(const LOGFONTW* pLogFontNew)
 	GetHeaderCtrl().RedrawWindow();
 }
 
-void CListEx::SetHeaderColumnColor(int iColumn, COLORREF clr)
+void CListEx::SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
-	GetHeaderCtrl().SetColumnColor(iColumn, clr);
+	GetHeaderCtrl().SetColumnColor(iColumn, clrBk, clrText);
 	Update(0);
 	GetHeaderCtrl().RedrawWindow();
 }
@@ -558,6 +574,10 @@ void CListEx::SetListMenu(CMenu* pMenu)
 
 void CListEx::SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
 	if (clrText == -1) //-1 for default color.
 		clrText = m_stColor.clrListText;
 

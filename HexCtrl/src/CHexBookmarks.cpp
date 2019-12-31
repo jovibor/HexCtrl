@@ -77,7 +77,7 @@ auto CHexBookmarks::GetData()->std::deque<HEXBOOKMARKSTRUCT>&
 	return m_deqBookmarks;
 }
 
-auto CHexBookmarks::GetTouchTime() const -> std::time_t
+auto CHexBookmarks::GetTouchTime()const ->__time64_t
 {
 	return m_time;
 }
@@ -157,7 +157,7 @@ auto CHexBookmarks::HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*
 		return nullptr;
 }
 
-bool CHexBookmarks::IsVirtual()
+bool CHexBookmarks::IsVirtual()const
 {
 	return m_pVirtual;
 }

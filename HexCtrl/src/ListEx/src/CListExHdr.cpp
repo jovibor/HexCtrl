@@ -49,7 +49,12 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BO
 
 	CMemDC memDC(*pDC, rect);
 	CDC& rDC = memDC.GetDC();
-	COLORREF clrBk;
+	COLORREF clrBk, clrText;
+
+	if (m_umapClrColumn.find(iItem) != m_umapClrColumn.end())
+		clrText = m_umapClrColumn[iItem].clrText;
+	else
+		clrText = m_clrText;
 
 	if (bIsHighlighted)
 	{
@@ -61,13 +66,13 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BO
 	else
 	{
 		if (m_umapClrColumn.find(iItem) != m_umapClrColumn.end())
-			clrBk = m_umapClrColumn[iItem];
+			clrBk = m_umapClrColumn[iItem].clrBk;
 		else
 			clrBk = m_clrBk;
 	}
 	rDC.FillSolidRect(&rect, clrBk);
 
-	rDC.SetTextColor(m_clrText);
+	rDC.SetTextColor(clrText);
 	rDC.SelectObject(m_fontHdr);
 	//Set item's text buffer first char to zero,
 	//then getting item's text and Draw it.
@@ -75,7 +80,7 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BO
 	GetItem(iItem, &m_hdItem);
 	if (StrStrW(m_wstrHeaderText, L"\n"))
 	{	//If it's multiline text, first — calculate rect for the text,
-		//with CALC_RECT flag (not drawing anything),
+		//with DT_CALCRECT flag (not drawing anything),
 		//and then calculate rect for final vertical text alignment.
 		CRect rcText;
 		rDC.DrawTextW(m_wstrHeaderText, &rcText, DT_CENTER | DT_CALCRECT);
@@ -97,7 +102,7 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BO
 			rDC.MoveTo(rect.right - 2 * iOffset, iOffset);
 			rDC.LineTo(rect.right - iOffset, rect.bottom - iOffset - 1);
 			rDC.LineTo(rect.right - 3 * iOffset - 2, rect.bottom - iOffset - 1);
-			rDC.SelectObject(&m_penShadow);
+			rDC.SelectObject(m_penShadow);
 			rDC.MoveTo(rect.right - 3 * iOffset - 1, rect.bottom - iOffset - 1);
 			rDC.LineTo(rect.right - 2 * iOffset, iOffset - 1);
 		}
@@ -106,14 +111,14 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BO
 			//Draw the DOWN arrow.
 			rDC.MoveTo(rect.right - iOffset - 1, iOffset);
 			rDC.LineTo(rect.right - 2 * iOffset - 1, rect.bottom - iOffset);
-			rDC.SelectObject(&m_penShadow);
+			rDC.SelectObject(m_penShadow);
 			rDC.MoveTo(rect.right - 2 * iOffset - 2, rect.bottom - iOffset);
 			rDC.LineTo(rect.right - 3 * iOffset - 1, iOffset);
 			rDC.LineTo(rect.right - iOffset - 1, iOffset);
 		}
 	}
 
-	//rDC.DrawEdge(&rect, EDGE_RAISED, BF_RECT);
+	//rDC.DrawEdge(&rect, EDGE_RAISED, BF_RECT); //3D look edges.
 	rDC.SelectObject(m_penGrid);
 	rDC.MoveTo(rect.left, rect.top);
 	rDC.LineTo(rect.left, rect.bottom);
@@ -125,10 +130,8 @@ LRESULT CListExHdr::OnLayout(WPARAM /*wParam*/, LPARAM lParam)
 
 	LPHDLAYOUT pHDL = reinterpret_cast<LPHDLAYOUT>(lParam);
 
-	//New header height.
-	pHDL->pwpos->cy = m_dwHeaderHeight;
-	//Decreasing list's height begining by the new header's height.
-	pHDL->prc->top = m_dwHeaderHeight;
+	pHDL->pwpos->cy = m_dwHeaderHeight;	//New header height.
+	pHDL->prc->top = m_dwHeaderHeight;  //Decreasing list's height begining by the new header's height.
 
 	return 0;
 }
@@ -149,9 +152,12 @@ void CListExHdr::SetColor(const LISTEXCOLORSTRUCT& lcs)
 	RedrawWindow();
 }
 
-void CListExHdr::SetColumnColor(int iColumn, COLORREF clr)
+void CListExHdr::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 {
-	m_umapClrColumn[iColumn] = clr;
+	if (clrText == -1)
+		clrText = m_clrText;
+
+	m_umapClrColumn[iColumn] = HDRCOLOR { clrBk, clrText };
 	RedrawWindow();
 }
 

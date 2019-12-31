@@ -10,17 +10,18 @@
 #include <afxcontrolbars.h>  //Standard MFC's controls header.
 #include "../../res/HexCtrlRes.h"
 
-namespace HEXCTRL::INTERNAL {
+namespace HEXCTRL::INTERNAL
+{
 	/********************************************
-	* CHexDlgAbout class definition.			*
+	* CHexDlgAbout class declaration.			*
 	********************************************/
 	class CHexDlgAbout final : public CDialogEx
 	{
 	public:
 		explicit CHexDlgAbout(CWnd* pParent) : CDialogEx(IDD_HEXCTRL_ABOUT, pParent) {}
-		virtual ~CHexDlgAbout() {}
+		virtual ~CHexDlgAbout() = default;
 	protected:
-		virtual BOOL OnInitDialog() override;
+		virtual BOOL OnInitDialog()override;
 		DECLARE_MESSAGE_MAP()
 	};
 }

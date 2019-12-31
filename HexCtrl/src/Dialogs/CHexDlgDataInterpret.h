@@ -17,13 +17,16 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgDataInterpret final : public CDialogEx
 	{
 	public:
-		CHexDlgDataInterpret(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_DATAINTERPRET, pParent) {}
-		virtual ~CHexDlgDataInterpret() {}
+		explicit CHexDlgDataInterpret(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_DATAINTERPRET, pParent) {}
+		virtual ~CHexDlgDataInterpret() = default;
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		ULONGLONG GetSize();
 		void InspectOffset(ULONGLONG ullOffset);
 		BOOL ShowWindow(int nCmdShow);
 	protected:
+		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+		virtual void OnOK();
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		virtual void DoDataExchange(CDataExchange* pDX);
 		virtual BOOL OnInitDialog();
 		afx_msg void OnClose();
@@ -51,9 +54,5 @@ namespace HEXCTRL::INTERNAL
 		UINT_PTR m_dwCurrID { };
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullSize { };
-		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
-		virtual void OnOK();
-	public:
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 	};
 }

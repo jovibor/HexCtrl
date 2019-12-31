@@ -92,7 +92,7 @@ It is written and tested with **/std:c++17** in *Visual Studio 2019*, under the 
 * Many options to **Copy/Paste** to/from clipboard
 * **Undo/Redo**
 * Modify data with **Filling** and many predefined **Operations** options
-* Ability to divide data into visual [Sectors](#setsectorsize)
+* Ability to visually divide data into [sectors](#setsectorsize)
 * Cutomizable look and appearance
 * Written with **/std:c++17** standard conformance
 

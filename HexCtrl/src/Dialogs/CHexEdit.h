@@ -14,8 +14,8 @@ namespace HEXCTRL::INTERNAL
 	class CHexEdit final : public CEdit
 	{
 	public:
-		CHexEdit() {}
-		~CHexEdit() {}
+		explicit CHexEdit() = default;
+		virtual ~CHexEdit() = default;
 	protected:
 		afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 		afx_msg UINT OnGetDlgCode();

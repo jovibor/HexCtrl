@@ -16,19 +16,20 @@ namespace HEXCTRL::INTERNAL
 	class CHexBookmarks
 	{
 	public:
-		CHexBookmarks() {}
+		explicit CHexBookmarks() = default;
+		~CHexBookmarks() = default;
 		DWORD Add(const HEXBOOKMARKSTRUCT& stBookmark); //Returns new bookmark Id.
 		void Attach(CHexCtrl* pHex);
 		void ClearAll();
 		auto GetBookmark(DWORD dwID)->HEXBOOKMARKSTRUCT*;
 		auto GetData()->std::deque<HEXBOOKMARKSTRUCT>&;
-		auto GetTouchTime()const->std::time_t;
+		auto GetTouchTime()const->__time64_t;
 		void GoBookmark(DWORD nID);
 		void GoNext();
 		void GoPrev();
 		bool HasBookmarks()const;
 		auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*;
-		bool IsVirtual();
+		bool IsVirtual()const;
 		void Remove(ULONGLONG ullOffset);
 		void RemoveId(DWORD dwID);
 		void SetVirtual(IHexBkmVirtual* pVirtual);
@@ -38,6 +39,6 @@ namespace HEXCTRL::INTERNAL
 		CHexCtrl* m_pHex { };
 		IHexBkmVirtual* m_pVirtual { };
 		int m_iCurrent { };
-		std::time_t m_time { }; //Last modification time.
+		__time64_t m_time { }; //Last modification time.
 	};
 }

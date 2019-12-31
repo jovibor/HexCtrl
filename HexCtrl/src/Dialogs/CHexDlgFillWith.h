@@ -11,12 +11,13 @@
 #include "../CHexCtrl.h"
 #include "../../res/HexCtrlRes.h"
 
-namespace HEXCTRL::INTERNAL {
+namespace HEXCTRL::INTERNAL
+{
 	class CHexDlgFillWith final : public CDialogEx
 	{
 	public:
 		explicit CHexDlgFillWith(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_FILLWITHDATA, pParent) {}
-		virtual ~CHexDlgFillWith() {}
+		virtual ~CHexDlgFillWith() = default;
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 	protected:
 		virtual void DoDataExchange(CDataExchange* pDX);

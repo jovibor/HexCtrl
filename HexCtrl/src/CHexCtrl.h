@@ -34,11 +34,11 @@ namespace HEXCTRL::INTERNAL
 	/********************************************************************************************
 	* CHexCtrl class declaration.																*
 	********************************************************************************************/
-	class CHexCtrl : public CWnd, public IHexCtrl
+	class CHexCtrl final : public CWnd, public IHexCtrl
 	{
 	public:
-		CHexCtrl();
-		~CHexCtrl();
+		explicit CHexCtrl();
+		virtual ~CHexCtrl() = default;
 		DWORD AddBookmark(const HEXBOOKMARKSTRUCT& hbs)override; //Adds new bookmark.
 		void ClearData()override;                           //Clears all data from HexCtrl's view (not touching data itself).
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
@@ -215,5 +215,5 @@ namespace HEXCTRL::INTERNAL
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
 		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
 		bool m_fSectorsPrintable { false };   //Print lines between sectors or not.
-};
+	};
 }

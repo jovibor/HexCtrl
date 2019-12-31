@@ -14,24 +14,23 @@
 
 using namespace HEXCTRL::INTERNAL::SCROLLEX;
 
-namespace HEXCTRL::INTERNAL {
-	namespace SCROLLEX {
-		enum class EState : DWORD
-		{
-			STATE_DEFAULT,
-			FIRSTARROW_HOVER, FIRSTARROW_CLICK,
-			FIRSTCHANNEL_CLICK,
-			THUMB_HOVER, THUMB_CLICK,
-			LASTCHANNEL_CLICK,
-			LASTARROW_CLICK, LASTARROW_HOVER
-		};
-		enum class ETimer : UINT_PTR {
-			IDT_FIRSTCLICK = 0x7ff0,
-			IDT_CLICKREPEAT = 0x7ff1
-		};
+namespace HEXCTRL::INTERNAL::SCROLLEX
+{
+	enum class EState : DWORD
+	{
+		STATE_DEFAULT,
+		FIRSTARROW_HOVER, FIRSTARROW_CLICK,
+		FIRSTCHANNEL_CLICK,
+		THUMB_HOVER, THUMB_CLICK,
+		LASTCHANNEL_CLICK,
+		LASTARROW_CLICK, LASTARROW_HOVER
+	};
+	enum class ETimer : UINT_PTR {
+		IDT_FIRSTCLICK = 0x7ff0,
+		IDT_CLICKREPEAT = 0x7ff1
+	};
 
-		constexpr auto THUMB_POS_MAX = 0x7fffffff;
-	}
+	constexpr auto THUMB_POS_MAX = 0x7fffffff;
 }
 
 /****************************************************

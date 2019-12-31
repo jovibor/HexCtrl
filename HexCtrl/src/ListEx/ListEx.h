@@ -9,8 +9,8 @@
 #include <afxcontrolbars.h>
 #include <memory>
 
-namespace HEXCTRL::INTERNAL::LISTEX {
-
+namespace HEXCTRL::INTERNAL::LISTEX
+{
 	/********************************************************************************************
 	* EnListExSortMode - Sorting mode.                                                          *
 	********************************************************************************************/
@@ -72,9 +72,9 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		virtual BOOL DeleteColumn(int nCol) = 0;
 		virtual BOOL DeleteItem(int nItem) = 0;
 		virtual void Destroy() = 0;
-		virtual ULONGLONG GetCellData(int iItem, int iSubitem) = 0;
-		virtual EnListExSortMode GetColumnSortMode(int iColumn) = 0;
-		virtual UINT GetFontSize() = 0;
+		virtual ULONGLONG GetCellData(int iItem, int iSubitem)const = 0;
+		virtual EnListExSortMode GetColumnSortMode(int iColumn)const = 0;
+		virtual UINT GetFontSize()const = 0;
 		virtual int GetSortColumn()const = 0;
 		virtual bool GetSortAscending()const = 0;
 		virtual bool IsCreated()const = 0;
@@ -87,9 +87,9 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 		virtual void SetColumnSortMode(int iColumn, EnListExSortMode enSortMode) = 0;
 		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0;
 		virtual void SetFontSize(UINT uiSize) = 0;
-		virtual void SetHeaderHeight(DWORD dwHeight) = 0;
-		virtual void SetHeaderFont(const LOGFONTW* pLogFontNew) = 0;
-		virtual void SetHeaderColumnColor(int iColumn, COLORREF clr) = 0;
+		virtual void SetHdrHeight(DWORD dwHeight) = 0;
+		virtual void SetHdrFont(const LOGFONTW* pLogFontNew) = 0;
+		virtual void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetListMenu(CMenu* pMenu) = 0;
 		virtual void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare = nullptr, EnListExSortMode enSortMode = EnListExSortMode::SORT_LEX) = 0;

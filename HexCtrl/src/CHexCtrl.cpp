@@ -149,10 +149,6 @@ CHexCtrl::CHexCtrl()
 	}
 }
 
-CHexCtrl::~CHexCtrl()
-{
-}
-
 DWORD CHexCtrl::AddBookmark(const HEXBOOKMARKSTRUCT& hbs)
 {
 	assert(IsCreated()); //Not created.

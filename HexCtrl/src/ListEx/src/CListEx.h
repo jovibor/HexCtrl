@@ -11,8 +11,8 @@
 #include <unordered_map>
 #include <chrono>
 
-namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL {
-
+namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
+{
 	/********************************************
 	* CELLTOOLTIP - tool-tips for the cell.     *
 	********************************************/
@@ -55,11 +55,10 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL {
 	/********************************************
 	* CListEx class declaration.                *
 	********************************************/
-	class CListEx : public IListEx
+	class CListEx final : public IListEx
 	{
 	public:
-		DECLARE_DYNAMIC(CListEx)
-		CListEx() = default;
+		explicit CListEx() = default;
 		~CListEx() = default;
 		bool Create(const LISTEXCREATESTRUCT& lcs)override;
 		void CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)override;
@@ -68,13 +67,13 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL {
 		BOOL DeleteColumn(int nCol)override;
 		BOOL DeleteItem(int iItem)override;
 		void Destroy()override;
-		ULONGLONG GetCellData(int iItem, int iSubItem)override;
-		EnListExSortMode GetColumnSortMode(int iColumn)override;
-		UINT GetFontSize()override;
+		ULONGLONG GetCellData(int iItem, int iSubItem)const override;
+		EnListExSortMode GetColumnSortMode(int iColumn)const override;
+		UINT GetFontSize()const override;
 		int GetSortColumn()const override;
 		bool GetSortAscending()const override;
 		bool IsCreated()const override;
-		UINT MapIndexToID(UINT nItem);
+		UINT MapIndexToID(UINT nItem)const;
 		void SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clrText)override;
 		void SetCellData(int iItem, int iSubItem, ULONGLONG ullData)override;
 		void SetCellMenu(int iItem, int iSubItem, CMenu* pMenu)override;
@@ -84,12 +83,13 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL {
 		void SetColumnSortMode(int iColumn, EnListExSortMode enSortMode)override;
 		void SetFont(const LOGFONTW* pLogFontNew)override;
 		void SetFontSize(UINT uiSize)override;
-		void SetHeaderHeight(DWORD dwHeight)override;
-		void SetHeaderFont(const LOGFONTW* pLogFontNew)override;
-		void SetHeaderColumnColor(int iColumn, COLORREF clr)override;
+		void SetHdrHeight(DWORD dwHeight)override;
+		void SetHdrFont(const LOGFONTW* pLogFontNew)override;
+		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
 		void SetListMenu(CMenu* pMenu)override;
 		void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)override;
 		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EnListExSortMode enSortMode)override;
+		DECLARE_DYNAMIC(CListEx)
 		DECLARE_MESSAGE_MAP()
 	protected:
 		CListExHdr& GetHeaderCtrl() { return m_stListHeader; }
@@ -123,7 +123,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL {
 		CFont m_fontList;
 		CPen m_penGrid;
 		CWnd m_wndTt;                   //Tool-tip window.
-		TOOLINFO m_stToolInfo { };      //Tool-tip info struct.
+		TTTOOLINFOW m_stToolInfo { };      //Tool-tip info struct.
 		LVHITTESTINFO m_stCurrCell { };
 		DWORD m_dwGridWidth { 1 };		//Grid width.
 		CMenu* m_pListMenu { };			//List global menu, if set.
@@ -136,6 +136,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL {
 		std::unordered_map<int, EnListExSortMode> m_umapColumnSortMode { };              //Column sorting mode.
 		NMITEMACTIVATE m_stNMII { };
 		int m_iSortColumn { };
+		long m_lSizeFont { };       //Font size.
 		PFNLVCOMPARE m_pfnCompare { nullptr };  //Pointer to user provided compare func.
 		EnListExSortMode m_enDefSortMode { EnListExSortMode::SORT_LEX }; //Default sorting mode.
 		bool m_fCreated { false };  //Is created.

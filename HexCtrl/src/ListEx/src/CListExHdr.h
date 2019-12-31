@@ -8,20 +8,31 @@
 #pragma once
 #include <unordered_map>
 
-namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL {
+namespace HEXCTRL::INTERNAL::LISTEX { struct LISTEXCOLORSTRUCT; } //Forward declaration.
+
+namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
+{
+	/********************************************
+	* HDRCOLOR - header column colors.          *
+	********************************************/
+	struct HDRCOLOR
+	{
+		COLORREF clrBk { };   //Background color.
+		COLORREF clrText { }; //Text color.
+	};
 
 	/********************************************
-	* CListExHdr class declaration.				*
+	* CListExHdr class declaration.             *
 	********************************************/
-	class CListExHdr : public CMFCHeaderCtrl
+	class CListExHdr final : public CMFCHeaderCtrl
 	{
 	public:
-		CListExHdr();
-		virtual ~CListExHdr() {}
+		explicit CListExHdr();
+		virtual ~CListExHdr() = default;
 		void SetHeight(DWORD dwHeight);
 		void SetFont(const LOGFONTW* pLogFontNew);
 		void SetColor(const LISTEXCOLORSTRUCT& lcs);
-		void SetColumnColor(int iColumn, COLORREF clr);
+		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText);
 		void SetSortable(bool fSortable);
 		void SetSortArrow(int iColumn, bool fAscending);
 	protected:
@@ -31,18 +42,18 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL {
 		DECLARE_MESSAGE_MAP()
 	private:
 		CFont m_fontHdr;
+		CPen m_penGrid;
+		CPen m_penLight;
+		CPen m_penShadow;
 		COLORREF m_clrBkNWA { }; //Bk of non working area.
 		COLORREF m_clrText { };
 		COLORREF m_clrBk { };
 		COLORREF m_clrHglInactive { };
 		COLORREF m_clrHglActive { };
-		CPen m_penGrid;
-		CPen m_penLight;
-		CPen m_penShadow;
 		HDITEMW m_hdItem { }; //For drawing.
 		WCHAR m_wstrHeaderText[MAX_PATH] { };
 		DWORD m_dwHeaderHeight { 19 }; //Standard (default) height.
-		std::unordered_map<int, COLORREF> m_umapClrColumn { }; //Color of individual columns.
+		std::unordered_map<int, HDRCOLOR> m_umapClrColumn { }; //Color of individual columns.
 		bool m_fSortable { false }; //Need to draw sortable triangle or not?
 		int m_iSortColumn { -1 };   //Column to draw sorting triangle at. -1 is to avoid triangle before first clicking.
 		bool m_fSortAscending { };  //Sorting type.

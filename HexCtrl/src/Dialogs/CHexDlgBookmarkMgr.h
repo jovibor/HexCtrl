@@ -20,7 +20,7 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexDlgBookmarkMgr(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_BOOKMARKMGR, pParent) {}
-		virtual ~CHexDlgBookmarkMgr() {}
+		virtual ~CHexDlgBookmarkMgr() = default;
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks);
 	protected:
 		virtual void DoDataExchange(CDataExchange* pDX);
@@ -28,6 +28,7 @@ namespace HEXCTRL::INTERNAL
 		virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+		afx_msg void OnDestroy();
 		DECLARE_MESSAGE_MAP()
 	private:
 		void UpdateList();
@@ -37,8 +38,6 @@ namespace HEXCTRL::INTERNAL
 		CMenu m_stMenuList;
 		DWORD m_dwCurrBkmId { }; //Currently selected bookmark Id.
 		int m_iCurrListId { };   //Currently selected list Id.
-		std::time_t m_time { };
-	public:
-		afx_msg void OnDestroy();
+		__time64_t m_time { };
 	};
 }
