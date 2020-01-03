@@ -1651,7 +1651,7 @@ void CHexCtrl::OnPaint()
 		int iDataInterpretHexPosToPrintX { 0x7FFFFFFF }, iDataInterpretAsciiPosToPrintX { }; //Data Interpreter X coords.
 		bool fBookmark { false };  //Flag to show current Bookmark in current Hex presence.
 		bool fSelection { false }; //Same as above but for selection.
-		HEXBOOKMARKSTRUCT* pBookmarkMain { };
+		HEXBOOKMARKSTRUCT* pBookmarkCurr { };
 
 		const auto iHexPosToPrintX = m_iIndentFirstHexChunk - iScrollH;
 		const auto iAsciiPosToPrintX = m_iIndentAscii - iScrollH;
@@ -1694,7 +1694,7 @@ void CHexCtrl::OnPaint()
 			if (pBookmark != nullptr)
 			{
 				//If it's nested bookmark.
-				if (pBookmarkMain != nullptr && pBookmarkMain != pBookmark)
+				if (pBookmarkCurr != nullptr && pBookmarkCurr != pBookmark)
 				{
 					if (!wstrHexBookmarkToPrint.empty()) //Only adding spaces if there are chars beforehead.
 					{
@@ -1711,18 +1711,18 @@ void CHexCtrl::OnPaint()
 					wstrHexBookmarkToPrint.clear();
 					vecBookmarksHex.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkHexPosToPrintX, iPosToPrintY,
 						(UINT)listWstrBookmarkHex.back().size(), listWstrBookmarkHex.back().data(), 0, { }, nullptr },
-						pBookmarkMain->clrBk, pBookmarkMain->clrText });
+						pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
 					//Ascii bookmarks Poly.
 					listWstrBookmarkAscii.emplace_back(std::move(wstrAsciiBookmarkToPrint));
 					wstrAsciiBookmarkToPrint.clear();
 					vecBookmarksAscii.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkAsciiPosToPrintX, iPosToPrintY,
 						(UINT)listWstrBookmarkAscii.back().size(), listWstrBookmarkAscii.back().data(), 0, { }, nullptr },
-						pBookmarkMain->clrBk, pBookmarkMain->clrText });
+						pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
 					iBookmarkHexPosToPrintX = 0x7FFFFFFF;
 				}
-				pBookmarkMain = pBookmark;
+				pBookmarkCurr = pBookmark;
 
 				if (iBookmarkHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
 				{
@@ -1757,18 +1757,18 @@ void CHexCtrl::OnPaint()
 				wstrHexBookmarkToPrint.clear();
 				vecBookmarksHex.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkHexPosToPrintX, iPosToPrintY,
 					(UINT)listWstrBookmarkHex.back().size(), listWstrBookmarkHex.back().data(), 0, { }, nullptr },
-					pBookmarkMain->clrBk, pBookmarkMain->clrText });
+					pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
 				//Ascii bookmarks Poly.
 				listWstrBookmarkAscii.emplace_back(std::move(wstrAsciiBookmarkToPrint));
 				wstrAsciiBookmarkToPrint.clear();
 				vecBookmarksAscii.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkAsciiPosToPrintX, iPosToPrintY,
 					(UINT)listWstrBookmarkAscii.back().size(), listWstrBookmarkAscii.back().data(), 0, { }, nullptr },
-					pBookmarkMain->clrBk, pBookmarkMain->clrText });
+					pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
 				iBookmarkHexPosToPrintX = 0x7FFFFFFF;
 				fBookmark = false;
-				pBookmarkMain = nullptr;
+				pBookmarkCurr = nullptr;
 			}
 
 			//Selection.
@@ -1883,13 +1883,13 @@ void CHexCtrl::OnPaint()
 			listWstrBookmarkHex.emplace_back(std::move(wstrHexBookmarkToPrint));
 			vecBookmarksHex.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkHexPosToPrintX, iPosToPrintY,
 				(UINT)listWstrBookmarkHex.back().size(), listWstrBookmarkHex.back().data(), 0, { }, nullptr },
-				pBookmarkMain->clrBk, pBookmarkMain->clrText });
+				pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
 			//Ascii bookmarks Poly.
 			listWstrBookmarkAscii.emplace_back(std::move(wstrAsciiBookmarkToPrint));
 			vecBookmarksAscii.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkAsciiPosToPrintX, iPosToPrintY,
 				(UINT)listWstrBookmarkAscii.back().size(), listWstrBookmarkAscii.back().data(), 0, { }, nullptr },
-				pBookmarkMain->clrBk, pBookmarkMain->clrText });
+				pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 		}
 
 		//Selection Poly.
@@ -1917,7 +1917,7 @@ void CHexCtrl::OnPaint()
 				(UINT)listWstrCursor.back().size(), listWstrCursor.back().data(), 0, { }, nullptr });
 		}
 
-		//Data Interpreter.
+		//Data Interpreter Poly.
 		if (!wstrHexDataInterpretToPrint.empty())
 		{
 			//Hex Data Interpreter Poly.
@@ -2404,7 +2404,7 @@ void CHexCtrl::RecalcAll()
 	//Current font size related.
 	CDC* pDC = GetDC();
 	pDC->SelectObject(m_fontMain);
-	TEXTMETRICW tm { };
+	TEXTMETRICW tm;
 	pDC->GetTextMetricsW(&tm);
 	m_sizeLetter.cx = tm.tmAveCharWidth;
 	m_sizeLetter.cy = tm.tmHeight + tm.tmExternalLeading;
@@ -2551,9 +2551,9 @@ HITTESTSTRUCT CHexCtrl::HitTest(const POINT* pPoint)
 	return stHit;
 }
 
-void CHexCtrl::HexChunkPoint(ULONGLONG ullChunk, int& iCx, int& iCy)const
+void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 {	//This func computes x and y pos of given Hex chunk.
-	DWORD dwMod = ullChunk % m_dwCapacity;
+	DWORD dwMod = ullOffset % m_dwCapacity;
 	int iBetweenBlocks { 0 };
 	if (dwMod >= m_dwCapacityBlockSize)
 		iBetweenBlocks = m_iSpaceBetweenBlocks;
@@ -2562,16 +2562,16 @@ void CHexCtrl::HexChunkPoint(ULONGLONG ullChunk, int& iCx, int& iCy)const
 		(dwMod / (DWORD)m_enShowMode) * m_iSpaceBetweenHexChunks) - m_pScrollH->GetScrollPos());
 
 	auto ullScrollV = m_pScrollV->GetScrollPos();
-	iCy = int((m_iStartWorkAreaY + (ullChunk / m_dwCapacity) * m_sizeLetter.cy) - (ullScrollV - (ullScrollV % m_sizeLetter.cy)));
+	iCy = int((m_iStartWorkAreaY + (ullOffset / m_dwCapacity) * m_sizeLetter.cy) - (ullScrollV - (ullScrollV % m_sizeLetter.cy)));
 }
 
-void CHexCtrl::AsciiChunkPoint(ULONGLONG ullChunk, int& iCx, int& iCy) const
+void CHexCtrl::AsciiChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy) const
 {	//This func computes x and y pos of given Ascii chunk.
-	DWORD dwMod = ullChunk % m_dwCapacity;
+	DWORD dwMod = ullOffset % m_dwCapacity;
 	iCx = int((m_iIndentAscii + dwMod * m_sizeLetter.cx) - m_pScrollH->GetScrollPos());
 
 	auto ullScrollV = m_pScrollV->GetScrollPos();
-	iCy = int((m_iStartWorkAreaY + (ullChunk / m_dwCapacity) * m_sizeLetter.cy) - (ullScrollV - (ullScrollV % m_sizeLetter.cy)));
+	iCy = int((m_iStartWorkAreaY + (ullOffset / m_dwCapacity) * m_sizeLetter.cy) - (ullScrollV - (ullScrollV % m_sizeLetter.cy)));
 }
 
 void CHexCtrl::ClipboardCopy(EClipboard enType)

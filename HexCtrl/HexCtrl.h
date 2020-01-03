@@ -137,7 +137,7 @@ namespace HEXCTRL
 		COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };         //Background color of the bottom "Info" rect.
 		COLORREF clrBkCursor { RGB(0, 0, 255) };                       //Cursor background color.
 		COLORREF clrBkCursorSelected { RGB(0, 0, 200) };               //Cursor background color in selection.
-		COLORREF clrBkTooltip { GetSysColor(COLOR_INFOBK) };           //Tooltip text color.
+		COLORREF clrBkTooltip { GetSysColor(COLOR_INFOBK) };           //Tooltip background color.
 	};
 
 	/********************************************************************************************

@@ -145,14 +145,15 @@ auto CHexBookmarks::HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*
 	if (m_pVirtual)
 		return m_pVirtual->HitTest(ullOffset);
 
-	auto iter = std::find_if(std::reverse_iterator(m_deqBookmarks.end()), std::reverse_iterator(m_deqBookmarks.begin()),
+	auto riter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
 		[ullOffset](const HEXBOOKMARKSTRUCT& ref)
-	{return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(), [ullOffset](const HEXSPANSTRUCT& refV)
+	{return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
+		[ullOffset](const HEXSPANSTRUCT& refV)
 	{return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
 	});
 
-	if (iter != std::reverse_iterator(m_deqBookmarks.begin()))
-		return &*iter;
+	if (riter != m_deqBookmarks.rend())
+		return &*riter;
 	else
 		return nullptr;
 }
@@ -170,20 +171,21 @@ void CHexBookmarks::Remove(ULONGLONG ullOffset)
 	if (m_pVirtual)
 		return m_pVirtual->Remove(ullOffset);
 
-	//Searching from the end, to remove last added bookmark, if many at the given offset.
-	auto iter = std::find_if(std::reverse_iterator(m_deqBookmarks.end()), std::reverse_iterator(m_deqBookmarks.begin()),
+	//Searching from the end, to remove last added bookmark if few at the given offset.
+	auto riter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
 		[ullOffset](const HEXBOOKMARKSTRUCT& ref)
-	{return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(), [ullOffset](const HEXSPANSTRUCT& refV)
+	{return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
+		[ullOffset](const HEXSPANSTRUCT& refV)
 	{return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
 	});
 
-	if (iter != std::reverse_iterator(m_deqBookmarks.begin()))
+	if (riter != m_deqBookmarks.rend())
 	{
-		m_deqBookmarks.erase((iter + 1).base()); //Weird notation for reverse_iterator to work in erase() (acc to standard).
+		m_deqBookmarks.erase((riter + 1).base()); //Weird notation for reverse_iterator to work in erase() (acc to standard).
 		m_pHex->RedrawWindow();
 	}
 
-	m_time = std::time(0);
+	m_time = _time64(nullptr);
 }
 
 void CHexBookmarks::RemoveId(DWORD dwID)
