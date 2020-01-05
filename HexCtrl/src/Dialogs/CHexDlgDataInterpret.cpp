@@ -289,6 +289,9 @@ void CHexDlgDataInterpret::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimi
 
 void CHexDlgDataInterpret::OnOK()
 {
+	if (!m_pHexCtrl->IsMutable())
+		return;
+
 	WCHAR buff[32];
 	GetDlgItem((int)m_dwCurrID)->GetWindowTextW(buff, 31);
 	LONGLONG llData;

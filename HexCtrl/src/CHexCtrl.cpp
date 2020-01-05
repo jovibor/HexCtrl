@@ -886,7 +886,7 @@ void CHexCtrl::OnMButtonDown(UINT /*nFlags*/, CPoint /*point*/)
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	static const wchar_t* const pwszErrVirtual { L"This function isn't supported in Virtual mode!" };
-	ULONGLONG uID = LOWORD(wParam);
+	const ULONGLONG uID = LOWORD(wParam);
 
 	switch (uID)
 	{
