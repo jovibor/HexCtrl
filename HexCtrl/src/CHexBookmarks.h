@@ -10,6 +10,7 @@
 #include "CHexCtrl.h"
 #include <vector>
 #include <ctime>
+#include <optional>
 
 namespace HEXCTRL::INTERNAL
 {
@@ -18,13 +19,13 @@ namespace HEXCTRL::INTERNAL
 	public:
 		explicit CHexBookmarks() = default;
 		~CHexBookmarks() = default;
-		DWORD Add(const HEXBOOKMARKSTRUCT& stBookmark); //Returns new bookmark Id.
+		DWORD Add(const HEXBOOKMARKSTRUCT& hbs); //Returns new bookmark Id.
 		void Attach(CHexCtrl* pHex);
 		void ClearAll();
-		auto GetBookmark(DWORD dwID)->HEXBOOKMARKSTRUCT*;
-		auto GetData()->std::deque<HEXBOOKMARKSTRUCT>&;
+		auto GetBookmark(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUCT>;
+		auto GetData()const->const std::deque<HEXBOOKMARKSTRUCT>*;
 		auto GetTouchTime()const->__time64_t;
-		void GoBookmark(DWORD nID);
+		void GoBookmark(DWORD dwID);
 		void GoNext();
 		void GoPrev();
 		bool HasBookmarks()const;

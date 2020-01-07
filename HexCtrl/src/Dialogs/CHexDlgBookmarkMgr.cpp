@@ -145,12 +145,15 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT:
 	{
-		HEXBOOKMARKSTRUCT hbkms = *m_pBookmarks->GetBookmark(m_dwCurrBkmId);
-		CHexDlgBookmarkProps dlgBkmEdit;
-		if (dlgBkmEdit.DoModal(&hbkms) == IDOK)
+		auto optBkm = m_pBookmarks->GetBookmark(m_dwCurrBkmId);
+		if (optBkm.has_value())
 		{
-			m_pBookmarks->Update(hbkms.dwID, hbkms);
-			UpdateList();
+			CHexDlgBookmarkProps dlgBkmEdit;
+			if (dlgBkmEdit.DoModal(&*optBkm) == IDOK)
+			{
+				m_pBookmarks->Update(optBkm->dwID, *optBkm);
+				UpdateList();
+			}
 		}
 	}
 	break;
@@ -175,7 +178,7 @@ void CHexDlgBookmarkMgr::UpdateList()
 	WCHAR wstr[32];
 
 	m_List->SetRedraw(FALSE);
-	for (const auto& iter : m_pBookmarks->GetData())
+	for (const auto& iter : *m_pBookmarks->GetData())
 	{
 		swprintf_s(wstr, 8, L"%i", listindex + 1);
 		m_List->InsertItem(listindex, wstr);

@@ -476,6 +476,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	UpdateSectorVisible();
 	WstrCapacityFill();
 	RecalcAll();
+	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
 }
 
 void CHexCtrl::SetColor(const HEXCOLORSTRUCT& clr)
@@ -556,6 +557,7 @@ void CHexCtrl::SetFontSize(UINT uiSize)
 	m_fontMain.CreateFontIndirectW(&lf);
 
 	RecalcAll();
+	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
 }
 
 void CHexCtrl::SetMutable(bool fEnable)
@@ -668,7 +670,7 @@ BOOL CHexCtrl::OnHelpInfo(HELPINFO* /*pHelpInfo*/)
 
 void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 {
-	const ULONGLONG ullHit = HitTest(&point).ullOffset;
+	const auto optHit = HitTest(point);
 
 	if (m_fLMousePressed)
 	{
@@ -701,9 +703,10 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 			}
 		}
 
-		if (ullHit == 0xFFFFFFFFFFFFFFFFull)
+		if (!optHit.has_value())
 			return;
 
+		const auto ullHit = optHit->ullOffset;
 		ULONGLONG ullClick, ullStart, ullSize, ullLines;
 		if (m_fSelectionBlock) //Select block (with Alt)
 		{
@@ -760,9 +763,9 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 	}
 	else
 	{
-		if (ullHit != 0xFFFFFFFFFFFFFFFFull)
+		if (optHit.has_value())
 		{
-			auto pBookmark = m_pBookmarks->HitTest(ullHit);
+			const auto pBookmark = m_pBookmarks->HitTest(optHit->ullOffset);
 			if (pBookmark != nullptr)
 			{
 				if (m_pBkmCurrTt != pBookmark)
@@ -814,12 +817,12 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	SetFocus();
 
-	HITTESTSTRUCT stHit { HitTest(&point) };
-	const ULONGLONG ullHit = stHit.ullOffset;
-	m_fCursorTextArea = stHit.fIsAscii;
-
-	if (ullHit == 0xFFFFFFFFFFFFFFFFull)
+	const auto optHit = HitTest(point);
+	if (!optHit.has_value())
 		return;
+
+	const auto ullHit = optHit->ullOffset;
+	m_fCursorTextArea = optHit->fIsAscii;
 
 	SetCapture();
 
@@ -1016,7 +1019,11 @@ void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 {
 	POINT pp = point;
 	ScreenToClient(&pp);
-	m_ullRMouseClick = HitTest(&pp).ullOffset;
+	const auto optHit = HitTest(pp);
+	if (optHit.has_value())
+		m_ullRMouseClick = optHit->ullOffset;
+	else
+		m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFULL;
 
 	//Notifying parent that we are about to display context menu.
 	MsgWindowNotify(HEXCTRL_MSG_CONTEXTMENU);
@@ -1469,6 +1476,7 @@ void CHexCtrl::OnVScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollB
 {
 	if (m_pScrollV->GetScrollPosDelta() != 0)
 		RedrawWindow();
+	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
 }
 
 void CHexCtrl::OnHScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollBar*/)
@@ -1505,17 +1513,8 @@ void CHexCtrl::OnPaint()
 	pDC->GetClipBox(&rc);
 	pDC->FillSolidRect(&rc, m_stColor.clrBk);
 
-	//Find the ullLineStart and ullLineEnd position, draw the visible part.
 	const auto ullLineStart = GetTopLine();
-	ULONGLONG ullLineEnd { 0 };
-	if (m_ullDataSize)
-	{
-		ullLineEnd = ullLineStart + (rcClient.Height() - m_iStartWorkAreaY - m_iHeightBottomOffArea) / m_sizeLetter.cy;
-		//If m_dwDataCount is really small we adjust dwLineEnd to be not bigger than maximum allowed.
-		if (ullLineEnd > (m_ullDataSize / m_dwCapacity))
-			ullLineEnd = (m_ullDataSize % m_dwCapacity) ? m_ullDataSize / m_dwCapacity + 1 : m_ullDataSize / m_dwCapacity;
-	}
-
+	const auto ullLineEnd = GetBottomLine();
 	const auto iSecondHorizLine = m_iStartWorkAreaY - 1;
 	const auto iThirdHorizLine = rcClient.Height() - m_iHeightBottomOffArea;
 	const auto iFourthHorizLine = iThirdHorizLine + m_iHeightBottomRect;
@@ -1651,7 +1650,7 @@ void CHexCtrl::OnPaint()
 		int iDataInterpretHexPosToPrintX { 0x7FFFFFFF }, iDataInterpretAsciiPosToPrintX { }; //Data Interpreter X coords.
 		bool fBookmark { false };  //Flag to show current Bookmark in current Hex presence.
 		bool fSelection { false }; //Same as above but for selection.
-		HEXBOOKMARKSTRUCT* pBookmarkCurr { };
+		const HEXBOOKMARKSTRUCT* pBookmarkCurr { };
 
 		const auto iHexPosToPrintX = m_iIndentFirstHexChunk - iScrollH;
 		const auto iAsciiPosToPrintX = m_iIndentAscii - iScrollH;
@@ -2498,11 +2497,25 @@ ULONGLONG CHexCtrl::GetTopLine()const
 	return m_pScrollV->GetScrollPos() / m_sizeLetter.cy;
 }
 
-HITTESTSTRUCT CHexCtrl::HitTest(const POINT* pPoint)
+ULONGLONG CHexCtrl::GetBottomLine() const
+{
+	ULONGLONG ullLineEnd { 0 };
+	if (m_ullDataSize)
+	{
+		ullLineEnd = GetTopLine() + m_iHeightWorkArea / m_sizeLetter.cy;
+		//If m_dwDataCount is really small we adjust ullLineEnd to be not bigger than maximum allowed.
+		if (ullLineEnd > (m_ullDataSize / m_dwCapacity))
+			ullLineEnd = (m_ullDataSize % m_dwCapacity) ? m_ullDataSize / m_dwCapacity + 1 : m_ullDataSize / m_dwCapacity;
+	}
+	return ullLineEnd;
+}
+
+auto CHexCtrl::HitTest(const POINT& pt)const->std::optional<HITTESTSTRUCT>
 {
 	HITTESTSTRUCT stHit;
-	int iY = pPoint->y;
-	int iX = pPoint->x + (int)m_pScrollH->GetScrollPos(); //To compensate horizontal scroll.
+	bool fHit { false };
+	int iY = pt.y;
+	int iX = pt.x + (int)m_pScrollH->GetScrollPos(); //To compensate horizontal scroll.
 	ULONGLONG ullCurLine = GetTopLine();
 
 	//Checking if cursor is within hex chunks area.
@@ -2531,6 +2544,7 @@ HITTESTSTRUCT CHexCtrl::HitTest(const POINT* pPoint)
 		}
 		stHit.ullOffset = (ULONGLONG)dwChunkX + ((iY - m_iStartWorkAreaY) / m_sizeLetter.cy) *
 			m_dwCapacity + (ullCurLine * m_dwCapacity);
+		fHit = true;
 	}
 	//Or within Ascii area.
 	else if ((iX >= m_iIndentAscii) && (iX < (m_iIndentAscii + m_iSpaceBetweenAscii * (int)m_dwCapacity))
@@ -2540,15 +2554,14 @@ HITTESTSTRUCT CHexCtrl::HitTest(const POINT* pPoint)
 		stHit.ullOffset = ((iX - (ULONGLONG)m_iIndentAscii) / m_iSpaceBetweenAscii) +
 			((iY - m_iStartWorkAreaY) / m_sizeLetter.cy) * m_dwCapacity + (ullCurLine * m_dwCapacity);
 		stHit.fIsAscii = true;
+		fHit = true;
 	}
-	else
-		stHit.ullOffset = 0xFFFFFFFFFFFFFFFFull;
 
 	//If cursor is out of end-bound of hex chunks or Ascii chars.
 	if (stHit.ullOffset >= m_ullDataSize)
-		stHit.ullOffset = 0xFFFFFFFFFFFFFFFFull;
+		fHit = false;
 
-	return stHit;
+	return fHit ? std::optional<HITTESTSTRUCT>{stHit} : std::nullopt;
 }
 
 void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
@@ -2987,8 +3000,15 @@ void CHexCtrl::MsgWindowNotify(UINT uCode)const
 		hns.pData = (PBYTE)&vecData;
 		break;
 	case HEXCTRL_MSG_VIEWCHANGE:
-		hns.ullData = GetTopLine();
-		break;
+	{
+		const auto ullLineStart = GetTopLine();
+		const auto ullLineEnd = GetBottomLine();
+		hns.stSpan.ullOffset = ullLineStart * m_dwCapacity;
+		hns.stSpan.ullSize = (ullLineEnd - ullLineStart) * m_dwCapacity;
+		if (hns.stSpan.ullOffset + hns.stSpan.ullSize > m_ullDataSize)
+			hns.stSpan.ullSize = m_ullDataSize - hns.stSpan.ullOffset;
+	}
+	break;
 	}
 	MsgWindowNotify(hns);
 }

@@ -56,28 +56,23 @@ void CHexBookmarks::ClearAll()
 	m_time = std::time(0);
 }
 
-auto CHexBookmarks::GetBookmark(DWORD dwID)->HEXBOOKMARKSTRUCT*
+auto CHexBookmarks::GetBookmark(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUCT>
 {
-	if (m_deqBookmarks.empty())
-		return nullptr;
-
 	auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
 		[dwID](const HEXBOOKMARKSTRUCT& ref) {return dwID == ref.dwID; });
 
 	if (iter != m_deqBookmarks.end())
-	{
-		return &*iter;
-	}
+		return *iter;
 	else
-		return nullptr;
+		return { };
 }
 
-auto CHexBookmarks::GetData()->std::deque<HEXBOOKMARKSTRUCT>&
+auto CHexBookmarks::GetData()const->const std::deque<HEXBOOKMARKSTRUCT>*
 {
-	return m_deqBookmarks;
+	return &m_deqBookmarks;
 }
 
-auto CHexBookmarks::GetTouchTime()const ->__time64_t
+auto CHexBookmarks::GetTouchTime()const->__time64_t
 {
 	return m_time;
 }
@@ -214,13 +209,13 @@ void CHexBookmarks::SetVirtual(IHexBkmVirtual* pVirtual)
 	m_pVirtual = pVirtual;
 }
 
-void CHexBookmarks::Update(DWORD dwId, const HEXBOOKMARKSTRUCT& stBookmark)
+void CHexBookmarks::Update(DWORD dwID, const HEXBOOKMARKSTRUCT& stBookmark)
 {
 	if (m_pVirtual || m_deqBookmarks.empty())
 		return;
 
 	auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-		[dwId](const HEXBOOKMARKSTRUCT& ref) {return dwId == ref.dwID; });
+		[dwID](const HEXBOOKMARKSTRUCT& ref) {return dwID == ref.dwID; });
 
 	if (iter != m_deqBookmarks.end())
 	{

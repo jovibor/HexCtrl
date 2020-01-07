@@ -10,6 +10,7 @@
 #include <unordered_map> //std::unordered_map and related.
 #include <deque>         //std::deque and related.
 #include <string>        //std::wstring and related.
+#include <optional>      ///std::optional
 #include <afxwin.h>      //MFC core and standard components.
 #include "../HexCtrl.h"
 
@@ -114,8 +115,9 @@ namespace HEXCTRL::INTERNAL
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcWorkAreaHeight(int iClientHeight);
 		void RecalcOffsetDigits();                             //How many digits in Offset (depends on Hex or Decimals).
-		[[nodiscard]] ULONGLONG GetTopLine()const;             //Returns current top line's number in view.
-		[[nodiscard]] HITTESTSTRUCT HitTest(const POINT*);     //Is any hex chunk withing given point?
+		[[nodiscard]] ULONGLONG GetTopLine()const;             //Returns current top line number in view.
+		[[nodiscard]] ULONGLONG GetBottomLine()const;          //Returns current bottom line number in view.
+		[[nodiscard]] auto HitTest(const POINT& pt)const->std::optional<HITTESTSTRUCT>; //Is any hex chunk withing given point?
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;   //Point of Hex chunk.
 		void AsciiChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Ascii chunk.
 		void ClipboardCopy(EClipboard enType);
@@ -169,6 +171,10 @@ namespace HEXCTRL::INTERNAL
 		HWND m_hwndMsg { };                   //Window handle the control messages will be sent to.
 		CWnd m_wndTtBkm { };                  //Tooltip window for bookmarks description.
 		TOOLINFO m_stToolInfo { };            //Tooltips struct.
+		CFont m_fontMain;                     //Main Hex chunks font.
+		CFont m_fontInfo;                     //Font for bottom Info rect.
+		CMenu m_menuMain;                     //Main popup menu.
+		CPen m_penLines;                      //Pen for lines.
 		HEXBOOKMARKSTRUCT* m_pBkmCurrTt { };  //Currently shown bookmark's tooltip;
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
@@ -179,26 +185,22 @@ namespace HEXCTRL::INTERNAL
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
 		DWORD m_dwOffsetBytes { };            //How many bytes "Offset" number posesses;
-		DWORD m_dwSectorSize { 0 };           //Size of a sector to print additional lines for.
+		DWORD m_dwSectorSize { 0 };           //Size of a sector to print additional lines between.
 		SIZE m_sizeLetter { 1, 1 };           //Current font's letter size (width, height).
-		CFont m_fontMain;                     //Main Hex chunks font.
-		CFont m_fontInfo;                     //Font for bottom Info rect.
-		CMenu m_menuMain;                     //Main popup menu.
-		CPen m_penLines;                      //Pen for lines.
 		long m_lFontSize { };                 //Current font size.
-		int m_iSizeFirstHalf { };             //Size of first half of capacity.
-		int m_iSizeHexByte { };               //Size of two hex letters representing one byte.
-		int m_iIndentAscii { };               //Indent of Ascii text begining.
-		int m_iIndentFirstHexChunk { };       //First hex chunk indent.
+		int m_iSizeFirstHalf { };             //Size in px of the first half of the capacity.
+		int m_iSizeHexByte { };               //Size in px of two hex letters representing one byte.
+		int m_iIndentAscii { };               //Indent in px of Ascii text begining.
+		int m_iIndentFirstHexChunk { };       //First hex chunk indent in px.
 		int m_iIndentTextCapacityY { };       //Caption text (0 1 2... D E F...) vertical offset.
-		int m_iDistanceBetweenHexChunks { };  //Distance between begining of the two hex chunks.
-		int m_iSpaceBetweenHexChunks { };     //Space between Hex chunks.
-		int m_iSpaceBetweenAscii { };         //Space between two Ascii chars.
-		int m_iSpaceBetweenBlocks { };        //Additional space between hex chunks after half of capacity.
+		int m_iDistanceBetweenHexChunks { };  //Distance between begining of the two hex chunks in px.
+		int m_iSpaceBetweenHexChunks { };     //Space between Hex chunks in px.
+		int m_iSpaceBetweenAscii { };         //Space between beginning of the two Ascii chars in px.
+		int m_iSpaceBetweenBlocks { };        //Additional space between hex chunks after half of capacity, in px.
 		int m_iHeightTopRect { };             //Height of the header where offsets (0 1 2... D E F...) reside.
 		int m_iStartWorkAreaY { };            //Start Y of the area where all drawing occurs.
 		int m_iEndWorkArea { };               //End of the area where all drawing occurs.
-		int m_iHeightWorkArea { };            //Height of the working area where all drawing occurs.
+		int m_iHeightWorkArea { };            //Height in px of the working area where all drawing occurs.
 		int m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfo { };          //Info text (bottom rect).
