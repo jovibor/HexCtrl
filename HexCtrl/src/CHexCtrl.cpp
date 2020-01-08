@@ -1637,17 +1637,17 @@ void CHexCtrl::OnPaint()
 		ExtTextOutW(pDC->m_hDC, m_iFirstVertLine + m_sizeLetter.cx - iScrollH, m_iStartWorkAreaY + (m_sizeLetter.cy * iLine),
 			NULL, nullptr, pwszOffset, m_dwOffsetDigits, nullptr);
 
-		//Hex, Ascii and Cursor strings to print.
+		//Hex, Ascii, Bookmarks, Selection, Datainterpret, Cursor wstrings to print.
 		std::wstring wstrHexToPrint { }, wstrAsciiToPrint { }, wstrHexCursorToPrint { }, wstrAsciiCursorToPrint { };
 		std::wstring wstrHexBookmarkToPrint { }, wstrAsciiBookmarkToPrint { }; //Bookmarks to print.
 		std::wstring wstrHexSelToPrint { }, wstrAsciiSelToPrint { };           //Selected Hex and Ascii strings to print.
 		std::wstring wstrHexDataInterpretToPrint { }, wstrAsciiDataInterpretToPrint { }; //Data Interpreter Hex and Ascii strings to print.
 
-		//Selection Hex and Ascii X coords. 0x7FFFFFFF is important.
-		int iSelHexPosToPrintX { 0x7FFFFFFF }, iSelAsciiPosToPrintX { };
+		//Bookmarks, Selection, Datainterpret, Cursor X coords. 0x7FFFFFFF is important.
 		int iBookmarkHexPosToPrintX { 0x7FFFFFFF }, iBookmarkAsciiPosToPrintX { };
-		int iCursorHexPosToPrintX { }, iCursorAsciiPosToPrintX { }; //Cursor X coords.
+		int iSelHexPosToPrintX { 0x7FFFFFFF }, iSelAsciiPosToPrintX { };
 		int iDataInterpretHexPosToPrintX { 0x7FFFFFFF }, iDataInterpretAsciiPosToPrintX { }; //Data Interpreter X coords.
+		int iCursorHexPosToPrintX { }, iCursorAsciiPosToPrintX { }; //Cursor X coords.
 		bool fBookmark { false };  //Flag to show current Bookmark in current Hex presence.
 		bool fSelection { false }; //Same as above but for selection.
 		const HEXBOOKMARKSTRUCT* pBookmarkCurr { };
@@ -1707,14 +1707,12 @@ void CHexCtrl::OnPaint()
 
 					//Hex bookmarks Poly.
 					listWstrBookmarkHex.emplace_back(std::move(wstrHexBookmarkToPrint));
-					wstrHexBookmarkToPrint.clear();
 					vecBookmarksHex.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkHexPosToPrintX, iPosToPrintY,
 						(UINT)listWstrBookmarkHex.back().size(), listWstrBookmarkHex.back().data(), 0, { }, nullptr },
 						pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
 					//Ascii bookmarks Poly.
 					listWstrBookmarkAscii.emplace_back(std::move(wstrAsciiBookmarkToPrint));
-					wstrAsciiBookmarkToPrint.clear();
 					vecBookmarksAscii.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkAsciiPosToPrintX, iPosToPrintY,
 						(UINT)listWstrBookmarkAscii.back().size(), listWstrBookmarkAscii.back().data(), 0, { }, nullptr },
 						pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
@@ -1753,14 +1751,12 @@ void CHexCtrl::OnPaint()
 
 				//Hex bookmarks Poly.
 				listWstrBookmarkHex.emplace_back(std::move(wstrHexBookmarkToPrint));
-				wstrHexBookmarkToPrint.clear();
 				vecBookmarksHex.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkHexPosToPrintX, iPosToPrintY,
 					(UINT)listWstrBookmarkHex.back().size(), listWstrBookmarkHex.back().data(), 0, { }, nullptr },
 					pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
 				//Ascii bookmarks Poly.
 				listWstrBookmarkAscii.emplace_back(std::move(wstrAsciiBookmarkToPrint));
-				wstrAsciiBookmarkToPrint.clear();
 				vecBookmarksAscii.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkAsciiPosToPrintX, iPosToPrintY,
 					(UINT)listWstrBookmarkAscii.back().size(), listWstrBookmarkAscii.back().data(), 0, { }, nullptr },
 					pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
@@ -1804,13 +1800,11 @@ void CHexCtrl::OnPaint()
 				{
 					//Hex selection Poly.
 					listWstrSelHex.emplace_back(std::move(wstrHexSelToPrint));
-					wstrHexSelToPrint.clear();
 					vecPolySelHex.emplace_back(POLYTEXTW { iSelHexPosToPrintX, iPosToPrintY,
 						(UINT)listWstrSelHex.back().size(), listWstrSelHex.back().data(), 0, { }, nullptr });
 
 					//Ascii selection Poly.
 					listWstrSelAscii.emplace_back(std::move(wstrAsciiSelToPrint));
-					wstrAsciiSelToPrint.clear();
 					vecPolySelAscii.emplace_back(POLYTEXTW { iSelAsciiPosToPrintX, iPosToPrintY,
 						(UINT)listWstrSelAscii.back().size(), listWstrSelAscii.back().data(), 0, { }, nullptr });
 				}
@@ -2772,7 +2766,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 		strToClipboard += WstrToStr(m_wstrCapacity);
 		strToClipboard += "   "; //Spaces to Ascii.
 		if (int iSize = (int)m_dwCapacity - 5; iSize > 0) //5 is strlen of "Ascii".
-			strToClipboard.insert(strToClipboard.size(), iSize / 2, ' ');
+			strToClipboard.insert(strToClipboard.size(), size_t(iSize / 2), ' ');
 		strToClipboard += "Ascii";
 		strToClipboard += "\r\n";
 
