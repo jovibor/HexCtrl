@@ -22,6 +22,13 @@
 #include <cassert>
 #include <algorithm>
 #include <numeric>
+
+#if __has_include(<format>) 
+#include <format>
+#else 
+static_assert("c++20 std::format support needed.");
+#endif
+
 #pragma comment(lib, "Dwmapi.lib")
 
 using namespace HEXCTRL;
@@ -514,7 +521,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	ClearData();
 
 	m_fDataSet = true;
-	m_pData = hds.pData;
+	m_pData = (PBYTE)hds.pData;
 	m_ullDataSize = hds.ullDataSize;
 	m_enDataMode = hds.enDataMode;
 	m_fMutable = hds.fMutable;

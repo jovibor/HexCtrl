@@ -195,7 +195,7 @@ namespace HEXCTRL
 		HWND            hwndMsg { };                           //Window for DATA_MSG mode. Parent is used by default.
 		IHexVirtual*    pHexVirtual { };                       //Pointer for DATA_VIRTUAL mode.
 		IHexBkmVirtual* pHexBkmVirtual { };                    //Pointer for Virtual Bookmarks.
-		PBYTE           pData { };                             //Data pointer for DATA_MEMORY mode. Not used in other modes.
+		std::byte*      pData { };                             //Data pointer for DATA_MEMORY mode. Not used in other modes.
 		bool            fMutable { false };                    //Is data mutable (editable) or read-only.
 	};
 
