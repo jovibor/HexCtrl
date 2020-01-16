@@ -45,7 +45,7 @@ BOOL CHexSampleDlg::OnInitDialog()
 	//hcs.enShowMode = EHexShowMode::ASDWORD;
 	//m_myHex->Create(hcs);
 
-	m_hds.pData = (std::byte*)m_data;
+	m_hds.pData = reinterpret_cast<std::byte*>(m_data);
 	m_hds.ullDataSize = sizeof(m_data);
 
 	return TRUE; //return TRUE  unless you set the focus to a control

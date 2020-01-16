@@ -78,18 +78,18 @@ namespace HEXCTRL::INTERNAL {
 
 	std::string WstrToStr(const std::wstring& wstr)
 	{
-		int iSize = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), nullptr, 0, nullptr, nullptr);
+		int iSize = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
-		WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &str[0], iSize, nullptr, nullptr);
+		WideCharToMultiByte(CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), &str[0], iSize, nullptr, nullptr);
 
 		return str;
 	}
 
 	std::wstring StrToWstr(const std::string& str)
 	{
-		int iSize = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+		int iSize = MultiByteToWideChar(CP_UTF8, 0, &str[0], static_cast<int>(str.size()), NULL, 0);
 		std::wstring wstr(iSize, 0);
-		MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstr[0], iSize);
+		MultiByteToWideChar(CP_UTF8, 0, &str[0], static_cast<int>(str.size()), &wstr[0], iSize);
 		return wstr;
 	}
 
@@ -110,7 +110,7 @@ namespace HEXCTRL::INTERNAL {
 			if (!CharsToUl(strToUL.data(), ulNumber))
 				return false;
 
-			strTmp += (unsigned char)ulNumber;
+			strTmp += static_cast<unsigned char>(ulNumber);
 		}
 		strToHex = std::move(strTmp);
 		strToHex.shrink_to_fit();

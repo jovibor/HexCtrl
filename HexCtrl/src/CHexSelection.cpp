@@ -70,7 +70,7 @@ DWORD CHexSelection::GetLineLength()const
 	if (!HasSelection())
 		return 0;
 
-	return (DWORD)m_vecSelect.front().ullSize;
+	return static_cast<DWORD>(m_vecSelect.front().ullSize);
 }
 
 ULONGLONG CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const

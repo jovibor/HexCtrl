@@ -62,7 +62,7 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 	if (IsCreated())
 		return false;
 
-	LONG_PTR dwStyle = (LONG_PTR)lcs.dwStyle;
+	LONG_PTR dwStyle = static_cast<LONG_PTR>(lcs.dwStyle);
 	if (lcs.fDialogCtrl)
 	{
 		SubclassDlgItem(lcs.uID, lcs.pwndParent);
@@ -86,10 +86,10 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 	m_stToolInfo.cbSize = TTTOOLINFOW_V1_SIZE;
 	m_stToolInfo.uFlags = TTF_TRACK;
 	m_stToolInfo.uId = 0x1;
-	m_wndTt.SendMessageW(TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-	m_wndTt.SendMessageW(TTM_SETMAXTIPWIDTH, 0, (LPARAM)400); //to allow use of newline \n.
-	m_wndTt.SendMessageW(TTM_SETTIPTEXTCOLOR, (WPARAM)m_stColor.clrTooltipText, 0);
-	m_wndTt.SendMessageW(TTM_SETTIPBKCOLOR, (WPARAM)m_stColor.clrTooltipBk, 0);
+	m_wndTt.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfo));
+	m_wndTt.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
+	m_wndTt.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColor.clrTooltipText), 0);
+	m_wndTt.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColor.clrTooltipBk), 0);
 
 	m_dwGridWidth = lcs.dwListGridWidth;
 	m_stNMII.hdr.idFrom = GetDlgCtrlID();
@@ -133,7 +133,7 @@ void CListEx::CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)
 
 int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 {
-	IListEx* pListCtrl = (IListEx*)lParamSort;
+	IListEx* pListCtrl = reinterpret_cast<IListEx*>(lParamSort);
 	int iSortColumn = pListCtrl->GetSortColumn();
 	EnListExSortMode enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
 
@@ -310,11 +310,11 @@ UINT CListEx::MapIndexToID(UINT nItem)const
 	//The unique ID is set in NMITEMACTIVATE::lParam by client.
 	if (m_fVirtual)
 	{
-		UINT uCtrlId = (UINT)GetDlgCtrlID();
+		UINT uCtrlId = static_cast<UINT>(GetDlgCtrlID());
 		NMITEMACTIVATE nmii { { m_hWnd, uCtrlId, LVM_MAPINDEXTOID } };
-		nmii.iItem = (int)nItem;
-		GetParent()->SendMessageW(WM_NOTIFY, (WPARAM)uCtrlId, (LPARAM)&nmii);
-		ID = (UINT)nmii.lParam;
+		nmii.iItem = static_cast<int>(nItem);
+		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&nmii));
+		ID = static_cast<UINT>(nmii.lParam);
 	}
 	else
 		ID = CMFCListCtrl::MapIndexToID(nItem);
@@ -331,7 +331,7 @@ void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clr
 	if (clrText == -1) //-1 for default color.
 		clrText = m_stColor.clrListText;
 
-	UINT ID = MapIndexToID((UINT)iItem);
+	UINT ID = MapIndexToID(static_cast<UINT>(iItem));
 	auto it = m_umapCellColor.find(ID);
 
 	//If there is no color for such item/subitem we just set it.
@@ -408,15 +408,11 @@ void CListEx::SetCellMenu(int iItem, int iSubItem, CMenu* pMenu)
 	}
 }
 
-void CListEx::SetCellTooltip(int iItem, int iSubItem, const wchar_t* pwszTooltip, const wchar_t* pwszCaption)
+void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTooltip, std::wstring_view wstrCaption)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
-
-	//Checking for nullptr, and assign empty string in such case.
-	const wchar_t* pCaption = pwszCaption ? pwszCaption : L"";
-	const wchar_t* pTooltip = pwszTooltip ? pwszTooltip : L"";
 
 	UINT ID = MapIndexToID(iItem);
 	auto it = m_umapCellTt.find(ID);
@@ -424,10 +420,11 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, const wchar_t* pwszTooltip
 	//If there is no tooltip for such item/subitem we just set it.
 	if (it == m_umapCellTt.end())
 	{
-		if (pwszTooltip || pwszCaption)
+		if (!wstrTooltip.empty() || !wstrCaption.empty())
 		{	//Initializing inner map.
 			std::unordered_map<int, CELLTOOLTIP> umapInner {
-				{ iSubItem, { CELLTOOLTIP { pTooltip, pCaption } } } };
+				{ iSubItem, { CELLTOOLTIP { std::move(std::wstring { wstrTooltip }),
+				std::move(std::wstring { wstrCaption }) } } } };
 			m_umapCellTt.insert({ ID, std::move(umapInner) });
 		}
 	}
@@ -439,14 +436,16 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, const wchar_t* pwszTooltip
 		//inserting new Subitem into inner map.
 		if (itInner == it->second.end())
 		{
-			if (pwszTooltip || pwszCaption)
-				it->second.insert({ iSubItem, { pTooltip, pCaption } });
+			if (!wstrTooltip.empty() || !wstrCaption.empty())
+				it->second.insert({ iSubItem, { std::move(std::wstring { wstrTooltip }),
+					std::move(std::wstring { wstrCaption }) } });
 		}
 		else
 		{	//If there is already exist this Item-Subitem's tooltip:
 			//change or erase it, depending on pwszTooltip emptiness.
-			if (pwszTooltip)
-				itInner->second = { pwszTooltip, pCaption };
+			if (!wstrTooltip.empty())
+				itInner->second = { std::move(std::wstring { wstrTooltip }),
+				std::move(std::wstring { wstrCaption }) };
 			else
 				it->second.erase(itInner);
 		}
@@ -495,7 +494,7 @@ void CListEx::SetFont(const LOGFONTW* pLogFontNew)
 	wp.cx = rc.Width();
 	wp.cy = rc.Height();
 	wp.flags = SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER;
-	SendMessageW(WM_WINDOWPOSCHANGED, 0, (LPARAM)&wp);
+	SendMessageW(WM_WINDOWPOSCHANGED, 0, reinterpret_cast<LPARAM>(&wp));
 
 	Update(0);
 }
@@ -524,7 +523,7 @@ void CListEx::SetFontSize(UINT uiSize)
 	wp.cx = rc.Width();
 	wp.cy = rc.Height();
 	wp.flags = SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER;
-	SendMessageW(WM_WINDOWPOSCHANGED, 0, (LPARAM)&wp);
+	SendMessageW(WM_WINDOWPOSCHANGED, 0, reinterpret_cast<LPARAM>(&wp));
 
 	Update(0);
 }
@@ -612,7 +611,7 @@ bool CListEx::HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& c
 		return false;
 
 	bool fHasColor { false };
-	UINT ID = MapIndexToID((UINT)iItem);
+	UINT ID = MapIndexToID(static_cast<UINT>(iItem));
 	auto it = m_umapCellColor.find(ID);
 
 	if (it != m_umapCellColor.end())
@@ -829,9 +828,9 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 
 		ClientToScreen(&pt);
 		m_wndTt.SendMessageW(TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(pt.x, pt.y));
-		m_wndTt.SendMessageW(TTM_SETTITLE, (WPARAM)TTI_NONE, (LPARAM)pwstrCaption->data());
-		m_wndTt.SendMessageW(TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-		m_wndTt.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+		m_wndTt.SendMessageW(TTM_SETTITLE, static_cast<WPARAM>(TTI_NONE), reinterpret_cast<LPARAM>(pwstrCaption->data()));
+		m_wndTt.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfo));
+		m_wndTt.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfo));
 
 		//Timer to check whether mouse left subitem rect.
 		SetTimer(ID_TIMER_TOOLTIP, 200, 0);
@@ -901,7 +900,7 @@ BOOL CListEx::OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 		m_stNMII.hdr.code = LISTEX_MSG_MENUSELECTED;
 		m_stNMII.lParam = LOWORD(wParam); //LOWORD(wParam) holds uiMenuItemId.
-		GetParent()->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), (LPARAM)&m_stNMII);
+		GetParent()->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&m_stNMII));
 	}
 
 	return CMFCListCtrl::OnCommand(wParam, lParam);
@@ -965,7 +964,7 @@ void CListEx::OnPaint()
 	rDC.GetClipBox(&rc);
 	rDC.FillSolidRect(rc, m_stColor.clrBkNWA);
 
-	DefWindowProcW(WM_PAINT, (WPARAM)rDC.m_hDC, (LPARAM)0);
+	DefWindowProcW(WM_PAINT, reinterpret_cast<WPARAM>(rDC.m_hDC), static_cast<LPARAM>(0));
 }
 
 void CListEx::OnHdnDividerdblclick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)

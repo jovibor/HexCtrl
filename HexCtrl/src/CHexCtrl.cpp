@@ -22,13 +22,7 @@
 #include <cassert>
 #include <algorithm>
 #include <numeric>
-
-#if __has_include(<format>) 
-#include <format>
-#else 
-static_assert("c++20 std::format support needed.");
-#endif
-
+//#include <format>
 #pragma comment(lib, "Dwmapi.lib")
 
 using namespace HEXCTRL;
@@ -228,9 +222,9 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_stToolInfo.uFlags = TTF_TRACK;
 	m_stToolInfo.uId = 0x01;
 	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, (LPARAM)400); //to allow use of newline \n.
-	m_wndTtBkm.SendMessageW(TTM_SETTIPTEXTCOLOR, (WPARAM)m_stColor.clrTextTooltip, 0);
-	m_wndTtBkm.SendMessageW(TTM_SETTIPBKCOLOR, (WPARAM)m_stColor.clrBkTooltip, 0);
+	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
+	m_wndTtBkm.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColor.clrTextTooltip), 0);
+	m_wndTtBkm.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColor.clrBkTooltip), 0);
 
 	m_hwndMsg = hcs.hwndParent;
 	m_stColor = hcs.stColor;
@@ -467,13 +461,13 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 
 	//Setting capacity according to current m_enShowMode.
 	if (dwCapacity < m_dwCapacity)
-		dwCapacity -= dwCapacity % (DWORD)m_enShowMode;
-	else if (dwCapacity % (DWORD)m_enShowMode)
-		dwCapacity += (DWORD)m_enShowMode - (dwCapacity % (DWORD)m_enShowMode);
+		dwCapacity -= dwCapacity % static_cast<DWORD>(m_enShowMode);
+	else if (dwCapacity % static_cast<DWORD>(m_enShowMode))
+		dwCapacity += static_cast<DWORD>(m_enShowMode) - (dwCapacity % static_cast<DWORD>(m_enShowMode));
 
 	//To prevent under/over flow.
-	if (dwCapacity < (DWORD)m_enShowMode)
-		dwCapacity = (DWORD)m_enShowMode;
+	if (dwCapacity < static_cast<DWORD>(m_enShowMode))
+		dwCapacity = static_cast<DWORD>(m_enShowMode);
 	else if (dwCapacity > m_dwCapacityMax)
 		dwCapacity = m_dwCapacityMax;
 
@@ -521,7 +515,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	ClearData();
 
 	m_fDataSet = true;
-	m_pData = (PBYTE)hds.pData;
+	m_pData = reinterpret_cast<PBYTE>(hds.pData);
 	m_ullDataSize = hds.ullDataSize;
 	m_enDataMode = hds.enDataMode;
 	m_fMutable = hds.fMutable;
@@ -1014,7 +1008,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	break;
 	default:
 		//For user defined custom menu, we notify parent window.
-		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_MENUCLICK } };
+		HEXNOTIFYSTRUCT hns { { .hwndFrom = m_hWnd, .idFrom = static_cast<UINT>(GetDlgCtrlID()), .code = HEXCTRL_MSG_MENUCLICK } };
 		hns.ullData = uID;
 		MsgWindowNotify(hns);
 	}
@@ -1382,7 +1376,7 @@ void CHexCtrl::OnKeyDownShiftUp()
 		{
 			ullClick = m_ullLMouseClick;
 			ullStart = (ullSelSize >= m_dwCapacity) ? m_ullLMouseClick : m_ullLMouseClick - m_dwCapacity;
-			ullSize = ullSelSize >= m_dwCapacity ? ullSelSize - m_dwCapacity : (ULONGLONG)m_dwCapacity + 1;
+			ullSize = ullSelSize >= m_dwCapacity ? ullSelSize - m_dwCapacity : static_cast<ULONGLONG>(m_dwCapacity) + 1;
 			ullSize = ullSize ? ullSize : 1;
 		}
 	}
@@ -1504,7 +1498,7 @@ void CHexCtrl::OnPaint()
 		return;
 	}
 
-	const int iScrollH = (int)m_pScrollH->GetScrollPos();
+	const int iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
 	CRect rcClient;
 	GetClientRect(rcClient);
 
@@ -1571,7 +1565,7 @@ void CHexCtrl::OnPaint()
 	auto pFontOld = pDC->SelectObject(m_fontInfo);
 	pDC->SetTextColor(m_stColor.clrTextInfoRect);
 	pDC->SetBkColor(m_stColor.clrBkInfoRect);
-	pDC->DrawTextW(m_wstrInfo.data(), (int)m_wstrInfo.size(), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+	pDC->DrawTextW(m_wstrInfo.data(), static_cast<int>(m_wstrInfo.size()), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
 	//«Offset» text.
 	rc.left = m_iFirstVertLine - iScrollH;
@@ -1585,7 +1579,7 @@ void CHexCtrl::OnPaint()
 
 	//Capacity numbers.
 	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunk - iScrollH, m_iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
-		m_wstrCapacity.data(), (UINT)m_wstrCapacity.size(), nullptr);
+		m_wstrCapacity.data(), static_cast<UINT>(m_wstrCapacity.size()), nullptr);
 
 	//"Ascii" text.
 	rc.left = m_iThirdVertLine - iScrollH;
@@ -1638,7 +1632,7 @@ void CHexCtrl::OnPaint()
 
 		//Left column offset printing (00000001...0000FFFF).
 		wchar_t pwszOffset[32]; //To be enough for max as Hex and as Decimals.
-		UllToWchars(iterLines * m_dwCapacity, pwszOffset, (size_t)m_dwOffsetBytes, m_fOffsetAsHex);
+		UllToWchars(iterLines * m_dwCapacity, pwszOffset, static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
 		pDC->SetTextColor(clrTextOffset);
 		pDC->SetBkColor(clrBkOffset);
 		ExtTextOutW(pDC->m_hDC, m_iFirstVertLine + m_sizeLetter.cx - iScrollH, m_iStartWorkAreaY + (m_sizeLetter.cy * iLine),
@@ -1682,7 +1676,7 @@ void CHexCtrl::OnPaint()
 			wstrHexToPrint += pwszHexToPrint[1];
 
 			//Additional space between grouped Hex chunks.
-			if (((iterChunks + 1) % (DWORD)m_enShowMode) == 0 && iterChunks < (m_dwCapacity - 1))
+			if (((iterChunks + 1) % static_cast<DWORD>(m_enShowMode)) == 0 && iterChunks < (m_dwCapacity - 1))
 				wstrHexToPrint += L" ";
 
 			//Additional space between capacity halves, only with ASBYTE representation.
@@ -1704,7 +1698,7 @@ void CHexCtrl::OnPaint()
 				{
 					if (!wstrHexBookmarkToPrint.empty()) //Only adding spaces if there are chars beforehead.
 					{
-						if ((iterChunks % (DWORD)m_enShowMode) == 0)
+						if ((iterChunks % static_cast<DWORD>(m_enShowMode)) == 0)
 							wstrHexBookmarkToPrint += L" ";
 
 						//Additional space between capacity halves, only with ASBYTE representation.
@@ -1715,13 +1709,13 @@ void CHexCtrl::OnPaint()
 					//Hex bookmarks Poly.
 					listWstrBookmarkHex.emplace_back(std::move(wstrHexBookmarkToPrint));
 					vecBookmarksHex.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkHexPosToPrintX, iPosToPrintY,
-						(UINT)listWstrBookmarkHex.back().size(), listWstrBookmarkHex.back().data(), 0, { }, nullptr },
+						static_cast<UINT>(listWstrBookmarkHex.back().size()), listWstrBookmarkHex.back().data(), 0, { }, nullptr },
 						pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
 					//Ascii bookmarks Poly.
 					listWstrBookmarkAscii.emplace_back(std::move(wstrAsciiBookmarkToPrint));
 					vecBookmarksAscii.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkAsciiPosToPrintX, iPosToPrintY,
-						(UINT)listWstrBookmarkAscii.back().size(), listWstrBookmarkAscii.back().data(), 0, { }, nullptr },
+						static_cast<UINT>(listWstrBookmarkAscii.back().size()), listWstrBookmarkAscii.back().data(), 0, { }, nullptr },
 						pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
 					iBookmarkHexPosToPrintX = 0x7FFFFFFF;
@@ -1737,7 +1731,7 @@ void CHexCtrl::OnPaint()
 
 				if (!wstrHexBookmarkToPrint.empty()) //Only adding spaces if there are chars beforehead.
 				{
-					if ((iterChunks % (DWORD)m_enShowMode) == 0)
+					if ((iterChunks % static_cast<DWORD>(m_enShowMode)) == 0)
 						wstrHexBookmarkToPrint += L" ";
 
 					//Additional space between capacity halves, only with ASBYTE representation.
@@ -1759,13 +1753,13 @@ void CHexCtrl::OnPaint()
 				//Hex bookmarks Poly.
 				listWstrBookmarkHex.emplace_back(std::move(wstrHexBookmarkToPrint));
 				vecBookmarksHex.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkHexPosToPrintX, iPosToPrintY,
-					(UINT)listWstrBookmarkHex.back().size(), listWstrBookmarkHex.back().data(), 0, { }, nullptr },
+					static_cast<UINT>(listWstrBookmarkHex.back().size()), listWstrBookmarkHex.back().data(), 0, { }, nullptr },
 					pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
 				//Ascii bookmarks Poly.
 				listWstrBookmarkAscii.emplace_back(std::move(wstrAsciiBookmarkToPrint));
 				vecBookmarksAscii.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkAsciiPosToPrintX, iPosToPrintY,
-					(UINT)listWstrBookmarkAscii.back().size(), listWstrBookmarkAscii.back().data(), 0, { }, nullptr },
+					static_cast<UINT>(listWstrBookmarkAscii.back().size()), listWstrBookmarkAscii.back().data(), 0, { }, nullptr },
 					pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
 				iBookmarkHexPosToPrintX = 0x7FFFFFFF;
@@ -1785,7 +1779,7 @@ void CHexCtrl::OnPaint()
 
 				if (!wstrHexSelToPrint.empty()) //Only adding spaces if there are chars beforehead.
 				{
-					if ((iterChunks % (DWORD)m_enShowMode) == 0)
+					if ((iterChunks % static_cast<DWORD>(m_enShowMode)) == 0)
 						wstrHexSelToPrint += L" ";
 
 					//Additional space between capacity halves, only with ASBYTE representation.
@@ -1808,12 +1802,12 @@ void CHexCtrl::OnPaint()
 					//Hex selection Poly.
 					listWstrSelHex.emplace_back(std::move(wstrHexSelToPrint));
 					vecPolySelHex.emplace_back(POLYTEXTW { iSelHexPosToPrintX, iPosToPrintY,
-						(UINT)listWstrSelHex.back().size(), listWstrSelHex.back().data(), 0, { }, nullptr });
+						static_cast<UINT>(listWstrSelHex.back().size()), listWstrSelHex.back().data(), 0, { }, nullptr });
 
 					//Ascii selection Poly.
 					listWstrSelAscii.emplace_back(std::move(wstrAsciiSelToPrint));
 					vecPolySelAscii.emplace_back(POLYTEXTW { iSelAsciiPosToPrintX, iPosToPrintY,
-						(UINT)listWstrSelAscii.back().size(), listWstrSelAscii.back().data(), 0, { }, nullptr });
+						static_cast<UINT>(listWstrSelAscii.back().size()), listWstrSelAscii.back().data(), 0, { }, nullptr });
 				}
 				iSelHexPosToPrintX = 0x7FFFFFFF;
 				fSelection = false;
@@ -1853,7 +1847,7 @@ void CHexCtrl::OnPaint()
 
 				if (!wstrHexDataInterpretToPrint.empty()) //Only adding spaces if there are chars beforehead.
 				{
-					if ((iterChunks % (DWORD)m_enShowMode) == 0)
+					if ((iterChunks % static_cast<DWORD>(m_enShowMode)) == 0)
 						wstrHexDataInterpretToPrint += L" ";
 
 					//Additional space between capacity halves, only with ASBYTE representation.
@@ -1869,12 +1863,12 @@ void CHexCtrl::OnPaint()
 		//Hex Poly.
 		listWstrHex.emplace_back(std::move(wstrHexToPrint));
 		vecPolyHex.emplace_back(POLYTEXTW { iHexPosToPrintX, iPosToPrintY,
-			(UINT)listWstrHex.back().size(), listWstrHex.back().data(), 0, { }, nullptr });
+			static_cast<UINT>(listWstrHex.back().size()), listWstrHex.back().data(), 0, { }, nullptr });
 
 		//Ascii Poly.
 		listWstrAscii.emplace_back(std::move(wstrAsciiToPrint));
 		vecPolyAscii.emplace_back(POLYTEXTW { iAsciiPosToPrintX, iPosToPrintY,
-			(UINT)listWstrAscii.back().size(), listWstrAscii.back().data(), 0, { }, nullptr });
+			static_cast<UINT>(listWstrAscii.back().size()), listWstrAscii.back().data(), 0, { }, nullptr });
 
 		//Bookmarks Poly.
 		if (!wstrHexBookmarkToPrint.empty())
@@ -1882,13 +1876,13 @@ void CHexCtrl::OnPaint()
 			//Hex bookmarks Poly.
 			listWstrBookmarkHex.emplace_back(std::move(wstrHexBookmarkToPrint));
 			vecBookmarksHex.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkHexPosToPrintX, iPosToPrintY,
-				(UINT)listWstrBookmarkHex.back().size(), listWstrBookmarkHex.back().data(), 0, { }, nullptr },
+				static_cast<UINT>(listWstrBookmarkHex.back().size()), listWstrBookmarkHex.back().data(), 0, { }, nullptr },
 				pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
 			//Ascii bookmarks Poly.
 			listWstrBookmarkAscii.emplace_back(std::move(wstrAsciiBookmarkToPrint));
 			vecBookmarksAscii.emplace_back(BOOKMARKS { POLYTEXTW { iBookmarkAsciiPosToPrintX, iPosToPrintY,
-				(UINT)listWstrBookmarkAscii.back().size(), listWstrBookmarkAscii.back().data(), 0, { }, nullptr },
+				static_cast<UINT>(listWstrBookmarkAscii.back().size()), listWstrBookmarkAscii.back().data(), 0, { }, nullptr },
 				pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 		}
 
@@ -1898,12 +1892,12 @@ void CHexCtrl::OnPaint()
 			//Hex selected Poly.
 			listWstrSelHex.emplace_back(std::move(wstrHexSelToPrint));
 			vecPolySelHex.emplace_back(POLYTEXTW { iSelHexPosToPrintX, iPosToPrintY,
-				(UINT)listWstrSelHex.back().size(), listWstrSelHex.back().data(), 0, { }, nullptr });
+				static_cast<UINT>(listWstrSelHex.back().size()), listWstrSelHex.back().data(), 0, { }, nullptr });
 
 			//Ascii selected Poly.
 			listWstrSelAscii.emplace_back(std::move(wstrAsciiSelToPrint));
 			vecPolySelAscii.emplace_back(POLYTEXTW { iSelAsciiPosToPrintX, iPosToPrintY,
-				(UINT)listWstrSelAscii.back().size(), listWstrSelAscii.back().data(), 0, { }, nullptr });
+				static_cast<UINT>(listWstrSelAscii.back().size()), listWstrSelAscii.back().data(), 0, { }, nullptr });
 		}
 
 		//Cursor Poly.
@@ -1911,10 +1905,10 @@ void CHexCtrl::OnPaint()
 		{
 			listWstrCursor.emplace_back(std::move(wstrHexCursorToPrint));
 			vecPolyCursor.emplace_back(POLYTEXTW { iCursorHexPosToPrintX, iPosToPrintY,
-				(UINT)listWstrCursor.back().size(), listWstrCursor.back().data(), 0, { }, nullptr });
+				static_cast<UINT>(listWstrCursor.back().size()), listWstrCursor.back().data(), 0, { }, nullptr });
 			listWstrCursor.emplace_back(std::move(wstrAsciiCursorToPrint));
 			vecPolyCursor.emplace_back(POLYTEXTW { iCursorAsciiPosToPrintX, iPosToPrintY,
-				(UINT)listWstrCursor.back().size(), listWstrCursor.back().data(), 0, { }, nullptr });
+				static_cast<UINT>(listWstrCursor.back().size()), listWstrCursor.back().data(), 0, { }, nullptr });
 		}
 
 		//Data Interpreter Poly.
@@ -1923,23 +1917,23 @@ void CHexCtrl::OnPaint()
 			//Hex Data Interpreter Poly.
 			listWstrDataInterpretHex.emplace_back(std::move(wstrHexDataInterpretToPrint));
 			vecPolyDataInterpretHex.emplace_back(POLYTEXTW { iDataInterpretHexPosToPrintX, iPosToPrintY,
-				(UINT)listWstrDataInterpretHex.back().size(), listWstrDataInterpretHex.back().data(), 0, { }, nullptr });
+				static_cast<UINT>(listWstrDataInterpretHex.back().size()), listWstrDataInterpretHex.back().data(), 0, { }, nullptr });
 
 			//Ascii Data Interpreter Poly.
 			listWstrDataInterpretAscii.emplace_back(std::move(wstrAsciiDataInterpretToPrint));
 			vecPolyDataInterpretAscii.emplace_back(POLYTEXTW { iDataInterpretAsciiPosToPrintX, iPosToPrintY,
-				(UINT)listWstrDataInterpretAscii.back().size(), listWstrDataInterpretAscii.back().data(), 0, { }, nullptr });
+				static_cast<UINT>(listWstrDataInterpretAscii.back().size()), listWstrDataInterpretAscii.back().data(), 0, { }, nullptr });
 		}
 	}
 
 	//Hex printing.
 	pDC->SetTextColor(m_stColor.clrTextHex);
 	pDC->SetBkColor(m_stColor.clrBk);
-	PolyTextOutW(pDC->m_hDC, vecPolyHex.data(), (UINT)vecPolyHex.size());
+	PolyTextOutW(pDC->m_hDC, vecPolyHex.data(), static_cast<UINT>(vecPolyHex.size()));
 
 	//Ascii printing.
 	pDC->SetTextColor(m_stColor.clrTextAscii);
-	PolyTextOutW(pDC->m_hDC, vecPolyAscii.data(), (UINT)vecPolyAscii.size());
+	PolyTextOutW(pDC->m_hDC, vecPolyAscii.data(), static_cast<UINT>(vecPolyAscii.size()));
 
 	//Bookmark printing.
 	if (!vecBookmarksHex.empty())
@@ -1961,10 +1955,10 @@ void CHexCtrl::OnPaint()
 	{
 		pDC->SetTextColor(m_stColor.clrTextSelected);
 		pDC->SetBkColor(m_stColor.clrBkSelected);
-		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), (UINT)vecPolySelHex.size());
+		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size()));
 
 		//Ascii selected printing.
-		PolyTextOutW(pDC->m_hDC, vecPolySelAscii.data(), (UINT)vecPolySelAscii.size());
+		PolyTextOutW(pDC->m_hDC, vecPolySelAscii.data(), static_cast<UINT>(vecPolySelAscii.size()));
 	}
 
 	//Cursor printing.
@@ -1972,7 +1966,7 @@ void CHexCtrl::OnPaint()
 	{
 		pDC->SetTextColor(m_stColor.clrTextCursor);
 		pDC->SetBkColor(clrBkCursor);
-		PolyTextOutW(pDC->m_hDC, vecPolyCursor.data(), (UINT)vecPolyCursor.size());
+		PolyTextOutW(pDC->m_hDC, vecPolyCursor.data(), static_cast<UINT>(vecPolyCursor.size()));
 	}
 
 	//Data Interpreter printing.
@@ -1980,10 +1974,10 @@ void CHexCtrl::OnPaint()
 	{
 		pDC->SetTextColor(m_stColor.clrTextDataInterpret);
 		pDC->SetBkColor(m_stColor.clrBkDataInterpret);
-		PolyTextOutW(pDC->m_hDC, vecPolyDataInterpretHex.data(), (UINT)vecPolyDataInterpretHex.size());
+		PolyTextOutW(pDC->m_hDC, vecPolyDataInterpretHex.data(), static_cast<UINT>(vecPolyDataInterpretHex.size()));
 
 		//Ascii selected printing.
-		PolyTextOutW(pDC->m_hDC, vecPolyDataInterpretAscii.data(), (UINT)vecPolyDataInterpretAscii.size());
+		PolyTextOutW(pDC->m_hDC, vecPolyDataInterpretAscii.data(), static_cast<UINT>(vecPolyDataInterpretAscii.size()));
 	}
 
 	//Sector lines printong.
@@ -2001,7 +1995,7 @@ void CHexCtrl::OnPaint()
 void CHexCtrl::OnSize(UINT /*nType*/, int /*cx*/, int cy)
 {
 	RecalcWorkAreaHeight(cy);
-	ULONGLONG ullPageSize = ULONGLONG(m_iHeightWorkArea * m_dbWheelRatio);
+	ULONGLONG ullPageSize = static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio);
 	if (ullPageSize < m_sizeLetter.cy)
 		ullPageSize = m_sizeLetter.cy;
 	m_pScrollV->SetScrollPageSize(ullPageSize);
@@ -2097,7 +2091,7 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullOffset)const
 	break;
 	case EHexDataMode::DATA_MSG:
 	{
-		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_GETDATA } };
+		HEXNOTIFYSTRUCT hns { { .hwndFrom = m_hWnd, .idFrom = static_cast<UINT>(GetDlgCtrlID()), .code = HEXCTRL_MSG_GETDATA } };
 		hns.stSpan.ullOffset = ullOffset;
 		hns.stSpan.ullSize = 1;
 		MsgWindowNotify(hns);
@@ -2127,9 +2121,9 @@ WORD CHexCtrl::GetWord(ULONGLONG ullOffset) const
 
 	WORD wData;
 	if (m_enDataMode == EHexDataMode::DATA_MEMORY)
-		wData = *(PWORD)((DWORD_PTR)m_pData + ullOffset);
+		wData = *reinterpret_cast<PWORD>((reinterpret_cast<DWORD_PTR>(m_pData) + ullOffset));
 	else
-		wData = ((WORD)GetByte(ullOffset)) | ((WORD)GetByte(ullOffset + 1) << 8);
+		wData = (static_cast<WORD>(GetByte(ullOffset))) | (static_cast<WORD>(GetByte(ullOffset + 1) << 8));
 
 	return wData;
 }
@@ -2142,10 +2136,10 @@ DWORD CHexCtrl::GetDword(ULONGLONG ullOffset) const
 
 	DWORD dwData;
 	if (m_enDataMode == EHexDataMode::DATA_MEMORY)
-		dwData = *(PDWORD)((DWORD_PTR)m_pData + ullOffset);
+		dwData = *reinterpret_cast<PDWORD>((reinterpret_cast<DWORD_PTR>(m_pData) + ullOffset));
 	else
-		dwData = ((DWORD)GetByte(ullOffset)) | ((DWORD)GetByte(ullOffset + 1) << 8)
-		| ((DWORD)GetByte(ullOffset + 2) << 16) | ((DWORD)GetByte(ullOffset + 3) << 24);
+		dwData = (static_cast<DWORD>(GetByte(ullOffset))) | (static_cast<DWORD>(GetByte(ullOffset + 1)) << 8)
+		| (static_cast<DWORD>(GetByte(ullOffset + 2)) << 16) | (static_cast<DWORD>(GetByte(ullOffset + 3)) << 24);
 
 	return dwData;
 }
@@ -2158,12 +2152,12 @@ QWORD CHexCtrl::GetQword(ULONGLONG ullOffset) const
 
 	QWORD ullData;
 	if (m_enDataMode == EHexDataMode::DATA_MEMORY)
-		ullData = *(PQWORD)((DWORD_PTR)m_pData + ullOffset);
+		ullData = *reinterpret_cast<PQWORD>((reinterpret_cast<DWORD_PTR>(m_pData) + ullOffset));
 	else
-		ullData = ((QWORD)GetByte(ullOffset)) | ((QWORD)GetByte(ullOffset + 1) << 8)
-		| ((QWORD)GetByte(ullOffset + 2) << 16) | ((QWORD)GetByte(ullOffset + 3) << 24)
-		| ((QWORD)GetByte(ullOffset + 4) << 32) | ((QWORD)GetByte(ullOffset + 5) << 40)
-		| ((QWORD)GetByte(ullOffset + 6) << 48) | ((QWORD)GetByte(ullOffset + 7) << 56);
+		ullData = (static_cast<QWORD>(GetByte(ullOffset))) | (static_cast<QWORD>(GetByte(ullOffset + 1) << 8))
+		| (static_cast<QWORD>(GetByte(ullOffset + 2)) << 16) | (static_cast<QWORD>(GetByte(ullOffset + 3)) << 24)
+		| (static_cast<QWORD>(GetByte(ullOffset + 4)) << 32) | (static_cast<QWORD>(GetByte(ullOffset + 5)) << 40)
+		| (static_cast<QWORD>(GetByte(ullOffset + 6)) << 48) | (static_cast<QWORD>(GetByte(ullOffset + 7)) << 56);
 
 	return ullData;
 }
@@ -2185,7 +2179,7 @@ bool CHexCtrl::SetWord(ULONGLONG ullOffset, WORD wData)
 	if ((ullOffset + sizeof(WORD)) > m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
-	*(PWORD)((DWORD_PTR)m_pData + ullOffset) = wData;
+	*reinterpret_cast<PWORD>(reinterpret_cast<DWORD_PTR>(m_pData) + ullOffset) = wData;
 
 	return true;
 }
@@ -2196,7 +2190,7 @@ bool CHexCtrl::SetDword(ULONGLONG ullOffset, DWORD dwData)
 	if ((ullOffset + sizeof(DWORD)) > m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
-	*(PDWORD)((DWORD_PTR)m_pData + ullOffset) = dwData;
+	*reinterpret_cast<PDWORD>(reinterpret_cast<DWORD_PTR>(m_pData) + ullOffset) = dwData;
 
 	return true;
 }
@@ -2207,7 +2201,7 @@ bool CHexCtrl::SetQword(ULONGLONG ullOffset, QWORD qwData)
 	if ((ullOffset + sizeof(QWORD)) > m_ullDataSize || m_enDataMode != EHexDataMode::DATA_MEMORY)
 		return false;
 
-	*(PQWORD)((DWORD_PTR)m_pData + ullOffset) = qwData;
+	*reinterpret_cast<PQWORD>(reinterpret_cast<DWORD_PTR>(m_pData) + ullOffset) = qwData;
 
 	return true;
 }
@@ -2252,12 +2246,12 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
 				for (ULONGLONG iterData = 0; iterData < hms.ullDataSize; iterData++)
 				{
-					if (ullTotalIndex >= vecRef.at((size_t)ullVecIndex).ullSize)
+					if (ullTotalIndex >= vecRef.at(static_cast<size_t>(ullVecIndex)).ullSize)
 					{
 						++ullVecIndex;
 						ullTotalIndex = 0;
 					}
-					pData[vecRef.at((size_t)ullVecIndex).ullOffset + ullTotalIndex] = hms.pData[iterData];
+					pData[vecRef.at(static_cast<size_t>(ullVecIndex)).ullOffset + ullTotalIndex] = hms.pData[iterData];
 					++ullTotalIndex;
 				}
 		}
@@ -2275,16 +2269,16 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 				switch (hms.ullDataSize)
 				{
 				case (sizeof(BYTE)):
-					ullDataOper = *(PBYTE)hms.pData;
+					ullDataOper = *reinterpret_cast<const BYTE*>(hms.pData);
 					break;
 				case (sizeof(WORD)):
-					ullDataOper = *(PWORD)hms.pData;
+					ullDataOper = *reinterpret_cast<const WORD*>(hms.pData);
 					break;
 				case (sizeof(DWORD)):
-					ullDataOper = *(PDWORD)hms.pData;
+					ullDataOper = *reinterpret_cast<const DWORD*>(hms.pData);
 					break;
 				case (sizeof(QWORD)):
-					ullDataOper = *(PQWORD)hms.pData;
+					ullDataOper = *reinterpret_cast<const QWORD*>(hms.pData);
 					break;
 				}
 			}
@@ -2349,13 +2343,13 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 					switch (hms.ullDataSize)
 					{
 					case (sizeof(BYTE)):
-						SetByte(ref.ullOffset + i, BYTE(ullData & 0xFF));
+						SetByte(ref.ullOffset + i, static_cast<BYTE>(ullData & 0xFF));
 						break;
 					case (sizeof(WORD)):
-						SetWord(ref.ullOffset + (i * sizeof(WORD)), WORD(ullData & 0xFFFF));
+						SetWord(ref.ullOffset + (i * sizeof(WORD)), static_cast<WORD>(ullData & 0xFFFF));
 						break;
 					case (sizeof(DWORD)):
-						SetDword(ref.ullOffset + (i * sizeof(DWORD)), DWORD(ullData & 0xFFFFFFFF));
+						SetDword(ref.ullOffset + (i * sizeof(DWORD)), static_cast<DWORD>(ullData & 0xFFFFFFFF));
 						break;
 					case (sizeof(QWORD)):
 						SetQword(ref.ullOffset + (i * sizeof(QWORD)), ullData);
@@ -2367,16 +2361,16 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 		break;
 		}
 
-		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_DATACHANGE } };
-		hns.pData = (PBYTE)&hms;
+		HEXNOTIFYSTRUCT hns { { .hwndFrom = m_hWnd, .idFrom = static_cast<UINT>(GetDlgCtrlID()), .code = HEXCTRL_MSG_DATACHANGE } };
+		hns.pData = reinterpret_cast<const BYTE*>(&hms);
 		ParentNotify(hns);
 	}
 	break;
 	case EHexDataMode::DATA_MSG:
 	{
 		//In EHexDataMode::DATA_MSG mode we send pointer to HEXMODIFYSTRUCT to Message window.
-		HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), HEXCTRL_MSG_DATACHANGE } };
-		hns.pData = (PBYTE)&hms;
+		HEXNOTIFYSTRUCT hns { { .hwndFrom = m_hWnd, .idFrom = static_cast<UINT>(GetDlgCtrlID()), .code = HEXCTRL_MSG_DATACHANGE } };
+		hns.pData = reinterpret_cast<const BYTE*>(&hms);
 		MsgWindowNotify(hns);
 	}
 	break;
@@ -2415,15 +2409,15 @@ void CHexCtrl::RecalcAll()
 	m_iSizeHexByte = m_sizeLetter.cx * 2;
 	m_iSpaceBetweenBlocks = (m_enShowMode == EHexShowMode::ASBYTE && m_dwCapacity > 1) ? m_sizeLetter.cx * 2 : 0;
 	m_iSpaceBetweenHexChunks = m_sizeLetter.cx;
-	m_iDistanceBetweenHexChunks = m_iSizeHexByte * (DWORD)m_enShowMode + m_iSpaceBetweenHexChunks;
-	m_iThirdVertLine = m_iSecondVertLine + m_iDistanceBetweenHexChunks * (m_dwCapacity / (DWORD)m_enShowMode)
+	m_iDistanceBetweenHexChunks = m_iSizeHexByte * static_cast<DWORD>(m_enShowMode) + m_iSpaceBetweenHexChunks;
+	m_iThirdVertLine = m_iSecondVertLine + m_iDistanceBetweenHexChunks * (m_dwCapacity / static_cast<DWORD>(m_enShowMode))
 		+ m_sizeLetter.cx + m_iSpaceBetweenBlocks;
 	m_iIndentAscii = m_iThirdVertLine + m_sizeLetter.cx;
 	m_iSpaceBetweenAscii = m_sizeLetter.cx;
 	m_iFourthVertLine = m_iIndentAscii + (m_iSpaceBetweenAscii * m_dwCapacity) + m_sizeLetter.cx;
 	m_iIndentFirstHexChunk = m_iSecondVertLine + m_sizeLetter.cx;
 	m_iSizeFirstHalf = m_iIndentFirstHexChunk + m_dwCapacityBlockSize * (m_sizeLetter.cx * 2) +
-		(m_dwCapacityBlockSize / (DWORD)m_enShowMode - 1) * m_iSpaceBetweenHexChunks;
+		(m_dwCapacityBlockSize / static_cast<DWORD>(m_enShowMode) - 1) * m_iSpaceBetweenHexChunks;
 	m_iHeightTopRect = std::lround(m_sizeLetter.cy * 1.5);
 	m_iStartWorkAreaY = m_iFirstHorizLine + m_iHeightTopRect;
 	m_iIndentTextCapacityY = m_iHeightTopRect / 2 - (m_sizeLetter.cy / 2);
@@ -2433,9 +2427,9 @@ void CHexCtrl::RecalcAll()
 	RecalcWorkAreaHeight(rc.Height());
 
 	//Scroll sizes according to current font size.
-	m_pScrollV->SetScrollSizes(m_sizeLetter.cy, ULONGLONG(m_iHeightWorkArea * m_dbWheelRatio),
-		(ULONGLONG)m_iStartWorkAreaY + m_iHeightBottomOffArea + m_sizeLetter.cy * (m_ullDataSize / m_dwCapacity + 2));
-	m_pScrollH->SetScrollSizes(m_sizeLetter.cx, rc.Width(), (ULONGLONG)m_iFourthVertLine + 1);
+	m_pScrollV->SetScrollSizes(m_sizeLetter.cy, static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio),
+		static_cast<ULONGLONG>(m_iStartWorkAreaY) + m_iHeightBottomOffArea + m_sizeLetter.cy * (m_ullDataSize / m_dwCapacity + 2));
+	m_pScrollH->SetScrollSizes(m_sizeLetter.cx, rc.Width(), static_cast<ULONGLONG>(m_iFourthVertLine) + 1);
 	m_pScrollV->SetScrollPos(ullCurLineV * m_sizeLetter.cy);
 
 	RedrawWindow();
@@ -2516,7 +2510,7 @@ auto CHexCtrl::HitTest(const POINT& pt)const->std::optional<HITTESTSTRUCT>
 	HITTESTSTRUCT stHit;
 	bool fHit { false };
 	int iY = pt.y;
-	int iX = pt.x + (int)m_pScrollH->GetScrollPos(); //To compensate horizontal scroll.
+	int iX = pt.x + static_cast<int>(m_pScrollH->GetScrollPos()); //To compensate horizontal scroll.
 	ULONGLONG ullCurLine = GetTopLine();
 
 	//Checking if cursor is within hex chunks area.
@@ -2535,7 +2529,7 @@ auto CHexCtrl::HitTest(const POINT& pt)const->std::optional<HITTESTSTRUCT>
 		int iSpaceBetweenHexChunks = 0;
 		for (unsigned i = 1; i <= m_dwCapacity; i++)
 		{
-			if ((i % (DWORD)m_enShowMode) == 0)
+			if ((i % static_cast<DWORD>(m_enShowMode)) == 0)
 				iSpaceBetweenHexChunks += m_iSpaceBetweenHexChunks;
 			if ((m_iSizeHexByte * i + iSpaceBetweenHexChunks) > dwX)
 			{
@@ -2543,16 +2537,16 @@ auto CHexCtrl::HitTest(const POINT& pt)const->std::optional<HITTESTSTRUCT>
 				break;
 			}
 		}
-		stHit.ullOffset = (ULONGLONG)dwChunkX + ((iY - m_iStartWorkAreaY) / m_sizeLetter.cy) *
+		stHit.ullOffset = static_cast<ULONGLONG>(dwChunkX) + ((iY - m_iStartWorkAreaY) / m_sizeLetter.cy) *
 			m_dwCapacity + (ullCurLine * m_dwCapacity);
 		fHit = true;
 	}
 	//Or within Ascii area.
-	else if ((iX >= m_iIndentAscii) && (iX < (m_iIndentAscii + m_iSpaceBetweenAscii * (int)m_dwCapacity))
+	else if ((iX >= m_iIndentAscii) && (iX < (m_iIndentAscii + m_iSpaceBetweenAscii * static_cast<int>(m_dwCapacity)))
 		&& (iY >= m_iStartWorkAreaY) && iY <= m_iEndWorkArea)
 	{
 		//Calculate ullHit Ascii symbol.
-		stHit.ullOffset = ((iX - (ULONGLONG)m_iIndentAscii) / m_iSpaceBetweenAscii) +
+		stHit.ullOffset = ((iX - static_cast<ULONGLONG>(m_iIndentAscii)) / m_iSpaceBetweenAscii) +
 			((iY - m_iStartWorkAreaY) / m_sizeLetter.cy) * m_dwCapacity + (ullCurLine * m_dwCapacity);
 		stHit.fIsAscii = true;
 		fHit = true;
@@ -2572,20 +2566,22 @@ void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 	if (dwMod >= m_dwCapacityBlockSize)
 		iBetweenBlocks = m_iSpaceBetweenBlocks;
 
-	iCx = int(((m_iIndentFirstHexChunk + iBetweenBlocks + dwMod * m_iSizeHexByte) +
-		(dwMod / (DWORD)m_enShowMode) * m_iSpaceBetweenHexChunks) - m_pScrollH->GetScrollPos());
+	iCx = static_cast<int>(((m_iIndentFirstHexChunk + iBetweenBlocks + dwMod * m_iSizeHexByte) +
+		(dwMod / static_cast<DWORD>(m_enShowMode)) * m_iSpaceBetweenHexChunks) - m_pScrollH->GetScrollPos());
 
 	auto ullScrollV = m_pScrollV->GetScrollPos();
-	iCy = int((m_iStartWorkAreaY + (ullOffset / m_dwCapacity) * m_sizeLetter.cy) - (ullScrollV - (ullScrollV % m_sizeLetter.cy)));
+	iCy = static_cast<int>((m_iStartWorkAreaY + (ullOffset / m_dwCapacity) * m_sizeLetter.cy) -
+		(ullScrollV - (ullScrollV % m_sizeLetter.cy)));
 }
 
 void CHexCtrl::AsciiChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy) const
 {	//This func computes x and y pos of given Ascii chunk.
 	DWORD dwMod = ullOffset % m_dwCapacity;
-	iCx = int((m_iIndentAscii + dwMod * m_sizeLetter.cx) - m_pScrollH->GetScrollPos());
+	iCx = static_cast<int>((m_iIndentAscii + dwMod * m_sizeLetter.cx) - m_pScrollH->GetScrollPos());
 
 	auto ullScrollV = m_pScrollV->GetScrollPos();
-	iCy = int((m_iStartWorkAreaY + (ullOffset / m_dwCapacity) * m_sizeLetter.cy) - (ullScrollV - (ullScrollV % m_sizeLetter.cy)));
+	iCy = static_cast<int>((m_iStartWorkAreaY + (ullOffset / m_dwCapacity) * m_sizeLetter.cy) -
+		(ullScrollV - (ullScrollV % m_sizeLetter.cy)));
 }
 
 void CHexCtrl::ClipboardCopy(EClipboard enType)
@@ -2605,7 +2601,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 	{
 	case EClipboard::COPY_HEX:
 	{
-		strToClipboard.reserve((size_t)ullSelSize * 2);
+		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 2);
 		for (unsigned i = 0; i < ullSelSize; ++i)
 		{
 			BYTE chByte = GetByte(m_pSelection->GetOffsetByIndex(i));
@@ -2616,8 +2612,8 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 	break;
 	case EClipboard::COPY_HEX_LE:
 	{
-		strToClipboard.reserve((size_t)ullSelSize * 2);
-		for (int i = (int)ullSelSize; i > 0; --i)
+		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 2);
+		for (int i = static_cast<int>(ullSelSize); i > 0; --i)
 		{
 			BYTE chByte = GetByte(m_pSelection->GetOffsetByIndex(i - 1));
 			strToClipboard += pszHexMap[(chByte & 0xF0) >> 4];
@@ -2627,7 +2623,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 	break;
 	case EClipboard::COPY_HEX_FORMATTED:
 	{
-		strToClipboard.reserve((size_t)ullSelSize * 3);
+		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 3);
 		if (m_fSelectionBlock)
 		{
 			DWORD dwTail = m_pSelection->GetLineLength();
@@ -2638,7 +2634,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 				strToClipboard += pszHexMap[(chByte & 0x0F)];
 
 				if (i < (ullSelSize - 1) && (dwTail - 1) != 0)
-					if (((m_pSelection->GetLineLength() - dwTail + 1) % (DWORD)m_enShowMode) == 0) //Add space after hex full chunk, ShowAs_size depending.
+					if (((m_pSelection->GetLineLength() - dwTail + 1) % static_cast<DWORD>(m_enShowMode)) == 0) //Add space after hex full chunk, ShowAs_size depending.
 						strToClipboard += " ";
 				if (--dwTail == 0 && i < (ullSelSize - 1)) //Next row.
 				{
@@ -2659,10 +2655,10 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 			//If at least two rows are selected.
 			if (dwModStart + ullSelSize > m_dwCapacity)
 			{
-				DWORD dwCount = dwModStart * 2 + dwModStart / (DWORD)m_enShowMode;
+				DWORD dwCount = dwModStart * 2 + dwModStart / static_cast<DWORD>(m_enShowMode);
 				//Additional spaces between halves. Only in ASBYTE's view mode.
 				dwCount += (m_enShowMode == EHexShowMode::ASBYTE) ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
-				strToClipboard.insert(0, (size_t)dwCount, ' ');
+				strToClipboard.insert(0, static_cast<size_t>(dwCount), ' ');
 			}
 
 			for (unsigned i = 0; i < ullSelSize; i++)
@@ -2674,7 +2670,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 				if (i < (ullSelSize - 1) && (dwTail - 1) != 0)
 					if (m_enShowMode == EHexShowMode::ASBYTE && dwTail == dwNextBlock)
 						strToClipboard += "   "; //Additional spaces between halves. Only in ASBYTE view mode.
-					else if (((m_dwCapacity - dwTail + 1) % (DWORD)m_enShowMode) == 0) //Add space after hex full chunk, ShowAs_size depending.
+					else if (((m_dwCapacity - dwTail + 1) % static_cast<DWORD>(m_enShowMode)) == 0) //Add space after hex full chunk, ShowAs_size depending.
 						strToClipboard += " ";
 				if (--dwTail == 0 && i < (ullSelSize - 1)) //Next row.
 				{
@@ -2687,7 +2683,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 	break;
 	case EClipboard::COPY_ASCII:
 	{
-		strToClipboard.reserve((size_t)ullSelSize);
+		strToClipboard.reserve(static_cast<size_t>(ullSelSize));
 		for (unsigned i = 0; i < ullSelSize; i++)
 		{
 			char ch = GetByte(m_pSelection->GetOffsetByIndex(i));
@@ -2700,7 +2696,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 	break;
 	case EClipboard::COPY_BASE64:
 	{
-		strToClipboard.reserve((size_t)ullSelSize * 2);
+		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 2);
 		const char* const pszBase64Map { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
 		unsigned int uValA = 0;
 		int iValB = -6;
@@ -2723,7 +2719,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 	break;
 	case EClipboard::COPY_CARRAY:
 	{
-		strToClipboard.reserve((size_t)ullSelSize * 3 + 64);
+		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 3 + 64);
 		strToClipboard = "unsigned char data[";
 		char arrSelectionNum[8] { };
 		sprintf_s(arrSelectionNum, 8, "%llu", ullSelSize);
@@ -2750,7 +2746,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 	break;
 	case EClipboard::COPY_GREPHEX:
 	{
-		strToClipboard.reserve((size_t)ullSelSize * 2);
+		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 2);
 		for (unsigned i = 0; i < ullSelSize; i++)
 		{
 			strToClipboard += "\\x";
@@ -2765,23 +2761,23 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 		if (m_fSelectionBlock) //Only works with classical selection.
 			break;
 
-		strToClipboard.reserve((size_t)ullSelSize * 4);
+		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 4);
 		strToClipboard = "Offset";
-		strToClipboard.insert(0, ((size_t)m_dwOffsetDigits - strToClipboard.size()) / 2, ' ');
-		strToClipboard.insert(strToClipboard.size(), (size_t)m_dwOffsetDigits - strToClipboard.size(), ' ');
+		strToClipboard.insert(0, (static_cast<size_t>(m_dwOffsetDigits) - strToClipboard.size()) / 2, ' ');
+		strToClipboard.insert(strToClipboard.size(), static_cast<size_t>(m_dwOffsetDigits) - strToClipboard.size(), ' ');
 		strToClipboard += "   "; //Spaces to Capacity.
 		strToClipboard += WstrToStr(m_wstrCapacity);
 		strToClipboard += "   "; //Spaces to Ascii.
-		if (int iSize = (int)m_dwCapacity - 5; iSize > 0) //5 is strlen of "Ascii".
-			strToClipboard.insert(strToClipboard.size(), size_t(iSize / 2), ' ');
+		if (int iSize = static_cast<int>(m_dwCapacity) - 5; iSize > 0) //5 is strlen of "Ascii".
+			strToClipboard.insert(strToClipboard.size(), static_cast<size_t>(iSize / 2), ' ');
 		strToClipboard += "Ascii";
 		strToClipboard += "\r\n";
 
 		//How many spaces are needed to be inserted at the beginning.
 		DWORD dwModStart = ullSelStart % m_dwCapacity;
 
-		DWORD dwLines = (DWORD)ullSelSize / m_dwCapacity;
-		if ((dwModStart + (DWORD)ullSelSize) > m_dwCapacity)
+		DWORD dwLines = static_cast<DWORD>(ullSelSize) / m_dwCapacity;
+		if ((dwModStart + static_cast<DWORD>(ullSelSize)) > m_dwCapacity)
 			++dwLines;
 		if ((ullSelSize % m_dwCapacity) + dwModStart > m_dwCapacity)
 			++dwLines;
@@ -2796,7 +2792,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 		{
 			wchar_t pwszOffset[32] { }; //To be enough for max as Hex and as Decimals.
 			UllToWchars(ullLineStart * m_dwCapacity + m_dwCapacity * iterLines,
-				pwszOffset, (size_t)m_dwOffsetBytes, m_fOffsetAsHex);
+				pwszOffset, static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
 			strToClipboard += WstrToStr(pwszOffset);
 			strToClipboard.insert(strToClipboard.size(), 3, ' ');
 
@@ -2821,7 +2817,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 				}
 
 				//Additional space between grouped Hex chunks.
-				if (((iterChunks + 1) % (DWORD)m_enShowMode) == 0 && iterChunks < (m_dwCapacity - 1))
+				if (((iterChunks + 1) % static_cast<DWORD>(m_enShowMode)) == 0 && iterChunks < (m_dwCapacity - 1))
 					strToClipboard += " ";
 
 				//Additional space between capacity halves, only with ASBYTE representation.
@@ -2845,12 +2841,12 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 		MessageBoxW(L"GlobalAlloc error.", L"Error", MB_ICONERROR);
 		return;
 	}
-	LPVOID hMemLock = GlobalLock(hMem);
-	if (!hMemLock) {
+	LPVOID lpMemLock = GlobalLock(hMem);
+	if (!lpMemLock) {
 		MessageBoxW(L"GlobalLock error.", L"Error", MB_ICONERROR);
 		return;
 	}
-	memcpy(hMemLock, strToClipboard.data(), strToClipboard.size() + 1);
+	memcpy(lpMemLock, strToClipboard.data(), strToClipboard.size() + 1);
 	GlobalUnlock(hMem);
 	OpenClipboard();
 	EmptyClipboard();
@@ -2870,7 +2866,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	if (!hClipboard)
 		return;
 
-	LPSTR pszClipboardData = (LPSTR)GlobalLock(hClipboard);
+	LPSTR pszClipboardData = static_cast<LPSTR>(GlobalLock(hClipboard));
 	if (!pszClipboardData)
 	{
 		CloseClipboard();
@@ -2888,12 +2884,12 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	switch (enType)
 	{
 	case EClipboard::PASTE_ASCII:
-		hmd.pData = (PBYTE)pszClipboardData;
+		hmd.pData = reinterpret_cast<PBYTE>(pszClipboardData);
 		ullSizeToModify = hmd.ullDataSize = ullSize;
 		break;
 	case EClipboard::PASTE_HEX:
 	{
-		size_t dwIterations = size_t(ullSize / 2 + ullSize % 2);
+		size_t dwIterations = static_cast<size_t>(ullSize / 2 + ullSize % 2);
 		char chToUL[3] { }; //Array for actual Ascii chars to convert from.
 		for (size_t i = 0; i < dwIterations; i++)
 		{
@@ -2915,9 +2911,9 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 				CloseClipboard();
 				return;
 			}
-			strData += (unsigned char)ulNumber;
+			strData += static_cast<unsigned char>(ulNumber);
 		}
-		hmd.pData = (PBYTE)strData.data();
+		hmd.pData = reinterpret_cast<PBYTE>(strData.data());
 		ullSizeToModify = hmd.ullDataSize = strData.size();
 	}
 	break;
@@ -2970,12 +2966,12 @@ void CHexCtrl::ParentNotify(const HEXNOTIFYSTRUCT& hns)const
 {
 	HWND hwndSendTo = GetParent()->GetSafeHwnd();
 	if (hwndSendTo)
-		::SendMessageW(hwndSendTo, WM_NOTIFY, GetDlgCtrlID(), (LPARAM)&hns);
+		::SendMessageW(hwndSendTo, WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&hns));
 }
 
 void CHexCtrl::ParentNotify(UINT uCode)const
 {
-	HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), uCode } };
+	HEXNOTIFYSTRUCT hns { { .hwndFrom = m_hWnd, .idFrom = static_cast<UINT>(GetDlgCtrlID()), .code = uCode } };
 	ParentNotify(hns);
 }
 
@@ -2983,12 +2979,12 @@ void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const
 {
 	HWND hwndSendTo = GetMsgWindow();
 	if (hwndSendTo)
-		::SendMessageW(hwndSendTo, WM_NOTIFY, GetDlgCtrlID(), (LPARAM)&hns);
+		::SendMessageW(hwndSendTo, WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&hns));
 }
 
 void CHexCtrl::MsgWindowNotify(UINT uCode)const
 {
-	HEXNOTIFYSTRUCT hns { { m_hWnd, (UINT)GetDlgCtrlID(), uCode } };
+	HEXNOTIFYSTRUCT hns { { .hwndFrom = m_hWnd, .idFrom = static_cast<UINT>(GetDlgCtrlID()), .code = uCode } };
 	std::vector<HEXSPANSTRUCT> vecData { };
 
 	switch (uCode)
@@ -2998,7 +2994,7 @@ void CHexCtrl::MsgWindowNotify(UINT uCode)const
 		break;
 	case HEXCTRL_MSG_SELECTION:
 		vecData = m_pSelection->GetData();
-		hns.pData = (PBYTE)&vecData;
+		hns.pData = reinterpret_cast<PBYTE>(&vecData);
 		break;
 	case HEXCTRL_MSG_VIEWCHANGE:
 	{
@@ -3190,9 +3186,9 @@ void CHexCtrl::Undo()
 	{
 		auto& refUndoData = iter.vecData;
 		for (size_t i = 0; i < refUndoData.size(); i++)
-		{
-			refRedo->at((size_t)ullIndex).vecData.push_back((std::byte)GetByte(iter.ullOffset + i)); //Fill Redo data with the next byte.
-			SetByte(iter.ullOffset + i, (BYTE)refUndoData[i]);                  //Undo the next byte.
+		{	//Fill Redo data with the next byte.
+			refRedo->at(static_cast<size_t>(ullIndex)).vecData.push_back(static_cast<std::byte>(GetByte(iter.ullOffset + i)));
+			SetByte(iter.ullOffset + i, static_cast<BYTE>(refUndoData[i])); //Undo the next byte.
 		}
 		++ullIndex;
 	}
@@ -3218,8 +3214,8 @@ void CHexCtrl::Redo()
 	for (auto& iter : *refRedo)
 	{
 		auto& refData = iter.vecData;
-		for (ULONGLONG i = 0; i < refData.size(); i++)
-			SetByte(iter.ullOffset + i, (BYTE)refData[(size_t)i]);
+		for (size_t i = 0; i < refData.size(); i++)
+			SetByte(iter.ullOffset + i, static_cast<BYTE>(refData[i]));
 	}
 
 	m_deqRedo.pop_back();
@@ -3231,7 +3227,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 {
 	//If Undo deque size is exceeding max limit,
 	//remove first snapshot from the beginning (the oldest one).
-	if (m_deqUndo.size() > (size_t)m_dwUndoMax)
+	if (m_deqUndo.size() > static_cast<size_t>(m_dwUndoMax))
 		m_deqUndo.pop_front();
 
 	//Making new Undo data snapshot.
@@ -3243,7 +3239,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 		for (auto& i : vecSpan)
 		{
 			refUndo->emplace_back(UNDOSTRUCT { i.ullOffset, { } });
-			refUndo->back().vecData.reserve((size_t)i.ullSize);
+			refUndo->back().vecData.reserve(static_cast<size_t>(i.ullSize));
 		}
 	}
 
@@ -3258,7 +3254,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 	for (auto& iter : vecSpan)
 	{
 		for (size_t i = 0; i < iter.ullSize; i++)
-			refUndo->at((size_t)ullIndex).vecData.push_back((std::byte)GetByte(iter.ullOffset + i));
+			refUndo->at(static_cast<size_t>(ullIndex)).vecData.push_back(static_cast<std::byte>(GetByte(iter.ullOffset + i)));
 		++ullIndex;
 	}
 }
@@ -3402,7 +3398,7 @@ void CHexCtrl::FillWithZeros()
 void CHexCtrl::WstrCapacityFill()
 {
 	m_wstrCapacity.clear();
-	m_wstrCapacity.reserve((size_t)m_dwCapacity * 3);
+	m_wstrCapacity.reserve(static_cast<size_t>(m_dwCapacity) * 3);
 	for (unsigned iter = 0; iter < m_dwCapacity; iter++)
 	{
 		if (m_fOffsetAsHex)
@@ -3434,7 +3430,7 @@ void CHexCtrl::WstrCapacityFill()
 		}
 
 		//Additional space between hex chunk blocks.
-		if ((((iter + 1) % (DWORD)m_enShowMode) == 0) && (iter < (m_dwCapacity - 1)))
+		if ((((iter + 1) % static_cast<DWORD>(m_enShowMode)) == 0) && (iter < (m_dwCapacity - 1)))
 			m_wstrCapacity += L" ";
 
 		//Additional space between hex halves.

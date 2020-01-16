@@ -102,10 +102,10 @@ void CHexBookmarks::GoNext()
 		return;
 	}
 
-	if (++m_iCurrent > int(m_deqBookmarks.size() - 1))
+	if (++m_iCurrent > static_cast<int>(m_deqBookmarks.size() - 1))
 		m_iCurrent = 0;
 
-	m_pHex->GoToOffset(m_deqBookmarks.at((size_t)m_iCurrent).vecSpan.front().ullOffset);
+	m_pHex->GoToOffset(m_deqBookmarks.at(static_cast<size_t>(m_iCurrent)).vecSpan.front().ullOffset);
 }
 
 void CHexBookmarks::GoPrev()
@@ -122,9 +122,9 @@ void CHexBookmarks::GoPrev()
 	}
 
 	if (--m_iCurrent < 0)
-		m_iCurrent = (int)m_deqBookmarks.size() - 1;
+		m_iCurrent = static_cast<int>(m_deqBookmarks.size()) - 1;
 
-	m_pHex->GoToOffset(m_deqBookmarks.at((size_t)m_iCurrent).vecSpan.front().ullOffset);
+	m_pHex->GoToOffset(m_deqBookmarks.at(static_cast<size_t>(m_iCurrent)).vecSpan.front().ullOffset);
 }
 
 bool CHexBookmarks::HasBookmarks()const

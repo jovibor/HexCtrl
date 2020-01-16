@@ -99,7 +99,7 @@ BOOL CHexDlgOperations::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	if (wParam == HEXCTRL_EDITCTRL)
 	{
-		NMHDR* pnmh = (NMHDR*)lParam;
+		NMHDR* pnmh = reinterpret_cast<NMHDR*>(lParam);
 		switch (pnmh->code)
 		{
 		case VK_RETURN:
@@ -199,7 +199,7 @@ void CHexDlgOperations::OnOK()
 			return;
 		}
 
-		hms.pData = (PBYTE)&llData;
+		hms.pData = reinterpret_cast<const BYTE*>(&llData);
 	}
 
 	switch (iRadioDataSize)

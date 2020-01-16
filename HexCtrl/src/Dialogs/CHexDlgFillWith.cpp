@@ -77,17 +77,17 @@ void CHexDlgFillWith::OnOK()
 			MessageBoxW(L"Wrong Hex format!", L"Format Error", MB_ICONERROR);
 			return;
 		}
-		hms.pData = (PBYTE)strToFill.data();
+		hms.pData = reinterpret_cast<PBYTE>(strToFill.data());
 		hms.ullDataSize = strToFill.size();
 	}
 	break;
 	case IDC_HEXCTRL_FILLWITHDATA_RADIO_TEXT:
-		hms.pData = (PBYTE)strToFill.data();
+		hms.pData = reinterpret_cast<PBYTE>(strToFill.data());
 		hms.ullDataSize = strToFill.size();
 		break;
 	case IDC_HEXCTRL_FILLWITHDATA_RADIO_UTF16:
-		hms.pData = (PBYTE)wstrComboText.data();
-		hms.ullDataSize = (ULONGLONG)wstrComboText.size() * sizeof(WCHAR);
+		hms.pData = reinterpret_cast<PBYTE>(wstrComboText.data());
+		hms.ullDataSize = static_cast<ULONGLONG>(wstrComboText.size()) * sizeof(WCHAR);
 		break;
 	}
 

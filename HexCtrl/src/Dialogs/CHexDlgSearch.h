@@ -64,7 +64,7 @@ namespace HEXCTRL::INTERNAL {
 		std::wstring wstrSearch { };     //String to search for.
 		std::wstring wstrReplace { };    //Search "Replace with..." wstring.
 		ESearchMode enSearchType { };    //Hex, Ascii, Unicode, etc...
-		ULONGLONG m_ullIndex { };        //An offset search should start from.
+		ULONGLONG m_ullOffset { };        //An offset search should start from.
 		DWORD m_dwCount { };             //How many, or what index number.
 		DWORD m_dwReplaced { };          //Replaced amount;
 		int m_iDirection { };            //Search direction: 1 = Forward, -1 = Backward.

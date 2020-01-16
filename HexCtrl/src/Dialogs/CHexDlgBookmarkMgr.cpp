@@ -76,7 +76,7 @@ BOOL CHexDlgBookmarkMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult
 			else
 			{
 				fEnabled = true;
-				m_dwCurrBkmId = (DWORD)m_List->GetItemData(pNMI->iItem);
+				m_dwCurrBkmId = static_cast<DWORD>(m_List->GetItemData(pNMI->iItem));
 				m_iCurrListId = pNMI->iItem;
 			}
 			m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
@@ -97,14 +97,14 @@ BOOL CHexDlgBookmarkMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult
 			if (pNMI->iItem == -1 || pNMI->iSubItem == -1 || !(pNMI->uNewState & LVIS_SELECTED))
 				break;
 
-			m_pBookmarks->GoBookmark((DWORD)m_List->GetItemData(pNMI->iItem));
+			m_pBookmarks->GoBookmark(static_cast<DWORD>(m_List->GetItemData(pNMI->iItem)));
 		}
 		break;
 		case NM_DBLCLK:
 			if (pNMI->iItem == -1 || pNMI->iSubItem == -1)
 				break;
 
-			m_dwCurrBkmId = (DWORD)m_List->GetItemData(pNMI->iItem);
+			m_dwCurrBkmId = static_cast<DWORD>(m_List->GetItemData(pNMI->iItem));
 			m_iCurrListId = pNMI->iItem;
 			SendMessageW(WM_COMMAND, IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT);
 			break;
@@ -197,7 +197,7 @@ void CHexDlgBookmarkMgr::UpdateList()
 		m_List->SetItemText(listindex, 2, wstr);
 		m_List->SetItemText(listindex, 3, iter.wstrDesc.data());
 		m_List->SetCellColor(listindex, 4, iter.clrBk);
-		m_List->SetItemData(listindex, (DWORD_PTR)iter.dwID);
+		m_List->SetItemData(listindex, static_cast<DWORD_PTR>(iter.dwID));
 
 		++listindex;
 	}

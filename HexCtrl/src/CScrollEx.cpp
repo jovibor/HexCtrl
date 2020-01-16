@@ -227,7 +227,7 @@ LONGLONG CScrollEx::GetScrollPosDelta()const
 	if (!m_fCreated)
 		return 0;
 
-	return LONGLONG(m_ullScrollPosCur - m_ullScrollPosPrev);
+	return static_cast<LONGLONG>(m_ullScrollPosCur - m_ullScrollPosPrev);
 }
 
 ULONGLONG CScrollEx::GetScrollLineSize()const
@@ -345,28 +345,28 @@ void CScrollEx::OnSetCursor(CWnd * /*pWnd*/, UINT nHitTest, UINT message)
 				ScrollLineUp();
 				m_enState = EState::FIRSTARROW_CLICK;
 				pParent->SetCapture();
-				SetTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
+				SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
 			}
 			else if (GetLastArrowRect(true).PtInRect(pt))
 			{
 				ScrollLineDown();
 				m_enState = EState::LASTARROW_CLICK;
 				pParent->SetCapture();
-				SetTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
+				SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
 			}
 			else if (GetFirstChannelRect(true).PtInRect(pt))
 			{
 				ScrollPageUp();
 				m_enState = EState::FIRSTCHANNEL_CLICK;
 				pParent->SetCapture();
-				SetTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
+				SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
 			}
 			else if (GetLastChannelRect(true).PtInRect(pt))
 			{
 				ScrollPageDown();
 				m_enState = EState::LASTCHANNEL_CLICK;
 				pParent->SetCapture();
-				SetTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK, m_iTimerFirstClick, nullptr);
+				SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
 			}
 		}
 	}
@@ -432,8 +432,8 @@ void CScrollEx::OnLButtonUp(UINT /*nFlags*/, CPoint /*point*/)
 	if (m_enState != EState::STATE_DEFAULT)
 	{
 		m_enState = EState::STATE_DEFAULT;
-		KillTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK);
-		KillTimer((UINT_PTR)ETimer::IDT_CLICKREPEAT);
+		KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
+		KillTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT));
 		ReleaseCapture();
 		DrawScrollBar();
 	}
@@ -636,11 +636,11 @@ UINT CScrollEx::GetThumbSizeWH()const
 
 	UINT uiThumbSize;
 	if (IsVert())
-		dDelta = (long double)rcParent.Height() / m_ullScrollSizeMax;
+		dDelta = static_cast<long double>(rcParent.Height()) / m_ullScrollSizeMax;
 	else
-		dDelta = (long double)rcParent.Width() / m_ullScrollSizeMax;
+		dDelta = static_cast<long double>(rcParent.Width()) / m_ullScrollSizeMax;
 
-	uiThumbSize = (UINT)std::lroundl(uiScrollWorkAreaSizeWH * dDelta);
+	uiThumbSize = static_cast<UINT>(std::lroundl(uiScrollWorkAreaSizeWH * dDelta));
 
 	if (uiThumbSize < m_uiThumbSizeMin)
 		uiThumbSize = m_uiThumbSizeMin;
@@ -679,15 +679,15 @@ void CScrollEx::SetThumbPos(int iPos)
 	{
 		if (IsVert())
 		{
-			if (iPos + (int)uiThumbSize > rcWorkArea.Height())
+			if (iPos + static_cast<int>(uiThumbSize) > rcWorkArea.Height())
 				iPos = rcWorkArea.Height() - uiThumbSize;
 		}
 		else
 		{
-			if (iPos + (int)uiThumbSize > rcWorkArea.Width())
+			if (iPos + static_cast<int>(uiThumbSize) > rcWorkArea.Width())
 				iPos = rcWorkArea.Width() - uiThumbSize;
 		}
-		ullNewScrollPos = (ULONGLONG)std::llroundl(iPos * GetThumbScrollingSize());
+		ullNewScrollPos = static_cast<ULONGLONG>(std::llroundl(iPos * GetThumbScrollingSize()));
 	}
 
 	SetScrollPos(ullNewScrollPos);
@@ -705,7 +705,7 @@ long double CScrollEx::GetThumbScrollingSize()const
 	else
 		iPage = GetParentRect().Width();
 
-	return (m_ullScrollSizeMax - iPage) / (long double)uiWAWOThumb;
+	return (m_ullScrollSizeMax - iPage) / static_cast<long double>(uiWAWOThumb);
 }
 
 CRect CScrollEx::GetFirstArrowRect(bool fClientCoord)const
@@ -825,11 +825,11 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 {
 	switch (nIDEvent)
 	{
-	case (UINT_PTR)ETimer::IDT_FIRSTCLICK:
-		KillTimer((UINT_PTR)ETimer::IDT_FIRSTCLICK);
-		SetTimer((UINT_PTR)ETimer::IDT_CLICKREPEAT, m_iTimerRepeat, nullptr);
+	case static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK):
+		KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
+		SetTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT), m_iTimerRepeat, nullptr);
 		break;
-	case (UINT_PTR)ETimer::IDT_CLICKREPEAT:
+	case static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT):
 	{
 		switch (m_enState)
 		{
