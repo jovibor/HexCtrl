@@ -185,8 +185,8 @@ void CHexDlgOperations::OnOK()
 	LONGLONG llData;
 	if (iEditId)
 	{
-		WCHAR pwszEditText[16];
-		GetDlgItemTextW(iEditId, pwszEditText, 16);
+		WCHAR pwszEditText[32];
+		GetDlgItemTextW(iEditId, pwszEditText, 32);
 
 		if (!StrToInt64ExW(pwszEditText, STIF_SUPPORT_HEX, &llData))
 		{
