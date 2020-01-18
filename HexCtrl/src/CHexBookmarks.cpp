@@ -26,8 +26,8 @@ DWORD CHexBookmarks::Add(const HEXBOOKMARKSTRUCT& hbs)
 	if (m_pVirtual)
 		return m_pVirtual->Add(hbs);
 
-	auto iter = std::max_element(m_deqBookmarks.begin(), m_deqBookmarks.end(), []
-	(const HEXBOOKMARKSTRUCT& ref1, const HEXBOOKMARKSTRUCT& ref2)
+	auto iter = std::max_element(m_deqBookmarks.begin(), m_deqBookmarks.end(),
+		[](const HEXBOOKMARKSTRUCT& ref1, const HEXBOOKMARKSTRUCT& ref2)
 	{return ref1.dwID < ref2.dwID; });
 
 	DWORD dwId { 1 }; //Bookmarks Id starts from 1.

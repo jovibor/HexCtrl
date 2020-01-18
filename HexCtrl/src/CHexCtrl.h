@@ -95,6 +95,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg UINT OnGetDlgCode();     //To properly work in dialogs.
 		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 		afx_msg void OnPaint();
+		void DrawData(CDC* pDC);
 		afx_msg void OnSize(UINT nType, int cx, int cy);
 		afx_msg void OnDestroy();
 		afx_msg BOOL OnNcActivate(BOOL bActive);

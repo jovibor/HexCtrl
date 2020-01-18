@@ -1498,7 +1498,6 @@ void CHexCtrl::OnPaint()
 		return;
 	}
 
-	const int iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
 	CRect rcClient;
 	GetClientRect(rcClient);
 
@@ -1513,14 +1512,12 @@ void CHexCtrl::OnPaint()
 	RECT rc; //Used for all local rect related drawings.
 	pDC->GetClipBox(&rc);
 	pDC->FillSolidRect(&rc, m_stColor.clrBk);
+	pDC->SelectObject(m_penLines);
 
-	const auto ullLineStart = GetTopLine();
-	const auto ullLineEnd = GetBottomLine();
+	const int iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
 	const auto iSecondHorizLine = m_iStartWorkAreaY - 1;
 	const auto iThirdHorizLine = rcClient.Height() - m_iHeightBottomOffArea;
 	const auto iFourthHorizLine = iThirdHorizLine + m_iHeightBottomRect;
-
-	pDC->SelectObject(m_penLines);
 
 	//First horizontal line.
 	pDC->MoveTo(m_iFirstVertLine - iScrollH, m_iFirstHorizLine);
@@ -1562,7 +1559,7 @@ void CHexCtrl::OnPaint()
 	pDC->FillSolidRect(&rc, m_stColor.clrBkInfoRect);
 	rc.left = m_iFirstVertLine + 5; //Draw text beginning with little indent.
 	rc.right = rcClient.right;		//Draw text to the end of the client area, even if it pass iFourthHorizLine.
-	auto pFontOld = pDC->SelectObject(m_fontInfo);
+	pDC->SelectObject(m_fontInfo);
 	pDC->SetTextColor(m_stColor.clrTextInfoRect);
 	pDC->SetBkColor(m_stColor.clrBkInfoRect);
 	pDC->DrawTextW(m_wstrInfo.data(), static_cast<int>(m_wstrInfo.size()), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
@@ -1588,11 +1585,17 @@ void CHexCtrl::OnPaint()
 	rc.bottom = iSecondHorizLine;
 	pDC->DrawTextW(L"Ascii", 5, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
+	DrawData(pDC); //Main method for drawing data. 
+}
+
+void CHexCtrl::DrawData(CDC* pDC)
+{
 	std::vector<POLYTEXTW> vecPolyHex, vecPolyAscii, vecPolySelHex, vecPolySelAscii, vecPolyCursor,
 		vecPolyDataInterpretHex, vecPolyDataInterpretAscii;
 
 	//Struct for Bookmarks.
-	struct BOOKMARKS {
+	struct BOOKMARKS
+	{
 		POLYTEXTW stPoly { };
 		COLORREF  clrBk { };
 		COLORREF  clrText { };
@@ -1610,6 +1613,10 @@ void CHexCtrl::OnPaint()
 	std::list<std::wstring> listWstrHex, listWstrAscii, listWstrBookmarkHex, listWstrBookmarkAscii,
 		listWstrSelHex, listWstrSelAscii, listWstrCursor, listWstrDataInterpretHex, listWstrDataInterpretAscii;
 	COLORREF clrBkCursor { }; //Cursor color.
+
+	const auto ullLineStart = GetTopLine();
+	const auto ullLineEnd = GetBottomLine();
+	const int iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
 
 	int iLine = 0; //Current line to print.
 	//Loop for printing Hex chunks and Ascii chars line by line.
@@ -1989,7 +1996,6 @@ void CHexCtrl::OnPaint()
 			pDC->LineTo(iter.ptEnd.x, iter.ptEnd.y);
 		}
 	}
-	pDC->SelectObject(pFontOld);
 }
 
 void CHexCtrl::OnSize(UINT /*nType*/, int /*cx*/, int cy)
