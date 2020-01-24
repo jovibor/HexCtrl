@@ -12,6 +12,10 @@
 #include <string>
 #include <Windows.h> //Standard Windows header.
 
+#ifndef __cpp_lib_byte
+static_assert(false, "std::byte compliant compiler required.");
+#endif
+
 /**********************************************************************
 * If HEXCTRL_IHEXCTRLPTR_UNIQUEPTR defined then IHexCtrlPtr is        * 
 * resolved to std::unique_ptr. Otherwise it's std::shared_ptr.        *
@@ -77,10 +81,10 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXMODIFYSTRUCT
 	{
-		EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
-		EHexOperMode   enOperMode { };          //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
-		const BYTE*    pData { };               //Pointer to a data to be set.
-		ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
+		EHexModifyMode   enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
+		EHexOperMode     enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
+		const std::byte* pData { };             //Pointer to a data to be set.
+		ULONGLONG        ullDataSize { };       //Size of the data pData is pointing to.
 		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
 	};
 
@@ -204,10 +208,10 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXNOTIFYSTRUCT
 	{
-		NMHDR         hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
-		HEXSPANSTRUCT stSpan { };  //Offset and size of the bytes. 
-		ULONGLONG     ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
-		const BYTE*   pData { };   //Pointer to a data to get/send.
+		NMHDR            hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
+		HEXSPANSTRUCT    stSpan { };  //Offset and size of the bytes. 
+		ULONGLONG        ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
+		const std::byte* pData { };   //Pointer to a data to get/send.
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
 

@@ -1443,7 +1443,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	HEXMODIFYSTRUCT hms;
 	hms.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, 1 });
 	hms.ullDataSize = 1;
-
+	
 	BYTE chByte = nChar & 0xFF;
 	if (!IsCurTextArea()) //If cursor is not in Ascii area - just one part (High/Low) of byte must be changed.
 	{
@@ -1463,7 +1463,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 			chByte = (chByte & 0x0F) | (chByteCurr & 0xF0);
 	}
 
-	hms.pData = &chByte;
+	hms.pData = reinterpret_cast<std::byte*>(&chByte);
 	ModifyData(hms);
 	CaretMoveRight();
 }
@@ -2103,7 +2103,7 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullOffset)const
 		MsgWindowNotify(hns);
 		BYTE byte;
 		if (hns.pData)
-			byte = *hns.pData;
+			byte = static_cast<BYTE>(*hns.pData);
 		else
 			byte = 0x00;
 		return byte;
@@ -2239,7 +2239,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 		case EHexModifyMode::MODIFY_DEFAULT:
 		{
 			for (ULONGLONG i = 0; i < hms.ullDataSize; i++)
-				pData[vecRefB.ullOffset + i] = hms.pData[i];
+				pData[vecRefB.ullOffset + i] = static_cast<BYTE>(hms.pData[i]);
 		}
 		break;
 		case EHexModifyMode::MODIFY_REPEAT:
@@ -2257,7 +2257,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 						++ullVecIndex;
 						ullTotalIndex = 0;
 					}
-					pData[vecRef.at(static_cast<size_t>(ullVecIndex)).ullOffset + ullTotalIndex] = hms.pData[iterData];
+					pData[vecRef.at(static_cast<size_t>(ullVecIndex)).ullOffset + ullTotalIndex] = static_cast<BYTE>(hms.pData[iterData]);
 					++ullTotalIndex;
 				}
 		}
@@ -2368,7 +2368,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 		}
 
 		HEXNOTIFYSTRUCT hns { { .hwndFrom = m_hWnd, .idFrom = static_cast<UINT>(GetDlgCtrlID()), .code = HEXCTRL_MSG_DATACHANGE } };
-		hns.pData = reinterpret_cast<const BYTE*>(&hms);
+		hns.pData = reinterpret_cast<const std::byte*>(&hms);
 		ParentNotify(hns);
 	}
 	break;
@@ -2376,7 +2376,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 	{
 		//In EHexDataMode::DATA_MSG mode we send pointer to HEXMODIFYSTRUCT to Message window.
 		HEXNOTIFYSTRUCT hns { { .hwndFrom = m_hWnd, .idFrom = static_cast<UINT>(GetDlgCtrlID()), .code = HEXCTRL_MSG_DATACHANGE } };
-		hns.pData = reinterpret_cast<const BYTE*>(&hms);
+		hns.pData = reinterpret_cast<const std::byte*>(&hms);
 		MsgWindowNotify(hns);
 	}
 	break;
@@ -2890,7 +2890,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	switch (enType)
 	{
 	case EClipboard::PASTE_ASCII:
-		hmd.pData = reinterpret_cast<PBYTE>(pszClipboardData);
+		hmd.pData = reinterpret_cast<std::byte*>(pszClipboardData);
 		ullSizeToModify = hmd.ullDataSize = ullSize;
 		break;
 	case EClipboard::PASTE_HEX:
@@ -2919,7 +2919,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 			}
 			strData += static_cast<unsigned char>(ulNumber);
 		}
-		hmd.pData = reinterpret_cast<PBYTE>(strData.data());
+		hmd.pData = reinterpret_cast<std::byte*>(strData.data());
 		ullSizeToModify = hmd.ullDataSize = strData.size();
 	}
 	break;
@@ -3000,7 +3000,7 @@ void CHexCtrl::MsgWindowNotify(UINT uCode)const
 		break;
 	case HEXCTRL_MSG_SELECTION:
 		vecData = m_pSelection->GetData();
-		hns.pData = reinterpret_cast<PBYTE>(&vecData);
+		hns.pData = reinterpret_cast<std::byte*>(&vecData);
 		break;
 	case HEXCTRL_MSG_VIEWCHANGE:
 	{
@@ -3396,8 +3396,8 @@ void CHexCtrl::FillWithZeros()
 	hms.vecSpan = m_pSelection->GetData();
 	hms.ullDataSize = 1;
 	hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
-	unsigned char chZero { 0 };
-	hms.pData = &chZero;
+	std::byte byteZero { 0 };
+	hms.pData = &byteZero;
 	ModifyData(hms);
 }
 

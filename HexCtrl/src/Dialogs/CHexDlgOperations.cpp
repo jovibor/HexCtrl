@@ -199,7 +199,7 @@ void CHexDlgOperations::OnOK()
 			return;
 		}
 
-		hms.pData = reinterpret_cast<const BYTE*>(&llData);
+		hms.pData = reinterpret_cast<const std::byte*>(&llData);
 	}
 
 	switch (iRadioDataSize)
