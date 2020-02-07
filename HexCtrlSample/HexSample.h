@@ -5,8 +5,8 @@
 class CHexSampleApp : public CWinApp
 {
 public:
-	CHexSampleApp();
+	CHexSampleApp() = default;
 public:
-	virtual BOOL InitInstance();
+	BOOL InitInstance() override;
 	DECLARE_MESSAGE_MAP()
 };

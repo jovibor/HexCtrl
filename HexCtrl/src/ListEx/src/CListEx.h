@@ -67,13 +67,13 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		BOOL DeleteColumn(int nCol)override;
 		BOOL DeleteItem(int iItem)override;
 		void Destroy()override;
-		ULONGLONG GetCellData(int iItem, int iSubItem)const override;
-		EnListExSortMode GetColumnSortMode(int iColumn)const override;
-		UINT GetFontSize()const override;
-		int GetSortColumn()const override;
-		bool GetSortAscending()const override;
-		bool IsCreated()const override;
-		UINT MapIndexToID(UINT nItem)const;
+		[[nodiscard]] ULONGLONG GetCellData(int iItem, int iSubItem)const override;
+		[[nodiscard]] EnListExSortMode GetColumnSortMode(int iColumn)const override;
+		[[nodiscard]] UINT GetFontSize()const override;
+		[[nodiscard]] int GetSortColumn()const override;
+		[[nodiscard]] bool GetSortAscending()const override;
+		[[nodiscard]] bool IsCreated()const override;
+		[[nodiscard]] UINT MapIndexToID(UINT nItem)const;
 		void SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clrText)override;
 		void SetCellData(int iItem, int iSubItem, ULONGLONG ullData)override;
 		void SetCellMenu(int iItem, int iSubItem, CMenu* pMenu)override;
@@ -97,7 +97,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		bool HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& clrText);
 		bool HasTooltip(int iItem, int iSubItem, std::wstring** ppwstrText = nullptr, std::wstring** ppwstrCaption = nullptr);
 		bool HasMenu(int iItem, int iSubItem, CMenu** ppMenu = nullptr);
-		void DrawItem(LPDRAWITEMSTRUCT);
+		void DrawItem(LPDRAWITEMSTRUCT pDIS)override;
 		afx_msg void OnPaint();
 		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 		afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
@@ -105,7 +105,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint pt);
 		afx_msg void OnRButtonDown(UINT nFlags, CPoint pt);
 		afx_msg void OnContextMenu(CWnd* pWnd, CPoint pt);
-		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 		afx_msg void OnMouseMove(UINT nFlags, CPoint pt);
 		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 		afx_msg void OnTimer(UINT_PTR nIDEvent);

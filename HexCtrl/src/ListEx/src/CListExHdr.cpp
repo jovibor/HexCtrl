@@ -128,8 +128,7 @@ LRESULT CListExHdr::OnLayout(WPARAM /*wParam*/, LPARAM lParam)
 {
 	CMFCHeaderCtrl::DefWindowProcW(HDM_LAYOUT, 0, lParam);
 
-	LPHDLAYOUT pHDL = reinterpret_cast<LPHDLAYOUT>(lParam);
-
+	auto pHDL = reinterpret_cast<LPHDLAYOUT>(lParam);
 	pHDL->pwpos->cy = m_dwHeaderHeight;	//New header height.
 	pHDL->prc->top = m_dwHeaderHeight;  //Decreasing list's height begining by the new header's height.
 

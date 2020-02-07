@@ -17,16 +17,16 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexDlgFillWith(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_FILLWITHDATA, pParent) {}
-		virtual ~CHexDlgFillWith() = default;
+		~CHexDlgFillWith() = default;
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 	protected:
-		virtual void DoDataExchange(CDataExchange* pDX);
-		virtual BOOL OnInitDialog();
+		void DoDataExchange(CDataExchange* pDX);
+		BOOL OnInitDialog();
+		void OnOK();
 		DECLARE_MESSAGE_MAP()
 	private:
-		CHexCtrl* GetHexCtrl()const;
+		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
 	private:
 		CHexCtrl* m_pHexCtrl { };
-		virtual void OnOK();
 	};
 }

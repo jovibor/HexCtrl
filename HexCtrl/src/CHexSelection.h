@@ -19,15 +19,15 @@ namespace HEXCTRL::INTERNAL
 		~CHexSelection() = default;
 		void Attach(CHexCtrl* p);
 		void ClearAll();
-		CHexCtrl* GetHexCtrl();
-		ULONGLONG GetSelectionEnd()const;
-		ULONGLONG GetSelectionSize()const;
-		ULONGLONG GetSelectionStart()const;
-		DWORD GetLineLength()const;  //Length of the selected line. Used in block selection (with Alt).
-		ULONGLONG GetOffsetByIndex(ULONGLONG ullIndex)const;  //Retrieves selection's offset by index [0...selectionSize)
-		auto GetData()const ->std::vector<HEXSPANSTRUCT>;
-		bool HasSelection()const;
-		bool HitTest(ULONGLONG ullIndex)const;
+		[[nodiscard]] CHexCtrl* GetHexCtrl();
+		[[nodiscard]] ULONGLONG GetSelectionEnd()const;
+		[[nodiscard]] ULONGLONG GetSelectionSize()const;
+		[[nodiscard]] ULONGLONG GetSelectionStart()const;
+		[[nodiscard]] DWORD GetLineLength()const;  //Length of the selected line. Used in block selection (with Alt).
+		[[nodiscard]] ULONGLONG GetOffsetByIndex(ULONGLONG ullIndex)const;  //Retrieves selection's offset by index [0...selectionSize)
+		[[nodiscard]] auto GetData()const->std::vector<HEXSPANSTRUCT>;
+		[[nodiscard]] bool HasSelection()const;
+		[[nodiscard]] bool HitTest(ULONGLONG ullIndex)const;
 		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect);
 		void SetSelectionEnd(ULONGLONG ullOffset);
 		void SetSelectionStart(ULONGLONG ullOffset);

@@ -18,15 +18,17 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexDlgOperations(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_OPERATIONS, pParent) {}
-		virtual ~CHexDlgOperations() = default;
+		~CHexDlgOperations() = default;
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 	protected:
-		virtual void DoDataExchange(CDataExchange* pDX);
-		virtual BOOL OnInitDialog();
-		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+		void DoDataExchange(CDataExchange* pDX);
+		BOOL OnInitDialog();
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+		void OnOK();
 		DECLARE_MESSAGE_MAP()
 	private:
-		CHexCtrl* GetHexCtrl()const;
+		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
 	private:
 		CHexCtrl* m_pHexCtrl { };
 		CHexEdit m_editOR;
@@ -38,7 +40,5 @@ namespace HEXCTRL::INTERNAL
 		CHexEdit m_editSub;
 		CHexEdit m_editMul;
 		CHexEdit m_editDiv;
-		virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
-		virtual void OnOK();
 	};
 }

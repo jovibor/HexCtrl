@@ -29,10 +29,10 @@ namespace HEXCTRL {
 		bool WCharsToUll(const wchar_t* pwcsz, unsigned long long& ull);
 
 		//Wide string to Multibyte string convertion.
-		std::string WstrToStr(const std::wstring& wstr);
+		std::string WstrToStr(std::wstring_view wstr);
 
 		//Multibyte string to wide string.
-		std::wstring StrToWstr(const std::string& str);
+		std::wstring StrToWstr(std::string_view str);
 
 		//Converts every two numeric chars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
 		bool StrToHex(const std::string& strFrom, std::string& strToHex);

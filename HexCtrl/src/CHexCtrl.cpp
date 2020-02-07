@@ -138,7 +138,7 @@ CHexCtrl::CHexCtrl()
 		wc.cbClsExtra = wc.cbWndExtra = 0;
 		wc.hInstance = hInst;
 		wc.hIcon = wc.hIconSm = nullptr;
-		wc.hCursor = (HCURSOR)LoadImageW(0, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
+		wc.hCursor = static_cast<HCURSOR>(LoadImageW(0, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 		wc.hbrBackground = nullptr;
 		wc.lpszMenuName = nullptr;
 		wc.lpszClassName = WSTR_HEXCTRL_CLASSNAME;
@@ -506,7 +506,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 		MessageBoxW(L"HexCtrl EHexDataMode::DATA_MSG mode requires HEXDATASTRUCT::hwndMsg to be set.", L"Error", MB_ICONWARNING);
 		return;
 	}
-	else if (hds.enDataMode == EHexDataMode::DATA_VIRTUAL && !hds.pHexVirtual)
+	if (hds.enDataMode == EHexDataMode::DATA_VIRTUAL && !hds.pHexVirtual)
 	{
 		MessageBoxW(L"HexCtrl EHexDataMode::DATA_VIRTUAL mode requires HEXDATASTRUCT::pHexVirtual to be set.", L"Error", MB_ICONWARNING);
 		return;
@@ -800,7 +800,8 @@ BOOL CHexCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 		SetFontSize(GetFontSize() + zDelta / WHEEL_DELTA * 2);
 		return TRUE;
 	}
-	else if (nFlags == (MK_CONTROL | MK_SHIFT))
+
+	if (nFlags == (MK_CONTROL | MK_SHIFT))
 	{
 		SetCapacity(m_dwCapacity + zDelta / WHEEL_DELTA);
 		return TRUE;
@@ -1443,7 +1444,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	HEXMODIFYSTRUCT hms;
 	hms.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, 1 });
 	hms.ullDataSize = 1;
-	
+
 	BYTE chByte = nChar & 0xFF;
 	if (!IsCurTextArea()) //If cursor is not in Ascii area - just one part (High/Low) of byte must be changed.
 	{
@@ -2001,7 +2002,7 @@ void CHexCtrl::DrawData(CDC* pDC)
 void CHexCtrl::OnSize(UINT /*nType*/, int /*cx*/, int cy)
 {
 	RecalcWorkAreaHeight(cy);
-	ULONGLONG ullPageSize = static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio);
+	auto ullPageSize = static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio);
 	if (ullPageSize < m_sizeLetter.cy)
 		ullPageSize = m_sizeLetter.cy;
 	m_pScrollV->SetScrollPageSize(ullPageSize);
@@ -2562,7 +2563,7 @@ auto CHexCtrl::HitTest(const POINT& pt)const->std::optional<HITTESTSTRUCT>
 	if (stHit.ullOffset >= m_ullDataSize)
 		fHit = false;
 
-	return fHit ? std::optional<HITTESTSTRUCT>{stHit} : std::nullopt;
+	return fHit ? std::optional { stHit } : std::nullopt;
 }
 
 void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
@@ -2872,7 +2873,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	if (!hClipboard)
 		return;
 
-	LPSTR pszClipboardData = static_cast<LPSTR>(GlobalLock(hClipboard));
+	auto pszClipboardData = static_cast<LPSTR>(GlobalLock(hClipboard));
 	if (!pszClipboardData)
 	{
 		CloseClipboard();
@@ -2895,7 +2896,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 		break;
 	case EClipboard::PASTE_HEX:
 	{
-		size_t dwIterations = static_cast<size_t>(ullSize / 2 + ullSize % 2);
+		auto dwIterations = static_cast<size_t>(ullSize / 2 + ullSize % 2);
 		char chToUL[3] { }; //Array for actual Ascii chars to convert from.
 		for (size_t i = 0; i < dwIterations; i++)
 		{
@@ -3272,7 +3273,7 @@ bool CHexCtrl::IsCurTextArea()const
 
 void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines, bool fScroll, bool fGoToStart)
 {
-	if (ullClick >= m_ullDataSize || ullStart >= m_ullDataSize || !ullSize)
+	if (ullClick >= m_ullDataSize || ullStart >= m_ullDataSize || ullSize == 0)
 		return;
 
 	if ((ullStart + ullSize) > m_ullDataSize)

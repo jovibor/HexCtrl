@@ -76,20 +76,20 @@ namespace HEXCTRL::INTERNAL {
 		return true;
 	}
 
-	std::string WstrToStr(const std::wstring& wstr)
+	std::string WstrToStr(std::wstring_view wstr)
 	{
-		int iSize = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
+		int iSize = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
-		WideCharToMultiByte(CP_UTF8, 0, &wstr[0], static_cast<int>(wstr.size()), &str[0], iSize, nullptr, nullptr);
+		WideCharToMultiByte(CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), &str[0], iSize, nullptr, nullptr);
 
 		return str;
 	}
 
-	std::wstring StrToWstr(const std::string& str)
+	std::wstring StrToWstr(std::string_view str)
 	{
-		int iSize = MultiByteToWideChar(CP_UTF8, 0, &str[0], static_cast<int>(str.size()), NULL, 0);
+		int iSize = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), NULL, 0);
 		std::wstring wstr(iSize, 0);
-		MultiByteToWideChar(CP_UTF8, 0, &str[0], static_cast<int>(str.size()), &wstr[0], iSize);
+		MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), &wstr[0], iSize);
 		return wstr;
 	}
 

@@ -99,7 +99,7 @@ BOOL CHexDlgOperations::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	if (wParam == HEXCTRL_EDITCTRL)
 	{
-		NMHDR* pnmh = reinterpret_cast<NMHDR*>(lParam);
+		auto pnmh = reinterpret_cast<NMHDR*>(lParam);
 		switch (pnmh->code)
 		{
 		case VK_RETURN:

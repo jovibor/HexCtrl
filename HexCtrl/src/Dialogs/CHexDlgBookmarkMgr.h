@@ -20,14 +20,14 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexDlgBookmarkMgr(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_BOOKMARKMGR, pParent) {}
-		virtual ~CHexDlgBookmarkMgr() = default;
+		~CHexDlgBookmarkMgr() = default;
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks);
 	protected:
-		virtual void DoDataExchange(CDataExchange* pDX);
-		virtual BOOL OnInitDialog();
-		virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+		void DoDataExchange(CDataExchange* pDX);
+		BOOL OnInitDialog();
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 		afx_msg void OnDestroy();
 		DECLARE_MESSAGE_MAP()
 	private:

@@ -104,11 +104,9 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		}
 		return;
 	}
-	else
-	{
-		for (auto i : m_vec16)
-			i->EnableWindow(TRUE);
-	}
+
+	for (auto i : m_vec16)
+		i->EnableWindow(TRUE);
 
 	const WORD word = m_pHexCtrl->GetWord(ullOffset);
 	swprintf_s(buff, 31, L"%hi", static_cast<short>(word));
@@ -125,11 +123,9 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		}
 		return;
 	}
-	else
-	{
-		for (auto i : m_vec32)
-			i->EnableWindow(TRUE);
-	}
+
+	for (auto i : m_vec32)
+		i->EnableWindow(TRUE);
 
 	const DWORD dword = m_pHexCtrl->GetDword(ullOffset);
 	swprintf_s(buff, 31, L"%i", static_cast<int>(dword));
@@ -146,7 +142,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	{
 		char str[32];
 		strftime(str, 31, "%d/%m/%Y %H:%M:%S", &tm);
-		wstrTime = StrToWstr(str).data();
+		wstrTime = StrToWstr(str);
 	}
 	else
 		wstrTime = L"N/A";
@@ -161,11 +157,9 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		}
 		return;
 	}
-	else
-	{
-		for (auto i : m_vec64)
-			i->EnableWindow(TRUE);
-	}
+
+	for (auto i : m_vec64)
+		i->EnableWindow(TRUE);
 
 	const QWORD qword = m_pHexCtrl->GetQword(ullOffset);
 	swprintf_s(buff, 31, L"%lli", static_cast<long long>(qword));
@@ -180,7 +174,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	{
 		char str[32];
 		strftime(str, 31, "%d/%m/%Y %H:%M:%S", &tm);
-		wstrTime = StrToWstr(str).data();
+		wstrTime = StrToWstr(str);
 	}
 	else
 		wstrTime = L"N/A";
@@ -203,7 +197,7 @@ BOOL CHexDlgDataInterpret::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResu
 {
 	if (wParam == HEXCTRL_EDITCTRL)
 	{
-		NMHDR* pnmh = reinterpret_cast<NMHDR*>(lParam);
+		auto pnmh = reinterpret_cast<NMHDR*>(lParam);
 		switch (pnmh->code)
 		{
 		case VK_RETURN:

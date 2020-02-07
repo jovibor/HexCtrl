@@ -62,7 +62,7 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 	if (IsCreated())
 		return false;
 
-	LONG_PTR dwStyle = static_cast<LONG_PTR>(lcs.dwStyle);
+	auto dwStyle = static_cast<LONG_PTR>(lcs.dwStyle);
 	if (lcs.fDialogCtrl)
 	{
 		SubclassDlgItem(lcs.uID, lcs.pwndParent);
@@ -133,7 +133,7 @@ void CListEx::CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)
 
 int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 {
-	IListEx* pListCtrl = reinterpret_cast<IListEx*>(lParamSort);
+	auto pListCtrl = reinterpret_cast<IListEx*>(lParamSort);
 	int iSortColumn = pListCtrl->GetSortColumn();
 	EnListExSortMode enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
 
@@ -810,7 +810,7 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 
 void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 {
-	LVHITTESTINFO hi;
+	LVHITTESTINFO hi { };
 	hi.pt = pt;
 	ListView_SubItemHitTest(m_hWnd, &hi);
 	std::wstring  *pwstrTt { }, *pwstrCaption { };
@@ -832,8 +832,8 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 		m_wndTt.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfo));
 		m_wndTt.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfo));
 
-		//Timer to check whether mouse left subitem rect.
-		SetTimer(ID_TIMER_TOOLTIP, 200, 0);
+		//Timer to check whether mouse left subitem's rect.
+		SetTimer(ID_TIMER_TOOLTIP, 200, nullptr);
 	}
 	else
 	{
@@ -915,21 +915,20 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 		CPoint pt;
 		GetCursorPos(&pt);
 		ScreenToClient(&pt);
-		LVHITTESTINFO hitInfo;
+		LVHITTESTINFO hitInfo { };
 		hitInfo.pt = pt;
 		ListView_SubItemHitTest(m_hWnd, &hitInfo);
 
 		//If cursor is still hovers subitem then do nothing.
 		if (m_stCurrCell.iItem == hitInfo.iItem && m_stCurrCell.iSubItem == hitInfo.iSubItem)
 			return;
-		else
-		{	//If it left.
-			m_fTtShown = false;
-			m_wndTt.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-			KillTimer(ID_TIMER_TOOLTIP);
-			m_stCurrCell.iItem = hitInfo.iItem;
-			m_stCurrCell.iSubItem = hitInfo.iSubItem;
-		}
+
+		//If it left.
+		m_fTtShown = false;
+		m_wndTt.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+		KillTimer(ID_TIMER_TOOLTIP);
+		m_stCurrCell.iItem = hitInfo.iItem;
+		m_stCurrCell.iSubItem = hitInfo.iSubItem;
 	}
 
 	CMFCListCtrl::OnTimer(nIDEvent);
@@ -1001,7 +1000,7 @@ void CListEx::OnLvnColumnclick(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	if (m_fSortable)
 	{
-		LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+		auto pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
 		m_fSortAscending = pNMLV->iSubItem == m_iSortColumn ? !m_fSortAscending : true;
 		m_iSortColumn = pNMLV->iSubItem;
 

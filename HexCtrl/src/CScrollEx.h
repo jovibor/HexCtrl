@@ -18,11 +18,11 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 	{
 	public:
 		explicit CScrollEx() = default;
-		virtual ~CScrollEx() = default;
+		~CScrollEx() = default;
 		bool Create(CWnd* pWnd, int iScrollType, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
 		void AddSibling(CScrollEx* pSibling);
-		bool IsVisible()const;
-		CWnd* GetParent()const;
+		[[nodiscard]] bool IsVisible()const;
+		[[nodiscard]] CWnd* GetParent()const;
 		void SetScrollSizes(ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
 		ULONGLONG SetScrollPos(ULONGLONG);
 		void ScrollLineUp();
@@ -35,10 +35,10 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		void ScrollPageRight();
 		void ScrollHome();
 		void ScrollEnd();
-		ULONGLONG GetScrollPos()const;
-		LONGLONG GetScrollPosDelta()const;
-		ULONGLONG GetScrollLineSize()const;
-		ULONGLONG GetScrollPageSize()const;
+		[[nodiscard]] ULONGLONG GetScrollPos()const;
+		[[nodiscard]] LONGLONG GetScrollPosDelta()const;
+		[[nodiscard]] ULONGLONG GetScrollLineSize()const;
+		[[nodiscard]] ULONGLONG GetScrollPageSize()const;
 		void SetScrollPageSize(ULONGLONG ullSize);
 
 		/************************************************************************
@@ -60,25 +60,25 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		void DrawScrollBar()const;                                   //Draws the whole Scrollbar.
 		void DrawArrows(CDC* pDC)const;                              //Draws arrows.
 		void DrawThumb(CDC* pDC)const;                               //Draws the Scroll thumb.
-		CRect GetScrollRect(bool fWithNCArea = false)const;          //Scroll's whole rect.
-		CRect GetScrollWorkAreaRect(bool fClientCoord = false)const; //Rect without arrows.
-		UINT GetScrollSizeWH()const;                                 //Scroll size in pixels, width or height.
-		UINT GetScrollWorkAreaSizeWH()const;                         //Scroll size (WH) without arrows.
-		CRect GetThumbRect(bool fClientCoord = false)const;
-		UINT GetThumbSizeWH()const;
-		int GetThumbPos()const;                                      //Current Thumb pos.
+		[[nodiscard]] CRect GetScrollRect(bool fWithNCArea = false)const;          //Scroll's whole rect.
+		[[nodiscard]] CRect GetScrollWorkAreaRect(bool fClientCoord = false)const; //Rect without arrows.
+		[[nodiscard]] UINT GetScrollSizeWH()const;                                 //Scroll size in pixels, width or height.
+		[[nodiscard]] UINT GetScrollWorkAreaSizeWH()const;                         //Scroll size (WH) without arrows.
+		[[nodiscard]] CRect GetThumbRect(bool fClientCoord = false)const;
+		[[nodiscard]] UINT GetThumbSizeWH()const;
+		[[nodiscard]] int GetThumbPos()const;                                      //Current Thumb pos.
 		void SetThumbPos(int iPos);
-		long double GetThumbScrollingSize()const;
-		CRect GetFirstArrowRect(bool fClientCoord = false)const;
-		CRect GetLastArrowRect(bool fClientCoord = false)const;
-		CRect GetFirstChannelRect(bool fClientCoord = false)const;
-		CRect GetLastChannelRect(bool fClientCoord = false)const;
-		CRect GetParentRect(bool fClient = true)const;
-		int GetTopDelta()const;	//Difference between parent window's Window and Client area. Very important in hit testing.
-		int GetLeftDelta()const;
-		bool IsVert()const;                                         //Is vertical or horizontal scrollbar.
-		bool IsThumbDragging()const;                                //Is the thumb currently dragged by mouse.
-		bool IsSiblingVisible()const;                               //Is sibling scrollbar currently visible or not.
+		[[nodiscard]] long double GetThumbScrollingSize()const;
+		[[nodiscard]] CRect GetFirstArrowRect(bool fClientCoord = false)const;
+		[[nodiscard]] CRect GetLastArrowRect(bool fClientCoord = false)const;
+		[[nodiscard]] CRect GetFirstChannelRect(bool fClientCoord = false)const;
+		[[nodiscard]] CRect GetLastChannelRect(bool fClientCoord = false)const;
+		[[nodiscard]] CRect GetParentRect(bool fClient = true)const;
+		[[nodiscard]] int GetTopDelta()const;	//Difference between parent window's Window and Client area. Very important in hit testing.
+		[[nodiscard]] int GetLeftDelta()const;
+		[[nodiscard]] bool IsVert()const;                                         //Is vertical or horizontal scrollbar.
+		[[nodiscard]] bool IsThumbDragging()const;                                //Is the thumb currently dragged by mouse.
+		[[nodiscard]] bool IsSiblingVisible()const;                               //Is sibling scrollbar currently visible or not.
 		void SendParentScrollMsg()const;                            //Sends the WM_(V/H)SCROLL to the parent window.
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		afx_msg void OnDestroy();

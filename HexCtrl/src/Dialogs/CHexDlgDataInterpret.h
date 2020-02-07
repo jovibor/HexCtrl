@@ -18,19 +18,19 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexDlgDataInterpret(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_DATAINTERPRET, pParent) {}
-		virtual ~CHexDlgDataInterpret() = default;
+		~CHexDlgDataInterpret() = default;
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		ULONGLONG GetSize();
 		void InspectOffset(ULONGLONG ullOffset);
 		BOOL ShowWindow(int nCmdShow);
 	protected:
-		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
-		virtual void OnOK();
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+		void OnOK();
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		virtual void DoDataExchange(CDataExchange* pDX);
-		virtual BOOL OnInitDialog();
+		void DoDataExchange(CDataExchange* pDX);
+		BOOL OnInitDialog();
 		afx_msg void OnClose();
-		virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 		void UpdateHexCtrl();
 		DECLARE_MESSAGE_MAP()
 	private:

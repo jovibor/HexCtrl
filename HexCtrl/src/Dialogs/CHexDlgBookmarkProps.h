@@ -17,12 +17,12 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexDlgBookmarkProps(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_BOOKMARKPROPS, pParent) {}
-		virtual ~CHexDlgBookmarkProps() = default;
+		~CHexDlgBookmarkProps() = default;
 		INT_PTR DoModal(HEXBOOKMARKSTRUCT* phbs);
 	protected:
-		virtual void DoDataExchange(CDataExchange* pDX);
-		virtual BOOL OnInitDialog();
-		virtual void OnOK();
+		void DoDataExchange(CDataExchange* pDX);
+		BOOL OnInitDialog();
+		void OnOK();
 		DECLARE_MESSAGE_MAP()
 	private:
 		HEXBOOKMARKSTRUCT* m_pHBS { };

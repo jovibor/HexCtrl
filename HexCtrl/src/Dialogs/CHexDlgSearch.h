@@ -27,12 +27,12 @@ namespace HEXCTRL::INTERNAL {
 	{
 	public:
 		explicit CHexDlgSearch(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_SEARCH, pParent) {}
-		virtual ~CHexDlgSearch() = default;
+		~CHexDlgSearch() = default;
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		void Search(bool fForward);
 	protected:
-		virtual void DoDataExchange(CDataExchange* pDX);
-		virtual BOOL OnInitDialog();
+		void DoDataExchange(CDataExchange* pDX);
+		BOOL OnInitDialog();
 		afx_msg void OnButtonSearchF();
 		afx_msg void OnButtonSearchB();
 		afx_msg void OnButtonReplace();
@@ -40,17 +40,17 @@ namespace HEXCTRL::INTERNAL {
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnCancel();
 		afx_msg void OnDestroy();
-		virtual BOOL PreTranslateMessage(MSG* pMsg);
+		BOOL PreTranslateMessage(MSG* pMsg);
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		void OnRadioBnRange(UINT nID);
 	private:
-		CHexCtrl* GetHexCtrl()const;
+		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
 		//ullOffset will return index of found occurence, if any.
 		bool DoSearch(const unsigned char* pWhere, ULONGLONG& ullStart, ULONGLONG ullUntil, const unsigned char* pSearch, size_t nSize, bool fForward = true);
 		void Search();
 		void SearchReplace(ULONGLONG ullIndex, const BYTE* pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw = true);
 		void ClearAll();
-		ESearchMode GetSearchMode(); //Returns current search mode.
+		[[nodiscard]] ESearchMode GetSearchMode(); //Returns current search mode.
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
 		DECLARE_MESSAGE_MAP()

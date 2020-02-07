@@ -10,10 +10,6 @@ BEGIN_MESSAGE_MAP(CHexSampleApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
-CHexSampleApp::CHexSampleApp()
-{
-}
-
 CHexSampleApp theApp;
 
 BOOL CHexSampleApp::InitInstance()

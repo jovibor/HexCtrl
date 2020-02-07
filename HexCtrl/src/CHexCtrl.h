@@ -39,23 +39,23 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexCtrl();
-		virtual ~CHexCtrl() = default;
+		~CHexCtrl() = default;
 		DWORD AddBookmark(const HEXBOOKMARKSTRUCT& hbs)override; //Adds new bookmark.
 		void ClearData()override;                           //Clears all data from HexCtrl's view (not touching data itself).
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)override; //Сreates custom dialog control.
 		void Destroy()override;                             //Deleter.
-		DWORD GetCapacity()const override;                  //Current capacity.
-		auto GetColor()const->HEXCOLORSTRUCT override;      //Current colors.
-		long GetFontSize()const override;                   //Current font size.
-		HMENU GetMenuHandle()const override;                //Context menu handle.
-		auto GetSelection()const->std::vector<HEXSPANSTRUCT> override; //Gets current selection.
-		auto GetShowMode()const->EHexShowMode override;     //Retrieves current show mode.
-		HWND GetWindowHandle()const override;               //Retrieves control's window handle.
+		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
+		[[nodiscard]] auto GetColor()const->HEXCOLORSTRUCT override;      //Current colors.
+		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
+		[[nodiscard]] HMENU GetMenuHandle()const override;                //Context menu handle.
+		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPANSTRUCT> override; //Gets current selection.
+		[[nodiscard]] auto GetShowMode()const->EHexShowMode override;     //Retrieves current show mode.
+		[[nodiscard]] HWND GetWindowHandle()const override;               //Retrieves control's window handle.
 		void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize) override; //Scrolls to given offset.
-		bool IsCreated()const override;                     //Shows whether control is created or not.
-		bool IsDataSet()const override;                     //Shows whether a data was set to the control or not.
-		bool IsMutable()const override;                     //Is edit mode enabled or not.
+		[[nodiscard]] bool IsCreated()const override;                     //Shows whether control is created or not.
+		[[nodiscard]] bool IsDataSet()const override;                     //Shows whether a data was set to the control or not.
+		[[nodiscard]] bool IsMutable()const override;                     //Is edit mode enabled or not.
 		void RemoveBookmark(DWORD dwId)override;            //Removes bookmark by the given Id.
 		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
 		void SetColor(const HEXCOLORSTRUCT& clr)override;   //Sets all the control's colors.
@@ -78,7 +78,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
-		virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 		afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 		afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
 		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);

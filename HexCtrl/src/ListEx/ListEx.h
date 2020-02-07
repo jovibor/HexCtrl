@@ -66,19 +66,19 @@ namespace HEXCTRL::INTERNAL::LISTEX
 	{
 	public:
 		IListEx() = default;
-		virtual ~IListEx() = default;
+		~IListEx() = default;
 		virtual bool Create(const LISTEXCREATESTRUCT& lcs) = 0;
 		virtual void CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg) = 0;
 		virtual BOOL DeleteAllItems() = 0;
 		virtual BOOL DeleteColumn(int nCol) = 0;
 		virtual BOOL DeleteItem(int nItem) = 0;
 		virtual void Destroy() = 0;
-		virtual ULONGLONG GetCellData(int iItem, int iSubitem)const = 0;
-		virtual EnListExSortMode GetColumnSortMode(int iColumn)const = 0;
-		virtual UINT GetFontSize()const = 0;
-		virtual int GetSortColumn()const = 0;
-		virtual bool GetSortAscending()const = 0;
-		virtual bool IsCreated()const = 0;
+		[[nodiscard]] virtual ULONGLONG GetCellData(int iItem, int iSubitem)const = 0;
+		[[nodiscard]] virtual EnListExSortMode GetColumnSortMode(int iColumn)const = 0;
+		[[nodiscard]] virtual UINT GetFontSize()const = 0;
+		[[nodiscard]] virtual int GetSortColumn()const = 0;
+		[[nodiscard]] virtual bool GetSortAscending()const = 0;
+		[[nodiscard]] virtual bool IsCreated()const = 0;
 		virtual void SetCellColor(int iItem, int iSubitem, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetCellData(int iItem, int iSubitem, ULONGLONG ullData) = 0;
 		virtual void SetCellMenu(int iItem, int iSubitem, CMenu* pMenu) = 0;

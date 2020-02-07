@@ -22,15 +22,15 @@ namespace HEXCTRL::INTERNAL
 		DWORD Add(const HEXBOOKMARKSTRUCT& hbs); //Returns new bookmark Id.
 		void Attach(CHexCtrl* pHex);
 		void ClearAll();
-		auto GetBookmark(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUCT>;
-		auto GetData()const->const std::deque<HEXBOOKMARKSTRUCT>*;
-		auto GetTouchTime()const->__time64_t;
+		[[nodiscard]] auto GetBookmark(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUCT>;
+		[[nodiscard]] auto GetData()const->const std::deque<HEXBOOKMARKSTRUCT>*;
+		[[nodiscard]] auto GetTouchTime()const->__time64_t;
 		void GoBookmark(DWORD dwID);
 		void GoNext();
 		void GoPrev();
-		bool HasBookmarks()const;
-		auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*;
-		bool IsVirtual()const;
+		[[nodiscard]] bool HasBookmarks()const;
+		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*;
+		[[nodiscard]] bool IsVirtual()const;
 		void Remove(ULONGLONG ullOffset);
 		void RemoveId(DWORD dwID);
 		void SetVirtual(IHexBkmVirtual* pVirtual);

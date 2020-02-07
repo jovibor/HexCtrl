@@ -227,17 +227,17 @@ namespace HEXCTRL
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;   //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) = 0; //Сreates custom dialog control.
 		virtual void Destroy() = 0;                            //Deleter.
-		virtual DWORD GetCapacity()const = 0;                  //Current capacity.
-		virtual auto GetColor()const->HEXCOLORSTRUCT = 0;      //Current colors.
-		virtual long GetFontSize()const = 0;                   //Current font size.
-		virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
-		virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> = 0; //Gets current selection.
-		virtual auto GetShowMode()const->EHexShowMode = 0;     //Retrieves current show mode.
-		virtual HWND GetWindowHandle()const = 0;               //Retrieves control's window handle.
+		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
+		[[nodiscard]] virtual auto GetColor()const->HEXCOLORSTRUCT = 0;      //Current colors.
+		[[nodiscard]] virtual long GetFontSize()const = 0;                   //Current font size.
+		[[nodiscard]] virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
+		[[nodiscard]] virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> = 0; //Gets current selection.
+		[[nodiscard]] virtual auto GetShowMode()const->EHexShowMode = 0;     //Retrieves current show mode.
+		[[nodiscard]] virtual HWND GetWindowHandle()const = 0;               //Retrieves control's window handle.
 		virtual void GoToOffset(ULONGLONG ullOffset, bool fSelect = false, ULONGLONG ullSize = 1) = 0; //Scrolls to given offset.
-		virtual bool IsCreated()const = 0;                     //Shows whether control is created or not.
-		virtual bool IsDataSet()const = 0;                     //Shows whether a data was set to the control or not.
-		virtual bool IsMutable()const = 0;                     //Is edit mode enabled or not.
+		[[nodiscard]] virtual bool IsCreated()const = 0;                     //Shows whether control is created or not.
+		[[nodiscard]] virtual bool IsDataSet()const = 0;                     //Shows whether a data was set to the control or not.
+		[[nodiscard]] virtual bool IsMutable()const = 0;                     //Is edit mode enabled or not.
 		virtual void RemoveBookmark(DWORD dwId) = 0;           //Removes bookmark by the given Id.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;  //Sets all the control's colors.
