@@ -100,9 +100,8 @@ namespace HEXCTRL
 	class IHexVirtual
 	{
 	public:
-		virtual ~IHexVirtual() = default;
-		virtual BYTE GetByte(ULONGLONG ullIndex) = 0;            //Gets the byte data by index.
-		virtual	void ModifyData(const HEXMODIFYSTRUCT& hms) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
+		virtual std::byte* GetData(const HEXSPANSTRUCT&) = 0; //Data index and size to get.
+		virtual	void ModifyData(const HEXMODIFYSTRUCT&) = 0;  //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
 	};
 
 	/********************************************************************************************
@@ -211,7 +210,7 @@ namespace HEXCTRL
 		NMHDR            hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
 		HEXSPANSTRUCT    stSpan { };  //Offset and size of the bytes. 
 		ULONGLONG        ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
-		const std::byte* pData { };   //Pointer to a data to get/send.
+		std::byte* pData { };         //Pointer to a data to get/send.
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
 

@@ -1510,15 +1510,22 @@ void CHexCtrl::OnPaint()
 	CMemDC memDC(dc, rcClient);
 	CDC* pDC = &memDC.GetDC();
 
-	RECT rc; //Used for all local rect related drawings.
-	pDC->GetClipBox(&rc);
-	pDC->FillSolidRect(&rc, m_stColor.clrBk);
-	pDC->SelectObject(m_penLines);
+	DrawWindow(pDC); //Draw the window with all layouts.
+	DrawData(pDC);   //Main method for drawing the data. 
+}
+
+void CHexCtrl::DrawWindow(CDC* pDC)
+{
+	CRect rcClient;
+	GetClientRect(rcClient);
 
 	const int iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
 	const auto iSecondHorizLine = m_iStartWorkAreaY - 1;
 	const auto iThirdHorizLine = rcClient.Height() - m_iHeightBottomOffArea;
 	const auto iFourthHorizLine = iThirdHorizLine + m_iHeightBottomRect;
+
+	pDC->FillSolidRect(rcClient, m_stColor.clrBk);
+	pDC->SelectObject(m_penLines);
 
 	//First horizontal line.
 	pDC->MoveTo(m_iFirstVertLine - iScrollH, m_iFirstHorizLine);
@@ -1553,40 +1560,29 @@ void CHexCtrl::OnPaint()
 	pDC->LineTo(m_iFourthVertLine - iScrollH, iFourthHorizLine);
 
 	//Bottom "Info" rect.
-	rc.left = m_iFirstVertLine + 1 - iScrollH;
-	rc.top = iThirdHorizLine + 1;
-	rc.right = m_iFourthVertLine;
-	rc.bottom = iFourthHorizLine;	//Fill bottom rect until iFourthHorizLine.
-	pDC->FillSolidRect(&rc, m_stColor.clrBkInfoRect);
-	rc.left = m_iFirstVertLine + 5; //Draw text beginning with little indent.
-	rc.right = rcClient.right;		//Draw text to the end of the client area, even if it pass iFourthHorizLine.
+	CRect rcInfo(m_iFirstVertLine + 1 - iScrollH, iThirdHorizLine + 1, m_iFourthVertLine, iFourthHorizLine); //Fill bottom rect until iFourthHorizLine.
+	pDC->FillSolidRect(rcInfo, m_stColor.clrBkInfoRect);
+	rcInfo.left = m_iFirstVertLine + 5; //Draw text beginning with little indent.
+	rcInfo.right = rcClient.right;		//Draw text to the end of the client area, even if it passes iFourthHorizLine.
 	pDC->SelectObject(m_fontInfo);
 	pDC->SetTextColor(m_stColor.clrTextInfoRect);
 	pDC->SetBkColor(m_stColor.clrBkInfoRect);
-	pDC->DrawTextW(m_wstrInfo.data(), static_cast<int>(m_wstrInfo.size()), &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+	pDC->DrawTextW(m_wstrInfo.data(), static_cast<int>(m_wstrInfo.size()), rcInfo, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
 	//«Offset» text.
-	rc.left = m_iFirstVertLine - iScrollH;
-	rc.top = m_iFirstHorizLine;
-	rc.right = m_iSecondVertLine - iScrollH;
-	rc.bottom = iSecondHorizLine;
+	CRect rcOffset(m_iFirstVertLine - iScrollH, m_iFirstHorizLine, m_iSecondVertLine - iScrollH, iSecondHorizLine);
 	pDC->SelectObject(m_fontMain);
 	pDC->SetTextColor(m_stColor.clrTextCaption);
 	pDC->SetBkColor(m_stColor.clrBk);
-	pDC->DrawTextW(L"Offset", 6, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	pDC->DrawTextW(L"Offset", 6, rcOffset, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	//Capacity numbers.
 	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunk - iScrollH, m_iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
 		m_wstrCapacity.data(), static_cast<UINT>(m_wstrCapacity.size()), nullptr);
 
 	//"Ascii" text.
-	rc.left = m_iThirdVertLine - iScrollH;
-	rc.top = m_iFirstHorizLine;
-	rc.right = m_iFourthVertLine - iScrollH;
-	rc.bottom = iSecondHorizLine;
-	pDC->DrawTextW(L"Ascii", 5, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-
-	DrawData(pDC); //Main method for drawing data. 
+	CRect rcAscii(m_iThirdVertLine - iScrollH, m_iFirstHorizLine, m_iFourthVertLine - iScrollH, iSecondHorizLine);
+	pDC->DrawTextW(L"Ascii", 5, rcAscii, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
 void CHexCtrl::DrawData(CDC* pDC)
@@ -1620,6 +1616,13 @@ void CHexCtrl::DrawData(CDC* pDC)
 	const int iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
 
 	int iLine = 0; //Current line to print.
+
+	const auto ullOffset = ullLineStart * m_dwCapacity;      //Offset of the visible data to print.
+	auto iSize = (ullLineEnd - ullLineStart) * m_dwCapacity; //Size of the visible data to print.
+	if ((ullOffset + iSize) > m_ullDataSize)
+		iSize = m_ullDataSize - ullOffset;
+	const auto pData = GetData({ ullOffset, iSize }); //Pointer to data to print.
+
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullLineStart; iterLines < ullLineEnd; iterLines++, iLine++)
 	{
@@ -1678,7 +1681,7 @@ void CHexCtrl::DrawData(CDC* pDC)
 				break;
 
 			//Hex chunk to print.
-			const auto chByteToPrint = GetByte(ullIndexByteToPrint);
+			const auto chByteToPrint = static_cast<BYTE>(pData[iLine * m_dwCapacity + iterChunks]); //Get the current byte to print.
 			const wchar_t pwszHexToPrint[2] { g_pwszHexMap[(chByteToPrint >> 4) & 0x0F], g_pwszHexMap[chByteToPrint & 0x0F] };
 			wstrHexToPrint += pwszHexToPrint[0];
 			wstrHexToPrint += pwszHexToPrint[1];
@@ -2075,7 +2078,37 @@ void CHexCtrl::OnDestroy()
 	CWnd::OnDestroy();
 }
 
-PBYTE CHexCtrl::GetData(ULONGLONG* pUllSize)
+std::byte* CHexCtrl::GetData(const HEXSPANSTRUCT& hss)
+{
+	if (hss.ullOffset >= m_ullDataSize || hss.ullSize > m_ullDataSize)
+		return nullptr;
+
+	switch (m_enDataMode)
+	{
+	case EHexDataMode::DATA_MEMORY:
+	{
+		return reinterpret_cast<std::byte*>(m_pData + hss.ullOffset);
+	}
+	break;
+	case EHexDataMode::DATA_MSG:
+	{
+		HEXNOTIFYSTRUCT hns { { .hwndFrom = m_hWnd, .idFrom = static_cast<UINT>(GetDlgCtrlID()), .code = HEXCTRL_MSG_GETDATA } };
+		hns.stSpan = hss;
+		MsgWindowNotify(hns);
+		return hns.pData;
+	}
+	break;
+	case EHexDataMode::DATA_VIRTUAL:
+	{
+		if (m_pHexVirtual)
+			return m_pHexVirtual->GetData(hss);
+	}
+	break;
+	}
+	return 0;
+}
+
+PBYTE CHexCtrl::GetDataInfo(ULONGLONG* pUllSize)
 {
 	if (pUllSize) //Optionally returns data size.
 		*pUllSize = m_ullDataSize;
@@ -2088,7 +2121,7 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullOffset)const
 	if (ullOffset >= m_ullDataSize)
 		return 0x00;
 
-	//If it's virtual data control we aquire next byte_to_print from m_hwndMsg window.
+	//If it's virtual data control we aquire next byte from m_hwndMsg window.
 	switch (m_enDataMode)
 	{
 	case EHexDataMode::DATA_MEMORY:
@@ -2113,11 +2146,15 @@ BYTE CHexCtrl::GetByte(ULONGLONG ullOffset)const
 	case EHexDataMode::DATA_VIRTUAL:
 	{
 		if (m_pHexVirtual)
-			return m_pHexVirtual->GetByte(ullOffset);
+		{
+			if (auto pData = m_pHexVirtual->GetData({ ullOffset, 1 }); pData != nullptr)
+				return static_cast<BYTE>(*pData);
+		}
 	}
 	break;
 	}
-	return 0;
+
+	return 0x00;
 }
 
 WORD CHexCtrl::GetWord(ULONGLONG ullOffset) const
@@ -2213,7 +2250,7 @@ bool CHexCtrl::SetQword(ULONGLONG ullOffset, QWORD qwData)
 	return true;
 }
 
-void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
+void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
 {
 	if (!m_fMutable)
 		return;
@@ -2234,7 +2271,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 	{
 	case EHexDataMode::DATA_MEMORY: //Modify only in non Virtual mode.
 	{
-		PBYTE pData = GetData();
+		PBYTE pData = GetDataInfo();
 		switch (hms.enModifyMode)
 		{
 		case EHexModifyMode::MODIFY_DEFAULT:
@@ -2369,7 +2406,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 		}
 
 		HEXNOTIFYSTRUCT hns { { .hwndFrom = m_hWnd, .idFrom = static_cast<UINT>(GetDlgCtrlID()), .code = HEXCTRL_MSG_DATACHANGE } };
-		hns.pData = reinterpret_cast<const std::byte*>(&hms);
+		hns.pData = reinterpret_cast<std::byte*>(&hms);
 		ParentNotify(hns);
 	}
 	break;
@@ -2377,7 +2414,7 @@ void CHexCtrl::ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw)
 	{
 		//In EHexDataMode::DATA_MSG mode we send pointer to HEXMODIFYSTRUCT to Message window.
 		HEXNOTIFYSTRUCT hns { { .hwndFrom = m_hWnd, .idFrom = static_cast<UINT>(GetDlgCtrlID()), .code = HEXCTRL_MSG_DATACHANGE } };
-		hns.pData = reinterpret_cast<const std::byte*>(&hms);
+		hns.pData = reinterpret_cast<std::byte*>(&hms);
 		MsgWindowNotify(hns);
 	}
 	break;
@@ -3194,7 +3231,7 @@ void CHexCtrl::Undo()
 		auto& refUndoData = iter.vecData;
 		for (size_t i = 0; i < refUndoData.size(); i++)
 		{	//Fill Redo data with the next byte.
-			refRedo->at(static_cast<size_t>(ullIndex)).vecData.push_back(static_cast<std::byte>(GetByte(iter.ullOffset + i)));
+			refRedo->at(static_cast<size_t>(ullIndex)).vecData.emplace_back(static_cast<std::byte>(GetByte(iter.ullOffset + i)));
 			SetByte(iter.ullOffset + i, static_cast<BYTE>(refUndoData[i])); //Undo the next byte.
 		}
 		++ullIndex;
@@ -3261,7 +3298,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 	for (auto& iter : vecSpan)
 	{
 		for (size_t i = 0; i < iter.ullSize; i++)
-			refUndo->at(static_cast<size_t>(ullIndex)).vecData.push_back(static_cast<std::byte>(GetByte(iter.ullOffset + i)));
+			refUndo->at(static_cast<size_t>(ullIndex)).vecData.emplace_back(static_cast<std::byte>(GetByte(iter.ullOffset + i)));
 		++ullIndex;
 	}
 }

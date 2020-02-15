@@ -232,9 +232,9 @@ It's the default data mode the control works in.
 The [`enDataMode`](#ehexdatamode) member of the [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_MEMORY`, and `pData` just points to bytes in memory.
 
 ### [](#)Message Window
-If [`enDataMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_MSG`, the control works in so called **Message Window mode**.
+If [`enDataMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_MSG`, the control works in, so called, **Message Window mode**.
 
-What it means is that when control is about to display next byte, it will first ask for this byte from the [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) window, in the form of **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** Windows' message. This is pretty much the same as the standard **MFC List Control** works when created with `LVS_OWNERDATA` flag.  
+What it means is that when control is about to display data, it will first ask for this data from the [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) window, in the form of **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** Windows' message. This is pretty much the same as the standard **MFC List Control** works when created with `LVS_OWNERDATA` flag.  
 By default the [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) is equal to the control's parent window.
 
 To properly handle this mode, you must process `WM_NOTIFY` messages in `hwndMsg` window as follows:
@@ -247,7 +247,12 @@ BOOL CMyWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
         switch (pHexNtfy->hdr.code)
         {
         case HEXCTRL_MSG_GETDATA:
-            pHexNtfy->pData =  /*Code to set the pointer to an actual data*/;
+            /**************************************************************************
+            * pHexNtfy->stSpan at this moment shows offset and size of the data 
+            * that HexCtrl requests. You have to provide pointer to it.
+            ***************************************************************************
+            
+            pHexNtfy->pData =  /*Set this pointer to an actual data*/;
             break;
         }
    }
@@ -267,8 +272,8 @@ You have to derive your own class from it and implement all its public methods:
 class IHexVirtual
 {
 public:
-    virtual BYTE GetByte(ULONGLONG ullIndex) = 0;            //Gets the byte data by index.
-    virtual void ModifyData(const HEXMODIFYSTRUCT& hmd) = 0; //Main routine to modify data, in fMutable=true mode.
+    virtual std::byte* GetData(const HEXSPANSTRUCT&) = 0; //Data index and size to get.
+    virtual void ModifyData(const HEXMODIFYSTRUCT&) = 0;  //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
 };
 ```
 Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
@@ -571,10 +576,10 @@ This structure is used internally in [`DATA_MEMORY`](#ehexdatamode) mode, as wel
 ```cpp
 struct HEXMODIFYSTRUCT
 {
-    EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
-    EHexOperMode   enOperMode { };          //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
-    const BYTE*    pData { };               //Pointer to a data to be set.
-    ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
+    EHexModifyMode   enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
+    EHexOperMode     enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
+    const std::byte* pData { };             //Pointer to a data to be set.
+    ULONGLONG        ullDataSize { };       //Size of the data pData is pointing to.
     std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
 };
 ```

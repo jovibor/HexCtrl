@@ -82,7 +82,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		return;
 
 	ULONGLONG ullSize;
-	m_pHexCtrl->GetData(&ullSize);
+	m_pHexCtrl->GetDataInfo(&ullSize);
 	if (ullOffset >= ullSize) //Out of data bounds.
 		return;
 

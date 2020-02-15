@@ -95,6 +95,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg UINT OnGetDlgCode();     //To properly work in dialogs.
 		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 		afx_msg void OnPaint();
+		void DrawWindow(CDC* pDC);
 		void DrawData(CDC* pDC);
 		afx_msg void OnSize(UINT nType, int cx, int cy);
 		afx_msg void OnDestroy();
@@ -102,7 +103,8 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
 	public:
-		PBYTE GetData(ULONGLONG* pUllSize = nullptr);          //Gets current data pointer and data size.
+		[[nodiscard]] std::byte* GetData(const HEXSPANSTRUCT& hss); 
+		PBYTE GetDataInfo(ULONGLONG* pUllSize = nullptr);      //Gets current data pointer and data size.
 		[[nodiscard]] BYTE GetByte(ULONGLONG ullOffset)const;  //Gets the BYTE data by index.
 		[[nodiscard]] WORD GetWord(ULONGLONG ullOffset)const;  //Gets the WORD data by index.
 		[[nodiscard]] DWORD GetDword(ULONGLONG ullOffset)const;//Gets the DWORD data by index.
@@ -111,7 +113,7 @@ namespace HEXCTRL::INTERNAL
 		bool SetWord(ULONGLONG ullOffset, WORD wData);		   //Sets the WORD data by index.
 		bool SetDword(ULONGLONG ullOffset, DWORD dwData);	   //Sets the DWORD data by index.
 		bool SetQword(ULONGLONG ullOffset, QWORD qwData);	   //Sets the QWORD data by index.
-		void ModifyData(const HEXMODIFYSTRUCT& hms, bool fRedraw = true); //Main routine to modify data, in m_fMutable==true mode.
+		void ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw = true); //Main routine to modify data, in m_fMutable==true mode.
 		[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcWorkAreaHeight(int iClientHeight);
