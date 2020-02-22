@@ -543,7 +543,7 @@ struct HEXDATASTRUCT
     HWND            hwndMsg { };                           //Window for DATA_MSG mode. Parent is used by default.
     IHexVirtual*    pHexVirtual { };                       //Pointer for DATA_VIRTUAL mode.
     IHexBkmVirtual* pHexBkmVirtual { };                    //Pointer for Virtual Bookmarks.
-    PBYTE           pData { };                             //Data pointer for DATA_MEMORY mode. Not used in other modes.
+    std::byte*      pData { };                             //Data pointer for DATA_MEMORY mode. Not used in other modes.
     bool            fMutable { false };                    //Is data mutable (editable) or read-only.
 };
 ```
@@ -600,7 +600,7 @@ struct HEXNOTIFYSTRUCT
     NMHDR         hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
     HEXSPANSTRUCT stSpan { };  //Offset and size of the bytes. 
     ULONGLONG     ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
-    const BYTE*   pData { };   //Pointer to a data to get/send.
+    std::byte*    pData { };   //Pointer to a data to get/send.
 };
 using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
 ```

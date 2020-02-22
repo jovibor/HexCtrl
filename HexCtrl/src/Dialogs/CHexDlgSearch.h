@@ -31,16 +31,16 @@ namespace HEXCTRL::INTERNAL {
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		void Search(bool fForward);
 	protected:
-		void DoDataExchange(CDataExchange* pDX);
-		BOOL OnInitDialog();
+		void DoDataExchange(CDataExchange* pDX)override;
+		BOOL OnInitDialog()override;
 		afx_msg void OnButtonSearchF();
 		afx_msg void OnButtonSearchB();
 		afx_msg void OnButtonReplace();
 		afx_msg void OnButtonReplaceAll();
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		afx_msg void OnCancel();
+		afx_msg void OnCancel()override;
 		afx_msg void OnDestroy();
-		BOOL PreTranslateMessage(MSG* pMsg);
+		BOOL PreTranslateMessage(MSG* pMsg)override;
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		void OnRadioBnRange(UINT nID);
 	private:

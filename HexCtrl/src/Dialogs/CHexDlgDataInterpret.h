@@ -24,13 +24,13 @@ namespace HEXCTRL::INTERNAL
 		void InspectOffset(ULONGLONG ullOffset);
 		BOOL ShowWindow(int nCmdShow);
 	protected:
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam);
-		void OnOK();
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
+		void OnOK()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		void DoDataExchange(CDataExchange* pDX);
-		BOOL OnInitDialog();
+		void DoDataExchange(CDataExchange* pDX)override;
+		BOOL OnInitDialog()override;
 		afx_msg void OnClose();
-		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		void UpdateHexCtrl();
 		DECLARE_MESSAGE_MAP()
 	private:

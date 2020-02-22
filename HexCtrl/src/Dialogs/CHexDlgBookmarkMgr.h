@@ -23,11 +23,11 @@ namespace HEXCTRL::INTERNAL
 		~CHexDlgBookmarkMgr() = default;
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks);
 	protected:
-		void DoDataExchange(CDataExchange* pDX);
-		BOOL OnInitDialog();
-		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+		void DoDataExchange(CDataExchange* pDX)override;
+		BOOL OnInitDialog()override;
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		afx_msg void OnDestroy();
 		DECLARE_MESSAGE_MAP()
 	private:

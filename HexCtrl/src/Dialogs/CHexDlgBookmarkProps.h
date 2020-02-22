@@ -20,9 +20,9 @@ namespace HEXCTRL::INTERNAL
 		~CHexDlgBookmarkProps() = default;
 		INT_PTR DoModal(HEXBOOKMARKSTRUCT* phbs);
 	protected:
-		void DoDataExchange(CDataExchange* pDX);
-		BOOL OnInitDialog();
-		void OnOK();
+		void DoDataExchange(CDataExchange* pDX)override;
+		BOOL OnInitDialog()override;
+		void OnOK()override;
 		DECLARE_MESSAGE_MAP()
 	private:
 		HEXBOOKMARKSTRUCT* m_pHBS { };

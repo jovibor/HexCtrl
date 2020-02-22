@@ -21,11 +21,11 @@ namespace HEXCTRL::INTERNAL
 		~CHexDlgOperations() = default;
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 	protected:
-		void DoDataExchange(CDataExchange* pDX);
-		BOOL OnInitDialog();
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam);
-		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
-		void OnOK();
+		void DoDataExchange(CDataExchange* pDX)override;
+		BOOL OnInitDialog()override;
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
+		void OnOK()override;
 		DECLARE_MESSAGE_MAP()
 	private:
 		[[nodiscard]] CHexCtrl* GetHexCtrl()const;

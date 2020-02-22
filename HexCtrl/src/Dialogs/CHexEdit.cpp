@@ -39,7 +39,7 @@ void CHexEdit::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 	}
 	if (uCode)
 	{
-		NMHDR nmhdr { .hwndFrom = m_hWnd, .idFrom = static_cast<UINT>(GetDlgCtrlID()), .code = uCode };
+		NMHDR nmhdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), uCode };
 		GetParent()->SendMessageW(WM_NOTIFY, HEXCTRL_EDITCTRL, reinterpret_cast<LPARAM>(&nmhdr));
 	}
 

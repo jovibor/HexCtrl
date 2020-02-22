@@ -78,7 +78,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 		afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
 		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
@@ -95,16 +95,23 @@ namespace HEXCTRL::INTERNAL
 		afx_msg UINT OnGetDlgCode();     //To properly work in dialogs.
 		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 		afx_msg void OnPaint();
-		void DrawWindow(CDC* pDC);
-		void DrawData(CDC* pDC);
+		void DrawWindow(CDC* pDC, const CRect& rectWnd);
+		void DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawHexAscii(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawSelection(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawCursor(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawDataInterpret(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawSectorLines(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		afx_msg void OnSize(UINT nType, int cx, int cy);
 		afx_msg void OnDestroy();
 		afx_msg BOOL OnNcActivate(BOOL bActive);
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
 	public:
-		[[nodiscard]] std::byte* GetData(const HEXSPANSTRUCT& hss); 
-		PBYTE GetDataInfo(ULONGLONG* pUllSize = nullptr);      //Gets current data pointer and data size.
+		[[nodiscard]] PBYTE GetData(const HEXSPANSTRUCT& hss); //Gets pointer to exact data offset, no matter what mode the control works in.
+		[[nodiscard]] PBYTE GetData();                         //Gets m_pData.
+		[[nodiscard]] ULONGLONG GetDataSize();                 //Gets m_ullDataSize.
 		[[nodiscard]] BYTE GetByte(ULONGLONG ullOffset)const;  //Gets the BYTE data by index.
 		[[nodiscard]] WORD GetWord(ULONGLONG ullOffset)const;  //Gets the WORD data by index.
 		[[nodiscard]] DWORD GetDword(ULONGLONG ullOffset)const;//Gets the DWORD data by index.

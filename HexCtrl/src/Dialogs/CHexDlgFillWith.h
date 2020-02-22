@@ -20,9 +20,9 @@ namespace HEXCTRL::INTERNAL
 		~CHexDlgFillWith() = default;
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 	protected:
-		void DoDataExchange(CDataExchange* pDX);
-		BOOL OnInitDialog();
-		void OnOK();
+		void DoDataExchange(CDataExchange* pDX)override;
+		BOOL OnInitDialog()override;
+		void OnOK()override;
 		DECLARE_MESSAGE_MAP()
 	private:
 		[[nodiscard]] CHexCtrl* GetHexCtrl()const;

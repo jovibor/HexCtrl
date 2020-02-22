@@ -110,7 +110,6 @@ namespace HEXCTRL
 	class IHexBkmVirtual
 	{
 	public:
-		virtual ~IHexBkmVirtual() = default;
 		virtual DWORD Add(const HEXBOOKMARKSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
 		virtual void ClearAll() = 0;                    //Clear all bookmarks.
 		virtual auto GetNext()->HEXBOOKMARKSTRUCT* = 0; //Get next bookmark.
@@ -207,10 +206,10 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXNOTIFYSTRUCT
 	{
-		NMHDR            hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
-		HEXSPANSTRUCT    stSpan { };  //Offset and size of the bytes. 
-		ULONGLONG        ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
-		std::byte* pData { };         //Pointer to a data to get/send.
+		NMHDR         hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
+		HEXSPANSTRUCT stSpan { };  //Offset and size of the bytes. 
+		ULONGLONG     ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
+		std::byte*    pData { };   //Pointer to a data to get/send.
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
 
