@@ -17,7 +17,7 @@ static_assert(false, "std::byte compliant compiler required.");
 #endif
 
 /**********************************************************************
-* If HEXCTRL_IHEXCTRLPTR_UNIQUEPTR defined then IHexCtrlPtr is        * 
+* If HEXCTRL_IHEXCTRLPTR_UNIQUEPTR defined then IHexCtrlPtr is        *
 * resolved to std::unique_ptr. Otherwise it's std::shared_ptr.        *
 **********************************************************************/
 #define HEXCTRL_IHEXCTRLPTR_UNIQUEPTR
@@ -53,6 +53,24 @@ namespace HEXCTRL
 	{
 		OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
 		OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
+	};
+
+	/********************************************************************************************
+	* EHexCmd - Enum of the commands that can be executed within HexCtrl, used in ExecuteCmd.   *
+	********************************************************************************************/
+	enum class EHexCmd : WORD
+	{
+		CMD_SEARCH = 0x01,
+		CMD_SHOWDATA_BYTE, CMD_SHOWDATA_WORD, CMD_SHOWDATA_DWORD, CMD_SHOWDATA_QWORD,
+		CMD_BKM_ADD, CMD_BKM_REMOVE, CMD_BKM_NEXT, CMD_BKM_PREV, CMD_BKM_CLEARALL, CMD_BKM_MANAGER,
+		CMD_CLIPBOARD_COPY_HEX, CMD_CLIPBOARD_COPY_HEXLE, CMD_CLIPBOARD_COPY_HEXFMT, CMD_CLIPBOARD_COPY_ASCII,
+		CMD_CLIPBOARD_COPY_BASE64, CMD_CLIPBOARD_COPY_CARR, CMD_CLIPBOARD_COPY_GREPHEX, CMD_CLIPBOARD_COPY_PRNTSCRN,
+		CMD_CLIPBOARD_PASTE_HEX, CMD_CLIPBOARD_PASTE_ASCII,
+		CMD_MODIFY_OPERS, CMD_MODIFY_FILLZEROES, CMD_MODIFY_FILLDATA, CMD_MODIFY_UNDO, CMD_MODIFY_REDO,
+		CMD_SEL_MARKSTART, CMD_SEL_MARKEND, CMD_SEL_SELECTALL,
+		CMD_DATAINTERPRET,
+		CMD_APPEARANCE_FONTINC, CMD_APPEARANCE_FONTDEC, CMD_APPEARANCE_CAPACITYINC, CMD_APPEARANCE_CAPACITYDEC,
+		CMD_PRINT, CMD_ABOUT
 	};
 
 	/********************************************************************************************
@@ -225,6 +243,7 @@ namespace HEXCTRL
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;   //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) = 0; //Сreates custom dialog control.
 		virtual void Destroy() = 0;                            //Deleter.
+		virtual void ExecuteCmd(EHexCmd enCmd)const = 0;       //Execute a command within the control.
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual auto GetColor()const->HEXCOLORSTRUCT = 0;      //Current colors.
 		[[nodiscard]] virtual long GetFontSize()const = 0;                   //Current font size.
@@ -233,9 +252,11 @@ namespace HEXCTRL
 		[[nodiscard]] virtual auto GetShowMode()const->EHexShowMode = 0;     //Retrieves current show mode.
 		[[nodiscard]] virtual HWND GetWindowHandle()const = 0;               //Retrieves control's window handle.
 		virtual void GoToOffset(ULONGLONG ullOffset, bool fSelect = false, ULONGLONG ullSize = 1) = 0; //Scrolls to given offset.
-		[[nodiscard]] virtual bool IsCreated()const = 0;                     //Shows whether control is created or not.
-		[[nodiscard]] virtual bool IsDataSet()const = 0;                     //Shows whether a data was set to the control or not.
-		[[nodiscard]] virtual bool IsMutable()const = 0;                     //Is edit mode enabled or not.
+		[[nodiscard]] virtual bool IsCmdAvail(EHexCmd enCmd)const = 0; //Is given Cmd currently available (can be executed)?
+		[[nodiscard]] virtual bool IsCreated()const = 0;       //Shows whether control is created or not.
+		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to the control or not.
+		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
+		virtual void Print()const = 0;                         //Printing routine.
 		virtual void RemoveBookmark(DWORD dwId) = 0;           //Removes bookmark by the given Id.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;  //Sets all the control's colors.

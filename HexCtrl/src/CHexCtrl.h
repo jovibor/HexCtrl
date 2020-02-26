@@ -45,6 +45,7 @@ namespace HEXCTRL::INTERNAL
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)override; //Сreates custom dialog control.
 		void Destroy()override;                             //Deleter.
+		void ExecuteCmd(EHexCmd enCmd)const override;       //Execute a command within the control.
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
 		[[nodiscard]] auto GetColor()const->HEXCOLORSTRUCT override;      //Current colors.
 		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
@@ -53,9 +54,11 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetShowMode()const->EHexShowMode override;     //Retrieves current show mode.
 		[[nodiscard]] HWND GetWindowHandle()const override;               //Retrieves control's window handle.
 		void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize) override; //Scrolls to given offset.
+		[[nodiscard]] bool IsCmdAvail(EHexCmd enCmd)const override;       //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] bool IsCreated()const override;                     //Shows whether control is created or not.
 		[[nodiscard]] bool IsDataSet()const override;                     //Shows whether a data was set to the control or not.
 		[[nodiscard]] bool IsMutable()const override;                     //Is edit mode enabled or not.
+		void Print()const override;                         //Printing routine.
 		void RemoveBookmark(DWORD dwId)override;            //Removes bookmark by the given Id.
 		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
 		void SetColor(const HEXCOLORSTRUCT& clr)override;   //Sets all the control's colors.

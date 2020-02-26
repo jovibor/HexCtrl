@@ -22,6 +22,7 @@
   * [Create](#create)
   * [CreateDialogCtrl](#createdialogctrl)
   * [Destroy](#destroy)
+  * [ExecuteCmd](#executecmd)
   * [GetCapacity](#getcapacity)
   * [GetColor](#getcolor)
   * [GetFontSize](#getfontsize)
@@ -30,9 +31,11 @@
   * [GetShowMode](#getshowmode)
   * [GetWindowHandle](#getwindowhandle)
   * [GoToOffset](#gotooffset) 
+  * [IsCmdAvail](#iscmdavail)
   * [IsCreated](#iscreated)
   * [IsDataSet](#isdataset)
   * [IsMutable](#ismutable)
+  * [Print](#print)
   * [RemoveBookmark](#removebookmark)
   * [SetCapacity](#setcapacity)
   * [SetColor](#setcolor)
@@ -58,6 +61,7 @@
   * [EHexDataMode](#ehexdatamode)
   * [EHexModifyMode](#ehexmodifymode)
   * [EHexOperMode](#ehexopermode)
+  * [EHexCmd](#ehexcmd)
    </details>
 * [Notification Messages](#notification-messages) <details><summary>_Expand_</summary>
   * [HEXCTRL_MSG_CARETCHANGE](#hexctrl_msg_caretchange)
@@ -351,6 +355,12 @@ You only invoke this method if you use a raw `IHexCtrl` pointer obtained by the 
 You usually don't need to call this method unless you use **HexControl** through the raw pointer obtained by [`CreateRawHexCtrl`](#createrawhexctrl) factory function.  
 If you use **HexControl** in standard way, through the [`IHexCtrlPtr`](#ihexctrlptr) pointer, obtained by `CreateHexCtrl` function, this method will be called automatically.
 
+### [](#)ExecuteCmd
+```cpp
+void ExecuteCmd(EHexCmd enCmd)const;
+```
+Executes one of the predefined commands of [`EHexCmd`](#ehexcmd) enum. All these commands are basically replicating control's inner menu.
+
 ### [](#)GetCapacity
 ```cpp
 DWORD GetCapacity()const
@@ -403,6 +413,12 @@ void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
 ```
 Jumps to the `ullOffset` offset, and selects `ullSize` bytes if `fSelect` is `true`.
 
+### [](#)IsCmdAvail
+```cpp
+bool IsCmdAvail(EHexCmd enCmd)const;
+```
+Returns `true` if given command can be executed at the moment, `false` otherwise.
+
 ### [](#)IsCreated
 ```cpp
 bool IsCreated()const;
@@ -420,6 +436,12 @@ Shows whether a data was set to **HexControl** or not
 bool IsMutable()const;
 ```
 Shows whether **HexControl** is currently in edit mode or not.
+
+### [](#)Print
+```cpp
+void Print()const;
+```
+Prepare document for printing and shows standard printing dialog.
 
 ### [](#)RemoveBookmark
 ```cpp
@@ -648,6 +670,25 @@ enum class EHexOperMode : WORD
 {
     OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
     OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
+};
+```
+
+### [](#)EHexCmd
+Enum of commands **HexCtrl** can execute. Basically these commands duplicate inner menu.
+```cpp
+enum class EHexCmd : WORD
+{
+    CMD_SEARCH = 0x01,
+    CMD_SHOWDATA_BYTE, CMD_SHOWDATA_WORD, CMD_SHOWDATA_DWORD, CMD_SHOWDATA_QWORD,
+    CMD_BKM_ADD, CMD_BKM_REMOVE, CMD_BKM_NEXT, CMD_BKM_PREV, CMD_BKM_CLEARALL, CMD_BKM_MANAGER,
+    	CMD_CLIPBOARD_COPY_HEX, CMD_CLIPBOARD_COPY_HEXLE, CMD_CLIPBOARD_COPY_HEXFMT, CMD_CLIPBOARD_COPY_ASCII,
+    CMD_CLIPBOARD_COPY_BASE64, CMD_CLIPBOARD_COPY_CARR, CMD_CLIPBOARD_COPY_GREPHEX, CMD_CLIPBOARD_COPY_PRNTSCRN,
+    CMD_CLIPBOARD_PASTE_HEX, CMD_CLIPBOARD_PASTE_ASCII,
+    CMD_MODIFY_OPERS, CMD_MODIFY_FILLZEROES, CMD_MODIFY_FILLDATA, CMD_MODIFY_UNDO, CMD_MODIFY_REDO,
+    CMD_SEL_MARKSTART, CMD_SEL_MARKEND, CMD_SEL_SELECTALL,
+    CMD_DATAINTERPRET,
+    CMD_APPEARANCE_FONTINC, CMD_APPEARANCE_FONTDEC, CMD_APPEARANCE_CAPACITYINC, CMD_APPEARANCE_CAPACITYDEC,
+    CMD_PRINT, CMD_ABOUT
 };
 ```
 

@@ -44,7 +44,7 @@ BEGIN
 END
 
 #endif    // APSTUDIO_INVOKED
-	
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -413,6 +413,7 @@ BEGIN
             MENUITEM "Increase capacity\tCtrl+Shift+MouseWheelUp", IDM_HEXCTRL_APPEARANCE_CAPACITYINCREASE
             MENUITEM "Decrease capacity\tCtrl+Shift+MouseWheelDown", IDM_HEXCTRL_APPEARANCE_CAPACITYDECREASE
         END
+        MENUITEM "Print...",                    IDM_HEXCTRL_PRINT
         MENUITEM SEPARATOR
         MENUITEM "About",                       IDM_HEXCTRL_ABOUT
     END
@@ -466,9 +467,8 @@ END
 //
 // Generated from the TEXTINCLUDE 3 resource.
 //
-#if defined(HEXCTRL_SHARED_DLL)
-	#include "afxribbon.rc"  //Needed for CMFCColorButton to work properly in dll.
-#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

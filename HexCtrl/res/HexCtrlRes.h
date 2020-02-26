@@ -108,13 +108,14 @@
 #define IDM_HEXCTRL_SELECTION_MARKEND   32801
 #define IDM_HEXCTRL_SELECTION_SELECTALL 32802
 #define IDM_HEXCTRL_DATAINTERPRET       32803
+#define IDM_HEXCTRL_PRINT               32804
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        9254
-#define _APS_NEXT_COMMAND_VALUE         32804
+#define _APS_NEXT_COMMAND_VALUE         32805
 #define _APS_NEXT_CONTROL_VALUE         9254
 #define _APS_NEXT_SYMED_VALUE           9333
 #endif
