@@ -152,7 +152,7 @@ CHexCtrl::CHexCtrl()
 
 DWORD CHexCtrl::AddBookmark(const HEXBOOKMARKSTRUCT& hbs)
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return 0xFFFFFFFF;
 
@@ -161,7 +161,7 @@ DWORD CHexCtrl::AddBookmark(const HEXBOOKMARKSTRUCT& hbs)
 
 void CHexCtrl::ClearData()
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
@@ -348,7 +348,7 @@ void CHexCtrl::Destroy()
 
 void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
 {
-	assert(IsCreated());  //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
@@ -471,7 +471,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
 
 DWORD CHexCtrl::GetCapacity()const
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return 0;
 
@@ -480,7 +480,7 @@ DWORD CHexCtrl::GetCapacity()const
 
 auto CHexCtrl::GetColor()const->HEXCOLORSTRUCT
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return { };
 
@@ -489,7 +489,7 @@ auto CHexCtrl::GetColor()const->HEXCOLORSTRUCT
 
 long CHexCtrl::GetFontSize()const
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return 0;
 
@@ -498,7 +498,7 @@ long CHexCtrl::GetFontSize()const
 
 HMENU CHexCtrl::GetMenuHandle()const
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return nullptr;
 
@@ -507,7 +507,7 @@ HMENU CHexCtrl::GetMenuHandle()const
 
 auto CHexCtrl::GetSelection()const->std::vector<HEXSPANSTRUCT>
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	assert(IsDataSet()); //Data is not set yet.
 
 	return m_pSelection->GetData();
@@ -515,7 +515,7 @@ auto CHexCtrl::GetSelection()const->std::vector<HEXSPANSTRUCT>
 
 auto CHexCtrl::GetShowMode()const -> EHexShowMode
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return EHexShowMode { };
 
@@ -524,7 +524,7 @@ auto CHexCtrl::GetShowMode()const -> EHexShowMode
 
 HWND CHexCtrl::GetWindowHandle()const
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return nullptr;
 
@@ -533,7 +533,7 @@ HWND CHexCtrl::GetWindowHandle()const
 
 void CHexCtrl::GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
 {
-	assert(IsCreated());  //Not created.
+	assert(IsCreated());
 	assert(IsDataSet()); //Data is not set yet.
 	if (!IsCreated() || !IsDataSet())
 		return;
@@ -546,7 +546,7 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
 
 bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 {
-	assert(IsCreated());  //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return false;
 
@@ -625,7 +625,7 @@ bool CHexCtrl::IsCreated()const
 
 bool CHexCtrl::IsDataSet()const
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return false;
 
@@ -634,7 +634,7 @@ bool CHexCtrl::IsDataSet()const
 
 bool CHexCtrl::IsMutable()const
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	assert(IsDataSet()); //Data is not set yet.
 	if (!IsCreated() || !IsDataSet())
 		return false;
@@ -642,9 +642,18 @@ bool CHexCtrl::IsMutable()const
 	return m_fMutable;
 }
 
+bool CHexCtrl::IsOffsetAsHex()const
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return false;
+
+	return m_fOffsetAsHex;
+}
+
 void CHexCtrl::Print()
 {
-	assert(IsCreated());  //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
@@ -747,7 +756,7 @@ void CHexCtrl::RemoveBookmark(DWORD dwId)
 
 void CHexCtrl::SetCapacity(DWORD dwCapacity)
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
@@ -777,7 +786,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 
 void CHexCtrl::SetColor(const HEXCOLORSTRUCT& clr)
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
@@ -787,7 +796,7 @@ void CHexCtrl::SetColor(const HEXCOLORSTRUCT& clr)
 
 void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 {
-	assert(IsCreated());         //Not created.
+	assert(IsCreated());       
 	if (!IsCreated() || hds.ullDataSize == 0)
 		return;
 
@@ -825,7 +834,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 
 void CHexCtrl::SetFont(const LOGFONTW* pLogFontNew)
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	assert(pLogFontNew); //Null font pointer.
 	if (!IsCreated() || !pLogFontNew)
 		return;
@@ -838,7 +847,7 @@ void CHexCtrl::SetFont(const LOGFONTW* pLogFontNew)
 
 void CHexCtrl::SetFontSize(UINT uiSize)
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
@@ -858,7 +867,7 @@ void CHexCtrl::SetFontSize(UINT uiSize)
 
 void CHexCtrl::SetMutable(bool fEnable)
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	assert(IsDataSet()); //Data is not set yet.
 	if (!IsCreated() || !IsDataSet())
 		return;
@@ -869,7 +878,7 @@ void CHexCtrl::SetMutable(bool fEnable)
 
 void CHexCtrl::SetSectorSize(DWORD dwSize, const wchar_t* wstrName)
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
@@ -882,7 +891,7 @@ void CHexCtrl::SetSectorSize(DWORD dwSize, const wchar_t* wstrName)
 
 void CHexCtrl::SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	assert(IsDataSet()); //Data is not set yet.
 	if (!IsCreated() || !IsDataSet())
 		return;
@@ -892,7 +901,7 @@ void CHexCtrl::SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
 
 void CHexCtrl::SetShowMode(EHexShowMode enShowMode)
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
@@ -940,7 +949,7 @@ void CHexCtrl::SetShowMode(EHexShowMode enShowMode)
 
 void CHexCtrl::SetWheelRatio(double dbRatio)
 {
-	assert(IsCreated()); //Not created.
+	assert(IsCreated());
 	if (!IsCreated())
 		return;
 

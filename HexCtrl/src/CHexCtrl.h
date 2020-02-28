@@ -55,9 +55,10 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] HWND GetWindowHandle()const override;               //Retrieves control's window handle.
 		void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize) override; //Scrolls to given offset.
 		[[nodiscard]] bool IsCmdAvail(EHexCmd enCmd)const override;       //Is given Cmd currently available (can be executed)?
-		[[nodiscard]] bool IsCreated()const override;                     //Shows whether control is created or not.
-		[[nodiscard]] bool IsDataSet()const override;                     //Shows whether a data was set to the control or not.
-		[[nodiscard]] bool IsMutable()const override;                     //Is edit mode enabled or not.
+		[[nodiscard]] bool IsCreated()const override;       //Shows whether control is created or not.
+		[[nodiscard]] bool IsDataSet()const override;       //Shows whether a data was set to the control or not.
+		[[nodiscard]] bool IsMutable()const override;       //Is edit mode enabled or not.
+		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
 		void Print()override;                               //Printing routine.
 		void RemoveBookmark(DWORD dwId)override;            //Removes bookmark by the given Id.
 		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
