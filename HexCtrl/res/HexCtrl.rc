@@ -413,6 +413,7 @@ BEGIN
             MENUITEM "Increase capacity\tCtrl+Shift+MouseWheelUp", IDM_HEXCTRL_APPEARANCE_CAPACITYINCREASE
             MENUITEM "Decrease capacity\tCtrl+Shift+MouseWheelDown", IDM_HEXCTRL_APPEARANCE_CAPACITYDECREASE
         END
+        MENUITEM SEPARATOR
         MENUITEM "Print...",                    IDM_HEXCTRL_PRINT
         MENUITEM SEPARATOR
         MENUITEM "About",                       IDM_HEXCTRL_ABOUT

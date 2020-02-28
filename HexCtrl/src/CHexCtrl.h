@@ -58,7 +58,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsCreated()const override;                     //Shows whether control is created or not.
 		[[nodiscard]] bool IsDataSet()const override;                     //Shows whether a data was set to the control or not.
 		[[nodiscard]] bool IsMutable()const override;                     //Is edit mode enabled or not.
-		void Print()const override;                         //Printing routine.
+		void Print()override;                               //Printing routine.
 		void RemoveBookmark(DWORD dwId)override;            //Removes bookmark by the given Id.
 		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
 		void SetColor(const HEXCOLORSTRUCT& clr)override;   //Sets all the control's colors.
@@ -172,12 +172,12 @@ namespace HEXCTRL::INTERNAL
 		const int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
 		const int m_iHeightBottomRect { 22 }; //Height of bottom Info rect.
 		const int m_iHeightBottomOffArea { m_iHeightBottomRect + m_iIndentBottomLine }; //Height of not visible rect from window's bottom to m_iThirdHorizLine.
-		const int m_iFirstHorizLine { 0 };    //First horizontal line indent.
-		const int m_iFirstVertLine { 0 };     //First vertical line indent.
+		 int m_iFirstHorizLine { 0 };    //First horizontal line indent.
+		 int m_iFirstVertLine { 0 };     //First vertical line indent.
 		const DWORD m_dwCapacityMax { 99 };   //Maximum capacity.
 		const DWORD m_dwUndoMax { 500 };      //How many Undo states to preserve.
 		HEXCOLORSTRUCT m_stColor;             //All control related colors.
-		EHexDataMode m_enDataMode { EHexDataMode::DATA_MEMORY }; //Control's creation mode.
+		EHexDataMode m_enDataMode { EHexDataMode::DATA_MEMORY }; //Control's data mode.
 		EHexShowMode m_enShowMode { };        //Current "Show data" mode.
 		PBYTE m_pData { };                    //Main data pointer. Modifiable in "Edit" mode.
 		IHexVirtual* m_pHexVirtual { };       //Data handler pointer for EHexDataMode::DATA_VIRTUAL

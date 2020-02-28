@@ -49,7 +49,7 @@ bool CScrollEx::Create(CWnd* pWndParent, int iScrollType,
 	if (m_fCreated || !pWndParent || (iScrollType != SB_VERT && iScrollType != SB_HORZ))
 		return false;
 
-	if (!CWnd::CreateEx(0, AfxRegisterWndClass(0), nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, 0))
+	if (!CWnd::CreateEx(0, AfxRegisterWndClass(0), nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr))
 		return false;
 
 	m_iScrollType = iScrollType;
@@ -825,11 +825,11 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 {
 	switch (nIDEvent)
 	{
-	case static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK):
+	case (static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK)):
 		KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
 		SetTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT), m_iTimerRepeat, nullptr);
 		break;
-	case static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT):
+	case (static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT)):
 	{
 		switch (m_enState)
 		{

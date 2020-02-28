@@ -211,21 +211,6 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
 
-	m_wndTtBkm.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
-		/*TTS_BALLOON |*/ TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-		nullptr, nullptr);
-
-	SetWindowTheme(m_wndTtBkm.m_hWnd, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
-
-	m_stToolInfo.cbSize = TTTOOLINFOW_V1_SIZE;
-	m_stToolInfo.uFlags = TTF_TRACK;
-	m_stToolInfo.uId = 0x01;
-	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
-	m_wndTtBkm.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColor.clrTextTooltip), 0);
-	m_wndTtBkm.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColor.clrBkTooltip), 0);
-
 	m_hwndMsg = hcs.hwndParent;
 	m_stColor = hcs.stColor;
 	m_enShowMode = hcs.enShowMode;
@@ -282,6 +267,21 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 		MessageBoxW(strError, L"Error", MB_ICONERROR);
 		return false;
 	}
+
+	m_wndTtBkm.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
+		/*TTS_BALLOON |*/ TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+		m_hWnd, nullptr);
+
+	SetWindowTheme(m_wndTtBkm.m_hWnd, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
+
+	m_stToolInfo.cbSize = TTTOOLINFOW_V1_SIZE;
+	m_stToolInfo.uFlags = TTF_TRACK;
+	m_stToolInfo.uId = 0x01;
+	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
+	m_wndTtBkm.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColor.clrTextTooltip), 0);
+	m_wndTtBkm.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColor.clrBkTooltip), 0);
 
 	//Font related.//////////////////////////////////////////////
 	LOGFONTW lf { };
@@ -421,7 +421,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
 	case EHexCmd::CMD_MODIFY_OPERS:
 		wParam = IDM_HEXCTRL_MODIFY_OPERATIONS;
 		break;
-	case EHexCmd::CMD_MODIFY_FILLZEROES:
+	case EHexCmd::CMD_MODIFY_FILLZEROS:
 		wParam = IDM_HEXCTRL_MODIFY_FILLZEROS;
 		break;
 	case EHexCmd::CMD_MODIFY_FILLDATA:
@@ -544,7 +544,7 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
 		GoToOffset(ullOffset);
 }
 
-bool CHexCtrl::IsCmdAvail(EHexCmd enCmd) const
+bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 {
 	assert(IsCreated());  //Not created.
 	if (!IsCreated())
@@ -552,11 +552,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd) const
 
 	bool fDataSet = IsDataSet();
 	bool fMutable = IsMutable();
-	bool fSelection = m_pSelection->HasSelection();
-	bool fBookmarks = m_pBookmarks->HasBookmarks();
-	bool fHasCurBkm = m_pBookmarks->HitTest(GetCaretPos()); //Is there a bookmark under cursor position?
-	bool fBkmVirtual = m_pBookmarks->IsVirtual();
-	bool fStatus = fDataSet && fSelection;
+	bool fStatus = fDataSet && m_pSelection->HasSelection();
 
 	bool fAvail { false };
 	switch (enCmd)
@@ -574,15 +570,15 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd) const
 		fAvail = true;
 		break;
 	case EHexCmd::CMD_BKM_REMOVE:
-		fAvail = fBookmarks && fHasCurBkm;
+		fAvail = m_pBookmarks->HasBookmarks() && m_pBookmarks->HitTest(GetCaretPos());
 		break;
 	case EHexCmd::CMD_BKM_NEXT:
 	case EHexCmd::CMD_BKM_PREV:
 	case EHexCmd::CMD_BKM_CLEARALL:
-		fAvail = fBookmarks;
+		fAvail = m_pBookmarks->HasBookmarks();
 		break;
 	case EHexCmd::CMD_BKM_MANAGER:
-		fAvail = fDataSet && !fBkmVirtual;
+		fAvail = fDataSet && !m_pBookmarks->IsVirtual();
 		break;
 	case EHexCmd::CMD_BKM_ADD:
 	case EHexCmd::CMD_CLIPBOARD_COPY_HEX:
@@ -600,9 +596,9 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd) const
 		fAvail = fMutable && fStatus && IsClipboardFormatAvailable(CF_TEXT);
 		break;
 	case EHexCmd::CMD_MODIFY_OPERS:
-	case EHexCmd::CMD_MODIFY_FILLZEROES:
+	case EHexCmd::CMD_MODIFY_FILLZEROS:
 	case EHexCmd::CMD_MODIFY_FILLDATA:
-		fAvail = m_fMutable && fStatus;
+		fAvail = fMutable && fStatus;
 		break;
 	case EHexCmd::CMD_MODIFY_UNDO:
 		fAvail = !m_deqUndo.empty();
@@ -646,8 +642,102 @@ bool CHexCtrl::IsMutable()const
 	return m_fMutable;
 }
 
-void CHexCtrl::Print()const
+void CHexCtrl::Print()
 {
+	assert(IsCreated());  //Not created.
+	if (!IsCreated())
+		return;
+
+	DWORD dwFlags;
+	if (m_pSelection->HasSelection())
+		dwFlags = PD_ALLPAGES | PD_CURRENTPAGE | PD_PAGENUMS | PD_SELECTION;
+	else
+		dwFlags = PD_ALLPAGES | PD_CURRENTPAGE | PD_PAGENUMS | PD_NOSELECTION;
+
+	CPrintDialog dlg(FALSE, dwFlags, this);
+	dlg.m_pd.nMaxPage = 0xffff;
+
+	if (dlg.DoModal() == IDCANCEL)
+	{
+		DeleteDC(dlg.m_pd.hDC);
+		return;
+	}
+
+	HDC hdcPrinter = dlg.GetPrinterDC();
+	if (hdcPrinter == nullptr)
+	{
+		MessageBoxW(L"No printer found!");
+		return;
+	}
+
+	CDC dcPrinter;
+	dcPrinter.Attach(hdcPrinter);
+
+	DOCINFOW di { };
+	di.cbSize = sizeof(DOCINFOW);
+	di.lpszDocName = L"HexCtrl";
+
+	if (dcPrinter.StartDocW(&di) < 0)
+	{
+		dcPrinter.AbortDoc();
+		dcPrinter.DeleteDC();
+		return;
+	}
+	if (dcPrinter.StartPage() < 0)
+	{
+		dcPrinter.AbortDoc();
+		dcPrinter.DeleteDC();
+		MessageBoxW(L"Could not start a page");
+		return;
+	}
+
+	CRect rc;
+	GetClientRect(rc);
+
+	CDC* thisDC = GetDC();
+	CDC cDC;
+	cDC.CreateCompatibleDC(thisDC);
+	CBitmap bmp;
+	bmp.CreateCompatibleBitmap(thisDC, rc.Width(), rc.Height());
+	cDC.SelectObject(bmp);
+	CDC* pDC = &cDC;
+
+	auto printDpi = ::GetDeviceCaps(dcPrinter, LOGPIXELSY);
+	auto screenDpi = ::GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
+	auto ratio = printDpi / screenDpi;
+	auto ullStartLine = GetTopLine();
+	auto ullEndLine = GetBottomLine();
+
+	DrawWindow(pDC, rc);
+	if (dlg.PrintSelection())
+	{
+		auto clBkrOld = m_stColor.clrBkSelected;
+		auto clTextOld = m_stColor.clrTextSelected;
+		m_stColor.clrBkSelected = m_stColor.clrBk;
+		m_stColor.clrTextSelected = m_stColor.clrTextHex;
+		DrawOffsets(pDC, ullStartLine, ullEndLine);
+		DrawSelection(pDC, ullStartLine, ullEndLine);
+		m_stColor.clrBkSelected = clBkrOld;
+		m_stColor.clrTextSelected = clTextOld;
+	}
+	else
+	{
+		DrawOffsets(pDC, ullStartLine, ullEndLine);
+		DrawHexAscii(pDC, ullStartLine, ullEndLine);
+		DrawBookmarks(pDC, ullStartLine, ullEndLine);
+		DrawSelection(pDC, ullStartLine, ullEndLine);
+		DrawCursor(pDC, ullStartLine, ullEndLine);
+		DrawDataInterpret(pDC, ullStartLine, ullEndLine);
+		DrawSectorLines(pDC, ullStartLine, ullEndLine);
+	}
+
+	dcPrinter.SetMapMode(MM_TEXT);
+	dcPrinter.StretchBlt(50 * ratio, 50 * ratio, rc.Width() * ratio, rc.Height() * ratio, pDC, 0, 0, rc.Width(), rc.Height(), SRCCOPY);
+	dcPrinter.EndPage();
+	dcPrinter.EndDoc();
+	dcPrinter.DeleteDC();
+
+	ReleaseDC(thisDC);
 }
 
 void CHexCtrl::RemoveBookmark(DWORD dwId)
@@ -698,7 +788,6 @@ void CHexCtrl::SetColor(const HEXCOLORSTRUCT& clr)
 void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 {
 	assert(IsCreated());         //Not created.
-	assert(hds.ullDataSize > 0); //Zero sized data check.
 	if (!IsCreated() || hds.ullDataSize == 0)
 		return;
 
@@ -1208,6 +1297,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 		SetCapacity(m_dwCapacity - 1);
 		break;
 	case IDM_HEXCTRL_PRINT:
+		Print();
 		break;
 	case IDM_HEXCTRL_ABOUT:
 	{
@@ -1280,8 +1370,10 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, m_fMutable ? uStatus : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLWITHDATA, m_fMutable ? uStatus : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_OPERATIONS, m_fMutable ? uStatus : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, m_deqUndo.empty() ? MF_GRAYED : MF_ENABLED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, m_deqRedo.empty() ? MF_GRAYED : MF_ENABLED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO,
+		(m_deqUndo.empty() || m_enDataMode != EHexDataMode::DATA_MEMORY) ? MF_GRAYED : MF_ENABLED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO,
+		(m_deqRedo.empty() || m_enDataMode != EHexDataMode::DATA_MEMORY) ? MF_GRAYED : MF_ENABLED);
 
 	//Selection
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_MARKSTART, fDataSet ? MF_ENABLED : MF_GRAYED);
@@ -1730,14 +1822,14 @@ void CHexCtrl::OnPaint()
 	DrawSectorLines(pDC, ullStartLine, ullEndLine);
 }
 
-void CHexCtrl::DrawWindow(CDC* pDC, const CRect& rectWnd)
+void CHexCtrl::DrawWindow(CDC* pDC, const CRect& rect)
 {
 	const int iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
 	const auto iSecondHorizLine = m_iStartWorkAreaY - 1;
-	const auto iThirdHorizLine = rectWnd.Height() - m_iHeightBottomOffArea;
+	const auto iThirdHorizLine = rect.Height() - m_iHeightBottomOffArea;
 	const auto iFourthHorizLine = iThirdHorizLine + m_iHeightBottomRect;
 
-	pDC->FillSolidRect(rectWnd, m_stColor.clrBk);
+	pDC->FillSolidRect(rect, m_stColor.clrBk);
 	pDC->SelectObject(m_penLines);
 
 	//First horizontal line.
@@ -1776,7 +1868,7 @@ void CHexCtrl::DrawWindow(CDC* pDC, const CRect& rectWnd)
 	CRect rcInfo(m_iFirstVertLine + 1 - iScrollH, iThirdHorizLine + 1, m_iFourthVertLine, iFourthHorizLine); //Fill bottom rect until iFourthHorizLine.
 	pDC->FillSolidRect(rcInfo, m_stColor.clrBkInfoRect);
 	rcInfo.left = m_iFirstVertLine + 5; //Draw text beginning with little indent.
-	rcInfo.right = rectWnd.right;		//Draw text to the end of the client area, even if it passes iFourthHorizLine.
+	rcInfo.right = rect.right;		//Draw text to the end of the client area, even if it passes iFourthHorizLine.
 	pDC->SelectObject(m_fontInfo);
 	pDC->SetTextColor(m_stColor.clrTextInfoRect);
 	pDC->SetBkColor(m_stColor.clrBkInfoRect);
@@ -3645,6 +3737,13 @@ void CHexCtrl::Redo()
 
 void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 {
+	auto ullTotalSize = std::accumulate(vecSpan.begin(), vecSpan.end(), ULONGLONG { },
+		[](ULONGLONG ullSumm, const HEXSPANSTRUCT& ref) {return ullSumm + ref.ullSize; });
+
+	//Check for very big undo size.
+	if (ullTotalSize > 1024 * 1024 * 10)
+		return;
+
 	//If Undo deque size is exceeding max limit,
 	//remove first snapshot from the beginning (the oldest one).
 	if (m_deqUndo.size() > static_cast<size_t>(m_dwUndoMax))
