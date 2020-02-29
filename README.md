@@ -24,6 +24,7 @@
   * [Destroy](#destroy)
   * [ExecuteCmd](#executecmd)
   * [GetCapacity](#getcapacity)
+  * [GetCaretPos](#getcaretpos)
   * [GetColor](#getcolor)
   * [GetFontSize](#getfontsize)
   * [GetMenuHandle](#getmenuhandle)
@@ -35,6 +36,7 @@
   * [IsCreated](#iscreated)
   * [IsDataSet](#isdataset)
   * [IsMutable](#ismutable)
+  * [IsOffsetAsHex](#isoffsetashex)
   * [Print](#print)
   * [RemoveBookmark](#removebookmark)
   * [SetCapacity](#setcapacity)
@@ -367,6 +369,12 @@ DWORD GetCapacity()const
 ```
 Returns current capacity.
 
+### [](#)GetCaretPos
+```cpp
+ULONGLONG GetCaretPos()const;
+```
+Retrieves current caret position offset.
+
 ### [](#)GetColor
 ```cpp
 auto GetColor()const->HEXCOLORSTRUCT
@@ -436,6 +444,12 @@ Shows whether a data was set to **HexControl** or not
 bool IsMutable()const;
 ```
 Shows whether **HexControl** is currently in edit mode or not.
+
+### [](#)IsOffsetAsHex
+```cpp
+bool IsOffsetAsHex()const;
+```
+Is "Offset" currently represented (shown) as Hex or as Decimal. It can be changed by double clicking at offset area.
 
 ### [](#)Print
 ```cpp

@@ -47,6 +47,7 @@ namespace HEXCTRL::INTERNAL
 		void Destroy()override;                             //Deleter.
 		void ExecuteCmd(EHexCmd enCmd)const override;       //Execute a command within the control.
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
+		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
 		[[nodiscard]] auto GetColor()const->HEXCOLORSTRUCT override;      //Current colors.
 		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
 		[[nodiscard]] HMENU GetMenuHandle()const override;                //Context menu handle.
@@ -99,13 +100,13 @@ namespace HEXCTRL::INTERNAL
 		afx_msg UINT OnGetDlgCode();     //To properly work in dialogs.
 		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 		afx_msg void OnPaint();
-		void DrawWindow(CDC* pDC, const CRect& rectWnd);
-		void DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawHexAscii(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawSelection(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawCursor(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawDataInterpret(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo, const CRect& rcClient);
+		void DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawHexAscii(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		void DrawSectorLines(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		afx_msg void OnSize(UINT nType, int cx, int cy);
 		afx_msg void OnDestroy();
@@ -127,6 +128,7 @@ namespace HEXCTRL::INTERNAL
 		void ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw = true); //Main routine to modify data, in m_fMutable==true mode.
 		[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
+		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc);   //Recalc routine for printing.
 		void RecalcWorkAreaHeight(int iClientHeight);
 		void RecalcOffsetDigits();                             //How many digits in Offset (depends on Hex or Decimals).
 		[[nodiscard]] ULONGLONG GetTopLine()const;             //Returns current top line number in view.
@@ -141,7 +143,6 @@ namespace HEXCTRL::INTERNAL
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
-		[[nodiscard]] ULONGLONG GetCaretPos()const;            //Cursor or selection_click depending on edit mode.
 		void SetCaretPos(ULONGLONG ullPos, bool fHighPart);    //Sets the cursor position when in Edit mode.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		void CaretMoveRight();
@@ -171,10 +172,8 @@ namespace HEXCTRL::INTERNAL
 		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll bar.
 		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll bar.
 		const int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
-		const int m_iHeightBottomRect { 22 }; //Height of bottom Info rect.
-		const int m_iHeightBottomOffArea { m_iHeightBottomRect + m_iIndentBottomLine }; //Height of not visible rect from window's bottom to m_iThirdHorizLine.
-		 int m_iFirstHorizLine { 0 };    //First horizontal line indent.
-		 int m_iFirstVertLine { 0 };     //First vertical line indent.
+		const int m_iFirstHorizLine { 0 };    //First horizontal line indent.
+		const int m_iFirstVertLine { 0 };     //First vertical line indent.
 		const DWORD m_dwCapacityMax { 99 };   //Maximum capacity.
 		const DWORD m_dwUndoMax { 500 };      //How many Undo states to preserve.
 		HEXCOLORSTRUCT m_stColor;             //All control related colors.
@@ -215,6 +214,8 @@ namespace HEXCTRL::INTERNAL
 		int m_iStartWorkAreaY { };            //Start Y of the area where all drawing occurs.
 		int m_iEndWorkArea { };               //End of the area where all drawing occurs.
 		int m_iHeightWorkArea { };            //Height in px of the working area where all drawing occurs.
+		int m_iHeightBottomRect { };          //Height of bottom Info rect.
+		int m_iHeightBottomOffArea {  };      //Height of the not visible rect from window's bottom to m_iThirdHorizLine.
 		int m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfo { };          //Info text (bottom rect).

@@ -18,7 +18,7 @@ protected:
 protected:
 	IHexCtrlPtr m_myHex { CreateHexCtrl() };
 	HEXDATASTRUCT m_hds;
-	UCHAR m_data[0xffff];
+	UCHAR m_data[0xfff];
 	HICON m_hIcon;
 
 	// Generated message map functions

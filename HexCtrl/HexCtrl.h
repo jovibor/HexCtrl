@@ -245,6 +245,7 @@ namespace HEXCTRL
 		virtual void Destroy() = 0;                            //Deleter.
 		virtual void ExecuteCmd(EHexCmd enCmd)const = 0;       //Execute a command within the control.
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
+		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
 		[[nodiscard]] virtual auto GetColor()const->HEXCOLORSTRUCT = 0;      //Current colors.
 		[[nodiscard]] virtual long GetFontSize()const = 0;                   //Current font size.
 		[[nodiscard]] virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
@@ -256,7 +257,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsCreated()const = 0;       //Shows whether control is created or not.
 		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
-		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" printed as Hex or as Decimal.
+		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
 		virtual void Print() = 0;                              //Printing routine.
 		virtual void RemoveBookmark(DWORD dwId) = 0;           //Removes bookmark by the given Id.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
