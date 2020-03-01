@@ -3589,11 +3589,15 @@ void CHexCtrl::UpdateInfoText()
 		if (m_pSelection->HasSelection())
 		{
 			if (m_fOffsetAsHex)
-				swprintf_s(wBuff, _countof(wBuff), L"Selected: 0x%llX bytes [0x%llX-0x%llX]", m_pSelection->GetSelectionSize(),  m_pSelection->GetSelectionStart(), m_pSelection->GetSelectionEnd() - 1);
+				swprintf_s(wBuff, _countof(wBuff), L"Selected: 0x%llX bytes [0x%llX-0x%llX] ", m_pSelection->GetSelectionSize(),  m_pSelection->GetSelectionStart(), m_pSelection->GetSelectionEnd() - 1);
 			else
-				swprintf_s(wBuff, _countof(wBuff), L"Selected: %llu bytes [%llu-%llu]", m_pSelection->GetSelectionSize(), m_pSelection->GetSelectionStart(), m_pSelection->GetSelectionEnd() - 1);
+				swprintf_s(wBuff, _countof(wBuff), L"Selected: %llu bytes [%llu-%llu] ", m_pSelection->GetSelectionSize(), m_pSelection->GetSelectionStart(), m_pSelection->GetSelectionEnd() - 1);
 			m_wstrInfo += wBuff;
 		}
+
+		//Mutable state
+		if (!IsMutable())
+			m_wstrInfo += L"Read-only";
 	}
 	else
 		m_wstrInfo.clear();
