@@ -759,7 +759,7 @@ void CHexCtrl::Print()
 		pDC->StartPage();
 		pDC->OffsetViewportOrg(iIndentX, iIndentY);
 
-		DrawWindow(pDC, &fontMain, &fontInfo, rcPrint);
+		DrawWindow(pDC, &fontMain, &fontInfo);
 		auto clBkrOld = m_stColor.clrBkSelected;
 		auto clTextOld = m_stColor.clrTextSelected;
 		m_stColor.clrBkSelected = m_stColor.clrBk;
@@ -782,7 +782,7 @@ void CHexCtrl::Print()
 			if (ullEndLine > ullTotalLines)
 				ullEndLine = (m_ullDataSize % m_dwCapacity) ? ullTotalLines + 1 : ullTotalLines;
 
-			DrawWindow(pDC, &fontMain, &fontInfo, rcPrint);
+			DrawWindow(pDC, &fontMain, &fontInfo);
 			DrawOffsets(pDC, &fontMain, ullStartLine, ullEndLine);
 			DrawHexAscii(pDC, &fontMain, ullStartLine, ullEndLine);
 			DrawBookmarks(pDC, &fontMain, ullStartLine, ullEndLine);
@@ -1865,10 +1865,12 @@ void CHexCtrl::OnPaint()
 
 	CRect rcClient;
 	GetClientRect(rcClient);
-
 	//To prevent drawing in too small window (can cause hangs).
 	if (rcClient.Height() < m_iHeightTopRect + m_iHeightBottomOffArea)
 		return;
+
+	m_iHeightClientArea = rcClient.Height();
+	m_iWidthClientArea = rcClient.Width();
 
 	//Drawing through CMemDC to avoid flickering.
 	CMemDC memDC(dc, rcClient);
@@ -1876,7 +1878,7 @@ void CHexCtrl::OnPaint()
 	const auto ullStartLine = GetTopLine();
 	const auto ullEndLine = GetBottomLine();
 
-	DrawWindow(pDC, &m_fontMain, &m_fontInfo, rcClient); //Draw the window with all layouts.
+	DrawWindow(pDC, &m_fontMain, &m_fontInfo); //Draw the window with all layouts.
 	DrawOffsets(pDC, &m_fontMain, ullStartLine, ullEndLine);
 	DrawHexAscii(pDC, &m_fontMain, ullStartLine, ullEndLine);
 	DrawBookmarks(pDC, &m_fontMain, ullStartLine, ullEndLine);
@@ -1886,14 +1888,17 @@ void CHexCtrl::OnPaint()
 	DrawSectorLines(pDC, ullStartLine, ullEndLine);
 }
 
-void CHexCtrl::DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo, const CRect& rcClient)
+void CHexCtrl::DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo)
 {
 	const int iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
 	const auto iSecondHorizLine = m_iStartWorkAreaY - 1;
-	const auto iThirdHorizLine = rcClient.bottom - m_iHeightBottomOffArea;
+	const auto iThirdHorizLine = m_iFirstHorizLine + m_iHeightClientArea - m_iHeightBottomOffArea;
 	const auto iFourthHorizLine = iThirdHorizLine + m_iHeightBottomRect;
 
-	pDC->FillSolidRect(rcClient, m_stColor.clrBk);
+	CRect rcWnd(m_iFirstVertLine, m_iFirstHorizLine,
+		m_iFirstVertLine + m_iWidthClientArea, m_iFirstHorizLine + m_iHeightClientArea);
+
+	pDC->FillSolidRect(rcWnd, m_stColor.clrBk);
 	pDC->SelectObject(m_penLines);
 
 	//First horizontal line.
@@ -1928,16 +1933,6 @@ void CHexCtrl::DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo, const CRect&
 	pDC->MoveTo(m_iFourthVertLine - iScrollH, m_iFirstHorizLine);
 	pDC->LineTo(m_iFourthVertLine - iScrollH, iFourthHorizLine);
 
-	//Bottom "Info" rcClient.
-	CRect rcInfo(m_iFirstVertLine + 1 - iScrollH, iThirdHorizLine + 1, m_iFourthVertLine, iFourthHorizLine); //Fill bottom rcClient until iFourthHorizLine.
-	pDC->FillSolidRect(rcInfo, m_stColor.clrBkInfoRect);
-	rcInfo.left = m_iFirstVertLine + 5; //Draw text beginning with little indent.
-	rcInfo.right = rcClient.right;		    //Draw text to the end of the client area, even if it passes iFourthHorizLine.
-	pDC->SelectObject(pFontInfo);
-	pDC->SetTextColor(m_stColor.clrTextInfoRect);
-	pDC->SetBkColor(m_stColor.clrBkInfoRect);
-	pDC->DrawTextW(m_wstrInfo.data(), static_cast<int>(m_wstrInfo.size()), rcInfo, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-
 	//«Offset» text.
 	CRect rcOffset(m_iFirstVertLine - iScrollH, m_iFirstHorizLine, m_iSecondVertLine - iScrollH, iSecondHorizLine);
 	pDC->SelectObject(pFont);
@@ -1952,6 +1947,16 @@ void CHexCtrl::DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo, const CRect&
 	//"Ascii" text.
 	CRect rcAscii(m_iThirdVertLine - iScrollH, m_iFirstHorizLine, m_iFourthVertLine - iScrollH, iSecondHorizLine);
 	pDC->DrawTextW(L"Ascii", 5, rcAscii, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+	//Bottom "Info" rect.
+	CRect rcInfo(m_iFirstVertLine + 1 - iScrollH, iThirdHorizLine + 1, m_iFourthVertLine, iFourthHorizLine); //Fill bottom rcClient until iFourthHorizLine.
+	pDC->FillSolidRect(rcInfo, m_stColor.clrBkInfoRect);
+	rcInfo.left = m_iFirstVertLine + 5; //Draw text beginning with little indent.
+	rcInfo.right = m_iFirstVertLine + m_iWidthClientArea; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
+	pDC->SelectObject(pFontInfo);
+	pDC->SetTextColor(m_stColor.clrTextInfoRect);
+	pDC->SetBkColor(m_stColor.clrBkInfoRect);
+	pDC->DrawTextW(m_wstrInfo.data(), static_cast<int>(m_wstrInfo.size()), rcInfo, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 }
 
 void CHexCtrl::DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine)
@@ -2537,9 +2542,9 @@ void CHexCtrl::DrawSectorLines(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEn
 	}
 }
 
-void CHexCtrl::OnSize(UINT /*nType*/, int /*cx*/, int cy)
+void CHexCtrl::OnSize(UINT /*nType*/, int cx, int cy)
 {
-	RecalcWorkAreaHeight(cy);
+	RecalcWorkArea(cy, cx);
 	auto ullPageSize = static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio);
 	if (ullPageSize < m_sizeLetter.cy)
 		ullPageSize = m_sizeLetter.cy;
@@ -3011,7 +3016,7 @@ void CHexCtrl::RecalcAll()
 
 	CRect rc;
 	GetClientRect(&rc);
-	RecalcWorkAreaHeight(rc.Height());
+	RecalcWorkArea(rc.Height(), rc.Width());
 
 	//Scroll sizes according to current font size.
 	m_pScrollV->SetScrollSizes(m_sizeLetter.cy, static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio),
@@ -3056,13 +3061,15 @@ void CHexCtrl::RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const C
 	m_iStartWorkAreaY = m_iFirstHorizLine + m_iHeightTopRect;
 	m_iIndentTextCapacityY = m_iHeightTopRect / 2 - (m_sizeLetter.cy / 2);
 
-	RecalcWorkAreaHeight(rc.Height());
+	RecalcWorkArea(rc.Height(), rc.Width());
 }
 
-void CHexCtrl::RecalcWorkAreaHeight(int iClientHeight)
+void CHexCtrl::RecalcWorkArea(int iHeight, int iWidth)
 {
-	m_iEndWorkArea = iClientHeight - m_iHeightBottomOffArea -
-		((iClientHeight - m_iStartWorkAreaY - m_iHeightBottomOffArea) % m_sizeLetter.cy);
+	m_iHeightClientArea = iHeight;
+	m_iWidthClientArea = iWidth;
+	m_iEndWorkArea = m_iHeightClientArea - m_iHeightBottomOffArea -
+		((m_iHeightClientArea - m_iStartWorkAreaY - m_iHeightBottomOffArea) % m_sizeLetter.cy);
 	m_iHeightWorkArea = m_iEndWorkArea - m_iStartWorkAreaY;
 }
 

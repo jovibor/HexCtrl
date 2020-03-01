@@ -100,7 +100,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg UINT OnGetDlgCode();     //To properly work in dialogs.
 		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 		afx_msg void OnPaint();
-		void DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo, const CRect& rcClient);
+		void DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo);
 		void DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		void DrawHexAscii(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		void DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
@@ -129,7 +129,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc);   //Recalc routine for printing.
-		void RecalcWorkAreaHeight(int iClientHeight);
+		void RecalcWorkArea(int iHeight, int iWidth);
 		void RecalcOffsetDigits();                             //How many digits in Offset (depends on Hex or Decimals).
 		[[nodiscard]] ULONGLONG GetTopLine()const;             //Returns current top line number in view.
 		[[nodiscard]] ULONGLONG GetBottomLine()const;          //Returns current bottom line number in view.
@@ -210,6 +210,8 @@ namespace HEXCTRL::INTERNAL
 		int m_iSpaceBetweenHexChunks { };     //Space between Hex chunks in px.
 		int m_iSpaceBetweenAscii { };         //Space between beginning of the two Ascii chars in px.
 		int m_iSpaceBetweenBlocks { };        //Additional space between hex chunks after half of capacity, in px.
+		int m_iHeightClientArea { };          //Height of the Control's window client area.
+		int m_iWidthClientArea { };           //Width of the Control's window client area.
 		int m_iHeightTopRect { };             //Height of the header where offsets (0 1 2... D E F...) reside.
 		int m_iStartWorkAreaY { };            //Start Y of the area where all drawing occurs.
 		int m_iEndWorkArea { };               //End of the area where all drawing occurs.
