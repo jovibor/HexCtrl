@@ -1404,7 +1404,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 		uStatus = MF_ENABLED;
 
 	//Main
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH, fDataSet ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH, fDataSet && (m_enDataMode == EHexDataMode::DATA_MEMORY) ? MF_ENABLED : MF_GRAYED);
 
 	//Bookmarks
 	bool fBookmarks = m_pBookmarks->HasBookmarks();
