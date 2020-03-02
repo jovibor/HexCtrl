@@ -670,8 +670,8 @@ void CHexCtrl::Print()
 
 	CPrintDialog dlg(FALSE, dwFlags, this);
 	dlg.m_pd.nMaxPage = 0xffff;
-	dlg.m_pd.nFromPage = 0;
-	dlg.m_pd.nToPage = 1;
+	dlg.m_pd.nFromPage = 1;
+	dlg.m_pd.nToPage = 2;
 
 	if (dlg.DoModal() == IDCANCEL) {
 		DeleteDC(dlg.m_pd.hDC);
@@ -759,6 +759,20 @@ void CHexCtrl::Print()
 		pDC->StartPage();
 		pDC->OffsetViewportOrg(iIndentX, iIndentY);
 
+		auto ullSelStart = m_pSelection->GetSelectionStart();
+		auto ullSelSize = m_pSelection->GetSelectionSize();
+		ullStartLine = ullSelStart / m_dwCapacity;
+
+		DWORD dwModStart = ullSelStart % m_dwCapacity;
+		DWORD dwLines = static_cast<DWORD>(ullSelSize) / m_dwCapacity;
+		if ((dwModStart + static_cast<DWORD>(ullSelSize)) > m_dwCapacity)
+			++dwLines;
+		if ((ullSelSize % m_dwCapacity) + dwModStart > m_dwCapacity)
+			++dwLines;
+		if (!dwLines)
+			dwLines = 1;
+		ullEndLine = ullStartLine + dwLines;
+
 		DrawWindow(pDC, &fontMain, &fontInfo);
 		auto clBkrOld = m_stColor.clrBkSelected;
 		auto clTextOld = m_stColor.clrTextSelected;
@@ -773,7 +787,7 @@ void CHexCtrl::Print()
 	}
 	else
 	{
-		for (int i = 0; i < iPagesToPrint; i++)
+		for (int i = 1; i <= iPagesToPrint; i++)
 		{
 			pDC->StartPage();
 			pDC->OffsetViewportOrg(iIndentX, iIndentY);
