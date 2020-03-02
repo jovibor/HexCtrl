@@ -1418,7 +1418,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 		uStatus = MF_ENABLED;
 
 	//Main
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH, fDataSet ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH, fDataSet && (m_enDataMode == EHexDataMode::DATA_MEMORY) ? MF_ENABLED : MF_GRAYED);
 
 	//Bookmarks
 	bool fBookmarks = m_pBookmarks->HasBookmarks();
@@ -3578,29 +3578,42 @@ void CHexCtrl::UpdateInfoText()
 {
 	if (IsDataSet())
 	{
-		WCHAR wBuff[128];
+		WCHAR wBuff[260];
 		m_wstrInfo.clear();
-		m_wstrInfo.reserve(128);
+		m_wstrInfo.reserve(_countof(wBuff));
+
+		//Offset/Document size
+		if (m_fOffsetAsHex)
+			swprintf_s(wBuff, _countof(wBuff), L"Offset: 0x%llX of 0x%llX; ", GetCaretPos(), m_ullDataSize-1);
+		else
+			swprintf_s(wBuff, _countof(wBuff), L"Offset: %llu of %llu; ", GetCaretPos(), m_ullDataSize-1);
+		m_wstrInfo = wBuff;
+		
+		//Page/Sector
 		if (IsSectorVisible())
 		{
-			swprintf_s(wBuff, 128, L"%s: %llu-%llu; ", m_wstrSectorName.data(),
-				GetCaretPos() / m_dwSectorSize, m_ullDataSize / m_dwSectorSize);
-			m_wstrInfo = wBuff;
+			if (m_fOffsetAsHex)
+				swprintf_s(wBuff, _countof(wBuff), L"%s: 0x%llX-0x%llX; ", m_wstrSectorName.data(), GetCaretPos() / m_dwSectorSize, m_ullDataSize / m_dwSectorSize);
+			else
+				swprintf_s(wBuff, _countof(wBuff), L"%s: %llu-%llu; ", m_wstrSectorName.data(), GetCaretPos() / m_dwSectorSize, m_ullDataSize / m_dwSectorSize);
+			m_wstrInfo += wBuff;
 		}
 
+		//Selection
 		if (m_pSelection->HasSelection())
 		{
-			swprintf_s(wBuff, 128, L"Selected: 0x%llX(%llu) [0x%llX(%llu)-0x%llX(%llu)]",
-				m_pSelection->GetSelectionSize(), m_pSelection->GetSelectionSize(),
-				m_pSelection->GetSelectionStart(), m_pSelection->GetSelectionStart(),
-				m_pSelection->GetSelectionEnd() - 1, m_pSelection->GetSelectionEnd() - 1);
+			if (m_fOffsetAsHex)
+				swprintf_s(wBuff, _countof(wBuff), L"Selected: 0x%llX bytes [0x%llX-0x%llX] ", m_pSelection->GetSelectionSize(),  m_pSelection->GetSelectionStart(), m_pSelection->GetSelectionEnd() - 1);
+			else
+				swprintf_s(wBuff, _countof(wBuff), L"Selected: %llu bytes [%llu-%llu] ", m_pSelection->GetSelectionSize(), m_pSelection->GetSelectionStart(), m_pSelection->GetSelectionEnd() - 1);
 			m_wstrInfo += wBuff;
 		}
+
+		//Mutable state
+		if (!IsMutable())
+			m_wstrInfo += L"RO";
 		else
-		{
-			swprintf_s(wBuff, 128, L"Bytes total: 0x%llX(%llu)", m_ullDataSize, m_ullDataSize);
-			m_wstrInfo += wBuff;
-		}
+			m_wstrInfo += L"RW";
 	}
 	else
 		m_wstrInfo.clear();
