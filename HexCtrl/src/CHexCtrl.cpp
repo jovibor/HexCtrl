@@ -3597,7 +3597,9 @@ void CHexCtrl::UpdateInfoText()
 
 		//Mutable state
 		if (!IsMutable())
-			m_wstrInfo += L"Read-only";
+			m_wstrInfo += L"RO";
+		else
+			m_wstrInfo += L"RW";
 	}
 	else
 		m_wstrInfo.clear();
