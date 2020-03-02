@@ -3024,7 +3024,10 @@ void CHexCtrl::RecalcAll()
 	m_pScrollH->SetScrollSizes(m_sizeLetter.cx, rc.Width(), static_cast<ULONGLONG>(m_iFourthVertLine) + 1);
 	m_pScrollV->SetScrollPos(ullCurLineV * m_sizeLetter.cy);
 
-	RedrawWindow();
+	//Update info text area (this also calls RedrawWindow)
+	//This is useful if user has just flipped hex/decimal address mode
+	//RedrawWindow();
+	UpdateInfoText();
 	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE);
 }
 
@@ -3704,7 +3707,9 @@ void CHexCtrl::SetCaretPos(ULONGLONG ullPos, bool fHighPart)
 	if (m_pScrollH->IsVisible() && !IsCurTextArea()) //Do not horz scroll when modifying text area (not Hex).
 		m_pScrollH->SetScrollPos(ullNewScrollH);
 
-	RedrawWindow();
+	//Update info text with new offset (this also calls RedrawWindow)
+	//RedrawWindow();
+	UpdateInfoText();
 	OnCaretPosChange(m_ullCaretPos);
 }
 
