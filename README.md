@@ -28,6 +28,7 @@
   * [GetColor](#getcolor)
   * [GetFontSize](#getfontsize)
   * [GetMenuHandle](#getmenuhandle)
+  * [GetSectorSize](#getsectorsize)
   * [GetSelection](#getselection)
   * [GetShowMode](#getshowmode)
   * [GetWindowHandle](#getwindowhandle)
@@ -394,6 +395,12 @@ Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if y
 
 When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXNOTIFYSTRUCT`](#hexnotifystruct) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `ullData` field of the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) will be holding `ID` of the menu clicked.
 
+### [](#)GetSectorSize
+```cpp
+DWORD GetSectorSize()const;
+```
+Gets current sector size set by [`SetSectorSize`](#setsectorsize).
+
 ### [](#)GetSelection
 ```cpp
 auto GetSelection()const->std::vector<HEXSPANSTRUCT>&;
@@ -577,6 +584,7 @@ struct HEXDATASTRUCT
     IHexVirtual*    pHexVirtual { };                       //Pointer for DATA_VIRTUAL mode.
     IHexBkmVirtual* pHexBkmVirtual { };                    //Pointer for Virtual Bookmarks.
     std::byte*      pData { };                             //Data pointer for DATA_MEMORY mode. Not used in other modes.
+    DWORD           dwCacheSize { 0x800000 };              //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
     bool            fMutable { false };                    //Is data mutable (editable) or read-only.
 };
 ```

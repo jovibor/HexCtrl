@@ -510,6 +510,15 @@ HMENU CHexCtrl::GetMenuHandle()const
 	return m_menuMain.GetSubMenu(0)->GetSafeHmenu();
 }
 
+DWORD CHexCtrl::GetSectorSize() const
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return 0;
+
+	return m_dwSectorSize;
+}
+
 auto CHexCtrl::GetSelection()const->std::vector<HEXSPANSTRUCT>
 {
 	assert(IsCreated());
@@ -893,6 +902,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_enDataMode = hds.enDataMode;
 	m_fMutable = hds.fMutable;
 	m_pHexVirtual = hds.pHexVirtual;
+	m_dwCacheSize = hds.dwCacheSize > 0 ? hds.dwCacheSize : 0x10000; //64Kb
 
 	m_pBookmarks->SetVirtual(hds.pHexBkmVirtual);
 	RecalcAll();
@@ -2824,7 +2834,7 @@ void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
 					break;
 				case EHexDataMode::DATA_VIRTUAL: //memset the ullSizeChunk size ullChunks times with *hms.pData.
 				{
-					ULONGLONG ullSizeChunk = 1024 * 1024 * 8; //Size of Virtual memory for acquiring, to work with.
+					ULONGLONG ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
 					if (iterSel.ullSize < ullSizeChunk)
 						ullSizeChunk = iterSel.ullSize;
 					ULONGLONG ullChunks = iterSel.ullSize % ullSizeChunk ? iterSel.ullSize / ullSizeChunk + 1 : iterSel.ullSize / ullSizeChunk;
@@ -2843,7 +2853,7 @@ void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
 				break;
 				case EHexDataMode::DATA_MSG:
 				{
-					ULONGLONG ullSizeChunk = 1024 * 1024 * 8; //Size of Virtual memory for acquiring, to work with.
+					ULONGLONG ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
 					if (iterSel.ullSize < ullSizeChunk)
 						ullSizeChunk = iterSel.ullSize;
 					ULONGLONG ullChunks = iterSel.ullSize % ullSizeChunk ? iterSel.ullSize / ullSizeChunk + 1 : iterSel.ullSize / ullSizeChunk;

@@ -186,6 +186,7 @@ namespace HEXCTRL
 		IHexVirtual*    pHexVirtual { };                       //Pointer for DATA_VIRTUAL mode.
 		IHexBkmVirtual* pHexBkmVirtual { };                    //Pointer for Virtual Bookmarks.
 		std::byte*      pData { };                             //Data pointer for DATA_MEMORY mode. Not used in other modes.
+		DWORD           dwCacheSize { 0x800000 };              //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
 		bool            fMutable { false };                    //Is data mutable (editable) or read-only.
 	};
 
@@ -219,6 +220,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual auto GetColor()const->HEXCOLORSTRUCT = 0;      //Current colors.
 		[[nodiscard]] virtual long GetFontSize()const = 0;                   //Current font size.
 		[[nodiscard]] virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
+		[[nodiscard]] virtual DWORD GetSectorSize()const = 0;                //Current sector size.
 		[[nodiscard]] virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> = 0; //Gets current selection.
 		[[nodiscard]] virtual auto GetShowMode()const->EHexShowMode = 0;     //Retrieves current show mode.
 		[[nodiscard]] virtual HWND GetWindowHandle()const = 0;               //Retrieves control's window handle.
@@ -236,7 +238,7 @@ namespace HEXCTRL
 		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0; //Sets the control's new font. This font has to be monospaced.
 		virtual void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/edit mode.
-		virtual void SetSectorSize(DWORD dwSize, const wchar_t* wstrName = L"Sector") = 0; //Sets sector/page size and name to draw the line between.
+		virtual void SetSectorSize(DWORD dwSize, const wchar_t* wstrName = L"Sector") = 0; //Sets sector/page size and name to draw the lines in-between.
 		virtual void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize) = 0; //Sets current selection.
 		virtual void SetShowMode(EHexShowMode enMode) = 0;     //Sets current data show mode.
 		virtual void SetWheelRatio(double dbRatio) = 0;        //Sets the ratio for how much to scroll with mouse-wheel.

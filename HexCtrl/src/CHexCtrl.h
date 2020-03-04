@@ -90,6 +90,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetColor()const->HEXCOLORSTRUCT override;      //Current colors.
 		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
 		[[nodiscard]] HMENU GetMenuHandle()const override;                //Context menu handle.
+		[[nodiscard]] DWORD GetSectorSize()const override;                //Current sector size.
 		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPANSTRUCT> override; //Gets current selection.
 		[[nodiscard]] auto GetShowMode()const->EHexShowMode override;     //Retrieves current show mode.
 		[[nodiscard]] HWND GetWindowHandle()const override;               //Retrieves control's window handle.
@@ -232,6 +233,7 @@ namespace HEXCTRL::INTERNAL
 		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
 		DWORD m_dwOffsetBytes { };            //How many bytes "Offset" number posesses;
 		DWORD m_dwSectorSize { 0 };           //Size of a sector to print additional lines between.
+		DWORD m_dwCacheSize { };              //Cache size for virtual and message modes, set in SetData.
 		SIZE m_sizeLetter { 1, 1 };           //Current font's letter size (width, height).
 		long m_lFontSize { };                 //Current font size.
 		int m_iSizeFirstHalf { };             //Size in px of the first half of the capacity.
