@@ -33,6 +33,45 @@ namespace HEXCTRL::INTERNAL
 	namespace SCROLLEX { class CScrollEx; }
 
 	/********************************************************************************************
+	* EModifyMode - Enum of the data modification mode, used in HEXMODIFYSTRUCT.             *
+	********************************************************************************************/
+	enum class EModifyMode : WORD
+	{
+		MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
+	};
+
+	/********************************************************************************************
+	* EOperMode - Enum of the data operation mode, used in HEXMODIFYSTRUCT,                  *
+	* when HEXMODIFYSTRUCT::enModifyMode is MODIFY_OPERATION.                                   *
+	********************************************************************************************/
+	enum class EOperMode : WORD
+	{
+		OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
+		OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
+	};
+
+	/********************************************************************************************
+	* HEXMODIFYSTRUCT - used to represent data modification parameters.                         *
+	* When enModifyMode is set to EModifyMode::MODIFY_DEFAULT, bytes from pData just replace    *
+	* corresponding data bytes as is. If enModifyMode is equal to EModifyMode::MODIFY_REPEAT    *
+	* then block by block replacement takes place few times.                                    *
+	*   For example : if SUM(vecSpan.ullSize) = 9, ullDataSize = 3 and enModifyMode is set to   *
+	* EModifyMode::MODIFY_REPEAT, bytes in memory at vecSpan.ullOffset position are             *
+	* 123456789, and bytes pointed to by pData are 345, then, after modification, bytes at      *
+	* vecSpan.ullOffset will be 345345345. If enModifyMode is equal to                          *
+	* EModifyMode::MODIFY_OPERATION then enOperMode comes into play, showing what kind of       *
+	* operation must be performed on data.                                                      *
+	********************************************************************************************/
+	struct HEXMODIFYSTRUCT
+	{
+		EModifyMode   enModifyMode { EModifyMode::MODIFY_DEFAULT }; //Modify mode.
+		EOperMode     enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
+		const std::byte* pData { };             //Pointer to a data to be set.
+		ULONGLONG        ullDataSize { };       //Size of the data pData is pointing to.
+		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
+	};
+
+	/********************************************************************************************
 	* CHexCtrl class declaration.																*
 	********************************************************************************************/
 	class CHexCtrl final : public CWnd, public IHexCtrl

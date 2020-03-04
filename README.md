@@ -56,13 +56,10 @@
   * [HEXDATASTRUCT](#hexdatastruct)
   * [HEXSPANSTRUCT](#hexspanstruct)
   * [HEXBOOKMARKSTRUCT](#hexbookmarkstruct)
-  * [HEXMODIFYSTRUCT](#hexmodifystruct)
   * [HEXNOTIFYSTRUCT](#hexnotifystruct)
   * [EHexCreateMode](#ehexcreatemode)
   * [EHexShowMode](#ehexshowmode)
   * [EHexDataMode](#ehexdatamode)
-  * [EHexModifyMode](#ehexmodifymode)
-  * [EHexOperMode](#ehexopermode)
   * [EHexCmd](#ehexcmd)
    </details>
 * [Notification Messages](#notification-messages) <details><summary>_Expand_</summary>
@@ -278,8 +275,8 @@ You have to derive your own class from it and implement all its public methods:
 class IHexVirtual
 {
 public:
-    virtual std::byte* GetData(const HEXSPANSTRUCT&) = 0; //Data index and size to get.
-    virtual void ModifyData(const HEXMODIFYSTRUCT&) = 0;  //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
+    virtual std::byte* GetData(const HEXSPANSTRUCT&) = 0;       //Data index and size to get.
+    virtual void SetData(std::byte*, const HEXSPANSTRUCT&) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
 };
 ```
 Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
@@ -607,27 +604,6 @@ struct HEXBOOKMARKSTRUCT
 ```
 The member `vecSpan` being of a `std::vector` type is because a bookmark may have few non adjacent areas. For instance, when selection is made as a block, with <kbd>Alt</kbd> pressed.
 
-### [](#)HEXMODIFYSTRUCT
-This structure is used internally in [`DATA_MEMORY`](#ehexdatamode) mode, as well as in the external notification routines, when working in [`DATA_MSG`](#ehexdatamode) and [`DATA_VIRTUAL`](#ehexdatamode) modes.
-```cpp
-struct HEXMODIFYSTRUCT
-{
-    EHexModifyMode   enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
-    EHexOperMode     enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
-    const std::byte* pData { };             //Pointer to a data to be set.
-    ULONGLONG        ullDataSize { };       //Size of the data pData is pointing to.
-    std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
-};
-```
-When `enModifyMode` is set to [`EHexModifyMode::MODIFY_DEFAULT`](#ehexmodifymode), bytes from `pData` just replace corresponding data bytes as is.  
-
-If `enModifyMode` is equal to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode) then block by block replacement takes place few times.
-
-For example: if `SUM(vecSpan.ullSize)` = 9, `ullDataSize` = 3 and `enModifyMode` is set to [`EHexModifyMode::MODIFY_REPEAT`](#ehexmodifymode), bytes in memory at `vecSpan.ullOffset` position are `123456789`, and bytes pointed to by `pData` are `345`, then, after modification, bytes at `vecSpan.ullOffset` will be `345345345`.
-
-If `enModifyMode` is equal to [`EHexModifyMode::MODIFY_OPERATION`](#ehexmodifymode) then
-[`enOperMode`](#ehexopermode) comes into play, showing what kind of operation must be performed on data.
-
 ### [](#)HEXNOTIFYSTRUCT
 This struct is used in notification purposes, to notify parent window about **HexControl**'s states.
 ```cpp
@@ -668,25 +644,6 @@ enum class EHexDataMode : DWORD
 };
 ```
 
-### [](#)EHexModifyMode
-Enum represents current data modification type.
-```cpp
-enum class EHexModifyMode : WORD
-{
-    MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
-};
-```
-
-### [](#)EHexOperMode
-Enum describes type of bitwise and arithmetic operations that should be performed on the data.
-```cpp
-enum class EHexOperMode : WORD
-{
-    OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
-    OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
-};
-```
-
 ### [](#)EHexCmd
 Enum of commands **HexCtrl** can execute. Basically these commands duplicate inner menu.
 ```cpp
@@ -717,7 +674,7 @@ Sent when caret position has changed. [`HEXNOTIFYSTRUCT::ullData`](#hexnotifystr
 Sent when context menu is about to be displayed.
 
 ### [](#)HEXCTRL_MSG_DATACHANGE
-Sent to indicate that the data has changed, used together with the pointer to [`HEXMODIFYSTRUCT`](#hexmodifystruct).
+Sent to indicate that the data has changed.
 
 ### [](#)HEXCTRL_MSG_DESTROY
 Sent to indicate that **HexControl** window is about to be destroyed.

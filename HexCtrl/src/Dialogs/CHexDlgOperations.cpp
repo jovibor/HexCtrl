@@ -131,7 +131,7 @@ void CHexDlgOperations::OnOK()
 	int iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_BYTE, IDC_HEXCTRL_OPERATIONS_RADIO_QWORD);
 
 	HEXMODIFYSTRUCT hms;
-	hms.enModifyMode = EHexModifyMode::MODIFY_OPERATION;
+	hms.enModifyMode = EModifyMode::MODIFY_OPERATION;
 	hms.vecSpan = pHex->GetSelection();
 	if (hms.vecSpan.empty())
 		return;
@@ -140,42 +140,42 @@ void CHexDlgOperations::OnOK()
 	switch (iRadioOperation)
 	{
 	case IDC_HEXCTRL_OPERATIONS_RADIO_OR:
-		hms.enOperMode = EHexOperMode::OPER_OR;
+		hms.enOperMode = EOperMode::OPER_OR;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_OR;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_XOR:
-		hms.enOperMode = EHexOperMode::OPER_XOR;
+		hms.enOperMode = EOperMode::OPER_XOR;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_XOR;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_AND:
-		hms.enOperMode = EHexOperMode::OPER_AND;
+		hms.enOperMode = EOperMode::OPER_AND;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_AND;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_NOT:
-		hms.enOperMode = EHexOperMode::OPER_NOT;
+		hms.enOperMode = EOperMode::OPER_NOT;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_SHL:
-		hms.enOperMode = EHexOperMode::OPER_SHL;
+		hms.enOperMode = EOperMode::OPER_SHL;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_SHL;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_SHR:
-		hms.enOperMode = EHexOperMode::OPER_SHR;
+		hms.enOperMode = EOperMode::OPER_SHR;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_SHR;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_ADD:
-		hms.enOperMode = EHexOperMode::OPER_ADD;
+		hms.enOperMode = EOperMode::OPER_ADD;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_ADD;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_SUB:
-		hms.enOperMode = EHexOperMode::OPER_SUBTRACT;
+		hms.enOperMode = EOperMode::OPER_SUBTRACT;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_SUB;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_MUL:
-		hms.enOperMode = EHexOperMode::OPER_MULTIPLY;
+		hms.enOperMode = EOperMode::OPER_MULTIPLY;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_MUL;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_DIV:
-		hms.enOperMode = EHexOperMode::OPER_DIVIDE;
+		hms.enOperMode = EOperMode::OPER_DIVIDE;
 		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_DIV;
 		break;
 	default:
@@ -193,7 +193,7 @@ void CHexDlgOperations::OnOK()
 			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 			return;
 		}
-		if (hms.enOperMode == EHexOperMode::OPER_DIVIDE && llData == 0) //Division by zero check.
+		if (hms.enOperMode == EOperMode::OPER_DIVIDE && llData == 0) //Division by zero check.
 		{
 			MessageBoxW(L"Wrong number format!\r\nCan not divide by zero.", L"Format Error", MB_ICONERROR);
 			return;

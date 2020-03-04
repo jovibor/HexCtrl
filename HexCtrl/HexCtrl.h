@@ -38,24 +38,6 @@ static_assert(false, "std::byte compliant compiler required.");
 namespace HEXCTRL
 {
 	/********************************************************************************************
-	* EHexModifyMode - Enum of the data modification mode, used in HEXMODIFYSTRUCT.             *
-	********************************************************************************************/
-	enum class EHexModifyMode : WORD
-	{
-		MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
-	};
-
-	/********************************************************************************************
-	* EHexOperMode - Enum of the data operation mode, used in HEXMODIFYSTRUCT,                  *
-	* when HEXMODIFYSTRUCT::enModifyMode is MODIFY_OPERATION.                                   *
-	********************************************************************************************/
-	enum class EHexOperMode : WORD
-	{
-		OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
-		OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
-	};
-
-	/********************************************************************************************
 	* EHexCmd - Enum of the commands that can be executed within HexCtrl, used in ExecuteCmd.   *
 	********************************************************************************************/
 	enum class EHexCmd : WORD
@@ -95,18 +77,6 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* HEXMODIFYSTRUCT - used to represent data modification parameters.                         *
-	********************************************************************************************/
-	struct HEXMODIFYSTRUCT
-	{
-		EHexModifyMode   enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
-		EHexOperMode     enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
-		const std::byte* pData { };             //Pointer to a data to be set.
-		ULONGLONG        ullDataSize { };       //Size of the data pData is pointing to.
-		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
-	};
-
-	/********************************************************************************************
 	* IHexVirtual - Pure abstract data handler class, that can be implemented by client,        *
 	* to set its own data handler routines.	Works in EHexDataMode::DATA_VIRTUAL mode.           *
 	* Pointer to this class can be set in IHexCtrl::SetData method.                             *
@@ -118,8 +88,8 @@ namespace HEXCTRL
 	class IHexVirtual
 	{
 	public:
-		virtual std::byte* GetData(const HEXSPANSTRUCT&) = 0; //Data index and size to get.
-		virtual	void ModifyData(const HEXMODIFYSTRUCT&) = 0;  //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
+		virtual std::byte* GetData(const HEXSPANSTRUCT&) = 0;       //Data index and size to get.
+		virtual	void SetData(std::byte*, const HEXSPANSTRUCT&) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
 	};
 
 	/********************************************************************************************
