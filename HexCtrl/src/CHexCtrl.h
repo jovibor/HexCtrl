@@ -153,18 +153,12 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
 	public:
-		[[nodiscard]] PBYTE GetData(const HEXSPANSTRUCT& hss); //Gets pointer to exact data offset, no matter what mode the control works in.
-		[[nodiscard]] PBYTE GetData();                         //Gets m_pData.
+		[[nodiscard]] PBYTE GetDataPtr(const HEXSPANSTRUCT& hss); //Gets pointer to exact data offset, no matter what mode the control works in.
+		[[nodiscard]] PBYTE GetDataPtr();                      //Gets m_pData.
 		[[nodiscard]] ULONGLONG GetDataSize();                 //Gets m_ullDataSize.
-		[[nodiscard]] BYTE GetByte(ULONGLONG ullOffset)const;  //Gets the BYTE data by index.
-		[[nodiscard]] WORD GetWord(ULONGLONG ullOffset)const;  //Gets the WORD data by index.
-		[[nodiscard]] DWORD GetDword(ULONGLONG ullOffset)const;//Gets the DWORD data by index.
-		[[nodiscard]] QWORD GetQword(ULONGLONG ullOffset)const;//Gets the QWORD data by index.
-		bool SetByte(ULONGLONG ullOffset, BYTE bData);         //Sets the BYTE data by index.
-		bool SetWord(ULONGLONG ullOffset, WORD wData);		   //Sets the WORD data by index.
-		bool SetDword(ULONGLONG ullOffset, DWORD dwData);	   //Sets the DWORD data by index.
-		bool SetQword(ULONGLONG ullOffset, QWORD qwData);	   //Sets the QWORD data by index.
-		void ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw = true); //Main routine to modify data, in m_fMutable==true mode.
+		template<typename T> [[nodiscard]] auto GetData(ULONGLONG ullOffset)->T; //Get T sized data from ullOffset.
+		template<typename T>void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
+		void ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw = true);     //Main routine to modify data, in m_fMutable==true mode.
 		[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc);   //Recalc routine for printing.
@@ -256,7 +250,7 @@ namespace HEXCTRL::INTERNAL
 		int m_iEndWorkArea { };               //End of the area where all drawing occurs.
 		int m_iHeightWorkArea { };            //Height in px of the working area where all drawing occurs.
 		int m_iHeightBottomRect { };          //Height of bottom Info rect.
-		int m_iHeightBottomOffArea {  };      //Height of the not visible rect from window's bottom to m_iThirdHorizLine.
+		int m_iHeightBottomOffArea { };      //Height of the not visible rect from window's bottom to m_iThirdHorizLine.
 		int m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfo { };          //Info text (bottom rect).

@@ -65,11 +65,11 @@
 * [Notification Messages](#notification-messages) <details><summary>_Expand_</summary>
   * [HEXCTRL_MSG_CARETCHANGE](#hexctrl_msg_caretchange)
   * [HEXCTRL_MSG_CONTEXTMENU](#hexctrl_msg_contextmenu)
-  * [HEXCTRL_MSG_DATACHANGE](#hexctrl_msg_datachange)
   * [HEXCTRL_MSG_DESTROY](#hexctrl_msg_destroy)
   * [HEXCTRL_MSG_GETDATA](#hexctrl_msg_getdata)
   * [HEXCTRL_MSG_MENUCLICK](#hexctrl_msg_menuclick)
   * [HEXCTRL_MSG_SELECTION](#hexctrl_msg_selection)
+  * [HEXCTRL_MSG_SETDATA](#hexctrl_msg_setdata)
   * [HEXCTRL_MSG_VIEWCHANGE](#hexctrl_msg_viewchange)
    </details>
 * [Exported Functions](#exported-functions) <details><summary>_Expand_</summary>
@@ -673,9 +673,6 @@ Sent when caret position has changed. [`HEXNOTIFYSTRUCT::ullData`](#hexnotifystr
 ### [](#)HEXCTRL_MSG_CONTEXTMENU
 Sent when context menu is about to be displayed.
 
-### [](#)HEXCTRL_MSG_DATACHANGE
-Sent to indicate that the data has changed.
-
 ### [](#)HEXCTRL_MSG_DESTROY
 Sent to indicate that **HexControl** window is about to be destroyed.
 
@@ -687,6 +684,9 @@ Sent when user defined custom menu has been clicked.
 
 ### [](#)HEXCTRL_MSG_SELECTION
 Sent when selection has been made.
+
+### [](#)HEXCTRL_MSG_SETDATA
+Sent to indicate that the data has changed.
 
 ### [](#)HEXCTRL_MSG_VIEWCHANGE
 Sent when **HexControl**'s view has changed, whether on resizing or scrolling. [`HEXNOTIFYSTRUCT::stSpan`](#hexnotifystruct) will hold starting offset and size of the visible data.
