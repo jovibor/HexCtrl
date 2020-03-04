@@ -33,6 +33,45 @@ namespace HEXCTRL::INTERNAL
 	namespace SCROLLEX { class CScrollEx; }
 
 	/********************************************************************************************
+	* EModifyMode - Enum of the data modification mode, used in HEXMODIFYSTRUCT.             *
+	********************************************************************************************/
+	enum class EModifyMode : WORD
+	{
+		MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
+	};
+
+	/********************************************************************************************
+	* EOperMode - Enum of the data operation mode, used in HEXMODIFYSTRUCT,                  *
+	* when HEXMODIFYSTRUCT::enModifyMode is MODIFY_OPERATION.                                   *
+	********************************************************************************************/
+	enum class EOperMode : WORD
+	{
+		OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
+		OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
+	};
+
+	/********************************************************************************************
+	* HEXMODIFYSTRUCT - used to represent data modification parameters.                         *
+	* When enModifyMode is set to EModifyMode::MODIFY_DEFAULT, bytes from pData just replace    *
+	* corresponding data bytes as is. If enModifyMode is equal to EModifyMode::MODIFY_REPEAT    *
+	* then block by block replacement takes place few times.                                    *
+	*   For example : if SUM(vecSpan.ullSize) = 9, ullDataSize = 3 and enModifyMode is set to   *
+	* EModifyMode::MODIFY_REPEAT, bytes in memory at vecSpan.ullOffset position are             *
+	* 123456789, and bytes pointed to by pData are 345, then, after modification, bytes at      *
+	* vecSpan.ullOffset will be 345345345. If enModifyMode is equal to                          *
+	* EModifyMode::MODIFY_OPERATION then enOperMode comes into play, showing what kind of       *
+	* operation must be performed on data.                                                      *
+	********************************************************************************************/
+	struct HEXMODIFYSTRUCT
+	{
+		EModifyMode      enModifyMode { EModifyMode::MODIFY_DEFAULT }; //Modify mode.
+		EOperMode        enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
+		const std::byte* pData { };             //Pointer to a data to be set.
+		ULONGLONG        ullDataSize { };       //Size of the data pData is pointing to.
+		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
+	};
+
+	/********************************************************************************************
 	* CHexCtrl class declaration.																*
 	********************************************************************************************/
 	class CHexCtrl final : public CWnd, public IHexCtrl
@@ -114,18 +153,12 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
 	public:
-		[[nodiscard]] PBYTE GetData(const HEXSPANSTRUCT& hss); //Gets pointer to exact data offset, no matter what mode the control works in.
-		[[nodiscard]] PBYTE GetData();                         //Gets m_pData.
+		[[nodiscard]] PBYTE GetDataPtr(const HEXSPANSTRUCT& hss); //Gets pointer to exact data offset, no matter what mode the control works in.
+		[[nodiscard]] PBYTE GetDataPtr();                      //Gets m_pData.
 		[[nodiscard]] ULONGLONG GetDataSize();                 //Gets m_ullDataSize.
-		[[nodiscard]] BYTE GetByte(ULONGLONG ullOffset)const;  //Gets the BYTE data by index.
-		[[nodiscard]] WORD GetWord(ULONGLONG ullOffset)const;  //Gets the WORD data by index.
-		[[nodiscard]] DWORD GetDword(ULONGLONG ullOffset)const;//Gets the DWORD data by index.
-		[[nodiscard]] QWORD GetQword(ULONGLONG ullOffset)const;//Gets the QWORD data by index.
-		bool SetByte(ULONGLONG ullOffset, BYTE bData);         //Sets the BYTE data by index.
-		bool SetWord(ULONGLONG ullOffset, WORD wData);		   //Sets the WORD data by index.
-		bool SetDword(ULONGLONG ullOffset, DWORD dwData);	   //Sets the DWORD data by index.
-		bool SetQword(ULONGLONG ullOffset, QWORD qwData);	   //Sets the QWORD data by index.
-		void ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw = true); //Main routine to modify data, in m_fMutable==true mode.
+		template<typename T> [[nodiscard]] auto GetData(ULONGLONG ullOffset)->T; //Get T sized data from ullOffset.
+		template<typename T>void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
+		void ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw = true);     //Main routine to modify data, in m_fMutable==true mode.
 		[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc);   //Recalc routine for printing.
@@ -217,7 +250,7 @@ namespace HEXCTRL::INTERNAL
 		int m_iEndWorkArea { };               //End of the area where all drawing occurs.
 		int m_iHeightWorkArea { };            //Height in px of the working area where all drawing occurs.
 		int m_iHeightBottomRect { };          //Height of bottom Info rect.
-		int m_iHeightBottomOffArea {  };      //Height of the not visible rect from window's bottom to m_iThirdHorizLine.
+		int m_iHeightBottomOffArea { };      //Height of the not visible rect from window's bottom to m_iThirdHorizLine.
 		int m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfo { };          //Info text (bottom rect).

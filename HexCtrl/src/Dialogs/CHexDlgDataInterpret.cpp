@@ -88,7 +88,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	m_ullOffset = ullOffset;
 	WCHAR buff[32];
 
-	const BYTE byte = m_pHexCtrl->GetByte(ullOffset);
+	const BYTE byte = m_pHexCtrl->GetData<BYTE>(ullOffset);
 	swprintf_s(buff, 31, L"%hhi", static_cast<char>(byte));
 	m_edit8sign.SetWindowTextW(buff);
 	swprintf_s(buff, 31, L"%hhu", byte);
@@ -107,7 +107,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	for (auto i : m_vec16)
 		i->EnableWindow(TRUE);
 
-	const WORD word = m_pHexCtrl->GetWord(ullOffset);
+	const WORD word = m_pHexCtrl->GetData<WORD>(ullOffset);
 	swprintf_s(buff, 31, L"%hi", static_cast<short>(word));
 	m_edit16sign.SetWindowTextW(buff);
 	swprintf_s(buff, 31, L"%hu", word);
@@ -126,7 +126,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	for (auto i : m_vec32)
 		i->EnableWindow(TRUE);
 
-	const DWORD dword = m_pHexCtrl->GetDword(ullOffset);
+	const DWORD dword = m_pHexCtrl->GetData<DWORD>(ullOffset);
 	swprintf_s(buff, 31, L"%i", static_cast<int>(dword));
 	m_edit32sign.SetWindowTextW(buff);
 	swprintf_s(buff, 31, L"%u", dword);
@@ -160,7 +160,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	for (auto i : m_vec64)
 		i->EnableWindow(TRUE);
 
-	const QWORD qword = m_pHexCtrl->GetQword(ullOffset);
+	const QWORD qword = m_pHexCtrl->GetData<QWORD>(ullOffset);
 	swprintf_s(buff, 31, L"%lli", static_cast<long long>(qword));
 	m_edit64sign.SetWindowTextW(buff);
 	swprintf_s(buff, 31, L"%llu", qword);
@@ -299,7 +299,7 @@ void CHexDlgDataInterpret::OnOK()
 			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 			break;
 		}
-		m_pHexCtrl->SetByte(m_ullOffset, static_cast<BYTE>(llData));
+		m_pHexCtrl->SetData(m_ullOffset, static_cast<BYTE>(llData));
 		break;
 	case IDC_HEXCTRL_DATAINTERPRET_EDIT_16SIGN:
 	case IDC_HEXCTRL_DATAINTERPRET_EDIT_16UNSIGN:
@@ -308,7 +308,7 @@ void CHexDlgDataInterpret::OnOK()
 			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 			break;
 		}
-		m_pHexCtrl->SetWord(m_ullOffset, static_cast<WORD>(llData));
+		m_pHexCtrl->SetData(m_ullOffset, static_cast<WORD>(llData));
 		break;
 	case IDC_HEXCTRL_DATAINTERPRET_EDIT_32SIGN:
 	case IDC_HEXCTRL_DATAINTERPRET_EDIT_32UNSIGN:
@@ -317,7 +317,7 @@ void CHexDlgDataInterpret::OnOK()
 			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 			break;
 		}
-		m_pHexCtrl->SetDword(m_ullOffset, static_cast<DWORD>(llData));
+		m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(llData));
 		break;
 	case IDC_HEXCTRL_DATAINTERPRET_EDIT_64SIGN:
 	case IDC_HEXCTRL_DATAINTERPRET_EDIT_64UNSIGN:
@@ -326,7 +326,7 @@ void CHexDlgDataInterpret::OnOK()
 			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 			break;
 		}
-		m_pHexCtrl->SetQword(m_ullOffset, static_cast<QWORD>(llData));
+		m_pHexCtrl->SetData(m_ullOffset, static_cast<QWORD>(llData));
 		break;
 	case IDC_HEXCTRL_DATAINTERPRET_EDIT_FLOAT:
 	{
@@ -338,7 +338,7 @@ void CHexDlgDataInterpret::OnOK()
 			break;
 		}
 		//TODO:	DWORD dw=std::bit_cast<DWORD>(fl);
-		m_pHexCtrl->SetDword(m_ullOffset, *reinterpret_cast<DWORD*>(&fl));
+		m_pHexCtrl->SetData(m_ullOffset, *reinterpret_cast<DWORD*>(&fl));
 	}
 	break;
 	case IDC_HEXCTRL_DATAINTERPRET_EDIT_DOUBLE:
@@ -350,7 +350,7 @@ void CHexDlgDataInterpret::OnOK()
 			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 			break;
 		}
-		m_pHexCtrl->SetQword(m_ullOffset, *reinterpret_cast<QWORD*>(&dd));
+		m_pHexCtrl->SetData(m_ullOffset, *reinterpret_cast<QWORD*>(&dd));
 	}
 	break;
 	case IDC_HEXCTRL_DATAINTERPRET_EDIT_TIME32:
@@ -366,7 +366,7 @@ void CHexDlgDataInterpret::OnOK()
 			MessageBoxW(L"Wrong date/time format!", L"Format Error", MB_ICONERROR);
 			break;
 		}
-		m_pHexCtrl->SetDword(m_ullOffset, static_cast<DWORD>(time32));
+		m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(time32));
 	}
 	break;
 	case IDC_HEXCTRL_DATAINTERPRET_EDIT_TIME64:
@@ -382,7 +382,7 @@ void CHexDlgDataInterpret::OnOK()
 			MessageBoxW(L"Wrong date/time format!", L"Format Error", MB_ICONERROR);
 			break;
 		}
-		m_pHexCtrl->SetQword(m_ullOffset, static_cast<QWORD>(time64));
+		m_pHexCtrl->SetData(m_ullOffset, static_cast<QWORD>(time64));
 	}
 	break;
 	}
