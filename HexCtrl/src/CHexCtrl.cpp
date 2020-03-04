@@ -2914,7 +2914,7 @@ void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
 	}
 
 	PBYTE pData { };
-	size_t sOffsetToSet { };
+	ULONGLONG ullOffsetToSet { };
 
 	switch (hms.enModifyMode)
 	{
@@ -2924,18 +2924,18 @@ void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
 		{
 		case EHexDataMode::DATA_MEMORY:
 			pData = m_pData;
-			sOffsetToSet = static_cast<size_t>(vecSelRef[0].ullOffset);
+			ullOffsetToSet = static_cast<size_t>(vecSelRef[0].ullOffset);
 			break;
 		case EHexDataMode::DATA_VIRTUAL:
 		{
 			pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ vecSelRef[0].ullOffset, hms.ullDataSize }));
-			sOffsetToSet = 0;
+			ullOffsetToSet = 0;
 		}
 		break;
 		}
 
 		for (ULONGLONG i = 0; i < hms.ullDataSize; i++)
-			pData[sOffsetToSet + i] = static_cast<BYTE>(hms.pData[i]);
+			pData[ullOffsetToSet + i] = static_cast<BYTE>(hms.pData[i]);
 
 		switch (m_enDataMode)
 		{
@@ -2949,29 +2949,62 @@ void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
 	{
 		for (const auto& iterSel : vecSelRef) //Selections' vector size times.
 		{
-			//Fill hms.vecSpan.ullSize bytes with hms.ullDataSize bytes hms.vecSpan.ullSize/hms.ullDataSize times.
-			ULONGLONG ullChunks = (iterSel.ullSize >= hms.ullDataSize) ? iterSel.ullSize / hms.ullDataSize : 0;
-			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
+			if (hms.ullDataSize == 1) //Special one byte sized data case, where memset shines.
 			{
-				sOffsetToSet = static_cast<size_t>(iterSel.ullOffset) + 
-					static_cast<size_t>(iterChunk) * static_cast<size_t>(hms.ullDataSize);
 				switch (m_enDataMode)
 				{
-				case EHexDataMode::DATA_MEMORY:
-					pData = m_pData + sOffsetToSet;
+				case EHexDataMode::DATA_MEMORY: //Just memset the whole iterSel.ullSize with *hms.pData.
+					ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset);
+					pData = m_pData + ullOffsetToSet;
+					memset(pData, static_cast<int>(*hms.pData), static_cast<size_t>(iterSel.ullSize));
 					break;
-				case EHexDataMode::DATA_VIRTUAL:
-					pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ sOffsetToSet, hms.ullDataSize }));
-					break;
+				case EHexDataMode::DATA_VIRTUAL: //memset the ullSizeChunk size ullChunks times with *hms.pData.
+				{
+					ULONGLONG ullSizeChunk = 1024 * 1024 * 8; //Size of Virtual memory for acquiring, to work with.
+					if (iterSel.ullSize < ullSizeChunk)
+						ullSizeChunk = iterSel.ullSize;
+					ULONGLONG ullChunks = iterSel.ullSize % ullSizeChunk ? iterSel.ullSize / ullSizeChunk + 1 : iterSel.ullSize / ullSizeChunk;
+
+					for (ULONGLONG itVirtChunk = 0; itVirtChunk < ullChunks; ++itVirtChunk)
+					{
+						ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset) + (itVirtChunk * ullSizeChunk);
+						if (ullOffsetToSet + ullSizeChunk > m_ullDataSize) //Overflow check.
+							ullSizeChunk = m_ullDataSize - ullOffsetToSet;
+
+						pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffsetToSet, ullSizeChunk }));
+						memset(pData, static_cast<int>(*hms.pData), static_cast<size_t>(ullSizeChunk));
+						m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { ullOffsetToSet, ullSizeChunk });
+					}
 				}
-
-				std::memcpy(pData, hms.pData, static_cast<size_t>(hms.ullDataSize));
-
-				switch (m_enDataMode)
+				break;
+				}
+			}
+			else
+			{
+				//Fill hms.vecSpan.ullSize bytes with hms.ullDataSize bytes hms.vecSpan.ullSize/hms.ullDataSize times.
+				ULONGLONG ullChunks = (iterSel.ullSize >= hms.ullDataSize) ? iterSel.ullSize / hms.ullDataSize : 0;
+				for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
 				{
-				case EHexDataMode::DATA_VIRTUAL:
-					m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { sOffsetToSet, hms.ullDataSize });
-					break;
+					ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset) +
+						static_cast<size_t>(iterChunk) * static_cast<size_t>(hms.ullDataSize);
+					switch (m_enDataMode)
+					{
+					case EHexDataMode::DATA_MEMORY:
+						pData = m_pData + ullOffsetToSet;
+						break;
+					case EHexDataMode::DATA_VIRTUAL:
+						pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffsetToSet, hms.ullDataSize }));
+						break;
+					}
+
+					std::memcpy(pData, hms.pData, static_cast<size_t>(hms.ullDataSize));
+
+					switch (m_enDataMode)
+					{
+					case EHexDataMode::DATA_VIRTUAL:
+						m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { ullOffsetToSet, hms.ullDataSize });
+						break;
+					}
 				}
 			}
 		}
