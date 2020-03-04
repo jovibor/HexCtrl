@@ -656,6 +656,15 @@ bool CHexCtrl::IsOffsetAsHex()const
 	return m_fOffsetAsHex;
 }
 
+DWORD CHexCtrl::GetSectorSize()const
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return false;
+
+	return m_dwSectorSize;
+}
+
 void CHexCtrl::Print()
 {
 	assert(IsCreated());

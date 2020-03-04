@@ -228,6 +228,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
+		[[nodiscard]] virtual DWORD GetSectorSize()const =0;   //Retrieve current sector size
 		virtual void Print() = 0;                              //Printing routine.
 		virtual void RemoveBookmark(DWORD dwId) = 0;           //Removes bookmark by the given Id.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.

@@ -99,6 +99,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsDataSet()const override;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] bool IsMutable()const override;       //Is edit mode enabled or not.
 		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
+		[[nodiscard]] DWORD GetSectorSize()const override;  //Retrieve current sector size
 		void Print()override;                               //Printing routine.
 		void RemoveBookmark(DWORD dwId)override;            //Removes bookmark by the given Id.
 		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
