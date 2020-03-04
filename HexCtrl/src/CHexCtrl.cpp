@@ -699,7 +699,7 @@ void CHexCtrl::Print()
 	}
 
 	const CSize sizePrintDpi = { GetDeviceCaps(dcPr, LOGPIXELSX), GetDeviceCaps(dcPr, LOGPIXELSY) };
-	const CSize sizePaper = { GetDeviceCaps(dcPr, PHYSICALWIDTH), GetDeviceCaps(dcPr, PHYSICALHEIGHT) };
+	//const CSize sizePaper = { GetDeviceCaps(dcPr, PHYSICALWIDTH), GetDeviceCaps(dcPr, PHYSICALHEIGHT) };
 	CRect rcPrint(CPoint(GetDeviceCaps(dcPr, PHYSICALOFFSETX), GetDeviceCaps(dcPr, PHYSICALOFFSETY)),
 		CSize(GetDeviceCaps(dcPr, HORZRES), GetDeviceCaps(dcPr, VERTRES)));
 	CDC* pCurrDC = GetDC();
@@ -2770,7 +2770,7 @@ bool CHexCtrl::SetByte(ULONGLONG ullOffset, BYTE bData)
 		return false;
 
 	PBYTE pData { };
-	ULONGLONG ullOffsetToSet { };
+	ULONGLONG ullOffsetToSet { 0 };
 	switch (m_enDataMode)
 	{
 	case EHexDataMode::DATA_MEMORY:
@@ -2778,11 +2778,8 @@ bool CHexCtrl::SetByte(ULONGLONG ullOffset, BYTE bData)
 		ullOffsetToSet = ullOffset;
 		break;
 	case EHexDataMode::DATA_VIRTUAL:
-	{
 		pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffset, sizeof(bData) }));
-		ullOffsetToSet = 0;
-	}
-	break;
+		break;
 	}
 
 	pData[ullOffsetToSet] = bData;
@@ -2804,7 +2801,7 @@ bool CHexCtrl::SetWord(ULONGLONG ullOffset, WORD wData)
 		return false;
 
 	PBYTE pData { };
-	ULONGLONG ullOffsetToSet { };
+	ULONGLONG ullOffsetToSet { 0 };
 	switch (m_enDataMode)
 	{
 	case EHexDataMode::DATA_MEMORY:
@@ -2812,11 +2809,8 @@ bool CHexCtrl::SetWord(ULONGLONG ullOffset, WORD wData)
 		ullOffsetToSet = ullOffset;
 		break;
 	case EHexDataMode::DATA_VIRTUAL:
-	{
 		pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffset, sizeof(wData) }));
-		ullOffsetToSet = 0;
-	}
-	break;
+		break;
 	}
 
 	*reinterpret_cast<PWORD>(pData + ullOffsetToSet) = wData;
@@ -2838,7 +2832,7 @@ bool CHexCtrl::SetDword(ULONGLONG ullOffset, DWORD dwData)
 		return false;
 
 	PBYTE pData { };
-	ULONGLONG ullOffsetToSet { };
+	ULONGLONG ullOffsetToSet { 0 };
 	switch (m_enDataMode)
 	{
 	case EHexDataMode::DATA_MEMORY:
@@ -2846,11 +2840,8 @@ bool CHexCtrl::SetDword(ULONGLONG ullOffset, DWORD dwData)
 		ullOffsetToSet = ullOffset;
 		break;
 	case EHexDataMode::DATA_VIRTUAL:
-	{
 		pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffset, sizeof(dwData) }));
-		ullOffsetToSet = 0;
-	}
-	break;
+		break;
 	}
 
 	*reinterpret_cast<PDWORD>(pData + ullOffsetToSet) = dwData;
@@ -2872,7 +2863,7 @@ bool CHexCtrl::SetQword(ULONGLONG ullOffset, QWORD qwData)
 		return false;
 
 	PBYTE pData { };
-	ULONGLONG ullOffsetToSet { };
+	ULONGLONG ullOffsetToSet { 0 };
 	switch (m_enDataMode)
 	{
 	case EHexDataMode::DATA_MEMORY:
@@ -2880,11 +2871,8 @@ bool CHexCtrl::SetQword(ULONGLONG ullOffset, QWORD qwData)
 		ullOffsetToSet = ullOffset;
 		break;
 	case EHexDataMode::DATA_VIRTUAL:
-	{
 		pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffset, sizeof(qwData) }));
-		ullOffsetToSet = 0;
-	}
-	break;
+		break;
 	}
 
 	*reinterpret_cast<PQWORD>(pData + ullOffsetToSet) = qwData;
@@ -2914,7 +2902,7 @@ void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
 	}
 
 	PBYTE pData { };
-	ULONGLONG ullOffsetToSet { };
+	ULONGLONG ullOffsetToSet { 0 };
 
 	switch (hms.enModifyMode)
 	{
@@ -2927,11 +2915,8 @@ void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
 			ullOffsetToSet = static_cast<size_t>(vecSelRef[0].ullOffset);
 			break;
 		case EHexDataMode::DATA_VIRTUAL:
-		{
 			pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ vecSelRef[0].ullOffset, hms.ullDataSize }));
-			ullOffsetToSet = 0;
-		}
-		break;
+			break;
 		}
 
 		for (ULONGLONG i = 0; i < hms.ullDataSize; i++)
