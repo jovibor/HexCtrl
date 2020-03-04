@@ -2904,23 +2904,17 @@ void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
 	if (!m_fMutable)
 		return;
 
-	const auto& vecSelectionRef = hms.vecSpan;
-	const auto& vecRefB = vecSelectionRef.back();
-	if (vecRefB.ullOffset >= m_ullDataSize || (vecRefB.ullOffset + vecRefB.ullSize) > m_ullDataSize
-		|| (vecRefB.ullOffset + hms.ullDataSize) > m_ullDataSize)
-		return;
+	const auto& vecSelRef = hms.vecSpan;
 
 	//Undo only for DATA_MEMORY for now.
 	if (m_enDataMode == EHexDataMode::DATA_MEMORY)
 	{
 		m_deqRedo.clear(); //No Redo unless we make Undo.
-		SnapshotUndo(vecSelectionRef);
+		SnapshotUndo(vecSelRef);
 	}
-	ULONGLONG ullTotalSize = std::accumulate(vecSelectionRef.begin(), vecSelectionRef.end(), ULONGLONG { },
-		[](ULONGLONG ullSumm, const HEXSPANSTRUCT& ref) {return ullSumm + ref.ullSize; });
 
 	PBYTE pData { };
-	ULONGLONG ullOffsetToSet { 0 };
+	size_t sOffsetToSet { };
 
 	switch (hms.enModifyMode)
 	{
@@ -2930,71 +2924,55 @@ void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
 		{
 		case EHexDataMode::DATA_MEMORY:
 			pData = m_pData;
-			ullOffsetToSet = vecRefB.ullOffset;
+			sOffsetToSet = static_cast<size_t>(vecSelRef[0].ullOffset);
 			break;
 		case EHexDataMode::DATA_VIRTUAL:
 		{
-			pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ vecRefB.ullOffset, hms.ullDataSize }));
-			ullOffsetToSet = 0;
+			pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ vecSelRef[0].ullOffset, hms.ullDataSize }));
+			sOffsetToSet = 0;
 		}
 		break;
 		}
 
 		for (ULONGLONG i = 0; i < hms.ullDataSize; i++)
-			pData[ullOffsetToSet + i] = static_cast<BYTE>(hms.pData[i]);
+			pData[sOffsetToSet + i] = static_cast<BYTE>(hms.pData[i]);
 
 		switch (m_enDataMode)
 		{
 		case EHexDataMode::DATA_VIRTUAL:
-			m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { vecRefB.ullOffset, hms.ullDataSize });
+			m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { vecSelRef[0].ullOffset, hms.ullDataSize });
 			break;
 		}
 	}
 	break;
 	case EModifyMode::MODIFY_REPEAT:
 	{
-		//Fill hms.ullSize bytes with hms.ullDataSize bytes hms.ullSize/hms.ullDataSize times.
-		ULONGLONG ullChunks = (ullTotalSize >= hms.ullDataSize) ? ullTotalSize / hms.ullDataSize : 0;
-		ULONGLONG ullVecIndex { 0 };
-		ULONGLONG ullTotalIndex { };
-
-		for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
+		for (const auto& iterSel : vecSelRef) //Selections' vector size times.
 		{
-			switch (m_enDataMode)
+			//Fill hms.vecSpan.ullSize bytes with hms.ullDataSize bytes hms.vecSpan.ullSize/hms.ullDataSize times.
+			ULONGLONG ullChunks = (iterSel.ullSize >= hms.ullDataSize) ? iterSel.ullSize / hms.ullDataSize : 0;
+			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
 			{
-			case EHexDataMode::DATA_MEMORY:
-				pData = m_pData;
-				ullOffsetToSet = vecSelectionRef.at(static_cast<size_t>(ullVecIndex)).ullOffset;
-				break;
-			case EHexDataMode::DATA_VIRTUAL:
-			{
-				pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({
-					vecSelectionRef.at(static_cast<size_t>(ullVecIndex)).ullOffset,
-					vecSelectionRef.at(static_cast<size_t>(ullVecIndex)).ullSize }));
-				ullOffsetToSet = 0;
-			}
-			break;
-			}
-
-			for (ULONGLONG iterData = 0; iterData < hms.ullDataSize; iterData++)
-			{
-				if (ullTotalIndex >= vecSelectionRef.at(static_cast<size_t>(ullVecIndex)).ullSize)
+				sOffsetToSet = static_cast<size_t>(iterSel.ullOffset) + 
+					static_cast<size_t>(iterChunk) * static_cast<size_t>(hms.ullDataSize);
+				switch (m_enDataMode)
 				{
-					++ullVecIndex;
-					ullTotalIndex = 0;
+				case EHexDataMode::DATA_MEMORY:
+					pData = m_pData + sOffsetToSet;
+					break;
+				case EHexDataMode::DATA_VIRTUAL:
+					pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ sOffsetToSet, hms.ullDataSize }));
+					break;
 				}
 
-				pData[ullOffsetToSet + ullTotalIndex] = static_cast<BYTE>(hms.pData[iterData]);
-				++ullTotalIndex;
-			}
+				std::memcpy(pData, hms.pData, static_cast<size_t>(hms.ullDataSize));
 
-			switch (m_enDataMode)
-			{
-			case EHexDataMode::DATA_VIRTUAL:
-				m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), {
-					vecSelectionRef.at(static_cast<size_t>(ullVecIndex)).ullOffset,
-					vecSelectionRef.at(static_cast<size_t>(ullVecIndex)).ullSize });
-				break;
+				switch (m_enDataMode)
+				{
+				case EHexDataMode::DATA_VIRTUAL:
+					m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { sOffsetToSet, hms.ullDataSize });
+					break;
+				}
 			}
 		}
 	}
@@ -3004,7 +2982,6 @@ void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
 		if (hms.ullDataSize > sizeof(QWORD))
 			return;
 
-		ULONGLONG ullChunks = vecSelectionRef.at(0).ullSize / hms.ullDataSize;
 		ULONGLONG ullDataOper { };
 
 		if (hms.pData) //hms.pData might be null for, say, EOperMode::OPER_NOT.
@@ -3026,25 +3003,25 @@ void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
 			}
 		}
 
-		//hms.vecSpan.size() times do following operations.
-		for (auto& ref : vecSelectionRef)
+		for (const auto& iterSel : vecSelRef) //Selections' vector size times.
 		{
+			ULONGLONG ullChunks = iterSel.ullSize / hms.ullDataSize;
 			for (ULONGLONG i = 0; i < ullChunks; i++)
 			{
 				QWORD ullData { };
 				switch (hms.ullDataSize)
 				{
 				case (sizeof(BYTE)):
-					ullData = GetByte(ref.ullOffset + i);
+					ullData = GetByte(iterSel.ullOffset + i);
 					break;
 				case (sizeof(WORD)):
-					ullData = GetWord(ref.ullOffset + (i * hms.ullDataSize));
+					ullData = GetWord(iterSel.ullOffset + (i * hms.ullDataSize));
 					break;
 				case (sizeof(DWORD)):
-					ullData = GetDword(ref.ullOffset + (i * hms.ullDataSize));
+					ullData = GetDword(iterSel.ullOffset + (i * hms.ullDataSize));
 					break;
 				case (sizeof(QWORD)):
-					ullData = GetQword(ref.ullOffset + (i * hms.ullDataSize));
+					ullData = GetQword(iterSel.ullOffset + (i * hms.ullDataSize));
 					break;
 				};
 
@@ -3086,16 +3063,16 @@ void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
 				switch (hms.ullDataSize)
 				{
 				case (sizeof(BYTE)):
-					SetByte(ref.ullOffset + i, static_cast<BYTE>(ullData & 0xFF));
+					SetByte(iterSel.ullOffset + i, static_cast<BYTE>(ullData & 0xFF));
 					break;
 				case (sizeof(WORD)):
-					SetWord(ref.ullOffset + (i * sizeof(WORD)), static_cast<WORD>(ullData & 0xFFFF));
+					SetWord(iterSel.ullOffset + (i * sizeof(WORD)), static_cast<WORD>(ullData & 0xFFFF));
 					break;
 				case (sizeof(DWORD)):
-					SetDword(ref.ullOffset + (i * sizeof(DWORD)), static_cast<DWORD>(ullData & 0xFFFFFFFF));
+					SetDword(iterSel.ullOffset + (i * sizeof(DWORD)), static_cast<DWORD>(ullData & 0xFFFFFFFF));
 					break;
 				case (sizeof(QWORD)):
-					SetQword(ref.ullOffset + (i * sizeof(QWORD)), ullData);
+					SetQword(iterSel.ullOffset + (i * sizeof(QWORD)), ullData);
 					break;
 				};
 			}

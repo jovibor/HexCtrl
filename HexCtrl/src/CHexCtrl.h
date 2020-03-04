@@ -64,8 +64,8 @@ namespace HEXCTRL::INTERNAL
 	********************************************************************************************/
 	struct HEXMODIFYSTRUCT
 	{
-		EModifyMode   enModifyMode { EModifyMode::MODIFY_DEFAULT }; //Modify mode.
-		EOperMode     enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
+		EModifyMode      enModifyMode { EModifyMode::MODIFY_DEFAULT }; //Modify mode.
+		EOperMode        enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
 		const std::byte* pData { };             //Pointer to a data to be set.
 		ULONGLONG        ullDataSize { };       //Size of the data pData is pointing to.
 		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
