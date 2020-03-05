@@ -2718,44 +2718,43 @@ template<typename T>
 void CHexCtrl::SetData(ULONGLONG ullOffset, T tData)
 {
 	//Data overflow check.
-	if (ullOffset >= m_ullDataSize)
+	if (ullOffset + sizeof(T) >= m_ullDataSize)
 		return;
 
-	PBYTE pData { };
-	ULONGLONG ullOffsetToSet { 0 };
+	std::byte* pData { };
 	switch (m_enDataMode)
 	{
 	case EHexDataMode::DATA_MEMORY:
-		pData = m_pData;
-		ullOffsetToSet = ullOffset;
+		pData = reinterpret_cast<std::byte*>(m_pData + ullOffset);
 		break;
 	case EHexDataMode::DATA_VIRTUAL:
-		pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffset, sizeof(T) }));
+		pData = m_pHexVirtual->GetData({ ullOffset, sizeof(T) });
 		break;
 	case EHexDataMode::DATA_MSG:
 	{
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
 		hns.stSpan = { ullOffset, sizeof(T) };
 		MsgWindowNotify(hns);
-		pData = reinterpret_cast<PBYTE>(hns.pData);
+		pData = hns.pData;
 	}
 	break;
 	}
 
-	*reinterpret_cast<T*>(pData + ullOffsetToSet) = tData;
+	std::copy_n(&tData, 1, reinterpret_cast<T*>(pData));
 
 	switch (m_enDataMode)
 	{
 	case EHexDataMode::DATA_VIRTUAL:
-		m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { ullOffset, sizeof(T) });
+		m_pHexVirtual->SetData(pData, { ullOffset, sizeof(T) });
 		break;
 	case EHexDataMode::DATA_MSG:
 	{
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_SETDATA } };
 		hns.stSpan = { ullOffset, sizeof(T) };
-		hns.pData = reinterpret_cast<std::byte*>(pData);
+		hns.pData = pData;
 		MsgWindowNotify(hns);
 	}
+	break;
 	}
 }
 
@@ -2793,64 +2792,61 @@ void CHexCtrl::Modify(MODIFYSTRUCT& hms, bool fRedraw)
 void CHexCtrl::ModifyDefault(MODIFYSTRUCT& hms)
 {
 	const auto& vecSelRef = hms.vecSpan;
-	PBYTE pData { };
-	ULONGLONG ullOffsetToSet { 0 };
+	std::byte* pData { };
 
 	switch (m_enDataMode)
 	{
 	case EHexDataMode::DATA_MEMORY:
-		pData = m_pData;
-		ullOffsetToSet = static_cast<size_t>(vecSelRef[0].ullOffset);
+		pData = reinterpret_cast<std::byte*>(m_pData + static_cast<size_t>(vecSelRef[0].ullOffset));
 		break;
 	case EHexDataMode::DATA_VIRTUAL:
-		pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ vecSelRef[0].ullOffset, hms.ullDataSize }));
+		pData = m_pHexVirtual->GetData({ vecSelRef[0].ullOffset, hms.ullDataSize });
 		break;
 	case EHexDataMode::DATA_MSG:
 	{
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
 		hns.stSpan = { vecSelRef[0].ullOffset, hms.ullDataSize };
 		MsgWindowNotify(hns);
-		pData = reinterpret_cast<PBYTE>(hns.pData);
+		pData = hns.pData;
 	}
 	break;
 	}
 
-	std::memcpy(pData + ullOffsetToSet, hms.pData, static_cast<size_t>(hms.ullDataSize));
+	std::copy_n(hms.pData, static_cast<size_t>(hms.ullDataSize), pData);
 
 	switch (m_enDataMode)
 	{
 	case EHexDataMode::DATA_VIRTUAL:
-		m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { vecSelRef[0].ullOffset, hms.ullDataSize });
+		m_pHexVirtual->SetData(pData, { vecSelRef[0].ullOffset, hms.ullDataSize });
 		break;
 	case EHexDataMode::DATA_MSG:
 	{
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_SETDATA } };
 		hns.stSpan = { vecSelRef[0].ullOffset, hms.ullDataSize };
-		hns.pData = reinterpret_cast<std::byte*>(pData);
+		hns.pData = pData;
 		MsgWindowNotify(hns);
 	}
 	break;
 	}
 }
 
-void CHexCtrl::ModifyRepeat(MODIFYSTRUCT & hms)
+void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
 {
 	const auto& vecSelRef = hms.vecSpan;
-	PBYTE pData { };
-	ULONGLONG ullOffsetToSet { 0 };
+	std::byte* pData { };
+	ULONGLONG ullOffset { 0 };
 
 	for (const auto& iterSel : vecSelRef) //Selections vector's size times.
 	{
-		if (hms.ullDataSize == 1) //Special one byte sized data case, where memset shines.
+		if (hms.ullDataSize == 1) //Special one byte sized data case, where std::fill shines.
 		{
 			switch (m_enDataMode)
 			{
-			case EHexDataMode::DATA_MEMORY: //Just memset the whole iterSel.ullSize with *hms.pData.
-				ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset);
-				pData = m_pData + ullOffsetToSet;
-				memset(pData, static_cast<int>(*hms.pData), static_cast<size_t>(iterSel.ullSize));
+			case EHexDataMode::DATA_MEMORY: //Just fill the whole iterSel.ullSize with *hms.pData.
+				pData = reinterpret_cast<std::byte*>(m_pData + static_cast<size_t>(iterSel.ullOffset));
+				std::fill_n(pData, static_cast<size_t>(iterSel.ullSize), *hms.pData);
 				break;
-			case EHexDataMode::DATA_VIRTUAL: //memset the ullSizeChunk size ullChunks times with *hms.pData.
+			case EHexDataMode::DATA_VIRTUAL: //Fill the ullSizeChunk size ullChunks times with *hms.pData.
 			{
 				ULONGLONG ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
 				if (iterSel.ullSize < ullSizeChunk)
@@ -2859,13 +2855,13 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT & hms)
 
 				for (ULONGLONG itVirtChunk = 0; itVirtChunk < ullChunks; ++itVirtChunk)
 				{
-					ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset) + (itVirtChunk * ullSizeChunk);
-					if (ullOffsetToSet + ullSizeChunk > m_ullDataSize) //Overflow check.
-						ullSizeChunk = m_ullDataSize - ullOffsetToSet;
+					ullOffset = static_cast<size_t>(iterSel.ullOffset) + (itVirtChunk * ullSizeChunk);
+					if (ullOffset + ullSizeChunk > m_ullDataSize) //Overflow check.
+						ullSizeChunk = m_ullDataSize - ullOffset;
 
-					pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffsetToSet, ullSizeChunk }));
-					memset(pData, static_cast<int>(*hms.pData), static_cast<size_t>(ullSizeChunk));
-					m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { ullOffsetToSet, ullSizeChunk });
+					pData = m_pHexVirtual->GetData({ ullOffset, ullSizeChunk });
+					std::fill_n(pData, static_cast<size_t>(ullSizeChunk), *hms.pData);
+					m_pHexVirtual->SetData(pData, { ullOffset, ullSizeChunk });
 				}
 			}
 			break;
@@ -2878,15 +2874,15 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT & hms)
 
 				for (ULONGLONG itVirtChunk = 0; itVirtChunk < ullChunks; ++itVirtChunk)
 				{
-					ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset) + (itVirtChunk * ullSizeChunk);
-					if (ullOffsetToSet + ullSizeChunk > m_ullDataSize) //Overflow check.
-						ullSizeChunk = m_ullDataSize - ullOffsetToSet;
+					ullOffset = static_cast<size_t>(iterSel.ullOffset) + (itVirtChunk * ullSizeChunk);
+					if (ullOffset + ullSizeChunk > m_ullDataSize) //Overflow check.
+						ullSizeChunk = m_ullDataSize - ullOffset;
 
 					HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
-					hns.stSpan = { ullOffsetToSet, ullSizeChunk };
+					hns.stSpan = { ullOffset, ullSizeChunk };
 					MsgWindowNotify(hns);
-					pData = reinterpret_cast<PBYTE>(hns.pData);
-					memset(pData, static_cast<int>(*hms.pData), static_cast<size_t>(ullSizeChunk));
+					pData = hns.pData;
+					std::fill_n(pData, static_cast<size_t>(ullSizeChunk), *hms.pData);
 					hns.hdr.code = HEXCTRL_MSG_SETDATA;
 					MsgWindowNotify(hns);
 				}
@@ -2900,38 +2896,38 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT & hms)
 			ULONGLONG ullChunks = (iterSel.ullSize >= hms.ullDataSize) ? iterSel.ullSize / hms.ullDataSize : 0;
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
 			{
-				ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset) +
+				ullOffset = static_cast<size_t>(iterSel.ullOffset) +
 					static_cast<size_t>(iterChunk) * static_cast<size_t>(hms.ullDataSize);
 				switch (m_enDataMode)
 				{
 				case EHexDataMode::DATA_MEMORY:
-					pData = m_pData + ullOffsetToSet;
+					pData = reinterpret_cast<std::byte*>(m_pData + ullOffset);
 					break;
 				case EHexDataMode::DATA_VIRTUAL:
-					pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffsetToSet, hms.ullDataSize }));
+					pData = m_pHexVirtual->GetData({ ullOffset, hms.ullDataSize });
 					break;
 				case EHexDataMode::DATA_MSG:
 				{
 					HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
-					hns.stSpan = { ullOffsetToSet, hms.ullDataSize };
+					hns.stSpan = { ullOffset, hms.ullDataSize };
 					MsgWindowNotify(hns);
-					pData = reinterpret_cast<PBYTE>(hns.pData);
+					pData = hns.pData;
 				}
 				break;
 				}
 
-				std::memcpy(pData, hms.pData, static_cast<size_t>(hms.ullDataSize));
+				std::copy_n(hms.pData, static_cast<size_t>(hms.ullDataSize), pData);
 
 				switch (m_enDataMode)
 				{
 				case EHexDataMode::DATA_VIRTUAL:
-					m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { ullOffsetToSet, hms.ullDataSize });
+					m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { ullOffset, hms.ullDataSize });
 					break;
 				case EHexDataMode::DATA_MSG:
 				{
 					HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_SETDATA } };
-					hns.stSpan = { ullOffsetToSet, hms.ullDataSize };
-					hns.pData = reinterpret_cast<std::byte*>(pData);
+					hns.stSpan = { ullOffset, hms.ullDataSize };
+					hns.pData = pData;
 					MsgWindowNotify(hns);
 				}
 				break;
@@ -2941,7 +2937,7 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT & hms)
 	}
 }
 
-void CHexCtrl::ModifyOperation(MODIFYSTRUCT & hms)
+void CHexCtrl::ModifyOperation(MODIFYSTRUCT& hms)
 {
 	if (hms.ullDataSize > sizeof(QWORD))
 		return;
