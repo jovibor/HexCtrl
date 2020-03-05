@@ -154,7 +154,8 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
 	public:
-		[[nodiscard]] PBYTE GetDataPtr(const HEXSPANSTRUCT& hss); //Gets pointer to exact data offset, no matter what mode the control works in.
+		[[nodiscard]] std::byte* GetData(const HEXSPANSTRUCT& hss); //Gets pointer to exact data offset, no matter what mode the control works in.
+		void SetData(std::byte* pData, const HEXSPANSTRUCT& hss);   //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
 		[[nodiscard]] PBYTE GetDataPtr();                      //Gets m_pData.
 		[[nodiscard]] ULONGLONG GetDataSize();                 //Gets m_ullDataSize.
 		template<typename T> [[nodiscard]] auto GetData(ULONGLONG ullOffset)->T; //Get T sized data from ullOffset.
@@ -216,7 +217,7 @@ namespace HEXCTRL::INTERNAL
 		HEXCOLORSTRUCT m_stColor;             //All control related colors.
 		EHexDataMode m_enDataMode { EHexDataMode::DATA_MEMORY }; //Control's data mode.
 		EHexShowMode m_enShowMode { };        //Current "Show data" mode.
-		PBYTE m_pData { };                    //Main data pointer. Modifiable in "Edit" mode.
+		std::byte* m_pData { };               //Main data pointer. Modifiable in "Edit" mode.
 		IHexVirtual* m_pHexVirtual { };       //Data handler pointer for EHexDataMode::DATA_VIRTUAL
 		HWND m_hwndMsg { };                   //Window handle the control messages will be sent to.
 		CWnd m_wndTtBkm { };                  //Tooltip window for bookmarks description.

@@ -895,7 +895,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	ClearData();
 
 	m_fDataSet = true;
-	m_pData = reinterpret_cast<PBYTE>(hds.pData);
+	m_pData = hds.pData;
 	m_ullDataSize = hds.ullDataSize;
 	m_enDataMode = hds.enDataMode;
 	m_fMutable = hds.fMutable;
@@ -2026,7 +2026,7 @@ void CHexCtrl::DrawHexAscii(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULON
 	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
 	if ((ullOffset + iSize) > m_ullDataSize)
 		iSize = m_ullDataSize - ullOffset;
-	const auto pData = GetDataPtr({ ullOffset, iSize }); //Pointer to data to print.
+	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
@@ -2107,7 +2107,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
 	if ((ullOffset + iSize) > m_ullDataSize)
 		iSize = m_ullDataSize - ullOffset;
-	const auto pData = GetDataPtr({ ullOffset, iSize }); //Pointer to data to print.
+	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
@@ -2257,7 +2257,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
 	if ((ullOffset + iSize) > m_ullDataSize)
 		iSize = m_ullDataSize - ullOffset;
-	const auto pData = GetDataPtr({ ullOffset, iSize }); //Pointer to data to print.
+	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
@@ -2372,7 +2372,7 @@ void CHexCtrl::DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGL
 	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
 	if ((ullOffset + iSize) > m_ullDataSize)
 		iSize = m_ullDataSize - ullOffset;
-	const auto pData = GetDataPtr({ ullOffset, iSize }); //Pointer to data to print.
+	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
@@ -2453,7 +2453,7 @@ void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine,
 	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
 	if ((ullOffset + iSize) > m_ullDataSize)
 		iSize = m_ullDataSize - ullOffset;
-	const auto pData = GetDataPtr({ ullOffset, iSize }); //Pointer to data to print.
+	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
@@ -2641,39 +2641,54 @@ void CHexCtrl::OnDestroy()
 	CWnd::OnDestroy();
 }
 
-PBYTE CHexCtrl::GetDataPtr(const HEXSPANSTRUCT& hss)
+std::byte* CHexCtrl::GetData(const HEXSPANSTRUCT& hss)
 {
 	if (hss.ullOffset >= m_ullDataSize || hss.ullSize > m_ullDataSize)
 		return nullptr;
 
+	std::byte* pData { };
 	switch (m_enDataMode)
 	{
 	case EHexDataMode::DATA_MEMORY:
-	{
-		return m_pData + hss.ullOffset;
-	}
-	break;
+		pData = m_pData + hss.ullOffset;
+		break;
 	case EHexDataMode::DATA_MSG:
 	{
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
 		hns.stSpan = hss;
 		MsgWindowNotify(hns);
-		return reinterpret_cast<PBYTE>(hns.pData);
+		pData = hns.pData;
 	}
 	break;
 	case EHexDataMode::DATA_VIRTUAL:
+		pData = m_pHexVirtual->GetData(hss);
+		break;
+	}
+
+	return pData;
+}
+
+void CHexCtrl::SetData(std::byte* pData, const HEXSPANSTRUCT& hss)
+{
+	switch (m_enDataMode)
 	{
-		if (m_pHexVirtual)
-			return reinterpret_cast<PBYTE>(m_pHexVirtual->GetData(hss));
+	case EHexDataMode::DATA_VIRTUAL:
+		m_pHexVirtual->SetData(pData, hss);
+		break;
+	case EHexDataMode::DATA_MSG:
+	{
+		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_SETDATA } };
+		hns.stSpan = hss;
+		hns.pData = pData;
+		MsgWindowNotify(hns);
 	}
 	break;
 	}
-	return nullptr;
 }
 
 PBYTE CHexCtrl::GetDataPtr()
 {
-	return m_pData;
+	return reinterpret_cast<PBYTE>(m_pData);
 }
 
 ULONGLONG CHexCtrl::GetDataSize()
@@ -2687,29 +2702,9 @@ auto CHexCtrl::GetData(ULONGLONG ullOffset)-> T
 	if (ullOffset >= m_ullDataSize)
 		return T { };
 
-	PBYTE pData { };
-	ULONGLONG ullOffsetToSet { 0 };
-	switch (m_enDataMode)
-	{
-	case EHexDataMode::DATA_MEMORY:
-		pData = m_pData;
-		ullOffsetToSet = ullOffset;
-		break;
-	case EHexDataMode::DATA_VIRTUAL:
-		pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffset, sizeof(T) }));
-		break;
-	case EHexDataMode::DATA_MSG:
-	{
-		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
-		hns.stSpan = { ullOffset, sizeof(T) };
-		MsgWindowNotify(hns);
-		pData = reinterpret_cast<PBYTE>(hns.pData);
-	}
-	break;
-	}
-
+	std::byte* pData = GetData({ ullOffset, sizeof(T) });
 	if (pData)
-		return *reinterpret_cast<T*>(pData + ullOffsetToSet);
+		return *reinterpret_cast<T*>(pData);
 
 	return T { };
 }
@@ -2718,44 +2713,12 @@ template<typename T>
 void CHexCtrl::SetData(ULONGLONG ullOffset, T tData)
 {
 	//Data overflow check.
-	if (ullOffset + sizeof(T) >= m_ullDataSize)
+	if (ullOffset + sizeof(T) > m_ullDataSize)
 		return;
 
-	std::byte* pData { };
-	switch (m_enDataMode)
-	{
-	case EHexDataMode::DATA_MEMORY:
-		pData = reinterpret_cast<std::byte*>(m_pData + ullOffset);
-		break;
-	case EHexDataMode::DATA_VIRTUAL:
-		pData = m_pHexVirtual->GetData({ ullOffset, sizeof(T) });
-		break;
-	case EHexDataMode::DATA_MSG:
-	{
-		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
-		hns.stSpan = { ullOffset, sizeof(T) };
-		MsgWindowNotify(hns);
-		pData = hns.pData;
-	}
-	break;
-	}
-
+	std::byte* pData = GetData({ ullOffset, sizeof(T) });
 	std::copy_n(&tData, 1, reinterpret_cast<T*>(pData));
-
-	switch (m_enDataMode)
-	{
-	case EHexDataMode::DATA_VIRTUAL:
-		m_pHexVirtual->SetData(pData, { ullOffset, sizeof(T) });
-		break;
-	case EHexDataMode::DATA_MSG:
-	{
-		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_SETDATA } };
-		hns.stSpan = { ullOffset, sizeof(T) };
-		hns.pData = pData;
-		MsgWindowNotify(hns);
-	}
-	break;
-	}
+	SetData(pData, { ullOffset, sizeof(T) });
 }
 
 void CHexCtrl::Modify(MODIFYSTRUCT& hms, bool fRedraw)
@@ -2792,42 +2755,9 @@ void CHexCtrl::Modify(MODIFYSTRUCT& hms, bool fRedraw)
 void CHexCtrl::ModifyDefault(MODIFYSTRUCT& hms)
 {
 	const auto& vecSelRef = hms.vecSpan;
-	std::byte* pData { };
-
-	switch (m_enDataMode)
-	{
-	case EHexDataMode::DATA_MEMORY:
-		pData = reinterpret_cast<std::byte*>(m_pData + static_cast<size_t>(vecSelRef[0].ullOffset));
-		break;
-	case EHexDataMode::DATA_VIRTUAL:
-		pData = m_pHexVirtual->GetData({ vecSelRef[0].ullOffset, hms.ullDataSize });
-		break;
-	case EHexDataMode::DATA_MSG:
-	{
-		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
-		hns.stSpan = { vecSelRef[0].ullOffset, hms.ullDataSize };
-		MsgWindowNotify(hns);
-		pData = hns.pData;
-	}
-	break;
-	}
-
-	std::copy_n(hms.pData, static_cast<size_t>(hms.ullDataSize), pData);
-
-	switch (m_enDataMode)
-	{
-	case EHexDataMode::DATA_VIRTUAL:
-		m_pHexVirtual->SetData(pData, { vecSelRef[0].ullOffset, hms.ullDataSize });
-		break;
-	case EHexDataMode::DATA_MSG:
-	{
-		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_SETDATA } };
-		hns.stSpan = { vecSelRef[0].ullOffset, hms.ullDataSize };
-		hns.pData = pData;
-		MsgWindowNotify(hns);
-	}
-	break;
-	}
+	std::byte* pData = GetData(vecSelRef[0]);
+	std::copy_n(hms.pData, static_cast<size_t>(vecSelRef[0].ullSize), pData);
+	SetData(pData, vecSelRef[0]);
 }
 
 void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
@@ -2843,10 +2773,11 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
 			switch (m_enDataMode)
 			{
 			case EHexDataMode::DATA_MEMORY: //Just fill the whole iterSel.ullSize with *hms.pData.
-				pData = reinterpret_cast<std::byte*>(m_pData + static_cast<size_t>(iterSel.ullOffset));
+				pData = GetData(iterSel);
 				std::fill_n(pData, static_cast<size_t>(iterSel.ullSize), *hms.pData);
 				break;
-			case EHexDataMode::DATA_VIRTUAL: //Fill the ullSizeChunk size ullChunks times with *hms.pData.
+			case EHexDataMode::DATA_MSG:    //Fill the ullSizeChunk size ullChunks times with *hms.pData.
+			case EHexDataMode::DATA_VIRTUAL:
 			{
 				ULONGLONG ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
 				if (iterSel.ullSize < ullSizeChunk)
@@ -2859,32 +2790,9 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
 					if (ullOffset + ullSizeChunk > m_ullDataSize) //Overflow check.
 						ullSizeChunk = m_ullDataSize - ullOffset;
 
-					pData = m_pHexVirtual->GetData({ ullOffset, ullSizeChunk });
+					pData = GetData({ ullOffset, ullSizeChunk });
 					std::fill_n(pData, static_cast<size_t>(ullSizeChunk), *hms.pData);
-					m_pHexVirtual->SetData(pData, { ullOffset, ullSizeChunk });
-				}
-			}
-			break;
-			case EHexDataMode::DATA_MSG:
-			{
-				ULONGLONG ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
-				if (iterSel.ullSize < ullSizeChunk)
-					ullSizeChunk = iterSel.ullSize;
-				ULONGLONG ullChunks = iterSel.ullSize % ullSizeChunk ? iterSel.ullSize / ullSizeChunk + 1 : iterSel.ullSize / ullSizeChunk;
-
-				for (ULONGLONG itVirtChunk = 0; itVirtChunk < ullChunks; ++itVirtChunk)
-				{
-					ullOffset = static_cast<size_t>(iterSel.ullOffset) + (itVirtChunk * ullSizeChunk);
-					if (ullOffset + ullSizeChunk > m_ullDataSize) //Overflow check.
-						ullSizeChunk = m_ullDataSize - ullOffset;
-
-					HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
-					hns.stSpan = { ullOffset, ullSizeChunk };
-					MsgWindowNotify(hns);
-					pData = hns.pData;
-					std::fill_n(pData, static_cast<size_t>(ullSizeChunk), *hms.pData);
-					hns.hdr.code = HEXCTRL_MSG_SETDATA;
-					MsgWindowNotify(hns);
+					SetData(pData, { ullOffset, ullSizeChunk });
 				}
 			}
 			break;
@@ -2898,40 +2806,10 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
 			{
 				ullOffset = static_cast<size_t>(iterSel.ullOffset) +
 					static_cast<size_t>(iterChunk) * static_cast<size_t>(hms.ullDataSize);
-				switch (m_enDataMode)
-				{
-				case EHexDataMode::DATA_MEMORY:
-					pData = reinterpret_cast<std::byte*>(m_pData + ullOffset);
-					break;
-				case EHexDataMode::DATA_VIRTUAL:
-					pData = m_pHexVirtual->GetData({ ullOffset, hms.ullDataSize });
-					break;
-				case EHexDataMode::DATA_MSG:
-				{
-					HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
-					hns.stSpan = { ullOffset, hms.ullDataSize };
-					MsgWindowNotify(hns);
-					pData = hns.pData;
-				}
-				break;
-				}
 
+				pData = GetData({ ullOffset, hms.ullDataSize });
 				std::copy_n(hms.pData, static_cast<size_t>(hms.ullDataSize), pData);
-
-				switch (m_enDataMode)
-				{
-				case EHexDataMode::DATA_VIRTUAL:
-					m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { ullOffset, hms.ullDataSize });
-					break;
-				case EHexDataMode::DATA_MSG:
-				{
-					HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_SETDATA } };
-					hns.stSpan = { ullOffset, hms.ullDataSize };
-					hns.pData = pData;
-					MsgWindowNotify(hns);
-				}
-				break;
-				}
+				SetData(pData, { ullOffset, hms.ullDataSize });
 			}
 		}
 	}
@@ -3882,7 +3760,7 @@ void CHexCtrl::Undo()
 		for (auto& i : *refUndo)
 		{
 			refRedo->emplace_back(UNDOSTRUCT { i.ullOffset, { } });
-			refRedo->back().vecData.reserve(i.vecData.size());
+			refRedo->back().vecData.resize(i.vecData.size());
 		}
 	}
 	catch (const std::bad_alloc&)
@@ -3892,18 +3770,17 @@ void CHexCtrl::Undo()
 	}
 
 	ULONGLONG ullIndex { 0 };
-	for (auto& iter : *refUndo)
+	for (const auto& iter : *refUndo)
 	{
 		auto& refUndoData = iter.vecData;
-		for (size_t i = 0; i < refUndoData.size(); i++)
-		{	//Fill Redo data with the next byte.
-			refRedo->at(static_cast<size_t>(ullIndex)).vecData.emplace_back(static_cast<std::byte>(GetData<BYTE>(iter.ullOffset + i)));
-			SetData(iter.ullOffset + i, static_cast<BYTE>(refUndoData[i])); //Undo the next byte.
-		}
+		std::byte* pData = GetData({ iter.ullOffset, refUndoData.size() });
+		//Fill Redo with the data.
+		std::copy_n(pData, refUndoData.size(), refRedo->at(static_cast<size_t>(ullIndex)).vecData.begin());
+		//Undo the data.
+		std::copy_n(refUndoData.begin(), refUndoData.size(), pData);
 		++ullIndex;
 	}
 	m_deqUndo.pop_back();
-
 	RedrawWindow();
 }
 
@@ -3921,15 +3798,14 @@ void CHexCtrl::Redo()
 	//Making new Undo data snapshot.
 	SnapshotUndo(vecSpan);
 
-	for (auto& iter : *refRedo)
+	for (const auto& iter : *refRedo)
 	{
-		auto& refData = iter.vecData;
-		for (size_t i = 0; i < refData.size(); i++)
-			SetData(iter.ullOffset + i, static_cast<BYTE>(refData[i]));
+		const auto& refData = iter.vecData;
+		std::byte* pData = GetData({ iter.ullOffset, refData.size() });
+		std::copy_n(refData.begin(), refData.size(), pData);
 	}
 
 	m_deqRedo.pop_back();
-
 	RedrawWindow();
 }
 
@@ -3953,10 +3829,10 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 	//Bad alloc may happen here!!!
 	try
 	{
-		for (auto& i : vecSpan)
+		for (auto& iterSel : vecSpan)
 		{
-			refUndo->emplace_back(UNDOSTRUCT { i.ullOffset, { } });
-			refUndo->back().vecData.reserve(static_cast<size_t>(i.ullSize));
+			refUndo->emplace_back(UNDOSTRUCT { iterSel.ullOffset, { } });
+			refUndo->back().vecData.resize(static_cast<size_t>(iterSel.ullSize));
 		}
 	}
 
@@ -3968,10 +3844,10 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 	}
 
 	ULONGLONG ullIndex { 0 };
-	for (auto& iter : vecSpan)
+	for (const auto& iterSel : vecSpan)
 	{
-		for (size_t i = 0; i < iter.ullSize; i++)
-			refUndo->at(static_cast<size_t>(ullIndex)).vecData.emplace_back(static_cast<std::byte>(GetData<BYTE>(iter.ullOffset + i)));
+		std::byte* pData = GetData(iterSel);
+		std::copy_n(pData, iterSel.ullSize, refUndo->at(static_cast<size_t>(ullIndex)).vecData.begin());
 		++ullIndex;
 	}
 }
