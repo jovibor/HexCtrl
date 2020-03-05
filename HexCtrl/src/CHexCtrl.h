@@ -33,7 +33,7 @@ namespace HEXCTRL::INTERNAL
 	namespace SCROLLEX { class CScrollEx; }
 
 	/********************************************************************************************
-	* EModifyMode - Enum of the data modification mode, used in HEXMODIFYSTRUCT.             *
+	* EModifyMode - Enum of the data modification mode, used in MODIFYSTRUCT.             *
 	********************************************************************************************/
 	enum class EModifyMode : WORD
 	{
@@ -41,8 +41,8 @@ namespace HEXCTRL::INTERNAL
 	};
 
 	/********************************************************************************************
-	* EOperMode - Enum of the data operation mode, used in HEXMODIFYSTRUCT,                  *
-	* when HEXMODIFYSTRUCT::enModifyMode is MODIFY_OPERATION.                                   *
+	* EOperMode - Enum of the data operation mode, used in MODIFYSTRUCT,                  *
+	* when MODIFYSTRUCT::enModifyMode is MODIFY_OPERATION.                                   *
 	********************************************************************************************/
 	enum class EOperMode : WORD
 	{
@@ -51,7 +51,7 @@ namespace HEXCTRL::INTERNAL
 	};
 
 	/********************************************************************************************
-	* HEXMODIFYSTRUCT - used to represent data modification parameters.                         *
+	* MODIFYSTRUCT - used to represent data modification parameters.                            *
 	* When enModifyMode is set to EModifyMode::MODIFY_DEFAULT, bytes from pData just replace    *
 	* corresponding data bytes as is. If enModifyMode is equal to EModifyMode::MODIFY_REPEAT    *
 	* then block by block replacement takes place few times.                                    *
@@ -62,7 +62,7 @@ namespace HEXCTRL::INTERNAL
 	* EModifyMode::MODIFY_OPERATION then enOperMode comes into play, showing what kind of       *
 	* operation must be performed on data.                                                      *
 	********************************************************************************************/
-	struct HEXMODIFYSTRUCT
+	struct MODIFYSTRUCT
 	{
 		EModifyMode      enModifyMode { EModifyMode::MODIFY_DEFAULT }; //Modify mode.
 		EOperMode        enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
@@ -159,7 +159,10 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] ULONGLONG GetDataSize();                 //Gets m_ullDataSize.
 		template<typename T> [[nodiscard]] auto GetData(ULONGLONG ullOffset)->T; //Get T sized data from ullOffset.
 		template<typename T>void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
-		void ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw = true);     //Main routine to modify data, in m_fMutable==true mode.
+		void Modify(MODIFYSTRUCT& hms, bool fRedraw = true);     //Main routine to modify data, in m_fMutable==true mode.
+		void ModifyDefault(MODIFYSTRUCT& hms);   //EModifyMode::MODIFY_DEFAULT
+		void ModifyRepeat(MODIFYSTRUCT& hms);    //EModifyMode::MODIFY_REPEAT
+		void ModifyOperation(MODIFYSTRUCT& hms); //EModifyMode::MODIFY_OPERATION
 		[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc);   //Recalc routine for printing.

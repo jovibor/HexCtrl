@@ -130,7 +130,7 @@ void CHexDlgOperations::OnOK()
 	int iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_OR, IDC_HEXCTRL_OPERATIONS_RADIO_DIV);
 	int iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_BYTE, IDC_HEXCTRL_OPERATIONS_RADIO_QWORD);
 
-	HEXMODIFYSTRUCT hms;
+	MODIFYSTRUCT hms;
 	hms.enModifyMode = EModifyMode::MODIFY_OPERATION;
 	hms.vecSpan = pHex->GetSelection();
 	if (hms.vecSpan.empty())
@@ -218,7 +218,7 @@ void CHexDlgOperations::OnOK()
 		break;
 	}
 
-	pHex->ModifyData(hms);
+	pHex->Modify(hms);
 	pHex->SetFocus();
 
 	CDialogEx::OnOK();

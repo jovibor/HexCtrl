@@ -138,7 +138,7 @@ CHexCtrl::CHexCtrl()
 		wc.cbClsExtra = wc.cbWndExtra = 0;
 		wc.hInstance = hInst;
 		wc.hIcon = wc.hIconSm = nullptr;
-		wc.hCursor = static_cast<HCURSOR>(LoadImageW(0, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
+		wc.hCursor = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 		wc.hbrBackground = nullptr;
 		wc.lpszMenuName = nullptr;
 		wc.lpszClassName = WSTR_HEXCTRL_CLASSNAME;
@@ -736,28 +736,26 @@ void CHexCtrl::Print()
 
 	rcPrint.bottom -= 200; //Ajust bottom indent of the printing rect.
 	RecalcPrint(pDC, &fontMain, &fontInfo, rcPrint);
-	auto linesInPage = m_iHeightWorkArea / m_sizeLetter.cy;
-	ULONGLONG ullTotalPages = ullTotalLines / linesInPage + 1;
+	auto iLinesInPage = m_iHeightWorkArea / m_sizeLetter.cy;
+	ULONGLONG ullTotalPages = ullTotalLines / iLinesInPage + 1;
 	int iPagesToPrint { };
 
 	if (dlg.PrintAll())
 	{
-		iPagesToPrint = (int)ullTotalPages;
+		iPagesToPrint = static_cast<int>(ullTotalPages);
 		ullStartLine = 0;
 	}
 	else if (dlg.PrintRange())
 	{
 		auto iFromPage = dlg.GetFromPage() - 1;
 		auto iToPage = dlg.GetToPage();
-		if (iFromPage > ullTotalPages) //Checks for out-of-range pages user input.
-			iPagesToPrint = 0;
-		else
+		if (iFromPage <= ullTotalPages) //Checks for out-of-range pages user input.
 		{
 			iPagesToPrint = iToPage - iFromPage;
 			if (iPagesToPrint + iFromPage > ullTotalPages)
-				iPagesToPrint = int(ullTotalPages - iFromPage);
+				iPagesToPrint = static_cast<int>(ullTotalPages - iFromPage);
 		}
-		ullStartLine = iFromPage * linesInPage;
+		ullStartLine = iFromPage * iLinesInPage;
 	}
 
 	const auto iIndentX = 100;
@@ -800,7 +798,7 @@ void CHexCtrl::Print()
 		{
 			pDC->StartPage();
 			pDC->OffsetViewportOrg(iIndentX, iIndentY);
-			ullEndLine = ullStartLine + linesInPage;
+			ullEndLine = ullStartLine + iLinesInPage;
 			//If m_dwDataCount is really small we adjust ullEndLine to be not bigger than maximum allowed.
 			if (ullEndLine > ullTotalLines)
 				ullEndLine = (m_ullDataSize % m_dwCapacity) ? ullTotalLines + 1 : ullTotalLines;
@@ -814,7 +812,7 @@ void CHexCtrl::Print()
 			DrawDataInterpret(pDC, &fontMain, ullStartLine, ullEndLine);
 			DrawSectorLines(pDC, ullStartLine, ullEndLine);
 
-			ullStartLine += linesInPage;
+			ullStartLine += iLinesInPage;
 			pDC->OffsetViewportOrg(-iIndentX, -iIndentY);
 			pDC->EndPage();
 		}
@@ -902,7 +900,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_enDataMode = hds.enDataMode;
 	m_fMutable = hds.fMutable;
 	m_pHexVirtual = hds.pHexVirtual;
-	m_dwCacheSize = hds.dwCacheSize > 0 ? hds.dwCacheSize : 0x10000; //64Kb
+	m_dwCacheSize = hds.dwCacheSize > 0x10000 ? hds.dwCacheSize : 0x10000; //64Kb is the minimum size.
 
 	m_pBookmarks->SetVirtual(hds.pHexBkmVirtual);
 	RecalcAll();
@@ -1830,7 +1828,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	if (!m_fMutable || (GetKeyState(VK_CONTROL) < 0))
 		return;
 
-	HEXMODIFYSTRUCT hms;
+	MODIFYSTRUCT hms;
 	hms.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, 1 });
 	hms.ullDataSize = 1;
 
@@ -1854,7 +1852,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	}
 
 	hms.pData = reinterpret_cast<std::byte*>(&chByte);
-	ModifyData(hms);
+	Modify(hms);
 	CaretMoveRight();
 }
 
@@ -2712,12 +2710,12 @@ auto CHexCtrl::GetData(ULONGLONG ullOffset)-> T
 
 	if (pData)
 		return *reinterpret_cast<T*>(pData + ullOffsetToSet);
-	else
-		return T { };
+
+	return T { };
 }
 
 template<typename T>
-inline void CHexCtrl::SetData(ULONGLONG ullOffset, T tData)
+void CHexCtrl::SetData(ULONGLONG ullOffset, T tData)
 {
 	//Data overflow check.
 	if (ullOffset >= m_ullDataSize)
@@ -2761,275 +2759,288 @@ inline void CHexCtrl::SetData(ULONGLONG ullOffset, T tData)
 	}
 }
 
-void CHexCtrl::ModifyData(HEXMODIFYSTRUCT& hms, bool fRedraw)
+void CHexCtrl::Modify(MODIFYSTRUCT& hms, bool fRedraw)
 {
-	if (!m_fMutable)
+	if (!IsMutable())
 		return;
-
-	const auto& vecSelRef = hms.vecSpan;
 
 	//Undo only for DATA_MEMORY for now.
 	if (m_enDataMode == EHexDataMode::DATA_MEMORY)
 	{
 		m_deqRedo.clear(); //No Redo unless we make Undo.
-		SnapshotUndo(vecSelRef);
+		SnapshotUndo(hms.vecSpan);
 	}
-
-	PBYTE pData { };
-	ULONGLONG ullOffsetToSet { 0 };
 
 	switch (hms.enModifyMode)
 	{
 	case EModifyMode::MODIFY_DEFAULT:
-	{
-		switch (m_enDataMode)
-		{
-		case EHexDataMode::DATA_MEMORY:
-			pData = m_pData;
-			ullOffsetToSet = static_cast<size_t>(vecSelRef[0].ullOffset);
-			break;
-		case EHexDataMode::DATA_VIRTUAL:
-			pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ vecSelRef[0].ullOffset, hms.ullDataSize }));
-			break;
-		case EHexDataMode::DATA_MSG:
-		{
-			HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
-			hns.stSpan = { vecSelRef[0].ullOffset, hms.ullDataSize };
-			MsgWindowNotify(hns);
-			pData = reinterpret_cast<PBYTE>(hns.pData);
-		}
+		ModifyDefault(hms);
 		break;
-		}
-
-		std::memcpy(pData + ullOffsetToSet, hms.pData, static_cast<size_t>(hms.ullDataSize));
-
-		switch (m_enDataMode)
-		{
-		case EHexDataMode::DATA_VIRTUAL:
-			m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { vecSelRef[0].ullOffset, hms.ullDataSize });
-			break;
-		case EHexDataMode::DATA_MSG:
-		{
-			HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_SETDATA } };
-			hns.stSpan = { vecSelRef[0].ullOffset, hms.ullDataSize };
-			hns.pData = reinterpret_cast<std::byte*>(pData);
-			MsgWindowNotify(hns);
-		}
-		break;
-		}
-	}
-	break;
 	case EModifyMode::MODIFY_REPEAT:
-	{
-		for (const auto& iterSel : vecSelRef) //Selections vector's size times.
-		{
-			if (hms.ullDataSize == 1) //Special one byte sized data case, where memset shines.
-			{
-				switch (m_enDataMode)
-				{
-				case EHexDataMode::DATA_MEMORY: //Just memset the whole iterSel.ullSize with *hms.pData.
-					ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset);
-					pData = m_pData + ullOffsetToSet;
-					memset(pData, static_cast<int>(*hms.pData), static_cast<size_t>(iterSel.ullSize));
-					break;
-				case EHexDataMode::DATA_VIRTUAL: //memset the ullSizeChunk size ullChunks times with *hms.pData.
-				{
-					ULONGLONG ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
-					if (iterSel.ullSize < ullSizeChunk)
-						ullSizeChunk = iterSel.ullSize;
-					ULONGLONG ullChunks = iterSel.ullSize % ullSizeChunk ? iterSel.ullSize / ullSizeChunk + 1 : iterSel.ullSize / ullSizeChunk;
-
-					for (ULONGLONG itVirtChunk = 0; itVirtChunk < ullChunks; ++itVirtChunk)
-					{
-						ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset) + (itVirtChunk * ullSizeChunk);
-						if (ullOffsetToSet + ullSizeChunk > m_ullDataSize) //Overflow check.
-							ullSizeChunk = m_ullDataSize - ullOffsetToSet;
-
-						pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffsetToSet, ullSizeChunk }));
-						memset(pData, static_cast<int>(*hms.pData), static_cast<size_t>(ullSizeChunk));
-						m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { ullOffsetToSet, ullSizeChunk });
-					}
-				}
-				break;
-				case EHexDataMode::DATA_MSG:
-				{
-					ULONGLONG ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
-					if (iterSel.ullSize < ullSizeChunk)
-						ullSizeChunk = iterSel.ullSize;
-					ULONGLONG ullChunks = iterSel.ullSize % ullSizeChunk ? iterSel.ullSize / ullSizeChunk + 1 : iterSel.ullSize / ullSizeChunk;
-
-					for (ULONGLONG itVirtChunk = 0; itVirtChunk < ullChunks; ++itVirtChunk)
-					{
-						ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset) + (itVirtChunk * ullSizeChunk);
-						if (ullOffsetToSet + ullSizeChunk > m_ullDataSize) //Overflow check.
-							ullSizeChunk = m_ullDataSize - ullOffsetToSet;
-
-						HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
-						hns.stSpan = { ullOffsetToSet, ullSizeChunk };
-						MsgWindowNotify(hns);
-						pData = reinterpret_cast<PBYTE>(hns.pData);
-						memset(pData, static_cast<int>(*hms.pData), static_cast<size_t>(ullSizeChunk));
-						hns.hdr.code = HEXCTRL_MSG_SETDATA;
-						MsgWindowNotify(hns);
-					}
-				}
-				break;
-				}
-			}
-			else
-			{
-				//Fill hms.vecSpan.ullSize bytes with hms.ullDataSize bytes hms.vecSpan.ullSize/hms.ullDataSize times.
-				ULONGLONG ullChunks = (iterSel.ullSize >= hms.ullDataSize) ? iterSel.ullSize / hms.ullDataSize : 0;
-				for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
-				{
-					ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset) +
-						static_cast<size_t>(iterChunk) * static_cast<size_t>(hms.ullDataSize);
-					switch (m_enDataMode)
-					{
-					case EHexDataMode::DATA_MEMORY:
-						pData = m_pData + ullOffsetToSet;
-						break;
-					case EHexDataMode::DATA_VIRTUAL:
-						pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffsetToSet, hms.ullDataSize }));
-						break;
-					case EHexDataMode::DATA_MSG:
-					{
-						HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
-						hns.stSpan = { ullOffsetToSet, hms.ullDataSize };
-						MsgWindowNotify(hns);
-						pData = reinterpret_cast<PBYTE>(hns.pData);
-					}
-					break;
-					}
-
-					std::memcpy(pData, hms.pData, static_cast<size_t>(hms.ullDataSize));
-
-					switch (m_enDataMode)
-					{
-					case EHexDataMode::DATA_VIRTUAL:
-						m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { ullOffsetToSet, hms.ullDataSize });
-						break;
-					case EHexDataMode::DATA_MSG:
-					{
-						HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_SETDATA } };
-						hns.stSpan = { ullOffsetToSet, hms.ullDataSize };
-						hns.pData = reinterpret_cast<std::byte*>(pData);
-						MsgWindowNotify(hns);
-					}
-					break;
-					}
-				}
-			}
-		}
-	}
-	break;
+		ModifyRepeat(hms);
+		break;
 	case EModifyMode::MODIFY_OPERATION:
-	{
-		if (hms.ullDataSize > sizeof(QWORD))
-			return;
-
-		ULONGLONG ullDataOper { };
-		if (hms.pData) //hms.pData might be null for, say, EOperMode::OPER_NOT.
-		{
-			switch (hms.ullDataSize)
-			{
-			case (sizeof(BYTE)):
-				ullDataOper = *reinterpret_cast<const BYTE*>(hms.pData);
-				break;
-			case (sizeof(WORD)):
-				ullDataOper = *reinterpret_cast<const WORD*>(hms.pData);
-				break;
-			case (sizeof(DWORD)):
-				ullDataOper = *reinterpret_cast<const DWORD*>(hms.pData);
-				break;
-			case (sizeof(QWORD)):
-				ullDataOper = *reinterpret_cast<const QWORD*>(hms.pData);
-				break;
-			}
-		}
-
-		for (const auto& iterSel : vecSelRef) //Selections vector's size times.
-		{
-			ULONGLONG ullChunks = iterSel.ullSize / hms.ullDataSize;
-			for (ULONGLONG i = 0; i < ullChunks; i++)
-			{
-				QWORD ullData { };
-				switch (hms.ullDataSize)
-				{
-				case (sizeof(BYTE)):
-					ullData = GetData<BYTE>(iterSel.ullOffset + i);
-					break;
-				case (sizeof(WORD)):
-					ullData = GetData<WORD>(iterSel.ullOffset + (i * hms.ullDataSize));
-					break;
-				case (sizeof(DWORD)):
-					ullData = GetData<DWORD>(iterSel.ullOffset + (i * hms.ullDataSize));
-					break;
-				case (sizeof(QWORD)):
-					ullData = GetData<QWORD>(iterSel.ullOffset + (i * hms.ullDataSize));
-					break;
-				};
-
-				switch (hms.enOperMode)
-				{
-				case EOperMode::OPER_OR:
-					ullData |= ullDataOper;
-					break;
-				case EOperMode::OPER_XOR:
-					ullData ^= ullDataOper;
-					break;
-				case EOperMode::OPER_AND:
-					ullData &= ullDataOper;
-					break;
-				case EOperMode::OPER_NOT:
-					ullData = ~ullData;
-					break;
-				case EOperMode::OPER_SHL:
-					ullData <<= ullDataOper;
-					break;
-				case EOperMode::OPER_SHR:
-					ullData >>= ullDataOper;
-					break;
-				case EOperMode::OPER_ADD:
-					ullData += ullDataOper;
-					break;
-				case EOperMode::OPER_SUBTRACT:
-					ullData -= ullDataOper;
-					break;
-				case EOperMode::OPER_MULTIPLY:
-					ullData *= ullDataOper;
-					break;
-				case EOperMode::OPER_DIVIDE:
-					if (ullDataOper) //Division by Zero check.
-						ullData /= ullDataOper;
-					break;
-				}
-
-				switch (hms.ullDataSize)
-				{
-				case (sizeof(BYTE)):
-					SetData(iterSel.ullOffset + i, static_cast<BYTE>(ullData & 0xFF));
-					break;
-				case (sizeof(WORD)):
-					SetData(iterSel.ullOffset + (i * sizeof(WORD)), static_cast<WORD>(ullData & 0xFFFF));
-					break;
-				case (sizeof(DWORD)):
-					SetData(iterSel.ullOffset + (i * sizeof(DWORD)), static_cast<DWORD>(ullData & 0xFFFFFFFF));
-					break;
-				case (sizeof(QWORD)):
-					SetData(iterSel.ullOffset + (i * sizeof(QWORD)), ullData);
-					break;
-				};
-			}
-		}
-	}
-	break;
+		ModifyOperation(hms);
+		break;
 	}
 
 	ParentNotify(HEXCTRL_MSG_SETDATA);
 
 	if (fRedraw)
 		RedrawWindow();
+}
+
+void CHexCtrl::ModifyDefault(MODIFYSTRUCT& hms)
+{
+	const auto& vecSelRef = hms.vecSpan;
+	PBYTE pData { };
+	ULONGLONG ullOffsetToSet { 0 };
+
+	switch (m_enDataMode)
+	{
+	case EHexDataMode::DATA_MEMORY:
+		pData = m_pData;
+		ullOffsetToSet = static_cast<size_t>(vecSelRef[0].ullOffset);
+		break;
+	case EHexDataMode::DATA_VIRTUAL:
+		pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ vecSelRef[0].ullOffset, hms.ullDataSize }));
+		break;
+	case EHexDataMode::DATA_MSG:
+	{
+		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
+		hns.stSpan = { vecSelRef[0].ullOffset, hms.ullDataSize };
+		MsgWindowNotify(hns);
+		pData = reinterpret_cast<PBYTE>(hns.pData);
+	}
+	break;
+	}
+
+	std::memcpy(pData + ullOffsetToSet, hms.pData, static_cast<size_t>(hms.ullDataSize));
+
+	switch (m_enDataMode)
+	{
+	case EHexDataMode::DATA_VIRTUAL:
+		m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { vecSelRef[0].ullOffset, hms.ullDataSize });
+		break;
+	case EHexDataMode::DATA_MSG:
+	{
+		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_SETDATA } };
+		hns.stSpan = { vecSelRef[0].ullOffset, hms.ullDataSize };
+		hns.pData = reinterpret_cast<std::byte*>(pData);
+		MsgWindowNotify(hns);
+	}
+	break;
+	}
+}
+
+void CHexCtrl::ModifyRepeat(MODIFYSTRUCT & hms)
+{
+	const auto& vecSelRef = hms.vecSpan;
+	PBYTE pData { };
+	ULONGLONG ullOffsetToSet { 0 };
+
+	for (const auto& iterSel : vecSelRef) //Selections vector's size times.
+	{
+		if (hms.ullDataSize == 1) //Special one byte sized data case, where memset shines.
+		{
+			switch (m_enDataMode)
+			{
+			case EHexDataMode::DATA_MEMORY: //Just memset the whole iterSel.ullSize with *hms.pData.
+				ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset);
+				pData = m_pData + ullOffsetToSet;
+				memset(pData, static_cast<int>(*hms.pData), static_cast<size_t>(iterSel.ullSize));
+				break;
+			case EHexDataMode::DATA_VIRTUAL: //memset the ullSizeChunk size ullChunks times with *hms.pData.
+			{
+				ULONGLONG ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
+				if (iterSel.ullSize < ullSizeChunk)
+					ullSizeChunk = iterSel.ullSize;
+				ULONGLONG ullChunks = iterSel.ullSize % ullSizeChunk ? iterSel.ullSize / ullSizeChunk + 1 : iterSel.ullSize / ullSizeChunk;
+
+				for (ULONGLONG itVirtChunk = 0; itVirtChunk < ullChunks; ++itVirtChunk)
+				{
+					ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset) + (itVirtChunk * ullSizeChunk);
+					if (ullOffsetToSet + ullSizeChunk > m_ullDataSize) //Overflow check.
+						ullSizeChunk = m_ullDataSize - ullOffsetToSet;
+
+					pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffsetToSet, ullSizeChunk }));
+					memset(pData, static_cast<int>(*hms.pData), static_cast<size_t>(ullSizeChunk));
+					m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { ullOffsetToSet, ullSizeChunk });
+				}
+			}
+			break;
+			case EHexDataMode::DATA_MSG:
+			{
+				ULONGLONG ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
+				if (iterSel.ullSize < ullSizeChunk)
+					ullSizeChunk = iterSel.ullSize;
+				ULONGLONG ullChunks = iterSel.ullSize % ullSizeChunk ? iterSel.ullSize / ullSizeChunk + 1 : iterSel.ullSize / ullSizeChunk;
+
+				for (ULONGLONG itVirtChunk = 0; itVirtChunk < ullChunks; ++itVirtChunk)
+				{
+					ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset) + (itVirtChunk * ullSizeChunk);
+					if (ullOffsetToSet + ullSizeChunk > m_ullDataSize) //Overflow check.
+						ullSizeChunk = m_ullDataSize - ullOffsetToSet;
+
+					HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
+					hns.stSpan = { ullOffsetToSet, ullSizeChunk };
+					MsgWindowNotify(hns);
+					pData = reinterpret_cast<PBYTE>(hns.pData);
+					memset(pData, static_cast<int>(*hms.pData), static_cast<size_t>(ullSizeChunk));
+					hns.hdr.code = HEXCTRL_MSG_SETDATA;
+					MsgWindowNotify(hns);
+				}
+			}
+			break;
+			}
+		}
+		else
+		{
+			//Fill hms.vecSpan.ullSize bytes with hms.ullDataSize bytes hms.vecSpan.ullSize/hms.ullDataSize times.
+			ULONGLONG ullChunks = (iterSel.ullSize >= hms.ullDataSize) ? iterSel.ullSize / hms.ullDataSize : 0;
+			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
+			{
+				ullOffsetToSet = static_cast<size_t>(iterSel.ullOffset) +
+					static_cast<size_t>(iterChunk) * static_cast<size_t>(hms.ullDataSize);
+				switch (m_enDataMode)
+				{
+				case EHexDataMode::DATA_MEMORY:
+					pData = m_pData + ullOffsetToSet;
+					break;
+				case EHexDataMode::DATA_VIRTUAL:
+					pData = reinterpret_cast<PBYTE>(m_pHexVirtual->GetData({ ullOffsetToSet, hms.ullDataSize }));
+					break;
+				case EHexDataMode::DATA_MSG:
+				{
+					HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
+					hns.stSpan = { ullOffsetToSet, hms.ullDataSize };
+					MsgWindowNotify(hns);
+					pData = reinterpret_cast<PBYTE>(hns.pData);
+				}
+				break;
+				}
+
+				std::memcpy(pData, hms.pData, static_cast<size_t>(hms.ullDataSize));
+
+				switch (m_enDataMode)
+				{
+				case EHexDataMode::DATA_VIRTUAL:
+					m_pHexVirtual->SetData(reinterpret_cast<std::byte*>(pData), { ullOffsetToSet, hms.ullDataSize });
+					break;
+				case EHexDataMode::DATA_MSG:
+				{
+					HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_SETDATA } };
+					hns.stSpan = { ullOffsetToSet, hms.ullDataSize };
+					hns.pData = reinterpret_cast<std::byte*>(pData);
+					MsgWindowNotify(hns);
+				}
+				break;
+				}
+			}
+		}
+	}
+}
+
+void CHexCtrl::ModifyOperation(MODIFYSTRUCT & hms)
+{
+	if (hms.ullDataSize > sizeof(QWORD))
+		return;
+
+	const auto& vecSelRef = hms.vecSpan;
+	ULONGLONG ullDataOper { };
+	if (hms.pData) //hms.pData might be null for, say, EOperMode::OPER_NOT.
+	{
+		switch (hms.ullDataSize)
+		{
+		case (sizeof(BYTE)):
+			ullDataOper = *reinterpret_cast<const BYTE*>(hms.pData);
+			break;
+		case (sizeof(WORD)):
+			ullDataOper = *reinterpret_cast<const WORD*>(hms.pData);
+			break;
+		case (sizeof(DWORD)):
+			ullDataOper = *reinterpret_cast<const DWORD*>(hms.pData);
+			break;
+		case (sizeof(QWORD)):
+			ullDataOper = *reinterpret_cast<const QWORD*>(hms.pData);
+			break;
+		}
+	}
+
+	for (const auto& iterSel : vecSelRef) //Selections vector's size times.
+	{
+		ULONGLONG ullChunks = iterSel.ullSize / hms.ullDataSize;
+		for (ULONGLONG i = 0; i < ullChunks; i++)
+		{
+			QWORD ullData { };
+			switch (hms.ullDataSize)
+			{
+			case (sizeof(BYTE)):
+				ullData = GetData<BYTE>(iterSel.ullOffset + i);
+				break;
+			case (sizeof(WORD)):
+				ullData = GetData<WORD>(iterSel.ullOffset + (i * hms.ullDataSize));
+				break;
+			case (sizeof(DWORD)):
+				ullData = GetData<DWORD>(iterSel.ullOffset + (i * hms.ullDataSize));
+				break;
+			case (sizeof(QWORD)):
+				ullData = GetData<QWORD>(iterSel.ullOffset + (i * hms.ullDataSize));
+				break;
+			};
+
+			switch (hms.enOperMode)
+			{
+			case EOperMode::OPER_OR:
+				ullData |= ullDataOper;
+				break;
+			case EOperMode::OPER_XOR:
+				ullData ^= ullDataOper;
+				break;
+			case EOperMode::OPER_AND:
+				ullData &= ullDataOper;
+				break;
+			case EOperMode::OPER_NOT:
+				ullData = ~ullData;
+				break;
+			case EOperMode::OPER_SHL:
+				ullData <<= ullDataOper;
+				break;
+			case EOperMode::OPER_SHR:
+				ullData >>= ullDataOper;
+				break;
+			case EOperMode::OPER_ADD:
+				ullData += ullDataOper;
+				break;
+			case EOperMode::OPER_SUBTRACT:
+				ullData -= ullDataOper;
+				break;
+			case EOperMode::OPER_MULTIPLY:
+				ullData *= ullDataOper;
+				break;
+			case EOperMode::OPER_DIVIDE:
+				if (ullDataOper) //Division by Zero check.
+					ullData /= ullDataOper;
+				break;
+			}
+
+			switch (hms.ullDataSize)
+			{
+			case (sizeof(BYTE)):
+				SetData(iterSel.ullOffset + i, static_cast<BYTE>(ullData & 0xFF));
+				break;
+			case (sizeof(WORD)):
+				SetData(iterSel.ullOffset + (i * sizeof(WORD)), static_cast<WORD>(ullData & 0xFFFF));
+				break;
+			case (sizeof(DWORD)):
+				SetData(iterSel.ullOffset + (i * sizeof(DWORD)), static_cast<DWORD>(ullData & 0xFFFFFFFF));
+				break;
+			case (sizeof(QWORD)):
+				SetData(iterSel.ullOffset + (i * sizeof(QWORD)), ullData);
+				break;
+			};
+		}
+	}
 }
 
 HWND CHexCtrl::GetMsgWindow()const
@@ -3570,7 +3581,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	if (m_ullCaretPos + ullSize > m_ullDataSize)
 		ullSize = m_ullDataSize - m_ullCaretPos;
 
-	HEXMODIFYSTRUCT hmd;
+	MODIFYSTRUCT hmd;
 	ULONGLONG ullSizeToModify { };
 
 	std::string strData;
@@ -3613,7 +3624,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	}
 
 	hmd.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, ullSizeToModify });
-	ModifyData(hmd);
+	Modify(hmd);
 
 	GlobalUnlock(hClipboard);
 	CloseClipboard();
@@ -4096,13 +4107,13 @@ void CHexCtrl::FillWithZeros()
 	if (!IsDataSet())
 		return;
 
-	HEXMODIFYSTRUCT hms;
+	MODIFYSTRUCT hms;
 	hms.vecSpan = m_pSelection->GetData();
 	hms.ullDataSize = 1;
 	hms.enModifyMode = EModifyMode::MODIFY_REPEAT;
 	std::byte byteZero { 0 };
 	hms.pData = &byteZero;
-	ModifyData(hms);
+	Modify(hms);
 }
 
 void CHexCtrl::WstrCapacityFill()

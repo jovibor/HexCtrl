@@ -289,11 +289,11 @@ void CHexDlgSearch::Search()
 
 void CHexDlgSearch::SearchReplace(ULONGLONG ullIndex, const BYTE* pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw)
 {
-	HEXMODIFYSTRUCT hms;
+	MODIFYSTRUCT hms;
 	hms.vecSpan.emplace_back(HEXSPANSTRUCT { ullIndex, nSizeData });
 	hms.ullDataSize = nSizeReplace;
 	hms.pData = reinterpret_cast<const std::byte*>(pData);
-	GetHexCtrl()->ModifyData(hms, fRedraw);
+	GetHexCtrl()->Modify(hms, fRedraw);
 }
 
 void CHexDlgSearch::OnButtonSearchF()
