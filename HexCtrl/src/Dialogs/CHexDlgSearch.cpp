@@ -101,7 +101,7 @@ void CHexDlgSearch::Search()
 		return;
 
 	auto ullDataSize = pHexCtrl->GetDataSize();
-	auto pData = pHexCtrl->GetDataPtr();
+	auto pData = reinterpret_cast<PBYTE>(pHexCtrl->GetData({ 0, 0 }));
 	if (wstrSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffset >= ullDataSize)
 		return;
 

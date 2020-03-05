@@ -156,7 +156,6 @@ namespace HEXCTRL::INTERNAL
 	public:
 		[[nodiscard]] std::byte* GetData(const HEXSPANSTRUCT& hss); //Gets pointer to exact data offset, no matter what mode the control works in.
 		void SetData(std::byte* pData, const HEXSPANSTRUCT& hss);   //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
-		[[nodiscard]] PBYTE GetDataPtr();                      //Gets m_pData.
 		[[nodiscard]] ULONGLONG GetDataSize();                 //Gets m_ullDataSize.
 		template<typename T> [[nodiscard]] auto GetData(ULONGLONG ullOffset)->T; //Get T sized data from ullOffset.
 		template<typename T>void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
@@ -175,6 +174,14 @@ namespace HEXCTRL::INTERNAL
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;   //Point of Hex chunk.
 		void AsciiChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Ascii chunk.
 		void ClipboardCopy(EClipboard enType);
+		std::string CopyHex();
+		std::string CopyHexLE();
+		std::string CopyHexFormatted();
+		std::string CopyAscii();
+		std::string CopyBase64();
+		std::string CopyCArr();
+		std::string CopyGrepHex();
+		std::string CopyPrintScreen();
 		void ClipboardPaste(EClipboard enType);
 		void UpdateInfoText();                                 //Updates text in the bottom "info" area according to currently selected data.
 		void ParentNotify(const HEXNOTIFYSTRUCT& hns)const;    //Notify routine used to send messages to Parent window.

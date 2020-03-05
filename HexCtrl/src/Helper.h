@@ -18,6 +18,7 @@ namespace HEXCTRL {
 	namespace INTERNAL {
 		//Fast lookup wchar_t array.
 		inline const wchar_t* const g_pwszHexMap { L"0123456789ABCDEF" };
+		inline const char* const g_pszHexMap { "0123456789ABCDEF" };
 
 		//Converts dwSize bytes of ull to WCHAR string.
 		void UllToWchars(ULONGLONG ull, wchar_t* pwsz, size_t dwSize, bool fAsHex = true);
