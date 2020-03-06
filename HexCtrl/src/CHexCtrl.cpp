@@ -1967,9 +1967,9 @@ void CHexCtrl::DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo)
 	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunk - iScrollH, m_iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
 		m_wstrCapacity.data(), static_cast<UINT>(m_wstrCapacity.size()), nullptr);
 
-	//"Ascii" text.
+	//"ASCII" text.
 	CRect rcAscii(m_iThirdVertLine - iScrollH, m_iFirstHorizLine, m_iFourthVertLine - iScrollH, iSecondHorizLine);
-	pDC->DrawTextW(L"Ascii", 5, rcAscii, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	pDC->DrawTextW(L"ASCII", 5, rcAscii, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	//Bottom "Info" rect.
 	CRect rcInfo(m_iFirstVertLine + 1 - iScrollH, iThirdHorizLine + 1, m_iFourthVertLine, iFourthHorizLine); //Fill bottom rcClient until iFourthHorizLine.
