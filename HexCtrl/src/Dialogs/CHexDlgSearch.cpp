@@ -109,7 +109,7 @@ void CHexDlgSearch::Search()
 	size_t nSizeSearch { };
 	const BYTE* pSearch { };
 	size_t nSizeReplace { };
-	const BYTE* pReplace { };
+	PBYTE pReplace { };
 	std::string strSearch;
 	std::string strReplace;
 	static const wchar_t* const wstrReplaceWarning { L"Replacing string is longer than Find string.\r\n"
@@ -287,12 +287,12 @@ void CHexDlgSearch::Search()
 	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)->SetWindowTextW(wstrInfo.data());
 }
 
-void CHexDlgSearch::SearchReplace(ULONGLONG ullIndex, const BYTE* pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw)
+void CHexDlgSearch::SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw)
 {
 	MODIFYSTRUCT hms;
 	hms.vecSpan.emplace_back(HEXSPANSTRUCT { ullIndex, nSizeData });
 	hms.ullDataSize = nSizeReplace;
-	hms.pData = reinterpret_cast<const std::byte*>(pData);
+	hms.pData = reinterpret_cast<std::byte*>(pData);
 	GetHexCtrl()->Modify(hms, fRedraw);
 }
 

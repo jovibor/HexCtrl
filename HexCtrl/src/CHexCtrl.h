@@ -13,6 +13,8 @@
 #include <optional>      ///std::optional
 #include <afxwin.h>      //MFC core and standard components.
 #include "../HexCtrl.h"
+#undef min //Undefined nasty windef.h macros
+#undef max
 
 namespace HEXCTRL::INTERNAL
 {
@@ -66,7 +68,7 @@ namespace HEXCTRL::INTERNAL
 	{
 		EModifyMode      enModifyMode { EModifyMode::MODIFY_DEFAULT }; //Modify mode.
 		EOperMode        enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
-		const std::byte* pData { };             //Pointer to a data to be set.
+		std::byte* pData { };                   //Pointer to a data to be set.
 		ULONGLONG        ullDataSize { };       //Size of the data pData is pointing to.
 		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
 	};
@@ -155,7 +157,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnNcPaint();
 	public:
 		[[nodiscard]] std::byte* GetData(const HEXSPANSTRUCT& hss); //Gets pointer to exact data offset, no matter what mode the control works in.
-		void SetData(std::byte* pData, const HEXSPANSTRUCT& hss);   //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
+		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss);   //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
 		[[nodiscard]] ULONGLONG GetDataSize();                 //Gets m_ullDataSize.
 		template<typename T> [[nodiscard]] auto GetData(ULONGLONG ullOffset)->T; //Get T sized data from ullOffset.
 		template<typename T>void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.

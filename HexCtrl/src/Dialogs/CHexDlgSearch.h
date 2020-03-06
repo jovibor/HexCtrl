@@ -48,7 +48,7 @@ namespace HEXCTRL::INTERNAL {
 		//ullOffset will return index of found occurence, if any.
 		bool DoSearch(const unsigned char* pWhere, ULONGLONG& ullStart, ULONGLONG ullUntil, const unsigned char* pSearch, size_t nSize, bool fForward = true);
 		void Search();
-		void SearchReplace(ULONGLONG ullIndex, const BYTE* pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw = true);
+		void SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw = true);
 		void ClearAll();
 		[[nodiscard]] ESearchMode GetSearchMode(); //Returns current search mode.
 		void ComboSearchFill(LPCWSTR pwsz);

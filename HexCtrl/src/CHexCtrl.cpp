@@ -2668,10 +2668,13 @@ std::byte* CHexCtrl::GetData(const HEXSPANSTRUCT& hss)
 	return pData;
 }
 
-void CHexCtrl::SetData(std::byte* pData, const HEXSPANSTRUCT& hss)
+void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss)
 {
 	switch (m_enDataMode)
 	{
+	case EHexDataMode::DATA_MEMORY:
+		//No need to do anything. Data is already set in pData memory.
+		break;
 	case EHexDataMode::DATA_VIRTUAL:
 		m_pHexVirtual->SetData(pData, hss);
 		break;
@@ -2713,7 +2716,7 @@ void CHexCtrl::SetData(ULONGLONG ullOffset, T tData)
 
 	std::byte* pData = GetData({ ullOffset, sizeof(T) });
 	std::copy_n(&tData, 1, reinterpret_cast<T*>(pData));
-	SetData(pData, { ullOffset, sizeof(T) });
+	SetDataVirtual(pData, { ullOffset, sizeof(T) });
 }
 
 void CHexCtrl::Modify(MODIFYSTRUCT& hms, bool fRedraw)
@@ -2752,7 +2755,7 @@ void CHexCtrl::ModifyDefault(MODIFYSTRUCT& hms)
 	const auto& vecSelRef = hms.vecSpan;
 	std::byte* pData = GetData(vecSelRef[0]);
 	std::copy_n(hms.pData, static_cast<size_t>(vecSelRef[0].ullSize), pData);
-	SetData(pData, vecSelRef[0]);
+	SetDataVirtual(pData, vecSelRef[0]);
 }
 
 void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
@@ -2763,39 +2766,63 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
 
 	for (const auto& iterSel : vecSelRef) //Selections vector's size times.
 	{
-		if (hms.ullDataSize == 1) //Special one byte sized data case, where std::fill shines.
+		if (hms.ullDataSize == sizeof(std::byte) //Special cases for fast std::fill.
+			|| hms.ullDataSize == sizeof(WORD)
+			|| hms.ullDataSize == sizeof(DWORD)
+			|| hms.ullDataSize == sizeof(QWORD))
 		{
+			ULONGLONG ullSizeChunk { };
+			ULONGLONG ullChunks { };
 			switch (m_enDataMode)
 			{
 			case EHexDataMode::DATA_MEMORY: //Just fill the whole iterSel.ullSize with *hms.pData.
-				pData = GetData(iterSel);
-				std::fill_n(pData, static_cast<size_t>(iterSel.ullSize), *hms.pData);
+				ullSizeChunk = iterSel.ullSize;
+				ullChunks = 1;
 				break;
 			case EHexDataMode::DATA_MSG:    //Fill the ullSizeChunk size ullChunks times with *hms.pData.
 			case EHexDataMode::DATA_VIRTUAL:
 			{
-				ULONGLONG ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
+				ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
+				ullSizeChunk -= (ullSizeChunk & (hms.ullDataSize - 1)); //Aligning chunk size to hms.ullDataSize.
 				if (iterSel.ullSize < ullSizeChunk)
 					ullSizeChunk = iterSel.ullSize;
-				ULONGLONG ullChunks = iterSel.ullSize % ullSizeChunk ? iterSel.ullSize / ullSizeChunk + 1 : iterSel.ullSize / ullSizeChunk;
-
-				for (ULONGLONG itVirtChunk = 0; itVirtChunk < ullChunks; ++itVirtChunk)
-				{
-					ullOffset = static_cast<size_t>(iterSel.ullOffset) + (itVirtChunk * ullSizeChunk);
-					if (ullOffset + ullSizeChunk > m_ullDataSize) //Overflow check.
-						ullSizeChunk = m_ullDataSize - ullOffset;
-
-					pData = GetData({ ullOffset, ullSizeChunk });
-					std::fill_n(pData, static_cast<size_t>(ullSizeChunk), *hms.pData);
-					SetData(pData, { ullOffset, ullSizeChunk });
-				}
+				ullChunks = iterSel.ullSize % ullSizeChunk ? iterSel.ullSize / ullSizeChunk + 1 : iterSel.ullSize / ullSizeChunk;
 			}
 			break;
+			}
+
+			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
+			{
+				ullOffset = static_cast<size_t>(iterSel.ullOffset) + (iterChunk * ullSizeChunk);
+				if (ullOffset + ullSizeChunk > m_ullDataSize) //Overflow check.
+					ullSizeChunk = m_ullDataSize - ullOffset;
+
+				pData = GetData({ ullOffset, ullSizeChunk });
+				switch (hms.ullDataSize)
+				{
+				case (sizeof(std::byte)):
+					std::fill_n(pData, static_cast<size_t>(ullSizeChunk), *hms.pData);
+					break;
+				case (sizeof(WORD)):
+					std::fill_n(reinterpret_cast<PWORD>(pData), static_cast<size_t>(ullSizeChunk) / sizeof(WORD),
+						*reinterpret_cast<PWORD>(hms.pData));
+					break;
+				case (sizeof(DWORD)):
+					std::fill_n(reinterpret_cast<PDWORD>(pData), static_cast<size_t>(ullSizeChunk) / sizeof(DWORD),
+						*reinterpret_cast<PDWORD>(hms.pData));
+					break;
+				case (sizeof(QWORD)):
+					std::fill_n(reinterpret_cast<PQWORD>(pData), static_cast<size_t>(ullSizeChunk) / sizeof(QWORD),
+						*reinterpret_cast<PQWORD>(hms.pData));
+					break;
+				}
+
+				SetDataVirtual(pData, { ullOffset, ullSizeChunk });
 			}
 		}
 		else
 		{
-			//Fill hms.vecSpan.ullSize bytes with hms.ullDataSize bytes hms.vecSpan.ullSize/hms.ullDataSize times.
+			//Fill iterSel.ullSize bytes with hms.ullDataSize bytes iterSel.ullSize / hms.ullDataSize times.
 			ULONGLONG ullChunks = (iterSel.ullSize >= hms.ullDataSize) ? iterSel.ullSize / hms.ullDataSize : 0;
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
 			{
@@ -2804,7 +2831,7 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
 
 				pData = GetData({ ullOffset, hms.ullDataSize });
 				std::copy_n(hms.pData, static_cast<size_t>(hms.ullDataSize), pData);
-				SetData(pData, { ullOffset, hms.ullDataSize });
+				SetDataVirtual(pData, { ullOffset, hms.ullDataSize });
 			}
 		}
 	}
@@ -2848,13 +2875,13 @@ void CHexCtrl::ModifyOperation(MODIFYSTRUCT& hms)
 				ullData = GetData<BYTE>(iterSel.ullOffset + i);
 				break;
 			case (sizeof(WORD)):
-				ullData = GetData<WORD>(iterSel.ullOffset + (i * hms.ullDataSize));
+				ullData = GetData<WORD>(iterSel.ullOffset + i * sizeof(WORD));
 				break;
 			case (sizeof(DWORD)):
-				ullData = GetData<DWORD>(iterSel.ullOffset + (i * hms.ullDataSize));
+				ullData = GetData<DWORD>(iterSel.ullOffset + i * sizeof(DWORD));
 				break;
 			case (sizeof(QWORD)):
-				ullData = GetData<QWORD>(iterSel.ullOffset + (i * hms.ullDataSize));
+				ullData = GetData<QWORD>(iterSel.ullOffset + i * sizeof(QWORD));
 				break;
 			};
 
@@ -2888,7 +2915,7 @@ void CHexCtrl::ModifyOperation(MODIFYSTRUCT& hms)
 				ullData *= ullDataOper;
 				break;
 			case EOperMode::OPER_DIVIDE:
-				if (ullDataOper) //Division by Zero check.
+				if (ullDataOper > 0) //Division by Zero check.
 					ullData /= ullDataOper;
 				break;
 			}
@@ -2896,13 +2923,13 @@ void CHexCtrl::ModifyOperation(MODIFYSTRUCT& hms)
 			switch (hms.ullDataSize)
 			{
 			case (sizeof(BYTE)):
-				SetData(iterSel.ullOffset + i, static_cast<BYTE>(ullData & 0xFF));
+				SetData(iterSel.ullOffset + i, static_cast<BYTE>(ullData & std::numeric_limits<BYTE>::max()));
 				break;
 			case (sizeof(WORD)):
-				SetData(iterSel.ullOffset + (i * sizeof(WORD)), static_cast<WORD>(ullData & 0xFFFF));
+				SetData(iterSel.ullOffset + (i * sizeof(WORD)), static_cast<WORD>(ullData & std::numeric_limits<WORD>::max()));
 				break;
 			case (sizeof(DWORD)):
-				SetData(iterSel.ullOffset + (i * sizeof(DWORD)), static_cast<DWORD>(ullData & 0xFFFFFFFF));
+				SetData(iterSel.ullOffset + (i * sizeof(DWORD)), static_cast<DWORD>(ullData & std::numeric_limits<DWORD>::max()));
 				break;
 			case (sizeof(QWORD)):
 				SetData(iterSel.ullOffset + (i * sizeof(QWORD)), ullData);
