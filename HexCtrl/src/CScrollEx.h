@@ -18,7 +18,6 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 	{
 	public:
 		explicit CScrollEx() = default;
-		~CScrollEx() = default;
 		bool Create(CWnd* pWnd, int iScrollType, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
 		void AddSibling(CScrollEx* pSibling);
 		[[nodiscard]] bool IsVisible()const;

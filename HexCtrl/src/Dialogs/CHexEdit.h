@@ -15,7 +15,6 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexEdit() = default;
-		~CHexEdit() = default;
 	protected:
 		afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 		afx_msg UINT OnGetDlgCode();

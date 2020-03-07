@@ -28,7 +28,6 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 	{
 	public:
 		explicit CListExHdr();
-		virtual ~CListExHdr() = default;
 		void SetHeight(DWORD dwHeight);
 		void SetFont(const LOGFONTW* pLogFontNew);
 		void SetColor(const LISTEXCOLORSTRUCT& lcs);

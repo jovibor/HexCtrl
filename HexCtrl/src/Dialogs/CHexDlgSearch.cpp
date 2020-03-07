@@ -121,8 +121,8 @@ void CHexDlgSearch::Search()
 	{
 	case ESearchMode::SEARCH_HEX:
 	{
-		strSearch = WstrToStr(wstrSearch);
 		strReplace = WstrToStr(wstrReplace);
+		strSearch = WstrToStr(wstrSearch);
 		if (!StrToHex(strSearch, strSearch))
 		{
 			m_iWrap = 1;

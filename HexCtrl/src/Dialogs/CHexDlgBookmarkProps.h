@@ -17,7 +17,6 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexDlgBookmarkProps(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_BOOKMARKPROPS, pParent) {}
-		~CHexDlgBookmarkProps() = default;
 		INT_PTR DoModal(HEXBOOKMARKSTRUCT* phbs);
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;

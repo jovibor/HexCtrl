@@ -18,7 +18,6 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexDlgDataInterpret(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_DATAINTERPRET, pParent) {}
-		~CHexDlgDataInterpret() = default;
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		ULONGLONG GetSize();
 		void InspectOffset(ULONGLONG ullOffset);

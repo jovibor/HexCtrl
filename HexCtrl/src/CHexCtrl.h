@@ -80,7 +80,6 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexCtrl();
-		~CHexCtrl() = default;
 		DWORD AddBookmark(const HEXBOOKMARKSTRUCT& hbs)override; //Adds new bookmark.
 		void ClearData()override;                           //Clears all data from HexCtrl's view (not touching data itself).
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
@@ -156,15 +155,17 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
 	public:
-		[[nodiscard]] std::byte* GetData(const HEXSPANSTRUCT& hss); //Gets pointer to exact data offset, no matter what mode the control works in.
-		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss);   //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
-		[[nodiscard]] ULONGLONG GetDataSize();                 //Gets m_ullDataSize.
+		[[nodiscard]] std::byte* GetData(const HEXSPANSTRUCT& hss);      //Gets pointer to exact data offset, no matter what mode the control works in.
+		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
+		[[nodiscard]] ULONGLONG GetDataSize();   //Gets m_ullDataSize.
 		template<typename T> [[nodiscard]] auto GetData(ULONGLONG ullOffset)->T; //Get T sized data from ullOffset.
 		template<typename T>void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
-		void Modify(MODIFYSTRUCT& hms, bool fRedraw = true);     //Main routine to modify data, in m_fMutable==true mode.
+		void Modify(MODIFYSTRUCT& hms, bool fRedraw = true);            //Main routine to modify data, in m_fMutable==true mode.
 		void ModifyDefault(MODIFYSTRUCT& hms);   //EModifyMode::MODIFY_DEFAULT
 		void ModifyRepeat(MODIFYSTRUCT& hms);    //EModifyMode::MODIFY_REPEAT
 		void ModifyOperation(MODIFYSTRUCT& hms); //EModifyMode::MODIFY_OPERATION
+		void Operations(std::byte* pData, EOperMode eMode, short size, std::byte* pDataOper, short sizeChunk); //Operations on sizeChunk sized data chunks.
+		template <typename T>void OperData(T* pData, EOperMode eMode, T tDataOper, short sizeChunk); //Immediate operations on pData.
 		[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc);   //Recalc routine for printing.
@@ -283,4 +284,73 @@ namespace HEXCTRL::INTERNAL
 		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
 		bool m_fSectorsPrintable { false };   //Print lines between sectors or not.
 	};
+
+	template<typename T>
+	inline auto CHexCtrl::GetData(ULONGLONG ullOffset)-> T
+	{
+		if (ullOffset >= m_ullDataSize)
+			return T { };
+
+		std::byte* pData = GetData({ ullOffset, sizeof(T) });
+		if (pData)
+			return *reinterpret_cast<T*>(pData);
+
+		return T { };
+	}
+
+	template<typename T>
+	inline void CHexCtrl::SetData(ULONGLONG ullOffset, T tData)
+	{
+		//Data overflow check.
+		if (ullOffset + sizeof(T) > m_ullDataSize)
+			return;
+
+		std::byte* pData = GetData({ ullOffset, sizeof(T) });
+		std::copy_n(&tData, 1, reinterpret_cast<T*>(pData));
+		SetDataVirtual(pData, { ullOffset, sizeof(T) });
+	}
+
+	template<typename T>
+	inline void CHexCtrl::OperData(T* pData, EOperMode eMode, T tDataOper, short sizeChunk)
+	{
+		auto sChunks = sizeChunk / sizeof(T);
+		for (size_t i = 0; i < sChunks; i++)
+		{
+			auto pDataMem = pData + i;
+			switch (eMode)
+			{
+			case EOperMode::OPER_OR:
+				*pDataMem |= tDataOper;
+				break;
+			case EOperMode::OPER_XOR:
+				*pDataMem ^= tDataOper;
+				break;
+			case EOperMode::OPER_AND:
+				*pDataMem &= tDataOper;
+				break;
+			case EOperMode::OPER_NOT:
+				*pDataMem = ~*pDataMem;
+				break;
+			case EOperMode::OPER_SHL:
+				*pDataMem <<= tDataOper;
+				break;
+			case EOperMode::OPER_SHR:
+				*pDataMem >>= tDataOper;
+				break;
+			case EOperMode::OPER_ADD:
+				*pDataMem += tDataOper;
+				break;
+			case EOperMode::OPER_SUBTRACT:
+				*pDataMem -= tDataOper;
+				break;
+			case EOperMode::OPER_MULTIPLY:
+				*pDataMem *= tDataOper;
+				break;
+			case EOperMode::OPER_DIVIDE:
+				if (tDataOper > 0) //Division by Zero check.
+					*pDataMem /= tDataOper;
+				break;
+			}
+		}
+	}
 }
