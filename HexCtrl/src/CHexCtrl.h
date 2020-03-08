@@ -164,8 +164,8 @@ namespace HEXCTRL::INTERNAL
 		void ModifyDefault(MODIFYSTRUCT& hms);   //EModifyMode::MODIFY_DEFAULT
 		void ModifyRepeat(MODIFYSTRUCT& hms);    //EModifyMode::MODIFY_REPEAT
 		void ModifyOperation(MODIFYSTRUCT& hms); //EModifyMode::MODIFY_OPERATION
-		void Operations(std::byte* pData, EOperMode eMode, short size, std::byte* pDataOper, short sizeChunk); //Operations on sizeChunk sized data chunks.
-		template <typename T>void OperData(T* pData, EOperMode eMode, T tDataOper, short sizeChunk); //Immediate operations on pData.
+		template <typename T>void OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeChunk); //Immediate operations on pData.
+		void CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLONG& ullSizeChunk, ULONGLONG& ullChunks);
 		[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc);   //Recalc routine for printing.
@@ -311,9 +311,9 @@ namespace HEXCTRL::INTERNAL
 	}
 
 	template<typename T>
-	inline void CHexCtrl::OperData(T* pData, EOperMode eMode, T tDataOper, short sizeChunk)
+	inline void CHexCtrl::OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeChunk)
 	{
-		auto sChunks = sizeChunk / sizeof(T);
+		auto sChunks = ullSizeChunk / sizeof(T);
 		for (size_t i = 0; i < sChunks; i++)
 		{
 			auto pDataMem = pData + i;

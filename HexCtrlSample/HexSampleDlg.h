@@ -18,10 +18,9 @@ protected:
 protected:
 	IHexCtrlPtr m_myHex { CreateHexCtrl() };
 	HEXDATASTRUCT m_hds;
-	BYTE m_data[1024 * 1024 * 800];
+	BYTE m_data[1024 * 1024 * 8];
 	HICON m_hIcon;
 
-	// Generated message map functions
 	BOOL OnInitDialog();
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
