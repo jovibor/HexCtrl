@@ -19,7 +19,6 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexDlgAbout(CWnd* pParent) : CDialogEx(IDD_HEXCTRL_ABOUT, pParent) {}
-		~CHexDlgAbout() = default;
 	protected:
 		BOOL OnInitDialog()override;
 		DECLARE_MESSAGE_MAP()

@@ -59,7 +59,6 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 	{
 	public:
 		explicit CListEx() = default;
-		~CListEx() = default;
 		bool Create(const LISTEXCREATESTRUCT& lcs)override;
 		void CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)override;
 		static int CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
@@ -92,8 +91,8 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		DECLARE_DYNAMIC(CListEx)
 		DECLARE_MESSAGE_MAP()
 	protected:
-		CListExHdr& GetHeaderCtrl() { return m_stListHeader; }
-		void InitHeader();
+		CListExHdr& GetHeaderCtrl()override { return m_stListHeader; }
+		void InitHeader()override;
 		bool HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& clrText);
 		bool HasTooltip(int iItem, int iSubItem, std::wstring** ppwstrText = nullptr, std::wstring** ppwstrCaption = nullptr);
 		bool HasMenu(int iItem, int iSubItem, CMenu** ppMenu = nullptr);
@@ -105,7 +104,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint pt);
 		afx_msg void OnRButtonDown(UINT nFlags, CPoint pt);
 		afx_msg void OnContextMenu(CWnd* pWnd, CPoint pt);
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		afx_msg void OnMouseMove(UINT nFlags, CPoint pt);
 		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 		afx_msg void OnTimer(UINT_PTR nIDEvent);

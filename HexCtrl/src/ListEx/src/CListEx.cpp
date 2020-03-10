@@ -423,8 +423,8 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTool
 		if (!wstrTooltip.empty() || !wstrCaption.empty())
 		{	//Initializing inner map.
 			std::unordered_map<int, CELLTOOLTIP> umapInner {
-				{ iSubItem, { CELLTOOLTIP { std::move(std::wstring { wstrTooltip }),
-				std::move(std::wstring { wstrCaption }) } } } };
+				{ iSubItem, { CELLTOOLTIP { std::wstring { wstrTooltip },
+				std::wstring { wstrCaption } } } } };
 			m_umapCellTt.insert({ ID, std::move(umapInner) });
 		}
 	}
@@ -437,15 +437,15 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTool
 		if (itInner == it->second.end())
 		{
 			if (!wstrTooltip.empty() || !wstrCaption.empty())
-				it->second.insert({ iSubItem, { std::move(std::wstring { wstrTooltip }),
-					std::move(std::wstring { wstrCaption }) } });
+				it->second.insert({ iSubItem, { std::wstring { wstrTooltip },
+					std::wstring { wstrCaption } } });
 		}
 		else
 		{	//If there is already exist this Item-Subitem's tooltip:
 			//change or erase it, depending on pwszTooltip emptiness.
 			if (!wstrTooltip.empty())
-				itInner->second = { std::move(std::wstring { wstrTooltip }),
-				std::move(std::wstring { wstrCaption }) };
+				itInner->second = { std::wstring { wstrTooltip },
+				std::wstring { wstrCaption } };
 			else
 				it->second.erase(itInner);
 		}

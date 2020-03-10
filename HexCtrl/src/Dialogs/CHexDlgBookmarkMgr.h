@@ -20,7 +20,6 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexDlgBookmarkMgr(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_BOOKMARKMGR, pParent) {}
-		~CHexDlgBookmarkMgr() = default;
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks);
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;

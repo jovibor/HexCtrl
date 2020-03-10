@@ -2668,10 +2668,13 @@ std::byte* CHexCtrl::GetData(const HEXSPANSTRUCT& hss)
 	return pData;
 }
 
-void CHexCtrl::SetData(std::byte* pData, const HEXSPANSTRUCT& hss)
+void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss)
 {
 	switch (m_enDataMode)
 	{
+	case EHexDataMode::DATA_MEMORY:
+		//No need to do anything. Data is already set in pData memory.
+		break;
 	case EHexDataMode::DATA_VIRTUAL:
 		m_pHexVirtual->SetData(pData, hss);
 		break;
@@ -2686,39 +2689,9 @@ void CHexCtrl::SetData(std::byte* pData, const HEXSPANSTRUCT& hss)
 	}
 }
 
-PBYTE CHexCtrl::GetDataPtr()
-{
-	return reinterpret_cast<PBYTE>(m_pData);
-}
-
 ULONGLONG CHexCtrl::GetDataSize()
 {
 	return m_ullDataSize;
-}
-
-template<typename T>
-auto CHexCtrl::GetData(ULONGLONG ullOffset)-> T
-{
-	if (ullOffset >= m_ullDataSize)
-		return T { };
-
-	std::byte* pData = GetData({ ullOffset, sizeof(T) });
-	if (pData)
-		return *reinterpret_cast<T*>(pData);
-
-	return T { };
-}
-
-template<typename T>
-void CHexCtrl::SetData(ULONGLONG ullOffset, T tData)
-{
-	//Data overflow check.
-	if (ullOffset + sizeof(T) > m_ullDataSize)
-		return;
-
-	std::byte* pData = GetData({ ullOffset, sizeof(T) });
-	std::copy_n(&tData, 1, reinterpret_cast<T*>(pData));
-	SetData(pData, { ullOffset, sizeof(T) });
 }
 
 void CHexCtrl::Modify(MODIFYSTRUCT& hms, bool fRedraw)
@@ -2757,7 +2730,7 @@ void CHexCtrl::ModifyDefault(MODIFYSTRUCT& hms)
 	const auto& vecSelRef = hms.vecSpan;
 	std::byte* pData = GetData(vecSelRef[0]);
 	std::copy_n(hms.pData, static_cast<size_t>(vecSelRef[0].ullSize), pData);
-	SetData(pData, vecSelRef[0]);
+	SetDataVirtual(pData, vecSelRef[0]);
 }
 
 void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
@@ -2768,39 +2741,49 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
 
 	for (const auto& iterSel : vecSelRef) //Selections vector's size times.
 	{
-		if (hms.ullDataSize == 1) //Special one byte sized data case, where std::fill shines.
+		if (hms.ullDataSize == sizeof(std::byte) //Special cases for fast std::fill.
+			|| hms.ullDataSize == sizeof(WORD)
+			|| hms.ullDataSize == sizeof(DWORD)
+			|| hms.ullDataSize == sizeof(QWORD))
 		{
-			switch (m_enDataMode)
-			{
-			case EHexDataMode::DATA_MEMORY: //Just fill the whole iterSel.ullSize with *hms.pData.
-				pData = GetData(iterSel);
-				std::fill_n(pData, static_cast<size_t>(iterSel.ullSize), *hms.pData);
-				break;
-			case EHexDataMode::DATA_MSG:    //Fill the ullSizeChunk size ullChunks times with *hms.pData.
-			case EHexDataMode::DATA_VIRTUAL:
-			{
-				ULONGLONG ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
-				if (iterSel.ullSize < ullSizeChunk)
-					ullSizeChunk = iterSel.ullSize;
-				ULONGLONG ullChunks = iterSel.ullSize % ullSizeChunk ? iterSel.ullSize / ullSizeChunk + 1 : iterSel.ullSize / ullSizeChunk;
+			ULONGLONG ullSizeChunk { };
+			ULONGLONG ullChunks { };
+			CalcChunksFromSize(iterSel.ullSize, hms.ullDataSize, ullSizeChunk, ullChunks);
 
-				for (ULONGLONG itVirtChunk = 0; itVirtChunk < ullChunks; ++itVirtChunk)
+			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
+			{
+				ullOffset = iterSel.ullOffset + (iterChunk * ullSizeChunk);
+				if (ullOffset + ullSizeChunk > m_ullDataSize) //Overflow check.
+					ullSizeChunk = m_ullDataSize - ullOffset;
+				if (ullOffset + ullSizeChunk > iterSel.ullOffset + iterSel.ullSize)
+					ullSizeChunk = (iterSel.ullOffset + iterSel.ullSize) - ullOffset;
+
+				pData = GetData({ ullOffset, ullSizeChunk });
+				switch (hms.ullDataSize)
 				{
-					ullOffset = static_cast<size_t>(iterSel.ullOffset) + (itVirtChunk * ullSizeChunk);
-					if (ullOffset + ullSizeChunk > m_ullDataSize) //Overflow check.
-						ullSizeChunk = m_ullDataSize - ullOffset;
-
-					pData = GetData({ ullOffset, ullSizeChunk });
+				case (sizeof(std::byte)):
 					std::fill_n(pData, static_cast<size_t>(ullSizeChunk), *hms.pData);
-					SetData(pData, { ullOffset, ullSizeChunk });
+					break;
+				case (sizeof(WORD)):
+					std::fill_n(reinterpret_cast<PWORD>(pData), static_cast<size_t>(ullSizeChunk) / sizeof(WORD),
+						*reinterpret_cast<PWORD>(hms.pData));
+					break;
+				case (sizeof(DWORD)):
+					std::fill_n(reinterpret_cast<PDWORD>(pData), static_cast<size_t>(ullSizeChunk) / sizeof(DWORD),
+						*reinterpret_cast<PDWORD>(hms.pData));
+					break;
+				case (sizeof(QWORD)):
+					std::fill_n(reinterpret_cast<PQWORD>(pData), static_cast<size_t>(ullSizeChunk) / sizeof(QWORD),
+						*reinterpret_cast<PQWORD>(hms.pData));
+					break;
 				}
-			}
-			break;
+				if (m_enDataMode != EHexDataMode::DATA_MEMORY)
+					SetDataVirtual(pData, { ullOffset, ullSizeChunk });
 			}
 		}
 		else
 		{
-			//Fill hms.vecSpan.ullSize bytes with hms.ullDataSize bytes hms.vecSpan.ullSize/hms.ullDataSize times.
+			//Fill iterSel.ullSize bytes with hms.ullDataSize bytes iterSel.ullSize / hms.ullDataSize times.
 			ULONGLONG ullChunks = (iterSel.ullSize >= hms.ullDataSize) ? iterSel.ullSize / hms.ullDataSize : 0;
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
 			{
@@ -2809,7 +2792,8 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
 
 				pData = GetData({ ullOffset, hms.ullDataSize });
 				std::copy_n(hms.pData, static_cast<size_t>(hms.ullDataSize), pData);
-				SetData(pData, { ullOffset, hms.ullDataSize });
+				if (m_enDataMode != EHexDataMode::DATA_MEMORY)
+					SetDataVirtual(pData, { ullOffset, hms.ullDataSize });
 			}
 		}
 	}
@@ -2819,101 +2803,88 @@ void CHexCtrl::ModifyOperation(MODIFYSTRUCT& hms)
 {
 	if (hms.ullDataSize > sizeof(QWORD))
 		return;
+	assert(hms.ullDataSize > 0 && ((hms.ullDataSize & (hms.ullDataSize - 1)) == 0)); //Power of 2 only! 
 
 	const auto& vecSelRef = hms.vecSpan;
-	ULONGLONG ullDataOper { };
-	if (hms.pData) //hms.pData might be null for, say, EOperMode::OPER_NOT.
-	{
-		switch (hms.ullDataSize)
-		{
-		case (sizeof(BYTE)):
-			ullDataOper = *reinterpret_cast<const BYTE*>(hms.pData);
-			break;
-		case (sizeof(WORD)):
-			ullDataOper = *reinterpret_cast<const WORD*>(hms.pData);
-			break;
-		case (sizeof(DWORD)):
-			ullDataOper = *reinterpret_cast<const DWORD*>(hms.pData);
-			break;
-		case (sizeof(QWORD)):
-			ullDataOper = *reinterpret_cast<const QWORD*>(hms.pData);
-			break;
-		}
-	}
-
 	for (const auto& iterSel : vecSelRef) //Selections vector's size times.
 	{
-		ULONGLONG ullChunks = iterSel.ullSize / hms.ullDataSize;
-		for (ULONGLONG i = 0; i < ullChunks; i++)
+		ULONGLONG ullSizeChunk { };
+		ULONGLONG ullChunks { };
+		CalcChunksFromSize(iterSel.ullSize, hms.ullDataSize, ullSizeChunk, ullChunks);
+
+		for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
 		{
-			QWORD ullData { };
+			ULONGLONG ullOffset = iterSel.ullOffset + (iterChunk * ullSizeChunk);
+			if (ullOffset + ullSizeChunk > m_ullDataSize) //Overflow check.
+				ullSizeChunk = m_ullDataSize - ullOffset;
+			if (ullOffset + ullSizeChunk > iterSel.ullOffset + iterSel.ullSize)
+				ullSizeChunk = (iterSel.ullOffset + iterSel.ullSize) - ullOffset;
+
+			std::byte* pData = GetData({ ullOffset, ullSizeChunk });
 			switch (hms.ullDataSize)
 			{
 			case (sizeof(BYTE)):
-				ullData = GetData<BYTE>(iterSel.ullOffset + i);
-				break;
-			case (sizeof(WORD)):
-				ullData = GetData<WORD>(iterSel.ullOffset + (i * hms.ullDataSize));
-				break;
-			case (sizeof(DWORD)):
-				ullData = GetData<DWORD>(iterSel.ullOffset + (i * hms.ullDataSize));
-				break;
-			case (sizeof(QWORD)):
-				ullData = GetData<QWORD>(iterSel.ullOffset + (i * hms.ullDataSize));
-				break;
-			};
-
-			switch (hms.enOperMode)
 			{
-			case EOperMode::OPER_OR:
-				ullData |= ullDataOper;
-				break;
-			case EOperMode::OPER_XOR:
-				ullData ^= ullDataOper;
-				break;
-			case EOperMode::OPER_AND:
-				ullData &= ullDataOper;
-				break;
-			case EOperMode::OPER_NOT:
-				ullData = ~ullData;
-				break;
-			case EOperMode::OPER_SHL:
-				ullData <<= ullDataOper;
-				break;
-			case EOperMode::OPER_SHR:
-				ullData >>= ullDataOper;
-				break;
-			case EOperMode::OPER_ADD:
-				ullData += ullDataOper;
-				break;
-			case EOperMode::OPER_SUBTRACT:
-				ullData -= ullDataOper;
-				break;
-			case EOperMode::OPER_MULTIPLY:
-				ullData *= ullDataOper;
-				break;
-			case EOperMode::OPER_DIVIDE:
-				if (ullDataOper) //Division by Zero check.
-					ullData /= ullDataOper;
-				break;
+				BYTE bDataOper { };
+				if (hms.pData) //pDataOper might be null for, say, EOperMode::OPER_NOT.
+					bDataOper = *reinterpret_cast<PBYTE>(hms.pData);
+				auto pOper = reinterpret_cast<PBYTE>(pData);
+				OperData(pOper, hms.enOperMode, bDataOper, ullSizeChunk);
+			}
+			break;
+			case (sizeof(WORD)):
+			{
+				WORD wDataOper { };
+				if (hms.pData)
+					wDataOper = *reinterpret_cast<PWORD>(hms.pData);
+				auto pOper = reinterpret_cast<PWORD>(pData);
+				OperData(pOper, hms.enOperMode, wDataOper, ullSizeChunk);
+			}
+			break;
+			case (sizeof(DWORD)):
+			{
+				DWORD dwDataOper { };
+				if (hms.pData)
+					dwDataOper = *reinterpret_cast<PDWORD>(hms.pData);
+				auto pOper = reinterpret_cast<PDWORD>(pData);
+				OperData(pOper, hms.enOperMode, dwDataOper, ullSizeChunk);
+			}
+			break;
+			case (sizeof(QWORD)):
+			{
+				QWORD qwDataOper { };
+				if (hms.pData)
+					qwDataOper = *reinterpret_cast<PQWORD>(hms.pData);
+				auto pOper = reinterpret_cast<PQWORD>(pData);
+				OperData(pOper, hms.enOperMode, qwDataOper, ullSizeChunk);
+			}
+			break;
 			}
 
-			switch (hms.ullDataSize)
-			{
-			case (sizeof(BYTE)):
-				SetData(iterSel.ullOffset + i, static_cast<BYTE>(ullData & 0xFF));
-				break;
-			case (sizeof(WORD)):
-				SetData(iterSel.ullOffset + (i * sizeof(WORD)), static_cast<WORD>(ullData & 0xFFFF));
-				break;
-			case (sizeof(DWORD)):
-				SetData(iterSel.ullOffset + (i * sizeof(DWORD)), static_cast<DWORD>(ullData & 0xFFFFFFFF));
-				break;
-			case (sizeof(QWORD)):
-				SetData(iterSel.ullOffset + (i * sizeof(QWORD)), ullData);
-				break;
-			};
+			if (m_enDataMode != EHexDataMode::DATA_MEMORY)
+				SetDataVirtual(pData, { ullOffset, ullSizeChunk });
 		}
+	}
+}
+
+void CHexCtrl::CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLONG& ullSizeChunk, ULONGLONG& ullChunks)
+{
+	switch (m_enDataMode)
+	{
+	case EHexDataMode::DATA_MEMORY:
+		ullSizeChunk = ullSize;
+		ullChunks = 1;
+		break;
+	case EHexDataMode::DATA_MSG:
+	case EHexDataMode::DATA_VIRTUAL:
+	{
+		ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
+		ullSizeChunk -= (ullSizeChunk & (ullAlign - 1)); //Aligning chunk size to hms.ullDataSize.
+		if (ullSize < ullSizeChunk)
+			ullSizeChunk = ullSize;
+		ullChunks = ullSize % ullSizeChunk ? ullSize / ullSizeChunk + 1 : ullSize / ullSizeChunk;
+	}
+	break;
 	}
 }
 
@@ -2974,7 +2945,7 @@ void CHexCtrl::RecalcAll()
 	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE);
 }
 
-void CHexCtrl::RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc)
+void CHexCtrl::RecalcPrint(CDC * pDC, CFont * pFontMain, CFont * pFontInfo, const CRect & rc)
 {
 	pDC->SelectObject(pFontMain);
 	TEXTMETRICW tm;
@@ -3081,7 +3052,7 @@ ULONGLONG CHexCtrl::GetBottomLine() const
 	return ullEndLine;
 }
 
-auto CHexCtrl::HitTest(const POINT& pt)const->std::optional<HITTESTSTRUCT>
+auto CHexCtrl::HitTest(const POINT & pt)const->std::optional<HITTESTSTRUCT>
 {
 	HITTESTSTRUCT stHit;
 	bool fHit { false };
@@ -3168,253 +3139,36 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 		return;
 	}
 
-	const char* const pszHexMap { "0123456789ABCDEF" };
-	std::string strToClipboard;
-	auto ullSelStart = m_pSelection->GetSelectionStart();
-	auto ullSelSize = m_pSelection->GetSelectionSize();
-
+	std::string strData;
 	switch (enType)
 	{
 	case EClipboard::COPY_HEX:
-	{
-		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 2);
-		for (unsigned i = 0; i < ullSelSize; ++i)
-		{
-			BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
-			strToClipboard += pszHexMap[(chByte & 0xF0) >> 4];
-			strToClipboard += pszHexMap[(chByte & 0x0F)];
-		}
-	}
-	break;
+		strData = CopyHex();
+		break;
 	case EClipboard::COPY_HEX_LE:
-	{
-		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 2);
-		for (int i = static_cast<int>(ullSelSize); i > 0; --i)
-		{
-			BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i - 1));
-			strToClipboard += pszHexMap[(chByte & 0xF0) >> 4];
-			strToClipboard += pszHexMap[(chByte & 0x0F)];
-		}
-	}
-	break;
+		strData = CopyHexLE();
+		break;
 	case EClipboard::COPY_HEX_FORMATTED:
-	{
-		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 3);
-		if (m_fSelectionBlock)
-		{
-			DWORD dwTail = m_pSelection->GetLineLength();
-			for (unsigned i = 0; i < ullSelSize; i++)
-			{
-				BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
-				strToClipboard += pszHexMap[(chByte & 0xF0) >> 4];
-				strToClipboard += pszHexMap[(chByte & 0x0F)];
-
-				if (i < (ullSelSize - 1) && (dwTail - 1) != 0)
-					if (((m_pSelection->GetLineLength() - dwTail + 1) % static_cast<DWORD>(m_enShowMode)) == 0) //Add space after hex full chunk, ShowAs_size depending.
-						strToClipboard += " ";
-				if (--dwTail == 0 && i < (ullSelSize - 1)) //Next row.
-				{
-					strToClipboard += "\r\n";
-					dwTail = m_pSelection->GetLineLength();
-				}
-			}
-		}
-		else
-		{
-			//How many spaces are needed to be inserted at the beginning.
-			DWORD dwModStart = ullSelStart % m_dwCapacity;
-
-			//When to insert first "\r\n".
-			DWORD dwTail = m_dwCapacity - dwModStart;
-			DWORD dwNextBlock = (m_dwCapacity % 2) ? m_dwCapacityBlockSize + 2 : m_dwCapacityBlockSize + 1;
-
-			//If at least two rows are selected.
-			if (dwModStart + ullSelSize > m_dwCapacity)
-			{
-				DWORD dwCount = dwModStart * 2 + dwModStart / static_cast<DWORD>(m_enShowMode);
-				//Additional spaces between halves. Only in ASBYTE's view mode.
-				dwCount += (m_enShowMode == EHexShowMode::ASBYTE) ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
-				strToClipboard.insert(0, static_cast<size_t>(dwCount), ' ');
-			}
-
-			for (unsigned i = 0; i < ullSelSize; i++)
-			{
-				BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
-				strToClipboard += pszHexMap[(chByte & 0xF0) >> 4];
-				strToClipboard += pszHexMap[(chByte & 0x0F)];
-
-				if (i < (ullSelSize - 1) && (dwTail - 1) != 0)
-				{
-					if (m_enShowMode == EHexShowMode::ASBYTE && dwTail == dwNextBlock)
-						strToClipboard += "   "; //Additional spaces between halves. Only in ASBYTE view mode.
-					else if (((m_dwCapacity - dwTail + 1) % static_cast<DWORD>(m_enShowMode)) == 0) //Add space after hex full chunk, ShowAs_size depending.
-						strToClipboard += " ";
-				}
-				if (--dwTail == 0 && i < (ullSelSize - 1)) //Next row.
-				{
-					strToClipboard += "\r\n";
-					dwTail = m_dwCapacity;
-				}
-			}
-		}
-	}
-	break;
+		strData = CopyHexFormatted();
+		break;
 	case EClipboard::COPY_ASCII:
-	{
-		strToClipboard.reserve(static_cast<size_t>(ullSelSize));
-		for (unsigned i = 0; i < ullSelSize; i++)
-		{
-			char ch = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
-			//If next byte is zero —> substitute it with space.
-			if (ch == 0)
-				ch = ' ';
-			strToClipboard += ch;
-		}
-	}
-	break;
+		strData = CopyAscii();
+		break;
 	case EClipboard::COPY_BASE64:
-	{
-		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 2);
-		const char* const pszBase64Map { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
-		unsigned int uValA = 0;
-		int iValB = -6;
-		for (unsigned i = 0; i < ullSelSize; i++)
-		{
-			uValA = (uValA << 8) + GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
-			iValB += 8;
-			while (iValB >= 0)
-			{
-				strToClipboard += pszBase64Map[(uValA >> iValB) & 0x3F];
-				iValB -= 6;
-			}
-		}
-
-		if (iValB > -6)
-			strToClipboard += pszBase64Map[((uValA << 8) >> (iValB + 8)) & 0x3F];
-		while (strToClipboard.size() % 4)
-			strToClipboard += '=';
-	}
-	break;
+		strData = CopyBase64();
+		break;
 	case EClipboard::COPY_CARRAY:
-	{
-		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 3 + 64);
-		strToClipboard = "unsigned char data[";
-		char arrSelectionNum[8] { };
-		sprintf_s(arrSelectionNum, 8, "%llu", ullSelSize);
-		strToClipboard += arrSelectionNum;
-		strToClipboard += "] = {\r\n";
-
-		for (unsigned i = 0; i < ullSelSize; i++)
-		{
-			strToClipboard += "0x";
-			BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
-			strToClipboard += pszHexMap[(chByte & 0xF0) >> 4];
-			strToClipboard += pszHexMap[(chByte & 0x0F)];
-			if (i < ullSelSize - 1)
-				strToClipboard += ",";
-			if ((i + 1) % 16 == 0)
-				strToClipboard += "\r\n";
-			else
-				strToClipboard += " ";
-		}
-		if (strToClipboard.back() != '\n') //To prevent double new line if ullSelSize % 16 == 0
-			strToClipboard += "\r\n";
-		strToClipboard += "};";
-	}
-	break;
+		strData = CopyCArr();
+		break;
 	case EClipboard::COPY_GREPHEX:
-	{
-		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 2);
-		for (unsigned i = 0; i < ullSelSize; i++)
-		{
-			strToClipboard += "\\x";
-			BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
-			strToClipboard += pszHexMap[(chByte & 0xF0) >> 4];
-			strToClipboard += pszHexMap[(chByte & 0x0F)];
-		}
-	}
-	break;
+		strData = CopyGrepHex();
+		break;
 	case EClipboard::COPY_PRINTSCREEN:
-	{
-		if (m_fSelectionBlock) //Only works with classical selection.
-			break;
-
-		strToClipboard.reserve(static_cast<size_t>(ullSelSize) * 4);
-		strToClipboard = "Offset";
-		strToClipboard.insert(0, (static_cast<size_t>(m_dwOffsetDigits) - strToClipboard.size()) / 2, ' ');
-		strToClipboard.insert(strToClipboard.size(), static_cast<size_t>(m_dwOffsetDigits) - strToClipboard.size(), ' ');
-		strToClipboard += "   "; //Spaces to Capacity.
-		strToClipboard += WstrToStr(m_wstrCapacity);
-		strToClipboard += "   "; //Spaces to Ascii.
-		if (int iSize = static_cast<int>(m_dwCapacity) - 5; iSize > 0) //5 is strlen of "Ascii".
-			strToClipboard.insert(strToClipboard.size(), static_cast<size_t>(iSize / 2), ' ');
-		strToClipboard += "Ascii";
-		strToClipboard += "\r\n";
-
-		//How many spaces are needed to be inserted at the beginning.
-		DWORD dwModStart = ullSelStart % m_dwCapacity;
-
-		DWORD dwLines = static_cast<DWORD>(ullSelSize) / m_dwCapacity;
-		if ((dwModStart + static_cast<DWORD>(ullSelSize)) > m_dwCapacity)
-			++dwLines;
-		if ((ullSelSize % m_dwCapacity) + dwModStart > m_dwCapacity)
-			++dwLines;
-		if (!dwLines)
-			dwLines = 1;
-
-		auto ullStartLine = ullSelStart / m_dwCapacity;
-		std::string strAscii;
-		ULONGLONG ullIndexByteToPrint { };
-
-		for (DWORD iterLines = 0; iterLines < dwLines; ++iterLines)
-		{
-			wchar_t pwszOffset[32] { }; //To be enough for max as Hex and as Decimals.
-			UllToWchars(ullStartLine * m_dwCapacity + m_dwCapacity * iterLines,
-				pwszOffset, static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
-			strToClipboard += WstrToStr(pwszOffset);
-			strToClipboard.insert(strToClipboard.size(), 3, ' ');
-
-			for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
-			{
-				if (dwModStart == 0 && ullIndexByteToPrint < ullSelSize)
-				{
-					BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(ullIndexByteToPrint++));
-					strToClipboard += pszHexMap[(chByte & 0xF0) >> 4];
-					strToClipboard += pszHexMap[(chByte & 0x0F)];
-
-					if (chByte < 32 || chByte >= 0x7f) //For non printable Ascii just print a dot.
-						chByte = '.';
-
-					strAscii += chByte;
-				}
-				else
-				{
-					strToClipboard += "  ";
-					strAscii += " ";
-					--dwModStart;
-				}
-
-				//Additional space between grouped Hex chunks.
-				if (((iterChunks + 1) % static_cast<DWORD>(m_enShowMode)) == 0 && iterChunks < (m_dwCapacity - 1))
-					strToClipboard += " ";
-
-				//Additional space between capacity halves, only with ASBYTE representation.
-				if (m_enShowMode == EHexShowMode::ASBYTE && iterChunks == (m_dwCapacityBlockSize - 1))
-					strToClipboard += "  ";
-			}
-			strToClipboard += "   "; //Ascii beginning.
-			strToClipboard += strAscii;
-			if (iterLines < dwLines - 1)
-				strToClipboard += "\r\n";
-			strAscii.clear();
-		}
-	}
-	break;
-	default:
+		strData = CopyPrintScreen();
 		break;
 	}
 
-	HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, strToClipboard.size() + 1);
+	HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, strData.size() + 1);
 	if (!hMem) {
 		MessageBoxW(L"GlobalAlloc error.", L"Error", MB_ICONERROR);
 		return;
@@ -3424,12 +3178,289 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 		MessageBoxW(L"GlobalLock error.", L"Error", MB_ICONERROR);
 		return;
 	}
-	memcpy(lpMemLock, strToClipboard.data(), strToClipboard.size() + 1);
+	memcpy(lpMemLock, strData.data(), strData.size() + 1);
 	GlobalUnlock(hMem);
 	OpenClipboard();
 	EmptyClipboard();
 	SetClipboardData(CF_TEXT, hMem);
 	CloseClipboard();
+}
+
+std::string CHexCtrl::CopyHex()
+{
+	std::string strData;
+	auto ullSelSize = m_pSelection->GetSelectionSize();
+
+	strData.reserve(static_cast<size_t>(ullSelSize) * 2);
+	for (unsigned i = 0; i < ullSelSize; ++i)
+	{
+		BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
+		strData += g_pszHexMap[(chByte & 0xF0) >> 4];
+		strData += g_pszHexMap[(chByte & 0x0F)];
+	}
+
+	return strData;
+}
+
+std::string CHexCtrl::CopyHexLE()
+{
+	std::string strData;
+	auto ullSelSize = m_pSelection->GetSelectionSize();
+
+	strData.reserve(static_cast<size_t>(ullSelSize) * 2);
+	for (int i = static_cast<int>(ullSelSize); i > 0; --i)
+	{
+		BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i - 1));
+		strData += g_pszHexMap[(chByte & 0xF0) >> 4];
+		strData += g_pszHexMap[(chByte & 0x0F)];
+	}
+
+	return strData;
+}
+
+std::string CHexCtrl::CopyHexFormatted()
+{
+	std::string strData;
+	auto ullSelStart = m_pSelection->GetSelectionStart();
+	auto ullSelSize = m_pSelection->GetSelectionSize();
+
+	strData.reserve(static_cast<size_t>(ullSelSize) * 3);
+	if (m_fSelectionBlock)
+	{
+		DWORD dwTail = m_pSelection->GetLineLength();
+		for (unsigned i = 0; i < ullSelSize; i++)
+		{
+			BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
+			strData += g_pszHexMap[(chByte & 0xF0) >> 4];
+			strData += g_pszHexMap[(chByte & 0x0F)];
+
+			if (i < (ullSelSize - 1) && (dwTail - 1) != 0)
+				if (((m_pSelection->GetLineLength() - dwTail + 1) % static_cast<DWORD>(m_enShowMode)) == 0) //Add space after hex full chunk, ShowAs_size depending.
+					strData += " ";
+			if (--dwTail == 0 && i < (ullSelSize - 1)) //Next row.
+			{
+				strData += "\r\n";
+				dwTail = m_pSelection->GetLineLength();
+			}
+		}
+	}
+	else
+	{
+		//How many spaces are needed to be inserted at the beginning.
+		DWORD dwModStart = ullSelStart % m_dwCapacity;
+
+		//When to insert first "\r\n".
+		DWORD dwTail = m_dwCapacity - dwModStart;
+		DWORD dwNextBlock = (m_dwCapacity % 2) ? m_dwCapacityBlockSize + 2 : m_dwCapacityBlockSize + 1;
+
+		//If at least two rows are selected.
+		if (dwModStart + ullSelSize > m_dwCapacity)
+		{
+			DWORD dwCount = dwModStart * 2 + dwModStart / static_cast<DWORD>(m_enShowMode);
+			//Additional spaces between halves. Only in ASBYTE's view mode.
+			dwCount += (m_enShowMode == EHexShowMode::ASBYTE) ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
+			strData.insert(0, static_cast<size_t>(dwCount), ' ');
+		}
+
+		for (unsigned i = 0; i < ullSelSize; i++)
+		{
+			BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
+			strData += g_pszHexMap[(chByte & 0xF0) >> 4];
+			strData += g_pszHexMap[(chByte & 0x0F)];
+
+			if (i < (ullSelSize - 1) && (dwTail - 1) != 0)
+			{
+				if (m_enShowMode == EHexShowMode::ASBYTE && dwTail == dwNextBlock)
+					strData += "   "; //Additional spaces between halves. Only in ASBYTE view mode.
+				else if (((m_dwCapacity - dwTail + 1) % static_cast<DWORD>(m_enShowMode)) == 0) //Add space after hex full chunk, ShowAs_size depending.
+					strData += " ";
+			}
+			if (--dwTail == 0 && i < (ullSelSize - 1)) //Next row.
+			{
+				strData += "\r\n";
+				dwTail = m_dwCapacity;
+			}
+		}
+	}
+
+	return strData;
+}
+
+std::string CHexCtrl::CopyAscii()
+{
+	std::string strData;
+	auto ullSelSize = m_pSelection->GetSelectionSize();
+
+	strData.reserve(static_cast<size_t>(ullSelSize));
+	for (unsigned i = 0; i < ullSelSize; i++)
+	{
+		char ch = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
+		//If next byte is zero —> substitute it with space.
+		if (ch == 0)
+			ch = ' ';
+		strData += ch;
+	}
+
+	return strData;
+}
+
+std::string CHexCtrl::CopyBase64()
+{
+	std::string strData;
+	auto ullSelSize = m_pSelection->GetSelectionSize();
+
+	strData.reserve(static_cast<size_t>(ullSelSize) * 2);
+	const char* const pszBase64Map { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
+	unsigned int uValA = 0;
+	int iValB = -6;
+	for (unsigned i = 0; i < ullSelSize; i++)
+	{
+		uValA = (uValA << 8) + GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
+		iValB += 8;
+		while (iValB >= 0)
+		{
+			strData += pszBase64Map[(uValA >> iValB) & 0x3F];
+			iValB -= 6;
+		}
+	}
+
+	if (iValB > -6)
+		strData += pszBase64Map[((uValA << 8) >> (iValB + 8)) & 0x3F];
+	while (strData.size() % 4)
+		strData += '=';
+
+	return strData;
+}
+
+std::string CHexCtrl::CopyCArr()
+{
+	std::string strData;
+	auto ullSelSize = m_pSelection->GetSelectionSize();
+
+	strData.reserve(static_cast<size_t>(ullSelSize) * 3 + 64);
+	strData = "unsigned char data[";
+	char arrSelectionNum[8] { };
+	sprintf_s(arrSelectionNum, 8, "%llu", ullSelSize);
+	strData += arrSelectionNum;
+	strData += "] = {\r\n";
+
+	for (unsigned i = 0; i < ullSelSize; i++)
+	{
+		strData += "0x";
+		BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
+		strData += g_pszHexMap[(chByte & 0xF0) >> 4];
+		strData += g_pszHexMap[(chByte & 0x0F)];
+		if (i < ullSelSize - 1)
+			strData += ",";
+		if ((i + 1) % 16 == 0)
+			strData += "\r\n";
+		else
+			strData += " ";
+	}
+	if (strData.back() != '\n') //To prevent double new line if ullSelSize % 16 == 0
+		strData += "\r\n";
+	strData += "};";
+
+	return strData;
+}
+
+std::string CHexCtrl::CopyGrepHex()
+{
+	std::string strData;
+	auto ullSelSize = m_pSelection->GetSelectionSize();
+
+	strData.reserve(static_cast<size_t>(ullSelSize) * 2);
+	for (unsigned i = 0; i < ullSelSize; i++)
+	{
+		strData += "\\x";
+		BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
+		strData += g_pszHexMap[(chByte & 0xF0) >> 4];
+		strData += g_pszHexMap[(chByte & 0x0F)];
+	}
+
+	return strData;
+}
+
+std::string CHexCtrl::CopyPrintScreen()
+{
+	if (m_fSelectionBlock) //Only works with classical selection.
+		return { };
+
+	std::string strData;
+	auto ullSelStart = m_pSelection->GetSelectionStart();
+	auto ullSelSize = m_pSelection->GetSelectionSize();
+
+	strData.reserve(static_cast<size_t>(ullSelSize) * 4);
+	strData = "Offset";
+	strData.insert(0, (static_cast<size_t>(m_dwOffsetDigits) - strData.size()) / 2, ' ');
+	strData.insert(strData.size(), static_cast<size_t>(m_dwOffsetDigits) - strData.size(), ' ');
+	strData += "   "; //Spaces to Capacity.
+	strData += WstrToStr(m_wstrCapacity);
+	strData += "   "; //Spaces to Ascii.
+	if (int iSize = static_cast<int>(m_dwCapacity) - 5; iSize > 0) //5 is strlen of "Ascii".
+		strData.insert(strData.size(), static_cast<size_t>(iSize / 2), ' ');
+	strData += "Ascii";
+	strData += "\r\n";
+
+	//How many spaces are needed to be inserted at the beginning.
+	DWORD dwModStart = ullSelStart % m_dwCapacity;
+
+	DWORD dwLines = static_cast<DWORD>(ullSelSize) / m_dwCapacity;
+	if ((dwModStart + static_cast<DWORD>(ullSelSize)) > m_dwCapacity)
+		++dwLines;
+	if ((ullSelSize % m_dwCapacity) + dwModStart > m_dwCapacity)
+		++dwLines;
+	if (!dwLines)
+		dwLines = 1;
+
+	auto ullStartLine = ullSelStart / m_dwCapacity;
+	std::string strAscii;
+	ULONGLONG ullIndexByteToPrint { };
+
+	for (DWORD iterLines = 0; iterLines < dwLines; ++iterLines)
+	{
+		wchar_t pwszOffset[32] { }; //To be enough for max as Hex and as Decimals.
+		UllToWchars(ullStartLine * m_dwCapacity + m_dwCapacity * iterLines,
+			pwszOffset, static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
+		strData += WstrToStr(pwszOffset);
+		strData.insert(strData.size(), 3, ' ');
+
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
+		{
+			if (dwModStart == 0 && ullIndexByteToPrint < ullSelSize)
+			{
+				BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(ullIndexByteToPrint++));
+				strData += g_pszHexMap[(chByte & 0xF0) >> 4];
+				strData += g_pszHexMap[(chByte & 0x0F)];
+
+				if (chByte < 32 || chByte >= 0x7f) //For non printable Ascii just print a dot.
+					chByte = '.';
+
+				strAscii += chByte;
+			}
+			else
+			{
+				strData += "  ";
+				strAscii += " ";
+				--dwModStart;
+			}
+
+			//Additional space between grouped Hex chunks.
+			if (((iterChunks + 1) % static_cast<DWORD>(m_enShowMode)) == 0 && iterChunks < (m_dwCapacity - 1))
+				strData += " ";
+
+			//Additional space between capacity halves, only with ASBYTE representation.
+			if (m_enShowMode == EHexShowMode::ASBYTE && iterChunks == (m_dwCapacityBlockSize - 1))
+				strData += "  ";
+		}
+		strData += "   "; //Ascii beginning.
+		strData += strAscii;
+		if (iterLines < dwLines - 1)
+			strData += "\r\n";
+		strAscii.clear();
+	}
+
+	return strData;
 }
 
 void CHexCtrl::ClipboardPaste(EClipboard enType)
@@ -3555,7 +3586,7 @@ void CHexCtrl::UpdateInfoText()
 	RedrawWindow();
 }
 
-void CHexCtrl::ParentNotify(const HEXNOTIFYSTRUCT& hns)const
+void CHexCtrl::ParentNotify(const HEXNOTIFYSTRUCT & hns)const
 {
 	HWND hwndSendTo = GetParent()->GetSafeHwnd();
 	if (hwndSendTo)

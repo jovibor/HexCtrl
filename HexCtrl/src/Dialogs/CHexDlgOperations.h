@@ -18,7 +18,6 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexDlgOperations(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_OPERATIONS, pParent) {}
-		~CHexDlgOperations() = default;
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;
