@@ -3524,11 +3524,11 @@ void CHexCtrl::UpdateInfoText()
 		if (IsSectorVisible())
 		{
 			if (m_fOffsetAsHex)
-				swprintf_s(wBuff, _countof(wBuff), L"%s: 0x%llX-0x%llX; ",
-					m_wstrSectorName.data(), GetCaretPos() / m_dwSectorSize, m_ullDataSize / m_dwSectorSize);
+				swprintf_s(wBuff, _countof(wBuff), L"%s: 0x%llX/0x%llX; ",
+					m_wstrSectorName.data(), GetCaretPos() / m_dwSectorSize, (m_ullDataSize / m_dwSectorSize)-1);
 			else
 				swprintf_s(wBuff, _countof(wBuff), L"%s: %llu-%llu; ",
-					m_wstrSectorName.data(), GetCaretPos() / m_dwSectorSize, m_ullDataSize / m_dwSectorSize);
+					m_wstrSectorName.data(), GetCaretPos() / m_dwSectorSize, (m_ullDataSize / m_dwSectorSize)-1);
 			m_wstrInfo += wBuff;
 		}
 
