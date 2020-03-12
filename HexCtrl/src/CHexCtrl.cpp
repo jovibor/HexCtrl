@@ -903,11 +903,10 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_fMutable = hds.fMutable;
 	m_pHexVirtual = hds.pHexVirtual;
 	m_dwCacheSize = hds.dwCacheSize > 0x10000 ? hds.dwCacheSize : 0x10000; //64Kb is the minimum size.
-	if (IsSectorVisible()) //If SetSectorSize was called before SetData.
-		UpdateSectorVisible();
-
+	
 	m_pBookmarks->SetVirtual(hds.pHexBkmVirtual);
 	RecalcAll();
+	UpdateSectorVisible();
 
 	if (hds.stSelSpan.ullSize)
 		SetSelection(hds.stSelSpan.ullOffset, hds.stSelSpan.ullOffset, hds.stSelSpan.ullSize, 1, true, true);
@@ -966,7 +965,8 @@ void CHexCtrl::SetSectorSize(DWORD dwSize, const wchar_t* wstrName)
 	m_dwSectorSize = dwSize;
 	m_wstrSectorName = wstrName;
 
-	UpdateSectorVisible();
+	if (IsDataSet())
+		UpdateSectorVisible();
 }
 
 void CHexCtrl::SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
