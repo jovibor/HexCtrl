@@ -565,7 +565,9 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 		return false;
 
 	bool fDataSet = IsDataSet();
-	bool fMutable = IsMutable();
+	bool fMutable { false };
+	if (fDataSet)
+		fMutable = IsMutable();
 	bool fStatus = fDataSet && m_pSelection->HasSelection();
 
 	bool fAvail { false };
@@ -901,6 +903,8 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_fMutable = hds.fMutable;
 	m_pHexVirtual = hds.pHexVirtual;
 	m_dwCacheSize = hds.dwCacheSize > 0x10000 ? hds.dwCacheSize : 0x10000; //64Kb is the minimum size.
+	if (IsSectorVisible()) //If SetSectorSize was called before SetData.
+		UpdateSectorVisible();
 
 	m_pBookmarks->SetVirtual(hds.pHexBkmVirtual);
 	RecalcAll();
@@ -963,7 +967,6 @@ void CHexCtrl::SetSectorSize(DWORD dwSize, const wchar_t* wstrName)
 	m_wstrSectorName = wstrName;
 
 	UpdateSectorVisible();
-	UpdateInfoText();
 }
 
 void CHexCtrl::SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
@@ -3554,12 +3557,14 @@ void CHexCtrl::UpdateInfoText()
 		//Page/Sector
 		if (IsSectorVisible())
 		{
+			auto ullSectorCurr = GetCaretPos() / m_dwSectorSize;
+
 			if (m_fOffsetAsHex)
-				swprintf_s(wBuff, _countof(wBuff), L"%s: 0x%llX-0x%llX; ",
-					m_wstrSectorName.data(), GetCaretPos() / m_dwSectorSize, m_ullDataSize / m_dwSectorSize);
+				swprintf_s(wBuff, _countof(wBuff), L"%s: 0x%llX/0x%llX; ",
+					m_wstrSectorName.data(), ullSectorCurr, m_ullTotalSectors);
 			else
-				swprintf_s(wBuff, _countof(wBuff), L"%s: %llu-%llu; ",
-					m_wstrSectorName.data(), GetCaretPos() / m_dwSectorSize, m_ullDataSize / m_dwSectorSize);
+				swprintf_s(wBuff, _countof(wBuff), L"%s: %llu/%llu; ",
+					m_wstrSectorName.data(), ullSectorCurr, m_ullTotalSectors);
 			m_wstrInfo += wBuff;
 		}
 
@@ -4065,15 +4070,18 @@ void CHexCtrl::WstrCapacityFill()
 
 bool CHexCtrl::IsSectorVisible()
 {
-	return m_fSectorsPrintable;
+	return m_fSectorVisible;
 }
 
 void CHexCtrl::UpdateSectorVisible()
 {
 	if (m_dwSectorSize && (m_dwSectorSize % m_dwCapacity == 0) && m_dwSectorSize >= m_dwCapacity)
-		m_fSectorsPrintable = true;
+	{
+		m_fSectorVisible = true;
+		m_ullTotalSectors = m_ullDataSize % m_dwSectorSize ? m_ullDataSize / m_dwSectorSize + 1 : m_ullDataSize / m_dwSectorSize;
+	}
 	else
-		m_fSectorsPrintable = false;
+		m_fSectorVisible = false;
 
 	UpdateInfoText();
 }

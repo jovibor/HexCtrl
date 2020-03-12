@@ -207,8 +207,8 @@ namespace HEXCTRL::INTERNAL
 		void SelectAll();                                         //Selects all current bytes.
 		void FillWithZeros();                                     //Fill selection with zeros.
 		void WstrCapacityFill();                                  //Fill m_wstrCapacity according to current m_dwCapacity.
-		[[nodiscard]] bool IsSectorVisible();                     //Returns m_fSectorsPrintable.
-		void UpdateSectorVisible();                               //Updates info about whether sectors lines printable atm or not.
+		[[nodiscard]] bool IsSectorVisible();                     //Returns m_fSectorVisible.
+		void UpdateSectorVisible();                               //Updates info about whether sector's lines printable atm or not.
 	private:
 		const std::unique_ptr<CHexDlgBookmarkMgr> m_pDlgBookmarkMgr { std::make_unique<CHexDlgBookmarkMgr>() }; //Bookmark manager.
 		const std::unique_ptr<CHexDlgDataInterpret> m_pDlgDataInterpret { std::make_unique<CHexDlgDataInterpret>() }; //Data Interpreter.
@@ -242,6 +242,7 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullLMouseClick { 0xFFFFFFFFFFFFFFFFULL }; //Left mouse button clicked chunk.
 		ULONGLONG m_ullRMouseClick { 0xFFFFFFFFFFFFFFFFULL }; //Right mouse clicked chunk. Used in bookmarking.
 		ULONGLONG m_ullCaretPos { };          //Current cursor position.
+		ULONGLONG m_ullTotalSectors { };      //How many "Sectors" in m_ullDataSize.
 		DWORD m_dwCapacity { 0x10 };          //How many bytes displayed in one row
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
@@ -282,7 +283,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
 		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
-		bool m_fSectorsPrintable { false };   //Print lines between sectors or not.
+		bool m_fSectorVisible { false };   //Print lines between sectors or not.
 	};
 
 	template<typename T>
