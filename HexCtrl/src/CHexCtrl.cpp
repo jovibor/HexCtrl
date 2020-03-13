@@ -3486,21 +3486,25 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	}
 
 	ULONGLONG ullSize = strlen(pszClipboardData);
-	if (m_ullCaretPos + ullSize > m_ullDataSize)
-		ullSize = m_ullDataSize - m_ullCaretPos;
-
-	MODIFYSTRUCT hmd;
 	ULONGLONG ullSizeToModify { };
+	MODIFYSTRUCT hmd;
 
 	std::string strData;
 	switch (enType)
 	{
 	case EClipboard::PASTE_ASCII:
+		if (m_ullCaretPos + ullSize > m_ullDataSize)
+			ullSize = m_ullDataSize - m_ullCaretPos;
+
 		hmd.pData = reinterpret_cast<std::byte*>(pszClipboardData);
 		ullSizeToModify = hmd.ullDataSize = ullSize;
 		break;
 	case EClipboard::PASTE_HEX:
 	{
+		ULONGLONG ullRealSize = ullSize / 2 + ullSize % 2;
+		if (m_ullCaretPos + ullRealSize > m_ullDataSize)
+			ullSize = (m_ullDataSize - m_ullCaretPos) * 2;
+
 		auto dwIterations = static_cast<size_t>(ullSize / 2 + ullSize % 2);
 		char chToUL[3] { }; //Array for actual Ascii chars to convert from.
 		for (size_t i = 0; i < dwIterations; i++)
