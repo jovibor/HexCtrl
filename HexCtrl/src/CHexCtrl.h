@@ -211,6 +211,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg BOOL OnNcActivate(BOOL bActive);
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
+		void ShowOffsetTooltip(bool fShow);
 	private:
 		const std::unique_ptr<CHexDlgBookmarkMgr> m_pDlgBookmarkMgr { std::make_unique<CHexDlgBookmarkMgr>() }; //Bookmark manager.
 		const std::unique_ptr<CHexDlgDataInterpret> m_pDlgDataInterpret { std::make_unique<CHexDlgDataInterpret>() }; //Data Interpreter.
@@ -233,7 +234,9 @@ namespace HEXCTRL::INTERNAL
 		IHexVirtual* m_pHexVirtual { };       //Data handler pointer for EHexDataMode::DATA_VIRTUAL
 		HWND m_hwndMsg { };                   //Window handle the control messages will be sent to.
 		CWnd m_wndTtBkm { };                  //Tooltip window for bookmarks description.
-		TOOLINFO m_stToolInfo { };            //Tooltips struct.
+		TTTOOLINFOW m_stToolInfoBkm { };      //Tooltip Bookmarks struct.
+		CWnd m_wndTtOffset { };               //Tooltip window for Offset in m_fHighLatency mode.
+		TTTOOLINFOW m_stToolInfoOffset { };   //Tooltips struct.
 		CFont m_fontMain;                     //Main Hex chunks font.
 		CFont m_fontInfo;                     //Font for bottom Info rect.
 		CMenu m_menuMain;                     //Main popup menu.
@@ -285,7 +288,9 @@ namespace HEXCTRL::INTERNAL
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
 		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
-		bool m_fSectorVisible { false };   //Print lines between sectors or not.
+		bool m_fSectorVisible { false };      //Print lines between sectors or not.
+		bool m_fHighLatency { false };        //Reflects HEXDATASTRUCT::fHighLatency.
+		wchar_t m_warrOffset[40] { L"Offset: " };
 	};
 
 	template<typename T>

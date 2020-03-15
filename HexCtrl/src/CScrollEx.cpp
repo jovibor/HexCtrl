@@ -245,6 +245,11 @@ void CScrollEx::SetScrollPageSize(ULONGLONG ullSize)
 	m_ullScrollPage = ullSize;
 }
 
+bool CScrollEx::IsThumbReleased()
+{
+	return m_enState != EState::THUMB_CLICK;
+}
+
 BOOL CScrollEx::OnNcActivate(BOOL /*bActive*/)const
 {
 	if (!m_fCreated)
@@ -426,17 +431,15 @@ void CScrollEx::OnMouseMove(UINT /*nFlags*/, CPoint point)
 
 void CScrollEx::OnLButtonUp(UINT /*nFlags*/, CPoint /*point*/)
 {
-	if (!m_fCreated)
+	if (!m_fCreated || m_enState == EState::STATE_DEFAULT)
 		return;
 
-	if (m_enState != EState::STATE_DEFAULT)
-	{
-		m_enState = EState::STATE_DEFAULT;
-		KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
-		KillTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT));
-		ReleaseCapture();
-		DrawScrollBar();
-	}
+	m_enState = EState::STATE_DEFAULT;
+	SendParentScrollMsg(); //For parent to check IsThumbReleased.
+	KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
+	KillTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT));
+	ReleaseCapture();
+	DrawScrollBar();
 }
 
 void CScrollEx::DrawScrollBar()const

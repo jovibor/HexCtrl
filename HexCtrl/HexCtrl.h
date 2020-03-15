@@ -42,7 +42,7 @@ namespace HEXCTRL
 	********************************************************************************************/
 	enum class EHexCmd : WORD
 	{
-		CMD_SEARCH = 0x01, CMD_SEARCH_NEXT,
+		CMD_SEARCH = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV,
 		CMD_SHOWDATA_BYTE, CMD_SHOWDATA_WORD, CMD_SHOWDATA_DWORD, CMD_SHOWDATA_QWORD,
 		CMD_BKM_ADD, CMD_BKM_REMOVE, CMD_BKM_NEXT, CMD_BKM_PREV, CMD_BKM_CLEARALL, CMD_BKM_MANAGER,
 		CMD_CLIPBOARD_COPY_HEX, CMD_CLIPBOARD_COPY_HEXLE, CMD_CLIPBOARD_COPY_HEXFMT, CMD_CLIPBOARD_COPY_ASCII,
@@ -180,14 +180,15 @@ namespace HEXCTRL
 	struct HEXDATASTRUCT
 	{
 		EHexDataMode    enDataMode { EHexDataMode::DATA_MEMORY }; //Working data mode.
-		ULONGLONG       ullDataSize { };                       //Size of the data to display, in bytes.
-		HEXSPANSTRUCT   stSelSpan { };                         //Select .ullOffset initial position. Works only if .ullSize > 0.
-		HWND            hwndMsg { };                           //Window for DATA_MSG mode. Parent is used by default.
-		IHexVirtual*    pHexVirtual { };                       //Pointer for DATA_VIRTUAL mode.
-		IHexBkmVirtual* pHexBkmVirtual { };                    //Pointer for Virtual Bookmarks.
-		std::byte*      pData { };                             //Data pointer for DATA_MEMORY mode. Not used in other modes.
-		DWORD           dwCacheSize { 0x800000 };              //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
-		bool            fMutable { false };                    //Is data mutable (editable) or read-only.
+		ULONGLONG       ullDataSize { };          //Size of the data to display, in bytes.
+		HEXSPANSTRUCT   stSelSpan { };            //Select .ullOffset initial position. Works only if .ullSize > 0.
+		HWND            hwndMsg { };              //Window for DATA_MSG mode. Parent is used by default.
+		IHexVirtual*    pHexVirtual { };          //Pointer for DATA_VIRTUAL mode.
+		IHexBkmVirtual* pHexBkmVirtual { };       //Pointer for Virtual Bookmarks.
+		std::byte*      pData { };                //Data pointer for DATA_MEMORY mode. Not used in other modes.
+		DWORD           dwCacheSize { 0x800000 }; //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
+		bool            fMutable { false };       //Is data mutable (editable) or read-only.
+		bool            fHighLatency { false };   //Do not redraw window until scrolling completes.
 	};
 
 	/********************************************************************************************

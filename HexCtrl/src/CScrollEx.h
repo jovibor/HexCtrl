@@ -39,6 +39,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		[[nodiscard]] ULONGLONG GetScrollLineSize()const;
 		[[nodiscard]] ULONGLONG GetScrollPageSize()const;
 		void SetScrollPageSize(ULONGLONG ullSize);
+		bool IsThumbReleased();
 
 		/************************************************************************
 		* CALLBACK METHODS:														*

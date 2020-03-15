@@ -272,16 +272,27 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 		/*TTS_BALLOON |*/ TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 		m_hWnd, nullptr);
-
 	SetWindowTheme(m_wndTtBkm.m_hWnd, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
-
-	m_stToolInfo.cbSize = TTTOOLINFOW_V1_SIZE;
-	m_stToolInfo.uFlags = TTF_TRACK;
-	m_stToolInfo.uId = 0x01;
-	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+	m_stToolInfoBkm.cbSize = TTTOOLINFOW_V1_SIZE;
+	m_stToolInfoBkm.uFlags = TTF_TRACK;
+	m_stToolInfoBkm.uId = 0x01;
+	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfoBkm);
 	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 	m_wndTtBkm.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColor.clrTextTooltip), 0);
 	m_wndTtBkm.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColor.clrBkTooltip), 0);
+
+	m_wndTtOffset.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
+		/*TTS_BALLOON |*/ TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+		m_hWnd, nullptr);
+	SetWindowTheme(m_wndTtOffset.m_hWnd, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
+	m_stToolInfoOffset.cbSize = TTTOOLINFOW_V1_SIZE;
+	m_stToolInfoOffset.uFlags = TTF_TRACK;
+	m_stToolInfoOffset.uId = 0x02;
+	m_wndTtOffset.SendMessageW(TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfoOffset);
+	m_wndTtOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
+	m_wndTtOffset.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColor.clrTextTooltip), 0);
+	m_wndTtOffset.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColor.clrBkTooltip), 0);
 
 	//Font related.//////////////////////////////////////////////
 	LOGFONTW lf { };
@@ -357,6 +368,12 @@ void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
 	{
 	case EHexCmd::CMD_SEARCH:
 		wParam = IDM_HEXCTRL_SEARCH;
+		break;
+	case EHexCmd::CMD_SEARCH_NEXT:
+		m_pDlgSearch->Search(true);
+		break;
+	case EHexCmd::CMD_SEARCH_PREV:
+		m_pDlgSearch->Search(false);
 		break;
 	case EHexCmd::CMD_SHOWDATA_BYTE:
 		wParam = IDM_HEXCTRL_SHOWAS_BYTE;
@@ -630,7 +647,8 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 		fAvail = fDataSet;
 		break;
 	case EHexCmd::CMD_SEARCH_NEXT:
-		m_pDlgSearch->IsSearchAvail();
+	case EHexCmd::CMD_SEARCH_PREV:
+		fAvail = m_pDlgSearch->IsSearchAvail();
 		break;
 	}
 
@@ -905,7 +923,8 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_enDataMode = hds.enDataMode;
 	m_fMutable = hds.fMutable;
 	m_pHexVirtual = hds.pHexVirtual;
-	m_dwCacheSize = hds.dwCacheSize > 0x10000 ? hds.dwCacheSize : 0x10000; //64Kb is the minimum size.
+	m_dwCacheSize = hds.dwCacheSize > 0x10000 ? hds.dwCacheSize : 0x10000; //64Kb is the minimum size
+	m_fHighLatency = hds.fHighLatency;
 
 	m_pBookmarks->SetVirtual(hds.pHexBkmVirtual);
 	RecalcAll();
@@ -1162,15 +1181,15 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 					CPoint ptScreen = point;
 					ClientToScreen(&ptScreen);
 
-					m_stToolInfo.lpszText = pBookmark->wstrDesc.data();
+					m_stToolInfoBkm.lpszText = pBookmark->wstrDesc.data();
 					m_wndTtBkm.SendMessageW(TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(ptScreen.x, ptScreen.y));
-					m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-					m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+					m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfoBkm);
+					m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfoBkm);
 				}
 			}
 			else
 			{
-				m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
+				m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfoBkm);
 				m_pBkmCurrTt = nullptr;
 			}
 		}
@@ -1458,10 +1477,8 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, m_fMutable ? uStatus : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLWITHDATA, m_fMutable ? uStatus : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_OPERATIONS, m_fMutable ? uStatus : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO,
-		(m_deqUndo.empty() || m_enDataMode != EHexDataMode::DATA_MEMORY) ? MF_GRAYED : MF_ENABLED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO,
-		(m_deqRedo.empty() || m_enDataMode != EHexDataMode::DATA_MEMORY) ? MF_GRAYED : MF_ENABLED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, (m_deqUndo.empty()) ? MF_GRAYED : MF_ENABLED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, (m_deqRedo.empty()) ? MF_GRAYED : MF_ENABLED);
 
 	//Selection
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_MARKSTART, fDataSet ? MF_ENABLED : MF_GRAYED);
@@ -1864,9 +1881,20 @@ UINT CHexCtrl::OnGetDlgCode()
 
 void CHexCtrl::OnVScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollBar*/)
 {
-	if (m_pScrollV->GetScrollPosDelta() != 0)
+	bool fRedraw = { false };
+	if (m_fHighLatency)
+	{
+		fRedraw = m_pScrollV->IsThumbReleased();
+		ShowOffsetTooltip(!fRedraw);
+	}
+	else if (m_pScrollV->GetScrollPosDelta() != 0)
+		fRedraw = true;
+
+	if (fRedraw)
+	{
 		RedrawWindow();
-	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
+		MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
+	}
 }
 
 void CHexCtrl::OnHScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollBar*/)
@@ -2614,6 +2642,21 @@ void CHexCtrl::OnNcPaint()
 	m_pScrollH->OnNcPaint();
 }
 
+void CHexCtrl::ShowOffsetTooltip(bool fShow)
+{
+	if (fShow)
+	{
+		CPoint ptScreen;
+		GetCursorPos(&ptScreen);
+
+		UllToWchars(GetTopLine() * m_dwCapacity, &m_warrOffset[8], static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
+		m_stToolInfoOffset.lpszText = m_warrOffset;
+		m_wndTtOffset.SendMessageW(TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(ptScreen.x - 5, ptScreen.y - 20));
+		m_wndTtOffset.SendMessageW(TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfoOffset);
+	}
+	m_wndTtOffset.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)fShow, (LPARAM)(LPTOOLINFO)&m_stToolInfoOffset);
+}
+
 void CHexCtrl::OnDestroy()
 {
 	ClearData();
@@ -2709,12 +2752,8 @@ void CHexCtrl::Modify(MODIFYSTRUCT& hms, bool fRedraw)
 	if (!IsMutable())
 		return;
 
-	//Undo only for DATA_MEMORY for now.
-	if (m_enDataMode == EHexDataMode::DATA_MEMORY)
-	{
-		m_deqRedo.clear(); //No Redo unless we make Undo.
-		SnapshotUndo(hms.vecSpan);
-	}
+	m_deqRedo.clear(); //No Redo unless we make Undo.
+	SnapshotUndo(hms.vecSpan);
 
 	switch (hms.enModifyMode)
 	{
@@ -3831,6 +3870,7 @@ void CHexCtrl::Undo()
 		std::copy_n(pData, refUndoData.size(), refRedo->at(static_cast<size_t>(ullIndex)).vecData.begin());
 		//Undo the data.
 		std::copy_n(refUndoData.begin(), refUndoData.size(), pData);
+		SetDataVirtual(pData, { iter.ullOffset, refUndoData.size() });
 		++ullIndex;
 	}
 	m_deqUndo.pop_back();
@@ -3856,6 +3896,7 @@ void CHexCtrl::Redo()
 		const auto& refData = iter.vecData;
 		std::byte* pData = GetData({ iter.ullOffset, refData.size() });
 		std::copy_n(refData.begin(), refData.size(), pData);
+		SetDataVirtual(pData, { iter.ullOffset, refData.size() });
 	}
 
 	m_deqRedo.pop_back();
@@ -3888,7 +3929,6 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 			refUndo->back().vecData.resize(static_cast<size_t>(iterSel.ullSize));
 		}
 	}
-
 	catch (const std::bad_alloc&)
 	{
 		m_deqUndo.clear();

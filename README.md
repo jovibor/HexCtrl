@@ -578,14 +578,15 @@ Main struct to set a data to display in the control.
 struct HEXDATASTRUCT
 {
     EHexDataMode    enDataMode { EHexDataMode::DATA_MEMORY }; //Working data mode.
-    ULONGLONG       ullDataSize { };                       //Size of the data to display, in bytes.
-    HEXSPANSTRUCT   stSelSpan { };                         //Select .ullOffset initial position. Works only if .ullSize > 0.
-    HWND            hwndMsg { };                           //Window for DATA_MSG mode. Parent is used by default.
-    IHexVirtual*    pHexVirtual { };                       //Pointer for DATA_VIRTUAL mode.
-    IHexBkmVirtual* pHexBkmVirtual { };                    //Pointer for Virtual Bookmarks.
-    std::byte*      pData { };                             //Data pointer for DATA_MEMORY mode. Not used in other modes.
-    DWORD           dwCacheSize { 0x800000 };              //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
-    bool            fMutable { false };                    //Is data mutable (editable) or read-only.
+    ULONGLONG       ullDataSize { };          //Size of the data to display, in bytes.
+    HEXSPANSTRUCT   stSelSpan { };            //Select .ullOffset initial position. Works only if .ullSize > 0.
+    HWND            hwndMsg { };              //Window for DATA_MSG mode. Parent is used by default.
+    IHexVirtual*    pHexVirtual { };          //Pointer for DATA_VIRTUAL mode.
+    IHexBkmVirtual* pHexBkmVirtual { };       //Pointer for Virtual Bookmarks.
+    std::byte*      pData { };                //Data pointer for DATA_MEMORY mode. Not used in other modes.
+    DWORD           dwCacheSize { 0x800000 }; //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
+    bool            fMutable { false };       //Is data mutable (editable) or read-only.
+    bool            fHighLatency { false };   //Do not redraw window until scrolling completes.
 };
 ```
 
@@ -657,13 +658,13 @@ Enum of commands **HexCtrl** can execute. Basically these commands duplicate inn
 ```cpp
 enum class EHexCmd : WORD
 {
-    CMD_SEARCH = 0x01,
+    CMD_SEARCH = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV,
     CMD_SHOWDATA_BYTE, CMD_SHOWDATA_WORD, CMD_SHOWDATA_DWORD, CMD_SHOWDATA_QWORD,
     CMD_BKM_ADD, CMD_BKM_REMOVE, CMD_BKM_NEXT, CMD_BKM_PREV, CMD_BKM_CLEARALL, CMD_BKM_MANAGER,
-    	CMD_CLIPBOARD_COPY_HEX, CMD_CLIPBOARD_COPY_HEXLE, CMD_CLIPBOARD_COPY_HEXFMT, CMD_CLIPBOARD_COPY_ASCII,
+    CMD_CLIPBOARD_COPY_HEX, CMD_CLIPBOARD_COPY_HEXLE, CMD_CLIPBOARD_COPY_HEXFMT, CMD_CLIPBOARD_COPY_ASCII,
     CMD_CLIPBOARD_COPY_BASE64, CMD_CLIPBOARD_COPY_CARR, CMD_CLIPBOARD_COPY_GREPHEX, CMD_CLIPBOARD_COPY_PRNTSCRN,
     CMD_CLIPBOARD_PASTE_HEX, CMD_CLIPBOARD_PASTE_ASCII,
-    CMD_MODIFY_OPERS, CMD_MODIFY_FILLZEROES, CMD_MODIFY_FILLDATA, CMD_MODIFY_UNDO, CMD_MODIFY_REDO,
+    CMD_MODIFY_OPERS, CMD_MODIFY_FILLZEROS, CMD_MODIFY_FILLDATA, CMD_MODIFY_UNDO, CMD_MODIFY_REDO,
     CMD_SEL_MARKSTART, CMD_SEL_MARKEND, CMD_SEL_SELECTALL,
     CMD_DATAINTERPRET,
     CMD_APPEARANCE_FONTINC, CMD_APPEARANCE_FONTDEC, CMD_APPEARANCE_CAPACITYINC, CMD_APPEARANCE_CAPACITYDEC,

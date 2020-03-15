@@ -29,7 +29,7 @@ namespace HEXCTRL::INTERNAL {
 		explicit CHexDlgSearch(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_SEARCH, pParent) {}
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		void Search(bool fForward);
-		bool IsSearchAvail(); //Can we do search next/prev?
+		[[nodiscard]] bool IsSearchAvail(); //Can we do search next/prev?
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
