@@ -35,7 +35,7 @@ BOOL CHexSampleDlg::OnInitDialog()
 
 	m_myHex->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
 	m_myHex->SetWheelRatio(0.5);
-	m_myHex->SetSectorSize(64);
+//	m_myHex->SetSectorSize(64);
 
 	//Classical approach:
 	//HEXCREATESTRUCT hcs;

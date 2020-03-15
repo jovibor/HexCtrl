@@ -29,6 +29,7 @@ namespace HEXCTRL::INTERNAL {
 		explicit CHexDlgSearch(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_SEARCH, pParent) {}
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		void Search(bool fForward);
+		bool IsSearchAvail(); //Can we do search next/prev?
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
@@ -45,7 +46,8 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
 		//ullOffset will return index of found occurence, if any.
-		bool DoSearch(const unsigned char* pWhere, ULONGLONG& ullStart, ULONGLONG ullUntil, const unsigned char* pSearch, size_t nSize, bool fForward = true);
+		bool DoSearch(ULONGLONG& ullStart, ULONGLONG ullUntil,
+			const unsigned char* pSearch, size_t nSize, bool fForward = true);
 		void Search();
 		void SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw = true);
 		void ClearAll();
@@ -60,7 +62,7 @@ namespace HEXCTRL::INTERNAL {
 		const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
 		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
 		CBrush m_stBrushDefault;
-		std::wstring wstrSearch { };     //String to search for.
+		std::wstring m_wstrSearch { };     //String to search for.
 		std::wstring wstrReplace { };    //Search "Replace with..." wstring.
 		ESearchMode enSearchType { };    //Hex, Ascii, Unicode, etc...
 		ULONGLONG m_ullOffset { };        //An offset search should start from.

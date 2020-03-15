@@ -49,6 +49,18 @@ void CHexDlgSearch::Search(bool fForward)
 	Search();
 }
 
+bool CHexDlgSearch::IsSearchAvail()
+{
+	CHexCtrl* pHexCtrl = GetHexCtrl();
+	if (!pHexCtrl)
+		return false;
+
+	if (m_wstrSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffset >= pHexCtrl->GetDataSize())
+		return false;
+
+	return true;
+}
+
 BOOL CHexDlgSearch::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -65,29 +77,87 @@ void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 }
 
-bool CHexDlgSearch::DoSearch(const unsigned char* pWhere, ULONGLONG& ullStart, ULONGLONG ullUntil, const unsigned char* pSearch, size_t nSize, bool fForward)
+bool CHexDlgSearch::DoSearch(ULONGLONG& ullOffset, ULONGLONG ullUntil, const unsigned char* pSearch, size_t nSizeSearch, bool fForward)
 {
+	auto pHex = GetHexCtrl();
+	ULONGLONG ullDataSize = pHex->GetDataSize();
+	if (ullOffset + nSizeSearch > ullDataSize)
+		return false;
+
+	ULONGLONG ullSize = fForward ? ullUntil - ullOffset : ullOffset - ullUntil; //Depends on search direction
+	ULONGLONG ullSizeChunk { };    //Size of the chunk to work with.
+	ULONGLONG ullChunks { };
+	ULONGLONG ullMemToAcquire { }; //Size of VirtualData memory for acquiring. It's bigger than ullSizeChunk.
+	ULONGLONG ullOffsetSearch { };
+
+	switch (pHex->GetDataMode())
+	{
+	case EHexDataMode::DATA_MEMORY:
+		ullSizeChunk = ullSize;
+		ullMemToAcquire = ullSizeChunk;
+		ullChunks = 1;
+		break;
+	case EHexDataMode::DATA_MSG:
+	case EHexDataMode::DATA_VIRTUAL:
+	{
+		ullMemToAcquire = pHex->GetCacheSize();
+		if (ullMemToAcquire > ullSize + nSizeSearch)
+			ullMemToAcquire = ullSize + nSizeSearch;
+		ullSizeChunk = ullMemToAcquire - nSizeSearch;
+		if (ullSize > ullSizeChunk)
+			ullChunks = ullSize % ullSizeChunk ? ullSize / ullSizeChunk + 1 : ullSize / ullSizeChunk;
+		else
+			ullChunks = 1;
+	}
+	break;
+	}
+
 	if (fForward)
 	{
-		for (ULONGLONG i = ullStart; i <= ullUntil; ++i)
+		ullOffsetSearch = ullOffset;
+		for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
 		{
-			if (memcmp(pWhere + i, pSearch, nSize) == 0)
+			if (ullOffsetSearch + ullMemToAcquire > ullDataSize)
 			{
-				ullStart = i;
-				return true;
+				ullMemToAcquire = ullDataSize - ullOffsetSearch;
+				ullSizeChunk = ullMemToAcquire - nSizeSearch;
+			}
+			if (iterChunk > 0)
+				ullOffsetSearch += ullSizeChunk;
+
+			auto pData = pHex->GetData({ ullOffsetSearch, ullMemToAcquire });
+			for (ULONGLONG i = 0; i <= ullSizeChunk; ++i)
+			{
+				if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
+				{
+					ullOffset = ullOffsetSearch + i;
+					return true;
+				}
 			}
 		}
 	}
 	else
 	{
-		//i might be negative.
-		for (auto i = static_cast<LONGLONG>(m_ullOffset); i >= static_cast<LONGLONG>(ullUntil); --i)
+		ullOffsetSearch = ullOffset - ullSizeChunk;
+		for (ULONGLONG iterChunk = ullChunks; iterChunk > 0; --iterChunk)
 		{
-			if (memcmp(pWhere + i, pSearch, nSize) == 0)
+			auto pData = pHex->GetData({ ullOffsetSearch, ullMemToAcquire });
+			for (auto i = static_cast<LONGLONG>(ullSizeChunk); i >= 0; --i)	//i might be negative.
 			{
-				ullStart = i;
-				return true;
+				if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
+				{
+					ullOffset = ullOffsetSearch + i;
+					return true;
+				}
 			}
+
+			if ((ullOffsetSearch - ullSizeChunk) < ullUntil
+				|| (ullOffsetSearch - ullSizeChunk) > (std::numeric_limits<ULONGLONG>::max() - ullSizeChunk))
+			{
+				ullMemToAcquire = (ullOffsetSearch - ullUntil) + nSizeSearch;
+				ullSizeChunk = ullMemToAcquire - nSizeSearch;
+			}
+			ullOffsetSearch -= ullSizeChunk;
 		}
 	}
 
@@ -101,8 +171,7 @@ void CHexDlgSearch::Search()
 		return;
 
 	auto ullDataSize = pHexCtrl->GetDataSize();
-	auto pData = reinterpret_cast<PBYTE>(pHexCtrl->GetData({ 0, 0 }));
-	if (wstrSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffset >= ullDataSize)
+	if (m_wstrSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffset >= ullDataSize)
 		return;
 
 	m_fFound = false;
@@ -122,7 +191,7 @@ void CHexDlgSearch::Search()
 	case ESearchMode::SEARCH_HEX:
 	{
 		strReplace = WstrToStr(wstrReplace);
-		strSearch = WstrToStr(wstrSearch);
+		strSearch = WstrToStr(m_wstrSearch);
 		if (!StrToHex(strSearch, strSearch))
 		{
 			m_iWrap = 1;
@@ -141,7 +210,7 @@ void CHexDlgSearch::Search()
 	break;
 	case ESearchMode::SEARCH_ASCII:
 	{
-		strSearch = WstrToStr(wstrSearch);
+		strSearch = WstrToStr(m_wstrSearch);
 		strReplace = WstrToStr(wstrReplace);
 		nSizeSearch = strSearch.size();
 		nSizeReplace = strReplace.size();
@@ -151,9 +220,9 @@ void CHexDlgSearch::Search()
 	break;
 	case ESearchMode::SEARCH_UTF16:
 	{
-		nSizeSearch = wstrSearch.size() * sizeof(wchar_t);
+		nSizeSearch = m_wstrSearch.size() * sizeof(wchar_t);
 		nSizeReplace = wstrReplace.size() * sizeof(wchar_t);
-		pSearch = reinterpret_cast<PBYTE>(wstrSearch.data());
+		pSearch = reinterpret_cast<PBYTE>(m_wstrSearch.data());
 		pReplace = reinterpret_cast<PBYTE>(wstrReplace.data());
 	}
 	break;
@@ -180,7 +249,7 @@ void CHexDlgSearch::Search()
 		ULONGLONG ullStart = 0;
 		while (true)
 		{
-			if (DoSearch(pData, ullStart, ullUntil, pSearch, nSizeSearch))
+			if (DoSearch(ullStart, ullUntil, pSearch, nSizeSearch))
 			{
 				SearchReplace(ullStart, pReplace, nSizeSearch, nSizeReplace, false);
 				ullStart += nSizeReplace;
@@ -204,7 +273,7 @@ void CHexDlgSearch::Search()
 			else
 				m_ullOffset = m_fSecondMatch ? m_ullOffset + 1 : 0;
 
-			if (DoSearch(pData, m_ullOffset, ullUntil, pSearch, nSizeSearch))
+			if (DoSearch(m_ullOffset, ullUntil, pSearch, nSizeSearch))
 			{
 				m_fFound = true;
 				m_fSecondMatch = true;
@@ -214,7 +283,7 @@ void CHexDlgSearch::Search()
 			if (!m_fFound && m_fSecondMatch)
 			{
 				m_ullOffset = 0; //Starting from the beginning.
-				if (DoSearch(pData, m_ullOffset, ullUntil, pSearch, nSizeSearch))
+				if (DoSearch(m_ullOffset, ullUntil, pSearch, nSizeSearch))
 				{
 					m_fFound = true;
 					m_fSecondMatch = true;
@@ -230,7 +299,7 @@ void CHexDlgSearch::Search()
 			if (m_fSecondMatch && m_ullOffset > 0)
 			{
 				m_ullOffset--;
-				if (DoSearch(pData, m_ullOffset, 0, pSearch, nSizeSearch, false))
+				if (DoSearch(m_ullOffset, 0, pSearch, nSizeSearch, false))
 				{
 					m_fFound = true;
 					m_fSecondMatch = true;
@@ -241,7 +310,7 @@ void CHexDlgSearch::Search()
 			if (!m_fFound)
 			{
 				m_ullOffset = ullDataSize - nSizeSearch;
-				if (DoSearch(pData, m_ullOffset, 0, pSearch, nSizeSearch, false))
+				if (DoSearch(m_ullOffset, 0, pSearch, nSizeSearch, false))
 				{
 					m_fFound = true;
 					m_fSecondMatch = true;
@@ -302,10 +371,10 @@ void CHexDlgSearch::OnButtonSearchF()
 	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_SEARCH, wstrTextSearch);
 	if (wstrTextSearch.IsEmpty())
 		return;
-	if (wstrTextSearch.Compare(wstrSearch.data()) != 0)
+	if (wstrTextSearch.Compare(m_wstrSearch.data()) != 0)
 	{
 		ClearAll();
-		wstrSearch = wstrTextSearch;
+		m_wstrSearch = wstrTextSearch;
 	}
 
 	m_iDirection = 1;
@@ -326,10 +395,10 @@ void CHexDlgSearch::OnButtonSearchB()
 	if (wstrTextSearch.IsEmpty())
 		return;
 
-	if (wstrTextSearch.Compare(wstrSearch.data()) != 0)
+	if (wstrTextSearch.Compare(m_wstrSearch.data()) != 0)
 	{
 		ClearAll();
-		wstrSearch = wstrTextSearch;
+		m_wstrSearch = wstrTextSearch;
 	}
 
 	m_iDirection = -1;
@@ -349,10 +418,10 @@ void CHexDlgSearch::OnButtonReplace()
 	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_SEARCH, wstrTextSearch);
 	if (wstrTextSearch.IsEmpty())
 		return;
-	if (wstrTextSearch.Compare(wstrSearch.data()) != 0)
+	if (wstrTextSearch.Compare(m_wstrSearch.data()) != 0)
 	{
 		ClearAll();
-		wstrSearch = wstrTextSearch;
+		m_wstrSearch = wstrTextSearch;
 	}
 
 	CStringW wstrTextReplace;
@@ -379,10 +448,10 @@ void CHexDlgSearch::OnButtonReplaceAll()
 	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_SEARCH, wstrTextSearch);
 	if (wstrTextSearch.IsEmpty())
 		return;
-	if (wstrTextSearch.Compare(wstrSearch.data()) != 0)
+	if (wstrTextSearch.Compare(m_wstrSearch.data()) != 0)
 	{
 		ClearAll();
-		wstrSearch = wstrTextSearch;
+		m_wstrSearch = wstrTextSearch;
 	}
 
 	CStringW wstrTextReplace;

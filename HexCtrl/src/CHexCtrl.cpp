@@ -629,6 +629,9 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 	case EHexCmd::CMD_DATAINTERPRET:
 		fAvail = fDataSet;
 		break;
+	case EHexCmd::CMD_SEARCH_NEXT:
+		m_pDlgSearch->IsSearchAvail();
+		break;
 	}
 
 	return fAvail;
@@ -903,7 +906,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_fMutable = hds.fMutable;
 	m_pHexVirtual = hds.pHexVirtual;
 	m_dwCacheSize = hds.dwCacheSize > 0x10000 ? hds.dwCacheSize : 0x10000; //64Kb is the minimum size.
-	
+
 	m_pBookmarks->SetVirtual(hds.pHexBkmVirtual);
 	RecalcAll();
 	UpdateSectorVisible();
@@ -1275,16 +1278,11 @@ void CHexCtrl::OnMButtonDown(UINT /*nFlags*/, CPoint /*point*/)
 
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-	static const wchar_t* const pwszErrVirtual { L"This function isn't supported in Virtual mode!" };
 	const ULONGLONG uID = LOWORD(wParam);
-
 	switch (uID)
 	{
 	case IDM_HEXCTRL_SEARCH:
-		if (m_enDataMode == EHexDataMode::DATA_MEMORY)
-			m_pDlgSearch->ShowWindow(SW_SHOW);
-		else
-			MessageBoxW(pwszErrVirtual, L"Error", MB_ICONEXCLAMATION);
+		m_pDlgSearch->ShowWindow(SW_SHOW);
 		break;
 	case IDM_HEXCTRL_SHOWAS_BYTE:
 		SetShowMode(EHexShowMode::ASBYTE);
@@ -1430,7 +1428,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 		uStatus = MF_ENABLED;
 
 	//Main
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH, fDataSet && (m_enDataMode == EHexDataMode::DATA_MEMORY) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH, fDataSet ? MF_ENABLED : MF_GRAYED);
 
 	//Bookmarks
 	bool fBookmarks = m_pBookmarks->HasBookmarks();
@@ -2644,7 +2642,7 @@ void CHexCtrl::OnDestroy()
 	CWnd::OnDestroy();
 }
 
-std::byte* CHexCtrl::GetData(const HEXSPANSTRUCT& hss)
+std::byte* CHexCtrl::GetData(HEXSPANSTRUCT hss)const
 {
 	if (hss.ullOffset >= m_ullDataSize || hss.ullSize > m_ullDataSize)
 		return nullptr;
@@ -2658,12 +2656,16 @@ std::byte* CHexCtrl::GetData(const HEXSPANSTRUCT& hss)
 	case EHexDataMode::DATA_MSG:
 	{
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
+		if (hss.ullSize == 0)
+			hss.ullSize = m_dwCacheSize;
 		hns.stSpan = hss;
 		MsgWindowNotify(hns);
 		pData = hns.pData;
 	}
 	break;
 	case EHexDataMode::DATA_VIRTUAL:
+		if (hss.ullSize == 0)
+			hss.ullSize = m_dwCacheSize;
 		pData = m_pHexVirtual->GetData(hss);
 		break;
 	}
@@ -2690,6 +2692,11 @@ void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss)
 	}
 	break;
 	}
+}
+
+EHexDataMode CHexCtrl::GetDataMode() const
+{
+	return m_enDataMode;
 }
 
 ULONGLONG CHexCtrl::GetDataSize()
@@ -2882,13 +2889,19 @@ void CHexCtrl::CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLO
 	case EHexDataMode::DATA_VIRTUAL:
 	{
 		ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
-		ullSizeChunk -= (ullSizeChunk & (ullAlign - 1)); //Aligning chunk size to hms.ullDataSize.
+		if (ullAlign > 0)
+			ullSizeChunk -= (ullSizeChunk & (ullAlign - 1)); //Aligning chunk size to ullAlign.
 		if (ullSize < ullSizeChunk)
 			ullSizeChunk = ullSize;
 		ullChunks = ullSize % ullSizeChunk ? ullSize / ullSizeChunk + 1 : ullSize / ullSizeChunk;
 	}
 	break;
 	}
+}
+
+DWORD CHexCtrl::GetCacheSize() const
+{
+	return m_dwCacheSize;
 }
 
 HWND CHexCtrl::GetMsgWindow()const

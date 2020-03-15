@@ -113,51 +113,11 @@ namespace HEXCTRL::INTERNAL
 		void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)override; //Sets current selection.
 		void SetShowMode(EHexShowMode enShowMode)override;  //Sets current data show mode.
 		void SetWheelRatio(double dbRatio)override;         //Sets the ratio for how much to scroll with mouse-wheel.
-	protected:
-		DECLARE_MESSAGE_MAP()
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
-		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
-		afx_msg void OnMButtonDown(UINT nFlags, CPoint point);
-		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-		afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
-		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
-		afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
-		afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
-		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-		afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-		afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
-		afx_msg void OnSysKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
-		void OnKeyDownCtrl(UINT nChar);  //Key pressed with the Ctrl.
-		void OnKeyDownShift(UINT nChar); //Key pressed with the Shift.
-		void OnKeyDownShiftLeft();       //Left Key pressed with the Shift.
-		void OnKeyDownShiftRight();      //Right Key pressed with the Shift.
-		void OnKeyDownShiftUp();         //Up Key pressed with the Shift.
-		void OnKeyDownShiftDown();       //Down Key pressed with the Shift.
-		afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
-		afx_msg UINT OnGetDlgCode();     //To properly work in dialogs.
-		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
-		afx_msg void OnPaint();
-		void DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo);
-		void DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawHexAscii(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawSectorLines(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		afx_msg void OnSize(UINT nType, int cx, int cy);
-		afx_msg void OnDestroy();
-		afx_msg BOOL OnNcActivate(BOOL bActive);
-		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
-		afx_msg void OnNcPaint();
 	public:
-		[[nodiscard]] std::byte* GetData(const HEXSPANSTRUCT& hss);      //Gets pointer to exact data offset, no matter what mode the control works in.
+		[[nodiscard]] std::byte* GetData(HEXSPANSTRUCT hss)const; //Gets pointer to exact data offset, no matter what mode the control works in.
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
-		[[nodiscard]] ULONGLONG GetDataSize();   //Gets m_ullDataSize.
+		[[nodiscard]] EHexDataMode GetDataMode()const; //Current Data mode.
+		[[nodiscard]] ULONGLONG GetDataSize();    //Gets m_ullDataSize.
 		template<typename T> [[nodiscard]] auto GetData(ULONGLONG ullOffset)->T; //Get T sized data from ullOffset.
 		template<typename T>void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
 		void Modify(MODIFYSTRUCT& hms, bool fRedraw = true);            //Main routine to modify data, in m_fMutable==true mode.
@@ -166,6 +126,7 @@ namespace HEXCTRL::INTERNAL
 		void ModifyOperation(MODIFYSTRUCT& hms); //EModifyMode::MODIFY_OPERATION
 		template <typename T>void OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeChunk); //Immediate operations on pData.
 		void CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLONG& ullSizeChunk, ULONGLONG& ullChunks);
+		[[nodiscard]] DWORD GetCacheSize()const;               //Returns Virtual/Message mode cache size.
 		[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc);   //Recalc routine for printing.
@@ -209,6 +170,47 @@ namespace HEXCTRL::INTERNAL
 		void WstrCapacityFill();                                  //Fill m_wstrCapacity according to current m_dwCapacity.
 		[[nodiscard]] bool IsSectorVisible();                     //Returns m_fSectorVisible.
 		void UpdateSectorVisible();                               //Updates info about whether sector's lines printable atm or not.
+	protected:
+		DECLARE_MESSAGE_MAP()
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
+		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+		afx_msg void OnMButtonDown(UINT nFlags, CPoint point);
+		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+		afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
+		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+		afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
+		afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
+		afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
+		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+		afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+		afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+		afx_msg void OnSysKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+		void OnKeyDownCtrl(UINT nChar);  //Key pressed with the Ctrl.
+		void OnKeyDownShift(UINT nChar); //Key pressed with the Shift.
+		void OnKeyDownShiftLeft();       //Left Key pressed with the Shift.
+		void OnKeyDownShiftRight();      //Right Key pressed with the Shift.
+		void OnKeyDownShiftUp();         //Up Key pressed with the Shift.
+		void OnKeyDownShiftDown();       //Down Key pressed with the Shift.
+		afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
+		afx_msg UINT OnGetDlgCode();     //To properly work in dialogs.
+		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+		afx_msg void OnPaint();
+		void DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo);
+		void DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawHexAscii(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawSectorLines(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		afx_msg void OnSize(UINT nType, int cx, int cy);
+		afx_msg void OnDestroy();
+		afx_msg BOOL OnNcActivate(BOOL bActive);
+		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
+		afx_msg void OnNcPaint();
 	private:
 		const std::unique_ptr<CHexDlgBookmarkMgr> m_pDlgBookmarkMgr { std::make_unique<CHexDlgBookmarkMgr>() }; //Bookmark manager.
 		const std::unique_ptr<CHexDlgDataInterpret> m_pDlgDataInterpret { std::make_unique<CHexDlgDataInterpret>() }; //Data Interpreter.
@@ -225,7 +227,7 @@ namespace HEXCTRL::INTERNAL
 		const DWORD m_dwCapacityMax { 99 };   //Maximum capacity.
 		const DWORD m_dwUndoMax { 500 };      //How many Undo states to preserve.
 		HEXCOLORSTRUCT m_stColor;             //All control related colors.
-		EHexDataMode m_enDataMode { EHexDataMode::DATA_MEMORY }; //Control's data mode.
+		EHexDataMode m_enDataMode { };        //Control's data mode.
 		EHexShowMode m_enShowMode { };        //Current "Show data" mode.
 		std::byte* m_pData { };               //Main data pointer. Modifiable in "Edit" mode.
 		IHexVirtual* m_pHexVirtual { };       //Data handler pointer for EHexDataMode::DATA_VIRTUAL

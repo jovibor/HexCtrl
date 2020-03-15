@@ -18,6 +18,7 @@ protected:
 protected:
 	IHexCtrlPtr m_myHex { CreateHexCtrl() };
 	HEXDATASTRUCT m_hds;
+//	BYTE m_data[16];
 	BYTE m_data[1024 * 1024 * 8];
 	HICON m_hIcon;
 
