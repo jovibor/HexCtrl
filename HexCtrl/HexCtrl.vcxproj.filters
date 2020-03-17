@@ -87,6 +87,9 @@
     <ClInclude Include="src\ListEx\src\CListExHdr.h">
       <Filter>HexCtrl\src\ListEx</Filter>
     </ClInclude>
+    <ClInclude Include="src\Dialogs\CHexDlgCallback.h">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\HexCtrlSample\stdafx.cpp">
@@ -136,6 +139,9 @@
     </ClCompile>
     <ClCompile Include="src\ListEx\src\CListExHdr.cpp">
       <Filter>HexCtrl\src\ListEx</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Dialogs\CHexDlgCallback.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

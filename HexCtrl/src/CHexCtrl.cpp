@@ -1301,7 +1301,8 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	switch (uID)
 	{
 	case IDM_HEXCTRL_SEARCH:
-		m_pDlgSearch->ShowWindow(SW_SHOW);
+		if (IsDataSet())
+			m_pDlgSearch->ShowWindow(SW_SHOW);
 		break;
 	case IDM_HEXCTRL_SHOWAS_BYTE:
 		SetShowMode(EHexShowMode::ASBYTE);

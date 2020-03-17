@@ -8,7 +8,10 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "CHexDlgSearch.h"
+#include "CHexDlgCallback.h"
 #include "../Helper.h"
+#include <thread>
+#include <atomic>
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
@@ -112,56 +115,69 @@ bool CHexDlgSearch::DoSearch(ULONGLONG& ullOffset, ULONGLONG ullUntil, const uns
 	break;
 	}
 
-	if (fForward)
-	{
-		ullOffsetSearch = ullOffset;
-		for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
+	bool fResult { false };
+	CHexDlgCallback dlg(L"Searching...");
+	std::thread thr([&]() {
+		if (fForward)
 		{
-			if (ullOffsetSearch + ullMemToAcquire > ullDataSize)
+			ullOffsetSearch = ullOffset;
+			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
 			{
-				ullMemToAcquire = ullDataSize - ullOffsetSearch;
-				ullSizeChunk = ullMemToAcquire - nSizeSearch;
-			}
-			if (iterChunk > 0)
-				ullOffsetSearch += ullSizeChunk;
-
-			auto pData = pHex->GetData({ ullOffsetSearch, ullMemToAcquire });
-			for (ULONGLONG i = 0; i <= ullSizeChunk; ++i)
-			{
-				if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
+				if (ullOffsetSearch + ullMemToAcquire > ullDataSize)
 				{
-					ullOffset = ullOffsetSearch + i;
-					return true;
+					ullMemToAcquire = ullDataSize - ullOffsetSearch;
+					ullSizeChunk = ullMemToAcquire - nSizeSearch;
+				}
+				if (iterChunk > 0)
+					ullOffsetSearch += ullSizeChunk;
+
+				auto pData = pHex->GetData({ ullOffsetSearch, ullMemToAcquire });
+				for (ULONGLONG i = 0; i <= ullSizeChunk; ++i)
+				{
+					if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
+					{
+						ullOffset = ullOffsetSearch + i;
+						fResult = true;
+						break;
+					}
+					if (dlg.IsCancelPressed())
+						break;
 				}
 			}
 		}
-	}
-	else
-	{
-		ullOffsetSearch = ullOffset - ullSizeChunk;
-		for (ULONGLONG iterChunk = ullChunks; iterChunk > 0; --iterChunk)
+		else
 		{
-			auto pData = pHex->GetData({ ullOffsetSearch, ullMemToAcquire });
-			for (auto i = static_cast<LONGLONG>(ullSizeChunk); i >= 0; --i)	//i might be negative.
+			ullOffsetSearch = ullOffset - ullSizeChunk;
+			for (ULONGLONG iterChunk = ullChunks; iterChunk > 0; --iterChunk)
 			{
-				if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
+				auto pData = pHex->GetData({ ullOffsetSearch, ullMemToAcquire });
+				for (auto i = static_cast<LONGLONG>(ullSizeChunk); i >= 0; --i)	//i might be negative.
 				{
-					ullOffset = ullOffsetSearch + i;
-					return true;
+					if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
+					{
+						ullOffset = ullOffsetSearch + i;
+						fResult = true;
+						break;
+					}
+					if (dlg.IsCancelPressed())
+						break;
 				}
-			}
 
-			if ((ullOffsetSearch - ullSizeChunk) < ullUntil
-				|| (ullOffsetSearch - ullSizeChunk) > (std::numeric_limits<ULONGLONG>::max() - ullSizeChunk))
-			{
-				ullMemToAcquire = (ullOffsetSearch - ullUntil) + nSizeSearch;
-				ullSizeChunk = ullMemToAcquire - nSizeSearch;
+				if ((ullOffsetSearch - ullSizeChunk) < ullUntil
+					|| (ullOffsetSearch - ullSizeChunk) > (std::numeric_limits<ULONGLONG>::max() - ullSizeChunk))
+				{
+					ullMemToAcquire = (ullOffsetSearch - ullUntil) + nSizeSearch;
+					ullSizeChunk = ullMemToAcquire - nSizeSearch;
+				}
+				ullOffsetSearch -= ullSizeChunk;
 			}
-			ullOffsetSearch -= ullSizeChunk;
 		}
-	}
+		dlg.Cancel();
+	});
+	thr.detach();
+	dlg.DoModal();
 
-	return false;
+	return fResult;
 }
 
 void CHexDlgSearch::Search()
@@ -472,7 +488,7 @@ void CHexDlgSearch::OnButtonReplaceAll()
 	SetActiveWindow();
 }
 
-void CHexDlgSearch::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)
+void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
 	if (nState == WA_INACTIVE)
 		SetLayeredWindowAttributes(0, 150, LWA_ALPHA);
@@ -480,7 +496,7 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)
 	{
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 		GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH)->SetFocus();
-		if (GetHexCtrl()->IsCreated())
+		if (GetHexCtrl()->IsCreated() && GetHexCtrl()->IsDataSet())
 		{
 			bool fMutable = GetHexCtrl()->IsMutable();
 			GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_REPLACE)->EnableWindow(fMutable);

@@ -7,25 +7,25 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include <afxdialogex.h>  //Standard MFC's controls header.
-#include "../CHexCtrl.h"
-#include "../../res/HexCtrlRes.h"
+#include <afxdialogex.h>
+#include <string>
 
 namespace HEXCTRL::INTERNAL
 {
-	class CHexDlgFillWith final : public CDialogEx
+	class CHexDlgCallback final : public CDialogEx
 	{
 	public:
-		explicit CHexDlgFillWith(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_FILLWITHDATA, pParent) {}
-		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
+		explicit CHexDlgCallback(std::wstring_view wstrOperName, CWnd* pParent = nullptr);
+		[[nodiscard]] bool IsCancelPressed()const;
+		void Cancel();
 	protected:
-		void DoDataExchange(CDataExchange* pDX)override;
-		BOOL OnInitDialog()override;
-		void OnOK()override;
+		BOOL OnInitDialog();
+		void DoDataExchange(CDataExchange* pDX);
+		afx_msg void OnCancel();
+		BOOL ContinueModal();
 		DECLARE_MESSAGE_MAP()
 	private:
-		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
-	private:
-		CHexCtrl* m_pHexCtrl { };
+		bool m_fCancel { false };
+		std::wstring m_wstrOperName { };
 	};
 }
