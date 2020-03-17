@@ -10,8 +10,6 @@
 #include "CHexDlgDataInterpret.h"
 #include "strsafe.h"
 #include "../Helper.h"
-#include <ctime>
-//#include <bit> //std::bit_cast
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
@@ -19,24 +17,16 @@ using namespace HEXCTRL::INTERNAL;
 BEGIN_MESSAGE_MAP(CHexDlgDataInterpret, CDialogEx)
 	ON_WM_CLOSE()
 	ON_WM_ACTIVATE()
+	ON_WM_SIZE()
+	ON_REGISTERED_MESSAGE(AFX_WM_PROPERTY_CHANGED, &CHexDlgDataInterpret::OnPropertyChanged)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_BE, &CHexDlgDataInterpret::OnHexctrlDatainterpretRadioBe)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE, &CHexDlgDataInterpret::OnHexctrlDatainterpretRadioLe)
 END_MESSAGE_MAP()
 
 void CHexDlgDataInterpret::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_EDIT_8SIGN, m_edit8sign);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_EDIT_8UNSIGN, m_edit8unsign);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_EDIT_16SIGN, m_edit16sign);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_EDIT_16UNSIGN, m_edit16unsign);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_EDIT_32SIGN, m_edit32sign);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_EDIT_32UNSIGN, m_edit32unsign);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_EDIT_64SIGN, m_edit64sign);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_EDIT_64UNSIGN, m_edit64unsign);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_EDIT_FLOAT, m_editFloat);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_EDIT_DOUBLE, m_editDouble);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_EDIT_TIME32, m_editTime32);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_EDIT_TIME64, m_editTime64);
+	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_PROPERTY_DATA, m_stCtrlGrid);
 }
 
 BOOL CHexDlgDataInterpret::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
@@ -49,31 +39,255 @@ BOOL CHexDlgDataInterpret::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 	return CDialogEx::Create(nIDTemplate, pHexCtrl);
 }
 
-ULONGLONG CHexDlgDataInterpret::GetSize()
-{
-	return m_ullSize;
-}
-
 BOOL CHexDlgDataInterpret::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_vec64.push_back(&m_edit64sign);
-	m_vec64.push_back(&m_edit64unsign);
-	m_vec64.push_back(&m_editDouble);
-	m_vec64.push_back(&m_editTime64);
+	if (auto pRadio = (CButton*)GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE); pRadio)
+		pRadio->SetCheck(1);
 
-	m_vec32.push_back(&m_edit32sign);
-	m_vec32.push_back(&m_edit32unsign);
-	m_vec32.push_back(&m_editFloat);
-	m_vec32.push_back(&m_editTime32);
-	std::copy(m_vec64.begin(), m_vec64.end(), std::back_inserter(m_vec32));
+	m_hdItemPropGrid.mask = HDI_WIDTH;
+	m_hdItemPropGrid.cxy = 120;
+	m_stCtrlGrid.EnableHeaderCtrl(TRUE, L"Data type", L"Value");
+	m_stCtrlGrid.GetHeaderCtrl().SetItem(0, &m_hdItemPropGrid); //Property grid column size.
 
-	m_vec16.push_back(&m_edit16sign);
-	m_vec16.push_back(&m_edit16unsign);
-	std::copy(m_vec32.begin(), m_vec32.end(), std::back_inserter(m_vec16));
+	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_CHAR, ESize::SIZE_BYTE, new CMFCPropertyGridProperty(L"char:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_UCHAR, ESize::SIZE_BYTE, new CMFCPropertyGridProperty(L"unsigned char:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_SHORT, ESize::SIZE_WORD, new CMFCPropertyGridProperty(L"short:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_USHORT, ESize::SIZE_WORD, new CMFCPropertyGridProperty(L"unsigned short:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_LONG, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"long:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_ULONG, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"unsigned long:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_LONGLONG, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"long long:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_ULONGLONG, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"unsigned long long:", L"0") });
+	CMFCPropertyGridProperty* pDigits = new CMFCPropertyGridProperty(L"Digits:");
+	for (auto& iter : m_vecProp)
+		if (iter.eGroup == EGroup::DIGITS)
+			pDigits->AddSubItem(iter.pProp);
+	m_stCtrlGrid.AddProperty(pDigits);
+
+	m_vecProp.emplace_back(GRIDDATA { EGroup::FLOAT, EName::NAME_FLOAT, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"Float:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::FLOAT, EName::NAME_DOUBLE, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"Double:", L"0") });
+	CMFCPropertyGridProperty* pFloats = new CMFCPropertyGridProperty(L"Floats:");
+	for (auto& iter : m_vecProp)
+		if (iter.eGroup == EGroup::FLOAT)
+			pFloats->AddSubItem(iter.pProp);
+	m_stCtrlGrid.AddProperty(pFloats);
+
+	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_TIME32T, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"time32_t:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_TIME64T, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"time64_t:", L"0") });
+	CMFCPropertyGridProperty* pTime = new CMFCPropertyGridProperty(L"Time:");
+	for (auto& iter : m_vecProp)
+		if (iter.eGroup == EGroup::TIME)
+			pTime->AddSubItem(iter.pProp);
+	m_stCtrlGrid.AddProperty(pTime);
 
 	return TRUE;
+}
+
+void CHexDlgDataInterpret::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+{
+	if (nState == WA_INACTIVE)
+	{
+		m_ullSize = 0;
+		UpdateHexCtrl();
+	}
+
+	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
+}
+
+void CHexDlgDataInterpret::OnOK()
+{
+	if (!m_pHexCtrl->IsMutable() || !m_pPropChanged)
+		return;
+
+	CStringW wstrValue = m_pPropChanged->GetValue();
+	const auto& refGridData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[this](const GRIDDATA& refData) {return refData.pProp == m_pPropChanged; });
+	if (refGridData == m_vecProp.end())
+		return;
+
+	bool fSuccess { false };
+	switch (refGridData->eGroup)
+	{
+	case EGroup::DIGITS:
+	{
+		LONGLONG llData;
+		ULONGLONG ullData;
+		if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
+			break;
+		switch (refGridData->eName)
+		{
+		case EName::NAME_CHAR:
+			fSuccess = SetDigitData<CHAR>(llData);
+			break;
+		case EName::NAME_UCHAR:
+			fSuccess = SetDigitData<UCHAR>(llData);
+			break;
+		case EName::NAME_SHORT:
+			fSuccess = SetDigitData<SHORT>(llData);
+			break;
+		case EName::NAME_USHORT:
+			fSuccess = SetDigitData<USHORT>(llData);
+			break;
+		case EName::NAME_LONG:
+			fSuccess = SetDigitData<LONG>(llData);
+			break;
+		case EName::NAME_ULONG:
+			fSuccess = SetDigitData<ULONG>(llData);
+			break;
+		case EName::NAME_LONGLONG:
+			if (WCharsToll(wstrValue, llData, false))
+				fSuccess = SetDigitData<LONGLONG>(llData);
+			break;
+		case EName::NAME_ULONGLONG:
+			if (WCharsToUll(wstrValue, ullData, false))
+				fSuccess = SetDigitData<ULONGLONG>(static_cast<LONGLONG>(ullData));
+			break;
+		}
+	}
+	break;
+	case EGroup::FLOAT:
+	case EGroup::TIME:
+		switch (refGridData->eName)
+		{
+		case EName::NAME_FLOAT:
+		{
+			wchar_t* pEndPtr;
+			float fl = wcstof(wstrValue, &pEndPtr);
+			if (fl == 0 && (pEndPtr == wstrValue.GetBuffer() || *pEndPtr != '\0'))
+				break;
+			//TODO:	DWORD dw=std::bit_cast<DWORD>(fl);
+			DWORD dwData = *reinterpret_cast<DWORD*>(&fl);
+			if (m_fBigEndian)
+				dwData = _byteswap_ulong(dwData);
+			m_pHexCtrl->SetData(m_ullOffset, dwData);
+			fSuccess = true;
+		}
+		break;
+		case EName::NAME_DOUBLE:
+		{
+			wchar_t* pEndPtr;
+			double dd = wcstod(wstrValue, &pEndPtr);
+			if (dd == 0 && (pEndPtr == wstrValue.GetBuffer() || *pEndPtr != '\0'))
+				break;
+			QWORD qwData = *reinterpret_cast<QWORD*>(&dd);
+			if (m_fBigEndian)
+				qwData = _byteswap_uint64(qwData);
+			m_pHexCtrl->SetData(m_ullOffset, qwData);
+			fSuccess = true;
+		}
+		break;
+		case EName::NAME_TIME32T:
+		{
+			tm tm { };
+			int iYear { };
+			swscanf_s(wstrValue, L"%2i/%2i/%4i %2i:%2i:%2i", &tm.tm_mday, &tm.tm_mon, &iYear, &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
+			tm.tm_year = iYear - 1900;
+			--tm.tm_mon; //Months start from 0.
+			__time32_t time32 = _mktime32(&tm);
+			if (time32 == -1)
+				break;
+			if (m_fBigEndian)
+				time32 = _byteswap_ulong(time32);
+			m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(time32));
+			fSuccess = true;
+		}
+		break;
+		case EName::NAME_TIME64T:
+		{
+			tm tm { };
+			int iYear { };
+			swscanf_s(wstrValue, L"%2i/%2i/%4i %2i:%2i:%2i", &tm.tm_mday, &tm.tm_mon, &iYear, &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
+			tm.tm_year = iYear - 1900;
+			--tm.tm_mon; //Months start from 0.
+			__time64_t time64 = _mktime64(&tm);
+			if (time64 == -1)
+				break;
+			if (m_fBigEndian)
+				time64 = _byteswap_uint64(time64);
+			m_pHexCtrl->SetData(m_ullOffset, static_cast<QWORD>(time64));
+			fSuccess = true;
+		};
+		break;
+		}
+	}
+	if (!fSuccess)
+		MessageBoxW(L"Wrong number format or out of range.", L"Data error...", MB_ICONERROR);
+
+	UpdateHexCtrl();
+	InspectOffset(m_ullOffset);
+}
+
+void CHexDlgDataInterpret::OnClose()
+{
+	m_ullSize = 0;
+	CDialogEx::OnClose();
+}
+
+LRESULT CHexDlgDataInterpret::OnPropertyChanged(WPARAM wParam, LPARAM lParam)
+{
+	if (wParam == IDC_HEXCTRL_DATAINTERPRET_PROPERTY_DATA)
+	{
+		m_pPropChanged = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
+		OnOK();
+	}
+
+	return 0;
+}
+
+BOOL CHexDlgDataInterpret::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT * pResult)
+{
+	if (wParam == HEXCTRL_PROPGRIDCTRL)
+	{
+		auto pHdr = reinterpret_cast<NMHDR*>(lParam);
+		if (pHdr->code != HEXCTRL_PROPGRIDCTRL_SELCHANGED)
+			return FALSE;
+
+		auto pData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+			[this](const GRIDDATA& refData) {return refData.pProp == m_stCtrlGrid.GetCurrentProp(); });
+
+		if (pData != m_vecProp.end())
+		{
+			switch (pData->eSize)
+			{
+			case ESize::SIZE_BYTE:
+				m_ullSize = static_cast<ULONGLONG>(ESize::SIZE_BYTE);
+				break;
+			case ESize::SIZE_WORD:
+				m_ullSize = static_cast<ULONGLONG>(ESize::SIZE_WORD);
+				break;
+			case ESize::SIZE_DWORD:
+				m_ullSize = static_cast<ULONGLONG>(ESize::SIZE_DWORD);
+				break;
+			case ESize::SIZE_QWORD:
+				m_ullSize = static_cast<ULONGLONG>(ESize::SIZE_QWORD);
+				break;
+			}
+			UpdateHexCtrl();
+		}
+	}
+
+	return CDialogEx::OnNotify(wParam, lParam, pResult);
+}
+
+void CHexDlgDataInterpret::OnSize(UINT nType, int cx, int cy)
+{
+	CDialogEx::OnSize(nType, cx, cy);
+
+	if (m_fVisible)
+		m_stCtrlGrid.GetHeaderCtrl().SetItem(0, &m_hdItemPropGrid); //Property grid column size.
+}
+
+void CHexDlgDataInterpret::OnHexctrlDatainterpretRadioBe()
+{
+	m_fBigEndian = true;
+	InspectOffset(m_ullOffset);
+}
+
+void CHexDlgDataInterpret::OnHexctrlDatainterpretRadioLe()
+{
+	m_fBigEndian = false;
+	InspectOffset(m_ullOffset);
 }
 
 void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
@@ -90,49 +304,81 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 
 	const BYTE byte = m_pHexCtrl->GetData<BYTE>(ullOffset);
 	swprintf_s(buff, 31, L"%hhi", static_cast<char>(byte));
-	m_edit8sign.SetWindowTextW(buff);
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_CHAR; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(buff);
+
 	swprintf_s(buff, 31, L"%hhu", byte);
-	m_edit8unsign.SetWindowTextW(buff);
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_UCHAR; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(buff);
 
 	if (ullOffset + sizeof(WORD) > ullSize)
 	{
-		for (auto i : m_vec16)
+		for (const auto& iter : m_vecProp)
 		{
-			i->SetWindowTextW(L"");
-			i->EnableWindow(FALSE);
+			if (iter.eSize > ESize::SIZE_BYTE)
+			{
+				iter.pProp->SetValue(L"0");
+				iter.pProp->Enable(0);
+			}
 		}
 		return;
 	}
 
-	for (auto i : m_vec16)
-		i->EnableWindow(TRUE);
+	for (const auto& iter : m_vecProp)
+		if (iter.eSize == ESize::SIZE_WORD)
+			iter.pProp->Enable(1);
 
-	const WORD word = m_pHexCtrl->GetData<WORD>(ullOffset);
+	WORD word = m_pHexCtrl->GetData<WORD>(ullOffset);
+	if (m_fBigEndian)
+		word = _byteswap_ushort(word);
+
 	swprintf_s(buff, 31, L"%hi", static_cast<short>(word));
-	m_edit16sign.SetWindowTextW(buff);
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_SHORT; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(buff);
+
 	swprintf_s(buff, 31, L"%hu", word);
-	m_edit16unsign.SetWindowTextW(buff);
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_USHORT; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(buff);
 
 	if (ullOffset + sizeof(DWORD) > ullSize)
 	{
-		for (auto i : m_vec32)
+		for (const auto& iter : m_vecProp)
 		{
-			i->SetWindowTextW(L"");
-			i->EnableWindow(FALSE);
+			if (iter.eSize > ESize::SIZE_WORD)
+			{
+				iter.pProp->SetValue(L"0");
+				iter.pProp->Enable(0);
+			}
 		}
 		return;
 	}
 
-	for (auto i : m_vec32)
-		i->EnableWindow(TRUE);
+	for (const auto& iter : m_vecProp)
+		if (iter.eSize == ESize::SIZE_DWORD)
+			iter.pProp->Enable(1);
 
-	const DWORD dword = m_pHexCtrl->GetData<DWORD>(ullOffset);
+	DWORD dword = m_pHexCtrl->GetData<DWORD>(ullOffset);
+	if (m_fBigEndian)
+		dword = _byteswap_ulong(dword);
+
 	swprintf_s(buff, 31, L"%i", static_cast<int>(dword));
-	m_edit32sign.SetWindowTextW(buff);
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_LONG; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(buff);
+
 	swprintf_s(buff, 31, L"%u", dword);
-	m_edit32unsign.SetWindowTextW(buff);
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_ULONG; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(buff);
+
 	swprintf_s(buff, 31, L"%.9e", *reinterpret_cast<const float*>(&dword));
-	m_editFloat.SetWindowTextW(buff);
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_FLOAT; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(buff);
 
 	//Time32.
 	std::wstring wstrTime;
@@ -145,28 +391,46 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	}
 	else
 		wstrTime = L"N/A";
-	m_editTime32.SetWindowTextW(wstrTime.data());
+
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_TIME32T; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(wstrTime.data());
 
 	if (ullOffset + sizeof(QWORD) > ullSize)
 	{
-		for (auto i : m_vec64)
+		for (const auto& iter : m_vecProp)
 		{
-			i->SetWindowTextW(L"");
-			i->EnableWindow(FALSE);
+			if (iter.eSize > ESize::SIZE_QWORD)
+			{
+				iter.pProp->SetValue(L"0");
+				iter.pProp->Enable(0);
+			}
 		}
 		return;
 	}
 
-	for (auto i : m_vec64)
-		i->EnableWindow(TRUE);
+	for (const auto& iter : m_vecProp)
+		if (iter.eSize == ESize::SIZE_QWORD)
+			iter.pProp->Enable(1);
 
-	const QWORD qword = m_pHexCtrl->GetData<QWORD>(ullOffset);
+	QWORD qword = m_pHexCtrl->GetData<QWORD>(ullOffset);
+	if (m_fBigEndian)
+		qword = _byteswap_uint64(qword);
+
 	swprintf_s(buff, 31, L"%lli", static_cast<long long>(qword));
-	m_edit64sign.SetWindowTextW(buff);
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_LONGLONG; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(buff);
+
 	swprintf_s(buff, 31, L"%llu", qword);
-	m_edit64unsign.SetWindowTextW(buff);
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_ULONGLONG; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(buff);
+
 	swprintf_s(buff, 31, L"%.18e", *reinterpret_cast<const double*>(&qword));
-	m_editDouble.SetWindowTextW(buff);
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_DOUBLE; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(buff);
 
 	//Time64.
 	if (_localtime64_s(&tm, reinterpret_cast<const __time64_t*>(&qword)) == 0)
@@ -177,7 +441,15 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	}
 	else
 		wstrTime = L"N/A";
-	m_editTime64.SetWindowTextW(wstrTime.data());
+
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_TIME64T; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(wstrTime.data());
+}
+
+ULONGLONG CHexDlgDataInterpret::GetSize()
+{
+	return m_ullSize;
 }
 
 BOOL CHexDlgDataInterpret::ShowWindow(int nCmdShow)
@@ -192,201 +464,8 @@ BOOL CHexDlgDataInterpret::ShowWindow(int nCmdShow)
 	return CWnd::ShowWindow(nCmdShow);
 }
 
-BOOL CHexDlgDataInterpret::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
-{
-	if (wParam == HEXCTRL_EDITCTRL)
-	{
-		auto pnmh = reinterpret_cast<NMHDR*>(lParam);
-		switch (pnmh->code)
-		{
-		case VK_RETURN:
-			m_dwCurrID = pnmh->idFrom;
-			OnOK();
-			break;
-		case VK_ESCAPE:
-			OnCancel();
-			break;
-		case VK_UP:
-			PostMessageW(WM_NEXTDLGCTL, TRUE);
-			break;
-		case VK_TAB:
-		case VK_DOWN:
-			PostMessageW(WM_NEXTDLGCTL);
-			break;
-		}
-	}
-
-	return CDialogEx::OnNotify(wParam, lParam, pResult);
-}
-
 void CHexDlgDataInterpret::UpdateHexCtrl()
 {
 	if (m_pHexCtrl)
 		m_pHexCtrl->RedrawWindow();
-}
-
-BOOL CHexDlgDataInterpret::OnCommand(WPARAM wParam, LPARAM lParam)
-{
-	if (!m_fVisible)
-		return CDialogEx::OnCommand(wParam, lParam);
-
-	WORD wID = LOWORD(wParam);
-	WORD wCode = HIWORD(wParam);
-
-	if (wCode == EN_SETFOCUS)
-	{
-		switch (wID)
-		{
-		case IDC_HEXCTRL_DATAINTERPRET_EDIT_8SIGN:
-		case IDC_HEXCTRL_DATAINTERPRET_EDIT_8UNSIGN:
-			m_ullSize = 1;
-			break;
-		case IDC_HEXCTRL_DATAINTERPRET_EDIT_16SIGN:
-		case IDC_HEXCTRL_DATAINTERPRET_EDIT_16UNSIGN:
-			m_ullSize = 2;
-			break;
-		case IDC_HEXCTRL_DATAINTERPRET_EDIT_32SIGN:
-		case IDC_HEXCTRL_DATAINTERPRET_EDIT_32UNSIGN:
-		case IDC_HEXCTRL_DATAINTERPRET_EDIT_FLOAT:
-		case IDC_HEXCTRL_DATAINTERPRET_EDIT_TIME32:
-			m_ullSize = 4;
-			break;
-		case IDC_HEXCTRL_DATAINTERPRET_EDIT_64SIGN:
-		case IDC_HEXCTRL_DATAINTERPRET_EDIT_64UNSIGN:
-		case IDC_HEXCTRL_DATAINTERPRET_EDIT_DOUBLE:
-		case IDC_HEXCTRL_DATAINTERPRET_EDIT_TIME64:
-			m_ullSize = 8;
-			break;
-		}
-		UpdateHexCtrl();
-	}
-
-	return CDialogEx::OnCommand(wParam, lParam);
-}
-
-void CHexDlgDataInterpret::OnClose()
-{
-	m_ullSize = 0;
-	CDialogEx::OnClose();
-}
-
-void CHexDlgDataInterpret::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
-{
-	if (nState == WA_INACTIVE)
-	{
-		m_ullSize = 0;
-		UpdateHexCtrl();
-	}
-
-	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
-}
-
-void CHexDlgDataInterpret::OnOK()
-{
-	if (!m_pHexCtrl->IsMutable())
-		return;
-
-	WCHAR buff[32];
-	GetDlgItem(static_cast<int>(m_dwCurrID))->GetWindowTextW(buff, 31);
-	LONGLONG llData;
-
-	switch (m_dwCurrID)
-	{
-	case IDC_HEXCTRL_DATAINTERPRET_EDIT_8SIGN:
-	case IDC_HEXCTRL_DATAINTERPRET_EDIT_8UNSIGN:
-		if (!StrToInt64ExW(buff, STIF_SUPPORT_HEX, &llData))
-		{
-			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
-			break;
-		}
-		m_pHexCtrl->SetData(m_ullOffset, static_cast<BYTE>(llData));
-		break;
-	case IDC_HEXCTRL_DATAINTERPRET_EDIT_16SIGN:
-	case IDC_HEXCTRL_DATAINTERPRET_EDIT_16UNSIGN:
-		if (!StrToInt64ExW(buff, STIF_SUPPORT_HEX, &llData))
-		{
-			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
-			break;
-		}
-		m_pHexCtrl->SetData(m_ullOffset, static_cast<WORD>(llData));
-		break;
-	case IDC_HEXCTRL_DATAINTERPRET_EDIT_32SIGN:
-	case IDC_HEXCTRL_DATAINTERPRET_EDIT_32UNSIGN:
-		if (!StrToInt64ExW(buff, STIF_SUPPORT_HEX, &llData))
-		{
-			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
-			break;
-		}
-		m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(llData));
-		break;
-	case IDC_HEXCTRL_DATAINTERPRET_EDIT_64SIGN:
-	case IDC_HEXCTRL_DATAINTERPRET_EDIT_64UNSIGN:
-		if (!StrToInt64ExW(buff, STIF_SUPPORT_HEX, &llData))
-		{
-			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
-			break;
-		}
-		m_pHexCtrl->SetData(m_ullOffset, static_cast<QWORD>(llData));
-		break;
-	case IDC_HEXCTRL_DATAINTERPRET_EDIT_FLOAT:
-	{
-		wchar_t* pEndPtr;
-		float fl = wcstof(buff, &pEndPtr);
-		if (fl == 0 && (pEndPtr == buff || *pEndPtr != '\0'))
-		{
-			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
-			break;
-		}
-		//TODO:	DWORD dw=std::bit_cast<DWORD>(fl);
-		m_pHexCtrl->SetData(m_ullOffset, *reinterpret_cast<DWORD*>(&fl));
-	}
-	break;
-	case IDC_HEXCTRL_DATAINTERPRET_EDIT_DOUBLE:
-	{
-		wchar_t* pEndPtr;
-		double dd = wcstod(buff, &pEndPtr);
-		if (dd == 0 && (pEndPtr == buff || *pEndPtr != '\0'))
-		{
-			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
-			break;
-		}
-		m_pHexCtrl->SetData(m_ullOffset, *reinterpret_cast<QWORD*>(&dd));
-	}
-	break;
-	case IDC_HEXCTRL_DATAINTERPRET_EDIT_TIME32:
-	{
-		tm tm { };
-		int iYear { };
-		swscanf_s(buff, L"%2i/%2i/%4i %2i:%2i:%2i", &tm.tm_mday, &tm.tm_mon, &iYear, &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
-		tm.tm_year = iYear - 1900;
-		--tm.tm_mon; //Months start from 0.
-		__time32_t time32 = _mktime32(&tm);
-		if (time32 == -1)
-		{
-			MessageBoxW(L"Wrong date/time format!", L"Format Error", MB_ICONERROR);
-			break;
-		}
-		m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(time32));
-	}
-	break;
-	case IDC_HEXCTRL_DATAINTERPRET_EDIT_TIME64:
-	{
-		tm tm { };
-		int iYear { };
-		swscanf_s(buff, L"%2i/%2i/%4i %2i:%2i:%2i", &tm.tm_mday, &tm.tm_mon, &iYear, &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
-		tm.tm_year = iYear - 1900;
-		--tm.tm_mon; //Months start from 0.
-		__time64_t time64 = _mktime64(&tm);
-		if (time64 == -1)
-		{
-			MessageBoxW(L"Wrong date/time format!", L"Format Error", MB_ICONERROR);
-			break;
-		}
-		m_pHexCtrl->SetData(m_ullOffset, static_cast<QWORD>(time64));
-	}
-	break;
-	}
-
-	UpdateHexCtrl();
-	InspectOffset(m_ullOffset);
 }

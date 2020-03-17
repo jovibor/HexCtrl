@@ -10,7 +10,7 @@
 #include <afxdialogex.h> //Standard MFC's controls header.
 #include "../CHexCtrl.h"
 #include "../../res/HexCtrlRes.h"
-#include "CHexEdit.h"
+#include "CHexPropGridCtrl.h"
 
 namespace HEXCTRL::INTERNAL
 {
@@ -23,35 +23,73 @@ namespace HEXCTRL::INTERNAL
 		void InspectOffset(ULONGLONG ullOffset);
 		BOOL ShowWindow(int nCmdShow);
 	protected:
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		void OnOK()override;
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		void OnOK()override;
 		afx_msg void OnClose();
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		void UpdateHexCtrl();
+		LRESULT OnPropertyChanged(WPARAM wparam, LPARAM lparam);
+		afx_msg void OnSize(UINT nType, int cx, int cy);
+		afx_msg void OnHexctrlDatainterpretRadioBe();
+		afx_msg void OnHexctrlDatainterpretRadioLe();
+		template <typename T>bool SetDigitData(LONGLONG llData);
 		DECLARE_MESSAGE_MAP()
 	private:
+		enum class EGroup : WORD { DIGITS, FLOAT, TIME };
+		enum class EName : WORD {
+			NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
+			NAME_LONG, NAME_ULONG, NAME_LONGLONG, NAME_ULONGLONG,
+			NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T
+		};
+		enum class ESize : WORD { SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4, SIZE_QWORD = 0x8 };
+		struct GRIDDATA
+		{
+			EGroup eGroup { };
+			EName eName { };
+			ESize eSize { };
+			CMFCPropertyGridProperty* pProp { };
+		};
 		CHexCtrl* m_pHexCtrl { };
 		bool m_fVisible { false };
-		CHexEdit m_edit8sign;
-		CHexEdit m_edit8unsign;
-		CHexEdit m_edit16sign;
-		CHexEdit m_edit16unsign;
-		CHexEdit m_edit32sign;
-		CHexEdit m_edit32unsign;
-		CHexEdit m_edit64sign;
-		CHexEdit m_edit64unsign;
-		CHexEdit m_editFloat;
-		CHexEdit m_editDouble;
-		CHexEdit m_editTime32;
-		CHexEdit m_editTime64;
-		std::vector<CHexEdit*> m_vec16 { };
-		std::vector<CHexEdit*> m_vec32 { };
-		std::vector<CHexEdit*> m_vec64 { };
-		UINT_PTR m_dwCurrID { };
+		bool m_fBigEndian { false };
+		CHexPropGridCtrl m_stCtrlGrid;
+		std::vector<GRIDDATA> m_vecProp;
+		CMFCPropertyGridProperty* m_pPropChanged { };
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullSize { };
+		HDITEMW m_hdItemPropGrid { };
 	};
+
+	template<typename T>
+	inline bool CHexDlgDataInterpret::SetDigitData(LONGLONG llData)
+	{
+		if constexpr (!std::is_same_v<T, ULONGLONG> && !std::is_same_v<T, LONGLONG>) //Do not check numeric_limits for sizeof(QWORD)
+		{
+			if (llData > static_cast<LONGLONG>(std::numeric_limits<T>::max())
+				|| llData < static_cast<LONGLONG>(std::numeric_limits<T>::min()))
+				return false;
+		}
+
+		T tData = static_cast<T>(llData);
+		if (m_fBigEndian)
+		{
+			switch (sizeof(T))
+			{
+			case (sizeof(WORD)):
+				tData = static_cast<T>(_byteswap_ushort(static_cast<WORD>(tData)));
+				break;
+			case (sizeof(DWORD)):
+				tData = static_cast<T>(_byteswap_ulong(static_cast<DWORD>(tData)));
+				break;
+			case (sizeof(QWORD)):
+				tData = static_cast<T>(_byteswap_uint64(static_cast<QWORD>(tData)));
+				break;
+			}
+		}
+		m_pHexCtrl->SetData(m_ullOffset, tData);
+
+		return true;
+	}
 }

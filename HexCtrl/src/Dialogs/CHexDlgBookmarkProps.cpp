@@ -80,30 +80,30 @@ void CHexDlgBookmarkProps::OnOK()
 
 	wchar_t pwszBuff[512];
 	CEdit* pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_OFFSET);
-	pEdit->GetWindowTextW(pwszBuff, 32);
-	ULONGLONG llOffset;
-	if (!WCharsToUll(pwszBuff, llOffset))
+	pEdit->GetWindowTextW(pwszBuff, 32); //Text limit for 32 chars
+	ULONGLONG ullOffset;
+	if (!WCharsToUll(pwszBuff, ullOffset))
 	{
 		MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 		return;
 	}
 	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_LENGTH);
-	pEdit->GetWindowTextW(pwszBuff, 32);
-	ULONGLONG llSize;
-	if (!WCharsToUll(pwszBuff, llSize))
+	pEdit->GetWindowTextW(pwszBuff, 32); //Text limit for 32 chars
+	ULONGLONG ullSize;
+	if (!WCharsToUll(pwszBuff, ullSize))
 	{
 		MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 		return;
 	}
-	if (llSize == 0)
+	if (ullSize == 0)
 	{
 		MessageBoxW(L"Length can not be zero!", L"Format Error", MB_ICONERROR);
 		return;
 	}
-	if (m_ullOffset != llOffset || m_ullSize != llSize)
+	if (m_ullOffset != ullOffset || m_ullSize != ullSize)
 	{
 		m_pHBS->vecSpan.clear();
-		m_pHBS->vecSpan.emplace_back(HEXSPANSTRUCT { llOffset, llSize });
+		m_pHBS->vecSpan.emplace_back(HEXSPANSTRUCT { ullOffset, ullSize });
 	}
 
 	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_DESCR);

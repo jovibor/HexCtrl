@@ -60,8 +60,10 @@ BOOL CHexDlgCallback::ContinueModal()
 	//to exit modal loop state, it may ASSERT sometimes if FALSE is returned
 	//too early, at very early stage of dialog initialization.
 	//https://docs.microsoft.com/en-us/cpp/mfc/reference/cwnd-class?view=vs-2017&redirectedfrom=MSDN#continuemodal
+	//To overcome this, PostMessageW(WM_COMMAND, IDOK) instead of return FALSE seems to work ok.
 	if (m_fCancel)
-		return FALSE;
+		PostMessageW(WM_COMMAND, IDOK);
+		//return FALSE;
 
 	return CDialogEx::ContinueModal();
 }

@@ -90,6 +90,12 @@
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexEdit.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
+    <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgCallback.h">
+	  <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\HexCtrl\src\Dialogs\CHexPropGridCtrl.h">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
     <ClInclude Include="..\HexCtrl\src\ListEx\ListEx.h">
       <Filter>HexCtrl\src\ListEx</Filter>
     </ClInclude>
@@ -98,9 +104,6 @@
     </ClInclude>
     <ClInclude Include="..\HexCtrl\src\ListEx\src\CListExHdr.h">
       <Filter>HexCtrl\src\ListEx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgCallback.h">
-      <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -152,14 +155,17 @@
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexEdit.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
+    <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgCallback.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\HexCtrl\src\Dialogs\CHexPropGridCtrl.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
     <ClCompile Include="..\HexCtrl\src\ListEx\src\CListEx.cpp">
       <Filter>HexCtrl\src\ListEx</Filter>
     </ClCompile>
     <ClCompile Include="..\HexCtrl\src\ListEx\src\CListExHdr.cpp">
       <Filter>HexCtrl\src\ListEx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgCallback.cpp">
-      <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

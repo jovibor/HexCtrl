@@ -117,7 +117,7 @@ bool CHexDlgSearch::DoSearch(ULONGLONG& ullOffset, ULONGLONG ullUntil, const uns
 
 	bool fResult { false };
 	CHexDlgCallback dlg(L"Searching...");
-	std::thread thr([&]() {
+	std::thread thrd([&]() {
 		if (fForward)
 		{
 			ullOffsetSearch = ullOffset;
@@ -174,8 +174,10 @@ bool CHexDlgSearch::DoSearch(ULONGLONG& ullOffset, ULONGLONG ullUntil, const uns
 		}
 		dlg.Cancel();
 	});
-	thr.detach();
-	dlg.DoModal();
+	if (ullSize > 1024 * 256) //Showing "Cancel" dialog only when data > 256 KB
+		dlg.DoModal();
+
+	thrd.join();
 
 	return fResult;
 }

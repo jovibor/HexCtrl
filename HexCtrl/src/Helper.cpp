@@ -66,11 +66,25 @@ namespace HEXCTRL::INTERNAL {
 		return true;
 	}
 
-	bool WCharsToUll(const wchar_t* pwcsz, unsigned long long & ull)
+	bool WCharsToUll(const wchar_t* pwcsz, unsigned long long& ull, bool fHex)
 	{
 		wchar_t* pEndPtr;
-		ull = wcstoull(pwcsz, &pEndPtr, 16);
-		if (ull == 0 && (pEndPtr == pwcsz || *pEndPtr != '\0'))
+		int iRadix = fHex ? 16 : 10;
+		ull = std::wcstoull(pwcsz, &pEndPtr, iRadix);
+		if ((ull == 0 && (pEndPtr == pwcsz || *pEndPtr != '\0'))
+			|| (ull == ULLONG_MAX && errno == ERANGE))
+			return false;
+
+		return true;
+	}
+
+	bool WCharsToll(const wchar_t* pwcsz, long long& ll, bool fHex)
+	{
+		wchar_t* pEndPtr;
+		int iRadix = fHex ? 16 : 10;
+		ll = std::wcstoll(pwcsz, &pEndPtr, iRadix);
+		if ((ll == 0 && (pEndPtr == pwcsz || *pEndPtr != '\0'))
+			|| ((ll == LLONG_MAX || ll == LLONG_MIN) && errno == ERANGE))
 			return false;
 
 		return true;
