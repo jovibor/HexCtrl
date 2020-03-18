@@ -11,7 +11,6 @@
 #include "CHexDlgCallback.h"
 #include "../Helper.h"
 #include <thread>
-#include <atomic>
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
@@ -80,14 +79,14 @@ void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 }
 
-bool CHexDlgSearch::DoSearch(ULONGLONG& ullOffset, ULONGLONG ullUntil, const unsigned char* pSearch, size_t nSizeSearch, bool fForward)
+bool CHexDlgSearch::DoSearch(ULONGLONG& ullStart, ULONGLONG ullEnd, const unsigned char* pSearch, size_t nSizeSearch, bool fForward)
 {
 	auto pHex = GetHexCtrl();
-	ULONGLONG ullDataSize = pHex->GetDataSize();
-	if (ullOffset + nSizeSearch > ullDataSize)
+	ULONGLONG ullMaxDataSize = pHex->GetDataSize();
+	if (ullStart + nSizeSearch > ullMaxDataSize)
 		return false;
 
-	ULONGLONG ullSize = fForward ? ullUntil - ullOffset : ullOffset - ullUntil; //Depends on search direction
+	ULONGLONG ullSize = fForward ? ullEnd - ullStart : ullStart - ullEnd; //Depends on search direction
 	ULONGLONG ullSizeChunk { };    //Size of the chunk to work with.
 	ULONGLONG ullChunks { };
 	ULONGLONG ullMemToAcquire { }; //Size of VirtualData memory for acquiring. It's bigger than ullSizeChunk.
@@ -120,12 +119,12 @@ bool CHexDlgSearch::DoSearch(ULONGLONG& ullOffset, ULONGLONG ullUntil, const uns
 	std::thread thrd([&]() {
 		if (fForward)
 		{
-			ullOffsetSearch = ullOffset;
+			ullOffsetSearch = ullStart;
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
 			{
-				if (ullOffsetSearch + ullMemToAcquire > ullDataSize)
+				if (ullOffsetSearch + ullMemToAcquire > ullMaxDataSize)
 				{
-					ullMemToAcquire = ullDataSize - ullOffsetSearch;
+					ullMemToAcquire = ullMaxDataSize - ullOffsetSearch;
 					ullSizeChunk = ullMemToAcquire - nSizeSearch;
 				}
 				if (iterChunk > 0)
@@ -136,7 +135,7 @@ bool CHexDlgSearch::DoSearch(ULONGLONG& ullOffset, ULONGLONG ullUntil, const uns
 				{
 					if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
 					{
-						ullOffset = ullOffsetSearch + i;
+						ullStart = ullOffsetSearch + i;
 						fResult = true;
 						break;
 					}
@@ -147,7 +146,7 @@ bool CHexDlgSearch::DoSearch(ULONGLONG& ullOffset, ULONGLONG ullUntil, const uns
 		}
 		else
 		{
-			ullOffsetSearch = ullOffset - ullSizeChunk;
+			ullOffsetSearch = ullStart - ullSizeChunk;
 			for (ULONGLONG iterChunk = ullChunks; iterChunk > 0; --iterChunk)
 			{
 				auto pData = pHex->GetData({ ullOffsetSearch, ullMemToAcquire });
@@ -155,7 +154,7 @@ bool CHexDlgSearch::DoSearch(ULONGLONG& ullOffset, ULONGLONG ullUntil, const uns
 				{
 					if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
 					{
-						ullOffset = ullOffsetSearch + i;
+						ullStart = ullOffsetSearch + i;
 						fResult = true;
 						break;
 					}
@@ -163,10 +162,10 @@ bool CHexDlgSearch::DoSearch(ULONGLONG& ullOffset, ULONGLONG ullUntil, const uns
 						break;
 				}
 
-				if ((ullOffsetSearch - ullSizeChunk) < ullUntil
+				if ((ullOffsetSearch - ullSizeChunk) < ullEnd
 					|| (ullOffsetSearch - ullSizeChunk) > (std::numeric_limits<ULONGLONG>::max() - ullSizeChunk))
 				{
-					ullMemToAcquire = (ullOffsetSearch - ullUntil) + nSizeSearch;
+					ullMemToAcquire = (ullOffsetSearch - ullEnd) + nSizeSearch;
 					ullSizeChunk = ullMemToAcquire - nSizeSearch;
 				}
 				ullOffsetSearch -= ullSizeChunk;
