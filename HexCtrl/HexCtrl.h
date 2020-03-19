@@ -9,6 +9,7 @@
 #pragma once
 #include <memory>    //std::shared/unique_ptr and related.
 #include <vector>
+#include <deque>
 #include <string>
 #include <Windows.h> //Standard Windows header.
 
@@ -209,13 +210,15 @@ namespace HEXCTRL
 	class IHexCtrl
 	{
 	public:
-		virtual ~IHexCtrl() = default;
-		virtual DWORD AddBookmark(const HEXBOOKMARKSTRUCT& hbs) = 0; //Adds new bookmark.
-		virtual void ClearData() = 0;                          //Clears all data from HexCtrl's view (not touching data itself).
-		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;   //Main initialization method.
+		virtual DWORD BkmAdd(const HEXBOOKMARKSTRUCT& hbs) = 0; //Adds new bookmark.
+		virtual void BkmClearAll() = 0;                         //Clear all bookmarks.
+		[[nodiscard]] virtual auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* = 0;
+		virtual void BkmRemove(DWORD dwId) = 0;                 //Removes bookmark by the given Id.
+		virtual void ClearData() = 0;                           //Clears all data from HexCtrl's view (not touching data itself).
+		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;    //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) = 0; //Сreates custom dialog control.
-		virtual void Destroy() = 0;                            //Deleter.
-		virtual void ExecuteCmd(EHexCmd enCmd)const = 0;       //Execute a command within the control.
+		virtual void Destroy() = 0;                             //Deleter.
+		virtual void ExecuteCmd(EHexCmd enCmd)const = 0;        //Execute a command within the control.
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
 		[[nodiscard]] virtual auto GetColor()const->HEXCOLORSTRUCT = 0;      //Current colors.
@@ -232,7 +235,6 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
 		virtual void Print() = 0;                              //Printing routine.
-		virtual void RemoveBookmark(DWORD dwId) = 0;           //Removes bookmark by the given Id.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;  //Sets all the control's colors.
 		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	

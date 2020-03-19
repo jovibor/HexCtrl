@@ -17,9 +17,8 @@ BEGIN_MESSAGE_MAP(CHexDlgCallback, CDialogEx)
 END_MESSAGE_MAP()
 
 CHexDlgCallback::CHexDlgCallback(std::wstring_view wstrOperName, CWnd* pParent)
-	: CDialogEx(IDD_HEXCTRL_CALLBACK, pParent)
+	: CDialogEx(IDD_HEXCTRL_CALLBACK, pParent), m_wstrOperName(wstrOperName)
 {
-	m_wstrOperName = wstrOperName;
 }
 
 BOOL CHexDlgCallback::OnInitDialog()
@@ -42,14 +41,14 @@ void CHexDlgCallback::OnCancel()
 	m_fCancel = true;
 }
 
-bool CHexDlgCallback::IsCancelPressed()const
+bool CHexDlgCallback::IsCanceled()const
 {
 	return m_fCancel;
 }
 
 void CHexDlgCallback::Cancel()
 {
-	m_fCancel = true;
+	OnCancel();
 }
 
 BOOL CHexDlgCallback::ContinueModal()

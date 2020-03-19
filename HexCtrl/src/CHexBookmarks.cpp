@@ -39,7 +39,7 @@ DWORD CHexBookmarks::Add(const HEXBOOKMARKSTRUCT& hbs)
 	if (m_pHex)
 		m_pHex->RedrawWindow();
 
-	m_time = std::time(0);
+	m_time = _time64(nullptr);
 
 	return dwId;
 }
@@ -53,7 +53,7 @@ void CHexBookmarks::ClearAll()
 	if (m_pHex)
 		m_pHex->RedrawWindow();
 
-	m_time = std::time(0);
+	m_time = _time64(nullptr);
 }
 
 auto CHexBookmarks::GetBookmark(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUCT>
@@ -201,7 +201,7 @@ void CHexBookmarks::RemoveId(DWORD dwID)
 			m_pHex->RedrawWindow();
 	}
 
-	m_time = std::time(0);
+	m_time = _time64(nullptr);
 }
 
 void CHexBookmarks::SetVirtual(IHexBkmVirtual* pVirtual)
@@ -224,5 +224,5 @@ void CHexBookmarks::Update(DWORD dwID, const HEXBOOKMARKSTRUCT& stBookmark)
 			m_pHex->RedrawWindow();
 	}
 
-	m_time = std::time(0);
+	m_time = _time64(nullptr);
 }

@@ -91,6 +91,7 @@ bool CHexDlgSearch::DoSearch(ULONGLONG& ullStart, ULONGLONG ullEnd, const unsign
 	ULONGLONG ullChunks { };
 	ULONGLONG ullMemToAcquire { }; //Size of VirtualData memory for acquiring. It's bigger than ullSizeChunk.
 	ULONGLONG ullOffsetSearch { };
+	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
 
 	switch (pHex->GetDataMode())
 	{
@@ -139,7 +140,7 @@ bool CHexDlgSearch::DoSearch(ULONGLONG& ullStart, ULONGLONG ullEnd, const unsign
 						fResult = true;
 						break;
 					}
-					if (dlg.IsCancelPressed())
+					if (dlg.IsCanceled())
 						break;
 				}
 			}
@@ -158,7 +159,7 @@ bool CHexDlgSearch::DoSearch(ULONGLONG& ullStart, ULONGLONG ullEnd, const unsign
 						fResult = true;
 						break;
 					}
-					if (dlg.IsCancelPressed())
+					if (dlg.IsCanceled())
 						break;
 				}
 
@@ -173,9 +174,8 @@ bool CHexDlgSearch::DoSearch(ULONGLONG& ullStart, ULONGLONG ullEnd, const unsign
 		}
 		dlg.Cancel();
 	});
-	if (ullSize > 1024 * 256) //Showing "Cancel" dialog only when data > 256 KB
+	if (ullSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
 		dlg.DoModal();
-
 	thrd.join();
 
 	return fResult;

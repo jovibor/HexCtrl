@@ -10,6 +10,7 @@
 #include "CHexDlgDataInterpret.h"
 #include "strsafe.h"
 #include "../Helper.h"
+#include <algorithm>
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;

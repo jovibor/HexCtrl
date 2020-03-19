@@ -16,7 +16,7 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexDlgCallback(std::wstring_view wstrOperName, CWnd* pParent = nullptr);
-		[[nodiscard]] bool IsCancelPressed()const;
+		[[nodiscard]] bool IsCanceled()const;
 		void Cancel();
 	protected:
 		BOOL OnInitDialog();

@@ -17,7 +17,10 @@
   * [Virtual Handler](#virtual-handler)
 * [Virtual Bookmarks](#virtual-bookmarks)
 * [Methods](#methods) <details><summary>_Expand_</summary>
-  * [AddBookmark](#addbookmark)
+  * [BkmAdd](#bkmadd)
+  * [BkmClearAll](#bkmclearall)
+  * [BkmGetData](#bkmgetdata)
+  * [BkmRemove](#bkmremove)
   * [ClearData](#cleardata)
   * [Create](#create)
   * [CreateDialogCtrl](#createdialogctrl)
@@ -39,7 +42,6 @@
   * [IsMutable](#ismutable)
   * [IsOffsetAsHex](#isoffsetashex)
   * [Print](#print)
-  * [RemoveBookmark](#removebookmark)
   * [SetCapacity](#setcapacity)
   * [SetColor](#setcolor)
   * [SetData](#setdata)
@@ -309,9 +311,9 @@ class IHexBkmVirtual
 ## [](#)Methods
 The **HexControl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
 
-### [](#)AddBookmark
+### [](#)BkmAdd
 ```cpp
-DWORD AddBookmark(const HEXBOOKMARKSTRUCT& hbs)
+DWORD BkmAdd(const HEXBOOKMARKSTRUCT& hbs)
 ```
 Adds new bookmark to the control. Uses [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) as an argument. Returns created bookmark's id.
 #### Example
@@ -322,8 +324,26 @@ hbs.clrBk = RGB(0, 255, 0);
 hbs.clrText = RGB(255, 255, 255);
 hbs.wstrDesc = L"My first bookmark, with green bk and white text.";
 
-myHex.AddBookmark(hbs);
+myHex.BkmAdd(hbs);
 ```
+
+### [](#)BkmClearAll
+```cpp
+void BkmClearAll();
+```
+Clears all bookmarks.
+
+### [](#)BkmGetData
+```cpp
+auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>*;
+```
+Retrives pointer to the internal array of [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct).
+
+### [](#)BkmRemove
+```cpp
+void BkmRemove(DWORD dwId);
+```
+Removes bookmark by the given Id.
 
 ### [](#)ClearData
 ```cpp
@@ -461,12 +481,6 @@ void Print()const;
 ```
 Prepare document for printing and shows standard printing dialog.
 
-### [](#)RemoveBookmark
-```cpp
-void RemoveBookmark(DWORD dwId);
-```
-Removes bookmark by the given Id.
-
 ### [](#)SetCapacity
 ```cpp
 void SetCapacity(DWORD dwCapacity);
@@ -601,17 +615,18 @@ struct HEXSPANSTRUCT
 ```
 
 ### [](#)HEXBOOKMARKSTRUCT
-Structure for bookmarks, used in [`AddBookmark`](#addbookmark) method.  
+Structure for bookmarks, used in [`BkmAdd`](#BkmAdd) method.  
 ```cpp
 struct HEXBOOKMARKSTRUCT
 {
-    std::vector<HEXSPANSTRUCT> vecSpan { };                    //Vector of offsets and sizes.
-    std::wstring               wstrDesc { };                   //Description text.
-    COLORREF                   clrBk { RGB(240, 240, 0) };     //Bk color.
-    COLORREF                   clrText { RGB(250, 250, 250) }; //Text color.
+    std::vector<HEXSPANSTRUCT> vecSpan { };                //Vector of offsets and sizes.
+    std::wstring               wstrDesc { };               //Description.
+    COLORREF                   clrBk { RGB(240, 240, 0) }; //Bk color.
+    COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.
+    DWORD                      dwID { };                   //Bookmark id. Must be 0. Assigned internally by framework.
 };
 ```
-The member `vecSpan` being of a `std::vector` type is because a bookmark may have few non adjacent areas. For instance, when selection is made as a block, with <kbd>Alt</kbd> pressed.
+The member `vecSpan` is of a `std::vector<HEXSPANSTRUCT>` type because a bookmark may have few non adjacent areas. For instance, when selection is made as a block, with <kbd>Alt</kbd> pressed.
 
 ### [](#)HEXNOTIFYSTRUCT
 This struct is used in notification purposes, to notify parent window about **HexControl**'s states.
