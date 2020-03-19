@@ -152,13 +152,13 @@ CHexCtrl::CHexCtrl()
 	}
 }
 
-DWORD CHexCtrl::BkmAdd(const HEXBOOKMARKSTRUCT& hbs)
+DWORD CHexCtrl::BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return 0xFFFFFFFF;
 
-	return m_pBookmarks->Add(hbs);
+	return m_pBookmarks->Add(hbs, fRedraw);
 }
 
 void CHexCtrl::BkmClearAll()

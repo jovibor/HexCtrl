@@ -18,7 +18,7 @@ void CHexBookmarks::Attach(CHexCtrl* pHex)
 	m_pHex = pHex;
 }
 
-DWORD CHexBookmarks::Add(const HEXBOOKMARKSTRUCT& hbs)
+DWORD CHexBookmarks::Add(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)
 {
 	if (!m_pHex || !m_pHex->IsDataSet())
 		return 0;
@@ -30,18 +30,17 @@ DWORD CHexBookmarks::Add(const HEXBOOKMARKSTRUCT& hbs)
 		[](const HEXBOOKMARKSTRUCT& ref1, const HEXBOOKMARKSTRUCT& ref2)
 	{return ref1.dwID < ref2.dwID; });
 
-	DWORD dwId { 1 }; //Bookmarks Id starts from 1.
+	DWORD dwID { 1 }; //Bookmarks' ID start from 1.
 	if (iter != m_deqBookmarks.end())
-		dwId = iter->dwID + 1; //Increasing next bookmark's Id by 1.
+		dwID = iter->dwID + 1; //Increasing next bookmark's ID by 1.
 
-	m_deqBookmarks.emplace_back(HEXBOOKMARKSTRUCT
-		{ hbs.vecSpan, hbs.wstrDesc, hbs.clrBk, hbs.clrText, dwId });
-	if (m_pHex)
+	m_deqBookmarks.emplace_back(HEXBOOKMARKSTRUCT { hbs.vecSpan, hbs.wstrDesc, hbs.clrBk, hbs.clrText, dwID });
+	if (fRedraw && m_pHex)
 		m_pHex->RedrawWindow();
 
 	m_time = _time64(nullptr);
 
-	return dwId;
+	return dwID;
 }
 
 void CHexBookmarks::ClearAll()
@@ -86,7 +85,7 @@ void CHexBookmarks::GoBookmark(DWORD dwID)
 		[dwID](const HEXBOOKMARKSTRUCT& ref) {return dwID == ref.dwID; });
 
 	if (iter != m_deqBookmarks.end())
-		m_pHex->GoToOffset(iter->vecSpan.front().ullOffset);
+		m_pHex->GoToOffset(iter->vecSpan.front().ullOffset, true, 1);
 }
 
 void CHexBookmarks::GoNext()
@@ -105,7 +104,7 @@ void CHexBookmarks::GoNext()
 	if (++m_iCurrent > static_cast<int>(m_deqBookmarks.size() - 1))
 		m_iCurrent = 0;
 
-	m_pHex->GoToOffset(m_deqBookmarks.at(static_cast<size_t>(m_iCurrent)).vecSpan.front().ullOffset);
+	m_pHex->GoToOffset(m_deqBookmarks.at(static_cast<size_t>(m_iCurrent)).vecSpan.front().ullOffset, true, 1);
 }
 
 void CHexBookmarks::GoPrev()
@@ -124,7 +123,7 @@ void CHexBookmarks::GoPrev()
 	if (--m_iCurrent < 0)
 		m_iCurrent = static_cast<int>(m_deqBookmarks.size()) - 1;
 
-	m_pHex->GoToOffset(m_deqBookmarks.at(static_cast<size_t>(m_iCurrent)).vecSpan.front().ullOffset);
+	m_pHex->GoToOffset(m_deqBookmarks.at(static_cast<size_t>(m_iCurrent)).vecSpan.front().ullOffset, true, 1);
 }
 
 bool CHexBookmarks::HasBookmarks()const

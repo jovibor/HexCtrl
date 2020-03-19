@@ -313,7 +313,7 @@ The **HexControl** has plenty of methods that you can use to customize its appea
 
 ### [](#)BkmAdd
 ```cpp
-DWORD BkmAdd(const HEXBOOKMARKSTRUCT& hbs)
+DWORD BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = false)
 ```
 Adds new bookmark to the control. Uses [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) as an argument. Returns created bookmark's id.
 #### Example

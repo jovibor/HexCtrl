@@ -210,7 +210,7 @@ namespace HEXCTRL
 	class IHexCtrl
 	{
 	public:
-		virtual DWORD BkmAdd(const HEXBOOKMARKSTRUCT& hbs) = 0; //Adds new bookmark.
+		virtual DWORD BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = false) = 0; //Adds new bookmark.
 		virtual void BkmClearAll() = 0;                         //Clear all bookmarks.
 		[[nodiscard]] virtual auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* = 0;
 		virtual void BkmRemove(DWORD dwId) = 0;                 //Removes bookmark by the given Id.

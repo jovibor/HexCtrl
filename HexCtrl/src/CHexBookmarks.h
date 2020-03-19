@@ -19,7 +19,7 @@ namespace HEXCTRL::INTERNAL
 	public:
 		explicit CHexBookmarks() = default;
 		~CHexBookmarks() = default;
-		DWORD Add(const HEXBOOKMARKSTRUCT& hbs); //Returns new bookmark Id.
+		DWORD Add(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = true); //Returns new bookmark Id.
 		void Attach(CHexCtrl* pHex);
 		void ClearAll();
 		[[nodiscard]] auto GetBookmark(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUCT>;
