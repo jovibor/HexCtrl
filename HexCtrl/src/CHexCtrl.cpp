@@ -1206,14 +1206,14 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 					ClientToScreen(&ptScreen);
 
 					m_stToolInfoBkm.lpszText = pBookmark->wstrDesc.data();
-					m_wndTtBkm.SendMessageW(TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(ptScreen.x, ptScreen.y));
-					m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfoBkm);
-					m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)TRUE, (LPARAM)(LPTOOLINFO)&m_stToolInfoBkm);
+					m_wndTtBkm.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x, ptScreen.y)));
+					m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
+					m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 				}
 			}
 			else
 			{
-				m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfoBkm);
+				m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 				m_pBkmCurrTt = nullptr;
 			}
 		}
@@ -2676,10 +2676,10 @@ void CHexCtrl::ShowOffsetTooltip(bool fShow)
 
 		UllToWchars(GetTopLine() * m_dwCapacity, &m_warrOffset[8], static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
 		m_stToolInfoOffset.lpszText = m_warrOffset;
-		m_wndTtOffset.SendMessageW(TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(ptScreen.x - 5, ptScreen.y - 20));
-		m_wndTtOffset.SendMessageW(TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfoOffset);
+		m_wndTtOffset.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
+		m_wndTtOffset.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
 	}
-	m_wndTtOffset.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)fShow, (LPARAM)(LPTOOLINFO)&m_stToolInfoOffset);
+	m_wndTtOffset.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
 }
 
 void CHexCtrl::OnDestroy()
@@ -2772,7 +2772,7 @@ ULONGLONG CHexCtrl::GetDataSize()
 	return m_ullDataSize;
 }
 
-void CHexCtrl::Modify(MODIFYSTRUCT& hms, bool fRedraw)
+void CHexCtrl::Modify(const MODIFYSTRUCT& hms, bool fRedraw)
 {
 	if (!IsMutable())
 		return;
@@ -2799,7 +2799,7 @@ void CHexCtrl::Modify(MODIFYSTRUCT& hms, bool fRedraw)
 		RedrawWindow();
 }
 
-void CHexCtrl::ModifyDefault(MODIFYSTRUCT& hms)
+void CHexCtrl::ModifyDefault(const MODIFYSTRUCT& hms)
 {
 	const auto& vecSelRef = hms.vecSpan;
 	std::byte* pData = GetData(vecSelRef[0]);
@@ -2807,7 +2807,7 @@ void CHexCtrl::ModifyDefault(MODIFYSTRUCT& hms)
 	SetDataVirtual(pData, vecSelRef[0]);
 }
 
-void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
+void CHexCtrl::ModifyRepeat(const MODIFYSTRUCT& hms)
 {
 	const auto& vecSelRef = hms.vecSpan;
 	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
@@ -2859,7 +2859,7 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
 					if (m_enDataMode != EHexDataMode::DATA_MEMORY)
 						SetDataVirtual(pData, { ullOffset, ullSizeChunk });
 					if (dlg.IsCanceled())
-						break;
+						goto exit;
 				}
 			}
 			else
@@ -2876,10 +2876,11 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
 					if (m_enDataMode != EHexDataMode::DATA_MEMORY)
 						SetDataVirtual(pData, { ullOffset, hms.ullDataSize });
 					if (dlg.IsCanceled())
-						break;
+						goto exit;
 				}
 			}
 		}
+	exit:
 		dlg.Cancel();
 	});
 	if (ullTotalSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
@@ -2887,7 +2888,7 @@ void CHexCtrl::ModifyRepeat(MODIFYSTRUCT& hms)
 	thrd.join();
 }
 
-void CHexCtrl::ModifyOperation(MODIFYSTRUCT& hms)
+void CHexCtrl::ModifyOperation(const MODIFYSTRUCT& hms)
 {
 	if (hms.ullDataSize > sizeof(QWORD))
 		return;
@@ -2958,9 +2959,11 @@ void CHexCtrl::ModifyOperation(MODIFYSTRUCT& hms)
 				if (m_enDataMode != EHexDataMode::DATA_MEMORY)
 					SetDataVirtual(pData, { ullOffset, ullSizeChunk });
 				if (dlg.IsCanceled())
-					break;
+					goto exit;
 			}
 		}
+	exit:
+		dlg.Cancel();
 	});
 	if (ullTotalSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
 		dlg.DoModal();

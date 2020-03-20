@@ -122,10 +122,10 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] ULONGLONG GetDataSize();    //Gets m_ullDataSize.
 		template<typename T> [[nodiscard]] auto GetData(ULONGLONG ullOffset)->T; //Get T sized data from ullOffset.
 		template<typename T>void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
-		void Modify(MODIFYSTRUCT& hms, bool fRedraw = true);            //Main routine to modify data, in m_fMutable==true mode.
-		void ModifyDefault(MODIFYSTRUCT& hms);   //EModifyMode::MODIFY_DEFAULT
-		void ModifyRepeat(MODIFYSTRUCT& hms);    //EModifyMode::MODIFY_REPEAT
-		void ModifyOperation(MODIFYSTRUCT& hms); //EModifyMode::MODIFY_OPERATION
+		void Modify(const MODIFYSTRUCT& hms, bool fRedraw = true);      //Main routine to modify data, in m_fMutable==true mode.
+		void ModifyDefault(const MODIFYSTRUCT& hms);   //EModifyMode::MODIFY_DEFAULT
+		void ModifyRepeat(const MODIFYSTRUCT& hms);    //EModifyMode::MODIFY_REPEAT
+		void ModifyOperation(const MODIFYSTRUCT& hms); //EModifyMode::MODIFY_OPERATION
 		template <typename T>void OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeChunk); //Immediate operations on pData.
 		void CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLONG& ullSizeChunk, ULONGLONG& ullChunks);
 		[[nodiscard]] DWORD GetCacheSize()const;               //Returns Virtual/Message mode cache size.

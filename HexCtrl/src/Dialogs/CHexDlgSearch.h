@@ -43,13 +43,14 @@ namespace HEXCTRL::INTERNAL {
 		BOOL PreTranslateMessage(MSG* pMsg)override;
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		void OnRadioBnRange(UINT nID);
+		bool PrepareSearch();
 	private:
 		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
 		//ullStart will return index of found occurence, if any.
-		bool DoSearch(ULONGLONG& ullStart, ULONGLONG ullEnd, const unsigned char* pSearch, size_t nSize, bool fForward = true);
+		bool DoSearch(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSize, bool fForward = true);
 		void Search();
-		void SearchReplace(ULONGLONG ullIndex, PBYTE pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw = true);
-		void ClearAll();
+		void Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t m_nSizeReplace, bool fRedraw = true);
+		void ResetSearch();
 		[[nodiscard]] ESearchMode GetSearchMode(); //Returns current search mode.
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
@@ -61,10 +62,11 @@ namespace HEXCTRL::INTERNAL {
 		const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
 		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
 		CBrush m_stBrushDefault;
-		std::wstring m_wstrSearch { };     //String to search for.
-		std::wstring wstrReplace { };    //Search "Replace with..." wstring.
-		ESearchMode enSearchType { };    //Hex, Ascii, Unicode, etc...
-		ULONGLONG m_ullOffset { };        //An offset search should start from.
+		std::wstring m_wstrTextSearch { };  //String to search for.
+		std::wstring m_wstrTextReplace { }; //Search "Replace with..." wstring.
+		ULONGLONG m_ullSearchStart { };
+		ULONGLONG m_ullSearchEnd { };
+		ULONGLONG m_ullOffset { };       //An offset search should start from.
 		DWORD m_dwCount { };             //How many, or what index number.
 		DWORD m_dwReplaced { };          //Replaced amount;
 		int m_iDirection { };            //Search direction: 1 = Forward, -1 = Backward.
@@ -76,5 +78,12 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fReplace { false };       //Find or Find and Replace with...?
 		bool m_fAll { false };           //Find/Replace one by one, or all?
 		bool m_fReplaceWarning { true }; //Show Replace string size exceeds Warning or not.
+		bool m_fSelection { false };     //Search in selection.
+		std::byte* m_pSearchData { };
+		std::byte* m_pReplaceData { };
+		size_t m_nSizeSearch { };
+		size_t m_nSizeReplace { };
+		std::string m_strSearch;
+		std::string m_strReplace;
 	};
 }

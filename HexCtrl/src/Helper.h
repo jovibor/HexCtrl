@@ -28,7 +28,7 @@ namespace HEXCTRL {
 		bool CharsToUl(const char* pcsz, unsigned long& ul);
 		//As above but for wchars*
 		bool WCharsToUll(const wchar_t* pwcsz, unsigned long long& ull, bool fHex = true);
-		bool WCharsToll(const wchar_t* pwcsz, long long& ull, bool fHex = true);
+		bool WCharsToll(const wchar_t* pwcsz, long long& ll, bool fHex = true);
 
 		//Wide string to Multibyte string convertion.
 		std::string WstrToStr(std::wstring_view wstr);
