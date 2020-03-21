@@ -56,6 +56,7 @@ BOOL CHexDlgOperations::OnCommand(WPARAM wParam, LPARAM lParam)
 	//lParam holds HWND.
 	WORD wID = LOWORD(wParam);
 	WORD wMessage = HIWORD(wParam);
+	bool fHere { true };
 	if (wID >= IDC_HEXCTRL_OPERATIONS_EDIT_OR && wID <= IDC_HEXCTRL_OPERATIONS_EDIT_DIV && wMessage == EN_SETFOCUS)
 	{
 		int iRadioID { };
@@ -88,9 +89,16 @@ BOOL CHexDlgOperations::OnCommand(WPARAM wParam, LPARAM lParam)
 		case IDC_HEXCTRL_OPERATIONS_EDIT_DIV:
 			iRadioID = IDC_HEXCTRL_OPERATIONS_RADIO_DIV;
 			break;
+		default:
+			fHere = false;
 		}
 		CheckRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_OR, IDC_HEXCTRL_OPERATIONS_RADIO_DIV, iRadioID);
 	}
+	else
+		fHere = false;
+
+	if (fHere)
+		return TRUE;
 
 	return CDialogEx::OnCommand(wParam, lParam);
 }

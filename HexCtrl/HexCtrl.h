@@ -11,6 +11,7 @@
 #include <vector>
 #include <deque>
 #include <string>
+#include <optional>
 #include <Windows.h> //Standard Windows header.
 
 #ifndef __cpp_lib_byte
@@ -72,6 +73,7 @@ namespace HEXCTRL
 	{
 		std::vector<HEXSPANSTRUCT> vecSpan { };                //Vector of offsets and sizes.
 		std::wstring               wstrDesc { };               //Description.
+		ULONGLONG                  ullData { };                //User defined custom data.
 		COLORREF                   clrBk { RGB(240, 240, 0) }; //Bk color.
 		COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.
 		DWORD                      dwID { };                   //Bookmark id. Must be 0. Assigned internally by framework.
@@ -212,7 +214,8 @@ namespace HEXCTRL
 	public:
 		virtual DWORD BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = false) = 0; //Adds new bookmark.
 		virtual void BkmClearAll() = 0;                         //Clear all bookmarks.
-		[[nodiscard]] virtual auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* = 0;
+		[[nodiscard]] virtual auto BkmGet(DWORD dwID)const->std::optional <HEXBOOKMARKSTRUCT> = 0; //Get bookmark by ID.
+		[[nodiscard]] virtual auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* = 0;    //Get list of all bookmarks.
 		virtual void BkmRemove(DWORD dwId) = 0;                 //Removes bookmark by the given Id.
 		virtual void ClearData() = 0;                           //Clears all data from HexCtrl's view (not touching data itself).
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;    //Main initialization method.

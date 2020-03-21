@@ -19,6 +19,7 @@
 * [Methods](#methods) <details><summary>_Expand_</summary>
   * [BkmAdd](#bkmadd)
   * [BkmClearAll](#bkmclearall)
+  * [BkmGet](#bkmget)
   * [BkmGetData](#bkmgetdata)
   * [BkmRemove](#bkmremove)
   * [ClearData](#cleardata)
@@ -333,6 +334,12 @@ void BkmClearAll();
 ```
 Clears all bookmarks.
 
+### [](#)BkmGet
+```cpp
+BkmGet(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUCT>;
+```
+Get bookmark by ID.
+
 ### [](#)BkmGetData
 ```cpp
 auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>*;
@@ -621,6 +628,7 @@ struct HEXBOOKMARKSTRUCT
 {
     std::vector<HEXSPANSTRUCT> vecSpan { };                //Vector of offsets and sizes.
     std::wstring               wstrDesc { };               //Description.
+    ULONGLONG                  ullData { };                //User defined custom data.
     COLORREF                   clrBk { RGB(240, 240, 0) }; //Bk color.
     COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.
     DWORD                      dwID { };                   //Bookmark id. Must be 0. Assigned internally by framework.

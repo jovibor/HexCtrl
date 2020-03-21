@@ -13,13 +13,6 @@
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
-namespace HEXCTRL::INTERNAL {
-	constexpr auto IDC_HEXCTRL_BOOKMARKMGR_MENU_NEW = 0x8000;
-	constexpr auto IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT = 0x8001;
-	constexpr auto IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE = 0x8002;
-	constexpr auto IDC_HEXCTRL_BOOKMARKMGR_MENU_CLEARALL = 0x8003;
-}
-
 BEGIN_MESSAGE_MAP(CHexDlgBookmarkMgr, CDialogEx)
 	ON_WM_ACTIVATE()
 	ON_WM_DESTROY()
@@ -130,6 +123,7 @@ void CHexDlgBookmarkMgr::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimize
 
 BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 {
+	bool fHere { true }; //Process message here, and not pass further, to parent.
 	switch (LOWORD(wParam))
 	{
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_NEW:
@@ -166,7 +160,12 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		m_pBookmarks->ClearAll();
 		UpdateList();
 		break;
+	default:
+		fHere = false;
 	}
+
+	if (fHere)
+		return TRUE;
 
 	return CDialogEx::OnCommand(wParam, lParam);
 }

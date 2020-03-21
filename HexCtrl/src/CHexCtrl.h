@@ -82,7 +82,8 @@ namespace HEXCTRL::INTERNAL
 		explicit CHexCtrl();
 		DWORD BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)override; //Adds new bookmark.
 		void BkmClearAll()override;                         //Clear all bookmarks.
-		[[nodiscard]] auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* override; //Get all bookmarks' data.
+		[[nodiscard]] auto BkmGet(DWORD dwID)const->std::optional <HEXBOOKMARKSTRUCT> override; //Get bookmark by ID.
+		[[nodiscard]] auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* override;    //Get all bookmarks' data.
 		void BkmRemove(DWORD dwId)override;                 //Removes bookmark by the given Id.
 		void ClearData()override;                           //Clears all data from HexCtrl's view (not touching data itself).
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.

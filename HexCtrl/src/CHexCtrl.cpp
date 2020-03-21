@@ -170,7 +170,16 @@ void CHexCtrl::BkmClearAll()
 	m_pBookmarks->ClearAll();
 }
 
-auto CHexCtrl::BkmGetData() const -> const std::deque<HEXBOOKMARKSTRUCT>*
+auto CHexCtrl::BkmGet(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUCT>
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
+	return m_pBookmarks->GetBookmark(dwID);
+}
+
+auto CHexCtrl::BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>*
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -556,7 +565,7 @@ HMENU CHexCtrl::GetMenuHandle()const
 	return m_menuMain.GetSubMenu(0)->GetSafeHmenu();
 }
 
-DWORD CHexCtrl::GetSectorSize() const
+DWORD CHexCtrl::GetSectorSize()const
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -573,7 +582,7 @@ auto CHexCtrl::GetSelection()const->std::vector<HEXSPANSTRUCT>
 	return m_pSelection->GetData();
 }
 
-auto CHexCtrl::GetShowMode()const -> EHexShowMode
+auto CHexCtrl::GetShowMode()const->EHexShowMode
 {
 	assert(IsCreated());
 	if (!IsCreated())

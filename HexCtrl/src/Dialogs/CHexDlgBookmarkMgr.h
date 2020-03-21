@@ -38,5 +38,11 @@ namespace HEXCTRL::INTERNAL
 		DWORD m_dwCurrBkmId { }; //Currently selected bookmark Id.
 		int m_iCurrListId { };   //Currently selected list Id.
 		__time64_t m_time { };
+		enum EMenuID {
+			IDC_HEXCTRL_BOOKMARKMGR_MENU_NEW = 0x8000,
+			IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT = 0x8001,
+			IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE = 0x8002,
+			IDC_HEXCTRL_BOOKMARKMGR_MENU_CLEARALL = 0x8003
+		};
 	};
 }

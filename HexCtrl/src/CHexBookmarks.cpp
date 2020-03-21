@@ -34,7 +34,8 @@ DWORD CHexBookmarks::Add(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)
 	if (iter != m_deqBookmarks.end())
 		dwID = iter->dwID + 1; //Increasing next bookmark's ID by 1.
 
-	m_deqBookmarks.emplace_back(HEXBOOKMARKSTRUCT { hbs.vecSpan, hbs.wstrDesc, hbs.clrBk, hbs.clrText, dwID });
+	m_deqBookmarks.emplace_back(
+		HEXBOOKMARKSTRUCT { hbs.vecSpan, hbs.wstrDesc, hbs.ullData, hbs.clrBk, hbs.clrText, dwID });
 	if (fRedraw && m_pHex)
 		m_pHex->RedrawWindow();
 
