@@ -238,6 +238,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
 		virtual void Print() = 0;                              //Printing routine.
+		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;  //Sets all the control's colors.
 		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
@@ -328,14 +329,15 @@ namespace HEXCTRL
 	* These codes are used to notify m_hwndMsg window about control's states.                   *
 	********************************************************************************************/
 
-	constexpr auto HEXCTRL_MSG_CARETCHANGE { 0x0100u };  //Caret position changed.
-	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0101u };  //OnContextMenu triggered.
-	constexpr auto HEXCTRL_MSG_DESTROY { 0x0102u };      //Indicates that HexCtrl is being destroyed.
-	constexpr auto HEXCTRL_MSG_GETDATA { 0x0103u };      //Used in DATA_MSG mode to acquire the next byte to display.
-	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0104u };    //User defined custom menu clicked.
-	constexpr auto HEXCTRL_MSG_SELECTION { 0x0105u };    //Selection has been made.
-	constexpr auto HEXCTRL_MSG_SETDATA { 0x0106u };      //Indicates that the data has changed.
-	constexpr auto HEXCTRL_MSG_VIEWCHANGE { 0x0107u };   //View of the control has changed.
+	constexpr auto HEXCTRL_MSG_BKMCLICK { 0x0100u };     //Bookmark clicked.
+	constexpr auto HEXCTRL_MSG_CARETCHANGE { 0x0101u };  //Caret position changed.
+	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0102u };  //OnContextMenu triggered.
+	constexpr auto HEXCTRL_MSG_DESTROY { 0x0103u };      //Indicates that HexCtrl is being destroyed.
+	constexpr auto HEXCTRL_MSG_GETDATA { 0x0104u };      //Used in DATA_MSG mode to acquire the next byte to display.
+	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0105u };    //User defined custom menu clicked.
+	constexpr auto HEXCTRL_MSG_SELECTION { 0x0106u };    //Selection has been made.
+	constexpr auto HEXCTRL_MSG_SETDATA { 0x0107u };      //Indicates that the data has changed.
+	constexpr auto HEXCTRL_MSG_VIEWCHANGE { 0x0108u };   //View of the control has changed.
 
 	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #ifdef _UNICODE

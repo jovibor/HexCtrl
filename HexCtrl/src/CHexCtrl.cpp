@@ -886,6 +886,15 @@ void CHexCtrl::Print()
 	RecalcAll();
 }
 
+void CHexCtrl::Redraw()
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
+	RedrawWindow();
+}
+
 void CHexCtrl::SetCapacity(DWORD dwCapacity)
 {
 	assert(IsCreated());
@@ -3815,6 +3824,13 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 {
 	m_pDlgDataInterpret->InspectOffset(ullOffset);
 	MsgWindowNotify(HEXCTRL_MSG_CARETCHANGE);
+
+	if (auto pBkm = m_pBookmarks->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.
+	{
+		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK } };
+		hns.ullData = static_cast<ULONGLONG>(pBkm->dwID); //Bookmark ID.
+		MsgWindowNotify(hns);
+	}
 }
 
 void CHexCtrl::CaretMoveRight()

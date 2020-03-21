@@ -106,6 +106,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsMutable()const override;       //Is edit mode enabled or not.
 		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
 		void Print()override;                               //Printing routine.
+		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
 		void SetColor(const HEXCOLORSTRUCT& clr)override;   //Sets all the control's colors.
 		void SetData(const HEXDATASTRUCT& hds)override;     //Main method for setting data to display (and edit).	

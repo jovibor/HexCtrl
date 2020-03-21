@@ -67,6 +67,7 @@
   * [EHexCmd](#ehexcmd)
    </details>
 * [Notification Messages](#notification-messages) <details><summary>_Expand_</summary>
+  * [HEXCTRL_MSG_BKMCLICK](#hexctrl_msg_bkmclicked) 
   * [HEXCTRL_MSG_CARETCHANGE](#hexctrl_msg_caretchange)
   * [HEXCTRL_MSG_CONTEXTMENU](#hexctrl_msg_contextmenu)
   * [HEXCTRL_MSG_DESTROY](#hexctrl_msg_destroy)
@@ -699,8 +700,11 @@ enum class EHexCmd : WORD
 In process of its work **HexControl** sends notification messages through **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** mechanism to indicate its states. These messages are sent either to [`HEXCREATESTRUCT::hwndParent`](#hexcreatestruct) or to [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) window, depending on whether the latter is set.  
 The `LPARAM` of the `WM_NOTIFY` message will hold pointer to the [`HEXNOTIFYSTRUCT`](#hexnotifystruct).
 
+### [](#)HEXCTRL_MSG_BKMCLICK
+Sent if bookmark is clicked. [`HEXNOTIFYSTRUCT::ullData`](#hexnotifystruct) will contain bookmark ID.
+
 ### [](#)HEXCTRL_MSG_CARETCHANGE
-Sent when caret position has changed. [`HEXNOTIFYSTRUCT::ullData`](#hexnotifystruct) will have current caret position.
+Sent when caret position has changed. [`HEXNOTIFYSTRUCT::ullData`](#hexnotifystruct) will contain current caret position.
 
 ### [](#)HEXCTRL_MSG_CONTEXTMENU
 Sent when context menu is about to be displayed.
@@ -709,7 +713,7 @@ Sent when context menu is about to be displayed.
 Sent to indicate that **HexControl** window is about to be destroyed.
 
 ### [](#)HEXCTRL_MSG_GETDATA
-Used in [`DATA_MSG`](#ehexdatamode) mode to acquire the next byte to display.
+Used in [`DATA_MSG`](#ehexdatamode) mode to acquire the data range to display.
 
 ### [](#)HEXCTRL_MSG_MENUCLICK
 Sent when user defined custom menu has been clicked.
@@ -721,7 +725,7 @@ Sent when selection has been made.
 Sent to indicate that the data has changed.
 
 ### [](#)HEXCTRL_MSG_VIEWCHANGE
-Sent when **HexControl**'s view has changed, whether on resizing or scrolling. [`HEXNOTIFYSTRUCT::stSpan`](#hexnotifystruct) will hold starting offset and size of the visible data.
+Sent when **HexControl**'s view has changed, whether on resizing or scrolling. [`HEXNOTIFYSTRUCT::stSpan`](#hexnotifystruct) will contain starting offset and size of the visible data.
 
 ## [](#)Exported Functions
 **HexControl** has few `"C"` interface functions which it exports when built as *.dll*.
