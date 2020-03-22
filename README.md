@@ -21,6 +21,7 @@
   * [BkmClearAll](#bkmclearall)
   * [BkmGet](#bkmget)
   * [BkmGetData](#bkmgetdata)
+  * [BkmHitTest](#bkmhittest)
   * [BkmRemove](#bkmremove)
   * [ClearData](#cleardata)
   * [Create](#create)
@@ -346,6 +347,12 @@ Get bookmark by ID.
 auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>*;
 ```
 Retrives pointer to the internal array of [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct).
+
+### [](#)BkmHitTest
+```cpp
+auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*;
+```
+Test given offset and retrives pointer to [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) if it contains bookmark.
 
 ### [](#)BkmRemove
 ```cpp

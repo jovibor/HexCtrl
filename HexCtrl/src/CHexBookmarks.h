@@ -39,7 +39,7 @@ namespace HEXCTRL::INTERNAL
 		std::deque<HEXBOOKMARKSTRUCT> m_deqBookmarks;
 		CHexCtrl* m_pHex { };
 		IHexBkmVirtual* m_pVirtual { };
-		int m_iCurrent { };
+		int m_iCurrent { };    //Current bookmark position in deque, to move next/prev.
 		__time64_t m_time { }; //Last modification time.
 	};
 }

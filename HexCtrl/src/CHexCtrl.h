@@ -13,7 +13,7 @@
 #include <optional>      ///std::optional
 #include <afxwin.h>      //MFC core and standard components.
 #include "../HexCtrl.h"
-#undef min //Undefined nasty windef.h macros
+#undef min //Undefining nasty windef.h macros
 #undef max
 
 namespace HEXCTRL::INTERNAL
@@ -84,7 +84,8 @@ namespace HEXCTRL::INTERNAL
 		void BkmClearAll()override;                         //Clear all bookmarks.
 		[[nodiscard]] auto BkmGet(DWORD dwID)const->std::optional <HEXBOOKMARKSTRUCT> override; //Get bookmark by ID.
 		[[nodiscard]] auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* override;    //Get all bookmarks' data.
-		void BkmRemove(DWORD dwId)override;                 //Removes bookmark by the given Id.
+		[[nodiscard]] auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* override;
+		void BkmRemove(DWORD dwID)override;                 //Removes bookmark by the given Id.
 		void ClearData()override;                           //Clears all data from HexCtrl's view (not touching data itself).
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)override; //Сreates custom dialog control.

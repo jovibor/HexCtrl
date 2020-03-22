@@ -214,9 +214,10 @@ namespace HEXCTRL
 	public:
 		virtual DWORD BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = false) = 0; //Adds new bookmark.
 		virtual void BkmClearAll() = 0;                         //Clear all bookmarks.
-		[[nodiscard]] virtual auto BkmGet(DWORD dwID)const->std::optional <HEXBOOKMARKSTRUCT> = 0; //Get bookmark by ID.
-		[[nodiscard]] virtual auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* = 0;    //Get list of all bookmarks.
-		virtual void BkmRemove(DWORD dwId) = 0;                 //Removes bookmark by the given Id.
+		[[nodiscard]] virtual auto BkmGet(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUCT> = 0; //Get bookmark by ID.
+		[[nodiscard]] virtual auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* = 0;   //Get list of all bookmarks.
+		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0;       //HitTest for given offset.
+		virtual void BkmRemove(DWORD dwID) = 0;                 //Removes bookmark by the given Id.
 		virtual void ClearData() = 0;                           //Clears all data from HexCtrl's view (not touching data itself).
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;    //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) = 0; //Сreates custom dialog control.

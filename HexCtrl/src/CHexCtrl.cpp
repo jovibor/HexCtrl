@@ -188,13 +188,22 @@ auto CHexCtrl::BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>*
 	return m_pBookmarks->GetData();
 }
 
-void CHexCtrl::BkmRemove(DWORD dwId)
+auto CHexCtrl::BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return nullptr;
+
+	return m_pBookmarks->HitTest(ullOffset);
+}
+
+void CHexCtrl::BkmRemove(DWORD dwID)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
-	m_pBookmarks->RemoveId(dwId);
+	m_pBookmarks->RemoveId(dwID);
 }
 
 void CHexCtrl::ClearData()
