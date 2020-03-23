@@ -7,10 +7,10 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include <afxdialogex.h> //Standard MFC's controls header.
-#include "../CHexCtrl.h"
 #include "../../res/HexCtrlRes.h"
+#include "../CHexCtrl.h"
 #include "CHexPropGridCtrl.h"
+#include <afxdialogex.h> //Standard MFC's controls header.
 
 namespace HEXCTRL::INTERNAL
 {

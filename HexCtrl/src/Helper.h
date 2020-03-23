@@ -10,9 +10,9 @@
 * These are some helper functions for HexCtrl.											*
 ****************************************************************************************/
 #pragma once
+#include "../verinfo/version.h"
 #include <afxwin.h>
 #include <string>
-#include "../verinfo/version.h"
 
 namespace HEXCTRL {
 	namespace INTERNAL {

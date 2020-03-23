@@ -8,20 +8,20 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "CHexCtrl.h"
-#include "Dialogs/CHexDlgAbout.h"
-#include "Dialogs/CHexDlgSearch.h"
-#include "Dialogs/CHexDlgOperations.h"
-#include "Dialogs/CHexDlgFillWith.h"
-#include "Dialogs/CHexDlgBookmarkMgr.h"
-#include "Dialogs/CHexDlgDataInterpret.h"
-#include "Dialogs/CHexDlgCallback.h"
-#include "CScrollEx.h"
-#include "CHexSelection.h"
 #include "CHexBookmarks.h"
+#include "CHexSelection.h"
+#include "CScrollEx.h"
+#include "Dialogs/CHexDlgAbout.h"
+#include "Dialogs/CHexDlgBookmarkMgr.h"
+#include "Dialogs/CHexDlgCallback.h"
+#include "Dialogs/CHexDlgDataInterpret.h"
+#include "Dialogs/CHexDlgFillWith.h"
+#include "Dialogs/CHexDlgOperations.h"
+#include "Dialogs/CHexDlgSearch.h"
 #include "Helper.h"
 #include "strsafe.h"
-#include <cassert>
 #include <algorithm>
+#include <cassert>
 #include <numeric>
 #include <thread>
 #pragma comment(lib, "Dwmapi.lib")
@@ -1161,9 +1161,12 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 			}
 		}
 
-		if (!optHit.has_value())
+		//To avoid unnecessary work we're checking if the current cursor pos is the same
+		//that is was at previous WM_MOUSEMOVE fire, with m_ullCurCursor.
+		if (!optHit.has_value() || optHit->ullOffset == m_ullCurCursor)
 			return;
 
+		m_ullCurCursor = optHit->ullOffset;
 		const auto ullHit = optHit->ullOffset;
 		ULONGLONG ullClick, ullStart, ullSize, ullLines;
 		if (m_fSelectionBlock) //Select block (with Alt)
@@ -1223,8 +1226,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 	{
 		if (optHit.has_value())
 		{
-			const auto pBookmark = m_pBookmarks->HitTest(optHit->ullOffset);
-			if (pBookmark != nullptr)
+			if (const auto pBookmark = m_pBookmarks->HitTest(optHit->ullOffset); pBookmark != nullptr)
 			{
 				if (m_pBkmCurrTt != pBookmark)
 				{
@@ -1280,15 +1282,11 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	if (!optHit.has_value())
 		return;
 
+	m_ullCurCursor = optHit->ullOffset;
 	const auto ullHit = optHit->ullOffset;
 	m_fCursorTextArea = optHit->fIsAscii;
-
 	SetCapture();
-
-	if (GetAsyncKeyState(VK_MENU) < 0)
-		m_fSelectionBlock = true;
-	else
-		m_fSelectionBlock = false;
+	m_fSelectionBlock = GetAsyncKeyState(VK_MENU) < 0;
 
 	ULONGLONG ullSelSize;
 	ULONGLONG ullSelStart;
@@ -1316,7 +1314,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 
 	m_fCursorHigh = true;
 	m_fLMousePressed = true;
-	m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFull;
+	m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFULL;
 	SetSelection(m_ullLMouseClick, ullSelStart, ullSelSize, 1, false);
 }
 
@@ -1371,8 +1369,8 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 		m_pBookmarks->Add(HEXBOOKMARKSTRUCT { m_pSelection->GetData() });
 		break;
 	case IDM_HEXCTRL_BOOKMARKS_REMOVE:
-		m_pBookmarks->Remove(m_ullRMouseClick != 0xFFFFFFFFFFFFFFFFull ? m_ullRMouseClick : GetCaretPos());
-		m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFull;
+		m_pBookmarks->Remove(m_ullRMouseClick != 0xFFFFFFFFFFFFFFFFULL ? m_ullRMouseClick : GetCaretPos());
+		m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFULL;
 		break;
 	case IDM_HEXCTRL_BOOKMARKS_NEXT:
 		m_pBookmarks->GoNext();
@@ -1586,7 +1584,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 		if (wParam)
 			SendMessageW(WM_COMMAND, wParam, 0);
 	}
-	m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFull; //Reset right mouse click.
+	m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFULL; //Reset right mouse click.
 }
 
 void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)

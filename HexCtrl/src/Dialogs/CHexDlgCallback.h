@@ -19,10 +19,10 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsCanceled()const;
 		void Cancel();
 	protected:
-		BOOL OnInitDialog();
-		void DoDataExchange(CDataExchange* pDX);
-		afx_msg void OnCancel();
-		BOOL ContinueModal();
+		BOOL OnInitDialog()override;
+		void DoDataExchange(CDataExchange* pDX)override;
+		afx_msg void OnCancel()override;
+		BOOL ContinueModal()override;
 		DECLARE_MESSAGE_MAP()
 	private:
 		bool m_fCancel { false };

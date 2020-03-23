@@ -8,9 +8,9 @@
 ****************************************************************************************/
 #pragma once
 #include "CHexCtrl.h"
-#include <vector>
 #include <ctime>
 #include <optional>
+#include <vector>
 
 namespace HEXCTRL::INTERNAL
 {

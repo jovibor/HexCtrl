@@ -7,11 +7,11 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include <afxcontrolbars.h>  //Standard MFC's controls header.
-#include "../CHexBookmarks.h"
-#include "CHexDlgBookmarkProps.h"
 #include "../../res/HexCtrlRes.h"
+#include "../CHexBookmarks.h"
 #include "../ListEx/ListEx.h"
+#include "CHexDlgBookmarkProps.h"
+#include <afxdialogex.h>  //Standard MFC's controls header.
 
 namespace HEXCTRL::INTERNAL
 {

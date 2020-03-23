@@ -120,5 +120,5 @@ namespace HEXCTRL::INTERNAL::LISTEX
 	* WM_NOTIFY codes (NMHDR.code values)										*
 	****************************************************************************/
 
-	constexpr auto LISTEX_MSG_MENUSELECTED = 0x1000u;
+	constexpr auto LISTEX_MSG_MENUSELECTED = 0x1000U;
 }

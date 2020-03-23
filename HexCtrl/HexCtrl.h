@@ -7,12 +7,12 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include <memory>    //std::shared/unique_ptr and related.
-#include <vector>
-#include <deque>
-#include <string>
-#include <optional>
 #include <Windows.h> //Standard Windows header.
+#include <deque>
+#include <memory>    //std::shared/unique_ptr and related.
+#include <optional>
+#include <string>
+#include <vector>
 
 #ifndef __cpp_lib_byte
 static_assert(false, "std::byte compliant compiler required.");
@@ -330,15 +330,15 @@ namespace HEXCTRL
 	* These codes are used to notify m_hwndMsg window about control's states.                   *
 	********************************************************************************************/
 
-	constexpr auto HEXCTRL_MSG_BKMCLICK { 0x0100u };     //Bookmark clicked.
-	constexpr auto HEXCTRL_MSG_CARETCHANGE { 0x0101u };  //Caret position changed.
-	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0102u };  //OnContextMenu triggered.
-	constexpr auto HEXCTRL_MSG_DESTROY { 0x0103u };      //Indicates that HexCtrl is being destroyed.
-	constexpr auto HEXCTRL_MSG_GETDATA { 0x0104u };      //Used in DATA_MSG mode to acquire the next byte to display.
-	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0105u };    //User defined custom menu clicked.
-	constexpr auto HEXCTRL_MSG_SELECTION { 0x0106u };    //Selection has been made.
-	constexpr auto HEXCTRL_MSG_SETDATA { 0x0107u };      //Indicates that the data has changed.
-	constexpr auto HEXCTRL_MSG_VIEWCHANGE { 0x0108u };   //View of the control has changed.
+	constexpr auto HEXCTRL_MSG_BKMCLICK { 0x0100U };     //Bookmark clicked.
+	constexpr auto HEXCTRL_MSG_CARETCHANGE { 0x0101U };  //Caret position changed.
+	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0102U };  //OnContextMenu triggered.
+	constexpr auto HEXCTRL_MSG_DESTROY { 0x0103U };      //Indicates that HexCtrl is being destroyed.
+	constexpr auto HEXCTRL_MSG_GETDATA { 0x0104U };      //Used in DATA_MSG mode to acquire the next byte to display.
+	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0105U };    //User defined custom menu clicked.
+	constexpr auto HEXCTRL_MSG_SELECTION { 0x0106U };    //Selection has been made.
+	constexpr auto HEXCTRL_MSG_SETDATA { 0x0107U };      //Indicates that the data has changed.
+	constexpr auto HEXCTRL_MSG_VIEWCHANGE { 0x0108U };   //View of the control has changed.
 
 	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #ifdef _UNICODE

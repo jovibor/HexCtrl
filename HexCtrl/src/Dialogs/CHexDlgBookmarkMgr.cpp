@@ -174,26 +174,26 @@ void CHexDlgBookmarkMgr::UpdateList()
 {
 	m_List->DeleteAllItems();
 	int listindex { };
-	WCHAR wstr[32];
+	WCHAR warr[32];
 
 	m_List->SetRedraw(FALSE);
 	for (const auto& iter : *m_pBookmarks->GetData())
 	{
-		swprintf_s(wstr, 8, L"%i", listindex + 1);
-		m_List->InsertItem(listindex, wstr);
+		swprintf_s(warr, _countof(warr), L"%i", listindex + 1);
+		m_List->InsertItem(listindex, warr);
 
 		ULONGLONG ullOffset { 0 };
 		ULONGLONG ullSize { 0 };
 		if (!iter.vecSpan.empty())
 		{
 			ullOffset = iter.vecSpan.front().ullOffset;
-			ullSize = std::accumulate(iter.vecSpan.begin(), iter.vecSpan.end(), ULONGLONG { },
+			ullSize = std::accumulate(iter.vecSpan.begin(), iter.vecSpan.end(), 0ULL,
 				[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
 		}
-		swprintf_s(wstr, 32, L"0x%llX", ullOffset);
-		m_List->SetItemText(listindex, 1, wstr);
-		swprintf_s(wstr, 32, L"0x%llX", ullSize);
-		m_List->SetItemText(listindex, 2, wstr);
+		swprintf_s(warr, _countof(warr), L"0x%llX", ullOffset);
+		m_List->SetItemText(listindex, 1, warr);
+		swprintf_s(warr, _countof(warr), L"0x%llX", ullSize);
+		m_List->SetItemText(listindex, 2, warr);
 		m_List->SetItemText(listindex, 3, iter.wstrDesc.data());
 		m_List->SetCellColor(listindex, 4, iter.clrBk);
 		m_List->SetItemData(listindex, static_cast<DWORD_PTR>(iter.dwID));

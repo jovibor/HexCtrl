@@ -134,8 +134,8 @@ void CListEx::CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)
 int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 {
 	auto pListCtrl = reinterpret_cast<IListEx*>(lParamSort);
-	int iSortColumn = pListCtrl->GetSortColumn();
-	EnListExSortMode enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
+	auto iSortColumn = pListCtrl->GetSortColumn();
+	auto enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
 
 	std::wstring wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn).GetBuffer();
 	std::wstring wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn).GetBuffer();
@@ -304,9 +304,9 @@ bool CListEx::IsCreated()const
 
 UINT CListEx::MapIndexToID(UINT nItem)const
 {
-	UINT ID;
-	//In case of virtual list the client code is responsible for
-	//mapping indexes to unique IDs.
+	UINT ID; //Unique ID of the list item. Used to uniquely identify the item.
+
+	//In case of virtual list the client code is responsible for mapping indexes to unique IDs.
 	//The unique ID is set in NMITEMACTIVATE::lParam by client.
 	if (m_fVirtual)
 	{

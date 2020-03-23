@@ -7,12 +7,13 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include <unordered_map> //std::unordered_map and related.
-#include <deque>         //std::deque and related.
-#include <string>        //std::wstring and related.
-#include <optional>      ///std::optional
-#include <afxwin.h>      //MFC core and standard components.
 #include "../HexCtrl.h"
+#include <afxwin.h>      //MFC core and standard components.
+#include <deque>         //std::deque and related.
+#include <optional>      ///std::optional
+#include <string>        //std::wstring and related.
+#include <unordered_map> //std::unordered_map and related.
+
 #undef min //Undefining nasty windef.h macros
 #undef max
 
@@ -251,7 +252,8 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
 		ULONGLONG m_ullLMouseClick { 0xFFFFFFFFFFFFFFFFULL }; //Left mouse button clicked chunk.
 		ULONGLONG m_ullRMouseClick { 0xFFFFFFFFFFFFFFFFULL }; //Right mouse clicked chunk. Used in bookmarking.
-		ULONGLONG m_ullCaretPos { };          //Current cursor position.
+		ULONGLONG m_ullCaretPos { };          //Current caret position.
+		ULONGLONG m_ullCurCursor { };         //Current cursor pos, to avoid WM_MOUSEMOVE handle at the same chunk.
 		ULONGLONG m_ullTotalSectors { };      //How many "Sectors" in m_ullDataSize.
 		DWORD m_dwCapacity { 0x10 };          //How many bytes displayed in one row
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.

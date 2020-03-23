@@ -7,9 +7,9 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include <afxcontrolbars.h>  //Standard MFC's controls header.
-#include "../CHexCtrl.h"
 #include "../../res/HexCtrlRes.h"
+#include "../CHexCtrl.h"
+#include <afxdialogex.h>  //Standard MFC's controls header.
 
 namespace HEXCTRL::INTERNAL {
 	/***************************************************************************************

@@ -20,5 +20,5 @@ namespace HEXCTRL::INTERNAL
 		afx_msg UINT OnGetDlgCode();
 		DECLARE_MESSAGE_MAP()
 	};
-	constexpr WPARAM HEXCTRL_EDITCTRL = 0xFFFFu;
+	constexpr WPARAM HEXCTRL_EDITCTRL = 0xFFFFU;
 }

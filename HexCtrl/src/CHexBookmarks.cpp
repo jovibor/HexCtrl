@@ -63,8 +63,8 @@ auto CHexBookmarks::GetBookmark(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUC
 
 	if (iter != m_deqBookmarks.end())
 		return *iter;
-	else
-		return { };
+
+	return { };
 }
 
 auto CHexBookmarks::GetData()const->const std::deque<HEXBOOKMARKSTRUCT>*
@@ -149,8 +149,8 @@ auto CHexBookmarks::HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*
 
 	if (riter != m_deqBookmarks.rend())
 		return &*riter;
-	else
-		return nullptr;
+
+	return nullptr;
 }
 
 bool CHexBookmarks::IsVirtual()const

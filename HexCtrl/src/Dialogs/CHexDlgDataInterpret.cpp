@@ -8,9 +8,9 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "CHexDlgDataInterpret.h"
-#include "strsafe.h"
 #include "../Helper.h"
 #include <algorithm>
+#include "strsafe.h"
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
@@ -60,7 +60,7 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_ULONG, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"unsigned long:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_LONGLONG, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"long long:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_ULONGLONG, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"unsigned long long:", L"0") });
-	CMFCPropertyGridProperty* pDigits = new CMFCPropertyGridProperty(L"Digits:");
+	auto pDigits = new CMFCPropertyGridProperty(L"Digits:");
 	for (auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::DIGITS)
 			pDigits->AddSubItem(iter.pProp);
@@ -68,7 +68,7 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 
 	m_vecProp.emplace_back(GRIDDATA { EGroup::FLOAT, EName::NAME_FLOAT, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"Float:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA { EGroup::FLOAT, EName::NAME_DOUBLE, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"Double:", L"0") });
-	CMFCPropertyGridProperty* pFloats = new CMFCPropertyGridProperty(L"Floats:");
+	auto pFloats = new CMFCPropertyGridProperty(L"Floats:");
 	for (auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::FLOAT)
 			pFloats->AddSubItem(iter.pProp);
@@ -76,7 +76,7 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 
 	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_TIME32T, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"time32_t:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_TIME64T, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"time64_t:", L"0") });
-	CMFCPropertyGridProperty* pTime = new CMFCPropertyGridProperty(L"Time:");
+	auto pTime = new CMFCPropertyGridProperty(L"Time:");
 	for (auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::TIME)
 			pTime->AddSubItem(iter.pProp);
@@ -331,7 +331,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		if (iter.eSize == ESize::SIZE_WORD)
 			iter.pProp->Enable(1);
 
-	WORD word = m_pHexCtrl->GetData<WORD>(ullOffset);
+	auto word = m_pHexCtrl->GetData<WORD>(ullOffset);
 	if (m_fBigEndian)
 		word = _byteswap_ushort(word);
 
@@ -362,7 +362,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		if (iter.eSize == ESize::SIZE_DWORD)
 			iter.pProp->Enable(1);
 
-	DWORD dword = m_pHexCtrl->GetData<DWORD>(ullOffset);
+	auto dword = m_pHexCtrl->GetData<DWORD>(ullOffset);
 	if (m_fBigEndian)
 		dword = _byteswap_ulong(dword);
 
@@ -414,7 +414,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		if (iter.eSize == ESize::SIZE_QWORD)
 			iter.pProp->Enable(1);
 
-	QWORD qword = m_pHexCtrl->GetData<QWORD>(ullOffset);
+	auto qword = m_pHexCtrl->GetData<QWORD>(ullOffset);
 	if (m_fBigEndian)
 		qword = _byteswap_uint64(qword);
 
