@@ -714,7 +714,7 @@ In process of its work **HexControl** sends notification messages through **[WM_
 The `LPARAM` of the `WM_NOTIFY` message will hold pointer to the [`HEXNOTIFYSTRUCT`](#hexnotifystruct).
 
 ### [](#)HEXCTRL_MSG_BKMCLICK
-Sent if bookmark is clicked. [`HEXNOTIFYSTRUCT::ullData`](#hexnotifystruct) will contain bookmark ID.
+Sent if bookmark is clicked. [`HEXNOTIFYSTRUCT::pData`](#hexnotifystruct) will contain [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) pointer.
 
 ### [](#)HEXCTRL_MSG_CARETCHANGE
 Sent when caret position has changed. [`HEXNOTIFYSTRUCT::ullData`](#hexnotifystruct) will contain current caret position.

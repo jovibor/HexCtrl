@@ -3843,7 +3843,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 	if (auto pBkm = m_pBookmarks->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.
 	{
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK } };
-		hns.ullData = static_cast<ULONGLONG>(pBkm->dwID); //Bookmark ID.
+		hns.pData = reinterpret_cast<std::byte*>(pBkm);
 		MsgWindowNotify(hns);
 	}
 }
