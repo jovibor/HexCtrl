@@ -23,6 +23,7 @@
   * [BkmGetData](#bkmgetdata)
   * [BkmHitTest](#bkmhittest)
   * [BkmRemove](#bkmremove)
+  * [BkmSetVirtual](#bkmsetvirtual)
   * [ClearData](#cleardata)
   * [Create](#create)
   * [CreateDialogCtrl](#createdialogctrl)
@@ -288,11 +289,11 @@ public:
 Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
 
 ## [](#)Virtual Bookmarks
-**HexControl** has innate functional to work with any amount of bookmarked regions. These regions can be assigned with individual background and text color, and description.
+**HexControl** has innate functional to work with any amount of bookmarked regions. These regions can be assigned with individual background and text color and description.
 
 But if you have some big and complicated data logic and want to handle all these regions yourself, you can do it.  
-For this you have to inherit your own class from the `IHexBkmVirtual` pure virtual interface and implement all the routines withing this class.
-You will have to assign then `pHexBkmVirtual` member of [`HEXDATASTRUCT`](#hexdatastruct) to instance of your class prior to [`SetData`](#setdata) call.  
+For this you have to inherit your own class from the `IHexBkmVirtual` pure virtual interface and implement all the routines withing this class.  
+To enable virtual bookmarks call the [`BkmSetVirtual`](#bkmsetvirtual) method.  
 
 The main method of the `IHexBkmVirtual` interface is `HitTest`. It takes byte's offset and returns pointer to [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) if there is a bookmark withing this byte, or `nullptr` otherwise.
 
@@ -359,6 +360,12 @@ Test given offset and retrives pointer to [`HEXBOOKMARKSTRUCT`](#hexbookmarkstru
 void BkmRemove(DWORD dwId);
 ```
 Removes bookmark by the given Id.
+
+### [](#)BkmSetVirtual
+```cpp
+void BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual = nullptr);
+```
+Enables or disables bookmarks virtual mode.
 
 ### [](#)ClearData
 ```cpp
@@ -611,7 +618,6 @@ struct HEXDATASTRUCT
     HEXSPANSTRUCT   stSelSpan { };            //Select .ullOffset initial position. Works only if .ullSize > 0.
     HWND            hwndMsg { };              //Window for DATA_MSG mode. Parent is used by default.
     IHexVirtual*    pHexVirtual { };          //Pointer for DATA_VIRTUAL mode.
-    IHexBkmVirtual* pHexBkmVirtual { };       //Pointer for Virtual Bookmarks.
     std::byte*      pData { };                //Data pointer for DATA_MEMORY mode. Not used in other modes.
     DWORD           dwCacheSize { 0x800000 }; //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
     bool            fMutable { false };       //Is data mutable (editable) or read-only.

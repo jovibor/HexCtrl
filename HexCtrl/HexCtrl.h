@@ -187,7 +187,6 @@ namespace HEXCTRL
 		HEXSPANSTRUCT   stSelSpan { };            //Select .ullOffset initial position. Works only if .ullSize > 0.
 		HWND            hwndMsg { };              //Window for DATA_MSG mode. Parent is used by default.
 		IHexVirtual*    pHexVirtual { };          //Pointer for DATA_VIRTUAL mode.
-		IHexBkmVirtual* pHexBkmVirtual { };       //Pointer for Virtual Bookmarks.
 		std::byte*      pData { };                //Data pointer for DATA_MEMORY mode. Not used in other modes.
 		DWORD           dwCacheSize { 0x800000 }; //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
 		bool            fMutable { false };       //Is data mutable (editable) or read-only.
@@ -218,6 +217,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* = 0;   //Get list of all bookmarks.
 		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0;       //HitTest for given offset.
 		virtual void BkmRemove(DWORD dwID) = 0;                 //Removes bookmark by the given Id.
+		virtual void BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual = nullptr) = 0; //Enable/disable bookmarks virtual mode.
 		virtual void ClearData() = 0;                           //Clears all data from HexCtrl's view (not touching data itself).
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;    //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) = 0; //Сreates custom dialog control.

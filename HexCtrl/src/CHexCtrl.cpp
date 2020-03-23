@@ -206,6 +206,15 @@ void CHexCtrl::BkmRemove(DWORD dwID)
 	m_pBookmarks->RemoveId(dwID);
 }
 
+void CHexCtrl::BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual)
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
+	m_pBookmarks->SetVirtual(fEnable, pVirtual);
+}
+
 void CHexCtrl::ClearData()
 {
 	assert(IsCreated());
@@ -977,7 +986,6 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_dwCacheSize = hds.dwCacheSize > 0x10000 ? hds.dwCacheSize : 0x10000; //64Kb is the minimum size
 	m_fHighLatency = hds.fHighLatency;
 
-	m_pBookmarks->SetVirtual(hds.pHexBkmVirtual);
 	RecalcAll();
 	UpdateSectorVisible();
 

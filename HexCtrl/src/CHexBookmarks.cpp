@@ -23,8 +23,12 @@ DWORD CHexBookmarks::Add(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)
 	if (!m_pHex || !m_pHex->IsDataSet())
 		return 0;
 
-	if (m_pVirtual)
-		return m_pVirtual->Add(hbs);
+	if (m_fVirtual)
+	{
+		if (m_pVirtual)
+			return m_pVirtual->Add(hbs);
+		return 0;
+	}
 
 	auto iter = std::max_element(m_deqBookmarks.begin(), m_deqBookmarks.end(),
 		[](const HEXBOOKMARKSTRUCT& ref1, const HEXBOOKMARKSTRUCT& ref2)
@@ -46,8 +50,12 @@ DWORD CHexBookmarks::Add(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)
 
 void CHexBookmarks::ClearAll()
 {
-	if (m_pVirtual)
-		return m_pVirtual->ClearAll();
+	if (m_fVirtual)
+	{
+		if (m_pVirtual)
+			return m_pVirtual->ClearAll();
+		return;
+	}
 
 	m_deqBookmarks.clear();
 	if (m_pHex)
@@ -79,7 +87,7 @@ auto CHexBookmarks::GetTouchTime()const->__time64_t
 
 void CHexBookmarks::GoBookmark(DWORD dwID)
 {
-	if (!m_pHex || m_pVirtual)
+	if (!m_pHex || m_fVirtual)
 		return;
 
 	auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
@@ -94,11 +102,14 @@ void CHexBookmarks::GoNext()
 	if (!m_pHex || m_deqBookmarks.empty())
 		return;
 
-	if (m_pVirtual)
+	if (m_fVirtual)
 	{
-		auto ptr = m_pVirtual->GetNext();
-		if (ptr)
-			m_pHex->GoToOffset(ptr->vecSpan.front().ullOffset);
+		if (m_pVirtual)
+		{
+			auto ptr = m_pVirtual->GetNext();
+			if (ptr)
+				m_pHex->GoToOffset(ptr->vecSpan.front().ullOffset);
+		}
 		return;
 	}
 
@@ -113,11 +124,14 @@ void CHexBookmarks::GoPrev()
 	if (!m_pHex || m_deqBookmarks.empty())
 		return;
 
-	if (m_pVirtual)
+	if (m_fVirtual)
 	{
-		auto ptr = m_pVirtual->GetPrev();
-		if (ptr)
-			m_pHex->GoToOffset(ptr->vecSpan.front().ullOffset);
+		if (m_pVirtual)
+		{
+			auto ptr = m_pVirtual->GetPrev();
+			if (ptr)
+				m_pHex->GoToOffset(ptr->vecSpan.front().ullOffset);
+		}
 		return;
 	}
 
@@ -129,16 +143,23 @@ void CHexBookmarks::GoPrev()
 
 bool CHexBookmarks::HasBookmarks()const
 {
-	if (m_pVirtual)
-		return m_pVirtual->HasBookmarks();
-
+	if (m_fVirtual)
+	{
+		if (m_pVirtual)
+			return m_pVirtual->HasBookmarks();
+		return false;
+	}
 	return !m_deqBookmarks.empty();
 }
 
 auto CHexBookmarks::HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*
 {
-	if (m_pVirtual)
-		return m_pVirtual->HitTest(ullOffset);
+	if (m_fVirtual)
+	{
+		if (m_pVirtual)
+			return m_pVirtual->HitTest(ullOffset);
+		return nullptr;
+	}
 
 	auto riter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
 		[ullOffset](const HEXBOOKMARKSTRUCT& ref)
@@ -155,7 +176,7 @@ auto CHexBookmarks::HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*
 
 bool CHexBookmarks::IsVirtual()const
 {
-	return m_pVirtual;
+	return m_fVirtual;
 }
 
 void CHexBookmarks::Remove(ULONGLONG ullOffset)
@@ -163,8 +184,12 @@ void CHexBookmarks::Remove(ULONGLONG ullOffset)
 	if (!m_pHex || m_deqBookmarks.empty() || !m_pHex->IsDataSet())
 		return;
 
-	if (m_pVirtual)
-		return m_pVirtual->Remove(ullOffset);
+	if (m_fVirtual)
+	{
+		if (m_pVirtual)
+			return m_pVirtual->Remove(ullOffset);
+		return;
+	}
 
 	//Searching from the end, to remove last added bookmark if few at the given offset.
 	auto riter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
@@ -185,8 +210,12 @@ void CHexBookmarks::Remove(ULONGLONG ullOffset)
 
 void CHexBookmarks::RemoveId(DWORD dwID)
 {
-	if (m_pVirtual)
-		return m_pVirtual->RemoveId(dwID);
+	if (m_fVirtual)
+	{
+		if (m_pVirtual)
+			return m_pVirtual->RemoveId(dwID);
+		return;
+	}
 
 	if (m_deqBookmarks.empty())
 		return;
@@ -204,14 +233,16 @@ void CHexBookmarks::RemoveId(DWORD dwID)
 	m_time = _time64(nullptr);
 }
 
-void CHexBookmarks::SetVirtual(IHexBkmVirtual* pVirtual)
+void CHexBookmarks::SetVirtual(bool fEnable, IHexBkmVirtual* pVirtual)
 {
-	m_pVirtual = pVirtual;
+	m_fVirtual = fEnable;
+	if (fEnable && pVirtual != nullptr)
+		m_pVirtual = pVirtual;
 }
 
 void CHexBookmarks::Update(DWORD dwID, const HEXBOOKMARKSTRUCT& stBookmark)
 {
-	if (m_pVirtual || m_deqBookmarks.empty())
+	if (m_fVirtual || m_deqBookmarks.empty())
 		return;
 
 	auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),

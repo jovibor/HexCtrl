@@ -33,13 +33,14 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsVirtual()const;
 		void Remove(ULONGLONG ullOffset);
 		void RemoveId(DWORD dwID);
-		void SetVirtual(IHexBkmVirtual* pVirtual);
+		void SetVirtual(bool fEnable, IHexBkmVirtual* pVirtual = nullptr);
 		void Update(DWORD dwID, const HEXBOOKMARKSTRUCT& stBookmark);
 	private:
 		std::deque<HEXBOOKMARKSTRUCT> m_deqBookmarks;
 		CHexCtrl* m_pHex { };
 		IHexBkmVirtual* m_pVirtual { };
-		int m_iCurrent { };    //Current bookmark position in deque, to move next/prev.
-		__time64_t m_time { }; //Last modification time.
+		int m_iCurrent { };        //Current bookmark position in deque, to move next/prev.
+		__time64_t m_time { };     //Last modification time.
+		bool m_fVirtual { false }; //Working in Virtual mode or not.
 	};
 }

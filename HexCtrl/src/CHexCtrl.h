@@ -87,6 +87,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* override;    //Get all bookmarks' data.
 		[[nodiscard]] auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* override;
 		void BkmRemove(DWORD dwID)override;                 //Removes bookmark by the given Id.
+		void BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual)override; //Enable/disable bookmarks virtual mode.
 		void ClearData()override;                           //Clears all data from HexCtrl's view (not touching data itself).
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)override; //Сreates custom dialog control.
