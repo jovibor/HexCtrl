@@ -28,6 +28,8 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		afx_msg void OnDestroy();
+		afx_msg void OnListBkmsGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
+		void SortBookmarks();
 		DECLARE_MESSAGE_MAP()
 	private:
 		void UpdateList();

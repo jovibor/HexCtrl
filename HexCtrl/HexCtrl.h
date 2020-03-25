@@ -78,6 +78,7 @@ namespace HEXCTRL
 		COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.
 		DWORD                      dwID { };                   //Bookmark id. Must be 0. Assigned internally by framework.
 	};
+	using PHEXBOOKMARKSTRUCT = HEXBOOKMARKSTRUCT*;
 
 	/********************************************************************************************
 	* IHexVirtual - Pure abstract data handler class, that can be implemented by client,        *

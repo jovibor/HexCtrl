@@ -53,7 +53,7 @@ BEGIN_MESSAGE_MAP(CListEx, CMFCListCtrl)
 	ON_NOTIFY(HDN_TRACKW, 0, &CListEx::OnHdnTrack)
 	ON_WM_CONTEXTMENU()
 	ON_WM_DESTROY()
-	ON_NOTIFY_REFLECT(LVN_COLUMNCLICK, &CListEx::OnLvnColumnclick)
+	ON_NOTIFY_REFLECT(LVN_COLUMNCLICK, &CListEx::OnLvnColumnClick)
 END_MESSAGE_MAP()
 
 bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
@@ -78,7 +78,7 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 	m_fSortable = lcs.fSortable;
 
 	if (!m_wndTt.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_BALLOON | TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr))
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr))
 		return false;
 
 	SetWindowTheme(m_wndTt, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
@@ -134,8 +134,8 @@ void CListEx::CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)
 int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 {
 	auto pListCtrl = reinterpret_cast<IListEx*>(lParamSort);
-	auto iSortColumn = pListCtrl->GetSortColumn();
-	auto enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
+	int iSortColumn = pListCtrl->GetSortColumn();
+	EnListExSortMode enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
 
 	std::wstring wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn).GetBuffer();
 	std::wstring wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn).GetBuffer();
@@ -304,9 +304,9 @@ bool CListEx::IsCreated()const
 
 UINT CListEx::MapIndexToID(UINT nItem)const
 {
-	UINT ID; //Unique ID of the list item. Used to uniquely identify the item.
-
-	//In case of virtual list the client code is responsible for mapping indexes to unique IDs.
+	UINT ID;
+	//In case of virtual list the client code is responsible for
+	//mapping indexes to unique IDs.
 	//The unique ID is set in NMITEMACTIVATE::lParam by client.
 	if (m_fVirtual)
 	{
@@ -423,8 +423,8 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTool
 		if (!wstrTooltip.empty() || !wstrCaption.empty())
 		{	//Initializing inner map.
 			std::unordered_map<int, CELLTOOLTIP> umapInner {
-				{ iSubItem, { CELLTOOLTIP { std::wstring { wstrTooltip },
-				std::wstring { wstrCaption } } } } };
+				{ iSubItem, { CELLTOOLTIP { std::move(std::wstring { wstrTooltip }),
+				std::move(std::wstring { wstrCaption }) } } } };
 			m_umapCellTt.insert({ ID, std::move(umapInner) });
 		}
 	}
@@ -437,15 +437,15 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTool
 		if (itInner == it->second.end())
 		{
 			if (!wstrTooltip.empty() || !wstrCaption.empty())
-				it->second.insert({ iSubItem, { std::wstring { wstrTooltip },
-					std::wstring { wstrCaption } } });
+				it->second.insert({ iSubItem, { std::move(std::wstring { wstrTooltip }),
+					std::move(std::wstring { wstrCaption }) } });
 		}
 		else
 		{	//If there is already exist this Item-Subitem's tooltip:
 			//change or erase it, depending on pwszTooltip emptiness.
 			if (!wstrTooltip.empty())
-				itInner->second = { std::wstring { wstrTooltip },
-				std::wstring { wstrCaption } };
+				itInner->second = { std::move(std::wstring { wstrTooltip }),
+				std::move(std::wstring { wstrCaption }) };
 			else
 				it->second.erase(itInner);
 		}
@@ -996,19 +996,36 @@ void CListEx::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	CMFCListCtrl::OnHScroll(nSBCode, nPos, pScrollBar);
 }
 
-void CListEx::OnLvnColumnclick(NMHDR* pNMHDR, LRESULT* pResult)
+BOOL CListEx::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
-	if (m_fSortable)
+	if (!m_fCreated)
+		return FALSE;
+
+	//HDN_ITEMCLICK messages should be handled here first, to set m_fSortAscending 
+	//and m_iSortColumn. And only then this message goes further, to parent window,
+	//in form of HDN_ITEMCLICK and LVN_COLUMNCLICK.
+	//If we execute this code in LVN_COLUMNCLICK handler, it will be handled
+	//only AFTER the parent window handles LVN_COLUMNCLICK.
+	//So briefly, ON_NOTIFY_REFLECT(LVN_COLUMNCLICK, &CListEx::OnLvnColumnClick) fires up
+	//only AFTER LVN_COLUMNCLICK sent to the parent.
+	auto pNMLV = reinterpret_cast<LPNMHEADERW>(lParam);
+	if (m_fSortable && (pNMLV->hdr.code == HDN_ITEMCLICKW || pNMLV->hdr.code == HDN_ITEMCLICKA))
 	{
-		auto pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
-		m_fSortAscending = pNMLV->iSubItem == m_iSortColumn ? !m_fSortAscending : true;
-		m_iSortColumn = pNMLV->iSubItem;
+		m_fSortAscending = pNMLV->iItem == m_iSortColumn ? !m_fSortAscending : true;
+		m_iSortColumn = pNMLV->iItem;
 
 		GetHeaderCtrl().SetSortArrow(m_iSortColumn, m_fSortAscending);
 		if (!m_fVirtual)
 			SortItemsEx(m_pfnCompare ? m_pfnCompare : DefCompareFunc, reinterpret_cast<DWORD_PTR>(this));
 	}
 
+	return CMFCListCtrl::OnNotify(wParam, lParam, pResult);
+}
+
+void CListEx::OnLvnColumnClick(NMHDR* /*pNMHDR*/, LRESULT *pResult)
+{
+	//Just an empty handler. Without it all works fine, but assert 
+	//triggers in Debug mode when clicking on header.
 	*pResult = 0;
 }
 

@@ -65,7 +65,6 @@ namespace HEXCTRL::INTERNAL::LISTEX
 	class IListEx : public CMFCListCtrl
 	{
 	public:
-		IListEx() = default;
 		virtual bool Create(const LISTEXCREATESTRUCT& lcs) = 0;
 		virtual void CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg) = 0;
 		virtual BOOL DeleteAllItems() = 0;
@@ -120,5 +119,5 @@ namespace HEXCTRL::INTERNAL::LISTEX
 	* WM_NOTIFY codes (NMHDR.code values)										*
 	****************************************************************************/
 
-	constexpr auto LISTEX_MSG_MENUSELECTED = 0x1000U;
+	constexpr auto LISTEX_MSG_MENUSELECTED = 0x1000u;
 }

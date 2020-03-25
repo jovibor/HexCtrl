@@ -170,6 +170,7 @@ void CListExHdr::SetSortArrow(int iColumn, bool fAscending)
 {
 	m_iSortColumn = iColumn;
 	m_fSortAscending = fAscending;
+	RedrawWindow();
 }
 
 void CListExHdr::SetFont(const LOGFONTW* pLogFontNew)

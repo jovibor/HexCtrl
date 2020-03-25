@@ -8,6 +8,7 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "CHexDlgBookmarkMgr.h"
+#include <algorithm>
 #include <numeric>
 
 using namespace HEXCTRL;
@@ -15,6 +16,7 @@ using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgBookmarkMgr, CDialogEx)
 	ON_WM_ACTIVATE()
+	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_BOOKMARKMGR_LIST, &CHexDlgBookmarkMgr::OnListBkmsGetDispInfo)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -36,12 +38,12 @@ BOOL CHexDlgBookmarkMgr::OnInitDialog()
 
 	m_List->CreateDialogCtrl(IDC_HEXCTRL_BOOKMARKMGR_LIST, this);
 	m_List->SetSortable(true);
-	m_List->InsertColumn(0, L"\u2116", LVCFMT_RIGHT, 30);
+	m_List->InsertColumn(0, L"\u2116", LVCFMT_RIGHT, 40);
 	m_List->InsertColumn(1, L"Offset", LVCFMT_RIGHT, 80);
 	m_List->InsertColumn(2, L"Size", LVCFMT_RIGHT, 80);
-	m_List->InsertColumn(3, L"Description", LVCFMT_LEFT, 215);
-	m_List->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 80);
-	m_List->SetColumnSortMode(0, EnListExSortMode::SORT_NUMERIC);
+	m_List->InsertColumn(3, L"Description", LVCFMT_LEFT, 210);
+	m_List->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 65);
+	//	m_List->SetColumnSortMode(0, EnListExSortMode::SORT_NUMERIC);
 	m_List->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 
 	m_stMenuList.CreatePopupMenu();
@@ -59,8 +61,19 @@ BOOL CHexDlgBookmarkMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam);
 	if (pNMI->hdr.idFrom == IDC_HEXCTRL_BOOKMARKMGR_LIST)
 	{
+		auto refData = m_pBookmarks->GetData();
+		DWORD dwBkmID { };
+		if (pNMI->iItem >= 0 && pNMI->iItem < static_cast<int>(refData->size()))
+			dwBkmID = refData->at(static_cast<size_t>(pNMI->iItem)).dwID;
+
 		switch (pNMI->hdr.code)
 		{
+		case LVM_MAPINDEXTOID:
+			pNMI->lParam = static_cast<LPARAM>(dwBkmID);
+			break;
+		case LVN_COLUMNCLICK:
+			SortBookmarks();
+			break;
 		case NM_RCLICK:
 		{
 			bool fEnabled;
@@ -69,7 +82,7 @@ BOOL CHexDlgBookmarkMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult
 			else
 			{
 				fEnabled = true;
-				m_dwCurrBkmId = static_cast<DWORD>(m_List->GetItemData(pNMI->iItem));
+				m_dwCurrBkmId = dwBkmID;
 				m_iCurrListId = pNMI->iItem;
 			}
 			m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
@@ -90,14 +103,14 @@ BOOL CHexDlgBookmarkMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult
 			if (pNMI->iItem == -1 || pNMI->iSubItem == -1 || !(pNMI->uNewState & LVIS_SELECTED))
 				break;
 
-			m_pBookmarks->GoBookmark(static_cast<DWORD>(m_List->GetItemData(pNMI->iItem)));
+			m_pBookmarks->GoBookmark(dwBkmID);
 		}
 		break;
 		case NM_DBLCLK:
 			if (pNMI->iItem == -1 || pNMI->iSubItem == -1)
 				break;
 
-			m_dwCurrBkmId = static_cast<DWORD>(m_List->GetItemData(pNMI->iItem));
+			m_dwCurrBkmId = dwBkmID;
 			m_iCurrListId = pNMI->iItem;
 			SendMessageW(WM_COMMAND, IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT);
 			break;
@@ -172,35 +185,14 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 
 void CHexDlgBookmarkMgr::UpdateList()
 {
-	m_List->DeleteAllItems();
-	int listindex { };
-	WCHAR warr[32];
-
-	m_List->SetRedraw(FALSE);
-	for (const auto& iter : *m_pBookmarks->GetData())
+	const auto refData = m_pBookmarks->GetData();
+	m_List->SetItemCountEx(static_cast<int>(refData->size()), LVSICF_NOSCROLL);
+	int listindex { 0 };
+	for (const auto& iter : *refData)
 	{
-		swprintf_s(warr, _countof(warr), L"%i", listindex + 1);
-		m_List->InsertItem(listindex, warr);
-
-		ULONGLONG ullOffset { 0 };
-		ULONGLONG ullSize { 0 };
-		if (!iter.vecSpan.empty())
-		{
-			ullOffset = iter.vecSpan.front().ullOffset;
-			ullSize = std::accumulate(iter.vecSpan.begin(), iter.vecSpan.end(), 0ULL,
-				[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
-		}
-		swprintf_s(warr, _countof(warr), L"0x%llX", ullOffset);
-		m_List->SetItemText(listindex, 1, warr);
-		swprintf_s(warr, _countof(warr), L"0x%llX", ullSize);
-		m_List->SetItemText(listindex, 2, warr);
-		m_List->SetItemText(listindex, 3, iter.wstrDesc.data());
-		m_List->SetCellColor(listindex, 4, iter.clrBk);
-		m_List->SetItemData(listindex, static_cast<DWORD_PTR>(iter.dwID));
-
-		++listindex;
+		m_List->SetCellColor(listindex++, 4, iter.clrBk);
 	}
-	m_List->SetRedraw(TRUE);
+
 	m_time = m_pBookmarks->GetTouchTime();
 }
 
@@ -210,4 +202,104 @@ void CHexDlgBookmarkMgr::OnDestroy()
 
 	m_List->DestroyWindow();
 	m_stMenuList.DestroyMenu();
+}
+
+void CHexDlgBookmarkMgr::OnListBkmsGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
+	auto pItem = &pDispInfo->item;
+
+	if (pItem->mask & LVIF_TEXT)
+	{
+		auto pBkm = m_pBookmarks->GetData();
+		auto iItemID = pItem->iItem;
+		auto iMaxLengh = pItem->cchTextMax;
+		auto& refData = pBkm->at(static_cast<size_t>(iItemID));
+		ULONGLONG ullOffset { 0 };
+		ULONGLONG ullSize { 0 };
+		switch (pItem->iSubItem)
+		{
+		case 0: //Index number.
+			swprintf_s(pItem->pszText, static_cast<size_t>(iMaxLengh), L"%d", iItemID + 1);
+			break;
+		case 1: //Offset
+			if (!refData.vecSpan.empty())
+				ullOffset = refData.vecSpan.front().ullOffset;
+			swprintf_s(pItem->pszText, static_cast<size_t>(iMaxLengh), L"0x%llX", ullOffset);
+			break;
+		case 2: //Size.
+			if (!refData.vecSpan.empty())
+				ullSize = std::accumulate(refData.vecSpan.begin(), refData.vecSpan.end(), 0ULL,
+					[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
+			swprintf_s(pItem->pszText, static_cast<size_t>(iMaxLengh), L"0x%llX", ullSize);
+			break;
+		case 3: //Description
+			pItem->pszText = const_cast<wchar_t*>(refData.wstrDesc.data());
+			break;
+		}
+	}
+	*pResult = 0;
+}
+
+void CHexDlgBookmarkMgr::SortBookmarks()
+{
+	auto refData = const_cast<std::deque<HEXBOOKMARKSTRUCT>*>(m_pBookmarks->GetData());
+	const auto iColumn = m_List->GetSortColumn();
+	const auto fAscending = m_List->GetSortAscending();
+
+	//Sorts bookmarks according to clicked column.
+	std::sort(refData->begin(), refData->end(), [iColumn, fAscending](const HEXBOOKMARKSTRUCT& st1, const HEXBOOKMARKSTRUCT& st2)
+	{
+		int iCompare { };
+		switch (iColumn)
+		{
+		case 0:
+			break;
+		case 1: //Offset.
+		{
+			ULONGLONG ullOffset1 { 0 };
+			ULONGLONG ullOffset2 { 0 };
+			if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
+			{
+				ullOffset1 = st1.vecSpan.front().ullOffset;
+				ullOffset2 = st2.vecSpan.front().ullOffset;
+				iCompare = ullOffset1 < ullOffset2 ? -1 : 1;
+			}
+		}
+		break;
+		case 2: //Size.
+		{
+			ULONGLONG ullSize1 { 0 };
+			ULONGLONG ullSize2 { 0 };
+			if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
+			{
+				ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
+					[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
+				ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
+					[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
+				iCompare = ullSize1 < ullSize2 ? -1 : 1;
+			}
+		}
+		break;
+		case 3: //Description.
+			iCompare = st1.wstrDesc.compare(st2.wstrDesc);
+			break;
+		}
+
+		bool fResult { false };
+		if (fAscending)
+		{
+			if (iCompare < 0)
+				fResult = true;
+		}
+		else
+		{
+			if (iCompare > 0)
+				fResult = true;
+		}
+
+		return fResult;
+	});
+
+	m_List->RedrawWindow();
 }

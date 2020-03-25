@@ -58,7 +58,6 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 	class CListEx final : public IListEx
 	{
 	public:
-		explicit CListEx() = default;
 		bool Create(const LISTEXCREATESTRUCT& lcs)override;
 		void CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)override;
 		static int CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
@@ -114,8 +113,9 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		afx_msg void OnHdnDividerdblclick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnHdnBegintrack(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnHdnTrack(NMHDR *pNMHDR, LRESULT *pResult);
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
+		afx_msg void OnLvnColumnClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnDestroy();
-		afx_msg void OnLvnColumnclick(NMHDR *pNMHDR, LRESULT *pResult);
 	private:
 		CListExHdr m_stListHeader;
 		LISTEXCOLORSTRUCT m_stColor { };
