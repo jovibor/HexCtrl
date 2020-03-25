@@ -20,8 +20,10 @@ BEGIN_MESSAGE_MAP(CHexDlgDataInterpret, CDialogEx)
 	ON_WM_ACTIVATE()
 	ON_WM_SIZE()
 	ON_REGISTERED_MESSAGE(AFX_WM_PROPERTY_CHANGED, &CHexDlgDataInterpret::OnPropertyChanged)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_BE, &CHexDlgDataInterpret::OnHexctrlDatainterpretRadioBe)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE, &CHexDlgDataInterpret::OnHexctrlDatainterpretRadioLe)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE, &CHexDlgDataInterpret::OnClickRadioLe)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_BE, &CHexDlgDataInterpret::OnClickRadioBe)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_DEC, &CHexDlgDataInterpret::OnClickRadioDec)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_HEX, &CHexDlgDataInterpret::OnClickRadioHex)
 END_MESSAGE_MAP()
 
 void CHexDlgDataInterpret::DoDataExchange(CDataExchange* pDX)
@@ -45,6 +47,8 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	if (auto pRadio = (CButton*)GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE); pRadio)
+		pRadio->SetCheck(1);
+	if (auto pRadio = (CButton*)GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_DEC); pRadio)
 		pRadio->SetCheck(1);
 
 	m_hdItemPropGrid.mask = HDI_WIDTH;
@@ -279,15 +283,27 @@ void CHexDlgDataInterpret::OnSize(UINT nType, int cx, int cy)
 		m_stCtrlGrid.GetHeaderCtrl().SetItem(0, &m_hdItemPropGrid); //Property grid column size.
 }
 
-void CHexDlgDataInterpret::OnHexctrlDatainterpretRadioBe()
+void CHexDlgDataInterpret::OnClickRadioLe()
+{
+	m_fBigEndian = false;
+	InspectOffset(m_ullOffset);
+}
+
+void CHexDlgDataInterpret::OnClickRadioBe()
 {
 	m_fBigEndian = true;
 	InspectOffset(m_ullOffset);
 }
 
-void CHexDlgDataInterpret::OnHexctrlDatainterpretRadioLe()
+void CHexDlgDataInterpret::OnClickRadioDec()
 {
-	m_fBigEndian = false;
+	m_fShowAsHex = false;
+	InspectOffset(m_ullOffset);
+}
+
+void CHexDlgDataInterpret::OnClickRadioHex()
+{
+	m_fShowAsHex = true;
 	InspectOffset(m_ullOffset);
 }
 
@@ -302,14 +318,25 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 
 	m_ullOffset = ullOffset;
 	WCHAR buff[32];
+	std::wstring wstrFormat { };
 
-	const BYTE byte = m_pHexCtrl->GetData<BYTE>(ullOffset);
-	swprintf_s(buff, 31, L"%hhi", static_cast<char>(byte));
+	if (m_fShowAsHex)
+		wstrFormat = L"0x%hhX";
+	else
+		wstrFormat = L"%hhi";
+
+	const auto byte = m_pHexCtrl->GetData<BYTE>(ullOffset);
+	swprintf_s(buff, _countof(buff), wstrFormat.data(), static_cast<char>(byte));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_CHAR; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
 
-	swprintf_s(buff, 31, L"%hhu", byte);
+	if (m_fShowAsHex)
+		wstrFormat = L"0x%hhX";
+	else
+		wstrFormat = L"%hhu";
+
+	swprintf_s(buff, _countof(buff), wstrFormat.data(), byte);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_UCHAR; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -335,12 +362,22 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	if (m_fBigEndian)
 		word = _byteswap_ushort(word);
 
-	swprintf_s(buff, 31, L"%hi", static_cast<short>(word));
+	if (m_fShowAsHex)
+		wstrFormat = L"0x%hX";
+	else
+		wstrFormat = L"%hi";
+
+	swprintf_s(buff, _countof(buff), wstrFormat.data(), static_cast<short>(word));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_SHORT; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
 
-	swprintf_s(buff, 31, L"%hu", word);
+	if (m_fShowAsHex)
+		wstrFormat = L"0x%hX";
+	else
+		wstrFormat = L"%hu";
+
+	swprintf_s(buff, _countof(buff), wstrFormat.data(), word);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_USHORT; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -366,17 +403,27 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	if (m_fBigEndian)
 		dword = _byteswap_ulong(dword);
 
-	swprintf_s(buff, 31, L"%i", static_cast<int>(dword));
+	if (m_fShowAsHex)
+		wstrFormat = L"0x%X";
+	else
+		wstrFormat = L"%i";
+
+	swprintf_s(buff, _countof(buff), wstrFormat.data(), static_cast<int>(dword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_LONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
 
-	swprintf_s(buff, 31, L"%u", dword);
+	if (m_fShowAsHex)
+		wstrFormat = L"0x%X";
+	else
+		wstrFormat = L"%u";
+
+	swprintf_s(buff, _countof(buff), wstrFormat.data(), dword);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_ULONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
 
-	swprintf_s(buff, 31, L"%.9e", *reinterpret_cast<const float*>(&dword));
+	swprintf_s(buff, _countof(buff), L"%.9e", *reinterpret_cast<const float*>(&dword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_FLOAT; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -418,12 +465,22 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	if (m_fBigEndian)
 		qword = _byteswap_uint64(qword);
 
-	swprintf_s(buff, 31, L"%lli", static_cast<long long>(qword));
+	if (m_fShowAsHex)
+		wstrFormat = L"0x%llX";
+	else
+		wstrFormat = L"%lli";
+
+	swprintf_s(buff, _countof(buff), wstrFormat.data(), static_cast<long long>(qword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_LONGLONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
 
-	swprintf_s(buff, 31, L"%llu", qword);
+	if (m_fShowAsHex)
+		wstrFormat = L"0x%llX";
+	else
+		wstrFormat = L"%llu";
+
+	swprintf_s(buff, _countof(buff), wstrFormat.data(), qword);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_ULONGLONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);

@@ -32,8 +32,8 @@ namespace HEXCTRL::INTERNAL
 		void UpdateHexCtrl();
 		LRESULT OnPropertyChanged(WPARAM wparam, LPARAM lparam);
 		afx_msg void OnSize(UINT nType, int cx, int cy);
-		afx_msg void OnHexctrlDatainterpretRadioBe();
-		afx_msg void OnHexctrlDatainterpretRadioLe();
+		afx_msg void OnClickRadioLe();
+		afx_msg void OnClickRadioBe();
 		template <typename T>bool SetDigitData(LONGLONG llData);
 		DECLARE_MESSAGE_MAP()
 	private:
@@ -54,12 +54,16 @@ namespace HEXCTRL::INTERNAL
 		CHexCtrl* m_pHexCtrl { };
 		bool m_fVisible { false };
 		bool m_fBigEndian { false };
+		bool m_fShowAsHex { false };
 		CHexPropGridCtrl m_stCtrlGrid;
 		std::vector<GRIDDATA> m_vecProp;
 		CMFCPropertyGridProperty* m_pPropChanged { };
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullSize { };
 		HDITEMW m_hdItemPropGrid { };
+	public:
+		afx_msg void OnClickRadioDec();
+		afx_msg void OnClickRadioHex();
 	};
 
 	template<typename T>
