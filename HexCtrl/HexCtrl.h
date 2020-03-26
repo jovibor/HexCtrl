@@ -73,10 +73,10 @@ namespace HEXCTRL
 	{
 		std::vector<HEXSPANSTRUCT> vecSpan { };                //Vector of offsets and sizes.
 		std::wstring               wstrDesc { };               //Description.
+		ULONGLONG                  ullID { };                  //Bookmark id. Must be 0, assigned internally by framework.
 		ULONGLONG                  ullData { };                //User defined custom data.
 		COLORREF                   clrBk { RGB(240, 240, 0) }; //Bk color.
 		COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.
-		DWORD                      dwID { };                   //Bookmark id. Must be 0. Assigned internally by framework.
 	};
 	using PHEXBOOKMARKSTRUCT = HEXBOOKMARKSTRUCT*;
 
@@ -102,14 +102,14 @@ namespace HEXCTRL
 	class IHexBkmVirtual
 	{
 	public:
-		virtual DWORD Add(const HEXBOOKMARKSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
+		virtual ULONGLONG Add(const HEXBOOKMARKSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
 		virtual void ClearAll() = 0;                    //Clear all bookmarks.
 		virtual auto GetNext()->HEXBOOKMARKSTRUCT* = 0; //Get next bookmark.
 		virtual auto GetPrev()->HEXBOOKMARKSTRUCT* = 0; //Get previous bookmark.
 		virtual bool HasBookmarks() = 0;                //Returns true is there is at least one bookmark atm.
 		virtual auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0; //Has given offset the bookmark?
 		virtual void Remove(ULONGLONG ullOffset) = 0;   //Remove bookmark by the given offset.
-		virtual void RemoveId(DWORD dwId) = 0;          //Remove bookmark by given ID (returned by Add()).
+		virtual void RemoveId(ULONGLONG ullId) = 0;     //Remove bookmark by given ID (returned by Add()).
 	};
 
 	/********************************************************************************************
@@ -212,12 +212,12 @@ namespace HEXCTRL
 	class IHexCtrl
 	{
 	public:
-		virtual DWORD BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = false) = 0; //Adds new bookmark.
+		virtual ULONGLONG BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = false) = 0; //Adds new bookmark.
 		virtual void BkmClearAll() = 0;                         //Clear all bookmarks.
-		[[nodiscard]] virtual auto BkmGet(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUCT> = 0; //Get bookmark by ID.
+		[[nodiscard]] virtual auto BkmGet(ULONGLONG ullID)const->std::optional<HEXBOOKMARKSTRUCT> = 0; //Get bookmark by ID.
 		[[nodiscard]] virtual auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* = 0;   //Get list of all bookmarks.
 		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0;       //HitTest for given offset.
-		virtual void BkmRemove(DWORD dwID) = 0;                 //Removes bookmark by the given Id.
+		virtual void BkmRemove(ULONGLONG ullID) = 0;            //Removes bookmark by the given Id.
 		virtual void BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual = nullptr) = 0; //Enable/disable bookmarks virtual mode.
 		virtual void ClearData() = 0;                           //Clears all data from HexCtrl's view (not touching data itself).
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;    //Main initialization method.

@@ -81,12 +81,12 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexCtrl();
-		DWORD BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)override; //Adds new bookmark.
+		ULONGLONG BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)override; //Adds new bookmark.
 		void BkmClearAll()override;                         //Clear all bookmarks.
-		[[nodiscard]] auto BkmGet(DWORD dwID)const->std::optional <HEXBOOKMARKSTRUCT> override; //Get bookmark by ID.
+		[[nodiscard]] auto BkmGet(ULONGLONG ullID)const->std::optional <HEXBOOKMARKSTRUCT> override; //Get bookmark by ID.
 		[[nodiscard]] auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* override;    //Get all bookmarks' data.
 		[[nodiscard]] auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* override;
-		void BkmRemove(DWORD dwID)override;                 //Removes bookmark by the given Id.
+		void BkmRemove(ULONGLONG ullID)override;            //Removes bookmark by the given Id.
 		void BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual)override; //Enable/disable bookmarks virtual mode.
 		void ClearData()override;                           //Clears all data from HexCtrl's view (not touching data itself).
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
@@ -184,6 +184,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 		afx_msg void OnMButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+		afx_msg void OnMouseLeave();
 		afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
@@ -299,7 +300,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fSectorVisible { false };      //Print lines between sectors or not.
 		bool m_fHighLatency { false };        //Reflects HEXDATASTRUCT::fHighLatency.
 		wchar_t m_warrOffset[40] { L"Offset: " };
-	};
+};
 
 	template<typename T>
 	inline auto CHexCtrl::GetData(ULONGLONG ullOffset)-> T

@@ -90,30 +90,31 @@ namespace HEXCTRL {
 ************************************************************************/
 BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_ACTIVATE()
+	ON_WM_CHAR()
+	ON_WM_CONTEXTMENU()
 	ON_WM_CLOSE()
 	ON_WM_DESTROY()
 	ON_WM_ERASEBKGND()
-	ON_WM_PAINT()
-	ON_WM_VSCROLL()
+	ON_WM_GETDLGCODE()
+	ON_WM_HELPINFO()
 	ON_WM_HSCROLL()
-	ON_WM_SETCURSOR()
-	ON_WM_MOUSEWHEEL()
-	ON_WM_MOUSEMOVE()
-	ON_WM_MBUTTONDOWN()
+	ON_WM_INITMENUPOPUP()
+	ON_WM_KEYDOWN()
+	ON_WM_LBUTTONDBLCLK()
 	ON_WM_LBUTTONDOWN()
 	ON_WM_LBUTTONUP()
-	ON_WM_KEYDOWN()
-	ON_WM_SIZE()
-	ON_WM_CONTEXTMENU()
-	ON_WM_INITMENUPOPUP()
+	ON_WM_MBUTTONDOWN()
+	ON_WM_MOUSELEAVE()
+	ON_WM_MOUSEMOVE()
+	ON_WM_MOUSEWHEEL()
 	ON_WM_NCACTIVATE()
 	ON_WM_NCCALCSIZE()
 	ON_WM_NCPAINT()
-	ON_WM_CHAR()
-	ON_WM_GETDLGCODE()
-	ON_WM_LBUTTONDBLCLK()
+	ON_WM_PAINT()
+	ON_WM_SETCURSOR()
+	ON_WM_SIZE()
 	ON_WM_SYSKEYDOWN()
-	ON_WM_HELPINFO()
+	ON_WM_VSCROLL()
 END_MESSAGE_MAP()
 
 //CWinApp object is vital for manual MFC, and for in-.dll work,
@@ -152,7 +153,7 @@ CHexCtrl::CHexCtrl()
 	}
 }
 
-DWORD CHexCtrl::BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)
+ULONGLONG CHexCtrl::BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -170,13 +171,13 @@ void CHexCtrl::BkmClearAll()
 	m_pBookmarks->ClearAll();
 }
 
-auto CHexCtrl::BkmGet(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUCT>
+auto CHexCtrl::BkmGet(ULONGLONG ullID)const->std::optional<HEXBOOKMARKSTRUCT>
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return { };
 
-	return m_pBookmarks->GetBookmark(dwID);
+	return m_pBookmarks->GetBookmark(ullID);
 }
 
 auto CHexCtrl::BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>*
@@ -197,13 +198,13 @@ auto CHexCtrl::BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*
 	return m_pBookmarks->HitTest(ullOffset);
 }
 
-void CHexCtrl::BkmRemove(DWORD dwID)
+void CHexCtrl::BkmRemove(ULONGLONG ullID)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
-	m_pBookmarks->RemoveId(dwID);
+	m_pBookmarks->RemoveId(ullID);
 }
 
 void CHexCtrl::BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual)
@@ -1246,6 +1247,12 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 					m_wndTtBkm.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x, ptScreen.y)));
 					m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 					m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
+
+					TRACKMOUSEEVENT tme { };
+					tme.cbSize = sizeof(TRACKMOUSEEVENT);
+					tme.dwFlags = TME_LEAVE;
+					tme.hwndTrack = m_hWnd;
+					TrackMouseEvent(&tme);
 				}
 			}
 			else
@@ -1258,6 +1265,12 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 		m_pScrollV->OnMouseMove(nFlags, point);
 		m_pScrollH->OnMouseMove(nFlags, point);
 	}
+}
+
+void CHexCtrl::OnMouseLeave()
+{
+	m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
+	m_pBkmCurrTt = nullptr;
 }
 
 BOOL CHexCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)

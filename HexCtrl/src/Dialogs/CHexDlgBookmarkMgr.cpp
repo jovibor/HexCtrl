@@ -62,14 +62,14 @@ BOOL CHexDlgBookmarkMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult
 	if (pNMI->hdr.idFrom == IDC_HEXCTRL_BOOKMARKMGR_LIST)
 	{
 		auto refData = m_pBookmarks->GetData();
-		DWORD dwBkmID { };
+		ULONGLONG ullBkmID { };
 		if (pNMI->iItem >= 0 && pNMI->iItem < static_cast<int>(refData->size()))
-			dwBkmID = refData->at(static_cast<size_t>(pNMI->iItem)).dwID;
+			ullBkmID = refData->at(static_cast<size_t>(pNMI->iItem)).ullID;
 
 		switch (pNMI->hdr.code)
 		{
 		case LVM_MAPINDEXTOID:
-			pNMI->lParam = static_cast<LPARAM>(dwBkmID);
+			pNMI->lParam = static_cast<LPARAM>(ullBkmID);
 			break;
 		case LVN_COLUMNCLICK:
 			SortBookmarks();
@@ -82,7 +82,7 @@ BOOL CHexDlgBookmarkMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult
 			else
 			{
 				fEnabled = true;
-				m_dwCurrBkmId = dwBkmID;
+				m_ullCurrBkmId = ullBkmID;
 				m_iCurrListId = pNMI->iItem;
 			}
 			m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
@@ -103,14 +103,14 @@ BOOL CHexDlgBookmarkMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult
 			if (pNMI->iItem == -1 || pNMI->iSubItem == -1 || !(pNMI->uNewState & LVIS_SELECTED))
 				break;
 
-			m_pBookmarks->GoBookmark(dwBkmID);
+			m_pBookmarks->GoBookmark(ullBkmID);
 		}
 		break;
 		case NM_DBLCLK:
 			if (pNMI->iItem == -1 || pNMI->iSubItem == -1)
 				break;
 
-			m_dwCurrBkmId = dwBkmID;
+			m_ullCurrBkmId = ullBkmID;
 			m_iCurrListId = pNMI->iItem;
 			SendMessageW(WM_COMMAND, IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT);
 			break;
@@ -152,20 +152,20 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT:
 	{
-		auto optBkm = m_pBookmarks->GetBookmark(m_dwCurrBkmId);
+		auto optBkm = m_pBookmarks->GetBookmark(m_ullCurrBkmId);
 		if (optBkm.has_value())
 		{
 			CHexDlgBookmarkProps dlgBkmEdit;
 			if (dlgBkmEdit.DoModal(&*optBkm) == IDOK)
 			{
-				m_pBookmarks->Update(optBkm->dwID, *optBkm);
+				m_pBookmarks->Update(optBkm->ullID, *optBkm);
 				UpdateList();
 			}
 		}
 	}
 	break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE:
-		m_pBookmarks->RemoveId(m_dwCurrBkmId);
+		m_pBookmarks->RemoveId(m_ullCurrBkmId);
 		m_List->DeleteItem(m_iCurrListId);
 		UpdateList();
 		break;

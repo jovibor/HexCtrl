@@ -642,11 +642,12 @@ struct HEXBOOKMARKSTRUCT
 {
     std::vector<HEXSPANSTRUCT> vecSpan { };                //Vector of offsets and sizes.
     std::wstring               wstrDesc { };               //Description.
+    ULONGLONG                  ullID { };                  //Bookmark id. Must be 0, assigned internally by framework.
     ULONGLONG                  ullData { };                //User defined custom data.
     COLORREF                   clrBk { RGB(240, 240, 0) }; //Bk color.
     COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.
-    DWORD                      dwID { };                   //Bookmark id. Must be 0. Assigned internally by framework.
 };
+using PHEXBOOKMARKSTRUCT = HEXBOOKMARKSTRUCT*;
 ```
 The member `vecSpan` is of a `std::vector<HEXSPANSTRUCT>` type because a bookmark may have few non adjacent areas. For instance, when selection is made as a block, with <kbd>Alt</kbd> pressed.
 

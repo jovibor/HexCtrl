@@ -34,6 +34,8 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnSize(UINT nType, int cx, int cy);
 		afx_msg void OnClickRadioLe();
 		afx_msg void OnClickRadioBe();
+		afx_msg void OnClickRadioDec();
+		afx_msg void OnClickRadioHex();
 		template <typename T>bool SetDigitData(LONGLONG llData);
 		DECLARE_MESSAGE_MAP()
 	private:
@@ -61,9 +63,6 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullSize { };
 		HDITEMW m_hdItemPropGrid { };
-	public:
-		afx_msg void OnClickRadioDec();
-		afx_msg void OnClickRadioHex();
 	};
 
 	template<typename T>

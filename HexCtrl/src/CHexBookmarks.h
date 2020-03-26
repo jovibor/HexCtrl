@@ -19,22 +19,22 @@ namespace HEXCTRL::INTERNAL
 	public:
 		explicit CHexBookmarks() = default;
 		~CHexBookmarks() = default;
-		DWORD Add(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = true); //Returns new bookmark Id.
+		ULONGLONG Add(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = true); //Returns new bookmark Id.
 		void Attach(CHexCtrl* pHex);
 		void ClearAll();
-		[[nodiscard]] auto GetBookmark(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUCT>;
+		[[nodiscard]] auto GetBookmark(ULONGLONG ullID)const->std::optional<HEXBOOKMARKSTRUCT>;
 		[[nodiscard]] auto GetData()const->const std::deque<HEXBOOKMARKSTRUCT>*;
 		[[nodiscard]] auto GetTouchTime()const->__time64_t;
-		void GoBookmark(DWORD dwID);
+		void GoBookmark(ULONGLONG ullID);
 		void GoNext();
 		void GoPrev();
 		[[nodiscard]] bool HasBookmarks()const;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*;
 		[[nodiscard]] bool IsVirtual()const;
 		void Remove(ULONGLONG ullOffset);
-		void RemoveId(DWORD dwID);
+		void RemoveId(ULONGLONG ullID);
 		void SetVirtual(bool fEnable, IHexBkmVirtual* pVirtual = nullptr);
-		void Update(DWORD dwID, const HEXBOOKMARKSTRUCT& stBookmark);
+		void Update(ULONGLONG ullID, const HEXBOOKMARKSTRUCT& stBookmark);
 	private:
 		std::deque<HEXBOOKMARKSTRUCT> m_deqBookmarks;
 		CHexCtrl* m_pHex { };
