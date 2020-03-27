@@ -36,16 +36,19 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioBe();
 		afx_msg void OnClickRadioDec();
 		afx_msg void OnClickRadioHex();
+		CString SystemTimeToString(PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
 		template <typename T>bool SetDigitData(LONGLONG llData);
 		DECLARE_MESSAGE_MAP()
 	private:
 		enum class EGroup : WORD { DIGITS, FLOAT, TIME };
 		enum class EName : WORD {
+			NAME_BINARY,
 			NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
-			NAME_LONG, NAME_ULONG, NAME_LONGLONG, NAME_ULONGLONG,
-			NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T
+			NAME_LONG, NAME_ULONG, NAME_LONGLONG, NAME_ULONGLONG, NAME_GUID,
+			NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
+			NAME_FILETIME, NAME_JAVATIME, NAME_MSDOSTIME, NAME_SYSTEMTIME, NAME_GUIDTIME
 		};
-		enum class ESize : WORD { SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4, SIZE_QWORD = 0x8 };
+		enum class ESize : WORD { SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4, SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10 };
 		struct GRIDDATA
 		{
 			EGroup eGroup { };
@@ -63,6 +66,8 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullSize { };
 		HDITEMW m_hdItemPropGrid { };
+		DWORD m_dwDateFormat { };
+		WCHAR m_wszDateSeparator[128] { };
 	};
 
 	template<typename T>
