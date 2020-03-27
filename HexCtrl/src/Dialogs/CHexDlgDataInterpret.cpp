@@ -320,6 +320,8 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	WCHAR buff[32];
 	std::wstring wstrFormat { };
 
+
+	//Char
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%hhX";
 	else
@@ -331,6 +333,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_CHAR; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
 
+	//Uchar
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%hhX";
 	else
@@ -362,6 +365,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	if (m_fBigEndian)
 		word = _byteswap_ushort(word);
 
+	//Short
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%hX";
 	else
@@ -372,6 +376,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_SHORT; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
 
+	//UShort
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%hX";
 	else
@@ -403,6 +408,8 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	if (m_fBigEndian)
 		dword = _byteswap_ulong(dword);
 
+
+	//Long
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%X";
 	else
@@ -413,6 +420,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_LONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
 
+	//Ulong
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%X";
 	else
@@ -465,6 +473,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	if (m_fBigEndian)
 		qword = _byteswap_uint64(qword);
 
+	//Longlong
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%llX";
 	else
@@ -475,6 +484,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_LONGLONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
 
+	//Ulonglong
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%llX";
 	else
@@ -485,7 +495,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_ULONGLONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
 
-	swprintf_s(buff, 31, L"%.18e", *reinterpret_cast<const double*>(&qword));
+	swprintf_s(buff, _countof(buff), L"%.18e", *reinterpret_cast<const double*>(&qword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_DOUBLE; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -494,7 +504,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	if (_localtime64_s(&tm, reinterpret_cast<const __time64_t*>(&qword)) == 0)
 	{
 		char str[32];
-		strftime(str, 31, "%d/%m/%Y %H:%M:%S", &tm);
+		strftime(str, _countof(str), "%d/%m/%Y %H:%M:%S", &tm);
 		wstrTime = StrToWstr(str);
 	}
 	else
