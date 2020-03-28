@@ -107,6 +107,7 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_OLEDATETIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"OLE time:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_JAVATIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"Java time:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_MSDOSTIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"MS-DOS time:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_MSDTTMTIME, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"MS-DTTM time:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_SYSTEMTIME, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"Windows SYSTEMTIME:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_GUIDTIME, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"GUID v1 UTC time:", L"0") });
 	auto pTime = new CMFCPropertyGridProperty(L"Time:");
@@ -607,6 +608,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		iter->pProp->SetValue(wstrTime.data());
 
 	//MS-DOS date/time
+	#pragma pack(push, 1)
 	typedef union _MSDOSDATETIME		//MS-DOS Date+Time structure (as used in FAT file system directory entry)
 	{									//See: https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
 		struct
@@ -616,8 +618,8 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		} TimeDate;
 		DWORD dwTimeDate;
 	} MSDOSDATETIME, *PMSDOSDATETIME;
+	#pragma pack(pop)
 	   	 
-	//Convert to FILETIME
 	wstrTime = L"N/A";
 	FILETIME ftMSDOS;
 	MSDOSDATETIME msdosDateTime;
@@ -632,6 +634,46 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_MSDOSTIME; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(wstrTime.data());
 	
+	//Microsoft DTTM time (as used by Microsoft Compound Document format)
+	//See: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/164c0c2e-6031-439e-88ad-69d00b69f414
+	#pragma pack(push, 1)
+	typedef union _DTTM
+	{
+		struct
+		{
+			unsigned long minute : 6;		//6+5+5+4+9+3=32
+			unsigned long hour : 5;
+			unsigned long dayofmonth : 5;
+			unsigned long month : 4;
+			unsigned long year : 9;
+			unsigned long weekday : 3;
+		} components;
+		unsigned long dwValue;
+	} DTTM, *PDTTM;
+	#pragma pack(pop)
+	
+	wstrTime = L"N/A";
+	DTTM dttm;
+	dttm.dwValue = dword;
+	if (dttm.components.dayofmonth>0 && dttm.components.dayofmonth<32 && dttm.components.hour<24 && dttm.components.minute<60 && dttm.components.month>0 && dttm.components.month<13 && dttm.components.weekday<7)
+	{
+		SysTime = {};
+		SysTime.wYear = 1900 + (WORD)dttm.components.year;
+		SysTime.wMonth = dttm.components.month;
+		SysTime.wDayOfWeek = dttm.components.weekday;
+		SysTime.wDay = dttm.components.dayofmonth;
+		SysTime.wHour = dttm.components.hour;
+		SysTime.wMinute = dttm.components.minute;
+		SysTime.wSecond = 0;
+		SysTime.wMilliseconds = 0;
+		wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
+	}
+
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_MSDTTMTIME; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(wstrTime.data());
+
+	#pragma pack(push, 1)
 	typedef union _DQWORD128
 	{									
 		struct
@@ -641,6 +683,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		} Value;
 		GUID gGUID;
 	} DQWORD128, *PDQWORD128;
+	#pragma pack(pop)
 
 	auto dqword = m_pHexCtrl->GetData<DQWORD128>(ullOffset);	
 	if (m_fBigEndian)
@@ -726,7 +769,7 @@ void CHexDlgDataInterpret::UpdateHexCtrl()
 
 CString CHexDlgDataInterpret::SystemTimeToString(PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)
 {
-	if (pSysTime->wDay > 0 && pSysTime->wDay < 32 && pSysTime->wMonth>0 && pSysTime->wMonth < 13 && pSysTime->wYear < 10000 && pSysTime->wHour < 25 && pSysTime->wMinute < 61 && pSysTime->wSecond < 61 && pSysTime->wMilliseconds < 1000)
+	if (pSysTime->wDay > 0 && pSysTime->wDay < 32 && pSysTime->wMonth>0 && pSysTime->wMonth < 13 && pSysTime->wYear < 10000 && pSysTime->wHour < 24 && pSysTime->wMinute < 60 && pSysTime->wSecond < 60 && pSysTime->wMilliseconds < 1000)
 	{
 		//Generate human formatted date. Fall back to UK/European if unable to determine
 		CString sResult;
