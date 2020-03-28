@@ -109,6 +109,13 @@ auto CHexBookmarks::GetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT*
 
 ULONGLONG CHexBookmarks::GetCount()
 {
+	if (m_fVirtual)
+	{
+		if (m_pVirtual)
+			return m_pVirtual->GetCount();
+		return 0;
+	}
+
 	return m_deqBookmarks.size();
 }
 

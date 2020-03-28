@@ -660,7 +660,8 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 		fAvail = true;
 		break;
 	case EHexCmd::CMD_BKM_REMOVE:
-		fAvail = m_pBookmarks->HasBookmarks() && m_pBookmarks->HitTest(GetCaretPos());
+		fAvail = m_pBookmarks->HasBookmarks()
+			&& (m_pBookmarks->HitTest(GetCaretPos()) || m_pBookmarks->HitTest(m_ullRMouseClick));
 		break;
 	case EHexCmd::CMD_BKM_NEXT:
 	case EHexCmd::CMD_BKM_PREV:
@@ -1508,54 +1509,43 @@ void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 
 void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bSysMenu*/)
 {
-	bool fDataSet = IsDataSet();
-	UINT uStatus;
-	if (!fDataSet || !m_pSelection->HasSelection())
-		uStatus = MF_GRAYED;
-	else
-		uStatus = MF_ENABLED;
-
 	//Main
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH, fDataSet ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH, IsCmdAvail(EHexCmd::CMD_SEARCH) ? MF_ENABLED : MF_GRAYED);
 
 	//Bookmarks
-	bool fBookmarks = m_pBookmarks->HasBookmarks();
-	bool fHasRMBM = m_pBookmarks->HitTest(m_ullRMouseClick); //Is there a bookmark under R-mouse cursor?
-	bool fBkmVirtual = m_pBookmarks->IsVirtual();
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_ADD, uStatus);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_REMOVE, fBookmarks && fHasRMBM ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_NEXT, fBookmarks ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_PREV, fBookmarks ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_CLEARALL, fBookmarks ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_MANAGER, (fDataSet && !fBkmVirtual) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_ADD, IsCmdAvail(EHexCmd::CMD_BKM_ADD) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_REMOVE, IsCmdAvail(EHexCmd::CMD_BKM_REMOVE) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_NEXT, IsCmdAvail(EHexCmd::CMD_BKM_NEXT) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_PREV, IsCmdAvail(EHexCmd::CMD_BKM_PREV) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_CLEARALL, IsCmdAvail(EHexCmd::CMD_BKM_CLEARALL) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_MANAGER, IsCmdAvail(EHexCmd::CMD_BKM_MANAGER) ? MF_ENABLED : MF_GRAYED);
 
 	//Clipboard
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEX, uStatus);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEXLE, uStatus);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEXFORMATTED, uStatus);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYASCII, uStatus);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYBASE64, uStatus);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYCARRAY, uStatus);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX, uStatus);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYPRINTSCREEN, uStatus);
-	BOOL fClipboard = IsClipboardFormatAvailable(CF_TEXT);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, (m_fMutable && fClipboard) ? uStatus : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTEASCII, (m_fMutable && fClipboard) ? uStatus : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEX) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEXLE, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEXLE) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEXFORMATTED, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYASCII, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_ASCII) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYBASE64, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_BASE64) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYCARRAY, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_CARR) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYPRINTSCREEN, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_PASTE_HEX) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTEASCII, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_PASTE_ASCII) ? MF_ENABLED : MF_GRAYED);
 
 	//Modify
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, m_fMutable ? uStatus : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLWITHDATA, m_fMutable ? uStatus : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_OPERATIONS, m_fMutable ? uStatus : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, (m_deqUndo.empty()) ? MF_GRAYED : MF_ENABLED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, (m_deqRedo.empty()) ? MF_GRAYED : MF_ENABLED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(EHexCmd::CMD_MODIFY_FILLZEROS) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLWITHDATA, IsCmdAvail(EHexCmd::CMD_MODIFY_FILLDATA) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_OPERATIONS, IsCmdAvail(EHexCmd::CMD_MODIFY_OPERS) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(EHexCmd::CMD_MODIFY_UNDO) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(EHexCmd::CMD_MODIFY_REDO) ? MF_ENABLED : MF_GRAYED);
 
 	//Selection
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_MARKSTART, fDataSet ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_MARKEND, fDataSet ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_SELECTALL, fDataSet ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_MARKSTART, IsCmdAvail(EHexCmd::CMD_SEL_MARKSTART) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_MARKEND, IsCmdAvail(EHexCmd::CMD_SEL_MARKEND) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_SELECTALL, IsCmdAvail(EHexCmd::CMD_SEL_SELECTALL) ? MF_ENABLED : MF_GRAYED);
 
 	//Data interpreter
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_DATAINTERPRET, fDataSet ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_DATAINTERPRET, IsCmdAvail(EHexCmd::CMD_DATAINTERPRET) ? MF_ENABLED : MF_GRAYED);
 }
 
 void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
