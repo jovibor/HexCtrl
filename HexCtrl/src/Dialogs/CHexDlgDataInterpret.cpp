@@ -561,14 +561,15 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		iter->pProp->SetValue(wstrTime.data());
 
 	//Javatime (signed)
+	//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC
 	wstrTime = L"N/A";
 	
 	FILETIME ftJavaTime;
 	if (qword >= 0)
 	{
 		LARGE_INTEGER Time;
-		Time.HighPart = FILETIME1970_LOW;
-		Time.LowPart = FILETIME1970_HIGH;
+		Time.HighPart = FILETIME1970_HIGH;
+		Time.LowPart = FILETIME1970_LOW;
 		Time.QuadPart += qword * FTTICKSPERMS;
 		ftJavaTime.dwHighDateTime = Time.HighPart;
 		ftJavaTime.dwLowDateTime = Time.LowPart;		
@@ -576,8 +577,8 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	else
 	{
 		LARGE_INTEGER Time;
-		Time.HighPart = FILETIME1970_LOW;
-		Time.LowPart = FILETIME1970_HIGH;
+		Time.HighPart = FILETIME1970_HIGH;
+		Time.LowPart = FILETIME1970_LOW;
 		Time.QuadPart -= qword * FTTICKSPERMS;
 		ftJavaTime.dwHighDateTime = Time.HighPart;
 		ftJavaTime.dwLowDateTime = Time.LowPart;
@@ -605,7 +606,6 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	wstrTime = L"N/A";
 	FILETIME ftMSDOS;
 	MSDOSDATETIME msdosDateTime;
-	dword = 0;
 	msdosDateTime.dwTimeDate = dword;	
 	if (DosDateTimeToFileTime(msdosDateTime.TimeDate.wDate, msdosDateTime.TimeDate.wTime, &ftMSDOS))
 	{
