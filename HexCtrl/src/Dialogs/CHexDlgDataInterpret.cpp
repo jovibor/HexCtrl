@@ -104,6 +104,7 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_TIME32T, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"time32_t:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_TIME64T, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"time64_t:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_FILETIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"FILETIME:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_OLEDATETIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"OLE time:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_JAVATIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"Java time:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_MSDOSTIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"MS-DOS time:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_SYSTEMTIME, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"Windows SYSTEMTIME:", L"0") });
@@ -531,6 +532,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_ULONGLONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
 
+	//Double
 	swprintf_s(buff, _countof(buff), L"%.18e", *reinterpret_cast<const double*>(&qword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_DOUBLE; }); iter != m_vecProp.end())
@@ -558,6 +560,19 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_FILETIME; }); iter != m_vecProp.end())
+		iter->pProp->SetValue(wstrTime.data());
+
+	//OLE (including MS Office) date/time
+	//Implemented using an 8-byte floating-point number. Days are represented as whole number increments starting with 30 December 1899, midnight as time zero.
+	//See: https://docs.microsoft.com/en-us/cpp/atl-mfc-shared/date-type?view=vs-2019
+	//
+	wstrTime = L"N/A";
+	COleDateTime dt((DATE)qword);
+	if (dt.GetAsSystemTime(SysTime))
+		wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
+
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_OLEDATETIME; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(wstrTime.data());
 
 	//Javatime (signed)
