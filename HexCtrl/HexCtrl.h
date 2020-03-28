@@ -103,13 +103,15 @@ namespace HEXCTRL
 	{
 	public:
 		virtual ULONGLONG Add(const HEXBOOKMARKSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
-		virtual void ClearAll() = 0;                    //Clear all bookmarks.
-		virtual auto GetNext()->HEXBOOKMARKSTRUCT* = 0; //Get next bookmark.
-		virtual auto GetPrev()->HEXBOOKMARKSTRUCT* = 0; //Get previous bookmark.
-		virtual bool HasBookmarks() = 0;                //Returns true is there is at least one bookmark atm.
-		virtual auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0; //Has given offset the bookmark?
+		virtual void ClearAll() = 0; //Clear all bookmarks.
+		[[nodiscard]] virtual ULONGLONG GetCount() = 0; //Get total bookmarks count.
+		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT* = 0; //Bookmark by ID.
+		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT* = 0; //Bookmark by index (in inner list).
+		[[nodiscard]] virtual auto GetNext()->HEXBOOKMARKSTRUCT* = 0; //Get next bookmark.
+		[[nodiscard]] virtual auto GetPrev()->HEXBOOKMARKSTRUCT* = 0; //Get previous bookmark.
+		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0; //Has given offset the bookmark?
 		virtual void Remove(ULONGLONG ullOffset) = 0;   //Remove bookmark by the given offset.
-		virtual void RemoveId(ULONGLONG ullId) = 0;     //Remove bookmark by given ID (returned by Add()).
+		virtual void RemoveByID(ULONGLONG ullID) = 0;   //Remove bookmark by given ID (returned by Add()).
 	};
 
 	/********************************************************************************************
@@ -214,8 +216,8 @@ namespace HEXCTRL
 	public:
 		virtual ULONGLONG BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = false) = 0; //Adds new bookmark.
 		virtual void BkmClearAll() = 0;                         //Clear all bookmarks.
-		[[nodiscard]] virtual auto BkmGet(ULONGLONG ullID)const->std::optional<HEXBOOKMARKSTRUCT> = 0; //Get bookmark by ID.
-		[[nodiscard]] virtual auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* = 0;   //Get list of all bookmarks.
+		[[nodiscard]] virtual auto BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT* = 0; //Get bookmark by ID.
+		[[nodiscard]] virtual auto BkmGetData()->std::deque<HEXBOOKMARKSTRUCT>* = 0;    //Get list of all bookmarks.
 		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0;       //HitTest for given offset.
 		virtual void BkmRemove(ULONGLONG ullID) = 0;            //Removes bookmark by the given Id.
 		virtual void BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual = nullptr) = 0; //Enable/disable bookmarks virtual mode.

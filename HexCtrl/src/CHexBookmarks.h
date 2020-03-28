@@ -22,8 +22,10 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG Add(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = true); //Returns new bookmark Id.
 		void Attach(CHexCtrl* pHex);
 		void ClearAll();
-		[[nodiscard]] auto GetBookmark(ULONGLONG ullID)const->std::optional<HEXBOOKMARKSTRUCT>;
-		[[nodiscard]] auto GetData()const->const std::deque<HEXBOOKMARKSTRUCT>*;
+		[[nodiscard]] auto GetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT*;       //Bookmark by ID.
+		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT*; //Bookmark by index (in inner list).
+		[[nodiscard]] auto GetData()->std::deque<HEXBOOKMARKSTRUCT>*;
+		[[nodiscard]] ULONGLONG GetCount();
 		[[nodiscard]] auto GetTouchTime()const->__time64_t;
 		void GoBookmark(ULONGLONG ullID);
 		void GoNext();
@@ -32,7 +34,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*;
 		[[nodiscard]] bool IsVirtual()const;
 		void Remove(ULONGLONG ullOffset);
-		void RemoveId(ULONGLONG ullID);
+		void RemoveByID(ULONGLONG ullID);
 		void SetVirtual(bool fEnable, IHexBkmVirtual* pVirtual = nullptr);
 		void Update(ULONGLONG ullID, const HEXBOOKMARKSTRUCT& stBookmark);
 	private:

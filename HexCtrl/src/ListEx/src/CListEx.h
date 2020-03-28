@@ -42,15 +42,6 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		std::chrono::high_resolution_clock::time_point time { }; //Time when added.
 	};
 
-	/********************************************
-	* CELLCOLOR - colors for the cell.          *
-	********************************************/
-	struct CELLCOLOR
-	{
-		COLORREF clrBk;
-		COLORREF clrText;
-	};
-
 
 	/********************************************
 	* CListEx class declaration.                *
@@ -76,7 +67,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		void SetCellData(int iItem, int iSubItem, ULONGLONG ullData)override;
 		void SetCellMenu(int iItem, int iSubItem, CMenu* pMenu)override;
 		void SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTooltip, std::wstring_view wstrCaption)override;
-		void SetColor(const LISTEXCOLORSTRUCT& lcs)override;
+		void SetColor(const LISTEXCOLORS& lcs)override;
 		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
 		void SetColumnSortMode(int iColumn, EnListExSortMode enSortMode)override;
 		void SetFont(const LOGFONTW* pLogFontNew)override;
@@ -118,7 +109,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		afx_msg void OnDestroy();
 	private:
 		CListExHdr m_stListHeader;
-		LISTEXCOLORSTRUCT m_stColor { };
+		LISTEXCOLORS m_stColor { };
 		CFont m_fontList;
 		CPen m_penGrid;
 		CWnd m_wndTt;                   //Tool-tip window.
@@ -129,7 +120,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		std::unordered_map<int, std::unordered_map<int, CELLTOOLTIP>> m_umapCellTt { };  //Cell's tooltips.
 		std::unordered_map<int, std::unordered_map<int, CMenu*>> m_umapCellMenu { };	 //Cell's menus.
 		std::unordered_map<int, std::unordered_map<int, ULONGLONG>> m_umapCellData { };  //Cell's custom data.
-		std::unordered_map<int, std::unordered_map<int, CELLCOLOR>> m_umapCellColor { }; //Cell's colors.
+		std::unordered_map<int, std::unordered_map<int, LISTEXCELLCOLOR>> m_umapCellColor { }; //Cell's colors.
 		std::unordered_map<DWORD, ROWCOLOR> m_umapRowColor { };     //Row colors.
 		std::unordered_map<int, COLUMNCOLOR> m_umapColumnColor { }; //Column colors.
 		std::unordered_map<int, EnListExSortMode> m_umapColumnSortMode { };              //Column sorting mode.

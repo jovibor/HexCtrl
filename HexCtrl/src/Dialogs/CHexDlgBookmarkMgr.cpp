@@ -16,7 +16,11 @@ using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgBookmarkMgr, CDialogEx)
 	ON_WM_ACTIVATE()
-	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_BOOKMARKMGR_LIST, &CHexDlgBookmarkMgr::OnListBkmsGetDispInfo)
+	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_BOOKMARKMGR_LIST, &CHexDlgBookmarkMgr::OnListBkmGetDispInfo)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_BOOKMARKMGR_LIST, &CHexDlgBookmarkMgr::OnListBkmItemChanged)
+	ON_NOTIFY(NM_CLICK, IDC_HEXCTRL_BOOKMARKMGR_LIST, &CHexDlgBookmarkMgr::OnListBkmItemChanged)
+	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_BOOKMARKMGR_LIST, &CHexDlgBookmarkMgr::OnListBkmDblClick)
+	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_BOOKMARKMGR_LIST, &CHexDlgBookmarkMgr::OnListBkmRClick)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -56,70 +60,6 @@ BOOL CHexDlgBookmarkMgr::OnInitDialog()
 	return TRUE;
 }
 
-BOOL CHexDlgBookmarkMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
-{
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam);
-	if (pNMI->hdr.idFrom == IDC_HEXCTRL_BOOKMARKMGR_LIST)
-	{
-		auto refData = m_pBookmarks->GetData();
-		ULONGLONG ullBkmID { };
-		if (pNMI->iItem >= 0 && pNMI->iItem < static_cast<int>(refData->size()))
-			ullBkmID = refData->at(static_cast<size_t>(pNMI->iItem)).ullID;
-
-		switch (pNMI->hdr.code)
-		{
-		case LVM_MAPINDEXTOID:
-			pNMI->lParam = static_cast<LPARAM>(ullBkmID);
-			break;
-		case LVN_COLUMNCLICK:
-			SortBookmarks();
-			break;
-		case NM_RCLICK:
-		{
-			bool fEnabled;
-			if (pNMI->iItem == -1 || pNMI->iSubItem == -1)
-				fEnabled = false;
-			else
-			{
-				fEnabled = true;
-				m_ullCurrBkmId = ullBkmID;
-				m_iCurrListId = pNMI->iItem;
-			}
-			m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-			m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-			m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_CLEARALL,
-				(m_List->GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-
-			POINT pt;
-			GetCursorPos(&pt);
-			m_stMenuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
-		}
-		break;
-		case LVN_ITEMCHANGED:
-		case NM_CLICK:
-		{
-			//Go selected bookmark only with keyboard arrows and lmouse clicks.
-			//Does not trigger (LVN_ITEMCHANGED event) when updating bookmark: !(pNMI->uNewState & LVIS_SELECTED)
-			if (pNMI->iItem == -1 || pNMI->iSubItem == -1 || !(pNMI->uNewState & LVIS_SELECTED))
-				break;
-
-			m_pBookmarks->GoBookmark(ullBkmID);
-		}
-		break;
-		case NM_DBLCLK:
-			if (pNMI->iItem == -1 || pNMI->iSubItem == -1)
-				break;
-
-			m_ullCurrBkmId = ullBkmID;
-			m_iCurrListId = pNMI->iItem;
-			SendMessageW(WM_COMMAND, IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT);
-			break;
-		}
-	}
-
-	return CDialogEx::OnNotify(wParam, lParam, pResult);
-}
-
 void CHexDlgBookmarkMgr::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
 	if (nState == WA_INACTIVE)
@@ -152,21 +92,20 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT:
 	{
-		auto optBkm = m_pBookmarks->GetBookmark(m_ullCurrBkmId);
-		if (optBkm.has_value())
+		if (auto pBkm = m_pBookmarks->GetByID(m_ullCurrBkmId); pBkm != nullptr)
 		{
 			CHexDlgBookmarkProps dlgBkmEdit;
-			if (dlgBkmEdit.DoModal(&*optBkm) == IDOK)
+			auto stBkm = *pBkm; //Pass a copy to dlgBkmEdit, to avoid changing the original, from list.
+			if (dlgBkmEdit.DoModal(&stBkm) == IDOK)
 			{
-				m_pBookmarks->Update(optBkm->ullID, *optBkm);
+				m_pBookmarks->Update(pBkm->ullID, stBkm);
 				UpdateList();
 			}
 		}
 	}
 	break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE:
-		m_pBookmarks->RemoveId(m_ullCurrBkmId);
-		m_List->DeleteItem(m_iCurrListId);
+		m_pBookmarks->RemoveByID(m_ullCurrBkmId);
 		UpdateList();
 		break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_CLEARALL:
@@ -183,38 +122,48 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	return CDialogEx::OnCommand(wParam, lParam);
 }
 
-void CHexDlgBookmarkMgr::UpdateList()
+BOOL CHexDlgBookmarkMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
-	const auto refData = m_pBookmarks->GetData();
-	m_List->SetItemCountEx(static_cast<int>(refData->size()), LVSICF_NOSCROLL);
-	int listindex { 0 };
-	for (const auto& iter : *refData)
+	auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam);
+	if (pNMI->hdr.idFrom == IDC_HEXCTRL_BOOKMARKMGR_LIST)
 	{
-		m_List->SetCellColor(listindex++, 4, iter.clrBk);
+		switch (pNMI->hdr.code)
+		{
+		case LVN_COLUMNCLICK: //ON_NOTIFY(LVN_COLUMNCLICK...) macro doesn't seem work, for no obvious reason.
+			if (!m_pBookmarks->IsVirtual())
+				SortBookmarks();
+			break;
+		case LISTEX_MSG_CELLCOLOR: //Dynamically set cells colors.
+			if (pNMI->iSubItem == 4)
+			{
+				if (auto pBkm = m_pBookmarks->GetByIndex(static_cast<size_t>(pNMI->iItem)); pBkm != nullptr)
+				{
+					static LISTEXCELLCOLOR stCellClr;
+					stCellClr.clrBk = pBkm->clrBk;
+					stCellClr.clrText = pBkm->clrText;
+					pNMI->lParam = reinterpret_cast<LPARAM>(&stCellClr);
+				}
+			}
+			break;
+		}
 	}
 
-	m_time = m_pBookmarks->GetTouchTime();
+	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
-void CHexDlgBookmarkMgr::OnDestroy()
-{
-	CDialogEx::OnDestroy();
-
-	m_List->DestroyWindow();
-	m_stMenuList.DestroyMenu();
-}
-
-void CHexDlgBookmarkMgr::OnListBkmsGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
+void CHexDlgBookmarkMgr::OnListBkmGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	auto pItem = &pDispInfo->item;
 
 	if (pItem->mask & LVIF_TEXT)
 	{
-		auto pBkm = m_pBookmarks->GetData();
 		auto iItemID = pItem->iItem;
 		auto iMaxLengh = pItem->cchTextMax;
-		auto& refData = pBkm->at(static_cast<size_t>(iItemID));
+		const auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(iItemID));
+		if (pBkm == nullptr)
+			return;
+
 		ULONGLONG ullOffset { 0 };
 		ULONGLONG ullSize { 0 };
 		switch (pItem->iSubItem)
@@ -223,27 +172,89 @@ void CHexDlgBookmarkMgr::OnListBkmsGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
 			swprintf_s(pItem->pszText, static_cast<size_t>(iMaxLengh), L"%d", iItemID + 1);
 			break;
 		case 1: //Offset
-			if (!refData.vecSpan.empty())
-				ullOffset = refData.vecSpan.front().ullOffset;
+			if (!pBkm->vecSpan.empty())
+				ullOffset = pBkm->vecSpan.front().ullOffset;
 			swprintf_s(pItem->pszText, static_cast<size_t>(iMaxLengh), L"0x%llX", ullOffset);
 			break;
 		case 2: //Size.
-			if (!refData.vecSpan.empty())
-				ullSize = std::accumulate(refData.vecSpan.begin(), refData.vecSpan.end(), 0ULL,
+			if (!pBkm->vecSpan.empty())
+				ullSize = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
 					[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
 			swprintf_s(pItem->pszText, static_cast<size_t>(iMaxLengh), L"0x%llX", ullSize);
 			break;
 		case 3: //Description
-			pItem->pszText = const_cast<wchar_t*>(refData.wstrDesc.data());
+			pItem->pszText = const_cast<wchar_t*>(pBkm->wstrDesc.data());
 			break;
 		}
 	}
 	*pResult = 0;
 }
 
+void CHexDlgBookmarkMgr::OnListBkmItemChanged(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+
+	//Go selected bookmark only with keyboard arrows and lmouse clicks.
+	//Does not trigger (LVN_ITEMCHANGED event) when updating bookmark: !(pNMI->uNewState & LVIS_SELECTED)
+	if (pNMI->iItem == -1 || pNMI->iSubItem == -1 || !(pNMI->uNewState & LVIS_SELECTED))
+		return;
+	if (auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(pNMI->iItem)); pBkm != nullptr)
+		m_pBookmarks->GoBookmark(pBkm->ullID);
+
+	*pResult = 0;
+}
+
+void CHexDlgBookmarkMgr::OnListBkmDblClick(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+
+	if (pNMI->iItem == -1 || pNMI->iSubItem == -1)
+		return;
+
+	if (auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(pNMI->iItem)); pBkm != nullptr)
+		m_ullCurrBkmId = pBkm->ullID;
+
+	m_iCurrListId = pNMI->iItem;
+	SendMessageW(WM_COMMAND, IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT);
+
+	*pResult = 0;
+}
+
+void CHexDlgBookmarkMgr::OnListBkmRClick(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+
+	bool fEnabled;
+	if (pNMI->iItem == -1 || pNMI->iSubItem == -1)
+		fEnabled = false;
+	else
+	{
+		fEnabled = true;
+		if (auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(pNMI->iItem)); pBkm != nullptr)
+			m_ullCurrBkmId = pBkm->ullID;
+		m_iCurrListId = pNMI->iItem;
+	}
+	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_CLEARALL,
+		(m_List->GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+
+	POINT pt;
+	GetCursorPos(&pt);
+	m_stMenuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
+
+	*pResult = 0;
+}
+
+void CHexDlgBookmarkMgr::UpdateList()
+{
+	m_List->SetItemCountEx(static_cast<int>(m_pBookmarks->GetCount()), LVSICF_NOSCROLL);
+	m_time = m_pBookmarks->GetTouchTime();
+}
+
 void CHexDlgBookmarkMgr::SortBookmarks()
 {
-	auto refData = const_cast<std::deque<HEXBOOKMARKSTRUCT>*>(m_pBookmarks->GetData());
+	auto refData = m_pBookmarks->GetData();
 	const auto iColumn = m_List->GetSortColumn();
 	const auto fAscending = m_List->GetSortAscending();
 
@@ -302,4 +313,12 @@ void CHexDlgBookmarkMgr::SortBookmarks()
 	});
 
 	m_List->RedrawWindow();
+}
+
+void CHexDlgBookmarkMgr::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	m_List->DestroyWindow();
+	m_stMenuList.DestroyMenu();
 }

@@ -159,7 +159,7 @@ void CHexDlgDataInterpret::OnOK()
 		{
 			wchar_t* pEndPtr;
 			float fl = wcstof(wstrValue, &pEndPtr);
-			if (fl == 0 && (pEndPtr == wstrValue.GetBuffer() || *pEndPtr != '\0'))
+			if (fl == 0 && (pEndPtr == wstrValue.GetString() || *pEndPtr != '\0'))
 				break;
 			//TODO:	DWORD dw=std::bit_cast<DWORD>(fl);
 			DWORD dwData = *reinterpret_cast<DWORD*>(&fl);
@@ -173,7 +173,7 @@ void CHexDlgDataInterpret::OnOK()
 		{
 			wchar_t* pEndPtr;
 			double dd = wcstod(wstrValue, &pEndPtr);
-			if (dd == 0 && (pEndPtr == wstrValue.GetBuffer() || *pEndPtr != '\0'))
+			if (dd == 0 && (pEndPtr == wstrValue.GetString() || *pEndPtr != '\0'))
 				break;
 			QWORD qwData = *reinterpret_cast<QWORD*>(&dd);
 			if (m_fBigEndian)

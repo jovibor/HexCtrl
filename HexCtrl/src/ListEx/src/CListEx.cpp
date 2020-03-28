@@ -137,8 +137,8 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 	int iSortColumn = pListCtrl->GetSortColumn();
 	EnListExSortMode enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
 
-	std::wstring wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn).GetBuffer();
-	std::wstring wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn).GetBuffer();
+	std::wstring wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn).GetString();
+	std::wstring wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn).GetString();
 
 	int iCompare { };
 	switch (enSortMode)
@@ -337,7 +337,7 @@ void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clr
 	//If there is no color for such item/subitem we just set it.
 	if (it == m_umapCellColor.end())
 	{	//Initializing inner map.
-		std::unordered_map<int, CELLCOLOR> umapInner { { iSubItem, CELLCOLOR { clrBk, clrText } } };
+		std::unordered_map<int, LISTEXCELLCOLOR> umapInner { { iSubItem, LISTEXCELLCOLOR { clrBk, clrText } } };
 		m_umapCellColor.insert({ ID, std::move(umapInner) });
 	}
 	else
@@ -345,7 +345,7 @@ void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clr
 		auto itInner = it->second.find(iSubItem);
 
 		if (itInner == it->second.end())
-			it->second.insert({ iSubItem, CELLCOLOR { clrBk, clrText } });
+			it->second.insert({ iSubItem, LISTEXCELLCOLOR { clrBk, clrText } });
 		else //If there is already exist this cell's color -> changing.
 		{
 			itInner->second.clrBk = clrBk;
@@ -452,7 +452,7 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTool
 	}
 }
 
-void CListEx::SetColor(const LISTEXCOLORSTRUCT& lcs)
+void CListEx::SetColor(const LISTEXCOLORS& lcs)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -611,44 +611,64 @@ bool CListEx::HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& c
 		return false;
 
 	bool fHasColor { false };
-	UINT ID = MapIndexToID(static_cast<UINT>(iItem));
-	auto it = m_umapCellColor.find(ID);
 
-	if (it != m_umapCellColor.end())
+	//If parent responds for LISTEX_MSG_CELLCOLOR message, we use lParam
+	//as a pointer to LISTEXCELLCOLOR. Otherwise we doing inner lookup.
+	auto iCtrlID = GetDlgCtrlID();
+	NMITEMACTIVATE nmii { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_CELLCOLOR } };
+	nmii.iItem = iItem;
+	nmii.iSubItem = iSubItem;
+	GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&nmii));
+	if (nmii.lParam != 0)
 	{
-		auto itInner = it->second.find(iSubItem);
+		auto pClr = reinterpret_cast<PLISTEXCELLCOLOR>(nmii.lParam);
+		clrBk = pClr->clrBk;
+		clrText = pClr->clrText;
 
-		//If subitem id found.
-		if (itInner != it->second.end())
-		{
-			clrBk = itInner->second.clrBk;
-			clrText = itInner->second.clrText;
-			fHasColor = true;
-		}
+		fHasColor = true;
 	}
 
 	if (!fHasColor)
 	{
-		auto itColumn = m_umapColumnColor.find(iSubItem);
-		auto itRow = m_umapRowColor.find(ID);
+		UINT ID = MapIndexToID(static_cast<UINT>(iItem));
+		auto it = m_umapCellColor.find(ID);
 
-		if (itColumn != m_umapColumnColor.end() && itRow != m_umapRowColor.end())
+		if (it != m_umapCellColor.end())
 		{
-			clrBk = itColumn->second.time > itRow->second.time ? itColumn->second.clrBk : itRow->second.clrBk;
-			clrText = itColumn->second.time > itRow->second.time ? itColumn->second.clrText : itRow->second.clrText;
-			fHasColor = true;
+			auto itInner = it->second.find(iSubItem);
+
+			//If subitem id found.
+			if (itInner != it->second.end())
+			{
+				clrBk = itInner->second.clrBk;
+				clrText = itInner->second.clrText;
+				fHasColor = true;
+			}
 		}
-		else if (itColumn != m_umapColumnColor.end())
+
+		if (!fHasColor)
 		{
-			clrBk = itColumn->second.clrBk;
-			clrText = itColumn->second.clrText;
-			fHasColor = true;
-		}
-		else if (itRow != m_umapRowColor.end())
-		{
-			clrBk = itRow->second.clrBk;
-			clrText = itRow->second.clrText;
-			fHasColor = true;
+			auto itColumn = m_umapColumnColor.find(iSubItem);
+			auto itRow = m_umapRowColor.find(ID);
+
+			if (itColumn != m_umapColumnColor.end() && itRow != m_umapRowColor.end())
+			{
+				clrBk = itColumn->second.time > itRow->second.time ? itColumn->second.clrBk : itRow->second.clrBk;
+				clrText = itColumn->second.time > itRow->second.time ? itColumn->second.clrText : itRow->second.clrText;
+				fHasColor = true;
+			}
+			else if (itColumn != m_umapColumnColor.end())
+			{
+				clrBk = itColumn->second.clrBk;
+				clrText = itColumn->second.clrText;
+				fHasColor = true;
+			}
+			else if (itRow != m_umapRowColor.end())
+			{
+				clrBk = itRow->second.clrBk;
+				clrText = itRow->second.clrText;
+				fHasColor = true;
+			}
 		}
 	}
 
@@ -744,8 +764,8 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 		return;
 
 	CDC* pDC = CDC::FromHandle(pDIS->hDC);
-	pDC->SelectObject(&m_penGrid);
-	pDC->SelectObject(&m_fontList);
+	pDC->SelectObject(m_penGrid);
+	pDC->SelectObject(m_fontList);
 	COLORREF clrBkCurrRow = (pDIS->itemID % 2) ? m_stColor.clrListBkRow2 : m_stColor.clrListBkRow1;
 
 	switch (pDIS->itemAction)

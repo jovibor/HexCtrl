@@ -20,10 +20,20 @@ namespace HEXCTRL::INTERNAL::LISTEX
 		SORT_LEX, SORT_NUMERIC
 	};
 
+	/********************************************
+	* LISTEXCELLCOLOR - colors for the cell.    *
+	********************************************/
+	struct LISTEXCELLCOLOR
+	{
+		COLORREF clrBk { };
+		COLORREF clrText { };
+	};
+	using PLISTEXCELLCOLOR = LISTEXCELLCOLOR*;
+
 	/********************************************************************************************
-	* LISTEXCOLORSTRUCT - All ListEx colors.                                                    *
+	* LISTEXCOLORS - All ListEx colors.                                                         *
 	********************************************************************************************/
-	struct LISTEXCOLORSTRUCT
+	struct LISTEXCOLORS
 	{
 		COLORREF clrListText { GetSysColor(COLOR_WINDOWTEXT) };            //List text color.
 		COLORREF clrListBkRow1 { GetSysColor(COLOR_WINDOW) };              //List Bk color of the odd rows.
@@ -46,7 +56,7 @@ namespace HEXCTRL::INTERNAL::LISTEX
 	* LISTEXCREATESTRUCT - Main initialization helper struct for CListEx::Create method.		*
 	********************************************************************************************/
 	struct LISTEXCREATESTRUCT {
-		LISTEXCOLORSTRUCT stColor { };           //All control's colors.
+		LISTEXCOLORS stColor { };                //All control's colors.
 		CRect             rect;                  //Initial rect.
 		CWnd*             pwndParent { };        //Parent window.
 		const LOGFONTW*   pListLogFont { };      //List font.
@@ -81,7 +91,7 @@ namespace HEXCTRL::INTERNAL::LISTEX
 		virtual void SetCellData(int iItem, int iSubitem, ULONGLONG ullData) = 0;
 		virtual void SetCellMenu(int iItem, int iSubitem, CMenu* pMenu) = 0;
 		virtual void SetCellTooltip(int iItem, int iSubitem, std::wstring_view wstrTooltip, std::wstring_view wstrCaption = L"") = 0;
-		virtual void SetColor(const LISTEXCOLORSTRUCT& lcs) = 0;
+		virtual void SetColor(const LISTEXCOLORS& lcs) = 0;
 		virtual void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetColumnSortMode(int iColumn, EnListExSortMode enSortMode) = 0;
 		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0;
@@ -119,5 +129,6 @@ namespace HEXCTRL::INTERNAL::LISTEX
 	* WM_NOTIFY codes (NMHDR.code values)										*
 	****************************************************************************/
 
-	constexpr auto LISTEX_MSG_MENUSELECTED = 0x1000u;
+	constexpr auto LISTEX_MSG_MENUSELECTED = 0x1000U; //User defined menu item selected.
+	constexpr auto LISTEX_MSG_CELLCOLOR = 0x1001U;    //Get cell color.
 }

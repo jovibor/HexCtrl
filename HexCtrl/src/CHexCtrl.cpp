@@ -171,16 +171,16 @@ void CHexCtrl::BkmClearAll()
 	m_pBookmarks->ClearAll();
 }
 
-auto CHexCtrl::BkmGet(ULONGLONG ullID)const->std::optional<HEXBOOKMARKSTRUCT>
+auto CHexCtrl::BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT*
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return { };
+		return nullptr;
 
-	return m_pBookmarks->GetBookmark(ullID);
+	return m_pBookmarks->GetByID(ullID);
 }
 
-auto CHexCtrl::BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>*
+auto CHexCtrl::BkmGetData()->std::deque<HEXBOOKMARKSTRUCT>*
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -204,7 +204,7 @@ void CHexCtrl::BkmRemove(ULONGLONG ullID)
 	if (!IsCreated())
 		return;
 
-	m_pBookmarks->RemoveId(ullID);
+	m_pBookmarks->RemoveByID(ullID);
 }
 
 void CHexCtrl::BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual)
@@ -667,9 +667,6 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 	case EHexCmd::CMD_BKM_CLEARALL:
 		fAvail = m_pBookmarks->HasBookmarks();
 		break;
-	case EHexCmd::CMD_BKM_MANAGER:
-		fAvail = fDataSet && !m_pBookmarks->IsVirtual();
-		break;
 	case EHexCmd::CMD_BKM_ADD:
 	case EHexCmd::CMD_CLIPBOARD_COPY_HEX:
 	case EHexCmd::CMD_CLIPBOARD_COPY_HEXLE:
@@ -697,6 +694,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 		fAvail = !m_deqRedo.empty();
 		break;
 	case EHexCmd::CMD_SEARCH:
+	case EHexCmd::CMD_BKM_MANAGER:
 	case EHexCmd::CMD_SEL_MARKSTART:
 	case EHexCmd::CMD_SEL_MARKEND:
 	case EHexCmd::CMD_SEL_SELECTALL:

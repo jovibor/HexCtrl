@@ -19,7 +19,7 @@
 * [Methods](#methods) <details><summary>_Expand_</summary>
   * [BkmAdd](#bkmadd)
   * [BkmClearAll](#bkmclearall)
-  * [BkmGet](#bkmget)
+  * [BkmGetByID](#bkmgetbyid)
   * [BkmGetData](#bkmgetdata)
   * [BkmHitTest](#bkmhittest)
   * [BkmRemove](#bkmremove)
@@ -300,15 +300,17 @@ The main method of the `IHexBkmVirtual` interface is `HitTest`. It takes byte's 
 ```cpp
 class IHexBkmVirtual
 {
-    public:
-    virtual DWORD Add(const HEXBOOKMARKSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
-    virtual void ClearAll() = 0;                    //Clear all bookmarks.
-    virtual auto GetNext()->HEXBOOKMARKSTRUCT* = 0; //Get next bookmark.
-    virtual auto GetPrev()->HEXBOOKMARKSTRUCT* = 0; //Get previous bookmark.
-    virtual bool HasBookmarks() = 0;                //Returns true is there is at least one bookmark atm.
-    virtual auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0; //Has given offset the bookmark?
+public:
+    virtual ULONGLONG Add(const HEXBOOKMARKSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
+    virtual void ClearAll() = 0; //Clear all bookmarks.
+    [[nodiscard]] virtual ULONGLONG GetCount() = 0; //Get total bookmarks count.
+    [[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT* = 0; //Bookmark by ID.
+    [[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT* = 0; //Bookmark by index (in inner list).
+    [[nodiscard]] virtual auto GetNext()->HEXBOOKMARKSTRUCT* = 0; //Get next bookmark.
+    [[nodiscard]] virtual auto GetPrev()->HEXBOOKMARKSTRUCT* = 0; //Get previous bookmark.
+    [[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0; //Has given offset the bookmark?
     virtual void Remove(ULONGLONG ullOffset) = 0;   //Remove bookmark by the given offset.
-    virtual void RemoveId(DWORD dwId) = 0;          //Remove bookmark by given ID (returned by Add()).
+    virtual void RemoveByID(ULONGLONG ullID) = 0;   //Remove bookmark by given ID (returned by Add()).
 };
 ```
 
@@ -337,15 +339,15 @@ void BkmClearAll();
 ```
 Clears all bookmarks.
 
-### [](#)BkmGet
+### [](#)BkmGetByID
 ```cpp
-BkmGet(DWORD dwID)const->std::optional<HEXBOOKMARKSTRUCT>;
+BkmGetByID(DWORD dwID)->HEXBOOKMARKSTRUCT*;
 ```
 Get bookmark by ID.
 
 ### [](#)BkmGetData
 ```cpp
-auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>*;
+auto BkmGetData()->std::deque<HEXBOOKMARKSTRUCT>*;
 ```
 Retrives pointer to the internal array of [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct).
 

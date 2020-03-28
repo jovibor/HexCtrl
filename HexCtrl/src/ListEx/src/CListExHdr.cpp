@@ -140,7 +140,7 @@ void CListExHdr::SetHeight(DWORD dwHeight)
 	m_dwHeaderHeight = dwHeight;
 }
 
-void CListExHdr::SetColor(const LISTEXCOLORSTRUCT& lcs)
+void CListExHdr::SetColor(const LISTEXCOLORS& lcs)
 {
 	m_clrText = lcs.clrHdrText;
 	m_clrBk = lcs.clrHdrBk;

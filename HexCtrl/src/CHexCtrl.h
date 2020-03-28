@@ -82,9 +82,9 @@ namespace HEXCTRL::INTERNAL
 	public:
 		explicit CHexCtrl();
 		ULONGLONG BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)override; //Adds new bookmark.
-		void BkmClearAll()override;                         //Clear all bookmarks.
-		[[nodiscard]] auto BkmGet(ULONGLONG ullID)const->std::optional <HEXBOOKMARKSTRUCT> override; //Get bookmark by ID.
-		[[nodiscard]] auto BkmGetData()const->const std::deque<HEXBOOKMARKSTRUCT>* override;    //Get all bookmarks' data.
+		void BkmClearAll()override; //Clear all bookmarks.
+		[[nodiscard]] auto BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT* override; //Get bookmark by ID.
+		[[nodiscard]] auto BkmGetData()->std::deque<HEXBOOKMARKSTRUCT>* override; //Get all bookmarks' data.
 		[[nodiscard]] auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* override;
 		void BkmRemove(ULONGLONG ullID)override;            //Removes bookmark by the given Id.
 		void BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual)override; //Enable/disable bookmarks virtual mode.
@@ -300,10 +300,10 @@ namespace HEXCTRL::INTERNAL
 		bool m_fSectorVisible { false };      //Print lines between sectors or not.
 		bool m_fHighLatency { false };        //Reflects HEXDATASTRUCT::fHighLatency.
 		wchar_t m_warrOffset[40] { L"Offset: " };
-};
+	};
 
 	template<typename T>
-	inline auto CHexCtrl::GetData(ULONGLONG ullOffset)-> T
+	inline auto CHexCtrl::GetData(ULONGLONG ullOffset)->T
 	{
 		if (ullOffset >= m_ullDataSize)
 			return T { };
