@@ -82,6 +82,7 @@ namespace HEXCTRL {
 		};
 
 		constexpr auto WSTR_HEXCTRL_CLASSNAME = L"HexCtrl";
+		constexpr ULONG_PTR ID_TIMER_BKM_TOOLTIP { 0x01 }; //Timer ID.
 	}
 }
 
@@ -104,7 +105,6 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_LBUTTONDOWN()
 	ON_WM_LBUTTONUP()
 	ON_WM_MBUTTONDOWN()
-	ON_WM_MOUSELEAVE()
 	ON_WM_MOUSEMOVE()
 	ON_WM_MOUSEWHEEL()
 	ON_WM_NCACTIVATE()
@@ -114,6 +114,7 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_SETCURSOR()
 	ON_WM_SIZE()
 	ON_WM_SYSKEYDOWN()
+	ON_WM_TIMER()
 	ON_WM_VSCROLL()
 END_MESSAGE_MAP()
 
@@ -1247,29 +1248,21 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 					m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 					m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 
-					TRACKMOUSEEVENT tme { };
-					tme.cbSize = sizeof(TRACKMOUSEEVENT);
-					tme.dwFlags = TME_LEAVE;
-					tme.hwndTrack = m_hWnd;
-					TrackMouseEvent(&tme);
+					//Timer to check whether cursor left client rect.
+					SetTimer(ID_TIMER_BKM_TOOLTIP, 300, nullptr);
 				}
 			}
 			else
 			{
 				m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 				m_pBkmCurrTt = nullptr;
+				KillTimer(ID_TIMER_BKM_TOOLTIP);
 			}
 		}
 
 		m_pScrollV->OnMouseMove(nFlags, point);
 		m_pScrollH->OnMouseMove(nFlags, point);
 	}
-}
-
-void CHexCtrl::OnMouseLeave()
-{
-	m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-	m_pBkmCurrTt = nullptr;
 }
 
 BOOL CHexCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
@@ -2699,6 +2692,26 @@ void CHexCtrl::OnNcPaint()
 
 	m_pScrollV->OnNcPaint();
 	m_pScrollH->OnNcPaint();
+}
+
+void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
+{
+	//Checking if cursor left client rect,
+	//if so — hiding bookmark tooltip and killing timer.
+	if (nIDEvent == ID_TIMER_BKM_TOOLTIP)
+	{
+		CRect rcClient;
+		GetClientRect(rcClient);
+		ClientToScreen(rcClient);
+		CPoint ptCursor;
+		GetCursorPos(&ptCursor);
+		if (!rcClient.PtInRect(ptCursor))
+		{
+			m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
+			m_pBkmCurrTt = nullptr;
+			KillTimer(ID_TIMER_BKM_TOOLTIP);
+		}
+	}
 }
 
 void CHexCtrl::ShowOffsetTooltip(bool fShow)

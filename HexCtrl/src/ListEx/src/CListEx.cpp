@@ -23,7 +23,7 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 	}
 
 	namespace INTERNAL {
-		constexpr ULONG_PTR ID_TIMER_TOOLTIP { 0x01 }; //Timer ID.
+		constexpr ULONG_PTR ID_TIMER_BKM_TOOLTIP { 0x01 }; //Timer ID.
 	}
 }
 
@@ -853,7 +853,7 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 		m_wndTt.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfo));
 
 		//Timer to check whether mouse left subitem's rect.
-		SetTimer(ID_TIMER_TOOLTIP, 200, nullptr);
+		SetTimer(ID_TIMER_BKM_TOOLTIP, 200, nullptr);
 	}
 	else
 	{
@@ -930,7 +930,7 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 {
 	//Checking if mouse left list's subitem rect,
 	//if so — hiding tooltip and killing timer.
-	if (nIDEvent == ID_TIMER_TOOLTIP)
+	if (nIDEvent == ID_TIMER_BKM_TOOLTIP)
 	{
 		CPoint pt;
 		GetCursorPos(&pt);
@@ -946,7 +946,7 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 		//If it left.
 		m_fTtShown = false;
 		m_wndTt.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-		KillTimer(ID_TIMER_TOOLTIP);
+		KillTimer(ID_TIMER_BKM_TOOLTIP);
 		m_stCurrCell.iItem = hitInfo.iItem;
 		m_stCurrCell.iSubItem = hitInfo.iSubItem;
 	}

@@ -184,7 +184,6 @@ namespace HEXCTRL::INTERNAL
 		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 		afx_msg void OnMButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-		afx_msg void OnMouseLeave();
 		afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
@@ -219,6 +218,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg BOOL OnNcActivate(BOOL bActive);
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
+		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		void ShowOffsetTooltip(bool fShow);
 	private:
 		const std::unique_ptr<CHexDlgBookmarkMgr> m_pDlgBookmarkMgr { std::make_unique<CHexDlgBookmarkMgr>() }; //Bookmark manager.
@@ -300,7 +300,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fSectorVisible { false };      //Print lines between sectors or not.
 		bool m_fHighLatency { false };        //Reflects HEXDATASTRUCT::fHighLatency.
 		wchar_t m_warrOffset[40] { L"Offset: " };
-	};
+};
 
 	template<typename T>
 	inline auto CHexCtrl::GetData(ULONGLONG ullOffset)->T
