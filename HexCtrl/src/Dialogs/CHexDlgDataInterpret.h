@@ -14,6 +14,48 @@
 
 namespace HEXCTRL::INTERNAL
 {
+	#pragma pack(push, 1)
+	typedef union _MSDOSDATETIME		//MS-DOS Date+Time structure (as used in FAT file system directory entry)
+	{									//See: https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
+		struct
+		{
+			WORD wTime;					//Time component
+			WORD wDate;					//Date component
+		} TimeDate;
+		DWORD dwTimeDate;
+	} MSDOSDATETIME, *PMSDOSDATETIME;
+	#pragma pack(pop)
+
+	//Microsoft DTTM time (as used by Microsoft Compound Document format)
+	//See: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/164c0c2e-6031-439e-88ad-69d00b69f414
+	#pragma pack(push, 1)
+	typedef union _DTTM
+	{
+		struct
+		{
+			unsigned long minute : 6;		//6+5+5+4+9+3=32
+			unsigned long hour : 5;
+			unsigned long dayofmonth : 5;
+			unsigned long month : 4;
+			unsigned long year : 9;
+			unsigned long weekday : 3;
+		} components;
+		unsigned long dwValue;
+	} DTTM, *PDTTM;
+	#pragma pack(pop)
+
+	#pragma pack(push, 1)
+	typedef union _DQWORD128
+	{
+		struct
+		{
+			QWORD qwLow;
+			QWORD qwHigh;
+		} Value;
+		GUID gGUID;
+	} DQWORD128, *PDQWORD128;
+	#pragma pack(pop)
+
 	class CHexDlgDataInterpret final : public CDialogEx
 	{
 	public:

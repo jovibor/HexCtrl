@@ -39,6 +39,9 @@ namespace HEXCTRL {
 		//Converts every two numeric chars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
 		bool StrToHex(const std::string& strFrom, std::string& strToHex);
 
+		//Convert string to GUID
+		bool StringToGuid(const wchar_t* pwszSource, LPGUID pGUIDResult);
+
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 #ifdef _WIN64

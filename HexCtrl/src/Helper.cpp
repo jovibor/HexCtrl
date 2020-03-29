@@ -131,4 +131,70 @@ namespace HEXCTRL::INTERNAL {
 
 		return true;
 	}
+
+	//Alternative to UuidFromString() that does not require Rpcrt4.dll
+	bool StringToGuid(const wchar_t* pwszSource, LPGUID pGUIDResult)
+	{					
+		//Check arguments
+		if (!pwszSource || !wcslen(pwszSource ) || !pGUIDResult)
+			return false;
+
+		//Make working copy of source data and empty result GUID
+		CString sBuffer = pwszSource;
+		memset(pGUIDResult, 0, sizeof(GUID));
+
+		//Make lower-case and strip any leading or trailing spaces
+		sBuffer = sBuffer.MakeLower();
+		sBuffer = sBuffer.Trim();
+
+		//Remove all but permitted lower-case hex characters
+		CString sResult;
+		for (size_t i = 0; i < sBuffer.GetLength(); i++)
+		{
+			//TODO: Recode using _istxdigit() - See BinUtil.cpp
+			//
+			const CString sPermittedHexChars = _T("0123456789abcdef");
+			const CString sCurrentCharacter = sBuffer.Mid(i, 1);
+			const CString sIgnoredChars = _T("{-}");
+
+			//Test if this character is a permitted hex character - 0123456789abcdef
+			if (sPermittedHexChars.FindOneOf(sCurrentCharacter) >= 0)
+			{
+				sResult.Append(sCurrentCharacter);
+			}
+			else if (sIgnoredChars.FindOneOf(sCurrentCharacter) >= 0)
+			{
+				//Do nothing - We always ignore {, } and -
+			}			
+			//Quit due to invalid data
+			else
+				return false;
+		}
+
+		//Confirm we now have exactly 32 characters. If we don't then game over
+		//NB: We now have a stripped GUID that is exactly 32 chars long
+		if (sResult.GetLength() != 32)
+			return false;
+
+		//%.8x pGuid->Data1
+		pGUIDResult->Data1 = _tcstoul(sResult.Mid(0, 8), NULL, 16);
+
+		//%.4x pGuid->Data2
+		pGUIDResult->Data2 = (unsigned short)_tcstoul(sResult.Mid(8, 4), NULL, 16);
+
+		//%.4x pGuid->Data3
+		pGUIDResult->Data3 = (unsigned short)_tcstoul(sResult.Mid(12, 4), NULL, 16);
+
+		//%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x pGuid->Data4[0], pGuid->Data4[1], pGuid->Data4[2], pGuid->Data4[3], pGuid->Data4[4], pGuid->Data4[5], pGuid->Data4[6], pGuid->Data4[7] 
+		pGUIDResult->Data4[0] = (unsigned char)_tcstoul(sResult.Mid(16, 2), NULL, 16);
+		pGUIDResult->Data4[1] = (unsigned char)_tcstoul(sResult.Mid(18, 2), NULL, 16);
+		pGUIDResult->Data4[2] = (unsigned char)_tcstoul(sResult.Mid(20, 2), NULL, 16);
+		pGUIDResult->Data4[3] = (unsigned char)_tcstoul(sResult.Mid(22, 2), NULL, 16);
+		pGUIDResult->Data4[4] = (unsigned char)_tcstoul(sResult.Mid(24, 2), NULL, 16);
+		pGUIDResult->Data4[5] = (unsigned char)_tcstoul(sResult.Mid(26, 2), NULL, 16);
+		pGUIDResult->Data4[6] = (unsigned char)_tcstoul(sResult.Mid(28, 2), NULL, 16);
+		pGUIDResult->Data4[7] = (unsigned char)_tcstoul(sResult.Mid(30, 2), NULL, 16);
+
+		return true;
+	}
 }

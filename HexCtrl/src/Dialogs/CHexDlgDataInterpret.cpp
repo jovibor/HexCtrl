@@ -17,13 +17,14 @@ using namespace HEXCTRL::INTERNAL;
 
 //Time calculation constants
 //
-#define FTTICKSPERMS				10000			//Number of 100ns intervals in a milli-second
-#define FTTICKSPERSECOND			10000000		//Number of 100ns intervals in a second
-#define HOURSPERDAY					24				//24 hours per day
-#define SECONDSPERHOUR				3600			//3600 seconds per hour
-#define FILETIME1582OFFSETDAYS		6653			//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 15 Oct 1582. Add 6653 days to convert to GUID time
-#define FILETIME1970_LOW			0xd53e8000		//1st Jan 1970 as FILETIME
-#define FILETIME1970_HIGH			0x019db1de		//Used for Unix and Java times
+const WCHAR* NIBBLES[] = { L"0000", L"0001", L"0010", L"0011", L"0100", L"0101", L"0110", L"0111",	L"1000", L"1001", L"1010", L"1011", L"1100", L"1101", L"1110", L"1111" };
+constexpr unsigned int FTTICKSPERMS = 10000;				//Number of 100ns intervals in a milli-second
+constexpr unsigned long FTTICKSPERSECOND = 10000000;		//Number of 100ns intervals in a second
+constexpr unsigned int HOURSPERDAY = 24;					//24 hours per day
+constexpr unsigned int SECONDSPERHOUR = 3600;				//3600 seconds per hour
+constexpr unsigned int FILETIME1582OFFSETDAYS = 6653;		//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 15 Oct 1582. Add 6653 days to convert to GUID time
+constexpr unsigned long FILETIME1970_LOW = 0xd53e8000;		//1st Jan 1970 as FILETIME
+constexpr unsigned long FILETIME1970_HIGH = 0x019db1de;		//Used for Unix and Java times
 
 BEGIN_MESSAGE_MAP(CHexDlgDataInterpret, CDialogEx)
 	ON_WM_CLOSE()
@@ -86,7 +87,7 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_ULONG, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"unsigned long:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_LONGLONG, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"long long:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_ULONGLONG, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"unsigned long long:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA{ EGroup::DIGITS, EName::NAME_GUID, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"GUID:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_GUID, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"GUID:", L"0") });
 	auto pDigits = new CMFCPropertyGridProperty(L"Digits:");
 	for (auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::DIGITS)
@@ -104,12 +105,12 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_TIME32T, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"time32_t:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_TIME64T, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"time64_t:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_FILETIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"FILETIME:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_OLEDATETIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"OLE time:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_JAVATIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"Java time:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_MSDOSTIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"MS-DOS time:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_MSDTTMTIME, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"MS-DTTM time:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_SYSTEMTIME, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"Windows SYSTEMTIME:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA{ EGroup::TIME, EName::NAME_GUIDTIME, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"GUID v1 UTC time:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_OLEDATETIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"OLE time:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_JAVATIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"Java time:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_MSDOSTIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"MS-DOS time:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_MSDTTMTIME, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"MS-DTTM time:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_SYSTEMTIME, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"Windows SYSTEMTIME:", L"0") });
+	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_GUIDTIME, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"GUID v1 UTC time:", L"0") });
 	auto pTime = new CMFCPropertyGridProperty(L"Time:");
 	for (auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::TIME)
@@ -145,40 +146,99 @@ void CHexDlgDataInterpret::OnOK()
 	switch (refGridData->eGroup)
 	{
 	case EGroup::DIGITS:
-	{
-		LONGLONG llData;
-		ULONGLONG ullData;
-		if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
-			break;
+	{		
 		switch (refGridData->eName)
 		{
+		case EName::NAME_BINARY:
+		{			
+			CString sBinary;
+			const CString sPermitted = L"01";
+			for (size_t i = 0; i < wstrValue.GetLength(); i++)
+			{
+				if (sPermitted.FindOneOf(wstrValue.Mid(i, 1)) >= 0)
+					sBinary.Append(wstrValue.Mid(i, 1));
+			}
+			
+			if (sBinary.GetLength() == 8)
+			{				
+				long lData = wcstol(sBinary.GetString(), NULL, 2);
+				fSuccess = SetDigitData<UCHAR>(lData);
+			}
+		}
+		break;
+		case EName::NAME_GUID:
+		{
+			GUID guid {};
+			if (StringToGuid(wstrValue.GetString(), &guid))
+			{
+				m_pHexCtrl->SetData(m_ullOffset, guid);
+				fSuccess = true;
+			}
+		}
+		break;
 		case EName::NAME_CHAR:
+		{
+			LONGLONG llData{};
+			if (!StrToInt64ExW(wstrValue, m_fShowAsHex ? STIF_SUPPORT_HEX : 0, &llData))
+				break;
 			fSuccess = SetDigitData<CHAR>(llData);
-			break;
+		}
+		break;
 		case EName::NAME_UCHAR:
-			fSuccess = SetDigitData<UCHAR>(llData);
-			break;
+		{
+			LONGLONG llData{};
+			if (!StrToInt64ExW(wstrValue, m_fShowAsHex ? STIF_SUPPORT_HEX : 0, &llData))
+				break;
+			fSuccess = SetDigitData<UCHAR>(llData);			
+		}
+		break;
 		case EName::NAME_SHORT:
+		{
+			LONGLONG llData{};
+			if (!StrToInt64ExW(wstrValue, m_fShowAsHex ? STIF_SUPPORT_HEX : 0, &llData))
+				break;
 			fSuccess = SetDigitData<SHORT>(llData);
-			break;
+		}
+		break;
 		case EName::NAME_USHORT:
+		{
+			LONGLONG llData{};
+			if (!StrToInt64ExW(wstrValue, m_fShowAsHex ? STIF_SUPPORT_HEX : 0, &llData))
+				break;
 			fSuccess = SetDigitData<USHORT>(llData);
-			break;
+		}
+		break;
 		case EName::NAME_LONG:
+		{
+			LONGLONG llData{};
+			if (!StrToInt64ExW(wstrValue, m_fShowAsHex ? STIF_SUPPORT_HEX : 0, &llData))
+				break;
 			fSuccess = SetDigitData<LONG>(llData);
-			break;
+		}
+		break;
 		case EName::NAME_ULONG:
+		{
+			LONGLONG llData{};
+			if (!StrToInt64ExW(wstrValue, m_fShowAsHex ? STIF_SUPPORT_HEX : 0, &llData))
+				break;
 			fSuccess = SetDigitData<ULONG>(llData);
-			break;
+		}
+		break;
 		case EName::NAME_LONGLONG:
+		{
+			LONGLONG llData{};
 			if (WCharsToll(wstrValue, llData, false))
 				fSuccess = SetDigitData<LONGLONG>(llData);
-			break;
-		case EName::NAME_ULONGLONG:
-			if (WCharsToUll(wstrValue, ullData, false))
-				fSuccess = SetDigitData<ULONGLONG>(static_cast<LONGLONG>(ullData));
-			break;
 		}
+		break;
+		case EName::NAME_ULONGLONG:
+		{
+			ULONGLONG ullData;
+			if (WCharsToUll(wstrValue, ullData, m_fShowAsHex))
+				fSuccess = SetDigitData<ULONGLONG>(static_cast<LONGLONG>(ullData));
+		}
+		break;
+		};
 	}
 	break;
 	case EGroup::FLOAT:
@@ -189,7 +249,7 @@ void CHexDlgDataInterpret::OnOK()
 		{
 			wchar_t* pEndPtr;
 			float fl = wcstof(wstrValue, &pEndPtr);
-			if (fl == 0 && (pEndPtr == wstrValue.GetBuffer() || *pEndPtr != '\0'))
+			if (fl == 0 && (pEndPtr == wstrValue.GetString() || *pEndPtr != '\0'))
 				break;
 			//TODO:	DWORD dw=std::bit_cast<DWORD>(fl);
 			DWORD dwData = *reinterpret_cast<DWORD*>(&fl);
@@ -203,7 +263,7 @@ void CHexDlgDataInterpret::OnOK()
 		{
 			wchar_t* pEndPtr;
 			double dd = wcstod(wstrValue, &pEndPtr);
-			if (dd == 0 && (pEndPtr == wstrValue.GetBuffer() || *pEndPtr != '\0'))
+			if (dd == 0 && (pEndPtr == wstrValue.GetString() || *pEndPtr != '\0'))
 				break;
 			QWORD qwData = *reinterpret_cast<QWORD*>(&dd);
 			if (m_fBigEndian)
@@ -242,9 +302,9 @@ void CHexDlgDataInterpret::OnOK()
 				time64 = _byteswap_uint64(time64);
 			m_pHexCtrl->SetData(m_ullOffset, static_cast<QWORD>(time64));
 			fSuccess = true;
-		};
-		break;
 		}
+		break;		
+		};
 	}
 	if (!fSuccess)
 		MessageBoxW(L"Wrong number format or out of range.", L"Data error...", MB_ICONERROR);
@@ -350,12 +410,10 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	WCHAR buff[32];
 	std::wstring wstrFormat { };
 
-	//Binary
-	const WCHAR* nibbles[] = { L"0000", L"0001", L"0010", L"0011", L"0100", L"0101", L"0110", L"0111",	L"1000", L"1001", L"1010", L"1011", L"1100", L"1101", L"1110", L"1111" };
-	wstrFormat = L"%s%s";
-	
+	//Binary	
+	wstrFormat = L"%s%s";	
 	const auto byte = m_pHexCtrl->GetData<BYTE>(ullOffset);
-	swprintf_s(buff, _countof(buff), wstrFormat.data(), nibbles[byte >> 4], nibbles[byte & 0x0F]);
+	swprintf_s(buff, _countof(buff), wstrFormat.data(), NIBBLES[byte >> 4], NIBBLES[byte & 0x0F]);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_BINARY; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -607,19 +665,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_JAVATIME; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(wstrTime.data());
 
-	//MS-DOS date/time
-	#pragma pack(push, 1)
-	typedef union _MSDOSDATETIME		//MS-DOS Date+Time structure (as used in FAT file system directory entry)
-	{									//See: https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
-		struct
-		{
-			WORD wTime;					//Time component
-			WORD wDate;					//Date component
-		} TimeDate;
-		DWORD dwTimeDate;
-	} MSDOSDATETIME, *PMSDOSDATETIME;
-	#pragma pack(pop)
-	   	 
+	//MS-DOS date/time	   	 
 	wstrTime = L"N/A";
 	FILETIME ftMSDOS;
 	MSDOSDATETIME msdosDateTime;
@@ -632,26 +678,9 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_MSDOSTIME; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstrTime.data());
+		iter->pProp->SetValue(wstrTime.data());		
 	
 	//Microsoft DTTM time (as used by Microsoft Compound Document format)
-	//See: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/164c0c2e-6031-439e-88ad-69d00b69f414
-	#pragma pack(push, 1)
-	typedef union _DTTM
-	{
-		struct
-		{
-			unsigned long minute : 6;		//6+5+5+4+9+3=32
-			unsigned long hour : 5;
-			unsigned long dayofmonth : 5;
-			unsigned long month : 4;
-			unsigned long year : 9;
-			unsigned long weekday : 3;
-		} components;
-		unsigned long dwValue;
-	} DTTM, *PDTTM;
-	#pragma pack(pop)
-	
 	wstrTime = L"N/A";
 	DTTM dttm;
 	dttm.dwValue = dword;
@@ -672,18 +701,6 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_MSDTTMTIME; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(wstrTime.data());
-
-	#pragma pack(push, 1)
-	typedef union _DQWORD128
-	{									
-		struct
-		{
-			QWORD qwLow;
-			QWORD qwHigh;
-		} Value;
-		GUID gGUID;
-	} DQWORD128, *PDQWORD128;
-	#pragma pack(pop)
 
 	auto dqword = m_pHexCtrl->GetData<DQWORD128>(ullOffset);	
 	if (m_fBigEndian)
