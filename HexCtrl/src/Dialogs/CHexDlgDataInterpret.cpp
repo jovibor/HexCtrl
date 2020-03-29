@@ -153,7 +153,7 @@ void CHexDlgDataInterpret::OnOK()
 		{			
 			CString sBinary;
 			const CString sPermitted = L"01";
-			for (size_t i = 0; i < wstrValue.GetLength(); i++)
+			for (int i = 0; i < wstrValue.GetLength(); i++)
 			{
 				if (sPermitted.FindOneOf(wstrValue.Mid(i, 1)) >= 0)
 					sBinary.Append(wstrValue.Mid(i, 1));
@@ -179,7 +179,7 @@ void CHexDlgDataInterpret::OnOK()
 		case EName::NAME_CHAR:
 		{
 			LONGLONG llData{};
-			if (!StrToInt64ExW(wstrValue, m_fShowAsHex ? STIF_SUPPORT_HEX : 0, &llData))
+			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
 				break;
 			fSuccess = SetDigitData<CHAR>(llData);
 		}
@@ -187,7 +187,7 @@ void CHexDlgDataInterpret::OnOK()
 		case EName::NAME_UCHAR:
 		{
 			LONGLONG llData{};
-			if (!StrToInt64ExW(wstrValue, m_fShowAsHex ? STIF_SUPPORT_HEX : 0, &llData))
+			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
 				break;
 			fSuccess = SetDigitData<UCHAR>(llData);			
 		}
@@ -195,7 +195,7 @@ void CHexDlgDataInterpret::OnOK()
 		case EName::NAME_SHORT:
 		{
 			LONGLONG llData{};
-			if (!StrToInt64ExW(wstrValue, m_fShowAsHex ? STIF_SUPPORT_HEX : 0, &llData))
+			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
 				break;
 			fSuccess = SetDigitData<SHORT>(llData);
 		}
@@ -203,7 +203,7 @@ void CHexDlgDataInterpret::OnOK()
 		case EName::NAME_USHORT:
 		{
 			LONGLONG llData{};
-			if (!StrToInt64ExW(wstrValue, m_fShowAsHex ? STIF_SUPPORT_HEX : 0, &llData))
+			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
 				break;
 			fSuccess = SetDigitData<USHORT>(llData);
 		}
@@ -211,7 +211,7 @@ void CHexDlgDataInterpret::OnOK()
 		case EName::NAME_LONG:
 		{
 			LONGLONG llData{};
-			if (!StrToInt64ExW(wstrValue, m_fShowAsHex ? STIF_SUPPORT_HEX : 0, &llData))
+			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
 				break;
 			fSuccess = SetDigitData<LONG>(llData);
 		}
@@ -219,7 +219,7 @@ void CHexDlgDataInterpret::OnOK()
 		case EName::NAME_ULONG:
 		{
 			LONGLONG llData{};
-			if (!StrToInt64ExW(wstrValue, m_fShowAsHex ? STIF_SUPPORT_HEX : 0, &llData))
+			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
 				break;
 			fSuccess = SetDigitData<ULONG>(llData);
 		}
@@ -234,7 +234,7 @@ void CHexDlgDataInterpret::OnOK()
 		case EName::NAME_ULONGLONG:
 		{
 			ULONGLONG ullData;
-			if (WCharsToUll(wstrValue, ullData, m_fShowAsHex))
+			if (WCharsToUll(wstrValue, ullData, false))
 				fSuccess = SetDigitData<ULONGLONG>(static_cast<LONGLONG>(ullData));
 		}
 		break;
@@ -786,6 +786,9 @@ void CHexDlgDataInterpret::UpdateHexCtrl()
 
 CString CHexDlgDataInterpret::SystemTimeToString(PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)
 {
+	if (!pSysTime)
+		return false;
+	
 	if (pSysTime->wDay > 0 && pSysTime->wDay < 32 && pSysTime->wMonth>0 && pSysTime->wMonth < 13 && pSysTime->wYear < 10000 && pSysTime->wHour < 24 && pSysTime->wMinute < 60 && pSysTime->wSecond < 60 && pSysTime->wMilliseconds < 1000)
 	{
 		//Generate human formatted date. Fall back to UK/European if unable to determine

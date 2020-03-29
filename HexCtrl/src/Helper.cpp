@@ -70,6 +70,8 @@ namespace HEXCTRL::INTERNAL {
 	{
 		wchar_t* pEndPtr;
 		int iRadix = fHex ? 16 : 10;
+		if ((wcsstr(pwcsz, L"0x") == pwcsz) || (wcsstr(pwcsz, L"0X") == pwcsz))
+			iRadix = 16; //NB: Avoid radix=0 because this may be treated as octal
 		ull = std::wcstoull(pwcsz, &pEndPtr, iRadix);
 		if ((ull == 0 && (pEndPtr == pwcsz || *pEndPtr != '\0'))
 			|| (ull == ULLONG_MAX && errno == ERANGE))
@@ -82,6 +84,8 @@ namespace HEXCTRL::INTERNAL {
 	{
 		wchar_t* pEndPtr;
 		int iRadix = fHex ? 16 : 10;
+		if ((wcsstr(pwcsz, L"0x") == pwcsz) || (wcsstr(pwcsz, L"0X") == pwcsz))
+			iRadix = 16; //NB: Avoid radix=0 because this may be treated as octal
 		ll = std::wcstoll(pwcsz, &pEndPtr, iRadix);
 		if ((ll == 0 && (pEndPtr == pwcsz || *pEndPtr != '\0'))
 			|| ((ll == LLONG_MAX || ll == LLONG_MIN) && errno == ERANGE))
@@ -149,7 +153,7 @@ namespace HEXCTRL::INTERNAL {
 
 		//Remove all but permitted lower-case hex characters
 		CString sResult;
-		for (size_t i = 0; i < sBuffer.GetLength(); i++)
+		for (int i = 0; i < sBuffer.GetLength(); i++)
 		{
 			//TODO: Recode using _istxdigit() - See BinUtil.cpp
 			//
