@@ -303,7 +303,150 @@ void CHexDlgDataInterpret::OnOK()
 			m_pHexCtrl->SetData(m_ullOffset, static_cast<QWORD>(time64));
 			fSuccess = true;
 		}
-		break;		
+		break;
+		case EName::NAME_FILETIME:
+		{
+			SYSTEMTIME stTime;
+			if (StringToSystemTime(wstrValue, &stTime, true, true))
+			{
+				FILETIME ftTime;
+				if (SystemTimeToFileTime(&stTime, &ftTime))
+				{
+					m_pHexCtrl->SetData(m_ullOffset, ftTime);
+					fSuccess = true;
+				}
+			}				
+		}
+		break;
+		case EName::NAME_OLEDATETIME:
+		{
+			SYSTEMTIME stTime;
+			if (StringToSystemTime(wstrValue, &stTime, true, true))
+			{
+				COleDateTime dt(stTime);
+				if (dt.GetStatus() == COleDateTime::valid)
+				{
+					m_pHexCtrl->SetData(m_ullOffset, dt.m_dt);
+					fSuccess = true;
+				}										
+			}
+		}
+		break;
+		case EName::NAME_JAVATIME:
+		{
+			SYSTEMTIME stTime;
+			if (StringToSystemTime(wstrValue, &stTime, true, true))
+			{
+				FILETIME ftTime;
+				if (SystemTimeToFileTime(&stTime, &ftTime))
+				{
+					//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC
+					LARGE_INTEGER lJavaTicks;
+					lJavaTicks.HighPart = ftTime.dwHighDateTime;
+					lJavaTicks.LowPart = ftTime.dwLowDateTime;
+
+					LARGE_INTEGER lEpochTicks;
+					lEpochTicks.HighPart = FILETIME1970_HIGH;
+					lEpochTicks.LowPart = FILETIME1970_LOW;
+
+					ULONGLONG ullDiffTicks;
+					if (lEpochTicks.QuadPart > lJavaTicks.QuadPart)
+						ullDiffTicks = lEpochTicks.QuadPart - lJavaTicks.QuadPart;
+					else
+						ullDiffTicks = lJavaTicks.QuadPart - lEpochTicks.QuadPart;
+				
+					ULONGLONG ullDiffMillis = ullDiffTicks/FTTICKSPERMS;
+					m_pHexCtrl->SetData(m_ullOffset, static_cast<ULONGLONG>(ullDiffMillis));
+					fSuccess = true;
+				}
+			}
+		}
+		break;
+		case EName::NAME_MSDOSTIME:
+		{
+			SYSTEMTIME stTime;
+			if (StringToSystemTime(wstrValue, &stTime, true, true))
+			{
+				FILETIME ftTime;
+				if (SystemTimeToFileTime(&stTime, &ftTime))
+				{
+					MSDOSDATETIME msdosDateTime;					
+					if (FileTimeToDosDateTime(&ftTime, &msdosDateTime.TimeDate.wDate, &msdosDateTime.TimeDate.wTime))
+					{
+						m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(msdosDateTime.dwTimeDate));
+						fSuccess = true;
+					}
+				}
+			}
+		}
+		break;
+		case EName::NAME_MSDTTMTIME:
+		{
+			SYSTEMTIME stTime;
+			if (StringToSystemTime(wstrValue, &stTime, true, true))
+			{
+				//Microsoft DTTM time (as used by Microsoft Compound Document format)
+				DTTM dttm;
+				dttm.components.year = stTime.wYear - 1900;
+				dttm.components.month = stTime.wMonth;
+				dttm.components.weekday = stTime.wDayOfWeek;
+				dttm.components.dayofmonth = stTime.wDay;
+				dttm.components.hour = stTime.wHour;
+				dttm.components.minute = stTime.wMinute;
+
+				m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(dttm.dwValue));
+				fSuccess = true;				
+			}
+		}
+		break;
+		case EName::NAME_SYSTEMTIME:
+		{
+			SYSTEMTIME stTime;
+			if (StringToSystemTime(wstrValue, &stTime, true, true))
+			{
+				m_pHexCtrl->SetData(m_ullOffset, stTime);
+				fSuccess = true;
+			}
+		}
+		break;
+		case EName::NAME_GUIDTIME:
+		{
+			auto dqword = m_pHexCtrl->GetData<DQWORD128>(m_ullOffset);			
+			unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
+			if (unGuidVersion == 1)
+			{
+				//RFC4122: The timestamp is a 60-bit value.  For UUID version 1, this is represented by Coordinated Universal Time (UTC) as a count of 100-
+				//nanosecond intervals since 00:00:00.00, 15 October 1582 (the date of Gregorian reform to the Christian calendar).
+				//
+				//Both FILETIME and GUID time are based upon 100ns intervals
+				//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Add 6653 days to convert to GUID time
+				//
+				SYSTEMTIME stTime;
+				if (StringToSystemTime(wstrValue, &stTime, true, true))
+				{
+					FILETIME ftTime;
+					if (SystemTimeToFileTime(&stTime, &ftTime))
+					{
+						LARGE_INTEGER qwGUIDTime;
+						qwGUIDTime.HighPart = ftTime.dwHighDateTime;
+						qwGUIDTime.LowPart = ftTime.dwLowDateTime;
+						
+						ULARGE_INTEGER ullAddTicks;
+						ullAddTicks.QuadPart = QWORD(FTTICKSPERSECOND)*QWORD(SECONDSPERHOUR)*QWORD(HOURSPERDAY)*QWORD(FILETIME1582OFFSETDAYS);
+						qwGUIDTime.QuadPart += ullAddTicks.QuadPart;
+						
+						//Encode version 1 GUID with time
+						dqword.gGUID.Data1 = qwGUIDTime.LowPart & 0xffffffffUL;					
+						dqword.gGUID.Data2 = qwGUIDTime.HighPart & 0xffff;						
+						dqword.gGUID.Data3 = ((qwGUIDTime.HighPart >> 16) & 0x0fff) | 0x1000;	//Including Type 1 flag (0x1000)
+
+						m_pHexCtrl->SetData(m_ullOffset, dqword);
+						fSuccess = true;
+					}
+				}		
+			}			
+		}
+		break;
 		};
 	}
 	if (!fSuccess)
@@ -827,4 +970,64 @@ CString CHexDlgDataInterpret::SystemTimeToString(PSYSTEMTIME pSysTime, bool bInc
 	}
 	else
 		return L"N/A";
+}
+
+bool CHexDlgDataInterpret::StringToSystemTime(const CString sDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)
+{
+	if (!sDateTime.GetLength() || !pSysTime)
+		return false;
+	
+	memset(pSysTime, 0, sizeof(SYSTEMTIME));
+
+	//Normalise the input string by replacing non-numeric characters except space with /
+	//This should regardless of the current date/time separator character
+	CString sDateTimeCooked;
+	for (int i = 0; i < sDateTime.GetLength(); i++)
+	{
+		if (iswdigit(sDateTime.GetAt(i)) || sDateTime.GetAt(i)==L' ')
+			sDateTimeCooked.AppendChar(sDateTime.GetAt(i));
+		else
+			sDateTimeCooked.AppendChar(L'/');		
+	}
+	
+	//Parse date component
+	if (bIncludeDate)
+	{
+		switch (m_dwDateFormat)
+		{
+			//0=Month-Day-Year
+		case 0:		swscanf_s(sDateTimeCooked, L"%2hd/%2hd/%4hd", &pSysTime->wMonth, &pSysTime->wDay, &pSysTime->wYear);
+			break;
+
+			//2=Year-Month-Day 
+		case 2:		swscanf_s(sDateTimeCooked, L"%4hd/%2hd/%2hd", &pSysTime->wYear, &pSysTime->wMonth, &pSysTime->wDay);
+			break;
+
+			//1=Day-Month-Year (default)
+		default:	swscanf_s(sDateTimeCooked, L"%2hd/%2hd/%4hd", &pSysTime->wDay, &pSysTime->wMonth, &pSysTime->wYear);
+			break;
+		}
+		
+		//Find time seperator (if present)
+		int nPos = sDateTimeCooked.Find(L" ");
+		if (nPos > 0)
+			sDateTimeCooked = sDateTimeCooked.Mid(nPos + 1);
+	}
+	
+	//Parse time component
+	if (bIncludeTime)
+	{
+		swscanf_s(sDateTimeCooked, L"%2hd/%2hd/%2hd/%3hd", &pSysTime->wHour, &pSysTime->wMinute, &pSysTime->wSecond, &pSysTime->wMilliseconds);
+
+		//Ensure valid SYSTEMTIME is calculated but only if time was specified but date was not
+		if (!bIncludeDate)
+		{			
+			pSysTime->wYear = 1900;
+			pSysTime->wMonth = 1;
+			pSysTime->wDay = 1;
+		}
+	}
+
+	FILETIME ftValidCheck;
+	return SystemTimeToFileTime(pSysTime, &ftValidCheck);
 }

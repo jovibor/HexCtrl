@@ -79,6 +79,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioDec();
 		afx_msg void OnClickRadioHex();
 		CString SystemTimeToString(PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
+		bool StringToSystemTime(const CString sDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
 		template <typename T>bool SetDigitData(LONGLONG llData);
 		DECLARE_MESSAGE_MAP()
 	private:
