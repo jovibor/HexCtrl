@@ -360,10 +360,17 @@ void CHexDlgDataInterpret::OnOK()
 				FILETIME ftTime;
 				if (SystemTimeToFileTime(&stTime, &ftTime))
 				{
-					m_pHexCtrl->SetData(m_ullOffset, ftTime);
+					ULARGE_INTEGER ullTime;
+					ullTime.LowPart = ftTime.dwLowDateTime;
+					ullTime.HighPart = ftTime.dwHighDateTime;
+
+					if (m_fBigEndian)
+						ullTime.QuadPart = _byteswap_uint64(ullTime.QuadPart);
+					
+					m_pHexCtrl->SetData(m_ullOffset, ullTime.QuadPart);
 					fSuccess = true;
 				}
-			}				
+			}
 		}
 		break;
 		case EName::NAME_OLEDATETIME:
@@ -374,7 +381,12 @@ void CHexDlgDataInterpret::OnOK()
 				COleDateTime dt(stTime);
 				if (dt.GetStatus() == COleDateTime::valid)
 				{
-					m_pHexCtrl->SetData(m_ullOffset, dt.m_dt);
+					ULONGLONG ullValue = (ULONGLONG)dt.m_dt;
+					
+					if (m_fBigEndian)
+						ullValue = _byteswap_uint64(ullValue);
+					
+					m_pHexCtrl->SetData(m_ullOffset, ullValue);
 					fSuccess = true;
 				}										
 			}
@@ -404,6 +416,10 @@ void CHexDlgDataInterpret::OnOK()
 						ullDiffTicks = lJavaTicks.QuadPart - lEpochTicks.QuadPart;
 				
 					ULONGLONG ullDiffMillis = ullDiffTicks/FTTICKSPERMS;
+
+					if (m_fBigEndian)
+						ullDiffMillis = _byteswap_uint64(ullDiffMillis);
+
 					m_pHexCtrl->SetData(m_ullOffset, static_cast<ULONGLONG>(ullDiffMillis));
 					fSuccess = true;
 				}
@@ -1018,7 +1034,7 @@ const CString CHexDlgDataInterpret::GetCurrentUserDateFormatString()
 CString CHexDlgDataInterpret::SystemTimeToString(PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)
 {
 	if (!pSysTime)
-		return false;
+		return L"Invalid";
 	
 	if (pSysTime->wDay > 0 && pSysTime->wDay < 32 && pSysTime->wMonth>0 && pSysTime->wMonth < 13 && pSysTime->wYear < 10000 && pSysTime->wHour < 24 && pSysTime->wMinute < 60 && pSysTime->wSecond < 60 && pSysTime->wMilliseconds < 1000)
 	{
