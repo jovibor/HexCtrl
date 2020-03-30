@@ -23,8 +23,9 @@ constexpr unsigned long FTTICKSPERSECOND = 10000000;		//Number of 100ns interval
 constexpr unsigned int HOURSPERDAY = 24;					//24 hours per day
 constexpr unsigned int SECONDSPERHOUR = 3600;				//3600 seconds per hour
 constexpr unsigned int FILETIME1582OFFSETDAYS = 6653;		//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 15 Oct 1582. Add 6653 days to convert to GUID time
-constexpr unsigned long FILETIME1970_LOW = 0xd53e8000;		//1st Jan 1970 as FILETIME
-constexpr unsigned long FILETIME1970_HIGH = 0x019db1de;		//Used for Unix and Java times
+constexpr unsigned long FILETIME1970_LOW = 0xd53e8000UL;	//1st Jan 1970 as FILETIME
+constexpr unsigned long FILETIME1970_HIGH = 0x019db1deUL;	//Used for Unix and Java times
+constexpr unsigned long long UNIXEPOCHDIFFERENCE = 11644473600ULL;//Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970
 
 BEGIN_MESSAGE_MAP(CHexDlgDataInterpret, CDialogEx)
 	ON_WM_CLOSE()
@@ -257,34 +258,98 @@ void CHexDlgDataInterpret::OnOK()
 		break;
 		case EName::NAME_TIME32T:
 		{
-			tm tm { };
-			int iYear { };
-			swscanf_s(wstrValue, L"%2i/%2i/%4i %2i:%2i:%2i", &tm.tm_mday, &tm.tm_mon, &iYear, &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
-			tm.tm_year = iYear - 1900;
-			--tm.tm_mon; //Months start from 0.
-			__time32_t time32 = _mktime32(&tm);
-			if (time32 == -1)
-				break;
-			if (m_fBigEndian)
-				time32 = _byteswap_ulong(time32);
-			m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(time32));
-			fSuccess = true;
+			//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
+			SYSTEMTIME stTime;
+			if (StringToSystemTime(wstrValue, &stTime, true, true))
+			{
+				//Unix times are signed but value before 1st January 1970 is not considered valid
+				//This is apparently because early complilers didn't support unsigned types. _mktime32() has the same limit
+				if (stTime.wYear >= 1970)
+				{
+					FILETIME ftTime;
+					if (SystemTimeToFileTime(&stTime, &ftTime))
+					{					
+						//Convert ticks to seconds and adjust epoch
+						LARGE_INTEGER lTicks;
+						lTicks.HighPart = ftTime.dwHighDateTime;
+						lTicks.LowPart = ftTime.dwLowDateTime;
+						lTicks.QuadPart /= FTTICKSPERSECOND;
+						lTicks.QuadPart -= UNIXEPOCHDIFFERENCE;
+
+						if (lTicks.QuadPart < LONG_MAX)
+						{
+							LONG lTime32 = (LONG)lTicks.QuadPart;
+
+							if (m_fBigEndian)
+								lTime32 = _byteswap_ulong(lTime32);
+
+							m_pHexCtrl->SetData(m_ullOffset, static_cast<LONG>(lTime32));
+							fSuccess = true;
+						}
+					}
+				}
+			}
+			
+			//tm tm { };
+			//int iYear { };
+			//swscanf_s(wstrValue, L"%2i/%2i/%4i %2i:%2i:%2i", &tm.tm_mday, &tm.tm_mon, &iYear, &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
+			//tm.tm_year = iYear - 1900;
+			//--tm.tm_mon; //Months start from 0.
+			//__time32_t time32 = _mktime32(&tm);
+			//if (time32 == -1)
+			//	break;
+			//if (m_fBigEndian)
+			//	time32 = _byteswap_ulong(time32);
+			//m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(time32));
+			//fSuccess = true;
 		}
 		break;
 		case EName::NAME_TIME64T:
 		{
-			tm tm { };
-			int iYear { };
-			swscanf_s(wstrValue, L"%2i/%2i/%4i %2i:%2i:%2i", &tm.tm_mday, &tm.tm_mon, &iYear, &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
-			tm.tm_year = iYear - 1900;
-			--tm.tm_mon; //Months start from 0.
-			__time64_t time64 = _mktime64(&tm);
-			if (time64 == -1)
-				break;
-			if (m_fBigEndian)
-				time64 = _byteswap_uint64(time64);
-			m_pHexCtrl->SetData(m_ullOffset, static_cast<QWORD>(time64));
-			fSuccess = true;
+			//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
+			SYSTEMTIME stTime;
+			if (StringToSystemTime(wstrValue, &stTime, true, true))
+			{
+				//Unix times are signed but value before 1st January 1970 is not considered valid
+				//This is apparently because early complilers didn't support unsigned types. _mktime64() has the same limit
+				if (stTime.wYear >= 1970)
+				{
+					FILETIME ftTime;
+					if (SystemTimeToFileTime(&stTime, &ftTime))
+					{
+						//Convert ticks to seconds and adjust epoch
+						LARGE_INTEGER lTicks;
+						lTicks.HighPart = ftTime.dwHighDateTime;
+						lTicks.LowPart = ftTime.dwLowDateTime;
+						lTicks.QuadPart /= FTTICKSPERSECOND;
+						lTicks.QuadPart -= UNIXEPOCHDIFFERENCE;
+
+						if (lTicks.QuadPart < LONGLONG_MAX)
+						{
+							LONGLONG llTime64 = (LONGLONG)lTicks.QuadPart;
+
+							if (m_fBigEndian)
+								llTime64 = _byteswap_uint64(llTime64);
+
+							m_pHexCtrl->SetData(m_ullOffset, static_cast<LONGLONG>(llTime64));
+							fSuccess = true;
+						}
+					}
+				}
+			}
+
+			//tm tm { };
+			//int iYear { };
+			//swscanf_s(wstrValue, L"%2i/%2i/%4i %2i:%2i:%2i", &tm.tm_mday, &tm.tm_mon, &iYear, &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
+			//tm.tm_year = iYear - 1900;
+			//--tm.tm_mon; //Months start from 0.
+			//__time64_t time64 = _mktime64(&tm);
+			//if (time64 == -1)
+			//	break;
+			//if (m_fBigEndian)
+			//	time64 = _byteswap_uint64(time64);
+			//m_pHexCtrl->SetData(m_ullOffset, static_cast<QWORD>(time64));
+			//fSuccess = true;
 		}
 		break;
 		case EName::NAME_FILETIME:
