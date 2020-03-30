@@ -582,6 +582,9 @@ BOOL CHexDlgDataInterpret::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT * pRes
 			case ESize::SIZE_QWORD:
 				m_ullSize = static_cast<ULONGLONG>(ESize::SIZE_QWORD);
 				break;
+			case ESize::SIZE_DQWORD:
+				m_ullSize = static_cast<ULONGLONG>(ESize::SIZE_DQWORD);
+				break;
 			}
 			UpdateHexCtrl();
 		}
