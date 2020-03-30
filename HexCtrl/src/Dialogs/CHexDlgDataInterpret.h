@@ -36,16 +36,23 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioBe();
 		afx_msg void OnClickRadioDec();
 		afx_msg void OnClickRadioHex();
+		const CString GetCurrentUserDateFormatString();
+		CString SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime);
+		bool StringToSystemTime(const CString& sDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
 		template <typename T>bool SetDigitData(LONGLONG llData);
+		bool StringToGuid(const wchar_t* pwszSource, LPGUID pGUIDResult);
 		DECLARE_MESSAGE_MAP()
 	private:
-		enum class EGroup : WORD { DIGITS, FLOAT, TIME };
+		enum class EGroup : WORD { DIGITS, FLOAT, TIME, MISC };
 		enum class EName : WORD {
+			NAME_BINARY,
 			NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
-			NAME_LONG, NAME_ULONG, NAME_LONGLONG, NAME_ULONGLONG,
-			NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T
+			NAME_LONG, NAME_ULONG, NAME_LONGLONG, NAME_ULONGLONG, NAME_GUID,
+			NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
+			NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
+			NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME
 		};
-		enum class ESize : WORD { SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4, SIZE_QWORD = 0x8 };
+		enum class ESize : WORD { SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4, SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10 };
 		struct GRIDDATA
 		{
 			EGroup eGroup { };
@@ -53,6 +60,48 @@ namespace HEXCTRL::INTERNAL
 			ESize eSize { };
 			CMFCPropertyGridProperty* pProp { };
 		};
+#pragma pack(push, 1)
+		typedef union _MSDOSDATETIME //MS-DOS Date+Time structure (as used in FAT file system directory entry)
+		{							 //See: https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
+			struct
+			{
+				WORD wTime;	//Time component
+				WORD wDate;	//Date component
+			} TimeDate;
+			DWORD dwTimeDate;
+		} MSDOSDATETIME, *PMSDOSDATETIME;
+#pragma pack(pop)
+
+		//Microsoft DTTM time (as used by Microsoft Compound Document format)
+		//See: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/164c0c2e-6031-439e-88ad-69d00b69f414
+#pragma pack(push, 1)
+		typedef union _DTTM
+		{
+			struct
+			{
+				unsigned long minute : 6; //6+5+5+4+9+3=32
+				unsigned long hour : 5;
+				unsigned long dayofmonth : 5;
+				unsigned long month : 4;
+				unsigned long year : 9;
+				unsigned long weekday : 3;
+			} components;
+			unsigned long dwValue;
+		} DTTM, *PDTTM;
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+		typedef union _DQWORD128
+		{
+			struct
+			{
+				QWORD qwLow;
+				QWORD qwHigh;
+			} Value;
+			GUID gGUID;
+		} DQWORD128, *PDQWORD128;
+#pragma pack(pop)
+	private:
 		CHexCtrl* m_pHexCtrl { };
 		bool m_fVisible { false };
 		bool m_fBigEndian { false };
@@ -63,12 +112,17 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullSize { };
 		HDITEMW m_hdItemPropGrid { };
+		DWORD m_dwDateFormat { };
+		WCHAR m_wszDateSeparator[4] { };
 	};
 
 	template<typename T>
 	inline bool CHexDlgDataInterpret::SetDigitData(LONGLONG llData)
 	{
-		if constexpr (!std::is_same_v<T, ULONGLONG> && !std::is_same_v<T, LONGLONG>) //Do not check numeric_limits for sizeof(QWORD)
+		//Do not check numeric_limits for sizeof(QWORD).
+		//There is no sense for that, because input argument is LONGLONG,
+		//and it can not be bigger than std::numeric_limits<(U)LONGLONG>::max()
+		if constexpr (!std::is_same_v<T, ULONGLONG> && !std::is_same_v<T, LONGLONG>)
 		{
 			if (llData > static_cast<LONGLONG>(std::numeric_limits<T>::max())
 				|| llData < static_cast<LONGLONG>(std::numeric_limits<T>::min()))
