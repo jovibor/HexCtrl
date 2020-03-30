@@ -81,6 +81,7 @@ namespace HEXCTRL::INTERNAL
 		CString SystemTimeToString(PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
 		bool StringToSystemTime(const CString sDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
 		template <typename T>bool SetDigitData(LONGLONG llData);
+		bool StringToGuid(const wchar_t* pwszSource, LPGUID pGUIDResult);
 		DECLARE_MESSAGE_MAP()
 	private:
 		enum class EGroup : WORD { DIGITS, FLOAT, TIME };

@@ -176,54 +176,6 @@ void CHexDlgDataInterpret::OnOK()
 			}
 		}
 		break;
-		case EName::NAME_CHAR:
-		{
-			LONGLONG llData{};
-			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
-				break;
-			fSuccess = SetDigitData<CHAR>(llData);
-		}
-		break;
-		case EName::NAME_UCHAR:
-		{
-			LONGLONG llData{};
-			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
-				break;
-			fSuccess = SetDigitData<UCHAR>(llData);			
-		}
-		break;
-		case EName::NAME_SHORT:
-		{
-			LONGLONG llData{};
-			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
-				break;
-			fSuccess = SetDigitData<SHORT>(llData);
-		}
-		break;
-		case EName::NAME_USHORT:
-		{
-			LONGLONG llData{};
-			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
-				break;
-			fSuccess = SetDigitData<USHORT>(llData);
-		}
-		break;
-		case EName::NAME_LONG:
-		{
-			LONGLONG llData{};
-			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
-				break;
-			fSuccess = SetDigitData<LONG>(llData);
-		}
-		break;
-		case EName::NAME_ULONG:
-		{
-			LONGLONG llData{};
-			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
-				break;
-			fSuccess = SetDigitData<ULONG>(llData);
-		}
-		break;
 		case EName::NAME_LONGLONG:
 		{
 			LONGLONG llData{};
@@ -236,6 +188,35 @@ void CHexDlgDataInterpret::OnOK()
 			ULONGLONG ullData;
 			if (WCharsToUll(wstrValue, ullData, false))
 				fSuccess = SetDigitData<ULONGLONG>(static_cast<LONGLONG>(ullData));
+		}
+		break;
+		default:
+		{
+			LONGLONG llData{};
+			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
+				break;
+
+			switch (refGridData->eName)
+			{
+				case EName::NAME_CHAR:
+					fSuccess = SetDigitData<CHAR>(llData);
+					break;
+				case EName::NAME_UCHAR:
+					fSuccess = SetDigitData<UCHAR>(llData);
+					break;
+				case EName::NAME_SHORT:
+					fSuccess = SetDigitData<SHORT>(llData);
+					break;
+				case EName::NAME_USHORT:
+					fSuccess = SetDigitData<USHORT>(llData);
+					break;
+				case EName::NAME_LONG:
+					fSuccess = SetDigitData<LONG>(llData);
+					break;
+				case EName::NAME_ULONG:
+					fSuccess = SetDigitData<ULONG>(llData);
+					break;
+			};
 		}
 		break;
 		};
@@ -449,6 +430,7 @@ void CHexDlgDataInterpret::OnOK()
 		break;
 		};
 	}
+
 	if (!fSuccess)
 		MessageBoxW(L"Wrong number format or out of range.", L"Data error...", MB_ICONERROR);
 
@@ -1030,4 +1012,70 @@ bool CHexDlgDataInterpret::StringToSystemTime(const CString sDateTime, PSYSTEMTI
 
 	FILETIME ftValidCheck;
 	return SystemTimeToFileTime(pSysTime, &ftValidCheck);
+}
+
+//Alternative to UuidFromString() that does not require Rpcrt4.dll
+bool CHexDlgDataInterpret::StringToGuid(const wchar_t* pwszSource, LPGUID pGUIDResult)
+{
+	//Check arguments
+	if (!pwszSource || !wcslen(pwszSource) || !pGUIDResult)
+		return false;
+
+	//Make working copy of source data and empty result GUID
+	CString sBuffer = pwszSource;
+	memset(pGUIDResult, 0, sizeof(GUID));
+
+	//Make lower-case and strip any leading or trailing spaces
+	sBuffer = sBuffer.MakeLower();
+	sBuffer = sBuffer.Trim();
+
+	//Remove all but permitted lower-case hex characters
+	CString sResult;
+	for (int i = 0; i < sBuffer.GetLength(); i++)
+	{
+		//TODO: Recode using _istxdigit() - See BinUtil.cpp
+		//
+		const CString sPermittedHexChars = _T("0123456789abcdef");
+		const CString sCurrentCharacter = sBuffer.Mid(i, 1);
+		const CString sIgnoredChars = _T("{-}");
+
+		//Test if this character is a permitted hex character - 0123456789abcdef
+		if (sPermittedHexChars.FindOneOf(sCurrentCharacter) >= 0)
+		{
+			sResult.Append(sCurrentCharacter);
+		}
+		else if (sIgnoredChars.FindOneOf(sCurrentCharacter) >= 0)
+		{
+			//Do nothing - We always ignore {, } and -
+		}
+		//Quit due to invalid data
+		else
+			return false;
+	}
+
+	//Confirm we now have exactly 32 characters. If we don't then game over
+	//NB: We now have a stripped GUID that is exactly 32 chars long
+	if (sResult.GetLength() != 32)
+		return false;
+
+	//%.8x pGuid->Data1
+	pGUIDResult->Data1 = wcstoul(sResult.Mid(0, 8), NULL, 16);
+
+	//%.4x pGuid->Data2
+	pGUIDResult->Data2 = (unsigned short)wcstoul(sResult.Mid(8, 4), NULL, 16);
+
+	//%.4x pGuid->Data3
+	pGUIDResult->Data3 = (unsigned short)wcstoul(sResult.Mid(12, 4), NULL, 16);
+
+	//%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x pGuid->Data4[0], pGuid->Data4[1], pGuid->Data4[2], pGuid->Data4[3], pGuid->Data4[4], pGuid->Data4[5], pGuid->Data4[6], pGuid->Data4[7] 
+	pGUIDResult->Data4[0] = (unsigned char)wcstoul(sResult.Mid(16, 2), NULL, 16);
+	pGUIDResult->Data4[1] = (unsigned char)wcstoul(sResult.Mid(18, 2), NULL, 16);
+	pGUIDResult->Data4[2] = (unsigned char)wcstoul(sResult.Mid(20, 2), NULL, 16);
+	pGUIDResult->Data4[3] = (unsigned char)wcstoul(sResult.Mid(22, 2), NULL, 16);
+	pGUIDResult->Data4[4] = (unsigned char)wcstoul(sResult.Mid(24, 2), NULL, 16);
+	pGUIDResult->Data4[5] = (unsigned char)wcstoul(sResult.Mid(26, 2), NULL, 16);
+	pGUIDResult->Data4[6] = (unsigned char)wcstoul(sResult.Mid(28, 2), NULL, 16);
+	pGUIDResult->Data4[7] = (unsigned char)wcstoul(sResult.Mid(30, 2), NULL, 16);
+
+	return true;
 }
