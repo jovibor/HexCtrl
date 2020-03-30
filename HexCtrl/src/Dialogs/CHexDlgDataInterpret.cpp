@@ -68,6 +68,12 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 	if (!nResult)
 		_stprintf_s(m_wszDateSeparator, _countof(m_wszDateSeparator), L"/");
 
+	//Update dialog title to include date format
+	CString sTitle;
+	GetWindowText(sTitle);
+	sTitle.AppendFormat(L" [%s]", GetCurrentUserDateFormatString().GetString());
+	SetWindowText(sTitle);
+
 	if (auto pRadio = (CButton*)GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE); pRadio)
 		pRadio->SetCheck(1);
 	if (auto pRadio = (CButton*)GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_DEC); pRadio)
@@ -87,7 +93,6 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_ULONG, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"unsigned long:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_LONGLONG, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"long long:", L"0") });
 	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_ULONGLONG, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"unsigned long long:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_GUID, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"GUID:", L"0") });
 	auto pDigits = new CMFCPropertyGridProperty(L"Digits:");
 	for (auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::DIGITS)
@@ -116,6 +121,13 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 		if (iter.eGroup == EGroup::TIME)
 			pTime->AddSubItem(iter.pProp);
 	m_stCtrlGrid.AddProperty(pTime);
+
+	m_vecProp.emplace_back(GRIDDATA{ EGroup::MISC, EName::NAME_GUID, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"GUID:", L"0") });
+	auto pMisc = new CMFCPropertyGridProperty(L"Misc:");
+	for (auto& iter : m_vecProp)
+		if (iter.eGroup == EGroup::MISC)
+			pMisc->AddSubItem(iter.pProp);
+	m_stCtrlGrid.AddProperty(pMisc);
 
 	return TRUE;
 }
@@ -163,16 +175,6 @@ void CHexDlgDataInterpret::OnOK()
 			{				
 				long lData = wcstol(sBinary.GetString(), NULL, 2);
 				fSuccess = SetDigitData<UCHAR>(lData);
-			}
-		}
-		break;
-		case EName::NAME_GUID:
-		{
-			GUID guid {};
-			if (StringToGuid(wstrValue.GetString(), &guid))
-			{
-				m_pHexCtrl->SetData(m_ullOffset, guid);
-				fSuccess = true;
 			}
 		}
 		break;
@@ -429,7 +431,24 @@ void CHexDlgDataInterpret::OnOK()
 		}
 		break;
 		};
+	case EGroup::MISC:
+	{
+		switch (refGridData->eName)
+		{
+		case EName::NAME_GUID:
+		{
+			GUID guid{};
+			if (StringToGuid(wstrValue.GetString(), &guid))
+			{
+				m_pHexCtrl->SetData(m_ullOffset, guid);
+				fSuccess = true;
+			}
+		}
+		break;
+		};
 	}
+	break;
+	};
 
 	if (!fSuccess)
 		MessageBoxW(L"Wrong number format or out of range.", L"Data error...", MB_ICONERROR);
@@ -907,6 +926,28 @@ void CHexDlgDataInterpret::UpdateHexCtrl()
 {
 	if (m_pHexCtrl)
 		m_pHexCtrl->RedrawWindow();
+}
+
+const CString CHexDlgDataInterpret::GetCurrentUserDateFormatString()
+{
+	CString sResult;
+
+	switch (m_dwDateFormat)
+	{
+		//0=Month-Day-Year
+	case 0:		sResult.Format(L"mm%sdd%syyyy", m_wszDateSeparator, m_wszDateSeparator);
+		break;
+
+		//2=Year-Month-Day 
+	case 2:		sResult.Format(L"yyyy%smm%sdd", m_wszDateSeparator, m_wszDateSeparator);
+		break;
+
+		//1=Day-Month-Year (default)
+	default:	sResult.Format(L"dd%smm%syyyy", m_wszDateSeparator, m_wszDateSeparator);
+		break;
+	}
+
+	return sResult;
 }
 
 CString CHexDlgDataInterpret::SystemTimeToString(PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)

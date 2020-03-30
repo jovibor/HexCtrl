@@ -78,13 +78,14 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioBe();
 		afx_msg void OnClickRadioDec();
 		afx_msg void OnClickRadioHex();
+		const CString GetCurrentUserDateFormatString();
 		CString SystemTimeToString(PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
 		bool StringToSystemTime(const CString sDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
 		template <typename T>bool SetDigitData(LONGLONG llData);
 		bool StringToGuid(const wchar_t* pwszSource, LPGUID pGUIDResult);
 		DECLARE_MESSAGE_MAP()
 	private:
-		enum class EGroup : WORD { DIGITS, FLOAT, TIME };
+		enum class EGroup : WORD { DIGITS, FLOAT, TIME, MISC };
 		enum class EName : WORD {
 			NAME_BINARY,
 			NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
@@ -111,7 +112,7 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullSize { };
 		HDITEMW m_hdItemPropGrid { };
 		DWORD m_dwDateFormat { };
-		WCHAR m_wszDateSeparator[128] { };
+		WCHAR m_wszDateSeparator[4] { };
 	};
 
 	template<typename T>
