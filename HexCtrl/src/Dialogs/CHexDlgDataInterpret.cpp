@@ -938,19 +938,23 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)
 	//Javatime (signed)
 	//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC
 	std::wstring wstrTime = NOTAPPLICABLE;
-	SYSTEMTIME SysTime { };
-	FILETIME ftJavaTime;
-
+	
+	//Add/subtract milliseconds from epoch time
 	LARGE_INTEGER Time;
 	Time.HighPart = FILETIME1970_HIGH;
 	Time.LowPart = FILETIME1970_LOW;
-	ftJavaTime.dwHighDateTime = Time.HighPart;
-	ftJavaTime.dwLowDateTime = Time.LowPart;
 	if (static_cast<LONGLONG>(qword) >= 0)
 		Time.QuadPart += qword * FTTICKSPERMS;
 	else
 		Time.QuadPart -= qword * FTTICKSPERMS;
 
+	//Convert to FILETIME
+	FILETIME ftJavaTime;
+	ftJavaTime.dwHighDateTime = Time.HighPart;
+	ftJavaTime.dwLowDateTime = Time.LowPart;
+
+	//Convert to SYSTEMTIME
+	SYSTEMTIME SysTime{ };
 	if (FileTimeToSystemTime(&ftJavaTime, &SysTime))
 		wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
 
@@ -1271,18 +1275,18 @@ bool CHexDlgDataInterpret::SetDataNAME_JAVATIME(std::wstring_view wstr)
 	lEpochTicks.HighPart = FILETIME1970_HIGH;
 	lEpochTicks.LowPart = FILETIME1970_LOW;
 
-	ULONGLONG ullDiffTicks;
+	LONGLONG llDiffTicks;
 	if (lEpochTicks.QuadPart > lJavaTicks.QuadPart)
-		ullDiffTicks = lEpochTicks.QuadPart - lJavaTicks.QuadPart;
+		llDiffTicks = -(lEpochTicks.QuadPart - lJavaTicks.QuadPart);
 	else
-		ullDiffTicks = lJavaTicks.QuadPart - lEpochTicks.QuadPart;
+		llDiffTicks = lJavaTicks.QuadPart - lEpochTicks.QuadPart;
 
-	ULONGLONG ullDiffMillis = ullDiffTicks / FTTICKSPERMS;
+	LONGLONG llDiffMillis = llDiffTicks / FTTICKSPERMS;
 
 	if (m_fBigEndian)
-		ullDiffMillis = _byteswap_uint64(ullDiffMillis);
+		llDiffMillis = _byteswap_uint64(llDiffMillis);
 
-	m_pHexCtrl->SetData(m_ullOffset, static_cast<ULONGLONG>(ullDiffMillis));
+	m_pHexCtrl->SetData(m_ullOffset, static_cast<LONGLONG>(llDiffMillis));
 
 	return true;
 }
