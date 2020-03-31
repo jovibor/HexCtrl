@@ -785,16 +785,31 @@ void CHexDlgDataInterpret::ShowNAME_FLOAT(DWORD dword)
 
 void CHexDlgDataInterpret::ShowNAME_TIME32(DWORD dword)
 {
-	std::wstring wstrTime;
-	tm tm;
-	if (_localtime32_s(&tm, reinterpret_cast<const __time32_t*>(&dword)) == 0)
+	std::wstring wstrTime = NOTAPPLICABLE;
+
+	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This is signed and wraps on 19 January 2038 
+	LONG lDiffSeconds = (LONG)dword;
+
+	//Unix times are signed and value before 1st January 1970 is not considered valid
+	//This is apparently because early complilers didn't support unsigned types. _mktime32() has the same limit
+	if (lDiffSeconds >= 0)
 	{
-		char str[32];
-		strftime(str, 31, "%d/%m/%Y %H:%M:%S", &tm);
-		wstrTime = StrToWstr(str);
+		//Add seconds from epoch time
+		LARGE_INTEGER Time;
+		Time.HighPart = FILETIME1970_HIGH;
+		Time.LowPart = FILETIME1970_LOW;
+		Time.QuadPart += ((LONGLONG)lDiffSeconds) * FTTICKSPERSECOND;
+
+		//Convert to FILETIME
+		FILETIME ftTime;
+		ftTime.dwHighDateTime = Time.HighPart;
+		ftTime.dwLowDateTime = Time.LowPart;
+
+		//Convert to SYSTEMTIME for display
+		SYSTEMTIME SysTime{ };
+		if (FileTimeToSystemTime(&ftTime, &SysTime))
+			wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
 	}
-	else
-		wstrTime = NOTAPPLICABLE;
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_TIME32T; }); iter != m_vecProp.end())
@@ -887,16 +902,31 @@ void CHexDlgDataInterpret::ShowNAME_DOUBLE(QWORD qword)
 
 void CHexDlgDataInterpret::ShowNAME_TIME64(QWORD qword)
 {
-	std::wstring wstrTime;
-	tm tm;
-	if (_localtime64_s(&tm, reinterpret_cast<const __time64_t*>(&qword)) == 0)
+	std::wstring wstrTime = NOTAPPLICABLE;
+
+	//The number of seconds since midnight January 1st 1970 UTC (64-bit). This is signed
+	LONGLONG llDiffSeconds = (LONGLONG)qword;
+	
+	//Unix times are signed and value before 1st January 1970 is not considered valid
+	//This is apparently because early complilers didn't support unsigned types. _mktime64() has the same limit
+	if (llDiffSeconds >= 0)
 	{
-		char str[32];
-		strftime(str, _countof(str), "%d/%m/%Y %H:%M:%S", &tm);
-		wstrTime = StrToWstr(str);
-	}
-	else
-		wstrTime = NOTAPPLICABLE;
+		//Add seconds from epoch time
+		LARGE_INTEGER Time;
+		Time.HighPart = FILETIME1970_HIGH;
+		Time.LowPart = FILETIME1970_LOW;
+		Time.QuadPart += llDiffSeconds * FTTICKSPERSECOND;
+
+		//Convert to FILETIME
+		FILETIME ftTime;
+		ftTime.dwHighDateTime = Time.HighPart;
+		ftTime.dwLowDateTime = Time.LowPart;
+
+		//Convert to SYSTEMTIME for display
+		SYSTEMTIME SysTime{ };
+		if (FileTimeToSystemTime(&ftTime, &SysTime))
+			wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
+	}	
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_TIME64T; }); iter != m_vecProp.end())
