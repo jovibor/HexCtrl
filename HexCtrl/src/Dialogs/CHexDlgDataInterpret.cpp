@@ -20,6 +20,7 @@ namespace HEXCTRL::INTERNAL {
 	const WCHAR* NIBBLES [] = {
 		L"0000", L"0001", L"0010", L"0011", L"0100", L"0101", L"0110", L"0111",
 		L"1000", L"1001", L"1010", L"1011", L"1100", L"1101", L"1110", L"1111" };
+	const WCHAR NOTAPPLICABLE[] = L"N/A";
 	constexpr auto FTTICKSPERMS = 10000U;                //Number of 100ns intervals in a milli-second
 	constexpr auto FTTICKSPERSECOND = 10000000UL;        //Number of 100ns intervals in a second
 	constexpr auto HOURSPERDAY = 24U;                    //24 hours per day
@@ -543,7 +544,7 @@ CString CHexDlgDataInterpret::SystemTimeToString(const SYSTEMTIME* pSysTime, boo
 		return sResult;
 	}
 
-	return L"N/A";
+	return NOTAPPLICABLE;
 }
 
 bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstrDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)
@@ -793,7 +794,7 @@ void CHexDlgDataInterpret::ShowNAME_TIME32(DWORD dword)
 		wstrTime = StrToWstr(str);
 	}
 	else
-		wstrTime = L"N/A";
+		wstrTime = NOTAPPLICABLE;
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_TIME32T; }); iter != m_vecProp.end())
@@ -802,7 +803,7 @@ void CHexDlgDataInterpret::ShowNAME_TIME32(DWORD dword)
 
 void CHexDlgDataInterpret::ShowNAME_MSDOSTIME(DWORD dword)
 {
-	std::wstring wstrTime = L"N/A";
+	std::wstring wstrTime = NOTAPPLICABLE;
 	SYSTEMTIME SysTime { };
 	FILETIME ftMSDOS;
 	MSDOSDATETIME msdosDateTime;
@@ -821,7 +822,7 @@ void CHexDlgDataInterpret::ShowNAME_MSDOSTIME(DWORD dword)
 void CHexDlgDataInterpret::ShowNAME_MSDTTMTIME(DWORD dword)
 {
 	//Microsoft DTTM time (as used by Microsoft Compound Document format)
-	std::wstring wstrTime = L"N/A";
+	std::wstring wstrTime = NOTAPPLICABLE;
 	SYSTEMTIME SysTime { };
 	DTTM dttm;
 	dttm.dwValue = dword;
@@ -895,7 +896,7 @@ void CHexDlgDataInterpret::ShowNAME_TIME64(QWORD qword)
 		wstrTime = StrToWstr(str);
 	}
 	else
-		wstrTime = L"N/A";
+		wstrTime = NOTAPPLICABLE;
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_TIME64T; }); iter != m_vecProp.end())
@@ -904,7 +905,7 @@ void CHexDlgDataInterpret::ShowNAME_TIME64(QWORD qword)
 
 void CHexDlgDataInterpret::ShowNAME_FILETIME(QWORD qword)
 {
-	std::wstring wstrTime = L"N/A";
+	std::wstring wstrTime = NOTAPPLICABLE;
 	SYSTEMTIME SysTime { };
 	if (FileTimeToSystemTime(reinterpret_cast<const FILETIME*>(&qword), &SysTime))
 		wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
@@ -920,7 +921,7 @@ void CHexDlgDataInterpret::ShowNAME_OLEDATETIME(QWORD qword)
 	//Implemented using an 8-byte floating-point number. Days are represented as whole number increments starting with 30 December 1899, midnight as time zero.
 	//See: https://docs.microsoft.com/en-us/cpp/atl-mfc-shared/date-type?view=vs-2019
 
-	std::wstring wstrTime = L"N/A";
+	std::wstring wstrTime = NOTAPPLICABLE;
 	SYSTEMTIME SysTime { };
 	COleDateTime dt(static_cast<DATE>(qword));
 	if (dt.GetAsSystemTime(SysTime))
@@ -936,7 +937,7 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)
 {
 	//Javatime (signed)
 	//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC
-	std::wstring wstrTime = L"N/A";
+	std::wstring wstrTime = NOTAPPLICABLE;
 	SYSTEMTIME SysTime { };
 	FILETIME ftJavaTime;
 
@@ -975,7 +976,7 @@ void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD128 & dqword)
 	//Guid v1 Datetime UTC
 	//The time structure within the NAME_GUID.
 	//First, verify GUID is actually version 1 style
-	std::wstring wstrTime = L"N/A";
+	std::wstring wstrTime = NOTAPPLICABLE;
 	SYSTEMTIME SysTime { };
 	unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
 
