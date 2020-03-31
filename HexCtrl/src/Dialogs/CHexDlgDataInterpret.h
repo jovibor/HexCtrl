@@ -22,64 +22,7 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG GetSize();
 		void InspectOffset(ULONGLONG ullOffset);
 		BOOL ShowWindow(int nCmdShow);
-	protected:
-		void DoDataExchange(CDataExchange* pDX)override;
-		BOOL OnInitDialog()override;
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		void OnOK()override;
-		afx_msg void OnClose();
-		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
-		void UpdateHexCtrl();
-		LRESULT OnPropertyChanged(WPARAM wparam, LPARAM lparam);
-		afx_msg void OnSize(UINT nType, int cx, int cy);
-		afx_msg void OnClickRadioLe();
-		afx_msg void OnClickRadioBe();
-		afx_msg void OnClickRadioDec();
-		afx_msg void OnClickRadioHex();
-		const CString GetCurrentUserDateFormatString();
-		CString SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime);
-		bool StringToSystemTime(const CString& sDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
-		template <typename T>bool SetDigitData(LONGLONG llData);
-		bool StringToGuid(const wchar_t* pwszSource, LPGUID pGUIDResult);
-		bool SetDataNAME_BINARY(std::wstring_view wstr);
-		bool SetDataNAME_CHAR(std::wstring_view wstr);
-		bool SetDataNAME_UCHAR(std::wstring_view wstr);
-		bool SetDataNAME_SHORT(std::wstring_view wstr);
-		bool SetDataNAME_USHORT(std::wstring_view wstr);
-		bool SetDataNAME_LONG(std::wstring_view wstr);
-		bool SetDataNAME_ULONG(std::wstring_view wstr);
-		bool SetDataNAME_LONGLONG(std::wstring_view wstr);
-		bool SetDataNAME_ULONGLONG(std::wstring_view wstr);
-		bool SetDataNAME_FLOAT(std::wstring_view wstr);
-		bool SetDataNAME_DOUBLE(std::wstring_view wstr);
-		bool SetDataNAME_TIME32T(std::wstring_view wstr);
-		bool SetDataNAME_TIME64T(std::wstring_view wstr);
-		bool SetDataNAME_FILETIME(std::wstring_view wstr);
-		bool SetDataNAME_OLEDATETIME(std::wstring_view wstr);
-		bool SetDataNAME_JAVATIME(std::wstring_view wstr);
-		bool SetDataNAME_MSDOSTIME(std::wstring_view wstr);
-		bool SetDataNAME_MSDTTMTIME(std::wstring_view wstr);
-		bool SetDataNAME_SYSTEMTIME(std::wstring_view wstr);
-		bool SetDataNAME_GUIDTIME(std::wstring_view wstr);
-		bool SetDataNAME_GUID(std::wstring_view wstr);
-		DECLARE_MESSAGE_MAP()
 	private:
-		enum class EGroup : WORD { DIGITS, FLOAT, TIME, MISC };
-		enum class EName : WORD {
-			NAME_BINARY, NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
-			NAME_LONG, NAME_ULONG, NAME_LONGLONG, NAME_ULONGLONG,
-			NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
-			NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
-			NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID
-		};
-		enum class ESize : WORD { SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4, SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10 };
-		struct GRIDDATA
-		{
-			EGroup eGroup { };
-			EName eName { };
-			ESize eSize { };
-			CMFCPropertyGridProperty* pProp { };
-		};
 #pragma pack(push, 1)
 		typedef union _MSDOSDATETIME //MS-DOS Date+Time structure (as used in FAT file system directory entry)
 		{							 //See: https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
@@ -121,6 +64,85 @@ namespace HEXCTRL::INTERNAL
 			GUID gGUID;
 		} DQWORD128, *PDQWORD128;
 #pragma pack(pop)
+	protected:
+		void DoDataExchange(CDataExchange* pDX)override;
+		BOOL OnInitDialog()override;
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		void OnOK()override;
+		afx_msg void OnClose();
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
+		void UpdateHexCtrl();
+		LRESULT OnPropertyChanged(WPARAM wparam, LPARAM lparam);
+		afx_msg void OnSize(UINT nType, int cx, int cy);
+		afx_msg void OnClickRadioLe();
+		afx_msg void OnClickRadioBe();
+		afx_msg void OnClickRadioDec();
+		afx_msg void OnClickRadioHex();
+		const CString GetCurrentUserDateFormatString();
+		CString SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime);
+		bool StringToSystemTime(std::wstring_view wstrDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
+		template <typename T>bool SetDigitData(LONGLONG llData);
+		bool StringToGuid(std::wstring_view pwszSource, LPGUID pGUIDResult);
+		void ShowNAME_BINARY(BYTE byte);
+		void ShowNAME_CHAR(BYTE byte);
+		void ShowNAME_UCHAR(BYTE byte);
+		void ShowNAME_SHORT(WORD word);
+		void ShowNAME_USHORT(WORD word);
+		void ShowNAME_LONG(DWORD dword);
+		void ShowNAME_ULONG(DWORD dword);
+		void ShowNAME_FLOAT(DWORD dword);
+		void ShowNAME_TIME32(DWORD dword);
+		void ShowNAME_MSDOSTIME(DWORD dword);
+		void ShowNAME_MSDTTMTIME(DWORD word);
+		void ShowNAME_LONGLONG(QWORD qword);
+		void ShowNAME_ULONGLONG(QWORD qword);
+		void ShowNAME_DOUBLE(QWORD qword);
+		void ShowNAME_TIME64(QWORD qword);
+		void ShowNAME_FILETIME(QWORD qword);
+		void ShowNAME_OLEDATETIME(QWORD qword);
+		void ShowNAME_JAVATIME(QWORD qword);
+		void ShowNAME_GUID(const DQWORD128& dqword);
+		void ShowNAME_GUIDTIME(const DQWORD128& dqword);
+		void ShowNAME_SYSTEMTIME(const DQWORD128& dqword);
+		bool SetDataNAME_BINARY(std::wstring_view wstr);
+		bool SetDataNAME_CHAR(std::wstring_view wstr);
+		bool SetDataNAME_UCHAR(std::wstring_view wstr);
+		bool SetDataNAME_SHORT(std::wstring_view wstr);
+		bool SetDataNAME_USHORT(std::wstring_view wstr);
+		bool SetDataNAME_LONG(std::wstring_view wstr);
+		bool SetDataNAME_ULONG(std::wstring_view wstr);
+		bool SetDataNAME_LONGLONG(std::wstring_view wstr);
+		bool SetDataNAME_ULONGLONG(std::wstring_view wstr);
+		bool SetDataNAME_FLOAT(std::wstring_view wstr);
+		bool SetDataNAME_DOUBLE(std::wstring_view wstr);
+		bool SetDataNAME_TIME32T(std::wstring_view wstr);
+		bool SetDataNAME_TIME64T(std::wstring_view wstr);
+		bool SetDataNAME_FILETIME(std::wstring_view wstr);
+		bool SetDataNAME_OLEDATETIME(std::wstring_view wstr);
+		bool SetDataNAME_JAVATIME(std::wstring_view wstr);
+		bool SetDataNAME_MSDOSTIME(std::wstring_view wstr);
+		bool SetDataNAME_MSDTTMTIME(std::wstring_view wstr);
+		bool SetDataNAME_SYSTEMTIME(std::wstring_view wstr);
+		bool SetDataNAME_GUIDTIME(std::wstring_view wstr);
+		bool SetDataNAME_GUID(std::wstring_view wstr);
+		DECLARE_MESSAGE_MAP()
+	private:
+		enum class EGroup : WORD { DIGITS, FLOAT, TIME, MISC };
+		enum class EName : WORD {
+			NAME_BINARY, NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
+			NAME_LONG, NAME_ULONG, NAME_LONGLONG, NAME_ULONGLONG,
+			NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
+			NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
+			NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID
+		};
+		enum class ESize : WORD { SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4, SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10 };
+		struct GRIDDATA
+		{
+			EGroup eGroup { };
+			EName eName { };
+			ESize eSize { };
+			CMFCPropertyGridProperty* pProp { };
+		};
 	private:
 		CHexCtrl* m_pHexCtrl { };
 		bool m_fVisible { false };
