@@ -952,8 +952,13 @@ void CHexDlgDataInterpret::ShowNAME_OLEDATETIME(QWORD qword)
 	//See: https://docs.microsoft.com/en-us/cpp/atl-mfc-shared/date-type?view=vs-2019
 
 	std::wstring wstrTime = NOTAPPLICABLE;
-	SYSTEMTIME SysTime { };
-	COleDateTime dt(static_cast<DATE>(qword));
+	
+	//Convert from ULL to Double cannot be done with static_cast?
+	DATE date;
+	std::memcpy(&date, &qword, sizeof(date));
+	COleDateTime dt(date);
+
+	SYSTEMTIME SysTime{ };
 	if (dt.GetAsSystemTime(SysTime))
 		wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
 
@@ -1275,13 +1280,15 @@ bool CHexDlgDataInterpret::SetDataNAME_OLEDATETIME(std::wstring_view wstr)
 	COleDateTime dt(stTime);
 	if (dt.GetStatus() != COleDateTime::valid)
 		return false;
-
-	auto ullValue = static_cast<ULONGLONG>(dt.m_dt);
+	
+	//Cannot convert from Double to ULL with static_cast?
+	ULONGLONG ullValue;
+	std:memcpy(&ullValue, &dt.m_dt, sizeof(dt.m_dt));
 
 	if (m_fBigEndian)
 		ullValue = _byteswap_uint64(ullValue);
 
-	m_pHexCtrl->SetData(m_ullOffset, dt.m_dt);
+	m_pHexCtrl->SetData(m_ullOffset, ullValue);
 
 	return true;
 }
