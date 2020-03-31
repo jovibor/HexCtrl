@@ -153,383 +153,80 @@ void CHexDlgDataInterpret::OnOK()
 	if (!m_pHexCtrl->IsMutable() || !m_pPropChanged)
 		return;
 
-	CStringW wstrValue = m_pPropChanged->GetValue();
 	const auto& refGridData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[this](const GRIDDATA& refData) {return refData.pProp == m_pPropChanged; });
 	if (refGridData == m_vecProp.end())
 		return;
 
+	CStringW wstrValue = m_pPropChanged->GetValue();
+	std::wstring_view wstr = wstrValue.GetString();
 	bool fSuccess { false };
-	switch (refGridData->eGroup)
+
+	switch (refGridData->eName)
 	{
-	case EGroup::DIGITS:
-	{
-		switch (refGridData->eName)
-		{
-		case EName::NAME_BINARY:
-		{
-			CString sBinary;
-			const CString sPermitted = L"01";
-			for (int i = 0; i < wstrValue.GetLength(); i++)
-			{
-				if (sPermitted.FindOneOf(wstrValue.Mid(i, 1)) >= 0)
-					sBinary.Append(wstrValue.Mid(i, 1));
-			}
-
-			if (sBinary.GetLength() == 8)
-			{
-				long lData = wcstol(sBinary.GetString(), NULL, 2);
-				fSuccess = SetDigitData<UCHAR>(lData);
-			}
-		}
+	case EName::NAME_BINARY:
+		fSuccess = SetDataNAME_BINARY(wstr);
 		break;
-		case EName::NAME_LONGLONG:
-		{
-			LONGLONG llData { };
-			if (WCharsToll(wstrValue, llData, false))
-				fSuccess = SetDigitData<LONGLONG>(llData);
-		}
+	case EName::NAME_CHAR:
+		fSuccess = SetDataNAME_CHAR(wstr);
 		break;
-		case EName::NAME_ULONGLONG:
-		{
-			ULONGLONG ullData;
-			if (WCharsToUll(wstrValue, ullData, false))
-				fSuccess = SetDigitData<ULONGLONG>(static_cast<LONGLONG>(ullData));
-		}
+	case EName::NAME_UCHAR:
+		fSuccess = SetDataNAME_UCHAR(wstr);
 		break;
-		default:
-		{
-			LONGLONG llData { };
-			if (!StrToInt64ExW(wstrValue, STIF_SUPPORT_HEX, &llData))
-				break;
-
-			switch (refGridData->eName)
-			{
-			case EName::NAME_CHAR:
-				fSuccess = SetDigitData<CHAR>(llData);
-				break;
-			case EName::NAME_UCHAR:
-				fSuccess = SetDigitData<UCHAR>(llData);
-				break;
-			case EName::NAME_SHORT:
-				fSuccess = SetDigitData<SHORT>(llData);
-				break;
-			case EName::NAME_USHORT:
-				fSuccess = SetDigitData<USHORT>(llData);
-				break;
-			case EName::NAME_LONG:
-				fSuccess = SetDigitData<LONG>(llData);
-				break;
-			case EName::NAME_ULONG:
-				fSuccess = SetDigitData<ULONG>(llData);
-				break;
-			};
-		}
+	case EName::NAME_SHORT:
+		fSuccess = SetDataNAME_SHORT(wstr);
 		break;
-		};
-	}
-	break;
-	case EGroup::FLOAT:
-	case EGroup::TIME:
-		switch (refGridData->eName)
-		{
-		case EName::NAME_FLOAT:
-		{
-			wchar_t* pEndPtr;
-			float fl = wcstof(wstrValue, &pEndPtr);
-			if (fl == 0 && (pEndPtr == wstrValue.GetString() || *pEndPtr != '\0'))
-				break;
-			//TODO:	DWORD dw=std::bit_cast<DWORD>(fl);
-			DWORD dwData = *reinterpret_cast<DWORD*>(&fl);
-			if (m_fBigEndian)
-				dwData = _byteswap_ulong(dwData);
-			m_pHexCtrl->SetData(m_ullOffset, dwData);
-			fSuccess = true;
-		}
+	case EName::NAME_USHORT:
+		fSuccess = SetDataNAME_USHORT(wstr);
 		break;
-		case EName::NAME_DOUBLE:
-		{
-			wchar_t* pEndPtr;
-			double dd = wcstod(wstrValue, &pEndPtr);
-			if (dd == 0 && (pEndPtr == wstrValue.GetString() || *pEndPtr != '\0'))
-				break;
-			QWORD qwData = *reinterpret_cast<QWORD*>(&dd);
-			if (m_fBigEndian)
-				qwData = _byteswap_uint64(qwData);
-			m_pHexCtrl->SetData(m_ullOffset, qwData);
-			fSuccess = true;
-		}
+	case EName::NAME_LONG:
+		fSuccess = SetDataNAME_LONG(wstr);
 		break;
-		case EName::NAME_TIME32T:
-		{
-			//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
-			SYSTEMTIME stTime;
-			if (StringToSystemTime(wstrValue, &stTime, true, true))
-			{
-				//Unix times are signed but value before 1st January 1970 is not considered valid
-				//This is apparently because early complilers didn't support unsigned types. _mktime32() has the same limit
-				if (stTime.wYear >= 1970)
-				{
-					FILETIME ftTime;
-					if (SystemTimeToFileTime(&stTime, &ftTime))
-					{
-						//Convert ticks to seconds and adjust epoch
-						LARGE_INTEGER lTicks;
-						lTicks.HighPart = ftTime.dwHighDateTime;
-						lTicks.LowPart = ftTime.dwLowDateTime;
-						lTicks.QuadPart /= FTTICKSPERSECOND;
-						lTicks.QuadPart -= UNIXEPOCHDIFFERENCE;
-
-						if (lTicks.QuadPart < LONG_MAX)
-						{
-							LONG lTime32 = static_cast<LONG>(lTicks.QuadPart);
-
-							if (m_fBigEndian)
-								lTime32 = _byteswap_ulong(lTime32);
-
-							m_pHexCtrl->SetData(m_ullOffset, static_cast<LONG>(lTime32));
-							fSuccess = true;
-						}
-					}
-				}
-			}
-
-			//tm tm { };
-			//int iYear { };
-			//swscanf_s(wstrValue, L"%2i/%2i/%4i %2i:%2i:%2i", &tm.tm_mday, &tm.tm_mon, &iYear, &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
-			//tm.tm_year = iYear - 1900;
-			//--tm.tm_mon; //Months start from 0.
-			//__time32_t time32 = _mktime32(&tm);
-			//if (time32 == -1)
-			//	break;
-			//if (m_fBigEndian)
-			//	time32 = _byteswap_ulong(time32);
-			//m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(time32));
-			//fSuccess = true;
-		}
+	case EName::NAME_ULONG:
+		fSuccess = SetDataNAME_ULONG(wstr);
 		break;
-		case EName::NAME_TIME64T:
-		{
-			//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
-			SYSTEMTIME stTime;
-			if (StringToSystemTime(wstrValue, &stTime, true, true))
-			{
-				//Unix times are signed but value before 1st January 1970 is not considered valid
-				//This is apparently because early complilers didn't support unsigned types. _mktime64() has the same limit
-				if (stTime.wYear >= 1970)
-				{
-					FILETIME ftTime;
-					if (SystemTimeToFileTime(&stTime, &ftTime))
-					{
-						//Convert ticks to seconds and adjust epoch
-						LARGE_INTEGER lTicks;
-						lTicks.HighPart = ftTime.dwHighDateTime;
-						lTicks.LowPart = ftTime.dwLowDateTime;
-						lTicks.QuadPart /= FTTICKSPERSECOND;
-						lTicks.QuadPart -= UNIXEPOCHDIFFERENCE;
-						LONGLONG llTime64 = static_cast<LONGLONG>(lTicks.QuadPart);
-
-						if (m_fBigEndian)
-							llTime64 = _byteswap_uint64(llTime64);
-
-						m_pHexCtrl->SetData(m_ullOffset, static_cast<LONGLONG>(llTime64));
-						fSuccess = true;
-					}
-				}
-			}
-
-			//tm tm { };
-			//int iYear { };
-			//swscanf_s(wstrValue, L"%2i/%2i/%4i %2i:%2i:%2i", &tm.tm_mday, &tm.tm_mon, &iYear, &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
-			//tm.tm_year = iYear - 1900;
-			//--tm.tm_mon; //Months start from 0.
-			//__time64_t time64 = _mktime64(&tm);
-			//if (time64 == -1)
-			//	break;
-			//if (m_fBigEndian)
-			//	time64 = _byteswap_uint64(time64);
-			//m_pHexCtrl->SetData(m_ullOffset, static_cast<QWORD>(time64));
-			//fSuccess = true;
-		}
+	case EName::NAME_LONGLONG:
+		fSuccess = SetDataNAME_LONGLONG(wstr);
 		break;
-		case EName::NAME_FILETIME:
-		{
-			SYSTEMTIME stTime;
-			if (StringToSystemTime(wstrValue, &stTime, true, true))
-			{
-				FILETIME ftTime;
-				if (SystemTimeToFileTime(&stTime, &ftTime))
-				{
-					ULARGE_INTEGER ullTime;
-					ullTime.LowPart = ftTime.dwLowDateTime;
-					ullTime.HighPart = ftTime.dwHighDateTime;
-
-					if (m_fBigEndian)
-						ullTime.QuadPart = _byteswap_uint64(ullTime.QuadPart);
-
-					m_pHexCtrl->SetData(m_ullOffset, ftTime);
-					fSuccess = true;
-				}
-			}
-		}
+	case EName::NAME_ULONGLONG:
+		fSuccess = SetDataNAME_ULONGLONG(wstr);
 		break;
-		case EName::NAME_OLEDATETIME:
-		{
-			SYSTEMTIME stTime;
-			if (StringToSystemTime(wstrValue, &stTime, true, true))
-			{
-				COleDateTime dt(stTime);
-				if (dt.GetStatus() == COleDateTime::valid)
-				{
-					ULONGLONG ullValue = static_cast<ULONGLONG>(dt.m_dt);
-
-					if (m_fBigEndian)
-						ullValue = _byteswap_uint64(ullValue);
-
-					m_pHexCtrl->SetData(m_ullOffset, dt.m_dt);
-					fSuccess = true;
-				}
-			}
-		}
+	case EName::NAME_FLOAT:
+		fSuccess = SetDataNAME_FLOAT(wstr);
 		break;
-		case EName::NAME_JAVATIME:
-		{
-			SYSTEMTIME stTime;
-			if (StringToSystemTime(wstrValue, &stTime, true, true))
-			{
-				FILETIME ftTime;
-				if (SystemTimeToFileTime(&stTime, &ftTime))
-				{
-					//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC
-					LARGE_INTEGER lJavaTicks;
-					lJavaTicks.HighPart = ftTime.dwHighDateTime;
-					lJavaTicks.LowPart = ftTime.dwLowDateTime;
-
-					LARGE_INTEGER lEpochTicks;
-					lEpochTicks.HighPart = FILETIME1970_HIGH;
-					lEpochTicks.LowPart = FILETIME1970_LOW;
-
-					ULONGLONG ullDiffTicks;
-					if (lEpochTicks.QuadPart > lJavaTicks.QuadPart)
-						ullDiffTicks = lEpochTicks.QuadPart - lJavaTicks.QuadPart;
-					else
-						ullDiffTicks = lJavaTicks.QuadPart - lEpochTicks.QuadPart;
-
-					ULONGLONG ullDiffMillis = ullDiffTicks / FTTICKSPERMS;
-
-					if (m_fBigEndian)
-						ullDiffMillis = _byteswap_uint64(ullDiffMillis);
-
-					m_pHexCtrl->SetData(m_ullOffset, static_cast<ULONGLONG>(ullDiffMillis));
-					fSuccess = true;
-				}
-			}
-		}
+	case EName::NAME_DOUBLE:
+		fSuccess = SetDataNAME_DOUBLE(wstr);
 		break;
-		case EName::NAME_MSDOSTIME:
-		{
-			SYSTEMTIME stTime;
-			if (StringToSystemTime(wstrValue, &stTime, true, true))
-			{
-				FILETIME ftTime;
-				if (SystemTimeToFileTime(&stTime, &ftTime))
-				{
-					MSDOSDATETIME msdosDateTime;
-					if (FileTimeToDosDateTime(&ftTime, &msdosDateTime.TimeDate.wDate, &msdosDateTime.TimeDate.wTime))
-					{
-						m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(msdosDateTime.dwTimeDate));
-						fSuccess = true;
-					}
-				}
-			}
-		}
+	case EName::NAME_TIME32T:
+		fSuccess = SetDataNAME_TIME32T(wstr);
 		break;
-		case EName::NAME_MSDTTMTIME:
-		{
-			SYSTEMTIME stTime;
-			if (StringToSystemTime(wstrValue, &stTime, true, true))
-			{
-				//Microsoft DTTM time (as used by Microsoft Compound Document format)
-				DTTM dttm;
-				dttm.components.year = stTime.wYear - 1900;
-				dttm.components.month = stTime.wMonth;
-				dttm.components.weekday = stTime.wDayOfWeek;
-				dttm.components.dayofmonth = stTime.wDay;
-				dttm.components.hour = stTime.wHour;
-				dttm.components.minute = stTime.wMinute;
-
-				m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(dttm.dwValue));
-				fSuccess = true;
-			}
-		}
+	case EName::NAME_TIME64T:
+		fSuccess = SetDataNAME_TIME64T(wstr);
 		break;
-		case EName::NAME_SYSTEMTIME:
-		{
-			SYSTEMTIME stTime;
-			if (StringToSystemTime(wstrValue, &stTime, true, true))
-			{
-				m_pHexCtrl->SetData(m_ullOffset, stTime);
-				fSuccess = true;
-			}
-		}
+	case EName::NAME_FILETIME:
+		fSuccess = SetDataNAME_FILETIME(wstr);
 		break;
-		case EName::NAME_GUIDTIME:
-		{
-			auto dqword = m_pHexCtrl->GetData<DQWORD128>(m_ullOffset);
-			unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
-			if (unGuidVersion == 1)
-			{
-				//RFC4122: The timestamp is a 60-bit value.  For UUID version 1, this is represented by Coordinated Universal Time (UTC) as a count of 100-
-				//nanosecond intervals since 00:00:00.00, 15 October 1582 (the date of Gregorian reform to the Christian calendar).
-				//
-				//Both FILETIME and GUID time are based upon 100ns intervals
-				//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Add 6653 days to convert to GUID time
-				//
-				SYSTEMTIME stTime;
-				if (StringToSystemTime(wstrValue, &stTime, true, true))
-				{
-					FILETIME ftTime;
-					if (SystemTimeToFileTime(&stTime, &ftTime))
-					{
-						LARGE_INTEGER qwGUIDTime;
-						qwGUIDTime.HighPart = ftTime.dwHighDateTime;
-						qwGUIDTime.LowPart = ftTime.dwLowDateTime;
-
-						ULARGE_INTEGER ullAddTicks;
-						ullAddTicks.QuadPart = static_cast<QWORD>(FTTICKSPERSECOND) * static_cast<QWORD>(SECONDSPERHOUR)
-							* static_cast<QWORD>(HOURSPERDAY) * static_cast<QWORD>(FILETIME1582OFFSETDAYS);
-						qwGUIDTime.QuadPart += ullAddTicks.QuadPart;
-
-						//Encode version 1 GUID with time
-						dqword.gGUID.Data1 = qwGUIDTime.LowPart;
-						dqword.gGUID.Data2 = qwGUIDTime.HighPart & 0xffff;
-						dqword.gGUID.Data3 = ((qwGUIDTime.HighPart >> 16) & 0x0fff) | 0x1000; //Including Type 1 flag (0x1000)
-
-						m_pHexCtrl->SetData(m_ullOffset, dqword);
-						fSuccess = true;
-					}
-				}
-			}
-		}
+	case EName::NAME_OLEDATETIME:
+		fSuccess = SetDataNAME_OLEDATETIME(wstr);
 		break;
-		};
-	case EGroup::MISC:
-	{
-		switch (refGridData->eName)
-		{
-		case EName::NAME_GUID:
-		{
-			GUID guid { };
-			if (StringToGuid(wstrValue.GetString(), &guid))
-			{
-				m_pHexCtrl->SetData(m_ullOffset, guid);
-				fSuccess = true;
-			}
-		}
+	case EName::NAME_JAVATIME:
+		fSuccess = SetDataNAME_JAVATIME(wstr);
 		break;
-		};
-	}
-	break;
+	case EName::NAME_MSDOSTIME:
+		fSuccess = SetDataNAME_MSDOSTIME(wstr);
+		break;
+	case EName::NAME_MSDTTMTIME:
+		fSuccess = SetDataNAME_MSDTTMTIME(wstr);
+		break;
+	case EName::NAME_SYSTEMTIME:
+		fSuccess = SetDataNAME_SYSTEMTIME(wstr);
+		break;
+	case EName::NAME_GUIDTIME:
+		fSuccess = SetDataNAME_GUIDTIME(wstr);
+		break;
+	case EName::NAME_GUID:
+		fSuccess = SetDataNAME_GUID(wstr);
+		break;
 	};
 
 	if (!fSuccess)
@@ -1236,6 +933,376 @@ bool CHexDlgDataInterpret::StringToGuid(const wchar_t* pwszSource, LPGUID pGUIDR
 	pGUIDResult->Data4[5] = static_cast<unsigned char>(wcstoul(sResult.Mid(26, 2), NULL, 16));
 	pGUIDResult->Data4[6] = static_cast<unsigned char>(wcstoul(sResult.Mid(28, 2), NULL, 16));
 	pGUIDResult->Data4[7] = static_cast<unsigned char>(wcstoul(sResult.Mid(30, 2), NULL, 16));
+
+	return true;
+}
+
+
+//SetData... methods.
+bool CHexDlgDataInterpret::SetDataNAME_BINARY(std::wstring_view wstr)
+{
+	bool fSuccess { false };
+	if (wstr.size() != 8 || wstr.find_first_not_of(L"01") != std::string::npos)
+		return fSuccess;
+
+	long lData = wcstol(wstr.data(), NULL, 2);
+	fSuccess = SetDigitData<UCHAR>(lData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_CHAR(std::wstring_view wstr)
+{
+	bool fSuccess { false };
+	LONGLONG llData { };
+	if (StrToInt64ExW(wstr.data(), STIF_SUPPORT_HEX, &llData))
+		fSuccess = SetDigitData<CHAR>(llData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_UCHAR(std::wstring_view wstr)
+{
+	bool fSuccess { false };
+	LONGLONG llData { };
+	if (StrToInt64ExW(wstr.data(), STIF_SUPPORT_HEX, &llData))
+		fSuccess = SetDigitData<UCHAR>(llData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_SHORT(std::wstring_view wstr)
+{
+	bool fSuccess { false };
+	LONGLONG llData { };
+	if (StrToInt64ExW(wstr.data(), STIF_SUPPORT_HEX, &llData))
+		fSuccess = SetDigitData<SHORT>(llData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_USHORT(std::wstring_view wstr)
+{
+	bool fSuccess { false };
+	LONGLONG llData { };
+	if (StrToInt64ExW(wstr.data(), STIF_SUPPORT_HEX, &llData))
+		fSuccess = SetDigitData<USHORT>(llData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_LONG(std::wstring_view wstr)
+{
+	bool fSuccess { false };
+	LONGLONG llData { };
+	if (StrToInt64ExW(wstr.data(), STIF_SUPPORT_HEX, &llData))
+		fSuccess = SetDigitData<LONG>(llData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_ULONG(std::wstring_view wstr)
+{
+	bool fSuccess { false };
+	LONGLONG llData { };
+	if (StrToInt64ExW(wstr.data(), STIF_SUPPORT_HEX, &llData))
+		fSuccess = SetDigitData<ULONG>(llData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_LONGLONG(std::wstring_view wstr)
+{
+	bool fSuccess { false };
+	LONGLONG llData { };
+	if (WCharsToll(wstr.data(), llData, false))
+		fSuccess = SetDigitData<LONGLONG>(llData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_ULONGLONG(std::wstring_view wstr)
+{
+	bool fSuccess { false };
+	ULONGLONG ullData;
+	if (WCharsToUll(wstr.data(), ullData, false))
+		fSuccess = SetDigitData<ULONGLONG>(static_cast<LONGLONG>(ullData));
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_FLOAT(std::wstring_view wstr)
+{
+	wchar_t* pEndPtr;
+	float fl = wcstof(wstr.data(), &pEndPtr);
+	if (fl == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+		return false;
+
+	//TODO: dwData = std::bit_cast<DWORD>(fl);
+	DWORD dwData = *reinterpret_cast<DWORD*>(&fl);
+	if (m_fBigEndian)
+		dwData = _byteswap_ulong(dwData);
+	m_pHexCtrl->SetData(m_ullOffset, dwData);
+
+	return true;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_DOUBLE(std::wstring_view wstr)
+{
+	wchar_t* pEndPtr;
+	double dd = wcstod(wstr.data(), &pEndPtr);
+	if (dd == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+		return false;
+
+	QWORD qwData = *reinterpret_cast<QWORD*>(&dd);
+	if (m_fBigEndian)
+		qwData = _byteswap_uint64(qwData);
+	m_pHexCtrl->SetData(m_ullOffset, qwData);
+
+	return true;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_TIME32T(std::wstring_view wstr)
+{
+	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
+	SYSTEMTIME stTime;
+	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+		return false;
+
+	//Unix times are signed but value before 1st January 1970 is not considered valid
+	//This is apparently because early complilers didn't support unsigned types. _mktime32() has the same limit
+	if (stTime.wYear < 1970)
+		return false;
+
+	FILETIME ftTime;
+	if (!SystemTimeToFileTime(&stTime, &ftTime))
+		return false;
+
+	//Convert ticks to seconds and adjust epoch
+	LARGE_INTEGER lTicks;
+	lTicks.HighPart = ftTime.dwHighDateTime;
+	lTicks.LowPart = ftTime.dwLowDateTime;
+	lTicks.QuadPart /= FTTICKSPERSECOND;
+	lTicks.QuadPart -= UNIXEPOCHDIFFERENCE;
+
+	if (lTicks.QuadPart < LONG_MAX)
+	{
+		LONG lTime32 = static_cast<LONG>(lTicks.QuadPart);
+
+		if (m_fBigEndian)
+			lTime32 = _byteswap_ulong(lTime32);
+
+		m_pHexCtrl->SetData(m_ullOffset, static_cast<LONG>(lTime32));
+	}
+
+	return true;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_TIME64T(std::wstring_view wstr)
+{
+	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
+	SYSTEMTIME stTime;
+	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+		return false;
+
+	//Unix times are signed but value before 1st January 1970 is not considered valid
+	//This is apparently because early complilers didn't support unsigned types. _mktime64() has the same limit
+	if (stTime.wYear < 1970)
+		return false;
+
+	FILETIME ftTime;
+	if (!SystemTimeToFileTime(&stTime, &ftTime))
+		return false;
+
+	//Convert ticks to seconds and adjust epoch
+	LARGE_INTEGER lTicks;
+	lTicks.HighPart = ftTime.dwHighDateTime;
+	lTicks.LowPart = ftTime.dwLowDateTime;
+	lTicks.QuadPart /= FTTICKSPERSECOND;
+	lTicks.QuadPart -= UNIXEPOCHDIFFERENCE;
+	LONGLONG llTime64 = static_cast<LONGLONG>(lTicks.QuadPart);
+
+	if (m_fBigEndian)
+		llTime64 = _byteswap_uint64(llTime64);
+
+	m_pHexCtrl->SetData(m_ullOffset, static_cast<LONGLONG>(llTime64));
+
+	return true;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_FILETIME(std::wstring_view wstr)
+{
+	SYSTEMTIME stTime;
+	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+		return false;
+
+	FILETIME ftTime;
+	if (!SystemTimeToFileTime(&stTime, &ftTime))
+		return false;
+
+	ULARGE_INTEGER ullTime;
+	ullTime.LowPart = ftTime.dwLowDateTime;
+	ullTime.HighPart = ftTime.dwHighDateTime;
+
+	if (m_fBigEndian)
+		ullTime.QuadPart = _byteswap_uint64(ullTime.QuadPart);
+
+	m_pHexCtrl->SetData(m_ullOffset, ftTime);
+
+	return true;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_OLEDATETIME(std::wstring_view wstr)
+{
+	SYSTEMTIME stTime;
+	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+		return false;
+
+	COleDateTime dt(stTime);
+	if (dt.GetStatus() != COleDateTime::valid)
+		return false;
+
+	ULONGLONG ullValue = static_cast<ULONGLONG>(dt.m_dt);
+
+	if (m_fBigEndian)
+		ullValue = _byteswap_uint64(ullValue);
+
+	m_pHexCtrl->SetData(m_ullOffset, dt.m_dt);
+
+	return true;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_JAVATIME(std::wstring_view wstr)
+{
+	SYSTEMTIME stTime;
+	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+		return false;
+
+	FILETIME ftTime;
+	if (!SystemTimeToFileTime(&stTime, &ftTime))
+		return false;
+
+	//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC
+	LARGE_INTEGER lJavaTicks;
+	lJavaTicks.HighPart = ftTime.dwHighDateTime;
+	lJavaTicks.LowPart = ftTime.dwLowDateTime;
+
+	LARGE_INTEGER lEpochTicks;
+	lEpochTicks.HighPart = FILETIME1970_HIGH;
+	lEpochTicks.LowPart = FILETIME1970_LOW;
+
+	ULONGLONG ullDiffTicks;
+	if (lEpochTicks.QuadPart > lJavaTicks.QuadPart)
+		ullDiffTicks = lEpochTicks.QuadPart - lJavaTicks.QuadPart;
+	else
+		ullDiffTicks = lJavaTicks.QuadPart - lEpochTicks.QuadPart;
+
+	ULONGLONG ullDiffMillis = ullDiffTicks / FTTICKSPERMS;
+
+	if (m_fBigEndian)
+		ullDiffMillis = _byteswap_uint64(ullDiffMillis);
+
+	m_pHexCtrl->SetData(m_ullOffset, static_cast<ULONGLONG>(ullDiffMillis));
+
+	return true;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_MSDOSTIME(std::wstring_view wstr)
+{
+	SYSTEMTIME stTime;
+	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+		return false;
+
+	FILETIME ftTime;
+	if (!SystemTimeToFileTime(&stTime, &ftTime))
+		return false;
+
+	MSDOSDATETIME msdosDateTime;
+	if (!FileTimeToDosDateTime(&ftTime, &msdosDateTime.TimeDate.wDate, &msdosDateTime.TimeDate.wTime))
+		return false;
+
+	m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(msdosDateTime.dwTimeDate));
+
+	return true;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)
+{
+	SYSTEMTIME stTime;
+	if (StringToSystemTime(wstr.data(), &stTime, true, true))
+		return false;
+
+	//Microsoft DTTM time (as used by Microsoft Compound Document format)
+	DTTM dttm;
+	dttm.components.year = stTime.wYear - 1900;
+	dttm.components.month = stTime.wMonth;
+	dttm.components.weekday = stTime.wDayOfWeek;
+	dttm.components.dayofmonth = stTime.wDay;
+	dttm.components.hour = stTime.wHour;
+	dttm.components.minute = stTime.wMinute;
+
+	m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(dttm.dwValue));
+
+	return true;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_SYSTEMTIME(std::wstring_view wstr)
+{
+	SYSTEMTIME stTime;
+	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+		return false;
+
+	m_pHexCtrl->SetData(m_ullOffset, stTime);
+
+	return true;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_GUIDTIME(std::wstring_view wstr)
+{
+	auto dqword = m_pHexCtrl->GetData<DQWORD128>(m_ullOffset);
+	unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
+	if (unGuidVersion != 1)
+		return false;
+
+	//RFC4122: The timestamp is a 60-bit value.  For UUID version 1, this is represented by Coordinated Universal Time (UTC) as a count of 100-
+	//nanosecond intervals since 00:00:00.00, 15 October 1582 (the date of Gregorian reform to the Christian calendar).
+	//
+	//Both FILETIME and GUID time are based upon 100ns intervals
+	//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Add 6653 days to convert to GUID time
+	SYSTEMTIME stTime;
+	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+		return false;
+
+	FILETIME ftTime;
+	if (!SystemTimeToFileTime(&stTime, &ftTime))
+		return false;
+
+	LARGE_INTEGER qwGUIDTime;
+	qwGUIDTime.HighPart = ftTime.dwHighDateTime;
+	qwGUIDTime.LowPart = ftTime.dwLowDateTime;
+
+	ULARGE_INTEGER ullAddTicks;
+	ullAddTicks.QuadPart = static_cast<QWORD>(FTTICKSPERSECOND) * static_cast<QWORD>(SECONDSPERHOUR)
+		* static_cast<QWORD>(HOURSPERDAY) * static_cast<QWORD>(FILETIME1582OFFSETDAYS);
+	qwGUIDTime.QuadPart += ullAddTicks.QuadPart;
+
+	//Encode version 1 GUID with time
+	dqword.gGUID.Data1 = qwGUIDTime.LowPart;
+	dqword.gGUID.Data2 = qwGUIDTime.HighPart & 0xffff;
+	dqword.gGUID.Data3 = ((qwGUIDTime.HighPart >> 16) & 0x0fff) | 0x1000; //Including Type 1 flag (0x1000)
+
+	m_pHexCtrl->SetData(m_ullOffset, dqword);
+
+	return true;
+}
+
+bool CHexDlgDataInterpret::SetDataNAME_GUID(std::wstring_view wstr)
+{
+	GUID guid { };
+	if (!StringToGuid(wstr.data(), &guid))
+		return false;
+
+	m_pHexCtrl->SetData(m_ullOffset, guid);
 
 	return true;
 }

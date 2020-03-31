@@ -41,16 +41,36 @@ namespace HEXCTRL::INTERNAL
 		bool StringToSystemTime(const CString& sDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
 		template <typename T>bool SetDigitData(LONGLONG llData);
 		bool StringToGuid(const wchar_t* pwszSource, LPGUID pGUIDResult);
+		bool SetDataNAME_BINARY(std::wstring_view wstr);
+		bool SetDataNAME_CHAR(std::wstring_view wstr);
+		bool SetDataNAME_UCHAR(std::wstring_view wstr);
+		bool SetDataNAME_SHORT(std::wstring_view wstr);
+		bool SetDataNAME_USHORT(std::wstring_view wstr);
+		bool SetDataNAME_LONG(std::wstring_view wstr);
+		bool SetDataNAME_ULONG(std::wstring_view wstr);
+		bool SetDataNAME_LONGLONG(std::wstring_view wstr);
+		bool SetDataNAME_ULONGLONG(std::wstring_view wstr);
+		bool SetDataNAME_FLOAT(std::wstring_view wstr);
+		bool SetDataNAME_DOUBLE(std::wstring_view wstr);
+		bool SetDataNAME_TIME32T(std::wstring_view wstr);
+		bool SetDataNAME_TIME64T(std::wstring_view wstr);
+		bool SetDataNAME_FILETIME(std::wstring_view wstr);
+		bool SetDataNAME_OLEDATETIME(std::wstring_view wstr);
+		bool SetDataNAME_JAVATIME(std::wstring_view wstr);
+		bool SetDataNAME_MSDOSTIME(std::wstring_view wstr);
+		bool SetDataNAME_MSDTTMTIME(std::wstring_view wstr);
+		bool SetDataNAME_SYSTEMTIME(std::wstring_view wstr);
+		bool SetDataNAME_GUIDTIME(std::wstring_view wstr);
+		bool SetDataNAME_GUID(std::wstring_view wstr);
 		DECLARE_MESSAGE_MAP()
 	private:
 		enum class EGroup : WORD { DIGITS, FLOAT, TIME, MISC };
 		enum class EName : WORD {
-			NAME_BINARY,
-			NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
-			NAME_LONG, NAME_ULONG, NAME_LONGLONG, NAME_ULONGLONG, NAME_GUID,
+			NAME_BINARY, NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
+			NAME_LONG, NAME_ULONG, NAME_LONGLONG, NAME_ULONGLONG,
 			NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
 			NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
-			NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME
+			NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID
 		};
 		enum class ESize : WORD { SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4, SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10 };
 		struct GRIDDATA
