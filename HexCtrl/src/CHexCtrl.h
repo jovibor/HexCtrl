@@ -193,6 +193,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
 		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 		afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+		afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
 		afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 		afx_msg void OnSysKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 		void OnKeyDownCtrl(UINT nChar);  //Key pressed with the Ctrl.
@@ -299,7 +300,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
 		bool m_fSectorVisible { false };      //Print lines between sectors or not.
 		bool m_fHighLatency { false };        //Reflects HEXDATASTRUCT::fHighLatency.
-		wchar_t m_warrOffset[40] { L"Offset: " };
+		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
 };
 
 	template<typename T>

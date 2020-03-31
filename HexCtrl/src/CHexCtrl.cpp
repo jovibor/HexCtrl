@@ -101,6 +101,7 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_HSCROLL()
 	ON_WM_INITMENUPOPUP()
 	ON_WM_KEYDOWN()
+	ON_WM_KEYUP()
 	ON_WM_LBUTTONDBLCLK()
 	ON_WM_LBUTTONDOWN()
 	ON_WM_LBUTTONUP()
@@ -1541,8 +1542,24 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_DATAINTERPRET, IsCmdAvail(EHexCmd::CMD_DATAINTERPRET) ? MF_ENABLED : MF_GRAYED);
 }
 
-void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
+void CHexCtrl::OnKeyUp(UINT /*nChar*/, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {
+	//If some key was previously pressed for some time, and now is released.
+	//Inspecting current caret position.
+	if (m_fKeyDownAtm)
+	{
+		m_fKeyDownAtm = false;
+		m_pDlgDataInterpret->InspectOffset(GetCaretPos());
+	}
+}
+
+void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
+{
+	//Bit 14 indicates that the key was pressed continuously.
+	//0x4000 == 0100 0000 0000 0000.
+	if (nFlags & 0x4000)
+		m_fKeyDownAtm = true;
+
 	if (GetAsyncKeyState(VK_CONTROL) < 0)    //With Ctrl pressed.
 		OnKeyDownCtrl(nChar);
 	else if (GetAsyncKeyState(VK_SHIFT) < 0) //With Shift pressed.
@@ -2721,8 +2738,9 @@ void CHexCtrl::ShowOffsetTooltip(bool fShow)
 		CPoint ptScreen;
 		GetCursorPos(&ptScreen);
 
-		UllToWchars(GetTopLine() * m_dwCapacity, &m_warrOffset[8], static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
-		m_stToolInfoOffset.lpszText = m_warrOffset;
+		static wchar_t warrOffset[40] { L"Offset: " };
+		UllToWchars(GetTopLine() * m_dwCapacity, &warrOffset[8], static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
+		m_stToolInfoOffset.lpszText = warrOffset;
 		m_wndTtOffset.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
 		m_wndTtOffset.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
 	}
@@ -3851,8 +3869,10 @@ void CHexCtrl::SetCaretPos(ULONGLONG ullPos, bool fHighPart)
 
 void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 {
-	m_pDlgDataInterpret->InspectOffset(ullOffset);
-	MsgWindowNotify(HEXCTRL_MSG_CARETCHANGE);
+	//To prevent inspecting while key is pressed continuously.
+	//Only when one time pressing.
+	if (!m_fKeyDownAtm)
+		m_pDlgDataInterpret->InspectOffset(ullOffset);
 
 	if (auto pBkm = m_pBookmarks->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.
 	{
@@ -3860,6 +3880,8 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 		hns.pData = reinterpret_cast<std::byte*>(pBkm);
 		MsgWindowNotify(hns);
 	}
+
+	MsgWindowNotify(HEXCTRL_MSG_CARETCHANGE);
 }
 
 void CHexCtrl::CaretMoveRight()
