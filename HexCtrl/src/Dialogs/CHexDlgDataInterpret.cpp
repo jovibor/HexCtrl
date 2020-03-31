@@ -1261,7 +1261,7 @@ bool CHexDlgDataInterpret::SetDataNAME_FILETIME(std::wstring_view wstr)
 	if (m_fBigEndian)
 		ullTime.QuadPart = _byteswap_uint64(ullTime.QuadPart);
 
-	m_pHexCtrl->SetData(m_ullOffset, ftTime);
+	m_pHexCtrl->SetData(m_ullOffset, ullTime.QuadPart);
 
 	return true;
 }
@@ -1335,6 +1335,8 @@ bool CHexDlgDataInterpret::SetDataNAME_MSDOSTIME(std::wstring_view wstr)
 	if (!FileTimeToDosDateTime(&ftTime, &msdosDateTime.TimeDate.wDate, &msdosDateTime.TimeDate.wTime))
 		return false;
 
+	//Note: Big Endian not currently supported. This has never existed in the "wild"
+
 	m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(msdosDateTime.dwTimeDate));
 
 	return true;
@@ -1355,6 +1357,8 @@ bool CHexDlgDataInterpret::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)
 	dttm.components.hour = stTime.wHour;
 	dttm.components.minute = stTime.wMinute;
 
+	//Note: Big Endian not currently supported. This has never existed in the "wild"
+
 	m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(dttm.dwValue));
 
 	return true;
@@ -1365,6 +1369,8 @@ bool CHexDlgDataInterpret::SetDataNAME_SYSTEMTIME(std::wstring_view wstr)
 	SYSTEMTIME stTime;
 	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
 		return false;
+
+	//Note: Big Endian not currently supported. This has never existed in the "wild"
 
 	m_pHexCtrl->SetData(m_ullOffset, stTime);
 
