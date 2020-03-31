@@ -66,10 +66,10 @@ namespace HEXCTRL::INTERNAL {
 		return true;
 	}
 
-	bool WCharsToUll(const wchar_t* pwcsz, unsigned long long& ull, bool fHex)
+	bool WCharsToUll(const wchar_t* pwcsz, unsigned long long& ull)
 	{
 		wchar_t* pEndPtr;
-		int iRadix = fHex ? 16 : 10;
+		int iRadix { 10 };
 		if ((wcsstr(pwcsz, L"0x") == pwcsz) || (wcsstr(pwcsz, L"0X") == pwcsz))
 			iRadix = 16; //NB: Avoid radix=0 because this may be treated as octal
 		ull = std::wcstoull(pwcsz, &pEndPtr, iRadix);
@@ -80,10 +80,10 @@ namespace HEXCTRL::INTERNAL {
 		return true;
 	}
 
-	bool WCharsToll(const wchar_t* pwcsz, long long& ll, bool fHex)
+	bool WCharsToll(const wchar_t* pwcsz, long long& ll)
 	{
 		wchar_t* pEndPtr;
-		int iRadix = fHex ? 16 : 10;
+		int iRadix { 10 };
 		if ((wcsstr(pwcsz, L"0x") == pwcsz) || (wcsstr(pwcsz, L"0X") == pwcsz))
 			iRadix = 16; //NB: Avoid radix=0 because this may be treated as octal
 		ll = std::wcstoll(pwcsz, &pEndPtr, iRadix);

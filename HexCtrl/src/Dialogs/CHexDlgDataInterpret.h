@@ -24,21 +24,22 @@ namespace HEXCTRL::INTERNAL
 		BOOL ShowWindow(int nCmdShow);
 	private:
 #pragma pack(push, 1)
-		typedef union _MSDOSDATETIME //MS-DOS Date+Time structure (as used in FAT file system directory entry)
-		{							 //See: https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
+		union MSDOSDATETIME //MS-DOS Date+Time structure (as used in FAT file system directory entry)
+		{				 //See: https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
 			struct
 			{
 				WORD wTime;	//Time component
 				WORD wDate;	//Date component
 			} TimeDate;
 			DWORD dwTimeDate;
-		} MSDOSDATETIME, *PMSDOSDATETIME;
+		};
+		using PMSDOSDATETIME = MSDOSDATETIME*;
 #pragma pack(pop)
 
 		//Microsoft DTTM time (as used by Microsoft Compound Document format)
 		//See: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/164c0c2e-6031-439e-88ad-69d00b69f414
 #pragma pack(push, 1)
-		typedef union _DTTM
+		union DTTM
 		{
 			struct
 			{
@@ -50,11 +51,12 @@ namespace HEXCTRL::INTERNAL
 				unsigned long weekday : 3;
 			} components;
 			unsigned long dwValue;
-		} DTTM, *PDTTM;
+		};
+		using PDTTM = DTTM*;
 #pragma pack(pop)
 
 #pragma pack(push, 1)
-		typedef union _DQWORD128
+		union DQWORD128
 		{
 			struct
 			{
@@ -62,7 +64,8 @@ namespace HEXCTRL::INTERNAL
 				QWORD qwHigh;
 			} Value;
 			GUID gGUID;
-		} DQWORD128, *PDQWORD128;
+		};
+		using PDQWORD128 = DQWORD128*;
 #pragma pack(pop)
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;
@@ -78,7 +81,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioBe();
 		afx_msg void OnClickRadioDec();
 		afx_msg void OnClickRadioHex();
-		const CString GetCurrentUserDateFormatString();
+		CString GetCurrentUserDateFormatString();
 		CString SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime);
 		bool StringToSystemTime(std::wstring_view wstrDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
 		template <typename T>bool SetDigitData(LONGLONG llData);

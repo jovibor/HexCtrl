@@ -63,21 +63,21 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 
 	//Determine locale specific date format. Default to UK/European if unable to determine
 	//See: https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
-	int nResult = GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
+	int nResult = GetLocaleInfoW(LOCALE_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
 		reinterpret_cast<LPTSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat));
 	if (!nResult)
 		m_dwDateFormat = 1;
 
 	//Determine 'short' date seperator character. Default to UK/European if unable to determine	
-	nResult = GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SDATE, m_wszDateSeparator, _countof(m_wszDateSeparator));
+	nResult = GetLocaleInfoW(LOCALE_USER_DEFAULT, LOCALE_SDATE, m_wszDateSeparator, _countof(m_wszDateSeparator));
 	if (!nResult)
 		_stprintf_s(m_wszDateSeparator, _countof(m_wszDateSeparator), L"/");
 
 	//Update dialog title to include date format
 	CString sTitle;
-	GetWindowText(sTitle);
+	GetWindowTextW(sTitle);
 	sTitle.AppendFormat(L" [%s]", GetCurrentUserDateFormatString().GetString());
-	SetWindowText(sTitle);
+	SetWindowTextW(sTitle);
 
 	if (auto pRadio = (CButton*)GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE); pRadio)
 		pRadio->SetCheck(1);
@@ -246,6 +246,9 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	if (ullOffset >= ullDataSize) //Out of data bounds.
 		return;
 
+	for (const auto& iter : m_vecProp)
+		iter.pProp->AllowEdit(m_pHexCtrl->IsMutable());
+
 	m_ullOffset = ullOffset;
 	const auto byte = m_pHexCtrl->GetData<BYTE>(ullOffset);
 
@@ -260,7 +263,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 			if (iter.eSize >= ESize::SIZE_WORD)
 			{
 				iter.pProp->SetValue(L"0");
-				iter.pProp->Enable(0);
+				iter.pProp->Enable(FALSE);
 			}
 		}
 		return;
@@ -269,7 +272,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	//ESize::SIZE_WORD////////////////////////////////////////////
 	for (const auto& iter : m_vecProp)
 		if (iter.eSize == ESize::SIZE_WORD)
-			iter.pProp->Enable(1);
+			iter.pProp->Enable(TRUE);
 
 	auto word = m_pHexCtrl->GetData<WORD>(ullOffset);
 	if (m_fBigEndian)
@@ -285,7 +288,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 			if (iter.eSize >= ESize::SIZE_DWORD)
 			{
 				iter.pProp->SetValue(L"0");
-				iter.pProp->Enable(0);
+				iter.pProp->Enable(FALSE);
 			}
 		}
 		return;
@@ -294,7 +297,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	//ESize::SIZE_DWORD//////////////////////////////////////////////
 	for (const auto& iter : m_vecProp)
 		if (iter.eSize == ESize::SIZE_DWORD)
-			iter.pProp->Enable(1);
+			iter.pProp->Enable(TRUE);
 
 	auto dword = m_pHexCtrl->GetData<DWORD>(ullOffset);
 	if (m_fBigEndian)
@@ -314,7 +317,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 			if (iter.eSize >= ESize::SIZE_QWORD)
 			{
 				iter.pProp->SetValue(L"0");
-				iter.pProp->Enable(0);
+				iter.pProp->Enable(FALSE);
 			}
 		}
 		return;
@@ -323,7 +326,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	//ESize::SIZE_QWORD//////////////////////////////////////////////////
 	for (const auto& iter : m_vecProp)
 		if (iter.eSize == ESize::SIZE_QWORD)
-			iter.pProp->Enable(1);
+			iter.pProp->Enable(TRUE);
 
 	auto qword = m_pHexCtrl->GetData<QWORD>(ullOffset);
 	if (m_fBigEndian)
@@ -344,7 +347,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 			if (iter.eSize >= ESize::SIZE_DQWORD)
 			{
 				iter.pProp->SetValue(L"0");
-				iter.pProp->Enable(0);
+				iter.pProp->Enable(FALSE);
 			}
 		}
 		return;
@@ -353,7 +356,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	//ESize::SIZE_DQWORD//////////////////////////////////////////////////
 	for (const auto& iter : m_vecProp)
 		if (iter.eSize == ESize::SIZE_DQWORD)
-			iter.pProp->Enable(1);
+			iter.pProp->Enable(TRUE);
 
 	auto dqword = m_pHexCtrl->GetData<DQWORD128>(ullOffset);
 	if (m_fBigEndian)
@@ -479,22 +482,20 @@ void CHexDlgDataInterpret::UpdateHexCtrl()
 		m_pHexCtrl->RedrawWindow();
 }
 
-const CString CHexDlgDataInterpret::GetCurrentUserDateFormatString()
+CString CHexDlgDataInterpret::GetCurrentUserDateFormatString()
 {
 	CString sResult;
 
 	switch (m_dwDateFormat)
 	{
-		//0=Month-Day-Year
-	case 0:		sResult.Format(L"mm%sdd%syyyy", m_wszDateSeparator, m_wszDateSeparator);
+	case 0:	//0=Month-Day-Year
+		sResult.Format(L"mm%sdd%syyyy", m_wszDateSeparator, m_wszDateSeparator);
 		break;
-
-		//2=Year-Month-Day 
-	case 2:		sResult.Format(L"yyyy%smm%sdd", m_wszDateSeparator, m_wszDateSeparator);
+	case 2:	//2=Year-Month-Day 
+		sResult.Format(L"yyyy%smm%sdd", m_wszDateSeparator, m_wszDateSeparator);
 		break;
-
-		//1=Day-Month-Year (default)
-	default:	sResult.Format(L"dd%smm%syyyy", m_wszDateSeparator, m_wszDateSeparator);
+	default: //1=Day-Month-Year (default)
+		sResult.Format(L"dd%smm%syyyy", m_wszDateSeparator, m_wszDateSeparator);
 		break;
 	}
 
@@ -516,16 +517,13 @@ CString CHexDlgDataInterpret::SystemTimeToString(const SYSTEMTIME* pSysTime, boo
 		{
 			switch (m_dwDateFormat)
 			{
-				//0=Month-Day-Year
-			case 0:
+			case 0:	//0=Month-Day-Year
 				sResult.Format(L"%.2d%s%.2d%s%.4d", pSysTime->wMonth, m_wszDateSeparator, pSysTime->wDay, m_wszDateSeparator, pSysTime->wYear);
 				break;
-				//2=Year-Month-Day 
-			case 2:
+			case 2:	//2=Year-Month-Day 
 				sResult.Format(L"%.4d%s%.2d%s%.2d", pSysTime->wYear, m_wszDateSeparator, pSysTime->wMonth, m_wszDateSeparator, pSysTime->wDay);
 				break;
-				//1=Day-Month-Year (default)
-			default:
+			default: //1=Day-Month-Year (default)
 				sResult.Format(L"%.2d%s%.2d%s%.4d", pSysTime->wDay, m_wszDateSeparator, pSysTime->wMonth, m_wszDateSeparator, pSysTime->wYear);
 			}
 
@@ -558,10 +556,10 @@ bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstrDateTime, PS
 	//Normalise the input string by replacing non-numeric characters except space with /
 	//This should regardless of the current date/time separator character
 	CString sDateTimeCooked;
-	for (int i = 0; i < wstrDateTime.size(); i++)
+	for (const auto& iter : wstrDateTime)
 	{
-		if (iswdigit(wstrDateTime[i]) || wstrDateTime[i] == L' ')
-			sDateTimeCooked.AppendChar(wstrDateTime[i]);
+		if (iswdigit(iter) || iter == L' ')
+			sDateTimeCooked.AppendChar(iter);
 		else
 			sDateTimeCooked.AppendChar(L'/');
 	}
@@ -571,16 +569,13 @@ bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstrDateTime, PS
 	{
 		switch (m_dwDateFormat)
 		{
-			//0=Month-Day-Year
-		case 0:
+		case 0:	//0=Month-Day-Year
 			swscanf_s(sDateTimeCooked, L"%2hu/%2hu/%4hu", &pSysTime->wMonth, &pSysTime->wDay, &pSysTime->wYear);
 			break;
-			//2=Year-Month-Day 
-		case 2:
+		case 2:	//2=Year-Month-Day 
 			swscanf_s(sDateTimeCooked, L"%4hu/%2hu/%2hu", &pSysTime->wYear, &pSysTime->wMonth, &pSysTime->wDay);
 			break;
-			//1=Day-Month-Year (default)
-		default:
+		default: //1=Day-Month-Year (default)
 			swscanf_s(sDateTimeCooked, L"%2hu/%2hu/%4hu", &pSysTime->wDay, &pSysTime->wMonth, &pSysTime->wYear);
 			break;
 		}
@@ -657,24 +652,24 @@ bool CHexDlgDataInterpret::StringToGuid(std::wstring_view pwszSource, LPGUID pGU
 		return false;
 
 	//%.8x pGuid->Data1
-	pGUIDResult->Data1 = wcstoul(sResult.Mid(0, 8), NULL, 16);
+	pGUIDResult->Data1 = wcstoul(sResult.Mid(0, 8), nullptr, 16);
 
 	//%.4x pGuid->Data2
-	pGUIDResult->Data2 = static_cast<unsigned short>(wcstoul(sResult.Mid(8, 4), NULL, 16));
+	pGUIDResult->Data2 = static_cast<unsigned short>(wcstoul(sResult.Mid(8, 4), nullptr, 16));
 
 	//%.4x pGuid->Data3
-	pGUIDResult->Data3 = static_cast<unsigned short>(wcstoul(sResult.Mid(12, 4), NULL, 16));
+	pGUIDResult->Data3 = static_cast<unsigned short>(wcstoul(sResult.Mid(12, 4), nullptr, 16));
 
 	//%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x pGuid->Data4[0], pGuid->Data4[1], pGuid->Data4[2], 
 	//pGuid->Data4[3], pGuid->Data4[4], pGuid->Data4[5], pGuid->Data4[6], pGuid->Data4[7] 
-	pGUIDResult->Data4[0] = static_cast<unsigned char>(wcstoul(sResult.Mid(16, 2), NULL, 16));
-	pGUIDResult->Data4[1] = static_cast<unsigned char>(wcstoul(sResult.Mid(18, 2), NULL, 16));
-	pGUIDResult->Data4[2] = static_cast<unsigned char>(wcstoul(sResult.Mid(20, 2), NULL, 16));
-	pGUIDResult->Data4[3] = static_cast<unsigned char>(wcstoul(sResult.Mid(22, 2), NULL, 16));
-	pGUIDResult->Data4[4] = static_cast<unsigned char>(wcstoul(sResult.Mid(24, 2), NULL, 16));
-	pGUIDResult->Data4[5] = static_cast<unsigned char>(wcstoul(sResult.Mid(26, 2), NULL, 16));
-	pGUIDResult->Data4[6] = static_cast<unsigned char>(wcstoul(sResult.Mid(28, 2), NULL, 16));
-	pGUIDResult->Data4[7] = static_cast<unsigned char>(wcstoul(sResult.Mid(30, 2), NULL, 16));
+	pGUIDResult->Data4[0] = static_cast<unsigned char>(wcstoul(sResult.Mid(16, 2), nullptr, 16));
+	pGUIDResult->Data4[1] = static_cast<unsigned char>(wcstoul(sResult.Mid(18, 2), nullptr, 16));
+	pGUIDResult->Data4[2] = static_cast<unsigned char>(wcstoul(sResult.Mid(20, 2), nullptr, 16));
+	pGUIDResult->Data4[3] = static_cast<unsigned char>(wcstoul(sResult.Mid(22, 2), nullptr, 16));
+	pGUIDResult->Data4[4] = static_cast<unsigned char>(wcstoul(sResult.Mid(24, 2), nullptr, 16));
+	pGUIDResult->Data4[5] = static_cast<unsigned char>(wcstoul(sResult.Mid(26, 2), nullptr, 16));
+	pGUIDResult->Data4[6] = static_cast<unsigned char>(wcstoul(sResult.Mid(28, 2), nullptr, 16));
+	pGUIDResult->Data4[7] = static_cast<unsigned char>(wcstoul(sResult.Mid(30, 2), nullptr, 16));
 
 	return true;
 }
@@ -948,9 +943,12 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)
 	LARGE_INTEGER Time;
 	Time.HighPart = FILETIME1970_HIGH;
 	Time.LowPart = FILETIME1970_LOW;
-	Time.QuadPart += qword * FTTICKSPERMS;
 	ftJavaTime.dwHighDateTime = Time.HighPart;
 	ftJavaTime.dwLowDateTime = Time.LowPart;
+	if (static_cast<LONGLONG>(qword) >= 0)
+		Time.QuadPart += qword * FTTICKSPERMS;
+	else
+		Time.QuadPart -= qword * FTTICKSPERMS;
 
 	if (FileTimeToSystemTime(&ftJavaTime, &SysTime))
 		wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
@@ -960,7 +958,7 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterpret::ShowNAME_GUID(const DQWORD128& dqword)
+void CHexDlgDataInterpret::ShowNAME_GUID(const DQWORD128 & dqword)
 {
 	CString sGUID;
 	sGUID.Format(_T("{%.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x}"),
@@ -972,9 +970,10 @@ void CHexDlgDataInterpret::ShowNAME_GUID(const DQWORD128& dqword)
 		iter->pProp->SetValue(sGUID);
 }
 
-void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD128& dqword)
+void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD128 & dqword)
 {
 	//Guid v1 Datetime UTC
+	//The time structure within the NAME_GUID.
 	//First, verify GUID is actually version 1 style
 	std::wstring wstrTime = L"N/A";
 	SYSTEMTIME SysTime { };
@@ -1012,22 +1011,20 @@ void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD128& dqword)
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterpret::ShowNAME_SYSTEMTIME(const DQWORD128& dqword)
+void CHexDlgDataInterpret::ShowNAME_SYSTEMTIME(const DQWORD128 & dqword)
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_SYSTEMTIME; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(SystemTimeToString(reinterpret_cast<const SYSTEMTIME*>(&dqword), true, true).GetString());
 }
 
-
-//SetData... methods.
 bool CHexDlgDataInterpret::SetDataNAME_BINARY(std::wstring_view wstr)
 {
 	bool fSuccess { false };
 	if (wstr.size() != 8 || wstr.find_first_not_of(L"01") != std::string::npos)
 		return fSuccess;
 
-	long lData = wcstol(wstr.data(), NULL, 2);
+	long lData = wcstol(wstr.data(), nullptr, 2);
 	fSuccess = SetDigitData<UCHAR>(lData);
 
 	return fSuccess;
@@ -1097,7 +1094,7 @@ bool CHexDlgDataInterpret::SetDataNAME_LONGLONG(std::wstring_view wstr)
 {
 	bool fSuccess { false };
 	LONGLONG llData { };
-	if (WCharsToll(wstr.data(), llData, false))
+	if (WCharsToll(wstr.data(), llData))
 		fSuccess = SetDigitData<LONGLONG>(llData);
 
 	return fSuccess;
@@ -1107,7 +1104,7 @@ bool CHexDlgDataInterpret::SetDataNAME_ULONGLONG(std::wstring_view wstr)
 {
 	bool fSuccess { false };
 	ULONGLONG ullData;
-	if (WCharsToUll(wstr.data(), ullData, false))
+	if (WCharsToUll(wstr.data(), ullData))
 		fSuccess = SetDigitData<ULONGLONG>(static_cast<LONGLONG>(ullData));
 
 	return fSuccess;
@@ -1202,7 +1199,7 @@ bool CHexDlgDataInterpret::SetDataNAME_TIME64T(std::wstring_view wstr)
 	lTicks.LowPart = ftTime.dwLowDateTime;
 	lTicks.QuadPart /= FTTICKSPERSECOND;
 	lTicks.QuadPart -= UNIXEPOCHDIFFERENCE;
-	LONGLONG llTime64 = static_cast<LONGLONG>(lTicks.QuadPart);
+	auto llTime64 = static_cast<LONGLONG>(lTicks.QuadPart);
 
 	if (m_fBigEndian)
 		llTime64 = _byteswap_uint64(llTime64);
@@ -1244,7 +1241,7 @@ bool CHexDlgDataInterpret::SetDataNAME_OLEDATETIME(std::wstring_view wstr)
 	if (dt.GetStatus() != COleDateTime::valid)
 		return false;
 
-	ULONGLONG ullValue = static_cast<ULONGLONG>(dt.m_dt);
+	auto ullValue = static_cast<ULONGLONG>(dt.m_dt);
 
 	if (m_fBigEndian)
 		ullValue = _byteswap_uint64(ullValue);
@@ -1341,6 +1338,10 @@ bool CHexDlgDataInterpret::SetDataNAME_SYSTEMTIME(std::wstring_view wstr)
 
 bool CHexDlgDataInterpret::SetDataNAME_GUIDTIME(std::wstring_view wstr)
 {
+	//This time is within NAME_GUID structure, and it depends on it.
+	//We can not just set a NAME_GUIDTIME for data range if it's not 
+	//a valid NAME_GUID range, so checking first.
+
 	auto dqword = m_pHexCtrl->GetData<DQWORD128>(m_ullOffset);
 	unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
 	if (unGuidVersion != 1)
