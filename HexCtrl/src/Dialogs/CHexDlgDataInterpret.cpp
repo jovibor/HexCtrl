@@ -1283,7 +1283,7 @@ bool CHexDlgDataInterpret::SetDataNAME_OLEDATETIME(std::wstring_view wstr)
 	
 	//Cannot convert from Double to ULL with static_cast?
 	ULONGLONG ullValue;
-	std:memcpy(&ullValue, &dt.m_dt, sizeof(dt.m_dt));
+	std::memcpy(&ullValue, &dt.m_dt, sizeof(dt.m_dt));
 
 	if (m_fBigEndian)
 		ullValue = _byteswap_uint64(ullValue);
