@@ -953,9 +953,8 @@ void CHexDlgDataInterpret::ShowNAME_OLEDATETIME(QWORD qword)
 
 	std::wstring wstrTime = NOTAPPLICABLE;
 	
-	//Convert from ULL to Double cannot be done with static_cast?
-	DATE date;
-	std::memcpy(&date, &qword, sizeof(date));
+	//Interpret date (double) from raw bits
+	DATE date = *reinterpret_cast<DATE*>(&qword);
 	COleDateTime dt(date);
 
 	SYSTEMTIME SysTime{ };
@@ -1281,9 +1280,8 @@ bool CHexDlgDataInterpret::SetDataNAME_OLEDATETIME(std::wstring_view wstr)
 	if (dt.GetStatus() != COleDateTime::valid)
 		return false;
 	
-	//Cannot convert from Double to ULL with static_cast?
-	ULONGLONG ullValue;
-	std::memcpy(&ullValue, &dt.m_dt, sizeof(dt.m_dt));
+	//Treat date (double) as raw bits
+	ULONGLONG ullValue = *reinterpret_cast<ULONGLONG*>(&dt.m_dt);
 
 	if (m_fBigEndian)
 		ullValue = _byteswap_uint64(ullValue);
