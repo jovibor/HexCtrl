@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright Â© 2018-2020 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
@@ -16,12 +16,6 @@ namespace HEXCTRL::INTERNAL
 {
 	class CHexDlgDataInterpret final : public CDialogEx
 	{
-	public:
-		explicit CHexDlgDataInterpret(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_DATAINTERPRET, pParent) {}
-		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
-		ULONGLONG GetSize();
-		void InspectOffset(ULONGLONG ullOffset);
-		BOOL ShowWindow(int nCmdShow);
 	private:
 #pragma pack(push, 1)
 		union MSDOSDATETIME //MS-DOS Date+Time structure (as used in FAT file system directory entry)
@@ -67,6 +61,24 @@ namespace HEXCTRL::INTERNAL
 		};
 		using PDQWORD128 = DQWORD128*;
 #pragma pack(pop)
+		//Time calculation constants
+		static inline const wchar_t* const arrNibbles [] {
+			L"0000", L"0001", L"0010", L"0011", L"0100", L"0101", L"0110", L"0111",
+			L"1000", L"1001", L"1010", L"1011", L"1100", L"1101", L"1110", L"1111" };
+		static constexpr auto m_uFTTicksPerMS = 10000U;             //Number of 100ns intervals in a milli-second
+		static constexpr auto m_uFTTicksPerSec = 10000000UL;        //Number of 100ns intervals in a second
+		static constexpr auto m_uHoursPerDay = 24U;                 //24 hours per day
+		static constexpr auto m_uSecondsPerHour = 3600U;            //3600 seconds per hour
+		static constexpr auto m_uFileTime1582OffsetDays = 6653U;    //FILETIME is based upon 1 Jan 1601 whilst GUID time is from 15 Oct 1582. Add 6653 days to convert to GUID time
+		static constexpr auto m_ulFileTime1970_LOW = 0xd53e8000UL;  //1st Jan 1970 as FILETIME
+		static constexpr auto m_ulFileTime1970_HIGH = 0x019db1deUL; //Used for Unix and Java times
+		static constexpr auto m_ullUnixEpochDiff = 11644473600ULL;  //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970
+	public:
+		explicit CHexDlgDataInterpret(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_DATAINTERPRET, pParent) {}
+		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
+		ULONGLONG GetSize();
+		void InspectOffset(ULONGLONG ullOffset);
+		BOOL ShowWindow(int nCmdShow);
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
@@ -85,7 +97,7 @@ namespace HEXCTRL::INTERNAL
 		CString SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime);
 		bool StringToSystemTime(std::wstring_view wstrDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
 		template <typename T>bool SetDigitData(LONGLONG llData);
-		bool StringToGuid(std::wstring_view pwszSource, LPGUID pGUIDResult);
+		bool StringToGuid(std::wstring_view wstrSource, GUID& GUIDResult);
 		void ShowNAME_BINARY(BYTE byte);
 		void ShowNAME_CHAR(BYTE byte);
 		void ShowNAME_UCHAR(BYTE byte);

@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright Â© 2018-2020 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
@@ -12,24 +12,7 @@
 #include <algorithm>
 #include "strsafe.h"
 
-using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
-
-//Time calculation constants
-namespace HEXCTRL::INTERNAL {
-	const WCHAR* NIBBLES [] = {
-		L"0000", L"0001", L"0010", L"0011", L"0100", L"0101", L"0110", L"0111",
-		L"1000", L"1001", L"1010", L"1011", L"1100", L"1101", L"1110", L"1111" };
-	const WCHAR NOTAPPLICABLE[] = L"N/A";
-	constexpr auto FTTICKSPERMS = 10000U;                //Number of 100ns intervals in a milli-second
-	constexpr auto FTTICKSPERSECOND = 10000000UL;        //Number of 100ns intervals in a second
-	constexpr auto HOURSPERDAY = 24U;                    //24 hours per day
-	constexpr auto SECONDSPERHOUR = 3600U;               //3600 seconds per hour
-	constexpr auto FILETIME1582OFFSETDAYS = 6653U;       //FILETIME is based upon 1 Jan 1601 whilst GUID time is from 15 Oct 1582. Add 6653 days to convert to GUID time
-	constexpr auto FILETIME1970_LOW = 0xd53e8000UL;      //1st Jan 1970 as FILETIME
-	constexpr auto FILETIME1970_HIGH = 0x019db1deUL;	 //Used for Unix and Java times
-	constexpr auto UNIXEPOCHDIFFERENCE = 11644473600ULL; //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970
-}
 
 BEGIN_MESSAGE_MAP(CHexDlgDataInterpret, CDialogEx)
 	ON_WM_CLOSE()
@@ -398,29 +381,11 @@ BOOL CHexDlgDataInterpret::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT * pRes
 		if (pHdr->code != HEXCTRL_PROPGRIDCTRL_SELCHANGED)
 			return FALSE;
 
-		auto pData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-			[this](const GRIDDATA& refData) {return refData.pProp == m_stCtrlGrid.GetCurrentProp(); });
-
-		if (pData != m_vecProp.end())
+		if (auto pData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+			[this](const GRIDDATA& refData)
+		{return refData.pProp == m_stCtrlGrid.GetCurrentProp(); }); pData != m_vecProp.end())
 		{
-			switch (pData->eSize)
-			{
-			case ESize::SIZE_BYTE:
-				m_ullSize = static_cast<ULONGLONG>(ESize::SIZE_BYTE);
-				break;
-			case ESize::SIZE_WORD:
-				m_ullSize = static_cast<ULONGLONG>(ESize::SIZE_WORD);
-				break;
-			case ESize::SIZE_DWORD:
-				m_ullSize = static_cast<ULONGLONG>(ESize::SIZE_DWORD);
-				break;
-			case ESize::SIZE_QWORD:
-				m_ullSize = static_cast<ULONGLONG>(ESize::SIZE_QWORD);
-				break;
-			case ESize::SIZE_DQWORD:
-				m_ullSize = static_cast<ULONGLONG>(ESize::SIZE_DQWORD);
-				break;
-			}
+			m_ullSize = static_cast<ULONGLONG>(pData->eSize);
 			UpdateHexCtrl();
 		}
 	}
@@ -607,17 +572,15 @@ bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstrDateTime, PS
 	return SystemTimeToFileTime(pSysTime, &ftValidCheck);
 }
 
-bool CHexDlgDataInterpret::StringToGuid(std::wstring_view pwszSource, LPGUID pGUIDResult)
+bool CHexDlgDataInterpret::StringToGuid(std::wstring_view wstrSource, GUID& GUIDResult)
 {
 	//Alternative to UuidFromString() that does not require Rpcrt4.dll
 
-	//Check arguments
-	if (pwszSource.empty() || pGUIDResult == nullptr)
+	if (wstrSource.empty())
 		return false;
 
-	//Make working copy of source data and empty result GUID
-	CString sBuffer = pwszSource.data();
-	std::memset(pGUIDResult, 0, sizeof(GUID));
+	//Make working copy of source data.
+	CString sBuffer = wstrSource.data();
 
 	//Make lower-case and strip any leading or trailing spaces
 	sBuffer = sBuffer.MakeLower();
@@ -653,32 +616,32 @@ bool CHexDlgDataInterpret::StringToGuid(std::wstring_view pwszSource, LPGUID pGU
 		return false;
 
 	//%.8x pGuid->Data1
-	pGUIDResult->Data1 = wcstoul(sResult.Mid(0, 8), nullptr, 16);
+	GUIDResult.Data1 = wcstoul(sResult.Mid(0, 8), nullptr, 16);
 
 	//%.4x pGuid->Data2
-	pGUIDResult->Data2 = static_cast<unsigned short>(wcstoul(sResult.Mid(8, 4), nullptr, 16));
+	GUIDResult.Data2 = static_cast<unsigned short>(wcstoul(sResult.Mid(8, 4), nullptr, 16));
 
 	//%.4x pGuid->Data3
-	pGUIDResult->Data3 = static_cast<unsigned short>(wcstoul(sResult.Mid(12, 4), nullptr, 16));
+	GUIDResult.Data3 = static_cast<unsigned short>(wcstoul(sResult.Mid(12, 4), nullptr, 16));
 
 	//%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x pGuid->Data4[0], pGuid->Data4[1], pGuid->Data4[2], 
 	//pGuid->Data4[3], pGuid->Data4[4], pGuid->Data4[5], pGuid->Data4[6], pGuid->Data4[7] 
-	pGUIDResult->Data4[0] = static_cast<unsigned char>(wcstoul(sResult.Mid(16, 2), nullptr, 16));
-	pGUIDResult->Data4[1] = static_cast<unsigned char>(wcstoul(sResult.Mid(18, 2), nullptr, 16));
-	pGUIDResult->Data4[2] = static_cast<unsigned char>(wcstoul(sResult.Mid(20, 2), nullptr, 16));
-	pGUIDResult->Data4[3] = static_cast<unsigned char>(wcstoul(sResult.Mid(22, 2), nullptr, 16));
-	pGUIDResult->Data4[4] = static_cast<unsigned char>(wcstoul(sResult.Mid(24, 2), nullptr, 16));
-	pGUIDResult->Data4[5] = static_cast<unsigned char>(wcstoul(sResult.Mid(26, 2), nullptr, 16));
-	pGUIDResult->Data4[6] = static_cast<unsigned char>(wcstoul(sResult.Mid(28, 2), nullptr, 16));
-	pGUIDResult->Data4[7] = static_cast<unsigned char>(wcstoul(sResult.Mid(30, 2), nullptr, 16));
+	GUIDResult.Data4[0] = static_cast<unsigned char>(wcstoul(sResult.Mid(16, 2), nullptr, 16));
+	GUIDResult.Data4[1] = static_cast<unsigned char>(wcstoul(sResult.Mid(18, 2), nullptr, 16));
+	GUIDResult.Data4[2] = static_cast<unsigned char>(wcstoul(sResult.Mid(20, 2), nullptr, 16));
+	GUIDResult.Data4[3] = static_cast<unsigned char>(wcstoul(sResult.Mid(22, 2), nullptr, 16));
+	GUIDResult.Data4[4] = static_cast<unsigned char>(wcstoul(sResult.Mid(24, 2), nullptr, 16));
+	GUIDResult.Data4[5] = static_cast<unsigned char>(wcstoul(sResult.Mid(26, 2), nullptr, 16));
+	GUIDResult.Data4[6] = static_cast<unsigned char>(wcstoul(sResult.Mid(28, 2), nullptr, 16));
+	GUIDResult.Data4[7] = static_cast<unsigned char>(wcstoul(sResult.Mid(30, 2), nullptr, 16));
 
 	return true;
 }
 
 void CHexDlgDataInterpret::ShowNAME_BINARY(BYTE byte)
 {
-	WCHAR buff[9];
-	swprintf_s(buff, _countof(buff), L"%s%s", NIBBLES[byte >> 4], NIBBLES[byte & 0x0F]);
+	WCHAR buff[32];
+	swprintf_s(buff, _countof(buff), L"%s%s", arrNibbles[byte >> 4], arrNibbles[byte & 0x0F]);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_BINARY; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -975,12 +938,12 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)
 	
 	//Add/subtract milliseconds from epoch time
 	LARGE_INTEGER Time;
-	Time.HighPart = FILETIME1970_HIGH;
-	Time.LowPart = FILETIME1970_LOW;
+	Time.HighPart = m_ulFileTime1970_HIGH;
+	Time.LowPart = m_ulFileTime1970_LOW;  
 	if (static_cast<LONGLONG>(qword) >= 0)
-		Time.QuadPart += qword * FTTICKSPERMS;
+		Time.QuadPart += qword * m_uFTTicksPerMS;
 	else
-		Time.QuadPart -= qword * FTTICKSPERMS;
+		Time.QuadPart -= qword * m_uFTTicksPerMS;
 
 	//Convert to FILETIME
 	FILETIME ftJavaTime;
@@ -997,7 +960,7 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterpret::ShowNAME_GUID(const DQWORD128 & dqword)
+void CHexDlgDataInterpret::ShowNAME_GUID(const DQWORD128& dqword)
 {
 	CString sGUID;
 	sGUID.Format(_T("{%.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x}"),
@@ -1009,7 +972,7 @@ void CHexDlgDataInterpret::ShowNAME_GUID(const DQWORD128 & dqword)
 		iter->pProp->SetValue(sGUID);
 }
 
-void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD128 & dqword)
+void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD128& dqword)
 {
 	//Guid v1 Datetime UTC
 	//The time structure within the NAME_GUID.
@@ -1033,8 +996,8 @@ void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD128 & dqword)
 		//NB: 6653 days from 15 Oct 1582 to 1 Jan 1601
 		//
 		ULARGE_INTEGER ullSubtractTicks;
-		ullSubtractTicks.QuadPart = static_cast<QWORD>(FTTICKSPERSECOND) * static_cast<QWORD>(SECONDSPERHOUR)
-			* static_cast<QWORD>(HOURSPERDAY) * static_cast<QWORD>(FILETIME1582OFFSETDAYS);
+		ullSubtractTicks.QuadPart = static_cast<QWORD>(m_uFTTicksPerSec) * static_cast<QWORD>(m_uSecondsPerHour)
+			* static_cast<QWORD>(m_uHoursPerDay) * static_cast<QWORD>(m_uFileTime1582OffsetDays);
 		qwGUIDTime.QuadPart -= ullSubtractTicks.QuadPart;
 
 		//Convert to SYSTEMTIME
@@ -1050,7 +1013,7 @@ void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD128 & dqword)
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterpret::ShowNAME_SYSTEMTIME(const DQWORD128 & dqword)
+void CHexDlgDataInterpret::ShowNAME_SYSTEMTIME(const DQWORD128& dqword)
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_SYSTEMTIME; }); iter != m_vecProp.end())
@@ -1059,14 +1022,12 @@ void CHexDlgDataInterpret::ShowNAME_SYSTEMTIME(const DQWORD128 & dqword)
 
 bool CHexDlgDataInterpret::SetDataNAME_BINARY(std::wstring_view wstr)
 {
-	bool fSuccess { false };
 	if (wstr.size() != 8 || wstr.find_first_not_of(L"01") != std::string::npos)
-		return fSuccess;
+		return false;
 
 	long lData = wcstol(wstr.data(), nullptr, 2);
-	fSuccess = SetDigitData<UCHAR>(lData);
 
-	return fSuccess;
+	return SetDigitData<UCHAR>(lData);
 }
 
 bool CHexDlgDataInterpret::SetDataNAME_CHAR(std::wstring_view wstr)
@@ -1200,8 +1161,8 @@ bool CHexDlgDataInterpret::SetDataNAME_TIME32T(std::wstring_view wstr)
 	LARGE_INTEGER lTicks;
 	lTicks.HighPart = ftTime.dwHighDateTime;
 	lTicks.LowPart = ftTime.dwLowDateTime;
-	lTicks.QuadPart /= FTTICKSPERSECOND;
-	lTicks.QuadPart -= UNIXEPOCHDIFFERENCE;
+	lTicks.QuadPart /= m_uFTTicksPerSec;
+	lTicks.QuadPart -= m_ullUnixEpochDiff;
 
 	if (lTicks.QuadPart < LONG_MAX)
 	{
@@ -1236,8 +1197,8 @@ bool CHexDlgDataInterpret::SetDataNAME_TIME64T(std::wstring_view wstr)
 	LARGE_INTEGER lTicks;
 	lTicks.HighPart = ftTime.dwHighDateTime;
 	lTicks.LowPart = ftTime.dwLowDateTime;
-	lTicks.QuadPart /= FTTICKSPERSECOND;
-	lTicks.QuadPart -= UNIXEPOCHDIFFERENCE;
+	lTicks.QuadPart /= m_uFTTicksPerSec;
+	lTicks.QuadPart -= m_ullUnixEpochDiff;
 	auto llTime64 = static_cast<LONGLONG>(lTicks.QuadPart);
 
 	if (m_fBigEndian)
@@ -1307,8 +1268,8 @@ bool CHexDlgDataInterpret::SetDataNAME_JAVATIME(std::wstring_view wstr)
 	lJavaTicks.LowPart = ftTime.dwLowDateTime;
 
 	LARGE_INTEGER lEpochTicks;
-	lEpochTicks.HighPart = FILETIME1970_HIGH;
-	lEpochTicks.LowPart = FILETIME1970_LOW;
+	lEpochTicks.HighPart = m_ulFileTime1970_HIGH;
+	lEpochTicks.LowPart = m_ulFileTime1970_LOW;
 
 	LONGLONG llDiffTicks;
 	if (lEpochTicks.QuadPart > lJavaTicks.QuadPart)
@@ -1316,7 +1277,7 @@ bool CHexDlgDataInterpret::SetDataNAME_JAVATIME(std::wstring_view wstr)
 	else
 		llDiffTicks = lJavaTicks.QuadPart - lEpochTicks.QuadPart;
 
-	LONGLONG llDiffMillis = llDiffTicks / FTTICKSPERMS;
+	ULONGLONG ullDiffMillis = ullDiffTicks / m_uFTTicksPerMS;
 
 	if (m_fBigEndian)
 		llDiffMillis = _byteswap_uint64(llDiffMillis);
@@ -1411,8 +1372,8 @@ bool CHexDlgDataInterpret::SetDataNAME_GUIDTIME(std::wstring_view wstr)
 	qwGUIDTime.LowPart = ftTime.dwLowDateTime;
 
 	ULARGE_INTEGER ullAddTicks;
-	ullAddTicks.QuadPart = static_cast<QWORD>(FTTICKSPERSECOND) * static_cast<QWORD>(SECONDSPERHOUR)
-		* static_cast<QWORD>(HOURSPERDAY) * static_cast<QWORD>(FILETIME1582OFFSETDAYS);
+	ullAddTicks.QuadPart = static_cast<QWORD>(m_uFTTicksPerSec) * static_cast<QWORD>(m_uSecondsPerHour)
+		* static_cast<QWORD>(m_uHoursPerDay) * static_cast<QWORD>(m_uFileTime1582OffsetDays);
 	qwGUIDTime.QuadPart += ullAddTicks.QuadPart;
 
 	//Encode version 1 GUID with time
@@ -1428,7 +1389,7 @@ bool CHexDlgDataInterpret::SetDataNAME_GUIDTIME(std::wstring_view wstr)
 bool CHexDlgDataInterpret::SetDataNAME_GUID(std::wstring_view wstr)
 {
 	GUID guid { };
-	if (!StringToGuid(wstr, &guid))
+	if (!StringToGuid(wstr, guid))
 		return false;
 
 	m_pHexCtrl->SetData(m_ullOffset, guid);
