@@ -891,8 +891,12 @@ void CHexDlgDataInterpret::ShowNAME_OLEDATETIME(QWORD qword)
 	//See: https://docs.microsoft.com/en-us/cpp/atl-mfc-shared/date-type?view=vs-2019
 
 	std::wstring wstrTime = L"N/A";
+
+	DATE date;
+	std::memcpy(&date, &qword, sizeof(date));
+	COleDateTime dt(date);
+
 	SYSTEMTIME SysTime { };
-	COleDateTime dt(static_cast<DATE>(qword));
 	if (dt.GetAsSystemTime(SysTime))
 		wstrTime = SystemTimeToString(&SysTime, true, true);
 
@@ -907,17 +911,20 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)
 	//Javatime (signed)
 	//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC
 	std::wstring wstrTime = L"N/A";
-	FILETIME ftJavaTime;
 
+	//Add/subtract milliseconds from epoch time
 	LARGE_INTEGER Time;
 	Time.HighPart = m_ulFileTime1970_HIGH;
 	Time.LowPart = m_ulFileTime1970_LOW;
-	ftJavaTime.dwHighDateTime = Time.HighPart;
-	ftJavaTime.dwLowDateTime = Time.LowPart;
 	if (static_cast<LONGLONG>(qword) >= 0)
 		Time.QuadPart += qword * m_uFTTicksPerMS;
 	else
 		Time.QuadPart -= qword * m_uFTTicksPerMS;
+
+	//Convert to FILETIME
+	FILETIME ftJavaTime;
+	ftJavaTime.dwHighDateTime = Time.HighPart;
+	ftJavaTime.dwLowDateTime = Time.LowPart;
 
 	SYSTEMTIME SysTime { };
 	if (FileTimeToSystemTime(&ftJavaTime, &SysTime))
@@ -1139,7 +1146,7 @@ bool CHexDlgDataInterpret::SetDataNAME_TIME32T(std::wstring_view wstr)
 		if (m_fBigEndian)
 			lTime32 = _byteswap_ulong(lTime32);
 
-		m_pHexCtrl->SetData(m_ullOffset, static_cast<LONG>(lTime32));
+		m_pHexCtrl->SetData(m_ullOffset, lTime32);
 	}
 
 	return true;
@@ -1172,7 +1179,7 @@ bool CHexDlgDataInterpret::SetDataNAME_TIME64T(std::wstring_view wstr)
 	if (m_fBigEndian)
 		llTime64 = _byteswap_uint64(llTime64);
 
-	m_pHexCtrl->SetData(m_ullOffset, static_cast<LONGLONG>(llTime64));
+	m_pHexCtrl->SetData(m_ullOffset, llTime64);
 
 	return true;
 }
@@ -1209,12 +1216,13 @@ bool CHexDlgDataInterpret::SetDataNAME_OLEDATETIME(std::wstring_view wstr)
 	if (dt.GetStatus() != COleDateTime::valid)
 		return false;
 
-	auto ullValue = static_cast<ULONGLONG>(dt.m_dt);
+	ULONGLONG ullValue;
+	std::memcpy(&ullValue, &dt.m_dt, sizeof(dt.m_dt));
 
 	if (m_fBigEndian)
 		ullValue = _byteswap_uint64(ullValue);
 
-	m_pHexCtrl->SetData(m_ullOffset, dt.m_dt);
+	m_pHexCtrl->SetData(m_ullOffset, ullValue);
 
 	return true;
 }
@@ -1238,18 +1246,18 @@ bool CHexDlgDataInterpret::SetDataNAME_JAVATIME(std::wstring_view wstr)
 	lEpochTicks.HighPart = m_ulFileTime1970_HIGH;
 	lEpochTicks.LowPart = m_ulFileTime1970_LOW;
 
-	ULONGLONG ullDiffTicks;
+	LONGLONG llDiffTicks;
 	if (lEpochTicks.QuadPart > lJavaTicks.QuadPart)
-		ullDiffTicks = lEpochTicks.QuadPart - lJavaTicks.QuadPart;
+		llDiffTicks = -(lEpochTicks.QuadPart - lJavaTicks.QuadPart);
 	else
-		ullDiffTicks = lJavaTicks.QuadPart - lEpochTicks.QuadPart;
+		llDiffTicks = lJavaTicks.QuadPart - lEpochTicks.QuadPart;
 
-	ULONGLONG ullDiffMillis = ullDiffTicks / m_uFTTicksPerMS;
+	LONGLONG llDiffMillis = llDiffTicks / m_uFTTicksPerMS;
 
 	if (m_fBigEndian)
-		ullDiffMillis = _byteswap_uint64(ullDiffMillis);
+		llDiffMillis = _byteswap_uint64(llDiffMillis);
 
-	m_pHexCtrl->SetData(m_ullOffset, static_cast<ULONGLONG>(ullDiffMillis));
+	m_pHexCtrl->SetData(m_ullOffset, llDiffMillis);
 
 	return true;
 }
@@ -1268,7 +1276,7 @@ bool CHexDlgDataInterpret::SetDataNAME_MSDOSTIME(std::wstring_view wstr)
 	if (!FileTimeToDosDateTime(&ftTime, &msdosDateTime.TimeDate.wDate, &msdosDateTime.TimeDate.wTime))
 		return false;
 
-	m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(msdosDateTime.dwTimeDate));
+	m_pHexCtrl->SetData(m_ullOffset, msdosDateTime.dwTimeDate);
 
 	return true;
 }
@@ -1288,7 +1296,7 @@ bool CHexDlgDataInterpret::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)
 	dttm.components.hour = stTime.wHour;
 	dttm.components.minute = stTime.wMinute;
 
-	m_pHexCtrl->SetData(m_ullOffset, static_cast<DWORD>(dttm.dwValue));
+	m_pHexCtrl->SetData(m_ullOffset, dttm.dwValue);
 
 	return true;
 }
