@@ -19,7 +19,7 @@ namespace HEXCTRL::INTERNAL
 	private:
 #pragma pack(push, 1)
 		union MSDOSDATETIME //MS-DOS Date+Time structure (as used in FAT file system directory entry)
-		{				 //See: https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
+		{				    //See: https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
 			struct
 			{
 				WORD wTime;	//Time component
@@ -93,8 +93,8 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioBe();
 		afx_msg void OnClickRadioDec();
 		afx_msg void OnClickRadioHex();
-		CString GetCurrentUserDateFormatString();
-		CString SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime);
+		std::wstring GetCurrentUserDateFormatString();
+		std::wstring SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime);
 		bool StringToSystemTime(std::wstring_view wstrDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
 		template <typename T>bool SetDigitData(LONGLONG llData);
 		bool StringToGuid(std::wstring_view wstrSource, GUID& GUIDResult);
@@ -108,7 +108,7 @@ namespace HEXCTRL::INTERNAL
 		void ShowNAME_FLOAT(DWORD dword);
 		void ShowNAME_TIME32(DWORD dword);
 		void ShowNAME_MSDOSTIME(DWORD dword);
-		void ShowNAME_MSDTTMTIME(DWORD word);
+		void ShowNAME_MSDTTMTIME(DWORD dword);
 		void ShowNAME_LONGLONG(QWORD qword);
 		void ShowNAME_ULONGLONG(QWORD qword);
 		void ShowNAME_DOUBLE(QWORD qword);
@@ -150,7 +150,10 @@ namespace HEXCTRL::INTERNAL
 			NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
 			NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID
 		};
-		enum class ESize : WORD { SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4, SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10 };
+		enum class ESize : WORD {
+			SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4,
+			SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10
+		};
 		struct GRIDDATA
 		{
 			EGroup eGroup { };
@@ -170,7 +173,7 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullSize { };
 		HDITEMW m_hdItemPropGrid { };
 		DWORD m_dwDateFormat { };
-		WCHAR m_wszDateSeparator[4] { };
+		WCHAR m_warrDateSeparator[4] { };
 	};
 
 	template<typename T>

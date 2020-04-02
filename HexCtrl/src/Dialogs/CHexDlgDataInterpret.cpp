@@ -47,20 +47,18 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 
 	//Determine locale specific date format. Default to UK/European if unable to determine
 	//See: https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
-	int nResult = GetLocaleInfoW(LOCALE_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
-		reinterpret_cast<LPTSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat));
-	if (!nResult)
+	if (!GetLocaleInfoW(LOCALE_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
+		reinterpret_cast<LPTSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat)))
 		m_dwDateFormat = 1;
 
 	//Determine 'short' date seperator character. Default to UK/European if unable to determine	
-	nResult = GetLocaleInfoW(LOCALE_USER_DEFAULT, LOCALE_SDATE, m_wszDateSeparator, _countof(m_wszDateSeparator));
-	if (!nResult)
-		_stprintf_s(m_wszDateSeparator, _countof(m_wszDateSeparator), L"/");
+	if (!GetLocaleInfoW(LOCALE_USER_DEFAULT, LOCALE_SDATE, m_warrDateSeparator, _countof(m_warrDateSeparator)))
+		swprintf_s(m_warrDateSeparator, _countof(m_warrDateSeparator), L"/");
 
 	//Update dialog title to include date format
 	CString sTitle;
 	GetWindowTextW(sTitle);
-	sTitle.AppendFormat(L" [%s]", GetCurrentUserDateFormatString().GetString());
+	sTitle.AppendFormat(L" [%s]", GetCurrentUserDateFormatString().data());
 	SetWindowTextW(sTitle);
 
 	if (auto pRadio = (CButton*)GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE); pRadio)
@@ -373,7 +371,7 @@ LRESULT CHexDlgDataInterpret::OnPropertyChanged(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-BOOL CHexDlgDataInterpret::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT * pResult)
+BOOL CHexDlgDataInterpret::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	if (wParam == HEXCTRL_PROPGRIDCTRL)
 	{
@@ -448,68 +446,76 @@ void CHexDlgDataInterpret::UpdateHexCtrl()
 		m_pHexCtrl->RedrawWindow();
 }
 
-CString CHexDlgDataInterpret::GetCurrentUserDateFormatString()
+std::wstring CHexDlgDataInterpret::GetCurrentUserDateFormatString()
 {
-	CString sResult;
-
+	std::wstring wstrFormat { };
 	switch (m_dwDateFormat)
 	{
 	case 0:	//0=Month-Day-Year
-		sResult.Format(L"mm%sdd%syyyy", m_wszDateSeparator, m_wszDateSeparator);
+		wstrFormat = L"mm%sdd%syyyy";
 		break;
-	case 2:	//2=Year-Month-Day 
-		sResult.Format(L"yyyy%smm%sdd", m_wszDateSeparator, m_wszDateSeparator);
+	case 2:	//2=Year-Month-Day
+		wstrFormat = L"yyyy%smm%sdd";
 		break;
 	default: //1=Day-Month-Year (default)
-		sResult.Format(L"dd%smm%syyyy", m_wszDateSeparator, m_wszDateSeparator);
-		break;
+		wstrFormat = L"dd%smm%syyyy";
 	}
 
-	return sResult;
+	WCHAR buff[32];
+	swprintf_s(buff, _countof(buff), wstrFormat.data(), m_warrDateSeparator, m_warrDateSeparator);
+
+	return buff;
 }
 
-CString CHexDlgDataInterpret::SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime)
+std::wstring CHexDlgDataInterpret::SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime)
 {
 	if (!pSysTime)
 		return L"Invalid";
+
+	std::wstring wstrRet = L"N/A";
 
 	if (pSysTime->wDay > 0 && pSysTime->wDay < 32 && pSysTime->wMonth > 0 && pSysTime->wMonth < 13
 		&& pSysTime->wYear < 10000 && pSysTime->wHour < 24 && pSysTime->wMinute < 60 && pSysTime->wSecond < 60
 		&& pSysTime->wMilliseconds < 1000)
 	{
 		//Generate human formatted date. Fall back to UK/European if unable to determine
-		CString sResult;
+		WCHAR buff[32];
 		if (bIncludeDate)
 		{
 			switch (m_dwDateFormat)
 			{
 			case 0:	//0=Month-Day-Year
-				sResult.Format(L"%.2d%s%.2d%s%.4d", pSysTime->wMonth, m_wszDateSeparator, pSysTime->wDay, m_wszDateSeparator, pSysTime->wYear);
+				swprintf_s(buff, _countof(buff), L"%.2d%s%.2d%s%.4d",
+					pSysTime->wMonth, m_warrDateSeparator, pSysTime->wDay, m_warrDateSeparator, pSysTime->wYear);
 				break;
-			case 2:	//2=Year-Month-Day 
-				sResult.Format(L"%.4d%s%.2d%s%.2d", pSysTime->wYear, m_wszDateSeparator, pSysTime->wMonth, m_wszDateSeparator, pSysTime->wDay);
+			case 2:	//2=Year-Month-Day
+				swprintf_s(buff, _countof(buff), L"%.4d%s%.2d%s%.2d",
+					pSysTime->wYear, m_warrDateSeparator, pSysTime->wMonth, m_warrDateSeparator, pSysTime->wDay);
 				break;
 			default: //1=Day-Month-Year (default)
-				sResult.Format(L"%.2d%s%.2d%s%.4d", pSysTime->wDay, m_wszDateSeparator, pSysTime->wMonth, m_wszDateSeparator, pSysTime->wYear);
+				swprintf_s(buff, _countof(buff), L"%.2d%s%.2d%s%.4d",
+					pSysTime->wDay, m_warrDateSeparator, pSysTime->wMonth, m_warrDateSeparator, pSysTime->wYear);
 			}
-
+			wstrRet = buff;
 			if (bIncludeTime)
-				sResult.Append(L" ");
+				wstrRet += L" ";
 		}
 
 		//Append optional time elements
 		if (bIncludeTime)
 		{
-			sResult.AppendFormat(L"%.2d:%.2d:%.2d", pSysTime->wHour, pSysTime->wMinute, pSysTime->wSecond);
+			swprintf_s(buff, _countof(buff), L"%.2d:%.2d:%.2d", pSysTime->wHour, pSysTime->wMinute, pSysTime->wSecond);
+			wstrRet += buff;
 
 			if (pSysTime->wMilliseconds > 0)
-				sResult.AppendFormat(L".%.3d", pSysTime->wMilliseconds);
+			{
+				swprintf_s(buff, _countof(buff), L".%.3d", pSysTime->wMilliseconds);
+				wstrRet += buff;
+			}
 		}
-
-		return sResult;
 	}
 
-	return L"N/A";
+	return wstrRet;
 }
 
 bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstrDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)
@@ -767,14 +773,14 @@ void CHexDlgDataInterpret::ShowNAME_TIME32(DWORD dword)
 void CHexDlgDataInterpret::ShowNAME_MSDOSTIME(DWORD dword)
 {
 	std::wstring wstrTime = L"N/A";
-	SYSTEMTIME SysTime { };
 	FILETIME ftMSDOS;
 	MSDOSDATETIME msdosDateTime;
 	msdosDateTime.dwTimeDate = dword;
 	if (DosDateTimeToFileTime(msdosDateTime.TimeDate.wDate, msdosDateTime.TimeDate.wTime, &ftMSDOS))
 	{
+		SYSTEMTIME SysTime { };
 		if (FileTimeToSystemTime(&ftMSDOS, &SysTime))
-			wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
+			wstrTime = SystemTimeToString(&SysTime, true, true);
 	}
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
@@ -786,13 +792,13 @@ void CHexDlgDataInterpret::ShowNAME_MSDTTMTIME(DWORD dword)
 {
 	//Microsoft DTTM time (as used by Microsoft Compound Document format)
 	std::wstring wstrTime = L"N/A";
-	SYSTEMTIME SysTime { };
 	DTTM dttm;
 	dttm.dwValue = dword;
 	if (dttm.components.dayofmonth > 0 && dttm.components.dayofmonth < 32
 		&& dttm.components.hour < 24 && dttm.components.minute < 60
 		&& dttm.components.month>0 && dttm.components.month < 13 && dttm.components.weekday < 7)
 	{
+		SYSTEMTIME SysTime { };
 		SysTime.wYear = 1900 + static_cast<WORD>(dttm.components.year);
 		SysTime.wMonth = dttm.components.month;
 		SysTime.wDayOfWeek = dttm.components.weekday;
@@ -801,7 +807,7 @@ void CHexDlgDataInterpret::ShowNAME_MSDTTMTIME(DWORD dword)
 		SysTime.wMinute = dttm.components.minute;
 		SysTime.wSecond = 0;
 		SysTime.wMilliseconds = 0;
-		wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
+		wstrTime = SystemTimeToString(&SysTime, true, true);
 	}
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
@@ -871,7 +877,7 @@ void CHexDlgDataInterpret::ShowNAME_FILETIME(QWORD qword)
 	std::wstring wstrTime = L"N/A";
 	SYSTEMTIME SysTime { };
 	if (FileTimeToSystemTime(reinterpret_cast<const FILETIME*>(&qword), &SysTime))
-		wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
+		wstrTime = SystemTimeToString(&SysTime, true, true);
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_FILETIME; }); iter != m_vecProp.end())
@@ -888,7 +894,7 @@ void CHexDlgDataInterpret::ShowNAME_OLEDATETIME(QWORD qword)
 	SYSTEMTIME SysTime { };
 	COleDateTime dt(static_cast<DATE>(qword));
 	if (dt.GetAsSystemTime(SysTime))
-		wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
+		wstrTime = SystemTimeToString(&SysTime, true, true);
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_OLEDATETIME; }); iter != m_vecProp.end())
@@ -901,7 +907,6 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)
 	//Javatime (signed)
 	//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC
 	std::wstring wstrTime = L"N/A";
-	SYSTEMTIME SysTime { };
 	FILETIME ftJavaTime;
 
 	LARGE_INTEGER Time;
@@ -914,8 +919,9 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)
 	else
 		Time.QuadPart -= qword * m_uFTTicksPerMS;
 
+	SYSTEMTIME SysTime { };
 	if (FileTimeToSystemTime(&ftJavaTime, &SysTime))
-		wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
+		wstrTime = SystemTimeToString(&SysTime, true, true);
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_JAVATIME; }); iter != m_vecProp.end())
@@ -940,7 +946,6 @@ void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD128& dqword)
 	//The time structure within the NAME_GUID.
 	//First, verify GUID is actually version 1 style
 	std::wstring wstrTime = L"N/A";
-	SYSTEMTIME SysTime { };
 	unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
 
 	if (unGuidVersion == 1)
@@ -966,8 +971,9 @@ void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD128& dqword)
 		FILETIME ftGUIDTime;
 		ftGUIDTime.dwHighDateTime = qwGUIDTime.HighPart;
 		ftGUIDTime.dwLowDateTime = qwGUIDTime.LowPart;
+		SYSTEMTIME SysTime { };
 		if (FileTimeToSystemTime(&ftGUIDTime, &SysTime))
-			wstrTime = SystemTimeToString(&SysTime, true, true).GetString();
+			wstrTime = SystemTimeToString(&SysTime, true, true);
 	}
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
@@ -979,7 +985,7 @@ void CHexDlgDataInterpret::ShowNAME_SYSTEMTIME(const DQWORD128& dqword)
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_SYSTEMTIME; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(SystemTimeToString(reinterpret_cast<const SYSTEMTIME*>(&dqword), true, true).GetString());
+		iter->pProp->SetValue(SystemTimeToString(reinterpret_cast<const SYSTEMTIME*>(&dqword), true, true).data());
 }
 
 bool CHexDlgDataInterpret::SetDataNAME_BINARY(std::wstring_view wstr)

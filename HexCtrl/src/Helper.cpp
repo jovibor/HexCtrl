@@ -105,7 +105,7 @@ namespace HEXCTRL::INTERNAL {
 
 	std::wstring StrToWstr(std::string_view str)
 	{
-		int iSize = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), NULL, 0);
+		int iSize = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
 		std::wstring wstr(iSize, 0);
 		MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), &wstr[0], iSize);
 		return wstr;

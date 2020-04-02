@@ -26,6 +26,7 @@ namespace HEXCTRL::INTERNAL
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		afx_msg void OnDestroy();
 		afx_msg void OnListBkmGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListBkmItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
@@ -47,6 +48,5 @@ namespace HEXCTRL::INTERNAL
 			IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE = 0x8002,
 			IDC_HEXCTRL_BOOKMARKMGR_MENU_CLEARALL = 0x8003
 		};
-		virtual BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 	};
 }
