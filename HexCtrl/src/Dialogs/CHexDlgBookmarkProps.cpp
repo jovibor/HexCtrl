@@ -82,7 +82,7 @@ void CHexDlgBookmarkProps::OnOK()
 	CEdit* pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_OFFSET);
 	pEdit->GetWindowTextW(pwszBuff, 32); //Text limit for 32 chars
 	ULONGLONG ullOffset;
-	if (!WCharsToUll(pwszBuff, ullOffset))
+	if (!wstr2num(pwszBuff, ullOffset))
 	{
 		MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 		return;
@@ -90,7 +90,7 @@ void CHexDlgBookmarkProps::OnOK()
 	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_LENGTH);
 	pEdit->GetWindowTextW(pwszBuff, 32); //Text limit for 32 chars
 	ULONGLONG ullSize;
-	if (!WCharsToUll(pwszBuff, ullSize))
+	if (!wstr2num(pwszBuff, ullSize))
 	{
 		MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 		return;

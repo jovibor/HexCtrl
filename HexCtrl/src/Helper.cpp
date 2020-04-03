@@ -66,33 +66,30 @@ namespace HEXCTRL::INTERNAL {
 		return true;
 	}
 
-	bool WCharsToUll(const wchar_t* pwcsz, unsigned long long& ull)
+	template<typename T, typename>
+	bool wstr2num(std::wstring_view wstr, T& t)
 	{
 		wchar_t* pEndPtr;
-		int iRadix { 10 };
-		if ((wcsstr(pwcsz, L"0x") == pwcsz) || (wcsstr(pwcsz, L"0X") == pwcsz))
-			iRadix = 16; //NB: Avoid radix=0 because this may be treated as octal
-		ull = std::wcstoull(pwcsz, &pEndPtr, iRadix);
-		if ((ull == 0 && (pEndPtr == pwcsz || *pEndPtr != '\0'))
-			|| (ull == ULLONG_MAX && errno == ERANGE))
-			return false;
+		if constexpr (std::is_same_v<T, ULONGLONG>)
+		{
+			t = std::wcstoull(wstr.data(), &pEndPtr, 0);
+			if ((t == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+				|| (t == ULLONG_MAX && errno == ERANGE))
+				return false;
+		}
+		else if constexpr (std::is_same_v<T, LONGLONG>)
+		{
+			t = std::wcstoll(wstr.data(), &pEndPtr, 0);
+			if ((t == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+				|| ((t == LLONG_MAX || t == LLONG_MIN) && errno == ERANGE))
+				return false;
+		}
 
 		return true;
 	}
-
-	bool WCharsToll(const wchar_t* pwcsz, long long& ll)
-	{
-		wchar_t* pEndPtr;
-		int iRadix { 10 };
-		if ((wcsstr(pwcsz, L"0x") == pwcsz) || (wcsstr(pwcsz, L"0X") == pwcsz))
-			iRadix = 16; //NB: Avoid radix=0 because this may be treated as octal
-		ll = std::wcstoll(pwcsz, &pEndPtr, iRadix);
-		if ((ll == 0 && (pEndPtr == pwcsz || *pEndPtr != '\0'))
-			|| ((ll == LLONG_MAX || ll == LLONG_MIN) && errno == ERANGE))
-			return false;
-
-		return true;
-	}
+	//Template function Types definitions, to be able to define here in .cpp
+	template bool wstr2num<ULONGLONG>(std::wstring_view wstr, ULONGLONG& t);
+	template bool wstr2num<LONGLONG>(std::wstring_view wstr, LONGLONG& t);
 
 	std::string WstrToStr(std::wstring_view wstr)
 	{

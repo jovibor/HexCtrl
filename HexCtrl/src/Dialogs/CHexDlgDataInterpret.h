@@ -87,6 +87,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClose();
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		void UpdateHexCtrl();
+		template <typename T>bool SetDigitData(T tData);
 		LRESULT OnPropertyChanged(WPARAM wparam, LPARAM lparam);
 		afx_msg void OnSize(UINT nType, int cx, int cy);
 		afx_msg void OnClickRadioLe();
@@ -96,7 +97,6 @@ namespace HEXCTRL::INTERNAL
 		std::wstring GetCurrentUserDateFormatString();
 		std::wstring SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime);
 		bool StringToSystemTime(std::wstring_view wstrDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
-		template <typename T>bool SetDigitData(LONGLONG llData);
 		bool StringToGuid(std::wstring_view wstrSource, GUID& GUIDResult);
 		void ShowNAME_BINARY(BYTE byte);
 		void ShowNAME_CHAR(BYTE byte);
@@ -176,38 +176,4 @@ namespace HEXCTRL::INTERNAL
 		DWORD m_dwDateFormat { };
 		WCHAR m_warrDateSeparator[4] { };
 	};
-
-	template<typename T>
-	inline bool CHexDlgDataInterpret::SetDigitData(LONGLONG llData)
-	{
-		//Do not check numeric_limits for sizeof(QWORD).
-		//There is no sense for that, because input argument is LONGLONG,
-		//and it can not be bigger than std::numeric_limits<(U)LONGLONG>::max()
-		if constexpr (!std::is_same_v<T, ULONGLONG> && !std::is_same_v<T, LONGLONG>)
-		{
-			if (llData > static_cast<LONGLONG>(std::numeric_limits<T>::max())
-				|| llData < static_cast<LONGLONG>(std::numeric_limits<T>::min()))
-				return false;
-		}
-
-		T tData = static_cast<T>(llData);
-		if (m_fBigEndian)
-		{
-			switch (sizeof(T))
-			{
-			case (sizeof(WORD)):
-				tData = static_cast<T>(_byteswap_ushort(static_cast<WORD>(tData)));
-				break;
-			case (sizeof(DWORD)):
-				tData = static_cast<T>(_byteswap_ulong(static_cast<DWORD>(tData)));
-				break;
-			case (sizeof(QWORD)):
-				tData = static_cast<T>(_byteswap_uint64(static_cast<QWORD>(tData)));
-				break;
-			}
-		}
-		m_pHexCtrl->SetData(m_ullOffset, tData);
-
-		return true;
-	}
 }

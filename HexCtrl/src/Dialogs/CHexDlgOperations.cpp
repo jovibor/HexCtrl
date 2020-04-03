@@ -196,7 +196,7 @@ void CHexDlgOperations::OnOK()
 		WCHAR pwszEditText[32];
 		GetDlgItemTextW(iEditId, pwszEditText, 32);
 
-		if (!StrToInt64ExW(pwszEditText, STIF_SUPPORT_HEX, &llData))
+		if (!wstr2num(pwszEditText, llData))
 		{
 			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 			return;

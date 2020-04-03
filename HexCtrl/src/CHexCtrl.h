@@ -124,7 +124,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] std::byte* GetData(HEXSPANSTRUCT hss)const; //Gets pointer to exact data offset, no matter what mode the control works in.
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
 		[[nodiscard]] EHexDataMode GetDataMode()const; //Current Data mode.
-		[[nodiscard]] ULONGLONG GetDataSize();    //Gets m_ullDataSize.
+		[[nodiscard]] ULONGLONG GetDataSize();         //Gets m_ullDataSize.
 		template<typename T> [[nodiscard]] auto GetData(ULONGLONG ullOffset)->T; //Get T sized data from ullOffset.
 		template<typename T>void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
 		void Modify(const MODIFYSTRUCT& hms, bool fRedraw = true);      //Main routine to modify data, in m_fMutable==true mode.
