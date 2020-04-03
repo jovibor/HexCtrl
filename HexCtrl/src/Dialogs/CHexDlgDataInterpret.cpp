@@ -68,52 +68,69 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 
 	m_hdItemPropGrid.mask = HDI_WIDTH;
 	m_hdItemPropGrid.cxy = 150;
+
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"binary:", L"0"), EGroup::DIGITS, EName::NAME_BINARY, ESize::SIZE_BYTE });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"char:", L"0"), EGroup::DIGITS, EName::NAME_CHAR, ESize::SIZE_BYTE });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"unsigned char:", L"0"), EGroup::DIGITS, EName::NAME_UCHAR, ESize::SIZE_BYTE });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"short:", L"0"), EGroup::DIGITS, EName::NAME_SHORT, ESize::SIZE_WORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"unsigned short:", L"0"), EGroup::DIGITS, EName::NAME_USHORT, ESize::SIZE_WORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"long:", L"0"), EGroup::DIGITS, EName::NAME_LONG, ESize::SIZE_DWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"unsigned long:", L"0"), EGroup::DIGITS, EName::NAME_ULONG, ESize::SIZE_DWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"long long:", L"0"), EGroup::DIGITS, EName::NAME_LONGLONG, ESize::SIZE_QWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"unsigned long long:", L"0"), EGroup::DIGITS, EName::NAME_ULONGLONG, ESize::SIZE_QWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"time32_t:", L"0"), EGroup::TIME, EName::NAME_TIME32T, ESize::SIZE_DWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"time64_t:", L"0"), EGroup::TIME, EName::NAME_TIME64T, ESize::SIZE_QWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"FILETIME:", L"0"), EGroup::TIME, EName::NAME_FILETIME, ESize::SIZE_QWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"OLE time:", L"0"), EGroup::TIME, EName::NAME_OLEDATETIME, ESize::SIZE_QWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"Java time:", L"0"), EGroup::TIME, EName::NAME_JAVATIME, ESize::SIZE_QWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"MS-DOS time:", L"0"), EGroup::TIME, EName::NAME_MSDOSTIME, ESize::SIZE_QWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"MS-DTTM time:", L"0"), EGroup::TIME, EName::NAME_MSDTTMTIME, ESize::SIZE_DWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"Windows SYSTEMTIME:", L"0"), EGroup::TIME, EName::NAME_SYSTEMTIME, ESize::SIZE_DQWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"Float:", L"0"), EGroup::FLOAT, EName::NAME_FLOAT, ESize::SIZE_DWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"Double:", L"0"), EGroup::FLOAT, EName::NAME_DOUBLE, ESize::SIZE_QWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"GUID:", L"0"), EGroup::MISC, EName::NAME_GUID, ESize::SIZE_DQWORD });
+	m_vecProp.emplace_back(GRIDDATA { new CMFCPropertyGridProperty(L"GUID v1 UTC time:", L"0"), EGroup::TIME, EName::NAME_GUIDTIME, ESize::SIZE_DQWORD, true });
+
 	m_stCtrlGrid.EnableHeaderCtrl(TRUE, L"Data type", L"Value");
 	m_stCtrlGrid.GetHeaderCtrl().SetItem(0, &m_hdItemPropGrid); //Property grid column size.
 
-	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_BINARY, ESize::SIZE_BYTE, new CMFCPropertyGridProperty(L"binary:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_CHAR, ESize::SIZE_BYTE, new CMFCPropertyGridProperty(L"char:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_UCHAR, ESize::SIZE_BYTE, new CMFCPropertyGridProperty(L"unsigned char:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_SHORT, ESize::SIZE_WORD, new CMFCPropertyGridProperty(L"short:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_USHORT, ESize::SIZE_WORD, new CMFCPropertyGridProperty(L"unsigned short:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_LONG, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"long:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_ULONG, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"unsigned long:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_LONGLONG, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"long long:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::DIGITS, EName::NAME_ULONGLONG, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"unsigned long long:", L"0") });
+	//Digits group
 	auto pDigits = new CMFCPropertyGridProperty(L"Digits:");
-	for (auto& iter : m_vecProp)
-		if (iter.eGroup == EGroup::DIGITS)
+	for (const auto& iter : m_vecProp)
+		if (iter.eGroup == EGroup::DIGITS && !iter.fChild)
 			pDigits->AddSubItem(iter.pProp);
 	m_stCtrlGrid.AddProperty(pDigits);
 
-	m_vecProp.emplace_back(GRIDDATA { EGroup::FLOAT, EName::NAME_FLOAT, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"Float:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::FLOAT, EName::NAME_DOUBLE, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"Double:", L"0") });
+	//Floats group
 	auto pFloats = new CMFCPropertyGridProperty(L"Floats:");
-	for (auto& iter : m_vecProp)
-		if (iter.eGroup == EGroup::FLOAT)
+	for (const auto& iter : m_vecProp)
+		if (iter.eGroup == EGroup::FLOAT && !iter.fChild)
 			pFloats->AddSubItem(iter.pProp);
 	m_stCtrlGrid.AddProperty(pFloats);
 
-	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_TIME32T, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"time32_t:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_TIME64T, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"time64_t:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_FILETIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"FILETIME:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_OLEDATETIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"OLE time:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_JAVATIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"Java time:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_MSDOSTIME, ESize::SIZE_QWORD, new CMFCPropertyGridProperty(L"MS-DOS time:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_MSDTTMTIME, ESize::SIZE_DWORD, new CMFCPropertyGridProperty(L"MS-DTTM time:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_SYSTEMTIME, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"Windows SYSTEMTIME:", L"0") });
-	m_vecProp.emplace_back(GRIDDATA { EGroup::TIME, EName::NAME_GUIDTIME, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"GUID v1 UTC time:", L"0") });
+	//Time group
 	auto pTime = new CMFCPropertyGridProperty(L"Time:");
-	for (auto& iter : m_vecProp)
-		if (iter.eGroup == EGroup::TIME)
+	for (const auto& iter : m_vecProp)
+		if (iter.eGroup == EGroup::TIME && !iter.fChild)
 			pTime->AddSubItem(iter.pProp);
 	m_stCtrlGrid.AddProperty(pTime);
 
-	m_vecProp.emplace_back(GRIDDATA { EGroup::MISC, EName::NAME_GUID, ESize::SIZE_DQWORD, new CMFCPropertyGridProperty(L"GUID:", L"0") });
+	//Miscellaneous group
 	auto pMisc = new CMFCPropertyGridProperty(L"Misc:");
-	for (auto& iter : m_vecProp)
-		if (iter.eGroup == EGroup::MISC)
+	for (const auto& iter : m_vecProp)
+		if (iter.eGroup == EGroup::MISC && !iter.fChild)
+		{
 			pMisc->AddSubItem(iter.pProp);
+			if (iter.eName == EName::NAME_GUID)
+			{
+				//GUID Time sub-group.
+				auto pGUIDsub = new CMFCPropertyGridProperty(L"GUID Time (built in GUID):");
+				if (auto iterTime = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+					[](const GRIDDATA& ref) {return ref.eName == EName::NAME_GUIDTIME; }); iterTime != m_vecProp.end())
+					pGUIDsub->AddSubItem(iterTime->pProp);
+				pMisc->AddSubItem(pGUIDsub);
+			}
+		}
 	m_stCtrlGrid.AddProperty(pMisc);
 
 	return TRUE;
@@ -754,16 +771,31 @@ void CHexDlgDataInterpret::ShowNAME_FLOAT(DWORD dword)
 
 void CHexDlgDataInterpret::ShowNAME_TIME32(DWORD dword)
 {
-	std::wstring wstrTime;
-	tm tm;
-	if (_localtime32_s(&tm, reinterpret_cast<const __time32_t*>(&dword)) == 0)
+	std::wstring wstrTime = L"N/A";
+
+	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This is signed and wraps on 19 January 2038 
+	auto lDiffSeconds = static_cast<LONG>(dword);
+
+	//Unix times are signed and value before 1st January 1970 is not considered valid
+	//This is apparently because early complilers didn't support unsigned types. _mktime32() has the same limit
+	if (lDiffSeconds >= 0)
 	{
-		char str[32];
-		strftime(str, 31, "%d/%m/%Y %H:%M:%S", &tm);
-		wstrTime = StrToWstr(str);
+		//Add seconds from epoch time
+		LARGE_INTEGER Time;
+		Time.HighPart = m_ulFileTime1970_HIGH;
+		Time.LowPart = m_ulFileTime1970_LOW;
+		Time.QuadPart += static_cast<LONGLONG>(lDiffSeconds) * m_uFTTicksPerSec;
+
+		//Convert to FILETIME
+		FILETIME ftTime;
+		ftTime.dwHighDateTime = Time.HighPart;
+		ftTime.dwLowDateTime = Time.LowPart;
+
+		//Convert to SYSTEMTIME for display
+		SYSTEMTIME SysTime { };
+		if (FileTimeToSystemTime(&ftTime, &SysTime))
+			wstrTime = SystemTimeToString(&SysTime, true, true);
 	}
-	else
-		wstrTime = L"N/A";
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_TIME32T; }); iter != m_vecProp.end())
@@ -856,16 +888,31 @@ void CHexDlgDataInterpret::ShowNAME_DOUBLE(QWORD qword)
 
 void CHexDlgDataInterpret::ShowNAME_TIME64(QWORD qword)
 {
-	std::wstring wstrTime;
-	tm tm;
-	if (_localtime64_s(&tm, reinterpret_cast<const __time64_t*>(&qword)) == 0)
+	std::wstring wstrTime = L"N/A";
+
+	//The number of seconds since midnight January 1st 1970 UTC (64-bit). This is signed
+	auto llDiffSeconds = static_cast<LONGLONG>(qword);
+
+	//Unix times are signed and value before 1st January 1970 is not considered valid
+	//This is apparently because early complilers didn't support unsigned types. _mktime64() has the same limit
+	if (llDiffSeconds >= 0)
 	{
-		char str[32];
-		strftime(str, _countof(str), "%d/%m/%Y %H:%M:%S", &tm);
-		wstrTime = StrToWstr(str);
+		//Add seconds from epoch time
+		LARGE_INTEGER Time;
+		Time.HighPart = m_ulFileTime1970_HIGH;
+		Time.LowPart = m_ulFileTime1970_LOW;
+		Time.QuadPart += llDiffSeconds * m_uFTTicksPerSec;
+
+		//Convert to FILETIME
+		FILETIME ftTime;
+		ftTime.dwHighDateTime = Time.HighPart;
+		ftTime.dwLowDateTime = Time.LowPart;
+
+		//Convert to SYSTEMTIME for display
+		SYSTEMTIME SysTime { };
+		if (FileTimeToSystemTime(&ftTime, &SysTime))
+			wstrTime = SystemTimeToString(&SysTime, true, true);
 	}
-	else
-		wstrTime = L"N/A";
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_TIME64T; }); iter != m_vecProp.end())
@@ -1194,14 +1241,14 @@ bool CHexDlgDataInterpret::SetDataNAME_FILETIME(std::wstring_view wstr)
 	if (!SystemTimeToFileTime(&stTime, &ftTime))
 		return false;
 
-	ULARGE_INTEGER ullTime;
-	ullTime.LowPart = ftTime.dwLowDateTime;
-	ullTime.HighPart = ftTime.dwHighDateTime;
+	ULARGE_INTEGER stLITime;
+	stLITime.LowPart = ftTime.dwLowDateTime;
+	stLITime.HighPart = ftTime.dwHighDateTime;
 
 	if (m_fBigEndian)
-		ullTime.QuadPart = _byteswap_uint64(ullTime.QuadPart);
+		stLITime.QuadPart = _byteswap_uint64(stLITime.QuadPart);
 
-	m_pHexCtrl->SetData(m_ullOffset, ftTime);
+	m_pHexCtrl->SetData(m_ullOffset, stLITime.QuadPart);
 
 	return true;
 }
@@ -1276,6 +1323,8 @@ bool CHexDlgDataInterpret::SetDataNAME_MSDOSTIME(std::wstring_view wstr)
 	if (!FileTimeToDosDateTime(&ftTime, &msdosDateTime.TimeDate.wDate, &msdosDateTime.TimeDate.wTime))
 		return false;
 
+	//Note: Big-endian is not currently supported. This has never existed in the "wild".
+
 	m_pHexCtrl->SetData(m_ullOffset, msdosDateTime.dwTimeDate);
 
 	return true;
@@ -1296,6 +1345,8 @@ bool CHexDlgDataInterpret::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)
 	dttm.components.hour = stTime.wHour;
 	dttm.components.minute = stTime.wMinute;
 
+	//Note: Big-endian is not currently supported. This has never existed in the "wild".
+
 	m_pHexCtrl->SetData(m_ullOffset, dttm.dwValue);
 
 	return true;
@@ -1306,6 +1357,8 @@ bool CHexDlgDataInterpret::SetDataNAME_SYSTEMTIME(std::wstring_view wstr)
 	SYSTEMTIME stTime;
 	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
 		return false;
+
+	//Note: Big-endian is not currently supported. This has never existed in the "wild".
 
 	m_pHexCtrl->SetData(m_ullOffset, stTime);
 

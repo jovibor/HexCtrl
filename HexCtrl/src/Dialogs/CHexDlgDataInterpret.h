@@ -156,10 +156,11 @@ namespace HEXCTRL::INTERNAL
 		};
 		struct GRIDDATA
 		{
+			CMFCPropertyGridProperty* pProp { };
 			EGroup eGroup { };
 			EName eName { };
 			ESize eSize { };
-			CMFCPropertyGridProperty* pProp { };
+			bool fChild { false };
 		};
 	private:
 		CHexCtrl* m_pHexCtrl { };
