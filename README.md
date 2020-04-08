@@ -89,10 +89,10 @@
 * [Licensing](#licensing)
 
 ## [](#)Introduction
-Being good low level library on top of Windows API in general, **MFC** was always lacking a good native controls support. This **HexControl** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't provide support for such control.
+Being good low level library on top of **Windows API** in general, **MFC** was always lacking a good native controls support. This **HexControl** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't provide support for such control.
 
 This doesn't mean that **HexControl** is limited to use only in **MFC** environment. The control is implemented as a pure abstract interface, and can be used as a *child* or *popup* window in any place of your application.  
-It is written and tested with **/std:c++17** in *Visual Studio 2019*, under the *Windows 10*.
+It is written and tested with **/std:c++17** in **Visual Studio 2019**, under the **Windows 10**.
 
 ### The main features of the **HexControl**:
 * View and edit data up to **16EB** (exabyte)
@@ -103,6 +103,7 @@ It is written and tested with **/std:c++17** in *Visual Studio 2019*, under the 
 * **Undo/Redo**
 * Modify data with **Filling** and many predefined **Operations** options
 * Ability to visually divide data into [sectors](#setsectorsize)
+* Print whole document/pages range/selection
 * Cutomizable look and appearance
 * Written with **/std:c++17** standard conformance
 
@@ -713,7 +714,7 @@ enum class EHexCmd : WORD
 ```
 
 ## [](#)Notification Messages
-In process of its work **HexControl** sends notification messages through **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** mechanism to indicate its states. These messages are sent either to [`HEXCREATESTRUCT::hwndParent`](#hexcreatestruct) or to [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) window, depending on whether the latter is set.  
+During its work **HexControl** sends notification messages through **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** mechanism to indicate its states. These messages are sent either to [`HEXCREATESTRUCT::hwndParent`](#hexcreatestruct) or to [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) window, depending on whether the latter is set.  
 The `LPARAM` of the `WM_NOTIFY` message will hold pointer to the [`HEXNOTIFYSTRUCT`](#hexnotifystruct).
 
 ### [](#)HEXCTRL_MSG_BKMCLICK

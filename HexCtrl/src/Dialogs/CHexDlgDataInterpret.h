@@ -50,7 +50,7 @@ namespace HEXCTRL::INTERNAL
 #pragma pack(pop)
 
 #pragma pack(push, 1)
-		union DQWORD128
+		union DQWORD
 		{
 			struct
 			{
@@ -59,7 +59,7 @@ namespace HEXCTRL::INTERNAL
 			} Value;
 			GUID gGUID;
 		};
-		using PDQWORD128 = DQWORD128*;
+		using PDQWORD = DQWORD*;
 #pragma pack(pop)
 		//Time calculation constants
 		static inline const wchar_t* const arrNibbles [] {
@@ -96,8 +96,8 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioHex();
 		std::wstring GetCurrentUserDateFormatString();
 		std::wstring SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime);
-		bool StringToSystemTime(std::wstring_view wstrDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
-		bool StringToGuid(std::wstring_view wstrSource, GUID& GUIDResult);
+		bool StringToSystemTime(std::wstring_view wstr, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
+		bool StringToGuid(std::wstring_view wstr, GUID& GUIDResult);
 		void ShowNAME_BINARY(BYTE byte);
 		void ShowNAME_CHAR(BYTE byte);
 		void ShowNAME_UCHAR(BYTE byte);
@@ -116,9 +116,9 @@ namespace HEXCTRL::INTERNAL
 		void ShowNAME_FILETIME(QWORD qword);
 		void ShowNAME_OLEDATETIME(QWORD qword);
 		void ShowNAME_JAVATIME(QWORD qword);
-		void ShowNAME_GUID(const DQWORD128& dqword);
-		void ShowNAME_GUIDTIME(const DQWORD128& dqword);
-		void ShowNAME_SYSTEMTIME(const DQWORD128& dqword);
+		void ShowNAME_GUID(const DQWORD& dqword);
+		void ShowNAME_GUIDTIME(const DQWORD& dqword);
+		void ShowNAME_SYSTEMTIME(const DQWORD& dqword);
 		bool SetDataNAME_BINARY(std::wstring_view wstr);
 		bool SetDataNAME_CHAR(std::wstring_view wstr);
 		bool SetDataNAME_UCHAR(std::wstring_view wstr);

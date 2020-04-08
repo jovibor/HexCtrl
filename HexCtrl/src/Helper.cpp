@@ -87,7 +87,7 @@ namespace HEXCTRL::INTERNAL {
 
 		return true;
 	}
-	//Template function Types definitions, to be able to define here in .cpp
+	//Explicit instantiations of templated func in .cpp.
 	template bool wstr2num<ULONGLONG>(std::wstring_view wstr, ULONGLONG& t);
 	template bool wstr2num<LONGLONG>(std::wstring_view wstr, LONGLONG& t);
 

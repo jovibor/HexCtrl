@@ -47,7 +47,6 @@ BOOL CHexDlgBookmarkMgr::OnInitDialog()
 	m_List->InsertColumn(2, L"Size", LVCFMT_RIGHT, 80);
 	m_List->InsertColumn(3, L"Description", LVCFMT_LEFT, 210);
 	m_List->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 65);
-	//	m_List->SetColumnSortMode(0, EnListExSortMode::SORT_NUMERIC);
 	m_List->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 
 	m_stMenuList.CreatePopupMenu();
@@ -81,11 +80,11 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_NEW:
 	{
-		HEXBOOKMARKSTRUCT hbkms;
+		HEXBOOKMARKSTRUCT hbs;
 		CHexDlgBookmarkProps dlgBkmEdit;
-		if (dlgBkmEdit.DoModal(&hbkms) == IDOK)
+		if (dlgBkmEdit.DoModal(hbs) == IDOK)
 		{
-			m_pBookmarks->Add(hbkms);
+			m_pBookmarks->Add(hbs);
 			UpdateList();
 		}
 	}
@@ -95,8 +94,8 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		if (auto pBkm = m_pBookmarks->GetByID(m_ullCurrBkmId); pBkm != nullptr)
 		{
 			CHexDlgBookmarkProps dlgBkmEdit;
-			auto stBkm = *pBkm; //Pass a copy to dlgBkmEdit, to avoid changing the original, from list.
-			if (dlgBkmEdit.DoModal(&stBkm) == IDOK)
+			auto stBkm = *pBkm; //Pass a copy to dlgBkmEdit to avoid changing the original, from list.
+			if (dlgBkmEdit.DoModal(stBkm) == IDOK)
 			{
 				m_pBookmarks->Update(pBkm->ullID, stBkm);
 				UpdateList();

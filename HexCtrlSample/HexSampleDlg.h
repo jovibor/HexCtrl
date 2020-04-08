@@ -21,7 +21,7 @@ protected:
 	BYTE m_data[1024 * 1024];
 	HICON m_hIcon;
 
-	BOOL OnInitDialog();
+	BOOL OnInitDialog()override;
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	afx_msg void OnBnSetDataRO();

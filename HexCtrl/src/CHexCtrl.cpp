@@ -7,8 +7,8 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "CHexCtrl.h"
 #include "CHexBookmarks.h"
+#include "CHexCtrl.h"
 #include "CHexSelection.h"
 #include "CScrollEx.h"
 #include "Dialogs/CHexDlgAbout.h"
@@ -69,7 +69,7 @@ namespace HEXCTRL {
 		{
 			HBITMAPSTRUCT() = default;
 			~HBITMAPSTRUCT() { ::DeleteObject(m_hBmp); }
-			HBITMAP operator=(const HBITMAP hBmp) { m_hBmp = hBmp; return hBmp; }
+			HBITMAPSTRUCT& operator=(const HBITMAP hBmp) { m_hBmp = hBmp; return *this; }
 			operator HBITMAP() { return m_hBmp; }
 			HBITMAP m_hBmp { };
 		};
@@ -112,6 +112,7 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_NCCALCSIZE()
 	ON_WM_NCPAINT()
 	ON_WM_PAINT()
+	ON_WM_RBUTTONDOWN()
 	ON_WM_SETCURSOR()
 	ON_WM_SIZE()
 	ON_WM_SYSKEYDOWN()
@@ -1075,12 +1076,13 @@ void CHexCtrl::SetShowMode(EHexShowMode enShowMode)
 	CMenu* pMenuShowDataAs { };
 	for (int i = 0; i < pMenuMain->GetMenuItemCount(); i++)
 	{
-		CStringW wstr;
-		if (pMenuMain->GetMenuStringW(i, wstr, MF_BYPOSITION) && wstr.Compare(L"Show data as...") == 0)
-		{
-			pMenuShowDataAs = pMenuMain->GetSubMenu(i);
-			break;
-		}
+		//Searching through all submenus whose first menuID is IDM_HEXCTRL_SHOWAS_BYTE.
+		if (auto p = pMenuMain->GetSubMenu(i); p != nullptr)
+			if (p->GetMenuItemID(0) == IDM_HEXCTRL_SHOWAS_BYTE)
+			{
+				pMenuShowDataAs = p;
+				break;
+			}
 	}
 
 	if (pMenuShowDataAs)
@@ -1354,6 +1356,16 @@ void CHexCtrl::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 	}
 }
 
+void CHexCtrl::OnRButtonDown(UINT /*nFlags*/, CPoint point)
+{
+	ScreenToClient(&point);
+	const auto optHit = HitTest(point);
+	if (optHit.has_value())
+		m_ullRMouseClick = optHit->ullOffset;
+	else
+		m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFULL;
+}
+
 void CHexCtrl::OnMButtonDown(UINT /*nFlags*/, CPoint /*point*/)
 {
 }
@@ -1488,15 +1500,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 
 void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 {
-	POINT pp = point;
-	ScreenToClient(&pp);
-	const auto optHit = HitTest(pp);
-	if (optHit.has_value())
-		m_ullRMouseClick = optHit->ullOffset;
-	else
-		m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFULL;
-
-	//Notifying parent that we are about to display context menu.
+	//Notify parent that we are about to display context menu.
 	MsgWindowNotify(HEXCTRL_MSG_CONTEXTMENU);
 	m_menuMain.GetSubMenu(0)->TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
 }
@@ -3340,6 +3344,8 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)
 	case EClipboard::COPY_PRINTSCREEN:
 		strData = CopyPrintScreen();
 		break;
+	default:
+		break;
 	}
 
 	HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, strData.size() + 1);
@@ -3704,6 +3710,8 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 		ullSizeToModify = hmd.ullDataSize = strData.size();
 	}
 	break;
+	default:
+		break;
 	}
 
 	hmd.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, ullSizeToModify });

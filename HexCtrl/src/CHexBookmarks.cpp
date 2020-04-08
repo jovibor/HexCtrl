@@ -71,18 +71,16 @@ auto CHexBookmarks::GetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT*
 {
 	if (m_fVirtual)
 	{
-		if (!m_pVirtual)
-			return nullptr;
-		return m_pVirtual->GetByID(ullID);
+		if (m_pVirtual)
+			return m_pVirtual->GetByID(ullID);
+		return nullptr;
 	}
-	else
-	{
-		auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-			[ullID](const HEXBOOKMARKSTRUCT& ref) {return ullID == ref.ullID; });
 
-		if (iter != m_deqBookmarks.end())
-			return &*iter;
-	}
+	auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
+		[ullID](const HEXBOOKMARKSTRUCT& ref) {return ullID == ref.ullID; });
+
+	if (iter != m_deqBookmarks.end())
+		return &*iter;
 
 	return nullptr;
 }
@@ -145,8 +143,7 @@ void CHexBookmarks::GoNext()
 	{
 		if (m_pVirtual)
 		{
-			auto ptr = m_pVirtual->GetNext();
-			if (ptr)
+			if (auto ptr = m_pVirtual->GetNext(); ptr != nullptr)
 				m_pHex->GoToOffset(ptr->vecSpan.front().ullOffset);
 		}
 		return;
@@ -167,8 +164,7 @@ void CHexBookmarks::GoPrev()
 	{
 		if (m_pVirtual)
 		{
-			auto ptr = m_pVirtual->GetPrev();
-			if (ptr)
+			if (auto ptr = m_pVirtual->GetPrev(); ptr != nullptr)
 				m_pHex->GoToOffset(ptr->vecSpan.front().ullOffset);
 		}
 		return;

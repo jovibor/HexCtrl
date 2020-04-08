@@ -7,10 +7,10 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "CHexDlgDataInterpret.h"
 #include "../Helper.h"
-#include <algorithm>
+#include "CHexDlgDataInterpret.h"
 #include "strsafe.h"
+#include <algorithm>
 
 using namespace HEXCTRL::INTERNAL;
 
@@ -157,8 +157,7 @@ void CHexDlgDataInterpret::OnOK()
 	if (refGridData == m_vecProp.end())
 		return;
 
-	CStringW wstrValue = m_pPropChanged->GetValue();
-	std::wstring_view wstr = wstrValue.GetString();
+	std::wstring_view wstr = static_cast<CStringW>(m_pPropChanged->GetValue()).GetString();
 	bool fSuccess { false };
 
 	switch (refGridData->eName)
@@ -357,7 +356,7 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 		if (iter.eSize == ESize::SIZE_DQWORD)
 			iter.pProp->Enable(TRUE);
 
-	auto dqword = m_pHexCtrl->GetData<DQWORD128>(ullOffset);
+	auto dqword = m_pHexCtrl->GetData<DQWORD>(ullOffset);
 	if (m_fBigEndian)
 	{
 		//TODO: Test this thoroughly
@@ -488,6 +487,8 @@ template<typename T>bool CHexDlgDataInterpret::SetDigitData(T tData)
 		case (sizeof(QWORD)):
 			tData = static_cast<T>(_byteswap_uint64(static_cast<QWORD>(tData)));
 			break;
+		default:
+			break;
 		}
 	}
 	m_pHexCtrl->SetData(m_ullOffset, tData);
@@ -567,22 +568,22 @@ std::wstring CHexDlgDataInterpret::SystemTimeToString(const SYSTEMTIME* pSysTime
 	return wstrRet;
 }
 
-bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstrDateTime, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)
+bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstr, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)
 {
-	if (wstrDateTime.empty() || pSysTime == nullptr)
+	if (wstr.empty() || pSysTime == nullptr)
 		return false;
 
 	std::memset(pSysTime, 0, sizeof(SYSTEMTIME));
 
 	//Normalise the input string by replacing non-numeric characters except space with /
 	//This should regardless of the current date/time separator character
-	CString sDateTimeCooked;
-	for (const auto& iter : wstrDateTime)
+	std::wstring wstrDateTimeCooked { };
+	for (const auto iter : wstr)
 	{
 		if (iswdigit(iter) || iter == L' ')
-			sDateTimeCooked.AppendChar(iter);
+			wstrDateTimeCooked += iter;
 		else
-			sDateTimeCooked.AppendChar(L'/');
+			wstrDateTimeCooked += L'/';
 	}
 
 	//Parse date component
@@ -591,26 +592,25 @@ bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstrDateTime, PS
 		switch (m_dwDateFormat)
 		{
 		case 0:	//0=Month-Day-Year
-			swscanf_s(sDateTimeCooked, L"%2hu/%2hu/%4hu", &pSysTime->wMonth, &pSysTime->wDay, &pSysTime->wYear);
+			swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &pSysTime->wMonth, &pSysTime->wDay, &pSysTime->wYear);
 			break;
 		case 2:	//2=Year-Month-Day 
-			swscanf_s(sDateTimeCooked, L"%4hu/%2hu/%2hu", &pSysTime->wYear, &pSysTime->wMonth, &pSysTime->wDay);
+			swscanf_s(wstrDateTimeCooked.data(), L"%4hu/%2hu/%2hu", &pSysTime->wYear, &pSysTime->wMonth, &pSysTime->wDay);
 			break;
 		default: //1=Day-Month-Year (default)
-			swscanf_s(sDateTimeCooked, L"%2hu/%2hu/%4hu", &pSysTime->wDay, &pSysTime->wMonth, &pSysTime->wYear);
+			swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &pSysTime->wDay, &pSysTime->wMonth, &pSysTime->wYear);
 			break;
 		}
 
 		//Find time seperator (if present)
-		int nPos = sDateTimeCooked.Find(L" ");
-		if (nPos > 0)
-			sDateTimeCooked = sDateTimeCooked.Mid(nPos + 1);
+		if (auto nPos = wstrDateTimeCooked.find(L' '); nPos != std::wstring::npos)
+			wstrDateTimeCooked = wstrDateTimeCooked.substr(nPos + 1);
 	}
 
 	//Parse time component
 	if (bIncludeTime)
 	{
-		swscanf_s(sDateTimeCooked, L"%2hu/%2hu/%2hu/%3hu", &pSysTime->wHour, &pSysTime->wMinute,
+		swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%2hu/%3hu", &pSysTime->wHour, &pSysTime->wMinute,
 			&pSysTime->wSecond, &pSysTime->wMilliseconds);
 
 		//Ensure valid SYSTEMTIME is calculated but only if time was specified but date was not
@@ -627,68 +627,40 @@ bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstrDateTime, PS
 	return SystemTimeToFileTime(pSysTime, &ftValidCheck);
 }
 
-bool CHexDlgDataInterpret::StringToGuid(std::wstring_view wstrSource, GUID& GUIDResult)
+bool CHexDlgDataInterpret::StringToGuid(std::wstring_view wstr, GUID& GUIDResult)
 {
-	//Alternative to UuidFromString() that does not require Rpcrt4.dll
-
-	if (wstrSource.empty())
+	//If string is empty or contains forbidden characters.
+	if (wstr.empty() || wstr.find_first_not_of(L"0123456789abcdefABCDEF{-}") != std::wstring_view::npos)
 		return false;
 
-	//Make working copy of source data.
-	CString sBuffer = wstrSource.data();
+	std::wstring wstrDigits { };
+	for (auto i = 0; i < wstr.size(); ++i)
+		if (auto sub = wstr.substr(i, 1); sub.find_first_not_of(L"{-}") != std::wstring_view::npos)
+			wstrDigits += sub; //Appending only hex wchars.
 
-	//Make lower-case and strip any leading or trailing spaces
-	sBuffer = sBuffer.MakeLower();
-	sBuffer = sBuffer.Trim();
-
-	//Remove all but permitted lower-case hex characters
-	CString sResult;
-	for (int i = 0; i < sBuffer.GetLength(); i++)
-	{
-		//TODO: Recode using _istxdigit() - See BinUtil.cpp
-		//
-		const CString sPermittedHexChars = _T("0123456789abcdef");
-		const CString sCurrentCharacter = sBuffer.Mid(i, 1);
-		const CString sIgnoredChars = _T("{-}");
-
-		//Test if this character is a permitted hex character - 0123456789abcdef
-		if (sPermittedHexChars.FindOneOf(sCurrentCharacter) >= 0)
-		{
-			sResult.Append(sCurrentCharacter);
-		}
-		else if (sIgnoredChars.FindOneOf(sCurrentCharacter) >= 0)
-		{
-			//Do nothing - We always ignore {, } and -
-		}
-		//Quit due to invalid data
-		else
-			return false;
-	}
-
-	//Confirm we now have exactly 32 characters. If we don't then game over
-	//NB: We now have a stripped GUID that is exactly 32 chars long
-	if (sResult.GetLength() != 32)
+	//There must be exactly 32 numbers in GUID.
+	if (wstrDigits.size() != 32)
 		return false;
 
 	//%.8x pGuid->Data1
-	GUIDResult.Data1 = wcstoul(sResult.Mid(0, 8), nullptr, 16);
+	GUIDResult.Data1 = wcstoul(wstrDigits.substr(0, 8).data(), nullptr, 16);
 
 	//%.4x pGuid->Data2
-	GUIDResult.Data2 = static_cast<unsigned short>(wcstoul(sResult.Mid(8, 4), nullptr, 16));
+	GUIDResult.Data2 = static_cast<unsigned short>(wcstoul(wstrDigits.substr(8, 4).data(), nullptr, 16));
 
 	//%.4x pGuid->Data3
-	GUIDResult.Data3 = static_cast<unsigned short>(wcstoul(sResult.Mid(12, 4), nullptr, 16));
+	GUIDResult.Data3 = static_cast<unsigned short>(wcstoul(wstrDigits.substr(12, 4).data(), nullptr, 16));
 
 	//%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x pGuid->Data4[0], pGuid->Data4[1], pGuid->Data4[2], 
 	//pGuid->Data4[3], pGuid->Data4[4], pGuid->Data4[5], pGuid->Data4[6], pGuid->Data4[7] 
-	GUIDResult.Data4[0] = static_cast<unsigned char>(wcstoul(sResult.Mid(16, 2), nullptr, 16));
-	GUIDResult.Data4[1] = static_cast<unsigned char>(wcstoul(sResult.Mid(18, 2), nullptr, 16));
-	GUIDResult.Data4[2] = static_cast<unsigned char>(wcstoul(sResult.Mid(20, 2), nullptr, 16));
-	GUIDResult.Data4[3] = static_cast<unsigned char>(wcstoul(sResult.Mid(22, 2), nullptr, 16));
-	GUIDResult.Data4[4] = static_cast<unsigned char>(wcstoul(sResult.Mid(24, 2), nullptr, 16));
-	GUIDResult.Data4[5] = static_cast<unsigned char>(wcstoul(sResult.Mid(26, 2), nullptr, 16));
-	GUIDResult.Data4[6] = static_cast<unsigned char>(wcstoul(sResult.Mid(28, 2), nullptr, 16));
-	GUIDResult.Data4[7] = static_cast<unsigned char>(wcstoul(sResult.Mid(30, 2), nullptr, 16));
+	GUIDResult.Data4[0] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(16, 2).data(), nullptr, 16));
+	GUIDResult.Data4[1] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(18, 2).data(), nullptr, 16));
+	GUIDResult.Data4[2] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(20, 2).data(), nullptr, 16));
+	GUIDResult.Data4[3] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(22, 2).data(), nullptr, 16));
+	GUIDResult.Data4[4] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(24, 2).data(), nullptr, 16));
+	GUIDResult.Data4[5] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(26, 2).data(), nullptr, 16));
+	GUIDResult.Data4[6] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(28, 2).data(), nullptr, 16));
+	GUIDResult.Data4[7] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(30, 2).data(), nullptr, 16));
 
 	return true;
 }
@@ -1014,19 +986,20 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterpret::ShowNAME_GUID(const DQWORD128& dqword)
+void CHexDlgDataInterpret::ShowNAME_GUID(const DQWORD& dqword)
 {
-	CString sGUID;
-	sGUID.Format(_T("{%.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x}"),
+	wchar_t buff[64];
+	swprintf_s(buff, _countof(buff), L"{%.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x}",
 		dqword.gGUID.Data1, dqword.gGUID.Data2, dqword.gGUID.Data3, dqword.gGUID.Data4[0],
 		dqword.gGUID.Data4[1], dqword.gGUID.Data4[2], dqword.gGUID.Data4[3], dqword.gGUID.Data4[4],
 		dqword.gGUID.Data4[5], dqword.gGUID.Data4[6], dqword.gGUID.Data4[7]);
+
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_GUID; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(sGUID);
+		iter->pProp->SetValue(buff);
 }
 
-void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD128& dqword)
+void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD& dqword)
 {
 	//Guid v1 Datetime UTC
 	//The time structure within the NAME_GUID.
@@ -1067,7 +1040,7 @@ void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD128& dqword)
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterpret::ShowNAME_SYSTEMTIME(const DQWORD128& dqword)
+void CHexDlgDataInterpret::ShowNAME_SYSTEMTIME(const DQWORD& dqword)
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_SYSTEMTIME; }); iter != m_vecProp.end())
@@ -1076,10 +1049,10 @@ void CHexDlgDataInterpret::ShowNAME_SYSTEMTIME(const DQWORD128& dqword)
 
 bool CHexDlgDataInterpret::SetDataNAME_BINARY(std::wstring_view wstr)
 {
-	if (wstr.size() != 8 || wstr.find_first_not_of(L"01") != std::string::npos)
+	if (wstr.size() != 8 || wstr.find_first_not_of(L"01") != std::wstring_view::npos)
 		return false;
 
-	auto uChar= static_cast<UCHAR>(wcstol(wstr.data(), nullptr, 2));
+	auto uChar = static_cast<UCHAR>(wcstol(wstr.data(), nullptr, 2));
 
 	return SetDigitData(uChar);
 }
@@ -1199,7 +1172,7 @@ bool CHexDlgDataInterpret::SetDataNAME_TIME32T(std::wstring_view wstr)
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
 	SYSTEMTIME stTime;
-	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+	if (!StringToSystemTime(wstr, &stTime, true, true))
 		return false;
 
 	//Unix times are signed but value before 1st January 1970 is not considered valid
@@ -1235,7 +1208,7 @@ bool CHexDlgDataInterpret::SetDataNAME_TIME64T(std::wstring_view wstr)
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
 	SYSTEMTIME stTime;
-	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+	if (!StringToSystemTime(wstr, &stTime, true, true))
 		return false;
 
 	//Unix times are signed but value before 1st January 1970 is not considered valid
@@ -1266,7 +1239,7 @@ bool CHexDlgDataInterpret::SetDataNAME_TIME64T(std::wstring_view wstr)
 bool CHexDlgDataInterpret::SetDataNAME_FILETIME(std::wstring_view wstr)
 {
 	SYSTEMTIME stTime;
-	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+	if (!StringToSystemTime(wstr, &stTime, true, true))
 		return false;
 
 	FILETIME ftTime;
@@ -1288,7 +1261,7 @@ bool CHexDlgDataInterpret::SetDataNAME_FILETIME(std::wstring_view wstr)
 bool CHexDlgDataInterpret::SetDataNAME_OLEDATETIME(std::wstring_view wstr)
 {
 	SYSTEMTIME stTime;
-	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+	if (!StringToSystemTime(wstr, &stTime, true, true))
 		return false;
 
 	COleDateTime dt(stTime);
@@ -1309,7 +1282,7 @@ bool CHexDlgDataInterpret::SetDataNAME_OLEDATETIME(std::wstring_view wstr)
 bool CHexDlgDataInterpret::SetDataNAME_JAVATIME(std::wstring_view wstr)
 {
 	SYSTEMTIME stTime;
-	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+	if (!StringToSystemTime(wstr, &stTime, true, true))
 		return false;
 
 	FILETIME ftTime;
@@ -1344,7 +1317,7 @@ bool CHexDlgDataInterpret::SetDataNAME_JAVATIME(std::wstring_view wstr)
 bool CHexDlgDataInterpret::SetDataNAME_MSDOSTIME(std::wstring_view wstr)
 {
 	SYSTEMTIME stTime;
-	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+	if (!StringToSystemTime(wstr, &stTime, true, true))
 		return false;
 
 	FILETIME ftTime;
@@ -1365,7 +1338,7 @@ bool CHexDlgDataInterpret::SetDataNAME_MSDOSTIME(std::wstring_view wstr)
 bool CHexDlgDataInterpret::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)
 {
 	SYSTEMTIME stTime;
-	if (StringToSystemTime(wstr.data(), &stTime, true, true))
+	if (!StringToSystemTime(wstr, &stTime, true, true))
 		return false;
 
 	//Microsoft DTTM time (as used by Microsoft Compound Document format)
@@ -1387,7 +1360,7 @@ bool CHexDlgDataInterpret::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)
 bool CHexDlgDataInterpret::SetDataNAME_SYSTEMTIME(std::wstring_view wstr)
 {
 	SYSTEMTIME stTime;
-	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+	if (!StringToSystemTime(wstr, &stTime, true, true))
 		return false;
 
 	//Note: Big-endian is not currently supported. This has never existed in the "wild".
@@ -1403,7 +1376,7 @@ bool CHexDlgDataInterpret::SetDataNAME_GUIDTIME(std::wstring_view wstr)
 	//We can not just set a NAME_GUIDTIME for data range if it's not 
 	//a valid NAME_GUID range, so checking first.
 
-	auto dqword = m_pHexCtrl->GetData<DQWORD128>(m_ullOffset);
+	auto dqword = m_pHexCtrl->GetData<DQWORD>(m_ullOffset);
 	unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
 	if (unGuidVersion != 1)
 		return false;
@@ -1414,7 +1387,7 @@ bool CHexDlgDataInterpret::SetDataNAME_GUIDTIME(std::wstring_view wstr)
 	//Both FILETIME and GUID time are based upon 100ns intervals
 	//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Add 6653 days to convert to GUID time
 	SYSTEMTIME stTime;
-	if (!StringToSystemTime(wstr.data(), &stTime, true, true))
+	if (!StringToSystemTime(wstr, &stTime, true, true))
 		return false;
 
 	FILETIME ftTime;

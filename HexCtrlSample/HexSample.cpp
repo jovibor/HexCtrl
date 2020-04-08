@@ -42,7 +42,7 @@ BOOL CHexSampleApp::InitInstance()
 	// such as the name of your company or organization
 	SetRegistryKey(_T("HexCtrl Sample Project"));
 
-	CHexSampleDlg* dlg = new CHexSampleDlg;
+	auto dlg = new CHexSampleDlg;
 	m_pMainWnd = dlg;
 	INT_PTR nResponse = dlg->DoModal();
 	if (nResponse == -1)

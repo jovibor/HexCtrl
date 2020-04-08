@@ -7,9 +7,9 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "CHexDlgSearch.h"
-#include "CHexDlgCallback.h"
 #include "../Helper.h"
+#include "CHexDlgCallback.h"
+#include "CHexDlgSearch.h"
 #include <thread>
 
 using namespace HEXCTRL;
@@ -85,7 +85,7 @@ bool CHexDlgSearch::PrepareSearch()
 		"Choosing \"No\" will cancel search." };
 	static const wchar_t* const wstrWrongInput { L"Wrong input data format!" };
 
-	CHexCtrl* pHexCtrl = GetHexCtrl();
+	auto pHexCtrl = GetHexCtrl();
 	if (!pHexCtrl)
 		return false;
 	auto ullDataSize = pHexCtrl->GetDataSize();
@@ -161,18 +161,15 @@ bool CHexDlgSearch::PrepareSearch()
 		auto vecSel = pHexCtrl->GetSelection();
 		if (vecSel.empty()) //No selection.
 			return false;
-		else
-		{
-			auto ullSelSize = vecSel.front().ullSize;
-			if (ullSelSize < m_nSizeSearch) //Selection is too small.
-				return false;
-			else
-			{
-				auto ullSelStart = vecSel.front().ullOffset;
-				m_ullSearchStart = ullSelStart;
-				m_ullSearchEnd = ullSelStart + ullSelSize - m_nSizeSearch;
-			}
-		}
+
+		auto ullSelSize = vecSel.front().ullSize;
+		if (ullSelSize < m_nSizeSearch) //Selection is too small.
+			return false;
+
+		auto ullSelStart = vecSel.front().ullOffset;
+		m_ullSearchStart = ullSelStart;
+		m_ullSearchEnd = ullSelStart + ullSelSize - m_nSizeSearch;
+
 		m_fSelection = true;
 	}
 	else
@@ -192,8 +189,8 @@ bool CHexDlgSearch::PrepareSearch()
 	{
 		if (IDNO == MessageBoxW(wstrReplaceWarning, L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST))
 			return false;
-		else
-			m_fReplaceWarning = false;
+
+		m_fReplaceWarning = false;
 	}
 
 	Search();
@@ -204,7 +201,7 @@ bool CHexDlgSearch::PrepareSearch()
 
 void CHexDlgSearch::Search()
 {
-	CHexCtrl* pHexCtrl = GetHexCtrl();
+	auto pHexCtrl = GetHexCtrl();
 	if (!pHexCtrl)
 		return;
 	if (m_wstrTextSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffset >= pHexCtrl->GetDataSize())
@@ -333,7 +330,7 @@ void CHexDlgSearch::Search()
 bool CHexDlgSearch::DoSearch(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSizeSearch, bool fForward)
 {
 	auto pHex = GetHexCtrl();
-	ULONGLONG ullMaxDataSize = pHex->GetDataSize();
+	auto ullMaxDataSize = pHex->GetDataSize();
 	if (ullStart + nSizeSearch > ullMaxDataSize)
 		return false;
 
@@ -572,7 +569,7 @@ ESearchMode CHexDlgSearch::GetSearchMode()
 
 void CHexDlgSearch::ComboSearchFill(LPCWSTR pwsz)
 {
-	CComboBox* pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH);
+	auto pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH);
 	if (!pCombo)
 		return;
 
@@ -588,7 +585,7 @@ void CHexDlgSearch::ComboSearchFill(LPCWSTR pwsz)
 
 void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
 {
-	CComboBox* pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_REPLACE);
+	auto pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_REPLACE);
 	if (!pCombo)
 		return;
 

@@ -57,7 +57,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		BOOL DeleteItem(int iItem)override;
 		void Destroy()override;
 		[[nodiscard]] ULONGLONG GetCellData(int iItem, int iSubItem)const override;
-		[[nodiscard]] EnListExSortMode GetColumnSortMode(int iColumn)const override;
+		[[nodiscard]] EListExSortMode GetColumnSortMode(int iColumn)const override;
 		[[nodiscard]] UINT GetFontSize()const override;
 		[[nodiscard]] int GetSortColumn()const override;
 		[[nodiscard]] bool GetSortAscending()const override;
@@ -69,7 +69,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		void SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTooltip, std::wstring_view wstrCaption)override;
 		void SetColor(const LISTEXCOLORS& lcs)override;
 		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
-		void SetColumnSortMode(int iColumn, EnListExSortMode enSortMode)override;
+		void SetColumnSortMode(int iColumn, EListExSortMode enSortMode)override;
 		void SetFont(const LOGFONTW* pLogFontNew)override;
 		void SetFontSize(UINT uiSize)override;
 		void SetHdrHeight(DWORD dwHeight)override;
@@ -77,7 +77,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
 		void SetListMenu(CMenu* pMenu)override;
 		void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)override;
-		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EnListExSortMode enSortMode)override;
+		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode enSortMode)override;
 		DECLARE_DYNAMIC(CListEx)
 		DECLARE_MESSAGE_MAP()
 	protected:
@@ -123,12 +123,12 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		std::unordered_map<int, std::unordered_map<int, LISTEXCELLCOLOR>> m_umapCellColor { }; //Cell's colors.
 		std::unordered_map<DWORD, ROWCOLOR> m_umapRowColor { };     //Row colors.
 		std::unordered_map<int, COLUMNCOLOR> m_umapColumnColor { }; //Column colors.
-		std::unordered_map<int, EnListExSortMode> m_umapColumnSortMode { };              //Column sorting mode.
+		std::unordered_map<int, EListExSortMode> m_umapColumnSortMode { };              //Column sorting mode.
 		NMITEMACTIVATE m_stNMII { };
 		int m_iSortColumn { };
 		long m_lSizeFont { };       //Font size.
 		PFNLVCOMPARE m_pfnCompare { nullptr };  //Pointer to user provided compare func.
-		EnListExSortMode m_enDefSortMode { EnListExSortMode::SORT_LEX }; //Default sorting mode.
+		EListExSortMode m_enDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
 		bool m_fCreated { false };  //Is created.
 		bool m_fSortable { false }; //Is list sortable.
 		bool m_fSortAscending { };  //Sorting type (ascending, descending).

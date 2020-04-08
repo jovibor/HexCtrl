@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright Â© 2018-2020 Jovibor https://github.com/jovibor/                             *
 * This is very extended and featured version of CMFCListCtrl class.                     *
 * Official git repository: https://github.com/jovibor/ListEx/                           *
 * This class is available under the "MIT License".                                      *
@@ -79,7 +79,7 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BO
 	m_wstrHeaderText[0] = L'\0';
 	GetItem(iItem, &m_hdItem);
 	if (StrStrW(m_wstrHeaderText, L"\n"))
-	{	//If it's multiline text, first — calculate rect for the text,
+	{	//If it's multiline text, first â€” calculate rect for the text,
 		//with DT_CALCRECT flag (not drawing anything),
 		//and then calculate rect for final vertical text alignment.
 		CRect rcText;

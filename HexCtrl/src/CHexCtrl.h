@@ -188,6 +188,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
+		afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 		afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);

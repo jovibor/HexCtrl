@@ -7,10 +7,10 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
+#include "../Helper.h"
 #include "CHexDlgBookmarkProps.h"
 #include <cassert>
 #include <numeric>
-#include"../Helper.h"
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
@@ -18,13 +18,9 @@ using namespace HEXCTRL::INTERNAL;
 BEGIN_MESSAGE_MAP(CHexDlgBookmarkProps, CDialogEx)
 END_MESSAGE_MAP()
 
-INT_PTR CHexDlgBookmarkProps::DoModal(HEXBOOKMARKSTRUCT* phbs)
+INT_PTR CHexDlgBookmarkProps::DoModal(HEXBOOKMARKSTRUCT& hbs)
 {
-	assert(phbs);
-	if (!phbs)
-		return -1;
-
-	m_pHBS = phbs;
+	m_pHBS = &hbs;
 
 	return CDialogEx::DoModal();
 }
@@ -58,7 +54,7 @@ BOOL CHexDlgBookmarkProps::OnInitDialog()
 		m_pHBS->vecSpan.emplace_back(HEXSPANSTRUCT { m_ullOffset, m_ullSize });
 	}
 	swprintf_s(pwszBuff, L"0x%llX", m_ullOffset);
-	CEdit* pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_OFFSET);
+	auto pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_OFFSET);
 	pEdit->SetWindowTextW(pwszBuff);
 
 	swprintf_s(pwszBuff, L"0x%llX", m_ullSize);
@@ -79,7 +75,7 @@ void CHexDlgBookmarkProps::OnOK()
 	m_pHBS->clrText = pClrBtn->GetColor();
 
 	wchar_t pwszBuff[512];
-	CEdit* pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_OFFSET);
+	auto pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_EDIT_OFFSET);
 	pEdit->GetWindowTextW(pwszBuff, 32); //Text limit for 32 chars
 	ULONGLONG ullOffset;
 	if (!wstr2num(pwszBuff, ullOffset))

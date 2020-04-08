@@ -7,8 +7,8 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "CHexDlgFillWith.h"
 #include "../Helper.h"
+#include "CHexDlgFillWith.h"
 
 using namespace HEXCTRL::INTERNAL;
 
@@ -27,8 +27,7 @@ BOOL CHexDlgFillWith::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	CheckRadioButton(IDC_HEXCTRL_FILLWITHDATA_RADIO_HEX, IDC_HEXCTRL_FILLWITHDATA_RADIO_UTF16, IDC_HEXCTRL_FILLWITHDATA_RADIO_HEX);
-	CComboBox* pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_FILLWITHDATA_COMBO_HEXTEXT);
-	if (pCombo)
+	if (auto pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_FILLWITHDATA_COMBO_HEXTEXT); pCombo != nullptr)
 		pCombo->LimitText(MAX_PATH); //Max characters count in combo's edit box.
 
 	return TRUE;
@@ -58,7 +57,7 @@ void CHexDlgFillWith::OnOK()
 	if (hms.vecSpan.empty())
 		return;
 
-	CComboBox* pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_FILLWITHDATA_COMBO_HEXTEXT);
+	auto pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_FILLWITHDATA_COMBO_HEXTEXT);
 	if (!pCombo)
 		return;
 

@@ -23,7 +23,7 @@ namespace HEXCTRL::INTERNAL::LISTEX {
 	}
 
 	namespace INTERNAL {
-		constexpr ULONG_PTR ID_TIMER_BKM_TOOLTIP { 0x01 }; //Timer ID.
+		constexpr ULONG_PTR ID_TIMER_TOOLTIP { 0x01 }; //Timer ID.
 	}
 }
 
@@ -134,19 +134,19 @@ void CListEx::CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)
 int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 {
 	auto pListCtrl = reinterpret_cast<IListEx*>(lParamSort);
-	int iSortColumn = pListCtrl->GetSortColumn();
-	EnListExSortMode enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
+	auto iSortColumn = pListCtrl->GetSortColumn();
+	auto enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
 
-	std::wstring wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn).GetString();
-	std::wstring wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn).GetString();
+	std::wstring_view wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn).GetString();
+	std::wstring_view wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn).GetString();
 
 	int iCompare { };
 	switch (enSortMode)
 	{
-	case EnListExSortMode::SORT_LEX:
+	case EListExSortMode::SORT_LEX:
 		iCompare = wstrItem1.compare(wstrItem2);
 		break;
-	case EnListExSortMode::SORT_NUMERIC:
+	case EListExSortMode::SORT_NUMERIC:
 	{
 		LONGLONG llData1 { }, llData2 { };
 		StrToInt64ExW(wstrItem1.data(), STIF_SUPPORT_HEX, &llData1);
@@ -256,11 +256,11 @@ ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)const
 	return 0;
 }
 
-EnListExSortMode CListEx::GetColumnSortMode(int iColumn)const
+EListExSortMode CListEx::GetColumnSortMode(int iColumn)const
 {
 	assert(IsCreated());
 
-	EnListExSortMode enMode;
+	EListExSortMode enMode;
 	auto iter = m_umapColumnSortMode.find(iColumn);
 	if (iter != m_umapColumnSortMode.end())
 		enMode = iter->second;
@@ -471,7 +471,7 @@ void CListEx::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 	m_umapColumnColor[iColumn] = COLUMNCOLOR { clrBk, clrText, std::chrono::high_resolution_clock::now() };
 }
 
-void CListEx::SetColumnSortMode(int iColumn, EnListExSortMode enSortMode)
+void CListEx::SetColumnSortMode(int iColumn, EListExSortMode enSortMode)
 {
 	m_umapColumnSortMode[iColumn] = enSortMode;
 }
@@ -583,7 +583,7 @@ void CListEx::SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)
 	m_umapRowColor[dwRow] = ROWCOLOR { clrBk, clrText, std::chrono::high_resolution_clock::now() };
 }
 
-void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EnListExSortMode enSortMode)
+void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode enSortMode)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -853,7 +853,7 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 		m_wndTt.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfo));
 
 		//Timer to check whether mouse left subitem's rect.
-		SetTimer(ID_TIMER_BKM_TOOLTIP, 200, nullptr);
+		SetTimer(ID_TIMER_TOOLTIP, 200, nullptr);
 	}
 	else
 	{
@@ -930,7 +930,7 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 {
 	//Checking if mouse left list's subitem rect,
 	//if so — hiding tooltip and killing timer.
-	if (nIDEvent == ID_TIMER_BKM_TOOLTIP)
+	if (nIDEvent == ID_TIMER_TOOLTIP)
 	{
 		CPoint pt;
 		GetCursorPos(&pt);
@@ -946,7 +946,7 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 		//If it left.
 		m_fTtShown = false;
 		m_wndTt.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stToolInfo);
-		KillTimer(ID_TIMER_BKM_TOOLTIP);
+		KillTimer(ID_TIMER_TOOLTIP);
 		m_stCurrCell.iItem = hitInfo.iItem;
 		m_stCurrCell.iSubItem = hitInfo.iSubItem;
 	}

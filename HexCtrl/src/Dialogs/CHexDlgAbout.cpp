@@ -7,8 +7,8 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "CHexDlgAbout.h"
 #include "../Helper.h"
+#include "CHexDlgAbout.h"
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;

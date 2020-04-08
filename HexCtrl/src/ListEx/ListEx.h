@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright Â© 2018-2020 Jovibor https://github.com/jovibor/                             *
 * This is very extended and featured version of CMFCListCtrl class.                     *
 * Official git repository: https://github.com/jovibor/ListEx/                           *
 * This class is available under the "MIT License".                                      *
@@ -13,9 +13,9 @@
 namespace HEXCTRL::INTERNAL::LISTEX
 {
 	/********************************************************************************************
-	* EnListExSortMode - Sorting mode.                                                          *
+	* EListExSortMode - Sorting mode.                                                           *
 	********************************************************************************************/
-	enum class EnListExSortMode : short
+	enum class EListExSortMode : short
 	{
 		SORT_LEX, SORT_NUMERIC
 	};
@@ -82,7 +82,7 @@ namespace HEXCTRL::INTERNAL::LISTEX
 		virtual BOOL DeleteItem(int nItem) = 0;
 		virtual void Destroy() = 0;
 		[[nodiscard]] virtual ULONGLONG GetCellData(int iItem, int iSubitem)const = 0;
-		[[nodiscard]] virtual EnListExSortMode GetColumnSortMode(int iColumn)const = 0;
+		[[nodiscard]] virtual EListExSortMode GetColumnSortMode(int iColumn)const = 0;
 		[[nodiscard]] virtual UINT GetFontSize()const = 0;
 		[[nodiscard]] virtual int GetSortColumn()const = 0;
 		[[nodiscard]] virtual bool GetSortAscending()const = 0;
@@ -93,7 +93,7 @@ namespace HEXCTRL::INTERNAL::LISTEX
 		virtual void SetCellTooltip(int iItem, int iSubitem, std::wstring_view wstrTooltip, std::wstring_view wstrCaption = L"") = 0;
 		virtual void SetColor(const LISTEXCOLORS& lcs) = 0;
 		virtual void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
-		virtual void SetColumnSortMode(int iColumn, EnListExSortMode enSortMode) = 0;
+		virtual void SetColumnSortMode(int iColumn, EListExSortMode enSortMode) = 0;
 		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0;
 		virtual void SetFontSize(UINT uiSize) = 0;
 		virtual void SetHdrHeight(DWORD dwHeight) = 0;
@@ -101,7 +101,8 @@ namespace HEXCTRL::INTERNAL::LISTEX
 		virtual void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetListMenu(CMenu* pMenu) = 0;
 		virtual void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText = -1) = 0;
-		virtual void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare = nullptr, EnListExSortMode enSortMode = EnListExSortMode::SORT_LEX) = 0;
+		virtual void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare = nullptr,
+			EListExSortMode enSortMode = EListExSortMode::SORT_LEX) = 0;
 	};
 
 	/********************************************************************************************

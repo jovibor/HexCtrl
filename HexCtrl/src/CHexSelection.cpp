@@ -108,16 +108,14 @@ void CHexSelection::SetSelectionEnd(ULONGLONG ullOffset)
 	m_ullMarkSelEnd = ullOffset;
 	if (m_ullMarkSelStart == 0xFFFFFFFFFFFFFFFFULL || m_ullMarkSelEnd < m_ullMarkSelStart)
 		return;
-	else
-	{
-		ULONGLONG ullSize = m_ullMarkSelEnd - m_ullMarkSelStart + 1;
-		m_vecSelect.clear();
-		m_vecSelect.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
 
-		CHexCtrl* pHex = GetHexCtrl();
-		if (pHex)
-			pHex->UpdateInfoText();
-	}
+	ULONGLONG ullSize = m_ullMarkSelEnd - m_ullMarkSelStart + 1;
+	m_vecSelect.clear();
+	m_vecSelect.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
+
+	CHexCtrl* pHex = GetHexCtrl();
+	if (pHex)
+		pHex->UpdateInfoText();
 }
 
 void CHexSelection::SetSelectionStart(ULONGLONG ullOffset)
@@ -125,14 +123,12 @@ void CHexSelection::SetSelectionStart(ULONGLONG ullOffset)
 	m_ullMarkSelStart = ullOffset;
 	if (m_ullMarkSelEnd == 0xFFFFFFFFFFFFFFFFULL || m_ullMarkSelStart > m_ullMarkSelEnd)
 		return;
-	else
-	{
-		ULONGLONG ullSize = m_ullMarkSelEnd - m_ullMarkSelStart + 1;
-		m_vecSelect.clear();
-		m_vecSelect.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
 
-		CHexCtrl* pHex = GetHexCtrl();
-		if (pHex)
-			pHex->UpdateInfoText();
-	}
+	ULONGLONG ullSize = m_ullMarkSelEnd - m_ullMarkSelStart + 1;
+	m_vecSelect.clear();
+	m_vecSelect.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
+
+	CHexCtrl* pHex = GetHexCtrl();
+	if (pHex)
+		pHex->UpdateInfoText();
 }
