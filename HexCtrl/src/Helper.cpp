@@ -67,19 +67,19 @@ namespace HEXCTRL::INTERNAL {
 	}
 
 	template<typename T, typename>
-	bool wstr2num(std::wstring_view wstr, T& t)
+	bool wstr2num(std::wstring_view wstr, T& t, int iBase)
 	{
 		wchar_t* pEndPtr;
 		if constexpr (std::is_same_v<T, ULONGLONG>)
 		{
-			t = std::wcstoull(wstr.data(), &pEndPtr, 0);
+			t = std::wcstoull(wstr.data(), &pEndPtr, iBase);
 			if ((t == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
 				|| (t == ULLONG_MAX && errno == ERANGE))
 				return false;
 		}
 		else if constexpr (std::is_same_v<T, LONGLONG>)
 		{
-			t = std::wcstoll(wstr.data(), &pEndPtr, 0);
+			t = std::wcstoll(wstr.data(), &pEndPtr, iBase);
 			if ((t == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
 				|| ((t == LLONG_MAX || t == LLONG_MIN) && errno == ERANGE))
 				return false;
@@ -88,8 +88,8 @@ namespace HEXCTRL::INTERNAL {
 		return true;
 	}
 	//Explicit instantiations of templated func in .cpp.
-	template bool wstr2num<ULONGLONG>(std::wstring_view wstr, ULONGLONG& t);
-	template bool wstr2num<LONGLONG>(std::wstring_view wstr, LONGLONG& t);
+	template bool wstr2num<ULONGLONG>(std::wstring_view wstr, ULONGLONG& t, int iBase);
+	template bool wstr2num<LONGLONG>(std::wstring_view wstr, LONGLONG& t, int iBase);
 
 	std::string WstrToStr(std::wstring_view wstr)
 	{

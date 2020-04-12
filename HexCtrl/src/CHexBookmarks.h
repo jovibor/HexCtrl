@@ -28,6 +28,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] ULONGLONG GetCount();
 		[[nodiscard]] auto GetTouchTime()const->__time64_t;
 		void GoBookmark(ULONGLONG ullID);
+		void GoBookmark(const HEXBOOKMARKSTRUCT& bkm)const;
 		void GoNext();
 		void GoPrev();
 		[[nodiscard]] bool HasBookmarks()const;

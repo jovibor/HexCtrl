@@ -373,6 +373,8 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 void CHexDlgDataInterpret::OnClose()
 {
 	m_ullSize = 0;
+	m_fVisible = false;
+
 	CDialogEx::OnClose();
 }
 
@@ -448,9 +450,8 @@ BOOL CHexDlgDataInterpret::ShowWindow(int nCmdShow)
 {
 	if (!m_pHexCtrl)
 		return FALSE;
-
-	m_fVisible = nCmdShow == SW_SHOW;
-	if (m_fVisible)
+	
+	if (m_fVisible = (nCmdShow == SW_SHOW); m_fVisible)
 		InspectOffset(m_pHexCtrl->GetCaretPos());
 
 	return CWnd::ShowWindow(nCmdShow);
@@ -625,44 +626,6 @@ bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstr, PSYSTEMTIM
 	FILETIME ftValidCheck;
 
 	return SystemTimeToFileTime(pSysTime, &ftValidCheck);
-}
-
-bool CHexDlgDataInterpret::StringToGuid(std::wstring_view wstr, GUID& GUIDResult)
-{
-	//If string is empty or contains forbidden characters.
-	if (wstr.empty() || wstr.find_first_not_of(L"0123456789abcdefABCDEF{-}") != std::wstring_view::npos)
-		return false;
-
-	std::wstring wstrDigits { };
-	for (auto i = 0; i < wstr.size(); ++i)
-		if (auto sub = wstr.substr(i, 1); sub.find_first_not_of(L"{-}") != std::wstring_view::npos)
-			wstrDigits += sub; //Appending only hex wchars.
-
-	//There must be exactly 32 numbers in GUID.
-	if (wstrDigits.size() != 32)
-		return false;
-
-	//%.8x pGuid->Data1
-	GUIDResult.Data1 = wcstoul(wstrDigits.substr(0, 8).data(), nullptr, 16);
-
-	//%.4x pGuid->Data2
-	GUIDResult.Data2 = static_cast<unsigned short>(wcstoul(wstrDigits.substr(8, 4).data(), nullptr, 16));
-
-	//%.4x pGuid->Data3
-	GUIDResult.Data3 = static_cast<unsigned short>(wcstoul(wstrDigits.substr(12, 4).data(), nullptr, 16));
-
-	//%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x pGuid->Data4[0], pGuid->Data4[1], pGuid->Data4[2], 
-	//pGuid->Data4[3], pGuid->Data4[4], pGuid->Data4[5], pGuid->Data4[6], pGuid->Data4[7] 
-	GUIDResult.Data4[0] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(16, 2).data(), nullptr, 16));
-	GUIDResult.Data4[1] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(18, 2).data(), nullptr, 16));
-	GUIDResult.Data4[2] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(20, 2).data(), nullptr, 16));
-	GUIDResult.Data4[3] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(22, 2).data(), nullptr, 16));
-	GUIDResult.Data4[4] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(24, 2).data(), nullptr, 16));
-	GUIDResult.Data4[5] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(26, 2).data(), nullptr, 16));
-	GUIDResult.Data4[6] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(28, 2).data(), nullptr, 16));
-	GUIDResult.Data4[7] = static_cast<unsigned char>(wcstoul(wstrDigits.substr(30, 2).data(), nullptr, 16));
-
-	return true;
 }
 
 void CHexDlgDataInterpret::ShowNAME_BINARY(BYTE byte)
@@ -988,15 +951,12 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)
 
 void CHexDlgDataInterpret::ShowNAME_GUID(const DQWORD& dqword)
 {
-	wchar_t buff[64];
-	swprintf_s(buff, _countof(buff), L"{%.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x}",
-		dqword.gGUID.Data1, dqword.gGUID.Data2, dqword.gGUID.Data3, dqword.gGUID.Data4[0],
-		dqword.gGUID.Data4[1], dqword.gGUID.Data4[2], dqword.gGUID.Data4[3], dqword.gGUID.Data4[4],
-		dqword.gGUID.Data4[5], dqword.gGUID.Data4[6], dqword.gGUID.Data4[7]);
+	LPWSTR lpwstr;
+	StringFromIID(dqword.gGUID, &lpwstr);
 
-	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_GUID; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(buff);
+		iter->pProp->SetValue(lpwstr);
 }
 
 void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD& dqword)
@@ -1415,8 +1375,8 @@ bool CHexDlgDataInterpret::SetDataNAME_GUIDTIME(std::wstring_view wstr)
 
 bool CHexDlgDataInterpret::SetDataNAME_GUID(std::wstring_view wstr)
 {
-	GUID guid { };
-	if (!StringToGuid(wstr, guid))
+	GUID guid;
+	if (IIDFromString(wstr.data(), &guid) != S_OK)
 		return false;
 
 	m_pHexCtrl->SetData(m_ullOffset, guid);

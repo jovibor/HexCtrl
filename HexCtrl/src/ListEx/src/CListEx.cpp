@@ -337,7 +337,7 @@ void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clr
 	//If there is no color for such item/subitem we just set it.
 	if (it == m_umapCellColor.end())
 	{	//Initializing inner map.
-		std::unordered_map<int, LISTEXCELLCOLOR> umapInner { { iSubItem, LISTEXCELLCOLOR { clrBk, clrText } } };
+		std::unordered_map<int, LISTEXCELLCOLOR> umapInner { { iSubItem, { clrBk, clrText } } };
 		m_umapCellColor.insert({ ID, std::move(umapInner) });
 	}
 	else
@@ -345,7 +345,7 @@ void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clr
 		auto itInner = it->second.find(iSubItem);
 
 		if (itInner == it->second.end())
-			it->second.insert({ iSubItem, LISTEXCELLCOLOR { clrBk, clrText } });
+			it->second.insert({ iSubItem, { clrBk, clrText } });
 		else //If there is already exist this cell's color -> changing.
 		{
 			itInner->second.clrBk = clrBk;
@@ -423,8 +423,8 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTool
 		if (!wstrTooltip.empty() || !wstrCaption.empty())
 		{	//Initializing inner map.
 			std::unordered_map<int, CELLTOOLTIP> umapInner {
-				{ iSubItem, { CELLTOOLTIP { std::move(std::wstring { wstrTooltip }),
-				std::move(std::wstring { wstrCaption }) } } } };
+				{ iSubItem, { std::wstring { wstrTooltip }, std::wstring { wstrCaption } } }
+			};
 			m_umapCellTt.insert({ ID, std::move(umapInner) });
 		}
 	}
@@ -437,15 +437,13 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTool
 		if (itInner == it->second.end())
 		{
 			if (!wstrTooltip.empty() || !wstrCaption.empty())
-				it->second.insert({ iSubItem, { std::move(std::wstring { wstrTooltip }),
-					std::move(std::wstring { wstrCaption }) } });
+				it->second.insert({ iSubItem, { std::wstring { wstrTooltip }, std::wstring { wstrCaption } } });
 		}
 		else
 		{	//If there is already exist this Item-Subitem's tooltip:
 			//change or erase it, depending on pwszTooltip emptiness.
 			if (!wstrTooltip.empty())
-				itInner->second = { std::move(std::wstring { wstrTooltip }),
-				std::move(std::wstring { wstrCaption }) };
+				itInner->second = { std::wstring { wstrTooltip }, std::wstring { wstrCaption } };
 			else
 				it->second.erase(itInner);
 		}

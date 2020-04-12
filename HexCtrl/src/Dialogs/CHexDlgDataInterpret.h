@@ -83,7 +83,7 @@ namespace HEXCTRL::INTERNAL
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		void OnOK()override;
+		afx_msg void OnOK()override;
 		afx_msg void OnClose();
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		void UpdateHexCtrl();
@@ -97,7 +97,6 @@ namespace HEXCTRL::INTERNAL
 		std::wstring GetCurrentUserDateFormatString();
 		std::wstring SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime);
 		bool StringToSystemTime(std::wstring_view wstr, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
-		bool StringToGuid(std::wstring_view wstr, GUID& GUIDResult);
 		void ShowNAME_BINARY(BYTE byte);
 		void ShowNAME_CHAR(BYTE byte);
 		void ShowNAME_UCHAR(BYTE byte);

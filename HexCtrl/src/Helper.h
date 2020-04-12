@@ -28,7 +28,7 @@ namespace HEXCTRL::INTERNAL {
 	
 	//Converts wstring to ULONGLONG or LONGLONG depending on template type argument.
 	template<typename T, typename = std::enable_if_t<std::is_same_v<T, ULONGLONG> || std::is_same_v<T, LONGLONG>>>
-	inline bool wstr2num(std::wstring_view wstr, T& t);
+	inline bool wstr2num(std::wstring_view wstr, T& t, int iBase = 0);
 
 	//Wide string to Multibyte string convertion.
 	std::string WstrToStr(std::wstring_view wstr);

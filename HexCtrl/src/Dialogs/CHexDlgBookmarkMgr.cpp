@@ -91,7 +91,7 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT:
 	{
-		if (auto pBkm = m_pBookmarks->GetByID(m_ullCurrBkmId); pBkm != nullptr)
+		if (auto pBkm = m_pBookmarks->GetByID(m_ullCurrBkmID); pBkm != nullptr)
 		{
 			CHexDlgBookmarkProps dlgBkmEdit;
 			auto stBkm = *pBkm; //Pass a copy to dlgBkmEdit to avoid changing the original, from list.
@@ -104,7 +104,7 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 	break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE:
-		m_pBookmarks->RemoveByID(m_ullCurrBkmId);
+		m_pBookmarks->RemoveByID(m_ullCurrBkmID);
 		UpdateList();
 		break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_CLEARALL:
@@ -198,7 +198,7 @@ void CHexDlgBookmarkMgr::OnListBkmItemChanged(NMHDR* pNMHDR, LRESULT* pResult)
 	if (pNMI->iItem == -1 || pNMI->iSubItem == -1 || !(pNMI->uNewState & LVIS_SELECTED))
 		return;
 	if (auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(pNMI->iItem)); pBkm != nullptr)
-		m_pBookmarks->GoBookmark(pBkm->ullID);
+		m_pBookmarks->GoBookmark(*pBkm);
 
 	*pResult = 0;
 }
@@ -211,9 +211,8 @@ void CHexDlgBookmarkMgr::OnListBkmDblClick(NMHDR* pNMHDR, LRESULT* pResult)
 		return;
 
 	if (auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(pNMI->iItem)); pBkm != nullptr)
-		m_ullCurrBkmId = pBkm->ullID;
+		m_ullCurrBkmID = pBkm->ullID;
 
-	m_iCurrListId = pNMI->iItem;
 	SendMessageW(WM_COMMAND, IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT);
 
 	*pResult = 0;
@@ -230,8 +229,7 @@ void CHexDlgBookmarkMgr::OnListBkmRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	{
 		fEnabled = true;
 		if (auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(pNMI->iItem)); pBkm != nullptr)
-			m_ullCurrBkmId = pBkm->ullID;
-		m_iCurrListId = pNMI->iItem;
+			m_ullCurrBkmID = pBkm->ullID;
 	}
 	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
