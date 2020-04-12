@@ -124,8 +124,14 @@ auto CHexBookmarks::GetTouchTime()const->__time64_t
 
 void CHexBookmarks::GoBookmark(ULONGLONG ullID)
 {
-	if (!m_pHex || m_fVirtual)
+	if (!m_pHex)
 		return;
+
+	if (m_fVirtual)
+	{
+		//Not implemented yet
+		return;
+	}
 
 	auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
 		[ullID](const HEXBOOKMARKSTRUCT& ref) {return ullID == ref.ullID; });
@@ -136,7 +142,7 @@ void CHexBookmarks::GoBookmark(ULONGLONG ullID)
 
 void CHexBookmarks::GoNext()
 {
-	if (!m_pHex || m_deqBookmarks.empty())
+	if (!m_pHex)
 		return;
 
 	if (m_fVirtual)
@@ -149,7 +155,9 @@ void CHexBookmarks::GoNext()
 		return;
 	}
 
-	if (++m_iCurrent > static_cast<int>(m_deqBookmarks.size() - 1))
+	if (m_deqBookmarks.empty())
+		return;
+	else if (++m_iCurrent > static_cast<int>(m_deqBookmarks.size() - 1))
 		m_iCurrent = 0;
 
 	m_pHex->GoToOffset(m_deqBookmarks.at(static_cast<size_t>(m_iCurrent)).vecSpan.front().ullOffset, true, 1);
@@ -157,7 +165,7 @@ void CHexBookmarks::GoNext()
 
 void CHexBookmarks::GoPrev()
 {
-	if (!m_pHex || m_deqBookmarks.empty())
+	if (!m_pHex)
 		return;
 
 	if (m_fVirtual)
@@ -170,7 +178,9 @@ void CHexBookmarks::GoPrev()
 		return;
 	}
 
-	if (--m_iCurrent < 0)
+	if (m_deqBookmarks.empty())
+		return;
+	else if (--m_iCurrent < 0)
 		m_iCurrent = static_cast<int>(m_deqBookmarks.size()) - 1;
 
 	m_pHex->GoToOffset(m_deqBookmarks.at(static_cast<size_t>(m_iCurrent)).vecSpan.front().ullOffset, true, 1);
@@ -217,7 +227,7 @@ bool CHexBookmarks::IsVirtual()const
 
 void CHexBookmarks::Remove(ULONGLONG ullOffset)
 {
-	if (!m_pHex || m_deqBookmarks.empty() || !m_pHex->IsDataSet())
+	if (!m_pHex || !m_pHex->IsDataSet())
 		return;
 
 	if (m_fVirtual)
@@ -226,8 +236,12 @@ void CHexBookmarks::Remove(ULONGLONG ullOffset)
 			return;
 		m_pVirtual->Remove(ullOffset);
 	}
+	
 	else
 	{
+		if (m_deqBookmarks.empty())
+			return;
+
 		//Searching from the end, to remove last added bookmark if few at the given offset.
 		auto riter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
 			[ullOffset](const HEXBOOKMARKSTRUCT& ref)
