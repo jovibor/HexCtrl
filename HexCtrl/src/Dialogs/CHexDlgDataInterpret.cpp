@@ -450,7 +450,7 @@ BOOL CHexDlgDataInterpret::ShowWindow(int nCmdShow)
 {
 	if (!m_pHexCtrl)
 		return FALSE;
-	
+
 	if (m_fVisible = (nCmdShow == SW_SHOW); m_fVisible)
 		InspectOffset(m_pHexCtrl->GetCaretPos());
 
@@ -951,12 +951,15 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)
 
 void CHexDlgDataInterpret::ShowNAME_GUID(const DQWORD& dqword)
 {
-	LPWSTR lpwstr;
-	StringFromIID(dqword.gGUID, &lpwstr);
+	wchar_t buff[64];
+	swprintf_s(buff, _countof(buff), L"{%.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x}",
+		dqword.gGUID.Data1, dqword.gGUID.Data2, dqword.gGUID.Data3, dqword.gGUID.Data4[0],
+		dqword.gGUID.Data4[1], dqword.gGUID.Data4[2], dqword.gGUID.Data4[3], dqword.gGUID.Data4[4],
+		dqword.gGUID.Data4[5], dqword.gGUID.Data4[6], dqword.gGUID.Data4[7]);
 
-		if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) {return refData.eName == EName::NAME_GUID; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(lpwstr);
+		iter->pProp->SetValue(buff);
 }
 
 void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const DQWORD& dqword)

@@ -303,6 +303,8 @@ void CHexBookmarks::SetVirtual(bool fEnable, IHexBkmVirtual* pVirtual)
 	m_fVirtual = fEnable;
 	if (fEnable && pVirtual != nullptr)
 		m_pVirtual = pVirtual;
+
+	m_time = _time64(nullptr);
 }
 
 void CHexBookmarks::Update(ULONGLONG ullID, const HEXBOOKMARKSTRUCT& stBookmark)
