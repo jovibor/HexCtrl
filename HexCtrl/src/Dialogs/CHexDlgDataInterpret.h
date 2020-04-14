@@ -10,7 +10,7 @@
 #include "../../res/HexCtrlRes.h"
 #include "../CHexCtrl.h"
 #include "CHexPropGridCtrl.h"
-#include <afxdialogex.h> //Standard MFC's controls header.
+#include <afxdialogex.h>
 
 namespace HEXCTRL::INTERNAL
 {
@@ -86,17 +86,17 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnOK()override;
 		afx_msg void OnClose();
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
-		void UpdateHexCtrl();
-		template <typename T>bool SetDigitData(T tData);
 		LRESULT OnPropertyChanged(WPARAM wparam, LPARAM lparam);
 		afx_msg void OnSize(UINT nType, int cx, int cy);
 		afx_msg void OnClickRadioLe();
 		afx_msg void OnClickRadioBe();
 		afx_msg void OnClickRadioDec();
 		afx_msg void OnClickRadioHex();
-		std::wstring GetCurrentUserDateFormatString()const;
-		std::wstring SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime)const;
-		bool StringToSystemTime(std::wstring_view wstr, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)const;
+		template <typename T>void SetDigitData(T tData);
+		void UpdateHexCtrl();
+		[[nodiscard]] std::wstring GetCurrentUserDateFormatString()const;
+		[[nodiscard]] std::wstring SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime)const;
+		[[nodiscard]] bool StringToSystemTime(std::wstring_view wstr, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)const;
 		void ShowNAME_BINARY(BYTE byte);
 		void ShowNAME_CHAR(BYTE byte);
 		void ShowNAME_UCHAR(BYTE byte);

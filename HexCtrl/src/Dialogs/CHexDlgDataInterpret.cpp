@@ -457,24 +457,8 @@ BOOL CHexDlgDataInterpret::ShowWindow(int nCmdShow)
 	return CWnd::ShowWindow(nCmdShow);
 }
 
-void CHexDlgDataInterpret::UpdateHexCtrl()
+template<typename T>void CHexDlgDataInterpret::SetDigitData(T tData)
 {
-	if (m_pHexCtrl)
-		m_pHexCtrl->RedrawWindow();
-}
-
-template<typename T>bool CHexDlgDataInterpret::SetDigitData(T tData)
-{
-	//Do not check numeric_limits for sizeof(QWORD).
-	//There is no sense for that, because input argument is LONGLONG,
-	//and it can not be bigger than std::numeric_limits<(U)LONGLONG>::max()
-	if constexpr (!std::is_same_v<T, ULONGLONG> && !std::is_same_v<T, LONGLONG>)
-	{
-		if (tData > static_cast<LONGLONG>(std::numeric_limits<T>::max())
-			|| tData < static_cast<LONGLONG>(std::numeric_limits<T>::min()))
-			return false;
-	}
-
 	if (m_fBigEndian)
 	{
 		switch (sizeof(T))
@@ -493,8 +477,12 @@ template<typename T>bool CHexDlgDataInterpret::SetDigitData(T tData)
 		}
 	}
 	m_pHexCtrl->SetData(m_ullOffset, tData);
+}
 
-	return true;
+void CHexDlgDataInterpret::UpdateHexCtrl()
+{
+	if (m_pHexCtrl)
+		m_pHexCtrl->RedrawWindow();
 }
 
 std::wstring CHexDlgDataInterpret::GetCurrentUserDateFormatString()const
@@ -1015,87 +1003,90 @@ bool CHexDlgDataInterpret::SetDataNAME_BINARY(std::wstring_view wstr)
 	if (wstr.size() != 8 || wstr.find_first_not_of(L"01") != std::wstring_view::npos)
 		return false;
 
-	auto uChar = static_cast<UCHAR>(wcstol(wstr.data(), nullptr, 2));
+	bool fSuccess;
+	UCHAR uchData;
+	if (fSuccess = wstr2num(wstr, uchData, 2); fSuccess)
+		SetDigitData(uchData);
 
-	return SetDigitData(uChar);
+	return fSuccess;
 }
 
 bool CHexDlgDataInterpret::SetDataNAME_CHAR(std::wstring_view wstr)
 {
-	bool fSuccess { false };
-	LONGLONG llData { };
-	if (wstr2num(wstr, llData))
-		fSuccess = SetDigitData(static_cast<CHAR>(llData));
+	bool fSuccess;
+	CHAR chData;
+	if (fSuccess = wstr2num(wstr, chData); fSuccess)
+		SetDigitData(chData);
 
 	return fSuccess;
 }
 
 bool CHexDlgDataInterpret::SetDataNAME_UCHAR(std::wstring_view wstr)
 {
-	bool fSuccess { false };
-	LONGLONG llData { };
-	if (wstr2num(wstr, llData))
-		fSuccess = SetDigitData(static_cast<UCHAR>(llData));
+	bool fSuccess;
+	UCHAR uchData;
+	if (fSuccess = wstr2num(wstr, uchData); fSuccess)
+		SetDigitData(uchData);
 
 	return fSuccess;
 }
 
 bool CHexDlgDataInterpret::SetDataNAME_SHORT(std::wstring_view wstr)
 {
-	bool fSuccess { false };
-	LONGLONG llData { };
-	if (wstr2num(wstr, llData))
-		fSuccess = SetDigitData(static_cast<SHORT>(llData));
+	bool fSuccess;
+	SHORT shData;
+	if (fSuccess = wstr2num(wstr, shData); fSuccess)
+		SetDigitData(shData);
 
 	return fSuccess;
 }
 
 bool CHexDlgDataInterpret::SetDataNAME_USHORT(std::wstring_view wstr)
 {
-	bool fSuccess { false };
-	LONGLONG llData { };
-	if (wstr2num(wstr, llData))
-		fSuccess = SetDigitData(static_cast<USHORT>(llData));
+	bool fSuccess;
+	USHORT ushData;
+	if (fSuccess = wstr2num(wstr, ushData); fSuccess)
+		SetDigitData(ushData);
 
 	return fSuccess;
 }
 
 bool CHexDlgDataInterpret::SetDataNAME_LONG(std::wstring_view wstr)
 {
-	bool fSuccess { false };
-	LONGLONG llData { };
-	if (wstr2num(wstr, llData))
-		fSuccess = SetDigitData(static_cast<LONG>(llData));
+	bool fSuccess;
+	LONG lData;
+	if (fSuccess = wstr2num(wstr, lData); fSuccess)
+		SetDigitData(lData);
 
 	return fSuccess;
 }
 
 bool CHexDlgDataInterpret::SetDataNAME_ULONG(std::wstring_view wstr)
 {
-	bool fSuccess { false };
-	LONGLONG llData { };
-	if (wstr2num(wstr, llData))
-		fSuccess = SetDigitData(static_cast<ULONG>(llData));
+	bool fSuccess;
+	ULONG ulData;
+	if (fSuccess = wstr2num(wstr, ulData); fSuccess)
+		SetDigitData(ulData);
 
 	return fSuccess;
 }
 
 bool CHexDlgDataInterpret::SetDataNAME_LONGLONG(std::wstring_view wstr)
 {
-	bool fSuccess { false };
-	LONGLONG llData { };
-	if (wstr2num(wstr, llData))
-		fSuccess = SetDigitData(llData);
+	bool fSuccess;
+	LONGLONG llData;
+	if (fSuccess = wstr2num(wstr, llData); fSuccess)
+		SetDigitData(llData);
 
 	return fSuccess;
 }
 
 bool CHexDlgDataInterpret::SetDataNAME_ULONGLONG(std::wstring_view wstr)
 {
-	bool fSuccess { false };
+	bool fSuccess;
 	ULONGLONG ullData;
-	if (wstr2num(wstr, ullData))
-		fSuccess = SetDigitData(ullData);
+	if (fSuccess = wstr2num(wstr, ullData); fSuccess)
+		SetDigitData(ullData);
 
 	return fSuccess;
 }

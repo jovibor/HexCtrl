@@ -25,10 +25,9 @@ namespace HEXCTRL::INTERNAL {
 	//Converts char* string to unsigned long number. Basically it's a strtoul() wrapper.
 	//Returns false if conversion is imposible, true otherwise.
 	bool CharsToUl(const char* pcsz, unsigned long& ul);
-	
+
 	//Converts wstring to ULONGLONG or LONGLONG depending on template type argument.
-	template<typename T, typename = std::enable_if_t<std::is_same_v<T, ULONGLONG> || std::is_same_v<T, LONGLONG>>>
-	inline bool wstr2num(std::wstring_view wstr, T& t, int iBase = 0);
+	template<typename T>inline bool wstr2num(std::wstring_view wstr, T& tData, int iBase = 0);
 
 	//Wide string to Multibyte string convertion.
 	std::string WstrToStr(std::wstring_view wstr);

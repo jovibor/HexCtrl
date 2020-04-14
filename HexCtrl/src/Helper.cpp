@@ -12,6 +12,9 @@
 #include "stdafx.h"
 #include "Helper.h"
 
+#undef min
+#undef max
+
 namespace HEXCTRL::INTERNAL {
 
 	void UllToWchars(ULONGLONG ull, wchar_t* pwsz, size_t dwSize, bool fAsHex)
@@ -63,30 +66,39 @@ namespace HEXCTRL::INTERNAL {
 		return !(ul == 0 && (pEndPtr == pcsz || *pEndPtr != '\0'));
 	}
 
-	template<typename T, typename>
-	bool wstr2num(std::wstring_view wstr, T& t, int iBase)
+	template<typename T>bool wstr2num(std::wstring_view wstr, T& tData, int iBase)
 	{
 		wchar_t* pEndPtr;
 		if constexpr (std::is_same_v<T, ULONGLONG>)
 		{
-			t = std::wcstoull(wstr.data(), &pEndPtr, iBase);
-			if ((t == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
-				|| (t == ULLONG_MAX && errno == ERANGE))
+			tData = std::wcstoull(wstr.data(), &pEndPtr, iBase);
+			if ((tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+				|| (tData == ULLONG_MAX && errno == ERANGE))
 				return false;
 		}
-		else if constexpr (std::is_same_v<T, LONGLONG>)
+		else
 		{
-			t = std::wcstoll(wstr.data(), &pEndPtr, iBase);
-			if ((t == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
-				|| ((t == LLONG_MAX || t == LLONG_MIN) && errno == ERANGE))
+			auto llData = std::wcstoll(wstr.data(), &pEndPtr, iBase);
+			if ((llData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+				|| ((llData == LLONG_MAX || llData == LLONG_MIN) && errno == ERANGE)
+				|| (llData > static_cast<LONGLONG>(std::numeric_limits<T>::max()))
+				|| (llData < static_cast<LONGLONG>(std::numeric_limits<T>::min()))
+				)
 				return false;
+			tData = static_cast<T>(llData);
 		}
 
 		return true;
 	}
 	//Explicit instantiations of templated func in .cpp.
-	template bool wstr2num<ULONGLONG>(std::wstring_view wstr, ULONGLONG& t, int iBase);
+	template bool wstr2num<CHAR>(std::wstring_view wstr, CHAR& t, int iBase);
+	template bool wstr2num<UCHAR>(std::wstring_view wstr, UCHAR& t, int iBase);
+	template bool wstr2num<SHORT>(std::wstring_view wstr, SHORT& t, int iBase);
+	template bool wstr2num<USHORT>(std::wstring_view wstr, USHORT& t, int iBase);
+	template bool wstr2num<LONG>(std::wstring_view wstr, LONG& t, int iBase);
+	template bool wstr2num<ULONG>(std::wstring_view wstr, ULONG& t, int iBase);
 	template bool wstr2num<LONGLONG>(std::wstring_view wstr, LONGLONG& t, int iBase);
+	template bool wstr2num<ULONGLONG>(std::wstring_view wstr, ULONGLONG& t, int iBase);
 
 	std::string WstrToStr(std::wstring_view wstr)
 	{
