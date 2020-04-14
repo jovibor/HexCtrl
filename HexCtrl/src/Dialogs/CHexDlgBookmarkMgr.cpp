@@ -197,8 +197,8 @@ void CHexDlgBookmarkMgr::OnListBkmItemChanged(NMHDR* pNMHDR, LRESULT* pResult)
 	//Does not trigger (LVN_ITEMCHANGED event) when updating bookmark: !(pNMI->uNewState & LVIS_SELECTED)
 	if (pNMI->iItem == -1 || pNMI->iSubItem == -1 || !(pNMI->uNewState & LVIS_SELECTED))
 		return;
-	if (auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(pNMI->iItem)); pBkm != nullptr)
-		m_pBookmarks->GoBookmark(*pBkm);
+	
+	m_pBookmarks->GoBookmark(static_cast<ULONGLONG>(pNMI->iItem));
 
 	*pResult = 0;
 }

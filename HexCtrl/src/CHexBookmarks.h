@@ -25,8 +25,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetData()->std::deque<HEXBOOKMARKSTRUCT>*;
 		[[nodiscard]] ULONGLONG GetCount();
 		[[nodiscard]] auto GetTouchTime()const->__time64_t;
-		void GoBookmark(ULONGLONG ullID);
-		void GoBookmark(const HEXBOOKMARKSTRUCT& bkm)const;
+		void GoBookmark(ULONGLONG ullIndex);
 		void GoNext();
 		void GoPrev();
 		[[nodiscard]] bool HasBookmarks()const;
@@ -40,7 +39,7 @@ namespace HEXCTRL::INTERNAL
 		std::deque<HEXBOOKMARKSTRUCT> m_deqBookmarks;
 		CHexCtrl* m_pHex { };
 		IHexBkmVirtual* m_pVirtual { };
-		int m_iCurrent { };        //Current bookmark position in deque, to move next/prev.
+		LONGLONG m_llCurrent { };  //Current bookmark position in deque, to move next/prev.
 		__time64_t m_time { };     //Last modification time.
 		bool m_fVirtual { false }; //Working in Virtual mode or not.
 	};

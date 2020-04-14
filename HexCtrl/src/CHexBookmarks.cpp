@@ -123,34 +123,16 @@ auto CHexBookmarks::GetTouchTime()const->__time64_t
 	return m_time;
 }
 
-void CHexBookmarks::GoBookmark(ULONGLONG ullID)
+void CHexBookmarks::GoBookmark(ULONGLONG ullIndex)
 {
 	if (!m_pHex)
 		return;
 
-	HEXBOOKMARKSTRUCT* pBkm { };
-	if (m_fVirtual)
+	if (auto pBkm = GetByIndex(ullIndex); pBkm != nullptr)
 	{
-		if (m_pVirtual)
-			pBkm = m_pVirtual->GetByID(ullID);
-	}
-	else
-	{
-		if (auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-			[ullID](const HEXBOOKMARKSTRUCT& ref) {return ullID == ref.ullID; }); iter != m_deqBookmarks.end())
-			pBkm = &*iter;
-	}
-
-	if (pBkm)
+		m_llCurrent = static_cast<LONGLONG>(ullIndex);
 		m_pHex->GoToOffset(pBkm->vecSpan.front().ullOffset, true, 1);
-}
-
-void CHexBookmarks::GoBookmark(const HEXBOOKMARKSTRUCT& bkm)const
-{
-	if (!m_pHex)
-		return;
-
-	m_pHex->GoToOffset(bkm.vecSpan.front().ullOffset, true, 1);
+	}
 }
 
 void CHexBookmarks::GoNext()
@@ -158,24 +140,10 @@ void CHexBookmarks::GoNext()
 	if (!m_pHex)
 		return;
 
-	HEXBOOKMARKSTRUCT* pBkm { };
-	if (m_fVirtual)
-	{
-		if (m_pVirtual)
-			pBkm = m_pVirtual->GetNext();
-	}
-	else
-	{
-		if (m_deqBookmarks.empty())
-			return;
+	if (++m_llCurrent >= static_cast<LONGLONG>(GetCount()))
+		m_llCurrent = 0;
 
-		if (++m_iCurrent > static_cast<int>(m_deqBookmarks.size() - 1))
-			m_iCurrent = 0;
-
-		pBkm = &m_deqBookmarks.at(static_cast<size_t>(m_iCurrent));
-	}
-
-	if (pBkm)
+	if (auto pBkm = GetByIndex(m_llCurrent); pBkm != nullptr)
 		m_pHex->GoToOffset(pBkm->vecSpan.front().ullOffset, true, 1);
 }
 
@@ -184,24 +152,10 @@ void CHexBookmarks::GoPrev()
 	if (!m_pHex)
 		return;
 
-	HEXBOOKMARKSTRUCT* pBkm { };
-	if (m_fVirtual)
-	{
-		if (m_pVirtual)
-			pBkm = m_pVirtual->GetPrev();
-	}
-	else
-	{
-		if (m_deqBookmarks.empty())
-			return;
+	if (--m_llCurrent; m_llCurrent < 0 || m_llCurrent >= static_cast<LONGLONG>(GetCount()))
+		m_llCurrent = static_cast<LONGLONG>(GetCount()) - 1;
 
-		if (--m_iCurrent < 0)
-			m_iCurrent = static_cast<int>(m_deqBookmarks.size()) - 1;
-
-		pBkm = &m_deqBookmarks.at(static_cast<size_t>(m_iCurrent));
-	}
-
-	if (pBkm)
+	if (auto pBkm = GetByIndex(m_llCurrent); pBkm != nullptr)
 		m_pHex->GoToOffset(pBkm->vecSpan.front().ullOffset, true, 1);
 }
 
@@ -254,7 +208,10 @@ void CHexBookmarks::Remove(ULONGLONG ullOffset)
 	if (m_fVirtual)
 	{
 		if (m_pVirtual)
-			m_pVirtual->Remove(ullOffset);
+		{
+			if (auto pBkm = m_pVirtual->HitTest(ullOffset); pBkm != nullptr)
+				m_pVirtual->RemoveByID(pBkm->ullID);
+		}
 	}
 	else
 	{

@@ -107,10 +107,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual ULONGLONG GetCount() = 0; //Get total bookmarks count.
 		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT* = 0; //Bookmark by ID.
 		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT* = 0; //Bookmark by index (in inner list).
-		[[nodiscard]] virtual auto GetNext()->HEXBOOKMARKSTRUCT* = 0; //Get next bookmark.
-		[[nodiscard]] virtual auto GetPrev()->HEXBOOKMARKSTRUCT* = 0; //Get previous bookmark.
 		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0; //Has given offset the bookmark?
-		virtual void Remove(ULONGLONG ullOffset) = 0;   //Remove bookmark by the given offset.
 		virtual void RemoveByID(ULONGLONG ullID) = 0;   //Remove bookmark by given ID (returned by Add()).
 	};
 
