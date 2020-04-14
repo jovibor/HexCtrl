@@ -17,8 +17,6 @@ namespace HEXCTRL::INTERNAL
 	class CHexBookmarks
 	{
 	public:
-		explicit CHexBookmarks() = default;
-		~CHexBookmarks() = default;
 		ULONGLONG Add(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = true); //Returns new bookmark Id.
 		void Attach(CHexCtrl* pHex);
 		void ClearAll();

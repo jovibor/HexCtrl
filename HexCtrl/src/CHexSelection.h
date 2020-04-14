@@ -15,8 +15,6 @@ namespace HEXCTRL::INTERNAL
 	class CHexSelection final
 	{
 	public:
-		explicit CHexSelection() = default;
-		~CHexSelection() = default;
 		void Attach(CHexCtrl* p);
 		void ClearAll();
 		[[nodiscard]] CHexCtrl* GetHexCtrl();

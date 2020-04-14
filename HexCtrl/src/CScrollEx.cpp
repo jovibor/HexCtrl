@@ -7,10 +7,10 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include <cmath>
-#include <cassert>
-#include "CScrollEx.h"
 #include "../res/HexCtrlRes.h"
+#include "CScrollEx.h"
+#include <cassert>
+#include <cmath>
 
 using namespace HEXCTRL::INTERNAL::SCROLLEX;
 
@@ -25,6 +25,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		LASTCHANNEL_CLICK,
 		LASTARROW_CLICK, LASTARROW_HOVER
 	};
+
 	enum class ETimer : UINT_PTR {
 		IDT_FIRSTCLICK = 0x7ff0,
 		IDT_CLICKREPEAT = 0x7ff1
@@ -250,15 +251,13 @@ bool CScrollEx::IsThumbReleased()
 	return m_enState != EState::THUMB_CLICK;
 }
 
-BOOL CScrollEx::OnNcActivate(BOOL /*bActive*/)const
+void CScrollEx::OnNcActivate(BOOL /*bActive*/)const
 {
 	if (!m_fCreated)
-		return FALSE;
+		return;
 
 	//To repaint NC area.
 	GetParent()->SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
-
-	return TRUE;
 }
 
 void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS * lpncsp)
@@ -859,18 +858,24 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 		}
 		break;
 		case EState::LASTCHANNEL_CLICK:
+		{
 			CPoint pt;
 			GetCursorPos(&pt);
 			CRect rc = GetThumbRect(true);
 			GetParent()->ClientToScreen(rc);
-			if (IsVert()) {
+			if (IsVert())
+			{
 				if (pt.y > rc.bottom)
 					ScrollPageDown();
 			}
-			else {
+			else
+			{
 				if (pt.x > rc.right)
 					ScrollPageDown();
 			}
+		}
+		break;
+		default:
 			break;
 		}
 	}

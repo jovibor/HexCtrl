@@ -1,0 +1,22 @@
+Checks: '*,
+-cppcoreguidelines-*,-google-*,-fuchsia-*,-hicpp-*,-cert-*,-clang-*,
+-modernize-use-trailing-return-type,
+-modernize-avoid-c-arrays,
+-llvm-header-guard,
+-llvm-namespace-comment,
+-llvm-qualified-auto,
+-readability-braces-around-statements,
+-readability-implicit-bool-conversion,
+-readability-magic-numbers,
+-readability-redundant-access-specifiers,
+-readability-isolate-declaration,
+-readability-qualified-auto,
+-readability-convert-member-functions-to-static,
+-readability-misleading-indentation,
+-misc-non-private-member-variables-in-classes,
+-misc-use-after-move,
+-bugprone-narrowing-conversions,
+-bugprone-use-after-move'
+
+
+HeaderFilterRegex: '.*'

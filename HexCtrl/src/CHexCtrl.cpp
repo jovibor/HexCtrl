@@ -69,8 +69,8 @@ namespace HEXCTRL {
 		{
 			HBITMAPSTRUCT() = default;
 			~HBITMAPSTRUCT() { ::DeleteObject(m_hBmp); }
-			HBITMAPSTRUCT& operator=(const HBITMAP hBmp) { m_hBmp = hBmp; return *this; }
-			operator HBITMAP() { return m_hBmp; }
+			HBITMAPSTRUCT& operator=(HBITMAP hBmp) { m_hBmp = hBmp; return *this; }
+			operator HBITMAP()const { return m_hBmp; }
 			HBITMAP m_hBmp { };
 		};
 
@@ -1077,10 +1077,10 @@ void CHexCtrl::SetShowMode(EHexShowMode enShowMode)
 	for (int i = 0; i < pMenuMain->GetMenuItemCount(); i++)
 	{
 		//Searching through all submenus whose first menuID is IDM_HEXCTRL_SHOWAS_BYTE.
-		if (auto p = pMenuMain->GetSubMenu(i); p != nullptr)
-			if (p->GetMenuItemID(0) == IDM_HEXCTRL_SHOWAS_BYTE)
+		if (auto pSubMenu = pMenuMain->GetSubMenu(i); pSubMenu != nullptr)
+			if (pSubMenu->GetMenuItemID(0) == IDM_HEXCTRL_SHOWAS_BYTE)
 			{
-				pMenuShowDataAs = p;
+				pMenuShowDataAs = pSubMenu;
 				break;
 			}
 	}
@@ -2831,12 +2831,12 @@ void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss)
 	}
 }
 
-EHexDataMode CHexCtrl::GetDataMode() const
+EHexDataMode CHexCtrl::GetDataMode()const
 {
 	return m_enDataMode;
 }
 
-ULONGLONG CHexCtrl::GetDataSize()
+ULONGLONG CHexCtrl::GetDataSize()const
 {
 	return m_ullDataSize;
 }
@@ -4002,7 +4002,7 @@ void CHexCtrl::Undo()
 	ULONGLONG ullIndex { 0 };
 	for (const auto& iter : *refUndo)
 	{
-		auto& refUndoData = iter.vecData;
+		const auto& refUndoData = iter.vecData;
 		std::byte* pData = GetData({ iter.ullOffset, refUndoData.size() });
 		//Fill Redo with the data.
 		std::copy_n(pData, refUndoData.size(), refRedo->at(static_cast<size_t>(ullIndex)).vecData.begin());
@@ -4061,7 +4061,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 	//Bad alloc may happen here!!!
 	try
 	{
-		for (auto& iterSel : vecSpan)
+		for (const auto& iterSel : vecSpan)
 		{
 			refUndo->emplace_back(UNDOSTRUCT { iterSel.ullOffset, { } });
 			refUndo->back().vecData.resize(static_cast<size_t>(iterSel.ullSize));
@@ -4263,7 +4263,7 @@ void CHexCtrl::WstrCapacityFill()
 	}
 }
 
-bool CHexCtrl::IsSectorVisible()
+bool CHexCtrl::IsSectorVisible()const
 {
 	return m_fSectorVisible;
 }

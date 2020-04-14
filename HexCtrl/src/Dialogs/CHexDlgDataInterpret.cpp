@@ -441,7 +441,7 @@ void CHexDlgDataInterpret::OnClickRadioHex()
 	InspectOffset(m_ullOffset);
 }
 
-ULONGLONG CHexDlgDataInterpret::GetSize()
+ULONGLONG CHexDlgDataInterpret::GetSize()const
 {
 	return m_ullSize;
 }
@@ -497,7 +497,7 @@ template<typename T>bool CHexDlgDataInterpret::SetDigitData(T tData)
 	return true;
 }
 
-std::wstring CHexDlgDataInterpret::GetCurrentUserDateFormatString()
+std::wstring CHexDlgDataInterpret::GetCurrentUserDateFormatString()const
 {
 	std::wstring wstrFormat { };
 	switch (m_dwDateFormat)
@@ -518,7 +518,7 @@ std::wstring CHexDlgDataInterpret::GetCurrentUserDateFormatString()
 	return buff;
 }
 
-std::wstring CHexDlgDataInterpret::SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime)
+std::wstring CHexDlgDataInterpret::SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime)const
 {
 	if (!pSysTime)
 		return L"Invalid";
@@ -569,7 +569,7 @@ std::wstring CHexDlgDataInterpret::SystemTimeToString(const SYSTEMTIME* pSysTime
 	return wstrRet;
 }
 
-bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstr, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)
+bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstr, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)const
 {
 	if (wstr.empty() || pSysTime == nullptr)
 		return false;

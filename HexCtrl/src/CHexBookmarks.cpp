@@ -195,7 +195,7 @@ void CHexBookmarks::GoPrev()
 		if (m_deqBookmarks.empty())
 			return;
 
-		else if (--m_iCurrent < 0)
+		if (--m_iCurrent < 0)
 			m_iCurrent = static_cast<int>(m_deqBookmarks.size()) - 1;
 
 		pBkm = &m_deqBookmarks.at(static_cast<size_t>(m_iCurrent));

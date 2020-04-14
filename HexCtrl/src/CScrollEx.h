@@ -23,7 +23,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		[[nodiscard]] bool IsVisible()const;
 		[[nodiscard]] CWnd* GetParent()const;
 		void SetScrollSizes(ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
-		ULONGLONG SetScrollPos(ULONGLONG);
+		ULONGLONG SetScrollPos(ULONGLONG ullNewPos);
 		void ScrollLineUp();
 		void ScrollLineDown();
 		void ScrollLineLeft();
@@ -46,7 +46,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		* These methods below must be called in the corresponding methods		*
 		* of the parent window.													*
 		************************************************************************/
-		BOOL OnNcActivate(BOOL bActive)const;
+		void OnNcActivate(BOOL bActive)const;
 		void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		void OnNcPaint()const;
 		void OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
@@ -55,7 +55,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		/************************************************************************
 		* END OF THE CALLBACK METHODS.											*
 		************************************************************************/
-	protected:
+	private:
 		DECLARE_MESSAGE_MAP()
 		void DrawScrollBar()const;                                   //Draws the whole Scrollbar.
 		void DrawArrows(CDC* pDC)const;                              //Draws arrows.
@@ -82,7 +82,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		void SendParentScrollMsg()const;                            //Sends the WM_(V/H)SCROLL to the parent window.
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		afx_msg void OnDestroy();
-	protected:
+	private:
 		CWnd* m_pwndParent { };                                     //Parent window.
 		CScrollEx* m_pSibling { };                                  //Sibling scrollbar, added with AddSibling.
 		CBitmap m_bmpArrows;                                        //Bitmap of the arrows.
@@ -101,7 +101,6 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		const unsigned m_uiThumbSizeMin { 15 };                     //Minimum thumb size.
 		const int m_iTimerFirstClick { 200 };                       //Millisec for WM_TIMER for first channel click.
 		const int m_iTimerRepeat { 50 };                            //Millisec for repeat when click and hold on channel.
-		const unsigned m_uiFirstArrowOffset { 0 };                  //Offset of the first arrow, in pixels, at arrows bitmap.
 		const unsigned m_uiLastArrowOffset { 18 };                  //Offset of the last arrow, in pixels, at arrows bitmap.
 		const unsigned m_uiArrowSize { 17 };                        //Arrow size in pixels.
 		bool m_fCreated { false };                                  //Is created or not.

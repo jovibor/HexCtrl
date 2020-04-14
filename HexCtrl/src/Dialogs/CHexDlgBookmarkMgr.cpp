@@ -222,10 +222,8 @@ void CHexDlgBookmarkMgr::OnListBkmRClick(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 
-	bool fEnabled;
-	if (pNMI->iItem == -1 || pNMI->iSubItem == -1)
-		fEnabled = false;
-	else
+	bool fEnabled { false };
+	if (pNMI->iItem != -1 && pNMI->iSubItem != -1)
 	{
 		fEnabled = true;
 		if (auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(pNMI->iItem)); pBkm != nullptr)
@@ -251,12 +249,12 @@ void CHexDlgBookmarkMgr::UpdateList()
 
 void CHexDlgBookmarkMgr::SortBookmarks()
 {
-	auto refData = m_pBookmarks->GetData();
+	auto pData = m_pBookmarks->GetData();
 	const auto iColumn = m_List->GetSortColumn();
 	const auto fAscending = m_List->GetSortAscending();
 
 	//Sorts bookmarks according to clicked column.
-	std::sort(refData->begin(), refData->end(), [iColumn, fAscending](const HEXBOOKMARKSTRUCT& st1, const HEXBOOKMARKSTRUCT& st2)
+	std::sort(pData->begin(), pData->end(), [iColumn, fAscending](const HEXBOOKMARKSTRUCT& st1, const HEXBOOKMARKSTRUCT& st2)
 	{
 		int iCompare { };
 		switch (iColumn)

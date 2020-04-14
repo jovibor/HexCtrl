@@ -76,10 +76,10 @@ namespace HEXCTRL::INTERNAL
 	public:
 		explicit CHexDlgDataInterpret(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_DATAINTERPRET, pParent) {}
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
-		ULONGLONG GetSize();
+		[[nodiscard]] ULONGLONG GetSize()const;
 		void InspectOffset(ULONGLONG ullOffset);
 		BOOL ShowWindow(int nCmdShow);
-	protected:
+	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -94,9 +94,9 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioBe();
 		afx_msg void OnClickRadioDec();
 		afx_msg void OnClickRadioHex();
-		std::wstring GetCurrentUserDateFormatString();
-		std::wstring SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime);
-		bool StringToSystemTime(std::wstring_view wstr, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime);
+		std::wstring GetCurrentUserDateFormatString()const;
+		std::wstring SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime)const;
+		bool StringToSystemTime(std::wstring_view wstr, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)const;
 		void ShowNAME_BINARY(BYTE byte);
 		void ShowNAME_CHAR(BYTE byte);
 		void ShowNAME_UCHAR(BYTE byte);
@@ -161,7 +161,6 @@ namespace HEXCTRL::INTERNAL
 			ESize eSize { };
 			bool fChild { false };
 		};
-	private:
 		CHexCtrl* m_pHexCtrl { };
 		bool m_fVisible { false };
 		bool m_fBigEndian { false };

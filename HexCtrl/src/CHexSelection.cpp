@@ -44,7 +44,7 @@ bool CHexSelection::HitTest(ULONGLONG ullIndex)const
 ULONGLONG CHexSelection::GetSelectionEnd()const
 {
 	if (!HasSelection())
-		return 0xFFFFFFFFFFFFFFFFul;
+		return 0xFFFFFFFFFFFFFFFFULL;
 
 	return m_vecSelect.back().ullOffset + m_vecSelect.back().ullSize;
 }
@@ -60,7 +60,7 @@ ULONGLONG CHexSelection::GetSelectionSize()const
 ULONGLONG CHexSelection::GetSelectionStart()const
 {
 	if (!HasSelection())
-		return 0xFFFFFFFFFFFFFFFFul;
+		return 0xFFFFFFFFFFFFFFFFULL;
 
 	return m_vecSelect.front().ullOffset;
 }
@@ -75,13 +75,13 @@ DWORD CHexSelection::GetLineLength()const
 
 ULONGLONG CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const
 {
-	ULONGLONG ullOffset { 0xFFFFFFFFFFFFFFFFull };
+	ULONGLONG ullOffset { 0xFFFFFFFFFFFFFFFFULL };
 
 	if (ullIndex >= GetSelectionSize())
 		return ullOffset;
 
 	ULONGLONG ullTotal { };
-	for (auto& i : m_vecSelect)
+	for (const auto& i : m_vecSelect)
 	{
 		ullTotal += i.ullSize;
 		if (ullIndex < ullTotal)

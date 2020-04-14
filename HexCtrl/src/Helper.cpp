@@ -60,10 +60,7 @@ namespace HEXCTRL::INTERNAL {
 	{
 		char* pEndPtr;
 		ul = strtoul(pcsz, &pEndPtr, 16);
-		if (ul == 0 && (pEndPtr == pcsz || *pEndPtr != '\0'))
-			return false;
-
-		return true;
+		return !(ul == 0 && (pEndPtr == pcsz || *pEndPtr != '\0'));
 	}
 
 	template<typename T, typename>
