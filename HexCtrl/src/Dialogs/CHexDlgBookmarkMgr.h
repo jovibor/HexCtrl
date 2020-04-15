@@ -30,6 +30,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnDestroy();
 		afx_msg void OnListBkmGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListBkmItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListBkmItemLClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListBkmDblClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListBkmRClick(NMHDR *pNMHDR, LRESULT *pResult);
 		void UpdateList();

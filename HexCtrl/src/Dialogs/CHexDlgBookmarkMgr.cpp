@@ -18,7 +18,7 @@ BEGIN_MESSAGE_MAP(CHexDlgBookmarkMgr, CDialogEx)
 	ON_WM_ACTIVATE()
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_BOOKMARKMGR_LIST, &CHexDlgBookmarkMgr::OnListBkmGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_BOOKMARKMGR_LIST, &CHexDlgBookmarkMgr::OnListBkmItemChanged)
-	ON_NOTIFY(NM_CLICK, IDC_HEXCTRL_BOOKMARKMGR_LIST, &CHexDlgBookmarkMgr::OnListBkmItemChanged)
+	ON_NOTIFY(NM_CLICK, IDC_HEXCTRL_BOOKMARKMGR_LIST, &CHexDlgBookmarkMgr::OnListBkmItemLClick)
 	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_BOOKMARKMGR_LIST, &CHexDlgBookmarkMgr::OnListBkmDblClick)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_BOOKMARKMGR_LIST, &CHexDlgBookmarkMgr::OnListBkmRClick)
 	ON_WM_DESTROY()
@@ -195,10 +195,18 @@ void CHexDlgBookmarkMgr::OnListBkmItemChanged(NMHDR* pNMHDR, LRESULT* pResult)
 
 	//Go selected bookmark only with keyboard arrows and lmouse clicks.
 	//Does not trigger (LVN_ITEMCHANGED event) when updating bookmark: !(pNMI->uNewState & LVIS_SELECTED)
-	if (pNMI->iItem == -1 || pNMI->iSubItem == -1 || !(pNMI->uNewState & LVIS_SELECTED))
-		return;
-	
-	m_pBookmarks->GoBookmark(static_cast<ULONGLONG>(pNMI->iItem));
+	if (pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED))
+		m_pBookmarks->GoBookmark(static_cast<ULONGLONG>(pNMI->iItem));
+
+	*pResult = 0;
+}
+
+void CHexDlgBookmarkMgr::OnListBkmItemLClick(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+
+	if (pNMI->iItem != -1 && pNMI->iSubItem != -1)
+		m_pBookmarks->GoBookmark(static_cast<ULONGLONG>(pNMI->iItem));
 
 	*pResult = 0;
 }
@@ -211,10 +219,10 @@ void CHexDlgBookmarkMgr::OnListBkmDblClick(NMHDR* pNMHDR, LRESULT* pResult)
 		return;
 
 	if (auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(pNMI->iItem)); pBkm != nullptr)
+	{
 		m_ullCurrBkmID = pBkm->ullID;
-
-	SendMessageW(WM_COMMAND, IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT);
-
+		SendMessageW(WM_COMMAND, IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT);
+	}
 	*pResult = 0;
 }
 
