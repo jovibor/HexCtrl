@@ -40,7 +40,7 @@ namespace HEXCTRL::INTERNAL
 		IListExPtr m_List { CreateListEx() };
 		CHexBookmarks* m_pBookmarks { };
 		CMenu m_stMenuList;
-		ULONGLONG m_ullCurrBkmID { }; //Currently selected bookmark ID.
+		ULONGLONG m_ullCurrBkmIndex { }; //Currently selected bookmark index.
 		__time64_t m_time { };
 		enum EMenuID {
 			IDC_HEXCTRL_BOOKMARKMGR_MENU_NEW = 0x8000,

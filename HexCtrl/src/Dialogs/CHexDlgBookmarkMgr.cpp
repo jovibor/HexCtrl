@@ -91,7 +91,7 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT:
 	{
-		if (auto pBkm = m_pBookmarks->GetByID(m_ullCurrBkmID); pBkm != nullptr)
+		if (auto pBkm = m_pBookmarks->GetByIndex(m_ullCurrBkmIndex); pBkm != nullptr)
 		{
 			CHexDlgBookmarkProps dlgBkmEdit;
 			auto stBkm = *pBkm; //Pass a copy to dlgBkmEdit to avoid changing the original, from list.
@@ -104,8 +104,11 @@ BOOL CHexDlgBookmarkMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 	break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE:
-		m_pBookmarks->RemoveByID(m_ullCurrBkmID);
-		UpdateList();
+		if (auto pBkm = m_pBookmarks->GetByIndex(m_ullCurrBkmIndex); pBkm != nullptr)
+		{
+			m_pBookmarks->RemoveByID(pBkm->ullID);
+			UpdateList();
+		}
 		break;
 	case IDC_HEXCTRL_BOOKMARKMGR_MENU_CLEARALL:
 		m_pBookmarks->ClearAll();
@@ -215,14 +218,12 @@ void CHexDlgBookmarkMgr::OnListBkmDblClick(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 
-	if (pNMI->iItem == -1 || pNMI->iSubItem == -1)
-		return;
-
-	if (auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(pNMI->iItem)); pBkm != nullptr)
+	if (pNMI->iItem != -1 && pNMI->iSubItem != -1)
 	{
-		m_ullCurrBkmID = pBkm->ullID;
+		m_ullCurrBkmIndex = static_cast<ULONGLONG>(pNMI->iItem);
 		SendMessageW(WM_COMMAND, IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT);
 	}
+
 	*pResult = 0;
 }
 
@@ -234,8 +235,7 @@ void CHexDlgBookmarkMgr::OnListBkmRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	if (pNMI->iItem != -1 && pNMI->iSubItem != -1)
 	{
 		fEnabled = true;
-		if (auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(pNMI->iItem)); pBkm != nullptr)
-			m_ullCurrBkmID = pBkm->ullID;
+		m_ullCurrBkmIndex = static_cast<ULONGLONG>(pNMI->iItem);
 	}
 	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
