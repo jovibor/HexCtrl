@@ -135,6 +135,11 @@ void CHexBookmarks::GoBookmark(ULONGLONG ullIndex)
 	}
 }
 
+ULONGLONG CHexBookmarks::GetCurrent()
+{
+	return static_cast<ULONGLONG>(m_llCurrent);
+}
+
 void CHexBookmarks::GoNext()
 {
 	if (!m_pHex)

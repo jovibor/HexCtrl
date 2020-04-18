@@ -37,7 +37,7 @@ namespace HEXCTRL::INTERNAL
 		void SortBookmarks();
 		DECLARE_MESSAGE_MAP()
 	private:
-		IListExPtr m_List { CreateListEx() };
+		IListExPtr m_stList { CreateListEx() };
 		CHexBookmarks* m_pBookmarks { };
 		CMenu m_stMenuList;
 		ULONGLONG m_ullCurrBkmIndex { }; //Currently selected bookmark index.
