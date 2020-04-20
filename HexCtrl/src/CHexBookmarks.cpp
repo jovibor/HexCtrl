@@ -35,7 +35,7 @@ ULONGLONG CHexBookmarks::Add(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)
 
 		if (auto iter = std::max_element(m_deqBookmarks.begin(), m_deqBookmarks.end(),
 			[](const HEXBOOKMARKSTRUCT& ref1, const HEXBOOKMARKSTRUCT& ref2)
-		{return ref1.ullID < ref2.ullID; }); iter != m_deqBookmarks.end())
+			{return ref1.ullID < ref2.ullID; }); iter != m_deqBookmarks.end())
 			ullID = iter->ullID + 1; //Increasing next bookmark's ID by 1.
 
 		m_deqBookmarks.emplace_back(
@@ -104,7 +104,7 @@ auto CHexBookmarks::GetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT*
 	return pBkm;
 }
 
-ULONGLONG CHexBookmarks::GetCount()
+ULONGLONG CHexBookmarks::GetCount()const
 {
 	ULONGLONG ullCount { };
 	if (m_fVirtual)
@@ -116,6 +116,11 @@ ULONGLONG CHexBookmarks::GetCount()
 		ullCount = m_deqBookmarks.size();
 
 	return ullCount;
+}
+
+ULONGLONG CHexBookmarks::GetCurrent()const
+{
+	return static_cast<ULONGLONG>(m_llCurrent);
 }
 
 auto CHexBookmarks::GetTouchTime()const->__time64_t
@@ -133,11 +138,6 @@ void CHexBookmarks::GoBookmark(ULONGLONG ullIndex)
 		m_llCurrent = static_cast<LONGLONG>(ullIndex);
 		m_pHex->GoToOffset(pBkm->vecSpan.front().ullOffset, true, 1);
 	}
-}
-
-ULONGLONG CHexBookmarks::GetCurrent()
-{
-	return static_cast<ULONGLONG>(m_llCurrent);
 }
 
 void CHexBookmarks::GoNext()
@@ -190,10 +190,10 @@ auto CHexBookmarks::HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*
 	{
 		if (auto rIter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
 			[ullOffset](const HEXBOOKMARKSTRUCT& ref)
-		{return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
-			[ullOffset](const HEXSPANSTRUCT& refV)
-		{return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
-		}); rIter != m_deqBookmarks.rend())
+			{return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
+				[ullOffset](const HEXSPANSTRUCT& refV)
+				{return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
+			}); rIter != m_deqBookmarks.rend())
 			pBkm = &*rIter;
 	}
 
@@ -226,10 +226,10 @@ void CHexBookmarks::Remove(ULONGLONG ullOffset)
 		//Searching from the end, to remove last added bookmark if few at the given offset.
 		if (auto rIter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
 			[ullOffset](const HEXBOOKMARKSTRUCT& ref)
-		{return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
-			[ullOffset](const HEXSPANSTRUCT& refV)
-		{return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
-		}); rIter != m_deqBookmarks.rend())
+			{return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
+				[ullOffset](const HEXSPANSTRUCT& refV)
+				{return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
+			}); rIter != m_deqBookmarks.rend())
 			m_deqBookmarks.erase((rIter + 1).base()); //Weird notation for reverse_iterator to work in erase() (acc to standard).
 	}
 

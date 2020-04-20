@@ -23,10 +23,10 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT*;       //Bookmark by ID.
 		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT*; //Bookmark by index (in inner list).
 		[[nodiscard]] auto GetData()->std::deque<HEXBOOKMARKSTRUCT>*;
-		[[nodiscard]] ULONGLONG GetCount();
+		[[nodiscard]] ULONGLONG GetCount()const;
+		[[nodiscard]] ULONGLONG GetCurrent()const;
 		[[nodiscard]] auto GetTouchTime()const->__time64_t;
 		void GoBookmark(ULONGLONG ullIndex);
-		ULONGLONG GetCurrent();
 		void GoNext();
 		void GoPrev();
 		[[nodiscard]] bool HasBookmarks()const;

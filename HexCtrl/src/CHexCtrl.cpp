@@ -2951,7 +2951,7 @@ void CHexCtrl::ModifyRepeat(const MODIFYSTRUCT& hms)
 		}
 	exit:
 		dlg.Cancel();
-	});
+		});
 	if (ullTotalSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
 		dlg.DoModal();
 	thrd.join();
@@ -3033,7 +3033,7 @@ void CHexCtrl::ModifyOperation(const MODIFYSTRUCT& hms)
 		}
 	exit:
 		dlg.Cancel();
-	});
+		});
 	if (ullTotalSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
 		dlg.DoModal();
 	thrd.join();

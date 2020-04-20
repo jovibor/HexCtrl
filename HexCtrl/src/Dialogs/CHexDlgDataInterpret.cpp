@@ -399,7 +399,7 @@ BOOL CHexDlgDataInterpret::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResu
 
 		if (auto pData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 			[this](const GRIDDATA& refData)
-		{return refData.pProp == m_stCtrlGrid.GetCurrentProp(); }); pData != m_vecProp.end())
+			{return refData.pProp == m_stCtrlGrid.GetCurrentProp(); }); pData != m_vecProp.end())
 		{
 			m_ullSize = static_cast<ULONGLONG>(pData->eSize);
 			UpdateHexCtrl();

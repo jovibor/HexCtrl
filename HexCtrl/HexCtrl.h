@@ -32,8 +32,8 @@ static_assert(false, "std::byte compliant compiler required.");
 
 /**********************************************************************
 * For manually initialize MFC.                                        *
-* This macro is used only for Win32 non MFC projects, built with      *
-* Use MFC in a Shared DLL option.                                     *
+* This macro is used only for Win32 non MFC projects, with HexCtrl    *
+* built from sources, with "Use MFC in a Shared DLL" setting.         *
 **********************************************************************/
 //#define HEXCTRL_MANUAL_MFC_INIT
 
@@ -182,15 +182,15 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXDATASTRUCT
 	{
-		EHexDataMode    enDataMode { EHexDataMode::DATA_MEMORY }; //Working data mode.
-		ULONGLONG       ullDataSize { };          //Size of the data to display, in bytes.
-		HEXSPANSTRUCT   stSelSpan { };            //Select .ullOffset initial position. Works only if .ullSize > 0.
-		HWND            hwndMsg { };              //Window for DATA_MSG mode. Parent is used by default.
-		IHexVirtual*    pHexVirtual { };          //Pointer for DATA_VIRTUAL mode.
-		std::byte*      pData { };                //Data pointer for DATA_MEMORY mode. Not used in other modes.
-		DWORD           dwCacheSize { 0x800000 }; //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
-		bool            fMutable { false };       //Is data mutable (editable) or read-only.
-		bool            fHighLatency { false };   //Do not redraw window until scrolling completes.
+		EHexDataMode  enDataMode { EHexDataMode::DATA_MEMORY }; //Working data mode.
+		ULONGLONG     ullDataSize { };          //Size of the data to display, in bytes.
+		HEXSPANSTRUCT stSelSpan { };            //Select .ullOffset initial position. Works only if .ullSize > 0.
+		HWND          hwndMsg { };              //Window for DATA_MSG mode. Parent is used by default.
+		IHexVirtual*  pHexVirtual { };          //Pointer for DATA_VIRTUAL mode.
+		std::byte*    pData { };                //Data pointer for DATA_MEMORY mode. Not used in other modes.
+		DWORD         dwCacheSize { 0x800000 }; //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
+		bool          fMutable { false };       //Is data mutable (editable) or read-only.
+		bool          fHighLatency { false };   //Do not redraw window until scrolling completes.
 	};
 
 	/********************************************************************************************

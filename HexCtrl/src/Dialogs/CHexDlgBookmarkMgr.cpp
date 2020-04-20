@@ -266,58 +266,59 @@ void CHexDlgBookmarkMgr::SortBookmarks()
 	const auto fAscending = m_stList->GetSortAscending();
 
 	//Sorts bookmarks according to clicked column.
-	std::sort(pData->begin(), pData->end(), [iColumn, fAscending](const HEXBOOKMARKSTRUCT& st1, const HEXBOOKMARKSTRUCT& st2)
-	{
-		int iCompare { };
-		switch (iColumn)
+	std::sort(pData->begin(), pData->end(),
+		[iColumn, fAscending](const HEXBOOKMARKSTRUCT& st1, const HEXBOOKMARKSTRUCT& st2)
 		{
-		case 0:
-			break;
-		case 1: //Offset.
-		{
-			ULONGLONG ullOffset1 { 0 };
-			ULONGLONG ullOffset2 { 0 };
-			if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
+			int iCompare { };
+			switch (iColumn)
 			{
-				ullOffset1 = st1.vecSpan.front().ullOffset;
-				ullOffset2 = st2.vecSpan.front().ullOffset;
-				iCompare = ullOffset1 < ullOffset2 ? -1 : 1;
-			}
-		}
-		break;
-		case 2: //Size.
-		{
-			ULONGLONG ullSize1 { 0 };
-			ULONGLONG ullSize2 { 0 };
-			if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
+			case 0:
+				break;
+			case 1: //Offset.
 			{
-				ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
-					[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
-				ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
-					[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
-				iCompare = ullSize1 < ullSize2 ? -1 : 1;
+				ULONGLONG ullOffset1 { 0 };
+				ULONGLONG ullOffset2 { 0 };
+				if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
+				{
+					ullOffset1 = st1.vecSpan.front().ullOffset;
+					ullOffset2 = st2.vecSpan.front().ullOffset;
+					iCompare = ullOffset1 < ullOffset2 ? -1 : 1;
+				}
 			}
-		}
-		break;
-		case 3: //Description.
-			iCompare = st1.wstrDesc.compare(st2.wstrDesc);
 			break;
-		}
+			case 2: //Size.
+			{
+				ULONGLONG ullSize1 { 0 };
+				ULONGLONG ullSize2 { 0 };
+				if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
+				{
+					ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
+						[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
+					ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
+						[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
+					iCompare = ullSize1 < ullSize2 ? -1 : 1;
+				}
+			}
+			break;
+			case 3: //Description.
+				iCompare = st1.wstrDesc.compare(st2.wstrDesc);
+				break;
+			}
 
-		bool fResult { false };
-		if (fAscending)
-		{
-			if (iCompare < 0)
-				fResult = true;
-		}
-		else
-		{
-			if (iCompare > 0)
-				fResult = true;
-		}
+			bool fResult { false };
+			if (fAscending)
+			{
+				if (iCompare < 0)
+					fResult = true;
+			}
+			else
+			{
+				if (iCompare > 0)
+					fResult = true;
+			}
 
-		return fResult;
-	});
+			return fResult;
+		});
 
 	m_stList->RedrawWindow();
 }

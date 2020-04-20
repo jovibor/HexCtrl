@@ -422,7 +422,7 @@ bool CHexDlgSearch::DoSearch(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* p
 		}
 	exit:
 		dlg.Cancel();
-	});
+		});
 	if (ullSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
 		dlg.DoModal();
 	thrd.join();

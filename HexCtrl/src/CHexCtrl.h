@@ -302,7 +302,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fSectorVisible { false };      //Print lines between sectors or not.
 		bool m_fHighLatency { false };        //Reflects HEXDATASTRUCT::fHighLatency.
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
-};
+	};
 
 	template<typename T>
 	inline auto CHexCtrl::GetData(ULONGLONG ullOffset)->T

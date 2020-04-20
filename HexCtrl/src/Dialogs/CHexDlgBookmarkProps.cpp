@@ -39,7 +39,7 @@ BOOL CHexDlgBookmarkProps::OnInitDialog()
 	pClrBtn->SetColor(m_pHBS->clrBk);
 	pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BOOKMARKPROPS_COLOR_TEXT);
 	pClrBtn->SetColor(m_pHBS->clrText);
-	
+
 	wchar_t pwszBuff[32];
 	if (!m_pHBS->vecSpan.empty())
 	{
