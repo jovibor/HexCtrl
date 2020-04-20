@@ -519,8 +519,11 @@ void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
 	case EHexCmd::CMD_SEL_SELECTALL:
 		wParam = IDM_HEXCTRL_SELECTION_SELECTALL;
 		break;
-	case EHexCmd::CMD_DATAINTERPRET:
-		wParam = IDM_HEXCTRL_DATAINTERPRET;
+	case EHexCmd::CMD_DATAINTERPRET_SHOW:
+		wParam = IDM_HEXCTRL_DATAINTERPRET_SHOW;
+		break;
+	case EHexCmd::CMD_DATAINTERPRET_HIDE:
+		wParam = IDM_HEXCTRL_DATAINTERPRET_HIDE;
 		break;
 	case EHexCmd::CMD_APPEARANCE_FONTINC:
 		wParam = IDM_HEXCTRL_APPEARANCE_FONTINCREASE;
@@ -702,7 +705,8 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 	case EHexCmd::CMD_SEL_MARKSTART:
 	case EHexCmd::CMD_SEL_MARKEND:
 	case EHexCmd::CMD_SEL_SELECTALL:
-	case EHexCmd::CMD_DATAINTERPRET:
+	case EHexCmd::CMD_DATAINTERPRET_SHOW:
+	case EHexCmd::CMD_DATAINTERPRET_HIDE:
 		fAvail = fDataSet;
 		break;
 	case EHexCmd::CMD_SEARCH_NEXT:
@@ -745,6 +749,11 @@ bool CHexCtrl::IsOffsetAsHex()const
 		return false;
 
 	return m_fOffsetAsHex;
+}
+
+bool CHexCtrl::IsDataInterpretVisible()const
+{
+	return m_pDlgDataInterpret->IsWindowVisible();
 }
 
 void CHexCtrl::Print()
@@ -1464,8 +1473,11 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	case IDM_HEXCTRL_SELECTION_SELECTALL:
 		SelectAll();
 		break;
-	case IDM_HEXCTRL_DATAINTERPRET:
+	case IDM_HEXCTRL_DATAINTERPRET_SHOW:		
 		m_pDlgDataInterpret->ShowWindow(SW_SHOW);
+		break;
+	case IDM_HEXCTRL_DATAINTERPRET_HIDE:
+		m_pDlgDataInterpret->ShowWindow(SW_HIDE);
 		break;
 	case IDM_HEXCTRL_APPEARANCE_FONTINCREASE:
 		SetFontSize(GetFontSize() + 2);
@@ -1543,7 +1555,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_SELECTALL, IsCmdAvail(EHexCmd::CMD_SEL_SELECTALL) ? MF_ENABLED : MF_GRAYED);
 
 	//Data interpreter
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_DATAINTERPRET, IsCmdAvail(EHexCmd::CMD_DATAINTERPRET) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_DATAINTERPRET_SHOW, IsCmdAvail(EHexCmd::CMD_DATAINTERPRET_SHOW) ? MF_ENABLED : MF_GRAYED);
 }
 
 void CHexCtrl::OnKeyUp(UINT /*nChar*/, UINT /*nRepCnt*/, UINT /*nFlags*/)

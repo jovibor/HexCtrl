@@ -108,6 +108,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsDataSet()const override;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] bool IsMutable()const override;       //Is edit mode enabled or not.
 		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
+		[[nodiscard]] bool IsDataInterpretVisible()const override; //Is data interpreter dialog visible or not.
 		void Print()override;                               //Printing routine.
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.

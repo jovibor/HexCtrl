@@ -52,7 +52,7 @@ namespace HEXCTRL
 		CMD_CLIPBOARD_PASTE_HEX, CMD_CLIPBOARD_PASTE_ASCII,
 		CMD_MODIFY_OPERS, CMD_MODIFY_FILLZEROS, CMD_MODIFY_FILLDATA, CMD_MODIFY_UNDO, CMD_MODIFY_REDO,
 		CMD_SEL_MARKSTART, CMD_SEL_MARKEND, CMD_SEL_SELECTALL,
-		CMD_DATAINTERPRET,
+		CMD_DATAINTERPRET_SHOW, CMD_DATAINTERPRET_HIDE,
 		CMD_APPEARANCE_FONTINC, CMD_APPEARANCE_FONTDEC, CMD_APPEARANCE_CAPACITYINC, CMD_APPEARANCE_CAPACITYDEC,
 		CMD_PRINT, CMD_ABOUT
 	};
@@ -238,6 +238,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
+		[[nodiscard]] virtual bool IsDataInterpretVisible()const = 0; //Is data interpreter dialog visible or not.
 		virtual void Print() = 0;                              //Printing routine.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.

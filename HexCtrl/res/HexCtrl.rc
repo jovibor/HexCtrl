@@ -436,7 +436,7 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "Select all\tCtrl+A",          IDM_HEXCTRL_SELECTION_SELECTALL
         END
-        MENUITEM "Data Interpreter",            IDM_HEXCTRL_DATAINTERPRET
+        MENUITEM "Data Interpreter",		IDM_HEXCTRL_DATAINTERPRET_SHOW
         POPUP "Appearance"
         BEGIN
             MENUITEM "Increase font size\tCtrl+MouseWheelUp", IDM_HEXCTRL_APPEARANCE_FONTINCREASE
