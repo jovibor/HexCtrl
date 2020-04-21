@@ -79,7 +79,6 @@
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
     <TargetName>$(ProjectName)</TargetName>
-    <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
     <OutDir>$(SolutionDir)bin\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -126,7 +125,8 @@
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
-      <Command>powershell.exe $(ProjectDir)verinfo\VerInfoRun.ps1 -versionFile  $(ProjectDir)verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <ResourceCompile>
       <PreprocessorDefinitions>HEXCTRL_SHARED_DLL;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -150,7 +150,8 @@
       <AdditionalOptions>/NOCOFFGRPINFO /pdbaltpath:%_PDB% </AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>powershell.exe $(ProjectDir)verinfo\VerInfoRun.ps1 -versionFile  $(ProjectDir)verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <ResourceCompile>
       <PreprocessorDefinitions>HEXCTRL_SHARED_DLL;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -176,7 +177,8 @@
       <ImportLibrary>$(OutDir)$(TargetName).lib</ImportLibrary>
     </Link>
     <PostBuildEvent>
-      <Command>powershell.exe $(ProjectDir)verinfo\VerInfoRun.ps1 -versionFile  $(ProjectDir)verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <ResourceCompile>
       <PreprocessorDefinitions>HEXCTRL_SHARED_DLL;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -209,7 +211,8 @@
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
-      <Command>powershell.exe $(ProjectDir)verinfo\VerInfoRun.ps1 -versionFile  $(ProjectDir)verinfo\version.h -patchFile $(TargetDir)$(TargetName)$(TargetExt)</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <ResourceCompile>
       <PreprocessorDefinitions>HEXCTRL_SHARED_DLL;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>

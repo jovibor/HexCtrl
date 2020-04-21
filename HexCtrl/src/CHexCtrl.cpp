@@ -2069,9 +2069,9 @@ void CHexCtrl::DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo)
 	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunk - iScrollH, m_iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
 		m_wstrCapacity.data(), static_cast<UINT>(m_wstrCapacity.size()), nullptr);
 
-	//"Ascii" text.
+	//"ASCII" text.
 	CRect rcAscii(m_iThirdVertLine - iScrollH, m_iFirstHorizLine, m_iFourthVertLine - iScrollH, iSecondHorizLine);
-	pDC->DrawTextW(L"Ascii", 5, rcAscii, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	pDC->DrawTextW(L"ASCII", 5, rcAscii, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	//Bottom "Info" rect.
 	CRect rcInfo(m_iFirstVertLine + 1 - iScrollH, iThirdHorizLine + 1, m_iFourthVertLine, iFourthHorizLine); //Fill bottom rcClient until iFourthHorizLine.
@@ -3576,10 +3576,10 @@ std::string CHexCtrl::CopyPrintScreen()
 	strData.insert(strData.size(), static_cast<size_t>(m_dwOffsetDigits) - strData.size(), ' ');
 	strData += "   "; //Spaces to Capacity.
 	strData += WstrToStr(m_wstrCapacity);
-	strData += "   "; //Spaces to Ascii.
-	if (int iSize = static_cast<int>(m_dwCapacity) - 5; iSize > 0) //5 is strlen of "Ascii".
+	strData += "   "; //Spaces to ASCII.
+	if (int iSize = static_cast<int>(m_dwCapacity) - 5; iSize > 0) //5 is strlen of "ASCII".
 		strData.insert(strData.size(), static_cast<size_t>(iSize / 2), ' ');
-	strData += "Ascii";
+	strData += "ASCII";
 	strData += "\r\n";
 
 	//How many spaces are needed to be inserted at the beginning.
