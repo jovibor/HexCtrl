@@ -92,7 +92,7 @@ namespace HEXCTRL::INTERNAL
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)override; //Сreates custom dialog control.
 		void Destroy()override;                             //Deleter.
-		void ExecuteCmd(EHexCmd enCmd)const override;       //Execute a command within the control.
+		void ExecuteCmd(EHexCmd enCmd)override;				//Execute a command within the control.
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
 		[[nodiscard]] auto GetColor()const->HEXCOLORSTRUCT override;      //Current colors.
@@ -178,6 +178,7 @@ namespace HEXCTRL::INTERNAL
 		void WstrCapacityFill();                                  //Fill m_wstrCapacity according to current m_dwCapacity.
 		[[nodiscard]] bool IsSectorVisible()const;                //Returns m_fSectorVisible.
 		void UpdateSectorVisible();                               //Updates info about whether sector's lines printable atm or not.
+		void ShowDataInterpreter(bool fShow);					  //Show/hide data interpreter
 	protected:
 		DECLARE_MESSAGE_MAP()
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);

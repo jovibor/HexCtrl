@@ -417,7 +417,7 @@ void CHexCtrl::Destroy()
 	delete this;
 }
 
-void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
+void CHexCtrl::ExecuteCmd(EHexCmd enCmd)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -520,10 +520,12 @@ void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
 		wParam = IDM_HEXCTRL_SELECTION_SELECTALL;
 		break;
 	case EHexCmd::CMD_DATAINTERPRET_SHOW:
-		wParam = IDM_HEXCTRL_DATAINTERPRET_SHOW;
+		ShowDataInterpreter(true);
+		return;
 		break;
 	case EHexCmd::CMD_DATAINTERPRET_HIDE:
-		wParam = IDM_HEXCTRL_DATAINTERPRET_HIDE;
+		ShowDataInterpreter(false);
+		return;
 		break;
 	case EHexCmd::CMD_APPEARANCE_FONTINC:
 		wParam = IDM_HEXCTRL_APPEARANCE_FONTINCREASE;
@@ -1072,6 +1074,16 @@ void CHexCtrl::SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
 	SetSelection(ullOffset, ullOffset, ullSize, 1, false);
 }
 
+void CHexCtrl::ShowDataInterpreter(bool fShow)
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
+	m_menuMain.CheckMenuItem(IDM_HEXCTRL_DATAINTERPRET, fShow ? MF_CHECKED : MF_UNCHECKED);
+	m_pDlgDataInterpret->ShowWindow(fShow ? SW_SHOW : SW_HIDE);
+}
+
 void CHexCtrl::SetShowMode(EHexShowMode enShowMode)
 {
 	assert(IsCreated());
@@ -1473,11 +1485,8 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	case IDM_HEXCTRL_SELECTION_SELECTALL:
 		SelectAll();
 		break;
-	case IDM_HEXCTRL_DATAINTERPRET_SHOW:		
-		m_pDlgDataInterpret->ShowWindow(SW_SHOW);
-		break;
-	case IDM_HEXCTRL_DATAINTERPRET_HIDE:
-		m_pDlgDataInterpret->ShowWindow(SW_HIDE);
+	case IDM_HEXCTRL_DATAINTERPRET:
+		ShowDataInterpreter(!IsDataInterpretVisible());
 		break;
 	case IDM_HEXCTRL_APPEARANCE_FONTINCREASE:
 		SetFontSize(GetFontSize() + 2);
@@ -1555,7 +1564,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_SELECTALL, IsCmdAvail(EHexCmd::CMD_SEL_SELECTALL) ? MF_ENABLED : MF_GRAYED);
 
 	//Data interpreter
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_DATAINTERPRET_SHOW, IsCmdAvail(EHexCmd::CMD_DATAINTERPRET_SHOW) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_DATAINTERPRET, IsCmdAvail(EHexCmd::CMD_DATAINTERPRET_SHOW) ? MF_ENABLED : MF_GRAYED);
 }
 
 void CHexCtrl::OnKeyUp(UINT /*nChar*/, UINT /*nRepCnt*/, UINT /*nFlags*/)
