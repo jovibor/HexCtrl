@@ -20,7 +20,6 @@
   * [BkmAdd](#bkmadd)
   * [BkmClearAll](#bkmclearall)
   * [BkmGetByID](#bkmgetbyid)
-  * [BkmGetData](#bkmgetdata)
   * [BkmHitTest](#bkmhittest)
   * [BkmRemove](#bkmremove)
   * [BkmSetVirtual](#bkmsetvirtual)
@@ -44,7 +43,6 @@
   * [IsDataSet](#isdataset)
   * [IsMutable](#ismutable)
   * [IsOffsetAsHex](#isoffsetashex)
-  * [Print](#print)
   * [SetCapacity](#setcapacity)
   * [SetColor](#setcolor)
   * [SetData](#setdata)
@@ -55,6 +53,7 @@
   * [SetSelection](#setselection)
   * [SetShowMode](#setshowmode)
   * [SetWheelRatio](#setwheelratio)
+  * [ShowDlg](#showdlg)
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
   * [HEXCREATESTRUCT](#hexcreatestruct)
@@ -63,10 +62,11 @@
   * [HEXSPANSTRUCT](#hexspanstruct)
   * [HEXBOOKMARKSTRUCT](#hexbookmarkstruct)
   * [HEXNOTIFYSTRUCT](#hexnotifystruct)
-  * [EHexCreateMode](#ehexcreatemode)
-  * [EHexShowMode](#ehexshowmode)
-  * [EHexDataMode](#ehexdatamode)
   * [EHexCmd](#ehexcmd)
+  * [EHexCreateMode](#ehexcreatemode)
+  * [EHexDataMode](#ehexdatamode)
+  * [EHexDlg](#ehexdlg)
+  * [EHexShowMode](#ehexshowmode)
    </details>
 * [Notification Messages](#notification-messages) <details><summary>_Expand_</summary>
   * [HEXCTRL_MSG_BKMCLICK](#hexctrl_msg_bkmclicked) 
@@ -343,12 +343,6 @@ BkmGetByID(DWORD dwID)->HEXBOOKMARKSTRUCT*;
 ```
 Get bookmark by ID.
 
-### [](#)BkmGetData
-```cpp
-auto BkmGetData()->std::deque<HEXBOOKMARKSTRUCT>*;
-```
-Retrives pointer to the internal array of [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct).
-
 ### [](#)BkmHitTest
 ```cpp
 auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*;
@@ -497,12 +491,6 @@ bool IsOffsetAsHex()const;
 ```
 Is "Offset" currently represented (shown) as Hex or as Decimal. It can be changed by double clicking at offset area.
 
-### [](#)Print
-```cpp
-void Print()const;
-```
-Prepare document for printing and shows standard printing dialog.
-
 ### [](#)SetCapacity
 ```cpp
 void SetCapacity(DWORD dwCapacity);
@@ -563,6 +551,12 @@ Sets current data show mode. See [`EHexShowMode`](#ehexshowmode) for more info.
 void SetWheelRatio(double dbRatio)
 ```
 Sets the ratio for how much to scroll with mouse-wheel.
+
+## [](#)ShowDlg
+```cpp
+void ShowDlg(EHexDlg enDlg, bool fShow)const;
+```
+Show or hide **HexControl**'s internal dialog window, from [`EHexDlg`](#ehexdlg) enum.
 
 ## [](#)Structures
 Below are listed all **HexControl**'s structures.
@@ -664,33 +658,6 @@ struct HEXNOTIFYSTRUCT
 using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
 ```
 
-### [](#)EHexCreateMode
-Enum that represents mode the **HexControl**'s window will be created in.
-```cpp
-enum class EHexCreateMode : DWORD
-{
-    CREATE_CHILD, CREATE_POPUP, CREATE_CUSTOMCTRL
-};
-```
-
-### [](#)EHexShowMode
-Enum that represents available data show modes.
-```cpp
-enum class EHexShowMode : DWORD
-{
-    ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
-};
-```
-
-### [](#)EHexDataMode
-`Enum` that represents current data [mode](#data-modes) **HexControl** works in. It's used as [`HEXDATASTRUCT`](#hexdatastruct) member in [`SetData`](#setdata) method.
-```cpp
-enum class EHexDataMode : DWORD
-{
-    DATA_MEMORY, DATA_MSG, DATA_VIRTUAL
-};
-```
-
 ### [](#)EHexCmd
 Enum of commands **HexCtrl** can execute. Basically these commands duplicate inner menu.
 ```cpp
@@ -707,6 +674,42 @@ enum class EHexCmd : WORD
     CMD_DATAINTERPRET,
     CMD_APPEARANCE_FONTINC, CMD_APPEARANCE_FONTDEC, CMD_APPEARANCE_CAPACITYINC, CMD_APPEARANCE_CAPACITYDEC,
     CMD_PRINT, CMD_ABOUT
+};
+```
+
+### [](#)EHexCreateMode
+Enum that represents mode the **HexControl**'s window will be created in.
+```cpp
+enum class EHexCreateMode : WORD
+{
+    CREATE_CHILD, CREATE_POPUP, CREATE_CUSTOMCTRL
+};
+```
+
+### [](#)EHexDataMode
+`Enum` that represents current data [mode](#data-modes) **HexControl** works in. It's used as [`HEXDATASTRUCT`](#hexdatastruct) member in [`SetData`](#setdata) method.
+```cpp
+enum class EHexDataMode : WORD
+{
+    DATA_MEMORY, DATA_MSG, DATA_VIRTUAL
+};
+```
+
+### [](#)EHexDlg
+All **HexControl**'s internal dialog windows.
+```cpp
+enum class EHexDlg : WORD
+{
+    DLG_BKMMANAGER, DLG_DATAINTERPRET, DLG_FILLDATA, DLG_OPERS, DLG_SEARCH
+};
+```
+
+### [](#)EHexShowMode
+Enum that represents available data show modes.
+```cpp
+enum class EHexShowMode : WORD
+{
+    ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
 };
 ```
 

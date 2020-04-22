@@ -8,48 +8,48 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "../Helper.h"
-#include "CHexDlgFillWith.h"
+#include "CHexDlgFillData.h"
 
 using namespace HEXCTRL::INTERNAL;
 
-BEGIN_MESSAGE_MAP(CHexDlgFillWith, CDialogEx)
+BEGIN_MESSAGE_MAP(CHexDlgFillData, CDialogEx)
 END_MESSAGE_MAP()
 
-BOOL CHexDlgFillWith::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
+BOOL CHexDlgFillData::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 {
 	m_pHexCtrl = pHexCtrl;
 
 	return CDialogEx::Create(nIDTemplate, pHexCtrl);
 }
 
-BOOL CHexDlgFillWith::OnInitDialog()
+BOOL CHexDlgFillData::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	CheckRadioButton(IDC_HEXCTRL_FILLWITHDATA_RADIO_HEX, IDC_HEXCTRL_FILLWITHDATA_RADIO_UTF16, IDC_HEXCTRL_FILLWITHDATA_RADIO_HEX);
-	if (auto pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_FILLWITHDATA_COMBO_HEXTEXT); pCombo != nullptr)
+	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16, IDC_HEXCTRL_FILLDATA_RADIO_HEX);
+	if (auto pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT); pCombo != nullptr)
 		pCombo->LimitText(MAX_PATH); //Max characters count in combo's edit box.
 
 	return TRUE;
 }
 
-CHexCtrl* CHexDlgFillWith::GetHexCtrl() const
+CHexCtrl* CHexDlgFillData::GetHexCtrl() const
 {
 	return m_pHexCtrl;
 }
 
-void CHexDlgFillWith::DoDataExchange(CDataExchange* pDX)
+void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 }
 
-void CHexDlgFillWith::OnOK()
+void CHexDlgFillData::OnOK()
 {
 	CHexCtrl* pHex = GetHexCtrl();
 	if (!pHex)
 		return;
 
-	int iRadioType = GetCheckedRadioButton(IDC_HEXCTRL_FILLWITHDATA_RADIO_HEX, IDC_HEXCTRL_FILLWITHDATA_RADIO_UTF16);
+	int iRadioType = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16);
 
 	MODIFYSTRUCT hms;
 	hms.enModifyMode = EModifyMode::MODIFY_REPEAT;
@@ -57,7 +57,7 @@ void CHexDlgFillWith::OnOK()
 	if (hms.vecSpan.empty())
 		return;
 
-	auto pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_FILLWITHDATA_COMBO_HEXTEXT);
+	auto pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT);
 	if (!pCombo)
 		return;
 
@@ -69,7 +69,7 @@ void CHexDlgFillWith::OnOK()
 	std::string strToFill = WstrToStr(wstrComboText);
 	switch (iRadioType)
 	{
-	case IDC_HEXCTRL_FILLWITHDATA_RADIO_HEX:
+	case IDC_HEXCTRL_FILLDATA_RADIO_HEX:
 	{
 		if (!StrToHex(strToFill, strToFill))
 		{
@@ -80,11 +80,11 @@ void CHexDlgFillWith::OnOK()
 		hms.ullDataSize = strToFill.size();
 	}
 	break;
-	case IDC_HEXCTRL_FILLWITHDATA_RADIO_TEXT:
+	case IDC_HEXCTRL_FILLDATA_RADIO_TEXT:
 		hms.pData = reinterpret_cast<std::byte*>(strToFill.data());
 		hms.ullDataSize = strToFill.size();
 		break;
-	case IDC_HEXCTRL_FILLWITHDATA_RADIO_UTF16:
+	case IDC_HEXCTRL_FILLDATA_RADIO_UTF16:
 		hms.pData = reinterpret_cast<std::byte*>(wstrComboText.data());
 		hms.ullDataSize = static_cast<ULONGLONG>(wstrComboText.size()) * sizeof(WCHAR);
 		break;

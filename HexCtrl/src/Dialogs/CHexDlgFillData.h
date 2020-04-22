@@ -13,10 +13,10 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	class CHexDlgFillWith final : public CDialogEx
+	class CHexDlgFillData final : public CDialogEx
 	{
 	public:
-		explicit CHexDlgFillWith(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_FILLWITHDATA, pParent) {}
+		explicit CHexDlgFillData(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_FILLDATA, pParent) {}
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;

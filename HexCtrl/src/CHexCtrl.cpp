@@ -15,7 +15,7 @@
 #include "Dialogs/CHexDlgBookmarkMgr.h"
 #include "Dialogs/CHexDlgCallback.h"
 #include "Dialogs/CHexDlgDataInterpret.h"
-#include "Dialogs/CHexDlgFillWith.h"
+#include "Dialogs/CHexDlgFillData.h"
 #include "Dialogs/CHexDlgOperations.h"
 #include "Dialogs/CHexDlgSearch.h"
 #include "Helper.h"
@@ -181,15 +181,6 @@ auto CHexCtrl::BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT*
 		return nullptr;
 
 	return m_pBookmarks->GetByID(ullID);
-}
-
-auto CHexCtrl::BkmGetData()->std::deque<HEXBOOKMARKSTRUCT>*
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return nullptr;
-
-	return m_pBookmarks->GetData();
 }
 
 auto CHexCtrl::BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*
@@ -386,7 +377,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	//All dialogs are created after the main window, to set the parent window correctly.
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this);
 	m_pDlgOpers->Create(IDD_HEXCTRL_OPERATIONS, this);
-	m_pDlgFillWith->Create(IDD_HEXCTRL_FILLWITHDATA, this);
+	m_pDlgFillData->Create(IDD_HEXCTRL_FILLDATA, this);
 	m_pDlgBookmarkMgr->Create(IDD_HEXCTRL_BOOKMARKMGR, this, &*m_pBookmarks);
 	m_pDlgDataInterpret->Create(IDD_HEXCTRL_DATAINTERPRET, this);
 	m_pBookmarks->Attach(this);
@@ -502,7 +493,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
 		wParam = IDM_HEXCTRL_MODIFY_FILLZEROS;
 		break;
 	case EHexCmd::CMD_MODIFY_FILLDATA:
-		wParam = IDM_HEXCTRL_MODIFY_FILLWITHDATA;
+		wParam = IDM_HEXCTRL_MODIFY_FILLDATA;
 		break;
 	case EHexCmd::CMD_MODIFY_UNDO:
 		wParam = IDM_HEXCTRL_MODIFY_UNDO;
@@ -747,166 +738,6 @@ bool CHexCtrl::IsOffsetAsHex()const
 	return m_fOffsetAsHex;
 }
 
-void CHexCtrl::Print()
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
-
-	DWORD dwFlags;
-	if (m_pSelection->HasSelection())
-		dwFlags = PD_ALLPAGES | PD_CURRENTPAGE | PD_PAGENUMS | PD_SELECTION;
-	else
-		dwFlags = PD_ALLPAGES | PD_CURRENTPAGE | PD_PAGENUMS | PD_NOSELECTION;
-
-	CPrintDialog dlg(FALSE, dwFlags, this);
-	dlg.m_pd.nMaxPage = 0xffff;
-	dlg.m_pd.nFromPage = 1;
-	dlg.m_pd.nToPage = 1;
-
-	if (dlg.DoModal() == IDCANCEL) {
-		DeleteDC(dlg.m_pd.hDC);
-		return;
-	}
-
-	HDC hdcPrinter = dlg.GetPrinterDC();
-	if (hdcPrinter == nullptr) {
-		MessageBoxW(L"No printer found!");
-		return;
-	}
-
-	CDC dcPr;
-	dcPr.Attach(hdcPrinter);
-	CDC* pDC = &dcPr;
-
-	DOCINFOW di { };
-	di.cbSize = sizeof(DOCINFOW);
-	di.lpszDocName = L"HexCtrl";
-
-	if (dcPr.StartDocW(&di) < 0) {
-		dcPr.AbortDoc();
-		dcPr.DeleteDC();
-		return;
-	}
-
-	const CSize sizePrintDpi = { GetDeviceCaps(dcPr, LOGPIXELSX), GetDeviceCaps(dcPr, LOGPIXELSY) };
-	//const CSize sizePaper = { GetDeviceCaps(dcPr, PHYSICALWIDTH), GetDeviceCaps(dcPr, PHYSICALHEIGHT) };
-	CRect rcPrint(CPoint(GetDeviceCaps(dcPr, PHYSICALOFFSETX), GetDeviceCaps(dcPr, PHYSICALOFFSETY)),
-		CSize(GetDeviceCaps(dcPr, HORZRES), GetDeviceCaps(dcPr, VERTRES)));
-	CDC* pCurrDC = GetDC();
-	auto iScreenDpiY = GetDeviceCaps(pCurrDC->m_hDC, LOGPIXELSY);
-	ReleaseDC(pCurrDC);
-	int iRatio = sizePrintDpi.cy / iScreenDpiY;
-
-	CFont fontMain; //Main font for printing
-	LOGFONTW lf { };
-	m_fontMain.GetLogFont(&lf);
-	lf.lfHeight *= iRatio;
-	fontMain.CreateFontIndirectW(&lf);
-	CFont fontInfo; //Info font for printing
-	LOGFONTW lfInfo { };
-	m_fontInfo.GetLogFont(&lfInfo);
-	lfInfo.lfHeight *= iRatio;
-	fontInfo.CreateFontIndirectW(&lfInfo);
-
-	ULONGLONG ullStartLine { };
-	ULONGLONG ullEndLine { };
-	ullStartLine = GetTopLine();
-	ullEndLine = GetBottomLine();
-	auto stOldLetter = m_sizeLetter;
-	auto ullTotalLines = m_ullDataSize / m_dwCapacity;
-
-	rcPrint.bottom -= 200; //Ajust bottom indent of the printing rect.
-	RecalcPrint(pDC, &fontMain, &fontInfo, rcPrint);
-	auto iLinesInPage = m_iHeightWorkArea / m_sizeLetter.cy;
-	ULONGLONG ullTotalPages = ullTotalLines / iLinesInPage + 1;
-	int iPagesToPrint { };
-
-	if (dlg.PrintAll())
-	{
-		iPagesToPrint = static_cast<int>(ullTotalPages);
-		ullStartLine = 0;
-	}
-	else if (dlg.PrintRange())
-	{
-		auto iFromPage = dlg.GetFromPage() - 1;
-		auto iToPage = dlg.GetToPage();
-		if (iFromPage <= ullTotalPages) //Checks for out-of-range pages user input.
-		{
-			iPagesToPrint = iToPage - iFromPage;
-			if (iPagesToPrint + iFromPage > ullTotalPages)
-				iPagesToPrint = static_cast<int>(ullTotalPages - iFromPage);
-		}
-		ullStartLine = iFromPage * iLinesInPage;
-	}
-
-	const auto iIndentX = 100;
-	const auto iIndentY = 100;
-	pDC->SetMapMode(MM_TEXT);
-	if (dlg.PrintSelection())
-	{
-		pDC->StartPage();
-		pDC->OffsetViewportOrg(iIndentX, iIndentY);
-
-		auto ullSelStart = m_pSelection->GetSelectionStart();
-		auto ullSelSize = m_pSelection->GetSelectionSize();
-		ullStartLine = ullSelStart / m_dwCapacity;
-
-		DWORD dwModStart = ullSelStart % m_dwCapacity;
-		DWORD dwLines = static_cast<DWORD>(ullSelSize) / m_dwCapacity;
-		if ((dwModStart + static_cast<DWORD>(ullSelSize)) > m_dwCapacity)
-			++dwLines;
-		if ((ullSelSize % m_dwCapacity) + dwModStart > m_dwCapacity)
-			++dwLines;
-		if (!dwLines)
-			dwLines = 1;
-		ullEndLine = ullStartLine + dwLines;
-
-		DrawWindow(pDC, &fontMain, &fontInfo);
-		auto clBkrOld = m_stColor.clrBkSelected;
-		auto clTextOld = m_stColor.clrTextSelected;
-		m_stColor.clrBkSelected = m_stColor.clrBk;
-		m_stColor.clrTextSelected = m_stColor.clrTextHex;
-		DrawOffsets(pDC, &fontMain, ullStartLine, ullEndLine);
-		DrawSelection(pDC, &fontMain, ullStartLine, ullEndLine);
-		m_stColor.clrBkSelected = clBkrOld;
-		m_stColor.clrTextSelected = clTextOld;
-
-		pDC->EndPage();
-	}
-	else
-	{
-		for (int i = 0; i < iPagesToPrint; i++)
-		{
-			pDC->StartPage();
-			pDC->OffsetViewportOrg(iIndentX, iIndentY);
-			ullEndLine = ullStartLine + iLinesInPage;
-			//If m_dwDataCount is really small we adjust ullEndLine to be not bigger than maximum allowed.
-			if (ullEndLine > ullTotalLines)
-				ullEndLine = (m_ullDataSize % m_dwCapacity) ? ullTotalLines + 1 : ullTotalLines;
-
-			DrawWindow(pDC, &fontMain, &fontInfo);
-			DrawOffsets(pDC, &fontMain, ullStartLine, ullEndLine);
-			DrawHexAscii(pDC, &fontMain, ullStartLine, ullEndLine);
-			DrawBookmarks(pDC, &fontMain, ullStartLine, ullEndLine);
-			DrawSelection(pDC, &fontMain, ullStartLine, ullEndLine);
-			DrawCursor(pDC, &fontMain, ullStartLine, ullEndLine);
-			DrawDataInterpret(pDC, &fontMain, ullStartLine, ullEndLine);
-			DrawSectorLines(pDC, ullStartLine, ullEndLine);
-
-			ullStartLine += iLinesInPage;
-			pDC->OffsetViewportOrg(-iIndentX, -iIndentY);
-			pDC->EndPage();
-		}
-	}
-
-	pDC->EndDoc();
-	pDC->DeleteDC();
-
-	m_sizeLetter = stOldLetter;
-	RecalcAll();
-}
-
 void CHexCtrl::Redraw()
 {
 	assert(IsCreated());
@@ -996,15 +827,15 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 		SetSelection(hds.stSelSpan.ullOffset, hds.stSelSpan.ullOffset, hds.stSelSpan.ullSize, 1, true, true);
 }
 
-void CHexCtrl::SetFont(const LOGFONTW* pLogFontNew)
+void CHexCtrl::SetFont(const LOGFONTW* pLogFont)
 {
 	assert(IsCreated());
-	assert(pLogFontNew); //Null font pointer.
-	if (!IsCreated() || !pLogFontNew)
+	assert(pLogFont); //Null font pointer.
+	if (!IsCreated() || !pLogFont)
 		return;
 
 	m_fontMain.DeleteObject();
-	m_fontMain.CreateFontIndirectW(pLogFontNew);
+	m_fontMain.CreateFontIndirectW(pLogFont);
 
 	RecalcAll();
 }
@@ -1040,7 +871,7 @@ void CHexCtrl::SetMutable(bool fEnable)
 	UpdateInfoText();
 }
 
-void CHexCtrl::SetSectorSize(DWORD dwSize, const wchar_t* wstrName)
+void CHexCtrl::SetSectorSize(DWORD dwSize, std::wstring_view wstrName)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -1120,6 +951,38 @@ void CHexCtrl::SetWheelRatio(double dbRatio)
 
 	m_dbWheelRatio = dbRatio;
 	SendMessageW(WM_SIZE);   //To recalc ScrollPageSize (m_pScrollV->SetScrollPageSize(...);)
+}
+
+void CHexCtrl::ShowDlg(EHexDlg enDlg, bool fShow)const
+{
+	assert(IsCreated());
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return;
+
+	int iShow { fShow ? SW_SHOW : SW_HIDE };
+	bool fMut = IsMutable();
+
+	switch (enDlg)
+	{
+	case EHexDlg::DLG_BKMMANAGER:
+		m_pDlgBookmarkMgr->ShowWindow(iShow);
+		break;
+	case EHexDlg::DLG_DATAINTERPRET:
+		m_pDlgDataInterpret->ShowWindow(iShow);
+		break;
+	case EHexDlg::DLG_FILLDATA:
+		if (fMut)
+			m_pDlgFillData->ShowWindow(iShow);
+		break;
+	case EHexDlg::DLG_OPERS:
+		if (fMut)
+			m_pDlgOpers->ShowWindow(iShow);
+		break;
+	case EHexDlg::DLG_SEARCH:
+		m_pDlgSearch->ShowWindow(iShow);
+		break;
+	}
 }
 
 
@@ -1446,8 +1309,8 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	case IDM_HEXCTRL_MODIFY_FILLZEROS:
 		FillWithZeros();
 		break;
-	case IDM_HEXCTRL_MODIFY_FILLWITHDATA:
-		m_pDlgFillWith->ShowWindow(SW_SHOW);
+	case IDM_HEXCTRL_MODIFY_FILLDATA:
+		m_pDlgFillData->ShowWindow(SW_SHOW);
 		break;
 	case IDM_HEXCTRL_MODIFY_UNDO:
 		Undo();
@@ -1532,7 +1395,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 
 	//Modify
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(EHexCmd::CMD_MODIFY_FILLZEROS) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLWITHDATA, IsCmdAvail(EHexCmd::CMD_MODIFY_FILLDATA) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLDATA, IsCmdAvail(EHexCmd::CMD_MODIFY_FILLDATA) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_OPERATIONS, IsCmdAvail(EHexCmd::CMD_MODIFY_OPERS) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(EHexCmd::CMD_MODIFY_UNDO) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(EHexCmd::CMD_MODIFY_REDO) ? MF_ENABLED : MF_GRAYED);
@@ -2762,7 +2625,7 @@ void CHexCtrl::OnDestroy()
 	m_umapHBITMAP.clear();
 	m_pDlgBookmarkMgr->DestroyWindow();
 	m_pDlgDataInterpret->DestroyWindow();
-	m_pDlgFillWith->DestroyWindow();
+	m_pDlgFillData->DestroyWindow();
 	m_pDlgOpers->DestroyWindow();
 	m_pDlgSearch->DestroyWindow();
 	m_pScrollV->DestroyWindow();
@@ -4279,4 +4142,160 @@ void CHexCtrl::UpdateSectorVisible()
 		m_fSectorVisible = false;
 
 	UpdateInfoText();
+}
+
+void CHexCtrl::Print()
+{
+	DWORD dwFlags;
+	if (m_pSelection->HasSelection())
+		dwFlags = PD_ALLPAGES | PD_CURRENTPAGE | PD_PAGENUMS | PD_SELECTION;
+	else
+		dwFlags = PD_ALLPAGES | PD_CURRENTPAGE | PD_PAGENUMS | PD_NOSELECTION;
+
+	CPrintDialog dlg(FALSE, dwFlags, this);
+	dlg.m_pd.nMaxPage = 0xffff;
+	dlg.m_pd.nFromPage = 1;
+	dlg.m_pd.nToPage = 1;
+
+	if (dlg.DoModal() == IDCANCEL) {
+		DeleteDC(dlg.m_pd.hDC);
+		return;
+	}
+
+	HDC hdcPrinter = dlg.GetPrinterDC();
+	if (hdcPrinter == nullptr) {
+		MessageBoxW(L"No printer found!");
+		return;
+	}
+
+	CDC dcPr;
+	dcPr.Attach(hdcPrinter);
+	CDC* pDC = &dcPr;
+
+	DOCINFOW di { };
+	di.cbSize = sizeof(DOCINFOW);
+	di.lpszDocName = L"HexCtrl";
+
+	if (dcPr.StartDocW(&di) < 0) {
+		dcPr.AbortDoc();
+		dcPr.DeleteDC();
+		return;
+	}
+
+	const CSize sizePrintDpi = { GetDeviceCaps(dcPr, LOGPIXELSX), GetDeviceCaps(dcPr, LOGPIXELSY) };
+	//const CSize sizePaper = { GetDeviceCaps(dcPr, PHYSICALWIDTH), GetDeviceCaps(dcPr, PHYSICALHEIGHT) };
+	CRect rcPrint(CPoint(GetDeviceCaps(dcPr, PHYSICALOFFSETX), GetDeviceCaps(dcPr, PHYSICALOFFSETY)),
+		CSize(GetDeviceCaps(dcPr, HORZRES), GetDeviceCaps(dcPr, VERTRES)));
+	CDC* pCurrDC = GetDC();
+	auto iScreenDpiY = GetDeviceCaps(pCurrDC->m_hDC, LOGPIXELSY);
+	ReleaseDC(pCurrDC);
+	int iRatio = sizePrintDpi.cy / iScreenDpiY;
+
+	CFont fontMain; //Main font for printing
+	LOGFONTW lf { };
+	m_fontMain.GetLogFont(&lf);
+	lf.lfHeight *= iRatio;
+	fontMain.CreateFontIndirectW(&lf);
+	CFont fontInfo; //Info font for printing
+	LOGFONTW lfInfo { };
+	m_fontInfo.GetLogFont(&lfInfo);
+	lfInfo.lfHeight *= iRatio;
+	fontInfo.CreateFontIndirectW(&lfInfo);
+
+	ULONGLONG ullStartLine { };
+	ULONGLONG ullEndLine { };
+	ullStartLine = GetTopLine();
+	ullEndLine = GetBottomLine();
+	auto stOldLetter = m_sizeLetter;
+	auto ullTotalLines = m_ullDataSize / m_dwCapacity;
+
+	rcPrint.bottom -= 200; //Ajust bottom indent of the printing rect.
+	RecalcPrint(pDC, &fontMain, &fontInfo, rcPrint);
+	auto iLinesInPage = m_iHeightWorkArea / m_sizeLetter.cy;
+	ULONGLONG ullTotalPages = ullTotalLines / iLinesInPage + 1;
+	int iPagesToPrint { };
+
+	if (dlg.PrintAll())
+	{
+		iPagesToPrint = static_cast<int>(ullTotalPages);
+		ullStartLine = 0;
+	}
+	else if (dlg.PrintRange())
+	{
+		auto iFromPage = dlg.GetFromPage() - 1;
+		auto iToPage = dlg.GetToPage();
+		if (iFromPage <= ullTotalPages) //Checks for out-of-range pages user input.
+		{
+			iPagesToPrint = iToPage - iFromPage;
+			if (iPagesToPrint + iFromPage > ullTotalPages)
+				iPagesToPrint = static_cast<int>(ullTotalPages - iFromPage);
+		}
+		ullStartLine = iFromPage * iLinesInPage;
+	}
+
+	const auto iIndentX = 100;
+	const auto iIndentY = 100;
+	pDC->SetMapMode(MM_TEXT);
+	if (dlg.PrintSelection())
+	{
+		pDC->StartPage();
+		pDC->OffsetViewportOrg(iIndentX, iIndentY);
+
+		auto ullSelStart = m_pSelection->GetSelectionStart();
+		auto ullSelSize = m_pSelection->GetSelectionSize();
+		ullStartLine = ullSelStart / m_dwCapacity;
+
+		DWORD dwModStart = ullSelStart % m_dwCapacity;
+		DWORD dwLines = static_cast<DWORD>(ullSelSize) / m_dwCapacity;
+		if ((dwModStart + static_cast<DWORD>(ullSelSize)) > m_dwCapacity)
+			++dwLines;
+		if ((ullSelSize % m_dwCapacity) + dwModStart > m_dwCapacity)
+			++dwLines;
+		if (!dwLines)
+			dwLines = 1;
+		ullEndLine = ullStartLine + dwLines;
+
+		DrawWindow(pDC, &fontMain, &fontInfo);
+		auto clBkrOld = m_stColor.clrBkSelected;
+		auto clTextOld = m_stColor.clrTextSelected;
+		m_stColor.clrBkSelected = m_stColor.clrBk;
+		m_stColor.clrTextSelected = m_stColor.clrTextHex;
+		DrawOffsets(pDC, &fontMain, ullStartLine, ullEndLine);
+		DrawSelection(pDC, &fontMain, ullStartLine, ullEndLine);
+		m_stColor.clrBkSelected = clBkrOld;
+		m_stColor.clrTextSelected = clTextOld;
+
+		pDC->EndPage();
+	}
+	else
+	{
+		for (int i = 0; i < iPagesToPrint; i++)
+		{
+			pDC->StartPage();
+			pDC->OffsetViewportOrg(iIndentX, iIndentY);
+			ullEndLine = ullStartLine + iLinesInPage;
+			//If m_dwDataCount is really small we adjust ullEndLine to be not bigger than maximum allowed.
+			if (ullEndLine > ullTotalLines)
+				ullEndLine = (m_ullDataSize % m_dwCapacity) ? ullTotalLines + 1 : ullTotalLines;
+
+			DrawWindow(pDC, &fontMain, &fontInfo);
+			DrawOffsets(pDC, &fontMain, ullStartLine, ullEndLine);
+			DrawHexAscii(pDC, &fontMain, ullStartLine, ullEndLine);
+			DrawBookmarks(pDC, &fontMain, ullStartLine, ullEndLine);
+			DrawSelection(pDC, &fontMain, ullStartLine, ullEndLine);
+			DrawCursor(pDC, &fontMain, ullStartLine, ullEndLine);
+			DrawDataInterpret(pDC, &fontMain, ullStartLine, ullEndLine);
+			DrawSectorLines(pDC, ullStartLine, ullEndLine);
+
+			ullStartLine += iLinesInPage;
+			pDC->OffsetViewportOrg(-iIndentX, -iIndentY);
+			pDC->EndPage();
+		}
+	}
+
+	pDC->EndDoc();
+	pDC->DeleteDC();
+
+	m_sizeLetter = stOldLetter;
+	RecalcAll();
 }

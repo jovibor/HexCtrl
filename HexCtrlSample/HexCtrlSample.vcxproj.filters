@@ -72,9 +72,6 @@
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgOperations.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgFillWith.h">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClInclude>
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgBookmarkMgr.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
@@ -91,7 +88,7 @@
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgCallback.h">
-	  <Filter>HexCtrl\src\Dialogs</Filter>
+      <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
     <ClInclude Include="..\HexCtrl\src\Dialogs\CHexPropGridCtrl.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
@@ -104,6 +101,9 @@
     </ClInclude>
     <ClInclude Include="..\HexCtrl\src\ListEx\src\CListExHdr.h">
       <Filter>HexCtrl\src\ListEx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\HexCtrl\src\Dialogs\CHexDlgFillData.h">
+      <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -137,9 +137,6 @@
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgOperations.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
-    <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgFillWith.cpp">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
     <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgBookmarkMgr.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
@@ -166,6 +163,9 @@
     </ClCompile>
     <ClCompile Include="..\HexCtrl\src\ListEx\src\CListExHdr.cpp">
       <Filter>HexCtrl\src\ListEx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\HexCtrl\src\Dialogs\CHexDlgFillData.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -58,6 +58,41 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
+	* EHexCreateMode - Enum of HexCtrl creation mode.                                           *
+	********************************************************************************************/
+	enum class EHexCreateMode : WORD
+	{
+		CREATE_CHILD, CREATE_POPUP, CREATE_CUSTOMCTRL
+	};
+
+	/********************************************************************************************
+	* EHexShowMode - current data mode representation.                                          *
+	********************************************************************************************/
+	enum class EHexShowMode : WORD
+	{
+		ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
+	};
+
+	/********************************************************************************************
+	* EHexDataMode - Enum of the working data mode, used in HEXDATASTRUCT in SetData.           *
+	* DATA_MEMORY: Default standard data mode.                                                  *
+	* DATA_MSG: Data is handled through WM_NOTIFY messages in handler window.				    *
+	* DATA_VIRTUAL: Data is handled through IHexVirtual interface by derived class.             *
+	********************************************************************************************/
+	enum class EHexDataMode : WORD
+	{
+		DATA_MEMORY, DATA_MSG, DATA_VIRTUAL
+	};
+
+	/********************************************************************************************
+	* EHexDlg - control's modeless dialogs.                                                     *
+	********************************************************************************************/
+	enum class EHexDlg : WORD
+	{
+		DLG_BKMMANAGER, DLG_DATAINTERPRET, DLG_FILLDATA, DLG_OPERS, DLG_SEARCH
+	};
+
+	/********************************************************************************************
 	* HEXSPANSTRUCT - Data offset and size, used in some data/size related routines.            *
 	********************************************************************************************/
 	struct HEXSPANSTRUCT
@@ -134,22 +169,6 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* EHexCreateMode - Enum of HexCtrl creation mode.                                           *
-	********************************************************************************************/
-	enum class EHexCreateMode : DWORD
-	{
-		CREATE_CHILD, CREATE_POPUP, CREATE_CUSTOMCTRL
-	};
-
-	/********************************************************************************************
-	* EHexShowMode - current data mode representation.                                          *
-	********************************************************************************************/
-	enum class EHexShowMode : DWORD
-	{
-		ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
-	};
-
-	/********************************************************************************************
 	* HEXCREATESTRUCT - for IHexCtrl::Create method.                                            *
 	********************************************************************************************/
 	struct HEXCREATESTRUCT
@@ -164,17 +183,6 @@ namespace HEXCTRL
 		DWORD           dwStyle { };          //Window styles, 0 for default.
 		DWORD           dwExStyle { };        //Extended window styles, 0 for default.
 		double          dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
-	};
-
-	/********************************************************************************************
-	* EHexDataMode - Enum of the working data mode, used in HEXDATASTRUCT in SetData.           *
-	* DATA_MEMORY: Default standard data mode.                                                  *
-	* DATA_MSG: Data is handled through WM_NOTIFY messages in handler window.				    *
-	* DATA_VIRTUAL: Data is handled through IHexVirtual interface by derived class.             *
-	********************************************************************************************/
-	enum class EHexDataMode : DWORD
-	{
-		DATA_MEMORY, DATA_MSG, DATA_VIRTUAL
 	};
 
 	/********************************************************************************************
@@ -214,7 +222,6 @@ namespace HEXCTRL
 		virtual ULONGLONG BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = false) = 0; //Adds new bookmark.
 		virtual void BkmClearAll() = 0;                         //Clear all bookmarks.
 		[[nodiscard]] virtual auto BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT* = 0; //Get bookmark by ID.
-		[[nodiscard]] virtual auto BkmGetData()->std::deque<HEXBOOKMARKSTRUCT>* = 0;    //Get list of all bookmarks.
 		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0;       //HitTest for given offset.
 		virtual void BkmRemove(ULONGLONG ullID) = 0;            //Removes bookmark by the given Id.
 		virtual void BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual = nullptr) = 0; //Enable/disable bookmarks virtual mode.
@@ -238,18 +245,18 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
-		virtual void Print() = 0;                              //Printing routine.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;  //Sets all the control's colors.
 		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
-		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0; //Sets the control's new font. This font has to be monospaced.
+		virtual void SetFont(const LOGFONTW* pLogFont) = 0;    //Sets the control's new font. This font has to be monospaced.
 		virtual void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/edit mode.
-		virtual void SetSectorSize(DWORD dwSize, const wchar_t* wstrName = L"Sector") = 0; //Sets sector/page size and name to draw the lines in-between.
+		virtual void SetSectorSize(DWORD dwSize, std::wstring_view wstrName = L"Sector") = 0; //Sets sector/page size and name to draw the lines in-between.
 		virtual void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize) = 0; //Sets current selection.
 		virtual void SetShowMode(EHexShowMode enMode) = 0;     //Sets current data show mode.
 		virtual void SetWheelRatio(double dbRatio) = 0;        //Sets the ratio for how much to scroll with mouse-wheel.
+		virtual void ShowDlg(EHexDlg enDlg, bool fShow = true)const = 0; //Show/hide specific dialog.
 	};
 
 	/********************************************************************************************

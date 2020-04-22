@@ -48,9 +48,6 @@
     <ClInclude Include="src\Dialogs\CHexDlgAbout.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="src\Dialogs\CHexDlgFillWith.h">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClInclude>
     <ClInclude Include="src\Dialogs\CHexDlgOperations.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
@@ -93,6 +90,9 @@
     <ClInclude Include="src\ListEx\src\CListExHdr.h">
       <Filter>HexCtrl\src\ListEx</Filter>
     </ClInclude>
+    <ClInclude Include="src\Dialogs\CHexDlgFillData.h">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\HexCtrlSample\stdafx.cpp">
@@ -111,9 +111,6 @@
       <Filter>HexCtrl\src</Filter>
     </ClCompile>
     <ClCompile Include="src\Dialogs\CHexDlgAbout.cpp">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Dialogs\CHexDlgFillWith.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
     <ClCompile Include="src\Dialogs\CHexDlgOperations.cpp">
@@ -148,6 +145,9 @@
     </ClCompile>
     <ClCompile Include="src\ListEx\src\CListExHdr.cpp">
       <Filter>HexCtrl\src\ListEx</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Dialogs\CHexDlgFillData.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

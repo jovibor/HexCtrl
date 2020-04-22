@@ -24,7 +24,7 @@ namespace HEXCTRL::INTERNAL
 	*********************************/
 	class CHexDlgBookmarkMgr;
 	class CHexDlgDataInterpret;
-	class CHexDlgFillWith;
+	class CHexDlgFillData;
 	class CHexDlgOperations;
 	class CHexDlgSearch;
 	class CHexBookmarks;
@@ -84,7 +84,6 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)override; //Adds new bookmark.
 		void BkmClearAll()override; //Clear all bookmarks.
 		[[nodiscard]] auto BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT* override; //Get bookmark by ID.
-		[[nodiscard]] auto BkmGetData()->std::deque<HEXBOOKMARKSTRUCT>* override; //Get all bookmarks' data.
 		[[nodiscard]] auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* override;
 		void BkmRemove(ULONGLONG ullID)override;            //Removes bookmark by the given Id.
 		void BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual)override; //Enable/disable bookmarks virtual mode.
@@ -108,18 +107,18 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsDataSet()const override;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] bool IsMutable()const override;       //Is edit mode enabled or not.
 		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
-		void Print()override;                               //Printing routine.
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
 		void SetColor(const HEXCOLORSTRUCT& clr)override;   //Sets all the control's colors.
 		void SetData(const HEXDATASTRUCT& hds)override;     //Main method for setting data to display (and edit).	
-		void SetFont(const LOGFONTW* pLogFontNew)override;  //Sets the control's new font. This font has to be monospaced.
+		void SetFont(const LOGFONTW* pLogFont)override;     //Sets the control's new font. This font has to be monospaced.
 		void SetFontSize(UINT uiSize)override;              //Sets the control's font size.
 		void SetMutable(bool fEnable)override;              //Enable or disable edit mode.
-		void SetSectorSize(DWORD dwSize, const wchar_t* wstrName)override; //Sets sector/page size and name to draw the line between. override;          //Sets sector/page size to draw the line between.
+		void SetSectorSize(DWORD dwSize, std::wstring_view wstrName)override; //Sets sector/page size and name to draw the line between. override;          //Sets sector/page size to draw the line between.
 		void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)override; //Sets current selection.
 		void SetShowMode(EHexShowMode enShowMode)override;  //Sets current data show mode.
 		void SetWheelRatio(double dbRatio)override;         //Sets the ratio for how much to scroll with mouse-wheel.
+		void ShowDlg(EHexDlg enDlg, bool fShow)const override; //Show/hide specific dialog.
 	public:
 		[[nodiscard]] std::byte* GetData(HEXSPANSTRUCT hss)const; //Gets pointer to exact data offset, no matter what mode the control works in.
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
@@ -177,6 +176,7 @@ namespace HEXCTRL::INTERNAL
 		void WstrCapacityFill();                                  //Fill m_wstrCapacity according to current m_dwCapacity.
 		[[nodiscard]] bool IsSectorVisible()const;                //Returns m_fSectorVisible.
 		void UpdateSectorVisible();                               //Updates info about whether sector's lines printable atm or not.
+		void Print();                                             //Printing routine.
 	protected:
 		DECLARE_MESSAGE_MAP()
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -225,7 +225,7 @@ namespace HEXCTRL::INTERNAL
 	private:
 		const std::unique_ptr<CHexDlgBookmarkMgr> m_pDlgBookmarkMgr { std::make_unique<CHexDlgBookmarkMgr>() }; //Bookmark manager.
 		const std::unique_ptr<CHexDlgDataInterpret> m_pDlgDataInterpret { std::make_unique<CHexDlgDataInterpret>() }; //Data Interpreter.
-		const std::unique_ptr<CHexDlgFillWith> m_pDlgFillWith { std::make_unique<CHexDlgFillWith>() };     //"Fill with..." dialog.
+		const std::unique_ptr<CHexDlgFillData> m_pDlgFillData { std::make_unique<CHexDlgFillData>() };     //"Fill with..." dialog.
 		const std::unique_ptr<CHexDlgOperations> m_pDlgOpers { std::make_unique<CHexDlgOperations>() };    //"Operations" dialog.
 		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };           //"Search..." dialog.
 		const std::unique_ptr<CHexBookmarks> m_pBookmarks { std::make_unique<CHexBookmarks>() };           //Bookmarks.
