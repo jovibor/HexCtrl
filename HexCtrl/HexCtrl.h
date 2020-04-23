@@ -259,6 +259,7 @@ namespace HEXCTRL
 		virtual void SetShowMode(EHexShowMode enMode) = 0;     //Sets current data show mode.
 		virtual void SetWheelRatio(double dbRatio) = 0;        //Sets the ratio for how much to scroll with mouse-wheel.
 		virtual void ShowDlg(EHexDlg enDlg, bool fShow = true)const = 0; //Show/hide specific dialog.
+		[[nodiscard]] virtual bool IsDlgVisible(EHexDlg enDlg)const = 0; //Report is specific dialog is currently shown.
 	};
 
 	/********************************************************************************************

@@ -121,6 +121,7 @@ namespace HEXCTRL::INTERNAL
 		void SetShowMode(EHexShowMode enShowMode)override;  //Sets current data show mode.
 		void SetWheelRatio(double dbRatio)override;         //Sets the ratio for how much to scroll with mouse-wheel.
 		void ShowDlg(EHexDlg enDlg, bool fShow)const override; //Show/hide specific dialog.
+		[[nodiscard]] bool IsDlgVisible(EHexDlg enDlg)const override;//Report is specific dialog is currently shown.
 	public:
 		[[nodiscard]] std::byte* GetData(HEXSPANSTRUCT hss)const; //Gets pointer to exact data offset, no matter what mode the control works in.
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.

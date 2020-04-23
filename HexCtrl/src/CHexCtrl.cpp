@@ -1003,6 +1003,38 @@ void CHexCtrl::ShowDlg(EHexDlg enDlg, bool fShow)const
 	}
 }
 
+bool CHexCtrl::IsDlgVisible(EHexDlg enDlg)const
+{
+	assert(IsCreated());
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return false;
+
+	bool fMut = IsMutable();
+
+	switch (enDlg)
+	{
+	case EHexDlg::DLG_BKMMANAGER:
+		return m_pDlgBookmarkMgr->IsWindowVisible();
+		break;
+	case EHexDlg::DLG_DATAINTERPRET:
+		return m_pDlgDataInterpret->IsWindowVisible();
+		break;
+	case EHexDlg::DLG_FILLDATA:
+		if (fMut)
+			return m_pDlgFillData->IsWindowVisible();
+		break;
+	case EHexDlg::DLG_OPERS:
+		if (fMut)
+			return m_pDlgOpers->IsWindowVisible();
+		break;
+	case EHexDlg::DLG_SEARCH:
+		return m_pDlgSearch->IsWindowVisible();
+		break;
+	}
+
+	return false;
+}
 
 /**************************************************************************
 * HexCtrl Private methods.
