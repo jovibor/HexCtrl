@@ -183,6 +183,24 @@ auto CHexCtrl::BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT*
 	return m_pBookmarks->GetByID(ullID);
 }
 
+auto CHexCtrl::BkmGetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT*
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return nullptr;
+
+	return m_pBookmarks->GetByIndex(ullIndex);
+}
+
+ULONGLONG CHexCtrl::BkmGetCount() const
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return 0ULL;
+
+	return m_pBookmarks->GetCount();
+}
+
 auto CHexCtrl::BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*
 {
 	assert(IsCreated());
@@ -192,7 +210,7 @@ auto CHexCtrl::BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*
 	return m_pBookmarks->HitTest(ullOffset);
 }
 
-void CHexCtrl::BkmRemove(ULONGLONG ullID)
+void CHexCtrl::BkmRemoveByID(ULONGLONG ullID)
 {
 	assert(IsCreated());
 	if (!IsCreated())

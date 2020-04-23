@@ -222,8 +222,10 @@ namespace HEXCTRL
 		virtual ULONGLONG BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = false) = 0; //Adds new bookmark.
 		virtual void BkmClearAll() = 0;                         //Clear all bookmarks.
 		[[nodiscard]] virtual auto BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT* = 0; //Get bookmark by ID.
-		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0;       //HitTest for given offset.
-		virtual void BkmRemove(ULONGLONG ullID) = 0;            //Removes bookmark by the given Id.
+		[[nodiscard]] virtual auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT* = 0; //Get bookmark by Index.
+		[[nodiscard]] virtual ULONGLONG BkmGetCount()const = 0; //Get bookmarks count.
+		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0; //HitTest for given offset.
+		virtual void BkmRemoveByID(ULONGLONG ullID) = 0;        //Remove bookmark by the given ID.
 		virtual void BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual = nullptr) = 0; //Enable/disable bookmarks virtual mode.
 		virtual void ClearData() = 0;                           //Clears all data from HexCtrl's view (not touching data itself).
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;    //Main initialization method.

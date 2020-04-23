@@ -20,8 +20,10 @@
   * [BkmAdd](#bkmadd)
   * [BkmClearAll](#bkmclearall)
   * [BkmGetByID](#bkmgetbyid)
+  * [BkmGetByIndex](#bkmgetbyindex)
+  * [BkmGetCount](#bkmgetcount)
   * [BkmHitTest](#bkmhittest)
-  * [BkmRemove](#bkmremove)
+  * [BkmRemoveByID](#bkmremovebyid)
   * [BkmSetVirtual](#bkmsetvirtual)
   * [ClearData](#cleardata)
   * [Create](#create)
@@ -317,7 +319,7 @@ The **HexControl** has plenty of methods that you can use to customize its appea
 
 ### [](#)BkmAdd
 ```cpp
-DWORD BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = false)
+ULONGLONG BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = false)
 ```
 Adds new bookmark to the control. Uses [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) as an argument. Returns created bookmark's id.
 #### Example
@@ -339,9 +341,21 @@ Clears all bookmarks.
 
 ### [](#)BkmGetByID
 ```cpp
-BkmGetByID(DWORD dwID)->HEXBOOKMARKSTRUCT*;
+BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT*;
 ```
 Get bookmark by ID.
+
+### [](#)BkmGetByIndex
+```cpp
+auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT*;
+```
+Get bookmark by Index.
+
+### [](#)BkmGetCount
+```cpp
+ULONGLONG BkmGetCount()const;
+```
+Get bookmarks' count.
 
 ### [](#)BkmHitTest
 ```cpp
@@ -349,11 +363,11 @@ auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*;
 ```
 Test given offset and retrives pointer to [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) if it contains bookmark.
 
-### [](#)BkmRemove
+### [](#)BkmRemoveByID
 ```cpp
-void BkmRemove(DWORD dwId);
+void BkmRemoveByID(ULONGLONG ullID);
 ```
-Removes bookmark by the given Id.
+Removes bookmark by the given ID.
 
 ### [](#)BkmSetVirtual
 ```cpp

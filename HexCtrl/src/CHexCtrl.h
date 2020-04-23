@@ -84,8 +84,10 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)override; //Adds new bookmark.
 		void BkmClearAll()override; //Clear all bookmarks.
 		[[nodiscard]] auto BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT* override; //Get bookmark by ID.
+		[[nodiscard]] auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT* override; //Get bookmark by Index.
+		[[nodiscard]] ULONGLONG BkmGetCount()const override; //Get bookmarks count.
 		[[nodiscard]] auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* override;
-		void BkmRemove(ULONGLONG ullID)override;            //Removes bookmark by the given Id.
+		void BkmRemoveByID(ULONGLONG ullID)override;        //Remove bookmark by the given Id.
 		void BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual)override; //Enable/disable bookmarks virtual mode.
 		void ClearData()override;                           //Clears all data from HexCtrl's view (not touching data itself).
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
