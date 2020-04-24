@@ -107,6 +107,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsCmdAvail(EHexCmd enCmd)const override;       //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] bool IsCreated()const override;       //Shows whether control is created or not.
 		[[nodiscard]] bool IsDataSet()const override;       //Shows whether a data was set to the control or not.
+		[[nodiscard]] bool IsDlgVisible(EHexDlg enDlg)const override; //Is specific dialog is currently visible.
 		[[nodiscard]] bool IsMutable()const override;       //Is edit mode enabled or not.
 		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
 		void Redraw()override;                              //Redraw the control's window.

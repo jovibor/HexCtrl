@@ -737,6 +737,36 @@ bool CHexCtrl::IsDataSet()const
 	return m_fDataSet;
 }
 
+bool CHexCtrl::IsDlgVisible(EHexDlg enDlg)const
+{
+	assert(IsCreated());
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return false;
+
+	bool fVisible { };
+	switch (enDlg)
+	{
+	case EHexDlg::DLG_BKMMANAGER:
+		fVisible = m_pDlgBookmarkMgr->IsWindowVisible();
+		break;
+	case EHexDlg::DLG_DATAINTERPRET:
+		fVisible = m_pDlgDataInterpret->IsWindowVisible();
+		break;
+	case EHexDlg::DLG_FILLDATA:
+		fVisible = m_pDlgFillData->IsWindowVisible();
+		break;
+	case EHexDlg::DLG_OPERS:
+		fVisible = m_pDlgOpers->IsWindowVisible();
+		break;
+	case EHexDlg::DLG_SEARCH:
+		fVisible = m_pDlgSearch->IsWindowVisible();
+		break;
+	}
+
+	return fVisible;
+}
+
 bool CHexCtrl::IsMutable()const
 {
 	assert(IsCreated());
@@ -1249,6 +1279,8 @@ void CHexCtrl::OnRButtonDown(UINT /*nFlags*/, CPoint point)
 
 void CHexCtrl::OnMButtonDown(UINT /*nFlags*/, CPoint /*point*/)
 {
+	if (m_pDlgDataInterpret->IsWindowVisible())
+		Beep(1000, 50);
 }
 
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
