@@ -9,8 +9,8 @@
 #include "../ListEx.h"
 #include "CListExHdr.h"
 
-using namespace HEXCTRL::INTERNAL::LISTEX;
-using namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL;
+using namespace HEXCTRL::LISTEX;
+using namespace HEXCTRL::LISTEX::INTERNAL;
 
 /****************************************************
 * CListExHdr class implementation.					*

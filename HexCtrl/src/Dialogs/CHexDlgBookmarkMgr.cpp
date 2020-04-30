@@ -40,14 +40,14 @@ BOOL CHexDlgBookmarkMgr::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_stList->CreateDialogCtrl(IDC_HEXCTRL_BOOKMARKMGR_LIST, this);
-	m_stList->SetSortable(true);
-	m_stList->InsertColumn(0, L"\u2116", LVCFMT_RIGHT, 40);
-	m_stList->InsertColumn(1, L"Offset", LVCFMT_RIGHT, 80);
-	m_stList->InsertColumn(2, L"Size", LVCFMT_RIGHT, 80);
-	m_stList->InsertColumn(3, L"Description", LVCFMT_LEFT, 210);
-	m_stList->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 65);
-	m_stList->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
+	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_BOOKMARKMGR_LIST, this);
+	m_pListMain->SetSortable(true);
+	m_pListMain->InsertColumn(0, L"\u2116", LVCFMT_RIGHT, 40);
+	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_RIGHT, 80);
+	m_pListMain->InsertColumn(2, L"Size", LVCFMT_RIGHT, 80);
+	m_pListMain->InsertColumn(3, L"Description", LVCFMT_LEFT, 210);
+	m_pListMain->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 65);
+	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 
 	m_stMenuList.CreatePopupMenu();
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, IDC_HEXCTRL_BOOKMARKMGR_MENU_NEW, L"New");
@@ -69,9 +69,9 @@ void CHexDlgBookmarkMgr::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimize
 		if (!m_time || m_time != m_pBookmarks->GetTouchTime())
 			UpdateList();
 
-		m_stList->SetItemState(-1, 0, LVIS_SELECTED);
-		m_stList->SetItemState(static_cast<int>(m_pBookmarks->GetCurrent()), LVIS_SELECTED, LVIS_SELECTED);
-		m_stList->EnsureVisible(static_cast<int>(m_pBookmarks->GetCurrent()), FALSE);
+		m_pListMain->SetItemState(-1, 0, LVIS_SELECTED);
+		m_pListMain->SetItemState(static_cast<int>(m_pBookmarks->GetCurrent()), LVIS_SELECTED, LVIS_SELECTED);
+		m_pListMain->EnsureVisible(static_cast<int>(m_pBookmarks->GetCurrent()), FALSE);
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
@@ -244,7 +244,7 @@ void CHexDlgBookmarkMgr::OnListBkmRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BOOKMARKMGR_MENU_CLEARALL,
-		(m_stList->GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+		(m_pListMain->GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 
 	POINT pt;
 	GetCursorPos(&pt);
@@ -255,15 +255,15 @@ void CHexDlgBookmarkMgr::OnListBkmRClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CHexDlgBookmarkMgr::UpdateList()
 {
-	m_stList->SetItemCountEx(static_cast<int>(m_pBookmarks->GetCount()), LVSICF_NOSCROLL);
+	m_pListMain->SetItemCountEx(static_cast<int>(m_pBookmarks->GetCount()), LVSICF_NOSCROLL);
 	m_time = m_pBookmarks->GetTouchTime();
 }
 
 void CHexDlgBookmarkMgr::SortBookmarks()
 {
 	auto pData = m_pBookmarks->GetData();
-	const auto iColumn = m_stList->GetSortColumn();
-	const auto fAscending = m_stList->GetSortAscending();
+	const auto iColumn = m_pListMain->GetSortColumn();
+	const auto fAscending = m_pListMain->GetSortAscending();
 
 	//Sorts bookmarks according to clicked column.
 	std::sort(pData->begin(), pData->end(),
@@ -320,13 +320,13 @@ void CHexDlgBookmarkMgr::SortBookmarks()
 			return fResult;
 		});
 
-	m_stList->RedrawWindow();
+	m_pListMain->RedrawWindow();
 }
 
 void CHexDlgBookmarkMgr::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
-	m_stList->DestroyWindow();
+	m_pListMain->DestroyWindow();
 	m_stMenuList.DestroyMenu();
 }

@@ -550,7 +550,7 @@ To remove the divider just set `dwSize` to 0.
 
 ### [](#)SetSelection
 ```cpp
-void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
+void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel);
 ```
 Sets current selection.
 

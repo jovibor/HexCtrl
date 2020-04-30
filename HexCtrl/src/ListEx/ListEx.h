@@ -10,7 +10,7 @@
 #include <memory>
 #include <string>
 
-namespace HEXCTRL::INTERNAL::LISTEX
+namespace HEXCTRL::LISTEX
 {
 	/********************************************************************************************
 	* EListExSortMode - Sorting mode.                                                           *
@@ -36,6 +36,7 @@ namespace HEXCTRL::INTERNAL::LISTEX
 	struct LISTEXCOLORS
 	{
 		COLORREF clrListText { GetSysColor(COLOR_WINDOWTEXT) };            //List text color.
+		COLORREF clrListTextLink { RGB(0, 0, 200) };            //List hyperlink text color.
 		COLORREF clrListBkRow1 { GetSysColor(COLOR_WINDOW) };              //List Bk color of the odd rows.
 		COLORREF clrListBkRow2 { GetSysColor(COLOR_WINDOW) };              //List Bk color of the even rows.
 		COLORREF clrListGrid { RGB(220, 220, 220) };                       //List grid color.
@@ -66,6 +67,7 @@ namespace HEXCTRL::INTERNAL::LISTEX
 		DWORD             dwListGridWidth { 1 }; //Width of the list grid.
 		DWORD             dwHdrHeight { 20 };    //Header height.
 		bool              fSortable { false };   //Is list sortable, by clicking on the header column?
+		bool              fLinksUnderline { true }; //Links are displayed underlined or not.
 		bool              fDialogCtrl { false }; //If it's a list within dialog.
 	};
 
@@ -82,6 +84,7 @@ namespace HEXCTRL::INTERNAL::LISTEX
 		virtual BOOL DeleteItem(int nItem) = 0;
 		virtual void Destroy() = 0;
 		[[nodiscard]] virtual ULONGLONG GetCellData(int iItem, int iSubitem)const = 0;
+		[[nodiscard]] virtual LISTEXCOLORS GetColors()const = 0;
 		[[nodiscard]] virtual EListExSortMode GetColumnSortMode(int iColumn)const = 0;
 		[[nodiscard]] virtual UINT GetFontSize()const = 0;
 		[[nodiscard]] virtual int GetSortColumn()const = 0;
@@ -91,7 +94,7 @@ namespace HEXCTRL::INTERNAL::LISTEX
 		virtual void SetCellData(int iItem, int iSubitem, ULONGLONG ullData) = 0;
 		virtual void SetCellMenu(int iItem, int iSubitem, CMenu* pMenu) = 0;
 		virtual void SetCellTooltip(int iItem, int iSubitem, std::wstring_view wstrTooltip, std::wstring_view wstrCaption = L"") = 0;
-		virtual void SetColor(const LISTEXCOLORS& lcs) = 0;
+		virtual void SetColors(const LISTEXCOLORS& lcs) = 0;
 		virtual void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetColumnSortMode(int iColumn, EListExSortMode enSortMode) = 0;
 		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0;
@@ -132,4 +135,5 @@ namespace HEXCTRL::INTERNAL::LISTEX
 
 	constexpr auto LISTEX_MSG_MENUSELECTED = 0x1000U; //User defined menu item selected.
 	constexpr auto LISTEX_MSG_CELLCOLOR = 0x1001U;    //Get cell color.
+	constexpr auto LISTEX_MSG_LINKCLICK = 0x1002U;    //Hyperlink has been clicked.
 }

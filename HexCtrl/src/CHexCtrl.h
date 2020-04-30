@@ -118,7 +118,7 @@ namespace HEXCTRL::INTERNAL
 		void SetFontSize(UINT uiSize)override;              //Sets the control's font size.
 		void SetMutable(bool fEnable)override;              //Enable or disable edit mode.
 		void SetSectorSize(DWORD dwSize, std::wstring_view wstrName)override; //Sets sector/page size and name to draw the line between. override;          //Sets sector/page size to draw the line between.
-		void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)override; //Sets current selection.
+		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel)override; //Sets current selection.
 		void SetShowMode(EHexShowMode enShowMode)override;  //Sets current data show mode.
 		void SetWheelRatio(double dbRatio)override;         //Sets the ratio for how much to scroll with mouse-wheel.
 		void ShowDlg(EHexDlg enDlg, bool fShow)const override; //Show/hide specific dialog.

@@ -256,7 +256,7 @@ namespace HEXCTRL
 		virtual void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/edit mode.
 		virtual void SetSectorSize(DWORD dwSize, std::wstring_view wstrName = L"Sector") = 0; //Sets sector/page size and name to draw the lines in-between.
-		virtual void SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize) = 0; //Sets current selection.
+		virtual void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel) = 0; //Sets current selection.
 		virtual void SetShowMode(EHexShowMode enMode) = 0;     //Sets current data show mode.
 		virtual void SetWheelRatio(double dbRatio) = 0;        //Sets the ratio for how much to scroll with mouse-wheel.
 		virtual void ShowDlg(EHexDlg enDlg, bool fShow = true)const = 0; //Show/hide specific dialog.

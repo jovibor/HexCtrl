@@ -11,7 +11,7 @@
 #include <chrono>
 #include <unordered_map>
 
-namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
+namespace HEXCTRL::LISTEX::INTERNAL
 {
 	/********************************************
 	* CELLTOOLTIP - tool-tips for the cell.     *
@@ -42,6 +42,18 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		std::chrono::high_resolution_clock::time_point time { }; //Time when added.
 	};
 
+	/********************************************
+	* ITEMTEXT - text and links in the cell.    *
+	********************************************/
+	struct ITEMTEXT
+	{
+		ITEMTEXT(std::wstring_view wstrText, std::wstring_view wstrLink, CRect rc, bool fIsLink) :
+			wstrText(wstrText), wstrLink(wstrLink), rect(rc), fLink(fIsLink) {}
+		std::wstring wstrText { }; //Visible text.
+		std::wstring wstrLink { }; //Text within <link=...> tag.
+		CRect rect { };            //Rect text belongs to.
+		bool fLink { false };      //Is it just a text (wstrLink is empty) or text with link?
+	};
 
 	/********************************************
 	* CListEx class declaration.                *
@@ -57,6 +69,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		BOOL DeleteItem(int iItem)override;
 		void Destroy()override;
 		[[nodiscard]] ULONGLONG GetCellData(int iItem, int iSubItem)const override;
+		[[nodiscard]] LISTEXCOLORS GetColors()const override;
 		[[nodiscard]] EListExSortMode GetColumnSortMode(int iColumn)const override;
 		[[nodiscard]] UINT GetFontSize()const override;
 		[[nodiscard]] int GetSortColumn()const override;
@@ -67,7 +80,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		void SetCellData(int iItem, int iSubItem, ULONGLONG ullData)override;
 		void SetCellMenu(int iItem, int iSubItem, CMenu* pMenu)override;
 		void SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTooltip, std::wstring_view wstrCaption)override;
-		void SetColor(const LISTEXCOLORS& lcs)override;
+		void SetColors(const LISTEXCOLORS& lcs)override;
 		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
 		void SetColumnSortMode(int iColumn, EListExSortMode enSortMode)override;
 		void SetFont(const LOGFONTW* pLogFontNew)override;
@@ -86,6 +99,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		bool HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& clrText);
 		bool HasTooltip(int iItem, int iSubItem, std::wstring** ppwstrText = nullptr, std::wstring** ppwstrCaption = nullptr);
 		bool HasMenu(int iItem, int iSubItem, CMenu** ppMenu = nullptr);
+		std::vector<ITEMTEXT> ParseItemText(int iItem, int iSubitem);
 		void DrawItem(LPDRAWITEMSTRUCT pDIS)override;
 		afx_msg void OnPaint();
 		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
@@ -109,11 +123,14 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		afx_msg void OnDestroy();
 	private:
 		CListExHdr m_stListHeader;
-		LISTEXCOLORS m_stColor { };
+		LISTEXCOLORS m_stColors { };
 		CFont m_fontList;
+		CFont m_fontListUnderline;
 		CPen m_penGrid;
 		CWnd m_wndTt;                   //Tool-tip window.
 		TTTOOLINFOW m_stToolInfo { };   //Tool-tip info struct.
+		HCURSOR m_cursorHand { };
+		HCURSOR m_cursorDefault { };
 		LVHITTESTINFO m_stCurrCell { };
 		DWORD m_dwGridWidth { 1 };		//Grid width.
 		CMenu* m_pListMenu { };			//List global menu, if set.
@@ -132,6 +149,7 @@ namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
 		bool m_fCreated { false };  //Is created.
 		bool m_fSortable { false }; //Is list sortable.
 		bool m_fSortAscending { };  //Sorting type (ascending, descending).
+		bool m_fLinksUnderline { }; //Links are displayed underlined or not.
 		bool m_fVirtual { false };  //Whether list is virtual (LVS_OWNERDATA) or not.
 		bool m_fTtShown { false };  //Is tool-tip shown atm.
 	};

@@ -11,11 +11,11 @@
 #include "../CHexBookmarks.h"
 #include "../ListEx/ListEx.h"
 #include "CHexDlgBookmarkProps.h"
-#include <afxdialogex.h>  //Standard MFC's controls header.
+#include <afxdialogex.h>
 
 namespace HEXCTRL::INTERNAL
 {
-	using namespace HEXCTRL::INTERNAL::LISTEX;
+	using namespace HEXCTRL::LISTEX;
 	class CHexDlgBookmarkMgr final : public CDialogEx
 	{
 	public:
@@ -37,7 +37,7 @@ namespace HEXCTRL::INTERNAL
 		void SortBookmarks();
 		DECLARE_MESSAGE_MAP()
 	private:
-		IListExPtr m_stList { CreateListEx() };
+		IListExPtr m_pListMain { CreateListEx() };
 		CHexBookmarks* m_pBookmarks { };
 		CMenu m_stMenuList;
 		ULONGLONG m_ullCurrBkmIndex { }; //Currently selected bookmark index.

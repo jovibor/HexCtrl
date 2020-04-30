@@ -932,14 +932,16 @@ void CHexCtrl::SetSectorSize(DWORD dwSize, std::wstring_view wstrName)
 		UpdateSectorVisible();
 }
 
-void CHexCtrl::SetSelection(ULONGLONG ullOffset, ULONGLONG ullSize)
+void CHexCtrl::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel)
 {
 	assert(IsCreated());
 	assert(IsDataSet()); //Data is not set yet.
 	if (!IsCreated() || !IsDataSet())
 		return;
 
-	SetSelection(ullOffset, ullOffset, ullSize, 1, false);
+	m_pSelection->SetSelection(vecSel);
+	UpdateInfoText();
+	MsgWindowNotify(HEXCTRL_MSG_SELECTION);
 }
 
 void CHexCtrl::SetShowMode(EHexShowMode enShowMode)

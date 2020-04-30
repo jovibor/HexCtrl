@@ -8,9 +8,9 @@
 #pragma once
 #include <unordered_map>
 
-namespace HEXCTRL::INTERNAL::LISTEX { struct LISTEXCOLORS; } //Forward declaration.
+namespace HEXCTRL::LISTEX { struct LISTEXCOLORS; } //Forward declaration.
 
-namespace HEXCTRL::INTERNAL::LISTEX::INTERNAL
+namespace HEXCTRL::LISTEX::INTERNAL
 {
 	/********************************************
 	* HDRCOLOR - header column colors.          *
