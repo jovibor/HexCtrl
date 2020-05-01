@@ -231,6 +231,7 @@ namespace HEXCTRL
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;    //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) = 0; //Сreates custom dialog control.
 		virtual void Destroy() = 0;                             //Deleter.
+		[[nodiscard]] virtual bool EnsureVisible(ULONGLONG ullOffset)const = 0; //Ensures that given offset is visible now.
 		virtual void ExecuteCmd(EHexCmd enCmd)const = 0;        //Execute a command within the control.
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.

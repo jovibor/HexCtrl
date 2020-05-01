@@ -426,6 +426,15 @@ void CHexCtrl::Destroy()
 	delete this;
 }
 
+bool CHexCtrl::EnsureVisible(ULONGLONG ullOffset) const
+{
+	auto dwCapacity = GetCapacity();
+	auto ullFirst = GetTopLine() * dwCapacity;;
+	auto ullLast = GetBottomLine() * dwCapacity + dwCapacity;
+
+	return (ullOffset >= ullFirst) && (ullOffset < ullLast);
+}
+
 void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
 {
 	assert(IsCreated());
@@ -4026,6 +4035,7 @@ void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ul
 	//If fScroll is true then do scrolling according to the made selection.
 	if (fScroll)
 	{
+		//fGoToStart means centralize scroll position on the screen (used in Search()).
 		if (fGoToStart)
 			GoToOffset(ullStart);
 		else
@@ -4038,7 +4048,6 @@ void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ul
 			GetClientRect(&rcClient);
 
 			//New scroll depending on selection direction: top <-> bottom.
-			//fGoToStart means centralize scroll position on the screen (used in Search()).
 			ULONGLONG ullMaxV = ullCurrScrollV + rcClient.Height() - m_iHeightBottomOffArea - m_iStartWorkAreaY -
 				((rcClient.Height() - m_iStartWorkAreaY - m_iHeightBottomOffArea) % m_sizeLetter.cy);
 			ULONGLONG ullNewStartV = ullStart / m_dwCapacity * m_sizeLetter.cy;
