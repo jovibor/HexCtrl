@@ -40,6 +40,7 @@
   * [GetShowMode](#getshowmode)
   * [GetWindowHandle](#getwindowhandle)
   * [GoToOffset](#gotooffset) 
+  * [HitTest](#hittest)
   * [IsCmdAvail](#iscmdavail)
   * [IsCreated](#iscreated)
   * [IsDataSet](#isdataset)
@@ -64,6 +65,7 @@
   * [HEXSPANSTRUCT](#hexspanstruct)
   * [HEXBOOKMARKSTRUCT](#hexbookmarkstruct)
   * [HEXNOTIFYSTRUCT](#hexnotifystruct)
+  * [HEXHITTESTSTRUCT](#hexhitteststruct)
   * [EHexCmd](#ehexcmd)
   * [EHexCreateMode](#ehexcreatemode)
   * [EHexDataMode](#ehexdatamode)
@@ -475,6 +477,12 @@ void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
 ```
 Jumps to the `ullOffset` offset, and selects `ullSize` bytes if `fSelect` is `true`.
 
+### [](#)HitTest
+```cpp
+auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTESTSTRUCT>
+```
+Hit testing of given point in screen `fScreen = true`, or client `fScreen = false` coordinates. In case of success returns [`HEXHITTESTSTRUCT`](#hexhitteststruct) structure.
+
 ### [](#)IsCmdAvail
 ```cpp
 bool IsCmdAvail(EHexCmd enCmd)const;
@@ -668,8 +676,19 @@ struct HEXNOTIFYSTRUCT
     HEXSPANSTRUCT stSpan { };  //Offset and size of the bytes. 
     ULONGLONG     ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
     std::byte*    pData { };   //Pointer to a data to get/send.
+    POINT         point { };   //Mouse position for menu notifications.
 };
 using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
+```
+
+### [](#)HEXHITTESTSTRUCT
+Structure is used in [`HitTest`](#hittest) method.
+```cpp
+struct HEXHITTESTSTRUCT
+{
+    ULONGLONG ullOffset { };      //Offset.
+    bool      fIsAscii { false }; //Is cursor at ASCII part or at Hex.
+};
 ```
 
 ### [](#)EHexCmd
@@ -747,7 +766,8 @@ Sent to indicate that **HexControl** window is about to be destroyed.
 Used in [`DATA_MSG`](#ehexdatamode) mode to acquire the data range to display.
 
 ### [](#)HEXCTRL_MSG_MENUCLICK
-Sent when user defined custom menu has been clicked.
+Sent when user defined custom menu has been clicked.  
+[`HEXNOTIFYSTRUCT`](#hexnotifystruct) `ullData` member contains menu ID, while `point` member contains position of the cursor, in screen coordinates, at the time of the mouse click.
 
 ### [](#)HEXCTRL_MSG_SELECTION
 Sent when selection has been made.

@@ -127,13 +127,21 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		CFont m_fontList;
 		CFont m_fontListUnderline;
 		CPen m_penGrid;
-		CWnd m_wndTt;                   //Tool-tip window.
-		TTTOOLINFOW m_stToolInfo { };   //Tool-tip info struct.
+		CWnd m_stWndTtCell;              //Cells' tool-tip window.
+		TTTOOLINFOW m_stTInfoCell { };   //Cells' tool-tip info struct.
+		CWnd m_stWndTtLink;              //Link tool-tip window.
+		TTTOOLINFOW m_stTInfoLink { };   //Cells' tool-tip info struct.
 		HCURSOR m_cursorHand { };
 		HCURSOR m_cursorDefault { };
 		LVHITTESTINFO m_stCurrCell { };
+		LVHITTESTINFO m_stCurrLink { };
 		DWORD m_dwGridWidth { 1 };		//Grid width.
 		CMenu* m_pListMenu { };			//List global menu, if set.
+		NMITEMACTIVATE m_stNMII { };
+		int m_iSortColumn { };
+		long m_lSizeFont { };       //Font size.
+		PFNLVCOMPARE m_pfnCompare { nullptr };  //Pointer to user provided compare func.
+		EListExSortMode m_enDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
 		std::unordered_map<int, std::unordered_map<int, CELLTOOLTIP>> m_umapCellTt { };  //Cell's tooltips.
 		std::unordered_map<int, std::unordered_map<int, CMenu*>> m_umapCellMenu { };	 //Cell's menus.
 		std::unordered_map<int, std::unordered_map<int, ULONGLONG>> m_umapCellData { };  //Cell's custom data.
@@ -141,18 +149,19 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		std::unordered_map<DWORD, ROWCOLOR> m_umapRowColor { };     //Row colors.
 		std::unordered_map<int, COLUMNCOLOR> m_umapColumnColor { }; //Column colors.
 		std::unordered_map<int, EListExSortMode> m_umapColumnSortMode { };              //Column sorting mode.
-		NMITEMACTIVATE m_stNMII { };
-		int m_iSortColumn { };
-		long m_lSizeFont { };       //Font size.
-		PFNLVCOMPARE m_pfnCompare { nullptr };  //Pointer to user provided compare func.
-		EListExSortMode m_enDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
 		bool m_fCreated { false };  //Is created.
 		bool m_fSortable { false }; //Is list sortable.
 		bool m_fSortAscending { };  //Sorting type (ascending, descending).
 		bool m_fLinksUnderline { }; //Links are displayed underlined or not.
+		bool m_fLinkTooltip { };    //Show links toolips.
 		bool m_fVirtual { false };  //Whether list is virtual (LVS_OWNERDATA) or not.
-		bool m_fTtShown { false };  //Is tool-tip shown atm.
-	};
+		bool m_fTtCellShown { false };  //Is cell's tool-tip shown atm.
+		bool m_fTtLinkShown { false };  //Is link's tool-tip shown atm.
+		bool m_fLDownAtLink { false };  //Left mouse down on link.
+		CRect m_rcLinkCurr { };         //Current link's rect;
+	public:
+		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+};
 
 	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #ifdef _UNICODE

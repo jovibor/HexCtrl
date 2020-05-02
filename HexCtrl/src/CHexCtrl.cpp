@@ -74,13 +74,6 @@ namespace HEXCTRL {
 			HBITMAP m_hBmp { };
 		};
 
-		//Hit test structure.
-		struct HITTESTSTRUCT
-		{
-			ULONGLONG ullOffset { };      //Offset.
-			bool      fIsAscii { false }; //Is cursot at Ascii part or at Hex.
-		};
-
 		constexpr auto WSTR_HEXCTRL_CLASSNAME = L"HexCtrl";
 		constexpr ULONG_PTR ID_TIMER_BKM_TOOLTIP { 0x01 }; //Timer ID.
 	}
@@ -426,15 +419,6 @@ void CHexCtrl::Destroy()
 	delete this;
 }
 
-bool CHexCtrl::EnsureVisible(ULONGLONG ullOffset) const
-{
-	auto dwCapacity = GetCapacity();
-	auto ullFirst = GetTopLine() * dwCapacity;;
-	auto ullLast = GetBottomLine() * dwCapacity + dwCapacity;
-
-	return (ullOffset >= ullFirst) && (ullOffset < ullLast);
-}
-
 void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
 {
 	assert(IsCreated());
@@ -653,6 +637,14 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
 		GoToOffset(ullOffset);
 }
 
+auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTRUCT>
+{
+	if (fScreen)
+		ScreenToClient(&pt);
+
+	return HitTest(pt);
+}
+
 bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 {
 	assert(IsCreated());
@@ -793,6 +785,15 @@ bool CHexCtrl::IsOffsetAsHex()const
 		return false;
 
 	return m_fOffsetAsHex;
+}
+
+bool CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const
+{
+	auto dwCapacity = GetCapacity();
+	auto ullFirst = GetTopLine() * dwCapacity;;
+	auto ullLast = GetBottomLine() * dwCapacity + dwCapacity;
+
+	return (ullOffset >= ullFirst) && (ullOffset < ullLast);
 }
 
 void CHexCtrl::Redraw()
@@ -1416,6 +1417,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 		//For user defined custom menu we notifying parent window.
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK } };
 		hns.ullData = uID;
+		hns.point = m_stMenuClickedPt;
 		MsgWindowNotify(hns);
 	}
 
@@ -1424,8 +1426,10 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 
 void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 {
-	//Notify parent that we are about to display context menu.
-	MsgWindowNotify(HEXCTRL_MSG_CONTEXTMENU);
+	//Notify parent that we are about to display a context menu.
+	HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU } };
+	hns.point = m_stMenuClickedPt = point;
+	MsgWindowNotify(hns);
 	m_menuMain.GetSubMenu(0)->TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
 }
 
@@ -3154,9 +3158,9 @@ ULONGLONG CHexCtrl::GetBottomLine() const
 	return ullEndLine;
 }
 
-auto CHexCtrl::HitTest(const POINT & pt)const->std::optional<HITTESTSTRUCT>
+auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>
 {
-	HITTESTSTRUCT stHit;
+	HEXHITTESTSTRUCT stHit;
 	bool fHit { false };
 	int iY = pt.y;
 	int iX = pt.x + static_cast<int>(m_pScrollH->GetScrollPos()); //To compensate horizontal scroll.

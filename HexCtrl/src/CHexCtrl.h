@@ -31,7 +31,6 @@ namespace HEXCTRL::INTERNAL
 	class CHexSelection;
 	struct UNDOSTRUCT;
 	struct HBITMAPSTRUCT;
-	struct HITTESTSTRUCT;
 	enum class EClipboard : DWORD;
 	namespace SCROLLEX { class CScrollEx; }
 
@@ -93,7 +92,6 @@ namespace HEXCTRL::INTERNAL
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)override; //Сreates custom dialog control.
 		void Destroy()override;                             //Deleter.
-		[[nodiscard]] bool EnsureVisible(ULONGLONG ullOffset)const override; //Ensures that given offset is visible now.
 		void ExecuteCmd(EHexCmd enCmd)const override;       //Execute a command within the control.
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
@@ -105,12 +103,14 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetShowMode()const->EHexShowMode override;     //Retrieves current show mode.
 		[[nodiscard]] HWND GetWindowHandle()const override;               //Retrieves control's window handle.
 		void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize) override; //Scrolls to given offset.
+		[[nodiscard]] auto HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTRUCT> override; //HitTest given point.
 		[[nodiscard]] bool IsCmdAvail(EHexCmd enCmd)const override;       //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] bool IsCreated()const override;       //Shows whether control is created or not.
 		[[nodiscard]] bool IsDataSet()const override;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] bool IsDlgVisible(EHexDlg enDlg)const override; //Is specific dialog is currently visible.
 		[[nodiscard]] bool IsMutable()const override;       //Is edit mode enabled or not.
 		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
+		[[nodiscard]] bool IsOffsetVisible(ULONGLONG ullOffset)const override; //Ensures that given offset is visible.
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
 		void SetColor(const HEXCOLORSTRUCT& clr)override;   //Sets all the control's colors.
@@ -144,7 +144,7 @@ namespace HEXCTRL::INTERNAL
 		void RecalcOffsetDigits();                             //How many digits in Offset (depends on Hex or Decimals).
 		[[nodiscard]] ULONGLONG GetTopLine()const;             //Returns current top line number in view.
 		[[nodiscard]] ULONGLONG GetBottomLine()const;          //Returns current bottom line number in view.
-		[[nodiscard]] auto HitTest(const POINT& pt)const->std::optional<HITTESTSTRUCT>; //Is any hex chunk withing given point?
+		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>; //Is any hex chunk withing given point?
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;   //Point of Hex chunk.
 		void AsciiChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Ascii chunk.
 		void ClipboardCopy(EClipboard enType);
@@ -254,6 +254,7 @@ namespace HEXCTRL::INTERNAL
 		CFont m_fontMain;                     //Main Hex chunks font.
 		CFont m_fontInfo;                     //Font for bottom Info rect.
 		CMenu m_menuMain;                     //Main popup menu.
+		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		CPen m_penLines;                      //Pen for lines.
 		HEXBOOKMARKSTRUCT* m_pBkmCurrTt { };  //Currently shown bookmark's tooltip;
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.

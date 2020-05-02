@@ -207,11 +207,22 @@ namespace HEXCTRL
 	struct HEXNOTIFYSTRUCT
 	{
 		NMHDR         hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
-		HEXSPANSTRUCT stSpan { };  //Offset and size of the bytes. 
+		HEXSPANSTRUCT stSpan { };  //Offset and size of the bytes.
 		ULONGLONG     ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
 		std::byte*    pData { };   //Pointer to a data to get/send.
+		POINT         point { };   //Mouse position for menu notifications.
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
+
+	/********************************************************************************************
+	* HEXHITTESTSTRUCT - used in HitTest method.                                                *
+	********************************************************************************************/
+	struct HEXHITTESTSTRUCT
+	{
+		ULONGLONG ullOffset { };      //Offset.
+		bool      fIsAscii { false }; //Is cursor at ASCII part or at Hex.
+	};
+
 
 	/********************************************************************************************
 	* IHexCtrl - pure abstract base class.                                                      *
@@ -231,7 +242,6 @@ namespace HEXCTRL
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;    //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) = 0; //Сreates custom dialog control.
 		virtual void Destroy() = 0;                             //Deleter.
-		[[nodiscard]] virtual bool EnsureVisible(ULONGLONG ullOffset)const = 0; //Ensures that given offset is visible now.
 		virtual void ExecuteCmd(EHexCmd enCmd)const = 0;        //Execute a command within the control.
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
@@ -243,12 +253,14 @@ namespace HEXCTRL
 		[[nodiscard]] virtual auto GetShowMode()const->EHexShowMode = 0;     //Retrieves current show mode.
 		[[nodiscard]] virtual HWND GetWindowHandle()const = 0;               //Retrieves control's window handle.
 		virtual void GoToOffset(ULONGLONG ullOffset, bool fSelect = false, ULONGLONG ullSize = 1) = 0; //Scrolls to given offset.
+		[[nodiscard]] virtual auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTESTSTRUCT> = 0; //HitTest given point.
 		[[nodiscard]] virtual bool IsCmdAvail(EHexCmd enCmd)const = 0; //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] virtual bool IsCreated()const = 0;       //Shows whether control is created or not.
 		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] virtual bool IsDlgVisible(EHexDlg enDlg)const = 0; //Is specific dialog is currently visible.
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
+		[[nodiscard]] virtual bool IsOffsetVisible(ULONGLONG ullOffset)const = 0; //Ensures that given offset is visible.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
 		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;  //Sets all the control's colors.

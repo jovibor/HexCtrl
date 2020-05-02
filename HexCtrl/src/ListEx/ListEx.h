@@ -57,18 +57,19 @@ namespace HEXCTRL::LISTEX
 	* LISTEXCREATESTRUCT - Main initialization helper struct for CListEx::Create method.		*
 	********************************************************************************************/
 	struct LISTEXCREATESTRUCT {
-		LISTEXCOLORS stColor { };                //All control's colors.
-		CRect             rect;                  //Initial rect.
-		CWnd*             pwndParent { };        //Parent window.
-		const LOGFONTW*   pListLogFont { };      //List font.
-		const LOGFONTW*   pHdrLogFont { };       //Header font.
-		DWORD             dwStyle { };           //Control's styles. Zero for default.
-		UINT              uID { };               //Control Id.
-		DWORD             dwListGridWidth { 1 }; //Width of the list grid.
-		DWORD             dwHdrHeight { 20 };    //Header height.
-		bool              fSortable { false };   //Is list sortable, by clicking on the header column?
-		bool              fLinksUnderline { true }; //Links are displayed underlined or not.
-		bool              fDialogCtrl { false }; //If it's a list within dialog.
+		LISTEXCOLORS stColor { };              //All control's colors.
+		CRect        rect;                     //Initial rect.
+		CWnd*        pwndParent { };           //Parent window.
+		LOGFONTW*    pListLogFont { };         //List font.
+		LOGFONTW*    pHdrLogFont { };          //Header font.
+		DWORD        dwStyle { };              //Control's styles. Zero for default.
+		UINT         uID { };                  //Control Id.
+		DWORD        dwListGridWidth { 1 };    //Width of the list grid.
+		DWORD        dwHdrHeight { 20 };       //Header height.
+		bool         fSortable { false };      //Is list sortable, by clicking on the header column?
+		bool         fLinksUnderline { true }; //Links are displayed underlined or not.
+		bool         fDialogCtrl { false };    //If it's a list within dialog.
+		bool         fLinkTooltip { true };    //Show links toolips.
 	};
 
 	/********************************************
