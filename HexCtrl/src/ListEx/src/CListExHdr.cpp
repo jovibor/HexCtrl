@@ -144,9 +144,9 @@ void CListExHdr::SetColor(const LISTEXCOLORS& lcs)
 {
 	m_clrText = lcs.clrHdrText;
 	m_clrBk = lcs.clrHdrBk;
-	m_clrBkNWA = lcs.clrBkNWA;
-	m_clrHglInactive = lcs.clrHdrHglInactive;
-	m_clrHglActive = lcs.clrHdrHglActive;
+	m_clrBkNWA = lcs.clrNWABk;
+	m_clrHglInactive = lcs.clrHdrHglInact;
+	m_clrHglActive = lcs.clrHdrHglAct;
 
 	RedrawWindow();
 }

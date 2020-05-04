@@ -47,12 +47,15 @@ namespace HEXCTRL::LISTEX::INTERNAL
 	********************************************/
 	struct ITEMTEXT
 	{
-		ITEMTEXT(std::wstring_view wstrText, std::wstring_view wstrLink, CRect rc, bool fIsLink) :
-			wstrText(wstrText), wstrLink(wstrLink), rect(rc), fLink(fIsLink) {}
-		std::wstring wstrText { }; //Visible text.
-		std::wstring wstrLink { }; //Text within <link=...> tag.
-		CRect rect { };            //Rect text belongs to.
-		bool fLink { false };      //Is it just a text (wstrLink is empty) or text with link?
+		ITEMTEXT(std::wstring_view wstrText, std::wstring_view wstrLink, std::wstring_view wstrTitle,
+			CRect rect, bool fLink = false, bool fTitle = false) :
+			wstrText(wstrText), wstrLink(wstrLink), wstrTitle(wstrTitle), rect(rect), fLink(fLink), fTitle(fTitle) {}
+		std::wstring wstrText { };  //Visible text.
+		std::wstring wstrLink { };  //Text within link <link="textFromHere"> tag.
+		std::wstring wstrTitle { }; //Text within title <...title="textFromHere"> tag.
+		CRect rect { };             //Rect text belongs to.
+		bool fLink { false };       //Is it just a text (wstrLink is empty) or text with link?
+		bool fTitle { false };      //Is it link with custom title (wstrTitle is not empty)?
 	};
 
 	/********************************************
@@ -161,9 +164,9 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		CRect m_rcLinkCurr { };         //Current link's rect;
 	public:
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
-};
+	};
 
-	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
+		/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #ifdef _UNICODE
 #if defined _M_IX86
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")

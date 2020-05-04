@@ -781,30 +781,39 @@ std::vector<ITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 		rcTextOrig.left += 4;
 
 	size_t nPosCurr { 0 };          //Current position in the parsed string.
-	size_t nPosTagFirst { };        //Start position of the opening tag "<link=".
-	size_t nPosTagFirstClosing { }; //Start position of the opening tag's closing bracket ">".
+	size_t nPosTagLink { };         //Start position of the opening tag "<link=".
+	size_t nPosLinkOpenQuote { };   //Position of the (link="<-) open quote.
+	size_t nPosLinkCloseQuote { };  //Position of the (link=""<-) close quote.
+	size_t nPosTagTitle { };        //Position of the (title=) tag beginning.
+	size_t nPosTitleOpenQuote { };  //Position of the (title="<-) open quote.
+	size_t nPosTitleCloseQuote { }; //Position of the (title=""<-) closequote.
+	size_t nPosTagFirstClose { };   //Start position of the opening tag's closing bracket ">".
 	size_t nPosTagLast { };         //Start position of the enclosing tag "</link>".
-	CRect rcTextCurr { }; //Current rect.
+	CRect rcTextCurr { };           //Current rect.
 
-	const std::wstring_view wstrTAGFirst { L"<link=" };
-	const std::wstring_view wstrTAGClosingFirst { L">" };
+	const std::wstring_view wstrTagLink { L"<link=" };
+	const std::wstring_view wstrTagFirstClose { L">" };
 	const std::wstring_view wstrTAGLast { L"</link>" };
+	const std::wstring_view wstrTAGTitle { L"title=" };
+	const std::wstring_view wstrQuote { L"\"" };
 
 	while (nPosCurr != std::wstring_view::npos)
 	{
-		//Search the string for a Tag pattern.
-		if ((nPosTagFirst = wstrText.find(wstrTAGFirst, nPosCurr)) != std::wstring_view::npos
-			&& (nPosTagFirstClosing = wstrText.find(wstrTAGClosingFirst, nPosTagFirst)) != std::wstring_view::npos
-			&& (nPosTagLast = wstrText.find(wstrTAGLast, nPosTagFirstClosing)) != std::wstring_view::npos)
+		//Searching the string for a <link=...></link> pattern.
+		if ((nPosTagLink = wstrText.find(wstrTagLink, nPosCurr)) != std::wstring_view::npos
+			&& (nPosLinkOpenQuote = wstrText.find(wstrQuote, nPosTagLink)) != std::wstring_view::npos
+			&& (nPosLinkCloseQuote = wstrText.find(wstrQuote, nPosLinkOpenQuote + wstrQuote.size())) != std::wstring_view::npos
+			&& (nPosTagFirstClose = wstrText.find(wstrTagFirstClose, nPosLinkCloseQuote + wstrQuote.size())) != std::wstring_view::npos
+			&& (nPosTagLast = wstrText.find(wstrTAGLast, nPosTagFirstClose + wstrTagFirstClose.size())) != std::wstring_view::npos)
 		{
 			auto pDC = GetDC();
 			pDC->SelectObject(m_fontList);
 			SIZE size;
 
-			//Any text before found Tag.
-			if (nPosTagFirst > nPosCurr)
+			//Any text before found tag.
+			if (nPosTagLink > nPosCurr)
 			{
-				auto wstrTextBefore = wstrText.substr(nPosCurr, nPosTagFirst - nPosCurr);
+				auto wstrTextBefore = wstrText.substr(nPosCurr, nPosTagLink - nPosCurr);
 				GetTextExtentPoint32W(pDC->m_hDC, wstrTextBefore.data(), static_cast<int>(wstrTextBefore.size()), &size);
 				if (rcTextCurr.IsRectNull())
 					rcTextCurr.SetRect(rcTextOrig.left, rcTextOrig.top, rcTextOrig.left + size.cx, rcTextOrig.bottom);
@@ -813,12 +822,13 @@ std::vector<ITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 					rcTextCurr.left = rcTextCurr.right;
 					rcTextCurr.right += size.cx;
 				}
-				vecData.emplace_back(wstrTextBefore, L"", rcTextCurr, false);
+				vecData.emplace_back(wstrTextBefore, L"", L"", rcTextCurr);
 			}
 
-			auto wstrTextLinked = wstrText.substr(nPosTagFirstClosing + wstrTAGClosingFirst.size(),
-				nPosTagLast - (nPosTagFirstClosing + wstrTAGClosingFirst.size()));
-			GetTextExtentPoint32W(pDC->m_hDC, wstrTextLinked.data(), static_cast<int>(wstrTextLinked.size()), &size);
+			//The clickable/linked text, that between <link=...>textFromHere</link> tags.
+			auto wstrTextBetweenTags = wstrText.substr(nPosTagFirstClose + wstrTagFirstClose.size(),
+				nPosTagLast - (nPosTagFirstClose + wstrTagFirstClose.size()));
+			GetTextExtentPoint32W(pDC->m_hDC, wstrTextBetweenTags.data(), static_cast<int>(wstrTextBetweenTags.size()), &size);
 			ReleaseDC(pDC);
 
 			if (rcTextCurr.IsRectNull())
@@ -829,10 +839,26 @@ std::vector<ITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 				rcTextCurr.right += size.cx;
 			}
 
-			auto wstrTextLinkID = wstrText.substr(nPosTagFirst + wstrTAGFirst.size(),
-				nPosTagFirstClosing - (nPosTagFirst + wstrTAGFirst.size()));
-			vecData.emplace_back(wstrTextLinked, wstrTextLinkID, rcTextCurr, true);
+			//Link tag text (linkID) between quotes: <link="textFromHere">
+			auto wstrTextLink = wstrText.substr(nPosLinkOpenQuote + wstrQuote.size(),
+				nPosLinkCloseQuote - nPosLinkOpenQuote - wstrQuote.size());
+			nPosCurr = nPosLinkCloseQuote + wstrQuote.size();
 
+			//Searching for title "<link=...title="">" tag.
+			bool fTitle { false };
+			std::wstring_view wstrTextTitle { };
+			if ((nPosTagTitle = wstrText.find(wstrTAGTitle, nPosCurr)) != std::wstring_view::npos
+				&& (nPosTitleOpenQuote = wstrText.find(wstrQuote, nPosTagTitle)) != std::wstring_view::npos
+				&& (nPosTitleCloseQuote = wstrText.find(wstrQuote, nPosTitleOpenQuote + wstrQuote.size())) != std::wstring_view::npos)
+			{
+				//Title tag text between quotes: <...title="textFromHere">
+				wstrTextTitle = wstrText.substr(nPosTitleOpenQuote + wstrQuote.size(),
+					nPosTitleCloseQuote - nPosTitleOpenQuote - wstrQuote.size());
+
+				fTitle = true;
+			}
+
+			vecData.emplace_back(wstrTextBetweenTags, wstrTextLink, wstrTextTitle, rcTextCurr, true, fTitle);
 			nPosCurr = nPosTagLast + wstrTAGLast.size();
 		}
 		else
@@ -853,7 +879,7 @@ std::vector<ITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 				rcTextCurr.right += size.cx;
 			}
 
-			vecData.emplace_back(wstrTextAfter, L"", rcTextCurr, false);
+			vecData.emplace_back(wstrTextAfter, L"", L"", rcTextCurr);
 			nPosCurr = std::wstring_view::npos;
 		}
 	}
@@ -889,16 +915,19 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 	{
 		for (int i = 0; i < GetHeaderCtrl().GetItemCount(); i++)
 		{
-			COLORREF clrText, clrBk;
+			COLORREF clrText, clrBk, clrTextLink;
 			//Subitems' draw routine. Colors depending on whether subitem selected or not,
 			//and has tooltip or not.
 			if (pDIS->itemState & ODS_SELECTED)
 			{
-				clrText = m_stColors.clrListTextSelected;
-				clrBk = m_stColors.clrListBkSelected;
+				clrText = m_stColors.clrListTextSel;
+				clrBk = m_stColors.clrListBkSel;
+				clrTextLink = m_stColors.clrListTextLinkSel;
 			}
 			else
 			{
+				clrTextLink = m_stColors.clrListTextLink;
+
 				if (!HasCellColor(pDIS->itemID, i, clrBk, clrText))
 				{
 					if (HasTooltip(pDIS->itemID, i))
@@ -926,7 +955,7 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 			{
 				if (iter.fLink)
 				{
-					pDC->SetTextColor(m_stColors.clrListTextLink);
+					pDC->SetTextColor(clrTextLink);
 					if (m_fLinksUnderline)
 						pDC->SelectObject(m_fontListUnderline);
 				}
@@ -988,14 +1017,14 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 				m_rcLinkCurr = iter.rect;
 
 				if (m_fLinkTooltip) //Links tooltips flag.
-				{	
+				{
 					m_fTtLinkShown = true;
 					m_stCurrLink.iItem = hi.iItem;
 					m_stCurrLink.iSubItem = hi.iSubItem;
+					m_stTInfoLink.lpszText = iter.fTitle ? iter.wstrTitle.data() : iter.wstrLink.data();
 
-					m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stTInfoLink);
-					m_stTInfoLink.lpszText = iter.wstrLink.data();
 					ClientToScreen(&pt);
+					m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stTInfoLink);
 					m_stWndTtLink.SendMessageW(TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(pt.x + 3, pt.y - 20));
 					m_stWndTtLink.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stTInfoLink));
 					m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stTInfoLink));
@@ -1205,6 +1234,7 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 
 		m_stCurrLink.iItem = -1;
 		m_stCurrLink.iSubItem = -1;
+		m_rcLinkCurr.SetRectEmpty();
 		break;
 	}
 }
@@ -1236,7 +1266,7 @@ void CListEx::OnPaint()
 	CMemDC memDC(dc, rc);
 	CDC& rDC = memDC.GetDC();
 	rDC.GetClipBox(&rc);
-	rDC.FillSolidRect(rc, m_stColors.clrBkNWA);
+	rDC.FillSolidRect(rc, m_stColors.clrNWABk);
 
 	DefWindowProcW(WM_PAINT, reinterpret_cast<WPARAM>(rDC.m_hDC), static_cast<LPARAM>(0));
 }

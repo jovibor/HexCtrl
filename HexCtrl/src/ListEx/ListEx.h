@@ -35,22 +35,23 @@ namespace HEXCTRL::LISTEX
 	********************************************************************************************/
 	struct LISTEXCOLORS
 	{
-		COLORREF clrListText { GetSysColor(COLOR_WINDOWTEXT) };            //List text color.
-		COLORREF clrListTextLink { RGB(0, 0, 200) };            //List hyperlink text color.
-		COLORREF clrListBkRow1 { GetSysColor(COLOR_WINDOW) };              //List Bk color of the odd rows.
-		COLORREF clrListBkRow2 { GetSysColor(COLOR_WINDOW) };              //List Bk color of the even rows.
-		COLORREF clrListGrid { RGB(220, 220, 220) };                       //List grid color.
-		COLORREF clrListTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected item text color.
-		COLORREF clrListBkSelected { GetSysColor(COLOR_HIGHLIGHT) };       //Selected item bk color.
-		COLORREF clrTooltipText { GetSysColor(COLOR_INFOTEXT) };           //Tooltip window text color.
-		COLORREF clrTooltipBk { GetSysColor(COLOR_INFOBK) };               //Tooltip window bk color.
-		COLORREF clrListTextCellTt { GetSysColor(COLOR_WINDOWTEXT) };      //Text color of a cell that has tooltip.
-		COLORREF clrListBkCellTt { RGB(170, 170, 230) };                   //Bk color of a cell that has tooltip.
-		COLORREF clrHdrText { GetSysColor(COLOR_WINDOWTEXT) };             //List header text color.
-		COLORREF clrHdrBk { GetSysColor(COLOR_WINDOW) };                   //List header bk color.
-		COLORREF clrHdrHglInactive { GetSysColor(COLOR_GRADIENTINACTIVECAPTION) };//Header highlight inactive.
-		COLORREF clrHdrHglActive { GetSysColor(COLOR_GRADIENTACTIVECAPTION) };    //Header highlight active.
-		COLORREF clrBkNWA { GetSysColor(COLOR_WINDOW) };                   //Bk of non working area.
+		COLORREF clrListText { GetSysColor(COLOR_WINDOWTEXT) };       //List text color.
+		COLORREF clrListTextLink { RGB(0, 0, 200) };                  //List hyperlink text color.
+		COLORREF clrListTextSel { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected item text color.
+		COLORREF clrListTextLinkSel { RGB(250, 250, 250) };           //List hyperlink text color in selected cell.
+		COLORREF clrListTextCellTt { GetSysColor(COLOR_WINDOWTEXT) }; //Text color of a cell that has tooltip.
+		COLORREF clrListBkRow1 { GetSysColor(COLOR_WINDOW) };         //List Bk color of the odd rows.
+		COLORREF clrListBkRow2 { GetSysColor(COLOR_WINDOW) };         //List Bk color of the even rows.
+		COLORREF clrListBkSel { GetSysColor(COLOR_HIGHLIGHT) };       //Selected item bk color.
+		COLORREF clrListBkCellTt { RGB(170, 170, 230) };              //Bk color of a cell that has tooltip.
+		COLORREF clrListGrid { RGB(220, 220, 220) };                  //List grid color.
+		COLORREF clrTooltipText { GetSysColor(COLOR_INFOTEXT) };      //Tooltip window text color.
+		COLORREF clrTooltipBk { GetSysColor(COLOR_INFOBK) };          //Tooltip window bk color.
+		COLORREF clrHdrText { GetSysColor(COLOR_WINDOWTEXT) };        //List header text color.
+		COLORREF clrHdrBk { GetSysColor(COLOR_WINDOW) };              //List header bk color.
+		COLORREF clrHdrHglInact { GetSysColor(COLOR_GRADIENTINACTIVECAPTION) };//Header highlight inactive.
+		COLORREF clrHdrHglAct { GetSysColor(COLOR_GRADIENTACTIVECAPTION) };    //Header highlight active.
+		COLORREF clrNWABk { GetSysColor(COLOR_WINDOW) };              //Bk of Non Working Area.
 	};
 
 	/********************************************************************************************
