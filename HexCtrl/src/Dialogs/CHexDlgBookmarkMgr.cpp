@@ -282,7 +282,7 @@ void CHexDlgBookmarkMgr::SortBookmarks()
 				{
 					ullOffset1 = st1.vecSpan.front().ullOffset;
 					ullOffset2 = st2.vecSpan.front().ullOffset;
-					iCompare = ullOffset1 < ullOffset2 ? -1 : 1;
+					iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
 				}
 			}
 			break;
@@ -296,7 +296,7 @@ void CHexDlgBookmarkMgr::SortBookmarks()
 						[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
 					ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
 						[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
-					iCompare = ullSize1 < ullSize2 ? -1 : 1;
+					iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
 				}
 			}
 			break;
@@ -305,19 +305,7 @@ void CHexDlgBookmarkMgr::SortBookmarks()
 				break;
 			}
 
-			bool fResult { false };
-			if (fAscending)
-			{
-				if (iCompare < 0)
-					fResult = true;
-			}
-			else
-			{
-				if (iCompare > 0)
-					fResult = true;
-			}
-
-			return fResult;
+			return fAscending ? iCompare < 0 : iCompare > 0;
 		});
 
 	m_pListMain->RedrawWindow();

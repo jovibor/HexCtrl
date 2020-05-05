@@ -1185,6 +1185,12 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 				KillTimer(ID_TIMER_BKM_TOOLTIP);
 			}
 		}
+		else if (m_pBkmCurrTt) //If there is already bkm tooltip shown, but cursor is outside data chunks.
+		{
+			m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
+			m_pBkmCurrTt = nullptr;
+			KillTimer(ID_TIMER_BKM_TOOLTIP);
+		}
 
 		m_pScrollV->OnMouseMove(nFlags, point);
 		m_pScrollH->OnMouseMove(nFlags, point);
