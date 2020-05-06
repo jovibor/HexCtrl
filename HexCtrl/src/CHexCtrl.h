@@ -181,6 +181,8 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsSectorVisible()const;                //Returns m_fSectorVisible.
 		void UpdateSectorVisible();                               //Updates info about whether sector's lines printable atm or not.
 		void Print();                                             //Printing routine.
+		void TtOffsetShow(bool fShow);              //Tooltip Offset show/hide.
+		void TtBkmShow(bool fShow, POINT pt = { }); //Tooltip bookmark show/hide.
 	protected:
 		DECLARE_MESSAGE_MAP()
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -225,7 +227,6 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
-		void ShowOffsetTooltip(bool fShow);
 	private:
 		const std::unique_ptr<CHexDlgBookmarkMgr> m_pDlgBookmarkMgr { std::make_unique<CHexDlgBookmarkMgr>() }; //Bookmark manager.
 		const std::unique_ptr<CHexDlgDataInterpret> m_pDlgDataInterpret { std::make_unique<CHexDlgDataInterpret>() }; //Data Interpreter.

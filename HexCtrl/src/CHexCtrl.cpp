@@ -75,7 +75,8 @@ namespace HEXCTRL {
 		};
 
 		constexpr auto WSTR_HEXCTRL_CLASSNAME = L"HexCtrl";
-		constexpr ULONG_PTR ID_TIMER_BKM_TOOLTIP { 0x01 }; //Timer ID.
+		constexpr ULONG_PTR ID_TOOLTIP_BKM { 0x01 };    //Tooltip ID for bookmarks.
+		constexpr ULONG_PTR ID_TOOLTIP_OFFSET { 0x02 }; //Tooltip ID for offset.
 	}
 }
 
@@ -286,7 +287,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	//3. To force HexCtrl window on taskbar the WS_EX_APPWINDOW extended window style must be set.
 	CStringW strError;
 	CRect rc = hcs.rect;
-	UINT uID = 0;
+	UINT uID { 0 };
 	switch (hcs.enCreateMode)
 	{
 	case EHexCreateMode::CREATE_POPUP:
@@ -337,7 +338,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	SetWindowTheme(m_wndTtBkm.m_hWnd, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
 	m_stToolInfoBkm.cbSize = TTTOOLINFOW_V1_SIZE;
 	m_stToolInfoBkm.uFlags = TTF_TRACK;
-	m_stToolInfoBkm.uId = 0x01;
+	m_stToolInfoBkm.uId = ID_TOOLTIP_BKM;
 	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfoBkm);
 	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 	m_wndTtBkm.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColor.clrTextTooltip), 0);
@@ -350,7 +351,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	SetWindowTheme(m_wndTtOffset.m_hWnd, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
 	m_stToolInfoOffset.cbSize = TTTOOLINFOW_V1_SIZE;
 	m_stToolInfoOffset.uFlags = TTF_TRACK;
-	m_stToolInfoOffset.uId = 0x02;
+	m_stToolInfoOffset.uId = ID_TOOLTIP_OFFSET;
 	m_wndTtOffset.SendMessageW(TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfoOffset);
 	m_wndTtOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 	m_wndTtOffset.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColor.clrTextTooltip), 0);
@@ -1170,27 +1171,14 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 					ClientToScreen(&ptScreen);
 
 					m_stToolInfoBkm.lpszText = pBookmark->wstrDesc.data();
-					m_wndTtBkm.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x, ptScreen.y)));
-					m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-					m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-
-					//Timer to check whether cursor left client rect.
-					SetTimer(ID_TIMER_BKM_TOOLTIP, 300, nullptr);
+					TtBkmShow(true, POINT { ptScreen.x, ptScreen.y });
 				}
 			}
 			else
-			{
-				m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-				m_pBkmCurrTt = nullptr;
-				KillTimer(ID_TIMER_BKM_TOOLTIP);
-			}
+				TtBkmShow(false);
 		}
 		else if (m_pBkmCurrTt) //If there is already bkm tooltip shown, but cursor is outside data chunks.
-		{
-			m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-			m_pBkmCurrTt = nullptr;
-			KillTimer(ID_TIMER_BKM_TOOLTIP);
-		}
+			TtBkmShow(false);
 
 		m_pScrollV->OnMouseMove(nFlags, point);
 		m_pScrollH->OnMouseMove(nFlags, point);
@@ -1892,7 +1880,7 @@ void CHexCtrl::OnVScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollB
 	if (m_fHighLatency)
 	{
 		fRedraw = m_pScrollV->IsThumbReleased();
-		ShowOffsetTooltip(!fRedraw);
+		TtOffsetShow(!fRedraw);
 	}
 	else if (m_pScrollV->GetScrollPosDelta() != 0)
 		fRedraw = true;
@@ -2653,7 +2641,7 @@ void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 {
 	//Checking if cursor left client rect,
 	//if so — hiding bookmark tooltip and killing timer.
-	if (nIDEvent == ID_TIMER_BKM_TOOLTIP)
+	if (nIDEvent == ID_TOOLTIP_BKM)
 	{
 		CRect rcClient;
 		GetClientRect(rcClient);
@@ -2661,28 +2649,8 @@ void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 		CPoint ptCursor;
 		GetCursorPos(&ptCursor);
 		if (!rcClient.PtInRect(ptCursor))
-		{
-			m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-			m_pBkmCurrTt = nullptr;
-			KillTimer(ID_TIMER_BKM_TOOLTIP);
-		}
+			TtBkmShow(false);
 	}
-}
-
-void CHexCtrl::ShowOffsetTooltip(bool fShow)
-{
-	if (fShow)
-	{
-		CPoint ptScreen;
-		GetCursorPos(&ptScreen);
-
-		static wchar_t warrOffset[40] { L"Offset: " };
-		UllToWchars(GetTopLine() * m_dwCapacity, &warrOffset[8], static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
-		m_stToolInfoOffset.lpszText = warrOffset;
-		m_wndTtOffset.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
-		m_wndTtOffset.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
-	}
-	m_wndTtOffset.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
 }
 
 void CHexCtrl::OnDestroy()
@@ -4369,4 +4337,37 @@ void CHexCtrl::Print()
 
 	m_sizeLetter = stOldLetter;
 	RecalcAll();
+}
+
+void CHexCtrl::TtOffsetShow(bool fShow)
+{
+	if (fShow)
+	{
+		CPoint ptScreen;
+		GetCursorPos(&ptScreen);
+
+		static wchar_t warrOffset[40] { L"Offset: " };
+		UllToWchars(GetTopLine() * m_dwCapacity, &warrOffset[8], static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
+		m_stToolInfoOffset.lpszText = warrOffset;
+		m_wndTtOffset.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
+		m_wndTtOffset.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
+	}
+	m_wndTtOffset.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
+}
+
+void CHexCtrl::TtBkmShow(bool fShow, POINT pt)
+{
+	if (fShow)
+	{
+		m_wndTtBkm.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x, pt.y)));
+		m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
+		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
+		SetTimer(ID_TOOLTIP_BKM, 300, nullptr);
+	}
+	else
+	{	
+		m_pBkmCurrTt = nullptr;
+		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
+		KillTimer(ID_TOOLTIP_BKM);
+	}
 }

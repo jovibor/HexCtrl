@@ -109,6 +109,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
 		afx_msg void OnKillFocus(CWnd* pNewWnd);
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint pt);
+		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 		afx_msg void OnRButtonDown(UINT nFlags, CPoint pt);
 		afx_msg void OnContextMenu(CWnd* pWnd, CPoint pt);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
@@ -162,8 +163,6 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		bool m_fTtLinkShown { false };  //Is link's tool-tip shown atm.
 		bool m_fLDownAtLink { false };  //Left mouse down on link.
 		CRect m_rcLinkCurr { };         //Current link's rect;
-	public:
-		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	};
 
 		/*******************Setting a manifest for ComCtl32.dll version 6.***********************/

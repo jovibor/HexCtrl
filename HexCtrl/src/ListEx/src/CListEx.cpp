@@ -793,8 +793,8 @@ std::vector<ITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 
 	const std::wstring_view wstrTagLink { L"<link=" };
 	const std::wstring_view wstrTagFirstClose { L">" };
-	const std::wstring_view wstrTAGLast { L"</link>" };
-	const std::wstring_view wstrTAGTitle { L"title=" };
+	const std::wstring_view wstrTagLast { L"</link>" };
+	const std::wstring_view wstrTagTitle { L"title=" };
 	const std::wstring_view wstrQuote { L"\"" };
 
 	while (nPosCurr != std::wstring_view::npos)
@@ -804,7 +804,7 @@ std::vector<ITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 			&& (nPosLinkOpenQuote = wstrText.find(wstrQuote, nPosTagLink)) != std::wstring_view::npos
 			&& (nPosLinkCloseQuote = wstrText.find(wstrQuote, nPosLinkOpenQuote + wstrQuote.size())) != std::wstring_view::npos
 			&& (nPosTagFirstClose = wstrText.find(wstrTagFirstClose, nPosLinkCloseQuote + wstrQuote.size())) != std::wstring_view::npos
-			&& (nPosTagLast = wstrText.find(wstrTAGLast, nPosTagFirstClose + wstrTagFirstClose.size())) != std::wstring_view::npos)
+			&& (nPosTagLast = wstrText.find(wstrTagLast, nPosTagFirstClose + wstrTagFirstClose.size())) != std::wstring_view::npos)
 		{
 			auto pDC = GetDC();
 			pDC->SelectObject(m_fontList);
@@ -847,7 +847,7 @@ std::vector<ITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 			//Searching for title "<link=...title="">" tag.
 			bool fTitle { false };
 			std::wstring_view wstrTextTitle { };
-			if ((nPosTagTitle = wstrText.find(wstrTAGTitle, nPosCurr)) != std::wstring_view::npos
+			if ((nPosTagTitle = wstrText.find(wstrTagTitle, nPosCurr)) != std::wstring_view::npos
 				&& (nPosTitleOpenQuote = wstrText.find(wstrQuote, nPosTagTitle)) != std::wstring_view::npos
 				&& (nPosTitleCloseQuote = wstrText.find(wstrQuote, nPosTitleOpenQuote + wstrQuote.size())) != std::wstring_view::npos)
 			{
@@ -859,7 +859,7 @@ std::vector<ITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 			}
 
 			vecData.emplace_back(wstrTextBetweenTags, wstrTextLink, wstrTextTitle, rcTextCurr, true, fTitle);
-			nPosCurr = nPosTagLast + wstrTAGLast.size();
+			nPosCurr = nPosTagLast + wstrTagLast.size();
 		}
 		else
 		{
