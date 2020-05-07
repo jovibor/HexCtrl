@@ -156,7 +156,7 @@ bool CHexDlgSearch::PrepareSearch()
 	break;
 	}
 
-	if (((CButton*)GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_SELECTION))->GetCheck() == BST_CHECKED)
+	if ((reinterpret_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_SELECTION)))->GetCheck() == BST_CHECKED)
 	{
 		auto vecSel = pHexCtrl->GetSelection();
 		if (vecSel.empty()) //No selection.
@@ -310,7 +310,13 @@ void CHexDlgSearch::Search()
 			ULONGLONG ullSelIndex = m_ullOffset;
 			ULONGLONG ullSelSize = m_fReplace ? m_nSizeReplace : m_nSizeSearch;
 			if (m_fSelection)
+			{
+				//Highlight selection.
+				std::vector<HEXSPANSTRUCT> vec { { ullSelIndex, ullSelSize } };
+				pHexCtrl->SetSelHighlight(vec);
 				pHexCtrl->GoToOffset(ullSelIndex);
+				pHexCtrl->Redraw();
+			}
 			else
 				pHexCtrl->GoToOffset(ullSelIndex, true, ullSelSize);
 		}
@@ -539,6 +545,7 @@ void CHexDlgSearch::ResetSearch()
 	m_fSecondMatch = { false };
 	m_fFound = { false };
 	m_fDoCount = { true };
+	GetHexCtrl()->ClearSelHighlight();
 
 	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)->SetWindowTextW(L"");
 }

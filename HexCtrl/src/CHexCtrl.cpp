@@ -1930,6 +1930,7 @@ void CHexCtrl::OnPaint()
 	DrawHexAscii(pDC, &m_fontMain, ullStartLine, ullEndLine);
 	DrawBookmarks(pDC, &m_fontMain, ullStartLine, ullEndLine);
 	DrawSelection(pDC, &m_fontMain, ullStartLine, ullEndLine);
+	DrawSelHighlight(pDC, &m_fontMain, ullStartLine, ullEndLine);
 	DrawCursor(pDC, &m_fontMain, ullStartLine, ullEndLine);
 	DrawDataInterpret(pDC, &m_fontMain, ullStartLine, ullEndLine);
 	DrawSectorLines(pDC, ullStartLine, ullEndLine);
@@ -2286,7 +2287,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 	{
 		std::wstring wstrHexSelToPrint { }, wstrAsciiSelToPrint { }; //Selected Hex and Ascii strings to print.
 		int iSelHexPosToPrintX { 0x7FFFFFFF }, iSelAsciiPosToPrintX { };
-		bool fSelection { false }; //Same as above but for selection.
+		bool fSelection { false };
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
@@ -2376,6 +2377,121 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size()));
 
 		//Ascii selected printing.
+		PolyTextOutW(pDC->m_hDC, vecPolySelAscii.data(), static_cast<UINT>(vecPolySelAscii.size()));
+	}
+}
+
+void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine)
+{
+	if (!m_pSelection->HasSelHighlight())
+		return;
+
+	std::vector<POLYTEXTW> vecPolySelHex, vecPolySelAscii;
+	std::list<std::wstring>	listWstrSelHex, listWstrSelAscii;
+	int iLine = 0; //Current line to print.
+
+	const auto ullOffset = ullStartLine * m_dwCapacity;      //Offset of the visible data to print.
+	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
+	if ((ullOffset + iSize) > m_ullDataSize)
+		iSize = m_ullDataSize - ullOffset;
+	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
+
+	//Loop for printing Hex chunks and Ascii chars line by line.
+	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
+	{
+		std::wstring wstrHexSelToPrint { }, wstrAsciiSelToPrint { }; //Selected Hex and Ascii strings to print.
+		int iSelHexPosToPrintX { 0x7FFFFFFF }, iSelAsciiPosToPrintX { };
+		bool fSelection { false };
+		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
+
+		//Main loop for printing Hex chunks and Ascii chars.
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
+		{
+			//Index of the next Byte to draw.
+			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
+			if (ullIndexByteToPrint >= m_ullDataSize) //Draw until reaching the end of m_ullDataSize.
+				break;
+
+			//Selection highlights.
+			if (m_pSelection->HitTestHighlight(ullIndexByteToPrint))
+			{	//Hex chunk to print.
+				const auto chByteToPrint = pData[iLine * m_dwCapacity + iterChunks]; //Get the current byte to print.
+				const wchar_t pwszHexToPrint[2] { g_pwszHexMap[(chByteToPrint >> 4) & 0x0F], g_pwszHexMap[chByteToPrint & 0x0F] };
+
+				//Ascii to print.
+				wchar_t wchAscii = chByteToPrint;
+				if (wchAscii < 32 || wchAscii >= 0x7f) //For non printable Ascii just print a dot.
+					wchAscii = '.';
+
+				if (iSelHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
+				{
+					int iCy;
+					HexChunkPoint(ullIndexByteToPrint, iSelHexPosToPrintX, iCy);
+					AsciiChunkPoint(ullIndexByteToPrint, iSelAsciiPosToPrintX, iCy);
+				}
+
+				if (!wstrHexSelToPrint.empty()) //Only adding spaces if there are chars beforehead.
+				{
+					if ((iterChunks % static_cast<DWORD>(m_enShowMode)) == 0)
+						wstrHexSelToPrint += L" ";
+
+					//Additional space between capacity halves, only with ASBYTE representation.
+					if (m_enShowMode == EHexShowMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+						wstrHexSelToPrint += L"  ";
+				}
+				wstrHexSelToPrint += pwszHexToPrint[0];
+				wstrHexSelToPrint += pwszHexToPrint[1];
+				wstrAsciiSelToPrint += wchAscii;
+				fSelection = true;
+			}
+			else if (fSelection)
+			{
+				//There can be multiple selection highlights in one line. 
+				//All the same as for bookmarks.
+
+				//Selection highlight Poly.
+				if (!wstrHexSelToPrint.empty())
+				{
+					//Hex selection highlight Poly.
+					listWstrSelHex.emplace_back(std::move(wstrHexSelToPrint));
+					vecPolySelHex.emplace_back(POLYTEXTW { iSelHexPosToPrintX, iPosToPrintY,
+						static_cast<UINT>(listWstrSelHex.back().size()), listWstrSelHex.back().data(), 0, { }, nullptr });
+
+					//Ascii selection highlight Poly.
+					listWstrSelAscii.emplace_back(std::move(wstrAsciiSelToPrint));
+					vecPolySelAscii.emplace_back(POLYTEXTW { iSelAsciiPosToPrintX, iPosToPrintY,
+						static_cast<UINT>(listWstrSelAscii.back().size()), listWstrSelAscii.back().data(), 0, { }, nullptr });
+				}
+				iSelHexPosToPrintX = 0x7FFFFFFF;
+				fSelection = false;
+			}
+		}
+
+		//Selection highlight Poly.
+		if (!wstrHexSelToPrint.empty())
+		{
+			//Hex selection highlight Poly.
+			listWstrSelHex.emplace_back(std::move(wstrHexSelToPrint));
+			vecPolySelHex.emplace_back(POLYTEXTW { iSelHexPosToPrintX, iPosToPrintY,
+				static_cast<UINT>(listWstrSelHex.back().size()), listWstrSelHex.back().data(), 0, { }, nullptr });
+
+			//Ascii selection highlight Poly.
+			listWstrSelAscii.emplace_back(std::move(wstrAsciiSelToPrint));
+			vecPolySelAscii.emplace_back(POLYTEXTW { iSelAsciiPosToPrintX, iPosToPrintY,
+				static_cast<UINT>(listWstrSelAscii.back().size()), listWstrSelAscii.back().data(), 0, { }, nullptr });
+		}
+	}
+
+	//Selection highlight printing.
+	if (!vecPolySelHex.empty())
+	{
+		//Colors are inverted colors of the selection.
+		pDC->SelectObject(pFont);
+		pDC->SetTextColor(m_stColor.clrBkSelected);
+		pDC->SetBkColor( m_stColor.clrTextSelected);
+		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size()));
+
+		//Ascii selection highlight printing.
 		PolyTextOutW(pDC->m_hDC, vecPolySelAscii.data(), static_cast<UINT>(vecPolySelAscii.size()));
 	}
 }
@@ -4072,6 +4188,16 @@ void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ul
 
 	MsgWindowNotify(HEXCTRL_MSG_SELECTION);
 	OnCaretPosChange(ullStart);
+}
+
+void CHexCtrl::SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight)
+{
+	m_pSelection->SetSelHighlight(vecSelHighlight);
+}
+
+void CHexCtrl::ClearSelHighlight()
+{
+	m_pSelection->ClearSelHighlight();
 }
 
 void CHexCtrl::GoToOffset(ULONGLONG ullOffset)

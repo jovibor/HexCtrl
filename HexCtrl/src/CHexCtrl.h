@@ -171,9 +171,11 @@ namespace HEXCTRL::INTERNAL
 		void Undo();
 		void Redo();
 		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
-		[[nodiscard]] bool IsCurTextArea()const;                  //Whether click was made in Text or Hex area.
+		[[nodiscard]] bool IsCurTextArea()const; //Whether last focus was set at ASCII or Hex chunks area.
 		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines,
 			bool fScroll = true, bool fGoToStart = false);
+		void SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight); //Set selection highlight.
+		void ClearSelHighlight(); //Clear selection highlight.
 		void GoToOffset(ULONGLONG ullOffset);                     //Scrolls to given offfset.
 		void SelectAll();                                         //Selects all current bytes.
 		void FillWithZeros();                                     //Fill selection with zeros.
@@ -218,6 +220,7 @@ namespace HEXCTRL::INTERNAL
 		void DrawHexAscii(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		void DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		void DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		void DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		void DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		void DrawSectorLines(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
@@ -289,7 +292,7 @@ namespace HEXCTRL::INTERNAL
 		int m_iEndWorkArea { };               //End of the area where all drawing occurs.
 		int m_iHeightWorkArea { };            //Height in px of the working area where all drawing occurs.
 		int m_iHeightBottomRect { };          //Height of bottom Info rect.
-		int m_iHeightBottomOffArea { };      //Height of the not visible rect from window's bottom to m_iThirdHorizLine.
+		int m_iHeightBottomOffArea { };       //Height of the not visible rect from window's bottom to m_iThirdHorizLine.
 		int m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfo { };          //Info text (bottom rect).
@@ -301,7 +304,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fDataSet { false };            //Is data set or not.
 		bool m_fMutable { false };            //Is control works in Edit or Read mode.
 		bool m_fCursorHigh { true };          //Cursor's High or Low bits position (first or last digit in hex chunk).
-		bool m_fCursorTextArea { false };     //Whether cursor at Ascii or Hex chunks area.
+		bool m_fCursorTextArea { false };     //Whether last focus was set at ASCII or Hex chunks area.
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
 		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.

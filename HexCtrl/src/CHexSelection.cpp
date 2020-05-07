@@ -20,9 +20,15 @@ void CHexSelection::Attach(CHexCtrl* p)
 
 void CHexSelection::ClearAll()
 {
-	m_vecSelect.clear();
+	m_vecSelection.clear();
+	m_vecSelHighlight.clear();
 	m_ullMarkSelStart = 0xFFFFFFFFFFFFFFFFULL;
 	m_ullMarkSelEnd = 0xFFFFFFFFFFFFFFFFULL;
+}
+
+void CHexSelection::ClearSelHighlight()
+{
+	m_vecSelHighlight.clear();
 }
 
 CHexCtrl* CHexSelection::GetHexCtrl()const
@@ -32,12 +38,24 @@ CHexCtrl* CHexSelection::GetHexCtrl()const
 
 bool CHexSelection::HasSelection()const
 {
-	return !m_vecSelect.empty();
+	return !m_vecSelection.empty();
+}
+
+bool CHexSelection::HasSelHighlight() const
+{
+	return !m_vecSelHighlight.empty();
 }
 
 bool CHexSelection::HitTest(ULONGLONG ullOffset)const
 {
-	return std::any_of(m_vecSelect.begin(), m_vecSelect.end(),
+	return std::any_of(m_vecSelection.begin(), m_vecSelection.end(),
+		[ullOffset](const HEXSPANSTRUCT& ref)
+		{ return ullOffset >= ref.ullOffset && ullOffset < (ref.ullOffset + ref.ullSize); });
+}
+
+bool CHexSelection::HitTestHighlight(ULONGLONG ullOffset) const
+{
+	return std::any_of(m_vecSelHighlight.begin(), m_vecSelHighlight.end(),
 		[ullOffset](const HEXSPANSTRUCT& ref)
 		{ return ullOffset >= ref.ullOffset && ullOffset < (ref.ullOffset + ref.ullSize); });
 }
@@ -59,7 +77,7 @@ ULONGLONG CHexSelection::GetSelectionEnd()const
 	if (!HasSelection())
 		return 0xFFFFFFFFFFFFFFFFULL;
 
-	return m_vecSelect.back().ullOffset + m_vecSelect.back().ullSize;
+	return m_vecSelection.back().ullOffset + m_vecSelection.back().ullSize;
 }
 
 ULONGLONG CHexSelection::GetSelectionSize()const
@@ -67,7 +85,7 @@ ULONGLONG CHexSelection::GetSelectionSize()const
 	if (!HasSelection())
 		return 0;
 
-	return 	m_vecSelect.size() * m_vecSelect.at(0).ullSize;
+	return 	m_vecSelection.size() * m_vecSelection.at(0).ullSize;
 }
 
 ULONGLONG CHexSelection::GetSelectionStart()const
@@ -75,7 +93,7 @@ ULONGLONG CHexSelection::GetSelectionStart()const
 	if (!HasSelection())
 		return 0xFFFFFFFFFFFFFFFFULL;
 
-	return m_vecSelect.front().ullOffset;
+	return m_vecSelection.front().ullOffset;
 }
 
 DWORD CHexSelection::GetLineLength()const
@@ -83,7 +101,7 @@ DWORD CHexSelection::GetLineLength()const
 	if (!HasSelection())
 		return 0;
 
-	return static_cast<DWORD>(m_vecSelect.front().ullSize);
+	return static_cast<DWORD>(m_vecSelection.front().ullSize);
 }
 
 ULONGLONG CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const
@@ -94,7 +112,7 @@ ULONGLONG CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const
 		return ullOffset;
 
 	ULONGLONG ullTotal { };
-	for (const auto& i : m_vecSelect)
+	for (const auto& i : m_vecSelection)
 	{
 		ullTotal += i.ullSize;
 		if (ullIndex < ullTotal)
@@ -108,12 +126,20 @@ ULONGLONG CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const
 
 auto CHexSelection::GetData()const ->std::vector<HEXSPANSTRUCT>
 {
-	return m_vecSelect;
+	return m_vecSelection;
 }
 
 void CHexSelection::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect)
 {
-	m_vecSelect = vecSelect;
+	//On new selection clear all highlights.
+	ClearSelHighlight();
+
+	m_vecSelection = vecSelect;
+}
+
+void CHexSelection::SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight)
+{
+	m_vecSelHighlight = vecSelHighlight;
 }
 
 void CHexSelection::SetSelectionEnd(ULONGLONG ullOffset)
@@ -123,8 +149,8 @@ void CHexSelection::SetSelectionEnd(ULONGLONG ullOffset)
 		return;
 
 	ULONGLONG ullSize = m_ullMarkSelEnd - m_ullMarkSelStart + 1;
-	m_vecSelect.clear();
-	m_vecSelect.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
+	m_vecSelection.clear();
+	m_vecSelection.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
 
 	CHexCtrl* pHex = GetHexCtrl();
 	if (pHex)
@@ -138,8 +164,8 @@ void CHexSelection::SetSelectionStart(ULONGLONG ullOffset)
 		return;
 
 	ULONGLONG ullSize = m_ullMarkSelEnd - m_ullMarkSelStart + 1;
-	m_vecSelect.clear();
-	m_vecSelect.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
+	m_vecSelection.clear();
+	m_vecSelection.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
 
 	CHexCtrl* pHex = GetHexCtrl();
 	if (pHex)
