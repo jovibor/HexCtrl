@@ -25,7 +25,7 @@ void CHexSelection::ClearAll()
 	m_ullMarkSelEnd = 0xFFFFFFFFFFFFFFFFULL;
 }
 
-CHexCtrl* CHexSelection::GetHexCtrl()
+CHexCtrl* CHexSelection::GetHexCtrl()const
 {
 	return m_pHex;
 }
@@ -35,10 +35,23 @@ bool CHexSelection::HasSelection()const
 	return !m_vecSelect.empty();
 }
 
-bool CHexSelection::HitTest(ULONGLONG ullIndex)const
+bool CHexSelection::HitTest(ULONGLONG ullOffset)const
 {
 	return std::any_of(m_vecSelect.begin(), m_vecSelect.end(),
-		[ullIndex](const HEXSPANSTRUCT& ref) { return ullIndex >= ref.ullOffset && ullIndex < (ref.ullOffset + ref.ullSize); });
+		[ullOffset](const HEXSPANSTRUCT& ref)
+		{ return ullOffset >= ref.ullOffset && ullOffset < (ref.ullOffset + ref.ullSize); });
+}
+
+bool CHexSelection::HitTestRange(const HEXSPANSTRUCT& hss)const
+{
+	if (!HasSelection())
+		return false;
+
+	for (auto i = 0; i < hss.ullSize; ++i)
+		if (HitTest(hss.ullOffset + i))
+			return true;
+
+	return false;
 }
 
 ULONGLONG CHexSelection::GetSelectionEnd()const

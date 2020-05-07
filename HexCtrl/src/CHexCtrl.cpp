@@ -2011,13 +2011,11 @@ void CHexCtrl::DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONG
 	const int iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
 	int iLine = 0; //Current line to print.
 
-	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
+	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
 	{
 		//Drawing offset with bk color depending on selection range.
 		COLORREF clrTextOffset, clrBkOffset;
-		if (m_pSelection->HasSelection()
-			&& (iterLines * m_dwCapacity + m_dwCapacity) > m_pSelection->GetSelectionStart()
-			&& (iterLines * m_dwCapacity) < m_pSelection->GetSelectionEnd())
+		if (m_pSelection->HitTestRange({ iterLines * m_dwCapacity, m_dwCapacity }))
 		{
 			clrTextOffset = m_stColor.clrTextSelected;
 			clrBkOffset = m_stColor.clrBkSelected;
@@ -4365,7 +4363,7 @@ void CHexCtrl::TtBkmShow(bool fShow, POINT pt)
 		SetTimer(ID_TOOLTIP_BKM, 300, nullptr);
 	}
 	else
-	{	
+	{
 		m_pBkmCurrTt = nullptr;
 		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 		KillTimer(ID_TOOLTIP_BKM);

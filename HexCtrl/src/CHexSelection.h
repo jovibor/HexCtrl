@@ -17,7 +17,7 @@ namespace HEXCTRL::INTERNAL
 	public:
 		void Attach(CHexCtrl* p);
 		void ClearAll();
-		[[nodiscard]] CHexCtrl* GetHexCtrl();
+		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
 		[[nodiscard]] ULONGLONG GetSelectionEnd()const;
 		[[nodiscard]] ULONGLONG GetSelectionSize()const;
 		[[nodiscard]] ULONGLONG GetSelectionStart()const;
@@ -25,7 +25,8 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] ULONGLONG GetOffsetByIndex(ULONGLONG ullIndex)const;  //Retrieves selection's offset by index [0...selectionSize)
 		[[nodiscard]] auto GetData()const->std::vector<HEXSPANSTRUCT>;
 		[[nodiscard]] bool HasSelection()const;
-		[[nodiscard]] bool HitTest(ULONGLONG ullIndex)const;
+		[[nodiscard]] bool HitTest(ULONGLONG ullOffset)const;
+		[[nodiscard]] bool HitTestRange(const HEXSPANSTRUCT& hss)const;
 		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect);
 		void SetSelectionEnd(ULONGLONG ullOffset);
 		void SetSelectionStart(ULONGLONG ullOffset);
