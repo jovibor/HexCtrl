@@ -10,7 +10,7 @@
 #include "../HexCtrl.h"
 #include <afxwin.h>      //MFC core and standard components.
 #include <deque>         //std::deque and related.
-#include <optional>      ///std::optional
+#include <optional>      //std::optional
 #include <string>        //std::wstring and related.
 #include <unordered_map> //std::unordered_map and related.
 
@@ -264,7 +264,7 @@ namespace HEXCTRL::INTERNAL
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
 		ULONGLONG m_ullLMouseClick { 0xFFFFFFFFFFFFFFFFULL }; //Left mouse button clicked chunk.
-		ULONGLONG m_ullRMouseClick { 0xFFFFFFFFFFFFFFFFULL }; //Right mouse clicked chunk. Used in bookmarking.
+		std::optional<ULONGLONG> m_optRMouseClick { }; //Right mouse clicked chunk. Used in bookmarking.
 		ULONGLONG m_ullCaretPos { };          //Current caret position.
 		ULONGLONG m_ullCurCursor { };         //Current cursor pos, to avoid WM_MOUSEMOVE handle at the same chunk.
 		ULONGLONG m_ullTotalSectors { };      //How many "Sectors" in m_ullDataSize.

@@ -233,7 +233,7 @@ void CHexCtrl::ClearData()
 	m_pData = nullptr;
 	m_fMutable = false;
 	m_ullLMouseClick = 0xFFFFFFFFFFFFFFFFULL;
-	m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFULL;
+	m_optRMouseClick.reset();
 
 	m_deqUndo.clear();
 	m_deqRedo.clear();
@@ -675,7 +675,8 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 		break;
 	case EHexCmd::CMD_BKM_REMOVE:
 		fAvail = m_pBookmarks->HasBookmarks()
-			&& (m_pBookmarks->HitTest(GetCaretPos()) || m_pBookmarks->HitTest(m_ullRMouseClick));
+			&& (m_pBookmarks->HitTest(GetCaretPos())
+				|| m_optRMouseClick ? m_pBookmarks->HitTest(*m_optRMouseClick) : false);
 		break;
 	case EHexCmd::CMD_BKM_NEXT:
 	case EHexCmd::CMD_BKM_PREV:
@@ -1099,7 +1100,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 
 		//To avoid unnecessary work we're checking if the current cursor pos is the same
 		//that is was at previous WM_MOUSEMOVE fire, with m_ullCurCursor.
-		if (!optHit.has_value() || optHit->ullOffset == m_ullCurCursor)
+		if (!optHit || optHit->ullOffset == m_ullCurCursor)
 			return;
 
 		m_ullCurCursor = optHit->ullOffset;
@@ -1160,7 +1161,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 	}
 	else
 	{
-		if (optHit.has_value())
+		if (optHit)
 		{
 			if (const auto pBookmark = m_pBookmarks->HitTest(optHit->ullOffset); pBookmark != nullptr)
 			{
@@ -1212,7 +1213,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	SetFocus();
 
 	const auto optHit = HitTest(point);
-	if (!optHit.has_value())
+	if (!optHit)
 		return;
 
 	m_ullCurCursor = optHit->ullOffset;
@@ -1247,7 +1248,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 
 	m_fCursorHigh = true;
 	m_fLMousePressed = true;
-	m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFULL;
+	m_optRMouseClick.reset();
 	SetSelection(m_ullLMouseClick, ullSelStart, ullSelSize, 1, false);
 }
 
@@ -1275,12 +1276,8 @@ void CHexCtrl::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 
 void CHexCtrl::OnRButtonDown(UINT /*nFlags*/, CPoint point)
 {
-	ScreenToClient(&point);
 	const auto optHit = HitTest(point);
-	if (optHit.has_value())
-		m_ullRMouseClick = optHit->ullOffset;
-	else
-		m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFULL;
+	m_optRMouseClick = optHit ? optHit->ullOffset : std::optional<ULONGLONG> { };
 }
 
 void CHexCtrl::OnMButtonDown(UINT /*nFlags*/, CPoint /*point*/)
@@ -1314,8 +1311,8 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 		m_pBookmarks->Add(HEXBOOKMARKSTRUCT { m_pSelection->GetData() });
 		break;
 	case IDM_HEXCTRL_BOOKMARKS_REMOVE:
-		m_pBookmarks->Remove(m_ullRMouseClick != 0xFFFFFFFFFFFFFFFFULL ? m_ullRMouseClick : GetCaretPos());
-		m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFULL;
+		m_pBookmarks->Remove(m_optRMouseClick.value_or(GetCaretPos()));
+		m_optRMouseClick.reset();
 		break;
 	case IDM_HEXCTRL_BOOKMARKS_NEXT:
 		m_pBookmarks->GoNext();
@@ -1529,7 +1526,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 		if (wParam)
 			SendMessageW(WM_COMMAND, wParam, 0);
 	}
-	m_ullRMouseClick = 0xFFFFFFFFFFFFFFFFULL; //Reset right mouse click.
+	m_optRMouseClick.reset(); //Reset right mouse click.
 }
 
 void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
@@ -3297,7 +3294,7 @@ auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>
 	if (stHit.ullOffset >= m_ullDataSize)
 		fHit = false;
 
-	return fHit ? std::optional { stHit } : std::nullopt;
+	return fHit ? std::optional<HEXHITTESTSTRUCT> { stHit } : std::nullopt;
 }
 
 void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
