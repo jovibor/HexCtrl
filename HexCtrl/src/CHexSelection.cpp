@@ -62,14 +62,13 @@ bool CHexSelection::HitTestHighlight(ULONGLONG ullOffset) const
 
 bool CHexSelection::HitTestRange(const HEXSPANSTRUCT& hss)const
 {
-	if (!HasSelection())
-		return false;
-
-	for (auto i = 0; i < hss.ullSize; ++i)
-		if (HitTest(hss.ullOffset + i))
-			return true;
-
-	return false;
+	return std::any_of(m_vecSelection.begin(), m_vecSelection.end(),
+		[&](const HEXSPANSTRUCT& ref)
+		{
+			return (hss.ullOffset >= ref.ullOffset && hss.ullOffset < (ref.ullOffset + ref.ullSize))
+				|| (ref.ullOffset >= hss.ullOffset && ref.ullOffset < (hss.ullOffset + hss.ullSize))
+				|| (hss.ullOffset + hss.ullSize > ref.ullOffset && hss.ullOffset + hss.ullSize <= (ref.ullOffset + ref.ullSize));
+		});
 }
 
 ULONGLONG CHexSelection::GetSelectionEnd()const

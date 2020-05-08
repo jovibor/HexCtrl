@@ -657,8 +657,8 @@ Structure for bookmarks, used in [`BkmAdd`](#BkmAdd) method.
 struct HEXBOOKMARKSTRUCT
 {
     std::vector<HEXSPANSTRUCT> vecSpan { };                //Vector of offsets and sizes.
-    std::wstring               wstrDesc { };               //Description.
-    ULONGLONG                  ullID { };                  //Bookmark id. Must be 0, assigned internally by framework.
+    std::wstring               wstrDesc { };               //Bookmark description.
+    ULONGLONG                  ullID { };                  //Bookmark ID, assigned internally by framework.
     ULONGLONG                  ullData { };                //User defined custom data.
     COLORREF                   clrBk { RGB(240, 240, 0) }; //Bk color.
     COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.

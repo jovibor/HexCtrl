@@ -27,9 +27,9 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetData()const->std::vector<HEXSPANSTRUCT>;
 		[[nodiscard]] bool HasSelection()const;
 		[[nodiscard]] bool HasSelHighlight()const;
-		[[nodiscard]] bool HitTest(ULONGLONG ullOffset)const;
-		[[nodiscard]] bool HitTestHighlight(ULONGLONG ullOffset)const;
-		[[nodiscard]] bool HitTestRange(const HEXSPANSTRUCT& hss)const;
+		[[nodiscard]] bool HitTest(ULONGLONG ullOffset)const;           //Is given offset within selection.
+		[[nodiscard]] bool HitTestHighlight(ULONGLONG ullOffset)const;  //Is given offset within highlighted selection.
+		[[nodiscard]] bool HitTestRange(const HEXSPANSTRUCT& hss)const; //Is there any selection within given range.
 		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect);
 		void SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight);
 		void SetSelectionEnd(ULONGLONG ullOffset);

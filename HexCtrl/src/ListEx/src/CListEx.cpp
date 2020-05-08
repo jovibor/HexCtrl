@@ -1239,7 +1239,7 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 	}
 }
 
-BOOL CListEx::OnSetCursor(CWnd * pWnd, UINT nHitTest, UINT message)
+BOOL CListEx::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 {
 	return CMFCListCtrl::OnSetCursor(pWnd, nHitTest, message);
 }

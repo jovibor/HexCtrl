@@ -2488,7 +2488,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 		//Colors are inverted colors of the selection.
 		pDC->SelectObject(pFont);
 		pDC->SetTextColor(m_stColor.clrBkSelected);
-		pDC->SetBkColor( m_stColor.clrTextSelected);
+		pDC->SetBkColor(m_stColor.clrTextSelected);
 		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size()));
 
 		//Ascii selection highlight printing.
