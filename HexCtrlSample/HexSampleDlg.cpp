@@ -23,6 +23,7 @@ BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_SETDATARO, &CHexSampleDlg::OnBnSetDataRO)
 	ON_BN_CLICKED(IDC_SETDATARW, &CHexSampleDlg::OnBnSetDataRW)
 	ON_BN_CLICKED(IDC_CLEARDATA, &CHexSampleDlg::OnBnClearData)
+	ON_NOTIFY(HEXCTRL_MSG_GETCOLOR, IDC_MY_HEX, &CHexSampleDlg::OnHexGetColor)
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
@@ -105,6 +106,36 @@ void CHexSampleDlg::OnBnSetDataRW()
 void CHexSampleDlg::OnBnClearData()
 {
 	m_myHex->ClearData();
+}
+
+void CHexSampleDlg::OnHexGetColor(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
+{
+	//Sample code for custom colors:
+/*	auto pNtfy = reinterpret_cast<PHEXNOTIFYSTRUCT>(pNMHDR);
+	if (pNtfy->stSpan.ullOffset < 18)
+	{
+		static std::vector<HEXCOLOR> vec {
+			{ RGB(50, 0, 0), RGB(255, 255, 255) },
+			{ RGB(0, 150, 0), RGB(255, 255, 255) },
+			{ RGB(255, 255, 0), RGB(0, 0, 0) },
+			{ RGB(0, 0, 50), RGB(255, 255, 255) },
+			{ RGB(50, 50, 110), RGB(255, 255, 255) },
+			{ RGB(50, 250, 50), RGB(255, 255, 255) },
+			{ RGB(110, 0, 0), RGB(255, 255, 255) },
+			{ RGB(0, 110, 0), RGB(255, 255, 255) },
+			{ RGB(0, 0, 110), RGB(255, 255, 255) },
+			{ RGB(110, 110, 0), RGB(255, 255, 255) },
+			{ RGB(0, 110, 110), RGB(255, 255, 255) },
+			{ RGB(110, 110, 110), RGB(255, 255, 255) },
+			{ RGB(220, 0, 0), RGB(255, 255, 255) },
+			{ RGB(0, 220, 0), RGB(255, 255, 255) },
+			{ RGB(0, 0, 220), RGB(255, 255, 255) },
+			{ RGB(220, 220, 0), RGB(255, 255, 255) },
+			{ RGB(0, 220, 220), RGB(255, 255, 255) },
+			{ RGB(0, 250, 0), RGB(255, 255, 255) }
+		};
+		pNtfy->pData = reinterpret_cast<std::byte*>(&vec[pNtfy->stSpan.ullOffset]);
+	}*/
 }
 
 void CHexSampleDlg::OnSize(UINT nType, int cx, int cy)

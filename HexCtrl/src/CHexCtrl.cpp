@@ -229,9 +229,12 @@ void CHexCtrl::ClearData()
 		return;
 
 	m_fDataSet = false;
-	m_ullDataSize = 0;
 	m_pData = nullptr;
+	m_ullDataSize = 0;
 	m_fMutable = false;
+	m_pHexVirtual = nullptr;
+	m_fHighLatency = false;
+	m_fCustomColors = false;
 	m_ullLMouseClick = 0xFFFFFFFFFFFFFFFFULL;
 	m_optRMouseClick.reset();
 
@@ -563,7 +566,7 @@ ULONGLONG CHexCtrl::GetCaretPos()const
 	return m_ullCaretPos;
 }
 
-auto CHexCtrl::GetColor()const->HEXCOLORSTRUCT
+auto CHexCtrl::GetColors()const->HEXCOLORSSTRUCT
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -675,8 +678,8 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 		break;
 	case EHexCmd::CMD_BKM_REMOVE:
 		fAvail = m_pBookmarks->HasBookmarks()
-			&& (m_pBookmarks->HitTest(GetCaretPos())
-				|| m_optRMouseClick ? m_pBookmarks->HitTest(*m_optRMouseClick) : false);
+			&& (m_pBookmarks->HitTest(GetCaretPos()) != nullptr
+				|| m_optRMouseClick ? m_pBookmarks->HitTest(*m_optRMouseClick) != nullptr : false);
 		break;
 	case EHexCmd::CMD_BKM_NEXT:
 	case EHexCmd::CMD_BKM_PREV:
@@ -837,7 +840,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
 }
 
-void CHexCtrl::SetColor(const HEXCOLORSTRUCT& clr)
+void CHexCtrl::SetColors(const HEXCOLORSSTRUCT& clr)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -879,6 +882,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_pHexVirtual = hds.pHexVirtual;
 	m_dwCacheSize = hds.dwCacheSize > 0x10000 ? hds.dwCacheSize : 0x10000; //64Kb is the minimum size
 	m_fHighLatency = hds.fHighLatency;
+	m_fCustomColors = hds.fCustomColors;
 
 	RecalcAll();
 	UpdateSectorVisible();
@@ -1926,6 +1930,7 @@ void CHexCtrl::OnPaint()
 	DrawOffsets(pDC, &m_fontMain, ullStartLine, ullEndLine);
 	DrawHexAscii(pDC, &m_fontMain, ullStartLine, ullEndLine);
 	DrawBookmarks(pDC, &m_fontMain, ullStartLine, ullEndLine);
+	DrawCustomColors(pDC, &m_fontMain, ullStartLine, ullEndLine);
 	DrawSelection(pDC, &m_fontMain, ullStartLine, ullEndLine);
 	DrawSelHighlight(pDC, &m_fontMain, ullStartLine, ullEndLine);
 	DrawCursor(pDC, &m_fontMain, ullStartLine, ullEndLine);
@@ -2263,6 +2268,172 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 
 			//Ascii bookmark printing.
 			PolyTextOutW(pDC->m_hDC, &vecBookmarksAscii[index++].stPoly, 1);
+		}
+	}
+}
+
+void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine)
+{
+	if (!m_fCustomColors)
+		return;
+
+	//Struct for colors.
+	struct COLORS
+	{
+		POLYTEXTW stPoly { };
+		HEXCOLOR clr { };
+	};
+
+	std::vector<COLORS> vecColorsHex, vecColorsAscii;
+	std::list<std::wstring> listWstrColorsHex, listWstrColorsAscii;
+	int iLine = 0; //Current line to print.
+
+	const auto ullOffset = ullStartLine * m_dwCapacity;      //Offset of the visible data to print.
+	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
+	if ((ullOffset + iSize) > m_ullDataSize)
+		iSize = m_ullDataSize - ullOffset;
+	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
+	HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETCOLOR } };
+	hns.stSpan.ullSize = 1; //One data chunk color to request.
+
+	//Loop for printing Hex chunks and Ascii chars line by line.
+	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
+	{
+		std::wstring wstrHexColorToPrint { }, wstrAsciiColorToPrint { }; //Colors to print.
+		int iColorHexPosToPrintX { 0x7FFFFFFF }, iColorAsciiPosToPrintX { };
+		bool fColor { false };  //Flag to show current Color in current Hex presence.
+		std::optional<HEXCOLOR> optColorCurr { }; //Current color.
+		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
+
+		//Main loop for printing Hex chunks and Ascii chars.
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
+		{
+			//Index of the next Byte to draw.
+			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
+			if (ullIndexByteToPrint >= m_ullDataSize) //Draw until reaching the end of m_ullDataSize.
+				break;
+
+			hns.pData = nullptr;
+			hns.stSpan.ullOffset = ullIndexByteToPrint;
+			MsgWindowNotify(hns);
+
+			//Colors.
+			if (auto pColor = reinterpret_cast<PHEXCOLOR>(hns.pData); pColor != nullptr)
+			{
+				//Hex chunk to print.
+				const auto chByteToPrint = pData[iLine * m_dwCapacity + iterChunks]; //Get the current byte to print.
+				const wchar_t pwszHexToPrint[2] { g_pwszHexMap[(chByteToPrint >> 4) & 0x0F], g_pwszHexMap[chByteToPrint & 0x0F] };
+
+				//Ascii to print.
+				wchar_t wchAscii = chByteToPrint;
+				if (wchAscii < 32 || wchAscii >= 0x7f) //For non printable Ascii just print a dot.
+					wchAscii = '.';
+
+				//If it's different color.
+				if (optColorCurr && (optColorCurr->clrBk != pColor->clrBk || optColorCurr->clrText != pColor->clrText))
+				{
+					if (!wstrHexColorToPrint.empty()) //Only adding spaces if there are chars beforehead.
+					{
+						if ((iterChunks % static_cast<DWORD>(m_enShowMode)) == 0)
+							wstrHexColorToPrint += L" ";
+
+						//Additional space between capacity halves, only with ASBYTE representation.
+						if (m_enShowMode == EHexShowMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+							wstrHexColorToPrint += L"  ";
+					}
+
+					//Hex colors Poly.
+					listWstrColorsHex.emplace_back(std::move(wstrHexColorToPrint));
+					vecColorsHex.emplace_back(COLORS { POLYTEXTW { iColorHexPosToPrintX, iPosToPrintY,
+						static_cast<UINT>(listWstrColorsHex.back().size()), listWstrColorsHex.back().data(), 0, { }, nullptr },
+						*optColorCurr });
+
+					//Ascii colors Poly.
+					listWstrColorsAscii.emplace_back(std::move(wstrAsciiColorToPrint));
+					vecColorsAscii.emplace_back(COLORS { POLYTEXTW { iColorAsciiPosToPrintX, iPosToPrintY,
+						static_cast<UINT>(listWstrColorsAscii.back().size()), listWstrColorsAscii.back().data(), 0, { }, nullptr },
+						*optColorCurr });
+
+					iColorHexPosToPrintX = 0x7FFFFFFF;
+				}
+				optColorCurr = *pColor;
+
+				if (iColorHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
+				{
+					int iCy;
+					HexChunkPoint(ullIndexByteToPrint, iColorHexPosToPrintX, iCy);
+					AsciiChunkPoint(ullIndexByteToPrint, iColorAsciiPosToPrintX, iCy);
+				}
+
+				if (!wstrHexColorToPrint.empty()) //Only adding spaces if there are chars beforehead.
+				{
+					if ((iterChunks % static_cast<DWORD>(m_enShowMode)) == 0)
+						wstrHexColorToPrint += L" ";
+
+					//Additional space between capacity halves, only with ASBYTE representation.
+					if (m_enShowMode == EHexShowMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+						wstrHexColorToPrint += L"  ";
+				}
+				wstrHexColorToPrint += pwszHexToPrint[0];
+				wstrHexColorToPrint += pwszHexToPrint[1];
+				wstrAsciiColorToPrint += wchAscii;
+				fColor = true;
+			}
+			else if (fColor)
+			{
+				//There can be multiple colors in one line. 
+				//So, if there already were colored bytes in the current line, we Poly them.
+				//Same Poly mechanism presents at the end of the current (iterLines) loop,
+				//to Poly colors that end at the line's end.
+
+				//Hex colors Poly.
+				listWstrColorsHex.emplace_back(std::move(wstrHexColorToPrint));
+				vecColorsHex.emplace_back(COLORS { POLYTEXTW { iColorHexPosToPrintX, iPosToPrintY,
+					static_cast<UINT>(listWstrColorsHex.back().size()), listWstrColorsHex.back().data(), 0, { }, nullptr },
+					*optColorCurr });
+
+				//Ascii colors Poly.
+				listWstrColorsAscii.emplace_back(std::move(wstrAsciiColorToPrint));
+				vecColorsAscii.emplace_back(COLORS { POLYTEXTW { iColorAsciiPosToPrintX, iPosToPrintY,
+					static_cast<UINT>(listWstrColorsAscii.back().size()), listWstrColorsAscii.back().data(), 0, { }, nullptr },
+					*optColorCurr });
+
+				iColorHexPosToPrintX = 0x7FFFFFFF;
+				fColor = false;
+				optColorCurr.reset();
+			}
+		}
+
+		//Colors Poly.
+		if (!wstrHexColorToPrint.empty())
+		{
+			//Hex colors Poly.
+			listWstrColorsHex.emplace_back(std::move(wstrHexColorToPrint));
+			vecColorsHex.emplace_back(COLORS { POLYTEXTW { iColorHexPosToPrintX, iPosToPrintY,
+				static_cast<UINT>(listWstrColorsHex.back().size()), listWstrColorsHex.back().data(), 0, { }, nullptr },
+				*optColorCurr });
+
+			//Ascii colors Poly.
+			listWstrColorsAscii.emplace_back(std::move(wstrAsciiColorToPrint));
+			vecColorsAscii.emplace_back(COLORS { POLYTEXTW { iColorAsciiPosToPrintX, iPosToPrintY,
+				static_cast<UINT>(listWstrColorsAscii.back().size()), listWstrColorsAscii.back().data(), 0, { }, nullptr },
+				*optColorCurr });
+		}
+	}
+
+	//Colors printing.
+	if (!vecColorsHex.empty())
+	{
+		pDC->SelectObject(pFont);
+		size_t index { 0 }; //Index for vecColorsAscii. Its size is always the same as the vecColorsHex.
+		for (const auto& iter : vecColorsHex)
+		{
+			pDC->SetTextColor(iter.clr.clrText);
+			pDC->SetBkColor(iter.clr.clrBk);
+			PolyTextOutW(pDC->m_hDC, &iter.stPoly, 1);
+
+			//Ascii color printing.
+			PolyTextOutW(pDC->m_hDC, &vecColorsAscii[index++].stPoly, 1);
 		}
 	}
 }

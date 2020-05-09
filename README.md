@@ -32,7 +32,7 @@
   * [ExecuteCmd](#executecmd)
   * [GetCapacity](#getcapacity)
   * [GetCaretPos](#getcaretpos)
-  * [GetColor](#getcolor)
+  * [GetColors](#getcolors)
   * [GetFontSize](#getfontsize)
   * [GetMenuHandle](#getmenuhandle)
   * [GetSectorSize](#getsectorsize)
@@ -47,7 +47,7 @@
   * [IsMutable](#ismutable)
   * [IsOffsetAsHex](#isoffsetashex)
   * [SetCapacity](#setcapacity)
-  * [SetColor](#setcolor)
+  * [SetColors](#setcolors)
   * [SetData](#setdata)
   * [SetFont](#setfont)
   * [SetFontSize](#setfontsize)
@@ -60,12 +60,13 @@
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
   * [HEXCREATESTRUCT](#hexcreatestruct)
-  * [HEXCOLORSTRUCT](#hexcolorstruct)
+  * [HEXCOLORSSTRUCT](#hexcolorsstruct)
   * [HEXDATASTRUCT](#hexdatastruct)
   * [HEXSPANSTRUCT](#hexspanstruct)
   * [HEXBOOKMARKSTRUCT](#hexbookmarkstruct)
   * [HEXNOTIFYSTRUCT](#hexnotifystruct)
   * [HEXHITTESTSTRUCT](#hexhitteststruct)
+  * [HEXCOLOR](#hexcolor)
   * [EHexCmd](#ehexcmd)
   * [EHexCreateMode](#ehexcreatemode)
   * [EHexDataMode](#ehexdatamode)
@@ -77,6 +78,7 @@
   * [HEXCTRL_MSG_CARETCHANGE](#hexctrl_msg_caretchange)
   * [HEXCTRL_MSG_CONTEXTMENU](#hexctrl_msg_contextmenu)
   * [HEXCTRL_MSG_DESTROY](#hexctrl_msg_destroy)
+  * [HEXCTRL_MSG_GETCOLOR](#hexctrl_msg_getcolor)
   * [HEXCTRL_MSG_GETDATA](#hexctrl_msg_getdata)
   * [HEXCTRL_MSG_MENUCLICK](#hexctrl_msg_menuclick)
   * [HEXCTRL_MSG_SELECTION](#hexctrl_msg_selection)
@@ -425,11 +427,11 @@ ULONGLONG GetCaretPos()const;
 ```
 Retrieves current caret position offset.
 
-### [](#)GetColor
+### [](#)GetColors
 ```cpp
-auto GetColor()const->HEXCOLORSTRUCT
+auto GetColors()const->HEXCOLORSSTRUCT
 ```
-Returns current [`HEXCOLORSTRUCT`](#hexcolorstruct).
+Returns current [`HEXCOLORSSTRUCT`](#hexcolorsstruct).
 
 ### [](#)GetFontSize
 ```cpp
@@ -519,11 +521,11 @@ void SetCapacity(DWORD dwCapacity);
 ```
 Sets the **HexControl** current capacity.
 
-### [](#)SetColor
+### [](#)SetColors
 ```cpp
-void SetColor(const HEXCOLORSTRUCT& clr);
+void SetColors(const HEXCOLORSSTRUCT& clr);
 ```
-Sets all the colors for the control. Takes [`HEXCOLORSTRUCT`](#hexcolorstruct) as the argument.
+Sets all the colors for the control. Takes [`HEXCOLORSSTRUCT`](#hexcolorsstruct) as the argument.
 
 ### [](#)SetData
 ```cpp
@@ -590,7 +592,7 @@ struct HEXCREATESTRUCT
 {
     EHexCreateMode  enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
     EHexShowMode    enShowMode { EHexShowMode::ASBYTE };           //Data representation mode.
-    HEXCOLORSTRUCT  stColor { };          //All the control's colors.
+    HEXCOLORSSTRUCT stColor { };          //All the control's colors.
     HWND            hwndParent { };       //Parent window pointer.
     const LOGFONTW* pLogFont { };         //Font to be used, nullptr for default. This font has to be monospaced.
     RECT            rect { };             //Initial rect. If null, the window is screen centered.
@@ -601,10 +603,10 @@ struct HEXCREATESTRUCT
 };
 ```
 
-### [](#)HEXCOLORSTRUCT
+### [](#)HEXCOLORSSTRUCT
 This structure describes all control's colors. All these colors have their default values.
 ```cpp
-struct HEXCOLORSTRUCT
+struct HEXCOLORSSTRUCT
 {
     COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };         //Hex chunks text color.
     COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };       //Ascii text color.
@@ -638,6 +640,7 @@ struct HEXDATASTRUCT
     DWORD         dwCacheSize { 0x800000 }; //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
     bool          fMutable { false };       //Is data mutable (editable) or read-only.
     bool          fHighLatency { false };   //Do not redraw window until scrolling completes.
+    bool          fCustomColors { false };  //Enable HEXCTRL_MSG_GETCOLOR message.
 };
 ```
 
@@ -689,6 +692,17 @@ struct HEXHITTESTSTRUCT
     ULONGLONG ullOffset { };      //Offset.
     bool      fIsAscii { false }; //Is cursor at ASCII part or at Hex.
 };
+```
+
+### [](#)HEXCOLOR
+**HexCtrl** custom colors.
+```cpp
+struct HEXCOLOR
+{
+    COLORREF clrBk { };   //Bk color.
+    COLORREF clrText { }; //Text color.
+};
+using PHEXCOLOR = HEXCOLOR*;
 ```
 
 ### [](#)EHexCmd
@@ -761,6 +775,12 @@ Sent when context menu is about to be displayed.
 
 ### [](#)HEXCTRL_MSG_DESTROY
 Sent to indicate that **HexControl** window is about to be destroyed.
+
+### [](#)HEXCTRL_MSG_GETCOLOR
+Message is sent to request a bk/text color for the current offset. [`HEXNOTIFYSTRUCT::stSpan.ullOffset`](#hexnotifystruct) will point to the offset of the data the request was sent for.  
+To provide the color, the `HEXNOTIFYSTRUCT::pData` member must be set to the valid [`HEXCOLOR`](#hexcolor) structure in response to this message. If no pointer is set in response the default colors will be used.  
+
+In order to receive this message the [`HEXDATASTRUCT::fCustomColors`](#hexdatastruct) flag must be set to true, prior to calling [`SetData`](#setdata) method.
 
 ### [](#)HEXCTRL_MSG_GETDATA
 Used in [`DATA_MSG`](#ehexdatamode) mode to acquire the data range to display.

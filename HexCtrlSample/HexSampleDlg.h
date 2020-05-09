@@ -27,6 +27,7 @@ protected:
 	afx_msg void OnBnSetDataRO();
 	afx_msg void OnBnSetDataRW();
 	afx_msg void OnBnClearData();
+	afx_msg void OnHexGetColor(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	DECLARE_MESSAGE_MAP()
 };

@@ -147,9 +147,9 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* HEXCOLORSTRUCT - All HexCtrl colors.                                                      *
+	* HEXCOLORSSTRUCT - All HexCtrl colors.                                                     *
 	********************************************************************************************/
-	struct HEXCOLORSTRUCT
+	struct HEXCOLORSSTRUCT
 	{
 		COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };         //Hex chunks text color.
 		COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };       //Ascii text color.
@@ -175,7 +175,7 @@ namespace HEXCTRL
 	{
 		EHexCreateMode  enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
 		EHexShowMode    enShowMode { EHexShowMode::ASBYTE };           //Data representation mode.
-		HEXCOLORSTRUCT  stColor { };          //All the control's colors.
+		HEXCOLORSSTRUCT stColor { };          //All the control's colors.
 		HWND            hwndParent { };       //Parent window handle.
 		const LOGFONTW* pLogFont { };         //Font to be used, nullptr for default. This font has to be monospaced.
 		RECT            rect { };             //Initial rect. If null, the window is screen centered.
@@ -199,6 +199,7 @@ namespace HEXCTRL
 		DWORD         dwCacheSize { 0x800000 }; //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
 		bool          fMutable { false };       //Is data mutable (editable) or read-only.
 		bool          fHighLatency { false };   //Do not redraw window until scrolling completes.
+		bool          fCustomColors { false };  //Enable HEXCTRL_MSG_GETCOLOR message.
 	};
 
 	/********************************************************************************************
@@ -208,7 +209,7 @@ namespace HEXCTRL
 	{
 		NMHDR         hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
 		HEXSPANSTRUCT stSpan { };  //Offset and size of the bytes.
-		ULONGLONG     ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
+		ULONGLONG     ullData { }; //Data depending on message (e.g. user defined custom menu ID/caret pos).
 		std::byte*    pData { };   //Pointer to a data to get/send.
 		POINT         point { };   //Mouse position for menu notifications.
 	};
@@ -222,6 +223,16 @@ namespace HEXCTRL
 		ULONGLONG ullOffset { };      //Offset.
 		bool      fIsAscii { false }; //Is cursor at ASCII part or at Hex.
 	};
+
+	/********************************************************************************************
+	* HEXCOLOR - used with the HEXCTRL_MSG_GETCOLOR message.                                    *
+	********************************************************************************************/
+	struct HEXCOLOR
+	{
+		COLORREF clrBk { };   //Bk color.
+		COLORREF clrText { }; //Text color.
+	};
+	using PHEXCOLOR = HEXCOLOR*;
 
 
 	/********************************************************************************************
@@ -245,7 +256,7 @@ namespace HEXCTRL
 		virtual void ExecuteCmd(EHexCmd enCmd)const = 0;        //Execute a command within the control.
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
-		[[nodiscard]] virtual auto GetColor()const->HEXCOLORSTRUCT = 0;      //Current colors.
+		[[nodiscard]] virtual auto GetColors()const->HEXCOLORSSTRUCT = 0;    //Current colors.
 		[[nodiscard]] virtual long GetFontSize()const = 0;                   //Current font size.
 		[[nodiscard]] virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
 		[[nodiscard]] virtual DWORD GetSectorSize()const = 0;                //Current sector size.
@@ -263,7 +274,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsOffsetVisible(ULONGLONG ullOffset)const = 0; //Ensures that given offset is visible.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
-		virtual void SetColor(const HEXCOLORSTRUCT& clr) = 0;  //Sets all the control's colors.
+		virtual void SetColors(const HEXCOLORSSTRUCT& clr) = 0;//Sets all the control's colors.
 		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
 		virtual void SetFont(const LOGFONTW* pLogFont) = 0;    //Sets the control's new font. This font has to be monospaced.
 		virtual void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
@@ -357,11 +368,12 @@ namespace HEXCTRL
 	constexpr auto HEXCTRL_MSG_CARETCHANGE { 0x0101U };  //Caret position changed.
 	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0102U };  //OnContextMenu triggered.
 	constexpr auto HEXCTRL_MSG_DESTROY { 0x0103U };      //Indicates that HexCtrl is being destroyed.
-	constexpr auto HEXCTRL_MSG_GETDATA { 0x0104U };      //Used in DATA_MSG mode to acquire the next byte to display.
-	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0105U };    //User defined custom menu clicked.
-	constexpr auto HEXCTRL_MSG_SELECTION { 0x0106U };    //Selection has been made.
-	constexpr auto HEXCTRL_MSG_SETDATA { 0x0107U };      //Indicates that the data has changed.
-	constexpr auto HEXCTRL_MSG_VIEWCHANGE { 0x0108U };   //View of the control has changed.
+	constexpr auto HEXCTRL_MSG_GETCOLOR { 0x0104U };     //Used to request a color for the given offset.
+	constexpr auto HEXCTRL_MSG_GETDATA { 0x0105U };      //Used in DATA_MSG mode to request the data to display.
+	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0106U };    //User defined custom menu clicked.
+	constexpr auto HEXCTRL_MSG_SELECTION { 0x0107U };    //Selection has been made.
+	constexpr auto HEXCTRL_MSG_SETDATA { 0x0108U };      //Indicates that the data has changed.
+	constexpr auto HEXCTRL_MSG_VIEWCHANGE { 0x0109U };   //View of the control has changed.
 
 	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #ifdef _UNICODE

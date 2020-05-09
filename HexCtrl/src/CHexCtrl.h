@@ -95,7 +95,7 @@ namespace HEXCTRL::INTERNAL
 		void ExecuteCmd(EHexCmd enCmd)const override;       //Execute a command within the control.
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
-		[[nodiscard]] auto GetColor()const->HEXCOLORSTRUCT override;      //Current colors.
+		[[nodiscard]] auto GetColors()const->HEXCOLORSSTRUCT override;    //Current colors.
 		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
 		[[nodiscard]] HMENU GetMenuHandle()const override;                //Context menu handle.
 		[[nodiscard]] DWORD GetSectorSize()const override;                //Current sector size.
@@ -113,7 +113,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsOffsetVisible(ULONGLONG ullOffset)const override; //Ensures that given offset is visible.
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
-		void SetColor(const HEXCOLORSTRUCT& clr)override;   //Sets all the control's colors.
+		void SetColors(const HEXCOLORSSTRUCT& clr)override; //Sets all the control's colors.
 		void SetData(const HEXDATASTRUCT& hds)override;     //Main method for setting data to display (and edit).	
 		void SetFont(const LOGFONTW* pLogFont)override;     //Sets the control's new font. This font has to be monospaced.
 		void SetFontSize(UINT uiSize)override;              //Sets the control's font size.
@@ -219,6 +219,7 @@ namespace HEXCTRL::INTERNAL
 		void DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		void DrawHexAscii(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		void DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
+		void DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		void DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		void DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
 		void DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
@@ -245,7 +246,7 @@ namespace HEXCTRL::INTERNAL
 		const int m_iFirstVertLine { 0 };     //First vertical line indent.
 		const DWORD m_dwCapacityMax { 99 };   //Maximum capacity.
 		const DWORD m_dwUndoMax { 500 };      //How many Undo states to preserve.
-		HEXCOLORSTRUCT m_stColor;             //All control related colors.
+		HEXCOLORSSTRUCT m_stColor;             //All control related colors.
 		EHexDataMode m_enDataMode { };        //Control's data mode.
 		EHexShowMode m_enShowMode { };        //Current "Show data" mode.
 		std::byte* m_pData { };               //Main data pointer. Modifiable in "Edit" mode.
@@ -311,6 +312,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fSectorVisible { false };      //Print lines between sectors or not.
 		bool m_fHighLatency { false };        //Reflects HEXDATASTRUCT::fHighLatency.
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
+		bool m_fCustomColors { false };       //Support for HEXCTRL_MSG_GETCOLOR.
 	};
 
 	template<typename T>
