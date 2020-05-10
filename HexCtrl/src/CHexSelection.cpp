@@ -13,9 +13,9 @@
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
-void CHexSelection::Attach(CHexCtrl* p)
+void CHexSelection::Attach(CHexCtrl* pHex)
 {
-	m_pHex = p;
+	m_pHex = pHex;
 }
 
 void CHexSelection::ClearAll()

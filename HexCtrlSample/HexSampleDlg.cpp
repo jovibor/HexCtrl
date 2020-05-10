@@ -12,10 +12,10 @@ CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/)
 	m_hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
 }
 
-HEXCOLOR* CHexSampleDlg::GetColor(ULONGLONG /*ullOffset*/)
+HEXCOLOR* CHexSampleDlg::GetColor(ULONGLONG ullOffset)
 {
 	//Sample code for custom colors:
-/*	if (ullOffset < 18)
+	if (ullOffset < 18)
 	{
 		static std::vector<HEXCOLOR> vec {
 			{ RGB(50, 0, 0), RGB(255, 255, 255) },
@@ -38,7 +38,7 @@ HEXCOLOR* CHexSampleDlg::GetColor(ULONGLONG /*ullOffset*/)
 			{ RGB(0, 250, 0), RGB(255, 255, 255) }
 		};
 		return &vec[ullOffset];
-	}*/
+	}
 
 	return nullptr;
 }
@@ -78,7 +78,7 @@ BOOL CHexSampleDlg::OnInitDialog()
 
 	m_hds.pData = reinterpret_cast<std::byte*>(m_data);
 	m_hds.ullDataSize = sizeof(m_data);
-	m_hds.pHexVirtColors = this;
+//	m_hds.pHexVirtColors = this;
 //	m_hds.fHighLatency = true;
 
 	return TRUE; //return TRUE  unless you set the focus to a control

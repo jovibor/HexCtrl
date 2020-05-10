@@ -235,9 +235,10 @@ void CHexCtrl::ClearData()
 	m_pHexVirtData = nullptr;
 	m_pHexVirtColors = nullptr;
 	m_fHighLatency = false;
-	m_fCustomColors = false;
-	m_ullLMouseClick = 0xFFFFFFFFFFFFFFFFULL;
+	m_ullLMouseClick = 0;
 	m_optRMouseClick.reset();
+	m_ullCaretPos = 0;
+	m_ullCurCursor = 0;
 
 	m_deqUndo.clear();
 	m_deqRedo.clear();
@@ -269,7 +270,6 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_COPYHEX] =
 		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_COPYHEX, &mii);
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_PASTEHEX] =
 		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
@@ -1222,7 +1222,6 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 		return;
 
 	m_ullCurCursor = optHit->ullOffset;
-	const auto ullHit = optHit->ullOffset;
 	m_fCursorTextArea = optHit->fIsAscii;
 	SetCapture();
 	m_fSelectionBlock = GetAsyncKeyState(VK_MENU) < 0;
@@ -1233,21 +1232,21 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	if (m_pSelection->HasSelection() && (nFlags & MK_SHIFT))
 	{
 		ULONGLONG ullSelEnd;
-		if (ullHit <= m_ullLMouseClick)
+		if (m_ullCurCursor <= m_ullLMouseClick)
 		{
-			ullSelStart = ullHit;
+			ullSelStart = m_ullCurCursor;
 			ullSelEnd = m_ullLMouseClick + 1;
 		}
 		else
 		{
 			ullSelStart = m_ullLMouseClick;
-			ullSelEnd = ullHit + 1;
+			ullSelEnd = m_ullCurCursor + 1;
 		}
 		ullSelSize = ullSelEnd - ullSelStart;
 	}
 	else
 	{
-		m_ullLMouseClick = ullSelStart = ullHit;
+		m_ullLMouseClick = ullSelStart = m_ullCurCursor;
 		ullSelSize = 1;
 	}
 
