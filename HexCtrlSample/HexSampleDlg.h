@@ -3,10 +3,11 @@
 
 using namespace HEXCTRL;
 
-class CHexSampleDlg : public CDialogEx
+class CHexSampleDlg : public CDialogEx, public IHexVirtColors
 {
 public:
 	explicit CHexSampleDlg(CWnd* pParent = nullptr);
+	HEXCOLOR* GetColor(ULONGLONG ullOffset)override;
 
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_HEXSAMPLE_DIALOG };
@@ -14,7 +15,6 @@ public:
 
 protected:
 	void DoDataExchange(CDataExchange* pDX) override;
-
 protected:
 	IHexCtrlPtr m_myHex { CreateHexCtrl() };
 	HEXDATASTRUCT m_hds;
@@ -27,7 +27,6 @@ protected:
 	afx_msg void OnBnSetDataRO();
 	afx_msg void OnBnSetDataRW();
 	afx_msg void OnBnClearData();
-	afx_msg void OnHexGetColor(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	DECLARE_MESSAGE_MAP()
 };

@@ -16,6 +16,7 @@
   * [Message Window](#message-window)
   * [Virtual Handler](#virtual-handler)
 * [Virtual Bookmarks](#virtual-bookmarks)
+* [IHexVirtColors](#ihexvirtcolors)
 * [Methods](#methods) <details><summary>_Expand_</summary>
   * [BkmAdd](#bkmadd)
   * [BkmClearAll](#bkmclearall)
@@ -78,7 +79,6 @@
   * [HEXCTRL_MSG_CARETCHANGE](#hexctrl_msg_caretchange)
   * [HEXCTRL_MSG_CONTEXTMENU](#hexctrl_msg_contextmenu)
   * [HEXCTRL_MSG_DESTROY](#hexctrl_msg_destroy)
-  * [HEXCTRL_MSG_GETCOLOR](#hexctrl_msg_getcolor)
   * [HEXCTRL_MSG_GETDATA](#hexctrl_msg_getdata)
   * [HEXCTRL_MSG_MENUCLICK](#hexctrl_msg_menuclick)
   * [HEXCTRL_MSG_SELECTION](#hexctrl_msg_selection)
@@ -283,29 +283,31 @@ The `ullIndex` member of the structure is an index of the byte to be displayed. 
 ### [](#)Virtual Handler
 If [`enDataMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_VIRTUAL` then all the data routine will be done through `HEXDATASTRUCT::pHexVirtual` pointer.
 
-This pointer is of `IHexVirtual` class type, which is a pure abstract base class.
+This pointer is of `IHexVirtData` class type, which is a pure abstract base class.
 You have to derive your own class from it and implement all its public methods:
 ```cpp
-class IHexVirtual
+class IHexVirtData
 {
 public:
-    virtual std::byte* GetData(const HEXSPANSTRUCT&) = 0;       //Data index and size to get.
+    [[nodiscard]] virtual std::byte* GetData(const HEXSPANSTRUCT&) = 0; //Data index and size to get.
     virtual void SetData(std::byte*, const HEXSPANSTRUCT&) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
 };
 ```
-Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtual = &yourDerivedObject`.
+Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtData = &yourDerivedObject`.
 
 ## [](#)Virtual Bookmarks
 **HexControl** has innate functional to work with any amount of bookmarked regions. These regions can be assigned with individual background and text color and description.
 
 But if you have some big and complicated data logic and want to handle all these regions yourself, you can do it.  
-For this you have to inherit your own class from the `IHexBkmVirtual` pure virtual interface and implement all the routines withing this class.  
+    virtuvoid SetData(std::byte*, const HEXSPANSTRUCT&) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
+
+
 To enable virtual bookmarks call the [`BkmSetVirtual`](#bkmsetvirtual) method.  
 
-The main method of the `IHexBkmVirtual` interface is `HitTest`. It takes byte's offset and returns pointer to [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) if there is a bookmark withing this byte, or `nullptr` otherwise.
+The main method of the `IHexVirtBkm` interface is `HitTest`. It takes byte's offset and returns pointer to [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) if there is a bookmark withing this byte, or `nullptr` otherwise.
 
 ```cpp
-class IHexBkmVirtual
+class IHexVirtBkm
 {
 public:
     virtual ULONGLONG Add(const HEXBOOKMARKSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
@@ -315,6 +317,19 @@ public:
     [[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT* = 0; //Bookmark by index (in inner list).
     [[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0; //Has given offset the bookmark?
     virtual void RemoveByID(ULONGLONG ullID) = 0;   //Remove bookmark by given ID (returned by Add()).
+};
+```
+
+## [](#)IHexVirtColors
+This interface is used to set custom bk/text colors for the given data offset.  
+To provide the color a pointer to the valid [`HEXCOLOR`](#hexcolor) structure must be returned from the `IHexVirtColors::GetColor` method. If `nullptr` is returned the default colors will be used.  
+
+In order to use this interface the [`HEXDATASTRUCT::pHexVirtColors`](#hexdatastruct) member must be set to the valid class inherited from this interface, prior to calling [`SetData`](#setdata) method.
+```cpp
+class IHexVirtColors
+{
+public:
+    [[nodiscard]] virtual PHEXCOLOR GetColor(ULONGLONG ullOffset) = 0;
 };
 ```
 
@@ -375,7 +390,7 @@ Removes bookmark by the given ID.
 
 ### [](#)BkmSetVirtual
 ```cpp
-void BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual = nullptr);
+void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual = nullptr);
 ```
 Enables or disables bookmarks virtual mode.
 
@@ -631,16 +646,16 @@ Main struct to set a data to display in the control.
 ```cpp
 struct HEXDATASTRUCT
 {
-    EHexDataMode  enDataMode { EHexDataMode::DATA_MEMORY }; //Working data mode.
-    ULONGLONG     ullDataSize { };          //Size of the data to display, in bytes.
-    HEXSPANSTRUCT stSelSpan { };            //Select .ullOffset initial position. Works only if .ullSize > 0.
-    HWND          hwndMsg { };              //Window for DATA_MSG mode. Parent is used by default.
-    IHexVirtual*  pHexVirtual { };          //Pointer for DATA_VIRTUAL mode.
-    std::byte*    pData { };                //Data pointer for DATA_MEMORY mode. Not used in other modes.
-    DWORD         dwCacheSize { 0x800000 }; //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
-    bool          fMutable { false };       //Is data mutable (editable) or read-only.
-    bool          fHighLatency { false };   //Do not redraw window until scrolling completes.
-    bool          fCustomColors { false };  //Enable HEXCTRL_MSG_GETCOLOR message.
+    EHexDataMode    enDataMode { EHexDataMode::DATA_MEMORY }; //Working data mode.
+    ULONGLONG       ullDataSize { };          //Size of the data to display, in bytes.
+    HEXSPANSTRUCT   stSelSpan { };            //Select .ullOffset initial position. Works only if .ullSize > 0.
+    HWND            hwndMsg { };              //Window for DATA_MSG mode. Parent is used by default.
+    IHexVirtData*   pHexVirtData { };         //Pointer for DATA_VIRTUAL mode.
+    IHexVirtColors* pHexVirtColors { };       //Pointer for Custom Colors class.
+    std::byte*      pData { };                //Data pointer for DATA_MEMORY mode. Not used in other modes.
+    DWORD           dwCacheSize { 0x800000 }; //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
+    bool            fMutable { false };       //Is data mutable (editable) or read-only.
+    bool            fHighLatency { false };   //Do not redraw window until scrolling completes.
 };
 ```
 
@@ -775,12 +790,6 @@ Sent when context menu is about to be displayed.
 
 ### [](#)HEXCTRL_MSG_DESTROY
 Sent to indicate that **HexControl** window is about to be destroyed.
-
-### [](#)HEXCTRL_MSG_GETCOLOR
-Message is sent to request a bk/text color for the current offset. [`HEXNOTIFYSTRUCT::stSpan.ullOffset`](#hexnotifystruct) will point to the offset of the data the request was sent for.  
-To provide the color, the `HEXNOTIFYSTRUCT::pData` member must be set to the valid [`HEXCOLOR`](#hexcolor) structure in response to this message. If no pointer is set in response the default colors will be used.  
-
-In order to receive this message the [`HEXDATASTRUCT::fCustomColors`](#hexdatastruct) flag must be set to true, prior to calling [`SetData`](#setdata) method.
 
 ### [](#)HEXCTRL_MSG_GETDATA
 Used in [`DATA_MSG`](#ehexdatamode) mode to acquire the data range to display.

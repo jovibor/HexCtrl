@@ -260,7 +260,7 @@ void CHexBookmarks::RemoveByID(ULONGLONG ullID)
 	m_time = _time64(nullptr);
 }
 
-void CHexBookmarks::SetVirtual(bool fEnable, IHexBkmVirtual* pVirtual)
+void CHexBookmarks::SetVirtual(bool fEnable, IHexVirtBkm* pVirtual)
 {
 	m_fVirtual = fEnable;
 	if (fEnable && pVirtual != nullptr)

@@ -213,7 +213,7 @@ void CHexCtrl::BkmRemoveByID(ULONGLONG ullID)
 	m_pBookmarks->RemoveByID(ullID);
 }
 
-void CHexCtrl::BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual)
+void CHexCtrl::BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -232,7 +232,8 @@ void CHexCtrl::ClearData()
 	m_pData = nullptr;
 	m_ullDataSize = 0;
 	m_fMutable = false;
-	m_pHexVirtual = nullptr;
+	m_pHexVirtData = nullptr;
+	m_pHexVirtColors = nullptr;
 	m_fHighLatency = false;
 	m_fCustomColors = false;
 	m_ullLMouseClick = 0xFFFFFFFFFFFFFFFFULL;
@@ -866,9 +867,9 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 		MessageBoxW(L"HexCtrl EHexDataMode::DATA_MSG mode requires HEXDATASTRUCT::hwndMsg to be set.", L"Error", MB_ICONWARNING);
 		return;
 	}
-	if (hds.enDataMode == EHexDataMode::DATA_VIRTUAL && !hds.pHexVirtual)
+	if (hds.enDataMode == EHexDataMode::DATA_VIRTUAL && !hds.pHexVirtData)
 	{
-		MessageBoxW(L"HexCtrl EHexDataMode::DATA_VIRTUAL mode requires HEXDATASTRUCT::pHexVirtual to be set.", L"Error", MB_ICONWARNING);
+		MessageBoxW(L"HexCtrl EHexDataMode::DATA_VIRTUAL mode requires HEXDATASTRUCT::pHexVirtData to be set.", L"Error", MB_ICONWARNING);
 		return;
 	}
 
@@ -879,10 +880,10 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_ullDataSize = hds.ullDataSize;
 	m_enDataMode = hds.enDataMode;
 	m_fMutable = hds.fMutable;
-	m_pHexVirtual = hds.pHexVirtual;
+	m_pHexVirtData = hds.pHexVirtData;
+	m_pHexVirtColors = hds.pHexVirtColors;
 	m_dwCacheSize = hds.dwCacheSize > 0x10000 ? hds.dwCacheSize : 0x10000; //64Kb is the minimum size
 	m_fHighLatency = hds.fHighLatency;
-	m_fCustomColors = hds.fCustomColors;
 
 	RecalcAll();
 	UpdateSectorVisible();
@@ -2274,7 +2275,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 
 void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine)
 {
-	if (!m_fCustomColors)
+	if (m_pHexVirtColors == nullptr)
 		return;
 
 	//Struct for colors.
@@ -2293,8 +2294,6 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	if ((ullOffset + iSize) > m_ullDataSize)
 		iSize = m_ullDataSize - ullOffset;
 	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
-	HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETCOLOR } };
-	hns.stSpan.ullSize = 1; //One data chunk color to request.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
@@ -2313,12 +2312,8 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 			if (ullIndexByteToPrint >= m_ullDataSize) //Draw until reaching the end of m_ullDataSize.
 				break;
 
-			hns.pData = nullptr;
-			hns.stSpan.ullOffset = ullIndexByteToPrint;
-			MsgWindowNotify(hns);
-
 			//Colors.
-			if (auto pColor = reinterpret_cast<PHEXCOLOR>(hns.pData); pColor != nullptr)
+			if (auto pColor = m_pHexVirtColors->GetColor(ullIndexByteToPrint); pColor != nullptr)
 			{
 				//Hex chunk to print.
 				const auto chByteToPrint = pData[iLine * m_dwCapacity + iterChunks]; //Get the current byte to print.
@@ -2987,7 +2982,7 @@ std::byte* CHexCtrl::GetData(HEXSPANSTRUCT hss)const
 	case EHexDataMode::DATA_VIRTUAL:
 		if (hss.ullSize == 0)
 			hss.ullSize = m_dwCacheSize;
-		pData = m_pHexVirtual->GetData(hss);
+		pData = m_pHexVirtData->GetData(hss);
 		break;
 	}
 
@@ -3002,7 +2997,7 @@ void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss)
 		//No need to do anything. Data is already set in pData memory.
 		break;
 	case EHexDataMode::DATA_VIRTUAL:
-		m_pHexVirtual->SetData(pData, hss);
+		m_pHexVirtData->SetData(pData, hss);
 		break;
 	case EHexDataMode::DATA_MSG:
 	{

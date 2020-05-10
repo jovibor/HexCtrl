@@ -87,7 +87,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] ULONGLONG BkmGetCount()const override; //Get bookmarks count.
 		[[nodiscard]] auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* override;
 		void BkmRemoveByID(ULONGLONG ullID)override;        //Remove bookmark by the given Id.
-		void BkmSetVirtual(bool fEnable, IHexBkmVirtual* pVirtual)override; //Enable/disable bookmarks virtual mode.
+		void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual)override; //Enable/disable bookmarks virtual mode.
 		void ClearData()override;                           //Clears all data from HexCtrl's view (not touching data itself).
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)override; //Сreates custom dialog control.
@@ -250,7 +250,8 @@ namespace HEXCTRL::INTERNAL
 		EHexDataMode m_enDataMode { };        //Control's data mode.
 		EHexShowMode m_enShowMode { };        //Current "Show data" mode.
 		std::byte* m_pData { };               //Main data pointer. Modifiable in "Edit" mode.
-		IHexVirtual* m_pHexVirtual { };       //Data handler pointer for EHexDataMode::DATA_VIRTUAL
+		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for EHexDataMode::DATA_VIRTUAL
+		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
 		HWND m_hwndMsg { };                   //Window handle the control messages will be sent to.
 		CWnd m_wndTtBkm { };                  //Tooltip window for bookmarks description.
 		TTTOOLINFOW m_stToolInfoBkm { };      //Tooltip Bookmarks struct.
