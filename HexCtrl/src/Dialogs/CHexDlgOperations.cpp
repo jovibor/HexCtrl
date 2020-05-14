@@ -131,7 +131,7 @@ BOOL CHexDlgOperations::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 
 void CHexDlgOperations::OnOK()
 {
-	CHexCtrl* pHex = GetHexCtrl();
+	auto pHex = GetHexCtrl();
 	if (!pHex)
 		return;
 
@@ -144,57 +144,57 @@ void CHexDlgOperations::OnOK()
 	if (hms.vecSpan.empty())
 		return;
 
-	int iEditId = 0;
+	int iEditID = 0;
 	switch (iRadioOperation)
 	{
 	case IDC_HEXCTRL_OPERATIONS_RADIO_OR:
 		hms.enOperMode = EOperMode::OPER_OR;
-		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_OR;
+		iEditID = IDC_HEXCTRL_OPERATIONS_EDIT_OR;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_XOR:
 		hms.enOperMode = EOperMode::OPER_XOR;
-		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_XOR;
+		iEditID = IDC_HEXCTRL_OPERATIONS_EDIT_XOR;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_AND:
 		hms.enOperMode = EOperMode::OPER_AND;
-		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_AND;
+		iEditID = IDC_HEXCTRL_OPERATIONS_EDIT_AND;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_NOT:
 		hms.enOperMode = EOperMode::OPER_NOT;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_SHL:
 		hms.enOperMode = EOperMode::OPER_SHL;
-		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_SHL;
+		iEditID = IDC_HEXCTRL_OPERATIONS_EDIT_SHL;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_SHR:
 		hms.enOperMode = EOperMode::OPER_SHR;
-		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_SHR;
+		iEditID = IDC_HEXCTRL_OPERATIONS_EDIT_SHR;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_ADD:
 		hms.enOperMode = EOperMode::OPER_ADD;
-		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_ADD;
+		iEditID = IDC_HEXCTRL_OPERATIONS_EDIT_ADD;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_SUB:
 		hms.enOperMode = EOperMode::OPER_SUBTRACT;
-		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_SUB;
+		iEditID = IDC_HEXCTRL_OPERATIONS_EDIT_SUB;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_MUL:
 		hms.enOperMode = EOperMode::OPER_MULTIPLY;
-		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_MUL;
+		iEditID = IDC_HEXCTRL_OPERATIONS_EDIT_MUL;
 		break;
 	case IDC_HEXCTRL_OPERATIONS_RADIO_DIV:
 		hms.enOperMode = EOperMode::OPER_DIVIDE;
-		iEditId = IDC_HEXCTRL_OPERATIONS_EDIT_DIV;
+		iEditID = IDC_HEXCTRL_OPERATIONS_EDIT_DIV;
 		break;
 	default:
 		break;
 	}
 
 	LONGLONG llData;
-	if (iEditId)
+	if (iEditID)
 	{
 		WCHAR pwszEditText[32];
-		GetDlgItemTextW(iEditId, pwszEditText, 32);
+		GetDlgItemTextW(iEditID, pwszEditText, _countof(pwszEditText));
 
 		if (!wstr2num(pwszEditText, llData))
 		{

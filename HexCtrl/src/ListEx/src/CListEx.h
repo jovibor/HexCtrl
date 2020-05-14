@@ -103,6 +103,8 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		bool HasTooltip(int iItem, int iSubItem, std::wstring** ppwstrText = nullptr, std::wstring** ppwstrCaption = nullptr);
 		bool HasMenu(int iItem, int iSubItem, CMenu** ppMenu = nullptr);
 		std::vector<ITEMTEXT> ParseItemText(int iItem, int iSubitem);
+		void TtLinkHide();
+		void TtCellHide();
 		void DrawItem(LPDRAWITEMSTRUCT pDIS)override;
 		afx_msg void OnPaint();
 		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
@@ -128,41 +130,42 @@ namespace HEXCTRL::LISTEX::INTERNAL
 	private:
 		CListExHdr m_stListHeader;
 		LISTEXCOLORS m_stColors { };
-		CFont m_fontList;
-		CFont m_fontListUnderline;
-		CPen m_penGrid;
-		CWnd m_stWndTtCell;              //Cells' tool-tip window.
-		TTTOOLINFOW m_stTInfoCell { };   //Cells' tool-tip info struct.
-		CWnd m_stWndTtLink;              //Link tool-tip window.
-		TTTOOLINFOW m_stTInfoLink { };   //Cells' tool-tip info struct.
-		HCURSOR m_cursorHand { };
-		HCURSOR m_cursorDefault { };
-		LVHITTESTINFO m_stCurrCell { };
-		LVHITTESTINFO m_stCurrLink { };
+		CFont m_fontList;               //Default list font.
+		CFont m_fontListUnderline;      //Underlined list font, for links.
+		CPen m_penGrid;                 //Pen for list lines between cells.
+		CWnd m_stWndTtCell;             //Cells' tool-tip window.
+		TTTOOLINFOW m_stTInfoCell { };  //Cells' tool-tip info struct.
+		CWnd m_stWndTtLink;             //Link tool-tip window.
+		TTTOOLINFOW m_stTInfoLink { };  //Link's tool-tip info struct.
+		std::wstring m_wstrTtText { };  //Link's tool-tip current text.
+		HCURSOR m_cursorHand { };       //Hand cursor handle.
+		HCURSOR m_cursorDefault { };    //Standard (default) cursor handle.
+		LVHITTESTINFO m_stCurrCell { }; //Cell's hit struct for tool-tip.
+		LVHITTESTINFO m_stCurrLink { }; //Cell's link hit struct for tool-tip.
 		DWORD m_dwGridWidth { 1 };		//Grid width.
 		CMenu* m_pListMenu { };			//List global menu, if set.
-		NMITEMACTIVATE m_stNMII { };
-		int m_iSortColumn { };
-		long m_lSizeFont { };       //Font size.
+		NMITEMACTIVATE m_stNMII { };    //Struct for SendMessage.
+		int m_iSortColumn { };          //Currently clicked header column.
+		long m_lSizeFont { };           //Font size.
 		PFNLVCOMPARE m_pfnCompare { nullptr };  //Pointer to user provided compare func.
 		EListExSortMode m_enDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
-		std::unordered_map<int, std::unordered_map<int, CELLTOOLTIP>> m_umapCellTt { };  //Cell's tooltips.
-		std::unordered_map<int, std::unordered_map<int, CMenu*>> m_umapCellMenu { };	 //Cell's menus.
-		std::unordered_map<int, std::unordered_map<int, ULONGLONG>> m_umapCellData { };  //Cell's custom data.
+		std::unordered_map<int, std::unordered_map<int, CELLTOOLTIP>> m_umapCellTt { }; //Cell's tooltips.
+		std::unordered_map<int, std::unordered_map<int, CMenu*>> m_umapCellMenu { };    //Cell's menus.
+		std::unordered_map<int, std::unordered_map<int, ULONGLONG>> m_umapCellData { }; //Cell's custom data.
 		std::unordered_map<int, std::unordered_map<int, LISTEXCELLCOLOR>> m_umapCellColor { }; //Cell's colors.
-		std::unordered_map<DWORD, ROWCOLOR> m_umapRowColor { };     //Row colors.
-		std::unordered_map<int, COLUMNCOLOR> m_umapColumnColor { }; //Column colors.
-		std::unordered_map<int, EListExSortMode> m_umapColumnSortMode { };              //Column sorting mode.
-		bool m_fCreated { false };  //Is created.
-		bool m_fSortable { false }; //Is list sortable.
-		bool m_fSortAscending { };  //Sorting type (ascending, descending).
-		bool m_fLinksUnderline { }; //Links are displayed underlined or not.
-		bool m_fLinkTooltip { };    //Show links toolips.
-		bool m_fVirtual { false };  //Whether list is virtual (LVS_OWNERDATA) or not.
-		bool m_fTtCellShown { false };  //Is cell's tool-tip shown atm.
-		bool m_fTtLinkShown { false };  //Is link's tool-tip shown atm.
-		bool m_fLDownAtLink { false };  //Left mouse down on link.
-		CRect m_rcLinkCurr { };         //Current link's rect;
+		std::unordered_map<DWORD, ROWCOLOR> m_umapRowColor { };            //Row colors.
+		std::unordered_map<int, COLUMNCOLOR> m_umapColumnColor { };        //Column colors.
+		std::unordered_map<int, EListExSortMode> m_umapColumnSortMode { }; //Column sorting mode.
+		bool m_fCreated { false };     //Is created.
+		bool m_fSortable { false };    //Is list sortable.
+		bool m_fSortAscending { };     //Sorting type (ascending, descending).
+		bool m_fLinksUnderline { };    //Links are displayed underlined or not.
+		bool m_fLinkTooltip { };       //Show links toolips.
+		bool m_fVirtual { false };     //Whether list is virtual (LVS_OWNERDATA) or not.
+		bool m_fTtCellShown { false }; //Is cell's tool-tip shown atm.
+		bool m_fTtLinkShown { false }; //Is link's tool-tip shown atm.
+		bool m_fLDownAtLink { false }; //Left mouse down on link.
+		CRect m_rcLinkCurr { };        //Current link's rect;
 	};
 
 		/*******************Setting a manifest for ComCtl32.dll version 6.***********************/

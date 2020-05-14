@@ -151,7 +151,7 @@ void CHexSelection::SetSelectionEnd(ULONGLONG ullOffset)
 	m_vecSelection.clear();
 	m_vecSelection.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
 
-	CHexCtrl* pHex = GetHexCtrl();
+	auto pHex = GetHexCtrl();
 	if (pHex)
 		pHex->UpdateInfoText();
 }
@@ -166,7 +166,7 @@ void CHexSelection::SetSelectionStart(ULONGLONG ullOffset)
 	m_vecSelection.clear();
 	m_vecSelection.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
 
-	CHexCtrl* pHex = GetHexCtrl();
+	auto pHex = GetHexCtrl();
 	if (pHex)
 		pHex->UpdateInfoText();
 }

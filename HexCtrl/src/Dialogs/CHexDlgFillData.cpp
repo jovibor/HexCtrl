@@ -45,7 +45,7 @@ void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
 
 void CHexDlgFillData::OnOK()
 {
-	CHexCtrl* pHex = GetHexCtrl();
+	auto pHex = GetHexCtrl();
 	if (!pHex)
 		return;
 

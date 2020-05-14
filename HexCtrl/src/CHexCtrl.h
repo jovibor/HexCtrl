@@ -74,7 +74,7 @@ namespace HEXCTRL::INTERNAL
 	};
 
 	/********************************************************************************************
-	* CHexCtrl class declaration.																*
+	* CHexCtrl class, is an implementation of the IHexCtrl interface.                           *
 	********************************************************************************************/
 	class CHexCtrl final : public CWnd, public IHexCtrl
 	{
@@ -123,7 +123,12 @@ namespace HEXCTRL::INTERNAL
 		void SetShowMode(EHexShowMode enShowMode)override;  //Sets current data show mode.
 		void SetWheelRatio(double dbRatio)override;         //Sets the ratio for how much to scroll with mouse-wheel.
 		void ShowDlg(EHexDlg enDlg, bool fShow)const override; //Show/hide specific dialog.
-	public:
+	private:
+		friend CHexDlgDataInterpret;
+		friend CHexDlgFillData;
+		friend CHexDlgOperations;
+		friend CHexDlgSearch;
+		friend CHexSelection;
 		[[nodiscard]] std::byte* GetData(HEXSPANSTRUCT hss)const; //Gets pointer to exact data offset, no matter what mode the control works in.
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
 		[[nodiscard]] EHexDataMode GetDataMode()const; //Current Data mode.
@@ -134,7 +139,7 @@ namespace HEXCTRL::INTERNAL
 		void ModifyDefault(const MODIFYSTRUCT& hms);   //EModifyMode::MODIFY_DEFAULT
 		void ModifyRepeat(const MODIFYSTRUCT& hms);    //EModifyMode::MODIFY_REPEAT
 		void ModifyOperation(const MODIFYSTRUCT& hms); //EModifyMode::MODIFY_OPERATION
-		template <typename T>void OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeChunk); //Immediate operations on pData.
+		template <typename T>void OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeData); //Immediate operations on pData.
 		void CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLONG& ullSizeChunk, ULONGLONG& ullChunks);
 		[[nodiscard]] DWORD GetCacheSize()const;               //Returns Virtual/Message mode cache size.
 		[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
@@ -185,8 +190,6 @@ namespace HEXCTRL::INTERNAL
 		void Print();                                             //Printing routine.
 		void TtOffsetShow(bool fShow);              //Tooltip Offset show/hide.
 		void TtBkmShow(bool fShow, POINT pt = { }); //Tooltip bookmark show/hide.
-	protected:
-		DECLARE_MESSAGE_MAP()
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
 		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
@@ -231,6 +234,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
+		DECLARE_MESSAGE_MAP()
 	private:
 		const std::unique_ptr<CHexDlgBookmarkMgr> m_pDlgBookmarkMgr { std::make_unique<CHexDlgBookmarkMgr>() }; //Bookmark manager.
 		const std::unique_ptr<CHexDlgDataInterpret> m_pDlgDataInterpret { std::make_unique<CHexDlgDataInterpret>() }; //Data Interpreter.
@@ -340,45 +344,51 @@ namespace HEXCTRL::INTERNAL
 		SetDataVirtual(pData, { ullOffset, sizeof(T) });
 	}
 
+	/************************************************************
+	* OperData - function for Modify/Operations
+	* pData - Starting address of the data to operate on.
+	* eMode - Operation mode.
+	* tDataOper - The data to apply the operation with.
+	* ullSizeData - Size of the data (selection) to operate on.
+	************************************************************/
 	template<typename T>
-	inline void CHexCtrl::OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeChunk)
+	inline void CHexCtrl::OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeData)
 	{
-		auto sChunks = ullSizeChunk / sizeof(T);
-		for (size_t i = 0; i < sChunks; i++)
+		auto nChunks = ullSizeData / sizeof(T);
+		for (auto pDataEnd = pData + nChunks; pData < pDataEnd; ++pData)
 		{
-			auto pDataMem = pData + i;
 			switch (eMode)
 			{
 			case EOperMode::OPER_OR:
-				*pDataMem |= tDataOper;
+				*pData |= tDataOper;
 				break;
 			case EOperMode::OPER_XOR:
-				*pDataMem ^= tDataOper;
+				*pData ^= tDataOper;
 				break;
 			case EOperMode::OPER_AND:
-				*pDataMem &= tDataOper;
+				*pData &= tDataOper;
 				break;
 			case EOperMode::OPER_NOT:
-				*pDataMem = ~*pDataMem;
+				*pData = ~*pData;
 				break;
 			case EOperMode::OPER_SHL:
-				*pDataMem <<= tDataOper;
+				*pData <<= tDataOper;
 				break;
 			case EOperMode::OPER_SHR:
-				*pDataMem >>= tDataOper;
+				*pData >>= tDataOper;
 				break;
 			case EOperMode::OPER_ADD:
-				*pDataMem += tDataOper;
+				*pData += tDataOper;
 				break;
 			case EOperMode::OPER_SUBTRACT:
-				*pDataMem -= tDataOper;
+				*pData -= tDataOper;
 				break;
 			case EOperMode::OPER_MULTIPLY:
-				*pDataMem *= tDataOper;
+				*pData *= tDataOper;
 				break;
 			case EOperMode::OPER_DIVIDE:
 				if (tDataOper > 0) //Division by Zero check.
-					*pDataMem /= tDataOper;
+					*pData /= tDataOper;
 				break;
 			}
 		}

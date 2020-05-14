@@ -10,33 +10,34 @@
 * These are some helper functions for HexCtrl.											*
 ****************************************************************************************/
 #pragma once
-#include "../verinfo/version.h"
+#include "version.h"
 #include <afxwin.h>
 #include <string>
 
 namespace HEXCTRL::INTERNAL {
-	//Fast lookup wchar_t array.
+	//Fast lookup char/wchar_t arrays.
 	inline const wchar_t* const g_pwszHexMap { L"0123456789ABCDEF" };
 	inline const char* const g_pszHexMap { "0123456789ABCDEF" };
 
 	//Converts dwSize bytes of ull to WCHAR string.
 	void UllToWchars(ULONGLONG ull, wchar_t* pwsz, size_t dwSize, bool fAsHex = true);
 
-	//Converts char* string to unsigned long number. Basically it's a strtoul() wrapper.
-	//Returns false if conversion is imposible, true otherwise.
-	bool CharsToUl(const char* pcsz, unsigned long& ul);
-
-	//Converts wstring to ULONGLONG or LONGLONG depending on template type argument.
-	template<typename T>inline bool wstr2num(std::wstring_view wstr, T& tData, int iBase = 0);
-
-	//Wide string to Multibyte string convertion.
-	std::string WstrToStr(std::wstring_view wstr);
-
-	//Multibyte string to wide string.
-	std::wstring StrToWstr(std::string_view str);
+	//Converts wide string to template's numeric data type.
+	template<typename T>
+	inline bool wstr2num(std::wstring_view wstr, T& tData, int iBase = 0);
+	
+	//Converts multibyte string to template's numeric data type.
+	template<typename T>
+	inline bool str2num(std::string_view str, T& tData, int iBase = 0);
 
 	//Converts every two numeric chars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
-	bool StrToHex(const std::string& strFrom, std::string& strToHex);
+	bool StrToHex(std::string_view str, std::string& strToHex);
+
+	//Wide to Multibyte string convertion.
+	std::string WstrToStr(std::wstring_view wstr);
+
+	//Multibyte to Wide string convertion.
+	std::wstring StrToWstr(std::string_view str);
 
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)

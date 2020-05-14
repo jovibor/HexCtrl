@@ -81,7 +81,7 @@ namespace HEXCTRL {
 }
 
 /************************************************************************
-* CHexCtrl implementation.                                              *
+* CHexCtrl class implementation.                                        *
 ************************************************************************/
 BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_ACTIVATE()
@@ -972,7 +972,7 @@ void CHexCtrl::SetShowMode(EHexShowMode enShowMode)
 	//Getting the "Show data as..." menu pointer independent of position.
 	auto pMenuMain = m_menuMain.GetSubMenu(0);
 	CMenu* pMenuShowDataAs { };
-	for (int i = 0; i < pMenuMain->GetMenuItemCount(); i++)
+	for (int i = 0; i < pMenuMain->GetMenuItemCount(); ++i)
 	{
 		//Searching through all submenus whose first menuID is IDM_HEXCTRL_SHOWAS_BYTE.
 		if (auto pSubMenu = pMenuMain->GetSubMenu(i); pSubMenu != nullptr)
@@ -986,7 +986,7 @@ void CHexCtrl::SetShowMode(EHexShowMode enShowMode)
 	if (pMenuShowDataAs)
 	{
 		//Unchecking all menus and checking only the currently selected.
-		for (int i = 0; i < pMenuShowDataAs->GetMenuItemCount(); i++)
+		for (int i = 0; i < pMenuShowDataAs->GetMenuItemCount(); ++i)
 			pMenuShowDataAs->CheckMenuItem(i, MF_UNCHECKED | MF_BYPOSITION);
 
 		UINT ID { };
@@ -2054,7 +2054,7 @@ void CHexCtrl::DrawHexAscii(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULON
 	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
-	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
+	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
 	{
 		//Hex, Ascii, Bookmarks, Selection, Datainterpret, Cursor wstrings to print.
 		std::wstring wstrHexToPrint { }, wstrAsciiToPrint { };
@@ -2064,7 +2064,7 @@ void CHexCtrl::DrawHexAscii(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULON
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
 		{
 			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
@@ -2135,7 +2135,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
-	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
+	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
 	{
 		std::wstring wstrHexBookmarkToPrint { }, wstrAsciiBookmarkToPrint { }; //Bookmarks to print.
 		int iBookmarkHexPosToPrintX { 0x7FFFFFFF }, iBookmarkAsciiPosToPrintX { };
@@ -2144,7 +2144,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
 		{
 			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
@@ -2295,7 +2295,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
-	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
+	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
 	{
 		std::wstring wstrHexColorToPrint { }, wstrAsciiColorToPrint { }; //Colors to print.
 		int iColorHexPosToPrintX { 0x7FFFFFFF }, iColorAsciiPosToPrintX { };
@@ -2304,7 +2304,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
 		{
 			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
@@ -2445,7 +2445,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
-	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
+	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
 	{
 		std::wstring wstrHexSelToPrint { }, wstrAsciiSelToPrint { }; //Selected Hex and Ascii strings to print.
 		int iSelHexPosToPrintX { 0x7FFFFFFF }, iSelAsciiPosToPrintX { };
@@ -2453,7 +2453,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
 		{
 			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
@@ -2559,7 +2559,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
-	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
+	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
 	{
 		std::wstring wstrHexSelToPrint { }, wstrAsciiSelToPrint { }; //Selected Hex and Ascii strings to print.
 		int iSelHexPosToPrintX { 0x7FFFFFFF }, iSelAsciiPosToPrintX { };
@@ -2567,7 +2567,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
 		{
 			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
@@ -2675,14 +2675,14 @@ void CHexCtrl::DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGL
 	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
-	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
+	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
 	{
 		std::wstring wstrHexCursorToPrint { }, wstrAsciiCursorToPrint { };
 		int iCursorHexPosToPrintX { }, iCursorAsciiPosToPrintX { }; //Cursor X coords.
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
 		{
 			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
@@ -2756,13 +2756,13 @@ void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine,
 	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
-	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
+	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
 	{
 		std::wstring wstrHexDataInterpretToPrint { }, wstrAsciiDataInterpretToPrint { }; //Data Interpreter Hex and Ascii strings to print.
 		int iDataInterpretHexPosToPrintX { 0x7FFFFFFF }, iDataInterpretAsciiPosToPrintX { }; //Data Interpreter X coords.
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 																			   //Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
 		{
 			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
@@ -2844,7 +2844,7 @@ void CHexCtrl::DrawSectorLines(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEn
 	int iLine = 0; //Current line to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
-	for (auto iterLines = ullStartLine; iterLines < ullEndLine; iterLines++, iLine++)
+	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
 	{
 		//Sectors lines vector to print.
 		if (IsSectorVisible() && ((iterLines * m_dwCapacity) % m_dwSectorSize == 0) && iLine > 0)
@@ -3113,7 +3113,7 @@ void CHexCtrl::ModifyRepeat(const MODIFYSTRUCT& hms)
 			{
 				//Fill iterSel.ullSize bytes with hms.ullDataSize bytes iterSel.ullSize / hms.ullDataSize times.
 				ULONGLONG ullChunks = (iterSel.ullSize >= hms.ullDataSize) ? iterSel.ullSize / hms.ullDataSize : 0;
-				for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; iterChunk++)
+				for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
 				{
 					ullOffset = static_cast<size_t>(iterSel.ullOffset) +
 						static_cast<size_t>(iterChunk) * static_cast<size_t>(hms.ullDataSize);
@@ -3430,7 +3430,7 @@ auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>
 		DWORD dwX = iX - m_iIndentFirstHexChunk - iBetweenBlocks;
 		DWORD dwChunkX { };
 		int iSpaceBetweenHexChunks = 0;
-		for (unsigned i = 1; i <= m_dwCapacity; i++)
+		for (unsigned i = 1; i <= m_dwCapacity; ++i)
 		{
 			if ((i % static_cast<DWORD>(m_enShowMode)) == 0)
 				iSpaceBetweenHexChunks += m_iSpaceBetweenHexChunks;
@@ -3552,7 +3552,7 @@ std::string CHexCtrl::CopyHex()
 	strData.reserve(static_cast<size_t>(ullSelSize) * 2);
 	for (unsigned i = 0; i < ullSelSize; ++i)
 	{
-		BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
+		auto chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
 		strData += g_pszHexMap[(chByte & 0xF0) >> 4];
 		strData += g_pszHexMap[(chByte & 0x0F)];
 	}
@@ -3568,7 +3568,7 @@ std::string CHexCtrl::CopyHexLE()
 	strData.reserve(static_cast<size_t>(ullSelSize) * 2);
 	for (int i = static_cast<int>(ullSelSize); i > 0; --i)
 	{
-		BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i - 1));
+		auto chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i - 1));
 		strData += g_pszHexMap[(chByte & 0xF0) >> 4];
 		strData += g_pszHexMap[(chByte & 0x0F)];
 	}
@@ -3586,9 +3586,9 @@ std::string CHexCtrl::CopyHexFormatted()
 	if (m_fSelectionBlock)
 	{
 		DWORD dwTail = m_pSelection->GetLineLength();
-		for (unsigned i = 0; i < ullSelSize; i++)
+		for (unsigned i = 0; i < ullSelSize; ++i)
 		{
-			BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
+			auto chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
 			strData += g_pszHexMap[(chByte & 0xF0) >> 4];
 			strData += g_pszHexMap[(chByte & 0x0F)];
 
@@ -3620,9 +3620,9 @@ std::string CHexCtrl::CopyHexFormatted()
 			strData.insert(0, static_cast<size_t>(dwCount), ' ');
 		}
 
-		for (unsigned i = 0; i < ullSelSize; i++)
+		for (unsigned i = 0; i < ullSelSize; ++i)
 		{
-			BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
+			auto chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
 			strData += g_pszHexMap[(chByte & 0xF0) >> 4];
 			strData += g_pszHexMap[(chByte & 0x0F)];
 
@@ -3650,9 +3650,9 @@ std::string CHexCtrl::CopyAscii()
 	auto ullSelSize = m_pSelection->GetSelectionSize();
 
 	strData.reserve(static_cast<size_t>(ullSelSize));
-	for (unsigned i = 0; i < ullSelSize; i++)
+	for (unsigned i = 0; i < ullSelSize; ++i)
 	{
-		char ch = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
+		auto ch = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
 		//If next byte is zero —> substitute it with space.
 		if (ch == 0)
 			ch = ' ';
@@ -3671,7 +3671,7 @@ std::string CHexCtrl::CopyBase64()
 	const char* const pszBase64Map { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
 	unsigned int uValA = 0;
 	int iValB = -6;
-	for (unsigned i = 0; i < ullSelSize; i++)
+	for (unsigned i = 0; i < ullSelSize; ++i)
 	{
 		uValA = (uValA << 8) + GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
 		iValB += 8;
@@ -3702,10 +3702,10 @@ std::string CHexCtrl::CopyCArr()
 	strData += arrSelectionNum;
 	strData += "] = {\r\n";
 
-	for (unsigned i = 0; i < ullSelSize; i++)
+	for (unsigned i = 0; i < ullSelSize; ++i)
 	{
 		strData += "0x";
-		BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
+		auto chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
 		strData += g_pszHexMap[(chByte & 0xF0) >> 4];
 		strData += g_pszHexMap[(chByte & 0x0F)];
 		if (i < ullSelSize - 1)
@@ -3728,10 +3728,10 @@ std::string CHexCtrl::CopyGrepHex()
 	auto ullSelSize = m_pSelection->GetSelectionSize();
 
 	strData.reserve(static_cast<size_t>(ullSelSize) * 2);
-	for (unsigned i = 0; i < ullSelSize; i++)
+	for (unsigned i = 0; i < ullSelSize; ++i)
 	{
 		strData += "\\x";
-		BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
+		auto chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(i));
 		strData += g_pszHexMap[(chByte & 0xF0) >> 4];
 		strData += g_pszHexMap[(chByte & 0x0F)];
 	}
@@ -3783,11 +3783,11 @@ std::string CHexCtrl::CopyPrintScreen()
 		strData += WstrToStr(pwszOffset);
 		strData.insert(strData.size(), 3, ' ');
 
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; iterChunks++)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
 		{
 			if (dwModStart == 0 && ullIndexByteToPrint < ullSelSize)
 			{
-				BYTE chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(ullIndexByteToPrint++));
+				auto chByte = GetData<BYTE>(m_pSelection->GetOffsetByIndex(ullIndexByteToPrint++));
 				strData += g_pszHexMap[(chByte & 0xF0) >> 4];
 				strData += g_pszHexMap[(chByte & 0x0F)];
 
@@ -3862,7 +3862,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 
 		auto dwIterations = static_cast<size_t>(ullSize / 2 + ullSize % 2);
 		char chToUL[3] { }; //Array for actual Ascii chars to convert from.
-		for (size_t i = 0; i < dwIterations; i++)
+		for (size_t i = 0; i < dwIterations; ++i)
 		{
 			if (i + 2 <= ullSize)
 			{
@@ -3875,14 +3875,14 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 				chToUL[1] = '\0';
 			}
 
-			unsigned long ulNumber;
-			if (!CharsToUl(chToUL, ulNumber))
+			unsigned char chNumber;
+			if (!str2num(chToUL, chNumber, 16))
 			{
 				GlobalUnlock(hClipboard);
 				CloseClipboard();
 				return;
 			}
-			strData += static_cast<unsigned char>(ulNumber);
+			strData += chNumber;
 		}
 		hmd.pData = reinterpret_cast<std::byte*>(strData.data());
 		ullSizeToModify = hmd.ullDataSize = strData.size();
@@ -4156,10 +4156,10 @@ void CHexCtrl::Undo()
 	if (m_deqUndo.empty())
 		return;
 
-	auto& refUndo = m_deqUndo.back();
+	const auto& refUndo = m_deqUndo.back();
 
 	//Making new Redo data snapshot.
-	auto& refRedo = m_deqRedo.emplace_back(std::make_unique<std::vector<UNDOSTRUCT>>());
+	const auto& refRedo = m_deqRedo.emplace_back(std::make_unique<std::vector<UNDOSTRUCT>>());
 
 	//Bad alloc may happen here!!!
 	//If there is no more free memory, just clear the vec and return.
@@ -4181,7 +4181,7 @@ void CHexCtrl::Undo()
 	for (const auto& iter : *refUndo)
 	{
 		const auto& refUndoData = iter.vecData;
-		std::byte* pData = GetData({ iter.ullOffset, refUndoData.size() });
+		const auto pData = GetData({ iter.ullOffset, refUndoData.size() });
 		//Fill Redo with the data.
 		std::copy_n(pData, refUndoData.size(), refRedo->at(static_cast<size_t>(ullIndex)).vecData.begin());
 		//Undo the data.
@@ -4210,7 +4210,7 @@ void CHexCtrl::Redo()
 	for (const auto& iter : *refRedo)
 	{
 		const auto& refData = iter.vecData;
-		std::byte* pData = GetData({ iter.ullOffset, refData.size() });
+		const auto pData = GetData({ iter.ullOffset, refData.size() });
 		std::copy_n(refData.begin(), refData.size(), pData);
 		SetDataVirtual(pData, { iter.ullOffset, refData.size() });
 	}
@@ -4234,7 +4234,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 		m_deqUndo.pop_front();
 
 	//Making new Undo data snapshot.
-	auto& refUndo = m_deqUndo.emplace_back(std::make_unique<std::vector<UNDOSTRUCT>>());
+	const auto& refUndo = m_deqUndo.emplace_back(std::make_unique<std::vector<UNDOSTRUCT>>());
 
 	//Bad alloc may happen here!!!
 	try
@@ -4279,7 +4279,7 @@ void CHexCtrl::SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ul
 	m_ullCaretPos = ullStart;
 
 	std::vector<HEXSPANSTRUCT> vecSelection;
-	for (ULONGLONG i = 0; i < ullLines; i++)
+	for (ULONGLONG i = 0; i < ullLines; ++i)
 		vecSelection.emplace_back(HEXSPANSTRUCT { ullStart + m_dwCapacity * i, ullSize });
 	m_pSelection->SetSelection(vecSelection);
 
@@ -4411,7 +4411,7 @@ void CHexCtrl::WstrCapacityFill()
 {
 	m_wstrCapacity.clear();
 	m_wstrCapacity.reserve(static_cast<size_t>(m_dwCapacity) * 3);
-	for (unsigned iter = 0; iter < m_dwCapacity; iter++)
+	for (unsigned iter = 0; iter < m_dwCapacity; ++iter)
 	{
 		if (m_fOffsetAsHex)
 		{
@@ -4594,7 +4594,7 @@ void CHexCtrl::Print()
 	}
 	else
 	{
-		for (int i = 0; i < iPagesToPrint; i++)
+		for (int i = 0; i < iPagesToPrint; ++i)
 		{
 			pDC->StartPage();
 			pDC->OffsetViewportOrg(iIndentX, iIndentY);

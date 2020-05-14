@@ -52,7 +52,7 @@ void CHexDlgSearch::Search(bool fForward)
 
 bool CHexDlgSearch::IsSearchAvail()
 {
-	CHexCtrl* pHexCtrl = GetHexCtrl();
+	auto pHexCtrl = GetHexCtrl();
 	if (!pHexCtrl)
 		return false;
 
