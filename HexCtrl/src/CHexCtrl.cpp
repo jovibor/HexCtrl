@@ -1922,7 +1922,7 @@ void CHexCtrl::OnPaint()
 
 	//Drawing through CMemDC to avoid flickering.
 	CMemDC memDC(dc, rcClient);
-	CDC* pDC = &memDC.GetDC();
+	auto pDC = &memDC.GetDC();
 	const auto ullStartLine = GetTopLine();
 	const auto ullEndLine = GetBottomLine();
 
@@ -2051,7 +2051,7 @@ void CHexCtrl::DrawHexAscii(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULON
 	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
 	if ((ullOffset + iSize) > m_ullDataSize)
 		iSize = m_ullDataSize - ullOffset;
-	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
+	auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
@@ -2064,15 +2064,14 @@ void CHexCtrl::DrawHexAscii(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULON
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
 		{
 			//Index of the next Byte to draw.
-			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
-			if (ullIndexByteToPrint >= m_ullDataSize) //Draw until reaching the end of m_ullDataSize.
+			if (iterLines * m_dwCapacity + iterChunks >= m_ullDataSize) //Draw until reaching the end of m_ullDataSize.
 				break;
 
 			//Hex chunk to print.
-			const auto chByteToPrint = pData[iLine * m_dwCapacity + iterChunks]; //Get the current byte to print.
+			const auto chByteToPrint = *pData; //Get current byte to print.
 			const wchar_t pwszHexToPrint[2] { g_pwszHexMap[(chByteToPrint >> 4) & 0x0F], g_pwszHexMap[chByteToPrint & 0x0F] };
 			wstrHexToPrint += pwszHexToPrint[0];
 			wstrHexToPrint += pwszHexToPrint[1];
@@ -2132,7 +2131,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
 	if ((ullOffset + iSize) > m_ullDataSize)
 		iSize = m_ullDataSize - ullOffset;
-	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
+	auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
@@ -2144,7 +2143,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
 		{
 			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
@@ -2155,7 +2154,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 			if (auto pBookmark = m_pBookmarks->HitTest(ullIndexByteToPrint); pBookmark != nullptr)
 			{
 				//Hex chunk to print.
-				const auto chByteToPrint = pData[iLine * m_dwCapacity + iterChunks]; //Get the current byte to print.
+				const auto chByteToPrint = *pData; //Get current byte to print.
 				const wchar_t pwszHexToPrint[2] { g_pwszHexMap[(chByteToPrint >> 4) & 0x0F], g_pwszHexMap[chByteToPrint & 0x0F] };
 
 				//Ascii to print.
@@ -2292,7 +2291,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
 	if ((ullOffset + iSize) > m_ullDataSize)
 		iSize = m_ullDataSize - ullOffset;
-	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
+	auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
@@ -2304,7 +2303,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
 		{
 			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
@@ -2315,7 +2314,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 			if (auto pColor = m_pHexVirtColors->GetColor(ullIndexByteToPrint); pColor != nullptr)
 			{
 				//Hex chunk to print.
-				const auto chByteToPrint = pData[iLine * m_dwCapacity + iterChunks]; //Get the current byte to print.
+				const auto chByteToPrint = *pData; //Get current byte to print.
 				const wchar_t pwszHexToPrint[2] { g_pwszHexMap[(chByteToPrint >> 4) & 0x0F], g_pwszHexMap[chByteToPrint & 0x0F] };
 
 				//Ascii to print.
@@ -2442,7 +2441,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
 	if ((ullOffset + iSize) > m_ullDataSize)
 		iSize = m_ullDataSize - ullOffset;
-	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
+	auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
@@ -2453,7 +2452,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
 		{
 			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
@@ -2463,7 +2462,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 			//Selection.
 			if (m_pSelection->HitTest(ullIndexByteToPrint))
 			{			//Hex chunk to print.
-				const auto chByteToPrint = pData[iLine * m_dwCapacity + iterChunks]; //Get the current byte to print.
+				const auto chByteToPrint = *pData; //Get current byte to print.
 				const wchar_t pwszHexToPrint[2] { g_pwszHexMap[(chByteToPrint >> 4) & 0x0F], g_pwszHexMap[chByteToPrint & 0x0F] };
 
 				//Ascii to print.
@@ -2556,7 +2555,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
 	if ((ullOffset + iSize) > m_ullDataSize)
 		iSize = m_ullDataSize - ullOffset;
-	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
+	auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
@@ -2567,7 +2566,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
 		{
 			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
@@ -2577,7 +2576,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 			//Selection highlights.
 			if (m_pSelection->HitTestHighlight(ullIndexByteToPrint))
 			{	//Hex chunk to print.
-				const auto chByteToPrint = pData[iLine * m_dwCapacity + iterChunks]; //Get the current byte to print.
+				const auto chByteToPrint = *pData; //Get current byte to print.
 				const wchar_t pwszHexToPrint[2] { g_pwszHexMap[(chByteToPrint >> 4) & 0x0F], g_pwszHexMap[chByteToPrint & 0x0F] };
 
 				//Ascii to print.
@@ -2672,7 +2671,7 @@ void CHexCtrl::DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGL
 	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
 	if ((ullOffset + iSize) > m_ullDataSize)
 		iSize = m_ullDataSize - ullOffset;
-	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
+	auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
@@ -2682,7 +2681,7 @@ void CHexCtrl::DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGL
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
 		{
 			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
@@ -2693,7 +2692,7 @@ void CHexCtrl::DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGL
 			if (ullIndexByteToPrint == m_ullCaretPos)
 			{
 				//Hex chunk to print.
-				const auto chByteToPrint = pData[iLine * m_dwCapacity + iterChunks]; //Get the current byte to print.
+				const auto chByteToPrint = *pData; //Get current byte to print.
 
 				//Ascii to print.
 				wchar_t wchAscii = chByteToPrint;
@@ -2753,7 +2752,7 @@ void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine,
 	auto iSize = (ullEndLine - ullStartLine) * m_dwCapacity; //Size of the visible data to print.
 	if ((ullOffset + iSize) > m_ullDataSize)
 		iSize = m_ullDataSize - ullOffset;
-	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
+	auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffset, iSize })); //Pointer to data to print.
 
 	//Loop for printing Hex chunks and Ascii chars line by line.
 	for (auto iterLines = ullStartLine; iterLines < ullEndLine; ++iterLines, ++iLine)
@@ -2762,7 +2761,7 @@ void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine,
 		int iDataInterpretHexPosToPrintX { 0x7FFFFFFF }, iDataInterpretAsciiPosToPrintX { }; //Data Interpreter X coords.
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 																			   //Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
 		{
 			//Index of the next Byte to draw.
 			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
@@ -2774,7 +2773,7 @@ void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine,
 				&& ullIndexByteToPrint >= m_ullCaretPos && ullIndexByteToPrint < m_ullCaretPos + ullSize)
 			{
 				//Hex chunk to print.
-				const auto chByteToPrint = pData[iLine * m_dwCapacity + iterChunks]; //Get the current byte to print.
+				const auto chByteToPrint = *pData; //Get current byte to print.
 				const wchar_t pwszHexToPrint[2] { g_pwszHexMap[(chByteToPrint >> 4) & 0x0F], g_pwszHexMap[chByteToPrint & 0x0F] };
 
 				//Ascii to print.
