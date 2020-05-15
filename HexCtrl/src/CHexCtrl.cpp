@@ -2062,14 +2062,11 @@ void CHexCtrl::DrawHexAscii(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULON
 		const auto iHexPosToPrintX = m_iIndentFirstHexChunk - iScrollH;
 		const auto iAsciiPosToPrintX = m_iIndentAscii - iScrollH;
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
+		auto ullByteToPrint = iterLines * m_dwCapacity;
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && ullByteToPrint < m_ullDataSize; ++iterChunks, ++pData, ++ullByteToPrint)
 		{
-			//Index of the next Byte to draw.
-			if (iterLines * m_dwCapacity + iterChunks >= m_ullDataSize) //Draw until reaching the end of m_ullDataSize.
-				break;
-
 			//Hex chunk to print.
 			const auto chByteToPrint = *pData; //Get current byte to print.
 			const wchar_t pwszHexToPrint[2] { g_pwszHexMap[(chByteToPrint >> 4) & 0x0F], g_pwszHexMap[chByteToPrint & 0x0F] };
@@ -2141,17 +2138,13 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 		bool fBookmark { false };  //Flag to show current Bookmark in current Hex presence.
 		const HEXBOOKMARKSTRUCT* pBookmarkCurr { };
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
+		auto ullByteToPrint = iterLines * m_dwCapacity;
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && ullByteToPrint < m_ullDataSize; ++iterChunks, ++pData, ++ullByteToPrint)
 		{
-			//Index of the next Byte to draw.
-			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
-			if (ullIndexByteToPrint >= m_ullDataSize) //Draw until reaching the end of m_ullDataSize.
-				break;
-
 			//Bookmarks.
-			if (auto pBookmark = m_pBookmarks->HitTest(ullIndexByteToPrint); pBookmark != nullptr)
+			if (auto pBookmark = m_pBookmarks->HitTest(ullByteToPrint); pBookmark != nullptr)
 			{
 				//Hex chunk to print.
 				const auto chByteToPrint = *pData; //Get current byte to print.
@@ -2194,8 +2187,8 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 				if (iBookmarkHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
 				{
 					int iCy;
-					HexChunkPoint(ullIndexByteToPrint, iBookmarkHexPosToPrintX, iCy);
-					AsciiChunkPoint(ullIndexByteToPrint, iBookmarkAsciiPosToPrintX, iCy);
+					HexChunkPoint(ullByteToPrint, iBookmarkHexPosToPrintX, iCy);
+					AsciiChunkPoint(ullByteToPrint, iBookmarkAsciiPosToPrintX, iCy);
 				}
 
 				if (!wstrHexBookmarkToPrint.empty()) //Only adding spaces if there are chars beforehead.
@@ -2301,17 +2294,13 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 		bool fColor { false };  //Flag to show current Color in current Hex presence.
 		std::optional<HEXCOLOR> optColorCurr { }; //Current color.
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
+		auto ullByteToPrint = iterLines * m_dwCapacity;
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && ullByteToPrint < m_ullDataSize; ++iterChunks, ++pData, ++ullByteToPrint)
 		{
-			//Index of the next Byte to draw.
-			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
-			if (ullIndexByteToPrint >= m_ullDataSize) //Draw until reaching the end of m_ullDataSize.
-				break;
-
 			//Colors.
-			if (auto pColor = m_pHexVirtColors->GetColor(ullIndexByteToPrint); pColor != nullptr)
+			if (auto pColor = m_pHexVirtColors->GetColor(ullByteToPrint); pColor != nullptr)
 			{
 				//Hex chunk to print.
 				const auto chByteToPrint = *pData; //Get current byte to print.
@@ -2354,8 +2343,8 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 				if (iColorHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
 				{
 					int iCy;
-					HexChunkPoint(ullIndexByteToPrint, iColorHexPosToPrintX, iCy);
-					AsciiChunkPoint(ullIndexByteToPrint, iColorAsciiPosToPrintX, iCy);
+					HexChunkPoint(ullByteToPrint, iColorHexPosToPrintX, iCy);
+					AsciiChunkPoint(ullByteToPrint, iColorAsciiPosToPrintX, iCy);
 				}
 
 				if (!wstrHexColorToPrint.empty()) //Only adding spaces if there are chars beforehead.
@@ -2450,17 +2439,13 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 		int iSelHexPosToPrintX { 0x7FFFFFFF }, iSelAsciiPosToPrintX { };
 		bool fSelection { false };
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
+		auto ullByteToPrint = iterLines * m_dwCapacity;
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && ullByteToPrint < m_ullDataSize; ++iterChunks, ++pData, ++ullByteToPrint)
 		{
-			//Index of the next Byte to draw.
-			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
-			if (ullIndexByteToPrint >= m_ullDataSize) //Draw until reaching the end of m_ullDataSize.
-				break;
-
 			//Selection.
-			if (m_pSelection->HitTest(ullIndexByteToPrint))
+			if (m_pSelection->HitTest(ullByteToPrint))
 			{			//Hex chunk to print.
 				const auto chByteToPrint = *pData; //Get current byte to print.
 				const wchar_t pwszHexToPrint[2] { g_pwszHexMap[(chByteToPrint >> 4) & 0x0F], g_pwszHexMap[chByteToPrint & 0x0F] };
@@ -2473,8 +2458,8 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULO
 				if (iSelHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
 				{
 					int iCy;
-					HexChunkPoint(ullIndexByteToPrint, iSelHexPosToPrintX, iCy);
-					AsciiChunkPoint(ullIndexByteToPrint, iSelAsciiPosToPrintX, iCy);
+					HexChunkPoint(ullByteToPrint, iSelHexPosToPrintX, iCy);
+					AsciiChunkPoint(ullByteToPrint, iSelAsciiPosToPrintX, iCy);
 				}
 
 				if (!wstrHexSelToPrint.empty()) //Only adding spaces if there are chars beforehead.
@@ -2564,17 +2549,13 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 		int iSelHexPosToPrintX { 0x7FFFFFFF }, iSelAsciiPosToPrintX { };
 		bool fSelection { false };
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
+		auto ullByteToPrint = iterLines * m_dwCapacity;
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && ullByteToPrint < m_ullDataSize; ++iterChunks, ++pData, ++ullByteToPrint)
 		{
-			//Index of the next Byte to draw.
-			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
-			if (ullIndexByteToPrint >= m_ullDataSize) //Draw until reaching the end of m_ullDataSize.
-				break;
-
 			//Selection highlights.
-			if (m_pSelection->HitTestHighlight(ullIndexByteToPrint))
+			if (m_pSelection->HitTestHighlight(ullByteToPrint))
 			{	//Hex chunk to print.
 				const auto chByteToPrint = *pData; //Get current byte to print.
 				const wchar_t pwszHexToPrint[2] { g_pwszHexMap[(chByteToPrint >> 4) & 0x0F], g_pwszHexMap[chByteToPrint & 0x0F] };
@@ -2587,8 +2568,8 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 				if (iSelHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
 				{
 					int iCy;
-					HexChunkPoint(ullIndexByteToPrint, iSelHexPosToPrintX, iCy);
-					AsciiChunkPoint(ullIndexByteToPrint, iSelAsciiPosToPrintX, iCy);
+					HexChunkPoint(ullByteToPrint, iSelHexPosToPrintX, iCy);
+					AsciiChunkPoint(ullByteToPrint, iSelAsciiPosToPrintX, iCy);
 				}
 
 				if (!wstrHexSelToPrint.empty()) //Only adding spaces if there are chars beforehead.
@@ -2679,17 +2660,13 @@ void CHexCtrl::DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGL
 		std::wstring wstrHexCursorToPrint { }, wstrAsciiCursorToPrint { };
 		int iCursorHexPosToPrintX { }, iCursorAsciiPosToPrintX { }; //Cursor X coords.
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
+		auto ullByteToPrint = iterLines * m_dwCapacity;
 
 		//Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && ullByteToPrint < m_ullDataSize; ++iterChunks, ++pData, ++ullByteToPrint)
 		{
-			//Index of the next Byte to draw.
-			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
-			if (ullIndexByteToPrint >= m_ullDataSize) //Draw until reaching the end of m_ullDataSize.
-				break;
-
 			//Cursor position. 
-			if (ullIndexByteToPrint == m_ullCaretPos)
+			if (ullByteToPrint == m_ullCaretPos)
 			{
 				//Hex chunk to print.
 				const auto chByteToPrint = *pData; //Get current byte to print.
@@ -2711,7 +2688,7 @@ void CHexCtrl::DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGL
 				}
 				wstrAsciiCursorToPrint = wchAscii;
 
-				if (m_pSelection->HitTest(ullIndexByteToPrint))
+				if (m_pSelection->HitTest(ullByteToPrint))
 					clrBkCursor = m_stColor.clrBkCursorSelected;
 				else
 					clrBkCursor = m_stColor.clrBkCursor;
@@ -2761,16 +2738,13 @@ void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine,
 		int iDataInterpretHexPosToPrintX { 0x7FFFFFFF }, iDataInterpretAsciiPosToPrintX { }; //Data Interpreter X coords.
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iLine; //Hex and Ascii the same.
 																			   //Main loop for printing Hex chunks and Ascii chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks, ++pData)
-		{
-			//Index of the next Byte to draw.
-			const ULONGLONG ullIndexByteToPrint = iterLines * m_dwCapacity + iterChunks;
-			if (ullIndexByteToPrint >= m_ullDataSize) //Draw until reaching the end of m_ullDataSize.
-				break;
+		auto ullByteToPrint = iterLines * m_dwCapacity;
 
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && ullByteToPrint < m_ullDataSize; ++iterChunks, ++pData, ++ullByteToPrint)
+		{
 			//Data Interpreter.
 			if (auto ullSize = m_pDlgDataInterpret->GetSize(); ullSize > 0
-				&& ullIndexByteToPrint >= m_ullCaretPos && ullIndexByteToPrint < m_ullCaretPos + ullSize)
+				&& ullByteToPrint >= m_ullCaretPos && ullByteToPrint < m_ullCaretPos + ullSize)
 			{
 				//Hex chunk to print.
 				const auto chByteToPrint = *pData; //Get current byte to print.
@@ -2784,8 +2758,8 @@ void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine,
 				if (iDataInterpretHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
 				{
 					int iCy;
-					HexChunkPoint(ullIndexByteToPrint, iDataInterpretHexPosToPrintX, iCy);
-					AsciiChunkPoint(ullIndexByteToPrint, iDataInterpretAsciiPosToPrintX, iCy);
+					HexChunkPoint(ullByteToPrint, iDataInterpretHexPosToPrintX, iCy);
+					AsciiChunkPoint(ullByteToPrint, iDataInterpretAsciiPosToPrintX, iCy);
 				}
 
 				if (!wstrHexDataInterpretToPrint.empty()) //Only adding spaces if there are chars beforehead.

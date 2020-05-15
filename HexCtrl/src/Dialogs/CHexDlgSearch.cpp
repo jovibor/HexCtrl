@@ -240,6 +240,9 @@ void CHexDlgSearch::Search()
 			else
 				m_ullOffset = m_fSecondMatch ? m_ullOffset + 1 : m_ullSearchStart;
 
+			if (m_ullOffset > m_ullSearchEnd)
+				m_ullOffset = m_ullSearchStart;
+
 			if (DoSearch(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch))
 			{
 				m_fFound = true;
