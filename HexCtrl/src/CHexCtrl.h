@@ -167,7 +167,7 @@ namespace HEXCTRL::INTERNAL
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
-		void SetCaretPos(ULONGLONG ullPos, bool fHighPart);    //Sets the cursor position when in Edit mode.
+		void MoveCaret(ULONGLONG ullPos, bool fHighPart);    //Sets the cursor position when in Edit mode.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		void CaretMoveRight();
 		void CaretMoveLeft();
@@ -177,7 +177,7 @@ namespace HEXCTRL::INTERNAL
 		void Redo();
 		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
 		[[nodiscard]] bool IsCurTextArea()const; //Whether last focus was set at ASCII or Hex chunks area.
-		void SetSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines,
+		void MakeSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines,
 			bool fScroll = true, bool fGoToStart = false);
 		void SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight); //Set selection highlight.
 		void ClearSelHighlight(); //Clear selection highlight.

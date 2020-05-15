@@ -6,13 +6,25 @@
 #define new DEBUG_NEW
 #endif
 
+BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
+	ON_WM_PAINT()
+	ON_WM_QUERYDRAGICON()
+	ON_BN_CLICKED(IDC_SETDATARO, &CHexSampleDlg::OnBnSetDataRO)
+	ON_BN_CLICKED(IDC_SETDATARW, &CHexSampleDlg::OnBnSetDataRW)
+	ON_BN_CLICKED(IDC_CLEARDATA, &CHexSampleDlg::OnBnClearData)
+	ON_BN_CLICKED(IDC_FILEOPENRO, &CHexSampleDlg::OnBnFileOpenRO)
+	ON_BN_CLICKED(IDC_FILEOPENRW, &CHexSampleDlg::OnBnFileOpenRW)
+	ON_WM_SIZE()
+	ON_WM_CLOSE()
+END_MESSAGE_MAP()
+
 CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_HEXSAMPLE_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
 }
 
-HEXCOLOR* CHexSampleDlg::GetColor(ULONGLONG ullOffset)
+PHEXCOLOR CHexSampleDlg::GetColor(ULONGLONG ullOffset)
 {
 	//Sample code for custom colors:
 	if (ullOffset < 18)
@@ -48,15 +60,6 @@ void CHexSampleDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 }
 
-BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
-	ON_WM_PAINT()
-	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDC_SETDATARO, &CHexSampleDlg::OnBnSetDataRO)
-	ON_BN_CLICKED(IDC_SETDATARW, &CHexSampleDlg::OnBnSetDataRW)
-	ON_BN_CLICKED(IDC_CLEARDATA, &CHexSampleDlg::OnBnClearData)
-	ON_WM_SIZE()
-END_MESSAGE_MAP()
-
 BOOL CHexSampleDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -76,10 +79,8 @@ BOOL CHexSampleDlg::OnInitDialog()
 	//hcs.enShowMode = EHexShowMode::ASDWORD;
 	//m_myHex->Create(hcs);
 
-	m_hds.pData = reinterpret_cast<std::byte*>(m_data);
-	m_hds.ullDataSize = sizeof(m_data);
-//	m_hds.pHexVirtColors = this;
-//	m_hds.fHighLatency = true;
+	//m_hds.pHexVirtColors = this;
+	//m_hds.fHighLatency = true;
 
 	return TRUE; //return TRUE  unless you set the focus to a control
 }
@@ -116,30 +117,152 @@ HCURSOR CHexSampleDlg::OnQueryDragIcon()
 
 void CHexSampleDlg::OnBnSetDataRO()
 {
-	if (!m_myHex->IsDataSet())
+	if (IsFileOpen())
+		FileClose();
+	else if (m_myHex->IsDataSet())
 	{
-		m_hds.fMutable = false;
-		m_myHex->SetData(m_hds);
+		m_myHex->SetMutable(false);
+		return;
 	}
-	m_myHex->SetMutable(false);
+
+	m_hds.pData = reinterpret_cast<std::byte*>(m_RandomData);
+	m_hds.ullDataSize = sizeof(m_RandomData);
+	m_hds.fMutable = false;
+	m_myHex->SetData(m_hds);
 }
 
 void CHexSampleDlg::OnBnSetDataRW()
 {
-	if (!m_myHex->IsDataSet())
+	if (IsFileOpen())
+		FileClose();
+	else if (m_myHex->IsDataSet())
 	{
-		m_hds.fMutable = true;
-		m_myHex->SetData(m_hds);
+		m_myHex->SetMutable(true);
+		return;
 	}
-	m_myHex->SetMutable(true);
+
+	m_hds.pData = reinterpret_cast<std::byte*>(m_RandomData);
+	m_hds.ullDataSize = sizeof(m_RandomData);
+	m_hds.fMutable = true;
+	m_myHex->SetData(m_hds);
+}
+
+void CHexSampleDlg::OnBnFileOpenRO()
+{
+	if (auto optFiles = OpenFileDlg(); optFiles)
+		FileOpen(optFiles->front(), false);
+}
+
+void CHexSampleDlg::OnBnFileOpenRW()
+{
+	if (auto optFiles = OpenFileDlg(); optFiles)
+		FileOpen(optFiles->front(), true);
 }
 
 void CHexSampleDlg::OnBnClearData()
 {
+	FileClose();
 	m_myHex->ClearData();
 }
 
 void CHexSampleDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
+}
+
+void CHexSampleDlg::OnClose()
+{
+	FileClose();
+	CDialogEx::OnClose();
+}
+
+auto CHexSampleDlg::OpenFileDlg()const->std::optional<std::vector<std::wstring>>
+{
+	CFileDialog fd(TRUE, nullptr, nullptr,
+		OFN_OVERWRITEPROMPT | OFN_EXPLORER | OFN_DONTADDTORECENT | OFN_ENABLESIZING
+		| OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST, L"All files (*.*)|*.*||");
+
+	std::vector<std::wstring> vecFiles { };
+	if (fd.DoModal() == IDOK)
+	{
+		CComPtr<IFileOpenDialog> pIFOD = fd.GetIFileOpenDialog();
+		CComPtr<IShellItemArray> pResults;
+		pIFOD->GetResults(&pResults);
+
+		DWORD dwCount { };
+		pResults->GetCount(&dwCount);
+		for (unsigned i = 0; i < dwCount; i++)
+		{
+			CComPtr<IShellItem> pItem;
+			pResults->GetItemAt(i, &pItem);
+			CComHeapPtr<wchar_t> pwstrPath;
+			pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwstrPath);
+			vecFiles.emplace_back(pwstrPath);
+		}
+	}
+
+	std::optional<std::vector<std::wstring>> optRet { };
+	if (!vecFiles.empty())
+		optRet = std::move(vecFiles);
+
+	return optRet;
+}
+
+bool CHexSampleDlg::IsFileOpen()const
+{
+	return m_fFileOpen;
+}
+
+void CHexSampleDlg::FileOpen(std::wstring_view wstrPath, bool fRW)
+{
+	FileClose();
+
+	m_hFile = CreateFileW(wstrPath.data(), fRW ? GENERIC_READ | GENERIC_WRITE : GENERIC_READ,
+		FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+	if (m_hFile == INVALID_HANDLE_VALUE)
+	{
+		MessageBoxW(L"CreateFile call failed.\r\nFile might be already opened by another process.", L"Error", MB_ICONERROR);
+		return;
+	}
+
+	m_hMapObject = CreateFileMappingW(m_hFile, nullptr, fRW ? PAGE_READWRITE : PAGE_READONLY, 0, 0, nullptr);
+	if (!m_hMapObject)
+	{
+		CloseHandle(m_hFile);
+		MessageBoxW(L"CreateFileMapping call failed.", L"Error", MB_ICONERROR);
+		return;
+	}
+
+	m_lpBase = MapViewOfFile(m_hMapObject, fRW ? FILE_MAP_WRITE : FILE_MAP_READ, 0, 0, 0);
+	if (!m_lpBase)
+	{
+		MessageBoxW(L"MapViewOfFile failed.\r\n File might be too big to fit in memory.", L"Error", MB_ICONERROR);
+		CloseHandle(m_hMapObject);
+		CloseHandle(m_hFile);
+		return;
+	}
+	m_fFileOpen = true;
+
+	LARGE_INTEGER stFileSize;
+	::GetFileSizeEx(m_hFile, &stFileSize);
+
+	m_hds.pData = static_cast<std::byte*>(m_lpBase);
+	m_hds.ullDataSize = (ULONGLONG)stFileSize.QuadPart;
+	m_hds.fMutable = fRW;
+	m_myHex->SetData(m_hds);
+}
+
+void CHexSampleDlg::FileClose()
+{
+	if (!IsFileOpen())
+		return;
+
+	if (m_lpBase)
+		UnmapViewOfFile(m_lpBase);
+	if (m_hMapObject)
+		CloseHandle(m_hMapObject);
+	if (m_hFile)
+		CloseHandle(m_hFile);
+
+	m_fFileOpen = false;
 }

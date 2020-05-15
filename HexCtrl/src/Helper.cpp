@@ -149,7 +149,7 @@ namespace HEXCTRL::INTERNAL {
 
 	std::string WstrToStr(std::wstring_view wstr)
 	{
-		int iSize = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
+		auto iSize = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
 		WideCharToMultiByte(CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), &str[0], iSize, nullptr, nullptr);
 
@@ -158,7 +158,7 @@ namespace HEXCTRL::INTERNAL {
 
 	std::wstring StrToWstr(std::string_view str)
 	{
-		int iSize = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
+		auto iSize = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
 		std::wstring wstr(iSize, 0);
 		MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), &wstr[0], iSize);
 
