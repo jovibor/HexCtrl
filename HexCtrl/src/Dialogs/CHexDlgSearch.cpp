@@ -10,6 +10,7 @@
 #include "../Helper.h"
 #include "CHexDlgCallback.h"
 #include "CHexDlgSearch.h"
+#include <cassert>
 #include <thread>
 
 using namespace HEXCTRL;
@@ -33,6 +34,10 @@ END_MESSAGE_MAP()
 
 BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 {
+	assert(pHexCtrl);
+	if (pHexCtrl == nullptr)
+		return FALSE;
+
 	m_pHexCtrl = pHexCtrl;
 
 	return CDialogEx::Create(nIDTemplate, pHexCtrl);
@@ -53,9 +58,6 @@ void CHexDlgSearch::Search(bool fForward)
 bool CHexDlgSearch::IsSearchAvail()
 {
 	auto pHexCtrl = GetHexCtrl();
-	if (!pHexCtrl)
-		return false;
-
 	if (m_wstrTextSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffset >= pHexCtrl->GetDataSize())
 		return false;
 
@@ -202,8 +204,6 @@ bool CHexDlgSearch::PrepareSearch()
 void CHexDlgSearch::Search()
 {
 	auto pHexCtrl = GetHexCtrl();
-	if (!pHexCtrl)
-		return;
 	if (m_wstrTextSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffset >= pHexCtrl->GetDataSize())
 		return;
 
@@ -222,6 +222,8 @@ void CHexDlgSearch::Search()
 				ullStart += m_nSizeReplace;
 				m_fFound = true;
 				m_dwReplaced++;
+				if (ullStart > ullUntil)
+					break;
 			}
 			else
 				break;
@@ -241,13 +243,17 @@ void CHexDlgSearch::Search()
 				m_ullOffset = m_fSecondMatch ? m_ullOffset + 1 : m_ullSearchStart;
 
 			if (m_ullOffset > m_ullSearchEnd)
+			{
 				m_ullOffset = m_ullSearchStart;
+				m_dwCount = 0;
+			}
 
 			if (DoSearch(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch))
 			{
 				m_fFound = true;
 				m_fSecondMatch = true;
 				m_fWrap = false;
+				m_fDoCount = true;
 				m_dwCount++;
 			}
 			if (!m_fFound && m_fSecondMatch)
@@ -500,17 +506,6 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
 }
 
-BOOL CHexDlgSearch::PreTranslateMessage(MSG * pMsg)
-{
-	if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_RETURN)
-	{
-		OnButtonSearchF();
-		return TRUE;
-	}
-
-	return CDialogEx::PreTranslateMessage(pMsg);
-}
-
 void CHexDlgSearch::OnCancel()
 {
 	ResetSearch();
@@ -519,7 +514,7 @@ void CHexDlgSearch::OnCancel()
 	CDialogEx::OnCancel();
 }
 
-HBRUSH CHexDlgSearch::OnCtlColor(CDC * pDC, CWnd * pWnd, UINT nCtlColor)
+HBRUSH CHexDlgSearch::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
 	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)
 	{
@@ -579,8 +574,8 @@ ESearchMode CHexDlgSearch::GetSearchMode()
 
 void CHexDlgSearch::ComboSearchFill(LPCWSTR pwsz)
 {
-	auto pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH);
-	if (!pCombo)
+	auto pCombo = reinterpret_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH));
+	if (pCombo == nullptr)
 		return;
 
 	//Insert wstring into ComboBox only if it's not already presented.
@@ -595,8 +590,8 @@ void CHexDlgSearch::ComboSearchFill(LPCWSTR pwsz)
 
 void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
 {
-	auto pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_REPLACE);
-	if (!pCombo)
+	auto pCombo = reinterpret_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_REPLACE));
+	if (pCombo == nullptr)
 		return;
 
 	//Insert wstring into ComboBox only if it's not already presented.

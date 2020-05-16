@@ -247,7 +247,7 @@ void CHexSampleDlg::FileOpen(std::wstring_view wstrPath, bool fRW)
 	::GetFileSizeEx(m_hFile, &stFileSize);
 
 	m_hds.pData = static_cast<std::byte*>(m_lpBase);
-	m_hds.ullDataSize = (ULONGLONG)stFileSize.QuadPart;
+	m_hds.ullDataSize = static_cast<ULONGLONG>(stFileSize.QuadPart);
 	m_hds.fMutable = fRW;
 	m_myHex->SetData(m_hds);
 }
