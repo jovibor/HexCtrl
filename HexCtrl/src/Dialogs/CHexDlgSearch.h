@@ -42,12 +42,11 @@ namespace HEXCTRL::INTERNAL {
 		afx_msg void OnDestroy();
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		void OnRadioBnRange(UINT nID);
-		bool PrepareSearch();
-	private:
 		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
-		//ullStart will return index of found occurence, if any.
-		bool DoSearch(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSize, bool fForward = true);
+		void PrepareSearch();
 		void Search();
+		//ullStart will return index of found occurence, if any.
+		bool Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSize, bool fForward = true);
 		void Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t m_nSizeReplace, bool fRedraw = true);
 		void ResetSearch();
 		[[nodiscard]] ESearchMode GetSearchMode(); //Returns current search mode.
@@ -78,8 +77,8 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fAll { false };           //Find/Replace one by one, or all?
 		bool m_fReplaceWarning { true }; //Show Replace string size exceeds Warning or not.
 		bool m_fSelection { false };     //Search in selection.
-		std::byte* m_pSearchData { };
-		std::byte* m_pReplaceData { };
+		std::byte* m_pSearchData { };    //Pointer to the data for search.
+		std::byte* m_pReplaceData { };   //Pointer to the data to replace with.
 		size_t m_nSizeSearch { };
 		size_t m_nSizeReplace { };
 		std::string m_strSearch;
