@@ -48,6 +48,7 @@
   * [IsMutable](#ismutable)
   * [IsOffsetAsHex](#isoffsetashex)
   * [SetCapacity](#setcapacity)
+  * [SetCodePage](#setcodepage)
   * [SetColors](#setcolors)
   * [SetData](#setdata)
   * [SetFont](#setfont)
@@ -535,6 +536,14 @@ Is "Offset" currently represented (shown) as Hex or as Decimal. It can be change
 void SetCapacity(DWORD dwCapacity);
 ```
 Sets the **HexControl** current capacity.
+
+### [](#)SetCodePage
+```cpp
+void SetCodePage(int iCodePage);
+```
+Sets the code page for the **HexCtrl**'s text area. Takes [code page identifier](https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers) as an argument, or `-1` for default ASCII-only characters.  
+
+**Note:** Code page identifier must represent [Single-byte Character Set](https://docs.microsoft.com/en-us/windows/win32/intl/single-byte-character-sets). Multi-byte character sets are not currently supported.
 
 ### [](#)SetColors
 ```cpp

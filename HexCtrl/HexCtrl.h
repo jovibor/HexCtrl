@@ -47,9 +47,9 @@ namespace HEXCTRL
 		CMD_SEARCH = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV,
 		CMD_SHOWDATA_BYTE, CMD_SHOWDATA_WORD, CMD_SHOWDATA_DWORD, CMD_SHOWDATA_QWORD,
 		CMD_BKM_ADD, CMD_BKM_REMOVE, CMD_BKM_NEXT, CMD_BKM_PREV, CMD_BKM_CLEARALL, CMD_BKM_MANAGER,
-		CMD_CLIPBOARD_COPY_HEX, CMD_CLIPBOARD_COPY_HEXLE, CMD_CLIPBOARD_COPY_HEXFMT, CMD_CLIPBOARD_COPY_ASCII,
+		CMD_CLIPBOARD_COPY_HEX, CMD_CLIPBOARD_COPY_HEXLE, CMD_CLIPBOARD_COPY_HEXFMT, CMD_CLIPBOARD_COPY_TEXT,
 		CMD_CLIPBOARD_COPY_BASE64, CMD_CLIPBOARD_COPY_CARR, CMD_CLIPBOARD_COPY_GREPHEX, CMD_CLIPBOARD_COPY_PRNTSCRN,
-		CMD_CLIPBOARD_PASTE_HEX, CMD_CLIPBOARD_PASTE_ASCII,
+		CMD_CLIPBOARD_PASTE_HEX, CMD_CLIPBOARD_PASTE_TEXT,
 		CMD_MODIFY_OPERS, CMD_MODIFY_FILLZEROS, CMD_MODIFY_FILLDATA, CMD_MODIFY_UNDO, CMD_MODIFY_REDO,
 		CMD_SEL_MARKSTART, CMD_SEL_MARKEND, CMD_SEL_SELECTALL,
 		CMD_DATAINTERPRET,
@@ -283,6 +283,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsOffsetVisible(ULONGLONG ullOffset)const = 0; //Ensures that given offset is visible.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
+		virtual void SetCodePage(int iCodePage) = 0;           //Code-page for text area.
 		virtual void SetColors(const HEXCOLORSSTRUCT& clr) = 0;//Sets all the control's colors.
 		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
 		virtual void SetFont(const LOGFONTW* pLogFont) = 0;    //Sets the control's new font. This font has to be monospaced.

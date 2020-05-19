@@ -11,6 +11,7 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "Helper.h"
+#include <cwctype>
 
 #undef min
 #undef max
@@ -147,21 +148,39 @@ namespace HEXCTRL::INTERNAL {
 		return true;
 	}
 
-	std::string WstrToStr(std::wstring_view wstr)
+	std::string WstrToStr(std::wstring_view wstr, UINT uCodePage)
 	{
-		auto iSize = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
+		auto iSize = WideCharToMultiByte(uCodePage, 0, wstr.data(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
-		WideCharToMultiByte(CP_UTF8, 0, wstr.data(), static_cast<int>(wstr.size()), &str[0], iSize, nullptr, nullptr);
+		WideCharToMultiByte(uCodePage, 0, wstr.data(), static_cast<int>(wstr.size()), &str[0], iSize, nullptr, nullptr);
 
 		return str;
 	}
 
-	std::wstring StrToWstr(std::string_view str)
+	std::wstring StrToWstr(std::string_view str, UINT uCodePage)
 	{
-		auto iSize = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
+		auto iSize = MultiByteToWideChar(uCodePage, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
 		std::wstring wstr(iSize, 0);
-		MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), &wstr[0], iSize);
+		MultiByteToWideChar(uCodePage, 0, str.data(), static_cast<int>(str.size()), &wstr[0], iSize);
 
 		return wstr;
+	}
+
+	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLFRepl)
+	{
+		//If fASCII is true, then only wchars in 0x1F<...<0x7f range are considered printable.
+		//If fCRLFRepl is false, then CR(0x0D) and LF(0x0A) wchars remain untouched.
+		if (fASCII)
+		{
+			for (auto& iter : wstr)
+				if ((iter <= 0x1F || iter >= 0x7f) && (fCRLFRepl || (iter != 0x0D && iter != 0x0A))) //All non ASCII.
+					iter = L'.';
+		}
+		else
+		{
+			for (auto& iter : wstr)
+				if (!std::iswprint(iter) && (fCRLFRepl || (iter != 0x0D && iter != 0x0A))) //All non printable wchars.
+					iter = L'.';
+		}
 	}
 }

@@ -409,14 +409,14 @@ BEGIN
             MENUITEM "Copy as Hex (little-endian)", IDM_HEXCTRL_CLIPBOARD_COPYHEXLE
             MENUITEM "Copy as Hex Formatted",       IDM_HEXCTRL_CLIPBOARD_COPYHEXFORMATTED
             MENUITEM SEPARATOR
-            MENUITEM "Copy as ASCII",               IDM_HEXCTRL_CLIPBOARD_COPYASCII
+            MENUITEM "Copy as Text",                IDM_HEXCTRL_CLIPBOARD_COPYTEXT
             MENUITEM "Copy as Base64",              IDM_HEXCTRL_CLIPBOARD_COPYBASE64
             MENUITEM "Copy as ""C"" Array",         IDM_HEXCTRL_CLIPBOARD_COPYCARRAY
             MENUITEM "Copy as Grep Hex",            IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX
             MENUITEM "Copy as Print Screen",        IDM_HEXCTRL_CLIPBOARD_COPYPRINTSCREEN
             MENUITEM SEPARATOR
             MENUITEM "Paste as Hex\tCtrl+V",        IDM_HEXCTRL_CLIPBOARD_PASTEHEX
-            MENUITEM "Paste as ASCII",              IDM_HEXCTRL_CLIPBOARD_PASTEASCII
+            MENUITEM "Paste as Text",               IDM_HEXCTRL_CLIPBOARD_PASTETEXT
         END
         POPUP "Modify"
         BEGIN

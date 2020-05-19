@@ -113,6 +113,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsOffsetVisible(ULONGLONG ullOffset)const override; //Ensures that given offset is visible.
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
+		void SetCodePage(int iCodePage)override;            //Code-page for text area.
 		void SetColors(const HEXCOLORSSTRUCT& clr)override; //Sets all the control's colors.
 		void SetData(const HEXDATASTRUCT& hds)override;     //Main method for setting data to display (and edit).	
 		void SetFont(const LOGFONTW* pLogFont)override;     //Sets the control's new font. This font has to be monospaced.
@@ -129,112 +130,116 @@ namespace HEXCTRL::INTERNAL
 		friend CHexDlgOperations;
 		friend CHexDlgSearch;
 		friend CHexSelection;
-		[[nodiscard]] std::byte* GetData(HEXSPANSTRUCT hss)const; //Gets pointer to exact data offset, no matter what mode the control works in.
-		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
-		[[nodiscard]] EHexDataMode GetDataMode()const; //Current Data mode.
-		[[nodiscard]] ULONGLONG GetDataSize()const;    //Gets m_ullDataSize.
-		template<typename T> [[nodiscard]] auto GetData(ULONGLONG ullOffset)->T; //Get T sized data from ullOffset.
-		template<typename T>void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
-		void Modify(const MODIFYSTRUCT& hms, bool fRedraw = true);      //Main routine to modify data, in m_fMutable==true mode.
-		void ModifyDefault(const MODIFYSTRUCT& hms);   //EModifyMode::MODIFY_DEFAULT
-		void ModifyRepeat(const MODIFYSTRUCT& hms);    //EModifyMode::MODIFY_REPEAT
-		void ModifyOperation(const MODIFYSTRUCT& hms); //EModifyMode::MODIFY_OPERATION
-		template <typename T>void OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeData); //Immediate operations on pData.
-		void CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLONG& ullSizeChunk, ULONGLONG& ullChunks);
-		[[nodiscard]] DWORD GetCacheSize()const;               //Returns Virtual/Message mode cache size.
-		[[nodiscard]] HWND GetMsgWindow()const;                //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
-		void RecalcAll();                                      //Recalcs all inner draw and data related values.
-		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc);   //Recalc routine for printing.
-		void RecalcWorkArea(int iHeight, int iWidth);
-		void RecalcOffsetDigits();                             //How many digits in Offset (depends on Hex or Decimals).
-		[[nodiscard]] ULONGLONG GetTopLine()const;             //Returns current top line number in view.
-		[[nodiscard]] ULONGLONG GetBottomLine()const;          //Returns current bottom line number in view.
-		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>; //Is any hex chunk withing given point?
-		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;   //Point of Hex chunk.
 		void AsciiChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Ascii chunk.
-		void ClipboardCopy(EClipboard enType);
-		std::string CopyHex();
-		std::string CopyHexLE();
-		std::string CopyHexFormatted();
-		std::string CopyAscii();
-		std::string CopyBase64();
-		std::string CopyCArr();
-		std::string CopyGrepHex();
-		std::string CopyPrintScreen();
-		void ClipboardPaste(EClipboard enType);
-		void UpdateInfoText();                                 //Updates text in the bottom "info" area according to currently selected data.
-		void ParentNotify(const HEXNOTIFYSTRUCT& hns)const;    //Notify routine used to send messages to Parent window.
-		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
-		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
-		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
-		void MoveCaret(ULONGLONG ullPos, bool fHighPart);    //Sets the cursor position when in Edit mode.
-		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
-		void CaretMoveRight();
-		void CaretMoveLeft();
-		void CaretMoveUp();
+		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tuple<std::wstring, std::wstring>;
+		void CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLONG& ullSizeChunk, ULONGLONG& ullChunks);
 		void CaretMoveDown();
-		void Undo();
-		void Redo();
-		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
-		[[nodiscard]] bool IsCurTextArea()const; //Whether last focus was set at ASCII or Hex chunks area.
+		void CaretMoveLeft();
+		void CaretMoveRight();
+		void CaretMoveUp();
+		void ClearSelHighlight(); //Clear selection highlight.
+		void ClipboardCopy(EClipboard enType)const;
+		void ClipboardPaste(EClipboard enType);
+		[[nodiscard]] auto CopyBase64()const->std::wstring;
+		[[nodiscard]] auto CopyCArr()const->std::wstring;
+		[[nodiscard]] auto CopyGrepHex()const->std::wstring;
+		[[nodiscard]] auto CopyHex()const->std::wstring;
+		[[nodiscard]] auto CopyHexFormatted()const->std::wstring;
+		[[nodiscard]] auto CopyHexLE()const->std::wstring;
+		[[nodiscard]] auto CopyPrintScreen()const->std::wstring;
+		[[nodiscard]] auto CopyText()const->std::wstring;
+		void DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo)const;
+		void DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines)const;
+		void DrawHexAscii(CDC* pDC, CFont* pFont, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawSectorLines(CDC* pDC, int iLines);
+		void FillWithZeros(); //Fill selection with zeros.
+		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;      //Returns current bottom line number in view.
+		[[nodiscard]] auto GetCacheSize()const->DWORD;           //Returns Virtual/Message mode cache size.
+		template<typename T>
+		[[nodiscard]] auto GetData(ULONGLONG ullOffset)const->T; //Get T sized data from ullOffset.
+		[[nodiscard]] auto GetData(HEXSPANSTRUCT hss)const->std::byte*; //Gets pointer to exact data offset, no matter what mode the control works in.
+		[[nodiscard]] auto GetDataMode()const->EHexDataMode;     //Current Data mode.
+		[[nodiscard]] auto GetDataSize()const->ULONGLONG;        //Gets m_ullDataSize.
+		[[nodiscard]] auto GetMsgWindow()const->HWND;            //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
+		void GoToOffset(ULONGLONG ullOffset);                    //Scrolls to given offfset.
+		[[nodiscard]] auto GetTopLine()const->ULONGLONG;         //Returns current top line number in view.
+		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;   //Point of Hex chunk.
+		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>; //Is any hex chunk withing given point?
+		[[nodiscard]] bool IsCurTextArea()const;                 //Whether last focus was set at Text or Hex chunks area.
+		[[nodiscard]] bool IsSectorVisible()const;               //Returns m_fSectorVisible.
 		void MakeSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines,
 			bool fScroll = true, bool fGoToStart = false);
-		void SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight); //Set selection highlight.
-		void ClearSelHighlight(); //Clear selection highlight.
-		void GoToOffset(ULONGLONG ullOffset);                     //Scrolls to given offfset.
-		void SelectAll();                                         //Selects all current bytes.
-		void FillWithZeros();                                     //Fill selection with zeros.
-		void WstrCapacityFill();                                  //Fill m_wstrCapacity according to current m_dwCapacity.
-		[[nodiscard]] bool IsSectorVisible()const;                //Returns m_fSectorVisible.
-		void UpdateSectorVisible();                               //Updates info about whether sector's lines printable atm or not.
-		void Print();                                             //Printing routine.
-		void TtOffsetShow(bool fShow);              //Tooltip Offset show/hide.
-		void TtBkmShow(bool fShow, POINT pt = { }); //Tooltip bookmark show/hide.
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
-		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
-		afx_msg void OnMButtonDown(UINT nFlags, CPoint point);
-		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-		afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
-		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
-		afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
-		afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
-		afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
-		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-		afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-		afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
-		afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
-		afx_msg void OnSysKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+		void Modify(const MODIFYSTRUCT& hms, bool fRedraw = true); //Main routine to modify data, in m_fMutable==true mode.
+		void ModifyDefault(const MODIFYSTRUCT& hms);           //EModifyMode::MODIFY_DEFAULT
+		void ModifyOperation(const MODIFYSTRUCT& hms);         //EModifyMode::MODIFY_OPERATION
+		void ModifyRepeat(const MODIFYSTRUCT& hms);            //EModifyMode::MODIFY_REPEAT
+		void MoveCaret(ULONGLONG ullPos, bool fHighPart);      //Sets the cursor position when in Edit mode.
+		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
+		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
+		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		void OnKeyDownCtrl(UINT nChar);  //Key pressed with the Ctrl.
 		void OnKeyDownShift(UINT nChar); //Key pressed with the Shift.
+		void OnKeyDownShiftDown();       //Down Key pressed with the Shift.
 		void OnKeyDownShiftLeft();       //Left Key pressed with the Shift.
 		void OnKeyDownShiftRight();      //Right Key pressed with the Shift.
 		void OnKeyDownShiftUp();         //Up Key pressed with the Shift.
-		void OnKeyDownShiftDown();       //Down Key pressed with the Shift.
+		template <typename T>
+		void OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeData); //Immediate operations on pData.
+		void ParentNotify(const HEXNOTIFYSTRUCT& hns)const;    //Notify routine used to send messages to Parent window.
+		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
+		void Print();                                          //Printing routine.
+		void RecalcAll();                                      //Recalcs all inner draw and data related values.
+		void RecalcOffsetDigits();                             //How many digits in Offset (depends on Hex or Decimals).
+		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc);   //Recalc routine for printing.
+		void RecalcTotalSectors();                             //Updates info about whether sector's lines printable atm or not.
+		void RecalcWorkArea(int iHeight, int iWidth);
+		void Redo();
+		void SelectAll(); //Select all current bytes.
+		template<typename T>
+		void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
+		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
+		void SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight); //Set selection highlight.
+		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
+		void TtBkmShow(bool fShow, POINT pt = { }); //Tooltip bookmark show/hide.
+		void TtOffsetShow(bool fShow);              //Tooltip Offset show/hide.
+		void Undo();
+		void UpdateInfoText();                      //Updates text in the bottom "info" area according to currently selected data.
+		void WstrCapacityFill();                    //Fill m_wstrCapacity according to current m_dwCapacity.
+		DECLARE_MESSAGE_MAP()
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
-		afx_msg UINT OnGetDlgCode();     //To properly work in dialogs.
-		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
-		afx_msg void OnPaint();
-		void DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo);
-		void DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawHexAscii(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		void DrawSectorLines(CDC* pDC, ULONGLONG ullStartLine, ULONGLONG ullEndLine);
-		afx_msg void OnSize(UINT nType, int cx, int cy);
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
+		afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 		afx_msg void OnDestroy();
+		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+		afx_msg UINT OnGetDlgCode(); //To properly work in dialogs.
+		afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
+		afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+		afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
+		afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+		afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
+		afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
+		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+		afx_msg void OnMButtonDown(UINT nFlags, CPoint point);
+		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 		afx_msg BOOL OnNcActivate(BOOL bActive);
 		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		afx_msg void OnNcPaint();
+		afx_msg void OnPaint();
+		afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
+		afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
+		afx_msg void OnSize(UINT nType, int cx, int cy);
+		afx_msg void OnSysKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
-		DECLARE_MESSAGE_MAP()
+		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	private:
 		const std::unique_ptr<CHexDlgBookmarkMgr> m_pDlgBookmarkMgr { std::make_unique<CHexDlgBookmarkMgr>() }; //Bookmark manager.
 		const std::unique_ptr<CHexDlgDataInterpret> m_pDlgDataInterpret { std::make_unique<CHexDlgDataInterpret>() }; //Data Interpreter.
@@ -300,9 +305,11 @@ namespace HEXCTRL::INTERNAL
 		int m_iHeightBottomRect { };          //Height of bottom Info rect.
 		int m_iHeightBottomOffArea { };       //Height of the not visible rect from window's bottom to m_iThirdHorizLine.
 		int m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
+		int m_iCodePage { -1 };               //Current code-page for Text area. -1 for default.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfo { };          //Info text (bottom rect).
 		std::wstring m_wstrSectorName { };    //Name of the sector/page.
+		std::wstring m_wstrTextTitle { L"ASCII" }; //Text area title.
 		std::deque<std::unique_ptr<std::vector<UNDOSTRUCT>>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<std::vector<UNDOSTRUCT>>> m_deqRedo; //Redo deque.
 		std::unordered_map<int, HBITMAPSTRUCT> m_umapHBITMAP;           //Images for the Menu.
@@ -314,18 +321,17 @@ namespace HEXCTRL::INTERNAL
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
 		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
-		bool m_fSectorVisible { false };      //Print lines between sectors or not.
 		bool m_fHighLatency { false };        //Reflects HEXDATASTRUCT::fHighLatency.
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
 	};
 
 	template<typename T>
-	inline auto CHexCtrl::GetData(ULONGLONG ullOffset)->T
+	inline auto CHexCtrl::GetData(ULONGLONG ullOffset)const->T
 	{
 		if (ullOffset >= m_ullDataSize)
 			return T { };
 
-		std::byte* pData = GetData({ ullOffset, sizeof(T) });
+		auto pData = GetData({ ullOffset, sizeof(T) });
 		if (pData)
 			return *reinterpret_cast<T*>(pData);
 
