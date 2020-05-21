@@ -309,7 +309,7 @@ namespace HEXCTRL::INTERNAL
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfo { };          //Info text (bottom rect).
 		std::wstring m_wstrSectorName { };    //Name of the sector/page.
-		std::wstring m_wstrTextTitle { L"ASCII" }; //Text area title.
+		std::wstring m_wstrTextTitle { };	  //Text area title.
 		std::deque<std::unique_ptr<std::vector<UNDOSTRUCT>>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<std::vector<UNDOSTRUCT>>> m_deqRedo; //Redo deque.
 		std::unordered_map<int, HBITMAPSTRUCT> m_umapHBITMAP;           //Images for the Menu.

@@ -86,6 +86,7 @@ namespace HEXCTRL::INTERNAL {
 		return true;
 	}
 	//Explicit instantiations of templated func in .cpp.
+	template bool wstr2num<int>(std::wstring_view wstr, int& t, int iBase);
 	template bool wstr2num<CHAR>(std::wstring_view wstr, CHAR& t, int iBase);
 	template bool wstr2num<UCHAR>(std::wstring_view wstr, UCHAR& t, int iBase);
 	template bool wstr2num<SHORT>(std::wstring_view wstr, SHORT& t, int iBase);

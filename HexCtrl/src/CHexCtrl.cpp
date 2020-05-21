@@ -18,6 +18,7 @@
 #include "Dialogs/CHexDlgFillData.h"
 #include "Dialogs/CHexDlgOperations.h"
 #include "Dialogs/CHexDlgSearch.h"
+#include "Dialogs/CHexDlgCodepage.h"
 #include "Helper.h"
 #include "strsafe.h"
 #include <algorithm>
@@ -400,6 +401,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_pSelection->Attach(this);
 
 	m_fCreated = true;
+	SetCodePage(m_iCodePage);
 	SetShowMode(m_enShowMode);
 
 	return true;
@@ -546,6 +548,9 @@ void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
 		break;
 	case EHexCmd::CMD_ABOUT:
 		wParam = IDM_HEXCTRL_ABOUT;
+		break;
+	case EHexCmd::CMD_CODEPAGE:
+		wParam = IDM_HEXCTRL_CODEPAGE;
 		break;
 	}
 
@@ -856,13 +861,13 @@ void CHexCtrl::SetCodePage(int iCodePage)
 	if (iCodePage == -1)
 		wstrFormat = L"ASCII";
 	else if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != 0 && stCPInfo.MaxCharSize == 1)
-		wstrFormat = L"ASCII (%i)";
+		wstrFormat = L"CP (%i)";
 
 	if (!wstrFormat.empty())
 	{
 		m_iCodePage = iCodePage;
 		WCHAR buff[32];
-		swprintf_s(buff, wstrFormat.data(), m_iCodePage);
+		swprintf_s(buff, _countof(buff), wstrFormat.data(), m_iCodePage);
 		m_wstrTextTitle = buff;
 		Redraw();
 	}
@@ -4065,6 +4070,12 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 		CHexDlgAbout dlgAbout(this);
 		dlgAbout.DoModal();
+	}
+	case IDM_HEXCTRL_CODEPAGE:
+	{
+		CHexDlgCodePage dlgCodepage(this);
+		if (dlgCodepage.DoModal() == IDOK)
+			SetCodePage(dlgCodepage.GetSelectedCodepage());
 	}
 	break;
 	default:
