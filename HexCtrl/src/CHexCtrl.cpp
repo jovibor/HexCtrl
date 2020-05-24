@@ -155,7 +155,7 @@ ULONGLONG CHexCtrl::BkmAdd(const HEXBKMSTRUCT& hbs, bool fRedraw)
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return 0xFFFFFFFF;
+		return 0UL;
 
 	return m_pBookmarks->Add(hbs, fRedraw);
 }
@@ -583,6 +583,10 @@ auto CHexCtrl::GetColors()const->HEXCOLORSSTRUCT
 
 int CHexCtrl::GetEncoding()const
 {
+	assert(IsCreated());
+	if (!IsCreated())
+		return 0;
+
 	return m_iCodePage;
 }
 
@@ -667,27 +671,12 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 		return false;
 
 	bool fDataSet = IsDataSet();
-	bool fMutable { false };
-	if (fDataSet)
-		fMutable = IsMutable();
-	bool fStatus = fDataSet && m_pSelection->HasSelection();
+	bool fMutable = fDataSet ? IsMutable() : false;
+	bool fSelection = fDataSet && m_pSelection->HasSelection();
+	bool fAvail;
 
-	bool fAvail { false };
 	switch (enCmd)
 	{
-	case EHexCmd::CMD_SHOWDATA_BYTE:
-	case EHexCmd::CMD_SHOWDATA_WORD:
-	case EHexCmd::CMD_SHOWDATA_DWORD:
-	case EHexCmd::CMD_SHOWDATA_QWORD:
-	case EHexCmd::CMD_APPEARANCE_FONTINC:
-	case EHexCmd::CMD_APPEARANCE_FONTDEC:
-	case EHexCmd::CMD_APPEARANCE_CAPACITYINC:
-	case EHexCmd::CMD_APPEARANCE_CAPACITYDEC:
-	case EHexCmd::CMD_ENCODING:
-	case EHexCmd::CMD_PRINT:
-	case EHexCmd::CMD_ABOUT:
-		fAvail = true;
-		break;
 	case EHexCmd::CMD_BKM_REMOVE:
 		fAvail = m_pBookmarks->HasBookmarks()
 			&& (m_pBookmarks->HitTest(GetCaretPos()) != nullptr
@@ -707,16 +696,16 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 	case EHexCmd::CMD_CLIPBOARD_COPY_CARR:
 	case EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX:
 	case EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN:
-		fAvail = fStatus;
+		fAvail = fSelection;
 		break;
 	case EHexCmd::CMD_CLIPBOARD_PASTE_HEX:
 	case EHexCmd::CMD_CLIPBOARD_PASTE_TEXT:
-		fAvail = fMutable && fStatus && IsClipboardFormatAvailable(CF_TEXT);
+		fAvail = fMutable && fSelection && IsClipboardFormatAvailable(CF_TEXT);
 		break;
 	case EHexCmd::CMD_MODIFY_OPERS:
 	case EHexCmd::CMD_MODIFY_FILLZEROS:
 	case EHexCmd::CMD_MODIFY_FILLDATA:
-		fAvail = fMutable && fStatus;
+		fAvail = fMutable && fSelection;
 		break;
 	case EHexCmd::CMD_MODIFY_UNDO:
 		fAvail = !m_deqUndo.empty();
@@ -736,6 +725,8 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 	case EHexCmd::CMD_SEARCH_PREV:
 		fAvail = m_pDlgSearch->IsSearchAvail();
 		break;
+	default:
+		fAvail = true;
 	}
 
 	return fAvail;
@@ -1836,7 +1827,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
 	{
 		std::wstring wstrHexBookmarkToPrint { }, wstrAsciiBookmarkToPrint { }; //Bookmarks to print.
-		int iBookmarkHexPosToPrintX { 0x7FFFFFFF }, iBookmarkAsciiPosToPrintX { };
+		int iBookmarkHexPosToPrintX { -1 }, iBookmarkAsciiPosToPrintX { };
 		bool fBookmark { false };  //Flag to show current Bookmark in current Hex presence.
 		const HEXBKMSTRUCT* pBookmarkCurr { };
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Ascii the same.
@@ -1872,11 +1863,11 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 						static_cast<UINT>(listWstrBookmarkAscii.back().size()), listWstrBookmarkAscii.back().data(), 0, { }, nullptr },
 						pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
-					iBookmarkHexPosToPrintX = 0x7FFFFFFF;
+					iBookmarkHexPosToPrintX = -1;
 				}
 				pBookmarkCurr = pBookmark;
 
-				if (iBookmarkHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
+				if (iBookmarkHexPosToPrintX == -1) //For just one time exec.
 				{
 					int iCy;
 					HexChunkPoint(sIndexToPrint, iBookmarkHexPosToPrintX, iCy);
@@ -1916,7 +1907,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 					static_cast<UINT>(listWstrBookmarkAscii.back().size()), listWstrBookmarkAscii.back().data(), 0, { }, nullptr },
 					pBookmarkCurr->clrBk, pBookmarkCurr->clrText });
 
-				iBookmarkHexPosToPrintX = 0x7FFFFFFF;
+				iBookmarkHexPosToPrintX = -1;
 				fBookmark = false;
 				pBookmarkCurr = nullptr;
 			}
@@ -1976,7 +1967,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
 	{
 		std::wstring wstrHexColorToPrint { }, wstrAsciiColorToPrint { }; //Colors to print.
-		int iColorHexPosToPrintX { 0x7FFFFFFF }, iColorAsciiPosToPrintX { };
+		int iColorHexPosToPrintX { -1 }, iColorAsciiPosToPrintX { };
 		bool fColor { false };  //Flag to show current Color in current Hex presence.
 		std::optional<HEXCOLOR> optColorCurr { }; //Current color.
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Ascii the same.
@@ -2012,11 +2003,11 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 						static_cast<UINT>(listWstrColorsAscii.back().size()), listWstrColorsAscii.back().data(), 0, { }, nullptr },
 						*optColorCurr });
 
-					iColorHexPosToPrintX = 0x7FFFFFFF;
+					iColorHexPosToPrintX = -1;
 				}
 				optColorCurr = *pColor;
 
-				if (iColorHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
+				if (iColorHexPosToPrintX == -1) //For just one time exec.
 				{
 					int iCy;
 					HexChunkPoint(sIndexToPrint, iColorHexPosToPrintX, iCy);
@@ -2056,7 +2047,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 					static_cast<UINT>(listWstrColorsAscii.back().size()), listWstrColorsAscii.back().data(), 0, { }, nullptr },
 					*optColorCurr });
 
-				iColorHexPosToPrintX = 0x7FFFFFFF;
+				iColorHexPosToPrintX = -1;
 				fColor = false;
 				optColorCurr.reset();
 			}
@@ -2106,7 +2097,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
 	{
 		std::wstring wstrHexSelToPrint { }, wstrAsciiSelToPrint { }; //Selected Hex and Ascii strings to print.
-		int iSelHexPosToPrintX { 0x7FFFFFFF }, iSelAsciiPosToPrintX { };
+		int iSelHexPosToPrintX { -1 }, iSelAsciiPosToPrintX { };
 		bool fSelection { false };
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Ascii the same.
 
@@ -2116,7 +2107,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 			//Selection.
 			if (m_pSelection->HitTest(ullStartOffset + sIndexToPrint))
 			{
-				if (iSelHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
+				if (iSelHexPosToPrintX == -1) //For just one time exec.
 				{
 					int iCy;
 					HexChunkPoint(sIndexToPrint, iSelHexPosToPrintX, iCy);
@@ -2155,7 +2146,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 					vecPolySelAscii.emplace_back(POLYTEXTW { iSelAsciiPosToPrintX, iPosToPrintY,
 						static_cast<UINT>(listWstrSelAscii.back().size()), listWstrSelAscii.back().data(), 0, { }, nullptr });
 				}
-				iSelHexPosToPrintX = 0x7FFFFFFF;
+				iSelHexPosToPrintX = -1;
 				fSelection = false;
 			}
 		}
@@ -2201,7 +2192,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
 	{
 		std::wstring wstrHexSelToPrint { }, wstrAsciiSelToPrint { }; //Selected Hex and Ascii strings to print.
-		int iSelHexPosToPrintX { 0x7FFFFFFF }, iSelAsciiPosToPrintX { };
+		int iSelHexPosToPrintX { -1 }, iSelAsciiPosToPrintX { };
 		bool fSelection { false };
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Ascii the same.
 
@@ -2211,7 +2202,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 			//Selection highlights.
 			if (m_pSelection->HitTestHighlight(ullStartOffset + sIndexToPrint))
 			{
-				if (iSelHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
+				if (iSelHexPosToPrintX == -1) //For just one time exec.
 				{
 					int iCy;
 					HexChunkPoint(sIndexToPrint, iSelHexPosToPrintX, iCy);
@@ -2250,7 +2241,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 					vecPolySelAscii.emplace_back(POLYTEXTW { iSelAsciiPosToPrintX, iPosToPrintY,
 						static_cast<UINT>(listWstrSelAscii.back().size()), listWstrSelAscii.back().data(), 0, { }, nullptr });
 				}
-				iSelHexPosToPrintX = 0x7FFFFFFF;
+				iSelHexPosToPrintX = -1;
 				fSelection = false;
 			}
 		}
@@ -2362,7 +2353,7 @@ void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine,
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
 	{
 		std::wstring wstrHexDataInterpretToPrint { }, wstrAsciiDataInterpretToPrint { }; //Data Interpreter Hex and Ascii strings to print.
-		int iDataInterpretHexPosToPrintX { 0x7FFFFFFF }, iDataInterpretAsciiPosToPrintX { }; //Data Interpreter X coords.
+		int iDataInterpretHexPosToPrintX { -1 }, iDataInterpretAsciiPosToPrintX { }; //Data Interpreter X coords.
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
@@ -2373,7 +2364,7 @@ void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine,
 				&& ullStartOffset + sIndexToPrint >= m_ullCaretPos
 				&& ullStartOffset + sIndexToPrint < m_ullCaretPos + ullSize)
 			{
-				if (iDataInterpretHexPosToPrintX == 0x7FFFFFFF) //For just one time exec.
+				if (iDataInterpretHexPosToPrintX == -1) //For just one time exec.
 				{
 					int iCy;
 					HexChunkPoint(sIndexToPrint, iDataInterpretHexPosToPrintX, iCy);

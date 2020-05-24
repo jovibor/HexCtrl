@@ -31,7 +31,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		IDT_CLICKREPEAT = 0x7ff1
 	};
 
-	constexpr auto THUMB_POS_MAX = 0x7fffffff;
+	constexpr auto THUMB_POS_MAX = 0x7FFFFFFF;
 }
 
 /****************************************************

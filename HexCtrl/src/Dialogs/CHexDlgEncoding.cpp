@@ -155,7 +155,7 @@ void CHexDlgEncoding::OnListCellColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 void CHexDlgEncoding::OnListLinkClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	ShellExecuteW(nullptr, L"open", reinterpret_cast<LPWSTR>(pNMI->lParam), nullptr, nullptr, 1);
+	ShellExecuteW(nullptr, L"open", reinterpret_cast<LPWSTR>(pNMI->lParam), nullptr, nullptr, SW_SHOWNORMAL);
 }
 
 void CHexDlgEncoding::SortList()

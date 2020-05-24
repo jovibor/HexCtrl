@@ -68,15 +68,16 @@ BOOL CHexDlgBkmProps::OnInitDialog()
 
 void CHexDlgBkmProps::OnOK()
 {
-	CMFCColorButton* pClrBtn;
-	pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_COLOR_BK);
+	wchar_t pwszBuff[512];
+	constexpr auto NUMBER_MAX_CHARS = 32; //Text limit 32 chars.
+
+	auto pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_COLOR_BK);
 	m_pHBS->clrBk = pClrBtn->GetColor();
 	pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_COLOR_TEXT);
 	m_pHBS->clrText = pClrBtn->GetColor();
 
-	wchar_t pwszBuff[512];
 	auto pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_OFFSET);
-	pEdit->GetWindowTextW(pwszBuff, 32); //Text limit 32 chars.
+	pEdit->GetWindowTextW(pwszBuff, NUMBER_MAX_CHARS);
 	ULONGLONG ullOffset;
 	if (!wstr2num(pwszBuff, ullOffset))
 	{
@@ -84,7 +85,7 @@ void CHexDlgBkmProps::OnOK()
 		return;
 	}
 	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_LENGTH);
-	pEdit->GetWindowTextW(pwszBuff, 32); //Text limit 32 chars.
+	pEdit->GetWindowTextW(pwszBuff, NUMBER_MAX_CHARS);
 	ULONGLONG ullSize;
 	if (!wstr2num(pwszBuff, ullSize))
 	{

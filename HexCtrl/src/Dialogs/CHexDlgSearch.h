@@ -38,7 +38,7 @@ namespace HEXCTRL::INTERNAL
 		void PrepareSearch();
 		void Search();
 		//ullStart will return index of found occurence, if any.
-		bool Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSize, bool fForward = true);
+		bool Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSize, ULONGLONG ullEndSentinel, bool fForward = true);
 		void Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t m_nSizeReplace, bool fRedraw = true);
 		void ResetSearch();
 		[[nodiscard]] EMode GetSearchMode(); //Returns current search mode.
@@ -57,11 +57,11 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullSearchStart { };
 		ULONGLONG m_ullSearchEnd { };
 		ULONGLONG m_ullOffset { };       //An offset search should start from.
+		ULONGLONG m_ullEndSentinel { };  //Maximum offset search can't cross.
 		DWORD m_dwCount { };             //How many, or what index number.
 		DWORD m_dwReplaced { };          //Replaced amount;
 		int m_iDirection { };            //Search direction: 1 = Forward, -1 = Backward.
 		int m_iWrap { };                 //Wrap direction: -1 = Beginning, 1 = End.
-		bool m_fWrap { false };          //Was search wrapped?
 		bool m_fSecondMatch { false };   //First or subsequent match. 
 		bool m_fFound { false };         //Found or not.
 		bool m_fDoCount { true };        //Do we count matches or just print "Found".

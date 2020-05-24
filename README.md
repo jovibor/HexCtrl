@@ -106,12 +106,14 @@ It is written and tested with **/std:c++17** in **Visual Studio 2019**, under th
 * View and edit data up to **16EB** (exabyte)
 * Work in three different data modes: **Memory**, **Message**, **Virtual**.
 * Fully featured **Bookmarks manager**
-* **Search and Replace...** for Hex, Ascii, UTF-16
+* **Search and Replace...** for **Hex** values, **ASCII** or **UTF-16** text
+* Change encoding for the text area
 * Many options to **Copy/Paste** to/from clipboard
 * **Undo/Redo**
 * Modify data with **Filling** and many predefined **Operations** options
 * Ability to visually divide data into [sectors](#setsectorsize)
 * Print whole document/pages range/selection
+* Set individual colors for the data chunks with [`IHexVirtColors`](#ihexvirtcolors) interface
 * Cutomizable look and appearance
 * Written with **/std:c++17** standard conformance
 

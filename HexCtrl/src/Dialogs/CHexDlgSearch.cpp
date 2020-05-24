@@ -167,12 +167,14 @@ void CHexDlgSearch::PrepareSearch()
 
 		m_ullSearchStart = vecSel.front().ullOffset;
 		m_ullSearchEnd = m_ullSearchStart + ullSelSize - m_nSizeSearch;
+		m_ullEndSentinel = m_ullSearchStart + ullSelSize;
 		m_fSelection = true;
 	}
 	else //Search in whole data.
 	{
 		m_ullSearchStart = 0;
 		m_ullSearchEnd = ullDataSize - m_nSizeSearch;
+		m_ullEndSentinel = pHexCtrl->GetDataSize();
 		m_fSelection = false;
 	}
 
@@ -210,7 +212,7 @@ void CHexDlgSearch::Search()
 		auto ullStart = m_ullSearchStart;
 		while (true)
 		{
-			if (Find(ullStart, ullUntil, m_pSearchData, m_nSizeSearch))
+			if (Find(ullStart, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel))
 			{
 				Replace(ullStart, m_pReplaceData, m_nSizeSearch, m_nSizeReplace, false);
 				ullStart += m_nSizeReplace;
@@ -236,28 +238,19 @@ void CHexDlgSearch::Search()
 			else
 				m_ullOffset = m_fSecondMatch ? m_ullOffset + 1 : m_ullSearchStart;
 
-			if (m_ullOffset > m_ullSearchEnd)
-			{
-				m_ullOffset = m_ullSearchStart;
-				m_dwCount = 0;
-			}
-
-			if (Find(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch))
+			if (Find(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel))
 			{
 				m_fFound = true;
 				m_fSecondMatch = true;
-				m_fWrap = false;
-				m_fDoCount = true;
 				m_dwCount++;
 			}
 			if (!m_fFound && m_fSecondMatch)
 			{
 				m_ullOffset = m_ullSearchStart; //Starting from the beginning.
-				if (Find(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch))
+				if (Find(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel))
 				{
 					m_fFound = true;
 					m_fSecondMatch = true;
-					m_fWrap = true;
 					m_fDoCount = true;
 					m_dwCount = 1;
 				}
@@ -270,22 +263,20 @@ void CHexDlgSearch::Search()
 			if (m_fSecondMatch && m_ullOffset > 0)
 			{
 				m_ullOffset--;
-				if (Find(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch, false))
+				if (Find(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, false))
 				{
 					m_fFound = true;
 					m_fSecondMatch = true;
-					m_fWrap = false;
 					m_dwCount--;
 				}
 			}
 			if (!m_fFound)
 			{
 				m_ullOffset = m_ullSearchEnd;
-				if (Find(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch, false))
+				if (Find(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, false))
 				{
 					m_fFound = true;
 					m_fSecondMatch = true;
-					m_fWrap = true;
 					m_iWrap = -1;
 					m_fDoCount = false;
 					m_dwCount = 1;
@@ -299,14 +290,14 @@ void CHexDlgSearch::Search()
 	{
 		if (m_fReplace && m_fAll)
 		{
-			swprintf_s(wstrInfo.data(), 127, L"%lu occurrence(s) replaced.", m_dwReplaced);
+			swprintf_s(wstrInfo.data(), wstrInfo.size(), L"%lu occurrence(s) replaced.", m_dwReplaced);
 			m_dwReplaced = 0;
 			pHexCtrl->RedrawWindow();
 		}
 		else
 		{
 			if (m_fDoCount)
-				swprintf_s(wstrInfo.data(), 127, L"Found occurrence \u2116 %lu from the beginning.", m_dwCount);
+				swprintf_s(wstrInfo.data(), wstrInfo.size(), L"Found occurrence \u2116 %lu from the beginning.", m_dwCount);
 			else
 				wstrInfo = L"Search found occurrence.";
 
@@ -336,11 +327,10 @@ void CHexDlgSearch::Search()
 	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)->SetWindowTextW(wstrInfo.data());
 }
 
-bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSizeSearch, bool fForward)
+bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch,
+	size_t nSizeSearch, ULONGLONG ullEndSentinel, bool fForward)
 {
-	auto pHex = GetHexCtrl();
-	auto ullMaxDataSize = pHex->GetDataSize();
-	if (ullStart + nSizeSearch > ullMaxDataSize)
+	if (ullStart + nSizeSearch > ullEndSentinel)
 		return false;
 
 	ULONGLONG ullSize = fForward ? ullEnd - ullStart : ullStart - ullEnd; //Depends on search direction
@@ -349,8 +339,9 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 	ULONGLONG ullMemToAcquire { }; //Size of VirtualData memory for acquiring. It's bigger than ullSizeChunk.
 	ULONGLONG ullOffsetSearch { };
 	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
+	auto pHexCtrl = GetHexCtrl();
 
-	switch (pHex->GetDataMode())
+	switch (pHexCtrl->GetDataMode())
 	{
 	case EHexDataMode::DATA_MEMORY:
 		ullSizeChunk = ullSize;
@@ -360,7 +351,7 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 	case EHexDataMode::DATA_MSG:
 	case EHexDataMode::DATA_VIRTUAL:
 	{
-		ullMemToAcquire = pHex->GetCacheSize();
+		ullMemToAcquire = pHexCtrl->GetCacheSize();
 		if (ullMemToAcquire > ullSize + nSizeSearch)
 			ullMemToAcquire = ullSize + nSizeSearch;
 		ullSizeChunk = ullMemToAcquire - nSizeSearch;
@@ -380,15 +371,15 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 			ullOffsetSearch = ullStart;
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
 			{
-				if (ullOffsetSearch + ullMemToAcquire > ullMaxDataSize)
+				if (ullOffsetSearch + ullMemToAcquire > ullEndSentinel)
 				{
-					ullMemToAcquire = ullMaxDataSize - ullOffsetSearch;
+					ullMemToAcquire = ullEndSentinel - ullOffsetSearch;
 					ullSizeChunk = ullMemToAcquire - nSizeSearch;
 				}
 				if (iterChunk > 0)
 					ullOffsetSearch += ullSizeChunk;
 
-				auto pData = pHex->GetData({ ullOffsetSearch, ullMemToAcquire });
+				auto pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 				for (ULONGLONG i = 0; i <= ullSizeChunk; ++i)
 				{
 					if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
@@ -407,7 +398,7 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 			ullOffsetSearch = ullStart - ullSizeChunk;
 			for (ULONGLONG iterChunk = ullChunks; iterChunk > 0; --iterChunk)
 			{
-				auto pData = pHex->GetData({ ullOffsetSearch, ullMemToAcquire });
+				auto pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 				for (auto i = static_cast<LONGLONG>(ullSizeChunk); i >= 0; --i)	//i might be negative.
 				{
 					if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
@@ -533,7 +524,6 @@ void CHexDlgSearch::ResetSearch()
 	m_dwCount = { };
 	m_dwReplaced = { };
 	m_iWrap = { };
-	m_fWrap = { false };
 	m_fSecondMatch = { false };
 	m_fFound = { false };
 	m_fDoCount = { true };
