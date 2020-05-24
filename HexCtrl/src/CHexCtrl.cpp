@@ -2465,10 +2465,10 @@ void CHexCtrl::FillWithZeros()
 
 auto CHexCtrl::GetBottomLine()const->ULONGLONG
 {
+	ULONGLONG ullEndLine { };
 	if (!IsDataSet())
-		return { };
+		return ullEndLine;
 
-	ULONGLONG ullEndLine { 0 };
 	auto ullTopLine = GetTopLine();
 	ullEndLine = ullTopLine + m_iHeightWorkArea / m_sizeLetter.cy;
 	//If m_dwDataCount is really small we adjust ullEndLine to be not bigger than maximum allowed.
@@ -4554,6 +4554,9 @@ BOOL CHexCtrl::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 
 void CHexCtrl::OnSize(UINT /*nType*/, int cx, int cy)
 {
+	if (!IsCreated())
+		return;
+
 	RecalcWorkArea(cy, cx);
 	auto ullPageSize = static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio);
 	if (ullPageSize < m_sizeLetter.cy)

@@ -68,21 +68,21 @@ BOOL CHexSampleDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE); //Set small icon
 
 	m_myHex->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
-	m_myHex->SetWheelRatio(0.5);
-//	m_myHex->SetSectorSize(32);
 
 	//Classical approach:
-	//HEXCREATESTRUCT hcs;
-	//hcs.hwndParent = m_hWnd;
-	//hcs.uID = IDC_MY_HEX;
-	//hcs.enCreateMode = EHexCreateMode::CREATE_CUSTOMCTRL;
-	//hcs.enShowMode = EHexShowMode::ASDWORD;
-	//m_myHex->Create(hcs);
-
+/*	HEXCREATESTRUCT hcs;
+	hcs.hwndParent = m_hWnd;
+	hcs.uID = IDC_MY_HEX;
+	hcs.enCreateMode = EHexCreateMode::CREATE_CUSTOMCTRL;
+	m_myHex->Create(hcs);
+*/
+	//m_myHex->SetWheelRatio(0.5);
+	//m_myHex->SetSectorSize(32);
+	
 	//m_hds.pHexVirtColors = this;
 	//m_hds.fHighLatency = true;
 
-	return TRUE; //return TRUE  unless you set the focus to a control
+	return TRUE;
 }
 
 void CHexSampleDlg::OnPaint()
