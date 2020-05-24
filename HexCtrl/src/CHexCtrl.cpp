@@ -2414,7 +2414,7 @@ void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine,
 	}
 }
 
-void CHexCtrl::DrawSectorLines(CDC* pDC, int iLines)
+void CHexCtrl::DrawSectorLines(CDC* pDC, ULONGLONG ullStartLine, int iLines)
 {
 	if (!IsSectorVisible())
 		return;
@@ -2431,7 +2431,7 @@ void CHexCtrl::DrawSectorLines(CDC* pDC, int iLines)
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
 	{
 		//Sectors lines vector to print.
-		if (((iterLines * m_dwCapacity) % m_dwSectorSize == 0) && iterLines > 0)
+		if ((((ullStartLine + iterLines) * m_dwCapacity) % m_dwSectorSize == 0) && iterLines > 0)
 		{
 			const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Ascii the same.
 			vecSecLines.emplace_back(SECTORLINES { { m_iFirstVertLine, iPosToPrintY }, { m_iFourthVertLine, iPosToPrintY } });
@@ -3460,7 +3460,7 @@ void CHexCtrl::Print()
 			DrawSelHighlight(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
 			DrawCursor(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
 			DrawDataInterpret(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
-			DrawSectorLines(pDC, iLines);
+			DrawSectorLines(pDC, ullStartLine, iLines);
 
 			ullStartLine += iLinesInPage;
 			pDC->OffsetViewportOrg(-iIndentX, -iIndentY);
@@ -4535,7 +4535,7 @@ void CHexCtrl::OnPaint()
 	DrawSelHighlight(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
 	DrawCursor(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
 	DrawDataInterpret(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
-	DrawSectorLines(pDC, iLines);
+	DrawSectorLines(pDC, ullStartLine, iLines);
 }
 
 void CHexCtrl::OnRButtonDown(UINT /*nFlags*/, CPoint point)

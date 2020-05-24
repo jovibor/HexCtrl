@@ -159,7 +159,7 @@ namespace HEXCTRL::INTERNAL
 		void DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawSectorLines(CDC* pDC, int iLines);
+		void DrawSectorLines(CDC* pDC, ULONGLONG ullStartLine, int iLines);
 		void FillWithZeros(); //Fill selection with zeros.
 		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;      //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCacheSize()const->DWORD;           //Returns Virtual/Message mode cache size.
