@@ -12,7 +12,7 @@
 namespace HEXCTRL::INTERNAL::SCROLLEX
 {
 	//Forward declaration.
-	enum class EState : DWORD;
+	enum class EState : WORD;
 
 	class CScrollEx : public CWnd
 	{

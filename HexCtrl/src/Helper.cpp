@@ -92,6 +92,8 @@ namespace HEXCTRL::INTERNAL {
 	template bool wstr2num<USHORT>(std::wstring_view wstr, USHORT& t, int iBase);
 	template bool wstr2num<LONG>(std::wstring_view wstr, LONG& t, int iBase);
 	template bool wstr2num<ULONG>(std::wstring_view wstr, ULONG& t, int iBase);
+	template bool wstr2num<INT>(std::wstring_view wstr, INT& t, int iBase);
+	template bool wstr2num<UINT>(std::wstring_view wstr, UINT& t, int iBase);
 	template bool wstr2num<LONGLONG>(std::wstring_view wstr, LONGLONG& t, int iBase);
 	template bool wstr2num<ULONGLONG>(std::wstring_view wstr, ULONGLONG& t, int iBase);
 

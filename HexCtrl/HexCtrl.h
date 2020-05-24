@@ -52,7 +52,7 @@ namespace HEXCTRL
 		CMD_CLIPBOARD_PASTE_HEX, CMD_CLIPBOARD_PASTE_TEXT,
 		CMD_MODIFY_OPERS, CMD_MODIFY_FILLZEROS, CMD_MODIFY_FILLDATA, CMD_MODIFY_UNDO, CMD_MODIFY_REDO,
 		CMD_SEL_MARKSTART, CMD_SEL_MARKEND, CMD_SEL_SELECTALL,
-		CMD_DATAINTERPRET,
+		CMD_DATAINTERPRET, CMD_ENCODING,
 		CMD_APPEARANCE_FONTINC, CMD_APPEARANCE_FONTDEC, CMD_APPEARANCE_CAPACITYINC, CMD_APPEARANCE_CAPACITYDEC,
 		CMD_PRINT, CMD_ABOUT
 	};
@@ -89,7 +89,7 @@ namespace HEXCTRL
 	********************************************************************************************/
 	enum class EHexDlg : WORD
 	{
-		DLG_BKMMANAGER, DLG_DATAINTERPRET, DLG_FILLDATA, DLG_OPERS, DLG_SEARCH
+		DLG_BKMMANAGER, DLG_DATAINTERPRET, DLG_FILLDATA, DLG_OPERS, DLG_SEARCH, DLG_ENCODING
 	};
 
 	/********************************************************************************************
@@ -102,9 +102,9 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* HEXBOOKMARKSTRUCT - Bookmarks.                                                            *
+	* HEXBKMSTRUCT - Bookmarks.                                                                 *
 	********************************************************************************************/
-	struct HEXBOOKMARKSTRUCT
+	struct HEXBKMSTRUCT
 	{
 		std::vector<HEXSPANSTRUCT> vecSpan { };                //Vector of offsets and sizes.
 		std::wstring               wstrDesc { };               //Bookmark description.
@@ -113,7 +113,7 @@ namespace HEXCTRL
 		COLORREF                   clrBk { RGB(240, 240, 0) }; //Bk color.
 		COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.
 	};
-	using PHEXBOOKMARKSTRUCT = HEXBOOKMARKSTRUCT*;
+	using PHEXBKMSTRUCT = HEXBKMSTRUCT*;
 
 	/********************************************************************************************
 	* IHexVirtData - Pure abstract data handler class, that can be implemented by client,       *
@@ -137,12 +137,12 @@ namespace HEXCTRL
 	class IHexVirtBkm
 	{
 	public:
-		virtual ULONGLONG Add(const HEXBOOKMARKSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
+		virtual ULONGLONG Add(const HEXBKMSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
 		virtual void ClearAll() = 0; //Clear all bookmarks.
 		[[nodiscard]] virtual ULONGLONG GetCount() = 0; //Get total bookmarks count.
-		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT* = 0; //Bookmark by ID.
-		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT* = 0; //Bookmark by index (in inner list).
-		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0;   //Does given offset have a bookmark?
+		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->HEXBKMSTRUCT* = 0; //Bookmark by ID.
+		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT* = 0; //Bookmark by index (in inner list).
+		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT* = 0;   //Does given offset have a bookmark?
 		virtual void RemoveByID(ULONGLONG ullID) = 0;   //Remove bookmark by given ID (returned by Add()).
 	};
 
@@ -250,12 +250,12 @@ namespace HEXCTRL
 	class IHexCtrl
 	{
 	public:
-		virtual ULONGLONG BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = false) = 0; //Adds new bookmark.
+		virtual ULONGLONG BkmAdd(const HEXBKMSTRUCT& hbs, bool fRedraw = false) = 0; //Adds new bookmark.
 		virtual void BkmClearAll() = 0;                         //Clear all bookmarks.
-		[[nodiscard]] virtual auto BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT* = 0; //Get bookmark by ID.
-		[[nodiscard]] virtual auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT* = 0; //Get bookmark by Index.
+		[[nodiscard]] virtual auto BkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT* = 0; //Get bookmark by ID.
+		[[nodiscard]] virtual auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT* = 0; //Get bookmark by Index.
 		[[nodiscard]] virtual ULONGLONG BkmGetCount()const = 0; //Get bookmarks count.
-		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0; //HitTest for given offset.
+		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT* = 0; //HitTest for given offset.
 		virtual void BkmRemoveByID(ULONGLONG ullID) = 0;        //Remove bookmark by the given ID.
 		virtual void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual = nullptr) = 0; //Enable/disable bookmarks virtual mode.
 		virtual void ClearData() = 0;                           //Clears all data from HexCtrl's view (not touching data itself).
@@ -266,6 +266,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORSSTRUCT = 0;    //Current colors.
+		[[nodiscard]] virtual int GetEncoding()const = 0;                    //Get current code page ID.
 		[[nodiscard]] virtual long GetFontSize()const = 0;                   //Current font size.
 		[[nodiscard]] virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
 		[[nodiscard]] virtual DWORD GetSectorSize()const = 0;                //Current sector size.
@@ -283,9 +284,9 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsOffsetVisible(ULONGLONG ullOffset)const = 0; //Ensures that given offset is visible.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
-		virtual void SetCodePage(int iCodePage) = 0;           //Code-page for text area.
 		virtual void SetColors(const HEXCOLORSSTRUCT& clr) = 0;//Sets all the control's colors.
 		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
+		virtual void SetEncoding(int iCodePage) = 0;           //Code page for text area.
 		virtual void SetFont(const LOGFONTW* pLogFont) = 0;    //Sets the control's new font. This font has to be monospaced.
 		virtual void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/edit mode.

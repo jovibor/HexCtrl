@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright Â© 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
@@ -8,34 +8,39 @@
 ****************************************************************************************/
 #pragma once
 #include "../CHexCtrl.h"
-#include "CHexEdit.h"
-#include <afxdialogex.h>  //Standard MFC's controls header.
+#include "../ListEx/ListEx.h"
+#include <afxdialogex.h>
 
 namespace HEXCTRL::INTERNAL
 {
-	class CHexDlgOperations final : public CDialogEx
+	using namespace HEXCTRL::LISTEX;
+	class CHexDlgEncoding final : public CDialogEx
 	{
+		struct SCODEPAGE
+		{
+			int iCPID { };
+			std::wstring wstrName { };
+			UINT uMaxChars { };
+		};
 	public:
+		void AddCP(std::wstring_view wstr);
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
-	protected:
+	private:
+		inline static BOOL CALLBACK EnumCodePagesProc(LPWSTR pwszCP);
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
-		void OnOK()override;
+		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListCellColor(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListLinkClick(NMHDR *pNMHDR, LRESULT *pResult);
 		DECLARE_MESSAGE_MAP()
+		void SortList();
 	private:
-		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
-	private:
+		inline static CHexDlgEncoding* m_pThis { };
 		CHexCtrl* m_pHexCtrl { };
-		CHexEdit m_editOR;
-		CHexEdit m_editXOR;
-		CHexEdit m_editAND;
-		CHexEdit m_editSHL;
-		CHexEdit m_editSHR;
-		CHexEdit m_editAdd;
-		CHexEdit m_editSub;
-		CHexEdit m_editMul;
-		CHexEdit m_editDiv;
+		IListExPtr m_pListMain { CreateListEx() };
+		std::vector<SCODEPAGE> m_vecCodePage { };
 	};
 }

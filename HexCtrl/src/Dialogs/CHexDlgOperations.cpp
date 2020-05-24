@@ -7,6 +7,7 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
+#include "../../res/HexCtrlRes.h"
 #include "../Helper.h"
 #include "CHexDlgOperations.h"
 
@@ -138,7 +139,7 @@ void CHexDlgOperations::OnOK()
 	int iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_OR, IDC_HEXCTRL_OPERATIONS_RADIO_DIV);
 	int iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_BYTE, IDC_HEXCTRL_OPERATIONS_RADIO_QWORD);
 
-	MODIFYSTRUCT hms;
+	SMODIFY hms;
 	hms.enModifyMode = EModifyMode::MODIFY_OPERATION;
 	hms.vecSpan = pHex->GetSelection();
 	if (hms.vecSpan.empty())

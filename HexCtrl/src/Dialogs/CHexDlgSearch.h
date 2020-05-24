@@ -7,26 +7,18 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include "../../res/HexCtrlRes.h"
 #include "../CHexCtrl.h"
 #include <afxdialogex.h>  //Standard MFC's controls header.
 
-namespace HEXCTRL::INTERNAL {
-	/***************************************************************************************
-	* ESearchMode - type of the search, also used in CHexDlgSearch.                        *
-	***************************************************************************************/
-	enum class ESearchMode : DWORD
-	{
-		SEARCH_HEX, SEARCH_ASCII, SEARCH_UTF16
-	};
-
+namespace HEXCTRL::INTERNAL
+{
 	/********************************************
-	* CHexDlgSearch class definition.			*
+	* CHexDlgSearch class declaration.			*
 	********************************************/
 	class CHexDlgSearch final : public CDialogEx
 	{
+		enum class EMode : WORD { SEARCH_HEX, SEARCH_ASCII, SEARCH_UTF16 };
 	public:
-		explicit CHexDlgSearch(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_SEARCH, pParent) {}
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		void Search(bool fForward);
 		[[nodiscard]] bool IsSearchAvail(); //Can we do search next/prev?
@@ -49,7 +41,7 @@ namespace HEXCTRL::INTERNAL {
 		bool Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSize, bool fForward = true);
 		void Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t m_nSizeReplace, bool fRedraw = true);
 		void ResetSearch();
-		[[nodiscard]] ESearchMode GetSearchMode(); //Returns current search mode.
+		[[nodiscard]] EMode GetSearchMode(); //Returns current search mode.
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
 		DECLARE_MESSAGE_MAP()

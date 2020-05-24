@@ -7,7 +7,6 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include "../../res/HexCtrlRes.h"
 #include "../CHexCtrl.h"
 #include "CHexPropGridCtrl.h"
 #include <afxdialogex.h>
@@ -18,7 +17,7 @@ namespace HEXCTRL::INTERNAL
 	{
 	private:
 #pragma pack(push, 1)
-		union MSDOSDATETIME //MS-DOS Date+Time structure (as used in FAT file system directory entry)
+		union UMSDOSDATETIME //MS-DOS Date+Time structure (as used in FAT file system directory entry)
 		{				    //See: https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
 			struct
 			{
@@ -27,13 +26,13 @@ namespace HEXCTRL::INTERNAL
 			} TimeDate;
 			DWORD dwTimeDate;
 		};
-		using PMSDOSDATETIME = MSDOSDATETIME*;
+		using PMSDOSDATETIME = UMSDOSDATETIME*;
 #pragma pack(pop)
 
-		//Microsoft DTTM time (as used by Microsoft Compound Document format)
+		//Microsoft UDTTM time (as used by Microsoft Compound Document format)
 		//See: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/164c0c2e-6031-439e-88ad-69d00b69f414
 #pragma pack(push, 1)
-		union DTTM
+		union UDTTM
 		{
 			struct
 			{
@@ -46,11 +45,11 @@ namespace HEXCTRL::INTERNAL
 			} components;
 			unsigned long dwValue;
 		};
-		using PDTTM = DTTM*;
+		using PDTTM = UDTTM*;
 #pragma pack(pop)
 
 #pragma pack(push, 1)
-		union DQWORD
+		union UDQWORD
 		{
 			struct
 			{
@@ -59,7 +58,7 @@ namespace HEXCTRL::INTERNAL
 			} Value;
 			GUID gGUID;
 		};
-		using PDQWORD = DQWORD*;
+		using PDQWORD = UDQWORD*;
 #pragma pack(pop)
 		//Time calculation constants
 		static inline const wchar_t* const arrNibbles [] {
@@ -74,7 +73,6 @@ namespace HEXCTRL::INTERNAL
 		static constexpr auto m_ulFileTime1970_HIGH = 0x019db1deUL; //Used for Unix and Java times
 		static constexpr auto m_ullUnixEpochDiff = 11644473600ULL;  //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970
 	public:
-		explicit CHexDlgDataInterpret(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_DATAINTERPRET, pParent) {}
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		[[nodiscard]] ULONGLONG GetSize()const;
 		void InspectOffset(ULONGLONG ullOffset);
@@ -115,9 +113,9 @@ namespace HEXCTRL::INTERNAL
 		void ShowNAME_FILETIME(QWORD qword);
 		void ShowNAME_OLEDATETIME(QWORD qword);
 		void ShowNAME_JAVATIME(QWORD qword);
-		void ShowNAME_GUID(const DQWORD& dqword);
-		void ShowNAME_GUIDTIME(const DQWORD& dqword);
-		void ShowNAME_SYSTEMTIME(const DQWORD& dqword);
+		void ShowNAME_GUID(const UDQWORD& dqword);
+		void ShowNAME_GUIDTIME(const UDQWORD& dqword);
+		void ShowNAME_SYSTEMTIME(const UDQWORD& dqword);
 		bool SetDataNAME_BINARY(std::wstring_view wstr);
 		bool SetDataNAME_CHAR(std::wstring_view wstr);
 		bool SetDataNAME_UCHAR(std::wstring_view wstr);
@@ -153,7 +151,7 @@ namespace HEXCTRL::INTERNAL
 			SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4,
 			SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10
 		};
-		struct GRIDDATA
+		struct SGRIDDATA
 		{
 			CMFCPropertyGridProperty* pProp { };
 			EGroup eGroup { };
@@ -166,7 +164,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fBigEndian { false };
 		bool m_fShowAsHex { false };
 		CHexPropGridCtrl m_stCtrlGrid;
-		std::vector<GRIDDATA> m_vecProp;
+		std::vector<SGRIDDATA> m_vecProp;
 		CMFCPropertyGridProperty* m_pPropChanged { };
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullSize { };

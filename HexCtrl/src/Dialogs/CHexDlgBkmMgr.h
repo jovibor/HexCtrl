@@ -7,19 +7,17 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include "../../res/HexCtrlRes.h"
 #include "../CHexBookmarks.h"
 #include "../ListEx/ListEx.h"
-#include "CHexDlgBookmarkProps.h"
+#include "CHexDlgBkmProps.h"
 #include <afxdialogex.h>
 
 namespace HEXCTRL::INTERNAL
 {
 	using namespace HEXCTRL::LISTEX;
-	class CHexDlgBookmarkMgr final : public CDialogEx
+	class CHexDlgBkmMgr final : public CDialogEx
 	{
 	public:
-		explicit CHexDlgBookmarkMgr(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_BOOKMARKMGR, pParent) {}
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks);
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;
@@ -28,11 +26,12 @@ namespace HEXCTRL::INTERNAL
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		afx_msg void OnDestroy();
-		afx_msg void OnListBkmGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListBkmItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListBkmItemLClick(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListBkmDblClick(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListBkmRClick(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListItemLClick(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListDblClick(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListCellColor(NMHDR *pNMHDR, LRESULT *pResult);
 		void UpdateList();
 		void SortBookmarks();
 		DECLARE_MESSAGE_MAP()
@@ -43,10 +42,10 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullCurrBkmIndex { }; //Currently selected bookmark index.
 		__time64_t m_time { };
 		enum EMenuID {
-			IDC_HEXCTRL_BOOKMARKMGR_MENU_NEW = 0x8000,
-			IDC_HEXCTRL_BOOKMARKMGR_MENU_EDIT = 0x8001,
-			IDC_HEXCTRL_BOOKMARKMGR_MENU_REMOVE = 0x8002,
-			IDC_HEXCTRL_BOOKMARKMGR_MENU_CLEARALL = 0x8003
+			IDC_HEXCTRL_BKMMGR_MENU_NEW = 0x8000,
+			IDC_HEXCTRL_BKMMGR_MENU_EDIT = 0x8001,
+			IDC_HEXCTRL_BKMMGR_MENU_REMOVE = 0x8002,
+			IDC_HEXCTRL_BKMMGR_MENU_CLEARALL = 0x8003
 		};
 	};
 }

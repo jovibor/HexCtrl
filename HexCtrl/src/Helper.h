@@ -18,7 +18,8 @@
 namespace HEXCTRL::INTERNAL {
 	
 	//Default codepage (Windows-1250) when HexCtrl code page is set to -1.
-	//To prevent any non ASCII (8-bit) default code pages.
+	//This is mainly to prevent any non 1-byte ASCII default code pages 
+	//that could be used in Windows (if CP_ACP was set here instead).
 	constexpr UINT CODEPAGE_DEFAULT = { 1250 };
 	
 	//Fast lookup char/wchar_t arrays.

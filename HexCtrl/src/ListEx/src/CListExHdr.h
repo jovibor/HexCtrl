@@ -35,7 +35,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		void SetSortable(bool fSortable);
 		void SetSortArrow(int iColumn, bool fAscending);
 	protected:
-		afx_msg void OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BOOL bIsHighlighted) override;
+		afx_msg void OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BOOL bIsHighlighted)override;
 		afx_msg LRESULT OnLayout(WPARAM wParam, LPARAM lParam);
 		afx_msg void OnDestroy();
 		DECLARE_MESSAGE_MAP()

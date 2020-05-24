@@ -227,9 +227,10 @@
     <ClInclude Include="src\CHexSelection.h" />
     <ClInclude Include="src\CScrollEx.h" />
     <ClInclude Include="src\Dialogs\CHexDlgAbout.h" />
-    <ClInclude Include="src\Dialogs\CHexDlgBookmarkProps.h" />
-    <ClInclude Include="src\Dialogs\CHexDlgBookmarkMgr.h" />
+    <ClInclude Include="src\Dialogs\CHexDlgBkmProps.h" />
+    <ClInclude Include="src\Dialogs\CHexDlgBkmMgr.h" />
     <ClInclude Include="src\Dialogs\CHexDlgCallback.h" />
+    <ClInclude Include="src\Dialogs\CHexDlgEncoding.h" />
     <ClInclude Include="src\Dialogs\CHexDlgDataInterpret.h" />
     <ClInclude Include="src\Dialogs\CHexDlgFillData.h" />
     <ClInclude Include="src\Dialogs\CHexDlgOperations.h" />
@@ -253,9 +254,10 @@
     <ClCompile Include="src\CHexSelection.cpp" />
     <ClCompile Include="src\CScrollEx.cpp" />
     <ClCompile Include="src\Dialogs\CHexDlgAbout.cpp" />
-    <ClCompile Include="src\Dialogs\CHexDlgBookmarkProps.cpp" />
-    <ClCompile Include="src\Dialogs\CHexDlgBookmarkMgr.cpp" />
+    <ClCompile Include="src\Dialogs\CHexDlgBkmProps.cpp" />
+    <ClCompile Include="src\Dialogs\CHexDlgBkmMgr.cpp" />
     <ClCompile Include="src\Dialogs\CHexDlgCallback.cpp" />
+    <ClCompile Include="src\Dialogs\CHexDlgEncoding.cpp" />
     <ClCompile Include="src\Dialogs\CHexDlgDataInterpret.cpp" />
     <ClCompile Include="src\Dialogs\CHexDlgFillData.cpp" />
     <ClCompile Include="src\Dialogs\CHexDlgOperations.cpp" />

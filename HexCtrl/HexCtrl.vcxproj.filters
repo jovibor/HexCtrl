@@ -60,12 +60,6 @@
     <ClInclude Include="res\HexCtrlRes.h">
       <Filter>HexCtrl\res</Filter>
     </ClInclude>
-    <ClInclude Include="src\Dialogs\CHexDlgBookmarkMgr.h">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Dialogs\CHexDlgBookmarkProps.h">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClInclude>
     <ClInclude Include="src\CHexSelection.h">
       <Filter>HexCtrl\src</Filter>
     </ClInclude>
@@ -91,6 +85,15 @@
       <Filter>HexCtrl\src\ListEx</Filter>
     </ClInclude>
     <ClInclude Include="src\Dialogs\CHexDlgFillData.h">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Dialogs\CHexDlgEncoding.h">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Dialogs\CHexDlgBkmMgr.h">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Dialogs\CHexDlgBkmProps.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
   </ItemGroup>
@@ -119,12 +122,6 @@
     <ClCompile Include="src\Dialogs\CHexDlgSearch.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
-    <ClCompile Include="src\Dialogs\CHexDlgBookmarkMgr.cpp">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Dialogs\CHexDlgBookmarkProps.cpp">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
     <ClCompile Include="src\CHexSelection.cpp">
       <Filter>HexCtrl\src</Filter>
     </ClCompile>
@@ -147,6 +144,15 @@
       <Filter>HexCtrl\src\ListEx</Filter>
     </ClCompile>
     <ClCompile Include="src\Dialogs\CHexDlgFillData.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Dialogs\CHexDlgEncoding.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Dialogs\CHexDlgBkmMgr.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Dialogs\CHexDlgBkmProps.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
   </ItemGroup>

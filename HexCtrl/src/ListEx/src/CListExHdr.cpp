@@ -74,6 +74,7 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BO
 
 	rDC.SetTextColor(clrText);
 	rDC.SelectObject(m_fontHdr);
+	
 	//Set item's text buffer first char to zero,
 	//then getting item's text and Draw it.
 	m_wstrHeaderText[0] = L'\0';
@@ -120,8 +121,13 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BO
 
 	//rDC.DrawEdge(&rect, EDGE_RAISED, BF_RECT); //3D look edges.
 	rDC.SelectObject(m_penGrid);
-	rDC.MoveTo(rect.left, rect.top);
+	rDC.MoveTo(rect.TopLeft());
 	rDC.LineTo(rect.left, rect.bottom);
+	if (iItem == GetItemCount() - 1) //Last item.
+	{
+		rDC.MoveTo(rect.right, rect.top);
+		rDC.LineTo(rect.BottomRight());
+	}
 }
 
 LRESULT CListExHdr::OnLayout(WPARAM /*wParam*/, LPARAM lParam)

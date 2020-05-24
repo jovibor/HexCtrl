@@ -12,9 +12,10 @@
 #include "CHexSelection.h"
 #include "CScrollEx.h"
 #include "Dialogs/CHexDlgAbout.h"
-#include "Dialogs/CHexDlgBookmarkMgr.h"
+#include "Dialogs/CHexDlgBkmMgr.h"
 #include "Dialogs/CHexDlgCallback.h"
 #include "Dialogs/CHexDlgDataInterpret.h"
+#include "Dialogs/CHexDlgEncoding.h"
 #include "Dialogs/CHexDlgFillData.h"
 #include "Dialogs/CHexDlgOperations.h"
 #include "Dialogs/CHexDlgSearch.h"
@@ -50,7 +51,7 @@ namespace HEXCTRL {
 	* Internal enums and structs.               *
 	********************************************/
 	namespace INTERNAL {
-		enum class EClipboard : DWORD
+		enum class CHexCtrl::EClipboard : WORD
 		{
 			COPY_HEX, COPY_HEX_LE, COPY_HEX_FORMATTED, COPY_ASCII, COPY_BASE64,
 			COPY_CARRAY, COPY_GREPHEX, COPY_PRINTSCREEN,
@@ -58,18 +59,18 @@ namespace HEXCTRL {
 		};
 
 		//Struct for UNDO command routine.
-		struct UNDOSTRUCT
+		struct CHexCtrl::SUNDO
 		{
 			ULONGLONG              ullOffset { }; //Start byte to apply Undo to.
 			std::vector<std::byte> vecData { };   //Data for Undo.
 		};
 
 		//Struct for resources auto deletion on destruction.
-		struct HBITMAPSTRUCT
+		struct CHexCtrl::SHBITMAP
 		{
-			HBITMAPSTRUCT() = default;
-			~HBITMAPSTRUCT() { ::DeleteObject(m_hBmp); }
-			HBITMAPSTRUCT& operator=(HBITMAP hBmp) { m_hBmp = hBmp; return *this; }
+			SHBITMAP() = default;
+			~SHBITMAP() { ::DeleteObject(m_hBmp); }
+			SHBITMAP& operator=(HBITMAP hBmp) { m_hBmp = hBmp; return *this; }
 			operator HBITMAP()const { return m_hBmp; }
 			HBITMAP m_hBmp { };
 		};
@@ -150,7 +151,7 @@ CHexCtrl::CHexCtrl()
 	}
 }
 
-ULONGLONG CHexCtrl::BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)
+ULONGLONG CHexCtrl::BkmAdd(const HEXBKMSTRUCT& hbs, bool fRedraw)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -168,7 +169,7 @@ void CHexCtrl::BkmClearAll()
 	m_pBookmarks->ClearAll();
 }
 
-auto CHexCtrl::BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT*
+auto CHexCtrl::BkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT*
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -177,7 +178,7 @@ auto CHexCtrl::BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT*
 	return m_pBookmarks->GetByID(ullID);
 }
 
-auto CHexCtrl::BkmGetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT*
+auto CHexCtrl::BkmGetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT*
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -195,7 +196,7 @@ ULONGLONG CHexCtrl::BkmGetCount() const
 	return m_pBookmarks->GetCount();
 }
 
-auto CHexCtrl::BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*
+auto CHexCtrl::BkmHitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT*
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -391,16 +392,18 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_pScrollH->AddSibling(m_pScrollV.get());
 
 	//All dialogs are created after the main window, to set the parent window correctly.
-	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this);
-	m_pDlgOpers->Create(IDD_HEXCTRL_OPERATIONS, this);
-	m_pDlgFillData->Create(IDD_HEXCTRL_FILLDATA, this);
-	m_pDlgBookmarkMgr->Create(IDD_HEXCTRL_BOOKMARKMGR, this, &*m_pBookmarks);
+	m_pDlgBookmarkMgr->Create(IDD_HEXCTRL_BKMMGR, this, &*m_pBookmarks);
+	m_pDlgEncoding->Create(IDD_HEXCTRL_ENCODING, this);
 	m_pDlgDataInterpret->Create(IDD_HEXCTRL_DATAINTERPRET, this);
+	m_pDlgFillData->Create(IDD_HEXCTRL_FILLDATA, this);
+	m_pDlgOpers->Create(IDD_HEXCTRL_OPERATIONS, this);
+	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this);
 	m_pBookmarks->Attach(this);
 	m_pSelection->Attach(this);
 
 	m_fCreated = true;
 	SetShowMode(m_enShowMode);
+	SetEncoding(-1);
 
 	return true;
 }
@@ -529,6 +532,9 @@ void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
 	case EHexCmd::CMD_DATAINTERPRET:
 		wParam = IDM_HEXCTRL_DATAINTERPRET;
 		break;
+	case EHexCmd::CMD_ENCODING:
+		wParam = IDM_HEXCTRL_ENCODING;
+		break;
 	case EHexCmd::CMD_APPEARANCE_FONTINC:
 		wParam = IDM_HEXCTRL_APPEARANCE_FONTINCREASE;
 		break;
@@ -548,9 +554,8 @@ void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
 		wParam = IDM_HEXCTRL_ABOUT;
 		break;
 	}
-
 	if (wParam)
-		SendMessageW(WM_COMMAND, wParam, 0);
+		SendMessageW(WM_COMMAND, wParam);
 }
 
 DWORD CHexCtrl::GetCapacity()const
@@ -574,6 +579,11 @@ auto CHexCtrl::GetColors()const->HEXCOLORSSTRUCT
 		return { };
 
 	return m_stColor;
+}
+
+int CHexCtrl::GetEncoding()const
+{
+	return m_iCodePage;
 }
 
 long CHexCtrl::GetFontSize()const
@@ -673,6 +683,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 	case EHexCmd::CMD_APPEARANCE_FONTDEC:
 	case EHexCmd::CMD_APPEARANCE_CAPACITYINC:
 	case EHexCmd::CMD_APPEARANCE_CAPACITYDEC:
+	case EHexCmd::CMD_ENCODING:
 	case EHexCmd::CMD_PRINT:
 	case EHexCmd::CMD_ABOUT:
 		fAvail = true;
@@ -769,6 +780,9 @@ bool CHexCtrl::IsDlgVisible(EHexDlg enDlg)const
 	case EHexDlg::DLG_SEARCH:
 		fVisible = m_pDlgSearch->IsWindowVisible();
 		break;
+	case EHexDlg::DLG_ENCODING:
+		fVisible = m_pDlgEncoding->IsWindowVisible();
+		break;
 	}
 
 	return fVisible;
@@ -845,29 +859,6 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
 }
 
-void CHexCtrl::SetCodePage(int iCodePage)
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
-
-	CPINFOEXW stCPInfo { };
-	std::wstring wstrFormat { };
-	if (iCodePage == -1)
-		wstrFormat = L"ASCII";
-	else if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != 0 && stCPInfo.MaxCharSize == 1)
-		wstrFormat = L"ASCII (%i)";
-
-	if (!wstrFormat.empty())
-	{
-		m_iCodePage = iCodePage;
-		WCHAR buff[32];
-		swprintf_s(buff, wstrFormat.data(), m_iCodePage);
-		m_wstrTextTitle = buff;
-		Redraw();
-	}
-}
-
 void CHexCtrl::SetColors(const HEXCOLORSSTRUCT& clr)
 {
 	assert(IsCreated());
@@ -918,6 +909,29 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 
 	if (hds.stSelSpan.ullSize)
 		MakeSelection(hds.stSelSpan.ullOffset, hds.stSelSpan.ullOffset, hds.stSelSpan.ullSize, 1, true, true);
+}
+
+void CHexCtrl::SetEncoding(int iCodePage)
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
+	CPINFOEXW stCPInfo { };
+	std::wstring wstrFormat { };
+	if (iCodePage == -1)
+		wstrFormat = L"ASCII";
+	else if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != 0 && stCPInfo.MaxCharSize == 1)
+		wstrFormat = L"ASCII (%i)";
+
+	if (!wstrFormat.empty())
+	{
+		m_iCodePage = iCodePage;
+		WCHAR buff[32];
+		swprintf_s(buff, _countof(buff), wstrFormat.data(), m_iCodePage);
+		m_wstrTextTitle = buff;
+		Redraw();
+	}
 }
 
 void CHexCtrl::SetFont(const LOGFONTW* pLogFont)
@@ -1078,6 +1092,9 @@ void CHexCtrl::ShowDlg(EHexDlg enDlg, bool fShow)const
 		break;
 	case EHexDlg::DLG_SEARCH:
 		m_pDlgSearch->ShowWindow(iShow);
+		break;
+	case EHexDlg::DLG_ENCODING:
+		m_pDlgEncoding->ShowWindow(iShow);
 		break;
 	}
 }
@@ -1313,7 +1330,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 
 	ULONGLONG ullSize = strlen(pszClipboardData);
 	ULONGLONG ullSizeToModify { };
-	MODIFYSTRUCT hmd;
+	SMODIFY hmd;
 
 	std::string strData;
 	switch (enType)
@@ -1821,7 +1838,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 		std::wstring wstrHexBookmarkToPrint { }, wstrAsciiBookmarkToPrint { }; //Bookmarks to print.
 		int iBookmarkHexPosToPrintX { 0x7FFFFFFF }, iBookmarkAsciiPosToPrintX { };
 		bool fBookmark { false };  //Flag to show current Bookmark in current Hex presence.
-		const HEXBOOKMARKSTRUCT* pBookmarkCurr { };
+		const HEXBKMSTRUCT* pBookmarkCurr { };
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
@@ -2446,7 +2463,7 @@ void CHexCtrl::FillWithZeros()
 	if (!IsDataSet())
 		return;
 
-	MODIFYSTRUCT hms;
+	SMODIFY hms;
 	hms.vecSpan = m_pSelection->GetData();
 	hms.ullDataSize = 1;
 	hms.enModifyMode = EModifyMode::MODIFY_REPEAT;
@@ -2708,7 +2725,7 @@ void CHexCtrl::MakeSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG u
 	OnCaretPosChange(ullStart);
 }
 
-void CHexCtrl::Modify(const MODIFYSTRUCT& hms, bool fRedraw)
+void CHexCtrl::Modify(const SMODIFY& hms, bool fRedraw)
 {
 	if (!IsMutable())
 		return;
@@ -2735,7 +2752,7 @@ void CHexCtrl::Modify(const MODIFYSTRUCT& hms, bool fRedraw)
 		RedrawWindow();
 }
 
-void CHexCtrl::ModifyDefault(const MODIFYSTRUCT& hms)
+void CHexCtrl::ModifyDefault(const SMODIFY& hms)
 {
 	const auto& vecSelRef = hms.vecSpan;
 	std::byte* pData = GetData(vecSelRef[0]);
@@ -2743,7 +2760,7 @@ void CHexCtrl::ModifyDefault(const MODIFYSTRUCT& hms)
 	SetDataVirtual(pData, vecSelRef[0]);
 }
 
-void CHexCtrl::ModifyOperation(const MODIFYSTRUCT& hms)
+void CHexCtrl::ModifyOperation(const SMODIFY& hms)
 {
 	if (hms.ullDataSize > sizeof(QWORD))
 		return;
@@ -2825,7 +2842,7 @@ void CHexCtrl::ModifyOperation(const MODIFYSTRUCT& hms)
 	thrd.join();
 }
 
-void CHexCtrl::ModifyRepeat(const MODIFYSTRUCT& hms)
+void CHexCtrl::ModifyRepeat(const SMODIFY& hms)
 {
 	const auto& vecSelRef = hms.vecSpan;
 	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
@@ -3623,7 +3640,7 @@ void CHexCtrl::Redo()
 
 	std::vector<HEXSPANSTRUCT> vecSpan { };
 	std::transform(refRedo->begin(), refRedo->end(), std::back_inserter(vecSpan),
-		[](UNDOSTRUCT& ref) { return HEXSPANSTRUCT { ref.ullOffset, ref.vecData.size() }; });
+		[](SUNDO& ref) { return HEXSPANSTRUCT { ref.ullOffset, ref.vecData.size() }; });
 
 	//Making new Undo data snapshot.
 	SnapshotUndo(vecSpan);
@@ -3689,14 +3706,14 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 		m_deqUndo.pop_front();
 
 	//Making new Undo data snapshot.
-	const auto& refUndo = m_deqUndo.emplace_back(std::make_unique<std::vector<UNDOSTRUCT>>());
+	const auto& refUndo = m_deqUndo.emplace_back(std::make_unique<std::vector<SUNDO>>());
 
 	//Bad alloc may happen here!!!
 	try
 	{
 		for (const auto& iterSel : vecSpan)
 		{
-			refUndo->emplace_back(UNDOSTRUCT { iterSel.ullOffset, { } });
+			refUndo->emplace_back(SUNDO { iterSel.ullOffset, { } });
 			refUndo->back().vecData.resize(static_cast<size_t>(iterSel.ullSize));
 		}
 	}
@@ -3757,7 +3774,7 @@ void CHexCtrl::Undo()
 	const auto& refUndo = m_deqUndo.back();
 
 	//Making new Redo data snapshot.
-	const auto& refRedo = m_deqRedo.emplace_back(std::make_unique<std::vector<UNDOSTRUCT>>());
+	const auto& refRedo = m_deqRedo.emplace_back(std::make_unique<std::vector<SUNDO>>());
 
 	//Bad alloc may happen here!!!
 	//If there is no more free memory, just clear the vec and return.
@@ -3765,7 +3782,7 @@ void CHexCtrl::Undo()
 	{
 		for (auto& i : *refUndo)
 		{
-			refRedo->emplace_back(UNDOSTRUCT { i.ullOffset, { } });
+			refRedo->emplace_back(SUNDO { i.ullOffset, { } });
 			refRedo->back().vecData.resize(i.vecData.size());
 		}
 	}
@@ -3902,7 +3919,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	if (!m_fMutable || (GetKeyState(VK_CONTROL) < 0))
 		return;
 
-	MODIFYSTRUCT hms;
+	SMODIFY hms;
 	hms.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, 1 });
 	hms.ullDataSize = 1;
 
@@ -3938,7 +3955,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 			{
 				wchar_t wch { static_cast<wchar_t>(nChar) };
 				//Convert input symbol (wchar) to char according to current Windows' code page.
-				if (auto str = WstrToStr(&wch, 1143); !str.empty())
+				if (auto str = WstrToStr(&wch, uCurrCodePage); !str.empty())
 					chByte = str[0];
 			}
 		}
@@ -3971,7 +3988,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 		SetShowMode(EHexShowMode::ASQWORD);
 		break;
 	case IDM_HEXCTRL_BOOKMARKS_ADD:
-		m_pBookmarks->Add(HEXBOOKMARKSTRUCT { m_pSelection->GetData() });
+		m_pBookmarks->Add(HEXBKMSTRUCT { m_pSelection->GetData() });
 		break;
 	case IDM_HEXCTRL_BOOKMARKS_REMOVE:
 		m_pBookmarks->Remove(m_optRMouseClick.value_or(GetCaretPos()));
@@ -4045,6 +4062,9 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 		break;
 	case IDM_HEXCTRL_DATAINTERPRET:
 		m_pDlgDataInterpret->ShowWindow(SW_SHOW);
+		break;
+	case IDM_HEXCTRL_ENCODING:
+		m_pDlgEncoding->ShowWindow(SW_SHOW);
 		break;
 	case IDM_HEXCTRL_APPEARANCE_FONTINCREASE:
 		SetFontSize(GetFontSize() + 2);
@@ -4513,9 +4533,10 @@ void CHexCtrl::OnPaint()
 	if (iLines < 0)
 		return;
 
-	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
 	DrawWindow(pDC, &m_fontMain, &m_fontInfo); //Draw the window with all layouts.
 	DrawOffsets(pDC, &m_fontMain, ullStartLine, iLines);
+
+	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
 	DrawHexAscii(pDC, &m_fontMain, iLines, wstrHex, wstrText);
 	DrawBookmarks(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
 	DrawCustomColors(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);

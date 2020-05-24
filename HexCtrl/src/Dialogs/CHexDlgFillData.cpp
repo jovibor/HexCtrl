@@ -7,6 +7,7 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
+#include "../../res/HexCtrlRes.h"
 #include "../Helper.h"
 #include "CHexDlgFillData.h"
 
@@ -51,7 +52,7 @@ void CHexDlgFillData::OnOK()
 
 	int iRadioType = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16);
 
-	MODIFYSTRUCT hms;
+	SMODIFY hms;
 	hms.enModifyMode = EModifyMode::MODIFY_REPEAT;
 	hms.vecSpan = pHex->GetSelection();
 	if (hms.vecSpan.empty())

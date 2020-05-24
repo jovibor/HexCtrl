@@ -34,6 +34,7 @@
   * [GetCapacity](#getcapacity)
   * [GetCaretPos](#getcaretpos)
   * [GetColors](#getcolors)
+  * [GetEncoding](#getincoding)
   * [GetFontSize](#getfontsize)
   * [GetMenuHandle](#getmenuhandle)
   * [GetSectorSize](#getsectorsize)
@@ -48,9 +49,9 @@
   * [IsMutable](#ismutable)
   * [IsOffsetAsHex](#isoffsetashex)
   * [SetCapacity](#setcapacity)
-  * [SetCodePage](#setcodepage)
   * [SetColors](#setcolors)
   * [SetData](#setdata)
+  * [SetEncoding](#setencoding)
   * [SetFont](#setfont)
   * [SetFontSize](#setfontsize)
   * [SetMutable](#setmutable)
@@ -65,7 +66,7 @@
   * [HEXCOLORSSTRUCT](#hexcolorsstruct)
   * [HEXDATASTRUCT](#hexdatastruct)
   * [HEXSPANSTRUCT](#hexspanstruct)
-  * [HEXBOOKMARKSTRUCT](#hexbookmarkstruct)
+  * [HEXBKMSTRUCT](#hexbkmstruct)
   * [HEXNOTIFYSTRUCT](#hexnotifystruct)
   * [HEXHITTESTSTRUCT](#hexhitteststruct)
   * [HEXCOLOR](#hexcolor)
@@ -305,18 +306,18 @@ But if you have some big and complicated data logic and want to handle all these
 
 To enable virtual bookmarks call the [`BkmSetVirtual`](#bkmsetvirtual) method.  
 
-The main method of the `IHexVirtBkm` interface is `HitTest`. It takes byte's offset and returns pointer to [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) if there is a bookmark withing this byte, or `nullptr` otherwise.
+The main method of the `IHexVirtBkm` interface is `HitTest`. It takes byte's offset and returns pointer to [`HEXBKMSTRUCT`](#HEXBKMSTRUCT) if there is a bookmark withing this byte, or `nullptr` otherwise.
 
 ```cpp
 class IHexVirtBkm
 {
 public:
-    virtual ULONGLONG Add(const HEXBOOKMARKSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
+    virtual ULONGLONG Add(const HEXBKMSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
     virtual void ClearAll() = 0; //Clear all bookmarks.
     [[nodiscard]] virtual ULONGLONG GetCount() = 0; //Get total bookmarks count.
-    [[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT* = 0; //Bookmark by ID.
-    [[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT* = 0; //Bookmark by index (in inner list).
-    [[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* = 0; //Has given offset the bookmark?
+    [[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->HEXBKMSTRUCT* = 0; //Bookmark by ID.
+    [[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT* = 0; //Bookmark by index (in inner list).
+    [[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT* = 0; //Has given offset the bookmark?
     virtual void RemoveByID(ULONGLONG ullID) = 0;   //Remove bookmark by given ID (returned by Add()).
 };
 ```
@@ -339,12 +340,12 @@ The **HexControl** has plenty of methods that you can use to customize its appea
 
 ### [](#)BkmAdd
 ```cpp
-ULONGLONG BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw = false)
+ULONGLONG BkmAdd(const HEXBKMSTRUCT& hbs, bool fRedraw = false)
 ```
-Adds new bookmark to the control. Uses [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) as an argument. Returns created bookmark's id.
+Adds new bookmark to the control. Uses [`HEXBKMSTRUCT`](#HEXBKMSTRUCT) as an argument. Returns created bookmark's id.
 #### Example
 ```cpp
-HEXBOOKMARKSTRUCT hbs;
+HEXBKMSTRUCT hbs;
 hbs.vecSpan.emplace_back(HEXSPANSTRUCT { 0x1, 10 });
 hbs.clrBk = RGB(0, 255, 0);
 hbs.clrText = RGB(255, 255, 255);
@@ -361,13 +362,13 @@ Clears all bookmarks.
 
 ### [](#)BkmGetByID
 ```cpp
-BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT*;
+BkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT*;
 ```
 Get bookmark by ID.
 
 ### [](#)BkmGetByIndex
 ```cpp
-auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT*;
+auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT*;
 ```
 Get bookmark by Index.
 
@@ -379,9 +380,9 @@ Get bookmarks' count.
 
 ### [](#)BkmHitTest
 ```cpp
-auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT*;
+auto BkmHitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT*;
 ```
-Test given offset and retrives pointer to [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) if it contains bookmark.
+Test given offset and retrives pointer to [`HEXBKMSTRUCT`](#HEXBKMSTRUCT) if it contains bookmark.
 
 ### [](#)BkmRemoveByID
 ```cpp
@@ -448,6 +449,12 @@ Retrieves current caret position offset.
 auto GetColors()const->HEXCOLORSSTRUCT
 ```
 Returns current [`HEXCOLORSSTRUCT`](#hexcolorsstruct).
+
+### [](#)GetEncoding
+```cpp
+int GetEncoding()const;
+```
+Get code page that is currently in use.
 
 ### [](#)GetFontSize
 ```cpp
@@ -537,9 +544,9 @@ void SetCapacity(DWORD dwCapacity);
 ```
 Sets the **HexControl** current capacity.
 
-### [](#)SetCodePage
+### [](#)SetEncoding
 ```cpp
-void SetCodePage(int iCodePage);
+void SetEncoding(int iCodePage);
 ```
 Sets the code page for the **HexCtrl**'s text area. Takes [code page identifier](https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers) as an argument, or `-1` for default ASCII-only characters.  
 
@@ -678,10 +685,10 @@ struct HEXSPANSTRUCT
 };
 ```
 
-### [](#)HEXBOOKMARKSTRUCT
+### [](#)HEXBKMSTRUCT
 Structure for bookmarks, used in [`BkmAdd`](#BkmAdd) method.  
 ```cpp
-struct HEXBOOKMARKSTRUCT
+struct HEXBKMSTRUCT
 {
     std::vector<HEXSPANSTRUCT> vecSpan { };                //Vector of offsets and sizes.
     std::wstring               wstrDesc { };               //Bookmark description.
@@ -690,7 +697,7 @@ struct HEXBOOKMARKSTRUCT
     COLORREF                   clrBk { RGB(240, 240, 0) }; //Bk color.
     COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.
 };
-using PHEXBOOKMARKSTRUCT = HEXBOOKMARKSTRUCT*;
+using PHEXBKMSTRUCT = HEXBKMSTRUCT*;
 ```
 The member `vecSpan` is of a `std::vector<HEXSPANSTRUCT>` type because a bookmark may have few non adjacent areas. For instance, when selection is made as a block, with <kbd>Alt</kbd> pressed.
 
@@ -789,7 +796,7 @@ During its work **HexControl** sends notification messages through **[WM_NOTIFY]
 The `LPARAM` of the `WM_NOTIFY` message will hold pointer to the [`HEXNOTIFYSTRUCT`](#hexnotifystruct).
 
 ### [](#)HEXCTRL_MSG_BKMCLICK
-Sent if bookmark is clicked. [`HEXNOTIFYSTRUCT::pData`](#hexnotifystruct) will contain [`HEXBOOKMARKSTRUCT`](#hexbookmarkstruct) pointer.
+Sent if bookmark is clicked. [`HEXNOTIFYSTRUCT::pData`](#hexnotifystruct) will contain [`HEXBKMSTRUCT`](#HEXBKMSTRUCT) pointer.
 
 ### [](#)HEXCTRL_MSG_CARETCHANGE
 Sent when caret position has changed. [`HEXNOTIFYSTRUCT::ullData`](#hexnotifystruct) will contain current caret position.

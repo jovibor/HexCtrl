@@ -33,7 +33,6 @@ namespace HEXCTRL::LISTEX {
 * CListEx class implementation.						*
 ****************************************************/
 IMPLEMENT_DYNAMIC(CListEx, CMFCListCtrl)
-
 BEGIN_MESSAGE_MAP(CListEx, CMFCListCtrl)
 	ON_WM_SETCURSOR()
 	ON_WM_KILLFOCUS()
@@ -57,6 +56,7 @@ BEGIN_MESSAGE_MAP(CListEx, CMFCListCtrl)
 	ON_WM_DESTROY()
 	ON_NOTIFY_REFLECT(LVN_COLUMNCLICK, &CListEx::OnLvnColumnClick)
 	ON_WM_LBUTTONUP()
+
 END_MESSAGE_MAP()
 
 bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
@@ -68,18 +68,18 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 	auto dwStyle = static_cast<LONG_PTR>(lcs.dwStyle);
 	if (lcs.fDialogCtrl)
 	{
-		SubclassDlgItem(lcs.uID, lcs.pwndParent);
+		SubclassDlgItem(lcs.uID, lcs.pParent);
 		dwStyle = GetWindowLongPtrW(m_hWnd, GWL_STYLE);
 		SetWindowLongPtrW(m_hWnd, GWL_STYLE, dwStyle | LVS_OWNERDRAWFIXED | LVS_REPORT);
 	}
 	else if (!CMFCListCtrl::Create(lcs.dwStyle | WS_CHILD | WS_VISIBLE | LVS_OWNERDRAWFIXED | LVS_REPORT,
-		lcs.rect, lcs.pwndParent, lcs.uID))
+		lcs.rect, lcs.pParent, lcs.uID))
 		return false;
 
 	m_fVirtual = dwStyle & LVS_OWNERDATA;
 	m_stColors = lcs.stColor;
 	m_fSortable = lcs.fSortable;
-	m_fLinksUnderline = lcs.fLinksUnderline;
+	m_fLinksUnderline = lcs.fLinkUnderline;
 	m_fLinkTooltip = lcs.fLinkTooltip;
 
 	if (!m_stWndTtCell.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_BALLOON | TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
@@ -145,7 +145,7 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 void CListEx::CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)
 {
 	LISTEXCREATESTRUCT lcs;
-	lcs.pwndParent = pwndDlg;
+	lcs.pParent = pwndDlg;
 	lcs.uID = uCtrlID;
 	lcs.fDialogCtrl = true;
 
@@ -534,6 +534,9 @@ void CListEx::SetFontSize(UINT uiSize)
 	lf.lfHeight = m_lSizeFont = uiSize;
 	m_fontList.DeleteObject();
 	m_fontList.CreateFontIndirectW(&lf);
+	lf.lfUnderline = 1;
+	m_fontListUnderline.DeleteObject();
+	m_fontListUnderline.CreateFontIndirectW(&lf);
 
 	//To get WM_MEASUREITEM msg after changing font.
 	CRect rc;
@@ -921,17 +924,18 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 	if (pDIS->itemID == -1)
 		return;
 
-	CDC* pDC = CDC::FromHandle(pDIS->hDC);
+	auto pDC = CDC::FromHandle(pDIS->hDC);
 	pDC->SelectObject(m_penGrid);
 	pDC->SelectObject(m_fontList);
-	COLORREF clrBkCurrRow = (pDIS->itemID % 2) ? m_stColors.clrListBkRow2 : m_stColors.clrListBkRow1;
+	const COLORREF clrBkCurrRow = (pDIS->itemID % 2) ? m_stColors.clrListBkRow2 : m_stColors.clrListBkRow1;
 
 	switch (pDIS->itemAction)
 	{
 	case ODA_SELECT:
 	case ODA_DRAWENTIRE:
 	{
-		for (int i = 0; i < GetHeaderCtrl().GetItemCount(); ++i)
+		const auto iColumns = GetHeaderCtrl().GetItemCount();
+		for (auto i = 0; i < iColumns; ++i)
 		{
 			COLORREF clrText, clrBk, clrTextLink;
 			//Subitems' draw routine. Colors depending on whether subitem selected or not,
@@ -962,7 +966,7 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 			}
 			CRect rcBounds;
 			GetSubItemRect(pDIS->itemID, i, LVIR_BOUNDS, rcBounds);
-			pDC->FillSolidRect(&rcBounds, clrBk);
+			pDC->FillSolidRect(rcBounds, clrBk);
 
 			CRect rcText;
 			GetSubItemRect(pDIS->itemID, i, LVIR_LABEL, rcText);
@@ -983,18 +987,19 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 					pDC->SelectObject(m_fontList);
 				}
 
-				ExtTextOutW(pDC->m_hDC, iter.rect.left, iter.rect.top, ETO_CLIPPED, rcText, iter.wstrText.data(), static_cast<UINT>(iter.wstrText.size()), nullptr);
+				ExtTextOutW(pDC->m_hDC, iter.rect.left, iter.rect.top, ETO_CLIPPED,
+					rcText, iter.wstrText.data(), static_cast<UINT>(iter.wstrText.size()), nullptr);
 			}
 
-			//Drawing Subitem's rect lines. 
-			pDC->MoveTo(rcBounds.left, rcBounds.top);
+			//Drawing subitem's rect lines. 
+			pDC->MoveTo(rcBounds.TopLeft());
 			pDC->LineTo(rcBounds.right, rcBounds.top);
-			pDC->MoveTo(rcBounds.left, rcBounds.top);
+			pDC->MoveTo(rcBounds.TopLeft());
 			pDC->LineTo(rcBounds.left, rcBounds.bottom);
 			pDC->MoveTo(rcBounds.left, rcBounds.bottom);
-			pDC->LineTo(rcBounds.right, rcBounds.bottom);
+			pDC->LineTo(rcBounds.BottomRight());
 			pDC->MoveTo(rcBounds.right, rcBounds.top);
-			pDC->LineTo(rcBounds.right, rcBounds.bottom);
+			pDC->LineTo(rcBounds.BottomRight());
 		}
 	}
 	break;
@@ -1252,17 +1257,17 @@ BOOL CListEx::OnEraseBkgnd(CDC* /*pDC*/)
 void CListEx::OnPaint()
 {
 	//To avoid flickering.
-	//Drawing to CMemDC, excluding list header area (rect).
-	CRect rc, rcHdr;
-	GetClientRect(&rc);
+	//Drawing to CMemDC, excluding list header area (rcHdr).
+	CRect rcClient, rcHdr;
+	GetClientRect(&rcClient);
 	GetHeaderCtrl().GetClientRect(rcHdr);
-	rc.top += rcHdr.Height();
+	rcClient.top += rcHdr.Height();
 
 	CPaintDC dc(this);
-	CMemDC memDC(dc, rc);
+	CMemDC memDC(dc, rcClient);
 	CDC& rDC = memDC.GetDC();
-	rDC.GetClipBox(&rc);
-	rDC.FillSolidRect(rc, m_stColors.clrNWABk);
+	rDC.GetClipBox(&rcClient);
+	rDC.FillSolidRect(rcClient, m_stColors.clrNWABk);
 
 	DefWindowProcW(WM_PAINT, reinterpret_cast<WPARAM>(rDC.m_hDC), static_cast<LPARAM>(0));
 }

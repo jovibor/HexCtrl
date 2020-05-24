@@ -16,7 +16,7 @@ using namespace HEXCTRL::INTERNAL::SCROLLEX;
 
 namespace HEXCTRL::INTERNAL::SCROLLEX
 {
-	enum class EState : DWORD
+	enum class EState : WORD
 	{
 		STATE_DEFAULT,
 		FIRSTARROW_HOVER, FIRSTARROW_CLICK,

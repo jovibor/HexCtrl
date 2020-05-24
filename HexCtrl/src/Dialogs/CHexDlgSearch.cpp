@@ -7,6 +7,7 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
+#include "../../res/HexCtrlRes.h"
 #include "../Helper.h"
 #include "CHexDlgCallback.h"
 #include "CHexDlgSearch.h"
@@ -113,7 +114,7 @@ void CHexDlgSearch::PrepareSearch()
 
 	switch (GetSearchMode())
 	{
-	case ESearchMode::SEARCH_HEX:
+	case EMode::SEARCH_HEX:
 	{
 		m_strSearch = WstrToStr(m_wstrTextSearch);
 		m_strReplace = WstrToStr(m_wstrTextReplace);
@@ -133,7 +134,7 @@ void CHexDlgSearch::PrepareSearch()
 		m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
 	}
 	break;
-	case ESearchMode::SEARCH_ASCII:
+	case EMode::SEARCH_ASCII:
 	{
 		m_strSearch = WstrToStr(m_wstrTextSearch);
 		m_strReplace = WstrToStr(m_wstrTextReplace);
@@ -143,7 +144,7 @@ void CHexDlgSearch::PrepareSearch()
 		m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
 	}
 	break;
-	case ESearchMode::SEARCH_UTF16:
+	case EMode::SEARCH_UTF16:
 	{
 		m_nSizeSearch = m_wstrTextSearch.size() * sizeof(wchar_t);
 		m_nSizeReplace = m_wstrTextReplace.size() * sizeof(wchar_t);
@@ -440,7 +441,7 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 
 void CHexDlgSearch::Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw)
 {
-	MODIFYSTRUCT hms;
+	SMODIFY hms;
 	hms.vecSpan.emplace_back(HEXSPANSTRUCT { ullIndex, nSizeData });
 	hms.ullDataSize = nSizeReplace;
 	hms.pData = pData;
@@ -546,19 +547,19 @@ CHexCtrl* CHexDlgSearch::GetHexCtrl()const
 	return m_pHexCtrl;
 }
 
-ESearchMode CHexDlgSearch::GetSearchMode()
+CHexDlgSearch::EMode CHexDlgSearch::GetSearchMode()
 {
-	ESearchMode enSearch { };
+	EMode enSearch { };
 	switch (GetCheckedRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE))
 	{
 	case IDC_HEXCTRL_SEARCH_RADIO_HEX:
-		enSearch = ESearchMode::SEARCH_HEX;
+		enSearch = EMode::SEARCH_HEX;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_ASCII:
-		enSearch = ESearchMode::SEARCH_ASCII;
+		enSearch = EMode::SEARCH_ASCII;
 		break;
 	case IDC_HEXCTRL_SEARCH_RADIO_UNICODE:
-		enSearch = ESearchMode::SEARCH_UTF16;
+		enSearch = EMode::SEARCH_UTF16;
 		break;
 	}
 

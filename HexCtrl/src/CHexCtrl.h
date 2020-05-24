@@ -22,20 +22,18 @@ namespace HEXCTRL::INTERNAL
 	/*********************************
 	* Forward declarations.          *
 	*********************************/
-	class CHexDlgBookmarkMgr;
+	class CHexDlgBkmMgr;
+	class CHexDlgEncoding;
 	class CHexDlgDataInterpret;
 	class CHexDlgFillData;
 	class CHexDlgOperations;
 	class CHexDlgSearch;
 	class CHexBookmarks;
 	class CHexSelection;
-	struct UNDOSTRUCT;
-	struct HBITMAPSTRUCT;
-	enum class EClipboard : DWORD;
-	namespace SCROLLEX { class CScrollEx; }
+	namespace SCROLLEX { class CScrollEx; };
 
 	/********************************************************************************************
-	* EModifyMode - Enum of the data modification mode, used in MODIFYSTRUCT.             *
+	* EModifyMode - Enum of the data modification mode, used in SMODIFY.                        *
 	********************************************************************************************/
 	enum class EModifyMode : WORD
 	{
@@ -43,8 +41,8 @@ namespace HEXCTRL::INTERNAL
 	};
 
 	/********************************************************************************************
-	* EOperMode - Enum of the data operation mode, used in MODIFYSTRUCT,                  *
-	* when MODIFYSTRUCT::enModifyMode is MODIFY_OPERATION.                                   *
+	* EOperMode - Enum of the data operation mode, used in SMODIFY,                             *
+	* when SMODIFY::enModifyMode is MODIFY_OPERATION.                                           *
 	********************************************************************************************/
 	enum class EOperMode : WORD
 	{
@@ -53,7 +51,7 @@ namespace HEXCTRL::INTERNAL
 	};
 
 	/********************************************************************************************
-	* MODIFYSTRUCT - used to represent data modification parameters.                            *
+	* SMODIFY - used to represent data modification parameters.                            *
 	* When enModifyMode is set to EModifyMode::MODIFY_DEFAULT, bytes from pData just replace    *
 	* corresponding data bytes as is. If enModifyMode is equal to EModifyMode::MODIFY_REPEAT    *
 	* then block by block replacement takes place few times.                                    *
@@ -64,7 +62,7 @@ namespace HEXCTRL::INTERNAL
 	* EModifyMode::MODIFY_OPERATION then enOperMode comes into play, showing what kind of       *
 	* operation must be performed on data.                                                      *
 	********************************************************************************************/
-	struct MODIFYSTRUCT
+	struct SMODIFY
 	{
 		EModifyMode      enModifyMode { EModifyMode::MODIFY_DEFAULT }; //Modify mode.
 		EOperMode        enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
@@ -80,13 +78,13 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexCtrl();
-		ULONGLONG BkmAdd(const HEXBOOKMARKSTRUCT& hbs, bool fRedraw)override; //Adds new bookmark.
+		ULONGLONG BkmAdd(const HEXBKMSTRUCT& hbs, bool fRedraw)override; //Adds new bookmark.
 		void BkmClearAll()override; //Clear all bookmarks.
-		[[nodiscard]] auto BkmGetByID(ULONGLONG ullID)->HEXBOOKMARKSTRUCT* override; //Get bookmark by ID.
-		[[nodiscard]] auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBOOKMARKSTRUCT* override; //Get bookmark by Index.
+		[[nodiscard]] auto BkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT* override; //Get bookmark by ID.
+		[[nodiscard]] auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT* override; //Get bookmark by Index.
 		[[nodiscard]] ULONGLONG BkmGetCount()const override; //Get bookmarks count.
-		[[nodiscard]] auto BkmHitTest(ULONGLONG ullOffset)->HEXBOOKMARKSTRUCT* override;
-		void BkmRemoveByID(ULONGLONG ullID)override;        //Remove bookmark by the given Id.
+		[[nodiscard]] auto BkmHitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT* override;
+		void BkmRemoveByID(ULONGLONG ullID)override;        //Remove bookmark by the given ID.
 		void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual)override; //Enable/disable bookmarks virtual mode.
 		void ClearData()override;                           //Clears all data from HexCtrl's view (not touching data itself).
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
@@ -96,6 +94,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
 		[[nodiscard]] auto GetColors()const->HEXCOLORSSTRUCT override;    //Current colors.
+		[[nodiscard]] int GetEncoding()const override;                    //Get current code page ID.
 		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
 		[[nodiscard]] HMENU GetMenuHandle()const override;                //Context menu handle.
 		[[nodiscard]] DWORD GetSectorSize()const override;                //Current sector size.
@@ -113,9 +112,9 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsOffsetVisible(ULONGLONG ullOffset)const override; //Ensures that given offset is visible.
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
-		void SetCodePage(int iCodePage)override;            //Code-page for text area.
 		void SetColors(const HEXCOLORSSTRUCT& clr)override; //Sets all the control's colors.
 		void SetData(const HEXDATASTRUCT& hds)override;     //Main method for setting data to display (and edit).	
+		void SetEncoding(int iCodePage)override;            //Code-page for text area.
 		void SetFont(const LOGFONTW* pLogFont)override;     //Sets the control's new font. This font has to be monospaced.
 		void SetFontSize(UINT uiSize)override;              //Sets the control's font size.
 		void SetMutable(bool fEnable)override;              //Enable or disable edit mode.
@@ -125,11 +124,14 @@ namespace HEXCTRL::INTERNAL
 		void SetWheelRatio(double dbRatio)override;         //Sets the ratio for how much to scroll with mouse-wheel.
 		void ShowDlg(EHexDlg enDlg, bool fShow)const override; //Show/hide specific dialog.
 	private:
-		friend CHexDlgDataInterpret;
-		friend CHexDlgFillData;
-		friend CHexDlgOperations;
-		friend CHexDlgSearch;
-		friend CHexSelection;
+		friend class CHexDlgDataInterpret;
+		friend class CHexDlgFillData;
+		friend class CHexDlgOperations;
+		friend class CHexDlgSearch;
+		friend class CHexSelection;
+		struct SHBITMAP;
+		struct SUNDO;
+		enum class EClipboard : WORD;
 		void AsciiChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Ascii chunk.
 		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tuple<std::wstring, std::wstring>;
 		void CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLONG& ullSizeChunk, ULONGLONG& ullChunks);
@@ -175,10 +177,10 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsSectorVisible()const;               //Returns m_fSectorVisible.
 		void MakeSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines,
 			bool fScroll = true, bool fGoToStart = false);
-		void Modify(const MODIFYSTRUCT& hms, bool fRedraw = true); //Main routine to modify data, in m_fMutable==true mode.
-		void ModifyDefault(const MODIFYSTRUCT& hms);           //EModifyMode::MODIFY_DEFAULT
-		void ModifyOperation(const MODIFYSTRUCT& hms);         //EModifyMode::MODIFY_OPERATION
-		void ModifyRepeat(const MODIFYSTRUCT& hms);            //EModifyMode::MODIFY_REPEAT
+		void Modify(const SMODIFY& hms, bool fRedraw = true);  //Main routine to modify data, in m_fMutable==true mode.
+		void ModifyDefault(const SMODIFY& hms);                //EModifyMode::MODIFY_DEFAULT
+		void ModifyOperation(const SMODIFY& hms);              //EModifyMode::MODIFY_OPERATION
+		void ModifyRepeat(const SMODIFY& hms);                 //EModifyMode::MODIFY_REPEAT
 		void MoveCaret(ULONGLONG ullPos, bool fHighPart);      //Sets the cursor position when in Edit mode.
 		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
@@ -241,7 +243,8 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	private:
-		const std::unique_ptr<CHexDlgBookmarkMgr> m_pDlgBookmarkMgr { std::make_unique<CHexDlgBookmarkMgr>() }; //Bookmark manager.
+		const std::unique_ptr<CHexDlgBkmMgr> m_pDlgBookmarkMgr { std::make_unique<CHexDlgBkmMgr>() }; //Bookmark manager.
+		const std::unique_ptr<CHexDlgEncoding> m_pDlgEncoding { std::make_unique<CHexDlgEncoding>() };     //Encoding dialog.
 		const std::unique_ptr<CHexDlgDataInterpret> m_pDlgDataInterpret { std::make_unique<CHexDlgDataInterpret>() }; //Data Interpreter.
 		const std::unique_ptr<CHexDlgFillData> m_pDlgFillData { std::make_unique<CHexDlgFillData>() };     //"Fill with..." dialog.
 		const std::unique_ptr<CHexDlgOperations> m_pDlgOpers { std::make_unique<CHexDlgOperations>() };    //"Operations" dialog.
@@ -271,7 +274,7 @@ namespace HEXCTRL::INTERNAL
 		CMenu m_menuMain;                     //Main popup menu.
 		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		CPen m_penLines;                      //Pen for lines.
-		HEXBOOKMARKSTRUCT* m_pBkmCurrTt { };  //Currently shown bookmark's tooltip;
+		HEXBKMSTRUCT* m_pBkmCurrTt { };  //Currently shown bookmark's tooltip;
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
 		ULONGLONG m_ullLMouseClick { };       //Left mouse button clicked chunk.
@@ -309,10 +312,10 @@ namespace HEXCTRL::INTERNAL
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfo { };          //Info text (bottom rect).
 		std::wstring m_wstrSectorName { };    //Name of the sector/page.
-		std::wstring m_wstrTextTitle { L"ASCII" }; //Text area title.
-		std::deque<std::unique_ptr<std::vector<UNDOSTRUCT>>> m_deqUndo; //Undo deque.
-		std::deque<std::unique_ptr<std::vector<UNDOSTRUCT>>> m_deqRedo; //Redo deque.
-		std::unordered_map<int, HBITMAPSTRUCT> m_umapHBITMAP;           //Images for the Menu.
+		std::wstring m_wstrTextTitle { };     //Text area title.
+		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqUndo; //Undo deque.
+		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqRedo; //Redo deque.
+		std::unordered_map<int, SHBITMAP> m_umapHBITMAP;           //Images for the Menu.
 		bool m_fCreated { false };            //Is control created or not yet.
 		bool m_fDataSet { false };            //Is data set or not.
 		bool m_fMutable { false };            //Is control works in Edit or Read mode.
@@ -331,8 +334,7 @@ namespace HEXCTRL::INTERNAL
 		if (ullOffset >= m_ullDataSize)
 			return T { };
 
-		auto pData = GetData({ ullOffset, sizeof(T) });
-		if (pData)
+		if (auto pData = GetData({ ullOffset, sizeof(T) }); pData != nullptr)
 			return *reinterpret_cast<T*>(pData);
 
 		return T { };
