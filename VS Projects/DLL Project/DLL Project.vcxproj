@@ -24,7 +24,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>HexCtrl</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>HexCtrl</ProjectName>
+    <ProjectName>DLL Project</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -78,25 +78,25 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
-    <TargetName>$(ProjectName)</TargetName>
+    <TargetName>HexCtrl</TargetName>
     <OutDir>$(SolutionDir)bin\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
-    <TargetName>$(ProjectName)d</TargetName>
+    <TargetName>HexCtrld</TargetName>
     <OutDir>$(SolutionDir)bin\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
     <OutDir>$(SolutionDir)bin\$(ProjectName)\</OutDir>
-    <TargetName>$(ProjectName)64d</TargetName>
+    <TargetName>HexCtrl64d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
-    <TargetName>$(ProjectName)64</TargetName>
+    <TargetName>HexCtrl64</TargetName>
     <OutDir>$(SolutionDir)bin\$(ProjectName)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -219,65 +219,65 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\HexCtrlSample\stdafx.h" />
-    <ClInclude Include="HexCtrl.h" />
-    <ClInclude Include="res\HexCtrlRes.h" />
-    <ClInclude Include="src\CHexBookmarks.h" />
-    <ClInclude Include="src\CHexCtrl.h" />
-    <ClInclude Include="src\CHexSelection.h" />
-    <ClInclude Include="src\CScrollEx.h" />
-    <ClInclude Include="src\Dialogs\CHexDlgAbout.h" />
-    <ClInclude Include="src\Dialogs\CHexDlgBkmProps.h" />
-    <ClInclude Include="src\Dialogs\CHexDlgBkmMgr.h" />
-    <ClInclude Include="src\Dialogs\CHexDlgCallback.h" />
-    <ClInclude Include="src\Dialogs\CHexDlgEncoding.h" />
-    <ClInclude Include="src\Dialogs\CHexDlgDataInterpret.h" />
-    <ClInclude Include="src\Dialogs\CHexDlgFillData.h" />
-    <ClInclude Include="src\Dialogs\CHexDlgOperations.h" />
-    <ClInclude Include="src\Dialogs\CHexDlgSearch.h" />
-    <ClInclude Include="src\Dialogs\CHexEdit.h" />
-    <ClInclude Include="src\Dialogs\CHexPropGridCtrl.h" />
-    <ClInclude Include="src\Helper.h" />
-    <ClInclude Include="src\ListEx\ListEx.h" />
-    <ClInclude Include="src\ListEx\src\CListEx.h" />
-    <ClInclude Include="src\ListEx\src\CListExHdr.h" />
+    <ClInclude Include="..\Sample Project\stdafx.h" />
+    <ClInclude Include="..\..\HexCtrl\HexCtrl.h" />
+    <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h" />
+    <ClInclude Include="..\..\HexCtrl\src\CHexBookmarks.h" />
+    <ClInclude Include="..\..\HexCtrl\src\CHexCtrl.h" />
+    <ClInclude Include="..\..\HexCtrl\src\CHexSelection.h" />
+    <ClInclude Include="..\..\HexCtrl\src\CScrollEx.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgAbout.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmProps.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgEncoding.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterpret.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgFillData.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgOperations.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexEdit.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Helper.h" />
+    <ClInclude Include="..\..\HexCtrl\src\ListEx\ListEx.h" />
+    <ClInclude Include="..\..\HexCtrl\src\ListEx\src\CListEx.h" />
+    <ClInclude Include="..\..\HexCtrl\src\ListEx\src\CListExHdr.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\HexCtrlSample\stdafx.cpp">
+    <ClCompile Include="..\Sample Project\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\CHexBookmarks.cpp" />
-    <ClCompile Include="src\CHexCtrl.cpp" />
-    <ClCompile Include="src\CHexSelection.cpp" />
-    <ClCompile Include="src\CScrollEx.cpp" />
-    <ClCompile Include="src\Dialogs\CHexDlgAbout.cpp" />
-    <ClCompile Include="src\Dialogs\CHexDlgBkmProps.cpp" />
-    <ClCompile Include="src\Dialogs\CHexDlgBkmMgr.cpp" />
-    <ClCompile Include="src\Dialogs\CHexDlgCallback.cpp" />
-    <ClCompile Include="src\Dialogs\CHexDlgEncoding.cpp" />
-    <ClCompile Include="src\Dialogs\CHexDlgDataInterpret.cpp" />
-    <ClCompile Include="src\Dialogs\CHexDlgFillData.cpp" />
-    <ClCompile Include="src\Dialogs\CHexDlgOperations.cpp" />
-    <ClCompile Include="src\Dialogs\CHexDlgSearch.cpp" />
-    <ClCompile Include="src\Dialogs\CHexEdit.cpp" />
-    <ClCompile Include="src\Dialogs\CHexPropGridCtrl.cpp" />
-    <ClCompile Include="src\Helper.cpp" />
-    <ClCompile Include="src\ListEx\src\CListEx.cpp" />
-    <ClCompile Include="src\ListEx\src\CListExHdr.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\CHexBookmarks.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\CHexSelection.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\CScrollEx.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgAbout.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmProps.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgEncoding.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterpret.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgFillData.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgOperations.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexEdit.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Helper.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\ListEx\src\CListEx.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\ListEx\src\CListExHdr.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="res\HexCtrl.rc" />
+    <ResourceCompile Include="..\..\HexCtrl\res\HexCtrl.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\HexCtrlIcon.bmp" />
-    <Image Include="res\MenuCopy.bmp" />
-    <Image Include="res\MenuFillZeros.bmp" />
-    <Image Include="res\MenuPaste.bmp" />
-    <Image Include="res\ScrollExH.bmp" />
-    <Image Include="res\ScrollExV.bmp" />
+    <Image Include="..\..\HexCtrl\res\HexCtrlIcon.bmp" />
+    <Image Include="..\..\HexCtrl\res\MenuCopy.bmp" />
+    <Image Include="..\..\HexCtrl\res\MenuFillZeros.bmp" />
+    <Image Include="..\..\HexCtrl\res\MenuPaste.bmp" />
+    <Image Include="..\..\HexCtrl\res\ScrollExH.bmp" />
+    <Image Include="..\..\HexCtrl\res\ScrollExV.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

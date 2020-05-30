@@ -126,11 +126,10 @@ The **HexControl** can be used in two different ways:
 
 ### [](#)Building From The Sources
 The building process is quite simple:
-1. Copy *HexCtrl* folder and its content (except **.vcxproj* files) into your project's folder.
-2. Add all files from that *HexCtrl* folder into your project.
-3. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the control.
-4. Declare [`IHexCtrlPtr`](#ihexctrlptr) member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
-5. [Create](#creating) control instance.
+1. Add all files from the *HexCtrl* folder into your project.
+2. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the **HexControl**.
+3. Declare [`IHexCtrlPtr`](#ihexctrlptr) member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
+4. [Create](#creating) control instance.
 
 If you want to build **HexControl** from the sources in non **MFC** app you will have to:
 1. Add support for **Use MFC in a Shared DLL** in your project settings.
@@ -149,7 +148,7 @@ To use **HexControl** as the *.dll* do the following:
 5. Declare [`IHexCtrlPtr`](#ihexctrlptr) member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
 5. [Create](#creating) control instance.
 
-To build *HexCtrl.dll* and *HexCtrl.lib* use the *HexCtrl/HexCtrl.vcxproj* **Visual Studio** project.
+To build *HexCtrl.dll* and *HexCtrl.lib* use the *DLL Project/DLL Project.vcxproj* **Visual Studio** project.
 
 #### Remarks:
 **HexControl**'s *.dll* is built with **MFC Static Linking**. So even if you are to use it in your own **MFC** project, even with different **MFC** version, there should not be any interferences
@@ -550,7 +549,7 @@ Sets the **HexControl** current capacity.
 ```cpp
 void SetEncoding(int iCodePage);
 ```
-Sets the code page for the **HexCtrl**'s text area. Takes [code page identifier](https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers) as an argument, or `-1` for default ASCII-only characters.  
+Sets the code page for the **HexControl**'s text area. Takes [code page identifier](https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers) as an argument, or `-1` for default ASCII-only characters.  
 
 **Note:** Code page identifier must represent [Single-byte Character Set](https://docs.microsoft.com/en-us/windows/win32/intl/single-byte-character-sets). Multi-byte character sets are not currently supported.
 
@@ -728,7 +727,7 @@ struct HEXHITTESTSTRUCT
 ```
 
 ### [](#)HEXCOLOR
-**HexCtrl** custom colors.
+**HexControl** custom colors.
 ```cpp
 struct HEXCOLOR
 {
@@ -739,7 +738,7 @@ using PHEXCOLOR = HEXCOLOR*;
 ```
 
 ### [](#)EHexCmd
-Enum of commands **HexCtrl** can execute. Basically these commands duplicate inner menu.
+Enum of commands **HexControl** can execute. Basically these commands duplicate inner menu.
 ```cpp
 enum class EHexCmd : WORD
 {

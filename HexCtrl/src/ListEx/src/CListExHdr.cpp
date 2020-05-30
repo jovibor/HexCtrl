@@ -162,7 +162,7 @@ void CListExHdr::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 	if (clrText == -1)
 		clrText = m_clrText;
 
-	m_umapClrColumn[iColumn] = HDRCOLOR { clrBk, clrText };
+	m_umapClrColumn[iColumn] = SHDRCOLOR { clrBk, clrText };
 	RedrawWindow();
 }
 

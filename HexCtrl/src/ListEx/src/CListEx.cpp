@@ -13,7 +13,8 @@
 using namespace HEXCTRL::LISTEX;
 using namespace HEXCTRL::LISTEX::INTERNAL;
 
-namespace HEXCTRL::LISTEX {
+namespace HEXCTRL::LISTEX
+{
 	/********************************************
 	* CreateRawListEx function implementation.	*
 	********************************************/
@@ -22,7 +23,53 @@ namespace HEXCTRL::LISTEX {
 		return new CListEx();
 	}
 
-	namespace INTERNAL {
+	namespace INTERNAL
+	{
+		/********************************************
+		* SCELLTOOLTIP - tool-tips for the cell.    *
+		********************************************/
+		struct CListEx::SCELLTOOLTIP
+		{
+			std::wstring wstrText;
+			std::wstring wstrCaption;
+		};
+
+		/********************************************
+		* SCOLUMNCOLOR - colors for the column.     *
+		********************************************/
+		struct CListEx::SCOLUMNCOLOR
+		{
+			COLORREF   clrBk { };    //Background.
+			COLORREF   clrText { };  //Text.
+			std::chrono::high_resolution_clock::time_point time { }; //Time when added.
+		};
+
+		/********************************************
+		* SROWCOLOR - colors for the row.           *
+		********************************************/
+		struct CListEx::SROWCOLOR
+		{
+			COLORREF   clrBk { };    //Background.
+			COLORREF   clrText { };  //Text.
+			std::chrono::high_resolution_clock::time_point time { }; //Time when added.
+		};
+
+		/********************************************
+		* SITEMTEXT - text and links in the cell.   *
+		********************************************/
+		struct CListEx::SITEMTEXT
+		{
+			SITEMTEXT(std::wstring_view wstrText, std::wstring_view wstrLink, std::wstring_view wstrTitle,
+				CRect rect, bool fLink = false, bool fTitle = false) :
+				wstrText(wstrText), wstrLink(wstrLink), wstrTitle(wstrTitle), rect(rect), fLink(fLink), fTitle(fTitle) {}
+			std::wstring wstrText { };  //Visible text.
+			std::wstring wstrLink { };  //Text within link <link="textFromHere"> tag.
+			std::wstring wstrTitle { }; //Text within title <...title="textFromHere"> tag.
+			CRect rect { };             //Rect text belongs to.
+			bool fLink { false };       //Is it just a text (wstrLink is empty) or text with link?
+			bool fTitle { false };      //Is it link with custom title (wstrTitle is not empty)?
+		};
+
 		constexpr ULONG_PTR ID_TIMER_TT_CELL_CHECK { 0x01 };    //Cell tool-tip check-timer ID.
 		constexpr ULONG_PTR ID_TIMER_TT_LINK_CHECK { 0x02 };    //Link tool-tip check-timer ID.
 		constexpr ULONG_PTR ID_TIMER_TT_LINK_ACTIVATE { 0x03 }; //Link tool-tip activate-timer ID.
@@ -444,7 +491,7 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTool
 	{
 		if (!wstrTooltip.empty() || !wstrCaption.empty())
 		{	//Initializing inner map.
-			std::unordered_map<int, CELLTOOLTIP> umapInner {
+			std::unordered_map<int, SCELLTOOLTIP> umapInner {
 				{ iSubItem, { std::wstring { wstrTooltip }, std::wstring { wstrCaption } } }
 			};
 			m_umapCellTt.insert({ ID, std::move(umapInner) });
@@ -488,7 +535,7 @@ void CListEx::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 	if (clrText == -1) //-1 for default color.
 		clrText = m_stColors.clrListText;
 
-	m_umapColumnColor[iColumn] = COLUMNCOLOR { clrBk, clrText, std::chrono::high_resolution_clock::now() };
+	m_umapColumnColor[iColumn] = SCOLUMNCOLOR { clrBk, clrText, std::chrono::high_resolution_clock::now() };
 }
 
 void CListEx::SetColumnSortMode(int iColumn, EListExSortMode enSortMode)
@@ -603,7 +650,7 @@ void CListEx::SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)
 	if (clrText == -1) //-1 for default color.
 		clrText = m_stColors.clrListText;
 
-	m_umapRowColor[dwRow] = ROWCOLOR { clrBk, clrText, std::chrono::high_resolution_clock::now() };
+	m_umapRowColor[dwRow] = SROWCOLOR { clrBk, clrText, std::chrono::high_resolution_clock::now() };
 }
 
 void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode enSortMode)
@@ -770,9 +817,9 @@ bool CListEx::HasMenu(int iItem, int iSubItem, CMenu** ppMenu)
 	return fHasMenu;
 }
 
-std::vector<ITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
+std::vector<CListEx::SITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 {
-	std::vector<ITEMTEXT> vecData { };
+	std::vector<SITEMTEXT> vecData { };
 	auto CStringText = GetItemText(iItem, iSubitem);
 	std::wstring_view wstrText = CStringText.GetString();
 	CRect rcTextOrig; //Original rect of the subitem's text.

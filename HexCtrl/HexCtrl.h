@@ -250,14 +250,14 @@ namespace HEXCTRL
 	class IHexCtrl
 	{
 	public:
-		virtual ULONGLONG BkmAdd(const HEXBKMSTRUCT& hbs, bool fRedraw = false) = 0; //Adds new bookmark.
-		virtual void BkmClearAll() = 0;                         //Clear all bookmarks.
-		[[nodiscard]] virtual auto BkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT* = 0; //Get bookmark by ID.
+		virtual ULONGLONG BkmAdd(const HEXBKMSTRUCT& hbs, bool fRedraw = false) = 0;     //Adds new bookmark.
+		virtual void BkmClearAll() = 0;                                                  //Clear all bookmarks.
+		[[nodiscard]] virtual auto BkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT* = 0;       //Get bookmark by ID.
 		[[nodiscard]] virtual auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT* = 0; //Get bookmark by Index.
-		[[nodiscard]] virtual ULONGLONG BkmGetCount()const = 0; //Get bookmarks count.
-		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT* = 0; //HitTest for given offset.
-		virtual void BkmRemoveByID(ULONGLONG ullID) = 0;        //Remove bookmark by the given ID.
-		virtual void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual = nullptr) = 0; //Enable/disable bookmarks virtual mode.
+		[[nodiscard]] virtual ULONGLONG BkmGetCount()const = 0;                          //Get bookmarks count.
+		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT* = 0;   //HitTest for given offset.
+		virtual void BkmRemoveByID(ULONGLONG ullID) = 0;                                 //Remove bookmark by the given ID.
+		virtual void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual = nullptr) = 0;   //Enable/disable bookmarks virtual mode.
 		virtual void ClearData() = 0;                           //Clears all data from HexCtrl's view (not touching data itself).
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;    //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg) = 0; //Сreates custom dialog control.

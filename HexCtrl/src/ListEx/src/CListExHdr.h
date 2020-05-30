@@ -13,19 +13,18 @@ namespace HEXCTRL::LISTEX { struct LISTEXCOLORS; } //Forward declaration.
 namespace HEXCTRL::LISTEX::INTERNAL
 {
 	/********************************************
-	* HDRCOLOR - header column colors.          *
-	********************************************/
-	struct HDRCOLOR
-	{
-		COLORREF clrBk { };   //Background color.
-		COLORREF clrText { }; //Text color.
-	};
-
-	/********************************************
 	* CListExHdr class declaration.             *
 	********************************************/
 	class CListExHdr final : public CMFCHeaderCtrl
 	{
+		/********************************************
+		* SHDRCOLOR - header column colors.         *
+		********************************************/
+		struct SHDRCOLOR
+		{
+			COLORREF clrBk { };   //Background color.
+			COLORREF clrText { }; //Text color.
+		};
 	public:
 		explicit CListExHdr();
 		void SetHeight(DWORD dwHeight);
@@ -52,7 +51,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		HDITEMW m_hdItem { }; //For drawing.
 		WCHAR m_wstrHeaderText[MAX_PATH] { };
 		DWORD m_dwHeaderHeight { 19 }; //Standard (default) height.
-		std::unordered_map<int, HDRCOLOR> m_umapClrColumn { }; //Color of individual columns.
+		std::unordered_map<int, SHDRCOLOR> m_umapClrColumn { }; //Color of individual columns.
 		bool m_fSortable { false }; //Need to draw sortable triangle or not?
 		int m_iSortColumn { -1 };   //Column to draw sorting triangle at. -1 is to avoid triangle before first clicking.
 		bool m_fSortAscending { };  //Sorting type.

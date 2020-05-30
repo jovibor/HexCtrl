@@ -14,55 +14,14 @@
 namespace HEXCTRL::LISTEX::INTERNAL
 {
 	/********************************************
-	* CELLTOOLTIP - tool-tips for the cell.     *
-	********************************************/
-	struct CELLTOOLTIP
-	{
-		std::wstring wstrText;
-		std::wstring wstrCaption;
-	};
-
-	/********************************************
-	* COLUMNCOLOR - colors for the column.      *
-	********************************************/
-	struct COLUMNCOLOR
-	{
-		COLORREF   clrBk { };    //Background.
-		COLORREF   clrText { };  //Text.
-		std::chrono::high_resolution_clock::time_point time { }; //Time when added.
-	};
-
-	/********************************************
-	* ROWCOLOR - colors for the row.            *
-	********************************************/
-	struct ROWCOLOR
-	{
-		COLORREF   clrBk { };    //Background.
-		COLORREF   clrText { };  //Text.
-		std::chrono::high_resolution_clock::time_point time { }; //Time when added.
-	};
-
-	/********************************************
-	* ITEMTEXT - text and links in the cell.    *
-	********************************************/
-	struct ITEMTEXT
-	{
-		ITEMTEXT(std::wstring_view wstrText, std::wstring_view wstrLink, std::wstring_view wstrTitle,
-			CRect rect, bool fLink = false, bool fTitle = false) :
-			wstrText(wstrText), wstrLink(wstrLink), wstrTitle(wstrTitle), rect(rect), fLink(fLink), fTitle(fTitle) {}
-		std::wstring wstrText { };  //Visible text.
-		std::wstring wstrLink { };  //Text within link <link="textFromHere"> tag.
-		std::wstring wstrTitle { }; //Text within title <...title="textFromHere"> tag.
-		CRect rect { };             //Rect text belongs to.
-		bool fLink { false };       //Is it just a text (wstrLink is empty) or text with link?
-		bool fTitle { false };      //Is it link with custom title (wstrTitle is not empty)?
-	};
-
-	/********************************************
 	* CListEx class declaration.                *
 	********************************************/
 	class CListEx final : public IListEx
 	{
+		struct SCELLTOOLTIP;
+		struct SCOLUMNCOLOR;
+		struct SROWCOLOR;
+		struct SITEMTEXT;
 	public:
 		bool Create(const LISTEXCREATESTRUCT& lcs)override;
 		void CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)override;
@@ -102,7 +61,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		bool HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& clrText);
 		bool HasTooltip(int iItem, int iSubItem, std::wstring** ppwstrText = nullptr, std::wstring** ppwstrCaption = nullptr);
 		bool HasMenu(int iItem, int iSubItem, CMenu** ppMenu = nullptr);
-		std::vector<ITEMTEXT> ParseItemText(int iItem, int iSubitem);
+		std::vector<SITEMTEXT> ParseItemText(int iItem, int iSubitem);
 		void TtLinkHide();
 		void TtCellHide();
 		void DrawItem(LPDRAWITEMSTRUCT pDIS)override;
@@ -149,12 +108,12 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		long m_lSizeFont { };           //Font size.
 		PFNLVCOMPARE m_pfnCompare { nullptr };  //Pointer to user provided compare func.
 		EListExSortMode m_enDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
-		std::unordered_map<int, std::unordered_map<int, CELLTOOLTIP>> m_umapCellTt { }; //Cell's tooltips.
+		std::unordered_map<int, std::unordered_map<int, SCELLTOOLTIP>> m_umapCellTt { }; //Cell's tooltips.
 		std::unordered_map<int, std::unordered_map<int, CMenu*>> m_umapCellMenu { };    //Cell's menus.
 		std::unordered_map<int, std::unordered_map<int, ULONGLONG>> m_umapCellData { }; //Cell's custom data.
 		std::unordered_map<int, std::unordered_map<int, LISTEXCELLCOLOR>> m_umapCellColor { }; //Cell's colors.
-		std::unordered_map<DWORD, ROWCOLOR> m_umapRowColor { };            //Row colors.
-		std::unordered_map<int, COLUMNCOLOR> m_umapColumnColor { };        //Column colors.
+		std::unordered_map<DWORD, SROWCOLOR> m_umapRowColor { };            //Row colors.
+		std::unordered_map<int, SCOLUMNCOLOR> m_umapColumnColor { };        //Column colors.
 		std::unordered_map<int, EListExSortMode> m_umapColumnSortMode { }; //Column sorting mode.
 		bool m_fCreated { false };     //Is created.
 		bool m_fSortable { false };    //Is list sortable.
