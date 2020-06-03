@@ -4100,6 +4100,10 @@ void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 
 void CHexCtrl::OnDestroy()
 {
+	//All these cleanups are important in case of HexCtrl being destroyed as a child window.
+	//When a child window is destroyed, the HexCtrl object itself is stil alive,
+	//if IHexCtrl::Destroy() method was not called.
+
 	ClearData();
 	m_wndTtBkm.DestroyWindow();
 	m_menuMain.DestroyMenu();
@@ -4110,6 +4114,7 @@ void CHexCtrl::OnDestroy()
 	m_pDlgBookmarkMgr->DestroyWindow();
 	m_pDlgDataInterpret->DestroyWindow();
 	m_pDlgFillData->DestroyWindow();
+	m_pDlgEncoding->DestroyWindow();
 	m_pDlgOpers->DestroyWindow();
 	m_pDlgSearch->DestroyWindow();
 	m_pScrollV->DestroyWindow();

@@ -16,12 +16,11 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
-	protected:
+	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
 		void OnOK()override;
 		DECLARE_MESSAGE_MAP()
-	private:
 		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
 	private:
 		CHexCtrl* m_pHexCtrl { };

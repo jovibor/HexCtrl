@@ -90,6 +90,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioBe();
 		afx_msg void OnClickRadioDec();
 		afx_msg void OnClickRadioHex();
+		afx_msg void OnDestroy();
 		template <typename T>void SetDigitData(T tData);
 		void UpdateHexCtrl();
 		[[nodiscard]] std::wstring GetCurrentUserDateFormatString()const;

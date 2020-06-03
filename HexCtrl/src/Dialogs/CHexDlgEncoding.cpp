@@ -21,6 +21,7 @@ BEGIN_MESSAGE_MAP(CHexDlgEncoding, CDialogEx)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_ENCODING_LIST, &CHexDlgEncoding::OnListItemChanged)
 	ON_NOTIFY(LISTEX_MSG_CELLCOLOR, IDC_HEXCTRL_ENCODING_LIST, &CHexDlgEncoding::OnListCellColor)
 	ON_NOTIFY(LISTEX_MSG_LINKCLICK, IDC_HEXCTRL_ENCODING_LIST, &CHexDlgEncoding::OnListLinkClick)
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 BOOL CHexDlgEncoding::EnumCodePagesProc(LPWSTR pwszCP)
@@ -183,4 +184,12 @@ void CHexDlgEncoding::SortList()
 		});
 
 	m_pListMain->RedrawWindow();
+}
+
+void CHexDlgEncoding::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	m_vecCodePage.clear();
+	m_pListMain->DestroyWindow();
 }

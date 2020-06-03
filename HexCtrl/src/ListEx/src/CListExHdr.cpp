@@ -203,9 +203,5 @@ void CListExHdr::OnDestroy()
 {
 	CMFCHeaderCtrl::OnDestroy();
 
-	m_fontHdr.DeleteObject();
-	m_penGrid.DeleteObject();
-	m_penLight.DeleteObject();
-	m_penShadow.DeleteObject();
 	m_umapClrColumn.clear();
 }

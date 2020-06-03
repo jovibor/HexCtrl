@@ -24,6 +24,7 @@ BEGIN_MESSAGE_MAP(CHexDlgDataInterpret, CDialogEx)
 	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_BE, &CHexDlgDataInterpret::OnClickRadioBe)
 	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_DEC, &CHexDlgDataInterpret::OnClickRadioDec)
 	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_HEX, &CHexDlgDataInterpret::OnClickRadioHex)
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 void CHexDlgDataInterpret::DoDataExchange(CDataExchange* pDX)
@@ -440,6 +441,15 @@ void CHexDlgDataInterpret::OnClickRadioHex()
 {
 	m_fShowAsHex = true;
 	InspectOffset(m_ullOffset);
+}
+
+void CHexDlgDataInterpret::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	m_stCtrlGrid.RemoveAll();
+	m_stCtrlGrid.DestroyWindow();
+	m_vecProp.clear();
 }
 
 ULONGLONG CHexDlgDataInterpret::GetSize()const

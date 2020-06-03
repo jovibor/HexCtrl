@@ -35,6 +35,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListCellColor(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListLinkClick(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnDestroy();
 		DECLARE_MESSAGE_MAP()
 		void SortList();
 	private:

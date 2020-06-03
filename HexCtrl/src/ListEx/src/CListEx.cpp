@@ -1388,6 +1388,7 @@ void CListEx::OnDestroy()
 	m_stWndTtCell.DestroyWindow();
 	m_stWndTtLink.DestroyWindow();
 	m_fontList.DeleteObject();
+	m_fontListUnderline.DeleteObject();
 	m_penGrid.DeleteObject();
 
 	m_umapCellTt.clear();
