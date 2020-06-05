@@ -634,13 +634,38 @@ auto CHexCtrl::GetShowMode()const->EHexShowMode
 	return m_enShowMode;
 }
 
-HWND CHexCtrl::GetWindowHandle()const
+HWND CHexCtrl::GetWindowHandle(EHexWnd enWnd)const
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return nullptr;
 
-	return m_hWnd;
+	HWND hWnd { };
+	switch (enWnd)
+	{
+	case EHexWnd::WND_MAIN:
+		hWnd = m_hWnd;
+	case EHexWnd::DLG_BKMMANAGER:
+		hWnd = m_pDlgBookmarkMgr->m_hWnd;
+		break;
+	case EHexWnd::DLG_DATAINTERPRET:
+		hWnd = m_pDlgDataInterpret->m_hWnd;
+		break;
+	case EHexWnd::DLG_FILLDATA:
+		hWnd = m_pDlgFillData->m_hWnd;
+		break;
+	case EHexWnd::DLG_OPERS:
+		hWnd = m_pDlgOpers->m_hWnd;
+		break;
+	case EHexWnd::DLG_SEARCH:
+		hWnd = m_pDlgSearch->m_hWnd;
+		break;
+	case EHexWnd::DLG_ENCODING:
+		hWnd = m_pDlgEncoding->m_hWnd;
+		break;
+	}
+
+	return hWnd;
 }
 
 void CHexCtrl::GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
@@ -746,7 +771,7 @@ bool CHexCtrl::IsDataSet()const
 	return m_fDataSet;
 }
 
-bool CHexCtrl::IsDlgVisible(EHexDlg enDlg)const
+bool CHexCtrl::IsDlgVisible(EHexWnd enDlg)const
 {
 	assert(IsCreated());
 	assert(IsDataSet());
@@ -756,22 +781,22 @@ bool CHexCtrl::IsDlgVisible(EHexDlg enDlg)const
 	bool fVisible { };
 	switch (enDlg)
 	{
-	case EHexDlg::DLG_BKMMANAGER:
+	case EHexWnd::DLG_BKMMANAGER:
 		fVisible = m_pDlgBookmarkMgr->IsWindowVisible();
 		break;
-	case EHexDlg::DLG_DATAINTERPRET:
+	case EHexWnd::DLG_DATAINTERPRET:
 		fVisible = m_pDlgDataInterpret->IsWindowVisible();
 		break;
-	case EHexDlg::DLG_FILLDATA:
+	case EHexWnd::DLG_FILLDATA:
 		fVisible = m_pDlgFillData->IsWindowVisible();
 		break;
-	case EHexDlg::DLG_OPERS:
+	case EHexWnd::DLG_OPERS:
 		fVisible = m_pDlgOpers->IsWindowVisible();
 		break;
-	case EHexDlg::DLG_SEARCH:
+	case EHexWnd::DLG_SEARCH:
 		fVisible = m_pDlgSearch->IsWindowVisible();
 		break;
-	case EHexDlg::DLG_ENCODING:
+	case EHexWnd::DLG_ENCODING:
 		fVisible = m_pDlgEncoding->IsWindowVisible();
 		break;
 	}
@@ -1055,7 +1080,7 @@ void CHexCtrl::SetWheelRatio(double dbRatio)
 	SendMessageW(WM_SIZE);   //To recalc ScrollPageSize (m_pScrollV->SetScrollPageSize(...);)
 }
 
-void CHexCtrl::ShowDlg(EHexDlg enDlg, bool fShow)const
+void CHexCtrl::ShowDlg(EHexWnd enDlg, bool fShow)const
 {
 	assert(IsCreated());
 	assert(IsDataSet());
@@ -1067,24 +1092,24 @@ void CHexCtrl::ShowDlg(EHexDlg enDlg, bool fShow)const
 
 	switch (enDlg)
 	{
-	case EHexDlg::DLG_BKMMANAGER:
+	case EHexWnd::DLG_BKMMANAGER:
 		m_pDlgBookmarkMgr->ShowWindow(iShow);
 		break;
-	case EHexDlg::DLG_DATAINTERPRET:
+	case EHexWnd::DLG_DATAINTERPRET:
 		m_pDlgDataInterpret->ShowWindow(iShow);
 		break;
-	case EHexDlg::DLG_FILLDATA:
+	case EHexWnd::DLG_FILLDATA:
 		if (fMut)
 			m_pDlgFillData->ShowWindow(iShow);
 		break;
-	case EHexDlg::DLG_OPERS:
+	case EHexWnd::DLG_OPERS:
 		if (fMut)
 			m_pDlgOpers->ShowWindow(iShow);
 		break;
-	case EHexDlg::DLG_SEARCH:
+	case EHexWnd::DLG_SEARCH:
 		m_pDlgSearch->ShowWindow(iShow);
 		break;
-	case EHexDlg::DLG_ENCODING:
+	case EHexWnd::DLG_ENCODING:
 		m_pDlgEncoding->ShowWindow(iShow);
 		break;
 	}

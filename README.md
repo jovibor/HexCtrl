@@ -59,7 +59,6 @@
   * [SetSelection](#setselection)
   * [SetShowMode](#setshowmode)
   * [SetWheelRatio](#setwheelratio)
-  * [ShowDlg](#showdlg)
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
   * [HEXCREATESTRUCT](#hexcreatestruct)
@@ -73,8 +72,8 @@
   * [EHexCmd](#ehexcmd)
   * [EHexCreateMode](#ehexcreatemode)
   * [EHexDataMode](#ehexdatamode)
-  * [EHexDlg](#ehexdlg)
   * [EHexShowMode](#ehexshowmode)
+  * [EHexWnd](#ehexwnd)
    </details>
 * [Notification Messages](#notification-messages) <details><summary>_Expand_</summary>
   * [HEXCTRL_MSG_BKMCLICK](#hexctrl_msg_bkmclicked) 
@@ -493,9 +492,9 @@ Retrieves current data show mode.
 
 ### [](#)GetWindowHandle
 ```cpp
-HWND GetWindowHandle()const
+HWND GetWindowHandle(EHexWnd enWnd)const
 ```
-Retrieves control's window handle.
+Retrieves window handle for one of the **HexControl**'s windows. Takes [`EHexWnd`](#ehexwnd) enum as an argument.
 
 ### [](#)GoToOffset
 ```cpp
@@ -607,12 +606,6 @@ Sets current data show mode. See [`EHexShowMode`](#ehexshowmode) for more info.
 void SetWheelRatio(double dbRatio)
 ```
 Sets the ratio for how much to scroll with mouse-wheel.
-
-## [](#)ShowDlg
-```cpp
-void ShowDlg(EHexDlg enDlg, bool fShow)const;
-```
-Show or hide **HexControl**'s internal dialog window, from [`EHexDlg`](#ehexdlg) enum.
 
 ## [](#)Structures
 Below are listed all **HexControl**'s structures.
@@ -774,21 +767,21 @@ enum class EHexDataMode : WORD
 };
 ```
 
-### [](#)EHexDlg
-All **HexControl**'s internal dialog windows.
-```cpp
-enum class EHexDlg : WORD
-{
-    DLG_BKMMANAGER, DLG_DATAINTERPRET, DLG_FILLDATA, DLG_OPERS, DLG_SEARCH
-};
-```
-
 ### [](#)EHexShowMode
 Enum that represents available data show modes.
 ```cpp
 enum class EHexShowMode : WORD
 {
     ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
+};
+```
+
+### [](#)EHexWnd
+All **HexControl**'s windows enum.
+```cpp
+enum class EHexWnd : WORD
+{
+    WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERPRET, DLG_FILLDATA, DLG_OPERS, DLG_SEARCH
 };
 ```
 
@@ -864,7 +857,7 @@ To properly resize and position your **HexControl**'s window you may have to han
 void CMyWnd::OnSize(UINT nType, int cx, int cy)
 {
     //...
-    ::SetWindowPos(m_myHex->GetWindowHandle(), this->m_hWnd, 0, 0, cx, cy, SWP_NOACTIVATE | SWP_NOZORDER);
+    ::SetWindowPos(m_myHex->GetWindowHandle(EHexWnd::WND_MAIN), this->m_hWnd, 0, 0, cx, cy, SWP_NOACTIVATE | SWP_NOZORDER);
 }
 ```
 

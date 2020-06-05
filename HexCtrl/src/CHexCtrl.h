@@ -100,13 +100,13 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] DWORD GetSectorSize()const override;                //Current sector size.
 		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPANSTRUCT> override; //Gets current selection.
 		[[nodiscard]] auto GetShowMode()const->EHexShowMode override;     //Retrieves current show mode.
-		[[nodiscard]] HWND GetWindowHandle()const override;               //Retrieves control's window handle.
+		[[nodiscard]] HWND GetWindowHandle(EHexWnd enWnd)const override;  //Retrieves control's window handle.
 		void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize) override; //Scrolls to given offset.
 		[[nodiscard]] auto HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTRUCT> override; //HitTest given point.
 		[[nodiscard]] bool IsCmdAvail(EHexCmd enCmd)const override;       //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] bool IsCreated()const override;       //Shows whether control is created or not.
 		[[nodiscard]] bool IsDataSet()const override;       //Shows whether a data was set to the control or not.
-		[[nodiscard]] bool IsDlgVisible(EHexDlg enDlg)const override; //Is specific dialog is currently visible.
+		[[nodiscard]] bool IsDlgVisible(EHexWnd enDlg)const override; //Is specific dialog is currently visible.
 		[[nodiscard]] bool IsMutable()const override;       //Is edit mode enabled or not.
 		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
 		[[nodiscard]] bool IsOffsetVisible(ULONGLONG ullOffset)const override; //Ensures that given offset is visible.
@@ -122,7 +122,7 @@ namespace HEXCTRL::INTERNAL
 		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel)override; //Sets current selection.
 		void SetShowMode(EHexShowMode enShowMode)override;  //Sets current data show mode.
 		void SetWheelRatio(double dbRatio)override;         //Sets the ratio for how much to scroll with mouse-wheel.
-		void ShowDlg(EHexDlg enDlg, bool fShow)const override; //Show/hide specific dialog.
+		void ShowDlg(EHexWnd enDlg, bool fShow)const override; //Show/hide specific dialog.
 	private:
 		friend class CHexDlgDataInterpret;
 		friend class CHexDlgFillData;

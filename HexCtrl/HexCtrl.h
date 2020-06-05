@@ -85,11 +85,11 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* EHexDlg - control's modeless dialogs.                                                     *
+	* EHexWnd - HexControl's windows.                                                           *
 	********************************************************************************************/
-	enum class EHexDlg : WORD
+	enum class EHexWnd : WORD
 	{
-		DLG_BKMMANAGER, DLG_DATAINTERPRET, DLG_FILLDATA, DLG_OPERS, DLG_SEARCH, DLG_ENCODING
+		WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERPRET, DLG_FILLDATA, DLG_OPERS, DLG_SEARCH, DLG_ENCODING
 	};
 
 	/********************************************************************************************
@@ -272,13 +272,14 @@ namespace HEXCTRL
 		[[nodiscard]] virtual DWORD GetSectorSize()const = 0;                //Current sector size.
 		[[nodiscard]] virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> = 0; //Gets current selection.
 		[[nodiscard]] virtual auto GetShowMode()const->EHexShowMode = 0;     //Retrieves current show mode.
-		[[nodiscard]] virtual HWND GetWindowHandle()const = 0;               //Retrieves control's window handle.
+		[[nodiscard]] virtual HWND GetWindowHandle(EHexWnd enWnd)const = 0;  //Retrieves control's window/dialog handle.
 		virtual void GoToOffset(ULONGLONG ullOffset, bool fSelect = false, ULONGLONG ullSize = 1) = 0; //Scrolls to given offset.
 		[[nodiscard]] virtual auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTESTSTRUCT> = 0; //HitTest given point.
 		[[nodiscard]] virtual bool IsCmdAvail(EHexCmd enCmd)const = 0; //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] virtual bool IsCreated()const = 0;       //Shows whether control is created or not.
 		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to the control or not.
-		[[nodiscard]] virtual bool IsDlgVisible(EHexDlg enDlg)const = 0; //Is specific dialog is currently visible.
+		[[deprecated("Warning! This method is deprecated and will be removed soon. Use the new GetWindowHandle() instead.")]]
+		[[nodiscard]] virtual bool IsDlgVisible(EHexWnd enDlg)const = 0; //Is specific dialog is currently visible.
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
 		[[nodiscard]] virtual bool IsOffsetVisible(ULONGLONG ullOffset)const = 0; //Ensures that given offset is visible.
@@ -294,7 +295,8 @@ namespace HEXCTRL
 		virtual void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel) = 0; //Sets current selection.
 		virtual void SetShowMode(EHexShowMode enMode) = 0;     //Sets current data show mode.
 		virtual void SetWheelRatio(double dbRatio) = 0;        //Sets the ratio for how much to scroll with mouse-wheel.
-		virtual void ShowDlg(EHexDlg enDlg, bool fShow = true)const = 0; //Show/hide specific dialog.
+		[[deprecated("Warning! This method is deprecated and will be removed soon. Use the new GetWindowHandle() instead.")]]
+		virtual void ShowDlg(EHexWnd enDlg, bool fShow = true)const = 0; //Show/hide specific dialog.
 	};
 
 	/********************************************************************************************
