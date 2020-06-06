@@ -447,7 +447,6 @@ void CHexDlgDataInterpret::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
-	m_stCtrlGrid.RemoveAll();
 	m_stCtrlGrid.DestroyWindow();
 	m_vecProp.clear();
 }

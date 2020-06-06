@@ -645,6 +645,7 @@ HWND CHexCtrl::GetWindowHandle(EHexWnd enWnd)const
 	{
 	case EHexWnd::WND_MAIN:
 		hWnd = m_hWnd;
+		break;
 	case EHexWnd::DLG_BKMMANAGER:
 		hWnd = m_pDlgBookmarkMgr->m_hWnd;
 		break;
