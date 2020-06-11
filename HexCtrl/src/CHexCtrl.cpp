@@ -4350,8 +4350,6 @@ void CHexCtrl::OnLButtonUp(UINT nFlags, CPoint point)
 
 void CHexCtrl::OnMButtonDown(UINT /*nFlags*/, CPoint /*point*/)
 {
-	if (m_pDlgDataInterpret->IsWindowVisible())
-		Beep(1000, 50);
 }
 
 void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)

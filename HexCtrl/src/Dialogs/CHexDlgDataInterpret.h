@@ -76,11 +76,11 @@ namespace HEXCTRL::INTERNAL
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		[[nodiscard]] ULONGLONG GetSize()const;
 		void InspectOffset(ULONGLONG ullOffset);
-		BOOL ShowWindow(int nCmdShow);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		afx_msg void OnShowWindow(BOOL bShow, UINT nStatus);
 		afx_msg void OnOK()override;
 		afx_msg void OnClose();
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
@@ -141,7 +141,7 @@ namespace HEXCTRL::INTERNAL
 		DECLARE_MESSAGE_MAP()
 	private:
 		enum class EGroup : WORD { DIGITS, FLOAT, TIME, MISC };
-		enum class EName : WORD 
+		enum class EName : WORD
 		{
 			NAME_BINARY, NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
 			NAME_LONG, NAME_ULONG, NAME_LONGLONG, NAME_ULONGLONG,

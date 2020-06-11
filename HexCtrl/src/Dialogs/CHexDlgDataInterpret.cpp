@@ -12,6 +12,7 @@
 #include "CHexDlgDataInterpret.h"
 #include "strsafe.h"
 #include <algorithm>
+#include <cassert>
 
 using namespace HEXCTRL::INTERNAL;
 
@@ -25,6 +26,7 @@ BEGIN_MESSAGE_MAP(CHexDlgDataInterpret, CDialogEx)
 	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_DEC, &CHexDlgDataInterpret::OnClickRadioDec)
 	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_HEX, &CHexDlgDataInterpret::OnClickRadioHex)
 	ON_WM_DESTROY()
+	ON_WM_SHOWWINDOW()
 END_MESSAGE_MAP()
 
 void CHexDlgDataInterpret::DoDataExchange(CDataExchange* pDX)
@@ -35,7 +37,8 @@ void CHexDlgDataInterpret::DoDataExchange(CDataExchange* pDX)
 
 BOOL CHexDlgDataInterpret::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 {
-	if (!pHexCtrl)
+	assert(pHexCtrl);
+	if (pHexCtrl == nullptr)
 		return FALSE;
 
 	m_pHexCtrl = pHexCtrl;
@@ -147,6 +150,14 @@ void CHexDlgDataInterpret::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimi
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
+}
+
+void CHexDlgDataInterpret::OnShowWindow(BOOL bShow, UINT nStatus)
+{
+	CDialogEx::OnShowWindow(bShow, nStatus);
+
+	if (m_fVisible = (bShow == TRUE); m_fVisible)
+		InspectOffset(m_pHexCtrl->GetCaretPos());
 }
 
 void CHexDlgDataInterpret::OnOK()
@@ -375,7 +386,6 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 void CHexDlgDataInterpret::OnClose()
 {
 	m_ullSize = 0;
-	m_fVisible = false;
 
 	CDialogEx::OnClose();
 }
@@ -454,17 +464,6 @@ void CHexDlgDataInterpret::OnDestroy()
 ULONGLONG CHexDlgDataInterpret::GetSize()const
 {
 	return m_ullSize;
-}
-
-BOOL CHexDlgDataInterpret::ShowWindow(int nCmdShow)
-{
-	if (!m_pHexCtrl)
-		return FALSE;
-
-	if (m_fVisible = (nCmdShow == SW_SHOW); m_fVisible)
-		InspectOffset(m_pHexCtrl->GetCaretPos());
-
-	return CWnd::ShowWindow(nCmdShow);
 }
 
 template<typename T>void CHexDlgDataInterpret::SetDigitData(T tData)
