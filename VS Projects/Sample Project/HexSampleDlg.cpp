@@ -49,7 +49,7 @@ PHEXCOLOR CHexSampleDlg::GetColor(ULONGLONG ullOffset)
 			{ RGB(0, 220, 220), RGB(255, 255, 255) },
 			{ RGB(0, 250, 0), RGB(255, 255, 255) }
 		};
-		return &vec[ullOffset];
+		return &vec[static_cast<size_t>(ullOffset)];
 	}
 
 	return nullptr;
@@ -78,7 +78,7 @@ BOOL CHexSampleDlg::OnInitDialog()
 */
 	//m_myHex->SetWheelRatio(0.5);
 	//m_myHex->SetSectorSize(32);
-	
+
 	//m_hds.pHexVirtColors = this;
 	//m_hds.fHighLatency = true;
 

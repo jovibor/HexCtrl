@@ -356,7 +356,7 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 			ullMemToAcquire = ullSize + nSizeSearch;
 		ullSizeChunk = ullMemToAcquire - nSizeSearch;
 		if (ullSize > ullSizeChunk)
-			ullChunks = ullSize % ullSizeChunk ? ullSize / ullSizeChunk + 1 : ullSize / ullSizeChunk;
+			ullChunks = (ullSize % ullSizeChunk) ? ullSize / ullSizeChunk + 1 : ullSize / ullSizeChunk;
 		else
 			ullChunks = 1;
 	}

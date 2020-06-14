@@ -38,8 +38,8 @@ namespace HEXCTRL::INTERNAL
 		void PrepareSearch();
 		void Search();
 		//ullStart will return index of found occurence, if any.
-		bool Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSize, ULONGLONG ullEndSentinel, bool fForward = true);
-		void Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t m_nSizeReplace, bool fRedraw = true);
+		bool Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSizeSearch, ULONGLONG ullEndSentinel, bool fForward = true);
+		void Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw = true);
 		void ResetSearch();
 		[[nodiscard]] EMode GetSearchMode(); //Returns current search mode.
 		void ComboSearchFill(LPCWSTR pwsz);

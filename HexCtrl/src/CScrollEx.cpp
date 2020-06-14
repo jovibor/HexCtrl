@@ -42,19 +42,19 @@ BEGIN_MESSAGE_MAP(CScrollEx, CWnd)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
-bool CScrollEx::Create(CWnd* pWndParent, int iScrollType,
+bool CScrollEx::Create(CWnd* pParent, int iScrollType,
 	ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
 {
 	assert(!m_fCreated); //Already created
-	assert(pWndParent);
-	if (m_fCreated || !pWndParent || (iScrollType != SB_VERT && iScrollType != SB_HORZ))
+	assert(pParent);
+	if (m_fCreated || !pParent || (iScrollType != SB_VERT && iScrollType != SB_HORZ))
 		return false;
 
 	if (!CWnd::CreateEx(0, AfxRegisterWndClass(0), nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr))
 		return false;
 
 	m_iScrollType = iScrollType;
-	m_pwndParent = pWndParent;
+	m_pwndParent = pParent;
 
 	UINT uiBmp;
 	if (IsVert())

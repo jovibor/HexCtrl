@@ -22,7 +22,6 @@ namespace HEXCTRL::INTERNAL
 		void ClearAll();
 		[[nodiscard]] auto GetByID(ULONGLONG ullID)->HEXBKMSTRUCT*;       //Bookmark by ID.
 		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT*; //Bookmark by index (in inner list).
-		[[nodiscard]] auto GetData()->std::deque<HEXBKMSTRUCT>*;
 		[[nodiscard]] ULONGLONG GetCount()const;
 		[[nodiscard]] ULONGLONG GetCurrent()const;
 		[[nodiscard]] auto GetTouchTime()const->__time64_t;
@@ -35,6 +34,7 @@ namespace HEXCTRL::INTERNAL
 		void Remove(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID);
 		void SetVirtual(bool fEnable, IHexVirtBkm* pVirtual = nullptr);
+		void SortData(int iColumn, bool fAscending);
 		void Update(ULONGLONG ullID, const HEXBKMSTRUCT& stBookmark);
 	private:
 		std::deque<HEXBKMSTRUCT> m_deqBookmarks;

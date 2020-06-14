@@ -9,7 +9,6 @@
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgBkmMgr.h"
-#include <algorithm>
 #include <numeric>
 
 using namespace HEXCTRL;
@@ -248,53 +247,8 @@ void CHexDlgBkmMgr::UpdateList()
 
 void CHexDlgBkmMgr::SortBookmarks()
 {
-	auto pData = m_pBookmarks->GetData();
-	const auto iColumn = m_pListMain->GetSortColumn();
-	const auto fAscending = m_pListMain->GetSortAscending();
-
-	//Sorts bookmarks according to clicked column.
-	std::sort(pData->begin(), pData->end(),
-		[iColumn, fAscending](const HEXBKMSTRUCT& st1, const HEXBKMSTRUCT& st2)
-		{
-			int iCompare { };
-			switch (iColumn)
-			{
-			case 0:
-				break;
-			case 1: //Offset.
-			{
-				ULONGLONG ullOffset1 { 0 };
-				ULONGLONG ullOffset2 { 0 };
-				if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
-				{
-					ullOffset1 = st1.vecSpan.front().ullOffset;
-					ullOffset2 = st2.vecSpan.front().ullOffset;
-					iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
-				}
-			}
-			break;
-			case 2: //Size.
-			{
-				ULONGLONG ullSize1 { 0 };
-				ULONGLONG ullSize2 { 0 };
-				if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
-				{
-					ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
-						[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
-					ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
-						[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
-					iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
-				}
-			}
-			break;
-			case 3: //Description.
-				iCompare = st1.wstrDesc.compare(st2.wstrDesc);
-				break;
-			}
-
-			return fAscending ? iCompare < 0 : iCompare > 0;
-		});
-
+	//Sort bookmarks according to clicked column.
+	m_pBookmarks->SortData(m_pListMain->GetSortColumn(), m_pListMain->GetSortAscending());
 	m_pListMain->RedrawWindow();
 }
 

@@ -21,7 +21,6 @@
 #include "Dialogs/CHexDlgSearch.h"
 #include "Helper.h"
 #include "strsafe.h"
-#include <algorithm>
 #include <cassert>
 #include <numeric>
 #include <thread>
@@ -772,39 +771,6 @@ bool CHexCtrl::IsDataSet()const
 	return m_fDataSet;
 }
 
-bool CHexCtrl::IsDlgVisible(EHexWnd enDlg)const
-{
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return false;
-
-	bool fVisible { };
-	switch (enDlg)
-	{
-	case EHexWnd::DLG_BKMMANAGER:
-		fVisible = m_pDlgBookmarkMgr->IsWindowVisible();
-		break;
-	case EHexWnd::DLG_DATAINTERPRET:
-		fVisible = m_pDlgDataInterpret->IsWindowVisible();
-		break;
-	case EHexWnd::DLG_FILLDATA:
-		fVisible = m_pDlgFillData->IsWindowVisible();
-		break;
-	case EHexWnd::DLG_OPERS:
-		fVisible = m_pDlgOpers->IsWindowVisible();
-		break;
-	case EHexWnd::DLG_SEARCH:
-		fVisible = m_pDlgSearch->IsWindowVisible();
-		break;
-	case EHexWnd::DLG_ENCODING:
-		fVisible = m_pDlgEncoding->IsWindowVisible();
-		break;
-	}
-
-	return fVisible;
-}
-
 bool CHexCtrl::IsMutable()const
 {
 	assert(IsCreated());
@@ -1081,41 +1047,6 @@ void CHexCtrl::SetWheelRatio(double dbRatio)
 	SendMessageW(WM_SIZE);   //To recalc ScrollPageSize (m_pScrollV->SetScrollPageSize(...);)
 }
 
-void CHexCtrl::ShowDlg(EHexWnd enDlg, bool fShow)const
-{
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return;
-
-	int iShow { fShow ? SW_SHOW : SW_HIDE };
-	bool fMut = IsMutable();
-
-	switch (enDlg)
-	{
-	case EHexWnd::DLG_BKMMANAGER:
-		m_pDlgBookmarkMgr->ShowWindow(iShow);
-		break;
-	case EHexWnd::DLG_DATAINTERPRET:
-		m_pDlgDataInterpret->ShowWindow(iShow);
-		break;
-	case EHexWnd::DLG_FILLDATA:
-		if (fMut)
-			m_pDlgFillData->ShowWindow(iShow);
-		break;
-	case EHexWnd::DLG_OPERS:
-		if (fMut)
-			m_pDlgOpers->ShowWindow(iShow);
-		break;
-	case EHexWnd::DLG_SEARCH:
-		m_pDlgSearch->ShowWindow(iShow);
-		break;
-	case EHexWnd::DLG_ENCODING:
-		m_pDlgEncoding->ShowWindow(iShow);
-		break;
-	}
-}
-
 
 /********************************************************************
 * HexCtrl Private methods.
@@ -1173,7 +1104,7 @@ void CHexCtrl::CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLO
 			ullSizeChunk -= (ullSizeChunk & (ullAlign - 1)); //Aligning chunk size to ullAlign.
 		if (ullSize < ullSizeChunk)
 			ullSizeChunk = ullSize;
-		ullChunks = ullSize % ullSizeChunk ? ullSize / ullSizeChunk + 1 : ullSize / ullSizeChunk;
+		ullChunks = (ullSize % ullSizeChunk) ? ullSize / ullSizeChunk + 1 : ullSize / ullSizeChunk;
 	}
 	break;
 	}
@@ -3397,7 +3328,7 @@ void CHexCtrl::Print()
 	fontInfo.CreateFontIndirectW(&lfInfo);
 
 	auto ullStartLine = GetTopLine();
-	auto ullEndLine = GetBottomLine();
+	ULONGLONG ullEndLine { };
 	auto stOldLetter = m_sizeLetter;
 	auto ullTotalLines = m_ullDataSize / m_dwCapacity;
 
@@ -3445,8 +3376,8 @@ void CHexCtrl::Print()
 			++dwLines;
 		if (!dwLines)
 			dwLines = 1;
+		
 		ullEndLine = ullStartLine + dwLines;
-
 		auto iLines = static_cast<int>(ullEndLine - ullStartLine);
 		const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
 
@@ -3636,7 +3567,7 @@ void CHexCtrl::RecalcPrint(CDC * pDC, CFont * pFontMain, CFont * pFontInfo, cons
 void CHexCtrl::RecalcTotalSectors()
 {
 	if (m_dwSectorSize)
-		m_ullTotalSectors = m_ullDataSize % m_dwSectorSize ? m_ullDataSize / m_dwSectorSize + 1 : m_ullDataSize / m_dwSectorSize;
+		m_ullTotalSectors = (m_ullDataSize % m_dwSectorSize) ? m_ullDataSize / m_dwSectorSize + 1 : m_ullDataSize / m_dwSectorSize;
 }
 
 void CHexCtrl::RecalcWorkArea(int iHeight, int iWidth)

@@ -84,7 +84,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnOK()override;
 		afx_msg void OnClose();
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
-		LRESULT OnPropertyChanged(WPARAM wparam, LPARAM lparam);
+		LRESULT OnPropertyChanged(WPARAM wParam, LPARAM lParam);
 		afx_msg void OnSize(UINT nType, int cx, int cy);
 		afx_msg void OnClickRadioLe();
 		afx_msg void OnClickRadioBe();

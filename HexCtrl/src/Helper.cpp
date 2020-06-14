@@ -11,6 +11,7 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "Helper.h"
+#include <algorithm>
 #include <cwctype>
 
 #undef min
@@ -174,15 +175,13 @@ namespace HEXCTRL::INTERNAL {
 		//If fCRLFRepl is false, then CR(0x0D) and LF(0x0A) wchars remain untouched.
 		if (fASCII)
 		{
-			for (auto& iter : wstr)
-				if ((iter <= 0x1F || iter >= 0x7f) && (fCRLFRepl || (iter != 0x0D && iter != 0x0A))) //All non ASCII.
-					iter = L'.';
+			std::replace_if(wstr.begin(), wstr.end(), [=](const wchar_t& ref) //All non ASCII.
+				{return (ref <= 0x1F || ref >= 0x7f) && (fCRLFRepl || (ref != 0x0D && ref != 0x0A)); }, L'.');
 		}
 		else
 		{
-			for (auto& iter : wstr)
-				if (!std::iswprint(iter) && (fCRLFRepl || (iter != 0x0D && iter != 0x0A))) //All non printable wchars.
-					iter = L'.';
+			std::replace_if(wstr.begin(), wstr.end(), [=](const wchar_t& ref) //All non printable wchars.
+				{return !std::iswprint(ref) && (fCRLFRepl || (ref != 0x0D && ref != 0x0A)); }, L'.');
 		}
 	}
 }
