@@ -33,6 +33,12 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
+void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
+{
+	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_SELECTION, m_stChkSel);
+}
+
 BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
@@ -42,6 +48,17 @@ BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 	m_pHexCtrl = pHexCtrl;
 
 	return CDialogEx::Create(nIDTemplate, pHexCtrl);
+}
+
+BOOL CHexDlgSearch::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	m_uRadioCurrent = IDC_HEXCTRL_SEARCH_RADIO_HEX;
+	CheckRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE, m_uRadioCurrent);
+	m_stBrushDefault.CreateSolidBrush(m_clrBkTextArea);
+
+	return TRUE;
 }
 
 void CHexDlgSearch::Search(bool fForward)
@@ -70,29 +87,11 @@ BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
 		if (auto vecSel = m_pHexCtrl->GetSelection(); vecSel.size() == 1 && vecSel.back().ullSize > 1)
 			iChkStatus = BST_CHECKED;
 
-		m_pChkSel->SetCheck(iChkStatus);
+		m_stChkSel.SetCheck(iChkStatus);
 		BringWindowToTop();
 	}
 
 	return CDialogEx::ShowWindow(nCmdShow);
-}
-
-BOOL CHexDlgSearch::OnInitDialog()
-{
-	CDialogEx::OnInitDialog();
-
-	m_uRadioCurrent = IDC_HEXCTRL_SEARCH_RADIO_HEX;
-	CheckRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE, m_uRadioCurrent);
-	m_stBrushDefault.CreateSolidBrush(m_clrBkTextArea);
-
-	m_pChkSel = reinterpret_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_SELECTION));
-
-	return TRUE;
-}
-
-void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
 }
 
 void CHexDlgSearch::PrepareSearch()
@@ -172,7 +171,7 @@ void CHexDlgSearch::PrepareSearch()
 	}
 
 	//Search in selection.
-	if (m_pChkSel->GetCheck() == BST_CHECKED)
+	if (m_stChkSel.GetCheck() == BST_CHECKED)
 	{
 		auto vecSel = pHexCtrl->GetSelection();
 		if (vecSel.empty()) //No selection.

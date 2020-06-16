@@ -49,7 +49,7 @@ namespace HEXCTRL::INTERNAL
 	private:
 		CHexCtrl* m_pHexCtrl { };
 		UINT m_uRadioCurrent { };
-		CButton* m_pChkSel { };   //Checkbox "Selection".
+		CButton m_stChkSel;              //Checkbox "Selection".
 		const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
 		const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
 		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
