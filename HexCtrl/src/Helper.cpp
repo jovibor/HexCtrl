@@ -17,8 +17,8 @@
 #undef min
 #undef max
 
-namespace HEXCTRL::INTERNAL {
-
+namespace HEXCTRL::INTERNAL
+{
 	void UllToWchars(ULONGLONG ull, wchar_t* pwsz, size_t dwSize, bool fAsHex)
 	{
 		if (fAsHex)
@@ -32,7 +32,7 @@ namespace HEXCTRL::INTERNAL {
 		}
 		else
 		{
-			std::wstring wstrFormat;
+			std::wstring_view wstrFormat { };
 			switch (dwSize)
 			{
 			case 2:

@@ -22,6 +22,7 @@ namespace HEXCTRL::INTERNAL
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		void Search(bool fForward);
 		[[nodiscard]] bool IsSearchAvail(); //Can we do search next/prev?
+		BOOL ShowWindow(int nCmdShow);
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
@@ -48,6 +49,7 @@ namespace HEXCTRL::INTERNAL
 	private:
 		CHexCtrl* m_pHexCtrl { };
 		UINT m_uRadioCurrent { };
+		CButton* m_pChkSel { };   //Checkbox "Selection".
 		const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
 		const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
 		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };

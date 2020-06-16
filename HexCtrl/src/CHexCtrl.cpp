@@ -901,7 +901,7 @@ void CHexCtrl::SetEncoding(int iCodePage)
 		return;
 
 	CPINFOEXW stCPInfo { };
-	std::wstring wstrFormat { };
+	std::wstring_view wstrFormat { };
 	if (iCodePage == -1)
 		wstrFormat = L"ASCII";
 	else if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != 0 && stCPInfo.MaxCharSize == 1)
@@ -1339,11 +1339,11 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 
 auto CHexCtrl::CopyBase64()const->std::wstring
 {
-	std::wstring strData;
+	std::wstring wstrData;
 	auto ullSelSize = m_pSelection->GetSelectionSize();
 
-	strData.reserve(static_cast<size_t>(ullSelSize) * 2);
-	const wchar_t* const pszBase64Map { L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
+	wstrData.reserve(static_cast<size_t>(ullSelSize) * 2);
+	const wchar_t* const pwszBase64Map { L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
 	unsigned int uValA = 0;
 	int iValB = -6;
 	for (unsigned i = 0; i < ullSelSize; ++i)
@@ -1352,17 +1352,17 @@ auto CHexCtrl::CopyBase64()const->std::wstring
 		iValB += 8;
 		while (iValB >= 0)
 		{
-			strData += pszBase64Map[(uValA >> iValB) & 0x3F];
+			wstrData += pwszBase64Map[(uValA >> iValB) & 0x3F];
 			iValB -= 6;
 		}
 	}
 
 	if (iValB > -6)
-		strData += pszBase64Map[((uValA << 8) >> (iValB + 8)) & 0x3F];
-	while (strData.size() % 4)
-		strData += '=';
+		wstrData += pwszBase64Map[((uValA << 8) >> (iValB + 8)) & 0x3F];
+	while (wstrData.size() % 4)
+		wstrData += '=';
 
-	return strData;
+	return wstrData;
 }
 
 auto CHexCtrl::CopyCArr()const->std::wstring
@@ -3916,11 +3916,11 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-	const ULONGLONG uID = LOWORD(wParam);
-	switch (uID)
+	const ULONGLONG ullID = LOWORD(wParam);
+	switch (ullID)
 	{
 	case IDM_HEXCTRL_SEARCH:
-		if (IsDataSet())
+		if (IsCmdAvail(EHexCmd::CMD_SEARCH))
 			m_pDlgSearch->ShowWindow(SW_SHOW);
 		break;
 	case IDM_HEXCTRL_SHOWAS_BYTE:
@@ -4038,7 +4038,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	default:
 		//For user defined custom menu we notifying parent window.
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK } };
-		hns.ullData = uID;
+		hns.ullData = ullID;
 		hns.point = m_stMenuClickedPt;
 		MsgWindowNotify(hns);
 	}

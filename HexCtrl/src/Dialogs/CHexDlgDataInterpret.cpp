@@ -496,7 +496,7 @@ void CHexDlgDataInterpret::UpdateHexCtrl()
 
 std::wstring CHexDlgDataInterpret::GetCurrentUserDateFormatString()const
 {
-	std::wstring wstrFormat { };
+	std::wstring_view wstrFormat { };
 	switch (m_dwDateFormat)
 	{
 	case 0:	//0=Month-Day-Year
@@ -636,7 +636,7 @@ void CHexDlgDataInterpret::ShowNAME_BINARY(BYTE byte)
 
 void CHexDlgDataInterpret::ShowNAME_CHAR(BYTE byte)
 {
-	std::wstring wstrFormat { };
+	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%hhX";
 	else
@@ -651,7 +651,7 @@ void CHexDlgDataInterpret::ShowNAME_CHAR(BYTE byte)
 
 void CHexDlgDataInterpret::ShowNAME_UCHAR(BYTE byte)
 {
-	std::wstring wstrFormat { };
+	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%hhX";
 	else
@@ -666,7 +666,7 @@ void CHexDlgDataInterpret::ShowNAME_UCHAR(BYTE byte)
 
 void CHexDlgDataInterpret::ShowNAME_SHORT(WORD word)
 {
-	std::wstring wstrFormat { };
+	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%hX";
 	else
@@ -681,7 +681,7 @@ void CHexDlgDataInterpret::ShowNAME_SHORT(WORD word)
 
 void CHexDlgDataInterpret::ShowNAME_USHORT(WORD word)
 {
-	std::wstring wstrFormat { };
+	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%hX";
 	else
@@ -696,7 +696,7 @@ void CHexDlgDataInterpret::ShowNAME_USHORT(WORD word)
 
 void CHexDlgDataInterpret::ShowNAME_LONG(DWORD dword)
 {
-	std::wstring wstrFormat { };
+	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%X";
 	else
@@ -711,7 +711,7 @@ void CHexDlgDataInterpret::ShowNAME_LONG(DWORD dword)
 
 void CHexDlgDataInterpret::ShowNAME_ULONG(DWORD dword)
 {
-	std::wstring wstrFormat { };
+	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%X";
 	else
@@ -813,7 +813,7 @@ void CHexDlgDataInterpret::ShowNAME_MSDTTMTIME(DWORD dword)
 
 void CHexDlgDataInterpret::ShowNAME_LONGLONG(QWORD qword)
 {
-	std::wstring wstrFormat { };
+	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%llX";
 	else
@@ -828,7 +828,7 @@ void CHexDlgDataInterpret::ShowNAME_LONGLONG(QWORD qword)
 
 void CHexDlgDataInterpret::ShowNAME_ULONGLONG(QWORD qword)
 {
-	std::wstring wstrFormat { };
+	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
 		wstrFormat = L"0x%llX";
 	else

@@ -62,6 +62,21 @@ bool CHexDlgSearch::IsSearchAvail()
 	return !(m_wstrTextSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffset >= pHexCtrl->GetDataSize());
 }
 
+BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
+{
+	if (nCmdShow == SW_SHOW)
+	{
+		int iChkStatus { BST_UNCHECKED };
+		if (auto vecSel = m_pHexCtrl->GetSelection(); vecSel.size() == 1 && vecSel.back().ullSize > 1)
+			iChkStatus = BST_CHECKED;
+
+		m_pChkSel->SetCheck(iChkStatus);
+		BringWindowToTop();
+	}
+
+	return CDialogEx::ShowWindow(nCmdShow);
+}
+
 BOOL CHexDlgSearch::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -69,6 +84,8 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_uRadioCurrent = IDC_HEXCTRL_SEARCH_RADIO_HEX;
 	CheckRadioButton(IDC_HEXCTRL_SEARCH_RADIO_HEX, IDC_HEXCTRL_SEARCH_RADIO_UNICODE, m_uRadioCurrent);
 	m_stBrushDefault.CreateSolidBrush(m_clrBkTextArea);
+
+	m_pChkSel = reinterpret_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_SELECTION));
 
 	return TRUE;
 }
@@ -155,7 +172,7 @@ void CHexDlgSearch::PrepareSearch()
 	}
 
 	//Search in selection.
-	if ((reinterpret_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_SELECTION)))->GetCheck() == BST_CHECKED)
+	if (m_pChkSel->GetCheck() == BST_CHECKED)
 	{
 		auto vecSel = pHexCtrl->GetSelection();
 		if (vecSel.empty()) //No selection.
