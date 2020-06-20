@@ -153,7 +153,7 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	if (pItem->mask & LVIF_TEXT)
 	{
 		const auto iItemID = pItem->iItem;
-		const auto iMaxLengh = pItem->cchTextMax;
+		const auto nMaxLengh = static_cast<size_t>(pItem->cchTextMax);
 		const auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(iItemID));
 		if (pBkm == nullptr)
 			return;
@@ -163,18 +163,18 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		switch (pItem->iSubItem)
 		{
 		case 0: //Index number.
-			swprintf_s(pItem->pszText, static_cast<size_t>(iMaxLengh), L"%d", iItemID + 1);
+			swprintf_s(pItem->pszText, nMaxLengh, L"%d", iItemID + 1);
 			break;
 		case 1: //Offset
 			if (!pBkm->vecSpan.empty())
 				ullOffset = pBkm->vecSpan.front().ullOffset;
-			swprintf_s(pItem->pszText, static_cast<size_t>(iMaxLengh), L"0x%llX", ullOffset);
+			swprintf_s(pItem->pszText, nMaxLengh, L"0x%llX", ullOffset);
 			break;
 		case 2: //Size.
 			if (!pBkm->vecSpan.empty())
 				ullSize = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
 					[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
-			swprintf_s(pItem->pszText, static_cast<size_t>(iMaxLengh), L"0x%llX", ullSize);
+			swprintf_s(pItem->pszText, nMaxLengh, L"0x%llX", ullSize);
 			break;
 		case 3: //Description
 			pItem->pszText = const_cast<wchar_t*>(pBkm->wstrDesc.data());

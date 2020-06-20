@@ -48,8 +48,6 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		COLORREF m_clrBk { };
 		COLORREF m_clrHglInactive { };
 		COLORREF m_clrHglActive { };
-		HDITEMW m_hdItem { }; //For drawing.
-		WCHAR m_wstrHeaderText[MAX_PATH] { };
 		DWORD m_dwHeaderHeight { 19 }; //Standard (default) height.
 		std::unordered_map<int, SHDRCOLOR> m_umapClrColumn { }; //Color of individual columns.
 		bool m_fSortable { false }; //Need to draw sortable triangle or not?

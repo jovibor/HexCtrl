@@ -29,11 +29,6 @@ CListExHdr::CListExHdr()
 	ncm.lfMessageFont.lfHeight = 16; //For some weird reason above func returns this value as MAX_LONG.
 
 	m_fontHdr.CreateFontIndirectW(&ncm.lfMessageFont);
-
-	m_hdItem.mask = HDI_TEXT;
-	m_hdItem.cchTextMax = MAX_PATH;
-	m_hdItem.pszText = m_wstrHeaderText;
-
 	m_penGrid.CreatePen(PS_SOLID, 2, RGB(220, 220, 220));
 	m_penLight.CreatePen(PS_SOLID, 1, GetSysColor(COLOR_3DHILIGHT));
 	m_penShadow.CreatePen(PS_SOLID, 1, GetSysColor(COLOR_3DSHADOW));
@@ -57,12 +52,7 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BO
 		clrText = m_clrText;
 
 	if (bIsHighlighted)
-	{
-		if (bIsPressed)
-			clrBk = m_clrHglActive;
-		else
-			clrBk = m_clrHglInactive;
-	}
+		clrBk = bIsPressed ? m_clrHglActive : m_clrHglInactive;
 	else
 	{
 		if (m_umapClrColumn.find(iItem) != m_umapClrColumn.end())
@@ -74,22 +64,46 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BO
 
 	rDC.SetTextColor(clrText);
 	rDC.SelectObject(m_fontHdr);
-	
+
 	//Set item's text buffer first char to zero,
 	//then getting item's text and Draw it.
-	m_wstrHeaderText[0] = L'\0';
-	GetItem(iItem, &m_hdItem);
-	if (StrStrW(m_wstrHeaderText, L"\n"))
+	static WCHAR warrHdrText[MAX_PATH] { };
+	warrHdrText[0] = L'\0';
+	static HDITEMW hdItem { HDI_FORMAT | HDI_TEXT };
+	hdItem.cchTextMax = MAX_PATH;
+	hdItem.pszText = warrHdrText;
+
+	GetItem(iItem, &hdItem);
+	UINT uFormat { };
+	switch (hdItem.fmt)
+	{
+	case (HDF_STRING | HDF_LEFT):
+		uFormat = DT_LEFT;
+		break;
+	case (HDF_STRING | HDF_CENTER):
+		uFormat = DT_CENTER;
+		break;
+	case (HDF_STRING | HDF_RIGHT):
+		uFormat = DT_RIGHT;
+		break;
+	}
+
+	constexpr long lOffset = 4;
+	rect.left += lOffset;
+	rect.right -= lOffset;
+	if (StrStrW(warrHdrText, L"\n"))
 	{	//If it's multiline text, first — calculate rect for the text,
 		//with DT_CALCRECT flag (not drawing anything),
 		//and then calculate rect for final vertical text alignment.
 		CRect rcText;
-		rDC.DrawTextW(m_wstrHeaderText, &rcText, DT_CENTER | DT_CALCRECT);
+		rDC.DrawTextW(warrHdrText, &rcText, DT_CENTER | DT_CALCRECT);
 		rect.top = rect.Height() / 2 - rcText.Height() / 2;
-		rDC.DrawTextW(m_wstrHeaderText, &rect, DT_CENTER);
+		rDC.DrawTextW(warrHdrText, &rect, uFormat);
 	}
 	else
-		rDC.DrawTextW(m_wstrHeaderText, &rect, DT_VCENTER | DT_CENTER | DT_SINGLELINE);
+		rDC.DrawTextW(warrHdrText, &rect, uFormat | DT_VCENTER | DT_SINGLELINE);
+	rect.left -= lOffset;
+	rect.right += lOffset;
 
 	//Draw sortable triangle (arrow).
 	if (m_fSortable && iItem == m_iSortColumn)

@@ -8,16 +8,18 @@
 ****************************************************************************************/
 #pragma once
 #include "../CHexCtrl.h"
+#include "../ListEx/ListEx.h"
 #include <afxdialogex.h>  //Standard MFC's controls header.
 
 namespace HEXCTRL::INTERNAL
 {
+	using namespace LISTEX;
 	/********************************************
 	* CHexDlgSearch class declaration.			*
 	********************************************/
 	class CHexDlgSearch final : public CDialogEx
 	{
-		enum class EMode : WORD { SEARCH_HEX, SEARCH_ASCII, SEARCH_UTF16 };
+		enum class EMode : WORD { SEARCH_HEX, SEARCH_ASCII, SEARCH_WCHAR };
 	public:
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		void Search(bool fForward);
@@ -26,15 +28,20 @@ namespace HEXCTRL::INTERNAL
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnButtonSearchF();
 		afx_msg void OnButtonSearchB();
 		afx_msg void OnButtonReplace();
 		afx_msg void OnButtonReplaceAll();
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		afx_msg void OnComboModeSelChange();
+		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnOK()override;
 		afx_msg void OnCancel()override;
 		afx_msg void OnDestroy();
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
-		void OnRadioBnRange(UINT nID);
+		void AddToList(ULONGLONG ullOffset);
+		void HexCtrlHgl(ULONGLONG ullOffset, ULONGLONG ullSize);
 		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
 		void PrepareSearch();
 		void Search();
@@ -48,8 +55,13 @@ namespace HEXCTRL::INTERNAL
 		DECLARE_MESSAGE_MAP()
 	private:
 		CHexCtrl* m_pHexCtrl { };
-		UINT m_uRadioCurrent { };
-		CButton m_stChkSel;              //Checkbox "Selection".
+		EMode m_eModeCurr { };
+		IListExPtr m_pListMain { CreateListEx() };
+		std::vector<ULONGLONG> m_vecSearchRes { };
+		CComboBox m_stComboSearch;      //Combo box Search.
+		CComboBox m_stComboReplace;     //Combo box Replace.
+		CComboBox m_stComboMode;        //Combo box "Search mode".
+		CButton m_stChkSel;             //Checkbox "Selection".
 		const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
 		const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
 		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
