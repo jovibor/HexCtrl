@@ -19,7 +19,11 @@ namespace HEXCTRL::INTERNAL
 	********************************************/
 	class CHexDlgSearch final : public CDialogEx
 	{
-		enum class EMode : WORD { SEARCH_HEX, SEARCH_ASCII, SEARCH_WCHAR };
+		enum class EMode : WORD {
+			SEARCH_HEX, SEARCH_ASCII, SEARCH_WCHAR,
+			SEARCH_BYTE, SEARCH_WORD, SEARCH_DWORD, SEARCH_QWORD,
+			SEARCH_FLOAT, SEARCH_DOUBLE
+		};
 	public:
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		void Search(bool fForward);
@@ -44,6 +48,15 @@ namespace HEXCTRL::INTERNAL
 		void HexCtrlHgl(ULONGLONG ullOffset, ULONGLONG ullSize);
 		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
 		void PrepareSearch();
+		[[nodiscard]] bool PrepareHex();
+		[[nodiscard]] bool PrepareASCII();
+		[[nodiscard]] bool PrepareWCHAR();
+		[[nodiscard]] bool PrepareBYTE();
+		[[nodiscard]] bool PrepareWORD();
+		[[nodiscard]] bool PrepareDWORD();
+		[[nodiscard]] bool PrepareQWORD();
+		[[nodiscard]] bool PrepareFloat();
+		[[nodiscard]] bool PrepareDouble();
 		void Search();
 		//ullStart will return index of found occurence, if any.
 		bool Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSizeSearch, ULONGLONG ullEndSentinel, bool fForward = true);
@@ -81,7 +94,6 @@ namespace HEXCTRL::INTERNAL
 		bool m_fDoCount { true };        //Do we count matches or just print "Found".
 		bool m_fReplace { false };       //Find or Find and Replace with...?
 		bool m_fAll { false };           //Find/Replace one by one, or all?
-		bool m_fReplaceWarning { true }; //Show Replace string size exceeds Warning or not.
 		bool m_fSelection { false };     //Search in selection.
 		std::byte* m_pSearchData { };    //Pointer to the data for search.
 		std::byte* m_pReplaceData { };   //Pointer to the data to replace with.
@@ -89,5 +101,6 @@ namespace HEXCTRL::INTERNAL
 		size_t m_nSizeReplace { };
 		std::string m_strSearch;
 		std::string m_strReplace;
+		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
 	};
 }

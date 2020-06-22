@@ -170,9 +170,10 @@ void CHexDlgDataInterpret::OnOK()
 	if (refGridData == m_vecProp.end())
 		return;
 
-	std::wstring_view wstr = static_cast<CStringW>(m_pPropChanged->GetValue()).GetString();
-	bool fSuccess { false };
+	auto mfcwstr = static_cast<CStringW>(m_pPropChanged->GetValue());
+	std::wstring_view wstr(mfcwstr.GetString(), mfcwstr.GetLength());
 
+	bool fSuccess { false };
 	switch (refGridData->eName)
 	{
 	case EName::NAME_BINARY:

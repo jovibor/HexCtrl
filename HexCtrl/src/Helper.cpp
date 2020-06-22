@@ -72,6 +72,18 @@ namespace HEXCTRL::INTERNAL
 				|| (tData == ULLONG_MAX && errno == ERANGE))
 				return false;
 		}
+		else if constexpr (std::is_same_v<T, float>)
+		{
+			tData = wcstof(wstr.data(), &pEndPtr);
+			if (tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+				return false;
+		}
+		else if constexpr (std::is_same_v<T, double>)
+		{
+			tData = wcstod(wstr.data(), &pEndPtr);
+			if (tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+				return false;
+		}
 		else
 		{
 			auto llData = std::wcstoll(wstr.data(), &pEndPtr, iBase);
@@ -97,6 +109,8 @@ namespace HEXCTRL::INTERNAL
 	template bool wstr2num<UINT>(std::wstring_view wstr, UINT& t, int iBase);
 	template bool wstr2num<LONGLONG>(std::wstring_view wstr, LONGLONG& t, int iBase);
 	template bool wstr2num<ULONGLONG>(std::wstring_view wstr, ULONGLONG& t, int iBase);
+	template bool wstr2num<float>(std::wstring_view wstr, float& t, int iBase);
+	template bool wstr2num<double>(std::wstring_view wstr, double& t, int iBase);
 
 	template<typename T>
 	bool str2num(std::string_view str, T& tData, int iBase)

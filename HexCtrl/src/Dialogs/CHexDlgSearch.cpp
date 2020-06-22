@@ -68,6 +68,18 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_ASCII));
 	iIndex = m_stComboMode.AddString(L"Text (wchar_t)");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_WCHAR));
+	iIndex = m_stComboMode.AddString(L"Number (BYTE)");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_BYTE));
+	iIndex = m_stComboMode.AddString(L"Number (WORD)");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_WORD));
+	iIndex = m_stComboMode.AddString(L"Number (DWORD)");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_DWORD));
+	iIndex = m_stComboMode.AddString(L"Number (QWORD)");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_QWORD));
+	iIndex = m_stComboMode.AddString(L"Number (Float)");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_FLOAT));
+	iIndex = m_stComboMode.AddString(L"Number (Double)");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_DOUBLE));
 
 	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_SEARCH_LIST_MAIN, this);
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
@@ -165,7 +177,7 @@ void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		case 0: //Index number.
 			swprintf_s(pItem->pszText, nMaxLengh, L"%zd", nItemID + 1);
 			break;
-		case 1: //Offset
+		case 1: //Offset.
 			swprintf_s(pItem->pszText, nMaxLengh, L"0x%llX", m_vecSearchRes[nItemID]);
 			break;
 		}
@@ -256,11 +268,6 @@ BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
 
 void CHexDlgSearch::PrepareSearch()
 {
-	static const wchar_t* const wstrReplaceWarning { L"Replacing string is longer than Find string.\r\n"
-		"Do you want to overwrite the bytes following search occurrence?\r\n"
-		"Choosing \"No\" will cancel search." };
-	static const wchar_t* const wstrWrongInput { L"Wrong input data format!" };
-
 	auto pHexCtrl = GetHexCtrl();
 	auto ullDataSize = pHexCtrl->GetDataSize();
 
@@ -288,47 +295,39 @@ void CHexDlgSearch::PrepareSearch()
 	}
 	GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH)->SetFocus();
 
+	bool fSuccess { false };
 	switch (GetSearchMode())
 	{
 	case EMode::SEARCH_HEX:
-	{
-		m_strSearch = WstrToStr(m_wstrTextSearch);
-		m_strReplace = WstrToStr(m_wstrTextReplace);
-		if (!StrToHex(m_strSearch, m_strSearch))
-		{
-			m_iWrap = 1;
-			return;
-		}
-		m_nSizeSearch = m_strSearch.size();
-		if ((m_fReplace && !StrToHex(m_strReplace, m_strReplace)))
-		{
-			MessageBoxW(wstrWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
-			return;
-		}
-		m_nSizeReplace = m_strReplace.size();
-		m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
-		m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
-	}
-	break;
+		fSuccess = PrepareHex();
+		break;
 	case EMode::SEARCH_ASCII:
-	{
-		m_strSearch = WstrToStr(m_wstrTextSearch);
-		m_strReplace = WstrToStr(m_wstrTextReplace);
-		m_nSizeSearch = m_strSearch.size();
-		m_nSizeReplace = m_strReplace.size();
-		m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
-		m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
-	}
-	break;
+		fSuccess = PrepareASCII();
+		break;
 	case EMode::SEARCH_WCHAR:
-	{
-		m_nSizeSearch = m_wstrTextSearch.size() * sizeof(wchar_t);
-		m_nSizeReplace = m_wstrTextReplace.size() * sizeof(wchar_t);
-		m_pSearchData = reinterpret_cast<std::byte*>(m_wstrTextSearch.data());
-		m_pReplaceData = reinterpret_cast<std::byte*>(m_wstrTextReplace.data());
+		fSuccess = PrepareWCHAR();
+		break;
+	case EMode::SEARCH_BYTE:
+		fSuccess = PrepareBYTE();
+		break;
+	case EMode::SEARCH_WORD:
+		fSuccess = PrepareWORD();
+		break;
+	case EMode::SEARCH_DWORD:
+		fSuccess = PrepareDWORD();
+		break;
+	case EMode::SEARCH_QWORD:
+		fSuccess = PrepareQWORD();
+		break;
+	case EMode::SEARCH_FLOAT:
+		fSuccess = PrepareFloat();
+		break;
+	case EMode::SEARCH_DOUBLE:
+		fSuccess = PrepareDouble();
+		break;
 	}
-	break;
-	}
+	if (!fSuccess)
+		return;
 
 	//Search in selection.
 	if (m_stChkSel.GetCheck() == BST_CHECKED)
@@ -361,16 +360,182 @@ void CHexDlgSearch::PrepareSearch()
 		return;
 	}
 
-	if (m_fReplaceWarning && m_fReplace && (m_nSizeReplace > m_nSizeSearch))
+	static bool fReplaceWarning { true }; //Show Replace string size exceeds Warning or not.
+	if (fReplaceWarning && m_fReplace && (m_nSizeReplace > m_nSizeSearch))
 	{
-		if (IDNO == MessageBoxW(wstrReplaceWarning, L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST))
+		static std::wstring_view wstrReplaceWarning { L"The replacing string is longer than Find string.\r\n"
+			"Do you want to overwrite the bytes following search occurrence?\r\n"
+			"Choosing \"No\" will cancel search." };
+		if (IDNO == MessageBoxW(wstrReplaceWarning.data(), L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST))
 			return;
-
-		m_fReplaceWarning = false;
+		fReplaceWarning = false;
 	}
 
 	Search();
 	SetActiveWindow();
+}
+
+bool CHexDlgSearch::PrepareHex()
+{
+	m_strSearch = WstrToStr(m_wstrTextSearch);
+	m_strReplace = WstrToStr(m_wstrTextReplace);
+	if (!StrToHex(m_strSearch, m_strSearch))
+	{
+		m_iWrap = 1;
+		return false;
+	}
+	m_nSizeSearch = m_strSearch.size();
+	if ((m_fReplace && !StrToHex(m_strReplace, m_strReplace)))
+	{
+		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		return false;
+	}
+	m_nSizeReplace = m_strReplace.size();
+	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
+	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+
+	return true;
+}
+
+bool CHexDlgSearch::PrepareASCII()
+{
+	m_strSearch = WstrToStr(m_wstrTextSearch);
+	m_strReplace = WstrToStr(m_wstrTextReplace);
+	m_nSizeSearch = m_strSearch.size();
+	m_nSizeReplace = m_strReplace.size();
+	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
+	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+
+	return true;
+}
+
+bool CHexDlgSearch::PrepareWCHAR()
+{
+	m_nSizeSearch = m_wstrTextSearch.size() * sizeof(wchar_t);
+	m_nSizeReplace = m_wstrTextReplace.size() * sizeof(wchar_t);
+	m_pSearchData = reinterpret_cast<std::byte*>(m_wstrTextSearch.data());
+	m_pReplaceData = reinterpret_cast<std::byte*>(m_wstrTextReplace.data());
+
+	return true;
+}
+
+bool CHexDlgSearch::PrepareBYTE()
+{
+	BYTE bData { };
+	BYTE bDataRet { };
+	if (!wstr2num(m_wstrTextSearch, bData) || (m_fReplace && !wstr2num(m_wstrTextReplace, bDataRet)))
+	{
+		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		return false;
+	}
+	m_strSearch = bData;
+	m_strReplace = bDataRet;
+	m_nSizeSearch = m_strSearch.size();
+	m_nSizeReplace = m_strReplace.size();
+	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
+	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+
+	return true;
+}
+
+bool CHexDlgSearch::PrepareWORD()
+{
+	WORD wData { };
+	WORD wDataRet { };
+	if (!wstr2num(m_wstrTextSearch, wData) || (m_fReplace && !wstr2num(m_wstrTextReplace, wDataRet)))
+	{
+		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		return false;
+	}
+
+	m_strSearch.assign(reinterpret_cast<char*>(&wData), sizeof(WORD));
+	m_strReplace.assign(reinterpret_cast<char*>(&wDataRet), sizeof(WORD));
+	m_nSizeSearch = m_strSearch.size();
+	m_nSizeReplace = m_strReplace.size();
+	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
+	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+
+	return true;
+}
+
+bool CHexDlgSearch::PrepareDWORD()
+{
+	DWORD dwData { };
+	DWORD dwDataRet { };
+	if (!wstr2num(m_wstrTextSearch, dwData) || (m_fReplace && !wstr2num(m_wstrTextReplace, dwDataRet)))
+	{
+		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		return false;
+	}
+
+	m_strSearch.assign(reinterpret_cast<char*>(&dwData), sizeof(DWORD));
+	m_strReplace.assign(reinterpret_cast<char*>(&dwDataRet), sizeof(DWORD));
+	m_nSizeSearch = m_strSearch.size();
+	m_nSizeReplace = m_strReplace.size();
+	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
+	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+
+	return true;
+}
+
+bool CHexDlgSearch::PrepareQWORD()
+{
+	QWORD qwData { };
+	QWORD qwDataRet { };
+	if (!wstr2num(m_wstrTextSearch, qwData) || (m_fReplace && !wstr2num(m_wstrTextReplace, qwDataRet)))
+	{
+		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		return false;
+	}
+
+	m_strSearch.assign(reinterpret_cast<char*>(&qwData), sizeof(QWORD));
+	m_strReplace.assign(reinterpret_cast<char*>(&qwDataRet), sizeof(QWORD));
+	m_nSizeSearch = m_strSearch.size();
+	m_nSizeReplace = m_strReplace.size();
+	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
+	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+
+	return true;
+}
+
+bool CHexDlgSearch::PrepareFloat()
+{
+	float flData { };
+	float flDataRet { };
+	if (!wstr2num(m_wstrTextSearch, flData) || (m_fReplace && !wstr2num(m_wstrTextReplace, flDataRet)))
+	{
+		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		return false;
+	}
+
+	m_strSearch.assign(reinterpret_cast<char*>(&flData), sizeof(float));
+	m_strReplace.assign(reinterpret_cast<char*>(&flDataRet), sizeof(float));
+	m_nSizeSearch = m_strSearch.size();
+	m_nSizeReplace = m_strReplace.size();
+	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
+	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+
+	return true;
+}
+
+bool CHexDlgSearch::PrepareDouble()
+{
+	double ddData { };
+	double ddDataRet { };
+	if (!wstr2num(m_wstrTextSearch, ddData) || (m_fReplace && !wstr2num(m_wstrTextReplace, ddDataRet)))
+	{
+		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		return false;
+	}
+	
+	m_strSearch.assign(reinterpret_cast<char*>(&ddData), sizeof(double));
+	m_strReplace.assign(reinterpret_cast<char*>(&ddDataRet), sizeof(double));
+	m_nSizeSearch = m_strSearch.size();
+	m_nSizeReplace = m_strReplace.size();
+	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
+	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+
+	return true;
 }
 
 void CHexDlgSearch::Search()
