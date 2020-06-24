@@ -16,7 +16,8 @@ Checks: '*,
 -misc-non-private-member-variables-in-classes,
 -misc-use-after-move,
 -bugprone-narrowing-conversions,
--bugprone-use-after-move'
+-bugprone-use-after-move,
 
+google-readability-casting'
 
 HeaderFilterRegex: '.*'

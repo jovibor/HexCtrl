@@ -10,6 +10,7 @@
 #include "../../res/HexCtrlRes.h"
 #include "../Helper.h"
 #include "CHexDlgFillData.h"
+#include <cassert>
 
 using namespace HEXCTRL::INTERNAL;
 
@@ -18,6 +19,10 @@ END_MESSAGE_MAP()
 
 BOOL CHexDlgFillData::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 {
+	assert(pHexCtrl);
+	if (pHexCtrl == nullptr)
+		return FALSE;
+
 	m_pHexCtrl = pHexCtrl;
 
 	return CDialogEx::Create(nIDTemplate, pHexCtrl);
@@ -28,7 +33,7 @@ BOOL CHexDlgFillData::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16, IDC_HEXCTRL_FILLDATA_RADIO_HEX);
-	if (auto pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT); pCombo != nullptr)
+	if (auto pCombo = static_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT)); pCombo != nullptr)
 		pCombo->LimitText(MAX_PATH); //Max characters count in combo's edit box.
 
 	return TRUE;
@@ -47,9 +52,6 @@ void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
 void CHexDlgFillData::OnOK()
 {
 	auto pHex = GetHexCtrl();
-	if (!pHex)
-		return;
-
 	int iRadioType = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16);
 
 	SMODIFY hms;
@@ -58,7 +60,7 @@ void CHexDlgFillData::OnOK()
 	if (hms.vecSpan.empty())
 		return;
 
-	auto pCombo = (CComboBox*)GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT);
+	auto pCombo = static_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT));
 	if (!pCombo)
 		return;
 

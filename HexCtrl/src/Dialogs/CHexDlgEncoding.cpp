@@ -41,6 +41,9 @@ void CHexDlgEncoding::AddCP(std::wstring_view wstr)
 BOOL CHexDlgEncoding::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
+	if (pHexCtrl == nullptr)
+		return FALSE;
+
 	m_pHexCtrl = pHexCtrl;
 
 	return CDialogEx::Create(nIDTemplate, pHexCtrl);

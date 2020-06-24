@@ -10,6 +10,7 @@
 #include "../../res/HexCtrlRes.h"
 #include "../Helper.h"
 #include "CHexDlgOperations.h"
+#include <cassert>
 
 using namespace HEXCTRL::INTERNAL;
 
@@ -18,6 +19,10 @@ END_MESSAGE_MAP()
 
 BOOL CHexDlgOperations::Create(UINT nIDTemplate, CHexCtrl * pHexCtrl)
 {
+	assert(pHexCtrl);
+	if (pHexCtrl == nullptr)
+		return FALSE;
+
 	m_pHexCtrl = pHexCtrl;
 
 	return CDialogEx::Create(nIDTemplate, pHexCtrl);
@@ -133,9 +138,6 @@ BOOL CHexDlgOperations::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 void CHexDlgOperations::OnOK()
 {
 	auto pHex = GetHexCtrl();
-	if (!pHex)
-		return;
-
 	int iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_OR, IDC_HEXCTRL_OPERATIONS_RADIO_DIV);
 	int iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERATIONS_RADIO_BYTE, IDC_HEXCTRL_OPERATIONS_RADIO_QWORD);
 

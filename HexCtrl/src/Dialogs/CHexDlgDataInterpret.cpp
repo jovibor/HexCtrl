@@ -66,9 +66,9 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 	sTitle.AppendFormat(L" [%s]", GetCurrentUserDateFormatString().data());
 	SetWindowTextW(sTitle);
 
-	if (auto pRadio = (CButton*)GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE); pRadio)
+	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE)); pRadio)
 		pRadio->SetCheck(1);
-	if (auto pRadio = (CButton*)GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_DEC); pRadio)
+	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_DEC)); pRadio)
 		pRadio->SetCheck(1);
 
 	m_hdItemPropGrid.mask = HDI_WIDTH;

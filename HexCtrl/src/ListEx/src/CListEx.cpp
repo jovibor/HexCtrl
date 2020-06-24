@@ -937,7 +937,7 @@ std::vector<CListEx::SITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 void CListEx::TtLinkHide()
 {
 	m_fTtLinkShown = false;
-	m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stTInfoLink);
+	m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoLink));
 	KillTimer(ID_TIMER_TT_LINK_CHECK);
 
 	m_stCurrLink.iItem = -1;
@@ -951,7 +951,7 @@ void CListEx::TtCellHide()
 	m_stCurrCell.iItem = -1;
 	m_stCurrCell.iSubItem = -1;
 
-	m_stWndTtCell.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stTInfoCell);
+	m_stWndTtCell.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoCell));
 	KillTimer(ID_TIMER_TT_CELL_CHECK);
 }
 
@@ -1124,7 +1124,7 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 			m_stTInfoCell.lpszText = pwstrTt->data();
 
 			ClientToScreen(&pt);
-			m_stWndTtCell.SendMessageW(TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(pt.x, pt.y));
+			m_stWndTtCell.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(pt.x, pt.y));
 			m_stWndTtCell.SendMessageW(TTM_SETTITLE, static_cast<WPARAM>(TTI_NONE), reinterpret_cast<LPARAM>(pwstrCaption->data()));
 			m_stWndTtCell.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stTInfoCell));
 			m_stWndTtCell.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stTInfoCell));
@@ -1271,8 +1271,8 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 		{
 			m_fTtLinkShown = true;
 
-			m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, (LPARAM)(LPTOOLINFO)&m_stTInfoLink);
-			m_stWndTtLink.SendMessageW(TTM_TRACKPOSITION, 0, (LPARAM)MAKELONG(ptScreen.x + 3, ptScreen.y - 20));
+			m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoLink));
+			m_stWndTtLink.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(ptScreen.x + 3, ptScreen.y - 20));
 			m_stWndTtLink.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stTInfoLink));
 			m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stTInfoLink));
 

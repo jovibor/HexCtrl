@@ -65,11 +65,13 @@ namespace HEXCTRL::INTERNAL
 	********************************************************************************************/
 	struct SMODIFY
 	{
-		EModifyMode      enModifyMode { EModifyMode::MODIFY_DEFAULT }; //Modify mode.
-		EOperMode        enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
-		std::byte* pData { };                   //Pointer to a data to be set.
-		ULONGLONG        ullDataSize { };       //Size of the data pData is pointing to.
+		EModifyMode enModifyMode { EModifyMode::MODIFY_DEFAULT }; //Modify mode.
+		EOperMode   enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
+		std::byte*  pData { };             //Pointer to a data to be set.
+		ULONGLONG   ullDataSize { };       //Size of the data pData is pointing to.
 		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
+		bool        fParentNtfy { true };  //Notify parent about data change or not?
+		bool        fRedraw { true };      //Redraw HexCtrl's window or not?
 	};
 
 	/********************************************************************************************
@@ -176,7 +178,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsSectorVisible()const;               //Returns m_fSectorVisible.
 		void MakeSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines,
 			bool fScroll = true, bool fGoToStart = false);
-		void Modify(const SMODIFY& hms, bool fRedraw = true);  //Main routine to modify data, in m_fMutable==true mode.
+		void Modify(const SMODIFY& hms);                       //Main routine to modify data, in m_fMutable==true mode.
 		void ModifyDefault(const SMODIFY& hms);                //EModifyMode::MODIFY_DEFAULT
 		void ModifyOperation(const SMODIFY& hms);              //EModifyMode::MODIFY_OPERATION
 		void ModifyRepeat(const SMODIFY& hms);                 //EModifyMode::MODIFY_REPEAT

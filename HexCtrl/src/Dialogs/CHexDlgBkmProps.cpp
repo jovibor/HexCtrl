@@ -34,11 +34,10 @@ BOOL CHexDlgBkmProps::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	CMFCColorButton* pClrBtn;
-	pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_COLOR_BK);
-	pClrBtn->SetColor(m_pHBS->clrBk);
-	pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_COLOR_TEXT);
-	pClrBtn->SetColor(m_pHBS->clrText);
+	if (auto pClrBtn = static_cast<CMFCColorButton*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_COLOR_BK)); pClrBtn != nullptr)
+		pClrBtn->SetColor(m_pHBS->clrBk);
+	if (auto pClrBtn = static_cast<CMFCColorButton*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_COLOR_TEXT)); pClrBtn != nullptr)
+		pClrBtn->SetColor(m_pHBS->clrText);
 
 	wchar_t pwszBuff[32];
 	if (!m_pHBS->vecSpan.empty())
@@ -54,13 +53,13 @@ BOOL CHexDlgBkmProps::OnInitDialog()
 		m_pHBS->vecSpan.emplace_back(HEXSPANSTRUCT { m_ullOffset, m_ullSize });
 	}
 	swprintf_s(pwszBuff, L"0x%llX", m_ullOffset);
-	auto pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_OFFSET);
+	auto pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_OFFSET));
 	pEdit->SetWindowTextW(pwszBuff);
 
 	swprintf_s(pwszBuff, L"0x%llX", m_ullSize);
-	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_LENGTH);
+	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_LENGTH));
 	pEdit->SetWindowTextW(pwszBuff);
-	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_DESCR);
+	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_DESCR));
 	pEdit->SetWindowTextW(m_pHBS->wstrDesc.data());
 
 	return TRUE;
@@ -71,12 +70,12 @@ void CHexDlgBkmProps::OnOK()
 	wchar_t pwszBuff[512];
 	constexpr auto NUMBER_MAX_CHARS = 32; //Text limit 32 chars.
 
-	auto pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_COLOR_BK);
+	auto pClrBtn = static_cast<CMFCColorButton*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_COLOR_BK));
 	m_pHBS->clrBk = pClrBtn->GetColor();
-	pClrBtn = (CMFCColorButton*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_COLOR_TEXT);
+	pClrBtn = static_cast<CMFCColorButton*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_COLOR_TEXT));
 	m_pHBS->clrText = pClrBtn->GetColor();
 
-	auto pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_OFFSET);
+	auto pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_OFFSET));
 	pEdit->GetWindowTextW(pwszBuff, NUMBER_MAX_CHARS);
 	ULONGLONG ullOffset;
 	if (!wstr2num(pwszBuff, ullOffset))
@@ -84,7 +83,7 @@ void CHexDlgBkmProps::OnOK()
 		MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 		return;
 	}
-	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_LENGTH);
+	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_LENGTH));
 	pEdit->GetWindowTextW(pwszBuff, NUMBER_MAX_CHARS);
 	ULONGLONG ullSize;
 	if (!wstr2num(pwszBuff, ullSize))
@@ -103,7 +102,7 @@ void CHexDlgBkmProps::OnOK()
 		m_pHBS->vecSpan.emplace_back(HEXSPANSTRUCT { ullOffset, ullSize });
 	}
 
-	pEdit = (CEdit*)GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_DESCR);
+	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_DESCR));
 	pEdit->GetWindowTextW(pwszBuff, _countof(pwszBuff));
 	m_pHBS->wstrDesc = pwszBuff;
 

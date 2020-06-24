@@ -269,13 +269,13 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	mii.fMask = MIIM_BITMAP;
 
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_COPYHEX] =
-		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_COPYHEX, &mii);
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_PASTEHEX] =
-		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, &mii);
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_MODIFY_FILLZEROS] =
-		(HBITMAP)LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
+		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
 
 	m_hwndMsg = hcs.hwndParent;
@@ -343,7 +343,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_stToolInfoBkm.cbSize = TTTOOLINFOW_V1_SIZE;
 	m_stToolInfoBkm.uFlags = TTF_TRACK;
 	m_stToolInfoBkm.uId = ID_TOOLTIP_BKM;
-	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfoBkm);
+	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 	m_wndTtBkm.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColor.clrTextTooltip), 0);
 	m_wndTtBkm.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColor.clrBkTooltip), 0);
@@ -356,7 +356,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_stToolInfoOffset.cbSize = TTTOOLINFOW_V1_SIZE;
 	m_stToolInfoOffset.uFlags = TTF_TRACK;
 	m_stToolInfoOffset.uId = ID_TOOLTIP_OFFSET;
-	m_wndTtOffset.SendMessageW(TTM_ADDTOOL, 0, (LPARAM)(LPTOOLINFO)&m_stToolInfoOffset);
+	m_wndTtOffset.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
 	m_wndTtOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 	m_wndTtOffset.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColor.clrTextTooltip), 0);
 	m_wndTtOffset.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColor.clrBkTooltip), 0);
@@ -2673,7 +2673,7 @@ void CHexCtrl::MakeSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG u
 	OnCaretPosChange(ullStart);
 }
 
-void CHexCtrl::Modify(const SMODIFY& hms, bool fRedraw)
+void CHexCtrl::Modify(const SMODIFY& hms)
 {
 	if (!IsMutable())
 		return;
@@ -2694,9 +2694,10 @@ void CHexCtrl::Modify(const SMODIFY& hms, bool fRedraw)
 		break;
 	}
 
-	ParentNotify(HEXCTRL_MSG_SETDATA);
+	if (hms.fParentNtfy)
+		ParentNotify(HEXCTRL_MSG_SETDATA);
 
-	if (fRedraw)
+	if (hms.fRedraw)
 		RedrawWindow();
 }
 
@@ -3376,7 +3377,7 @@ void CHexCtrl::Print()
 			++dwLines;
 		if (!dwLines)
 			dwLines = 1;
-		
+
 		ullEndLine = ullStartLine + dwLines;
 		auto iLines = static_cast<int>(ullEndLine - ullStartLine);
 		const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
@@ -3693,7 +3694,7 @@ void CHexCtrl::TtBkmShow(bool fShow, POINT pt)
 	else
 	{
 		m_pBkmCurrTt = nullptr;
-		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, (WPARAM)FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
+		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 		KillTimer(ID_TOOLTIP_BKM);
 	}
 }
