@@ -407,14 +407,14 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	return true;
 }
 
-bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)
+bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hParent)
 {
 	assert(!IsCreated()); //Already created.
 	if (IsCreated())
 		return false;
 
 	HEXCREATESTRUCT hcs;
-	hcs.hwndParent = hwndDlg;
+	hcs.hwndParent = hParent;
 	hcs.uID = uCtrlID;
 	hcs.enCreateMode = EHexCreateMode::CREATE_CUSTOMCTRL;
 
@@ -1602,7 +1602,7 @@ auto CHexCtrl::CopyText()const->std::wstring
 	for (auto i = 0; i < ullSelSize; ++i)
 		strData.push_back(GetData<BYTE>(m_pSelection->GetOffsetByIndex(i)));
 
-	auto wstrData = StrToWstr(strData, m_iCodePage == -1 ? CODEPAGE_DEFAULT : m_iCodePage);
+	auto wstrData = str2wstr(strData, m_iCodePage == -1 ? CODEPAGE_DEFAULT : m_iCodePage);
 	ReplaceUnprintable(wstrData, m_iCodePage == -1, false);
 
 	return wstrData;
@@ -3014,7 +3014,6 @@ void CHexCtrl::OnKeyDownCtrl(UINT nChar)
 void CHexCtrl::OnKeyDownShift(UINT nChar)
 {
 	WPARAM wParam { };
-
 	switch (nChar)
 	{
 	case VK_LEFT:
@@ -3904,7 +3903,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 			{
 				wchar_t wch { static_cast<wchar_t>(nChar) };
 				//Convert input symbol (wchar) to char according to current Windows' code page.
-				if (auto str = WstrToStr(&wch, uCurrCodePage); !str.empty())
+				if (auto str = wstr2str(&wch, uCurrCodePage); !str.empty())
 					chByte = str[0];
 			}
 		}

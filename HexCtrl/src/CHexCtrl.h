@@ -91,7 +91,7 @@ namespace HEXCTRL::INTERNAL
 		void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual)override; //Enable/disable bookmarks virtual mode.
 		void ClearData()override;                           //Clears all data from HexCtrl's view (not touching data itself).
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
-		bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg)override; //Сreates custom dialog control.
+		bool CreateDialogCtrl(UINT uCtrlID, HWND hParent)override; //Сreates custom dialog control.
 		void Destroy()override;                             //Deleter.
 		void ExecuteCmd(EHexCmd enCmd)const override;       //Execute a command within the control.
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.

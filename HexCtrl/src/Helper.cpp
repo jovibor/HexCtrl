@@ -64,30 +64,38 @@ namespace HEXCTRL::INTERNAL
 	template<typename T>
 	bool wstr2num(std::wstring_view wstr, T& tData, int iBase)
 	{
+		std::wstring_view wstrView { wstr };
+		std::wstring wstrNT; //WString NullTerminated, in case of wstr is not NT.
+		if (*wstr.end() != '\0')
+		{
+			wstrNT = wstr;
+			wstrView = wstrNT;
+		}
+
 		wchar_t* pEndPtr;
 		if constexpr (std::is_same_v<T, ULONGLONG>)
 		{
-			tData = std::wcstoull(wstr.data(), &pEndPtr, iBase);
-			if ((tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+			tData = std::wcstoull(wstrView.data(), &pEndPtr, iBase);
+			if ((tData == 0 && (pEndPtr == wstrView.data() || *pEndPtr != '\0'))
 				|| (tData == ULLONG_MAX && errno == ERANGE))
 				return false;
 		}
 		else if constexpr (std::is_same_v<T, float>)
 		{
-			tData = wcstof(wstr.data(), &pEndPtr);
-			if (tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+			tData = wcstof(wstrView.data(), &pEndPtr);
+			if (tData == 0 && (pEndPtr == wstrView.data() || *pEndPtr != '\0'))
 				return false;
 		}
 		else if constexpr (std::is_same_v<T, double>)
 		{
-			tData = wcstod(wstr.data(), &pEndPtr);
-			if (tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+			tData = wcstod(wstrView.data(), &pEndPtr);
+			if (tData == 0 && (pEndPtr == wstrView.data() || *pEndPtr != '\0'))
 				return false;
 		}
 		else
 		{
-			auto llData = std::wcstoll(wstr.data(), &pEndPtr, iBase);
-			if ((llData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+			const auto llData = std::wcstoll(wstrView.data(), &pEndPtr, iBase);
+			if ((llData == 0 && (pEndPtr == wstrView.data() || *pEndPtr != '\0'))
 				|| ((llData == LLONG_MAX || llData == LLONG_MIN) && errno == ERANGE)
 				|| (llData > static_cast<LONGLONG>(std::numeric_limits<T>::max()))
 				|| (llData < static_cast<LONGLONG>(std::numeric_limits<T>::min()))
@@ -115,18 +123,26 @@ namespace HEXCTRL::INTERNAL
 	template<typename T>
 	bool str2num(std::string_view str, T& tData, int iBase)
 	{
+		std::string_view strView { str };
+		std::string strNT; //String NullTerminated, in case of str is not NT.
+		if (*str.end() != '\0')
+		{
+			strNT = str;
+			strView = strNT;
+		}
+		
 		char* pEndPtr;
 		if constexpr (std::is_same_v<T, ULONGLONG>)
 		{
-			tData = std::strtoull(str.data(), &pEndPtr, iBase);
-			if ((tData == 0 && (pEndPtr == str.data() || *pEndPtr != '\0'))
+			tData = std::strtoull(strView.data(), &pEndPtr, iBase);
+			if ((tData == 0 && (pEndPtr == strView.data() || *pEndPtr != '\0'))
 				|| (tData == ULLONG_MAX && errno == ERANGE))
 				return false;
 		}
 		else
 		{
-			auto llData = std::strtoll(str.data(), &pEndPtr, iBase);
-			if ((llData == 0 && (pEndPtr == str.data() || *pEndPtr != '\0'))
+			const auto llData = std::strtoll(strView.data(), &pEndPtr, iBase);
+			if ((llData == 0 && (pEndPtr == strView.data() || *pEndPtr != '\0'))
 				|| ((llData == LLONG_MAX || llData == LLONG_MIN) && errno == ERANGE)
 				|| (llData > static_cast<LONGLONG>(std::numeric_limits<T>::max()))
 				|| (llData < static_cast<LONGLONG>(std::numeric_limits<T>::min()))
@@ -140,43 +156,36 @@ namespace HEXCTRL::INTERNAL
 	//Explicit instantiations of templated func in .cpp.
 	template bool str2num<UCHAR>(std::string_view str, UCHAR& t, int iBase);
 
-	bool StrToHex(std::string_view str, std::string& strToHex)
+	bool str2hex(std::string_view str, std::string& strToHex)
 	{
-		size_t dwIterations = str.size() / 2 + str.size() % 2;
+		const auto nIterations = str.size() / 2 + str.size() % 2;
 		std::string strTmp;
-		for (size_t i = 0; i < dwIterations; ++i)
+		strTmp.reserve(nIterations);
+		for (size_t i = 0; i < nIterations; ++i)
 		{
-			std::string strToUL; //String to hold currently extracted two letters.
-
-			if (i + 2 <= str.size())
-				strToUL = str.substr(i * 2, 2);
+			//Extract two current chars and pass it to str2num as string_view.
+			if (unsigned char chNumber;	str2num(str.substr(i * 2, (i + 2 <= str.size()) ? 2 : 1), chNumber, 16))
+				strTmp += chNumber;
 			else
-				strToUL = str.substr(i * 2, 1);
-
-			unsigned char chNumber;
-			if (!str2num(strToUL.data(), chNumber, 16))
 				return false;
-
-			strTmp += chNumber;
 		}
 		strToHex = std::move(strTmp);
-		strToHex.shrink_to_fit();
 
 		return true;
 	}
 
-	std::string WstrToStr(std::wstring_view wstr, UINT uCodePage)
+	std::string wstr2str(std::wstring_view wstr, UINT uCodePage)
 	{
-		auto iSize = WideCharToMultiByte(uCodePage, 0, wstr.data(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
+		const auto iSize = WideCharToMultiByte(uCodePage, 0, wstr.data(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
 		WideCharToMultiByte(uCodePage, 0, wstr.data(), static_cast<int>(wstr.size()), &str[0], iSize, nullptr, nullptr);
 
 		return str;
 	}
 
-	std::wstring StrToWstr(std::string_view str, UINT uCodePage)
+	std::wstring str2wstr(std::string_view str, UINT uCodePage)
 	{
-		auto iSize = MultiByteToWideChar(uCodePage, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
+		const auto iSize = MultiByteToWideChar(uCodePage, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
 		std::wstring wstr(iSize, 0);
 		MultiByteToWideChar(uCodePage, 0, str.data(), static_cast<int>(str.size()), &wstr[0], iSize);
 

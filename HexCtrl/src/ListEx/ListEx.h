@@ -81,7 +81,7 @@ namespace HEXCTRL::LISTEX
 	{
 	public:
 		virtual bool Create(const LISTEXCREATESTRUCT& lcs) = 0;
-		virtual void CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg) = 0;
+		virtual void CreateDialogCtrl(UINT uCtrlID, CWnd* pParent) = 0;
 		virtual BOOL DeleteAllItems() = 0;
 		virtual BOOL DeleteColumn(int nCol) = 0;
 		virtual BOOL DeleteItem(int nItem) = 0;

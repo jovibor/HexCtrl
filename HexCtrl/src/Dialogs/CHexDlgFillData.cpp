@@ -69,12 +69,12 @@ void CHexDlgFillData::OnOK()
 		return;
 
 	std::wstring wstrComboText = pwszComboText;
-	std::string strToFill = WstrToStr(wstrComboText);
+	std::string strToFill = wstr2str(wstrComboText);
 	switch (iRadioType)
 	{
 	case IDC_HEXCTRL_FILLDATA_RADIO_HEX:
 	{
-		if (!StrToHex(strToFill, strToFill))
+		if (!str2hex(strToFill, strToFill))
 		{
 			MessageBoxW(L"Wrong Hex format!", L"Format Error", MB_ICONERROR);
 			return;

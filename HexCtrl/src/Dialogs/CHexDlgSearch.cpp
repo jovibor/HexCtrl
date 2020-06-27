@@ -378,15 +378,15 @@ void CHexDlgSearch::PrepareSearch()
 
 bool CHexDlgSearch::PrepareHex()
 {
-	m_strSearch = WstrToStr(m_wstrTextSearch);
-	m_strReplace = WstrToStr(m_wstrTextReplace);
-	if (!StrToHex(m_strSearch, m_strSearch))
+	m_strSearch = wstr2str(m_wstrTextSearch);
+	m_strReplace = wstr2str(m_wstrTextReplace);
+	if (!str2hex(m_strSearch, m_strSearch))
 	{
 		m_iWrap = 1;
 		return false;
 	}
 	m_nSizeSearch = m_strSearch.size();
-	if ((m_fReplace && !StrToHex(m_strReplace, m_strReplace)))
+	if ((m_fReplace && !str2hex(m_strReplace, m_strReplace)))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
@@ -400,8 +400,8 @@ bool CHexDlgSearch::PrepareHex()
 
 bool CHexDlgSearch::PrepareASCII()
 {
-	m_strSearch = WstrToStr(m_wstrTextSearch);
-	m_strReplace = WstrToStr(m_wstrTextReplace);
+	m_strSearch = wstr2str(m_wstrTextSearch);
+	m_strReplace = wstr2str(m_wstrTextReplace);
 	m_nSizeSearch = m_strSearch.size();
 	m_nSizeReplace = m_strReplace.size();
 	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());

@@ -37,13 +37,13 @@ namespace HEXCTRL::INTERNAL
 	inline bool str2num(std::string_view str, T& tData, int iBase = 0);
 
 	//Converts every two numeric chars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
-	bool StrToHex(std::string_view str, std::string& strToHex);
+	bool str2hex(std::string_view str, std::string& strToHex);
 
 	//Wide to Multibyte string convertion.
-	std::string WstrToStr(std::wstring_view wstr, UINT uCodePage = CP_UTF8);
+	std::string wstr2str(std::wstring_view wstr, UINT uCodePage = CP_UTF8);
 
 	//Multibyte to Wide string convertion.
-	std::wstring StrToWstr(std::string_view str, UINT uCodePage = CP_UTF8);
+	std::wstring str2wstr(std::string_view str, UINT uCodePage = CP_UTF8);
 
 	//Substitute all unprintable wchar symbols with dot.
 	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLFRepl = true);

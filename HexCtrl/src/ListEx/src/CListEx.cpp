@@ -189,10 +189,10 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 	return true;
 }
 
-void CListEx::CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)
+void CListEx::CreateDialogCtrl(UINT uCtrlID, CWnd* pParent)
 {
 	LISTEXCREATESTRUCT lcs;
-	lcs.pParent = pwndDlg;
+	lcs.pParent = pParent;
 	lcs.uID = uCtrlID;
 	lcs.fDialogCtrl = true;
 
@@ -838,11 +838,11 @@ std::vector<CListEx::SITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 	size_t nPosTagLast { };         //Start position of the enclosing tag "</link>".
 	CRect rcTextCurr { };           //Current rect.
 
-	const std::wstring_view wstrTagLink { L"<link=" };
-	const std::wstring_view wstrTagFirstClose { L">" };
-	const std::wstring_view wstrTagLast { L"</link>" };
-	const std::wstring_view wstrTagTitle { L"title=" };
-	const std::wstring_view wstrQuote { L"\"" };
+	constexpr std::wstring_view wstrTagLink { L"<link=" };
+	constexpr std::wstring_view wstrTagFirstClose { L">" };
+	constexpr std::wstring_view wstrTagLast { L"</link>" };
+	constexpr std::wstring_view wstrTagTitle { L"title=" };
+	constexpr std::wstring_view wstrQuote { L"\"" };
 
 	while (nPosCurr != std::wstring_view::npos)
 	{
