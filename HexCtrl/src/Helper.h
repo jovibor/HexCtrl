@@ -30,14 +30,14 @@ namespace HEXCTRL::INTERNAL
 
 	//Converts wide string to template's numeric data type.
 	template<typename T>
-	inline bool wstr2num(std::wstring_view wstr, T& tData, int iBase = 0);
+	inline bool wstr2num(const std::wstring& wstr, T& tData, int iBase = 0);
 
 	//Converts multibyte string to template's numeric data type.
 	template<typename T>
-	inline bool str2num(std::string_view str, T& tData, int iBase = 0);
+	inline bool str2num(const std::string& str, T& tData, int iBase = 0);
 
 	//Converts every two numeric chars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
-	bool str2hex(std::string_view str, std::string& strToHex);
+	bool str2hex(const std::string& str, std::string& strToHex);
 
 	//Wide to Multibyte string convertion.
 	std::string wstr2str(std::wstring_view wstr, UINT uCodePage = CP_UTF8);

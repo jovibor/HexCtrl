@@ -221,7 +221,9 @@
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexBookmarks.h" />
+    <ClInclude Include="..\..\HexCtrl\src\CHexCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexSelection.h" />
+    <ClInclude Include="..\..\HexCtrl\src\CScrollEx.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgAbout.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmProps.h" />
@@ -234,8 +236,6 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexEdit.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\src\Helper.h" />
-    <ClInclude Include="..\..\HexCtrl\src\CHexCtrl.h" />
-    <ClInclude Include="..\..\HexCtrl\src\CScrollEx.h" />
     <ClInclude Include="..\..\HexCtrl\src\ListEx\ListEx.h" />
     <ClInclude Include="..\..\HexCtrl\src\ListEx\src\CListEx.h" />
     <ClInclude Include="..\..\HexCtrl\src\ListEx\src\CListExHdr.h" />
@@ -247,7 +247,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\HexCtrl\src\CHexBookmarks.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexSelection.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\CScrollEx.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgAbout.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmProps.cpp" />
@@ -260,8 +262,6 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexEdit.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Helper.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\CScrollEx.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\ListEx\src\CListEx.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\ListEx\src\CListExHdr.cpp" />
     <ClCompile Include="HexSample.cpp" />

@@ -62,40 +62,32 @@ namespace HEXCTRL::INTERNAL
 	}
 
 	template<typename T>
-	bool wstr2num(std::wstring_view wstr, T& tData, int iBase)
+	bool wstr2num(const std::wstring& wstr, T& tData, int iBase)
 	{
-		std::wstring_view wstrView { wstr };
-		std::wstring wstrNT; //WString NullTerminated, in case of wstr is not NT.
-		if (*wstr.end() != '\0')
-		{
-			wstrNT = wstr;
-			wstrView = wstrNT;
-		}
-
 		wchar_t* pEndPtr;
 		if constexpr (std::is_same_v<T, ULONGLONG>)
 		{
-			tData = std::wcstoull(wstrView.data(), &pEndPtr, iBase);
-			if ((tData == 0 && (pEndPtr == wstrView.data() || *pEndPtr != '\0'))
+			tData = std::wcstoull(wstr.data(), &pEndPtr, iBase);
+			if ((tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
 				|| (tData == ULLONG_MAX && errno == ERANGE))
 				return false;
 		}
 		else if constexpr (std::is_same_v<T, float>)
 		{
-			tData = wcstof(wstrView.data(), &pEndPtr);
-			if (tData == 0 && (pEndPtr == wstrView.data() || *pEndPtr != '\0'))
+			tData = wcstof(wstr.data(), &pEndPtr);
+			if (tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
 				return false;
 		}
 		else if constexpr (std::is_same_v<T, double>)
 		{
-			tData = wcstod(wstrView.data(), &pEndPtr);
-			if (tData == 0 && (pEndPtr == wstrView.data() || *pEndPtr != '\0'))
+			tData = wcstod(wstr.data(), &pEndPtr);
+			if (tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
 				return false;
 		}
 		else
 		{
-			const auto llData = std::wcstoll(wstrView.data(), &pEndPtr, iBase);
-			if ((llData == 0 && (pEndPtr == wstrView.data() || *pEndPtr != '\0'))
+			const auto llData = std::wcstoll(wstr.data(), &pEndPtr, iBase);
+			if ((llData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
 				|| ((llData == LLONG_MAX || llData == LLONG_MIN) && errno == ERANGE)
 				|| (llData > static_cast<LONGLONG>(std::numeric_limits<T>::max()))
 				|| (llData < static_cast<LONGLONG>(std::numeric_limits<T>::min()))
@@ -107,42 +99,34 @@ namespace HEXCTRL::INTERNAL
 		return true;
 	}
 	//Explicit instantiations of templated func in .cpp.
-	template bool wstr2num<CHAR>(std::wstring_view wstr, CHAR& t, int iBase);
-	template bool wstr2num<UCHAR>(std::wstring_view wstr, UCHAR& t, int iBase);
-	template bool wstr2num<SHORT>(std::wstring_view wstr, SHORT& t, int iBase);
-	template bool wstr2num<USHORT>(std::wstring_view wstr, USHORT& t, int iBase);
-	template bool wstr2num<LONG>(std::wstring_view wstr, LONG& t, int iBase);
-	template bool wstr2num<ULONG>(std::wstring_view wstr, ULONG& t, int iBase);
-	template bool wstr2num<INT>(std::wstring_view wstr, INT& t, int iBase);
-	template bool wstr2num<UINT>(std::wstring_view wstr, UINT& t, int iBase);
-	template bool wstr2num<LONGLONG>(std::wstring_view wstr, LONGLONG& t, int iBase);
-	template bool wstr2num<ULONGLONG>(std::wstring_view wstr, ULONGLONG& t, int iBase);
-	template bool wstr2num<float>(std::wstring_view wstr, float& t, int iBase);
-	template bool wstr2num<double>(std::wstring_view wstr, double& t, int iBase);
+	template bool wstr2num<CHAR>(const std::wstring& wstr, CHAR& t, int iBase);
+	template bool wstr2num<UCHAR>(const std::wstring& wstr, UCHAR& t, int iBase);
+	template bool wstr2num<SHORT>(const std::wstring& wstr, SHORT& t, int iBase);
+	template bool wstr2num<USHORT>(const std::wstring& wstr, USHORT& t, int iBase);
+	template bool wstr2num<LONG>(const std::wstring& wstr, LONG& t, int iBase);
+	template bool wstr2num<ULONG>(const std::wstring& wstr, ULONG& t, int iBase);
+	template bool wstr2num<INT>(const std::wstring& wstr, INT& t, int iBase);
+	template bool wstr2num<UINT>(const std::wstring& wstr, UINT& t, int iBase);
+	template bool wstr2num<LONGLONG>(const std::wstring& wstr, LONGLONG& t, int iBase);
+	template bool wstr2num<ULONGLONG>(const std::wstring& wstr, ULONGLONG& t, int iBase);
+	template bool wstr2num<float>(const std::wstring& wstr, float& t, int iBase);
+	template bool wstr2num<double>(const std::wstring& wstr, double& t, int iBase);
 
 	template<typename T>
-	bool str2num(std::string_view str, T& tData, int iBase)
+	bool str2num(const std::string& str, T& tData, int iBase)
 	{
-		std::string_view strView { str };
-		std::string strNT; //String NullTerminated, in case of str is not NT.
-		if (*str.end() != '\0')
-		{
-			strNT = str;
-			strView = strNT;
-		}
-		
 		char* pEndPtr;
 		if constexpr (std::is_same_v<T, ULONGLONG>)
 		{
-			tData = std::strtoull(strView.data(), &pEndPtr, iBase);
-			if ((tData == 0 && (pEndPtr == strView.data() || *pEndPtr != '\0'))
+			tData = std::strtoull(str.data(), &pEndPtr, iBase);
+			if ((tData == 0 && (pEndPtr == str.data() || *pEndPtr != '\0'))
 				|| (tData == ULLONG_MAX && errno == ERANGE))
 				return false;
 		}
 		else
 		{
-			const auto llData = std::strtoll(strView.data(), &pEndPtr, iBase);
-			if ((llData == 0 && (pEndPtr == strView.data() || *pEndPtr != '\0'))
+			const auto llData = std::strtoll(str.data(), &pEndPtr, iBase);
+			if ((llData == 0 && (pEndPtr == str.data() || *pEndPtr != '\0'))
 				|| ((llData == LLONG_MAX || llData == LLONG_MIN) && errno == ERANGE)
 				|| (llData > static_cast<LONGLONG>(std::numeric_limits<T>::max()))
 				|| (llData < static_cast<LONGLONG>(std::numeric_limits<T>::min()))
@@ -154,9 +138,9 @@ namespace HEXCTRL::INTERNAL
 		return true;
 	}
 	//Explicit instantiations of templated func in .cpp.
-	template bool str2num<UCHAR>(std::string_view str, UCHAR& t, int iBase);
+	template bool str2num<UCHAR>(const std::string& str, UCHAR& t, int iBase);
 
-	bool str2hex(std::string_view str, std::string& strToHex)
+	bool str2hex(const std::string& str, std::string& strToHex)
 	{
 		const auto nIterations = str.size() / 2 + str.size() % 2;
 		std::string strTmp;

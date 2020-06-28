@@ -24,7 +24,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		struct SITEMTEXT;
 	public:
 		bool Create(const LISTEXCREATESTRUCT& lcs)override;
-		void CreateDialogCtrl(UINT uCtrlID, CWnd* pwndDlg)override;
+		void CreateDialogCtrl(UINT uCtrlID, CWnd* pParent)override;
 		static int CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 		BOOL DeleteAllItems()override;
 		BOOL DeleteColumn(int nCol)override;

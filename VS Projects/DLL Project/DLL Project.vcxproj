@@ -219,7 +219,6 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\Sample Project\stdafx.h" />
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexBookmarks.h" />
@@ -227,11 +226,11 @@
     <ClInclude Include="..\..\HexCtrl\src\CHexSelection.h" />
     <ClInclude Include="..\..\HexCtrl\src\CScrollEx.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgAbout.h" />
-    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmProps.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmProps.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.h" />
-    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgEncoding.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterpret.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgEncoding.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgFillData.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgOperations.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.h" />
@@ -241,24 +240,19 @@
     <ClInclude Include="..\..\HexCtrl\src\ListEx\ListEx.h" />
     <ClInclude Include="..\..\HexCtrl\src\ListEx\src\CListEx.h" />
     <ClInclude Include="..\..\HexCtrl\src\ListEx\src\CListExHdr.h" />
+    <ClInclude Include="..\Sample Project\stdafx.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Sample Project\stdafx.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\CHexBookmarks.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexSelection.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CScrollEx.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgAbout.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmProps.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmProps.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgEncoding.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterpret.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgEncoding.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgFillData.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgOperations.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp" />
@@ -267,6 +261,12 @@
     <ClCompile Include="..\..\HexCtrl\src\Helper.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\ListEx\src\CListEx.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\ListEx\src\CListExHdr.cpp" />
+    <ClCompile Include="..\Sample Project\stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\HexCtrl\res\HexCtrl.rc" />

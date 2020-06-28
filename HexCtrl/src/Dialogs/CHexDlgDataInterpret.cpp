@@ -170,8 +170,7 @@ void CHexDlgDataInterpret::OnOK()
 	if (refGridData == m_vecProp.end())
 		return;
 
-	auto mfcwstr = static_cast<CStringW>(m_pPropChanged->GetValue());
-	std::wstring_view wstr(mfcwstr.GetString(), mfcwstr.GetLength());
+	std::wstring wstr = static_cast<CStringW>(m_pPropChanged->GetValue()).GetString();
 
 	bool fSuccess { false };
 	switch (refGridData->eName)
@@ -1008,7 +1007,7 @@ void CHexDlgDataInterpret::ShowNAME_SYSTEMTIME(const UDQWORD& dqword)
 		iter->pProp->SetValue(SystemTimeToString(reinterpret_cast<const SYSTEMTIME*>(&dqword), true, true).data());
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_BINARY(std::wstring_view wstr)
+bool CHexDlgDataInterpret::SetDataNAME_BINARY(const std::wstring& wstr)
 {
 	if (wstr.size() != 8 || wstr.find_first_not_of(L"01") != std::wstring_view::npos)
 		return false;
@@ -1021,7 +1020,7 @@ bool CHexDlgDataInterpret::SetDataNAME_BINARY(std::wstring_view wstr)
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_CHAR(std::wstring_view wstr)
+bool CHexDlgDataInterpret::SetDataNAME_CHAR(const std::wstring& wstr)
 {
 	bool fSuccess;
 	CHAR chData;
@@ -1031,7 +1030,7 @@ bool CHexDlgDataInterpret::SetDataNAME_CHAR(std::wstring_view wstr)
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_UCHAR(std::wstring_view wstr)
+bool CHexDlgDataInterpret::SetDataNAME_UCHAR(const std::wstring& wstr)
 {
 	bool fSuccess;
 	UCHAR uchData;
@@ -1041,7 +1040,7 @@ bool CHexDlgDataInterpret::SetDataNAME_UCHAR(std::wstring_view wstr)
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_SHORT(std::wstring_view wstr)
+bool CHexDlgDataInterpret::SetDataNAME_SHORT(const std::wstring& wstr)
 {
 	bool fSuccess;
 	SHORT shData;
@@ -1051,7 +1050,7 @@ bool CHexDlgDataInterpret::SetDataNAME_SHORT(std::wstring_view wstr)
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_USHORT(std::wstring_view wstr)
+bool CHexDlgDataInterpret::SetDataNAME_USHORT(const std::wstring& wstr)
 {
 	bool fSuccess;
 	USHORT ushData;
@@ -1061,7 +1060,7 @@ bool CHexDlgDataInterpret::SetDataNAME_USHORT(std::wstring_view wstr)
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_LONG(std::wstring_view wstr)
+bool CHexDlgDataInterpret::SetDataNAME_LONG(const std::wstring& wstr)
 {
 	bool fSuccess;
 	LONG lData;
@@ -1071,7 +1070,7 @@ bool CHexDlgDataInterpret::SetDataNAME_LONG(std::wstring_view wstr)
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_ULONG(std::wstring_view wstr)
+bool CHexDlgDataInterpret::SetDataNAME_ULONG(const std::wstring& wstr)
 {
 	bool fSuccess;
 	ULONG ulData;
@@ -1081,7 +1080,7 @@ bool CHexDlgDataInterpret::SetDataNAME_ULONG(std::wstring_view wstr)
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_LONGLONG(std::wstring_view wstr)
+bool CHexDlgDataInterpret::SetDataNAME_LONGLONG(const std::wstring& wstr)
 {
 	bool fSuccess;
 	LONGLONG llData;
@@ -1091,7 +1090,7 @@ bool CHexDlgDataInterpret::SetDataNAME_LONGLONG(std::wstring_view wstr)
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_ULONGLONG(std::wstring_view wstr)
+bool CHexDlgDataInterpret::SetDataNAME_ULONGLONG(const std::wstring& wstr)
 {
 	bool fSuccess;
 	ULONGLONG ullData;
@@ -1101,35 +1100,24 @@ bool CHexDlgDataInterpret::SetDataNAME_ULONGLONG(std::wstring_view wstr)
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_FLOAT(std::wstring_view wstr)
+bool CHexDlgDataInterpret::SetDataNAME_FLOAT(const std::wstring& wstr)
 {
-	wchar_t* pEndPtr;
-	float fl = wcstof(wstr.data(), &pEndPtr);
-	if (fl == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
-		return false;
+	bool fSuccess;
+	float fl;
+	if (fSuccess = wstr2num(wstr, fl); fSuccess)
+		SetDigitData(fl);
 
-	//TODO: dwData = std::bit_cast<DWORD>(fl);
-	DWORD dwData = *reinterpret_cast<DWORD*>(&fl);
-	if (m_fBigEndian)
-		dwData = _byteswap_ulong(dwData);
-	m_pHexCtrl->SetData(m_ullOffset, dwData);
-
-	return true;
+	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_DOUBLE(std::wstring_view wstr)
+bool CHexDlgDataInterpret::SetDataNAME_DOUBLE(const std::wstring& wstr)
 {
-	wchar_t* pEndPtr;
-	double dd = wcstod(wstr.data(), &pEndPtr);
-	if (dd == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
-		return false;
+	bool fSuccess;
+	double dd;
+	if (fSuccess = wstr2num(wstr, dd); fSuccess)
+		SetDigitData(dd);
 
-	QWORD qwData = *reinterpret_cast<QWORD*>(&dd);
-	if (m_fBigEndian)
-		qwData = _byteswap_uint64(qwData);
-	m_pHexCtrl->SetData(m_ullOffset, qwData);
-
-	return true;
+	return fSuccess;
 }
 
 bool CHexDlgDataInterpret::SetDataNAME_TIME32T(std::wstring_view wstr)
@@ -1377,7 +1365,7 @@ bool CHexDlgDataInterpret::SetDataNAME_GUIDTIME(std::wstring_view wstr)
 	return true;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_GUID(std::wstring_view wstr)
+bool CHexDlgDataInterpret::SetDataNAME_GUID(const std::wstring& wstr)
 {
 	GUID guid;
 	if (IIDFromString(wstr.data(), &guid) != S_OK)

@@ -419,7 +419,7 @@ BEGIN
         BEGIN
             MENUITEM "Copy as Hex\tCtrl+C",         IDM_HEXCTRL_CLIPBOARD_COPYHEX
             MENUITEM "Copy as Hex (little-endian)", IDM_HEXCTRL_CLIPBOARD_COPYHEXLE
-            MENUITEM "Copy as Hex Formatted",       IDM_HEXCTRL_CLIPBOARD_COPYHEXFORMATTED
+            MENUITEM "Copy as Hex Formatted",       IDM_HEXCTRL_CLIPBOARD_COPYHEXFMT
             MENUITEM SEPARATOR
             MENUITEM "Copy as Text",                IDM_HEXCTRL_CLIPBOARD_COPYTEXT
             MENUITEM "Copy as Base64",              IDM_HEXCTRL_CLIPBOARD_COPYBASE64
@@ -432,7 +432,7 @@ BEGIN
         END
         POPUP "Modify"
         BEGIN
-            MENUITEM "Operations...\tCtrl+O",       IDM_HEXCTRL_MODIFY_OPERATIONS
+            MENUITEM "Operations...\tCtrl+O",       IDM_HEXCTRL_MODIFY_OPERS
             MENUITEM "Fill with zeros",             IDM_HEXCTRL_MODIFY_FILLZEROS
             MENUITEM "Fill with data...",           IDM_HEXCTRL_MODIFY_FILLDATA
             MENUITEM SEPARATOR
@@ -441,20 +441,20 @@ BEGIN
         END
         POPUP "Selection"
         BEGIN
-            MENUITEM "Mark Selection Start\tAlt+1", IDM_HEXCTRL_SELECTION_MARKSTART
-            MENUITEM "Mark Selection End\tAlt+2",   IDM_HEXCTRL_SELECTION_MARKEND
+            MENUITEM "Mark Selection Start\tAlt+1", IDM_HEXCTRL_SEL_MARKSTART
+            MENUITEM "Mark Selection End\tAlt+2",   IDM_HEXCTRL_SEL_MARKEND
             MENUITEM SEPARATOR
-            MENUITEM "Select all\tCtrl+A",          IDM_HEXCTRL_SELECTION_SELECTALL
+            MENUITEM "Select all\tCtrl+A",          IDM_HEXCTRL_SEL_ALL
         END
         MENUITEM "Data Interpreter",            IDM_HEXCTRL_DATAINTERPRET
         MENUITEM "Encoding",                    IDM_HEXCTRL_ENCODING
         POPUP "Appearance"
         BEGIN
-            MENUITEM "Increase font size\tCtrl+MouseWheelUp", IDM_HEXCTRL_APPEARANCE_FONTINCREASE
-            MENUITEM "Decrease font size\tCtrl+MouseWheelDown", IDM_HEXCTRL_APPEARANCE_FONTDECREASE
+            MENUITEM "Increase font size\tCtrl+MouseWheelUp", IDM_HEXCTRL_APPEARANCE_FONTINC
+            MENUITEM "Decrease font size\tCtrl+MouseWheelDown", IDM_HEXCTRL_APPEARANCE_FONTDEC
             MENUITEM SEPARATOR
-            MENUITEM "Increase capacity\tCtrl+Shift+MouseWheelUp", IDM_HEXCTRL_APPEARANCE_CAPACITYINCREASE
-            MENUITEM "Decrease capacity\tCtrl+Shift+MouseWheelDown", IDM_HEXCTRL_APPEARANCE_CAPACITYDECREASE
+            MENUITEM "Increase capacity\tCtrl+Shift+MouseWheelUp", IDM_HEXCTRL_APPEARANCE_CAPACINC
+            MENUITEM "Decrease capacity\tCtrl+Shift+MouseWheelDown", IDM_HEXCTRL_APPEARANCE_CAPACDEC
         END
         MENUITEM SEPARATOR
         MENUITEM "Print...",                    IDM_HEXCTRL_PRINT

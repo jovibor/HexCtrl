@@ -52,7 +52,7 @@ namespace HEXCTRL {
 	namespace INTERNAL {
 		enum class CHexCtrl::EClipboard : WORD
 		{
-			COPY_HEX, COPY_HEX_LE, COPY_HEX_FORMATTED, COPY_ASCII, COPY_BASE64,
+			COPY_HEX, COPY_HEX_LE, COPY_HEX_FORMATTED, COPY_TEXT, COPY_BASE64,
 			COPY_CARRAY, COPY_GREPHEX, COPY_PRINTSCREEN,
 			PASTE_HEX, PASTE_TEXT
 		};
@@ -283,7 +283,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_enShowMode = hcs.enShowMode;
 	m_dbWheelRatio = hcs.dbWheelRatio;
 
-	DWORD dwStyle = hcs.dwStyle;
+	auto dwStyle = hcs.dwStyle;
 	//1. WS_POPUP style is vital for GetParent to work properly in EHexCreateMode::CREATE_POPUP mode.
 	//   Without this style GetParent/GetOwner always return 0, no matter whether pParentWnd is provided to CreateWindowEx or not.
 	//2. Created HexCtrl window will always overlap (be on top of) its parent, or owner, window 
@@ -426,17 +426,17 @@ void CHexCtrl::Destroy()
 	delete this;
 }
 
-void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
+void CHexCtrl::ExecuteCmd(EHexCmd enCmd)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
-	WPARAM wParam { };
 	switch (enCmd)
 	{
 	case EHexCmd::CMD_SEARCH:
-		wParam = IDM_HEXCTRL_SEARCH;
+		if (IsCmdAvail(EHexCmd::CMD_SEARCH))
+			m_pDlgSearch->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_SEARCH_NEXT:
 		m_pDlgSearch->Search(true);
@@ -445,116 +445,154 @@ void CHexCtrl::ExecuteCmd(EHexCmd enCmd)const
 		m_pDlgSearch->Search(false);
 		break;
 	case EHexCmd::CMD_SHOWDATA_BYTE:
-		wParam = IDM_HEXCTRL_SHOWAS_BYTE;
+		SetShowMode(EHexShowMode::ASBYTE);
 		break;
 	case EHexCmd::CMD_SHOWDATA_WORD:
-		wParam = IDM_HEXCTRL_SHOWAS_WORD;
+		SetShowMode(EHexShowMode::ASWORD);
 		break;
 	case EHexCmd::CMD_SHOWDATA_DWORD:
-		wParam = IDM_HEXCTRL_SHOWAS_DWORD;
+		SetShowMode(EHexShowMode::ASDWORD);
 		break;
 	case EHexCmd::CMD_SHOWDATA_QWORD:
-		wParam = IDM_HEXCTRL_SHOWAS_QWORD;
+		SetShowMode(EHexShowMode::ASQWORD);
 		break;
 	case EHexCmd::CMD_BKM_ADD:
-		wParam = IDM_HEXCTRL_BOOKMARKS_ADD;
+		m_pBookmarks->Add(HEXBKMSTRUCT { m_pSelection->GetData() });
 		break;
 	case EHexCmd::CMD_BKM_REMOVE:
-		wParam = IDM_HEXCTRL_BOOKMARKS_REMOVE;
+		m_pBookmarks->Remove(m_optRMouseClick.value_or(GetCaretPos()));
+		m_optRMouseClick.reset();
 		break;
 	case EHexCmd::CMD_BKM_NEXT:
-		wParam = IDM_HEXCTRL_BOOKMARKS_NEXT;
+		m_pBookmarks->GoNext();
 		break;
 	case EHexCmd::CMD_BKM_PREV:
-		wParam = IDM_HEXCTRL_BOOKMARKS_PREV;
+		m_pBookmarks->GoPrev();
 		break;
 	case EHexCmd::CMD_BKM_CLEARALL:
-		wParam = IDM_HEXCTRL_BOOKMARKS_CLEARALL;
+		m_pBookmarks->ClearAll();
 		break;
 	case EHexCmd::CMD_BKM_MANAGER:
-		wParam = IDM_HEXCTRL_BOOKMARKS_MANAGER;
+		m_pDlgBookmarkMgr->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_HEX:
-		wParam = IDM_HEXCTRL_CLIPBOARD_COPYHEX;
+		ClipboardCopy(EClipboard::COPY_HEX);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_HEXLE:
-		wParam = IDM_HEXCTRL_CLIPBOARD_COPYHEXLE;
+		ClipboardCopy(EClipboard::COPY_HEX_LE);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT:
-		wParam = IDM_HEXCTRL_CLIPBOARD_COPYHEXFORMATTED;
+		ClipboardCopy(EClipboard::COPY_HEX_FORMATTED);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_TEXT:
-		wParam = IDM_HEXCTRL_CLIPBOARD_COPYTEXT;
+		ClipboardCopy(EClipboard::COPY_TEXT);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_BASE64:
-		wParam = IDM_HEXCTRL_CLIPBOARD_COPYBASE64;
+		ClipboardCopy(EClipboard::COPY_BASE64);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_CARR:
-		wParam = IDM_HEXCTRL_CLIPBOARD_COPYCARRAY;
+		ClipboardCopy(EClipboard::COPY_CARRAY);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX:
-		wParam = IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX;
+		ClipboardCopy(EClipboard::COPY_GREPHEX);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN:
-		wParam = IDM_HEXCTRL_CLIPBOARD_COPYPRINTSCREEN;
+		ClipboardCopy(EClipboard::COPY_PRINTSCREEN);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_PASTE_HEX:
-		wParam = IDM_HEXCTRL_CLIPBOARD_PASTEHEX;
+		ClipboardPaste(EClipboard::PASTE_HEX);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_PASTE_TEXT:
-		wParam = IDM_HEXCTRL_CLIPBOARD_PASTETEXT;
+		ClipboardPaste(EClipboard::PASTE_TEXT);
 		break;
 	case EHexCmd::CMD_MODIFY_OPERS:
-		wParam = IDM_HEXCTRL_MODIFY_OPERATIONS;
+		m_pDlgOpers->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_MODIFY_FILLZEROS:
-		wParam = IDM_HEXCTRL_MODIFY_FILLZEROS;
+		FillWithZeros();
 		break;
 	case EHexCmd::CMD_MODIFY_FILLDATA:
-		wParam = IDM_HEXCTRL_MODIFY_FILLDATA;
+		m_pDlgFillData->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_MODIFY_UNDO:
-		wParam = IDM_HEXCTRL_MODIFY_UNDO;
+		Undo();
 		break;
 	case EHexCmd::CMD_MODIFY_REDO:
-		wParam = IDM_HEXCTRL_MODIFY_REDO;
+		Redo();
 		break;
 	case EHexCmd::CMD_SEL_MARKSTART:
-		wParam = IDM_HEXCTRL_SELECTION_MARKSTART;
+		m_pSelection->SetSelectionStart(GetCaretPos());
 		break;
 	case EHexCmd::CMD_SEL_MARKEND:
-		wParam = IDM_HEXCTRL_SELECTION_MARKEND;
+		m_pSelection->SetSelectionEnd(GetCaretPos());
 		break;
-	case EHexCmd::CMD_SEL_SELECTALL:
-		wParam = IDM_HEXCTRL_SELECTION_SELECTALL;
+	case EHexCmd::CMD_SEL_ALL:
+		SelAll();
+		break;
+	case EHexCmd::CMD_SEL_ADDLEFT:
+		SelAddLeft();
+		break;
+	case EHexCmd::CMD_SEL_ADDRIGHT:
+		SelAddRight();
+		break;
+	case EHexCmd::CMD_SEL_ADDUP:
+		SelAddUp();
+		break;
+	case EHexCmd::CMD_SEL_ADDDOWN:
+		SelAddDown();
 		break;
 	case EHexCmd::CMD_DATAINTERPRET:
-		wParam = IDM_HEXCTRL_DATAINTERPRET;
+		m_pDlgDataInterpret->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_ENCODING:
-		wParam = IDM_HEXCTRL_ENCODING;
+		m_pDlgEncoding->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_APPEARANCE_FONTINC:
-		wParam = IDM_HEXCTRL_APPEARANCE_FONTINCREASE;
+		SetFontSize(GetFontSize() + 2);
 		break;
 	case EHexCmd::CMD_APPEARANCE_FONTDEC:
-		wParam = IDM_HEXCTRL_APPEARANCE_FONTDECREASE;
+		SetFontSize(GetFontSize() - 2);
 		break;
-	case EHexCmd::CMD_APPEARANCE_CAPACITYINC:
-		wParam = IDM_HEXCTRL_APPEARANCE_CAPACITYINCREASE;
+	case EHexCmd::CMD_APPEARANCE_CAPACINC:
+		SetCapacity(m_dwCapacity + 1);
 		break;
-	case EHexCmd::CMD_APPEARANCE_CAPACITYDEC:
-		wParam = IDM_HEXCTRL_APPEARANCE_CAPACITYDECREASE;
+	case EHexCmd::CMD_APPEARANCE_CAPACDEC:
+		SetCapacity(m_dwCapacity - 1);
 		break;
 	case EHexCmd::CMD_PRINT:
-		wParam = IDM_HEXCTRL_PRINT;
+		Print();
 		break;
 	case EHexCmd::CMD_ABOUT:
-		wParam = IDM_HEXCTRL_ABOUT;
+	{
+		CHexDlgAbout dlgAbout(this);
+		dlgAbout.DoModal();
+	}
+	break;
+	case EHexCmd::CMD_CARET_LEFT:
+		CaretMoveLeft();
+		break;
+	case EHexCmd::CMD_CARET_RIGHT:
+		CaretMoveRight();
+		break;
+	case EHexCmd::CMD_CARET_UP:
+		CaretMoveUp();
+		break;
+	case EHexCmd::CMD_CARET_DOWN:
+		CaretMoveDown();
+		break;
+	case EHexCmd::CMD_SCROLL_PAGEUP:
+		m_pScrollV->ScrollPageUp();
+		break;
+	case EHexCmd::CMD_SCROLL_PAGEDOWN:
+		m_pScrollV->ScrollPageDown();
+		break;
+	case EHexCmd::CMD_SCROLL_TOP:
+		m_pScrollV->ScrollHome();
+		break;
+	case EHexCmd::CMD_SCROLL_BOTTOM:
+		m_pScrollV->ScrollEnd();
 		break;
 	}
-	if (wParam)
-		SendMessageW(WM_COMMAND, wParam);
 }
 
 DWORD CHexCtrl::GetCapacity()const
@@ -742,7 +780,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 	case EHexCmd::CMD_BKM_MANAGER:
 	case EHexCmd::CMD_SEL_MARKSTART:
 	case EHexCmd::CMD_SEL_MARKEND:
-	case EHexCmd::CMD_SEL_SELECTALL:
+	case EHexCmd::CMD_SEL_ALL:
 	case EHexCmd::CMD_DATAINTERPRET:
 		fAvail = fDataSet;
 		break;
@@ -1216,7 +1254,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)const
 	case EClipboard::COPY_HEX_FORMATTED:
 		wstrData = CopyHexFormatted();
 		break;
-	case EClipboard::COPY_ASCII:
+	case EClipboard::COPY_TEXT:
 		wstrData = CopyText();
 		break;
 	case EClipboard::COPY_BASE64:
@@ -2601,7 +2639,7 @@ void CHexCtrl::MakeSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG u
 	if ((ullStart + ullSize) > m_ullDataSize)
 		ullSize = m_ullDataSize - ullStart;
 
-	ULONGLONG ullEnd = ullStart + ullSize; //ullEnd is exclusive - ).
+	ULONGLONG ullEnd = ullStart + ullSize; //ullEnd is exclusive (")").
 	m_ullLMouseClick = ullClick;
 	m_ullCaretPos = ullStart;
 
@@ -2649,7 +2687,7 @@ void CHexCtrl::MakeSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG u
 			{
 				if (ullNewStartV < ullCurrScrollV)
 					ullNewScrollV = ullCurrScrollV - m_sizeLetter.cy;
-				else
+				else if (ullNewStartV >= ullMaxV)
 					ullNewScrollV = ullCurrScrollV + m_sizeLetter.cy;
 			}
 
@@ -2975,290 +3013,72 @@ void CHexCtrl::OnKeyDownCtrl(UINT nChar)
 {
 	//TranslateAccelerator doesn't work within .dll without client's code modification.
 	//So, this is the manual, kind of, implementation (translation).
-	WPARAM wParam { };
+
+	EHexCmd eCmd { };
 	switch (nChar)
 	{
 	case 'F':
 	case 'H':
-		wParam = IDM_HEXCTRL_SEARCH;
+		eCmd = EHexCmd::CMD_SEARCH;
 		break;
 	case 'B':
-		wParam = IDM_HEXCTRL_BOOKMARKS_ADD;
+		eCmd = EHexCmd::CMD_BKM_ADD;
 		break;
 	case 'N':
-		wParam = IDM_HEXCTRL_BOOKMARKS_REMOVE;
+		eCmd = EHexCmd::CMD_BKM_REMOVE;
 		break;
 	case 'C':
-		wParam = IDM_HEXCTRL_CLIPBOARD_COPYHEX;
+		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_HEX;
 		break;
 	case 'V':
-		wParam = IDM_HEXCTRL_CLIPBOARD_PASTEHEX;
+		eCmd = EHexCmd::CMD_CLIPBOARD_PASTE_HEX;
 		break;
 	case 'O':
-		wParam = IDM_HEXCTRL_MODIFY_OPERATIONS;
+		eCmd = EHexCmd::CMD_MODIFY_OPERS;
 		break;
 	case 'A':
-		wParam = IDM_HEXCTRL_SELECTION_SELECTALL;
+		eCmd = EHexCmd::CMD_SEL_ALL;
 		break;
 	case 'Z':
-		wParam = IDM_HEXCTRL_MODIFY_UNDO;
+		eCmd = EHexCmd::CMD_MODIFY_UNDO;
 		break;
 	case 'Y':
-		wParam = IDM_HEXCTRL_MODIFY_REDO;
+		eCmd = EHexCmd::CMD_MODIFY_REDO;
 		break;
 	}
-	if (wParam)
-		SendMessageW(WM_COMMAND, wParam, 0);
+	if (static_cast<WORD>(eCmd) > 0)
+		ExecuteCmd(eCmd);
 }
 
 void CHexCtrl::OnKeyDownShift(UINT nChar)
 {
-	WPARAM wParam { };
+	EHexCmd eCmd { };
 	switch (nChar)
 	{
 	case VK_LEFT:
-		OnKeyDownShiftLeft();
+		eCmd = EHexCmd::CMD_SEL_ADDLEFT;
 		break;
 	case VK_RIGHT:
-		OnKeyDownShiftRight();
+		eCmd = EHexCmd::CMD_SEL_ADDRIGHT;
 		break;
 	case VK_UP:
-		OnKeyDownShiftUp();
+		eCmd = EHexCmd::CMD_SEL_ADDUP;
 		break;
 	case VK_DOWN:
-		OnKeyDownShiftDown();
+		eCmd = EHexCmd::CMD_SEL_ADDDOWN;
 		break;
 	case VK_F2:
-		wParam = IDM_HEXCTRL_BOOKMARKS_PREV;
+		eCmd = EHexCmd::CMD_BKM_PREV;
 		break;
 	case VK_F3:
-		m_pDlgSearch->Search(false);
+		eCmd = EHexCmd::CMD_SEARCH_PREV;
 		break;
 	}
-	if (wParam)
-		SendMessageW(WM_COMMAND, wParam, 0);
+	if (static_cast<WORD>(eCmd) > 0)
+		ExecuteCmd(eCmd);
 }
 
-void CHexCtrl::OnKeyDownShiftDown()
-{
-	ULONGLONG ullClick { }, ullStart { }, ullSize = 0;
-	ULONGLONG ullSelStart = m_pSelection->GetSelectionStart();
-	ULONGLONG ullSelSize = m_pSelection->GetSelectionSize();
-	if (m_fMutable)
-	{
-		if (m_ullCaretPos == m_ullLMouseClick
-			|| m_ullCaretPos == ullSelStart
-			|| m_ullCaretPos == m_pSelection->GetSelectionEnd())
-		{
-			if (ullSelStart == m_ullLMouseClick)
-			{
-				ullClick = ullStart = m_ullLMouseClick;
-				ullSize = ullSelSize + m_dwCapacity;
-			}
-			else if (ullSelStart < m_ullLMouseClick)
-			{
-				ullClick = m_ullLMouseClick;
-				ullStart = ullSelSize > m_dwCapacity ? ullSelStart + m_dwCapacity : m_ullLMouseClick;
-				ullSize = ullSelSize >= m_dwCapacity ? ullSelSize - m_dwCapacity : m_dwCapacity;
-				ullSize = ullSize ? ullSize : 1;
-			}
-		}
-		else
-		{
-			ullClick = ullStart = m_ullCaretPos;
-			ullSize = 1;
-		}
-	}
-	else if (m_pSelection->HasSelection())
-	{
-		if (ullSelStart == m_ullLMouseClick)
-		{
-			ullClick = ullStart = m_ullLMouseClick;
-			ullSize = ullSelSize + m_dwCapacity;
-		}
-		else if (ullSelStart < m_ullLMouseClick)
-		{
-			ullClick = m_ullLMouseClick;
-			ullStart = ullSelSize > m_dwCapacity ? ullSelStart + m_dwCapacity : m_ullLMouseClick;
-			ullSize = ullSelSize >= m_dwCapacity ? ullSelSize - m_dwCapacity : m_dwCapacity;
-			ullSize = ullSize ? ullSize : 1;
-		}
-	}
-
-	if (ullSize > 0)
-		MakeSelection(ullClick, ullStart, ullSize, 1);
-}
-
-void CHexCtrl::OnKeyDownShiftLeft()
-{
-	ULONGLONG ullClick { }, ullStart { }, ullSize = 0;
-	ULONGLONG ullSelStart = m_pSelection->GetSelectionStart();
-	ULONGLONG ullSelSize = m_pSelection->GetSelectionSize();
-
-	if (m_fMutable)
-	{
-		if (m_ullCaretPos == m_ullLMouseClick
-			|| m_ullCaretPos == ullSelStart
-			|| m_ullCaretPos == m_pSelection->GetSelectionEnd())
-		{
-			if (ullSelStart == m_ullLMouseClick && ullSelSize > 1)
-			{
-				ullClick = ullStart = m_ullLMouseClick;
-				ullSize = ullSelSize - 1;
-			}
-			else
-			{
-				ullClick = m_ullLMouseClick;
-				ullStart = ullSelStart - 1;
-				ullSize = ullSelSize + 1;
-			}
-		}
-		else
-		{
-			ullClick = ullStart = m_ullCaretPos;
-			ullSize = 1;
-		}
-	}
-	else if (m_pSelection->HasSelection())
-	{
-		if (ullSelStart == m_ullLMouseClick && ullSelSize > 1)
-		{
-			ullClick = ullStart = m_ullLMouseClick;
-			ullSize = ullSelSize - 1;
-		}
-		else
-		{
-			ullClick = m_ullLMouseClick;
-			ullStart = ullSelStart - 1;
-			ullSize = ullSelSize + 1;
-		}
-	}
-
-	if (ullSize > 0)
-		MakeSelection(ullClick, ullStart, ullSize, 1);
-}
-
-void CHexCtrl::OnKeyDownShiftRight()
-{
-	ULONGLONG ullClick { }, ullStart { }, ullSize = 0;
-	ULONGLONG ullSelStart = m_pSelection->GetSelectionStart();
-	ULONGLONG ullSelSize = m_pSelection->GetSelectionSize();
-
-	if (m_fMutable)
-	{
-		if (m_ullCaretPos == m_ullLMouseClick || m_ullCaretPos == ullSelStart
-			|| m_ullCaretPos == m_pSelection->GetSelectionEnd())
-		{
-			if (ullSelStart == m_ullLMouseClick)
-			{
-				ullClick = ullStart = m_ullLMouseClick;
-				ullSize = ullSelSize + 1;
-			}
-			else
-			{
-				ullClick = m_ullLMouseClick;
-				ullStart = ullSelStart + 1;
-				ullSize = ullSelSize - 1;
-			}
-		}
-		else
-		{
-			ullClick = ullStart = m_ullCaretPos;
-			ullSize = 1;
-		}
-	}
-	else if (m_pSelection->HasSelection())
-	{
-		if (ullSelStart == m_ullLMouseClick)
-		{
-			ullClick = ullStart = m_ullLMouseClick;
-			ullSize = ullSelSize + 1;
-		}
-		else
-		{
-			ullClick = m_ullLMouseClick;
-			ullStart = ullSelStart + 1;
-			ullSize = ullSelSize - 1;
-		}
-	}
-
-	if (ullSize > 0)
-		MakeSelection(ullClick, ullStart, ullSize, 1);
-}
-
-void CHexCtrl::OnKeyDownShiftUp()
-{
-	ULONGLONG ullClick { }, ullStart { 0 }, ullSize { 0 };
-	ULONGLONG ullSelStart = m_pSelection->GetSelectionStart();
-	ULONGLONG ullSelSize = m_pSelection->GetSelectionSize();
-
-	if (m_fMutable)
-	{
-		if (m_ullCaretPos == m_ullLMouseClick || m_ullCaretPos == ullSelStart
-			|| m_ullCaretPos == m_pSelection->GetSelectionEnd())
-		{
-			if (ullSelStart == 0)
-				return;
-
-			if (ullSelStart < m_ullLMouseClick)
-			{
-				ullClick = m_ullLMouseClick;
-				if (ullSelStart < m_dwCapacity)
-				{
-					ullSize = ullSelSize + ullSelStart;
-				}
-				else
-				{
-					ullStart = ullSelStart - m_dwCapacity;
-					ullSize = ullSelSize + m_dwCapacity;
-				}
-			}
-			else
-			{
-				ullClick = m_ullLMouseClick;
-				ullStart = ullSelSize >= m_dwCapacity ? m_ullLMouseClick : m_ullLMouseClick - m_dwCapacity;
-				ullSize = ullSelSize >= m_dwCapacity ? ullSelSize - m_dwCapacity : m_dwCapacity + 1;
-				ullSize = ullSize ? ullSize : 1;
-			}
-		}
-		else
-		{
-			ullClick = ullStart = m_ullCaretPos;
-			ullSize = 1;
-		}
-	}
-	else if (m_pSelection->HasSelection())
-	{
-		if (ullSelStart == 0)
-			return;
-
-		if (ullSelStart < m_ullLMouseClick)
-		{
-			ullClick = m_ullLMouseClick;
-			if (ullSelStart < m_dwCapacity)
-			{
-				ullSize = ullSelSize + ullSelStart;
-			}
-			else
-			{
-				ullStart = ullSelStart - m_dwCapacity;
-				ullSize = ullSelSize + m_dwCapacity;
-			}
-		}
-		else
-		{
-			ullClick = m_ullLMouseClick;
-			ullStart = (ullSelSize >= m_dwCapacity) ? m_ullLMouseClick : m_ullLMouseClick - m_dwCapacity;
-			ullSize = ullSelSize >= m_dwCapacity ? ullSelSize - m_dwCapacity : static_cast<ULONGLONG>(m_dwCapacity) + 1;
-			ullSize = ullSize ? ullSize : 1;
-		}
-	}
-
-	if (ullSize > 0)
-		MakeSelection(ullClick, ullStart, ullSize, 1);
-}
-
-void CHexCtrl::ParentNotify(const HEXNOTIFYSTRUCT & hns)const
+void CHexCtrl::ParentNotify(const HEXNOTIFYSTRUCT& hns)const
 {
 	::SendMessageW(GetParent()->GetSafeHwnd(), WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&hns));
 }
@@ -3528,7 +3348,7 @@ void CHexCtrl::RecalcOffsetDigits()
 	}
 }
 
-void CHexCtrl::RecalcPrint(CDC * pDC, CFont * pFontMain, CFont * pFontInfo, const CRect & rc)
+void CHexCtrl::RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc)
 {
 	pDC->SelectObject(pFontMain);
 	TEXTMETRICW tm;
@@ -3605,12 +3425,231 @@ void CHexCtrl::Redo()
 	RedrawWindow();
 }
 
-void CHexCtrl::SelectAll()
+void CHexCtrl::SelAll()
 {
 	if (!IsDataSet())
 		return;
 
 	MakeSelection(0, 0, m_ullDataSize, 1, false);
+}
+
+void CHexCtrl::SelAddDown()
+{
+	ULONGLONG ullClick { }, ullStart { }, ullSize = 0;
+	ULONGLONG ullSelStart = m_pSelection->GetSelectionStart();
+	ULONGLONG ullSelSize = m_pSelection->GetSelectionSize();
+	if (m_fMutable)
+	{
+		if (m_ullCaretPos == m_ullLMouseClick
+			|| m_ullCaretPos == ullSelStart
+			|| m_ullCaretPos == m_pSelection->GetSelectionEnd())
+		{
+			if (ullSelStart == m_ullLMouseClick)
+			{
+				ullClick = ullStart = m_ullLMouseClick;
+				ullSize = ullSelSize + m_dwCapacity;
+			}
+			else if (ullSelStart < m_ullLMouseClick)
+			{
+				ullClick = m_ullLMouseClick;
+				ullStart = ullSelSize > m_dwCapacity ? ullSelStart + m_dwCapacity : m_ullLMouseClick;
+				ullSize = ullSelSize >= m_dwCapacity ? ullSelSize - m_dwCapacity : m_dwCapacity;
+				ullSize = ullSize ? ullSize : 1;
+			}
+		}
+		else
+		{
+			ullClick = ullStart = m_ullCaretPos;
+			ullSize = 1;
+		}
+	}
+	else if (m_pSelection->HasSelection())
+	{
+		if (ullSelStart == m_ullLMouseClick)
+		{
+			ullClick = ullStart = m_ullLMouseClick;
+			ullSize = ullSelSize + m_dwCapacity;
+		}
+		else if (ullSelStart < m_ullLMouseClick)
+		{
+			ullClick = m_ullLMouseClick;
+			ullStart = ullSelSize > m_dwCapacity ? ullSelStart + m_dwCapacity : m_ullLMouseClick;
+			ullSize = ullSelSize >= m_dwCapacity ? ullSelSize - m_dwCapacity : m_dwCapacity;
+			ullSize = ullSize ? ullSize : 1;
+		}
+	}
+
+	if (ullSize > 0)
+		MakeSelection(ullClick, ullStart, ullSize, 1);
+}
+
+void CHexCtrl::SelAddLeft()
+{
+	ULONGLONG ullClick { }, ullStart { }, ullSize = 0;
+	ULONGLONG ullSelStart = m_pSelection->GetSelectionStart();
+	ULONGLONG ullSelSize = m_pSelection->GetSelectionSize();
+
+	if (m_fMutable)
+	{
+		if (m_ullCaretPos == m_ullLMouseClick
+			|| m_ullCaretPos == ullSelStart
+			|| m_ullCaretPos == m_pSelection->GetSelectionEnd())
+		{
+			if (ullSelStart == m_ullLMouseClick && ullSelSize > 1)
+			{
+				ullClick = ullStart = m_ullLMouseClick;
+				ullSize = ullSelSize - 1;
+			}
+			else
+			{
+				ullClick = m_ullLMouseClick;
+				ullStart = ullSelStart - 1;
+				ullSize = ullSelSize + 1;
+			}
+		}
+		else
+		{
+			ullClick = ullStart = m_ullCaretPos;
+			ullSize = 1;
+		}
+	}
+	else if (m_pSelection->HasSelection())
+	{
+		if (ullSelStart == m_ullLMouseClick && ullSelSize > 1)
+		{
+			ullClick = ullStart = m_ullLMouseClick;
+			ullSize = ullSelSize - 1;
+		}
+		else
+		{
+			ullClick = m_ullLMouseClick;
+			ullStart = ullSelStart - 1;
+			ullSize = ullSelSize + 1;
+		}
+	}
+
+	if (ullSize > 0)
+		MakeSelection(ullClick, ullStart, ullSize, 1);
+}
+
+void CHexCtrl::SelAddRight()
+{
+	ULONGLONG ullClick { }, ullStart { }, ullSize = 0;
+	ULONGLONG ullSelStart = m_pSelection->GetSelectionStart();
+	ULONGLONG ullSelSize = m_pSelection->GetSelectionSize();
+
+	if (m_fMutable)
+	{
+		if (m_ullCaretPos == m_ullLMouseClick || m_ullCaretPos == ullSelStart
+			|| m_ullCaretPos == m_pSelection->GetSelectionEnd())
+		{
+			if (ullSelStart == m_ullLMouseClick)
+			{
+				ullClick = ullStart = m_ullLMouseClick;
+				ullSize = ullSelSize + 1;
+			}
+			else
+			{
+				ullClick = m_ullLMouseClick;
+				ullStart = ullSelStart + 1;
+				ullSize = ullSelSize - 1;
+			}
+		}
+		else
+		{
+			ullClick = ullStart = m_ullCaretPos;
+			ullSize = 1;
+		}
+	}
+	else if (m_pSelection->HasSelection())
+	{
+		if (ullSelStart == m_ullLMouseClick)
+		{
+			ullClick = ullStart = m_ullLMouseClick;
+			ullSize = ullSelSize + 1;
+		}
+		else
+		{
+			ullClick = m_ullLMouseClick;
+			ullStart = ullSelStart + 1;
+			ullSize = ullSelSize - 1;
+		}
+	}
+
+	if (ullSize > 0)
+		MakeSelection(ullClick, ullStart, ullSize, 1);
+}
+
+void CHexCtrl::SelAddUp()
+{
+	ULONGLONG ullClick { }, ullStart { 0 }, ullSize { 0 };
+	ULONGLONG ullSelStart = m_pSelection->GetSelectionStart();
+	ULONGLONG ullSelSize = m_pSelection->GetSelectionSize();
+
+	if (m_fMutable)
+	{
+		if (m_ullCaretPos == m_ullLMouseClick || m_ullCaretPos == ullSelStart
+			|| m_ullCaretPos == m_pSelection->GetSelectionEnd())
+		{
+			if (ullSelStart == 0)
+				return;
+
+			if (ullSelStart < m_ullLMouseClick)
+			{
+				ullClick = m_ullLMouseClick;
+				if (ullSelStart < m_dwCapacity)
+				{
+					ullSize = ullSelSize + ullSelStart;
+				}
+				else
+				{
+					ullStart = ullSelStart - m_dwCapacity;
+					ullSize = ullSelSize + m_dwCapacity;
+				}
+			}
+			else
+			{
+				ullClick = m_ullLMouseClick;
+				ullStart = ullSelSize >= m_dwCapacity ? m_ullLMouseClick : m_ullLMouseClick - m_dwCapacity;
+				ullSize = ullSelSize >= m_dwCapacity ? ullSelSize - m_dwCapacity : m_dwCapacity + 1;
+				ullSize = ullSize ? ullSize : 1;
+			}
+		}
+		else
+		{
+			ullClick = ullStart = m_ullCaretPos;
+			ullSize = 1;
+		}
+	}
+	else if (m_pSelection->HasSelection())
+	{
+		if (ullSelStart == 0)
+			return;
+
+		if (ullSelStart < m_ullLMouseClick)
+		{
+			ullClick = m_ullLMouseClick;
+			if (ullSelStart < m_dwCapacity)
+			{
+				ullSize = ullSelSize + ullSelStart;
+			}
+			else
+			{
+				ullStart = ullSelStart - m_dwCapacity;
+				ullSize = ullSelSize + m_dwCapacity;
+			}
+		}
+		else
+		{
+			ullClick = m_ullLMouseClick;
+			ullStart = (ullSelSize >= m_dwCapacity) ? m_ullLMouseClick : m_ullLMouseClick - m_dwCapacity;
+			ullSize = ullSelSize >= m_dwCapacity ? ullSelSize - m_dwCapacity : static_cast<ULONGLONG>(m_dwCapacity) + 1;
+			ullSize = ullSize ? ullSize : 1;
+		}
+	}
+
+	if (ullSize > 0)
+		MakeSelection(ullClick, ullStart, ullSize, 1);
 }
 
 void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss)
@@ -3916,132 +3955,131 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-	const ULONGLONG ullID = LOWORD(wParam);
-	switch (ullID)
+	const auto wID = LOWORD(wParam);
+	EHexCmd eCmd { };
+	switch (wID)
 	{
 	case IDM_HEXCTRL_SEARCH:
-		if (IsCmdAvail(EHexCmd::CMD_SEARCH))
-			m_pDlgSearch->ShowWindow(SW_SHOW);
+		eCmd = EHexCmd::CMD_SEARCH;
 		break;
 	case IDM_HEXCTRL_SHOWAS_BYTE:
-		SetShowMode(EHexShowMode::ASBYTE);
+		eCmd = EHexCmd::CMD_SHOWDATA_BYTE;
 		break;
 	case IDM_HEXCTRL_SHOWAS_WORD:
-		SetShowMode(EHexShowMode::ASWORD);
+		eCmd = EHexCmd::CMD_SHOWDATA_WORD;
 		break;
 	case IDM_HEXCTRL_SHOWAS_DWORD:
-		SetShowMode(EHexShowMode::ASDWORD);
+		eCmd = EHexCmd::CMD_SHOWDATA_DWORD;
 		break;
 	case IDM_HEXCTRL_SHOWAS_QWORD:
-		SetShowMode(EHexShowMode::ASQWORD);
+		eCmd = EHexCmd::CMD_SHOWDATA_QWORD;
 		break;
 	case IDM_HEXCTRL_BOOKMARKS_ADD:
-		m_pBookmarks->Add(HEXBKMSTRUCT { m_pSelection->GetData() });
+		eCmd = EHexCmd::CMD_BKM_ADD;
 		break;
 	case IDM_HEXCTRL_BOOKMARKS_REMOVE:
-		m_pBookmarks->Remove(m_optRMouseClick.value_or(GetCaretPos()));
-		m_optRMouseClick.reset();
+		eCmd = EHexCmd::CMD_BKM_REMOVE;
 		break;
 	case IDM_HEXCTRL_BOOKMARKS_NEXT:
-		m_pBookmarks->GoNext();
+		eCmd = EHexCmd::CMD_BKM_NEXT;
 		break;
 	case IDM_HEXCTRL_BOOKMARKS_PREV:
-		m_pBookmarks->GoPrev();
+		eCmd = EHexCmd::CMD_BKM_PREV;
 		break;
 	case IDM_HEXCTRL_BOOKMARKS_CLEARALL:
-		m_pBookmarks->ClearAll();
+		eCmd = EHexCmd::CMD_BKM_CLEARALL;
 		break;
 	case IDM_HEXCTRL_BOOKMARKS_MANAGER:
-		m_pDlgBookmarkMgr->ShowWindow(SW_SHOW);
+		eCmd = EHexCmd::CMD_BKM_MANAGER;
 		break;
 	case IDM_HEXCTRL_CLIPBOARD_COPYHEX:
-		ClipboardCopy(EClipboard::COPY_HEX);
+		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_HEX;
 		break;
 	case IDM_HEXCTRL_CLIPBOARD_COPYHEXLE:
-		ClipboardCopy(EClipboard::COPY_HEX_LE);
+		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_HEXLE;
 		break;
-	case IDM_HEXCTRL_CLIPBOARD_COPYHEXFORMATTED:
-		ClipboardCopy(EClipboard::COPY_HEX_FORMATTED);
+	case IDM_HEXCTRL_CLIPBOARD_COPYHEXFMT:
+		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT;
 		break;
 	case IDM_HEXCTRL_CLIPBOARD_COPYTEXT:
-		ClipboardCopy(EClipboard::COPY_ASCII);
+		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_TEXT;
 		break;
 	case IDM_HEXCTRL_CLIPBOARD_COPYBASE64:
-		ClipboardCopy(EClipboard::COPY_BASE64);
+		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_BASE64;
 		break;
 	case IDM_HEXCTRL_CLIPBOARD_COPYCARRAY:
-		ClipboardCopy(EClipboard::COPY_CARRAY);
+		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_CARR;
 		break;
 	case IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX:
-		ClipboardCopy(EClipboard::COPY_GREPHEX);
+		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX;
 		break;
 	case IDM_HEXCTRL_CLIPBOARD_COPYPRINTSCREEN:
-		ClipboardCopy(EClipboard::COPY_PRINTSCREEN);
+		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN;
 		break;
 	case IDM_HEXCTRL_CLIPBOARD_PASTEHEX:
-		ClipboardPaste(EClipboard::PASTE_HEX);
+		eCmd = EHexCmd::CMD_CLIPBOARD_PASTE_HEX;
 		break;
 	case IDM_HEXCTRL_CLIPBOARD_PASTETEXT:
-		ClipboardPaste(EClipboard::PASTE_TEXT);
+		eCmd = EHexCmd::CMD_CLIPBOARD_PASTE_TEXT;
 		break;
-	case IDM_HEXCTRL_MODIFY_OPERATIONS:
-		m_pDlgOpers->ShowWindow(SW_SHOW);
+	case IDM_HEXCTRL_MODIFY_OPERS:
+		eCmd = EHexCmd::CMD_MODIFY_OPERS;
 		break;
 	case IDM_HEXCTRL_MODIFY_FILLZEROS:
-		FillWithZeros();
+		eCmd = EHexCmd::CMD_MODIFY_FILLZEROS;
 		break;
 	case IDM_HEXCTRL_MODIFY_FILLDATA:
-		m_pDlgFillData->ShowWindow(SW_SHOW);
+		eCmd = EHexCmd::CMD_MODIFY_FILLDATA;
 		break;
 	case IDM_HEXCTRL_MODIFY_UNDO:
-		Undo();
+		eCmd = EHexCmd::CMD_MODIFY_UNDO;
 		break;
 	case IDM_HEXCTRL_MODIFY_REDO:
-		Redo();
+		eCmd = EHexCmd::CMD_MODIFY_REDO;
 		break;
-	case IDM_HEXCTRL_SELECTION_MARKSTART:
-		m_pSelection->SetSelectionStart(GetCaretPos());
+	case IDM_HEXCTRL_SEL_MARKSTART:
+		eCmd = EHexCmd::CMD_SEL_MARKSTART;
 		break;
-	case IDM_HEXCTRL_SELECTION_MARKEND:
-		m_pSelection->SetSelectionEnd(GetCaretPos());
+	case IDM_HEXCTRL_SEL_MARKEND:
+		eCmd = EHexCmd::CMD_SEL_MARKEND;
 		break;
-	case IDM_HEXCTRL_SELECTION_SELECTALL:
-		SelectAll();
+	case IDM_HEXCTRL_SEL_ALL:
+		eCmd = EHexCmd::CMD_SEL_ALL;
 		break;
 	case IDM_HEXCTRL_DATAINTERPRET:
-		m_pDlgDataInterpret->ShowWindow(SW_SHOW);
+		eCmd = EHexCmd::CMD_DATAINTERPRET;
 		break;
 	case IDM_HEXCTRL_ENCODING:
-		m_pDlgEncoding->ShowWindow(SW_SHOW);
+		eCmd = EHexCmd::CMD_ENCODING;
 		break;
-	case IDM_HEXCTRL_APPEARANCE_FONTINCREASE:
-		SetFontSize(GetFontSize() + 2);
+	case IDM_HEXCTRL_APPEARANCE_FONTINC:
+		eCmd = EHexCmd::CMD_APPEARANCE_FONTINC;
 		break;
-	case IDM_HEXCTRL_APPEARANCE_FONTDECREASE:
-		SetFontSize(GetFontSize() - 2);
+	case IDM_HEXCTRL_APPEARANCE_FONTDEC:
+		eCmd = EHexCmd::CMD_APPEARANCE_FONTDEC;
 		break;
-	case IDM_HEXCTRL_APPEARANCE_CAPACITYINCREASE:
-		SetCapacity(m_dwCapacity + 1);
+	case IDM_HEXCTRL_APPEARANCE_CAPACINC:
+		eCmd = EHexCmd::CMD_APPEARANCE_CAPACINC;
 		break;
-	case IDM_HEXCTRL_APPEARANCE_CAPACITYDECREASE:
-		SetCapacity(m_dwCapacity - 1);
+	case IDM_HEXCTRL_APPEARANCE_CAPACDEC:
+		eCmd = EHexCmd::CMD_APPEARANCE_CAPACDEC;
 		break;
 	case IDM_HEXCTRL_PRINT:
-		Print();
+		eCmd = EHexCmd::CMD_PRINT;
 		break;
 	case IDM_HEXCTRL_ABOUT:
-	{
-		CHexDlgAbout dlgAbout(this);
-		dlgAbout.DoModal();
-	}
-	break;
+		eCmd = EHexCmd::CMD_ABOUT;
+		break;
 	default:
 		//For user defined custom menu we notifying parent window.
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK } };
-		hns.ullData = ullID;
+		hns.ullData = wID;
 		hns.point = m_stMenuClickedPt;
 		MsgWindowNotify(hns);
 	}
+
+	if (static_cast<WORD>(eCmd) > 0)
+		ExecuteCmd(eCmd);
 
 	return CWnd::OnCommand(wParam, lParam);
 }
@@ -4125,7 +4163,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 	//Clipboard
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEX) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEXLE, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEXLE) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEXFORMATTED, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEXFMT, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYTEXT, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_TEXT) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYBASE64, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_BASE64) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYCARRAY, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_CARR) ? MF_ENABLED : MF_GRAYED);
@@ -4137,14 +4175,14 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 	//Modify
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(EHexCmd::CMD_MODIFY_FILLZEROS) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLDATA, IsCmdAvail(EHexCmd::CMD_MODIFY_FILLDATA) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_OPERATIONS, IsCmdAvail(EHexCmd::CMD_MODIFY_OPERS) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_OPERS, IsCmdAvail(EHexCmd::CMD_MODIFY_OPERS) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(EHexCmd::CMD_MODIFY_UNDO) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(EHexCmd::CMD_MODIFY_REDO) ? MF_ENABLED : MF_GRAYED);
 
 	//Selection
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_MARKSTART, IsCmdAvail(EHexCmd::CMD_SEL_MARKSTART) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_MARKEND, IsCmdAvail(EHexCmd::CMD_SEL_MARKEND) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SELECTION_SELECTALL, IsCmdAvail(EHexCmd::CMD_SEL_SELECTALL) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKSTART, IsCmdAvail(EHexCmd::CMD_SEL_MARKSTART) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKEND, IsCmdAvail(EHexCmd::CMD_SEL_MARKEND) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(EHexCmd::CMD_SEL_ALL) ? MF_ENABLED : MF_GRAYED);
 
 	//Data interpreter
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_DATAINTERPRET, IsCmdAvail(EHexCmd::CMD_DATAINTERPRET) ? MF_ENABLED : MF_GRAYED);
@@ -4163,42 +4201,42 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 		OnKeyDownShift(nChar);
 	else
 	{
-		WPARAM wParam { };
+		EHexCmd eCmd { };
 		switch (nChar)
 		{
 		case VK_F2:
-			wParam = IDM_HEXCTRL_BOOKMARKS_NEXT;
+			eCmd = EHexCmd::CMD_BKM_NEXT;
 			break;
 		case VK_F3:
-			m_pDlgSearch->Search(true);
+			eCmd = EHexCmd::CMD_SEARCH_NEXT;
 			break;
 		case VK_RIGHT:
-			CaretMoveRight();
+			eCmd = EHexCmd::CMD_CARET_RIGHT;
 			break;
 		case VK_LEFT:
-			CaretMoveLeft();
+			eCmd = EHexCmd::CMD_CARET_LEFT;
 			break;
 		case VK_DOWN:
-			CaretMoveDown();
+			eCmd = EHexCmd::CMD_CARET_DOWN;
 			break;
 		case VK_UP:
-			CaretMoveUp();
+			eCmd = EHexCmd::CMD_CARET_UP;
 			break;
 		case VK_PRIOR: //Page-Up
-			m_pScrollV->ScrollPageUp();
+			eCmd = EHexCmd::CMD_SCROLL_PAGEUP;
 			break;
 		case VK_NEXT:  //Page-Down
-			m_pScrollV->ScrollPageDown();
+			eCmd = EHexCmd::CMD_SCROLL_PAGEDOWN;
 			break;
 		case VK_HOME:
-			m_pScrollV->ScrollHome();
+			eCmd = EHexCmd::CMD_SCROLL_TOP;
 			break;
 		case VK_END:
-			m_pScrollV->ScrollEnd();
+			eCmd = EHexCmd::CMD_SCROLL_BOTTOM;
 			break;
 		}
-		if (wParam)
-			SendMessageW(WM_COMMAND, wParam, 0);
+		if (static_cast<WORD>(eCmd) > 0)
+			ExecuteCmd(eCmd);
 	}
 	m_optRMouseClick.reset(); //Reset right mouse click.
 }
@@ -4531,10 +4569,10 @@ void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	switch (nChar)
 	{
 	case '1':
-		wParam = IDM_HEXCTRL_SELECTION_MARKSTART;
+		wParam = IDM_HEXCTRL_SEL_MARKSTART;
 		break;
 	case '2':
-		wParam = IDM_HEXCTRL_SELECTION_MARKEND;
+		wParam = IDM_HEXCTRL_SEL_MARKEND;
 		break;
 	}
 	if (wParam)

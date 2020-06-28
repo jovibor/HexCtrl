@@ -117,17 +117,17 @@ namespace HEXCTRL::INTERNAL
 		void ShowNAME_GUID(const UDQWORD& dqword);
 		void ShowNAME_GUIDTIME(const UDQWORD& dqword);
 		void ShowNAME_SYSTEMTIME(const UDQWORD& dqword);
-		bool SetDataNAME_BINARY(std::wstring_view wstr);
-		bool SetDataNAME_CHAR(std::wstring_view wstr);
-		bool SetDataNAME_UCHAR(std::wstring_view wstr);
-		bool SetDataNAME_SHORT(std::wstring_view wstr);
-		bool SetDataNAME_USHORT(std::wstring_view wstr);
-		bool SetDataNAME_LONG(std::wstring_view wstr);
-		bool SetDataNAME_ULONG(std::wstring_view wstr);
-		bool SetDataNAME_LONGLONG(std::wstring_view wstr);
-		bool SetDataNAME_ULONGLONG(std::wstring_view wstr);
-		bool SetDataNAME_FLOAT(std::wstring_view wstr);
-		bool SetDataNAME_DOUBLE(std::wstring_view wstr);
+		bool SetDataNAME_BINARY(const std::wstring& wstr);
+		bool SetDataNAME_CHAR(const std::wstring& wstr);
+		bool SetDataNAME_UCHAR(const std::wstring& wstr);
+		bool SetDataNAME_SHORT(const std::wstring& wstr);
+		bool SetDataNAME_USHORT(const std::wstring& wstr);
+		bool SetDataNAME_LONG(const std::wstring& wstr);
+		bool SetDataNAME_ULONG(const std::wstring& wstr);
+		bool SetDataNAME_LONGLONG(const std::wstring& wstr);
+		bool SetDataNAME_ULONGLONG(const std::wstring& wstr);
+		bool SetDataNAME_FLOAT(const std::wstring& wstr);
+		bool SetDataNAME_DOUBLE(const std::wstring& wstr);
 		bool SetDataNAME_TIME32T(std::wstring_view wstr);
 		bool SetDataNAME_TIME64T(std::wstring_view wstr);
 		bool SetDataNAME_FILETIME(std::wstring_view wstr);
@@ -137,7 +137,7 @@ namespace HEXCTRL::INTERNAL
 		bool SetDataNAME_MSDTTMTIME(std::wstring_view wstr);
 		bool SetDataNAME_SYSTEMTIME(std::wstring_view wstr);
 		bool SetDataNAME_GUIDTIME(std::wstring_view wstr);
-		bool SetDataNAME_GUID(std::wstring_view wstr);
+		bool SetDataNAME_GUID(const std::wstring& wstr);
 		DECLARE_MESSAGE_MAP()
 	private:
 		enum class EGroup : WORD { DIGITS, FLOAT, TIME, MISC };

@@ -51,10 +51,12 @@ namespace HEXCTRL
 		CMD_CLIPBOARD_COPY_BASE64, CMD_CLIPBOARD_COPY_CARR, CMD_CLIPBOARD_COPY_GREPHEX, CMD_CLIPBOARD_COPY_PRNTSCRN,
 		CMD_CLIPBOARD_PASTE_HEX, CMD_CLIPBOARD_PASTE_TEXT,
 		CMD_MODIFY_OPERS, CMD_MODIFY_FILLZEROS, CMD_MODIFY_FILLDATA, CMD_MODIFY_UNDO, CMD_MODIFY_REDO,
-		CMD_SEL_MARKSTART, CMD_SEL_MARKEND, CMD_SEL_SELECTALL,
+		CMD_SEL_MARKSTART, CMD_SEL_MARKEND, CMD_SEL_ALL, CMD_SEL_ADDLEFT, CMD_SEL_ADDRIGHT, CMD_SEL_ADDUP, CMD_SEL_ADDDOWN,
 		CMD_DATAINTERPRET, CMD_ENCODING,
-		CMD_APPEARANCE_FONTINC, CMD_APPEARANCE_FONTDEC, CMD_APPEARANCE_CAPACITYINC, CMD_APPEARANCE_CAPACITYDEC,
-		CMD_PRINT, CMD_ABOUT
+		CMD_APPEARANCE_FONTINC, CMD_APPEARANCE_FONTDEC, CMD_APPEARANCE_CAPACINC, CMD_APPEARANCE_CAPACDEC,
+		CMD_PRINT, CMD_ABOUT,
+		CMD_CARET_LEFT, CMD_CARET_RIGHT, CMD_CARET_UP, CMD_CARET_DOWN,
+		CMD_SCROLL_PAGEUP, CMD_SCROLL_PAGEDOWN, CMD_SCROLL_TOP, CMD_SCROLL_BOTTOM
 	};
 
 	/********************************************************************************************
@@ -262,7 +264,7 @@ namespace HEXCTRL
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;    //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hParent) = 0; //Сreates custom dialog control.
 		virtual void Destroy() = 0;                             //Deleter.
-		virtual void ExecuteCmd(EHexCmd enCmd)const = 0;        //Execute a command within the control.
+		virtual void ExecuteCmd(EHexCmd enCmd) = 0;              //Execute a command within the control.
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORSSTRUCT = 0;    //Current colors.

@@ -93,7 +93,7 @@ namespace HEXCTRL::INTERNAL
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hParent)override; //Сreates custom dialog control.
 		void Destroy()override;                             //Deleter.
-		void ExecuteCmd(EHexCmd enCmd)const override;       //Execute a command within the control.
+		void ExecuteCmd(EHexCmd enCmd)override;             //Execute a command within the control.
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
 		[[nodiscard]] auto GetColors()const->HEXCOLORSSTRUCT override;    //Current colors.
@@ -188,10 +188,6 @@ namespace HEXCTRL::INTERNAL
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		void OnKeyDownCtrl(UINT nChar);  //Key pressed with the Ctrl.
 		void OnKeyDownShift(UINT nChar); //Key pressed with the Shift.
-		void OnKeyDownShiftDown();       //Down Key pressed with the Shift.
-		void OnKeyDownShiftLeft();       //Left Key pressed with the Shift.
-		void OnKeyDownShiftRight();      //Right Key pressed with the Shift.
-		void OnKeyDownShiftUp();         //Up Key pressed with the Shift.
 		template <typename T>
 		void OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeData); //Immediate operations on pData.
 		void ParentNotify(const HEXNOTIFYSTRUCT& hns)const;    //Notify routine used to send messages to Parent window.
@@ -203,7 +199,11 @@ namespace HEXCTRL::INTERNAL
 		void RecalcTotalSectors();                             //Updates info about whether sector's lines printable atm or not.
 		void RecalcWorkArea(int iHeight, int iWidth);
 		void Redo();
-		void SelectAll(); //Select all current bytes.
+		void SelAll();           //Select all.
+		void SelAddDown();       //Down Key pressed with the Shift.
+		void SelAddLeft();       //Left Key pressed with the Shift.
+		void SelAddRight();      //Right Key pressed with the Shift.
+		void SelAddUp();         //Up Key pressed with the Shift.
 		template<typename T>
 		void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.

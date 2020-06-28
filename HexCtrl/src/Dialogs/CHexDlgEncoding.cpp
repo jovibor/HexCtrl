@@ -33,7 +33,7 @@ BOOL CHexDlgEncoding::EnumCodePagesProc(LPWSTR pwszCP)
 
 void CHexDlgEncoding::AddCP(std::wstring_view wstr)
 {
-	if (UINT uCPID { };	wstr2num(wstr, uCPID))
+	if (UINT uCPID { };	wstr2num(std::wstring { wstr }, uCPID))
 		if (CPINFOEXW stCP { }; GetCPInfoExW(uCPID, 0, &stCP) != 0)
 			m_vecCodePage.emplace_back(SCODEPAGE { static_cast<int>(uCPID), stCP.CodePageName, stCP.MaxCharSize });
 }
