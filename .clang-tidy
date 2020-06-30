@@ -20,4 +20,4 @@ Checks: '*,
 
 google-readability-casting'
 
-HeaderFilterRegex: '.*'
+HeaderFilterRegex: ''

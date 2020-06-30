@@ -20,8 +20,11 @@
 #include "Dialogs/CHexDlgOperations.h"
 #include "Dialogs/CHexDlgSearch.h"
 #include "Helper.h"
+#include "rapidjson/document.h"
+#include "rapidjson/istreamwrapper.h"
 #include "strsafe.h"
 #include <cassert>
+#include <fstream>
 #include <numeric>
 #include <thread>
 #pragma comment(lib, "Dwmapi.lib")
@@ -52,9 +55,8 @@ namespace HEXCTRL {
 	namespace INTERNAL {
 		enum class CHexCtrl::EClipboard : WORD
 		{
-			COPY_HEX, COPY_HEX_LE, COPY_HEX_FORMATTED, COPY_TEXT, COPY_BASE64,
-			COPY_CARRAY, COPY_GREPHEX, COPY_PRINTSCREEN,
-			PASTE_HEX, PASTE_TEXT
+			COPY_HEX, COPY_HEXLE, COPY_HEXFMT, COPY_TEXT, COPY_BASE64,
+			COPY_CARR, COPY_GREPHEX, COPY_PRNTSCRN, PASTE_HEX, PASTE_TEXT
 		};
 
 		//Struct for UNDO command routine.
@@ -72,6 +74,17 @@ namespace HEXCTRL {
 			SHBITMAP& operator=(HBITMAP hBmp) { m_hBmp = hBmp; return *this; }
 			operator HBITMAP()const { return m_hBmp; }
 			HBITMAP m_hBmp { };
+		};
+
+		//Key bindings.
+		struct CHexCtrl::SKEYBIND
+		{
+			EHexCmd       eCmd { };
+			WORD          wMenuID { };
+			unsigned char uKey { };
+			bool          fCtrl { };
+			bool          fShift { };
+			bool          fAlt { };
 		};
 
 		constexpr auto WSTR_HEXCTRL_CLASSNAME = L"HexCtrl";
@@ -128,7 +141,7 @@ CHexCtrl::CHexCtrl()
 		AfxWinInit(::GetModuleHandleW(NULL), NULL, ::GetCommandLineW(), 0);
 #endif
 
-	HINSTANCE hInst = AfxGetInstanceHandle();
+	auto hInst = AfxGetInstanceHandle();
 	WNDCLASSEXW wc { };
 	if (!(::GetClassInfoExW(hInst, WSTR_HEXCTRL_CLASSNAME, &wc)))
 	{
@@ -256,7 +269,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	if (IsCreated())
 		return false;
 
-	HINSTANCE hInst = AfxGetInstanceHandle();
+	auto hInst = AfxGetInstanceHandle();
 
 	//Menus
 	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCE(IDR_HEXCTRL_MENU)))
@@ -275,7 +288,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, &mii);
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_MODIFY_FILLZEROS] =
-		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILL_ZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
+		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILLZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
 
 	m_hwndMsg = hcs.hwndParent;
@@ -299,11 +312,9 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 		dwStyle |= WS_VISIBLE | WS_POPUP | WS_OVERLAPPEDWINDOW;
 		if (rc.IsRectNull())
 		{	//If initial rect is null, and it's a float window, then place it at screen center.
-			int iPosX = GetSystemMetrics(SM_CXSCREEN) / 4;
-			int iPosY = GetSystemMetrics(SM_CYSCREEN) / 4;
-			int iPosCX = iPosX * 3;
-			int iPosCY = iPosY * 3;
-			rc.SetRect(iPosX, iPosY, iPosCX, iPosCY);
+			const auto iPosX = GetSystemMetrics(SM_CXSCREEN) / 4;
+			const auto iPosY = GetSystemMetrics(SM_CYSCREEN) / 4;
+			rc.SetRect(iPosX, iPosY, iPosX * 3, iPosY * 3);
 		}
 	}
 	break;
@@ -337,8 +348,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 
 	m_wndTtBkm.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
 		/*TTS_BALLOON |*/ TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-		m_hWnd, nullptr);
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
 	SetWindowTheme(m_wndTtBkm.m_hWnd, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
 	m_stToolInfoBkm.cbSize = TTTOOLINFOW_V1_SIZE;
 	m_stToolInfoBkm.uFlags = TTF_TRACK;
@@ -403,6 +413,8 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_fCreated = true;
 	SetShowMode(m_enShowMode);
 	SetEncoding(-1);
+
+	SetConfig(L"");
 
 	return true;
 }
@@ -479,10 +491,10 @@ void CHexCtrl::ExecuteCmd(EHexCmd enCmd)
 		ClipboardCopy(EClipboard::COPY_HEX);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_HEXLE:
-		ClipboardCopy(EClipboard::COPY_HEX_LE);
+		ClipboardCopy(EClipboard::COPY_HEXLE);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT:
-		ClipboardCopy(EClipboard::COPY_HEX_FORMATTED);
+		ClipboardCopy(EClipboard::COPY_HEXFMT);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_TEXT:
 		ClipboardCopy(EClipboard::COPY_TEXT);
@@ -491,13 +503,13 @@ void CHexCtrl::ExecuteCmd(EHexCmd enCmd)
 		ClipboardCopy(EClipboard::COPY_BASE64);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_CARR:
-		ClipboardCopy(EClipboard::COPY_CARRAY);
+		ClipboardCopy(EClipboard::COPY_CARR);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX:
 		ClipboardCopy(EClipboard::COPY_GREPHEX);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN:
-		ClipboardCopy(EClipboard::COPY_PRINTSCREEN);
+		ClipboardCopy(EClipboard::COPY_PRNTSCRN);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_PASTE_HEX:
 		ClipboardPaste(EClipboard::PASTE_HEX);
@@ -890,6 +902,190 @@ void CHexCtrl::SetColors(const HEXCOLORSSTRUCT& clr)
 	RedrawWindow();
 }
 
+bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
+{
+	//Mapping between stringified EHexCmd::* and its value-menuID pairs.
+#define TO_STR_MAP(x, y) { #x, {EHexCmd::##x, static_cast<WORD>(y)} }
+	const std::unordered_map<std::string, std::pair<EHexCmd, WORD>> umapCmdMenu
+	{
+		TO_STR_MAP(CMD_SEARCH, IDM_HEXCTRL_SEARCH), TO_STR_MAP(CMD_SEARCH_NEXT, 0), TO_STR_MAP(CMD_SEARCH_PREV, 0),
+		TO_STR_MAP(CMD_SHOWDATA_BYTE, IDM_HEXCTRL_SHOWAS_BYTE), TO_STR_MAP(CMD_SHOWDATA_WORD, IDM_HEXCTRL_SHOWAS_WORD),
+		TO_STR_MAP(CMD_SHOWDATA_DWORD, IDM_HEXCTRL_SHOWAS_DWORD), TO_STR_MAP(CMD_SHOWDATA_QWORD, IDM_HEXCTRL_SHOWAS_QWORD),
+		TO_STR_MAP(CMD_BKM_ADD, IDM_HEXCTRL_BOOKMARKS_ADD), TO_STR_MAP(CMD_BKM_REMOVE, IDM_HEXCTRL_BOOKMARKS_REMOVE),
+		TO_STR_MAP(CMD_BKM_NEXT, IDM_HEXCTRL_BOOKMARKS_NEXT), TO_STR_MAP(CMD_BKM_PREV, IDM_HEXCTRL_BOOKMARKS_PREV),
+		TO_STR_MAP(CMD_BKM_CLEARALL, IDM_HEXCTRL_BOOKMARKS_CLEARALL), TO_STR_MAP(CMD_BKM_MANAGER, IDM_HEXCTRL_BOOKMARKS_MANAGER),
+		TO_STR_MAP(CMD_CLIPBOARD_COPY_HEX, IDM_HEXCTRL_CLIPBOARD_COPYHEX),
+		TO_STR_MAP(CMD_CLIPBOARD_COPY_HEXLE, IDM_HEXCTRL_CLIPBOARD_COPYHEXLE),
+		TO_STR_MAP(CMD_CLIPBOARD_COPY_HEXFMT, IDM_HEXCTRL_CLIPBOARD_COPYHEXFMT),
+		TO_STR_MAP(CMD_CLIPBOARD_COPY_TEXT, IDM_HEXCTRL_CLIPBOARD_COPYTEXT),
+		TO_STR_MAP(CMD_CLIPBOARD_COPY_BASE64, IDM_HEXCTRL_CLIPBOARD_COPYBASE64),
+		TO_STR_MAP(CMD_CLIPBOARD_COPY_CARR, IDM_HEXCTRL_CLIPBOARD_COPYCARRAY),
+		TO_STR_MAP(CMD_CLIPBOARD_COPY_GREPHEX, IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX),
+		TO_STR_MAP(CMD_CLIPBOARD_COPY_PRNTSCRN, IDM_HEXCTRL_CLIPBOARD_COPYPRNTSCRN),
+		TO_STR_MAP(CMD_CLIPBOARD_PASTE_HEX, IDM_HEXCTRL_CLIPBOARD_PASTEHEX),
+		TO_STR_MAP(CMD_CLIPBOARD_PASTE_TEXT, IDM_HEXCTRL_CLIPBOARD_PASTETEXT),
+		TO_STR_MAP(CMD_MODIFY_OPERS, IDM_HEXCTRL_MODIFY_OPERS), TO_STR_MAP(CMD_MODIFY_FILLZEROS, IDM_HEXCTRL_MODIFY_FILLZEROS),
+		TO_STR_MAP(CMD_MODIFY_FILLDATA, IDM_HEXCTRL_MODIFY_FILLDATA), TO_STR_MAP(CMD_MODIFY_UNDO, IDM_HEXCTRL_MODIFY_UNDO),
+		TO_STR_MAP(CMD_MODIFY_REDO, IDM_HEXCTRL_MODIFY_REDO), TO_STR_MAP(CMD_SEL_MARKSTART, IDM_HEXCTRL_SEL_MARKSTART),
+		TO_STR_MAP(CMD_SEL_MARKEND, IDM_HEXCTRL_SEL_MARKEND),
+		TO_STR_MAP(CMD_SEL_ALL, IDM_HEXCTRL_SEL_ALL), TO_STR_MAP(CMD_SEL_ADDLEFT, 0), TO_STR_MAP(CMD_SEL_ADDRIGHT, 0),
+		TO_STR_MAP(CMD_SEL_ADDUP, 0), TO_STR_MAP(CMD_SEL_ADDDOWN, 0),
+		TO_STR_MAP(CMD_DATAINTERPRET, IDM_HEXCTRL_DATAINTERPRET), TO_STR_MAP(CMD_ENCODING, IDM_HEXCTRL_ENCODING),
+		TO_STR_MAP(CMD_APPEARANCE_FONTINC, IDM_HEXCTRL_APPEARANCE_FONTINC),
+		TO_STR_MAP(CMD_APPEARANCE_FONTDEC, IDM_HEXCTRL_APPEARANCE_FONTDEC),
+		TO_STR_MAP(CMD_APPEARANCE_CAPACINC, IDM_HEXCTRL_APPEARANCE_CAPACINC),
+		TO_STR_MAP(CMD_APPEARANCE_CAPACDEC, IDM_HEXCTRL_APPEARANCE_CAPACDEC), TO_STR_MAP(CMD_PRINT, IDM_HEXCTRL_PRINT),
+		TO_STR_MAP(CMD_ABOUT, IDM_HEXCTRL_ABOUT), TO_STR_MAP(CMD_CARET_LEFT, 0), TO_STR_MAP(CMD_CARET_RIGHT, 0),
+		TO_STR_MAP(CMD_CARET_UP, 0), TO_STR_MAP(CMD_CARET_DOWN, 0), TO_STR_MAP(CMD_SCROLL_PAGEUP, 0),
+		TO_STR_MAP(CMD_SCROLL_PAGEDOWN, 0), TO_STR_MAP(CMD_SCROLL_TOP, 0), TO_STR_MAP(CMD_SCROLL_BOTTOM, 0)
+	};
+
+	const std::unordered_map<std::string_view, unsigned char> umapKeys {
+		{ { "ctrl" }, VK_CONTROL },
+		{ { "shift" }, VK_SHIFT },
+		{ { "alt" }, VK_MENU },
+		{ { "tab" }, VK_TAB },
+		{ { "enter" }, VK_RETURN },
+		{ { "esc" }, VK_ESCAPE },
+		{ { "space" }, VK_SPACE },
+		{ { "backspace" }, VK_BACK },
+		{ { "delete" }, VK_DELETE },
+		{ { "insert" }, VK_INSERT },
+		{ { "f1" }, VK_F1 },
+		{ { "f2" }, VK_F2 },
+		{ { "f3" }, VK_F3 },
+		{ { "f4" }, VK_F4 },
+		{ { "f5" }, VK_F5 },
+		{ { "f6" }, VK_F6 },
+		{ { "f7" }, VK_F7 },
+		{ { "f8" }, VK_F8 },
+		{ { "f9" }, VK_F9 },
+		{ { "f10" }, VK_F10 },
+		{ { "right" }, VK_RIGHT },
+		{ { "left" }, VK_LEFT },
+		{ { "up" }, VK_UP },
+		{ { "down" }, VK_DOWN },
+		{ { "pageup" }, VK_PRIOR },
+		{ { "pagedown" }, VK_NEXT },
+		{ { "home" }, VK_HOME },
+		{ { "end" }, VK_END },
+		{ { "plus" }, VK_OEM_PLUS },
+		{ { "minus" }, VK_OEM_MINUS },
+		{ { "num_plus" }, VK_ADD },
+		{ { "num_minus" }, VK_SUBTRACT }
+	};
+
+	auto lmbJson = [&](auto&& refJson, auto&& lmbParse)
+	{
+		std::vector<SKEYBIND> vecRet { };
+		for (auto iterJ = refJson.MemberBegin(); iterJ != refJson.MemberEnd(); ++iterJ) //JSON data iterating.
+		{
+			if (auto iterCmd = umapCmdMenu.find(iterJ->name.GetString()); iterCmd != umapCmdMenu.end())
+				for (auto iterValue = iterJ->value.Begin(); iterValue != iterJ->value.End(); ++iterValue) //Array iterating.
+					if (auto opt = lmbParse(iterValue->GetString()); opt)
+					{
+						auto stKeyBind = opt.value();
+						stKeyBind.eCmd = iterCmd->second.first;
+						stKeyBind.wMenuID = iterCmd->second.second;
+						vecRet.emplace_back(stKeyBind);
+					}
+		}
+
+		return vecRet;
+	};
+
+	auto lmbParse = [&](std::string_view str)->std::optional<SKEYBIND>
+	{
+		if (str.empty())
+			return { };
+
+		SKEYBIND stRet { };
+		auto iSize = str.size();
+		size_t nPosStart { }; //Next position to start search for '+' sign.
+		auto nSubWords = std::count(str.begin(), str.end(), '+') + 1; //How many sub-words (divided by '+')?
+		for (auto i = 0; i < nSubWords; ++i)
+		{
+			size_t nSizeSubWord;
+			auto nPosNext = str.find('+', nPosStart);
+			if (nPosNext == std::string_view::npos)
+				nSizeSubWord = iSize - nPosStart;
+			else
+				nSizeSubWord = nPosNext - nPosStart;
+
+			auto strSubWord = str.substr(nPosStart, nSizeSubWord);
+			nPosStart = nPosNext + 1;
+
+			if (strSubWord.size() == 1)
+				stRet.uKey = static_cast<UCHAR>(std::toupper(strSubWord[0])); //Binding keys in uppercase.
+			else if (auto iter = umapKeys.find(strSubWord); iter != umapKeys.end())
+			{
+				if (iter->second == VK_CONTROL)
+					stRet.fCtrl = true;
+				else if (iter->second == VK_SHIFT)
+					stRet.fShift = true;
+				else if (iter->second == VK_MENU)
+					stRet.fAlt = true;
+				else
+					stRet.uKey = iter->second;
+			}
+		}
+
+		return stRet;
+	};
+
+	auto lmbVecEqualize = [](std::vector<SKEYBIND>& vecMain, const std::vector<SKEYBIND>& vecFrom)
+	{
+		//Remove everything from vecMain that exists in vecFrom.
+		for (const auto& iterFrom : vecFrom)
+			vecMain.erase(std::remove_if(vecMain.begin(), vecMain.end(), [&](const SKEYBIND& ref)
+				{return ref.eCmd == iterFrom.eCmd; }), vecMain.end());
+
+		//Add everything from vecFrom to vecMain.
+		for (const auto& iterFrom : vecFrom)
+			vecMain.emplace_back(iterFrom);
+	};
+
+	rapidjson::Document doc;
+	bool fRet { false };
+	if (wstrPath.empty()) //Default keybind.json from resources.
+	{
+		auto hInst = AfxGetInstanceHandle();
+		if (auto hRes = FindResourceW(hInst, MAKEINTRESOURCEW(IDR_JSON_KEYBIND), L"JSON"); hRes != nullptr)
+		{
+			if (auto hData = LoadResource(hInst, hRes); hData != nullptr)
+			{
+				auto nSize = static_cast<std::size_t>(SizeofResource(hInst, hRes));
+				auto pData = static_cast<char*>(LockResource(hData));
+
+				if (doc.Parse(pData, nSize); !doc.IsNull())
+				{
+					m_vecKeyBind.clear();
+					for (const auto& iter : umapCmdMenu) //Fill m_vecKeyBind with all possible commands from umapCmdMenu.
+					{
+						SKEYBIND st;
+						st.eCmd = iter.second.first;
+						st.wMenuID = iter.second.second;
+						m_vecKeyBind.emplace_back(st);
+					}
+					lmbVecEqualize(m_vecKeyBind, lmbJson(doc, lmbParse)); //Add all default keybindings.
+					fRet = true;
+				}
+			}
+		}
+	}
+	else if (std::ifstream ifs(std::wstring { wstrPath }); ifs.is_open())
+	{
+		rapidjson::IStreamWrapper isw { ifs };
+		if (doc.ParseStream(isw); !doc.IsNull())
+		{
+			lmbVecEqualize(m_vecKeyBind, lmbJson(doc, lmbParse));
+			fRet = true;
+		}
+	}
+
+	return fRet;
+}
+
 void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 {
 	assert(IsCreated());
@@ -1248,10 +1444,10 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)const
 	case EClipboard::COPY_HEX:
 		wstrData = CopyHex();
 		break;
-	case EClipboard::COPY_HEX_LE:
+	case EClipboard::COPY_HEXLE:
 		wstrData = CopyHexLE();
 		break;
-	case EClipboard::COPY_HEX_FORMATTED:
+	case EClipboard::COPY_HEXFMT:
 		wstrData = CopyHexFormatted();
 		break;
 	case EClipboard::COPY_TEXT:
@@ -1260,13 +1456,13 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)const
 	case EClipboard::COPY_BASE64:
 		wstrData = CopyBase64();
 		break;
-	case EClipboard::COPY_CARRAY:
+	case EClipboard::COPY_CARR:
 		wstrData = CopyCArr();
 		break;
 	case EClipboard::COPY_GREPHEX:
 		wstrData = CopyGrepHex();
 		break;
-	case EClipboard::COPY_PRINTSCREEN:
+	case EClipboard::COPY_PRNTSCRN:
 		wstrData = CopyPrintScreen();
 		break;
 	default:
@@ -2478,6 +2674,17 @@ auto CHexCtrl::GetCacheSize()const->DWORD
 	return m_dwCacheSize;
 }
 
+auto CHexCtrl::GetCommand(UCHAR uChar, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>
+{
+	std::optional<EHexCmd> optRet { };
+	if (auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref)
+		{return ref.fCtrl == fCtrl && ref.fShift == fShift && ref.fAlt == fAlt && ref.uKey == uChar; });
+		iter != m_vecKeyBind.end())
+		optRet = iter->eCmd;
+
+	return optRet;
+}
+
 auto CHexCtrl::GetData(HEXSPANSTRUCT hss)const->std::byte*
 {
 	if (hss.ullOffset >= m_ullDataSize || hss.ullSize > m_ullDataSize)
@@ -3007,75 +3214,6 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 	}
 
 	MsgWindowNotify(HEXCTRL_MSG_CARETCHANGE);
-}
-
-void CHexCtrl::OnKeyDownCtrl(UINT nChar)
-{
-	//TranslateAccelerator doesn't work within .dll without client's code modification.
-	//So, this is the manual, kind of, implementation (translation).
-
-	EHexCmd eCmd { };
-	switch (nChar)
-	{
-	case 'F':
-	case 'H':
-		eCmd = EHexCmd::CMD_SEARCH;
-		break;
-	case 'B':
-		eCmd = EHexCmd::CMD_BKM_ADD;
-		break;
-	case 'N':
-		eCmd = EHexCmd::CMD_BKM_REMOVE;
-		break;
-	case 'C':
-		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_HEX;
-		break;
-	case 'V':
-		eCmd = EHexCmd::CMD_CLIPBOARD_PASTE_HEX;
-		break;
-	case 'O':
-		eCmd = EHexCmd::CMD_MODIFY_OPERS;
-		break;
-	case 'A':
-		eCmd = EHexCmd::CMD_SEL_ALL;
-		break;
-	case 'Z':
-		eCmd = EHexCmd::CMD_MODIFY_UNDO;
-		break;
-	case 'Y':
-		eCmd = EHexCmd::CMD_MODIFY_REDO;
-		break;
-	}
-	if (static_cast<WORD>(eCmd) > 0)
-		ExecuteCmd(eCmd);
-}
-
-void CHexCtrl::OnKeyDownShift(UINT nChar)
-{
-	EHexCmd eCmd { };
-	switch (nChar)
-	{
-	case VK_LEFT:
-		eCmd = EHexCmd::CMD_SEL_ADDLEFT;
-		break;
-	case VK_RIGHT:
-		eCmd = EHexCmd::CMD_SEL_ADDRIGHT;
-		break;
-	case VK_UP:
-		eCmd = EHexCmd::CMD_SEL_ADDUP;
-		break;
-	case VK_DOWN:
-		eCmd = EHexCmd::CMD_SEL_ADDDOWN;
-		break;
-	case VK_F2:
-		eCmd = EHexCmd::CMD_BKM_PREV;
-		break;
-	case VK_F3:
-		eCmd = EHexCmd::CMD_SEARCH_PREV;
-		break;
-	}
-	if (static_cast<WORD>(eCmd) > 0)
-		ExecuteCmd(eCmd);
 }
 
 void CHexCtrl::ParentNotify(const HEXNOTIFYSTRUCT& hns)const
@@ -3903,7 +4041,7 @@ void CHexCtrl::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 
 void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {
-	if (!m_fMutable || (GetKeyState(VK_CONTROL) < 0))
+	if (!m_fMutable || !IsCurTextArea() || (GetKeyState(VK_CONTROL) < 0))
 		return;
 
 	SMODIFY hms;
@@ -3911,40 +4049,20 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	hms.ullDataSize = 1;
 
 	BYTE chByte = nChar & 0xFF;
-	if (!IsCurTextArea()) //If cursor is not in Ascii area then just one part (High/Low) of byte must be changed.
+	WCHAR warrCurrLocaleID[KL_NAMELENGTH];
+	GetKeyboardLayoutNameW(warrCurrLocaleID); //Current langID as wstring.
+	LCID dwCurrLocaleID { };
+	if (wstr2num(warrCurrLocaleID, dwCurrLocaleID, 16)) //Convert langID from wstr to number.
 	{
-		if (chByte >= 0x30 && chByte <= 0x39)      //Digits.
-			chByte -= 0x30;
-		else if (chByte >= 0x41 && chByte <= 0x46) //Hex letters uppercase.
-			chByte -= 0x37;
-		else if (chByte >= 0x61 && chByte <= 0x66) //Hex letters lowercase.
-			chByte -= 0x57;
-		else
-			return;
-
-		auto chByteCurr = GetData<BYTE>(m_ullCaretPos);
-		if (m_fCursorHigh)
-			chByte = (chByte << 4) | (chByteCurr & 0x0F);
-		else
-			chByte = (chByte & 0x0F) | (chByteCurr & 0xF0);
-	}
-	else
-	{
-		WCHAR warrCurrLocaleID[KL_NAMELENGTH];
-		GetKeyboardLayoutNameW(warrCurrLocaleID); //Current langID as wstring.
-		LCID dwCurrLocaleID { };
-		if (wstr2num(warrCurrLocaleID, dwCurrLocaleID, 16)) //Convert langID from wstr to number.
+		UINT uCurrCodePage { };
+		int iSize = sizeof(uCurrCodePage) / sizeof(WCHAR);
+		if (GetLocaleInfoW(dwCurrLocaleID, LOCALE_IDEFAULTANSICODEPAGE | LOCALE_RETURN_NUMBER,
+			reinterpret_cast<LPWSTR>(&uCurrCodePage), iSize) == iSize) //ANSI code page for the current langID (if any).
 		{
-			UINT uCurrCodePage { };
-			int iSize = sizeof(uCurrCodePage) / sizeof(WCHAR);
-			if (GetLocaleInfoW(dwCurrLocaleID, LOCALE_IDEFAULTANSICODEPAGE | LOCALE_RETURN_NUMBER,
-				reinterpret_cast<LPWSTR>(&uCurrCodePage), iSize) == iSize) //ANSI code page for the current langID (if any).
-			{
-				wchar_t wch { static_cast<wchar_t>(nChar) };
-				//Convert input symbol (wchar) to char according to current Windows' code page.
-				if (auto str = wstr2str(&wch, uCurrCodePage); !str.empty())
-					chByte = str[0];
-			}
+			wchar_t wch { static_cast<wchar_t>(nChar) };
+			//Convert input symbol (wchar) to char according to current Windows' code page.
+			if (auto str = wstr2str(&wch, uCurrCodePage); !str.empty())
+				chByte = str[0];
 		}
 	}
 
@@ -3955,131 +4073,18 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-	const auto wID = LOWORD(wParam);
-	EHexCmd eCmd { };
-	switch (wID)
-	{
-	case IDM_HEXCTRL_SEARCH:
-		eCmd = EHexCmd::CMD_SEARCH;
-		break;
-	case IDM_HEXCTRL_SHOWAS_BYTE:
-		eCmd = EHexCmd::CMD_SHOWDATA_BYTE;
-		break;
-	case IDM_HEXCTRL_SHOWAS_WORD:
-		eCmd = EHexCmd::CMD_SHOWDATA_WORD;
-		break;
-	case IDM_HEXCTRL_SHOWAS_DWORD:
-		eCmd = EHexCmd::CMD_SHOWDATA_DWORD;
-		break;
-	case IDM_HEXCTRL_SHOWAS_QWORD:
-		eCmd = EHexCmd::CMD_SHOWDATA_QWORD;
-		break;
-	case IDM_HEXCTRL_BOOKMARKS_ADD:
-		eCmd = EHexCmd::CMD_BKM_ADD;
-		break;
-	case IDM_HEXCTRL_BOOKMARKS_REMOVE:
-		eCmd = EHexCmd::CMD_BKM_REMOVE;
-		break;
-	case IDM_HEXCTRL_BOOKMARKS_NEXT:
-		eCmd = EHexCmd::CMD_BKM_NEXT;
-		break;
-	case IDM_HEXCTRL_BOOKMARKS_PREV:
-		eCmd = EHexCmd::CMD_BKM_PREV;
-		break;
-	case IDM_HEXCTRL_BOOKMARKS_CLEARALL:
-		eCmd = EHexCmd::CMD_BKM_CLEARALL;
-		break;
-	case IDM_HEXCTRL_BOOKMARKS_MANAGER:
-		eCmd = EHexCmd::CMD_BKM_MANAGER;
-		break;
-	case IDM_HEXCTRL_CLIPBOARD_COPYHEX:
-		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_HEX;
-		break;
-	case IDM_HEXCTRL_CLIPBOARD_COPYHEXLE:
-		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_HEXLE;
-		break;
-	case IDM_HEXCTRL_CLIPBOARD_COPYHEXFMT:
-		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT;
-		break;
-	case IDM_HEXCTRL_CLIPBOARD_COPYTEXT:
-		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_TEXT;
-		break;
-	case IDM_HEXCTRL_CLIPBOARD_COPYBASE64:
-		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_BASE64;
-		break;
-	case IDM_HEXCTRL_CLIPBOARD_COPYCARRAY:
-		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_CARR;
-		break;
-	case IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX:
-		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX;
-		break;
-	case IDM_HEXCTRL_CLIPBOARD_COPYPRINTSCREEN:
-		eCmd = EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN;
-		break;
-	case IDM_HEXCTRL_CLIPBOARD_PASTEHEX:
-		eCmd = EHexCmd::CMD_CLIPBOARD_PASTE_HEX;
-		break;
-	case IDM_HEXCTRL_CLIPBOARD_PASTETEXT:
-		eCmd = EHexCmd::CMD_CLIPBOARD_PASTE_TEXT;
-		break;
-	case IDM_HEXCTRL_MODIFY_OPERS:
-		eCmd = EHexCmd::CMD_MODIFY_OPERS;
-		break;
-	case IDM_HEXCTRL_MODIFY_FILLZEROS:
-		eCmd = EHexCmd::CMD_MODIFY_FILLZEROS;
-		break;
-	case IDM_HEXCTRL_MODIFY_FILLDATA:
-		eCmd = EHexCmd::CMD_MODIFY_FILLDATA;
-		break;
-	case IDM_HEXCTRL_MODIFY_UNDO:
-		eCmd = EHexCmd::CMD_MODIFY_UNDO;
-		break;
-	case IDM_HEXCTRL_MODIFY_REDO:
-		eCmd = EHexCmd::CMD_MODIFY_REDO;
-		break;
-	case IDM_HEXCTRL_SEL_MARKSTART:
-		eCmd = EHexCmd::CMD_SEL_MARKSTART;
-		break;
-	case IDM_HEXCTRL_SEL_MARKEND:
-		eCmd = EHexCmd::CMD_SEL_MARKEND;
-		break;
-	case IDM_HEXCTRL_SEL_ALL:
-		eCmd = EHexCmd::CMD_SEL_ALL;
-		break;
-	case IDM_HEXCTRL_DATAINTERPRET:
-		eCmd = EHexCmd::CMD_DATAINTERPRET;
-		break;
-	case IDM_HEXCTRL_ENCODING:
-		eCmd = EHexCmd::CMD_ENCODING;
-		break;
-	case IDM_HEXCTRL_APPEARANCE_FONTINC:
-		eCmd = EHexCmd::CMD_APPEARANCE_FONTINC;
-		break;
-	case IDM_HEXCTRL_APPEARANCE_FONTDEC:
-		eCmd = EHexCmd::CMD_APPEARANCE_FONTDEC;
-		break;
-	case IDM_HEXCTRL_APPEARANCE_CAPACINC:
-		eCmd = EHexCmd::CMD_APPEARANCE_CAPACINC;
-		break;
-	case IDM_HEXCTRL_APPEARANCE_CAPACDEC:
-		eCmd = EHexCmd::CMD_APPEARANCE_CAPACDEC;
-		break;
-	case IDM_HEXCTRL_PRINT:
-		eCmd = EHexCmd::CMD_PRINT;
-		break;
-	case IDM_HEXCTRL_ABOUT:
-		eCmd = EHexCmd::CMD_ABOUT;
-		break;
-	default:
-		//For user defined custom menu we notifying parent window.
+	const auto wMenuID = LOWORD(wParam);
+
+	if (auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref)
+		{return ref.wMenuID == wMenuID;	}); iter != m_vecKeyBind.end())
+		ExecuteCmd(iter->eCmd);
+	else
+	{	//For user defined custom menu we notifying parent window.
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK } };
-		hns.ullData = wID;
+		hns.ullData = wMenuID;
 		hns.point = m_stMenuClickedPt;
 		MsgWindowNotify(hns);
 	}
-
-	if (static_cast<WORD>(eCmd) > 0)
-		ExecuteCmd(eCmd);
 
 	return CWnd::OnCommand(wParam, lParam);
 }
@@ -4106,6 +4111,7 @@ void CHexCtrl::OnDestroy()
 	m_fontInfo.DeleteObject();
 	m_penLines.DeleteObject();
 	m_umapHBITMAP.clear();
+	m_vecKeyBind.clear();
 	m_pDlgBookmarkMgr->DestroyWindow();
 	m_pDlgDataInterpret->DestroyWindow();
 	m_pDlgFillData->DestroyWindow();
@@ -4168,7 +4174,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYBASE64, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_BASE64) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYCARRAY, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_CARR) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYPRINTSCREEN, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYPRNTSCRN, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_PASTE_HEX) ? MF_ENABLED : MF_GRAYED);
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTETEXT, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_PASTE_TEXT) ? MF_ENABLED : MF_GRAYED);
 
@@ -4195,49 +4201,39 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 	if (nFlags & 0x4000)
 		m_fKeyDownAtm = true;
 
-	if (GetAsyncKeyState(VK_CONTROL) < 0)    //With Ctrl pressed.
-		OnKeyDownCtrl(nChar);
-	else if (GetAsyncKeyState(VK_SHIFT) < 0) //With Shift pressed.
-		OnKeyDownShift(nChar);
-	else
+	if (auto opt = GetCommand(static_cast<BYTE>(nChar),
+		GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, false); opt)
+		ExecuteCmd(opt.value());
+	else if (m_fMutable)
 	{
-		EHexCmd eCmd { };
-		switch (nChar)
+		SMODIFY hms;
+		hms.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, 1 });
+		hms.ullDataSize = 1;
+
+		BYTE chByte = nChar & 0xFF;
+		if (!IsCurTextArea()) //If cursor is not in Ascii area then just one part (High/Low) of byte must be changed.
 		{
-		case VK_F2:
-			eCmd = EHexCmd::CMD_BKM_NEXT;
-			break;
-		case VK_F3:
-			eCmd = EHexCmd::CMD_SEARCH_NEXT;
-			break;
-		case VK_RIGHT:
-			eCmd = EHexCmd::CMD_CARET_RIGHT;
-			break;
-		case VK_LEFT:
-			eCmd = EHexCmd::CMD_CARET_LEFT;
-			break;
-		case VK_DOWN:
-			eCmd = EHexCmd::CMD_CARET_DOWN;
-			break;
-		case VK_UP:
-			eCmd = EHexCmd::CMD_CARET_UP;
-			break;
-		case VK_PRIOR: //Page-Up
-			eCmd = EHexCmd::CMD_SCROLL_PAGEUP;
-			break;
-		case VK_NEXT:  //Page-Down
-			eCmd = EHexCmd::CMD_SCROLL_PAGEDOWN;
-			break;
-		case VK_HOME:
-			eCmd = EHexCmd::CMD_SCROLL_TOP;
-			break;
-		case VK_END:
-			eCmd = EHexCmd::CMD_SCROLL_BOTTOM;
-			break;
+			if (chByte >= 0x30 && chByte <= 0x39)      //Digits.
+				chByte -= 0x30;
+			else if (chByte >= 0x41 && chByte <= 0x46) //Hex letters uppercase.
+				chByte -= 0x37;
+			else if (chByte >= 0x61 && chByte <= 0x66) //Hex letters lowercase.
+				chByte -= 0x57;
+			else
+				return;
+
+			auto chByteCurr = GetData<BYTE>(m_ullCaretPos);
+			if (m_fCursorHigh)
+				chByte = (chByte << 4) | (chByteCurr & 0x0F);
+			else
+				chByte = (chByte & 0x0F) | (chByteCurr & 0xF0);
+
+			hms.pData = reinterpret_cast<std::byte*>(&chByte);
+			Modify(hms);
+			CaretMoveRight();
 		}
-		if (static_cast<WORD>(eCmd) > 0)
-			ExecuteCmd(eCmd);
 	}
+
 	m_optRMouseClick.reset(); //Reset right mouse click.
 }
 
@@ -4565,18 +4561,9 @@ void CHexCtrl::OnSize(UINT /*nType*/, int cx, int cy)
 
 void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {
-	WPARAM wParam { };
-	switch (nChar)
-	{
-	case '1':
-		wParam = IDM_HEXCTRL_SEL_MARKSTART;
-		break;
-	case '2':
-		wParam = IDM_HEXCTRL_SEL_MARKEND;
-		break;
-	}
-	if (wParam)
-		SendMessageW(WM_COMMAND, wParam, 0);
+	if (auto opt = GetCommand(static_cast<BYTE>(nChar),
+		GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, true); opt)
+		ExecuteCmd(opt.value());
 }
 
 void CHexCtrl::OnTimer(UINT_PTR nIDEvent)

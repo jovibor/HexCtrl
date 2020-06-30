@@ -286,6 +286,7 @@ namespace HEXCTRL
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
 		virtual void SetColors(const HEXCOLORSSTRUCT& clr) = 0;//Sets all the control's colors.
+		virtual bool SetConfig(std::wstring_view wstrPath) = 0;//Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
 		virtual void SetEncoding(int iCodePage) = 0;           //Code page for text area.
 		virtual void SetFont(const LOGFONTW* pLogFont) = 0;    //Sets the control's new font. This font has to be monospaced.

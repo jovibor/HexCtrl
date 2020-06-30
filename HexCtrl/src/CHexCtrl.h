@@ -115,6 +115,7 @@ namespace HEXCTRL::INTERNAL
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
 		void SetColors(const HEXCOLORSSTRUCT& clr)override; //Sets all the control's colors.
+		bool SetConfig(std::wstring_view wstrPath)override; //Set configuration file, or "" for defaults.
 		void SetData(const HEXDATASTRUCT& hds)override;     //Main method for setting data to display (and edit).	
 		void SetEncoding(int iCodePage)override;            //Code-page for text area.
 		void SetFont(const LOGFONTW* pLogFont)override;     //Sets the control's new font. This font has to be monospaced.
@@ -132,6 +133,7 @@ namespace HEXCTRL::INTERNAL
 		friend class CHexSelection;
 		struct SHBITMAP;
 		struct SUNDO;
+		struct SKEYBIND;
 		enum class EClipboard : WORD;
 		void AsciiChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Ascii chunk.
 		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tuple<std::wstring, std::wstring>;
@@ -164,6 +166,7 @@ namespace HEXCTRL::INTERNAL
 		void FillWithZeros(); //Fill selection with zeros.
 		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;      //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCacheSize()const->DWORD;           //Returns Virtual/Message mode cache size.
+		[[nodiscard]] auto GetCommand(UCHAR uChar, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
 		template<typename T>
 		[[nodiscard]] auto GetData(ULONGLONG ullOffset)const->T; //Get T sized data from ullOffset.
 		[[nodiscard]] auto GetData(HEXSPANSTRUCT hss)const->std::byte*; //Gets pointer to exact data offset, no matter what mode the control works in.
@@ -186,8 +189,6 @@ namespace HEXCTRL::INTERNAL
 		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
-		void OnKeyDownCtrl(UINT nChar);  //Key pressed with the Ctrl.
-		void OnKeyDownShift(UINT nChar); //Key pressed with the Shift.
 		template <typename T>
 		void OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeData); //Immediate operations on pData.
 		void ParentNotify(const HEXNOTIFYSTRUCT& hns)const;    //Notify routine used to send messages to Parent window.
@@ -317,6 +318,7 @@ namespace HEXCTRL::INTERNAL
 		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqRedo; //Redo deque.
 		std::unordered_map<int, SHBITMAP> m_umapHBITMAP;           //Images for the Menu.
+		std::vector<SKEYBIND> m_vecKeyBind { }; //Vector of key bindings.
 		bool m_fCreated { false };            //Is control created or not yet.
 		bool m_fDataSet { false };            //Is data set or not.
 		bool m_fMutable { false };            //Is control works in Edit or Read mode.

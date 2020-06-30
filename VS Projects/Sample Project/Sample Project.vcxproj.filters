@@ -186,6 +186,9 @@
     <None Include="res\HexSample.rc2">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\..\HexCtrl\res\keybind.json">
+      <Filter>HexCtrl\res</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\HexSample.ico">

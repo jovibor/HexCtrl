@@ -181,4 +181,9 @@
       <Filter>HexCtrl\res</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\HexCtrl\res\keybind.json">
+      <Filter>HexCtrl\res</Filter>
+    </None>
+  </ItemGroup>
 </Project>

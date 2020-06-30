@@ -279,6 +279,11 @@
     <Image Include="..\..\HexCtrl\res\ScrollExH.bmp" />
     <Image Include="..\..\HexCtrl\res\ScrollExV.bmp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\HexCtrl\res\keybind.json">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

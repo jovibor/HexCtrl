@@ -278,6 +278,9 @@
     <ResourceCompile Include="HexSample.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\HexCtrl\res\keybind.json">
+      <FileType>Document</FileType>
+    </None>
     <None Include="res\HexSample.rc2" />
   </ItemGroup>
   <ItemGroup>

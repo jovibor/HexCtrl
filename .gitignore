@@ -47,6 +47,7 @@ local.properties
 *.user
 *.sln.docstates
 *.opendb
+*solution_suppressions.cfg
 
 # Build results
 
