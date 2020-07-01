@@ -115,6 +115,7 @@ It is written and tested with **/std:c++17** in **Visual Studio 2019**, under th
 * Print whole document/pages range/selection
 * Set individual colors for the data chunks with [`IHexVirtColors`](#ihexvirtcolors) interface
 * Cutomizable look and appearance
+* [Assign keyboard shortcuts](#setconfig) via external config file
 * Written with **/std:c++17** standard conformance
 
 ![](docs/img/hexctrl_operationswnd.jpg)

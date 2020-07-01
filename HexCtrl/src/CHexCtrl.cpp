@@ -437,17 +437,16 @@ void CHexCtrl::Destroy()
 	delete this;
 }
 
-void CHexCtrl::ExecuteCmd(EHexCmd enCmd)
+void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 {
 	assert(IsCreated());
-	if (!IsCreated())
+	if (!IsCreated() || !IsCmdAvail(eCmd))
 		return;
 
-	switch (enCmd)
+	switch (eCmd)
 	{
 	case EHexCmd::CMD_DLG_SEARCH:
-		if (IsCmdAvail(EHexCmd::CMD_DLG_SEARCH))
-			m_pDlgSearch->ShowWindow(SW_SHOW);
+		m_pDlgSearch->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_SEARCH_NEXT:
 		m_pDlgSearch->Search(true);
@@ -738,7 +737,7 @@ auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTR
 	return HitTest(pt);
 }
 
-bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
+bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -749,7 +748,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd enCmd)const
 	bool fSelection = fDataSet && m_pSelection->HasSelection();
 	bool fAvail;
 
-	switch (enCmd)
+	switch (eCmd)
 	{
 	case EHexCmd::CMD_BKM_REMOVE:
 		fAvail = m_pBookmarks->HasBookmarks()
@@ -1094,40 +1093,38 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 	{
 		lmbVecEqualize(m_vecKeyBind, lmbJson(doc, lmbParse));
 
-		std::vector<WORD> vecTmp { }; //Temp array of menuIDs, to assign only one (first) keybinding for menu name.
-		vecTmp.reserve(m_vecKeyBind.size());
-		for (const auto& iter : m_vecKeyBind)
+		std::size_t i { 0 };
+		for (const auto& iterMain : m_vecKeyBind)
 		{
-			if (auto itTmp = std::find(vecTmp.begin(), vecTmp.end(), iter.wMenuID);
-				itTmp == vecTmp.end() && iter.wMenuID != 0 && iter.uKey != 0)
+			//Check for previous same menu ID, to assign only one(first) keybinding for menu name.
+			auto iterEnd = m_vecKeyBind.begin() + i++;
+			if (auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd,
+				[&](const SKEYBIND& ref) { return ref.wMenuID == iterMain.wMenuID; });
+				iterTmp == iterEnd && iterMain.wMenuID != 0 && iterMain.uKey != 0)
 			{
 				CString str;
-				m_menuMain.GetMenuStringW(iter.wMenuID, str, MF_BYCOMMAND);
+				m_menuMain.GetMenuStringW(iterMain.wMenuID, str, MF_BYCOMMAND);
 				std::wstring wstr = str.GetString();
 				if (const auto nPos = wstr.find('\t'); nPos != std::wstring::npos)
 					wstr.erase(nPos);
 
 				wstr += L'\t';
-				if (iter.fCtrl)
+				if (iterMain.fCtrl)
 					wstr += L"Ctrl+";
-				if (iter.fShift)
+				if (iterMain.fShift)
 					wstr += L"Shift+";
-				if (iter.fAlt)
+				if (iterMain.fAlt)
 					wstr += L"Alt+";
 
 				//Search for any special key names: 'Tab', 'Enter', etc...
 				//If not found then it's just a char.
-				std::wstring wstrTmp { iter.uKey };
-				for (const auto& iterUmap : umapKeys)
-					if (iterUmap.second.first == iter.uKey)
-					{
-						wstrTmp = iterUmap.second.second;
-						break;
-					}
+				if (auto iterUmap = std::find_if(umapKeys.begin(), umapKeys.end(), [&](const auto& ref)
+					{ return ref.second.first == iterMain.uKey; }); iterUmap != umapKeys.end())
+					wstr += iterUmap->second.second;
+				else
+					wstr += iterMain.uKey;
 
-				wstr += wstrTmp;
-				m_menuMain.ModifyMenuW(iter.wMenuID, MF_BYCOMMAND, iter.wMenuID, wstr.data());
-				vecTmp.emplace_back(iter.wMenuID);
+				m_menuMain.ModifyMenuW(iterMain.wMenuID, MF_BYCOMMAND, iterMain.wMenuID, wstr.data());
 			}
 		}
 	}
