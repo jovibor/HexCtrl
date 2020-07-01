@@ -394,7 +394,7 @@ IDR_HEXCTRL_MENU MENU
 BEGIN
     POPUP ""
     BEGIN
-        MENUITEM "Search and Replace\tCtrl+F",  IDM_HEXCTRL_SEARCH
+        MENUITEM "Search and Replace",          IDM_HEXCTRL_SEARCH
         MENUITEM SEPARATOR
         POPUP "Show data as..."
         BEGIN
@@ -405,11 +405,11 @@ BEGIN
         END
         POPUP "Bookmarks"
         BEGIN
-            MENUITEM "Add bookmark\tCtrl+B",        IDM_HEXCTRL_BOOKMARKS_ADD
-            MENUITEM "Remove bookmark\tCtrl+N",     IDM_HEXCTRL_BOOKMARKS_REMOVE
+            MENUITEM "Add bookmark",                IDM_HEXCTRL_BOOKMARKS_ADD
+            MENUITEM "Remove bookmark",             IDM_HEXCTRL_BOOKMARKS_REMOVE
             MENUITEM SEPARATOR
-            MENUITEM "Go next bookmark\tF2",        IDM_HEXCTRL_BOOKMARKS_NEXT
-            MENUITEM "Go previous bookmark\tShift+F2", IDM_HEXCTRL_BOOKMARKS_PREV
+            MENUITEM "Go next bookmark",            IDM_HEXCTRL_BOOKMARKS_NEXT
+            MENUITEM "Go previous bookmark",        IDM_HEXCTRL_BOOKMARKS_PREV
             MENUITEM SEPARATOR
             MENUITEM "Clear all bookmarks",         IDM_HEXCTRL_BOOKMARKS_CLEARALL
             MENUITEM SEPARATOR
@@ -417,7 +417,7 @@ BEGIN
         END
         POPUP "Clipboard"
         BEGIN
-            MENUITEM "Copy as Hex\tCtrl+C",         IDM_HEXCTRL_CLIPBOARD_COPYHEX
+            MENUITEM "Copy as Hex",                 IDM_HEXCTRL_CLIPBOARD_COPYHEX
             MENUITEM "Copy as Hex (little-endian)", IDM_HEXCTRL_CLIPBOARD_COPYHEXLE
             MENUITEM "Copy as Hex Formatted",       IDM_HEXCTRL_CLIPBOARD_COPYHEXFMT
             MENUITEM SEPARATOR
@@ -427,24 +427,24 @@ BEGIN
             MENUITEM "Copy as Grep Hex",            IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX
             MENUITEM "Copy as Print Screen",        IDM_HEXCTRL_CLIPBOARD_COPYPRNTSCRN
             MENUITEM SEPARATOR
-            MENUITEM "Paste as Hex\tCtrl+V",        IDM_HEXCTRL_CLIPBOARD_PASTEHEX
+            MENUITEM "Paste as Hex",                IDM_HEXCTRL_CLIPBOARD_PASTEHEX
             MENUITEM "Paste as Text",               IDM_HEXCTRL_CLIPBOARD_PASTETEXT
         END
         POPUP "Modify"
         BEGIN
-            MENUITEM "Operations...\tCtrl+O",       IDM_HEXCTRL_MODIFY_OPERS
+            MENUITEM "Operations...",               IDM_HEXCTRL_MODIFY_OPERS
             MENUITEM "Fill with zeros",             IDM_HEXCTRL_MODIFY_FILLZEROS
             MENUITEM "Fill with data...",           IDM_HEXCTRL_MODIFY_FILLDATA
             MENUITEM SEPARATOR
-            MENUITEM "Undo\tCtrl+Z",                IDM_HEXCTRL_MODIFY_UNDO
-            MENUITEM "Redo\tCtrl+Y",                IDM_HEXCTRL_MODIFY_REDO
+            MENUITEM "Undo",                        IDM_HEXCTRL_MODIFY_UNDO
+            MENUITEM "Redo",                        IDM_HEXCTRL_MODIFY_REDO
         END
         POPUP "Selection"
         BEGIN
-            MENUITEM "Mark Selection Start\tAlt+1", IDM_HEXCTRL_SEL_MARKSTART
-            MENUITEM "Mark Selection End\tAlt+2",   IDM_HEXCTRL_SEL_MARKEND
+            MENUITEM "Mark Selection Start",        IDM_HEXCTRL_SEL_MARKSTART
+            MENUITEM "Mark Selection End",          IDM_HEXCTRL_SEL_MARKEND
             MENUITEM SEPARATOR
-            MENUITEM "Select all\tCtrl+A",          IDM_HEXCTRL_SEL_ALL
+            MENUITEM "Select all",                  IDM_HEXCTRL_SEL_ALL
         END
         MENUITEM "Data Interpreter",            IDM_HEXCTRL_DATAINTERPRET
         MENUITEM "Encoding",                    IDM_HEXCTRL_ENCODING

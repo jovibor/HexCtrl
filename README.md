@@ -50,6 +50,7 @@
   * [IsOffsetAsHex](#isoffsetashex)
   * [SetCapacity](#setcapacity)
   * [SetColors](#setcolors)
+  * [SetConfig](#setconfig)
   * [SetData](#setdata)
   * [SetEncoding](#setencoding)
   * [SetFont](#setfont)
@@ -558,6 +559,20 @@ void SetColors(const HEXCOLORSSTRUCT& clr);
 ```
 Sets all the colors for the control. Takes [`HEXCOLORSSTRUCT`](#hexcolorsstruct) as the argument.
 
+### [](#)SetConfig
+```cpp
+bool SetConfig(std::wstring_view wstrPath);
+```
+Set the path to a JSON config file with keybindings to use in **HexControl**, or `""` for default. This file is using [`EHexCmd`](#ehexcmd) enum values as keys and strings array as values:
+```json
+{
+    "CMD_DLG_SEARCH": [ "ctrl+f", "ctrl+h" ],
+    "CMD_SEARCH_NEXT": [ "f3" ],
+    "CMD_SEARCH_PREV": [ "shift+f3" ]
+}
+```
+For default values see `HexCtrl/res/keybind.json` file from the project source folder.
+
 ### [](#)SetData
 ```cpp
 void SetData(const HEXDATASTRUCT& hds);
@@ -731,21 +746,21 @@ using PHEXCOLOR = HEXCOLOR*;
 ```
 
 ### [](#)EHexCmd
-Enum of commands **HexControl** can execute. Basically these commands duplicate inner menu.
+Enum of commands that can be executed within **HexControl**.
 ```cpp
 enum class EHexCmd : WORD
 {
-    CMD_SEARCH = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV,
+    CMD_DLG_SEARCH = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV,
     CMD_SHOWDATA_BYTE, CMD_SHOWDATA_WORD, CMD_SHOWDATA_DWORD, CMD_SHOWDATA_QWORD,
-    CMD_BKM_ADD, CMD_BKM_REMOVE, CMD_BKM_NEXT, CMD_BKM_PREV, CMD_BKM_CLEARALL, CMD_BKM_MANAGER,
+    CMD_BKM_ADD, CMD_BKM_REMOVE, CMD_BKM_NEXT, CMD_BKM_PREV, CMD_BKM_CLEARALL, CMD_DLG_BKM_MANAGER,
     CMD_CLIPBOARD_COPY_HEX, CMD_CLIPBOARD_COPY_HEXLE, CMD_CLIPBOARD_COPY_HEXFMT, CMD_CLIPBOARD_COPY_TEXT,
     CMD_CLIPBOARD_COPY_BASE64, CMD_CLIPBOARD_COPY_CARR, CMD_CLIPBOARD_COPY_GREPHEX, CMD_CLIPBOARD_COPY_PRNTSCRN,
     CMD_CLIPBOARD_PASTE_HEX, CMD_CLIPBOARD_PASTE_TEXT,
-    CMD_MODIFY_OPERS, CMD_MODIFY_FILLZEROS, CMD_MODIFY_FILLDATA, CMD_MODIFY_UNDO, CMD_MODIFY_REDO,
+    CMD_DLG_MODIFY_OPERS, CMD_MODIFY_FILLZEROS, CMD_DLG_MODIFY_FILLDATA, CMD_MODIFY_UNDO, CMD_MODIFY_REDO,
     CMD_SEL_MARKSTART, CMD_SEL_MARKEND, CMD_SEL_ALL, CMD_SEL_ADDLEFT, CMD_SEL_ADDRIGHT, CMD_SEL_ADDUP, CMD_SEL_ADDDOWN,
-    CMD_DATAINTERPRET, CMD_ENCODING,
+    CMD_DLG_DATAINTERPRET, CMD_DLG_ENCODING,
     CMD_APPEARANCE_FONTINC, CMD_APPEARANCE_FONTDEC, CMD_APPEARANCE_CAPACINC, CMD_APPEARANCE_CAPACDEC,
-    CMD_PRINT, CMD_ABOUT,
+    CMD_DLG_PRINT, CMD_DLG_ABOUT,
     CMD_CARET_LEFT, CMD_CARET_RIGHT, CMD_CARET_UP, CMD_CARET_DOWN,
     CMD_SCROLL_PAGEUP, CMD_SCROLL_PAGEDOWN, CMD_SCROLL_TOP, CMD_SCROLL_BOTTOM
 };
