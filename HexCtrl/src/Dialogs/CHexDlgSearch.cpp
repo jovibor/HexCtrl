@@ -27,8 +27,10 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_WM_CTLCOLOR()
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_SEARCH_F, &CHexDlgSearch::OnButtonSearchF)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_SEARCH_B, &CHexDlgSearch::OnButtonSearchB)
+	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_FINDALL, &CHexDlgSearch::OnButtonFindAll)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLACE, &CHexDlgSearch::OnButtonReplace)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL, &CHexDlgSearch::OnButtonReplaceAll)
+	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_CLEAR, &CHexDlgSearch::OnButtonClear)
 	ON_CBN_SELCHANGE(IDC_HEXCTRL_SEARCH_COMBO_MODE, &CHexDlgSearch::OnComboModeSelChange)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListItemChanged)
@@ -66,7 +68,7 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_stComboMode.SetCurSel(iIndex);
 	iIndex = m_stComboMode.AddString(L"Text (ASCII)");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_ASCII));
-	iIndex = m_stComboMode.AddString(L"Text (wchar_t)");
+	iIndex = m_stComboMode.AddString(L"Text (UTF-16)");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_WCHAR));
 	iIndex = m_stComboMode.AddString(L"Number (BYTE)");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_BYTE));
@@ -139,6 +141,14 @@ void CHexDlgSearch::OnButtonSearchB()
 	PrepareSearch();
 }
 
+void CHexDlgSearch::OnButtonFindAll()
+{
+	m_iDirection = 1;
+	m_fReplace = false;
+	m_fAll = true;
+	PrepareSearch();
+}
+
 void CHexDlgSearch::OnButtonReplace()
 {
 	m_iDirection = 1;
@@ -153,6 +163,12 @@ void CHexDlgSearch::OnButtonReplaceAll()
 	m_fReplace = true;
 	m_fAll = true;
 	PrepareSearch();
+}
+
+void CHexDlgSearch::OnButtonClear()
+{
+	m_pListMain->SetItemCountEx(0);
+	m_vecSearchRes.clear();
 }
 
 void CHexDlgSearch::OnComboModeSelChange()
@@ -209,9 +225,9 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 {
 	int iHighlight;
 	if (auto iter = std::find(m_vecSearchRes.begin(), m_vecSearchRes.end(), ullOffset);
-		iter == m_vecSearchRes.end() && m_vecSearchRes.size() < 1024) //Max 1024 found search occurences.
+		iter == m_vecSearchRes.end() && m_vecSearchRes.size() < static_cast<size_t>(m_dwMaxSearch)) //Max found search occurences.
 	{
-		m_vecSearchRes.emplace_back(m_ullOffset);
+		m_vecSearchRes.emplace_back(ullOffset);
 		iHighlight = static_cast<int>(m_vecSearchRes.size());
 		m_pListMain->SetItemCountEx(iHighlight);
 		iHighlight -= 1;
@@ -226,16 +242,16 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 
 void CHexDlgSearch::HexCtrlHgl(ULONGLONG ullOffset, ULONGLONG ullSize)
 {
-	if (auto pHexCtrl = GetHexCtrl(); m_fSelection)
-	{
-		//Highlight selection.
-		std::vector<HEXSPANSTRUCT> vec { { ullOffset, ullSize } };
-		pHexCtrl->SetSelHighlight(vec);
-		pHexCtrl->GoToOffset(ullOffset);
-		pHexCtrl->Redraw();
-	}
+	auto pHexCtrl = GetHexCtrl();
+	std::vector<HEXSPANSTRUCT> vecSel { { ullOffset, ullSize } };
+
+	if (m_fSelection) //Highlight selection.
+		pHexCtrl->SetSelHighlight(vecSel);
 	else
-		pHexCtrl->GoToOffset(ullOffset, true, ullSize);
+		pHexCtrl->SetSelection(vecSel);
+
+	if (!pHexCtrl->IsOffsetVisible(ullOffset))
+		pHexCtrl->GoToOffset(ullOffset);
 }
 
 void CHexDlgSearch::Search(bool fForward)
@@ -290,11 +306,14 @@ void CHexDlgSearch::PrepareSearch()
 		GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_REPLACE, warrReplace, _countof(warrReplace));
 		m_wstrTextReplace = warrReplace;
 		if (m_wstrTextReplace.empty())
+		{
+			MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			m_stComboReplace.SetFocus();
 			return;
-
+		}
 		ComboReplaceFill(warrReplace);
 	}
-	GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_SEARCH)->SetFocus();
+	m_stComboSearch.SetFocus();
 
 	bool fSuccess { false };
 	switch (GetSearchMode())
@@ -336,6 +355,16 @@ void CHexDlgSearch::PrepareSearch()
 		auto vecSel = pHexCtrl->GetSelection();
 		if (vecSel.empty()) //No selection.
 			return;
+
+		//If the current selection differs from the previous one.
+		if (m_stSelSpan.ullOffset != vecSel.front().ullOffset ||
+			m_stSelSpan.ullSize != vecSel.front().ullSize)
+		{
+			OnButtonClear();
+			m_dwCount = 0;
+			m_fSecondMatch = false;
+			m_stSelSpan = vecSel.front();
+		}
 
 		auto ullSelSize = vecSel.front().ullSize;
 		if (ullSelSize < m_nSizeSearch) //Selection is too small.
@@ -383,12 +412,15 @@ bool CHexDlgSearch::PrepareHex()
 	if (!str2hex(m_strSearch, m_strSearch))
 	{
 		m_iWrap = 1;
+		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
 	m_nSizeSearch = m_strSearch.size();
+
 	if ((m_fReplace && !str2hex(m_strReplace, m_strReplace)))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		m_stComboReplace.SetFocus();
 		return false;
 	}
 	m_nSizeReplace = m_strReplace.size();
@@ -631,7 +663,7 @@ void CHexDlgSearch::Search()
 			if (m_fFound) //Notifying parent just once about data change/replace.
 				pHexCtrl->ParentNotify(HEXCTRL_MSG_SETDATA);
 		}
-		else if (m_iDirection == 1 && m_fSecondMatch) //Forward direction.
+		else if (m_iDirection == 1 && m_fSecondMatch) //Forward only direction.
 		{
 			Replace(m_ullOffset, m_pReplaceData, m_nSizeSearch, m_nSizeReplace);
 			m_ullOffset += m_nSizeReplace; //Increase next search step to replaced count.
@@ -643,24 +675,69 @@ void CHexDlgSearch::Search()
 	}
 	else //Search.
 	{
-		if (m_iDirection == 1) //Forward direction.
+		if (m_fAll) //Find All
 		{
-			m_ullOffset = m_fSecondMatch ? m_ullOffset + 1 : m_ullSearchStart;
-			lmbFindForward();
+			OnButtonClear(); //Clearing all results.
+			m_dwCount = 0;
+			auto ullStart = m_ullSearchStart;
+			auto lmbSearch = [&](CHexDlgCallback* pDlg)
+			{
+				while (true)
+				{
+					if (Find(ullStart, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, true, false))
+					{
+						m_vecSearchRes.emplace_back(ullStart); //Filling the vector of Found occurences.
+						ullStart += m_nSizeSearch;
+						m_fFound = true;
+						++m_dwCount;
+						if (ullStart > ullUntil || m_dwCount >= m_dwMaxSearch) //Find no more than m_dwMaxSearch.
+							break;
+					}
+					else
+						break;
+
+					if (pDlg->IsCanceled())
+						goto exit;
+				}
+			exit:
+				m_pListMain->SetItemCountEx(static_cast<int>(m_dwCount));
+				pDlg->Cancel();
+			};
+
+			CHexDlgCallback dlg(L"Searching...");
+			std::thread thrd(lmbSearch, &dlg);
+			dlg.DoModal();
+			thrd.join();
 		}
-		else if (m_iDirection == -1) //Backward direction
+		else
 		{
-			lmbFindBackward();
+			if (m_iDirection == 1) //Forward direction.
+			{
+				m_ullOffset = m_fSecondMatch ? m_ullOffset + 1 : m_ullSearchStart;
+				lmbFindForward();
+			}
+			else if (m_iDirection == -1) //Backward direction
+			{
+				lmbFindBackward();
+			}
 		}
 	}
 
 	std::wstring wstrInfo(128, 0);
 	if (m_fFound)
 	{
-		if (m_fReplace && m_fAll)
+		if (m_fAll)
 		{
-			swprintf_s(wstrInfo.data(), wstrInfo.size(), L"%lu occurrence(s) replaced.", m_dwReplaced);
-			m_dwReplaced = 0;
+			if (m_fReplace)
+			{
+				swprintf_s(wstrInfo.data(), wstrInfo.size(), L"%lu occurrence(s) replaced.", m_dwReplaced);
+				m_dwReplaced = 0;
+			}
+			else
+			{
+				swprintf_s(wstrInfo.data(), wstrInfo.size(), L"Found %lu occurrences.", m_dwCount);
+				m_dwCount = 0;
+			}
 			pHexCtrl->RedrawWindow();
 		}
 		else
@@ -855,7 +932,6 @@ void CHexDlgSearch::ResetSearch()
 	m_pListMain->SetItemCountEx(0);
 	m_vecSearchRes.clear();
 	GetHexCtrl()->ClearSelHighlight();
-
 	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)->SetWindowTextW(L"");
 }
 

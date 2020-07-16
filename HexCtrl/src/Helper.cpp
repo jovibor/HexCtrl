@@ -142,9 +142,13 @@ namespace HEXCTRL::INTERNAL
 
 	bool str2hex(const std::string& str, std::string& strToHex)
 	{
-		const auto nIterations = str.size() / 2 + str.size() % 2;
+		if (str.size() % 2 > 0) //Only even amount of chars allowed.
+			return false;
+
+		const auto nIterations = str.size() / 2;
 		std::string strTmp;
 		strTmp.reserve(nIterations);
+
 		for (size_t i = 0; i < nIterations; ++i)
 		{
 			//Extract two current chars and pass it to str2num as string_view.

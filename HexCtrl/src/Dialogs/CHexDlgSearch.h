@@ -35,8 +35,10 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnButtonSearchF();
 		afx_msg void OnButtonSearchB();
+		afx_msg void OnButtonFindAll();
 		afx_msg void OnButtonReplace();
 		afx_msg void OnButtonReplaceAll();
+		afx_msg void OnButtonClear();
 		afx_msg void OnComboModeSelChange();
 		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
@@ -89,6 +91,7 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullEndSentinel { };  //Maximum offset search can't cross.
 		DWORD m_dwCount { };             //How many, or what index number.
 		DWORD m_dwReplaced { };          //Replaced amount;
+		DWORD m_dwMaxSearch { 1000 };    //Maximum found search occurences.
 		int m_iDirection { };            //Search direction: 1 = Forward, -1 = Backward.
 		int m_iWrap { };                 //Wrap direction: -1 = Beginning, 1 = End.
 		bool m_fSecondMatch { false };   //First or subsequent match. 
@@ -104,5 +107,6 @@ namespace HEXCTRL::INTERNAL
 		std::string m_strSearch;
 		std::string m_strReplace;
 		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
+		HEXSPANSTRUCT m_stSelSpan { };   //Previous selection.
 	};
 }

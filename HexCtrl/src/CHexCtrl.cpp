@@ -23,6 +23,7 @@
 #include "Helper.h"
 #include "strsafe.h"
 #include <cassert>
+#include <cctype>
 #include <fstream>
 #include <numeric>
 #include <thread>
@@ -3860,6 +3861,7 @@ void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss)
 void CHexCtrl::SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight)
 {
 	m_pSelection->SetSelHighlight(vecSelHighlight);
+	RedrawWindow();
 }
 
 void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
