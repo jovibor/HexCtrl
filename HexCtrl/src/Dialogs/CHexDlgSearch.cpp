@@ -31,6 +31,7 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLACE, &CHexDlgSearch::OnButtonReplace)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL, &CHexDlgSearch::OnButtonReplaceAll)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_CLEAR, &CHexDlgSearch::OnButtonClear)
+	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_CHECK_SELECTION, &CHexDlgSearch::OnCheckSel)
 	ON_CBN_SELCHANGE(IDC_HEXCTRL_SEARCH_COMBO_MODE, &CHexDlgSearch::OnComboModeSelChange)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListItemChanged)
@@ -40,10 +41,12 @@ END_MESSAGE_MAP()
 void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_SELECTION, m_stChkSel);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_SELECTION, m_stCheckSel);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_SEARCH, m_stComboSearch);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_REPLACE, m_stComboReplace);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_MODE, m_stComboMode);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_START, m_stEditStart);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_STEP, m_stEditStep);
 }
 
 BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
@@ -87,6 +90,9 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 	m_pListMain->InsertColumn(0, L"\u2116", 0, 40);
 	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 445);
+
+	SetEditStartAt(m_ullOffsetCurr);
+	SetEditStep(m_ullStep);
 
 	return TRUE;
 }
@@ -171,6 +177,11 @@ void CHexDlgSearch::OnButtonClear()
 	m_vecSearchRes.clear();
 }
 
+void CHexDlgSearch::OnCheckSel()
+{
+	m_stEditStart.EnableWindow(m_stCheckSel.GetCheck() == BST_CHECKED ? 0 : 1);
+}
+
 void CHexDlgSearch::OnComboModeSelChange()
 {
 	if (auto eMode = GetSearchMode(); eMode != m_eModeCurr)
@@ -206,7 +217,10 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED))
-		HexCtrlHgl(m_vecSearchRes[static_cast<size_t>(pNMI->iItem)], m_fReplace ? m_nSizeReplace : m_nSizeSearch);
+	{
+		SetEditStartAt(m_vecSearchRes[static_cast<size_t>(pNMI->iItem)]);
+		HexCtrlHighlight(m_vecSearchRes[static_cast<size_t>(pNMI->iItem)], m_fReplace ? m_nSizeReplace : m_nSizeSearch);
+	}
 }
 
 HBRUSH CHexDlgSearch::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
@@ -240,7 +254,7 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 	m_pListMain->EnsureVisible(iHighlight, TRUE);
 }
 
-void CHexDlgSearch::HexCtrlHgl(ULONGLONG ullOffset, ULONGLONG ullSize)
+void CHexDlgSearch::HexCtrlHighlight(ULONGLONG ullOffset, ULONGLONG ullSize)
 {
 	auto pHexCtrl = GetHexCtrl();
 	std::vector<HEXSPANSTRUCT> vecSel { { ullOffset, ullSize } };
@@ -265,7 +279,7 @@ void CHexDlgSearch::Search(bool fForward)
 bool CHexDlgSearch::IsSearchAvail()
 {
 	auto pHexCtrl = GetHexCtrl();
-	return !(m_wstrTextSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffset >= pHexCtrl->GetDataSize());
+	return !(m_wstrTextSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffsetCurr >= pHexCtrl->GetDataSize());
 }
 
 BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
@@ -276,7 +290,8 @@ BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
 		if (auto vecSel = m_pHexCtrl->GetSelection(); vecSel.size() == 1 && vecSel.back().ullSize > 1)
 			iChkStatus = BST_CHECKED;
 
-		m_stChkSel.SetCheck(iChkStatus);
+		m_stCheckSel.SetCheck(iChkStatus);
+		m_stEditStart.EnableWindow(iChkStatus == BST_CHECKED ? 0 : 1);
 		BringWindowToTop();
 	}
 
@@ -288,17 +303,33 @@ void CHexDlgSearch::PrepareSearch()
 	auto pHexCtrl = GetHexCtrl();
 	auto ullDataSize = pHexCtrl->GetDataSize();
 
+	//"Search" text.
 	CStringW wstrTextSearch;
-	GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_SEARCH, wstrTextSearch);
+	m_stComboSearch.GetWindowTextW(wstrTextSearch);
 	if (wstrTextSearch.IsEmpty())
 		return;
-
 	if (wstrTextSearch.Compare(m_wstrTextSearch.data()) != 0)
 	{
 		ResetSearch();
 		m_wstrTextSearch = wstrTextSearch;
 	}
 	ComboSearchFill(wstrTextSearch);
+
+	//Start at.
+	CStringW wstrStart;
+	ULONGLONG ullOffsetCurr;
+	m_stEditStart.GetWindowTextW(wstrStart);
+	if (wstrStart.IsEmpty() || !wstr2num(wstrStart.GetString(), ullOffsetCurr))
+		return;
+	m_ullOffsetCurr = ullOffsetCurr;
+
+	//Step.
+	CStringW wstrStep;
+	ULONGLONG ullStep;
+	m_stEditStep.GetWindowTextW(wstrStep);
+	if (wstrStep.IsEmpty() || !wstr2num(wstrStep.GetString(), ullStep))
+		return;
+	m_ullStep = ullStep;
 
 	if (m_fReplace)
 	{
@@ -350,42 +381,44 @@ void CHexDlgSearch::PrepareSearch()
 		return;
 
 	//Search in selection.
-	if (m_stChkSel.GetCheck() == BST_CHECKED)
+	if (m_stCheckSel.GetCheck() == BST_CHECKED)
 	{
 		auto vecSel = pHexCtrl->GetSelection();
 		if (vecSel.empty()) //No selection.
 			return;
 
+		auto& refFront = vecSel.front();
 		//If the current selection differs from the previous one.
-		if (m_stSelSpan.ullOffset != vecSel.front().ullOffset ||
-			m_stSelSpan.ullSize != vecSel.front().ullSize)
+		if (m_stSelSpan.ullOffset != refFront.ullOffset ||
+			m_stSelSpan.ullSize != refFront.ullSize)
 		{
 			OnButtonClear();
 			m_dwCount = 0;
 			m_fSecondMatch = false;
-			m_stSelSpan = vecSel.front();
+			m_stSelSpan = refFront;
+			m_ullOffsetCurr = refFront.ullOffset;
 		}
 
-		auto ullSelSize = vecSel.front().ullSize;
+		auto ullSelSize = refFront.ullSize;
 		if (ullSelSize < m_nSizeSearch) //Selection is too small.
 			return;
 
-		m_ullSearchStart = vecSel.front().ullOffset;
-		m_ullSearchEnd = m_ullSearchStart + ullSelSize - m_nSizeSearch;
-		m_ullEndSentinel = m_ullSearchStart + ullSelSize;
+		m_ullOffsetStart = refFront.ullOffset;
+		m_ullOffsetEnd = m_ullOffsetStart + ullSelSize - m_nSizeSearch;
+		m_ullEndSentinel = m_ullOffsetStart + ullSelSize;
 		m_fSelection = true;
 	}
 	else //Search in whole data.
 	{
-		m_ullSearchStart = 0;
-		m_ullSearchEnd = ullDataSize - m_nSizeSearch;
+		m_ullOffsetStart = 0;
+		m_ullOffsetEnd = ullDataSize - m_nSizeSearch;
 		m_ullEndSentinel = pHexCtrl->GetDataSize();
 		m_fSelection = false;
 	}
 
-	if (m_ullOffset + m_nSizeSearch > ullDataSize || m_ullOffset + m_nSizeReplace > ullDataSize)
+	if (m_ullOffsetCurr + m_nSizeSearch > ullDataSize || m_ullOffsetCurr + m_nSizeReplace > ullDataSize)
 	{
-		m_ullOffset = 0;
+		m_ullOffsetCurr = 0;
 		m_fSecondMatch = false;
 		return;
 	}
@@ -574,14 +607,14 @@ bool CHexDlgSearch::PrepareDouble()
 void CHexDlgSearch::Search()
 {
 	auto pHexCtrl = GetHexCtrl();
-	if (m_wstrTextSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffset >= pHexCtrl->GetDataSize())
+	if (m_wstrTextSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffsetCurr >= pHexCtrl->GetDataSize())
 		return;
 
 	m_fFound = false;
-	auto ullUntil = m_ullSearchEnd;
+	auto ullUntil = m_ullOffsetEnd;
 	auto lmbFindForward = [&]()
 	{
-		if (Find(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel))
+		if (Find(m_ullOffsetCurr, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel))
 		{
 			m_fFound = true;
 			m_fSecondMatch = true;
@@ -589,8 +622,8 @@ void CHexDlgSearch::Search()
 		}
 		if (!m_fFound && m_fSecondMatch)
 		{
-			m_ullOffset = m_ullSearchStart; //Starting from the beginning.
-			if (Find(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel))
+			m_ullOffsetCurr = m_ullOffsetStart; //Starting from the beginning.
+			if (Find(m_ullOffsetCurr, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel))
 			{
 				m_fFound = true;
 				m_fSecondMatch = true;
@@ -602,22 +635,21 @@ void CHexDlgSearch::Search()
 	};
 	auto lmbFindBackward = [&]()
 	{
-		ullUntil = m_ullSearchStart;
-		if (m_fSecondMatch && m_ullOffset > 0)
+		ullUntil = m_ullOffsetStart;
+		if (m_fSecondMatch && m_ullOffsetCurr - m_ullStep < m_ullOffsetCurr)
 		{
-			--m_ullOffset;
-			if (Find(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, false))
+			m_ullOffsetCurr -= m_ullStep;
+			if (Find(m_ullOffsetCurr, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, false))
 			{
 				m_fFound = true;
-				m_fSecondMatch = true;
 				m_dwCount--;
 			}
 		}
 
 		if (!m_fFound)
 		{
-			m_ullOffset = m_ullSearchEnd;
-			if (Find(m_ullOffset, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, false))
+			m_ullOffsetCurr = m_ullOffsetEnd;
+			if (Find(m_ullOffsetCurr, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, false))
 			{
 				m_fFound = true;
 				m_fSecondMatch = true;
@@ -632,7 +664,7 @@ void CHexDlgSearch::Search()
 	{
 		if (m_fAll) //Replace All
 		{
-			auto ullStart = m_ullSearchStart;
+			auto ullStart = m_ullOffsetStart;
 			auto lmbSearch = [&](CHexDlgCallback* pDlg)
 			{
 				while (true)
@@ -640,7 +672,7 @@ void CHexDlgSearch::Search()
 					if (Find(ullStart, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, true, false))
 					{
 						Replace(ullStart, m_pReplaceData, m_nSizeSearch, m_nSizeReplace, false, false);
-						ullStart += m_nSizeReplace;
+						ullStart += m_nSizeReplace <= m_ullStep ? m_ullStep : m_nSizeReplace;
 						m_fFound = true;
 						m_dwReplaced++;
 						if (ullStart > ullUntil)
@@ -665,8 +697,10 @@ void CHexDlgSearch::Search()
 		}
 		else if (m_iDirection == 1 && m_fSecondMatch) //Forward only direction.
 		{
-			Replace(m_ullOffset, m_pReplaceData, m_nSizeSearch, m_nSizeReplace);
-			m_ullOffset += m_nSizeReplace; //Increase next search step to replaced count.
+			Replace(m_ullOffsetCurr, m_pReplaceData, m_nSizeSearch, m_nSizeReplace);
+
+			//Increase next search step to replaced or m_ullStep amount.
+			m_ullOffsetCurr += m_nSizeReplace <= m_ullStep ? m_ullStep : m_nSizeReplace;
 			m_dwReplaced++;
 		}
 
@@ -679,7 +713,7 @@ void CHexDlgSearch::Search()
 		{
 			OnButtonClear(); //Clearing all results.
 			m_dwCount = 0;
-			auto ullStart = m_ullSearchStart;
+			auto ullStart = m_ullOffsetStart;
 			auto lmbSearch = [&](CHexDlgCallback* pDlg)
 			{
 				while (true)
@@ -687,7 +721,7 @@ void CHexDlgSearch::Search()
 					if (Find(ullStart, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, true, false))
 					{
 						m_vecSearchRes.emplace_back(ullStart); //Filling the vector of Found occurences.
-						ullStart += m_nSizeSearch;
+						ullStart += m_ullStep;
 						m_fFound = true;
 						++m_dwCount;
 						if (ullStart > ullUntil || m_dwCount >= m_dwMaxSearch) //Find no more than m_dwMaxSearch.
@@ -713,7 +747,8 @@ void CHexDlgSearch::Search()
 		{
 			if (m_iDirection == 1) //Forward direction.
 			{
-				m_ullOffset = m_fSecondMatch ? m_ullOffset + 1 : m_ullSearchStart;
+				//If previously anything was found we increase m_ullOffsetCurr by m_ullStep.
+				m_ullOffsetCurr = m_fSecondMatch ? m_ullOffsetCurr + m_ullStep : m_ullOffsetCurr;
 				lmbFindForward();
 			}
 			else if (m_iDirection == -1) //Backward direction
@@ -747,8 +782,9 @@ void CHexDlgSearch::Search()
 			else
 				wstrInfo = L"Search found occurrence.";
 
-			HexCtrlHgl(m_ullOffset, m_fReplace ? m_nSizeReplace : m_nSizeSearch);
-			AddToList(m_ullOffset);
+			HexCtrlHighlight(m_ullOffsetCurr, m_fReplace ? m_nSizeReplace : m_nSizeSearch);
+			AddToList(m_ullOffsetCurr);
+			SetEditStartAt(m_ullOffsetCurr);
 		}
 	}
 	else
@@ -781,7 +817,7 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 	{
 	case EHexDataMode::DATA_MEMORY:
 		ullSizeChunk = ullSize;
-		ullMemToAcquire = ullSizeChunk;
+		ullMemToAcquire = ullSize;
 		ullChunks = 1;
 		break;
 	case EHexDataMode::DATA_MSG:
@@ -816,7 +852,7 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 					ullOffsetSearch += ullSizeChunk;
 
 				auto pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
-				for (ULONGLONG i = 0; i <= ullSizeChunk; ++i)
+				for (ULONGLONG i = 0; i <= ullSizeChunk; i += m_ullStep)
 				{
 					if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
 					{
@@ -835,7 +871,7 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 			for (ULONGLONG iterChunk = ullChunks; iterChunk > 0; --iterChunk)
 			{
 				auto pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
-				for (auto i = static_cast<LONGLONG>(ullSizeChunk); i >= 0; --i)	//i might be negative.
+				for (auto i = static_cast<LONGLONG>(ullSizeChunk); i >= 0; i -= m_ullStep)	//i might be negative.
 				{
 					if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
 					{
@@ -920,9 +956,23 @@ void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
 	}
 }
 
+void CHexDlgSearch::SetEditStartAt(ULONGLONG ullOffset)
+{
+	wchar_t buff[32] { };
+	swprintf_s(buff, _countof(buff), L"0x%llX", ullOffset);
+	m_stEditStart.SetWindowTextW(buff);
+}
+
+void CHexDlgSearch::SetEditStep(ULONGLONG ullStep)
+{
+	wchar_t buff[32] { };
+	swprintf_s(buff, _countof(buff), L"%llu", ullStep);
+	m_stEditStep.SetWindowTextW(buff);
+}
+
 void CHexDlgSearch::ResetSearch()
 {
-	m_ullOffset = { };
+	m_ullOffsetCurr = { };
 	m_dwCount = { };
 	m_dwReplaced = { };
 	m_iWrap = { };

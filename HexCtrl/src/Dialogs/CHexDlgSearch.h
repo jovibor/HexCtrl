@@ -39,6 +39,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnButtonReplace();
 		afx_msg void OnButtonReplaceAll();
 		afx_msg void OnButtonClear();
+		afx_msg void OnCheckSel();
 		afx_msg void OnComboModeSelChange();
 		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
@@ -47,7 +48,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnDestroy();
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		void AddToList(ULONGLONG ullOffset);
-		void HexCtrlHgl(ULONGLONG ullOffset, ULONGLONG ullSize);
+		void HexCtrlHighlight(ULONGLONG ullOffset, ULONGLONG ullSize); //Highlight found in HexCtrl.
 		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
 		void PrepareSearch();
 		[[nodiscard]] bool PrepareHex();
@@ -69,26 +70,31 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] EMode GetSearchMode(); //Returns current search mode.
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
+		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
+		void SetEditStep(ULONGLONG ullStep);
 		DECLARE_MESSAGE_MAP()
 	private:
 		CHexCtrl* m_pHexCtrl { };
 		EMode m_eModeCurr { };
 		IListExPtr m_pListMain { CreateListEx() };
 		std::vector<ULONGLONG> m_vecSearchRes { };
-		CComboBox m_stComboSearch;      //Combo box Search.
-		CComboBox m_stComboReplace;     //Combo box Replace.
-		CComboBox m_stComboMode;        //Combo box "Search mode".
-		CButton m_stChkSel;             //Checkbox "Selection".
+		CComboBox m_stComboSearch;  //Combo box "Search".
+		CComboBox m_stComboReplace; //Combo box "Replace".
+		CComboBox m_stComboMode;    //Combo box "Search mode".
+		CButton m_stCheckSel;         //Check box "Selection".
+		CEdit m_stEditStart;        //Edit "Start search at".
+		CEdit m_stEditStep;         //Edit "Step".
 		const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
 		const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
 		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
 		CBrush m_stBrushDefault;
 		std::wstring m_wstrTextSearch { };  //String to search for.
 		std::wstring m_wstrTextReplace { }; //Search "Replace with..." wstring.
-		ULONGLONG m_ullSearchStart { };
-		ULONGLONG m_ullSearchEnd { };
-		ULONGLONG m_ullOffset { };       //An offset search should start from.
+		ULONGLONG m_ullOffsetStart { };  //Search start boundary.
+		ULONGLONG m_ullOffsetEnd { };    //Search end boundary.
+		ULONGLONG m_ullOffsetCurr { };   //Current offset search should start from.
 		ULONGLONG m_ullEndSentinel { };  //Maximum offset search can't cross.
+		ULONGLONG m_ullStep { 1 };       //Search step (default is 1 byte).
 		DWORD m_dwCount { };             //How many, or what index number.
 		DWORD m_dwReplaced { };          //Replaced amount;
 		DWORD m_dwMaxSearch { 1000 };    //Maximum found search occurences.
