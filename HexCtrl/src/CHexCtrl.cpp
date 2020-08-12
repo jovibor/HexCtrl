@@ -269,10 +269,8 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	if (IsCreated())
 		return false;
 
-	auto hInst = AfxGetInstanceHandle();
-
 	//Menus
-	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCE(IDR_HEXCTRL_MENU)))
+	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCEW(IDR_HEXCTRL_MENU)))
 	{
 		MessageBoxW(L"HexControl LoadMenu(IDR_HEXCTRL_MENU) failed.", L"Error", MB_ICONERROR);
 		return false;
@@ -281,14 +279,15 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	mii.cbSize = sizeof(MENUITEMINFOW);
 	mii.fMask = MIIM_BITMAP;
 
+	auto hInst = AfxGetInstanceHandle();
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_COPYHEX] =
-		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
+		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_COPYHEX, &mii);
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_PASTEHEX] =
-		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
+		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, &mii);
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_MODIFY_FILLZEROS] =
-		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCE(IDB_HEXCTRL_MENU_FILLZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
+		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MENU_FILLZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
 
 	m_hwndMsg = hcs.hwndParent;
@@ -997,7 +996,6 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 
 		return vecRet;
 	};
-
 	auto lmbParse = [&](std::string_view str)->std::optional<SKEYBIND>
 	{
 		if (str.empty())
@@ -1043,7 +1041,6 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 
 		return stRet;
 	};
-
 	auto lmbVecEqualize = [](std::vector<SKEYBIND>& vecMain, const std::vector<SKEYBIND>& vecFrom)
 	{
 		//Remove everything from vecMain that exists in vecFrom.
@@ -1097,7 +1094,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		std::size_t i { 0 };
 		for (const auto& iterMain : m_vecKeyBind)
 		{
-			//Check for previous same menu ID, to assign only one(first) keybinding for menu name.
+			//Check for previous same menu ID, to assign only one (first) keybinding for menu name.
 			auto iterEnd = m_vecKeyBind.begin() + i++;
 			if (auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd,
 				[&](const SKEYBIND& ref) { return ref.wMenuID == iterMain.wMenuID; });
@@ -1125,7 +1122,13 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 				else
 					wstr += iterMain.uKey;
 
-				m_menuMain.ModifyMenuW(iterMain.wMenuID, MF_BYCOMMAND, iterMain.wMenuID, wstr.data());
+				//Modify menu with a new name (with shortcut appended) and old bitmap.
+				MENUITEMINFOW mii { };
+				mii.cbSize = sizeof(MENUITEMINFOW);
+				mii.fMask = MIIM_BITMAP | MIIM_STRING;
+				m_menuMain.GetMenuItemInfoW(iterMain.wMenuID, &mii);
+				mii.dwTypeData = wstr.data();
+				m_menuMain.SetMenuItemInfoW(iterMain.wMenuID, &mii);
 			}
 		}
 	}
