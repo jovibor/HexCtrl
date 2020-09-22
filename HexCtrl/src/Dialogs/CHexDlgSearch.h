@@ -81,7 +81,7 @@ namespace HEXCTRL::INTERNAL
 		CComboBox m_stComboSearch;  //Combo box "Search".
 		CComboBox m_stComboReplace; //Combo box "Replace".
 		CComboBox m_stComboMode;    //Combo box "Search mode".
-		CButton m_stCheckSel;         //Check box "Selection".
+		CButton m_stCheckSel;       //Check box "Selection".
 		CEdit m_stEditStart;        //Edit "Start search at".
 		CEdit m_stEditStep;         //Edit "Step".
 		const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };

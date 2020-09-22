@@ -2707,14 +2707,15 @@ void CHexCtrl::FillWithZeros()
 auto CHexCtrl::GetBottomLine()const->ULONGLONG
 {
 	ULONGLONG ullEndLine { };
-	if (!IsDataSet())
-		return ullEndLine;
+	if (IsDataSet())
+	{
+		auto ullTopLine = GetTopLine();
+		ullEndLine = (ullTopLine + m_iHeightWorkArea / m_sizeLetter.cy) - 1;
 
-	auto ullTopLine = GetTopLine();
-	ullEndLine = ullTopLine + m_iHeightWorkArea / m_sizeLetter.cy;
-	//If m_dwDataCount is really small we adjust ullEndLine to be not bigger than maximum allowed.
-	if (ullEndLine > (m_ullDataSize / m_dwCapacity))
-		ullEndLine = (m_ullDataSize % m_dwCapacity) ? m_ullDataSize / m_dwCapacity + 1 : m_ullDataSize / m_dwCapacity;
+		//If m_dwDataCount is really small we adjust ullEndLine to be not bigger than maximum allowed.
+		if (ullEndLine > (m_ullDataSize / m_dwCapacity))
+			ullEndLine = (m_ullDataSize % m_dwCapacity) ? m_ullDataSize / m_dwCapacity : m_ullDataSize / m_dwCapacity - 1;
+	}
 
 	return ullEndLine;
 }
@@ -4559,9 +4560,6 @@ void CHexCtrl::OnPaint()
 	m_iHeightClientArea = rcClient.Height();
 	m_iWidthClientArea = rcClient.Width();
 
-	//Drawing through CMemDC to avoid flickering.
-	CMemDC memDC(dc, rcClient);
-	auto pDC = &memDC.GetDC();
 	const auto ullStartLine = GetTopLine();
 	const auto ullEndLine = GetBottomLine();
 	auto iLines = static_cast<int>(ullEndLine - ullStartLine);
@@ -4569,9 +4567,15 @@ void CHexCtrl::OnPaint()
 	if (iLines < 0)
 		return;
 
+	//Actual amount of lines, "ullEndLine - ullStartLine" always shows one line less.
+	if (IsDataSet())
+		++iLines;
+
+	//Drawing through CMemDC to avoid flickering.
+	CMemDC memDC(dc, rcClient);
+	auto pDC = &memDC.GetDC();
 	DrawWindow(pDC, &m_fontMain, &m_fontInfo); //Draw the window with all layouts.
 	DrawOffsets(pDC, &m_fontMain, ullStartLine, iLines);
-
 	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
 	DrawHexAscii(pDC, &m_fontMain, iLines, wstrHex, wstrText);
 	DrawBookmarks(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);

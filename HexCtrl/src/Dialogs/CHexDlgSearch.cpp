@@ -91,7 +91,6 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_pListMain->InsertColumn(0, L"\u2116", 0, 40);
 	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 445);
 
-	SetEditStartAt(m_ullOffsetCurr);
 	SetEditStep(m_ullStep);
 
 	return TRUE;
@@ -317,9 +316,9 @@ void CHexDlgSearch::PrepareSearch()
 
 	//Start at.
 	CStringW wstrStart;
-	ULONGLONG ullOffsetCurr;
+	ULONGLONG ullOffsetCurr { };
 	m_stEditStart.GetWindowTextW(wstrStart);
-	if (wstrStart.IsEmpty() || !wstr2num(wstrStart.GetString(), ullOffsetCurr))
+	if (!wstrStart.IsEmpty() && !wstr2num(wstrStart.GetString(), ullOffsetCurr))
 		return;
 	m_ullOffsetCurr = ullOffsetCurr;
 
