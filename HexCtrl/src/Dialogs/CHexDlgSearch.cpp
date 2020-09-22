@@ -35,6 +35,7 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_CBN_SELCHANGE(IDC_HEXCTRL_SEARCH_COMBO_MODE, &CHexDlgSearch::OnComboModeSelChange)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListItemChanged)
+	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListRClick)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -90,6 +91,11 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 	m_pListMain->InsertColumn(0, L"\u2116", 0, 40);
 	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 445);
+
+	m_stMenuList.CreatePopupMenu();
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, IDC_HEXCTRL_SEARCH_MENU_ADDBKM, L"Add bookmark");
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, IDC_HEXCTRL_SEARCH_MENU_SELECTALL, L"Select All");
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, IDC_HEXCTRL_SEARCH_MENU_CLEARALL, L"Clear");
 
 	SetEditStep(m_ullStep);
 
@@ -324,7 +330,7 @@ void CHexDlgSearch::PrepareSearch()
 
 	//Step.
 	CStringW wstrStep;
-	ULONGLONG ullStep;
+	ULONGLONG ullStep = 1;
 	m_stEditStep.GetWindowTextW(wstrStep);
 	if (wstrStep.IsEmpty() || !wstr2num(wstrStep.GetString(), ullStep))
 		return;
@@ -990,4 +996,57 @@ void CHexDlgSearch::OnDestroy()
 
 	m_pListMain->DestroyWindow();
 	m_stBrushDefault.DeleteObject();
+	m_stMenuList.DestroyMenu();
+}
+
+void CHexDlgSearch::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
+{
+	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_SEARCH_MENU_ADDBKM, (m_pListMain->GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_SEARCH_MENU_SELECTALL, (m_pListMain->GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_SEARCH_MENU_CLEARALL, (m_pListMain->GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+
+	POINT pt;
+	GetCursorPos(&pt);
+	m_stMenuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
+}
+
+BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
+{
+	bool fHere{ true };
+	switch (LOWORD(wParam))
+	{
+	case IDC_HEXCTRL_SEARCH_MENU_ADDBKM:
+		{
+			int nItem = -1;
+			for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i)
+			{
+				nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
+				
+				auto sOffsetText = m_pListMain->GetItemText(nItem, 1);
+				ULONGLONG ullOffset;								
+				if (wstr2num(sOffsetText.GetString(), ullOffset))
+				{
+					HEXBKMSTRUCT hbs;
+					hbs.vecSpan.emplace_back(HEXSPANSTRUCT{ ullOffset, 1 });
+					hbs.wstrDesc = L"";
+					GetHexCtrl()->BkmAdd(hbs, false);
+				}
+			}
+		}
+		break;
+	case IDC_HEXCTRL_SEARCH_MENU_SELECTALL:
+		m_pListMain->SetItemState(-1, LVIS_SELECTED, LVIS_SELECTED);
+		break;
+	case IDC_HEXCTRL_SEARCH_MENU_CLEARALL:
+		m_pListMain->SetItemCountEx(0);
+		m_vecSearchRes.clear();
+		break;
+	default:
+		fHere = false;
+	}
+
+	if (fHere)
+		return TRUE;
+
+	return CDialogEx::OnCommand(wParam, lParam);
 }

@@ -46,6 +46,8 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnOK()override;
 		afx_msg void OnCancel()override;
 		afx_msg void OnDestroy();
+		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		void AddToList(ULONGLONG ullOffset);
 		void HexCtrlHighlight(ULONGLONG ullOffset, ULONGLONG ullSize); //Highlight found in HexCtrl.
@@ -114,5 +116,11 @@ namespace HEXCTRL::INTERNAL
 		std::string m_strReplace;
 		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
 		HEXSPANSTRUCT m_stSelSpan { };   //Previous selection.
+		CMenu m_stMenuList;
+		enum EMenuID {
+			IDC_HEXCTRL_SEARCH_MENU_ADDBKM = 0x8000,
+			IDC_HEXCTRL_SEARCH_MENU_SELECTALL = 0x8001,
+			IDC_HEXCTRL_SEARCH_MENU_CLEARALL = 0x8002
+		};
 	};
 }
