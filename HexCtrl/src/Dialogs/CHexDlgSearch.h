@@ -15,7 +15,7 @@ namespace HEXCTRL::INTERNAL
 {
 	using namespace LISTEX;
 	/********************************************
-	* CHexDlgSearch class declaration.			*
+	* CHexDlgSearch class declaration.          *
 	********************************************/
 	class CHexDlgSearch final : public CDialogEx
 	{
@@ -23,6 +23,9 @@ namespace HEXCTRL::INTERNAL
 			SEARCH_HEX, SEARCH_ASCII, SEARCH_WCHAR,
 			SEARCH_BYTE, SEARCH_WORD, SEARCH_DWORD, SEARCH_QWORD,
 			SEARCH_FLOAT, SEARCH_DOUBLE
+		};
+		enum class EMenuID : WORD {
+			IDM_SEARCH_ADDBKM = 0x8000, IDM_SEARCH_SELECTALL = 0x8001, IDM_SEARCH_CLEARALL = 0x8002
 		};
 	public:
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
@@ -38,7 +41,6 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnButtonFindAll();
 		afx_msg void OnButtonReplace();
 		afx_msg void OnButtonReplaceAll();
-		afx_msg void OnButtonClear();
 		afx_msg void OnCheckSel();
 		afx_msg void OnComboModeSelChange();
 		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
@@ -46,9 +48,12 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnOK()override;
 		afx_msg void OnCancel()override;
 		afx_msg void OnDestroy();
+		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		void AddToList(ULONGLONG ullOffset);
-		void HexCtrlHighlight(ULONGLONG ullOffset, ULONGLONG ullSize); //Highlight found in HexCtrl.
+		void ClearList();
+		void HexCtrlHighlight(const std::vector<HEXSPANSTRUCT>& vecSel); //Highlight found occurence in HexCtrl.
 		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
 		void PrepareSearch();
 		[[nodiscard]] bool PrepareHex();
@@ -114,5 +119,6 @@ namespace HEXCTRL::INTERNAL
 		std::string m_strReplace;
 		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
 		HEXSPANSTRUCT m_stSelSpan { };   //Previous selection.
+		CMenu m_stMenuList;
 	};
 }

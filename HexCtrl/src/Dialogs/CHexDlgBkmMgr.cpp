@@ -51,11 +51,11 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 
 	m_stMenuList.CreatePopupMenu();
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, IDC_HEXCTRL_BKMMGR_MENU_NEW, L"New");
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, IDC_HEXCTRL_BKMMGR_MENU_EDIT, L"Edit");
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, IDC_HEXCTRL_BKMMGR_MENU_REMOVE, L"Remove");
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_NEW), L"New");
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_EDIT), L"Edit");
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVE), L"Remove");
 	m_stMenuList.AppendMenuW(MF_SEPARATOR);
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, IDC_HEXCTRL_BKMMGR_MENU_CLEARALL, L"Clear all");
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_CLEARALL), L"Clear All");
 
 	return TRUE;
 }
@@ -81,9 +81,9 @@ void CHexDlgBkmMgr::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	bool fHere { true }; //Process message here, and not pass further, to parent.
-	switch (LOWORD(wParam))
+	switch (static_cast<EMenuID>(LOWORD(wParam)))
 	{
-	case IDC_HEXCTRL_BKMMGR_MENU_NEW:
+	case EMenuID::IDM_BKMMGR_NEW:
 	{
 		HEXBKMSTRUCT hbs;
 		CHexDlgBkmProps dlgBkmEdit;
@@ -94,7 +94,7 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 	}
 	break;
-	case IDC_HEXCTRL_BKMMGR_MENU_EDIT:
+	case EMenuID::IDM_BKMMGR_EDIT:
 	{
 		if (auto pBkm = m_pBookmarks->GetByIndex(m_ullCurrBkmIndex); pBkm != nullptr)
 		{
@@ -108,14 +108,14 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 	}
 	break;
-	case IDC_HEXCTRL_BKMMGR_MENU_REMOVE:
+	case EMenuID::IDM_BKMMGR_REMOVE:
 		if (auto pBkm = m_pBookmarks->GetByIndex(m_ullCurrBkmIndex); pBkm != nullptr)
 		{
 			m_pBookmarks->RemoveByID(pBkm->ullID);
 			UpdateList();
 		}
 		break;
-	case IDC_HEXCTRL_BKMMGR_MENU_CLEARALL:
+	case EMenuID::IDM_BKMMGR_CLEARALL:
 		m_pBookmarks->ClearAll();
 		UpdateList();
 		break;
@@ -203,7 +203,7 @@ void CHexDlgBkmMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iItem != -1 && pNMI->iSubItem != -1)
 	{
 		m_ullCurrBkmIndex = static_cast<ULONGLONG>(pNMI->iItem);
-		SendMessageW(WM_COMMAND, IDC_HEXCTRL_BKMMGR_MENU_EDIT);
+		SendMessageW(WM_COMMAND, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_EDIT));
 	}
 }
 
@@ -215,9 +215,9 @@ void CHexDlgBkmMgr::OnListRClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		fEnabled = true;
 		m_ullCurrBkmIndex = static_cast<ULONGLONG>(pNMI->iItem);
 	}
-	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BKMMGR_MENU_EDIT, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BKMMGR_MENU_REMOVE, (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuList.EnableMenuItem(IDC_HEXCTRL_BKMMGR_MENU_CLEARALL,
+	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_EDIT), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVE), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_CLEARALL),
 		(m_pListMain->GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 
 	POINT pt;

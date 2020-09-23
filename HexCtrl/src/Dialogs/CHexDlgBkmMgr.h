@@ -15,8 +15,15 @@
 namespace HEXCTRL::INTERNAL
 {
 	using namespace HEXCTRL::LISTEX;
+	/********************************************
+	* CHexDlgBkmMgr class declaration.          *
+	********************************************/
 	class CHexDlgBkmMgr final : public CDialogEx
 	{
+		enum class EMenuID : WORD {
+			IDM_BKMMGR_NEW = 0x8000, IDM_BKMMGR_EDIT = 0x8001,
+			IDM_BKMMGR_REMOVE = 0x8002, IDM_BKMMGR_CLEARALL = 0x8003
+		};
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks);
 	protected:
@@ -41,11 +48,5 @@ namespace HEXCTRL::INTERNAL
 		CMenu m_stMenuList;
 		ULONGLONG m_ullCurrBkmIndex { }; //Currently selected bookmark index.
 		__time64_t m_time { };
-		enum EMenuID {
-			IDC_HEXCTRL_BKMMGR_MENU_NEW = 0x8000,
-			IDC_HEXCTRL_BKMMGR_MENU_EDIT = 0x8001,
-			IDC_HEXCTRL_BKMMGR_MENU_REMOVE = 0x8002,
-			IDC_HEXCTRL_BKMMGR_MENU_CLEARALL = 0x8003
-		};
 	};
 }

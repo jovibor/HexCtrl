@@ -30,11 +30,11 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_FINDALL, &CHexDlgSearch::OnButtonFindAll)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLACE, &CHexDlgSearch::OnButtonReplace)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL, &CHexDlgSearch::OnButtonReplaceAll)
-	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_CLEAR, &CHexDlgSearch::OnButtonClear)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_CHECK_SELECTION, &CHexDlgSearch::OnCheckSel)
 	ON_CBN_SELCHANGE(IDC_HEXCTRL_SEARCH_COMBO_MODE, &CHexDlgSearch::OnComboModeSelChange)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListItemChanged)
+	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListRClick)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -90,6 +90,12 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 	m_pListMain->InsertColumn(0, L"\u2116", 0, 40);
 	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 445);
+
+	m_stMenuList.CreatePopupMenu();
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_ADDBKM), L"Add bookmark");
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_SELECTALL), L"Select All");
+	m_stMenuList.AppendMenuW(MF_SEPARATOR);
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_CLEARALL), L"Clear All");
 
 	SetEditStep(m_ullStep);
 
@@ -170,10 +176,38 @@ void CHexDlgSearch::OnButtonReplaceAll()
 	PrepareSearch();
 }
 
-void CHexDlgSearch::OnButtonClear()
+BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-	m_pListMain->SetItemCountEx(0);
-	m_vecSearchRes.clear();
+	bool fHere { true };
+	switch (static_cast<EMenuID>(LOWORD(wParam)))
+	{
+	case EMenuID::IDM_SEARCH_ADDBKM:
+	{
+		HEXBKMSTRUCT hbs { };
+		int nItem = -1;
+		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i)
+		{
+			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
+			hbs.vecSpan.emplace_back(HEXSPANSTRUCT { m_vecSearchRes.at(static_cast<size_t>(nItem)),
+				m_fReplace ? m_nSizeReplace : m_nSizeSearch });
+		}
+		GetHexCtrl()->BkmAdd(hbs, true);
+	}
+	break;
+	case EMenuID::IDM_SEARCH_SELECTALL:
+		m_pListMain->SetItemState(-1, LVIS_SELECTED, LVIS_SELECTED);
+		break;
+	case EMenuID::IDM_SEARCH_CLEARALL:
+		ClearList();
+		break;
+	default:
+		fHere = false;
+	}
+
+	if (fHere)
+		return TRUE;
+
+	return CDialogEx::OnCommand(wParam, lParam);
 }
 
 void CHexDlgSearch::OnCheckSel()
@@ -218,8 +252,36 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED))
 	{
 		SetEditStartAt(m_vecSearchRes[static_cast<size_t>(pNMI->iItem)]);
-		HexCtrlHighlight(m_vecSearchRes[static_cast<size_t>(pNMI->iItem)], m_fReplace ? m_nSizeReplace : m_nSizeSearch);
+
+		std::vector<HEXSPANSTRUCT> vecSpan { };
+		int nItem = -1;
+		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i)
+		{
+			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
+
+			//Do not yet add selected (clicked) item (in multiselect), will add it after the loop,
+			//so that it's always last in vec, to highlight it in HexCtrlHighlight.
+			if (pNMI->iItem != nItem)
+				vecSpan.emplace_back(HEXSPANSTRUCT { m_vecSearchRes.at(static_cast<size_t>(nItem)),
+					m_fReplace ? m_nSizeReplace : m_nSizeSearch });
+		}
+		vecSpan.emplace_back(HEXSPANSTRUCT { m_vecSearchRes.at(static_cast<size_t>(pNMI->iItem)),
+			m_fReplace ? m_nSizeReplace : m_nSizeSearch });
+
+		HexCtrlHighlight(vecSpan);
 	}
+}
+
+void CHexDlgSearch::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
+{
+	bool fEnabled { m_pListMain->GetItemCount() > 0 };
+	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_ADDBKM), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_SELECTALL), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_CLEARALL), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+
+	POINT pt;
+	GetCursorPos(&pt);
+	m_stMenuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
 }
 
 HBRUSH CHexDlgSearch::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
@@ -253,18 +315,23 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 	m_pListMain->EnsureVisible(iHighlight, TRUE);
 }
 
-void CHexDlgSearch::HexCtrlHighlight(ULONGLONG ullOffset, ULONGLONG ullSize)
+void CHexDlgSearch::ClearList()
+{
+	m_pListMain->SetItemCountEx(0);
+	m_vecSearchRes.clear();
+}
+
+void CHexDlgSearch::HexCtrlHighlight(const std::vector<HEXSPANSTRUCT>& vecSel)
 {
 	auto pHexCtrl = GetHexCtrl();
-	std::vector<HEXSPANSTRUCT> vecSel { { ullOffset, ullSize } };
 
 	if (m_fSelection) //Highlight selection.
 		pHexCtrl->SetSelHighlight(vecSel);
 	else
 		pHexCtrl->SetSelection(vecSel);
 
-	if (!pHexCtrl->IsOffsetVisible(ullOffset))
-		pHexCtrl->GoToOffset(ullOffset);
+	if (!pHexCtrl->IsOffsetVisible(vecSel.back().ullOffset))
+		pHexCtrl->GoToOffset(vecSel.back().ullOffset);
 }
 
 void CHexDlgSearch::Search(bool fForward)
@@ -391,7 +458,7 @@ void CHexDlgSearch::PrepareSearch()
 		if (m_stSelSpan.ullOffset != refFront.ullOffset ||
 			m_stSelSpan.ullSize != refFront.ullSize)
 		{
-			OnButtonClear();
+			ClearList();
 			m_dwCount = 0;
 			m_fSecondMatch = false;
 			m_stSelSpan = refFront;
@@ -710,7 +777,7 @@ void CHexDlgSearch::Search()
 	{
 		if (m_fAll) //Find All
 		{
-			OnButtonClear(); //Clearing all results.
+			ClearList(); //Clearing all results.
 			m_dwCount = 0;
 			auto ullStart = m_ullOffsetStart;
 			auto lmbSearch = [&](CHexDlgCallback* pDlg)
@@ -781,7 +848,7 @@ void CHexDlgSearch::Search()
 			else
 				wstrInfo = L"Search found occurrence.";
 
-			HexCtrlHighlight(m_ullOffsetCurr, m_fReplace ? m_nSizeReplace : m_nSizeSearch);
+			HexCtrlHighlight({ { m_ullOffsetCurr, m_fReplace ? m_nSizeReplace : m_nSizeSearch } });
 			AddToList(m_ullOffsetCurr);
 			SetEditStartAt(m_ullOffsetCurr);
 		}
@@ -990,4 +1057,5 @@ void CHexDlgSearch::OnDestroy()
 
 	m_pListMain->DestroyWindow();
 	m_stBrushDefault.DeleteObject();
+	m_stMenuList.DestroyMenu();
 }
