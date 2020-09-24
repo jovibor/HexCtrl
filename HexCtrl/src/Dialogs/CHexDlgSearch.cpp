@@ -182,16 +182,17 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 	switch (static_cast<EMenuID>(LOWORD(wParam)))
 	{
 	case EMenuID::IDM_SEARCH_ADDBKM:
-	{
-		HEXBKMSTRUCT hbs { };
+	{		
 		int nItem { -1 };
 		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i)
 		{
+			HEXBKMSTRUCT hbs{ };
 			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
 			hbs.vecSpan.emplace_back(HEXSPANSTRUCT { m_vecSearchRes.at(static_cast<size_t>(nItem)),
 				m_fReplace ? m_nSizeReplace : m_nSizeSearch });
-		}
-		GetHexCtrl()->BkmAdd(hbs, true);
+
+			GetHexCtrl()->BkmAdd(hbs, true);
+		}		
 	}
 	break;
 	case EMenuID::IDM_SEARCH_SELECTALL:
