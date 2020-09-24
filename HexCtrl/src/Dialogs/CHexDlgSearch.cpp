@@ -92,7 +92,7 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 445);
 
 	m_stMenuList.CreatePopupMenu();
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_ADDBKM), L"Add bookmark");
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_ADDBKM), L"Add bookmark(s)");
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_SELECTALL), L"Select All");
 	m_stMenuList.AppendMenuW(MF_SEPARATOR);
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_CLEARALL), L"Clear All");
@@ -183,15 +183,16 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 	case EMenuID::IDM_SEARCH_ADDBKM:
 	{
-		HEXBKMSTRUCT hbs { };
 		int nItem { -1 };
 		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i)
 		{
+			HEXBKMSTRUCT hbs { };
 			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
 			hbs.vecSpan.emplace_back(HEXSPANSTRUCT { m_vecSearchRes.at(static_cast<size_t>(nItem)),
 				m_fReplace ? m_nSizeReplace : m_nSizeSearch });
+			GetHexCtrl()->BkmAdd(hbs, false);
 		}
-		GetHexCtrl()->BkmAdd(hbs, true);
+		GetHexCtrl()->Redraw();
 	}
 	break;
 	case EMenuID::IDM_SEARCH_SELECTALL:
