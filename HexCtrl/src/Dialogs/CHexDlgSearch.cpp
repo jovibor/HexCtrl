@@ -184,7 +184,7 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 	case EMenuID::IDM_SEARCH_ADDBKM:
 	{
 		HEXBKMSTRUCT hbs { };
-		int nItem = -1;
+		int nItem { -1 };
 		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i)
 		{
 			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);

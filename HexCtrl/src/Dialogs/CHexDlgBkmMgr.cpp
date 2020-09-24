@@ -43,11 +43,11 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 
 	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_BKMMGR_LIST, this);
 	m_pListMain->SetSortable(true);
-	m_pListMain->InsertColumn(0, L"\u2116", LVCFMT_RIGHT, 40);
-	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_RIGHT, 80);
-	m_pListMain->InsertColumn(2, L"Size", LVCFMT_RIGHT, 80);
+	m_pListMain->InsertColumn(0, L"\u2116", LVCFMT_LEFT, 40);
+	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_CENTER, 80);
+	m_pListMain->InsertColumn(2, L"Size", LVCFMT_CENTER, 80);
 	m_pListMain->InsertColumn(3, L"Description", LVCFMT_LEFT, 210);
-	m_pListMain->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 65);
+	m_pListMain->InsertColumn(4, L"Bk color", LVCFMT_CENTER, 65);
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 
 	m_stMenuList.CreatePopupMenu();
@@ -96,7 +96,11 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	break;
 	case EMenuID::IDM_BKMMGR_EDIT:
 	{
-		if (auto pBkm = m_pBookmarks->GetByIndex(m_ullCurrBkmIndex); pBkm != nullptr)
+		if (m_pListMain->GetSelectedCount() > 1)
+			break;
+
+		auto nItem = m_pListMain->GetNextItem(-1, LVNI_SELECTED);
+		if (auto pBkm = m_pBookmarks->GetByIndex(nItem); pBkm != nullptr)
 		{
 			CHexDlgBkmProps dlgBkmEdit;
 			auto stBkm = *pBkm; //Pass a copy to dlgBkmEdit to avoid changing the original, from list.
@@ -109,12 +113,21 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 	break;
 	case EMenuID::IDM_BKMMGR_REMOVE:
-		if (auto pBkm = m_pBookmarks->GetByIndex(m_ullCurrBkmIndex); pBkm != nullptr)
+	{
+		std::vector<HEXBKMSTRUCT*> vecBkm { };
+		int nItem { -1 };
+		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i)
 		{
-			m_pBookmarks->RemoveByID(pBkm->ullID);
-			UpdateList();
+			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
+			if (auto pBkm = m_pBookmarks->GetByIndex(nItem); pBkm != nullptr)
+				vecBkm.emplace_back(pBkm);
 		}
-		break;
+		for (const auto& iter : vecBkm)
+			m_pBookmarks->RemoveByID(iter->ullID);
+
+		UpdateList();
+	}
+	break;
 	case EMenuID::IDM_BKMMGR_CLEARALL:
 		m_pBookmarks->ClearAll();
 		UpdateList();
@@ -135,7 +148,7 @@ BOOL CHexDlgBkmMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 	{
 		switch (pNMI->hdr.code)
 		{
-		case LVN_COLUMNCLICK: //ON_NOTIFY(LVN_COLUMNCLICK...) macro doesn't seem work, for no obvious reason.
+		case LVN_COLUMNCLICK: //ON_NOTIFY(LVN_COLUMNCLICK...) macro doesn't seem to work, for no obvious reason.
 			if (!m_pBookmarks->IsVirtual())
 				SortBookmarks();
 			break;
@@ -201,21 +214,18 @@ void CHexDlgBkmMgr::OnListItemLClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 void CHexDlgBkmMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iItem != -1 && pNMI->iSubItem != -1)
-	{
-		m_ullCurrBkmIndex = static_cast<ULONGLONG>(pNMI->iItem);
 		SendMessageW(WM_COMMAND, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_EDIT));
-	}
 }
 
 void CHexDlgBkmMgr::OnListRClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	bool fEnabled { false };
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iItem != -1 && pNMI->iSubItem != -1)
-	{
 		fEnabled = true;
-		m_ullCurrBkmIndex = static_cast<ULONGLONG>(pNMI->iItem);
-	}
-	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_EDIT), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+
+	//Edit menu enabled only when one item selected.
+	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_EDIT),
+		(fEnabled && (m_pListMain->GetSelectedCount() == 1) ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVE), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_CLEARALL),
 		(m_pListMain->GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);

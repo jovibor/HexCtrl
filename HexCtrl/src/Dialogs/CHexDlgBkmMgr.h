@@ -46,7 +46,6 @@ namespace HEXCTRL::INTERNAL
 		IListExPtr m_pListMain { CreateListEx() };
 		CHexBookmarks* m_pBookmarks { };
 		CMenu m_stMenuList;
-		ULONGLONG m_ullCurrBkmIndex { }; //Currently selected bookmark index.
 		__time64_t m_time { };
 	};
 }
