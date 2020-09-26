@@ -22,6 +22,8 @@ BEGIN_MESSAGE_MAP(CHexDlgBkmMgr, CDialogEx)
 	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListDblClick)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListRClick)
 	ON_NOTIFY(LISTEX_MSG_CELLCOLOR, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListCellColor)
+	ON_COMMAND(IDC_HEXCTRL_BKMMGR_RADIO_DEC, &CHexDlgBkmMgr::OnClickRadioDec)
+	ON_COMMAND(IDC_HEXCTRL_BKMMGR_RADIO_HEX, &CHexDlgBkmMgr::OnClickRadioHex)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -40,6 +42,9 @@ void CHexDlgBkmMgr::DoDataExchange(CDataExchange* pDX)
 BOOL CHexDlgBkmMgr::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
+
+	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RADIO_DEC)); pRadio)
+		pRadio->SetCheck(1);
 
 	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_BKMMGR_LIST, this);
 	m_pListMain->SetSortable(true);
@@ -176,18 +181,27 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		switch (pItem->iSubItem)
 		{
 		case 0: //Index number.
-			swprintf_s(pItem->pszText, nMaxLengh, L"%d", iItemID + 1);
+			if (m_fShowAsHex)
+				swprintf_s(pItem->pszText, nMaxLengh, L"0x%x", iItemID + 1);
+			else
+				swprintf_s(pItem->pszText, nMaxLengh, L"%d", iItemID + 1);
 			break;
 		case 1: //Offset
 			if (!pBkm->vecSpan.empty())
 				ullOffset = pBkm->vecSpan.front().ullOffset;
-			swprintf_s(pItem->pszText, nMaxLengh, L"0x%llX", ullOffset);
+			if (m_fShowAsHex)
+				swprintf_s(pItem->pszText, nMaxLengh, L"0x%llX", ullOffset);
+			else
+				swprintf_s(pItem->pszText, nMaxLengh, L"%llu", ullOffset);
 			break;
 		case 2: //Size.
 			if (!pBkm->vecSpan.empty())
 				ullSize = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
 					[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
-			swprintf_s(pItem->pszText, nMaxLengh, L"0x%llX", ullSize);
+			if (m_fShowAsHex)
+				swprintf_s(pItem->pszText, nMaxLengh, L"0x%llX", ullSize);
+			else
+				swprintf_s(pItem->pszText, nMaxLengh, L"%llu", ullSize);
 			break;
 		case 3: //Description
 			pItem->pszText = const_cast<wchar_t*>(pBkm->wstrDesc.data());
@@ -268,4 +282,16 @@ void CHexDlgBkmMgr::OnDestroy()
 
 	m_pListMain->DestroyWindow();
 	m_stMenuList.DestroyMenu();
+}
+
+void CHexDlgBkmMgr::OnClickRadioDec()
+{
+	m_fShowAsHex = false;
+	m_pListMain->RedrawWindow();
+}
+
+void CHexDlgBkmMgr::OnClickRadioHex()
+{
+	m_fShowAsHex = true;
+	m_pListMain->RedrawWindow();
 }
