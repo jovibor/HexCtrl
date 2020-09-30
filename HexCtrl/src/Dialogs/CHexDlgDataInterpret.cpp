@@ -67,9 +67,9 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 	SetWindowTextW(sTitle);
 
 	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE)); pRadio)
-		pRadio->SetCheck(1);
+		pRadio->SetCheck(BST_CHECKED);
 	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_DEC)); pRadio)
-		pRadio->SetCheck(1);
+		pRadio->SetCheck(BST_CHECKED);
 
 	m_hdItemPropGrid.mask = HDI_WIDTH;
 	m_hdItemPropGrid.cxy = 150;
@@ -1374,4 +1374,19 @@ bool CHexDlgDataInterpret::SetDataNAME_GUID(const std::wstring& wstr)
 	m_pHexCtrl->SetData(m_ullOffset, guid);
 
 	return true;
+}
+
+void CHexDlgDataInterpret::SetDisplayMode(bool fShowAsHex)
+{
+	m_fShowAsHex = fShowAsHex;
+
+	auto pHexRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_HEX));
+	auto pDecRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_DEC));
+	if (pHexRadio && pDecRadio)
+	{
+		pHexRadio->SetCheck(m_fShowAsHex ? BST_CHECKED : BST_UNCHECKED);
+		pDecRadio->SetCheck(m_fShowAsHex ? BST_UNCHECKED : BST_CHECKED);
+	}
+
+	InspectOffset(m_ullOffset);
 }

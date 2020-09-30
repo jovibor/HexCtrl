@@ -26,6 +26,7 @@ namespace HEXCTRL::INTERNAL
 		};
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks);
+		void SetDisplayMode(bool fShowAsHex);
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;

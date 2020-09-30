@@ -44,7 +44,7 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RADIO_DEC)); pRadio)
-		pRadio->SetCheck(1);
+		pRadio->SetCheck(BST_CHECKED);
 
 	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_BKMMGR_LIST, this);
 	m_pListMain->SetSortable(true);
@@ -92,7 +92,7 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 		HEXBKMSTRUCT hbs;
 		CHexDlgBkmProps dlgBkmEdit;
-		if (dlgBkmEdit.DoModal(hbs) == IDOK)
+		if (dlgBkmEdit.DoModal(hbs, m_fShowAsHex) == IDOK)
 		{
 			m_pBookmarks->Add(hbs);
 			UpdateList();
@@ -109,7 +109,7 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		{
 			CHexDlgBkmProps dlgBkmEdit;
 			auto stBkm = *pBkm; //Pass a copy to dlgBkmEdit to avoid changing the original, from list.
-			if (dlgBkmEdit.DoModal(stBkm) == IDOK)
+			if (dlgBkmEdit.DoModal(stBkm, m_fShowAsHex) == IDOK)
 			{
 				m_pBookmarks->Update(pBkm->ullID, stBkm);
 				UpdateList();
@@ -293,5 +293,20 @@ void CHexDlgBkmMgr::OnClickRadioDec()
 void CHexDlgBkmMgr::OnClickRadioHex()
 {
 	m_fShowAsHex = true;
+	m_pListMain->RedrawWindow();
+}
+
+void CHexDlgBkmMgr::SetDisplayMode(bool fShowAsHex)
+{
+	m_fShowAsHex = fShowAsHex;
+
+	auto pHexRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RADIO_HEX));
+	auto pDecRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RADIO_DEC));
+	if (pHexRadio && pDecRadio)
+	{
+		pHexRadio->SetCheck(m_fShowAsHex ? BST_CHECKED : BST_UNCHECKED);
+		pDecRadio->SetCheck(m_fShowAsHex ? BST_UNCHECKED : BST_CHECKED);
+	}
+	
 	m_pListMain->RedrawWindow();
 }

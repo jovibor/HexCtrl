@@ -76,6 +76,7 @@ namespace HEXCTRL::INTERNAL
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		[[nodiscard]] ULONGLONG GetSize()const;
 		void InspectOffset(ULONGLONG ullOffset);
+		void SetDisplayMode(bool fShowAsHex);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;

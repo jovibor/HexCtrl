@@ -483,6 +483,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		m_pBookmarks->ClearAll();
 		break;
 	case EHexCmd::CMD_DLG_BKM_MANAGER:
+		m_pDlgBookmarkMgr->SetDisplayMode(IsOffsetAsHex());
 		m_pDlgBookmarkMgr->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_HEX:
@@ -552,6 +553,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		SelAddDown();
 		break;
 	case EHexCmd::CMD_DLG_DATAINTERPRET:
+		m_pDlgDataInterpret->SetDisplayMode(IsOffsetAsHex());
 		m_pDlgDataInterpret->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_DLG_ENCODING:
