@@ -22,6 +22,8 @@ BEGIN_MESSAGE_MAP(CHexDlgBkmMgr, CDialogEx)
 	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListDblClick)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListRClick)
 	ON_NOTIFY(LISTEX_MSG_CELLCOLOR, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListCellColor)
+	ON_COMMAND(IDC_HEXCTRL_BKMMGR_RADIO_DEC, &CHexDlgBkmMgr::OnClickRadioDec)
+	ON_COMMAND(IDC_HEXCTRL_BKMMGR_RADIO_HEX, &CHexDlgBkmMgr::OnClickRadioHex)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -57,6 +59,9 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	m_stMenuList.AppendMenuW(MF_SEPARATOR);
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_CLEARALL), L"Clear All");
 
+	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RADIO_HEX)); pRadio)
+		pRadio->SetCheck(BST_CHECKED);
+
 	return TRUE;
 }
 
@@ -87,7 +92,7 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 		HEXBKMSTRUCT hbs;
 		CHexDlgBkmProps dlgBkmEdit;
-		if (dlgBkmEdit.DoModal(hbs) == IDOK)
+		if (dlgBkmEdit.DoModal(hbs, m_fShowAsHex) == IDOK)
 		{
 			m_pBookmarks->Add(hbs);
 			UpdateList();
@@ -104,7 +109,7 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		{
 			CHexDlgBkmProps dlgBkmEdit;
 			auto stBkm = *pBkm; //Pass a copy to dlgBkmEdit to avoid changing the original, from list.
-			if (dlgBkmEdit.DoModal(stBkm) == IDOK)
+			if (dlgBkmEdit.DoModal(stBkm, m_fShowAsHex) == IDOK)
 			{
 				m_pBookmarks->Update(pBkm->ullID, stBkm);
 				UpdateList();
@@ -142,6 +147,18 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	return CDialogEx::OnCommand(wParam, lParam);
 }
 
+void CHexDlgBkmMgr::OnClickRadioDec()
+{
+	m_fShowAsHex = false;
+	m_pListMain->RedrawWindow();
+}
+
+void CHexDlgBkmMgr::OnClickRadioHex()
+{
+	m_fShowAsHex = true;
+	m_pListMain->RedrawWindow();
+}
+
 BOOL CHexDlgBkmMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_BKMMGR_LIST)
@@ -166,7 +183,7 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	if (pItem->mask & LVIF_TEXT)
 	{
 		const auto iItemID = pItem->iItem;
-		const auto nMaxLengh = static_cast<size_t>(pItem->cchTextMax);
+		const auto nMaxLength = static_cast<size_t>(pItem->cchTextMax);
 		const auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(iItemID));
 		if (pBkm == nullptr)
 			return;
@@ -176,18 +193,18 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		switch (pItem->iSubItem)
 		{
 		case 0: //Index number.
-			swprintf_s(pItem->pszText, nMaxLengh, L"%d", iItemID + 1);
+			swprintf_s(pItem->pszText, nMaxLength, L"%d", iItemID + 1);
 			break;
 		case 1: //Offset
 			if (!pBkm->vecSpan.empty())
 				ullOffset = pBkm->vecSpan.front().ullOffset;
-			swprintf_s(pItem->pszText, nMaxLengh, L"0x%llX", ullOffset);
+			swprintf_s(pItem->pszText, nMaxLength, m_fShowAsHex ? L"0x%llX" : L"%llu", ullOffset);
 			break;
 		case 2: //Size.
 			if (!pBkm->vecSpan.empty())
 				ullSize = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
 					[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
-			swprintf_s(pItem->pszText, nMaxLengh, L"0x%llX", ullSize);
+			swprintf_s(pItem->pszText, nMaxLength, m_fShowAsHex ? L"0x%llX" : L"%llu", ullSize);
 			break;
 		case 3: //Description
 			pItem->pszText = const_cast<wchar_t*>(pBkm->wstrDesc.data());

@@ -39,6 +39,8 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListDblClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListCellColor(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnClickRadioDec();
+		afx_msg void OnClickRadioHex();
 		void UpdateList();
 		void SortBookmarks();
 		DECLARE_MESSAGE_MAP()
@@ -47,5 +49,6 @@ namespace HEXCTRL::INTERNAL
 		CHexBookmarks* m_pBookmarks { };
 		CMenu m_stMenuList;
 		__time64_t m_time { };
+		bool m_fShowAsHex { true };
 	};
 }

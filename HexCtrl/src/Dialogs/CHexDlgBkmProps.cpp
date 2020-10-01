@@ -18,9 +18,10 @@ using namespace HEXCTRL::INTERNAL;
 BEGIN_MESSAGE_MAP(CHexDlgBkmProps, CDialogEx)
 END_MESSAGE_MAP()
 
-INT_PTR CHexDlgBkmProps::DoModal(HEXBKMSTRUCT& hbs)
+INT_PTR CHexDlgBkmProps::DoModal(HEXBKMSTRUCT& hbs, bool fShowAsHex)
 {
 	m_pHBS = &hbs;
+	m_fShowAsHex = fShowAsHex;
 
 	return CDialogEx::DoModal();
 }
@@ -52,13 +53,15 @@ BOOL CHexDlgBkmProps::OnInitDialog()
 		m_ullSize = 1;
 		m_pHBS->vecSpan.emplace_back(HEXSPANSTRUCT { m_ullOffset, m_ullSize });
 	}
-	swprintf_s(pwszBuff, L"0x%llX", m_ullOffset);
+
+	swprintf_s(pwszBuff, m_fShowAsHex ? L"0x%llX" : L"%llu", m_ullOffset);
 	auto pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_OFFSET));
 	pEdit->SetWindowTextW(pwszBuff);
 
-	swprintf_s(pwszBuff, L"0x%llX", m_ullSize);
+	swprintf_s(pwszBuff, m_fShowAsHex ? L"0x%llX" : L"%llu", m_ullSize);
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_LENGTH));
 	pEdit->SetWindowTextW(pwszBuff);
+
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_DESCR));
 	pEdit->SetWindowTextW(m_pHBS->wstrDesc.data());
 
@@ -78,24 +81,22 @@ void CHexDlgBkmProps::OnOK()
 	auto pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_OFFSET));
 	pEdit->GetWindowTextW(pwszBuff, NUMBER_MAX_CHARS);
 	ULONGLONG ullOffset;
-	if (!wstr2num(pwszBuff, ullOffset))
-	{
-		MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
+	if (!wstr2num(pwszBuff, ullOffset)) {
+		MessageBoxW(L"Invalid offset format", L"Format Error", MB_ICONERROR);
 		return;
 	}
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_LENGTH));
 	pEdit->GetWindowTextW(pwszBuff, NUMBER_MAX_CHARS);
 	ULONGLONG ullSize;
-	if (!wstr2num(pwszBuff, ullSize))
-	{
-		MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
+	if (!wstr2num(pwszBuff, ullSize)) {
+		MessageBoxW(L"Invalid length format", L"Format Error", MB_ICONERROR);
 		return;
 	}
-	if (ullSize == 0)
-	{
+	if (ullSize == 0) {
 		MessageBoxW(L"Length can not be zero!", L"Format Error", MB_ICONERROR);
 		return;
 	}
+
 	if (m_ullOffset != ullOffset || m_ullSize != ullSize)
 	{
 		m_pHBS->vecSpan.clear();

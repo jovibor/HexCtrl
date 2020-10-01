@@ -67,9 +67,9 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 	SetWindowTextW(sTitle);
 
 	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE)); pRadio)
-		pRadio->SetCheck(1);
-	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_DEC)); pRadio)
-		pRadio->SetCheck(1);
+		pRadio->SetCheck(BST_CHECKED);
+	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_HEX)); pRadio)
+		pRadio->SetCheck(BST_CHECKED);
 
 	m_hdItemPropGrid.mask = HDI_WIDTH;
 	m_hdItemPropGrid.cxy = 150;
