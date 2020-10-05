@@ -8,7 +8,6 @@
 ****************************************************************************************/
 #pragma once
 #include "../CHexCtrl.h"
-#include "CHexEdit.h"
 #include <afxdialogex.h>  //Standard MFC's controls header.
 
 namespace HEXCTRL::INTERNAL
@@ -28,14 +27,5 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
 	private:
 		CHexCtrl* m_pHexCtrl { };
-		CHexEdit m_editOR;
-		CHexEdit m_editXOR;
-		CHexEdit m_editAND;
-		CHexEdit m_editSHL;
-		CHexEdit m_editSHR;
-		CHexEdit m_editAdd;
-		CHexEdit m_editSub;
-		CHexEdit m_editMul;
-		CHexEdit m_editDiv;
 	};
 }

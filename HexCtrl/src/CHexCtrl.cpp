@@ -1195,7 +1195,7 @@ void CHexCtrl::SetEncoding(int iCodePage)
 	{
 		m_iCodePage = iCodePage;
 		WCHAR buff[32];
-		swprintf_s(buff, _countof(buff), wstrFormat.data(), m_iCodePage);
+		swprintf_s(buff, std::size(buff), wstrFormat.data(), m_iCodePage);
 		m_wstrTextTitle = buff;
 		Redraw();
 	}
@@ -1657,7 +1657,7 @@ auto CHexCtrl::CopyCArr()const->std::wstring
 	wstrData.reserve(static_cast<size_t>(ullSelSize) * 3 + 64);
 	wstrData = L"unsigned char data[";
 	wchar_t arrSelectionNum[8] { };
-	swprintf_s(arrSelectionNum, _countof(arrSelectionNum), L"%llu", ullSelSize);
+	swprintf_s(arrSelectionNum, std::size(arrSelectionNum), L"%llu", ullSelSize);
 	wstrData += arrSelectionNum;
 	wstrData += L"] = {\r\n";
 
@@ -3991,12 +3991,12 @@ void CHexCtrl::UpdateInfoText()
 	{
 		WCHAR wBuff[260];
 		m_wstrInfo.clear();
-		m_wstrInfo.reserve(_countof(wBuff));
+		m_wstrInfo.reserve(std::size(wBuff));
 
 		if (m_fOffsetAsHex)
-			swprintf_s(wBuff, _countof(wBuff), L"Cursor: 0x%llX; ", GetCaretPos());
+			swprintf_s(wBuff, std::size(wBuff), L"Cursor: 0x%llX; ", GetCaretPos());
 		else
-			swprintf_s(wBuff, _countof(wBuff), L"Cursor: %llu; ", GetCaretPos());
+			swprintf_s(wBuff, std::size(wBuff), L"Cursor: %llu; ", GetCaretPos());
 		m_wstrInfo = wBuff;
 
 		//Page/Sector
@@ -4005,10 +4005,10 @@ void CHexCtrl::UpdateInfoText()
 			auto ullSectorCurr = GetCaretPos() / m_dwSectorSize;
 
 			if (m_fOffsetAsHex)
-				swprintf_s(wBuff, _countof(wBuff), L"%s: 0x%llX/0x%llX; ",
+				swprintf_s(wBuff, std::size(wBuff), L"%s: 0x%llX/0x%llX; ",
 					m_wstrSectorName.data(), ullSectorCurr, m_ullTotalSectors);
 			else
-				swprintf_s(wBuff, _countof(wBuff), L"%s: %llu/%llu; ",
+				swprintf_s(wBuff, std::size(wBuff), L"%s: %llu/%llu; ",
 					m_wstrSectorName.data(), ullSectorCurr, m_ullTotalSectors);
 			m_wstrInfo += wBuff;
 		}
@@ -4016,10 +4016,10 @@ void CHexCtrl::UpdateInfoText()
 		if (m_pSelection->HasSelection())
 		{
 			if (m_fOffsetAsHex)
-				swprintf_s(wBuff, _countof(wBuff), L"Selected: 0x%llX [0x%llX-0x%llX]; ",
+				swprintf_s(wBuff, std::size(wBuff), L"Selected: 0x%llX [0x%llX-0x%llX]; ",
 					m_pSelection->GetSelectionSize(), m_pSelection->GetSelectionStart(), m_pSelection->GetSelectionEnd() - 1);
 			else
-				swprintf_s(wBuff, _countof(wBuff), L"Selected: %llu [%llu-%llu]; ",
+				swprintf_s(wBuff, std::size(wBuff), L"Selected: %llu [%llu-%llu]; ",
 					m_pSelection->GetSelectionSize(), m_pSelection->GetSelectionStart(), m_pSelection->GetSelectionEnd() - 1);
 			m_wstrInfo += wBuff;
 		}

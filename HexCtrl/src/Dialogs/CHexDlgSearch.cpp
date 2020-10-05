@@ -401,7 +401,7 @@ void CHexDlgSearch::PrepareSearch()
 	if (m_fReplace)
 	{
 		wchar_t warrReplace[64];
-		GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_REPLACE, warrReplace, _countof(warrReplace));
+		GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_REPLACE, warrReplace, static_cast<int>(std::size(warrReplace)));
 		m_wstrTextReplace = warrReplace;
 		if (m_wstrTextReplace.empty())
 		{
@@ -1026,14 +1026,14 @@ void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
 void CHexDlgSearch::SetEditStartAt(ULONGLONG ullOffset)
 {
 	wchar_t buff[32] { };
-	swprintf_s(buff, _countof(buff), L"0x%llX", ullOffset);
+	swprintf_s(buff, std::size(buff), L"0x%llX", ullOffset);
 	m_stEditStart.SetWindowTextW(buff);
 }
 
 void CHexDlgSearch::SetEditStep(ULONGLONG ullStep)
 {
 	wchar_t buff[32] { };
-	swprintf_s(buff, _countof(buff), L"%llu", ullStep);
+	swprintf_s(buff, std::size(buff), L"%llu", ullStep);
 	m_stEditStep.SetWindowTextW(buff);
 }
 

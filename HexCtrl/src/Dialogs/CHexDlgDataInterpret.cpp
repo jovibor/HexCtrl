@@ -57,8 +57,8 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 		m_dwDateFormat = 1;
 
 	//Determine 'short' date seperator character. Default to UK/European if unable to determine	
-	if (!GetLocaleInfoW(LOCALE_USER_DEFAULT, LOCALE_SDATE, m_warrDateSeparator, _countof(m_warrDateSeparator)))
-		swprintf_s(m_warrDateSeparator, _countof(m_warrDateSeparator), L"/");
+	if (!GetLocaleInfoW(LOCALE_USER_DEFAULT, LOCALE_SDATE, m_warrDateSeparator, static_cast<int>(std::size(m_warrDateSeparator))))
+		swprintf_s(m_warrDateSeparator, std::size(m_warrDateSeparator), L"/");
 
 	//Update dialog title to include date format
 	CString sTitle;
@@ -510,7 +510,7 @@ std::wstring CHexDlgDataInterpret::GetCurrentUserDateFormatString()const
 	}
 
 	WCHAR buff[32];
-	swprintf_s(buff, _countof(buff), wstrFormat.data(), m_warrDateSeparator, m_warrDateSeparator);
+	swprintf_s(buff, std::size(buff), wstrFormat.data(), m_warrDateSeparator, m_warrDateSeparator);
 
 	return buff;
 }
@@ -533,15 +533,15 @@ std::wstring CHexDlgDataInterpret::SystemTimeToString(const SYSTEMTIME* pSysTime
 			switch (m_dwDateFormat)
 			{
 			case 0:	//0=Month-Day-Year
-				swprintf_s(buff, _countof(buff), L"%.2d%s%.2d%s%.4d",
+				swprintf_s(buff, std::size(buff), L"%.2d%s%.2d%s%.4d",
 					pSysTime->wMonth, m_warrDateSeparator, pSysTime->wDay, m_warrDateSeparator, pSysTime->wYear);
 				break;
 			case 2:	//2=Year-Month-Day
-				swprintf_s(buff, _countof(buff), L"%.4d%s%.2d%s%.2d",
+				swprintf_s(buff, std::size(buff), L"%.4d%s%.2d%s%.2d",
 					pSysTime->wYear, m_warrDateSeparator, pSysTime->wMonth, m_warrDateSeparator, pSysTime->wDay);
 				break;
 			default: //1=Day-Month-Year (default)
-				swprintf_s(buff, _countof(buff), L"%.2d%s%.2d%s%.4d",
+				swprintf_s(buff, std::size(buff), L"%.2d%s%.2d%s%.4d",
 					pSysTime->wDay, m_warrDateSeparator, pSysTime->wMonth, m_warrDateSeparator, pSysTime->wYear);
 			}
 			wstrRet = buff;
@@ -552,12 +552,12 @@ std::wstring CHexDlgDataInterpret::SystemTimeToString(const SYSTEMTIME* pSysTime
 		//Append optional time elements
 		if (bIncludeTime)
 		{
-			swprintf_s(buff, _countof(buff), L"%.2d:%.2d:%.2d", pSysTime->wHour, pSysTime->wMinute, pSysTime->wSecond);
+			swprintf_s(buff, std::size(buff), L"%.2d:%.2d:%.2d", pSysTime->wHour, pSysTime->wMinute, pSysTime->wSecond);
 			wstrRet += buff;
 
 			if (pSysTime->wMilliseconds > 0)
 			{
-				swprintf_s(buff, _countof(buff), L".%.3d", pSysTime->wMilliseconds);
+				swprintf_s(buff, std::size(buff), L".%.3d", pSysTime->wMilliseconds);
 				wstrRet += buff;
 			}
 		}
@@ -628,7 +628,7 @@ bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstr, PSYSTEMTIM
 void CHexDlgDataInterpret::ShowNAME_BINARY(BYTE byte)
 {
 	WCHAR buff[32];
-	swprintf_s(buff, _countof(buff), L"%s%s", arrNibbles[byte >> 4], arrNibbles[byte & 0x0F]);
+	swprintf_s(buff, std::size(buff), L"%s%s", arrNibbles[byte >> 4], arrNibbles[byte & 0x0F]);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_BINARY; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -643,7 +643,7 @@ void CHexDlgDataInterpret::ShowNAME_CHAR(BYTE byte)
 		wstrFormat = L"%hhi";
 
 	WCHAR buff[32];
-	swprintf_s(buff, _countof(buff), wstrFormat.data(), static_cast<char>(byte));
+	swprintf_s(buff, std::size(buff), wstrFormat.data(), static_cast<char>(byte));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_CHAR; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -658,7 +658,7 @@ void CHexDlgDataInterpret::ShowNAME_UCHAR(BYTE byte)
 		wstrFormat = L"%hhu";
 
 	WCHAR buff[32];
-	swprintf_s(buff, _countof(buff), wstrFormat.data(), byte);
+	swprintf_s(buff, std::size(buff), wstrFormat.data(), byte);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_UCHAR; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -673,7 +673,7 @@ void CHexDlgDataInterpret::ShowNAME_SHORT(WORD word)
 		wstrFormat = L"%hi";
 
 	WCHAR buff[32];
-	swprintf_s(buff, _countof(buff), wstrFormat.data(), static_cast<short>(word));
+	swprintf_s(buff, std::size(buff), wstrFormat.data(), static_cast<short>(word));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_SHORT; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -688,7 +688,7 @@ void CHexDlgDataInterpret::ShowNAME_USHORT(WORD word)
 		wstrFormat = L"%hu";
 
 	WCHAR buff[32];
-	swprintf_s(buff, _countof(buff), wstrFormat.data(), word);
+	swprintf_s(buff, std::size(buff), wstrFormat.data(), word);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_USHORT; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -703,7 +703,7 @@ void CHexDlgDataInterpret::ShowNAME_LONG(DWORD dword)
 		wstrFormat = L"%i";
 
 	WCHAR buff[32];
-	swprintf_s(buff, _countof(buff), wstrFormat.data(), static_cast<int>(dword));
+	swprintf_s(buff, std::size(buff), wstrFormat.data(), static_cast<int>(dword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_LONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -718,7 +718,7 @@ void CHexDlgDataInterpret::ShowNAME_ULONG(DWORD dword)
 		wstrFormat = L"%u";
 
 	WCHAR buff[32];
-	swprintf_s(buff, _countof(buff), wstrFormat.data(), dword);
+	swprintf_s(buff, std::size(buff), wstrFormat.data(), dword);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_ULONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -727,7 +727,7 @@ void CHexDlgDataInterpret::ShowNAME_ULONG(DWORD dword)
 void CHexDlgDataInterpret::ShowNAME_FLOAT(DWORD dword)
 {
 	WCHAR buff[32];
-	swprintf_s(buff, _countof(buff), L"%.9e", *reinterpret_cast<const float*>(&dword));
+	swprintf_s(buff, std::size(buff), L"%.9e", *reinterpret_cast<const float*>(&dword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_FLOAT; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -820,7 +820,7 @@ void CHexDlgDataInterpret::ShowNAME_LONGLONG(QWORD qword)
 		wstrFormat = L"%lli";
 
 	WCHAR buff[32];
-	swprintf_s(buff, _countof(buff), wstrFormat.data(), static_cast<long long>(qword));
+	swprintf_s(buff, std::size(buff), wstrFormat.data(), static_cast<long long>(qword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_LONGLONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -835,7 +835,7 @@ void CHexDlgDataInterpret::ShowNAME_ULONGLONG(QWORD qword)
 		wstrFormat = L"%llu";
 
 	WCHAR buff[32];
-	swprintf_s(buff, _countof(buff), wstrFormat.data(), qword);
+	swprintf_s(buff, std::size(buff), wstrFormat.data(), qword);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_ULONGLONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -844,7 +844,7 @@ void CHexDlgDataInterpret::ShowNAME_ULONGLONG(QWORD qword)
 void CHexDlgDataInterpret::ShowNAME_DOUBLE(QWORD qword)
 {
 	WCHAR buff[32];
-	swprintf_s(buff, _countof(buff), L"%.18e", *reinterpret_cast<const double*>(&qword));
+	swprintf_s(buff, std::size(buff), L"%.18e", *reinterpret_cast<const double*>(&qword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_DOUBLE; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -949,7 +949,7 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)
 void CHexDlgDataInterpret::ShowNAME_GUID(const UDQWORD& dqword)
 {
 	wchar_t buff[64];
-	swprintf_s(buff, _countof(buff), L"{%.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x}",
+	swprintf_s(buff, std::size(buff), L"{%.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x}",
 		dqword.gGUID.Data1, dqword.gGUID.Data2, dqword.gGUID.Data3, dqword.gGUID.Data4[0],
 		dqword.gGUID.Data4[1], dqword.gGUID.Data4[2], dqword.gGUID.Data4[3], dqword.gGUID.Data4[4],
 		dqword.gGUID.Data4[5], dqword.gGUID.Data4[6], dqword.gGUID.Data4[7]);

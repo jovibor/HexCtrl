@@ -104,7 +104,7 @@ void CHexDlgBkmProps::OnOK()
 	}
 
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_DESCR));
-	pEdit->GetWindowTextW(pwszBuff, _countof(pwszBuff));
+	pEdit->GetWindowTextW(pwszBuff, static_cast<int>(std::size(pwszBuff)));
 	m_pHBS->wstrDesc = pwszBuff;
 
 	CDialogEx::OnOK();

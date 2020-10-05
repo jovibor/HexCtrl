@@ -234,7 +234,6 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgFillData.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgOperations.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.h" />
-    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexEdit.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\src\Helper.h" />
     <ClInclude Include="..\..\HexCtrl\src\ListEx\ListEx.h" />
@@ -256,7 +255,6 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgFillData.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgOperations.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexEdit.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Helper.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\ListEx\src\CListEx.cpp" />

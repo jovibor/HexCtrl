@@ -45,25 +45,16 @@ CHexCtrl* CHexDlgOperations::GetHexCtrl()const
 void CHexDlgOperations::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-
-	DDX_Control(pDX, IDC_HEXCTRL_OPERS_EDIT_OR, m_editOR);
-	DDX_Control(pDX, IDC_HEXCTRL_OPERS_EDIT_XOR, m_editXOR);
-	DDX_Control(pDX, IDC_HEXCTRL_OPERS_EDIT_AND, m_editAND);
-	DDX_Control(pDX, IDC_HEXCTRL_OPERS_EDIT_SHL, m_editSHL);
-	DDX_Control(pDX, IDC_HEXCTRL_OPERS_EDIT_SHR, m_editSHR);
-	DDX_Control(pDX, IDC_HEXCTRL_OPERS_EDIT_ADD, m_editAdd);
-	DDX_Control(pDX, IDC_HEXCTRL_OPERS_EDIT_SUB, m_editSub);
-	DDX_Control(pDX, IDC_HEXCTRL_OPERS_EDIT_MUL, m_editMul);
-	DDX_Control(pDX, IDC_HEXCTRL_OPERS_EDIT_DIV, m_editDiv);
 }
 
 BOOL CHexDlgOperations::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	//lParam holds HWND.
-	WORD wID = LOWORD(wParam);
 	WORD wMessage = HIWORD(wParam);
 	bool fHere { true };
-	if (wID >= IDC_HEXCTRL_OPERS_EDIT_OR && wID <= IDC_HEXCTRL_OPERS_EDIT_DIV && wMessage == EN_SETFOCUS)
+	if (auto wID = LOWORD(wParam); wID >= IDC_HEXCTRL_OPERS_EDIT_OR
+		&& wID <= IDC_HEXCTRL_OPERS_EDIT_DIV
+		&& wMessage == EN_SETFOCUS)
 	{
 		int iRadioID { };
 		switch (wID)
@@ -111,27 +102,6 @@ BOOL CHexDlgOperations::OnCommand(WPARAM wParam, LPARAM lParam)
 
 BOOL CHexDlgOperations::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
-	if (wParam == HEXCTRL_EDITCTRL)
-	{
-		auto pnmh = reinterpret_cast<NMHDR*>(lParam);
-		switch (pnmh->code)
-		{
-		case VK_RETURN:
-			OnOK();
-			break;
-		case VK_ESCAPE:
-			OnCancel();
-			break;
-		case VK_UP:
-			PostMessageW(WM_NEXTDLGCTL, TRUE);
-			break;
-		case VK_TAB:
-		case VK_DOWN:
-			PostMessageW(WM_NEXTDLGCTL);
-			break;
-		}
-	}
-
 	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
@@ -147,7 +117,7 @@ void CHexDlgOperations::OnOK()
 	if (hms.vecSpan.empty())
 		return;
 
-	int iEditID = 0;
+	int iEditID { 0 };
 	switch (iRadioOperation)
 	{
 	case IDC_HEXCTRL_OPERS_RADIO_OR:
@@ -197,7 +167,7 @@ void CHexDlgOperations::OnOK()
 	if (iEditID)
 	{
 		WCHAR pwszEditText[32];
-		GetDlgItemTextW(iEditID, pwszEditText, _countof(pwszEditText));
+		GetDlgItemTextW(iEditID, pwszEditText, static_cast<int>(std::size(pwszEditText)));
 
 		if (!wstr2num(pwszEditText, llData))
 		{
