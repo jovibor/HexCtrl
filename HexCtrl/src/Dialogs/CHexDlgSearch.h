@@ -68,11 +68,11 @@ namespace HEXCTRL::INTERNAL
 		void Search();
 		//ullStart will return index of found occurence, if any.
 		bool Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSizeSearch,
-			ULONGLONG ullEndSentinel, bool fForward = true, bool fThread = true);
+			ULONGLONG ullEndSentinel, bool fForward = true, bool fThread = true)const;
 		void Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace,
-			bool fRedraw = true, bool fParentNtfy = true);
+			bool fRedraw = true, bool fParentNtfy = true)const;
 		void ResetSearch();
-		[[nodiscard]] EMode GetSearchMode(); //Returns current search mode.
+		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.

@@ -1120,6 +1120,12 @@ RAPIDJSON_NAMESPACE_END
 #define RAPIDJSON_VERSION_CODE(x,y,z) \
   (((x)*100000) + ((y)*100) + (z))
 
+#if defined(__has_builtin)
+#define RAPIDJSON_HAS_BUILTIN(x) __has_builtin(x)
+#else
+#define RAPIDJSON_HAS_BUILTIN(x) 0
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 // RAPIDJSON_DIAG_PUSH/POP, RAPIDJSON_DIAG_OFF
 
@@ -1221,6 +1227,19 @@ RAPIDJSON_NAMESPACE_END
 #endif
 #endif // RAPIDJSON_HAS_CXX11_RANGE_FOR
 
+///////////////////////////////////////////////////////////////////////////////
+// C++17 features
+
+#if defined(__has_cpp_attribute)
+# if __has_cpp_attribute(fallthrough)
+#  define RAPIDJSON_DELIBERATE_FALLTHROUGH [[fallthrough]]
+# else
+#  define RAPIDJSON_DELIBERATE_FALLTHROUGH
+# endif
+#else
+# define RAPIDJSON_DELIBERATE_FALLTHROUGH
+#endif
+
 //!@endcond
 
 //! Assertion (in non-throwing contexts).
@@ -1237,15 +1256,34 @@ RAPIDJSON_NAMESPACE_END
 ///////////////////////////////////////////////////////////////////////////////
 // RAPIDJSON_NOEXCEPT_ASSERT
 
+#ifndef RAPIDJSON_NOEXCEPT_ASSERT
 #ifdef RAPIDJSON_ASSERT_THROWS
 #if RAPIDJSON_HAS_CXX11_NOEXCEPT
 #define RAPIDJSON_NOEXCEPT_ASSERT(x)
 #else
-#define RAPIDJSON_NOEXCEPT_ASSERT(x) RAPIDJSON_ASSERT(x)
+#include <cassert>
+#define RAPIDJSON_NOEXCEPT_ASSERT(x) assert(x)
 #endif // RAPIDJSON_HAS_CXX11_NOEXCEPT
 #else
 #define RAPIDJSON_NOEXCEPT_ASSERT(x) RAPIDJSON_ASSERT(x)
 #endif // RAPIDJSON_ASSERT_THROWS
+#endif // RAPIDJSON_NOEXCEPT_ASSERT
+
+///////////////////////////////////////////////////////////////////////////////
+// malloc/realloc/free
+
+#ifndef RAPIDJSON_MALLOC
+///! customization point for global \c malloc
+#define RAPIDJSON_MALLOC(size) std::malloc(size)
+#endif
+#ifndef RAPIDJSON_REALLOC
+///! customization point for global \c realloc
+#define RAPIDJSON_REALLOC(ptr, new_size) std::realloc(ptr, new_size)
+#endif
+#ifndef RAPIDJSON_FREE
+///! customization point for global \c free
+#define RAPIDJSON_FREE(ptr) std::free(ptr)
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // new/delete
@@ -1346,7 +1384,7 @@ concept Allocator {
 */
 
 
-/*! \def RAPIDJSON_ALLOCATOR_DEFUALT_CHUNK_CAPACITY
+/*! \def RAPIDJSON_ALLOCATOR_DEFAULT_CHUNK_CAPACITY
     \ingroup RAPIDJSON_CONFIG
     \brief User-defined kDefaultChunkCapacity definition.
 
@@ -1370,19 +1408,19 @@ public:
     static const bool kNeedFree = true;
     void* Malloc(size_t size) { 
         if (size) //  behavior of malloc(0) is implementation defined.
-            return std::malloc(size);
+            return RAPIDJSON_MALLOC(size);
         else
             return NULL; // standardize to returning NULL.
     }
     void* Realloc(void* originalPtr, size_t originalSize, size_t newSize) {
         (void)originalSize;
         if (newSize == 0) {
-            std::free(originalPtr);
+            RAPIDJSON_FREE(originalPtr);
             return NULL;
         }
-        return std::realloc(originalPtr, newSize);
+        return RAPIDJSON_REALLOC(originalPtr, newSize);
     }
-    static void Free(void *ptr) { std::free(ptr); }
+    static void Free(void *ptr) { RAPIDJSON_FREE(ptr); }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2969,6 +3007,86 @@ RAPIDJSON_DIAG_POP
 // End file:encodedstream.h
 
 
+// Begin file: internal/clzll.h
+// Tencent is pleased to support the open source community by making RapidJSON available.
+//
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+//
+// Licensed under the MIT License (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
+//
+// http://opensource.org/licenses/MIT
+//
+// Unless required by applicable law or agreed to in writing, software distributed
+// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+// CONDITIONS OF ANY KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations under the License.
+
+#ifndef RAPIDJSON_CLZLL_H_
+#define RAPIDJSON_CLZLL_H_
+
+
+// Begin file: ../rapidjson.h
+// already included
+// End file:../rapidjson.h
+
+
+#if defined(_MSC_VER) && !defined(UNDER_CE)
+#include <intrin.h>
+#if defined(_WIN64)
+#pragma intrinsic(_BitScanReverse64)
+#else
+#pragma intrinsic(_BitScanReverse)
+#endif
+#endif
+
+RAPIDJSON_NAMESPACE_BEGIN
+namespace internal {
+
+inline uint32_t clzll(uint64_t x) {
+    // Passing 0 to __builtin_clzll is UB in GCC and results in an
+    // infinite loop in the software implementation.
+    RAPIDJSON_ASSERT(x != 0);
+
+#if defined(_MSC_VER) && !defined(UNDER_CE)
+    unsigned long r = 0;
+#if defined(_WIN64)
+    _BitScanReverse64(&r, x);
+#else
+    // Scan the high 32 bits.
+    if (_BitScanReverse(&r, static_cast<uint32_t>(x >> 32)))
+        return 63 - (r + 32);
+
+    // Scan the low 32 bits.
+    _BitScanReverse(&r, static_cast<uint32_t>(x & 0xFFFFFFFF));
+#endif // _WIN64
+
+    return 63 - r;
+#elif (defined(__GNUC__) && __GNUC__ >= 4) || RAPIDJSON_HAS_BUILTIN(__builtin_clzll)
+    // __builtin_clzll wrapper
+    return static_cast<uint32_t>(__builtin_clzll(x));
+#else
+    // naive version
+    uint32_t r = 0;
+    while (!(x & (static_cast<uint64_t>(1) << 63))) {
+        x <<= 1;
+        ++r;
+    }
+
+    return r;
+#endif // _MSC_VER
+}
+
+#define RAPIDJSON_CLZLL RAPIDJSON_NAMESPACE::internal::clzll
+
+} // namespace internal
+RAPIDJSON_NAMESPACE_END
+
+#endif // RAPIDJSON_CLZLL_H_
+
+// End file:internal/clzll.h
+
+
 // Begin file: internal/meta.h
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
@@ -3242,6 +3360,7 @@ RAPIDJSON_DIAG_POP
 
 // End file:swap.h
 
+#include <cstddef>
 
 #if defined(__clang__)
 RAPIDJSON_DIAG_PUSH
@@ -3339,7 +3458,7 @@ public:
     template<typename T>
     RAPIDJSON_FORCEINLINE void Reserve(size_t count = 1) {
          // Expand the stack if needed
-        if (RAPIDJSON_UNLIKELY(stackTop_ + sizeof(T) * count > stackEnd_))
+        if (RAPIDJSON_UNLIKELY(static_cast<std::ptrdiff_t>(sizeof(T) * count) > (stackEnd_ - stackTop_)))
             Expand<T>(count);
     }
 
@@ -3352,7 +3471,7 @@ public:
     template<typename T>
     RAPIDJSON_FORCEINLINE T* PushUnsafe(size_t count = 1) {
         RAPIDJSON_ASSERT(stackTop_);
-        RAPIDJSON_ASSERT(stackTop_ + sizeof(T) * count <= stackEnd_);
+        RAPIDJSON_ASSERT(static_cast<std::ptrdiff_t>(sizeof(T) * count) <= (stackEnd_ - stackTop_));
         T* ret = reinterpret_cast<T*>(stackTop_);
         stackTop_ += sizeof(T) * count;
         return ret;
@@ -3588,7 +3707,7 @@ RAPIDJSON_NAMESPACE_END
 // End file:../rapidjson.h
 
 
-#if defined(_MSC_VER) && !__INTEL_COMPILER && defined(_M_AMD64)
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && defined(_M_AMD64)
 #include <intrin.h> // for _umul128
 #pragma intrinsic(_umul128)
 #endif
@@ -3890,11 +4009,15 @@ RAPIDJSON_NAMESPACE_END
 // already included
 // End file:../rapidjson.h
 
+
+// Begin file: clzll.h
+// already included
+// End file:clzll.h
+
 #include <limits>
 
 #if defined(_MSC_VER) && defined(_M_AMD64) && !defined(__INTEL_COMPILER)
 #include <intrin.h>
-#pragma intrinsic(_BitScanReverse64)
 #pragma intrinsic(_umul128)
 #endif
 
@@ -3970,22 +4093,8 @@ struct DiyFp {
     }
 
     DiyFp Normalize() const {
-        RAPIDJSON_ASSERT(f != 0); // https://stackoverflow.com/a/26809183/291737
-#if defined(_MSC_VER) && defined(_M_AMD64)
-        unsigned long index;
-        _BitScanReverse64(&index, f);
-        return DiyFp(f << (63 - index), e - (63 - index));
-#elif defined(__GNUC__) && __GNUC__ >= 4
-        int s = __builtin_clzll(f);
+        int s = static_cast<int>(clzll(f));
         return DiyFp(f << s, e - s);
-#else
-        DiyFp res = *this;
-        while (!(res.f & (static_cast<uint64_t>(1) << 63))) {
-            res.f <<= 1;
-            res.e--;
-        }
-        return res;
-#endif
     }
 
     DiyFp NormalizeBoundary() const {
@@ -4777,6 +4886,7 @@ enum ParseFlag {
     kParseNumbersAsStringsFlag = 64,    //!< Parse all numbers (ints/doubles) as strings.
     kParseTrailingCommasFlag = 128, //!< Allow trailing commas at the end of objects and arrays.
     kParseNanAndInfFlag = 256,      //!< Allow parsing NaN, Inf, Infinity, -Inf and -Infinity as doubles.
+    kParseEscapedApostropheFlag = 512,  //!< Allow escaped apostrophe in strings.
     kParseDefaultFlags = RAPIDJSON_PARSE_DEFAULT_FLAGS  //!< Default parse flags. Can be customized by defining RAPIDJSON_PARSE_DEFAULT_FLAGS
 };
 
@@ -5067,16 +5177,16 @@ inline const char *SkipWhitespace_SIMD(const char* p) {
 
         x = vmvnq_u8(x);                       // Negate
         x = vrev64q_u8(x);                     // Rev in 64
-        uint64_t low = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 0);   // extract
-        uint64_t high = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 1);  // extract
+        uint64_t low = vgetq_lane_u64(vreinterpretq_u64_u8(x), 0);   // extract
+        uint64_t high = vgetq_lane_u64(vreinterpretq_u64_u8(x), 1);  // extract
 
         if (low == 0) {
             if (high != 0) {
-                int lz =__builtin_clzll(high);;
+                uint32_t lz = internal::clzll(high);
                 return p + 8 + (lz >> 3);
             }
         } else {
-            int lz = __builtin_clzll(low);;
+            uint32_t lz = internal::clzll(low);
             return p + (lz >> 3);
         }
     }
@@ -5103,16 +5213,16 @@ inline const char *SkipWhitespace_SIMD(const char* p, const char* end) {
 
         x = vmvnq_u8(x);                       // Negate
         x = vrev64q_u8(x);                     // Rev in 64
-        uint64_t low = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 0);   // extract
-        uint64_t high = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 1);  // extract
+        uint64_t low = vgetq_lane_u64(vreinterpretq_u64_u8(x), 0);   // extract
+        uint64_t high = vgetq_lane_u64(vreinterpretq_u64_u8(x), 1);  // extract
 
         if (low == 0) {
             if (high != 0) {
-                int lz = __builtin_clzll(high);
+                uint32_t lz = internal::clzll(high);
                 return p + 8 + (lz >> 3);
             }
         } else {
-            int lz = __builtin_clzll(low);
+            uint32_t lz = internal::clzll(low);
             return p + (lz >> 3);
         }
     }
@@ -5614,7 +5724,7 @@ private:
 //!@cond RAPIDJSON_HIDDEN_FROM_DOXYGEN
 #define Z16 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
         static const char escape[256] = {
-            Z16, Z16, 0, 0,'\"', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,'/',
+            Z16, Z16, 0, 0,'\"', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '/',
             Z16, Z16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,'\\', 0, 0, 0,
             0, 0,'\b', 0, 0, 0,'\f', 0, 0, 0, 0, 0, 0, 0,'\n', 0,
             0, 0,'\r', 0,'\t', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -5637,19 +5747,31 @@ private:
                     is.Take();
                     os.Put(static_cast<typename TEncoding::Ch>(escape[static_cast<unsigned char>(e)]));
                 }
+                else if ((parseFlags & kParseEscapedApostropheFlag) && RAPIDJSON_LIKELY(e == '\'')) { // Allow escaped apostrophe
+                    is.Take();
+                    os.Put('\'');
+                }
                 else if (RAPIDJSON_LIKELY(e == 'u')) {    // Unicode
                     is.Take();
                     unsigned codepoint = ParseHex4(is, escapeOffset);
                     RAPIDJSON_PARSE_ERROR_EARLY_RETURN_VOID;
-                    if (RAPIDJSON_UNLIKELY(codepoint >= 0xD800 && codepoint <= 0xDBFF)) {
-                        // Handle UTF-16 surrogate pair
-                        if (RAPIDJSON_UNLIKELY(!Consume(is, '\\') || !Consume(is, 'u')))
+                    if (RAPIDJSON_UNLIKELY(codepoint >= 0xD800 && codepoint <= 0xDFFF)) {
+                        // high surrogate, check if followed by valid low surrogate
+                        if (RAPIDJSON_LIKELY(codepoint <= 0xDBFF)) {
+                            // Handle UTF-16 surrogate pair
+                            if (RAPIDJSON_UNLIKELY(!Consume(is, '\\') || !Consume(is, 'u')))
+                                RAPIDJSON_PARSE_ERROR(kParseErrorStringUnicodeSurrogateInvalid, escapeOffset);
+                            unsigned codepoint2 = ParseHex4(is, escapeOffset);
+                            RAPIDJSON_PARSE_ERROR_EARLY_RETURN_VOID;
+                            if (RAPIDJSON_UNLIKELY(codepoint2 < 0xDC00 || codepoint2 > 0xDFFF))
+                                RAPIDJSON_PARSE_ERROR(kParseErrorStringUnicodeSurrogateInvalid, escapeOffset);
+                            codepoint = (((codepoint - 0xD800) << 10) | (codepoint2 - 0xDC00)) + 0x10000;
+                        }
+                        // single low surrogate
+                        else
+                        {
                             RAPIDJSON_PARSE_ERROR(kParseErrorStringUnicodeSurrogateInvalid, escapeOffset);
-                        unsigned codepoint2 = ParseHex4(is, escapeOffset);
-                        RAPIDJSON_PARSE_ERROR_EARLY_RETURN_VOID;
-                        if (RAPIDJSON_UNLIKELY(codepoint2 < 0xDC00 || codepoint2 > 0xDFFF))
-                            RAPIDJSON_PARSE_ERROR(kParseErrorStringUnicodeSurrogateInvalid, escapeOffset);
-                        codepoint = (((codepoint - 0xD800) << 10) | (codepoint2 - 0xDC00)) + 0x10000;
+                        }
                     }
                     TEncoding::Encode(os, codepoint);
                 }
@@ -5868,19 +5990,19 @@ private:
             x = vorrq_u8(x, vcltq_u8(s, s3));
 
             x = vrev64q_u8(x);                     // Rev in 64
-            uint64_t low = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 0);   // extract
-            uint64_t high = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 1);  // extract
+            uint64_t low = vgetq_lane_u64(vreinterpretq_u64_u8(x), 0);   // extract
+            uint64_t high = vgetq_lane_u64(vreinterpretq_u64_u8(x), 1);  // extract
 
             SizeType length = 0;
             bool escaped = false;
             if (low == 0) {
                 if (high != 0) {
-                    unsigned lz = (unsigned)__builtin_clzll(high);;
+                    uint32_t lz = internal::clzll(high);
                     length = 8 + (lz >> 3);
                     escaped = true;
                 }
             } else {
-                unsigned lz = (unsigned)__builtin_clzll(low);;
+                uint32_t lz = internal::clzll(low);
                 length = lz >> 3;
                 escaped = true;
             }
@@ -5938,19 +6060,19 @@ private:
             x = vorrq_u8(x, vcltq_u8(s, s3));
 
             x = vrev64q_u8(x);                     // Rev in 64
-            uint64_t low = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 0);   // extract
-            uint64_t high = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 1);  // extract
+            uint64_t low = vgetq_lane_u64(vreinterpretq_u64_u8(x), 0);   // extract
+            uint64_t high = vgetq_lane_u64(vreinterpretq_u64_u8(x), 1);  // extract
 
             SizeType length = 0;
             bool escaped = false;
             if (low == 0) {
                 if (high != 0) {
-                    unsigned lz = (unsigned)__builtin_clzll(high);
+                    uint32_t lz = internal::clzll(high);
                     length = 8 + (lz >> 3);
                     escaped = true;
                 }
             } else {
-                unsigned lz = (unsigned)__builtin_clzll(low);
+                uint32_t lz = internal::clzll(low);
                 length = lz >> 3;
                 escaped = true;
             }
@@ -5994,17 +6116,17 @@ private:
             x = vorrq_u8(x, vcltq_u8(s, s3));
 
             x = vrev64q_u8(x);                     // Rev in 64
-            uint64_t low = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 0);   // extract
-            uint64_t high = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 1);  // extract
+            uint64_t low = vgetq_lane_u64(vreinterpretq_u64_u8(x), 0);   // extract
+            uint64_t high = vgetq_lane_u64(vreinterpretq_u64_u8(x), 1);  // extract
 
             if (low == 0) {
                 if (high != 0) {
-                    int lz = __builtin_clzll(high);
+                    uint32_t lz = internal::clzll(high);
                     p += 8 + (lz >> 3);
                     break;
                 }
             } else {
-                int lz = __builtin_clzll(low);
+                uint32_t lz = internal::clzll(low);
                 p += lz >> 3;
                 break;
             }
@@ -6027,7 +6149,7 @@ private:
         RAPIDJSON_FORCEINLINE Ch Peek() const { return is.Peek(); }
         RAPIDJSON_FORCEINLINE Ch TakePush() { return is.Take(); }
         RAPIDJSON_FORCEINLINE Ch Take() { return is.Take(); }
-		  RAPIDJSON_FORCEINLINE void Push(char) {}
+        RAPIDJSON_FORCEINLINE void Push(char) {}
 
         size_t Tell() { return is.Tell(); }
         size_t Length() { return 0; }
@@ -6950,6 +7072,9 @@ RAPIDJSON_NAMESPACE_END
 
 #include <new>      // placement new
 #include <limits>
+#ifdef __cpp_lib_three_way_comparison
+#include <compare>
+#endif
 
 RAPIDJSON_DIAG_PUSH
 #ifdef __clang__
@@ -6982,6 +7107,48 @@ class GenericValue;
 template <typename Encoding, typename Allocator, typename StackAllocator>
 class GenericDocument;
 
+/*! \def RAPIDJSON_DEFAULT_ALLOCATOR
+    \ingroup RAPIDJSON_CONFIG
+    \brief Allows to choose default allocator.
+
+    User can define this to use CrtAllocator or MemoryPoolAllocator.
+*/
+#ifndef RAPIDJSON_DEFAULT_ALLOCATOR
+#define RAPIDJSON_DEFAULT_ALLOCATOR MemoryPoolAllocator<CrtAllocator>
+#endif
+
+/*! \def RAPIDJSON_DEFAULT_STACK_ALLOCATOR
+    \ingroup RAPIDJSON_CONFIG
+    \brief Allows to choose default stack allocator for Document.
+
+    User can define this to use CrtAllocator or MemoryPoolAllocator.
+*/
+#ifndef RAPIDJSON_DEFAULT_STACK_ALLOCATOR
+#define RAPIDJSON_DEFAULT_STACK_ALLOCATOR CrtAllocator
+#endif
+
+/*! \def RAPIDJSON_VALUE_DEFAULT_OBJECT_CAPACITY
+    \ingroup RAPIDJSON_CONFIG
+    \brief User defined kDefaultObjectCapacity value.
+
+    User can define this as any natural number.
+*/
+#ifndef RAPIDJSON_VALUE_DEFAULT_OBJECT_CAPACITY
+// number of objects that rapidjson::Value allocates memory for by default
+#define RAPIDJSON_VALUE_DEFAULT_OBJECT_CAPACITY 16
+#endif
+
+/*! \def RAPIDJSON_VALUE_DEFAULT_ARRAY_CAPACITY
+    \ingroup RAPIDJSON_CONFIG
+    \brief User defined kDefaultArrayCapacity value.
+
+    User can define this as any natural number.
+*/
+#ifndef RAPIDJSON_VALUE_DEFAULT_ARRAY_CAPACITY
+// number of array elements that rapidjson::Value allocates memory for by default
+#define RAPIDJSON_VALUE_DEFAULT_ARRAY_CAPACITY 16
+#endif
+
 //! Name-value pair in a JSON object value.
 /*!
     This class was internal to GenericValue. It used to be a inner struct.
@@ -6989,9 +7156,45 @@ class GenericDocument;
     https://code.google.com/p/rapidjson/issues/detail?id=64
 */
 template <typename Encoding, typename Allocator> 
-struct GenericMember { 
+class GenericMember {
+public:
     GenericValue<Encoding, Allocator> name;     //!< name of member (must be a string)
     GenericValue<Encoding, Allocator> value;    //!< value of member.
+
+#if RAPIDJSON_HAS_CXX11_RVALUE_REFS
+    //! Move constructor in C++11
+    GenericMember(GenericMember&& rhs) RAPIDJSON_NOEXCEPT
+        : name(std::move(rhs.name)),
+          value(std::move(rhs.value))
+    {
+    }
+
+    //! Move assignment in C++11
+    GenericMember& operator=(GenericMember&& rhs) RAPIDJSON_NOEXCEPT {
+        return *this = static_cast<GenericMember&>(rhs);
+    }
+#endif
+
+    //! Assignment with move semantics.
+    /*! \param rhs Source of the assignment. Its name and value will become a null value after assignment.
+    */
+    GenericMember& operator=(GenericMember& rhs) RAPIDJSON_NOEXCEPT {
+        if (RAPIDJSON_LIKELY(this != &rhs)) {
+            name = rhs.name;
+            value = rhs.value;
+        }
+        return *this;
+    }
+
+    // swap() for std::sort() and other potential use in STL.
+    friend inline void swap(GenericMember& a, GenericMember& b) RAPIDJSON_NOEXCEPT {
+        a.name.Swap(b.name);
+        a.value.Swap(b.value);
+    }
+
+private:
+    //! Copy constructor is not permitted.
+    GenericMember(const GenericMember& rhs);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -7095,12 +7298,16 @@ public:
 
     //! @name relations
     //@{
-    bool operator==(ConstIterator that) const { return ptr_ == that.ptr_; }
-    bool operator!=(ConstIterator that) const { return ptr_ != that.ptr_; }
-    bool operator<=(ConstIterator that) const { return ptr_ <= that.ptr_; }
-    bool operator>=(ConstIterator that) const { return ptr_ >= that.ptr_; }
-    bool operator< (ConstIterator that) const { return ptr_ < that.ptr_; }
-    bool operator> (ConstIterator that) const { return ptr_ > that.ptr_; }
+    template <bool Const_> bool operator==(const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ == that.ptr_; }
+    template <bool Const_> bool operator!=(const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ != that.ptr_; }
+    template <bool Const_> bool operator<=(const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ <= that.ptr_; }
+    template <bool Const_> bool operator>=(const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ >= that.ptr_; }
+    template <bool Const_> bool operator< (const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ < that.ptr_; }
+    template <bool Const_> bool operator> (const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ > that.ptr_; }
+
+#ifdef __cpp_lib_three_way_comparison
+    template <bool Const_> std::strong_ordering operator<=>(const GenericMemberIterator<Const_, Encoding, Allocator>& that) const { return ptr_ <=> that.ptr_; }
+#endif
     //@}
 
     //! @name dereference
@@ -7125,17 +7332,17 @@ private:
 // class-based member iterator implementation disabled, use plain pointers
 
 template <bool Const, typename Encoding, typename Allocator>
-struct GenericMemberIterator;
+class GenericMemberIterator;
 
 //! non-const GenericMemberIterator
 template <typename Encoding, typename Allocator>
-struct GenericMemberIterator<false,Encoding,Allocator> {
+class GenericMemberIterator<false,Encoding,Allocator> {
     //! use plain pointer as iterator type
     typedef GenericMember<Encoding,Allocator>* Iterator;
 };
 //! const GenericMemberIterator
 template <typename Encoding, typename Allocator>
-struct GenericMemberIterator<true,Encoding,Allocator> {
+class GenericMemberIterator<true,Encoding,Allocator> {
     //! use plain const pointer as iterator type
     typedef const GenericMember<Encoding,Allocator>* Iterator;
 };
@@ -7494,7 +7701,7 @@ template <bool, typename> class GenericObject;
     \tparam Encoding    Encoding of the value. (Even non-string values need to have the same encoding in a document)
     \tparam Allocator   Allocator type for allocating memory of object, array and string.
 */
-template <typename Encoding, typename Allocator = MemoryPoolAllocator<> > 
+template <typename Encoding, typename Allocator = RAPIDJSON_DEFAULT_ALLOCATOR >
 class GenericValue {
 public:
     //! Name-value pair in an object.
@@ -7849,7 +8056,7 @@ public:
     //! Equal-to operator
     /*!
         \note If an object contains duplicated named member, comparing equality with any object is always \c false.
-        \note Linear time complexity (number of all values in the subtree and total lengths of all strings).
+        \note Complexity is quadratic in Object's member number and linear for the rest (number of all values in the subtree and total lengths of all strings).
     */
     template <typename SourceAllocator>
     bool operator==(const GenericValue<Encoding, SourceAllocator>& rhs) const {
@@ -8859,8 +9066,8 @@ private:
         kTypeMask = 0x07
     };
 
-    static const SizeType kDefaultArrayCapacity = 16;
-    static const SizeType kDefaultObjectCapacity = 16;
+    static const SizeType kDefaultArrayCapacity = RAPIDJSON_VALUE_DEFAULT_ARRAY_CAPACITY;
+    static const SizeType kDefaultObjectCapacity = RAPIDJSON_VALUE_DEFAULT_OBJECT_CAPACITY;
 
     struct Flag {
 #if RAPIDJSON_48BITPOINTER_OPTIMIZATION
@@ -9040,7 +9247,7 @@ typedef GenericValue<UTF8<> > Value;
     \tparam StackAllocator Allocator for allocating memory for stack during parsing.
     \warning Although GenericDocument inherits from GenericValue, the API does \b not provide any virtual functions, especially no virtual destructor.  To avoid memory leaks, do not \c delete a GenericDocument object via a pointer to a GenericValue.
 */
-template <typename Encoding, typename Allocator = MemoryPoolAllocator<>, typename StackAllocator = CrtAllocator>
+template <typename Encoding, typename Allocator = RAPIDJSON_DEFAULT_ALLOCATOR, typename StackAllocator = RAPIDJSON_DEFAULT_STACK_ALLOCATOR >
 class GenericDocument : public GenericValue<Encoding, Allocator> {
 public:
     typedef typename Encoding::Ch Ch;                       //!< Character type derived from Encoding.
@@ -9424,6 +9631,7 @@ private:
 
 //! GenericDocument with UTF8 encoding
 typedef GenericDocument<UTF8<> > Document;
+
 
 //! Helper class for accessing Value of array type.
 /*!
@@ -9914,7 +10122,7 @@ class PrettyWriter;
 // document.h
 
 template <typename Encoding, typename Allocator> 
-struct GenericMember;
+class GenericMember;
 
 template <bool Const, typename Encoding, typename Allocator>
 class GenericMemberIterator;
@@ -9989,6 +10197,7 @@ RAPIDJSON_NAMESPACE_END
 // End file:stream.h
 
 #include <iosfwd>
+#include <ios>
 
 #ifdef __clang__
 RAPIDJSON_DIAG_PUSH
@@ -11090,10 +11299,11 @@ public:
                     v = &((*v)[t->index]);
                 }
                 else {
-                    typename ValueType::MemberIterator m = v->FindMember(GenericStringRef<Ch>(t->name, t->length));
+                    typename ValueType::MemberIterator m = v->FindMember(GenericValue<EncodingType>(GenericStringRef<Ch>(t->name, t->length)));
                     if (m == v->MemberEnd()) {
                         v->AddMember(ValueType(t->name, t->length, allocator).Move(), ValueType().Move(), allocator);
-                        v = &(--v->MemberEnd())->value; // Assumes AddMember() appends at the end
+                        m = v->MemberEnd();
+                        v = &(--m)->value; // Assumes AddMember() appends at the end
                         exist = false;
                     }
                     else
@@ -11145,7 +11355,7 @@ public:
             switch (v->GetType()) {
             case kObjectType:
                 {
-                    typename ValueType::MemberIterator m = v->FindMember(GenericStringRef<Ch>(t->name, t->length));
+                    typename ValueType::MemberIterator m = v->FindMember(GenericValue<EncodingType>(GenericStringRef<Ch>(t->name, t->length)));
                     if (m == v->MemberEnd())
                         break;
                     v = &m->value;
@@ -11381,7 +11591,7 @@ public:
             switch (v->GetType()) {
             case kObjectType:
                 {
-                    typename ValueType::MemberIterator m = v->FindMember(GenericStringRef<Ch>(t->name, t->length));
+                    typename ValueType::MemberIterator m = v->FindMember(GenericValue<EncodingType>(GenericStringRef<Ch>(t->name, t->length)));
                     if (m == v->MemberEnd())
                         return false;
                     v = &m->value;
@@ -12061,6 +12271,11 @@ RAPIDJSON_DIAG_POP
 // End file:stream.h
 
 
+// Begin file: internal/clzll.h
+// already included
+// End file:internal/clzll.h
+
+
 // Begin file: internal/meta.h
 // already included
 // End file:internal/meta.h
@@ -12684,7 +12899,7 @@ public:
       return Key(str.data(), SizeType(str.size()));
     }
 #endif
-	
+
     bool EndObject(SizeType memberCount = 0) {
         (void)memberCount;
         RAPIDJSON_ASSERT(level_stack_.GetSize() >= sizeof(Level)); // not inside an Object
@@ -12740,6 +12955,8 @@ public:
         os_->Flush();
     }
 
+    static const size_t kDefaultLevelDepth = 32;
+
 protected:
     //! Information for each nested level
     struct Level {
@@ -12747,8 +12964,6 @@ protected:
         size_t valueCount;  //!< number of values in this level
         bool inArray;       //!< true if in array, otherwise in object
     };
-
-    static const size_t kDefaultLevelDepth = 32;
 
     bool WriteNull()  {
         PutReserve(*os_, 4);
@@ -13126,19 +13341,19 @@ inline bool Writer<StringBuffer>::ScanWriteUnescapedString(StringStream& is, siz
         x = vorrq_u8(x, vcltq_u8(s, s3));
 
         x = vrev64q_u8(x);                     // Rev in 64
-        uint64_t low = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 0);   // extract
-        uint64_t high = vgetq_lane_u64(reinterpret_cast<uint64x2_t>(x), 1);  // extract
+        uint64_t low = vgetq_lane_u64(vreinterpretq_u64_u8(x), 0);   // extract
+        uint64_t high = vgetq_lane_u64(vreinterpretq_u64_u8(x), 1);  // extract
 
         SizeType len = 0;
         bool escaped = false;
         if (low == 0) {
             if (high != 0) {
-                unsigned lz = (unsigned)__builtin_clzll(high);
+                uint32_t lz = internal::clzll(high);
                 len = 8 + (lz >> 3);
                 escaped = true;
             }
         } else {
-            unsigned lz = (unsigned)__builtin_clzll(low);
+            uint32_t lz = internal::clzll(low);
             len = lz >> 3;
             escaped = true;
         }
@@ -13212,7 +13427,7 @@ public:
 
 
     explicit PrettyWriter(StackAllocator* allocator = 0, size_t levelDepth = Base::kDefaultLevelDepth) : 
-        Base(allocator, levelDepth), indentChar_(' '), indentCharCount_(4) {}
+        Base(allocator, levelDepth), indentChar_(' '), indentCharCount_(4), formatOptions_(kFormatDefault) {}
 
 #if RAPIDJSON_HAS_CXX11_RVALUE_REFS
     PrettyWriter(PrettyWriter&& rhs) :
@@ -13523,7 +13738,6 @@ RAPIDJSON_DIAG_POP
 RAPIDJSON_DIAG_PUSH
 RAPIDJSON_DIAG_OFF(padded)
 RAPIDJSON_DIAG_OFF(switch-enum)
-RAPIDJSON_DIAG_OFF(implicit-fallthrough)
 #elif defined(_MSC_VER)
 RAPIDJSON_DIAG_PUSH
 RAPIDJSON_DIAG_OFF(4512) // assignment operator could not be generated
@@ -13532,9 +13746,6 @@ RAPIDJSON_DIAG_OFF(4512) // assignment operator could not be generated
 #ifdef __GNUC__
 RAPIDJSON_DIAG_PUSH
 RAPIDJSON_DIAG_OFF(effc++)
-#if __GNUC__ >= 7
-RAPIDJSON_DIAG_OFF(implicit-fallthrough)
-#endif
 #endif
 
 #ifndef RAPIDJSON_REGEX_VERBOSE
@@ -13791,6 +14002,7 @@ private:
                     if (!CharacterEscape(ds, &codepoint))
                         return; // Unsupported escape character
                     // fall through to default
+                    RAPIDJSON_DELIBERATE_FALLTHROUGH;
 
                 default: // Pattern character
                     PushOperand(operandStack, codepoint);
@@ -14020,6 +14232,7 @@ private:
                 else if (!CharacterEscape(ds, &codepoint))
                     return false;
                 // fall through to default
+                RAPIDJSON_DELIBERATE_FALLTHROUGH;
 
             default:
                 switch (step) {
@@ -14029,6 +14242,7 @@ private:
                         break;
                     }
                     // fall through to step 0 for other characters
+                    RAPIDJSON_DELIBERATE_FALLTHROUGH;
 
                 case 0:
                     {
@@ -14620,7 +14834,7 @@ public:
     Schema(SchemaDocumentType* schemaDocument, const PointerType& p, const ValueType& value, const ValueType& document, AllocatorType* allocator) :
         allocator_(allocator),
         uri_(schemaDocument->GetURI(), *allocator),
-        pointer_(p),
+        pointer_(p, allocator),
         typeless_(schemaDocument->GetTypeless()),
         enum_(),
         enumCount_(),
@@ -14654,7 +14868,6 @@ public:
         exclusiveMaximum_(false),
         defaultValueLength_(0)
     {
-        typedef typename SchemaDocumentType::ValueType ValueType;
         typedef typename ValueType::ConstValueIterator ConstValueIterator;
         typedef typename ValueType::ConstMemberIterator ConstMemberIterator;
 
@@ -15110,7 +15323,7 @@ public:
                 }
         }
 
-        SizeType index;
+        SizeType index  = 0;
         if (FindPropertyIndex(ValueType(str, len).Move(), &index)) {
             if (context.patternPropertiesSchemaCount > 0) {
                 context.patternPropertiesSchemas[context.patternPropertiesSchemaCount++] = properties_[index].schema;
@@ -15360,7 +15573,7 @@ private:
 #elif RAPIDJSON_SCHEMA_USE_STDREGEX
     template <typename ValueType>
     RegexType* CreatePattern(const ValueType& value) {
-        if (value.IsString())
+        if (value.IsString()) {
             RegexType *r = static_cast<RegexType*>(allocator_->Malloc(sizeof(RegexType)));
             try {
                 return new (r) RegexType(value.GetString(), std::size_t(value.GetStringLength()), std::regex_constants::ECMAScript);
@@ -15368,6 +15581,7 @@ private:
             catch (const std::regex_error&) {
                 AllocatorType::Free(r);
             }
+        }
         return 0;
     }
 

@@ -827,27 +827,24 @@ std::vector<CListEx::SITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 	if (iSubitem != 0) //Not needed for item itself (not subitem).
 		rcTextOrig.left += 4;
 
-	size_t nPosCurr { 0 };          //Current position in the parsed string.
-	size_t nPosTagLink { };         //Start position of the opening tag "<link=".
-	size_t nPosLinkOpenQuote { };   //Position of the (link="<-) open quote.
-	size_t nPosLinkCloseQuote { };  //Position of the (link=""<-) close quote.
-	size_t nPosTagTitle { };        //Position of the (title=) tag beginning.
-	size_t nPosTitleOpenQuote { };  //Position of the (title="<-) open quote.
-	size_t nPosTitleCloseQuote { }; //Position of the (title=""<-) closequote.
-	size_t nPosTagFirstClose { };   //Start position of the opening tag's closing bracket ">".
-	size_t nPosTagLast { };         //Start position of the enclosing tag "</link>".
-	CRect rcTextCurr { };           //Current rect.
-
-	constexpr std::wstring_view wstrTagLink { L"<link=" };
-	constexpr std::wstring_view wstrTagFirstClose { L">" };
-	constexpr std::wstring_view wstrTagLast { L"</link>" };
-	constexpr std::wstring_view wstrTagTitle { L"title=" };
-	constexpr std::wstring_view wstrQuote { L"\"" };
+	size_t nPosCurr { 0 }; //Current position in the parsed string.
+	CRect rcTextCurr { };  //Current rect.
 
 	while (nPosCurr != std::wstring_view::npos)
 	{
+		constexpr std::wstring_view wstrTagLink { L"<link=" };
+		constexpr std::wstring_view wstrTagFirstClose { L">" };
+		constexpr std::wstring_view wstrTagLast { L"</link>" };
+		constexpr std::wstring_view wstrTagTitle { L"title=" };
+		constexpr std::wstring_view wstrQuote { L"\"" };
+
 		//Searching the string for a <link=...></link> pattern.
-		if ((nPosTagLink = wstrText.find(wstrTagLink, nPosCurr)) != std::wstring_view::npos
+		if (size_t nPosTagLink { }, //Start position of the opening tag "<link=".
+			nPosLinkOpenQuote { },  //Position of the (link="<-) open quote.
+			nPosLinkCloseQuote { }, //Position of the (link=""<-) close quote.
+			nPosTagFirstClose { },  //Start position of the opening tag's closing bracket ">".
+			nPosTagLast { };        //Start position of the enclosing tag "</link>".
+			(nPosTagLink = wstrText.find(wstrTagLink, nPosCurr)) != std::wstring_view::npos
 			&& (nPosLinkOpenQuote = wstrText.find(wstrQuote, nPosTagLink)) != std::wstring_view::npos
 			&& (nPosLinkCloseQuote = wstrText.find(wstrQuote, nPosLinkOpenQuote + wstrQuote.size())) != std::wstring_view::npos
 			&& (nPosTagFirstClose = wstrText.find(wstrTagFirstClose, nPosLinkCloseQuote + wstrQuote.size())) != std::wstring_view::npos
@@ -894,14 +891,17 @@ std::vector<CListEx::SITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 			//Searching for title "<link=...title="">" tag.
 			bool fTitle { false };
 			std::wstring_view wstrTextTitle { };
-			if ((nPosTagTitle = wstrText.find(wstrTagTitle, nPosCurr)) != std::wstring_view::npos
+
+			if (size_t nPosTagTitle { }, //Position of the (title=) tag beginning.
+				nPosTitleOpenQuote { },  //Position of the (title="<-) opening quote.
+				nPosTitleCloseQuote { }; //Position of the (title=""<-) closing equote.
+				(nPosTagTitle = wstrText.find(wstrTagTitle, nPosCurr)) != std::wstring_view::npos
 				&& (nPosTitleOpenQuote = wstrText.find(wstrQuote, nPosTagTitle)) != std::wstring_view::npos
 				&& (nPosTitleCloseQuote = wstrText.find(wstrQuote, nPosTitleOpenQuote + wstrQuote.size())) != std::wstring_view::npos)
 			{
 				//Title tag text between quotes: <...title="textFromHere">
 				wstrTextTitle = wstrText.substr(nPosTitleOpenQuote + wstrQuote.size(),
 					nPosTitleCloseQuote - nPosTitleOpenQuote - wstrQuote.size());
-
 				fTitle = true;
 			}
 

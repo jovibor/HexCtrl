@@ -693,7 +693,6 @@ void CHexDlgSearch::Search()
 			if (Find(m_ullOffsetCurr, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel))
 			{
 				m_fFound = true;
-				m_fSecondMatch = true;
 				m_fDoCount = true;
 				m_dwCount = 1;
 			}
@@ -867,7 +866,7 @@ void CHexDlgSearch::Search()
 }
 
 bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch,
-	size_t nSizeSearch, ULONGLONG ullEndSentinel, bool fForward, bool fThread)
+	size_t nSizeSearch, ULONGLONG ullEndSentinel, bool fForward, bool fThread)const
 {
 	if (ullStart + nSizeSearch > ullEndSentinel)
 		return false;
@@ -978,7 +977,7 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 }
 
 void CHexDlgSearch::Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace,
-	bool fRedraw, bool fParentNtfy)
+	bool fRedraw, bool fParentNtfy)const
 {
 	SMODIFY hms;
 	hms.vecSpan.emplace_back(HEXSPANSTRUCT { ullIndex, nSizeData });
@@ -994,7 +993,7 @@ CHexCtrl* CHexDlgSearch::GetHexCtrl()const
 	return m_pHexCtrl;
 }
 
-CHexDlgSearch::EMode CHexDlgSearch::GetSearchMode()
+CHexDlgSearch::EMode CHexDlgSearch::GetSearchMode()const
 {
 	return static_cast<EMode>(m_stComboMode.GetItemData(m_stComboMode.GetCurSel()));
 }

@@ -17,7 +17,7 @@ using namespace HEXCTRL::INTERNAL;
 BEGIN_MESSAGE_MAP(CHexDlgOperations, CDialogEx)
 END_MESSAGE_MAP()
 
-BOOL CHexDlgOperations::Create(UINT nIDTemplate, CHexCtrl * pHexCtrl)
+BOOL CHexDlgOperations::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
 	if (pHexCtrl == nullptr)

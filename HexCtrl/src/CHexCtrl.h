@@ -173,7 +173,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetDataMode()const->EHexDataMode;     //Current Data mode.
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG;        //Gets m_ullDataSize.
 		[[nodiscard]] auto GetMsgWindow()const->HWND;            //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
-		void GoToOffset(ULONGLONG ullOffset);                    //Scrolls to given offfset.
+		void GoToOffset(ULONGLONG ullOffset)const;               //Scrolls to given offfset.
 		[[nodiscard]] auto GetTopLine()const->ULONGLONG;         //Returns current top line number in view.
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;   //Point of Hex chunk.
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>; //Is any hex chunk withing given point?

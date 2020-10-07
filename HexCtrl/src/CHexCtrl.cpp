@@ -87,9 +87,9 @@ namespace HEXCTRL {
 			bool          fAlt { };
 		};
 
-		constexpr auto WSTR_HEXCTRL_CLASSNAME = L"HexCtrl";
-		constexpr ULONG_PTR ID_TOOLTIP_BKM { 0x01 };    //Tooltip ID for bookmarks.
-		constexpr ULONG_PTR ID_TOOLTIP_OFFSET { 0x02 }; //Tooltip ID for offset.
+		constexpr auto WSTR_HEXCTRL_CLASSNAME { L"HexCtrl" }; //HexControl Class name.
+		constexpr auto ID_TOOLTIP_BKM { 0x01ULL };            //Tooltip ID for bookmarks.
+		constexpr auto ID_TOOLTIP_OFFSET { 0x02ULL };         //Tooltip ID for offset.
 	}
 }
 
@@ -143,7 +143,7 @@ CHexCtrl::CHexCtrl()
 
 	auto hInst = AfxGetInstanceHandle();
 	WNDCLASSEXW wc { };
-	if (!(::GetClassInfoExW(hInst, WSTR_HEXCTRL_CLASSNAME, &wc)))
+	if (!::GetClassInfoExW(hInst, WSTR_HEXCTRL_CLASSNAME, &wc))
 	{
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
@@ -155,8 +155,7 @@ CHexCtrl::CHexCtrl()
 		wc.hbrBackground = nullptr;
 		wc.lpszMenuName = nullptr;
 		wc.lpszClassName = WSTR_HEXCTRL_CLASSNAME;
-		if (!RegisterClassExW(&wc))
-		{
+		if (!RegisterClassExW(&wc)) {
 			MessageBoxW(L"HexControl RegisterClassExW error.", L"Error", MB_ICONERROR);
 			return;
 		}
@@ -301,13 +300,12 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	//2. Created HexCtrl window will always overlap (be on top of) its parent, or owner, window 
 	//   if pParentWnd is set (is not nullptr) in CreateWindowEx.
 	//3. To force HexCtrl window on taskbar the WS_EX_APPWINDOW extended window style must be set.
-	CStringW strError;
+	CStringW wstrError;
 	CRect rc = hcs.rect;
 	UINT uID { 0 };
 	switch (hcs.enCreateMode)
 	{
 	case EHexCreateMode::CREATE_POPUP:
-	{
 		dwStyle |= WS_VISIBLE | WS_POPUP | WS_OVERLAPPEDWINDOW;
 		if (rc.IsRectNull())
 		{	//If initial rect is null, and it's a float window, then place it at screen center.
@@ -315,33 +313,27 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 			const auto iPosY = GetSystemMetrics(SM_CYSCREEN) / 4;
 			rc.SetRect(iPosX, iPosY, iPosX * 3, iPosY * 3);
 		}
-	}
-	break;
+		break;
 	case EHexCreateMode::CREATE_CHILD:
-	{
 		dwStyle |= WS_VISIBLE | WS_CHILD;
 		uID = hcs.uID;
-	}
-	break;
+		break;
 	case EHexCreateMode::CREATE_CUSTOMCTRL:
-	{   //If it's a Custom Control in dialog, there is no need to create a window, just subclassing.
+		//If it's a Custom Control in dialog, there is no need to create a window, just subclassing.
 		if (!SubclassDlgItem(hcs.uID, CWnd::FromHandle(hcs.hwndParent)))
-			strError.Format(L"HexCtrl (Id:%u) SubclassDlgItem failed.\r\nCheck CreateDialogCtrl parameters.", hcs.uID);
-	}
-	break;
+			wstrError.Format(L"HexCtrl (ID:%u) SubclassDlgItem failed.\r\nCheck CreateDialogCtrl parameters.", hcs.uID);
+		break;
 	}
 
 	//Creating window.
-	if (hcs.enCreateMode != EHexCreateMode::CREATE_CUSTOMCTRL)
-	{
-		if (!CWnd::CreateEx(hcs.dwExStyle, WSTR_HEXCTRL_CLASSNAME, L"HexControl",
-			dwStyle, rc, CWnd::FromHandle(hcs.hwndParent), uID))
-			strError.Format(L"HexCtrl (Id:%u) CreateEx failed.\r\nCheck HEXCREATESTRUCT parameters.", hcs.uID);
-	}
+	if (hcs.enCreateMode == EHexCreateMode::CREATE_CHILD || hcs.enCreateMode == EHexCreateMode::CREATE_POPUP)
+		if (!CWnd::CreateEx(hcs.dwExStyle, WSTR_HEXCTRL_CLASSNAME, L"HexControl", dwStyle, rc,
+			CWnd::FromHandle(hcs.hwndParent), uID))
+			wstrError.Format(L"HexCtrl (ID:%u) CreateEx failed.\r\nCheck HEXCREATESTRUCT parameters.", hcs.uID);
 
-	if (strError.GetLength()) //If there was some Creation error.
+	if (wstrError.GetLength()) //If there was some Creation error.
 	{
-		MessageBoxW(strError, L"Error", MB_ICONERROR);
+		MessageBoxW(wstrError, L"Error", MB_ICONERROR);
 		return false;
 	}
 
@@ -393,7 +385,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	DwmExtendFrameIntoClientArea(m_hWnd, &marg);
 	SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 
-	//ScrollBars should be created here, after main Window (to attach to) has already been created, to avoid assertions.
+	//ScrollBars should be created here, after the main window has already been created (to attach to), to avoid assertions.
 	m_pScrollV->Create(this, SB_VERT, 0, 0, 0); //Actual sizes are set in RecalcAll().
 	m_pScrollH->Create(this, SB_HORZ, 0, 0, 0);
 	m_pScrollV->AddSibling(m_pScrollH.get());
@@ -412,7 +404,6 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_fCreated = true;
 	SetShowMode(m_enShowMode);
 	SetEncoding(-1);
-
 	SetConfig(L"");
 
 	return true;
@@ -2782,7 +2773,7 @@ auto CHexCtrl::GetMsgWindow()const->HWND
 	return m_hwndMsg;
 }
 
-void CHexCtrl::GoToOffset(ULONGLONG ullOffset)
+void CHexCtrl::GoToOffset(ULONGLONG ullOffset)const
 {
 	if (!IsDataSet())
 		return;
