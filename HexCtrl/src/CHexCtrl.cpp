@@ -2700,11 +2700,10 @@ auto CHexCtrl::GetBottomLine()const->ULONGLONG
 	ULONGLONG ullEndLine { };
 	if (IsDataSet())
 	{
-		auto ullTopLine = GetTopLine();
-		ullEndLine = (ullTopLine + m_iHeightWorkArea / m_sizeLetter.cy) - 1;
-
-		//If m_dwDataCount is really small we adjust ullEndLine to be not bigger than maximum allowed.
-		if (ullEndLine > (m_ullDataSize / m_dwCapacity))
+		ullEndLine = (GetTopLine() + m_iHeightWorkArea / m_sizeLetter.cy) - 1;
+		//If m_ullDataSize is really small, or we at the scroll end,
+		//we adjust ullEndLine to be not bigger than maximum allowed.
+		if (ullEndLine >= (m_ullDataSize / m_dwCapacity))
 			ullEndLine = (m_ullDataSize % m_dwCapacity) ? m_ullDataSize / m_dwCapacity : m_ullDataSize / m_dwCapacity - 1;
 	}
 
@@ -3476,7 +3475,8 @@ void CHexCtrl::RecalcAll()
 
 	//Scroll sizes according to current font size.
 	m_pScrollV->SetScrollSizes(m_sizeLetter.cy, static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio),
-		static_cast<ULONGLONG>(m_iStartWorkAreaY) + m_iHeightBottomOffArea + m_sizeLetter.cy * (m_ullDataSize / m_dwCapacity + 2));
+		static_cast<ULONGLONG>(m_iStartWorkAreaY) + m_iHeightBottomOffArea + m_sizeLetter.cy *
+		(m_ullDataSize / m_dwCapacity + (m_ullDataSize % m_dwCapacity == 0 ? 1 : 2)));
 	m_pScrollH->SetScrollSizes(m_sizeLetter.cx, rc.Width(), static_cast<ULONGLONG>(m_iFourthVertLine) + 1);
 	m_pScrollV->SetScrollPos(ullCurLineV * m_sizeLetter.cy);
 
