@@ -77,7 +77,7 @@ BOOL CHexSampleDlg::OnInitDialog()
 	m_myHex->Create(hcs);
 */
 	//m_myHex->SetWheelRatio(0.5);
-	//m_myHex->SetSectorSize(32);
+	m_myHex->SetPageSize(64);
 
 	//m_hds.pHexVirtColors = this;
 	//m_hds.fHighLatency = true;

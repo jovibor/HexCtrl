@@ -34,10 +34,13 @@
   * [GetCapacity](#getcapacity)
   * [GetCaretPos](#getcaretpos)
   * [GetColors](#getcolors)
-  * [GetEncoding](#getincoding)
+  * [GetDataSize](#getdatasize)
+  * [GetEncoding](#getencoding)
   * [GetFontSize](#getfontsize)
   * [GetMenuHandle](#getmenuhandle)
-  * [GetSectorSize](#getsectorsize)
+  * [GetPagesCount](#getpagescount)
+  * [GetPagePos](#getpagepos)
+  * [GetPageSize](#getpagesize)
   * [GetSelection](#getselection)
   * [GetShowMode](#getshowmode)
   * [GetWindowHandle](#getwindowhandle)
@@ -56,7 +59,7 @@
   * [SetFont](#setfont)
   * [SetFontSize](#setfontsize)
   * [SetMutable](#setmutable)
-  * [SetSectorSize](#setsectorsize)
+  * [SetPageSize](#setpagesize)
   * [SetSelection](#setselection)
   * [SetShowMode](#setshowmode)
   * [SetWheelRatio](#setwheelratio)
@@ -111,7 +114,7 @@ It is written and tested with **/std:c++17** in **Visual Studio 2019**, under th
 * Many options to **Copy/Paste** to/from clipboard
 * **Undo/Redo**
 * Modify data with **Filling** and many predefined **Operations** options
-* Ability to visually divide data into [sectors](#setsectorsize)
+* Ability to visually divide data into [pages](#setpagesize)
 * Print whole document/pages range/selection
 * Set individual colors for the data chunks with [`IHexVirtColors`](#ihexvirtcolors) interface
 * Cutomizable look and appearance
@@ -452,6 +455,12 @@ auto GetColors()const->HEXCOLORSSTRUCT
 ```
 Returns current [`HEXCOLORSSTRUCT`](#hexcolorsstruct).
 
+### [](#)GetDataSize
+```cpp
+auto GetDataSize()const->ULONGLONG;
+```
+Returns currently set data size.
+
 ### [](#)GetEncoding
 ```cpp
 int GetEncoding()const;
@@ -474,11 +483,23 @@ Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if y
 
 When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXNOTIFYSTRUCT`](#hexnotifystruct) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `ullData` field of the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) will be holding `ID` of the menu clicked.
 
-### [](#)GetSectorSize
+### [](#)GetPagesCount
 ```cpp
-DWORD GetSectorSize()const;
+DWORD GetPageSize()const;
 ```
-Gets current sector size set by [`SetSectorSize`](#setsectorsize).
+Get current count of pages set by [`SetPageSize`](#setpagesize).
+
+### [](#)GetPagePos
+```cpp
+auto GetPagePos()->ULONGLONG const;
+```
+Get current page a cursor stays at.
+
+### [](#)GetPageSize
+```cpp
+DWORD GetPageSize()const;
+```
+Get current page size set by [`SetPageSize`](#setpagesize).
 
 ### [](#)GetSelection
 ```cpp
@@ -598,11 +619,11 @@ void SetMutable(bool fEnable);
 ```
 Enables or disables mutable mode. In mutable mode all the data can be modified.
 
-### [](#)SetSectorSize
+### [](#)SetPageSize
 ```cpp
-void SetSectorSize(DWORD dwSize, const wchar_t* wstrName = L"Sector");
+void SetPageSize(DWORD dwSize, const wchar_t* wstrName = L"Page");
 ```
-Sets the size of the sector to draw the divider line between. This size should be multiple to the current [capacity](#setcapacity) size to take effect. The second argument sets the name to be displayed in the bottom info area of the **HexControl** ("Sector", "Page", "etc...").  
+Sets the size of the page to draw the divider line between. This size should be multiple to the current [capacity](#setcapacity) size to take effect. The second argument sets the name to be displayed in the bottom info area of the **HexControl** ("Page", "Sector", etc...).  
 To remove the divider just set `dwSize` to 0.
 
 ### [](#)SetSelection

@@ -97,10 +97,13 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
 		[[nodiscard]] auto GetColors()const->HEXCOLORSSTRUCT override;    //Current colors.
+		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;        //Get currently set data size.
 		[[nodiscard]] int GetEncoding()const override;                    //Get current code page ID.
 		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
 		[[nodiscard]] HMENU GetMenuHandle()const override;                //Context menu handle.
-		[[nodiscard]] DWORD GetSectorSize()const override;                //Current sector size.
+		[[nodiscard]] auto GetPagesCount()const->ULONGLONG override;      //Get count of pages.
+		[[nodiscard]] auto GetPagePos()const->ULONGLONG override;         //Get current page a cursor stays at.
+		[[nodiscard]] DWORD GetPageSize()const override;                  //Current page size.
 		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPANSTRUCT> override; //Gets current selection.
 		[[nodiscard]] auto GetShowMode()const->EHexShowMode override;     //Retrieves current show mode.
 		[[nodiscard]] HWND GetWindowHandle(EHexWnd enWnd)const override;  //Retrieves control's window/dialog handle.
@@ -113,18 +116,18 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
 		[[nodiscard]] bool IsOffsetVisible(ULONGLONG ullOffset)const override; //Ensures that given offset is visible.
 		void Redraw()override;                              //Redraw the control's window.
-		void SetCapacity(DWORD dwCapacity)override;         //Sets the control's current capacity.
-		void SetColors(const HEXCOLORSSTRUCT& clr)override; //Sets all the control's colors.
+		void SetCapacity(DWORD dwCapacity)override;         //Set the control's current capacity.
+		void SetColors(const HEXCOLORSSTRUCT& clr)override; //Set all the control's colors.
 		bool SetConfig(std::wstring_view wstrPath)override; //Set configuration file, or "" for defaults.
 		void SetData(const HEXDATASTRUCT& hds)override;     //Main method for setting data to display (and edit).	
 		void SetEncoding(int iCodePage)override;            //Code-page for text area.
-		void SetFont(const LOGFONTW* pLogFont)override;     //Sets the control's new font. This font has to be monospaced.
-		void SetFontSize(UINT uiSize)override;              //Sets the control's font size.
+		void SetFont(const LOGFONTW* pLogFont)override;     //Set the control's new font. This font has to be monospaced.
+		void SetFontSize(UINT uiSize)override;              //Set the control's font size.
 		void SetMutable(bool fEnable)override;              //Enable or disable edit mode.
-		void SetSectorSize(DWORD dwSize, std::wstring_view wstrName)override; //Sets sector/page size and name to draw the line between. override;          //Sets sector/page size to draw the line between.
-		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel)override; //Sets current selection.
-		void SetShowMode(EHexShowMode enShowMode)override;  //Sets current data show mode.
-		void SetWheelRatio(double dbRatio)override;         //Sets the ratio for how much to scroll with mouse-wheel.
+		void SetPageSize(DWORD dwSize, std::wstring_view wstrName)override;  //Set page size and name to draw the line between.
+		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel)override; //Set current selection.
+		void SetShowMode(EHexShowMode enShowMode)override;  //Set current data show mode.
+		void SetWheelRatio(double dbRatio)override;         //Set the ratio for how much to scroll with mouse-wheel.
 	private:
 		friend class CHexDlgDataInterpret;
 		friend class CHexDlgFillData;
@@ -171,7 +174,6 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetData(ULONGLONG ullOffset)const->T; //Get T sized data from ullOffset.
 		[[nodiscard]] auto GetData(HEXSPANSTRUCT hss)const->std::byte*; //Gets pointer to exact data offset, no matter what mode the control works in.
 		[[nodiscard]] auto GetDataMode()const->EHexDataMode;     //Current Data mode.
-		[[nodiscard]] auto GetDataSize()const->ULONGLONG;        //Gets m_ullDataSize.
 		[[nodiscard]] auto GetMsgWindow()const->HWND;            //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		void GoToOffset(ULONGLONG ullOffset)const;               //Scrolls to given offfset.
 		[[nodiscard]] auto GetTopLine()const->ULONGLONG;         //Returns current top line number in view.
@@ -197,7 +199,7 @@ namespace HEXCTRL::INTERNAL
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcOffsetDigits();                             //How many digits in Offset (depends on Hex or Decimals).
 		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc);   //Recalc routine for printing.
-		void RecalcTotalSectors();                             //Updates info about whether sector's lines printable atm or not.
+		void RecalcTotalPages();                             //Updates info about whether sector's lines printable atm or not.
 		void RecalcWorkArea(int iHeight, int iWidth);
 		void Redo();
 		void SelAll();           //Select all.
@@ -283,12 +285,12 @@ namespace HEXCTRL::INTERNAL
 		std::optional<ULONGLONG> m_optRMouseClick { }; //Right mouse clicked chunk. Used in bookmarking.
 		ULONGLONG m_ullCaretPos { };          //Current caret position.
 		ULONGLONG m_ullCurCursor { };         //Current cursor pos, to avoid WM_MOUSEMOVE handle at the same chunk.
-		ULONGLONG m_ullTotalSectors { };      //How many "Sectors" in m_ullDataSize.
+		ULONGLONG m_ullTotalPages { };      //How many "Sectors" in m_ullDataSize.
 		DWORD m_dwCapacity { 0x10 };          //How many bytes displayed in one row
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
 		DWORD m_dwOffsetBytes { };            //How many bytes "Offset" number posesses;
-		DWORD m_dwSectorSize { 0 };           //Size of a sector to print additional lines between.
+		DWORD m_dwPageSize { 0 };           //Size of a sector to print additional lines between.
 		DWORD m_dwCacheSize { };              //Cache size for virtual and message modes, set in SetData.
 		SIZE m_sizeLetter { 1, 1 };           //Current font's letter size (width, height).
 		long m_lFontSize { };                 //Current font size.
@@ -313,7 +315,7 @@ namespace HEXCTRL::INTERNAL
 		int m_iCodePage { -1 };               //Current code-page for Text area. -1 for default.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfo { };          //Info text (bottom rect).
-		std::wstring m_wstrSectorName { };    //Name of the sector/page.
+		std::wstring m_wstrPageName { };    //Name of the sector/page.
 		std::wstring m_wstrTextTitle { };     //Text area title.
 		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqRedo; //Redo deque.

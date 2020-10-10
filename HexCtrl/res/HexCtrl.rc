@@ -216,6 +216,37 @@ BEGIN
     LTEXT           "Below are listed all the code pages that are installed in the system.\r\nGreyed out the code pages that are currently unsupported by HexCtrl.",IDC_STATIC,6,4,228,16
 END
 
+IDD_HEXCTRL_GOTO DIALOGEX 0, 0, 269, 97
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_TOOLWINDOW
+CAPTION "Go to..."
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "Go",IDOK,153,9,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,209,9,50,14
+    EDITTEXT        IDC_HEXCTRL_GOTO_EDIT_GOTO,40,9,108,14,ES_AUTOHSCROLL
+    LTEXT           "Go to:",IDC_STATIC,14,12,22,8
+    LTEXT           "Range:",IDC_STATIC,137,56,24,8
+    LTEXT           "Pages total:",IDC_STATIC,134,67,40,8
+    GROUPBOX        "Available data limits/ranges:",IDC_STATIC,127,36,138,54
+    CONTROL         "Offset",IDC_HEXCTRL_GOTO_RADIO_OFFSET,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,40,26,37,8
+    CONTROL         "Page",IDC_HEXCTRL_GOTO_RADIO_PAGE,"Button",BS_AUTORADIOBUTTON,80,26,29,8
+    GROUPBOX        "Addres type:",IDC_STATIC,7,36,116,54
+    CONTROL         "Absolute",IDC_HEXCTRL_GOTO_RADIO_ABS,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,14,47,44,8
+    CONTROL         "Forward from the current",IDC_HEXCTRL_GOTO_RADIO_FWDCURR,
+                    "Button",BS_AUTORADIOBUTTON,14,57,97,8
+    CONTROL         "Backward from the current",IDC_HEXCTRL_GOTO_RADIO_BACKCURR,
+                    "Button",BS_AUTORADIOBUTTON,14,67,101,8
+    CONTROL         "Backward from the end",IDC_HEXCTRL_GOTO_RADIO_BACKEND,
+                    "Button",BS_AUTORADIOBUTTON,14,77,90,10
+    LTEXT           "",IDC_HEXCTRL_GOTO_STATIC_OFFTOTAL,182,47,75,8
+    LTEXT           "",IDC_HEXCTRL_GOTO_STATIC_PAGERANGE,165,76,93,8
+    LTEXT           "Offsets total:",IDC_STATIC,134,47,44,8
+    LTEXT           "",IDC_HEXCTRL_GOTO_STATIC_OFFRANGE,165,56,93,8
+    LTEXT           "Range:",IDC_STATIC,137,76,24,8
+    LTEXT           "",IDC_HEXCTRL_GOTO_STATIC_PAGETOTAL,175,67,83,8
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -284,6 +315,13 @@ BEGIN
 
     IDD_HEXCTRL_ENCODING, DIALOG
     BEGIN
+    END
+
+    IDD_HEXCTRL_GOTO, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 265
+        BOTTOMMARGIN, 90
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -409,6 +447,7 @@ BEGIN
             MENUITEM "DWORD",                       IDM_HEXCTRL_SHOWAS_DWORD
             MENUITEM "QWORD",                       IDM_HEXCTRL_SHOWAS_QWORD
         END
+        MENUITEM "Go to address...",            IDM_HEXCTRL_GOTO
         POPUP "Bookmarks"
         BEGIN
             MENUITEM "Add bookmark",                IDM_HEXCTRL_BOOKMARKS_ADD
@@ -528,6 +567,11 @@ BEGIN
 END
 
 IDD_HEXCTRL_ENCODING AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_HEXCTRL_GOTO AFX_DIALOG_LAYOUT
 BEGIN
     0
 END

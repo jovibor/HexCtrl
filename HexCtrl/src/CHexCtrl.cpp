@@ -18,6 +18,7 @@
 #include "Dialogs/CHexDlgDataInterpret.h"
 #include "Dialogs/CHexDlgEncoding.h"
 #include "Dialogs/CHexDlgFillData.h"
+#include "Dialogs/CHexDlgGoTo.h"
 #include "Dialogs/CHexDlgOperations.h"
 #include "Dialogs/CHexDlgSearch.h"
 #include "Helper.h"
@@ -166,7 +167,7 @@ ULONGLONG CHexCtrl::BkmAdd(const HEXBKMSTRUCT& hbs, bool fRedraw)
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return 0UL;
+		return { };
 
 	return m_pBookmarks->Add(hbs, fRedraw);
 }
@@ -202,7 +203,7 @@ ULONGLONG CHexCtrl::BkmGetCount() const
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return 0ULL;
+		return { };
 
 	return m_pBookmarks->GetCount();
 }
@@ -445,6 +446,13 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case EHexCmd::CMD_SEARCH_PREV:
 		m_pDlgSearch->Search(false);
 		break;
+	case EHexCmd::CMD_DLG_GOTO:
+	{
+		CHexDlgGoTo dlgGoTo(this);
+		if (dlgGoTo.DoModal() == IDOK)
+			GoToOffset(dlgGoTo.GetResult(), true, 1);
+	}
+	break;
 	case EHexCmd::CMD_SHOWDATA_BYTE:
 		SetShowMode(EHexShowMode::ASBYTE);
 		break;
@@ -600,13 +608,18 @@ DWORD CHexCtrl::GetCapacity()const
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return 0;
+		return { };
 
 	return m_dwCapacity;
 }
 
 ULONGLONG CHexCtrl::GetCaretPos()const
 {
+	assert(IsCreated());
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return { };
+
 	return m_ullCaretPos;
 }
 
@@ -619,11 +632,21 @@ auto CHexCtrl::GetColors()const->HEXCOLORSSTRUCT
 	return m_stColor;
 }
 
+auto CHexCtrl::GetDataSize()const->ULONGLONG
+{
+	assert(IsCreated());
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return { };
+
+	return m_ullDataSize;
+}
+
 int CHexCtrl::GetEncoding()const
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return 0;
+		return { };
 
 	return m_iCodePage;
 }
@@ -632,7 +655,7 @@ long CHexCtrl::GetFontSize()const
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return 0;
+		return { };
 
 	return m_lFontSize;
 }
@@ -646,19 +669,41 @@ HMENU CHexCtrl::GetMenuHandle()const
 	return m_menuMain.GetSubMenu(0)->GetSafeHmenu();
 }
 
-DWORD CHexCtrl::GetSectorSize()const
+auto CHexCtrl::GetPagesCount()const->ULONGLONG
+{
+	assert(IsCreated());
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return { };
+
+	return m_ullTotalPages;
+}
+
+auto CHexCtrl::GetPagePos()const->ULONGLONG
+{
+	assert(IsCreated());
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return { };
+
+	return GetCaretPos() / GetPageSize();
+}
+
+DWORD CHexCtrl::GetPageSize()const
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return 0;
+		return { };
 
-	return m_dwSectorSize;
+	return m_dwPageSize;
 }
 
 auto CHexCtrl::GetSelection()const->std::vector<HEXSPANSTRUCT>
 {
 	assert(IsCreated());
-	assert(IsDataSet()); //Data is not set yet.
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return { };
 
 	return m_pSelection->GetData();
 }
@@ -710,7 +755,7 @@ HWND CHexCtrl::GetWindowHandle(EHexWnd enWnd)const
 void CHexCtrl::GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
 {
 	assert(IsCreated());
-	assert(IsDataSet()); //Data is not set yet.
+	assert(IsDataSet());
 	if (!IsCreated() || !IsDataSet())
 		return;
 
@@ -722,6 +767,11 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
 
 auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTRUCT>
 {
+	assert(IsCreated());
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return { };
+
 	if (fScreen)
 		ScreenToClient(&pt);
 
@@ -778,6 +828,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		fAvail = !m_deqRedo.empty();
 		break;
 	case EHexCmd::CMD_DLG_SEARCH:
+	case EHexCmd::CMD_DLG_GOTO:
 	case EHexCmd::CMD_DLG_BKM_MANAGER:
 	case EHexCmd::CMD_SEL_MARKSTART:
 	case EHexCmd::CMD_SEL_MARKEND:
@@ -831,6 +882,11 @@ bool CHexCtrl::IsOffsetAsHex()const
 
 bool CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const
 {
+	assert(IsCreated());
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return false;
+
 	auto dwCapacity = GetCapacity();
 	auto ullFirst = GetTopLine() * dwCapacity;;
 	auto ullLast = GetBottomLine() * dwCapacity + dwCapacity;
@@ -873,7 +929,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	m_dwCapacityBlockSize = m_dwCapacity / 2;
 
 	WstrCapacityFill();
-	RecalcTotalSectors();
+	RecalcTotalPages();
 	RecalcAll();
 	if (IsSectorVisible() != fSecVisBefore)
 		UpdateInfoText();
@@ -902,6 +958,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 	const std::unordered_map<std::string, std::pair<EHexCmd, WORD>> umapCmdMenu
 	{
 		TO_STR_MAP(CMD_DLG_SEARCH, IDM_HEXCTRL_SEARCH), TO_STR_MAP(CMD_SEARCH_NEXT, 0), TO_STR_MAP(CMD_SEARCH_PREV, 0),
+		TO_STR_MAP(CMD_DLG_GOTO, IDM_HEXCTRL_GOTO),
 		TO_STR_MAP(CMD_SHOWDATA_BYTE, IDM_HEXCTRL_SHOWAS_BYTE), TO_STR_MAP(CMD_SHOWDATA_WORD, IDM_HEXCTRL_SHOWAS_WORD),
 		TO_STR_MAP(CMD_SHOWDATA_DWORD, IDM_HEXCTRL_SHOWAS_DWORD), TO_STR_MAP(CMD_SHOWDATA_QWORD, IDM_HEXCTRL_SHOWAS_QWORD),
 		TO_STR_MAP(CMD_BKM_ADD, IDM_HEXCTRL_BOOKMARKS_ADD), TO_STR_MAP(CMD_BKM_REMOVE, IDM_HEXCTRL_BOOKMARKS_REMOVE),
@@ -1162,7 +1219,7 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_fHighLatency = hds.fHighLatency;
 
 	RecalcAll();
-	RecalcTotalSectors();
+	RecalcTotalPages();
 	UpdateInfoText();
 
 	if (hds.stSelSpan.ullSize)
@@ -1228,7 +1285,7 @@ void CHexCtrl::SetFontSize(UINT uiSize)
 void CHexCtrl::SetMutable(bool fEnable)
 {
 	assert(IsCreated());
-	assert(IsDataSet()); //Data is not set yet.
+	assert(IsDataSet());
 	if (!IsCreated() || !IsDataSet())
 		return;
 
@@ -1236,17 +1293,17 @@ void CHexCtrl::SetMutable(bool fEnable)
 	UpdateInfoText();
 }
 
-void CHexCtrl::SetSectorSize(DWORD dwSize, std::wstring_view wstrName)
+void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wstrName)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
-	m_dwSectorSize = dwSize;
-	m_wstrSectorName = wstrName;
+	m_dwPageSize = dwSize;
+	m_wstrPageName = wstrName;
 	if (IsDataSet())
 	{
-		RecalcTotalSectors();
+		RecalcTotalPages();
 		UpdateInfoText();
 	}
 }
@@ -1254,7 +1311,7 @@ void CHexCtrl::SetSectorSize(DWORD dwSize, std::wstring_view wstrName)
 void CHexCtrl::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel)
 {
 	assert(IsCreated());
-	assert(IsDataSet()); //Data is not set yet.
+	assert(IsDataSet());
 	if (!IsCreated() || !IsDataSet())
 		return;
 
@@ -2663,7 +2720,7 @@ void CHexCtrl::DrawSectorLines(CDC* pDC, ULONGLONG ullStartLine, int iLines)
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
 	{
 		//Sectors lines vector to print.
-		if ((((ullStartLine + iterLines) * m_dwCapacity) % m_dwSectorSize == 0) && iterLines > 0)
+		if ((((ullStartLine + iterLines) * m_dwCapacity) % m_dwPageSize == 0) && iterLines > 0)
 		{
 			const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Ascii the same.
 			vecSecLines.emplace_back(SECTORLINES { { m_iFirstVertLine, iPosToPrintY }, { m_iFourthVertLine, iPosToPrintY } });
@@ -2760,11 +2817,6 @@ auto CHexCtrl::GetData(HEXSPANSTRUCT hss)const->std::byte*
 auto CHexCtrl::GetDataMode()const->EHexDataMode
 {
 	return m_enDataMode;
-}
-
-auto CHexCtrl::GetDataSize()const->ULONGLONG
-{
-	return m_ullDataSize;
 }
 
 auto CHexCtrl::GetMsgWindow()const->HWND
@@ -2876,7 +2928,7 @@ bool CHexCtrl::IsCurTextArea()const
 
 bool CHexCtrl::IsSectorVisible()const
 {
-	return m_dwSectorSize > 0 && (m_dwSectorSize % m_dwCapacity == 0) && m_dwSectorSize >= m_dwCapacity;
+	return m_dwPageSize > 0 && (m_dwPageSize % m_dwCapacity == 0) && m_dwPageSize >= m_dwCapacity;
 }
 
 void CHexCtrl::MakeSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines, bool fScroll, bool fGoToStart)
@@ -3564,10 +3616,11 @@ void CHexCtrl::RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const C
 	RecalcWorkArea(rc.Height(), rc.Width());
 }
 
-void CHexCtrl::RecalcTotalSectors()
+void CHexCtrl::RecalcTotalPages()
 {
-	if (m_dwSectorSize)
-		m_ullTotalSectors = (m_ullDataSize % m_dwSectorSize) ? m_ullDataSize / m_dwSectorSize + 1 : m_ullDataSize / m_dwSectorSize;
+	if (m_dwPageSize)
+		m_ullTotalPages = (m_ullDataSize % m_dwPageSize) ?
+		m_ullDataSize / m_dwPageSize + 1 : m_ullDataSize / m_dwPageSize;
 }
 
 void CHexCtrl::RecalcWorkArea(int iHeight, int iWidth)
@@ -3993,14 +4046,14 @@ void CHexCtrl::UpdateInfoText()
 		//Page/Sector
 		if (IsSectorVisible())
 		{
-			auto ullSectorCurr = GetCaretPos() / m_dwSectorSize;
+			auto ullPageCurr = GetPagePos();
 
 			if (m_fOffsetAsHex)
 				swprintf_s(wBuff, std::size(wBuff), L"%s: 0x%llX/0x%llX; ",
-					m_wstrSectorName.data(), ullSectorCurr, m_ullTotalSectors);
+					m_wstrPageName.data(), ullPageCurr, m_ullTotalPages);
 			else
 				swprintf_s(wBuff, std::size(wBuff), L"%s: %llu/%llu; ",
-					m_wstrSectorName.data(), ullSectorCurr, m_ullTotalSectors);
+					m_wstrPageName.data(), ullPageCurr, m_ullTotalPages);
 			m_wstrInfo += wBuff;
 		}
 
@@ -4117,7 +4170,6 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	const auto wMenuID = LOWORD(wParam);
-
 	if (auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref)
 		{return ref.wMenuID == wMenuID;	}); iter != m_vecKeyBind.end())
 		ExecuteCmd(iter->eCmd);
@@ -4200,6 +4252,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bS
 {
 	//Main
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH, IsCmdAvail(EHexCmd::CMD_DLG_SEARCH) ? MF_ENABLED : MF_GRAYED);
+	m_menuMain.EnableMenuItem(IDM_HEXCTRL_GOTO, IsCmdAvail(EHexCmd::CMD_DLG_GOTO) ? MF_ENABLED : MF_GRAYED);
 
 	//Bookmarks
 	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_ADD, IsCmdAvail(EHexCmd::CMD_BKM_ADD) ? MF_ENABLED : MF_GRAYED);

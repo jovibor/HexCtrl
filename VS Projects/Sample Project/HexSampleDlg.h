@@ -28,7 +28,7 @@ private:
 private:
 	IHexCtrlPtr m_myHex { CreateHexCtrl() };
 	HEXDATASTRUCT m_hds;
-	BYTE m_RandomData[16 * 512];
+	BYTE m_RandomData[16 * 1024];
 	HICON m_hIcon;
 	bool m_fFileOpen { false };
 	HANDLE m_hFile { };

@@ -34,7 +34,7 @@ BOOL CHexDlgOperations::OnInitDialog()
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_DIV, IDC_HEXCTRL_OPERS_RADIO_OR);
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD, IDC_HEXCTRL_OPERS_RADIO_BYTE);
 
-	return TRUE; // return TRUE unless you set the focus to a control
+	return TRUE;
 }
 
 CHexCtrl* CHexDlgOperations::GetHexCtrl()const
@@ -94,10 +94,7 @@ BOOL CHexDlgOperations::OnCommand(WPARAM wParam, LPARAM lParam)
 	else
 		fHere = false;
 
-	if (fHere)
-		return TRUE;
-
-	return CDialogEx::OnCommand(wParam, lParam);
+	return fHere ? TRUE : CDialogEx::OnCommand(wParam, lParam);
 }
 
 BOOL CHexDlgOperations::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
@@ -108,8 +105,8 @@ BOOL CHexDlgOperations::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 void CHexDlgOperations::OnOK()
 {
 	auto pHex = GetHexCtrl();
-	int iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_DIV);
-	int iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
+	auto iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_DIV);
+	auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
 
 	SMODIFY hms;
 	hms.enModifyMode = EModifyMode::MODIFY_OPERATION;

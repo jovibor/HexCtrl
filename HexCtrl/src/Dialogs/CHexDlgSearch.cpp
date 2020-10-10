@@ -238,7 +238,7 @@ void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		switch (pItem->iSubItem)
 		{
 		case 0: //Index number.
-			swprintf_s(pItem->pszText, nMaxLengh, L"%zd", nItemID + 1);
+			swprintf_s(pItem->pszText, nMaxLengh, L"%zu", nItemID + 1);
 			break;
 		case 1: //Offset.
 			swprintf_s(pItem->pszText, nMaxLengh, L"0x%llX", m_vecSearchRes[nItemID]);
@@ -392,7 +392,7 @@ void CHexDlgSearch::PrepareSearch()
 
 	//Step.
 	CStringW wstrStep;
-	ULONGLONG ullStep;
+	ULONGLONG ullStep { };
 	m_stEditStep.GetWindowTextW(wstrStep);
 	if (wstrStep.IsEmpty() || !wstr2num(wstrStep.GetString(), ullStep))
 		return;

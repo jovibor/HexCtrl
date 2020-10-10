@@ -44,7 +44,7 @@ namespace HEXCTRL
 	********************************************************************************************/
 	enum class EHexCmd : WORD
 	{
-		CMD_DLG_SEARCH = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV,
+		CMD_DLG_SEARCH = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV, CMD_DLG_GOTO,
 		CMD_SHOWDATA_BYTE, CMD_SHOWDATA_WORD, CMD_SHOWDATA_DWORD, CMD_SHOWDATA_QWORD,
 		CMD_BKM_ADD, CMD_BKM_REMOVE, CMD_BKM_NEXT, CMD_BKM_PREV, CMD_BKM_CLEARALL, CMD_DLG_BKM_MANAGER,
 		CMD_CLIPBOARD_COPY_HEX, CMD_CLIPBOARD_COPY_HEXLE, CMD_CLIPBOARD_COPY_HEXFMT, CMD_CLIPBOARD_COPY_TEXT,
@@ -264,14 +264,17 @@ namespace HEXCTRL
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;    //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hParent) = 0; //Сreates custom dialog control.
 		virtual void Destroy() = 0;                             //Deleter.
-		virtual void ExecuteCmd(EHexCmd enCmd) = 0;              //Execute a command within the control.
+		virtual void ExecuteCmd(EHexCmd enCmd) = 0;             //Execute a command within the control.
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORSSTRUCT = 0;    //Current colors.
+		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual int GetEncoding()const = 0;                    //Get current code page ID.
 		[[nodiscard]] virtual long GetFontSize()const = 0;                   //Current font size.
 		[[nodiscard]] virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
-		[[nodiscard]] virtual DWORD GetSectorSize()const = 0;                //Current sector size.
+		[[nodiscard]] virtual auto GetPagesCount()const->ULONGLONG = 0;      //Get count of pages.
+		[[nodiscard]] virtual auto GetPagePos()const->ULONGLONG = 0;         //Get current page a cursor stays at.
+		[[nodiscard]] virtual DWORD GetPageSize()const = 0;                  //Current page size.
 		[[nodiscard]] virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> = 0; //Gets current selection.
 		[[nodiscard]] virtual auto GetShowMode()const->EHexShowMode = 0;     //Retrieves current show mode.
 		[[nodiscard]] virtual HWND GetWindowHandle(EHexWnd enWnd)const = 0;  //Retrieves control's window/dialog handle.
@@ -284,18 +287,18 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
 		[[nodiscard]] virtual bool IsOffsetVisible(ULONGLONG ullOffset)const = 0; //Ensures that given offset is visible.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
-		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Sets the control's current capacity.
-		virtual void SetColors(const HEXCOLORSSTRUCT& clr) = 0;//Sets all the control's colors.
+		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
+		virtual void SetColors(const HEXCOLORSSTRUCT& clr) = 0;//Set all the control's colors.
 		virtual bool SetConfig(std::wstring_view wstrPath) = 0;//Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
 		virtual void SetEncoding(int iCodePage) = 0;           //Code page for text area.
-		virtual void SetFont(const LOGFONTW* pLogFont) = 0;    //Sets the control's new font. This font has to be monospaced.
-		virtual void SetFontSize(UINT uiSize) = 0;             //Sets the control's font size.
+		virtual void SetFont(const LOGFONTW* pLogFont) = 0;    //Set the control's new font. This font has to be monospaced.
+		virtual void SetFontSize(UINT uiSize) = 0;             //Set the control's font size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/edit mode.
-		virtual void SetSectorSize(DWORD dwSize, std::wstring_view wstrName = L"Sector") = 0; //Sets sector/page size and name to draw the lines in-between.
+		virtual void SetPageSize(DWORD dwSize, std::wstring_view wstrName = L"Page") = 0; //Set page size and name to draw the lines in-between.
 		virtual void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel) = 0; //Sets current selection.
-		virtual void SetShowMode(EHexShowMode enMode) = 0;     //Sets current data show mode.
-		virtual void SetWheelRatio(double dbRatio) = 0;        //Sets the ratio for how much to scroll with mouse-wheel.
+		virtual void SetShowMode(EHexShowMode enMode) = 0;     //Set current data show mode.
+		virtual void SetWheelRatio(double dbRatio) = 0;        //Set the ratio for how much to scroll with mouse-wheel.
 	};
 
 	/********************************************************************************************
