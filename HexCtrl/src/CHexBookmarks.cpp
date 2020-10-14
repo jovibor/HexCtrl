@@ -14,14 +14,14 @@
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
-void CHexBookmarks::Attach(CHexCtrl* pHex)
+void CHexBookmarks::Attach(IHexCtrl* pHexCtrl)
 {
-	m_pHex = pHex;
+	m_pHexCtrl = pHexCtrl;
 }
 
 ULONGLONG CHexBookmarks::Add(const HEXBKMSTRUCT& hbs, bool fRedraw)
 {
-	if (!m_pHex || !m_pHex->IsDataSet())
+	if (!m_pHexCtrl || !m_pHexCtrl->IsDataSet())
 		return 0;
 
 	ULONGLONG ullID { static_cast<ULONGLONG>(-1) };
@@ -43,8 +43,8 @@ ULONGLONG CHexBookmarks::Add(const HEXBKMSTRUCT& hbs, bool fRedraw)
 			HEXBKMSTRUCT { hbs.vecSpan, hbs.wstrDesc, ullID, hbs.ullData, hbs.clrBk, hbs.clrText });
 	}
 
-	if (fRedraw && m_pHex)
-		m_pHex->RedrawWindow();
+	if (fRedraw && m_pHexCtrl)
+		m_pHexCtrl->Redraw();
 	m_time = _time64(nullptr);
 
 	return ullID;
@@ -60,8 +60,8 @@ void CHexBookmarks::ClearAll()
 	else
 		m_deqBookmarks.clear();
 
-	if (m_pHex)
-		m_pHex->RedrawWindow();
+	if (m_pHexCtrl)
+		m_pHexCtrl->Redraw();
 	m_time = _time64(nullptr);
 }
 
@@ -116,7 +116,7 @@ ULONGLONG CHexBookmarks::GetCount()const
 
 ULONGLONG CHexBookmarks::GetCurrent()const
 {
-	return static_cast<ULONGLONG>(m_llCurrent);
+	return static_cast<ULONGLONG>(m_llIndexCurr);
 }
 
 auto CHexBookmarks::GetTouchTime()const->__time64_t
@@ -126,38 +126,51 @@ auto CHexBookmarks::GetTouchTime()const->__time64_t
 
 void CHexBookmarks::GoBookmark(ULONGLONG ullIndex)
 {
-	if (!m_pHex)
+	if (!m_pHexCtrl)
 		return;
 
 	if (auto pBkm = GetByIndex(ullIndex); pBkm != nullptr)
 	{
-		m_llCurrent = static_cast<LONGLONG>(ullIndex);
-		m_pHex->GoToOffset(pBkm->vecSpan.front().ullOffset, true, 1);
+		m_llIndexCurr = static_cast<LONGLONG>(ullIndex);
+		auto ullOffset = pBkm->vecSpan.front().ullOffset;
+		m_pHexCtrl->SetCaretPos(ullOffset);
+		if (!m_pHexCtrl->IsOffsetVisible(ullOffset))
+			m_pHexCtrl->GoToOffset(ullOffset);
 	}
 }
 
 void CHexBookmarks::GoNext()
 {
-	if (!m_pHex)
+	if (!m_pHexCtrl)
 		return;
 
-	if (++m_llCurrent >= static_cast<LONGLONG>(GetCount()))
-		m_llCurrent = 0;
+	if (++m_llIndexCurr >= static_cast<LONGLONG>(GetCount()))
+		m_llIndexCurr = 0;
 
-	if (auto pBkm = GetByIndex(m_llCurrent); pBkm != nullptr)
-		m_pHex->GoToOffset(pBkm->vecSpan.front().ullOffset, true, 1);
+	if (auto pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr)
+	{
+		auto ullOffset = pBkm->vecSpan.front().ullOffset;
+		m_pHexCtrl->SetCaretPos(ullOffset);
+		if (!m_pHexCtrl->IsOffsetVisible(ullOffset))
+			m_pHexCtrl->GoToOffset(ullOffset);
+	}
 }
 
 void CHexBookmarks::GoPrev()
 {
-	if (!m_pHex)
+	if (!m_pHexCtrl)
 		return;
 
-	if (--m_llCurrent; m_llCurrent < 0 || m_llCurrent >= static_cast<LONGLONG>(GetCount()))
-		m_llCurrent = static_cast<LONGLONG>(GetCount()) - 1;
+	if (--m_llIndexCurr; m_llIndexCurr < 0 || m_llIndexCurr >= static_cast<LONGLONG>(GetCount()))
+		m_llIndexCurr = static_cast<LONGLONG>(GetCount()) - 1;
 
-	if (auto pBkm = GetByIndex(m_llCurrent); pBkm != nullptr)
-		m_pHex->GoToOffset(pBkm->vecSpan.front().ullOffset, true, 1);
+	if (auto pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr)
+	{
+		auto ullOffset = pBkm->vecSpan.front().ullOffset;
+		m_pHexCtrl->SetCaretPos(ullOffset);
+		if (!m_pHexCtrl->IsOffsetVisible(ullOffset))
+			m_pHexCtrl->GoToOffset(ullOffset);
+	}
 }
 
 bool CHexBookmarks::HasBookmarks()const
@@ -203,7 +216,7 @@ bool CHexBookmarks::IsVirtual()const
 
 void CHexBookmarks::Remove(ULONGLONG ullOffset)
 {
-	if (!m_pHex || !m_pHex->IsDataSet())
+	if (!m_pHexCtrl || !m_pHexCtrl->IsDataSet())
 		return;
 
 	if (m_fVirtual)
@@ -229,8 +242,8 @@ void CHexBookmarks::Remove(ULONGLONG ullOffset)
 			m_deqBookmarks.erase((rIter + 1).base()); //Weird notation for reverse_iterator to work in erase() (acc to standard).
 	}
 
-	if (m_pHex)
-		m_pHex->RedrawWindow();
+	if (m_pHexCtrl)
+		m_pHexCtrl->Redraw();
 	m_time = _time64(nullptr);
 }
 
@@ -251,8 +264,8 @@ void CHexBookmarks::RemoveByID(ULONGLONG ullID)
 			m_deqBookmarks.erase(iter);
 	}
 
-	if (m_pHex)
-		m_pHex->RedrawWindow();
+	if (m_pHexCtrl)
+		m_pHexCtrl->Redraw();
 	m_time = _time64(nullptr);
 }
 
@@ -318,7 +331,7 @@ void CHexBookmarks::Update(ULONGLONG ullID, const HEXBKMSTRUCT& stBookmark)
 	if (iter != m_deqBookmarks.end())
 		*iter = stBookmark;
 
-	if (m_pHex)
-		m_pHex->RedrawWindow();
+	if (m_pHexCtrl)
+		m_pHexCtrl->Redraw();
 	m_time = _time64(nullptr);
 }

@@ -107,7 +107,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPANSTRUCT> override; //Gets current selection.
 		[[nodiscard]] auto GetShowMode()const->EHexShowMode override;     //Retrieves current show mode.
 		[[nodiscard]] HWND GetWindowHandle(EHexWnd enWnd)const override;  //Retrieves control's window/dialog handle.
-		void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)override; //Scrolls to given offset.
+		void GoToOffset(ULONGLONG ullOffset)override; //Go/scroll to given offset.
 		[[nodiscard]] auto HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTRUCT> override; //HitTest given point.
 		[[nodiscard]] bool IsCmdAvail(EHexCmd eCmd)const override;        //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] bool IsCreated()const override;       //Shows whether control is created or not.
@@ -117,6 +117,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsOffsetVisible(ULONGLONG ullOffset)const override; //Ensures that given offset is visible.
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Set the control's current capacity.
+		void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true)override; //Set the caret position.
 		void SetColors(const HEXCOLORSSTRUCT& clr)override; //Set all the control's colors.
 		bool SetConfig(std::wstring_view wstrPath)override; //Set configuration file, or "" for defaults.
 		void SetData(const HEXDATASTRUCT& hds)override;     //Main method for setting data to display (and edit).	
@@ -141,10 +142,17 @@ namespace HEXCTRL::INTERNAL
 		void AsciiChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Ascii chunk.
 		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tuple<std::wstring, std::wstring>;
 		void CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLONG& ullSizeChunk, ULONGLONG& ullChunks);
+		void CaretMove(ULONGLONG ullOffset, bool fHighPart, bool fScroll = true); //Set caret position when in mutable mode.
 		void CaretMoveDown();
 		void CaretMoveLeft();
 		void CaretMoveRight();
 		void CaretMoveUp();
+		void CaretToDataBeg(); //Set caret and go to data beginning.
+		void CaretToDataEnd(); //Set caret and go to data end.
+		void CaretToLineBeg(); //Set caret and go to current line beginning.
+		void CaretToLineEnd(); //Set caret and go to current line end.
+		void CaretToPageBeg(); //Set caret and go to current page beginning.
+		void CaretToPageEnd(); //Set caret and go to current page end.
 		void ClearSelHighlight(); //Clear selection highlight.
 		void ClipboardCopy(EClipboard enType)const;
 		void ClipboardPaste(EClipboard enType);
@@ -175,7 +183,6 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetData(HEXSPANSTRUCT hss)const->std::byte*; //Gets pointer to exact data offset, no matter what mode the control works in.
 		[[nodiscard]] auto GetDataMode()const->EHexDataMode;     //Current Data mode.
 		[[nodiscard]] auto GetMsgWindow()const->HWND;            //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
-		void GoToOffset(ULONGLONG ullOffset)const;               //Scrolls to given offfset.
 		[[nodiscard]] auto GetTopLine()const->ULONGLONG;         //Returns current top line number in view.
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;   //Point of Hex chunk.
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>; //Is any hex chunk withing given point?
@@ -187,7 +194,6 @@ namespace HEXCTRL::INTERNAL
 		void ModifyDefault(const SMODIFY& hms);                //EModifyMode::MODIFY_DEFAULT
 		void ModifyOperation(const SMODIFY& hms);              //EModifyMode::MODIFY_OPERATION
 		void ModifyRepeat(const SMODIFY& hms);                 //EModifyMode::MODIFY_REPEAT
-		void MoveCaret(ULONGLONG ullPos, bool fHighPart);      //Sets the cursor position when in Edit mode.
 		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.

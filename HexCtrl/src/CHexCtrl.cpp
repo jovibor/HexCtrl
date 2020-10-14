@@ -33,10 +33,11 @@
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
-namespace HEXCTRL {
-	/********************************************
-	* CreateRawHexCtrl function implementation. *
-	********************************************/
+namespace HEXCTRL
+{
+/********************************************
+* CreateRawHexCtrl function implementation. *
+********************************************/
 	extern "C" HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl()
 	{
 		return new CHexCtrl();
@@ -53,7 +54,8 @@ namespace HEXCTRL {
 	/********************************************
 	* Internal enums and structs.               *
 	********************************************/
-	namespace INTERNAL {
+	namespace INTERNAL
+	{
 		enum class CHexCtrl::EClipboard : WORD
 		{
 			COPY_HEX, COPY_HEXLE, COPY_HEXFMT, COPY_TEXT, COPY_BASE64,
@@ -446,13 +448,36 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case EHexCmd::CMD_SEARCH_PREV:
 		m_pDlgSearch->Search(false);
 		break;
-	case EHexCmd::CMD_DLG_GOTO:
+	case EHexCmd::CMD_NAV_DLG_GOTO:
 	{
 		CHexDlgGoTo dlgGoTo(this);
 		if (dlgGoTo.DoModal() == IDOK)
-			GoToOffset(dlgGoTo.GetResult(), true, 1);
+		{
+			auto ullOffset = dlgGoTo.GetResult();
+			SetCaretPos(ullOffset);
+			if (!IsOffsetVisible(ullOffset))
+				GoToOffset(ullOffset);
+		}
 	}
 	break;
+	case EHexCmd::CMD_NAV_DATABEG:
+		CaretToDataBeg();
+		break;
+	case EHexCmd::CMD_NAV_DATAEND:
+		CaretToDataEnd();
+		break;
+	case EHexCmd::CMD_NAV_PAGEBEG:
+		CaretToPageBeg();
+		break;
+	case EHexCmd::CMD_NAV_PAGEEND:
+		CaretToPageEnd();
+		break;
+	case EHexCmd::CMD_NAV_LINEBEG:
+		CaretToLineBeg();
+		break;
+	case EHexCmd::CMD_NAV_LINEEND:
+		CaretToLineEnd();
+		break;
 	case EHexCmd::CMD_SHOWDATA_BYTE:
 		SetShowMode(EHexShowMode::ASBYTE);
 		break;
@@ -481,7 +506,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case EHexCmd::CMD_BKM_CLEARALL:
 		m_pBookmarks->ClearAll();
 		break;
-	case EHexCmd::CMD_DLG_BKM_MANAGER:
+	case EHexCmd::CMD_BKM_DLG_MANAGER:
 		m_pDlgBookmarkMgr->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_CLIPBOARD_COPY_HEX:
@@ -514,13 +539,13 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case EHexCmd::CMD_CLIPBOARD_PASTE_TEXT:
 		ClipboardPaste(EClipboard::PASTE_TEXT);
 		break;
-	case EHexCmd::CMD_DLG_MODIFY_OPERS:
+	case EHexCmd::CMD_MODIFY_DLG_OPERS:
 		m_pDlgOpers->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_MODIFY_FILLZEROS:
 		FillWithZeros();
 		break;
-	case EHexCmd::CMD_DLG_MODIFY_FILLDATA:
+	case EHexCmd::CMD_MODIFY_DLG_FILLDATA:
 		m_pDlgFillData->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_MODIFY_UNDO:
@@ -595,12 +620,6 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case EHexCmd::CMD_SCROLL_PAGEDOWN:
 		m_pScrollV->ScrollPageDown();
 		break;
-	case EHexCmd::CMD_SCROLL_TOP:
-		m_pScrollV->ScrollHome();
-		break;
-	case EHexCmd::CMD_SCROLL_BOTTOM:
-		m_pScrollV->ScrollEnd();
-		break;
 	}
 }
 
@@ -608,7 +627,7 @@ DWORD CHexCtrl::GetCapacity()const
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return { };
+		return 1; //Capacity can't be less than one.
 
 	return m_dwCapacity;
 }
@@ -752,17 +771,29 @@ HWND CHexCtrl::GetWindowHandle(EHexWnd enWnd)const
 	return hWnd;
 }
 
-void CHexCtrl::GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
+void CHexCtrl::GoToOffset(ULONGLONG ullOffset)
 {
 	assert(IsCreated());
 	assert(IsDataSet());
 	if (!IsCreated() || !IsDataSet())
 		return;
 
-	if (fSelect)
-		MakeSelection(ullOffset, ullOffset, ullSize, 1, true, true);
-	else
-		GoToOffset(ullOffset);
+	ULONGLONG ullNewStartV = ullOffset / m_dwCapacity * m_sizeLetter.cy;
+	ULONGLONG ullNewScrollV { 0 }, ullNewScrollH { };
+
+	//To prevent negative numbers.
+	if (ullNewStartV > m_iHeightWorkArea / 2)
+	{
+		ullNewScrollV = ullNewStartV - m_iHeightWorkArea / 2;
+		ullNewScrollV -= ullNewScrollV % m_sizeLetter.cy;
+	}
+
+	ullNewScrollH = (ullOffset % m_dwCapacity) * m_iSizeHexByte;
+	ullNewScrollH += (ullNewScrollH / m_iDistanceBetweenHexChunks) * m_iSpaceBetweenHexChunks;
+
+	m_pScrollV->SetScrollPos(ullNewScrollV);
+	if (m_pScrollH->IsVisible() && !IsCurTextArea())
+		m_pScrollH->SetScrollPos(ullNewScrollH);
 }
 
 auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTRUCT>
@@ -816,9 +847,9 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case EHexCmd::CMD_CLIPBOARD_PASTE_TEXT:
 		fAvail = fMutable && fSelection && IsClipboardFormatAvailable(CF_TEXT);
 		break;
-	case EHexCmd::CMD_DLG_MODIFY_OPERS:
+	case EHexCmd::CMD_MODIFY_DLG_OPERS:
 	case EHexCmd::CMD_MODIFY_FILLZEROS:
-	case EHexCmd::CMD_DLG_MODIFY_FILLDATA:
+	case EHexCmd::CMD_MODIFY_DLG_FILLDATA:
 		fAvail = fMutable && fSelection;
 		break;
 	case EHexCmd::CMD_MODIFY_UNDO:
@@ -828,8 +859,12 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		fAvail = !m_deqRedo.empty();
 		break;
 	case EHexCmd::CMD_DLG_SEARCH:
-	case EHexCmd::CMD_DLG_GOTO:
-	case EHexCmd::CMD_DLG_BKM_MANAGER:
+	case EHexCmd::CMD_NAV_DLG_GOTO:
+	case EHexCmd::CMD_NAV_DATABEG:
+	case EHexCmd::CMD_NAV_DATAEND:
+	case EHexCmd::CMD_NAV_LINEBEG:
+	case EHexCmd::CMD_NAV_LINEEND:
+	case EHexCmd::CMD_BKM_DLG_MANAGER:
 	case EHexCmd::CMD_SEL_MARKSTART:
 	case EHexCmd::CMD_SEL_MARKEND:
 	case EHexCmd::CMD_SEL_ALL:
@@ -839,6 +874,10 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case EHexCmd::CMD_SEARCH_NEXT:
 	case EHexCmd::CMD_SEARCH_PREV:
 		fAvail = m_pDlgSearch->IsSearchAvail();
+		break;
+	case EHexCmd::CMD_NAV_PAGEBEG:
+	case EHexCmd::CMD_NAV_PAGEEND:
+		fAvail = fDataSet && GetPagesCount() > 0;
 		break;
 	default:
 		fAvail = true;
@@ -937,6 +976,19 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
 }
 
+void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow)
+{
+	assert(IsCreated());
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return;
+
+	if (m_fMutable)
+		CaretMove(ullOffset, fHighLow, false);
+	else
+		MakeSelection(ullOffset, ullOffset, 1, 1, false);
+}
+
 void CHexCtrl::SetColors(const HEXCOLORSSTRUCT& clr)
 {
 	assert(IsCreated());
@@ -954,40 +1006,63 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		return false;
 
 	//Mapping between stringified EHexCmd::* and its value-menuID pairs.
-#define TO_STR_MAP(x, y) { #x, {EHexCmd::##x, static_cast<WORD>(y)} }
-	const std::unordered_map<std::string, std::pair<EHexCmd, WORD>> umapCmdMenu
-	{
-		TO_STR_MAP(CMD_DLG_SEARCH, IDM_HEXCTRL_SEARCH), TO_STR_MAP(CMD_SEARCH_NEXT, 0), TO_STR_MAP(CMD_SEARCH_PREV, 0),
-		TO_STR_MAP(CMD_DLG_GOTO, IDM_HEXCTRL_GOTO),
-		TO_STR_MAP(CMD_SHOWDATA_BYTE, IDM_HEXCTRL_SHOWAS_BYTE), TO_STR_MAP(CMD_SHOWDATA_WORD, IDM_HEXCTRL_SHOWAS_WORD),
-		TO_STR_MAP(CMD_SHOWDATA_DWORD, IDM_HEXCTRL_SHOWAS_DWORD), TO_STR_MAP(CMD_SHOWDATA_QWORD, IDM_HEXCTRL_SHOWAS_QWORD),
-		TO_STR_MAP(CMD_BKM_ADD, IDM_HEXCTRL_BOOKMARKS_ADD), TO_STR_MAP(CMD_BKM_REMOVE, IDM_HEXCTRL_BOOKMARKS_REMOVE),
-		TO_STR_MAP(CMD_BKM_NEXT, IDM_HEXCTRL_BOOKMARKS_NEXT), TO_STR_MAP(CMD_BKM_PREV, IDM_HEXCTRL_BOOKMARKS_PREV),
-		TO_STR_MAP(CMD_BKM_CLEARALL, IDM_HEXCTRL_BOOKMARKS_CLEARALL), TO_STR_MAP(CMD_DLG_BKM_MANAGER, IDM_HEXCTRL_BOOKMARKS_MANAGER),
-		TO_STR_MAP(CMD_CLIPBOARD_COPY_HEX, IDM_HEXCTRL_CLIPBOARD_COPYHEX),
-		TO_STR_MAP(CMD_CLIPBOARD_COPY_HEXLE, IDM_HEXCTRL_CLIPBOARD_COPYHEXLE),
-		TO_STR_MAP(CMD_CLIPBOARD_COPY_HEXFMT, IDM_HEXCTRL_CLIPBOARD_COPYHEXFMT),
-		TO_STR_MAP(CMD_CLIPBOARD_COPY_TEXT, IDM_HEXCTRL_CLIPBOARD_COPYTEXT),
-		TO_STR_MAP(CMD_CLIPBOARD_COPY_BASE64, IDM_HEXCTRL_CLIPBOARD_COPYBASE64),
-		TO_STR_MAP(CMD_CLIPBOARD_COPY_CARR, IDM_HEXCTRL_CLIPBOARD_COPYCARRAY),
-		TO_STR_MAP(CMD_CLIPBOARD_COPY_GREPHEX, IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX),
-		TO_STR_MAP(CMD_CLIPBOARD_COPY_PRNTSCRN, IDM_HEXCTRL_CLIPBOARD_COPYPRNTSCRN),
-		TO_STR_MAP(CMD_CLIPBOARD_PASTE_HEX, IDM_HEXCTRL_CLIPBOARD_PASTEHEX),
-		TO_STR_MAP(CMD_CLIPBOARD_PASTE_TEXT, IDM_HEXCTRL_CLIPBOARD_PASTETEXT),
-		TO_STR_MAP(CMD_DLG_MODIFY_OPERS, IDM_HEXCTRL_MODIFY_OPERS), TO_STR_MAP(CMD_MODIFY_FILLZEROS, IDM_HEXCTRL_MODIFY_FILLZEROS),
-		TO_STR_MAP(CMD_DLG_MODIFY_FILLDATA, IDM_HEXCTRL_MODIFY_FILLDATA), TO_STR_MAP(CMD_MODIFY_UNDO, IDM_HEXCTRL_MODIFY_UNDO),
-		TO_STR_MAP(CMD_MODIFY_REDO, IDM_HEXCTRL_MODIFY_REDO), TO_STR_MAP(CMD_SEL_MARKSTART, IDM_HEXCTRL_SEL_MARKSTART),
-		TO_STR_MAP(CMD_SEL_MARKEND, IDM_HEXCTRL_SEL_MARKEND),
-		TO_STR_MAP(CMD_SEL_ALL, IDM_HEXCTRL_SEL_ALL), TO_STR_MAP(CMD_SEL_ADDLEFT, 0), TO_STR_MAP(CMD_SEL_ADDRIGHT, 0),
-		TO_STR_MAP(CMD_SEL_ADDUP, 0), TO_STR_MAP(CMD_SEL_ADDDOWN, 0),
-		TO_STR_MAP(CMD_DLG_DATAINTERPRET, IDM_HEXCTRL_DATAINTERPRET), TO_STR_MAP(CMD_DLG_ENCODING, IDM_HEXCTRL_ENCODING),
-		TO_STR_MAP(CMD_APPEARANCE_FONTINC, IDM_HEXCTRL_APPEARANCE_FONTINC),
-		TO_STR_MAP(CMD_APPEARANCE_FONTDEC, IDM_HEXCTRL_APPEARANCE_FONTDEC),
-		TO_STR_MAP(CMD_APPEARANCE_CAPACINC, IDM_HEXCTRL_APPEARANCE_CAPACINC),
-		TO_STR_MAP(CMD_APPEARANCE_CAPACDEC, IDM_HEXCTRL_APPEARANCE_CAPACDEC), TO_STR_MAP(CMD_DLG_PRINT, IDM_HEXCTRL_PRINT),
-		TO_STR_MAP(CMD_DLG_ABOUT, IDM_HEXCTRL_ABOUT), TO_STR_MAP(CMD_CARET_LEFT, 0), TO_STR_MAP(CMD_CARET_RIGHT, 0),
-		TO_STR_MAP(CMD_CARET_UP, 0), TO_STR_MAP(CMD_CARET_DOWN, 0), TO_STR_MAP(CMD_SCROLL_PAGEUP, 0),
-		TO_STR_MAP(CMD_SCROLL_PAGEDOWN, 0), TO_STR_MAP(CMD_SCROLL_TOP, 0), TO_STR_MAP(CMD_SCROLL_BOTTOM, 0)
+	const std::unordered_map<std::string, std::pair<EHexCmd, WORD>> umapCmdMenu	{
+		{ "CMD_DLG_SEARCH", { EHexCmd::CMD_DLG_SEARCH, static_cast<WORD>(IDM_HEXCTRL_SEARCH) } },
+		{ "CMD_SEARCH_NEXT", { EHexCmd::CMD_SEARCH_NEXT, static_cast<WORD>(0) } },
+		{ "CMD_SEARCH_PREV", { EHexCmd::CMD_SEARCH_PREV, static_cast<WORD>(0) } },
+		{ "CMD_NAV_DLG_GOTO", { EHexCmd::CMD_NAV_DLG_GOTO, static_cast<WORD>(IDM_HEXCTRL_NAV_GOTO) } },
+		{ "CMD_NAV_DATABEG", { EHexCmd::CMD_NAV_DATABEG, static_cast<WORD>(IDM_HEXCTRL_NAV_DATABEG) } },
+		{ "CMD_NAV_DATAEND", { EHexCmd::CMD_NAV_DATAEND, static_cast<WORD>(IDM_HEXCTRL_NAV_DATAEND) } },
+		{ "CMD_NAV_PAGEBEG", { EHexCmd::CMD_NAV_PAGEBEG, static_cast<WORD>(IDM_HEXCTRL_NAV_PAGEBEG) } },
+		{ "CMD_NAV_PAGEEND", { EHexCmd::CMD_NAV_PAGEEND, static_cast<WORD>(IDM_HEXCTRL_NAV_PAGEEND) } },
+		{ "CMD_NAV_LINEBEG", { EHexCmd::CMD_NAV_LINEBEG, static_cast<WORD>(IDM_HEXCTRL_NAV_LINEBEG) } },
+		{ "CMD_NAV_LINEEND", { EHexCmd::CMD_NAV_LINEEND, static_cast<WORD>(IDM_HEXCTRL_NAV_LINEEND) } },
+		{ "CMD_SHOWDATA_BYTE", { EHexCmd::CMD_SHOWDATA_BYTE, static_cast<WORD>(IDM_HEXCTRL_SHOWAS_BYTE) } },
+		{ "CMD_SHOWDATA_WORD", { EHexCmd::CMD_SHOWDATA_WORD, static_cast<WORD>(IDM_HEXCTRL_SHOWAS_WORD) } },
+		{ "CMD_SHOWDATA_DWORD", { EHexCmd::CMD_SHOWDATA_DWORD, static_cast<WORD>(IDM_HEXCTRL_SHOWAS_DWORD) } },
+		{ "CMD_SHOWDATA_QWORD", { EHexCmd::CMD_SHOWDATA_QWORD, static_cast<WORD>(IDM_HEXCTRL_SHOWAS_QWORD) } },
+		{ "CMD_BKM_ADD", { EHexCmd::CMD_BKM_ADD, static_cast<WORD>(IDM_HEXCTRL_BOOKMARKS_ADD) } },
+		{ "CMD_BKM_REMOVE", { EHexCmd::CMD_BKM_REMOVE, static_cast<WORD>(IDM_HEXCTRL_BOOKMARKS_REMOVE) } },
+		{ "CMD_BKM_NEXT", { EHexCmd::CMD_BKM_NEXT, static_cast<WORD>(IDM_HEXCTRL_BOOKMARKS_NEXT) } },
+		{ "CMD_BKM_PREV", { EHexCmd::CMD_BKM_PREV, static_cast<WORD>(IDM_HEXCTRL_BOOKMARKS_PREV) } },
+		{ "CMD_BKM_CLEARALL", { EHexCmd::CMD_BKM_CLEARALL, static_cast<WORD>(IDM_HEXCTRL_BOOKMARKS_CLEARALL) } },
+		{ "CMD_BKM_DLG_MANAGER", { EHexCmd::CMD_BKM_DLG_MANAGER, static_cast<WORD>(IDM_HEXCTRL_BOOKMARKS_MANAGER) } },
+		{ "CMD_CLIPBOARD_COPY_HEX", { EHexCmd::CMD_CLIPBOARD_COPY_HEX, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYHEX) } },
+		{ "CMD_CLIPBOARD_COPY_HEXLE", { EHexCmd::CMD_CLIPBOARD_COPY_HEXLE, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYHEXLE) } },
+		{ "CMD_CLIPBOARD_COPY_HEXFMT", { EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYHEXFMT) } },
+		{ "CMD_CLIPBOARD_COPY_TEXT", { EHexCmd::CMD_CLIPBOARD_COPY_TEXT, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYTEXT) } },
+		{ "CMD_CLIPBOARD_COPY_BASE64", { EHexCmd::CMD_CLIPBOARD_COPY_BASE64, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYBASE64) } },
+		{ "CMD_CLIPBOARD_COPY_CARR", { EHexCmd::CMD_CLIPBOARD_COPY_CARR, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYCARRAY) } },
+		{ "CMD_CLIPBOARD_COPY_GREPHEX", { EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX) } },
+		{ "CMD_CLIPBOARD_COPY_PRNTSCRN", { EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYPRNTSCRN) } },
+		{ "CMD_CLIPBOARD_PASTE_HEX", { EHexCmd::CMD_CLIPBOARD_PASTE_HEX, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_PASTEHEX) } },
+		{ "CMD_CLIPBOARD_PASTE_TEXT", { EHexCmd::CMD_CLIPBOARD_PASTE_TEXT, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_PASTETEXT) } },
+		{ "CMD_MODIFY_DLG_OPERS", { EHexCmd::CMD_MODIFY_DLG_OPERS, static_cast<WORD>(IDM_HEXCTRL_MODIFY_OPERS) } },
+		{ "CMD_MODIFY_FILLZEROS", { EHexCmd::CMD_MODIFY_FILLZEROS, static_cast<WORD>(IDM_HEXCTRL_MODIFY_FILLZEROS) } },
+		{ "CMD_MODIFY_DLG_FILLDATA", { EHexCmd::CMD_MODIFY_DLG_FILLDATA, static_cast<WORD>(IDM_HEXCTRL_MODIFY_FILLDATA) } },
+		{ "CMD_MODIFY_UNDO", { EHexCmd::CMD_MODIFY_UNDO, static_cast<WORD>(IDM_HEXCTRL_MODIFY_UNDO) } },
+		{ "CMD_MODIFY_REDO", { EHexCmd::CMD_MODIFY_REDO, static_cast<WORD>(IDM_HEXCTRL_MODIFY_REDO) } },
+		{ "CMD_SEL_MARKSTART", { EHexCmd::CMD_SEL_MARKSTART, static_cast<WORD>(IDM_HEXCTRL_SEL_MARKSTART) } },
+		{ "CMD_SEL_MARKEND", { EHexCmd::CMD_SEL_MARKEND, static_cast<WORD>(IDM_HEXCTRL_SEL_MARKEND) } },
+		{ "CMD_SEL_ALL", { EHexCmd::CMD_SEL_ALL, static_cast<WORD>(IDM_HEXCTRL_SEL_ALL) } },
+		{ "CMD_SEL_ADDLEFT", { EHexCmd::CMD_SEL_ADDLEFT, static_cast<WORD>(0) } },
+		{ "CMD_SEL_ADDRIGHT", { EHexCmd::CMD_SEL_ADDRIGHT, static_cast<WORD>(0) } },
+		{ "CMD_SEL_ADDUP", { EHexCmd::CMD_SEL_ADDUP, static_cast<WORD>(0) } },
+		{ "CMD_SEL_ADDDOWN", { EHexCmd::CMD_SEL_ADDDOWN, static_cast<WORD>(0) } },
+		{ "CMD_DLG_DATAINTERPRET", { EHexCmd::CMD_DLG_DATAINTERPRET, static_cast<WORD>(IDM_HEXCTRL_DATAINTERPRET) } },
+		{ "CMD_DLG_ENCODING", { EHexCmd::CMD_DLG_ENCODING, static_cast<WORD>(IDM_HEXCTRL_ENCODING) } },
+		{ "CMD_APPEARANCE_FONTINC", { EHexCmd::CMD_APPEARANCE_FONTINC, static_cast<WORD>(IDM_HEXCTRL_APPEARANCE_FONTINC) } },
+		{ "CMD_APPEARANCE_FONTDEC", { EHexCmd::CMD_APPEARANCE_FONTDEC, static_cast<WORD>(IDM_HEXCTRL_APPEARANCE_FONTDEC) } },
+		{ "CMD_APPEARANCE_CAPACINC", { EHexCmd::CMD_APPEARANCE_CAPACINC, static_cast<WORD>(IDM_HEXCTRL_APPEARANCE_CAPACINC) } },
+		{ "CMD_APPEARANCE_CAPACDEC", { EHexCmd::CMD_APPEARANCE_CAPACDEC, static_cast<WORD>(IDM_HEXCTRL_APPEARANCE_CAPACDEC) } },
+		{ "CMD_DLG_PRINT", { EHexCmd::CMD_DLG_PRINT, static_cast<WORD>(IDM_HEXCTRL_PRINT) } },
+		{ "CMD_DLG_ABOUT", { EHexCmd::CMD_DLG_ABOUT, static_cast<WORD>(IDM_HEXCTRL_ABOUT) } },
+		{ "CMD_CARET_LEFT", { EHexCmd::CMD_CARET_LEFT, static_cast<WORD>(0) } },
+		{ "CMD_CARET_RIGHT", { EHexCmd::CMD_CARET_RIGHT, static_cast<WORD>(0) } },
+		{ "CMD_CARET_UP", { EHexCmd::CMD_CARET_UP, static_cast<WORD>(0) } },
+		{ "CMD_CARET_DOWN", { EHexCmd::CMD_CARET_DOWN, static_cast<WORD>(0) } },
+		{ "CMD_SCROLL_PAGEUP", { EHexCmd::CMD_SCROLL_PAGEUP, static_cast<WORD>(0) } },
+		{ "CMD_SCROLL_PAGEDOWN", { EHexCmd::CMD_SCROLL_PAGEDOWN, static_cast<WORD>(0) } }
 	};
 
 	const std::unordered_map<std::string_view, std::pair<UCHAR, std::wstring_view>> umapKeys
@@ -1012,10 +1087,10 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ { "f8" }, { VK_F8, { L"F8" } } },
 		{ { "f9" }, { VK_F9, { L"F9" } } },
 		{ { "f10" }, { VK_F10, { L"F10" } } },
-		{ { "right" }, { VK_RIGHT, { L"Right arrow" } } },
-		{ { "left" }, { VK_LEFT, { L"Left arrow" } } },
-		{ { "up" }, { VK_UP, { L"Up arrow" } } },
-		{ { "down" }, { VK_DOWN, { L"Down arrow" } } },
+		{ { "right" }, { VK_RIGHT, { L"Right Arrow" } } },
+		{ { "left" }, { VK_LEFT, { L"Left Arrow" } } },
+		{ { "up" }, { VK_UP, { L"Up Arrow" } } },
+		{ { "down" }, { VK_DOWN, { L"Down Arrow" } } },
 		{ { "pageup" }, { VK_PRIOR, { L"PageUp" } } },
 		{ { "pagedown" }, { VK_NEXT, { L"PageDown" } } },
 		{ { "home" }, { VK_HOME, { L"Home" } } },
@@ -1093,12 +1168,12 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 	{
 		//Remove everything from vecMain that exists in vecFrom.
 		for (const auto& iterFrom : vecFrom)
-			vecMain.erase(std::remove_if(vecMain.begin(), vecMain.end(), [&](const SKEYBIND& ref)
-				{return ref.eCmd == iterFrom.eCmd; }), vecMain.end());
+			vecMain.erase(std::remove_if(vecMain.begin(), vecMain.end(),
+				[&](const SKEYBIND& ref) {return ref.eCmd == iterFrom.eCmd; }),
+				vecMain.end());
 
 		//Add everything from vecFrom to vecMain.
-		for (const auto& iterFrom : vecFrom)
-			vecMain.emplace_back(iterFrom);
+		vecMain.insert(vecMain.end(), vecFrom.begin(), vecFrom.end());
 	};
 
 	rapidjson::Document doc;
@@ -1148,9 +1223,9 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 				[&](const SKEYBIND& ref) { return ref.wMenuID == iterMain.wMenuID; });
 				iterTmp == iterEnd && iterMain.wMenuID != 0 && iterMain.uKey != 0)
 			{
-				CString str;
-				m_menuMain.GetMenuStringW(iterMain.wMenuID, str, MF_BYCOMMAND);
-				std::wstring wstr = str.GetString();
+				CStringW wstrMenuName;
+				m_menuMain.GetMenuStringW(iterMain.wMenuID, wstrMenuName, MF_BYCOMMAND);
+				std::wstring wstr = wstrMenuName.GetString();
 				if (const auto nPos = wstr.find('\t'); nPos != std::wstring::npos)
 					wstr.erase(nPos);
 
@@ -1442,13 +1517,63 @@ void CHexCtrl::CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLO
 	}
 }
 
+void CHexCtrl::CaretMove(ULONGLONG ullOffset, bool fHighPart, bool fScroll)
+{
+	m_ullCaretPos = ullOffset;
+	if (m_ullCaretPos >= m_ullDataSize)
+	{
+		m_ullCaretPos = m_ullDataSize - 1;
+		m_fCursorHigh = false;
+	}
+	else
+		m_fCursorHigh = fHighPart;
+	if (fScroll)
+	{
+		auto ullCurrScrollV = m_pScrollV->GetScrollPos();
+		if (auto iMod = ullCurrScrollV % m_sizeLetter.cy; iMod > 0)
+			ullCurrScrollV -= iMod;
+		auto ullCurrScrollH = m_pScrollH->GetScrollPos();
+
+		int iCx, iCy;
+		HexChunkPoint(m_ullCaretPos, iCx, iCy);
+		CRect rcClient;
+		GetClientRect(&rcClient);
+
+		ULONGLONG ullMaxV = ullCurrScrollV + rcClient.Height() - m_iHeightBottomOffArea - m_iStartWorkAreaY -
+			((rcClient.Height() - m_iStartWorkAreaY - m_iHeightBottomOffArea) % m_sizeLetter.cy);
+		ULONGLONG ullNewStartV = m_ullCaretPos / m_dwCapacity * m_sizeLetter.cy;
+
+		auto ullNewScrollV = ullCurrScrollV;
+		if (ullNewStartV >= ullMaxV)
+			ullNewScrollV = ullCurrScrollV + m_sizeLetter.cy;
+		else if (ullNewStartV < ullCurrScrollV)
+			ullNewScrollV = ullCurrScrollV - m_sizeLetter.cy;
+
+		ULONGLONG ullNewScrollH { };
+		int iMaxClientX = rcClient.Width() - m_iSizeHexByte;
+		if (iCx >= iMaxClientX)
+			ullNewScrollH = ullCurrScrollH + (iCx - iMaxClientX);
+		else if (iCx < 0)
+			ullNewScrollH = ullCurrScrollH + iCx;
+		else
+			ullNewScrollH = ullCurrScrollH;
+
+		if (ullNewScrollV != ullCurrScrollV)
+			m_pScrollV->SetScrollPos(ullNewScrollV);
+		if (m_pScrollH->IsVisible() && !IsCurTextArea()) //Do not horz scroll when modifying text area (not Hex).
+			m_pScrollH->SetScrollPos(ullNewScrollH);
+	}
+	UpdateInfoText();
+	OnCaretPosChange(m_ullCaretPos);
+}
+
 void CHexCtrl::CaretMoveDown()
 {
-	ULONGLONG ullNewPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
+	auto ullNewPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
 	ullNewPos += m_dwCapacity;
 
 	if (m_fMutable)
-		MoveCaret(ullNewPos, m_fCursorHigh);
+		CaretMove(ullNewPos, m_fCursorHigh);
 	else
 		MakeSelection(ullNewPos, ullNewPos, 1, 1);
 }
@@ -1457,20 +1582,20 @@ void CHexCtrl::CaretMoveLeft()
 {
 	if (m_fMutable)
 	{
-		ULONGLONG ull = m_ullCaretPos;
+		auto ullPos = m_ullCaretPos;
 		bool fHighPart;
 		if (IsCurTextArea())
 		{
-			if (ull > 0) //To avoid overflow.
-				--ull;
+			if (ullPos > 0) //To avoid overflow.
+				--ullPos;
 			else
 				return; //Zero index byte.
 			fHighPart = m_fCursorHigh;
 		}
 		else if (m_fCursorHigh)
 		{
-			if (ull > 0) //To avoid overflow.
-				--ull;
+			if (ullPos > 0) //To avoid overflow.
+				--ullPos;
 			else
 				return; //Zero index byte.
 			fHighPart = false;
@@ -1478,7 +1603,7 @@ void CHexCtrl::CaretMoveLeft()
 		else
 			fHighPart = true;
 
-		MoveCaret(ull, fHighPart);
+		CaretMove(ullPos, fHighPart);
 	}
 	else
 		MakeSelection(m_ullLMouseClick - 1, m_ullLMouseClick - 1, 1, 1);
@@ -1505,7 +1630,7 @@ void CHexCtrl::CaretMoveRight()
 			ullPos = m_ullCaretPos + 1;
 			fHighPart = true;
 		}
-		MoveCaret(ullPos, fHighPart);
+		CaretMove(ullPos, fHighPart);
 	}
 	else
 		MakeSelection(m_ullLMouseClick + 1, m_ullLMouseClick + 1, 1, 1);
@@ -1513,14 +1638,69 @@ void CHexCtrl::CaretMoveRight()
 
 void CHexCtrl::CaretMoveUp()
 {
-	ULONGLONG ullNewPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
+	auto ullNewPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
 	if (ullNewPos >= m_dwCapacity)
 		ullNewPos -= m_dwCapacity;
 
 	if (m_fMutable)
-		MoveCaret(ullNewPos, m_fCursorHigh);
+		CaretMove(ullNewPos, m_fCursorHigh);
 	else
 		MakeSelection(ullNewPos, ullNewPos, 1, 1);
+}
+
+void CHexCtrl::CaretToDataBeg()
+{
+	SetCaretPos(0, true);
+	GoToOffset(0);
+}
+
+void CHexCtrl::CaretToDataEnd()
+{
+	auto ullPos = GetDataSize() - 1;
+	SetCaretPos(ullPos);
+	GoToOffset(ullPos);
+}
+
+void CHexCtrl::CaretToLineBeg()
+{
+	auto ullPos = GetCaretPos() - (GetCaretPos() % GetCapacity());
+	SetCaretPos(ullPos);
+	if (!IsOffsetVisible(ullPos))
+		GoToOffset(ullPos);
+}
+
+void CHexCtrl::CaretToLineEnd()
+{
+	auto ullPos = GetCaretPos() + (GetCapacity() - (GetCaretPos() % GetCapacity())) - 1;
+	if (ullPos >= GetDataSize())
+		ullPos = GetDataSize() - 1;
+	SetCaretPos(ullPos);
+	if (!IsOffsetVisible(ullPos))
+		GoToOffset(ullPos);
+}
+
+void CHexCtrl::CaretToPageBeg()
+{
+	if (GetPageSize() == 0)
+		return;
+
+	auto ullPos = GetCaretPos() - (GetCaretPos() % GetPageSize());
+	SetCaretPos(ullPos);
+	if (!IsOffsetVisible(ullPos))
+		GoToOffset(ullPos);
+}
+
+void CHexCtrl::CaretToPageEnd()
+{
+	if (GetPageSize() == 0)
+		return;
+
+	auto ullPos = GetCaretPos() + (GetPageSize() - (GetCaretPos() % GetPageSize())) - 1;
+	if (ullPos >= GetDataSize())
+		ullPos = GetDataSize() - 1;
+	SetCaretPos(ullPos);
+	if (!IsOffsetVisible(ullPos))
+		GoToOffset(ullPos);
 }
 
 void CHexCtrl::ClearSelHighlight()
@@ -2824,29 +3004,6 @@ auto CHexCtrl::GetMsgWindow()const->HWND
 	return m_hwndMsg;
 }
 
-void CHexCtrl::GoToOffset(ULONGLONG ullOffset)const
-{
-	if (!IsDataSet())
-		return;
-
-	ULONGLONG ullNewStartV = ullOffset / m_dwCapacity * m_sizeLetter.cy;
-	ULONGLONG ullNewScrollV { 0 }, ullNewScrollH { };
-
-	//To prevent negative numbers.
-	if (ullNewStartV > m_iHeightWorkArea / 2)
-	{
-		ullNewScrollV = ullNewStartV - m_iHeightWorkArea / 2;
-		ullNewScrollV -= ullNewScrollV % m_sizeLetter.cy;
-	}
-
-	ullNewScrollH = (ullOffset % m_dwCapacity) * m_iSizeHexByte;
-	ullNewScrollH += (ullNewScrollH / m_iDistanceBetweenHexChunks) * m_iSpaceBetweenHexChunks;
-
-	m_pScrollV->SetScrollPos(ullNewScrollV);
-	if (m_pScrollH->IsVisible() && !IsCurTextArea())
-		m_pScrollH->SetScrollPos(ullNewScrollH);
-}
-
 auto CHexCtrl::GetTopLine()const->ULONGLONG
 {
 	return m_pScrollV->GetScrollPos() / m_sizeLetter.cy;
@@ -2939,14 +3096,14 @@ void CHexCtrl::MakeSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG u
 	if ((ullStart + ullSize) > m_ullDataSize)
 		ullSize = m_ullDataSize - ullStart;
 
-	ULONGLONG ullEnd = ullStart + ullSize; //ullEnd is exclusive (")").
+	ULONGLONG ullEnd = ullStart + ullSize; //ullEnd is exclusive ( ")" ).
 	m_ullLMouseClick = ullClick;
 	m_ullCaretPos = ullStart;
 
-	std::vector<HEXSPANSTRUCT> vecSelection;
+	std::vector<HEXSPANSTRUCT> vecSel;
 	for (ULONGLONG i = 0; i < ullLines; ++i)
-		vecSelection.emplace_back(HEXSPANSTRUCT { ullStart + m_dwCapacity * i, ullSize });
-	m_pSelection->SetSelection(vecSelection);
+		vecSel.emplace_back(HEXSPANSTRUCT { ullStart + m_dwCapacity * i, ullSize });
+	m_pSelection->SetSelection(vecSel);
 
 	UpdateInfoText();
 
@@ -3208,55 +3365,6 @@ void CHexCtrl::ModifyRepeat(const SMODIFY& hms)
 	if (ullTotalSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
 		dlg.DoModal();
 	thrd.join();
-}
-
-void CHexCtrl::MoveCaret(ULONGLONG ullPos, bool fHighPart)
-{
-	m_ullCaretPos = ullPos;
-	if (m_ullCaretPos >= m_ullDataSize)
-	{
-		m_ullCaretPos = m_ullDataSize - 1;
-		m_fCursorHigh = false;
-	}
-	else
-		m_fCursorHigh = fHighPart;
-
-	auto ullCurrScrollV = m_pScrollV->GetScrollPos();
-	if (auto iMod = ullCurrScrollV % m_sizeLetter.cy; iMod > 0)
-		ullCurrScrollV -= iMod;
-	auto ullCurrScrollH = m_pScrollH->GetScrollPos();
-
-	int iCx, iCy;
-	HexChunkPoint(m_ullCaretPos, iCx, iCy);
-	CRect rcClient;
-	GetClientRect(&rcClient);
-
-	ULONGLONG ullMaxV = ullCurrScrollV + rcClient.Height() - m_iHeightBottomOffArea - m_iStartWorkAreaY -
-		((rcClient.Height() - m_iStartWorkAreaY - m_iHeightBottomOffArea) % m_sizeLetter.cy);
-	ULONGLONG ullNewStartV = m_ullCaretPos / m_dwCapacity * m_sizeLetter.cy;
-
-	auto ullNewScrollV = ullCurrScrollV;
-	if (ullNewStartV >= ullMaxV)
-		ullNewScrollV = ullCurrScrollV + m_sizeLetter.cy;
-	else if (ullNewStartV < ullCurrScrollV)
-		ullNewScrollV = ullCurrScrollV - m_sizeLetter.cy;
-
-	ULONGLONG ullNewScrollH { };
-	int iMaxClientX = rcClient.Width() - m_iSizeHexByte;
-	if (iCx >= iMaxClientX)
-		ullNewScrollH = ullCurrScrollH + (iCx - iMaxClientX);
-	else if (iCx < 0)
-		ullNewScrollH = ullCurrScrollH + iCx;
-	else
-		ullNewScrollH = ullCurrScrollH;
-
-	if (ullNewScrollV != ullCurrScrollV)
-		m_pScrollV->SetScrollPos(ullNewScrollV);
-	if (m_pScrollH->IsVisible() && !IsCurTextArea()) //Do not horz scroll when modifying text area (not Hex).
-		m_pScrollH->SetScrollPos(ullNewScrollH);
-
-	UpdateInfoText();
-	OnCaretPosChange(m_ullCaretPos);
 }
 
 void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const
@@ -4248,46 +4356,56 @@ void CHexCtrl::OnHScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollB
 		RedrawWindow();
 }
 
-void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT /*nIndex*/, BOOL /*bSysMenu*/)
+void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMenu*/)
 {
-	//Main
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH, IsCmdAvail(EHexCmd::CMD_DLG_SEARCH) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_GOTO, IsCmdAvail(EHexCmd::CMD_DLG_GOTO) ? MF_ENABLED : MF_GRAYED);
-
-	//Bookmarks
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_ADD, IsCmdAvail(EHexCmd::CMD_BKM_ADD) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_REMOVE, IsCmdAvail(EHexCmd::CMD_BKM_REMOVE) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_NEXT, IsCmdAvail(EHexCmd::CMD_BKM_NEXT) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_PREV, IsCmdAvail(EHexCmd::CMD_BKM_PREV) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_CLEARALL, IsCmdAvail(EHexCmd::CMD_BKM_CLEARALL) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_MANAGER, IsCmdAvail(EHexCmd::CMD_DLG_BKM_MANAGER) ? MF_ENABLED : MF_GRAYED);
-
-	//Clipboard
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEX) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEXLE, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEXLE) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEXFMT, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYTEXT, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_TEXT) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYBASE64, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_BASE64) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYCARRAY, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_CARR) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYPRNTSCRN, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_PASTE_HEX) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTETEXT, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_PASTE_TEXT) ? MF_ENABLED : MF_GRAYED);
-
-	//Modify
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(EHexCmd::CMD_MODIFY_FILLZEROS) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLDATA, IsCmdAvail(EHexCmd::CMD_DLG_MODIFY_FILLDATA) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_OPERS, IsCmdAvail(EHexCmd::CMD_DLG_MODIFY_OPERS) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(EHexCmd::CMD_MODIFY_UNDO) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(EHexCmd::CMD_MODIFY_REDO) ? MF_ENABLED : MF_GRAYED);
-
-	//Selection
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKSTART, IsCmdAvail(EHexCmd::CMD_SEL_MARKSTART) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKEND, IsCmdAvail(EHexCmd::CMD_SEL_MARKEND) ? MF_ENABLED : MF_GRAYED);
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(EHexCmd::CMD_SEL_ALL) ? MF_ENABLED : MF_GRAYED);
-
-	//Data interpreter
-	m_menuMain.EnableMenuItem(IDM_HEXCTRL_DATAINTERPRET, IsCmdAvail(EHexCmd::CMD_DLG_DATAINTERPRET) ? MF_ENABLED : MF_GRAYED);
+	switch (nIndex) //Zero based index of the menu. Zero means main menu itself, 1 - first (sub)menu, and so on.
+	{
+	case 0:	//Main menu.
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH, IsCmdAvail(EHexCmd::CMD_DLG_SEARCH) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DATAINTERPRET, IsCmdAvail(EHexCmd::CMD_DLG_DATAINTERPRET) ? MF_ENABLED : MF_GRAYED);
+		break;
+	case 3:	//Navigation.
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_GOTO, IsCmdAvail(EHexCmd::CMD_NAV_DLG_GOTO) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DATABEG, IsCmdAvail(EHexCmd::CMD_NAV_DATABEG) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DATAEND, IsCmdAvail(EHexCmd::CMD_NAV_DATAEND) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_PAGEBEG, IsCmdAvail(EHexCmd::CMD_NAV_PAGEBEG) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_PAGEEND, IsCmdAvail(EHexCmd::CMD_NAV_PAGEEND) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_LINEBEG, IsCmdAvail(EHexCmd::CMD_NAV_LINEBEG) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_LINEEND, IsCmdAvail(EHexCmd::CMD_NAV_LINEEND) ? MF_ENABLED : MF_GRAYED);
+		break;
+	case 4:	//Bookmarks
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_ADD, IsCmdAvail(EHexCmd::CMD_BKM_ADD) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_REMOVE, IsCmdAvail(EHexCmd::CMD_BKM_REMOVE) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_NEXT, IsCmdAvail(EHexCmd::CMD_BKM_NEXT) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_PREV, IsCmdAvail(EHexCmd::CMD_BKM_PREV) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_CLEARALL, IsCmdAvail(EHexCmd::CMD_BKM_CLEARALL) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_MANAGER, IsCmdAvail(EHexCmd::CMD_BKM_DLG_MANAGER) ? MF_ENABLED : MF_GRAYED);
+		break;
+	case 5:	//Clipboard
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEX) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEXLE, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEXLE) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEXFMT, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYTEXT, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_TEXT) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYBASE64, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_BASE64) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYCARRAY, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_CARR) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYPRNTSCRN, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_PASTE_HEX) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTETEXT, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_PASTE_TEXT) ? MF_ENABLED : MF_GRAYED);
+		break;
+	case 6: //Modify
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(EHexCmd::CMD_MODIFY_FILLZEROS) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLDATA, IsCmdAvail(EHexCmd::CMD_MODIFY_DLG_FILLDATA) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_OPERS, IsCmdAvail(EHexCmd::CMD_MODIFY_DLG_OPERS) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(EHexCmd::CMD_MODIFY_UNDO) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(EHexCmd::CMD_MODIFY_REDO) ? MF_ENABLED : MF_GRAYED);
+		break;
+	case 7: //Selection
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKSTART, IsCmdAvail(EHexCmd::CMD_SEL_MARKSTART) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKEND, IsCmdAvail(EHexCmd::CMD_SEL_MARKEND) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(EHexCmd::CMD_SEL_ALL) ? MF_ENABLED : MF_GRAYED);
+		break;
+	}
 }
 
 void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)

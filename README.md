@@ -521,9 +521,9 @@ Retrieves window handle for one of the **HexControl**'s windows. Takes [`EHexWnd
 
 ### [](#)GoToOffset
 ```cpp
-void GoToOffset(ULONGLONG ullOffset, bool fSelect, ULONGLONG ullSize)
+void GoToOffset(ULONGLONG ullOffset)
 ```
-Jumps to the `ullOffset` offset, and selects `ullSize` bytes if `fSelect` is `true`.
+Go to the `ullOffset` offset.
 
 ### [](#)HitTest
 ```cpp
@@ -567,13 +567,11 @@ void SetCapacity(DWORD dwCapacity);
 ```
 Sets the **HexControl** current capacity.
 
-### [](#)SetEncoding
+### [](#)SetCaretPos
 ```cpp
-void SetEncoding(int iCodePage);
+void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true);
 ```
-Sets the code page for the **HexControl**'s text area. Takes [code page identifier](https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers) as an argument, or `-1` for default ASCII-only characters.  
-
-**Note:** Code page identifier must represent [Single-byte Character Set](https://docs.microsoft.com/en-us/windows/win32/intl/single-byte-character-sets). Multi-byte character sets are not currently supported.
+Set the caret to the given offset. The `fHighLow` flag shows which part of the hex chunk, low or high, a caret must be set to, it only works in mutable mode.
 
 ### [](#)SetColors
 ```cpp
@@ -585,7 +583,7 @@ Sets all the colors for the control. Takes [`HEXCOLORSSTRUCT`](#hexcolorsstruct)
 ```cpp
 bool SetConfig(std::wstring_view wstrPath);
 ```
-Set the path to a JSON config file with keybindings to use in **HexControl**, or `""` for default. This file is using [`EHexCmd`](#ehexcmd) enum values as keys and strings array as values:
+Set the path to a JSON config file with keybindings to use in **HexControl**, or `L""` for default. This file is using [`EHexCmd`](#ehexcmd) enum values as keys and strings array as values:
 ```json
 {
     "CMD_DLG_SEARCH": [ "ctrl+f", "ctrl+h" ],
@@ -600,6 +598,14 @@ For default values see `HexCtrl/res/keybind.json` file from the project source f
 void SetData(const HEXDATASTRUCT& hds);
 ```
 Main method to set data to display in read-only or edit modes. Takes [`HEXDATASTRUCT`](#hexdatastruct) as an  argument.
+
+### [](#)SetEncoding
+```cpp
+void SetEncoding(int iCodePage);
+```
+Sets the code page for the **HexControl**'s text area. Takes [code page identifier](https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers) as an argument, or `-1` for default ASCII-only characters.  
+
+**Note:** Code page identifier must represent [Single-byte Character Set](https://docs.microsoft.com/en-us/windows/win32/intl/single-byte-character-sets). Multi-byte character sets are not currently supported.
 
 ### [](#)SetFont
 ```cpp

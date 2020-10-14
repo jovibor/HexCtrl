@@ -16,7 +16,7 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexDlgGoTo(CHexCtrl* pHexCtrl);
-		[[nodiscard]]ULONGLONG GetResult()const;
+		[[nodiscard]] ULONGLONG GetResult()const;
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;

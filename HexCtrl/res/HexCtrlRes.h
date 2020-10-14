@@ -126,14 +126,20 @@
 #define IDM_HEXCTRL_DATAINTERPRET       32803
 #define IDM_HEXCTRL_PRINT               32804
 #define IDM_HEXCTRL_ENCODING            32805
-#define IDM_HEXCTRL_GOTO                32806
+#define IDM_HEXCTRL_NAV_GOTO            32806
+#define IDM_HEXCTRL_NAV_DATABEG         32807
+#define IDM_HEXCTRL_NAV_DATAEND         32808
+#define IDM_HEXCTRL_NAV_PAGEBEG         32809
+#define IDM_HEXCTRL_NAV_PAGEEND         32810
+#define IDM_HEXCTRL_NAV_LINEBEG         32811
+#define IDM_HEXCTRL_NAV_LINEEND         32812
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        9271
-#define _APS_NEXT_COMMAND_VALUE         32807
+#define _APS_NEXT_COMMAND_VALUE         32813
 #define _APS_NEXT_CONTROL_VALUE         9271
 #define _APS_NEXT_SYMED_VALUE           9333
 #endif

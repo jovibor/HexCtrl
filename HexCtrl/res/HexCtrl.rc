@@ -447,7 +447,19 @@ BEGIN
             MENUITEM "DWORD",                       IDM_HEXCTRL_SHOWAS_DWORD
             MENUITEM "QWORD",                       IDM_HEXCTRL_SHOWAS_QWORD
         END
-        MENUITEM "Go to address...",            IDM_HEXCTRL_GOTO
+        POPUP "Navigation"
+        BEGIN
+            MENUITEM "Go to Address...",            IDM_HEXCTRL_NAV_GOTO
+            MENUITEM SEPARATOR
+            MENUITEM "Data Beginning",              IDM_HEXCTRL_NAV_DATABEG
+            MENUITEM "Data End",                    IDM_HEXCTRL_NAV_DATAEND
+            MENUITEM SEPARATOR
+            MENUITEM "Page Beginning",              IDM_HEXCTRL_NAV_PAGEBEG
+            MENUITEM "Page End",                    IDM_HEXCTRL_NAV_PAGEEND
+            MENUITEM SEPARATOR
+            MENUITEM "Line Beginning",              IDM_HEXCTRL_NAV_LINEBEG
+            MENUITEM "Line End",                    IDM_HEXCTRL_NAV_LINEEND
+        END
         POPUP "Bookmarks"
         BEGIN
             MENUITEM "Add bookmark",                IDM_HEXCTRL_BOOKMARKS_ADD

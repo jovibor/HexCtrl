@@ -156,7 +156,7 @@ void CHexDlgDataInterpret::OnShowWindow(BOOL bShow, UINT nStatus)
 {
 	CDialogEx::OnShowWindow(bShow, nStatus);
 
-	if ((m_fVisible = (bShow != FALSE)))
+	if (m_fVisible = bShow != FALSE; m_fVisible)
 		InspectOffset(m_pHexCtrl->GetCaretPos());
 }
 

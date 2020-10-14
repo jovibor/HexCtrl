@@ -10,7 +10,7 @@ public:
 private:
 	PHEXCOLOR GetColor(ULONGLONG ullOffset)override;
 	BOOL OnInitDialog()override;
-	void DoDataExchange(CDataExchange* pDX) override;
+	void DoDataExchange(CDataExchange* pDX)override;
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	afx_msg void OnBnSetDataRO();
