@@ -15,10 +15,10 @@ namespace HEXCTRL::INTERNAL
 	class CHexSelection final
 	{
 	public:
-		void Attach(CHexCtrl* pHex);
+		void Attach(IHexCtrl* pHexCtrl);
 		void ClearAll();
 		void ClearSelHighlight();
-		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
+		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		[[nodiscard]] ULONGLONG GetSelectionEnd()const;
 		[[nodiscard]] ULONGLONG GetSelectionSize()const;
 		[[nodiscard]] ULONGLONG GetSelectionStart()const;
@@ -35,7 +35,7 @@ namespace HEXCTRL::INTERNAL
 		void SetSelectionEnd(ULONGLONG ullOffset);
 		void SetSelectionStart(ULONGLONG ullOffset);
 	private:
-		CHexCtrl* m_pHex { };
+		IHexCtrl* m_pHexCtrl { };
 		std::vector<HEXSPANSTRUCT> m_vecSelection { };         //Selection vector.
 		std::vector<HEXSPANSTRUCT> m_vecSelHighlight { };      //Selection highlight vector.
 		ULONGLONG m_ullMarkSelStart { 0xFFFFFFFFFFFFFFFFULL }; //For SetSelectionStart().

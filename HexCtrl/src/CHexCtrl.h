@@ -134,7 +134,6 @@ namespace HEXCTRL::INTERNAL
 		friend class CHexDlgFillData;
 		friend class CHexDlgOperations;
 		friend class CHexDlgSearch;
-		friend class CHexSelection;
 		struct SHBITMAP;
 		struct SUNDO;
 		struct SKEYBIND;
@@ -187,9 +186,7 @@ namespace HEXCTRL::INTERNAL
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;   //Point of Hex chunk.
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>; //Is any hex chunk withing given point?
 		[[nodiscard]] bool IsCurTextArea()const;                 //Whether last focus was set at Text or Hex chunks area.
-		[[nodiscard]] bool IsSectorVisible()const;               //Returns m_fSectorVisible.
-		void MakeSelection(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines,
-			bool fScroll = true, bool fGoToStart = false);
+		[[nodiscard]] bool IsPageVisible()const;                 //Returns m_fSectorVisible.
 		void Modify(const SMODIFY& hms);                       //Main routine to modify data, in m_fMutable==true mode.
 		void ModifyDefault(const SMODIFY& hms);                //EModifyMode::MODIFY_DEFAULT
 		void ModifyOperation(const SMODIFY& hms);              //EModifyMode::MODIFY_OPERATION
@@ -204,8 +201,7 @@ namespace HEXCTRL::INTERNAL
 		void Print();                                          //Printing routine.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcOffsetDigits();                             //How many digits in Offset (depends on Hex or Decimals).
-		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc);   //Recalc routine for printing.
-		void RecalcTotalPages();                             //Updates info about whether sector's lines printable atm or not.
+		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc); //Recalc routine for printing.
 		void RecalcWorkArea(int iHeight, int iWidth);
 		void Redo();
 		void SelAll();           //Select all.
@@ -213,6 +209,7 @@ namespace HEXCTRL::INTERNAL
 		void SelAddLeft();       //Left Key pressed with the Shift.
 		void SelAddRight();      //Right Key pressed with the Shift.
 		void SelAddUp();         //Up Key pressed with the Shift.
+		void SelectionMove(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines, bool fScroll = true);
 		template<typename T>
 		void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
@@ -221,7 +218,6 @@ namespace HEXCTRL::INTERNAL
 		void TtBkmShow(bool fShow, POINT pt = { }); //Tooltip bookmark show/hide.
 		void TtOffsetShow(bool fShow);              //Tooltip Offset show/hide.
 		void Undo();
-		void UpdateInfoText();                      //Updates text in the bottom "info" area according to currently selected data.
 		void WstrCapacityFill();                    //Fill m_wstrCapacity according to current m_dwCapacity.
 		DECLARE_MESSAGE_MAP()
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -284,19 +280,18 @@ namespace HEXCTRL::INTERNAL
 		CMenu m_menuMain;                     //Main popup menu.
 		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		CPen m_penLines;                      //Pen for lines.
-		HEXBKMSTRUCT* m_pBkmCurrTt { };  //Currently shown bookmark's tooltip;
+		HEXBKMSTRUCT* m_pBkmCurrTt { };       //Currently shown bookmark's tooltip;
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
 		ULONGLONG m_ullLMouseClick { };       //Left mouse button clicked chunk.
 		std::optional<ULONGLONG> m_optRMouseClick { }; //Right mouse clicked chunk. Used in bookmarking.
 		ULONGLONG m_ullCaretPos { };          //Current caret position.
 		ULONGLONG m_ullCurCursor { };         //Current cursor pos, to avoid WM_MOUSEMOVE handle at the same chunk.
-		ULONGLONG m_ullTotalPages { };      //How many "Sectors" in m_ullDataSize.
 		DWORD m_dwCapacity { 0x10 };          //How many bytes displayed in one row
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
 		DWORD m_dwOffsetBytes { };            //How many bytes "Offset" number posesses;
-		DWORD m_dwPageSize { 0 };           //Size of a sector to print additional lines between.
+		DWORD m_dwPageSize { 0 };             //Size of a page to print additional lines between.
 		DWORD m_dwCacheSize { };              //Cache size for virtual and message modes, set in SetData.
 		SIZE m_sizeLetter { 1, 1 };           //Current font's letter size (width, height).
 		long m_lFontSize { };                 //Current font size.
@@ -321,7 +316,7 @@ namespace HEXCTRL::INTERNAL
 		int m_iCodePage { -1 };               //Current code-page for Text area. -1 for default.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfo { };          //Info text (bottom rect).
-		std::wstring m_wstrPageName { };    //Name of the sector/page.
+		std::wstring m_wstrPageName { };      //Name of the sector/page.
 		std::wstring m_wstrTextTitle { };     //Text area title.
 		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqRedo; //Redo deque.

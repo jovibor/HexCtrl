@@ -490,8 +490,8 @@ template<typename T>void CHexDlgDataInterpret::SetDigitData(T tData)const
 
 void CHexDlgDataInterpret::UpdateHexCtrl()const
 {
-	if (m_pHexCtrl)
-		m_pHexCtrl->RedrawWindow();
+	if (m_pHexCtrl && m_pHexCtrl->IsCreated())
+		m_pHexCtrl->Redraw();
 }
 
 std::wstring CHexDlgDataInterpret::GetCurrentUserDateFormatString()const

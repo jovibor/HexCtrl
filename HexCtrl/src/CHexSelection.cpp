@@ -13,9 +13,9 @@
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
-void CHexSelection::Attach(CHexCtrl* pHex)
+void CHexSelection::Attach(IHexCtrl* pHexCtrl)
 {
-	m_pHex = pHex;
+	m_pHexCtrl = pHexCtrl;
 }
 
 void CHexSelection::ClearAll()
@@ -31,9 +31,9 @@ void CHexSelection::ClearSelHighlight()
 	m_vecSelHighlight.clear();
 }
 
-CHexCtrl* CHexSelection::GetHexCtrl()const
+IHexCtrl* CHexSelection::GetHexCtrl()const
 {
-	return m_pHex;
+	return m_pHexCtrl;
 }
 
 bool CHexSelection::HasSelection()const
@@ -84,7 +84,7 @@ ULONGLONG CHexSelection::GetSelectionSize()const
 	if (!HasSelection())
 		return 0;
 
-	return 	m_vecSelection.size() * m_vecSelection.at(0).ullSize;
+	return m_vecSelection.size() * m_vecSelection.at(0).ullSize;
 }
 
 ULONGLONG CHexSelection::GetSelectionStart()const
@@ -132,8 +132,10 @@ void CHexSelection::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect)
 {
 	//On new selection clear all highlights.
 	ClearSelHighlight();
-
 	m_vecSelection = vecSelect;
+
+	if (auto pHex = GetHexCtrl(); pHex)
+		pHex->Redraw();
 }
 
 void CHexSelection::SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight)
@@ -151,9 +153,8 @@ void CHexSelection::SetSelectionEnd(ULONGLONG ullOffset)
 	m_vecSelection.clear();
 	m_vecSelection.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
 
-	auto pHex = GetHexCtrl();
-	if (pHex)
-		pHex->UpdateInfoText();
+	if (auto pHex = GetHexCtrl(); pHex)
+		pHex->Redraw();
 }
 
 void CHexSelection::SetSelectionStart(ULONGLONG ullOffset)
@@ -166,7 +167,6 @@ void CHexSelection::SetSelectionStart(ULONGLONG ullOffset)
 	m_vecSelection.clear();
 	m_vecSelection.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
 
-	auto pHex = GetHexCtrl();
-	if (pHex)
-		pHex->UpdateInfoText();
+	if (auto pHex = GetHexCtrl(); pHex)
+		pHex->Redraw();
 }

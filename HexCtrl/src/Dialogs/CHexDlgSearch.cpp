@@ -839,7 +839,6 @@ void CHexDlgSearch::Search()
 				swprintf_s(wstrInfo.data(), wstrInfo.size(), L"Found %lu occurrences.", m_dwCount);
 				m_dwCount = 0;
 			}
-			pHexCtrl->RedrawWindow();
 		}
 		else
 		{
