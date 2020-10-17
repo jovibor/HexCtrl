@@ -569,9 +569,9 @@ Sets the **HexControl** current capacity.
 
 ### [](#)SetCaretPos
 ```cpp
-void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true);
+void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true);
 ```
-Set the caret to the given offset. The `fHighLow` flag shows which part of the hex chunk, low or high, a caret must be set to, it only works in mutable mode.
+Set the caret to the given offset. The `fHighLow` flag shows which part of the hex chunk, low or high, a caret must be set to, it only makes sense in mutable mode.
 
 ### [](#)SetColors
 ```cpp
@@ -634,7 +634,7 @@ To remove the divider just set `dwSize` to 0.
 
 ### [](#)SetSelection
 ```cpp
-void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel);
+void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true);
 ```
 Sets current selection.
 

@@ -117,7 +117,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsOffsetVisible(ULONGLONG ullOffset)const override; //Ensures that given offset is visible.
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Set the control's current capacity.
-		void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true)override; //Set the caret position.
+		void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true)override; //Set the caret position.
 		void SetColors(const HEXCOLORSSTRUCT& clr)override; //Set all the control's colors.
 		bool SetConfig(std::wstring_view wstrPath)override; //Set configuration file, or "" for defaults.
 		void SetData(const HEXDATASTRUCT& hds)override;     //Main method for setting data to display (and edit).	
@@ -126,7 +126,7 @@ namespace HEXCTRL::INTERNAL
 		void SetFontSize(UINT uiSize)override;              //Set the control's font size.
 		void SetMutable(bool fEnable)override;              //Enable or disable edit mode.
 		void SetPageSize(DWORD dwSize, std::wstring_view wstrName)override;  //Set page size and name to draw the line between.
-		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel)override; //Set current selection.
+		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true)override; //Set current selection.
 		void SetShowMode(EHexShowMode enShowMode)override;  //Set current data show mode.
 		void SetWheelRatio(double dbRatio)override;         //Set the ratio for how much to scroll with mouse-wheel.
 	private:
@@ -141,17 +141,16 @@ namespace HEXCTRL::INTERNAL
 		void AsciiChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Ascii chunk.
 		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tuple<std::wstring, std::wstring>;
 		void CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLONG& ullSizeChunk, ULONGLONG& ullChunks);
-		void CaretMove(ULONGLONG ullOffset, bool fHighPart, bool fScroll = true); //Set caret position when in mutable mode.
-		void CaretMoveDown();
-		void CaretMoveLeft();
-		void CaretMoveRight();
-		void CaretMoveUp();
-		void CaretToDataBeg(); //Set caret and go to data beginning.
-		void CaretToDataEnd(); //Set caret and go to data end.
-		void CaretToLineBeg(); //Set caret and go to current line beginning.
-		void CaretToLineEnd(); //Set caret and go to current line end.
-		void CaretToPageBeg(); //Set caret and go to current page beginning.
-		void CaretToPageEnd(); //Set caret and go to current page end.
+		void CaretMoveDown();  //Set caret one line down.
+		void CaretMoveLeft();  //Set caret one chunk left.
+		void CaretMoveRight(); //Set caret one chunk right.
+		void CaretMoveUp();    //Set caret one line up.
+		void CaretToDataBeg(); //Set caret to a data beginning.
+		void CaretToDataEnd(); //Set caret to a data end.
+		void CaretToLineBeg(); //Set caret to a current line beginning.
+		void CaretToLineEnd(); //Set caret to a current line end.
+		void CaretToPageBeg(); //Set caret to a current page beginning.
+		void CaretToPageEnd(); //Set caret to a current page end.
 		void ClearSelHighlight(); //Clear selection highlight.
 		void ClipboardCopy(EClipboard enType)const;
 		void ClipboardPaste(EClipboard enType);
@@ -204,17 +203,20 @@ namespace HEXCTRL::INTERNAL
 		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc); //Recalc routine for printing.
 		void RecalcWorkArea(int iHeight, int iWidth);
 		void Redo();
+		void ScrollOffsetH(ULONGLONG ullOffset); //Scroll horizontally to given offset.
 		void SelAll();           //Select all.
 		void SelAddDown();       //Down Key pressed with the Shift.
 		void SelAddLeft();       //Left Key pressed with the Shift.
 		void SelAddRight();      //Right Key pressed with the Shift.
 		void SelAddUp();         //Up Key pressed with the Shift.
-		void SelectionMove(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines, bool fScroll = true);
+		void SelectionMake(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines,
+			bool fScroll = true, bool fRedraw = true);
 		template<typename T>
 		void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
 		void SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight); //Set selection highlight.
 		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
+		auto TestOffsetVis(ULONGLONG ullOffset)const->std::tuple<std::int8_t, std::int8_t>;
 		void TtBkmShow(bool fShow, POINT pt = { }); //Tooltip bookmark show/hide.
 		void TtOffsetShow(bool fShow);              //Tooltip Offset show/hide.
 		void Undo();

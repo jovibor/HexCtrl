@@ -30,10 +30,10 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool HitTest(ULONGLONG ullOffset)const;           //Is given offset within selection.
 		[[nodiscard]] bool HitTestHighlight(ULONGLONG ullOffset)const;  //Is given offset within highlighted selection.
 		[[nodiscard]] bool HitTestRange(const HEXSPANSTRUCT& hss)const; //Is there any selection within given range.
-		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect);
+		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect, bool fRedraw = true);
 		void SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight);
-		void SetSelectionEnd(ULONGLONG ullOffset);
-		void SetSelectionStart(ULONGLONG ullOffset);
+		void SetSelectionEnd(ULONGLONG ullOffset, bool fRedraw = true);
+		void SetSelectionStart(ULONGLONG ullOffset, bool fRedraw = true);
 	private:
 		IHexCtrl* m_pHexCtrl { };
 		std::vector<HEXSPANSTRUCT> m_vecSelection { };         //Selection vector.

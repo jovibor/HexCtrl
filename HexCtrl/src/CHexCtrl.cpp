@@ -779,7 +779,7 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset)
 		return;
 
 	ULONGLONG ullNewStartV = ullOffset / m_dwCapacity * m_sizeLetter.cy;
-	ULONGLONG ullNewScrollV { 0 }, ullNewScrollH { };
+	ULONGLONG ullNewScrollV { 0ULL }, ullNewScrollH { };
 
 	//To prevent negative numbers.
 	if (ullNewStartV > m_iHeightWorkArea / 2)
@@ -941,46 +941,29 @@ void CHexCtrl::Redraw()
 
 	if (IsDataSet())
 	{
-		WCHAR wBuff[260];
+		WCHAR wBuff[256];
 		m_wstrInfo.clear();
 		m_wstrInfo.reserve(std::size(wBuff));
 
-		if (m_fOffsetAsHex)
-			swprintf_s(wBuff, std::size(wBuff), L"Cursor: 0x%llX; ", GetCaretPos());
-		else
-			swprintf_s(wBuff, std::size(wBuff), L"Cursor: %llu; ", GetCaretPos());
+		swprintf_s(wBuff, std::size(wBuff), IsOffsetAsHex() ? L"Caret: 0x%llX; " : L"Caret: %llu; ", GetCaretPos());
 		m_wstrInfo = wBuff;
 
-		//Page/Sector
-		if (IsPageVisible())
+		if (IsPageVisible()) //Page/Sector
 		{
-			auto ullPageCurr = GetPagePos();
-
-			if (m_fOffsetAsHex)
-				swprintf_s(wBuff, std::size(wBuff), L"%s: 0x%llX/0x%llX; ",
-					m_wstrPageName.data(), ullPageCurr, GetPagesCount());
-			else
-				swprintf_s(wBuff, std::size(wBuff), L"%s: %llu/%llu; ",
-					m_wstrPageName.data(), ullPageCurr, GetPagesCount());
+			swprintf_s(wBuff, std::size(wBuff), IsOffsetAsHex() ? L"%s: 0x%llX/0x%llX; " : L"%s: %llu/%llu; ",
+				m_wstrPageName.data(), GetPagePos(), GetPagesCount());
 			m_wstrInfo += wBuff;
 		}
 
 		if (m_pSelection->HasSelection())
 		{
-			if (m_fOffsetAsHex)
-				swprintf_s(wBuff, std::size(wBuff), L"Selected: 0x%llX [0x%llX-0x%llX]; ",
-					m_pSelection->GetSelectionSize(), m_pSelection->GetSelectionStart(), m_pSelection->GetSelectionEnd() - 1);
-			else
-				swprintf_s(wBuff, std::size(wBuff), L"Selected: %llu [%llu-%llu]; ",
-					m_pSelection->GetSelectionSize(), m_pSelection->GetSelectionStart(), m_pSelection->GetSelectionEnd() - 1);
+			swprintf_s(wBuff, std::size(wBuff),
+				IsOffsetAsHex() ? L"Selected: 0x%llX [0x%llX-0x%llX]; " : L"Selected: %llu [%llu-%llu]; ",
+				m_pSelection->GetSelectionSize(), m_pSelection->GetSelectionStart(), m_pSelection->GetSelectionEnd() - 1);
 			m_wstrInfo += wBuff;
 		}
 
-		//Mutable state
-		if (!IsMutable())
-			m_wstrInfo += L"RO;";
-		else
-			m_wstrInfo += L"RW;";
+		m_wstrInfo += IsMutable() ? L"RW;" : L"RO;"; //Mutable state
 	}
 	else
 		m_wstrInfo.clear();
@@ -1017,17 +1000,27 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
 }
 
-void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow)
+void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
 {
 	assert(IsCreated());
 	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
+	if (!IsCreated() || !IsDataSet() || ullOffset >= GetDataSize())
 		return;
 
+	m_ullCaretPos = ullOffset;
 	if (m_fMutable)
-		CaretMove(ullOffset, fHighLow, false);
+	{
+		m_fCursorHigh = fHighLow;
+		if (fRedraw)
+			Redraw();
+	}
 	else
-		SelectionMove(ullOffset, ullOffset, 1, 1, false);
+	{
+		m_ullLMouseClick = ullOffset;
+		m_pSelection->SetSelection({ { ullOffset, 1 } }, fRedraw);
+		MsgWindowNotify(HEXCTRL_MSG_SELECTION);
+	}
+	OnCaretPosChange(ullOffset);
 }
 
 void CHexCtrl::SetColors(const HEXCOLORSSTRUCT& clr)
@@ -1423,14 +1416,14 @@ void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wstrName)
 		Redraw();
 }
 
-void CHexCtrl::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel)
+void CHexCtrl::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw)
 {
 	assert(IsCreated());
 	assert(IsDataSet());
 	if (!IsCreated() || !IsDataSet())
 		return;
 
-	m_pSelection->SetSelection(vecSel);
+	m_pSelection->SetSelection(vecSel, fRedraw);
 	MsgWindowNotify(HEXCTRL_MSG_SELECTION);
 }
 
@@ -1556,136 +1549,109 @@ void CHexCtrl::CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLO
 	}
 }
 
-void CHexCtrl::CaretMove(ULONGLONG ullOffset, bool fHighPart, bool fScroll)
-{
-	m_ullCaretPos = ullOffset;
-	if (m_ullCaretPos >= m_ullDataSize)
-	{
-		m_ullCaretPos = m_ullDataSize - 1;
-		m_fCursorHigh = false;
-	}
-	else
-		m_fCursorHigh = fHighPart;
-
-	if (fScroll)
-	{
-		auto ullCurrScrollV = m_pScrollV->GetScrollPos();
-		if (auto iMod = ullCurrScrollV % m_sizeLetter.cy; iMod > 0)
-			ullCurrScrollV -= iMod;
-		auto ullCurrScrollH = m_pScrollH->GetScrollPos();
-
-		int iCx, iCy;
-		HexChunkPoint(m_ullCaretPos, iCx, iCy);
-		CRect rcClient;
-		GetClientRect(&rcClient);
-
-		ULONGLONG ullMaxV = ullCurrScrollV + rcClient.Height() - m_iHeightBottomOffArea - m_iStartWorkAreaY -
-			((rcClient.Height() - m_iStartWorkAreaY - m_iHeightBottomOffArea) % m_sizeLetter.cy);
-		ULONGLONG ullNewStartV = m_ullCaretPos / m_dwCapacity * m_sizeLetter.cy;
-
-		auto ullNewScrollV = ullCurrScrollV;
-		if (ullNewStartV >= ullMaxV)
-			ullNewScrollV = ullCurrScrollV + m_sizeLetter.cy;
-		else if (ullNewStartV < ullCurrScrollV)
-			ullNewScrollV = ullCurrScrollV - m_sizeLetter.cy;
-
-		ULONGLONG ullNewScrollH { };
-		int iMaxClientX = rcClient.Width() - m_iSizeHexByte;
-		if (iCx >= iMaxClientX)
-			ullNewScrollH = ullCurrScrollH + (iCx - iMaxClientX);
-		else if (iCx < 0)
-			ullNewScrollH = ullCurrScrollH + iCx;
-		else
-			ullNewScrollH = ullCurrScrollH;
-
-		if (ullNewScrollV != ullCurrScrollV)
-			m_pScrollV->SetScrollPos(ullNewScrollV);
-		if (m_pScrollH->IsVisible() && !IsCurTextArea()) //Do not horz scroll when modifying text area (not Hex).
-			m_pScrollH->SetScrollPos(ullNewScrollH);
-	}
-	Redraw();
-	OnCaretPosChange(m_ullCaretPos);
-}
-
 void CHexCtrl::CaretMoveDown()
 {
-	auto ullNewPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
-	ullNewPos += m_dwCapacity;
+	auto ullOldPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
+	auto ullNewPos = ullOldPos + m_dwCapacity >= GetDataSize() ? ullOldPos : ullOldPos + m_dwCapacity;
+	SetCaretPos(ullNewPos, m_fCursorHigh, false);
 
-	if (m_fMutable)
-		CaretMove(ullNewPos, m_fCursorHigh);
-	else
-		SelectionMove(ullNewPos, ullNewPos, 1, 1);
+	auto [vOld, hOld] = TestOffsetVis(ullOldPos);
+	auto [vNew, hNew] = TestOffsetVis(ullNewPos);
+	if (vOld == 0 && vNew != 0)
+		m_pScrollV->ScrollLineDown();
+
+	Redraw();
 }
 
 void CHexCtrl::CaretMoveLeft()
 {
+	auto ullOldPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
+	auto ullNewPos { 0ULL };
 	if (m_fMutable)
 	{
-		auto ullPos = m_ullCaretPos;
-		bool fHighPart;
 		if (IsCurTextArea())
 		{
-			if (ullPos > 0) //To avoid overflow.
-				--ullPos;
-			else
-				return; //Zero index byte.
-			fHighPart = m_fCursorHigh;
+			if (ullOldPos == 0) //To avoid underflow.
+				return;
+			ullNewPos = ullOldPos - 1;
 		}
 		else if (m_fCursorHigh)
 		{
-			if (ullPos > 0) //To avoid overflow.
-				--ullPos;
-			else
-				return; //Zero index byte.
-			fHighPart = false;
+			if (ullOldPos == 0) //To avoid underflow.
+				return;
+			ullNewPos = ullOldPos - 1;
+			m_fCursorHigh = false;
 		}
 		else
-			fHighPart = true;
-
-		CaretMove(ullPos, fHighPart);
+		{
+			ullNewPos = ullOldPos;
+			m_fCursorHigh = true;
+		}
 	}
+	else if (ullOldPos > 0)
+		ullNewPos = ullOldPos - 1;
+
+	SetCaretPos(ullNewPos, m_fCursorHigh, false);
+
+	auto [vOld, hOld] = TestOffsetVis(ullOldPos);
+	auto [vNew, hNew] = TestOffsetVis(ullNewPos);
+	if (vOld == 0 && vNew != 0)
+		m_pScrollV->ScrollLineUp();
+	else if (hNew != 0 && !IsCurTextArea()) //Do not horz scroll when in text area.
+		ScrollOffsetH(ullNewPos);
 	else
-		SelectionMove(m_ullLMouseClick - 1, m_ullLMouseClick - 1, 1, 1);
+		Redraw();
 }
 
 void CHexCtrl::CaretMoveRight()
 {
+	auto ullOldPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
+	auto ullNewPos { 0ULL };
 	if (m_fMutable)
 	{
-		ULONGLONG ullPos;
-		bool fHighPart;
 		if (IsCurTextArea())
-		{
-			ullPos = m_ullCaretPos + 1;
-			fHighPart = m_fCursorHigh;
-		}
+			ullNewPos = ullOldPos + 1;
 		else if (m_fCursorHigh)
 		{
-			ullPos = m_ullCaretPos;
-			fHighPart = false;
+			ullNewPos = ullOldPos;
+			m_fCursorHigh = false;
 		}
 		else
 		{
-			ullPos = m_ullCaretPos + 1;
-			fHighPart = true;
+			ullNewPos = ullOldPos + 1;
+			m_fCursorHigh = true;
 		}
-		CaretMove(ullPos, fHighPart);
 	}
 	else
-		SelectionMove(m_ullLMouseClick + 1, m_ullLMouseClick + 1, 1, 1);
+		ullNewPos = ullOldPos + 1;
+
+	if (auto ullDataSize = GetDataSize(); ullNewPos >= ullDataSize) //To avoid overflow.
+		ullNewPos = ullDataSize - 1;
+
+	SetCaretPos(ullNewPos, m_fCursorHigh, false);
+
+	auto [vOld, hOld] = TestOffsetVis(ullOldPos);
+	auto [vNew, hNew] = TestOffsetVis(ullNewPos);
+	if (vOld == 0 && vNew != 0)
+		m_pScrollV->ScrollLineDown();
+	else if (hNew != 0 && !IsCurTextArea()) //Do not horz scroll when in text area.
+		ScrollOffsetH(ullNewPos);
+	else
+		Redraw();
 }
 
 void CHexCtrl::CaretMoveUp()
 {
-	auto ullNewPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
-	if (ullNewPos >= m_dwCapacity)
-		ullNewPos -= m_dwCapacity;
+	auto ullOldPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
+	auto ullNewPos = ullOldPos >= m_dwCapacity ? ullOldPos - m_dwCapacity : ullOldPos;
+	SetCaretPos(ullNewPos, m_fCursorHigh, false);
 
-	if (m_fMutable)
-		CaretMove(ullNewPos, m_fCursorHigh);
-	else
-		SelectionMove(ullNewPos, ullNewPos, 1, 1);
+	auto [vOld, hOld] = TestOffsetVis(ullOldPos);
+	auto [vNew, hNew] = TestOffsetVis(ullNewPos);
+	if (vOld == 0 && vNew != 0)
+		m_pScrollV->ScrollLineUp();
+
+	Redraw();
 }
 
 void CHexCtrl::CaretToDataBeg()
@@ -3719,6 +3685,30 @@ void CHexCtrl::Redo()
 	RedrawWindow();
 }
 
+void CHexCtrl::ScrollOffsetH(ULONGLONG ullOffset)
+{
+	//Horisontally scroll to given offset.
+	if (!m_pScrollH->IsVisible())
+		return;
+
+	int iCx, iCy;
+	HexChunkPoint(ullOffset, iCx, iCy);
+	CRect rcClient;
+	GetClientRect(&rcClient);
+
+	ULONGLONG ullNewScrollH { };
+	auto ullCurrScrollH = m_pScrollH->GetScrollPos();
+	auto iMaxClientX = rcClient.Width() - m_iSizeHexByte;
+	if (iCx >= iMaxClientX)
+		ullNewScrollH = ullCurrScrollH + (iCx - iMaxClientX);
+	else if (iCx < 0)
+		ullNewScrollH = ullCurrScrollH + iCx;
+	else
+		ullNewScrollH = ullCurrScrollH;
+
+	m_pScrollH->SetScrollPos(ullNewScrollH);
+}
+
 void CHexCtrl::SelAll()
 {
 	if (!IsDataSet())
@@ -3729,7 +3719,7 @@ void CHexCtrl::SelAll()
 
 void CHexCtrl::SelAddDown()
 {
-	ULONGLONG ullClick { }, ullStart { }, ullSize { 0 };
+	ULONGLONG ullClick { }, ullStart { }, ullSize { 0ULL };
 	ULONGLONG ullSelStart = m_pSelection->GetSelectionStart();
 	ULONGLONG ullSelSize = m_pSelection->GetSelectionSize();
 	if (m_fMutable)
@@ -3774,7 +3764,7 @@ void CHexCtrl::SelAddDown()
 	}
 
 	if (ullSize > 0)
-		SelectionMove(ullClick, ullStart, ullSize, 1);
+		SelectionMake(ullClick, ullStart, ullSize, 1);
 }
 
 void CHexCtrl::SelAddLeft()
@@ -3823,7 +3813,7 @@ void CHexCtrl::SelAddLeft()
 	}
 
 	if (ullSize > 0)
-		SelectionMove(ullClick, ullStart, ullSize, 1);
+		SelectionMake(ullClick, ullStart, ullSize, 1);
 }
 
 void CHexCtrl::SelAddRight()
@@ -3871,7 +3861,7 @@ void CHexCtrl::SelAddRight()
 	}
 
 	if (ullSize > 0)
-		SelectionMove(ullClick, ullStart, ullSize, 1);
+		SelectionMake(ullClick, ullStart, ullSize, 1);
 }
 
 void CHexCtrl::SelAddUp()
@@ -3943,10 +3933,10 @@ void CHexCtrl::SelAddUp()
 	}
 
 	if (ullSize > 0)
-		SelectionMove(ullClick, ullStart, ullSize, 1);
+		SelectionMake(ullClick, ullStart, ullSize, 1);
 }
 
-void CHexCtrl::SelectionMove(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines, bool fScroll)
+void CHexCtrl::SelectionMake(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines, bool fScroll, bool fRedraw)
 {
 	if (ullClick >= m_ullDataSize || ullStart >= m_ullDataSize || ullSize == 0)
 		return;
@@ -3959,9 +3949,9 @@ void CHexCtrl::SelectionMove(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG u
 	m_ullCaretPos = ullStart;
 
 	std::vector<HEXSPANSTRUCT> vecSel;
-	for (ULONGLONG i = 0; i < ullLines; ++i)
+	for (auto i = 0ULL; i < ullLines; ++i)
 		vecSel.emplace_back(HEXSPANSTRUCT { ullStart + m_dwCapacity * i, ullSize });
-	m_pSelection->SetSelection(vecSel);
+	m_pSelection->SetSelection(vecSel, fRedraw);
 
 	//Don't need to scroll if it's mouse selection, or just selection assignment.
 	//If fScroll is true then do scrolling according to the made selection.
@@ -4085,6 +4075,31 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 		std::copy_n(pData, iterSel.ullSize, refUndo->at(static_cast<size_t>(ullIndex)).vecData.begin());
 		++ullIndex;
 	}
+}
+
+auto CHexCtrl::TestOffsetVis(ULONGLONG ullOffset)const->std::tuple<std::int8_t, std::int8_t>
+{
+	//Returns two std::int8_t for vertical and horizontal visibility for given offset.
+	//-1 - ullOffset is higher or at the left of visible area
+	// 1 - lower or at the right
+	// 0 - visible.
+	assert(IsCreated());
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return { };
+
+	auto dwCapacity = GetCapacity();
+	auto ullFirst = GetTopLine() * dwCapacity;;
+	auto ullLast = GetBottomLine() * dwCapacity + dwCapacity;
+
+	CRect rcClient;
+	GetClientRect(&rcClient);
+	int iCx, iCy;
+	HexChunkPoint(ullOffset, iCx, iCy);
+	int iMaxClientX = rcClient.Width() - m_iSizeHexByte;
+
+	return { static_cast<std::int8_t>(ullOffset < ullFirst ? -1 : (ullOffset >= ullLast ? 1 : 0)),
+		static_cast<std::int8_t>(iCx < 0 ? -1 : (iCx >= iMaxClientX ? 1 : 0)) };
 }
 
 void CHexCtrl::TtBkmShow(bool fShow, POINT pt)
@@ -4486,7 +4501,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	m_fCursorHigh = true;
 	m_fLMousePressed = true;
 	m_optRMouseClick.reset();
-	SelectionMove(m_ullLMouseClick, ullSelStart, ullSelSize, 1, false);
+	SelectionMake(m_ullLMouseClick, ullSelStart, ullSelSize, 1, false);
 }
 
 void CHexCtrl::OnLButtonUp(UINT nFlags, CPoint point)
@@ -4597,8 +4612,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 			}
 			ullLines = 1;
 		}
-
-		SelectionMove(ullClick, ullStart, ullSize, ullLines, false);
+		SelectionMake(ullClick, ullStart, ullSize, ullLines, false);
 	}
 	else
 	{
@@ -4619,7 +4633,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 			else
 				TtBkmShow(false);
 		}
-		else if (m_pBkmCurrTt) //If there is already bkm tooltip shown, but cursor is outside data chunks.
+		else if (m_pBkmCurrTt) //If there is already bkm tooltip shown, but cursor is outside of data chunks.
 			TtBkmShow(false);
 
 		m_pScrollV->OnMouseMove(nFlags, point);

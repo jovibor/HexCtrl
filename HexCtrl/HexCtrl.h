@@ -289,7 +289,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsOffsetVisible(ULONGLONG ullOffset)const = 0; //Ensures that given offset is visible.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
-		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true) = 0; //Set the caret position.
+		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true) = 0; //Set the caret position.
 		virtual void SetColors(const HEXCOLORSSTRUCT& clr) = 0;//Set all the control's colors.
 		virtual bool SetConfig(std::wstring_view wstrPath) = 0;//Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
@@ -298,7 +298,7 @@ namespace HEXCTRL
 		virtual void SetFontSize(UINT uiSize) = 0;             //Set the control's font size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/edit mode.
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wstrName = L"Page") = 0; //Set page size and name to draw the lines in-between.
-		virtual void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel) = 0; //Set current selection.
+		virtual void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true) = 0; //Set current selection.
 		virtual void SetShowMode(EHexShowMode enMode) = 0;     //Set current data show mode.
 		virtual void SetWheelRatio(double dbRatio) = 0;        //Set the ratio for how much to scroll with mouse-wheel.
 	};
