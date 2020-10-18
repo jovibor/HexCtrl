@@ -209,8 +209,6 @@ namespace HEXCTRL::INTERNAL
 		void SelAddLeft();       //Left Key pressed with the Shift.
 		void SelAddRight();      //Right Key pressed with the Shift.
 		void SelAddUp();         //Up Key pressed with the Shift.
-		void SelectionMake(ULONGLONG ullClick, ULONGLONG ullStart, ULONGLONG ullSize, ULONGLONG ullLines,
-			bool fScroll = true, bool fRedraw = true);
 		template<typename T>
 		void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
