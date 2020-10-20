@@ -771,24 +771,34 @@ HWND CHexCtrl::GetWindowHandle(EHexWnd enWnd)const
 	return hWnd;
 }
 
-void CHexCtrl::GoToOffset(ULONGLONG ullOffset)
+void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iRelPos)
 {
 	assert(IsCreated());
 	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
+	if (!IsCreated() || !IsDataSet() || ullOffset >= GetDataSize())
 		return;
 
-	ULONGLONG ullNewStartV = ullOffset / m_dwCapacity * m_sizeLetter.cy;
-	ULONGLONG ullNewScrollV { 0ULL }, ullNewScrollH { };
+	auto ullNewStartV = ullOffset / m_dwCapacity * m_sizeLetter.cy;
+	auto ullNewScrollV { 0ULL };
 
-	//To prevent negative numbers.
-	if (ullNewStartV > m_iHeightWorkArea / 2)
+	switch (iRelPos)
 	{
-		ullNewScrollV = ullNewStartV - m_iHeightWorkArea / 2;
-		ullNewScrollV -= ullNewScrollV % m_sizeLetter.cy;
+	case -1: //Offset will be at the top line.
+		ullNewScrollV = ullNewStartV;
+		break;
+	case 0: //Offset at the middle.
+		if (ullNewStartV > m_iHeightWorkArea / 2) //To prevent negative numbers.
+		{
+			ullNewScrollV = ullNewStartV - m_iHeightWorkArea / 2;
+			ullNewScrollV -= ullNewScrollV % m_sizeLetter.cy;
+		}
+		break;
+	case 1: //Offset at the bottom.
+		ullNewScrollV = ullNewStartV - (GetBottomLine() - GetTopLine()) * m_sizeLetter.cy;
+		break;
 	}
 
-	ullNewScrollH = (ullOffset % m_dwCapacity) * m_iSizeHexByte;
+	ULONGLONG ullNewScrollH = (ullOffset % m_dwCapacity) * m_iSizeHexByte;
 	ullNewScrollH += (ullNewScrollH / m_iDistanceBetweenHexChunks) * m_iSpaceBetweenHexChunks;
 
 	m_pScrollV->SetScrollPos(ullNewScrollV);

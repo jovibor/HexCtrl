@@ -521,9 +521,12 @@ Retrieves window handle for one of the **HexControl**'s windows. Takes [`EHexWnd
 
 ### [](#)GoToOffset
 ```cpp
-void GoToOffset(ULONGLONG ullOffset)
+void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0)
 ```
-Go to the `ullOffset` offset.
+Go to a given offset. The second argument `iRelPos` may take in three different values:  
+* `-1` — offset will appear at the top line.
+* &nbsp; `0` — offset will appear at the middle.
+* &nbsp; `1` — offset will appear at the bottom line.
 
 ### [](#)HitTest
 ```cpp
