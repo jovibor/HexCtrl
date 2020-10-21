@@ -282,12 +282,12 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	mii.fMask = MIIM_BITMAP;
 
 	auto hInst = AfxGetInstanceHandle();
-	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_COPYHEX] =
+	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLPBRD_COPYHEX] =
 		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_COPYHEX, &mii);
-	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLIPBOARD_PASTEHEX] =
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_COPYHEX, &mii);
+	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLPBRD_PASTEHEX] =
 		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, &mii);
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_PASTEHEX, &mii);
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_MODIFY_FILLZEROS] =
 		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MENU_FILLZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
@@ -397,7 +397,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	//All dialogs are created after the main window, to set the parent window correctly.
 	m_pDlgBookmarkMgr->Create(IDD_HEXCTRL_BKMMGR, this, &*m_pBookmarks);
 	m_pDlgEncoding->Create(IDD_HEXCTRL_ENCODING, this);
-	m_pDlgDataInterpret->Create(IDD_HEXCTRL_DATAINTERPRET, this);
+	m_pDlgDataInterpret->Create(IDD_HEXCTRL_DATAINTERP, this);
 	m_pDlgFillData->Create(IDD_HEXCTRL_FILLDATA, this);
 	m_pDlgOpers->Create(IDD_HEXCTRL_OPERATIONS, this);
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this);
@@ -509,34 +509,34 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case EHexCmd::CMD_BKM_DLG_MANAGER:
 		m_pDlgBookmarkMgr->ShowWindow(SW_SHOW);
 		break;
-	case EHexCmd::CMD_CLIPBOARD_COPY_HEX:
+	case EHexCmd::CMD_CLPBRD_COPYHEX:
 		ClipboardCopy(EClipboard::COPY_HEX);
 		break;
-	case EHexCmd::CMD_CLIPBOARD_COPY_HEXLE:
+	case EHexCmd::CMD_CLPBRD_COPYHEXLE:
 		ClipboardCopy(EClipboard::COPY_HEXLE);
 		break;
-	case EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT:
+	case EHexCmd::CMD_CLPBRD_COPYHEXFMT:
 		ClipboardCopy(EClipboard::COPY_HEXFMT);
 		break;
-	case EHexCmd::CMD_CLIPBOARD_COPY_TEXT:
+	case EHexCmd::CMD_CLPBRD_COPYTEXT:
 		ClipboardCopy(EClipboard::COPY_TEXT);
 		break;
-	case EHexCmd::CMD_CLIPBOARD_COPY_BASE64:
+	case EHexCmd::CMD_CLPBRD_COPYBASE64:
 		ClipboardCopy(EClipboard::COPY_BASE64);
 		break;
-	case EHexCmd::CMD_CLIPBOARD_COPY_CARR:
+	case EHexCmd::CMD_CLPBRD_COPYCARR:
 		ClipboardCopy(EClipboard::COPY_CARR);
 		break;
-	case EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX:
+	case EHexCmd::CMD_CLPBRD_COPYGREPHEX:
 		ClipboardCopy(EClipboard::COPY_GREPHEX);
 		break;
-	case EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN:
+	case EHexCmd::CMD_CLPBRD_COPYPRNTSCRN:
 		ClipboardCopy(EClipboard::COPY_PRNTSCRN);
 		break;
-	case EHexCmd::CMD_CLIPBOARD_PASTE_HEX:
+	case EHexCmd::CMD_CLPBRD_PASTEHEX:
 		ClipboardPaste(EClipboard::PASTE_HEX);
 		break;
-	case EHexCmd::CMD_CLIPBOARD_PASTE_TEXT:
+	case EHexCmd::CMD_CLPBRD_PASTETEXT:
 		ClipboardPaste(EClipboard::PASTE_TEXT);
 		break;
 	case EHexCmd::CMD_MODIFY_DLG_OPERS:
@@ -575,22 +575,22 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case EHexCmd::CMD_SEL_ADDDOWN:
 		SelAddDown();
 		break;
-	case EHexCmd::CMD_DLG_DATAINTERPRET:
+	case EHexCmd::CMD_DLG_DATAINTERP:
 		m_pDlgDataInterpret->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_DLG_ENCODING:
 		m_pDlgEncoding->ShowWindow(SW_SHOW);
 		break;
-	case EHexCmd::CMD_APPEARANCE_FONTINC:
+	case EHexCmd::CMD_APPEAR_FONTINC:
 		SetFontSize(GetFontSize() + 2);
 		break;
-	case EHexCmd::CMD_APPEARANCE_FONTDEC:
+	case EHexCmd::CMD_APPEAR_FONTDEC:
 		SetFontSize(GetFontSize() - 2);
 		break;
-	case EHexCmd::CMD_APPEARANCE_CAPACINC:
+	case EHexCmd::CMD_APPEAR_CAPACINC:
 		SetCapacity(m_dwCapacity + 1);
 		break;
-	case EHexCmd::CMD_APPEARANCE_CAPACDEC:
+	case EHexCmd::CMD_APPEAR_CAPACDEC:
 		SetCapacity(m_dwCapacity - 1);
 		break;
 	case EHexCmd::CMD_DLG_PRINT:
@@ -843,18 +843,18 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		fAvail = m_pBookmarks->HasBookmarks();
 		break;
 	case EHexCmd::CMD_BKM_ADD:
-	case EHexCmd::CMD_CLIPBOARD_COPY_HEX:
-	case EHexCmd::CMD_CLIPBOARD_COPY_HEXLE:
-	case EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT:
-	case EHexCmd::CMD_CLIPBOARD_COPY_TEXT:
-	case EHexCmd::CMD_CLIPBOARD_COPY_BASE64:
-	case EHexCmd::CMD_CLIPBOARD_COPY_CARR:
-	case EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX:
-	case EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN:
+	case EHexCmd::CMD_CLPBRD_COPYHEX:
+	case EHexCmd::CMD_CLPBRD_COPYHEXLE:
+	case EHexCmd::CMD_CLPBRD_COPYHEXFMT:
+	case EHexCmd::CMD_CLPBRD_COPYTEXT:
+	case EHexCmd::CMD_CLPBRD_COPYBASE64:
+	case EHexCmd::CMD_CLPBRD_COPYCARR:
+	case EHexCmd::CMD_CLPBRD_COPYGREPHEX:
+	case EHexCmd::CMD_CLPBRD_COPYPRNTSCRN:
 		fAvail = fSelection;
 		break;
-	case EHexCmd::CMD_CLIPBOARD_PASTE_HEX:
-	case EHexCmd::CMD_CLIPBOARD_PASTE_TEXT:
+	case EHexCmd::CMD_CLPBRD_PASTEHEX:
+	case EHexCmd::CMD_CLPBRD_PASTETEXT:
 		fAvail = fMutable && fSelection && IsClipboardFormatAvailable(CF_TEXT);
 		break;
 	case EHexCmd::CMD_MODIFY_DLG_OPERS:
@@ -878,7 +878,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case EHexCmd::CMD_SEL_MARKSTART:
 	case EHexCmd::CMD_SEL_MARKEND:
 	case EHexCmd::CMD_SEL_ALL:
-	case EHexCmd::CMD_DLG_DATAINTERPRET:
+	case EHexCmd::CMD_DLG_DATAINTERP:
 		fAvail = fDataSet;
 		break;
 	case EHexCmd::CMD_SEARCH_NEXT:
@@ -1050,10 +1050,12 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 
 	//Mapping between stringified EHexCmd::* and its value-menuID pairs.
 	const std::unordered_map<std::string, std::pair<EHexCmd, WORD>> umapCmdMenu {
-		{ "CMD_DLG_SEARCH", { EHexCmd::CMD_DLG_SEARCH, static_cast<WORD>(IDM_HEXCTRL_SEARCH) } },
+		{ "CMD_DLG_SEARCH", { EHexCmd::CMD_DLG_SEARCH, static_cast<WORD>(IDM_HEXCTRL_DLG_SEARCH) } },
 		{ "CMD_SEARCH_NEXT", { EHexCmd::CMD_SEARCH_NEXT, static_cast<WORD>(0) } },
 		{ "CMD_SEARCH_PREV", { EHexCmd::CMD_SEARCH_PREV, static_cast<WORD>(0) } },
-		{ "CMD_NAV_DLG_GOTO", { EHexCmd::CMD_NAV_DLG_GOTO, static_cast<WORD>(IDM_HEXCTRL_NAV_GOTO) } },
+		{ "CMD_NAV_DLG_GOTO", { EHexCmd::CMD_NAV_DLG_GOTO, static_cast<WORD>(IDM_HEXCTRL_NAV_DLG_GOTO) } },
+		{ "CMD_NAV_REPFWD", { EHexCmd::CMD_NAV_REPFWD, static_cast<WORD>(IDM_HEXCTRL_NAV_REPFWD) } },
+		{ "CMD_NAV_REPBKW", { EHexCmd::CMD_NAV_REPBKW, static_cast<WORD>(IDM_HEXCTRL_NAV_REPBKW) } },
 		{ "CMD_NAV_DATABEG", { EHexCmd::CMD_NAV_DATABEG, static_cast<WORD>(IDM_HEXCTRL_NAV_DATABEG) } },
 		{ "CMD_NAV_DATAEND", { EHexCmd::CMD_NAV_DATAEND, static_cast<WORD>(IDM_HEXCTRL_NAV_DATAEND) } },
 		{ "CMD_NAV_PAGEBEG", { EHexCmd::CMD_NAV_PAGEBEG, static_cast<WORD>(IDM_HEXCTRL_NAV_PAGEBEG) } },
@@ -1064,25 +1066,25 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ "CMD_SHOWDATA_WORD", { EHexCmd::CMD_SHOWDATA_WORD, static_cast<WORD>(IDM_HEXCTRL_SHOWAS_WORD) } },
 		{ "CMD_SHOWDATA_DWORD", { EHexCmd::CMD_SHOWDATA_DWORD, static_cast<WORD>(IDM_HEXCTRL_SHOWAS_DWORD) } },
 		{ "CMD_SHOWDATA_QWORD", { EHexCmd::CMD_SHOWDATA_QWORD, static_cast<WORD>(IDM_HEXCTRL_SHOWAS_QWORD) } },
-		{ "CMD_BKM_ADD", { EHexCmd::CMD_BKM_ADD, static_cast<WORD>(IDM_HEXCTRL_BOOKMARKS_ADD) } },
-		{ "CMD_BKM_REMOVE", { EHexCmd::CMD_BKM_REMOVE, static_cast<WORD>(IDM_HEXCTRL_BOOKMARKS_REMOVE) } },
-		{ "CMD_BKM_NEXT", { EHexCmd::CMD_BKM_NEXT, static_cast<WORD>(IDM_HEXCTRL_BOOKMARKS_NEXT) } },
-		{ "CMD_BKM_PREV", { EHexCmd::CMD_BKM_PREV, static_cast<WORD>(IDM_HEXCTRL_BOOKMARKS_PREV) } },
-		{ "CMD_BKM_CLEARALL", { EHexCmd::CMD_BKM_CLEARALL, static_cast<WORD>(IDM_HEXCTRL_BOOKMARKS_CLEARALL) } },
-		{ "CMD_BKM_DLG_MANAGER", { EHexCmd::CMD_BKM_DLG_MANAGER, static_cast<WORD>(IDM_HEXCTRL_BOOKMARKS_MANAGER) } },
-		{ "CMD_CLIPBOARD_COPY_HEX", { EHexCmd::CMD_CLIPBOARD_COPY_HEX, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYHEX) } },
-		{ "CMD_CLIPBOARD_COPY_HEXLE", { EHexCmd::CMD_CLIPBOARD_COPY_HEXLE, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYHEXLE) } },
-		{ "CMD_CLIPBOARD_COPY_HEXFMT", { EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYHEXFMT) } },
-		{ "CMD_CLIPBOARD_COPY_TEXT", { EHexCmd::CMD_CLIPBOARD_COPY_TEXT, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYTEXT) } },
-		{ "CMD_CLIPBOARD_COPY_BASE64", { EHexCmd::CMD_CLIPBOARD_COPY_BASE64, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYBASE64) } },
-		{ "CMD_CLIPBOARD_COPY_CARR", { EHexCmd::CMD_CLIPBOARD_COPY_CARR, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYCARRAY) } },
-		{ "CMD_CLIPBOARD_COPY_GREPHEX", { EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX) } },
-		{ "CMD_CLIPBOARD_COPY_PRNTSCRN", { EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_COPYPRNTSCRN) } },
-		{ "CMD_CLIPBOARD_PASTE_HEX", { EHexCmd::CMD_CLIPBOARD_PASTE_HEX, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_PASTEHEX) } },
-		{ "CMD_CLIPBOARD_PASTE_TEXT", { EHexCmd::CMD_CLIPBOARD_PASTE_TEXT, static_cast<WORD>(IDM_HEXCTRL_CLIPBOARD_PASTETEXT) } },
-		{ "CMD_MODIFY_DLG_OPERS", { EHexCmd::CMD_MODIFY_DLG_OPERS, static_cast<WORD>(IDM_HEXCTRL_MODIFY_OPERS) } },
+		{ "CMD_BKM_ADD", { EHexCmd::CMD_BKM_ADD, static_cast<WORD>(IDM_HEXCTRL_BKM_ADD) } },
+		{ "CMD_BKM_REMOVE", { EHexCmd::CMD_BKM_REMOVE, static_cast<WORD>(IDM_HEXCTRL_BKM_REMOVE) } },
+		{ "CMD_BKM_NEXT", { EHexCmd::CMD_BKM_NEXT, static_cast<WORD>(IDM_HEXCTRL_BKM_NEXT) } },
+		{ "CMD_BKM_PREV", { EHexCmd::CMD_BKM_PREV, static_cast<WORD>(IDM_HEXCTRL_BKM_PREV) } },
+		{ "CMD_BKM_CLEARALL", { EHexCmd::CMD_BKM_CLEARALL, static_cast<WORD>(IDM_HEXCTRL_BKM_CLEARALL) } },
+		{ "CMD_BKM_DLG_MANAGER", { EHexCmd::CMD_BKM_DLG_MANAGER, static_cast<WORD>(IDM_HEXCTRL_BKM_DLG_MANAGER) } },
+		{ "CMD_CLPBRD_COPYHEX", { EHexCmd::CMD_CLPBRD_COPYHEX, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYHEX) } },
+		{ "CMD_CLPBRD_COPYHEXLE", { EHexCmd::CMD_CLPBRD_COPYHEXLE, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYHEXLE) } },
+		{ "CMD_CLPBRD_COPYHEXFMT", { EHexCmd::CMD_CLPBRD_COPYHEXFMT, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYHEXFMT) } },
+		{ "CMD_CLPBRD_COPYTEXT", { EHexCmd::CMD_CLPBRD_COPYTEXT, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYTEXT) } },
+		{ "CMD_CLPBRD_COPYBASE64", { EHexCmd::CMD_CLPBRD_COPYBASE64, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYBASE64) } },
+		{ "CMD_CLPBRD_COPYCARR", { EHexCmd::CMD_CLPBRD_COPYCARR, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYCARR) } },
+		{ "CMD_CLPBRD_COPYGREPHEX", { EHexCmd::CMD_CLPBRD_COPYGREPHEX, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYGREPHEX) } },
+		{ "CMD_CLPBRD_COPYPRNTSCRN", { EHexCmd::CMD_CLPBRD_COPYPRNTSCRN, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN) } },
+		{ "CMD_CLPBRD_PASTEHEX", { EHexCmd::CMD_CLPBRD_PASTEHEX, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_PASTEHEX) } },
+		{ "CMD_CLPBRD_PASTETEXT", { EHexCmd::CMD_CLPBRD_PASTETEXT, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_PASTETEXT) } },
+		{ "CMD_MODIFY_DLG_OPERS", { EHexCmd::CMD_MODIFY_DLG_OPERS, static_cast<WORD>(IDM_HEXCTRL_MODIFY_DLG_OPERS) } },
 		{ "CMD_MODIFY_FILLZEROS", { EHexCmd::CMD_MODIFY_FILLZEROS, static_cast<WORD>(IDM_HEXCTRL_MODIFY_FILLZEROS) } },
-		{ "CMD_MODIFY_DLG_FILLDATA", { EHexCmd::CMD_MODIFY_DLG_FILLDATA, static_cast<WORD>(IDM_HEXCTRL_MODIFY_FILLDATA) } },
+		{ "CMD_MODIFY_DLG_FILLDATA", { EHexCmd::CMD_MODIFY_DLG_FILLDATA, static_cast<WORD>(IDM_HEXCTRL_MODIFY_DLG_FILLDATA) } },
 		{ "CMD_MODIFY_UNDO", { EHexCmd::CMD_MODIFY_UNDO, static_cast<WORD>(IDM_HEXCTRL_MODIFY_UNDO) } },
 		{ "CMD_MODIFY_REDO", { EHexCmd::CMD_MODIFY_REDO, static_cast<WORD>(IDM_HEXCTRL_MODIFY_REDO) } },
 		{ "CMD_SEL_MARKSTART", { EHexCmd::CMD_SEL_MARKSTART, static_cast<WORD>(IDM_HEXCTRL_SEL_MARKSTART) } },
@@ -1092,14 +1094,14 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ "CMD_SEL_ADDRIGHT", { EHexCmd::CMD_SEL_ADDRIGHT, static_cast<WORD>(0) } },
 		{ "CMD_SEL_ADDUP", { EHexCmd::CMD_SEL_ADDUP, static_cast<WORD>(0) } },
 		{ "CMD_SEL_ADDDOWN", { EHexCmd::CMD_SEL_ADDDOWN, static_cast<WORD>(0) } },
-		{ "CMD_DLG_DATAINTERPRET", { EHexCmd::CMD_DLG_DATAINTERPRET, static_cast<WORD>(IDM_HEXCTRL_DATAINTERPRET) } },
-		{ "CMD_DLG_ENCODING", { EHexCmd::CMD_DLG_ENCODING, static_cast<WORD>(IDM_HEXCTRL_ENCODING) } },
-		{ "CMD_APPEARANCE_FONTINC", { EHexCmd::CMD_APPEARANCE_FONTINC, static_cast<WORD>(IDM_HEXCTRL_APPEARANCE_FONTINC) } },
-		{ "CMD_APPEARANCE_FONTDEC", { EHexCmd::CMD_APPEARANCE_FONTDEC, static_cast<WORD>(IDM_HEXCTRL_APPEARANCE_FONTDEC) } },
-		{ "CMD_APPEARANCE_CAPACINC", { EHexCmd::CMD_APPEARANCE_CAPACINC, static_cast<WORD>(IDM_HEXCTRL_APPEARANCE_CAPACINC) } },
-		{ "CMD_APPEARANCE_CAPACDEC", { EHexCmd::CMD_APPEARANCE_CAPACDEC, static_cast<WORD>(IDM_HEXCTRL_APPEARANCE_CAPACDEC) } },
-		{ "CMD_DLG_PRINT", { EHexCmd::CMD_DLG_PRINT, static_cast<WORD>(IDM_HEXCTRL_PRINT) } },
-		{ "CMD_DLG_ABOUT", { EHexCmd::CMD_DLG_ABOUT, static_cast<WORD>(IDM_HEXCTRL_ABOUT) } },
+		{ "CMD_DLG_DATAINTERPRET", { EHexCmd::CMD_DLG_DATAINTERP, static_cast<WORD>(IDM_HEXCTRL_DLG_DATAINTERP) } },
+		{ "CMD_DLG_ENCODING", { EHexCmd::CMD_DLG_ENCODING, static_cast<WORD>(IDM_HEXCTRL_DLG_ENCODING) } },
+		{ "CMD_APPEAR_FONTINC", { EHexCmd::CMD_APPEAR_FONTINC, static_cast<WORD>(IDM_HEXCTRL_APPEAR_FONTINC) } },
+		{ "CMD_APPEAR_FONTDEC", { EHexCmd::CMD_APPEAR_FONTDEC, static_cast<WORD>(IDM_HEXCTRL_APPEAR_FONTDEC) } },
+		{ "CMD_APPEAR_CAPACINC", { EHexCmd::CMD_APPEAR_CAPACINC, static_cast<WORD>(IDM_HEXCTRL_APPEAR_CAPACINC) } },
+		{ "CMD_APPEAR_CAPACDEC", { EHexCmd::CMD_APPEAR_CAPACDEC, static_cast<WORD>(IDM_HEXCTRL_APPEAR_CAPACDEC) } },
+		{ "CMD_DLG_PRINT", { EHexCmd::CMD_DLG_PRINT, static_cast<WORD>(IDM_HEXCTRL_DLG_PRINT) } },
+		{ "CMD_DLG_ABOUT", { EHexCmd::CMD_DLG_ABOUT, static_cast<WORD>(IDM_HEXCTRL_DLG_ABOUT) } },
 		{ "CMD_CARET_LEFT", { EHexCmd::CMD_CARET_LEFT, static_cast<WORD>(0) } },
 		{ "CMD_CARET_RIGHT", { EHexCmd::CMD_CARET_RIGHT, static_cast<WORD>(0) } },
 		{ "CMD_CARET_UP", { EHexCmd::CMD_CARET_UP, static_cast<WORD>(0) } },
@@ -1224,7 +1226,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 	if (wstrPath.empty()) //Default keybind.json from resources.
 	{
 		const auto hInst = AfxGetInstanceHandle();
-		if (const auto hRes = FindResourceW(hInst, MAKEINTRESOURCEW(IDR_JSON_KEYBIND), L"JSON"); hRes != nullptr)
+		if (const auto hRes = FindResourceW(hInst, MAKEINTRESOURCEW(IDR_HEXCTRL_JSON_KEYBIND), L"JSON"); hRes != nullptr)
 		{
 			if (const auto hData = LoadResource(hInst, hRes); hData != nullptr)
 			{
@@ -4338,11 +4340,13 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 	switch (nIndex) //Zero based index of the menu. Zero means main menu itself, 1 - first (sub)menu, and so on.
 	{
 	case 0:	//Main menu.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH, IsCmdAvail(EHexCmd::CMD_DLG_SEARCH) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DATAINTERPRET, IsCmdAvail(EHexCmd::CMD_DLG_DATAINTERPRET) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLG_SEARCH, IsCmdAvail(EHexCmd::CMD_DLG_SEARCH) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLG_DATAINTERP, IsCmdAvail(EHexCmd::CMD_DLG_DATAINTERP) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 3:	//Navigation.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_GOTO, IsCmdAvail(EHexCmd::CMD_NAV_DLG_GOTO) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DLG_GOTO, IsCmdAvail(EHexCmd::CMD_NAV_DLG_GOTO) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_REPFWD, IsCmdAvail(EHexCmd::CMD_NAV_REPFWD) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_REPBKW, IsCmdAvail(EHexCmd::CMD_NAV_REPBKW) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DATABEG, IsCmdAvail(EHexCmd::CMD_NAV_DATABEG) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DATAEND, IsCmdAvail(EHexCmd::CMD_NAV_DATAEND) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_PAGEBEG, IsCmdAvail(EHexCmd::CMD_NAV_PAGEBEG) ? MF_ENABLED : MF_GRAYED);
@@ -4351,29 +4355,29 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_LINEEND, IsCmdAvail(EHexCmd::CMD_NAV_LINEEND) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 4:	//Bookmarks
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_ADD, IsCmdAvail(EHexCmd::CMD_BKM_ADD) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_REMOVE, IsCmdAvail(EHexCmd::CMD_BKM_REMOVE) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_NEXT, IsCmdAvail(EHexCmd::CMD_BKM_NEXT) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_PREV, IsCmdAvail(EHexCmd::CMD_BKM_PREV) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_CLEARALL, IsCmdAvail(EHexCmd::CMD_BKM_CLEARALL) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BOOKMARKS_MANAGER, IsCmdAvail(EHexCmd::CMD_BKM_DLG_MANAGER) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_ADD, IsCmdAvail(EHexCmd::CMD_BKM_ADD) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_REMOVE, IsCmdAvail(EHexCmd::CMD_BKM_REMOVE) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_NEXT, IsCmdAvail(EHexCmd::CMD_BKM_NEXT) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_PREV, IsCmdAvail(EHexCmd::CMD_BKM_PREV) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_CLEARALL, IsCmdAvail(EHexCmd::CMD_BKM_CLEARALL) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_DLG_MANAGER, IsCmdAvail(EHexCmd::CMD_BKM_DLG_MANAGER) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 5:	//Clipboard
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEX) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEXLE, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEXLE) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYHEXFMT, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_HEXFMT) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYTEXT, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_TEXT) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYBASE64, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_BASE64) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYCARRAY, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_CARR) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_GREPHEX) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_COPYPRNTSCRN, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_COPY_PRNTSCRN) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTEHEX, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_PASTE_HEX) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLIPBOARD_PASTETEXT, IsCmdAvail(EHexCmd::CMD_CLIPBOARD_PASTE_TEXT) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEX, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYHEX) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXLE, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYHEXLE) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXFMT, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYHEXFMT) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYTEXT, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYTEXT) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYBASE64, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYBASE64) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYCARR, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYCARR) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYGREPHEX, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYGREPHEX) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYPRNTSCRN) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTEHEX, IsCmdAvail(EHexCmd::CMD_CLPBRD_PASTEHEX) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTETEXT, IsCmdAvail(EHexCmd::CMD_CLPBRD_PASTETEXT) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 6: //Modify
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(EHexCmd::CMD_MODIFY_FILLZEROS) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLDATA, IsCmdAvail(EHexCmd::CMD_MODIFY_DLG_FILLDATA) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_OPERS, IsCmdAvail(EHexCmd::CMD_MODIFY_DLG_OPERS) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLG_FILLDATA, IsCmdAvail(EHexCmd::CMD_MODIFY_DLG_FILLDATA) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLG_OPERS, IsCmdAvail(EHexCmd::CMD_MODIFY_DLG_OPERS) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(EHexCmd::CMD_MODIFY_UNDO) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(EHexCmd::CMD_MODIFY_REDO) ? MF_ENABLED : MF_GRAYED);
 		break;
@@ -4392,9 +4396,9 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 	if (nFlags & 0x4000)
 		m_fKeyDownAtm = true;
 
-	if (auto opt = GetCommand(static_cast<BYTE>(nChar),
-		GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); opt)
-		ExecuteCmd(opt.value());
+	if (auto optCmd = GetCommand(static_cast<BYTE>(nChar),
+		GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd)
+		ExecuteCmd(optCmd.value());
 	else if (m_fMutable)
 	{
 		SMODIFY hms;
@@ -4432,7 +4436,7 @@ void CHexCtrl::OnKeyUp(UINT /*nChar*/, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {
 	//If some key was previously pressed for some time, and now is released.
 	//Inspecting current caret position.
-	if (m_fKeyDownAtm)
+	if (m_fKeyDownAtm && IsDataSet())
 	{
 		m_fKeyDownAtm = false;
 		m_pDlgDataInterpret->InspectOffset(GetCaretPos());

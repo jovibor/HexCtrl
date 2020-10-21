@@ -21,10 +21,10 @@ BEGIN_MESSAGE_MAP(CHexDlgDataInterpret, CDialogEx)
 	ON_WM_ACTIVATE()
 	ON_WM_SIZE()
 	ON_REGISTERED_MESSAGE(AFX_WM_PROPERTY_CHANGED, &CHexDlgDataInterpret::OnPropertyChanged)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE, &CHexDlgDataInterpret::OnClickRadioLe)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_BE, &CHexDlgDataInterpret::OnClickRadioBe)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_DEC, &CHexDlgDataInterpret::OnClickRadioDec)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERPRET_RADIO_HEX, &CHexDlgDataInterpret::OnClickRadioHex)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_LE, &CHexDlgDataInterpret::OnClickRadioLe)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_BE, &CHexDlgDataInterpret::OnClickRadioBe)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_DEC, &CHexDlgDataInterpret::OnClickRadioDec)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_HEX, &CHexDlgDataInterpret::OnClickRadioHex)
 	ON_WM_DESTROY()
 	ON_WM_SHOWWINDOW()
 END_MESSAGE_MAP()
@@ -32,7 +32,7 @@ END_MESSAGE_MAP()
 void CHexDlgDataInterpret::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERPRET_PROPERTY_DATA, m_stCtrlGrid);
+	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_PROPDATA, m_stCtrlGrid);
 }
 
 BOOL CHexDlgDataInterpret::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
@@ -66,9 +66,9 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 	sTitle.AppendFormat(L" [%s]", GetCurrentUserDateFormatString().data());
 	SetWindowTextW(sTitle);
 
-	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_LE)); pRadio)
+	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RADIO_LE)); pRadio)
 		pRadio->SetCheck(BST_CHECKED);
-	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERPRET_RADIO_HEX)); pRadio)
+	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RADIO_HEX)); pRadio)
 		pRadio->SetCheck(BST_CHECKED);
 
 	m_hdItemPropGrid.mask = HDI_WIDTH;
@@ -392,7 +392,7 @@ void CHexDlgDataInterpret::OnClose()
 
 LRESULT CHexDlgDataInterpret::OnPropertyChanged(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam == IDC_HEXCTRL_DATAINTERPRET_PROPERTY_DATA)
+	if (wParam == IDC_HEXCTRL_DATAINTERP_PROPDATA)
 	{
 		m_pPropChanged = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
 		OnOK();

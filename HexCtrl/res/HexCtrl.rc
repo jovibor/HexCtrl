@@ -180,19 +180,17 @@ BEGIN
     GROUPBOX        "Bookmark properties:",IDC_STATIC,7,6,322,120
 END
 
-IDD_HEXCTRL_DATAINTERPRET DIALOGEX 0, 0, 273, 310
+IDD_HEXCTRL_DATAINTERP DIALOGEX 0, 0, 273, 310
 STYLE DS_SETFONT | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Data Interpreter"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_HEXCTRL_DATAINTERPRET_PROPERTY_DATA,
-                    "MfcPropertyGrid",WS_BORDER | 0x100,2,0,269,284
-    CONTROL         "Little-endian",IDC_HEXCTRL_DATAINTERPRET_RADIO_LE,
-                    "Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,14,292,50,8
-    CONTROL         "Big-endian",IDC_HEXCTRL_DATAINTERPRET_RADIO_BE,"Button",BS_AUTORADIOBUTTON,68,292,46,8
-    CONTROL         "Decimal",IDC_HEXCTRL_DATAINTERPRET_RADIO_DEC,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,165,292,36,8
-    CONTROL         "Hex",IDC_HEXCTRL_DATAINTERPRET_RADIO_HEX,"Button",BS_AUTORADIOBUTTON,133,292,24,8
+    CONTROL         "",IDC_HEXCTRL_DATAINTERP_PROPDATA,"MfcPropertyGrid",WS_BORDER | 0x100,2,0,269,284
+    CONTROL         "Little-endian",IDC_HEXCTRL_DATAINTERP_RADIO_LE,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,14,292,50,8
+    CONTROL         "Big-endian",IDC_HEXCTRL_DATAINTERP_RADIO_BE,"Button",BS_AUTORADIOBUTTON,68,292,46,8
+    CONTROL         "Decimal",IDC_HEXCTRL_DATAINTERP_RADIO_DEC,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,165,292,36,8
+    CONTROL         "Hex",IDC_HEXCTRL_DATAINTERP_RADIO_HEX,"Button",BS_AUTORADIOBUTTON,133,292,24,8
     GROUPBOX        "",IDC_STATIC,8,285,111,20
     GROUPBOX        "",IDC_STATIC,127,285,137,20
 END
@@ -300,7 +298,7 @@ BEGIN
     BEGIN
     END
 
-    IDD_HEXCTRL_DATAINTERPRET, DIALOG
+    IDD_HEXCTRL_DATAINTERP, DIALOG
     BEGIN
         RIGHTMARGIN, 267
     END
@@ -398,9 +396,9 @@ BEGIN
     0
 END
 
-IDD_HEXCTRL_DATAINTERPRET DLGINIT
+IDD_HEXCTRL_DATAINTERP DLGINIT
 BEGIN
-    IDC_HEXCTRL_DATAINTERPRET_PROPERTY_DATA, 0x37c, 414, 0
+    IDC_HEXCTRL_DATAINTERP_PROPDATA, 0x37c, 414, 0
 0x4d3c, 0x4346, 0x7250, 0x706f, 0x7265, 0x7974, 0x7247, 0x6469, 0x485f, 
 0x6165, 0x6564, 0x4372, 0x7274, 0x3e6c, 0x5254, 0x4555, 0x2f3c, 0x464d, 
 0x5043, 0x6f72, 0x6570, 0x7472, 0x4779, 0x6972, 0x5f64, 0x6548, 0x6461, 
@@ -438,7 +436,7 @@ IDR_HEXCTRL_MENU MENU
 BEGIN
     POPUP ""
     BEGIN
-        MENUITEM "Search and Replace",          IDM_HEXCTRL_SEARCH
+        MENUITEM "Search and Replace",          IDM_HEXCTRL_DLG_SEARCH
         MENUITEM SEPARATOR
         POPUP "Show data as..."
         BEGIN
@@ -449,7 +447,9 @@ BEGIN
         END
         POPUP "Navigation"
         BEGIN
-            MENUITEM "Go to Address...",            IDM_HEXCTRL_NAV_GOTO
+            MENUITEM "Go to Address...",            IDM_HEXCTRL_NAV_DLG_GOTO
+            MENUITEM "Repeat Forward",              IDM_HEXCTRL_NAV_REPFWD
+            MENUITEM "Repeat Backward",             IDM_HEXCTRL_NAV_REPBKW
             MENUITEM SEPARATOR
             MENUITEM "Data Beginning",              IDM_HEXCTRL_NAV_DATABEG
             MENUITEM "Data End",                    IDM_HEXCTRL_NAV_DATAEND
@@ -462,36 +462,36 @@ BEGIN
         END
         POPUP "Bookmarks"
         BEGIN
-            MENUITEM "Add bookmark",                IDM_HEXCTRL_BOOKMARKS_ADD
-            MENUITEM "Remove bookmark",             IDM_HEXCTRL_BOOKMARKS_REMOVE
+            MENUITEM "Add bookmark",                IDM_HEXCTRL_BKM_ADD
+            MENUITEM "Remove bookmark",             IDM_HEXCTRL_BKM_REMOVE
             MENUITEM SEPARATOR
-            MENUITEM "Go next bookmark",            IDM_HEXCTRL_BOOKMARKS_NEXT
-            MENUITEM "Go previous bookmark",        IDM_HEXCTRL_BOOKMARKS_PREV
+            MENUITEM "Go next bookmark",            IDM_HEXCTRL_BKM_NEXT
+            MENUITEM "Go previous bookmark",        IDM_HEXCTRL_BKM_PREV
             MENUITEM SEPARATOR
-            MENUITEM "Clear all bookmarks",         IDM_HEXCTRL_BOOKMARKS_CLEARALL
+            MENUITEM "Clear all bookmarks",         IDM_HEXCTRL_BKM_CLEARALL
             MENUITEM SEPARATOR
-            MENUITEM "Bookmarks manager",           IDM_HEXCTRL_BOOKMARKS_MANAGER
+            MENUITEM "Bookmarks manager",           IDM_HEXCTRL_BKM_DLG_MANAGER
         END
         POPUP "Clipboard"
         BEGIN
-            MENUITEM "Copy as Hex",                 IDM_HEXCTRL_CLIPBOARD_COPYHEX
-            MENUITEM "Copy as Hex (little-endian)", IDM_HEXCTRL_CLIPBOARD_COPYHEXLE
-            MENUITEM "Copy as Hex Formatted",       IDM_HEXCTRL_CLIPBOARD_COPYHEXFMT
+            MENUITEM "Copy as Hex",                 IDM_HEXCTRL_CLPBRD_COPYHEX
+            MENUITEM "Copy as Hex (little-endian)", IDM_HEXCTRL_CLPBRD_COPYHEXLE
+            MENUITEM "Copy as Hex Formatted",       IDM_HEXCTRL_CLPBRD_COPYHEXFMT
             MENUITEM SEPARATOR
-            MENUITEM "Copy as Text",                IDM_HEXCTRL_CLIPBOARD_COPYTEXT
-            MENUITEM "Copy as Base64",              IDM_HEXCTRL_CLIPBOARD_COPYBASE64
-            MENUITEM "Copy as ""C"" Array",         IDM_HEXCTRL_CLIPBOARD_COPYCARRAY
-            MENUITEM "Copy as Grep Hex",            IDM_HEXCTRL_CLIPBOARD_COPYGREPHEX
-            MENUITEM "Copy as Print Screen",        IDM_HEXCTRL_CLIPBOARD_COPYPRNTSCRN
+            MENUITEM "Copy as Text",                IDM_HEXCTRL_CLPBRD_COPYTEXT
+            MENUITEM "Copy as Base64",              IDM_HEXCTRL_CLPBRD_COPYBASE64
+            MENUITEM "Copy as ""C"" Array",         IDM_HEXCTRL_CLPBRD_COPYCARR
+            MENUITEM "Copy as Grep Hex",            IDM_HEXCTRL_CLPBRD_COPYGREPHEX
+            MENUITEM "Copy as Print Screen",        IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN
             MENUITEM SEPARATOR
-            MENUITEM "Paste as Hex",                IDM_HEXCTRL_CLIPBOARD_PASTEHEX
-            MENUITEM "Paste as Text",               IDM_HEXCTRL_CLIPBOARD_PASTETEXT
+            MENUITEM "Paste as Hex",                IDM_HEXCTRL_CLPBRD_PASTEHEX
+            MENUITEM "Paste as Text",               IDM_HEXCTRL_CLPBRD_PASTETEXT
         END
         POPUP "Modify"
         BEGIN
-            MENUITEM "Operations...",               IDM_HEXCTRL_MODIFY_OPERS
+            MENUITEM "Operations...",               IDM_HEXCTRL_MODIFY_DLG_OPERS
             MENUITEM "Fill with zeros",             IDM_HEXCTRL_MODIFY_FILLZEROS
-            MENUITEM "Fill with data...",           IDM_HEXCTRL_MODIFY_FILLDATA
+            MENUITEM "Fill with data...",           IDM_HEXCTRL_MODIFY_DLG_FILLDATA
             MENUITEM SEPARATOR
             MENUITEM "Undo",                        IDM_HEXCTRL_MODIFY_UNDO
             MENUITEM "Redo",                        IDM_HEXCTRL_MODIFY_REDO
@@ -503,20 +503,20 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "Select all",                  IDM_HEXCTRL_SEL_ALL
         END
-        MENUITEM "Data Interpreter",            IDM_HEXCTRL_DATAINTERPRET
-        MENUITEM "Encoding",                    IDM_HEXCTRL_ENCODING
+        MENUITEM "Data Interpreter",            IDM_HEXCTRL_DLG_DATAINTERP
+        MENUITEM "Encoding",                    IDM_HEXCTRL_DLG_ENCODING
         POPUP "Appearance"
         BEGIN
-            MENUITEM "Increase font size\tCtrl+MouseWheelUp", IDM_HEXCTRL_APPEARANCE_FONTINC
-            MENUITEM "Decrease font size\tCtrl+MouseWheelDown", IDM_HEXCTRL_APPEARANCE_FONTDEC
+            MENUITEM "Increase font size\tCtrl+MouseWheelUp", IDM_HEXCTRL_APPEAR_FONTINC
+            MENUITEM "Decrease font size\tCtrl+MouseWheelDown", IDM_HEXCTRL_APPEAR_FONTDEC
             MENUITEM SEPARATOR
-            MENUITEM "Increase capacity\tCtrl+Shift+MouseWheelUp", IDM_HEXCTRL_APPEARANCE_CAPACINC
-            MENUITEM "Decrease capacity\tCtrl+Shift+MouseWheelDown", IDM_HEXCTRL_APPEARANCE_CAPACDEC
+            MENUITEM "Increase capacity\tCtrl+Shift+MouseWheelUp", IDM_HEXCTRL_APPEAR_CAPACINC
+            MENUITEM "Decrease capacity\tCtrl+Shift+MouseWheelDown", IDM_HEXCTRL_APPEAR_CAPACDEC
         END
         MENUITEM SEPARATOR
-        MENUITEM "Print...",                    IDM_HEXCTRL_PRINT
+        MENUITEM "Print...",                    IDM_HEXCTRL_DLG_PRINT
         MENUITEM SEPARATOR
-        MENUITEM "About",                       IDM_HEXCTRL_ABOUT
+        MENUITEM "About",                       IDM_HEXCTRL_DLG_ABOUT
     END
 END
 
@@ -546,7 +546,7 @@ BEGIN
     0
 END
 
-IDD_HEXCTRL_DATAINTERPRET AFX_DIALOG_LAYOUT
+IDD_HEXCTRL_DATAINTERP AFX_DIALOG_LAYOUT
 BEGIN
     0,
     0, 0, 100, 100,
@@ -594,7 +594,7 @@ END
 // JSON
 //
 
-IDR_JSON_KEYBIND        JSON                    "keybind.json"
+IDR_HEXCTRL_JSON_KEYBIND JSON                    "keybind.json"
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
