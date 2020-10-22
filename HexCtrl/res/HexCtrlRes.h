@@ -11,6 +11,7 @@
 #define IDD_HEXCTRL_SEARCH              9101
 #define IDD_HEXCTRL_ABOUT               9102
 #define IDD_HEXCTRL_OPERATIONS          9103
+#define IDD_HEXCTRL_OPERS               9103
 #define IDD_HEXCTRL_FILLDATA            9104
 #define IDD_HEXCTRL_BKMMGR              9105
 #define IDD_HEXCTRL_BKMPROPS            9106

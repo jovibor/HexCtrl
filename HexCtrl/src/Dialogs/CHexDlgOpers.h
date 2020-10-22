@@ -12,7 +12,7 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	class CHexDlgOperations final : public CDialogEx
+	class CHexDlgOpers final : public CDialogEx
 	{
 	public:
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);

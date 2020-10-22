@@ -7,7 +7,7 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include "CHexCtrl.h"
+#include "../HexCtrl.h"
 #include <vector>
 
 namespace HEXCTRL::INTERNAL

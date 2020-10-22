@@ -15,11 +15,11 @@
 #include "Dialogs/CHexDlgAbout.h"
 #include "Dialogs/CHexDlgBkmMgr.h"
 #include "Dialogs/CHexDlgCallback.h"
-#include "Dialogs/CHexDlgDataInterpret.h"
+#include "Dialogs/CHexDlgDataInterp.h"
 #include "Dialogs/CHexDlgEncoding.h"
 #include "Dialogs/CHexDlgFillData.h"
 #include "Dialogs/CHexDlgGoTo.h"
-#include "Dialogs/CHexDlgOperations.h"
+#include "Dialogs/CHexDlgOpers.h"
 #include "Dialogs/CHexDlgSearch.h"
 #include "Helper.h"
 #include "strsafe.h"
@@ -395,12 +395,13 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_pScrollH->AddSibling(m_pScrollV.get());
 
 	//All dialogs are created after the main window, to set the parent window correctly.
-	m_pDlgBookmarkMgr->Create(IDD_HEXCTRL_BKMMGR, this, &*m_pBookmarks);
+	m_pDlgBkmMgr->Create(IDD_HEXCTRL_BKMMGR, this, &*m_pBookmarks);
 	m_pDlgEncoding->Create(IDD_HEXCTRL_ENCODING, this);
-	m_pDlgDataInterpret->Create(IDD_HEXCTRL_DATAINTERP, this);
+	m_pDlgDataInterp->Create(IDD_HEXCTRL_DATAINTERP, this);
 	m_pDlgFillData->Create(IDD_HEXCTRL_FILLDATA, this);
 	m_pDlgOpers->Create(IDD_HEXCTRL_OPERATIONS, this);
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this);
+	m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, this);
 	m_pBookmarks->Attach(this);
 	m_pSelection->Attach(this);
 
@@ -449,17 +450,14 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		m_pDlgSearch->Search(false);
 		break;
 	case EHexCmd::CMD_NAV_DLG_GOTO:
-	{
-		CHexDlgGoTo dlgGoTo(this);
-		if (dlgGoTo.DoModal() == IDOK)
-		{
-			auto ullOffset = dlgGoTo.GetResult();
-			SetCaretPos(ullOffset);
-			if (!IsOffsetVisible(ullOffset))
-				GoToOffset(ullOffset);
-		}
-	}
-	break;
+		m_pDlgGoTo->ShowWindow(SW_SHOW);
+		break;
+	case EHexCmd::CMD_NAV_REPFWD:
+		m_pDlgGoTo->Repeat();
+		break;
+	case EHexCmd::CMD_NAV_REPBKW:
+		m_pDlgGoTo->Repeat(false);
+		break;
 	case EHexCmd::CMD_NAV_DATABEG:
 		CaretToDataBeg();
 		break;
@@ -507,7 +505,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		m_pBookmarks->ClearAll();
 		break;
 	case EHexCmd::CMD_BKM_DLG_MANAGER:
-		m_pDlgBookmarkMgr->ShowWindow(SW_SHOW);
+		m_pDlgBkmMgr->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_CLPBRD_COPYHEX:
 		ClipboardCopy(EClipboard::COPY_HEX);
@@ -576,7 +574,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		SelAddDown();
 		break;
 	case EHexCmd::CMD_DLG_DATAINTERP:
-		m_pDlgDataInterpret->ShowWindow(SW_SHOW);
+		m_pDlgDataInterp->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_DLG_ENCODING:
 		m_pDlgEncoding->ShowWindow(SW_SHOW);
@@ -749,10 +747,10 @@ HWND CHexCtrl::GetWindowHandle(EHexWnd enWnd)const
 		hWnd = m_hWnd;
 		break;
 	case EHexWnd::DLG_BKMMANAGER:
-		hWnd = m_pDlgBookmarkMgr->m_hWnd;
+		hWnd = m_pDlgBkmMgr->m_hWnd;
 		break;
-	case EHexWnd::DLG_DATAINTERPRET:
-		hWnd = m_pDlgDataInterpret->m_hWnd;
+	case EHexWnd::DLG_DATAINTERP:
+		hWnd = m_pDlgDataInterp->m_hWnd;
 		break;
 	case EHexWnd::DLG_FILLDATA:
 		hWnd = m_pDlgFillData->m_hWnd;
@@ -765,6 +763,9 @@ HWND CHexCtrl::GetWindowHandle(EHexWnd enWnd)const
 		break;
 	case EHexWnd::DLG_ENCODING:
 		hWnd = m_pDlgEncoding->m_hWnd;
+		break;
+	case EHexWnd::DLG_GOTO:
+		hWnd = m_pDlgGoTo->m_hWnd;
 		break;
 	}
 
@@ -868,6 +869,10 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case EHexCmd::CMD_MODIFY_REDO:
 		fAvail = !m_deqRedo.empty();
 		break;
+	case EHexCmd::CMD_CARET_RIGHT:
+	case EHexCmd::CMD_CARET_LEFT:
+	case EHexCmd::CMD_CARET_DOWN:
+	case EHexCmd::CMD_CARET_UP:
 	case EHexCmd::CMD_DLG_SEARCH:
 	case EHexCmd::CMD_NAV_DLG_GOTO:
 	case EHexCmd::CMD_NAV_DATABEG:
@@ -888,6 +893,10 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case EHexCmd::CMD_NAV_PAGEBEG:
 	case EHexCmd::CMD_NAV_PAGEEND:
 		fAvail = fDataSet && GetPagesCount() > 0;
+		break;
+	case EHexCmd::CMD_NAV_REPFWD:
+	case EHexCmd::CMD_NAV_REPBKW:
+		fAvail = fDataSet && m_pDlgGoTo->IsRepeatAvail();
 		break;
 	default:
 		fAvail = true;
@@ -1616,6 +1625,9 @@ void CHexCtrl::CaretMoveLeft()
 
 void CHexCtrl::CaretMoveRight()
 {
+	if (!IsDataSet())
+		return;
+
 	auto ullOldPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
 	auto ullNewPos { 0ULL };
 	if (m_fMutable)
@@ -2846,7 +2858,7 @@ void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine,
 		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wstrText.size(); ++iterChunks, ++sIndexToPrint)
 		{
 			//Data Interpreter.
-			if (auto ullSize = m_pDlgDataInterpret->GetSize(); ullSize > 0
+			if (auto ullSize = m_pDlgDataInterp->GetSize(); ullSize > 0
 				&& ullStartOffset + sIndexToPrint >= m_ullCaretPos
 				&& ullStartOffset + sIndexToPrint < m_ullCaretPos + ullSize)
 			{
@@ -3342,7 +3354,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 	//To prevent inspecting while key is pressed continuously.
 	//Only when one time pressing.
 	if (!m_fKeyDownAtm)
-		m_pDlgDataInterpret->InspectOffset(ullOffset);
+		m_pDlgDataInterp->InspectOffset(ullOffset);
 
 	if (auto pBkm = m_pBookmarks->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.
 	{
@@ -4294,8 +4306,8 @@ void CHexCtrl::OnDestroy()
 	m_penLines.DeleteObject();
 	m_umapHBITMAP.clear();
 	m_vecKeyBind.clear();
-	m_pDlgBookmarkMgr->DestroyWindow();
-	m_pDlgDataInterpret->DestroyWindow();
+	m_pDlgBkmMgr->DestroyWindow();
+	m_pDlgDataInterp->DestroyWindow();
 	m_pDlgFillData->DestroyWindow();
 	m_pDlgEncoding->DestroyWindow();
 	m_pDlgOpers->DestroyWindow();
@@ -4439,7 +4451,7 @@ void CHexCtrl::OnKeyUp(UINT /*nChar*/, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	if (m_fKeyDownAtm && IsDataSet())
 	{
 		m_fKeyDownAtm = false;
-		m_pDlgDataInterpret->InspectOffset(GetCaretPos());
+		m_pDlgDataInterp->InspectOffset(GetCaretPos());
 	}
 }
 
@@ -4766,9 +4778,9 @@ void CHexCtrl::OnSize(UINT /*nType*/, int cx, int cy)
 
 void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {
-	if (auto opt = GetCommand(static_cast<BYTE>(nChar),
-		GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, true); opt)
-		ExecuteCmd(opt.value());
+	if (auto optCmd = GetCommand(static_cast<BYTE>(nChar),
+		GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, true); optCmd)
+		ExecuteCmd(optCmd.value());
 }
 
 void CHexCtrl::OnTimer(UINT_PTR nIDEvent)

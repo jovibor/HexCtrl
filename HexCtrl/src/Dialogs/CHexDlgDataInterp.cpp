@@ -9,33 +9,33 @@
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
 #include "../Helper.h"
-#include "CHexDlgDataInterpret.h"
+#include "CHexDlgDataInterp.h"
 #include "strsafe.h"
 #include <algorithm>
 #include <cassert>
 
 using namespace HEXCTRL::INTERNAL;
 
-BEGIN_MESSAGE_MAP(CHexDlgDataInterpret, CDialogEx)
+BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
 	ON_WM_CLOSE()
 	ON_WM_ACTIVATE()
 	ON_WM_SIZE()
-	ON_REGISTERED_MESSAGE(AFX_WM_PROPERTY_CHANGED, &CHexDlgDataInterpret::OnPropertyChanged)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_LE, &CHexDlgDataInterpret::OnClickRadioLe)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_BE, &CHexDlgDataInterpret::OnClickRadioBe)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_DEC, &CHexDlgDataInterpret::OnClickRadioDec)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_HEX, &CHexDlgDataInterpret::OnClickRadioHex)
+	ON_REGISTERED_MESSAGE(AFX_WM_PROPERTY_CHANGED, &CHexDlgDataInterp::OnPropertyChanged)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_LE, &CHexDlgDataInterp::OnClickRadioLe)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_BE, &CHexDlgDataInterp::OnClickRadioBe)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_DEC, &CHexDlgDataInterp::OnClickRadioDec)
+	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_HEX, &CHexDlgDataInterp::OnClickRadioHex)
 	ON_WM_DESTROY()
 	ON_WM_SHOWWINDOW()
 END_MESSAGE_MAP()
 
-void CHexDlgDataInterpret::DoDataExchange(CDataExchange* pDX)
+void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_PROPDATA, m_stCtrlGrid);
 }
 
-BOOL CHexDlgDataInterpret::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
+BOOL CHexDlgDataInterp::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
 	if (pHexCtrl == nullptr)
@@ -46,7 +46,7 @@ BOOL CHexDlgDataInterpret::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 	return CDialogEx::Create(nIDTemplate, pHexCtrl);
 }
 
-BOOL CHexDlgDataInterpret::OnInitDialog()
+BOOL CHexDlgDataInterp::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
@@ -141,7 +141,7 @@ BOOL CHexDlgDataInterpret::OnInitDialog()
 	return TRUE;
 }
 
-void CHexDlgDataInterpret::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
 	if (nState == WA_INACTIVE)
 	{
@@ -152,7 +152,7 @@ void CHexDlgDataInterpret::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimi
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
 }
 
-void CHexDlgDataInterpret::OnShowWindow(BOOL bShow, UINT nStatus)
+void CHexDlgDataInterp::OnShowWindow(BOOL bShow, UINT nStatus)
 {
 	CDialogEx::OnShowWindow(bShow, nStatus);
 
@@ -160,7 +160,7 @@ void CHexDlgDataInterpret::OnShowWindow(BOOL bShow, UINT nStatus)
 		InspectOffset(m_pHexCtrl->GetCaretPos());
 }
 
-void CHexDlgDataInterpret::OnOK()
+void CHexDlgDataInterp::OnOK()
 {
 	if (!m_pHexCtrl->IsMutable() || !m_pPropChanged)
 		return;
@@ -248,7 +248,7 @@ void CHexDlgDataInterpret::OnOK()
 	InspectOffset(m_ullOffset);
 }
 
-void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
+void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 {
 	if (!m_fVisible)
 		return;
@@ -383,14 +383,14 @@ void CHexDlgDataInterpret::InspectOffset(ULONGLONG ullOffset)
 	ShowNAME_SYSTEMTIME(dqword);
 }
 
-void CHexDlgDataInterpret::OnClose()
+void CHexDlgDataInterp::OnClose()
 {
 	m_ullSize = 0;
 
 	CDialogEx::OnClose();
 }
 
-LRESULT CHexDlgDataInterpret::OnPropertyChanged(WPARAM wParam, LPARAM lParam)
+LRESULT CHexDlgDataInterp::OnPropertyChanged(WPARAM wParam, LPARAM lParam)
 {
 	if (wParam == IDC_HEXCTRL_DATAINTERP_PROPDATA)
 	{
@@ -401,7 +401,7 @@ LRESULT CHexDlgDataInterpret::OnPropertyChanged(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-BOOL CHexDlgDataInterpret::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+BOOL CHexDlgDataInterp::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	if (wParam == HEXCTRL_PROPGRIDCTRL)
 	{
@@ -421,7 +421,7 @@ BOOL CHexDlgDataInterpret::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResu
 	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
-void CHexDlgDataInterpret::OnSize(UINT nType, int cx, int cy)
+void CHexDlgDataInterp::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
 
@@ -429,31 +429,31 @@ void CHexDlgDataInterpret::OnSize(UINT nType, int cx, int cy)
 		m_stCtrlGrid.GetHeaderCtrl().SetItem(0, &m_hdItemPropGrid); //Property grid column size.
 }
 
-void CHexDlgDataInterpret::OnClickRadioLe()
+void CHexDlgDataInterp::OnClickRadioLe()
 {
 	m_fBigEndian = false;
 	InspectOffset(m_ullOffset);
 }
 
-void CHexDlgDataInterpret::OnClickRadioBe()
+void CHexDlgDataInterp::OnClickRadioBe()
 {
 	m_fBigEndian = true;
 	InspectOffset(m_ullOffset);
 }
 
-void CHexDlgDataInterpret::OnClickRadioDec()
+void CHexDlgDataInterp::OnClickRadioDec()
 {
 	m_fShowAsHex = false;
 	InspectOffset(m_ullOffset);
 }
 
-void CHexDlgDataInterpret::OnClickRadioHex()
+void CHexDlgDataInterp::OnClickRadioHex()
 {
 	m_fShowAsHex = true;
 	InspectOffset(m_ullOffset);
 }
 
-void CHexDlgDataInterpret::OnDestroy()
+void CHexDlgDataInterp::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
@@ -461,12 +461,12 @@ void CHexDlgDataInterpret::OnDestroy()
 	m_vecProp.clear();
 }
 
-ULONGLONG CHexDlgDataInterpret::GetSize()const
+ULONGLONG CHexDlgDataInterp::GetSize()const
 {
 	return m_ullSize;
 }
 
-template<typename T>void CHexDlgDataInterpret::SetDigitData(T tData)const
+template<typename T>void CHexDlgDataInterp::SetDigitData(T tData)const
 {
 	if (m_fBigEndian)
 	{
@@ -488,13 +488,13 @@ template<typename T>void CHexDlgDataInterpret::SetDigitData(T tData)const
 	m_pHexCtrl->SetData(m_ullOffset, tData);
 }
 
-void CHexDlgDataInterpret::UpdateHexCtrl()const
+void CHexDlgDataInterp::UpdateHexCtrl()const
 {
 	if (m_pHexCtrl && m_pHexCtrl->IsCreated())
 		m_pHexCtrl->Redraw();
 }
 
-std::wstring CHexDlgDataInterpret::GetCurrentUserDateFormatString()const
+std::wstring CHexDlgDataInterp::GetCurrentUserDateFormatString()const
 {
 	std::wstring_view wstrFormat { };
 	switch (m_dwDateFormat)
@@ -515,7 +515,7 @@ std::wstring CHexDlgDataInterpret::GetCurrentUserDateFormatString()const
 	return buff;
 }
 
-std::wstring CHexDlgDataInterpret::SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime)const
+std::wstring CHexDlgDataInterp::SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime)const
 {
 	if (!pSysTime)
 		return L"Invalid";
@@ -566,7 +566,7 @@ std::wstring CHexDlgDataInterpret::SystemTimeToString(const SYSTEMTIME* pSysTime
 	return wstrRet;
 }
 
-bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstr, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)const
+bool CHexDlgDataInterp::StringToSystemTime(std::wstring_view wstr, PSYSTEMTIME pSysTime, bool bIncludeDate, bool bIncludeTime)const
 {
 	if (wstr.empty() || pSysTime == nullptr)
 		return false;
@@ -625,7 +625,7 @@ bool CHexDlgDataInterpret::StringToSystemTime(std::wstring_view wstr, PSYSTEMTIM
 	return SystemTimeToFileTime(pSysTime, &ftValidCheck);
 }
 
-void CHexDlgDataInterpret::ShowNAME_BINARY(BYTE byte)const
+void CHexDlgDataInterp::ShowNAME_BINARY(BYTE byte)const
 {
 	WCHAR buff[32];
 	swprintf_s(buff, std::size(buff), L"%s%s", arrNibbles[byte >> 4], arrNibbles[byte & 0x0F]);
@@ -634,7 +634,7 @@ void CHexDlgDataInterpret::ShowNAME_BINARY(BYTE byte)const
 		iter->pProp->SetValue(buff);
 }
 
-void CHexDlgDataInterpret::ShowNAME_CHAR(BYTE byte)const
+void CHexDlgDataInterp::ShowNAME_CHAR(BYTE byte)const
 {
 	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
@@ -649,7 +649,7 @@ void CHexDlgDataInterpret::ShowNAME_CHAR(BYTE byte)const
 		iter->pProp->SetValue(buff);
 }
 
-void CHexDlgDataInterpret::ShowNAME_UCHAR(BYTE byte)const
+void CHexDlgDataInterp::ShowNAME_UCHAR(BYTE byte)const
 {
 	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
@@ -664,7 +664,7 @@ void CHexDlgDataInterpret::ShowNAME_UCHAR(BYTE byte)const
 		iter->pProp->SetValue(buff);
 }
 
-void CHexDlgDataInterpret::ShowNAME_SHORT(WORD word)const
+void CHexDlgDataInterp::ShowNAME_SHORT(WORD word)const
 {
 	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
@@ -679,7 +679,7 @@ void CHexDlgDataInterpret::ShowNAME_SHORT(WORD word)const
 		iter->pProp->SetValue(buff);
 }
 
-void CHexDlgDataInterpret::ShowNAME_USHORT(WORD word)const
+void CHexDlgDataInterp::ShowNAME_USHORT(WORD word)const
 {
 	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
@@ -694,7 +694,7 @@ void CHexDlgDataInterpret::ShowNAME_USHORT(WORD word)const
 		iter->pProp->SetValue(buff);
 }
 
-void CHexDlgDataInterpret::ShowNAME_LONG(DWORD dword)const
+void CHexDlgDataInterp::ShowNAME_LONG(DWORD dword)const
 {
 	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
@@ -709,7 +709,7 @@ void CHexDlgDataInterpret::ShowNAME_LONG(DWORD dword)const
 		iter->pProp->SetValue(buff);
 }
 
-void CHexDlgDataInterpret::ShowNAME_ULONG(DWORD dword)const
+void CHexDlgDataInterp::ShowNAME_ULONG(DWORD dword)const
 {
 	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
@@ -724,7 +724,7 @@ void CHexDlgDataInterpret::ShowNAME_ULONG(DWORD dword)const
 		iter->pProp->SetValue(buff);
 }
 
-void CHexDlgDataInterpret::ShowNAME_FLOAT(DWORD dword)const
+void CHexDlgDataInterp::ShowNAME_FLOAT(DWORD dword)const
 {
 	WCHAR buff[32];
 	swprintf_s(buff, std::size(buff), L"%.9e", *reinterpret_cast<const float*>(&dword));
@@ -733,7 +733,7 @@ void CHexDlgDataInterpret::ShowNAME_FLOAT(DWORD dword)const
 		iter->pProp->SetValue(buff);
 }
 
-void CHexDlgDataInterpret::ShowNAME_TIME32(DWORD dword)const
+void CHexDlgDataInterp::ShowNAME_TIME32(DWORD dword)const
 {
 	std::wstring wstrTime = L"N/A";
 
@@ -766,7 +766,7 @@ void CHexDlgDataInterpret::ShowNAME_TIME32(DWORD dword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterpret::ShowNAME_MSDOSTIME(DWORD dword)const
+void CHexDlgDataInterp::ShowNAME_MSDOSTIME(DWORD dword)const
 {
 	std::wstring wstrTime = L"N/A";
 	FILETIME ftMSDOS;
@@ -784,7 +784,7 @@ void CHexDlgDataInterpret::ShowNAME_MSDOSTIME(DWORD dword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterpret::ShowNAME_MSDTTMTIME(DWORD dword)const
+void CHexDlgDataInterp::ShowNAME_MSDTTMTIME(DWORD dword)const
 {
 	//Microsoft UDTTM time (as used by Microsoft Compound Document format)
 	std::wstring wstrTime = L"N/A";
@@ -811,7 +811,7 @@ void CHexDlgDataInterpret::ShowNAME_MSDTTMTIME(DWORD dword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterpret::ShowNAME_LONGLONG(QWORD qword)const
+void CHexDlgDataInterp::ShowNAME_LONGLONG(QWORD qword)const
 {
 	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
@@ -826,7 +826,7 @@ void CHexDlgDataInterpret::ShowNAME_LONGLONG(QWORD qword)const
 		iter->pProp->SetValue(buff);
 }
 
-void CHexDlgDataInterpret::ShowNAME_ULONGLONG(QWORD qword)const
+void CHexDlgDataInterp::ShowNAME_ULONGLONG(QWORD qword)const
 {
 	std::wstring_view wstrFormat { };
 	if (m_fShowAsHex)
@@ -841,7 +841,7 @@ void CHexDlgDataInterpret::ShowNAME_ULONGLONG(QWORD qword)const
 		iter->pProp->SetValue(buff);
 }
 
-void CHexDlgDataInterpret::ShowNAME_DOUBLE(QWORD qword)const
+void CHexDlgDataInterp::ShowNAME_DOUBLE(QWORD qword)const
 {
 	WCHAR buff[32];
 	swprintf_s(buff, std::size(buff), L"%.18e", *reinterpret_cast<const double*>(&qword));
@@ -850,7 +850,7 @@ void CHexDlgDataInterpret::ShowNAME_DOUBLE(QWORD qword)const
 		iter->pProp->SetValue(buff);
 }
 
-void CHexDlgDataInterpret::ShowNAME_TIME64(QWORD qword)const
+void CHexDlgDataInterp::ShowNAME_TIME64(QWORD qword)const
 {
 	std::wstring wstrTime = L"N/A";
 
@@ -883,7 +883,7 @@ void CHexDlgDataInterpret::ShowNAME_TIME64(QWORD qword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterpret::ShowNAME_FILETIME(QWORD qword)const
+void CHexDlgDataInterp::ShowNAME_FILETIME(QWORD qword)const
 {
 	std::wstring wstrTime = L"N/A";
 	SYSTEMTIME SysTime { };
@@ -895,7 +895,7 @@ void CHexDlgDataInterpret::ShowNAME_FILETIME(QWORD qword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterpret::ShowNAME_OLEDATETIME(QWORD qword)const
+void CHexDlgDataInterp::ShowNAME_OLEDATETIME(QWORD qword)const
 {
 	//OLE (including MS Office) date/time
 	//Implemented using an 8-byte floating-point number. Days are represented as whole number increments starting with 30 December 1899, midnight as time zero.
@@ -917,7 +917,7 @@ void CHexDlgDataInterpret::ShowNAME_OLEDATETIME(QWORD qword)const
 
 }
 
-void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)const
+void CHexDlgDataInterp::ShowNAME_JAVATIME(QWORD qword)const
 {
 	//Javatime (signed)
 	//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC
@@ -946,7 +946,7 @@ void CHexDlgDataInterpret::ShowNAME_JAVATIME(QWORD qword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterpret::ShowNAME_GUID(const UDQWORD& dqword)const
+void CHexDlgDataInterp::ShowNAME_GUID(const UDQWORD& dqword)const
 {
 	wchar_t buff[64];
 	swprintf_s(buff, std::size(buff), L"{%.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x}",
@@ -959,7 +959,7 @@ void CHexDlgDataInterpret::ShowNAME_GUID(const UDQWORD& dqword)const
 		iter->pProp->SetValue(buff);
 }
 
-void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const UDQWORD& dqword)const
+void CHexDlgDataInterp::ShowNAME_GUIDTIME(const UDQWORD& dqword)const
 {
 	//Guid v1 Datetime UTC
 	//The time structure within the NAME_GUID.
@@ -1000,14 +1000,14 @@ void CHexDlgDataInterpret::ShowNAME_GUIDTIME(const UDQWORD& dqword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterpret::ShowNAME_SYSTEMTIME(const UDQWORD& dqword)const
+void CHexDlgDataInterp::ShowNAME_SYSTEMTIME(const UDQWORD& dqword)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_SYSTEMTIME; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(SystemTimeToString(reinterpret_cast<const SYSTEMTIME*>(&dqword), true, true).data());
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_BINARY(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataNAME_BINARY(const std::wstring& wstr)const
 {
 	if (wstr.size() != 8 || wstr.find_first_not_of(L"01") != std::wstring_view::npos)
 		return false;
@@ -1020,7 +1020,7 @@ bool CHexDlgDataInterpret::SetDataNAME_BINARY(const std::wstring& wstr)const
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_CHAR(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataNAME_CHAR(const std::wstring& wstr)const
 {
 	bool fSuccess;
 	CHAR chData;
@@ -1030,7 +1030,7 @@ bool CHexDlgDataInterpret::SetDataNAME_CHAR(const std::wstring& wstr)const
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_UCHAR(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataNAME_UCHAR(const std::wstring& wstr)const
 {
 	bool fSuccess;
 	UCHAR uchData;
@@ -1040,7 +1040,7 @@ bool CHexDlgDataInterpret::SetDataNAME_UCHAR(const std::wstring& wstr)const
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_SHORT(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataNAME_SHORT(const std::wstring& wstr)const
 {
 	bool fSuccess;
 	SHORT shData;
@@ -1050,7 +1050,7 @@ bool CHexDlgDataInterpret::SetDataNAME_SHORT(const std::wstring& wstr)const
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_USHORT(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataNAME_USHORT(const std::wstring& wstr)const
 {
 	bool fSuccess;
 	USHORT ushData;
@@ -1060,7 +1060,7 @@ bool CHexDlgDataInterpret::SetDataNAME_USHORT(const std::wstring& wstr)const
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_LONG(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataNAME_LONG(const std::wstring& wstr)const
 {
 	bool fSuccess;
 	LONG lData;
@@ -1070,7 +1070,7 @@ bool CHexDlgDataInterpret::SetDataNAME_LONG(const std::wstring& wstr)const
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_ULONG(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataNAME_ULONG(const std::wstring& wstr)const
 {
 	bool fSuccess;
 	ULONG ulData;
@@ -1080,7 +1080,7 @@ bool CHexDlgDataInterpret::SetDataNAME_ULONG(const std::wstring& wstr)const
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_LONGLONG(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataNAME_LONGLONG(const std::wstring& wstr)const
 {
 	bool fSuccess;
 	LONGLONG llData;
@@ -1090,7 +1090,7 @@ bool CHexDlgDataInterpret::SetDataNAME_LONGLONG(const std::wstring& wstr)const
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_ULONGLONG(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataNAME_ULONGLONG(const std::wstring& wstr)const
 {
 	bool fSuccess;
 	ULONGLONG ullData;
@@ -1100,7 +1100,7 @@ bool CHexDlgDataInterpret::SetDataNAME_ULONGLONG(const std::wstring& wstr)const
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_FLOAT(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataNAME_FLOAT(const std::wstring& wstr)const
 {
 	bool fSuccess;
 	float fl;
@@ -1110,7 +1110,7 @@ bool CHexDlgDataInterpret::SetDataNAME_FLOAT(const std::wstring& wstr)const
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_DOUBLE(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataNAME_DOUBLE(const std::wstring& wstr)const
 {
 	bool fSuccess;
 	double dd;
@@ -1120,7 +1120,7 @@ bool CHexDlgDataInterpret::SetDataNAME_DOUBLE(const std::wstring& wstr)const
 	return fSuccess;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_TIME32T(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataNAME_TIME32T(std::wstring_view wstr)const
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
 	SYSTEMTIME stTime;
@@ -1156,7 +1156,7 @@ bool CHexDlgDataInterpret::SetDataNAME_TIME32T(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_TIME64T(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataNAME_TIME64T(std::wstring_view wstr)const
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
 	SYSTEMTIME stTime;
@@ -1188,7 +1188,7 @@ bool CHexDlgDataInterpret::SetDataNAME_TIME64T(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_FILETIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataNAME_FILETIME(std::wstring_view wstr)const
 {
 	SYSTEMTIME stTime;
 	if (!StringToSystemTime(wstr, &stTime, true, true))
@@ -1210,7 +1210,7 @@ bool CHexDlgDataInterpret::SetDataNAME_FILETIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_OLEDATETIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataNAME_OLEDATETIME(std::wstring_view wstr)const
 {
 	SYSTEMTIME stTime;
 	if (!StringToSystemTime(wstr, &stTime, true, true))
@@ -1231,7 +1231,7 @@ bool CHexDlgDataInterpret::SetDataNAME_OLEDATETIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_JAVATIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataNAME_JAVATIME(std::wstring_view wstr)const
 {
 	SYSTEMTIME stTime;
 	if (!StringToSystemTime(wstr, &stTime, true, true))
@@ -1266,7 +1266,7 @@ bool CHexDlgDataInterpret::SetDataNAME_JAVATIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_MSDOSTIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataNAME_MSDOSTIME(std::wstring_view wstr)const
 {
 	SYSTEMTIME stTime;
 	if (!StringToSystemTime(wstr, &stTime, true, true))
@@ -1287,7 +1287,7 @@ bool CHexDlgDataInterpret::SetDataNAME_MSDOSTIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)const
 {
 	SYSTEMTIME stTime;
 	if (!StringToSystemTime(wstr, &stTime, true, true))
@@ -1309,7 +1309,7 @@ bool CHexDlgDataInterpret::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_SYSTEMTIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataNAME_SYSTEMTIME(std::wstring_view wstr)const
 {
 	SYSTEMTIME stTime;
 	if (!StringToSystemTime(wstr, &stTime, true, true))
@@ -1322,7 +1322,7 @@ bool CHexDlgDataInterpret::SetDataNAME_SYSTEMTIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_GUIDTIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataNAME_GUIDTIME(std::wstring_view wstr)const
 {
 	//This time is within NAME_GUID structure, and it depends on it.
 	//We can not just set a NAME_GUIDTIME for data range if it's not 
@@ -1365,7 +1365,7 @@ bool CHexDlgDataInterpret::SetDataNAME_GUIDTIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterpret::SetDataNAME_GUID(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataNAME_GUID(const std::wstring& wstr)const
 {
 	GUID guid;
 	if (IIDFromString(wstr.data(), &guid) != S_OK)

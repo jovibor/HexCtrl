@@ -15,11 +15,13 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgGoTo final : public CDialogEx
 	{
 	public:
-		explicit CHexDlgGoTo(CHexCtrl* pHexCtrl);
-		[[nodiscard]] ULONGLONG GetResult()const;
+		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
+		[[nodiscard]] bool IsRepeatAvail()const;
+		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
 	protected:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		void OnOK()override;
 		afx_msg void OnClickRadioAbs();
 		afx_msg void OnClickRadioFwdCurr();
@@ -28,13 +30,16 @@ namespace HEXCTRL::INTERNAL
 		DECLARE_MESSAGE_MAP()
 	private:
 		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
+		void HexCtrlGoOffset(ULONGLONG ullOffset);
 		void SetRangesText()const;
 	private:
 		CHexCtrl* m_pHexCtrl { };
-		ULONGLONG m_ullResult { };
+		ULONGLONG m_ullData { };
+		ULONGLONG m_ullCurrOffset { }; //Offset that was set when OnGo was called last time.
 		ULONGLONG m_ullOffsetsFrom { };
 		ULONGLONG m_ullOffsetsTo { };
 		ULONGLONG m_ullPagesFrom { };
 		ULONGLONG m_ullPagesTo { };
+		int m_iRepeat { 0 };
 	};
 }

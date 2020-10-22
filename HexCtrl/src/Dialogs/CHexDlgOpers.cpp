@@ -9,15 +9,15 @@
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
 #include "../Helper.h"
-#include "CHexDlgOperations.h"
+#include "CHexDlgOpers.h"
 #include <cassert>
 
 using namespace HEXCTRL::INTERNAL;
 
-BEGIN_MESSAGE_MAP(CHexDlgOperations, CDialogEx)
+BEGIN_MESSAGE_MAP(CHexDlgOpers, CDialogEx)
 END_MESSAGE_MAP()
 
-BOOL CHexDlgOperations::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
+BOOL CHexDlgOpers::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
 	if (pHexCtrl == nullptr)
@@ -28,7 +28,7 @@ BOOL CHexDlgOperations::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 	return CDialogEx::Create(nIDTemplate, pHexCtrl);
 }
 
-BOOL CHexDlgOperations::OnInitDialog()
+BOOL CHexDlgOpers::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_DIV, IDC_HEXCTRL_OPERS_RADIO_OR);
@@ -37,17 +37,17 @@ BOOL CHexDlgOperations::OnInitDialog()
 	return TRUE;
 }
 
-CHexCtrl* CHexDlgOperations::GetHexCtrl()const
+CHexCtrl* CHexDlgOpers::GetHexCtrl()const
 {
 	return m_pHexCtrl;
 }
 
-void CHexDlgOperations::DoDataExchange(CDataExchange* pDX)
+void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 }
 
-BOOL CHexDlgOperations::OnCommand(WPARAM wParam, LPARAM lParam)
+BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	//lParam holds HWND.
 	WORD wMessage = HIWORD(wParam);
@@ -97,12 +97,12 @@ BOOL CHexDlgOperations::OnCommand(WPARAM wParam, LPARAM lParam)
 	return fHere ? TRUE : CDialogEx::OnCommand(wParam, lParam);
 }
 
-BOOL CHexDlgOperations::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+BOOL CHexDlgOpers::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
-void CHexDlgOperations::OnOK()
+void CHexDlgOpers::OnOK()
 {
 	auto pHex = GetHexCtrl();
 	auto iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_DIV);

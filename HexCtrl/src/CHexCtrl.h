@@ -25,10 +25,11 @@ namespace HEXCTRL::INTERNAL
 	*********************************/
 	class CHexDlgBkmMgr;
 	class CHexDlgEncoding;
-	class CHexDlgDataInterpret;
+	class CHexDlgDataInterp;
 	class CHexDlgFillData;
-	class CHexDlgOperations;
+	class CHexDlgOpers;
 	class CHexDlgSearch;
+	class CHexDlgGoTo;
 	class CHexBookmarks;
 	class CHexSelection;
 	namespace SCROLLEX { class CScrollEx; };
@@ -130,9 +131,9 @@ namespace HEXCTRL::INTERNAL
 		void SetShowMode(EHexShowMode enShowMode)override;  //Set current data show mode.
 		void SetWheelRatio(double dbRatio)override;         //Set the ratio for how much to scroll with mouse-wheel.
 	private:
-		friend class CHexDlgDataInterpret;
+		friend class CHexDlgDataInterp;
 		friend class CHexDlgFillData;
-		friend class CHexDlgOperations;
+		friend class CHexDlgOpers;
 		friend class CHexDlgSearch;
 		struct SHBITMAP;
 		struct SUNDO;
@@ -249,14 +250,15 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	private:
-		const std::unique_ptr<CHexDlgBkmMgr> m_pDlgBookmarkMgr { std::make_unique<CHexDlgBkmMgr>() }; //Bookmark manager.
-		const std::unique_ptr<CHexDlgEncoding> m_pDlgEncoding { std::make_unique<CHexDlgEncoding>() };     //Encoding dialog.
-		const std::unique_ptr<CHexDlgDataInterpret> m_pDlgDataInterpret { std::make_unique<CHexDlgDataInterpret>() }; //Data Interpreter.
-		const std::unique_ptr<CHexDlgFillData> m_pDlgFillData { std::make_unique<CHexDlgFillData>() };     //"Fill with..." dialog.
-		const std::unique_ptr<CHexDlgOperations> m_pDlgOpers { std::make_unique<CHexDlgOperations>() };    //"Operations" dialog.
-		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };           //"Search..." dialog.
-		const std::unique_ptr<CHexBookmarks> m_pBookmarks { std::make_unique<CHexBookmarks>() };           //Bookmarks.
-		const std::unique_ptr<CHexSelection> m_pSelection { std::make_unique<CHexSelection>() };           //Selection class.
+		const std::unique_ptr<CHexDlgBkmMgr> m_pDlgBkmMgr { std::make_unique<CHexDlgBkmMgr>() };             //"Bookmark manager" dialog.
+		const std::unique_ptr<CHexDlgEncoding> m_pDlgEncoding { std::make_unique<CHexDlgEncoding>() };       //"Encoding" dialog.
+		const std::unique_ptr<CHexDlgDataInterp> m_pDlgDataInterp { std::make_unique<CHexDlgDataInterp>() }; //"Data interpreter" dialog.
+		const std::unique_ptr<CHexDlgFillData> m_pDlgFillData { std::make_unique<CHexDlgFillData>() };       //"Fill with..." dialog.
+		const std::unique_ptr<CHexDlgOpers> m_pDlgOpers { std::make_unique<CHexDlgOpers>() };    //"Operations" dialog.
+		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() }; //"Search..." dialog.
+		const std::unique_ptr<CHexDlgGoTo> m_pDlgGoTo { std::make_unique<CHexDlgGoTo>() };       //"GoTo..." dialog.
+		const std::unique_ptr<CHexBookmarks> m_pBookmarks { std::make_unique<CHexBookmarks>() }; //Bookmarks.
+		const std::unique_ptr<CHexSelection> m_pSelection { std::make_unique<CHexSelection>() }; //Selection class.
 		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll bar.
 		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll bar.
 		const int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
@@ -264,7 +266,7 @@ namespace HEXCTRL::INTERNAL
 		const int m_iFirstVertLine { 0 };     //First vertical line indent.
 		const DWORD m_dwCapacityMax { 99 };   //Maximum capacity.
 		const DWORD m_dwUndoMax { 500 };      //How many Undo states to preserve.
-		HEXCOLORSSTRUCT m_stColor;             //All control related colors.
+		HEXCOLORSSTRUCT m_stColor;            //All control related colors.
 		EHexDataMode m_enDataMode { };        //Control's data mode.
 		EHexShowMode m_enShowMode { };        //Current "Show data" mode.
 		std::byte* m_pData { };               //Main data pointer. Modifiable in "Edit" mode.

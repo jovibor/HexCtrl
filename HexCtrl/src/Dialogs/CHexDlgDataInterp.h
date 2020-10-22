@@ -13,7 +13,7 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	class CHexDlgDataInterpret final : public CDialogEx
+	class CHexDlgDataInterp final : public CDialogEx
 	{
 	private:
 #pragma pack(push, 1)

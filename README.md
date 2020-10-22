@@ -825,11 +825,12 @@ enum class EHexShowMode : WORD
 ```
 
 ### [](#)EHexWnd
-All **HexControl**'s windows enum.
+Enum of all **HexControl**'s internal windows. This enum is used as an arg in [`GetWindowHandle`](#getwindowhandle) method to retrieve window's handle. 
 ```cpp
 enum class EHexWnd : WORD
 {
-    WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERPRET, DLG_FILLDATA, DLG_OPERS, DLG_SEARCH
+	WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_FILLDATA,
+	DLG_OPERS, DLG_SEARCH, DLG_ENCODING, DLG_GOTO
 };
 ```
 

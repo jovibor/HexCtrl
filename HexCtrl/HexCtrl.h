@@ -93,7 +93,8 @@ namespace HEXCTRL
 	********************************************************************************************/
 	enum class EHexWnd : WORD
 	{
-		WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERPRET, DLG_FILLDATA, DLG_OPERS, DLG_SEARCH, DLG_ENCODING
+		WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_FILLDATA, 
+		DLG_OPERS, DLG_SEARCH, DLG_ENCODING, DLG_GOTO
 	};
 
 	/********************************************************************************************
