@@ -704,7 +704,6 @@ struct HEXDATASTRUCT
 {
     EHexDataMode    enDataMode { EHexDataMode::DATA_MEMORY }; //Working data mode.
     ULONGLONG       ullDataSize { };          //Size of the data to display, in bytes.
-    HEXSPANSTRUCT   stSelSpan { };            //Select .ullOffset initial position. Works only if .ullSize > 0.
     HWND            hwndMsg { };              //Window for DATA_MSG mode. Parent is used by default.
     IHexVirtData*   pHexVirtData { };         //Pointer for DATA_VIRTUAL mode.
     IHexVirtColors* pHexVirtColors { };       //Pointer for Custom Colors class.
