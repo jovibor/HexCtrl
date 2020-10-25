@@ -247,6 +247,15 @@ namespace HEXCTRL
 		bool      fIsAscii { false }; //Is cursor at ASCII part or at Hex.
 	};
 
+	/********************************************************************************************
+	* HEXVISSTRUCT - Offset visibility struct, used in IsOffsetVisible method.                  *
+	********************************************************************************************/
+	struct HEXVISSTRUCT
+	{
+		std::int8_t i8Vert { }; //Vertical offset.
+		std::int8_t i8Horz { }; //Horizontal offset.
+		operator bool() { return i8Vert == 0 && i8Horz == 0; }; //For test simplicity: if(IsOffsetVisible()).
+	};
 
 	/********************************************************************************************
 	* IHexCtrl - pure abstract base class.                                                      *
@@ -287,7 +296,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
-		[[nodiscard]] virtual bool IsOffsetVisible(ULONGLONG ullOffset)const = 0; //Ensures that given offset is visible.
+		[[nodiscard]] virtual HEXVISSTRUCT IsOffsetVisible(ULONGLONG ullOffset)const = 0; //Ensures that the given offset is visible.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
 		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true) = 0; //Set the caret position.

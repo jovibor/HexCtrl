@@ -115,7 +115,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsDataSet()const override;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] bool IsMutable()const override;       //Is edit mode enabled or not.
 		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
-		[[nodiscard]] bool IsOffsetVisible(ULONGLONG ullOffset)const override; //Ensures that given offset is visible.
+		[[nodiscard]] HEXVISSTRUCT IsOffsetVisible(ULONGLONG ullOffset)const override; //Ensures that the given offset is visible.
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Set the control's current capacity.
 		void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true)override; //Set the caret position.
@@ -215,7 +215,6 @@ namespace HEXCTRL::INTERNAL
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
 		void SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight); //Set selection highlight.
 		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
-		auto TestOffsetVis(ULONGLONG ullOffset)const->std::tuple<std::int8_t, std::int8_t>;
 		void TtBkmShow(bool fShow, POINT pt = { }); //Tooltip bookmark show/hide.
 		void TtOffsetShow(bool fShow);              //Tooltip Offset show/hide.
 		void Undo();

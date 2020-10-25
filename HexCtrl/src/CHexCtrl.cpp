@@ -798,13 +798,14 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iRelPos)
 		ullNewScrollV = ullNewStartV - (GetBottomLine() - GetTopLine()) * m_sizeLetter.cy;
 		break;
 	}
-
-	ULONGLONG ullNewScrollH = (ullOffset % m_dwCapacity) * m_iSizeHexByte;
-	ullNewScrollH += (ullNewScrollH / m_iDistanceBetweenHexChunks) * m_iSpaceBetweenHexChunks;
-
 	m_pScrollV->SetScrollPos(ullNewScrollV);
+
 	if (m_pScrollH->IsVisible() && !IsCurTextArea())
+	{
+		ULONGLONG ullNewScrollH = (ullOffset % m_dwCapacity) * m_iSizeHexByte;
+		ullNewScrollH += (ullNewScrollH / m_iDistanceBetweenHexChunks) * m_iSpaceBetweenHexChunks;
 		m_pScrollH->SetScrollPos(ullNewScrollH);
+	}
 }
 
 auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTRUCT>
@@ -938,18 +939,29 @@ bool CHexCtrl::IsOffsetAsHex()const
 	return m_fOffsetAsHex;
 }
 
-bool CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const
+HEXVISSTRUCT CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const
 {
+	//Returns HEXVISSTRUCT with two std::int8_t for vertical and horizontal visibility respectively.
+	//-1 - ullOffset is higher, or at the left, of the visible area
+	// 1 - lower, or at the right
+	// 0 - visible.
 	assert(IsCreated());
 	assert(IsDataSet());
 	if (!IsCreated() || !IsDataSet())
-		return false;
+		return { -1, -1 }; //To ensure false return.
 
-	auto dwCapacity = GetCapacity();
-	auto ullFirst = GetTopLine() * dwCapacity;;
-	auto ullLast = GetBottomLine() * dwCapacity + dwCapacity;
+	const auto dwCapacity = GetCapacity();
+	const auto ullFirst = GetTopLine() * dwCapacity;
+	const auto ullLast = GetBottomLine() * dwCapacity + dwCapacity;
 
-	return (ullOffset >= ullFirst) && (ullOffset < ullLast);
+	CRect rcClient;
+	GetClientRect(&rcClient);
+	int iCx, iCy;
+	HexChunkPoint(ullOffset, iCx, iCy);
+	int iMaxClientX = rcClient.Width() - m_iSizeHexByte;
+
+	return { static_cast<std::int8_t>(ullOffset < ullFirst ? -1 : (ullOffset >= ullLast ? 1 : 0)),
+		static_cast<std::int8_t>(iCx < 0 ? -1 : (iCx >= iMaxClientX ? 1 : 0)) };
 }
 
 void CHexCtrl::Redraw()
@@ -1567,12 +1579,12 @@ void CHexCtrl::CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLO
 void CHexCtrl::CaretMoveDown()
 {
 	const auto ullOldPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
-	auto ullNewPos = ullOldPos + m_dwCapacity >= GetDataSize() ? ullOldPos : ullOldPos + m_dwCapacity;
+	const auto ullNewPos = ullOldPos + m_dwCapacity >= GetDataSize() ? ullOldPos : ullOldPos + m_dwCapacity;
 	SetCaretPos(ullNewPos, m_fCursorHigh, false);
 
-	auto [i8VOld, i8HOld] = TestOffsetVis(ullOldPos);
-	auto [i8VNew, i8HNew] = TestOffsetVis(ullNewPos);
-	if (i8VOld == 0 && i8VNew != 0)
+	const auto stOld = IsOffsetVisible(ullOldPos);
+	const auto stNew = IsOffsetVisible(ullNewPos);
+	if (stOld.i8Vert == 0 && stNew.i8Vert != 0)
 		m_pScrollV->ScrollLineDown();
 
 	Redraw();
@@ -1608,11 +1620,11 @@ void CHexCtrl::CaretMoveLeft()
 
 	SetCaretPos(ullNewPos, m_fCursorHigh, false);
 
-	auto [i8VOld, i8HOld] = TestOffsetVis(ullOldPos);
-	auto [i8VNew, i8HNew] = TestOffsetVis(ullNewPos);
-	if (i8VOld == 0 && i8VNew != 0)
+	const auto stOld = IsOffsetVisible(ullOldPos);
+	const auto stNew = IsOffsetVisible(ullNewPos);
+	if (stOld.i8Vert == 0 && stNew.i8Vert != 0)
 		m_pScrollV->ScrollLineUp();
-	else if (i8HNew != 0 && !IsCurTextArea()) //Do not horz scroll when in text area.
+	else if (stNew.i8Horz != 0 && !IsCurTextArea()) //Do not horz scroll when in text area.
 		ScrollOffsetH(ullNewPos);
 
 	Redraw();
@@ -1648,11 +1660,11 @@ void CHexCtrl::CaretMoveRight()
 
 	SetCaretPos(ullNewPos, m_fCursorHigh, false);
 
-	auto [i8VOld, i8HOld] = TestOffsetVis(ullOldPos);
-	auto [i8VNew, i8HNew] = TestOffsetVis(ullNewPos);
-	if (i8VOld == 0 && i8VNew != 0)
+	const auto stOld = IsOffsetVisible(ullOldPos);
+	const auto stNew = IsOffsetVisible(ullNewPos);
+	if (stOld.i8Vert == 0 && stNew.i8Vert != 0)
 		m_pScrollV->ScrollLineDown();
-	else if (i8HNew != 0 && !IsCurTextArea()) //Do not horz scroll when in text area.
+	else if (stNew.i8Horz != 0 && !IsCurTextArea()) //Do not horz scroll when in text area.
 		ScrollOffsetH(ullNewPos);
 
 	Redraw();
@@ -1661,12 +1673,12 @@ void CHexCtrl::CaretMoveRight()
 void CHexCtrl::CaretMoveUp()
 {
 	const auto ullOldPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
-	auto ullNewPos = ullOldPos >= m_dwCapacity ? ullOldPos - m_dwCapacity : ullOldPos;
+	const auto ullNewPos = ullOldPos >= m_dwCapacity ? ullOldPos - m_dwCapacity : ullOldPos;
 	SetCaretPos(ullNewPos, m_fCursorHigh, false);
 
-	auto [i8VOld, i8HOld] = TestOffsetVis(ullOldPos);
-	auto [i8VNew, i8HNew] = TestOffsetVis(ullNewPos);
-	if (i8VOld == 0 && i8VNew != 0)
+	const auto stOld = IsOffsetVisible(ullOldPos);
+	const auto stNew = IsOffsetVisible(ullNewPos);
+	if (stOld.i8Vert == 0 && stNew.i8Vert != 0)
 		m_pScrollV->ScrollLineUp();
 
 	Redraw();
@@ -1680,14 +1692,14 @@ void CHexCtrl::CaretToDataBeg()
 
 void CHexCtrl::CaretToDataEnd()
 {
-	auto ullPos = GetDataSize() - 1;
+	const auto ullPos = GetDataSize() - 1;
 	SetCaretPos(ullPos);
 	GoToOffset(ullPos);
 }
 
 void CHexCtrl::CaretToLineBeg()
 {
-	auto ullPos = GetCaretPos() - (GetCaretPos() % GetCapacity());
+	const auto ullPos = GetCaretPos() - (GetCaretPos() % GetCapacity());
 	SetCaretPos(ullPos);
 	if (!IsOffsetVisible(ullPos))
 		GoToOffset(ullPos);
@@ -1708,7 +1720,7 @@ void CHexCtrl::CaretToPageBeg()
 	if (GetPageSize() == 0)
 		return;
 
-	auto ullPos = GetCaretPos() - (GetCaretPos() % GetPageSize());
+	const auto ullPos = GetCaretPos() - (GetCaretPos() % GetPageSize());
 	SetCaretPos(ullPos);
 	if (!IsOffsetVisible(ullPos))
 		GoToOffset(ullPos);
@@ -3690,7 +3702,7 @@ void CHexCtrl::Redo()
 
 void CHexCtrl::ScrollOffsetH(ULONGLONG ullOffset)
 {
-	//Horisontally scroll to given offset.
+	//Horizontally-only scrolls to a given offset.
 	if (!m_pScrollH->IsVisible())
 		return;
 
@@ -3777,9 +3789,9 @@ void CHexCtrl::SelAddDown()
 		m_ullLMouseClick = ullClick;
 		SetSelection({ { ullStart, ullSize } }, false);
 
-		auto [i8i8VOld, i8i8HOld] = TestOffsetVis(ullOldPos);
-		auto [i8i8VNew, i8i8HNew] = TestOffsetVis(ullNewPos);
-		if (i8i8VNew != 0 && i8i8VOld == 0)
+		const auto stOld = IsOffsetVisible(ullOldPos);
+		const auto stNew = IsOffsetVisible(ullNewPos);
+		if (stNew.i8Vert != 0 && stOld.i8Vert == 0)
 			m_pScrollV->ScrollLineDown();
 		Redraw();
 		OnCaretPosChange(GetCaretPos());
@@ -3833,11 +3845,11 @@ void CHexCtrl::SelAddLeft()
 		m_ullLMouseClick = ullClick;
 		SetSelection({ { ullStart, ullSize } }, false);
 
-		auto [i8VOld, i8HOld] = TestOffsetVis(ullOldPos);
-		auto [i8VNew, i8HNew] = TestOffsetVis(ullNewPos);
-		if (i8VNew != 0 && i8VOld == 0)
+		const auto stOld = IsOffsetVisible(ullOldPos);
+		const auto stNew = IsOffsetVisible(ullNewPos);
+		if (stNew.i8Vert != 0 && stOld.i8Vert == 0)
 			m_pScrollV->ScrollLineUp();
-		else if (i8HNew != 0 && !IsCurTextArea()) //Do not horz scroll when in text area.
+		else if (stNew.i8Horz != 0 && !IsCurTextArea()) //Do not horz scroll when in text area.
 			ScrollOffsetH(ullNewPos);
 		else
 			Redraw();
@@ -3897,11 +3909,11 @@ void CHexCtrl::SelAddRight()
 		m_ullLMouseClick = ullClick;
 		SetSelection({ { ullStart, ullSize } }, false);
 
-		auto [i8VOld, i8HOld] = TestOffsetVis(ullOldPos);
-		auto [i8VNew, i8HNew] = TestOffsetVis(ullNewPos);
-		if (i8VNew != 0 && i8VOld == 0)
+		const auto stOld = IsOffsetVisible(ullOldPos);
+		const auto stNew = IsOffsetVisible(ullNewPos);
+		if (stNew.i8Vert != 0 && stOld.i8Vert == 0)
 			m_pScrollV->ScrollLineDown();
-		else if (i8HNew != 0 && !IsCurTextArea()) //Do not horz scroll when in text area.
+		else if (stNew.i8Horz != 0 && !IsCurTextArea()) //Do not horz scroll when in text area.
 			ScrollOffsetH(ullNewPos);
 		else
 			Redraw();
@@ -3980,9 +3992,9 @@ void CHexCtrl::SelAddUp()
 		m_ullLMouseClick = ullClick;
 		SetSelection({ { ullStart, ullSize } }, false);
 
-		auto [i8VOld, i8HOld] = TestOffsetVis(ullOldPos);
-		auto [i8VNew, i8HNew] = TestOffsetVis(ullNewPos);
-		if (i8VNew != 0 && i8VOld == 0)
+		const auto stOld = IsOffsetVisible(ullOldPos);
+		const auto stNew = IsOffsetVisible(ullNewPos);
+		if (stNew.i8Vert != 0 && stOld.i8Vert == 0)
 			m_pScrollV->ScrollLineUp();
 		Redraw();
 		OnCaretPosChange(GetCaretPos());
@@ -4056,31 +4068,6 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 		std::copy_n(pData, iterSel.ullSize, refUndo->at(static_cast<size_t>(ullIndex)).vecData.begin());
 		++ullIndex;
 	}
-}
-
-auto CHexCtrl::TestOffsetVis(ULONGLONG ullOffset)const->std::tuple<std::int8_t, std::int8_t>
-{
-	//Returns two std::int8_t for vertical and horizontal visibility for given offset.
-	//-1 - ullOffset is higher or at the left of visible area
-	// 1 - lower or at the right
-	// 0 - visible.
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return { };
-
-	auto dwCapacity = GetCapacity();
-	auto ullFirst = GetTopLine() * dwCapacity;;
-	auto ullLast = GetBottomLine() * dwCapacity + dwCapacity;
-
-	CRect rcClient;
-	GetClientRect(&rcClient);
-	int iCx, iCy;
-	HexChunkPoint(ullOffset, iCx, iCy);
-	int iMaxClientX = rcClient.Width() - m_iSizeHexByte;
-
-	return { static_cast<std::int8_t>(ullOffset < ullFirst ? -1 : (ullOffset >= ullLast ? 1 : 0)),
-		static_cast<std::int8_t>(iCx < 0 ? -1 : (iCx >= iMaxClientX ? 1 : 0)) };
 }
 
 void CHexCtrl::TtBkmShow(bool fShow, POINT pt)

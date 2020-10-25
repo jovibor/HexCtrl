@@ -51,7 +51,10 @@
   * [IsDataSet](#isdataset)
   * [IsMutable](#ismutable)
   * [IsOffsetAsHex](#isoffsetashex)
+  * [IsOffsetVisible](#isoffsetvisible)
+  * [Redraw](#redraw)
   * [SetCapacity](#setcapacity)
+  * [SetCaretPos](#setcaretpos)
   * [SetColors](#setcolors)
   * [SetConfig](#setconfig)
   * [SetData](#setdata)
@@ -65,14 +68,15 @@
   * [SetWheelRatio](#setwheelratio)
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
-  * [HEXCREATESTRUCT](#hexcreatestruct)
-  * [HEXCOLORSSTRUCT](#hexcolorsstruct)
-  * [HEXDATASTRUCT](#hexdatastruct)
-  * [HEXSPANSTRUCT](#hexspanstruct)
   * [HEXBKMSTRUCT](#hexbkmstruct)
-  * [HEXNOTIFYSTRUCT](#hexnotifystruct)
-  * [HEXHITTESTSTRUCT](#hexhitteststruct)
   * [HEXCOLOR](#hexcolor)
+  * [HEXCOLORSSTRUCT](#hexcolorsstruct)
+  * [HEXCREATESTRUCT](#hexcreatestruct)
+  * [HEXDATASTRUCT](#hexdatastruct)
+  * [HEXHITTESTSTRUCT](#hexhitteststruct)
+  * [HEXNOTIFYSTRUCT](#hexnotifystruct)
+  * [HEXSPANSTRUCT](#hexspanstruct)
+  * [HEXVISSTRUCT](#hexvisstruct)
   * [EHexCmd](#ehexcmd)
   * [EHexCreateMode](#ehexcreatemode)
   * [EHexDataMode](#ehexdatamode)
@@ -130,7 +134,7 @@ The **HexControl** can be used in two different ways:
 
 ### [](#)Building From The Sources
 The building process is quite simple:
-1. Add all files from the *HexCtrl* folder into your project.
+1. Add all files from the *HexCtrl* folder (except for `/dep/` subfolder) into your project.
 2. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the **HexControl**.
 3. Declare [`IHexCtrlPtr`](#ihexctrlptr) member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
 4. [Create](#creating) control instance.
@@ -523,10 +527,10 @@ Retrieves window handle for one of the **HexControl**'s windows. Takes [`EHexWnd
 ```cpp
 void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0)
 ```
-Go to a given offset. The second argument `iRelPos` may take in three different values:  
-* `-1` — offset will appear at the top line.
-* &nbsp; `0` — offset will appear at the middle.
-* &nbsp; `1` — offset will appear at the bottom line.
+Go to a given offset. The second argument `iRelPos` may take-in three different values:  
+* `-1` - offset will appear at the top line.
+* &nbsp; `0` - offset will appear at the middle.
+* &nbsp; `1` - offset will appear at the bottom line.
 
 ### [](#)HitTest
 ```cpp
@@ -563,6 +567,18 @@ Shows whether **HexControl** is currently in edit mode or not.
 bool IsOffsetAsHex()const;
 ```
 Is "Offset" currently represented (shown) as Hex or as Decimal. It can be changed by double clicking at offset area.
+
+### [](#)IsOffsetVisible
+```cpp
+HEXVISSTRUCT IsOffsetVisible(ULONGLONG ullOffset)const;
+```
+Checks for offset visibility and returns [`HEXVISSTRUCT`](#hexvisstruct) as a result.
+
+### [](#)Redraw
+```cpp
+void Redraw();
+```
+Redraws the main window.
 
 ### [](#)SetCapacity
 ```cpp
@@ -656,22 +672,31 @@ Sets the ratio for how much to scroll with mouse-wheel.
 ## [](#)Structures
 Below are listed all **HexControl**'s structures.
 
-### [](#)HEXCREATESTRUCT
-The main initialization struct used for control creation.
+### [](#)HEXBKMSTRUCT
+Structure for bookmarks, used in [`BkmAdd`](#BkmAdd) method.  
 ```cpp
-struct HEXCREATESTRUCT
+struct HEXBKMSTRUCT
 {
-    EHexCreateMode  enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
-    EHexShowMode    enShowMode { EHexShowMode::ASBYTE };           //Data representation mode.
-    HEXCOLORSSTRUCT stColor { };          //All the control's colors.
-    HWND            hwndParent { };       //Parent window pointer.
-    const LOGFONTW* pLogFont { };         //Font to be used, nullptr for default. This font has to be monospaced.
-    RECT            rect { };             //Initial rect. If null, the window is screen centered.
-    UINT            uID { };              //Control ID.
-    DWORD           dwStyle { };          //Window styles, 0 for default.
-    DWORD           dwExStyle { };        //Extended window styles, 0 for default.
-    double          dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
+    std::vector<HEXSPANSTRUCT> vecSpan { };                //Vector of offsets and sizes.
+    std::wstring               wstrDesc { };               //Bookmark description.
+    ULONGLONG                  ullID { };                  //Bookmark ID, assigned internally by framework.
+    ULONGLONG                  ullData { };                //User defined custom data.
+    COLORREF                   clrBk { RGB(240, 240, 0) }; //Bk color.
+    COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.
 };
+using PHEXBKMSTRUCT = HEXBKMSTRUCT*;
+```
+The member `vecSpan` is of a `std::vector<HEXSPANSTRUCT>` type because a bookmark may have few non adjacent areas. For instance, when selection is made as a block, with <kbd>Alt</kbd> pressed.
+
+### [](#)HEXCOLOR
+**HexControl** custom colors.
+```cpp
+struct HEXCOLOR
+{
+    COLORREF clrBk { };   //Bk color.
+    COLORREF clrText { }; //Text color.
+};
+using PHEXCOLOR = HEXCOLOR*;
 ```
 
 ### [](#)HEXCOLORSSTRUCT
@@ -697,6 +722,24 @@ struct HEXCOLORSSTRUCT
 };
 ```
 
+### [](#)HEXCREATESTRUCT
+The main initialization struct used for control creation.
+```cpp
+struct HEXCREATESTRUCT
+{
+    EHexCreateMode  enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
+    EHexShowMode    enShowMode { EHexShowMode::ASBYTE };           //Data representation mode.
+    HEXCOLORSSTRUCT stColor { };          //All the control's colors.
+    HWND            hwndParent { };       //Parent window pointer.
+    const LOGFONTW* pLogFont { };         //Font to be used, nullptr for default. This font has to be monospaced.
+    RECT            rect { };             //Initial rect. If null, the window is screen centered.
+    UINT            uID { };              //Control ID.
+    DWORD           dwStyle { };          //Window styles, 0 for default.
+    DWORD           dwExStyle { };        //Extended window styles, 0 for default.
+    double          dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
+};
+```
+
 ### [](#)HEXDATASTRUCT
 Main struct to set a data to display in the control.
 ```cpp
@@ -714,31 +757,15 @@ struct HEXDATASTRUCT
 };
 ```
 
-### [](#)HEXSPANSTRUCT
-This struct is used mostly in selection and bookmarking routines. It holds offset and size of the data region.
+### [](#)HEXHITTESTSTRUCT
+Structure is used in [`HitTest`](#hittest) method.
 ```cpp
-struct HEXSPANSTRUCT
+struct HEXHITTESTSTRUCT
 {
-    ULONGLONG ullOffset { };
-    ULONGLONG ullSize { };
+    ULONGLONG ullOffset { };      //Offset.
+    bool      fIsAscii { false }; //Is cursor at ASCII part or at Hex.
 };
 ```
-
-### [](#)HEXBKMSTRUCT
-Structure for bookmarks, used in [`BkmAdd`](#BkmAdd) method.  
-```cpp
-struct HEXBKMSTRUCT
-{
-    std::vector<HEXSPANSTRUCT> vecSpan { };                //Vector of offsets and sizes.
-    std::wstring               wstrDesc { };               //Bookmark description.
-    ULONGLONG                  ullID { };                  //Bookmark ID, assigned internally by framework.
-    ULONGLONG                  ullData { };                //User defined custom data.
-    COLORREF                   clrBk { RGB(240, 240, 0) }; //Bk color.
-    COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.
-};
-using PHEXBKMSTRUCT = HEXBKMSTRUCT*;
-```
-The member `vecSpan` is of a `std::vector<HEXSPANSTRUCT>` type because a bookmark may have few non adjacent areas. For instance, when selection is made as a block, with <kbd>Alt</kbd> pressed.
 
 ### [](#)HEXNOTIFYSTRUCT
 This struct is used in notification purposes, to notify parent window about **HexControl**'s states.
@@ -754,25 +781,29 @@ struct HEXNOTIFYSTRUCT
 using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
 ```
 
-### [](#)HEXHITTESTSTRUCT
-Structure is used in [`HitTest`](#hittest) method.
+### [](#)HEXSPANSTRUCT
+This struct is used mostly in selection and bookmarking routines. It holds offset and size of the data region.
 ```cpp
-struct HEXHITTESTSTRUCT
+struct HEXSPANSTRUCT
 {
-    ULONGLONG ullOffset { };      //Offset.
-    bool      fIsAscii { false }; //Is cursor at ASCII part or at Hex.
+    ULONGLONG ullOffset { };
+    ULONGLONG ullSize { };
 };
 ```
 
-### [](#)HEXCOLOR
-**HexControl** custom colors.
+### [](#)HEXVISSTRUCT
+This struct is returned from [`IsOffsetVisible`](#isoffsetvisible) method. Two members `i8Vert` and `i8Horz` represent vertical and horizontal visibility respectively. These members can be in three different states:
+* `-1` — offset is higher, or at the left, of the visible area.
+* &nbsp; `1` — offset is lower, or at the right.
+* &nbsp; `0` — offset is visible.
+
 ```cpp
-struct HEXCOLOR
+struct HEXVISSTRUCT
 {
-    COLORREF clrBk { };   //Bk color.
-    COLORREF clrText { }; //Text color.
+    std::int8_t i8Vert { }; //Vertical offset.
+    std::int8_t i8Horz { }; //Horizontal offset.
+    operator bool() { return i8Vert == 0 && i8Horz == 0; }; //For test simplicity: if(IsOffsetVisible()).
 };
-using PHEXCOLOR = HEXCOLOR*;
 ```
 
 ### [](#)EHexCmd
