@@ -403,10 +403,10 @@ LRESULT CHexDlgDataInterp::OnPropertyChanged(WPARAM wParam, LPARAM lParam)
 
 BOOL CHexDlgDataInterp::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
-	if (wParam == HEXCTRL_PROPGRIDCTRL)
+	if (wParam == IDC_HEXCTRL_DATAINTERP_PROPDATA)
 	{
 		auto pHdr = reinterpret_cast<NMHDR*>(lParam);
-		if (pHdr->code != HEXCTRL_PROPGRIDCTRL_SELCHANGED)
+		if (pHdr->code != MSG_PROPGRIDCTRL_SELCHANGED)
 			return FALSE;
 
 		if (auto pData = std::find_if(m_vecProp.begin(), m_vecProp.end(),

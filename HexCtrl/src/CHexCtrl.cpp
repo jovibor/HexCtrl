@@ -90,7 +90,7 @@ namespace HEXCTRL
 			bool          fAlt { };
 		};
 
-		constexpr auto WSTR_HEXCTRL_CLASSNAME { L"HexCtrl" }; //HexControl Class name.
+		constexpr auto HEXCTRL_CLASSNAME_WSTR { L"HexCtrl" }; //HexControl Class name.
 		constexpr auto ID_TOOLTIP_BKM { 0x01ULL };            //Tooltip ID for bookmarks.
 		constexpr auto ID_TOOLTIP_OFFSET { 0x02ULL };         //Tooltip ID for offset.
 	}
@@ -146,7 +146,7 @@ CHexCtrl::CHexCtrl()
 
 	auto hInst = AfxGetInstanceHandle();
 	WNDCLASSEXW wc { };
-	if (!::GetClassInfoExW(hInst, WSTR_HEXCTRL_CLASSNAME, &wc))
+	if (!::GetClassInfoExW(hInst, HEXCTRL_CLASSNAME_WSTR, &wc))
 	{
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
@@ -157,7 +157,7 @@ CHexCtrl::CHexCtrl()
 		wc.hCursor = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 		wc.hbrBackground = nullptr;
 		wc.lpszMenuName = nullptr;
-		wc.lpszClassName = WSTR_HEXCTRL_CLASSNAME;
+		wc.lpszClassName = HEXCTRL_CLASSNAME_WSTR;
 		if (!RegisterClassExW(&wc)) {
 			MessageBoxW(L"HexControl RegisterClassExW error.", L"Error", MB_ICONERROR);
 			return;
@@ -330,7 +330,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 
 	//Creating window.
 	if (hcs.enCreateMode == EHexCreateMode::CREATE_CHILD || hcs.enCreateMode == EHexCreateMode::CREATE_POPUP)
-		if (!CWnd::CreateEx(hcs.dwExStyle, WSTR_HEXCTRL_CLASSNAME, L"HexControl", dwStyle, rc,
+		if (!CWnd::CreateEx(hcs.dwExStyle, HEXCTRL_CLASSNAME_WSTR, L"HexControl", dwStyle, rc,
 			CWnd::FromHandle(hcs.hwndParent), uID))
 			wstrError.Format(L"HexCtrl (ID:%u) CreateEx failed.\r\nCheck HEXCREATESTRUCT parameters.", hcs.uID);
 
@@ -1039,17 +1039,15 @@ void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
 		return;
 
 	m_ullCaretPos = ullOffset;
-	if (m_fMutable)
-	{
-		m_fCursorHigh = fHighLow;
-		if (fRedraw)
-			Redraw();
-	}
-	else
+	m_fCursorHigh = fHighLow;
+	if (!m_fMutable)
 	{
 		m_ullLMouseClick = ullOffset;
-		SetSelection({ { ullOffset, 1 } }, fRedraw);
+		SetSelection({ { ullOffset, 1 } }, false);
 	}
+	if (fRedraw)
+		Redraw();
+
 	OnCaretPosChange(ullOffset);
 }
 
@@ -1545,7 +1543,7 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 	}
 
 	//Converting bytes to Text.
-	UINT uCodePage = m_iCodePage == -1 ? CODEPAGE_DEFAULT : static_cast<UINT>(m_iCodePage);
+	UINT uCodePage = m_iCodePage == -1 ? HEXCTRL_CODEPAGE_DEFAULT : static_cast<UINT>(m_iCodePage);
 	std::wstring wstrText(sSizeData, 0);
 	MultiByteToWideChar(uCodePage, 0, reinterpret_cast<LPCCH>(pData),
 		static_cast<int>(sSizeData), wstrText.data(), static_cast<int>(sSizeData));
@@ -2150,7 +2148,7 @@ auto CHexCtrl::CopyText()const->std::wstring
 	for (auto i = 0; i < ullSelSize; ++i)
 		strData.push_back(GetData<BYTE>(m_pSelection->GetOffsetByIndex(i)));
 
-	auto wstrData = str2wstr(strData, m_iCodePage == -1 ? CODEPAGE_DEFAULT : m_iCodePage);
+	auto wstrData = str2wstr(strData, m_iCodePage == -1 ? HEXCTRL_CODEPAGE_DEFAULT : m_iCodePage);
 	ReplaceUnprintable(wstrData, m_iCodePage == -1, false);
 
 	return wstrData;
@@ -4473,6 +4471,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	m_ullCaretPos = ullSelStart;
 	std::vector<HEXSPANSTRUCT> vecSel { { ullSelStart, ullSelSize } };
 	SetSelection(vecSel);
+	OnCaretPosChange(GetCaretPos());
 }
 
 void CHexCtrl::OnLButtonUp(UINT nFlags, CPoint point)

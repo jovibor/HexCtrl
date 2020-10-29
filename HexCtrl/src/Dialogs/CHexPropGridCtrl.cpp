@@ -24,6 +24,6 @@ void CHexPropGridCtrl::OnPropertyChanged(CMFCPropertyGridProperty* pProp) const
 void CHexPropGridCtrl::OnChangeSelection(CMFCPropertyGridProperty* pNewSel, CMFCPropertyGridProperty* /*pOldSel*/)
 {
 	m_pNewSel = pNewSel;
-	NMHDR nmhdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_PROPGRIDCTRL_SELCHANGED };
-	GetParent()->SendMessageW(WM_NOTIFY, HEXCTRL_PROPGRIDCTRL, reinterpret_cast<LPARAM>(&nmhdr));
+	NMHDR nmhdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), MSG_PROPGRIDCTRL_SELCHANGED };
+	GetParent()->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&nmhdr));
 }

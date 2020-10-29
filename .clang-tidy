@@ -1,5 +1,5 @@
 Checks: '*,
--cppcoreguidelines-*,-google-*,-fuchsia-*,-hicpp-*,-cert-*,-clang-*,
+-cppcoreguidelines-*,-google-*,-fuchsia-*,-hicpp-*,-cert-*,-clang-*,-llvmlibc-*,
 -modernize-use-trailing-return-type,
 -modernize-avoid-c-arrays,
 -llvm-header-guard,

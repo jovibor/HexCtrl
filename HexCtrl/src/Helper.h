@@ -16,25 +16,25 @@
 #include <string>
 
 namespace HEXCTRL::INTERNAL
-{	
+{
 	//Default codepage (Windows-1250) when HexCtrl code page is set to -1.
 	//This is mainly to prevent any non 1-byte ASCII default code pages 
-	//that could be used in Windows (if CP_ACP would have been set here instead).
-	constexpr UINT CODEPAGE_DEFAULT = { 1250 };
-	
-	//Fast lookup char/wchar_t arrays.
-	inline const wchar_t* const g_pwszHexMap { L"0123456789ABCDEF" };
+	//that could be set in Windows (if CP_ACP would have been set here instead).
+	constexpr auto HEXCTRL_CODEPAGE_DEFAULT { 1250U };
+
+	//Fast lookup wchar_t array.
+	constexpr const wchar_t* const g_pwszHexMap { L"0123456789ABCDEF" };
 
 	//Converts dwSize bytes of ull to WCHAR string.
 	void UllToWchars(ULONGLONG ull, wchar_t* pwsz, size_t dwSize, bool fAsHex = true);
 
 	//Converts wide string to template's numeric data type.
 	template<typename T>
-	inline bool wstr2num(const std::wstring& wstr, T& tData, int iBase = 0);
+	bool wstr2num(const std::wstring& wstr, T& tData, int iBase = 0);
 
 	//Converts multibyte string to template's numeric data type.
 	template<typename T>
-	inline bool str2num(const std::string& str, T& tData, int iBase = 0);
+	bool str2num(const std::string& str, T& tData, int iBase = 0);
 
 	//Converts every two numeric chars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
 	bool str2hex(const std::string& str, std::string& strToHex);
