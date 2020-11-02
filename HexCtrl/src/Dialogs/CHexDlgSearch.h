@@ -77,6 +77,7 @@ namespace HEXCTRL::INTERNAL
 		void ComboReplaceFill(LPCWSTR pwsz);
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
 		void SetEditStep(ULONGLONG ullStep);
+		[[nodiscard]] int memcmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const;
 		DECLARE_MESSAGE_MAP()
 	private:
 		CHexCtrl* m_pHexCtrl { };
@@ -86,18 +87,19 @@ namespace HEXCTRL::INTERNAL
 		CComboBox m_stComboSearch;  //Combo box "Search".
 		CComboBox m_stComboReplace; //Combo box "Replace".
 		CComboBox m_stComboMode;    //Combo box "Search mode".
-		CButton m_stCheckSel;       //Check box "Selection".
+		CButton m_stCheckSel;       //Check box "In selection".
+		CButton m_stCheckWcard;     //Check box "Wildcard".
 		CEdit m_stEditStart;        //Edit "Start search at".
 		CEdit m_stEditStep;         //Edit "Step".
 		const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
 		const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
 		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
 		CBrush m_stBrushDefault;
-		std::wstring m_wstrTextSearch { };  //String to search for.
-		std::wstring m_wstrTextReplace { }; //Search "Replace with..." wstring.
+		std::wstring m_wstrTextSearch { };  //Text from "Search" box.
+		std::wstring m_wstrTextReplace { }; //Text from "Replace with..." box.
 		ULONGLONG m_ullOffsetStart { };  //Search start boundary.
 		ULONGLONG m_ullOffsetEnd { };    //Search end boundary.
-		ULONGLONG m_ullOffsetCurr { };   //Current offset search should start from.
+		ULONGLONG m_ullOffsetCurr { };   //Current offset a search should start from.
 		ULONGLONG m_ullEndSentinel { };  //Maximum offset search can't cross.
 		ULONGLONG m_ullStep { 1 };       //Search step (default is 1 byte).
 		DWORD m_dwCount { };             //How many, or what index number.
@@ -111,12 +113,16 @@ namespace HEXCTRL::INTERNAL
 		bool m_fReplace { false };       //Find or Find and Replace with...?
 		bool m_fAll { false };           //Find/Replace one by one, or all?
 		bool m_fSelection { false };     //Search in selection.
+		bool m_fWildcard { false };      //Use wildcard.
 		std::byte* m_pSearchData { };    //Pointer to the data for search.
 		std::byte* m_pReplaceData { };   //Pointer to the data to replace with.
 		size_t m_nSizeSearch { };
 		size_t m_nSizeReplace { };
-		std::string m_strSearch;
-		std::string m_strReplace;
+		std::string m_strSearch;         //Actual string to search after all conversions.
+		std::string m_strReplace;        //Actual string to replace.
+		std::wstring m_wstrSearch;       //Actual wstring to search.
+		std::wstring m_wstrReplace;      //Actual wstring to replace.
+		const std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
 		HEXSPANSTRUCT m_stSelSpan { };   //Previous selection.
 		CMenu m_stMenuList;

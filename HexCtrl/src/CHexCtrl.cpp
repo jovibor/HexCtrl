@@ -4203,10 +4203,6 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	if (!m_fMutable || !IsCurTextArea() || (GetKeyState(VK_CONTROL) < 0))
 		return;
 
-	SMODIFY hms;
-	hms.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, 1 });
-	hms.ullDataSize = 1;
-
 	BYTE chByte = nChar & 0xFF;
 	WCHAR warrCurrLocaleID[KL_NAMELENGTH];
 	GetKeyboardLayoutNameW(warrCurrLocaleID); //Current langID as wstring.
@@ -4225,6 +4221,9 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 		}
 	}
 
+	SMODIFY hms;
+	hms.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, 1 });
+	hms.ullDataSize = 1;
 	hms.pData = reinterpret_cast<std::byte*>(&chByte);
 	Modify(hms);
 	CaretMoveRight();
@@ -4276,6 +4275,7 @@ void CHexCtrl::OnDestroy()
 	m_pDlgEncoding->DestroyWindow();
 	m_pDlgOpers->DestroyWindow();
 	m_pDlgSearch->DestroyWindow();
+	m_pDlgGoTo->DestroyWindow();
 	m_pScrollV->DestroyWindow();
 	m_pScrollH->DestroyWindow();
 
@@ -4374,34 +4374,32 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 	if (auto optCmd = GetCommand(static_cast<BYTE>(nChar),
 		GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd)
 		ExecuteCmd(optCmd.value());
-	else if (m_fMutable)
+	else if (IsMutable() && !IsCurTextArea()) //If caret is in Hex area, just one part (High/Low) of byte must be changed.
 	{
+		BYTE chByte = nChar & 0xFF;
+		//Normalizing all input in Hex area, reducing it to 0-15 (0x0-F) digit range.
+		//Allowing only [0-9][A-F][NUM0-NUM9].
+		if (chByte >= 0x30 && chByte <= 0x39)      //Digits [0-9].
+			chByte -= 0x30;
+		else if (chByte >= 0x41 && chByte <= 0x46) //Hex letters [A-F].
+			chByte -= 0x37;
+		else if (chByte >= 0x60 && chByte <= 0x69) //VK_NUMPAD0 - VK_NUMPAD9 [NUM0-NUM9].
+			chByte -= 0x60;
+		else
+			return;
+
+		auto chByteCurr = GetData<BYTE>(m_ullCaretPos);
+		if (m_fCursorHigh)
+			chByte = (chByte << 4) | (chByteCurr & 0x0F);
+		else
+			chByte = (chByte & 0x0F) | (chByteCurr & 0xF0);
+
 		SMODIFY hms;
 		hms.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, 1 });
 		hms.ullDataSize = 1;
-
-		BYTE chByte = nChar & 0xFF;
-		if (!IsCurTextArea()) //If cursor is not in Ascii area then just one part (High/Low) of byte must be changed.
-		{
-			if (chByte >= 0x30 && chByte <= 0x39)      //Digits.
-				chByte -= 0x30;
-			else if (chByte >= 0x41 && chByte <= 0x46) //Hex letters uppercase.
-				chByte -= 0x37;
-			else if (chByte >= 0x61 && chByte <= 0x66) //Hex letters lowercase.
-				chByte -= 0x57;
-			else
-				return;
-
-			auto chByteCurr = GetData<BYTE>(m_ullCaretPos);
-			if (m_fCursorHigh)
-				chByte = (chByte << 4) | (chByteCurr & 0x0F);
-			else
-				chByte = (chByte & 0x0F) | (chByteCurr & 0xF0);
-
-			hms.pData = reinterpret_cast<std::byte*>(&chByte);
-			Modify(hms);
-			CaretMoveRight();
-		}
+		hms.pData = reinterpret_cast<std::byte*>(&chByte);
+		Modify(hms);
+		CaretMoveRight();
 	}
 
 	m_optRMouseClick.reset(); //Reset right mouse click.

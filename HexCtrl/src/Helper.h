@@ -37,7 +37,8 @@ namespace HEXCTRL::INTERNAL
 	bool str2num(const std::string& str, T& tData, int iBase = 0);
 
 	//Converts every two numeric chars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
-	bool str2hex(const std::string& str, std::string& strToHex);
+	//fWc means that wildcards are allowed, uWc - the wildcard.
+	bool str2hex(const std::string& str, std::string& strToHex, bool fWc = false, unsigned char uWc = '?');
 
 	//Wide to Multibyte string convertion.
 	std::string wstr2str(std::wstring_view wstr, UINT uCodePage = CP_UTF8);

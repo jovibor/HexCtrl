@@ -87,11 +87,10 @@ namespace HEXCTRL::INTERNAL
 		else
 		{
 			const auto llData = std::wcstoll(wstr.data(), &pEndPtr, iBase);
-			if ((llData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+			if ((llData == 0 && (pEndPtr == wstr.data() || *pEndPtr != L'\0'))
 				|| ((llData == LLONG_MAX || llData == LLONG_MIN) && errno == ERANGE)
 				|| (llData > static_cast<LONGLONG>(std::numeric_limits<T>::max()))
-				|| (llData < static_cast<LONGLONG>(std::numeric_limits<T>::min()))
-				)
+				|| (llData < static_cast<LONGLONG>(std::numeric_limits<std::make_signed_t<T>>::min())))
 				return false;
 			tData = static_cast<T>(llData);
 		}
@@ -129,7 +128,7 @@ namespace HEXCTRL::INTERNAL
 			if ((llData == 0 && (pEndPtr == str.data() || *pEndPtr != '\0'))
 				|| ((llData == LLONG_MAX || llData == LLONG_MIN) && errno == ERANGE)
 				|| (llData > static_cast<LONGLONG>(std::numeric_limits<T>::max()))
-				|| (llData < static_cast<LONGLONG>(std::numeric_limits<T>::min()))
+				|| (llData < static_cast<LONGLONG>(std::numeric_limits<std::make_signed_t<T>>::min()))
 				)
 				return false;
 			tData = static_cast<T>(llData);
@@ -140,20 +139,26 @@ namespace HEXCTRL::INTERNAL
 	//Explicit instantiations of templated func in .cpp.
 	template bool str2num<UCHAR>(const std::string& str, UCHAR& t, int iBase);
 
-	bool str2hex(const std::string& str, std::string& strToHex)
+	bool str2hex(const std::string& str, std::string& strToHex, bool fWc, unsigned char uWc)
 	{
-		if (str.size() % 2 > 0) //Only even amount of chars allowed.
-			return false;
-
-		const auto nIterations = str.size() / 2;
 		std::string strTmp;
-		strTmp.reserve(nIterations);
-
-		for (size_t i = 0; i < nIterations; ++i)
+		for (auto iterBegin = str.begin(); iterBegin != str.end();)
 		{
-			//Extract two current chars and pass it to str2num as string_view.
-			if (unsigned char chNumber;	str2num(str.substr(i * 2, (i + 2 <= str.size()) ? 2 : 1), chNumber, 16))
+			if (fWc && *iterBegin == uWc) //Skip wildcard.
+			{
+				++iterBegin;
+				strTmp += uWc;
+				continue;
+			}
+
+			//Extract two current chars and pass it to str2num as string.
+			const size_t nOffsetCurr = iterBegin - str.begin();
+			const auto nSize = nOffsetCurr + 2 <= str.size() ? 2 : 1;
+			if (unsigned char chNumber;	str2num(str.substr(nOffsetCurr, nSize), chNumber, 16))
+			{
+				iterBegin += nSize;
 				strTmp += chNumber;
+			}
 			else
 				return false;
 		}

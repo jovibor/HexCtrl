@@ -8,6 +8,7 @@
 #include "stdafx.h"
 #include "CListEx.h"
 #include "strsafe.h"
+#include <algorithm>
 #include <cassert>
 
 using namespace HEXCTRL::LISTEX;
@@ -1074,24 +1075,21 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 	ListView_SubItemHitTest(m_hWnd, &hi);
 
 	bool fLink { false }; //Cursor at link's rect area.
-	for (const auto& iter : ParseItemText(hi.iItem, hi.iSubItem))
+	auto vecText = ParseItemText(hi.iItem, hi.iSubItem);
+	if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](SITEMTEXT& iter)
+		{ return iter.fLink && iter.rect.PtInRect(pt); }); iterFind != vecText.end())
 	{
-		if (iter.fLink && iter.rect.PtInRect(pt))
+		fLink = true;
+		if (m_fLinkTooltip && !m_fLDownAtLink && m_rcLinkCurr != iterFind->rect)
 		{
-			fLink = true;
+			TtLinkHide();
+			m_rcLinkCurr = iterFind->rect;
+			m_stCurrLink.iItem = hi.iItem;
+			m_stCurrLink.iSubItem = hi.iSubItem;
+			m_wstrTtText = iterFind->fTitle ? iterFind->wstrTitle : iterFind->wstrLink;
+			m_stTInfoLink.lpszText = m_wstrTtText.data();
 
-			if (m_fLinkTooltip && !m_fLDownAtLink && m_rcLinkCurr != iter.rect)
-			{
-				TtLinkHide();
-				m_rcLinkCurr = iter.rect;
-				m_stCurrLink.iItem = hi.iItem;
-				m_stCurrLink.iSubItem = hi.iSubItem;
-				m_wstrTtText = iter.fTitle ? iter.wstrTitle : iter.wstrLink;
-				m_stTInfoLink.lpszText = m_wstrTtText.data();
-
-				SetTimer(ID_TIMER_TT_LINK_ACTIVATE, 400, nullptr); //Activate (show) tooltip after delay.
-			}
-			break;
+			SetTimer(ID_TIMER_TT_LINK_ACTIVATE, 400, nullptr); //Activate (show) tooltip after delay.
 		}
 	}
 	SetCursor(fLink ? m_cursorHand : m_cursorDefault);
@@ -1154,15 +1152,13 @@ void CListEx::OnLButtonDown(UINT nFlags, CPoint pt)
 		return;
 
 	bool fLinkDown { false };
-	for (const auto& iter : ParseItemText(hi.iItem, hi.iSubItem))
+	auto vecText = ParseItemText(hi.iItem, hi.iSubItem);
+	if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](SITEMTEXT& iter)
+		{ return iter.fLink && iter.rect.PtInRect(pt); }); iterFind != vecText.end())
 	{
-		if (iter.fLink && iter.rect.PtInRect(pt))
-		{
-			m_fLDownAtLink = true;
-			m_rcLinkCurr = iter.rect;
-			fLinkDown = true;
-			break;
-		}
+		m_fLDownAtLink = true;
+		m_rcLinkCurr = iterFind->rect;
+		fLinkDown = true;
 	}
 
 	if (!fLinkDown)
@@ -1183,23 +1179,19 @@ void CListEx::OnLButtonUp(UINT nFlags, CPoint pt)
 			return;
 		}
 
-		for (const auto& iter : ParseItemText(hi.iItem, hi.iSubItem))
+		auto vecText = ParseItemText(hi.iItem, hi.iSubItem);
+		if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](SITEMTEXT& iter)
+			{ return iter.fLink && iter.rect == m_rcLinkCurr; }); iterFind != vecText.end())
 		{
-			if (iter.fLink && iter.rect == m_rcLinkCurr)
-			{
-				m_rcLinkCurr.SetRectEmpty();
-				fLinkUp = true;
-
-				UINT uCtrlId = static_cast<UINT>(GetDlgCtrlID());
-				NMITEMACTIVATE nmii { { m_hWnd, uCtrlId, LISTEX_MSG_LINKCLICK } };
-				nmii.iItem = hi.iItem;
-				nmii.iSubItem = hi.iSubItem;
-				nmii.ptAction = pt;
-				nmii.lParam = reinterpret_cast<LPARAM>(iter.wstrLink.data());
-				GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&nmii));
-
-				break;
-			}
+			m_rcLinkCurr.SetRectEmpty();
+			fLinkUp = true;
+			UINT uCtrlId = static_cast<UINT>(GetDlgCtrlID());
+			NMITEMACTIVATE nmii { { m_hWnd, uCtrlId, LISTEX_MSG_LINKCLICK } };
+			nmii.iItem = hi.iItem;
+			nmii.iSubItem = hi.iSubItem;
+			nmii.ptAction = pt;
+			nmii.lParam = reinterpret_cast<LPARAM>(iterFind->wstrLink.data());
+			GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&nmii));
 		}
 	}
 
