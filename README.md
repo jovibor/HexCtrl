@@ -37,12 +37,12 @@
   * [GetDataSize](#getdatasize)
   * [GetEncoding](#getencoding)
   * [GetFontSize](#getfontsize)
+  * [GetGroupMode](#getgroupmode)
   * [GetMenuHandle](#getmenuhandle)
   * [GetPagesCount](#getpagescount)
   * [GetPagePos](#getpagepos)
   * [GetPageSize](#getpagesize)
   * [GetSelection](#getselection)
-  * [GetShowMode](#getshowmode)
   * [GetWindowHandle](#getwindowhandle)
   * [GoToOffset](#gotooffset) 
   * [HitTest](#hittest)
@@ -61,10 +61,11 @@
   * [SetEncoding](#setencoding)
   * [SetFont](#setfont)
   * [SetFontSize](#setfontsize)
+  * [SetGroupMode](#setgroupmode)
   * [SetMutable](#setmutable)
+  * [SetOffsetMode](#setoffsetmode)
   * [SetPageSize](#setpagesize)
   * [SetSelection](#setselection)
-  * [SetShowMode](#setshowmode)
   * [SetWheelRatio](#setwheelratio)
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
@@ -80,7 +81,7 @@
   * [EHexCmd](#ehexcmd)
   * [EHexCreateMode](#ehexcreatemode)
   * [EHexDataMode](#ehexdatamode)
-  * [EHexShowMode](#ehexshowmode)
+  * [EHexGroupMode](#ehexgroupmode)
   * [EHexWnd](#ehexwnd)
    </details>
 * [Notification Messages](#notification-messages) <details><summary>_Expand_</summary>
@@ -471,6 +472,13 @@ int GetEncoding()const;
 ```
 Get code page that is currently in use.
 
+### [](#)GetGroupMode
+```cpp
+auto GetGroupMode()const->EHexGroupMode;
+```
+Retrieves current data grouping mode.
+
+
 ### [](#)GetFontSize
 ```cpp
 long GetFontSize()const;
@@ -510,12 +518,6 @@ Get current page size set by [`SetPageSize`](#setpagesize).
 auto GetSelection()const->std::vector<HEXSPANSTRUCT>&;
 ```
 Returns `std::vector` of offsets and sizes of the current selection.
-
-### [](#)GetShowMode
-```cpp
-auto GetShowMode()const->EHexShowMode;
-```
-Retrieves current data show mode.
 
 ### [](#)GetWindowHandle
 ```cpp
@@ -638,11 +640,23 @@ void SetFontSize(UINT uiSize);
 ```
 Sets a new font size to the **HexControl**.
 
+### [](#)SetGroupMode
+```cpp
+void SetGroupMode(EHexGroupMode enGroupMode);
+```
+Sets current data grouping mode. See [`EHexGroupMode`](#ehexgroupmode) for more info.
+
 ### [](#)SetMutable
 ```cpp
 void SetMutable(bool fEnable);
 ```
 Enables or disables mutable mode. In mutable mode all the data can be modified.
+
+### [](#)SetOffsetMode
+```cpp
+void SetOffsetMode(bool fHex);
+```
+Set offset area being shown as Hex (`fHex=true`) or as Decimal (`fHex=false`).
 
 ### [](#)SetPageSize
 ```cpp
@@ -656,12 +670,6 @@ To remove the divider just set `dwSize` to 0.
 void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true);
 ```
 Sets current selection.
-
-### [](#)SetShowMode
-```cpp
-void SetShowMode(EHexShowMode enShowMode);
-```
-Sets current data show mode. See [`EHexShowMode`](#ehexshowmode) for more info.
 
 ### [](#)SetWheelRatio
 ```cpp
@@ -728,7 +736,6 @@ The main initialization struct used for control creation.
 struct HEXCREATESTRUCT
 {
     EHexCreateMode  enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
-    EHexShowMode    enShowMode { EHexShowMode::ASBYTE };           //Data representation mode.
     HEXCOLORSSTRUCT stColor { };          //All the control's colors.
     HWND            hwndParent { };       //Parent window pointer.
     const LOGFONTW* pLogFont { };         //Font to be used, nullptr for default. This font has to be monospaced.
@@ -845,10 +852,10 @@ enum class EHexDataMode : WORD
 };
 ```
 
-### [](#)EHexShowMode
-Enum that represents available data show modes.
+### [](#)EHexGroupMode
+Enum that represents available data grouping modes.
 ```cpp
-enum class EHexShowMode : WORD
+enum class EHexGroupMode : WORD
 {
     ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
 };

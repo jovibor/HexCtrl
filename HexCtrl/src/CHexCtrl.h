@@ -101,12 +101,12 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;        //Get currently set data size.
 		[[nodiscard]] int GetEncoding()const override;                    //Get current code page ID.
 		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
+		[[nodiscard]] auto GetGroupMode()const->EHexGroupMode override;   //Retrieves current data grouping mode.
 		[[nodiscard]] HMENU GetMenuHandle()const override;                //Context menu handle.
 		[[nodiscard]] auto GetPagesCount()const->ULONGLONG override;      //Get count of pages.
 		[[nodiscard]] auto GetPagePos()const->ULONGLONG override;         //Get current page a cursor stays at.
 		[[nodiscard]] DWORD GetPageSize()const override;                  //Current page size.
 		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPANSTRUCT> override; //Gets current selection.
-		[[nodiscard]] auto GetShowMode()const->EHexShowMode override;     //Retrieves current show mode.
 		[[nodiscard]] HWND GetWindowHandle(EHexWnd enWnd)const override;  //Retrieves control's window/dialog handle.
 		void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0)override;    //Go (scroll) to a given offset.
 		[[nodiscard]] auto HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTRUCT> override; //HitTest given point.
@@ -125,10 +125,11 @@ namespace HEXCTRL::INTERNAL
 		void SetEncoding(int iCodePage)override;            //Code-page for text area.
 		void SetFont(const LOGFONTW* pLogFont)override;     //Set the control's new font. This font has to be monospaced.
 		void SetFontSize(UINT uiSize)override;              //Set the control's font size.
-		void SetMutable(bool fEnable)override;              //Enable or disable edit mode.
+		void SetGroupMode(EHexGroupMode enGroupMode)override; //Set current "Group Data By" mode.
+		void SetMutable(bool fEnable)override;              //Enable or disable mutable/editable mode.
+		void SetOffsetMode(bool fHex)override;              //Set offset being shown as Hex or as Decimal.
 		void SetPageSize(DWORD dwSize, std::wstring_view wstrName)override;  //Set page size and name to draw the line between.
 		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true)override; //Set current selection.
-		void SetShowMode(EHexShowMode enShowMode)override;  //Set current data show mode.
 		void SetWheelRatio(double dbRatio)override;         //Set the ratio for how much to scroll with mouse-wheel.
 	private:
 		friend class CHexDlgDataInterp;
@@ -267,7 +268,7 @@ namespace HEXCTRL::INTERNAL
 		const DWORD m_dwUndoMax { 500 };      //How many Undo states to preserve.
 		HEXCOLORSSTRUCT m_stColor;            //All control related colors.
 		EHexDataMode m_enDataMode { };        //Control's data mode.
-		EHexShowMode m_enShowMode { };        //Current "Show data" mode.
+		EHexGroupMode m_enGroupMode { EHexGroupMode::ASBYTE }; //Current "Group Data By" mode.
 		std::byte* m_pData { };               //Main data pointer. Modifiable in "Edit" mode.
 		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for EHexDataMode::DATA_VIRTUAL
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.

@@ -139,15 +139,15 @@ namespace HEXCTRL::INTERNAL
 	//Explicit instantiations of templated func in .cpp.
 	template bool str2num<UCHAR>(const std::string& str, UCHAR& t, int iBase);
 
-	bool str2hex(const std::string& str, std::string& strToHex, bool fWc, unsigned char uWc)
+	bool str2hex(const std::string& str, std::string& strToHex, bool fWc, char chWc)
 	{
 		std::string strTmp;
 		for (auto iterBegin = str.begin(); iterBegin != str.end();)
 		{
-			if (fWc && *iterBegin == uWc) //Skip wildcard.
+			if (fWc && *iterBegin == chWc) //Skip wildcard.
 			{
 				++iterBegin;
-				strTmp += uWc;
+				strTmp += chWc;
 				continue;
 			}
 
@@ -187,17 +187,17 @@ namespace HEXCTRL::INTERNAL
 
 	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLFRepl)
 	{
-		//If fASCII is true, then only wchars in 0x1F<...<0x7f range are considered printable.
+		//If fASCII is true, then only wchars in 0x1F<...<0x7F range are considered printable.
 		//If fCRLFRepl is false, then CR(0x0D) and LF(0x0A) wchars remain untouched.
 		if (fASCII)
 		{
-			std::replace_if(wstr.begin(), wstr.end(), [=](const wchar_t& ref) //All non ASCII.
-				{return (ref <= 0x1F || ref >= 0x7f) && (fCRLFRepl || (ref != 0x0D && ref != 0x0A)); }, L'.');
+			std::replace_if(wstr.begin(), wstr.end(), [=](wchar_t wch) //All non ASCII.
+				{return (wch <= 0x1F || wch >= 0x7F) && (fCRLFRepl || (wch != 0x0D && wch != 0x0A)); }, L'.');
 		}
 		else
 		{
-			std::replace_if(wstr.begin(), wstr.end(), [=](const wchar_t& ref) //All non printable wchars.
-				{return !std::iswprint(ref) && (fCRLFRepl || (ref != 0x0D && ref != 0x0A)); }, L'.');
+			std::replace_if(wstr.begin(), wstr.end(), [=](wchar_t wch) //All non printable wchars.
+				{return !std::iswprint(wch) && (fCRLFRepl || (wch != 0x0D && wch != 0x0A)); }, L'.');
 		}
 	}
 }

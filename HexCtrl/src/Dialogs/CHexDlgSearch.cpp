@@ -535,7 +535,7 @@ bool CHexDlgSearch::PrepareHex()
 {
 	m_strSearch = wstr2str(m_wstrTextSearch);
 	m_strReplace = wstr2str(m_wstrTextReplace);
-	if (!str2hex(m_strSearch, m_strSearch, m_fWildcard, static_cast<unsigned char>(m_uWildcard)))
+	if (!str2hex(m_strSearch, m_strSearch, m_fWildcard, static_cast<char>(m_uWildcard)))
 	{
 		m_iWrap = 1;
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);

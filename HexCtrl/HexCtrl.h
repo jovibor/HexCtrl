@@ -47,7 +47,7 @@ namespace HEXCTRL
 		CMD_DLG_SEARCH = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV,
 		CMD_NAV_DLG_GOTO, CMD_NAV_REPFWD, CMD_NAV_REPBKW, CMD_NAV_DATABEG, CMD_NAV_DATAEND, 
 		CMD_NAV_PAGEBEG, CMD_NAV_PAGEEND, CMD_NAV_LINEBEG, CMD_NAV_LINEEND,
-		CMD_SHOWDATA_BYTE, CMD_SHOWDATA_WORD, CMD_SHOWDATA_DWORD, CMD_SHOWDATA_QWORD,
+		CMD_GROUPBY_BYTE, CMD_GROUPBY_WORD, CMD_GROUPBY_DWORD, CMD_GROUPBY_QWORD,
 		CMD_BKM_ADD, CMD_BKM_REMOVE, CMD_BKM_NEXT, CMD_BKM_PREV, CMD_BKM_CLEARALL, CMD_BKM_DLG_MANAGER,
 		CMD_CLPBRD_COPYHEX, CMD_CLPBRD_COPYHEXLE, CMD_CLPBRD_COPYHEXFMT, CMD_CLPBRD_COPYTEXT,
 		CMD_CLPBRD_COPYBASE64, CMD_CLPBRD_COPYCARR, CMD_CLPBRD_COPYGREPHEX, CMD_CLPBRD_COPYPRNTSCRN,
@@ -70,9 +70,9 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* EHexShowMode - current data mode representation.                                          *
+	* EHexGroupMode - current data mode representation.                                          *
 	********************************************************************************************/
-	enum class EHexShowMode : WORD
+	enum class EHexGroupMode : WORD
 	{
 		ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
 	};
@@ -198,7 +198,6 @@ namespace HEXCTRL
 	struct HEXCREATESTRUCT
 	{
 		EHexCreateMode  enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
-		EHexShowMode    enShowMode { EHexShowMode::ASBYTE };           //Data representation mode.
 		HEXCOLORSSTRUCT stColor { };          //All the control's colors.
 		HWND            hwndParent { };       //Parent window handle.
 		const LOGFONTW* pLogFont { };         //Font to be used, nullptr for default. This font has to be monospaced.
@@ -282,12 +281,12 @@ namespace HEXCTRL
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual int GetEncoding()const = 0;                    //Get current code page ID.
 		[[nodiscard]] virtual long GetFontSize()const = 0;                   //Current font size.
+		[[nodiscard]] virtual auto GetGroupMode()const->EHexGroupMode = 0;   //Retrieves current data grouping mode.
 		[[nodiscard]] virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
 		[[nodiscard]] virtual auto GetPagesCount()const->ULONGLONG = 0;      //Get count of pages.
 		[[nodiscard]] virtual auto GetPagePos()const->ULONGLONG = 0;         //Get current page a cursor stays at.
 		[[nodiscard]] virtual DWORD GetPageSize()const = 0;                  //Current page size.
 		[[nodiscard]] virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> = 0; //Gets current selection.
-		[[nodiscard]] virtual auto GetShowMode()const->EHexShowMode = 0;     //Retrieves current show mode.
 		[[nodiscard]] virtual HWND GetWindowHandle(EHexWnd enWnd)const = 0;  //Retrieves control's window/dialog handle.
 		virtual void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0) = 0;   //Go (scroll) to a given offset.
 		[[nodiscard]] virtual auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTESTSTRUCT> = 0; //HitTest given point.
@@ -306,10 +305,11 @@ namespace HEXCTRL
 		virtual void SetEncoding(int iCodePage) = 0;           //Code-page for text area.
 		virtual void SetFont(const LOGFONTW* pLogFont) = 0;    //Set the control's new font. This font has to be monospaced.
 		virtual void SetFontSize(UINT uiSize) = 0;             //Set the control's font size.
-		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/edit mode.
+		virtual void SetGroupMode(EHexGroupMode enMode) = 0;   //Set current "Group Data By" mode.
+		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
+		virtual void SetOffsetMode(bool fHex) = 0;             //Set offset being shown as Hex or as Decimal.
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wstrName = L"Page") = 0; //Set page size and name to draw the lines in-between.
 		virtual void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true) = 0; //Set current selection.
-		virtual void SetShowMode(EHexShowMode enMode) = 0;     //Set current data show mode.
 		virtual void SetWheelRatio(double dbRatio) = 0;        //Set the ratio for how much to scroll with mouse-wheel.
 	};
 
