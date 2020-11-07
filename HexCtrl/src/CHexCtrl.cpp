@@ -1038,7 +1038,7 @@ void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
 		return;
 
 	m_ullCaretPos = ullOffset;
-	m_fCursorHigh = fHighLow;
+	m_fCaretHigh = fHighLow;
 	if (!m_fMutable)
 	{
 		m_ullLMouseClick = ullOffset;
@@ -1588,7 +1588,7 @@ void CHexCtrl::CaretMoveDown()
 {
 	const auto ullOldPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
 	const auto ullNewPos = ullOldPos + m_dwCapacity >= GetDataSize() ? ullOldPos : ullOldPos + m_dwCapacity;
-	SetCaretPos(ullNewPos, m_fCursorHigh, false);
+	SetCaretPos(ullNewPos, m_fCaretHigh, false);
 
 	const auto stOld = IsOffsetVisible(ullOldPos);
 	const auto stNew = IsOffsetVisible(ullNewPos);
@@ -1610,23 +1610,23 @@ void CHexCtrl::CaretMoveLeft()
 				return;
 			ullNewPos = ullOldPos - 1;
 		}
-		else if (m_fCursorHigh)
+		else if (m_fCaretHigh)
 		{
 			if (ullOldPos == 0) //To avoid underflow.
 				return;
 			ullNewPos = ullOldPos - 1;
-			m_fCursorHigh = false;
+			m_fCaretHigh = false;
 		}
 		else
 		{
 			ullNewPos = ullOldPos;
-			m_fCursorHigh = true;
+			m_fCaretHigh = true;
 		}
 	}
 	else if (ullOldPos > 0)
 		ullNewPos = ullOldPos - 1;
 
-	SetCaretPos(ullNewPos, m_fCursorHigh, false);
+	SetCaretPos(ullNewPos, m_fCaretHigh, false);
 
 	const auto stOld = IsOffsetVisible(ullOldPos);
 	const auto stNew = IsOffsetVisible(ullNewPos);
@@ -1649,15 +1649,15 @@ void CHexCtrl::CaretMoveRight()
 	{
 		if (IsCurTextArea())
 			ullNewPos = ullOldPos + 1;
-		else if (m_fCursorHigh)
+		else if (m_fCaretHigh)
 		{
 			ullNewPos = ullOldPos;
-			m_fCursorHigh = false;
+			m_fCaretHigh = false;
 		}
 		else
 		{
 			ullNewPos = ullOldPos + 1;
-			m_fCursorHigh = ullOldPos != GetDataSize() - 1; //Last byte case.
+			m_fCaretHigh = ullOldPos != GetDataSize() - 1; //Last byte case.
 		}
 	}
 	else
@@ -1666,7 +1666,7 @@ void CHexCtrl::CaretMoveRight()
 	if (auto ullDataSize = GetDataSize(); ullNewPos >= ullDataSize) //To avoid overflow.
 		ullNewPos = ullDataSize - 1;
 
-	SetCaretPos(ullNewPos, m_fCursorHigh, false);
+	SetCaretPos(ullNewPos, m_fCaretHigh, false);
 
 	const auto stOld = IsOffsetVisible(ullOldPos);
 	const auto stNew = IsOffsetVisible(ullNewPos);
@@ -1682,7 +1682,7 @@ void CHexCtrl::CaretMoveUp()
 {
 	const auto ullOldPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
 	const auto ullNewPos = ullOldPos >= m_dwCapacity ? ullOldPos - m_dwCapacity : ullOldPos;
-	SetCaretPos(ullNewPos, m_fCursorHigh, false);
+	SetCaretPos(ullNewPos, m_fCaretHigh, false);
 
 	const auto stOld = IsOffsetVisible(ullOldPos);
 	const auto stNew = IsOffsetVisible(ullNewPos);
@@ -2246,8 +2246,8 @@ void CHexCtrl::DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int i
 		COLORREF clrTextOffset, clrBkOffset;
 		if (m_pSelection->HitTestRange({ ullStartOffset + iterLines * m_dwCapacity, m_dwCapacity }))
 		{
-			clrTextOffset = m_stColor.clrTextSelected;
-			clrBkOffset = m_stColor.clrBkSelected;
+			clrTextOffset = m_stColor.clrTextSelect;
+			clrBkOffset = m_stColor.clrBkSelect;
 		}
 		else
 		{
@@ -2318,7 +2318,7 @@ void CHexCtrl::DrawHexAscii(CDC* pDC, CFont* pFont, int iLines, std::wstring_vie
 	PolyTextOutW(pDC->m_hDC, vecPolyHex.data(), static_cast<UINT>(vecPolyHex.size()));
 
 	//Ascii printing.
-	pDC->SetTextColor(m_stColor.clrTextAscii);
+	pDC->SetTextColor(m_stColor.clrTextASCII);
 	PolyTextOutW(pDC->m_hDC, vecPolyAscii.data(), static_cast<UINT>(vecPolyAscii.size()));
 }
 
@@ -2683,8 +2683,8 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 	if (!vecPolySelHex.empty())
 	{
 		pDC->SelectObject(pFont);
-		pDC->SetTextColor(m_stColor.clrTextSelected);
-		pDC->SetBkColor(m_stColor.clrBkSelected);
+		pDC->SetTextColor(m_stColor.clrTextSelect);
+		pDC->SetBkColor(m_stColor.clrBkSelect);
 		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size()));
 
 		//Ascii selected printing.
@@ -2779,8 +2779,8 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	{
 		//Colors are inverted colors of the selection.
 		pDC->SelectObject(pFont);
-		pDC->SetTextColor(m_stColor.clrBkSelected);
-		pDC->SetBkColor(m_stColor.clrTextSelected);
+		pDC->SetTextColor(m_stColor.clrBkSelect);
+		pDC->SetBkColor(m_stColor.clrTextSelect);
 		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size()));
 
 		//Ascii selection highlight printing.
@@ -2788,75 +2788,75 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	}
 }
 
-void CHexCtrl::DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
+void CHexCtrl::DrawCaret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
 {
 	if (!IsDataSet() || !IsMutable())
 		return;
 
-	std::vector<POLYTEXTW> vecPolyCursor;
-	std::list<std::wstring> listWstrCursor;
-	COLORREF clrBkCursor { }; //Cursor color.
+	std::vector<POLYTEXTW> vecPolyCaret;
+	std::list<std::wstring> listWstrCaret;
+	COLORREF clrBkCaret { }; //Caret color.
 	const auto ullStartOffset = ullStartLine * m_dwCapacity;
 	size_t sIndexToPrint { };
 	bool fCurFound { false };
 
 	for (auto iterLines = 0; iterLines < iLines && !fCurFound; ++iterLines)
 	{
-		std::wstring wstrHexCursorToPrint { }, wstrAsciiCursorToPrint { };
-		int iCursorHexPosToPrintX { }, iCursorAsciiPosToPrintX { }; //Cursor X coords.
+		std::wstring wstrHexCaretToPrint { }, wstrAsciiCaretToPrint { };
+		int iCaretHexPosToPrintX { }, iCaretAsciiPosToPrintX { }; //Caret X coords.
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
 		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wstrText.size(); ++iterChunks, ++sIndexToPrint)
 		{
-			//Cursor position. 
+			//Caret position. 
 			if (ullStartOffset + sIndexToPrint == m_ullCaretPos)
 			{
 				int iCy;
-				HexChunkPoint(m_ullCaretPos, iCursorHexPosToPrintX, iCy);
-				AsciiChunkPoint(m_ullCaretPos, iCursorAsciiPosToPrintX, iCy);
-				if (m_fCursorHigh)
-					wstrHexCursorToPrint = wstrHex[sIndexToPrint * 2];
+				HexChunkPoint(m_ullCaretPos, iCaretHexPosToPrintX, iCy);
+				AsciiChunkPoint(m_ullCaretPos, iCaretAsciiPosToPrintX, iCy);
+				if (m_fCaretHigh)
+					wstrHexCaretToPrint = wstrHex[sIndexToPrint * 2];
 				else
 				{
-					wstrHexCursorToPrint = wstrHex[sIndexToPrint * 2 + 1];
-					iCursorHexPosToPrintX += m_sizeLetter.cx;
+					wstrHexCaretToPrint = wstrHex[sIndexToPrint * 2 + 1];
+					iCaretHexPosToPrintX += m_sizeLetter.cx;
 				}
-				wstrAsciiCursorToPrint = wstrText[sIndexToPrint];
+				wstrAsciiCaretToPrint = wstrText[sIndexToPrint];
 
 				if (m_pSelection->HitTest(ullStartOffset + sIndexToPrint))
-					clrBkCursor = m_stColor.clrBkCursorSelected;
+					clrBkCaret = m_stColor.clrBkCaretSelect;
 				else
-					clrBkCursor = m_stColor.clrBkCursor;
+					clrBkCaret = m_stColor.clrBkCaret;
 
 				fCurFound = true;
-				break; //No need to loop further, only one Chunk with cursor.
+				break; //No need to loop further, only one Chunk with caret.
 			}
 		}
 
-		//Cursor Poly.
-		if (!wstrHexCursorToPrint.empty())
+		//Caret Poly.
+		if (!wstrHexCaretToPrint.empty())
 		{
-			listWstrCursor.emplace_back(std::move(wstrHexCursorToPrint));
-			vecPolyCursor.emplace_back(POLYTEXTW { iCursorHexPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(listWstrCursor.back().size()), listWstrCursor.back().data(), 0, { }, nullptr });
-			listWstrCursor.emplace_back(std::move(wstrAsciiCursorToPrint));
-			vecPolyCursor.emplace_back(POLYTEXTW { iCursorAsciiPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(listWstrCursor.back().size()), listWstrCursor.back().data(), 0, { }, nullptr });
+			listWstrCaret.emplace_back(std::move(wstrHexCaretToPrint));
+			vecPolyCaret.emplace_back(POLYTEXTW { iCaretHexPosToPrintX, iPosToPrintY,
+				static_cast<UINT>(listWstrCaret.back().size()), listWstrCaret.back().data(), 0, { }, nullptr });
+			listWstrCaret.emplace_back(std::move(wstrAsciiCaretToPrint));
+			vecPolyCaret.emplace_back(POLYTEXTW { iCaretAsciiPosToPrintX, iPosToPrintY,
+				static_cast<UINT>(listWstrCaret.back().size()), listWstrCaret.back().data(), 0, { }, nullptr });
 		}
 	}
 
-	//Cursor printing.
-	if (!vecPolyCursor.empty())
+	//Caret printing.
+	if (!vecPolyCaret.empty())
 	{
 		pDC->SelectObject(pFont);
-		pDC->SetTextColor(m_stColor.clrTextCursor);
-		pDC->SetBkColor(clrBkCursor);
-		PolyTextOutW(pDC->m_hDC, vecPolyCursor.data(), static_cast<UINT>(vecPolyCursor.size()));
+		pDC->SetTextColor(m_stColor.clrTextCaret);
+		pDC->SetBkColor(clrBkCaret);
+		PolyTextOutW(pDC->m_hDC, vecPolyCaret.data(), static_cast<UINT>(vecPolyCaret.size()));
 	}
 }
 
-void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
+void CHexCtrl::DrawDataInterp(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
 {
 	std::vector<POLYTEXTW> vecPolyDataInterpretHex, vecPolyDataInterpretAscii;
 	std::list<std::wstring> listWstrDataInterpretHex, listWstrDataInterpretAscii;
@@ -2918,8 +2918,8 @@ void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine,
 	if (!vecPolyDataInterpretHex.empty())
 	{
 		pDC->SelectObject(pFont);
-		pDC->SetTextColor(m_stColor.clrTextDataInterpret);
-		pDC->SetBkColor(m_stColor.clrBkDataInterpret);
+		pDC->SetTextColor(m_stColor.clrTextDataInterp);
+		pDC->SetBkColor(m_stColor.clrBkDataInterp);
 		PolyTextOutW(pDC->m_hDC, vecPolyDataInterpretHex.data(), static_cast<UINT>(vecPolyDataInterpretHex.size()));
 
 		//Ascii selected printing.
@@ -2927,34 +2927,34 @@ void CHexCtrl::DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine,
 	}
 }
 
-void CHexCtrl::DrawSectorLines(CDC* pDC, ULONGLONG ullStartLine, int iLines)
+void CHexCtrl::DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines)
 {
 	if (!IsPageVisible())
 		return;
 
 	//Struct for sector lines.
-	struct SECTORLINES
+	struct PAGELINES
 	{
 		POINT ptStart;
 		POINT ptEnd;
 	};
-	std::vector<SECTORLINES> vecSecLines;
+	std::vector<PAGELINES> vecPageLines;
 
-	//Loop for printing Hex chunks and Ascii chars line by line.
+	//Loop for printing Hex chunks and ASCII chars line by line.
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
 	{
-		//Sectors lines vector to print.
+		//Page's lines vector to print.
 		if ((((ullStartLine + iterLines) * m_dwCapacity) % m_dwPageSize == 0) && iterLines > 0)
 		{
 			const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Ascii the same.
-			vecSecLines.emplace_back(SECTORLINES { { m_iFirstVertLine, iPosToPrintY }, { m_iFourthVertLine, iPosToPrintY } });
+			vecPageLines.emplace_back(PAGELINES { { m_iFirstVertLine, iPosToPrintY }, { m_iFourthVertLine, iPosToPrintY } });
 		}
 	}
 
-	//Sector lines printing.
-	if (!vecSecLines.empty())
+	//Page lines printing.
+	if (!vecPageLines.empty())
 	{
-		for (const auto& iter : vecSecLines)
+		for (const auto& iter : vecPageLines)
 		{
 			pDC->MoveTo(iter.ptStart.x, iter.ptStart.y);
 			pDC->LineTo(iter.ptEnd.x, iter.ptEnd.y);
@@ -3505,14 +3505,14 @@ void CHexCtrl::Print()
 		const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
 
 		DrawWindow(pDC, &fontMain, &fontInfo);
-		auto clBkOld = m_stColor.clrBkSelected;
-		auto clTextOld = m_stColor.clrTextSelected;
-		m_stColor.clrBkSelected = m_stColor.clrBk;
-		m_stColor.clrTextSelected = m_stColor.clrTextHex;
+		auto clBkOld = m_stColor.clrBkSelect;
+		auto clTextOld = m_stColor.clrTextSelect;
+		m_stColor.clrBkSelect = m_stColor.clrBk;
+		m_stColor.clrTextSelect = m_stColor.clrTextHex;
 		DrawOffsets(pDC, &fontMain, ullStartLine, iLines);
 		DrawSelection(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
-		m_stColor.clrBkSelected = clBkOld;
-		m_stColor.clrTextSelected = clTextOld;
+		m_stColor.clrBkSelect = clBkOld;
+		m_stColor.clrTextSelect = clTextOld;
 
 		pDC->EndPage();
 	}
@@ -3538,9 +3538,9 @@ void CHexCtrl::Print()
 			DrawCustomColors(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
 			DrawSelection(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
 			DrawSelHighlight(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
-			DrawCursor(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
-			DrawDataInterpret(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
-			DrawSectorLines(pDC, ullStartLine, iLines);
+			DrawCaret(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
+			DrawDataInterp(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
+			DrawPageLines(pDC, ullStartLine, iLines);
 
 			ullStartLine += iLinesInPage;
 			pDC->OffsetViewportOrg(-iIndentX, -iIndentY);
@@ -4399,7 +4399,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 			return;
 
 		auto chByteCurr = GetData<BYTE>(m_ullCaretPos);
-		if (m_fCursorHigh)
+		if (m_fCaretHigh)
 			chByte = (chByte << 4) | (chByteCurr & 0x0F);
 		else
 			chByte = (chByte & 0x0F) | (chByteCurr & 0xF0);
@@ -4469,7 +4469,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 		ullSelSize = 1;
 	}
 
-	m_fCursorHigh = true;
+	m_fCaretHigh = true;
 	m_fLMousePressed = true;
 	m_optRMouseClick.reset();
 	m_ullCaretPos = ullSelStart;
@@ -4712,9 +4712,9 @@ void CHexCtrl::OnPaint()
 	DrawCustomColors(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
 	DrawSelection(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
 	DrawSelHighlight(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
-	DrawCursor(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
-	DrawDataInterpret(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
-	DrawSectorLines(pDC, ullStartLine, iLines);
+	DrawCaret(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
+	DrawDataInterp(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
+	DrawPageLines(pDC, ullStartLine, iLines);
 }
 
 void CHexCtrl::OnRButtonDown(UINT /*nFlags*/, CPoint point)

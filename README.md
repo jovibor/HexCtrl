@@ -105,25 +105,24 @@
 * [Licensing](#licensing)
 
 ## [](#)Introduction
-Being good low level library on top of **Windows API** in general, **MFC** was always lacking a good native controls support. This **HexControl** is an attempt to expand standard **MFC** functionality, because at the moment **MFC** doesn't provide support for such control.
+**HexCtrl** is a very featured Hex viewer/editor control written with **MFC** library.
 
-This doesn't mean that **HexControl** is limited to use only in **MFC** environment. The control is implemented as a pure abstract interface, and can be used as a *child* or *popup* window in any place of your application.  
-It is written and tested with **/std:c++17** in **Visual Studio 2019**, under the **Windows 10**.
+It's implemented as a pure abstract interface and therefore can be used in your app even if you doesn't use **MFC** directly. It's written with **/std:c++17** standart in **Visual Studio 2019**, under the **Windows 10**.
 
 ### The main features of the **HexControl**:
 * View and edit data up to **16EB** (exabyte)
-* Work in three different data modes: **Memory**, **Message**, **Virtual**.
-* Fully featured **Bookmarks manager**
-* **Search and Replace...** for **Hex** values, **ASCII** or **UTF-16** text
-* Change encoding for the text area
+* Work in three different data modes: **Memory**, **Message**, **Virtual**
+* Fully featured **Bookmarks Manager**
+* Fully featured **Search and Replace**
+* Changeable encoding for the text area
 * Many options to **Copy/Paste** to/from clipboard
 * **Undo/Redo**
 * Modify data with **Filling** and many predefined **Operations** options
 * Ability to visually divide data into [pages](#setpagesize)
 * Print whole document/pages range/selection
 * Set individual colors for the data chunks with [`IHexVirtColors`](#ihexvirtcolors) interface
-* Cutomizable look and appearance
-* [Assign keyboard shortcuts](#setconfig) via external config file
+* Cutomizable colors, look and appearance
+* [Assignable keyboard shortcuts](#setconfig) via external config file
 * Written with **/std:c++17** standard conformance
 
 ![](docs/img/hexctrl_operationswnd.jpg)
@@ -712,21 +711,21 @@ This structure describes all control's colors. All these colors have their defau
 ```cpp
 struct HEXCOLORSSTRUCT
 {
-    COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };         //Hex chunks text color.
-    COLORREF clrTextAscii { GetSysColor(COLOR_WINDOWTEXT) };       //Ascii text color.
-    COLORREF clrTextSelected { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected text color.
-    COLORREF clrTextDataInterpret { RGB(250, 250, 250) };          //Data Interpreter text color.
-    COLORREF clrTextCaption { RGB(0, 0, 180) };                    //Caption text color
-    COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };    //Text color of the bottom "Info" rect.
-    COLORREF clrTextCursor { RGB(255, 255, 255) };                 //Cursor text color.
-    COLORREF clrTextTooltip { GetSysColor(COLOR_INFOTEXT) };       //Tooltip text color.
-    COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                  //Background color.
-    COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };       //Background color of the selected Hex/Ascii.
-    COLORREF clrBkDataInterpret { RGB(147, 58, 22) };              //Data Interpreter Bk color.
-    COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };         //Background color of the bottom "Info" rect.
-    COLORREF clrBkCursor { RGB(0, 0, 255) };                       //Cursor background color.
-    COLORREF clrBkCursorSelected { RGB(0, 0, 200) };               //Cursor background color in selection.
-    COLORREF clrBkTooltip { GetSysColor(COLOR_INFOBK) };           //Tooltip background color.
+    COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };       //Hex chunks text color.
+    COLORREF clrTextASCII { GetSysColor(COLOR_WINDOWTEXT) };     //ASCII text color.
+    COLORREF clrTextSelect { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected text color.
+    COLORREF clrTextDataInterp { RGB(250, 250, 250) };           //Data Interpreter text color.
+    COLORREF clrTextCaption { RGB(0, 0, 180) };                  //Caption text color
+    COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };  //Text color of the bottom "Info" rect.
+    COLORREF clrTextCaret { RGB(255, 255, 255) };                //Caret text color.
+    COLORREF clrTextTooltip { GetSysColor(COLOR_INFOTEXT) };     //Tooltip text color.
+    COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                //Background color.
+    COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };     //Background color of the selected Hex/ASCII.
+    COLORREF clrBkDataInterp { RGB(147, 58, 22) };               //Data Interpreter Bk color.
+    COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };       //Background color of the bottom "Info" rect.
+    COLORREF clrBkCaret { RGB(0, 0, 255) };                      //Caret background color.
+    COLORREF clrBkCaretSelect { RGB(0, 0, 200) };                //Caret background color in selection.
+    COLORREF clrBkTooltip { GetSysColor(COLOR_INFOBK) };         //Tooltip background color.
 };
 ```
 
@@ -738,7 +737,7 @@ struct HEXCREATESTRUCT
     EHexCreateMode  enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
     HEXCOLORSSTRUCT stColor { };          //All the control's colors.
     HWND            hwndParent { };       //Parent window pointer.
-    const LOGFONTW* pLogFont { };         //Font to be used, nullptr for default. This font has to be monospaced.
+    const LOGFONTW* pLogFont { };         //Font to be used instead of default, it has to be monospaced.
     RECT            rect { };             //Initial rect. If null, the window is screen centered.
     UINT            uID { };              //Control ID.
     DWORD           dwStyle { };          //Window styles, 0 for default.

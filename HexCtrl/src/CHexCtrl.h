@@ -171,9 +171,9 @@ namespace HEXCTRL::INTERNAL
 		void DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawCursor(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawDataInterpret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawSectorLines(CDC* pDC, ULONGLONG ullStartLine, int iLines);
+		void DrawCaret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawDataInterp(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines);
 		void FillWithZeros(); //Fill selection with zeros.
 		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;      //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCacheSize()const->DWORD;           //Returns Virtual/Message mode cache size.
@@ -327,7 +327,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fCreated { false };            //Is control created or not yet.
 		bool m_fDataSet { false };            //Is data set or not.
 		bool m_fMutable { false };            //Is control works in Edit or Read mode.
-		bool m_fCursorHigh { true };          //Cursor's High or Low bits position (first or last digit in hex chunk).
+		bool m_fCaretHigh { true };           //Caret's High or Low bits position (first or last digit in hex chunk).
 		bool m_fCursorTextArea { false };     //Whether last focus was set at ASCII or Hex chunks area.
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
