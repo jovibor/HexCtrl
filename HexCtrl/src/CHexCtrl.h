@@ -355,7 +355,7 @@ namespace HEXCTRL::INTERNAL
 		if (ullOffset + sizeof(T) > m_ullDataSize)
 			return;
 
-		auto pData = GetData({ ullOffset, sizeof(T) });
+		const auto pData = GetData({ ullOffset, sizeof(T) });
 		std::copy_n(&tData, 1, reinterpret_cast<T*>(pData));
 		SetDataVirtual(pData, { ullOffset, sizeof(T) });
 	}
@@ -370,8 +370,11 @@ namespace HEXCTRL::INTERNAL
 	template<typename T>
 	inline void CHexCtrl::OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeData)
 	{
+		if (pData == nullptr)
+			return;
+
 		auto nChunks = ullSizeData / sizeof(T);
-		for (auto pDataEnd = pData + nChunks; pData < pDataEnd; ++pData)
+		for (const auto pDataEnd = pData + nChunks; pData < pDataEnd; ++pData)
 		{
 			switch (eMode)
 			{

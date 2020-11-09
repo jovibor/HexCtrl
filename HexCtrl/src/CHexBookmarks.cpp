@@ -129,10 +129,10 @@ void CHexBookmarks::GoBookmark(ULONGLONG ullIndex)
 	if (!m_pHexCtrl)
 		return;
 
-	if (auto pBkm = GetByIndex(ullIndex); pBkm != nullptr)
+	if (const auto* const pBkm = GetByIndex(ullIndex); pBkm != nullptr)
 	{
 		m_llIndexCurr = static_cast<LONGLONG>(ullIndex);
-		auto ullOffset = pBkm->vecSpan.front().ullOffset;
+		const auto ullOffset = pBkm->vecSpan.front().ullOffset;
 		m_pHexCtrl->SetCaretPos(ullOffset);
 		if (!m_pHexCtrl->IsOffsetVisible(ullOffset))
 			m_pHexCtrl->GoToOffset(ullOffset);
@@ -147,9 +147,9 @@ void CHexBookmarks::GoNext()
 	if (++m_llIndexCurr >= static_cast<LONGLONG>(GetCount()))
 		m_llIndexCurr = 0;
 
-	if (auto pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr)
+	if (const auto* const pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr)
 	{
-		auto ullOffset = pBkm->vecSpan.front().ullOffset;
+		const auto ullOffset = pBkm->vecSpan.front().ullOffset;
 		m_pHexCtrl->SetCaretPos(ullOffset);
 		if (!m_pHexCtrl->IsOffsetVisible(ullOffset))
 			m_pHexCtrl->GoToOffset(ullOffset);
@@ -164,9 +164,9 @@ void CHexBookmarks::GoPrev()
 	if (--m_llIndexCurr; m_llIndexCurr < 0 || m_llIndexCurr >= static_cast<LONGLONG>(GetCount()))
 		m_llIndexCurr = static_cast<LONGLONG>(GetCount()) - 1;
 
-	if (auto pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr)
+	if (const auto* const pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr)
 	{
-		auto ullOffset = pBkm->vecSpan.front().ullOffset;
+		const auto ullOffset = pBkm->vecSpan.front().ullOffset;
 		m_pHexCtrl->SetCaretPos(ullOffset);
 		if (!m_pHexCtrl->IsOffsetVisible(ullOffset))
 			m_pHexCtrl->GoToOffset(ullOffset);
@@ -223,7 +223,7 @@ void CHexBookmarks::Remove(ULONGLONG ullOffset)
 	{
 		if (m_pVirtual)
 		{
-			if (auto pBkm = m_pVirtual->HitTest(ullOffset); pBkm != nullptr)
+			if (const auto* const pBkm = m_pVirtual->HitTest(ullOffset); pBkm != nullptr)
 				m_pVirtual->RemoveByID(pBkm->ullID);
 		}
 	}
@@ -293,8 +293,8 @@ void CHexBookmarks::SortData(int iColumn, bool fAscending)
 			{
 				if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
 				{
-					auto ullOffset1 = st1.vecSpan.front().ullOffset;
-					auto ullOffset2 = st2.vecSpan.front().ullOffset;
+					const auto ullOffset1 = st1.vecSpan.front().ullOffset;
+					const auto ullOffset2 = st2.vecSpan.front().ullOffset;
 					iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
 				}
 			}

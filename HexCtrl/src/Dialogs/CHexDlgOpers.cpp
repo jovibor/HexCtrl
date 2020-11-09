@@ -50,9 +50,9 @@ void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
 BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	//lParam holds HWND.
-	WORD wMessage = HIWORD(wParam);
+	const auto wMessage = HIWORD(wParam);
 	bool fHere { true };
-	if (auto wID = LOWORD(wParam); wID >= IDC_HEXCTRL_OPERS_EDIT_OR
+	if (const auto wID = LOWORD(wParam); wID >= IDC_HEXCTRL_OPERS_EDIT_OR
 		&& wID <= IDC_HEXCTRL_OPERS_EDIT_DIV
 		&& wMessage == EN_SETFOCUS)
 	{
@@ -104,9 +104,9 @@ BOOL CHexDlgOpers::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 
 void CHexDlgOpers::OnOK()
 {
-	auto pHex = GetHexCtrl();
-	auto iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_DIV);
-	auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
+	const auto pHex = GetHexCtrl();
+	const auto iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_DIV);
+	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
 
 	SMODIFY hms;
 	hms.enModifyMode = EModifyMode::MODIFY_OPERATION;

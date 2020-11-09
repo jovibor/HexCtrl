@@ -33,13 +33,13 @@ BOOL CHexDlgFillData::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16, IDC_HEXCTRL_FILLDATA_RADIO_HEX);
-	if (auto pCombo = static_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT)); pCombo != nullptr)
+	if (const auto pCombo = static_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT)); pCombo != nullptr)
 		pCombo->LimitText(MAX_PATH); //Max characters count in combo's edit box.
 
 	return TRUE;
 }
 
-CHexCtrl* CHexDlgFillData::GetHexCtrl() const
+CHexCtrl* CHexDlgFillData::GetHexCtrl()const
 {
 	return m_pHexCtrl;
 }
@@ -51,8 +51,8 @@ void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
 
 void CHexDlgFillData::OnOK()
 {
-	auto pHex = GetHexCtrl();
-	int iRadioType = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16);
+	const auto pHex = GetHexCtrl();
+	const auto iRadioType = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16);
 
 	SMODIFY hms;
 	hms.enModifyMode = EModifyMode::MODIFY_REPEAT;
@@ -60,7 +60,7 @@ void CHexDlgFillData::OnOK()
 	if (hms.vecSpan.empty())
 		return;
 
-	auto pCombo = static_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT));
+	const auto pCombo = static_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT));
 	if (!pCombo)
 		return;
 

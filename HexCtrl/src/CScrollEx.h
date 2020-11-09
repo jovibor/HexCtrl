@@ -39,7 +39,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		[[nodiscard]] ULONGLONG GetScrollLineSize()const;
 		[[nodiscard]] ULONGLONG GetScrollPageSize()const;
 		void SetScrollPageSize(ULONGLONG ullSize);
-		bool IsThumbReleased();
+		bool IsThumbReleased()const;
 
 		/************************************************************************
 		* CALLBACK METHODS:														*
@@ -76,9 +76,9 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		[[nodiscard]] CRect GetParentRect(bool fClient = true)const;
 		[[nodiscard]] int GetTopDelta()const;	//Difference between parent window's Window and Client area. Very important in hit testing.
 		[[nodiscard]] int GetLeftDelta()const;
-		[[nodiscard]] bool IsVert()const;                                         //Is vertical or horizontal scrollbar.
-		[[nodiscard]] bool IsThumbDragging()const;                                //Is the thumb currently dragged by mouse.
-		[[nodiscard]] bool IsSiblingVisible()const;                               //Is sibling scrollbar currently visible or not.
+		[[nodiscard]] bool IsVert()const;                           //Is vertical or horizontal scrollbar.
+		[[nodiscard]] bool IsThumbDragging()const;                  //Is the thumb currently dragged by mouse.
+		[[nodiscard]] bool IsSiblingVisible()const;                 //Is sibling scrollbar currently visible or not.
 		void SendParentScrollMsg()const;                            //Sends the WM_(V/H)SCROLL to the parent window.
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		afx_msg void OnDestroy();

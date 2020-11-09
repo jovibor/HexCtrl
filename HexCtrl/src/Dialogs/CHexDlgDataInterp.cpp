@@ -253,7 +253,7 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 	if (!m_fVisible)
 		return;
 
-	auto ullDataSize = m_pHexCtrl->GetDataSize();
+	const auto ullDataSize = m_pHexCtrl->GetDataSize();
 	if (ullOffset >= ullDataSize) //Out of data bounds.
 		return;
 
@@ -373,7 +373,7 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 	if (m_fBigEndian)
 	{
 		//TODO: Test this thoroughly
-		QWORD tmp = dqword.Value.qwLow;
+		const auto tmp = dqword.Value.qwLow;
 		dqword.Value.qwLow = _byteswap_uint64(dqword.Value.qwHigh);
 		dqword.Value.qwHigh = _byteswap_uint64(tmp);
 	}
@@ -405,7 +405,7 @@ BOOL CHexDlgDataInterp::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	if (wParam == IDC_HEXCTRL_DATAINTERP_PROPDATA)
 	{
-		auto pHdr = reinterpret_cast<NMHDR*>(lParam);
+		const auto* const pHdr = reinterpret_cast<NMHDR*>(lParam);
 		if (pHdr->code != MSG_PROPGRIDCTRL_SELCHANGED)
 			return FALSE;
 
@@ -601,7 +601,7 @@ bool CHexDlgDataInterp::StringToSystemTime(std::wstring_view wstr, PSYSTEMTIME p
 		}
 
 		//Find time seperator (if present)
-		if (auto nPos = wstrDateTimeCooked.find(L' '); nPos != std::wstring::npos)
+		if (const auto nPos = wstrDateTimeCooked.find(L' '); nPos != std::wstring::npos)
 			wstrDateTimeCooked = wstrDateTimeCooked.substr(nPos + 1);
 	}
 
@@ -636,14 +636,8 @@ void CHexDlgDataInterp::ShowNAME_BINARY(BYTE byte)const
 
 void CHexDlgDataInterp::ShowNAME_CHAR(BYTE byte)const
 {
-	std::wstring_view wstrFormat { };
-	if (m_fShowAsHex)
-		wstrFormat = L"0x%hhX";
-	else
-		wstrFormat = L"%hhi";
-
 	WCHAR buff[32];
-	swprintf_s(buff, std::size(buff), wstrFormat.data(), static_cast<char>(byte));
+	swprintf_s(buff, std::size(buff), m_fShowAsHex ? L"0x%hhX" : L"%hhi", static_cast<char>(byte));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_CHAR; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -651,14 +645,8 @@ void CHexDlgDataInterp::ShowNAME_CHAR(BYTE byte)const
 
 void CHexDlgDataInterp::ShowNAME_UCHAR(BYTE byte)const
 {
-	std::wstring_view wstrFormat { };
-	if (m_fShowAsHex)
-		wstrFormat = L"0x%hhX";
-	else
-		wstrFormat = L"%hhu";
-
 	WCHAR buff[32];
-	swprintf_s(buff, std::size(buff), wstrFormat.data(), byte);
+	swprintf_s(buff, std::size(buff), m_fShowAsHex ? L"0x%hhX" : L"%hhu", byte);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_UCHAR; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -666,14 +654,8 @@ void CHexDlgDataInterp::ShowNAME_UCHAR(BYTE byte)const
 
 void CHexDlgDataInterp::ShowNAME_SHORT(WORD word)const
 {
-	std::wstring_view wstrFormat { };
-	if (m_fShowAsHex)
-		wstrFormat = L"0x%hX";
-	else
-		wstrFormat = L"%hi";
-
 	WCHAR buff[32];
-	swprintf_s(buff, std::size(buff), wstrFormat.data(), static_cast<short>(word));
+	swprintf_s(buff, std::size(buff), m_fShowAsHex ? L"0x%hX" : L"%hi", static_cast<short>(word));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_SHORT; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -681,14 +663,8 @@ void CHexDlgDataInterp::ShowNAME_SHORT(WORD word)const
 
 void CHexDlgDataInterp::ShowNAME_USHORT(WORD word)const
 {
-	std::wstring_view wstrFormat { };
-	if (m_fShowAsHex)
-		wstrFormat = L"0x%hX";
-	else
-		wstrFormat = L"%hu";
-
 	WCHAR buff[32];
-	swprintf_s(buff, std::size(buff), wstrFormat.data(), word);
+	swprintf_s(buff, std::size(buff), m_fShowAsHex ? L"0x%hX" : L"%hu", word);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_USHORT; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -696,14 +672,8 @@ void CHexDlgDataInterp::ShowNAME_USHORT(WORD word)const
 
 void CHexDlgDataInterp::ShowNAME_LONG(DWORD dword)const
 {
-	std::wstring_view wstrFormat { };
-	if (m_fShowAsHex)
-		wstrFormat = L"0x%X";
-	else
-		wstrFormat = L"%i";
-
 	WCHAR buff[32];
-	swprintf_s(buff, std::size(buff), wstrFormat.data(), static_cast<int>(dword));
+	swprintf_s(buff, std::size(buff), m_fShowAsHex ? L"0x%X" : L"%i", static_cast<int>(dword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_LONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -711,14 +681,8 @@ void CHexDlgDataInterp::ShowNAME_LONG(DWORD dword)const
 
 void CHexDlgDataInterp::ShowNAME_ULONG(DWORD dword)const
 {
-	std::wstring_view wstrFormat { };
-	if (m_fShowAsHex)
-		wstrFormat = L"0x%X";
-	else
-		wstrFormat = L"%u";
-
 	WCHAR buff[32];
-	swprintf_s(buff, std::size(buff), wstrFormat.data(), dword);
+	swprintf_s(buff, std::size(buff), m_fShowAsHex ? L"0x%X" : L"%u", dword);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_ULONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -738,7 +702,7 @@ void CHexDlgDataInterp::ShowNAME_TIME32(DWORD dword)const
 	std::wstring wstrTime = L"N/A";
 
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This is signed and wraps on 19 January 2038 
-	auto lDiffSeconds = static_cast<LONG>(dword);
+	const auto lDiffSeconds = static_cast<LONG>(dword);
 
 	//Unix times are signed and value before 1st January 1970 is not considered valid
 	//This is apparently because early complilers didn't support unsigned types. _mktime32() has the same limit
@@ -813,14 +777,8 @@ void CHexDlgDataInterp::ShowNAME_MSDTTMTIME(DWORD dword)const
 
 void CHexDlgDataInterp::ShowNAME_LONGLONG(QWORD qword)const
 {
-	std::wstring_view wstrFormat { };
-	if (m_fShowAsHex)
-		wstrFormat = L"0x%llX";
-	else
-		wstrFormat = L"%lli";
-
 	WCHAR buff[32];
-	swprintf_s(buff, std::size(buff), wstrFormat.data(), static_cast<long long>(qword));
+	swprintf_s(buff, std::size(buff), m_fShowAsHex ? L"0x%llX" : L"%lli", static_cast<long long>(qword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_LONGLONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -828,14 +786,8 @@ void CHexDlgDataInterp::ShowNAME_LONGLONG(QWORD qword)const
 
 void CHexDlgDataInterp::ShowNAME_ULONGLONG(QWORD qword)const
 {
-	std::wstring_view wstrFormat { };
-	if (m_fShowAsHex)
-		wstrFormat = L"0x%llX";
-	else
-		wstrFormat = L"%llu";
-
 	WCHAR buff[32];
-	swprintf_s(buff, std::size(buff), wstrFormat.data(), qword);
+	swprintf_s(buff, std::size(buff), m_fShowAsHex ? L"0x%llX" : L"%llu", qword);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_ULONGLONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -855,7 +807,7 @@ void CHexDlgDataInterp::ShowNAME_TIME64(QWORD qword)const
 	std::wstring wstrTime = L"N/A";
 
 	//The number of seconds since midnight January 1st 1970 UTC (64-bit). This is signed
-	auto llDiffSeconds = static_cast<LONGLONG>(qword);
+	const auto llDiffSeconds = static_cast<LONGLONG>(qword);
 
 	//Unix times are signed and value before 1st January 1970 is not considered valid
 	//This is apparently because early complilers didn't support unsigned types. _mktime64() has the same limit
@@ -905,7 +857,7 @@ void CHexDlgDataInterp::ShowNAME_OLEDATETIME(QWORD qword)const
 
 	DATE date;
 	std::memcpy(&date, &qword, sizeof(date));
-	COleDateTime dt(date);
+	const COleDateTime dt(date);
 
 	SYSTEMTIME SysTime { };
 	if (dt.GetAsSystemTime(SysTime))
@@ -965,7 +917,7 @@ void CHexDlgDataInterp::ShowNAME_GUIDTIME(const UDQWORD& dqword)const
 	//The time structure within the NAME_GUID.
 	//First, verify GUID is actually version 1 style
 	std::wstring wstrTime = L"N/A";
-	unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
+	const unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
 
 	if (unGuidVersion == 1)
 	{
@@ -1216,7 +1168,7 @@ bool CHexDlgDataInterp::SetDataNAME_OLEDATETIME(std::wstring_view wstr)const
 	if (!StringToSystemTime(wstr, &stTime, true, true))
 		return false;
 
-	COleDateTime dt(stTime);
+	const COleDateTime dt(stTime);
 	if (dt.GetStatus() != COleDateTime::valid)
 		return false;
 
@@ -1329,7 +1281,7 @@ bool CHexDlgDataInterp::SetDataNAME_GUIDTIME(std::wstring_view wstr)const
 	//a valid NAME_GUID range, so checking first.
 
 	auto dqword = m_pHexCtrl->GetData<UDQWORD>(m_ullOffset);
-	unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
+	const unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
 	if (unGuidVersion != 1)
 		return false;
 

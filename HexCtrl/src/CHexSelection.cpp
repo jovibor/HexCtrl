@@ -149,11 +149,11 @@ void CHexSelection::SetSelectionEnd(ULONGLONG ullOffset, bool fRedraw)
 	if (m_ullMarkSelStart == 0xFFFFFFFFFFFFFFFFULL || m_ullMarkSelEnd < m_ullMarkSelStart)
 		return;
 
-	ULONGLONG ullSize = m_ullMarkSelEnd - m_ullMarkSelStart + 1;
+	const ULONGLONG ullSize = m_ullMarkSelEnd - m_ullMarkSelStart + 1;
 	m_vecSelection.clear();
 	m_vecSelection.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
 
-	if (auto pHex = GetHexCtrl(); fRedraw && pHex)
+	if (const auto pHex = GetHexCtrl(); fRedraw && pHex)
 		pHex->Redraw();
 }
 
@@ -163,10 +163,10 @@ void CHexSelection::SetSelectionStart(ULONGLONG ullOffset, bool fRedraw)
 	if (m_ullMarkSelEnd == 0xFFFFFFFFFFFFFFFFULL || m_ullMarkSelStart > m_ullMarkSelEnd)
 		return;
 
-	ULONGLONG ullSize = m_ullMarkSelEnd - m_ullMarkSelStart + 1;
+	const ULONGLONG ullSize = m_ullMarkSelEnd - m_ullMarkSelStart + 1;
 	m_vecSelection.clear();
 	m_vecSelection.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
 
-	if (auto pHex = GetHexCtrl(); fRedraw && pHex)
+	if (const auto pHex = GetHexCtrl(); fRedraw && pHex)
 		pHex->Redraw();
 }

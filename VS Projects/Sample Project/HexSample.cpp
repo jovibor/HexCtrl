@@ -44,7 +44,7 @@ BOOL CHexSampleApp::InitInstance()
 
 	auto dlg = new CHexSampleDlg;
 	m_pMainWnd = dlg;
-	INT_PTR nResponse = dlg->DoModal();
+	const auto nResponse = dlg->DoModal();
 	if (nResponse == -1)
 	{
 		TRACE(traceAppMsg, 0, "Warning: dialog creation failed, so application is terminating unexpectedly.\n");

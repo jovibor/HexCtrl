@@ -202,12 +202,12 @@ void CListEx::CreateDialogCtrl(UINT uCtrlID, CWnd* pParent)
 
 int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 {
-	auto pListCtrl = reinterpret_cast<IListEx*>(lParamSort);
-	auto iSortColumn = pListCtrl->GetSortColumn();
-	auto enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
+	const auto* const pListCtrl = reinterpret_cast<IListEx*>(lParamSort);
+	const auto iSortColumn = pListCtrl->GetSortColumn();
+	const auto enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
 
-	std::wstring_view wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn).GetString();
-	std::wstring_view wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn).GetString();
+	const std::wstring_view wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn).GetString();
+	const std::wstring_view wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn).GetString();
 
 	int iCompare { };
 	switch (enSortMode)
@@ -279,7 +279,7 @@ BOOL CListEx::DeleteItem(int iItem)
 	if (!IsCreated())
 		return FALSE;
 
-	UINT ID = MapIndexToID(iItem);
+	const auto ID = MapIndexToID(iItem);
 
 	if (auto iter = m_umapCellTt.find(ID); iter != m_umapCellTt.end())
 		m_umapCellTt.erase(iter);
@@ -306,7 +306,7 @@ ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)const
 	if (!IsCreated())
 		return 0;
 
-	UINT ID = MapIndexToID(iItem);
+	const auto ID = MapIndexToID(iItem);
 	auto it = m_umapCellData.find(ID);
 
 	if (it != m_umapCellData.end())
@@ -380,7 +380,7 @@ UINT CListEx::MapIndexToID(UINT nItem)const
 	//The unique ID is set in NMITEMACTIVATE::lParam by client.
 	if (m_fVirtual)
 	{
-		UINT uCtrlId = static_cast<UINT>(GetDlgCtrlID());
+		const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
 		NMITEMACTIVATE nmii { { m_hWnd, uCtrlId, LVM_MAPINDEXTOID } };
 		nmii.iItem = static_cast<int>(nItem);
 		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&nmii));
@@ -685,7 +685,7 @@ bool CListEx::HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& c
 
 	//If parent responds for LISTEX_MSG_CELLCOLOR message, we use lParam
 	//as a pointer to LISTEXCELLCOLOR. Otherwise we doing inner lookup.
-	auto iCtrlID = GetDlgCtrlID();
+	const auto iCtrlID = GetDlgCtrlID();
 	NMITEMACTIVATE nmii { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_CELLCOLOR } };
 	nmii.iItem = iItem;
 	nmii.iSubItem = iSubItem;
@@ -701,7 +701,7 @@ bool CListEx::HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& c
 
 	if (!fHasColor)
 	{
-		UINT ID = MapIndexToID(static_cast<UINT>(iItem));
+		const auto ID = MapIndexToID(static_cast<UINT>(iItem));
 		auto it = m_umapCellColor.find(ID);
 
 		if (it != m_umapCellColor.end())
@@ -753,7 +753,7 @@ bool CListEx::HasTooltip(int iItem, int iSubItem, std::wstring** ppwstrText, std
 
 	//Can return true/false indicating if subitem has tooltip,
 	//or can return pointers to tooltip text as well, if poiters are not nullptr.
-	UINT ID = MapIndexToID(iItem);
+	const auto ID = MapIndexToID(iItem);
 	auto it = m_umapCellTt.find(ID);
 
 	if (it != m_umapCellTt.end())
@@ -792,7 +792,7 @@ bool CListEx::HasMenu(int iItem, int iSubItem, CMenu** ppMenu)
 	}
 	else
 	{
-		UINT ID = MapIndexToID(iItem);
+		const auto ID = MapIndexToID(iItem);
 		auto it = m_umapCellMenu.find(ID);
 
 		if (it != m_umapCellMenu.end())
@@ -822,7 +822,7 @@ std::vector<CListEx::SITEMTEXT> CListEx::ParseItemText(int iItem, int iSubitem)
 {
 	std::vector<SITEMTEXT> vecData { };
 	auto CStringText = GetItemText(iItem, iSubitem);
-	std::wstring_view wstrText = CStringText.GetString();
+	const std::wstring_view wstrText = CStringText.GetString();
 	CRect rcTextOrig; //Original rect of the subitem's text.
 	GetSubItemRect(iItem, iSubitem, LVIR_LABEL, rcTextOrig);
 	if (iSubitem != 0) //Not needed for item itself (not subitem).
@@ -1185,7 +1185,7 @@ void CListEx::OnLButtonUp(UINT nFlags, CPoint pt)
 		{
 			m_rcLinkCurr.SetRectEmpty();
 			fLinkUp = true;
-			UINT uCtrlId = static_cast<UINT>(GetDlgCtrlID());
+			const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
 			NMITEMACTIVATE nmii { { m_hWnd, uCtrlId, LISTEX_MSG_LINKCLICK } };
 			nmii.iItem = hi.iItem;
 			nmii.iSubItem = hi.iSubItem;
@@ -1353,7 +1353,7 @@ BOOL CListEx::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 	//only AFTER the parent window handles LVN_COLUMNCLICK.
 	//So briefly, ON_NOTIFY_REFLECT(LVN_COLUMNCLICK, &CListEx::OnLvnColumnClick) fires up
 	//only AFTER LVN_COLUMNCLICK sent to the parent.
-	auto pNMLV = reinterpret_cast<LPNMHEADERW>(lParam);
+	const auto* const pNMLV = reinterpret_cast<LPNMHEADERW>(lParam);
 	if (m_fSortable && (pNMLV->hdr.code == HDN_ITEMCLICKW || pNMLV->hdr.code == HDN_ITEMCLICKA))
 	{
 		m_fSortAscending = pNMLV->iItem == m_iSortColumn ? !m_fSortAscending : true;

@@ -42,10 +42,10 @@ BOOL CHexDlgGoTo::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RADIO_OFFSET)); pRadio)
+	if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RADIO_OFFSET)); pRadio)
 		pRadio->SetCheck(BST_CHECKED);
 
-	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RADIO_ABS)); pRadio)
+	if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RADIO_ABS)); pRadio)
 		pRadio->SetCheck(BST_CHECKED);
 
 	return TRUE;
@@ -53,7 +53,7 @@ BOOL CHexDlgGoTo::OnInitDialog()
 
 void CHexDlgGoTo::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	auto pHexCtrl = GetHexCtrl();
+	const auto* const pHexCtrl = GetHexCtrl();
 	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
 		return;
 
@@ -67,7 +67,7 @@ void CHexDlgGoTo::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 		//In case of no page size, disable "Page" radio.
 		if (pHexCtrl->GetPagesCount() == 0)
 		{
-			if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RADIO_PAGE)); pRadio)
+			if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RADIO_PAGE)); pRadio)
 				pRadio->EnableWindow(FALSE);
 			swprintf_s(buff, std::size(buff), L"Not available");
 		}
@@ -107,7 +107,7 @@ void CHexDlgGoTo::OnOK()
 		return;
 	}
 
-	auto pHexCtrl { GetHexCtrl() };
+	const auto* const pHexCtrl { GetHexCtrl() };
 	auto ullRangeFrom { 0ULL };
 	auto ullRangeTo { 0ULL };
 	auto ullMul { 0ULL };
@@ -174,7 +174,7 @@ void CHexDlgGoTo::OnOK()
 
 void CHexDlgGoTo::OnClickRadioAbs()
 {
-	auto pHexCtrl = GetHexCtrl();
+	const auto* const pHexCtrl = GetHexCtrl();
 	m_ullOffsetsFrom = 0ULL;
 	m_ullOffsetsTo = pHexCtrl->GetDataSize() - 1;
 	m_ullPagesFrom = 0;
@@ -185,7 +185,7 @@ void CHexDlgGoTo::OnClickRadioAbs()
 
 void CHexDlgGoTo::OnClickRadioFwdCurr()
 {
-	auto pHexCtrl = GetHexCtrl();
+	const auto* const pHexCtrl = GetHexCtrl();
 	m_ullOffsetsFrom = (pHexCtrl->GetDataSize() - pHexCtrl->GetCaretPos() - 1) == 0 ? 0ULL : 1ULL;
 	m_ullOffsetsTo = pHexCtrl->GetDataSize() - pHexCtrl->GetCaretPos() - 1;
 
@@ -202,7 +202,7 @@ void CHexDlgGoTo::OnClickRadioFwdCurr()
 
 void CHexDlgGoTo::OnClickRadioBackCurr()
 {
-	auto pHexCtrl = GetHexCtrl();
+	const auto* const pHexCtrl = GetHexCtrl();
 	m_ullOffsetsFrom = pHexCtrl->GetCaretPos() > 0 ? 1ULL : 0ULL;
 	m_ullOffsetsTo = pHexCtrl->GetCaretPos();
 	m_ullPagesFrom = pHexCtrl->GetPagesCount() > 0 ? (pHexCtrl->GetPagePos() > 0 ? 1ULL : 0ULL) : 0ULL;
@@ -213,7 +213,7 @@ void CHexDlgGoTo::OnClickRadioBackCurr()
 
 void CHexDlgGoTo::OnClickRadioBackEnd()
 {
-	auto pHexCtrl = GetHexCtrl();
+	const auto* const pHexCtrl = GetHexCtrl();
 	m_ullOffsetsFrom = pHexCtrl->GetDataSize() > 1 ? 1ULL : 0ULL;
 	m_ullOffsetsTo = pHexCtrl->GetDataSize() - 1;
 	m_ullPagesFrom = pHexCtrl->GetPagesCount() > 1 ? 1ULL : 0ULL;
@@ -232,7 +232,7 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 	if (!IsRepeatAvail())
 		return;
 
-	auto pHexCtrl = GetHexCtrl();
+	const auto* const pHexCtrl = GetHexCtrl();
 	if (fFwd) //Repeat the last command (forward or backward) as is.
 	{
 		switch (m_iRepeat) {
@@ -274,7 +274,7 @@ CHexCtrl* CHexDlgGoTo::GetHexCtrl()const
 
 void CHexDlgGoTo::HexCtrlGoOffset(ULONGLONG ullOffset)
 {
-	auto pHexCtrl = GetHexCtrl();
+	const auto pHexCtrl = GetHexCtrl();
 
 	pHexCtrl->SetCaretPos(ullOffset);
 	if (!pHexCtrl->IsOffsetVisible(ullOffset))

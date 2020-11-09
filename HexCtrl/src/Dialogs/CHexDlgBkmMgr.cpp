@@ -59,7 +59,7 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	m_stMenuList.AppendMenuW(MF_SEPARATOR);
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_CLEARALL), L"Clear All");
 
-	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RADIO_HEX)); pRadio)
+	if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RADIO_HEX)); pRadio)
 		pRadio->SetCheck(BST_CHECKED);
 
 	return TRUE;
@@ -104,8 +104,8 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		if (m_pListMain->GetSelectedCount() > 1)
 			break;
 
-		auto nItem = m_pListMain->GetNextItem(-1, LVNI_SELECTED);
-		if (auto pBkm = m_pBookmarks->GetByIndex(nItem); pBkm != nullptr)
+		const auto nItem = m_pListMain->GetNextItem(-1, LVNI_SELECTED);
+		if (const auto* const pBkm = m_pBookmarks->GetByIndex(nItem); pBkm != nullptr)
 		{
 			CHexDlgBkmProps dlgBkmEdit;
 			auto stBkm = *pBkm; //Pass a copy to dlgBkmEdit to avoid changing the original, from list.
@@ -124,7 +124,7 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i)
 		{
 			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
-			if (auto pBkm = m_pBookmarks->GetByIndex(nItem); pBkm != nullptr)
+			if (const auto pBkm = m_pBookmarks->GetByIndex(nItem); pBkm != nullptr)
 				vecBkm.emplace_back(pBkm);
 		}
 		for (const auto& iter : vecBkm)
@@ -161,7 +161,7 @@ void CHexDlgBkmMgr::OnClickRadioHex()
 
 BOOL CHexDlgBkmMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
-	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_BKMMGR_LIST)
+	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_BKMMGR_LIST)
 	{
 		switch (pNMI->hdr.code)
 		{
@@ -217,27 +217,27 @@ void CHexDlgBkmMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	//Go selected bookmark only with keyboard arrows and lmouse clicks.
 	//Does not trigger (LVN_ITEMCHANGED event) when updating bookmark: !(pNMI->uNewState & LVIS_SELECTED)
-	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED))
 		m_pBookmarks->GoBookmark(static_cast<ULONGLONG>(pNMI->iItem));
 }
 
 void CHexDlgBkmMgr::OnListItemLClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iItem != -1 && pNMI->iSubItem != -1)
+	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iItem != -1 && pNMI->iSubItem != -1)
 		m_pBookmarks->GoBookmark(static_cast<ULONGLONG>(pNMI->iItem));
 }
 
 void CHexDlgBkmMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iItem != -1 && pNMI->iSubItem != -1)
+	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iItem != -1 && pNMI->iSubItem != -1)
 		SendMessageW(WM_COMMAND, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_EDIT));
 }
 
 void CHexDlgBkmMgr::OnListRClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	bool fEnabled { false };
-	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iItem != -1 && pNMI->iSubItem != -1)
+	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iItem != -1 && pNMI->iSubItem != -1)
 		fEnabled = true;
 
 	//Edit menu enabled only when one item selected.
@@ -256,7 +256,7 @@ void CHexDlgBkmMgr::OnListCellColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iSubItem == 4)
 	{
-		if (auto pBkm = m_pBookmarks->GetByIndex(static_cast<size_t>(pNMI->iItem)); pBkm != nullptr)
+		if (const auto* const pBkm = m_pBookmarks->GetByIndex(static_cast<size_t>(pNMI->iItem)); pBkm != nullptr)
 		{
 			static LISTEXCELLCOLOR stCellClr;
 			stCellClr.clrBk = pBkm->clrBk;

@@ -99,7 +99,7 @@ void CHexDlgEncoding::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 
 BOOL CHexDlgEncoding::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
-	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_ENCODING_LIST)
+	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_ENCODING_LIST)
 	{
 		switch (pNMI->hdr.code)
 		{
@@ -138,11 +138,11 @@ void CHexDlgEncoding::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 void CHexDlgEncoding::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED))
 	{
-		auto sIndex = static_cast<size_t>(pNMI->iItem);
-		if (auto uMaxChars = m_vecCodePage[sIndex].uMaxChars; uMaxChars == 1)
+		const auto sIndex = static_cast<size_t>(pNMI->iItem);
+		if (const auto uMaxChars = m_vecCodePage[sIndex].uMaxChars; uMaxChars == 1)
 			m_pHexCtrl->SetEncoding(m_vecCodePage[sIndex].iCPID);
 	}
 }
@@ -158,7 +158,7 @@ void CHexDlgEncoding::OnListCellColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 void CHexDlgEncoding::OnListLinkClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	ShellExecuteW(nullptr, L"open", reinterpret_cast<LPWSTR>(pNMI->lParam), nullptr, nullptr, SW_SHOWNORMAL);
 }
 

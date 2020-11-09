@@ -100,7 +100,7 @@ BOOL CHexDlgSearch::OnInitDialog()
 
 	SetEditStep(m_ullStep);
 
-	auto hwndTip = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
+	const auto hwndTip = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr);
 	if (hwndTip == nullptr)
 		return FALSE;
@@ -134,10 +134,10 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 		m_stComboSearch.SetFocus();
 
-		auto pHexCtrl = GetHexCtrl();
+		const auto* const pHexCtrl = GetHexCtrl();
 		if (pHexCtrl->IsCreated() && pHexCtrl->IsDataSet())
 		{
-			bool fMutable = pHexCtrl->IsMutable();
+			const auto fMutable = pHexCtrl->IsMutable();
 			m_stComboReplace.EnableWindow(fMutable);
 			GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE)->EnableWindow(fMutable);
 			GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL)->EnableWindow(fMutable);
@@ -242,7 +242,7 @@ void CHexDlgSearch::OnCheckSel()
 
 void CHexDlgSearch::OnComboModeSelChange()
 {
-	if (auto eMode = GetSearchMode(); eMode != m_eModeCurr)
+	if (const auto eMode = GetSearchMode(); eMode != m_eModeCurr)
 	{
 		ResetSearch();
 		m_eModeCurr = eMode;
@@ -251,8 +251,8 @@ void CHexDlgSearch::OnComboModeSelChange()
 
 void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
-	const auto pItem = &pDispInfo->item;
+	const auto* const pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
+	const auto* const pItem = &pDispInfo->item;
 
 	if (pItem->mask & LVIF_TEXT)
 	{
@@ -273,7 +273,7 @@ void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED))
 	{
 		SetEditStartAt(m_vecSearchRes[static_cast<size_t>(pNMI->iItem)]);
@@ -299,7 +299,7 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 void CHexDlgSearch::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 {
-	bool fEnabled { m_pListMain->GetItemCount() > 0 };
+	const auto fEnabled { m_pListMain->GetItemCount() > 0 };
 	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_ADDBKM), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_SELECTALL), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_CLEARALL), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
@@ -348,7 +348,7 @@ void CHexDlgSearch::ClearList()
 
 void CHexDlgSearch::HexCtrlHighlight(const std::vector<HEXSPANSTRUCT>& vecSel)
 {
-	auto pHexCtrl = GetHexCtrl();
+	const auto pHexCtrl = GetHexCtrl();
 
 	if (m_fSelection) //Highlight selection.
 		pHexCtrl->SetSelHighlight(vecSel);
@@ -369,7 +369,7 @@ void CHexDlgSearch::Search(bool fForward)
 
 bool CHexDlgSearch::IsSearchAvail()
 {
-	auto pHexCtrl = GetHexCtrl();
+	const auto* const pHexCtrl = GetHexCtrl();
 	return !(m_wstrTextSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffsetCurr >= pHexCtrl->GetDataSize());
 }
 
@@ -391,7 +391,7 @@ BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
 
 void CHexDlgSearch::PrepareSearch()
 {
-	auto pHexCtrl = GetHexCtrl();
+	const auto* const pHexCtrl = GetHexCtrl();
 	const auto ullDataSize = pHexCtrl->GetDataSize();
 
 	//"Search" text.
@@ -492,7 +492,7 @@ void CHexDlgSearch::PrepareSearch()
 			m_ullOffsetCurr = refFront.ullOffset;
 		}
 
-		auto ullSelSize = refFront.ullSize;
+		const auto ullSelSize = refFront.ullSize;
 		if (ullSelSize < m_nSizeSearch) //Selection is too small.
 			return;
 
@@ -707,13 +707,13 @@ bool CHexDlgSearch::PrepareDouble()
 
 void CHexDlgSearch::Search()
 {
-	auto pHexCtrl = GetHexCtrl();
+	const auto pHexCtrl = GetHexCtrl();
 	if (m_wstrTextSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffsetCurr >= pHexCtrl->GetDataSize())
 		return;
 
 	m_fFound = false;
 	auto ullUntil = m_ullOffsetEnd;
-	auto lmbFindForward = [&]()
+	const auto lmbFindForward = [&]()
 	{
 		if (Find(m_ullOffsetCurr, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel))
 		{
@@ -733,7 +733,7 @@ void CHexDlgSearch::Search()
 			m_iWrap = 1;
 		}
 	};
-	auto lmbFindBackward = [&]()
+	const auto lmbFindBackward = [&]()
 	{
 		ullUntil = m_ullOffsetStart;
 		if (m_fSecondMatch && m_ullOffsetCurr - m_ullStep < m_ullOffsetCurr)
@@ -905,13 +905,13 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 	if (ullStart + nSizeSearch > ullEndSentinel)
 		return false;
 
-	ULONGLONG ullSize = fForward ? ullEnd - ullStart : ullStart - ullEnd; //Depends on search direction
+	const auto ullSize = fForward ? ullEnd - ullStart : ullStart - ullEnd; //Depends on search direction
 	ULONGLONG ullSizeChunk { };    //Size of the chunk to work with.
 	ULONGLONG ullChunks { };
 	ULONGLONG ullMemToAcquire { }; //Size of VirtualData memory for acquiring. It's bigger than ullSizeChunk.
 	ULONGLONG ullOffsetSearch { };
 	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
-	auto pHexCtrl = GetHexCtrl();
+	const auto pHexCtrl = GetHexCtrl();
 
 	switch (pHexCtrl->GetDataMode())
 	{
@@ -948,7 +948,7 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 				if (iterChunk > 0)
 					ullOffsetSearch += ullSizeChunk;
 
-				auto pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
+				const auto* const pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 				for (auto i = 0ULL; i <= ullSizeChunk; i += m_ullStep)
 				{
 					if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
@@ -967,7 +967,7 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 			ullOffsetSearch = ullStart - ullSizeChunk;
 			for (auto iterChunk = ullChunks; iterChunk > 0; --iterChunk)
 			{
-				auto pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
+				const auto* const pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 				for (auto i = static_cast<LONGLONG>(ullSizeChunk); i >= 0; i -= m_ullStep)	//i might be negative.
 				{
 					if (memcmp(pData + i, pSearch, nSizeSearch) == 0)

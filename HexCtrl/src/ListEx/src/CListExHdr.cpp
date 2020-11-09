@@ -208,7 +208,7 @@ void CListExHdr::SetFont(const LOGFONTW* pLogFontNew)
 	pDC->SelectObject(m_fontHdr);
 	pDC->GetTextMetricsW(&tm);
 	ReleaseDC(pDC);
-	DWORD dwHeightFont = tm.tmHeight + tm.tmExternalLeading + 1;
+	const DWORD dwHeightFont = tm.tmHeight + tm.tmExternalLeading + 1;
 	if (dwHeightFont > m_dwHeaderHeight)
 		SetHeight(dwHeightFont);
 }
