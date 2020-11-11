@@ -43,11 +43,13 @@ void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_SELECTION, m_stCheckSel);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_WILDCARD, m_stCheckWcard);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_BE, m_stCheckBE);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_SEARCH, m_stComboSearch);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_REPLACE, m_stComboReplace);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_MODE, m_stComboMode);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_START, m_stEditStart);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_STEP, m_stEditStep);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_LIMIT, m_stEditLimit);
 }
 
 BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
@@ -74,13 +76,13 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_ASCII));
 	iIndex = m_stComboMode.AddString(L"UTF-16 Text");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_WCHAR));
-	iIndex = m_stComboMode.AddString(L"Byte (std::(u)int8_t)");
+	iIndex = m_stComboMode.AddString(L"Byte: (u)int8");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_BYTE));
-	iIndex = m_stComboMode.AddString(L"Short (std::(u)int16_t)");
+	iIndex = m_stComboMode.AddString(L"Short: (u)int16");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_WORD));
-	iIndex = m_stComboMode.AddString(L"Int (std::(u)int32_t)");
+	iIndex = m_stComboMode.AddString(L"Int: (u)int32");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_DWORD));
-	iIndex = m_stComboMode.AddString(L"Int64 (std::(u)int64_t)");
+	iIndex = m_stComboMode.AddString(L"Int64: (u)int64");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_QWORD));
 	iIndex = m_stComboMode.AddString(L"Float");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_FLOAT));
@@ -98,7 +100,14 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_stMenuList.AppendMenuW(MF_SEPARATOR);
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_CLEARALL), L"Clear All");
 
-	SetEditStep(m_ullStep);
+	//"Step" edit box text.
+	wchar_t buff[32] { };
+	swprintf_s(buff, std::size(buff), L"%llu", m_ullStep);
+	m_stEditStep.SetWindowTextW(buff);
+
+	//"Limit search hit" edit box text.
+	swprintf_s(buff, std::size(buff), L"%u", m_dwFoundLimit);
+	m_stEditLimit.SetWindowTextW(buff);
 
 	const auto hwndTip = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr);
@@ -111,12 +120,12 @@ BOOL CHexDlgSearch::OnInitDialog()
 	stToolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
 	stToolInfo.uId = reinterpret_cast<UINT_PTR>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_WILDCARD)->m_hWnd);
 	static std::wstring wstrToolText { }; //Tooltip text.
-	wstrToolText += L"Use '";
+	wstrToolText += L"Use ";
 	wstrToolText += static_cast<wchar_t>(m_uWildcard);
-	wstrToolText += L"' character to match any symbol, or any byte if in `Hex Bytes` search mode.\r\n";
+	wstrToolText += L" character to match any symbol, or any byte if in \"Hex Bytes\" search mode.\r\n";
 	wstrToolText += L"Example:\r\n";
-	wstrToolText += L"  Hex Bytes : `11?33` will find 112233, 113333, 114433, 119733, etc...\r\n";
-	wstrToolText += L"  ASCII Text: `sa??le` will find `sample`, 'saAAle', 'saxale', 'saZZle', etc...\r\n";
+	wstrToolText += L"  Hex Bytes: 11?11 will match: 112211, 113311, 114411, 119711, etc...\r\n";
+	wstrToolText += L"  ASCII Text: sa??le will match: sample, saAAle, saxale, saZble, etc...\r\n";
 	stToolInfo.lpszText = wstrToolText.data();
 	::SendMessageW(hwndTip, TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&stToolInfo));
 	::SendMessageW(hwndTip, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
@@ -242,11 +251,28 @@ void CHexDlgSearch::OnCheckSel()
 
 void CHexDlgSearch::OnComboModeSelChange()
 {
-	if (const auto eMode = GetSearchMode(); eMode != m_eModeCurr)
+	const auto eMode = GetSearchMode();
+
+	if (eMode != m_eModeCurr)
 	{
 		ResetSearch();
 		m_eModeCurr = eMode;
 	}
+
+	BOOL fCheckBigEndian { FALSE };
+	switch (eMode)
+	{
+	case EMode::SEARCH_WORD:
+	case EMode::SEARCH_DWORD:
+	case EMode::SEARCH_QWORD:
+	case EMode::SEARCH_FLOAT:
+	case EMode::SEARCH_DOUBLE:
+		fCheckBigEndian = TRUE;
+		break;
+	default:
+		break;
+	}
+	m_stCheckBE.EnableWindow(fCheckBigEndian);
 }
 
 void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
@@ -323,14 +349,16 @@ HBRUSH CHexDlgSearch::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 
 void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 {
-	int iHighlight;
+	int iHighlight { };
 	if (auto iter = std::find(m_vecSearchRes.begin(), m_vecSearchRes.end(), ullOffset);
-		iter == m_vecSearchRes.end() && m_vecSearchRes.size() < static_cast<size_t>(m_dwMaxSearch)) //Max found search occurences.
+		iter == m_vecSearchRes.end()) //Max found search occurences.
 	{
-		m_vecSearchRes.emplace_back(ullOffset);
-		iHighlight = static_cast<int>(m_vecSearchRes.size());
-		m_pListMain->SetItemCountEx(iHighlight);
-		iHighlight -= 1;
+		if (m_vecSearchRes.size() < static_cast<size_t>(m_dwFoundLimit))
+		{
+			m_vecSearchRes.emplace_back(ullOffset);
+			iHighlight = static_cast<int>(m_vecSearchRes.size());
+			m_pListMain->SetItemCountEx(iHighlight--);
+		}
 	}
 	else
 		iHighlight = static_cast<int>(iter - m_vecSearchRes.begin());
@@ -367,7 +395,7 @@ void CHexDlgSearch::Search(bool fForward)
 	Search();
 }
 
-bool CHexDlgSearch::IsSearchAvail()
+bool CHexDlgSearch::IsSearchAvail()const
 {
 	const auto* const pHexCtrl = GetHexCtrl();
 	return !(m_wstrTextSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffsetCurr >= pHexCtrl->GetDataSize());
@@ -393,13 +421,15 @@ void CHexDlgSearch::PrepareSearch()
 {
 	const auto* const pHexCtrl = GetHexCtrl();
 	const auto ullDataSize = pHexCtrl->GetDataSize();
+	m_fWildcard = m_stCheckWcard.GetCheck() == BST_CHECKED;
+	m_fSelection = m_stCheckSel.GetCheck() == BST_CHECKED;
+	m_fBigEndian = m_stCheckBE.GetCheck() == BST_CHECKED;
 
 	//"Search" text.
 	CStringW wstrTextSearch;
 	m_stComboSearch.GetWindowTextW(wstrTextSearch);
 	if (wstrTextSearch.IsEmpty())
 		return;
-
 	if (wstrTextSearch.Compare(m_wstrTextSearch.data()) != 0)
 	{
 		ResetSearch();
@@ -408,20 +438,25 @@ void CHexDlgSearch::PrepareSearch()
 	ComboSearchFill(wstrTextSearch);
 
 	//Start at.
-	CStringW wstrStart;
-	ULONGLONG ullOffsetCurr { };
-	m_stEditStart.GetWindowTextW(wstrStart);
-	if (!wstrStart.IsEmpty() && !wstr2num(wstrStart.GetString(), ullOffsetCurr))
-		return;
-	m_ullOffsetCurr = ullOffsetCurr;
+	if (!m_fSelection) //Do not use "Start at" field when in the selection.
+	{
+		CStringW wstrStart;
+		m_stEditStart.GetWindowTextW(wstrStart);
+		if (!wstrStart.IsEmpty() && !wstr2num(wstrStart.GetString(), m_ullOffsetCurr))
+			return;
+	}
 
 	//Step.
 	CStringW wstrStep;
-	ULONGLONG ullStep { };
 	m_stEditStep.GetWindowTextW(wstrStep);
-	if (wstrStep.IsEmpty() || !wstr2num(wstrStep.GetString(), ullStep))
+	if (wstrStep.IsEmpty() || !wstr2num(wstrStep.GetString(), m_ullStep))
 		return;
-	m_ullStep = ullStep;
+
+	//Limit.
+	CStringW wstrLimit;
+	m_stEditLimit.GetWindowTextW(wstrLimit);
+	if (wstrStep.IsEmpty() || !wstr2num(wstrLimit.GetString(), m_dwFoundLimit))
+		return;
 
 	if (m_fReplace)
 	{
@@ -437,7 +472,6 @@ void CHexDlgSearch::PrepareSearch()
 		ComboReplaceFill(warrReplace);
 	}
 	m_stComboSearch.SetFocus();
-	m_fWildcard = m_stCheckWcard.GetCheck() == BST_CHECKED;
 
 	bool fSuccess { false };
 	switch (GetSearchMode())
@@ -473,10 +507,9 @@ void CHexDlgSearch::PrepareSearch()
 	if (!fSuccess)
 		return;
 
-	//Search in selection.
-	if (m_stCheckSel.GetCheck() == BST_CHECKED)
+	if (m_fSelection) //Search in selection.
 	{
-		auto vecSel = pHexCtrl->GetSelection();
+		const auto vecSel = pHexCtrl->GetSelection();
 		if (vecSel.empty()) //No selection.
 			return;
 
@@ -496,17 +529,15 @@ void CHexDlgSearch::PrepareSearch()
 		if (ullSelSize < m_nSizeSearch) //Selection is too small.
 			return;
 
-		m_ullOffsetStart = refFront.ullOffset;
-		m_ullOffsetEnd = m_ullOffsetStart + ullSelSize - m_nSizeSearch;
-		m_ullEndSentinel = m_ullOffsetStart + ullSelSize;
-		m_fSelection = true;
+		m_ullBoundBegin = refFront.ullOffset;
+		m_ullBoundEnd = m_ullBoundBegin + ullSelSize - m_nSizeSearch;
+		m_ullEndSentinel = m_ullBoundBegin + ullSelSize;
 	}
 	else //Search in whole data.
 	{
-		m_ullOffsetStart = 0;
-		m_ullOffsetEnd = ullDataSize - m_nSizeSearch;
+		m_ullBoundBegin = 0;
+		m_ullBoundEnd = ullDataSize - m_nSizeSearch;
 		m_ullEndSentinel = pHexCtrl->GetDataSize();
-		m_fSelection = false;
 	}
 
 	if (m_ullOffsetCurr + m_nSizeSearch > ullDataSize || m_ullOffsetCurr + m_nSizeReplace > ullDataSize)
@@ -615,6 +646,11 @@ bool CHexDlgSearch::PrepareWORD()
 		return false;
 	}
 
+	if (m_fBigEndian) {
+		wData = _byteswap_ushort(wData);
+		wDataRep = _byteswap_ushort(wDataRep);
+	}
+
 	m_strSearch.assign(reinterpret_cast<char*>(&wData), sizeof(WORD));
 	m_strReplace.assign(reinterpret_cast<char*>(&wDataRep), sizeof(WORD));
 	m_nSizeSearch = m_strSearch.size();
@@ -633,6 +669,11 @@ bool CHexDlgSearch::PrepareDWORD()
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
+	}
+
+	if (m_fBigEndian) {
+		dwData = _byteswap_ulong(dwData);
+		dwDataRep = _byteswap_ulong(dwDataRep);
 	}
 
 	m_strSearch.assign(reinterpret_cast<char*>(&dwData), sizeof(DWORD));
@@ -655,6 +696,11 @@ bool CHexDlgSearch::PrepareQWORD()
 		return false;
 	}
 
+	if (m_fBigEndian) {
+		qwData = _byteswap_uint64(qwData);
+		qwDataRep = _byteswap_uint64(qwDataRep);
+	}
+
 	m_strSearch.assign(reinterpret_cast<char*>(&qwData), sizeof(QWORD));
 	m_strReplace.assign(reinterpret_cast<char*>(&qwDataRep), sizeof(QWORD));
 	m_nSizeSearch = m_strSearch.size();
@@ -673,6 +719,13 @@ bool CHexDlgSearch::PrepareFloat()
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
+	}
+
+	if (m_fBigEndian) {
+		auto lData = _byteswap_ulong(*reinterpret_cast<unsigned long*>(&flData));
+		flData = *reinterpret_cast<float*>(&lData);
+		auto lDataRep = _byteswap_ulong(*reinterpret_cast<unsigned long*>(&flDataRep));
+		flDataRep = *reinterpret_cast<float*>(&lDataRep);
 	}
 
 	m_strSearch.assign(reinterpret_cast<char*>(&flData), sizeof(float));
@@ -695,6 +748,13 @@ bool CHexDlgSearch::PrepareDouble()
 		return false;
 	}
 
+	if (m_fBigEndian) {
+		auto llData = _byteswap_uint64(*reinterpret_cast<unsigned long long*>(&ddData));
+		ddData = *reinterpret_cast<double*>(&llData);
+		auto llDataRep = _byteswap_uint64(*reinterpret_cast<unsigned long long*>(&ddDataRep));
+		ddDataRep = *reinterpret_cast<double*>(&llDataRep);
+	}
+
 	m_strSearch.assign(reinterpret_cast<char*>(&ddData), sizeof(double));
 	m_strReplace.assign(reinterpret_cast<char*>(&ddDataRep), sizeof(double));
 	m_nSizeSearch = m_strSearch.size();
@@ -712,7 +772,7 @@ void CHexDlgSearch::Search()
 		return;
 
 	m_fFound = false;
-	auto ullUntil = m_ullOffsetEnd;
+	auto ullUntil = m_ullBoundEnd;
 	const auto lmbFindForward = [&]()
 	{
 		if (Find(m_ullOffsetCurr, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel))
@@ -723,7 +783,7 @@ void CHexDlgSearch::Search()
 		}
 		if (!m_fFound && m_fSecondMatch)
 		{
-			m_ullOffsetCurr = m_ullOffsetStart; //Starting from the beginning.
+			m_ullOffsetCurr = m_ullBoundBegin; //Starting from the beginning.
 			if (Find(m_ullOffsetCurr, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel))
 			{
 				m_fFound = true;
@@ -735,7 +795,7 @@ void CHexDlgSearch::Search()
 	};
 	const auto lmbFindBackward = [&]()
 	{
-		ullUntil = m_ullOffsetStart;
+		ullUntil = m_ullBoundBegin;
 		if (m_fSecondMatch && m_ullOffsetCurr - m_ullStep < m_ullOffsetCurr)
 		{
 			m_ullOffsetCurr -= m_ullStep;
@@ -748,7 +808,7 @@ void CHexDlgSearch::Search()
 
 		if (!m_fFound)
 		{
-			m_ullOffsetCurr = m_ullOffsetEnd;
+			m_ullOffsetCurr = m_ullBoundEnd;
 			if (Find(m_ullOffsetCurr, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, false))
 			{
 				m_fFound = true;
@@ -764,7 +824,7 @@ void CHexDlgSearch::Search()
 	{
 		if (m_fAll) //Replace All
 		{
-			auto ullStart = m_ullOffsetStart;
+			auto ullStart = m_ullOffsetCurr;
 			auto lmbSearch = [&](CHexDlgCallback* pDlg)
 			{
 				while (true)
@@ -813,7 +873,7 @@ void CHexDlgSearch::Search()
 		{
 			ClearList(); //Clearing all results.
 			m_dwCount = 0;
-			auto ullStart = m_ullOffsetStart;
+			auto ullStart = m_ullOffsetCurr;
 			auto lmbSearch = [&](CHexDlgCallback* pDlg)
 			{
 				while (true)
@@ -824,7 +884,7 @@ void CHexDlgSearch::Search()
 						ullStart += m_ullStep;
 						m_fFound = true;
 						++m_dwCount;
-						if (ullStart > ullUntil || m_dwCount >= m_dwMaxSearch) //Find no more than m_dwMaxSearch.
+						if (ullStart > ullUntil || m_dwCount >= m_dwFoundLimit) //Find no more than m_dwFoundLimit.
 							break;
 					}
 					else
@@ -1060,13 +1120,6 @@ void CHexDlgSearch::SetEditStartAt(ULONGLONG ullOffset)
 	m_stEditStart.SetWindowTextW(buff);
 }
 
-void CHexDlgSearch::SetEditStep(ULONGLONG ullStep)
-{
-	wchar_t buff[32] { };
-	swprintf_s(buff, std::size(buff), L"%llu", ullStep);
-	m_stEditStep.SetWindowTextW(buff);
-}
-
 int CHexDlgSearch::memcmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const
 {
 	if (m_fWildcard)
@@ -1078,7 +1131,7 @@ int CHexDlgSearch::memcmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t
 
 			if (*pBuf1 < *pBuf2)
 				return -1;
-			if (*pBuf1 > * pBuf2)
+			if (*pBuf1 > *pBuf2)
 				return 1;
 		}
 		return 0;

@@ -94,7 +94,7 @@ namespace HEXCTRL::INTERNAL
 		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hParent)override; //Сreates custom dialog control.
 		void Destroy()override;                             //Deleter.
-		void ExecuteCmd(EHexCmd eCmd)override;              //Execute a command within the control.
+		void ExecuteCmd(EHexCmd eCmd)override;                            //Execute a command within the control.
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
 		[[nodiscard]] auto GetColors()const->HEXCOLORSSTRUCT override;    //Current colors.
@@ -334,6 +334,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
 		bool m_fHighLatency { false };        //Reflects HEXDATASTRUCT::fHighLatency.
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
+		bool m_fMenuCMD { false };            //Command to be executed through menu, not through key-shortcut.
 	};
 
 	template<typename T>

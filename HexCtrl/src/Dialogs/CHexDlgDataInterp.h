@@ -164,7 +164,7 @@ namespace HEXCTRL::INTERNAL
 		CHexCtrl* m_pHexCtrl { };
 		bool m_fVisible { false };
 		bool m_fBigEndian { false };
-		bool m_fShowAsHex { false };
+		bool m_fShowAsHex { true };
 		CHexPropGridCtrl m_stCtrlGrid;
 		std::vector<SGRIDDATA> m_vecProp;
 		CMFCPropertyGridProperty* m_pPropChanged { };

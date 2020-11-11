@@ -45,7 +45,7 @@ namespace HEXCTRL
 	enum class EHexCmd : WORD
 	{
 		CMD_DLG_SEARCH = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV,
-		CMD_NAV_DLG_GOTO, CMD_NAV_REPFWD, CMD_NAV_REPBKW, CMD_NAV_DATABEG, CMD_NAV_DATAEND, 
+		CMD_NAV_DLG_GOTO, CMD_NAV_REPFWD, CMD_NAV_REPBKW, CMD_NAV_DATABEG, CMD_NAV_DATAEND,
 		CMD_NAV_PAGEBEG, CMD_NAV_PAGEEND, CMD_NAV_LINEBEG, CMD_NAV_LINEEND,
 		CMD_GROUPBY_BYTE, CMD_GROUPBY_WORD, CMD_GROUPBY_DWORD, CMD_GROUPBY_QWORD,
 		CMD_BKM_ADD, CMD_BKM_REMOVE, CMD_BKM_NEXT, CMD_BKM_PREV, CMD_BKM_CLEARALL, CMD_BKM_DLG_MANAGER,
@@ -93,7 +93,7 @@ namespace HEXCTRL
 	********************************************************************************************/
 	enum class EHexWnd : WORD
 	{
-		WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_FILLDATA, 
+		WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_FILLDATA,
 		DLG_OPERS, DLG_SEARCH, DLG_ENCODING, DLG_GOTO
 	};
 
@@ -253,7 +253,7 @@ namespace HEXCTRL
 	{
 		std::int8_t i8Vert { }; //Vertical offset.
 		std::int8_t i8Horz { }; //Horizontal offset.
-		operator bool() { return i8Vert == 0 && i8Horz == 0; }; //For test simplicity: if(IsOffsetVisible()).
+		operator bool()const { return i8Vert == 0 && i8Horz == 0; }; //For test simplicity: if(IsOffsetVisible()).
 	};
 
 	/********************************************************************************************
@@ -274,7 +274,7 @@ namespace HEXCTRL
 		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;    //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hParent) = 0; //Сreates custom dialog control.
 		virtual void Destroy() = 0;                             //Deleter.
-		virtual void ExecuteCmd(EHexCmd enCmd) = 0;             //Execute a command within the control.
+		virtual void ExecuteCmd(EHexCmd enCmd) = 0;                          //Execute a command within the control.
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORSSTRUCT = 0;    //Current colors.

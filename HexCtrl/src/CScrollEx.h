@@ -17,11 +17,15 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 	class CScrollEx : public CWnd
 	{
 	public:
-		explicit CScrollEx() = default;
 		bool Create(CWnd* pParent, int iScrollType, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
 		void AddSibling(CScrollEx* pSibling);
-		[[nodiscard]] bool IsVisible()const;
 		[[nodiscard]] CWnd* GetParent()const;
+		[[nodiscard]] ULONGLONG GetScrollPos()const;
+		[[nodiscard]] LONGLONG GetScrollPosDelta()const;
+		[[nodiscard]] ULONGLONG GetScrollLineSize()const;
+		[[nodiscard]] ULONGLONG GetScrollPageSize()const;
+		[[nodiscard]] bool IsThumbReleased()const;
+		[[nodiscard]] bool IsVisible()const;
 		void SetScrollSizes(ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
 		ULONGLONG SetScrollPos(ULONGLONG ullNewPos);
 		void ScrollLineUp();
@@ -34,12 +38,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		void ScrollPageRight();
 		void ScrollHome();
 		void ScrollEnd();
-		[[nodiscard]] ULONGLONG GetScrollPos()const;
-		[[nodiscard]] LONGLONG GetScrollPosDelta()const;
-		[[nodiscard]] ULONGLONG GetScrollLineSize()const;
-		[[nodiscard]] ULONGLONG GetScrollPageSize()const;
 		void SetScrollPageSize(ULONGLONG ullSize);
-		bool IsThumbReleased()const;
 
 		/************************************************************************
 		* CALLBACK METHODS:														*

@@ -491,8 +491,9 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		m_pBookmarks->Add(HEXBKMSTRUCT { m_pSelection->GetData() });
 		break;
 	case EHexCmd::CMD_BKM_REMOVE:
-		m_pBookmarks->Remove(m_optRMouseClick.value_or(GetCaretPos()));
+		m_pBookmarks->Remove(m_fMenuCMD ? m_optRMouseClick.value() : GetCaretPos());
 		m_optRMouseClick.reset();
+		m_fMenuCMD = false;
 		break;
 	case EHexCmd::CMD_BKM_NEXT:
 		m_pBookmarks->GoNext();
@@ -834,9 +835,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	switch (eCmd)
 	{
 	case EHexCmd::CMD_BKM_REMOVE:
-		fAvail = m_pBookmarks->HasBookmarks()
-			&& (m_pBookmarks->HitTest(GetCaretPos()) != nullptr
-				|| m_optRMouseClick ? m_pBookmarks->HitTest(*m_optRMouseClick) != nullptr : false);
+		fAvail = m_pBookmarks->HitTest(m_fMenuCMD ? *m_optRMouseClick : GetCaretPos()) != nullptr;
 		break;
 	case EHexCmd::CMD_BKM_NEXT:
 	case EHexCmd::CMD_BKM_PREV:
@@ -4242,7 +4241,10 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	const auto wMenuID = LOWORD(wParam);
 	if (auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref)
 		{return ref.wMenuID == wMenuID;	}); iter != m_vecKeyBind.end())
+	{
+		m_fMenuCMD = true;
 		ExecuteCmd(iter->eCmd);
+	}
 	else
 	{	//For user defined custom menu we notifying parent window.
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK } };
@@ -4320,6 +4322,7 @@ void CHexCtrl::OnHScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollB
 
 void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMenu*/)
 {
+	m_fMenuCMD = true;
 	switch (nIndex) //Zero based index of the menu. Zero means main menu itself, 1 - first (sub)menu, and so on.
 	{
 	case 0:	//Main menu.
@@ -4370,6 +4373,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(EHexCmd::CMD_SEL_ALL) ? MF_ENABLED : MF_GRAYED);
 		break;
 	}
+	m_fMenuCMD = false;
 }
 
 void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
@@ -4381,7 +4385,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 
 	if (auto optCmd = GetCommand(static_cast<BYTE>(nChar),
 		GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd)
-		ExecuteCmd(optCmd.value());
+		ExecuteCmd(*optCmd);
 	else if (IsMutable() && !IsCurTextArea()) //If caret is in Hex area, just one part (High/Low) of byte must be changed.
 	{
 		BYTE chByte = nChar & 0xFF;
@@ -4746,7 +4750,7 @@ void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {
 	if (auto optCmd = GetCommand(static_cast<BYTE>(nChar),
 		GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, true); optCmd)
-		ExecuteCmd(optCmd.value());
+		ExecuteCmd(*optCmd);
 }
 
 void CHexCtrl::OnTimer(UINT_PTR nIDEvent)

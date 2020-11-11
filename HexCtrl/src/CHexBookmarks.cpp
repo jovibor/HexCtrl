@@ -73,12 +73,9 @@ auto CHexBookmarks::GetByID(ULONGLONG ullID)->HEXBKMSTRUCT*
 		if (m_pVirtual)
 			pBkm = m_pVirtual->GetByID(ullID);
 	}
-	else
-	{
-		if (auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-			[ullID](const HEXBKMSTRUCT& ref) {return ullID == ref.ullID; }); iter != m_deqBookmarks.end())
-			pBkm = &*iter;
-	}
+	else if (auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
+		[ullID](const HEXBKMSTRUCT& ref) {return ullID == ref.ullID; }); iter != m_deqBookmarks.end())
+		pBkm = &*iter;
 
 	return pBkm;
 }
@@ -91,11 +88,8 @@ auto CHexBookmarks::GetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT*
 		if (m_pVirtual)
 			pBkm = m_pVirtual->GetByIndex(ullIndex);
 	}
-	else
-	{
-		if (ullIndex < m_deqBookmarks.size())
-			pBkm = &m_deqBookmarks.at(static_cast<size_t>(ullIndex));
-	}
+	else if (ullIndex < m_deqBookmarks.size())
+		pBkm = &m_deqBookmarks[static_cast<size_t>(ullIndex)];
 
 	return pBkm;
 }
@@ -199,9 +193,9 @@ auto CHexBookmarks::HitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT*
 	{
 		if (auto rIter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
 			[ullOffset](const HEXBKMSTRUCT& ref)
-			{return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
+			{ return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPANSTRUCT& refV)
-				{return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
+				{ return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
 			}); rIter != m_deqBookmarks.rend())
 			pBkm = &*rIter;
 	}

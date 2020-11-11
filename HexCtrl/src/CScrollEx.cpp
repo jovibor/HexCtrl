@@ -82,14 +82,45 @@ void CScrollEx::AddSibling(CScrollEx* pSibling)
 	m_pSibling = pSibling;
 }
 
-bool CScrollEx::IsVisible() const
+bool CScrollEx::IsThumbReleased()const
+{
+	return m_enState != EState::THUMB_CLICK;
+}
+
+bool CScrollEx::IsVisible()const
 {
 	return m_fVisible;
 }
 
-CWnd* CScrollEx::GetParent() const
+CWnd* CScrollEx::GetParent()const
 {
 	return m_pwndParent;
+}
+
+ULONGLONG CScrollEx::GetScrollPos()const
+{
+	if (!m_fCreated)
+		return { };
+
+	return m_ullScrollPosCur;
+}
+
+LONGLONG CScrollEx::GetScrollPosDelta()const
+{
+	if (!m_fCreated)
+		return { };
+
+	return static_cast<LONGLONG>(m_ullScrollPosCur - m_ullScrollPosPrev);
+}
+
+ULONGLONG CScrollEx::GetScrollLineSize()const
+{
+	return m_ullScrollLine;
+}
+
+ULONGLONG CScrollEx::GetScrollPageSize()const
+{
+	return m_ullScrollPage;
 }
 
 void CScrollEx::SetScrollSizes(ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
@@ -215,42 +246,14 @@ void CScrollEx::ScrollEnd()
 	SetScrollPos(m_ullScrollSizeMax);
 }
 
-ULONGLONG CScrollEx::GetScrollPos()const
-{
-	if (!m_fCreated)
-		return 0;
-
-	return m_ullScrollPosCur;
-}
-
-LONGLONG CScrollEx::GetScrollPosDelta()const
-{
-	if (!m_fCreated)
-		return 0;
-
-	return static_cast<LONGLONG>(m_ullScrollPosCur - m_ullScrollPosPrev);
-}
-
-ULONGLONG CScrollEx::GetScrollLineSize()const
-{
-	return m_ullScrollLine;
-}
-
-ULONGLONG CScrollEx::GetScrollPageSize()const
-{
-	return m_ullScrollPage;
-}
-
 void CScrollEx::SetScrollPageSize(ULONGLONG ullSize)
 {
 	m_ullScrollPage = ullSize;
 }
 
-bool CScrollEx::IsThumbReleased()const
-{
-	return m_enState != EState::THUMB_CLICK;
-}
-
+/*****************************
+* Private methods.
+*****************************/
 void CScrollEx::OnNcActivate(BOOL /*bActive*/)const
 {
 	if (!m_fCreated)
@@ -781,7 +784,7 @@ CRect CScrollEx::GetParentRect(bool fClient)const
 	return rc;
 }
 
-int CScrollEx::GetTopDelta() const
+int CScrollEx::GetTopDelta()const
 {
 	CRect rcClient = GetParentRect();
 	GetParent()->MapWindowPoints(nullptr, &rcClient);
@@ -789,7 +792,7 @@ int CScrollEx::GetTopDelta() const
 	return rcClient.top - GetParentRect(false).top;
 }
 
-int CScrollEx::GetLeftDelta() const
+int CScrollEx::GetLeftDelta()const
 {
 	CRect rcClient = GetParentRect();
 	GetParent()->MapWindowPoints(nullptr, &rcClient);
