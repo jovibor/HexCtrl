@@ -8,7 +8,7 @@
 ****************************************************************************************/
 #pragma once
 #include "../CHexCtrl.h"
-#include "../ListEx/ListEx.h"
+#include "../../dep/ListEx/ListEx.h"
 #include <afxdialogex.h>  //Standard MFC's controls header.
 
 namespace HEXCTRL::INTERNAL

@@ -8,7 +8,7 @@
 ****************************************************************************************/
 #pragma once
 #include "../CHexBookmarks.h"
-#include "../ListEx/ListEx.h"
+#include "../../dep/ListEx/ListEx.h"
 #include "CHexDlgBkmProps.h"
 #include <afxdialogex.h>
 

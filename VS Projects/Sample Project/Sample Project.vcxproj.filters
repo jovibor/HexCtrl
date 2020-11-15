@@ -22,11 +22,14 @@
     <Filter Include="HexCtrl\src\Dialogs">
       <UniqueIdentifier>{2b48a932-9a86-4e73-ab10-ce442ea73d80}</UniqueIdentifier>
     </Filter>
-    <Filter Include="HexCtrl\src\ListEx">
-      <UniqueIdentifier>{e5da979b-11e6-4a4d-9b49-086a6f7400e3}</UniqueIdentifier>
-    </Filter>
     <Filter Include="HexCtrl\res">
       <UniqueIdentifier>{5939ca0d-077d-4e58-9022-87ae277af5be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HexCtrl\dep">
+      <UniqueIdentifier>{ec2e9c83-a8cc-4167-ade4-dbba26d39f9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HexCtrl\dep\ListEx">
+      <UniqueIdentifier>{9752f1bb-669f-4114-8ef1-196b3553a7a9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -87,15 +90,6 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\src\ListEx\ListEx.h">
-      <Filter>HexCtrl\src\ListEx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\src\ListEx\src\CListEx.h">
-      <Filter>HexCtrl\src\ListEx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\src\ListEx\src\CListExHdr.h">
-      <Filter>HexCtrl\src\ListEx</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h">
       <Filter>HexCtrl\res</Filter>
     </ClInclude>
@@ -107,6 +101,15 @@
     </ClInclude>
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\HexCtrl\dep\ListEx\src\CListEx.h">
+      <Filter>HexCtrl\dep\ListEx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\HexCtrl\dep\ListEx\src\CListExHdr.h">
+      <Filter>HexCtrl\dep\ListEx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\HexCtrl\dep\ListEx\ListEx.h">
+      <Filter>HexCtrl\dep\ListEx</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -158,12 +161,6 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\ListEx\src\CListEx.cpp">
-      <Filter>HexCtrl\src\ListEx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\ListEx\src\CListExHdr.cpp">
-      <Filter>HexCtrl\src\ListEx</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgGoTo.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
@@ -172,6 +169,12 @@
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\dep\ListEx\src\CListEx.cpp">
+      <Filter>HexCtrl\dep\ListEx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\dep\ListEx\src\CListExHdr.cpp">
+      <Filter>HexCtrl\dep\ListEx</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

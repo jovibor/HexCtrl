@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright Â© 2018-2020 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
@@ -8,7 +8,7 @@
 ****************************************************************************************/
 #pragma once
 #include "../CHexCtrl.h"
-#include "../ListEx/ListEx.h"
+#include "../../dep/ListEx/ListEx.h"
 #include <afxdialogex.h>
 
 namespace HEXCTRL::INTERNAL

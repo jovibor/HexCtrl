@@ -223,6 +223,9 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\HexCtrl\dep\ListEx\ListEx.h" />
+    <ClInclude Include="..\..\HexCtrl\dep\ListEx\src\CListEx.h" />
+    <ClInclude Include="..\..\HexCtrl\dep\ListEx\src\CListExHdr.h" />
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexBookmarks.h" />
@@ -241,12 +244,11 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\src\Helper.h" />
-    <ClInclude Include="..\..\HexCtrl\src\ListEx\ListEx.h" />
-    <ClInclude Include="..\..\HexCtrl\src\ListEx\src\CListEx.h" />
-    <ClInclude Include="..\..\HexCtrl\src\ListEx\src\CListExHdr.h" />
     <ClInclude Include="..\Sample Project\stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\HexCtrl\dep\ListEx\src\CListEx.cpp" />
+    <ClCompile Include="..\..\HexCtrl\dep\ListEx\src\CListExHdr.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexBookmarks.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexSelection.cpp" />
@@ -263,8 +265,6 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Helper.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\ListEx\src\CListEx.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\ListEx\src\CListExHdr.cpp" />
     <ClCompile Include="..\Sample Project\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

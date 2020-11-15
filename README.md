@@ -134,10 +134,13 @@ The **HexControl** can be used in two different ways:
 
 ### [](#)Building From The Sources
 The building process is quite simple:
-1. Add all files from the *HexCtrl* folder (except for `/dep/` subfolder) into your project.
-2. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the **HexControl**.
-3. Declare [`IHexCtrlPtr`](#ihexctrlptr) member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
-4. [Create](#creating) control instance.
+1. Copy *HexCtrl* folder into your project's directory.
+2. Add all files from the *HexCtrl* folder into your project, except for  
+*HexCtrl/dep/rapidjson/rapidjson-amalgam.h* (header-only lib).
+3. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the **HexControl**.
+4. Declare [**HexControl**'s namespace](#namespace): `using namespace HEXCTRL;`
+5. Declare [`IHexCtrlPtr`](#ihexctrlptr) member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
+6. [Create](#creating) control instance.
 
 If you want to build **HexControl** from the sources in non **MFC** app you will have to:
 1. Add support for **Use MFC in a Shared DLL** in your project settings.
@@ -154,9 +157,9 @@ To use **HexControl** as the *.dll* do the following:
 #include "HexCtrl.h"` 
 ```
 5. Declare [`IHexCtrlPtr`](#ihexctrlptr) member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
-5. [Create](#creating) control instance.
+6. [Create](#creating) control instance.
 
-To build *HexCtrl.dll* and *HexCtrl.lib* use the *DLL Project/DLL Project.vcxproj* **Visual Studio** project.
+To build *HexCtrl.dll* and *HexCtrl.lib* use the *DLL Project/DLL Project.vcxproj* **Visual Studio** project file.
 
 #### Remarks:
 **HexControl**'s *.dll* is built with **MFC Static Linking**. So even if you are to use it in your own **MFC** project, even with different **MFC** version, there should not be any interferences
@@ -919,7 +922,7 @@ extern "C" HEXCTRLAPI HEXCTRLINFO* __cdecl GetHexCtrlInfo();
 Returns pointer to [`HEXCTRLINFO`](#hexctrlinfo), which is the **HexControl**'s service information structure.
 
 ### [](#)HEXCTRLINFO
-Service structure, keeps **HexControl**'s version information.
+Service structure for **HexControl**'s version information.
 ```cpp
 struct HEXCTRLINFO
 {

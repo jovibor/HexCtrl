@@ -6,14 +6,18 @@
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
-
 /****************************************************************************************
-* These are some helper functions for HexCtrl.											*
+* Here dwells some useful helper stuff for HexCtrl.                                     *
 ****************************************************************************************/
 #pragma once
-#include "version.h"
 #include <afxwin.h>
 #include <string>
+
+#define HEXCTRL_PRODUCT_NAME			"Hex Control for MFC/Win32"
+#define HEXCTRL_COPYRIGHT_NAME  		"(C) 2018-2021 Jovibor"
+#define HEXCTRL_VERSION_MAJOR			2
+#define HEXCTRL_VERSION_MINOR			19
+#define HEXCTRL_VERSION_MAINTENANCE		2
 
 namespace HEXCTRL::INTERNAL
 {
@@ -49,13 +53,13 @@ namespace HEXCTRL::INTERNAL
 	//Substitute all unprintable wchar symbols with dot.
 	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLFRepl = true);
 
-#define STR_HELPER(x) #x
-#define STR(x) STR_HELPER(x)
+#define TO_STR_HELPER(x) #x
+#define TO_STR(x) TO_STR_HELPER(x)
 #ifdef _WIN64
-	constexpr auto HEXCTRL_VERSION_WSTR = L"" STR(MAJOR_VERSION) "." STR(MINOR_VERSION) "." STR(MAINTENANCE_VERSION) " (x64)";
+#define HEXCTRL_VERSION_WSTR HEXCTRL_PRODUCT_NAME L", v" TO_STR(HEXCTRL_VERSION_MAJOR) "."\
+		TO_STR(HEXCTRL_VERSION_MINOR) "." TO_STR(HEXCTRL_VERSION_MAINTENANCE) " (x64)"
 #else
-	constexpr auto HEXCTRL_VERSION_WSTR = L"" STR(MAJOR_VERSION) "." STR(MINOR_VERSION) "." STR(MAINTENANCE_VERSION);
+#define HEXCTRL_VERSION_WSTR HEXCTRL_PRODUCT_NAME L", v" TO_STR(HEXCTRL_VERSION_MAJOR) "."\
+		TO_STR(HEXCTRL_VERSION_MINOR) "." TO_STR(HEXCTRL_VERSION_MAINTENANCE) " (x86)"
 #endif
-	constexpr auto HEXCTRL_VERSION_ULL = ULONGLONG((static_cast<ULONGLONG>(MAJOR_VERSION) << 48)
-		| (static_cast<ULONGLONG>(MINOR_VERSION) << 32) | (static_cast<ULONGLONG>(MAINTENANCE_VERSION) << 16) | static_cast<ULONGLONG>(REVISION_VERSION));
 };

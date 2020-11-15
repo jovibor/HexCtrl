@@ -7,7 +7,8 @@
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "../dep/rapidjson-amalgamation.h"
+#include "../dep/rapidjson/rapidjson-amalgam.h"
+#include "../res/HexCtrlRes.h"
 #include "CHexBookmarks.h"
 #include "CHexCtrl.h"
 #include "CHexSelection.h"
@@ -45,8 +46,12 @@ namespace HEXCTRL
 
 	extern "C" HEXCTRLAPI HEXCTRLINFO * __cdecl GetHexCtrlInfo()
 	{
-		static HEXCTRLINFO stVersion { HEXCTRL_VERSION_WSTR, { HEXCTRL_VERSION_ULL } };
-		//	static HEXCTRLINFO stVersion { .pwszVersion = HEXCTRL_VERSION_WSTR, .ullVersion = { HEXCTRL_VERSION_ULL } };
+		static HEXCTRLINFO stVersion { HEXCTRL_VERSION_WSTR,
+		{ ULONGLONG(
+			(static_cast<ULONGLONG>(HEXCTRL_VERSION_MAJOR) << 48)
+		| (static_cast<ULONGLONG>(HEXCTRL_VERSION_MINOR) << 32)
+		| (static_cast<ULONGLONG>(HEXCTRL_VERSION_MAINTENANCE) << 16)) }
+		};
 
 		return &stVersion;
 	};
@@ -4592,7 +4597,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 		m_ullLMouseClick = ullClick;
 		m_ullCaretPos = ullStart;
 		std::vector<HEXSPANSTRUCT> vecSel;
-		vecSel.reserve(ullLines);
+		vecSel.reserve(static_cast<size_t>(ullLines));
 		for (auto iterLines = 0ULL; iterLines < ullLines; ++iterLines)
 			vecSel.emplace_back(HEXSPANSTRUCT { ullStart + m_dwCapacity * iterLines, ullSize });
 		SetSelection(vecSel);

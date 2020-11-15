@@ -69,7 +69,7 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* EHexGroupMode - current data mode representation.                                          *
+	* EHexGroupMode - current data mode representation.                                         *
 	********************************************************************************************/
 	enum class EHexGroupMode : WORD
 	{

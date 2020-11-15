@@ -23,9 +23,9 @@ END_MESSAGE_MAP()
 BOOL CHexDlgAbout::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
-	std::wstring wstrVer = L"Hex Control for MFC/Win32, v";
-	wstrVer += HEXCTRL_VERSION_WSTR;
-	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(wstrVer.data());
+
+#define HEXCTRL_VERSION_DESCR HEXCTRL_VERSION_WSTR "\r\nAuthor: " HEXCTRL_COPYRIGHT_NAME
+	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(HEXCTRL_VERSION_DESCR);
 
 	return TRUE;
 }

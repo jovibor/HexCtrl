@@ -228,6 +228,9 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\HexCtrl\dep\ListEx\ListEx.h" />
+    <ClInclude Include="..\..\HexCtrl\dep\ListEx\src\CListEx.h" />
+    <ClInclude Include="..\..\HexCtrl\dep\ListEx\src\CListExHdr.h" />
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexBookmarks.h" />
@@ -246,9 +249,6 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\src\Helper.h" />
-    <ClInclude Include="..\..\HexCtrl\src\ListEx\ListEx.h" />
-    <ClInclude Include="..\..\HexCtrl\src\ListEx\src\CListEx.h" />
-    <ClInclude Include="..\..\HexCtrl\src\ListEx\src\CListExHdr.h" />
     <ClInclude Include="HexSample.h" />
     <ClInclude Include="HexSampleDlg.h" />
     <ClInclude Include="Resource.h" />
@@ -256,6 +256,8 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\HexCtrl\dep\ListEx\src\CListEx.cpp" />
+    <ClCompile Include="..\..\HexCtrl\dep\ListEx\src\CListExHdr.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexBookmarks.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexSelection.cpp" />
@@ -272,8 +274,6 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Helper.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\ListEx\src\CListEx.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\ListEx\src\CListExHdr.cpp" />
     <ClCompile Include="HexSample.cpp" />
     <ClCompile Include="HexSampleDlg.cpp" />
     <ClCompile Include="stdafx.cpp">

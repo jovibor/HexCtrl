@@ -6,14 +6,10 @@
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 * For more information visit the project's official repository.                         *
 ****************************************************************************************/
-/****************************************************************************************
-* These are some helper functions for HexCtrl.											*
-****************************************************************************************/
 #include "stdafx.h"
 #include "Helper.h"
 #include <algorithm>
 #include <cwctype>
-
 #undef min
 #undef max
 
