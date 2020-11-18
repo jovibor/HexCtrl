@@ -1,10 +1,9 @@
 /****************************************************************************************
-* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
-* For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
@@ -12,6 +11,7 @@
 #include "CHexDlgGoTo.h"
 #include <cassert>
 
+using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgGoTo, CDialogEx)
@@ -22,7 +22,7 @@ BEGIN_MESSAGE_MAP(CHexDlgGoTo, CDialogEx)
 	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
-BOOL CHexDlgGoTo::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
+BOOL CHexDlgGoTo::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
 	if (pHexCtrl == nullptr)
@@ -30,7 +30,7 @@ BOOL CHexDlgGoTo::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 
 	m_pHexCtrl = pHexCtrl;
 
-	return CDialogEx::Create(nIDTemplate, pHexCtrl);
+	return CDialogEx::Create(nIDTemplate, pParent);
 }
 
 void CHexDlgGoTo::DoDataExchange(CDataExchange* pDX)
@@ -267,7 +267,7 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 	HexCtrlGoOffset(m_ullCurrOffset);
 }
 
-CHexCtrl* CHexDlgGoTo::GetHexCtrl()const
+IHexCtrl* CHexDlgGoTo::GetHexCtrl()const
 {
 	return m_pHexCtrl;
 }

@@ -1,20 +1,24 @@
 /****************************************************************************************
-* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
-* For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
 #include "CHexSelection.h"
 #include <algorithm>
+#include <cassert>
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
 void CHexSelection::Attach(IHexCtrl* pHexCtrl)
 {
+	assert(pHexCtrl);
+	if (pHexCtrl == nullptr)
+		return;
+
 	m_pHexCtrl = pHexCtrl;
 }
 
@@ -29,11 +33,6 @@ void CHexSelection::ClearAll()
 void CHexSelection::ClearSelHighlight()
 {
 	m_vecSelHighlight.clear();
-}
-
-IHexCtrl* CHexSelection::GetHexCtrl()const
-{
-	return m_pHexCtrl;
 }
 
 bool CHexSelection::HasSelection()const
@@ -134,8 +133,8 @@ void CHexSelection::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect, bo
 	ClearSelHighlight();
 	m_vecSelection = vecSelect;
 
-	if (auto pHex = GetHexCtrl(); fRedraw && pHex)
-		pHex->Redraw();
+	if (fRedraw)
+		m_pHexCtrl->Redraw();
 }
 
 void CHexSelection::SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight)
@@ -143,30 +142,24 @@ void CHexSelection::SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHigh
 	m_vecSelHighlight = vecSelHighlight;
 }
 
-void CHexSelection::SetSelectionEnd(ULONGLONG ullOffset, bool fRedraw)
+void CHexSelection::SetSelStartEnd(ULONGLONG ullOffset, bool fStart, bool fRedraw)
 {
-	m_ullMarkSelEnd = ullOffset;
-	if (m_ullMarkSelStart == 0xFFFFFFFFFFFFFFFFULL || m_ullMarkSelEnd < m_ullMarkSelStart)
-		return;
+	if (fStart)
+	{
+		m_ullMarkSelStart = ullOffset;
+		if (m_ullMarkSelEnd == 0xFFFFFFFFFFFFFFFFULL || m_ullMarkSelStart > m_ullMarkSelEnd)
+			return;
+	}
+	else
+	{
+		m_ullMarkSelEnd = ullOffset;
+		if (m_ullMarkSelStart == 0xFFFFFFFFFFFFFFFFULL || m_ullMarkSelEnd < m_ullMarkSelStart)
+			return;
+	}
 
-	const ULONGLONG ullSize = m_ullMarkSelEnd - m_ullMarkSelStart + 1;
 	m_vecSelection.clear();
-	m_vecSelection.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
+	m_vecSelection.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, m_ullMarkSelEnd - m_ullMarkSelStart + 1 });
 
-	if (const auto pHex = GetHexCtrl(); fRedraw && pHex)
-		pHex->Redraw();
-}
-
-void CHexSelection::SetSelectionStart(ULONGLONG ullOffset, bool fRedraw)
-{
-	m_ullMarkSelStart = ullOffset;
-	if (m_ullMarkSelEnd == 0xFFFFFFFFFFFFFFFFULL || m_ullMarkSelStart > m_ullMarkSelEnd)
-		return;
-
-	const ULONGLONG ullSize = m_ullMarkSelEnd - m_ullMarkSelStart + 1;
-	m_vecSelection.clear();
-	m_vecSelection.emplace_back(HEXSPANSTRUCT { m_ullMarkSelStart, ullSize });
-
-	if (const auto pHex = GetHexCtrl(); fRedraw && pHex)
-		pHex->Redraw();
+	if (fRedraw)
+		m_pHexCtrl->Redraw();
 }

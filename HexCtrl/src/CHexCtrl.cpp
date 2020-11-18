@@ -1,10 +1,9 @@
 /****************************************************************************************
-* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
-* For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
 #include "../dep/rapidjson/rapidjson-amalgam.h"
@@ -393,23 +392,23 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 
 	//ScrollBars should be created here, after the main window has already been created (to attach to), to avoid assertions.
-	m_pScrollV->Create(this, SB_VERT, 0, 0, 0); //Actual sizes are set in RecalcAll().
-	m_pScrollH->Create(this, SB_HORZ, 0, 0, 0);
+	m_pScrollV->Create(this, true, IDB_HEXCTRL_SCROLL_V, 0, 0, 0); //Actual sizes are set in RecalcAll().
+	m_pScrollH->Create(this, false, IDB_HEXCTRL_SCROLL_H, 0, 0, 0);
 	m_pScrollV->AddSibling(m_pScrollH.get());
 	m_pScrollH->AddSibling(m_pScrollV.get());
 
 	//All dialogs are created after the main window, to set the parent window correctly.
 	m_pDlgBkmMgr->Create(IDD_HEXCTRL_BKMMGR, this, &*m_pBookmarks);
-	m_pDlgEncoding->Create(IDD_HEXCTRL_ENCODING, this);
+	m_pDlgEncoding->Create(IDD_HEXCTRL_ENCODING, this, this);
 	m_pDlgDataInterp->Create(IDD_HEXCTRL_DATAINTERP, this);
 	m_pDlgFillData->Create(IDD_HEXCTRL_FILLDATA, this);
 	m_pDlgOpers->Create(IDD_HEXCTRL_OPERATIONS, this);
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this);
-	m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, this);
+	m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, this, this);
 	m_pBookmarks->Attach(this);
 	m_pSelection->Attach(this);
-
 	m_fCreated = true;
+
 	SetGroupMode(m_enGroupMode);
 	SetEncoding(-1);
 	SetConfig(L"");
@@ -558,10 +557,10 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		Redo();
 		break;
 	case EHexCmd::CMD_SEL_MARKSTART:
-		m_pSelection->SetSelectionStart(GetCaretPos());
+		m_pSelection->SetSelStartEnd(GetCaretPos(), true);
 		break;
 	case EHexCmd::CMD_SEL_MARKEND:
-		m_pSelection->SetSelectionEnd(GetCaretPos());
+		m_pSelection->SetSelStartEnd(GetCaretPos(), false);
 		break;
 	case EHexCmd::CMD_SEL_ALL:
 		SelAll();

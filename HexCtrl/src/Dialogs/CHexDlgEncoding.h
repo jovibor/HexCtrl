@@ -1,13 +1,12 @@
 /****************************************************************************************
-* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
-* For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include "../CHexCtrl.h"
+#include "../../HexCtrl.h"
 #include "../../dep/ListEx/ListEx.h"
 #include <afxdialogex.h>
 
@@ -24,7 +23,7 @@ namespace HEXCTRL::INTERNAL
 		};
 	public:
 		void AddCP(std::wstring_view wstr);
-		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
+		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 	private:
 		inline static BOOL CALLBACK EnumCodePagesProc(LPWSTR pwszCP);
 		void DoDataExchange(CDataExchange* pDX)override;
@@ -40,7 +39,7 @@ namespace HEXCTRL::INTERNAL
 		void SortList();
 	private:
 		inline static CHexDlgEncoding* m_pThis { };
-		CHexCtrl* m_pHexCtrl { };
+		IHexCtrl* m_pHexCtrl { };
 		IListExPtr m_pListMain { CreateListEx() };
 		std::vector<SCODEPAGE> m_vecCodePage { };
 	};

@@ -1,13 +1,12 @@
 /****************************************************************************************
-* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
-* For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
-#include "../CHexCtrl.h"
+#include "../../HexCtrl.h"
 #include <afxdialogex.h>
 
 namespace HEXCTRL::INTERNAL
@@ -15,7 +14,7 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgGoTo final : public CDialogEx
 	{
 	public:
-		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
+		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsRepeatAvail()const;
 		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
 	protected:
@@ -29,11 +28,11 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioBackEnd();
 		DECLARE_MESSAGE_MAP()
 	private:
-		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
+		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		void HexCtrlGoOffset(ULONGLONG ullOffset);
 		void SetRangesText()const;
 	private:
-		CHexCtrl* m_pHexCtrl { };
+		IHexCtrl* m_pHexCtrl { };
 		ULONGLONG m_ullData { };
 		ULONGLONG m_ullCurrOffset { }; //Offset that was set when OnGo was called last time.
 		ULONGLONG m_ullOffsetsFrom { };

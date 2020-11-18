@@ -1,10 +1,9 @@
 /****************************************************************************************
-* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
-* For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
@@ -38,7 +37,7 @@ void CHexDlgEncoding::AddCP(std::wstring_view wstr)
 			m_vecCodePage.emplace_back(SCODEPAGE { static_cast<int>(uCPID), stCP.CodePageName, stCP.MaxCharSize });
 }
 
-BOOL CHexDlgEncoding::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
+BOOL CHexDlgEncoding::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
 	if (pHexCtrl == nullptr)
@@ -46,7 +45,7 @@ BOOL CHexDlgEncoding::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 
 	m_pHexCtrl = pHexCtrl;
 
-	return CDialogEx::Create(nIDTemplate, pHexCtrl);
+	return CDialogEx::Create(nIDTemplate, pParent);
 }
 
 void CHexDlgEncoding::DoDataExchange(CDataExchange* pDX)

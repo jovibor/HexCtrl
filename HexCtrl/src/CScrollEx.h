@@ -1,23 +1,20 @@
 /****************************************************************************************
-* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC applications.                                           *
 * Official git repository of the project: https://github.com/jovibor/HexCtrl/           *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
-* For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #pragma once
 #include <afxwin.h>
 
 namespace HEXCTRL::INTERNAL::SCROLLEX
 {
-	//Forward declaration.
-	enum class EState : WORD;
-
+	enum class EState : WORD; //Forward declaration.
 	class CScrollEx : public CWnd
 	{
 	public:
-		bool Create(CWnd* pParent, int iScrollType, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
+		bool Create(CWnd* pParent, bool fVert, UINT uiResBmp, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
 		void AddSibling(CScrollEx* pSibling);
 		[[nodiscard]] CWnd* GetParent()const;
 		[[nodiscard]] ULONGLONG GetScrollPos()const;
@@ -26,7 +23,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		[[nodiscard]] ULONGLONG GetScrollPageSize()const;
 		[[nodiscard]] bool IsThumbReleased()const;
 		[[nodiscard]] bool IsVisible()const;
-		void SetScrollSizes(ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
+		void SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG ullSizeMax);
 		ULONGLONG SetScrollPos(ULONGLONG ullNewPos);
 		void ScrollLineUp();
 		void ScrollLineDown();
@@ -93,7 +90,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		ULONGLONG m_ullScrollLine { };                              //Size of one line scroll, when clicking arrow.
 		ULONGLONG m_ullScrollPage { };                              //Size of page scroll, when clicking channel.
 		ULONGLONG m_ullScrollSizeMax { };                           //Maximum scroll size (limit).
-		int m_iScrollType { };                                      //Scrollbar type - horizontal or vertical.
+		bool m_fScrollVert { };                                     //Scrollbar type, horizontal or vertical.
 		const COLORREF m_clrBkNC { GetSysColor(COLOR_3DFACE) };     //Bk color of the non client area. 
 		const COLORREF m_clrBkScrollBar { RGB(241, 241, 241) };     //Color of the scrollbar.
 		const COLORREF m_clrThumb { RGB(192, 192, 192) };           //Scroll thumb color.

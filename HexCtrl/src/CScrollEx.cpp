@@ -1,13 +1,11 @@
 /****************************************************************************************
-* Copyright © 2018-2020 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC applications.                                           *
 * Official git repository of the project: https://github.com/jovibor/HexCtrl/           *
 * This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
-* For more information visit the project's official repository.                         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "../res/HexCtrlRes.h"
 #include "CScrollEx.h"
 #include <cassert>
 #include <cmath>
@@ -26,7 +24,8 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		LASTARROW_CLICK, LASTARROW_HOVER
 	};
 
-	enum class ETimer : UINT_PTR {
+	enum class ETimer : UINT_PTR
+	{
 		IDT_FIRSTCLICK = 0x7ff0,
 		IDT_CLICKREPEAT = 0x7ff1
 	};
@@ -42,33 +41,20 @@ BEGIN_MESSAGE_MAP(CScrollEx, CWnd)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
-bool CScrollEx::Create(CWnd* pParent, int iScrollType,
+bool CScrollEx::Create(CWnd* pParent, bool fVert, UINT uiResBmp,
 	ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
 {
 	assert(!m_fCreated); //Already created
 	assert(pParent);
-	if (m_fCreated || !pParent || (iScrollType != SB_VERT && iScrollType != SB_HORZ))
+	if (m_fCreated || !pParent)
 		return false;
-
 	if (!CWnd::CreateEx(0, AfxRegisterWndClass(0), nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr))
 		return false;
 
-	m_iScrollType = iScrollType;
+	m_fScrollVert = fVert;
 	m_pwndParent = pParent;
-
-	UINT uiBmp;
-	if (IsVert())
-	{
-		uiBmp = IDB_HEXCTRL_SCROLL_V;
-		m_uiScrollBarSizeWH = GetSystemMetrics(SM_CXVSCROLL);
-	}
-	else
-	{
-		uiBmp = IDB_HEXCTRL_SCROLL_H;
-		m_uiScrollBarSizeWH = GetSystemMetrics(SM_CXHSCROLL);
-	}
-
-	if (!m_bmpArrows.LoadBitmapW(uiBmp))
+	m_uiScrollBarSizeWH = GetSystemMetrics(fVert ? SM_CXVSCROLL : SM_CXHSCROLL);
+	if (!m_bmpArrows.LoadBitmapW(uiResBmp))
 		return false;
 
 	m_fCreated = true;
@@ -123,15 +109,15 @@ ULONGLONG CScrollEx::GetScrollPageSize()const
 	return m_ullScrollPage;
 }
 
-void CScrollEx::SetScrollSizes(ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
+void CScrollEx::SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG ullSizeMax)
 {
 	assert(m_fCreated);
 	if (!m_fCreated)
 		return;
 
-	m_ullScrollLine = ullScrolline;
-	m_ullScrollPage = ullScrollPage;
-	m_ullScrollSizeMax = ullScrollSizeMax;
+	m_ullScrollLine = ullLine;
+	m_ullScrollPage = ullPage;
+	m_ullScrollSizeMax = ullSizeMax;
 
 	CWnd* pWnd = GetParent();
 	if (pWnd) //To repaint NC area.
@@ -338,7 +324,7 @@ void CScrollEx::OnSetCursor(CWnd * /*pWnd*/, UINT nHitTest, UINT message)
 
 		if (IsVisible())
 		{
-			CWnd* pParent = GetParent();
+			const auto pParent = GetParent();
 			pParent->SetFocus();
 
 			if (GetThumbRect(true).PtInRect(pt))
@@ -449,8 +435,8 @@ void CScrollEx::DrawScrollBar()const
 	if (!IsVisible())
 		return;
 
-	CWnd* hwndParent = GetParent();
-	CWindowDC parentDC(hwndParent);
+	const auto pParent = GetParent();
+	CWindowDC parentDC(pParent);
 
 	CDC dcMem;
 	CBitmap bitmap;
@@ -521,7 +507,7 @@ void CScrollEx::DrawArrows(CDC* pDC)const
 
 void CScrollEx::DrawThumb(CDC* pDC)const
 {
-	CRect rcThumb = GetThumbRect();
+	auto rcThumb = GetThumbRect();
 	if (!rcThumb.IsRectNull())
 		pDC->FillSolidRect(rcThumb, m_clrThumb);
 }
@@ -532,7 +518,7 @@ CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
 		return { };
 
 	const auto* const pParent = GetParent();
-	CRect rcClient = GetParentRect();
+	auto rcClient = GetParentRect();
 	const auto rcWnd = GetParentRect(false);
 	pParent->MapWindowPoints(nullptr, &rcClient);
 
@@ -567,7 +553,7 @@ CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
 
 CRect CScrollEx::GetScrollWorkAreaRect(bool fClientCoord)const
 {
-	CRect rc = GetScrollRect();
+	auto rc = GetScrollRect();
 	if (IsVert())
 		rc.DeflateRect(0, m_uiScrollBarSizeWH, 0, m_uiScrollBarSizeWH);
 	else
@@ -704,18 +690,14 @@ long double CScrollEx::GetThumbScrollingSize()const
 		return 0;
 
 	const auto uiWAWOThumb = GetScrollWorkAreaSizeWH() - GetThumbSizeWH(); //Work area without thumb.
-	int iPage;
-	if (IsVert())
-		iPage = GetParentRect().Height();
-	else
-		iPage = GetParentRect().Width();
+	int iPage { IsVert() ? GetParentRect().Height() : GetParentRect().Width() };
 
 	return (m_ullScrollSizeMax - iPage) / static_cast<long double>(uiWAWOThumb);
 }
 
 CRect CScrollEx::GetFirstArrowRect(bool fClientCoord)const
 {
-	CRect rc = GetScrollRect();
+	auto rc = GetScrollRect();
 	if (IsVert())
 		rc.bottom = rc.top + m_uiArrowSize;
 	else
@@ -802,7 +784,7 @@ int CScrollEx::GetLeftDelta()const
 
 bool CScrollEx::IsVert()const
 {
-	return m_iScrollType == SB_VERT;
+	return m_fScrollVert;
 }
 
 bool CScrollEx::IsThumbDragging()const
