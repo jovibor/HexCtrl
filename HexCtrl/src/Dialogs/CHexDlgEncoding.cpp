@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cassert>
 
+using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgEncoding, CDialogEx)
