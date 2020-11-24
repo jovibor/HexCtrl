@@ -13,9 +13,6 @@
 namespace HEXCTRL::INTERNAL
 {
 	using namespace LISTEX;
-	/********************************************
-	* CHexDlgSearch class declaration.          *
-	********************************************/
 	class CHexDlgSearch final : public CDialogEx
 	{
 		enum class EMode : WORD {
@@ -75,11 +72,11 @@ namespace HEXCTRL::INTERNAL
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
-		[[nodiscard]] int memcmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const;
+		[[nodiscard]] bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const;
 		DECLARE_MESSAGE_MAP()
 	private:
 		CHexCtrl* m_pHexCtrl { };
-		EMode m_eModeCurr { };
+		EMode m_eSearchMode { };
 		IListExPtr m_pListMain { CreateListEx() };
 		std::vector<ULONGLONG> m_vecSearchRes { };
 		CComboBox m_stComboSearch;  //Combo box "Search".
@@ -88,6 +85,7 @@ namespace HEXCTRL::INTERNAL
 		CButton m_stCheckSel;       //Check box "In selection".
 		CButton m_stCheckWcard;     //Check box "Wildcard".
 		CButton m_stCheckBE;        //Check box "Big-endian".
+		CButton m_stCheckMatchC;    //Check box "Match case".
 		CEdit m_stEditStart;        //Edit box "Start search at".
 		CEdit m_stEditStep;         //Edit box "Step".
 		CEdit m_stEditLimit;        //Edit box "Limit search hit".
@@ -112,9 +110,10 @@ namespace HEXCTRL::INTERNAL
 		bool m_fDoCount { true };       //Do we count matches or just print "Found".
 		bool m_fReplace { false };      //Find or Find and Replace with...?
 		bool m_fAll { false };          //Find/Replace one by one, or all?
-		bool m_fSelection { false };    //Search in selection.
-		bool m_fWildcard { false };     //Use wildcard.
-		bool m_fBigEndian { false };    //Big-endian.
+		bool m_fSelection { false };    //In selection check box.
+		bool m_fWildcard { false };     //Wildcard check box.
+		bool m_fBigEndian { false };    //Big-endian check box.
+		bool m_fMatchCase { false };    //Match case check box.
 		std::byte* m_pSearchData { };   //Pointer to the data for search.
 		std::byte* m_pReplaceData { };  //Pointer to the data to replace with.
 		size_t m_nSizeSearch { };
@@ -125,7 +124,7 @@ namespace HEXCTRL::INTERNAL
 		std::wstring m_wstrReplace;     //Actual wstring to replace.
 		const std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
-		HEXSPANSTRUCT m_stSelSpan { };   //Previous selection.
+		HEXSPANSTRUCT m_stSelSpan { };  //Previous selection.
 		CMenu m_stMenuList;
 	};
 }

@@ -11,6 +11,7 @@
 #include "CHexDlgCallback.h"
 #include "CHexDlgSearch.h"
 #include <cassert>
+#include <cwctype>
 #include <limits>
 #include <thread>
 #undef min
@@ -46,6 +47,7 @@ void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_SELECTION, m_stCheckSel);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_WILDCARD, m_stCheckWcard);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_BE, m_stCheckBE);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_MATCHCASE, m_stCheckMatchC);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_SEARCH, m_stComboSearch);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_REPLACE, m_stComboReplace);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_MODE, m_stComboMode);
@@ -94,7 +96,7 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_SEARCH_LIST_MAIN, this);
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 	m_pListMain->InsertColumn(0, L"\u2116", 0, 40);
-	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 445);
+	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 455);
 
 	m_stMenuList.CreatePopupMenu();
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_ADDBKM), L"Add bookmark(s)");
@@ -255,13 +257,15 @@ void CHexDlgSearch::OnComboModeSelChange()
 {
 	const auto eMode = GetSearchMode();
 
-	if (eMode != m_eModeCurr)
+	if (eMode != m_eSearchMode)
 	{
 		ResetSearch();
-		m_eModeCurr = eMode;
+		m_eSearchMode = eMode;
 	}
 
-	BOOL fCheckBigEndian { FALSE };
+	BOOL fWildcard { FALSE };
+	BOOL fBigEndian { FALSE };
+	BOOL fMatchCase { FALSE };
 	switch (eMode)
 	{
 	case EMode::SEARCH_WORD:
@@ -269,12 +273,22 @@ void CHexDlgSearch::OnComboModeSelChange()
 	case EMode::SEARCH_QWORD:
 	case EMode::SEARCH_FLOAT:
 	case EMode::SEARCH_DOUBLE:
-		fCheckBigEndian = TRUE;
+		fBigEndian = TRUE;
+		break;
+	case EMode::SEARCH_ASCII:
+	case EMode::SEARCH_WCHAR:
+		fMatchCase = TRUE;
+		fWildcard = TRUE;
+		break;
+	case EMode::SEARCH_HEX:
+		fWildcard = TRUE;
 		break;
 	default:
 		break;
 	}
-	m_stCheckBE.EnableWindow(fCheckBigEndian);
+	m_stCheckWcard.EnableWindow(fWildcard);
+	m_stCheckBE.EnableWindow(fBigEndian);
+	m_stCheckMatchC.EnableWindow(fMatchCase);
 }
 
 void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
@@ -426,6 +440,7 @@ void CHexDlgSearch::PrepareSearch()
 	m_fWildcard = m_stCheckWcard.GetCheck() == BST_CHECKED;
 	m_fSelection = m_stCheckSel.GetCheck() == BST_CHECKED;
 	m_fBigEndian = m_stCheckBE.GetCheck() == BST_CHECKED;
+	m_fMatchCase = m_stCheckMatchC.GetCheck() == BST_CHECKED;
 
 	//"Search" text.
 	CStringW wstrTextSearch;
@@ -444,7 +459,9 @@ void CHexDlgSearch::PrepareSearch()
 	{
 		CStringW wstrStart;
 		m_stEditStart.GetWindowTextW(wstrStart);
-		if (!wstrStart.IsEmpty() && !wstr2num(wstrStart.GetString(), m_ullOffsetCurr))
+		if (wstrStart.IsEmpty())
+			m_ullOffsetCurr = 0;
+		else if (!wstr2num(wstrStart.GetString(), m_ullOffsetCurr))
 			return;
 	}
 
@@ -592,6 +609,10 @@ bool CHexDlgSearch::PrepareHex()
 bool CHexDlgSearch::PrepareASCII()
 {
 	m_strSearch = wstr2str(m_wstrTextSearch);
+	if (!m_fMatchCase)
+		std::transform(m_strSearch.begin(), m_strSearch.end(), m_strSearch.begin(),
+			[](unsigned char ch) { return static_cast<char>(std::toupper(ch)); });
+
 	m_strReplace = wstr2str(m_wstrTextReplace);
 	m_nSizeSearch = m_strSearch.size();
 	m_nSizeReplace = m_strReplace.size();
@@ -604,13 +625,17 @@ bool CHexDlgSearch::PrepareASCII()
 bool CHexDlgSearch::PrepareWCHAR()
 {
 	m_wstrSearch = m_wstrTextSearch;
-	m_wstrReplace = m_wstrTextReplace;
+	if (!m_fMatchCase)
+		std::transform(m_wstrSearch.begin(), m_wstrSearch.end(), m_wstrSearch.begin(), std::towupper);
+
 	if (m_fWildcard)
 	{
 		//Constructing one wchar_t consisting with two m_uWildcard symbols.
 		const wchar_t wDblWildcard = static_cast<short>(m_uWildcard) << 8 | static_cast<short>(m_uWildcard);
 		std::replace(m_wstrSearch.begin(), m_wstrSearch.end(), static_cast<wchar_t>(m_uWildcard), wDblWildcard);
 	}
+
+	m_wstrReplace = m_wstrTextReplace;
 	m_nSizeSearch = m_wstrSearch.size() * sizeof(wchar_t);
 	m_nSizeReplace = m_wstrReplace.size() * sizeof(wchar_t);
 	m_pSearchData = reinterpret_cast<std::byte*>(m_wstrSearch.data());
@@ -1013,7 +1038,7 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 				const auto* const pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 				for (auto i = 0ULL; i <= ullSizeChunk; i += m_ullStep)
 				{
-					if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
+					if (MemCmp(pData + i, pSearch, nSizeSearch))
 					{
 						ullStart = ullOffsetSearch + i;
 						fResult = true;
@@ -1032,7 +1057,7 @@ bool CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSear
 				const auto* const pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 				for (auto i = static_cast<LONGLONG>(ullSizeChunk); i >= 0; i -= m_ullStep)	//i might be negative.
 				{
-					if (memcmp(pData + i, pSearch, nSizeSearch) == 0)
+					if (MemCmp(pData + i, pSearch, nSizeSearch))
 					{
 						ullStart = ullOffsetSearch + i;
 						fResult = true;
@@ -1122,24 +1147,47 @@ void CHexDlgSearch::SetEditStartAt(ULONGLONG ullOffset)
 	m_stEditStart.SetWindowTextW(buff);
 }
 
-int CHexDlgSearch::memcmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const
+bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const
 {
+	const std::byte* pData1 { pBuf1 };
+	std::string strUpper;
+	std::wstring wstrUpper;
+
+	if (!m_fMatchCase)
+	{
+		switch (m_eSearchMode)
+		{
+		case EMode::SEARCH_ASCII:
+			strUpper.resize(nSize);
+			std::transform(reinterpret_cast<const char*>(pBuf1), reinterpret_cast<const char*>(pBuf1 + nSize),
+				strUpper.begin(), [](unsigned char ch) { return static_cast<char>(std::toupper(ch)); });
+			pData1 = reinterpret_cast<std::byte*>(strUpper.data());
+			break;
+		case EMode::SEARCH_WCHAR:
+			wstrUpper.resize(nSize / sizeof(wchar_t));
+			std::transform(reinterpret_cast<const wchar_t*>(pBuf1), reinterpret_cast<const wchar_t*>(pBuf1 + nSize),
+				wstrUpper.begin(), [](wchar_t wch) { return static_cast<wchar_t>(std::towupper(wch)); });
+			pData1 = reinterpret_cast<std::byte*>(wstrUpper.data());
+			break;
+		default:
+			break;
+		}
+	}
+
 	if (m_fWildcard)
 	{
-		for (auto i { 0ULL }; i < nSize; ++i, ++pBuf1, ++pBuf2)
+		for (auto i { 0ULL }; i < nSize; ++i, ++pData1, ++pBuf2)
 		{
 			if (*pBuf2 == m_uWildcard) //Checking for wildcard match.
 				continue;
 
-			if (*pBuf1 < *pBuf2)
-				return -1;
-			if (*pBuf1 > *pBuf2)
-				return 1;
+			if (*pData1 != *pBuf2)
+				return false;
 		}
-		return 0;
+		return true;
 	}
 
-	return std::memcmp(pBuf1, pBuf2, nSize);
+	return std::memcmp(pData1, pBuf2, nSize) == 0;
 }
 
 void CHexDlgSearch::ResetSearch()
