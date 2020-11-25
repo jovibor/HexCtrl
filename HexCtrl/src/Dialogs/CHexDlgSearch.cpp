@@ -11,6 +11,7 @@
 #include "CHexDlgCallback.h"
 #include "CHexDlgSearch.h"
 #include <cassert>
+#include <cctype>
 #include <cwctype>
 #include <limits>
 #include <thread>
