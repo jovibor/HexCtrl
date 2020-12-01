@@ -15,14 +15,9 @@ namespace HEXCTRL::INTERNAL
 	using namespace LISTEX;
 	class CHexDlgSearch final : public CDialogEx
 	{
-		enum class EMode : WORD {
-			SEARCH_HEX, SEARCH_ASCII, SEARCH_WCHAR,
-			SEARCH_BYTE, SEARCH_WORD, SEARCH_DWORD, SEARCH_QWORD,
-			SEARCH_FLOAT, SEARCH_DOUBLE
-		};
-		enum class EMenuID : WORD {
-			IDM_SEARCH_ADDBKM = 0x8000, IDM_SEARCH_SELECTALL = 0x8001, IDM_SEARCH_CLEARALL = 0x8002
-		};
+		struct SFIND;
+		enum class EMode : WORD;
+		enum class EMenuID : WORD;
 	public:
 		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
 		void Search(bool fForward);
@@ -63,8 +58,8 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool PrepareDouble();
 		void Search();
 		//ullStart will return index of found occurence, if any.
-		bool Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSizeSearch,
-			ULONGLONG ullEndSentinel, bool fForward = true, bool fThread = true)const;
+		SFIND Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSizeSearch,
+			ULONGLONG ullEndSentinel, bool fForward = true, CHexDlgCallback* pDlg = nullptr, bool fDlgExit = true)const;
 		void Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace,
 			bool fRedraw = true, bool fParentNtfy = true)const;
 		void ResetSearch();

@@ -72,7 +72,6 @@ void CHexDlgFillData::OnOK()
 	switch (iRadioType)
 	{
 	case IDC_HEXCTRL_FILLDATA_RADIO_HEX:
-	{
 		if (!str2hex(strToFill, strToFill))
 		{
 			MessageBoxW(L"Wrong Hex format!", L"Format Error", MB_ICONERROR);
@@ -80,8 +79,7 @@ void CHexDlgFillData::OnOK()
 		}
 		hms.pData = reinterpret_cast<std::byte*>(strToFill.data());
 		hms.ullDataSize = strToFill.size();
-	}
-	break;
+		break;
 	case IDC_HEXCTRL_FILLDATA_RADIO_TEXT:
 		hms.pData = reinterpret_cast<std::byte*>(strToFill.data());
 		hms.ullDataSize = strToFill.size();
@@ -89,6 +87,8 @@ void CHexDlgFillData::OnOK()
 	case IDC_HEXCTRL_FILLDATA_RADIO_UTF16:
 		hms.pData = reinterpret_cast<std::byte*>(wstrComboText.data());
 		hms.ullDataSize = static_cast<ULONGLONG>(wstrComboText.size()) * sizeof(WCHAR);
+		break;
+	default:
 		break;
 	}
 

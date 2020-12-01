@@ -12,7 +12,8 @@
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgCallback, CDialogEx)
-	ON_COMMAND(IDCANCEL, &CHexDlgCallback::OnCancel)
+	ON_COMMAND(IDCANCEL, &CHexDlgCallback::OnBtnCancel)
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 CHexDlgCallback::CHexDlgCallback(std::wstring_view wstrOperName, CWnd* pParent)
@@ -26,6 +27,7 @@ BOOL CHexDlgCallback::OnInitDialog()
 
 	SetWindowTextW(m_wstrOperName.data());
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPERNAME)->SetWindowTextW(m_wstrOperName.data());
+	SetTimer(IDT_EXITCHECK, 150, nullptr);
 
 	return TRUE;
 }
@@ -35,7 +37,18 @@ void CHexDlgCallback::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 }
 
-void CHexDlgCallback::OnCancel()
+void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == IDT_EXITCHECK && m_fCancel)
+	{
+		OnCancel();
+		KillTimer(IDT_EXITCHECK);
+	}
+
+	CDialogEx::OnTimer(nIDEvent);
+}
+
+void CHexDlgCallback::OnBtnCancel()
 {
 	m_fCancel = true;
 }
@@ -45,23 +58,7 @@ bool CHexDlgCallback::IsCanceled()const
 	return m_fCancel;
 }
 
-void CHexDlgCallback::Cancel()
+void CHexDlgCallback::ExitDlg()
 {
-	OnCancel();
-}
-
-BOOL CHexDlgCallback::ContinueModal()
-{
-	//Returning FALSE from here means exiting from the modal loop.
-
-	//Although it's explicitly stated that this function must return zero 
-	//to exit modal loop state, it may ASSERT sometimes if FALSE is returned
-	//too early, at very early stage of dialog initialization.
-	//https://docs.microsoft.com/en-us/cpp/mfc/reference/cwnd-class?view=vs-2017&redirectedfrom=MSDN#continuemodal
-	//To overcome this, PostMessageW(WM_COMMAND, IDOK) instead of return FALSE seems to work ok.
-	if (m_fCancel)
-		PostMessageW(WM_COMMAND, IDOK);
-		//return FALSE;
-
-	return CDialogEx::ContinueModal();
+	OnBtnCancel();
 }

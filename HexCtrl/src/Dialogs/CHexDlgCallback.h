@@ -16,15 +16,16 @@ namespace HEXCTRL::INTERNAL
 	public:
 		explicit CHexDlgCallback(std::wstring_view wstrOperName, CWnd* pParent = nullptr);
 		[[nodiscard]] bool IsCanceled()const;
-		void Cancel();
+		void ExitDlg();
 	protected:
 		BOOL OnInitDialog()override;
 		void DoDataExchange(CDataExchange* pDX)override;
-		afx_msg void OnCancel()override;
-		BOOL ContinueModal()override;
+		void OnBtnCancel();	
+		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		DECLARE_MESSAGE_MAP()
 	private:
 		bool m_fCancel { false };
 		std::wstring m_wstrOperName { };
+		const UINT_PTR IDT_EXITCHECK { 0x1 };
 	};
 }

@@ -288,17 +288,14 @@ void CHexBookmarks::SortData(int iColumn, bool fAscending)
 			case 0:
 				break;
 			case 1: //Offset.
-			{
 				if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
 				{
 					const auto ullOffset1 = st1.vecSpan.front().ullOffset;
 					const auto ullOffset2 = st2.vecSpan.front().ullOffset;
 					iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
 				}
-			}
 			break;
 			case 2: //Size.
-			{
 				if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
 				{
 					auto ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
@@ -307,10 +304,11 @@ void CHexBookmarks::SortData(int iColumn, bool fAscending)
 						[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
 					iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
 				}
-			}
 			break;
 			case 3: //Description.
 				iCompare = st1.wstrDesc.compare(st2.wstrDesc);
+				break;
+			default:
 				break;
 			}
 

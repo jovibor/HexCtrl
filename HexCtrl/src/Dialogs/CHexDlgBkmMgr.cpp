@@ -173,6 +173,8 @@ BOOL CHexDlgBkmMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 			if (!m_pBookmarks->IsVirtual())
 				SortBookmarks();
 			break;
+		default:
+			break;
 		}
 	}
 
@@ -212,6 +214,8 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			break;
 		case 3: //Description
 			pItem->pszText = const_cast<wchar_t*>(pBkm->wstrDesc.data());
+			break;
+		default:
 			break;
 		}
 	}

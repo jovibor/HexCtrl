@@ -92,6 +92,8 @@ void CHexDlgGoTo::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 		case IDC_HEXCTRL_GOTO_RADIO_BACKEND:
 			OnClickRadioBackEnd();
 			break;
+		default:
+			break;
 		}
 	}
 
@@ -123,6 +125,8 @@ void CHexDlgGoTo::OnOK()
 		ullRangeTo = m_ullPagesTo;
 		ullMul = pHexCtrl->GetPageSize();
 		break;
+	default:
+		break;
 	}
 
 	if (m_ullData < ullRangeFrom || m_ullData > ullRangeTo || m_ullData == 0)
@@ -150,6 +154,8 @@ void CHexDlgGoTo::OnOK()
 		ullResult = pHexCtrl->GetDataSize() - (m_ullData * ullMul) - 1;
 		m_iRepeat = 0;
 		break;
+	default:
+		break;
 	}
 
 	HexCtrlGoOffset(ullResult);
@@ -168,6 +174,8 @@ void CHexDlgGoTo::OnOK()
 		break;
 	case IDC_HEXCTRL_GOTO_RADIO_BACKEND:
 		OnClickRadioBackEnd();
+		break;
+	default:
 		break;
 	}
 }
@@ -235,7 +243,8 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 	const auto* const pHexCtrl = GetHexCtrl();
 	if (fFwd) //Repeat the last command (forward or backward) as is.
 	{
-		switch (m_iRepeat) {
+		switch (m_iRepeat)
+		{
 		case -1:
 			if (m_ullCurrOffset < m_ullData) //To avoid underflow.
 				return;
@@ -245,12 +254,15 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 			if (m_ullCurrOffset + m_ullData >= pHexCtrl->GetDataSize()) //To avoid overflow.
 				return;
 			m_ullCurrOffset += m_ullData;
+			break;
+		default:
 			break;
 		}
 	}
 	else //Repeat opposite of the last command (forward<->backward).
 	{
-		switch (m_iRepeat) {
+		switch (m_iRepeat)
+		{
 		case -1:
 			if (m_ullCurrOffset + m_ullData >= pHexCtrl->GetDataSize()) //To avoid overflow.
 				return;
@@ -260,6 +272,8 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 			if (m_ullCurrOffset < m_ullData) //To avoid underflow.
 				return;
 			m_ullCurrOffset -= m_ullData;
+			break;
+		default:
 			break;
 		}
 	}

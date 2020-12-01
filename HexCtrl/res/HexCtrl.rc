@@ -438,9 +438,15 @@ IDR_HEXCTRL_MENU MENU
 BEGIN
     POPUP ""
     BEGIN
-        MENUITEM "Search and Replace",          IDM_HEXCTRL_DLG_SEARCH
+        POPUP "Search and Replace"
+        BEGIN
+            MENUITEM "Search and Replace...",       IDM_HEXCTRL_DLG_SEARCH
+            MENUITEM SEPARATOR
+            MENUITEM "Search Next",                 IDM_HEXCTRL_SEARCH_NEXT
+            MENUITEM "Search Previous",             IDM_HEXCTRL_SEARCH_PREV
+        END
         MENUITEM SEPARATOR
-        POPUP "Group Data By..."
+        POPUP "Group Data"
         BEGIN
             MENUITEM "Byte (1 byte)",               IDM_HEXCTRL_GROUPBY_BYTE, CHECKED
             MENUITEM "Word (2 bytes)",              IDM_HEXCTRL_GROUPBY_WORD
@@ -505,8 +511,11 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "Select all",                  IDM_HEXCTRL_SEL_ALL
         END
-        MENUITEM "Data Interpreter",            IDM_HEXCTRL_DLG_DATAINTERP
-        MENUITEM "Encoding",                    IDM_HEXCTRL_DLG_ENCODING
+        POPUP "Data View"
+        BEGIN
+            MENUITEM "Data Interpreter",            IDM_HEXCTRL_DLG_DATAINTERP
+            MENUITEM "Text Encoding",               IDM_HEXCTRL_DLG_ENCODING
+        END
         POPUP "Appearance"
         BEGIN
             MENUITEM "Increase font size\tCtrl+MouseWheelUp", IDM_HEXCTRL_APPEAR_FONTINC
@@ -516,9 +525,12 @@ BEGIN
             MENUITEM "Decrease capacity\tCtrl+Shift+MouseWheelDown", IDM_HEXCTRL_APPEAR_CAPACDEC
         END
         MENUITEM SEPARATOR
-        MENUITEM "Print...",                    IDM_HEXCTRL_DLG_PRINT
-        MENUITEM SEPARATOR
-        MENUITEM "About",                       IDM_HEXCTRL_DLG_ABOUT
+        POPUP "Other"
+        BEGIN
+            MENUITEM "Print...",                    IDM_HEXCTRL_DLG_PRINT
+            MENUITEM SEPARATOR
+            MENUITEM "About",                       IDM_HEXCTRL_DLG_ABOUT
+        END
     END
 END
 

@@ -193,6 +193,8 @@ void CHexDlgOpers::OnOK()
 	case IDC_HEXCTRL_OPERS_RADIO_QWORD:
 		hms.ullDataSize = 8;
 		break;
+	default:
+		break;
 	}
 
 	pHex->Modify(hms);

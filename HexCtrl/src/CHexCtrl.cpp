@@ -46,8 +46,7 @@ namespace HEXCTRL
 	extern "C" HEXCTRLAPI HEXCTRLINFO * __cdecl GetHexCtrlInfo()
 	{
 		static HEXCTRLINFO stVersion { HEXCTRL_VERSION_WSTR,
-		{ ULONGLONG(
-			(static_cast<ULONGLONG>(HEXCTRL_VERSION_MAJOR) << 48)
+		{ static_cast<ULONGLONG>((static_cast<ULONGLONG>(HEXCTRL_VERSION_MAJOR) << 48)
 		| (static_cast<ULONGLONG>(HEXCTRL_VERSION_MINOR) << 32)
 		| (static_cast<ULONGLONG>(HEXCTRL_VERSION_MAINTENANCE) << 16)) }
 		};
@@ -801,6 +800,8 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iRelPos)
 	case 1: //Offset at the bottom.
 		ullNewScrollV = ullNewStartV - (GetBottomLine() - GetTopLine()) * m_sizeLetter.cy;
 		break;
+	default:
+		break;
 	}
 	m_pScrollV->SetScrollPos(ullNewScrollV);
 
@@ -1072,8 +1073,8 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 	//Mapping between stringified EHexCmd::* and its value-menuID pairs.
 	const std::unordered_map<std::string, std::pair<EHexCmd, WORD>> umapCmdMenu {
 		{ "CMD_DLG_SEARCH", { EHexCmd::CMD_DLG_SEARCH, static_cast<WORD>(IDM_HEXCTRL_DLG_SEARCH) } },
-		{ "CMD_SEARCH_NEXT", { EHexCmd::CMD_SEARCH_NEXT, static_cast<WORD>(0) } },
-		{ "CMD_SEARCH_PREV", { EHexCmd::CMD_SEARCH_PREV, static_cast<WORD>(0) } },
+		{ "CMD_SEARCH_NEXT", { EHexCmd::CMD_SEARCH_NEXT, static_cast<WORD>(IDM_HEXCTRL_SEARCH_NEXT) } },
+		{ "CMD_SEARCH_PREV", { EHexCmd::CMD_SEARCH_PREV, static_cast<WORD>(IDM_HEXCTRL_SEARCH_PREV) } },
 		{ "CMD_NAV_DLG_GOTO", { EHexCmd::CMD_NAV_DLG_GOTO, static_cast<WORD>(IDM_HEXCTRL_NAV_DLG_GOTO) } },
 		{ "CMD_NAV_REPFWD", { EHexCmd::CMD_NAV_REPFWD, static_cast<WORD>(IDM_HEXCTRL_NAV_REPFWD) } },
 		{ "CMD_NAV_REPBKW", { EHexCmd::CMD_NAV_REPBKW, static_cast<WORD>(IDM_HEXCTRL_NAV_REPBKW) } },
@@ -1172,7 +1173,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		std::vector<SKEYBIND> vecRet { };
 		for (auto iterJ = refJson.MemberBegin(); iterJ != refJson.MemberEnd(); ++iterJ) //JSON data iterating.
 		{
-			if (auto iterCmd = umapCmdMenu.find(iterJ->name.GetString()); iterCmd != umapCmdMenu.end())
+			if (const auto iterCmd = umapCmdMenu.find(iterJ->name.GetString()); iterCmd != umapCmdMenu.end())
 				for (auto iterValue = iterJ->value.Begin(); iterValue != iterJ->value.End(); ++iterValue) //Array iterating.
 					if (auto opt = lmbParse(iterValue->GetString()); opt)
 					{
@@ -1208,7 +1209,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 
 			if (strSubWord.size() == 1)
 				stRet.uKey = static_cast<UCHAR>(std::toupper(strSubWord[0])); //Binding keys are in uppercase.
-			else if (auto iter = umapKeys.find(strSubWord); iter != umapKeys.end())
+			else if (const auto iter = umapKeys.find(strSubWord); iter != umapKeys.end())
 			{
 				const auto uChar = iter->second.first;
 				switch (uChar)
@@ -1284,7 +1285,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		for (const auto& iterMain : m_vecKeyBind)
 		{
 			//Check for previous same menu ID, to assign only one (first) keybinding for menu name.
-			auto iterEnd = m_vecKeyBind.begin() + i++;
+			const auto iterEnd = m_vecKeyBind.begin() + i++;
 			if (auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd,
 				[&](const SKEYBIND& ref) { return ref.wMenuID == iterMain.wMenuID; });
 				iterTmp == iterEnd && iterMain.wMenuID != 0 && iterMain.uKey != 0)
@@ -3235,6 +3236,8 @@ void CHexCtrl::ModifyOperation(const SMODIFY& hms)
 					OperData(pOper, hms.enOperMode, qwDataOper, ullSizeChunk);
 				}
 				break;
+				default:
+					break;
 				}
 
 				if (m_enDataMode != EHexDataMode::DATA_MEMORY)
@@ -3244,7 +3247,7 @@ void CHexCtrl::ModifyOperation(const SMODIFY& hms)
 			}
 		}
 	exit:
-		dlg.Cancel();
+		dlg.ExitDlg();
 		});
 	if (ullTotalSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
 		dlg.DoModal();
@@ -3299,6 +3302,8 @@ void CHexCtrl::ModifyRepeat(const SMODIFY& hms)
 						std::fill_n(reinterpret_cast<PQWORD>(pData), static_cast<size_t>(ullSizeChunk) / sizeof(QWORD),
 							*reinterpret_cast<PQWORD>(hms.pData));
 						break;
+					default:
+						break;
 					}
 					if (m_enDataMode != EHexDataMode::DATA_MEMORY)
 						SetDataVirtual(pData, { ullOffset, ullSizeChunk });
@@ -3325,7 +3330,7 @@ void CHexCtrl::ModifyRepeat(const SMODIFY& hms)
 			}
 		}
 	exit:
-		dlg.Cancel();
+		dlg.ExitDlg();
 		});
 	if (ullTotalSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
 		dlg.DoModal();
@@ -3361,6 +3366,8 @@ void CHexCtrl::MsgWindowNotify(UINT uCode)const
 			hns.stSpan.ullSize = m_ullDataSize - hns.stSpan.ullOffset;
 	}
 	break;
+	default:
+		break;
 	}
 	MsgWindowNotify(hns);
 }
@@ -4327,11 +4334,13 @@ void CHexCtrl::OnHScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollB
 void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMenu*/)
 {
 	m_fMenuCMD = true;
-	switch (nIndex) //Zero based index of the menu. Zero means main menu itself, 1 - first (sub)menu, and so on.
+	//The nIndex specifies the zero-based relative position of the menu item that opens the drop-down menu or submenu.
+	switch (nIndex)
 	{
-	case 0:	//Main menu.
+	case 0:	//Search.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLG_SEARCH, IsCmdAvail(EHexCmd::CMD_DLG_SEARCH) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLG_DATAINTERP, IsCmdAvail(EHexCmd::CMD_DLG_DATAINTERP) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_NEXT, IsCmdAvail(EHexCmd::CMD_SEARCH_NEXT) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_PREV, IsCmdAvail(EHexCmd::CMD_SEARCH_PREV) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 3:	//Navigation.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DLG_GOTO, IsCmdAvail(EHexCmd::CMD_NAV_DLG_GOTO) ? MF_ENABLED : MF_GRAYED);
@@ -4375,6 +4384,12 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKSTART, IsCmdAvail(EHexCmd::CMD_SEL_MARKSTART) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKEND, IsCmdAvail(EHexCmd::CMD_SEL_MARKEND) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(EHexCmd::CMD_SEL_ALL) ? MF_ENABLED : MF_GRAYED);
+		break;
+	case 8: //Data Presentation.
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLG_DATAINTERP, IsCmdAvail(EHexCmd::CMD_DLG_DATAINTERP) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLG_ENCODING, IsCmdAvail(EHexCmd::CMD_DLG_ENCODING) ? MF_ENABLED : MF_GRAYED);
+		break;
+	default:
 		break;
 	}
 	m_fMenuCMD = false;

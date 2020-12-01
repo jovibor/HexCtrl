@@ -88,7 +88,7 @@ void CHexDlgEncoding::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 			[this](const SCODEPAGE& ref) { return ref.iCPID == m_pHexCtrl->GetEncoding(); }
 		); iter != m_vecCodePage.end())
 		{
-			auto iItem = static_cast<int>(iter - m_vecCodePage.begin());
+			const auto iItem = static_cast<int>(iter - m_vecCodePage.begin());
 			m_pListMain->SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
 			m_pListMain->EnsureVisible(iItem, FALSE);
 		}
@@ -105,6 +105,8 @@ BOOL CHexDlgEncoding::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 		{
 		case LVN_COLUMNCLICK:
 			SortList();
+			break;
+		default:
 			break;
 		}
 	}
@@ -131,6 +133,8 @@ void CHexDlgEncoding::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			break;
 		case 2: //Max chars.
 			swprintf_s(pItem->pszText, nMaxLengh, L"%u", m_vecCodePage[nItemID].uMaxChars);
+			break;
+		default:
 			break;
 		}
 	}
@@ -180,6 +184,8 @@ void CHexDlgEncoding::SortList()
 				break;
 			case 2: //Max chars.
 				iCompare = st1.uMaxChars != st2.uMaxChars ? (st1.uMaxChars < st2.uMaxChars ? -1 : 1) : 0;
+				break;
+			default:
 				break;
 			}
 

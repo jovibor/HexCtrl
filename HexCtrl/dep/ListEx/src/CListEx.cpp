@@ -264,9 +264,9 @@ BOOL CListEx::DeleteColumn(int nCol)
 	if (!IsCreated())
 		return FALSE;
 
-	if (auto iter = m_umapColumnColor.find(nCol); iter != m_umapColumnColor.end())
+	if (const auto iter = m_umapColumnColor.find(nCol); iter != m_umapColumnColor.end())
 		m_umapColumnColor.erase(iter);
-	if (auto iter = m_umapColumnSortMode.find(nCol); iter != m_umapColumnSortMode.end())
+	if (const auto iter = m_umapColumnSortMode.find(nCol); iter != m_umapColumnSortMode.end())
 		m_umapColumnSortMode.erase(iter);
 
 	return CMFCListCtrl::DeleteColumn(nCol);
@@ -280,15 +280,15 @@ BOOL CListEx::DeleteItem(int iItem)
 
 	const auto ID = MapIndexToID(iItem);
 
-	if (auto iter = m_umapCellTt.find(ID); iter != m_umapCellTt.end())
+	if (const auto iter = m_umapCellTt.find(ID); iter != m_umapCellTt.end())
 		m_umapCellTt.erase(iter);
-	if (auto iter = m_umapCellMenu.find(ID); iter != m_umapCellMenu.end())
+	if (const auto iter = m_umapCellMenu.find(ID); iter != m_umapCellMenu.end())
 		m_umapCellMenu.erase(iter);
-	if (auto iter = m_umapCellData.find(ID); iter != m_umapCellData.end())
+	if (const auto iter = m_umapCellData.find(ID); iter != m_umapCellData.end())
 		m_umapCellData.erase(iter);
-	if (auto iter = m_umapCellColor.find(ID); iter != m_umapCellColor.end())
+	if (const auto iter = m_umapCellColor.find(ID); iter != m_umapCellColor.end())
 		m_umapCellColor.erase(iter);
-	if (auto iter = m_umapRowColor.find(ID); iter != m_umapRowColor.end())
+	if (const auto iter = m_umapRowColor.find(ID); iter != m_umapRowColor.end())
 		m_umapRowColor.erase(iter);
 
 	return CMFCListCtrl::DeleteItem(iItem);
@@ -306,11 +306,11 @@ ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)const
 		return 0;
 
 	const auto ID = MapIndexToID(iItem);
-	auto it = m_umapCellData.find(ID);
+	const auto it = m_umapCellData.find(ID);
 
 	if (it != m_umapCellData.end())
 	{
-		auto itInner = it->second.find(iSubItem);
+		const auto itInner = it->second.find(iSubItem);
 
 		//If subitem id found.
 		if (itInner != it->second.end())
@@ -330,7 +330,7 @@ EListExSortMode CListEx::GetColumnSortMode(int iColumn)const
 	assert(IsCreated());
 
 	EListExSortMode enMode;
-	auto iter = m_umapColumnSortMode.find(iColumn);
+	const auto iter = m_umapColumnSortMode.find(iColumn);
 	if (iter != m_umapColumnSortMode.end())
 		enMode = iter->second;
 	else
@@ -400,8 +400,8 @@ void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clr
 	if (clrText == -1) //-1 for default color.
 		clrText = m_stColors.clrListText;
 
-	UINT ID = MapIndexToID(static_cast<UINT>(iItem));
-	auto it = m_umapCellColor.find(ID);
+	const auto ID = MapIndexToID(static_cast<UINT>(iItem));
+	const auto it = m_umapCellColor.find(ID);
 
 	//If there is no color for such item/subitem we just set it.
 	if (it == m_umapCellColor.end())
@@ -411,7 +411,7 @@ void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clr
 	}
 	else
 	{
-		auto itInner = it->second.find(iSubItem);
+		const auto itInner = it->second.find(iSubItem);
 
 		if (itInner == it->second.end())
 			it->second.insert({ iSubItem, { clrBk, clrText } });
@@ -429,8 +429,8 @@ void CListEx::SetCellData(int iItem, int iSubItem, ULONGLONG ullData)
 	if (!IsCreated())
 		return;
 
-	UINT ID = MapIndexToID(iItem);
-	auto it = m_umapCellData.find(ID);
+	const auto ID = MapIndexToID(iItem);
+	const auto it = m_umapCellData.find(ID);
 
 	//If there is no data for such item/subitem we just set it.
 	if (it == m_umapCellData.end())
@@ -440,7 +440,7 @@ void CListEx::SetCellData(int iItem, int iSubItem, ULONGLONG ullData)
 	}
 	else
 	{
-		auto itInner = it->second.find(iSubItem);
+		const auto itInner = it->second.find(iSubItem);
 
 		if (itInner == it->second.end())
 			it->second.insert({ iSubItem, ullData });
@@ -455,8 +455,8 @@ void CListEx::SetCellMenu(int iItem, int iSubItem, CMenu* pMenu)
 	if (!IsCreated())
 		return;
 
-	UINT ID = MapIndexToID(iItem);
-	auto it = m_umapCellMenu.find(ID);
+	const auto ID = MapIndexToID(iItem);
+	const auto it = m_umapCellMenu.find(ID);
 
 	//If there is no menu for such item/subitem we just set it.
 	if (it == m_umapCellMenu.end())
@@ -466,7 +466,7 @@ void CListEx::SetCellMenu(int iItem, int iSubItem, CMenu* pMenu)
 	}
 	else
 	{
-		auto itInner = it->second.find(iSubItem);
+		const auto itInner = it->second.find(iSubItem);
 
 		//If there is Item's menu but no Subitem's menu
 		//inserting new Subitem into inner map.
@@ -483,8 +483,8 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTool
 	if (!IsCreated())
 		return;
 
-	UINT ID = MapIndexToID(iItem);
-	auto it = m_umapCellTt.find(ID);
+	const auto ID = MapIndexToID(iItem);
+	const auto it = m_umapCellTt.find(ID);
 
 	//If there is no tooltip for such item/subitem we just set it.
 	if (it == m_umapCellTt.end())
@@ -499,7 +499,7 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTool
 	}
 	else
 	{
-		auto itInner = it->second.find(iSubItem);
+		const auto itInner = it->second.find(iSubItem);
 
 		//If there is Item's tooltip but no Subitem's tooltip
 		//inserting new Subitem into inner map.
@@ -691,7 +691,7 @@ bool CListEx::HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& c
 	GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&nmii));
 	if (nmii.lParam != 0)
 	{
-		auto pClr = reinterpret_cast<PLISTEXCELLCOLOR>(nmii.lParam);
+		const auto pClr = reinterpret_cast<PLISTEXCELLCOLOR>(nmii.lParam);
 		clrBk = pClr->clrBk;
 		clrText = pClr->clrText;
 
@@ -701,11 +701,11 @@ bool CListEx::HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& c
 	if (!fHasColor)
 	{
 		const auto ID = MapIndexToID(static_cast<UINT>(iItem));
-		auto it = m_umapCellColor.find(ID);
+		const auto it = m_umapCellColor.find(ID);
 
 		if (it != m_umapCellColor.end())
 		{
-			auto itInner = it->second.find(iSubItem);
+			const auto itInner = it->second.find(iSubItem);
 
 			//If subitem id found.
 			if (itInner != it->second.end())
@@ -718,8 +718,8 @@ bool CListEx::HasCellColor(int iItem, int iSubItem, COLORREF& clrBk, COLORREF& c
 
 		if (!fHasColor)
 		{
-			auto itColumn = m_umapColumnColor.find(iSubItem);
-			auto itRow = m_umapRowColor.find(ID);
+			const auto itColumn = m_umapColumnColor.find(iSubItem);
+			const auto itRow = m_umapRowColor.find(ID);
 
 			if (itColumn != m_umapColumnColor.end() && itRow != m_umapRowColor.end())
 			{
@@ -753,11 +753,11 @@ bool CListEx::HasTooltip(int iItem, int iSubItem, std::wstring** ppwstrText, std
 	//Can return true/false indicating if subitem has tooltip,
 	//or can return pointers to tooltip text as well, if poiters are not nullptr.
 	const auto ID = MapIndexToID(iItem);
-	auto it = m_umapCellTt.find(ID);
+	const auto it = m_umapCellTt.find(ID);
 
 	if (it != m_umapCellTt.end())
 	{
-		auto itInner = it->second.find(iSubItem);
+		const auto itInner = it->second.find(iSubItem);
 
 		//If subitem id found and its text is not empty.
 		if (itInner != it->second.end() && !itInner->second.wstrText.empty())
@@ -792,11 +792,11 @@ bool CListEx::HasMenu(int iItem, int iSubItem, CMenu** ppMenu)
 	else
 	{
 		const auto ID = MapIndexToID(iItem);
-		auto it = m_umapCellMenu.find(ID);
+		const auto it = m_umapCellMenu.find(ID);
 
 		if (it != m_umapCellMenu.end())
 		{
-			auto itInner = it->second.find(iSubItem);
+			const auto itInner = it->second.find(iSubItem);
 
 			//If subitem id found.
 			if (itInner != it->second.end())
@@ -1052,6 +1052,8 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 	break;
 	case ODA_FOCUS:
 		break;
+	default:
+		break;
 	}
 }
 
@@ -1274,6 +1276,8 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 			m_rcLinkCurr.SetRectEmpty();
 
 		KillTimer(ID_TIMER_TT_LINK_ACTIVATE);
+		break;
+	default:
 		break;
 	}
 }

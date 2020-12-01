@@ -52,6 +52,8 @@ namespace HEXCTRL::INTERNAL
 			case 8:
 				wstrFormat = L"%019llu";
 				break;
+			default:
+				break;
 			}
 			swprintf_s(pwsz, 32, wstrFormat.data(), ull);
 		}

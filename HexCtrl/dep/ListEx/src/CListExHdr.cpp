@@ -85,6 +85,8 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rect, BOOL bIsPressed, BO
 	case (HDF_STRING | HDF_RIGHT):
 		uFormat = DT_RIGHT;
 		break;
+	default:
+		break;
 	}
 
 	constexpr long lOffset = 4;
