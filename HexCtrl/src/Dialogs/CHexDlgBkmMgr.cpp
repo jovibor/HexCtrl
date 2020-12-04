@@ -8,11 +8,20 @@
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgBkmMgr.h"
+#include "CHexDlgBkmProps.h"
 #include <cassert>
 #include <numeric>
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
+
+namespace HEXCTRL::INTERNAL
+{
+	enum class CHexDlgBkmMgr::EMenuID : WORD {
+		IDM_BKMMGR_NEW = 0x8000, IDM_BKMMGR_EDIT = 0x8001,
+		IDM_BKMMGR_REMOVE = 0x8002, IDM_BKMMGR_CLEARALL = 0x8003
+	};
+};
 
 BEGIN_MESSAGE_MAP(CHexDlgBkmMgr, CDialogEx)
 	ON_WM_ACTIVATE()
@@ -239,7 +248,7 @@ void CHexDlgBkmMgr::OnListItemLClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 void CHexDlgBkmMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iItem != -1 && pNMI->iSubItem != -1)
-		SendMessageW(WM_COMMAND, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_EDIT));
+		SendMessageW(WM_COMMAND, static_cast<WPARAM>(EMenuID::IDM_BKMMGR_EDIT));
 }
 
 void CHexDlgBkmMgr::OnListRClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
@@ -249,10 +258,10 @@ void CHexDlgBkmMgr::OnListRClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		fEnabled = true;
 
 	//Edit menu enabled only when one item selected.
-	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_EDIT),
+	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_EDIT),
 		(fEnabled && (m_pListMain->GetSelectedCount() == 1) ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVE), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuList.EnableMenuItem(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_CLEARALL),
+	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVE), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_CLEARALL),
 		(m_pListMain->GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 
 	POINT pt;

@@ -162,7 +162,6 @@ namespace HEXCTRL::INTERNAL
 			bool fChild { false };
 		};
 		CHexCtrl* m_pHexCtrl { };
-		bool m_fVisible { false };
 		bool m_fBigEndian { false };
 		bool m_fShowAsHex { true };
 		CHexPropGridCtrl m_stCtrlGrid;
@@ -170,7 +169,6 @@ namespace HEXCTRL::INTERNAL
 		CMFCPropertyGridProperty* m_pPropChanged { };
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullSize { };
-		HDITEMW m_hdItemPropGrid { };
 		DWORD m_dwDateFormat { };
 		WCHAR m_warrDateSeparator[4] { };
 	};

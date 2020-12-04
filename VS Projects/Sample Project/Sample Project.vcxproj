@@ -231,6 +231,7 @@
     <ClInclude Include="..\..\HexCtrl\dep\ListEx\src\CListEx.h" />
     <ClInclude Include="..\..\HexCtrl\dep\ListEx\src\CListExHdr.h" />
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h" />
+    <ClInclude Include="..\..\HexCtrl\HexCtrlDefs.h" />
     <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexBookmarks.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexCtrl.h" />

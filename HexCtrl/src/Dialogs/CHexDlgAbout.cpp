@@ -12,10 +12,6 @@
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
-/****************************************************
-* CHexDlgAbout class implementation.				*
-****************************************************/
-
 BEGIN_MESSAGE_MAP(CHexDlgAbout, CDialogEx)
 END_MESSAGE_MAP()
 

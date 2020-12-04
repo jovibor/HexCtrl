@@ -6,7 +6,7 @@
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 ****************************************************************************************/
 #pragma once
-#include "../../HexCtrl.h"
+#include "../../HexCtrlDefs.h"
 #include "../../res/HexCtrlRes.h"
 #include <afxcontrolbars.h>
 

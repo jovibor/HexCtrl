@@ -405,7 +405,6 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this);
 	m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, this, this);
 	m_pBookmarks->Attach(this);
-	m_pSelection->Attach(this);
 	m_fCreated = true;
 
 	SetGroupMode(m_enGroupMode);
@@ -557,9 +556,11 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case EHexCmd::CMD_SEL_MARKSTART:
 		m_pSelection->SetSelStartEnd(GetCaretPos(), true);
+		Redraw();
 		break;
 	case EHexCmd::CMD_SEL_MARKEND:
 		m_pSelection->SetSelStartEnd(GetCaretPos(), false);
+		Redraw();
 		break;
 	case EHexCmd::CMD_SEL_ALL:
 		SelAll();
@@ -1511,7 +1512,9 @@ void CHexCtrl::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedr
 	if (!IsCreated() || !IsDataSet())
 		return;
 
-	m_pSelection->SetSelection(vecSel, fRedraw);
+	m_pSelection->SetSelection(vecSel);
+	if (fRedraw)
+		Redraw();
 	MsgWindowNotify(HEXCTRL_MSG_SELECTION);
 }
 
@@ -3181,7 +3184,7 @@ void CHexCtrl::ModifyOperation(const SMODIFY& hms)
 	const auto ullTotalSize = std::accumulate(vecSelRef.begin(), vecSelRef.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPANSTRUCT& ref) {return ullSumm + ref.ullSize; });
 
-	CHexDlgCallback dlg(L"Modifying...");
+	CHexDlgCallback dlgClbk(L"Modifying...");
 	std::thread thrd([&]() {
 		for (const auto& iterSel : vecSelRef) //Selections vector's size times.
 		{
@@ -3242,15 +3245,15 @@ void CHexCtrl::ModifyOperation(const SMODIFY& hms)
 
 				if (m_enDataMode != EHexDataMode::DATA_MEMORY)
 					SetDataVirtual(pData, { ullOffset, ullSizeChunk });
-				if (dlg.IsCanceled())
+				if (dlgClbk.IsCanceled())
 					goto exit;
 			}
 		}
 	exit:
-		dlg.ExitDlg();
+		dlgClbk.ExitDlg();
 		});
 	if (ullTotalSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
-		dlg.DoModal();
+		dlgClbk.DoModal();
 	thrd.join();
 }
 
@@ -3376,7 +3379,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 {
 	//To prevent inspecting while key is pressed continuously.
 	//Only when one time pressing.
-	if (!m_fKeyDownAtm)
+	if (!m_fKeyDownAtm && m_pDlgDataInterp->IsWindowVisible())
 		m_pDlgDataInterp->InspectOffset(ullOffset);
 
 	if (auto pBkm = m_pBookmarks->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.

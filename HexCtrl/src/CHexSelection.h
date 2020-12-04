@@ -6,7 +6,7 @@
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 ****************************************************************************************/
 #pragma once
-#include "../HexCtrl.h"
+#include "../HexCtrlDefs.h"
 #include <vector>
 
 namespace HEXCTRL::INTERNAL
@@ -14,7 +14,6 @@ namespace HEXCTRL::INTERNAL
 	class CHexSelection final
 	{
 	public:
-		void Attach(IHexCtrl* pHexCtrl);
 		void ClearAll();
 		void ClearSelHighlight();
 		[[nodiscard]] ULONGLONG GetSelectionEnd()const;
@@ -28,11 +27,10 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool HitTest(ULONGLONG ullOffset)const;           //Is given offset within selection.
 		[[nodiscard]] bool HitTestHighlight(ULONGLONG ullOffset)const;  //Is given offset within highlighted selection.
 		[[nodiscard]] bool HitTestRange(const HEXSPANSTRUCT& hss)const; //Is there any selection within given range.
-		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect, bool fRedraw = true);
+		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect);
 		void SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight);
-		void SetSelStartEnd(ULONGLONG ullOffset, bool fStart, bool fRedraw = true); //fStart true - Start, false - End.
+		void SetSelStartEnd(ULONGLONG ullOffset, bool fStart); //fStart true - Start, false - End.
 	private:
-		IHexCtrl* m_pHexCtrl { };
 		std::vector<HEXSPANSTRUCT> m_vecSelection { };         //Selection vector.
 		std::vector<HEXSPANSTRUCT> m_vecSelHighlight { };      //Selection highlight vector.
 		ULONGLONG m_ullMarkSelStart { 0xFFFFFFFFFFFFFFFFULL }; //For SetSelStartEnd().

@@ -111,6 +111,9 @@
     <ClInclude Include="..\..\HexCtrl\dep\ListEx\ListEx.h">
       <Filter>HexCtrl\dep\ListEx</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\HexCtrl\HexCtrlDefs.h">
+      <Filter>HexCtrl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HexSample.cpp">

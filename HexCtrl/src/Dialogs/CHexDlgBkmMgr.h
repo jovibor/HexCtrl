@@ -8,7 +8,6 @@
 #pragma once
 #include "../CHexBookmarks.h"
 #include "../../dep/ListEx/ListEx.h"
-#include "CHexDlgBkmProps.h"
 #include <afxdialogex.h>
 
 namespace HEXCTRL::INTERNAL
@@ -16,10 +15,7 @@ namespace HEXCTRL::INTERNAL
 	using namespace HEXCTRL::LISTEX;
 	class CHexDlgBkmMgr final : public CDialogEx
 	{
-		enum class EMenuID : WORD {
-			IDM_BKMMGR_NEW = 0x8000, IDM_BKMMGR_EDIT = 0x8001,
-			IDM_BKMMGR_REMOVE = 0x8002, IDM_BKMMGR_CLEARALL = 0x8003
-		};
+		enum class EMenuID : WORD;
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks);
 	protected:

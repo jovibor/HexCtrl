@@ -70,9 +70,6 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RADIO_HEX)); pRadio)
 		pRadio->SetCheck(BST_CHECKED);
 
-	m_hdItemPropGrid.mask = HDI_WIDTH;
-	m_hdItemPropGrid.cxy = 150;
-
 	m_vecProp.emplace_back(SGRIDDATA { new CMFCPropertyGridProperty(L"binary:", L"0"), EGroup::DIGITS, EName::NAME_BINARY, ESize::SIZE_BYTE });
 	m_vecProp.emplace_back(SGRIDDATA { new CMFCPropertyGridProperty(L"char:", L"0"), EGroup::DIGITS, EName::NAME_CHAR, ESize::SIZE_BYTE });
 	m_vecProp.emplace_back(SGRIDDATA { new CMFCPropertyGridProperty(L"unsigned char:", L"0"), EGroup::DIGITS, EName::NAME_UCHAR, ESize::SIZE_BYTE });
@@ -96,9 +93,12 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	m_vecProp.emplace_back(SGRIDDATA { new CMFCPropertyGridProperty(L"GUID v1 UTC time:", L"0"), EGroup::TIME, EName::NAME_GUIDTIME, ESize::SIZE_DQWORD, true });
 
 	m_stCtrlGrid.EnableHeaderCtrl(TRUE, L"Data type", L"Value");
-	m_stCtrlGrid.GetHeaderCtrl().SetItem(0, &m_hdItemPropGrid); //Property grid column size.
+	HDITEMW hdItemPropGrid { };
+	hdItemPropGrid.mask = HDI_WIDTH;
+	hdItemPropGrid.cxy = 150;
+	m_stCtrlGrid.GetHeaderCtrl().SetItem(0, &hdItemPropGrid); //Property grid column size.
 
-	//Digits group
+		//Digits group
 	auto pDigits = new CMFCPropertyGridProperty(L"Digits:");
 	for (const auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::DIGITS && !iter.fChild)
@@ -155,7 +155,7 @@ void CHexDlgDataInterp::OnShowWindow(BOOL bShow, UINT nStatus)
 {
 	CDialogEx::OnShowWindow(bShow, nStatus);
 
-	if (m_fVisible = bShow != FALSE; m_fVisible)
+	if (bShow != FALSE)
 		InspectOffset(m_pHexCtrl->GetCaretPos());
 }
 
@@ -249,9 +249,6 @@ void CHexDlgDataInterp::OnOK()
 
 void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 {
-	if (!m_fVisible)
-		return;
-
 	const auto ullDataSize = m_pHexCtrl->GetDataSize();
 	if (ullOffset >= ullDataSize) //Out of data bounds.
 		return;
@@ -423,9 +420,6 @@ BOOL CHexDlgDataInterp::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 void CHexDlgDataInterp::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
-
-	if (m_fVisible)
-		m_stCtrlGrid.GetHeaderCtrl().SetItem(0, &m_hdItemPropGrid); //Property grid column size.
 }
 
 void CHexDlgDataInterp::OnClickRadioLe()

@@ -148,7 +148,7 @@ If you want to build **HexCtrl** from the sources in non **MFC** app you will ha
 
 ### [](#)Dynamic Link Library
 To use **HexCtrl** as the *.dll* do the following:
-1. Copy *HexCtrl.h* file into your project's folder.
+1. Copy *HexCtrl.h* and *HexCtrlDefs.h* files into your project's folder.
 2. Copy *HexCtrl.lib* file into your project's folder, so that linker can see it.
 3. Put *HexCtrl.dll* file next to your *.exe* file.
 4. Add the following line where you suppose to use the control:

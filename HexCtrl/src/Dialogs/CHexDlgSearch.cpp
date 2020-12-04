@@ -905,9 +905,9 @@ void CHexDlgSearch::Search()
 				pDlgClb->ExitDlg();
 			};
 
-			CHexDlgCallback dlgClb(L"Searching...");
-			std::thread thrd(lmbSearch, &dlgClb);
-			dlgClb.DoModal();
+			CHexDlgCallback dlgClbk(L"Searching...");
+			std::thread thrd(lmbSearch, &dlgClbk);
+			dlgClbk.DoModal();
 			thrd.join();
 			if (m_fFound) //Notifying parent just once about data change/replace.
 				pHexCtrl->ParentNotify(HEXCTRL_MSG_SETDATA);
@@ -956,9 +956,9 @@ void CHexDlgSearch::Search()
 				m_pListMain->SetItemCountEx(static_cast<int>(m_dwCount));
 			};
 
-			CHexDlgCallback dlgClb(L"Searching...");
-			std::thread thrd(lmbSearch, &dlgClb);
-			dlgClb.DoModal();
+			CHexDlgCallback dlgClbk(L"Searching...");
+			std::thread thrd(lmbSearch, &dlgClbk);
+			dlgClbk.DoModal();
 			thrd.join();
 		}
 		else
@@ -1127,9 +1127,9 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 
 	if (pDlg == nullptr && ullSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
 	{
-		CHexDlgCallback dlg(L"Searching...");
-		std::thread thrd(lmbSearch, &dlg);
-		dlg.DoModal();
+		CHexDlgCallback dlgClbk(L"Searching...");
+		std::thread thrd(lmbSearch, &dlgClbk);
+		dlgClbk.DoModal();
 		thrd.join();
 	}
 	else
