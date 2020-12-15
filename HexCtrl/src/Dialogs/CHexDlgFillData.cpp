@@ -38,11 +38,6 @@ BOOL CHexDlgFillData::OnInitDialog()
 	return TRUE;
 }
 
-CHexCtrl* CHexDlgFillData::GetHexCtrl()const
-{
-	return m_pHexCtrl;
-}
-
 void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
@@ -50,12 +45,11 @@ void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
 
 void CHexDlgFillData::OnOK()
 {
-	const auto pHex = GetHexCtrl();
 	const auto iRadioType = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16);
 
 	SMODIFY hms;
 	hms.enModifyMode = EModifyMode::MODIFY_REPEAT;
-	hms.vecSpan = pHex->GetSelection();
+	hms.vecSpan = m_pHexCtrl->GetSelection();
 	if (hms.vecSpan.empty())
 		return;
 
@@ -101,8 +95,8 @@ void CHexDlgFillData::OnOK()
 		pCombo->InsertString(0, wstrComboText.data());
 	}
 
-	pHex->Modify(hms);
-	pHex->SetFocus();
+	m_pHexCtrl->Modify(hms);
+	::SetFocus(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN));
 
 	CDialogEx::OnOK();
 }

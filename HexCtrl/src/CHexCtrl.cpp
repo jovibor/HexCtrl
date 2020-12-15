@@ -35,9 +35,6 @@ using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL
 {
-/********************************************
-* CreateRawHexCtrl function implementation. *
-********************************************/
 	extern "C" HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl()
 	{
 		return new CHexCtrl();
@@ -99,9 +96,6 @@ namespace HEXCTRL
 	}
 }
 
-/************************************************************************
-* CHexCtrl class implementation.                                        *
-************************************************************************/
 BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_ACTIVATE()
 	ON_WM_CHAR()
@@ -1505,14 +1499,15 @@ void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wstrName)
 		Redraw();
 }
 
-void CHexCtrl::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw)
+void CHexCtrl::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw, bool fHighlight)
 {
 	assert(IsCreated());
 	assert(IsDataSet());
 	if (!IsCreated() || !IsDataSet())
 		return;
 
-	m_pSelection->SetSelection(vecSel);
+	m_pSelection->SetSelection(vecSel, fHighlight);
+
 	if (fRedraw)
 		Redraw();
 	MsgWindowNotify(HEXCTRL_MSG_SELECTION);
@@ -1585,7 +1580,7 @@ void CHexCtrl::CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLO
 			ullSizeChunk -= (ullSizeChunk & (ullAlign - 1)); //Aligning chunk size to ullAlign.
 		if (ullSize < ullSizeChunk)
 			ullSizeChunk = ullSize;
-		ullChunks = (ullSize % ullSizeChunk) ? ullSize / ullSizeChunk + 1 : ullSize / ullSizeChunk;
+		ullChunks = ullSize / ullSizeChunk + ((ullSize % ullSizeChunk) ? 1 : 0);
 	}
 	break;
 	}
@@ -1752,11 +1747,6 @@ void CHexCtrl::CaretToPageEnd()
 	SetCaretPos(ullPos);
 	if (!IsOffsetVisible(ullPos))
 		GoToOffset(ullPos);
-}
-
-void CHexCtrl::ClearSelHighlight()
-{
-	m_pSelection->ClearSelHighlight();
 }
 
 void CHexCtrl::ClipboardCopy(EClipboard enType)const
@@ -3158,8 +3148,7 @@ void CHexCtrl::Modify(const SMODIFY& hms)
 		break;
 	}
 
-	if (hms.fParentNtfy)
-		ParentNotify(HEXCTRL_MSG_SETDATA);
+	ParentNotify(HEXCTRL_MSG_SETDATA);
 
 	if (hms.fRedraw)
 		RedrawWindow();
@@ -3266,7 +3255,7 @@ void CHexCtrl::ModifyRepeat(const SMODIFY& hms)
 	std::byte* pData { };
 	ULONGLONG ullOffset { 0 };
 
-	CHexDlgCallback dlg(L"Modifying...");
+	CHexDlgCallback dlgClbk(L"Modifying...");
 	std::thread thrd([&]() {
 		for (const auto& iterSel : vecSelRef) //Selections vector's size times.
 		{
@@ -3310,7 +3299,7 @@ void CHexCtrl::ModifyRepeat(const SMODIFY& hms)
 					}
 					if (m_enDataMode != EHexDataMode::DATA_MEMORY)
 						SetDataVirtual(pData, { ullOffset, ullSizeChunk });
-					if (dlg.IsCanceled())
+					if (dlgClbk.IsCanceled())
 						goto exit;
 				}
 			}
@@ -3327,16 +3316,16 @@ void CHexCtrl::ModifyRepeat(const SMODIFY& hms)
 					std::copy_n(hms.pData, static_cast<size_t>(hms.ullDataSize), pData);
 					if (m_enDataMode != EHexDataMode::DATA_MEMORY)
 						SetDataVirtual(pData, { ullOffset, hms.ullDataSize });
-					if (dlg.IsCanceled())
+					if (dlgClbk.IsCanceled())
 						goto exit;
 				}
 			}
 		}
 	exit:
-		dlg.ExitDlg();
+		dlgClbk.ExitDlg();
 		});
 	if (ullTotalSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
-		dlg.DoModal();
+		dlgClbk.DoModal();
 	thrd.join();
 }
 
@@ -4039,12 +4028,6 @@ void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss)
 	}
 	break;
 	}
-}
-
-void CHexCtrl::SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight)
-{
-	m_pSelection->SetSelHighlight(vecSelHighlight);
-	RedrawWindow();
 }
 
 void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)

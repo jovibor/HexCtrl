@@ -21,11 +21,6 @@ void CHexSelection::ClearAll()
 	m_ullMarkSelEnd = 0xFFFFFFFFFFFFFFFFULL;
 }
 
-void CHexSelection::ClearSelHighlight()
-{
-	m_vecSelHighlight.clear();
-}
-
 bool CHexSelection::HasSelection()const
 {
 	return !m_vecSelection.empty();
@@ -118,16 +113,15 @@ auto CHexSelection::GetData()const ->std::vector<HEXSPANSTRUCT>
 	return m_vecSelection;
 }
 
-void CHexSelection::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect)
+void CHexSelection::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fHighlight)
 {
-	//On new selection clear all highlights.
-	ClearSelHighlight();
-	m_vecSelection = vecSelect;
-}
-
-void CHexSelection::SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight)
-{
-	m_vecSelHighlight = vecSelHighlight;
+	if (fHighlight)
+		m_vecSelHighlight = vecSel;
+	else
+	{
+		m_vecSelHighlight.clear(); //On new selection clear all highlights.
+		m_vecSelection = vecSel;
+	}
 }
 
 void CHexSelection::SetSelStartEnd(ULONGLONG ullOffset, bool fStart)

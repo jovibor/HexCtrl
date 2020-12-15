@@ -15,7 +15,6 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		void ClearAll();
-		void ClearSelHighlight();
 		[[nodiscard]] ULONGLONG GetSelectionEnd()const;
 		[[nodiscard]] ULONGLONG GetSelectionSize()const;
 		[[nodiscard]] ULONGLONG GetSelectionStart()const;
@@ -27,12 +26,11 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool HitTest(ULONGLONG ullOffset)const;           //Is given offset within selection.
 		[[nodiscard]] bool HitTestHighlight(ULONGLONG ullOffset)const;  //Is given offset within highlighted selection.
 		[[nodiscard]] bool HitTestRange(const HEXSPANSTRUCT& hss)const; //Is there any selection within given range.
-		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSelect);
-		void SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight);
+		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fHighlight); //Set a selection or selection highlight.
 		void SetSelStartEnd(ULONGLONG ullOffset, bool fStart); //fStart true - Start, false - End.
 	private:
-		std::vector<HEXSPANSTRUCT> m_vecSelection { };         //Selection vector.
-		std::vector<HEXSPANSTRUCT> m_vecSelHighlight { };      //Selection highlight vector.
+		std::vector<HEXSPANSTRUCT> m_vecSelection { };         //Selection data vector.
+		std::vector<HEXSPANSTRUCT> m_vecSelHighlight { };      //Selection highlight data vector.
 		ULONGLONG m_ullMarkSelStart { 0xFFFFFFFFFFFFFFFFULL }; //For SetSelStartEnd().
 		ULONGLONG m_ullMarkSelEnd { 0xFFFFFFFFFFFFFFFFULL };   //For SetSelectionEnd().
 	};

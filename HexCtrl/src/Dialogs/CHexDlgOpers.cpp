@@ -36,11 +36,6 @@ BOOL CHexDlgOpers::OnInitDialog()
 	return TRUE;
 }
 
-CHexCtrl* CHexDlgOpers::GetHexCtrl()const
-{
-	return m_pHexCtrl;
-}
-
 void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
@@ -103,13 +98,12 @@ BOOL CHexDlgOpers::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 
 void CHexDlgOpers::OnOK()
 {
-	const auto pHex = GetHexCtrl();
 	const auto iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_DIV);
 	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
 
 	SMODIFY hms;
 	hms.enModifyMode = EModifyMode::MODIFY_OPERATION;
-	hms.vecSpan = pHex->GetSelection();
+	hms.vecSpan = m_pHexCtrl->GetSelection();
 	if (hms.vecSpan.empty())
 		return;
 
@@ -197,8 +191,8 @@ void CHexDlgOpers::OnOK()
 		break;
 	}
 
-	pHex->Modify(hms);
-	pHex->SetFocus();
+	m_pHexCtrl->Modify(hms);
+	::SetFocus(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN));
 
 	CDialogEx::OnOK();
 }

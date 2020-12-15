@@ -63,16 +63,15 @@ namespace HEXCTRL::INTERNAL
 	struct SMODIFY
 	{
 		EModifyMode enModifyMode { EModifyMode::MODIFY_DEFAULT }; //Modify mode.
-		EOperMode   enOperMode { };        //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
-		std::byte*  pData { };             //Pointer to a data to be set.
-		ULONGLONG   ullDataSize { };       //Size of the data pData is pointing to.
+		EOperMode   enOperMode { };             //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
+		std::byte*  pData { };                  //Pointer to a data to be set.
+		ULONGLONG   ullDataSize { };            //Size of the data pData is pointing to.
 		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
-		bool        fParentNtfy { true };  //Notify parent about data change or not?
-		bool        fRedraw { true };      //Redraw HexCtrl's window or not?
+		bool        fRedraw { true };           //Redraw HexCtrl's window after data changes?
 	};
 
 	/********************************************************************************************
-	* CHexCtrl class, is an implementation of the IHexCtrl interface.                           *
+	* CHexCtrl class is an implementation of the IHexCtrl interface.                            *
 	********************************************************************************************/
 	class CHexCtrl final : public CWnd, public IHexCtrl
 	{
@@ -125,7 +124,7 @@ namespace HEXCTRL::INTERNAL
 		void SetMutable(bool fEnable)override;              //Enable or disable mutable/editable mode.
 		void SetOffsetMode(bool fHex)override;              //Set offset being shown as Hex or as Decimal.
 		void SetPageSize(DWORD dwSize, std::wstring_view wstrName)override;  //Set page size and name to draw the line between.
-		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true)override; //Set current selection.
+		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true, bool fHighlight = false)override; //Set current selection.
 		void SetWheelRatio(double dbRatio)override;         //Set the ratio for how much to scroll with mouse-wheel.
 	private:
 		friend class CHexDlgDataInterp;
@@ -149,7 +148,6 @@ namespace HEXCTRL::INTERNAL
 		void CaretToLineEnd(); //Set caret to a current line end.
 		void CaretToPageBeg(); //Set caret to a current page beginning.
 		void CaretToPageEnd(); //Set caret to a current page end.
-		void ClearSelHighlight(); //Clear selection highlight.
 		void ClipboardCopy(EClipboard enType)const;
 		void ClipboardPaste(EClipboard enType);
 		[[nodiscard]] auto CopyBase64()const->std::wstring;
@@ -210,7 +208,6 @@ namespace HEXCTRL::INTERNAL
 		template<typename T>
 		void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
-		void SetSelHighlight(const std::vector<HEXSPANSTRUCT>& vecSelHighlight); //Set selection highlight.
 		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
 		void TtBkmShow(bool fShow, POINT pt = { }); //Tooltip bookmark show/hide.
 		void TtOffsetShow(bool fShow);              //Tooltip Offset show/hide.

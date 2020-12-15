@@ -20,7 +20,6 @@ namespace HEXCTRL::INTERNAL
 		BOOL OnInitDialog()override;
 		void OnOK()override;
 		DECLARE_MESSAGE_MAP()
-		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
 	private:
 		CHexCtrl* m_pHexCtrl { };
 	};

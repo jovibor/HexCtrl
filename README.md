@@ -669,9 +669,9 @@ To remove the divider just set `dwSize` to 0.
 
 ### [](#)SetSelection
 ```cpp
-void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true);
+void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true, bool fHighlight = false);
 ```
-Sets current selection.
+Sets current selection or highlight in the selection, if `fHighlight` is `true`.
 
 ### [](#)SetWheelRatio
 ```cpp

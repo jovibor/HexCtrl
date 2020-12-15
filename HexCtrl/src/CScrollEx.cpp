@@ -33,9 +33,6 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 	constexpr auto THUMB_POS_MAX = 0x7FFFFFFF;
 }
 
-/****************************************************
-* CScrollEx class implementation.					*
-****************************************************/
 BEGIN_MESSAGE_MAP(CScrollEx, CWnd)
 	ON_WM_TIMER()
 	ON_WM_DESTROY()

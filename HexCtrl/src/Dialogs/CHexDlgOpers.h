@@ -23,8 +23,6 @@ namespace HEXCTRL::INTERNAL
 		void OnOK()override;
 		DECLARE_MESSAGE_MAP()
 	private:
-		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
-	private:
 		CHexCtrl* m_pHexCtrl { };
 	};
 }
