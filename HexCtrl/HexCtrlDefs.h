@@ -229,4 +229,44 @@ namespace HEXCTRL
 		std::int8_t i8Horz { }; //Horizontal offset.
 		operator bool()const { return i8Vert == 0 && i8Horz == 0; }; //For test simplicity: if(IsOffsetVisible()).
 	};
+
+	/********************************************************************************************
+	* EHexModifyMode - Enum of the data modification mode, used in HEXMODIFY.                   *
+	********************************************************************************************/
+	enum class EHexModifyMode : WORD
+	{
+		MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
+	};
+
+	/********************************************************************************************
+	* EHexOperMode - Enum of the data operation mode, used in HEXMODIFY when                    *
+	* HEXMODIFY::enModifyMode is set to MODIFY_OPERATION.                                       *
+	********************************************************************************************/
+	enum class EHexOperMode : WORD
+	{
+		OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
+		OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
+	};
+
+	/********************************************************************************************
+	* HEXMODIFY - used to represent data modification parameters.                               *
+	* When enModifyMode is set to EHexModifyMode::MODIFY_DEFAULT, bytes from pData just replace *
+	* corresponding data bytes as is. If enModifyMode is equal to EHexModifyMode::MODIFY_REPEAT *
+	* then block by block replacement takes place few times.                                    *
+	*   For example : if SUM(vecSpan.ullSize) = 9, ullDataSize = 3 and enModifyMode is set to   *
+	* EHexModifyMode::MODIFY_REPEAT, bytes in memory at vecSpan.ullOffset position are          *
+	* 123456789, and bytes pointed to by pData are 345, then, after modification, bytes at      *
+	* vecSpan.ullOffset will be 345345345. If enModifyMode is equal to                          *
+	* EHexModifyMode::MODIFY_OPERATION then enOperMode comes into play, showing what kind of    *
+	* operation must be performed on data.                                                      *
+	********************************************************************************************/
+	struct HEXMODIFY
+	{
+		EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
+		EHexOperMode   enOperMode { };          //Operation mode, used only if enModifyMode == MODIFY_OPERATION.
+		std::byte*  pData { };                  //Pointer to a data to be set.
+		ULONGLONG   ullDataSize { };            //Size of the data pData is pointing to.
+		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
+		bool        fRedraw { true };           //Redraw HexCtrl's window after data changes?
+	};
 };

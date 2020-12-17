@@ -31,9 +31,12 @@
   * [CreateDialogCtrl](#createdialogctrl)
   * [Destroy](#destroy)
   * [ExecuteCmd](#executecmd)
+  * [GetCacheSize](#getcachesize)
   * [GetCapacity](#getcapacity)
   * [GetCaretPos](#getcaretpos)
   * [GetColors](#getcolors)
+  * [GetData](#getdata)
+  * [GetDataMode](#getdatamode)
   * [GetDataSize](#getdatasize)
   * [GetEncoding](#getencoding)
   * [GetFontSize](#getfontsize)
@@ -52,6 +55,7 @@
   * [IsMutable](#ismutable)
   * [IsOffsetAsHex](#isoffsetashex)
   * [IsOffsetVisible](#isoffsetvisible)
+  * [ModifyData](#modifydata)
   * [Redraw](#redraw)
   * [SetCapacity](#setcapacity)
   * [SetCaretPos](#setcaretpos)
@@ -75,13 +79,18 @@
   * [HEXCREATESTRUCT](#hexcreatestruct)
   * [HEXDATASTRUCT](#hexdatastruct)
   * [HEXHITTESTSTRUCT](#hexhitteststruct)
+  * [HEXMODIFY](#hexmodify)
   * [HEXNOTIFYSTRUCT](#hexnotifystruct)
   * [HEXSPANSTRUCT](#hexspanstruct)
   * [HEXVISSTRUCT](#hexvisstruct)
+  </details>
+* [Enums](#enums) <details><summary>_Expand_</summary>
   * [EHexCmd](#ehexcmd)
   * [EHexCreateMode](#ehexcreatemode)
   * [EHexDataMode](#ehexdatamode)
   * [EHexGroupMode](#ehexgroupmode)
+  * [EHexModifyMode](#ehexmodifymode)
+  * [EHexOperMode](#ehexopermode)
   * [EHexWnd](#ehexwnd)
    </details>
 * [Notification Messages](#notification-messages) <details><summary>_Expand_</summary>
@@ -444,9 +453,15 @@ void ExecuteCmd(EHexCmd enCmd)const;
 ```
 Executes one of the predefined commands of [`EHexCmd`](#ehexcmd) enum. All these commands are basically replicating control's inner menu.
 
+### [](#)GetCacheSize
+```cpp
+auto GetCacheSize()const->DWORD;
+```
+Returns current cache size set in [`HEXDATASTRUCT`](#hexdatastruct).
+
 ### [](#)GetCapacity
 ```cpp
-DWORD GetCapacity()const
+DWORD GetCapacity()const;
 ```
 Returns current capacity.
 
@@ -458,9 +473,21 @@ Retrieves current caret position offset.
 
 ### [](#)GetColors
 ```cpp
-auto GetColors()const->HEXCOLORSSTRUCT
+auto GetColors()const->HEXCOLORSSTRUCT;
 ```
 Returns current [`HEXCOLORSSTRUCT`](#hexcolorsstruct).
+
+### [](#)GetData
+```cpp
+auto GetData(HEXSPANSTRUCT hss)const->std::byte*;
+```
+Returns a pointer to data offset, no matter what mode the control works in.
+
+### [](#)GetDataMode
+```cpp
+auto GetDataMode()const->EHexDataMode;
+```
+Returns current [data mode](#ehexdatamode).
 
 ### [](#)GetDataSize
 ```cpp
@@ -577,6 +604,12 @@ Is "Offset" currently represented (shown) as Hex or as Decimal. It can be change
 HEXVISSTRUCT IsOffsetVisible(ULONGLONG ullOffset)const;
 ```
 Checks for offset visibility and returns [`HEXVISSTRUCT`](#hexvisstruct) as a result.
+
+### [](#)ModifyData
+```cpp
+void ModifyData(const HEXMODIFY& hms);
+```
+Modify data in set **HexCtrl**. See [`HEXMODIFY`](#hexmodify) struct for details.
 
 ### [](#)Redraw
 ```cpp
@@ -776,6 +809,25 @@ struct HEXHITTESTSTRUCT
 };
 ```
 
+### [](#)HEXMODIFY
+This struct is used to represent data modification parameters.  
+When `enModifyMode` is set to `EHexModifyMode::MODIFY_DEFAULT`, bytes from `pData` just replace corresponding data bytes as is.  
+
+If `enModifyMode` is equal to `EHexModifyMode::MODIFY_REPEAT` then block by block replacement takes place few times. For example : if SUM(`vecSpan.ullSize`) = 9, `ullDataSize` = 3 and `enModifyMode` is set to `EHexModifyMode::MODIFY_REPEAT`, bytes in memory at `vecSpan.ullOffset` position are 123456789, and bytes pointed to by pData are 345, then, after modification, bytes at vecSpan.ullOffset will be 345345345.  
+
+If `enModifyMode` is equal to `EHexModifyMode::MODIFY_OPERATION` then `enOperMode` comes into play, showing what kind of operation must be performed on data.
+```cpp
+struct HEXMODIFY
+{
+    EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
+    EHexOperMode   enOperMode { };          //Operation mode, used only if enModifyMode == MODIFY_OPERATION.
+    std::byte*  pData { };                  //Pointer to a data to be set.
+    ULONGLONG   ullDataSize { };            //Size of the data pData is pointing to.
+    std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
+    bool        fRedraw { true };           //Redraw HexCtrl's window after data changes?
+};
+```
+
 ### [](#)HEXNOTIFYSTRUCT
 This struct is used in notification purposes, to notify parent window about **HexCtrl**'s states.
 ```cpp
@@ -814,6 +866,8 @@ struct HEXVISSTRUCT
     operator bool() { return i8Vert == 0 && i8Horz == 0; }; //For test simplicity: if(IsOffsetVisible()).
 };
 ```
+
+## [](#)Enums
 
 ### [](#)EHexCmd
 Enum of commands that can be executed within **HexCtrl**.
@@ -860,6 +914,25 @@ Enum that represents available data grouping modes.
 enum class EHexGroupMode : WORD
 {
     ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
+};
+```
+
+### [](#)EHexModifyMode
+Enum of the data modification mode, used in [`HEXMODIFY`](#hexmodify).
+```cpp
+enum class EHexModifyMode : WORD
+{
+    MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
+};
+```
+
+### [](#)EHexOperMode
+Enum of the data operation mode, used in [`HEXMODIFY`](#hexmodify) when `HEXMODIFY::enModifyMode` is set to `MODIFY_OPERATION`.
+```cpp
+enum class EHexOperMode : WORD
+{
+    OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
+    OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
 };
 ```
 

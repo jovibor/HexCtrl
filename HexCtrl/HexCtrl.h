@@ -54,9 +54,12 @@ namespace HEXCTRL
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hParent) = 0; //Сreates custom dialog control.
 		virtual void Destroy() = 0;                             //Deleter.
 		virtual void ExecuteCmd(EHexCmd enCmd) = 0;                          //Execute a command within the control.
+		[[nodiscard]] virtual auto GetCacheSize()const->DWORD = 0;           //Returns Virtual/Message mode cache size.
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORSSTRUCT = 0;    //Current colors.
+		[[nodiscard]] virtual auto GetData(HEXSPANSTRUCT hss)const->std::byte* = 0; //Get pointer to data offset, no matter what mode the control works in.
+		[[nodiscard]] virtual auto GetDataMode()const->EHexDataMode = 0;     //Get current Data mode.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual int GetEncoding()const = 0;                    //Get current code page ID.
 		[[nodiscard]] virtual long GetFontSize()const = 0;                   //Current font size.
@@ -75,6 +78,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
 		[[nodiscard]] virtual HEXVISSTRUCT IsOffsetVisible(ULONGLONG ullOffset)const = 0; //Ensures that the given offset is visible.
+		virtual void ModifyData(const HEXMODIFY& hms) = 0;     //Main routine to modify data in IsMutable()==true mode.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
 		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true) = 0; //Set the caret position.

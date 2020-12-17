@@ -34,7 +34,7 @@ void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_PROPDATA, m_stCtrlGrid);
 }
 
-BOOL CHexDlgDataInterp::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
+BOOL CHexDlgDataInterp::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
 	if (pHexCtrl == nullptr)
@@ -42,7 +42,7 @@ BOOL CHexDlgDataInterp::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 
 	m_pHexCtrl = pHexCtrl;
 
-	return CDialogEx::Create(nIDTemplate, pHexCtrl);
+	return CDialogEx::Create(nIDTemplate, pParent);
 }
 
 BOOL CHexDlgDataInterp::OnInitDialog()
@@ -257,7 +257,7 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 		iter.pProp->AllowEdit(m_pHexCtrl->IsMutable());
 
 	m_ullOffset = ullOffset;
-	const auto byte = m_pHexCtrl->GetData<BYTE>(ullOffset);
+	const auto byte = GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset);
 
 	ShowNAME_BINARY(byte);
 	ShowNAME_CHAR(byte);
@@ -281,7 +281,7 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 		if (iter.eSize == ESize::SIZE_WORD)
 			iter.pProp->Enable(TRUE);
 
-	auto word = m_pHexCtrl->GetData<WORD>(ullOffset);
+	auto word = GetIHexTData<WORD>(*m_pHexCtrl, ullOffset);
 	if (m_fBigEndian)
 		word = _byteswap_ushort(word);
 
@@ -306,7 +306,7 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 		if (iter.eSize == ESize::SIZE_DWORD)
 			iter.pProp->Enable(TRUE);
 
-	auto dword = m_pHexCtrl->GetData<DWORD>(ullOffset);
+	auto dword = GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset);
 	if (m_fBigEndian)
 		dword = _byteswap_ulong(dword);
 
@@ -335,7 +335,7 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 		if (iter.eSize == ESize::SIZE_QWORD)
 			iter.pProp->Enable(TRUE);
 
-	auto qword = m_pHexCtrl->GetData<QWORD>(ullOffset);
+	auto qword = GetIHexTData<QWORD>(*m_pHexCtrl, ullOffset);
 	if (m_fBigEndian)
 		qword = _byteswap_uint64(qword);
 
@@ -365,7 +365,7 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 		if (iter.eSize == ESize::SIZE_DQWORD)
 			iter.pProp->Enable(TRUE);
 
-	auto dqword = m_pHexCtrl->GetData<UDQWORD>(ullOffset);
+	auto dqword = GetIHexTData<UDQWORD>(*m_pHexCtrl, ullOffset);
 	if (m_fBigEndian)
 	{
 		//TODO: Test this thoroughly
@@ -459,7 +459,8 @@ ULONGLONG CHexDlgDataInterp::GetSize()const
 	return m_ullSize;
 }
 
-template<typename T>void CHexDlgDataInterp::SetDigitData(T tData)const
+template<typename T>
+void CHexDlgDataInterp::SetTData(T tData)const
 {
 	if (m_fBigEndian)
 	{
@@ -478,7 +479,8 @@ template<typename T>void CHexDlgDataInterp::SetDigitData(T tData)const
 			break;
 		}
 	}
-	m_pHexCtrl->SetData(m_ullOffset, tData);
+
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, tData);
 }
 
 void CHexDlgDataInterp::UpdateHexCtrl()const
@@ -960,7 +962,7 @@ bool CHexDlgDataInterp::SetDataNAME_BINARY(const std::wstring& wstr)const
 	bool fSuccess;
 	UCHAR uchData;
 	if (fSuccess = wstr2num(wstr, uchData, 2); fSuccess)
-		SetDigitData(uchData);
+		SetTData(uchData);
 
 	return fSuccess;
 }
@@ -970,7 +972,7 @@ bool CHexDlgDataInterp::SetDataNAME_CHAR(const std::wstring& wstr)const
 	bool fSuccess;
 	CHAR chData;
 	if (fSuccess = wstr2num(wstr, chData); fSuccess)
-		SetDigitData(chData);
+		SetTData(chData);
 
 	return fSuccess;
 }
@@ -980,7 +982,7 @@ bool CHexDlgDataInterp::SetDataNAME_UCHAR(const std::wstring& wstr)const
 	bool fSuccess;
 	UCHAR uchData;
 	if (fSuccess = wstr2num(wstr, uchData); fSuccess)
-		SetDigitData(uchData);
+		SetTData(uchData);
 
 	return fSuccess;
 }
@@ -990,7 +992,7 @@ bool CHexDlgDataInterp::SetDataNAME_SHORT(const std::wstring& wstr)const
 	bool fSuccess;
 	SHORT shData;
 	if (fSuccess = wstr2num(wstr, shData); fSuccess)
-		SetDigitData(shData);
+		SetTData(shData);
 
 	return fSuccess;
 }
@@ -1000,7 +1002,7 @@ bool CHexDlgDataInterp::SetDataNAME_USHORT(const std::wstring& wstr)const
 	bool fSuccess;
 	USHORT ushData;
 	if (fSuccess = wstr2num(wstr, ushData); fSuccess)
-		SetDigitData(ushData);
+		SetTData(ushData);
 
 	return fSuccess;
 }
@@ -1010,7 +1012,7 @@ bool CHexDlgDataInterp::SetDataNAME_LONG(const std::wstring& wstr)const
 	bool fSuccess;
 	LONG lData;
 	if (fSuccess = wstr2num(wstr, lData); fSuccess)
-		SetDigitData(lData);
+		SetTData(lData);
 
 	return fSuccess;
 }
@@ -1020,7 +1022,7 @@ bool CHexDlgDataInterp::SetDataNAME_ULONG(const std::wstring& wstr)const
 	bool fSuccess;
 	ULONG ulData;
 	if (fSuccess = wstr2num(wstr, ulData); fSuccess)
-		SetDigitData(ulData);
+		SetTData(ulData);
 
 	return fSuccess;
 }
@@ -1030,7 +1032,7 @@ bool CHexDlgDataInterp::SetDataNAME_LONGLONG(const std::wstring& wstr)const
 	bool fSuccess;
 	LONGLONG llData;
 	if (fSuccess = wstr2num(wstr, llData); fSuccess)
-		SetDigitData(llData);
+		SetTData(llData);
 
 	return fSuccess;
 }
@@ -1040,7 +1042,7 @@ bool CHexDlgDataInterp::SetDataNAME_ULONGLONG(const std::wstring& wstr)const
 	bool fSuccess;
 	ULONGLONG ullData;
 	if (fSuccess = wstr2num(wstr, ullData); fSuccess)
-		SetDigitData(ullData);
+		SetTData(ullData);
 
 	return fSuccess;
 }
@@ -1050,7 +1052,7 @@ bool CHexDlgDataInterp::SetDataNAME_FLOAT(const std::wstring& wstr)const
 	bool fSuccess;
 	float fl;
 	if (fSuccess = wstr2num(wstr, fl); fSuccess)
-		SetDigitData(fl);
+		SetTData(fl);
 
 	return fSuccess;
 }
@@ -1060,7 +1062,7 @@ bool CHexDlgDataInterp::SetDataNAME_DOUBLE(const std::wstring& wstr)const
 	bool fSuccess;
 	double dd;
 	if (fSuccess = wstr2num(wstr, dd); fSuccess)
-		SetDigitData(dd);
+		SetTData(dd);
 
 	return fSuccess;
 }
@@ -1095,7 +1097,7 @@ bool CHexDlgDataInterp::SetDataNAME_TIME32T(std::wstring_view wstr)const
 		if (m_fBigEndian)
 			lTime32 = _byteswap_ulong(lTime32);
 
-		m_pHexCtrl->SetData(m_ullOffset, lTime32);
+		SetIHexTData(*m_pHexCtrl, m_ullOffset, lTime32);
 	}
 
 	return true;
@@ -1128,7 +1130,7 @@ bool CHexDlgDataInterp::SetDataNAME_TIME64T(std::wstring_view wstr)const
 	if (m_fBigEndian)
 		llTime64 = _byteswap_uint64(llTime64);
 
-	m_pHexCtrl->SetData(m_ullOffset, llTime64);
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, llTime64);
 
 	return true;
 }
@@ -1150,7 +1152,7 @@ bool CHexDlgDataInterp::SetDataNAME_FILETIME(std::wstring_view wstr)const
 	if (m_fBigEndian)
 		stLITime.QuadPart = _byteswap_uint64(stLITime.QuadPart);
 
-	m_pHexCtrl->SetData(m_ullOffset, stLITime.QuadPart);
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, stLITime.QuadPart);
 
 	return true;
 }
@@ -1171,7 +1173,7 @@ bool CHexDlgDataInterp::SetDataNAME_OLEDATETIME(std::wstring_view wstr)const
 	if (m_fBigEndian)
 		ullValue = _byteswap_uint64(ullValue);
 
-	m_pHexCtrl->SetData(m_ullOffset, ullValue);
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, ullValue);
 
 	return true;
 }
@@ -1206,7 +1208,7 @@ bool CHexDlgDataInterp::SetDataNAME_JAVATIME(std::wstring_view wstr)const
 	if (m_fBigEndian)
 		llDiffMillis = _byteswap_uint64(llDiffMillis);
 
-	m_pHexCtrl->SetData(m_ullOffset, llDiffMillis);
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, llDiffMillis);
 
 	return true;
 }
@@ -1227,7 +1229,7 @@ bool CHexDlgDataInterp::SetDataNAME_MSDOSTIME(std::wstring_view wstr)const
 
 	//Note: Big-endian is not currently supported. This has never existed in the "wild".
 
-	m_pHexCtrl->SetData(m_ullOffset, msdosDateTime.dwTimeDate);
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, msdosDateTime.dwTimeDate);
 
 	return true;
 }
@@ -1249,7 +1251,7 @@ bool CHexDlgDataInterp::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)const
 
 	//Note: Big-endian is not currently supported. This has never existed in the "wild".
 
-	m_pHexCtrl->SetData(m_ullOffset, dttm.dwValue);
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, dttm.dwValue);
 
 	return true;
 }
@@ -1262,7 +1264,7 @@ bool CHexDlgDataInterp::SetDataNAME_SYSTEMTIME(std::wstring_view wstr)const
 
 	//Note: Big-endian is not currently supported. This has never existed in the "wild".
 
-	m_pHexCtrl->SetData(m_ullOffset, stTime);
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, stTime);
 
 	return true;
 }
@@ -1273,7 +1275,7 @@ bool CHexDlgDataInterp::SetDataNAME_GUIDTIME(std::wstring_view wstr)const
 	//We can not just set a NAME_GUIDTIME for data range if it's not 
 	//a valid NAME_GUID range, so checking first.
 
-	auto dqword = m_pHexCtrl->GetData<UDQWORD>(m_ullOffset);
+	auto dqword = GetIHexTData<UDQWORD>(*m_pHexCtrl, m_ullOffset);
 	const unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
 	if (unGuidVersion != 1)
 		return false;
@@ -1305,7 +1307,7 @@ bool CHexDlgDataInterp::SetDataNAME_GUIDTIME(std::wstring_view wstr)const
 	dqword.gGUID.Data2 = qwGUIDTime.HighPart & 0xffff;
 	dqword.gGUID.Data3 = ((qwGUIDTime.HighPart >> 16) & 0x0fff) | 0x1000; //Including Type 1 flag (0x1000)
 
-	m_pHexCtrl->SetData(m_ullOffset, dqword);
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, dqword);
 
 	return true;
 }
@@ -1316,7 +1318,7 @@ bool CHexDlgDataInterp::SetDataNAME_GUID(const std::wstring& wstr)const
 	if (IIDFromString(wstr.data(), &guid) != S_OK)
 		return false;
 
-	m_pHexCtrl->SetData(m_ullOffset, guid);
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, guid);
 
 	return true;
 }

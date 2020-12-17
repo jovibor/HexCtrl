@@ -6,7 +6,7 @@
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 ****************************************************************************************/
 #pragma once
-#include "../CHexCtrl.h"
+#include "../../HexCtrl.h"
 #include "CHexPropGridCtrl.h"
 #include <afxcontrolbars.h>
 #include <afxdialogex.h>
@@ -73,7 +73,7 @@ namespace HEXCTRL::INTERNAL
 		static constexpr auto m_ulFileTime1970_HIGH = 0x019db1deUL; //Used for Unix and Java times
 		static constexpr auto m_ullUnixEpochDiff = 11644473600ULL;  //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970
 	public:
-		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
+		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 		[[nodiscard]] ULONGLONG GetSize()const;
 		void InspectOffset(ULONGLONG ullOffset);
 	private:
@@ -91,7 +91,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioDec();
 		afx_msg void OnClickRadioHex();
 		afx_msg void OnDestroy();
-		template <typename T>void SetDigitData(T tData)const;
+		template <typename T>void SetTData(T tData)const;
 		void UpdateHexCtrl()const;
 		[[nodiscard]] std::wstring GetCurrentUserDateFormatString()const;
 		[[nodiscard]] std::wstring SystemTimeToString(const SYSTEMTIME* pSysTime, bool bIncludeDate, bool bIncludeTime)const;
@@ -161,7 +161,7 @@ namespace HEXCTRL::INTERNAL
 			ESize eSize { };
 			bool fChild { false };
 		};
-		CHexCtrl* m_pHexCtrl { };
+		IHexCtrl* m_pHexCtrl { };
 		bool m_fBigEndian { false };
 		bool m_fShowAsHex { true };
 		CHexPropGridCtrl m_stCtrlGrid;

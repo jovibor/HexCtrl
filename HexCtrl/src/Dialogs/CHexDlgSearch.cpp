@@ -10,6 +10,7 @@
 #include "../Helper.h"
 #include "CHexDlgCallback.h"
 #include "CHexDlgSearch.h"
+#include <algorithm>
 #include <cassert>
 #include <cctype>
 #include <cwctype>
@@ -73,7 +74,7 @@ void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_LIMIT, m_stEditLimit);
 }
 
-BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
+BOOL CHexDlgSearch::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
 	if (pHexCtrl == nullptr)
@@ -81,7 +82,7 @@ BOOL CHexDlgSearch::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 
 	m_pHexCtrl = pHexCtrl;
 
-	return CDialogEx::Create(nIDTemplate, pHexCtrl);
+	return CDialogEx::Create(nIDTemplate, pParent);
 }
 
 BOOL CHexDlgSearch::OnInitDialog()
@@ -1131,15 +1132,15 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 
 void CHexDlgSearch::Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw)const
 {
-	SMODIFY hms;
+	HEXMODIFY hms;
 	hms.vecSpan.emplace_back(HEXSPANSTRUCT { ullIndex, nSizeData });
 	hms.ullDataSize = nSizeReplace;
 	hms.pData = pData;
 	hms.fRedraw = fRedraw;
-	GetHexCtrl()->Modify(hms);
+	GetHexCtrl()->ModifyData(hms);
 }
 
-CHexCtrl* CHexDlgSearch::GetHexCtrl()const
+IHexCtrl* CHexDlgSearch::GetHexCtrl()const
 {
 	return m_pHexCtrl;
 }

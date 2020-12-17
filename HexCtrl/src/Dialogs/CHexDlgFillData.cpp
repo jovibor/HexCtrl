@@ -16,7 +16,7 @@ using namespace HEXCTRL::INTERNAL;
 BEGIN_MESSAGE_MAP(CHexDlgFillData, CDialogEx)
 END_MESSAGE_MAP()
 
-BOOL CHexDlgFillData::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
+BOOL CHexDlgFillData::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
 	if (pHexCtrl == nullptr)
@@ -24,7 +24,7 @@ BOOL CHexDlgFillData::Create(UINT nIDTemplate, CHexCtrl* pHexCtrl)
 
 	m_pHexCtrl = pHexCtrl;
 
-	return CDialogEx::Create(nIDTemplate, pHexCtrl);
+	return CDialogEx::Create(nIDTemplate, pParent);
 }
 
 BOOL CHexDlgFillData::OnInitDialog()
@@ -47,8 +47,8 @@ void CHexDlgFillData::OnOK()
 {
 	const auto iRadioType = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16);
 
-	SMODIFY hms;
-	hms.enModifyMode = EModifyMode::MODIFY_REPEAT;
+	HEXMODIFY hms;
+	hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 	hms.vecSpan = m_pHexCtrl->GetSelection();
 	if (hms.vecSpan.empty())
 		return;
@@ -95,7 +95,7 @@ void CHexDlgFillData::OnOK()
 		pCombo->InsertString(0, wstrComboText.data());
 	}
 
-	m_pHexCtrl->Modify(hms);
+	m_pHexCtrl->ModifyData(hms);
 	::SetFocus(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN));
 
 	CDialogEx::OnOK();

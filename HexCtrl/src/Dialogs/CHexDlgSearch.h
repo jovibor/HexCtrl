@@ -6,7 +6,7 @@
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 ****************************************************************************************/
 #pragma once
-#include "../CHexCtrl.h"
+#include "../../HexCtrl.h"
 #include "../../dep/ListEx/ListEx.h"
 #include <afxdialogex.h>
 
@@ -19,7 +19,7 @@ namespace HEXCTRL::INTERNAL
 		enum class EMode : WORD;
 		enum class EMenuID : WORD;
 	public:
-		BOOL Create(UINT nIDTemplate, CHexCtrl* pHexCtrl);
+		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 		void Search(bool fForward);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
 		BOOL ShowWindow(int nCmdShow);
@@ -45,7 +45,7 @@ namespace HEXCTRL::INTERNAL
 		void AddToList(ULONGLONG ullOffset);
 		void ClearList();
 		void HexCtrlHighlight(const std::vector<HEXSPANSTRUCT>& vecSel); //Highlight found occurence in HexCtrl.
-		[[nodiscard]] CHexCtrl* GetHexCtrl()const;
+		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		void PrepareSearch();
 		[[nodiscard]] bool PrepareHex();
 		[[nodiscard]] bool PrepareASCII();
@@ -69,7 +69,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const;
 		DECLARE_MESSAGE_MAP()
 	private:
-		CHexCtrl* m_pHexCtrl { };
+		IHexCtrl* m_pHexCtrl { };
 		EMode m_eSearchMode { };
 		IListExPtr m_pListMain { CreateListEx() };
 		std::vector<ULONGLONG> m_vecSearchRes { };

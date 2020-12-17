@@ -9,14 +9,15 @@
 * Here dwells some useful helper stuff for HexCtrl.                                     *
 ****************************************************************************************/
 #pragma once
+#include "../HexCtrl.h"
 #include <afxwin.h>
 #include <string>
 
 #define HEXCTRL_PRODUCT_NAME			"Hex Control for MFC/Win32"
 #define HEXCTRL_COPYRIGHT_NAME  		"(C) 2018-2021 Jovibor"
 #define HEXCTRL_VERSION_MAJOR			2
-#define HEXCTRL_VERSION_MINOR			19
-#define HEXCTRL_VERSION_MAINTENANCE		3
+#define HEXCTRL_VERSION_MINOR			20
+#define HEXCTRL_VERSION_MAINTENANCE		0
 
 namespace HEXCTRL::INTERNAL
 {
@@ -51,6 +52,35 @@ namespace HEXCTRL::INTERNAL
 
 	//Substitute all unprintable wchar symbols with dot.
 	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLFRepl = true);
+
+	//Get data from IHexCtrl's given offset converted to necessary type.
+	template<typename T>
+	T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
+	{
+		T tData { };
+		if (const auto pData = refHexCtrl.GetData({ ullOffset, sizeof(T) });
+			ullOffset >= refHexCtrl.GetDataSize() && pData != nullptr)
+			tData = *reinterpret_cast<T*>(pData);
+
+		return tData;
+	}
+
+	//Set data to IHexCtrl's given offset converted to necessary type.
+	template<typename T>
+	void SetIHexTData(IHexCtrl& refHexCtrl, ULONGLONG ullOffset, T tData)
+	{
+		//Data overflow check.
+		if (ullOffset + sizeof(T) > refHexCtrl.GetDataSize())
+			return;
+
+		HEXMODIFY hms;
+		hms.enModifyMode = EHexModifyMode::MODIFY_DEFAULT;
+		hms.fRedraw = false;
+		hms.pData = reinterpret_cast<std::byte*>(&tData);
+		hms.ullDataSize = sizeof(T);
+		hms.vecSpan.emplace_back(HEXSPANSTRUCT { ullOffset, sizeof(T) });
+		refHexCtrl.ModifyData(hms);
+	}
 
 #define TO_STR_HELPER(x) #x
 #define TO_STR(x) TO_STR_HELPER(x)

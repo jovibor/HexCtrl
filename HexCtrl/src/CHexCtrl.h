@@ -31,46 +31,6 @@ namespace HEXCTRL::INTERNAL
 	namespace SCROLLEX { class CScrollEx; };
 
 	/********************************************************************************************
-	* EModifyMode - Enum of the data modification mode, used in SMODIFY.                        *
-	********************************************************************************************/
-	enum class EModifyMode : WORD
-	{
-		MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
-	};
-
-	/********************************************************************************************
-	* EOperMode - Enum of the data operation mode, used in SMODIFY,                             *
-	* when SMODIFY::enModifyMode is MODIFY_OPERATION.                                           *
-	********************************************************************************************/
-	enum class EOperMode : WORD
-	{
-		OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
-		OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
-	};
-
-	/********************************************************************************************
-	* SMODIFY - used to represent data modification parameters.                            *
-	* When enModifyMode is set to EModifyMode::MODIFY_DEFAULT, bytes from pData just replace    *
-	* corresponding data bytes as is. If enModifyMode is equal to EModifyMode::MODIFY_REPEAT    *
-	* then block by block replacement takes place few times.                                    *
-	*   For example : if SUM(vecSpan.ullSize) = 9, ullDataSize = 3 and enModifyMode is set to   *
-	* EModifyMode::MODIFY_REPEAT, bytes in memory at vecSpan.ullOffset position are             *
-	* 123456789, and bytes pointed to by pData are 345, then, after modification, bytes at      *
-	* vecSpan.ullOffset will be 345345345. If enModifyMode is equal to                          *
-	* EModifyMode::MODIFY_OPERATION then enOperMode comes into play, showing what kind of       *
-	* operation must be performed on data.                                                      *
-	********************************************************************************************/
-	struct SMODIFY
-	{
-		EModifyMode enModifyMode { EModifyMode::MODIFY_DEFAULT }; //Modify mode.
-		EOperMode   enOperMode { };             //Operation mode enum. Used only if enModifyMode == MODIFY_OPERATION.
-		std::byte*  pData { };                  //Pointer to a data to be set.
-		ULONGLONG   ullDataSize { };            //Size of the data pData is pointing to.
-		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
-		bool        fRedraw { true };           //Redraw HexCtrl's window after data changes?
-	};
-
-	/********************************************************************************************
 	* CHexCtrl class is an implementation of the IHexCtrl interface.                            *
 	********************************************************************************************/
 	class CHexCtrl final : public CWnd, public IHexCtrl
@@ -90,9 +50,12 @@ namespace HEXCTRL::INTERNAL
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hParent)override; //Сreates custom dialog control.
 		void Destroy()override;                             //Deleter.
 		void ExecuteCmd(EHexCmd eCmd)override;                            //Execute a command within the control.
+		[[nodiscard]] auto GetCacheSize()const->DWORD override;           //Returns Virtual/Message mode cache size.
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
 		[[nodiscard]] auto GetColors()const->HEXCOLORSSTRUCT override;    //Current colors.
+		[[nodiscard]] auto GetData(HEXSPANSTRUCT hss)const->std::byte* override; //Get pointer to data offset, no matter what mode the control works in.
+		[[nodiscard]] auto GetDataMode()const->EHexDataMode override;     //Get current Data mode.
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;        //Get currently set data size.
 		[[nodiscard]] int GetEncoding()const override;                    //Get current code page ID.
 		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
@@ -111,6 +74,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsMutable()const override;       //Is edit mode enabled or not.
 		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
 		[[nodiscard]] HEXVISSTRUCT IsOffsetVisible(ULONGLONG ullOffset)const override; //Ensures that the given offset is visible.
+		void ModifyData(const HEXMODIFY& hms)override;      //Main routine to modify data in IsMutable()==true mode.
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Set the control's current capacity.
 		void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true)override; //Set the caret position.
@@ -127,10 +91,6 @@ namespace HEXCTRL::INTERNAL
 		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true, bool fHighlight = false)override; //Set current selection.
 		void SetWheelRatio(double dbRatio)override;         //Set the ratio for how much to scroll with mouse-wheel.
 	private:
-		friend class CHexDlgDataInterp;
-		friend class CHexDlgFillData;
-		friend class CHexDlgOpers;
-		friend class CHexDlgSearch;
 		struct SHBITMAP;
 		struct SUNDO;
 		struct SKEYBIND;
@@ -170,27 +130,21 @@ namespace HEXCTRL::INTERNAL
 		void DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines);
 		void FillWithZeros(); //Fill selection with zeros.
 		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;      //Returns current bottom line number in view.
-		[[nodiscard]] auto GetCacheSize()const->DWORD;           //Returns Virtual/Message mode cache size.
 		[[nodiscard]] auto GetCommand(UCHAR uChar, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
-		template<typename T>
-		[[nodiscard]] auto GetData(ULONGLONG ullOffset)const->T; //Get T sized data from ullOffset.
-		[[nodiscard]] auto GetData(HEXSPANSTRUCT hss)const->std::byte*; //Gets pointer to exact data offset, no matter what mode the control works in.
-		[[nodiscard]] auto GetDataMode()const->EHexDataMode;     //Current Data mode.
 		[[nodiscard]] auto GetMsgWindow()const->HWND;            //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		[[nodiscard]] auto GetTopLine()const->ULONGLONG;         //Returns current top line number in view.
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;   //Point of Hex chunk.
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>; //Is any hex chunk withing given point?
 		[[nodiscard]] bool IsCurTextArea()const;                 //Whether last focus was set at Text or Hex chunks area.
 		[[nodiscard]] bool IsPageVisible()const;                 //Returns m_fSectorVisible.
-		void Modify(const SMODIFY& hms);                       //Main routine to modify data, in m_fMutable==true mode.
-		void ModifyDefault(const SMODIFY& hms);                //EModifyMode::MODIFY_DEFAULT
-		void ModifyOperation(const SMODIFY& hms);              //EModifyMode::MODIFY_OPERATION
-		void ModifyRepeat(const SMODIFY& hms);                 //EModifyMode::MODIFY_REPEAT
+		void ModifyDefault(const HEXMODIFY& hms);                //EHexModifyMode::MODIFY_DEFAULT
+		void ModifyOperation(const HEXMODIFY& hms);              //EHexModifyMode::MODIFY_OPERATION
+		void ModifyRepeat(const HEXMODIFY& hms);                 //EHexModifyMode::MODIFY_REPEAT
 		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		template <typename T>
-		void OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeData); //Immediate operations on pData.
+		void OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ullSizeData); //Immediate operations on pData.
 		void ParentNotify(const HEXNOTIFYSTRUCT& hns)const;    //Notify routine used to send messages to Parent window.
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 		void Print();                                          //Printing routine.
@@ -205,8 +159,6 @@ namespace HEXCTRL::INTERNAL
 		void SelAddLeft();       //Left Key pressed with the Shift.
 		void SelAddRight();      //Right Key pressed with the Shift.
 		void SelAddUp();         //Up Key pressed with the Shift.
-		template<typename T>
-		void SetData(ULONGLONG ullOffset, T tData); //Set T sized data tData at ullOffset.
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
 		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
 		void TtBkmShow(bool fShow, POINT pt = { }); //Tooltip bookmark show/hide.
@@ -329,81 +281,4 @@ namespace HEXCTRL::INTERNAL
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
 		bool m_fMenuCMD { false };            //Command to be executed through menu, not through key-shortcut.
 	};
-
-	template<typename T>
-	inline auto CHexCtrl::GetData(ULONGLONG ullOffset)const->T
-	{
-		if (ullOffset >= m_ullDataSize)
-			return T { };
-
-		if (auto pData = GetData({ ullOffset, sizeof(T) }); pData != nullptr)
-			return *reinterpret_cast<T*>(pData);
-
-		return T { };
-	}
-
-	template<typename T>
-	inline void CHexCtrl::SetData(ULONGLONG ullOffset, T tData)
-	{
-		//Data overflow check.
-		if (ullOffset + sizeof(T) > m_ullDataSize)
-			return;
-
-		const auto pData = GetData({ ullOffset, sizeof(T) });
-		std::copy_n(&tData, 1, reinterpret_cast<T*>(pData));
-		SetDataVirtual(pData, { ullOffset, sizeof(T) });
-	}
-
-	/************************************************************
-	* OperData - function for Modify/Operations
-	* pData - Starting address of the data to operate on.
-	* eMode - Operation mode.
-	* tDataOper - The data to apply the operation with.
-	* ullSizeData - Size of the data (selection) to operate on.
-	************************************************************/
-	template<typename T>
-	inline void CHexCtrl::OperData(T* pData, EOperMode eMode, T tDataOper, ULONGLONG ullSizeData)
-	{
-		if (pData == nullptr)
-			return;
-
-		auto nChunks = ullSizeData / sizeof(T);
-		for (const auto pDataEnd = pData + nChunks; pData < pDataEnd; ++pData)
-		{
-			switch (eMode)
-			{
-			case EOperMode::OPER_OR:
-				*pData |= tDataOper;
-				break;
-			case EOperMode::OPER_XOR:
-				*pData ^= tDataOper;
-				break;
-			case EOperMode::OPER_AND:
-				*pData &= tDataOper;
-				break;
-			case EOperMode::OPER_NOT:
-				*pData = ~*pData;
-				break;
-			case EOperMode::OPER_SHL:
-				*pData <<= tDataOper;
-				break;
-			case EOperMode::OPER_SHR:
-				*pData >>= tDataOper;
-				break;
-			case EOperMode::OPER_ADD:
-				*pData += tDataOper;
-				break;
-			case EOperMode::OPER_SUBTRACT:
-				*pData -= tDataOper;
-				break;
-			case EOperMode::OPER_MULTIPLY:
-				*pData *= tDataOper;
-				break;
-			case EOperMode::OPER_DIVIDE:
-				if (tDataOper > 0) //Division by Zero check.
-					*pData /= tDataOper;
-				break;
-			}
-		}
-	}
 }
