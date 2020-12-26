@@ -11,13 +11,14 @@
 #pragma once
 #include "../HexCtrl.h"
 #include <afxwin.h>
+#include <cassert>
 #include <string>
 
 #define HEXCTRL_PRODUCT_NAME			"Hex Control for MFC/Win32"
 #define HEXCTRL_COPYRIGHT_NAME  		"(C) 2018-2021 Jovibor"
 #define HEXCTRL_VERSION_MAJOR			2
 #define HEXCTRL_VERSION_MINOR			20
-#define HEXCTRL_VERSION_MAINTENANCE		0
+#define HEXCTRL_VERSION_MAINTENANCE		1
 
 namespace HEXCTRL::INTERNAL
 {
@@ -58,9 +59,11 @@ namespace HEXCTRL::INTERNAL
 	T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
 	{
 		T tData { };
-		if (const auto pData = refHexCtrl.GetData({ ullOffset, sizeof(T) });
-			ullOffset >= refHexCtrl.GetDataSize() && pData != nullptr)
+		if (const auto pData = refHexCtrl.GetData({ ullOffset, sizeof(T) }); pData != nullptr)
+		{
+			assert(pData != nullptr);
 			tData = *reinterpret_cast<T*>(pData);
+		}
 
 		return tData;
 	}

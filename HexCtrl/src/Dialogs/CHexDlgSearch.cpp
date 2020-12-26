@@ -899,7 +899,7 @@ void CHexDlgSearch::Search()
 				pDlgClbk->ExitDlg();
 			};
 
-			CHexDlgCallback dlgClbk(L"Searching...");
+			CHexDlgCallback dlgClbk(L"Searching...", ullStart, ullUntil, this);
 			std::thread thrd(lmbSearch, &dlgClbk);
 			dlgClbk.DoModal();
 			thrd.join();
@@ -948,7 +948,7 @@ void CHexDlgSearch::Search()
 				m_pListMain->SetItemCountEx(static_cast<int>(m_dwCount));
 			};
 
-			CHexDlgCallback dlgClbk(L"Searching...");
+			CHexDlgCallback dlgClbk(L"Searching...", ullStart, ullUntil, this);
 			std::thread thrd(lmbSearch, &dlgClbk);
 			dlgClbk.DoModal();
 			thrd.join();
@@ -1020,29 +1020,29 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 	if (ullStart + nSizeSearch > ullEndSentinel)
 		return { false, false };
 
-	const auto ullSize = fForward ? ullEnd - ullStart : ullStart - ullEnd; //Depends on search direction
+	const auto ullSizeTotal = fForward ? ullEnd - ullStart : ullStart - ullEnd; //Depends on search direction.
 	ULONGLONG ullSizeChunk { };    //Size of the chunk to work with.
 	ULONGLONG ullChunks { };
 	ULONGLONG ullMemToAcquire { }; //Size of VirtualData memory for acquiring. It's bigger than ullSizeChunk.
 	ULONGLONG ullOffsetSearch { };
-	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
+	constexpr auto iSizeQuick { 1024 * 256 }; //256KB.
 	const auto pHexCtrl = GetHexCtrl();
 
 	switch (pHexCtrl->GetDataMode())
 	{
 	case EHexDataMode::DATA_MEMORY:
-		ullSizeChunk = ullSize;
-		ullMemToAcquire = ullSize;
+		ullSizeChunk = ullSizeTotal;
+		ullMemToAcquire = ullSizeTotal;
 		ullChunks = 1;
 		break;
 	case EHexDataMode::DATA_MSG:
 	case EHexDataMode::DATA_VIRTUAL:
 	{
 		ullMemToAcquire = pHexCtrl->GetCacheSize();
-		if (ullMemToAcquire > ullSize + nSizeSearch)
-			ullMemToAcquire = ullSize + nSizeSearch;
+		if (ullMemToAcquire > ullSizeTotal + nSizeSearch)
+			ullMemToAcquire = ullSizeTotal + nSizeSearch;
 		ullSizeChunk = ullMemToAcquire - nSizeSearch;
-		ullChunks = ullSize > ullSizeChunk ? ullSize / ullSizeChunk + ((ullSize % ullSizeChunk) ? 1 : 0) : 1;
+		ullChunks = ullSizeTotal > ullSizeChunk ? ullSizeTotal / ullSizeChunk + ((ullSizeTotal % ullSizeChunk) ? 1 : 0) : 1;
 	}
 	break;
 	}
@@ -1056,15 +1056,9 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 			ullOffsetSearch = ullStart;
 			for (auto iterChunk = 0ULL; iterChunk < ullChunks; ++iterChunk)
 			{
-				if (ullOffsetSearch + ullMemToAcquire > ullEndSentinel)
-				{
-					ullMemToAcquire = ullEndSentinel - ullOffsetSearch;
-					ullSizeChunk = ullMemToAcquire - nSizeSearch;
-				}
-				if (iterChunk > 0)
-					ullOffsetSearch += ullSizeChunk;
-
 				const auto* const pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
+				assert(pData != nullptr);
+
 				for (auto i = 0ULL; i <= ullSizeChunk; i += m_ullStep)
 				{
 					if (MemCmp(pData + i, pSearch, nSizeSearch))
@@ -1073,11 +1067,23 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 						fResult = true;
 						goto FOUND;
 					}
-					if (pDlgClbk != nullptr && pDlgClbk->IsCanceled())
+
+					if (pDlgClbk != nullptr)
 					{
-						fCanceled = true;
-						return; //Breaking out from all level loops.
+						if (pDlgClbk->IsCanceled())
+						{
+							fCanceled = true;
+							return; //Breaking out from all level loops.
+						}
+						pDlgClbk->SetProgress(ullOffsetSearch + i);
 					}
+				}
+
+				ullOffsetSearch += ullSizeChunk;
+				if (ullOffsetSearch + ullMemToAcquire > ullEndSentinel)
+				{
+					ullMemToAcquire = ullEndSentinel - ullOffsetSearch;
+					ullSizeChunk = ullMemToAcquire - nSizeSearch;
 				}
 			}
 		}
@@ -1087,6 +1093,8 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 			for (auto iterChunk = ullChunks; iterChunk > 0; --iterChunk)
 			{
 				const auto* const pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
+				assert(pData != nullptr);
+
 				for (auto i = static_cast<LONGLONG>(ullSizeChunk); i >= 0; i -= m_ullStep)	//i might be negative.
 				{
 					if (MemCmp(pData + i, pSearch, nSizeSearch))
@@ -1095,10 +1103,15 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 						fResult = true;
 						goto FOUND;
 					}
-					if (pDlgClbk != nullptr && pDlgClbk->IsCanceled())
+
+					if (pDlgClbk != nullptr)
 					{
-						fCanceled = true;
-						return; //Breaking out from all level loops.
+						if (pDlgClbk->IsCanceled())
+						{
+							fCanceled = true;
+							return; //Breaking out from all level loops.
+						}
+						pDlgClbk->SetProgress(ullStart - (ullOffsetSearch + i));
 					}
 				}
 
@@ -1117,9 +1130,9 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 			pDlgClbk->ExitDlg();
 	};
 
-	if (pDlgClbk == nullptr && ullSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
+	if (pDlgClbk == nullptr && ullSizeTotal > iSizeQuick) //Showing "Cancel" dialog only when data > iSizeQuick
 	{
-		CHexDlgCallback dlgClbk(L"Searching...");
+		CHexDlgCallback dlgClbk(L"Searching...", fForward ? ullStart : ullEnd, fForward ? ullEnd : ullStart);
 		std::thread thrd(lmbSearch, &dlgClbk);
 		dlgClbk.DoModal();
 		thrd.join();

@@ -8,6 +8,7 @@
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgCallback.h"
+#include <cassert>
 
 using namespace HEXCTRL::INTERNAL;
 
@@ -16,9 +17,11 @@ BEGIN_MESSAGE_MAP(CHexDlgCallback, CDialogEx)
 	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
-CHexDlgCallback::CHexDlgCallback(std::wstring_view wstrOperName, CWnd* pParent)
-	: CDialogEx(IDD_HEXCTRL_CALLBACK, pParent), m_wstrOperName(wstrOperName)
+CHexDlgCallback::CHexDlgCallback(std::wstring_view wstrOperName, ULONGLONG ullProgBarMin, ULONGLONG ullProgBarMax, CWnd* pParent)
+	: CDialogEx(IDD_HEXCTRL_CALLBACK, pParent),
+	m_wstrOperName(wstrOperName), m_ullProgBarMin(ullProgBarMin), m_ullProgBarMax(ullProgBarMax)
 {
+	assert(ullProgBarMin < ullProgBarMax);
 }
 
 BOOL CHexDlgCallback::OnInitDialog()
@@ -27,7 +30,12 @@ BOOL CHexDlgCallback::OnInitDialog()
 
 	SetWindowTextW(m_wstrOperName.data());
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPERNAME)->SetWindowTextW(m_wstrOperName.data());
-	SetTimer(IDT_EXITCHECK, 150, nullptr);
+	SetTimer(IDT_EXITCHECK, 100, nullptr);
+
+	m_stProgBar.SetRange32(0, 1000);
+	m_stProgBar.SetPos(0);
+
+	m_ullThousandth = (m_ullProgBarMax - m_ullProgBarMin) / 1000;
 
 	return TRUE;
 }
@@ -35,15 +43,21 @@ BOOL CHexDlgCallback::OnInitDialog()
 void CHexDlgCallback::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+
+	DDX_Control(pDX, IDC_HEXCTRL_CALLBACK_PROGBAR, m_stProgBar);
 }
 
 void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 {
 	if (nIDEvent == IDT_EXITCHECK && m_fCancel)
 	{
-		OnCancel();
 		KillTimer(IDT_EXITCHECK);
+		OnCancel();
 	}
+
+	//How many thousandth parts have already passed.
+	int iPos = static_cast<int>((m_ullProgBarCurr - m_ullProgBarMin) / m_ullThousandth);
+	m_stProgBar.SetPos(iPos);
 
 	CDialogEx::OnTimer(nIDEvent);
 }
@@ -56,6 +70,11 @@ void CHexDlgCallback::OnBtnCancel()
 bool CHexDlgCallback::IsCanceled()const
 {
 	return m_fCancel;
+}
+
+void CHexDlgCallback::SetProgress(ULONGLONG ullProgCurr)
+{
+	m_ullProgBarCurr = ullProgCurr;
 }
 
 void CHexDlgCallback::ExitDlg()

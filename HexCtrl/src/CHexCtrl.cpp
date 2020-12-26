@@ -659,10 +659,7 @@ auto CHexCtrl::GetData(HEXSPANSTRUCT hss)const->std::byte*
 {
 	assert(IsCreated());
 	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return { };
-
-	if (hss.ullOffset + hss.ullSize > m_ullDataSize)
+	if (!IsCreated() || !IsDataSet() || (hss.ullOffset + hss.ullSize > m_ullDataSize))
 		return nullptr;
 
 	std::byte* pData { };
@@ -3033,7 +3030,9 @@ auto CHexCtrl::GetBottomLine()const->ULONGLONG
 	ULONGLONG ullEndLine { };
 	if (IsDataSet())
 	{
-		ullEndLine = (GetTopLine() + m_iHeightWorkArea / m_sizeLetter.cy) - 1;
+		ullEndLine = GetTopLine() + m_iHeightWorkArea / m_sizeLetter.cy;
+		if (ullEndLine > 0) //To avoid underflow.
+			--ullEndLine;
 		//If m_ullDataSize is really small, or we at the scroll end,
 		//we adjust ullEndLine to be not bigger than maximum allowed.
 		if (ullEndLine >= (m_ullDataSize / m_dwCapacity))
@@ -3189,7 +3188,7 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 	const auto ullTotalSize = std::accumulate(vecSelRef.begin(), vecSelRef.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPANSTRUCT& ref) {return ullSumm + ref.ullSize; });
 
-	CHexDlgCallback dlgClbk(L"Modifying...");
+	CHexDlgCallback dlgClbk(L"Modifying...", vecSelRef.begin()->ullOffset, vecSelRef.back().ullOffset + vecSelRef.back().ullSize, this);
 	std::thread thrd([&]() {
 		for (const auto& iterSel : vecSelRef) //Selections vector's size times.
 		{
@@ -3250,8 +3249,11 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 
 				if (m_enDataMode != EHexDataMode::DATA_MEMORY)
 					SetDataVirtual(pData, { ullOffset, ullSizeChunk });
+
 				if (dlgClbk.IsCanceled())
 					goto exit;
+
+				dlgClbk.SetProgress(ullOffset);
 			}
 		}
 	exit:
@@ -3271,14 +3273,12 @@ void CHexCtrl::ModifyRepeat(const HEXMODIFY& hms)
 	std::byte* pData { };
 	ULONGLONG ullOffset { 0 };
 
-	CHexDlgCallback dlgClbk(L"Modifying...");
+	CHexDlgCallback dlgClbk(L"Modifying...", vecSelRef.begin()->ullOffset, vecSelRef.back().ullOffset + vecSelRef.back().ullSize, this);
 	std::thread thrd([&]() {
 		for (const auto& iterSel : vecSelRef) //Selections vector's size times.
 		{
-			if (hms.ullDataSize == sizeof(std::byte) //Special cases for fast std::fill.
-				|| hms.ullDataSize == sizeof(WORD)
-				|| hms.ullDataSize == sizeof(DWORD)
-				|| hms.ullDataSize == sizeof(QWORD))
+			if (hms.ullDataSize == sizeof(std::byte) || hms.ullDataSize == sizeof(WORD) //Special cases for fast std::fill.
+				|| hms.ullDataSize == sizeof(DWORD) || hms.ullDataSize == sizeof(QWORD))
 			{
 				ULONGLONG ullSizeChunk { };
 				ULONGLONG ullChunks { };
@@ -3315,8 +3315,11 @@ void CHexCtrl::ModifyRepeat(const HEXMODIFY& hms)
 					}
 					if (m_enDataMode != EHexDataMode::DATA_MEMORY)
 						SetDataVirtual(pData, { ullOffset, ullSizeChunk });
+
 					if (dlgClbk.IsCanceled())
 						goto exit;
+
+					dlgClbk.SetProgress(ullOffset);
 				}
 			}
 			else
@@ -3332,8 +3335,11 @@ void CHexCtrl::ModifyRepeat(const HEXMODIFY& hms)
 					std::copy_n(hms.pData, static_cast<size_t>(hms.ullDataSize), pData);
 					if (m_enDataMode != EHexDataMode::DATA_MEMORY)
 						SetDataVirtual(pData, { ullOffset, hms.ullDataSize });
+
 					if (dlgClbk.IsCanceled())
 						goto exit;
+
+					dlgClbk.SetProgress(ullOffset);
 				}
 			}
 		}
