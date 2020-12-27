@@ -59,11 +59,10 @@ namespace HEXCTRL::INTERNAL
 	T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
 	{
 		T tData { };
-		if (const auto pData = refHexCtrl.GetData({ ullOffset, sizeof(T) }); pData != nullptr)
-		{
-			assert(pData != nullptr);
+		const auto pData = refHexCtrl.GetData({ ullOffset, sizeof(T) });
+		assert(pData != nullptr);
+		if (pData != nullptr)
 			tData = *reinterpret_cast<T*>(pData);
-		}
 
 		return tData;
 	}
@@ -73,6 +72,7 @@ namespace HEXCTRL::INTERNAL
 	void SetIHexTData(IHexCtrl& refHexCtrl, ULONGLONG ullOffset, T tData)
 	{
 		//Data overflow check.
+		assert(ullOffset + sizeof(T) <= refHexCtrl.GetDataSize());
 		if (ullOffset + sizeof(T) > refHexCtrl.GetDataSize())
 			return;
 
