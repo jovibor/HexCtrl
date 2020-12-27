@@ -29,6 +29,7 @@
   "CMD_CLPBRD_COPYCARR": [ "" ],
   "CMD_CLPBRD_COPYGREPHEX": [ "" ],
   "CMD_CLPBRD_COPYPRNTSCRN": [ "" ],
+  "CMD_CLPBRD_COPYOFFSET": [ "" ],
   "CMD_CLPBRD_PASTEHEX": [ "ctrl+v" ],
   "CMD_CLPBRD_PASTETEXT": [ "" ],
   "CMD_MODIFY_DLG_OPERS": [ "ctrl+o" ],

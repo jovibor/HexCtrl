@@ -11,6 +11,7 @@
 #include "CHexDlgOpers.h"
 #include <cassert>
 
+using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgOpers, CDialogEx)

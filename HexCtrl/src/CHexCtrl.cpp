@@ -59,7 +59,7 @@ namespace HEXCTRL
 		enum class CHexCtrl::EClipboard : WORD
 		{
 			COPY_HEX, COPY_HEXLE, COPY_HEXFMT, COPY_TEXT, COPY_BASE64,
-			COPY_CARR, COPY_GREPHEX, COPY_PRNTSCRN, PASTE_HEX, PASTE_TEXT
+			COPY_CARR, COPY_GREPHEX, COPY_PRNTSCRN, COPY_OFFSET, PASTE_HEX, PASTE_TEXT
 		};
 
 		//Struct for UNDO command routine.
@@ -527,6 +527,9 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case EHexCmd::CMD_CLPBRD_COPYPRNTSCRN:
 		ClipboardCopy(EClipboard::COPY_PRNTSCRN);
 		break;
+	case EHexCmd::CMD_CLPBRD_COPYOFFSET:
+		ClipboardCopy(EClipboard::COPY_OFFSET);
+		break;
 	case EHexCmd::CMD_CLPBRD_PASTEHEX:
 		ClipboardPaste(EClipboard::PASTE_HEX);
 		break;
@@ -902,6 +905,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case EHexCmd::CMD_CLPBRD_COPYCARR:
 	case EHexCmd::CMD_CLPBRD_COPYGREPHEX:
 	case EHexCmd::CMD_CLPBRD_COPYPRNTSCRN:
+	case EHexCmd::CMD_CLPBRD_COPYOFFSET:
 		fAvail = fSelection;
 		break;
 	case EHexCmd::CMD_CLPBRD_PASTEHEX:
@@ -1148,6 +1152,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ "CMD_CLPBRD_COPYCARR", { EHexCmd::CMD_CLPBRD_COPYCARR, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYCARR) } },
 		{ "CMD_CLPBRD_COPYGREPHEX", { EHexCmd::CMD_CLPBRD_COPYGREPHEX, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYGREPHEX) } },
 		{ "CMD_CLPBRD_COPYPRNTSCRN", { EHexCmd::CMD_CLPBRD_COPYPRNTSCRN, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN) } },
+		{ "CMD_CLPBRD_COPYOFFSET", { EHexCmd::CMD_CLPBRD_COPYOFFSET, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYOFFSET) } },
 		{ "CMD_CLPBRD_PASTEHEX", { EHexCmd::CMD_CLPBRD_PASTEHEX, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_PASTEHEX) } },
 		{ "CMD_CLPBRD_PASTETEXT", { EHexCmd::CMD_CLPBRD_PASTETEXT, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_PASTETEXT) } },
 		{ "CMD_MODIFY_DLG_OPERS", { EHexCmd::CMD_MODIFY_DLG_OPERS, static_cast<WORD>(IDM_HEXCTRL_MODIFY_DLG_OPERS) } },
@@ -1838,6 +1843,9 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)const
 	case EClipboard::COPY_PRNTSCRN:
 		wstrData = CopyPrintScreen();
 		break;
+	case EClipboard::COPY_OFFSET:
+		wstrData = CopyOffset();
+		break;
 	default:
 		break;
 	}
@@ -2114,6 +2122,22 @@ auto CHexCtrl::CopyHexLE()const->std::wstring
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i - 1));
 		wstrData += g_pwszHexMap[(chByte & 0xF0) >> 4];
 		wstrData += g_pwszHexMap[(chByte & 0x0F)];
+	}
+
+	return wstrData;
+}
+
+auto CHexCtrl::CopyOffset()const->std::wstring
+{
+	std::wstring wstrData;
+	if (m_pSelection->HasSelection())
+	{
+		const auto vecSel = GetSelection();
+		wchar_t pwszOffset[32] { };
+		UllToWchars(vecSel.front().ullOffset, pwszOffset, static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
+		if (m_fOffsetAsHex)
+			wstrData += L"0x";
+		wstrData += pwszOffset;
 	}
 
 	return wstrData;
@@ -4434,6 +4458,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYCARR, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYCARR) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYGREPHEX, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYGREPHEX) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYPRNTSCRN) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYOFFSET, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYOFFSET) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTEHEX, IsCmdAvail(EHexCmd::CMD_CLPBRD_PASTEHEX) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTETEXT, IsCmdAvail(EHexCmd::CMD_CLPBRD_PASTETEXT) ? MF_ENABLED : MF_GRAYED);
 		break;

@@ -116,6 +116,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto CopyHex()const->std::wstring;
 		[[nodiscard]] auto CopyHexFormatted()const->std::wstring;
 		[[nodiscard]] auto CopyHexLE()const->std::wstring;
+		[[nodiscard]] auto CopyOffset()const->std::wstring;
 		[[nodiscard]] auto CopyPrintScreen()const->std::wstring;
 		[[nodiscard]] auto CopyText()const->std::wstring;
 		void DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo)const;

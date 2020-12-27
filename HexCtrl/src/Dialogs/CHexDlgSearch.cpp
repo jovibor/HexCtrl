@@ -1021,11 +1021,13 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 		return { false, false };
 
 	const auto ullSizeTotal = fForward ? ullEnd - ullStart : ullStart - ullEnd; //Depends on search direction.
+	const ULONGLONG ullStep { m_ullStep }; //Search step.
 	ULONGLONG ullSizeChunk { };    //Size of the chunk to work with.
-	ULONGLONG ullChunks { };
+	ULONGLONG ullChunks { };       //How many chunks.
 	ULONGLONG ullMemToAcquire { }; //Size of VirtualData memory for acquiring. It's bigger than ullSizeChunk.
 	ULONGLONG ullOffsetSearch { };
 	constexpr auto iSizeQuick { 1024 * 256 }; //256KB.
+	bool fBigStep { false };
 	const auto pHexCtrl = GetHexCtrl();
 
 	switch (pHexCtrl->GetDataMode())
@@ -1043,6 +1045,14 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 			ullMemToAcquire = ullSizeTotal + nSizeSearch;
 		ullSizeChunk = ullMemToAcquire - nSizeSearch;
 		ullChunks = ullSizeTotal > ullSizeChunk ? ullSizeTotal / ullSizeChunk + ((ullSizeTotal % ullSizeChunk) ? 1 : 0) : 1;
+
+		if (ullStep > ullSizeChunk) //For very big steps.
+		{
+			ullChunks = ullSizeTotal > ullStep ? ullSizeTotal / ullStep + ((ullSizeTotal % ullStep) ? 1 : 0) : 1;
+			fBigStep = true;
+		}
+		else
+			ullChunks = ullSizeTotal > ullSizeChunk ? ullSizeTotal / ullSizeChunk + ((ullSizeTotal % ullSizeChunk) ? 1 : 0) : 1;
 	}
 	break;
 	}
@@ -1051,7 +1061,7 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 	bool fCanceled { false };
 	const auto lmbSearch = [&](CHexDlgCallback* pDlgClbk = nullptr)
 	{
-		if (fForward)
+		if (fForward) //Forward search.
 		{
 			ullOffsetSearch = ullStart;
 			for (auto iterChunk = 0ULL; iterChunk < ullChunks; ++iterChunk)
@@ -1059,11 +1069,11 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 				const auto* const pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 				assert(pData != nullptr);
 
-				for (auto i = 0ULL; i <= ullSizeChunk; i += m_ullStep)
+				for (auto iterData = 0ULL; iterData <= ullSizeChunk; iterData += ullStep)
 				{
-					if (MemCmp(pData + i, pSearch, nSizeSearch))
+					if (MemCmp(pData + iterData, pSearch, nSizeSearch))
 					{
-						ullStart = ullOffsetSearch + i;
+						ullStart = ullOffsetSearch + iterData;
 						fResult = true;
 						goto FOUND;
 					}
@@ -1075,11 +1085,14 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 							fCanceled = true;
 							return; //Breaking out from all level loops.
 						}
-						pDlgClbk->SetProgress(ullOffsetSearch + i);
+						pDlgClbk->SetProgress(ullOffsetSearch + iterData);
 					}
 				}
 
-				ullOffsetSearch += ullSizeChunk;
+				if (fBigStep)
+					ullOffsetSearch += ullStep;
+				else
+					ullOffsetSearch += ullSizeChunk;
 				if (ullOffsetSearch + ullMemToAcquire > ullEndSentinel)
 				{
 					ullMemToAcquire = ullEndSentinel - ullOffsetSearch;
@@ -1087,7 +1100,7 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 				}
 			}
 		}
-		else
+		else //Backward search.
 		{
 			ullOffsetSearch = ullStart - ullSizeChunk;
 			for (auto iterChunk = ullChunks; iterChunk > 0; --iterChunk)
@@ -1095,11 +1108,11 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 				const auto* const pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 				assert(pData != nullptr);
 
-				for (auto i = static_cast<LONGLONG>(ullSizeChunk); i >= 0; i -= m_ullStep)	//i might be negative.
+				for (auto iterData = static_cast<LONGLONG>(ullSizeChunk); iterData >= 0; iterData -= ullStep) //iterData might be negative.
 				{
-					if (MemCmp(pData + i, pSearch, nSizeSearch))
+					if (MemCmp(pData + iterData, pSearch, nSizeSearch))
 					{
-						ullStart = ullOffsetSearch + i;
+						ullStart = ullOffsetSearch + iterData;
 						fResult = true;
 						goto FOUND;
 					}
@@ -1111,17 +1124,28 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 							fCanceled = true;
 							return; //Breaking out from all level loops.
 						}
-						pDlgClbk->SetProgress(ullStart - (ullOffsetSearch + i));
+						pDlgClbk->SetProgress(ullStart - (ullOffsetSearch + iterData));
 					}
 				}
 
-				if ((ullOffsetSearch - ullSizeChunk) < ullEnd
-					|| (ullOffsetSearch - ullSizeChunk) > (std::numeric_limits<ULONGLONG>::max() - ullSizeChunk))
+				if (fBigStep)
 				{
-					ullMemToAcquire = (ullOffsetSearch - ullEnd) + nSizeSearch;
-					ullSizeChunk = ullMemToAcquire - nSizeSearch;
+					if ((ullOffsetSearch - ullStep) < ullEnd
+						|| (ullOffsetSearch - ullStep) > (std::numeric_limits<ULONGLONG>::max() - ullStep))
+						break; //Lower bound reached.
+
+					ullOffsetSearch -= ullSizeChunk;
 				}
-				ullOffsetSearch -= ullSizeChunk;
+				else
+				{
+					if ((ullOffsetSearch - ullSizeChunk) < ullEnd
+						|| (ullOffsetSearch - ullSizeChunk) > (std::numeric_limits<ULONGLONG>::max() - ullSizeChunk))
+					{
+						ullMemToAcquire = (ullOffsetSearch - ullEnd) + nSizeSearch;
+						ullSizeChunk = ullMemToAcquire - nSizeSearch;
+					}
+					ullOffsetSearch -= ullSizeChunk;
+				}
 			}
 		}
 

@@ -493,6 +493,8 @@ BEGIN
             MENUITEM "Copy as Grep Hex",            IDM_HEXCTRL_CLPBRD_COPYGREPHEX
             MENUITEM "Copy as Print Screen",        IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN
             MENUITEM SEPARATOR
+            MENUITEM "Copy Offset",                 IDM_HEXCTRL_CLPBRD_COPYOFFSET
+            MENUITEM SEPARATOR
             MENUITEM "Paste as Hex",                IDM_HEXCTRL_CLPBRD_PASTEHEX
             MENUITEM "Paste as Text",               IDM_HEXCTRL_CLPBRD_PASTETEXT
         END

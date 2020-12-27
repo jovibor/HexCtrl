@@ -143,13 +143,14 @@
 #define IDM_HEXCTRL_NAV_REPBKW          32814
 #define IDM_HEXCTRL_SEARCH_NEXT         32815
 #define IDM_HEXCTRL_SEARCH_PREV         32816
+#define IDM_HEXCTRL_CLPBRD_COPYOFFSET   32817
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        9275
-#define _APS_NEXT_COMMAND_VALUE         32817
+#define _APS_NEXT_COMMAND_VALUE         32818
 #define _APS_NEXT_CONTROL_VALUE         9276
 #define _APS_NEXT_SYMED_VALUE           9333
 #endif
