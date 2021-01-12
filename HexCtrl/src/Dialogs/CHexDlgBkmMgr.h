@@ -30,7 +30,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListItemLClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListDblClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListCellColor(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListGetColor(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnClickRadioDec();
 		afx_msg void OnClickRadioHex();
 		void UpdateList();

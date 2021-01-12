@@ -22,12 +22,12 @@ namespace HEXCTRL::LISTEX
 	/********************************************
 	* LISTEXCELLCOLOR - colors for the cell.    *
 	********************************************/
-	struct LISTEXCELLCOLOR
+	struct LISTEXCOLOR
 	{
 		COLORREF clrBk { };
 		COLORREF clrText { };
 	};
-	using PLISTEXCELLCOLOR = LISTEXCELLCOLOR*;
+	using PLISTEXCOLOR = LISTEXCOLOR*;
 
 	/********************************************************************************************
 	* LISTEXCOLORS - All ListEx colors.                                                         *
@@ -71,10 +71,21 @@ namespace HEXCTRL::LISTEX
 		bool         fSortable { false };     //Is list sortable, by clicking on the header column?
 		bool         fLinkUnderline { true }; //Links are displayed underlined or not.
 		bool         fLinkTooltip { true };   //Show links' toolips.
+		bool         fHighLatency { false };  //Do not redraw window until scrolling completes.
 	};
 
 	/********************************************
-	* CListEx class definition.					*
+	* LISTEXTOOLTIP - tool-tips for the cell.   *
+	********************************************/
+	struct LISTEXTOOLTIP
+	{
+		std::wstring wstrText;
+		std::wstring wstrCaption;
+	};
+	using PLISTEXTOOLTIP = LISTEXTOOLTIP*;
+
+	/********************************************
+	* IListEx pure virtual base class.          *
 	********************************************/
 	class IListEx : public CMFCListCtrl
 	{
@@ -91,20 +102,26 @@ namespace HEXCTRL::LISTEX
 		[[nodiscard]] virtual UINT GetFontSize()const = 0;
 		[[nodiscard]] virtual int GetSortColumn()const = 0;
 		[[nodiscard]] virtual bool GetSortAscending()const = 0;
+		virtual void HideColumn(int iIndex, bool fHide) = 0;
+		virtual int InsertColumn(int nCol, const LVCOLUMN* pColumn) = 0;
+		virtual int InsertColumn(int nCol, LPCTSTR lpszColumnHeading, int nFormat = LVCFMT_LEFT, int nWidth = -1, int nSubItem = -1) = 0;
 		[[nodiscard]] virtual bool IsCreated()const = 0;
+		[[nodiscard]] virtual bool IsColumnSortable(int iColumn) = 0;
+		virtual void ResetSort() = 0; //Reset all the sort by any column to its default state.
 		virtual void SetCellColor(int iItem, int iSubitem, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetCellData(int iItem, int iSubitem, ULONGLONG ullData) = 0;
-		virtual void SetCellMenu(int iItem, int iSubitem, CMenu* pMenu) = 0;
+		virtual void SetCellIcon(int iItem, int iSubitem, int iIndex) = 0;
 		virtual void SetCellTooltip(int iItem, int iSubitem, std::wstring_view wstrTooltip, std::wstring_view wstrCaption = L"") = 0;
 		virtual void SetColors(const LISTEXCOLORS& lcs) = 0;
 		virtual void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
-		virtual void SetColumnSortMode(int iColumn, EListExSortMode enSortMode) = 0;
+		virtual void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enSortMode = { }) = 0;
 		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0;
 		virtual void SetFontSize(UINT uiSize) = 0;
-		virtual void SetHdrHeight(DWORD dwHeight) = 0;
-		virtual void SetHdrFont(const LOGFONTW* pLogFontNew) = 0;
 		virtual void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
-		virtual void SetListMenu(CMenu* pMenu) = 0;
+		virtual void SetHdrColumnIcon(int iColumn, int iIconIndex, bool fClick = false) = 0; //Icon index in image list for given column.
+		virtual void SetHdrFont(const LOGFONTW* pLogFontNew) = 0;
+		virtual void SetHdrHeight(DWORD dwHeight) = 0;
+		virtual void SetHdrImageList(CImageList* pList) = 0;
 		virtual void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare = nullptr,
 			EListExSortMode enSortMode = EListExSortMode::SORT_LEX) = 0;
@@ -125,7 +142,7 @@ namespace HEXCTRL::LISTEX
 
 	inline IListExUnPtr CreateListEx()
 	{
-		return IListExUnPtr(CreateRawListEx(), [](IListEx * p) { p->Destroy(); });
+		return IListExUnPtr(CreateRawListEx(), [](IListEx* p) { p->Destroy(); });
 	};
 
 	using IListExPtr = IListExUnPtr;
@@ -135,7 +152,11 @@ namespace HEXCTRL::LISTEX
 	* WM_NOTIFY codes (NMHDR.code values)										*
 	****************************************************************************/
 
-	constexpr auto LISTEX_MSG_MENUSELECTED = 0x1000U; //User defined menu item selected.
-	constexpr auto LISTEX_MSG_CELLCOLOR = 0x1001U;    //Get cell color.
-	constexpr auto LISTEX_MSG_LINKCLICK = 0x1002U;    //Hyperlink has been clicked.
+	constexpr auto LISTEX_MSG_GETCOLOR = 0x1000U;     //Get cell color.
+	constexpr auto LISTEX_MSG_GETICON = 0x1001U;      //Get cell icon.
+	constexpr auto LISTEX_MSG_GETTOOLTIP = 0x1002U;   //Get cell tool-tip data.
+	constexpr auto LISTEX_MSG_LINKCLICK = 0x1003U;    //Hyperlink has been clicked.
+	constexpr auto LISTEX_MSG_HDRICONCLICK = 0x1004U; //Header's icon has been clicked.
+	constexpr auto LISTEX_MSG_HDRRBTNDOWN = 0x1005U;  //Header's WM_RBUTTONDOWN message.
+	constexpr auto LISTEX_MSG_HDRRBTNUP = 0x1006U;    //Header's WM_RBUTTONUP message.
 }

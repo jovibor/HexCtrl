@@ -674,16 +674,16 @@ auto CHexCtrl::GetData(HEXSPANSTRUCT hss)const->std::byte*
 	case EHexDataMode::DATA_MSG:
 	{
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
-		if (hss.ullSize == 0)
-			hss.ullSize = m_dwCacheSize;
+		if (hss.ullSize == 0 || hss.ullSize > GetCacheSize())
+			hss.ullSize = GetCacheSize();
 		hns.stSpan = hss;
 		MsgWindowNotify(hns);
 		pData = hns.pData;
 	}
 	break;
 	case EHexDataMode::DATA_VIRTUAL:
-		if (hss.ullSize == 0)
-			hss.ullSize = m_dwCacheSize;
+		if (hss.ullSize == 0 || hss.ullSize > GetCacheSize())
+			hss.ullSize = GetCacheSize();
 		pData = m_pHexVirtData->GetData(hss);
 		break;
 	}
@@ -1634,7 +1634,7 @@ void CHexCtrl::CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLO
 	case EHexDataMode::DATA_MSG:
 	case EHexDataMode::DATA_VIRTUAL:
 	{
-		ullSizeChunk = m_dwCacheSize; //Size of Virtual memory for acquiring, to work with.
+		ullSizeChunk = GetCacheSize(); //Size of Virtual memory for acquiring, to work with.
 		if (ullAlign > 0)
 			ullSizeChunk -= (ullSizeChunk & (ullAlign - 1)); //Aligning chunk size to ullAlign.
 		if (ullSize < ullSizeChunk)

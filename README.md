@@ -481,7 +481,10 @@ Returns current [`HEXCOLORSSTRUCT`](#hexcolorsstruct).
 ```cpp
 auto GetData(HEXSPANSTRUCT hss)const->std::byte*;
 ```
-Returns a pointer to data offset, no matter what mode the control works in.
+Returns a pointer to a data offset no matter what mode the control works in.  
+
+Note, that in the `DATA_VIRTUAL` and `DATA_MSG` modes returned data size can not exceed current [cache size](#getcachesize), and therefore may be less than the size acquired.  
+In the `DATA_MEMORY` mode a returned pointer is just an offset from the data pointer set in the [`SetData`](#setdata) method.
 
 ### [](#)GetDataMode
 ```cpp

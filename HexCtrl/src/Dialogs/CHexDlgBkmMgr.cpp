@@ -30,7 +30,7 @@ BEGIN_MESSAGE_MAP(CHexDlgBkmMgr, CDialogEx)
 	ON_NOTIFY(NM_CLICK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListItemLClick)
 	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListDblClick)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListRClick)
-	ON_NOTIFY(LISTEX_MSG_CELLCOLOR, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListCellColor)
+	ON_NOTIFY(LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListGetColor)
 	ON_COMMAND(IDC_HEXCTRL_BKMMGR_RADIO_DEC, &CHexDlgBkmMgr::OnClickRadioDec)
 	ON_COMMAND(IDC_HEXCTRL_BKMMGR_RADIO_HEX, &CHexDlgBkmMgr::OnClickRadioHex)
 	ON_WM_DESTROY()
@@ -210,7 +210,7 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		case 0: //Index number.
 			swprintf_s(pItem->pszText, nMaxLength, L"%d", iItemID + 1);
 			break;
-		case 1: //Offset
+		case 1: //Offset.
 			if (!pBkm->vecSpan.empty())
 				ullOffset = pBkm->vecSpan.front().ullOffset;
 			swprintf_s(pItem->pszText, nMaxLength, m_fShowAsHex ? L"0x%llX" : L"%llu", ullOffset);
@@ -221,7 +221,7 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 					[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
 			swprintf_s(pItem->pszText, nMaxLength, m_fShowAsHex ? L"0x%llX" : L"%llu", ullSize);
 			break;
-		case 3: //Description
+		case 3: //Description.
 			pItem->pszText = const_cast<wchar_t*>(pBkm->wstrDesc.data());
 			break;
 		default:
@@ -269,13 +269,13 @@ void CHexDlgBkmMgr::OnListRClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	m_stMenuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
 }
 
-void CHexDlgBkmMgr::OnListCellColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iSubItem == 4)
 	{
 		if (const auto* const pBkm = m_pBookmarks->GetByIndex(static_cast<size_t>(pNMI->iItem)); pBkm != nullptr)
 		{
-			static LISTEXCELLCOLOR stCellClr;
+			static LISTEXCOLOR stCellClr;
 			stCellClr.clrBk = pBkm->clrBk;
 			stCellClr.clrText = pBkm->clrText;
 			pNMI->lParam = reinterpret_cast<LPARAM>(&stCellClr);

@@ -19,7 +19,7 @@ BEGIN_MESSAGE_MAP(CHexDlgEncoding, CDialogEx)
 	ON_WM_ACTIVATE()
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_ENCODING_LIST, &CHexDlgEncoding::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_ENCODING_LIST, &CHexDlgEncoding::OnListItemChanged)
-	ON_NOTIFY(LISTEX_MSG_CELLCOLOR, IDC_HEXCTRL_ENCODING_LIST, &CHexDlgEncoding::OnListCellColor)
+	ON_NOTIFY(LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_ENCODING_LIST, &CHexDlgEncoding::OnListGetColor)
 	ON_NOTIFY(LISTEX_MSG_LINKCLICK, IDC_HEXCTRL_ENCODING_LIST, &CHexDlgEncoding::OnListLinkClick)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
@@ -151,11 +151,11 @@ void CHexDlgEncoding::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgEncoding::OnListCellColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgEncoding::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); m_vecCodePage[static_cast<size_t>(pNMI->iItem)].uMaxChars > 1)
 	{
-		static LISTEXCELLCOLOR stClr { RGB(240, 240, 240), RGB(70, 70, 70) };
+		static LISTEXCOLOR stClr { RGB(240, 240, 240), RGB(70, 70, 70) };
 		pNMI->lParam = reinterpret_cast<LPARAM>(&stClr);
 	}
 }
