@@ -4794,7 +4794,7 @@ void CHexCtrl::OnPaint()
 	CRect rcClient;
 	GetClientRect(rcClient);
 	//To prevent drawing in too small window (can cause hangs).
-	if (rcClient.Height() < m_iHeightTopRect + m_iHeightBottomOffArea)
+	if (rcClient.IsRectEmpty() || rcClient.Height() < m_iHeightTopRect + m_iHeightBottomOffArea)
 		return;
 
 	m_iHeightClientArea = rcClient.Height();
