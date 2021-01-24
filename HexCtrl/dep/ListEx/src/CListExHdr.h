@@ -8,7 +8,12 @@
 #include <optional>
 #include <unordered_map>
 
-namespace HEXCTRL::LISTEX { struct LISTEXCOLORS; } //Forward declaration.
+//Forward declaration.
+namespace HEXCTRL::LISTEX
+{
+	struct LISTEXCOLORS;
+	struct LISTEXHDRICON;
+}
 
 namespace HEXCTRL::LISTEX::INTERNAL
 {
@@ -32,7 +37,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		void SetFont(const LOGFONTW* pLogFontNew);
 		void SetColor(const LISTEXCOLORS& lcs);
 		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText);
-		void SetColumnIcon(int iColumn, int iIconIndex, bool fClick);
+		void SetColumnIcon(int iColumn, const LISTEXHDRICON& stIcon);
 		void SetColumnSortable(int iColumn, bool fSortable);
 		void SetSortable(bool fSortable);
 		void SetSortArrow(int iColumn, bool fAscending);

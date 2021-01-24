@@ -49,7 +49,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		void SetFont(const LOGFONTW* pLogFontNew)override;
 		void SetFontSize(UINT uiSize)override;
 		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1)override;
-		void SetHdrColumnIcon(int iColumn, int iIconIndex, bool fClick = false)override; //Icon index in image list for given column.
+		void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)override; //Icon for a given column.
 		void SetHdrFont(const LOGFONTW* pLogFontNew)override;
 		void SetHdrHeight(DWORD dwHeight)override;
 		void SetHdrImageList(CImageList* pList)override;

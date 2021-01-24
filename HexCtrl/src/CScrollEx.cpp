@@ -199,7 +199,6 @@ void CScrollEx::OnMouseMove(UINT /*nFlags*/, CPoint point)
 
 void CScrollEx::OnNcActivate(BOOL /*bActive*/)const
 {
-	assert(m_fCreated);
 	if (!m_fCreated)
 		return;
 
@@ -260,7 +259,6 @@ void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS * lpncs
 
 void CScrollEx::OnNcPaint()const
 {
-	assert(m_fCreated);
 	if (!m_fCreated)
 		return;
 

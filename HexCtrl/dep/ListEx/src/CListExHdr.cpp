@@ -5,8 +5,8 @@
 * This class is available under the "MIT License".                                      *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "../ListEx.h"
 #include "CListExHdr.h"
+#include "../ListEx.h"
 #include <cassert>
 
 using namespace HEXCTRL::LISTEX;
@@ -28,9 +28,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 	********************************************/
 	struct CListExHdr::SHDRICON
 	{
-		int   iIndex { };           //Icon index.
-		CRect rc;                   //Icon rect.
-		bool  fClickable { false }; //Clickable or not.
+		LISTEXHDRICON stIcon { };   //Icon data struct.
 		bool  fLMPressed { false }; //Left mouse button pressed atm.
 	};
 
@@ -189,20 +187,19 @@ void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed,
 	}
 
 	//Draw icon for column, if any.
-	long lIndentLeft { 4 }; //Left text indent.
-	if (const auto pData = HasIcon(ID); pData != nullptr) //If column has icon.
+	long lIndentTextLeft { 4 }; //Left text indent.
+	if (const auto pData = HasIcon(ID); pData != nullptr) //If column has an icon.
 	{
-		IMAGEINFO stIMG;
 		const auto pImgList = GetImageList(LVSIL_NORMAL);
-		pImgList->GetImageInfo(pData->iIndex, &stIMG);
-		pData->rc.SetRect(rcOrig.left + lIndentLeft, rcOrig.top, rcOrig.left + (stIMG.rcImage.right - stIMG.rcImage.left),
-			rcOrig.top + (stIMG.rcImage.bottom - stIMG.rcImage.top)); //Setting rect for the icon.
-		lIndentLeft += pData->rc.Width() + lIndentLeft;
-		pImgList->DrawEx(&rDC, pData->iIndex, { pData->rc.left, pData->rc.top }, { }, CLR_NONE, CLR_NONE, ILD_NORMAL);
+		int iCX { };
+		int iCY { };
+		ImageList_GetIconSize(pImgList->m_hImageList, &iCX, &iCY); //Icon dimensions.
+		pImgList->DrawEx(&rDC, pData->stIcon.iIndex, rcOrig.TopLeft() + pData->stIcon.pt, { }, CLR_NONE, CLR_NONE, ILD_NORMAL);
+		lIndentTextLeft += pData->stIcon.pt.x + iCX;
 	}
 
-	constexpr long lIndentRight = 4;
-	CRect rcText { rcOrig.left + lIndentLeft, rcOrig.top, rcOrig.right - lIndentRight, rcOrig.bottom };
+	constexpr long lIndentTextRight = 4;
+	CRect rcText { rcOrig.left + lIndentTextLeft, rcOrig.top, rcOrig.right - lIndentTextRight, rcOrig.bottom };
 	if (StrStrW(warrHdrText, L"\n"))
 	{	//If it's multiline text, first — calculate rect for the text,
 		//with DT_CALCRECT flag (not drawing anything),
@@ -273,12 +270,19 @@ void CListExHdr::OnLButtonDown(UINT nFlags, CPoint point)
 	if (ht.iItem >= 0)
 	{
 		const auto ID = ColumnIndexToID(ht.iItem);
-		if (const auto pData = HasIcon(ID); pData != nullptr && !IsHidden(ID))
+		if (const auto pData = HasIcon(ID); pData != nullptr && pData->stIcon.fClickable && !IsHidden(ID))
 		{
-			if (pData->fClickable && pData->rc.PtInRect(point))
+			int iCX { };
+			int iCY { };
+			ImageList_GetIconSize(GetImageList()->m_hImageList, &iCX, &iCY);
+			CRect rcColumn;
+			GetItemRect(ht.iItem, rcColumn);
+			CRect rcIcon(rcColumn.TopLeft() + pData->stIcon.pt, SIZE { iCX, iCY });
+
+			if (rcIcon.PtInRect(point))
 			{
 				pData->fLMPressed = true;
-				return;
+				return; //Do not invoke default handler.
 			}
 		}
 	}
@@ -288,21 +292,38 @@ void CListExHdr::OnLButtonDown(UINT nFlags, CPoint point)
 
 void CListExHdr::OnLButtonUp(UINT nFlags, CPoint point)
 {
-	for (auto& iter : m_umapIcons)
+	HDHITTESTINFO ht { };
+	ht.pt = point;
+	HitTest(&ht);
+	if (ht.iItem >= 0)
 	{
-		if (iter.second.fLMPressed && iter.second.rc.PtInRect(point))
+		for (auto& iter : m_umapIcons)
 		{
-			for (auto& iterData : m_umapIcons)
-				iterData.second.fLMPressed = false; //Remove fLMPressed flag from all columns.
+			if (!iter.second.fLMPressed)
+				continue;
 
-			if (auto pParent = GetParent(); pParent != nullptr) //List control pointer.
+			int iCX { };
+			int iCY { };
+			ImageList_GetIconSize(GetImageList()->m_hImageList, &iCX, &iCY);
+			CRect rcColumn;
+			GetItemRect(ht.iItem, rcColumn);
+			CRect rcIcon(rcColumn.TopLeft() + iter.second.stIcon.pt, SIZE { iCX, iCY });
+
+			if (rcIcon.PtInRect(point))
 			{
-				const auto uCtrlId = static_cast<UINT>(pParent->GetDlgCtrlID());
-				NMHEADERW hdr { { pParent->m_hWnd, uCtrlId, LISTEX_MSG_HDRICONCLICK } };
-				hdr.iItem = ColumnIDToIndex(iter.first);
-				pParent->GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&hdr));
+				for (auto& iterData : m_umapIcons)
+					iterData.second.fLMPressed = false; //Remove fLMPressed flag from all columns.
+
+				if (auto pParent = GetParent(); pParent != nullptr) //List control pointer.
+				{
+					const auto uCtrlId = static_cast<UINT>(pParent->GetDlgCtrlID());
+					NMHEADERW hdr { { pParent->m_hWnd, uCtrlId, LISTEX_MSG_HDRICONCLICK } };
+					hdr.iItem = ColumnIDToIndex(iter.first);
+					pParent->GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&hdr));
+				}
 			}
-			return;
+
+			break;
 		}
 	}
 
@@ -440,21 +461,20 @@ void CListExHdr::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 	RedrawWindow();
 }
 
-void CListExHdr::SetColumnIcon(int iColumn, int iIconIndex, bool fClick)
+void CListExHdr::SetColumnIcon(int iColumn, const LISTEXHDRICON & stIcon)
 {
 	const auto ID = ColumnIndexToID(iColumn);
 	assert(ID > 0);
 	if (ID == 0)
 		return;
 
-	if (iIconIndex == -1) //If column already has icon.
+	if (stIcon.iIndex == -1) //If column already has icon.
 		m_umapIcons.erase(ID);
 	else
 	{
-		SHDRICON stIcon;
-		stIcon.iIndex = iIconIndex;
-		stIcon.fClickable = fClick;
-		m_umapIcons[ID] = stIcon;
+		SHDRICON stHdrIcon;
+		stHdrIcon.stIcon = stIcon;
+		m_umapIcons[ID] = stHdrIcon;
 	}
 	RedrawWindow();
 }

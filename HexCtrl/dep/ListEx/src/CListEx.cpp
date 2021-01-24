@@ -667,13 +667,13 @@ void CListEx::SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 	GetHeaderCtrl().RedrawWindow();
 }
 
-void CListEx::SetHdrColumnIcon(int iColumn, int iIconIndex, bool fClick)
+void CListEx::SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
-	GetHeaderCtrl().SetColumnIcon(iColumn, iIconIndex, fClick);
+	GetHeaderCtrl().SetColumnIcon(iColumn, stIcon);
 }
 
 void CListEx::SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)
@@ -1373,8 +1373,12 @@ BOOL CListEx::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT * pResult)
 
 void CListEx::OnLvnColumnClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 {
-	//Just an empty handler. 
-	//Without it all works fine, but assert triggers in Debug when clicking on header.
+	/*******************************************************************************
+	* Just an empty handler. 
+	* Without it all works fine, but assert triggers in Debug mode, when clicking 
+	* on header, if list is in Virtual mode (LVS_OWNERDATA).
+	* ASSERT((GetStyle() & LVS_OWNERDATA)==0)
+	*******************************************************************************/
 }
 
 void CListEx::OnHdnBegindrag(NMHDR * pNMHDR, LRESULT * pResult)

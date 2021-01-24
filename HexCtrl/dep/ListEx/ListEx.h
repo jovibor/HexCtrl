@@ -20,7 +20,7 @@ namespace HEXCTRL::LISTEX
 	};
 
 	/********************************************
-	* LISTEXCELLCOLOR - colors for the cell.    *
+	* LISTEXCOLOR - colors for the cell.        *
 	********************************************/
 	struct LISTEXCOLOR
 	{
@@ -85,6 +85,16 @@ namespace HEXCTRL::LISTEX
 	using PLISTEXTOOLTIP = LISTEXTOOLTIP*;
 
 	/********************************************
+	* LISTEXHDRICON - Icon for header column.   *
+	********************************************/
+	struct LISTEXHDRICON
+	{
+		POINT pt { };              //Point of the top-left corner.
+		int   iIndex { };          //Icon index in the header's image list.
+		bool  fClickable { true }; //Is icon sending LISTEX_MSG_HDRICONCLICK message when clicked.
+	};
+
+	/********************************************
 	* IListEx pure virtual base class.          *
 	********************************************/
 	class IListEx : public CMFCListCtrl
@@ -118,7 +128,7 @@ namespace HEXCTRL::LISTEX
 		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0;
 		virtual void SetFontSize(UINT uiSize) = 0;
 		virtual void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
-		virtual void SetHdrColumnIcon(int iColumn, int iIconIndex, bool fClick = false) = 0; //Icon index in image list for given column.
+		virtual void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon) = 0; //Icon for a given column.
 		virtual void SetHdrFont(const LOGFONTW* pLogFontNew) = 0;
 		virtual void SetHdrHeight(DWORD dwHeight) = 0;
 		virtual void SetHdrImageList(CImageList* pList) = 0;
