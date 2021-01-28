@@ -3477,6 +3477,14 @@ void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ull
 			if (tDataOper > 0) //Division by Zero check.
 				*pData /= tDataOper;
 			break;
+		case EHexOperMode::OPER_CEILING:
+			if (*pData > tDataOper)
+				*pData = tDataOper;
+			break;
+		case EHexOperMode::OPER_FLOOR:
+			if (*pData < tDataOper)
+				*pData = tDataOper;
+			break;
 		}
 	}
 }

@@ -245,7 +245,7 @@ namespace HEXCTRL
 	enum class EHexOperMode : WORD
 	{
 		OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
-		OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
+		OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE, OPER_CEILING, OPER_FLOOR
 	};
 
 	/********************************************************************************************

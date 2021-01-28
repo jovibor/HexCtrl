@@ -31,7 +31,7 @@ BOOL CHexDlgOpers::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
 BOOL CHexDlgOpers::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
-	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_DIV, IDC_HEXCTRL_OPERS_RADIO_OR);
+	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR, IDC_HEXCTRL_OPERS_RADIO_OR);
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD, IDC_HEXCTRL_OPERS_RADIO_BYTE);
 
 	return TRUE;
@@ -48,7 +48,7 @@ BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
 	const auto wMessage = HIWORD(wParam);
 	bool fHere { true };
 	if (const auto wID = LOWORD(wParam); wID >= IDC_HEXCTRL_OPERS_EDIT_OR
-		&& wID <= IDC_HEXCTRL_OPERS_EDIT_DIV
+		&& wID <= IDC_HEXCTRL_OPERS_EDIT_FLOOR
 		&& wMessage == EN_SETFOCUS)
 	{
 		int iRadioID { };
@@ -81,10 +81,16 @@ BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
 		case IDC_HEXCTRL_OPERS_EDIT_DIV:
 			iRadioID = IDC_HEXCTRL_OPERS_RADIO_DIV;
 			break;
+		case IDC_HEXCTRL_OPERS_EDIT_CEILING:
+			iRadioID = IDC_HEXCTRL_OPERS_RADIO_CEILING;
+			break;
+		case IDC_HEXCTRL_OPERS_EDIT_FLOOR:
+			iRadioID = IDC_HEXCTRL_OPERS_RADIO_FLOOR;
+			break;
 		default:
 			fHere = false;
 		}
-		CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_DIV, iRadioID);
+		CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR, iRadioID);
 	}
 	else
 		fHere = false;
@@ -99,7 +105,7 @@ BOOL CHexDlgOpers::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 
 void CHexDlgOpers::OnOK()
 {
-	const auto iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_DIV);
+	const auto iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR);
 	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
 
 	HEXMODIFY hms;
@@ -150,6 +156,14 @@ void CHexDlgOpers::OnOK()
 		hms.enOperMode = EHexOperMode::OPER_DIVIDE;
 		iEditID = IDC_HEXCTRL_OPERS_EDIT_DIV;
 		break;
+	case IDC_HEXCTRL_OPERS_RADIO_CEILING:
+		hms.enOperMode = EHexOperMode::OPER_CEILING;
+		iEditID = IDC_HEXCTRL_OPERS_EDIT_CEILING;
+		break;
+	case IDC_HEXCTRL_OPERS_RADIO_FLOOR:
+		hms.enOperMode = EHexOperMode::OPER_FLOOR;
+		iEditID = IDC_HEXCTRL_OPERS_EDIT_FLOOR;
+		break;
 	default:
 		break;
 	}
@@ -160,7 +174,12 @@ void CHexDlgOpers::OnOK()
 		WCHAR pwszEditText[32];
 		GetDlgItemTextW(iEditID, pwszEditText, static_cast<int>(std::size(pwszEditText)));
 
-		if (!wstr2num(pwszEditText, llData))
+		if (!wcslen(pwszEditText))
+		{
+			MessageBoxW(L"Missing value!", L"Format Error", MB_ICONERROR);
+			return;
+		}
+		else if (!wstr2num(pwszEditText, llData))
 		{
 			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
 			return;
