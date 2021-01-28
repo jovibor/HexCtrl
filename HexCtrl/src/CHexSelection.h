@@ -15,11 +15,11 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		void ClearAll();
-		[[nodiscard]] ULONGLONG GetSelectionEnd()const;
-		[[nodiscard]] ULONGLONG GetSelectionSize()const;
-		[[nodiscard]] ULONGLONG GetSelectionStart()const;
+		[[nodiscard]] ULONGLONG GetSelEnd()const;
+		[[nodiscard]] ULONGLONG GetSelSize()const;
+		[[nodiscard]] ULONGLONG GetSelStart()const;
 		[[nodiscard]] DWORD GetLineLength()const;  //Length of the selected line. Used in block selection (with Alt).
-		[[nodiscard]] ULONGLONG GetOffsetByIndex(ULONGLONG ullIndex)const;  //Retrieves selection's offset by index [0...selectionSize)
+		[[nodiscard]] ULONGLONG GetOffsetByIndex(ULONGLONG ullIndex)const;  //Retrieves selection's offset by index [0...GetSelSize())
 		[[nodiscard]] auto GetData()const->std::vector<HEXSPANSTRUCT>;
 		[[nodiscard]] bool HasSelection()const;
 		[[nodiscard]] bool HasSelHighlight()const;
@@ -32,6 +32,6 @@ namespace HEXCTRL::INTERNAL
 		std::vector<HEXSPANSTRUCT> m_vecSelection { };         //Selection data vector.
 		std::vector<HEXSPANSTRUCT> m_vecSelHighlight { };      //Selection highlight data vector.
 		ULONGLONG m_ullMarkSelStart { 0xFFFFFFFFFFFFFFFFULL }; //For SetSelStartEnd().
-		ULONGLONG m_ullMarkSelEnd { 0xFFFFFFFFFFFFFFFFULL };   //For SetSelectionEnd().
+		ULONGLONG m_ullMarkSelEnd { 0xFFFFFFFFFFFFFFFFULL };   //For SetSelStartEnd().
 	};
 }

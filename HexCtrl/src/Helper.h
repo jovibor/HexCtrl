@@ -1,8 +1,8 @@
 /****************************************************************************************
 * Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
-* This is a Hex Control for MFC applications.                                           *
-* Official git repository of the project: https://github.com/jovibor/HexCtrl/           *
-* This software is available under the "MIT License modified with The Commons Clause".  *
+* This is a Hex Control for MFC/Win32 applications.                                     *
+* Official git repository: https://github.com/jovibor/HexCtrl/                          *
+* This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 ****************************************************************************************/
 /****************************************************************************************
@@ -17,8 +17,8 @@
 #define HEXCTRL_PRODUCT_NAME			"Hex Control for MFC/Win32"
 #define HEXCTRL_COPYRIGHT_NAME  		"(C) 2018-2021 Jovibor"
 #define HEXCTRL_VERSION_MAJOR			2
-#define HEXCTRL_VERSION_MINOR			20
-#define HEXCTRL_VERSION_MAINTENANCE		1
+#define HEXCTRL_VERSION_MINOR			21
+#define HEXCTRL_VERSION_MAINTENANCE		0
 
 namespace HEXCTRL::INTERNAL
 {

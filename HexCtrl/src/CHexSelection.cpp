@@ -56,15 +56,15 @@ bool CHexSelection::HitTestRange(const HEXSPANSTRUCT& hss)const
 		});
 }
 
-ULONGLONG CHexSelection::GetSelectionEnd()const
+ULONGLONG CHexSelection::GetSelEnd()const
 {
 	if (!HasSelection())
 		return 0xFFFFFFFFFFFFFFFFULL;
 
-	return m_vecSelection.back().ullOffset + m_vecSelection.back().ullSize;
+	return m_vecSelection.back().ullOffset + m_vecSelection.back().ullSize - 1;
 }
 
-ULONGLONG CHexSelection::GetSelectionSize()const
+ULONGLONG CHexSelection::GetSelSize()const
 {
 	if (!HasSelection())
 		return 0;
@@ -72,7 +72,7 @@ ULONGLONG CHexSelection::GetSelectionSize()const
 	return m_vecSelection.size() * m_vecSelection.at(0).ullSize;
 }
 
-ULONGLONG CHexSelection::GetSelectionStart()const
+ULONGLONG CHexSelection::GetSelStart()const
 {
 	if (!HasSelection())
 		return 0xFFFFFFFFFFFFFFFFULL;
@@ -92,23 +92,23 @@ ULONGLONG CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const
 {
 	ULONGLONG ullOffset { 0xFFFFFFFFFFFFFFFFULL };
 
-	if (ullIndex >= GetSelectionSize())
+	if (ullIndex >= GetSelSize())
 		return ullOffset;
 
 	ULONGLONG ullTotal { };
-	for (const auto& i : m_vecSelection)
+	for (const auto& iterData : m_vecSelection)
 	{
-		ullTotal += i.ullSize;
+		ullTotal += iterData.ullSize;
 		if (ullIndex < ullTotal)
 		{
-			ullOffset = i.ullOffset + (ullIndex - (ullTotal - i.ullSize));
+			ullOffset = iterData.ullOffset + (ullIndex - (ullTotal - iterData.ullSize));
 			break;
 		}
 	}
 	return ullOffset;
 }
 
-auto CHexSelection::GetData()const ->std::vector<HEXSPANSTRUCT>
+auto CHexSelection::GetData()const->std::vector<HEXSPANSTRUCT>
 {
 	return m_vecSelection;
 }

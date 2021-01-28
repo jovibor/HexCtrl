@@ -484,7 +484,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		SetGroupMode(EHexGroupMode::ASQWORD);
 		break;
 	case EHexCmd::CMD_BKM_ADD:
-		m_pBookmarks->Add(HEXBKMSTRUCT { m_pSelection->GetData() });
+		m_pBookmarks->Add(HEXBKMSTRUCT { GetSelection() });
 		break;
 	case EHexCmd::CMD_BKM_REMOVE:
 		m_pBookmarks->Remove(m_fMenuCMD ? m_optRMouseClick.value() : GetCaretPos());
@@ -1043,7 +1043,7 @@ void CHexCtrl::Redraw()
 		{
 			swprintf_s(wBuff, std::size(wBuff),
 				IsOffsetAsHex() ? L"Selected: 0x%llX [0x%llX-0x%llX]; " : L"Selected: %llu [%llu-%llu]; ",
-				m_pSelection->GetSelectionSize(), m_pSelection->GetSelectionStart(), m_pSelection->GetSelectionEnd() - 1);
+				m_pSelection->GetSelSize(), m_pSelection->GetSelStart(), m_pSelection->GetSelEnd());
 			m_wstrInfo += wBuff;
 		}
 
@@ -1093,11 +1093,7 @@ void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
 
 	m_ullCaretPos = ullOffset;
 	m_fCaretHigh = fHighLow;
-	if (!m_fMutable)
-	{
-		m_ullLMouseClick = ullOffset;
-		SetSelection({ { ullOffset, 1 } }, false);
-	}
+
 	if (fRedraw)
 		Redraw();
 
@@ -1647,7 +1643,7 @@ void CHexCtrl::CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLO
 
 void CHexCtrl::CaretMoveDown()
 {
-	const auto ullOldPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
+	const auto ullOldPos = m_ullCaretPos;
 	const auto ullNewPos = ullOldPos + m_dwCapacity >= GetDataSize() ? ullOldPos : ullOldPos + m_dwCapacity;
 	SetCaretPos(ullNewPos, m_fCaretHigh, false);
 
@@ -1661,17 +1657,18 @@ void CHexCtrl::CaretMoveDown()
 
 void CHexCtrl::CaretMoveLeft()
 {
-	const auto ullOldPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
+	const auto ullOldPos = m_ullCaretPos;
 	auto ullNewPos { 0ULL };
-	if (m_fMutable)
+
+	if (IsCurTextArea() || !IsMutable())
 	{
-		if (IsCurTextArea())
-		{
-			if (ullOldPos == 0) //To avoid underflow.
-				return;
-			ullNewPos = ullOldPos - 1;
-		}
-		else if (m_fCaretHigh)
+		if (ullOldPos == 0) //To avoid underflow.
+			return;
+		ullNewPos = ullOldPos - 1;
+	}
+	else
+	{
+		if (m_fCaretHigh)
 		{
 			if (ullOldPos == 0) //To avoid underflow.
 				return;
@@ -1684,8 +1681,6 @@ void CHexCtrl::CaretMoveLeft()
 			m_fCaretHigh = true;
 		}
 	}
-	else if (ullOldPos > 0)
-		ullNewPos = ullOldPos - 1;
 
 	SetCaretPos(ullNewPos, m_fCaretHigh, false);
 
@@ -1704,13 +1699,14 @@ void CHexCtrl::CaretMoveRight()
 	if (!IsDataSet())
 		return;
 
-	const auto ullOldPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
+	const auto ullOldPos = m_ullCaretPos;
 	auto ullNewPos { 0ULL };
-	if (m_fMutable)
+
+	if (IsCurTextArea() || !IsMutable())
+		ullNewPos = ullOldPos + 1;
+	else
 	{
-		if (IsCurTextArea())
-			ullNewPos = ullOldPos + 1;
-		else if (m_fCaretHigh)
+		if (m_fCaretHigh)
 		{
 			ullNewPos = ullOldPos;
 			m_fCaretHigh = false;
@@ -1721,8 +1717,6 @@ void CHexCtrl::CaretMoveRight()
 			m_fCaretHigh = ullOldPos != GetDataSize() - 1; //Last byte case.
 		}
 	}
-	else
-		ullNewPos = ullOldPos + 1;
 
 	if (const auto ullDataSize = GetDataSize(); ullNewPos >= ullDataSize) //To avoid overflow.
 		ullNewPos = ullDataSize - 1;
@@ -1741,7 +1735,7 @@ void CHexCtrl::CaretMoveRight()
 
 void CHexCtrl::CaretMoveUp()
 {
-	const auto ullOldPos = m_fMutable ? m_ullCaretPos : m_ullLMouseClick;
+	const auto ullOldPos = m_ullCaretPos;
 	const auto ullNewPos = ullOldPos >= m_dwCapacity ? ullOldPos - m_dwCapacity : ullOldPos;
 	SetCaretPos(ullNewPos, m_fCaretHigh, false);
 
@@ -1810,7 +1804,7 @@ void CHexCtrl::CaretToPageEnd()
 
 void CHexCtrl::ClipboardCopy(EClipboard enType)const
 {
-	if (!m_pSelection->HasSelection() || m_pSelection->GetSelectionSize() > 1024 * 1024 * 8) //8MB
+	if (!m_pSelection->HasSelection() || m_pSelection->GetSelSize() > 1024 * 1024 * 8) //8MB
 	{
 		::MessageBoxW(nullptr, L"Selection size is too big to copy.\r\nTry to select less.", L"Error", MB_ICONERROR);
 		return;
@@ -1953,7 +1947,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 auto CHexCtrl::CopyBase64()const->std::wstring
 {
 	std::wstring wstrData;
-	const auto ullSelSize = m_pSelection->GetSelectionSize();
+	const auto ullSelSize = m_pSelection->GetSelSize();
 
 	wstrData.reserve(static_cast<size_t>(ullSelSize) * 2);
 	constexpr const wchar_t* const pwszBase64Map { L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
@@ -1981,7 +1975,7 @@ auto CHexCtrl::CopyBase64()const->std::wstring
 auto CHexCtrl::CopyCArr()const->std::wstring
 {
 	std::wstring wstrData;
-	const auto ullSelSize = m_pSelection->GetSelectionSize();
+	const auto ullSelSize = m_pSelection->GetSelSize();
 
 	wstrData.reserve(static_cast<size_t>(ullSelSize) * 3 + 64);
 	wstrData = L"unsigned char data[";
@@ -2013,7 +2007,7 @@ auto CHexCtrl::CopyCArr()const->std::wstring
 auto CHexCtrl::CopyGrepHex()const->std::wstring
 {
 	std::wstring wstrData;
-	const auto ullSelSize = m_pSelection->GetSelectionSize();
+	const auto ullSelSize = m_pSelection->GetSelSize();
 
 	wstrData.reserve(static_cast<size_t>(ullSelSize) * 2);
 	for (unsigned i = 0; i < ullSelSize; ++i)
@@ -2030,7 +2024,7 @@ auto CHexCtrl::CopyGrepHex()const->std::wstring
 auto CHexCtrl::CopyHex()const->std::wstring
 {
 	std::wstring wstrData;
-	const auto ullSelSize = m_pSelection->GetSelectionSize();
+	const auto ullSelSize = m_pSelection->GetSelSize();
 
 	wstrData.reserve(static_cast<size_t>(ullSelSize) * 2);
 	for (unsigned i = 0; i < ullSelSize; ++i)
@@ -2046,8 +2040,8 @@ auto CHexCtrl::CopyHex()const->std::wstring
 auto CHexCtrl::CopyHexFormatted()const->std::wstring
 {
 	std::wstring wstrData;
-	const auto ullSelStart = m_pSelection->GetSelectionStart();
-	const auto ullSelSize = m_pSelection->GetSelectionSize();
+	const auto ullSelStart = m_pSelection->GetSelStart();
+	const auto ullSelSize = m_pSelection->GetSelSize();
 
 	wstrData.reserve(static_cast<size_t>(ullSelSize) * 3);
 	if (m_fSelectionBlock)
@@ -2114,7 +2108,7 @@ auto CHexCtrl::CopyHexFormatted()const->std::wstring
 auto CHexCtrl::CopyHexLE()const->std::wstring
 {
 	std::wstring wstrData;
-	const auto ullSelSize = m_pSelection->GetSelectionSize();
+	const auto ullSelSize = m_pSelection->GetSelSize();
 
 	wstrData.reserve(static_cast<size_t>(ullSelSize) * 2);
 	for (int i = static_cast<int>(ullSelSize); i > 0; --i)
@@ -2148,8 +2142,8 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 	if (m_fSelectionBlock) //Only works with classical selection.
 		return { };
 
-	const auto ullSelStart = m_pSelection->GetSelectionStart();
-	const auto ullSelSize = m_pSelection->GetSelectionSize();
+	const auto ullSelStart = m_pSelection->GetSelStart();
+	const auto ullSelSize = m_pSelection->GetSelSize();
 
 	std::wstring wstrRet { };
 	wstrRet.reserve(static_cast<size_t>(ullSelSize) * 4);
@@ -2225,7 +2219,7 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 auto CHexCtrl::CopyText()const->std::wstring
 {
 	std::string strData;
-	const auto ullSelSize = m_pSelection->GetSelectionSize();
+	const auto ullSelSize = m_pSelection->GetSelSize();
 	strData.reserve(static_cast<size_t>(ullSelSize));
 
 	for (auto i = 0; i < ullSelSize; ++i)
@@ -2863,7 +2857,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 
 void CHexCtrl::DrawCaret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
 {
-	if (!IsDataSet() || !IsMutable())
+	if (!IsDataSet())// || !IsMutable())
 		return;
 
 	std::vector<POLYTEXTW> vecPolyCaret;
@@ -3041,7 +3035,7 @@ void CHexCtrl::FillWithZeros()
 		return;
 
 	HEXMODIFY hms;
-	hms.vecSpan = m_pSelection->GetData();
+	hms.vecSpan = GetSelection();
 	hms.ullDataSize = 1;
 	hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 	std::byte byteZero { 0 };
@@ -3391,7 +3385,7 @@ void CHexCtrl::MsgWindowNotify(UINT uCode)const
 		hns.ullData = GetCaretPos();
 		break;
 	case HEXCTRL_MSG_SELECTION:
-		vecData = m_pSelection->GetData();
+		vecData = GetSelection();
 		hns.pData = reinterpret_cast<std::byte*>(&vecData);
 		break;
 	case HEXCTRL_MSG_VIEWCHANGE:
@@ -3587,8 +3581,8 @@ void CHexCtrl::Print()
 		pDC->StartPage();
 		pDC->OffsetViewportOrg(iIndentX, iIndentY);
 
-		const auto ullSelStart = m_pSelection->GetSelectionStart();
-		const auto ullSelSize = m_pSelection->GetSelectionSize();
+		const auto ullSelStart = m_pSelection->GetSelStart();
+		const auto ullSelSize = m_pSelection->GetSelSize();
 		ullStartLine = ullSelStart / m_dwCapacity;
 
 		const DWORD dwModStart = ullSelStart % m_dwCapacity;
@@ -3842,9 +3836,12 @@ void CHexCtrl::SelAll()
 
 void CHexCtrl::SelAddDown()
 {
+	if (!m_pSelection->HasSelection())
+		return;
+
 	ULONGLONG ullClick { }, ullStart { }, ullSize { 0ULL };
-	const auto ullSelStart = m_pSelection->GetSelectionStart();
-	const auto ullSelSize = m_pSelection->GetSelectionSize();
+	const auto ullSelStart = m_pSelection->GetSelStart();
+	const auto ullSelSize = m_pSelection->GetSelSize();
 	ULONGLONG ullNewPos { }; //Future pos of selection start.
 	ULONGLONG ullOldPos { }; //Current pos of selection start.
 
@@ -3875,19 +3872,14 @@ void CHexCtrl::SelAddDown()
 		}
 	};
 
-	if (m_fMutable)
-	{
-		if (m_ullCaretPos == m_ullLMouseClick || m_ullCaretPos == ullSelStart
-			|| m_ullCaretPos == m_pSelection->GetSelectionEnd())
-			lmbSelection();
-		else
-		{
-			ullClick = ullStart = m_ullCaretPos;
-			ullSize = 1;
-		}
-	}
-	else if (m_pSelection->HasSelection())
+	if (m_ullCaretPos == m_ullLMouseClick || m_ullCaretPos == ullSelStart
+		|| m_ullCaretPos == m_pSelection->GetSelEnd())
 		lmbSelection();
+	else
+	{
+		ullClick = ullStart = m_ullCaretPos;
+		ullSize = 1;
+	}
 
 	if (ullStart + ullSize > m_ullDataSize) //To avoid overflow.
 		ullSize = m_ullDataSize - ullStart;
@@ -3909,9 +3901,12 @@ void CHexCtrl::SelAddDown()
 
 void CHexCtrl::SelAddLeft()
 {
+	if (!m_pSelection->HasSelection())
+		return;
+
 	ULONGLONG ullClick { }, ullStart { }, ullSize { 0 };
-	const auto ullSelStart = m_pSelection->GetSelectionStart();
-	const auto ullSelSize = m_pSelection->GetSelectionSize();
+	const auto ullSelStart = m_pSelection->GetSelStart();
+	const auto ullSelSize = m_pSelection->GetSelSize();
 	ULONGLONG ullNewPos { }; //Future pos of selection start.
 	ULONGLONG ullOldPos { }; //Current pos of selection start.
 
@@ -3934,19 +3929,15 @@ void CHexCtrl::SelAddLeft()
 		}
 	};
 
-	if (m_fMutable)
-	{
-		if (m_ullCaretPos == m_ullLMouseClick || m_ullCaretPos == ullSelStart
-			|| m_ullCaretPos == m_pSelection->GetSelectionEnd())
-			lmbSelection();
-		else
-		{
-			ullClick = ullStart = m_ullCaretPos;
-			ullSize = 1;
-		}
-	}
-	else if (m_pSelection->HasSelection())
+	if (m_ullCaretPos == m_ullLMouseClick
+		|| m_ullCaretPos == ullSelStart
+		|| m_ullCaretPos == m_pSelection->GetSelEnd())
 		lmbSelection();
+	else
+	{
+		ullClick = ullStart = m_ullCaretPos;
+		ullSize = 1;
+	}
 
 	if (ullSize > 0)
 	{
@@ -3968,9 +3959,12 @@ void CHexCtrl::SelAddLeft()
 
 void CHexCtrl::SelAddRight()
 {
+	if (!m_pSelection->HasSelection())
+		return;
+
 	ULONGLONG ullClick { }, ullStart { }, ullSize { 0UL };
-	const auto ullSelStart = m_pSelection->GetSelectionStart();
-	const auto ullSelSize = m_pSelection->GetSelectionSize();
+	const auto ullSelStart = m_pSelection->GetSelStart();
+	const auto ullSelSize = m_pSelection->GetSelSize();
 	ULONGLONG ullNewPos { }; //Future pos of selection start.
 	ULONGLONG ullOldPos { }; //Current pos of selection start.
 
@@ -3995,19 +3989,15 @@ void CHexCtrl::SelAddRight()
 		}
 	};
 
-	if (m_fMutable)
-	{
-		if (m_ullCaretPos == m_ullLMouseClick || m_ullCaretPos == ullSelStart
-			|| m_ullCaretPos == m_pSelection->GetSelectionEnd())
-			lmbSelection();
-		else
-		{
-			ullClick = ullStart = m_ullCaretPos;
-			ullSize = 1;
-		}
-	}
-	else if (m_pSelection->HasSelection())
+	if (m_ullCaretPos == m_ullLMouseClick
+		|| m_ullCaretPos == ullSelStart
+		|| m_ullCaretPos == m_pSelection->GetSelEnd())
 		lmbSelection();
+	else
+	{
+		ullClick = ullStart = m_ullCaretPos;
+		ullSize = 1;
+	}
 
 	if (ullStart + ullSize > m_ullDataSize) //To avoid overflow.
 		ullSize = m_ullDataSize - ullStart;
@@ -4032,9 +4022,12 @@ void CHexCtrl::SelAddRight()
 
 void CHexCtrl::SelAddUp()
 {
+	if (!m_pSelection->HasSelection())
+		return;
+
 	ULONGLONG ullClick { }, ullStart { 0 }, ullSize { 0 };
-	const auto ullSelStart = m_pSelection->GetSelectionStart();
-	const auto ullSelSize = m_pSelection->GetSelectionSize();
+	const auto ullSelStart = m_pSelection->GetSelStart();
+	const auto ullSelSize = m_pSelection->GetSelSize();
 	ULONGLONG ullNewPos { }; //Future pos of selection start.
 	ULONGLONG ullOldPos { }; //Current pos of selection start.
 
@@ -4081,19 +4074,15 @@ void CHexCtrl::SelAddUp()
 		}
 	};
 
-	if (m_fMutable)
-	{
-		if (m_ullCaretPos == m_ullLMouseClick || m_ullCaretPos == ullSelStart
-			|| m_ullCaretPos == m_pSelection->GetSelectionEnd())
-			lmbSelection();
-		else
-		{
-			ullClick = ullStart = m_ullCaretPos;
-			ullSize = 1;
-		}
-	}
-	else if (m_pSelection->HasSelection())
+	if (m_ullCaretPos == m_ullLMouseClick
+		|| m_ullCaretPos == ullSelStart
+		|| m_ullCaretPos == m_pSelection->GetSelEnd())
 		lmbSelection();
+	else
+	{
+		ullClick = ullStart = m_ullCaretPos;
+		ullSize = 1;
+	}
 
 	if (ullSize > 0)
 	{
@@ -4306,7 +4295,7 @@ void CHexCtrl::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 
 void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {
-	if (!m_fMutable || !IsCurTextArea() || (GetKeyState(VK_CONTROL) < 0))
+	if (!IsMutable() || !IsCurTextArea() || (GetKeyState(VK_CONTROL) < 0))
 		return;
 
 	BYTE chByte = nChar & 0xFF;

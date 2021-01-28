@@ -1,8 +1,8 @@
 /****************************************************************************************
 * Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
-* This is a Hex Control for MFC applications.                                           *
-* Official git repository of the project: https://github.com/jovibor/HexCtrl/           *
-* This software is available under the "MIT License modified with The Commons Clause".  *
+* This is a Hex Control for MFC/Win32 applications.                                     *
+* Official git repository: https://github.com/jovibor/HexCtrl/                          *
+* This software is available under the "MIT License modified with The Commons Clause".  *
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 ****************************************************************************************/
 #include "stdafx.h"
@@ -206,7 +206,7 @@ void CScrollEx::OnNcActivate(BOOL /*bActive*/)const
 	GetParent()->SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 }
 
-void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS * lpncsp)
+void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS* lpncsp)
 {
 	if (!m_fCreated)
 		return;
@@ -215,10 +215,7 @@ void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS * lpncs
 	const auto ullCurPos = GetScrollPos();
 	if (IsVert())
 	{
-		UINT uiHeight = rc.Height();
-		if (IsSiblingVisible())
-			uiHeight = rc.Height() - m_uiScrollBarSizeWH;
-
+		const UINT uiHeight { IsSiblingVisible() ? rc.Height() - m_uiScrollBarSizeWH : rc.Height() };
 		if (uiHeight < m_ullScrollSizeMax)
 		{
 			m_fVisible = true;
@@ -236,10 +233,7 @@ void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS * lpncs
 	}
 	else
 	{
-		UINT uiWidth = rc.Width();
-		if (IsSiblingVisible())
-			uiWidth = rc.Width() - m_uiScrollBarSizeWH;
-
+		const UINT uiWidth { IsSiblingVisible() ? rc.Width() - m_uiScrollBarSizeWH : rc.Width() };
 		if (uiWidth < m_ullScrollSizeMax)
 		{
 			m_fVisible = true;
@@ -265,7 +259,7 @@ void CScrollEx::OnNcPaint()const
 	DrawScrollBar();
 }
 
-void CScrollEx::OnSetCursor(CWnd * /*pWnd*/, UINT nHitTest, UINT message)
+void CScrollEx::OnSetCursor(CWnd* /*pWnd*/, UINT nHitTest, UINT message)
 {
 	assert(m_fCreated);
 	if (!m_fCreated)
@@ -487,10 +481,10 @@ void CScrollEx::DrawScrollBar()const
 	CDC dcMem;
 	dcMem.CreateCompatibleDC(&dcParent);
 	CBitmap bitmap;
-	const auto rc = GetParentRect(false);
-	bitmap.CreateCompatibleBitmap(&dcParent, rc.Width(), rc.Height());
+	const auto rcWnd = GetParentRect(false);
+	bitmap.CreateCompatibleBitmap(&dcParent, rcWnd.Width(), rcWnd.Height());
 	dcMem.SelectObject(&bitmap);
-	CDC* pDC = &dcMem;
+	const auto pDC = &dcMem;
 
 	const auto rcSNC = GetScrollRect(true);	//Scroll bar with any additional non client area, to fill it below.
 	pDC->FillSolidRect(&rcSNC, m_clrBkNC);	//Scroll bar with NC Bk.
@@ -560,9 +554,8 @@ CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
 
 	const auto* const pParent = GetParent();
 	auto rcClient = GetParentRect();
-	const auto rcWnd = GetParentRect(false);
 	pParent->MapWindowPoints(nullptr, &rcClient);
-
+	const auto rcWnd = GetParentRect(false);
 	const auto iTopDelta = GetTopDelta();
 	const auto iLeftDelta = GetLeftDelta();
 
