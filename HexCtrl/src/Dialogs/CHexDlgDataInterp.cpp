@@ -465,20 +465,12 @@ void CHexDlgDataInterp::SetTData(T tData)const
 {
 	if (m_fBigEndian)
 	{
-		switch (sizeof(T))
-		{
-		case (sizeof(WORD)):
+		if constexpr (sizeof(T) == sizeof(WORD))
 			tData = static_cast<T>(_byteswap_ushort(static_cast<WORD>(tData)));
-			break;
-		case (sizeof(DWORD)):
+		else if constexpr (sizeof(T) == sizeof(DWORD))
 			tData = static_cast<T>(_byteswap_ulong(static_cast<DWORD>(tData)));
-			break;
-		case (sizeof(QWORD)):
+		else if constexpr (sizeof(T) == sizeof(QWORD))
 			tData = static_cast<T>(_byteswap_uint64(static_cast<QWORD>(tData)));
-			break;
-		default:
-			break;
-		}
 	}
 
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, tData);
