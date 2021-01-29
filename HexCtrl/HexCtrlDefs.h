@@ -264,9 +264,9 @@ namespace HEXCTRL
 	{
 		EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
 		EHexOperMode   enOperMode { };          //Operation mode, used only if enModifyMode == MODIFY_OPERATION.
-		std::byte*  pData { };                  //Pointer to a data to be set.
-		ULONGLONG   ullDataSize { };            //Size of the data pData is pointing to.
+		std::byte*     pData { };               //Pointer to a data to be set.
+		ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
 		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
-		bool        fRedraw { true };           //Redraw HexCtrl's window after data changes?
+		bool           fRedraw { true };        //Redraw HexCtrl's window after data changes?
 	};
 };
