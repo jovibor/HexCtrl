@@ -3162,7 +3162,8 @@ bool CHexCtrl::IsPageVisible()const
 
 void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 {
-	if (!IsMutable())
+	assert(!hms.vecSpan.empty());
+	if (!IsMutable() || hms.vecSpan.empty())
 		return;
 
 	m_deqRedo.clear(); //No Redo unless we make Undo.
@@ -3189,26 +3190,28 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 
 void CHexCtrl::ModifyDefault(const HEXMODIFY& hms)
 {
-	const auto& vecSelRef = hms.vecSpan;
-	const auto pData = GetData(vecSelRef[0]);
-	std::copy_n(hms.pData, static_cast<size_t>(vecSelRef[0].ullSize), pData);
-	SetDataVirtual(pData, vecSelRef[0]);
+	assert((hms.vecSpan.at(0).ullOffset + hms.vecSpan.at(0).ullSize) <= GetDataSize());
+	const auto& vecSpanRef = hms.vecSpan;
+	const auto pData = GetData(vecSpanRef[0]);
+	std::copy_n(hms.pData, static_cast<size_t>(vecSpanRef[0].ullSize), pData);
+	SetDataVirtual(pData, vecSpanRef[0]);
 }
 
 void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 {
-	if (hms.ullDataSize > sizeof(QWORD))
-		return;
 	assert(hms.ullDataSize > 0 && ((hms.ullDataSize & (hms.ullDataSize - 1)) == 0)); //Power of 2 only! 
+	if (hms.ullDataSize == 0 || hms.ullDataSize > sizeof(QWORD))
+		return;
 
-	const auto& vecSelRef = hms.vecSpan;
+	const auto& vecSpanRef = hms.vecSpan;
 	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
-	const auto ullTotalSize = std::accumulate(vecSelRef.begin(), vecSelRef.end(), 0ULL,
+	const auto ullTotalSize = std::accumulate(vecSpanRef.begin(), vecSpanRef.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPANSTRUCT& ref) {return ullSumm + ref.ullSize; });
+	assert(ullTotalSize <= GetDataSize());
 
-	CHexDlgCallback dlgClbk(L"Modifying...", vecSelRef.begin()->ullOffset, vecSelRef.back().ullOffset + vecSelRef.back().ullSize, this);
+	CHexDlgCallback dlgClbk(L"Modifying...", vecSpanRef.begin()->ullOffset, vecSpanRef.back().ullOffset + vecSpanRef.back().ullSize, this);
 	std::thread thrd([&]() {
-		for (const auto& iterSel : vecSelRef) //Selections vector's size times.
+		for (const auto& iterSel : vecSpanRef) //Selections vector's size times.
 		{
 			ULONGLONG ullSizeChunk { };
 			ULONGLONG ullChunks { };
@@ -3284,16 +3287,18 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 
 void CHexCtrl::ModifyRepeat(const HEXMODIFY& hms)
 {
-	const auto& vecSelRef = hms.vecSpan;
+	const auto& vecSpanRef = hms.vecSpan;
 	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
-	const auto ullTotalSize = std::accumulate(vecSelRef.begin(), vecSelRef.end(), 0ULL,
+	const auto ullTotalSize = std::accumulate(vecSpanRef.begin(), vecSpanRef.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPANSTRUCT& ref) {return ullSumm + ref.ullSize; });
+	assert(ullTotalSize <= GetDataSize());
+
 	std::byte* pData { };
 	ULONGLONG ullOffset { 0 };
 
-	CHexDlgCallback dlgClbk(L"Modifying...", vecSelRef.begin()->ullOffset, vecSelRef.back().ullOffset + vecSelRef.back().ullSize, this);
+	CHexDlgCallback dlgClbk(L"Modifying...", vecSpanRef.begin()->ullOffset, vecSpanRef.back().ullOffset + vecSpanRef.back().ullSize, this);
 	std::thread thrd([&]() {
-		for (const auto& iterSel : vecSelRef) //Selections vector's size times.
+		for (const auto& iterSel : vecSpanRef) //Selections vector's size times.
 		{
 			if (hms.ullDataSize == sizeof(std::byte) || hms.ullDataSize == sizeof(WORD) //Special cases for fast std::fill.
 				|| hms.ullDataSize == sizeof(DWORD) || hms.ullDataSize == sizeof(QWORD))
