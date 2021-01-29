@@ -145,7 +145,7 @@ namespace HEXCTRL::INTERNAL
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		template <typename T>
-		void OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ullSizeData); //Immediate operations on pData.
+		void OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ullSizeData, bool fBigEndian); //Immediate operations on pData.
 		void ParentNotify(const HEXNOTIFYSTRUCT& hns)const;    //Notify routine used to send messages to Parent window.
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 		void Print();                                          //Printing routine.

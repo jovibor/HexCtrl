@@ -266,6 +266,7 @@ namespace HEXCTRL
 		EHexOperMode   enOperMode { };          //Operation mode, used only if enModifyMode == MODIFY_OPERATION.
 		std::byte*     pData { };               //Pointer to a data to be set.
 		ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
+		bool           fBigEndian{ false };     //pData treated as big endian, used only if enModifyMode == MODIFY_OPERATION.
 		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
 		bool           fRedraw { true };        //Redraw HexCtrl's window after data changes?
 	};

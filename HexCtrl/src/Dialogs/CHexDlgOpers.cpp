@@ -33,6 +33,9 @@ BOOL CHexDlgOpers::OnInitDialog()
 	CDialogEx::OnInitDialog();
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR, IDC_HEXCTRL_OPERS_RADIO_OR);
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD, IDC_HEXCTRL_OPERS_RADIO_BYTE);
+	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_LE, IDC_HEXCTRL_OPERS_RADIO_BE, IDC_HEXCTRL_OPERS_RADIO_LE);
+	GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_LE)->EnableWindow(false);
+	GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_BE)->EnableWindow(false);
 
 	return TRUE;
 }
@@ -46,8 +49,9 @@ BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	//lParam holds HWND.
 	const auto wMessage = HIWORD(wParam);
-	bool fHere { true };
-	if (const auto wID = LOWORD(wParam); wID >= IDC_HEXCTRL_OPERS_EDIT_OR
+	const auto wID = LOWORD(wParam);
+	bool fHere { true };	
+	if (wID >= IDC_HEXCTRL_OPERS_EDIT_OR
 		&& wID <= IDC_HEXCTRL_OPERS_EDIT_FLOOR
 		&& wMessage == EN_SETFOCUS)
 	{
@@ -92,10 +96,30 @@ BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 		CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR, iRadioID);
 	}
+	else if (wID >= IDC_HEXCTRL_OPERS_RADIO_BYTE
+			&& wID <= IDC_HEXCTRL_OPERS_RADIO_QWORD)			
+	{
+		bool bEnabled { };
+		switch (wID)
+		{
+		case IDC_HEXCTRL_OPERS_RADIO_BYTE:
+			bEnabled = false;			
+			break;
+		case IDC_HEXCTRL_OPERS_RADIO_WORD:
+		case IDC_HEXCTRL_OPERS_RADIO_DWORD:
+		case IDC_HEXCTRL_OPERS_RADIO_QWORD:
+			bEnabled = true;
+			break;
+		default:
+			fHere = false;
+		}
+		GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_LE)->EnableWindow(bEnabled);
+		GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_BE)->EnableWindow(bEnabled);
+	}
 	else
 		fHere = false;
 
-	return fHere ? TRUE : CDialogEx::OnCommand(wParam, lParam);
+	return fHere ? true : CDialogEx::OnCommand(wParam, lParam);
 }
 
 BOOL CHexDlgOpers::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
@@ -107,9 +131,11 @@ void CHexDlgOpers::OnOK()
 {
 	const auto iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR);
 	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
-
+	const auto iRadioByteOrder = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_LE, IDC_HEXCTRL_OPERS_RADIO_BE);
+	
 	HEXMODIFY hms;
 	hms.enModifyMode = EHexModifyMode::MODIFY_OPERATION;
+	hms.fBigEndian = iRadioByteOrder == IDC_HEXCTRL_OPERS_RADIO_BE;
 	hms.vecSpan = m_pHexCtrl->GetSelection();
 	if (hms.vecSpan.empty())
 		return;
@@ -168,6 +194,24 @@ void CHexDlgOpers::OnOK()
 		break;
 	}
 
+	switch (iRadioDataSize)
+	{
+	case IDC_HEXCTRL_OPERS_RADIO_BYTE:
+		hms.ullDataSize = 1;
+		break;
+	case IDC_HEXCTRL_OPERS_RADIO_WORD:
+		hms.ullDataSize = 2;		
+		break;
+	case IDC_HEXCTRL_OPERS_RADIO_DWORD:
+		hms.ullDataSize = 4;		
+		break;
+	case IDC_HEXCTRL_OPERS_RADIO_QWORD:
+		hms.ullDataSize = 8;
+		break;
+	default:
+		break;
+	}
+
 	LONGLONG llData;
 	if (iEditID)
 	{
@@ -190,25 +234,24 @@ void CHexDlgOpers::OnOK()
 			return;
 		}
 
-		hms.pData = reinterpret_cast<std::byte*>(&llData);
-	}
+		//Reverse byte ordering for big-endian
+		if (hms.fBigEndian)
+		{
+			switch (iRadioDataSize)
+			{
+			case IDC_HEXCTRL_OPERS_RADIO_WORD:
+				llData = static_cast<WORD>(_byteswap_ushort(static_cast<WORD>(llData)));
+				break;
+			case IDC_HEXCTRL_OPERS_RADIO_DWORD:
+				llData = static_cast<DWORD>(_byteswap_ulong(static_cast<DWORD>(llData)));
+				break;
+			case IDC_HEXCTRL_OPERS_RADIO_QWORD:
+				llData = static_cast<QWORD>(_byteswap_uint64(static_cast<QWORD>(llData)));
+				break;
+			}
+		}
 
-	switch (iRadioDataSize)
-	{
-	case IDC_HEXCTRL_OPERS_RADIO_BYTE:
-		hms.ullDataSize = 1;
-		break;
-	case IDC_HEXCTRL_OPERS_RADIO_WORD:
-		hms.ullDataSize = 2;
-		break;
-	case IDC_HEXCTRL_OPERS_RADIO_DWORD:
-		hms.ullDataSize = 4;
-		break;
-	case IDC_HEXCTRL_OPERS_RADIO_QWORD:
-		hms.ullDataSize = 8;
-		break;
-	default:
-		break;
+		hms.pData = reinterpret_cast<std::byte*>(&llData);
 	}
 
 	m_pHexCtrl->ModifyData(hms);
