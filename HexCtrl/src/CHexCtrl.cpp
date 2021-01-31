@@ -867,7 +867,7 @@ auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTR
 	assert(IsCreated());
 	assert(IsDataSet());
 	if (!IsCreated() || !IsDataSet())
-		return { };
+		return std::nullopt;
 
 	if (fScreen)
 		ScreenToClient(&pt);
@@ -3099,51 +3099,54 @@ void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>
 {
 	HEXHITTESTSTRUCT stHit;
-	bool fHit { false };
 	const auto iY = pt.y;
 	const auto iX = pt.x + static_cast<int>(m_pScrollH->GetScrollPos()); //To compensate horizontal scroll.
 	const auto ullCurLine = GetTopLine();
 
-	//Checking if cursor is within hex chunks area.
+	bool fHit { false };
+	//Checking if iX is within Hex chunks area.
 	if ((iX >= m_iIndentFirstHexChunk) && (iX < m_iThirdVertLine) && (iY >= m_iStartWorkAreaY) && (iY <= m_iEndWorkArea))
 	{
-		//Additional space between halves. Only in BYTE's view mode.
-		int iBetweenBlocks;
-		if (m_enGroupMode == EHexGroupMode::ASBYTE && iX > m_iSizeFirstHalf)
-			iBetweenBlocks = m_iSpaceBetweenBlocks;
-		else
-			iBetweenBlocks = 0;
-
-		//Calculate hex chunk.
-		const DWORD dwX = iX - m_iIndentFirstHexChunk - iBetweenBlocks;
-		DWORD dwChunkX { };
-		int iSpaceBetweenHexChunks = 0;
-		for (unsigned i = 1; i <= m_dwCapacity; ++i)
+		int iTotalSpaceBetweenChunks { 0 };
+		for (auto i = 0U; i < m_dwCapacity; ++i)
 		{
-			if ((i % static_cast<DWORD>(m_enGroupMode)) == 0)
-				iSpaceBetweenHexChunks += m_iSpaceBetweenHexChunks;
-			if ((m_iSizeHexByte * i + iSpaceBetweenHexChunks) > dwX)
+			if (i > 0 && (i % static_cast<DWORD>(m_enGroupMode)) == 0)
 			{
-				dwChunkX = i - 1;
+				iTotalSpaceBetweenChunks += m_iSpaceBetweenHexChunks;
+				if (m_enGroupMode == EHexGroupMode::ASBYTE && i == m_dwCapacityBlockSize)
+					iTotalSpaceBetweenChunks += m_iSpaceBetweenBlocks;
+			}
+
+			const auto iCurrChunkBegin = m_iIndentFirstHexChunk + (m_iSizeHexByte * i) + iTotalSpaceBetweenChunks;
+			const auto iCurrChunkEnd = iCurrChunkBegin + m_iSizeHexByte +
+				(((i + 1) % static_cast<DWORD>(m_enGroupMode)) == 0 ? m_iSpaceBetweenHexChunks : 0)
+				+ ((m_enGroupMode == EHexGroupMode::ASBYTE && (i + 1) == m_dwCapacityBlockSize) ? m_iSpaceBetweenBlocks : 0);
+
+			if (static_cast<unsigned int>(iX) < iCurrChunkEnd) //If iX lays in-between [iCurrChunkBegin...iCurrChunkEnd).
+			{
+				stHit.ullOffset = static_cast<ULONGLONG>(i) + ((iY - m_iStartWorkAreaY) / m_sizeLetter.cy) *
+					m_dwCapacity + (ullCurLine * m_dwCapacity);
+
+				if ((iX - iCurrChunkBegin) < static_cast<DWORD>(m_sizeLetter.cx)) //Check byte's High or Low half was hit.
+					stHit.fIsHigh = true;
+
+				fHit = true;
 				break;
 			}
 		}
-		stHit.ullOffset = static_cast<ULONGLONG>(dwChunkX) + ((iY - m_iStartWorkAreaY) / m_sizeLetter.cy) *
-			m_dwCapacity + (ullCurLine * m_dwCapacity);
-		fHit = true;
 	}
-	//Or within Ascii area.
+	//Or within ASCII area.
 	else if ((iX >= m_iIndentAscii) && (iX < (m_iIndentAscii + m_iSpaceBetweenAscii * static_cast<int>(m_dwCapacity)))
 		&& (iY >= m_iStartWorkAreaY) && iY <= m_iEndWorkArea)
 	{
-		//Calculate ullHit Ascii symbol.
+		//Calculate ullOffset ASCII symbol.
 		stHit.ullOffset = ((iX - static_cast<ULONGLONG>(m_iIndentAscii)) / m_iSpaceBetweenAscii) +
 			((iY - m_iStartWorkAreaY) / m_sizeLetter.cy) * m_dwCapacity + (ullCurLine * m_dwCapacity);
 		stHit.fIsAscii = true;
 		fHit = true;
 	}
 
-	//If cursor is out of end-bound of hex chunks or Ascii chars.
+	//If iX is out of end-bound of Hex chunks or ASCII chars.
 	if (stHit.ullOffset >= m_ullDataSize)
 		fHit = false;
 
@@ -3430,7 +3433,7 @@ template<typename T>
 void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ullSizeData)
 {
 	/************************************************************
-	* OperData - function for Modify/Operations
+	* OperData - function for Modify->Operations.
 	* pData - Starting address of the data to operate on.
 	* eMode - Operation mode.
 	* tDataOper - The data to apply the operation with.
@@ -3440,7 +3443,7 @@ void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ull
 	if (pData == nullptr)
 		return;
 
-	auto nChunks = ullSizeData / sizeof(T);
+	const auto nChunks = ullSizeData / sizeof(T);
 	for (const auto pDataEnd = pData + nChunks; pData < pDataEnd; ++pData)
 	{
 		switch (eMode)
@@ -4496,7 +4499,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 	if (auto optCmd = GetCommand(static_cast<BYTE>(nChar),
 		GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd)
 		ExecuteCmd(*optCmd);
-	else if (IsMutable() && !IsCurTextArea()) //If caret is in Hex area, just one part (High/Low) of byte must be changed.
+	else if (IsDataSet() && IsMutable() && !IsCurTextArea()) //If caret is in Hex area, just one part (High/Low) of byte must be changed.
 	{
 		BYTE chByte = nChar & 0xFF;
 		//Normalizing all input in Hex area, reducing it to 0-15 (0x0-F) digit range.
@@ -4540,7 +4543,7 @@ void CHexCtrl::OnKeyUp(UINT /*nChar*/, UINT /*nRepCnt*/, UINT /*nFlags*/)
 
 void CHexCtrl::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 {
-	if (point.x < m_iSecondVertLine)
+	if (point.x + static_cast<long>(m_pScrollH->GetScrollPos()) < m_iSecondVertLine)
 		SetOffsetMode(!IsOffsetAsHex());
 }
 
@@ -4554,6 +4557,8 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 
 	m_ullCurCursor = optHit->ullOffset;
 	m_fCursorTextArea = optHit->fIsAscii;
+	if (!optHit->fIsAscii)
+		m_fCaretHigh = optHit->fIsHigh;
 	m_fSelectionBlock = GetAsyncKeyState(VK_MENU) < 0;
 	SetCapture();
 
@@ -4581,7 +4586,6 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 		ullSelSize = 1;
 	}
 
-	m_fCaretHigh = true;
 	m_fLMousePressed = true;
 	m_optRMouseClick.reset();
 	m_ullCaretPos = ullSelStart;

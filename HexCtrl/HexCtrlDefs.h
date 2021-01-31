@@ -218,6 +218,7 @@ namespace HEXCTRL
 	{
 		ULONGLONG ullOffset { };      //Offset.
 		bool      fIsAscii { false }; //Is cursor at ASCII part or at Hex.
+		bool      fIsHigh { false };  //Is it High or Low part of the byte.
 	};
 
 	/********************************************************************************************
