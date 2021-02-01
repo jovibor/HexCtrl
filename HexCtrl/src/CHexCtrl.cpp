@@ -247,10 +247,10 @@ void CHexCtrl::ClearData()
 	m_pHexVirtData = nullptr;
 	m_pHexVirtColors = nullptr;
 	m_fHighLatency = false;
-	m_ullLMouseClick = 0;
+	m_ullCursorPrev = 0;
 	m_optRMouseClick.reset();
 	m_ullCaretPos = 0;
-	m_ullCurCursor = 0;
+	m_ullCursorNow = 0;
 
 	m_deqUndo.clear();
 	m_deqRedo.clear();
@@ -3863,16 +3863,16 @@ void CHexCtrl::SelAddDown()
 
 	const auto lmbSelection = [&]()
 	{
-		if (ullSelStart == m_ullLMouseClick)
+		if (ullSelStart == m_ullCursorPrev)
 		{
-			ullClick = ullStart = m_ullLMouseClick;
+			ullClick = ullStart = m_ullCursorPrev;
 			ullSize = ullSelSize + m_dwCapacity;
 			ullNewPos = ullClick + ullSize - 1;
 			ullOldPos = ullNewPos - m_dwCapacity;
 		}
-		else if (ullSelStart < m_ullLMouseClick)
+		else if (ullSelStart < m_ullCursorPrev)
 		{
-			ullClick = m_ullLMouseClick;
+			ullClick = m_ullCursorPrev;
 			if (ullSelSize > m_dwCapacity)
 			{
 				ullStart = ullSelStart + m_dwCapacity;
@@ -3888,7 +3888,7 @@ void CHexCtrl::SelAddDown()
 		}
 	};
 
-	if (m_ullCaretPos == m_ullLMouseClick || m_ullCaretPos == ullSelStart
+	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart
 		|| m_ullCaretPos == m_pSelection->GetSelEnd())
 		lmbSelection();
 	else
@@ -3903,7 +3903,7 @@ void CHexCtrl::SelAddDown()
 	if (ullSize > 0)
 	{
 		m_ullCaretPos = ullStart;
-		m_ullLMouseClick = ullClick;
+		m_ullCursorPrev = ullClick;
 		SetSelection({ { ullStart, ullSize } }, false);
 
 		const auto stOld = IsOffsetVisible(ullOldPos);
@@ -3928,16 +3928,16 @@ void CHexCtrl::SelAddLeft()
 
 	const auto lmbSelection = [&]()
 	{
-		if (ullSelStart == m_ullLMouseClick && ullSelSize > 1)
+		if (ullSelStart == m_ullCursorPrev && ullSelSize > 1)
 		{
-			ullClick = ullStart = m_ullLMouseClick;
+			ullClick = ullStart = m_ullCursorPrev;
 			ullSize = ullSelSize - 1;
 			ullOldPos = ullStart + ullSize;
 			ullNewPos = ullOldPos - 1;
 		}
 		else
 		{
-			ullClick = m_ullLMouseClick;
+			ullClick = m_ullCursorPrev;
 			ullStart = ullSelStart > 0 ? ullSelStart - 1 : 0;
 			ullSize = ullSelStart > 0 ? ullSelSize + 1 : ullSelSize;
 			ullNewPos = ullStart;
@@ -3945,7 +3945,7 @@ void CHexCtrl::SelAddLeft()
 		}
 	};
 
-	if (m_ullCaretPos == m_ullLMouseClick
+	if (m_ullCaretPos == m_ullCursorPrev
 		|| m_ullCaretPos == ullSelStart
 		|| m_ullCaretPos == m_pSelection->GetSelEnd())
 		lmbSelection();
@@ -3958,7 +3958,7 @@ void CHexCtrl::SelAddLeft()
 	if (ullSize > 0)
 	{
 		m_ullCaretPos = ullStart;
-		m_ullLMouseClick = ullClick;
+		m_ullCursorPrev = ullClick;
 		SetSelection({ { ullStart, ullSize } }, false);
 
 		const auto stOld = IsOffsetVisible(ullOldPos);
@@ -3986,9 +3986,9 @@ void CHexCtrl::SelAddRight()
 
 	const auto lmbSelection = [&]()
 	{
-		if (ullSelStart == m_ullLMouseClick)
+		if (ullSelStart == m_ullCursorPrev)
 		{
-			ullClick = ullStart = m_ullLMouseClick;
+			ullClick = ullStart = m_ullCursorPrev;
 			ullSize = ullSelSize + 1;
 
 			ullNewPos = ullClick + ullSize - 1;
@@ -3996,7 +3996,7 @@ void CHexCtrl::SelAddRight()
 		}
 		else
 		{
-			ullClick = m_ullLMouseClick;
+			ullClick = m_ullCursorPrev;
 			ullStart = ullSelStart + 1;
 			ullSize = ullSelSize - 1;
 
@@ -4005,7 +4005,7 @@ void CHexCtrl::SelAddRight()
 		}
 	};
 
-	if (m_ullCaretPos == m_ullLMouseClick
+	if (m_ullCaretPos == m_ullCursorPrev
 		|| m_ullCaretPos == ullSelStart
 		|| m_ullCaretPos == m_pSelection->GetSelEnd())
 		lmbSelection();
@@ -4021,7 +4021,7 @@ void CHexCtrl::SelAddRight()
 	if (ullSize > 0)
 	{
 		m_ullCaretPos = ullStart;
-		m_ullLMouseClick = ullClick;
+		m_ullCursorPrev = ullClick;
 		SetSelection({ { ullStart, ullSize } }, false);
 
 		const auto stOld = IsOffsetVisible(ullOldPos);
@@ -4049,9 +4049,9 @@ void CHexCtrl::SelAddUp()
 
 	const auto lmbSelection = [&]()
 	{
-		if (ullSelStart < m_ullLMouseClick)
+		if (ullSelStart < m_ullCursorPrev)
 		{
-			ullClick = m_ullLMouseClick;
+			ullClick = m_ullCursorPrev;
 			ullOldPos = ullSelStart;
 
 			if (ullSelStart < m_dwCapacity)
@@ -4068,7 +4068,7 @@ void CHexCtrl::SelAddUp()
 		}
 		else
 		{
-			ullClick = m_ullLMouseClick;
+			ullClick = m_ullCursorPrev;
 			if (ullSelSize > m_dwCapacity)
 			{
 				ullStart = ullClick;
@@ -4090,7 +4090,7 @@ void CHexCtrl::SelAddUp()
 		}
 	};
 
-	if (m_ullCaretPos == m_ullLMouseClick
+	if (m_ullCaretPos == m_ullCursorPrev
 		|| m_ullCaretPos == ullSelStart
 		|| m_ullCaretPos == m_pSelection->GetSelEnd())
 		lmbSelection();
@@ -4103,7 +4103,7 @@ void CHexCtrl::SelAddUp()
 	if (ullSize > 0)
 	{
 		m_ullCaretPos = ullStart;
-		m_ullLMouseClick = ullClick;
+		m_ullCursorPrev = ullClick;
 		SetSelection({ { ullStart, ullSize } }, false);
 
 		const auto stOld = IsOffsetVisible(ullOldPos);
@@ -4555,41 +4555,35 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	if (!optHit)
 		return;
 
-	m_ullCurCursor = optHit->ullOffset;
+	m_fLMousePressed = true;
+	m_ullCursorNow = m_ullCaretPos = optHit->ullOffset;
 	m_fCursorTextArea = optHit->fIsAscii;
+	m_optRMouseClick.reset();
 	if (!optHit->fIsAscii)
 		m_fCaretHigh = optHit->fIsHigh;
 	m_fSelectionBlock = GetAsyncKeyState(VK_MENU) < 0;
 	SetCapture();
 
-	ULONGLONG ullSelSize;
-	ULONGLONG ullSelStart;
-
-	if (m_pSelection->HasSelection() && (nFlags & MK_SHIFT))
+	std::vector<HEXSPANSTRUCT> vecSel { };
+	if (nFlags & MK_SHIFT)
 	{
+		ULONGLONG ullSelStart;
 		ULONGLONG ullSelEnd;
-		if (m_ullCurCursor <= m_ullLMouseClick)
+		if (m_ullCursorNow <= m_ullCursorPrev)
 		{
-			ullSelStart = m_ullCurCursor;
-			ullSelEnd = m_ullLMouseClick + 1;
+			ullSelStart = m_ullCursorNow;
+			ullSelEnd = m_ullCursorPrev + 1;
 		}
 		else
 		{
-			ullSelStart = m_ullLMouseClick;
-			ullSelEnd = m_ullCurCursor + 1;
+			ullSelStart = m_ullCursorPrev;
+			ullSelEnd = m_ullCursorNow + 1;
 		}
-		ullSelSize = ullSelEnd - ullSelStart;
+		vecSel.emplace_back(HEXSPANSTRUCT { ullSelStart, ullSelEnd - ullSelStart });
 	}
 	else
-	{
-		m_ullLMouseClick = ullSelStart = m_ullCurCursor;
-		ullSelSize = 1;
-	}
+		m_ullCursorPrev = m_ullCursorNow;
 
-	m_fLMousePressed = true;
-	m_optRMouseClick.reset();
-	m_ullCaretPos = ullSelStart;
-	std::vector<HEXSPANSTRUCT> vecSel { { ullSelStart, ullSelSize } };
 	SetSelection(vecSel);
 	OnCaretPosChange(GetCaretPos());
 }
@@ -4615,7 +4609,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 
 	if (m_fLMousePressed)
 	{
-		//If LMouse is pressed but cursor is outside client area.
+		//If LMouse is pressed but cursor is outside of client area.
 		//SetCapture() behaviour.
 
 		CRect rcClient;
@@ -4644,17 +4638,19 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 			}
 		}
 
-		//To avoid unnecessary work we're checking if the current cursor pos is the same
-		//that is was at previous WM_MOUSEMOVE fire, with m_ullCurCursor.
-		if (!optHit || optHit->ullOffset == m_ullCurCursor)
+		//Checking if the current cursor pos is at the same byte's half
+		//that it was at the previous WM_MOUSEMOVE fire.
+		//Making selection of the byte only if the cursor has crossed byte's halves.
+		//Doesn't apply when moving in ASCII area.
+		if (!optHit || (optHit->ullOffset == m_ullCursorNow && m_fCaretHigh == optHit->fIsHigh && !optHit->fIsAscii))
 			return;
 
-		m_ullCurCursor = optHit->ullOffset;
+		m_ullCursorNow = optHit->ullOffset;
 		const auto ullHit = optHit->ullOffset;
 		ULONGLONG ullClick, ullStart, ullSize, ullLines;
 		if (m_fSelectionBlock) //Select block (with Alt)
 		{
-			ullClick = m_ullLMouseClick;
+			ullClick = m_ullCursorPrev;
 			if (ullHit >= ullClick)
 			{
 				if (ullHit % m_dwCapacity <= ullClick % m_dwCapacity)
@@ -4688,22 +4684,22 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 		}
 		else
 		{
-			if (ullHit <= m_ullLMouseClick)
+			if (ullHit <= m_ullCursorPrev)
 			{
-				ullClick = m_ullLMouseClick;
+				ullClick = m_ullCursorPrev;
 				ullStart = ullHit;
 				ullSize = ullClick - ullStart + 1;
 			}
 			else
 			{
-				ullClick = m_ullLMouseClick;
-				ullStart = m_ullLMouseClick;
+				ullClick = m_ullCursorPrev;
+				ullStart = m_ullCursorPrev;
 				ullSize = ullHit - ullClick + 1;
 			}
 			ullLines = 1;
 		}
 
-		m_ullLMouseClick = ullClick;
+		m_ullCursorPrev = ullClick;
 		m_ullCaretPos = ullStart;
 		std::vector<HEXSPANSTRUCT> vecSel;
 		vecSel.reserve(static_cast<size_t>(ullLines));
