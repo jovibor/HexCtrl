@@ -34,8 +34,8 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		[[nodiscard]] int GetSortColumn()const override;
 		[[nodiscard]] bool GetSortAscending()const override;
 		void HideColumn(int iIndex, bool fHide)override;
-		int InsertColumn(int nCol, const LVCOLUMN* pColumn);
-		int InsertColumn(int nCol, LPCTSTR lpszColumnHeading, int nFormat = LVCFMT_LEFT, int nWidth = -1, int nSubItem = -1);
+		int InsertColumn(int nCol, const LVCOLUMN* pColumn)override;
+		int InsertColumn(int nCol, LPCTSTR lpszColumnHeading, int nFormat = LVCFMT_LEFT, int nWidth = -1, int nSubItem = -1)override;
 		[[nodiscard]] bool IsCreated()const override;
 		[[nodiscard]] bool IsColumnSortable(int iColumn)override;
 		void ResetSort()override; //Reset all the sort by any column to its default state.

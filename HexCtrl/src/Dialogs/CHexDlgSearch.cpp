@@ -1044,7 +1044,6 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 		if (ullMemToAcquire > ullSizeTotal + nSizeSearch)
 			ullMemToAcquire = ullSizeTotal + nSizeSearch;
 		ullSizeChunk = ullMemToAcquire - nSizeSearch;
-		ullChunks = ullSizeTotal > ullSizeChunk ? ullSizeTotal / ullSizeChunk + ((ullSizeTotal % ullSizeChunk) ? 1 : 0) : 1;
 
 		if (ullStep > ullSizeChunk) //For very big steps.
 		{

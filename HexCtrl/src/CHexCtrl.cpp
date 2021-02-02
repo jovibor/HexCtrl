@@ -3036,7 +3036,7 @@ void CHexCtrl::FillWithZeros()
 
 	HEXMODIFY hms;
 	hms.vecSpan = GetSelection();
-	hms.ullDataSize = 1;
+	hms.ullDataSize = sizeof(BYTE);
 	hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 	std::byte byteZero { 0 };
 	hms.pData = &byteZero;
@@ -3237,7 +3237,7 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 					if (hms.pData) //pDataOper might be null for, say, EHexOperMode::OPER_NOT.
 						bDataOper = *reinterpret_cast<PBYTE>(hms.pData);
 					auto pOper = reinterpret_cast<PBYTE>(pData);
-					OperData(pOper, hms.enOperMode, bDataOper, ullSizeChunk);
+					OperData(pOper, hms.enOperMode, bDataOper, ullSizeChunk, hms.fBigEndian);
 				}
 				break;
 				case (sizeof(WORD)):
@@ -3246,7 +3246,7 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 					if (hms.pData)
 						wDataOper = *reinterpret_cast<PWORD>(hms.pData);
 					auto pOper = reinterpret_cast<PWORD>(pData);
-					OperData(pOper, hms.enOperMode, wDataOper, ullSizeChunk);
+					OperData(pOper, hms.enOperMode, wDataOper, ullSizeChunk, hms.fBigEndian);
 				}
 				break;
 				case (sizeof(DWORD)):
@@ -3255,7 +3255,7 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 					if (hms.pData)
 						dwDataOper = *reinterpret_cast<PDWORD>(hms.pData);
 					auto pOper = reinterpret_cast<PDWORD>(pData);
-					OperData(pOper, hms.enOperMode, dwDataOper, ullSizeChunk);
+					OperData(pOper, hms.enOperMode, dwDataOper, ullSizeChunk, hms.fBigEndian);
 				}
 				break;
 				case (sizeof(QWORD)):
@@ -3264,7 +3264,7 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 					if (hms.pData)
 						qwDataOper = *reinterpret_cast<PQWORD>(hms.pData);
 					auto pOper = reinterpret_cast<PQWORD>(pData);
-					OperData(pOper, hms.enOperMode, qwDataOper, ullSizeChunk);
+					OperData(pOper, hms.enOperMode, qwDataOper, ullSizeChunk, hms.fBigEndian);
 				}
 				break;
 				default:
@@ -3430,7 +3430,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 }
 
 template<typename T>
-void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ullSizeData)
+void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ullSizeData, bool fBigEndian)
 {
 	/************************************************************
 	* OperData - function for Modify->Operations.
@@ -3438,14 +3438,26 @@ void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ull
 	* eMode - Operation mode.
 	* tDataOper - The data to apply the operation with.
 	* ullSizeData - Size of the data (selection) to operate on.
+	* fBigEndian - Data is in big-endian byte order.
 	************************************************************/
 
 	if (pData == nullptr)
 		return;
 
 	const auto nChunks = ullSizeData / sizeof(T);
-	for (const auto pDataEnd = pData + nChunks; pData < pDataEnd; ++pData)
+	for (const auto* const pDataEnd = pData + nChunks; pData < pDataEnd; ++pData)
 	{
+
+		if (fBigEndian)
+		{
+			if constexpr (sizeof(T) == sizeof(WORD))
+				*pData = _byteswap_ushort(*pData);
+			else if constexpr (sizeof(T) == sizeof(DWORD))
+				*pData = _byteswap_ulong(*pData);
+			else if constexpr (sizeof(T) == sizeof(QWORD))
+				*pData = _byteswap_uint64(*pData);
+		}
+
 		switch (eMode)
 		{
 		case EHexOperMode::OPER_OR:
@@ -3487,6 +3499,16 @@ void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ull
 			if (*pData < tDataOper)
 				*pData = tDataOper;
 			break;
+		}
+
+		if (fBigEndian)
+		{
+			if constexpr (sizeof(T) == sizeof(WORD))
+				*pData = _byteswap_ushort(*pData);
+			else if constexpr (sizeof(T) == sizeof(DWORD))
+				*pData = _byteswap_ulong(*pData);
+			else if constexpr (sizeof(T) == sizeof(QWORD))
+				*pData = _byteswap_uint64(*pData);
 		}
 	}
 }
@@ -4334,7 +4356,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 
 	HEXMODIFY hms;
 	hms.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, 1 });
-	hms.ullDataSize = 1;
+	hms.ullDataSize = sizeof(BYTE);
 	hms.pData = reinterpret_cast<std::byte*>(&chByte);
 	ModifyData(hms);
 	CaretMoveRight();
@@ -4521,7 +4543,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 
 		HEXMODIFY hms;
 		hms.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, 1 });
-		hms.ullDataSize = 1;
+		hms.ullDataSize = sizeof(BYTE);
 		hms.pData = reinterpret_cast<std::byte*>(&chByte);
 		ModifyData(hms);
 		CaretMoveRight();

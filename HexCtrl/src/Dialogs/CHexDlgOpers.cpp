@@ -33,6 +33,7 @@ BOOL CHexDlgOpers::OnInitDialog()
 	CDialogEx::OnInitDialog();
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR, IDC_HEXCTRL_OPERS_RADIO_OR);
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD, IDC_HEXCTRL_OPERS_RADIO_BYTE);
+	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_LE, IDC_HEXCTRL_OPERS_RADIO_BE, IDC_HEXCTRL_OPERS_RADIO_LE);
 
 	return TRUE;
 }
@@ -46,10 +47,9 @@ BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	//lParam holds HWND.
 	const auto wMessage = HIWORD(wParam);
+	const auto wID = LOWORD(wParam);
 	bool fHere { true };
-	if (const auto wID = LOWORD(wParam); wID >= IDC_HEXCTRL_OPERS_EDIT_OR
-		&& wID <= IDC_HEXCTRL_OPERS_EDIT_FLOOR
-		&& wMessage == EN_SETFOCUS)
+	if (wID >= IDC_HEXCTRL_OPERS_EDIT_OR && wID <= IDC_HEXCTRL_OPERS_EDIT_FLOOR && wMessage == EN_SETFOCUS)
 	{
 		int iRadioID { };
 		switch (wID)
@@ -92,6 +92,22 @@ BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 		CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR, iRadioID);
 	}
+	else if (wID >= IDC_HEXCTRL_OPERS_RADIO_BYTE && wID <= IDC_HEXCTRL_OPERS_RADIO_QWORD)
+	{
+		BOOL fEnabled { FALSE };
+		switch (wID)
+		{
+		case IDC_HEXCTRL_OPERS_RADIO_WORD:
+		case IDC_HEXCTRL_OPERS_RADIO_DWORD:
+		case IDC_HEXCTRL_OPERS_RADIO_QWORD:
+			fEnabled = TRUE;
+			break;
+		default:
+			fHere = false;
+		}
+		GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_LE)->EnableWindow(fEnabled);
+		GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_BE)->EnableWindow(fEnabled);
+	}
 	else
 		fHere = false;
 
@@ -107,9 +123,11 @@ void CHexDlgOpers::OnOK()
 {
 	const auto iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR);
 	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
+	const auto iRadioByteOrder = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_LE, IDC_HEXCTRL_OPERS_RADIO_BE);
 
 	HEXMODIFY hms;
 	hms.enModifyMode = EHexModifyMode::MODIFY_OPERATION;
+	hms.fBigEndian = iRadioDataSize != IDC_HEXCTRL_OPERS_RADIO_BYTE && iRadioByteOrder == IDC_HEXCTRL_OPERS_RADIO_BE;
 	hms.vecSpan = m_pHexCtrl->GetSelection();
 	if (hms.vecSpan.empty())
 		return;
@@ -168,47 +186,44 @@ void CHexDlgOpers::OnOK()
 		break;
 	}
 
+	switch (iRadioDataSize)
+	{
+	case IDC_HEXCTRL_OPERS_RADIO_BYTE:
+		hms.ullDataSize = sizeof(BYTE);
+		break;
+	case IDC_HEXCTRL_OPERS_RADIO_WORD:
+		hms.ullDataSize = sizeof(WORD);
+		break;
+	case IDC_HEXCTRL_OPERS_RADIO_DWORD:
+		hms.ullDataSize = sizeof(DWORD);
+		break;
+	case IDC_HEXCTRL_OPERS_RADIO_QWORD:
+		hms.ullDataSize = sizeof(QWORD);
+		break;
+	default:
+		break;
+	}
+
 	LONGLONG llData;
-	if (iEditID)
+	if (iEditID > 0)
 	{
 		WCHAR pwszEditText[32];
 		GetDlgItemTextW(iEditID, pwszEditText, static_cast<int>(std::size(pwszEditText)));
 
-		if (!wcslen(pwszEditText))
-		{
-			MessageBoxW(L"Missing value!", L"Format Error", MB_ICONERROR);
-			return;
-		}
+		std::wstring wstrErr { };
+		if (wcsnlen(pwszEditText, std::size(pwszEditText)) == 0)
+			wstrErr = L"Missing value!";
 		else if (!wstr2num(pwszEditText, llData))
+			wstrErr = L"Wrong number format!";
+		else if (hms.enOperMode == EHexOperMode::OPER_DIVIDE && llData == 0) //Division by zero check.
+			wstrErr = L"Wrong number format! Can not divide by zero!";
+		if (!wstrErr.empty())
 		{
-			MessageBoxW(L"Wrong number format!", L"Format Error", MB_ICONERROR);
-			return;
-		}
-		if (hms.enOperMode == EHexOperMode::OPER_DIVIDE && llData == 0) //Division by zero check.
-		{
-			MessageBoxW(L"Wrong number format!\r\nCan not divide by zero.", L"Format Error", MB_ICONERROR);
+			MessageBoxW(wstrErr.data(), L"Format Error!", MB_ICONERROR);
 			return;
 		}
 
 		hms.pData = reinterpret_cast<std::byte*>(&llData);
-	}
-
-	switch (iRadioDataSize)
-	{
-	case IDC_HEXCTRL_OPERS_RADIO_BYTE:
-		hms.ullDataSize = 1;
-		break;
-	case IDC_HEXCTRL_OPERS_RADIO_WORD:
-		hms.ullDataSize = 2;
-		break;
-	case IDC_HEXCTRL_OPERS_RADIO_DWORD:
-		hms.ullDataSize = 4;
-		break;
-	case IDC_HEXCTRL_OPERS_RADIO_QWORD:
-		hms.ullDataSize = 8;
-		break;
-	default:
-		break;
 	}
 
 	m_pHexCtrl->ModifyData(hms);
