@@ -913,6 +913,8 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		fAvail = fMutable && fSelection && IsClipboardFormatAvailable(CF_TEXT);
 		break;
 	case EHexCmd::CMD_MODIFY_DLG_OPERS:
+		fAvail = fMutable;
+		break;
 	case EHexCmd::CMD_MODIFY_FILLZEROS:
 	case EHexCmd::CMD_MODIFY_DLG_FILLDATA:
 		fAvail = fMutable && fSelection;
@@ -3444,11 +3446,15 @@ void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ull
 	if (pData == nullptr)
 		return;
 
+	//Avoid unnecessary byte swap for NOT operation
+	bool fSwapByteOrder = fBigEndian;
+	if (eMode == EHexOperMode::OPER_NOT)
+		fSwapByteOrder = false;
+
 	const auto nChunks = ullSizeData / sizeof(T);
 	for (const auto* const pDataEnd = pData + nChunks; pData < pDataEnd; ++pData)
 	{
-
-		if (fBigEndian)
+		if (fSwapByteOrder)
 		{
 			if constexpr (sizeof(T) == sizeof(WORD))
 				*pData = _byteswap_ushort(*pData);
@@ -3501,7 +3507,7 @@ void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ull
 			break;
 		}
 
-		if (fBigEndian)
+		if (fSwapByteOrder)
 		{
 			if constexpr (sizeof(T) == sizeof(WORD))
 				*pData = _byteswap_ushort(*pData);
