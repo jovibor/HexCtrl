@@ -138,7 +138,7 @@ BEGIN
     LTEXT           "bits",IDC_STATIC,92,93,12,8
     LTEXT           "bits",IDC_STATIC,92,106,12,8
     GROUPBOX        "Operations:",IDC_STATIC,9,6,234,128
-    LTEXT           "To use Hex values use 0x as prefix.",IDC_STATIC,17,18,117,8
+    LTEXT           "To use Hex values put a 0x as prefix.",IDC_STATIC,17,18,120,8
 END
 
 IDD_HEXCTRL_FILLDATA DIALOGEX 0, 0, 269, 96

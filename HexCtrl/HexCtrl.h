@@ -68,7 +68,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual auto GetPagesCount()const->ULONGLONG = 0;      //Get count of pages.
 		[[nodiscard]] virtual auto GetPagePos()const->ULONGLONG = 0;         //Get current page a cursor stays at.
 		[[nodiscard]] virtual DWORD GetPageSize()const = 0;                  //Current page size.
-		[[nodiscard]] virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> = 0; //Gets current selection.
+		[[nodiscard]] virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> = 0; //Get current selection.
 		[[nodiscard]] virtual HWND GetWindowHandle(EHexWnd enWnd)const = 0;  //Retrieves control's window/dialog handle.
 		virtual void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0) = 0;   //Go (scroll) to a given offset.
 		[[nodiscard]] virtual auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTESTSTRUCT> = 0; //HitTest given point.

@@ -124,28 +124,39 @@ void CHexDlgOpers::OnOK()
 	const auto iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR);
 	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
 	const auto iRadioByteOrder = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_LE, IDC_HEXCTRL_OPERS_RADIO_BE);
+	const auto fBigEndian = iRadioByteOrder == IDC_HEXCTRL_OPERS_RADIO_BE && iRadioDataSize != IDC_HEXCTRL_OPERS_RADIO_BYTE
+		&& iRadioOperation != IDC_HEXCTRL_OPERS_RADIO_NOT;
 
 	HEXMODIFY hms;
 	hms.enModifyMode = EHexModifyMode::MODIFY_OPERATION;
-	hms.fBigEndian = iRadioDataSize != IDC_HEXCTRL_OPERS_RADIO_BYTE && iRadioByteOrder == IDC_HEXCTRL_OPERS_RADIO_BE;
 	hms.vecSpan = m_pHexCtrl->GetSelection();
 	if (hms.vecSpan.empty())
 		return;
 
+	/***************************************************************************
+	* Some operations don't need to swap the whole data in big-endian mode.
+	* Instead the Operational data-bytes can be swapped here just once.
+	* Binary OR/XOR/AND are good examples, binary NOT doesn't need swap at all.
+	* The fSwapHere flag swows exactly this, that data can be swapped here.
+	***************************************************************************/
+	bool fSwapHere { false };
 	int iEditID { 0 };
 	switch (iRadioOperation)
 	{
 	case IDC_HEXCTRL_OPERS_RADIO_OR:
 		hms.enOperMode = EHexOperMode::OPER_OR;
 		iEditID = IDC_HEXCTRL_OPERS_EDIT_OR;
+		fSwapHere = true;
 		break;
 	case IDC_HEXCTRL_OPERS_RADIO_XOR:
 		hms.enOperMode = EHexOperMode::OPER_XOR;
 		iEditID = IDC_HEXCTRL_OPERS_EDIT_XOR;
+		fSwapHere = true;
 		break;
 	case IDC_HEXCTRL_OPERS_RADIO_AND:
 		hms.enOperMode = EHexOperMode::OPER_AND;
 		iEditID = IDC_HEXCTRL_OPERS_EDIT_AND;
+		fSwapHere = true;
 		break;
 	case IDC_HEXCTRL_OPERS_RADIO_NOT:
 		hms.enOperMode = EHexOperMode::OPER_NOT;
@@ -185,6 +196,8 @@ void CHexDlgOpers::OnOK()
 	default:
 		break;
 	}
+	if (iEditID == 0)
+		return;
 
 	switch (iRadioDataSize)
 	{
@@ -204,28 +217,42 @@ void CHexDlgOpers::OnOK()
 		break;
 	}
 
-	LONGLONG llData;
-	if (iEditID > 0)
+	WCHAR pwszEditText[32];
+	GetDlgItemTextW(iEditID, pwszEditText, static_cast<int>(std::size(pwszEditText)));
+	
+	LONGLONG llData { };
+	std::wstring wstrErr { };
+	if (wcsnlen(pwszEditText, std::size(pwszEditText)) == 0)
+		wstrErr = L"Missing value!";
+	else if (!wstr2num(pwszEditText, llData))
+		wstrErr = L"Wrong number format!";
+	else if (hms.enOperMode == EHexOperMode::OPER_DIVIDE && llData == 0) //Division by zero check.
+		wstrErr = L"Wrong number format! Can not divide by zero!";
+	if (!wstrErr.empty())
 	{
-		WCHAR pwszEditText[32];
-		GetDlgItemTextW(iEditID, pwszEditText, static_cast<int>(std::size(pwszEditText)));
-
-		std::wstring wstrErr { };
-		if (wcsnlen(pwszEditText, std::size(pwszEditText)) == 0)
-			wstrErr = L"Missing value!";
-		else if (!wstr2num(pwszEditText, llData))
-			wstrErr = L"Wrong number format!";
-		else if (hms.enOperMode == EHexOperMode::OPER_DIVIDE && llData == 0) //Division by zero check.
-			wstrErr = L"Wrong number format! Can not divide by zero!";
-		if (!wstrErr.empty())
-		{
-			MessageBoxW(wstrErr.data(), L"Format Error!", MB_ICONERROR);
-			return;
-		}
-
-		hms.pData = reinterpret_cast<std::byte*>(&llData);
+		MessageBoxW(wstrErr.data(), L"Format Error!", MB_ICONERROR);
+		return;
 	}
 
+	if (fBigEndian && fSwapHere)
+	{
+		switch (hms.ullDataSize)
+		{
+		case (sizeof(WORD)):
+			llData = static_cast<LONGLONG>(_byteswap_ushort(static_cast<WORD>(llData)));
+			break;
+		case (sizeof(DWORD)):
+			llData = static_cast<LONGLONG>(_byteswap_ulong(static_cast<DWORD>(llData)));
+			break;
+		case (sizeof(QWORD)):
+			llData = static_cast<LONGLONG>(_byteswap_uint64(static_cast<QWORD>(llData)));
+			break;
+		default:
+			break;
+		}
+	}
+	hms.fBigEndian = fBigEndian && !fSwapHere;
+	hms.pData = reinterpret_cast<std::byte*>(&llData);
 	m_pHexCtrl->ModifyData(hms);
 	::SetFocus(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN));
 

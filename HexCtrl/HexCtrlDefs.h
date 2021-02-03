@@ -223,6 +223,9 @@ namespace HEXCTRL
 
 	/********************************************************************************************
 	* HEXVISSTRUCT - Offset visibility struct, used in IsOffsetVisible method.                  *
+	* -1 - Offset is higher, or at the left, of the visible area.                               *
+	*  1 - lower, or at the right.                                                              *
+	*  0 - visible.                                                                             *
 	********************************************************************************************/
 	struct HEXVISSTRUCT
 	{
