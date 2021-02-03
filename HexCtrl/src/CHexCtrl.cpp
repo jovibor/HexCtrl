@@ -3446,15 +3446,21 @@ void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ull
 	if (pData == nullptr)
 		return;
 
-	//Avoid unnecessary byte swap for NOT operation
-	bool fSwapByteOrder = fBigEndian;
+	//Determine if start / end operation byte swapping is required
+	bool fSwapByteOrderStart = fBigEndian;
+	bool fSwapByteOrderEnd = fSwapByteOrderStart;
 	if (eMode == EHexOperMode::OPER_NOT)
-		fSwapByteOrder = false;
+		fSwapByteOrderStart = fSwapByteOrderEnd = false;
+	else if (eMode == EHexOperMode::OPER_SWAPBYTES)
+	{
+		fSwapByteOrderStart = true;
+		fSwapByteOrderEnd = false;
+	}
 
 	const auto nChunks = ullSizeData / sizeof(T);
 	for (const auto* const pDataEnd = pData + nChunks; pData < pDataEnd; ++pData)
 	{
-		if (fSwapByteOrder)
+		if (fSwapByteOrderStart)
 		{
 			if constexpr (sizeof(T) == sizeof(WORD))
 				*pData = _byteswap_ushort(*pData);
@@ -3484,6 +3490,9 @@ void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ull
 		case EHexOperMode::OPER_SHR:
 			*pData >>= tDataOper;
 			break;
+		case EHexOperMode::OPER_SWAPBYTES:
+			//Do nothing
+			break;
 		case EHexOperMode::OPER_ADD:
 			*pData += tDataOper;
 			break;
@@ -3507,7 +3516,7 @@ void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ull
 			break;
 		}
 
-		if (fSwapByteOrder)
+		if (fSwapByteOrderEnd)
 		{
 			if constexpr (sizeof(T) == sizeof(WORD))
 				*pData = _byteswap_ushort(*pData);

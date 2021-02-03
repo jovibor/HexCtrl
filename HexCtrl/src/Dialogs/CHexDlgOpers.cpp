@@ -192,6 +192,9 @@ void CHexDlgOpers::OnOK()
 		hms.enOperMode = EHexOperMode::OPER_SHR;
 		iEditID = IDC_HEXCTRL_OPERS_EDIT_SHR;
 		break;
+	case IDC_HEXCTRL_OPERS_RADIO_SWAPBYTES:
+		hms.enOperMode = EHexOperMode::OPER_SWAPBYTES;
+		break;
 	case IDC_HEXCTRL_OPERS_RADIO_ADD:
 		hms.enOperMode = EHexOperMode::OPER_ADD;
 		iEditID = IDC_HEXCTRL_OPERS_EDIT_ADD;
