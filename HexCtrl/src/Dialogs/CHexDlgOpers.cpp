@@ -48,10 +48,11 @@ BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
 	//lParam holds HWND.
 	const auto wMessage = HIWORD(wParam);
 	const auto wID = LOWORD(wParam);
-	bool fHere { true };
+	const bool fMsgHere { !(wID == IDOK || wID == IDCANCEL) };
+
 	if (wID >= IDC_HEXCTRL_OPERS_EDIT_OR && wID <= IDC_HEXCTRL_OPERS_EDIT_FLOOR && wMessage == EN_SETFOCUS)
 	{
-		int iRadioID { };
+		int iRadioID { 0 };
 		switch (wID)
 		{
 		case IDC_HEXCTRL_OPERS_EDIT_OR:
@@ -88,30 +89,21 @@ BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
 			iRadioID = IDC_HEXCTRL_OPERS_RADIO_FLOOR;
 			break;
 		default:
-			fHere = false;
-		}
-		CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR, iRadioID);
-	}
-	else if (wID >= IDC_HEXCTRL_OPERS_RADIO_BYTE && wID <= IDC_HEXCTRL_OPERS_RADIO_QWORD)
-	{
-		BOOL fEnabled { FALSE };
-		switch (wID)
-		{
-		case IDC_HEXCTRL_OPERS_RADIO_WORD:
-		case IDC_HEXCTRL_OPERS_RADIO_DWORD:
-		case IDC_HEXCTRL_OPERS_RADIO_QWORD:
-			fEnabled = TRUE;
 			break;
-		default:
-			fHere = false;
 		}
-		GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_LE)->EnableWindow(fEnabled);
-		GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_BE)->EnableWindow(fEnabled);
-	}
-	else
-		fHere = false;
 
-	return fHere ? TRUE : CDialogEx::OnCommand(wParam, lParam);
+		if (iRadioID > 0)
+			CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR, iRadioID);
+	}
+
+	//Enable or disable big/little-endian radio buttons.
+	const auto iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR);
+	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
+	const BOOL fBeLeEnable { iRadioDataSize != IDC_HEXCTRL_OPERS_RADIO_BYTE && iRadioOperation != IDC_HEXCTRL_OPERS_RADIO_NOT };
+	GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_LE)->EnableWindow(fBeLeEnable);
+	GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_BE)->EnableWindow(fBeLeEnable);
+
+	return fMsgHere ? TRUE : CDialogEx::OnCommand(wParam, lParam);
 }
 
 BOOL CHexDlgOpers::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
@@ -196,8 +188,6 @@ void CHexDlgOpers::OnOK()
 	default:
 		break;
 	}
-	if (iEditID == 0)
-		return;
 
 	switch (iRadioDataSize)
 	{
@@ -217,21 +207,24 @@ void CHexDlgOpers::OnOK()
 		break;
 	}
 
-	WCHAR pwszEditText[32];
-	GetDlgItemTextW(iEditID, pwszEditText, static_cast<int>(std::size(pwszEditText)));
-	
 	LONGLONG llData { };
-	std::wstring wstrErr { };
-	if (wcsnlen(pwszEditText, std::size(pwszEditText)) == 0)
-		wstrErr = L"Missing value!";
-	else if (!wstr2num(pwszEditText, llData))
-		wstrErr = L"Wrong number format!";
-	else if (hms.enOperMode == EHexOperMode::OPER_DIVIDE && llData == 0) //Division by zero check.
-		wstrErr = L"Wrong number format! Can not divide by zero!";
-	if (!wstrErr.empty())
+	if (iEditID != 0) //All the switches that have edit fields.
 	{
-		MessageBoxW(wstrErr.data(), L"Format Error!", MB_ICONERROR);
-		return;
+		WCHAR pwszEditText[32];
+		GetDlgItemTextW(iEditID, pwszEditText, static_cast<int>(std::size(pwszEditText)));
+
+		std::wstring wstrErr { };
+		if (wcsnlen(pwszEditText, std::size(pwszEditText)) == 0)
+			wstrErr = L"Missing value!";
+		else if (!wstr2num(pwszEditText, llData))
+			wstrErr = L"Wrong number format!";
+		else if (hms.enOperMode == EHexOperMode::OPER_DIVIDE && llData == 0) //Division by zero check.
+			wstrErr = L"Wrong number format! Can not divide by zero!";
+		if (!wstrErr.empty())
+		{
+			MessageBoxW(wstrErr.data(), L"Format Error!", MB_ICONERROR);
+			return;
+		}
 	}
 
 	if (fBigEndian && fSwapHere)

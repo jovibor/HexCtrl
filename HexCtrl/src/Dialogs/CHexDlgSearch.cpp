@@ -232,7 +232,7 @@ void CHexDlgSearch::OnButtonReplaceAll()
 
 BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-	bool fHere { true };
+	bool fMsgHere { true };
 	switch (static_cast<EMenuID>(LOWORD(wParam)))
 	{
 	case EMenuID::IDM_SEARCH_ADDBKM:
@@ -257,13 +257,10 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 		m_fSecondMatch = false; //To be able to search from the zero offset.
 		break;
 	default:
-		fHere = false;
+		fMsgHere = false;
 	}
 
-	if (fHere)
-		return TRUE;
-
-	return CDialogEx::OnCommand(wParam, lParam);
+	return fMsgHere ? TRUE : CDialogEx::OnCommand(wParam, lParam);
 }
 
 void CHexDlgSearch::OnCheckSel()

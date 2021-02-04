@@ -98,7 +98,7 @@ void CHexDlgBkmMgr::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 
 BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-	bool fHere { true }; //Process message here, and not pass further, to parent.
+	bool fMsgHere { true }; //Process message here, and not pass further, to parent.
 	switch (static_cast<EMenuID>(LOWORD(wParam)))
 	{
 	case EMenuID::IDM_BKMMGR_NEW:
@@ -151,13 +151,10 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		UpdateList();
 		break;
 	default:
-		fHere = false;
+		fMsgHere = false;
 	}
 
-	if (fHere)
-		return TRUE;
-
-	return CDialogEx::OnCommand(wParam, lParam);
+	return fMsgHere ? TRUE : CDialogEx::OnCommand(wParam, lParam);
 }
 
 void CHexDlgBkmMgr::OnClickRadioDec()
