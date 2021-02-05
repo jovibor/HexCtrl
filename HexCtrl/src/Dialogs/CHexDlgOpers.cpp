@@ -225,25 +225,26 @@ void CHexDlgOpers::OnOK()
 			MessageBoxW(wstrErr.data(), L"Format Error!", MB_ICONERROR);
 			return;
 		}
-	}
 
-	if (fBigEndian && fSwapHere)
-	{
-		switch (hms.ullDataSize)
+		if (fBigEndian && fSwapHere)
 		{
-		case (sizeof(WORD)):
-			llData = static_cast<LONGLONG>(_byteswap_ushort(static_cast<WORD>(llData)));
-			break;
-		case (sizeof(DWORD)):
-			llData = static_cast<LONGLONG>(_byteswap_ulong(static_cast<DWORD>(llData)));
-			break;
-		case (sizeof(QWORD)):
-			llData = static_cast<LONGLONG>(_byteswap_uint64(static_cast<QWORD>(llData)));
-			break;
-		default:
-			break;
+			switch (hms.ullDataSize)
+			{
+			case (sizeof(WORD)):
+				llData = static_cast<LONGLONG>(_byteswap_ushort(static_cast<WORD>(llData)));
+				break;
+			case (sizeof(DWORD)):
+				llData = static_cast<LONGLONG>(_byteswap_ulong(static_cast<DWORD>(llData)));
+				break;
+			case (sizeof(QWORD)):
+				llData = static_cast<LONGLONG>(_byteswap_uint64(static_cast<QWORD>(llData)));
+				break;
+			default:
+				break;
+			}
 		}
 	}
+
 	hms.fBigEndian = fBigEndian && !fSwapHere;
 	hms.pData = reinterpret_cast<std::byte*>(&llData);
 	m_pHexCtrl->ModifyData(hms);
