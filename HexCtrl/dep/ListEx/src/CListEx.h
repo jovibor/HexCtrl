@@ -66,6 +66,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		auto ParseItemText(int iItem, int iSubitem)->std::vector<SITEMDATA>;
 		void TtLinkHide();
 		void TtCellHide();
+		void TtRowShow(bool fShow, UINT uRow); //Tooltips for HighLatency mode.
 		void DrawItem(LPDRAWITEMSTRUCT pDIS)override;
 		afx_msg void OnPaint();
 		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
@@ -95,6 +96,8 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		TTTOOLINFOW m_stTInfoCell { };  //Cells' tool-tip info struct.
 		CWnd m_stWndTtLink;             //Link tool-tip window.
 		TTTOOLINFOW m_stTInfoLink { };  //Link's tool-tip info struct.
+		CWnd m_wndTtRow { };            //Tooltip window for row in m_fHighLatency mode.
+		TTTOOLINFOW m_stToolInfoRow { };//Tooltips struct.
 		std::wstring m_wstrTtText { };  //Link's tool-tip current text.
 		HCURSOR m_cursorHand { };       //Hand cursor handle.
 		HCURSOR m_cursorDefault { };    //Standard (default) cursor handle.
@@ -105,6 +108,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		long m_lSizeFont { };           //Font size.
 		PFNLVCOMPARE m_pfnCompare { nullptr };  //Pointer to user provided compare func.
 		EListExSortMode m_enDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
+		CRect m_rcLinkCurr { };               //Current link's rect;
 		std::unordered_map<int, std::unordered_map<int, LISTEXTOOLTIP>> m_umapCellTt { };  //Cell's tooltips.
 		std::unordered_map<int, std::unordered_map<int, ULONGLONG>> m_umapCellData { };    //Cell's custom data.
 		std::unordered_map<int, std::unordered_map<int, LISTEXCOLOR>> m_umapCellColor { }; //Cell's colors.
@@ -122,7 +126,6 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		bool m_fTtCellShown { false }; //Is cell's tool-tip shown atm.
 		bool m_fTtLinkShown { false }; //Is link's tool-tip shown atm.
 		bool m_fLDownAtLink { false }; //Left mouse down on link.
-		CRect m_rcLinkCurr { };        //Current link's rect;
 	};
 
 			/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
