@@ -162,7 +162,7 @@ namespace HEXCTRL::INTERNAL
 		void SelAddUp();         //Up Key pressed with the Shift.
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
 		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
-		void TtBkmShow(bool fShow, POINT pt = { }); //Tooltip bookmark show/hide.
+		void TtBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip bookmark show/hide.
 		void TtOffsetShow(bool fShow);              //Tooltip Offset show/hide.
 		void Undo();
 		void WstrCapacityFill();                    //Fill m_wstrCapacity according to current m_dwCapacity.
@@ -210,8 +210,6 @@ namespace HEXCTRL::INTERNAL
 		const int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
 		const int m_iFirstHorizLine { 0 };    //First horizontal line indent.
 		const int m_iFirstVertLine { 0 };     //First vertical line indent.
-		const DWORD m_dwCapacityMax { 99 };   //Maximum capacity.
-		const DWORD m_dwUndoMax { 500 };      //How many Undo states to preserve.
 		HEXCOLORSSTRUCT m_stColor;            //All control related colors.
 		EHexDataMode m_enDataMode { };        //Control's data mode.
 		EHexGroupMode m_enGroupMode { EHexGroupMode::ASBYTE }; //Current "Group Data By" mode.
@@ -221,6 +219,7 @@ namespace HEXCTRL::INTERNAL
 		HWND m_hwndMsg { };                   //Window handle the control messages will be sent to.
 		CWnd m_wndTtBkm { };                  //Tooltip window for bookmarks description.
 		TTTOOLINFOW m_stToolInfoBkm { };      //Tooltip Bookmarks struct.
+		std::time_t m_tmBkmTt { };            //A beginning time to calc the diff, for hiding bkm tooltip after.
 		CWnd m_wndTtOffset { };               //Tooltip window for Offset in m_fHighLatency mode.
 		TTTOOLINFOW m_stToolInfoOffset { };   //Tooltips struct.
 		CFont m_fontMain;                     //Main Hex chunks font.
@@ -228,7 +227,7 @@ namespace HEXCTRL::INTERNAL
 		CMenu m_menuMain;                     //Main popup menu.
 		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		CPen m_penLines;                      //Pen for lines.
-		HEXBKMSTRUCT* m_pBkmCurrTt { };       //Currently shown bookmark's tooltip;
+		HEXBKMSTRUCT* m_pBkmTtCurr { };       //Currently shown bookmark's tooltip;
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
 		std::optional<ULONGLONG> m_optRMouseClick { }; //Right mouse clicked chunk. Used in bookmarking.

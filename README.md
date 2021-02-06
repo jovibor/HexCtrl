@@ -757,14 +757,12 @@ struct HEXCOLORSSTRUCT
     COLORREF clrTextCaption { RGB(0, 0, 180) };                  //Caption text color
     COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };  //Text color of the bottom "Info" rect.
     COLORREF clrTextCaret { RGB(255, 255, 255) };                //Caret text color.
-    COLORREF clrTextTooltip { GetSysColor(COLOR_INFOTEXT) };     //Tooltip text color.
     COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                //Background color.
     COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };     //Background color of the selected Hex/ASCII.
     COLORREF clrBkDataInterp { RGB(147, 58, 22) };               //Data Interpreter Bk color.
     COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };       //Background color of the bottom "Info" rect.
     COLORREF clrBkCaret { RGB(0, 0, 255) };                      //Caret background color.
     COLORREF clrBkCaretSelect { RGB(0, 0, 200) };                //Caret background color in selection.
-    COLORREF clrBkTooltip { GetSysColor(COLOR_INFOBK) };         //Tooltip background color.
 };
 ```
 

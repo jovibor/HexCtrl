@@ -336,30 +336,21 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 		return false;
 	}
 
-	m_wndTtBkm.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
-		/*TTS_BALLOON |*/ TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
+	m_wndTtBkm.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
-	SetWindowTheme(m_wndTtBkm.m_hWnd, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
 	m_stToolInfoBkm.cbSize = TTTOOLINFOW_V1_SIZE;
 	m_stToolInfoBkm.uFlags = TTF_TRACK;
 	m_stToolInfoBkm.uId = ID_TOOLTIP_BKM;
 	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
-	m_wndTtBkm.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColor.clrTextTooltip), 0);
-	m_wndTtBkm.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColor.clrBkTooltip), 0);
 
-	m_wndTtOffset.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
-		/*TTS_BALLOON |*/ TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-		m_hWnd, nullptr);
-	SetWindowTheme(m_wndTtOffset.m_hWnd, nullptr, L""); //To prevent Windows from changing theme of Balloon window.
+	m_wndTtOffset.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
 	m_stToolInfoOffset.cbSize = TTTOOLINFOW_V1_SIZE;
 	m_stToolInfoOffset.uFlags = TTF_TRACK;
 	m_stToolInfoOffset.uId = ID_TOOLTIP_OFFSET;
 	m_wndTtOffset.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
 	m_wndTtOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
-	m_wndTtOffset.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColor.clrTextTooltip), 0);
-	m_wndTtOffset.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColor.clrBkTooltip), 0);
 
 	//Font related.//////////////////////////////////////////////
 	LOGFONTW lf { };
@@ -1061,7 +1052,9 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	if (!IsCreated())
 		return;
 
-	if (dwCapacity < 1 || dwCapacity > m_dwCapacityMax)
+	constexpr DWORD dwCapacityMax { 99 }; //Maximum capacity allowed.
+
+	if (dwCapacity < 1 || dwCapacity > dwCapacityMax)
 		return;
 
 	//Setting capacity according to current m_enGroupMode.
@@ -1073,8 +1066,8 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	//To prevent under/over flow.
 	if (dwCapacity < static_cast<DWORD>(m_enGroupMode))
 		dwCapacity = static_cast<DWORD>(m_enGroupMode);
-	else if (dwCapacity > m_dwCapacityMax)
-		dwCapacity = m_dwCapacityMax;
+	else if (dwCapacity > dwCapacityMax)
+		dwCapacity = dwCapacityMax;
 
 	m_dwCapacity = dwCapacity;
 	m_dwCapacityBlockSize = m_dwCapacity / 2;
@@ -4160,6 +4153,8 @@ void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss)
 
 void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 {
+	constexpr DWORD dwUndoMax { 500 }; //How many Undo states to preserve.
+
 	auto ullTotalSize = std::accumulate(vecSpan.begin(), vecSpan.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPANSTRUCT& ref) {return ullSumm + ref.ullSize; });
 
@@ -4169,7 +4164,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 
 	//If Undo deque size is exceeding max limit,
 	//remove first snapshot from the beginning (the oldest one).
-	if (m_deqUndo.size() > static_cast<size_t>(m_dwUndoMax))
+	if (m_deqUndo.size() > static_cast<size_t>(dwUndoMax))
 		m_deqUndo.pop_front();
 
 	//Making new Undo data snapshot.
@@ -4200,18 +4195,23 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 	}
 }
 
-void CHexCtrl::TtBkmShow(bool fShow, POINT pt)
+void CHexCtrl::TtBkmShow(bool fShow, POINT pt, bool fTimerCancel)
 {
 	if (fShow)
 	{
+		m_tmBkmTt = std::time(nullptr);
 		m_wndTtBkm.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x, pt.y)));
 		m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 		SetTimer(ID_TOOLTIP_BKM, 300, nullptr);
 	}
+	else if (fTimerCancel) //Tooltip was canceled by the timer, not mouse move.
+	{
+		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
+	}
 	else
 	{
-		m_pBkmCurrTt = nullptr;
+		m_pBkmTtCurr = nullptr;
 		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 		KillTimer(ID_TOOLTIP_BKM);
 	}
@@ -4733,22 +4733,22 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 	{
 		if (optHit)
 		{
-			if (const auto pBookmark = m_pBookmarks->HitTest(optHit->ullOffset); pBookmark != nullptr)
+			if (const auto pBkm = m_pBookmarks->HitTest(optHit->ullOffset); pBkm != nullptr)
 			{
-				if (m_pBkmCurrTt != pBookmark)
+				if (m_pBkmTtCurr != pBkm)
 				{
-					m_pBkmCurrTt = pBookmark;
+					m_pBkmTtCurr = pBkm;
 					CPoint ptScreen = point;
 					ClientToScreen(&ptScreen);
 
-					m_stToolInfoBkm.lpszText = pBookmark->wstrDesc.data();
+					m_stToolInfoBkm.lpszText = pBkm->wstrDesc.data();
 					TtBkmShow(true, POINT { ptScreen.x, ptScreen.y });
 				}
 			}
 			else
 				TtBkmShow(false);
 		}
-		else if (m_pBkmCurrTt) //If there is already bkm tooltip shown, but cursor is outside of data chunks.
+		else if (m_pBkmTtCurr) //If there is already bkm tooltip shown, but cursor is outside of data chunks.
 			TtBkmShow(false);
 
 		m_pScrollV->OnMouseMove(nFlags, point);
@@ -4887,17 +4887,21 @@ void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 
 void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 {
-	//Checking if cursor left client rect,
-	//if so — hiding bookmark tooltip and killing timer.
 	if (nIDEvent == ID_TOOLTIP_BKM)
 	{
+		constexpr auto tmSecToShow { 10.0 }; //How many seconds to show bkm tooltip.
 		CRect rcClient;
 		GetClientRect(rcClient);
 		ClientToScreen(rcClient);
 		CPoint ptCursor;
 		GetCursorPos(&ptCursor);
+
+		//Checking if cursor has left client rect.
 		if (!rcClient.PtInRect(ptCursor))
 			TtBkmShow(false);
+		//Or more than tmSecToShow seconds have passed since bkm toolip is shown.
+		else if (std::difftime(std::time(nullptr), m_tmBkmTt) >= tmSecToShow)
+			TtBkmShow(false, { }, true);
 	}
 }
 
