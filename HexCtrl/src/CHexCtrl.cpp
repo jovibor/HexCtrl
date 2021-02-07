@@ -4393,12 +4393,14 @@ void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 
 void CHexCtrl::OnDestroy()
 {
-	//All these cleanups are important in case of HexCtrl being destroyed as a child window.
-	//When a child window is destroyed, the HexCtrl object itself is stil alive,
-	//if IHexCtrl::Destroy() method was not called.
+	//All these cleanups below are important in case of HexCtrl 
+	//being destroyed as a window but not as an object itself.
+	//When a window is destroyed, the HexCtrl object itself is still alive if the IHexCtrl::Destroy() 
+	//method was not called.
 
 	ClearData();
 	m_wndTtBkm.DestroyWindow();
+	m_wndTtOffset.DestroyWindow();
 	m_menuMain.DestroyMenu();
 	m_fontMain.DeleteObject();
 	m_fontInfo.DeleteObject();

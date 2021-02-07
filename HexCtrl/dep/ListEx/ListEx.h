@@ -89,7 +89,7 @@ namespace HEXCTRL::LISTEX
 	********************************************/
 	struct LISTEXHDRICON
 	{
-		POINT pt { };              //Point of the top-left corner.
+		POINT pt { };              //Coords of the icon's top-left corner in the header item's rect.
 		int   iIndex { };          //Icon index in the header's image list.
 		bool  fClickable { true }; //Is icon sending LISTEX_MSG_HDRICONCLICK message when clicked.
 	};

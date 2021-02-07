@@ -96,7 +96,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		TTTOOLINFOW m_stTInfoCell { };  //Cells' tool-tip info struct.
 		CWnd m_stWndTtLink;             //Link tool-tip window.
 		TTTOOLINFOW m_stTInfoLink { };  //Link's tool-tip info struct.
-		CWnd m_wndTtRow { };            //Tooltip window for row in m_fHighLatency mode.
+		CWnd m_stWndTtRow { };            //Tooltip window for row in m_fHighLatency mode.
 		TTTOOLINFOW m_stToolInfoRow { };//Tooltips struct.
 		std::wstring m_wstrTtText { };  //Link's tool-tip current text.
 		HCURSOR m_cursorHand { };       //Hand cursor handle.
@@ -108,7 +108,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		long m_lSizeFont { };           //Font size.
 		PFNLVCOMPARE m_pfnCompare { nullptr };  //Pointer to user provided compare func.
 		EListExSortMode m_enDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
-		CRect m_rcLinkCurr { };               //Current link's rect;
+		CRect m_rcLinkCurr { };         //Current link's rect;
 		std::unordered_map<int, std::unordered_map<int, LISTEXTOOLTIP>> m_umapCellTt { };  //Cell's tooltips.
 		std::unordered_map<int, std::unordered_map<int, ULONGLONG>> m_umapCellData { };    //Cell's custom data.
 		std::unordered_map<int, std::unordered_map<int, LISTEXCOLOR>> m_umapCellColor { }; //Cell's colors.

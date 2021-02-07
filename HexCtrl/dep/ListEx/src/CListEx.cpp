@@ -143,13 +143,13 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 
 	if (m_fHighLatency) //Tooltip for HighLatency mode.
 	{
-		if (!m_wndTtRow.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
+		if (!m_stWndTtRow.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
 			CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr))
 			return false;
 		m_stToolInfoRow.cbSize = TTTOOLINFOW_V1_SIZE;
 		m_stToolInfoRow.uFlags = TTF_TRACK;
 		m_stToolInfoRow.uId = 0x03;
-		m_wndTtRow.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoRow));
+		m_stWndTtRow.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoRow));
 	}
 
 	m_dwGridWidth = lcs.dwListGridWidth;
@@ -975,10 +975,10 @@ void CListEx::TtRowShow(bool fShow, UINT uRow)
 		static wchar_t warrOffset[32] { L"Row: " };
 		swprintf_s(&warrOffset[5], 24, L"%u", uRow);
 		m_stToolInfoRow.lpszText = warrOffset;
-		m_wndTtRow.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
-		m_wndTtRow.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoRow));
+		m_stWndTtRow.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
+		m_stWndTtRow.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoRow));
 	}
-	m_wndTtRow.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_stToolInfoRow));
+	m_stWndTtRow.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_stToolInfoRow));
 }
 
 void CListEx::MeasureItem(LPMEASUREITEMSTRUCT lpMIS)
@@ -1427,6 +1427,7 @@ void CListEx::OnDestroy()
 
 	m_stWndTtCell.DestroyWindow();
 	m_stWndTtLink.DestroyWindow();
+	m_stWndTtRow.DestroyWindow();
 	m_fontList.DeleteObject();
 	m_fontListUnderline.DeleteObject();
 	m_penGrid.DeleteObject();
