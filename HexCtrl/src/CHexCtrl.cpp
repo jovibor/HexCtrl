@@ -904,6 +904,8 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		fAvail = fMutable && fSelection && IsClipboardFormatAvailable(CF_TEXT);
 		break;
 	case EHexCmd::CMD_MODIFY_DLG_OPERS:
+		fAvail = fMutable;
+		break;
 	case EHexCmd::CMD_MODIFY_FILLZEROS:
 	case EHexCmd::CMD_MODIFY_DLG_FILLDATA:
 		fAvail = fMutable && fSelection;

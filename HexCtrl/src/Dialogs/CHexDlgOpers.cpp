@@ -15,6 +15,7 @@ using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgOpers, CDialogEx)
+	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
 BOOL CHexDlgOpers::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
@@ -34,8 +35,31 @@ BOOL CHexDlgOpers::OnInitDialog()
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR, IDC_HEXCTRL_OPERS_RADIO_OR);
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD, IDC_HEXCTRL_OPERS_RADIO_BYTE);
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_LE, IDC_HEXCTRL_OPERS_RADIO_BE, IDC_HEXCTRL_OPERS_RADIO_LE);
-
+	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_ALL, IDC_HEXCTRL_OPERS_RADIO_SELECTION, IDC_HEXCTRL_OPERS_RADIO_ALL);
+	
 	return TRUE;
+}
+
+void CHexDlgOpers::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+{
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE)
+	{
+		if (m_pHexCtrl->IsCreated())
+		{
+			if (m_pHexCtrl->GetSelection().empty())
+			{
+				CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_ALL, IDC_HEXCTRL_OPERS_RADIO_SELECTION, IDC_HEXCTRL_OPERS_RADIO_ALL);
+				GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_SELECTION)->EnableWindow(false);
+			}
+			else
+			{
+				CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_ALL, IDC_HEXCTRL_OPERS_RADIO_SELECTION, IDC_HEXCTRL_OPERS_RADIO_SELECTION);
+				GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_SELECTION)->EnableWindow(true);
+			}
+		}
+	}
+
+	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
 }
 
 void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
@@ -116,14 +140,29 @@ void CHexDlgOpers::OnOK()
 	const auto iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR);
 	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
 	const auto iRadioByteOrder = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_LE, IDC_HEXCTRL_OPERS_RADIO_BE);
+	const auto iRadioAllSelection = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_ALL, IDC_HEXCTRL_OPERS_RADIO_SELECTION);
 	const auto fBigEndian = iRadioByteOrder == IDC_HEXCTRL_OPERS_RADIO_BE && iRadioDataSize != IDC_HEXCTRL_OPERS_RADIO_BYTE
 		&& iRadioOperation != IDC_HEXCTRL_OPERS_RADIO_NOT;
 
-	HEXMODIFY hms;
+	HEXMODIFY hms{};
 	hms.enModifyMode = EHexModifyMode::MODIFY_OPERATION;
+	hms.fBigEndian = iRadioDataSize != IDC_HEXCTRL_OPERS_RADIO_BYTE && iRadioByteOrder == IDC_HEXCTRL_OPERS_RADIO_BE;
 	hms.vecSpan = m_pHexCtrl->GetSelection();
-	if (hms.vecSpan.empty())
+	if (iRadioAllSelection == IDC_HEXCTRL_OPERS_RADIO_SELECTION && hms.vecSpan.empty())
+	{
+		//Should never happen
+		assert(false);
 		return;
+	}
+	else if (iRadioAllSelection == IDC_HEXCTRL_OPERS_RADIO_ALL)
+	{
+		hms.vecSpan.clear();
+		hms.vecSpan.push_back({ 0, m_pHexCtrl->GetDataSize() });
+
+		//Prompt user
+		if (MessageBoxW(L"Are you sure?", L"Modify ALL data?", MB_YESNO | MB_ICONQUESTION) == IDNO)
+			return;
+	}
 
 	/***************************************************************************
 	* Some operations don't need to swap the whole data in big-endian mode.
