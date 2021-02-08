@@ -42,7 +42,7 @@ BOOL CHexDlgOpers::OnInitDialog()
 
 void CHexDlgOpers::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	if (nState == WA_ACTIVE)
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE)
 	{
 		if (m_pHexCtrl->IsCreated())
 		{
