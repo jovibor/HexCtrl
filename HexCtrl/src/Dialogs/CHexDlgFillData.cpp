@@ -15,6 +15,7 @@ using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgFillData, CDialogEx)
+	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
 BOOL CHexDlgFillData::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
@@ -33,10 +34,34 @@ BOOL CHexDlgFillData::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16, IDC_HEXCTRL_FILLDATA_RADIO_HEX);
+	CheckRadioButton(IDC_HEXCTRL_FILLDATA_ALL, IDC_HEXCTRL_FILLDATA_SELECTION, IDC_HEXCTRL_FILLDATA_ALL);
+
 	if (const auto pCombo = static_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT)); pCombo != nullptr)
 		pCombo->LimitText(MAX_PATH); //Max characters count in combo's edit box.
 
 	return TRUE;
+}
+
+void CHexDlgFillData::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+{
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE)
+	{
+		if (m_pHexCtrl->IsCreated())
+		{
+			if (m_pHexCtrl->GetSelection().empty())
+			{
+				CheckRadioButton(IDC_HEXCTRL_FILLDATA_ALL, IDC_HEXCTRL_FILLDATA_SELECTION, IDC_HEXCTRL_FILLDATA_ALL);
+				GetDlgItem(IDC_HEXCTRL_FILLDATA_SELECTION)->EnableWindow(false);
+			}
+			else
+			{
+				CheckRadioButton(IDC_HEXCTRL_FILLDATA_ALL, IDC_HEXCTRL_FILLDATA_SELECTION, IDC_HEXCTRL_FILLDATA_SELECTION);
+				GetDlgItem(IDC_HEXCTRL_FILLDATA_SELECTION)->EnableWindow(true);
+			}
+		}
+	}
+
+	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
 }
 
 void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
@@ -47,12 +72,26 @@ void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
 void CHexDlgFillData::OnOK()
 {
 	const auto iRadioType = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16);
+	const auto iRadioAllSelection = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_ALL, IDC_HEXCTRL_FILLDATA_SELECTION);
 
 	HEXMODIFY hms;
 	hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 	hms.vecSpan = m_pHexCtrl->GetSelection();
-	if (hms.vecSpan.empty())
+	if (iRadioAllSelection == IDC_HEXCTRL_FILLDATA_SELECTION && hms.vecSpan.empty())
+	{
+		//Should never happen
+		assert(false);
 		return;
+	}
+	else if (iRadioAllSelection == IDC_HEXCTRL_FILLDATA_ALL)
+	{
+		hms.vecSpan.clear();
+		hms.vecSpan.push_back({ 0, m_pHexCtrl->GetDataSize() });
+
+		//Prompt user
+		if (MessageBoxW(L"Are you sure?", L"Fill ALL data?", MB_YESNO | MB_ICONQUESTION) == IDNO)
+			return;
+	}
 
 	const auto pCombo = static_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT));
 	if (!pCombo)
