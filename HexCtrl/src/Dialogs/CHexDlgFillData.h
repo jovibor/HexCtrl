@@ -18,6 +18,7 @@ namespace HEXCTRL::INTERNAL
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		void OnOK()override;
 		DECLARE_MESSAGE_MAP()
 	private:

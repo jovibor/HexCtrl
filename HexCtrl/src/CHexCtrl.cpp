@@ -907,8 +907,10 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		fAvail = fMutable;
 		break;
 	case EHexCmd::CMD_MODIFY_FILLZEROS:
-	case EHexCmd::CMD_MODIFY_DLG_FILLDATA:
 		fAvail = fMutable && fSelection;
+		break;
+	case EHexCmd::CMD_MODIFY_DLG_FILLDATA:
+		fAvail = fMutable;
 		break;
 	case EHexCmd::CMD_MODIFY_UNDO:
 		fAvail = !m_deqUndo.empty();
