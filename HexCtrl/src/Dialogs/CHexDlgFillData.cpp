@@ -44,21 +44,15 @@ BOOL CHexDlgFillData::OnInitDialog()
 
 void CHexDlgFillData::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
+	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
+		return;
+
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE)
 	{
-		if (m_pHexCtrl->IsCreated())
-		{
-			if (m_pHexCtrl->GetSelection().empty())
-			{
-				CheckRadioButton(IDC_HEXCTRL_FILLDATA_ALL, IDC_HEXCTRL_FILLDATA_SELECTION, IDC_HEXCTRL_FILLDATA_ALL);
-				GetDlgItem(IDC_HEXCTRL_FILLDATA_SELECTION)->EnableWindow(false);
-			}
-			else
-			{
-				CheckRadioButton(IDC_HEXCTRL_FILLDATA_ALL, IDC_HEXCTRL_FILLDATA_SELECTION, IDC_HEXCTRL_FILLDATA_SELECTION);
-				GetDlgItem(IDC_HEXCTRL_FILLDATA_SELECTION)->EnableWindow(true);
-			}
-		}
+		const auto fSelection { m_pHexCtrl->HasSelection() };
+		CheckRadioButton(IDC_HEXCTRL_FILLDATA_ALL, IDC_HEXCTRL_FILLDATA_SELECTION,
+			fSelection ? IDC_HEXCTRL_FILLDATA_SELECTION : IDC_HEXCTRL_FILLDATA_ALL);
+		GetDlgItem(IDC_HEXCTRL_FILLDATA_SELECTION)->EnableWindow(fSelection);
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
@@ -76,22 +70,14 @@ void CHexDlgFillData::OnOK()
 
 	HEXMODIFY hms;
 	hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
-	hms.vecSpan = m_pHexCtrl->GetSelection();
-	if (iRadioAllSelection == IDC_HEXCTRL_FILLDATA_SELECTION && hms.vecSpan.empty())
+	if (iRadioAllSelection == IDC_HEXCTRL_FILLDATA_ALL)
 	{
-		//Should never happen
-		assert(false);
-		return;
-	}
-	else if (iRadioAllSelection == IDC_HEXCTRL_FILLDATA_ALL)
-	{
-		hms.vecSpan.clear();
-		hms.vecSpan.push_back({ 0, m_pHexCtrl->GetDataSize() });
-
-		//Prompt user
-		if (MessageBoxW(L"Are you sure?", L"Fill ALL data?", MB_YESNO | MB_ICONQUESTION) == IDNO)
+		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify All data?", MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
+		hms.vecSpan.emplace_back(HEXSPANSTRUCT { 0, m_pHexCtrl->GetDataSize() });
 	}
+	else
+		hms.vecSpan = m_pHexCtrl->GetSelection();
 
 	const auto pCombo = static_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT));
 	if (!pCombo)

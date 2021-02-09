@@ -158,21 +158,20 @@ BOOL CHexDlgSearch::OnInitDialog()
 
 void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
+	const auto* const pHexCtrl = GetHexCtrl();
+	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
+		return;
+
 	if (nState == WA_INACTIVE)
 		SetLayeredWindowAttributes(0, 150, LWA_ALPHA);
 	else
 	{
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 		m_stComboSearch.SetFocus();
-
-		const auto* const pHexCtrl = GetHexCtrl();
-		if (pHexCtrl->IsCreated() && pHexCtrl->IsDataSet())
-		{
-			const auto fMutable = pHexCtrl->IsMutable();
-			m_stComboReplace.EnableWindow(fMutable);
-			GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE)->EnableWindow(fMutable);
-			GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL)->EnableWindow(fMutable);
-		}
+		const auto fMutable = pHexCtrl->IsMutable();
+		m_stComboReplace.EnableWindow(fMutable);
+		GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE)->EnableWindow(fMutable);
+		GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL)->EnableWindow(fMutable);
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);

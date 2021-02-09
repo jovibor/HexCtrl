@@ -853,6 +853,15 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iRelPos)
 	}
 }
 
+bool CHexCtrl::HasSelection()const
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return false;
+
+	return m_pSelection->HasSelection();
+}
+
 auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTRUCT>
 {
 	assert(IsCreated());
@@ -874,7 +883,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 
 	const bool fDataSet = IsDataSet();
 	const bool fMutable = fDataSet ? IsMutable() : false;
-	const bool fSelection = fDataSet && m_pSelection->HasSelection();
+	const bool fSelection = fDataSet && HasSelection();
 	bool fAvail;
 
 	switch (eCmd)
@@ -1034,7 +1043,7 @@ void CHexCtrl::Redraw()
 			m_wstrInfo += wBuff;
 		}
 
-		if (m_pSelection->HasSelection())
+		if (HasSelection())
 		{
 			swprintf_s(wBuff, std::size(wBuff),
 				IsOffsetAsHex() ? L"Selected: 0x%llX [0x%llX-0x%llX]; " : L"Selected: %llu [%llu-%llu]; ",
@@ -1801,7 +1810,7 @@ void CHexCtrl::CaretToPageEnd()
 
 void CHexCtrl::ClipboardCopy(EClipboard enType)const
 {
-	if (!m_pSelection->HasSelection() || m_pSelection->GetSelSize() > 1024 * 1024 * 8) //8MB
+	if (!HasSelection() || m_pSelection->GetSelSize() > 1024 * 1024 * 8) //8MB
 	{
 		::MessageBoxW(nullptr, L"Selection size is too big to copy.\r\nTry to select less.", L"Error", MB_ICONERROR);
 		return;
@@ -1867,7 +1876,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)const
 
 void CHexCtrl::ClipboardPaste(EClipboard enType)
 {
-	if (!m_fMutable || !m_pSelection->HasSelection() || !::OpenClipboard(m_hWnd))
+	if (!m_fMutable || !HasSelection() || !::OpenClipboard(m_hWnd))
 		return;
 
 	const auto hClipboard = GetClipboardData(CF_TEXT);
@@ -2121,7 +2130,7 @@ auto CHexCtrl::CopyHexLE()const->std::wstring
 auto CHexCtrl::CopyOffset()const->std::wstring
 {
 	std::wstring wstrData;
-	if (m_pSelection->HasSelection())
+	if (HasSelection())
 	{
 		const auto vecSel = GetSelection();
 		wchar_t pwszOffset[32] { };
@@ -3524,7 +3533,7 @@ void CHexCtrl::ParentNotify(UINT uCode)const
 void CHexCtrl::Print()
 {
 	DWORD dwFlags;
-	if (m_pSelection->HasSelection())
+	if (HasSelection())
 		dwFlags = PD_ALLPAGES | PD_CURRENTPAGE | PD_PAGENUMS | PD_SELECTION;
 	else
 		dwFlags = PD_ALLPAGES | PD_CURRENTPAGE | PD_PAGENUMS | PD_NOSELECTION;
@@ -3871,7 +3880,7 @@ void CHexCtrl::SelAll()
 
 void CHexCtrl::SelAddDown()
 {
-	if (!m_pSelection->HasSelection())
+	if (!HasSelection())
 		return;
 
 	ULONGLONG ullClick { }, ullStart { }, ullSize { 0ULL };
@@ -3936,7 +3945,7 @@ void CHexCtrl::SelAddDown()
 
 void CHexCtrl::SelAddLeft()
 {
-	if (!m_pSelection->HasSelection())
+	if (!HasSelection())
 		return;
 
 	ULONGLONG ullClick { }, ullStart { }, ullSize { 0 };
@@ -3994,7 +4003,7 @@ void CHexCtrl::SelAddLeft()
 
 void CHexCtrl::SelAddRight()
 {
-	if (!m_pSelection->HasSelection())
+	if (!HasSelection())
 		return;
 
 	ULONGLONG ullClick { }, ullStart { }, ullSize { 0UL };
@@ -4057,7 +4066,7 @@ void CHexCtrl::SelAddRight()
 
 void CHexCtrl::SelAddUp()
 {
-	if (!m_pSelection->HasSelection())
+	if (!HasSelection())
 		return;
 
 	ULONGLONG ullClick { }, ullStart { 0 }, ullSize { 0 };
