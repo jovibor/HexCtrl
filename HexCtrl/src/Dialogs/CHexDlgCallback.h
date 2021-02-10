@@ -30,7 +30,6 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullProgBarMin { };
 		ULONGLONG m_ullProgBarMax { };
 		ULONGLONG m_ullProgBarCurr { };
-		ULONGLONG m_ullThousandth { };   //One thousandth part.
 		bool m_fCancel { false };
 		std::wstring m_wstrOperName { };
 		const UINT_PTR IDT_EXITCHECK { 0x1 };

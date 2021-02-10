@@ -34,9 +34,7 @@ BOOL CHexDlgCallback::OnInitDialog()
 
 	m_stProgBar.SetRange32(0, 1000);
 	m_stProgBar.SetPos(0);
-
-	m_ullThousandth = (m_ullProgBarMax - m_ullProgBarMin) / 1000;
-
+	
 	return TRUE;
 }
 
@@ -54,9 +52,8 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 		KillTimer(IDT_EXITCHECK);
 		OnCancel();
 	}
-
-	//How many thousandth parts have already passed.
-	int iPos = static_cast<int>((m_ullProgBarCurr - m_ullProgBarMin) / m_ullThousandth);
+	
+	int iPos = static_cast<int>(((m_ullProgBarCurr - m_ullProgBarMin) * 1000) / (m_ullProgBarMax - m_ullProgBarMin));
 	m_stProgBar.SetPos(iPos);
 
 	CDialogEx::OnTimer(nIDEvent);
