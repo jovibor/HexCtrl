@@ -32,10 +32,11 @@ BOOL CHexDlgCallback::OnInitDialog()
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPERNAME)->SetWindowTextW(m_wstrOperName.data());
 	SetTimer(IDT_EXITCHECK, 100, nullptr);
 
-	m_stProgBar.SetRange32(0, 1000);
+	constexpr auto iRange { 1000 };
+	m_stProgBar.SetRange32(0, iRange);
 	m_stProgBar.SetPos(0);
 
-	m_ullThousandth = (m_ullProgBarMax - m_ullProgBarMin) / 1000;
+	m_ullThousandth = (m_ullProgBarMax - m_ullProgBarMin) >= iRange ? (m_ullProgBarMax - m_ullProgBarMin) / iRange : 1;
 
 	return TRUE;
 }

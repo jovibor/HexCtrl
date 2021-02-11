@@ -913,13 +913,11 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		fAvail = fMutable && fSelection && IsClipboardFormatAvailable(CF_TEXT);
 		break;
 	case EHexCmd::CMD_MODIFY_DLG_OPERS:
+	case EHexCmd::CMD_MODIFY_DLG_FILLDATA:
 		fAvail = fMutable;
 		break;
 	case EHexCmd::CMD_MODIFY_FILLZEROS:
 		fAvail = fMutable && fSelection;
-		break;
-	case EHexCmd::CMD_MODIFY_DLG_FILLDATA:
-		fAvail = fMutable;
 		break;
 	case EHexCmd::CMD_MODIFY_UNDO:
 		fAvail = !m_deqUndo.empty();
@@ -3436,7 +3434,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 }
 
 template<typename T>
-void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ullSizeData, bool fBigEndian)
+void CHexCtrl::OperData(T* pData, const EHexOperMode eMode, const T tDataOper, const ULONGLONG ullSizeData, bool fBigEndian)
 {
 	/************************************************************
 	* OperData - function for Modify->Operations.
@@ -3447,23 +3445,20 @@ void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ull
 	* fBigEndian - Data is in big-endian byte order.
 	************************************************************/
 
-	if (pData == nullptr)
-		return;
+	assert(pData != nullptr);
 
-	const auto nChunks = ullSizeData / sizeof(T);
-	for (const auto* const pDataEnd = pData + nChunks; pData < pDataEnd; ++pData)
+	constexpr auto lmbSwap = [](T* pData)
 	{
+		if constexpr (sizeof(T) == sizeof(WORD))
+			*pData = _byteswap_ushort(*pData);
+		else if constexpr (sizeof(T) == sizeof(DWORD))
+			*pData = _byteswap_ulong(*pData);
+		else if constexpr (sizeof(T) == sizeof(QWORD))
+			*pData = _byteswap_uint64(*pData);
+	};
 
-		if (fBigEndian)
-		{
-			if constexpr (sizeof(T) == sizeof(WORD))
-				*pData = _byteswap_ushort(*pData);
-			else if constexpr (sizeof(T) == sizeof(DWORD))
-				*pData = _byteswap_ulong(*pData);
-			else if constexpr (sizeof(T) == sizeof(QWORD))
-				*pData = _byteswap_uint64(*pData);
-		}
-
+	constexpr auto lmbOper = [](T* pData, const EHexOperMode eMode, const T tDataOper, const auto lmbSwap)
+	{
 		switch (eMode)
 		{
 		case EHexOperMode::OPER_OR:
@@ -3484,6 +3479,9 @@ void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ull
 		case EHexOperMode::OPER_SHR:
 			*pData >>= tDataOper;
 			break;
+		case EHexOperMode::OPER_SWAP:
+			lmbSwap(pData);
+			break;
 		case EHexOperMode::OPER_ADD:
 			*pData += tDataOper;
 			break;
@@ -3494,7 +3492,7 @@ void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ull
 			*pData *= tDataOper;
 			break;
 		case EHexOperMode::OPER_DIVIDE:
-			if (tDataOper > 0) //Division by Zero check.
+			if (tDataOper > 0) //Division by zero check.
 				*pData /= tDataOper;
 			break;
 		case EHexOperMode::OPER_CEILING:
@@ -3506,15 +3504,23 @@ void CHexCtrl::OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ull
 				*pData = tDataOper;
 			break;
 		}
+	};
 
-		if (fBigEndian)
+	const auto nChunks = ullSizeData / sizeof(T);
+	if (fBigEndian)
+	{
+		for (const auto* const pDataEnd = pData + nChunks; pData < pDataEnd; ++pData)
 		{
-			if constexpr (sizeof(T) == sizeof(WORD))
-				*pData = _byteswap_ushort(*pData);
-			else if constexpr (sizeof(T) == sizeof(DWORD))
-				*pData = _byteswap_ulong(*pData);
-			else if constexpr (sizeof(T) == sizeof(QWORD))
-				*pData = _byteswap_uint64(*pData);
+			lmbSwap(pData);
+			lmbOper(pData, eMode, tDataOper, lmbSwap);
+			lmbSwap(pData);
+		}
+	}
+	else
+	{
+		for (const auto* const pDataEnd = pData + nChunks; pData < pDataEnd; ++pData)
+		{
+			lmbOper(pData, eMode, tDataOper, lmbSwap);
 		}
 	}
 }
@@ -4760,10 +4766,10 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 					TtBkmShow(true, POINT { ptScreen.x, ptScreen.y });
 				}
 			}
-			else
+			else if (m_pBkmTtCurr != nullptr)
 				TtBkmShow(false);
 		}
-		else if (m_pBkmTtCurr) //If there is already bkm tooltip shown, but cursor is outside of data chunks.
+		else if (m_pBkmTtCurr != nullptr) //If there is already bkm tooltip shown, but cursor is outside of data chunks.
 			TtBkmShow(false);
 
 		m_pScrollV->OnMouseMove(nFlags, point);

@@ -117,9 +117,11 @@ BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
 	//Enable or disable big/little-endian radio buttons.
 	const auto iRadioOperation = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_OR, IDC_HEXCTRL_OPERS_RADIO_FLOOR);
 	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
-	const BOOL fBeLeEnable { iRadioDataSize != IDC_HEXCTRL_OPERS_RADIO_BYTE && iRadioOperation != IDC_HEXCTRL_OPERS_RADIO_NOT };
+	const BOOL fBeLeEnable { iRadioDataSize != IDC_HEXCTRL_OPERS_RADIO_BYTE && iRadioOperation != IDC_HEXCTRL_OPERS_RADIO_NOT
+		&& iRadioOperation != IDC_HEXCTRL_OPERS_RADIO_SWAP };
 	GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_LE)->EnableWindow(fBeLeEnable);
 	GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_BE)->EnableWindow(fBeLeEnable);
+	GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_SWAP)->EnableWindow(iRadioDataSize != IDC_HEXCTRL_OPERS_RADIO_BYTE);
 
 	return fMsgHere ? TRUE : CDialogEx::OnCommand(wParam, lParam);
 }
@@ -136,17 +138,16 @@ void CHexDlgOpers::OnOK()
 	const auto iRadioByteOrder = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_LE, IDC_HEXCTRL_OPERS_RADIO_BE);
 	const auto iRadioAllSelection = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_ALL, IDC_HEXCTRL_OPERS_RADIO_SELECTION);
 	const auto fBigEndian = iRadioByteOrder == IDC_HEXCTRL_OPERS_RADIO_BE && iRadioDataSize != IDC_HEXCTRL_OPERS_RADIO_BYTE
-		&& iRadioOperation != IDC_HEXCTRL_OPERS_RADIO_NOT;
+		&& iRadioOperation != IDC_HEXCTRL_OPERS_RADIO_NOT && iRadioOperation != IDC_HEXCTRL_OPERS_RADIO_SWAP;
 
 	HEXMODIFY hms;
 	hms.enModifyMode = EHexModifyMode::MODIFY_OPERATION;
-	hms.fBigEndian = iRadioDataSize != IDC_HEXCTRL_OPERS_RADIO_BYTE && iRadioByteOrder == IDC_HEXCTRL_OPERS_RADIO_BE;
 
 	/***************************************************************************
 	* Some operations don't need to swap the whole data in big-endian mode.
 	* Instead the Operational data-bytes can be swapped here just once.
 	* Binary OR/XOR/AND are good examples, binary NOT doesn't need swap at all.
-	* The fSwapHere flag swows exactly this, that data can be swapped here.
+	* The fSwapHere flag shows exactly this, that data can be swapped here.
 	***************************************************************************/
 	bool fSwapHere { false };
 	int iEditID { 0 };
@@ -177,6 +178,9 @@ void CHexDlgOpers::OnOK()
 	case IDC_HEXCTRL_OPERS_RADIO_SHR:
 		hms.enOperMode = EHexOperMode::OPER_SHR;
 		iEditID = IDC_HEXCTRL_OPERS_EDIT_SHR;
+		break;
+	case IDC_HEXCTRL_OPERS_RADIO_SWAP:
+		hms.enOperMode = EHexOperMode::OPER_SWAP;
 		break;
 	case IDC_HEXCTRL_OPERS_RADIO_ADD:
 		hms.enOperMode = EHexOperMode::OPER_ADD;
@@ -231,7 +235,7 @@ void CHexDlgOpers::OnOK()
 		GetDlgItemTextW(iEditID, pwszEditText, static_cast<int>(std::size(pwszEditText)));
 
 		std::wstring wstrErr { };
-		if (wcsnlen(pwszEditText, std::size(pwszEditText)) == 0)
+		if (pwszEditText[0] == L'\0') //Edit field emptiness check.
 			wstrErr = L"Missing value!";
 		else if (!wstr2num(pwszEditText, llData))
 			wstrErr = L"Wrong number format!";
@@ -270,7 +274,6 @@ void CHexDlgOpers::OnOK()
 	}
 	else
 		hms.vecSpan = m_pHexCtrl->GetSelection();
-
 
 	hms.fBigEndian = fBigEndian && !fSwapHere;
 	hms.pData = reinterpret_cast<std::byte*>(&llData);
