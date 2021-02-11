@@ -3450,11 +3450,11 @@ void CHexCtrl::OperData(T* pData, const EHexOperMode eMode, const T tDataOper, c
 	constexpr auto lmbSwap = [](T* pData)
 	{
 		if constexpr (sizeof(T) == sizeof(WORD))
-			*pData = _byteswap_ushort(*pData);
+			*pData = static_cast<T>(_byteswap_ushort(static_cast<WORD>(*pData)));
 		else if constexpr (sizeof(T) == sizeof(DWORD))
-			*pData = _byteswap_ulong(*pData);
+			*pData = static_cast<T>(_byteswap_ulong(static_cast<DWORD>(*pData)));
 		else if constexpr (sizeof(T) == sizeof(QWORD))
-			*pData = _byteswap_uint64(*pData);
+			*pData = static_cast<T>(_byteswap_uint64(static_cast<QWORD>(*pData)));
 	};
 
 	constexpr auto lmbOper = [](T* pData, const EHexOperMode eMode, const T tDataOper, const auto lmbSwap)
