@@ -905,12 +905,11 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case EHexCmd::CMD_CLPBRD_COPYCARR:
 	case EHexCmd::CMD_CLPBRD_COPYGREPHEX:
 	case EHexCmd::CMD_CLPBRD_COPYPRNTSCRN:
-	case EHexCmd::CMD_CLPBRD_COPYOFFSET:
 		fAvail = fSelection;
 		break;
 	case EHexCmd::CMD_CLPBRD_PASTEHEX:
 	case EHexCmd::CMD_CLPBRD_PASTETEXT:
-		fAvail = fMutable && fSelection && IsClipboardFormatAvailable(CF_TEXT);
+		fAvail = fMutable && IsClipboardFormatAvailable(CF_TEXT);
 		break;
 	case EHexCmd::CMD_MODIFY_DLG_OPERS:
 	case EHexCmd::CMD_MODIFY_DLG_FILLDATA:
@@ -940,6 +939,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case EHexCmd::CMD_SEL_MARKEND:
 	case EHexCmd::CMD_SEL_ALL:
 	case EHexCmd::CMD_DLG_DATAINTERP:
+	case EHexCmd::CMD_CLPBRD_COPYOFFSET:
 		fAvail = fDataSet;
 		break;
 	case EHexCmd::CMD_SEARCH_NEXT:
@@ -1808,7 +1808,7 @@ void CHexCtrl::CaretToPageEnd()
 
 void CHexCtrl::ClipboardCopy(EClipboard enType)const
 {
-	if (!HasSelection() || m_pSelection->GetSelSize() > 1024 * 1024 * 8) //8MB
+	if (m_pSelection->GetSelSize() > 1024 * 1024 * 8) //8MB
 	{
 		::MessageBoxW(nullptr, L"Selection size is too big to copy.\r\nTry to select less.", L"Error", MB_ICONERROR);
 		return;
@@ -1874,7 +1874,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)const
 
 void CHexCtrl::ClipboardPaste(EClipboard enType)
 {
-	if (!m_fMutable || !HasSelection() || !::OpenClipboard(m_hWnd))
+	if (!IsMutable() || !::OpenClipboard(m_hWnd))
 		return;
 
 	const auto hClipboard = GetClipboardData(CF_TEXT);
@@ -1940,7 +1940,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 		break;
 	}
 
-	hmd.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, ullSizeToModify });
+	hmd.vecSpan.emplace_back(HEXSPANSTRUCT { GetCaretPos(), ullSizeToModify });
 	ModifyData(hmd);
 
 	GlobalUnlock(hClipboard);
@@ -2127,16 +2127,10 @@ auto CHexCtrl::CopyHexLE()const->std::wstring
 
 auto CHexCtrl::CopyOffset()const->std::wstring
 {
-	std::wstring wstrData;
-	if (HasSelection())
-	{
-		const auto vecSel = GetSelection();
-		wchar_t pwszOffset[32] { };
-		UllToWchars(vecSel.front().ullOffset, pwszOffset, static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
-		if (m_fOffsetAsHex)
-			wstrData += L"0x";
-		wstrData += pwszOffset;
-	}
+	wchar_t pwszOffset[32] { };
+	UllToWchars(GetCaretPos(), pwszOffset, static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
+	std::wstring wstrData { m_fOffsetAsHex ? L"0x" : L"" };
+	wstrData += pwszOffset;
 
 	return wstrData;
 }
