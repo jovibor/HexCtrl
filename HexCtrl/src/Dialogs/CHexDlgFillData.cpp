@@ -122,6 +122,7 @@ void CHexDlgFillData::OnOK()
 	}
 
 	m_pHexCtrl->ModifyData(hms);
+	m_pHexCtrl->Redraw();
 	::SetFocus(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN));
 
 	CDialogEx::OnOK();

@@ -278,6 +278,7 @@ void CHexDlgOpers::OnOK()
 	hms.fBigEndian = fBigEndian && !fSwapHere;
 	hms.pData = reinterpret_cast<std::byte*>(&llData);
 	m_pHexCtrl->ModifyData(hms);
+	m_pHexCtrl->Redraw();
 	::SetFocus(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN));
 
 	CDialogEx::OnOK();

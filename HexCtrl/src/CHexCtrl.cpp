@@ -3045,6 +3045,7 @@ void CHexCtrl::FillWithZeros()
 	std::byte byteZero { 0 };
 	hms.pData = &byteZero;
 	ModifyData(hms);
+	Redraw();
 }
 
 auto CHexCtrl::GetBottomLine()const->ULONGLONG
@@ -3190,9 +3191,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	}
 
 	ParentNotify(HEXCTRL_MSG_SETDATA);
-
-	if (hms.fRedraw)
-		RedrawWindow();
 }
 
 void CHexCtrl::ModifyDefault(const HEXMODIFY& hms)

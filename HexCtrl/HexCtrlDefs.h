@@ -270,6 +270,5 @@ namespace HEXCTRL
 		ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
 		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
 		bool           fBigEndian { false };    //Treat the data being modified as a big endian, used only in MODIFY_OPERATION mode.
-		bool           fRedraw { true };        //Redraw HexCtrl's window after data changes?
 	};
 };

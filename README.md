@@ -822,10 +822,10 @@ struct HEXMODIFY
 {
     EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
     EHexOperMode   enOperMode { };          //Operation mode, used only if enModifyMode == MODIFY_OPERATION.
-    std::byte*  pData { };                  //Pointer to a data to be set.
-    ULONGLONG   ullDataSize { };            //Size of the data pData is pointing to.
+    std::byte*     pData { };               //Pointer to a data to be set.
+    ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
     std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
-    bool        fRedraw { true };           //Redraw HexCtrl's window after data changes?
+    bool           fBigEndian { false };    //Treat the data being modified as a big endian, used only in MODIFY_OPERATION mode.
 };
 ```
 
@@ -932,8 +932,8 @@ Enum of the data operation mode, used in [`HEXMODIFY`](#hexmodify) when `HEXMODI
 ```cpp
 enum class EHexOperMode : WORD
 {
-    OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR,
-    OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE
+    OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_SWAP,
+    OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE, OPER_CEILING, OPER_FLOOR
 };
 ```
 

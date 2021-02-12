@@ -78,7 +78,6 @@ namespace HEXCTRL::INTERNAL
 
 		HEXMODIFY hms;
 		hms.enModifyMode = EHexModifyMode::MODIFY_DEFAULT;
-		hms.fRedraw = false;
 		hms.pData = reinterpret_cast<std::byte*>(&tData);
 		hms.ullDataSize = sizeof(T);
 		hms.vecSpan.emplace_back(HEXSPANSTRUCT { ullOffset, sizeof(T) });

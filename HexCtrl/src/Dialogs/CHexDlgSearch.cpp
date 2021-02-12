@@ -881,7 +881,7 @@ void CHexDlgSearch::Search()
 				{
 					if (Find(ullStart, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, true, pDlgClbk, false))
 					{
-						Replace(ullStart, m_pReplaceData, m_nSizeSearch, m_nSizeReplace, false);
+						Replace(ullStart, m_pReplaceData, m_nSizeSearch, m_nSizeReplace);
 						ullStart += m_nSizeReplace <= m_ullStep ? m_ullStep : m_nSizeReplace;
 						m_fFound = true;
 						++m_dwReplaced;
@@ -1162,13 +1162,12 @@ CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, 
 	return { fResult, fCanceled };
 }
 
-void CHexDlgSearch::Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw)const
+void CHexDlgSearch::Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace)const
 {
 	HEXMODIFY hms;
 	hms.vecSpan.emplace_back(HEXSPANSTRUCT { ullIndex, nSizeData });
 	hms.ullDataSize = nSizeReplace;
 	hms.pData = pData;
-	hms.fRedraw = fRedraw;
 	GetHexCtrl()->ModifyData(hms);
 }
 

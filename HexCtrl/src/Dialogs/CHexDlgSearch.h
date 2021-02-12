@@ -60,7 +60,7 @@ namespace HEXCTRL::INTERNAL
 		//ullStart will return index of found occurence, if any.
 		SFIND Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSizeSearch,
 			ULONGLONG ullEndSentinel, bool fForward = true, CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true)const;
-		void Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace, bool fRedraw = true)const;
+		void Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace)const;
 		void ResetSearch();
 		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
 		void ComboSearchFill(LPCWSTR pwsz);
