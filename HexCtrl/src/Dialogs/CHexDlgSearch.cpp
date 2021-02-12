@@ -569,7 +569,7 @@ void CHexDlgSearch::PrepareSearch()
 	{
 		m_ullBoundBegin = 0;
 		m_ullBoundEnd = ullDataSize - m_nSizeSearch;
-		m_ullEndSentinel = pHexCtrl->GetDataSize();
+		m_ullEndSentinel = ullDataSize;
 	}
 
 	if (m_ullOffsetCurr + m_nSizeSearch > ullDataSize || m_ullOffsetCurr + m_nSizeReplace > ullDataSize)
