@@ -241,13 +241,20 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* EHexOperMode - Enum of the data operation mode, used in HEXMODIFY when                    *
-	* HEXMODIFY::enModifyMode is set to MODIFY_OPERATION.                                       *
+	* EHexOperMode - Data Operation mode, used in EHexModifyMode::MODIFY_OPERATION mode.        *
 	********************************************************************************************/
 	enum class EHexOperMode : WORD
 	{
 		OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_SWAP,
 		OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE, OPER_CEILING, OPER_FLOOR
+	};
+
+	/********************************************************************************************
+	* EHexOperSize - Data size to operate on, used in EHexModifyMode::MODIFY_OPERATION mode.    *
+	********************************************************************************************/
+	enum class EHexOperSize : WORD
+	{
+		SIZE_BYTE = 0x01, SIZE_WORD = 0x02, SIZE_DWORD = 0x04, SIZE_QWORD = 0x08
 	};
 
 	/********************************************************************************************
@@ -258,14 +265,15 @@ namespace HEXCTRL
 	*   For example : if SUM(vecSpan.ullSize) = 9, ullDataSize = 3 and enModifyMode is set to   *
 	* EHexModifyMode::MODIFY_REPEAT, bytes in memory at vecSpan.ullOffset position are          *
 	* 123456789, and bytes pointed to by pData are 345, then, after modification, bytes at      *
-	* vecSpan.ullOffset will be 345345345. If enModifyMode is equal to                          *
-	* EHexModifyMode::MODIFY_OPERATION then enOperMode comes into play, showing what kind of    *
-	* operation must be performed on data.                                                      *
+	* vecSpan.ullOffset will be 345345345.                                                      *
+	* If enModifyMode is equal to MODIFY_OPERATION then enOperMode comes into play, showing     *
+	* what kind of operation must be performed on data, with the enOperSize showing the size.   *
 	********************************************************************************************/
 	struct HEXMODIFY
 	{
 		EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
 		EHexOperMode   enOperMode { };          //Operation mode, used only if enModifyMode == MODIFY_OPERATION.
+		EHexOperSize   enOperSize { };          //Operation data size.
 		std::byte*     pData { };               //Pointer to a data to be set.
 		ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
 		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.

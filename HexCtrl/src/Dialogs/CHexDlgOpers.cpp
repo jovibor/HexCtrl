@@ -213,16 +213,16 @@ void CHexDlgOpers::OnOK()
 	switch (iRadioDataSize)
 	{
 	case IDC_HEXCTRL_OPERS_RADIO_BYTE:
-		hms.ullDataSize = sizeof(BYTE);
+		hms.enOperSize = EHexOperSize::SIZE_BYTE;
 		break;
 	case IDC_HEXCTRL_OPERS_RADIO_WORD:
-		hms.ullDataSize = sizeof(WORD);
+		hms.enOperSize = EHexOperSize::SIZE_WORD;
 		break;
 	case IDC_HEXCTRL_OPERS_RADIO_DWORD:
-		hms.ullDataSize = sizeof(DWORD);
+		hms.enOperSize = EHexOperSize::SIZE_DWORD;
 		break;
 	case IDC_HEXCTRL_OPERS_RADIO_QWORD:
-		hms.ullDataSize = sizeof(QWORD);
+		hms.enOperSize = EHexOperSize::SIZE_QWORD;
 		break;
 	default:
 		break;
@@ -249,15 +249,15 @@ void CHexDlgOpers::OnOK()
 
 		if (fBigEndian && fSwapHere)
 		{
-			switch (hms.ullDataSize)
+			switch (hms.enOperSize)
 			{
-			case (sizeof(WORD)):
+			case EHexOperSize::SIZE_WORD:
 				llData = static_cast<LONGLONG>(_byteswap_ushort(static_cast<WORD>(llData)));
 				break;
-			case (sizeof(DWORD)):
+			case EHexOperSize::SIZE_DWORD:
 				llData = static_cast<LONGLONG>(_byteswap_ulong(static_cast<DWORD>(llData)));
 				break;
-			case (sizeof(QWORD)):
+			case EHexOperSize::SIZE_QWORD:
 				llData = static_cast<LONGLONG>(_byteswap_uint64(static_cast<QWORD>(llData)));
 				break;
 			default:

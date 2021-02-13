@@ -3198,10 +3198,6 @@ void CHexCtrl::ModifyDefault(const HEXMODIFY& hms)
 
 void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 {
-	assert(hms.ullDataSize > 0 && ((hms.ullDataSize & (hms.ullDataSize - 1)) == 0)); //Power of 2 only! 
-	if (hms.ullDataSize == 0 || hms.ullDataSize > sizeof(QWORD))
-		return;
-
 	const auto& vecSpanRef = hms.vecSpan;
 	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
 	const auto ullTotalSize = std::accumulate(vecSpanRef.begin(), vecSpanRef.end(), 0ULL,
@@ -3214,7 +3210,7 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 		{
 			ULONGLONG ullSizeChunk { };
 			ULONGLONG ullChunks { };
-			CalcChunksFromSize(iterSel.ullSize, hms.ullDataSize, ullSizeChunk, ullChunks);
+			CalcChunksFromSize(iterSel.ullSize, static_cast<ULONGLONG>(hms.enOperSize), ullSizeChunk, ullChunks);
 
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
 			{
@@ -3225,9 +3221,9 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 					ullSizeChunk = (iterSel.ullOffset + iterSel.ullSize) - ullOffset;
 
 				const auto pData = GetData({ ullOffset, ullSizeChunk });
-				switch (hms.ullDataSize)
+				switch (hms.enOperSize)
 				{
-				case (sizeof(BYTE)):
+				case EHexOperSize::SIZE_BYTE:
 				{
 					BYTE bDataOper { };
 					if (hms.pData) //pDataOper might be null for, say, EHexOperMode::OPER_NOT.
@@ -3236,7 +3232,7 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 					OperData(pOper, hms.enOperMode, bDataOper, ullSizeChunk, hms.fBigEndian);
 				}
 				break;
-				case (sizeof(WORD)):
+				case EHexOperSize::SIZE_WORD:
 				{
 					WORD wDataOper { };
 					if (hms.pData)
@@ -3245,7 +3241,7 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 					OperData(pOper, hms.enOperMode, wDataOper, ullSizeChunk, hms.fBigEndian);
 				}
 				break;
-				case (sizeof(DWORD)):
+				case EHexOperSize::SIZE_DWORD:
 				{
 					DWORD dwDataOper { };
 					if (hms.pData)
@@ -3254,7 +3250,7 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 					OperData(pOper, hms.enOperMode, dwDataOper, ullSizeChunk, hms.fBigEndian);
 				}
 				break;
-				case (sizeof(QWORD)):
+				case EHexOperSize::SIZE_QWORD:
 				{
 					QWORD qwDataOper { };
 					if (hms.pData)
