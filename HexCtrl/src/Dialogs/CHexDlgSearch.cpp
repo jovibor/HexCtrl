@@ -51,7 +51,7 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_FINDALL, &CHexDlgSearch::OnButtonFindAll)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLACE, &CHexDlgSearch::OnButtonReplace)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL, &CHexDlgSearch::OnButtonReplaceAll)
-	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_CHECK_SELECTION, &CHexDlgSearch::OnCheckSel)
+	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_CHECK_SEL, &CHexDlgSearch::OnCheckSel)
 	ON_CBN_SELCHANGE(IDC_HEXCTRL_SEARCH_COMBO_MODE, &CHexDlgSearch::OnComboModeSelChange)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListItemChanged)
@@ -62,7 +62,7 @@ END_MESSAGE_MAP()
 void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_SELECTION, m_stCheckSel);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_SEL, m_stCheckSel);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_WILDCARD, m_stCheckWcard);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_BE, m_stCheckBE);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_MATCHCASE, m_stCheckMatchC);
@@ -90,6 +90,9 @@ BOOL CHexDlgSearch::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	m_stBrushDefault.CreateSolidBrush(m_clrBkTextArea);
+	constexpr auto iTextLimit { 512 };
+	m_stComboSearch.LimitText(iTextLimit);
+	m_stComboReplace.LimitText(iTextLimit);
 
 	auto iIndex = m_stComboMode.AddString(L"Hex Bytes");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_HEX));
@@ -369,7 +372,7 @@ void CHexDlgSearch::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 
 HBRUSH CHexDlgSearch::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
-	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)
+	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_SEARCH_STATIC_RESULT)
 	{
 		pDC->SetBkColor(m_clrBkTextArea);
 		pDC->SetTextColor(m_fFound ? m_clrSearchFound : m_clrSearchFailed);
@@ -1007,7 +1010,7 @@ void CHexDlgSearch::Search()
 		}
 	}
 
-	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)->SetWindowTextW(wstrInfo.data());
+	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_RESULT)->SetWindowTextW(wstrInfo.data());
 }
 
 CHexDlgSearch::SFIND CHexDlgSearch::Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch,
@@ -1267,7 +1270,7 @@ void CHexDlgSearch::ResetSearch()
 	m_pListMain->SetItemCountEx(0);
 	m_vecSearchRes.clear();
 	GetHexCtrl()->SetSelection({ }, false, true); //Clear selection highlight.
-	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_TEXTBOTTOM)->SetWindowTextW(L"");
+	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_RESULT)->SetWindowTextW(L"");
 }
 
 void CHexDlgSearch::OnDestroy()

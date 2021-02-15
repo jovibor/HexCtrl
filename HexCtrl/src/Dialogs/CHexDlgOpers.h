@@ -22,8 +22,11 @@ namespace HEXCTRL::INTERNAL
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		void OnOK()override;
+		EHexOperMode GetOperMode()const;
+		void CheckWndAvail()const;
 		DECLARE_MESSAGE_MAP()
 	private:
 		IHexCtrl* m_pHexCtrl { };
+		CComboBox m_stComboOper;  //Data operation combo-box.
 	};
 }

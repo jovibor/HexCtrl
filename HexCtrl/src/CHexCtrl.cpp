@@ -3206,59 +3206,39 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 
 	CHexDlgCallback dlgClbk(L"Modifying...", vecSpanRef.begin()->ullOffset, vecSpanRef.back().ullOffset + vecSpanRef.back().ullSize, this);
 	std::thread thrd([&]() {
-		for (const auto& iterSel : vecSpanRef) //Selections vector's size times.
+		for (const auto& iterSpan : vecSpanRef) //Span-vector's size times.
 		{
 			ULONGLONG ullSizeChunk { };
 			ULONGLONG ullChunks { };
-			CalcChunksFromSize(iterSel.ullSize, static_cast<ULONGLONG>(hms.enOperSize), ullSizeChunk, ullChunks);
+			CalcChunksFromSize(iterSpan.ullSize, static_cast<ULONGLONG>(hms.enOperSize), ullSizeChunk, ullChunks);
 
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
 			{
-				const auto ullOffset = iterSel.ullOffset + (iterChunk * ullSizeChunk);
+				const auto ullOffset = iterSpan.ullOffset + (iterChunk * ullSizeChunk);
 				if (ullOffset + ullSizeChunk > m_ullDataSize) //Overflow check.
 					ullSizeChunk = m_ullDataSize - ullOffset;
-				if (ullOffset + ullSizeChunk > iterSel.ullOffset + iterSel.ullSize)
-					ullSizeChunk = (iterSel.ullOffset + iterSel.ullSize) - ullOffset;
+				if (ullOffset + ullSizeChunk > iterSpan.ullOffset + iterSpan.ullSize)
+					ullSizeChunk = (iterSpan.ullOffset + iterSpan.ullSize) - ullOffset;
 
 				const auto pData = GetData({ ullOffset, ullSizeChunk });
 				switch (hms.enOperSize)
 				{
 				case EHexOperSize::SIZE_BYTE:
-				{
-					BYTE bDataOper { };
-					if (hms.pData) //pDataOper might be null for, say, EHexOperMode::OPER_NOT.
-						bDataOper = *reinterpret_cast<PBYTE>(hms.pData);
-					auto pOper = reinterpret_cast<PBYTE>(pData);
-					OperData(pOper, hms.enOperMode, bDataOper, ullSizeChunk, hms.fBigEndian);
-				}
-				break;
+					OperData(reinterpret_cast<PBYTE>(pData), hms.enOperMode,
+						hms.pData != nullptr ? *reinterpret_cast<PBYTE>(hms.pData) : static_cast<BYTE>(0), ullSizeChunk, hms.fBigEndian);
+					break;
 				case EHexOperSize::SIZE_WORD:
-				{
-					WORD wDataOper { };
-					if (hms.pData)
-						wDataOper = *reinterpret_cast<PWORD>(hms.pData);
-					auto pOper = reinterpret_cast<PWORD>(pData);
-					OperData(pOper, hms.enOperMode, wDataOper, ullSizeChunk, hms.fBigEndian);
-				}
-				break;
+					OperData(reinterpret_cast<PWORD>(pData), hms.enOperMode,
+						hms.pData != nullptr ? *reinterpret_cast<PWORD>(hms.pData) : static_cast<WORD>(0), ullSizeChunk, hms.fBigEndian);
+					break;
 				case EHexOperSize::SIZE_DWORD:
-				{
-					DWORD dwDataOper { };
-					if (hms.pData)
-						dwDataOper = *reinterpret_cast<PDWORD>(hms.pData);
-					auto pOper = reinterpret_cast<PDWORD>(pData);
-					OperData(pOper, hms.enOperMode, dwDataOper, ullSizeChunk, hms.fBigEndian);
-				}
-				break;
+					OperData(reinterpret_cast<PDWORD>(pData), hms.enOperMode,
+						hms.pData != nullptr ? *reinterpret_cast<PDWORD>(hms.pData) : static_cast<DWORD>(0), ullSizeChunk, hms.fBigEndian);
+					break;
 				case EHexOperSize::SIZE_QWORD:
-				{
-					QWORD qwDataOper { };
-					if (hms.pData)
-						qwDataOper = *reinterpret_cast<PQWORD>(hms.pData);
-					auto pOper = reinterpret_cast<PQWORD>(pData);
-					OperData(pOper, hms.enOperMode, qwDataOper, ullSizeChunk, hms.fBigEndian);
-				}
-				break;
+					OperData(reinterpret_cast<PQWORD>(pData), hms.enOperMode,
+						hms.pData != nullptr ? *reinterpret_cast<PQWORD>(hms.pData) : static_cast<QWORD>(0), ullSizeChunk, hms.fBigEndian);
+					break;
 				default:
 					break;
 				}
@@ -3293,22 +3273,22 @@ void CHexCtrl::ModifyRepeat(const HEXMODIFY& hms)
 
 	CHexDlgCallback dlgClbk(L"Modifying...", vecSpanRef.begin()->ullOffset, vecSpanRef.back().ullOffset + vecSpanRef.back().ullSize, this);
 	std::thread thrd([&]() {
-		for (const auto& iterSel : vecSpanRef) //Selections vector's size times.
+		for (const auto& iterSpan : vecSpanRef) //Span-vector's size times.
 		{
 			if (hms.ullDataSize == sizeof(std::byte) || hms.ullDataSize == sizeof(WORD) //Special cases for fast std::fill.
 				|| hms.ullDataSize == sizeof(DWORD) || hms.ullDataSize == sizeof(QWORD))
 			{
 				ULONGLONG ullSizeChunk { };
 				ULONGLONG ullChunks { };
-				CalcChunksFromSize(iterSel.ullSize, hms.ullDataSize, ullSizeChunk, ullChunks);
+				CalcChunksFromSize(iterSpan.ullSize, hms.ullDataSize, ullSizeChunk, ullChunks);
 
 				for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
 				{
-					ullOffset = iterSel.ullOffset + (iterChunk * ullSizeChunk);
+					ullOffset = iterSpan.ullOffset + (iterChunk * ullSizeChunk);
 					if (ullOffset + ullSizeChunk > m_ullDataSize) //Overflow check.
 						ullSizeChunk = m_ullDataSize - ullOffset;
-					if (ullOffset + ullSizeChunk > iterSel.ullOffset + iterSel.ullSize)
-						ullSizeChunk = (iterSel.ullOffset + iterSel.ullSize) - ullOffset;
+					if (ullOffset + ullSizeChunk > iterSpan.ullOffset + iterSpan.ullSize)
+						ullSizeChunk = (iterSpan.ullOffset + iterSpan.ullSize) - ullOffset;
 
 					pData = GetData({ ullOffset, ullSizeChunk });
 					switch (hms.ullDataSize)
@@ -3342,11 +3322,11 @@ void CHexCtrl::ModifyRepeat(const HEXMODIFY& hms)
 			}
 			else
 			{
-				//Fill iterSel.ullSize bytes with hms.ullDataSize bytes iterSel.ullSize / hms.ullDataSize times.
-				const ULONGLONG ullChunks = (iterSel.ullSize >= hms.ullDataSize) ? iterSel.ullSize / hms.ullDataSize : 0;
+				//Fill iterSpan.ullSize bytes with hms.ullDataSize bytes iterSpan.ullSize / hms.ullDataSize times.
+				const ULONGLONG ullChunks = (iterSpan.ullSize >= hms.ullDataSize) ? iterSpan.ullSize / hms.ullDataSize : 0;
 				for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
 				{
-					ullOffset = static_cast<size_t>(iterSel.ullOffset) +
+					ullOffset = static_cast<size_t>(iterSpan.ullOffset) +
 						static_cast<size_t>(iterChunk) * static_cast<size_t>(hms.ullDataSize);
 
 					pData = GetData({ ullOffset, hms.ullDataSize });
@@ -3422,7 +3402,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 }
 
 template<typename T>
-void CHexCtrl::OperData(T* pData, const EHexOperMode eMode, const T tDataOper, const ULONGLONG ullSizeData, bool fBigEndian)
+void CHexCtrl::OperData(T* pData, const EHexOperMode eMode, const T tDataOper, const ULONGLONG ullSizeData, const bool fBigEndian)
 {
 	/************************************************************
 	* OperData - function for Modify->Operations.
@@ -3466,6 +3446,26 @@ void CHexCtrl::OperData(T* pData, const EHexOperMode eMode, const T tDataOper, c
 			break;
 		case EHexOperMode::OPER_SHR:
 			*pData >>= tDataOper;
+			break;
+		case EHexOperMode::OPER_ROTL:
+			if constexpr (sizeof(T) == sizeof(BYTE))
+				*pData = static_cast<T>(_rotl8(static_cast<BYTE>(*pData), static_cast<unsigned char>(tDataOper)));
+			else if constexpr (sizeof(T) == sizeof(WORD))
+				*pData = static_cast<T>(_rotl16(static_cast<WORD>(*pData), static_cast<unsigned char>(tDataOper)));
+			else if constexpr (sizeof(T) == sizeof(DWORD))
+				*pData = static_cast<T>(_rotl(static_cast<DWORD>(*pData), static_cast<unsigned char>(tDataOper)));
+			else if constexpr (sizeof(T) == sizeof(QWORD))
+				*pData = static_cast<T>(_rotl64(static_cast<QWORD>(*pData), static_cast<unsigned char>(tDataOper)));
+			break;
+		case EHexOperMode::OPER_ROTR:
+			if constexpr (sizeof(T) == sizeof(BYTE))
+				*pData = static_cast<T>(_rotr8(static_cast<BYTE>(*pData), static_cast<unsigned char>(tDataOper)));
+			else if constexpr (sizeof(T) == sizeof(WORD))
+				*pData = static_cast<T>(_rotr16(static_cast<WORD>(*pData), static_cast<unsigned char>(tDataOper)));
+			else if constexpr (sizeof(T) == sizeof(DWORD))
+				*pData = static_cast<T>(_rotr(static_cast<DWORD>(*pData), static_cast<unsigned char>(tDataOper)));
+			else if constexpr (sizeof(T) == sizeof(QWORD))
+				*pData = static_cast<T>(_rotr64(static_cast<QWORD>(*pData), static_cast<unsigned char>(tDataOper)));
 			break;
 		case EHexOperMode::OPER_SWAP:
 			lmbSwap(pData);

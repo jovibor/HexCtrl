@@ -34,10 +34,11 @@ BOOL CHexDlgFillData::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16, IDC_HEXCTRL_FILLDATA_RADIO_HEX);
-	CheckRadioButton(IDC_HEXCTRL_FILLDATA_ALL, IDC_HEXCTRL_FILLDATA_SELECTION, IDC_HEXCTRL_FILLDATA_ALL);
+	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_ALL, IDC_HEXCTRL_FILLDATA_RADIO_SEL, IDC_HEXCTRL_FILLDATA_RADIO_ALL);
 
-	if (const auto pCombo = static_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT)); pCombo != nullptr)
-		pCombo->LimitText(MAX_PATH); //Max characters count in combo's edit box.
+	constexpr auto iTextLimit { 512 };
+	const auto pCombo = static_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_DATA));
+	pCombo->LimitText(iTextLimit); //Max characters of combo-box.
 
 	return TRUE;
 }
@@ -50,9 +51,9 @@ void CHexDlgFillData::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE)
 	{
 		const auto fSelection { m_pHexCtrl->HasSelection() };
-		CheckRadioButton(IDC_HEXCTRL_FILLDATA_ALL, IDC_HEXCTRL_FILLDATA_SELECTION,
-			fSelection ? IDC_HEXCTRL_FILLDATA_SELECTION : IDC_HEXCTRL_FILLDATA_ALL);
-		GetDlgItem(IDC_HEXCTRL_FILLDATA_SELECTION)->EnableWindow(fSelection);
+		CheckRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_ALL, IDC_HEXCTRL_FILLDATA_RADIO_SEL,
+			fSelection ? IDC_HEXCTRL_FILLDATA_RADIO_SEL : IDC_HEXCTRL_FILLDATA_RADIO_ALL);
+		GetDlgItem(IDC_HEXCTRL_FILLDATA_RADIO_SEL)->EnableWindow(fSelection);
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
@@ -66,11 +67,11 @@ void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
 void CHexDlgFillData::OnOK()
 {
 	const auto iRadioType = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_HEX, IDC_HEXCTRL_FILLDATA_RADIO_UTF16);
-	const auto iRadioAllSelection = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_ALL, IDC_HEXCTRL_FILLDATA_SELECTION);
+	const auto iRadioAllSelection = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_ALL, IDC_HEXCTRL_FILLDATA_RADIO_SEL);
 
 	HEXMODIFY hms;
 	hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
-	if (iRadioAllSelection == IDC_HEXCTRL_FILLDATA_ALL)
+	if (iRadioAllSelection == IDC_HEXCTRL_FILLDATA_RADIO_ALL)
 	{
 		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify All data?", MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
@@ -79,7 +80,7 @@ void CHexDlgFillData::OnOK()
 	else
 		hms.vecSpan = m_pHexCtrl->GetSelection();
 
-	const auto pCombo = static_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_HEXTEXT));
+	const auto pCombo = static_cast<CComboBox*>(GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_DATA));
 	if (!pCombo)
 		return;
 
