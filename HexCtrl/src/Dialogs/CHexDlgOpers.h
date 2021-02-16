@@ -22,7 +22,7 @@ namespace HEXCTRL::INTERNAL
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		void OnOK()override;
-		EHexOperMode GetOperMode()const;
+		[[nodiscard]] EHexOperMode GetOperMode()const;
 		void CheckWndAvail()const;
 		DECLARE_MESSAGE_MAP()
 	private:

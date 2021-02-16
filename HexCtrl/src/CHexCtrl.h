@@ -67,7 +67,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPANSTRUCT> override; //Gets current selection.
 		[[nodiscard]] HWND GetWindowHandle(EHexWnd enWnd)const override;  //Retrieves control's window/dialog handle.
 		void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0)override;    //Go (scroll) to a given offset.
-		[[nodiscard]] bool HasSelection()const override;    //Does have currently any selection or not.
+		[[nodiscard]] bool HasSelection()const override;    //Does currently have any selection or not.
 		[[nodiscard]] auto HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTRUCT> override; //HitTest given point.
 		[[nodiscard]] bool IsCmdAvail(EHexCmd eCmd)const override;        //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] bool IsCreated()const override;       //Shows whether control is created or not.
@@ -131,17 +131,18 @@ namespace HEXCTRL::INTERNAL
 		void DrawDataInterp(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines);
 		void FillWithZeros(); //Fill selection with zeros.
-		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;      //Returns current bottom line number in view.
+		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;    //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCommand(UCHAR uChar, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
-		[[nodiscard]] auto GetMsgWindow()const->HWND;            //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
-		[[nodiscard]] auto GetTopLine()const->ULONGLONG;         //Returns current top line number in view.
-		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;   //Point of Hex chunk.
+		[[nodiscard]] auto GetMsgWindow()const->HWND;          //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
+		[[nodiscard]] auto GetTopLine()const->ULONGLONG;       //Returns current top line number in view.
+		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Hex chunk.
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>; //Is any hex chunk withing given point?
-		[[nodiscard]] bool IsCurTextArea()const;                 //Whether last focus was set at Text or Hex chunks area.
-		[[nodiscard]] bool IsPageVisible()const;                 //Returns m_fSectorVisible.
-		void ModifyDefault(const HEXMODIFY& hms);                //EHexModifyMode::MODIFY_DEFAULT
-		void ModifyOperation(const HEXMODIFY& hms);              //EHexModifyMode::MODIFY_OPERATION
-		void ModifyRepeat(const HEXMODIFY& hms);                 //EHexModifyMode::MODIFY_REPEAT
+		[[nodiscard]] bool IsCurTextArea()const;               //Whether last focus was set at Text or Hex chunks area.
+		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
+		void ModifyDefault(const HEXMODIFY& hms);              //EHexModifyMode::MODIFY_DEFAULT
+		void ModifyOperation(const HEXMODIFY& hms);            //EHexModifyMode::MODIFY_OPERATION
+		void ModifyRandom(const HEXMODIFY& hms);               //EHexModifyMode::MODIFY_RANDOM
+		void ModifyRepeat(const HEXMODIFY& hms);               //EHexModifyMode::MODIFY_REPEAT
 		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.

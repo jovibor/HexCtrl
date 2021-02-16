@@ -237,7 +237,7 @@ namespace HEXCTRL
 	********************************************************************************************/
 	enum class EHexModifyMode : WORD
 	{
-		MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
+		MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RANDOM
 	};
 
 	/********************************************************************************************

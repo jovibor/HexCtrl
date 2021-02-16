@@ -27,6 +27,7 @@
 #include <cctype>
 #include <fstream>
 #include <numeric>
+#include <random>
 #include <thread>
 #pragma comment(lib, "Dwmapi.lib")
 
@@ -3176,11 +3177,16 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	case EHexModifyMode::MODIFY_DEFAULT:
 		ModifyDefault(hms);
 		break;
+	case EHexModifyMode::MODIFY_RANDOM:
+		ModifyRandom(hms);
+		break;
 	case EHexModifyMode::MODIFY_REPEAT:
 		ModifyRepeat(hms);
 		break;
 	case EHexModifyMode::MODIFY_OPERATION:
 		ModifyOperation(hms);
+		break;
+	default:
 		break;
 	}
 
@@ -3250,6 +3256,67 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 					goto exit;
 
 				dlgClbk.SetProgress(ullOffset);
+			}
+		}
+	exit:
+		dlgClbk.ExitDlg();
+		});
+	if (ullTotalSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
+		dlgClbk.DoModal();
+	thrd.join();
+}
+
+void CHexCtrl::ModifyRandom(const HEXMODIFY& hms)
+{
+	const auto& vecSpanRef = hms.vecSpan;
+	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
+	const auto ullTotalSize = std::accumulate(vecSpanRef.begin(), vecSpanRef.end(), 0ULL,
+		[](ULONGLONG ullSumm, const HEXSPANSTRUCT& ref) {return ullSumm + ref.ullSize; });
+	assert(ullTotalSize <= GetDataSize());
+
+	CHexDlgCallback dlgClbk(L"Modifying...", vecSpanRef.begin()->ullOffset, vecSpanRef.back().ullOffset + vecSpanRef.back().ullSize, this);
+	std::thread thrd([&]() {
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution distrib(0, 255);
+		for (const auto& iterSpan : vecSpanRef) //Span-vector's size times.
+		{
+			ULONGLONG ullSizeChunk { };
+			ULONGLONG ullChunks { };
+			CalcChunksFromSize(iterSpan.ullSize, static_cast<ULONGLONG>(hms.enOperSize), ullSizeChunk, ullChunks);
+
+			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
+			{
+				const auto ullOffset = iterSpan.ullOffset + (iterChunk * ullSizeChunk);
+				if (ullOffset + ullSizeChunk > m_ullDataSize) //Overflow check.
+					ullSizeChunk = m_ullDataSize - ullOffset;
+				if (ullOffset + ullSizeChunk > iterSpan.ullOffset + iterSpan.ullSize)
+					ullSizeChunk = (iterSpan.ullOffset + iterSpan.ullSize) - ullOffset;
+
+				const auto pData = GetData({ ullOffset, ullSizeChunk });
+				
+				/************************************************************************************
+				* Loop for random fill pData.
+				* An std::generate() could be used here, though the ability to dlgClbk.SetProgress
+				* would be lost then.
+				* Although for_loop approach is slower due to constant SetProgress calls,
+				* in Release build it's pretty fast and, i believe, enough for 99% use cases.
+				* Also, this loop can further be improved with SIMD methods, if so needed.
+				************************************************************************************/
+				for (auto ullIndex { 0ULL }; ullIndex < ullSizeChunk; ++ullIndex)
+				{
+					pData[ullIndex] = static_cast<std::byte>(distrib(gen));
+					if (dlgClbk.IsCanceled())
+					{
+						if (m_enDataMode != EHexDataMode::DATA_MEMORY)
+							SetDataVirtual(pData, { ullOffset, ullSizeChunk });
+						goto exit;
+					}
+					dlgClbk.SetProgress(ullOffset + ullIndex);
+				}
+
+				if (m_enDataMode != EHexDataMode::DATA_MEMORY)
+					SetDataVirtual(pData, { ullOffset, ullSizeChunk });
 			}
 		}
 	exit:
@@ -3331,6 +3398,7 @@ void CHexCtrl::ModifyRepeat(const HEXMODIFY& hms)
 
 					pData = GetData({ ullOffset, hms.ullDataSize });
 					std::copy_n(hms.pData, static_cast<size_t>(hms.ullDataSize), pData);
+
 					if (m_enDataMode != EHexDataMode::DATA_MEMORY)
 						SetDataVirtual(pData, { ullOffset, hms.ullDataSize });
 

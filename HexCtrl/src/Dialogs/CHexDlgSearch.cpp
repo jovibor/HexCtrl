@@ -24,13 +24,15 @@ using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL
 {
-	enum class CHexDlgSearch::EMode : WORD {
+	enum class CHexDlgSearch::EMode : WORD
+	{
 		SEARCH_HEX, SEARCH_ASCII, SEARCH_WCHAR,
 		SEARCH_BYTE, SEARCH_WORD, SEARCH_DWORD, SEARCH_QWORD,
 		SEARCH_FLOAT, SEARCH_DOUBLE
 	};
 
-	enum class CHexDlgSearch::EMenuID : WORD {
+	enum class CHexDlgSearch::EMenuID : WORD
+	{
 		IDM_SEARCH_ADDBKM = 0x8000, IDM_SEARCH_SELECTALL = 0x8001, IDM_SEARCH_CLEARALL = 0x8002
 	};
 

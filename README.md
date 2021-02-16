@@ -47,7 +47,8 @@
   * [GetPageSize](#getpagesize)
   * [GetSelection](#getselection)
   * [GetWindowHandle](#getwindowhandle)
-  * [GoToOffset](#gotooffset) 
+  * [GoToOffset](#gotooffset)
+  * [HasSelection](#hasselection)
   * [HitTest](#hittest)
   * [IsCmdAvail](#iscmdavail)
   * [IsCreated](#iscreated)
@@ -566,6 +567,12 @@ Go to a given offset. The second argument `iRelPos` may take-in three different 
 * &nbsp; `0` - offset will appear at the middle.
 * &nbsp; `1` - offset will appear at the bottom line.
 
+### [](#)HasSelection
+```cpp
+bool HasSelection()const;
+```
+Returns `true` if **HexCtrl** has any bytes selected.
+
 ### [](#)HitTest
 ```cpp
 auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTESTSTRUCT>
@@ -822,11 +829,13 @@ struct HEXMODIFY
 {
     EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
     EHexOperMode   enOperMode { };          //Operation mode, used only if enModifyMode == MODIFY_OPERATION.
+    EHexOperSize   enOperSize { };          //Operation data size.
     std::byte*     pData { };               //Pointer to a data to be set.
     ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
     std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
     bool           fBigEndian { false };    //Treat the data being modified as a big endian, used only in MODIFY_OPERATION mode.
 };
+
 ```
 
 ### [](#)HEXNOTIFYSTRUCT
@@ -923,7 +932,7 @@ Enum of the data modification mode, used in [`HEXMODIFY`](#hexmodify).
 ```cpp
 enum class EHexModifyMode : WORD
 {
-    MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION
+    MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RANDOM
 };
 ```
 
@@ -932,8 +941,8 @@ Enum of the data operation mode, used in [`HEXMODIFY`](#hexmodify) when `HEXMODI
 ```cpp
 enum class EHexOperMode : WORD
 {
-    OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_SWAP,
-    OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE, OPER_CEILING, OPER_FLOOR
+    OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_ROTL, OPER_ROTR,
+    OPER_SWAP, OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE, OPER_CEILING, OPER_FLOOR
 };
 ```
 

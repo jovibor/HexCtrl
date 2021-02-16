@@ -109,7 +109,7 @@ BEGIN
     CONTROL         "DWORD",IDC_HEXCTRL_OPERS_RADIO_DWORD,"Button",BS_AUTORADIOBUTTON,85,67,38,8
     CONTROL         "QWORD",IDC_HEXCTRL_OPERS_RADIO_QWORD,"Button",BS_AUTORADIOBUTTON,127,67,38,8
     GROUPBOX        "Data region to modify:",IDC_STATIC,128,84,117,25
-    CONTROL         "All",IDC_HEXCTRL_OPERS_RADIO_ALL,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,140,95,23,8
+    CONTROL         "All",IDC_HEXCTRL_OPERS_RADIO_ALL,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,140,95,19,8
     CONTROL         "Selection",IDC_HEXCTRL_OPERS_RADIO_SEL,"Button",BS_AUTORADIOBUTTON,166,95,40,8
     DEFPUSHBUTTON   "OK",IDOK,66,117,50,14,BS_FLAT
     PUSHBUTTON      "Cancel",IDCANCEL,135,117,50,14,BS_FLAT
@@ -120,23 +120,22 @@ BEGIN
     LTEXT           "Operand:",IDC_STATIC,95,30,31,8
 END
 
-IDD_HEXCTRL_FILLDATA DIALOGEX 0, 0, 269, 96
+IDD_HEXCTRL_FILLDATA DIALOGEX 0, 0, 243, 108
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW | WS_EX_WINDOWEDGE
-CAPTION "Fill with data..."
+CAPTION "Fill With Data..."
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,80,75,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,139,75,50,14
-    COMBOBOX        IDC_HEXCTRL_FILLDATA_COMBO_DATA,48,32,200,30,CBS_DROPDOWN | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Hex values",IDC_HEXCTRL_FILLDATA_RADIO_HEX,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,48,20,48,8
-    CONTROL         "Text / ASCII",IDC_HEXCTRL_FILLDATA_RADIO_TEXT,"Button",BS_AUTORADIOBUTTON,102,20,52,8
-    CONTROL         "Text / UTF-16 (Unicode)",IDC_HEXCTRL_FILLDATA_RADIO_UTF16,
-                    "Button",BS_AUTORADIOBUTTON,159,20,90,8
-    LTEXT           "Fill data:",IDC_STATIC,15,34,28,8
-    CONTROL         "All",IDC_HEXCTRL_FILLDATA_RADIO_ALL,"Button",BS_AUTORADIOBUTTON | WS_GROUP,182,48,21,10
-    CONTROL         "Selection",IDC_HEXCTRL_FILLDATA_RADIO_SEL,"Button",BS_AUTORADIOBUTTON,208,48,40,10
-    GROUPBOX        "",IDC_STATIC,8,7,253,55
+    DEFPUSHBUTTON   "OK",IDOK,67,85,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,126,85,50,14
+    COMBOBOX        IDC_HEXCTRL_FILLDATA_COMBO_DATA,48,32,177,30,CBS_DROPDOWN | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Fill data:",IDC_STATIC,17,34,28,8
+    CONTROL         "All",IDC_HEXCTRL_FILLDATA_RADIO_ALL,"Button",BS_AUTORADIOBUTTON | WS_GROUP,151,59,17,8
+    CONTROL         "Selection",IDC_HEXCTRL_FILLDATA_RADIO_SEL,"Button",BS_AUTORADIOBUTTON,177,59,40,8
+    GROUPBOX        "Filling Options:",IDC_STATIC,6,4,232,75
+    GROUPBOX        "Data region to modify:",IDC_STATIC,139,48,86,25
+    COMBOBOX        IDC_HEXCTRL_FILLDATA_COMBO_TYPE,48,17,177,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Fill type:",IDC_STATIC,17,19,28,8
 END
 
 IDD_HEXCTRL_BKMMGR DIALOGEX 0, 0, 365, 271
@@ -265,10 +264,6 @@ BEGIN
 
     IDD_HEXCTRL_FILLDATA, DIALOG
     BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 262
-        TOPMARGIN, 6
-        BOTTOMMARGIN, 89
     END
 
     IDD_HEXCTRL_BKMMGR, DIALOG
@@ -453,15 +448,15 @@ BEGIN
         END
         POPUP "Bookmarks"
         BEGIN
-            MENUITEM "Add bookmark",                IDM_HEXCTRL_BKM_ADD
-            MENUITEM "Remove bookmark",             IDM_HEXCTRL_BKM_REMOVE
+            MENUITEM "Add Bookmark",                IDM_HEXCTRL_BKM_ADD
+            MENUITEM "Remove Bookmark",             IDM_HEXCTRL_BKM_REMOVE
             MENUITEM SEPARATOR
-            MENUITEM "Go next bookmark",            IDM_HEXCTRL_BKM_NEXT
-            MENUITEM "Go previous bookmark",        IDM_HEXCTRL_BKM_PREV
+            MENUITEM "Go Next Bookmark",            IDM_HEXCTRL_BKM_NEXT
+            MENUITEM "Go Previous Bookmark",        IDM_HEXCTRL_BKM_PREV
             MENUITEM SEPARATOR
-            MENUITEM "Clear all bookmarks",         IDM_HEXCTRL_BKM_CLEARALL
+            MENUITEM "Clear All Bookmarks",         IDM_HEXCTRL_BKM_CLEARALL
             MENUITEM SEPARATOR
-            MENUITEM "Bookmarks manager",           IDM_HEXCTRL_BKM_DLG_MANAGER
+            MENUITEM "Bookmarks Manager",           IDM_HEXCTRL_BKM_DLG_MANAGER
         END
         POPUP "Clipboard"
         BEGIN
@@ -483,8 +478,8 @@ BEGIN
         POPUP "Modify"
         BEGIN
             MENUITEM "Operations...",               IDM_HEXCTRL_MODIFY_DLG_OPERS
-            MENUITEM "Fill with zeros",             IDM_HEXCTRL_MODIFY_FILLZEROS
-            MENUITEM "Fill with data...",           IDM_HEXCTRL_MODIFY_DLG_FILLDATA
+            MENUITEM "Fill With Zeros",             IDM_HEXCTRL_MODIFY_FILLZEROS
+            MENUITEM "Fill With Data...",           IDM_HEXCTRL_MODIFY_DLG_FILLDATA
             MENUITEM SEPARATOR
             MENUITEM "Undo",                        IDM_HEXCTRL_MODIFY_UNDO
             MENUITEM "Redo",                        IDM_HEXCTRL_MODIFY_REDO
@@ -494,7 +489,7 @@ BEGIN
             MENUITEM "Mark Selection Start",        IDM_HEXCTRL_SEL_MARKSTART
             MENUITEM "Mark Selection End",          IDM_HEXCTRL_SEL_MARKEND
             MENUITEM SEPARATOR
-            MENUITEM "Select all",                  IDM_HEXCTRL_SEL_ALL
+            MENUITEM "Select All",                  IDM_HEXCTRL_SEL_ALL
         END
         POPUP "Data View"
         BEGIN
@@ -503,11 +498,11 @@ BEGIN
         END
         POPUP "Appearance"
         BEGIN
-            MENUITEM "Increase font size\tCtrl+MouseWheelUp", IDM_HEXCTRL_APPEAR_FONTINC
-            MENUITEM "Decrease font size\tCtrl+MouseWheelDown", IDM_HEXCTRL_APPEAR_FONTDEC
+            MENUITEM "Increase Font Size\tCtrl+MouseWheelUp", IDM_HEXCTRL_APPEAR_FONTINC
+            MENUITEM "Decrease Font Size\tCtrl+MouseWheelDown", IDM_HEXCTRL_APPEAR_FONTDEC
             MENUITEM SEPARATOR
-            MENUITEM "Increase capacity\tCtrl+Shift+MouseWheelUp", IDM_HEXCTRL_APPEAR_CAPACINC
-            MENUITEM "Decrease capacity\tCtrl+Shift+MouseWheelDown", IDM_HEXCTRL_APPEAR_CAPACDEC
+            MENUITEM "Increase Capacity\tCtrl+Shift+MouseWheelUp", IDM_HEXCTRL_APPEAR_CAPACINC
+            MENUITEM "Decrease Capacity\tCtrl+Shift+MouseWheelDown", IDM_HEXCTRL_APPEAR_CAPACDEC
         END
         MENUITEM SEPARATOR
         POPUP "Other"

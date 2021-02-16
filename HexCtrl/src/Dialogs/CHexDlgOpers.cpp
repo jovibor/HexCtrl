@@ -94,18 +94,28 @@ void CHexDlgOpers::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
 }
 
-BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
+BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
 {
-	bool fMsgHere { false };
-	const auto wID = LOWORD(wParam); //Control ID.
-	if ((wID >= IDC_HEXCTRL_OPERS_RADIO_BYTE && wID <= IDC_HEXCTRL_OPERS_RADIO_QWORD)
-		|| wID == IDC_HEXCTRL_OPERS_COMBO_OPER)
+	switch (LOWORD(wParam)) //Control ID.
 	{
+	case IDC_HEXCTRL_OPERS_RADIO_BYTE:
+	case IDC_HEXCTRL_OPERS_RADIO_WORD:
+	case IDC_HEXCTRL_OPERS_RADIO_DWORD:
+	case IDC_HEXCTRL_OPERS_RADIO_QWORD:
+	case IDC_HEXCTRL_OPERS_COMBO_OPER:
 		CheckWndAvail();
-		fMsgHere = true;
+		break;
+	case IDOK:
+		OnOK();
+		break;
+	case IDCANCEL:
+		CDialogEx::OnCancel();
+		break;
+	default:
+		break;
 	}
 
-	return fMsgHere ? TRUE : CDialogEx::OnCommand(wParam, lParam);
+	return TRUE;
 }
 
 BOOL CHexDlgOpers::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
