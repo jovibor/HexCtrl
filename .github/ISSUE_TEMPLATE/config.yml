@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ❓/🚀/💬 Ask a Question / Feature Request / General Chat
+    url: https://github.com/jovibor/HexCtrl/discussions/new
+    about: Everything but bug-reports please post here.
