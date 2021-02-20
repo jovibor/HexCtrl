@@ -39,9 +39,11 @@ BOOL CHexDlgOpers::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	auto iIndex = m_stComboOper.AddString(L"Add");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_ADD));
+	auto iIndex = m_stComboOper.AddString(L"Assign");
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_ASSIGN));
 	m_stComboOper.SetCurSel(iIndex);
+	iIndex = m_stComboOper.AddString(L"Add");
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_ADD));
 	iIndex = m_stComboOper.AddString(L"Subtract");
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_SUBTRACT));
 	iIndex = m_stComboOper.AddString(L"Multiply");
@@ -138,16 +140,16 @@ void CHexDlgOpers::OnOK()
 	switch (iRadioDataSize)
 	{
 	case IDC_HEXCTRL_OPERS_RADIO_BYTE:
-		hms.enOperSize = EHexOperSize::SIZE_BYTE;
+		hms.enOperSize = EHexDataSize::SIZE_BYTE;
 		break;
 	case IDC_HEXCTRL_OPERS_RADIO_WORD:
-		hms.enOperSize = EHexOperSize::SIZE_WORD;
+		hms.enOperSize = EHexDataSize::SIZE_WORD;
 		break;
 	case IDC_HEXCTRL_OPERS_RADIO_DWORD:
-		hms.enOperSize = EHexOperSize::SIZE_DWORD;
+		hms.enOperSize = EHexDataSize::SIZE_DWORD;
 		break;
 	case IDC_HEXCTRL_OPERS_RADIO_QWORD:
-		hms.enOperSize = EHexOperSize::SIZE_QWORD;
+		hms.enOperSize = EHexDataSize::SIZE_QWORD;
 		break;
 	default:
 		break;
@@ -176,23 +178,23 @@ void CHexDlgOpers::OnOK()
 		{
 			/***************************************************************************
 			* Some operations don't need to swap the whole data in big-endian mode.
-			* Instead the Operational data-bytes can be swapped here just once.
+			* Instead the Operand data-bytes can be swapped here just once.
 			* Binary OR/XOR/AND are good examples, binary NOT doesn't need swap at all.
 			* The fSwapHere flag shows exactly this, that data can be swapped here.
 			***************************************************************************/
 			if (eOperMode == EHexOperMode::OPER_OR || eOperMode == EHexOperMode::OPER_XOR
-				|| eOperMode == EHexOperMode::OPER_AND)
+				|| eOperMode == EHexOperMode::OPER_AND || eOperMode == EHexOperMode::OPER_ASSIGN)
 			{
 				fBigEndian = false;
 				switch (hms.enOperSize)
 				{
-				case EHexOperSize::SIZE_WORD:
+				case EHexDataSize::SIZE_WORD:
 					llData = static_cast<LONGLONG>(_byteswap_ushort(static_cast<WORD>(llData)));
 					break;
-				case EHexOperSize::SIZE_DWORD:
+				case EHexDataSize::SIZE_DWORD:
 					llData = static_cast<LONGLONG>(_byteswap_ulong(static_cast<DWORD>(llData)));
 					break;
-				case EHexOperSize::SIZE_QWORD:
+				case EHexDataSize::SIZE_QWORD:
 					llData = static_cast<LONGLONG>(_byteswap_uint64(static_cast<QWORD>(llData)));
 					break;
 				default:

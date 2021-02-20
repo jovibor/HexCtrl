@@ -464,16 +464,16 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		CaretToLineEnd();
 		break;
 	case EHexCmd::CMD_GROUPBY_BYTE:
-		SetGroupMode(EHexGroupMode::ASBYTE);
+		SetGroupMode(EHexDataSize::SIZE_BYTE);
 		break;
 	case EHexCmd::CMD_GROUPBY_WORD:
-		SetGroupMode(EHexGroupMode::ASWORD);
+		SetGroupMode(EHexDataSize::SIZE_WORD);
 		break;
 	case EHexCmd::CMD_GROUPBY_DWORD:
-		SetGroupMode(EHexGroupMode::ASDWORD);
+		SetGroupMode(EHexDataSize::SIZE_DWORD);
 		break;
 	case EHexCmd::CMD_GROUPBY_QWORD:
-		SetGroupMode(EHexGroupMode::ASQWORD);
+		SetGroupMode(EHexDataSize::SIZE_QWORD);
 		break;
 	case EHexCmd::CMD_BKM_ADD:
 		m_pBookmarks->Add(HEXBKMSTRUCT { GetSelection() });
@@ -721,11 +721,11 @@ long CHexCtrl::GetFontSize()const
 	return m_lFontSize;
 }
 
-auto CHexCtrl::GetGroupMode()const->EHexGroupMode
+auto CHexCtrl::GetGroupMode()const->EHexDataSize
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return EHexGroupMode { };
+		return EHexDataSize { };
 
 	return m_enGroupMode;
 }
@@ -1473,10 +1473,11 @@ void CHexCtrl::SetFontSize(UINT uiSize)
 	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
 }
 
-void CHexCtrl::SetGroupMode(EHexGroupMode enGroupMode)
+void CHexCtrl::SetGroupMode(EHexDataSize enGroupMode)
 {
 	assert(IsCreated());
-	if (!IsCreated())
+	assert(enGroupMode <= EHexDataSize::SIZE_QWORD);
+	if (!IsCreated() || enGroupMode > EHexDataSize::SIZE_QWORD)
 		return;
 
 	m_enGroupMode = enGroupMode;
@@ -1504,16 +1505,16 @@ void CHexCtrl::SetGroupMode(EHexGroupMode enGroupMode)
 		UINT ID { };
 		switch (enGroupMode)
 		{
-		case EHexGroupMode::ASBYTE:
+		case EHexDataSize::SIZE_BYTE:
 			ID = IDM_HEXCTRL_GROUPBY_BYTE;
 			break;
-		case EHexGroupMode::ASWORD:
+		case EHexDataSize::SIZE_WORD:
 			ID = IDM_HEXCTRL_GROUPBY_WORD;
 			break;
-		case EHexGroupMode::ASDWORD:
+		case EHexDataSize::SIZE_DWORD:
 			ID = IDM_HEXCTRL_GROUPBY_DWORD;
 			break;
-		case EHexGroupMode::ASQWORD:
+		case EHexDataSize::SIZE_QWORD:
 			ID = IDM_HEXCTRL_GROUPBY_QWORD;
 			break;
 		}
@@ -2081,8 +2082,8 @@ auto CHexCtrl::CopyHexFormatted()const->std::wstring
 		if (dwModStart + ullSelSize > m_dwCapacity)
 		{
 			DWORD dwCount = dwModStart * 2 + dwModStart / static_cast<DWORD>(m_enGroupMode);
-			//Additional spaces between halves. Only in ASBYTE's view mode.
-			dwCount += (m_enGroupMode == EHexGroupMode::ASBYTE) ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
+			//Additional spaces between halves. Only in SIZE_BYTE's view mode.
+			dwCount += (m_enGroupMode == EHexDataSize::SIZE_BYTE) ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
 			wstrData.insert(0, static_cast<size_t>(dwCount), ' ');
 		}
 
@@ -2094,8 +2095,8 @@ auto CHexCtrl::CopyHexFormatted()const->std::wstring
 
 			if (i < (ullSelSize - 1) && (dwTail - 1) != 0)
 			{
-				if (m_enGroupMode == EHexGroupMode::ASBYTE && dwTail == dwNextBlock)
-					wstrData += L"   "; //Additional spaces between halves. Only in ASBYTE view mode.
+				if (m_enGroupMode == EHexDataSize::SIZE_BYTE && dwTail == dwNextBlock)
+					wstrData += L"   "; //Additional spaces between halves. Only in SIZE_BYTE view mode.
 				else if (((m_dwCapacity - dwTail + 1) % static_cast<DWORD>(m_enGroupMode)) == 0) //Add space after hex full chunk, ShowAs_size depending.
 					wstrData += L" ";
 			}
@@ -2201,8 +2202,8 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 			if (((iterChunks + 1) % static_cast<DWORD>(m_enGroupMode)) == 0 && iterChunks < (m_dwCapacity - 1))
 				wstrRet += L" ";
 
-			//Additional space between capacity halves, only with ASBYTE representation.
-			if (m_enGroupMode == EHexGroupMode::ASBYTE && iterChunks == (m_dwCapacityBlockSize - 1))
+			//Additional space between capacity halves, only with SIZE_BYTE representation.
+			if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterChunks == (m_dwCapacityBlockSize - 1))
 				wstrRet += L"  ";
 		}
 		wstrRet += L"   "; //Ascii beginning.
@@ -2358,8 +2359,8 @@ void CHexCtrl::DrawHexAscii(CDC* pDC, CFont* pFont, int iLines, std::wstring_vie
 			if (((iterChunks + 1) % static_cast<DWORD>(m_enGroupMode)) == 0 && iterChunks < (m_dwCapacity - 1))
 				wstrHexToPrint += L" ";
 
-			//Additional space between capacity halves, only with ASBYTE representation.
-			if (m_enGroupMode == EHexGroupMode::ASBYTE && iterChunks == (m_dwCapacityBlockSize - 1))
+			//Additional space between capacity halves, only with SIZE_BYTE representation.
+			if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterChunks == (m_dwCapacityBlockSize - 1))
 				wstrHexToPrint += L"  ";
 
 			//Ascii to print.
@@ -2425,8 +2426,8 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 						if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0)
 							wstrHexBkmToPrint += L" ";
 
-						//Additional space between capacity halves, only with ASBYTE representation.
-						if (m_enGroupMode == EHexGroupMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+						//Additional space between capacity halves, only with SIZE_BYTE representation.
+						if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterChunks == m_dwCapacityBlockSize)
 							wstrHexBkmToPrint += L"  ";
 					}
 
@@ -2458,8 +2459,8 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 					if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0)
 						wstrHexBkmToPrint += L" ";
 
-					//Additional space between capacity halves, only with ASBYTE representation.
-					if (m_enGroupMode == EHexGroupMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+					//Additional space between capacity halves, only with SIZE_BYTE representation.
+					if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterChunks == m_dwCapacityBlockSize)
 						wstrHexBkmToPrint += L"  ";
 				}
 				wstrHexBkmToPrint += wstrHex[sIndexToPrint * 2];
@@ -2565,8 +2566,8 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 						if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0)
 							wstrHexColorToPrint += L" ";
 
-						//Additional space between capacity halves, only with ASBYTE representation.
-						if (m_enGroupMode == EHexGroupMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+						//Additional space between capacity halves, only with SIZE_BYTE representation.
+						if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterChunks == m_dwCapacityBlockSize)
 							wstrHexColorToPrint += L"  ";
 					}
 
@@ -2598,8 +2599,8 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 					if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0)
 						wstrHexColorToPrint += L" ";
 
-					//Additional space between capacity halves, only with ASBYTE representation.
-					if (m_enGroupMode == EHexGroupMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+					//Additional space between capacity halves, only with SIZE_BYTE representation.
+					if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterChunks == m_dwCapacityBlockSize)
 						wstrHexColorToPrint += L"  ";
 				}
 				wstrHexColorToPrint += wstrHex[sIndexToPrint * 2];
@@ -2698,8 +2699,8 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 					if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0)
 						wstrHexSelToPrint += L" ";
 
-					//Additional space between capacity halves, only with ASBYTE representation.
-					if (m_enGroupMode == EHexGroupMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+					//Additional space between capacity halves, only with SIZE_BYTE representation.
+					if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterChunks == m_dwCapacityBlockSize)
 						wstrHexSelToPrint += L"  ";
 				}
 				wstrHexSelToPrint += wstrHex[sIndexToPrint * 2];
@@ -2793,8 +2794,8 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 					if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0)
 						wstrHexSelToPrint += L" ";
 
-					//Additional space between capacity halves, only with ASBYTE representation.
-					if (m_enGroupMode == EHexGroupMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+					//Additional space between capacity halves, only with SIZE_BYTE representation.
+					if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterChunks == m_dwCapacityBlockSize)
 						wstrHexSelToPrint += L"  ";
 				}
 				wstrHexSelToPrint += wstrHex[sIndexToPrint * 2];
@@ -2955,8 +2956,8 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, in
 					if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0)
 						wstrHexDataInterpretToPrint += L" ";
 
-					//Additional space between capacity halves, only with ASBYTE representation.
-					if (m_enGroupMode == EHexGroupMode::ASBYTE && iterChunks == m_dwCapacityBlockSize)
+					//Additional space between capacity halves, only with SIZE_BYTE representation.
+					if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterChunks == m_dwCapacityBlockSize)
 						wstrHexDataInterpretToPrint += L"  ";
 				}
 				wstrHexDataInterpretToPrint += wstrHex[sIndexToPrint * 2];
@@ -3113,14 +3114,14 @@ auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>
 			if (i > 0 && (i % static_cast<DWORD>(m_enGroupMode)) == 0)
 			{
 				iTotalSpaceBetweenChunks += m_iSpaceBetweenHexChunks;
-				if (m_enGroupMode == EHexGroupMode::ASBYTE && i == m_dwCapacityBlockSize)
+				if (m_enGroupMode == EHexDataSize::SIZE_BYTE && i == m_dwCapacityBlockSize)
 					iTotalSpaceBetweenChunks += m_iSpaceBetweenBlocks;
 			}
 
 			const auto iCurrChunkBegin = m_iIndentFirstHexChunk + (m_iSizeHexByte * i) + iTotalSpaceBetweenChunks;
 			const auto iCurrChunkEnd = iCurrChunkBegin + m_iSizeHexByte +
 				(((i + 1) % static_cast<DWORD>(m_enGroupMode)) == 0 ? m_iSpaceBetweenHexChunks : 0)
-				+ ((m_enGroupMode == EHexGroupMode::ASBYTE && (i + 1) == m_dwCapacityBlockSize) ? m_iSpaceBetweenBlocks : 0);
+				+ ((m_enGroupMode == EHexDataSize::SIZE_BYTE && (i + 1) == m_dwCapacityBlockSize) ? m_iSpaceBetweenBlocks : 0);
 
 			if (static_cast<unsigned int>(iX) < iCurrChunkEnd) //If iX lays in-between [iCurrChunkBegin...iCurrChunkEnd).
 			{
@@ -3229,19 +3230,19 @@ void CHexCtrl::ModifyOperation(const HEXMODIFY& hms)
 				const auto pData = GetData({ ullOffset, ullSizeChunk });
 				switch (hms.enOperSize)
 				{
-				case EHexOperSize::SIZE_BYTE:
+				case EHexDataSize::SIZE_BYTE:
 					OperData(reinterpret_cast<PBYTE>(pData), hms.enOperMode,
 						hms.pData != nullptr ? *reinterpret_cast<PBYTE>(hms.pData) : static_cast<BYTE>(0), ullSizeChunk, hms.fBigEndian);
 					break;
-				case EHexOperSize::SIZE_WORD:
+				case EHexDataSize::SIZE_WORD:
 					OperData(reinterpret_cast<PWORD>(pData), hms.enOperMode,
 						hms.pData != nullptr ? *reinterpret_cast<PWORD>(hms.pData) : static_cast<WORD>(0), ullSizeChunk, hms.fBigEndian);
 					break;
-				case EHexOperSize::SIZE_DWORD:
+				case EHexDataSize::SIZE_DWORD:
 					OperData(reinterpret_cast<PDWORD>(pData), hms.enOperMode,
 						hms.pData != nullptr ? *reinterpret_cast<PDWORD>(hms.pData) : static_cast<DWORD>(0), ullSizeChunk, hms.fBigEndian);
 					break;
-				case EHexOperSize::SIZE_QWORD:
+				case EHexDataSize::SIZE_QWORD:
 					OperData(reinterpret_cast<PQWORD>(pData), hms.enOperMode,
 						hms.pData != nullptr ? *reinterpret_cast<PQWORD>(hms.pData) : static_cast<QWORD>(0), ullSizeChunk, hms.fBigEndian);
 					break;
@@ -3294,7 +3295,7 @@ void CHexCtrl::ModifyRandom(const HEXMODIFY& hms)
 					ullSizeChunk = (iterSpan.ullOffset + iterSpan.ullSize) - ullOffset;
 
 				const auto pData = GetData({ ullOffset, ullSizeChunk });
-				
+
 				/************************************************************************************
 				* Loop for random fill pData.
 				* An std::generate() could be used here, though the ability to dlgClbk.SetProgress
@@ -3497,6 +3498,9 @@ void CHexCtrl::OperData(T* pData, const EHexOperMode eMode, const T tDataOper, c
 	{
 		switch (eMode)
 		{
+		case EHexOperMode::OPER_ASSIGN:
+			*pData = tDataOper;
+			break;
 		case EHexOperMode::OPER_OR:
 			*pData |= tDataOper;
 			break;
@@ -3778,7 +3782,7 @@ void CHexCtrl::RecalcAll()
 	RecalcOffsetDigits();
 	m_iSecondVertLine = m_iFirstVertLine + m_dwOffsetDigits * m_sizeLetter.cx + m_sizeLetter.cx * 2;
 	m_iSizeHexByte = m_sizeLetter.cx * 2;
-	m_iSpaceBetweenBlocks = (m_enGroupMode == EHexGroupMode::ASBYTE && m_dwCapacity > 1) ? m_sizeLetter.cx * 2 : 0;
+	m_iSpaceBetweenBlocks = (m_enGroupMode == EHexDataSize::SIZE_BYTE && m_dwCapacity > 1) ? m_sizeLetter.cx * 2 : 0;
 	m_iSpaceBetweenHexChunks = m_sizeLetter.cx;
 	m_iDistanceBetweenHexChunks = m_iSizeHexByte * static_cast<DWORD>(m_enGroupMode) + m_iSpaceBetweenHexChunks;
 	m_iThirdVertLine = m_iSecondVertLine + m_iDistanceBetweenHexChunks * (m_dwCapacity / static_cast<DWORD>(m_enGroupMode))
@@ -3855,7 +3859,7 @@ void CHexCtrl::RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const C
 	RecalcOffsetDigits();
 	m_iSecondVertLine = m_iFirstVertLine + m_dwOffsetDigits * m_sizeLetter.cx + m_sizeLetter.cx * 2;
 	m_iSizeHexByte = m_sizeLetter.cx * 2;
-	m_iSpaceBetweenBlocks = (m_enGroupMode == EHexGroupMode::ASBYTE && m_dwCapacity > 1) ? m_sizeLetter.cx * 2 : 0;
+	m_iSpaceBetweenBlocks = (m_enGroupMode == EHexDataSize::SIZE_BYTE && m_dwCapacity > 1) ? m_sizeLetter.cx * 2 : 0;
 	m_iSpaceBetweenHexChunks = m_sizeLetter.cx;
 	m_iDistanceBetweenHexChunks = m_iSizeHexByte * static_cast<DWORD>(m_enGroupMode) + m_iSpaceBetweenHexChunks;
 	m_iThirdVertLine = m_iSecondVertLine + m_iDistanceBetweenHexChunks * (m_dwCapacity / static_cast<DWORD>(m_enGroupMode))
@@ -4390,7 +4394,7 @@ void CHexCtrl::WstrCapacityFill()
 			m_wstrCapacity += L" ";
 
 		//Additional space between hex halves.
-		if (m_enGroupMode == EHexGroupMode::ASBYTE && iter == (m_dwCapacityBlockSize - 1))
+		if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iter == (m_dwCapacityBlockSize - 1))
 			m_wstrCapacity += L"  ";
 	}
 }

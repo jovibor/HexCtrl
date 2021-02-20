@@ -89,7 +89,7 @@
   * [EHexCmd](#ehexcmd)
   * [EHexCreateMode](#ehexcreatemode)
   * [EHexDataMode](#ehexdatamode)
-  * [EHexGroupMode](#ehexgroupmode)
+  * [EHexDataSize](#ehexdatasize)
   * [EHexModifyMode](#ehexmodifymode)
   * [EHexOperMode](#ehexopermode)
   * [EHexWnd](#ehexwnd)
@@ -507,7 +507,7 @@ Get code page that is currently in use.
 
 ### [](#)GetGroupMode
 ```cpp
-auto GetGroupMode()const->EHexGroupMode;
+auto GetGroupMode()const->EHexDataSize;
 ```
 Retrieves current data grouping mode.
 
@@ -687,9 +687,9 @@ Sets a new font size to the **HexCtrl**.
 
 ### [](#)SetGroupMode
 ```cpp
-void SetGroupMode(EHexGroupMode enGroupMode);
+void SetGroupMode(EHexDataSize enGroupMode);
 ```
-Sets current data grouping mode. See [`EHexGroupMode`](#ehexgroupmode) for more info.
+Sets current data grouping mode. See [`EHexDataSize`](#ehexdatasize) for more info.
 
 ### [](#)SetMutable
 ```cpp
@@ -882,7 +882,7 @@ struct HEXVISSTRUCT
 ### [](#)EHexCmd
 Enum of commands that can be executed within **HexCtrl**.
 ```cpp
-enum class EHexCmd : WORD
+enum class EHexCmd : std::uint8_t
 {
     CMD_DLG_SEARCH = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV,
     CMD_SHOWDATA_BYTE, CMD_SHOWDATA_WORD, CMD_SHOWDATA_DWORD, CMD_SHOWDATA_QWORD,
@@ -903,7 +903,7 @@ enum class EHexCmd : WORD
 ### [](#)EHexCreateMode
 Enum that represents mode the **HexCtrl**'s window will be created in.
 ```cpp
-enum class EHexCreateMode : WORD
+enum class EHexCreateMode : std::uint8_t
 {
     CREATE_CHILD, CREATE_POPUP, CREATE_CUSTOMCTRL
 };
@@ -912,25 +912,25 @@ enum class EHexCreateMode : WORD
 ### [](#)EHexDataMode
 `Enum` that represents current data [mode](#data-modes) **HexCtrl** works in. It's used as [`HEXDATASTRUCT`](#hexdatastruct) member in [`SetData`](#setdata) method.
 ```cpp
-enum class EHexDataMode : WORD
+enum class EHexDataMode : std::uint8_t
 {
     DATA_MEMORY, DATA_MSG, DATA_VIRTUAL
 };
 ```
 
-### [](#)EHexGroupMode
-Enum that represents available data grouping modes.
+### [](#)EHexDataSize
+Data size to operate on, used in `EHexModifyMode::MODIFY_OPERATION` mode. Also used to set data grouping mode, in [`SetGroupMode`](#setgroupmode) method.
 ```cpp
-enum class EHexGroupMode : WORD
+enum class EHexDataSize : std::uint8_t
 {
-    ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
+    SIZE_BYTE = 0x01, SIZE_WORD = 0x02, SIZE_DWORD = 0x04, SIZE_QWORD = 0x08
 };
 ```
 
 ### [](#)EHexModifyMode
 Enum of the data modification mode, used in [`HEXMODIFY`](#hexmodify).
 ```cpp
-enum class EHexModifyMode : WORD
+enum class EHexModifyMode : std::uint8_t
 {
     MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RANDOM
 };
@@ -939,17 +939,18 @@ enum class EHexModifyMode : WORD
 ### [](#)EHexOperMode
 Enum of the data operation mode, used in [`HEXMODIFY`](#hexmodify) when `HEXMODIFY::enModifyMode` is set to `MODIFY_OPERATION`.
 ```cpp
-enum class EHexOperMode : WORD
+enum class EHexOperMode : std::uint8_t
 {
-    OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_ROTL, OPER_ROTR,
-    OPER_SWAP, OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE, OPER_CEILING, OPER_FLOOR
+    OPER_ASSIGN, OPER_OR, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_ROTL,
+    OPER_ROTR, OPER_SWAP, OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE,
+    OPER_CEILING, OPER_FLOOR
 };
 ```
 
 ### [](#)EHexWnd
 Enum of all **HexCtrl**'s internal windows. This enum is used as an arg in [`GetWindowHandle`](#getwindowhandle) method to retrieve window's handle. 
 ```cpp
-enum class EHexWnd : WORD
+enum class EHexWnd : std::uint8_t
 {
 	WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_FILLDATA,
 	DLG_OPERS, DLG_SEARCH, DLG_ENCODING, DLG_GOTO

@@ -16,7 +16,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* EHexCmd - Enum of the commands that can be executed within HexCtrl, used in ExecuteCmd.   *
 	********************************************************************************************/
-	enum class EHexCmd : WORD
+	enum class EHexCmd : std::uint8_t
 	{
 		CMD_DLG_SEARCH = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV,
 		CMD_NAV_DLG_GOTO, CMD_NAV_REPFWD, CMD_NAV_REPBKW, CMD_NAV_DATABEG, CMD_NAV_DATAEND,
@@ -38,17 +38,9 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* EHexCreateMode - Enum of HexCtrl creation mode.                                           *
 	********************************************************************************************/
-	enum class EHexCreateMode : WORD
+	enum class EHexCreateMode : std::uint8_t
 	{
 		CREATE_CHILD, CREATE_POPUP, CREATE_CUSTOMCTRL
-	};
-
-	/********************************************************************************************
-	* EHexGroupMode - current data mode representation.                                         *
-	********************************************************************************************/
-	enum class EHexGroupMode : WORD
-	{
-		ASBYTE = 1, ASWORD = 2, ASDWORD = 4, ASQWORD = 8
 	};
 
 	/********************************************************************************************
@@ -57,7 +49,7 @@ namespace HEXCTRL
 	* DATA_MSG: Data is handled through WM_NOTIFY messages in handler window.				    *
 	* DATA_VIRTUAL: Data is handled through IHexVirtData interface by derived class.            *
 	********************************************************************************************/
-	enum class EHexDataMode : WORD
+	enum class EHexDataMode : std::uint8_t
 	{
 		DATA_MEMORY, DATA_MSG, DATA_VIRTUAL
 	};
@@ -65,7 +57,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* EHexWnd - HexControl's windows.                                                           *
 	********************************************************************************************/
-	enum class EHexWnd : WORD
+	enum class EHexWnd : std::uint8_t
 	{
 		WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_FILLDATA,
 		DLG_OPERS, DLG_SEARCH, DLG_ENCODING, DLG_GOTO
@@ -235,7 +227,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* EHexModifyMode - Enum of the data modification mode, used in HEXMODIFY.                   *
 	********************************************************************************************/
-	enum class EHexModifyMode : WORD
+	enum class EHexModifyMode : std::uint8_t
 	{
 		MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RANDOM
 	};
@@ -243,16 +235,18 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* EHexOperMode - Data Operation mode, used in EHexModifyMode::MODIFY_OPERATION mode.        *
 	********************************************************************************************/
-	enum class EHexOperMode : WORD
+	enum class EHexOperMode : std::uint8_t
 	{
-		OPER_OR = 0x01, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_ROTL, OPER_ROTR,
-		OPER_SWAP, OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE, OPER_CEILING, OPER_FLOOR
+		OPER_ASSIGN, OPER_OR, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_ROTL,
+		OPER_ROTR, OPER_SWAP, OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE,
+		OPER_CEILING, OPER_FLOOR
 	};
 
 	/********************************************************************************************
-	* EHexOperSize - Data size to operate on, used in EHexModifyMode::MODIFY_OPERATION mode.    *
+	* EHexDataSize - Data size to operate on, used in EHexModifyMode::MODIFY_OPERATION mode.    *
+	* Also used to set data grouping mode, in SetGroupMode method.                              *
 	********************************************************************************************/
-	enum class EHexOperSize : WORD
+	enum class EHexDataSize : std::uint8_t
 	{
 		SIZE_BYTE = 0x01, SIZE_WORD = 0x02, SIZE_DWORD = 0x04, SIZE_QWORD = 0x08
 	};
@@ -273,7 +267,7 @@ namespace HEXCTRL
 	{
 		EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
 		EHexOperMode   enOperMode { };          //Operation mode, used only if enModifyMode == MODIFY_OPERATION.
-		EHexOperSize   enOperSize { };          //Operation data size.
+		EHexDataSize   enOperSize { };          //Operation data size.
 		std::byte*     pData { };               //Pointer to a data to be set.
 		ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
 		std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
