@@ -138,6 +138,7 @@ namespace HEXCTRL::INTERNAL
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Hex chunk.
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>; //Is any hex chunk withing given point?
 		[[nodiscard]] bool IsCurTextArea()const;               //Whether last focus was set at Text or Hex chunks area.
+		[[nodiscard]] bool IsDrawable()const;                  //Should WM_PAINT be handled atm or not.
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
 		void ModifyDefault(const HEXMODIFY& hms);              //EHexModifyMode::MODIFY_DEFAULT
 		void ModifyOperation(const HEXMODIFY& hms);            //EHexModifyMode::MODIFY_OPERATION
@@ -163,6 +164,7 @@ namespace HEXCTRL::INTERNAL
 		void SelAddRight();      //Right Key pressed with the Shift.
 		void SelAddUp();         //Up Key pressed with the Shift.
 		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
+		void SetRedraw(bool fRedraw); //Handle WM_PAINT msg or not.
 		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
 		void TtBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip bookmark show/hide.
 		void TtOffsetShow(bool fShow);              //Tooltip Offset show/hide.
@@ -282,5 +284,6 @@ namespace HEXCTRL::INTERNAL
 		bool m_fHighLatency { false };        //Reflects HEXDATASTRUCT::fHighLatency.
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
 		bool m_fMenuCMD { false };            //Command to be executed through menu, not through key-shortcut.
+		bool m_fRedraw { true };            //Should WM_PAINT be handled or not.
 	};
 }

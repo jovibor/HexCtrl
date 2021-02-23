@@ -3159,6 +3159,11 @@ bool CHexCtrl::IsCurTextArea()const
 	return m_fCursorTextArea;
 }
 
+bool CHexCtrl::IsDrawable()const
+{
+	return m_fRedraw;
+}
+
 bool CHexCtrl::IsPageVisible()const
 {
 	return m_dwPageSize > 0 && (m_dwPageSize % m_dwCapacity == 0) && m_dwPageSize >= m_dwCapacity;
@@ -3173,6 +3178,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	m_deqRedo.clear(); //No Redo unless we make Undo.
 	SnapshotUndo(hms.vecSpan);
 
+	SetRedraw(false);
 	switch (hms.enModifyMode)
 	{
 	case EHexModifyMode::MODIFY_DEFAULT:
@@ -3190,6 +3196,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	default:
 		break;
 	}
+	SetRedraw(true);
 
 	ParentNotify(HEXCTRL_MSG_SETDATA);
 }
@@ -4230,6 +4237,11 @@ void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss)
 	}
 }
 
+void CHexCtrl::SetRedraw(bool fRedraw)
+{
+	m_fRedraw = fRedraw;
+}
+
 void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 {
 	constexpr DWORD dwUndoMax { 500 }; //How many Undo states to preserve.
@@ -4887,7 +4899,7 @@ void CHexCtrl::OnNcPaint()
 void CHexCtrl::OnPaint()
 {
 	CPaintDC dc(this);
-	if (!m_fCreated)
+	if (!IsCreated())
 	{
 		CRect rc;
 		dc.GetClipBox(rc);
@@ -4895,6 +4907,9 @@ void CHexCtrl::OnPaint()
 		dc.TextOutW(1, 1, L"Call IHexCtrl::Create first.");
 		return;
 	}
+
+	if (!IsDrawable()) //Control should not be rendered atm.
+		return;
 
 	CRect rcClient;
 	GetClientRect(rcClient);
