@@ -78,7 +78,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
-		[[nodiscard]] virtual HEXVISSTRUCT IsOffsetVisible(ULONGLONG ullOffset)const = 0; //Ensures that the given offset is visible.
+		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISSTRUCT = 0; //Ensures that the given offset is visible.
 		virtual void ModifyData(const HEXMODIFY& hms) = 0;     //Main routine to modify data in IsMutable()==true mode.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
@@ -186,6 +186,5 @@ namespace HEXCTRL
 	constexpr auto HEXCTRL_MSG_VIEWCHANGE { 0x0108U };   //View of the control has changed.
 
 	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
-#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' \
-version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 }

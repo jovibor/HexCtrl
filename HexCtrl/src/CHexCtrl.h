@@ -74,7 +74,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsDataSet()const override;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] bool IsMutable()const override;       //Is edit mode enabled or not.
 		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
-		[[nodiscard]] HEXVISSTRUCT IsOffsetVisible(ULONGLONG ullOffset)const override; //Ensures that the given offset is visible.
+		[[nodiscard]] auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISSTRUCT override; //Ensures that the given offset is visible.
 		void ModifyData(const HEXMODIFY& hms)override;      //Main routine to modify data in IsMutable()==true mode.
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Set the control's current capacity.
@@ -98,7 +98,6 @@ namespace HEXCTRL::INTERNAL
 		enum class EClipboard : WORD;
 		void AsciiChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Ascii chunk.
 		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tuple<std::wstring, std::wstring>;
-		void CalcChunksFromSize(ULONGLONG ullSize, ULONGLONG ullAlign, ULONGLONG& ullSizeChunk, ULONGLONG& ullChunks);
 		void CaretMoveDown();  //Set caret one line down.
 		void CaretMoveLeft();  //Set caret one chunk left.
 		void CaretMoveRight(); //Set caret one chunk right.
@@ -140,15 +139,11 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsCurTextArea()const;               //Whether last focus was set at Text or Hex chunks area.
 		[[nodiscard]] bool IsDrawable()const;                  //Should WM_PAINT be handled atm or not.
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
-		void ModifyDefault(const HEXMODIFY& hms);              //EHexModifyMode::MODIFY_DEFAULT
-		void ModifyOperation(const HEXMODIFY& hms);            //EHexModifyMode::MODIFY_OPERATION
-		void ModifyRandom(const HEXMODIFY& hms);               //EHexModifyMode::MODIFY_RANDOM
-		void ModifyRepeat(const HEXMODIFY& hms);               //EHexModifyMode::MODIFY_REPEAT
+		template<typename T>
+		void ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSizeToOperWith); //Main "modify" method with different workers.
 		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
 		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
-		template <typename T>
-		void OperData(T* pData, EHexOperMode eMode, T tDataOper, ULONGLONG ullSizeData, bool fBigEndian); //Immediate operations on pData.
 		void ParentNotify(const HEXNOTIFYSTRUCT& hns)const;    //Notify routine used to send messages to Parent window.
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 		void Print();                                          //Printing routine.
