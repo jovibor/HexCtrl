@@ -5,8 +5,8 @@
 * This class is available under the "MIT License".                                      *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "CListExHdr.h"
 #include "../ListEx.h"
+#include "CListExHdr.h"
 #include <cassert>
 
 using namespace HEXCTRL::LISTEX;

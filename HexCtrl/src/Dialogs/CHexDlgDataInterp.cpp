@@ -165,15 +165,15 @@ void CHexDlgDataInterp::OnOK()
 	if (!m_pHexCtrl->IsMutable() || !m_pPropChanged)
 		return;
 
-	const auto& refGridData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+	const auto itGridData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[this](const SGRIDDATA& refData) {return refData.pProp == m_pPropChanged; });
-	if (refGridData == m_vecProp.end())
+	if (itGridData == m_vecProp.end())
 		return;
 
 	std::wstring wstr = static_cast<CStringW>(m_pPropChanged->GetValue()).GetString();
 
 	bool fSuccess { false };
-	switch (refGridData->eName)
+	switch (itGridData->eName)
 	{
 	case EName::NAME_BINARY:
 		fSuccess = SetDataNAME_BINARY(wstr);
