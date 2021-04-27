@@ -104,10 +104,11 @@ namespace HEXCTRL::INTERNAL
 		bool m_fDoCount { true };       //Do we count matches or just print "Found".
 		bool m_fReplace { false };      //Find or Find and Replace with...?
 		bool m_fAll { false };          //Find/Replace one by one, or all?
-		bool m_fSelection { false };    //In selection check box.
-		bool m_fWildcard { false };     //Wildcard check box.
-		bool m_fBigEndian { false };    //Big-endian check box.
-		bool m_fMatchCase { false };    //Match case check box.
+		bool m_fSelection { false };    //"In selection" check box.
+		bool m_fWildcard { false };     //"Wildcard" check box.
+		bool m_fBigEndian { false };    //"Big-endian" check box.
+		bool m_fMatchCase { false };    //"Match case" check box.
+		bool m_fInverted { false };     //"Inverted" check box
 		std::byte* m_pSearchData { };   //Pointer to the data for search.
 		std::byte* m_pReplaceData { };  //Pointer to the data to replace with.
 		size_t m_nSizeSearch { };

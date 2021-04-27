@@ -136,17 +136,22 @@ BOOL CHexDlgSearch::OnInitDialog()
 	swprintf_s(buff, std::size(buff), L"%u", m_dwFoundLimit);
 	m_stEditLimit.SetWindowTextW(buff);
 
-	const auto hwndTip = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
+	const auto hwndTipWC = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr);
-	if (hwndTip == nullptr)
+	const auto hwndTipInv = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr);
+	if (hwndTipWC == nullptr || hwndTipInv == nullptr)
 		return FALSE;
 
-	TTTOOLINFOW stToolInfo { }; //Wildcard check box tooltip.
+	TTTOOLINFOW stToolInfo { }; 
 	stToolInfo.cbSize = sizeof(TTTOOLINFOW);
 	stToolInfo.hwnd = m_hWnd;
 	stToolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
+
+	//"Wildcard" check box tooltip.
 	stToolInfo.uId = reinterpret_cast<UINT_PTR>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_WILDCARD)->m_hWnd);
-	static std::wstring wstrToolText { }; //Tooltip text.
+	std::wstring wstrToolText { };
+	//"Wildcard" tooltip text.
 	wstrToolText += L"Use ";
 	wstrToolText += static_cast<wchar_t>(m_uWildcard);
 	wstrToolText += L" character to match any symbol, or any byte if in \"Hex Bytes\" search mode.\r\n";
@@ -154,9 +159,17 @@ BOOL CHexDlgSearch::OnInitDialog()
 	wstrToolText += L"  Hex Bytes: 11?11 will match: 112211, 113311, 114411, 119711, etc...\r\n";
 	wstrToolText += L"  ASCII Text: sa??le will match: sample, saAAle, saxale, saZble, etc...\r\n";
 	stToolInfo.lpszText = wstrToolText.data();
-	::SendMessageW(hwndTip, TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&stToolInfo));
-	::SendMessageW(hwndTip, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
-	::SendMessageW(hwndTip, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
+	::SendMessageW(hwndTipWC, TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&stToolInfo));
+	::SendMessageW(hwndTipWC, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
+	::SendMessageW(hwndTipWC, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
+
+	stToolInfo.uId = reinterpret_cast<UINT_PTR>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_INV)->m_hWnd);
+	//"Inverted" tooltip text.
+	wstrToolText = L"Search for the non-matching occurences.\r\nThat is everything that don't match search conditions.";
+	stToolInfo.lpszText = wstrToolText.data();
+	::SendMessageW(hwndTipInv, TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&stToolInfo));
+	::SendMessageW(hwndTipInv, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
+	::SendMessageW(hwndTipInv, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
 
 	return TRUE;
 }
@@ -459,6 +472,7 @@ void CHexDlgSearch::PrepareSearch()
 	m_fSelection = m_stCheckSel.GetCheck() == BST_CHECKED;
 	m_fBigEndian = m_stCheckBE.GetCheck() == BST_CHECKED;
 	m_fMatchCase = m_stCheckMatchC.GetCheck() == BST_CHECKED;
+	m_fInverted = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_INV))->GetCheck() == BST_CHECKED;
 
 	//"Search" text.
 	CStringW wstrTextSearch;
@@ -1252,12 +1266,14 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_
 				continue;
 
 			if (*pData1 != *pBuf2)
-				return false;
+				return m_fInverted;
 		}
-		return true;
+		return !m_fInverted;
 	}
 
-	return std::memcmp(pData1, pBuf2, nSize) == 0;
+	const auto iResult = std::memcmp(pData1, pBuf2, nSize);
+
+	return m_fInverted ? iResult != 0 : iResult == 0;
 }
 
 void CHexDlgSearch::ResetSearch()
