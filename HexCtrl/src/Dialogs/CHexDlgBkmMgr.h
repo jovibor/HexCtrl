@@ -27,12 +27,11 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnDestroy();
 		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListItemLClick(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListLClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListDblClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListGetColor(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnClickRadioDec();
-		afx_msg void OnClickRadioHex();
+		afx_msg void OnClickRadioHexDec();
 		void UpdateList();
 		void SortBookmarks();
 		DECLARE_MESSAGE_MAP()

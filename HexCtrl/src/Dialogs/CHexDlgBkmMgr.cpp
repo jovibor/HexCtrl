@@ -27,12 +27,12 @@ BEGIN_MESSAGE_MAP(CHexDlgBkmMgr, CDialogEx)
 	ON_WM_ACTIVATE()
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListItemChanged)
-	ON_NOTIFY(NM_CLICK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListItemLClick)
+	ON_NOTIFY(NM_CLICK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListLClick)
 	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListDblClick)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListRClick)
 	ON_NOTIFY(LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListGetColor)
-	ON_COMMAND(IDC_HEXCTRL_BKMMGR_RADIO_DEC, &CHexDlgBkmMgr::OnClickRadioDec)
-	ON_COMMAND(IDC_HEXCTRL_BKMMGR_RADIO_HEX, &CHexDlgBkmMgr::OnClickRadioHex)
+	ON_BN_CLICKED(IDC_HEXCTRL_BKMMGR_RADIO_DEC, &CHexDlgBkmMgr::OnClickRadioHexDec)
+	ON_BN_CLICKED(IDC_HEXCTRL_BKMMGR_RADIO_HEX, &CHexDlgBkmMgr::OnClickRadioHexDec)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -157,15 +157,9 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	return fMsgHere ? TRUE : CDialogEx::OnCommand(wParam, lParam);
 }
 
-void CHexDlgBkmMgr::OnClickRadioDec()
+void CHexDlgBkmMgr::OnClickRadioHexDec()
 {
-	m_fShowAsHex = false;
-	m_pListMain->RedrawWindow();
-}
-
-void CHexDlgBkmMgr::OnClickRadioHex()
-{
-	m_fShowAsHex = true;
+	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RADIO_HEX))->GetCheck() == BST_CHECKED;
 	m_pListMain->RedrawWindow();
 }
 
@@ -236,7 +230,7 @@ void CHexDlgBkmMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		m_pBookmarks->GoBookmark(static_cast<ULONGLONG>(pNMI->iItem));
 }
 
-void CHexDlgBkmMgr::OnListItemLClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgBkmMgr::OnListLClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iItem != -1 && pNMI->iSubItem != -1)
 		m_pBookmarks->GoBookmark(static_cast<ULONGLONG>(pNMI->iItem));

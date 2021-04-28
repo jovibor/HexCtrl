@@ -17,16 +17,16 @@ using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
-	ON_WM_CLOSE()
 	ON_WM_ACTIVATE()
-	ON_WM_SIZE()
-	ON_REGISTERED_MESSAGE(AFX_WM_PROPERTY_CHANGED, &CHexDlgDataInterp::OnPropertyChanged)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_LE, &CHexDlgDataInterp::OnClickRadioLe)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_BE, &CHexDlgDataInterp::OnClickRadioBe)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_DEC, &CHexDlgDataInterp::OnClickRadioDec)
-	ON_COMMAND(IDC_HEXCTRL_DATAINTERP_RADIO_HEX, &CHexDlgDataInterp::OnClickRadioHex)
+	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_RADIO_LE, &CHexDlgDataInterp::OnClickRadioBeLe)
+	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_RADIO_BE, &CHexDlgDataInterp::OnClickRadioBeLe)
+	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_RADIO_DEC, &CHexDlgDataInterp::OnClickRadioHexDec)
+	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_RADIO_HEX, &CHexDlgDataInterp::OnClickRadioHexDec)
+	ON_WM_CLOSE()
 	ON_WM_DESTROY()
+	ON_REGISTERED_MESSAGE(AFX_WM_PROPERTY_CHANGED, &CHexDlgDataInterp::OnPropertyChanged)
 	ON_WM_SHOWWINDOW()
+	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
@@ -420,27 +420,15 @@ void CHexDlgDataInterp::OnSize(UINT nType, int cx, int cy)
 	CDialogEx::OnSize(nType, cx, cy);
 }
 
-void CHexDlgDataInterp::OnClickRadioLe()
+void CHexDlgDataInterp::OnClickRadioBeLe()
 {
-	m_fBigEndian = false;
+	m_fBigEndian = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RADIO_BE))->GetCheck() == BST_CHECKED;
 	InspectOffset(m_ullOffset);
 }
 
-void CHexDlgDataInterp::OnClickRadioBe()
+void CHexDlgDataInterp::OnClickRadioHexDec()
 {
-	m_fBigEndian = true;
-	InspectOffset(m_ullOffset);
-}
-
-void CHexDlgDataInterp::OnClickRadioDec()
-{
-	m_fShowAsHex = false;
-	InspectOffset(m_ullOffset);
-}
-
-void CHexDlgDataInterp::OnClickRadioHex()
-{
-	m_fShowAsHex = true;
+	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RADIO_HEX))->GetCheck() == BST_CHECKED;
 	InspectOffset(m_ullOffset);
 }
 

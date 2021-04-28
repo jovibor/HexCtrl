@@ -86,10 +86,8 @@ namespace HEXCTRL::INTERNAL
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		LRESULT OnPropertyChanged(WPARAM wParam, LPARAM lParam);
 		afx_msg void OnSize(UINT nType, int cx, int cy);
-		afx_msg void OnClickRadioLe();
-		afx_msg void OnClickRadioBe();
-		afx_msg void OnClickRadioDec();
-		afx_msg void OnClickRadioHex();
+		afx_msg void OnClickRadioBeLe();
+		afx_msg void OnClickRadioHexDec();
 		afx_msg void OnDestroy();
 		template <typename T>void SetTData(T tData)const;
 		void UpdateHexCtrl()const;

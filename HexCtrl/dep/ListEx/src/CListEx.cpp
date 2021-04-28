@@ -1115,9 +1115,8 @@ BOOL CListEx::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 
 void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 {
-	LVHITTESTINFO hi { };
-	hi.pt = pt;
-	ListView_SubItemHitTest(m_hWnd, &hi);
+	LVHITTESTINFO hi { pt };
+	SubItemHitTest(&hi);
 
 	bool fLink { false }; //Cursor at link's rect area.
 	auto vecText = ParseItemText(hi.iItem, hi.iSubItem);
@@ -1189,20 +1188,18 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 
 void CListEx::OnLButtonDown(UINT nFlags, CPoint pt)
 {
-	LVHITTESTINFO hi { };
-	hi.pt = pt;
-	ListView_SubItemHitTest(m_hWnd, &hi);
-	if (hi.iSubItem == -1 || hi.iItem == -1)
-		return;
-
 	bool fLinkDown { false };
-	auto vecText = ParseItemText(hi.iItem, hi.iSubItem);
-	if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](SITEMDATA& iter)
-		{ return iter.fLink && iter.rect.PtInRect(pt); }); iterFind != vecText.end())
+	LVHITTESTINFO hi { pt };
+	if (SubItemHitTest(&hi) != -1)
 	{
-		m_fLDownAtLink = true;
-		m_rcLinkCurr = iterFind->rect;
-		fLinkDown = true;
+		auto vecText = ParseItemText(hi.iItem, hi.iSubItem);
+		if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](SITEMDATA& iter)
+			{ return iter.fLink && iter.rect.PtInRect(pt); }); iterFind != vecText.end())
+		{
+			m_fLDownAtLink = true;
+			m_rcLinkCurr = iterFind->rect;
+			fLinkDown = true;
+		}
 	}
 
 	if (!fLinkDown)
