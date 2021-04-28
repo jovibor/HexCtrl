@@ -15,7 +15,6 @@ namespace HEXCTRL::INTERNAL
 	using namespace LISTEX;
 	class CHexDlgSearch final : public CDialogEx
 	{
-		struct SFIND;
 		enum class EMode : WORD;
 		enum class EMenuID : WORD;
 	public:
@@ -46,7 +45,7 @@ namespace HEXCTRL::INTERNAL
 		void ClearList();
 		void HexCtrlHighlight(const std::vector<HEXSPANSTRUCT>& vecSel); //Highlight found occurence in HexCtrl.
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
-		void PrepareSearch();
+		void Prepare();
 		[[nodiscard]] bool PrepareHex();
 		[[nodiscard]] bool PrepareASCII();
 		[[nodiscard]] bool PrepareWCHAR();
@@ -56,10 +55,8 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool PrepareQWORD();
 		[[nodiscard]] bool PrepareFloat();
 		[[nodiscard]] bool PrepareDouble();
+		[[nodiscard]] bool PrepareFILETIME();
 		void Search();
-		//ullStart will return index of found occurence, if any.
-		SFIND Find(ULONGLONG& ullStart, ULONGLONG ullEnd, std::byte* pSearch, size_t nSizeSearch,
-			ULONGLONG ullEndSentinel, bool fForward = true, CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true)const;
 		void Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace)const;
 		void ResetSearch();
 		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.

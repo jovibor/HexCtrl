@@ -12,6 +12,7 @@
 #include "../HexCtrl.h"
 #include <afxwin.h>
 #include <cassert>
+#include <optional>
 #include <string>
 
 #define HEXCTRL_PRODUCT_NAME			L"Hex Control for MFC/Win32"
@@ -46,17 +47,20 @@ namespace HEXCTRL::INTERNAL
 	bool str2hex(const std::string& str, std::string& strToHex, bool fWc = false, char chWc = '?');
 
 	//Wide to Multibyte string convertion.
-	std::string wstr2str(std::wstring_view wstr, UINT uCodePage = CP_UTF8);
+	[[nodiscard]] std::string wstr2str(std::wstring_view wstr, UINT uCodePage = CP_UTF8);
 
 	//Multibyte to Wide string convertion.
-	std::wstring str2wstr(std::string_view str, UINT uCodePage = CP_UTF8);
+	[[nodiscard]] std::wstring str2wstr(std::string_view str, UINT uCodePage = CP_UTF8);
 
 	//Substitute all unprintable wchar symbols with dot.
 	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLFRepl = true);
+	
+	//Convert string_view into SYSTEMTIME struct.
+	[[nodiscard]] auto StringToSystemTime(std::wstring_view wstr, DWORD dwDateFormat)->std::optional<SYSTEMTIME>;
 
 	//Get data from IHexCtrl's given offset converted to necessary type.
 	template<typename T>
-	T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
+	[[nodiscard]] T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
 	{
 		T tData { };
 		const auto pData = refHexCtrl.GetData({ ullOffset, sizeof(T) });

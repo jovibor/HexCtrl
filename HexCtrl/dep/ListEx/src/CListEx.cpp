@@ -997,23 +997,24 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 	if (pDIS->itemID == -1)
 		return;
 
-	auto pDC = CDC::FromHandle(pDIS->hDC);
-	pDC->SelectObject(m_penGrid);
-	pDC->SelectObject(m_fontList);
-	const COLORREF clrBkCurrRow = (pDIS->itemID % 2) ? m_stColors.clrListBkRow2 : m_stColors.clrListBkRow1;
-
 	switch (pDIS->itemAction)
 	{
 	case ODA_SELECT:
 	case ODA_DRAWENTIRE:
 	{
+		const auto pDC = CDC::FromHandle(pDIS->hDC);
+		const auto clrBkCurrRow = (pDIS->itemID % 2) ? m_stColors.clrListBkRow2 : m_stColors.clrListBkRow1;
 		const auto iColumns = GetHeaderCtrl().GetItemCount();
+
 		for (auto iColumn = 0; iColumn < iColumns; ++iColumn)
 		{
 			if (GetHeaderCtrl().IsColumnHidden(iColumn))
 				continue;
 
-			COLORREF clrText, clrBk, clrTextLink;
+			COLORREF clrText;
+			COLORREF clrBk;
+			COLORREF clrTextLink;
+
 			//Subitems' draw routine. 
 			//Colors depending on whether subitem selected or not, and has tooltip or not.
 			if (pDIS->itemState & ODS_SELECTED)
@@ -1062,7 +1063,6 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 						pDC, iter.iIconIndex, { iter.rect.left, iter.rect.top }, { }, CLR_NONE, CLR_NONE, ILD_NORMAL);
 					continue;
 				}
-
 				if (iter.fLink)
 				{
 					pDC->SetTextColor(clrTextLink);
@@ -1078,7 +1078,8 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 					rcText, iter.wstrText.data(), static_cast<UINT>(iter.wstrText.size()), nullptr);
 			}
 
-			//Drawing subitem's rect lines. 
+			//Drawing subitem's rect lines.
+			pDC->SelectObject(m_penGrid);
 			pDC->MoveTo(rcBounds.TopLeft());
 			pDC->LineTo(rcBounds.right, rcBounds.top);
 			pDC->MoveTo(rcBounds.TopLeft());
@@ -1087,6 +1088,10 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 			pDC->LineTo(rcBounds.BottomRight());
 			pDC->MoveTo(rcBounds.right, rcBounds.top);
 			pDC->LineTo(rcBounds.BottomRight());
+
+			//Draw focus rect (marquee).
+			if ((pDIS->itemState & ODS_FOCUS) && !(pDIS->itemState & ODS_SELECTED))
+				pDC->DrawFocusRect(rcBounds);
 		}
 	}
 	break;
@@ -1102,6 +1107,7 @@ BOOL CListEx::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 		SetFontSize(GetFontSize() + zDelta / WHEEL_DELTA * 2);
 		return TRUE;
 	}
+
 	GetHeaderCtrl().RedrawWindow();
 
 	return CMFCListCtrl::OnMouseWheel(nFlags, zDelta, pt);
@@ -1290,7 +1296,7 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 	}
 }
 
-BOOL CListEx::OnSetCursor(CWnd * pWnd, UINT nHitTest, UINT message)
+BOOL CListEx::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 {
 	return CMFCListCtrl::OnSetCursor(pWnd, nHitTest, message);
 }
@@ -1359,14 +1365,14 @@ void CListEx::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 		CMFCListCtrl::OnVScroll(nSBCode, nPos, pScrollBar);
 }
 
-void CListEx::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar * pScrollBar)
+void CListEx::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
 	GetHeaderCtrl().RedrawWindow();
 
 	CMFCListCtrl::OnHScroll(nSBCode, nPos, pScrollBar);
 }
 
-BOOL CListEx::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT * pResult)
+BOOL CListEx::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	if (!m_fCreated)
 		return FALSE;
@@ -1407,14 +1413,14 @@ void CListEx::OnLvnColumnClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 	*******************************************************************************/
 }
 
-void CListEx::OnHdnBegindrag(NMHDR * pNMHDR, LRESULT * pResult)
+void CListEx::OnHdnBegindrag(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	const auto phdr = reinterpret_cast<LPNMHEADERW>(pNMHDR);
 	if (GetHeaderCtrl().IsColumnHidden(phdr->iItem))
 		*pResult = TRUE;
 }
 
-void CListEx::OnHdnBegintrack(NMHDR * pNMHDR, LRESULT * pResult)
+void CListEx::OnHdnBegintrack(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	const auto phdr = reinterpret_cast<LPNMHEADERW>(pNMHDR);
 	if (GetHeaderCtrl().IsColumnHidden(phdr->iItem))

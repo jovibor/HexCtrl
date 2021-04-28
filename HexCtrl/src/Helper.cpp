@@ -198,4 +198,48 @@ namespace HEXCTRL::INTERNAL
 				{return !std::iswprint(wch) && (fCRLFRepl || (wch != 0x0D && wch != 0x0A)); }, L'.');
 		}
 	}
+
+	auto StringToSystemTime(const std::wstring_view wstr, const DWORD dwDateFormat)->std::optional<SYSTEMTIME>
+	{
+		//dwDateFormat is a locale specific date format https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
+		
+		if (wstr.empty())
+			return std::nullopt;
+
+		//Normalise the input string by replacing non-numeric characters except space with a `/`.
+		//This should regardless of the current date/time separator character.
+		std::wstring wstrDateTimeCooked { };
+		for (const auto iter : wstr)
+			wstrDateTimeCooked += (iswdigit(iter) || iter == L' ') ? iter : L'/';
+
+		SYSTEMTIME stSysTime { };
+		int iParsedArgs { };
+
+		//Parse date component
+		switch (dwDateFormat)
+		{
+		case 0:	//Month-Day-Year
+			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &stSysTime.wMonth, &stSysTime.wDay, &stSysTime.wYear);
+			break;
+		case 2:	//Year-Month-Day 
+			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%4hu/%2hu/%2hu", &stSysTime.wYear, &stSysTime.wMonth, &stSysTime.wDay);
+			break;
+		default: //Day-Month-Year (default)
+			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &stSysTime.wDay, &stSysTime.wMonth, &stSysTime.wYear);
+			break;
+		}
+		if (iParsedArgs != 3)
+			return std::nullopt;
+
+		//Find time seperator (if present)
+		if (const auto nPos = wstrDateTimeCooked.find(L' '); nPos != std::wstring::npos)
+			wstrDateTimeCooked = wstrDateTimeCooked.substr(nPos + 1);
+
+		//Parse time component
+		if (swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%2hu/%3hu", &stSysTime.wHour, &stSysTime.wMinute,
+			&stSysTime.wSecond, &stSysTime.wMilliseconds) != 4)
+			return std::nullopt;
+
+		return { stSysTime };
+	}
 }

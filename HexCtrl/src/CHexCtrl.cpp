@@ -476,7 +476,8 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		SetGroupMode(EHexDataSize::SIZE_QWORD);
 		break;
 	case EHexCmd::CMD_BKM_ADD:
-		m_pBookmarks->Add(HEXBKMSTRUCT { GetSelection() });
+		m_pBookmarks->Add(HEXBKMSTRUCT { HasSelection() ? GetSelection()
+			: std::vector<HEXSPANSTRUCT> { { GetCaretPos(), 1 } } });
 		break;
 	case EHexCmd::CMD_BKM_REMOVE:
 		m_pBookmarks->Remove(m_fMenuCMD ? m_optRMouseClick.value() : GetCaretPos());
@@ -897,7 +898,6 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case EHexCmd::CMD_BKM_CLEARALL:
 		fAvail = m_pBookmarks->HasBookmarks();
 		break;
-	case EHexCmd::CMD_BKM_ADD:
 	case EHexCmd::CMD_CLPBRD_COPYHEX:
 	case EHexCmd::CMD_CLPBRD_COPYHEXLE:
 	case EHexCmd::CMD_CLPBRD_COPYHEXFMT:
@@ -925,6 +925,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case EHexCmd::CMD_MODIFY_REDO:
 		fAvail = !m_deqRedo.empty();
 		break;
+	case EHexCmd::CMD_BKM_ADD:
 	case EHexCmd::CMD_CARET_RIGHT:
 	case EHexCmd::CMD_CARET_LEFT:
 	case EHexCmd::CMD_CARET_DOWN:
