@@ -1160,7 +1160,7 @@ void CHexDlgSearch::Search()
 	}
 	else //Search.
 	{
-		if (m_fAll) //lmbFind All
+		if (m_fAll)
 		{
 			ClearList(); //Clearing all results.
 			m_dwCount = 0;
@@ -1179,7 +1179,7 @@ void CHexDlgSearch::Search()
 						m_fFound = true;
 						++m_dwCount;
 
-						if (ullStart > ullUntil || m_dwCount >= m_dwFoundLimit || pDlgClbk->IsCanceled()) //lmbFind no more than m_dwFoundLimit.
+						if (ullStart > ullUntil || m_dwCount >= m_dwFoundLimit || pDlgClbk->IsCanceled()) //Find no more than m_dwFoundLimit.
 							break;
 					}
 					else

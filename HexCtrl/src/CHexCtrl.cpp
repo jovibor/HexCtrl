@@ -294,29 +294,25 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	m_stColor = hcs.stColor;
 	m_dbWheelRatio = hcs.dbWheelRatio;
 
-	auto dwStyle = hcs.dwStyle;
 	//1. WS_POPUP style is vital for GetParent to work properly in EHexCreateMode::CREATE_POPUP mode.
 	//   Without this style GetParent/GetOwner always return 0, no matter whether pParentWnd is provided to CreateWindowEx or not.
 	//2. Created HexCtrl window will always overlap (be on top of) its parent, or owner, window 
 	//   if pParentWnd is set (is not nullptr) in CreateWindowEx.
 	//3. To force HexCtrl window on taskbar the WS_EX_APPWINDOW extended window style must be set.
 	CStringW wstrError;
-	CRect rc = hcs.rect;
-	UINT uID { 0 };
+	const auto lmbCreateWnd = [&](UINT uID, DWORD dwStyle)
+	{
+		if (!CWnd::CreateEx(hcs.dwExStyle, HEXCTRL_CLASSNAME_WSTR, L"HexControl", dwStyle, hcs.rect,
+			CWnd::FromHandle(hcs.hwndParent), uID))
+			wstrError.Format(L"HexCtrl (ID:%u) CreateEx failed.\r\nCheck HEXCREATESTRUCT parameters.", uID);
+	};
 	switch (hcs.enCreateMode)
 	{
 	case EHexCreateMode::CREATE_POPUP:
-		dwStyle |= WS_VISIBLE | WS_POPUP | WS_OVERLAPPEDWINDOW;
-		if (rc.IsRectNull())
-		{	//If initial rect is null, and it's a float window, then place it at screen center.
-			const auto iPosX = GetSystemMetrics(SM_CXSCREEN) / 4;
-			const auto iPosY = GetSystemMetrics(SM_CYSCREEN) / 4;
-			rc.SetRect(iPosX, iPosY, iPosX * 3, iPosY * 3);
-		}
+		lmbCreateWnd(0, hcs.dwStyle | WS_VISIBLE | WS_POPUP | WS_OVERLAPPEDWINDOW);
 		break;
 	case EHexCreateMode::CREATE_CHILD:
-		dwStyle |= WS_VISIBLE | WS_CHILD;
-		uID = hcs.uID;
+		lmbCreateWnd(hcs.uID, hcs.dwStyle | WS_VISIBLE | WS_CHILD);
 		break;
 	case EHexCreateMode::CREATE_CUSTOMCTRL:
 		//If it's a Custom Control in dialog, there is no need to create a window, just subclassing.
@@ -324,14 +320,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 			wstrError.Format(L"HexCtrl (ID:%u) SubclassDlgItem failed.\r\nCheck CreateDialogCtrl parameters.", hcs.uID);
 		break;
 	}
-
-	//Creating window.
-	if (hcs.enCreateMode == EHexCreateMode::CREATE_CHILD || hcs.enCreateMode == EHexCreateMode::CREATE_POPUP)
-		if (!CWnd::CreateEx(hcs.dwExStyle, HEXCTRL_CLASSNAME_WSTR, L"HexControl", dwStyle, rc,
-			CWnd::FromHandle(hcs.hwndParent), uID))
-			wstrError.Format(L"HexCtrl (ID:%u) CreateEx failed.\r\nCheck HEXCREATESTRUCT parameters.", hcs.uID);
-
-	if (wstrError.GetLength()) //If there was some Creation error.
+	if (wstrError.GetLength() > 0) //If there was any creation error.
 	{
 		MessageBoxW(wstrError, L"Error", MB_ICONERROR);
 		return false;
