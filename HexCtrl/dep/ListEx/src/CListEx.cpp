@@ -1304,7 +1304,7 @@ void CListEx::OnKillFocus(CWnd* /*pNewWnd*/)
 
 BOOL CListEx::OnEraseBkgnd(CDC* /*pDC*/)
 {
-	return FALSE;
+	return TRUE;
 }
 
 void CListEx::OnPaint()

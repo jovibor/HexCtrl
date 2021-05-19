@@ -136,10 +136,10 @@ CWinApp theApp;
 
 CHexCtrl::CHexCtrl()
 {
-	//MFC initialization, if HexCtrl is used in non MFC project, with Shared MFC linking.
+	//MFC initialization, if HexCtrl is used in non MFC project with a "Shared MFC" linking.
 #if defined HEXCTRL_MANUAL_MFC_INIT
 	if (!AfxGetModuleState()->m_lpszCurrentAppName)
-		AfxWinInit(::GetModuleHandleW(NULL), NULL, ::GetCommandLineW(), 0);
+		AfxWinInit(::GetModuleHandleW(nullptr), nullptr, ::GetCommandLineW(), 0);
 #endif
 
 	const auto hInst = AfxGetInstanceHandle();
@@ -350,6 +350,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	{
 		StringCchCopyW(lf.lfFaceName, 9, L"Consolas");
 		lf.lfHeight = 18;
+		lf.lfPitchAndFamily = FIXED_PITCH;
 	}
 	m_lFontSize = lf.lfHeight;
 	m_fontMain.CreateFontIndirectW(&lf);
@@ -1619,8 +1620,8 @@ void CHexCtrl::SetEncoding(int iCodePage)
 void CHexCtrl::SetFont(const LOGFONTW* pLogFont)
 {
 	assert(IsCreated());
-	assert(pLogFont); //Null font pointer.
-	if (!IsCreated() || !pLogFont)
+	assert(pLogFont);
+	if (!IsCreated() || pLogFont == nullptr)
 		return;
 
 	m_fontMain.DeleteObject();
@@ -2438,7 +2439,7 @@ void CHexCtrl::DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo)const
 	pDC->DrawTextW(L"Offset", 6, rcOffset, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	//Capacity numbers.
-	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunk - iScrollH, m_iFirstHorizLine + m_iIndentTextCapacityY, NULL, nullptr,
+	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunk - iScrollH, m_iFirstHorizLine + m_iIndentTextCapacityY, 0, nullptr,
 		m_wstrCapacity.data(), static_cast<UINT>(m_wstrCapacity.size()), nullptr);
 
 	//Text area title.
@@ -2483,7 +2484,7 @@ void CHexCtrl::DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int i
 		pDC->SetTextColor(clrTextOffset);
 		pDC->SetBkColor(clrBkOffset);
 		ExtTextOutW(pDC->m_hDC, m_iFirstVertLine + m_sizeLetter.cx - iScrollH, m_iStartWorkAreaY + (m_sizeLetter.cy * iterLines),
-			NULL, nullptr, pwszOffset, m_dwOffsetDigits, nullptr);
+			0, nullptr, pwszOffset, m_dwOffsetDigits, nullptr);
 	}
 }
 
@@ -4374,7 +4375,7 @@ void CHexCtrl::OnDestroy()
 
 BOOL CHexCtrl::OnEraseBkgnd(CDC* /*pDC*/)
 {
-	return FALSE;
+	return TRUE;
 }
 
 UINT CHexCtrl::OnGetDlgCode()

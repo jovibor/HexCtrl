@@ -162,9 +162,9 @@ namespace HEXCTRL::INTERNAL
 		void SetRedraw(bool fRedraw); //Handle WM_PAINT msg or not.
 		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
 		void TtBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip bookmark show/hide.
-		void TtOffsetShow(bool fShow);              //Tooltip Offset show/hide.
+		void TtOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();
-		void WstrCapacityFill();                    //Fill m_wstrCapacity according to current m_dwCapacity.
+		void WstrCapacityFill();       //Fill m_wstrCapacity according to current m_dwCapacity.
 		DECLARE_MESSAGE_MAP()
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
