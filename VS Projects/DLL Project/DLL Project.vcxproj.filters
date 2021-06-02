@@ -51,9 +51,6 @@
     <ClInclude Include="..\..\HexCtrl\src\CScrollEx.h">
       <Filter>HexCtrl\src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\src\Helper.h">
-      <Filter>HexCtrl\src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgAbout.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
@@ -102,6 +99,9 @@
     <ClInclude Include="..\..\HexCtrl\HexCtrlDefs.h">
       <Filter>HexCtrl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\HexCtrl\src\HexUtility.h">
+      <Filter>HexCtrl\src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Sample Project\stdafx.cpp">
@@ -117,9 +117,6 @@
       <Filter>HexCtrl\src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\CScrollEx.cpp">
-      <Filter>HexCtrl\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Helper.cpp">
       <Filter>HexCtrl\src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgAbout.cpp">
@@ -160,6 +157,9 @@
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\dep\ListEx\src\CListExHdr.cpp">
       <Filter>HexCtrl\dep\ListEx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\HexUtility.cpp">
+      <Filter>HexCtrl\src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

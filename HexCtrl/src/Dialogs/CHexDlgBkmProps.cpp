@@ -6,7 +6,7 @@
 * https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "../Helper.h"
+#include "../HexUtility.h"
 #include "CHexDlgBkmProps.h"
 #include <cassert>
 #include <numeric>

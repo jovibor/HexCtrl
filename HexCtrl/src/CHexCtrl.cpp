@@ -21,7 +21,7 @@
 #include "Dialogs/CHexDlgGoTo.h"
 #include "Dialogs/CHexDlgOpers.h"
 #include "Dialogs/CHexDlgSearch.h"
-#include "Helper.h"
+#include "HexUtility.h"
 #include "strsafe.h"
 #include <cassert>
 #include <cctype>

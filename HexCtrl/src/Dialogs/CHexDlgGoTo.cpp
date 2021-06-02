@@ -7,7 +7,7 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
-#include "../Helper.h"
+#include "../HexUtility.h"
 #include "CHexDlgGoTo.h"
 #include <cassert>
 
