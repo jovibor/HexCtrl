@@ -1025,11 +1025,33 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	{
 	case EHexModifyMode::MODIFY_DEFAULT:
 	{
-		assert((hms.vecSpan[0].ullOffset + hms.vecSpan[0].ullSize) <= GetDataSize());
 		const auto& vecSpanRef = hms.vecSpan;
-		const auto pData = GetData(vecSpanRef[0]);
-		std::copy_n(hms.pData, static_cast<size_t>(vecSpanRef[0].ullSize), pData);
-		SetDataVirtual(pData, vecSpanRef[0]);
+		assert((vecSpanRef[0].ullOffset + vecSpanRef[0].ullSize) <= GetDataSize());
+
+		if (m_enDataMode != EHexDataMode::DATA_MEMORY && vecSpanRef[0].ullSize > GetCacheSize())
+		{
+			const auto ullSizeChunk = GetCacheSize();
+			const auto iMod = vecSpanRef[0].ullSize % ullSizeChunk;
+			auto ullChunks = vecSpanRef[0].ullSize / ullSizeChunk + (iMod > 0 ? 1 : 0);
+			std::size_t ullOffset = 0;
+			while (ullChunks-- > 0)
+			{
+				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
+				if (const auto pData = GetData({ ullOffset, ullSize }); pData != nullptr)
+				{
+					std::copy_n(hms.pData + ullOffset, ullSize, pData);
+					SetDataVirtual(pData, { ullOffset, ullSize });
+				}
+				ullOffset += ullSize;
+			}
+		}
+		else {
+			if (const auto pData = GetData(vecSpanRef[0]); pData != nullptr)
+			{
+				std::copy_n(hms.pData, static_cast<size_t>(vecSpanRef[0].ullSize), pData);
+				SetDataVirtual(pData, vecSpanRef[0]);
+			}
+		}
 	}
 	break;
 	case EHexModifyMode::MODIFY_RANDOM:
@@ -2272,7 +2294,7 @@ auto CHexCtrl::CopyHexLE()const->std::wstring
 	const auto ullSelSize = m_pSelection->GetSelSize();
 
 	wstrData.reserve(static_cast<size_t>(ullSelSize) * 2);
-	for (int i = static_cast<int>(ullSelSize); i > 0; --i)
+	for (auto i = ullSelSize; i > 0; --i)
 	{
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i - 1));
 		wstrData += g_pwszHexMap[(chByte & 0xF0) >> 4];
@@ -3763,10 +3785,33 @@ void CHexCtrl::Redo()
 
 	for (const auto& iter : *refRedo)
 	{
-		const auto& refData = iter.vecData;
-		const auto pData = GetData({ iter.ullOffset, refData.size() });
-		std::copy_n(refData.begin(), refData.size(), pData);
-		SetDataVirtual(pData, { iter.ullOffset, refData.size() });
+		const auto& refRedoData = iter.vecData;
+
+		//In Virtual mode processing data chunk by chunk.
+		if (m_enDataMode != EHexDataMode::DATA_MEMORY && refRedoData.size() > GetCacheSize())
+		{
+			const auto ullSizeChunk = GetCacheSize();
+			const auto iMod = refRedoData.size() % ullSizeChunk;
+			auto ullChunks = refRedoData.size() / ullSizeChunk + (iMod > 0 ? 1 : 0);
+			std::size_t ullOffset = 0;
+			while (ullChunks-- > 0)
+			{
+				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
+				if (const auto pData = GetData({ ullOffset, ullSize }); pData != nullptr)
+				{
+					std::copy_n(refRedoData.begin() + ullOffset, ullSize, pData);
+					SetDataVirtual(pData, { ullOffset, ullSize });
+				}
+				ullOffset += ullSize;
+			}
+		}
+		else {
+			if (const auto pData = GetData({ iter.ullOffset, refRedoData.size() }); pData != nullptr)
+			{
+				std::copy_n(refRedoData.begin(), refRedoData.size(), pData);
+				SetDataVirtual(pData, { iter.ullOffset, refRedoData.size() });
+			}
+		}
 	}
 
 	m_deqRedo.pop_back();
@@ -4099,8 +4144,7 @@ void CHexCtrl::SetRedraw(bool fRedraw)
 void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 {
 	constexpr DWORD dwUndoMax { 500 }; //How many Undo states to preserve.
-
-	auto ullTotalSize = std::accumulate(vecSpan.begin(), vecSpan.end(), 0ULL,
+	const auto ullTotalSize = std::accumulate(vecSpan.begin(), vecSpan.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPANSTRUCT& ref) {return ullSumm + ref.ullSize; });
 
 	//Check for very big undo size.
@@ -4118,7 +4162,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 	//Bad alloc may happen here!!!
 	try
 	{
-		for (const auto& iterSel : vecSpan)
+		for (const auto& iterSel : vecSpan) //vecSpan.size() amount of continuous areas to preserve.
 		{
 			refUndo->emplace_back(SUNDO { iterSel.ullOffset, { } });
 			refUndo->back().vecData.resize(static_cast<size_t>(iterSel.ullSize));
@@ -4131,11 +4175,28 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 		return;
 	}
 
-	ULONGLONG ullIndex { 0 };
+	std::size_t ullIndex { 0 };
 	for (const auto& iterSel : vecSpan)
 	{
-		const auto* const pData = GetData(iterSel);
-		std::copy_n(pData, iterSel.ullSize, refUndo->at(static_cast<size_t>(ullIndex)).vecData.begin());
+		//In Virtual mode processing data chunk by chunk.
+		if (m_enDataMode != EHexDataMode::DATA_MEMORY && iterSel.ullSize > GetCacheSize())
+		{
+			const auto ullSizeChunk = GetCacheSize();
+			const auto iMod = iterSel.ullSize % ullSizeChunk;
+			auto ullChunks = iterSel.ullSize / ullSizeChunk + (iMod > 0 ? 1 : 0);
+			std::size_t ullOffset = 0;
+			while (ullChunks-- > 0)
+			{
+				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
+				if (const auto* const pData = GetData({ ullOffset, ullSize }); pData != nullptr)
+					std::copy_n(pData, ullSize, refUndo->at(ullIndex).vecData.begin() + ullOffset);
+				ullOffset += ullSize;
+			}
+		}
+		else {
+			if (const auto* const pData = GetData(iterSel); pData != nullptr)
+				std::copy_n(pData, iterSel.ullSize, refUndo->at(ullIndex).vecData.begin());
+		}
 		++ullIndex;
 	}
 }
@@ -4204,16 +4265,38 @@ void CHexCtrl::Undo()
 		return;
 	}
 
-	ULONGLONG ullIndex { 0 };
+	std::size_t ullIndex { 0 };
 	for (const auto& iter : *refUndo)
 	{
 		const auto& refUndoData = iter.vecData;
-		const auto pData = GetData({ iter.ullOffset, refUndoData.size() });
-		//Fill Redo with the data.
-		std::copy_n(pData, refUndoData.size(), refRedo->at(static_cast<size_t>(ullIndex)).vecData.begin());
-		//Undo the data.
-		std::copy_n(refUndoData.begin(), refUndoData.size(), pData);
-		SetDataVirtual(pData, { iter.ullOffset, refUndoData.size() });
+
+		//In Virtual mode processing data chunk by chunk.
+		if (m_enDataMode != EHexDataMode::DATA_MEMORY && refUndoData.size() > GetCacheSize())
+		{
+			const auto ullSizeChunk = GetCacheSize();
+			const auto iMod = refUndoData.size() % ullSizeChunk;
+			auto ullChunks = refUndoData.size() / ullSizeChunk + (iMod > 0 ? 1 : 0);
+			std::size_t ullOffset = 0;
+			while (ullChunks-- > 0)
+			{
+				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
+				if (const auto pData = GetData({ ullOffset, ullSize }); pData != nullptr)
+				{
+					std::copy_n(pData, ullSize, refRedo->at(ullIndex).vecData.begin() + ullOffset); //Fill Redo with the data.
+					std::copy_n(refUndoData.begin() + ullOffset, ullSize, pData); //Undo the data.
+					SetDataVirtual(pData, { ullOffset, ullSize });
+				}
+				ullOffset += ullSize;
+			}
+		}
+		else {
+			if (const auto pData = GetData({ iter.ullOffset, refUndoData.size() }); pData != nullptr)
+			{
+				std::copy_n(pData, refUndoData.size(), refRedo->at(ullIndex).vecData.begin()); //Fill Redo with the data.
+				std::copy_n(refUndoData.begin(), refUndoData.size(), pData); //Undo the data.
+				SetDataVirtual(pData, { iter.ullOffset, refUndoData.size() });
+			}
+		}
 		++ullIndex;
 	}
 	m_deqUndo.pop_back();

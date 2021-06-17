@@ -163,23 +163,21 @@ void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed,
 	rDC.SelectObject(m_fontHdr);
 
 	//Set item's text buffer first char to zero, then getting item's text and Draw it.
-	static WCHAR warrHdrText[MAX_PATH] { };
+	static WCHAR warrHdrText[MAX_PATH];
 	warrHdrText[0] = L'\0';
-	static HDITEMW hdItem { HDI_FORMAT | HDI_TEXT };
-	hdItem.cchTextMax = MAX_PATH;
-	hdItem.pszText = warrHdrText;
-
+	HDITEMW hdItem { HDI_FORMAT | HDI_TEXT, 0, warrHdrText, nullptr, MAX_PATH };
 	GetItem(iItem, &hdItem);
+
 	UINT uFormat { };
-	switch (hdItem.fmt)
+	switch (hdItem.fmt & HDF_JUSTIFYMASK)
 	{
-	case (HDF_STRING | HDF_LEFT):
+	case HDF_LEFT:
 		uFormat = DT_LEFT;
 		break;
-	case (HDF_STRING | HDF_CENTER):
+	case HDF_CENTER:
 		uFormat = DT_CENTER;
 		break;
-	case (HDF_STRING | HDF_RIGHT):
+	case HDF_RIGHT:
 		uFormat = DT_RIGHT;
 		break;
 	default:
@@ -205,7 +203,7 @@ void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed,
 		//with DT_CALCRECT flag (not drawing anything),
 		//and then calculate rect for final vertical text alignment.
 		CRect rcCalcText;
-		rDC.DrawTextW(warrHdrText, &rcCalcText, DT_CENTER | DT_CALCRECT);
+		rDC.DrawTextW(warrHdrText, &rcCalcText, uFormat | DT_CALCRECT);
 		rcText.top = rcText.Height() / 2 - rcCalcText.Height() / 2;
 		rDC.DrawTextW(warrHdrText, &rcOrig, uFormat);
 	}
