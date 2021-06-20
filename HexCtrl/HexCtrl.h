@@ -41,24 +41,24 @@ namespace HEXCTRL
 	class IHexCtrl
 	{
 	public:
-		virtual ULONGLONG BkmAdd(const HEXBKMSTRUCT& hbs, bool fRedraw = false) = 0;     //Adds new bookmark.
-		virtual void BkmClearAll() = 0;                                                  //Clear all bookmarks.
-		[[nodiscard]] virtual auto BkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT* = 0;       //Get bookmark by ID.
-		[[nodiscard]] virtual auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT* = 0; //Get bookmark by Index.
-		[[nodiscard]] virtual ULONGLONG BkmGetCount()const = 0;                          //Get bookmarks count.
-		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT* = 0;   //HitTest for given offset.
-		virtual void BkmRemoveByID(ULONGLONG ullID) = 0;                                 //Remove bookmark by the given ID.
-		virtual void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual = nullptr) = 0;   //Enable/disable bookmarks virtual mode.
-		virtual void ClearData() = 0;                           //Clears all data from HexCtrl's view (not touching data itself).
-		virtual bool Create(const HEXCREATESTRUCT& hcs) = 0;    //Main initialization method.
-		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hParent) = 0; //Сreates custom dialog control.
-		virtual void Destroy() = 0;                             //Deleter.
+		virtual ULONGLONG BkmAdd(const HEXBKM& hbs, bool fRedraw = false) = 0;     //Adds new bookmark.
+		virtual void BkmClearAll() = 0;                                            //Clear all bookmarks.
+		[[nodiscard]] virtual auto BkmGetByID(ULONGLONG ullID)->HEXBKM* = 0;       //Get bookmark by ID.
+		[[nodiscard]] virtual auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBKM* = 0; //Get bookmark by Index.
+		[[nodiscard]] virtual ULONGLONG BkmGetCount()const = 0;                    //Get bookmarks count.
+		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBKM* = 0;   //HitTest for given offset.
+		virtual void BkmRemoveByID(ULONGLONG ullID) = 0;                           //Remove bookmark by the given ID.
+		virtual void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual = nullptr) = 0; //Enable/disable bookmarks virtual mode.
+		virtual void ClearData() = 0; //Clears all data from HexCtrl's view (not touching data itself).
+		virtual bool Create(const HEXCREATE& hcs) = 0;                       //Main initialization method.
+		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hParent) = 0;       //Сreates custom dialog control.
+		virtual void Destroy() = 0;                                          //Deleter.
 		virtual void ExecuteCmd(EHexCmd enCmd) = 0;                          //Execute a command within the control.
 		[[nodiscard]] virtual auto GetCacheSize()const->DWORD = 0;           //Returns Virtual/Message mode cache size.
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
-		[[nodiscard]] virtual auto GetColors()const->HEXCOLORSSTRUCT = 0;    //Current colors.
-		[[nodiscard]] virtual auto GetData(HEXSPANSTRUCT hss)const->std::byte* = 0; //Get pointer to data offset, no matter what mode the control works in.
+		[[nodiscard]] virtual auto GetColors()const->HEXCOLORS = 0;          //Current colors.
+		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->std::byte* = 0; //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual int GetEncoding()const = 0;                    //Get current code page ID.
 		[[nodiscard]] virtual long GetFontSize()const = 0;                   //Current font size.
@@ -67,25 +67,25 @@ namespace HEXCTRL
 		[[nodiscard]] virtual auto GetPagesCount()const->ULONGLONG = 0;      //Get count of pages.
 		[[nodiscard]] virtual auto GetPagePos()const->ULONGLONG = 0;         //Get current page a cursor stays at.
 		[[nodiscard]] virtual DWORD GetPageSize()const = 0;                  //Current page size.
-		[[nodiscard]] virtual auto GetSelection()const->std::vector<HEXSPANSTRUCT> = 0; //Get current selection.
+		[[nodiscard]] virtual auto GetSelection()const->std::vector<HEXSPAN> = 0; //Get current selection.
 		[[nodiscard]] virtual HWND GetWindowHandle(EHexWnd enWnd)const = 0;  //Retrieves control's window/dialog handle.
 		virtual void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0) = 0;   //Go (scroll) to a given offset.
 		[[nodiscard]] virtual bool HasSelection()const = 0;    //Does currently have any selection or not.
-		[[nodiscard]] virtual auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTESTSTRUCT> = 0; //HitTest given point.
+		[[nodiscard]] virtual auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTEST> = 0; //HitTest given point.
 		[[nodiscard]] virtual bool IsCmdAvail(EHexCmd enCmd)const = 0; //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] virtual bool IsCreated()const = 0;       //Shows whether control is created or not.
 		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
-		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISSTRUCT = 0; //Ensures that the given offset is visible.
+		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION = 0; //Ensures that the given offset is visible.
 		[[nodiscard]] virtual bool IsVirtual()const = 0;       //Is working in Virtual or default mode.
 		virtual void ModifyData(const HEXMODIFY& hms) = 0;     //Main routine to modify data in IsMutable()==true mode.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
 		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true) = 0; //Set the caret position.
-		virtual void SetColors(const HEXCOLORSSTRUCT& clr) = 0;//Set all the control's colors.
+		virtual void SetColors(const HEXCOLORS& clr) = 0;      //Set all the control's colors.
 		virtual bool SetConfig(std::wstring_view wstrPath) = 0;//Set configuration file, or "" for defaults.
-		virtual void SetData(const HEXDATASTRUCT& hds) = 0;    //Main method for setting data to display (and edit).	
+		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).	
 		virtual void SetEncoding(int iCodePage) = 0;           //Code-page for text area.
 		virtual void SetFont(const LOGFONTW* pLogFont) = 0;    //Set the control's new font. This font has to be monospaced.
 		virtual void SetFontSize(UINT uiSize) = 0;             //Set the control's font size.
@@ -93,7 +93,7 @@ namespace HEXCTRL
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
 		virtual void SetOffsetMode(bool fHex) = 0;             //Set offset being shown as Hex or as Decimal.
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wstrName = L"Page") = 0; //Set page size and name to draw the lines in-between.
-		virtual void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
+		virtual void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
 		virtual void SetWheelRatio(double dbRatio) = 0;        //Set the ratio for how much to scroll with mouse-wheel.
 	};
 

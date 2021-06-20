@@ -43,7 +43,7 @@ namespace HEXCTRL::INTERNAL
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		void AddToList(ULONGLONG ullOffset);
 		void ClearList();
-		void HexCtrlHighlight(const std::vector<HEXSPANSTRUCT>& vecSel); //Highlight found occurence in HexCtrl.
+		void HexCtrlHighlight(const std::vector<HEXSPAN>& vecSel); //Highlight found occurence in HexCtrl.
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		void Prepare();
 		[[nodiscard]] bool PrepareHex();
@@ -116,7 +116,7 @@ namespace HEXCTRL::INTERNAL
 		std::wstring m_wstrReplace;     //Actual wstring to replace.
 		const std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
-		HEXSPANSTRUCT m_stSelSpan { };  //Previous selection.
+		HEXSPAN m_stSelSpan { };  //Previous selection.
 		CMenu m_stMenuList;
 	};
 }

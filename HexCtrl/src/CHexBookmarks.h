@@ -17,11 +17,11 @@ namespace HEXCTRL::INTERNAL
 	class CHexBookmarks
 	{
 	public:
-		ULONGLONG Add(const HEXBKMSTRUCT& hbs, bool fRedraw = true); //Returns new bookmark Id.
+		ULONGLONG Add(const HEXBKM& hbs, bool fRedraw = true); //Returns new bookmark Id.
 		void Attach(IHexCtrl* pHexCtrl);
 		void ClearAll();
-		[[nodiscard]] auto GetByID(ULONGLONG ullID)->HEXBKMSTRUCT*;       //Bookmark by ID.
-		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT*; //Bookmark by index (in inner list).
+		[[nodiscard]] auto GetByID(ULONGLONG ullID)->HEXBKM*;       //Bookmark by ID.
+		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex)->HEXBKM*; //Bookmark by index (in inner list).
 		[[nodiscard]] ULONGLONG GetCount()const;
 		[[nodiscard]] ULONGLONG GetCurrent()const;
 		[[nodiscard]] auto GetTouchTime()const->__time64_t;
@@ -29,15 +29,15 @@ namespace HEXCTRL::INTERNAL
 		void GoNext();
 		void GoPrev();
 		[[nodiscard]] bool HasBookmarks()const;
-		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT*;
+		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)->HEXBKM*;
 		[[nodiscard]] bool IsVirtual()const;
 		void Remove(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID);
 		void SetVirtual(bool fEnable, IHexVirtBkm* pVirtual = nullptr);
 		void SortData(int iColumn, bool fAscending);
-		void Update(ULONGLONG ullID, const HEXBKMSTRUCT& stBookmark);
+		void Update(ULONGLONG ullID, const HEXBKM& stBookmark);
 	private:
-		std::deque<HEXBKMSTRUCT> m_deqBookmarks;
+		std::deque<HEXBKM> m_deqBookmarks;
 		IHexCtrl* m_pHexCtrl { };
 		IHexVirtBkm* m_pVirtual { };
 		LONGLONG m_llIndexCurr { }; //Current bookmark position index, to move next/prev.

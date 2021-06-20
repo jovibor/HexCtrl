@@ -163,7 +163,7 @@ CHexCtrl::CHexCtrl()
 	}
 }
 
-ULONGLONG CHexCtrl::BkmAdd(const HEXBKMSTRUCT& hbs, bool fRedraw)
+ULONGLONG CHexCtrl::BkmAdd(const HEXBKM& hbs, bool fRedraw)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -181,7 +181,7 @@ void CHexCtrl::BkmClearAll()
 	m_pBookmarks->ClearAll();
 }
 
-auto CHexCtrl::BkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT*
+auto CHexCtrl::BkmGetByID(ULONGLONG ullID)->HEXBKM*
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -190,7 +190,7 @@ auto CHexCtrl::BkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT*
 	return m_pBookmarks->GetByID(ullID);
 }
 
-auto CHexCtrl::BkmGetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT*
+auto CHexCtrl::BkmGetByIndex(ULONGLONG ullIndex)->HEXBKM*
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -208,7 +208,7 @@ ULONGLONG CHexCtrl::BkmGetCount() const
 	return m_pBookmarks->GetCount();
 }
 
-auto CHexCtrl::BkmHitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT*
+auto CHexCtrl::BkmHitTest(ULONGLONG ullOffset)->HEXBKM*
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -263,7 +263,7 @@ void CHexCtrl::ClearData()
 	Redraw();
 }
 
-bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
+bool CHexCtrl::Create(const HEXCREATE& hcs)
 {
 	assert(!IsCreated()); //Already created.
 	if (IsCreated())
@@ -303,7 +303,7 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 	{
 		if (!CWnd::CreateEx(hcs.dwExStyle, HEXCTRL_CLASSNAME_WSTR, L"HexControl", dwStyle, hcs.rect,
 			CWnd::FromHandle(hcs.hwndParent), uID))
-			wstrError.Format(L"HexCtrl (ID:%u) CreateEx failed.\r\nCheck HEXCREATESTRUCT parameters.", uID);
+			wstrError.Format(L"HexCtrl (ID:%u) CreateEx failed.\r\nCheck HEXCREATE parameters.", uID);
 	};
 	switch (hcs.enCreateMode)
 	{
@@ -395,7 +395,7 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hParent)
 	if (IsCreated())
 		return false;
 
-	HEXCREATESTRUCT hcs;
+	HEXCREATE hcs;
 	hcs.hwndParent = hParent;
 	hcs.uID = uCtrlID;
 	hcs.enCreateMode = EHexCreateMode::CREATE_CUSTOMCTRL;
@@ -465,8 +465,8 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		SetGroupMode(EHexDataSize::SIZE_QWORD);
 		break;
 	case EHexCmd::CMD_BKM_ADD:
-		m_pBookmarks->Add(HEXBKMSTRUCT { HasSelection() ? GetSelection()
-			: std::vector<HEXSPANSTRUCT> { { GetCaretPos(), 1 } } });
+		m_pBookmarks->Add(HEXBKM { HasSelection() ? GetSelection()
+			: std::vector<HEXSPAN> { { GetCaretPos(), 1 } } });
 		break;
 	case EHexCmd::CMD_BKM_REMOVE:
 		m_pBookmarks->Remove(m_fMenuCMD ? m_optRMouseClick.value() : GetCaretPos());
@@ -631,7 +631,7 @@ ULONGLONG CHexCtrl::GetCaretPos()const
 	return m_ullCaretPos;
 }
 
-auto CHexCtrl::GetColors()const->HEXCOLORSSTRUCT
+auto CHexCtrl::GetColors()const->HEXCOLORS
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -640,7 +640,7 @@ auto CHexCtrl::GetColors()const->HEXCOLORSSTRUCT
 	return m_stColor;
 }
 
-auto CHexCtrl::GetData(HEXSPANSTRUCT hss)const->std::byte*
+auto CHexCtrl::GetData(HEXSPAN hss)const->std::byte*
 {
 	assert(IsCreated());
 	assert(IsDataSet());
@@ -737,7 +737,7 @@ DWORD CHexCtrl::GetPageSize()const
 	return m_dwPageSize;
 }
 
-auto CHexCtrl::GetSelection()const->std::vector<HEXSPANSTRUCT>
+auto CHexCtrl::GetSelection()const->std::vector<HEXSPAN>
 {
 	assert(IsCreated());
 	assert(IsDataSet());
@@ -832,7 +832,7 @@ bool CHexCtrl::HasSelection()const
 	return m_pSelection->HasSelection();
 }
 
-auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTRUCT>
+auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST>
 {
 	assert(IsCreated());
 	assert(IsDataSet());
@@ -964,9 +964,9 @@ bool CHexCtrl::IsOffsetAsHex()const
 	return m_fOffsetAsHex;
 }
 
-auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISSTRUCT
+auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION
 {
-	//Returns HEXVISSTRUCT with two std::int8_t for vertical and horizontal visibility respectively.
+	//Returns HEXVISION with two std::int8_t for vertical and horizontal visibility respectively.
 	//-1 - ullOffset is higher, or at the left, of the visible area
 	// 1 - lower, or at the right
 	// 0 - visible.
@@ -1292,7 +1292,7 @@ void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
 	OnCaretPosChange(ullOffset);
 }
 
-void CHexCtrl::SetColors(const HEXCOLORSSTRUCT& clr)
+void CHexCtrl::SetColors(const HEXCOLORS& clr)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -1565,7 +1565,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 	return fRet;
 }
 
-void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
+void CHexCtrl::SetData(const HEXDATA& hds)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -1727,7 +1727,7 @@ void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wstrName)
 		Redraw();
 }
 
-void CHexCtrl::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw, bool fHighlight)
+void CHexCtrl::SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw, bool fHighlight)
 {
 	assert(IsCreated());
 	assert(IsDataSet());
@@ -2090,7 +2090,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 		break;
 	}
 
-	hmd.vecSpan.emplace_back(HEXSPANSTRUCT { GetCaretPos(), ullSizeToModify });
+	hmd.vecSpan.emplace_back(HEXSPAN { GetCaretPos(), ullSizeToModify });
 	ModifyData(hmd);
 
 	GlobalUnlock(hClipboard);
@@ -2557,7 +2557,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 		std::wstring wstrHexBkmToPrint { }, wstrAsciiBkmToPrint { }; //Bookmarks to print.
 		int iBkmHexPosToPrintX { -1 }, iBkmAsciiPosToPrintX { };
 		bool fBookmark { false };  //Flag to show current Bookmark in current Hex presence.
-		const HEXBKMSTRUCT* pBkmCurr { };
+		const HEXBKM* pBkmCurr { };
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Ascii the same.
 
 		//Main loop for printing Hex chunks and Ascii chars.
@@ -3242,9 +3242,9 @@ void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 		(ullScrollV - (ullScrollV % m_sizeLetter.cy)));
 }
 
-auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>
+auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTEST>
 {
-	HEXHITTESTSTRUCT stHit;
+	HEXHITTEST stHit;
 	const auto iY = pt.y;
 	const auto iX = pt.x + static_cast<int>(m_pScrollH->GetScrollPos()); //To compensate horizontal scroll.
 	const auto ullCurLine = GetTopLine();
@@ -3296,7 +3296,7 @@ auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>
 	if (stHit.ullOffset >= m_ullDataSize)
 		fHit = false;
 
-	return fHit ? std::optional<HEXHITTESTSTRUCT> { stHit } : std::nullopt;
+	return fHit ? std::optional<HEXHITTEST> { stHit } : std::nullopt;
 }
 
 bool CHexCtrl::IsCurTextArea()const
@@ -3320,7 +3320,7 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSiz
 	const auto& vecSpanRef = hms.vecSpan;
 	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
 	const auto ullTotalSize = std::accumulate(vecSpanRef.begin(), vecSpanRef.end(), 0ULL,
-		[](ULONGLONG ullSumm, const HEXSPANSTRUCT& ref) {return ullSumm + ref.ullSize; });
+		[](ULONGLONG ullSumm, const HEXSPAN& ref) {return ullSumm + ref.ullSize; });
 	assert(ullTotalSize <= GetDataSize());
 
 	CHexDlgCallback dlgClbk(L"Modifying...", vecSpanRef.begin()->ullOffset, vecSpanRef.back().ullOffset + vecSpanRef.back().ullSize, this);
@@ -3388,7 +3388,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 
 	if (auto pBkm = m_pBookmarks->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.
 	{
-		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK } };
+		HEXNOTIFY hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK } };
 		hns.pData = reinterpret_cast<std::byte*>(pBkm);
 		ParentNotify(hns);
 	}
@@ -3396,15 +3396,15 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 	ParentNotify(HEXCTRL_MSG_CARETCHANGE);
 }
 
-void CHexCtrl::ParentNotify(const HEXNOTIFYSTRUCT& hns)const
+void CHexCtrl::ParentNotify(const HEXNOTIFY& hns)const
 {
 	::SendMessageW(GetParent()->GetSafeHwnd(), WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&hns));
 }
 
 void CHexCtrl::ParentNotify(UINT uCode)const
 {
-	HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), uCode } };
-	std::vector<HEXSPANSTRUCT> vecData { };
+	HEXNOTIFY hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), uCode } };
+	std::vector<HEXSPAN> vecData { };
 
 	switch (uCode)
 	{
@@ -3729,9 +3729,9 @@ void CHexCtrl::Redo()
 
 	const auto& refRedo = m_deqRedo.back();
 
-	std::vector<HEXSPANSTRUCT> vecSpan { };
+	std::vector<HEXSPAN> vecSpan { };
 	std::transform(refRedo->begin(), refRedo->end(), std::back_inserter(vecSpan),
-		[](SUNDO& ref) { return HEXSPANSTRUCT { ref.ullOffset, ref.vecData.size() }; });
+		[](SUNDO& ref) { return HEXSPAN { ref.ullOffset, ref.vecData.size() }; });
 
 	//Making new Undo data snapshot.
 	SnapshotUndo(vecSpan);
@@ -4068,7 +4068,7 @@ void CHexCtrl::SelAddUp()
 	}
 }
 
-void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss)
+void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPAN& hss)
 {
 	if (!IsVirtual())
 		return;
@@ -4083,11 +4083,11 @@ void CHexCtrl::SetRedraw(bool fRedraw)
 	m_fRedraw = fRedraw;
 }
 
-void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
+void CHexCtrl::SnapshotUndo(const std::vector<HEXSPAN>& vecSpan)
 {
 	constexpr DWORD dwUndoMax { 500 }; //How many Undo states to preserve.
 	const auto ullTotalSize = std::accumulate(vecSpan.begin(), vecSpan.end(), 0ULL,
-		[](ULONGLONG ullSumm, const HEXSPANSTRUCT& ref) {return ullSumm + ref.ullSize; });
+		[](ULONGLONG ullSumm, const HEXSPAN& ref) {return ullSumm + ref.ullSize; });
 
 	//Check for very big undo size.
 	if (ullTotalSize > 1024 * 1024 * 10)
@@ -4325,7 +4325,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	}
 
 	HEXMODIFY hms;
-	hms.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, 1 });
+	hms.vecSpan.emplace_back(HEXSPAN { m_ullCaretPos, 1 });
 	hms.ullDataSize = sizeof(BYTE);
 	hms.pData = reinterpret_cast<std::byte*>(&chByte);
 	ModifyData(hms);
@@ -4343,7 +4343,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 	else
 	{	//For user defined custom menu we notifying parent window.
-		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK } };
+		HEXNOTIFY hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK } };
 		hns.ullData = wMenuID;
 		hns.point = m_stMenuClickedPt;
 		ParentNotify(hns);
@@ -4355,7 +4355,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 {
 	//Notify parent that we are about to display a context menu.
-	HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU } };
+	HEXNOTIFY hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU } };
 	hns.point = m_stMenuClickedPt = point;
 	ParentNotify(hns);
 	m_menuMain.GetSubMenu(0)->TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
@@ -4511,7 +4511,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 			chByte = (chByte & 0x0F) | (chByteCurr & 0xF0);
 
 		HEXMODIFY hms;
-		hms.vecSpan.emplace_back(HEXSPANSTRUCT { m_ullCaretPos, 1 });
+		hms.vecSpan.emplace_back(HEXSPAN { m_ullCaretPos, 1 });
 		hms.ullDataSize = sizeof(BYTE);
 		hms.pData = reinterpret_cast<std::byte*>(&chByte);
 		ModifyData(hms);
@@ -4555,7 +4555,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	m_fSelectionBlock = GetAsyncKeyState(VK_MENU) < 0;
 	SetCapture();
 
-	std::vector<HEXSPANSTRUCT> vecSel { };
+	std::vector<HEXSPAN> vecSel { };
 	if (nFlags & MK_SHIFT)
 	{
 		ULONGLONG ullSelStart;
@@ -4570,7 +4570,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 			ullSelStart = m_ullCursorPrev;
 			ullSelEnd = m_ullCursorNow + 1;
 		}
-		vecSel.emplace_back(HEXSPANSTRUCT { ullSelStart, ullSelEnd - ullSelStart });
+		vecSel.emplace_back(HEXSPAN { ullSelStart, ullSelEnd - ullSelStart });
 	}
 	else
 		m_ullCursorPrev = m_ullCursorNow;
@@ -4692,10 +4692,10 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 
 		m_ullCursorPrev = ullClick;
 		m_ullCaretPos = ullStart;
-		std::vector<HEXSPANSTRUCT> vecSel;
+		std::vector<HEXSPAN> vecSel;
 		vecSel.reserve(static_cast<size_t>(ullLines));
 		for (auto iterLines = 0ULL; iterLines < ullLines; ++iterLines)
-			vecSel.emplace_back(HEXSPANSTRUCT { ullStart + m_dwCapacity * iterLines, ullSize });
+			vecSel.emplace_back(HEXSPAN { ullStart + m_dwCapacity * iterLines, ullSize });
 		SetSelection(vecSel);
 	}
 	else

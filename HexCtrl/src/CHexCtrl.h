@@ -37,24 +37,24 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexCtrl();
-		ULONGLONG BkmAdd(const HEXBKMSTRUCT& hbs, bool fRedraw)override; //Adds new bookmark.
-		void BkmClearAll()override; //Clear all bookmarks.
-		[[nodiscard]] auto BkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT* override; //Get bookmark by ID.
-		[[nodiscard]] auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT* override; //Get bookmark by Index.
-		[[nodiscard]] ULONGLONG BkmGetCount()const override; //Get bookmarks count.
-		[[nodiscard]] auto BkmHitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT* override;
-		void BkmRemoveByID(ULONGLONG ullID)override;        //Remove bookmark by the given ID.
+		ULONGLONG BkmAdd(const HEXBKM& hbs, bool fRedraw)override;              //Adds new bookmark.
+		void BkmClearAll()override;                                             //Clear all bookmarks.
+		[[nodiscard]] auto BkmGetByID(ULONGLONG ullID)->HEXBKM* override;       //Get bookmark by ID.
+		[[nodiscard]] auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBKM* override; //Get bookmark by Index.
+		[[nodiscard]] ULONGLONG BkmGetCount()const override;                    //Get bookmarks count.
+		[[nodiscard]] auto BkmHitTest(ULONGLONG ullOffset)->HEXBKM* override;   //HitTest for given offset.
+		void BkmRemoveByID(ULONGLONG ullID)override;                     //Remove bookmark by the given ID.
 		void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual)override; //Enable/disable bookmarks virtual mode.
-		void ClearData()override;                           //Clears all data from HexCtrl's view (not touching data itself).
-		bool Create(const HEXCREATESTRUCT& hcs)override;    //Main initialization method.
-		bool CreateDialogCtrl(UINT uCtrlID, HWND hParent)override; //Сreates custom dialog control.
-		void Destroy()override;                             //Deleter.
+		void ClearData()override; //Clears all data from HexCtrl's view (not touching data itself).
+		bool Create(const HEXCREATE& hcs)override;                        //Main initialization method.
+		bool CreateDialogCtrl(UINT uCtrlID, HWND hParent)override;        //Сreates custom dialog control.
+		void Destroy()override;                                           //Deleter.
 		void ExecuteCmd(EHexCmd eCmd)override;                            //Execute a command within the control.
 		[[nodiscard]] auto GetCacheSize()const->DWORD override;           //Returns Virtual/Message mode cache size.
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
-		[[nodiscard]] auto GetColors()const->HEXCOLORSSTRUCT override;    //Current colors.
-		[[nodiscard]] auto GetData(HEXSPANSTRUCT hss)const->std::byte* override; //Get pointer to data offset, no matter what mode the control works in.
+		[[nodiscard]] auto GetColors()const->HEXCOLORS override;          //Current colors.
+		[[nodiscard]] auto GetData(HEXSPAN hss)const->std::byte* override; //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;        //Get currently set data size.
 		[[nodiscard]] int GetEncoding()const override;                    //Get current code page ID.
 		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
@@ -63,25 +63,25 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetPagesCount()const->ULONGLONG override;      //Get count of pages.
 		[[nodiscard]] auto GetPagePos()const->ULONGLONG override;         //Get current page a cursor stays at.
 		[[nodiscard]] DWORD GetPageSize()const override;                  //Current page size.
-		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPANSTRUCT> override; //Gets current selection.
+		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPAN> override; //Gets current selection.
 		[[nodiscard]] HWND GetWindowHandle(EHexWnd enWnd)const override;  //Retrieves control's window/dialog handle.
 		void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0)override;    //Go (scroll) to a given offset.
 		[[nodiscard]] bool HasSelection()const override;    //Does currently have any selection or not.
-		[[nodiscard]] auto HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTESTSTRUCT> override; //HitTest given point.
+		[[nodiscard]] auto HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST> override; //HitTest given point.
 		[[nodiscard]] bool IsCmdAvail(EHexCmd eCmd)const override;        //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] bool IsCreated()const override;       //Shows whether control is created or not.
 		[[nodiscard]] bool IsDataSet()const override;       //Shows whether a data was set to the control or not.
 		[[nodiscard]] bool IsMutable()const override;       //Is edit mode enabled or not.
 		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
-		[[nodiscard]] auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISSTRUCT override; //Ensures that the given offset is visible.
+		[[nodiscard]] auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION override; //Ensures that the given offset is visible.
 		[[nodiscard]] bool IsVirtual()const override;       //Is working in Virtual or default mode.
 		void ModifyData(const HEXMODIFY& hms)override;      //Main routine to modify data in IsMutable()==true mode.
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Set the control's current capacity.
 		void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true)override; //Set the caret position.
-		void SetColors(const HEXCOLORSSTRUCT& clr)override; //Set all the control's colors.
+		void SetColors(const HEXCOLORS& clr)override;       //Set all the control's colors.
 		bool SetConfig(std::wstring_view wstrPath)override; //Set configuration file, or "" for defaults.
-		void SetData(const HEXDATASTRUCT& hds)override;     //Main method for setting data to display (and edit).	
+		void SetData(const HEXDATA& hds)override;           //Main method for setting data to display (and edit).	
 		void SetEncoding(int iCodePage)override;            //Code-page for text area.
 		void SetFont(const LOGFONTW* pLogFont)override;     //Set the control's new font. This font has to be monospaced.
 		void SetFontSize(UINT uiSize)override;              //Set the control's font size.
@@ -89,7 +89,7 @@ namespace HEXCTRL::INTERNAL
 		void SetMutable(bool fEnable)override;              //Enable or disable mutable/editable mode.
 		void SetOffsetMode(bool fHex)override;              //Set offset being shown as Hex or as Decimal.
 		void SetPageSize(DWORD dwSize, std::wstring_view wstrName)override;  //Set page size and name to draw the line between.
-		void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true, bool fHighlight = false)override; //Set current selection.
+		void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false)override; //Set current selection.
 		void SetWheelRatio(double dbRatio)override;         //Set the ratio for how much to scroll with mouse-wheel.
 	private:
 		struct SHBITMAP;
@@ -134,14 +134,14 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetCommand(UCHAR uChar, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
 		[[nodiscard]] auto GetTopLine()const->ULONGLONG;       //Returns current top line number in view.
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Hex chunk.
-		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>; //Is any hex chunk withing given point?
+		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTEST>; //Is any hex chunk withing given point?
 		[[nodiscard]] bool IsCurTextArea()const;               //Whether last focus was set at Text or Hex chunks area.
 		[[nodiscard]] bool IsDrawable()const;                  //Should WM_PAINT be handled atm or not.
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
 		template<typename T>
 		void ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSizeToOperWith); //Main "modify" method with different workers.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
-		void ParentNotify(const HEXNOTIFYSTRUCT& hns)const;    //Notify routine used to send messages to Parent window.
+		void ParentNotify(const HEXNOTIFY& hns)const;    //Notify routine used to send messages to Parent window.
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 		void Print();                                          //Printing routine.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
@@ -155,9 +155,9 @@ namespace HEXCTRL::INTERNAL
 		void SelAddLeft();       //Left Key pressed with the Shift.
 		void SelAddRight();      //Right Key pressed with the Shift.
 		void SelAddUp();         //Up Key pressed with the Shift.
-		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in Virtual mode.
+		void SetDataVirtual(std::byte* pData, const HEXSPAN& hss); //Sets data (notifies back) in Virtual mode.
 		void SetRedraw(bool fRedraw); //Handle WM_PAINT message or not.
-		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
+		void SnapshotUndo(const std::vector<HEXSPAN>& vecSpan); //Takes currently modifiable data snapshot.
 		void TtBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip bookmark show/hide.
 		void TtOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();
@@ -206,7 +206,7 @@ namespace HEXCTRL::INTERNAL
 		const int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
 		const int m_iFirstHorizLine { 0 };    //First horizontal line indent.
 		const int m_iFirstVertLine { 0 };     //First vertical line indent.
-		HEXCOLORSSTRUCT m_stColor;            //All control related colors.
+		HEXCOLORS m_stColor;            //All control related colors.
 		EHexDataSize m_enGroupMode { EHexDataSize::SIZE_BYTE }; //Current "Group Data By" mode.
 		std::byte* m_pData { };               //Main data pointer. Modifiable in "Edit" mode.
 		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.
@@ -221,7 +221,7 @@ namespace HEXCTRL::INTERNAL
 		CMenu m_menuMain;                     //Main popup menu.
 		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		CPen m_penLines;                      //Pen for lines.
-		HEXBKMSTRUCT* m_pBkmTtCurr { };       //Currently shown bookmark's tooltip;
+		HEXBKM* m_pBkmTtCurr { };       //Currently shown bookmark's tooltip;
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
 		std::optional<ULONGLONG> m_optRMouseClick { }; //Right mouse clicked chunk. Used in bookmarking.
@@ -271,7 +271,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
 		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
-		bool m_fHighLatency { false };        //Reflects HEXDATASTRUCT::fHighLatency.
+		bool m_fHighLatency { false };        //Reflects HEXDATA::fHighLatency.
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
 		bool m_fMenuCMD { false };            //Command to be executed through menu, not through key-shortcut.
 		bool m_fRedraw { true };            //Should WM_PAINT be handled or not.

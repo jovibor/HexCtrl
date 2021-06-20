@@ -71,18 +71,18 @@
   * [SetWheelRatio](#setwheelratio)
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
-  * [HEXBKMSTRUCT](#hexbkmstruct)
+  * [HEXBKM](#hexbkm)
   * [HEXCOLOR](#hexcolor)
   * [HEXCOLORINFO](#hexcolorinfo)
-  * [HEXCOLORSSTRUCT](#hexcolorsstruct)
-  * [HEXCREATESTRUCT](#hexcreatestruct)
+  * [HEXCOLORS](#hexcolors)
+  * [HEXCREATE](#hexcreate)
   * [HEXDATAINFO](#hexdatainfo)
-  * [HEXDATASTRUCT](#hexdatastruct)
-  * [HEXHITTESTSTRUCT](#hexhitteststruct)
+  * [HEXDATA](#hexdata)
+  * [HEXHITTEST](#hexhittest)
   * [HEXMODIFY](#hexmodify)
-  * [HEXNOTIFYSTRUCT](#hexnotifystruct)
-  * [HEXSPANSTRUCT](#hexspanstruct)
-  * [HEXVISSTRUCT](#hexvisstruct)
+  * [HEXNOTIFY](#hexnotify)
+  * [HEXSPAN](#hexspan)
+  * [HEXVISION](#hexvision)
   </details>
 * [Enums](#enums) <details><summary>_Expand_</summary>
   * [EHexCmd](#ehexcmd)
@@ -196,16 +196,16 @@ using namespace HEXCTRL;
 ## [](#)Creating
 
 ### [](#)Classic Approach
-[`Create`](#create) is the first method you call to create **HexCtrl** instance. It takes [`HEXCREATESTRUCT`](#hexcreatestruct) reference as an argument.
+[`Create`](#create) is the first method you call to create **HexCtrl** instance. It takes [`HEXCREATE`](#HEXCREATE) reference as an argument.
 
 You can choose whether control will behave as a *child* or independent *popup* window, by setting `enCreateMode` member of this struct to [`EHexCreateMode::CREATE_CHILD`](#ehexcreatemode) or [`EHexCreateMode::CREATE_POPUP`](#ehexcreatemode) respectively.
 ```cpp
-HEXCREATESTRUCT hcs;
+HEXCREATE hcs;
 hcs.enCreateMode = EHexCreateMode::CREATE_POPUP;
 hcs.hwndParent = m_hWnd;
 m_myHex->Create(hcs);
 ```
-For all available options see [`HEXCREATESTRUCT`](#hexcreatestruct) description.
+For all available options see [`HEXCREATE`](#HEXCREATE) description.
 
 ### [](#)In Dialog
 To use **HexCtrl** within *Dialog* you can, of course, create it with the [Classic Approach](#classic-approach), call [`Create`](#create) method and provide all the necessary information.
@@ -237,13 +237,13 @@ The code below shows how to construct [`IHexCtrlPtr`](#ihexctrlptr) object and d
 ```cpp
 IHexCtrlPtr myHex { CreateHexCtrl() };
 
-HEXCREATESTRUCT hcs;
+HEXCREATE hcs;
 hcs.hwndParent = m_hWnd;
 hcs.rect = {0, 0, 600, 400}; //Window rect.
 
 myHex->Create(hcs);
 
-HEXDATASTRUCT hds;
+HEXDATA hds;
 hds.pData = (unsigned char*)GetModuleHandle(0);
 hds.ullDataSize = 0x1FF;
 
@@ -252,7 +252,7 @@ myHex->SetData(hds);
 The next example displays `std::string`'s text as hex:
 ```cpp
 std::string str = "My string";
-HEXDATASTRUCT hds;
+HEXDATA hds;
 hds.pData = (unsigned char*)str.data();
 hds.ullDataSize = str.size();
 
@@ -263,39 +263,39 @@ myHex->SetData(hds);
 Besides the standard default mode, when **HexCtrl** just holds a pointer to some bytes in memory, it also has additional Virtual mode.  
 This mode can be quite useful, for instance in cases where you need to display a very large amount of data that can't fit in memory all at once.
 
-If `HEXDATASTRUCT::pHexVirtData` pointer is set then all the data routine will be done through it. This pointer is of `IHexVirtData` class type, which is a pure abstract base class.
+If `HEXDATA::pHexVirtData` pointer is set then all the data routine will be done through it. This pointer is of `IHexVirtData` class type, which is a pure abstract base class.
 You have to derive your own class from it and implement all its public methods.
 ```cpp
 class IHexVirtData
 {
 public:
     [[nodiscard]] virtual std::byte* OnHexGetData(const HEXDATAINFO&) = 0; //Data index and size to get.
-    virtual void OnHexSetData(std::byte*, const HEXDATAINFO&) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
+    virtual void OnHexSetData(std::byte*, const HEXDATAINFO&) = 0; //Routine to modify data, if HEXDATA::fMutable == true.
 };
 ```
-Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtData = &yourDerivedObject`.
+Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATA::pHexVirtData = &yourDerivedObject`.
 
 ## [](#)Virtual Bookmarks
 **HexCtrl** has innate functional to work with any amount of bookmarked regions. These regions can be assigned with individual background and text color and description.
 
 But if you have some big and complicated data logic and want to handle all these regions yourself, you can do it.  
-    virtuvoid SetData(std::byte*, const HEXSPANSTRUCT&) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
+    virtuvoid SetData(std::byte*, const HEXSPAN&) = 0; //Routine to modify data, if HEXDATA::fMutable == true.
 
 
 To enable virtual bookmarks call the [`BkmSetVirtual`](#bkmsetvirtual) method.  
 
-The main method of the `IHexVirtBkm` interface is `HitTest`. It takes byte's offset and returns pointer to [`HEXBKMSTRUCT`](#HEXBKMSTRUCT) if there is a bookmark withing this byte, or `nullptr` otherwise.
+The main method of the `IHexVirtBkm` interface is `HitTest`. It takes byte's offset and returns pointer to [`HEXBKM`](#HEXBKM) if there is a bookmark withing this byte, or `nullptr` otherwise.
 
 ```cpp
 class IHexVirtBkm
 {
 public:
-    virtual ULONGLONG OnHexBkmAdd(const HEXBKMSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
+    virtual ULONGLONG OnHexBkmAdd(const HEXBKM& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
     virtual void OnHexBkmClearAll() = 0; //Clear all bookmarks.
     [[nodiscard]] virtual ULONGLONG OnHexBkmGetCount() = 0; //Get total bookmarks count.
-    [[nodiscard]] virtual auto OnHexBkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT* = 0; //Bookmark by ID.
-    [[nodiscard]] virtual auto OnHexBkmGetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT* = 0; //Bookmark by index (in inner list).
-    [[nodiscard]] virtual auto OnHexBkmHitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT* = 0;   //Does given offset have a bookmark?
+    [[nodiscard]] virtual auto OnHexBkmGetByID(ULONGLONG ullID)->HEXBKM* = 0; //Bookmark by ID.
+    [[nodiscard]] virtual auto OnHexBkmGetByIndex(ULONGLONG ullIndex)->HEXBKM* = 0; //Bookmark by index (in inner list).
+    [[nodiscard]] virtual auto OnHexBkmHitTest(ULONGLONG ullOffset)->HEXBKM* = 0;   //Does given offset have a bookmark?
     virtual void OnHexBkmRemoveByID(ULONGLONG ullID) = 0; //Remove bookmark by given ID (returned by Add()).
 };
 ```
@@ -304,7 +304,7 @@ public:
 This interface is used to set custom bk/text colors for the given data offset.  
 To provide a color, a pointer to the valid [`HEXCOLOR`](#hexcolor) structure must be returned from the `IHexVirtColors::OnHexGetColor` method. If `nullptr` is returned default colors will be used.  
 
-In order to use this feature the [`HEXDATASTRUCT::pHexVirtColors`](#hexdatastruct) member must be set to a valid class inherited from this interface, prior to calling [`SetData`](#setdata) method.
+In order to use this feature the [`HEXDATA::pHexVirtColors`](#HEXDATA) member must be set to a valid class inherited from this interface, prior to calling [`SetData`](#setdata) method.
 ```cpp
 class IHexVirtColors
 {
@@ -318,13 +318,13 @@ The **HexCtrl** has plenty of methods that you can use to customize its appearan
 
 ### [](#)BkmAdd
 ```cpp
-ULONGLONG BkmAdd(const HEXBKMSTRUCT& hbs, bool fRedraw = false)
+ULONGLONG BkmAdd(const HEXBKM& hbs, bool fRedraw = false)
 ```
-Adds new bookmark to the control. Uses [`HEXBKMSTRUCT`](#HEXBKMSTRUCT) as an argument. Returns created bookmark's id.
+Adds new bookmark to the control. Uses [`HEXBKM`](#HEXBKM) as an argument. Returns created bookmark's id.
 #### Example
 ```cpp
-HEXBKMSTRUCT hbs;
-hbs.vecSpan.emplace_back(HEXSPANSTRUCT { 0x1, 10 });
+HEXBKM hbs;
+hbs.vecSpan.emplace_back(HEXSPAN { 0x1, 10 });
 hbs.clrBk = RGB(0, 255, 0);
 hbs.clrText = RGB(255, 255, 255);
 hbs.wstrDesc = L"My first bookmark, with green bk and white text.";
@@ -340,13 +340,13 @@ Clears all bookmarks.
 
 ### [](#)BkmGetByID
 ```cpp
-BkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT*;
+BkmGetByID(ULONGLONG ullID)->HEXBKM*;
 ```
 Get bookmark by ID.
 
 ### [](#)BkmGetByIndex
 ```cpp
-auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT*;
+auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBKM*;
 ```
 Get bookmark by Index.
 
@@ -358,9 +358,9 @@ Get bookmarks' count.
 
 ### [](#)BkmHitTest
 ```cpp
-auto BkmHitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT*;
+auto BkmHitTest(ULONGLONG ullOffset)->HEXBKM*;
 ```
-Test given offset and retrives pointer to [`HEXBKMSTRUCT`](#HEXBKMSTRUCT) if it contains bookmark.
+Test given offset and retrives pointer to [`HEXBKM`](#HEXBKM) if it contains bookmark.
 
 ### [](#)BkmRemoveByID
 ```cpp
@@ -382,10 +382,10 @@ Clears data from the **HexCtrl** view, not touching data itself.
 
 ### [](#)Create
 ```cpp
-bool Create(const HEXCREATESTRUCT& hcs);
+bool Create(const HEXCREATE& hcs);
 ```
 Main initialization method.  
-Takes [`HEXCREATESTRUCT`](#hexcreatestruct) as argument. Returns `true` if created successfully, `false` otherwise.
+Takes [`HEXCREATE`](#HEXCREATE) as argument. Returns `true` if created successfully, `false` otherwise.
 
 ### [](#)CreateDialogCtrl
 ```cpp
@@ -414,7 +414,7 @@ Executes one of the predefined commands of [`EHexCmd`](#ehexcmd) enum. All these
 ```cpp
 auto GetCacheSize()const->DWORD;
 ```
-Returns current cache size set in [`HEXDATASTRUCT`](#hexdatastruct).
+Returns current cache size set in [`HEXDATA`](#HEXDATA).
 
 ### [](#)GetCapacity
 ```cpp
@@ -430,13 +430,13 @@ Retrieves current caret position offset.
 
 ### [](#)GetColors
 ```cpp
-auto GetColors()const->HEXCOLORSSTRUCT;
+auto GetColors()const->HEXCOLORS;
 ```
-Returns current [`HEXCOLORSSTRUCT`](#hexcolorsstruct).
+Returns current [`HEXCOLORS`](#HEXCOLORS).
 
 ### [](#)GetData
 ```cpp
-auto GetData(HEXSPANSTRUCT hss)const->std::byte*;
+auto GetData(HEXSPAN hss)const->std::byte*;
 ```
 Returns a pointer to a data offset no matter what mode the control works in.  
 
@@ -476,7 +476,7 @@ Retrives the `HMENU` handle of the control's context menu. You can use this hand
 
 Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.
 
-When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXNOTIFYSTRUCT`](#hexnotifystruct) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `ullData` field of the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) will be holding `ID` of the menu clicked.
+When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXNOTIFY`](#HEXNOTIFY) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `ullData` field of the [`HEXNOTIFY`](#HEXNOTIFY) will be holding `ID` of the menu clicked.
 
 ### [](#)GetPagesCount
 ```cpp
@@ -498,7 +498,7 @@ Get current page size set by [`SetPageSize`](#setpagesize).
 
 ### [](#)GetSelection
 ```cpp
-auto GetSelection()const->std::vector<HEXSPANSTRUCT>&;
+auto GetSelection()const->std::vector<HEXSPAN>&;
 ```
 Returns `std::vector` of offsets and sizes of the current selection.
 
@@ -525,9 +525,9 @@ Returns `true` if **HexCtrl** has any bytes selected.
 
 ### [](#)HitTest
 ```cpp
-auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTESTSTRUCT>
+auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTEST>
 ```
-Hit testing of given point in screen `fScreen = true`, or client `fScreen = false` coordinates. In case of success returns [`HEXHITTESTSTRUCT`](#hexhitteststruct) structure.
+Hit testing of given point in screen `fScreen = true`, or client `fScreen = false` coordinates. In case of success returns [`HEXHITTEST`](#HEXHITTEST) structure.
 
 ### [](#)IsCmdAvail
 ```cpp
@@ -561,9 +561,9 @@ Is "Offset" currently represented (shown) as Hex or as Decimal. It can be change
 
 ### [](#)IsOffsetVisible
 ```cpp
-HEXVISSTRUCT IsOffsetVisible(ULONGLONG ullOffset)const;
+HEXVISION IsOffsetVisible(ULONGLONG ullOffset)const;
 ```
-Checks for offset visibility and returns [`HEXVISSTRUCT`](#hexvisstruct) as a result.
+Checks for offset visibility and returns [`HEXVISION`](#HEXVISION) as a result.
 
 ### [](#)IsVirtual
 ```cpp
@@ -597,9 +597,9 @@ Set the caret to the given offset. The `fHighLow` flag shows which part of the h
 
 ### [](#)SetColors
 ```cpp
-void SetColors(const HEXCOLORSSTRUCT& clr);
+void SetColors(const HEXCOLORS& clr);
 ```
-Sets all the colors for the control. Takes [`HEXCOLORSSTRUCT`](#hexcolorsstruct) as the argument.
+Sets all the colors for the control. Takes [`HEXCOLORS`](#HEXCOLORS) as the argument.
 
 ### [](#)SetConfig
 ```cpp
@@ -617,9 +617,9 @@ For default values see `HexCtrl/res/keybind.json` file from the project source f
 
 ### [](#)SetData
 ```cpp
-void SetData(const HEXDATASTRUCT& hds);
+void SetData(const HEXDATA& hds);
 ```
-Main method to set data to display in read-only or edit modes. Takes [`HEXDATASTRUCT`](#hexdatastruct) as an  argument.
+Main method to set data to display in read-only or edit modes. Takes [`HEXDATA`](#HEXDATA) as an  argument.
 
 ### [](#)SetEncoding
 ```cpp
@@ -668,7 +668,7 @@ To remove the divider just set `dwSize` to 0.
 
 ### [](#)SetSelection
 ```cpp
-void SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedraw = true, bool fHighlight = false);
+void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false);
 ```
 Sets current selection or highlight in the selection, if `fHighlight` is `true`.
 
@@ -681,21 +681,21 @@ Sets the ratio for how much to scroll with mouse-wheel.
 ## [](#)Structures
 Below are listed all **HexCtrl**'s structures.
 
-### [](#)HEXBKMSTRUCT
+### [](#)HEXBKM
 Structure for bookmarks, used in [`BkmAdd`](#BkmAdd) method.  
 ```cpp
-struct HEXBKMSTRUCT
+struct HEXBKM
 {
-    std::vector<HEXSPANSTRUCT> vecSpan { };                //Vector of offsets and sizes.
-    std::wstring               wstrDesc { };               //Bookmark description.
-    ULONGLONG                  ullID { };                  //Bookmark ID, assigned internally by framework.
-    ULONGLONG                  ullData { };                //User defined custom data.
-    COLORREF                   clrBk { RGB(240, 240, 0) }; //Bk color.
-    COLORREF                   clrText { RGB(0, 0, 0) };   //Text color.
+    std::vector<HEXSPAN> vecSpan { };                //Vector of offsets and sizes.
+    std::wstring         wstrDesc { };               //Bookmark description.
+    ULONGLONG            ullID { };                  //Bookmark ID, assigned internally by framework.
+    ULONGLONG            ullData { };                //User defined custom data.
+    COLORREF             clrBk { RGB(240, 240, 0) }; //Bk color.
+    COLORREF             clrText { RGB(0, 0, 0) };   //Text color.
 };
-using PHEXBKMSTRUCT = HEXBKMSTRUCT*;
+using PHEXBKM = HEXBKM*;
 ```
-The member `vecSpan` is of a `std::vector<HEXSPANSTRUCT>` type because a bookmark may have few non adjacent areas. For instance, when selection is made as a block, with <kbd>Alt</kbd> pressed.
+The member `vecSpan` is of a `std::vector<HEXSPAN>` type because a bookmark may have few non adjacent areas. For instance, when selection is made as a block, with <kbd>Alt</kbd> pressed.
 
 ### [](#)HEXCOLOR
 **HexCtrl** custom colors.
@@ -718,10 +718,10 @@ struct HEXCOLORINFO
 };
 ```
 
-### [](#)HEXCOLORSSTRUCT
+### [](#)HEXCOLORS
 This structure describes all control's colors. All these colors have their default values.
 ```cpp
-struct HEXCOLORSSTRUCT
+struct HEXCOLORS
 {
     COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };       //Hex chunks text color.
     COLORREF clrTextASCII { GetSysColor(COLOR_WINDOWTEXT) };     //ASCII text color.
@@ -739,13 +739,13 @@ struct HEXCOLORSSTRUCT
 };
 ```
 
-### [](#)HEXCREATESTRUCT
+### [](#)HEXCREATE
 The main initialization struct used for control creation.
 ```cpp
-struct HEXCREATESTRUCT
+struct HEXCREATE
 {
     EHexCreateMode  enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
-    HEXCOLORSSTRUCT stColor { };          //All the control's colors.
+    HEXCOLORS       stColor { };          //All the control's colors.
     HWND            hwndParent { };       //Parent window pointer.
     const LOGFONTW* pLogFont { };         //Font to be used instead of default, it has to be monospaced.
     RECT            rect { };             //Initial rect. If null, the window is screen centered.
@@ -761,15 +761,15 @@ Struct for a data information used in [`IHexVirtData`](#virtual-data-mode).
 ```cpp
 struct HEXDATAINFO
 {
-    NMHDR         hdr { };    //Standard Windows header.
-    HEXSPANSTRUCT stSpan { }; //Offset and size of the data bytes.
+    NMHDR   hdr { };    //Standard Windows header.
+    HEXSPAN stSpan { }; //Offset and size of the data bytes.
 };
 ```
 
-### [](#)HEXDATASTRUCT
+### [](#)HEXDATA
 Main struct to set a data to display in the control.
 ```cpp
-struct HEXDATASTRUCT
+struct HEXDATA
 {
     ULONGLONG       ullDataSize { };          //Size of the data to display, in bytes.
     IHexVirtData*   pHexVirtData { };         //Pointer for Virtual mode.
@@ -781,10 +781,10 @@ struct HEXDATASTRUCT
 };
 ```
 
-### [](#)HEXHITTESTSTRUCT
+### [](#)HEXHITTEST
 Structure is used in [`HitTest`](#hittest) method.
 ```cpp
-struct HEXHITTESTSTRUCT
+struct HEXHITTEST
 {
     ULONGLONG ullOffset { };      //Offset.
     bool      fIsAscii { false }; //Is cursor at ASCII part or at Hex.
@@ -806,44 +806,44 @@ struct HEXMODIFY
     EHexOperSize   enOperSize { };          //Operation data size.
     std::byte*     pData { };               //Pointer to a data to be set.
     ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
-    std::vector<HEXSPANSTRUCT> vecSpan { }; //Vector of data offsets and sizes.
+    std::vector<HEXSPAN> vecSpan { }; //Vector of data offsets and sizes.
     bool           fBigEndian { false };    //Treat the data being modified as a big endian, used only in MODIFY_OPERATION mode.
 };
 
 ```
 
-### [](#)HEXNOTIFYSTRUCT
+### [](#)HEXNOTIFY
 This struct is used in notification purposes, to notify parent window about **HexCtrl**'s states.
 ```cpp
-struct HEXNOTIFYSTRUCT
+struct HEXNOTIFY
 {
-    NMHDR         hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
-    HEXSPANSTRUCT stSpan { };  //Offset and size of the bytes. 
-    ULONGLONG     ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
-    std::byte*    pData { };   //Pointer to a data to get/send.
-    POINT         point { };   //Mouse position for menu notifications.
+    NMHDR      hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
+    HEXSPAN    stSpan { };  //Offset and size of the bytes. 
+    ULONGLONG  ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
+    std::byte* Data { };   //Pointer to a data to get/send.
+    POINT      point { };   //Mouse position for menu notifications.
 };
-using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;
+using PHEXNOTIFY = HEXNOTIFY*;
 ```
 
-### [](#)HEXSPANSTRUCT
+### [](#)HEXSPAN
 This struct is used mostly in selection and bookmarking routines. It holds offset and size of the data region.
 ```cpp
-struct HEXSPANSTRUCT
+struct HEXSPAN
 {
     ULONGLONG ullOffset { };
     ULONGLONG ullSize { };
 };
 ```
 
-### [](#)HEXVISSTRUCT
+### [](#)HEXVISION
 This struct is returned from [`IsOffsetVisible`](#isoffsetvisible) method. Two members `i8Vert` and `i8Horz` represent vertical and horizontal visibility respectively. These members can be in three different states:
 * `-1` — offset is higher, or at the left, of the visible area.
 * &nbsp; `1` — offset is lower, or at the right.
 * &nbsp; `0` — offset is visible.
 
 ```cpp
-struct HEXVISSTRUCT
+struct HEXVISION
 {
     std::int8_t i8Vert { }; //Vertical offset.
     std::int8_t i8Horz { }; //Horizontal offset.
@@ -917,20 +917,20 @@ Enum of all **HexCtrl**'s internal windows. This enum is used as an arg in [`Get
 ```cpp
 enum class EHexWnd : std::uint8_t
 {
-	WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_FILLDATA,
-	DLG_OPERS, DLG_SEARCH, DLG_ENCODING, DLG_GOTO
+    WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_FILLDATA,
+    DLG_OPERS, DLG_SEARCH, DLG_ENCODING, DLG_GOTO
 };
 ```
 
 ## [](#)Notification Messages
-During its work **HexCtrl** sends notification messages through **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** mechanism to indicate its states. These messages are sent either to [`HEXCREATESTRUCT::hwndParent`](#hexcreatestruct) or to [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) window, depending on whether the latter is set.  
-The `LPARAM` of the `WM_NOTIFY` message will hold pointer to the [`HEXNOTIFYSTRUCT`](#hexnotifystruct).
+During its work **HexCtrl** sends notification messages through **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** mechanism to indicate its states. These messages are sent to [`HEXCREATE::hwndParent`](#HEXCREATE) window.
+The `LPARAM` of the `WM_NOTIFY` message will hold pointer to the [`HEXNOTIFY`](#HEXNOTIFY) struct.
 
 ### [](#)HEXCTRL_MSG_BKMCLICK
-Sent if bookmark is clicked. [`HEXNOTIFYSTRUCT::pData`](#hexnotifystruct) will contain [`HEXBKMSTRUCT`](#HEXBKMSTRUCT) pointer.
+Sent if bookmark is clicked. [`HEXNOTIFY::pData`](#HEXNOTIFY) will contain [`HEXBKM`](#HEXBKM) pointer.
 
 ### [](#)HEXCTRL_MSG_CARETCHANGE
-Sent when caret position has changed. [`HEXNOTIFYSTRUCT::ullData`](#hexnotifystruct) will contain current caret position.
+Sent when caret position has changed. [`HEXNOTIFY::ullData`](#HEXNOTIFY) will contain current caret position.
 
 ### [](#)HEXCTRL_MSG_CONTEXTMENU
 Sent when context menu is about to be displayed.
@@ -940,7 +940,7 @@ Sent to indicate that **HexCtrl** window is about to be destroyed.
 
 ### [](#)HEXCTRL_MSG_MENUCLICK
 Sent when user defined custom menu has been clicked.  
-[`HEXNOTIFYSTRUCT`](#hexnotifystruct) `ullData` member contains menu ID, while `point` member contains position of the cursor, in screen coordinates, at the time of the mouse click.
+[`HEXNOTIFY`](#HEXNOTIFY) `ullData` member contains menu ID, while `point` member contains position of the cursor, in screen coordinates, at the time of the mouse click.
 
 ### [](#)HEXCTRL_MSG_SELECTION
 Sent when selection has been made.
@@ -949,7 +949,7 @@ Sent when selection has been made.
 Sent to indicate that the data has changed.
 
 ### [](#)HEXCTRL_MSG_VIEWCHANGE
-Sent when **HexCtrl**'s view has changed, whether on resizing or scrolling. [`HEXNOTIFYSTRUCT::stSpan`](#hexnotifystruct) will contain starting offset and size of the visible data.
+Sent when **HexCtrl**'s view has changed, whether on resizing or scrolling. [`HEXNOTIFY::stSpan`](#HEXNOTIFY) will contain starting offset and size of the visible data.
 
 ## [](#)Exported Functions
 **HexCtrl** has few `"C"` interface functions which it exports when built as *.dll*.

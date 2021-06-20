@@ -17,7 +17,7 @@ using namespace HEXCTRL::INTERNAL;
 BEGIN_MESSAGE_MAP(CHexDlgBkmProps, CDialogEx)
 END_MESSAGE_MAP()
 
-INT_PTR CHexDlgBkmProps::DoModal(HEXBKMSTRUCT& hbs, bool fShowAsHex)
+INT_PTR CHexDlgBkmProps::DoModal(HEXBKM& hbs, bool fShowAsHex)
 {
 	m_pHBS = &hbs;
 	m_fShowAsHex = fShowAsHex;
@@ -44,13 +44,13 @@ BOOL CHexDlgBkmProps::OnInitDialog()
 	{
 		m_ullOffset = m_pHBS->vecSpan.front().ullOffset;
 		m_ullSize = std::accumulate(m_pHBS->vecSpan.begin(), m_pHBS->vecSpan.end(), ULONGLONG { },
-			[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
+			[](auto ullTotal, const HEXSPAN& ref) {return ullTotal + ref.ullSize; });
 	}
 	else
 	{
 		m_ullOffset = 0;
 		m_ullSize = 1;
-		m_pHBS->vecSpan.emplace_back(HEXSPANSTRUCT { m_ullOffset, m_ullSize });
+		m_pHBS->vecSpan.emplace_back(HEXSPAN { m_ullOffset, m_ullSize });
 	}
 
 	swprintf_s(pwszBuff, m_fShowAsHex ? L"0x%llX" : L"%llu", m_ullOffset);
@@ -99,7 +99,7 @@ void CHexDlgBkmProps::OnOK()
 	if (m_ullOffset != ullOffset || m_ullSize != ullSize)
 	{
 		m_pHBS->vecSpan.clear();
-		m_pHBS->vecSpan.emplace_back(HEXSPANSTRUCT { ullOffset, ullSize });
+		m_pHBS->vecSpan.emplace_back(HEXSPAN { ullOffset, ullSize });
 	}
 
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_DESCR));

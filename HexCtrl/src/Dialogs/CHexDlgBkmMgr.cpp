@@ -103,7 +103,7 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 	case EMenuID::IDM_BKMMGR_NEW:
 	{
-		HEXBKMSTRUCT hbs;
+		HEXBKM hbs;
 		CHexDlgBkmProps dlgBkmEdit;
 		if (dlgBkmEdit.DoModal(hbs, m_fShowAsHex) == IDOK)
 		{
@@ -132,7 +132,7 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	break;
 	case EMenuID::IDM_BKMMGR_REMOVE:
 	{
-		std::vector<HEXBKMSTRUCT*> vecBkm { };
+		std::vector<HEXBKM*> vecBkm { };
 		int nItem { -1 };
 		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i)
 		{
@@ -209,7 +209,7 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		case 2: //Size.
 			if (!pBkm->vecSpan.empty())
 				ullSize = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
-					[](auto ullTotal, const HEXSPANSTRUCT& ref) {return ullTotal + ref.ullSize; });
+					[](auto ullTotal, const HEXSPAN& ref) {return ullTotal + ref.ullSize; });
 			swprintf_s(pItem->pszText, nMaxLength, m_fShowAsHex ? L"0x%llX" : L"%llu", ullSize);
 			break;
 		case 3: //Description.

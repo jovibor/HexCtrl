@@ -15,11 +15,11 @@
 #include <optional>
 #include <string>
 
-#define HEXCTRL_PRODUCT_NAME			L"Hex Control for MFC/Win32"
-#define HEXCTRL_COPYRIGHT_NAME  		L"(C) 2018-2021 Jovibor"
-#define HEXCTRL_VERSION_MAJOR			2
-#define HEXCTRL_VERSION_MINOR			21
-#define HEXCTRL_VERSION_MAINTENANCE		1
+#define HEXCTRL_PRODUCT_NAME		L"Hex Control for MFC/Win32"
+#define HEXCTRL_COPYRIGHT_NAME  	L"(C) 2018-2021 Jovibor"
+#define HEXCTRL_VERSION_MAJOR		2
+#define HEXCTRL_VERSION_MINOR		22
+#define HEXCTRL_VERSION_MAINTENANCE	0
 
 namespace HEXCTRL::INTERNAL
 {
@@ -84,7 +84,7 @@ namespace HEXCTRL::INTERNAL
 		hms.enModifyMode = EHexModifyMode::MODIFY_DEFAULT;
 		hms.pData = reinterpret_cast<std::byte*>(&tData);
 		hms.ullDataSize = sizeof(T);
-		hms.vecSpan.emplace_back(HEXSPANSTRUCT { ullOffset, sizeof(T) });
+		hms.vecSpan.emplace_back(HEXSPAN { ullOffset, sizeof(T) });
 		refHexCtrl.ModifyData(hms);
 	}
 
