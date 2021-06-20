@@ -918,15 +918,13 @@ void CHexDlgSearch::Search()
 		bool fBigStep { false };
 		const auto pHexCtrl = GetHexCtrl();
 
-		switch (pHexCtrl->GetDataMode())
+		if (!pHexCtrl->IsVirtual())
 		{
-		case EHexDataMode::DATA_MEMORY:
 			ullSizeChunk = ullSizeTotal;
 			ullMemToAcquire = ullSizeTotal;
 			ullChunks = 1;
-			break;
-		case EHexDataMode::DATA_MSG:
-		case EHexDataMode::DATA_VIRTUAL:
+		}
+		else
 		{
 			ullMemToAcquire = pHexCtrl->GetCacheSize();
 			if (ullMemToAcquire > ullSizeTotal + nSizeSearch)
@@ -940,8 +938,6 @@ void CHexDlgSearch::Search()
 			}
 			else
 				ullChunks = ullSizeTotal > ullSizeChunk ? ullSizeTotal / ullSizeChunk + ((ullSizeTotal % ullSizeChunk) ? 1 : 0) : 1;
-		}
-		break;
 		}
 
 		bool fResult { false };

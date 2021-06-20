@@ -290,7 +290,6 @@ bool CHexCtrl::Create(const HEXCREATESTRUCT& hcs)
 		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MENU_FILLZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
 
-	m_hwndMsg = hcs.hwndParent;
 	m_stColor = hcs.stColor;
 	m_dbWheelRatio = hcs.dbWheelRatio;
 
@@ -649,39 +648,16 @@ auto CHexCtrl::GetData(HEXSPANSTRUCT hss)const->std::byte*
 		return nullptr;
 
 	std::byte* pData { };
-	switch (m_enDataMode)
-	{
-	case EHexDataMode::DATA_MEMORY:
+	if (!IsVirtual())
 		pData = m_pData + hss.ullOffset;
-		break;
-	case EHexDataMode::DATA_MSG:
+	else
 	{
-		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_GETDATA } };
-		if (hss.ullSize == 0 || hss.ullSize > GetCacheSize())
-			hss.ullSize = GetCacheSize();
-		hns.stSpan = hss;
-		MsgWindowNotify(hns);
-		pData = hns.pData;
-	}
-	break;
-	case EHexDataMode::DATA_VIRTUAL:
 		if (hss.ullSize == 0 || hss.ullSize > GetCacheSize())
 			hss.ullSize = GetCacheSize();
 		pData = m_pHexVirtData->GetData(hss);
-		break;
 	}
 
 	return pData;
-}
-
-auto CHexCtrl::GetDataMode()const->EHexDataMode
-{
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return { };
-
-	return m_enDataMode;
 }
 
 auto CHexCtrl::GetDataSize()const->ULONGLONG
@@ -1011,6 +987,16 @@ auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISSTRUCT
 		static_cast<std::int8_t>(iCx < 0 ? -1 : (iCx >= iMaxClientX ? 1 : 0)) };
 }
 
+bool CHexCtrl::IsVirtual()const
+{
+	assert(IsCreated());
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return false;
+
+	return m_pHexVirtData != nullptr;
+}
+
 void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 {
 	assert(!hms.vecSpan.empty());
@@ -1028,7 +1014,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		const auto& vecSpanRef = hms.vecSpan;
 		assert((vecSpanRef[0].ullOffset + vecSpanRef[0].ullSize) <= GetDataSize());
 
-		if (m_enDataMode != EHexDataMode::DATA_MEMORY && vecSpanRef[0].ullSize > GetCacheSize())
+		if (IsVirtual() && vecSpanRef[0].ullSize > GetCacheSize())
 		{
 			const auto ullSizeChunk = GetCacheSize();
 			const auto iMod = vecSpanRef[0].ullSize % ullSizeChunk;
@@ -1285,7 +1271,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 
 	WstrCapacityFill();
 	RecalcAll();
-	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
+	ParentNotify(HEXCTRL_MSG_VIEWCHANGE);
 }
 
 void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
@@ -1583,22 +1569,6 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	if (!IsCreated())
 		return;
 
-	//m_hwndMsg was previously set in IHexCtrl::Create.
-	if (hds.hwndMsg)
-		m_hwndMsg = hds.hwndMsg;
-
-	//Virtual mode is possible only when there is a MSG window, a data requests will be sent to.
-	if (hds.enDataMode == EHexDataMode::DATA_MSG && !GetMsgWindow())
-	{
-		MessageBoxW(L"HexCtrl EHexDataMode::DATA_MSG mode requires HEXDATASTRUCT::hwndMsg to be set.", L"Error", MB_ICONWARNING);
-		return;
-	}
-	if (hds.enDataMode == EHexDataMode::DATA_VIRTUAL && !hds.pHexVirtData)
-	{
-		MessageBoxW(L"HexCtrl EHexDataMode::DATA_VIRTUAL mode requires HEXDATASTRUCT::pHexVirtData to be set.", L"Error", MB_ICONWARNING);
-		return;
-	}
-
 	ClearData();
 	if (hds.ullDataSize == 0) //If data size is zero we do nothing further, just return after ClearData.
 		return;
@@ -1606,7 +1576,6 @@ void CHexCtrl::SetData(const HEXDATASTRUCT& hds)
 	m_fDataSet = true;
 	m_pData = hds.pData;
 	m_ullDataSize = hds.ullDataSize;
-	m_enDataMode = hds.enDataMode;
 	m_fMutable = hds.fMutable;
 	m_pHexVirtData = hds.pHexVirtData;
 	m_pHexVirtColors = hds.pHexVirtColors;
@@ -1669,7 +1638,7 @@ void CHexCtrl::SetFontSize(UINT uiSize)
 	m_fontMain.CreateFontIndirectW(&lf);
 
 	RecalcAll();
-	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
+	ParentNotify(HEXCTRL_MSG_VIEWCHANGE);
 }
 
 void CHexCtrl::SetGroupMode(EHexDataSize enGroupMode)
@@ -1767,7 +1736,7 @@ void CHexCtrl::SetSelection(const std::vector<HEXSPANSTRUCT>& vecSel, bool fRedr
 
 	if (fRedraw)
 		Redraw();
-	MsgWindowNotify(HEXCTRL_MSG_SELECTION);
+	ParentNotify(HEXCTRL_MSG_SELECTION);
 }
 
 void CHexCtrl::SetWheelRatio(double dbRatio)
@@ -3249,11 +3218,6 @@ auto CHexCtrl::GetCommand(UCHAR uChar, bool fCtrl, bool fShift, bool fAlt)const-
 	return optRet;
 }
 
-auto CHexCtrl::GetMsgWindow()const->HWND
-{
-	return m_hwndMsg;
-}
-
 auto CHexCtrl::GetTopLine()const->ULONGLONG
 {
 	return m_pScrollV->GetScrollPos() / m_sizeLetter.cy;
@@ -3363,14 +3327,13 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSiz
 			const auto ullAlign { ullSizeToOperWith };
 			ULONGLONG ullSizeChunk { };
 			ULONGLONG ullChunks { };
-			switch (m_enDataMode)
+
+			if (!IsVirtual())
 			{
-			case EHexDataMode::DATA_MEMORY:
 				ullSizeChunk = iterSpan.ullSize;
 				ullChunks = 1;
-				break;
-			case EHexDataMode::DATA_MSG:
-			case EHexDataMode::DATA_VIRTUAL:
+			}
+			else
 			{
 				ullSizeChunk = GetCacheSize(); //Size of Virtual memory for acquiring, to work with.
 				if (ullAlign > 0)
@@ -3378,8 +3341,6 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSiz
 				if (ullSize < ullSizeChunk)
 					ullSizeChunk = ullSize;
 				ullChunks = ullSize / ullSizeChunk + ((ullSize % ullSizeChunk) ? 1 : 0);
-			}
-			break;
 			}
 
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
@@ -3397,31 +3358,46 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSiz
 					lmbWorker(pData + ullIndex, hms);
 					if (dlgClbk.IsCanceled())
 					{
-						if (m_enDataMode != EHexDataMode::DATA_MEMORY)
-							SetDataVirtual(pData, { ullOffset, ullSizeChunk });
+						SetDataVirtual(pData, { ullOffset, ullSizeChunk });
 						goto exit;
 					}
 					dlgClbk.SetProgress(ullOffset + ullIndex);
 				}
 
-				if (m_enDataMode != EHexDataMode::DATA_MEMORY)
-					SetDataVirtual(pData, { ullOffset, ullSizeChunk });
+				SetDataVirtual(pData, { ullOffset, ullSizeChunk });
 			}
 		}
 	exit:
 		dlgClbk.ExitDlg();
-		});
+				});
 	if (ullTotalSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
 		dlgClbk.DoModal();
 	thrd.join();
 }
 
-void CHexCtrl::MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const
+void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 {
-	::SendMessageW(GetMsgWindow(), WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&hns));
+	//To prevent inspecting while key is pressed continuously.
+	//Only when one time pressing.
+	if (!m_fKeyDownAtm && m_pDlgDataInterp->IsWindowVisible())
+		m_pDlgDataInterp->InspectOffset(ullOffset);
+
+	if (auto pBkm = m_pBookmarks->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.
+	{
+		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK } };
+		hns.pData = reinterpret_cast<std::byte*>(pBkm);
+		ParentNotify(hns);
+	}
+
+	ParentNotify(HEXCTRL_MSG_CARETCHANGE);
 }
 
-void CHexCtrl::MsgWindowNotify(UINT uCode)const
+void CHexCtrl::ParentNotify(const HEXNOTIFYSTRUCT& hns)const
+{
+	::SendMessageW(GetParent()->GetSafeHwnd(), WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&hns));
+}
+
+void CHexCtrl::ParentNotify(UINT uCode)const
 {
 	HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), uCode } };
 	std::vector<HEXSPANSTRUCT> vecData { };
@@ -3448,34 +3424,7 @@ void CHexCtrl::MsgWindowNotify(UINT uCode)const
 	default:
 		break;
 	}
-	MsgWindowNotify(hns);
-}
 
-void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
-{
-	//To prevent inspecting while key is pressed continuously.
-	//Only when one time pressing.
-	if (!m_fKeyDownAtm && m_pDlgDataInterp->IsWindowVisible())
-		m_pDlgDataInterp->InspectOffset(ullOffset);
-
-	if (auto pBkm = m_pBookmarks->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.
-	{
-		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK } };
-		hns.pData = reinterpret_cast<std::byte*>(pBkm);
-		MsgWindowNotify(hns);
-	}
-
-	MsgWindowNotify(HEXCTRL_MSG_CARETCHANGE);
-}
-
-void CHexCtrl::ParentNotify(const HEXNOTIFYSTRUCT& hns)const
-{
-	::SendMessageW(GetParent()->GetSafeHwnd(), WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&hns));
-}
-
-void CHexCtrl::ParentNotify(UINT uCode)const
-{
-	HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), uCode } };
 	ParentNotify(hns);
 }
 
@@ -3692,7 +3641,7 @@ void CHexCtrl::RecalcAll()
 	m_pScrollV->SetScrollPos(ullCurLineV * m_sizeLetter.cy);
 
 	Redraw();
-	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE);
+	ParentNotify(HEXCTRL_MSG_VIEWCHANGE);
 }
 
 void CHexCtrl::RecalcOffsetDigits()
@@ -3788,7 +3737,7 @@ void CHexCtrl::Redo()
 		const auto& refRedoData = iter.vecData;
 
 		//In Virtual mode processing data chunk by chunk.
-		if (m_enDataMode != EHexDataMode::DATA_MEMORY && refRedoData.size() > GetCacheSize())
+		if (IsVirtual() && refRedoData.size() > GetCacheSize())
 		{
 			const auto ullSizeChunk = GetCacheSize();
 			const auto iMod = refRedoData.size() % ullSizeChunk;
@@ -4117,23 +4066,10 @@ void CHexCtrl::SelAddUp()
 
 void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss)
 {
-	switch (m_enDataMode)
-	{
-	case EHexDataMode::DATA_MEMORY:
-		//No need to do anything. Data is already set in pData memory.
-		break;
-	case EHexDataMode::DATA_VIRTUAL:
-		m_pHexVirtData->SetData(pData, hss);
-		break;
-	case EHexDataMode::DATA_MSG:
-	{
-		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_SETDATA } };
-		hns.stSpan = hss;
-		hns.pData = pData;
-		MsgWindowNotify(hns);
-	}
-	break;
-	}
+	if (!IsVirtual())
+		return;
+
+	m_pHexVirtData->SetData(pData, hss);
 }
 
 void CHexCtrl::SetRedraw(bool fRedraw)
@@ -4179,7 +4115,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan)
 	for (const auto& iterSel : vecSpan)
 	{
 		//In Virtual mode processing data chunk by chunk.
-		if (m_enDataMode != EHexDataMode::DATA_MEMORY && iterSel.ullSize > GetCacheSize())
+		if (IsVirtual() && iterSel.ullSize > GetCacheSize())
 		{
 			const auto ullSizeChunk = GetCacheSize();
 			const auto iMod = iterSel.ullSize % ullSizeChunk;
@@ -4271,7 +4207,7 @@ void CHexCtrl::Undo()
 		const auto& refUndoData = iter.vecData;
 
 		//In Virtual mode processing data chunk by chunk.
-		if (m_enDataMode != EHexDataMode::DATA_MEMORY && refUndoData.size() > GetCacheSize())
+		if (IsVirtual() && refUndoData.size() > GetCacheSize())
 		{
 			const auto ullSizeChunk = GetCacheSize();
 			const auto iMod = refUndoData.size() % ullSizeChunk;
@@ -4404,7 +4340,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 		HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK } };
 		hns.ullData = wMenuID;
 		hns.point = m_stMenuClickedPt;
-		MsgWindowNotify(hns);
+		ParentNotify(hns);
 	}
 
 	return CWnd::OnCommand(wParam, lParam);
@@ -4415,7 +4351,7 @@ void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 	//Notify parent that we are about to display a context menu.
 	HEXNOTIFYSTRUCT hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU } };
 	hns.point = m_stMenuClickedPt = point;
-	MsgWindowNotify(hns);
+	ParentNotify(hns);
 	m_menuMain.GetSubMenu(0)->TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
 }
 
@@ -4447,9 +4383,6 @@ void CHexCtrl::OnDestroy()
 
 	m_dwCapacity = 0x10;
 	m_fCreated = false;
-
-	if (m_enDataMode == EHexDataMode::DATA_MSG && GetMsgWindow() != GetParent()->GetSafeHwnd())
-		MsgWindowNotify(HEXCTRL_MSG_DESTROY); //To avoid sending notify message twice to the same window.
 
 	ParentNotify(HEXCTRL_MSG_DESTROY);
 
@@ -4908,7 +4841,7 @@ void CHexCtrl::OnSize(UINT /*nType*/, int cx, int cy)
 	if (ullPageSize < m_sizeLetter.cy)
 		ullPageSize = m_sizeLetter.cy;
 	m_pScrollV->SetScrollPageSize(ullPageSize);
-	MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE);
+	ParentNotify(HEXCTRL_MSG_VIEWCHANGE);
 }
 
 void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
@@ -4950,6 +4883,6 @@ void CHexCtrl::OnVScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollB
 	if (fRedraw)
 	{
 		RedrawWindow();
-		MsgWindowNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
+		ParentNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
 	}
 }

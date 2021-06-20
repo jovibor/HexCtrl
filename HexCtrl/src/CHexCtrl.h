@@ -55,7 +55,6 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
 		[[nodiscard]] auto GetColors()const->HEXCOLORSSTRUCT override;    //Current colors.
 		[[nodiscard]] auto GetData(HEXSPANSTRUCT hss)const->std::byte* override; //Get pointer to data offset, no matter what mode the control works in.
-		[[nodiscard]] auto GetDataMode()const->EHexDataMode override;     //Get current Data mode.
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;        //Get currently set data size.
 		[[nodiscard]] int GetEncoding()const override;                    //Get current code page ID.
 		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
@@ -75,6 +74,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsMutable()const override;       //Is edit mode enabled or not.
 		[[nodiscard]] bool IsOffsetAsHex()const override;   //Is "Offset" printed as Hex or as Decimal.
 		[[nodiscard]] auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISSTRUCT override; //Ensures that the given offset is visible.
+		[[nodiscard]] bool IsVirtual()const override;       //Is working in Virtual or default mode.
 		void ModifyData(const HEXMODIFY& hms)override;      //Main routine to modify data in IsMutable()==true mode.
 		void Redraw()override;                              //Redraw the control's window.
 		void SetCapacity(DWORD dwCapacity)override;         //Set the control's current capacity.
@@ -132,7 +132,6 @@ namespace HEXCTRL::INTERNAL
 		void FillWithZeros(); //Fill selection with zeros.
 		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;    //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCommand(UCHAR uChar, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
-		[[nodiscard]] auto GetMsgWindow()const->HWND;          //Returns pointer to the "Message" window. See HEXDATASTRUCT::pwndMessage.
 		[[nodiscard]] auto GetTopLine()const->ULONGLONG;       //Returns current top line number in view.
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Hex chunk.
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTESTSTRUCT>; //Is any hex chunk withing given point?
@@ -141,8 +140,6 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
 		template<typename T>
 		void ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSizeToOperWith); //Main "modify" method with different workers.
-		void MsgWindowNotify(const HEXNOTIFYSTRUCT& hns)const; //Notify routine used to send messages to Msg window.
-		void MsgWindowNotify(UINT uCode)const;                 //Same as above, but only for notification code.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		void ParentNotify(const HEXNOTIFYSTRUCT& hns)const;    //Notify routine used to send messages to Parent window.
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
@@ -158,8 +155,8 @@ namespace HEXCTRL::INTERNAL
 		void SelAddLeft();       //Left Key pressed with the Shift.
 		void SelAddRight();      //Right Key pressed with the Shift.
 		void SelAddUp();         //Up Key pressed with the Shift.
-		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in DATA_MSG and DATA_VIRTUAL.
-		void SetRedraw(bool fRedraw); //Handle WM_PAINT msg or not.
+		void SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss); //Sets data (notifies back) in Virtual mode.
+		void SetRedraw(bool fRedraw); //Handle WM_PAINT message or not.
 		void SnapshotUndo(const std::vector<HEXSPANSTRUCT>& vecSpan); //Takes currently modifiable data snapshot.
 		void TtBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip bookmark show/hide.
 		void TtOffsetShow(bool fShow); //Tooltip Offset show/hide.
@@ -210,12 +207,10 @@ namespace HEXCTRL::INTERNAL
 		const int m_iFirstHorizLine { 0 };    //First horizontal line indent.
 		const int m_iFirstVertLine { 0 };     //First vertical line indent.
 		HEXCOLORSSTRUCT m_stColor;            //All control related colors.
-		EHexDataMode m_enDataMode { };        //Control's data mode.
 		EHexDataSize m_enGroupMode { EHexDataSize::SIZE_BYTE }; //Current "Group Data By" mode.
 		std::byte* m_pData { };               //Main data pointer. Modifiable in "Edit" mode.
-		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for EHexDataMode::DATA_VIRTUAL
+		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
-		HWND m_hwndMsg { };                   //Window handle the control messages will be sent to.
 		CWnd m_wndTtBkm { };                  //Tooltip window for bookmarks description.
 		TTTOOLINFOW m_stToolInfoBkm { };      //Tooltip Bookmarks struct.
 		std::time_t m_tmBkmTt { };            //A beginning time to calc the diff, for hiding bkm tooltip after.

@@ -44,17 +44,6 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* EHexDataMode - Enum of the working data mode, used in HEXDATASTRUCT in SetData.           *
-	* DATA_MEMORY: Default standard data mode.                                                  *
-	* DATA_MSG: Data is handled through WM_NOTIFY messages in handler window.				    *
-	* DATA_VIRTUAL: Data is handled through IHexVirtData interface by derived class.            *
-	********************************************************************************************/
-	enum class EHexDataMode : std::uint8_t
-	{
-		DATA_MEMORY, DATA_MSG, DATA_VIRTUAL
-	};
-
-	/********************************************************************************************
 	* EHexWnd - HexControl's windows.                                                           *
 	********************************************************************************************/
 	enum class EHexWnd : std::uint8_t
@@ -88,11 +77,7 @@ namespace HEXCTRL
 
 	/********************************************************************************************
 	* IHexVirtData - Pure abstract data handler class, that can be implemented by client,       *
-	* to set its own data handler routines.	Works in EHexDataMode::DATA_VIRTUAL mode.           *
-	* Pointer to this class can be set in IHexCtrl::SetData method.                             *
-	* Its usage is very similar to DATA_MSG logic, where control sends WM_NOTIFY messages       *
-	* to set window to get/set data. But in this case it's just a pointer to a custom           *
-	* routine's implementation.                                                                 *
+	* to set its own data handler routines.	Pointer to this class can be set in SetData method. *
 	* All virtual functions must be defined in client's derived class.                          *
 	********************************************************************************************/
 	class IHexVirtData
@@ -177,13 +162,11 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXDATASTRUCT
 	{
-		EHexDataMode    enDataMode { EHexDataMode::DATA_MEMORY }; //Working data mode.
 		ULONGLONG       ullDataSize { };          //Size of the data to display, in bytes.
-		HWND            hwndMsg { };              //Window for DATA_MSG mode. Parent is used by default.
-		IHexVirtData*   pHexVirtData { };         //Pointer for DATA_VIRTUAL mode.
+		IHexVirtData*   pHexVirtData { };         //Pointer for Virtual mode.
 		IHexVirtColors* pHexVirtColors { };       //Pointer for Custom Colors class.
-		std::byte*      pData { };                //Data pointer for DATA_MEMORY mode. Not used in other modes.
-		DWORD           dwCacheSize { 0x800000 }; //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
+		std::byte*      pData { };                //Data pointer in default mode.
+		DWORD           dwCacheSize { 0x800000 }; //In Virtual mode max cached size of data to fetch.
 		bool            fMutable { false };       //Is data mutable (editable) or read-only.
 		bool            fHighLatency { false };   //Do not redraw window until scrolling completes.
 	};

@@ -59,7 +59,6 @@ namespace HEXCTRL
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORSSTRUCT = 0;    //Current colors.
 		[[nodiscard]] virtual auto GetData(HEXSPANSTRUCT hss)const->std::byte* = 0; //Get pointer to data offset, no matter what mode the control works in.
-		[[nodiscard]] virtual auto GetDataMode()const->EHexDataMode = 0;     //Get current Data mode.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual int GetEncoding()const = 0;                    //Get current code page ID.
 		[[nodiscard]] virtual long GetFontSize()const = 0;                   //Current font size.
@@ -79,6 +78,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
 		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISSTRUCT = 0; //Ensures that the given offset is visible.
+		[[nodiscard]] virtual bool IsVirtual()const = 0;       //Is working in Virtual or default mode.
 		virtual void ModifyData(const HEXMODIFY& hms) = 0;     //Main routine to modify data in IsMutable()==true mode.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
@@ -179,11 +179,10 @@ namespace HEXCTRL
 	constexpr auto HEXCTRL_MSG_CARETCHANGE { 0x0101U };  //Caret position changed.
 	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0102U };  //OnContextMenu triggered.
 	constexpr auto HEXCTRL_MSG_DESTROY { 0x0103U };      //Indicates that HexCtrl is being destroyed.
-	constexpr auto HEXCTRL_MSG_GETDATA { 0x0104U };      //Used in DATA_MSG mode to request the data to display.
-	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0105U };    //User defined custom menu clicked.
-	constexpr auto HEXCTRL_MSG_SELECTION { 0x0106U };    //Selection has been made.
-	constexpr auto HEXCTRL_MSG_SETDATA { 0x0107U };      //Indicates that the data has changed.
-	constexpr auto HEXCTRL_MSG_VIEWCHANGE { 0x0108U };   //View of the control has changed.
+	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0104U };    //User defined custom menu clicked.
+	constexpr auto HEXCTRL_MSG_SELECTION { 0x0105U };    //Selection has been made.
+	constexpr auto HEXCTRL_MSG_SETDATA { 0x0106U };      //Indicates that the data has changed.
+	constexpr auto HEXCTRL_MSG_VIEWCHANGE { 0x0107U };   //View of the control has changed.
 
 	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")

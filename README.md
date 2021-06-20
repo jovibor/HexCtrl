@@ -11,10 +11,7 @@
   * [Classic Approach](#classic-approach)
   * [In Dialog](#in-dialog)
 * [Set The Data](#set-the-data)
-* [Data Modes](#data-modes)
-  * [Memory Data](#memory-data)
-  * [Message Window](#message-window)
-  * [Virtual Handler](#virtual-handler)
+* [Virtual Data Mode](#virtual-data-mode)
 * [Virtual Bookmarks](#virtual-bookmarks)
 * [IHexVirtColors](#ihexvirtcolors)
 * [Methods](#methods) <details><summary>_Expand_</summary>
@@ -36,7 +33,6 @@
   * [GetCaretPos](#getcaretpos)
   * [GetColors](#getcolors)
   * [GetData](#getdata)
-  * [GetDataMode](#getdatamode)
   * [GetDataSize](#getdatasize)
   * [GetEncoding](#getencoding)
   * [GetFontSize](#getfontsize)
@@ -56,6 +52,7 @@
   * [IsMutable](#ismutable)
   * [IsOffsetAsHex](#isoffsetashex)
   * [IsOffsetVisible](#isoffsetvisible)
+  * [IsVirtual](#isvirtual)
   * [ModifyData](#modifydata)
   * [Redraw](#redraw)
   * [SetCapacity](#setcapacity)
@@ -88,7 +85,6 @@
 * [Enums](#enums) <details><summary>_Expand_</summary>
   * [EHexCmd](#ehexcmd)
   * [EHexCreateMode](#ehexcreatemode)
-  * [EHexDataMode](#ehexdatamode)
   * [EHexDataSize](#ehexdatasize)
   * [EHexModifyMode](#ehexmodifymode)
   * [EHexOperMode](#ehexopermode)
@@ -99,7 +95,6 @@
   * [HEXCTRL_MSG_CARETCHANGE](#hexctrl_msg_caretchange)
   * [HEXCTRL_MSG_CONTEXTMENU](#hexctrl_msg_contextmenu)
   * [HEXCTRL_MSG_DESTROY](#hexctrl_msg_destroy)
-  * [HEXCTRL_MSG_GETDATA](#hexctrl_msg_getdata)
   * [HEXCTRL_MSG_MENUCLICK](#hexctrl_msg_menuclick)
   * [HEXCTRL_MSG_SELECTION](#hexctrl_msg_selection)
   * [HEXCTRL_MSG_SETDATA](#hexctrl_msg_setdata)
@@ -262,53 +257,12 @@ hds.ullDataSize = str.size();
 myHex->SetData(hds);
 ```
 
-## [](#)Data Modes
-Besides the standard classical mode, when **HexCtrl** just holds a pointer to some array of bytes in memory, it also has additional advanced modes it can be running in.  
-These modes can be quite useful for instance in cases where you need to display a very large amount of data that can't fit in memory all at once.
+## [](#)Virtual Data Mode
+Besides the standard default mode, when **HexCtrl** just holds a pointer to some bytes in memory, it also has additional Virtual mode.  
+This mode can be quite useful, for instance in cases where you need to display a very large amount of data that can't fit in memory all at once.
 
-These modes are ruled over through the [`enDataMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct).
-
-### [](#)Memory Data
-It's the default data mode the control works in.  
-The [`enDataMode`](#ehexdatamode) member of the [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_MEMORY`, and `pData` just points to bytes in memory.
-
-### [](#)Message Window
-If [`enDataMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_MSG`, the control works in, so called, **Message Window mode**.
-
-What it means is that when control is about to display data, it will first ask for this data from the [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) window, in the form of **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** Windows' message. This is pretty much the same as the standard **MFC List Control** works when created with `LVS_OWNERDATA` flag.  
-By default the [`HEXDATASTRUCT::hwndMsg`](#hexdatastruct) is equal to the control's parent window.
-
-To properly handle this mode, you must process `WM_NOTIFY` messages in `hwndMsg` window as follows:
-```cpp
-BOOL CMyWnd::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
-{
-    PHEXNOTIFYSTRUCT pHexNtfy = (PHEXNOTIFYSTRUCT)lParam;
-    if (pHexNtfy->hdr.idFrom == IDC_MY_HEX)
-    {
-        switch (pHexNtfy->hdr.code)
-        {
-        case HEXCTRL_MSG_GETDATA:
-            /**************************************************************************
-            * pHexNtfy->stSpan at this moment shows offset and size of the data 
-            * that HexCtrl requests. You have to provide pointer to it.
-            ***************************************************************************
-            
-            pHexNtfy->pData =  /*Set this pointer to an actual data*/;
-            break;
-        }
-   }
-}
-```
-`lParam` will hold a pointer to the [`HEXNOTIFYSTRUCT`](#hexnotifystruct) structure.
-
-The first member of this structure is a standard Windows' **[NMHDR](https://docs.microsoft.com/en-us/windows/win32/api/richedit/ns-richedit-nmhdr)** struct, it will have its `code` member equal to `HEXCTRL_MSG_GETDATA`, indicating that **HexCtrl**'s byte request has arrived.  
-The `ullIndex` member of the structure is an index of the byte to be displayed. And the `pData` is the pointer to an actual byte that you have to set in response.
-
-### [](#)Virtual Handler
-If [`enDataMode`](#ehexdatamode) member of [`HEXDATASTRUCT`](#hexdatastruct) is set to `DATA_VIRTUAL` then all the data routine will be done through `HEXDATASTRUCT::pHexVirtual` pointer.
-
-This pointer is of `IHexVirtData` class type, which is a pure abstract base class.
-You have to derive your own class from it and implement all its public methods:
+If `HEXDATASTRUCT::pHexVirtData` pointer is set then all the data routine will be done through it. This pointer is of `IHexVirtData` class type, which is a pure abstract base class.
+You have to derive your own class from it and implement all its public methods.
 ```cpp
 class IHexVirtData
 {
@@ -484,14 +438,8 @@ auto GetData(HEXSPANSTRUCT hss)const->std::byte*;
 ```
 Returns a pointer to a data offset no matter what mode the control works in.  
 
-Note, that in the `DATA_VIRTUAL` and `DATA_MSG` modes returned data size can not exceed current [cache size](#getcachesize), and therefore may be less than the size acquired.  
-In the `DATA_MEMORY` mode a returned pointer is just an offset from the data pointer set in the [`SetData`](#setdata) method.
-
-### [](#)GetDataMode
-```cpp
-auto GetDataMode()const->EHexDataMode;
-```
-Returns current [data mode](#ehexdatamode).
+Note that in the Virtual mode returned data size can not exceed current [cache size](#getcachesize), and therefore may be less than the size acquired.  
+In the default mode returned pointer is just an offset from the data pointer set in the [`SetData`](#setdata) method.
 
 ### [](#)GetDataSize
 ```cpp
@@ -614,6 +562,12 @@ Is "Offset" currently represented (shown) as Hex or as Decimal. It can be change
 HEXVISSTRUCT IsOffsetVisible(ULONGLONG ullOffset)const;
 ```
 Checks for offset visibility and returns [`HEXVISSTRUCT`](#hexvisstruct) as a result.
+
+### [](#)IsVirtual
+```cpp
+bool IsVirtual()const;
+```
+Returns `true` if **HexCtrl** currently works in [Virtual Data Mode](#virtual-data-mode).
 
 ### [](#)ModifyData
 ```cpp
@@ -795,13 +749,11 @@ Main struct to set a data to display in the control.
 ```cpp
 struct HEXDATASTRUCT
 {
-    EHexDataMode    enDataMode { EHexDataMode::DATA_MEMORY }; //Working data mode.
     ULONGLONG       ullDataSize { };          //Size of the data to display, in bytes.
-    HWND            hwndMsg { };              //Window for DATA_MSG mode. Parent is used by default.
-    IHexVirtData*   pHexVirtData { };         //Pointer for DATA_VIRTUAL mode.
+    IHexVirtData*   pHexVirtData { };         //Pointer for Virtual mode.
     IHexVirtColors* pHexVirtColors { };       //Pointer for Custom Colors class.
-    std::byte*      pData { };                //Data pointer for DATA_MEMORY mode. Not used in other modes.
-    DWORD           dwCacheSize { 0x800000 }; //In DATA_MSG and DATA_VIRTUAL max cached size of data to fetch.
+    std::byte*      pData { };                //Data pointer in default mode.
+    DWORD           dwCacheSize { 0x800000 }; //In Virtual mode max cached size of data to fetch.
     bool            fMutable { false };       //Is data mutable (editable) or read-only.
     bool            fHighLatency { false };   //Do not redraw window until scrolling completes.
 };
@@ -909,15 +861,6 @@ enum class EHexCreateMode : std::uint8_t
 };
 ```
 
-### [](#)EHexDataMode
-`Enum` that represents current data [mode](#data-modes) **HexCtrl** works in. It's used as [`HEXDATASTRUCT`](#hexdatastruct) member in [`SetData`](#setdata) method.
-```cpp
-enum class EHexDataMode : std::uint8_t
-{
-    DATA_MEMORY, DATA_MSG, DATA_VIRTUAL
-};
-```
-
 ### [](#)EHexDataSize
 Data size to operate on, used in `EHexModifyMode::MODIFY_OPERATION` mode. Also used to set data grouping mode, in [`SetGroupMode`](#setgroupmode) method.
 ```cpp
@@ -972,9 +915,6 @@ Sent when context menu is about to be displayed.
 
 ### [](#)HEXCTRL_MSG_DESTROY
 Sent to indicate that **HexCtrl** window is about to be destroyed.
-
-### [](#)HEXCTRL_MSG_GETDATA
-Used in [`DATA_MSG`](#ehexdatamode) mode to acquire the data range to display.
 
 ### [](#)HEXCTRL_MSG_MENUCLICK
 Sent when user defined custom menu has been clicked.  
