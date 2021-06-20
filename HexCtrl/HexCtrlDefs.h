@@ -62,6 +62,27 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
+	* HEXDATAINFO - struct for a data information used in IHexVirtData.                         *
+	********************************************************************************************/
+	struct HEXDATAINFO
+	{
+		NMHDR         hdr { };    //Standard Windows header.
+		HEXSPANSTRUCT stSpan { }; //Offset and size of the data bytes.
+	};
+
+	/********************************************************************************************
+	* IHexVirtData - Pure abstract data handler class, that can be implemented by client,       *
+	* to set its own data handler routines.	Pointer to this class can be set in SetData method. *
+	* All virtual functions must be defined in client's derived class.                          *
+	********************************************************************************************/
+	class IHexVirtData
+	{
+	public:
+		[[nodiscard]] virtual std::byte* OnHexGetData(const HEXDATAINFO&) = 0; //Data index and size to get.
+		virtual	void OnHexSetData(std::byte*, const HEXDATAINFO&) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
+	};
+
+	/********************************************************************************************
 	* HEXBKMSTRUCT - Bookmarks.                                                                 *
 	********************************************************************************************/
 	struct HEXBKMSTRUCT
@@ -76,30 +97,18 @@ namespace HEXCTRL
 	using PHEXBKMSTRUCT = HEXBKMSTRUCT*;
 
 	/********************************************************************************************
-	* IHexVirtData - Pure abstract data handler class, that can be implemented by client,       *
-	* to set its own data handler routines.	Pointer to this class can be set in SetData method. *
-	* All virtual functions must be defined in client's derived class.                          *
-	********************************************************************************************/
-	class IHexVirtData
-	{
-	public:
-		[[nodiscard]] virtual std::byte* GetData(const HEXSPANSTRUCT&) = 0; //Data index and size to get.
-		virtual	void SetData(std::byte*, const HEXSPANSTRUCT&) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
-	};
-
-	/********************************************************************************************
 	* IHexVirtBkm - Pure abstract class for virtual bookmarks.                                  *
 	********************************************************************************************/
 	class IHexVirtBkm
 	{
 	public:
-		virtual ULONGLONG Add(const HEXBKMSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
-		virtual void ClearAll() = 0; //Clear all bookmarks.
-		[[nodiscard]] virtual ULONGLONG GetCount() = 0; //Get total bookmarks count.
-		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->HEXBKMSTRUCT* = 0; //Bookmark by ID.
-		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT* = 0; //Bookmark by index (in inner list).
-		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT* = 0;   //Does given offset have a bookmark?
-		virtual void RemoveByID(ULONGLONG ullID) = 0;   //Remove bookmark by given ID (returned by Add()).
+		virtual ULONGLONG OnHexBkmAdd(const HEXBKMSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
+		virtual void OnHexBkmClearAll() = 0; //Clear all bookmarks.
+		[[nodiscard]] virtual ULONGLONG OnHexBkmGetCount() = 0; //Get total bookmarks count.
+		[[nodiscard]] virtual auto OnHexBkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT* = 0; //Bookmark by ID.
+		[[nodiscard]] virtual auto OnHexBkmGetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT* = 0; //Bookmark by index (in inner list).
+		[[nodiscard]] virtual auto OnHexBkmHitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT* = 0;   //Does given offset have a bookmark?
+		virtual void OnHexBkmRemoveByID(ULONGLONG ullID) = 0; //Remove bookmark by given ID (returned by Add()).
 	};
 
 	/********************************************************************************************
@@ -113,12 +122,21 @@ namespace HEXCTRL
 	using PHEXCOLOR = HEXCOLOR*;
 
 	/********************************************************************************************
+	* HEXCOLORINFO - struct for hex chunks' color information.                                  *
+	********************************************************************************************/
+	struct HEXCOLORINFO
+	{
+		NMHDR     hdr { };       //Standard Windows header.
+		ULONGLONG ullOffset { }; //Offset for the color.
+	};
+	
+	/********************************************************************************************
 	* IHexVirtColors - Pure abstract class for chunk colors.                                    *
 	********************************************************************************************/
 	class IHexVirtColors
 	{
 	public:
-		[[nodiscard]] virtual PHEXCOLOR GetColor(ULONGLONG ullOffset) = 0;
+		[[nodiscard]] virtual PHEXCOLOR OnHexGetColor(const HEXCOLORINFO&) = 0;
 	};
 
 	/********************************************************************************************
@@ -179,7 +197,7 @@ namespace HEXCTRL
 		NMHDR         hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
 		HEXSPANSTRUCT stSpan { };  //Offset and size of the bytes.
 		ULONGLONG     ullData { }; //Data depending on message (e.g. user defined custom menu ID/caret pos).
-		std::byte*    pData { };   //Pointer to a data to get/send.
+		std::byte*    pData { };   //Pointer to a data depending on notify message.
 		POINT         point { };   //Mouse position for menu notifications.
 	};
 	using PHEXNOTIFYSTRUCT = HEXNOTIFYSTRUCT*;

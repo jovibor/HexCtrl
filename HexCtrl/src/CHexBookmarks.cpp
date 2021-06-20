@@ -32,7 +32,7 @@ ULONGLONG CHexBookmarks::Add(const HEXBKMSTRUCT& hbs, bool fRedraw)
 	if (m_fVirtual)
 	{
 		if (m_pVirtual)
-			ullID = m_pVirtual->Add(hbs);
+			ullID = m_pVirtual->OnHexBkmAdd(hbs);
 	}
 	else
 	{
@@ -59,7 +59,7 @@ void CHexBookmarks::ClearAll()
 	if (m_fVirtual)
 	{
 		if (m_pVirtual)
-			m_pVirtual->ClearAll();
+			m_pVirtual->OnHexBkmClearAll();
 	}
 	else
 		m_deqBookmarks.clear();
@@ -75,7 +75,7 @@ auto CHexBookmarks::GetByID(ULONGLONG ullID)->HEXBKMSTRUCT*
 	if (m_fVirtual)
 	{
 		if (m_pVirtual)
-			pBkm = m_pVirtual->GetByID(ullID);
+			pBkm = m_pVirtual->OnHexBkmGetByID(ullID);
 	}
 	else if (auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
 		[ullID](const HEXBKMSTRUCT& ref) {return ullID == ref.ullID; }); iter != m_deqBookmarks.end())
@@ -90,7 +90,7 @@ auto CHexBookmarks::GetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT*
 	if (m_fVirtual)
 	{
 		if (m_pVirtual)
-			pBkm = m_pVirtual->GetByIndex(ullIndex);
+			pBkm = m_pVirtual->OnHexBkmGetByIndex(ullIndex);
 	}
 	else if (ullIndex < m_deqBookmarks.size())
 		pBkm = &m_deqBookmarks[static_cast<size_t>(ullIndex)];
@@ -104,7 +104,7 @@ ULONGLONG CHexBookmarks::GetCount()const
 	if (m_fVirtual)
 	{
 		if (m_pVirtual)
-			ullCount = m_pVirtual->GetCount();
+			ullCount = m_pVirtual->OnHexBkmGetCount();
 	}
 	else
 		ullCount = m_deqBookmarks.size();
@@ -177,7 +177,7 @@ bool CHexBookmarks::HasBookmarks()const
 	if (m_fVirtual)
 	{
 		if (m_pVirtual)
-			fHasBookmarks = m_pVirtual->GetCount() > 0;
+			fHasBookmarks = m_pVirtual->OnHexBkmGetCount() > 0;
 	}
 	else
 		fHasBookmarks = !m_deqBookmarks.empty();
@@ -191,7 +191,7 @@ auto CHexBookmarks::HitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT*
 	if (m_fVirtual)
 	{
 		if (m_pVirtual)
-			pBkm = m_pVirtual->HitTest(ullOffset);
+			pBkm = m_pVirtual->OnHexBkmHitTest(ullOffset);
 	}
 	else
 	{
@@ -221,8 +221,8 @@ void CHexBookmarks::Remove(ULONGLONG ullOffset)
 	{
 		if (m_pVirtual)
 		{
-			if (const auto* const pBkm = m_pVirtual->HitTest(ullOffset); pBkm != nullptr)
-				m_pVirtual->RemoveByID(pBkm->ullID);
+			if (const auto* const pBkm = m_pVirtual->OnHexBkmHitTest(ullOffset); pBkm != nullptr)
+				m_pVirtual->OnHexBkmRemoveByID(pBkm->ullID);
 		}
 	}
 	else
@@ -250,7 +250,7 @@ void CHexBookmarks::RemoveByID(ULONGLONG ullID)
 	if (m_fVirtual)
 	{
 		if (m_pVirtual)
-			m_pVirtual->RemoveByID(ullID);
+			m_pVirtual->OnHexBkmRemoveByID(ullID);
 	}
 	else
 	{

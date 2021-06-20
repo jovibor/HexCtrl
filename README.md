@@ -73,8 +73,10 @@
 * [Structures](#structures) <details><summary>_Expand_</summary>
   * [HEXBKMSTRUCT](#hexbkmstruct)
   * [HEXCOLOR](#hexcolor)
+  * [HEXCOLORINFO](#hexcolorinfo)
   * [HEXCOLORSSTRUCT](#hexcolorsstruct)
   * [HEXCREATESTRUCT](#hexcreatestruct)
+  * [HEXDATAINFO](#hexdatainfo)
   * [HEXDATASTRUCT](#hexdatastruct)
   * [HEXHITTESTSTRUCT](#hexhitteststruct)
   * [HEXMODIFY](#hexmodify)
@@ -267,8 +269,8 @@ You have to derive your own class from it and implement all its public methods.
 class IHexVirtData
 {
 public:
-    [[nodiscard]] virtual std::byte* GetData(const HEXSPANSTRUCT&) = 0; //Data index and size to get.
-    virtual void SetData(std::byte*, const HEXSPANSTRUCT&) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
+    [[nodiscard]] virtual std::byte* OnHexGetData(const HEXDATAINFO&) = 0; //Data index and size to get.
+    virtual void OnHexSetData(std::byte*, const HEXDATAINFO&) = 0; //Routine to modify data, if HEXDATASTRUCT::fMutable == true.
 };
 ```
 Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATASTRUCT::pHexVirtData = &yourDerivedObject`.
@@ -288,26 +290,26 @@ The main method of the `IHexVirtBkm` interface is `HitTest`. It takes byte's off
 class IHexVirtBkm
 {
 public:
-    virtual ULONGLONG Add(const HEXBKMSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
-    virtual void ClearAll() = 0; //Clear all bookmarks.
-    [[nodiscard]] virtual ULONGLONG GetCount() = 0; //Get total bookmarks count.
-    [[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->HEXBKMSTRUCT* = 0; //Bookmark by ID.
-    [[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT* = 0; //Bookmark by index (in inner list).
-    [[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT* = 0; //Has given offset the bookmark?
-    virtual void RemoveByID(ULONGLONG ullID) = 0;   //Remove bookmark by given ID (returned by Add()).
+    virtual ULONGLONG OnHexBkmAdd(const HEXBKMSTRUCT& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
+    virtual void OnHexBkmClearAll() = 0; //Clear all bookmarks.
+    [[nodiscard]] virtual ULONGLONG OnHexBkmGetCount() = 0; //Get total bookmarks count.
+    [[nodiscard]] virtual auto OnHexBkmGetByID(ULONGLONG ullID)->HEXBKMSTRUCT* = 0; //Bookmark by ID.
+    [[nodiscard]] virtual auto OnHexBkmGetByIndex(ULONGLONG ullIndex)->HEXBKMSTRUCT* = 0; //Bookmark by index (in inner list).
+    [[nodiscard]] virtual auto OnHexBkmHitTest(ULONGLONG ullOffset)->HEXBKMSTRUCT* = 0;   //Does given offset have a bookmark?
+    virtual void OnHexBkmRemoveByID(ULONGLONG ullID) = 0; //Remove bookmark by given ID (returned by Add()).
 };
 ```
 
 ## [](#)IHexVirtColors
 This interface is used to set custom bk/text colors for the given data offset.  
-To provide the color a pointer to the valid [`HEXCOLOR`](#hexcolor) structure must be returned from the `IHexVirtColors::GetColor` method. If `nullptr` is returned the default colors will be used.  
+To provide a color, a pointer to the valid [`HEXCOLOR`](#hexcolor) structure must be returned from the `IHexVirtColors::OnHexGetColor` method. If `nullptr` is returned default colors will be used.  
 
-In order to use this interface the [`HEXDATASTRUCT::pHexVirtColors`](#hexdatastruct) member must be set to the valid class inherited from this interface, prior to calling [`SetData`](#setdata) method.
+In order to use this feature the [`HEXDATASTRUCT::pHexVirtColors`](#hexdatastruct) member must be set to a valid class inherited from this interface, prior to calling [`SetData`](#setdata) method.
 ```cpp
 class IHexVirtColors
 {
 public:
-    [[nodiscard]] virtual PHEXCOLOR GetColor(ULONGLONG ullOffset) = 0;
+    [[nodiscard]] virtual PHEXCOLOR OnHexGetColor(const HEXCOLORINFO&) = 0;
 };
 ```
 
@@ -706,6 +708,16 @@ struct HEXCOLOR
 using PHEXCOLOR = HEXCOLOR*;
 ```
 
+### [](#)HEXCOLORINFO
+Struct for hex chunks' color information.
+```cpp
+struct HEXCOLORINFO
+{
+    NMHDR     hdr { };       //Standard Windows header.
+    ULONGLONG ullOffset { }; //Offset for the color.
+};
+```
+
 ### [](#)HEXCOLORSSTRUCT
 This structure describes all control's colors. All these colors have their default values.
 ```cpp
@@ -741,6 +753,16 @@ struct HEXCREATESTRUCT
     DWORD           dwStyle { };          //Window styles, 0 for default.
     DWORD           dwExStyle { };        //Extended window styles, 0 for default.
     double          dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
+};
+```
+
+### [](#)HEXDATAINFO
+Struct for a data information used in [`IHexVirtData`](#virtual-data-mode).
+```cpp
+struct HEXDATAINFO
+{
+    NMHDR         hdr { };    //Standard Windows header.
+    HEXSPANSTRUCT stSpan { }; //Offset and size of the data bytes.
 };
 ```
 

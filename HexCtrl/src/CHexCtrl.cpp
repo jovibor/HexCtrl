@@ -654,7 +654,9 @@ auto CHexCtrl::GetData(HEXSPANSTRUCT hss)const->std::byte*
 	{
 		if (hss.ullSize == 0 || hss.ullSize > GetCacheSize())
 			hss.ullSize = GetCacheSize();
-		pData = m_pHexVirtData->GetData(hss);
+		HEXDATAINFO hdi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
+		hdi.stSpan = hss;
+		pData = m_pHexVirtData->OnHexGetData(hdi);
 	}
 
 	return pData;
@@ -2697,12 +2699,14 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 		bool fColor { false };  //Flag to show current Color in current Hex presence.
 		std::optional<HEXCOLOR> optColorCurr { }; //Current color.
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Ascii the same.
-
+		HEXCOLORINFO hci { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
+		
 		//Main loop for printing Hex chunks and Ascii chars.
 		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wstrText.size(); ++iterChunks, ++sIndexToPrint)
 		{
 			//Colors.
-			if (auto pColor = m_pHexVirtColors->GetColor(ullStartOffset + sIndexToPrint); pColor != nullptr)
+			hci.ullOffset = ullStartOffset + sIndexToPrint;
+			if (auto pColor = m_pHexVirtColors->OnHexGetColor(hci); pColor != nullptr)
 			{
 				//If it's different color.
 				if (optColorCurr && (optColorCurr->clrBk != pColor->clrBk || optColorCurr->clrText != pColor->clrText))
@@ -4069,7 +4073,9 @@ void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPANSTRUCT& hss)
 	if (!IsVirtual())
 		return;
 
-	m_pHexVirtData->SetData(pData, hss);
+	HEXDATAINFO hdi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
+	hdi.stSpan = hss;
+	m_pHexVirtData->OnHexSetData(pData, hdi);
 }
 
 void CHexCtrl::SetRedraw(bool fRedraw)

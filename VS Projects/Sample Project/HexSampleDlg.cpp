@@ -24,10 +24,10 @@ CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/)
 	m_hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
 }
 
-PHEXCOLOR CHexSampleDlg::GetColor(ULONGLONG ullOffset)
+PHEXCOLOR CHexSampleDlg::OnHexGetColor(const HEXCOLORINFO& hci)
 {
 	//Sample code for custom colors:
-	if (ullOffset < 18)
+	if (hci.ullOffset < 18)
 	{
 		static std::vector<HEXCOLOR> vec {
 			{ RGB(50, 0, 0), RGB(255, 255, 255) },
@@ -49,7 +49,7 @@ PHEXCOLOR CHexSampleDlg::GetColor(ULONGLONG ullOffset)
 			{ RGB(0, 220, 220), RGB(255, 255, 255) },
 			{ RGB(0, 250, 0), RGB(255, 255, 255) }
 		};
-		return &vec[static_cast<size_t>(ullOffset)];
+		return &vec[static_cast<size_t>(hci.ullOffset)];
 	}
 
 	return nullptr;
