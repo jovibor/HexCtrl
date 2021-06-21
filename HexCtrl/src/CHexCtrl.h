@@ -141,7 +141,8 @@ namespace HEXCTRL::INTERNAL
 		template<typename T>
 		void ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSizeToOperWith); //Main "modify" method with different workers.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
-		void ParentNotify(const HEXNOTIFY& hns)const;    //Notify routine used to send messages to Parent window.
+		template<typename T>
+		void ParentNotify(const T& t)const;                    //Notify routine used to send messages to Parent window.
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 		void Print();                                          //Printing routine.
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.

@@ -67,8 +67,9 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXDATAINFO
 	{
-		NMHDR   hdr { };    //Standard Windows header.
-		HEXSPAN stSpan { }; //Offset and size of the data bytes.
+		NMHDR      hdr { };    //Standard Windows header.
+		HEXSPAN    stSpan { }; //Offset and size of the data bytes.
+		std::byte* pData { };  //Data pointer.
 	};
 
 	/********************************************************************************************
@@ -79,8 +80,8 @@ namespace HEXCTRL
 	class IHexVirtData
 	{
 	public:
-		[[nodiscard]] virtual std::byte* OnHexGetData(const HEXDATAINFO&) = 0; //Data index and size to get.
-		virtual	void OnHexSetData(std::byte*, const HEXDATAINFO&) = 0; //Routine to modify data, if HEXDATA::fMutable == true.
+		virtual void OnHexGetData(HEXDATAINFO&) = 0; //Data beginning index and size to get.
+		virtual void OnHexSetData(HEXDATAINFO&) = 0; //Routine to modify data, if HEXDATA::fMutable == true.
 	};
 
 	/********************************************************************************************
@@ -115,6 +116,25 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
+	* HEXBKMINFO - Bookmarks info.                                                              *
+	********************************************************************************************/
+	struct HEXBKMINFO
+	{
+		NMHDR   hdr { };  //Standard Windows header.
+		PHEXBKM pBkm { }; //Bookmark pointer.
+	};
+
+	/********************************************************************************************
+	* HEXMENUINFO - Menu info.                                                                  *
+	********************************************************************************************/
+	struct HEXMENUINFO
+	{
+		NMHDR hdr { };     //Standard Windows header.
+		POINT pt { };      //Mouse position when clicked.
+		WORD  wMenuID { }; //Menu identifier.
+	};
+
+	/********************************************************************************************
 	* HEXCOLOR - used with the IHexVirtColors interface.                                        *
 	********************************************************************************************/
 	struct HEXCOLOR
@@ -131,6 +151,7 @@ namespace HEXCTRL
 	{
 		NMHDR     hdr { };       //Standard Windows header.
 		ULONGLONG ullOffset { }; //Offset for the color.
+		PHEXCOLOR pClr { };      //Pointer to the color struct.
 	};
 
 	/********************************************************************************************
@@ -139,7 +160,7 @@ namespace HEXCTRL
 	class IHexVirtColors
 	{
 	public:
-		[[nodiscard]] virtual PHEXCOLOR OnHexGetColor(const HEXCOLORINFO&) = 0;
+		[[nodiscard]] virtual void OnHexGetColor(HEXCOLORINFO&) = 0;
 	};
 
 	/********************************************************************************************
@@ -198,7 +219,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXNOTIFY - used in notifications routine.                                                *
 	********************************************************************************************/
-	struct HEXNOTIFY
+/*	struct HEXNOTIFY
 	{
 		NMHDR      hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
 		HEXSPAN    stSpan { };  //Offset and size of the bytes.
@@ -209,7 +230,7 @@ namespace HEXCTRL
 	using HEXNOTIFYSTRUCT [[deprecated("Struct is deprecated, use HEXNOTIFY instead.")]] = HEXNOTIFY;
 	using PHEXNOTIFYSTRUCT = HEXNOTIFY*;
 	using PHEXNOTIFY = HEXNOTIFY*;
-
+	*/
 	/********************************************************************************************
 	* HEXHITTEST - used in HitTest method.                                                      *
 	********************************************************************************************/

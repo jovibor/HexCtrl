@@ -656,7 +656,8 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->std::byte*
 			hss.ullSize = GetCacheSize();
 		HEXDATAINFO hdi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
 		hdi.stSpan = hss;
-		pData = m_pHexVirtData->OnHexGetData(hdi);
+		m_pHexVirtData->OnHexGetData(hdi);
+		pData = hdi.pData;
 	}
 
 	return pData;
@@ -2700,16 +2701,17 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 		std::optional<HEXCOLOR> optColorCurr { }; //Current color.
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Ascii the same.
 		HEXCOLORINFO hci { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
-		
+
 		//Main loop for printing Hex chunks and Ascii chars.
 		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wstrText.size(); ++iterChunks, ++sIndexToPrint)
 		{
 			//Colors.
 			hci.ullOffset = ullStartOffset + sIndexToPrint;
-			if (auto pColor = m_pHexVirtColors->OnHexGetColor(hci); pColor != nullptr)
+			hci.pClr = nullptr; //Nullify for the next iteration.
+			if (m_pHexVirtColors->OnHexGetColor(hci); hci.pClr != nullptr)
 			{
 				//If it's different color.
-				if (optColorCurr && (optColorCurr->clrBk != pColor->clrBk || optColorCurr->clrText != pColor->clrText))
+				if (optColorCurr && (optColorCurr->clrBk != hci.pClr->clrBk || optColorCurr->clrText != hci.pClr->clrText))
 				{
 					if (!wstrHexColorToPrint.empty()) //Only adding spaces if there are chars beforehead.
 					{
@@ -2735,7 +2737,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 
 					iColorHexPosToPrintX = -1;
 				}
-				optColorCurr = *pColor;
+				optColorCurr = *hci.pClr;
 
 				if (iColorHexPosToPrintX == -1) //For just one time exec.
 				{
@@ -3388,48 +3390,24 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 
 	if (auto pBkm = m_pBookmarks->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.
 	{
-		HEXNOTIFY hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK } };
-		hns.pData = reinterpret_cast<std::byte*>(pBkm);
-		ParentNotify(hns);
+		HEXBKMINFO hbi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK } };
+		hbi.pBkm = pBkm;
+		ParentNotify(hbi);
 	}
 
 	ParentNotify(HEXCTRL_MSG_CARETCHANGE);
 }
 
-void CHexCtrl::ParentNotify(const HEXNOTIFY& hns)const
+template<typename T>
+void CHexCtrl::ParentNotify(const T& t)const
 {
-	::SendMessageW(GetParent()->GetSafeHwnd(), WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&hns));
+	::SendMessageW(GetParent()->GetSafeHwnd(), WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));
 }
 
 void CHexCtrl::ParentNotify(UINT uCode)const
 {
-	HEXNOTIFY hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), uCode } };
-	std::vector<HEXSPAN> vecData { };
-
-	switch (uCode)
-	{
-	case HEXCTRL_MSG_CARETCHANGE:
-		hns.ullData = GetCaretPos();
-		break;
-	case HEXCTRL_MSG_SELECTION:
-		vecData = GetSelection();
-		hns.pData = reinterpret_cast<std::byte*>(&vecData);
-		break;
-	case HEXCTRL_MSG_VIEWCHANGE:
-	{
-		const auto ullStartLine = GetTopLine();
-		const auto ullEndLine = GetBottomLine();
-		hns.stSpan.ullOffset = ullStartLine * m_dwCapacity;
-		hns.stSpan.ullSize = (ullEndLine - ullStartLine) * m_dwCapacity;
-		if (hns.stSpan.ullOffset + hns.stSpan.ullSize > m_ullDataSize)
-			hns.stSpan.ullSize = m_ullDataSize - hns.stSpan.ullOffset;
-	}
-	break;
-	default:
-		break;
-	}
-
-	ParentNotify(hns);
+	NMHDR nmhdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), uCode };
+	ParentNotify(nmhdr);
 }
 
 void CHexCtrl::Print()
@@ -4075,7 +4053,8 @@ void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPAN& hss)
 
 	HEXDATAINFO hdi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
 	hdi.stSpan = hss;
-	m_pHexVirtData->OnHexSetData(pData, hdi);
+	hdi.pData = pData;
+	m_pHexVirtData->OnHexSetData(hdi);
 }
 
 void CHexCtrl::SetRedraw(bool fRedraw)
@@ -4343,10 +4322,10 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 	else
 	{	//For user defined custom menu we notifying parent window.
-		HEXNOTIFY hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK } };
-		hns.ullData = wMenuID;
-		hns.point = m_stMenuClickedPt;
-		ParentNotify(hns);
+		HEXMENUINFO hmi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK } };
+		hmi.wMenuID = wMenuID;
+		hmi.pt = m_stMenuClickedPt;
+		ParentNotify(hmi);
 	}
 
 	return CWnd::OnCommand(wParam, lParam);
@@ -4355,9 +4334,9 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 {
 	//Notify parent that we are about to display a context menu.
-	HEXNOTIFY hns { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU } };
-	hns.point = m_stMenuClickedPt = point;
-	ParentNotify(hns);
+	HEXMENUINFO hmi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU } };
+	hmi.pt = m_stMenuClickedPt = point;
+	ParentNotify(hmi);
 	m_menuMain.GetSubMenu(0)->TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
 }
 

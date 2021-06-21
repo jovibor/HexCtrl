@@ -72,15 +72,16 @@
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
   * [HEXBKM](#hexbkm)
+  * [HEXBKMINFO](#hexbkminfo)
   * [HEXCOLOR](#hexcolor)
   * [HEXCOLORINFO](#hexcolorinfo)
   * [HEXCOLORS](#hexcolors)
   * [HEXCREATE](#hexcreate)
-  * [HEXDATAINFO](#hexdatainfo)
   * [HEXDATA](#hexdata)
+  * [HEXDATAINFO](#hexdatainfo)
   * [HEXHITTEST](#hexhittest)
+  * [HEXMENUINFO](#hexmenuinfo)
   * [HEXMODIFY](#hexmodify)
-  * [HEXNOTIFY](#hexnotify)
   * [HEXSPAN](#hexspan)
   * [HEXVISION](#hexvision)
   </details>
@@ -112,7 +113,7 @@
 * [Licensing](#licensing)
 
 ## [](#)Introduction
-**HexCtrl** is a very featured Hex viewer/editor control written with **C++/MFC** library.
+**HexCtrl** is a very featured Hex viewer/editor control written in **C++** with a help of the **MFC** library.
 
 It's implemented as a pure abstract interface and therefore can be used in your app even if you don't use **MFC** directly. It's written with **/std:c++17** standart in **Visual Studio 2019**, under the **Windows 10**.
 
@@ -269,8 +270,8 @@ You have to derive your own class from it and implement all its public methods.
 class IHexVirtData
 {
 public:
-    [[nodiscard]] virtual std::byte* OnHexGetData(const HEXDATAINFO&) = 0; //Data index and size to get.
-    virtual void OnHexSetData(std::byte*, const HEXDATAINFO&) = 0; //Routine to modify data, if HEXDATA::fMutable == true.
+    virtual void OnHexGetData(HEXDATAINFO&) = 0; //Data beginning index and size to get.
+    virtual void OnHexSetData(HEXDATAINFO&) = 0; //Routine to modify data, if HEXDATA::fMutable == true.
 };
 ```
 Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATA::pHexVirtData = &yourDerivedObject`.
@@ -476,7 +477,7 @@ Retrives the `HMENU` handle of the control's context menu. You can use this hand
 
 Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.
 
-When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXNOTIFY`](#HEXNOTIFY) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `ullData` field of the [`HEXNOTIFY`](#HEXNOTIFY) will be holding `ID` of the menu clicked.
+When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXMENUINFO`](#HEXMENUINFO) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `wMenuID` field will be holding `ID` of the menu clicked.
 
 ### [](#)GetPagesCount
 ```cpp
@@ -697,6 +698,17 @@ using PHEXBKM = HEXBKM*;
 ```
 The member `vecSpan` is of a `std::vector<HEXSPAN>` type because a bookmark may have few non adjacent areas. For instance, when selection is made as a block, with <kbd>Alt</kbd> pressed.
 
+
+### [](#)HEXBKMINFO
+Bookmark information struct.
+```cpp
+struct HEXBKMINFO
+{
+    NMHDR   hdr { };  //Standard Windows header.
+    PHEXBKM pBkm { }; //Bookmark pointer.
+};
+```
+
 ### [](#)HEXCOLOR
 **HexCtrl** custom colors.
 ```cpp
@@ -715,6 +727,7 @@ struct HEXCOLORINFO
 {
     NMHDR     hdr { };       //Standard Windows header.
     ULONGLONG ullOffset { }; //Offset for the color.
+    PHEXCOLOR pClr { };      //Pointer to the color struct.
 };
 ```
 
@@ -756,16 +769,6 @@ struct HEXCREATE
 };
 ```
 
-### [](#)HEXDATAINFO
-Struct for a data information used in [`IHexVirtData`](#virtual-data-mode).
-```cpp
-struct HEXDATAINFO
-{
-    NMHDR   hdr { };    //Standard Windows header.
-    HEXSPAN stSpan { }; //Offset and size of the data bytes.
-};
-```
-
 ### [](#)HEXDATA
 Main struct to set a data to display in the control.
 ```cpp
@@ -778,6 +781,17 @@ struct HEXDATA
     DWORD           dwCacheSize { 0x800000 }; //In Virtual mode max cached size of data to fetch.
     bool            fMutable { false };       //Is data mutable (editable) or read-only.
     bool            fHighLatency { false };   //Do not redraw window until scrolling completes.
+};
+```
+
+### [](#)HEXDATAINFO
+Struct for a data information used in [`IHexVirtData`](#virtual-data-mode).
+```cpp
+struct HEXDATAINFO
+{
+    NMHDR      hdr { };    //Standard Windows header.
+    HEXSPAN    stSpan { }; //Offset and size of the data bytes.
+    std::byte* pData { };  //Data pointer.
 };
 ```
 
@@ -812,18 +826,15 @@ struct HEXMODIFY
 
 ```
 
-### [](#)HEXNOTIFY
-This struct is used in notification purposes, to notify parent window about **HexCtrl**'s states.
+### [](#)HEXMENUINFO
+Menu information struct.
 ```cpp
-struct HEXNOTIFY
+struct HEXMENUINFO
 {
-    NMHDR      hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
-    HEXSPAN    stSpan { };  //Offset and size of the bytes. 
-    ULONGLONG  ullData { }; //Data depending on message (e.g. user defined custom menu id/cursor pos).
-    std::byte* Data { };   //Pointer to a data to get/send.
-    POINT      point { };   //Mouse position for menu notifications.
+    NMHDR hdr { };     //Standard Windows header.
+    POINT pt { };      //Mouse position when clicked.
+    WORD  wMenuID { }; //Menu identifier.
 };
-using PHEXNOTIFY = HEXNOTIFY*;
 ```
 
 ### [](#)HEXSPAN
@@ -924,23 +935,22 @@ enum class EHexWnd : std::uint8_t
 
 ## [](#)Notification Messages
 During its work **HexCtrl** sends notification messages through **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** mechanism to indicate its states. These messages are sent to [`HEXCREATE::hwndParent`](#HEXCREATE) window.
-The `LPARAM` of the `WM_NOTIFY` message will hold pointer to the [`HEXNOTIFY`](#HEXNOTIFY) struct.
+The `LPARAM` of the `WM_NOTIFY` message will hold a pointer to the [`NMHDR`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-nmhdr) standard windows struct. Depending on the notification message code `LPARAM` can then be casted to different struct.
 
 ### [](#)HEXCTRL_MSG_BKMCLICK
-Sent if bookmark is clicked. [`HEXNOTIFY::pData`](#HEXNOTIFY) will contain [`HEXBKM`](#HEXBKM) pointer.
+Sent if bookmark is clicked. `LPARAM` will contain [`HEXBKMINFO`](#hexbkminfo) pointer.
 
 ### [](#)HEXCTRL_MSG_CARETCHANGE
-Sent when caret position has changed. [`HEXNOTIFY::ullData`](#HEXNOTIFY) will contain current caret position.
+Sent when caret position has changed.
 
 ### [](#)HEXCTRL_MSG_CONTEXTMENU
-Sent when context menu is about to be displayed.
+Sent when context menu is about to be displayed. `LPARAM` will contain [`HEXBKMINFO`](#hexbkminfo) pointer.
 
 ### [](#)HEXCTRL_MSG_DESTROY
 Sent to indicate that **HexCtrl** window is about to be destroyed.
 
 ### [](#)HEXCTRL_MSG_MENUCLICK
-Sent when user defined custom menu has been clicked.  
-[`HEXNOTIFY`](#HEXNOTIFY) `ullData` member contains menu ID, while `point` member contains position of the cursor, in screen coordinates, at the time of the mouse click.
+Sent when user defined custom menu has been clicked. `LPARAM` will contain [`HEXBKMINFO`](#hexbkminfo) pointer.
 
 ### [](#)HEXCTRL_MSG_SELECTION
 Sent when selection has been made.
@@ -949,7 +959,7 @@ Sent when selection has been made.
 Sent to indicate that the data has changed.
 
 ### [](#)HEXCTRL_MSG_VIEWCHANGE
-Sent when **HexCtrl**'s view has changed, whether on resizing or scrolling. [`HEXNOTIFY::stSpan`](#HEXNOTIFY) will contain starting offset and size of the visible data.
+Sent when **HexCtrl**'s view has changed, whether on resizing or scrolling.
 
 ## [](#)Exported Functions
 **HexCtrl** has few `"C"` interface functions which it exports when built as *.dll*.

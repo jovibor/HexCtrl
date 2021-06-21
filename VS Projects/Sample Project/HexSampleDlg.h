@@ -8,7 +8,7 @@ class CHexSampleDlg : public CDialogEx, public IHexVirtColors
 public:
 	explicit CHexSampleDlg(CWnd* pParent = nullptr);
 private:
-	PHEXCOLOR OnHexGetColor(const HEXCOLORINFO& hci)override;
+	void OnHexGetColor(HEXCOLORINFO& hci)override;
 	BOOL OnInitDialog()override;
 	void DoDataExchange(CDataExchange* pDX)override;
 	afx_msg void OnPaint();
