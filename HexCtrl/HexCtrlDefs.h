@@ -81,7 +81,7 @@ namespace HEXCTRL
 	{
 	public:
 		virtual void OnHexGetData(HEXDATAINFO&) = 0; //Data beginning index and size to get.
-		virtual void OnHexSetData(HEXDATAINFO&) = 0; //Routine to modify data, if HEXDATA::fMutable == true.
+		virtual void OnHexSetData(const HEXDATAINFO&) = 0; //Called when data was set (changed).
 	};
 
 	/********************************************************************************************

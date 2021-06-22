@@ -1739,6 +1739,7 @@ void CHexCtrl::SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw, bo
 
 	if (fRedraw)
 		Redraw();
+
 	ParentNotify(HEXCTRL_MSG_SELECTION);
 }
 
@@ -3783,12 +3784,10 @@ void CHexCtrl::SelAll()
 
 void CHexCtrl::SelAddDown()
 {
-	if (!HasSelection())
-		return;
-
+	const auto fHasSel = HasSelection();
+	const auto ullSelStart = fHasSel ? m_pSelection->GetSelStart() : m_ullCaretPos;
+	const auto ullSelSize = fHasSel ? m_pSelection->GetSelSize() : 1;
 	ULONGLONG ullClick { }, ullStart { }, ullSize { 0ULL };
-	const auto ullSelStart = m_pSelection->GetSelStart();
-	const auto ullSelSize = m_pSelection->GetSelSize();
 	ULONGLONG ullNewPos { }; //Future pos of selection start.
 	ULONGLONG ullOldPos { }; //Current pos of selection start.
 
@@ -3848,12 +3847,10 @@ void CHexCtrl::SelAddDown()
 
 void CHexCtrl::SelAddLeft()
 {
-	if (!HasSelection())
-		return;
-
+	const auto fHasSel = HasSelection();
+	const auto ullSelStart = fHasSel ? m_pSelection->GetSelStart() : m_ullCaretPos;
+	const auto ullSelSize = fHasSel ? m_pSelection->GetSelSize() : 1;
 	ULONGLONG ullClick { }, ullStart { }, ullSize { 0 };
-	const auto ullSelStart = m_pSelection->GetSelStart();
-	const auto ullSelSize = m_pSelection->GetSelSize();
 	ULONGLONG ullNewPos { }; //Future pos of selection start.
 	ULONGLONG ullOldPos { }; //Current pos of selection start.
 
@@ -3906,12 +3903,10 @@ void CHexCtrl::SelAddLeft()
 
 void CHexCtrl::SelAddRight()
 {
-	if (!HasSelection())
-		return;
-
+	const auto fHasSel = HasSelection();
+	const auto ullSelStart = fHasSel ? m_pSelection->GetSelStart() : m_ullCaretPos;
+	const auto ullSelSize = fHasSel ? m_pSelection->GetSelSize() : 1;
 	ULONGLONG ullClick { }, ullStart { }, ullSize { 0UL };
-	const auto ullSelStart = m_pSelection->GetSelStart();
-	const auto ullSelSize = m_pSelection->GetSelSize();
 	ULONGLONG ullNewPos { }; //Future pos of selection start.
 	ULONGLONG ullOldPos { }; //Current pos of selection start.
 
@@ -3969,12 +3964,10 @@ void CHexCtrl::SelAddRight()
 
 void CHexCtrl::SelAddUp()
 {
-	if (!HasSelection())
-		return;
-
+	const auto fHasSel = HasSelection();
+	const auto ullSelStart = fHasSel ? m_pSelection->GetSelStart() : m_ullCaretPos;
+	const auto ullSelSize = fHasSel ? m_pSelection->GetSelSize() : 1;
 	ULONGLONG ullClick { }, ullStart { 0 }, ullSize { 0 };
-	const auto ullSelStart = m_pSelection->GetSelStart();
-	const auto ullSelSize = m_pSelection->GetSelSize();
 	ULONGLONG ullNewPos { }; //Future pos of selection start.
 	ULONGLONG ullOldPos { }; //Current pos of selection start.
 
@@ -4048,6 +4041,10 @@ void CHexCtrl::SelAddUp()
 
 void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPAN& hss)
 {
+	//Note: Since this method can be executed asynchronously (in search/replace, etc...),
+	//the SendMesage(parent, ...) is impossible here because receiver window
+	//must be run in the same thread as a sender.
+
 	if (!IsVirtual())
 		return;
 
@@ -4554,7 +4551,11 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	else
 		m_ullCursorPrev = m_ullCursorNow;
 
-	SetSelection(vecSel);
+	if (HasSelection() || !vecSel.empty()) //To avoid set empty selection when it's already empty.
+		SetSelection(vecSel);
+	else
+		Redraw();
+
 	OnCaretPosChange(GetCaretPos());
 }
 
