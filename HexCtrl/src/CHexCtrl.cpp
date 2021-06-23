@@ -420,10 +420,10 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		m_pDlgSearch->ShowWindow(SW_SHOW);
 		break;
 	case EHexCmd::CMD_SEARCH_NEXT:
-		m_pDlgSearch->Search(true);
+		m_pDlgSearch->SearchNextPrev(true);
 		break;
 	case EHexCmd::CMD_SEARCH_PREV:
-		m_pDlgSearch->Search(false);
+		m_pDlgSearch->SearchNextPrev(false);
 		break;
 	case EHexCmd::CMD_NAV_DLG_GOTO:
 		m_pDlgGoTo->ShowWindow(SW_SHOW);

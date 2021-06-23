@@ -16,14 +16,29 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgSearch final : public CDialogEx
 	{
 		enum class EMode : WORD;
-		enum class EMenuID : WORD;
+		struct SFIND;
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
-		void Search(bool fForward);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
+		void SearchNextPrev(bool fForward);
 		BOOL ShowWindow(int nCmdShow);
-	protected:
+	private:
 		void DoDataExchange(CDataExchange* pDX)override;
+		void AddToList(ULONGLONG ullOffset);
+		void ClearList();
+		void ComboSearchFill(LPCWSTR pwsz);
+		void ComboReplaceFill(LPCWSTR pwsz);
+
+		//Main routine for finding stuff.
+		[[nodiscard]] SFIND Finder(ULONGLONG& ullStart, ULONGLONG ullEnd,
+			std::byte* pSearch, size_t nSizeSearch,
+			ULONGLONG ullEndSentinel, bool fForward = true,
+			CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true);
+		
+		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
+		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
+		void HexCtrlHighlight(const std::vector<HEXSPAN>& vecSel); //Highlight found occurence in HexCtrl.
+		[[nodiscard]] bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnButtonSearchF();
@@ -41,10 +56,6 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
-		void AddToList(ULONGLONG ullOffset);
-		void ClearList();
-		void HexCtrlHighlight(const std::vector<HEXSPAN>& vecSel); //Highlight found occurence in HexCtrl.
-		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		void Prepare();
 		[[nodiscard]] bool PrepareHex();
 		[[nodiscard]] bool PrepareASCII();
@@ -56,14 +67,10 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool PrepareFloat();
 		[[nodiscard]] bool PrepareDouble();
 		[[nodiscard]] bool PrepareFILETIME();
-		void Search();
 		void Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace)const;
 		void ResetSearch();
-		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
-		void ComboSearchFill(LPCWSTR pwsz);
-		void ComboReplaceFill(LPCWSTR pwsz);
+		void Search();
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
-		[[nodiscard]] bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const;
 		DECLARE_MESSAGE_MAP()
 	private:
 		IHexCtrl* m_pHexCtrl { };

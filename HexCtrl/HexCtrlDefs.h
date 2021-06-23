@@ -160,7 +160,7 @@ namespace HEXCTRL
 	class IHexVirtColors
 	{
 	public:
-		[[nodiscard]] virtual void OnHexGetColor(HEXCOLORINFO&) = 0;
+		virtual void OnHexGetColor(HEXCOLORINFO&) = 0;
 	};
 
 	/********************************************************************************************
