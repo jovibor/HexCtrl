@@ -4753,22 +4753,21 @@ void CHexCtrl::OnNcPaint()
 }
 
 void CHexCtrl::OnPaint()
-{
+{	
+	if (!IsDrawable()) //Control should not be rendered atm.
+		return;
+
 	CPaintDC dc(this);
+	CRect rcClient;
+	GetClientRect(rcClient);
+
 	if (!IsCreated())
 	{
-		CRect rc;
-		dc.GetClipBox(rc);
-		dc.FillSolidRect(rc, RGB(250, 250, 250));
+		dc.FillSolidRect(rcClient, RGB(250, 250, 250));
 		dc.TextOutW(1, 1, L"Call IHexCtrl::Create first.");
 		return;
 	}
 
-	if (!IsDrawable()) //Control should not be rendered atm.
-		return;
-
-	CRect rcClient;
-	GetClientRect(rcClient);
 	//To prevent drawing in too small window (can cause hangs).
 	if (rcClient.IsRectEmpty() || rcClient.Height() < m_iHeightTopRect + m_iHeightBottomOffArea)
 		return;
