@@ -576,7 +576,7 @@ Returns `true` if **HexCtrl** currently works in [Virtual Data Mode](#virtual-da
 ```cpp
 void ModifyData(const HEXMODIFY& hms);
 ```
-Modify data in set **HexCtrl**. See [`HEXMODIFY`](#hexmodify) struct for details.
+Modify data currently set in **HexCtrl**, see the [`HEXMODIFY`](#hexmodify) struct for details.
 
 ### [](#)Redraw
 ```cpp
@@ -594,7 +594,7 @@ Sets the **HexCtrl** current capacity.
 ```cpp
 void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true);
 ```
-Set the caret to the given offset. The `fHighLow` flag shows which part of the hex chunk, low or high, a caret must be set to, it only makes sense in mutable mode.
+Sets the caret to the given offset. The `fHighLow` flag shows which part of the hex chunk, low or high, a caret must be set to.
 
 ### [](#)SetColors
 ```cpp
@@ -606,7 +606,7 @@ Sets all the colors for the control. Takes [`HEXCOLORS`](#HEXCOLORS) as the argu
 ```cpp
 bool SetConfig(std::wstring_view wstrPath);
 ```
-Set the path to a JSON config file with keybindings to use in **HexCtrl**, or `L""` for default. This file is using [`EHexCmd`](#ehexcmd) enum values as keys and strings array as values:
+Sets the path to a JSON config file with keybindings to use in **HexCtrl**, or empty path (`L""`) for default. This file is using [`EHexCmd`](#ehexcmd) enum values as keys and strings array as values:
 ```json
 {
     "CMD_DLG_SEARCH": [ "ctrl+f", "ctrl+h" ],
@@ -614,13 +614,13 @@ Set the path to a JSON config file with keybindings to use in **HexCtrl**, or `L
     "CMD_SEARCH_PREV": [ "shift+f3" ]
 }
 ```
-For default values see `HexCtrl/res/keybind.json` file from the project source folder.
+For default values see the [`HexCtrl/res/keybind.json`](https://github.com/jovibor/HexCtrl/blob/master/HexCtrl/res/keybind.json) file from the project sources.
 
 ### [](#)SetData
 ```cpp
 void SetData(const HEXDATA& hds);
 ```
-Main method to set data to display in read-only or edit modes. Takes [`HEXDATA`](#HEXDATA) as an  argument.
+Main method to set a data to display in read-only or mutable modes. Takes [`HEXDATA`](#HEXDATA) as an  argument.
 
 ### [](#)SetEncoding
 ```cpp
@@ -658,7 +658,7 @@ Enables or disables mutable mode. In mutable mode all the data can be modified.
 ```cpp
 void SetOffsetMode(bool fHex);
 ```
-Set offset area being shown as Hex (`fHex=true`) or as Decimal (`fHex=false`).
+Sets offset area being shown as Hex (`fHex=true`) or as Decimal (`fHex=false`).
 
 ### [](#)SetPageSize
 ```cpp
@@ -815,15 +815,14 @@ If `enModifyMode` is equal to `EHexModifyMode::MODIFY_OPERATION` then `enOperMod
 ```cpp
 struct HEXMODIFY
 {
-    EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
-    EHexOperMode   enOperMode { };          //Operation mode, used only if enModifyMode == MODIFY_OPERATION.
-    EHexOperSize   enOperSize { };          //Operation data size.
-    std::byte*     pData { };               //Pointer to a data to be set.
-    ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
-    std::vector<HEXSPAN> vecSpan { }; //Vector of data offsets and sizes.
-    bool           fBigEndian { false };    //Treat the data being modified as a big endian, used only in MODIFY_OPERATION mode.
+    EHexModifyMode       enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
+    EHexOperMode         enOperMode { };       //Operation mode, used only in MODIFY_OPERATION mode.
+    EHexDataSize         enOperSize { };       //Operation data size.
+    std::byte*           pData { };            //Pointer to a data to be set.
+    ULONGLONG            ullDataSize { };      //Size of the data pData is pointing to.
+    std::vector<HEXSPAN> vecSpan { };          //Vector of data offsets and sizes.
+    bool                 fBigEndian { false }; //Treat the data as a big endian, used only in MODIFY_OPERATION mode.
 };
-
 ```
 
 ### [](#)HEXMENUINFO
@@ -934,32 +933,32 @@ enum class EHexWnd : std::uint8_t
 ```
 
 ## [](#)Notification Messages
-During its work **HexCtrl** sends notification messages through **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** mechanism to indicate its states. These messages are sent to [`HEXCREATE::hwndParent`](#HEXCREATE) window.
-The `LPARAM` of the `WM_NOTIFY` message will hold a pointer to the [`NMHDR`](https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-nmhdr) standard windows struct. Depending on the notification message code `LPARAM` can then be casted to different struct.
+During its work **HexCtrl** sends notification messages to [`HEXCREATE::hwndParent`](#hexcreate) window, about its different states, through **[WM_NOTIFY](https://docs.microsoft.com/en-us/windows/win32/controls/wm-notify)** mechanism.  
+The `LPARAM` of the `WM_NOTIFY` message will contain a pointer to the **[NMHDR](https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-nmhdr)** standard windows struct. Depending on the notification message `LPARAM` can then be casted to a pointer to another struct, see message description for details.
 
 ### [](#)HEXCTRL_MSG_BKMCLICK
-Sent if bookmark is clicked. `LPARAM` will contain [`HEXBKMINFO`](#hexbkminfo) pointer.
+Sent if bookmark is clicked. `LPARAM` will contain pointer to a [`HEXBKMINFO`](#hexbkminfo) struct.
 
 ### [](#)HEXCTRL_MSG_CARETCHANGE
-Sent when caret position has changed.
+Sent when caret position has changed. `LPARAM` will contain pointer to a `NMHDR` struct.
 
 ### [](#)HEXCTRL_MSG_CONTEXTMENU
-Sent when context menu is about to be displayed. `LPARAM` will contain [`HEXBKMINFO`](#hexbkminfo) pointer.
+Sent when context menu is about to be displayed. `LPARAM` will contain pointer to a [`HEXMENUINFO`](#hexmenuinfo) struct.
 
 ### [](#)HEXCTRL_MSG_DESTROY
-Sent to indicate that **HexCtrl** window is about to be destroyed.
+Sent to indicate that **HexCtrl** window is about to be destroyed. `LPARAM` will contain pointer to a `NMHDR` struct.
 
 ### [](#)HEXCTRL_MSG_MENUCLICK
-Sent when user defined custom menu has been clicked. `LPARAM` will contain [`HEXBKMINFO`](#hexbkminfo) pointer.
+Sent when user defined custom menu has been clicked. `LPARAM` will contain pointer to a [`HEXMENUINFO`](#hexmenuinfo) struct.
 
 ### [](#)HEXCTRL_MSG_SELECTION
-Sent when selection has been made.
+Sent when selection has been made. `LPARAM` will contain pointer to a `NMHDR` struct.
 
 ### [](#)HEXCTRL_MSG_SETDATA
-Sent to indicate that the data has changed.
+Sent to indicate that the data has changed. `LPARAM` will contain pointer to a `NMHDR` struct.
 
 ### [](#)HEXCTRL_MSG_VIEWCHANGE
-Sent when **HexCtrl**'s view has changed, whether on resizing or scrolling.
+Sent when **HexCtrl**'s view has changed, whether on resizing or scrolling. `LPARAM` will contain pointer to a `NMHDR` struct.
 
 ## [](#)Exported Functions
 **HexCtrl** has few `"C"` interface functions which it exports when built as *.dll*.

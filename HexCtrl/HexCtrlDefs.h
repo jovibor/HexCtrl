@@ -217,21 +217,6 @@ namespace HEXCTRL
 	using HEXDATASTRUCT [[deprecated("Struct is deprecated, use HEXDATA instead.")]] = HEXDATA;
 
 	/********************************************************************************************
-	* HEXNOTIFY - used in notifications routine.                                                *
-	********************************************************************************************/
-/*	struct HEXNOTIFY
-	{
-		NMHDR      hdr { };     //Standard Windows header. For hdr.code values see HEXCTRL_MSG_* messages.
-		HEXSPAN    stSpan { };  //Offset and size of the bytes.
-		ULONGLONG  ullData { }; //Data depending on message (e.g. user defined custom menu ID/caret pos).
-		std::byte* pData { };   //Pointer to a data depending on notify message.
-		POINT      point { };   //Mouse position for menu notifications.
-	};
-	using HEXNOTIFYSTRUCT [[deprecated("Struct is deprecated, use HEXNOTIFY instead.")]] = HEXNOTIFY;
-	using PHEXNOTIFYSTRUCT = HEXNOTIFY*;
-	using PHEXNOTIFY = HEXNOTIFY*;
-	*/
-	/********************************************************************************************
 	* HEXHITTEST - used in HitTest method.                                                      *
 	********************************************************************************************/
 	struct HEXHITTEST
@@ -296,12 +281,12 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXMODIFY
 	{
-		EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
-		EHexOperMode   enOperMode { };          //Operation mode, used only if enModifyMode == MODIFY_OPERATION.
-		EHexDataSize   enOperSize { };          //Operation data size.
-		std::byte*     pData { };               //Pointer to a data to be set.
-		ULONGLONG      ullDataSize { };         //Size of the data pData is pointing to.
-		std::vector<HEXSPAN> vecSpan { };       //Vector of data offsets and sizes.
-		bool           fBigEndian { false };    //Treat the data being modified as a big endian, used only in MODIFY_OPERATION mode.
+		EHexModifyMode       enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
+		EHexOperMode         enOperMode { };       //Operation mode, used only in MODIFY_OPERATION mode.
+		EHexDataSize         enOperSize { };       //Operation data size.
+		std::byte*           pData { };            //Pointer to a data to be set.
+		ULONGLONG            ullDataSize { };      //Size of the data pData is pointing to.
+		std::vector<HEXSPAN> vecSpan { };          //Vector of data offsets and sizes.
+		bool                 fBigEndian { false }; //Treat the data as a big endian, used only in MODIFY_OPERATION mode.
 	};
 };
