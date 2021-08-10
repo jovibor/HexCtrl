@@ -13,7 +13,7 @@
 * [Set The Data](#set-the-data)
 * [Virtual Data Mode](#virtual-data-mode)
 * [Virtual Bookmarks](#virtual-bookmarks)
-* [IHexVirtColors](#ihexvirtcolors)
+* [Custom Colors](#custom-colors)
 * [Methods](#methods) <details><summary>_Expand_</summary>
   * [BkmAdd](#bkmadd)
   * [BkmClearAll](#bkmclearall)
@@ -270,22 +270,18 @@ You have to derive your own class from it and implement all its public methods.
 class IHexVirtData
 {
 public:
-    virtual void OnHexGetData(HEXDATAINFO&) = 0; //Data beginning index and size to get.
-    virtual void OnHexSetData(HEXDATAINFO&) = 0; //Routine to modify data, if HEXDATA::fMutable == true.
+    virtual void OnHexGetData(HEXDATAINFO&) = 0;       //Data to get.
+    virtual void OnHexSetData(const HEXDATAINFO&) = 0; //Data to set, if mutable.
 };
 ```
-Then provide a pointer to created object of this derived class prior to call to [`SetData`](#setdata) method in form of `HEXDATA::pHexVirtData = &yourDerivedObject`.
+Then provide a pointer to the created object of this derived class prior to call to [`SetData`](#setdata) method, through the `HEXDATA::pHexVirtData`.
 
 ## [](#)Virtual Bookmarks
-**HexCtrl** has innate functional to work with any amount of bookmarked regions. These regions can be assigned with individual background and text color and description.
+**HexCtrl** has innate functional to work with any amount of bookmarked regions. These regions can be assigned with individual background and text colors and description.
 
-But if you have some big and complicated data logic and want to handle all these regions yourself, you can do it.  
-    virtuvoid SetData(std::byte*, const HEXSPAN&) = 0; //Routine to modify data, if HEXDATA::fMutable == true.
+But if you have some big and complicated data logic and want to handle all these regions yourself, you can do it with the help of Virtual Bookmarks. To enable it call the [`BkmSetVirtual`](#bkmsetvirtual) method.  
 
-
-To enable virtual bookmarks call the [`BkmSetVirtual`](#bkmsetvirtual) method.  
-
-The main method of the `IHexVirtBkm` interface is `HitTest`. It takes byte's offset and returns pointer to [`HEXBKM`](#HEXBKM) if there is a bookmark withing this byte, or `nullptr` otherwise.
+The main method of the `IHexVirtBkm` interface is `HitTest`. It takes data offset and returns pointer to [`HEXBKM`](#HEXBKM) if there is a bookmark, or `nullptr` otherwise.
 
 ```cpp
 class IHexVirtBkm
@@ -300,19 +296,18 @@ public:
     virtual void OnHexBkmRemoveByID(ULONGLONG ullID) = 0; //Remove bookmark by given ID (returned by Add()).
 };
 ```
-
-## [](#)IHexVirtColors
-This interface is used to set custom bk/text colors for the given data offset.  
-To provide a color, a pointer to the valid [`HEXCOLOR`](#hexcolor) structure must be returned from the `IHexVirtColors::OnHexGetColor` method. If `nullptr` is returned default colors will be used.  
-
-In order to use this feature the [`HEXDATA::pHexVirtColors`](#HEXDATA) member must be set to a valid class inherited from this interface, prior to calling [`SetData`](#setdata) method.
+## [](#)Custom Colors
+### [](#)IHexVirtColors
+This interface is used to set custom bk/text colors for the data offset.  
+In order to use this feature the [`HEXDATA::pHexVirtColors`](#hexdata) member must be set to a valid class inherited from this interface prior to calling [`SetData`](#setdata) method.
 ```cpp
 class IHexVirtColors
 {
 public:
-    [[nodiscard]] virtual PHEXCOLOR OnHexGetColor(const HEXCOLORINFO&) = 0;
+    void OnHexGetColor(HEXCOLORINFO&) = 0;
 };
 ```
+The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinfo) struct as an argument. The `PHEXCOLOR::pClr` member of this struct must point to a desired colors after method completes, or `nullptr` for default colors.
 
 ## [](#)Methods
 The **HexCtrl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.

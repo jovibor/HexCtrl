@@ -80,8 +80,8 @@ namespace HEXCTRL
 	class IHexVirtData
 	{
 	public:
-		virtual void OnHexGetData(HEXDATAINFO&) = 0; //Data beginning index and size to get.
-		virtual void OnHexSetData(const HEXDATAINFO&) = 0; //Called when data was set (changed).
+		virtual void OnHexGetData(HEXDATAINFO&) = 0;       //Data to get.
+		virtual void OnHexSetData(const HEXDATAINFO&) = 0; //Data to set, if mutable.
 	};
 
 	/********************************************************************************************
@@ -182,7 +182,7 @@ namespace HEXCTRL
 		COLORREF clrBkCaret { RGB(0, 0, 255) };                      //Caret background color.
 		COLORREF clrBkCaretSelect { RGB(0, 0, 200) };                //Caret background color in selection.
 	};
-	using HEXCOLORSSTRUCT [[deprecated("Struct is deprecated, use HEXCREATE instead.")]] = HEXCOLORS;
+	using HEXCOLORSSTRUCT [[deprecated("Struct is deprecated, use HEXCOLORS instead.")]] = HEXCOLORS;
 
 	/********************************************************************************************
 	* HEXCREATE - for IHexCtrl::Create method.                                                  *

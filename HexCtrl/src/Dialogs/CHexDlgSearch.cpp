@@ -469,7 +469,7 @@ BOOL CHexDlgSearch::OnInitDialog()
 
 	stToolInfo.uId = reinterpret_cast<UINT_PTR>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_INV)->m_hWnd);
 	//"Inverted" tooltip text.
-	wstrToolText = L"Search for the non-matching occurences.\r\nThat is everything that don't match search conditions.";
+	wstrToolText = L"Search for the non-matching occurences.\r\nThat is everything that doesn't match search conditions.";
 	stToolInfo.lpszText = wstrToolText.data();
 	::SendMessageW(hwndTipInv, TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&stToolInfo));
 	::SendMessageW(hwndTipInv, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
