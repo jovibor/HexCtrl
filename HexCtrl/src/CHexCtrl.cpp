@@ -1047,8 +1047,8 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	{
 		std::random_device rd;
 		std::mt19937 gen(rd());
-		std::uniform_int_distribution distrib(0, 255);
-		constexpr auto lmbRandom = [&](std::byte* pData, const HEXMODIFY& /*hms*/)
+		const std::uniform_int_distribution distrib(0, 255);
+		const auto lmbRandom = [&](std::byte* pData, const HEXMODIFY&)
 		{
 			assert(pData != nullptr);
 			*pData = static_cast<std::byte>(distrib(gen));
@@ -4753,7 +4753,7 @@ void CHexCtrl::OnNcPaint()
 }
 
 void CHexCtrl::OnPaint()
-{	
+{
 	if (!IsDrawable()) //Control should not be rendered atm.
 		return;
 

@@ -202,7 +202,7 @@ namespace HEXCTRL::INTERNAL
 	auto StringToSystemTime(const std::wstring_view wstr, const DWORD dwDateFormat)->std::optional<SYSTEMTIME>
 	{
 		//dwDateFormat is a locale specific date format https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
-		
+
 		if (wstr.empty())
 			return std::nullopt;
 

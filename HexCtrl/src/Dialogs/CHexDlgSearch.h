@@ -34,7 +34,7 @@ namespace HEXCTRL::INTERNAL
 			std::byte* pSearch, size_t nSizeSearch,
 			ULONGLONG ullEndSentinel, bool fForward = true,
 			CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true);
-		
+
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
 		void HexCtrlHighlight(const std::vector<HEXSPAN>& vecSel); //Highlight found occurence in HexCtrl.

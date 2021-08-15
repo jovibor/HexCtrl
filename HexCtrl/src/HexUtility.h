@@ -54,7 +54,7 @@ namespace HEXCTRL::INTERNAL
 
 	//Substitute all unprintable wchar symbols with dot.
 	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLFRepl = true);
-	
+
 	//Convert string_view into SYSTEMTIME struct.
 	[[nodiscard]] auto StringToSystemTime(std::wstring_view wstr, DWORD dwDateFormat)->std::optional<SYSTEMTIME>;
 
