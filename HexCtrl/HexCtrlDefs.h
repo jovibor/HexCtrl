@@ -8,6 +8,7 @@
 #pragma once
 #include <Windows.h>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -206,13 +207,12 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXDATA
 	{
-		ULONGLONG       ullDataSize { };          //Size of the data to display, in bytes.
-		IHexVirtData*   pHexVirtData { };         //Pointer for Virtual mode.
-		IHexVirtColors* pHexVirtColors { };       //Pointer for Custom Colors class.
-		std::byte*      pData { };                //Data pointer in default mode.
-		DWORD           dwCacheSize { 0x800000 }; //In Virtual mode max cached size of data to fetch.
-		bool            fMutable { false };       //Is data mutable (editable) or read-only.
-		bool            fHighLatency { false };   //Do not redraw window until scrolling completes.
+		std::span<std::byte> spnData { };              //Data to display.
+		IHexVirtData*        pHexVirtData { };         //Pointer for Virtual mode.
+		IHexVirtColors*      pHexVirtColors { };       //Pointer for Custom Colors class.
+		DWORD                dwCacheSize { 0x800000 }; //In Virtual mode max cached size of data to fetch.
+		bool                 fMutable { false };       //Is data mutable (editable) or read-only.
+		bool                 fHighLatency { false };   //Do not redraw window until scrolling completes.
 	};
 	using HEXDATASTRUCT [[deprecated("Struct is deprecated, use HEXDATA instead.")]] = HEXDATA;
 

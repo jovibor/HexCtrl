@@ -124,8 +124,7 @@ void CHexSampleDlg::OnBnSetDataRO()
 		return;
 	}
 
-	m_hds.pData = reinterpret_cast<std::byte*>(m_RandomData);
-	m_hds.ullDataSize = sizeof(m_RandomData);
+	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
 	m_hds.fMutable = false;
 	m_myHex->SetData(m_hds);
 }
@@ -140,8 +139,7 @@ void CHexSampleDlg::OnBnSetDataRW()
 		return;
 	}
 
-	m_hds.pData = reinterpret_cast<std::byte*>(m_RandomData);
-	m_hds.ullDataSize = sizeof(m_RandomData);
+	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
 	m_hds.fMutable = true;
 	m_myHex->SetData(m_hds);
 }
@@ -245,8 +243,7 @@ void CHexSampleDlg::FileOpen(std::wstring_view wstrPath, bool fRW)
 	LARGE_INTEGER stFileSize;
 	::GetFileSizeEx(m_hFile, &stFileSize);
 
-	m_hds.pData = static_cast<std::byte*>(m_lpBase);
-	m_hds.ullDataSize = static_cast<ULONGLONG>(stFileSize.QuadPart);
+	m_hds.spnData = { static_cast<std::byte*>(m_lpBase), static_cast<std::size_t>(stFileSize.QuadPart) };
 	m_hds.fMutable = fRW;
 	m_myHex->SetData(m_hds);
 }

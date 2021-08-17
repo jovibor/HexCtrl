@@ -241,9 +241,8 @@ void CHexCtrl::ClearData()
 	if (!IsCreated())
 		return;
 
+	m_spnData = { };
 	m_fDataSet = false;
-	m_pData = nullptr;
-	m_ullDataSize = 0;
 	m_fMutable = false;
 	m_pHexVirtData = nullptr;
 	m_pHexVirtColors = nullptr;
@@ -644,12 +643,12 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->std::byte*
 {
 	assert(IsCreated());
 	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet() || (hss.ullOffset + hss.ullSize > m_ullDataSize))
+	if (!IsCreated() || !IsDataSet() || (hss.ullOffset + hss.ullSize > m_spnData.size()))
 		return nullptr;
 
 	std::byte* pData { };
 	if (!IsVirtual())
-		pData = m_pData + hss.ullOffset;
+		pData = m_spnData.data() + hss.ullOffset;
 	else
 	{
 		if (hss.ullSize == 0 || hss.ullSize > GetCacheSize())
@@ -670,7 +669,7 @@ auto CHexCtrl::GetDataSize()const->ULONGLONG
 	if (!IsCreated() || !IsDataSet())
 		return { };
 
-	return m_ullDataSize;
+	return m_spnData.size();
 }
 
 int CHexCtrl::GetEncoding()const
@@ -716,7 +715,7 @@ auto CHexCtrl::GetPagesCount()const->ULONGLONG
 	if (!IsCreated() || !IsDataSet() || GetPageSize() == 0)
 		return { };
 
-	return (m_ullDataSize % m_dwPageSize) ? m_ullDataSize / m_dwPageSize + 1 : m_ullDataSize / m_dwPageSize;
+	return (m_spnData.size() % m_dwPageSize) ? m_spnData.size() / m_dwPageSize + 1 : m_spnData.size() / m_dwPageSize;
 }
 
 auto CHexCtrl::GetPagePos()const->ULONGLONG
@@ -1573,12 +1572,11 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 		return;
 
 	ClearData();
-	if (hds.ullDataSize == 0) //If data size is zero we do nothing further, just return after ClearData.
+	if (hds.spnData.size() == 0) //If data size is zero we do nothing further, just return after ClearData.
 		return;
 
 	m_fDataSet = true;
-	m_pData = hds.pData;
-	m_ullDataSize = hds.ullDataSize;
+	m_spnData = hds.spnData;
 	m_fMutable = hds.fMutable;
 	m_pHexVirtData = hds.pHexVirtData;
 	m_pHexVirtColors = hds.pHexVirtColors;
@@ -1775,8 +1773,8 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 
 	const auto ullOffsetStart = ullStartLine * m_dwCapacity; //Offset of the visible data to print.
 	size_t sSizeData = static_cast<size_t>(iLines) * static_cast<size_t>(m_dwCapacity); //Size of the visible data to print.
-	if (ullOffsetStart + sSizeData > m_ullDataSize)
-		sSizeData = static_cast<size_t>(m_ullDataSize - ullOffsetStart);
+	if (ullOffsetStart + sSizeData > m_spnData.size())
+		sSizeData = static_cast<size_t>(m_spnData.size() - ullOffsetStart);
 	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffsetStart, sSizeData })); //Pointer to data to print.
 
 	std::wstring wstrHex { };
@@ -2048,8 +2046,8 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	switch (enType)
 	{
 	case EClipboard::PASTE_TEXT:
-		if (m_ullCaretPos + ullSize > m_ullDataSize)
-			ullSize = m_ullDataSize - m_ullCaretPos;
+		if (m_ullCaretPos + ullSize > m_spnData.size())
+			ullSize = m_spnData.size() - m_ullCaretPos;
 
 		hmd.pData = reinterpret_cast<std::byte*>(pszClipboardData);
 		ullSizeToModify = hmd.ullDataSize = ullSize;
@@ -2057,8 +2055,8 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	case EClipboard::PASTE_HEX:
 	{
 		const ULONGLONG ullRealSize = ullSize / 2 + ullSize % 2;
-		if (m_ullCaretPos + ullRealSize > m_ullDataSize)
-			ullSize = (m_ullDataSize - m_ullCaretPos) * 2;
+		if (m_ullCaretPos + ullRealSize > m_spnData.size())
+			ullSize = (m_spnData.size() - m_ullCaretPos) * 2;
 
 		const auto nIterations = static_cast<size_t>(ullSize / 2 + ullSize % 2);
 		char chToUL[3] { }; //Array for actual Ascii chars to convert from.
@@ -3207,8 +3205,8 @@ auto CHexCtrl::GetBottomLine()const->ULONGLONG
 			--ullEndLine;
 		//If m_ullDataSize is really small, or we at the scroll end,
 		//we adjust ullEndLine to be not bigger than maximum allowed.
-		if (ullEndLine >= (m_ullDataSize / m_dwCapacity))
-			ullEndLine = (m_ullDataSize % m_dwCapacity) ? m_ullDataSize / m_dwCapacity : m_ullDataSize / m_dwCapacity - 1;
+		if (ullEndLine >= (m_spnData.size() / m_dwCapacity))
+			ullEndLine = (m_spnData.size() % m_dwCapacity) ? m_spnData.size() / m_dwCapacity : m_spnData.size() / m_dwCapacity - 1;
 	}
 
 	return ullEndLine;
@@ -3296,7 +3294,7 @@ auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTEST>
 	}
 
 	//If iX is out of end-bound of Hex chunks or ASCII chars.
-	if (stHit.ullOffset >= m_ullDataSize)
+	if (stHit.ullOffset >= m_spnData.size())
 		fHit = false;
 
 	return fHit ? std::optional<HEXHITTEST> { stHit } : std::nullopt;
@@ -3353,8 +3351,8 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSiz
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
 			{
 				const auto ullOffset = iterSpan.ullOffset + (iterChunk * ullSizeChunk);
-				if (ullOffset + ullSizeChunk > m_ullDataSize) //Overflow check.
-					ullSizeChunk = m_ullDataSize - ullOffset;
+				if (ullOffset + ullSizeChunk > m_spnData.size()) //Overflow check.
+					ullSizeChunk = m_spnData.size() - ullOffset;
 				if (ullOffset + ullSizeChunk > iterSpan.ullOffset + iterSpan.ullSize)
 					ullSizeChunk = (iterSpan.ullOffset + iterSpan.ullSize) - ullOffset;
 
@@ -3472,7 +3470,7 @@ void CHexCtrl::Print()
 	auto ullStartLine = GetTopLine();
 	ULONGLONG ullEndLine { };
 	const auto stOldLetter = m_sizeLetter;
-	const auto ullTotalLines = m_ullDataSize / m_dwCapacity;
+	const auto ullTotalLines = m_spnData.size() / m_dwCapacity;
 
 	rcPrint.bottom -= 200; //Ajust bottom indent of the printing rect.
 	RecalcPrint(pDC, &fontMain, &fontInfo, rcPrint);
@@ -3545,7 +3543,7 @@ void CHexCtrl::Print()
 
 			//If m_dwDataCount is really small we adjust ullEndLine to be not bigger than maximum allowed.
 			if (ullEndLine > ullTotalLines)
-				ullEndLine = (m_ullDataSize % m_dwCapacity) ? ullTotalLines + 1 : ullTotalLines;
+				ullEndLine = (m_spnData.size() % m_dwCapacity) ? ullTotalLines + 1 : ullTotalLines;
 
 			const auto iLines = static_cast<int>(ullEndLine - ullStartLine);
 			const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
@@ -3619,7 +3617,7 @@ void CHexCtrl::RecalcAll()
 	//Scroll sizes according to current font size.
 	m_pScrollV->SetScrollSizes(m_sizeLetter.cy, static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio),
 		static_cast<ULONGLONG>(m_iStartWorkAreaY) + m_iHeightBottomOffArea + m_sizeLetter.cy *
-		(m_ullDataSize / m_dwCapacity + (m_ullDataSize % m_dwCapacity == 0 ? 1 : 2)));
+		(m_spnData.size() / m_dwCapacity + (m_spnData.size() % m_dwCapacity == 0 ? 1 : 2)));
 	m_pScrollH->SetScrollSizes(m_sizeLetter.cx, rc.Width(), static_cast<ULONGLONG>(m_iFourthVertLine) + 1);
 	m_pScrollV->SetScrollPos(ullCurLineV * m_sizeLetter.cy);
 
@@ -3629,22 +3627,22 @@ void CHexCtrl::RecalcAll()
 
 void CHexCtrl::RecalcOffsetDigits()
 {
-	if (m_ullDataSize <= 0xffffffffUL)
+	if (m_spnData.size() <= 0xffffffffUL)
 	{
 		m_dwOffsetBytes = 4;
 		m_dwOffsetDigits = m_fOffsetAsHex ? 8 : 10;
 	}
-	else if (m_ullDataSize <= 0xffffffffffUL)
+	else if (m_spnData.size() <= 0xffffffffffUL)
 	{
 		m_dwOffsetBytes = 5;
 		m_dwOffsetDigits = m_fOffsetAsHex ? 10 : 13;
 	}
-	else if (m_ullDataSize <= 0xffffffffffffUL)
+	else if (m_spnData.size() <= 0xffffffffffffUL)
 	{
 		m_dwOffsetBytes = 6;
 		m_dwOffsetDigits = m_fOffsetAsHex ? 12 : 15;
 	}
-	else if (m_ullDataSize <= 0xffffffffffffffUL)
+	else if (m_spnData.size() <= 0xffffffffffffffUL)
 	{
 		m_dwOffsetBytes = 7;
 		m_dwOffsetDigits = m_fOffsetAsHex ? 14 : 17;
@@ -3827,8 +3825,8 @@ void CHexCtrl::SelAddDown()
 		ullSize = 1;
 	}
 
-	if (ullStart + ullSize > m_ullDataSize) //To avoid overflow.
-		ullSize = m_ullDataSize - ullStart;
+	if (ullStart + ullSize > m_spnData.size()) //To avoid overflow.
+		ullSize = m_spnData.size() - ullStart;
 
 	if (ullSize > 0)
 	{
@@ -3941,8 +3939,8 @@ void CHexCtrl::SelAddRight()
 		ullSize = 1;
 	}
 
-	if (ullStart + ullSize > m_ullDataSize) //To avoid overflow.
-		ullSize = m_ullDataSize - ullStart;
+	if (ullStart + ullSize > m_spnData.size()) //To avoid overflow.
+		ullSize = m_spnData.size() - ullStart;
 
 	if (ullSize > 0)
 	{

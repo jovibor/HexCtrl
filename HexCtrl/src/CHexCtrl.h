@@ -207,9 +207,9 @@ namespace HEXCTRL::INTERNAL
 		const int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
 		const int m_iFirstHorizLine { 0 };    //First horizontal line indent.
 		const int m_iFirstVertLine { 0 };     //First vertical line indent.
-		HEXCOLORS m_stColor;            //All control related colors.
+		std::span<std::byte> m_spnData { };   //Main data span.
+		HEXCOLORS m_stColor;                  //All control related colors.
 		EHexDataSize m_enGroupMode { EHexDataSize::SIZE_BYTE }; //Current "Group Data By" mode.
-		std::byte* m_pData { };               //Main data pointer. Modifiable in "Edit" mode.
 		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
 		CWnd m_wndTtBkm { };                  //Tooltip window for bookmarks description.
@@ -224,7 +224,6 @@ namespace HEXCTRL::INTERNAL
 		CPen m_penLines;                      //Pen for lines.
 		HEXBKM* m_pBkmTtCurr { };       //Currently shown bookmark's tooltip;
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
-		ULONGLONG m_ullDataSize { };          //Size of the displayed data in bytes.
 		std::optional<ULONGLONG> m_optRMouseClick { }; //Right mouse clicked chunk. Used in bookmarking.
 		ULONGLONG m_ullCaretPos { };          //Current caret position.
 		ULONGLONG m_ullCursorNow { };         //The cursor's current clicked pos.
