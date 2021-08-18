@@ -44,7 +44,7 @@ ULONGLONG CHexBookmarks::Add(const HEXBKM& hbs, bool fRedraw)
 			ullID = iter->ullID + 1; //Increasing next bookmark's ID by 1.
 
 		m_deqBookmarks.emplace_back(
-			HEXBKM { hbs.vecSpan, hbs.wstrDesc, ullID, hbs.ullData, hbs.clrBk, hbs.clrText });
+			HEXBKM { hbs.vecOffset, hbs.wstrDesc, ullID, hbs.ullData, hbs.clrBk, hbs.clrText });
 	}
 
 	if (fRedraw && m_pHexCtrl)
@@ -130,7 +130,7 @@ void CHexBookmarks::GoBookmark(ULONGLONG ullIndex)
 	if (const auto* const pBkm = GetByIndex(ullIndex); pBkm != nullptr)
 	{
 		m_llIndexCurr = static_cast<LONGLONG>(ullIndex);
-		const auto ullOffset = pBkm->vecSpan.front().ullOffset;
+		const auto ullOffset = pBkm->vecOffset.front().ullOffset;
 		m_pHexCtrl->SetCaretPos(ullOffset);
 		if (!m_pHexCtrl->IsOffsetVisible(ullOffset))
 			m_pHexCtrl->GoToOffset(ullOffset);
@@ -147,7 +147,7 @@ void CHexBookmarks::GoNext()
 
 	if (const auto* const pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr)
 	{
-		const auto ullOffset = pBkm->vecSpan.front().ullOffset;
+		const auto ullOffset = pBkm->vecOffset.front().ullOffset;
 		m_pHexCtrl->SetCaretPos(ullOffset);
 		if (!m_pHexCtrl->IsOffsetVisible(ullOffset))
 			m_pHexCtrl->GoToOffset(ullOffset);
@@ -164,7 +164,7 @@ void CHexBookmarks::GoPrev()
 
 	if (const auto* const pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr)
 	{
-		const auto ullOffset = pBkm->vecSpan.front().ullOffset;
+		const auto ullOffset = pBkm->vecOffset.front().ullOffset;
 		m_pHexCtrl->SetCaretPos(ullOffset);
 		if (!m_pHexCtrl->IsOffsetVisible(ullOffset))
 			m_pHexCtrl->GoToOffset(ullOffset);
@@ -197,8 +197,8 @@ auto CHexBookmarks::HitTest(ULONGLONG ullOffset)->HEXBKM*
 	{
 		if (auto rIter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
 			[ullOffset](const HEXBKM& ref)
-			{ return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
-				[ullOffset](const HEXSPAN& refV)
+			{ return std::any_of(ref.vecOffset.begin(), ref.vecOffset.end(),
+				[ullOffset](const HEXOFFSET& refV)
 				{ return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
 			}); rIter != m_deqBookmarks.rend())
 			pBkm = &*rIter;
@@ -233,8 +233,8 @@ void CHexBookmarks::Remove(ULONGLONG ullOffset)
 		//Searching from the end, to remove last added bookmark if few at the given offset.
 		if (auto rIter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
 			[ullOffset](const HEXBKM& ref)
-			{return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
-				[ullOffset](const HEXSPAN& refV)
+			{return std::any_of(ref.vecOffset.begin(), ref.vecOffset.end(),
+				[ullOffset](const HEXOFFSET& refV)
 				{return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
 			}); rIter != m_deqBookmarks.rend())
 			m_deqBookmarks.erase((rIter + 1).base()); //Weird notation for reverse_iterator to work in erase() (acc to standard).
@@ -288,20 +288,20 @@ void CHexBookmarks::SortData(int iColumn, bool fAscending)
 			case 0:
 				break;
 			case 1: //Offset.
-				if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
+				if (!st1.vecOffset.empty() && !st2.vecOffset.empty())
 				{
-					const auto ullOffset1 = st1.vecSpan.front().ullOffset;
-					const auto ullOffset2 = st2.vecSpan.front().ullOffset;
+					const auto ullOffset1 = st1.vecOffset.front().ullOffset;
+					const auto ullOffset2 = st2.vecOffset.front().ullOffset;
 					iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
 				}
 				break;
 			case 2: //Size.
-				if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
+				if (!st1.vecOffset.empty() && !st2.vecOffset.empty())
 				{
-					auto ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
-						[](auto ullTotal, const HEXSPAN& ref) {return ullTotal + ref.ullSize; });
-					auto ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
-						[](auto ullTotal, const HEXSPAN& ref) {return ullTotal + ref.ullSize; });
+					auto ullSize1 = std::accumulate(st1.vecOffset.begin(), st1.vecOffset.end(), 0ULL,
+						[](auto ullTotal, const HEXOFFSET& ref) {return ullTotal + ref.ullSize; });
+					auto ullSize2 = std::accumulate(st2.vecOffset.begin(), st2.vecOffset.end(), 0ULL,
+						[](auto ullTotal, const HEXOFFSET& ref) {return ullTotal + ref.ullSize; });
 					iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
 				}
 				break;

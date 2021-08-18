@@ -40,17 +40,17 @@ BOOL CHexDlgBkmProps::OnInitDialog()
 		pClrBtn->SetColor(m_pHBS->clrText);
 
 	wchar_t pwszBuff[32];
-	if (!m_pHBS->vecSpan.empty())
+	if (!m_pHBS->vecOffset.empty())
 	{
-		m_ullOffset = m_pHBS->vecSpan.front().ullOffset;
-		m_ullSize = std::accumulate(m_pHBS->vecSpan.begin(), m_pHBS->vecSpan.end(), ULONGLONG { },
-			[](auto ullTotal, const HEXSPAN& ref) {return ullTotal + ref.ullSize; });
+		m_ullOffset = m_pHBS->vecOffset.front().ullOffset;
+		m_ullSize = std::accumulate(m_pHBS->vecOffset.begin(), m_pHBS->vecOffset.end(), ULONGLONG { },
+			[](auto ullTotal, const HEXOFFSET& ref) {return ullTotal + ref.ullSize; });
 	}
 	else
 	{
 		m_ullOffset = 0;
 		m_ullSize = 1;
-		m_pHBS->vecSpan.emplace_back(HEXSPAN { m_ullOffset, m_ullSize });
+		m_pHBS->vecOffset.emplace_back(HEXOFFSET { m_ullOffset, m_ullSize });
 	}
 
 	swprintf_s(pwszBuff, m_fShowAsHex ? L"0x%llX" : L"%llu", m_ullOffset);
@@ -98,8 +98,8 @@ void CHexDlgBkmProps::OnOK()
 
 	if (m_ullOffset != ullOffset || m_ullSize != ullSize)
 	{
-		m_pHBS->vecSpan.clear();
-		m_pHBS->vecSpan.emplace_back(HEXSPAN { ullOffset, ullSize });
+		m_pHBS->vecOffset.clear();
+		m_pHBS->vecOffset.emplace_back(HEXOFFSET { ullOffset, ullSize });
 	}
 
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_DESCR));

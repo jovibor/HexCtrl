@@ -37,7 +37,7 @@ namespace HEXCTRL::INTERNAL
 
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
-		void HexCtrlHighlight(const std::vector<HEXSPAN>& vecSel); //Highlight found occurence in HexCtrl.
+		void HexCtrlHighlight(const std::vector<HEXOFFSET>& vecSel); //Highlight found occurence in HexCtrl.
 		[[nodiscard]] bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -123,7 +123,7 @@ namespace HEXCTRL::INTERNAL
 		std::wstring m_wstrReplace;     //Actual wstring to replace.
 		const std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
-		HEXSPAN m_stSelSpan { };  //Previous selection.
+		HEXOFFSET m_stSelSpan { };  //Previous selection.
 		CMenu m_stMenuList;
 	};
 }

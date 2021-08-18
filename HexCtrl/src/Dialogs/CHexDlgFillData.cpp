@@ -115,10 +115,10 @@ void CHexDlgFillData::OnOK()
 	{
 		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify All data?", MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
-		hms.vecSpan.emplace_back(HEXSPAN { 0, m_pHexCtrl->GetDataSize() });
+		hms.vecOffset.emplace_back(HEXOFFSET { 0, m_pHexCtrl->GetDataSize() });
 	}
 	else
-		hms.vecSpan = m_pHexCtrl->GetSelection();
+		hms.vecOffset = m_pHexCtrl->GetSelection();
 
 	std::wstring wstrComboText = pwszComboText;
 	std::string strToFill = wstr2str(wstrComboText);
@@ -130,18 +130,15 @@ void CHexDlgFillData::OnOK()
 			MessageBoxW(L"Wrong Hex format!", L"Format Error", MB_ICONERROR);
 			return;
 		}
-		hms.pData = reinterpret_cast<std::byte*>(strToFill.data());
-		hms.ullDataSize = strToFill.size();
+		hms.spnData = { reinterpret_cast<std::byte*>(strToFill.data()), strToFill.size() };
 		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 		break;
 	case EFillType::FILL_ASCII:
-		hms.pData = reinterpret_cast<std::byte*>(strToFill.data());
-		hms.ullDataSize = strToFill.size();
+		hms.spnData = { reinterpret_cast<std::byte*>(strToFill.data()), strToFill.size() };
 		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 		break;
 	case EFillType::FILL_WCHAR:
-		hms.pData = reinterpret_cast<std::byte*>(wstrComboText.data());
-		hms.ullDataSize = static_cast<ULONGLONG>(wstrComboText.size()) * sizeof(WCHAR);
+		hms.spnData = { reinterpret_cast<std::byte*>(wstrComboText.data()), wstrComboText.size() * sizeof(WCHAR) };
 		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 		break;
 	case EFillType::FILL_RANDOM:

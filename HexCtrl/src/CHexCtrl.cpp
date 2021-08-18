@@ -465,7 +465,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case EHexCmd::CMD_BKM_ADD:
 		m_pBookmarks->Add(HEXBKM { HasSelection() ? GetSelection()
-			: std::vector<HEXSPAN> { { GetCaretPos(), 1 } } });
+			: std::vector<HEXOFFSET> { { GetCaretPos(), 1 } } });
 		break;
 	case EHexCmd::CMD_BKM_REMOVE:
 		m_pBookmarks->Remove(m_fMenuCMD ? m_optRMouseClick.value() : GetCaretPos());
@@ -639,7 +639,7 @@ auto CHexCtrl::GetColors()const->HEXCOLORS
 	return m_stColor;
 }
 
-auto CHexCtrl::GetData(HEXSPAN hss)const->std::span<std::byte>
+auto CHexCtrl::GetData(HEXOFFSET ho)const->std::span<std::byte>
 {
 	assert(IsCreated());
 	assert(IsDataSet());
@@ -649,15 +649,15 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->std::span<std::byte>
 	std::span<std::byte> spnData;
 	if (!IsVirtual())
 	{
-		if (hss.ullOffset + hss.ullSize <= GetDataSize())
-			spnData = { m_spnData.data() + hss.ullOffset, hss.ullSize };
+		if (ho.ullOffset + ho.ullSize <= GetDataSize())
+			spnData = { m_spnData.data() + ho.ullOffset, ho.ullSize };
 	}
 	else
 	{
-		if (hss.ullSize == 0 || hss.ullSize > GetCacheSize())
-			hss.ullSize = GetCacheSize();
+		if (ho.ullSize == 0 || ho.ullSize > GetCacheSize())
+			ho.ullSize = GetCacheSize();
 		HEXDATAINFO hdi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
-		hdi.stSpan = hss;
+		hdi.stOffset = ho;
 		m_pHexVirtData->OnHexGetData(hdi);
 		spnData = hdi.spnData;
 	}
@@ -741,7 +741,7 @@ DWORD CHexCtrl::GetPageSize()const
 	return m_dwPageSize;
 }
 
-auto CHexCtrl::GetSelection()const->std::vector<HEXSPAN>
+auto CHexCtrl::GetSelection()const->std::vector<HEXOFFSET>
 {
 	assert(IsCreated());
 	assert(IsDataSet());
@@ -1005,43 +1005,43 @@ bool CHexCtrl::IsVirtual()const
 
 void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 {
-	assert(!hms.vecSpan.empty());
-	if (!IsMutable() || hms.vecSpan.empty())
+	assert(!hms.vecOffset.empty());
+	if (!IsMutable() || hms.vecOffset.empty())
 		return;
 
 	m_deqRedo.clear(); //No Redo unless we make Undo.
-	SnapshotUndo(hms.vecSpan);
+	SnapshotUndo(hms.vecOffset);
 
 	SetRedraw(false);
 	switch (hms.enModifyMode)
 	{
 	case EHexModifyMode::MODIFY_DEFAULT:
 	{
-		const auto& vecSpanRef = hms.vecSpan;
-		assert((vecSpanRef[0].ullOffset + vecSpanRef[0].ullSize) <= GetDataSize());
+		const auto& vecOffsetRef = hms.vecOffset;
+		assert((vecOffsetRef[0].ullOffset + vecOffsetRef[0].ullSize) <= GetDataSize());
 
-		if (IsVirtual() && vecSpanRef[0].ullSize > GetCacheSize())
+		if (IsVirtual() && vecOffsetRef[0].ullSize > GetCacheSize())
 		{
 			const auto ullSizeChunk = GetCacheSize();
-			const auto iMod = vecSpanRef[0].ullSize % ullSizeChunk;
-			auto ullChunks = vecSpanRef[0].ullSize / ullSizeChunk + (iMod > 0 ? 1 : 0);
+			const auto iMod = vecOffsetRef[0].ullSize % ullSizeChunk;
+			auto ullChunks = vecOffsetRef[0].ullSize / ullSizeChunk + (iMod > 0 ? 1 : 0);
 			std::size_t ullOffset = 0;
 			while (ullChunks-- > 0)
 			{
 				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
 				if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
 				{
-					std::copy_n(hms.pData + ullOffset, ullSize, spnData.data());
+					std::copy_n(hms.spnData.data() + ullOffset, ullSize, spnData.data());
 					SetDataVirtual(spnData, { ullOffset, ullSize });
 				}
 				ullOffset += ullSize;
 			}
 		}
 		else {
-			if (const auto spnData = GetData(vecSpanRef[0]); !spnData.empty())
+			if (const auto spnData = GetData(vecOffsetRef[0]); !spnData.empty())
 			{
-				std::copy_n(hms.pData, static_cast<size_t>(vecSpanRef[0].ullSize), spnData.data());
-				SetDataVirtual(spnData, vecSpanRef[0]);
+				std::copy_n(hms.spnData.data(), static_cast<size_t>(vecOffsetRef[0].ullSize), spnData.data());
+				SetDataVirtual(spnData, vecOffsetRef[0]);
 			}
 		}
 	}
@@ -1064,9 +1064,9 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		constexpr auto lmbRepeat = [](std::byte* pData, const HEXMODIFY& hms)
 		{
 			assert(pData != nullptr);
-			std::copy_n(hms.pData, static_cast<size_t>(hms.ullDataSize), pData);
+			std::copy_n(hms.spnData.data(), hms.spnData.size(), pData);
 		};
-		ModifyWorker(hms, lmbRepeat, hms.ullDataSize);
+		ModifyWorker(hms, lmbRepeat, hms.spnData.size());
 	}
 	break;
 	case EHexModifyMode::MODIFY_OPERATION:
@@ -1162,21 +1162,21 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				switch (hms.enOperSize)
 				{
 				case EHexDataSize::SIZE_BYTE:
-					lmbOper(reinterpret_cast<PBYTE>(pData), hms.enOperMode, *reinterpret_cast<PBYTE>(hms.pData), lmbSwap);
+					lmbOper(reinterpret_cast<PBYTE>(pData), hms.enOperMode, *reinterpret_cast<PBYTE>(hms.spnData.data()), lmbSwap);
 					break;
 				case EHexDataSize::SIZE_WORD:
 					lmbSwap(reinterpret_cast<PWORD>(pData));
-					lmbOper(reinterpret_cast<PWORD>(pData), hms.enOperMode, *reinterpret_cast<PWORD>(hms.pData), lmbSwap);
+					lmbOper(reinterpret_cast<PWORD>(pData), hms.enOperMode, *reinterpret_cast<PWORD>(hms.spnData.data()), lmbSwap);
 					lmbSwap(reinterpret_cast<PWORD>(pData));
 					break;
 				case EHexDataSize::SIZE_DWORD:
 					lmbSwap(reinterpret_cast<PDWORD>(pData));
-					lmbOper(reinterpret_cast<PDWORD>(pData), hms.enOperMode, *reinterpret_cast<PDWORD>(hms.pData), lmbSwap);
+					lmbOper(reinterpret_cast<PDWORD>(pData), hms.enOperMode, *reinterpret_cast<PDWORD>(hms.spnData.data()), lmbSwap);
 					lmbSwap(reinterpret_cast<PDWORD>(pData));
 					break;
 				case EHexDataSize::SIZE_QWORD:
 					lmbSwap(reinterpret_cast<PQWORD>(pData));
-					lmbOper(reinterpret_cast<PQWORD>(pData), hms.enOperMode, *reinterpret_cast<PQWORD>(hms.pData), lmbSwap);
+					lmbOper(reinterpret_cast<PQWORD>(pData), hms.enOperMode, *reinterpret_cast<PQWORD>(hms.spnData.data()), lmbSwap);
 					lmbSwap(reinterpret_cast<PQWORD>(pData));
 					break;
 				}
@@ -1186,16 +1186,16 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				switch (hms.enOperSize)
 				{
 				case EHexDataSize::SIZE_BYTE:
-					lmbOper(reinterpret_cast<PBYTE>(pData), hms.enOperMode, *reinterpret_cast<PBYTE>(hms.pData), lmbSwap);
+					lmbOper(reinterpret_cast<PBYTE>(pData), hms.enOperMode, *reinterpret_cast<PBYTE>(hms.spnData.data()), lmbSwap);
 					break;
 				case EHexDataSize::SIZE_WORD:
-					lmbOper(reinterpret_cast<PWORD>(pData), hms.enOperMode, *reinterpret_cast<PWORD>(hms.pData), lmbSwap);
+					lmbOper(reinterpret_cast<PWORD>(pData), hms.enOperMode, *reinterpret_cast<PWORD>(hms.spnData.data()), lmbSwap);
 					break;
 				case EHexDataSize::SIZE_DWORD:
-					lmbOper(reinterpret_cast<PDWORD>(pData), hms.enOperMode, *reinterpret_cast<PDWORD>(hms.pData), lmbSwap);
+					lmbOper(reinterpret_cast<PDWORD>(pData), hms.enOperMode, *reinterpret_cast<PDWORD>(hms.spnData.data()), lmbSwap);
 					break;
 				case EHexDataSize::SIZE_QWORD:
-					lmbOper(reinterpret_cast<PQWORD>(pData), hms.enOperMode, *reinterpret_cast<PQWORD>(hms.pData), lmbSwap);
+					lmbOper(reinterpret_cast<PQWORD>(pData), hms.enOperMode, *reinterpret_cast<PQWORD>(hms.spnData.data()), lmbSwap);
 					break;
 				}
 			}
@@ -1730,7 +1730,7 @@ void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wstrName)
 		Redraw();
 }
 
-void CHexCtrl::SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw, bool fHighlight)
+void CHexCtrl::SetSelection(const std::vector<HEXOFFSET>& vecSel, bool fRedraw, bool fHighlight)
 {
 	assert(IsCreated());
 	assert(IsDataSet());
@@ -2058,8 +2058,8 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 		if (m_ullCaretPos + ullSize > ullDataSize)
 			ullSize = ullDataSize - m_ullCaretPos;
 
-		hmd.pData = reinterpret_cast<std::byte*>(pszClipboardData);
-		ullSizeToModify = hmd.ullDataSize = ullSize;
+		hmd.spnData = { reinterpret_cast<std::byte*>(pszClipboardData), ullSize };
+		ullSizeToModify = ullSize;
 		break;
 	case EClipboard::PASTE_HEX:
 	{
@@ -2091,15 +2091,15 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 			}
 			strData += chNumber;
 		}
-		hmd.pData = reinterpret_cast<std::byte*>(strData.data());
-		ullSizeToModify = hmd.ullDataSize = strData.size();
+		hmd.spnData = { reinterpret_cast<std::byte*>(strData.data()), strData.size() };
+		ullSizeToModify = strData.size();
 	}
 	break;
 	default:
 		break;
 	}
 
-	hmd.vecSpan.emplace_back(HEXSPAN { GetCaretPos(), ullSizeToModify });
+	hmd.vecOffset.emplace_back(HEXOFFSET { GetCaretPos(), ullSizeToModify });
 	ModifyData(hmd);
 
 	GlobalUnlock(hClipboard);
@@ -3195,11 +3195,10 @@ void CHexCtrl::FillWithZeros()
 		return;
 
 	HEXMODIFY hms;
-	hms.vecSpan = GetSelection();
-	hms.ullDataSize = sizeof(BYTE);
+	hms.vecOffset = GetSelection();
 	hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 	std::byte byteZero { 0 };
-	hms.pData = &byteZero;
+	hms.spnData = { &byteZero, sizeof(byteZero) };
 	ModifyData(hms);
 	Redraw();
 }
@@ -3327,15 +3326,15 @@ bool CHexCtrl::IsPageVisible()const
 template<typename T>
 void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSizeToOperWith)
 {
-	const auto& vecSpanRef = hms.vecSpan;
+	const auto& vecOffsetRef = hms.vecOffset;
 	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
-	const auto ullTotalSize = std::accumulate(vecSpanRef.begin(), vecSpanRef.end(), 0ULL,
-		[](ULONGLONG ullSumm, const HEXSPAN& ref) {return ullSumm + ref.ullSize; });
+	const auto ullTotalSize = std::accumulate(vecOffsetRef.begin(), vecOffsetRef.end(), 0ULL,
+		[](ULONGLONG ullSumm, const HEXOFFSET& ref) {return ullSumm + ref.ullSize; });
 	assert(ullTotalSize <= GetDataSize());
 
-	CHexDlgCallback dlgClbk(L"Modifying...", vecSpanRef.begin()->ullOffset, vecSpanRef.back().ullOffset + vecSpanRef.back().ullSize, this);
+	CHexDlgCallback dlgClbk(L"Modifying...", vecOffsetRef.begin()->ullOffset, vecOffsetRef.back().ullOffset + vecOffsetRef.back().ullSize, this);
 	std::thread thrd([&]() {
-		for (const auto& iterSpan : vecSpanRef) //Span-vector's size times.
+		for (const auto& iterSpan : vecOffsetRef) //Span-vector's size times.
 		{
 			const auto ullSize { iterSpan.ullSize };
 			const auto ullAlign { ullSizeToOperWith };
@@ -3716,12 +3715,12 @@ void CHexCtrl::Redo()
 
 	const auto& refRedo = m_deqRedo.back();
 
-	std::vector<HEXSPAN> vecSpan { };
-	std::transform(refRedo->begin(), refRedo->end(), std::back_inserter(vecSpan),
-		[](SUNDO& ref) { return HEXSPAN { ref.ullOffset, ref.vecData.size() }; });
+	std::vector<HEXOFFSET> vecOffset { };
+	std::transform(refRedo->begin(), refRedo->end(), std::back_inserter(vecOffset),
+		[](SUNDO& ref) { return HEXOFFSET { ref.ullOffset, ref.vecData.size() }; });
 
 	//Making new Undo data snapshot.
-	SnapshotUndo(vecSpan);
+	SnapshotUndo(vecOffset);
 
 	for (const auto& iter : *refRedo)
 	{
@@ -4047,7 +4046,7 @@ void CHexCtrl::SelAddUp()
 	}
 }
 
-void CHexCtrl::SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss)
+void CHexCtrl::SetDataVirtual(std::span<std::byte> spnData, const HEXOFFSET& ho)
 {
 	//Note: Since this method can be executed asynchronously (in search/replace, etc...),
 	//the SendMesage(parent, ...) is impossible here because receiver window
@@ -4057,7 +4056,7 @@ void CHexCtrl::SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss)
 		return;
 
 	HEXDATAINFO hdi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
-	hdi.stSpan = hss;
+	hdi.stOffset = ho;
 	hdi.spnData = spnData;
 	m_pHexVirtData->OnHexSetData(hdi);
 }
@@ -4067,11 +4066,11 @@ void CHexCtrl::SetRedraw(bool fRedraw)
 	m_fRedraw = fRedraw;
 }
 
-void CHexCtrl::SnapshotUndo(const std::vector<HEXSPAN>& vecSpan)
+void CHexCtrl::SnapshotUndo(const std::vector<HEXOFFSET>& vecOffset)
 {
 	constexpr DWORD dwUndoMax { 500 }; //How many Undo states to preserve.
-	const auto ullTotalSize = std::accumulate(vecSpan.begin(), vecSpan.end(), 0ULL,
-		[](ULONGLONG ullSumm, const HEXSPAN& ref) {return ullSumm + ref.ullSize; });
+	const auto ullTotalSize = std::accumulate(vecOffset.begin(), vecOffset.end(), 0ULL,
+		[](ULONGLONG ullSumm, const HEXOFFSET& ref) {return ullSumm + ref.ullSize; });
 
 	//Check for very big undo size.
 	if (ullTotalSize > 1024 * 1024 * 10)
@@ -4088,7 +4087,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPAN>& vecSpan)
 	//Bad alloc may happen here!!!
 	try
 	{
-		for (const auto& iterSel : vecSpan) //vecSpan.size() amount of continuous areas to preserve.
+		for (const auto& iterSel : vecOffset) //vecOffset.size() amount of continuous areas to preserve.
 		{
 			refUndo->emplace_back(SUNDO { iterSel.ullOffset, { } });
 			refUndo->back().vecData.resize(static_cast<size_t>(iterSel.ullSize));
@@ -4102,7 +4101,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPAN>& vecSpan)
 	}
 
 	std::size_t ullIndex { 0 };
-	for (const auto& iterSel : vecSpan)
+	for (const auto& iterSel : vecOffset)
 	{
 		//In Virtual mode processing data chunk by chunk.
 		if (IsVirtual() && iterSel.ullSize > GetCacheSize())
@@ -4309,9 +4308,8 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	}
 
 	HEXMODIFY hms;
-	hms.vecSpan.emplace_back(HEXSPAN { m_ullCaretPos, 1 });
-	hms.ullDataSize = sizeof(BYTE);
-	hms.pData = reinterpret_cast<std::byte*>(&chByte);
+	hms.vecOffset.emplace_back(HEXOFFSET { m_ullCaretPos, 1 });
+	hms.spnData = { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) };
 	ModifyData(hms);
 	CaretMoveRight();
 }
@@ -4495,9 +4493,8 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 			chByte = (chByte & 0x0F) | (chByteCurr & 0xF0);
 
 		HEXMODIFY hms;
-		hms.vecSpan.emplace_back(HEXSPAN { m_ullCaretPos, 1 });
-		hms.ullDataSize = sizeof(BYTE);
-		hms.pData = reinterpret_cast<std::byte*>(&chByte);
+		hms.vecOffset.emplace_back(HEXOFFSET { m_ullCaretPos, 1 });
+		hms.spnData = { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) };
 		ModifyData(hms);
 		CaretMoveRight();
 	}
@@ -4539,7 +4536,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	m_fSelectionBlock = GetAsyncKeyState(VK_MENU) < 0;
 	SetCapture();
 
-	std::vector<HEXSPAN> vecSel { };
+	std::vector<HEXOFFSET> vecSel { };
 	if (nFlags & MK_SHIFT)
 	{
 		ULONGLONG ullSelStart;
@@ -4554,7 +4551,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 			ullSelStart = m_ullCursorPrev;
 			ullSelEnd = m_ullCursorNow + 1;
 		}
-		vecSel.emplace_back(HEXSPAN { ullSelStart, ullSelEnd - ullSelStart });
+		vecSel.emplace_back(HEXOFFSET { ullSelStart, ullSelEnd - ullSelStart });
 	}
 	else
 		m_ullCursorPrev = m_ullCursorNow;
@@ -4680,10 +4677,10 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 
 		m_ullCursorPrev = ullClick;
 		m_ullCaretPos = ullStart;
-		std::vector<HEXSPAN> vecSel;
+		std::vector<HEXOFFSET> vecSel;
 		vecSel.reserve(static_cast<size_t>(ullLines));
 		for (auto iterLines = 0ULL; iterLines < ullLines; ++iterLines)
-			vecSel.emplace_back(HEXSPAN { ullStart + m_dwCapacity * iterLines, ullSize });
+			vecSel.emplace_back(HEXOFFSET { ullStart + m_dwCapacity * iterLines, ullSize });
 		SetSelection(vecSel);
 	}
 	else

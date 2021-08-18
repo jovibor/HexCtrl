@@ -54,7 +54,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
 		[[nodiscard]] auto GetColors()const->HEXCOLORS override;          //Current colors.
-		[[nodiscard]] auto GetData(HEXSPAN hss)const->std::span<std::byte> override; //Get pointer to data offset, no matter what mode the control works in.
+		[[nodiscard]] auto GetData(HEXOFFSET ho)const->std::span<std::byte> override; //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;        //Get currently set data size.
 		[[nodiscard]] int GetEncoding()const override;                    //Get current code page ID.
 		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
@@ -63,7 +63,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetPagesCount()const->ULONGLONG override;      //Get count of pages.
 		[[nodiscard]] auto GetPagePos()const->ULONGLONG override;         //Get current page a cursor stays at.
 		[[nodiscard]] DWORD GetPageSize()const override;                  //Current page size.
-		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPAN> override; //Gets current selection.
+		[[nodiscard]] auto GetSelection()const->std::vector<HEXOFFSET> override; //Gets current selection.
 		[[nodiscard]] HWND GetWindowHandle(EHexWnd enWnd)const override;  //Retrieves control's window/dialog handle.
 		void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0)override;    //Go (scroll) to a given offset.
 		[[nodiscard]] bool HasSelection()const override;    //Does currently have any selection or not.
@@ -89,7 +89,7 @@ namespace HEXCTRL::INTERNAL
 		void SetMutable(bool fEnable)override;              //Enable or disable mutable/editable mode.
 		void SetOffsetMode(bool fHex)override;              //Set offset being shown as Hex or as Decimal.
 		void SetPageSize(DWORD dwSize, std::wstring_view wstrName)override;  //Set page size and name to draw the line between.
-		void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false)override; //Set current selection.
+		void SetSelection(const std::vector<HEXOFFSET>& vecSel, bool fRedraw = true, bool fHighlight = false)override; //Set current selection.
 		void SetWheelRatio(double dbRatio)override;         //Set the ratio for how much to scroll with mouse-wheel.
 	private:
 		struct SHBITMAP;
@@ -156,9 +156,9 @@ namespace HEXCTRL::INTERNAL
 		void SelAddLeft();       //Left Key pressed with the Shift.
 		void SelAddRight();      //Right Key pressed with the Shift.
 		void SelAddUp();         //Up Key pressed with the Shift.
-		void SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss); //Sets data (notifies back) in Virtual mode.
+		void SetDataVirtual(std::span<std::byte> spnData, const HEXOFFSET& ho); //Sets data (notifies back) in Virtual mode.
 		void SetRedraw(bool fRedraw); //Handle WM_PAINT message or not.
-		void SnapshotUndo(const std::vector<HEXSPAN>& vecSpan); //Takes currently modifiable data snapshot.
+		void SnapshotUndo(const std::vector<HEXOFFSET>& vecSpan); //Takes currently modifiable data snapshot.
 		void TtBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip bookmark show/hide.
 		void TtOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();

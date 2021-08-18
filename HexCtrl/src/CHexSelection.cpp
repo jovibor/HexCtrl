@@ -34,21 +34,21 @@ bool CHexSelection::HasSelHighlight() const
 bool CHexSelection::HitTest(ULONGLONG ullOffset)const
 {
 	return std::any_of(m_vecSelection.begin(), m_vecSelection.end(),
-		[ullOffset](const HEXSPAN& ref)
+		[ullOffset](const HEXOFFSET& ref)
 		{ return ullOffset >= ref.ullOffset && ullOffset < (ref.ullOffset + ref.ullSize); });
 }
 
 bool CHexSelection::HitTestHighlight(ULONGLONG ullOffset) const
 {
 	return std::any_of(m_vecSelHighlight.begin(), m_vecSelHighlight.end(),
-		[ullOffset](const HEXSPAN& ref)
+		[ullOffset](const HEXOFFSET& ref)
 		{ return ullOffset >= ref.ullOffset && ullOffset < (ref.ullOffset + ref.ullSize); });
 }
 
-bool CHexSelection::HitTestRange(const HEXSPAN& hss)const
+bool CHexSelection::HitTestRange(const HEXOFFSET& hss)const
 {
 	return std::any_of(m_vecSelection.begin(), m_vecSelection.end(),
-		[&](const HEXSPAN& ref)
+		[&](const HEXOFFSET& ref)
 		{
 			return (hss.ullOffset >= ref.ullOffset && hss.ullOffset < (ref.ullOffset + ref.ullSize))
 				|| (ref.ullOffset >= hss.ullOffset && ref.ullOffset < (hss.ullOffset + hss.ullSize))
@@ -108,12 +108,12 @@ ULONGLONG CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const
 	return ullOffset;
 }
 
-auto CHexSelection::GetData()const->std::vector<HEXSPAN>
+auto CHexSelection::GetData()const->std::vector<HEXOFFSET>
 {
 	return m_vecSelection;
 }
 
-void CHexSelection::SetSelection(const std::vector<HEXSPAN>& vecSel, bool fHighlight)
+void CHexSelection::SetSelection(const std::vector<HEXOFFSET>& vecSel, bool fHighlight)
 {
 	if (fHighlight)
 		m_vecSelHighlight = vecSel;
@@ -140,5 +140,5 @@ void CHexSelection::SetSelStartEnd(ULONGLONG ullOffset, bool fStart)
 	}
 
 	m_vecSelection.clear();
-	m_vecSelection.emplace_back(HEXSPAN { m_ullMarkSelStart, m_ullMarkSelEnd - m_ullMarkSelStart + 1 });
+	m_vecSelection.emplace_back(HEXOFFSET { m_ullMarkSelStart, m_ullMarkSelEnd - m_ullMarkSelStart + 1 });
 }

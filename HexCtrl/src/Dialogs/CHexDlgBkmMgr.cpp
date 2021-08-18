@@ -202,14 +202,14 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			swprintf_s(pItem->pszText, nMaxLength, L"%d", iItemID + 1);
 			break;
 		case 1: //Offset.
-			if (!pBkm->vecSpan.empty())
-				ullOffset = pBkm->vecSpan.front().ullOffset;
+			if (!pBkm->vecOffset.empty())
+				ullOffset = pBkm->vecOffset.front().ullOffset;
 			swprintf_s(pItem->pszText, nMaxLength, m_fShowAsHex ? L"0x%llX" : L"%llu", ullOffset);
 			break;
 		case 2: //Size.
-			if (!pBkm->vecSpan.empty())
-				ullSize = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
-					[](auto ullTotal, const HEXSPAN& ref) {return ullTotal + ref.ullSize; });
+			if (!pBkm->vecOffset.empty())
+				ullSize = std::accumulate(pBkm->vecOffset.begin(), pBkm->vecOffset.end(), 0ULL,
+					[](auto ullTotal, const HEXOFFSET& ref) {return ullTotal + ref.ullSize; });
 			swprintf_s(pItem->pszText, nMaxLength, m_fShowAsHex ? L"0x%llX" : L"%llu", ullSize);
 			break;
 		case 3: //Description.
