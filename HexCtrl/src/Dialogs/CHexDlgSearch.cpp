@@ -224,12 +224,12 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd,
 			ullOffsetSearch = ullStart;
 			for (auto iterChunk = 0ULL; iterChunk < ullChunks; ++iterChunk)
 			{
-				const auto* const pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
-				assert(pData != nullptr);
+				const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
+				assert(!spnData.empty());
 
 				for (auto iterData = 0ULL; iterData <= ullSizeChunk; iterData += ullStep)
 				{
-					if (MemCmp(pData + iterData, pSearch, nSizeSearch))
+					if (MemCmp(spnData.data() + iterData, pSearch, nSizeSearch))
 					{
 						ullStart = ullOffsetSearch + iterData;
 						fResult = true;
@@ -263,12 +263,12 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd,
 			ullOffsetSearch = ullStart - ullSizeChunk;
 			for (auto iterChunk = ullChunks; iterChunk > 0; --iterChunk)
 			{
-				const auto* const pData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
-				assert(pData != nullptr);
+				const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
+				assert(!spnData.empty());
 
 				for (auto iterData = static_cast<LONGLONG>(ullSizeChunk); iterData >= 0; iterData -= ullStep) //iterData might be negative.
 				{
-					if (MemCmp(pData + iterData, pSearch, nSizeSearch))
+					if (MemCmp(spnData.data() + iterData, pSearch, nSizeSearch))
 					{
 						ullStart = ullOffsetSearch + iterData;
 						fResult = true;

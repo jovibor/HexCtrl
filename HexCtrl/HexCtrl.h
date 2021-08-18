@@ -58,7 +58,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORS = 0;          //Current colors.
-		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->std::byte* = 0; //Get pointer to data offset, no matter what mode the control works in.
+		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->std::span<std::byte> = 0; //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual int GetEncoding()const = 0;                    //Get current code page ID.
 		[[nodiscard]] virtual long GetFontSize()const = 0;                   //Current font size.

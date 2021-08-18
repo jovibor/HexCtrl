@@ -639,16 +639,19 @@ auto CHexCtrl::GetColors()const->HEXCOLORS
 	return m_stColor;
 }
 
-auto CHexCtrl::GetData(HEXSPAN hss)const->std::byte*
+auto CHexCtrl::GetData(HEXSPAN hss)const->std::span<std::byte>
 {
 	assert(IsCreated());
 	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet() || (hss.ullOffset + hss.ullSize > m_spnData.size()))
-		return nullptr;
+	if (!IsCreated() || !IsDataSet())
+		return { };
 
-	std::byte* pData { };
+	std::span<std::byte> spnData;
 	if (!IsVirtual())
-		pData = m_spnData.data() + hss.ullOffset;
+	{
+		if (hss.ullOffset + hss.ullSize <= GetDataSize())
+			spnData = { m_spnData.data() + hss.ullOffset, hss.ullSize };
+	}
 	else
 	{
 		if (hss.ullSize == 0 || hss.ullSize > GetCacheSize())
@@ -656,17 +659,16 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->std::byte*
 		HEXDATAINFO hdi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
 		hdi.stSpan = hss;
 		m_pHexVirtData->OnHexGetData(hdi);
-		pData = hdi.pData;
+		spnData = hdi.spnData;
 	}
 
-	return pData;
+	return spnData;
 }
 
 auto CHexCtrl::GetDataSize()const->ULONGLONG
 {
 	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
+	if (!IsCreated())
 		return { };
 
 	return m_spnData.size();
@@ -715,7 +717,9 @@ auto CHexCtrl::GetPagesCount()const->ULONGLONG
 	if (!IsCreated() || !IsDataSet() || GetPageSize() == 0)
 		return { };
 
-	return (m_spnData.size() % m_dwPageSize) ? m_spnData.size() / m_dwPageSize + 1 : m_spnData.size() / m_dwPageSize;
+	const auto ullSize = GetDataSize();
+
+	return (ullSize % m_dwPageSize) ? ullSize / m_dwPageSize + 1 : ullSize / m_dwPageSize;
 }
 
 auto CHexCtrl::GetPagePos()const->ULONGLONG
@@ -1025,19 +1029,19 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			while (ullChunks-- > 0)
 			{
 				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
-				if (const auto pData = GetData({ ullOffset, ullSize }); pData != nullptr)
+				if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
 				{
-					std::copy_n(hms.pData + ullOffset, ullSize, pData);
-					SetDataVirtual(pData, { ullOffset, ullSize });
+					std::copy_n(hms.pData + ullOffset, ullSize, spnData.data());
+					SetDataVirtual(spnData, { ullOffset, ullSize });
 				}
 				ullOffset += ullSize;
 			}
 		}
 		else {
-			if (const auto pData = GetData(vecSpanRef[0]); pData != nullptr)
+			if (const auto spnData = GetData(vecSpanRef[0]); !spnData.empty())
 			{
-				std::copy_n(hms.pData, static_cast<size_t>(vecSpanRef[0].ullSize), pData);
-				SetDataVirtual(pData, vecSpanRef[0]);
+				std::copy_n(hms.pData, static_cast<size_t>(vecSpanRef[0].ullSize), spnData.data());
+				SetDataVirtual(spnData, vecSpanRef[0]);
 			}
 		}
 	}
@@ -1772,14 +1776,18 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 		return { };
 
 	const auto ullOffsetStart = ullStartLine * m_dwCapacity; //Offset of the visible data to print.
-	size_t sSizeData = static_cast<size_t>(iLines) * static_cast<size_t>(m_dwCapacity); //Size of the visible data to print.
-	if (ullOffsetStart + sSizeData > m_spnData.size())
-		sSizeData = static_cast<size_t>(m_spnData.size() - ullOffsetStart);
-	const auto pData = reinterpret_cast<PBYTE>(GetData({ ullOffsetStart, sSizeData })); //Pointer to data to print.
+	std::size_t sSizeDataToPrint = static_cast<std::size_t>(iLines) * static_cast<std::size_t>(m_dwCapacity); //Size of the visible data to print.
+	if (ullOffsetStart + sSizeDataToPrint > GetDataSize())
+		sSizeDataToPrint = static_cast<std::size_t>(GetDataSize() - ullOffsetStart);
 
+	const auto spnData = GetData({ ullOffsetStart, sSizeDataToPrint }); //Span data to print.
+	assert(!spnData.empty());
+	assert(spnData.size() == sSizeDataToPrint);
+
+	const auto pData = reinterpret_cast<PBYTE>(spnData.data()); //Pointer to data to print.
 	std::wstring wstrHex { };
-	wstrHex.reserve(sSizeData * 2);
-	for (auto iterpData = pData; iterpData < pData + sSizeData; ++iterpData) //Converting bytes to Hexes.
+	wstrHex.reserve(sSizeDataToPrint * 2);
+	for (auto iterpData = pData; iterpData < pData + sSizeDataToPrint; ++iterpData) //Converting bytes to Hexes.
 	{
 		wstrHex.push_back(g_pwszHexMap[(*iterpData >> 4) & 0x0F]);
 		wstrHex.push_back(g_pwszHexMap[*iterpData & 0x0F]);
@@ -1787,9 +1795,9 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 
 	//Converting bytes to Text.
 	const auto uCodePage = m_iCodePage == -1 ? HEXCTRL_CODEPAGE_DEFAULT : static_cast<UINT>(m_iCodePage);
-	std::wstring wstrText(sSizeData, 0);
+	std::wstring wstrText(sSizeDataToPrint, 0);
 	MultiByteToWideChar(uCodePage, 0, reinterpret_cast<LPCCH>(pData),
-		static_cast<int>(sSizeData), wstrText.data(), static_cast<int>(sSizeData));
+		static_cast<int>(sSizeDataToPrint), wstrText.data(), static_cast<int>(sSizeDataToPrint));
 	ReplaceUnprintable(wstrText, m_iCodePage == -1);
 
 	return { std::move(wstrHex), std::move(wstrText) };
@@ -2043,11 +2051,12 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	HEXMODIFY hmd;
 
 	std::string strData;
+	const auto ullDataSize = GetDataSize();
 	switch (enType)
 	{
 	case EClipboard::PASTE_TEXT:
-		if (m_ullCaretPos + ullSize > m_spnData.size())
-			ullSize = m_spnData.size() - m_ullCaretPos;
+		if (m_ullCaretPos + ullSize > ullDataSize)
+			ullSize = ullDataSize - m_ullCaretPos;
 
 		hmd.pData = reinterpret_cast<std::byte*>(pszClipboardData);
 		ullSizeToModify = hmd.ullDataSize = ullSize;
@@ -2055,8 +2064,8 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	case EClipboard::PASTE_HEX:
 	{
 		const ULONGLONG ullRealSize = ullSize / 2 + ullSize % 2;
-		if (m_ullCaretPos + ullRealSize > m_spnData.size())
-			ullSize = (m_spnData.size() - m_ullCaretPos) * 2;
+		if (m_ullCaretPos + ullRealSize > ullDataSize)
+			ullSize = (ullDataSize - m_ullCaretPos) * 2;
 
 		const auto nIterations = static_cast<size_t>(ullSize / 2 + ullSize % 2);
 		char chToUL[3] { }; //Array for actual Ascii chars to convert from.
@@ -3205,8 +3214,8 @@ auto CHexCtrl::GetBottomLine()const->ULONGLONG
 			--ullEndLine;
 		//If m_ullDataSize is really small, or we at the scroll end,
 		//we adjust ullEndLine to be not bigger than maximum allowed.
-		if (ullEndLine >= (m_spnData.size() / m_dwCapacity))
-			ullEndLine = (m_spnData.size() % m_dwCapacity) ? m_spnData.size() / m_dwCapacity : m_spnData.size() / m_dwCapacity - 1;
+		if (const auto ullSize = GetDataSize(); ullEndLine >= (ullSize / m_dwCapacity))
+			ullEndLine = (ullSize % m_dwCapacity) ? ullSize / m_dwCapacity : ullSize / m_dwCapacity - 1;
 	}
 
 	return ullEndLine;
@@ -3294,7 +3303,7 @@ auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTEST>
 	}
 
 	//If iX is out of end-bound of Hex chunks or ASCII chars.
-	if (stHit.ullOffset >= m_spnData.size())
+	if (stHit.ullOffset >= GetDataSize())
 		fHit = false;
 
 	return fHit ? std::optional<HEXHITTEST> { stHit } : std::nullopt;
@@ -3351,25 +3360,25 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSiz
 			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
 			{
 				const auto ullOffset = iterSpan.ullOffset + (iterChunk * ullSizeChunk);
-				if (ullOffset + ullSizeChunk > m_spnData.size()) //Overflow check.
-					ullSizeChunk = m_spnData.size() - ullOffset;
+				if (ullOffset + ullSizeChunk > GetDataSize()) //Overflow check.
+					ullSizeChunk = GetDataSize() - ullOffset;
 				if (ullOffset + ullSizeChunk > iterSpan.ullOffset + iterSpan.ullSize)
 					ullSizeChunk = (iterSpan.ullOffset + iterSpan.ullSize) - ullOffset;
 
-				const auto pData = GetData({ ullOffset, ullSizeChunk });
+				const auto spnData = GetData({ ullOffset, ullSizeChunk });
 
 				for (auto ullIndex { 0ULL }; ullIndex <= (ullSizeChunk - ullSizeToOperWith); ullIndex += ullSizeToOperWith)
 				{
-					lmbWorker(pData + ullIndex, hms);
+					lmbWorker(spnData.data() + ullIndex, hms);
 					if (dlgClbk.IsCanceled())
 					{
-						SetDataVirtual(pData, { ullOffset, ullSizeChunk });
+						SetDataVirtual(spnData, { ullOffset, ullSizeChunk });
 						goto exit;
 					}
 					dlgClbk.SetProgress(ullOffset + ullIndex);
 				}
 
-				SetDataVirtual(pData, { ullOffset, ullSizeChunk });
+				SetDataVirtual(spnData, { ullOffset, ullSizeChunk });
 			}
 		}
 	exit:
@@ -3470,7 +3479,7 @@ void CHexCtrl::Print()
 	auto ullStartLine = GetTopLine();
 	ULONGLONG ullEndLine { };
 	const auto stOldLetter = m_sizeLetter;
-	const auto ullTotalLines = m_spnData.size() / m_dwCapacity;
+	const auto ullTotalLines = GetDataSize() / m_dwCapacity;
 
 	rcPrint.bottom -= 200; //Ajust bottom indent of the printing rect.
 	RecalcPrint(pDC, &fontMain, &fontInfo, rcPrint);
@@ -3543,7 +3552,7 @@ void CHexCtrl::Print()
 
 			//If m_dwDataCount is really small we adjust ullEndLine to be not bigger than maximum allowed.
 			if (ullEndLine > ullTotalLines)
-				ullEndLine = (m_spnData.size() % m_dwCapacity) ? ullTotalLines + 1 : ullTotalLines;
+				ullEndLine = (GetDataSize() % m_dwCapacity) ? ullTotalLines + 1 : ullTotalLines;
 
 			const auto iLines = static_cast<int>(ullEndLine - ullStartLine);
 			const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
@@ -3617,7 +3626,7 @@ void CHexCtrl::RecalcAll()
 	//Scroll sizes according to current font size.
 	m_pScrollV->SetScrollSizes(m_sizeLetter.cy, static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio),
 		static_cast<ULONGLONG>(m_iStartWorkAreaY) + m_iHeightBottomOffArea + m_sizeLetter.cy *
-		(m_spnData.size() / m_dwCapacity + (m_spnData.size() % m_dwCapacity == 0 ? 1 : 2)));
+		(GetDataSize() / m_dwCapacity + (GetDataSize() % m_dwCapacity == 0 ? 1 : 2)));
 	m_pScrollH->SetScrollSizes(m_sizeLetter.cx, rc.Width(), static_cast<ULONGLONG>(m_iFourthVertLine) + 1);
 	m_pScrollV->SetScrollPos(ullCurLineV * m_sizeLetter.cy);
 
@@ -3627,30 +3636,31 @@ void CHexCtrl::RecalcAll()
 
 void CHexCtrl::RecalcOffsetDigits()
 {
-	if (m_spnData.size() <= 0xffffffffUL)
+	const auto ullDataSize = GetDataSize();
+	if (ullDataSize <= 0xffffffffUL)
 	{
 		m_dwOffsetBytes = 4;
-		m_dwOffsetDigits = m_fOffsetAsHex ? 8 : 10;
+		m_dwOffsetDigits = IsOffsetAsHex() ? 8 : 10;
 	}
-	else if (m_spnData.size() <= 0xffffffffffUL)
+	else if (ullDataSize <= 0xffffffffffUL)
 	{
 		m_dwOffsetBytes = 5;
-		m_dwOffsetDigits = m_fOffsetAsHex ? 10 : 13;
+		m_dwOffsetDigits = IsOffsetAsHex() ? 10 : 13;
 	}
-	else if (m_spnData.size() <= 0xffffffffffffUL)
+	else if (ullDataSize <= 0xffffffffffffUL)
 	{
 		m_dwOffsetBytes = 6;
-		m_dwOffsetDigits = m_fOffsetAsHex ? 12 : 15;
+		m_dwOffsetDigits = IsOffsetAsHex() ? 12 : 15;
 	}
-	else if (m_spnData.size() <= 0xffffffffffffffUL)
+	else if (ullDataSize <= 0xffffffffffffffUL)
 	{
 		m_dwOffsetBytes = 7;
-		m_dwOffsetDigits = m_fOffsetAsHex ? 14 : 17;
+		m_dwOffsetDigits = IsOffsetAsHex() ? 14 : 17;
 	}
 	else
 	{
 		m_dwOffsetBytes = 8;
-		m_dwOffsetDigits = m_fOffsetAsHex ? 16 : 19;
+		m_dwOffsetDigits = IsOffsetAsHex() ? 16 : 19;
 	}
 }
 
@@ -3727,19 +3737,19 @@ void CHexCtrl::Redo()
 			while (ullChunks-- > 0)
 			{
 				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
-				if (const auto pData = GetData({ ullOffset, ullSize }); pData != nullptr)
+				if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
 				{
-					std::copy_n(refRedoData.begin() + ullOffset, ullSize, pData);
-					SetDataVirtual(pData, { ullOffset, ullSize });
+					std::copy_n(refRedoData.begin() + ullOffset, ullSize, spnData.data());
+					SetDataVirtual(spnData, { ullOffset, ullSize });
 				}
 				ullOffset += ullSize;
 			}
 		}
 		else {
-			if (const auto pData = GetData({ iter.ullOffset, refRedoData.size() }); pData != nullptr)
+			if (const auto spnData = GetData({ iter.ullOffset, refRedoData.size() }); !spnData.empty())
 			{
-				std::copy_n(refRedoData.begin(), refRedoData.size(), pData);
-				SetDataVirtual(pData, { iter.ullOffset, refRedoData.size() });
+				std::copy_n(refRedoData.begin(), refRedoData.size(), spnData.data());
+				SetDataVirtual(spnData, { iter.ullOffset, refRedoData.size() });
 			}
 		}
 	}
@@ -3825,8 +3835,8 @@ void CHexCtrl::SelAddDown()
 		ullSize = 1;
 	}
 
-	if (ullStart + ullSize > m_spnData.size()) //To avoid overflow.
-		ullSize = m_spnData.size() - ullStart;
+	if (ullStart + ullSize > GetDataSize()) //To avoid overflow.
+		ullSize = GetDataSize() - ullStart;
 
 	if (ullSize > 0)
 	{
@@ -3939,8 +3949,8 @@ void CHexCtrl::SelAddRight()
 		ullSize = 1;
 	}
 
-	if (ullStart + ullSize > m_spnData.size()) //To avoid overflow.
-		ullSize = m_spnData.size() - ullStart;
+	if (ullStart + ullSize > GetDataSize()) //To avoid overflow.
+		ullSize = GetDataSize() - ullStart;
 
 	if (ullSize > 0)
 	{
@@ -4037,7 +4047,7 @@ void CHexCtrl::SelAddUp()
 	}
 }
 
-void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPAN& hss)
+void CHexCtrl::SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss)
 {
 	//Note: Since this method can be executed asynchronously (in search/replace, etc...),
 	//the SendMesage(parent, ...) is impossible here because receiver window
@@ -4048,7 +4058,7 @@ void CHexCtrl::SetDataVirtual(std::byte* pData, const HEXSPAN& hss)
 
 	HEXDATAINFO hdi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
 	hdi.stSpan = hss;
-	hdi.pData = pData;
+	hdi.spnData = spnData;
 	m_pHexVirtData->OnHexSetData(hdi);
 }
 
@@ -4104,14 +4114,14 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPAN>& vecSpan)
 			while (ullChunks-- > 0)
 			{
 				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
-				if (const auto* const pData = GetData({ ullOffset, ullSize }); pData != nullptr)
-					std::copy_n(pData, ullSize, refUndo->at(ullIndex).vecData.begin() + ullOffset);
+				if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
+					std::copy_n(spnData.data(), ullSize, refUndo->at(ullIndex).vecData.begin() + ullOffset);
 				ullOffset += ullSize;
 			}
 		}
 		else {
-			if (const auto* const pData = GetData(iterSel); pData != nullptr)
-				std::copy_n(pData, iterSel.ullSize, refUndo->at(ullIndex).vecData.begin());
+			if (const auto spnData = GetData(iterSel); !spnData.empty())
+				std::copy_n(spnData.data(), iterSel.ullSize, refUndo->at(ullIndex).vecData.begin());
 		}
 		++ullIndex;
 	}
@@ -4196,21 +4206,21 @@ void CHexCtrl::Undo()
 			while (ullChunks-- > 0)
 			{
 				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
-				if (const auto pData = GetData({ ullOffset, ullSize }); pData != nullptr)
+				if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
 				{
-					std::copy_n(pData, ullSize, refRedo->at(ullIndex).vecData.begin() + ullOffset); //Fill Redo with the data.
-					std::copy_n(refUndoData.begin() + ullOffset, ullSize, pData); //Undo the data.
-					SetDataVirtual(pData, { ullOffset, ullSize });
+					std::copy_n(spnData.data(), ullSize, refRedo->at(ullIndex).vecData.begin() + ullOffset); //Fill Redo with the data.
+					std::copy_n(refUndoData.begin() + ullOffset, ullSize, spnData.data()); //Undo the data.
+					SetDataVirtual(spnData, { ullOffset, ullSize });
 				}
 				ullOffset += ullSize;
 			}
 		}
 		else {
-			if (const auto pData = GetData({ iter.ullOffset, refUndoData.size() }); pData != nullptr)
+			if (const auto spnData = GetData({ iter.ullOffset, refUndoData.size() }); !spnData.empty())
 			{
-				std::copy_n(pData, refUndoData.size(), refRedo->at(ullIndex).vecData.begin()); //Fill Redo with the data.
-				std::copy_n(refUndoData.begin(), refUndoData.size(), pData); //Undo the data.
-				SetDataVirtual(pData, { iter.ullOffset, refUndoData.size() });
+				std::copy_n(spnData.data(), refUndoData.size(), refRedo->at(ullIndex).vecData.begin()); //Fill Redo with the data.
+				std::copy_n(refUndoData.begin(), refUndoData.size(), spnData.data()); //Undo the data.
+				SetDataVirtual(spnData, { iter.ullOffset, refUndoData.size() });
 			}
 		}
 		++ullIndex;

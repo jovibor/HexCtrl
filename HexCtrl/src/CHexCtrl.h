@@ -54,7 +54,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
 		[[nodiscard]] auto GetColors()const->HEXCOLORS override;          //Current colors.
-		[[nodiscard]] auto GetData(HEXSPAN hss)const->std::byte* override; //Get pointer to data offset, no matter what mode the control works in.
+		[[nodiscard]] auto GetData(HEXSPAN hss)const->std::span<std::byte> override; //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;        //Get currently set data size.
 		[[nodiscard]] int GetEncoding()const override;                    //Get current code page ID.
 		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
@@ -156,7 +156,7 @@ namespace HEXCTRL::INTERNAL
 		void SelAddLeft();       //Left Key pressed with the Shift.
 		void SelAddRight();      //Right Key pressed with the Shift.
 		void SelAddUp();         //Up Key pressed with the Shift.
-		void SetDataVirtual(std::byte* pData, const HEXSPAN& hss); //Sets data (notifies back) in Virtual mode.
+		void SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss); //Sets data (notifies back) in Virtual mode.
 		void SetRedraw(bool fRedraw); //Handle WM_PAINT message or not.
 		void SnapshotUndo(const std::vector<HEXSPAN>& vecSpan); //Takes currently modifiable data snapshot.
 		void TtBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip bookmark show/hide.

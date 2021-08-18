@@ -63,10 +63,10 @@ namespace HEXCTRL::INTERNAL
 	[[nodiscard]] T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
 	{
 		T tData { };
-		const auto pData = refHexCtrl.GetData({ ullOffset, sizeof(T) });
-		assert(pData != nullptr);
-		if (pData != nullptr)
-			tData = *reinterpret_cast<T*>(pData);
+		const auto spnData = refHexCtrl.GetData({ ullOffset, sizeof(T) });
+		assert(!spnData.empty());
+		if (!spnData.empty())
+			tData = *reinterpret_cast<T*>(spnData.data());
 
 		return tData;
 	}

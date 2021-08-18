@@ -68,9 +68,9 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXDATAINFO
 	{
-		NMHDR      hdr { };    //Standard Windows header.
-		HEXSPAN    stSpan { }; //Offset and size of the data bytes.
-		std::byte* pData { };  //Data pointer.
+		NMHDR                hdr { };     //Standard Windows header.
+		HEXSPAN              stSpan { };  //Offset and size of the data bytes.
+		std::span<std::byte> spnData { }; //Data span.
 	};
 
 	/********************************************************************************************
