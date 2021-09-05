@@ -133,12 +133,12 @@ namespace HEXCTRL
 #endif
 
 	extern "C" HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl();
-	using IHexCtrlUnPtr = std::unique_ptr<IHexCtrl, void(*)(IHexCtrl*)>;
+	using IHexCtrlUnPtr = std::unique_ptr < IHexCtrl, decltype([](IHexCtrl* p) { p->Destroy(); }) > ;
 	using IHexCtrlShPtr = std::shared_ptr<IHexCtrl>;
 
 	inline IHexCtrlUnPtr CreateHexCtrl()
 	{
-		return IHexCtrlUnPtr(CreateRawHexCtrl(), [](IHexCtrl* p) { p->Destroy(); });
+		return IHexCtrlUnPtr(CreateRawHexCtrl());
 	};
 
 #ifdef HEXCTRL_IHEXCTRLPTR_UNIQUEPTR
