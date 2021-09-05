@@ -23,6 +23,7 @@
 #include "Dialogs/CHexDlgSearch.h"
 #include "HexUtility.h"
 #include "strsafe.h"
+#include <bit>
 #include <cassert>
 #include <cctype>
 #include <fstream>
@@ -1075,17 +1076,17 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		{
 			assert(pData != nullptr);
 
-			constexpr auto lmbSwap = [](auto* pData)
+			constexpr auto lmbSwap = []<typename T>(T * pData)
 			{
-				if constexpr (sizeof(decltype(*pData)) == sizeof(WORD))
-					*pData = static_cast<WORD>(_byteswap_ushort(static_cast<WORD>(*pData)));
-				else if constexpr (sizeof(decltype(*pData)) == sizeof(DWORD))
-					*pData = static_cast<DWORD>(_byteswap_ulong(static_cast<DWORD>(*pData)));
-				else if constexpr (sizeof(decltype(*pData)) == sizeof(QWORD))
-					*pData = static_cast<QWORD>(_byteswap_uint64(static_cast<QWORD>(*pData)));
+				if constexpr (sizeof(T) == sizeof(WORD))
+					*pData = _byteswap_ushort(*pData);
+				else if constexpr (sizeof(T) == sizeof(DWORD))
+					*pData = _byteswap_ulong(*pData);
+				else if constexpr (sizeof(T) == sizeof(QWORD))
+					*pData = _byteswap_uint64(*pData);
 			};
 
-			constexpr auto lmbOper = [](auto* pData, const EHexOperMode eMode, const auto tDataOper, const auto lmbSwap)
+			constexpr auto lmbOper = []<typename T>(T * pData, const EHexOperMode eMode, const T tDataOper, const auto lmbSwap)
 			{
 				switch (eMode)
 				{
@@ -1111,24 +1112,10 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					*pData >>= tDataOper;
 					break;
 				case EHexOperMode::OPER_ROTL:
-					if constexpr (sizeof(decltype(*pData)) == sizeof(BYTE))
-						*pData = static_cast<BYTE>(_rotl8(static_cast<BYTE>(*pData), static_cast<unsigned char>(tDataOper)));
-					else if constexpr (sizeof(decltype(*pData)) == sizeof(WORD))
-						*pData = static_cast<WORD>(_rotl16(static_cast<WORD>(*pData), static_cast<unsigned char>(tDataOper)));
-					else if constexpr (sizeof(decltype(*pData)) == sizeof(DWORD))
-						*pData = static_cast<DWORD>(_rotl(static_cast<DWORD>(*pData), static_cast<unsigned char>(tDataOper)));
-					else if constexpr (sizeof(decltype(*pData)) == sizeof(QWORD))
-						*pData = static_cast<QWORD>(_rotl64(static_cast<QWORD>(*pData), static_cast<unsigned char>(tDataOper)));
+					*pData = std::rotl(*pData, static_cast<int>(tDataOper));
 					break;
 				case EHexOperMode::OPER_ROTR:
-					if constexpr (sizeof(decltype(*pData)) == sizeof(BYTE))
-						*pData = static_cast<BYTE>(_rotr8(static_cast<BYTE>(*pData), static_cast<unsigned char>(tDataOper)));
-					else if constexpr (sizeof(decltype(*pData)) == sizeof(WORD))
-						*pData = static_cast<WORD>(_rotr16(static_cast<WORD>(*pData), static_cast<unsigned char>(tDataOper)));
-					else if constexpr (sizeof(decltype(*pData)) == sizeof(DWORD))
-						*pData = static_cast<DWORD>(_rotr(static_cast<DWORD>(*pData), static_cast<unsigned char>(tDataOper)));
-					else if constexpr (sizeof(decltype(*pData)) == sizeof(QWORD))
-						*pData = static_cast<QWORD>(_rotr64(static_cast<QWORD>(*pData), static_cast<unsigned char>(tDataOper)));
+					*pData = std::rotr(*pData, static_cast<int>(tDataOper));
 					break;
 				case EHexOperMode::OPER_SWAP:
 					lmbSwap(pData);
