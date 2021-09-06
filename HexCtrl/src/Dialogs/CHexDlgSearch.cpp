@@ -11,14 +11,13 @@
 #include "CHexDlgCallback.h"
 #include "CHexDlgSearch.h"
 #include <algorithm>
+#include <bit>
 #include <cassert>
 #include <cctype>
 #include <cwctype>
 #include <limits>
 #include <string>
 #include <thread>
-#undef min
-#undef max
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
@@ -289,7 +288,7 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd,
 				if (fBigStep)
 				{
 					if ((ullOffsetSearch - ullStep) < ullEnd
-						|| (ullOffsetSearch - ullStep) > (std::numeric_limits<ULONGLONG>::max() - ullStep))
+						|| (ullOffsetSearch - ullStep) > ((std::numeric_limits<ULONGLONG>::max)() - ullStep))
 						break; //Lower bound reached.
 
 					ullOffsetSearch -= ullSizeChunk;
@@ -297,7 +296,7 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd,
 				else
 				{
 					if ((ullOffsetSearch - ullSizeChunk) < ullEnd
-						|| (ullOffsetSearch - ullSizeChunk) > (std::numeric_limits<ULONGLONG>::max() - ullSizeChunk))
+						|| (ullOffsetSearch - ullSizeChunk) > ((std::numeric_limits<ULONGLONG>::max)() - ullSizeChunk))
 					{
 						ullMemToAcquire = (ullOffsetSearch - ullEnd) + nSizeSearch;
 						ullSizeChunk = ullMemToAcquire - nSizeSearch;
@@ -1033,10 +1032,8 @@ bool CHexDlgSearch::PrepareFloat()
 
 	if (m_fBigEndian)
 	{
-		auto lData = _byteswap_ulong(*reinterpret_cast<unsigned long*>(&flData));
-		flData = *reinterpret_cast<float*>(&lData);
-		auto lDataRep = _byteswap_ulong(*reinterpret_cast<unsigned long*>(&flDataRep));
-		flDataRep = *reinterpret_cast<float*>(&lDataRep);
+		flData = std::bit_cast<float>(_byteswap_ulong(std::bit_cast<unsigned long>(flData)));
+		flDataRep = std::bit_cast<float>(_byteswap_ulong(std::bit_cast<unsigned long>(flDataRep)));
 	}
 
 	m_strSearch.assign(reinterpret_cast<char*>(&flData), sizeof(float));
@@ -1061,10 +1058,8 @@ bool CHexDlgSearch::PrepareDouble()
 
 	if (m_fBigEndian)
 	{
-		auto llData = _byteswap_uint64(*reinterpret_cast<unsigned long long*>(&ddData));
-		ddData = *reinterpret_cast<double*>(&llData);
-		auto llDataRep = _byteswap_uint64(*reinterpret_cast<unsigned long long*>(&ddDataRep));
-		ddDataRep = *reinterpret_cast<double*>(&llDataRep);
+		ddData = std::bit_cast<double>(_byteswap_uint64(std::bit_cast<unsigned long long>(ddData)));
+		ddDataRep = std::bit_cast<double>(_byteswap_uint64(std::bit_cast<unsigned long long>(ddDataRep)));
 	}
 
 	m_strSearch.assign(reinterpret_cast<char*>(&ddData), sizeof(double));

@@ -11,6 +11,7 @@
 #include "CHexDlgDataInterp.h"
 #include "strsafe.h"
 #include <algorithm>
+#include <bit>
 #include <cassert>
 
 using namespace HEXCTRL;
@@ -596,7 +597,7 @@ void CHexDlgDataInterp::ShowNAME_ULONG(DWORD dword)const
 void CHexDlgDataInterp::ShowNAME_FLOAT(DWORD dword)const
 {
 	WCHAR buff[32];
-	swprintf_s(buff, std::size(buff), L"%.9e", *reinterpret_cast<const float*>(&dword));
+	swprintf_s(buff, std::size(buff), L"%.9e", std::bit_cast<float>(dword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_FLOAT; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -701,7 +702,7 @@ void CHexDlgDataInterp::ShowNAME_ULONGLONG(QWORD qword)const
 void CHexDlgDataInterp::ShowNAME_DOUBLE(QWORD qword)const
 {
 	WCHAR buff[32];
-	swprintf_s(buff, std::size(buff), L"%.18e", *reinterpret_cast<const double*>(&qword));
+	swprintf_s(buff, std::size(buff), L"%.18e", std::bit_cast<double>(qword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_DOUBLE; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(buff);
@@ -862,7 +863,7 @@ void CHexDlgDataInterp::ShowNAME_SYSTEMTIME(const UDQWORD& dqword)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_SYSTEMTIME; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(SystemTimeToString(*reinterpret_cast<const SYSTEMTIME*>(&dqword)).data());
+		iter->pProp->SetValue(SystemTimeToString(std::bit_cast<SYSTEMTIME>(dqword)).data());
 }
 
 bool CHexDlgDataInterp::SetDataNAME_BINARY(const std::wstring& wstr)const

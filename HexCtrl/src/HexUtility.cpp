@@ -10,8 +10,6 @@
 #include <algorithm>
 #include <cwctype>
 #include <limits>
-#undef min
-#undef max
 
 namespace HEXCTRL::INTERNAL
 {
@@ -87,8 +85,8 @@ namespace HEXCTRL::INTERNAL
 			const auto llData = std::wcstoll(wstr.data(), &pEndPtr, iBase);
 			if ((llData == 0 && (pEndPtr == wstr.data() || *pEndPtr != L'\0'))
 				|| ((llData == LLONG_MAX || llData == LLONG_MIN) && errno == ERANGE)
-				|| (llData > static_cast<LONGLONG>(std::numeric_limits<T>::max()))
-				|| (llData < static_cast<LONGLONG>(std::numeric_limits<std::make_signed_t<T>>::min())))
+				|| (llData > static_cast<LONGLONG>((std::numeric_limits<T>::max)()))
+				|| (llData < static_cast<LONGLONG>((std::numeric_limits<std::make_signed_t<T>>::min)())))
 				return false;
 			tData = static_cast<T>(llData);
 		}
@@ -125,8 +123,8 @@ namespace HEXCTRL::INTERNAL
 			const auto llData = std::strtoll(str.data(), &pEndPtr, iBase);
 			if ((llData == 0 && (pEndPtr == str.data() || *pEndPtr != '\0'))
 				|| ((llData == LLONG_MAX || llData == LLONG_MIN) && errno == ERANGE)
-				|| (llData > static_cast<LONGLONG>(std::numeric_limits<T>::max()))
-				|| (llData < static_cast<LONGLONG>(std::numeric_limits<std::make_signed_t<T>>::min()))
+				|| (llData > static_cast<LONGLONG>((std::numeric_limits<T>::max)()))
+				|| (llData < static_cast<LONGLONG>((std::numeric_limits<std::make_signed_t<T>>::min)()))
 				)
 				return false;
 			tData = static_cast<T>(llData);
