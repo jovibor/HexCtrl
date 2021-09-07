@@ -496,8 +496,6 @@ std::wstring CHexDlgDataInterp::SystemTimeToString(const SYSTEMTIME& refSysTime)
 		|| refSysTime.wMilliseconds > 999)
 		return L"N/A";
 
-	std::wstring wstrRet { };
-
 	//Generate human formatted date. Fall back to UK/European if unable to determine
 	WCHAR buff[32];
 	switch (m_dwDateFormat)
@@ -515,7 +513,7 @@ std::wstring CHexDlgDataInterp::SystemTimeToString(const SYSTEMTIME& refSysTime)
 			refSysTime.wDay, m_wDateSeparator, refSysTime.wMonth, m_wDateSeparator, refSysTime.wYear);
 	}
 
-	wstrRet = buff;
+	std::wstring wstrRet = buff;
 	wstrRet += L" ";
 
 	//Append optional time elements

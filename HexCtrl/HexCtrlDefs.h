@@ -54,9 +54,9 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* HEXOFFSET - Data offset and size, used in some data/size related routines.                *
+	* HEXSPAN - Data offset and size, used in some data/size related routines.                  *
 	********************************************************************************************/
-	struct HEXOFFSET
+	struct HEXSPAN
 	{
 		ULONGLONG ullOffset { };
 		ULONGLONG ullSize { };
@@ -67,9 +67,9 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXDATAINFO
 	{
-		NMHDR                hdr { };      //Standard Windows header.
-		HEXOFFSET            stOffset { }; //Offset and size of the data bytes.
-		std::span<std::byte> spnData { };  //Data span.
+		NMHDR                hdr { };       //Standard Windows header.
+		HEXSPAN              stHexSpan { }; //Offset and size of the data bytes.
+		std::span<std::byte> spnData { };   //Data span.
 	};
 
 	/********************************************************************************************
@@ -89,12 +89,12 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXBKM
 	{
-		std::vector<HEXOFFSET> vecOffset { };              //Vector of offsets and sizes.
-		std::wstring           wstrDesc { };               //Bookmark description.
-		ULONGLONG              ullID { };                  //Bookmark ID, assigned internally by framework.
-		ULONGLONG              ullData { };                //User defined custom data.
-		COLORREF               clrBk { RGB(240, 240, 0) }; //Bk color.
-		COLORREF               clrText { RGB(0, 0, 0) };   //Text color.
+		std::vector<HEXSPAN> vecSpan { };                //Vector of offsets and sizes.
+		std::wstring         wstrDesc { };               //Bookmark description.
+		ULONGLONG            ullID { };                  //Bookmark ID, assigned internally by framework.
+		ULONGLONG            ullData { };                //User defined custom data.
+		COLORREF             clrBk { RGB(240, 240, 0) }; //Bk color.
+		COLORREF             clrText { RGB(0, 0, 0) };   //Text color.
 	};
 	using PHEXBKM = HEXBKM*;
 
@@ -238,7 +238,7 @@ namespace HEXCTRL
 	********************************************************************************************/
 	enum class EHexModifyMode : std::uint8_t
 	{
-		MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RANDOM
+		MODIFY_ONCE, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RANDOM
 	};
 
 	/********************************************************************************************
@@ -262,23 +262,24 @@ namespace HEXCTRL
 
 	/********************************************************************************************
 	* HEXMODIFY - used to represent data modification parameters.                               *
-	* When enModifyMode is set to EHexModifyMode::MODIFY_DEFAULT, bytes from pData just replace *
-	* corresponding data bytes as is. If enModifyMode is equal to EHexModifyMode::MODIFY_REPEAT *
+	* When enModifyMode is set to EHexModifyMode::MODIFY_ONCE, bytes from spnData.data() just   *
+	* replace corresponding data bytes as is.                                                   * 
+	* If enModifyMode is equal to EHexModifyMode::MODIFY_REPEAT                                 *
 	* then block by block replacement takes place few times.                                    *
-	*   For example : if SUM(vecOffset.ullSize) = 9, ullDataSize = 3 and enModifyMode is set to *
-	* EHexModifyMode::MODIFY_REPEAT, bytes in memory at vecOffset.ullOffset position are        *
+	*   For example : if SUM(vecSpan.ullSize) = 9, ullDataSize = 3 and enModifyMode is set to   *
+	* EHexModifyMode::MODIFY_REPEAT, bytes in memory at vecSpan.ullOffset position are          *
 	* 123456789, and bytes pointed to by spnData are 345, then, after modification, bytes at    *
-	* vecOffset.ullOffset will be 345345345.                                                    *
+	* vecSpan.ullOffset will be 345345345.                                                      *
 	* If enModifyMode is equal to MODIFY_OPERATION then enOperMode comes into play, showing     *
 	* what kind of operation must be performed on data, with the enOperSize showing the size.   *
 	********************************************************************************************/
 	struct HEXMODIFY
 	{
-		EHexModifyMode         enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
-		EHexOperMode           enOperMode { };       //Operation mode, used only in MODIFY_OPERATION mode.
-		EHexDataSize           enOperSize { };       //Operation data size.
-		std::span<std::byte>   spnData { };          //Data span.
-		std::vector<HEXOFFSET> vecOffset { };        //Vector of data offsets and sizes.
-		bool                   fBigEndian { false }; //Treat the data as a big endian, used only in MODIFY_OPERATION mode.
+		EHexModifyMode       enModifyMode { EHexModifyMode::MODIFY_ONCE }; //Modify mode.
+		EHexOperMode         enOperMode { };       //Operation mode, used only in MODIFY_OPERATION mode.
+		EHexDataSize         enOperSize { };       //Operation data size.
+		std::span<std::byte> spnData { };          //Data span.
+		std::vector<HEXSPAN> vecSpan { };          //Vector of data offsets and sizes.
+		bool                 fBigEndian { false }; //Treat the data as a big endian, used only in MODIFY_OPERATION mode.
 	};
 };

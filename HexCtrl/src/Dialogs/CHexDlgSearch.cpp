@@ -334,7 +334,7 @@ auto CHexDlgSearch::GetSearchMode()const->CHexDlgSearch::EMode
 	return static_cast<EMode>(m_stComboMode.GetItemData(m_stComboMode.GetCurSel()));
 }
 
-void CHexDlgSearch::HexCtrlHighlight(const std::vector<HEXOFFSET>& vecSel)
+void CHexDlgSearch::HexCtrlHighlight(const std::vector<HEXSPAN>& vecSel)
 {
 	const auto pHexCtrl = GetHexCtrl();
 	pHexCtrl->SetSelection(vecSel, true, m_fSelection); //Highlight selection?
@@ -562,7 +562,7 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 		{
 			HEXBKM hbs { };
 			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
-			hbs.vecOffset.emplace_back(HEXOFFSET { m_vecSearchRes.at(static_cast<size_t>(nItem)),
+			hbs.vecSpan.emplace_back(HEXSPAN { m_vecSearchRes.at(static_cast<size_t>(nItem)),
 				m_fReplace ? m_nSizeReplace : m_nSizeSearch });
 			GetHexCtrl()->BkmAdd(hbs, false);
 		}
@@ -667,7 +667,7 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	{
 		SetEditStartAt(m_vecSearchRes[static_cast<size_t>(pNMI->iItem)]);
 
-		std::vector<HEXOFFSET> vecOffset { };
+		std::vector<HEXSPAN> vecSpan { };
 		int nItem = -1;
 		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i)
 		{
@@ -676,13 +676,13 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			//Do not yet add selected (clicked) item (in multiselect), will add it after the loop,
 			//so that it's always last in vec, to highlight it in HexCtrlHighlight.
 			if (pNMI->iItem != nItem)
-				vecOffset.emplace_back(HEXOFFSET { m_vecSearchRes.at(static_cast<size_t>(nItem)),
+				vecSpan.emplace_back(HEXSPAN { m_vecSearchRes.at(static_cast<size_t>(nItem)),
 					m_fReplace ? m_nSizeReplace : m_nSizeSearch });
 		}
-		vecOffset.emplace_back(HEXOFFSET { m_vecSearchRes.at(static_cast<size_t>(pNMI->iItem)),
+		vecSpan.emplace_back(HEXSPAN { m_vecSearchRes.at(static_cast<size_t>(pNMI->iItem)),
 			m_fReplace ? m_nSizeReplace : m_nSizeSearch });
 
-		HexCtrlHighlight(vecOffset);
+		HexCtrlHighlight(vecSpan);
 	}
 }
 
@@ -1129,7 +1129,7 @@ bool CHexDlgSearch::PrepareFILETIME()
 void CHexDlgSearch::Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace)const
 {
 	HEXMODIFY hms;
-	hms.vecOffset.emplace_back(HEXOFFSET { ullIndex, nSizeData });
+	hms.vecSpan.emplace_back(HEXSPAN { ullIndex, nSizeData });
 	hms.spnData = { pData, nSizeReplace };
 	GetHexCtrl()->ModifyData(hms);
 }

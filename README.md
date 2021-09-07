@@ -769,13 +769,12 @@ Main struct to set a data to display in the control.
 ```cpp
 struct HEXDATA
 {
-    ULONGLONG       ullDataSize { };          //Size of the data to display, in bytes.
-    IHexVirtData*   pHexVirtData { };         //Pointer for Virtual mode.
-    IHexVirtColors* pHexVirtColors { };       //Pointer for Custom Colors class.
-    std::byte*      pData { };                //Data pointer in default mode.
-    DWORD           dwCacheSize { 0x800000 }; //In Virtual mode max cached size of data to fetch.
-    bool            fMutable { false };       //Is data mutable (editable) or read-only.
-    bool            fHighLatency { false };   //Do not redraw window until scrolling completes.
+    std::span<std::byte> spnData { };              //Data to display.
+    IHexVirtData*        pHexVirtData { };         //Pointer for Virtual mode.
+    IHexVirtColors*      pHexVirtColors { };       //Pointer for Custom Colors class.
+    DWORD                dwCacheSize { 0x800000 }; //In Virtual mode max cached size of data to fetch.
+    bool                 fMutable { false };       //Is data mutable (editable) or read-only.
+    bool                 fHighLatency { false };   //Do not redraw window until scrolling completes.
 };
 ```
 
@@ -784,9 +783,9 @@ Struct for a data information used in [`IHexVirtData`](#virtual-data-mode).
 ```cpp
 struct HEXDATAINFO
 {
-    NMHDR      hdr { };    //Standard Windows header.
-    HEXSPAN    stSpan { }; //Offset and size of the data bytes.
-    std::byte* pData { };  //Data pointer.
+    NMHDR                hdr { };       //Standard Windows header.
+    HEXSPAN              stHexSpan { }; //Offset and size of the data bytes.
+    std::span<std::byte> spnData { };   //Data span.
 };
 ```
 
@@ -802,7 +801,7 @@ struct HEXHITTEST
 
 ### [](#)HEXMODIFY
 This struct is used to represent data modification parameters.  
-When `enModifyMode` is set to `EHexModifyMode::MODIFY_DEFAULT`, bytes from `pData` just replace corresponding data bytes as is.  
+When `enModifyMode` is set to `EHexModifyMode::MODIFY_ONCE`, bytes from `pData` just replace corresponding data bytes as is.  
 
 If `enModifyMode` is equal to `EHexModifyMode::MODIFY_REPEAT` then block by block replacement takes place few times. For example : if SUM(`vecSpan.ullSize`) = 9, `ullDataSize` = 3 and `enModifyMode` is set to `EHexModifyMode::MODIFY_REPEAT`, bytes in memory at `vecSpan.ullOffset` position are 123456789, and bytes pointed to by pData are 345, then, after modification, bytes at vecSpan.ullOffset will be 345345345.  
 
@@ -810,11 +809,10 @@ If `enModifyMode` is equal to `EHexModifyMode::MODIFY_OPERATION` then `enOperMod
 ```cpp
 struct HEXMODIFY
 {
-    EHexModifyMode       enModifyMode { EHexModifyMode::MODIFY_DEFAULT }; //Modify mode.
+    EHexModifyMode       enModifyMode { EHexModifyMode::MODIFY_ONCE }; //Modify mode.
     EHexOperMode         enOperMode { };       //Operation mode, used only in MODIFY_OPERATION mode.
     EHexDataSize         enOperSize { };       //Operation data size.
-    std::byte*           pData { };            //Pointer to a data to be set.
-    ULONGLONG            ullDataSize { };      //Size of the data pData is pointing to.
+    std::span<std::byte> spnData { };          //Data span.
     std::vector<HEXSPAN> vecSpan { };          //Vector of data offsets and sizes.
     bool                 fBigEndian { false }; //Treat the data as a big endian, used only in MODIFY_OPERATION mode.
 };
@@ -902,7 +900,7 @@ Enum of the data modification mode, used in [`HEXMODIFY`](#hexmodify).
 ```cpp
 enum class EHexModifyMode : std::uint8_t
 {
-    MODIFY_DEFAULT, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RANDOM
+    MODIFY_ONCE, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RANDOM
 };
 ```
 
