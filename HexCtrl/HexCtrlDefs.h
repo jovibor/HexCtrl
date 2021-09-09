@@ -2,8 +2,7 @@
 * Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
-* This software is available under the "MIT License modified with The Commons Clause".  *
-* https://github.com/jovibor/HexCtrl/blob/master/LICENSE                                *
+* This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #pragma once
 #include <Windows.h>
@@ -263,7 +262,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXMODIFY - used to represent data modification parameters.                               *
 	* When enModifyMode is set to EHexModifyMode::MODIFY_ONCE, bytes from spnData.data() just   *
-	* replace corresponding data bytes as is.                                                   * 
+	* replace corresponding data bytes as is.                                                   *
 	* If enModifyMode is equal to EHexModifyMode::MODIFY_REPEAT                                 *
 	* then block by block replacement takes place few times.                                    *
 	*   For example : if SUM(vecSpan.ullSize) = 9, ullDataSize = 3 and enModifyMode is set to   *
