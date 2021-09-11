@@ -11,6 +11,10 @@
 #include <string>
 #include <vector>
 
+#if !defined(__cpp_lib_span) || !defined(__cpp_lib_bit_cast)
+#error "C++20 compiler is required for HexCtrl."
+#endif
+
 namespace HEXCTRL
 {
 	/********************************************************************************************

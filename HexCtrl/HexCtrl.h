@@ -9,10 +9,6 @@
 #include <memory>
 #include <optional>
 
-#ifndef __cpp_lib_byte
-static_assert(false, "std::byte compliant compiler required.");
-#endif
-
 /**********************************************************************
 * If HEXCTRL_IHEXCTRLPTR_UNIQUEPTR defined then IHexCtrlPtr is        *
 * resolved to std::unique_ptr. Otherwise it's std::shared_ptr.        *
