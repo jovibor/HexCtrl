@@ -124,6 +124,7 @@ namespace HEXCTRL
 		NMHDR   hdr { };  //Standard Windows header.
 		PHEXBKM pBkm { }; //Bookmark pointer.
 	};
+	using PHEXBKMINFO = HEXBKMINFO*;
 
 	/********************************************************************************************
 	* HEXMENUINFO - Menu info.                                                                  *
@@ -134,6 +135,7 @@ namespace HEXCTRL
 		POINT pt { };      //Mouse position when clicked.
 		WORD  wMenuID { }; //Menu identifier.
 	};
+	using PHEXMENUINFO = HEXMENUINFO*;
 
 	/********************************************************************************************
 	* HEXCOLOR - used with the IHexVirtColors interface.                                        *
