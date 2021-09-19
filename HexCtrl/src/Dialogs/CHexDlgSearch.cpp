@@ -171,46 +171,48 @@ void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
 	}
 }
 
-auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd,
-	std::byte* pSearch, size_t nSizeSearch,
-	ULONGLONG ullEndSentinel, bool fForward,
-	CHexDlgCallback* pDlgClbk, bool fDlgExit)->SFIND
+auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, std::span<std::byte> spnSearch,
+	bool fForward, CHexDlgCallback* pDlgClbk, bool fDlgExit)->SFIND
 {
 	//ullStart will return index of found occurence, if any.
+
+	const auto pDataSearch = spnSearch.data();
+	const auto nSizeSearch = spnSearch.size();
+	const auto ullEndSentinel = m_ullEndSentinel;
 
 	if (ullStart + nSizeSearch > ullEndSentinel)
 		return { false, false };
 
-	const auto ullSizeTotal = fForward ? ullEnd - ullStart : ullStart - ullEnd; //Depends on search direction.
-	const ULONGLONG ullStep { m_ullStep }; //Search step.
-	ULONGLONG ullSizeChunk { };    //Size of the chunk to work with.
-	ULONGLONG ullChunks { };       //How many chunks.
-	ULONGLONG ullMemToAcquire { }; //Size of VirtualData memory for acquiring. It's bigger than ullSizeChunk.
-	ULONGLONG ullOffsetSearch { };
-	constexpr auto iSizeQuick { 1024 * 256 }; //256KB.
-	bool fBigStep { false };
+	const auto ullSizeTotal = ullEndSentinel - (fForward ? ullStart : ullEnd); //Depends on search direction.
+	const auto ullStep { m_ullStep }; //Search step.
 	const auto pHexCtrl = GetHexCtrl();
+	ULONGLONG ullMemChunks { };    //How many memory chunks.
+	ULONGLONG ullChunkSize { };    //Size of the chunk to work with.
+	ULONGLONG ullMemToAcquire { }; //Size of VirtualData memory for acquiring. It's bigger than ullChunkSize.
+	ULONGLONG ullOffsetSearch { };
+	bool fBigStep { false };
+	constexpr auto iSizeQuick { 1024 * 256 }; //256KB.
 
 	if (!pHexCtrl->IsVirtual())
 	{
-		ullSizeChunk = ullSizeTotal;
+		ullChunkSize = ullSizeTotal;
 		ullMemToAcquire = ullSizeTotal;
-		ullChunks = 1;
+		ullMemChunks = 1;
 	}
 	else
 	{
 		ullMemToAcquire = pHexCtrl->GetCacheSize();
-		if (ullMemToAcquire > ullSizeTotal + nSizeSearch)
-			ullMemToAcquire = ullSizeTotal + nSizeSearch;
-		ullSizeChunk = ullMemToAcquire - nSizeSearch;
+		if (ullMemToAcquire > ullSizeTotal)
+			ullMemToAcquire = ullSizeTotal;
+		ullChunkSize = ullMemToAcquire - nSizeSearch;
 
-		if (ullStep > ullSizeChunk) //For very big steps.
+		if (ullStep > ullChunkSize) //For very big steps.
 		{
-			ullChunks = ullSizeTotal > ullStep ? ullSizeTotal / ullStep + ((ullSizeTotal % ullStep) ? 1 : 0) : 1;
+			ullMemChunks = ullSizeTotal > ullStep ? ullSizeTotal / ullStep + ((ullSizeTotal % ullStep) ? 1 : 0) : 1;
 			fBigStep = true;
 		}
 		else
-			ullChunks = ullSizeTotal > ullSizeChunk ? ullSizeTotal / ullSizeChunk + ((ullSizeTotal % ullSizeChunk) ? 1 : 0) : 1;
+			ullMemChunks = ullSizeTotal > ullChunkSize ? ullSizeTotal / ullChunkSize + ((ullSizeTotal % ullChunkSize) ? 1 : 0) : 1;
 	}
 
 	bool fResult { false };
@@ -220,14 +222,14 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd,
 		if (fForward) //Forward search.
 		{
 			ullOffsetSearch = ullStart;
-			for (auto iterChunk = 0ULL; iterChunk < ullChunks; ++iterChunk)
+			for (auto iterChunk = 0ULL; iterChunk < ullMemChunks; ++iterChunk)
 			{
 				const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 				assert(!spnData.empty());
 
-				for (auto iterData = 0ULL; iterData <= ullSizeChunk; iterData += ullStep)
+				for (auto iterData = 0ULL; iterData <= ullChunkSize; iterData += ullStep)
 				{
-					if (MemCmp(spnData.data() + iterData, pSearch, nSizeSearch))
+					if (MemCmp(spnData.data() + iterData, pDataSearch, nSizeSearch))
 					{
 						ullStart = ullOffsetSearch + iterData;
 						fResult = true;
@@ -248,25 +250,25 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd,
 				if (fBigStep)
 					ullOffsetSearch += ullStep;
 				else
-					ullOffsetSearch += ullSizeChunk;
+					ullOffsetSearch += ullChunkSize;
 				if (ullOffsetSearch + ullMemToAcquire > ullEndSentinel)
 				{
 					ullMemToAcquire = ullEndSentinel - ullOffsetSearch;
-					ullSizeChunk = ullMemToAcquire - nSizeSearch;
+					ullChunkSize = ullMemToAcquire - nSizeSearch;
 				}
 			}
 		}
 		else //Backward search.
 		{
-			ullOffsetSearch = ullStart - ullSizeChunk;
-			for (auto iterChunk = ullChunks; iterChunk > 0; --iterChunk)
+			ullOffsetSearch = ullStart - ullChunkSize;
+			for (auto iterChunk = ullMemChunks; iterChunk > 0; --iterChunk)
 			{
 				const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 				assert(!spnData.empty());
 
-				for (auto iterData = static_cast<LONGLONG>(ullSizeChunk); iterData >= 0; iterData -= ullStep) //iterData might be negative.
+				for (auto iterData = static_cast<LONGLONG>(ullChunkSize); iterData >= 0; iterData -= ullStep) //iterData might be negative.
 				{
-					if (MemCmp(spnData.data() + iterData, pSearch, nSizeSearch))
+					if (MemCmp(spnData.data() + iterData, pDataSearch, nSizeSearch))
 					{
 						ullStart = ullOffsetSearch + iterData;
 						fResult = true;
@@ -290,17 +292,17 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd,
 						|| (ullOffsetSearch - ullStep) > ((std::numeric_limits<ULONGLONG>::max)() - ullStep))
 						break; //Lower bound reached.
 
-					ullOffsetSearch -= ullSizeChunk;
+					ullOffsetSearch -= ullChunkSize;
 				}
 				else
 				{
-					if ((ullOffsetSearch - ullSizeChunk) < ullEnd
-						|| (ullOffsetSearch - ullSizeChunk) > ((std::numeric_limits<ULONGLONG>::max)() - ullSizeChunk))
+					if ((ullOffsetSearch - ullChunkSize) < ullEnd
+						|| (ullOffsetSearch - ullChunkSize) > ((std::numeric_limits<ULONGLONG>::max)() - ullChunkSize))
 					{
 						ullMemToAcquire = (ullOffsetSearch - ullEnd) + nSizeSearch;
-						ullSizeChunk = ullMemToAcquire - nSizeSearch;
+						ullChunkSize = ullMemToAcquire - nSizeSearch;
 					}
-					ullOffsetSearch -= ullSizeChunk;
+					ullOffsetSearch -= ullChunkSize;
 				}
 			}
 		}
@@ -562,7 +564,7 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 			HEXBKM hbs { };
 			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
 			hbs.vecSpan.emplace_back(HEXSPAN { m_vecSearchRes.at(static_cast<size_t>(nItem)),
-				m_fReplace ? m_nSizeReplace : m_nSizeSearch });
+				m_fReplace ? m_spnReplace.size() : m_spnSearch.size() });
 			GetHexCtrl()->BkmAdd(hbs, false);
 		}
 		GetHexCtrl()->Redraw();
@@ -675,11 +677,11 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			//Do not yet add selected (clicked) item (in multiselect), will add it after the loop,
 			//so that it's always last in vec, to highlight it in HexCtrlHighlight.
 			if (pNMI->iItem != nItem)
-				vecSpan.emplace_back(HEXSPAN { m_vecSearchRes.at(static_cast<size_t>(nItem)),
-					m_fReplace ? m_nSizeReplace : m_nSizeSearch });
+				vecSpan.emplace_back(m_vecSearchRes.at(static_cast<size_t>(nItem)),
+					m_fReplace ? m_spnReplace.size() : m_spnSearch.size());
 		}
 		vecSpan.emplace_back(HEXSPAN { m_vecSearchRes.at(static_cast<size_t>(pNMI->iItem)),
-			m_fReplace ? m_nSizeReplace : m_nSizeSearch });
+			m_fReplace ? m_spnReplace.size() : m_spnSearch.size() });
 
 		HexCtrlHighlight(vecSpan);
 	}
@@ -825,21 +827,21 @@ void CHexDlgSearch::Prepare()
 		}
 
 		const auto ullSelSize = refFront.ullSize;
-		if (ullSelSize < m_nSizeSearch) //Selection is too small.
+		if (ullSelSize < m_spnSearch.size()) //Selection is too small.
 			return;
 
 		m_ullBoundBegin = refFront.ullOffset;
-		m_ullBoundEnd = m_ullBoundBegin + ullSelSize - m_nSizeSearch;
+		m_ullBoundEnd = m_ullBoundBegin + ullSelSize - m_spnSearch.size();
 		m_ullEndSentinel = m_ullBoundBegin + ullSelSize;
 	}
 	else //Search in whole data.
 	{
 		m_ullBoundBegin = 0;
-		m_ullBoundEnd = ullDataSize - m_nSizeSearch;
+		m_ullBoundEnd = ullDataSize - m_spnSearch.size();
 		m_ullEndSentinel = ullDataSize;
 	}
 
-	if (m_ullOffsetCurr + m_nSizeSearch > ullDataSize || m_ullOffsetCurr + m_nSizeReplace > ullDataSize)
+	if (m_ullOffsetCurr + m_spnSearch.size() > ullDataSize || m_ullOffsetCurr + m_spnReplace.size() > ullDataSize)
 	{
 		m_ullOffsetCurr = 0;
 		m_fSecondMatch = false;
@@ -847,7 +849,7 @@ void CHexDlgSearch::Prepare()
 	}
 
 	static bool fReplaceWarning { true }; //Show Replace string size exceeds Warning or not.
-	if (fReplaceWarning && m_fReplace && (m_nSizeReplace > m_nSizeSearch))
+	if (fReplaceWarning && m_fReplace && (m_spnReplace.size() > m_spnSearch.size()))
 	{
 		static std::wstring_view wstrReplaceWarning { L"The replacing string is longer than searching string.\r\n"
 			"Do you want to overwrite the bytes following search occurrence?\r\n"
@@ -871,7 +873,6 @@ bool CHexDlgSearch::PrepareHex()
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
-	m_nSizeSearch = m_strSearch.size();
 
 	if ((m_fReplace && !str2hex(m_strReplace, m_strReplace)))
 	{
@@ -879,9 +880,9 @@ bool CHexDlgSearch::PrepareHex()
 		m_stComboReplace.SetFocus();
 		return false;
 	}
-	m_nSizeReplace = m_strReplace.size();
-	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
-	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+
+	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
+	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
 	return true;
 }
@@ -894,10 +895,8 @@ bool CHexDlgSearch::PrepareASCII()
 			[](unsigned char ch) { return static_cast<char>(std::toupper(ch)); });
 
 	m_strReplace = wstr2str(m_wstrTextReplace);
-	m_nSizeSearch = m_strSearch.size();
-	m_nSizeReplace = m_strReplace.size();
-	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
-	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
+	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
 	return true;
 }
@@ -916,10 +915,8 @@ bool CHexDlgSearch::PrepareWCHAR()
 	}
 
 	m_wstrReplace = m_wstrTextReplace;
-	m_nSizeSearch = m_wstrSearch.size() * sizeof(wchar_t);
-	m_nSizeReplace = m_wstrReplace.size() * sizeof(wchar_t);
-	m_pSearchData = reinterpret_cast<std::byte*>(m_wstrSearch.data());
-	m_pReplaceData = reinterpret_cast<std::byte*>(m_wstrReplace.data());
+	m_spnSearch = { reinterpret_cast<std::byte*>(m_wstrSearch.data()), m_wstrSearch.size() * sizeof(wchar_t) };
+	m_spnReplace = { reinterpret_cast<std::byte*>(m_wstrReplace.data()), m_wstrReplace.size() * sizeof(wchar_t) };
 
 	return true;
 }
@@ -935,10 +932,8 @@ bool CHexDlgSearch::PrepareBYTE()
 	}
 	m_strSearch = bData;
 	m_strReplace = bDataRep;
-	m_nSizeSearch = m_strSearch.size();
-	m_nSizeReplace = m_strReplace.size();
-	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
-	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
+	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
 	return true;
 }
@@ -961,8 +956,8 @@ bool CHexDlgSearch::PrepareWORD()
 
 	m_strSearch.assign(reinterpret_cast<char*>(&wData), sizeof(WORD));
 	m_strReplace.assign(reinterpret_cast<char*>(&wDataRep), sizeof(WORD));
-	m_nSizeSearch = m_strSearch.size();
-	m_nSizeReplace = m_strReplace.size();
+	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
+	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
 	return true;
 }
@@ -985,10 +980,8 @@ bool CHexDlgSearch::PrepareDWORD()
 
 	m_strSearch.assign(reinterpret_cast<char*>(&dwData), sizeof(DWORD));
 	m_strReplace.assign(reinterpret_cast<char*>(&dwDataRep), sizeof(DWORD));
-	m_nSizeSearch = m_strSearch.size();
-	m_nSizeReplace = m_strReplace.size();
-	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
-	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
+	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
 	return true;
 }
@@ -1011,10 +1004,8 @@ bool CHexDlgSearch::PrepareQWORD()
 
 	m_strSearch.assign(reinterpret_cast<char*>(&qwData), sizeof(QWORD));
 	m_strReplace.assign(reinterpret_cast<char*>(&qwDataRep), sizeof(QWORD));
-	m_nSizeSearch = m_strSearch.size();
-	m_nSizeReplace = m_strReplace.size();
-	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
-	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
+	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
 	return true;
 }
@@ -1037,10 +1028,8 @@ bool CHexDlgSearch::PrepareFloat()
 
 	m_strSearch.assign(reinterpret_cast<char*>(&flData), sizeof(float));
 	m_strReplace.assign(reinterpret_cast<char*>(&flDataRep), sizeof(float));
-	m_nSizeSearch = m_strSearch.size();
-	m_nSizeReplace = m_strReplace.size();
-	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
-	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
+	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
 	return true;
 }
@@ -1063,10 +1052,8 @@ bool CHexDlgSearch::PrepareDouble()
 
 	m_strSearch.assign(reinterpret_cast<char*>(&ddData), sizeof(double));
 	m_strReplace.assign(reinterpret_cast<char*>(&ddDataRep), sizeof(double));
-	m_nSizeSearch = m_strSearch.size();
-	m_nSizeReplace = m_strReplace.size();
-	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
-	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
+	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
 	return true;
 }
@@ -1117,19 +1104,17 @@ bool CHexDlgSearch::PrepareFILETIME()
 
 	m_strSearch.assign(reinterpret_cast<char*>(&stFileTimeSearch), sizeof(FILETIME));
 	m_strReplace.assign(reinterpret_cast<char*>(&stFileTimeReplace), sizeof(FILETIME));
-	m_nSizeSearch = m_strSearch.size();
-	m_nSizeReplace = m_strReplace.size();
-	m_pSearchData = reinterpret_cast<std::byte*>(m_strSearch.data());
-	m_pReplaceData = reinterpret_cast<std::byte*>(m_strReplace.data());
+	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
+	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
 	return true;
 }
 
-void CHexDlgSearch::Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace)const
+void CHexDlgSearch::Replace(ULONGLONG ullIndex, size_t nSizeData, std::span<std::byte> spnReplace)const
 {
 	HEXMODIFY hms;
 	hms.vecSpan.emplace_back(HEXSPAN { ullIndex, nSizeData });
-	hms.spnData = { pData, nSizeReplace };
+	hms.spnData = spnReplace;
 	GetHexCtrl()->ModifyData(hms);
 }
 
@@ -1161,7 +1146,7 @@ void CHexDlgSearch::Search()
 
 	const auto lmbFindForward = [&]()
 	{
-		if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel);
+		if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_spnSearch, m_ullEndSentinel);
 			stFind.fFound)
 		{
 			m_fFound = true;
@@ -1176,7 +1161,7 @@ void CHexDlgSearch::Search()
 			if (m_fSecondMatch && !stFind.fCanceled)
 			{
 				m_ullOffsetCurr = m_ullBoundBegin; //Starting from the beginning.
-				if (Finder(m_ullOffsetCurr, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel))
+				if (Finder(m_ullOffsetCurr, ullUntil, m_spnSearch, m_ullEndSentinel))
 				{
 					m_fFound = true;
 					m_fDoCount = true;
@@ -1192,7 +1177,7 @@ void CHexDlgSearch::Search()
 		if (m_fSecondMatch && m_ullOffsetCurr - m_ullStep < m_ullOffsetCurr)
 		{
 			m_ullOffsetCurr -= m_ullStep;
-			if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, false);
+			if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_spnSearch, m_ullEndSentinel, false);
 				stFind.fFound)
 			{
 				m_fFound = true;
@@ -1207,7 +1192,7 @@ void CHexDlgSearch::Search()
 			if (!stFind.fCanceled)
 			{
 				m_ullOffsetCurr = m_ullBoundEnd;
-				if (Finder(m_ullOffsetCurr, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, false))
+				if (Finder(m_ullOffsetCurr, ullUntil, m_spnSearch, m_ullEndSentinel, false))
 				{
 					m_fFound = true;
 					m_fSecondMatch = true;
@@ -1231,10 +1216,10 @@ void CHexDlgSearch::Search()
 
 				while (true)
 				{
-					if (Finder(ullStart, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, true, pDlgClbk, false))
+					if (Finder(ullStart, ullUntil, m_spnSearch, true, pDlgClbk, false))
 					{
-						Replace(ullStart, m_pReplaceData, m_nSizeSearch, m_nSizeReplace);
-						ullStart += m_nSizeReplace <= m_ullStep ? m_ullStep : m_nSizeReplace;
+						Replace(ullStart, m_spnSearch.size(), m_spnReplace);
+						ullStart += m_spnReplace.size() <= m_ullStep ? m_ullStep : m_spnReplace.size();
 						m_fFound = true;
 						++m_dwReplaced;
 						if (ullStart > ullUntil || m_dwReplaced >= m_dwFoundLimit || pDlgClbk->IsCanceled())
@@ -1257,9 +1242,9 @@ void CHexDlgSearch::Search()
 			lmbFindForward();
 			if (m_fFound)
 			{
-				Replace(m_ullOffsetCurr, m_pReplaceData, m_nSizeSearch, m_nSizeReplace);
+				Replace(m_ullOffsetCurr, m_spnSearch.size(), m_spnReplace);
 				//Increase next search step to replaced or m_ullStep amount.
-				m_ullOffsetCurr += m_nSizeReplace <= m_ullStep ? m_ullStep : m_nSizeReplace;
+				m_ullOffsetCurr += m_spnReplace.size() <= m_ullStep ? m_ullStep : m_spnReplace.size();
 				++m_dwReplaced;
 			}
 		}
@@ -1278,7 +1263,7 @@ void CHexDlgSearch::Search()
 
 				while (true)
 				{
-					if (Finder(ullStart, ullUntil, m_pSearchData, m_nSizeSearch, m_ullEndSentinel, true, pDlgClbk, false))
+					if (Finder(ullStart, ullUntil, m_spnSearch, true, pDlgClbk, false))
 					{
 						m_vecSearchRes.emplace_back(ullStart); //Filling the vector of Found occurences.
 						ullStart += m_ullStep;
@@ -1340,7 +1325,7 @@ void CHexDlgSearch::Search()
 			else
 				wstrInfo = L"Search found occurrence.";
 
-			HexCtrlHighlight({ { ullOffsetFound, m_fReplace ? m_nSizeReplace : m_nSizeSearch } });
+			HexCtrlHighlight({ { ullOffsetFound, m_fReplace ? m_spnReplace.size() : m_spnSearch.size() } });
 			AddToList(ullOffsetFound);
 			SetEditStartAt(m_ullOffsetCurr);
 		}

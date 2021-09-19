@@ -16,11 +16,11 @@ BEGIN_MESSAGE_MAP(CHexDlgCallback, CDialogEx)
 	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
-CHexDlgCallback::CHexDlgCallback(std::wstring_view wstrOperName, ULONGLONG ullProgBarMin, ULONGLONG ullProgBarMax, CWnd* pParent)
-	: CDialogEx(IDD_HEXCTRL_CALLBACK, pParent),
+CHexDlgCallback::CHexDlgCallback(std::wstring_view wstrOperName, ULONGLONG ullProgBarMin,
+	ULONGLONG ullProgBarMax, CWnd* pParent) : CDialogEx(IDD_HEXCTRL_CALLBACK, pParent),
 	m_wstrOperName(wstrOperName), m_ullProgBarMin(ullProgBarMin), m_ullProgBarMax(ullProgBarMax)
 {
-	assert(ullProgBarMin < ullProgBarMax);
+	assert(ullProgBarMin <= ullProgBarMax);
 }
 
 BOOL CHexDlgCallback::OnInitDialog()

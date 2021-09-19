@@ -656,6 +656,7 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->std::span<std::byte>
 	{
 		if (hss.ullSize == 0 || hss.ullSize > GetCacheSize())
 			hss.ullSize = GetCacheSize();
+
 		HEXDATAINFO hdi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
 		hdi.stHexSpan = hss;
 		m_pHexVirtData->OnHexGetData(hdi);

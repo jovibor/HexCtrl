@@ -29,10 +29,8 @@ namespace HEXCTRL::INTERNAL
 		void ComboReplaceFill(LPCWSTR pwsz);
 
 		//Main routine for finding stuff.
-		[[nodiscard]] SFIND Finder(ULONGLONG& ullStart, ULONGLONG ullEnd,
-			std::byte* pSearch, size_t nSizeSearch,
-			ULONGLONG ullEndSentinel, bool fForward = true,
-			CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true);
+		[[nodiscard]] SFIND Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, std::span<std::byte> spnSearch,
+			bool fForward = true, CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true);
 
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
@@ -66,7 +64,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool PrepareFloat();
 		[[nodiscard]] bool PrepareDouble();
 		[[nodiscard]] bool PrepareFILETIME();
-		void Replace(ULONGLONG ullIndex, std::byte* pData, size_t nSizeData, size_t nSizeReplace)const;
+		void Replace(ULONGLONG ullIndex, size_t nSizeData, std::span<std::byte> spnReplace)const;
 		void ResetSearch();
 		void Search();
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
@@ -86,12 +84,11 @@ namespace HEXCTRL::INTERNAL
 		CEdit m_stEditStart;        //Edit box "Start search at".
 		CEdit m_stEditStep;         //Edit box "Step".
 		CEdit m_stEditLimit;        //Edit box "Limit search hit".
+		CBrush m_stBrushDefault;
+		CMenu m_stMenuList;
 		const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
 		const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
 		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
-		CBrush m_stBrushDefault;
-		std::wstring m_wstrTextSearch { };  //Text from "Search" box.
-		std::wstring m_wstrTextReplace { }; //Text from "Replace with..." box.
 		ULONGLONG m_ullBoundBegin { };  //Search start boundary.
 		ULONGLONG m_ullBoundEnd { };    //Search end boundary.
 		ULONGLONG m_ullOffsetCurr { };  //Current offset a search should start from.
@@ -112,17 +109,16 @@ namespace HEXCTRL::INTERNAL
 		bool m_fBigEndian { false };    //"Big-endian" check box.
 		bool m_fMatchCase { false };    //"Match case" check box.
 		bool m_fInverted { false };     //"Inverted" check box
-		std::byte* m_pSearchData { };   //Pointer to the data for search.
-		std::byte* m_pReplaceData { };  //Pointer to the data to replace with.
-		size_t m_nSizeSearch { };
-		size_t m_nSizeReplace { };
-		std::string m_strSearch;        //Actual string to search after all conversions.
-		std::string m_strReplace;       //Actual string to replace.
-		std::wstring m_wstrSearch;      //Actual wstring to search.
-		std::wstring m_wstrReplace;     //Actual wstring to replace.
-		const std::byte m_uWildcard { '?' }; //Wildcard symbol.
+		std::span<std::byte> m_spnSearch;   //"Search" span.
+		std::span<std::byte> m_spnReplace;  //"Replace" span.
+		std::string m_strSearch;            //Actual string to search after all conversions.
+		std::string m_strReplace;           //Actual string to replace.
+		std::wstring m_wstrSearch;          //Actual wstring to search.
+		std::wstring m_wstrReplace;         //Actual wstring to replace.
+		std::wstring m_wstrTextSearch { };  //Text from "Search" box.
+		std::wstring m_wstrTextReplace { }; //Text from "Replace with..." box.
 		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
-		HEXSPAN m_stSelSpan { };  //Previous selection.
-		CMenu m_stMenuList;
+		const std::byte m_uWildcard { '?' }; //Wildcard symbol.
+		HEXSPAN m_stSelSpan { };            //Previous selection.
 	};
 }
