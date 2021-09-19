@@ -57,7 +57,7 @@ namespace HEXCTRL
 	********************************************/
 	namespace INTERNAL
 	{
-		enum class CHexCtrl::EClipboard : WORD
+		enum class CHexCtrl::EClipboard : std::uint8_t
 		{
 			COPY_HEX, COPY_HEXLE, COPY_HEXFMT, COPY_TEXT, COPY_BASE64,
 			COPY_CARR, COPY_GREPHEX, COPY_PRNTSCRN, COPY_OFFSET, PASTE_HEX, PASTE_TEXT
@@ -650,7 +650,7 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->std::span<std::byte>
 	if (!IsVirtual())
 	{
 		if (hss.ullOffset + hss.ullSize <= GetDataSize())
-			spnData = { m_spnData.data() + hss.ullOffset, hss.ullSize };
+			spnData = { m_spnData.data() + hss.ullOffset, static_cast<std::size_t>(hss.ullSize) };
 	}
 	else
 	{
@@ -1025,7 +1025,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			const auto ullSizeChunk = GetCacheSize();
 			const auto iMod = vecSpanRef[0].ullSize % ullSizeChunk;
 			auto ullChunks = vecSpanRef[0].ullSize / ullSizeChunk + (iMod > 0 ? 1 : 0);
-			std::size_t ullOffset = 0;
+			ULONGLONG ullOffset { 0 };
 			while (ullChunks-- > 0)
 			{
 				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
@@ -1037,7 +1037,8 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				ullOffset += ullSize;
 			}
 		}
-		else {
+		else
+		{
 			if (const auto spnData = GetData(vecSpanRef[0]); !spnData.empty())
 			{
 				std::copy_n(hms.spnData.data(), static_cast<size_t>(vecSpanRef[0].ullSize), spnData.data());
@@ -1051,7 +1052,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		std::random_device rd;
 		std::mt19937 gen(rd());
 		const std::uniform_int_distribution distrib(0, 255);
-		const auto lmbRandom = [&](std::byte* pData, const HEXMODIFY&)
+		const auto lmbRandom = [&](std::byte* pData, const HEXMODIFY& /*hms*/)
 		{
 			assert(pData != nullptr);
 			*pData = static_cast<std::byte>(distrib(gen));
@@ -1562,7 +1563,7 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 		return;
 
 	ClearData();
-	if (hds.spnData.size() == 0) //If data size is zero we do nothing further, just return after ClearData.
+	if (hds.spnData.empty()) //If data size is zero we do nothing further, just return after ClearData.
 		return;
 
 	m_fDataSet = true;
@@ -1570,7 +1571,7 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 	m_fMutable = hds.fMutable;
 	m_pHexVirtData = hds.pHexVirtData;
 	m_pHexVirtColors = hds.pHexVirtColors;
-	m_dwCacheSize = hds.dwCacheSize > 0x10000 ? hds.dwCacheSize : 0x10000; //64Kb is the minimum size
+	m_dwCacheSize = hds.dwCacheSize > 0x10000 ? hds.dwCacheSize : 0x10000; //64Kb is the minimum size.
 	m_fHighLatency = hds.fHighLatency;
 
 	RecalcAll();
@@ -2036,7 +2037,6 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	ULONGLONG ullSizeToModify { };
 	HEXMODIFY hmd;
 
-	std::string strData;
 	const auto ullDataSize = GetDataSize();
 	switch (enType)
 	{
@@ -2044,7 +2044,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 		if (m_ullCaretPos + ullSize > ullDataSize)
 			ullSize = ullDataSize - m_ullCaretPos;
 
-		hmd.spnData = { reinterpret_cast<std::byte*>(pszClipboardData), ullSize };
+		hmd.spnData = { reinterpret_cast<std::byte*>(pszClipboardData), static_cast<std::size_t>(ullSize) };
 		ullSizeToModify = ullSize;
 		break;
 	case EClipboard::PASTE_HEX:
@@ -2053,6 +2053,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 		if (m_ullCaretPos + ullRealSize > ullDataSize)
 			ullSize = (ullDataSize - m_ullCaretPos) * 2;
 
+		std::string strData;
 		const auto nIterations = static_cast<size_t>(ullSize / 2 + ullSize % 2);
 		char chToUL[3] { }; //Array for actual Ascii chars to convert from.
 		for (size_t i = 0; i < nIterations; ++i)
@@ -4092,15 +4093,15 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPAN>& vecSpan)
 		//In Virtual mode processing data chunk by chunk.
 		if (IsVirtual() && iterSel.ullSize > GetCacheSize())
 		{
-			const auto ullSizeChunk = GetCacheSize();
-			const auto iMod = iterSel.ullSize % ullSizeChunk;
-			auto ullChunks = iterSel.ullSize / ullSizeChunk + (iMod > 0 ? 1 : 0);
-			std::size_t ullOffset = 0;
+			const auto dwSizeChunk = GetCacheSize();
+			const auto ullMod = iterSel.ullSize % dwSizeChunk;
+			auto ullChunks = iterSel.ullSize / dwSizeChunk + (ullMod > 0 ? 1 : 0);
+			ULONGLONG ullOffset { 0 };
 			while (ullChunks-- > 0)
 			{
-				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
+				const auto ullSize = (ullChunks == 1 && ullMod > 0) ? ullMod : dwSizeChunk;
 				if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
-					std::copy_n(spnData.data(), ullSize, refUndo->at(ullIndex).vecData.begin() + ullOffset);
+					std::copy_n(spnData.data(), ullSize, refUndo->at(ullIndex).vecData.begin() + static_cast<std::size_t>(ullOffset));
 				ullOffset += ullSize;
 			}
 		}

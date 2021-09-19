@@ -113,9 +113,9 @@
 * [Licensing](#licensing)
 
 ## [](#)Introduction
-**HexCtrl** is a very featured Hex viewer/editor control written in **C++** with a help of the **MFC** library.
+**HexCtrl** is a very featured hex viewer/editor control written in **C++** with the help of the **MFC** library.
 
-It's implemented as a pure abstract interface and therefore can be used in your app even if you don't use **MFC** directly. It's written with **/std:c++17** standart in **Visual Studio 2019**, under the **Windows 10**.
+It's implemented as a pure abstract interface and therefore can be used in your app even if you don't use **MFC** directly. It's written with **/std:c++20** standard in **Visual Studio 2019**.
 
 ### The main features of the **HexCtrl**:
 * View and edit data up to **16EB** (exabyte)
@@ -131,7 +131,7 @@ It's implemented as a pure abstract interface and therefore can be used in your 
 * Set individual colors for the data chunks with [`IHexVirtColors`](#ihexvirtcolors) interface
 * Cutomizable colors, look and appearance
 * [Assignable keyboard shortcuts](#setconfig) via external config file
-* Written with **/std:c++17** standard conformance
+* Written with **/std:c++20** standard conformance
 
 ![](docs/img/hexctrl_operationswnd.jpg)
 
@@ -197,7 +197,7 @@ using namespace HEXCTRL;
 ## [](#)Creating
 
 ### [](#)Classic Approach
-[`Create`](#create) is the first method you call to create **HexCtrl** instance. It takes [`HEXCREATE`](#HEXCREATE) reference as an argument.
+[`Create`](#create) is the first method you call to create **HexCtrl** instance. It takes [`HEXCREATE`](#hexcreate) reference as an argument.
 
 You can choose whether control will behave as a *child* or independent *popup* window, by setting `enCreateMode` member of this struct to [`EHexCreateMode::CREATE_CHILD`](#ehexcreatemode) or [`EHexCreateMode::CREATE_POPUP`](#ehexcreatemode) respectively.
 ```cpp
@@ -206,7 +206,7 @@ hcs.enCreateMode = EHexCreateMode::CREATE_POPUP;
 hcs.hwndParent = m_hWnd;
 m_myHex->Create(hcs);
 ```
-For all available options see [`HEXCREATE`](#HEXCREATE) description.
+For all available options see [`HEXCREATE`](#hexcreate) description.
 
 ### [](#)In Dialog
 To use **HexCtrl** within *Dialog* you can, of course, create it with the [Classic Approach](#classic-approach), call [`Create`](#create) method and provide all the necessary information.
@@ -233,30 +233,25 @@ BOOL CMyDialog::OnInitDialog()
 ```
 
 ## [](#)Set the Data
-To set a data to display in the **HexCtrl** use [`SetData`](#setdata) method.
-The code below shows how to construct [`IHexCtrlPtr`](#ihexctrlptr) object and display first `0x1FF` bytes of the current app's memory:
+To set a data for the **HexCtrl** the [`SetData`](#setdata) method is used.  
+The code below shows how to construct [`HexCtrl`](#ihexctrlptr) object and display first `0x1FF` bytes of the current app's memory:
 ```cpp
 IHexCtrlPtr myHex { CreateHexCtrl() };
 
 HEXCREATE hcs;
 hcs.hwndParent = m_hWnd;
 hcs.rect = {0, 0, 600, 400}; //Window rect.
-
 myHex->Create(hcs);
 
 HEXDATA hds;
-hds.pData = (unsigned char*)GetModuleHandle(0);
-hds.ullDataSize = 0x1FF;
-
+hds.spnData = { reinterpret_cast<std::byte*>(GetModuleHandle(nullptr)), 0x1FF };
 myHex->SetData(hds);
 ```
-The next example displays `std::string`'s text as hex:
+The next example shows how to display `std::string`'s text as hex data:
 ```cpp
 std::string str = "My string";
 HEXDATA hds;
-hds.pData = (unsigned char*)str.data();
-hds.ullDataSize = str.size();
-
+hds.spnData = { reinterpret_cast<std::byte*>(str.data()), str.size() };
 myHex->SetData(hds);
 ```
 
@@ -281,7 +276,7 @@ Then provide a pointer to the created object of this derived class prior to call
 
 But if you have some big and complicated data logic and want to handle all these regions yourself, you can do it with the help of Virtual Bookmarks. To enable it call the [`BkmSetVirtual`](#bkmsetvirtual) method.  
 
-The main method of the `IHexVirtBkm` interface is `HitTest`. It takes data offset and returns pointer to [`HEXBKM`](#HEXBKM) if there is a bookmark, or `nullptr` otherwise.
+The main method of the `IHexVirtBkm` interface is `HitTest`. It takes data offset and returns pointer to [`HEXBKM`](#hexbkm) if there is a bookmark, or `nullptr` otherwise.
 
 ```cpp
 class IHexVirtBkm
@@ -307,7 +302,7 @@ public:
     void OnHexGetColor(HEXCOLORINFO&) = 0;
 };
 ```
-The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinfo) struct as an argument. The `PHEXCOLOR::pClr` member of this struct must point to a desired colors after method completes, or `nullptr` for default colors.
+The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinfo) struct as an argument. The `pClr` member of this struct must point to a valid [`HEXCOLOR`](#hexcolor) struct after method completes, or `nullptr` for default colors.
 
 ## [](#)Methods
 The **HexCtrl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
@@ -316,7 +311,7 @@ The **HexCtrl** has plenty of methods that you can use to customize its appearan
 ```cpp
 ULONGLONG BkmAdd(const HEXBKM& hbs, bool fRedraw = false)
 ```
-Adds new bookmark to the control. Uses [`HEXBKM`](#HEXBKM) as an argument. Returns created bookmark's id.
+Adds new bookmark to the control. Uses [`HEXBKM`](#hexbkm) as an argument. Returns created bookmark's id.
 #### Example
 ```cpp
 HEXBKM hbs;
@@ -356,7 +351,7 @@ Get bookmarks' count.
 ```cpp
 auto BkmHitTest(ULONGLONG ullOffset)->HEXBKM*;
 ```
-Test given offset and retrives pointer to [`HEXBKM`](#HEXBKM) if it contains bookmark.
+Test given offset and retrives pointer to [`HEXBKM`](#hexbkm) if it contains bookmark.
 
 ### [](#)BkmRemoveByID
 ```cpp
@@ -381,7 +376,7 @@ Clears data from the **HexCtrl** view, not touching data itself.
 bool Create(const HEXCREATE& hcs);
 ```
 Main initialization method.  
-Takes [`HEXCREATE`](#HEXCREATE) as argument. Returns `true` if created successfully, `false` otherwise.
+Takes [`HEXCREATE`](#hexcreate) as argument. Returns `true` if created successfully, `false` otherwise.
 
 ### [](#)CreateDialogCtrl
 ```cpp
@@ -410,7 +405,7 @@ Executes one of the predefined commands of [`EHexCmd`](#ehexcmd) enum. All these
 ```cpp
 auto GetCacheSize()const->DWORD;
 ```
-Returns current cache size set in [`HEXDATA`](#HEXDATA).
+Returns current cache size set in [`HEXDATA`](#hexdata).
 
 ### [](#)GetCapacity
 ```cpp
@@ -428,7 +423,7 @@ Retrieves current caret position offset.
 ```cpp
 auto GetColors()const->HEXCOLORS;
 ```
-Returns current [`HEXCOLORS`](#HEXCOLORS).
+Returns current [`HEXCOLORS`](#hexcolors).
 
 ### [](#)GetData
 ```cpp
@@ -472,7 +467,7 @@ Retrives the `HMENU` handle of the control's context menu. You can use this hand
 
 Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.
 
-When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXMENUINFO`](#HEXMENUINFO) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `wMenuID` field will be holding `ID` of the menu clicked.
+When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXMENUINFO`](#hexmenuinfo) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `wMenuID` field will be holding `ID` of the menu clicked.
 
 ### [](#)GetPagesCount
 ```cpp
@@ -494,9 +489,9 @@ Get current page size set by [`SetPageSize`](#setpagesize).
 
 ### [](#)GetSelection
 ```cpp
-auto GetSelection()const->std::vector<HEXSPAN>&;
+auto GetSelection()const->std::vector<HEXSPAN>;
 ```
-Returns `std::vector` of offsets and sizes of the current selection.
+Returns `std::vector` with the offsets and sizes of the current selection.
 
 ### [](#)GetWindowHandle
 ```cpp
@@ -517,13 +512,13 @@ Go to a given offset. The second argument `iRelPos` may take-in three different 
 ```cpp
 bool HasSelection()const;
 ```
-Returns `true` if **HexCtrl** has any bytes selected.
+Returns `true` if **HexCtrl** has any area selected.
 
 ### [](#)HitTest
 ```cpp
 auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTEST>
 ```
-Hit testing of given point in screen `fScreen = true`, or client `fScreen = false` coordinates. In case of success returns [`HEXHITTEST`](#HEXHITTEST) structure.
+Hit testing of given point in a screen `fScreen = true`, or client `fScreen = false` coordinates. In case of success returns [`HEXHITTEST`](#hexhittest) structure.
 
 ### [](#)IsCmdAvail
 ```cpp
@@ -559,7 +554,7 @@ Is "Offset" currently represented (shown) as Hex or as Decimal. It can be change
 ```cpp
 HEXVISION IsOffsetVisible(ULONGLONG ullOffset)const;
 ```
-Checks for offset visibility and returns [`HEXVISION`](#HEXVISION) as a result.
+Checks for offset visibility and returns [`HEXVISION`](#hexvision) as a result.
 
 ### [](#)IsVirtual
 ```cpp
@@ -577,13 +572,13 @@ Modify data currently set in **HexCtrl**, see the [`HEXMODIFY`](#hexmodify) stru
 ```cpp
 void Redraw();
 ```
-Redraws the main window.
+Redraws main window.
 
 ### [](#)SetCapacity
 ```cpp
 void SetCapacity(DWORD dwCapacity);
 ```
-Sets the **HexCtrl** current capacity.
+Sets **HexCtrl**'s current capacity.
 
 ### [](#)SetCaretPos
 ```cpp
@@ -595,7 +590,7 @@ Sets the caret to the given offset. The `fHighLow` flag shows which part of the 
 ```cpp
 void SetColors(const HEXCOLORS& clr);
 ```
-Sets all the colors for the control. Takes [`HEXCOLORS`](#HEXCOLORS) as the argument.
+Sets all the colors for the control. Takes [`HEXCOLORS`](#hexcolors) as the argument.
 
 ### [](#)SetConfig
 ```cpp
@@ -615,7 +610,7 @@ For default values see the [`HexCtrl/res/keybind.json`](https://github.com/jovib
 ```cpp
 void SetData(const HEXDATA& hds);
 ```
-Main method to set a data to display in read-only or mutable modes. Takes [`HEXDATA`](#HEXDATA) as an  argument.
+Main method to set a data to display in read-only or mutable modes. Takes [`HEXDATA`](#hexdata) as an  argument.
 
 ### [](#)SetEncoding
 ```cpp
@@ -878,7 +873,7 @@ enum class EHexCmd : std::uint8_t
 ```
 
 ### [](#)EHexCreateMode
-Enum that represents mode the **HexCtrl**'s window will be created in.
+Enum represents the modes that **HexCtrl**'s window can be created in.
 ```cpp
 enum class EHexCreateMode : std::uint8_t
 {
@@ -896,7 +891,7 @@ enum class EHexDataSize : std::uint8_t
 ```
 
 ### [](#)EHexModifyMode
-Enum of the data modification mode, used in [`HEXMODIFY`](#hexmodify).
+Enum of the data modification modes, used in [`HEXMODIFY`](#hexmodify).
 ```cpp
 enum class EHexModifyMode : std::uint8_t
 {
@@ -905,7 +900,7 @@ enum class EHexModifyMode : std::uint8_t
 ```
 
 ### [](#)EHexOperMode
-Enum of the data operation mode, used in [`HEXMODIFY`](#hexmodify) when `HEXMODIFY::enModifyMode` is set to `MODIFY_OPERATION`.
+Enum of the data operation modes, used in [`HEXMODIFY`](#hexmodify) when `HEXMODIFY::enModifyMode` is set to `MODIFY_OPERATION`.
 ```cpp
 enum class EHexOperMode : std::uint8_t
 {
@@ -1002,6 +997,5 @@ To change control's font size — <kbd>Ctrl+MouseWheel</kbd>
 To change control's capacity — <kbd>Ctrl+Shift+MouseWheel</kbd>
 
 ## [](#)Licensing
-This software is available under the **"MIT License modified with The Commons Clause".**  
-Briefly: It is free for any **non commercial** use.  
-[https://github.com/jovibor/HexCtrl/blob/master/LICENSE](https://github.com/jovibor/HexCtrl/blob/master/LICENSE)
+This software is available under **"The HexCtrl License"**, it is free for any **NON-COMMERCIAL** use.  
+See the [LICENSE](https://github.com/jovibor/HexCtrl/blob/master/LICENSE) file.

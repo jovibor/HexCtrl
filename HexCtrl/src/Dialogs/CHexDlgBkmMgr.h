@@ -14,7 +14,7 @@ namespace HEXCTRL::INTERNAL
 	using namespace HEXCTRL::LISTEX;
 	class CHexDlgBkmMgr final : public CDialogEx
 	{
-		enum class EMenuID : WORD;
+		enum class EMenuID : std::uint16_t;
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks);
 	protected:

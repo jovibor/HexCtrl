@@ -14,7 +14,7 @@ namespace HEXCTRL::INTERNAL
 	using namespace LISTEX;
 	class CHexDlgSearch final : public CDialogEx
 	{
-		enum class EMode : WORD;
+		enum class EMode : std::uint8_t;
 		struct SFIND;
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);

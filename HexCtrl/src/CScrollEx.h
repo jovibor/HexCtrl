@@ -11,7 +11,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 {
 	class CScrollEx : public CWnd
 	{
-		enum class EState : WORD; //Forward declaration.
+		enum class EState : std::uint8_t; //Forward declaration.
 	public:
 		void AddSibling(CScrollEx* pSibling);
 		bool Create(CWnd* pParent, bool fVert, UINT uiResBmp, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);

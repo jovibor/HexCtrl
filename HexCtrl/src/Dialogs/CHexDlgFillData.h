@@ -12,7 +12,7 @@ namespace HEXCTRL::INTERNAL
 {
 	class CHexDlgFillData final : public CDialogEx
 	{
-		enum class EFillType : WORD;
+		enum class EFillType : std::uint8_t;
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 	private:

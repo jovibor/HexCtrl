@@ -13,7 +13,7 @@ using namespace HEXCTRL::INTERNAL::SCROLLEX;
 
 namespace HEXCTRL::INTERNAL::SCROLLEX
 {
-	enum class CScrollEx::EState : WORD
+	enum class CScrollEx::EState : std::uint8_t
 	{
 		STATE_DEFAULT,
 		FIRSTARROW_HOVER, FIRSTARROW_CLICK,
@@ -23,7 +23,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		LASTARROW_CLICK, LASTARROW_HOVER
 	};
 
-	enum class ETimer : UINT_PTR
+	enum class ETimer : std::uint16_t
 	{
 		IDT_FIRSTCLICK = 0x7ff0,
 		IDT_CLICKREPEAT = 0x7ff1

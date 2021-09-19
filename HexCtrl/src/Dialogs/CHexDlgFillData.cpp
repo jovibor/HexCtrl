@@ -15,7 +15,7 @@ using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL
 {
-	enum class CHexDlgFillData::EFillType : WORD
+	enum class CHexDlgFillData::EFillType : std::uint8_t
 	{
 		FILL_HEX, FILL_ASCII, FILL_WCHAR, FILL_RANDOM
 	};

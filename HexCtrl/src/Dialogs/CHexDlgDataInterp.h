@@ -136,8 +136,8 @@ namespace HEXCTRL::INTERNAL
 		bool SetDataNAME_GUID(const std::wstring& wstr)const;
 		DECLARE_MESSAGE_MAP()
 	private:
-		enum class EGroup : WORD { DIGITS, FLOAT, TIME, MISC };
-		enum class EName : WORD
+		enum class EGroup : std::uint8_t { DIGITS, FLOAT, TIME, MISC };
+		enum class EName : std::uint8_t
 		{
 			NAME_BINARY, NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
 			NAME_LONG, NAME_ULONG, NAME_LONGLONG, NAME_ULONGLONG,
@@ -145,7 +145,8 @@ namespace HEXCTRL::INTERNAL
 			NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
 			NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID
 		};
-		enum class ESize : WORD {
+		enum class ESize : std::uint8_t
+		{
 			SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4,
 			SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10
 		};

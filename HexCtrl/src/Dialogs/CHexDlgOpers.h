@@ -14,7 +14,7 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
-	protected:
+	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);

@@ -53,7 +53,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] DWORD GetCapacity()const override;                  //Current capacity.
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;              //Cursor position.
 		[[nodiscard]] auto GetColors()const->HEXCOLORS override;          //Current colors.
-		[[nodiscard]] auto GetData(HEXSPAN ho)const->std::span<std::byte> override; //Get pointer to data offset, no matter what mode the control works in.
+		[[nodiscard]] auto GetData(HEXSPAN hss)const->std::span<std::byte> override; //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;        //Get currently set data size.
 		[[nodiscard]] int GetEncoding()const override;                    //Get current code page ID.
 		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
@@ -94,7 +94,7 @@ namespace HEXCTRL::INTERNAL
 		struct SHBITMAP;
 		struct SUNDO;
 		struct SKEYBIND;
-		enum class EClipboard : WORD;
+		enum class EClipboard : std::uint8_t;
 		void AsciiChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Ascii chunk.
 		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tuple<std::wstring, std::wstring>;
 		void CaretMoveDown();  //Set caret one line down.

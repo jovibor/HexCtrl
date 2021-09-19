@@ -16,7 +16,7 @@ using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL
 {
-	enum class CHexDlgBkmMgr::EMenuID : WORD {
+	enum class CHexDlgBkmMgr::EMenuID : std::uint16_t {
 		IDM_BKMMGR_NEW = 0x8000, IDM_BKMMGR_EDIT = 0x8001,
 		IDM_BKMMGR_REMOVE = 0x8002, IDM_BKMMGR_CLEARALL = 0x8003
 	};

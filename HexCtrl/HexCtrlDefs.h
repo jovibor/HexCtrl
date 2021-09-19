@@ -194,7 +194,7 @@ namespace HEXCTRL
 		EHexCreateMode enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
 		HEXCOLORS      stColor { };          //All the control's colors.
 		HWND           hwndParent { };       //Parent window handle.
-		PLOGFONTW      pLogFont { };         //Font to be used instead of default. This font has to be monospaced.
+		PLOGFONTW      pLogFont { };         //Font to be used instead of default, it has to be monospaced.
 		RECT           rect { };             //Initial rect. If null, the window is screen centered.
 		UINT           uID { };              //Control ID.
 		DWORD          dwStyle { };          //Window styles, 0 for default.
