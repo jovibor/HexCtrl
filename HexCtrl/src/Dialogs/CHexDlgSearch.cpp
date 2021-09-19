@@ -405,19 +405,19 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_ASCII));
 	iIndex = m_stComboMode.AddString(L"UTF-16 Text");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_WCHAR));
-	iIndex = m_stComboMode.AddString(L"Byte: (u)int8");
+	iIndex = m_stComboMode.AddString(L"Char");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_BYTE));
-	iIndex = m_stComboMode.AddString(L"Short: (u)int16");
+	iIndex = m_stComboMode.AddString(L"Short");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_WORD));
-	iIndex = m_stComboMode.AddString(L"Int: (u)int32");
+	iIndex = m_stComboMode.AddString(L"Int32");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_DWORD));
-	iIndex = m_stComboMode.AddString(L"Int64: (u)int64");
+	iIndex = m_stComboMode.AddString(L"Int64");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_QWORD));
 	iIndex = m_stComboMode.AddString(L"Float");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_FLOAT));
 	iIndex = m_stComboMode.AddString(L"Double");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_DOUBLE));
-	iIndex = m_stComboMode.AddString(L"FILETIME");
+	iIndex = m_stComboMode.AddString(L"FILETIME struct");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_FILETIME));
 
 	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_SEARCH_LIST_MAIN, this);
@@ -703,8 +703,11 @@ HBRUSH CHexDlgSearch::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
 	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_SEARCH_STATIC_RESULT)
 	{
+		constexpr auto clrFound { RGB(0, 200, 0) };
+		constexpr auto clrFailed { RGB(200, 0, 0) };
+
 		pDC->SetBkColor(m_clrBkTextArea);
-		pDC->SetTextColor(m_fFound ? m_clrSearchFound : m_clrSearchFailed);
+		pDC->SetTextColor(m_fFound ? clrFound : clrFailed);
 		return m_stBrushDefault;
 	}
 

@@ -73,7 +73,7 @@ namespace HEXCTRL::INTERNAL
 		IHexCtrl* m_pHexCtrl { };
 		EMode m_eSearchMode { };
 		IListExPtr m_pListMain { CreateListEx() };
-		std::vector<ULONGLONG> m_vecSearchRes { };
+		std::vector<ULONGLONG> m_vecSearchRes { }; //Search results.
 		CComboBox m_stComboSearch;  //Combo box "Search".
 		CComboBox m_stComboReplace; //Combo box "Replace".
 		CComboBox m_stComboMode;    //Combo box "Search mode".
@@ -86,8 +86,6 @@ namespace HEXCTRL::INTERNAL
 		CEdit m_stEditLimit;        //Edit box "Limit search hit".
 		CBrush m_stBrushDefault;
 		CMenu m_stMenuList;
-		const COLORREF m_clrSearchFailed { RGB(200, 0, 0) };
-		const COLORREF m_clrSearchFound { RGB(0, 200, 0) };
 		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
 		ULONGLONG m_ullBoundBegin { };  //Search start boundary.
 		ULONGLONG m_ullBoundEnd { };    //Search end boundary.
