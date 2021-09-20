@@ -1149,7 +1149,7 @@ void CHexDlgSearch::Search()
 
 	const auto lmbFindForward = [&]()
 	{
-		if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_spnSearch, m_ullEndSentinel);
+		if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_spnSearch);
 			stFind.fFound)
 		{
 			m_fFound = true;
@@ -1164,7 +1164,7 @@ void CHexDlgSearch::Search()
 			if (m_fSecondMatch && !stFind.fCanceled)
 			{
 				m_ullOffsetCurr = m_ullBoundBegin; //Starting from the beginning.
-				if (Finder(m_ullOffsetCurr, ullUntil, m_spnSearch, m_ullEndSentinel))
+				if (Finder(m_ullOffsetCurr, ullUntil, m_spnSearch))
 				{
 					m_fFound = true;
 					m_fDoCount = true;
@@ -1180,7 +1180,7 @@ void CHexDlgSearch::Search()
 		if (m_fSecondMatch && m_ullOffsetCurr - m_ullStep < m_ullOffsetCurr)
 		{
 			m_ullOffsetCurr -= m_ullStep;
-			if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_spnSearch, m_ullEndSentinel, false);
+			if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_spnSearch, false);
 				stFind.fFound)
 			{
 				m_fFound = true;
@@ -1195,7 +1195,7 @@ void CHexDlgSearch::Search()
 			if (!stFind.fCanceled)
 			{
 				m_ullOffsetCurr = m_ullBoundEnd;
-				if (Finder(m_ullOffsetCurr, ullUntil, m_spnSearch, m_ullEndSentinel, false))
+				if (Finder(m_ullOffsetCurr, ullUntil, m_spnSearch, false))
 				{
 					m_fFound = true;
 					m_fSecondMatch = true;
