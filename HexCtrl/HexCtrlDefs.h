@@ -271,10 +271,10 @@ namespace HEXCTRL
 	* replace corresponding data bytes as is.                                                   *
 	* If enModifyMode is equal to EHexModifyMode::MODIFY_REPEAT                                 *
 	* then block by block replacement takes place few times.                                    *
-	*   For example : if SUM(vecSpan.ullSize) = 9, ullDataSize = 3 and enModifyMode is set to   *
-	* EHexModifyMode::MODIFY_REPEAT, bytes in memory at vecSpan.ullOffset position are          *
-	* 123456789, and bytes pointed to by spnData are 345, then, after modification, bytes at    *
-	* vecSpan.ullOffset will be 345345345.                                                      *
+	*   For example : if SUM(vecSpan.ullSize) == 9, spnData.size() == 3 and enModifyMode is set *
+	* to EHexModifyMode::MODIFY_REPEAT, bytes in memory at vecSpan.ullOffset position are       *
+	* `010203040506070809`, and bytes pointed to by spnData.data() are `030405`, then after     *
+	* modification bytes at vecSpan.ullOffset will be `030405030405030405.                      *
 	* If enModifyMode is equal to MODIFY_OPERATION then enOperMode comes into play, showing     *
 	* what kind of operation must be performed on data, with the enOperSize showing the size.   *
 	********************************************************************************************/

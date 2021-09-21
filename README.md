@@ -119,7 +119,7 @@ It's implemented as a pure abstract interface and therefore can be used in your 
 
 ### The main features of the **HexCtrl**:
 * View and edit data up to **16EB** (exabyte)
-* Work in three different data modes: **Memory**, **Message**, **Virtual**
+* Works in two data modes, **Memory** and [**Virtual Data Mode**](#virtual-data-mode)
 * Fully featured **Bookmarks Manager**
 * Fully featured **Search and Replace**
 * Changeable encoding for the text area
@@ -128,8 +128,8 @@ It's implemented as a pure abstract interface and therefore can be used in your 
 * Modify data with **Filling** and many predefined **Operations** options
 * Ability to visually divide data into [pages](#setpagesize)
 * Print whole document/pages range/selection
-* Set individual colors for the data chunks with [`IHexVirtColors`](#ihexvirtcolors) interface
-* Cutomizable colors, look and appearance
+* Set individual colors for the data chunks with [**Custom Colors**](#ihexvirtcolors)
+* Customizable look and appearance
 * [Assignable keyboard shortcuts](#setconfig) via external config file
 * Written with **/std:c++20** standard conformance
 
@@ -215,10 +215,10 @@ But there is another option you can use:
 1. Put **Custom Control** from the **Toolbox** in **Visual Studio** dialog designer into your dialog template and make it desirable size.  
 ![](docs/img/hexctrl_vstoolbox.jpg) ![](docs/img/hexctrl_vscustomctrl.jpg)
 2. Go to the **Properties** of that control and in the **Class** field, within the **Misc** section, type: <kbd>HexCtrl</kbd>.  
-Give the control appropriate **ID** of your choise (<kbd>IDC_MY_HEX</kbd> in this example).  
+Give the control appropriate **ID** of your choice (<kbd>IDC_MY_HEX</kbd> in this example).  
 Also, here you can set the control's **Dynamic Layout** properties, so that control behaves appropriately when dialog is being resized.  
 ![](docs/img/hexctrl_vsproperties.jpg)
-3. Declare [`IHexCtrlPtr`](#ihexctrlptr) member varable within your dialog class:
+3. Declare [`IHexCtrlPtr`](#ihexctrlptr) member variable within your dialog class:
 ```cpp
 IHexCtrlPtr m_myHex { CreateHexCtrl() };
 ```
@@ -305,7 +305,7 @@ public:
 The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinfo) struct as an argument. The `pClr` member of this struct must point to a valid [`HEXCOLOR`](#hexcolor) struct after method completes, or `nullptr` for default colors.
 
 ## [](#)Methods
-The **HexCtrl** has plenty of methods that you can use to customize its appearance, and to manage its behaviour.
+The **HexCtrl** has plenty of methods that you can use to customize its appearance, and to manage its behavior.
 
 ### [](#)BkmAdd
 ```cpp
@@ -351,7 +351,7 @@ Get bookmarks' count.
 ```cpp
 auto BkmHitTest(ULONGLONG ullOffset)->HEXBKM*;
 ```
-Test given offset and retrives pointer to [`HEXBKM`](#hexbkm) if it contains bookmark.
+Test given offset and retrieves pointer to [`HEXBKM`](#hexbkm) if it contains a bookmark.
 
 ### [](#)BkmRemoveByID
 ```cpp
@@ -463,7 +463,7 @@ Returns current font size.
 ```cpp
 HMENU GetMenuHandle()const;
 ```
-Retrives the `HMENU` handle of the control's context menu. You can use this handle to customize menu for your needs.
+Retrieves the `HMENU` handle of the control's context menu. You can use this handle to customize menu for your needs.
 
 Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.
 
@@ -797,8 +797,15 @@ struct HEXHITTEST
 ### [](#)HEXMODIFY
 This struct is used to represent data modification parameters.  
 When `enModifyMode` is set to `EHexModifyMode::MODIFY_ONCE`, bytes from `pData` just replace corresponding data bytes as is.  
+If `enModifyMode` is equal to `EHexModifyMode::MODIFY_REPEAT` then block by block replacement takes place few times.  
+For example, if:
+* `SUM(vecSpan.ullSize) == 9`
+* `spnData.size() == 3`
+* `enModifyMode` is set to `EHexModifyMode::MODIFY_REPEAT`
+* bytes in memory at `vecSpan.ullOffset` are `010203040506070809`
+* bytes pointed to by `spnData.data()` are `030405`
 
-If `enModifyMode` is equal to `EHexModifyMode::MODIFY_REPEAT` then block by block replacement takes place few times. For example : if SUM(`vecSpan.ullSize`) = 9, `ullDataSize` = 3 and `enModifyMode` is set to `EHexModifyMode::MODIFY_REPEAT`, bytes in memory at `vecSpan.ullOffset` position are 123456789, and bytes pointed to by pData are 345, then, after modification, bytes at vecSpan.ullOffset will be 345345345.  
+then, after modification, bytes at `vecSpan.ullOffset` will become `030405030405030405`.  
 
 If `enModifyMode` is equal to `EHexModifyMode::MODIFY_OPERATION` then `enOperMode` comes into play, showing what kind of operation must be performed on data.
 ```cpp
