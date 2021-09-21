@@ -427,10 +427,10 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Group Data"
         BEGIN
-            MENUITEM "Byte (1 byte)",               IDM_HEXCTRL_GROUPBY_BYTE, CHECKED
-            MENUITEM "Word (2 bytes)",              IDM_HEXCTRL_GROUPBY_WORD
-            MENUITEM "Dword (4 bytes)",             IDM_HEXCTRL_GROUPBY_DWORD
-            MENUITEM "Qword (8 bytes)",             IDM_HEXCTRL_GROUPBY_QWORD
+            MENUITEM "One Byte",                    IDM_HEXCTRL_GROUPBY_BYTE, CHECKED
+            MENUITEM "Two Bytes (WORD)",            IDM_HEXCTRL_GROUPBY_WORD
+            MENUITEM "Four Bytes (DWORD)",          IDM_HEXCTRL_GROUPBY_DWORD
+            MENUITEM "Eight Bytes (QWORD)",         IDM_HEXCTRL_GROUPBY_QWORD
         END
         POPUP "Navigation"
         BEGIN
@@ -479,8 +479,8 @@ BEGIN
         POPUP "Modify"
         BEGIN
             MENUITEM "Operations...",               IDM_HEXCTRL_MODIFY_DLG_OPERS
-            MENUITEM "Fill With Zeros",             IDM_HEXCTRL_MODIFY_FILLZEROS
-            MENUITEM "Fill With Data...",           IDM_HEXCTRL_MODIFY_DLG_FILLDATA
+            MENUITEM "Fill with Zeros",             IDM_HEXCTRL_MODIFY_FILLZEROS
+            MENUITEM "Fill with Data...",           IDM_HEXCTRL_MODIFY_DLG_FILLDATA
             MENUITEM SEPARATOR
             MENUITEM "Undo",                        IDM_HEXCTRL_MODIFY_UNDO
             MENUITEM "Redo",                        IDM_HEXCTRL_MODIFY_REDO
