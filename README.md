@@ -35,7 +35,7 @@
   * [GetData](#getdata)
   * [GetDataSize](#getdatasize)
   * [GetEncoding](#getencoding)
-  * [GetFontSize](#getfontsize)
+  * [GetFont](#getfont)
   * [GetGroupMode](#getgroupmode)
   * [GetMenuHandle](#getmenuhandle)
   * [GetPagesCount](#getpagescount)
@@ -62,7 +62,6 @@
   * [SetData](#setdata)
   * [SetEncoding](#setencoding)
   * [SetFont](#setfont)
-  * [SetFontSize](#setfontsize)
   * [SetGroupMode](#setgroupmode)
   * [SetMutable](#setmutable)
   * [SetOffsetMode](#setoffsetmode)
@@ -446,18 +445,17 @@ int GetEncoding()const;
 ```
 Get code page that is currently in use.
 
+### [](#)GetFont
+```cpp
+void GetFont(LOGFONTW& lf);
+```
+Retrieves current font through `lf` arg.
+
 ### [](#)GetGroupMode
 ```cpp
 auto GetGroupMode()const->EHexDataSize;
 ```
 Retrieves current data grouping mode.
-
-
-### [](#)GetFontSize
-```cpp
-long GetFontSize()const;
-```
-Returns current font size.
 
 ### [](#)GetMenuHandle
 ```cpp
@@ -622,15 +620,9 @@ Sets the code page for the **HexCtrl**'s text area. Takes [code page identifier]
 
 ### [](#)SetFont
 ```cpp
-void SetFont(const LOGFONTW* pLogFontNew);
+void SetFont(const LOGFONTW& lf);
 ```
 Sets a new font for the **HexCtrl**. This font has to be monospaced.
-
-### [](#)SetFontSize
-```cpp
-void SetFontSize(UINT uiSize);
-```
-Sets a new font size to the **HexCtrl**.
 
 ### [](#)SetGroupMode
 ```cpp

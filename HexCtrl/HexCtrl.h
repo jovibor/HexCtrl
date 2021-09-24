@@ -56,7 +56,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual auto GetData(HEXSPAN ho)const->std::span<std::byte> = 0; //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual int GetEncoding()const = 0;                    //Get current code page ID.
-		[[nodiscard]] virtual long GetFontSize()const = 0;                   //Current font size.
+		virtual void GetFont(LOGFONTW& lf) = 0;                              //Get current font.
 		[[nodiscard]] virtual auto GetGroupMode()const->EHexDataSize = 0;    //Retrieves current data grouping mode.
 		[[nodiscard]] virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
 		[[nodiscard]] virtual auto GetPagesCount()const->ULONGLONG = 0;      //Get count of pages.
@@ -82,8 +82,7 @@ namespace HEXCTRL
 		virtual bool SetConfig(std::wstring_view wstrPath) = 0;//Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).	
 		virtual void SetEncoding(int iCodePage) = 0;           //Code-page for text area.
-		virtual void SetFont(const LOGFONTW* pLogFont) = 0;    //Set the control's new font. This font has to be monospaced.
-		virtual void SetFontSize(UINT uiSize) = 0;             //Set the control's font size.
+		virtual void SetFont(const LOGFONTW& lf) = 0;         //Set the control's new font. This font has to be monospaced.
 		virtual void SetGroupMode(EHexDataSize enMode) = 0;    //Set current "Group Data By" mode.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
 		virtual void SetOffsetMode(bool fHex) = 0;             //Set offset being shown as Hex or as Decimal.

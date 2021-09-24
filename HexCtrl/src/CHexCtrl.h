@@ -56,7 +56,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetData(HEXSPAN hss)const->std::span<std::byte> override; //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;        //Get currently set data size.
 		[[nodiscard]] int GetEncoding()const override;                    //Get current code page ID.
-		[[nodiscard]] long GetFontSize()const override;                   //Current font size.
+		void GetFont(LOGFONTW& lf)override;                               //Get current font.
 		[[nodiscard]] auto GetGroupMode()const->EHexDataSize override;    //Retrieves current data grouping mode.
 		[[nodiscard]] HMENU GetMenuHandle()const override;                //Context menu handle.
 		[[nodiscard]] auto GetPagesCount()const->ULONGLONG override;      //Get count of pages.
@@ -82,8 +82,7 @@ namespace HEXCTRL::INTERNAL
 		bool SetConfig(std::wstring_view wstrPath)override; //Set configuration file, or "" for defaults.
 		void SetData(const HEXDATA& hds)override;           //Main method for setting data to display (and edit).	
 		void SetEncoding(int iCodePage)override;            //Code-page for text area.
-		void SetFont(const LOGFONTW* pLogFont)override;     //Set the control's new font. This font has to be monospaced.
-		void SetFontSize(UINT uiSize)override;              //Set the control's font size.
+		void SetFont(const LOGFONTW& lf)override;           //Set the control's new font. This font has to be monospaced.
 		void SetGroupMode(EHexDataSize enGroupMode)override; //Set current "Group Data By" mode.
 		void SetMutable(bool fEnable)override;              //Enable or disable mutable/editable mode.
 		void SetOffsetMode(bool fHex)override;              //Set offset being shown as Hex or as Decimal.
@@ -107,6 +106,7 @@ namespace HEXCTRL::INTERNAL
 		void CaretToLineEnd(); //Set caret to a current line end.
 		void CaretToPageBeg(); //Set caret to a current page beginning.
 		void CaretToPageEnd(); //Set caret to a current page end.
+		void ChooseFontDlg();  //The "ChooseFont" dialog.
 		void ClipboardCopy(EClipboard enType)const;
 		void ClipboardPaste(EClipboard enType);
 		[[nodiscard]] auto CopyBase64()const->std::wstring;
@@ -129,8 +129,10 @@ namespace HEXCTRL::INTERNAL
 		void DrawDataInterp(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines);
 		void FillWithZeros(); //Fill selection with zeros.
+		void FontSizeIncDec(bool fInc = true); //Increase os decrease font size by minimum amount.
 		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;    //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCommand(UCHAR uChar, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
+		[[nodiscard]] long GetFontSize();
 		[[nodiscard]] auto GetTopLine()const->ULONGLONG;       //Returns current top line number in view.
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Hex chunk.
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTEST>; //Is any hex chunk withing given point?
@@ -156,6 +158,7 @@ namespace HEXCTRL::INTERNAL
 		void SelAddRight();      //Right Key pressed with the Shift.
 		void SelAddUp();         //Up Key pressed with the Shift.
 		void SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss); //Sets data (notifies back) in Virtual mode.
+		void SetFontSize(long lSize); //Set current font size.
 		void SetRedraw(bool fRedraw); //Handle WM_PAINT message or not.
 		void SnapshotUndo(const std::vector<HEXSPAN>& vecSpan); //Takes currently modifiable data snapshot.
 		void TtBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip bookmark show/hide.
@@ -234,7 +237,6 @@ namespace HEXCTRL::INTERNAL
 		DWORD m_dwPageSize { 0 };             //Size of a page to print additional lines between.
 		DWORD m_dwCacheSize { };              //Cache size for virtual and message modes, set in SetData.
 		SIZE m_sizeLetter { 1, 1 };           //Current font's letter size (width, height).
-		long m_lFontSize { };                 //Current font size.
 		int m_iSizeFirstHalf { };             //Size in px of the first half of the capacity.
 		int m_iSizeHexByte { };               //Size in px of two hex letters representing one byte.
 		int m_iIndentAscii { };               //Indent in px of Ascii text begining.

@@ -347,13 +347,15 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	else
 	{
 		StringCchCopyW(lf.lfFaceName, 9, L"Consolas");
-		lf.lfHeight = 18;
+		auto pDC = GetDC();
+		lf.lfHeight = -MulDiv(11, GetDeviceCaps(pDC->m_hDC, LOGPIXELSY), 72);
+		ReleaseDC(pDC);
 		lf.lfPitchAndFamily = FIXED_PITCH;
 	}
-	m_lFontSize = lf.lfHeight;
 	m_fontMain.CreateFontIndirectW(&lf);
 
-	lf.lfHeight = 16;
+	//LOGFONT::lfHeight docs explains this behavior.
+	lf.lfHeight = lf.lfHeight + (lf.lfHeight < 0 ? 1 : -1); //Decreasing font size by 1.
 	m_fontInfo.CreateFontIndirectW(&lf);
 	//End of font related.///////////////////////////////////////
 
@@ -561,17 +563,20 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case EHexCmd::CMD_DLG_ENCODING:
 		m_pDlgEncoding->ShowWindow(SW_SHOW);
 		break;
+	case EHexCmd::CMD_APPEAR_FONTCHOOSE:
+		ChooseFontDlg();
+		break;
 	case EHexCmd::CMD_APPEAR_FONTINC:
-		SetFontSize(GetFontSize() + 2);
+		FontSizeIncDec(true);
 		break;
 	case EHexCmd::CMD_APPEAR_FONTDEC:
-		SetFontSize(GetFontSize() - 2);
+		FontSizeIncDec(false);
 		break;
 	case EHexCmd::CMD_APPEAR_CAPACINC:
-		SetCapacity(m_dwCapacity + 1);
+		SetCapacity(GetCapacity() + 1);
 		break;
 	case EHexCmd::CMD_APPEAR_CAPACDEC:
-		SetCapacity(m_dwCapacity - 1);
+		SetCapacity(GetCapacity() - 1);
 		break;
 	case EHexCmd::CMD_DLG_PRINT:
 		Print();
@@ -684,13 +689,13 @@ int CHexCtrl::GetEncoding()const
 	return m_iCodePage;
 }
 
-long CHexCtrl::GetFontSize()const
+void CHexCtrl::GetFont(LOGFONTW& lf)
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return { };
+		return;
 
-	return m_lFontSize;
+	m_fontMain.GetLogFont(&lf);
 }
 
 auto CHexCtrl::GetGroupMode()const->EHexDataSize
@@ -1349,6 +1354,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ "CMD_SEL_ADDDOWN", { EHexCmd::CMD_SEL_ADDDOWN, static_cast<WORD>(0) } },
 		{ "CMD_DLG_DATAINTERPRET", { EHexCmd::CMD_DLG_DATAINTERP, static_cast<WORD>(IDM_HEXCTRL_DLG_DATAINTERP) } },
 		{ "CMD_DLG_ENCODING", { EHexCmd::CMD_DLG_ENCODING, static_cast<WORD>(IDM_HEXCTRL_DLG_ENCODING) } },
+		{ "CMD_APPEAR_FONTCHOOSE", { EHexCmd::CMD_APPEAR_FONTCHOOSE, static_cast<WORD>(IDM_HEXCTRL_APPEAR_FONTCHOOSE) } },
 		{ "CMD_APPEAR_FONTINC", { EHexCmd::CMD_APPEAR_FONTINC, static_cast<WORD>(IDM_HEXCTRL_APPEAR_FONTINC) } },
 		{ "CMD_APPEAR_FONTDEC", { EHexCmd::CMD_APPEAR_FONTDEC, static_cast<WORD>(IDM_HEXCTRL_APPEAR_FONTDEC) } },
 		{ "CMD_APPEAR_CAPACINC", { EHexCmd::CMD_APPEAR_CAPACINC, static_cast<WORD>(IDM_HEXCTRL_APPEAR_CAPACINC) } },
@@ -1601,32 +1607,12 @@ void CHexCtrl::SetEncoding(int iCodePage)
 	}
 }
 
-void CHexCtrl::SetFont(const LOGFONTW* pLogFont)
-{
-	assert(IsCreated());
-	assert(pLogFont);
-	if (!IsCreated() || pLogFont == nullptr)
-		return;
-
-	m_fontMain.DeleteObject();
-	m_fontMain.CreateFontIndirectW(pLogFont);
-
-	RecalcAll();
-}
-
-void CHexCtrl::SetFontSize(UINT uiSize)
+void CHexCtrl::SetFont(const LOGFONTW& lf)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
-	//Prevent font size from being too small or too big.
-	if (uiSize < 9 || uiSize > 75)
-		return;
-
-	LOGFONTW lf;
-	m_fontMain.GetLogFont(&lf);
-	m_lFontSize = lf.lfHeight = uiSize;
 	m_fontMain.DeleteObject();
 	m_fontMain.CreateFontIndirectW(&lf);
 
@@ -1950,6 +1936,20 @@ void CHexCtrl::CaretToPageEnd()
 	SetCaretPos(ullPos);
 	if (!IsOffsetVisible(ullPos))
 		GoToOffset(ullPos);
+}
+
+void CHexCtrl::ChooseFontDlg()
+{
+	CHOOSEFONTW chf { };
+	LOGFONTW lf { };
+	GetFont(lf);
+	chf.lStructSize = sizeof(CHOOSEFONTW);
+	chf.hwndOwner = m_hWnd;
+	chf.lpLogFont = &lf;
+	chf.Flags = CF_FIXEDPITCHONLY | CF_NOSCRIPTSEL | CF_NOSIMULATIONS | CF_NOSTYLESEL | CF_INITTOLOGFONTSTRUCT | CF_FORCEFONTEXIST;
+
+	if (ChooseFontW(&chf) == TRUE)
+		SetFont(lf);
 }
 
 void CHexCtrl::ClipboardCopy(EClipboard enType)const
@@ -3191,6 +3191,17 @@ void CHexCtrl::FillWithZeros()
 	Redraw();
 }
 
+void CHexCtrl::FontSizeIncDec(bool fInc)
+{
+	//https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-logfontw#members
+	auto lFontSize = GetFontSize();
+	if (fInc)
+		lFontSize = lFontSize < 0 ? lFontSize - 1 : lFontSize + 2;
+	else
+		lFontSize = lFontSize < 0 ? lFontSize + 1 : lFontSize - 2;
+	SetFontSize(lFontSize);
+}
+
 auto CHexCtrl::GetBottomLine()const->ULONGLONG
 {
 	ULONGLONG ullEndLine { };
@@ -3217,6 +3228,14 @@ auto CHexCtrl::GetCommand(UCHAR uChar, bool fCtrl, bool fShift, bool fAlt)const-
 		optRet = iter->eCmd;
 
 	return optRet;
+}
+
+long CHexCtrl::GetFontSize()
+{
+	LOGFONTW lf;
+	GetFont(lf);
+
+	return lf.lfHeight;
 }
 
 auto CHexCtrl::GetTopLine()const->ULONGLONG
@@ -4049,6 +4068,30 @@ void CHexCtrl::SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss)
 	m_pHexVirtData->OnHexSetData(hdi);
 }
 
+void CHexCtrl::SetFontSize(long lSize)
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
+	//Prevent font size from being too small or too big.
+	if (lSize < 0)
+	{
+		if (lSize < -100/*Max size*/ || lSize > -7/*Min size*/)
+			return;
+	}
+	else if (lSize > 0)
+	{
+		if (lSize < 9/*Min size*/ || lSize > 75/*Max size*/)
+			return;
+	}
+
+	LOGFONTW lf;
+	GetFont(lf);
+	lf.lfHeight = lSize;
+	SetFont(lf);
+}
+
 void CHexCtrl::SetRedraw(bool fRedraw)
 {
 	m_fRedraw = fRedraw;
@@ -4702,7 +4745,7 @@ BOOL CHexCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
 	if (nFlags == MK_CONTROL)
 	{
-		SetFontSize(GetFontSize() + zDelta / WHEEL_DELTA * 2);
+		FontSizeIncDec(zDelta > 0);
 		return TRUE;
 	}
 
