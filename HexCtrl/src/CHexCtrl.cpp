@@ -4546,8 +4546,23 @@ void CHexCtrl::OnKeyUp(UINT /*nChar*/, UINT /*nRepCnt*/, UINT /*nFlags*/)
 
 void CHexCtrl::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 {
-	if (point.x + static_cast<long>(m_pScrollH->GetScrollPos()) < m_iSecondVertLine)
+	if ((point.x + static_cast<long>(m_pScrollH->GetScrollPos())) < m_iSecondVertLine) //DblClick on "Offset" area.
+	{
 		SetOffsetMode(!IsOffsetAsHex());
+	}
+	else if (const auto optHit = HitTest(point); optHit) //DblClick on hex/text area.
+	{
+		m_fLMousePressed = true;
+		m_ullCursorNow = m_ullCaretPos = optHit->ullOffset;
+		m_fCursorTextArea = optHit->fIsAscii;
+		m_optRMouseClick.reset();
+		if (!optHit->fIsAscii)
+			m_fCaretHigh = optHit->fIsHigh;
+		m_fSelectionBlock = GetAsyncKeyState(VK_MENU) < 0;
+		m_ullCursorPrev = m_ullCursorNow;
+		SetSelection({ { m_ullCursorNow, 1ULL } });
+		SetCapture();
+	}
 }
 
 void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
