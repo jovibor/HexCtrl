@@ -3426,31 +3426,39 @@ void CHexCtrl::ParentNotify(UINT uCode)const
 
 void CHexCtrl::Print()
 {
-	DWORD dwFlags;
-	if (HasSelection())
-		dwFlags = PD_ALLPAGES | PD_CURRENTPAGE | PD_PAGENUMS | PD_SELECTION;
-	else
-		dwFlags = PD_ALLPAGES | PD_CURRENTPAGE | PD_PAGENUMS | PD_NOSELECTION;
+	CPrintDialogEx dlg(PD_RETURNDC | (HasSelection() ? PD_SELECTION : PD_NOSELECTION | PD_PAGENUMS), this);
+	dlg.m_pdex.lStructSize = sizeof(PRINTDLGEX);
+	dlg.m_pdex.nStartPage = START_PAGE_GENERAL;
+	dlg.m_pdex.nMinPage = 1;
+	dlg.m_pdex.nMaxPage = 0xffff;
+	dlg.m_pdex.nPageRanges = 1;
+	dlg.m_pdex.nMaxPageRanges = 1;
+	PRINTPAGERANGE ppr { .nFromPage = 1, .nToPage = 1 };
+	dlg.m_pdex.lpPageRanges = &ppr;
 
-	CPrintDialog dlg(FALSE, dwFlags, this);
-	dlg.m_pd.nMaxPage = 0xffff;
-	dlg.m_pd.nFromPage = 1;
-	dlg.m_pd.nToPage = 1;
-
-	if (dlg.DoModal() == IDCANCEL) {
-		DeleteDC(dlg.m_pd.hDC);
+	if (dlg.DoModal() != S_OK)
+	{
+		MessageBoxW(L"Internal printer initialization error", L"Error", MB_ICONERROR);
 		return;
 	}
 
-	HDC hdcPrinter = dlg.GetPrinterDC();
-	if (hdcPrinter == nullptr) {
+	//User pressed "Cancel", or "Apply" and then "Cancel".
+	if (dlg.m_pdex.dwResultAction == PD_RESULT_CANCEL || dlg.m_pdex.dwResultAction == PD_RESULT_APPLY)
+	{
+		DeleteDC(dlg.m_pdex.hDC);
+		return;
+	}
+
+	auto hdcPrinter = dlg.GetPrinterDC();
+	if (hdcPrinter == nullptr)
+	{
 		MessageBoxW(L"No printer found!");
 		return;
 	}
 
 	CDC dcPr;
 	dcPr.Attach(hdcPrinter);
-	CDC* pDC = &dcPr;
+	auto pDC = &dcPr;
 
 	DOCINFOW di { };
 	di.cbSize = sizeof(DOCINFOW);
@@ -3500,8 +3508,8 @@ void CHexCtrl::Print()
 	}
 	else if (dlg.PrintRange())
 	{
-		const auto iFromPage = dlg.GetFromPage() - 1;
-		const auto iToPage = dlg.GetToPage();
+		const auto iFromPage = ppr.nFromPage - 1;
+		const auto iToPage = ppr.nToPage;
 		if (iFromPage <= ullTotalPages) //Checks for out-of-range pages user input.
 		{
 			iPagesToPrint = iToPage - iFromPage;
