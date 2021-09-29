@@ -25,7 +25,7 @@ namespace HEXCTRL::INTERNAL
 {
 	enum class CHexDlgSearch::EMode : std::uint8_t
 	{
-		SEARCH_HEX, SEARCH_ASCII, SEARCH_WCHAR,
+		SEARCH_HEX, SEARCH_ASCII, SEARCH_UTF8, SEARCH_WCHAR,
 		SEARCH_BYTE, SEARCH_WORD, SEARCH_DWORD, SEARCH_QWORD,
 		SEARCH_FLOAT, SEARCH_DOUBLE, SEARCH_FILETIME
 	};
@@ -403,19 +403,21 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_stComboMode.SetCurSel(iIndex);
 	iIndex = m_stComboMode.AddString(L"ASCII Text");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_ASCII));
+	iIndex = m_stComboMode.AddString(L"UTF-8 Text");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_UTF8));
 	iIndex = m_stComboMode.AddString(L"UTF-16 Text");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_WCHAR));
-	iIndex = m_stComboMode.AddString(L"Char");
+	iIndex = m_stComboMode.AddString(L"Char value");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_BYTE));
-	iIndex = m_stComboMode.AddString(L"Short");
+	iIndex = m_stComboMode.AddString(L"Short value");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_WORD));
-	iIndex = m_stComboMode.AddString(L"Int32");
+	iIndex = m_stComboMode.AddString(L"Int32 value");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_DWORD));
-	iIndex = m_stComboMode.AddString(L"Int64");
+	iIndex = m_stComboMode.AddString(L"Int64 value");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_QWORD));
-	iIndex = m_stComboMode.AddString(L"Float");
+	iIndex = m_stComboMode.AddString(L"Float value");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_FLOAT));
-	iIndex = m_stComboMode.AddString(L"Double");
+	iIndex = m_stComboMode.AddString(L"Double value");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_DOUBLE));
 	iIndex = m_stComboMode.AddString(L"FILETIME struct");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_FILETIME));
@@ -649,7 +651,7 @@ void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 		switch (pItem->iSubItem)
 		{
-		case 0: //Index number.
+		case 0: //Index value.
 			swprintf_s(pItem->pszText, nMaxLengh, L"%zu", nItemID + 1);
 			break;
 		case 1: //Offset.
@@ -783,6 +785,9 @@ void CHexDlgSearch::Prepare()
 	case EMode::SEARCH_ASCII:
 		fSuccess = PrepareASCII();
 		break;
+	case EMode::SEARCH_UTF8:
+		fSuccess = PrepareUTF8();
+		break;
 	case EMode::SEARCH_WCHAR:
 		fSuccess = PrepareWCHAR();
 		break;
@@ -868,6 +873,7 @@ void CHexDlgSearch::Prepare()
 
 bool CHexDlgSearch::PrepareHex()
 {
+	m_fMatchCase = false;
 	m_strSearch = wstr2str(m_wstrTextSearch);
 	m_strReplace = wstr2str(m_wstrTextReplace);
 	if (!str2hex(m_strSearch, m_strSearch, m_fWildcard, static_cast<char>(m_uWildcard)))
@@ -892,12 +898,12 @@ bool CHexDlgSearch::PrepareHex()
 
 bool CHexDlgSearch::PrepareASCII()
 {
-	m_strSearch = wstr2str(m_wstrTextSearch);
+	m_strSearch = wstr2str(m_wstrTextSearch, CP_OEMCP); //Convert to ASCII-string of the system's current codepage.
 	if (!m_fMatchCase)
 		std::transform(m_strSearch.begin(), m_strSearch.end(), m_strSearch.begin(),
 			[](unsigned char ch) { return static_cast<char>(std::toupper(ch)); });
 
-	m_strReplace = wstr2str(m_wstrTextReplace);
+	m_strReplace = wstr2str(m_wstrTextReplace, CP_OEMCP);
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
@@ -924,8 +930,22 @@ bool CHexDlgSearch::PrepareWCHAR()
 	return true;
 }
 
+bool CHexDlgSearch::PrepareUTF8()
+{
+	m_fMatchCase = false;
+	m_fWildcard = false;
+	m_strSearch = wstr2str(m_wstrTextSearch, CP_UTF8); //Convert to UTF-8 string.
+	m_strReplace = wstr2str(m_wstrTextReplace, CP_UTF8);
+	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
+	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
+
+	return true;
+}
+
 bool CHexDlgSearch::PrepareBYTE()
 {
+	m_fMatchCase = false;
+	m_fWildcard = false;
 	BYTE bData { };
 	BYTE bDataRep { };
 	if (!wstr2num(m_wstrTextSearch, bData) || (m_fReplace && !wstr2num(m_wstrTextReplace, bDataRep)))
@@ -943,6 +963,8 @@ bool CHexDlgSearch::PrepareBYTE()
 
 bool CHexDlgSearch::PrepareWORD()
 {
+	m_fMatchCase = false;
+	m_fWildcard = false;
 	WORD wData { };
 	WORD wDataRep { };
 	if (!wstr2num(m_wstrTextSearch, wData) || (m_fReplace && !wstr2num(m_wstrTextReplace, wDataRep)))
@@ -967,6 +989,8 @@ bool CHexDlgSearch::PrepareWORD()
 
 bool CHexDlgSearch::PrepareDWORD()
 {
+	m_fMatchCase = false;
+	m_fWildcard = false;
 	DWORD dwData { };
 	DWORD dwDataRep { };
 	if (!wstr2num(m_wstrTextSearch, dwData) || (m_fReplace && !wstr2num(m_wstrTextReplace, dwDataRep)))
@@ -991,6 +1015,8 @@ bool CHexDlgSearch::PrepareDWORD()
 
 bool CHexDlgSearch::PrepareQWORD()
 {
+	m_fMatchCase = false;
+	m_fWildcard = false;
 	QWORD qwData { };
 	QWORD qwDataRep { };
 	if (!wstr2num(m_wstrTextSearch, qwData) || (m_fReplace && !wstr2num(m_wstrTextReplace, qwDataRep)))
@@ -1015,6 +1041,8 @@ bool CHexDlgSearch::PrepareQWORD()
 
 bool CHexDlgSearch::PrepareFloat()
 {
+	m_fMatchCase = false;
+	m_fWildcard = false;
 	float flData { };
 	float flDataRep { };
 	if (!wstr2num(m_wstrTextSearch, flData) || (m_fReplace && !wstr2num(m_wstrTextReplace, flDataRep)))
@@ -1039,6 +1067,8 @@ bool CHexDlgSearch::PrepareFloat()
 
 bool CHexDlgSearch::PrepareDouble()
 {
+	m_fMatchCase = false;
+	m_fWildcard = false;
 	double ddData { };
 	double ddDataRep { };
 	if (!wstr2num(m_wstrTextSearch, ddData) || (m_fReplace && !wstr2num(m_wstrTextReplace, ddDataRep)))
@@ -1063,6 +1093,8 @@ bool CHexDlgSearch::PrepareDouble()
 
 bool CHexDlgSearch::PrepareFILETIME()
 {
+	m_fMatchCase = false;
+	m_fWildcard = false;
 	DWORD dwDateFormat { };
 	if (!GetLocaleInfoW(LOCALE_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
 		reinterpret_cast<LPWSTR>(&dwDateFormat), sizeof(dwDateFormat)))

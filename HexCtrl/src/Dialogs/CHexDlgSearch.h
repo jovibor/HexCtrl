@@ -57,6 +57,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool PrepareHex();
 		[[nodiscard]] bool PrepareASCII();
 		[[nodiscard]] bool PrepareWCHAR();
+		[[nodiscard]] bool PrepareUTF8();
 		[[nodiscard]] bool PrepareBYTE();
 		[[nodiscard]] bool PrepareWORD();
 		[[nodiscard]] bool PrepareDWORD();
