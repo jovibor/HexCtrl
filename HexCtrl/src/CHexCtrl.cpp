@@ -1943,13 +1943,20 @@ void CHexCtrl::ChooseFontDlg()
 	CHOOSEFONTW chf { };
 	LOGFONTW lf { };
 	GetFont(lf);
+	auto stClr = GetColors();
 	chf.lStructSize = sizeof(CHOOSEFONTW);
 	chf.hwndOwner = m_hWnd;
 	chf.lpLogFont = &lf;
-	chf.Flags = CF_FIXEDPITCHONLY | CF_NOSCRIPTSEL | CF_NOSIMULATIONS | CF_NOSTYLESEL | CF_INITTOLOGFONTSTRUCT | CF_FORCEFONTEXIST;
+	chf.rgbColors = stClr.clrTextHex;
+	chf.Flags = CF_FIXEDPITCHONLY | CF_NOSCRIPTSEL | CF_NOSIMULATIONS | CF_EFFECTS
+		| CF_INITTOLOGFONTSTRUCT | CF_FORCEFONTEXIST;
 
 	if (ChooseFontW(&chf) == TRUE)
+	{
 		SetFont(lf);
+		stClr.clrTextHex = stClr.clrTextASCII = chf.rgbColors;
+		SetColors(stClr);
+	}
 }
 
 void CHexCtrl::ClipboardCopy(EClipboard enType)const

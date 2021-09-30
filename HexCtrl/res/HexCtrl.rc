@@ -499,7 +499,7 @@ BEGIN
         END
         POPUP "Appearance"
         BEGIN
-            MENUITEM "Choose Font",                 IDM_HEXCTRL_APPEAR_FONTCHOOSE
+            MENUITEM "Choose Font...",              IDM_HEXCTRL_APPEAR_FONTCHOOSE
             MENUITEM "Increase Font Size\tCtrl+MouseWheelUp", IDM_HEXCTRL_APPEAR_FONTINC
             MENUITEM "Decrease Font Size\tCtrl+MouseWheelDown", IDM_HEXCTRL_APPEAR_FONTDEC
             MENUITEM SEPARATOR
