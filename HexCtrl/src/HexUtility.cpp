@@ -134,10 +134,16 @@ namespace HEXCTRL::INTERNAL
 	//Explicit instantiations of templated func in .cpp.
 	template bool str2num<UCHAR>(const std::string& str, UCHAR& t, int iBase);
 
-	bool str2hex(const std::string& str, std::string& strToHex, bool fWc, char chWc)
+	bool str2hex(std::string_view strIn, std::string& strToHex, bool fWc, char chWc)
 	{
+		std::string strFilter = "0123456789AaBbCcDdEeFf"; //Allowed characters.
+		if (fWc)
+			strFilter += chWc;
+		if (strIn.find_first_not_of(strFilter) != std::string_view::npos)
+			return false;
+
 		std::string strTmp;
-		for (auto iterBegin = str.begin(); iterBegin != str.end();)
+		for (auto iterBegin = strIn.begin(); iterBegin != strIn.end();)
 		{
 			if (fWc && *iterBegin == chWc) //Skip wildcard.
 			{
@@ -147,9 +153,9 @@ namespace HEXCTRL::INTERNAL
 			}
 
 			//Extract two current chars and pass it to str2num as string.
-			const size_t nOffsetCurr = iterBegin - str.begin();
-			const auto nSize = nOffsetCurr + 2 <= str.size() ? 2 : 1;
-			if (unsigned char chNumber;	str2num(str.substr(nOffsetCurr, nSize), chNumber, 16))
+			const size_t nOffsetCurr = iterBegin - strIn.begin();
+			const auto nSize = nOffsetCurr + 2 <= strIn.size() ? 2 : 1;
+			if (unsigned char chNumber;	str2num(std::string(strIn.substr(nOffsetCurr, nSize)), chNumber, 16))
 			{
 				iterBegin += nSize;
 				strTmp += chNumber;

@@ -54,7 +54,7 @@ namespace HEXCTRL::INTERNAL
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		void Prepare();
-		[[nodiscard]] bool PrepareHex();
+		[[nodiscard]] bool PrepareHexBytes();
 		[[nodiscard]] bool PrepareASCII();
 		[[nodiscard]] bool PrepareWCHAR();
 		[[nodiscard]] bool PrepareUTF8();

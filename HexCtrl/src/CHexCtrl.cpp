@@ -861,9 +861,9 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	if (!IsCreated())
 		return false;
 
-	const bool fDataSet = IsDataSet();
-	const bool fMutable = fDataSet ? IsMutable() : false;
-	const bool fSelection = fDataSet && HasSelection();
+	const auto fDataSet = IsDataSet();
+	const auto fMutable = fDataSet ? IsMutable() : false;
+	const auto fSelection = fDataSet && HasSelection();
 	bool fAvail;
 
 	switch (eCmd)
@@ -4332,7 +4332,7 @@ void CHexCtrl::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 
 void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {
-	if (!IsMutable() || !IsCurTextArea() || (GetKeyState(VK_CONTROL) < 0))
+	if (!IsDataSet() || !IsMutable() || !IsCurTextArea() || (GetKeyState(VK_CONTROL) < 0))
 		return;
 
 	BYTE chByte = nChar & 0xFF;

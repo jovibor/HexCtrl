@@ -780,7 +780,7 @@ void CHexDlgSearch::Prepare()
 	switch (GetSearchMode())
 	{
 	case EMode::SEARCH_HEX:
-		fSuccess = PrepareHex();
+		fSuccess = PrepareHexBytes();
 		break;
 	case EMode::SEARCH_ASCII:
 		fSuccess = PrepareASCII();
@@ -871,21 +871,22 @@ void CHexDlgSearch::Prepare()
 	SetActiveWindow();
 }
 
-bool CHexDlgSearch::PrepareHex()
+bool CHexDlgSearch::PrepareHexBytes()
 {
+	constexpr auto wstrWrongInput { L"Unacceptable input character.\r\nAllowed characters are: 0123456789AaBbCcDdEeFf" };
 	m_fMatchCase = false;
 	m_strSearch = wstr2str(m_wstrTextSearch);
 	m_strReplace = wstr2str(m_wstrTextReplace);
 	if (!str2hex(m_strSearch, m_strSearch, m_fWildcard, static_cast<char>(m_uWildcard)))
 	{
 		m_iWrap = 1;
-		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		MessageBoxW(wstrWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
 
 	if ((m_fReplace && !str2hex(m_strReplace, m_strReplace)))
 	{
-		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		MessageBoxW(wstrWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		m_stComboReplace.SetFocus();
 		return false;
 	}
