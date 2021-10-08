@@ -33,5 +33,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fCancel { false };
 		std::wstring m_wstrOperName { };
 		const UINT_PTR IDT_EXITCHECK { 0x1 };
+		long long m_llTicks { 0LL }; //How many ticks have passed since dialog beginning.
+		int m_iTicksInSecond { };    //How many ticks in one second.
 	};
 }

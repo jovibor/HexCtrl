@@ -108,16 +108,17 @@ namespace HEXCTRL::INTERNAL
 		bool m_fBigEndian { false };    //"Big-endian" check box.
 		bool m_fMatchCase { false };    //"Match case" check box.
 		bool m_fInverted { false };     //"Inverted" check box
-		std::span<std::byte> m_spnSearch;   //"Search" span.
-		std::span<std::byte> m_spnReplace;  //"Replace" span.
-		std::string m_strSearch;            //Actual string to search after all conversions.
-		std::string m_strReplace;           //Actual string to replace.
-		std::wstring m_wstrSearch;          //Actual wstring to search.
-		std::wstring m_wstrReplace;         //Actual wstring to replace.
-		std::wstring m_wstrTextSearch { };  //Text from "Search" box.
-		std::wstring m_wstrTextReplace { }; //Text from "Replace with..." box.
+		bool m_fReplaceWarn { true };   //Show "Replace string size exceeds..." warning message or not.
+		std::span<std::byte> m_spnSearch;    //"Search" span.
+		std::span<std::byte> m_spnReplace;   //"Replace" span.
+		std::string m_strSearch;             //Actual string to search after all conversions.
+		std::string m_strReplace;            //Actual string to replace.
+		std::wstring m_wstrSearch;           //Actual wstring to search.
+		std::wstring m_wstrReplace;          //Actual wstring to replace.
+		std::wstring m_wstrTextSearch { };   //Text from "Search" box.
+		std::wstring m_wstrTextReplace { };  //Text from "Replace with..." box.
 		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
 		const std::byte m_uWildcard { '?' }; //Wildcard symbol.
-		HEXSPAN m_stSelSpan { };            //Previous selection.
+		HEXSPAN m_stSelSpan { };             //Previous selection.
 	};
 }

@@ -265,10 +265,9 @@ void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	{
 		if (const auto* const pBkm = m_pBookmarks->GetByIndex(static_cast<size_t>(pNMI->iItem)); pBkm != nullptr)
 		{
-			static LISTEXCOLOR stCellClr;
-			stCellClr.clrBk = pBkm->clrBk;
-			stCellClr.clrText = pBkm->clrText;
-			pNMI->lParam = reinterpret_cast<LPARAM>(&stCellClr);
+			m_stCellClr.clrBk = pBkm->clrBk;
+			m_stCellClr.clrText = pBkm->clrText;
+			pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
 		}
 	}
 }

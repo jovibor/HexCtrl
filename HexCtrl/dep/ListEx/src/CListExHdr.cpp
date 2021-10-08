@@ -151,7 +151,7 @@ void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed,
 	}
 
 	CMemDC memDC(*pDC, rcOrig);
-	CDC& rDC = memDC.GetDC();
+	auto& rDC = memDC.GetDC();
 	const auto ID = ColumnIndexToID(iItem);
 
 	auto const pClr = HasColor(ID);
@@ -163,7 +163,7 @@ void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed,
 	rDC.SelectObject(m_fontHdr);
 
 	//Set item's text buffer first char to zero, then getting item's text and Draw it.
-	static WCHAR warrHdrText[MAX_PATH];
+	wchar_t warrHdrText[MAX_PATH];
 	warrHdrText[0] = L'\0';
 	HDITEMW hdItem { HDI_FORMAT | HDI_TEXT, 0, warrHdrText, nullptr, MAX_PATH };
 	GetItem(iItem, &hdItem);

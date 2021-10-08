@@ -4201,7 +4201,7 @@ void CHexCtrl::TtOffsetShow(bool fShow)
 		CPoint ptScreen;
 		GetCursorPos(&ptScreen);
 
-		static wchar_t warrOffset[40] { L"Offset: " };
+		wchar_t warrOffset[64] { L"Offset: " };
 		UllToWchars(GetTopLine() * m_dwCapacity, &warrOffset[8], static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
 		m_stToolInfoOffset.lpszText = warrOffset;
 		m_wndTtOffset.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));

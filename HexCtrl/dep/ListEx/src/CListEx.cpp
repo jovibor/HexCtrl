@@ -969,7 +969,7 @@ void CListEx::TtRowShow(bool fShow, UINT uRow)
 		CPoint ptScreen;
 		GetCursorPos(&ptScreen);
 
-		static wchar_t warrOffset[32] { L"Row: " };
+		wchar_t warrOffset[32] { L"Row: " };
 		swprintf_s(&warrOffset[5], 24, L"%u", uRow);
 		m_stToolInfoRow.lpszText = warrOffset;
 		m_stWndTtRow.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
@@ -1326,33 +1326,31 @@ void CListEx::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
 	if (m_fVirtual && m_fHighLatency)
 	{
-		static bool flag { };
-		static UINT uItem;
 		if (nSBCode != SB_THUMBTRACK)
 		{
 			//If there was SB_THUMBTRACK message previously, calculate the scroll amount (up/down)
 			//by multiplying item's row height by difference between current (top) and nPos row.
 			//Scroll may be negative therefore.
-			if (flag)
+			if (m_fHLFlag)
 			{
 				CRect rc;
-				GetItemRect(uItem, rc, LVIR_LABEL);
-				CSize size(0, (uItem - GetTopIndex()) * rc.Height());
+				GetItemRect(m_uHLItem, rc, LVIR_LABEL);
+				CSize size(0, (m_uHLItem - GetTopIndex()) * rc.Height());
 				Scroll(size);
-				flag = false;
+				m_fHLFlag = false;
 			}
 			TtRowShow(false, 0);
 			CMFCListCtrl::OnVScroll(nSBCode, nPos, pScrollBar);
 		}
 		else
 		{
-			flag = true;
+			m_fHLFlag = true;
 			SCROLLINFO si { };
 			si.cbSize = sizeof(SCROLLINFO);
 			si.fMask = SIF_ALL;
 			GetScrollInfo(SB_VERT, &si);
-			uItem = si.nTrackPos; //si.nTrackPos is in fact a row number.
-			TtRowShow(true, uItem);
+			m_uHLItem = si.nTrackPos; //si.nTrackPos is in fact a row number.
+			TtRowShow(true, m_uHLItem);
 		}
 	}
 	else

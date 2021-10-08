@@ -856,15 +856,14 @@ void CHexDlgSearch::Prepare()
 		return;
 	}
 
-	static bool fReplaceWarning { true }; //Show Replace string size exceeds Warning or not.
-	if (fReplaceWarning && m_fReplace && (m_spnReplace.size() > m_spnSearch.size()))
+	if (m_fReplaceWarn && m_fReplace && (m_spnReplace.size() > m_spnSearch.size()))
 	{
-		static std::wstring_view wstrReplaceWarning { L"The replacing string is longer than searching string.\r\n"
+		constexpr auto wstrReplaceWarning { L"The replacing string is longer than searching string.\r\n"
 			"Do you want to overwrite the bytes following search occurrence?\r\n"
 			"Choosing \"No\" will cancel search." };
-		if (IDNO == MessageBoxW(wstrReplaceWarning.data(), L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST))
+		if (IDNO == MessageBoxW(wstrReplaceWarning, L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST))
 			return;
-		fReplaceWarning = false;
+		m_fReplaceWarn = false;
 	}
 
 	Search();

@@ -29,7 +29,9 @@ BOOL CHexDlgCallback::OnInitDialog()
 
 	SetWindowTextW(m_wstrOperName.data());
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPERNAME)->SetWindowTextW(m_wstrOperName.data());
-	SetTimer(IDT_EXITCHECK, 100, nullptr);
+	constexpr auto iElapse { 100 }; //Milliseconds for the timer.
+	SetTimer(IDT_EXITCHECK, iElapse, nullptr);
+	m_iTicksInSecond = 1000 / iElapse;
 
 	constexpr auto iRange { 1000 };
 	m_stProgBar.SetRange32(0, iRange);
@@ -55,9 +57,16 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 		OnCancel();
 	}
 
+	const auto ullCurDiff = m_ullProgBarCurr - m_ullProgBarMin;
 	//How many thousandth parts have already passed.
-	int iPos = static_cast<int>((m_ullProgBarCurr - m_ullProgBarMin) / m_ullThousandth);
+	auto iPos = static_cast<int>(ullCurDiff / m_ullThousandth);
 	m_stProgBar.SetPos(iPos);
+
+	constexpr auto iBytesInMB = 1024 * 1024; //(B in KB) * (KB in MB)
+	wchar_t buff[64];
+	swprintf_s(buff, std::size(buff), L" %lld MB/s", ((ullCurDiff / ++m_llTicks) * m_iTicksInSecond) / iBytesInMB);
+	std::wstring wstr = m_wstrOperName + buff;
+	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPERNAME)->SetWindowTextW(wstr.data());
 
 	CDialogEx::OnTimer(nIDEvent);
 }

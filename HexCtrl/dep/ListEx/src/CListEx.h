@@ -126,6 +126,8 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		bool m_fTtCellShown { false }; //Is cell's tool-tip shown atm.
 		bool m_fTtLinkShown { false }; //Is link's tool-tip shown atm.
 		bool m_fLDownAtLink { false }; //Left mouse down on link.
+		bool m_fHLFlag { };            //High latency Vscroll flag.
+		UINT m_uHLItem { };            //High latency Vscroll item.
 	};
 
 			/*******************Setting a manifest for ComCtl32.dll version 6.***********************/

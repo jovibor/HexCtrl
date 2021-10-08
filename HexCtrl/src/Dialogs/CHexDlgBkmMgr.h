@@ -39,6 +39,7 @@ namespace HEXCTRL::INTERNAL
 		CHexBookmarks* m_pBookmarks { };
 		CMenu m_stMenuList;
 		__time64_t m_time { };
+		LISTEXCOLOR m_stCellClr { };
 		bool m_fShowAsHex { true };
 	};
 }
