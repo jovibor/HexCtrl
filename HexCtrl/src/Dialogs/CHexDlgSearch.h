@@ -15,7 +15,9 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgSearch final : public CDialogEx
 	{
 		enum class EMode : std::uint8_t;
-		struct SFIND;
+		struct SFINDRESULT;
+		struct STHREADRUN;
+		enum class EType :std::uint8_t;
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
@@ -29,12 +31,13 @@ namespace HEXCTRL::INTERNAL
 		void ComboReplaceFill(LPCWSTR pwsz);
 
 		//Main routine for finding stuff.
-		[[nodiscard]] SFIND Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, std::span<std::byte> spnSearch,
+		[[nodiscard]] SFINDRESULT Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, std::span<std::byte> spnSearch,
 			bool fForward = true, CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true);
 
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
 		void HexCtrlHighlight(const std::vector<HEXSPAN>& vecSel); //Highlight found occurence in HexCtrl.
+		template<EType eType>
 		[[nodiscard]] bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -69,6 +72,8 @@ namespace HEXCTRL::INTERNAL
 		void ResetSearch();
 		void Search();
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
+		template<EType eType>
+		void ThreadRun(STHREADRUN* pStThread);
 		DECLARE_MESSAGE_MAP()
 	private:
 		IHexCtrl* m_pHexCtrl { };
@@ -91,7 +96,7 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullBoundBegin { };  //Search start boundary.
 		ULONGLONG m_ullBoundEnd { };    //Search end boundary.
 		ULONGLONG m_ullOffsetCurr { };  //Current offset a search should start from.
-		ULONGLONG m_ullEndSentinel { }; //Maximum offset search can't cross.
+		ULONGLONG m_ullEndSentinel { }; //Maximum offset that search can't cross.
 		ULONGLONG m_ullStep { 1 };      //Search step (default is 1 byte).
 		DWORD m_dwCount { };            //How many, or what index number.
 		DWORD m_dwReplaced { };         //Replaced amount;
@@ -120,5 +125,6 @@ namespace HEXCTRL::INTERNAL
 		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
 		const std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		HEXSPAN m_stSelSpan { };             //Previous selection.
+		void(CHexDlgSearch::*m_pfnThread)(STHREADRUN* pThread);
 	};
 }

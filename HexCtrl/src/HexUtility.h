@@ -43,7 +43,7 @@ namespace HEXCTRL::INTERNAL
 
 	//Converts every two numeric chars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
 	//fWc means that wildcards are allowed, uWc - the wildcard.
-	bool str2hex(std::string_view str, std::string& strToHex, bool fWc = false, char chWc = '?');
+	bool str2hex(std::string_view strIn, std::string& strToHex, bool fWc = false, char chWc = '?');
 
 	//Wide to Multibyte string convertion.
 	[[nodiscard]] std::string wstr2str(std::wstring_view wstr, UINT uCodePage = CP_UTF8);

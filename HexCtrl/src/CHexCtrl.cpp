@@ -1951,7 +1951,7 @@ void CHexCtrl::ChooseFontDlg()
 	chf.Flags = CF_FIXEDPITCHONLY | CF_NOSCRIPTSEL | CF_NOSIMULATIONS | CF_EFFECTS
 		| CF_INITTOLOGFONTSTRUCT | CF_FORCEFONTEXIST;
 
-	if (ChooseFontW(&chf) == TRUE)
+	if (ChooseFontW(&chf) != FALSE)
 	{
 		SetFont(lf);
 		stClr.clrTextHex = stClr.clrTextASCII = chf.rgbColors;
