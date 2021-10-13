@@ -17,7 +17,6 @@ namespace HEXCTRL::INTERNAL
 		enum class EMode : std::uint8_t;
 		struct SFINDRESULT;
 		struct STHREADRUN;
-		enum class EType :std::uint8_t;
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
@@ -37,7 +36,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
 		void HexCtrlHighlight(const std::vector<HEXSPAN>& vecSel); //Highlight found occurence in HexCtrl.
-		template<EType eType>
+		template<std::uint16_t uiType>
 		[[nodiscard]] bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -72,7 +71,7 @@ namespace HEXCTRL::INTERNAL
 		void ResetSearch();
 		void Search();
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
-		template<EType eType>
+		template<std::uint16_t uiType>
 		void ThreadRun(STHREADRUN* pStThread);
 		DECLARE_MESSAGE_MAP()
 	private:
@@ -125,6 +124,6 @@ namespace HEXCTRL::INTERNAL
 		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
 		const std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		HEXSPAN m_stSelSpan { };             //Previous selection.
-		void(CHexDlgSearch::*m_pfnThread)(STHREADRUN* pThread);
+		void(CHexDlgSearch::*m_pfnThread)(STHREADRUN* pThread); //Func pointer to the ThreadRun<> for the Search thread.
 	};
 }

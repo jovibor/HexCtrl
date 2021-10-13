@@ -30,14 +30,16 @@ namespace HEXCTRL::INTERNAL
 		SEARCH_FLOAT, SEARCH_DOUBLE, SEARCH_FILETIME
 	};
 
-	enum class CHexDlgSearch::EType : std::uint8_t //For instantiations of templated MemCmp<>.
+	enum class ECmpType : std::uint16_t //Flags for the instantiations of templated MemCmp<>.
 	{
-		TYPE_RAWLOOP,         //Raw loop comparison.
-		TYPE_RAWLOOP_WC,      //Raw loop with wildcard, it's same for ASCII, WCHAR and HEX.
-		TYPE_ASCII_NOMC_WC,   //ASCII no match-case with wildcard.
-		TYPE_ASCII_NOMC_NOWC, //ASCII no match-case no wildcard.
-		TYPE_WCHAR_NOMC_WC,   //WCHAR no match-case with wildcard.
-		TYPE_WCHAR_NOMC_NOWC  //WCHAR no match-case no wildcard.
+		TYPE_CHAR_LOOP = 0x0001,
+		TYPE_WCHAR_LOOP = 0x0002,
+		TYPE_CASE_INSENSITIVE = 0x0004,
+		TYPE_WILDCARD = 0x0008,
+		TYPE_INT8 = 0x0010,
+		TYPE_INT16 = 0x0020,
+		TYPE_INT32 = 0x0040,
+		TYPE_INT64 = 0x0080
 	};
 
 	enum class EMenuID : std::uint16_t
@@ -286,56 +288,89 @@ void CHexDlgSearch::HexCtrlHighlight(const std::vector<HEXSPAN>& vecSel)
 		pHexCtrl->GoToOffset(vecSel.back().ullOffset);
 }
 
-template<CHexDlgSearch::EType eType>
+template<std::uint16_t uiType>
 bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const
 {
-	if constexpr (eType == EType::TYPE_RAWLOOP || eType == EType::TYPE_RAWLOOP_WC)
+	using enum ECmpType;
+	if constexpr ((uiType & static_cast<std::uint16_t>(TYPE_INT8)) > 0)
 	{
-		for (auto i { 0U }; i < nSize; ++i, ++pBuf1, ++pBuf2)
-		{
-			if constexpr (eType == EType::TYPE_RAWLOOP_WC)
-			{
-				if (*pBuf2 == m_uWildcard) //Checking for wildcard match.
-					continue;
-			}
-			if (*pBuf1 != *pBuf2)
-				return m_fInverted;
-		}
-		return !m_fInverted;
-	}
-	else if constexpr (eType == EType::TYPE_ASCII_NOMC_NOWC || eType == EType::TYPE_ASCII_NOMC_WC)
-	{
-		for (auto i { 0U }; i < nSize; ++i, ++pBuf1, ++pBuf2)
-		{
-			if constexpr (eType == EType::TYPE_ASCII_NOMC_WC)
-			{
-				if (*pBuf2 == m_uWildcard) //Checking for wildcard match.
-					continue;
-			}
-			auto ch = static_cast<char>(*pBuf1);
-			if (ch >= 0x61 && ch < 0x7B)
-				ch -= 32;
-			if (ch != static_cast<char>(*pBuf2))
-				return m_fInverted;
-		}
-		return !m_fInverted;
-	}
-	else if constexpr (eType == EType::TYPE_WCHAR_NOMC_WC || eType == EType::TYPE_WCHAR_NOMC_NOWC)
-	{
-		wchar_t wbuff[SEARCH_SIZE_LIMIT / sizeof(wchar_t)];
-		std::transform(reinterpret_cast<const wchar_t*>(pBuf1), reinterpret_cast<const wchar_t*>(pBuf1 + nSize),
-			wbuff, [](wchar_t wch) { return static_cast<wchar_t>(std::towupper(wch)); });
-		pBuf1 = reinterpret_cast<std::byte*>(wbuff);
+		if (*reinterpret_cast<const std::uint8_t*>(pBuf1) != *reinterpret_cast<const std::uint8_t*>(pBuf2))
+			return m_fInverted;
 
+		return !m_fInverted;
+	}
+	else if constexpr ((uiType & static_cast<std::uint16_t>(TYPE_INT16)) > 0)
+	{
+		if (*reinterpret_cast<const std::uint16_t*>(pBuf1) != *reinterpret_cast<const std::uint16_t*>(pBuf2))
+			return m_fInverted;
+
+		return !m_fInverted;
+	}
+	else if constexpr ((uiType & static_cast<std::uint16_t>(TYPE_INT32)) > 0)
+	{
+		if (*reinterpret_cast<const std::uint32_t*>(pBuf1) != *reinterpret_cast<const std::uint32_t*>(pBuf2))
+			return m_fInverted;
+
+		return !m_fInverted;
+	}
+	else if constexpr ((uiType & static_cast<std::uint16_t>(TYPE_INT64)) > 0)
+	{
+		if (*reinterpret_cast<const std::uint64_t*>(pBuf1) != *reinterpret_cast<const std::uint64_t*>(pBuf2))
+			return m_fInverted;
+
+		return !m_fInverted;
+	}
+	else if constexpr ((uiType & static_cast<std::uint16_t>(TYPE_CHAR_LOOP)) > 0)
+	{
 		for (auto i { 0U }; i < nSize; ++i, ++pBuf1, ++pBuf2)
 		{
-			if constexpr (eType == EType::TYPE_WCHAR_NOMC_WC)
+			if constexpr ((uiType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0)
 			{
 				if (*pBuf2 == m_uWildcard) //Checking for wildcard match.
 					continue;
 			}
-			if (*pBuf1 != *pBuf2)
-				return m_fInverted;
+
+			if constexpr ((uiType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0)
+			{
+				auto ch = static_cast<char>(*pBuf1);
+				if (ch >= 0x41 && ch <= 0x5A) //IsUpper.
+					ch += 32;
+				if (ch != static_cast<char>(*pBuf2))
+					return m_fInverted;
+			}
+			else
+			{
+				if (*pBuf1 != *pBuf2)
+					return m_fInverted;
+			}
+		}
+		return !m_fInverted;
+	}
+	else if constexpr ((uiType & static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)) > 0)
+	{
+		auto pBuf1wch = reinterpret_cast<const wchar_t*>(pBuf1);
+		auto pBuf2wch = reinterpret_cast<const wchar_t*>(pBuf2);
+		for (auto i { 0U }; i < nSize / sizeof(wchar_t); ++i, ++pBuf1wch, ++pBuf2wch)
+		{
+			if constexpr ((uiType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0)
+			{
+				if (*pBuf2wch == static_cast<wchar_t>(m_uWildcard)) //Checking for wildcard match.
+					continue;
+			}
+
+			if constexpr ((uiType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0)
+			{
+				auto wch = *pBuf1wch;
+				if (wch >= 0x41 && wch <= 0x5A) //IsUpper.
+					wch += 32;
+				if (wch != *pBuf2wch)
+					return m_fInverted;
+			}
+			else
+			{
+				if (*pBuf1wch != *pBuf2wch)
+					return m_fInverted;
+			}
 		}
 		return !m_fInverted;
 	}
@@ -844,33 +879,39 @@ bool CHexDlgSearch::PrepareHexBytes()
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
+	using enum ECmpType;
 	if (!m_fWildcard)
-		m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP>;
+		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)>;
 	else
-		m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP_WC>;
+		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
+		static_cast<std::uint16_t>(TYPE_WILDCARD)>;
 
 	return true;
 }
 
 bool CHexDlgSearch::PrepareASCII()
 {
-	m_strSearch = wstr2str(m_wstrTextSearch, CP_OEMCP); //Convert to ASCII-string of the system's current codepage.
-	if (!m_fMatchCase)
+	m_strSearch = wstr2str(m_wstrTextSearch, CP_ACP); //Convert to the system default Windows ANSI code page.
+	if (!m_fMatchCase) //Make the string lowercase.
 		std::transform(m_strSearch.begin(), m_strSearch.end(), m_strSearch.begin(),
-			[](unsigned char ch) { return static_cast<char>(std::toupper(ch)); });
+			[](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
 
-	m_strReplace = wstr2str(m_wstrTextReplace, CP_OEMCP);
+	m_strReplace = wstr2str(m_wstrTextReplace, CP_ACP);
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
+	using enum ECmpType;
 	if (m_fMatchCase && !m_fWildcard)
-		m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP>;
+		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)>;
 	else if (m_fMatchCase && m_fWildcard)
-		m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP_WC>;
+		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
+		| static_cast<std::uint16_t>(TYPE_WILDCARD)>;
 	else if (!m_fMatchCase && m_fWildcard)
-		m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_ASCII_NOMC_WC>;
+		m_pfnThread = &CHexDlgSearch::ThreadRun< static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
+		static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD)>;
 	else if (!m_fMatchCase && !m_fWildcard)
-		m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_ASCII_NOMC_NOWC>;
+		m_pfnThread = &CHexDlgSearch::ThreadRun< static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
+		| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)>;
 
 	return true;
 }
@@ -878,28 +919,25 @@ bool CHexDlgSearch::PrepareASCII()
 bool CHexDlgSearch::PrepareWCHAR()
 {
 	m_wstrSearch = m_wstrTextSearch;
-	if (!m_fMatchCase)
-		std::transform(m_wstrSearch.begin(), m_wstrSearch.end(), m_wstrSearch.begin(), std::towupper);
-
-	if (m_fWildcard)
-	{
-		//Constructing one wchar_t consisting with two m_uWildcard symbols.
-		const wchar_t wDblWildcard = static_cast<short>(m_uWildcard) << 8 | static_cast<short>(m_uWildcard);
-		std::replace(m_wstrSearch.begin(), m_wstrSearch.end(), static_cast<wchar_t>(m_uWildcard), wDblWildcard);
-	}
+	if (!m_fMatchCase) //Make the string lowercase.
+		std::transform(m_wstrSearch.begin(), m_wstrSearch.end(), m_wstrSearch.begin(), std::towlower);
 
 	m_wstrReplace = m_wstrTextReplace;
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_wstrSearch.data()), m_wstrSearch.size() * sizeof(wchar_t) };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_wstrReplace.data()), m_wstrReplace.size() * sizeof(wchar_t) };
 
+	using enum ECmpType;
 	if (m_fMatchCase && !m_fWildcard)
-		m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP>;
+		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)>;
 	else if (m_fMatchCase && m_fWildcard)
-		m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP_WC>;
+		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
+		| static_cast<std::uint16_t>(TYPE_WILDCARD)>;
 	else if (!m_fMatchCase && m_fWildcard)
-		m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_WCHAR_NOMC_WC>;
+		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
+		| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD)>;
 	else if (!m_fMatchCase && !m_fWildcard)
-		m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_WCHAR_NOMC_NOWC>;
+		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
+		| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)>;
 
 	return true;
 }
@@ -913,7 +951,8 @@ bool CHexDlgSearch::PrepareUTF8()
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
-	m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP>;
+	using enum ECmpType;
+	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)>;
 
 	return true;
 }
@@ -934,7 +973,8 @@ bool CHexDlgSearch::PrepareBYTE()
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
-	m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP>;
+	using enum ECmpType;
+	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT8)>;
 
 	return true;
 }
@@ -962,7 +1002,8 @@ bool CHexDlgSearch::PrepareWORD()
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
-	m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP>;
+	using enum ECmpType;
+	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT16)>;
 
 	return true;
 }
@@ -990,7 +1031,8 @@ bool CHexDlgSearch::PrepareDWORD()
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
-	m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP>;
+	using enum ECmpType;
+	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT32)>;
 
 	return true;
 }
@@ -1018,7 +1060,8 @@ bool CHexDlgSearch::PrepareQWORD()
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
-	m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP>;
+	using enum ECmpType;
+	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT64)>;
 
 	return true;
 }
@@ -1046,7 +1089,8 @@ bool CHexDlgSearch::PrepareFloat()
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
-	m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP>;
+	using enum ECmpType;
+	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT32)>;
 
 	return true;
 }
@@ -1074,7 +1118,8 @@ bool CHexDlgSearch::PrepareDouble()
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
-	m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP>;
+	using enum ECmpType;
+	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT64)>;
 
 	return true;
 }
@@ -1130,7 +1175,8 @@ bool CHexDlgSearch::PrepareFILETIME()
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
-	m_pfnThread = &CHexDlgSearch::ThreadRun<EType::TYPE_RAWLOOP>;
+	using enum ECmpType;
+	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT64)>;
 
 	return true;
 }
@@ -1379,7 +1425,7 @@ void CHexDlgSearch::SetEditStartAt(ULONGLONG ullOffset)
 	m_stEditStart.SetWindowTextW(buff);
 }
 
-template<CHexDlgSearch::EType eType>
+template<std::uint16_t uiType>
 void CHexDlgSearch::ThreadRun(STHREADRUN* pStThread)
 {
 	const auto pDataSearch = pStThread->spnSearch.data();
@@ -1397,7 +1443,7 @@ void CHexDlgSearch::ThreadRun(STHREADRUN* pStThread)
 
 			for (auto iterData = 0ULL; iterData <= pStThread->ullChunkSize; iterData += ullStep)
 			{
-				if (MemCmp<eType>(spnData.data() + iterData, pDataSearch, nSizeSearch))
+				if (MemCmp<uiType>(spnData.data() + iterData, pDataSearch, nSizeSearch))
 				{
 					pStThread->ullStart = ullOffsetSearch + iterData;
 					pStThread->fResult = true;
@@ -1443,7 +1489,7 @@ void CHexDlgSearch::ThreadRun(STHREADRUN* pStThread)
 
 			for (auto iterData = static_cast<LONGLONG>(pStThread->ullChunkSize); iterData >= 0; iterData -= ullStep) //iterData might be negative.
 			{
-				if (MemCmp<eType>(spnData.data() + iterData, pDataSearch, nSizeSearch))
+				if (MemCmp<uiType>(spnData.data() + iterData, pDataSearch, nSizeSearch))
 				{
 					pStThread->ullStart = ullOffsetSearch + iterData;
 					pStThread->fResult = true;
