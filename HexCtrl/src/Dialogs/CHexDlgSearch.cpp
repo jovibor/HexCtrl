@@ -502,18 +502,6 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
 }
 
-void CHexDlgSearch::OnOK()
-{
-	OnButtonSearchF();
-}
-
-void CHexDlgSearch::OnCancel()
-{
-	::SetFocus(GetHexCtrl()->GetWindowHandle(EHexWnd::WND_MAIN));
-
-	CDialogEx::OnCancel();
-}
-
 void CHexDlgSearch::OnButtonSearchF()
 {
 	m_iDirection = 1;
@@ -554,9 +542,55 @@ void CHexDlgSearch::OnButtonReplaceAll()
 	Prepare();
 }
 
+void CHexDlgSearch::OnCancel()
+{
+	::SetFocus(GetHexCtrl()->GetWindowHandle(EHexWnd::WND_MAIN));
+
+	CDialogEx::OnCancel();
+}
+
 void CHexDlgSearch::OnCheckSel()
 {
 	m_stEditStart.EnableWindow(m_stCheckSel.GetCheck() == BST_CHECKED ? 0 : 1);
+}
+
+void CHexDlgSearch::OnComboModeSelChange()
+{
+	const auto eMode = GetSearchMode();
+
+	if (eMode != m_eSearchMode)
+	{
+		ResetSearch();
+		m_eSearchMode = eMode;
+	}
+
+	BOOL fWildcard { FALSE };
+	BOOL fBigEndian { FALSE };
+	BOOL fMatchCase { FALSE };
+	switch (eMode)
+	{
+	case EMode::SEARCH_WORD:
+	case EMode::SEARCH_DWORD:
+	case EMode::SEARCH_QWORD:
+	case EMode::SEARCH_FLOAT:
+	case EMode::SEARCH_DOUBLE:
+	case EMode::SEARCH_FILETIME:
+		fBigEndian = TRUE;
+		break;
+	case EMode::SEARCH_ASCII:
+	case EMode::SEARCH_WCHAR:
+		fMatchCase = TRUE;
+		fWildcard = TRUE;
+		break;
+	case EMode::SEARCH_HEXBYTES:
+		fWildcard = TRUE;
+		break;
+	default:
+		break;
+	}
+	m_stCheckWcard.EnableWindow(fWildcard);
+	m_stCheckBE.EnableWindow(fBigEndian);
+	m_stCheckMatchC.EnableWindow(fMatchCase);
 }
 
 BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
@@ -613,45 +647,6 @@ void CHexDlgSearch::OnDestroy()
 	m_pListMain->DestroyWindow();
 	m_stBrushDefault.DeleteObject();
 	m_stMenuList.DestroyMenu();
-}
-
-void CHexDlgSearch::OnComboModeSelChange()
-{
-	const auto eMode = GetSearchMode();
-
-	if (eMode != m_eSearchMode)
-	{
-		ResetSearch();
-		m_eSearchMode = eMode;
-	}
-
-	BOOL fWildcard { FALSE };
-	BOOL fBigEndian { FALSE };
-	BOOL fMatchCase { FALSE };
-	switch (eMode)
-	{
-	case EMode::SEARCH_WORD:
-	case EMode::SEARCH_DWORD:
-	case EMode::SEARCH_QWORD:
-	case EMode::SEARCH_FLOAT:
-	case EMode::SEARCH_DOUBLE:
-	case EMode::SEARCH_FILETIME:
-		fBigEndian = TRUE;
-		break;
-	case EMode::SEARCH_ASCII:
-	case EMode::SEARCH_WCHAR:
-		fMatchCase = TRUE;
-		fWildcard = TRUE;
-		break;
-	case EMode::SEARCH_HEXBYTES:
-		fWildcard = TRUE;
-		break;
-	default:
-		break;
-	}
-	m_stCheckWcard.EnableWindow(fWildcard);
-	m_stCheckBE.EnableWindow(fBigEndian);
-	m_stCheckMatchC.EnableWindow(fMatchCase);
 }
 
 void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
@@ -714,6 +709,11 @@ void CHexDlgSearch::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 	POINT pt;
 	GetCursorPos(&pt);
 	m_stMenuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
+}
+
+void CHexDlgSearch::OnOK()
+{
+	OnButtonSearchF();
 }
 
 void CHexDlgSearch::Prepare()
@@ -1434,6 +1434,8 @@ void CHexDlgSearch::Search()
 	}
 
 	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_RESULT)->SetWindowTextW(wstrInfo.data());
+	SetForegroundWindow();
+	SetFocus();
 }
 
 void CHexDlgSearch::SetEditStartAt(ULONGLONG ullOffset)
