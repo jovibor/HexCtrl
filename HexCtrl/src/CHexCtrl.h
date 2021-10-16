@@ -87,6 +87,7 @@ namespace HEXCTRL::INTERNAL
 		void SetMutable(bool fEnable)override;              //Enable or disable mutable/editable mode.
 		void SetOffsetMode(bool fHex)override;              //Set offset being shown as Hex or as Decimal.
 		void SetPageSize(DWORD dwSize, std::wstring_view wstrName)override;  //Set page size and name to draw the line between.
+		void SetRedraw(bool fRedraw)override;               //Handle WM_PAINT message or not.
 		void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false)override; //Set current selection.
 		void SetWheelRatio(double dbRatio)override;         //Set the ratio for how much to scroll with mouse-wheel.
 	private:
@@ -159,7 +160,6 @@ namespace HEXCTRL::INTERNAL
 		void SelAddUp();         //Up Key pressed with the Shift.
 		void SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss); //Sets data (notifies back) in Virtual mode.
 		void SetFontSize(long lSize); //Set current font size.
-		void SetRedraw(bool fRedraw); //Handle WM_PAINT message or not.
 		void SnapshotUndo(const std::vector<HEXSPAN>& vecSpan); //Takes currently modifiable data snapshot.
 		void TtBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip bookmark show/hide.
 		void TtOffsetShow(bool fShow); //Tooltip Offset show/hide.

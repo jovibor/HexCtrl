@@ -1704,6 +1704,15 @@ void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wstrName)
 		Redraw();
 }
 
+void CHexCtrl::SetRedraw(bool fRedraw)
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
+	m_fRedraw = fRedraw;
+}
+
 void CHexCtrl::SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw, bool fHighlight)
 {
 	assert(IsCreated());
@@ -4107,11 +4116,6 @@ void CHexCtrl::SetFontSize(long lSize)
 	SetFont(lf);
 }
 
-void CHexCtrl::SetRedraw(bool fRedraw)
-{
-	m_fRedraw = fRedraw;
-}
-
 void CHexCtrl::SnapshotUndo(const std::vector<HEXSPAN>& vecSpan)
 {
 	constexpr DWORD dwUndoMax { 500 }; //How many Undo states to preserve.
@@ -4833,10 +4837,11 @@ void CHexCtrl::OnNcPaint()
 
 void CHexCtrl::OnPaint()
 {
+	CPaintDC dc(this);
+
 	if (!IsDrawable()) //Control should not be rendered atm.
 		return;
 
-	CPaintDC dc(this);
 	CRect rcClient;
 	GetClientRect(rcClient);
 

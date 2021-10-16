@@ -812,10 +812,12 @@ void CHexDlgSearch::Prepare()
 	case EMode::SEARCH_FILETIME:
 		fSuccess = PrepareFILETIME();
 		break;
+#ifdef SEARCH_IO_TESTING
 	case EMode::SEARCH_READONLY: //REMOVELATER:
 		fSuccess = true;
 		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(999)>;
 		break;
+#endif
 	}
 	if (!fSuccess)
 		return;
@@ -1293,6 +1295,8 @@ void CHexDlgSearch::Search()
 		}
 	};
 
+	pHexCtrl->SetRedraw(false);
+
 	if (m_fReplace) //Replace
 	{
 		if (m_fAll) //Replace All
@@ -1389,6 +1393,8 @@ void CHexDlgSearch::Search()
 			}
 		}
 	}
+
+	pHexCtrl->SetRedraw(true);
 
 	std::wstring wstrInfo(128, 0);
 	if (m_fFound)
