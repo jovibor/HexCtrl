@@ -1553,10 +1553,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 					m_vecKeyBind.clear();
 					for (const auto& iter : umapCmdMenu) //Fill m_vecKeyBind with all possible commands from umapCmdMenu.
 					{
-						SKEYBIND st;
-						st.eCmd = iter.second.first;
-						st.wMenuID = iter.second.second;
-						m_vecKeyBind.emplace_back(st);
+						m_vecKeyBind.emplace_back(iter.second.first, iter.second.second);
 					}
 					fRet = true;
 				}
@@ -2100,7 +2097,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 		return;
 
 	const auto pszClipboardData = static_cast<LPSTR>(GlobalLock(hClipboard));
-	if (!pszClipboardData)
+	if (pszClipboardData == nullptr)
 	{
 		CloseClipboard();
 		return;
@@ -2109,6 +2106,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 	ULONGLONG ullSize = strlen(pszClipboardData);
 	ULONGLONG ullSizeToModify { };
 	HEXMODIFY hmd;
+	std::string strData; //Actual data to paste, must outlive hmd.
 
 	const auto ullDataSize = GetDataSize();
 	switch (enType)
@@ -2126,7 +2124,6 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 		if (m_ullCaretPos + ullRealSize > ullDataSize)
 			ullSize = (ullDataSize - m_ullCaretPos) * 2;
 
-		std::string strData;
 		const auto nIterations = static_cast<size_t>(ullSize / 2 + ullSize % 2);
 		char chToUL[3] { }; //Array for actual Ascii chars to convert from.
 		for (size_t i = 0; i < nIterations; ++i)
@@ -2151,6 +2148,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 			}
 			strData += chNumber;
 		}
+
 		hmd.spnData = { reinterpret_cast<std::byte*>(strData.data()), strData.size() };
 		ullSizeToModify = strData.size();
 	}
@@ -2159,7 +2157,7 @@ void CHexCtrl::ClipboardPaste(EClipboard enType)
 		break;
 	}
 
-	hmd.vecSpan.emplace_back(HEXSPAN { GetCaretPos(), ullSizeToModify });
+	hmd.vecSpan.emplace_back(GetCaretPos(), ullSizeToModify);
 	ModifyData(hmd);
 
 	GlobalUnlock(hClipboard);
@@ -4414,7 +4412,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	}
 
 	HEXMODIFY hms;
-	hms.vecSpan.emplace_back(HEXSPAN { m_ullCaretPos, 1 });
+	hms.vecSpan.emplace_back(m_ullCaretPos, 1);
 	hms.spnData = { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) };
 	ModifyData(hms);
 	CaretMoveRight();
@@ -4599,7 +4597,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 			chByte = (chByte & 0x0F) | (chByteCurr & 0xF0);
 
 		HEXMODIFY hms;
-		hms.vecSpan.emplace_back(HEXSPAN { m_ullCaretPos, 1 });
+		hms.vecSpan.emplace_back(m_ullCaretPos, 1);
 		hms.spnData = { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) };
 		ModifyData(hms);
 		CaretMoveRight();
@@ -4685,7 +4683,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 			ullSelStart = m_ullCursorPrev;
 			ullSelEnd = m_ullCursorNow + 1;
 		}
-		vecSel.emplace_back(HEXSPAN { ullSelStart, ullSelEnd - ullSelStart });
+		vecSel.emplace_back(ullSelStart, ullSelEnd - ullSelStart);
 	}
 	else
 		m_ullCursorPrev = m_ullCursorNow;
@@ -4814,7 +4812,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 		std::vector<HEXSPAN> vecSel;
 		vecSel.reserve(static_cast<size_t>(ullLines));
 		for (auto iterLines = 0ULL; iterLines < ullLines; ++iterLines)
-			vecSel.emplace_back(HEXSPAN { ullStart + m_dwCapacity * iterLines, ullSize });
+			vecSel.emplace_back(ullStart + m_dwCapacity * iterLines, ullSize);
 		SetSelection(vecSel);
 	}
 	else
