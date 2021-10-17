@@ -141,7 +141,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsDrawable()const;                  //Should WM_PAINT be handled atm or not.
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
 		template<typename T>
-		void ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSizeToOperWith); //Main "modify" method with different workers.
+		void ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, std::span<std::byte> spnDataToOperWith); //Main "modify" method with different workers.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		template<typename T>
 		void ParentNotify(const T& t)const;                    //Notify routine used to send messages to Parent window.

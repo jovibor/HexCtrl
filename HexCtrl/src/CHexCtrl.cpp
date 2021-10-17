@@ -1058,27 +1058,83 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		std::random_device rd;
 		std::mt19937 gen(rd());
 		const std::uniform_int_distribution distrib(0, 255);
-		const auto lmbRandom = [&](std::byte* pData, const HEXMODIFY& /*hms*/)
+		const auto lmbRandom = [&](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> /**/)
 		{
 			assert(pData != nullptr);
 			*pData = static_cast<std::byte>(distrib(gen));
 		};
-		ModifyWorker(hms, lmbRandom, sizeof(std::byte));
+		ModifyWorker(hms, lmbRandom, { static_cast<std::byte*>(nullptr), sizeof(std::byte) });
 	}
 	break;
 	case EHexModifyMode::MODIFY_REPEAT:
 	{
-		constexpr auto lmbRepeat = [](std::byte* pData, const HEXMODIFY& hms)
+		constexpr auto lmbRepeat = [](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> spnDataFrom)
 		{
 			assert(pData != nullptr);
-			std::copy_n(hms.spnData.data(), hms.spnData.size(), pData);
+			std::copy_n(spnDataFrom.data(), spnDataFrom.size(), pData);
 		};
-		ModifyWorker(hms, lmbRepeat, hms.spnData.size());
+
+		//In cases where only one affected data region (hms.vecSpan.size()==1) is used,
+		//and the size of the repeated data is quite small (1, 2 or 4 bytes),
+		//we extend this repeated data to uint64_t size to speed up the whole process of repeating.
+		//For FillWithZero it's gonna be eight bytes at a time instead of just one.
+		//At the end we simply fill up the remainder (SizeOfTheAffectedData % sizeof(uint64_t) ).
+		const auto& refHexSpan = hms.vecSpan.back();
+		if (hms.vecSpan.size() == 1 && refHexSpan.ullSize > 8 && (hms.spnData.size() == sizeof(std::uint8_t)
+			|| hms.spnData.size() == sizeof(std::uint16_t) || hms.spnData.size() == sizeof(std::uint32_t)))
+		{
+			std::uint64_t u64Data { };
+			switch (sizeof(std::uint64_t) / hms.spnData.size()) //How many times to clone original data.
+			{
+			case 2: //Original data was sizeof(uint32_t) length.
+			{
+				const auto u32data = *reinterpret_cast<std::uint32_t*>(hms.spnData.data());
+				u64Data = (static_cast<std::uint64_t>(u32data) << 32) | u32data;
+			}
+			break;
+			case 4: //Original data was sizeof(uint16_t) length.
+			{
+				const auto u16data = *reinterpret_cast<std::uint16_t*>(hms.spnData.data());
+				u64Data = (static_cast<std::uint64_t>(u16data) << 48)
+					| (static_cast<std::uint64_t>(u16data) << 32)
+					| (static_cast<std::uint64_t>(u16data) << 16) | u16data;
+			}
+			break;
+			case 8: //Original data was sizeof(uint8_t) length.
+			{
+				const auto u8data = *reinterpret_cast<std::uint8_t*>(hms.spnData.data());
+				u64Data = (static_cast<std::uint64_t>(u8data) << 56)
+					| (static_cast<std::uint64_t>(u8data) << 48)
+					| (static_cast<std::uint64_t>(u8data) << 40)
+					| (static_cast<std::uint64_t>(u8data) << 32)
+					| (static_cast<std::uint64_t>(u8data) << 24)
+					| (static_cast<std::uint64_t>(u8data) << 16)
+					| (static_cast<std::uint64_t>(u8data) << 8) | u8data;
+				break;
+			}
+			}
+			ModifyWorker(hms, lmbRepeat, { reinterpret_cast<std::byte*>(&u64Data), sizeof(u64Data) });
+
+			const auto iRem = refHexSpan.ullSize % sizeof(u64Data); //Remainder.
+			for (std::size_t iterRem = 0; iterRem < (iRem / hms.spnData.size()); ++iterRem) //Works only if iRem >= hms.spnData.size().
+			{
+				const auto ullSize = hms.spnData.size();
+				const auto ullOffset = refHexSpan.ullOffset + refHexSpan.ullSize - iRem + (ullSize * iterRem);
+				if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
+				{
+					std::copy_n(hms.spnData.data(), ullSize, spnData.data());
+					SetDataVirtual(spnData, { ullOffset, ullSize });
+				}
+			}
+		}
+		else {
+			ModifyWorker(hms, lmbRepeat, hms.spnData);
+		}
 	}
 	break;
 	case EHexModifyMode::MODIFY_OPERATION:
 	{
-		constexpr auto lmbOperData = [](std::byte* pData, const HEXMODIFY& hms)
+		constexpr auto lmbOperData = [](std::byte* pData, const HEXMODIFY& hms, std::span<std::byte>/**/)
 		{
 			assert(pData != nullptr);
 
@@ -1193,7 +1249,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				}
 			}
 		};
-		ModifyWorker(hms, lmbOperData, static_cast<ULONGLONG>(hms.enOperSize));
+		ModifyWorker(hms, lmbOperData, { static_cast<std::byte*>(nullptr), static_cast<std::size_t>(hms.enOperSize) });
 	}
 	break;
 	default:
@@ -3347,7 +3403,7 @@ bool CHexCtrl::IsPageVisible()const
 }
 
 template<typename T>
-void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSizeToOperWith)
+void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, std::span<std::byte> spnDataToOperWith)
 {
 	const auto& vecSpanRef = hms.vecSpan;
 	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
@@ -3360,7 +3416,7 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSiz
 		for (const auto& iterSpan : vecSpanRef) //Span-vector's size times.
 		{
 			const auto ullSize { iterSpan.ullSize };
-			const auto ullAlign { ullSizeToOperWith };
+			const auto ullAlign { spnDataToOperWith.size() };
 			ULONGLONG ullSizeChunk { };
 			ULONGLONG ullChunks { };
 
@@ -3389,9 +3445,9 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, ULONGLONG ullSiz
 
 				const auto spnData = GetData({ ullOffset, ullSizeChunk });
 
-				for (auto ullIndex { 0ULL }; ullIndex <= (ullSizeChunk - ullSizeToOperWith); ullIndex += ullSizeToOperWith)
+				for (auto ullIndex { 0ULL }; ullIndex <= (ullSizeChunk - ullAlign); ullIndex += ullAlign)
 				{
-					lmbWorker(spnData.data() + ullIndex, hms);
+					lmbWorker(spnData.data() + ullIndex, hms, spnDataToOperWith);
 					if (dlgClbk.IsCanceled())
 					{
 						SetDataVirtual(spnData, { ullOffset, ullSizeChunk });
