@@ -22,11 +22,6 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	//Default codepage (Windows-1250) when HexCtrl code page is set to -1.
-	//This is mainly to prevent any non 1-byte ASCII default code pages 
-	//that could be set in Windows (if CP_ACP would have been set here instead).
-	constexpr auto HEXCTRL_CODEPAGE_DEFAULT { 1250U };
-
 	//Fast lookup wchar_t array.
 	constexpr const wchar_t* const g_pwszHexMap { L"0123456789ABCDEF" };
 
@@ -52,7 +47,7 @@ namespace HEXCTRL::INTERNAL
 	[[nodiscard]] std::wstring str2wstr(std::string_view str, UINT uCodePage = CP_UTF8);
 
 	//Substitute all unprintable wchar symbols with dot.
-	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLFRepl = true);
+	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF = true);
 
 	//Convert string_view into SYSTEMTIME struct.
 	[[nodiscard]] auto StringToSystemTime(std::wstring_view wstr, DWORD dwDateFormat)->std::optional<SYSTEMTIME>;

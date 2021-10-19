@@ -95,7 +95,6 @@ namespace HEXCTRL::INTERNAL
 		struct SUNDO;
 		struct SKEYBIND;
 		enum class EClipboard : std::uint8_t;
-		void AsciiChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Ascii chunk.
 		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tuple<std::wstring, std::wstring>;
 		void CaretMoveDown();  //Set caret one line down.
 		void CaretMoveLeft();  //Set caret one chunk left.
@@ -121,7 +120,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto CopyText()const->std::wstring;
 		void DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo)const;
 		void DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines)const;
-		void DrawHexAscii(CDC* pDC, CFont* pFont, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawHexText(CDC* pDC, CFont* pFont, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
@@ -134,6 +133,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;    //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCommand(UCHAR uChar, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
 		[[nodiscard]] long GetFontSize();
+		[[nodiscard]] CRect GetRectTextCaption()const;         //Returns rect of the text caption area.
 		[[nodiscard]] auto GetTopLine()const->ULONGLONG;       //Returns current top line number in view.
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Hex chunk.
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTEST>; //Is any hex chunk withing given point?
@@ -161,6 +161,7 @@ namespace HEXCTRL::INTERNAL
 		void SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss); //Sets data (notifies back) in Virtual mode.
 		void SetFontSize(long lSize); //Set current font size.
 		void SnapshotUndo(const std::vector<HEXSPAN>& vecSpan); //Takes currently modifiable data snapshot.
+		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;     //Point of the text chunk.
 		void TtBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip bookmark show/hide.
 		void TtOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();
@@ -207,7 +208,7 @@ namespace HEXCTRL::INTERNAL
 		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll bar.
 		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll bar.
 		const int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
-		const int m_iFirstHorizLine { 0 };    //First horizontal line indent.
+		const int m_iFirstHorzLine { 0 };     //First horizontal line indent.
 		const int m_iFirstVertLine { 0 };     //First vertical line indent.
 		std::span<std::byte> m_spnData { };   //Main data span.
 		HEXCOLORS m_stColor;                  //All control related colors.
@@ -239,22 +240,25 @@ namespace HEXCTRL::INTERNAL
 		SIZE m_sizeLetter { 1, 1 };           //Current font's letter size (width, height).
 		int m_iSizeFirstHalf { };             //Size in px of the first half of the capacity.
 		int m_iSizeHexByte { };               //Size in px of two hex letters representing one byte.
-		int m_iIndentAscii { };               //Indent in px of Ascii text begining.
-		int m_iIndentFirstHexChunk { };       //First hex chunk indent in px.
-		int m_iIndentTextCapacityY { };       //Caption text (0 1 2... D E F...) vertical offset.
+		int m_iIndentTextX { };               //Indent in px of the text (ASCII) beginning.
+		int m_iIndentFirstHexChunkX { };      //First hex chunk indent in px.
+		int m_iIndentCapTextY { };            //Caption text (0 1 2... D E F...) vertical offset.
 		int m_iDistanceBetweenHexChunks { };  //Distance between begining of the two hex chunks in px.
 		int m_iSpaceBetweenHexChunks { };     //Space between Hex chunks in px.
-		int m_iSpaceBetweenAscii { };         //Space between beginning of the two Ascii chars in px.
+		int m_iDistanceBetweenChars { };      //Distance between beginning of the two text chars in px.
 		int m_iSpaceBetweenBlocks { };        //Additional space between hex chunks after half of capacity, in px.
-		int m_iHeightClientArea { };          //Height of the Control's window client area.
 		int m_iWidthClientArea { };           //Width of the Control's window client area.
-		int m_iHeightTopRect { };             //Height of the header where offsets (0 1 2... D E F...) reside.
 		int m_iStartWorkAreaY { };            //Start Y of the area where all drawing occurs.
 		int m_iEndWorkArea { };               //End of the area where all drawing occurs.
+		int m_iHeightClientArea { };          //Height of the Control's window client area.
+		int m_iHeightTopRect { };             //Height of the header where offsets (0 1 2... D E F...) reside.
 		int m_iHeightWorkArea { };            //Height in px of the working area where all drawing occurs.
 		int m_iHeightBottomRect { };          //Height of bottom Info rect.
 		int m_iHeightBottomOffArea { };       //Height of the not visible rect from window's bottom to m_iThirdHorizLine.
-		int m_iSecondVertLine { }, m_iThirdVertLine { }, m_iFourthVertLine { }; //Vertical lines indent.
+		int m_iSecondHorzLine { };            //Secont horizontal line indent.
+		int m_iSecondVertLine { };            //Second vert line indent.
+		int m_iThirdVertLine { };             //Third vert line indent.
+		int m_iFourthVertLine { };            //Fourth vert line indent.
 		int m_iCodePage { -1 };               //Current code-page for Text area. -1 for default.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfo { };          //Info text (bottom rect).
@@ -275,6 +279,6 @@ namespace HEXCTRL::INTERNAL
 		bool m_fHighLatency { false };        //Reflects HEXDATA::fHighLatency.
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
 		bool m_fMenuCMD { false };            //Command to be executed through menu, not through key-shortcut.
-		bool m_fRedraw { true };            //Should WM_PAINT be handled or not.
+		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
 	};
 }

@@ -66,6 +66,7 @@
   * [SetMutable](#setmutable)
   * [SetOffsetMode](#setoffsetmode)
   * [SetPageSize](#setpagesize)
+  * [SetRedraw](#setredraw)
   * [SetSelection](#setselection)
   * [SetWheelRatio](#setwheelratio)
    </details>
@@ -648,6 +649,12 @@ void SetPageSize(DWORD dwSize, const wchar_t* wstrName = L"Page");
 ```
 Sets the size of the page to draw the divider line between. This size should be multiple to the current [capacity](#setcapacity) size to take effect. The second argument sets the name to be displayed in the bottom info area of the **HexCtrl** ("Page", "Sector", etc...).  
 To remove the divider just set `dwSize` to 0.
+
+### [](#)SetRedraw
+```cpp
+void SetRedraw(bool fRedraw);
+```
+Should the main **HexCtrl** window be redrawn or not. E.g. should the `WM_PAINT` message be handled or not.
 
 ### [](#)SetSelection
 ```cpp
