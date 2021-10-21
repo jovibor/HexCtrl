@@ -170,13 +170,13 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXCOLORS
 	{
-		COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };       //Hex chunks text color.
-		COLORREF clrTextASCII { GetSysColor(COLOR_WINDOWTEXT) };     //ASCII text color.
-		COLORREF clrTextSelect { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected text color.
-		COLORREF clrTextDataInterp { RGB(250, 250, 250) };           //Data Interpreter text color.
-		COLORREF clrTextCaption { RGB(0, 0, 180) };                  //Caption text color
-		COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };  //Text color of the bottom "Info" rect.
-		COLORREF clrTextCaret { RGB(255, 255, 255) };                //Caret text color.
+		COLORREF clrFontHex { GetSysColor(COLOR_WINDOWTEXT) };       //Hex-chunks font color.
+		COLORREF clrFontText { GetSysColor(COLOR_WINDOWTEXT) };      //Text font color.
+		COLORREF clrFontSelect { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected hex/text font color.
+		COLORREF clrFontDataInterp { RGB(250, 250, 250) };           //Data Interpreter text/hex font color.
+		COLORREF clrFontCaption { RGB(0, 0, 180) };                  //Caption font color
+		COLORREF clrFontInfoRect { GetSysColor(COLOR_WINDOWTEXT) };  //Font color of the bottom "Info" rect.
+		COLORREF clrFontCaret { RGB(255, 255, 255) };                //Caret font color.
 		COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                //Background color.
 		COLORREF clrBkSelect { GetSysColor(COLOR_HIGHLIGHT) };       //Background color of the selected Hex/ASCII.
 		COLORREF clrBkDataInterp { RGB(147, 58, 22) };               //Data Interpreter Bk color.

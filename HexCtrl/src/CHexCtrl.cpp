@@ -2000,14 +2000,14 @@ void CHexCtrl::ChooseFontDlg()
 	chf.lStructSize = sizeof(CHOOSEFONTW);
 	chf.hwndOwner = m_hWnd;
 	chf.lpLogFont = &lf;
-	chf.rgbColors = stClr.clrTextHex;
+	chf.rgbColors = stClr.clrFontHex;
 	chf.Flags = CF_FIXEDPITCHONLY | CF_NOSCRIPTSEL | CF_NOSIMULATIONS | CF_EFFECTS
 		| CF_INITTOLOGFONTSTRUCT | CF_FORCEFONTEXIST;
 
 	if (ChooseFontW(&chf) != FALSE)
 	{
 		SetFont(lf);
-		stClr.clrTextHex = stClr.clrTextASCII = chf.rgbColors;
+		stClr.clrFontHex = stClr.clrFontText = chf.rgbColors;
 		SetColors(stClr);
 	}
 }
@@ -2493,7 +2493,7 @@ void CHexCtrl::DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo)const
 	//«Offset» text.
 	CRect rcOffset(m_iFirstVertLine - iScrollH, m_iFirstHorzLine, m_iSecondVertLine - iScrollH, m_iSecondHorzLine);
 	pDC->SelectObject(pFont);
-	pDC->SetTextColor(m_stColor.clrTextCaption);
+	pDC->SetTextColor(m_stColor.clrFontCaption);
 	pDC->SetBkColor(m_stColor.clrBk);
 	pDC->DrawTextW(L"Offset", 6, rcOffset, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
@@ -2511,7 +2511,7 @@ void CHexCtrl::DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo)const
 	rcInfo.left = m_iFirstVertLine + 5; //Draw text beginning with little indent.
 	rcInfo.right = m_iFirstVertLine + m_iWidthClientArea; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
 	pDC->SelectObject(pFontInfo);
-	pDC->SetTextColor(m_stColor.clrTextInfoRect);
+	pDC->SetTextColor(m_stColor.clrFontInfoRect);
 	pDC->SetBkColor(m_stColor.clrBkInfoRect);
 	pDC->DrawTextW(m_wstrInfo.data(), static_cast<int>(m_wstrInfo.size()), rcInfo, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 }
@@ -2527,12 +2527,12 @@ void CHexCtrl::DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int i
 		COLORREF clrTextOffset, clrBkOffset;
 		if (m_pSelection->HitTestRange({ ullStartOffset + iterLines * m_dwCapacity, m_dwCapacity }))
 		{
-			clrTextOffset = m_stColor.clrTextSelect;
+			clrTextOffset = m_stColor.clrFontSelect;
 			clrBkOffset = m_stColor.clrBkSelect;
 		}
 		else
 		{
-			clrTextOffset = m_stColor.clrTextCaption;
+			clrTextOffset = m_stColor.clrFontCaption;
 			clrBkOffset = m_stColor.clrBk;
 		}
 
@@ -2594,12 +2594,12 @@ void CHexCtrl::DrawHexText(CDC* pDC, CFont* pFont, int iLines, std::wstring_view
 
 	//Hex printing.
 	pDC->SelectObject(pFont);
-	pDC->SetTextColor(m_stColor.clrTextHex);
+	pDC->SetTextColor(m_stColor.clrFontHex);
 	pDC->SetBkColor(m_stColor.clrBk);
 	PolyTextOutW(pDC->m_hDC, vecPolyHex.data(), static_cast<UINT>(vecPolyHex.size()));
 
 	//Ascii printing.
-	pDC->SetTextColor(m_stColor.clrTextASCII);
+	pDC->SetTextColor(m_stColor.clrFontText);
 	PolyTextOutW(pDC->m_hDC, vecPolyAscii.data(), static_cast<UINT>(vecPolyAscii.size()));
 }
 
@@ -2967,7 +2967,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 	if (!vecPolySelHex.empty())
 	{
 		pDC->SelectObject(pFont);
-		pDC->SetTextColor(m_stColor.clrTextSelect);
+		pDC->SetTextColor(m_stColor.clrFontSelect);
 		pDC->SetBkColor(m_stColor.clrBkSelect);
 		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size()));
 
@@ -3064,7 +3064,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 		//Colors are inverted colors of the selection.
 		pDC->SelectObject(pFont);
 		pDC->SetTextColor(m_stColor.clrBkSelect);
-		pDC->SetBkColor(m_stColor.clrTextSelect);
+		pDC->SetBkColor(m_stColor.clrFontSelect);
 		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size()));
 
 		//Ascii selection highlight printing.
@@ -3134,7 +3134,7 @@ void CHexCtrl::DrawCaret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLi
 	if (!vecPolyCaret.empty())
 	{
 		pDC->SelectObject(pFont);
-		pDC->SetTextColor(m_stColor.clrTextCaret);
+		pDC->SetTextColor(m_stColor.clrFontCaret);
 		pDC->SetBkColor(clrBkCaret);
 		PolyTextOutW(pDC->m_hDC, vecPolyCaret.data(), static_cast<UINT>(vecPolyCaret.size()));
 	}
@@ -3202,7 +3202,7 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, in
 	if (!vecPolyDataInterpretHex.empty())
 	{
 		pDC->SelectObject(pFont);
-		pDC->SetTextColor(m_stColor.clrTextDataInterp);
+		pDC->SetTextColor(m_stColor.clrFontDataInterp);
 		pDC->SetBkColor(m_stColor.clrBkDataInterp);
 		PolyTextOutW(pDC->m_hDC, vecPolyDataInterpretHex.data(), static_cast<UINT>(vecPolyDataInterpretHex.size()));
 
@@ -3621,13 +3621,13 @@ void CHexCtrl::Print()
 
 		DrawWindow(pDC, &fontMain, &fontInfo);
 		const auto clBkOld = m_stColor.clrBkSelect;
-		const auto clTextOld = m_stColor.clrTextSelect;
+		const auto clTextOld = m_stColor.clrFontSelect;
 		m_stColor.clrBkSelect = m_stColor.clrBk;
-		m_stColor.clrTextSelect = m_stColor.clrTextHex;
+		m_stColor.clrFontSelect = m_stColor.clrFontHex;
 		DrawOffsets(pDC, &fontMain, ullStartLine, iLines);
 		DrawSelection(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
 		m_stColor.clrBkSelect = clBkOld;
-		m_stColor.clrTextSelect = clTextOld;
+		m_stColor.clrFontSelect = clTextOld;
 
 		pDC->EndPage();
 	}
