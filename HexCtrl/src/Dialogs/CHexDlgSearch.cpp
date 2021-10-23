@@ -692,8 +692,8 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 				vecSpan.emplace_back(m_vecSearchRes.at(static_cast<size_t>(nItem)),
 					m_fReplace ? m_spnReplace.size() : m_spnSearch.size());
 		}
-		vecSpan.emplace_back(HEXSPAN { m_vecSearchRes.at(static_cast<size_t>(pNMI->iItem)),
-			m_fReplace ? m_spnReplace.size() : m_spnSearch.size() });
+		vecSpan.emplace_back(m_vecSearchRes.at(static_cast<size_t>(pNMI->iItem)),
+			m_fReplace ? m_spnReplace.size() : m_spnSearch.size());
 
 		HexCtrlHighlight(vecSpan);
 	}
@@ -1201,10 +1201,11 @@ bool CHexDlgSearch::PrepareFILETIME()
 	return true;
 }
 
-void CHexDlgSearch::Replace(ULONGLONG ullIndex, size_t nSizeData, std::span<std::byte> spnReplace)const
+void CHexDlgSearch::Replace(ULONGLONG ullIndex, const std::span<std::byte> spnReplace)const
 {
 	HEXMODIFY hms;
-	hms.vecSpan.emplace_back(HEXSPAN { ullIndex, nSizeData });
+	hms.enModifyMode = EHexModifyMode::MODIFY_ONCE;
+	hms.vecSpan.emplace_back(ullIndex, spnReplace.size());
 	hms.spnData = spnReplace;
 	GetHexCtrl()->ModifyData(hms);
 }
@@ -1311,7 +1312,7 @@ void CHexDlgSearch::Search()
 				{
 					if (Finder(ullStart, ullUntil, m_spnSearch, true, pDlgClbk, false))
 					{
-						Replace(ullStart, m_spnSearch.size(), m_spnReplace);
+						Replace(ullStart, m_spnReplace);
 						ullStart += m_spnReplace.size() <= m_ullStep ? m_ullStep : m_spnReplace.size();
 						m_fFound = true;
 						++m_dwReplaced;
@@ -1325,7 +1326,7 @@ void CHexDlgSearch::Search()
 				pDlgClbk->ExitDlg();
 			};
 
-			CHexDlgCallback dlgClbk(L"Searching...", ullStart, ullUntil, this);
+			CHexDlgCallback dlgClbk(L"Replacing...", ullStart, ullUntil, this);
 			std::thread thrd(lmbReplaceAll, &dlgClbk);
 			dlgClbk.DoModal();
 			thrd.join();
@@ -1335,7 +1336,7 @@ void CHexDlgSearch::Search()
 			lmbFindForward();
 			if (m_fFound)
 			{
-				Replace(m_ullOffsetCurr, m_spnSearch.size(), m_spnReplace);
+				Replace(m_ullOffsetCurr, m_spnReplace);
 				//Increase next search step to replaced or m_ullStep amount.
 				m_ullOffsetCurr += m_spnReplace.size() <= m_ullStep ? m_ullStep : m_spnReplace.size();
 				++m_dwReplaced;
@@ -1614,6 +1615,15 @@ void CHexDlgSearch::ThreadRun(STHREADRUN* pStThread)
 	}
 
 FOUND:
-	if (pStThread->fDlgExit && pStThread->pDlgClbk != nullptr)
-		pStThread->pDlgClbk->ExitDlg();
+	if (pStThread->pDlgClbk != nullptr)
+	{
+		if (pStThread->fDlgExit)
+			pStThread->pDlgClbk->ExitDlg();
+		else {
+			//If MemCmp returns true at the very first hit, we don't reach the SetProgress in the main loop.
+			//It might be the case for the "Find/Replace All" for example.
+			//If the data all the same (e.g. 0xCDCDCDCD...) then MemCmp would return true every single step.
+			pStThread->pDlgClbk->SetProgress(pStThread->ullStart);
+		}
+	}
 }

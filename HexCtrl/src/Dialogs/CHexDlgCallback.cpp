@@ -18,7 +18,8 @@ END_MESSAGE_MAP()
 
 CHexDlgCallback::CHexDlgCallback(std::wstring_view wstrOperName, ULONGLONG ullProgBarMin,
 	ULONGLONG ullProgBarMax, CWnd* pParent) : CDialogEx(IDD_HEXCTRL_CALLBACK, pParent),
-	m_wstrOperName(wstrOperName), m_ullProgBarMin(ullProgBarMin), m_ullProgBarMax(ullProgBarMax)
+	m_wstrOperName(wstrOperName), m_ullProgBarMin(ullProgBarMin), m_ullProgBarCurr(ullProgBarMin),
+	m_ullProgBarMax(ullProgBarMax)
 {
 	assert(ullProgBarMin <= ullProgBarMax);
 }
@@ -29,6 +30,7 @@ BOOL CHexDlgCallback::OnInitDialog()
 
 	SetWindowTextW(m_wstrOperName.data());
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPERNAME)->SetWindowTextW(m_wstrOperName.data());
+
 	constexpr auto iElapse { 100 }; //Milliseconds for the timer.
 	SetTimer(IDT_EXITCHECK, iElapse, nullptr);
 	m_iTicksInSecond = 1000 / iElapse;
@@ -63,10 +65,19 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 	m_stProgBar.SetPos(iPos);
 
 	constexpr auto iBytesInMB = 1024 * 1024; //(B in KB) * (KB in MB)
-	wchar_t buff[64];
-	swprintf_s(buff, std::size(buff), L" %lld MB/s", ((ullCurDiff / ++m_llTicks) * m_iTicksInSecond) / iBytesInMB);
-	std::wstring wstr = m_wstrOperName + buff;
-	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPERNAME)->SetWindowTextW(wstr.data());
+	const auto iSpeedMBS = ((ullCurDiff / ++m_llTicks) * m_iTicksInSecond) / iBytesInMB; //Speed in MB/s.
+	std::wstring wstrDisplay = m_wstrOperName;
+	if (iSpeedMBS > 1)
+	{
+		wchar_t buff[64];
+		swprintf_s(buff, std::size(buff), L"%lld MB/s", iSpeedMBS);
+		wstrDisplay += buff;
+	}
+	else //If speed is less than 1 MB/s.
+	{
+		wstrDisplay += L"< 1 MB/s";
+	}
+	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPERNAME)->SetWindowTextW(wstrDisplay.data());
 
 	CDialogEx::OnTimer(nIDEvent);
 }

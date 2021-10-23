@@ -139,5 +139,5 @@ void CHexSelection::SetSelStartEnd(ULONGLONG ullOffset, bool fStart)
 	}
 
 	m_vecSelection.clear();
-	m_vecSelection.emplace_back(HEXSPAN { m_ullMarkSelStart, m_ullMarkSelEnd - m_ullMarkSelStart + 1 });
+	m_vecSelection.emplace_back(m_ullMarkSelStart, m_ullMarkSelEnd - m_ullMarkSelStart + 1);
 }

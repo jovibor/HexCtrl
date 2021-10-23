@@ -67,7 +67,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool PrepareFloat();
 		[[nodiscard]] bool PrepareDouble();
 		[[nodiscard]] bool PrepareFILETIME();
-		void Replace(ULONGLONG ullIndex, size_t nSizeData, std::span<std::byte> spnReplace)const;
+		void Replace(ULONGLONG ullIndex, std::span<std::byte> spnReplace)const;
 		void ResetSearch();
 		void Search();
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.

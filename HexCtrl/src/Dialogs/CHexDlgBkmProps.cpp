@@ -49,7 +49,7 @@ BOOL CHexDlgBkmProps::OnInitDialog()
 	{
 		m_ullOffset = 0;
 		m_ullSize = 1;
-		m_pHBS->vecSpan.emplace_back(HEXSPAN { m_ullOffset, m_ullSize });
+		m_pHBS->vecSpan.emplace_back(m_ullOffset, m_ullSize);
 	}
 
 	swprintf_s(pwszBuff, m_fShowAsHex ? L"0x%llX" : L"%llu", m_ullOffset);
@@ -98,7 +98,7 @@ void CHexDlgBkmProps::OnOK()
 	if (m_ullOffset != ullOffset || m_ullSize != ullSize)
 	{
 		m_pHBS->vecSpan.clear();
-		m_pHBS->vecSpan.emplace_back(HEXSPAN { ullOffset, ullSize });
+		m_pHBS->vecSpan.emplace_back(ullOffset, ullSize);
 	}
 
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_DESCR));

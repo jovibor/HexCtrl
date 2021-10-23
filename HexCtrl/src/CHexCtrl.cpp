@@ -1023,15 +1023,26 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	{
 	case EHexModifyMode::MODIFY_ONCE:
 	{
-		const auto& vecSpanRef = hms.vecSpan;
-		assert((vecSpanRef[0].ullOffset + vecSpanRef[0].ullSize) <= GetDataSize());
+		const auto stHexSpan = hms.vecSpan.back();
+		const auto ullOffsetToModify = stHexSpan.ullOffset;
+		const auto ullSizeToModify = stHexSpan.ullSize;
 
-		if (IsVirtual() && vecSpanRef[0].ullSize > GetCacheSize())
+		assert((ullOffsetToModify + ullSizeToModify) <= GetDataSize());
+		if ((ullOffsetToModify + ullSizeToModify) > GetDataSize())
+			return;
+
+		//Check if the size of a data to_modify_from less then the ullSizeToModify.
+		//It must be equal or more.
+		assert(hms.spnData.size() >= ullSizeToModify);
+		if (hms.spnData.size() < ullSizeToModify)
+			return;
+
+		if (IsVirtual() && ullSizeToModify > GetCacheSize())
 		{
 			const auto ullSizeChunk = GetCacheSize();
-			const auto iMod = vecSpanRef[0].ullSize % ullSizeChunk;
-			auto ullChunks = vecSpanRef[0].ullSize / ullSizeChunk + (iMod > 0 ? 1 : 0);
-			ULONGLONG ullOffset { 0 };
+			const auto iMod = ullSizeToModify % ullSizeChunk;
+			auto ullChunks = ullSizeToModify / ullSizeChunk + (iMod > 0 ? 1 : 0);
+			auto ullOffset { 0ULL };
 			while (ullChunks-- > 0)
 			{
 				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
@@ -1045,10 +1056,10 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		}
 		else
 		{
-			if (const auto spnData = GetData(vecSpanRef[0]); !spnData.empty())
+			if (const auto spnData = GetData(stHexSpan); !spnData.empty())
 			{
-				std::copy_n(hms.spnData.data(), static_cast<size_t>(vecSpanRef[0].ullSize), spnData.data());
-				SetDataVirtual(spnData, vecSpanRef[0]);
+				std::copy_n(hms.spnData.data(), static_cast<size_t>(ullSizeToModify), spnData.data());
+				SetDataVirtual(spnData, stHexSpan);
 			}
 		}
 	}
@@ -3430,49 +3441,57 @@ bool CHexCtrl::IsPageVisible()const
 }
 
 template<typename T>
-void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, std::span<std::byte> spnDataToOperWith)
+void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const std::span<std::byte> spnDataToOperWith)
 {
 	const auto& vecSpanRef = hms.vecSpan;
-	constexpr auto sizeQuick { 1024 * 256 }; //256KB.
 	const auto ullTotalSize = std::accumulate(vecSpanRef.begin(), vecSpanRef.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPAN& ref) {return ullSumm + ref.ullSize; });
 	assert(ullTotalSize <= GetDataSize());
 
-	CHexDlgCallback dlgClbk(L"Modifying...", vecSpanRef.begin()->ullOffset, vecSpanRef.back().ullOffset + vecSpanRef.back().ullSize, this);
-	std::thread thrd([&]() {
+	CHexDlgCallback dlgClbk(L"Modifying...", vecSpanRef.back().ullOffset,
+		vecSpanRef.back().ullOffset + ullTotalSize, this);
+	const auto lmbThread = [&]()
+	{
 		for (const auto& iterSpan : vecSpanRef) //Span-vector's size times.
 		{
-			const auto ullSize { iterSpan.ullSize };
-			const auto ullAlign { spnDataToOperWith.size() };
+			const auto ullOffsetToModify { iterSpan.ullOffset };
+			const auto ullSizeToModify { iterSpan.ullSize };
+			const auto ullSizeToOperWith { spnDataToOperWith.size() };
+
+			//If the size of the data to_modify_from is bigger than
+			//the data to modify, we do nothing.
+			if (ullSizeToOperWith > ullSizeToModify)
+				break;
+
 			ULONGLONG ullSizeChunk { };
 			ULONGLONG ullChunks { };
 
 			if (!IsVirtual())
 			{
-				ullSizeChunk = iterSpan.ullSize;
+				ullSizeChunk = ullSizeToModify;
 				ullChunks = 1;
 			}
 			else
 			{
 				ullSizeChunk = GetCacheSize(); //Size of Virtual memory for acquiring, to work with.
-				if (ullAlign > 0)
+				if (const auto ullAlign { ullSizeToOperWith }; ullAlign > 0)
 					ullSizeChunk -= (ullSizeChunk & (ullAlign - 1)); //Aligning chunk size to ullAlign.
-				if (ullSize < ullSizeChunk)
-					ullSizeChunk = ullSize;
-				ullChunks = ullSize / ullSizeChunk + ((ullSize % ullSizeChunk) ? 1 : 0);
+				if (ullSizeToModify < ullSizeChunk)
+					ullSizeChunk = ullSizeToModify;
+				ullChunks = ullSizeToModify / ullSizeChunk + ((ullSizeToModify % ullSizeChunk) ? 1 : 0);
 			}
 
-			for (ULONGLONG iterChunk = 0; iterChunk < ullChunks; ++iterChunk)
+			for (auto iterChunk { 0ULL }; iterChunk < ullChunks; ++iterChunk)
 			{
-				const auto ullOffset = iterSpan.ullOffset + (iterChunk * ullSizeChunk);
+				const auto ullOffset = ullOffsetToModify + (iterChunk * ullSizeChunk);
 				if (ullOffset + ullSizeChunk > GetDataSize()) //Overflow check.
 					ullSizeChunk = GetDataSize() - ullOffset;
-				if (ullOffset + ullSizeChunk > iterSpan.ullOffset + iterSpan.ullSize)
-					ullSizeChunk = (iterSpan.ullOffset + iterSpan.ullSize) - ullOffset;
+				if (ullOffset + ullSizeChunk > ullOffsetToModify + ullSizeToModify)
+					ullSizeChunk = (ullOffsetToModify + ullSizeToModify) - ullOffset;
 
 				const auto spnData = GetData({ ullOffset, ullSizeChunk });
 
-				for (auto ullIndex { 0ULL }; ullIndex <= (ullSizeChunk - ullAlign); ullIndex += ullAlign)
+				for (auto ullIndex { 0ULL }; ullIndex <= (ullSizeChunk - ullSizeToOperWith); ullIndex += ullSizeToOperWith)
 				{
 					lmbWorker(spnData.data() + ullIndex, hms, spnDataToOperWith);
 					if (dlgClbk.IsCanceled())
@@ -3488,10 +3507,14 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, T& lmbWorker, std::span<std::b
 		}
 	exit:
 		dlgClbk.ExitDlg();
-				});
+	};
+
+	std::thread thrdWorker(lmbThread); //Worker thread.
+
+	constexpr auto sizeQuick { 1024 * 1024 }; //1MB.
 	if (ullTotalSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
 		dlgClbk.DoModal();
-	thrd.join();
+	thrdWorker.join();
 }
 
 void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)

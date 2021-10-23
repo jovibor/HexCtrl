@@ -207,7 +207,7 @@ void CHexDlgOpers::OnOK()
 	{
 		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify All data?", MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
-		hms.vecSpan.emplace_back(HEXSPAN { 0, m_pHexCtrl->GetDataSize() });
+		hms.vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
 	}
 	else
 		hms.vecSpan = m_pHexCtrl->GetSelection();

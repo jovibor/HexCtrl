@@ -101,43 +101,45 @@ BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
 
 void CHexDlgFillData::OnOK()
 {
-	WCHAR pwszComboText[512];
+	wchar_t pwszComboText[MAX_PATH * 2];
 	if (m_stComboData.IsWindowEnabled() && m_stComboData.GetWindowTextW(pwszComboText, MAX_PATH) == 0) //No text.
 	{
 		MessageBoxW(L"Missing Fill Data!", L"Data Error!", MB_ICONERROR);
 		return;
 	}
 
-	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_ALL, IDC_HEXCTRL_FILLDATA_RADIO_SEL);
 	HEXMODIFY hms;
+	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_ALL, IDC_HEXCTRL_FILLDATA_RADIO_SEL);
 	if (iRadioAllOrSel == IDC_HEXCTRL_FILLDATA_RADIO_ALL)
 	{
-		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify All data?", MB_YESNO | MB_ICONWARNING) == IDNO)
+		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify All data?",
+			MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
-		hms.vecSpan.emplace_back(HEXSPAN { 0, m_pHexCtrl->GetDataSize() });
+		hms.vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
 	}
 	else
 		hms.vecSpan = m_pHexCtrl->GetSelection();
 
-	std::wstring wstrComboText = pwszComboText;
-	std::string strToFill = wstr2str(wstrComboText);
+	std::wstring wstrFillWith = pwszComboText;
+	std::string strFillWith = wstr2str(wstrFillWith);
 	switch (GetFillType())
 	{
 	case EFillType::FILL_HEX:
-		if (!str2hex(strToFill, strToFill))
+		if (!str2hex(strFillWith, strFillWith))
 		{
 			MessageBoxW(L"Wrong Hex format!", L"Format Error", MB_ICONERROR);
 			return;
 		}
-		hms.spnData = { reinterpret_cast<std::byte*>(strToFill.data()), strToFill.size() };
+
+		hms.spnData = { reinterpret_cast<std::byte*>(strFillWith.data()), strFillWith.size() };
 		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 		break;
 	case EFillType::FILL_ASCII:
-		hms.spnData = { reinterpret_cast<std::byte*>(strToFill.data()), strToFill.size() };
+		hms.spnData = { reinterpret_cast<std::byte*>(strFillWith.data()), strFillWith.size() };
 		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 		break;
 	case EFillType::FILL_WCHAR:
-		hms.spnData = { reinterpret_cast<std::byte*>(wstrComboText.data()), wstrComboText.size() * sizeof(WCHAR) };
+		hms.spnData = { reinterpret_cast<std::byte*>(wstrFillWith.data()), wstrFillWith.size() * sizeof(WCHAR) };
 		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 		break;
 	case EFillType::FILL_RANDOM:
@@ -148,12 +150,19 @@ void CHexDlgFillData::OnOK()
 	}
 
 	//Insert wstring into ComboBox only if it's not already presented.
-	if (m_stComboData.FindStringExact(0, wstrComboText.data()) == CB_ERR)
+	if (m_stComboData.FindStringExact(0, wstrFillWith.data()) == CB_ERR)
 	{
 		//Keep max 50 strings in list.
 		if (m_stComboData.GetCount() == 50)
 			m_stComboData.DeleteString(49);
-		m_stComboData.InsertString(0, wstrComboText.data());
+		m_stComboData.InsertString(0, wstrFillWith.data());
+	}
+
+	if (hms.spnData.size() > hms.vecSpan.back().ullSize)
+	{
+		MessageBoxW(L"Fill data size is bigger than the region selected for modification, please select a larger region.",
+			L"Data region size error.", MB_ICONERROR);
+		return;
 	}
 
 	m_pHexCtrl->ModifyData(hms);
