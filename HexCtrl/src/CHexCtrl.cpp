@@ -1057,13 +1057,37 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	{
 		std::random_device rd;
 		std::mt19937 gen(rd());
-		const std::uniform_int_distribution distrib(0, 255);
-		const auto lmbRandom = [&](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> /**/)
+		const std::uniform_int_distribution<std::uint64_t> distUInt64(0, (std::numeric_limits<std::uint64_t>::max)());
+		const auto lmbRandomUInt64 = [&](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> /**/)
 		{
 			assert(pData != nullptr);
-			*pData = static_cast<std::byte>(distrib(gen));
+			*reinterpret_cast<std::uint64_t*>(pData) = distUInt64(gen);
 		};
-		ModifyWorker(hms, lmbRandom, { static_cast<std::byte*>(nullptr), sizeof(std::byte) });
+		const auto lmbRandomByte = [&](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> /**/)
+		{
+			assert(pData != nullptr);
+			*pData = static_cast<std::byte>(distUInt64(gen));
+		};
+
+		const auto& refHexSpan = hms.vecSpan.back();
+		if (hms.vecSpan.size() == 1 && refHexSpan.ullSize >= 8)
+		{
+			ModifyWorker(hms, lmbRandomUInt64, { static_cast<std::byte*>(nullptr), sizeof(std::uint64_t) });
+
+			if (const auto iRem = refHexSpan.ullSize % sizeof(std::uint64_t); iRem > 0) //Remainder.
+			{
+				const auto ullOffset = refHexSpan.ullOffset + refHexSpan.ullSize - iRem;
+				const auto spnData = GetData({ ullOffset, iRem });
+				for (std::size_t iterRem = 0; iterRem < iRem; ++iterRem)
+				{
+					spnData.data()[iterRem] = static_cast<std::byte>(distUInt64(gen));
+				}
+				SetDataVirtual(spnData, { ullOffset, iRem });
+			}
+		}
+		else {
+			ModifyWorker(hms, lmbRandomByte, { static_cast<std::byte*>(nullptr), sizeof(std::byte) });
+		}
 	}
 	break;
 	case EHexModifyMode::MODIFY_REPEAT:
@@ -1080,11 +1104,12 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		//For FillWithZero it's gonna be eight bytes at a time instead of just one.
 		//At the end we simply fill up the remainder (SizeOfTheAffectedData % sizeof(uint64_t) ).
 		const auto& refHexSpan = hms.vecSpan.back();
-		if (hms.vecSpan.size() == 1 && refHexSpan.ullSize > 8 && (hms.spnData.size() == sizeof(std::uint8_t)
-			|| hms.spnData.size() == sizeof(std::uint16_t) || hms.spnData.size() == sizeof(std::uint32_t)))
+		const auto sSizeDataToFillWith = hms.spnData.size();
+		if (hms.vecSpan.size() == 1 && refHexSpan.ullSize > 8 && (sSizeDataToFillWith == sizeof(std::uint8_t)
+			|| sSizeDataToFillWith == sizeof(std::uint16_t) || sSizeDataToFillWith == sizeof(std::uint32_t)))
 		{
 			std::uint64_t u64Data { };
-			switch (sizeof(std::uint64_t) / hms.spnData.size()) //How many times to clone original data.
+			switch (sizeof(std::uint64_t) / sSizeDataToFillWith) //How many times to clone original data.
 			{
 			case 2: //Original data is sizeof(uint32_t) length.
 			{
@@ -1108,16 +1133,15 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			}
 			ModifyWorker(hms, lmbRepeat, { reinterpret_cast<std::byte*>(&u64Data), sizeof(u64Data) });
 
-			const auto iRem = refHexSpan.ullSize % sizeof(u64Data); //Remainder.
-			for (std::size_t iterRem = 0; iterRem < (iRem / hms.spnData.size()); ++iterRem) //Works only if iRem >= hms.spnData.size().
+			if (const auto iRem = refHexSpan.ullSize % sizeof(u64Data); iRem >= sSizeDataToFillWith) //Remainder.
 			{
-				const auto ullSize = hms.spnData.size();
-				const auto ullOffset = refHexSpan.ullOffset + refHexSpan.ullSize - iRem + (ullSize * iterRem);
-				if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
+				const auto ullOffset = refHexSpan.ullOffset + refHexSpan.ullSize - iRem;
+				const auto spnData = GetData({ ullOffset, iRem });
+				for (std::size_t iterRem = 0; iterRem < (iRem / sSizeDataToFillWith); ++iterRem) //Works only if iRem >= hms.spnData.size().
 				{
-					std::copy_n(hms.spnData.data(), ullSize, spnData.data());
-					SetDataVirtual(spnData, { ullOffset, ullSize });
+					std::copy_n(hms.spnData.data(), sSizeDataToFillWith, spnData.data() + (iterRem * sSizeDataToFillWith));
 				}
+				SetDataVirtual(spnData, { ullOffset, iRem - (iRem % sSizeDataToFillWith) });
 			}
 		}
 		else {
