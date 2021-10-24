@@ -67,15 +67,22 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 	constexpr auto iBytesInMB = 1024 * 1024; //(B in KB) * (KB in MB)
 	const auto iSpeedMBS = ((ullCurDiff / ++m_llTicks) * m_iTicksInSecond) / iBytesInMB; //Speed in MB/s.
 	std::wstring wstrDisplay = m_wstrOperName;
-	if (iSpeedMBS > 1)
-	{
-		wchar_t buff[64];
-		swprintf_s(buff, std::size(buff), L"%lld MB/s", iSpeedMBS);
-		wstrDisplay += buff;
-	}
-	else //If speed is less than 1 MB/s.
+	constexpr auto iMBInGB = 1024; //How many MB in one GB.
+	wchar_t buff[64];
+
+	if (iSpeedMBS < 1)//If speed is less than 1 MB/s.
 	{
 		wstrDisplay += L"< 1 MB/s";
+	}
+	else if (iSpeedMBS > iMBInGB) //More than 1 GB/s.
+	{
+		swprintf_s(buff, std::size(buff), L"%.2f GB/s", static_cast<float>(iSpeedMBS) / iMBInGB);
+		wstrDisplay += buff;
+	}
+	else
+	{
+		swprintf_s(buff, std::size(buff), L"%lld MB/s", iSpeedMBS);
+		wstrDisplay += buff;
 	}
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPERNAME)->SetWindowTextW(wstrDisplay.data());
 

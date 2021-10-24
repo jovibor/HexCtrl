@@ -341,22 +341,26 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_wndTtOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 
 	//Font related.//////////////////////////////////////////////
-	LOGFONTW lf { };
-	if (hcs.pLogFont)
-		lf = *hcs.pLogFont;
-	else
-	{
-		StringCchCopyW(lf.lfFaceName, 9, L"Consolas");
-		auto pDC = GetDC();
-		lf.lfHeight = -MulDiv(11, GetDeviceCaps(pDC->m_hDC, LOGPIXELSY), 72);
-		ReleaseDC(pDC);
-		lf.lfPitchAndFamily = FIXED_PITCH;
-	}
-	m_fontMain.CreateFontIndirectW(&lf);
+	auto pDC = GetDC();
+	const auto iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
+	ReleaseDC(pDC);
 
-	//LOGFONT::lfHeight docs explains this behavior.
-	lf.lfHeight = lf.lfHeight + (lf.lfHeight < 0 ? 1 : -1); //Decreasing font size by 1.
-	m_fontInfo.CreateFontIndirectW(&lf);
+	LOGFONTW lfMain { };
+	if (hcs.pLogFont == nullptr) //Creating default main font.
+	{
+		StringCchCopyW(lfMain.lfFaceName, LF_FACESIZE, L"Consolas");
+		lfMain.lfHeight = -MulDiv(11, iLOGPIXELSY, 72);
+		lfMain.lfPitchAndFamily = FIXED_PITCH;
+	}
+	else
+		lfMain = *hcs.pLogFont;
+	m_fontMain.CreateFontIndirectW(&lfMain);
+
+	LOGFONTW lfInfo { }; //Info area font, independent from the main font.
+	StringCchCopyW(lfInfo.lfFaceName, LF_FACESIZE, L"Consolas");
+	lfInfo.lfHeight = -MulDiv(11, iLOGPIXELSY, 72) + 1; //Size is less by 1 than the default main font.
+	lfInfo.lfPitchAndFamily = FIXED_PITCH;
+	m_fontInfo.CreateFontIndirectW(&lfInfo);
 	//End of font related.///////////////////////////////////////
 
 	m_penLines.CreatePen(PS_SOLID, 1, RGB(200, 200, 200));
@@ -1110,49 +1114,35 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		};
 
 		//In cases where only one affected data region (hms.vecSpan.size()==1) is used,
-		//and the size of the repeated data is quite small (1, 2 or 4 bytes),
-		//we extend this repeated data to uint64_t size to speed up the whole process of repeating.
-		//For FillWithZero it's gonna be eight bytes at a time instead of just one.
-		//At the end we simply fill up the remainder (SizeOfTheAffectedData % sizeof(uint64_t) ).
-		const auto& refHexSpan = hms.vecSpan.back();
-		const auto sSizeDataToFillWith = hms.spnData.size();
-		if (hms.vecSpan.size() == 1 && refHexSpan.ullSize > 8 && (sSizeDataToFillWith == sizeof(std::uint8_t)
-			|| sSizeDataToFillWith == sizeof(std::uint16_t) || sSizeDataToFillWith == sizeof(std::uint32_t)))
-		{
-			std::uint64_t u64Data { };
-			switch (sizeof(std::uint64_t) / sSizeDataToFillWith) //How many times to clone original data.
-			{
-			case 2: //Original data is sizeof(uint32_t) length.
-			{
-				const auto u32data = static_cast<std::uint64_t>(*reinterpret_cast<std::uint32_t*>(hms.spnData.data()));
-				u64Data = (u32data << 32) | u32data;
-			}
-			break;
-			case 4: //Original data is sizeof(uint16_t) length.
-			{
-				const auto u16data = static_cast<std::uint64_t>(*reinterpret_cast<std::uint16_t*>(hms.spnData.data()));
-				u64Data = (u16data << 48) | (u16data << 32) | (u16data << 16) | u16data;
-			}
-			break;
-			case 8: //Original data is sizeof(uint8_t) length.
-			{
-				const auto u8data = static_cast<std::uint64_t>(*reinterpret_cast<std::uint8_t*>(hms.spnData.data()));
-				u64Data = (u8data << 56) | (u8data << 48) | (u8data << 40) | (u8data << 32)
-					| (u8data << 24) | (u8data << 16) | (u8data << 8) | u8data;
-				break;
-			}
-			}
-			ModifyWorker(hms, lmbRepeat, { reinterpret_cast<std::byte*>(&u64Data), sizeof(u64Data) });
+		//and the size of the repeated data is equal to the extent of 2,
+		//we extend that repeated data to iBuffSizeForFastFill size to speed up 
+		//the whole process of repeating.
+		//At the end we simply fill up the remainder (ullSizeToModify % iBuffSizeForFastFill ).
+		const auto ullOffsetToModify = hms.vecSpan.back().ullOffset;
+		const auto ullSizeToModify = hms.vecSpan.back().ullSize;
+		const auto sSizeToFillWith = hms.spnData.size();
+		constexpr auto iBuffSizeForFastFill { 256 };
 
-			if (const auto iRem = refHexSpan.ullSize % sizeof(u64Data); iRem >= sSizeDataToFillWith) //Remainder.
+		if (hms.vecSpan.size() == 1 && ullSizeToModify > iBuffSizeForFastFill
+			&& sSizeToFillWith < iBuffSizeForFastFill && (iBuffSizeForFastFill % sSizeToFillWith) == 0)
+		{
+			std::byte buffFillData[iBuffSizeForFastFill]; //Buffer for fast fill data.
+			for (auto iter = 0ULL; iter < iBuffSizeForFastFill; iter += sSizeToFillWith)
 			{
-				const auto ullOffset = refHexSpan.ullOffset + refHexSpan.ullSize - iRem;
+				std::copy_n(hms.spnData.data(), sSizeToFillWith, buffFillData + iter);
+			}
+
+			ModifyWorker(hms, lmbRepeat, { buffFillData, iBuffSizeForFastFill });
+
+			if (const auto iRem = ullSizeToModify % iBuffSizeForFastFill; iRem >= sSizeToFillWith) //Remainder.
+			{
+				const auto ullOffset = ullOffsetToModify + ullSizeToModify - iRem;
 				const auto spnData = GetData({ ullOffset, iRem });
-				for (std::size_t iterRem = 0; iterRem < (iRem / sSizeDataToFillWith); ++iterRem) //Works only if iRem >= hms.spnData.size().
+				for (std::size_t iterRem = 0; iterRem < (iRem / sSizeToFillWith); ++iterRem) //Works only if iRem >= sSizeToFillWith.
 				{
-					std::copy_n(hms.spnData.data(), sSizeDataToFillWith, spnData.data() + (iterRem * sSizeDataToFillWith));
+					std::copy_n(hms.spnData.data(), sSizeToFillWith, spnData.data() + (iterRem * sSizeToFillWith));
 				}
-				SetDataVirtual(spnData, { ullOffset, iRem - (iRem % sSizeDataToFillWith) });
+				SetDataVirtual(spnData, { ullOffset, iRem - (iRem % sSizeToFillWith) });
 			}
 		}
 		else {
