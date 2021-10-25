@@ -1126,7 +1126,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		if (hms.vecSpan.size() == 1 && ullSizeToModify > iBuffSizeForFastFill
 			&& sSizeToFillWith < iBuffSizeForFastFill && (iBuffSizeForFastFill % sSizeToFillWith) == 0)
 		{
-			std::byte buffFillData[iBuffSizeForFastFill]; //Buffer for fast fill data.
+			std::byte buffFillData[iBuffSizeForFastFill]; //Buffer for fast data fill.
 			for (auto iter = 0ULL; iter < iBuffSizeForFastFill; iter += sSizeToFillWith)
 			{
 				std::copy_n(hms.spnData.data(), sSizeToFillWith, buffFillData + iter);
@@ -3480,7 +3480,6 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const std:
 					ullSizeChunk = (ullOffsetToModify + ullSizeToModify) - ullOffset;
 
 				const auto spnData = GetData({ ullOffset, ullSizeChunk });
-
 				for (auto ullIndex { 0ULL }; ullIndex <= (ullSizeChunk - ullSizeToOperWith); ullIndex += ullSizeToOperWith)
 				{
 					lmbWorker(spnData.data() + ullIndex, hms, spnDataToOperWith);
@@ -3491,7 +3490,6 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const std:
 					}
 					dlgClbk.SetProgress(ullOffset + ullIndex);
 				}
-
 				SetDataVirtual(spnData, { ullOffset, ullSizeChunk });
 			}
 		}
@@ -3499,12 +3497,17 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const std:
 		dlgClbk.ExitDlg();
 	};
 
-	std::thread thrdWorker(lmbThread); //Worker thread.
-
-	constexpr auto sizeQuick { 1024 * 1024 }; //1MB.
-	if (ullTotalSize > sizeQuick) //Showing "Cancel" dialog only when data > sizeQuick
+	constexpr auto iSizeToRunThread { 1024 * 1024 }; //1MB.
+	if (ullTotalSize > iSizeToRunThread) //Spawning new thread only if data size is big enough.
+	{
+		std::thread thrdWorker(lmbThread);
 		dlgClbk.DoModal();
-	thrdWorker.join();
+		thrdWorker.join();
+	}
+	else
+	{
+		lmbThread();
+	}
 }
 
 void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
