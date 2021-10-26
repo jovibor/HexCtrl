@@ -1023,71 +1023,72 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	SnapshotUndo(hms.vecSpan);
 
 	SetRedraw(false);
+	using enum EHexModifyMode;
 	switch (hms.enModifyMode)
 	{
-	case EHexModifyMode::MODIFY_ONCE:
+	case MODIFY_ONCE:
 	{
 		const auto stHexSpan = hms.vecSpan.back();
 		const auto ullOffsetToModify = stHexSpan.ullOffset;
-		const auto ullSizeToModify = stHexSpan.ullSize;
+		const auto ullSizeToModify = (std::min)(stHexSpan.ullSize, static_cast<ULONGLONG>(hms.spnData.size()));
 
 		assert((ullOffsetToModify + ullSizeToModify) <= GetDataSize());
 		if ((ullOffsetToModify + ullSizeToModify) > GetDataSize())
 			return;
 
-		//Check if the size of a data to_modify_from less then the ullSizeToModify.
-		//It must be equal or more.
-		assert(hms.spnData.size() >= ullSizeToModify);
-		if (hms.spnData.size() < ullSizeToModify)
-			return;
-
 		if (IsVirtual() && ullSizeToModify > GetCacheSize())
 		{
-			const auto ullSizeChunk = GetCacheSize();
-			const auto iMod = ullSizeToModify % ullSizeChunk;
-			auto ullChunks = ullSizeToModify / ullSizeChunk + (iMod > 0 ? 1 : 0);
-			auto ullOffset { 0ULL };
+			const auto ullSizeCache = GetCacheSize();
+			const auto iMod = ullSizeToModify % ullSizeCache;
+			auto ullChunks = ullSizeToModify / ullSizeCache + (iMod > 0 ? 1 : 0);
+			auto ullOffsetCurr = ullOffsetToModify;
+			auto ullOffsetSpanCurr = 0ULL;
 			while (ullChunks-- > 0)
 			{
-				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
-				if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
-				{
-					std::copy_n(hms.spnData.data() + ullOffset, ullSize, spnData.data());
-					SetDataVirtual(spnData, { ullOffset, ullSize });
-				}
-				ullOffset += ullSize;
+				const auto ullSizeToModifyCurr = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeCache;
+				const auto spnData = GetData({ ullOffsetCurr, ullSizeToModifyCurr });
+				assert(!spnData.empty());
+				std::copy_n(hms.spnData.data() + ullOffsetSpanCurr, ullSizeToModifyCurr, spnData.data());
+				SetDataVirtual(spnData, { ullOffsetCurr, ullSizeToModifyCurr });
+				ullOffsetCurr += ullSizeToModifyCurr;
+				ullOffsetSpanCurr += ullSizeToModifyCurr;
 			}
 		}
 		else
 		{
-			if (const auto spnData = GetData(stHexSpan); !spnData.empty())
-			{
-				std::copy_n(hms.spnData.data(), static_cast<size_t>(ullSizeToModify), spnData.data());
-				SetDataVirtual(spnData, stHexSpan);
-			}
+			const auto spnData = GetData({ ullOffsetToModify, ullSizeToModify });
+			assert(!spnData.empty());
+			std::copy_n(hms.spnData.data(), static_cast<size_t>(ullSizeToModify), spnData.data());
+			SetDataVirtual(spnData, { ullOffsetToModify, ullSizeToModify });
 		}
 	}
 	break;
-	case EHexModifyMode::MODIFY_RANDOM:
+	case MODIFY_RAND_MT19937:
+	case MODIFY_RAND_FAST:
 	{
 		std::random_device rd;
 		std::mt19937 gen(rd());
 		const std::uniform_int_distribution<std::uint64_t> distUInt64(0, (std::numeric_limits<std::uint64_t>::max)());
-		const auto lmbRandomUInt64 = [&](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> /**/)
+		const auto lmbRandUInt64 = [&](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> /**/)
 		{
 			assert(pData != nullptr);
 			*reinterpret_cast<std::uint64_t*>(pData) = distUInt64(gen);
 		};
-		const auto lmbRandomByte = [&](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> /**/)
+		const auto lmbRandByte = [&](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> /**/)
 		{
 			assert(pData != nullptr);
 			*pData = static_cast<std::byte>(distUInt64(gen));
 		};
+		const auto lmbRandFast = [](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> spnDataFrom)
+		{
+			assert(pData != nullptr);
+			std::copy_n(spnDataFrom.data(), spnDataFrom.size(), pData);
+		};
 
 		const auto& refHexSpan = hms.vecSpan.back();
-		if (hms.vecSpan.size() == 1 && refHexSpan.ullSize >= 8)
+		if (hms.enModifyMode == MODIFY_RAND_MT19937 && hms.vecSpan.size() == 1 && refHexSpan.ullSize >= sizeof(std::uint64_t))
 		{
-			ModifyWorker(hms, lmbRandomUInt64, { static_cast<std::byte*>(nullptr), sizeof(std::uint64_t) });
+			ModifyWorker(hms, lmbRandUInt64, { static_cast<std::byte*>(nullptr), sizeof(std::uint64_t) });
 
 			if (const auto iRem = refHexSpan.ullSize % sizeof(std::uint64_t); iRem > 0) //Remainder.
 			{
@@ -1100,12 +1101,57 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				SetDataVirtual(spnData, { ullOffset, iRem });
 			}
 		}
+		else if (hms.enModifyMode == MODIFY_RAND_FAST && hms.vecSpan.size() == 1 && refHexSpan.ullSize >= GetCacheSize())
+		{
+			//Fill the uptrRandData buffer with true random data of ullSizeRandBuff size.
+			//Then clone this buffer to the destination data.
+			const auto ullSizeRandBuff = 1024 * 1024; //1MB.
+			std::unique_ptr<std::byte []> uptrRandData = std::make_unique<std::byte []>(ullSizeRandBuff);
+
+			for (auto iter = 0UL; iter < ullSizeRandBuff; iter += sizeof(std::uint64_t))
+			{
+				*reinterpret_cast<std::uint64_t*>(&uptrRandData[iter]) = distUInt64(gen);
+			};
+
+			ModifyWorker(hms, lmbRandFast, { uptrRandData.get(), ullSizeRandBuff });
+
+			//Filling the remainder data.
+			if (const auto iRem = refHexSpan.ullSize % ullSizeRandBuff; iRem > 0) //Remainder.
+			{
+				if (iRem <= GetCacheSize())
+				{
+					const auto ullOffsetCurr = refHexSpan.ullOffset + refHexSpan.ullSize - iRem;
+					const auto spnData = GetData({ ullOffsetCurr, iRem });
+					assert(!spnData.empty());
+					std::copy_n(uptrRandData.get(), iRem, spnData.data());
+					SetDataVirtual(spnData, { ullOffsetCurr, iRem });
+				}
+				else
+				{
+					const auto ullSizeCache = GetCacheSize();
+					const auto iMod = iRem % ullSizeCache;
+					auto ullChunks = iRem / ullSizeCache + (iMod > 0 ? 1 : 0);
+					auto ullOffsetCurr = refHexSpan.ullOffset + refHexSpan.ullSize - iRem;
+					auto ullOffsetRandCurr = 0ULL;
+					while (ullChunks-- > 0)
+					{
+						const auto ullSizeToModify = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeCache;
+						const auto spnData = GetData({ ullOffsetCurr, ullSizeToModify });
+						assert(!spnData.empty());
+						std::copy_n(uptrRandData.get() + ullOffsetRandCurr, ullSizeToModify, spnData.data());
+						SetDataVirtual(spnData, { ullOffsetCurr, ullSizeToModify });
+						ullOffsetCurr += ullSizeToModify;
+						ullOffsetRandCurr += ullSizeToModify;
+					}
+				}
+			}
+		}
 		else {
-			ModifyWorker(hms, lmbRandomByte, { static_cast<std::byte*>(nullptr), sizeof(std::byte) });
+			ModifyWorker(hms, lmbRandByte, { static_cast<std::byte*>(nullptr), sizeof(std::byte) });
 		}
 	}
 	break;
-	case EHexModifyMode::MODIFY_REPEAT:
+	case MODIFY_REPEAT:
 	{
 		constexpr auto lmbRepeat = [](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> spnDataFrom)
 		{
@@ -1120,29 +1166,29 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		//At the end we simply fill up the remainder (ullSizeToModify % iBuffSizeForFastFill ).
 		const auto ullOffsetToModify = hms.vecSpan.back().ullOffset;
 		const auto ullSizeToModify = hms.vecSpan.back().ullSize;
-		const auto sSizeToFillWith = hms.spnData.size();
+		const auto ullSizeToFillWith = hms.spnData.size();
 		constexpr auto iBuffSizeForFastFill { 256 };
 
 		if (hms.vecSpan.size() == 1 && ullSizeToModify > iBuffSizeForFastFill
-			&& sSizeToFillWith < iBuffSizeForFastFill && (iBuffSizeForFastFill % sSizeToFillWith) == 0)
+			&& ullSizeToFillWith < iBuffSizeForFastFill && (iBuffSizeForFastFill % ullSizeToFillWith) == 0)
 		{
 			std::byte buffFillData[iBuffSizeForFastFill]; //Buffer for fast data fill.
-			for (auto iter = 0ULL; iter < iBuffSizeForFastFill; iter += sSizeToFillWith)
+			for (auto iter = 0ULL; iter < iBuffSizeForFastFill; iter += ullSizeToFillWith)
 			{
-				std::copy_n(hms.spnData.data(), sSizeToFillWith, buffFillData + iter);
+				std::copy_n(hms.spnData.data(), ullSizeToFillWith, buffFillData + iter);
 			}
 
 			ModifyWorker(hms, lmbRepeat, { buffFillData, iBuffSizeForFastFill });
 
-			if (const auto iRem = ullSizeToModify % iBuffSizeForFastFill; iRem >= sSizeToFillWith) //Remainder.
+			if (const auto iRem = ullSizeToModify % iBuffSizeForFastFill; iRem >= ullSizeToFillWith) //Remainder.
 			{
 				const auto ullOffset = ullOffsetToModify + ullSizeToModify - iRem;
 				const auto spnData = GetData({ ullOffset, iRem });
-				for (std::size_t iterRem = 0; iterRem < (iRem / sSizeToFillWith); ++iterRem) //Works only if iRem >= sSizeToFillWith.
+				for (std::size_t iterRem = 0; iterRem < (iRem / ullSizeToFillWith); ++iterRem) //Works only if iRem >= sSizeToFillWith.
 				{
-					std::copy_n(hms.spnData.data(), sSizeToFillWith, spnData.data() + (iterRem * sSizeToFillWith));
+					std::copy_n(hms.spnData.data(), ullSizeToFillWith, spnData.data() + (iterRem * ullSizeToFillWith));
 				}
-				SetDataVirtual(spnData, { ullOffset, iRem - (iRem % sSizeToFillWith) });
+				SetDataVirtual(spnData, { ullOffset, iRem - (iRem % ullSizeToFillWith) });
 			}
 		}
 		else {
@@ -1150,7 +1196,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		}
 	}
 	break;
-	case EHexModifyMode::MODIFY_OPERATION:
+	case MODIFY_OPERATION:
 	{
 		constexpr auto lmbOperData = [](std::byte* pData, const HEXMODIFY& hms, std::span<std::byte>/**/)
 		{
@@ -1649,7 +1695,11 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 	m_fMutable = hds.fMutable;
 	m_pHexVirtData = hds.pHexVirtData;
 	m_pHexVirtColors = hds.pHexVirtColors;
-	m_dwCacheSize = hds.dwCacheSize > 0x10000 ? hds.dwCacheSize : 0x10000; //64Kb is the minimum size.
+	m_dwCacheSize = hds.dwCacheSize; //Cache size must be at least sizeof(std::uint64_t) aligned.
+	if (m_dwCacheSize < 0x10000 || (m_dwCacheSize % sizeof(std::uint64_t)) != 0)
+	{
+		m_dwCacheSize = 0x10000; //64Kb is the minimum default size.
+	}
 	m_fHighLatency = hds.fHighLatency;
 
 	RecalcAll();
@@ -3433,6 +3483,10 @@ bool CHexCtrl::IsPageVisible()const
 template<typename T>
 void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const std::span<std::byte> spnDataToOperWith)
 {
+	assert(!spnDataToOperWith.empty());
+	if (spnDataToOperWith.empty())
+		return;
+
 	const auto& vecSpanRef = hms.vecSpan;
 	const auto ullTotalSize = std::accumulate(vecSpanRef.begin(), vecSpanRef.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPAN& ref) {return ullSumm + ref.ullSize; });
@@ -3453,44 +3507,114 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const std:
 			if (ullSizeToOperWith > ullSizeToModify)
 				break;
 
-			ULONGLONG ullSizeChunk { };
+			ULONGLONG ullSizeCache { };
 			ULONGLONG ullChunks { };
+			bool fCacheIsLargeEnough { true }; //Cache is larger than ullSizeToOperWith.
 
 			if (!IsVirtual())
 			{
-				ullSizeChunk = ullSizeToModify;
+				ullSizeCache = ullSizeToModify;
 				ullChunks = 1;
 			}
 			else
 			{
-				ullSizeChunk = GetCacheSize(); //Size of Virtual memory for acquiring, to work with.
-				if (const auto ullAlign { ullSizeToOperWith }; ullAlign > 0)
-					ullSizeChunk -= (ullSizeChunk & (ullAlign - 1)); //Aligning chunk size to ullAlign.
-				if (ullSizeToModify < ullSizeChunk)
-					ullSizeChunk = ullSizeToModify;
-				ullChunks = ullSizeToModify / ullSizeChunk + ((ullSizeToModify % ullSizeChunk) ? 1 : 0);
+				ullSizeCache = GetCacheSize(); //Size of Virtual memory for acquiring, to work with.
+				if (ullSizeCache >= ullSizeToOperWith)
+				{
+					ullSizeCache -= ullSizeCache % ullSizeToOperWith; //Aligning chunk size to ullSizeToOperWith.
+
+					if (ullSizeToModify < ullSizeCache)
+						ullSizeCache = ullSizeToModify;
+					ullChunks = ullSizeToModify / ullSizeCache + ((ullSizeToModify % ullSizeCache) ? 1 : 0);
+				}
+				else
+				{
+					fCacheIsLargeEnough = false;
+					const auto iSmallMod = ullSizeToOperWith % ullSizeCache;
+					const auto ullSmallChunks = ullSizeToOperWith / ullSizeCache + (iSmallMod > 0 ? 1 : 0);
+					ullChunks = (ullSizeToModify / ullSizeToOperWith) * ullSmallChunks;
+				}
 			}
 
-			for (auto iterChunk { 0ULL }; iterChunk < ullChunks; ++iterChunk)
+			if (fCacheIsLargeEnough)
 			{
-				const auto ullOffset = ullOffsetToModify + (iterChunk * ullSizeChunk);
-				if (ullOffset + ullSizeChunk > GetDataSize()) //Overflow check.
-					ullSizeChunk = GetDataSize() - ullOffset;
-				if (ullOffset + ullSizeChunk > ullOffsetToModify + ullSizeToModify)
-					ullSizeChunk = (ullOffsetToModify + ullSizeToModify) - ullOffset;
-
-				const auto spnData = GetData({ ullOffset, ullSizeChunk });
-				for (auto ullIndex { 0ULL }; ullIndex <= (ullSizeChunk - ullSizeToOperWith); ullIndex += ullSizeToOperWith)
+				for (auto iterChunk { 0ULL }; iterChunk < ullChunks; ++iterChunk)
 				{
-					lmbWorker(spnData.data() + ullIndex, hms, spnDataToOperWith);
+					const auto ullOffsetCurr = ullOffsetToModify + (iterChunk * ullSizeCache);
+					if (ullOffsetCurr + ullSizeCache > GetDataSize()) //Overflow check.
+					{
+						ullSizeCache = GetDataSize() - ullOffsetCurr;
+						if (ullSizeCache < ullSizeToOperWith) //ullSizeChunk is too small for ullSizeToOperWith.
+							break;
+					}
+
+					if ((ullOffsetCurr + ullSizeCache) > (ullOffsetToModify + ullSizeToModify))
+					{
+						ullSizeCache = (ullOffsetToModify + ullSizeToModify) - ullOffsetCurr;
+						if (ullSizeCache < ullSizeToOperWith) //ullSizeChunk is too small for ullSizeToOperWith.
+							break;
+					}
+
+					const auto spnData = GetData({ ullOffsetCurr, ullSizeCache });
+					assert(!spnData.empty());
+					for (auto ullIndex { 0ULL }; ullIndex <= (ullSizeCache - ullSizeToOperWith); ullIndex += ullSizeToOperWith)
+					{
+						lmbWorker(spnData.data() + ullIndex, hms, spnDataToOperWith);
+						if (dlgClbk.IsCanceled())
+						{
+							SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCache });
+							goto exit;
+						}
+						dlgClbk.SetProgress(ullOffsetCurr + ullIndex);
+					}
+					SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCache });
+				}
+			}
+			else
+			{
+				//It's a special case for when the ullSizeToOperWith is larger than
+				//the current cache size (only in Virtual mode).
+
+				const auto iSmallMod = ullSizeToOperWith % ullSizeCache;
+				const auto ullSmallChunks = ullSizeToOperWith / ullSizeCache + (iSmallMod > 0 ? 1 : 0);
+				auto ullSmallChunkCur = 0ULL; //Current small chunk index.
+				auto ullOffsetCurr = 0ULL;
+				auto ullOffsetSubSpan = 0ULL; //Current offset for spnDataToOperWith.subspan().
+				auto ullSizeCacheCurr = 0ULL; //Current cache size.
+				for (auto iterChunk { 0ULL }; iterChunk < ullChunks; ++iterChunk)
+				{
+					if (ullSmallChunkCur == (ullSmallChunks - 1) && iSmallMod > 0)
+					{
+						ullOffsetCurr += iSmallMod;
+						ullSizeCacheCurr = iSmallMod;
+						ullOffsetSubSpan += iSmallMod;
+					}
+					else
+					{
+						ullOffsetCurr = ullOffsetToModify + (iterChunk * ullSizeCache);
+						ullSizeCacheCurr = ullSizeCache;
+						ullOffsetSubSpan = ullSmallChunkCur * ullSizeCache;
+					}
+
+					const auto spnData = GetData({ ullOffsetCurr, ullSizeCacheCurr });
+					assert(!spnData.empty());
+
+					lmbWorker(spnData.data(), hms, spnDataToOperWith.subspan(static_cast<std::size_t>(ullOffsetSubSpan),
+						static_cast<std::size_t>(ullSizeCacheCurr)));
 					if (dlgClbk.IsCanceled())
 					{
-						SetDataVirtual(spnData, { ullOffset, ullSizeChunk });
+						SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCacheCurr });
 						goto exit;
 					}
-					dlgClbk.SetProgress(ullOffset + ullIndex);
+					dlgClbk.SetProgress(ullOffsetCurr + ullSizeCacheCurr);
+					SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCacheCurr });
+
+					if (++ullSmallChunkCur == ullSmallChunks)
+					{
+						ullSmallChunkCur = 0ULL;
+						ullOffsetSubSpan = 0ULL;
+					}
 				}
-				SetDataVirtual(spnData, { ullOffset, ullSizeChunk });
 			}
 		}
 	exit:

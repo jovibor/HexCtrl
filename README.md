@@ -901,7 +901,7 @@ Enum of the data modification modes, used in [`HEXMODIFY`](#hexmodify).
 ```cpp
 enum class EHexModifyMode : std::uint8_t
 {
-    MODIFY_ONCE, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RANDOM
+    MODIFY_ONCE, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RAND_MT19937, MODIFY_RAND_FAST
 };
 ```
 

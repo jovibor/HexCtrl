@@ -17,7 +17,7 @@ namespace HEXCTRL::INTERNAL
 {
 	enum class CHexDlgFillData::EFillType : std::uint8_t
 	{
-		FILL_HEX, FILL_ASCII, FILL_WCHAR, FILL_RANDOM
+		FILL_HEX, FILL_ASCII, FILL_WCHAR, FILL_RAND_MT19937, FILL_RAND_FAST
 	};
 };
 
@@ -54,8 +54,10 @@ BOOL CHexDlgFillData::OnInitDialog()
 	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_ASCII));
 	iIndex = m_stComboType.AddString(L"UTF-16 Text");
 	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_WCHAR));
-	iIndex = m_stComboType.AddString(L"Random Data (mt19937)");
-	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RANDOM));
+	iIndex = m_stComboType.AddString(L"Random Data (MT19937)");
+	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_MT19937));
+	iIndex = m_stComboType.AddString(L"Pseudo Random Data (Non-secure, Fast)");
+	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_FAST));
 
 	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_ALL, IDC_HEXCTRL_FILLDATA_RADIO_SEL, IDC_HEXCTRL_FILLDATA_RADIO_ALL);
 	m_stComboData.LimitText(512); //Max characters of combo-box.
@@ -81,11 +83,15 @@ void CHexDlgFillData::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 
 BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
 {
+	using enum EFillType;
 	switch (LOWORD(wParam))
 	{
 	case IDC_HEXCTRL_FILLDATA_COMBO_TYPE:
-		m_stComboData.EnableWindow(GetFillType() != EFillType::FILL_RANDOM);
-		break;
+	{
+		const auto enFillType = GetFillType();
+		m_stComboData.EnableWindow(enFillType != FILL_RAND_MT19937 && enFillType != FILL_RAND_FAST);
+	}
+	break;
 	case IDOK:
 		OnOK();
 		break;
@@ -115,6 +121,7 @@ void CHexDlgFillData::OnOK()
 		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify All data?",
 			MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
+
 		hms.vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
 	}
 	else
@@ -125,26 +132,39 @@ void CHexDlgFillData::OnOK()
 	switch (GetFillType())
 	{
 	case EFillType::FILL_HEX:
+	{
 		if (!str2hex(strFillWith, strFillWith))
 		{
 			MessageBoxW(L"Wrong Hex format!", L"Format Error", MB_ICONERROR);
 			return;
 		}
 
-		hms.spnData = { reinterpret_cast<std::byte*>(strFillWith.data()), strFillWith.size() };
 		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
-		break;
+		hms.spnData = { reinterpret_cast<std::byte*>(strFillWith.data()), strFillWith.size() };
+	}
+	break;
 	case EFillType::FILL_ASCII:
+	{
+		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 		hms.spnData = { reinterpret_cast<std::byte*>(strFillWith.data()), strFillWith.size() };
-		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
-		break;
+	}
+	break;
 	case EFillType::FILL_WCHAR:
-		hms.spnData = { reinterpret_cast<std::byte*>(wstrFillWith.data()), wstrFillWith.size() * sizeof(WCHAR) };
+	{
 		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
-		break;
-	case EFillType::FILL_RANDOM:
-		hms.enModifyMode = EHexModifyMode::MODIFY_RANDOM;
-		break;
+		hms.spnData = { reinterpret_cast<std::byte*>(wstrFillWith.data()), wstrFillWith.size() * sizeof(WCHAR) };
+	}
+	break;
+	case EFillType::FILL_RAND_MT19937:
+	{
+		hms.enModifyMode = EHexModifyMode::MODIFY_RAND_MT19937;
+	}
+	break;
+	case EFillType::FILL_RAND_FAST:
+	{
+		hms.enModifyMode = EHexModifyMode::MODIFY_RAND_FAST;
+	}
+	break;
 	default:
 		break;
 	}
