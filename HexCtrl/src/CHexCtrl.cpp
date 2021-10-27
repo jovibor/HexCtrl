@@ -1103,20 +1103,22 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		}
 		else if (hms.enModifyMode == MODIFY_RAND_FAST && hms.vecSpan.size() == 1 && refHexSpan.ullSize >= GetCacheSize())
 		{
-			//Fill the uptrRandData buffer with true random data of ullSizeRandBuff size.
+			//Fill the uptrRandData buffer with true random data of ulSizeRandBuff size.
 			//Then clone this buffer to the destination data.
-			const auto ullSizeRandBuff = 1024 * 1024; //1MB.
-			std::unique_ptr<std::byte []> uptrRandData = std::make_unique<std::byte []>(ullSizeRandBuff);
+			//Buffer is allocated with alignment for maximum performance.
+			constexpr auto ulSizeRandBuff = 1024U * 1024U; //1MB.
+			std::unique_ptr < std::byte [], decltype([](std::byte* pData) { _aligned_free(pData); }) >
+				uptrRandData(static_cast<std::byte*>(_aligned_malloc(ulSizeRandBuff, 32)));
 
-			for (auto iter = 0UL; iter < ullSizeRandBuff; iter += sizeof(std::uint64_t))
+			for (auto iter = 0UL; iter < ulSizeRandBuff; iter += sizeof(std::uint64_t))
 			{
 				*reinterpret_cast<std::uint64_t*>(&uptrRandData[iter]) = distUInt64(gen);
 			};
 
-			ModifyWorker(hms, lmbRandFast, { uptrRandData.get(), ullSizeRandBuff });
+			ModifyWorker(hms, lmbRandFast, { uptrRandData.get(), ulSizeRandBuff });
 
 			//Filling the remainder data.
-			if (const auto iRem = refHexSpan.ullSize % ullSizeRandBuff; iRem > 0) //Remainder.
+			if (const auto iRem = refHexSpan.ullSize % ulSizeRandBuff; iRem > 0) //Remainder.
 			{
 				if (iRem <= GetCacheSize())
 				{
@@ -1163,28 +1165,28 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		//and the size of the repeated data is equal to the extent of 2,
 		//we extend that repeated data to iBuffSizeForFastFill size to speed up 
 		//the whole process of repeating.
-		//At the end we simply fill up the remainder (ullSizeToModify % iBuffSizeForFastFill ).
+		//At the end we simply fill up the remainder (ullSizeToModify % ulSizeBuffFastFill ).
 		const auto ullOffsetToModify = hms.vecSpan.back().ullOffset;
 		const auto ullSizeToModify = hms.vecSpan.back().ullSize;
 		const auto ullSizeToFillWith = hms.spnData.size();
-		constexpr auto iBuffSizeForFastFill { 256 };
+		constexpr auto ulSizeBuffFastFill { 256U };
 
-		if (hms.vecSpan.size() == 1 && ullSizeToModify > iBuffSizeForFastFill
-			&& ullSizeToFillWith < iBuffSizeForFastFill && (iBuffSizeForFastFill % ullSizeToFillWith) == 0)
+		if (hms.vecSpan.size() == 1 && ullSizeToModify > ulSizeBuffFastFill
+			&& ullSizeToFillWith < ulSizeBuffFastFill && (ulSizeBuffFastFill % ullSizeToFillWith) == 0)
 		{
-			std::byte buffFillData[iBuffSizeForFastFill]; //Buffer for fast data fill.
-			for (auto iter = 0ULL; iter < iBuffSizeForFastFill; iter += ullSizeToFillWith)
+			alignas(32) std::byte buffFillData[ulSizeBuffFastFill]; //Buffer for fast data fill.
+			for (auto iter = 0ULL; iter < ulSizeBuffFastFill; iter += ullSizeToFillWith)
 			{
 				std::copy_n(hms.spnData.data(), ullSizeToFillWith, buffFillData + iter);
 			}
 
-			ModifyWorker(hms, lmbRepeat, { buffFillData, iBuffSizeForFastFill });
+			ModifyWorker(hms, lmbRepeat, { buffFillData, ulSizeBuffFastFill });
 
-			if (const auto iRem = ullSizeToModify % iBuffSizeForFastFill; iRem >= ullSizeToFillWith) //Remainder.
+			if (const auto iRem = ullSizeToModify % ulSizeBuffFastFill; iRem >= ullSizeToFillWith) //Remainder.
 			{
 				const auto ullOffset = ullOffsetToModify + ullSizeToModify - iRem;
 				const auto spnData = GetData({ ullOffset, iRem });
-				for (std::size_t iterRem = 0; iterRem < (iRem / ullSizeToFillWith); ++iterRem) //Works only if iRem >= sSizeToFillWith.
+				for (std::size_t iterRem = 0; iterRem < (iRem / ullSizeToFillWith); ++iterRem) //Works only if iRem >= ullSizeToFillWith.
 				{
 					std::copy_n(hms.spnData.data(), ullSizeToFillWith, spnData.data() + (iterRem * ullSizeToFillWith));
 				}

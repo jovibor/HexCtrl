@@ -56,7 +56,7 @@ BOOL CHexDlgFillData::OnInitDialog()
 	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_WCHAR));
 	iIndex = m_stComboType.AddString(L"Random Data (MT19937)");
 	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_MT19937));
-	iIndex = m_stComboType.AddString(L"Pseudo Random Data (Non-secure, Fast)");
+	iIndex = m_stComboType.AddString(L"Pseudo Random Data (Less secure, fast)");
 	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_FAST));
 
 	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_ALL, IDC_HEXCTRL_FILLDATA_RADIO_SEL, IDC_HEXCTRL_FILLDATA_RADIO_ALL);
