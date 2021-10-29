@@ -385,6 +385,13 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this, this);
 	m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, this, this);
 	m_pBookmarks->Attach(this);
+
+	//Determine current user locale specific date format. Default to UK/European if unable to determine
+	//See: https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
+	if (!GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SSHORTDATE | LOCALE_RETURN_NUMBER,
+		reinterpret_cast<LPWSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat)))
+		m_dwDateFormat = 1;
+
 	m_fCreated = true;
 
 	SetGroupMode(m_enGroupMode);
@@ -5194,5 +5201,24 @@ void CHexCtrl::OnVScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollB
 	{
 		RedrawWindow();
 		ParentNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
+	}
+}
+
+DWORD CHexCtrl::GetCurrentDateFormat()const
+{
+	return m_dwDateFormat;
+}
+
+void CHexCtrl::SetCurrentDateFormat(DWORD dwDateFormat)
+{
+	switch (dwDateFormat)
+	{
+	case 0:	//0=Month-Day-Year
+	case 2:	//2=Year-Month-Day
+		m_dwDateFormat = dwDateFormat;
+		break;
+	default: //1=Day-Month-Year (default)
+		m_dwDateFormat = 1;
+		break;
 	}
 }

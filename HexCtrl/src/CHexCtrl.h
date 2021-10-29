@@ -90,6 +90,8 @@ namespace HEXCTRL::INTERNAL
 		void SetRedraw(bool fRedraw)override;               //Handle WM_PAINT message or not.
 		void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false)override; //Set current selection.
 		void SetWheelRatio(double dbRatio)override;         //Set the ratio for how much to scroll with mouse-wheel.
+		[[nodiscard]] DWORD GetCurrentDateFormat()const override;   //Determine current date format
+		void SetCurrentDateFormat(DWORD dwDateFormat)override;		//Change current date format
 	private:
 		struct SHBITMAP;
 		struct SUNDO;
@@ -280,5 +282,6 @@ namespace HEXCTRL::INTERNAL
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
 		bool m_fMenuCMD { false };            //Command to be executed through menu, not through key-shortcut.
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
+		DWORD m_dwDateFormat { };			  //Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 	};
 }

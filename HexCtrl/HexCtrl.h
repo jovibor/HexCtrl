@@ -74,6 +74,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
 		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION = 0; //Ensures that the given offset is visible.
 		[[nodiscard]] virtual bool IsVirtual()const = 0;       //Is working in Virtual or default mode.
+		[[nodiscard]] virtual DWORD GetCurrentDateFormat()const = 0;   //Determine current date format
 		virtual void ModifyData(const HEXMODIFY& hms) = 0;     //Main routine to modify data in IsMutable()==true mode.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
@@ -90,6 +91,7 @@ namespace HEXCTRL
 		virtual void SetRedraw(bool fRedraw) = 0;              //Handle WM_PAINT message or not.
 		virtual void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
 		virtual void SetWheelRatio(double dbRatio) = 0;        //Set the ratio for how much to scroll with mouse-wheel.
+		virtual void SetCurrentDateFormat(DWORD dwDateFormat) = 0;	//Change current date format. e.g. 0=MMddYYYY, 1=ddMMYYYY (default), 2=YYYYMMdd			
 	};
 
 	/********************************************************************************************
