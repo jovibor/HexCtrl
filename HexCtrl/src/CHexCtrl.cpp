@@ -385,15 +385,12 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this, this);
 	m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, this, this);
 	m_pBookmarks->Attach(this);
-
-	//Determine current user locale specific date format. Default to UK/European if unable to determine
-	SetDateFormat();
-	
 	m_fCreated = true;
 
 	SetGroupMode(m_enGroupMode);
 	SetEncoding(-1);
 	SetConfig(L"");
+	SetDateFormat(-1);
 
 	return true;
 }
@@ -686,6 +683,15 @@ auto CHexCtrl::GetDataSize()const->ULONGLONG
 		return { };
 
 	return m_spnData.size();
+}
+
+DWORD CHexCtrl::GetDateFormat()const
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return -1;
+
+	return m_dwDateFormat;
 }
 
 int CHexCtrl::GetEncoding()const
@@ -1709,6 +1715,29 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 	m_fHighLatency = hds.fHighLatency;
 
 	RecalcAll();
+}
+
+void CHexCtrl::SetDateFormat(DWORD dwDateFormat)
+{	
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+	
+	assert(dwDateFormat == -1 || dwDateFormat < 3);
+	if (dwDateFormat != -1 || dwDateFormat > 2)
+		return;
+
+	if(dwDateFormat == -1)
+	{
+		//Determine current user locale specific date format.
+		if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
+			reinterpret_cast<LPWSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat)) == 0)
+		{
+			assert(true); //Something went wrong.			
+		}
+	}
+	else
+		m_dwDateFormat = dwDateFormat;
 }
 
 void CHexCtrl::SetEncoding(int iCodePage)
@@ -5198,34 +5227,5 @@ void CHexCtrl::OnVScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollB
 	{
 		RedrawWindow();
 		ParentNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
-	}
-}
-
-DWORD CHexCtrl::GetDateFormat()const
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return 1;
-
-	return m_dwDateFormat;
-}
-
-void CHexCtrl::SetDateFormat(DWORD dwDateFormat)
-{	
-	if (dwDateFormat != -1 || dwDateFormat > 2)
-		return;
-
-	switch (dwDateFormat)
-	{
-	case -1:
-		//Determine current user locale specific date format. Default to UK/European if unable to determine
-		//See: https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
-		if (!GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
-			reinterpret_cast<LPWSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat)))
-			m_dwDateFormat = 1;			
-		break;
-	default:
-		m_dwDateFormat = dwDateFormat;
-		break;
 	}
 }
