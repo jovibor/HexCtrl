@@ -55,6 +55,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORS = 0;          //Current colors.
 		[[nodiscard]] virtual auto GetData(HEXSPAN ho)const->std::span<std::byte> = 0; //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
+		[[nodiscard]] virtual DWORD GetDateFormat()const = 0;  //Determine current date format
 		[[nodiscard]] virtual int GetEncoding()const = 0;                    //Get current code page ID.
 		virtual void GetFont(LOGFONTW& lf) = 0;                              //Get current font.
 		[[nodiscard]] virtual auto GetGroupMode()const->EHexDataSize = 0;    //Retrieves current data grouping mode.
@@ -73,15 +74,15 @@ namespace HEXCTRL
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
 		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION = 0; //Ensures that the given offset is visible.
-		[[nodiscard]] virtual bool IsVirtual()const = 0;       //Is working in Virtual or default mode.
-		[[nodiscard]] virtual DWORD GetCurrentDateFormat()const = 0;   //Determine current date format
+		[[nodiscard]] virtual bool IsVirtual()const = 0;       //Is working in Virtual or default mode.		
 		virtual void ModifyData(const HEXMODIFY& hms) = 0;     //Main routine to modify data in IsMutable()==true mode.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
 		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true) = 0; //Set the caret position.
 		virtual void SetColors(const HEXCOLORS& clr) = 0;      //Set all the control's colors.
 		virtual bool SetConfig(std::wstring_view wstrPath) = 0;//Set configuration file, or "" for defaults.
-		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).	
+		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).
+		virtual void SetDateFormat(DWORD dwDateFormat) = 0;	   //Change current date format. e.g. -1=User default, 0=MMddYYYY, 1=ddMMYYYY, 2=YYYYMMdd
 		virtual void SetEncoding(int iCodePage) = 0;           //Code-page for text area.
 		virtual void SetFont(const LOGFONTW& lf) = 0;         //Set the control's new font. This font has to be monospaced.
 		virtual void SetGroupMode(EHexDataSize enMode) = 0;    //Set current "Group Data By" mode.
@@ -90,8 +91,7 @@ namespace HEXCTRL
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wstrName = L"Page") = 0; //Set page size and name to draw the lines in-between.
 		virtual void SetRedraw(bool fRedraw) = 0;              //Handle WM_PAINT message or not.
 		virtual void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
-		virtual void SetWheelRatio(double dbRatio) = 0;        //Set the ratio for how much to scroll with mouse-wheel.
-		virtual void SetCurrentDateFormat(DWORD dwDateFormat) = 0;	//Change current date format. e.g. 0=MMddYYYY, 1=ddMMYYYY (default), 2=YYYYMMdd			
+		virtual void SetWheelRatio(double dbRatio) = 0;        //Set the ratio for how much to scroll with mouse-wheel.		
 	};
 
 	/********************************************************************************************
