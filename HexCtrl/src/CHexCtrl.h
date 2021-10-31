@@ -239,6 +239,7 @@ namespace HEXCTRL::INTERNAL
 		DWORD m_dwOffsetBytes { };            //How many bytes "Offset" number posesses;
 		DWORD m_dwPageSize { 0 };             //Size of a page to print additional lines between.
 		DWORD m_dwCacheSize { };              //Cache size for virtual and message modes, set in SetData.
+		DWORD m_dwDateFormat { };             //Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 		SIZE m_sizeLetter { 1, 1 };           //Current font's letter size (width, height).
 		int m_iSizeFirstHalf { };             //Size in px of the first half of the capacity.
 		int m_iSizeHexByte { };               //Size in px of two hex letters representing one byte.
@@ -282,6 +283,5 @@ namespace HEXCTRL::INTERNAL
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
 		bool m_fMenuCMD { false };            //Command to be executed through menu, not through key-shortcut.
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
-		DWORD m_dwDateFormat { };			  //Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 	};
 }
