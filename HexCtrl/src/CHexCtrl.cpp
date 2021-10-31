@@ -387,7 +387,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_pBookmarks->Attach(this);
 
 	//Determine current user locale specific date format. Default to UK/European if unable to determine
-	m_dwDateFormat = GetUserDefaultDateFormat();
+	SetDateFormat();
 	
 	m_fCreated = true;
 
@@ -5211,18 +5211,18 @@ DWORD CHexCtrl::GetDateFormat()const
 }
 
 void CHexCtrl::SetDateFormat(DWORD dwDateFormat)
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
-	
+{	
 	if (dwDateFormat != -1 || dwDateFormat > 2)
 		return;
 
 	switch (dwDateFormat)
 	{
 	case -1:
-		m_dwDateFormat = GetUserDefaultDateFormat();
+		//Determine current user locale specific date format. Default to UK/European if unable to determine
+		//See: https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
+		if (!GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
+			reinterpret_cast<LPWSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat)))
+			m_dwDateFormat = 1;			
 		break;
 	default:
 		m_dwDateFormat = dwDateFormat;

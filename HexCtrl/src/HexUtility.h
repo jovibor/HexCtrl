@@ -52,9 +52,6 @@ namespace HEXCTRL::INTERNAL
 	//Convert string_view into SYSTEMTIME struct.
 	[[nodiscard]] auto StringToSystemTime(std::wstring_view wstr, DWORD dwDateFormat)->std::optional<SYSTEMTIME>;
 
-	//Determine current user date format
-	[[nodiscard]] DWORD GetUserDefaultDateFormat();
-
 	//Get data from IHexCtrl's given offset converted to necessary type.
 	template<typename T>
 	[[nodiscard]] T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
