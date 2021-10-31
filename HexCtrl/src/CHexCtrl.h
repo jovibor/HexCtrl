@@ -55,7 +55,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetColors()const->HEXCOLORS override;          //Current colors.
 		[[nodiscard]] auto GetData(HEXSPAN hss)const->std::span<std::byte> override; //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;        //Get currently set data size.
-		[[nodiscard]] DWORD GetDateFormat()const override;                //Determine current date format
+		[[nodiscard]] DWORD GetDateFormat()const override;                //Determine current date format.
 		[[nodiscard]] int GetEncoding()const override;                    //Get current code page ID.
 		void GetFont(LOGFONTW& lf)override;                               //Get current font.
 		[[nodiscard]] auto GetGroupMode()const->EHexDataSize override;    //Retrieves current data grouping mode.
@@ -82,7 +82,7 @@ namespace HEXCTRL::INTERNAL
 		void SetColors(const HEXCOLORS& clr)override;       //Set all the control's colors.
 		bool SetConfig(std::wstring_view wstrPath)override; //Set configuration file, or "" for defaults.
 		void SetData(const HEXDATA& hds)override;           //Main method for setting data to display (and edit).
-		void SetDateFormat(DWORD dwDateFormat = -1)override;//Change current date format. e.g. -1=User default, 0=MMddYYYY, 1=ddMMYYYY, 2=YYYYMMdd
+		void SetDateFormat(DWORD dwDateFormat)override;     //Change current date format. e.g. -1=User default, 0=MMddYYYY, 1=ddMMYYYY, 2=YYYYMMdd
 		void SetEncoding(int iCodePage)override;            //Code-page for text area.
 		void SetFont(const LOGFONTW& lf)override;           //Set the control's new font. This font has to be monospaced.
 		void SetGroupMode(EHexDataSize enGroupMode)override; //Set current "Group Data By" mode.
