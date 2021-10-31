@@ -252,7 +252,7 @@ namespace HEXCTRL::INTERNAL
 
 		//Determine current user locale specific date format. Default to UK/European if unable to determine
 		//See: https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
-		if (!GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SSHORTDATE | LOCALE_RETURN_NUMBER,
+		if (!GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
 			reinterpret_cast<LPWSTR>(&dwDateFormat), sizeof(dwDateFormat)))
 			dwDateFormat = 1;
 
