@@ -25,6 +25,7 @@
 #include <bit>
 #include <cassert>
 #include <cctype>
+#include <format>
 #include <fstream>
 #include <numeric>
 #include <random>
@@ -297,12 +298,12 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	//2. Created HexCtrl window will always overlap (be on top of) its parent, or owner, window 
 	//   if pParentWnd is set (is not nullptr) in CreateWindowEx.
 	//3. To force HexCtrl window on taskbar the WS_EX_APPWINDOW extended window style must be set.
-	CStringW wstrError;
+	std::wstring wstrError;
 	const auto lmbCreateWnd = [&](UINT uID, DWORD dwStyle)
 	{
 		if (!CWnd::CreateEx(hcs.dwExStyle, HEXCTRL_CLASSNAME_WSTR, L"HexControl", dwStyle, hcs.rect,
 			CWnd::FromHandle(hcs.hwndParent), uID))
-			wstrError.Format(L"HexCtrl (ID:%u) CreateEx failed.\r\nCheck HEXCREATE parameters.", uID);
+			wstrError = std::format(L"HexCtrl (ID: {}) CreateEx failed.\r\nCheck HEXCREATE parameters.", uID);
 	};
 	switch (hcs.enCreateMode)
 	{
@@ -315,12 +316,12 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	case EHexCreateMode::CREATE_CUSTOMCTRL:
 		//If it's a Custom Control in dialog, there is no need to create a window, just subclassing.
 		if (!SubclassDlgItem(hcs.uID, CWnd::FromHandle(hcs.hwndParent)))
-			wstrError.Format(L"HexCtrl (ID:%u) SubclassDlgItem failed.\r\nCheck CreateDialogCtrl parameters.", hcs.uID);
+			wstrError = std::format(L"HexCtrl (ID: {}) SubclassDlgItem failed.\r\nCheck CreateDialogCtrl parameters.", hcs.uID);
 		break;
 	}
-	if (wstrError.GetLength() > 0) //If there was any creation error.
+	if (!wstrError.empty()) //If there was any creation error.
 	{
-		MessageBoxW(wstrError, L"Error", MB_ICONERROR);
+		MessageBoxW(wstrError.data(), L"Error", MB_ICONERROR);
 		return false;
 	}
 
