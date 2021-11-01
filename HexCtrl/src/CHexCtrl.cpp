@@ -390,6 +390,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	SetGroupMode(m_enGroupMode);
 	SetEncoding(-1);
 	SetConfig(L"");
+	SetDateFormat(-1);
 
 	return true;
 }
@@ -682,6 +683,15 @@ auto CHexCtrl::GetDataSize()const->ULONGLONG
 		return { };
 
 	return m_spnData.size();
+}
+
+DWORD CHexCtrl::GetDateFormat()const
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return -1;
+
+	return m_dwDateFormat;
 }
 
 int CHexCtrl::GetEncoding()const
@@ -1705,6 +1715,29 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 	m_fHighLatency = hds.fHighLatency;
 
 	RecalcAll();
+}
+
+void CHexCtrl::SetDateFormat(DWORD dwDateFormat)
+{	
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+	
+	assert(dwDateFormat == -1 || dwDateFormat < 3);
+	if (dwDateFormat != -1 || dwDateFormat > 2)
+		return;
+
+	if(dwDateFormat == -1)
+	{
+		//Determine current user locale specific date format.
+		if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
+			reinterpret_cast<LPWSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat)) == 0)
+		{
+			assert(true); //Something went wrong.			
+		}
+	}
+	else
+		m_dwDateFormat = dwDateFormat;
 }
 
 void CHexCtrl::SetEncoding(int iCodePage)

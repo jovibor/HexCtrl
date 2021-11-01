@@ -50,18 +50,6 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	//Determine locale specific date format. Default to UK/European if unable to determine
-	//See: https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
-	if (!GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SSHORTDATE | LOCALE_RETURN_NUMBER,
-		reinterpret_cast<LPWSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat)))
-		m_dwDateFormat = 1;
-
-	//Update dialog title to include date format
-	CString sTitle;
-	GetWindowTextW(sTitle);
-	sTitle.AppendFormat(L" [%s]", GetCurrentUserDateFormatString().data());
-	SetWindowTextW(sTitle);
-
 	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RADIO_LE)); pRadio)
 		pRadio->SetCheck(BST_CHECKED);
 	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RADIO_HEX)); pRadio)
@@ -151,6 +139,12 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 void CHexDlgDataInterp::OnShowWindow(BOOL bShow, UINT nStatus)
 {
 	CDialogEx::OnShowWindow(bShow, nStatus);
+
+	//Update dialog title to reflect current date format
+	CString sTitle;
+	GetWindowTextW(sTitle);
+	sTitle.AppendFormat(L" [%s]", GetCurrentUserDateFormatString().data());
+	SetWindowTextW(sTitle);
 
 	if (bShow != FALSE)
 		InspectOffset(m_pHexCtrl->GetCaretPos());
@@ -470,7 +464,7 @@ void CHexDlgDataInterp::UpdateHexCtrl()const
 std::wstring CHexDlgDataInterp::GetCurrentUserDateFormatString()const
 {
 	std::wstring_view wstrFormat { };
-	switch (m_dwDateFormat)
+	switch (m_pHexCtrl->GetDateFormat())
 	{
 	case 0:	//0=Month-Day-Year
 		wstrFormat = L"mm%sdd%syyyy";
@@ -497,7 +491,7 @@ std::wstring CHexDlgDataInterp::SystemTimeToString(const SYSTEMTIME& refSysTime)
 
 	//Generate human formatted date. Fall back to UK/European if unable to determine
 	WCHAR buff[32];
-	switch (m_dwDateFormat)
+	switch (m_pHexCtrl->GetDateFormat())
 	{
 	case 0:	//0=Month-Day-Year
 		swprintf_s(buff, std::size(buff), L"%.2d%s%.2d%s%.4d",
@@ -979,7 +973,7 @@ bool CHexDlgDataInterp::SetDataNAME_DOUBLE(const std::wstring& wstr)const
 bool CHexDlgDataInterp::SetDataNAME_TIME32T(std::wstring_view wstr)const
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
 	if (!optSysTime)
 		return false;
 
@@ -1015,7 +1009,7 @@ bool CHexDlgDataInterp::SetDataNAME_TIME32T(std::wstring_view wstr)const
 bool CHexDlgDataInterp::SetDataNAME_TIME64T(std::wstring_view wstr)const
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
 	if (!optSysTime)
 		return false;
 
@@ -1046,7 +1040,7 @@ bool CHexDlgDataInterp::SetDataNAME_TIME64T(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataNAME_FILETIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
 	if (!optSysTime)
 		return false;
 
@@ -1068,7 +1062,7 @@ bool CHexDlgDataInterp::SetDataNAME_FILETIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataNAME_OLEDATETIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
 	if (!optSysTime)
 		return false;
 
@@ -1089,7 +1083,7 @@ bool CHexDlgDataInterp::SetDataNAME_OLEDATETIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataNAME_JAVATIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
 	if (!optSysTime)
 		return false;
 
@@ -1124,7 +1118,7 @@ bool CHexDlgDataInterp::SetDataNAME_JAVATIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataNAME_MSDOSTIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
 	if (!optSysTime)
 		return false;
 
@@ -1145,7 +1139,7 @@ bool CHexDlgDataInterp::SetDataNAME_MSDOSTIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
 	if (!optSysTime)
 		return false;
 
@@ -1167,7 +1161,7 @@ bool CHexDlgDataInterp::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataNAME_SYSTEMTIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
 	if (!optSysTime)
 		return false;
 
@@ -1194,7 +1188,7 @@ bool CHexDlgDataInterp::SetDataNAME_GUIDTIME(std::wstring_view wstr)const
 	//
 	//Both FILETIME and GUID time are based upon 100ns intervals
 	//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Add 6653 days to convert to GUID time
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
 	if (!optSysTime)
 		return false;
 

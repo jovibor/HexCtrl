@@ -165,8 +165,7 @@ namespace HEXCTRL::INTERNAL
 		std::vector<SGRIDDATA> m_vecProp;
 		CMFCPropertyGridProperty* m_pPropChanged { };
 		ULONGLONG m_ullOffset { };
-		ULONGLONG m_ullSize { };
-		DWORD m_dwDateFormat { };
+		ULONGLONG m_ullSize { };		
 		const WCHAR m_wDateSeparator[2] { L'/', 0 };
 	};
 }
