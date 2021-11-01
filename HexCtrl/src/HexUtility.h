@@ -49,8 +49,17 @@ namespace HEXCTRL::INTERNAL
 	//Substitute all unprintable wchar symbols with dot.
 	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF = true);
 
-	//Convert string_view into SYSTEMTIME struct.
+	//Convert string into FILETIME struct.
+	[[nodiscard]] auto StringToFileTime(std::wstring_view wstr, DWORD dwDateFormat)->std::optional<FILETIME>;
+
+	//Convert string into SYSTEMTIME struct.
 	[[nodiscard]] auto StringToSystemTime(std::wstring_view wstr, DWORD dwDateFormat)->std::optional<SYSTEMTIME>;
+
+	//Convert FILETIME struct to a readable string.
+	[[nodiscard]] auto FileTimeToString(const FILETIME& stFileTime, DWORD dwDateFormat = 1)->std::wstring;
+
+	//Convert SYSTEMTIME struct to a readable string.
+	[[nodiscard]] auto SystemTimeToString(const SYSTEMTIME& stSysTime, DWORD dwDateFormat = 1)->std::wstring;
 
 	//Get data from IHexCtrl's given offset converted to necessary type.
 	template<typename T>

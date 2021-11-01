@@ -8,6 +8,7 @@
 #include "HexUtility.h"
 #include <algorithm>
 #include <cwctype>
+#include <format>
 #include <limits>
 
 namespace HEXCTRL::INTERNAL
@@ -202,6 +203,21 @@ namespace HEXCTRL::INTERNAL
 		}
 	}
 
+	auto StringToFileTime(std::wstring_view wstr, DWORD dwDateFormat)->std::optional<FILETIME>
+	{
+		std::optional<FILETIME> optFT { std::nullopt };
+		if (auto optSysTime = StringToSystemTime(wstr, dwDateFormat); optSysTime)
+		{
+			FILETIME ftTime;
+			if (SystemTimeToFileTime(&optSysTime.value(), &ftTime) != FALSE)
+			{
+				optFT = ftTime;
+			}
+		}
+
+		return optFT;
+	}
+
 	auto StringToSystemTime(const std::wstring_view wstr, const DWORD dwDateFormat)->std::optional<SYSTEMTIME>
 	{
 		//dwDateFormat is a locale specific date format https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
@@ -224,25 +240,62 @@ namespace HEXCTRL::INTERNAL
 		case 0:	//Month-Day-Year
 			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &stSysTime.wMonth, &stSysTime.wDay, &stSysTime.wYear);
 			break;
+		case 1: //Day-Month-Year (default)
+			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &stSysTime.wDay, &stSysTime.wMonth, &stSysTime.wYear);
+			break;
 		case 2:	//Year-Month-Day 
 			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%4hu/%2hu/%2hu", &stSysTime.wYear, &stSysTime.wMonth, &stSysTime.wDay);
 			break;
-		default: //Day-Month-Year (default)
-			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &stSysTime.wDay, &stSysTime.wMonth, &stSysTime.wYear);
-			break;
+		default:
+			assert(true);
+			return std::nullopt;
 		}
 		if (iParsedArgs != 3)
 			return std::nullopt;
 
-		//Find time seperator (if present)
+		//Find time seperator (if present).
 		if (const auto nPos = wstrDateTimeCooked.find(L' '); nPos != std::wstring::npos)
 			wstrDateTimeCooked = wstrDateTimeCooked.substr(nPos + 1);
 
-		//Parse time component
+		//Parse time component.
 		if (swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%2hu/%3hu", &stSysTime.wHour, &stSysTime.wMinute,
 			&stSysTime.wSecond, &stSysTime.wMilliseconds) != 4)
 			return std::nullopt;
 
-		return { stSysTime };
+		return stSysTime;
+	}
+
+	auto FileTimeToString(const FILETIME& stFileTime, DWORD dwDateFormat)->std::wstring
+	{
+		std::wstring wstrTime;
+		if (SYSTEMTIME stSysTime { }; FileTimeToSystemTime(&stFileTime, &stSysTime) != FALSE)
+			wstrTime = SystemTimeToString(stSysTime, dwDateFormat);
+
+		return wstrTime;
+	}
+
+	auto SystemTimeToString(const SYSTEMTIME & stSysTime, DWORD dwDateFormat) -> std::wstring
+	{
+		if (dwDateFormat > 2 || stSysTime.wDay == 0 || stSysTime.wDay > 31 || stSysTime.wMonth == 0 || stSysTime.wMonth > 12
+			|| stSysTime.wYear > 9999 || stSysTime.wHour > 23 || stSysTime.wMinute > 59 || stSysTime.wSecond > 59
+			|| stSysTime.wMilliseconds > 999)
+			return L"N/A";
+
+		std::wstring_view wstrFmt;
+		switch (dwDateFormat)
+		{
+		case 0:	//0:Month/Day/Year HH:MM:SS.mmm
+			wstrFmt = L"{1:02d}/{0:02d}/{2} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
+			break;
+		case 1: //1:Day/Month/Year HH:MM:SS.mmm
+			wstrFmt = L"{0:02d}/{1:02d}/{2} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
+			break;
+		case 2: //2:Year/Month/Day HH:MM:SS.mmm
+			wstrFmt = L"{2}/{1:02d}/{0:02d} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
+			break;
+		}
+
+		return std::format(wstrFmt, stSysTime.wDay, stSysTime.wMonth, stSysTime.wYear,
+			stSysTime.wHour, stSysTime.wMinute, stSysTime.wSecond, stSysTime.wMilliseconds);
 	}
 }

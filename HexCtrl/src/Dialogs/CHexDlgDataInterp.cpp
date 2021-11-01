@@ -464,7 +464,7 @@ void CHexDlgDataInterp::UpdateHexCtrl()const
 std::wstring CHexDlgDataInterp::GetCurrentUserDateFormatString()const
 {
 	std::wstring_view wstrFormat { };
-	switch (m_pHexCtrl->GetDateFormat())
+	switch (m_pHexCtrl->GetDateInfo())
 	{
 	case 0:	//0=Month-Day-Year
 		wstrFormat = L"mm%sdd%syyyy";
@@ -491,7 +491,7 @@ std::wstring CHexDlgDataInterp::SystemTimeToString(const SYSTEMTIME& refSysTime)
 
 	//Generate human formatted date. Fall back to UK/European if unable to determine
 	WCHAR buff[32];
-	switch (m_pHexCtrl->GetDateFormat())
+	switch (m_pHexCtrl->GetDateInfo())
 	{
 	case 0:	//0=Month-Day-Year
 		swprintf_s(buff, std::size(buff), L"%.2d%s%.2d%s%.4d",
@@ -973,7 +973,7 @@ bool CHexDlgDataInterp::SetDataNAME_DOUBLE(const std::wstring& wstr)const
 bool CHexDlgDataInterp::SetDataNAME_TIME32T(std::wstring_view wstr)const
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
 	if (!optSysTime)
 		return false;
 
@@ -1009,7 +1009,7 @@ bool CHexDlgDataInterp::SetDataNAME_TIME32T(std::wstring_view wstr)const
 bool CHexDlgDataInterp::SetDataNAME_TIME64T(std::wstring_view wstr)const
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
 	if (!optSysTime)
 		return false;
 
@@ -1040,17 +1040,13 @@ bool CHexDlgDataInterp::SetDataNAME_TIME64T(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataNAME_FILETIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
-	if (!optSysTime)
-		return false;
-
-	FILETIME ftTime;
-	if (!SystemTimeToFileTime(&*optSysTime, &ftTime))
+	const auto optFileTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
+	if (!optFileTime)
 		return false;
 
 	ULARGE_INTEGER stLITime;
-	stLITime.LowPart = ftTime.dwLowDateTime;
-	stLITime.HighPart = ftTime.dwHighDateTime;
+	stLITime.LowPart = optFileTime.value().dwLowDateTime;
+	stLITime.HighPart = optFileTime.value().dwHighDateTime;
 
 	if (m_fBigEndian)
 		stLITime.QuadPart = _byteswap_uint64(stLITime.QuadPart);
@@ -1062,7 +1058,7 @@ bool CHexDlgDataInterp::SetDataNAME_FILETIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataNAME_OLEDATETIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
 	if (!optSysTime)
 		return false;
 
@@ -1083,18 +1079,14 @@ bool CHexDlgDataInterp::SetDataNAME_OLEDATETIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataNAME_JAVATIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
-	if (!optSysTime)
-		return false;
-
-	FILETIME ftTime;
-	if (!SystemTimeToFileTime(&*optSysTime, &ftTime))
+	const auto optFileTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
+	if (!optFileTime)
 		return false;
 
 	//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC
 	LARGE_INTEGER lJavaTicks;
-	lJavaTicks.HighPart = ftTime.dwHighDateTime;
-	lJavaTicks.LowPart = ftTime.dwLowDateTime;
+	lJavaTicks.HighPart = optFileTime.value().dwHighDateTime;
+	lJavaTicks.LowPart = optFileTime.value().dwLowDateTime;
 
 	LARGE_INTEGER lEpochTicks;
 	lEpochTicks.HighPart = m_ulFileTime1970_HIGH;
@@ -1118,16 +1110,12 @@ bool CHexDlgDataInterp::SetDataNAME_JAVATIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataNAME_MSDOSTIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
-	if (!optSysTime)
-		return false;
-
-	FILETIME ftTime;
-	if (!SystemTimeToFileTime(&*optSysTime, &ftTime))
+	const auto optFileTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
+	if (!optFileTime)
 		return false;
 
 	UMSDOSDATETIME msdosDateTime;
-	if (!FileTimeToDosDateTime(&ftTime, &msdosDateTime.TimeDate.wDate, &msdosDateTime.TimeDate.wTime))
+	if (!FileTimeToDosDateTime(&*optFileTime, &msdosDateTime.TimeDate.wDate, &msdosDateTime.TimeDate.wTime))
 		return false;
 
 	//Note: Big-endian is not currently supported. This has never existed in the "wild".
@@ -1139,7 +1127,7 @@ bool CHexDlgDataInterp::SetDataNAME_MSDOSTIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
 	if (!optSysTime)
 		return false;
 
@@ -1161,7 +1149,7 @@ bool CHexDlgDataInterp::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataNAME_SYSTEMTIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
 	if (!optSysTime)
 		return false;
 
@@ -1188,7 +1176,7 @@ bool CHexDlgDataInterp::SetDataNAME_GUIDTIME(std::wstring_view wstr)const
 	//
 	//Both FILETIME and GUID time are based upon 100ns intervals
 	//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Add 6653 days to convert to GUID time
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateFormat());
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
 	if (!optSysTime)
 		return false;
 

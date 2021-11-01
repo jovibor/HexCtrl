@@ -390,7 +390,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	SetGroupMode(m_enGroupMode);
 	SetEncoding(-1);
 	SetConfig(L"");
-	SetDateFormat(-1);
+	SetDateInfo(0xFFFFFFFF);
 
 	return true;
 }
@@ -685,11 +685,11 @@ auto CHexCtrl::GetDataSize()const->ULONGLONG
 	return m_spnData.size();
 }
 
-DWORD CHexCtrl::GetDateFormat()const
+DWORD CHexCtrl::GetDateInfo()const
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return -1;
+		return 0xFFFFFFFF;
 
 	return m_dwDateFormat;
 }
@@ -1717,17 +1717,17 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 	RecalcAll();
 }
 
-void CHexCtrl::SetDateFormat(DWORD dwDateFormat)
-{	
+void CHexCtrl::SetDateInfo(DWORD dwDateFormat)
+{
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
-	
-	assert(dwDateFormat == -1 || dwDateFormat < 3);
-	if (dwDateFormat != -1 || dwDateFormat > 2)
+
+	assert(dwDateFormat == 0xFFFFFFFF || dwDateFormat <= 2);
+	if (dwDateFormat != 0xFFFFFFFF || dwDateFormat > 2)
 		return;
 
-	if(dwDateFormat == -1)
+	if (dwDateFormat == 0xFFFFFFFF)
 	{
 		//Determine current user locale specific date format.
 		if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,

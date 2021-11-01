@@ -1148,17 +1148,11 @@ bool CHexDlgSearch::PrepareFILETIME()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	DWORD dwDateFormat { };
-	if (!GetLocaleInfoW(LOCALE_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
-		reinterpret_cast<LPWSTR>(&dwDateFormat), sizeof(dwDateFormat)))
-		dwDateFormat = 1;
+	DWORD dwDateFormat { GetHexCtrl()->GetDateInfo() };
 
-	const auto optSysTimeSearch = StringToSystemTime(m_wstrTextSearch, dwDateFormat);
-	const auto optSysTimeReplace = StringToSystemTime(m_wstrTextReplace, dwDateFormat);
-	FILETIME stFileTimeSearch { };
-	FILETIME stFileTimeReplace { };
-	if (!optSysTimeSearch || !SystemTimeToFileTime(&*optSysTimeSearch, &stFileTimeSearch)
-			|| (m_fReplace && (!optSysTimeReplace || !SystemTimeToFileTime(&*optSysTimeReplace, &stFileTimeReplace))))
+	const auto optFTSearch = StringToFileTime(m_wstrTextSearch, dwDateFormat);
+	const auto optFTReplace = StringToFileTime(m_wstrTextReplace, dwDateFormat);
+	if (!optFTSearch || (m_fReplace && !optFTReplace))
 	{
 		wchar_t wSeparator[2] { L'/' };
 		std::wstring_view wstrFormat { };
@@ -1167,11 +1161,11 @@ bool CHexDlgSearch::PrepareFILETIME()
 		case 0:	//Month-Day-Year
 			wstrFormat = L"MM%sDD%sYYYY HH:MM:SS.mmm";
 			break;
+		case 1: //Day-Month-Year (default)
+			wstrFormat = L"DD%sMM%YYYY HH:MM:SS.mmm";
 		case 2:	//Year-Month-Day
 			wstrFormat = L"YYYY%sMM%sDD HH:MM:SS.mmm";
 			break;
-		default: //Day-Month-Year (default)
-			wstrFormat = L"DD%sMM%YYYY HH:MM:SS.mmm";
 		}
 
 		WCHAR buff[32];
@@ -1182,16 +1176,18 @@ bool CHexDlgSearch::PrepareFILETIME()
 		return false;
 	}
 
+	FILETIME stFTSearch { optFTSearch.value() };
+	FILETIME stFTReplace { optFTReplace.value() };
 	if (m_fBigEndian)
 	{
-		stFileTimeSearch.dwLowDateTime = _byteswap_ulong(stFileTimeSearch.dwLowDateTime);
-		stFileTimeSearch.dwHighDateTime = _byteswap_ulong(stFileTimeSearch.dwHighDateTime);
-		stFileTimeReplace.dwLowDateTime = _byteswap_ulong(stFileTimeReplace.dwLowDateTime);
-		stFileTimeReplace.dwHighDateTime = _byteswap_ulong(stFileTimeReplace.dwHighDateTime);
+		stFTSearch.dwLowDateTime = _byteswap_ulong(stFTSearch.dwLowDateTime);
+		stFTSearch.dwHighDateTime = _byteswap_ulong(stFTSearch.dwHighDateTime);
+		stFTReplace.dwLowDateTime = _byteswap_ulong(stFTReplace.dwLowDateTime);
+		stFTReplace.dwHighDateTime = _byteswap_ulong(stFTReplace.dwHighDateTime);
 	}
 
-	m_strSearch.assign(reinterpret_cast<char*>(&stFileTimeSearch), sizeof(FILETIME));
-	m_strReplace.assign(reinterpret_cast<char*>(&stFileTimeReplace), sizeof(FILETIME));
+	m_strSearch.assign(reinterpret_cast<char*>(&stFTSearch), sizeof(FILETIME));
+	m_strReplace.assign(reinterpret_cast<char*>(&stFTReplace), sizeof(FILETIME));
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
