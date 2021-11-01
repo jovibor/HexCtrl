@@ -46,8 +46,8 @@ namespace HEXCTRL::INTERNAL
 	//Multibyte to Wide string convertion.
 	[[nodiscard]] std::wstring str2wstr(std::string_view str, UINT uCodePage = CP_UTF8);
 
-	//Substitute all unprintable wchar symbols with dot.
-	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF = true);
+	//Substitute all unprintable wchar symbols with specified character
+	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF, wchar_t wcReplacementChar);
 
 	//Convert string into FILETIME struct.
 	[[nodiscard]] auto StringToFileTime(std::wstring_view wstr, DWORD dwDateFormat)->std::optional<FILETIME>;
