@@ -772,6 +772,15 @@ auto CHexCtrl::GetSelection()const->std::vector<HEXSPAN>
 	return m_pSelection->GetData();
 }
 
+wchar_t CHexCtrl::GetUnprintableCharacter()const
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return { L' ' };
+
+	return m_wcUnprintable;
+}
+
 HWND CHexCtrl::GetWindowHandle(EHexWnd enWnd)const
 {
 	assert(IsCreated());
@@ -1885,6 +1894,15 @@ void CHexCtrl::SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw, bo
 	ParentNotify(HEXCTRL_MSG_SELECTION);
 }
 
+void CHexCtrl::SetUnprintableCharacter(wchar_t wcUnprintable)
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
+	m_wcUnprintable = wcUnprintable;
+}
+
 void CHexCtrl::SetWheelRatio(double dbRatio)
 {
 	assert(IsCreated());
@@ -1936,7 +1954,7 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 		MultiByteToWideChar(iEncoding, 0, reinterpret_cast<LPCCH>(pData),
 			static_cast<int>(sSizeDataToPrint), wstrText.data(), static_cast<int>(sSizeDataToPrint));
 	}
-	ReplaceUnprintable(wstrText, iEncoding == -1);
+	ReplaceUnprintable(wstrText, iEncoding == -1, m_wcUnprintable);
 
 	return { std::move(wstrHex), std::move(wstrText) };
 }
@@ -2552,7 +2570,7 @@ auto CHexCtrl::CopyText()const->std::wstring
 	{
 		wstrText = str2wstr(strData, iEncoding);
 	}
-	ReplaceUnprintable(wstrText, iEncoding == -1, false);
+	ReplaceUnprintable(wstrText, iEncoding == -1, m_wcUnprintable, false);
 
 	return wstrText;
 }

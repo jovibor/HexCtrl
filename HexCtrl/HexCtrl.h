@@ -64,6 +64,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual auto GetPagePos()const->ULONGLONG = 0;         //Get current page a cursor stays at.
 		[[nodiscard]] virtual DWORD GetPageSize()const = 0;                  //Current page size.
 		[[nodiscard]] virtual auto GetSelection()const->std::vector<HEXSPAN> = 0; //Get current selection.
+		[[nodiscard]] virtual wchar_t GetUnprintableCharacter()const = 0;     //Set unprintable replacement character
 		[[nodiscard]] virtual HWND GetWindowHandle(EHexWnd enWnd)const = 0;  //Retrieves control's window/dialog handle.
 		virtual void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0) = 0;   //Go (scroll) to a given offset.
 		[[nodiscard]] virtual bool HasSelection()const = 0;    //Does currently have any selection or not.
@@ -91,6 +92,7 @@ namespace HEXCTRL
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wstrName = L"Page") = 0; //Set page size and name to draw the lines in-between.
 		virtual void SetRedraw(bool fRedraw) = 0;              //Handle WM_PAINT message or not.
 		virtual void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
+		virtual void SetUnprintableCharacter(wchar_t wcUnprintable) = 0; //Set unprintable replacement character
 		virtual void SetWheelRatio(double dbRatio) = 0;        //Set the ratio for how much to scroll with mouse-wheel.		
 	};
 
