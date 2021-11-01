@@ -64,7 +64,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetPagePos()const->ULONGLONG override;         //Get current page a cursor stays at.
 		[[nodiscard]] DWORD GetPageSize()const override;                  //Current page size.
 		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPAN> override; //Gets current selection.
-		[[nodiscard]] wchar_t GetUnprintableCharacter()const override;    //Set unprintable replacement character
+		[[nodiscard]] wchar_t GetUnprintableChar()const override;         //Get unprintable replacement character
 		[[nodiscard]] HWND GetWindowHandle(EHexWnd enWnd)const override;  //Retrieves control's window/dialog handle.
 		void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0)override;    //Go (scroll) to a given offset.
 		[[nodiscard]] bool HasSelection()const override;    //Does currently have any selection or not.
@@ -92,7 +92,7 @@ namespace HEXCTRL::INTERNAL
 		void SetPageSize(DWORD dwSize, std::wstring_view wstrName)override;  //Set page size and name to draw the line between.
 		void SetRedraw(bool fRedraw)override;               //Handle WM_PAINT message or not.
 		void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false)override; //Set current selection.
-		void SetUnprintableCharacter(wchar_t wcUnprintable)override; //Set unprintable replacement character
+		void SetUnprintableChar(wchar_t wcUnprintable)override; //Set unprintable replacement character
 		void SetWheelRatio(double dbRatio)override;         //Set the ratio for how much to scroll with mouse-wheel.				
 	private:
 		struct SHBITMAP;
@@ -285,6 +285,6 @@ namespace HEXCTRL::INTERNAL
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
 		bool m_fMenuCMD { false };            //Command to be executed through menu, not through key-shortcut.
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
-		wchar_t m_wcUnprintable { L'.' };     //Replacement character for unprintable characters
+		wchar_t m_wchUnprintable { L'.' };    //Replacement character for unprintable characters
 	};
 }

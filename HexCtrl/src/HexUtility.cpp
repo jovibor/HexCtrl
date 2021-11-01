@@ -187,7 +187,7 @@ namespace HEXCTRL::INTERNAL
 		return wstr;
 	}
 
-	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, wchar_t wcReplacementChar, bool fCRLF)
+	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF, wchar_t wcReplacementChar)
 	{
 		//If fASCII is true, then only wchars in 0x1F<...<0x7F range are considered printable.
 		//If fCRLF is false, then CR(0x0D) and LF(0x0A) wchars remain untouched.

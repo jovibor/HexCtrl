@@ -47,7 +47,7 @@ namespace HEXCTRL::INTERNAL
 	[[nodiscard]] std::wstring str2wstr(std::string_view str, UINT uCodePage = CP_UTF8);
 
 	//Substitute all unprintable wchar symbols with specified character
-	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, wchar_t wcReplacementChar = L'.', bool fCRLF = true);
+	void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF, wchar_t wcReplacementChar);
 
 	//Convert string into FILETIME struct.
 	[[nodiscard]] auto StringToFileTime(std::wstring_view wstr, DWORD dwDateFormat)->std::optional<FILETIME>;
