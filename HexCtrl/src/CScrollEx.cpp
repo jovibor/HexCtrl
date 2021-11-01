@@ -51,8 +51,9 @@ bool CScrollEx::Create(CWnd* pParent, bool fVert, UINT uiResBmp,
 {
 	assert(!m_fCreated); //Already created
 	assert(pParent);
-	if (m_fCreated || !pParent)
+	if (m_fCreated || pParent == nullptr)
 		return false;
+
 	if (!CWnd::CreateEx(0, AfxRegisterWndClass(0), nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr))
 		return false;
 
@@ -264,57 +265,54 @@ void CScrollEx::OnSetCursor(CWnd* /*pWnd*/, UINT nHitTest, UINT message)
 	if (!m_fCreated)
 		return;
 
-	if (nHitTest == HTTOPLEFT || nHitTest == HTLEFT || nHitTest == HTTOPRIGHT || nHitTest == HTSIZE
-		|| nHitTest == HTBOTTOMLEFT || nHitTest == HTRIGHT || nHitTest == HTBOTTOM || nHitTest == HTBOTTOMRIGHT)
+	if (nHitTest == HTTOPLEFT || nHitTest == HTLEFT || nHitTest == HTBOTTOMLEFT
+		|| nHitTest == HTTOPRIGHT || nHitTest == HTRIGHT || nHitTest == HTBOTTOMRIGHT
+		|| nHitTest == HTBOTTOM || nHitTest == HTSIZE || !IsVisible())
 		return;
 
 	switch (message)
 	{
 	case WM_LBUTTONDOWN:
 	{
+		const auto pParent = GetParent();
 		POINT pt;
 		GetCursorPos(&pt);
-		GetParent()->ScreenToClient(&pt);
+		pParent->ScreenToClient(&pt);
+		pParent->SetFocus();
 
-		if (IsVisible())
+		if (GetThumbRect(true).PtInRect(pt))
 		{
-			const auto pParent = GetParent();
-			pParent->SetFocus();
-
-			if (GetThumbRect(true).PtInRect(pt))
-			{
-				m_ptCursorCur = pt;
-				m_enState = EState::THUMB_CLICK;
-				pParent->SetCapture();
-			}
-			else if (GetFirstArrowRect(true).PtInRect(pt))
-			{
-				ScrollLineUp();
-				m_enState = EState::FIRSTARROW_CLICK;
-				pParent->SetCapture();
-				SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
-			}
-			else if (GetLastArrowRect(true).PtInRect(pt))
-			{
-				ScrollLineDown();
-				m_enState = EState::LASTARROW_CLICK;
-				pParent->SetCapture();
-				SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
-			}
-			else if (GetFirstChannelRect(true).PtInRect(pt))
-			{
-				ScrollPageUp();
-				m_enState = EState::FIRSTCHANNEL_CLICK;
-				pParent->SetCapture();
-				SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
-			}
-			else if (GetLastChannelRect(true).PtInRect(pt))
-			{
-				ScrollPageDown();
-				m_enState = EState::LASTCHANNEL_CLICK;
-				pParent->SetCapture();
-				SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
-			}
+			m_ptCursorCur = pt;
+			m_enState = EState::THUMB_CLICK;
+			pParent->SetCapture();
+		}
+		else if (GetFirstArrowRect(true).PtInRect(pt))
+		{
+			ScrollLineUp();
+			m_enState = EState::FIRSTARROW_CLICK;
+			pParent->SetCapture();
+			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
+		}
+		else if (GetLastArrowRect(true).PtInRect(pt))
+		{
+			ScrollLineDown();
+			m_enState = EState::LASTARROW_CLICK;
+			pParent->SetCapture();
+			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
+		}
+		else if (GetFirstChannelRect(true).PtInRect(pt))
+		{
+			ScrollPageUp();
+			m_enState = EState::FIRSTCHANNEL_CLICK;
+			pParent->SetCapture();
+			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
+		}
+		else if (GetLastChannelRect(true).PtInRect(pt))
+		{
+			ScrollPageDown();
+			m_enState = EState::LASTCHANNEL_CLICK;
+			pParent->SetCapture();
+			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
 		}
 	}
 	break;
@@ -333,8 +331,8 @@ void CScrollEx::SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG u
 	m_ullScrollPage = ullPage;
 	m_ullScrollSizeMax = ullSizeMax;
 
-	CWnd* pWnd = GetParent();
-	if (pWnd) //To repaint NC area.
+	auto* pWnd = GetParent();
+	if (pWnd != nullptr) //To repaint NC area.
 		pWnd->SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 }
 
