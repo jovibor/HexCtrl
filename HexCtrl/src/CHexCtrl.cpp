@@ -24,7 +24,7 @@
 #include "strsafe.h"
 #include <bit>
 #include <cassert>
-#include <cctype>
+#include <cwctype>
 #include <format>
 #include <fstream>
 #include <numeric>
@@ -1733,8 +1733,8 @@ void CHexCtrl::SetDateInfo(DWORD dwDateFormat)
 	if (!IsCreated())
 		return;
 
-	assert(dwDateFormat == 0xFFFFFFFF || dwDateFormat <= 2);
-	if (dwDateFormat != 0xFFFFFFFF && dwDateFormat > 2)
+	assert(dwDateFormat <= 2 || dwDateFormat == 0xFFFFFFFF);
+	if (dwDateFormat > 2 && dwDateFormat != 0xFFFFFFFF)
 		return;
 
 	if (dwDateFormat == 0xFFFFFFFF)
@@ -1894,13 +1894,13 @@ void CHexCtrl::SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw, bo
 	ParentNotify(HEXCTRL_MSG_SELECTION);
 }
 
-void CHexCtrl::SetUnprintableChar(wchar_t wcUnprintable)
+void CHexCtrl::SetUnprintableChar(wchar_t wch)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
-	m_wchUnprintable = wcUnprintable;
+	m_wchUnprintable = wch;
 }
 
 void CHexCtrl::SetWheelRatio(double dbRatio)
@@ -1954,7 +1954,7 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 		MultiByteToWideChar(iEncoding, 0, reinterpret_cast<LPCCH>(pData),
 			static_cast<int>(sSizeDataToPrint), wstrText.data(), static_cast<int>(sSizeDataToPrint));
 	}
-	ReplaceUnprintable(wstrText, iEncoding == -1, true, m_wchUnprintable);
+	ReplaceUnprintable(wstrText, iEncoding == -1, true);
 
 	return { std::move(wstrHex), std::move(wstrText) };
 }
@@ -2570,7 +2570,7 @@ auto CHexCtrl::CopyText()const->std::wstring
 	{
 		wstrText = str2wstr(strData, iEncoding);
 	}
-	ReplaceUnprintable(wstrText, iEncoding == -1, false, m_wchUnprintable);
+	ReplaceUnprintable(wstrText, iEncoding == -1, false);
 
 	return wstrText;
 }
@@ -4066,6 +4066,22 @@ void CHexCtrl::Redo()
 	m_deqRedo.pop_back();
 	ParentNotify(HEXCTRL_MSG_SETDATA);
 	RedrawWindow();
+}
+
+void CHexCtrl::ReplaceUnprintable(std::wstring & wstr, bool fASCII, bool fCRLF)const
+{
+	//If fASCII is true, then only wchars in 0x1F<...<0x7F range are considered printable.
+	//If fCRLF is false, then CR(0x0D) and LF(0x0A) wchars remain untouched.
+	if (fASCII)
+	{
+		std::replace_if(wstr.begin(), wstr.end(), [=](wchar_t wch) //All non ASCII.
+			{return (wch <= 0x1F || wch >= 0x7F) && (fCRLF || (wch != 0x0D && wch != 0x0A)); }, m_wchUnprintable);
+	}
+	else
+	{
+		std::replace_if(wstr.begin(), wstr.end(), [=](wchar_t wch) //All non printable wchars.
+			{return !std::iswprint(wch) && (fCRLF || (wch != 0x0D && wch != 0x0A)); }, m_wchUnprintable);
+	}
 }
 
 void CHexCtrl::ScrollOffsetH(ULONGLONG ullOffset)

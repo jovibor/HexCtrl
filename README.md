@@ -34,6 +34,7 @@
   * [GetColors](#getcolors)
   * [GetData](#getdata)
   * [GetDataSize](#getdatasize)
+  * [GetDateInfo](#getdateinfo)
   * [GetEncoding](#getencoding)
   * [GetFont](#getfont)
   * [GetGroupMode](#getgroupmode)
@@ -42,6 +43,7 @@
   * [GetPagePos](#getpagepos)
   * [GetPageSize](#getpagesize)
   * [GetSelection](#getselection)
+  * [GetUnprintableChar](#getunprintablechar)
   * [GetWindowHandle](#getwindowhandle)
   * [GoToOffset](#gotooffset)
   * [HasSelection](#hasselection)
@@ -60,6 +62,7 @@
   * [SetColors](#setcolors)
   * [SetConfig](#setconfig)
   * [SetData](#setdata)
+  * [SetDateInfo](#setdateinfo)
   * [SetEncoding](#setencoding)
   * [SetFont](#setfont)
   * [SetGroupMode](#setgroupmode)
@@ -68,6 +71,7 @@
   * [SetPageSize](#setpagesize)
   * [SetRedraw](#setredraw)
   * [SetSelection](#setselection)
+  * [SetUnprintableChar](#setunprintablechar)
   * [SetWheelRatio](#setwheelratio)
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
@@ -440,6 +444,12 @@ auto GetDataSize()const->ULONGLONG;
 ```
 Returns currently set data size.
 
+### [](#)GetDateInfo
+```cpp
+DWORD GetDateInfo()const;
+```
+Returns current [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate).
+
 ### [](#)GetEncoding
 ```cpp
 int GetEncoding()const;
@@ -491,6 +501,12 @@ Get current page size set by [`SetPageSize`](#setpagesize).
 auto GetSelection()const->std::vector<HEXSPAN>;
 ```
 Returns `std::vector` with the offsets and sizes of the current selection.
+
+### [](#)GetUnprintableChar
+```cpp
+wchar_t GetUnprintableChar()const;
+```
+Returns replacement char for unprintable characters.
 
 ### [](#)GetWindowHandle
 ```cpp
@@ -611,6 +627,12 @@ void SetData(const HEXDATA& hds);
 ```
 Main method to set a data to display in read-only or mutable modes. Takes [`HEXDATA`](#hexdata) as an  argument.
 
+## [](#)SetDateInfo
+```cpp
+void SetDateInfo(DWORD dwDateFormat);
+```
+Sets current [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate).
+
 ### [](#)SetEncoding
 ```cpp
 void SetEncoding(int iCodePage);
@@ -661,6 +683,12 @@ Should the main **HexCtrl** window be redrawn or not. E.g. should the `WM_PAINT`
 void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false);
 ```
 Sets current selection or highlight in the selection, if `fHighlight` is `true`.
+
+### [](#)SetUnprintableChar
+```cpp
+void SetUnprintableChar(wchar_t wch);
+```
+Sets replacement char for unprintable characters.
 
 ### [](#)SetWheelRatio
 ```cpp
