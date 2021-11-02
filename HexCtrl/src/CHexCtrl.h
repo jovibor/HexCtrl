@@ -132,7 +132,8 @@ namespace HEXCTRL::INTERNAL
 		void DrawCaret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawDataInterp(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines);
-		void FillWithZeros(); //Fill selection with zeros.
+		void FillCapacityString();  //Fill m_wstrCapacity according to current m_dwCapacity.
+		void FillWithZeros();       //Fill selection with zeros.
 		void FontSizeIncDec(bool fInc = true); //Increase os decrease font size by minimum amount.
 		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;    //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCommand(UCHAR uChar, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
@@ -171,7 +172,6 @@ namespace HEXCTRL::INTERNAL
 		void TtBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip bookmark show/hide.
 		void TtOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();
-		void WstrCapacityFill();       //Fill m_wstrCapacity according to current m_dwCapacity.
 		DECLARE_MESSAGE_MAP()
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);

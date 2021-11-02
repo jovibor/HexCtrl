@@ -213,7 +213,7 @@ namespace HEXCTRL::INTERNAL
 		return wstrTime;
 	}
 
-	auto SystemTimeToString(const SYSTEMTIME & stSysTime, DWORD dwDateFormat) -> std::wstring
+	auto SystemTimeToString(const SYSTEMTIME& stSysTime, DWORD dwDateFormat)-> std::wstring
 	{
 		if (dwDateFormat > 2 || stSysTime.wDay == 0 || stSysTime.wDay > 31 || stSysTime.wMonth == 0 || stSysTime.wMonth > 12
 			|| stSysTime.wYear > 9999 || stSysTime.wHour > 23 || stSysTime.wMinute > 59 || stSysTime.wSecond > 59

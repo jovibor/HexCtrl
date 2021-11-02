@@ -1402,7 +1402,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	m_dwCapacity = dwCapacity;
 	m_dwCapacityBlockSize = m_dwCapacity / 2;
 
-	WstrCapacityFill();
+	FillCapacityString();
 	RecalcAll();
 	ParentNotify(HEXCTRL_MSG_VIEWCHANGE);
 }
@@ -1844,7 +1844,7 @@ void CHexCtrl::SetOffsetMode(bool fHex)
 		return;
 
 	m_fOffsetAsHex = fHex;
-	WstrCapacityFill();
+	FillCapacityString();
 	RecalcAll();
 }
 
@@ -3360,6 +3360,24 @@ void CHexCtrl::DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines)
 	}
 }
 
+void CHexCtrl::FillCapacityString()
+{
+	m_wstrCapacity.clear();
+	m_wstrCapacity.reserve(static_cast<size_t>(m_dwCapacity) * 3);
+	for (auto iter { 0U }; iter < m_dwCapacity; ++iter)
+	{
+		m_wstrCapacity += std::format(IsOffsetAsHex() ? L"{: >2X}" : L"{: >2d}", iter);
+
+		//Additional space between hex chunk blocks.
+		if ((((iter + 1) % static_cast<DWORD>(m_enGroupMode)) == 0) && (iter < (m_dwCapacity - 1)))
+			m_wstrCapacity += L" ";
+
+		//Additional space between hex halves.
+		if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iter == (m_dwCapacityBlockSize - 1))
+			m_wstrCapacity += L"  ";
+	}
+}
+
 void CHexCtrl::FillWithZeros()
 {
 	if (!IsDataSet())
@@ -4567,40 +4585,6 @@ void CHexCtrl::Undo()
 	m_deqUndo.pop_back();
 	ParentNotify(HEXCTRL_MSG_SETDATA);
 	RedrawWindow();
-}
-
-void CHexCtrl::WstrCapacityFill()
-{
-	m_wstrCapacity.clear();
-	m_wstrCapacity.reserve(static_cast<size_t>(m_dwCapacity) * 3);
-	for (unsigned iter = 0; iter < m_dwCapacity; ++iter)
-	{
-		if (IsOffsetAsHex())
-		{
-			if (iter < 0x10)
-			{
-				m_wstrCapacity += L" ";
-				m_wstrCapacity += g_pwszHexMap[iter];
-			}
-			else
-			{
-				m_wstrCapacity += g_pwszHexMap[(iter & 0xF0) >> 4];
-				m_wstrCapacity += g_pwszHexMap[iter & 0x0F];
-			}
-		}
-		else
-		{
-			m_wstrCapacity += std::format(L"{: >2d}", iter);
-		}
-
-		//Additional space between hex chunk blocks.
-		if ((((iter + 1) % static_cast<DWORD>(m_enGroupMode)) == 0) && (iter < (m_dwCapacity - 1)))
-			m_wstrCapacity += L" ";
-
-		//Additional space between hex halves.
-		if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iter == (m_dwCapacityBlockSize - 1))
-			m_wstrCapacity += L"  ";
-	}
 }
 
 

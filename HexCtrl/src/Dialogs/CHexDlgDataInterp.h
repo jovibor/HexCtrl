@@ -91,7 +91,6 @@ namespace HEXCTRL::INTERNAL
 		template <typename T>void SetTData(T tData)const;
 		void UpdateHexCtrl()const;
 		[[nodiscard]] std::wstring GetCurrentUserDateFormatString()const;
-		[[nodiscard]] std::wstring SystemTimeToString(const SYSTEMTIME& refSysTime)const;
 		void ShowNAME_BINARY(BYTE byte)const;
 		void ShowNAME_CHAR(BYTE byte)const;
 		void ShowNAME_UCHAR(BYTE byte)const;
@@ -165,7 +164,7 @@ namespace HEXCTRL::INTERNAL
 		std::vector<SGRIDDATA> m_vecProp;
 		CMFCPropertyGridProperty* m_pPropChanged { };
 		ULONGLONG m_ullOffset { };
-		ULONGLONG m_ullSize { };		
+		ULONGLONG m_ullSize { };
 		const WCHAR m_wDateSeparator[2] { L'/', 0 };
 	};
 }
