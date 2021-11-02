@@ -143,7 +143,7 @@ void CHexDlgDataInterp::OnShowWindow(BOOL bShow, UINT nStatus)
 	//Update dialog title to reflect current date format
 	CString sTitle;
 	GetWindowTextW(sTitle);
-	sTitle.AppendFormat(L" [%s]", GetCurrentUserDateFormatString().data());
+	sTitle.AppendFormat(L" [%s]", GetDateFormatString(m_pHexCtrl->GetDateInfo()).data());
 	SetWindowTextW(sTitle);
 
 	if (bShow != FALSE)
@@ -461,27 +461,6 @@ void CHexDlgDataInterp::UpdateHexCtrl()const
 		m_pHexCtrl->Redraw();
 }
 
-std::wstring CHexDlgDataInterp::GetCurrentUserDateFormatString()const
-{
-	std::wstring_view wstrFormat { };
-	switch (m_pHexCtrl->GetDateInfo())
-	{
-	case 0:	//0=Month-Day-Year
-		wstrFormat = L"mm%sdd%syyyy";
-		break;
-	case 2:	//2=Year-Month-Day
-		wstrFormat = L"yyyy%smm%sdd";
-		break;
-	default: //1=Day-Month-Year (default)
-		wstrFormat = L"dd%smm%syyyy";
-	}
-
-	WCHAR buff[32];
-	swprintf_s(buff, std::size(buff), wstrFormat.data(), m_wDateSeparator, m_wDateSeparator);
-
-	return buff;
-}
-
 void CHexDlgDataInterp::ShowNAME_BINARY(BYTE byte)const
 {
 	WCHAR buff[32];
@@ -610,17 +589,17 @@ void CHexDlgDataInterp::ShowNAME_MSDTTMTIME(DWORD dword)const
 		&& dttm.components.hour < 24 && dttm.components.minute < 60
 		&& dttm.components.month>0 && dttm.components.month < 13 && dttm.components.weekday < 7)
 	{
-		SYSTEMTIME SysTime { };
-		SysTime.wYear = 1900 + static_cast<WORD>(dttm.components.year);
-		SysTime.wMonth = dttm.components.month;
-		SysTime.wDayOfWeek = dttm.components.weekday;
-		SysTime.wDay = dttm.components.dayofmonth;
-		SysTime.wHour = dttm.components.hour;
-		SysTime.wMinute = dttm.components.minute;
-		SysTime.wSecond = 0;
-		SysTime.wMilliseconds = 0;
+		SYSTEMTIME stSysTime { };
+		stSysTime.wYear = 1900 + static_cast<WORD>(dttm.components.year);
+		stSysTime.wMonth = dttm.components.month;
+		stSysTime.wDayOfWeek = dttm.components.weekday;
+		stSysTime.wDay = dttm.components.dayofmonth;
+		stSysTime.wHour = dttm.components.hour;
+		stSysTime.wMinute = dttm.components.minute;
+		stSysTime.wSecond = 0;
+		stSysTime.wMilliseconds = 0;
 
-		wstrTime = SystemTimeToString(SysTime);
+		wstrTime = SystemTimeToString(stSysTime, m_pHexCtrl->GetDateInfo());
 	}
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
@@ -706,9 +685,9 @@ void CHexDlgDataInterp::ShowNAME_OLEDATETIME(QWORD qword)const
 	std::memcpy(&date, &qword, sizeof(date));
 	const COleDateTime dt(date);
 
-	SYSTEMTIME SysTime { };
-	if (dt.GetAsSystemTime(SysTime))
-		wstrTime = SystemTimeToString(SysTime);
+	SYSTEMTIME stSysTime { };
+	if (dt.GetAsSystemTime(stSysTime))
+		wstrTime = SystemTimeToString(stSysTime, m_pHexCtrl->GetDateInfo());
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_OLEDATETIME; }); iter != m_vecProp.end())
@@ -798,7 +777,7 @@ void CHexDlgDataInterp::ShowNAME_SYSTEMTIME(const UDQWORD& dqword)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_SYSTEMTIME; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(SystemTimeToString(std::bit_cast<SYSTEMTIME>(dqword)).data());
+		iter->pProp->SetValue(SystemTimeToString(std::bit_cast<SYSTEMTIME>(dqword), m_pHexCtrl->GetDateInfo()).data());
 }
 
 bool CHexDlgDataInterp::SetDataNAME_BINARY(const std::wstring& wstr)const
@@ -1120,13 +1099,11 @@ bool CHexDlgDataInterp::SetDataNAME_GUIDTIME(std::wstring_view wstr)const
 	//
 	//Both FILETIME and GUID time are based upon 100ns intervals
 	//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Add 6653 days to convert to GUID time
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
-	if (!optSysTime)
+	const auto optFTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
+	if (!optFTime)
 		return false;
 
-	FILETIME ftTime;
-	if (!SystemTimeToFileTime(&*optSysTime, &ftTime))
-		return false;
+	const auto ftTime = optFTime.value();
 
 	LARGE_INTEGER qwGUIDTime;
 	qwGUIDTime.HighPart = ftTime.dwHighDateTime;

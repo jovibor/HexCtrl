@@ -1154,23 +1154,7 @@ bool CHexDlgSearch::PrepareFILETIME()
 	const auto optFTReplace = StringToFileTime(m_wstrTextReplace, dwDateFormat);
 	if (!optFTSearch || (m_fReplace && !optFTReplace))
 	{
-		wchar_t wSeparator[2] { L'/' };
-		std::wstring_view wstrFormat { };
-		switch (dwDateFormat)
-		{
-		case 0:	//Month-Day-Year
-			wstrFormat = L"MM%sDD%sYYYY HH:MM:SS.mmm";
-			break;
-		case 1: //Day-Month-Year (default)
-			wstrFormat = L"DD%sMM%YYYY HH:MM:SS.mmm";
-		case 2:	//Year-Month-Day
-			wstrFormat = L"YYYY%sMM%sDD HH:MM:SS.mmm";
-			break;
-		}
-
-		WCHAR buff[32];
-		swprintf_s(buff, std::size(buff), wstrFormat.data(), wSeparator, wSeparator);
-		std::wstring wstr = L"Wrong FILETIME format.\r\nA correct format is: " + std::wstring(buff);
+		std::wstring wstr = L"Wrong FILETIME format.\r\nA correct format is: " + GetDateFormatString(dwDateFormat);
 		MessageBoxW(wstr.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 
 		return false;

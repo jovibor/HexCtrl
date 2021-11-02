@@ -90,7 +90,6 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnDestroy();
 		template <typename T>void SetTData(T tData)const;
 		void UpdateHexCtrl()const;
-		[[nodiscard]] std::wstring GetCurrentUserDateFormatString()const;
 		void ShowNAME_BINARY(BYTE byte)const;
 		void ShowNAME_CHAR(BYTE byte)const;
 		void ShowNAME_UCHAR(BYTE byte)const;
@@ -165,6 +164,5 @@ namespace HEXCTRL::INTERNAL
 		CMFCPropertyGridProperty* m_pPropChanged { };
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullSize { };
-		const WCHAR m_wDateSeparator[2] { L'/', 0 };
 	};
 }

@@ -237,4 +237,21 @@ namespace HEXCTRL::INTERNAL
 		return std::format(wstrFmt, stSysTime.wDay, stSysTime.wMonth, stSysTime.wYear,
 			stSysTime.wHour, stSysTime.wMinute, stSysTime.wSecond, stSysTime.wMilliseconds);
 	}
+
+	auto GetDateFormatString(DWORD dwDateFormat)->std::wstring
+	{
+		std::wstring wstrFormat;
+		switch (dwDateFormat)
+		{
+		case 0:	//Month-Day-Year
+			wstrFormat = L"MM/DD/YYYY HH:MM:SS.mmm";
+			break;
+		case 1: //Day-Month-Year
+			wstrFormat = L"DD/MM/YYYY HH:MM:SS.mmm";
+		case 2:	//Year-Month-Day
+			wstrFormat = L"YYYY/MM/DD HH:MM:SS.mmm";
+			break;
+		}
+		return wstrFormat;
+	}
 }

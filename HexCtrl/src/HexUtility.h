@@ -50,10 +50,12 @@ namespace HEXCTRL::INTERNAL
 	[[nodiscard]] auto StringToSystemTime(std::wstring_view wstr, DWORD dwDateFormat)->std::optional<SYSTEMTIME>;
 
 	//Convert FILETIME struct to a readable string.
-	[[nodiscard]] auto FileTimeToString(const FILETIME& stFileTime, DWORD dwDateFormat = 1)->std::wstring;
+	[[nodiscard]] auto FileTimeToString(const FILETIME& stFileTime, DWORD dwDateFormat)->std::wstring;
 
 	//Convert SYSTEMTIME struct to a readable string.
-	[[nodiscard]] auto SystemTimeToString(const SYSTEMTIME& stSysTime, DWORD dwDateFormat = 1)->std::wstring;
+	[[nodiscard]] auto SystemTimeToString(const SYSTEMTIME& stSysTime, DWORD dwDateFormat)->std::wstring;
+
+	[[nodiscard]] auto GetDateFormatString(DWORD dwDateFormat)->std::wstring;
 
 	//Get data from IHexCtrl's given offset converted to necessary type.
 	template<typename T>
