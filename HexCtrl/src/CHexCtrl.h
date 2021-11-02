@@ -146,6 +146,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
 		template<typename T>
 		void ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, std::span<std::byte> spnDataToOperWith); //Main "modify" method with different workers.
+		void OffsetToString(ULONGLONG ullOffset, wchar_t* buffOut)const; //Format offset to wchar_t string.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		template<typename T>
 		void ParentNotify(const T& t)const;                    //Notify routine used to send messages to Parent window.
@@ -239,7 +240,6 @@ namespace HEXCTRL::INTERNAL
 		DWORD m_dwCapacity { 0x10 };          //How many bytes displayed in one row
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
 		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
-		DWORD m_dwOffsetBytes { };            //How many bytes "Offset" number posesses;
 		DWORD m_dwPageSize { 0 };             //Size of a page to print additional lines between.
 		DWORD m_dwCacheSize { };              //Cache size for virtual and message modes, set in SetData.
 		DWORD m_dwDateFormat { };             //Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate

@@ -2464,10 +2464,10 @@ auto CHexCtrl::CopyHexLE()const->std::wstring
 
 auto CHexCtrl::CopyOffset()const->std::wstring
 {
-	wchar_t pwszOffset[32] { };
-	UllToWchars(GetCaretPos(), pwszOffset, static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
-	std::wstring wstrData { m_fOffsetAsHex ? L"0x" : L"" };
-	wstrData += pwszOffset;
+	wchar_t pwszBuff[32] { };
+	OffsetToString(GetCaretPos(), pwszBuff);
+	std::wstring wstrData { IsOffsetAsHex() ? L"0x" : L"" };
+	wstrData += pwszBuff;
 
 	return wstrData;
 }
@@ -2511,10 +2511,9 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 
 	for (DWORD iterLines = 0; iterLines < dwLines; ++iterLines)
 	{
-		wchar_t pwszOffset[32] { }; //To be enough for max as Hex and as Decimals.
-		UllToWchars(ullStartLine * m_dwCapacity + m_dwCapacity * iterLines,
-			pwszOffset, static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
-		wstrRet += pwszOffset;
+		wchar_t pwszBuff[32] { }; //To be enough for max as Hex and as Decimals.
+		OffsetToString(ullStartLine * m_dwCapacity + m_dwCapacity * iterLines, pwszBuff);
+		wstrRet += pwszBuff;
 		wstrRet.insert(wstrRet.size(), 3, ' ');
 
 		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks)
@@ -2666,13 +2665,13 @@ void CHexCtrl::DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int i
 		}
 
 		//Left column offset printing (00000001...0000FFFF).
-		wchar_t pwszOffset[32]; //To be enough for max as Hex and as Decimals.
-		UllToWchars((ullStartLine + iterLines) * m_dwCapacity, pwszOffset, static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
+		wchar_t pwszBuff[32]; //To be enough for max as Hex and as Decimals.
+		OffsetToString((ullStartLine + iterLines) * m_dwCapacity, pwszBuff);
 		pDC->SelectObject(pFont);
 		pDC->SetTextColor(clrTextOffset);
 		pDC->SetBkColor(clrBkOffset);
 		ExtTextOutW(pDC->m_hDC, m_iFirstVertLine + m_sizeLetter.cx - iScrollH, m_iStartWorkAreaY + (m_sizeLetter.cy * iterLines),
-			0, nullptr, pwszOffset, m_dwOffsetDigits, nullptr);
+			0, nullptr, pwszBuff, m_dwOffsetDigits, nullptr);
 	}
 }
 
@@ -3688,6 +3687,11 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const std:
 	}
 }
 
+void CHexCtrl::OffsetToString(ULONGLONG ullOffset, wchar_t* buffOut)const
+{
+	std::format_to(buffOut, IsOffsetAsHex() ? "{:0>{}X}" : "{:0>{}}", ullOffset, m_dwOffsetDigits);
+}
+
 void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 {
 	//To prevent inspecting while key is pressed continuously.
@@ -3947,27 +3951,22 @@ void CHexCtrl::RecalcOffsetDigits()
 	const auto ullDataSize = GetDataSize();
 	if (ullDataSize <= 0xffffffffUL)
 	{
-		m_dwOffsetBytes = 4;
 		m_dwOffsetDigits = IsOffsetAsHex() ? 8 : 10;
 	}
 	else if (ullDataSize <= 0xffffffffffUL)
 	{
-		m_dwOffsetBytes = 5;
 		m_dwOffsetDigits = IsOffsetAsHex() ? 10 : 13;
 	}
 	else if (ullDataSize <= 0xffffffffffffUL)
 	{
-		m_dwOffsetBytes = 6;
 		m_dwOffsetDigits = IsOffsetAsHex() ? 12 : 15;
 	}
 	else if (ullDataSize <= 0xffffffffffffffUL)
 	{
-		m_dwOffsetBytes = 7;
 		m_dwOffsetDigits = IsOffsetAsHex() ? 14 : 17;
 	}
 	else
 	{
-		m_dwOffsetBytes = 8;
 		m_dwOffsetDigits = IsOffsetAsHex() ? 16 : 19;
 	}
 }
@@ -4511,7 +4510,7 @@ void CHexCtrl::TtOffsetShow(bool fShow)
 		GetCursorPos(&ptScreen);
 
 		wchar_t warrOffset[64] { L"Offset: " };
-		UllToWchars(GetTopLine() * m_dwCapacity, &warrOffset[8], static_cast<size_t>(m_dwOffsetBytes), m_fOffsetAsHex);
+		OffsetToString(GetTopLine() * m_dwCapacity, &warrOffset[8]);
 		m_stToolInfoOffset.lpszText = warrOffset;
 		m_wndTtOffset.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
 		m_wndTtOffset.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
@@ -4590,7 +4589,7 @@ void CHexCtrl::WstrCapacityFill()
 	m_wstrCapacity.reserve(static_cast<size_t>(m_dwCapacity) * 3);
 	for (unsigned iter = 0; iter < m_dwCapacity; ++iter)
 	{
-		if (m_fOffsetAsHex)
+		if (IsOffsetAsHex())
 		{
 			if (iter < 0x10)
 			{

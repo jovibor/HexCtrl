@@ -25,9 +25,6 @@ namespace HEXCTRL::INTERNAL
 	//Fast lookup wchar_t array.
 	constexpr const wchar_t* const g_pwszHexMap { L"0123456789ABCDEF" };
 
-	//Converts dwSize bytes of ull to WCHAR string.
-	void UllToWchars(ULONGLONG ull, wchar_t* pwsz, size_t dwSize, bool fAsHex = true);
-
 	//Converts wide string to template's numeric data type.
 	template<typename T>
 	bool wstr2num(const std::wstring& wstr, T& tData, int iBase = 0);
