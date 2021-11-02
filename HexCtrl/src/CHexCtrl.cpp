@@ -1352,34 +1352,26 @@ void CHexCtrl::Redraw()
 	if (!IsCreated())
 		return;
 
+	m_wstrInfo.clear();
+
 	if (IsDataSet())
 	{
-		WCHAR wBuff[256];
-		m_wstrInfo.clear();
-		m_wstrInfo.reserve(std::size(wBuff));
+		m_wstrInfo = std::format(IsOffsetAsHex() ? L"Caret: 0x{:X}; " : L"Caret: {}; ", GetCaretPos());
 
-		swprintf_s(wBuff, std::size(wBuff), IsOffsetAsHex() ? L"Caret: 0x%llX; " : L"Caret: %llu; ", GetCaretPos());
-		m_wstrInfo = wBuff;
-
-		if (IsPageVisible()) //Page/Sector
+		if (IsPageVisible()) //Page/Sector.
 		{
-			swprintf_s(wBuff, std::size(wBuff), IsOffsetAsHex() ? L"%s: 0x%llX/0x%llX; " : L"%s: %llu/%llu; ",
-				m_wstrPageName.data(), GetPagePos(), GetPagesCount());
-			m_wstrInfo += wBuff;
+			m_wstrInfo += std::format(IsOffsetAsHex() ? L"{}: 0x{:X}/0x{:X}; " : L"{}: {}/{}; ",
+				m_wstrPageName, GetPagePos(), GetPagesCount());
 		}
 
 		if (HasSelection())
 		{
-			swprintf_s(wBuff, std::size(wBuff),
-				IsOffsetAsHex() ? L"Selected: 0x%llX [0x%llX-0x%llX]; " : L"Selected: %llu [%llu-%llu]; ",
+			m_wstrInfo += std::format(IsOffsetAsHex() ? L"Selected: 0x{:X} [0x{:X}-0x{:X}]; " : L"Selected: {} [{}-{}]; ",
 				m_pSelection->GetSelSize(), m_pSelection->GetSelStart(), m_pSelection->GetSelEnd());
-			m_wstrInfo += wBuff;
 		}
 
-		m_wstrInfo += IsMutable() ? L"RW;" : L"RO;"; //Mutable state
+		m_wstrInfo += IsMutable() ? L"RW;" : L"RO;"; //Mutable state.
 	}
-	else
-		m_wstrInfo.clear();
 
 	RedrawWindow();
 }
@@ -1390,7 +1382,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	if (!IsCreated())
 		return;
 
-	constexpr DWORD dwCapacityMax { 99 }; //Maximum capacity allowed.
+	constexpr DWORD dwCapacityMax { 0x64U }; //Maximum capacity allowed.
 
 	if (dwCapacity < 1 || dwCapacity > dwCapacityMax)
 		return;
@@ -1761,14 +1753,12 @@ void CHexCtrl::SetEncoding(int iCodePage)
 	if (iCodePage == -1)
 		wstrFormat = L"ASCII";
 	else if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != FALSE && stCPInfo.MaxCharSize == 1)
-		wstrFormat = L"Codepage %i";
+		wstrFormat = L"Codepage {}";
 
 	if (!wstrFormat.empty())
 	{
 		m_iCodePage = iCodePage;
-		WCHAR buff[32];
-		swprintf_s(buff, std::size(buff), wstrFormat.data(), m_iCodePage);
-		m_wstrTextTitle = buff;
+		m_wstrTextTitle = std::format(wstrFormat, m_iCodePage);
 		Redraw();
 	}
 }
@@ -2319,11 +2309,7 @@ auto CHexCtrl::CopyCArr()const->std::wstring
 	const auto ullSelSize = m_pSelection->GetSelSize();
 
 	wstrData.reserve(static_cast<size_t>(ullSelSize) * 3 + 64);
-	wstrData = L"unsigned char data[";
-	wchar_t arrSelectionNum[8] { };
-	swprintf_s(arrSelectionNum, std::size(arrSelectionNum), L"%llu", ullSelSize);
-	wstrData += arrSelectionNum;
-	wstrData += L"] = {\r\n";
+	wstrData = std::format(L"unsigned char data[{}] = {{\r\n", ullSelSize);
 
 	for (unsigned i = 0; i < ullSelSize; ++i)
 	{
@@ -4604,17 +4590,7 @@ void CHexCtrl::WstrCapacityFill()
 		}
 		else
 		{
-			if (iter < 10)
-			{
-				m_wstrCapacity += L" ";
-				m_wstrCapacity += g_pwszHexMap[iter];
-			}
-			else
-			{
-				wchar_t buff[4];
-				swprintf_s(buff, 4, L"%u", iter);
-				m_wstrCapacity += buff;
-			}
+			m_wstrCapacity += std::format(L"{: >2d}", iter);
 		}
 
 		//Additional space between hex chunk blocks.
