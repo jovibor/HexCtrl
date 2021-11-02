@@ -1734,7 +1734,7 @@ void CHexCtrl::SetDateInfo(DWORD dwDateFormat)
 		return;
 
 	assert(dwDateFormat == 0xFFFFFFFF || dwDateFormat <= 2);
-	if (dwDateFormat != 0xFFFFFFFF || dwDateFormat > 2)
+	if (dwDateFormat != 0xFFFFFFFF && dwDateFormat > 2)
 		return;
 
 	if (dwDateFormat == 0xFFFFFFFF)
