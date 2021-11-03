@@ -60,9 +60,6 @@ namespace HEXCTRL::INTERNAL
 		using PDQWORD = UDQWORD*;
 #pragma pack(pop)
 		//Time calculation constants
-		static inline const wchar_t* const arrNibbles [] {
-			L"0000", L"0001", L"0010", L"0011", L"0100", L"0101", L"0110", L"0111",
-			L"1000", L"1001", L"1010", L"1011", L"1100", L"1101", L"1110", L"1111" };
 		static constexpr auto m_uFTTicksPerMS = 10000U;             //Number of 100ns intervals in a milli-second
 		static constexpr auto m_uFTTicksPerSec = 10000000UL;        //Number of 100ns intervals in a second
 		static constexpr auto m_uHoursPerDay = 24U;                 //24 hours per day

@@ -9,6 +9,7 @@
 #include "../HexUtility.h"
 #include "CHexDlgGoTo.h"
 #include <cassert>
+#include <format>
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
@@ -62,20 +63,20 @@ void CHexDlgGoTo::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 	{
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 
-		wchar_t buff[32];
+		std::wstring wstr;
 		//In case of no page size, disable "Page" radio.
 		if (pHexCtrl->GetPagesCount() == 0)
 		{
 			if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RADIO_PAGE)); pRadio)
 				pRadio->EnableWindow(FALSE);
-			swprintf_s(buff, std::size(buff), L"Not available");
+			wstr = L"Not available";
 		}
 		else
-			swprintf_s(buff, std::size(buff), L"0x%llX", pHexCtrl->GetPagesCount());
+			wstr = std::format(L"0x{:X}", pHexCtrl->GetPagesCount());
 
-		GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_PAGETOTAL)->SetWindowTextW(buff);
-		swprintf_s(buff, std::size(buff), L"0x%llX", pHexCtrl->GetDataSize());
-		GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_OFFTOTAL)->SetWindowTextW(buff);
+		GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_PAGETOTAL)->SetWindowTextW(wstr.data());
+		wstr = std::format(L"0x{:X}", pHexCtrl->GetDataSize());
+		GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_OFFTOTAL)->SetWindowTextW(wstr.data());
 
 		switch (GetCheckedRadioButton(IDC_HEXCTRL_GOTO_RADIO_ABS, IDC_HEXCTRL_GOTO_RADIO_BACKEND))
 		{
@@ -298,14 +299,13 @@ void CHexDlgGoTo::HexCtrlGoOffset(ULONGLONG ullOffset)
 
 void CHexDlgGoTo::SetRangesText()const
 {
-	wchar_t buff[32];
-	swprintf_s(buff, std::size(buff), L"%llu-%llX", m_ullOffsetsFrom, m_ullOffsetsTo);
-	GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_OFFRANGE)->SetWindowTextW(buff);
+	std::wstring wstr = std::format(L"{}-{:X}", m_ullOffsetsFrom, m_ullOffsetsTo);
+	GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_OFFRANGE)->SetWindowTextW(wstr.data());
 
 	if (GetHexCtrl()->GetPagesCount() > 0)
-		swprintf_s(buff, std::size(buff), L"%llu-%llX", m_ullPagesFrom, m_ullPagesTo);
+		wstr = std::format(L"{}-{:X}", m_ullPagesFrom, m_ullPagesTo);
 	else
-		swprintf_s(buff, std::size(buff), L"Not available");
+		wstr = L"Not available";
 
-	GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_PAGERANGE)->SetWindowTextW(buff);
+	GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_PAGERANGE)->SetWindowTextW(wstr.data());
 }

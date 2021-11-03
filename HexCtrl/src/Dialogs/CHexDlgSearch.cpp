@@ -12,8 +12,8 @@
 #include <algorithm>
 #include <bit>
 #include <cassert>
-#include <cctype>
 #include <cwctype>
+#include <format>
 #include <limits>
 #include <string>
 #include <thread>
@@ -435,13 +435,10 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_CLEARALL), L"Clear All");
 
 	//"Step" edit box text.
-	wchar_t buff[32] { };
-	swprintf_s(buff, std::size(buff), L"%llu", m_ullStep);
-	m_stEditStep.SetWindowTextW(buff);
+	m_stEditStep.SetWindowTextW(std::format(L"{}", m_ullStep).data());
 
 	//"Limit search hit" edit box text.
-	swprintf_s(buff, std::size(buff), L"%u", m_dwFoundLimit);
-	m_stEditLimit.SetWindowTextW(buff);
+	m_stEditLimit.SetWindowTextW(std::format(L"{}", m_dwFoundLimit).data());
 
 	const auto hwndTipWC = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr);
@@ -657,15 +654,13 @@ void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	if (pItem->mask & LVIF_TEXT)
 	{
 		const auto nItemID = static_cast<size_t>(pItem->iItem);
-		const auto nMaxLengh = static_cast<size_t>(pItem->cchTextMax);
-
 		switch (pItem->iSubItem)
 		{
 		case 0: //Index value.
-			swprintf_s(pItem->pszText, nMaxLengh, L"%zu", nItemID + 1);
+			*std::format_to(pItem->pszText, L"{}", nItemID + 1) = L'\0';
 			break;
 		case 1: //Offset.
-			swprintf_s(pItem->pszText, nMaxLengh, L"0x%llX", m_vecSearchRes[nItemID]);
+			*std::format_to(pItem->pszText, L"0x{:X}", m_vecSearchRes[nItemID]) = L'\0';
 			break;
 		default:
 			break;
@@ -874,7 +869,7 @@ void CHexDlgSearch::Prepare()
 
 	Search();
 	SetActiveWindow();
-}
+	}
 
 bool CHexDlgSearch::PrepareHexBytes()
 {
@@ -1377,27 +1372,27 @@ void CHexDlgSearch::Search()
 
 	pHexCtrl->SetRedraw(true);
 
-	std::wstring wstrInfo(128, 0);
+	std::wstring wstrInfo;
 	if (m_fFound)
 	{
 		if (m_fAll)
 		{
 			if (m_fReplace)
 			{
-				swprintf_s(wstrInfo.data(), wstrInfo.size(), L"%lu occurrence(s) replaced.", m_dwReplaced);
+				wstrInfo = std::format(L"{} occurrence(s) replaced.", m_dwReplaced);
 				m_dwReplaced = 0;
 				pHexCtrl->Redraw(); //Redraw in case of Replace all.
 			}
 			else
 			{
-				swprintf_s(wstrInfo.data(), wstrInfo.size(), L"Found %lu occurrences.", m_dwCount);
+				wstrInfo = std::format(L"Found {} occurrences.", m_dwCount);
 				m_dwCount = 0;
 			}
 		}
 		else
 		{
 			if (m_fDoCount)
-				swprintf_s(wstrInfo.data(), wstrInfo.size(), L"Found occurrence \u2116 %lu from the beginning.", m_dwCount);
+				wstrInfo = std::format(L"Found occurrence \u2116 {} from the beginning.", m_dwCount);
 			else
 				wstrInfo = L"Search found occurrence.";
 
@@ -1427,9 +1422,7 @@ void CHexDlgSearch::Search()
 
 void CHexDlgSearch::SetEditStartAt(ULONGLONG ullOffset)
 {
-	wchar_t buff[32] { };
-	swprintf_s(buff, std::size(buff), L"0x%llX", ullOffset);
-	m_stEditStart.SetWindowTextW(buff);
+	m_stEditStart.SetWindowTextW(std::format(L"0x{:X}", ullOffset).data());
 }
 
 template<std::uint16_t uiType>

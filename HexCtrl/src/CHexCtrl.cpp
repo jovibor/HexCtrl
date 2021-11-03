@@ -2450,7 +2450,7 @@ auto CHexCtrl::CopyHexLE()const->std::wstring
 
 auto CHexCtrl::CopyOffset()const->std::wstring
 {
-	wchar_t pwszBuff[32] { };
+	wchar_t pwszBuff[32];
 	OffsetToString(GetCaretPos(), pwszBuff);
 	std::wstring wstrData { IsOffsetAsHex() ? L"0x" : L"" };
 	wstrData += pwszBuff;
@@ -2497,7 +2497,7 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 
 	for (DWORD iterLines = 0; iterLines < dwLines; ++iterLines)
 	{
-		wchar_t pwszBuff[32] { }; //To be enough for max as Hex and as Decimals.
+		wchar_t pwszBuff[32]; //To be enough for max as Hex and as Decimals.
 		OffsetToString(ullStartLine * m_dwCapacity + m_dwCapacity * iterLines, pwszBuff);
 		wstrRet += pwszBuff;
 		wstrRet.insert(wstrRet.size(), 3, ' ');
@@ -3693,7 +3693,8 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const std:
 
 void CHexCtrl::OffsetToString(ULONGLONG ullOffset, wchar_t* buffOut)const
 {
-	std::format_to(buffOut, IsOffsetAsHex() ? "{:0>{}X}" : "{:0>{}}", ullOffset, m_dwOffsetDigits);
+	//Null terminated, as by default format_to does not null terminate formatted data.
+	*std::format_to(buffOut, IsOffsetAsHex() ? "{:0>{}X}" : "{:0>{}}", ullOffset, m_dwOffsetDigits) = L'\0';
 }
 
 void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)

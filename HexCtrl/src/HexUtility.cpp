@@ -251,6 +251,9 @@ namespace HEXCTRL::INTERNAL
 		case 2:	//Year-Month-Day
 			wstrFormat = L"YYYY/MM/DD HH:MM:SS.mmm";
 			break;
+		default:
+			assert(true);
+			break;
 		}
 		return wstrFormat;
 	}

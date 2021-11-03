@@ -8,6 +8,7 @@
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgCallback.h"
 #include <cassert>
+#include <format>
 
 using namespace HEXCTRL::INTERNAL;
 
@@ -70,18 +71,18 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 	constexpr auto iMBInGB = 1024; //How many MB in one GB.
 	wchar_t buff[64];
 
-	if (iSpeedMBS < 1)//If speed is less than 1 MB/s.
+	if (iSpeedMBS < 1) //If speed is less than 1 MB/s.
 	{
 		wstrDisplay += L"< 1 MB/s";
 	}
 	else if (iSpeedMBS > iMBInGB) //More than 1 GB/s.
 	{
-		swprintf_s(buff, std::size(buff), L"%.2f GB/s", static_cast<float>(iSpeedMBS) / iMBInGB);
+		*std::format_to(buff, L"{:.2f} GB/s", static_cast<float>(iSpeedMBS) / iMBInGB) = L'\0';
 		wstrDisplay += buff;
 	}
 	else
 	{
-		swprintf_s(buff, std::size(buff), L"%lld MB/s", iSpeedMBS);
+		*std::format_to(buff, L"{} MB/s", iSpeedMBS) = L'\0';
 		wstrDisplay += buff;
 	}
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPERNAME)->SetWindowTextW(wstrDisplay.data());

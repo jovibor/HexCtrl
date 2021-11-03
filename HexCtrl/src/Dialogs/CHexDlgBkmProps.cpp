@@ -8,6 +8,7 @@
 #include "../HexUtility.h"
 #include "CHexDlgBkmProps.h"
 #include <cassert>
+#include <format>
 #include <numeric>
 
 using namespace HEXCTRL;
@@ -38,7 +39,6 @@ BOOL CHexDlgBkmProps::OnInitDialog()
 	if (auto pClrBtn = static_cast<CMFCColorButton*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_COLOR_TEXT)); pClrBtn != nullptr)
 		pClrBtn->SetColor(m_pHBS->clrText);
 
-	wchar_t pwszBuff[32];
 	if (!m_pHBS->vecSpan.empty())
 	{
 		m_ullOffset = m_pHBS->vecSpan.front().ullOffset;
@@ -52,13 +52,11 @@ BOOL CHexDlgBkmProps::OnInitDialog()
 		m_pHBS->vecSpan.emplace_back(m_ullOffset, m_ullSize);
 	}
 
-	swprintf_s(pwszBuff, m_fShowAsHex ? L"0x%llX" : L"%llu", m_ullOffset);
 	auto pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_OFFSET));
-	pEdit->SetWindowTextW(pwszBuff);
+	pEdit->SetWindowTextW(std::format(m_fShowAsHex ? L"0x{:X}" : L"{}", m_ullOffset).data());
 
-	swprintf_s(pwszBuff, m_fShowAsHex ? L"0x%llX" : L"%llu", m_ullSize);
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_LENGTH));
-	pEdit->SetWindowTextW(pwszBuff);
+	pEdit->SetWindowTextW(std::format(m_fShowAsHex ? L"0x{:X}" : L"{}", m_ullSize).data());
 
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_DESCR));
 	pEdit->SetWindowTextW(m_pHBS->wstrDesc.data());

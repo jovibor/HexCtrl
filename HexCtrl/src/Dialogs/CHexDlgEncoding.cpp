@@ -10,6 +10,7 @@
 #include "CHexDlgEncoding.h"
 #include <algorithm>
 #include <cassert>
+#include <format>
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
@@ -125,13 +126,13 @@ void CHexDlgEncoding::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		switch (pItem->iSubItem)
 		{
 		case 0: //Code page ID.
-			swprintf_s(pItem->pszText, nMaxLengh, L"%d", m_vecCodePage[nItemID].iCPID);
+			*std::format_to(pItem->pszText, L"{}", m_vecCodePage[nItemID].iCPID) = L'\0';
 			break;
-		case 1: //Name
+		case 1: //Name.
 			pItem->pszText = m_vecCodePage[nItemID].wstrName.data();
 			break;
 		case 2: //Max chars.
-			swprintf_s(pItem->pszText, nMaxLengh, L"%u", m_vecCodePage[nItemID].uMaxChars);
+			*std::format_to(pItem->pszText, L"{}", m_vecCodePage[nItemID].uMaxChars) = L'\0';
 			break;
 		default:
 			break;

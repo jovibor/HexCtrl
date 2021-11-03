@@ -9,6 +9,7 @@
 #include "CHexDlgBkmMgr.h"
 #include "CHexDlgBkmProps.h"
 #include <cassert>
+#include <format>
 #include <numeric>
 
 using namespace HEXCTRL;
@@ -198,18 +199,18 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		switch (pItem->iSubItem)
 		{
 		case 0: //Index number.
-			swprintf_s(pItem->pszText, nMaxLength, L"%d", iItemID + 1);
+			*std::format_to(pItem->pszText, L"{}", iItemID + 1) = L'\0';
 			break;
 		case 1: //Offset.
 			if (!pBkm->vecSpan.empty())
 				ullOffset = pBkm->vecSpan.front().ullOffset;
-			swprintf_s(pItem->pszText, nMaxLength, m_fShowAsHex ? L"0x%llX" : L"%llu", ullOffset);
+			*std::format_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", ullOffset) = L'\0';
 			break;
 		case 2: //Size.
 			if (!pBkm->vecSpan.empty())
 				ullSize = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
 					[](auto ullTotal, const HEXSPAN& ref) {return ullTotal + ref.ullSize; });
-			swprintf_s(pItem->pszText, nMaxLength, m_fShowAsHex ? L"0x%llX" : L"%llu", ullSize);
+			*std::format_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", ullSize) = L'\0';
 			break;
 		case 3: //Description.
 			pItem->pszText = const_cast<wchar_t*>(pBkm->wstrDesc.data());
