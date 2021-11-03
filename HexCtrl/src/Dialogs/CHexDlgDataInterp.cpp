@@ -141,12 +141,6 @@ void CHexDlgDataInterp::OnShowWindow(BOOL bShow, UINT nStatus)
 {
 	CDialogEx::OnShowWindow(bShow, nStatus);
 
-	//Update dialog title to reflect current date format
-	CString sTitle;
-	GetWindowTextW(sTitle);
-	sTitle.AppendFormat(L" [%s]", GetDateFormatString(m_pHexCtrl->GetDateInfo()).data());
-	SetWindowTextW(sTitle);
-
 	if (bShow != FALSE)
 		InspectOffset(m_pHexCtrl->GetCaretPos());
 }
@@ -370,6 +364,11 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 	ShowNAME_GUID(dqword);
 	ShowNAME_GUIDTIME(dqword);
 	ShowNAME_SYSTEMTIME(dqword);
+
+	//Re-generate dialog title to reflect current date format
+	CString sTitle;
+	sTitle.AppendFormat(L"Data Interpreter [%s]", GetDateFormatString(m_pHexCtrl->GetDateInfo()).data());
+	SetWindowTextW(sTitle);
 }
 
 void CHexDlgDataInterp::OnClose()
@@ -474,7 +473,7 @@ void CHexDlgDataInterp::ShowNAME_CHAR(BYTE byte)const
 {
 	//TODO: Remove static_cast<int> when bug in <format> is resolved.
 	//https://github.com/microsoft/STL/issues/2320
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", static_cast<int>(static_cast<char>(byte)));
+	const auto wstr = std::format(m_fShowAsHex ? L"{:#x}" : L"{:d}", static_cast<int>(static_cast<char>(byte)));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_CHAR; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(wstr.data());
@@ -482,7 +481,7 @@ void CHexDlgDataInterp::ShowNAME_CHAR(BYTE byte)const
 
 void CHexDlgDataInterp::ShowNAME_UCHAR(BYTE byte)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", byte);
+	const auto wstr = std::format(m_fShowAsHex ? L"{:#x}" : L"{:d}", byte);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_UCHAR; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(wstr.data());
@@ -490,7 +489,7 @@ void CHexDlgDataInterp::ShowNAME_UCHAR(BYTE byte)const
 
 void CHexDlgDataInterp::ShowNAME_SHORT(WORD word)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", static_cast<short>(word));
+	const auto wstr = std::format(m_fShowAsHex ? L"{:#x}" : L"{:d}", static_cast<short>(word));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_SHORT; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(wstr.data());
@@ -498,7 +497,7 @@ void CHexDlgDataInterp::ShowNAME_SHORT(WORD word)const
 
 void CHexDlgDataInterp::ShowNAME_USHORT(WORD word)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", word);
+	const auto wstr = std::format(m_fShowAsHex ? L"{:#x}" : L"{:d}", word);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_USHORT; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(wstr.data());
@@ -506,7 +505,7 @@ void CHexDlgDataInterp::ShowNAME_USHORT(WORD word)const
 
 void CHexDlgDataInterp::ShowNAME_LONG(DWORD dword)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", static_cast<int>(dword));
+	const auto wstr = std::format(m_fShowAsHex ? L"{:#x}" : L"{:d}", static_cast<int>(dword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_LONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(wstr.data());
@@ -514,7 +513,7 @@ void CHexDlgDataInterp::ShowNAME_LONG(DWORD dword)const
 
 void CHexDlgDataInterp::ShowNAME_ULONG(DWORD dword)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", dword);
+	const auto wstr = std::format(m_fShowAsHex ? L"{:#x}" : L"{:d}", dword);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_ULONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(wstr.data());
@@ -604,7 +603,7 @@ void CHexDlgDataInterp::ShowNAME_MSDTTMTIME(DWORD dword)const
 
 void CHexDlgDataInterp::ShowNAME_LONGLONG(QWORD qword)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", static_cast<long long>(qword));
+	const auto wstr = std::format(m_fShowAsHex ? L"{:#x}" : L"{:d}", static_cast<long long>(qword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_LONGLONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(wstr.data());
@@ -612,7 +611,7 @@ void CHexDlgDataInterp::ShowNAME_LONGLONG(QWORD qword)const
 
 void CHexDlgDataInterp::ShowNAME_ULONGLONG(QWORD qword)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", qword);
+	const auto wstr = std::format(m_fShowAsHex ? L"{:#x}" : L"{:d}", qword);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_ULONGLONG; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(wstr.data());
