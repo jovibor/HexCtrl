@@ -47,6 +47,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnButtonReplaceAll();
 		afx_msg void OnCheckSel();
 		afx_msg void OnComboModeSelChange();
+		afx_msg void UpdateSearchReplaceControls();
 		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnOK()override;
