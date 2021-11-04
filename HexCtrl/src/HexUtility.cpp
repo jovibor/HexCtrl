@@ -148,7 +148,7 @@ namespace HEXCTRL::INTERNAL
 		if (auto optSysTime = StringToSystemTime(wstr, dwDateFormat); optSysTime)
 		{
 			FILETIME ftTime;
-			if (SystemTimeToFileTime(&optSysTime.value(), &ftTime) != FALSE)
+			if (SystemTimeToFileTime(&*optSysTime, &ftTime) != FALSE)
 			{
 				optFT = ftTime;
 			}
@@ -248,6 +248,7 @@ namespace HEXCTRL::INTERNAL
 			break;
 		case 1: //Day-Month-Year
 			wstrFormat = L"DD/MM/YYYY HH:MM:SS.mmm";
+			break;
 		case 2:	//Year-Month-Day
 			wstrFormat = L"YYYY/MM/DD HH:MM:SS.mmm";
 			break;

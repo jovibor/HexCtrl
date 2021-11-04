@@ -14,6 +14,10 @@ namespace HEXCTRL::INTERNAL
 {
 	class CHexDlgDataInterp final : public CDialogEx
 	{
+	public:
+		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
+		[[nodiscard]] ULONGLONG GetSize()const;
+		void InspectOffset(ULONGLONG ullOffset);
 	private:
 #pragma pack(push, 1)
 		union UMSDOSDATETIME //MS-DOS Date+Time structure (as used in FAT file system directory entry)
@@ -68,67 +72,63 @@ namespace HEXCTRL::INTERNAL
 		static constexpr auto m_ulFileTime1970_LOW = 0xd53e8000UL;  //1st Jan 1970 as FILETIME
 		static constexpr auto m_ulFileTime1970_HIGH = 0x019db1deUL; //Used for Unix and Java times
 		static constexpr auto m_ullUnixEpochDiff = 11644473600ULL;  //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970
-	public:
-		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
-		[[nodiscard]] ULONGLONG GetSize()const;
-		void InspectOffset(ULONGLONG ullOffset);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		afx_msg void OnShowWindow(BOOL bShow, UINT nStatus);
 		afx_msg void OnOK()override;
+		afx_msg void OnClickRadioBeLe();
+		afx_msg void OnClickRadioHexDec();
 		afx_msg void OnClose();
+		afx_msg void OnDestroy();
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		LRESULT OnPropertyChanged(WPARAM wParam, LPARAM lParam);
 		afx_msg void OnSize(UINT nType, int cx, int cy);
-		afx_msg void OnClickRadioBeLe();
-		afx_msg void OnClickRadioHexDec();
-		afx_msg void OnDestroy();
-		template <typename T>void SetTData(T tData)const;
+		template <typename T>
+		void SetTData(T tData)const;
+		[[nodiscard]] bool SetDataBINARY(const std::wstring& wstr)const;
+		[[nodiscard]] bool SetDataCHAR(const std::wstring& wstr)const;
+		[[nodiscard]] bool SetDataUCHAR(const std::wstring& wstr)const;
+		[[nodiscard]] bool SetDataSHORT(const std::wstring& wstr)const;
+		[[nodiscard]] bool SetDataUSHORT(const std::wstring& wstr)const;
+		[[nodiscard]] bool SetDataLONG(const std::wstring& wstr)const;
+		[[nodiscard]] bool SetDataULONG(const std::wstring& wstr)const;
+		[[nodiscard]] bool SetDataLONGLONG(const std::wstring& wstr)const;
+		[[nodiscard]] bool SetDataULONGLONG(const std::wstring& wstr)const;
+		[[nodiscard]] bool SetDataFLOAT(const std::wstring& wstr)const;
+		[[nodiscard]] bool SetDataDOUBLE(const std::wstring& wstr)const;
+		[[nodiscard]] bool SetDataTIME32T(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataTIME64T(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataFILETIME(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataOLEDATETIME(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataJAVATIME(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataMSDOSTIME(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataMSDTTMTIME(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataSYSTEMTIME(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataGUID(const std::wstring& wstr)const;
+		void ShowValueBINARY(BYTE byte)const;
+		void ShowValueCHAR(BYTE byte)const;
+		void ShowValueUCHAR(BYTE byte)const;
+		void ShowValueSHORT(WORD word)const;
+		void ShowValueUSHORT(WORD word)const;
+		void ShowValueLONG(DWORD dword)const;
+		void ShowValueULONG(DWORD dword)const;
+		void ShowValueFLOAT(DWORD dword)const;
+		void ShowValueTIME32(DWORD dword)const;
+		void ShowValueMSDOSTIME(DWORD dword)const;
+		void ShowValueMSDTTMTIME(DWORD dword)const;
+		void ShowValueLONGLONG(QWORD qword)const;
+		void ShowValueULONGLONG(QWORD qword)const;
+		void ShowValueDOUBLE(QWORD qword)const;
+		void ShowValueTIME64(QWORD qword)const;
+		void ShowValueFILETIME(QWORD qword)const;
+		void ShowValueOLEDATETIME(QWORD qword)const;
+		void ShowValueJAVATIME(QWORD qword)const;
+		void ShowValueGUID(const UDQWORD& dqword)const;
+		void ShowValueGUIDTIME(const UDQWORD& dqword)const;
+		void ShowValueSYSTEMTIME(const UDQWORD& dqword)const;
 		void UpdateHexCtrl()const;
-		void ShowNAME_BINARY(BYTE byte)const;
-		void ShowNAME_CHAR(BYTE byte)const;
-		void ShowNAME_UCHAR(BYTE byte)const;
-		void ShowNAME_SHORT(WORD word)const;
-		void ShowNAME_USHORT(WORD word)const;
-		void ShowNAME_LONG(DWORD dword)const;
-		void ShowNAME_ULONG(DWORD dword)const;
-		void ShowNAME_FLOAT(DWORD dword)const;
-		void ShowNAME_TIME32(DWORD dword)const;
-		void ShowNAME_MSDOSTIME(DWORD dword)const;
-		void ShowNAME_MSDTTMTIME(DWORD dword)const;
-		void ShowNAME_LONGLONG(QWORD qword)const;
-		void ShowNAME_ULONGLONG(QWORD qword)const;
-		void ShowNAME_DOUBLE(QWORD qword)const;
-		void ShowNAME_TIME64(QWORD qword)const;
-		void ShowNAME_FILETIME(QWORD qword)const;
-		void ShowNAME_OLEDATETIME(QWORD qword)const;
-		void ShowNAME_JAVATIME(QWORD qword)const;
-		void ShowNAME_GUID(const UDQWORD& dqword)const;
-		void ShowNAME_GUIDTIME(const UDQWORD& dqword)const;
-		void ShowNAME_SYSTEMTIME(const UDQWORD& dqword)const;
-		bool SetDataNAME_BINARY(const std::wstring& wstr)const;
-		bool SetDataNAME_CHAR(const std::wstring& wstr)const;
-		bool SetDataNAME_UCHAR(const std::wstring& wstr)const;
-		bool SetDataNAME_SHORT(const std::wstring& wstr)const;
-		bool SetDataNAME_USHORT(const std::wstring& wstr)const;
-		bool SetDataNAME_LONG(const std::wstring& wstr)const;
-		bool SetDataNAME_ULONG(const std::wstring& wstr)const;
-		bool SetDataNAME_LONGLONG(const std::wstring& wstr)const;
-		bool SetDataNAME_ULONGLONG(const std::wstring& wstr)const;
-		bool SetDataNAME_FLOAT(const std::wstring& wstr)const;
-		bool SetDataNAME_DOUBLE(const std::wstring& wstr)const;
-		bool SetDataNAME_TIME32T(std::wstring_view wstr)const;
-		bool SetDataNAME_TIME64T(std::wstring_view wstr)const;
-		bool SetDataNAME_FILETIME(std::wstring_view wstr)const;
-		bool SetDataNAME_OLEDATETIME(std::wstring_view wstr)const;
-		bool SetDataNAME_JAVATIME(std::wstring_view wstr)const;
-		bool SetDataNAME_MSDOSTIME(std::wstring_view wstr)const;
-		bool SetDataNAME_MSDTTMTIME(std::wstring_view wstr)const;
-		bool SetDataNAME_SYSTEMTIME(std::wstring_view wstr)const;
-		bool SetDataNAME_GUIDTIME(std::wstring_view wstr)const;
-		bool SetDataNAME_GUID(const std::wstring& wstr)const;
 		DECLARE_MESSAGE_MAP()
 	private:
 		enum class EGroup : std::uint8_t { DIGITS, FLOAT, TIME, MISC };
@@ -153,13 +153,13 @@ namespace HEXCTRL::INTERNAL
 			ESize eSize { };
 			bool fChild { false };
 		};
-		IHexCtrl* m_pHexCtrl { };
-		bool m_fBigEndian { false };
-		bool m_fShowAsHex { true };
-		CHexPropGridCtrl m_stCtrlGrid;
 		std::vector<SGRIDDATA> m_vecProp;
+		IHexCtrl* m_pHexCtrl { };
+		CHexPropGridCtrl m_stCtrlGrid;
 		CMFCPropertyGridProperty* m_pPropChanged { };
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullSize { };
+		bool m_fBigEndian { false };
+		bool m_fShowAsHex { true };
 	};
 }

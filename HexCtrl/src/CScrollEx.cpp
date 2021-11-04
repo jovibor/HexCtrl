@@ -275,6 +275,9 @@ void CScrollEx::OnSetCursor(CWnd* /*pWnd*/, UINT nHitTest, UINT message)
 	case WM_LBUTTONDOWN:
 	{
 		const auto pParent = GetParent();
+		if (pParent == nullptr)
+			return;
+
 		POINT pt;
 		GetCursorPos(&pt);
 		pParent->ScreenToClient(&pt);

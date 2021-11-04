@@ -869,7 +869,7 @@ void CHexDlgSearch::Prepare()
 
 	Search();
 	SetActiveWindow();
-	}
+}
 
 bool CHexDlgSearch::PrepareHexBytes()
 {
@@ -1155,8 +1155,8 @@ bool CHexDlgSearch::PrepareFILETIME()
 		return false;
 	}
 
-	FILETIME stFTSearch { optFTSearch.value() };
-	FILETIME stFTReplace { optFTReplace.value() };
+	FILETIME stFTSearch { *optFTSearch };
+	FILETIME stFTReplace { *optFTReplace };
 	if (m_fBigEndian)
 	{
 		stFTSearch.dwLowDateTime = _byteswap_ulong(stFTSearch.dwLowDateTime);

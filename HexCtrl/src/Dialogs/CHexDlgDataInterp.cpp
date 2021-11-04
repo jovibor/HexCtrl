@@ -30,12 +30,6 @@ BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
-void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_PROPDATA, m_stCtrlGrid);
-}
-
 BOOL CHexDlgDataInterp::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
@@ -45,6 +39,150 @@ BOOL CHexDlgDataInterp::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCt
 	m_pHexCtrl = pHexCtrl;
 
 	return CDialogEx::Create(nIDTemplate, pParent);
+}
+
+ULONGLONG CHexDlgDataInterp::GetSize()const
+{
+	return m_ullSize;
+}
+
+void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
+{
+	const auto ullDataSize = m_pHexCtrl->GetDataSize();
+	if (ullOffset >= ullDataSize) //Out of data bounds.
+		return;
+
+	const auto fMutable = m_pHexCtrl->IsMutable();
+	for (const auto& iter : m_vecProp)
+		iter.pProp->AllowEdit(fMutable ? TRUE : FALSE);
+
+	m_ullOffset = ullOffset;
+	const auto byte = GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset);
+
+	ShowValueBINARY(byte);
+	ShowValueCHAR(byte);
+	ShowValueUCHAR(byte);
+
+	if (ullOffset + static_cast<unsigned>(ESize::SIZE_WORD) > ullDataSize)
+	{
+		for (const auto& iter : m_vecProp)
+		{
+			if (iter.eSize >= ESize::SIZE_WORD)
+			{
+				iter.pProp->SetValue(L"0");
+				iter.pProp->Enable(FALSE);
+			}
+		}
+		return;
+	}
+
+	//ESize::SIZE_WORD////////////////////////////////////////////
+	for (const auto& iter : m_vecProp)
+		if (iter.eSize == ESize::SIZE_WORD)
+			iter.pProp->Enable(TRUE);
+
+	auto word = GetIHexTData<WORD>(*m_pHexCtrl, ullOffset);
+	if (m_fBigEndian)
+		word = _byteswap_ushort(word);
+
+	ShowValueSHORT(word);
+	ShowValueUSHORT(word);
+
+	if (ullOffset + static_cast<unsigned>(ESize::SIZE_DWORD) > ullDataSize)
+	{
+		for (const auto& iter : m_vecProp)
+		{
+			if (iter.eSize >= ESize::SIZE_DWORD)
+			{
+				iter.pProp->SetValue(L"0");
+				iter.pProp->Enable(FALSE);
+			}
+		}
+		return;
+	}
+
+	//ESize::SIZE_DWORD//////////////////////////////////////////////
+	for (const auto& iter : m_vecProp)
+		if (iter.eSize == ESize::SIZE_DWORD)
+			iter.pProp->Enable(TRUE);
+
+	auto dword = GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset);
+	if (m_fBigEndian)
+		dword = _byteswap_ulong(dword);
+
+	ShowValueLONG(dword);
+	ShowValueULONG(dword);
+	ShowValueFLOAT(dword);
+	ShowValueTIME32(dword);
+	ShowValueMSDOSTIME(dword);
+	ShowValueMSDTTMTIME(dword);
+
+	if (ullOffset + static_cast<unsigned>(ESize::SIZE_QWORD) > ullDataSize)
+	{
+		for (const auto& iter : m_vecProp)
+		{
+			if (iter.eSize >= ESize::SIZE_QWORD)
+			{
+				iter.pProp->SetValue(L"0");
+				iter.pProp->Enable(FALSE);
+			}
+		}
+		return;
+	}
+
+	//ESize::SIZE_QWORD//////////////////////////////////////////////////
+	for (const auto& iter : m_vecProp)
+		if (iter.eSize == ESize::SIZE_QWORD)
+			iter.pProp->Enable(TRUE);
+
+	auto qword = GetIHexTData<QWORD>(*m_pHexCtrl, ullOffset);
+	if (m_fBigEndian)
+		qword = _byteswap_uint64(qword);
+
+	ShowValueLONGLONG(qword);
+	ShowValueULONGLONG(qword);
+	ShowValueDOUBLE(qword);
+	ShowValueTIME64(qword);
+	ShowValueFILETIME(qword);
+	ShowValueOLEDATETIME(qword);
+	ShowValueJAVATIME(qword);
+
+	if (ullOffset + static_cast<unsigned>(ESize::SIZE_DQWORD) > ullDataSize)
+	{
+		for (const auto& iter : m_vecProp)
+		{
+			if (iter.eSize >= ESize::SIZE_DQWORD)
+			{
+				iter.pProp->SetValue(L"0");
+				iter.pProp->Enable(FALSE);
+			}
+		}
+		return;
+	}
+
+	//ESize::SIZE_DQWORD//////////////////////////////////////////////////
+	for (const auto& iter : m_vecProp)
+		if (iter.eSize == ESize::SIZE_DQWORD)
+			iter.pProp->Enable(TRUE);
+
+	auto dqword = GetIHexTData<UDQWORD>(*m_pHexCtrl, ullOffset);
+	if (m_fBigEndian)
+	{
+		//TODO: Test this thoroughly
+		const auto tmp = dqword.Value.qwLow;
+		dqword.Value.qwLow = _byteswap_uint64(dqword.Value.qwHigh);
+		dqword.Value.qwHigh = _byteswap_uint64(tmp);
+	}
+
+	ShowValueGUID(dqword);
+	ShowValueGUIDTIME(dqword);
+	ShowValueSYSTEMTIME(dqword);
+}
+
+void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
+{
+	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_PROPDATA, m_stCtrlGrid);
 }
 
 BOOL CHexDlgDataInterp::OnInitDialog()
@@ -133,22 +271,17 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 		m_ullSize = 0;
 		UpdateHexCtrl();
 	}
+	else
+	{
+		if (m_pHexCtrl->IsCreated())
+		{
+			const auto wstrTitle = L"Date/Time format is: " + GetDateFormatString(m_pHexCtrl->GetDateInfo());
+			SetWindowTextW(wstrTitle.data()); //Update dialog title to reflect current date format.
+			InspectOffset(m_pHexCtrl->GetCaretPos());
+		}
+	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
-}
-
-void CHexDlgDataInterp::OnShowWindow(BOOL bShow, UINT nStatus)
-{
-	CDialogEx::OnShowWindow(bShow, nStatus);
-
-	//Update dialog title to reflect current date format
-	CString sTitle;
-	GetWindowTextW(sTitle);
-	sTitle.AppendFormat(L" [%s]", GetDateFormatString(m_pHexCtrl->GetDateInfo()).data());
-	SetWindowTextW(sTitle);
-
-	if (bShow != FALSE)
-		InspectOffset(m_pHexCtrl->GetCaretPos());
 }
 
 void CHexDlgDataInterp::OnOK()
@@ -167,67 +300,67 @@ void CHexDlgDataInterp::OnOK()
 	switch (itGridData->eName)
 	{
 	case EName::NAME_BINARY:
-		fSuccess = SetDataNAME_BINARY(wstr);
+		fSuccess = SetDataBINARY(wstr);
 		break;
 	case EName::NAME_CHAR:
-		fSuccess = SetDataNAME_CHAR(wstr);
+		fSuccess = SetDataCHAR(wstr);
 		break;
 	case EName::NAME_UCHAR:
-		fSuccess = SetDataNAME_UCHAR(wstr);
+		fSuccess = SetDataUCHAR(wstr);
 		break;
 	case EName::NAME_SHORT:
-		fSuccess = SetDataNAME_SHORT(wstr);
+		fSuccess = SetDataSHORT(wstr);
 		break;
 	case EName::NAME_USHORT:
-		fSuccess = SetDataNAME_USHORT(wstr);
+		fSuccess = SetDataUSHORT(wstr);
 		break;
 	case EName::NAME_LONG:
-		fSuccess = SetDataNAME_LONG(wstr);
+		fSuccess = SetDataLONG(wstr);
 		break;
 	case EName::NAME_ULONG:
-		fSuccess = SetDataNAME_ULONG(wstr);
+		fSuccess = SetDataULONG(wstr);
 		break;
 	case EName::NAME_LONGLONG:
-		fSuccess = SetDataNAME_LONGLONG(wstr);
+		fSuccess = SetDataLONGLONG(wstr);
 		break;
 	case EName::NAME_ULONGLONG:
-		fSuccess = SetDataNAME_ULONGLONG(wstr);
+		fSuccess = SetDataULONGLONG(wstr);
 		break;
 	case EName::NAME_FLOAT:
-		fSuccess = SetDataNAME_FLOAT(wstr);
+		fSuccess = SetDataFLOAT(wstr);
 		break;
 	case EName::NAME_DOUBLE:
-		fSuccess = SetDataNAME_DOUBLE(wstr);
+		fSuccess = SetDataDOUBLE(wstr);
 		break;
 	case EName::NAME_TIME32T:
-		fSuccess = SetDataNAME_TIME32T(wstr);
+		fSuccess = SetDataTIME32T(wstr);
 		break;
 	case EName::NAME_TIME64T:
-		fSuccess = SetDataNAME_TIME64T(wstr);
+		fSuccess = SetDataTIME64T(wstr);
 		break;
 	case EName::NAME_FILETIME:
-		fSuccess = SetDataNAME_FILETIME(wstr);
+		fSuccess = SetDataFILETIME(wstr);
 		break;
 	case EName::NAME_OLEDATETIME:
-		fSuccess = SetDataNAME_OLEDATETIME(wstr);
+		fSuccess = SetDataOLEDATETIME(wstr);
 		break;
 	case EName::NAME_JAVATIME:
-		fSuccess = SetDataNAME_JAVATIME(wstr);
+		fSuccess = SetDataJAVATIME(wstr);
 		break;
 	case EName::NAME_MSDOSTIME:
-		fSuccess = SetDataNAME_MSDOSTIME(wstr);
+		fSuccess = SetDataMSDOSTIME(wstr);
 		break;
 	case EName::NAME_MSDTTMTIME:
-		fSuccess = SetDataNAME_MSDTTMTIME(wstr);
+		fSuccess = SetDataMSDTTMTIME(wstr);
 		break;
 	case EName::NAME_SYSTEMTIME:
-		fSuccess = SetDataNAME_SYSTEMTIME(wstr);
+		fSuccess = SetDataSYSTEMTIME(wstr);
 		break;
 	case EName::NAME_GUIDTIME:
-		fSuccess = SetDataNAME_GUIDTIME(wstr);
+		fSuccess = SetDataGUIDTIME(wstr);
 		break;
 	case EName::NAME_GUID:
-		fSuccess = SetDataNAME_GUID(wstr);
+		fSuccess = SetDataGUID(wstr);
 		break;
 	};
 
@@ -239,137 +372,16 @@ void CHexDlgDataInterp::OnOK()
 	InspectOffset(m_ullOffset);
 }
 
-void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
+void CHexDlgDataInterp::OnClickRadioBeLe()
 {
-	const auto ullDataSize = m_pHexCtrl->GetDataSize();
-	if (ullOffset >= ullDataSize) //Out of data bounds.
-		return;
+	m_fBigEndian = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RADIO_BE))->GetCheck() == BST_CHECKED;
+	InspectOffset(m_ullOffset);
+}
 
-	const auto fMutable = m_pHexCtrl->IsMutable();
-	for (const auto& iter : m_vecProp)
-		iter.pProp->AllowEdit(fMutable ? TRUE : FALSE);
-
-	m_ullOffset = ullOffset;
-	const auto byte = GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset);
-
-	ShowNAME_BINARY(byte);
-	ShowNAME_CHAR(byte);
-	ShowNAME_UCHAR(byte);
-
-	if (ullOffset + static_cast<unsigned>(ESize::SIZE_WORD) > ullDataSize)
-	{
-		for (const auto& iter : m_vecProp)
-		{
-			if (iter.eSize >= ESize::SIZE_WORD)
-			{
-				iter.pProp->SetValue(L"0");
-				iter.pProp->Enable(FALSE);
-			}
-		}
-		return;
-	}
-
-	//ESize::SIZE_WORD////////////////////////////////////////////
-	for (const auto& iter : m_vecProp)
-		if (iter.eSize == ESize::SIZE_WORD)
-			iter.pProp->Enable(TRUE);
-
-	auto word = GetIHexTData<WORD>(*m_pHexCtrl, ullOffset);
-	if (m_fBigEndian)
-		word = _byteswap_ushort(word);
-
-	ShowNAME_SHORT(word);
-	ShowNAME_USHORT(word);
-
-	if (ullOffset + static_cast<unsigned>(ESize::SIZE_DWORD) > ullDataSize)
-	{
-		for (const auto& iter : m_vecProp)
-		{
-			if (iter.eSize >= ESize::SIZE_DWORD)
-			{
-				iter.pProp->SetValue(L"0");
-				iter.pProp->Enable(FALSE);
-			}
-		}
-		return;
-	}
-
-	//ESize::SIZE_DWORD//////////////////////////////////////////////
-	for (const auto& iter : m_vecProp)
-		if (iter.eSize == ESize::SIZE_DWORD)
-			iter.pProp->Enable(TRUE);
-
-	auto dword = GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset);
-	if (m_fBigEndian)
-		dword = _byteswap_ulong(dword);
-
-	ShowNAME_LONG(dword);
-	ShowNAME_ULONG(dword);
-	ShowNAME_FLOAT(dword);
-	ShowNAME_TIME32(dword);
-	ShowNAME_MSDOSTIME(dword);
-	ShowNAME_MSDTTMTIME(dword);
-
-	if (ullOffset + static_cast<unsigned>(ESize::SIZE_QWORD) > ullDataSize)
-	{
-		for (const auto& iter : m_vecProp)
-		{
-			if (iter.eSize >= ESize::SIZE_QWORD)
-			{
-				iter.pProp->SetValue(L"0");
-				iter.pProp->Enable(FALSE);
-			}
-		}
-		return;
-	}
-
-	//ESize::SIZE_QWORD//////////////////////////////////////////////////
-	for (const auto& iter : m_vecProp)
-		if (iter.eSize == ESize::SIZE_QWORD)
-			iter.pProp->Enable(TRUE);
-
-	auto qword = GetIHexTData<QWORD>(*m_pHexCtrl, ullOffset);
-	if (m_fBigEndian)
-		qword = _byteswap_uint64(qword);
-
-	ShowNAME_LONGLONG(qword);
-	ShowNAME_ULONGLONG(qword);
-	ShowNAME_DOUBLE(qword);
-	ShowNAME_TIME64(qword);
-	ShowNAME_FILETIME(qword);
-	ShowNAME_OLEDATETIME(qword);
-	ShowNAME_JAVATIME(qword);
-
-	if (ullOffset + static_cast<unsigned>(ESize::SIZE_DQWORD) > ullDataSize)
-	{
-		for (const auto& iter : m_vecProp)
-		{
-			if (iter.eSize >= ESize::SIZE_DQWORD)
-			{
-				iter.pProp->SetValue(L"0");
-				iter.pProp->Enable(FALSE);
-			}
-		}
-		return;
-	}
-
-	//ESize::SIZE_DQWORD//////////////////////////////////////////////////
-	for (const auto& iter : m_vecProp)
-		if (iter.eSize == ESize::SIZE_DQWORD)
-			iter.pProp->Enable(TRUE);
-
-	auto dqword = GetIHexTData<UDQWORD>(*m_pHexCtrl, ullOffset);
-	if (m_fBigEndian)
-	{
-		//TODO: Test this thoroughly
-		const auto tmp = dqword.Value.qwLow;
-		dqword.Value.qwLow = _byteswap_uint64(dqword.Value.qwHigh);
-		dqword.Value.qwHigh = _byteswap_uint64(tmp);
-	}
-
-	ShowNAME_GUID(dqword);
-	ShowNAME_GUIDTIME(dqword);
-	ShowNAME_SYSTEMTIME(dqword);
+void CHexDlgDataInterp::OnClickRadioHexDec()
+{
+	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RADIO_HEX))->GetCheck() == BST_CHECKED;
+	InspectOffset(m_ullOffset);
 }
 
 void CHexDlgDataInterp::OnClose()
@@ -379,15 +391,12 @@ void CHexDlgDataInterp::OnClose()
 	CDialogEx::OnClose();
 }
 
-LRESULT CHexDlgDataInterp::OnPropertyChanged(WPARAM wParam, LPARAM lParam)
+void CHexDlgDataInterp::OnDestroy()
 {
-	if (wParam == IDC_HEXCTRL_DATAINTERP_PROPDATA)
-	{
-		m_pPropChanged = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
-		OnOK();
-	}
+	CDialogEx::OnDestroy();
 
-	return 0;
+	m_stCtrlGrid.DestroyWindow();
+	m_vecProp.clear();
 }
 
 BOOL CHexDlgDataInterp::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
@@ -410,34 +419,20 @@ BOOL CHexDlgDataInterp::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
+LRESULT CHexDlgDataInterp::OnPropertyChanged(WPARAM wParam, LPARAM lParam)
+{
+	if (wParam == IDC_HEXCTRL_DATAINTERP_PROPDATA)
+	{
+		m_pPropChanged = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
+		OnOK();
+	}
+
+	return 0;
+}
+
 void CHexDlgDataInterp::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
-}
-
-void CHexDlgDataInterp::OnClickRadioBeLe()
-{
-	m_fBigEndian = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RADIO_BE))->GetCheck() == BST_CHECKED;
-	InspectOffset(m_ullOffset);
-}
-
-void CHexDlgDataInterp::OnClickRadioHexDec()
-{
-	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RADIO_HEX))->GetCheck() == BST_CHECKED;
-	InspectOffset(m_ullOffset);
-}
-
-void CHexDlgDataInterp::OnDestroy()
-{
-	CDialogEx::OnDestroy();
-
-	m_stCtrlGrid.DestroyWindow();
-	m_vecProp.clear();
-}
-
-ULONGLONG CHexDlgDataInterp::GetSize()const
-{
-	return m_ullSize;
 }
 
 template<typename T>
@@ -456,79 +451,420 @@ void CHexDlgDataInterp::SetTData(T tData)const
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, tData);
 }
 
-void CHexDlgDataInterp::UpdateHexCtrl()const
+bool CHexDlgDataInterp::SetDataBINARY(const std::wstring& wstr)const
 {
-	if (m_pHexCtrl && m_pHexCtrl->IsCreated())
-		m_pHexCtrl->Redraw();
+	if (wstr.size() != 8 || wstr.find_first_not_of(L"01") != std::wstring_view::npos)
+		return false;
+
+	bool fSuccess;
+	UCHAR uchData;
+	if (fSuccess = wstr2num(wstr, uchData, 2); fSuccess)
+		SetTData(uchData);
+
+	return fSuccess;
 }
 
-void CHexDlgDataInterp::ShowNAME_BINARY(BYTE byte)const
+bool CHexDlgDataInterp::SetDataCHAR(const std::wstring& wstr)const
 {
-	const auto wstr = std::format(L"{:b}", byte);
+	bool fSuccess;
+	CHAR chData;
+	if (fSuccess = wstr2num(wstr, chData); fSuccess)
+		SetTData(chData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterp::SetDataUCHAR(const std::wstring& wstr)const
+{
+	bool fSuccess;
+	UCHAR uchData;
+	if (fSuccess = wstr2num(wstr, uchData); fSuccess)
+		SetTData(uchData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterp::SetDataSHORT(const std::wstring& wstr)const
+{
+	bool fSuccess;
+	SHORT shData;
+	if (fSuccess = wstr2num(wstr, shData); fSuccess)
+		SetTData(shData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterp::SetDataUSHORT(const std::wstring& wstr)const
+{
+	bool fSuccess;
+	USHORT ushData;
+	if (fSuccess = wstr2num(wstr, ushData); fSuccess)
+		SetTData(ushData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterp::SetDataLONG(const std::wstring& wstr)const
+{
+	bool fSuccess;
+	LONG lData;
+	if (fSuccess = wstr2num(wstr, lData); fSuccess)
+		SetTData(lData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterp::SetDataULONG(const std::wstring& wstr)const
+{
+	bool fSuccess;
+	ULONG ulData;
+	if (fSuccess = wstr2num(wstr, ulData); fSuccess)
+		SetTData(ulData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterp::SetDataLONGLONG(const std::wstring& wstr)const
+{
+	bool fSuccess;
+	LONGLONG llData;
+	if (fSuccess = wstr2num(wstr, llData); fSuccess)
+		SetTData(llData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterp::SetDataULONGLONG(const std::wstring& wstr)const
+{
+	bool fSuccess;
+	ULONGLONG ullData;
+	if (fSuccess = wstr2num(wstr, ullData); fSuccess)
+		SetTData(ullData);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterp::SetDataFLOAT(const std::wstring& wstr)const
+{
+	bool fSuccess;
+	float fl;
+	if (fSuccess = wstr2num(wstr, fl); fSuccess)
+		SetTData(fl);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterp::SetDataDOUBLE(const std::wstring& wstr)const
+{
+	bool fSuccess;
+	double dd;
+	if (fSuccess = wstr2num(wstr, dd); fSuccess)
+		SetTData(dd);
+
+	return fSuccess;
+}
+
+bool CHexDlgDataInterp::SetDataTIME32T(std::wstring_view wstr)const
+{
+	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
+	if (!optSysTime)
+		return false;
+
+	//Unix times are signed but value before 1st January 1970 is not considered valid
+	//This is apparently because early complilers didn't support unsigned types. _mktime32() has the same limit
+	if (optSysTime->wYear < 1970)
+		return false;
+
+	FILETIME ftTime;
+	if (!SystemTimeToFileTime(&*optSysTime, &ftTime))
+		return false;
+
+	//Convert ticks to seconds and adjust epoch
+	LARGE_INTEGER lTicks;
+	lTicks.HighPart = ftTime.dwHighDateTime;
+	lTicks.LowPart = ftTime.dwLowDateTime;
+	lTicks.QuadPart /= m_uFTTicksPerSec;
+	lTicks.QuadPart -= m_ullUnixEpochDiff;
+
+	if (lTicks.QuadPart < LONG_MAX)
+	{
+		LONG lTime32 = static_cast<LONG>(lTicks.QuadPart);
+
+		if (m_fBigEndian)
+			lTime32 = _byteswap_ulong(lTime32);
+
+		SetIHexTData(*m_pHexCtrl, m_ullOffset, lTime32);
+	}
+
+	return true;
+}
+
+bool CHexDlgDataInterp::SetDataTIME64T(std::wstring_view wstr)const
+{
+	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
+	if (!optSysTime)
+		return false;
+
+	//Unix times are signed but value before 1st January 1970 is not considered valid
+	//This is apparently because early complilers didn't support unsigned types. _mktime64() has the same limit
+	if (optSysTime->wYear < 1970)
+		return false;
+
+	FILETIME ftTime;
+	if (!SystemTimeToFileTime(&*optSysTime, &ftTime))
+		return false;
+
+	//Convert ticks to seconds and adjust epoch
+	LARGE_INTEGER lTicks;
+	lTicks.HighPart = ftTime.dwHighDateTime;
+	lTicks.LowPart = ftTime.dwLowDateTime;
+	lTicks.QuadPart /= m_uFTTicksPerSec;
+	lTicks.QuadPart -= m_ullUnixEpochDiff;
+	auto llTime64 = static_cast<LONGLONG>(lTicks.QuadPart);
+
+	if (m_fBigEndian)
+		llTime64 = _byteswap_uint64(llTime64);
+
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, llTime64);
+
+	return true;
+}
+
+bool CHexDlgDataInterp::SetDataFILETIME(std::wstring_view wstr)const
+{
+	const auto optFileTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
+	if (!optFileTime)
+		return false;
+
+	ULARGE_INTEGER stLITime;
+	stLITime.LowPart = optFileTime->dwLowDateTime;
+	stLITime.HighPart = optFileTime->dwHighDateTime;
+
+	if (m_fBigEndian)
+		stLITime.QuadPart = _byteswap_uint64(stLITime.QuadPart);
+
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, stLITime.QuadPart);
+
+	return true;
+}
+
+bool CHexDlgDataInterp::SetDataOLEDATETIME(std::wstring_view wstr)const
+{
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
+	if (!optSysTime)
+		return false;
+
+	const COleDateTime dt(*optSysTime);
+	if (dt.GetStatus() != COleDateTime::valid)
+		return false;
+
+	ULONGLONG ullValue;
+	std::memcpy(&ullValue, &dt.m_dt, sizeof(dt.m_dt));
+
+	if (m_fBigEndian)
+		ullValue = _byteswap_uint64(ullValue);
+
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, ullValue);
+
+	return true;
+}
+
+bool CHexDlgDataInterp::SetDataJAVATIME(std::wstring_view wstr)const
+{
+	const auto optFileTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
+	if (!optFileTime)
+		return false;
+
+	//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC
+	LARGE_INTEGER lJavaTicks;
+	lJavaTicks.HighPart = optFileTime->dwHighDateTime;
+	lJavaTicks.LowPart = optFileTime->dwLowDateTime;
+
+	LARGE_INTEGER lEpochTicks;
+	lEpochTicks.HighPart = m_ulFileTime1970_HIGH;
+	lEpochTicks.LowPart = m_ulFileTime1970_LOW;
+
+	LONGLONG llDiffTicks;
+	if (lEpochTicks.QuadPart > lJavaTicks.QuadPart)
+		llDiffTicks = -(lEpochTicks.QuadPart - lJavaTicks.QuadPart);
+	else
+		llDiffTicks = lJavaTicks.QuadPart - lEpochTicks.QuadPart;
+
+	LONGLONG llDiffMillis = llDiffTicks / m_uFTTicksPerMS;
+
+	if (m_fBigEndian)
+		llDiffMillis = _byteswap_uint64(llDiffMillis);
+
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, llDiffMillis);
+
+	return true;
+}
+
+bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wstr)const
+{
+	const auto optFileTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
+	if (!optFileTime)
+		return false;
+
+	UMSDOSDATETIME msdosDateTime;
+	if (!FileTimeToDosDateTime(&*optFileTime, &msdosDateTime.TimeDate.wDate, &msdosDateTime.TimeDate.wTime))
+		return false;
+
+	//Note: Big-endian is not currently supported. This has never existed in the "wild".
+
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, msdosDateTime.dwTimeDate);
+
+	return true;
+}
+
+bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wstr)const
+{
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
+	if (!optSysTime)
+		return false;
+
+	//Microsoft UDTTM time (as used by Microsoft Compound Document format)
+	UDTTM dttm;
+	dttm.components.year = optSysTime->wYear - 1900;
+	dttm.components.month = optSysTime->wMonth;
+	dttm.components.weekday = optSysTime->wDayOfWeek;
+	dttm.components.dayofmonth = optSysTime->wDay;
+	dttm.components.hour = optSysTime->wHour;
+	dttm.components.minute = optSysTime->wMinute;
+
+	//Note: Big-endian is not currently supported. This has never existed in the "wild".
+
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, dttm.dwValue);
+
+	return true;
+}
+
+bool CHexDlgDataInterp::SetDataSYSTEMTIME(std::wstring_view wstr)const
+{
+	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
+	if (!optSysTime)
+		return false;
+
+	//Note: Big-endian is not currently supported. This has never existed in the "wild".
+
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, *optSysTime);
+
+	return true;
+}
+
+bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wstr)const
+{
+	//This time is within NAME_GUID structure, and it depends on it.
+	//We can not just set a NAME_GUIDTIME for data range if it's not 
+	//a valid NAME_GUID range, so checking first.
+
+	auto dqword = GetIHexTData<UDQWORD>(*m_pHexCtrl, m_ullOffset);
+	const unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
+	if (unGuidVersion != 1)
+		return false;
+
+	//RFC4122: The timestamp is a 60-bit value.  For UUID version 1, this is represented by Coordinated Universal Time (UTC) as a count of 100-
+	//nanosecond intervals since 00:00:00.00, 15 October 1582 (the date of Gregorian reform to the Christian calendar).
+	//
+	//Both FILETIME and GUID time are based upon 100ns intervals
+	//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Add 6653 days to convert to GUID time
+	const auto optFTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
+	if (!optFTime)
+		return false;
+
+	const auto ftTime = *optFTime;
+
+	LARGE_INTEGER qwGUIDTime;
+	qwGUIDTime.HighPart = ftTime.dwHighDateTime;
+	qwGUIDTime.LowPart = ftTime.dwLowDateTime;
+
+	ULARGE_INTEGER ullAddTicks;
+	ullAddTicks.QuadPart = static_cast<QWORD>(m_uFTTicksPerSec) * static_cast<QWORD>(m_uSecondsPerHour)
+		* static_cast<QWORD>(m_uHoursPerDay) * static_cast<QWORD>(m_uFileTime1582OffsetDays);
+	qwGUIDTime.QuadPart += ullAddTicks.QuadPart;
+
+	//Encode version 1 GUID with time
+	dqword.gGUID.Data1 = qwGUIDTime.LowPart;
+	dqword.gGUID.Data2 = qwGUIDTime.HighPart & 0xffff;
+	dqword.gGUID.Data3 = ((qwGUIDTime.HighPart >> 16) & 0x0fff) | 0x1000; //Including Type 1 flag (0x1000)
+
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, dqword);
+
+	return true;
+}
+
+bool CHexDlgDataInterp::SetDataGUID(const std::wstring& wstr)const
+{
+	GUID guid;
+	if (IIDFromString(wstr.data(), &guid) != S_OK)
+		return false;
+
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, guid);
+
+	return true;
+}
+
+void CHexDlgDataInterp::ShowValueBINARY(BYTE byte)const
+{
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_BINARY; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstr.data());
+		iter->pProp->SetValue(std::format(L"{:08b}", byte).data());
 }
 
-void CHexDlgDataInterp::ShowNAME_CHAR(BYTE byte)const
+void CHexDlgDataInterp::ShowValueCHAR(BYTE byte)const
 {
 	//TODO: Remove static_cast<int> when bug in <format> is resolved.
 	//https://github.com/microsoft/STL/issues/2320
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", static_cast<int>(static_cast<char>(byte)));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_CHAR; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstr.data());
+		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#04X}" : L"{:d}", static_cast<int>(static_cast<char>(byte))).data());
 }
 
-void CHexDlgDataInterp::ShowNAME_UCHAR(BYTE byte)const
+void CHexDlgDataInterp::ShowValueUCHAR(BYTE byte)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", byte);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_UCHAR; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstr.data());
+		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#04X}" : L"{:d}", byte).data());
 }
 
-void CHexDlgDataInterp::ShowNAME_SHORT(WORD word)const
+void CHexDlgDataInterp::ShowValueSHORT(WORD word)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", static_cast<short>(word));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_SHORT; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstr.data());
+		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#06X}" : L"{:d}", static_cast<short>(word)).data());
 }
 
-void CHexDlgDataInterp::ShowNAME_USHORT(WORD word)const
+void CHexDlgDataInterp::ShowValueUSHORT(WORD word)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", word);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_USHORT; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstr.data());
+		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#06X}" : L"{:d}", word).data());
 }
 
-void CHexDlgDataInterp::ShowNAME_LONG(DWORD dword)const
+void CHexDlgDataInterp::ShowValueLONG(DWORD dword)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", static_cast<int>(dword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_LONG; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstr.data());
+		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#010X}" : L"{:d}", static_cast<int>(dword)).data());
 }
 
-void CHexDlgDataInterp::ShowNAME_ULONG(DWORD dword)const
+void CHexDlgDataInterp::ShowValueULONG(DWORD dword)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", dword);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_ULONG; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstr.data());
+		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#010X}" : L"{:d}", dword).data());
 }
 
-void CHexDlgDataInterp::ShowNAME_FLOAT(DWORD dword)const
+void CHexDlgDataInterp::ShowValueFLOAT(DWORD dword)const
 {
-	const auto wstr = std::format(L"{:.9e}", std::bit_cast<float>(dword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_FLOAT; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstr.data());
+		iter->pProp->SetValue(std::format(L"{:.9e}", std::bit_cast<float>(dword)).data());
 }
 
-void CHexDlgDataInterp::ShowNAME_TIME32(DWORD dword)const
+void CHexDlgDataInterp::ShowValueTIME32(DWORD dword)const
 {
 	std::wstring wstrTime = L"N/A";
 
@@ -558,7 +894,7 @@ void CHexDlgDataInterp::ShowNAME_TIME32(DWORD dword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterp::ShowNAME_MSDOSTIME(DWORD dword)const
+void CHexDlgDataInterp::ShowValueMSDOSTIME(DWORD dword)const
 {
 	std::wstring wstrTime = L"N/A";
 	FILETIME ftMSDOS;
@@ -574,7 +910,7 @@ void CHexDlgDataInterp::ShowNAME_MSDOSTIME(DWORD dword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterp::ShowNAME_MSDTTMTIME(DWORD dword)const
+void CHexDlgDataInterp::ShowValueMSDTTMTIME(DWORD dword)const
 {
 	//Microsoft UDTTM time (as used by Microsoft Compound Document format)
 	std::wstring wstrTime = L"N/A";
@@ -602,31 +938,28 @@ void CHexDlgDataInterp::ShowNAME_MSDTTMTIME(DWORD dword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterp::ShowNAME_LONGLONG(QWORD qword)const
+void CHexDlgDataInterp::ShowValueLONGLONG(QWORD qword)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", static_cast<long long>(qword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_LONGLONG; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstr.data());
+		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#018X}" : L"{:d}", static_cast<long long>(qword)).data());
 }
 
-void CHexDlgDataInterp::ShowNAME_ULONGLONG(QWORD qword)const
+void CHexDlgDataInterp::ShowValueULONGLONG(QWORD qword)const
 {
-	const auto wstr = std::format(m_fShowAsHex ? L"{:#X}" : L"{:d}", qword);
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_ULONGLONG; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstr.data());
+		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#018X}" : L"{:d}", qword).data());
 }
 
-void CHexDlgDataInterp::ShowNAME_DOUBLE(QWORD qword)const
+void CHexDlgDataInterp::ShowValueDOUBLE(QWORD qword)const
 {
-	const auto wstr = std::format(L"{:.18e}", std::bit_cast<double>(qword));
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_DOUBLE; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstr.data());
+		iter->pProp->SetValue(std::format(L"{:.18e}", std::bit_cast<double>(qword)).data());
 }
 
-void CHexDlgDataInterp::ShowNAME_TIME64(QWORD qword)const
+void CHexDlgDataInterp::ShowValueTIME64(QWORD qword)const
 {
 	std::wstring wstrTime = L"N/A";
 
@@ -656,16 +989,14 @@ void CHexDlgDataInterp::ShowNAME_TIME64(QWORD qword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterp::ShowNAME_FILETIME(QWORD qword)const
+void CHexDlgDataInterp::ShowValueFILETIME(QWORD qword)const
 {
-	std::wstring wstrTime = FileTimeToString(*reinterpret_cast<const FILETIME*>(&qword), m_pHexCtrl->GetDateInfo());
-
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_FILETIME; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstrTime.data());
+		iter->pProp->SetValue(FileTimeToString(std::bit_cast<FILETIME>(qword), m_pHexCtrl->GetDateInfo()).data());
 }
 
-void CHexDlgDataInterp::ShowNAME_OLEDATETIME(QWORD qword)const
+void CHexDlgDataInterp::ShowValueOLEDATETIME(QWORD qword)const
 {
 	//OLE (including MS Office) date/time
 	//Implemented using an 8-byte floating-point number. Days are represented as whole number increments starting with 30 December 1899, midnight as time zero.
@@ -686,7 +1017,7 @@ void CHexDlgDataInterp::ShowNAME_OLEDATETIME(QWORD qword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterp::ShowNAME_JAVATIME(QWORD qword)const
+void CHexDlgDataInterp::ShowValueJAVATIME(QWORD qword)const
 {
 	//Javatime (signed)
 	//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC
@@ -705,26 +1036,25 @@ void CHexDlgDataInterp::ShowNAME_JAVATIME(QWORD qword)const
 	ftJavaTime.dwHighDateTime = Time.HighPart;
 	ftJavaTime.dwLowDateTime = Time.LowPart;
 
-	std::wstring wstrTime = FileTimeToString(ftJavaTime, m_pHexCtrl->GetDateInfo());
-
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_JAVATIME; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(wstrTime.data());
+		iter->pProp->SetValue(FileTimeToString(ftJavaTime, m_pHexCtrl->GetDateInfo()).data());
 }
 
-void CHexDlgDataInterp::ShowNAME_GUID(const UDQWORD& dqword)const
+void CHexDlgDataInterp::ShowValueGUID(const UDQWORD& dqword)const
 {
-	const auto wstr = std::format(L"{{{:0>8x}-{:0>4x}-{:0>4x}-{:0>2x}{:0>2x}-{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}}}",
-		dqword.gGUID.Data1, dqword.gGUID.Data2, dqword.gGUID.Data3, dqword.gGUID.Data4[0],
-		dqword.gGUID.Data4[1], dqword.gGUID.Data4[2], dqword.gGUID.Data4[3], dqword.gGUID.Data4[4],
-		dqword.gGUID.Data4[5], dqword.gGUID.Data4[6], dqword.gGUID.Data4[7]);
-
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_GUID; }); iter != m_vecProp.end())
+	{
+		const auto wstr = std::format(L"{{{:0>8x}-{:0>4x}-{:0>4x}-{:0>2x}{:0>2x}-{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}}}",
+			dqword.gGUID.Data1, dqword.gGUID.Data2, dqword.gGUID.Data3, dqword.gGUID.Data4[0],
+			dqword.gGUID.Data4[1], dqword.gGUID.Data4[2], dqword.gGUID.Data4[3], dqword.gGUID.Data4[4],
+			dqword.gGUID.Data4[5], dqword.gGUID.Data4[6], dqword.gGUID.Data4[7]);
 		iter->pProp->SetValue(wstr.data());
+	}
 }
 
-void CHexDlgDataInterp::ShowNAME_GUIDTIME(const UDQWORD& dqword)const
+void CHexDlgDataInterp::ShowValueGUIDTIME(const UDQWORD& dqword)const
 {
 	//Guid v1 Datetime UTC
 	//The time structure within the NAME_GUID.
@@ -764,364 +1094,15 @@ void CHexDlgDataInterp::ShowNAME_GUIDTIME(const UDQWORD& dqword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterp::ShowNAME_SYSTEMTIME(const UDQWORD& dqword)const
+void CHexDlgDataInterp::ShowValueSYSTEMTIME(const UDQWORD& dqword)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_SYSTEMTIME; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(SystemTimeToString(std::bit_cast<SYSTEMTIME>(dqword), m_pHexCtrl->GetDateInfo()).data());
 }
 
-bool CHexDlgDataInterp::SetDataNAME_BINARY(const std::wstring& wstr)const
+void CHexDlgDataInterp::UpdateHexCtrl()const
 {
-	if (wstr.size() != 8 || wstr.find_first_not_of(L"01") != std::wstring_view::npos)
-		return false;
-
-	bool fSuccess;
-	UCHAR uchData;
-	if (fSuccess = wstr2num(wstr, uchData, 2); fSuccess)
-		SetTData(uchData);
-
-	return fSuccess;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_CHAR(const std::wstring& wstr)const
-{
-	bool fSuccess;
-	CHAR chData;
-	if (fSuccess = wstr2num(wstr, chData); fSuccess)
-		SetTData(chData);
-
-	return fSuccess;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_UCHAR(const std::wstring& wstr)const
-{
-	bool fSuccess;
-	UCHAR uchData;
-	if (fSuccess = wstr2num(wstr, uchData); fSuccess)
-		SetTData(uchData);
-
-	return fSuccess;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_SHORT(const std::wstring& wstr)const
-{
-	bool fSuccess;
-	SHORT shData;
-	if (fSuccess = wstr2num(wstr, shData); fSuccess)
-		SetTData(shData);
-
-	return fSuccess;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_USHORT(const std::wstring& wstr)const
-{
-	bool fSuccess;
-	USHORT ushData;
-	if (fSuccess = wstr2num(wstr, ushData); fSuccess)
-		SetTData(ushData);
-
-	return fSuccess;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_LONG(const std::wstring& wstr)const
-{
-	bool fSuccess;
-	LONG lData;
-	if (fSuccess = wstr2num(wstr, lData); fSuccess)
-		SetTData(lData);
-
-	return fSuccess;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_ULONG(const std::wstring& wstr)const
-{
-	bool fSuccess;
-	ULONG ulData;
-	if (fSuccess = wstr2num(wstr, ulData); fSuccess)
-		SetTData(ulData);
-
-	return fSuccess;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_LONGLONG(const std::wstring& wstr)const
-{
-	bool fSuccess;
-	LONGLONG llData;
-	if (fSuccess = wstr2num(wstr, llData); fSuccess)
-		SetTData(llData);
-
-	return fSuccess;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_ULONGLONG(const std::wstring& wstr)const
-{
-	bool fSuccess;
-	ULONGLONG ullData;
-	if (fSuccess = wstr2num(wstr, ullData); fSuccess)
-		SetTData(ullData);
-
-	return fSuccess;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_FLOAT(const std::wstring& wstr)const
-{
-	bool fSuccess;
-	float fl;
-	if (fSuccess = wstr2num(wstr, fl); fSuccess)
-		SetTData(fl);
-
-	return fSuccess;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_DOUBLE(const std::wstring& wstr)const
-{
-	bool fSuccess;
-	double dd;
-	if (fSuccess = wstr2num(wstr, dd); fSuccess)
-		SetTData(dd);
-
-	return fSuccess;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_TIME32T(std::wstring_view wstr)const
-{
-	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
-	if (!optSysTime)
-		return false;
-
-	//Unix times are signed but value before 1st January 1970 is not considered valid
-	//This is apparently because early complilers didn't support unsigned types. _mktime32() has the same limit
-	if (optSysTime->wYear < 1970)
-		return false;
-
-	FILETIME ftTime;
-	if (!SystemTimeToFileTime(&*optSysTime, &ftTime))
-		return false;
-
-	//Convert ticks to seconds and adjust epoch
-	LARGE_INTEGER lTicks;
-	lTicks.HighPart = ftTime.dwHighDateTime;
-	lTicks.LowPart = ftTime.dwLowDateTime;
-	lTicks.QuadPart /= m_uFTTicksPerSec;
-	lTicks.QuadPart -= m_ullUnixEpochDiff;
-
-	if (lTicks.QuadPart < LONG_MAX)
-	{
-		LONG lTime32 = static_cast<LONG>(lTicks.QuadPart);
-
-		if (m_fBigEndian)
-			lTime32 = _byteswap_ulong(lTime32);
-
-		SetIHexTData(*m_pHexCtrl, m_ullOffset, lTime32);
-	}
-
-	return true;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_TIME64T(std::wstring_view wstr)const
-{
-	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
-	if (!optSysTime)
-		return false;
-
-	//Unix times are signed but value before 1st January 1970 is not considered valid
-	//This is apparently because early complilers didn't support unsigned types. _mktime64() has the same limit
-	if (optSysTime->wYear < 1970)
-		return false;
-
-	FILETIME ftTime;
-	if (!SystemTimeToFileTime(&*optSysTime, &ftTime))
-		return false;
-
-	//Convert ticks to seconds and adjust epoch
-	LARGE_INTEGER lTicks;
-	lTicks.HighPart = ftTime.dwHighDateTime;
-	lTicks.LowPart = ftTime.dwLowDateTime;
-	lTicks.QuadPart /= m_uFTTicksPerSec;
-	lTicks.QuadPart -= m_ullUnixEpochDiff;
-	auto llTime64 = static_cast<LONGLONG>(lTicks.QuadPart);
-
-	if (m_fBigEndian)
-		llTime64 = _byteswap_uint64(llTime64);
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, llTime64);
-
-	return true;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_FILETIME(std::wstring_view wstr)const
-{
-	const auto optFileTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
-	if (!optFileTime)
-		return false;
-
-	ULARGE_INTEGER stLITime;
-	stLITime.LowPart = optFileTime.value().dwLowDateTime;
-	stLITime.HighPart = optFileTime.value().dwHighDateTime;
-
-	if (m_fBigEndian)
-		stLITime.QuadPart = _byteswap_uint64(stLITime.QuadPart);
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, stLITime.QuadPart);
-
-	return true;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_OLEDATETIME(std::wstring_view wstr)const
-{
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
-	if (!optSysTime)
-		return false;
-
-	const COleDateTime dt(*optSysTime);
-	if (dt.GetStatus() != COleDateTime::valid)
-		return false;
-
-	ULONGLONG ullValue;
-	std::memcpy(&ullValue, &dt.m_dt, sizeof(dt.m_dt));
-
-	if (m_fBigEndian)
-		ullValue = _byteswap_uint64(ullValue);
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, ullValue);
-
-	return true;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_JAVATIME(std::wstring_view wstr)const
-{
-	const auto optFileTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
-	if (!optFileTime)
-		return false;
-
-	//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC
-	LARGE_INTEGER lJavaTicks;
-	lJavaTicks.HighPart = optFileTime.value().dwHighDateTime;
-	lJavaTicks.LowPart = optFileTime.value().dwLowDateTime;
-
-	LARGE_INTEGER lEpochTicks;
-	lEpochTicks.HighPart = m_ulFileTime1970_HIGH;
-	lEpochTicks.LowPart = m_ulFileTime1970_LOW;
-
-	LONGLONG llDiffTicks;
-	if (lEpochTicks.QuadPart > lJavaTicks.QuadPart)
-		llDiffTicks = -(lEpochTicks.QuadPart - lJavaTicks.QuadPart);
-	else
-		llDiffTicks = lJavaTicks.QuadPart - lEpochTicks.QuadPart;
-
-	LONGLONG llDiffMillis = llDiffTicks / m_uFTTicksPerMS;
-
-	if (m_fBigEndian)
-		llDiffMillis = _byteswap_uint64(llDiffMillis);
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, llDiffMillis);
-
-	return true;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_MSDOSTIME(std::wstring_view wstr)const
-{
-	const auto optFileTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
-	if (!optFileTime)
-		return false;
-
-	UMSDOSDATETIME msdosDateTime;
-	if (!FileTimeToDosDateTime(&*optFileTime, &msdosDateTime.TimeDate.wDate, &msdosDateTime.TimeDate.wTime))
-		return false;
-
-	//Note: Big-endian is not currently supported. This has never existed in the "wild".
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, msdosDateTime.dwTimeDate);
-
-	return true;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_MSDTTMTIME(std::wstring_view wstr)const
-{
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
-	if (!optSysTime)
-		return false;
-
-	//Microsoft UDTTM time (as used by Microsoft Compound Document format)
-	UDTTM dttm;
-	dttm.components.year = optSysTime->wYear - 1900;
-	dttm.components.month = optSysTime->wMonth;
-	dttm.components.weekday = optSysTime->wDayOfWeek;
-	dttm.components.dayofmonth = optSysTime->wDay;
-	dttm.components.hour = optSysTime->wHour;
-	dttm.components.minute = optSysTime->wMinute;
-
-	//Note: Big-endian is not currently supported. This has never existed in the "wild".
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, dttm.dwValue);
-
-	return true;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_SYSTEMTIME(std::wstring_view wstr)const
-{
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
-	if (!optSysTime)
-		return false;
-
-	//Note: Big-endian is not currently supported. This has never existed in the "wild".
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, *optSysTime);
-
-	return true;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_GUIDTIME(std::wstring_view wstr)const
-{
-	//This time is within NAME_GUID structure, and it depends on it.
-	//We can not just set a NAME_GUIDTIME for data range if it's not 
-	//a valid NAME_GUID range, so checking first.
-
-	auto dqword = GetIHexTData<UDQWORD>(*m_pHexCtrl, m_ullOffset);
-	const unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
-	if (unGuidVersion != 1)
-		return false;
-
-	//RFC4122: The timestamp is a 60-bit value.  For UUID version 1, this is represented by Coordinated Universal Time (UTC) as a count of 100-
-	//nanosecond intervals since 00:00:00.00, 15 October 1582 (the date of Gregorian reform to the Christian calendar).
-	//
-	//Both FILETIME and GUID time are based upon 100ns intervals
-	//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Add 6653 days to convert to GUID time
-	const auto optFTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
-	if (!optFTime)
-		return false;
-
-	const auto ftTime = optFTime.value();
-
-	LARGE_INTEGER qwGUIDTime;
-	qwGUIDTime.HighPart = ftTime.dwHighDateTime;
-	qwGUIDTime.LowPart = ftTime.dwLowDateTime;
-
-	ULARGE_INTEGER ullAddTicks;
-	ullAddTicks.QuadPart = static_cast<QWORD>(m_uFTTicksPerSec) * static_cast<QWORD>(m_uSecondsPerHour)
-		* static_cast<QWORD>(m_uHoursPerDay) * static_cast<QWORD>(m_uFileTime1582OffsetDays);
-	qwGUIDTime.QuadPart += ullAddTicks.QuadPart;
-
-	//Encode version 1 GUID with time
-	dqword.gGUID.Data1 = qwGUIDTime.LowPart;
-	dqword.gGUID.Data2 = qwGUIDTime.HighPart & 0xffff;
-	dqword.gGUID.Data3 = ((qwGUIDTime.HighPart >> 16) & 0x0fff) | 0x1000; //Including Type 1 flag (0x1000)
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, dqword);
-
-	return true;
-}
-
-bool CHexDlgDataInterp::SetDataNAME_GUID(const std::wstring& wstr)const
-{
-	GUID guid;
-	if (IIDFromString(wstr.data(), &guid) != S_OK)
-		return false;
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, guid);
-
-	return true;
+	if (m_pHexCtrl && m_pHexCtrl->IsCreated())
+		m_pHexCtrl->Redraw();
 }
