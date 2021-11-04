@@ -87,6 +87,8 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL, &CHexDlgSearch::OnButtonReplaceAll)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_CHECK_SEL, &CHexDlgSearch::OnCheckSel)
 	ON_CBN_SELCHANGE(IDC_HEXCTRL_SEARCH_COMBO_MODE, &CHexDlgSearch::OnComboModeSelChange)
+	ON_CBN_EDITUPDATE(IDC_HEXCTRL_SEARCH_COMBO_SEARCH, &CHexDlgSearch::UpdateSearchReplaceControls)
+	ON_CBN_EDITUPDATE(IDC_HEXCTRL_SEARCH_COMBO_REPLACE, &CHexDlgSearch::UpdateSearchReplaceControls)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListItemChanged)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListRClick)
@@ -490,10 +492,7 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 	{
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 		m_stComboSearch.SetFocus();
-		const auto fMutable = pHexCtrl->IsMutable();
-		m_stComboReplace.EnableWindow(fMutable);
-		GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE)->EnableWindow(fMutable);
-		GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL)->EnableWindow(fMutable);
+		UpdateSearchReplaceControls();
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
@@ -588,6 +587,19 @@ void CHexDlgSearch::OnComboModeSelChange()
 	m_stCheckWcard.EnableWindow(fWildcard);
 	m_stCheckBE.EnableWindow(fBigEndian);
 	m_stCheckMatchC.EnableWindow(fMatchCase);
+
+	//Assist user with required date format.
+	if (eMode == EMode::SEARCH_FILETIME)
+	{
+		const auto wstr = GetDateFormatString(GetHexCtrl()->GetDateInfo());
+		m_stComboSearch.SetCueBanner(wstr.data());
+		m_stComboReplace.SetCueBanner(wstr.data());
+	}
+	else
+	{
+		m_stComboSearch.SetCueBanner(L"");
+		m_stComboReplace.SetCueBanner(L"");
+	}
 }
 
 BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
@@ -1599,4 +1611,24 @@ FOUND:
 			pStThread->pDlgClbk->SetProgress(pStThread->ullStart);
 		}
 	}
+}
+
+void CHexDlgSearch::UpdateSearchReplaceControls()
+{		
+	const auto fMutable = GetHexCtrl()->IsMutable();
+	m_stComboReplace.EnableWindow(fMutable);
+	
+	CStringW wstrTextSearch;
+	m_stComboSearch.GetWindowTextW(wstrTextSearch);
+	const auto fSearchEnabled = !wstrTextSearch.IsEmpty();
+	
+	CStringW wstrTextReplace;
+	m_stComboReplace.GetWindowTextW(wstrTextReplace);
+	const auto fReplaceEnabled = fMutable && fSearchEnabled && !wstrTextReplace.IsEmpty();
+
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCH_F)->EnableWindow(fSearchEnabled);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCH_B)->EnableWindow(fSearchEnabled);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_FINDALL)->EnableWindow(fSearchEnabled);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE)->EnableWindow(fReplaceEnabled);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL)->EnableWindow(fReplaceEnabled);
 }

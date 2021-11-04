@@ -73,6 +73,7 @@ namespace HEXCTRL::INTERNAL
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
 		template<std::uint16_t uiType>
 		void ThreadRun(STHREADRUN* pStThread);
+		void UpdateSearchReplaceControls();
 		DECLARE_MESSAGE_MAP()
 	private:
 		IHexCtrl* m_pHexCtrl { };
