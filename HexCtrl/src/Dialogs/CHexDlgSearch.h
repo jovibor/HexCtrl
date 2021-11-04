@@ -47,7 +47,6 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnButtonReplaceAll();
 		afx_msg void OnCheckSel();
 		afx_msg void OnComboModeSelChange();
-		afx_msg void UpdateSearchReplaceControls();
 		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnOK()override;
@@ -74,6 +73,7 @@ namespace HEXCTRL::INTERNAL
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
 		template<std::uint16_t uiType>
 		void ThreadRun(STHREADRUN* pStThread);
+		void UpdateSearchReplaceControls();
 		DECLARE_MESSAGE_MAP()
 	private:
 		IHexCtrl* m_pHexCtrl { };
