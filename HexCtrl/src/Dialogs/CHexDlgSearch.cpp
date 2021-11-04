@@ -588,39 +588,18 @@ void CHexDlgSearch::OnComboModeSelChange()
 	m_stCheckBE.EnableWindow(fBigEndian);
 	m_stCheckMatchC.EnableWindow(fMatchCase);
 
-	//Assist user with required date format
+	//Assist user with required date format.
 	if (eMode == EMode::SEARCH_FILETIME)
 	{
-		DWORD dwDateFormat = GetHexCtrl()->GetDateInfo();
-		m_stComboSearch.SetCueBanner(GetDateFormatString(dwDateFormat).data());
-		m_stComboReplace.SetCueBanner(GetDateFormatString(dwDateFormat).data());
+		const auto wstr = GetDateFormatString(GetHexCtrl()->GetDateInfo());
+		m_stComboSearch.SetCueBanner(wstr.data());
+		m_stComboReplace.SetCueBanner(wstr.data());
 	}
 	else
 	{
 		m_stComboSearch.SetCueBanner(L"");
 		m_stComboReplace.SetCueBanner(L"");
-
 	}
-}
-
-void CHexDlgSearch::UpdateSearchReplaceControls()
-{		
-	const auto fMutable = GetHexCtrl()->IsMutable();
-	m_stComboReplace.EnableWindow(fMutable);
-	
-	CStringW wstrTextSearch;
-	m_stComboSearch.GetWindowTextW(wstrTextSearch);
-	bool bSearchEnabled = !wstrTextSearch.IsEmpty();
-	
-	CStringW wstrTextReplace;
-	m_stComboReplace.GetWindowTextW(wstrTextReplace);
-	bool bReplaceEnabled = fMutable && bSearchEnabled && !wstrTextReplace.IsEmpty();
-
-	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCH_F)->EnableWindow(bSearchEnabled);
-	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCH_B)->EnableWindow(bSearchEnabled);
-	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_FINDALL)->EnableWindow(bSearchEnabled);
-	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE)->EnableWindow(bReplaceEnabled);
-	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL)->EnableWindow(bReplaceEnabled);
 }
 
 BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
@@ -1632,4 +1611,24 @@ FOUND:
 			pStThread->pDlgClbk->SetProgress(pStThread->ullStart);
 		}
 	}
+}
+
+void CHexDlgSearch::UpdateSearchReplaceControls()
+{		
+	const auto fMutable = GetHexCtrl()->IsMutable();
+	m_stComboReplace.EnableWindow(fMutable);
+	
+	CStringW wstrTextSearch;
+	m_stComboSearch.GetWindowTextW(wstrTextSearch);
+	const auto fSearchEnabled = !wstrTextSearch.IsEmpty();
+	
+	CStringW wstrTextReplace;
+	m_stComboReplace.GetWindowTextW(wstrTextReplace);
+	const auto fReplaceEnabled = fMutable && fSearchEnabled && !wstrTextReplace.IsEmpty();
+
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCH_F)->EnableWindow(fSearchEnabled);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCH_B)->EnableWindow(fSearchEnabled);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_FINDALL)->EnableWindow(fSearchEnabled);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE)->EnableWindow(fReplaceEnabled);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL)->EnableWindow(fReplaceEnabled);
 }
