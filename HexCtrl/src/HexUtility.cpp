@@ -194,12 +194,14 @@ namespace HEXCTRL::INTERNAL
 
 		//Find time seperator (if present).
 		if (const auto nPos = wstrDateTimeCooked.find(L' '); nPos != std::wstring::npos)
+		{
 			wstrDateTimeCooked = wstrDateTimeCooked.substr(nPos + 1);
 
-		//Parse time component.
-		if (swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%2hu/%3hu", &stSysTime.wHour, &stSysTime.wMinute,
-			&stSysTime.wSecond, &stSysTime.wMilliseconds) != 4)
-			return std::nullopt;
+			//Parse time component HH:MM:SS.mmm
+			if (swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%2hu/%3hu", &stSysTime.wHour, &stSysTime.wMinute,
+				&stSysTime.wSecond, &stSysTime.wMilliseconds) != 4)
+				return std::nullopt;
+		}
 
 		return stSysTime;
 	}
