@@ -179,7 +179,7 @@ namespace HEXCTRL::INTERNAL
 		case 0:	//Month-Day-Year
 			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &stSysTime.wMonth, &stSysTime.wDay, &stSysTime.wYear);
 			break;
-		case 1: //Day-Month-Year (default)
+		case 1: //Day-Month-Year
 			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &stSysTime.wDay, &stSysTime.wMonth, &stSysTime.wYear);
 			break;
 		case 2:	//Year-Month-Day 
@@ -192,7 +192,7 @@ namespace HEXCTRL::INTERNAL
 		if (iParsedArgs != 3)
 			return std::nullopt;
 
-		//Find time seperator (if present).
+		//Find time seperator, if present.
 		if (const auto nPos = wstrDateTimeCooked.find(L' '); nPos != std::wstring::npos)
 		{
 			wstrDateTimeCooked = wstrDateTimeCooked.substr(nPos + 1);
@@ -206,58 +206,60 @@ namespace HEXCTRL::INTERNAL
 		return stSysTime;
 	}
 
-	auto FileTimeToString(const FILETIME& stFileTime, DWORD dwDateFormat)->std::wstring
+	auto FileTimeToString(const FILETIME& stFileTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring
 	{
 		std::wstring wstrTime;
 		if (SYSTEMTIME stSysTime { }; FileTimeToSystemTime(&stFileTime, &stSysTime) != FALSE)
-			wstrTime = SystemTimeToString(stSysTime, dwDateFormat);
+			wstrTime = SystemTimeToString(stSysTime, dwFormat, wchSepar);
+		else
+			wstrTime = L"N/A";
 
 		return wstrTime;
 	}
 
-	auto SystemTimeToString(const SYSTEMTIME& stSysTime, DWORD dwDateFormat)-> std::wstring
+	auto SystemTimeToString(const SYSTEMTIME& stSysTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring
 	{
-		if (dwDateFormat > 2 || stSysTime.wDay == 0 || stSysTime.wDay > 31 || stSysTime.wMonth == 0 || stSysTime.wMonth > 12
+		if (dwFormat > 2 || stSysTime.wDay == 0 || stSysTime.wDay > 31 || stSysTime.wMonth == 0 || stSysTime.wMonth > 12
 			|| stSysTime.wYear > 9999 || stSysTime.wHour > 23 || stSysTime.wMinute > 59 || stSysTime.wSecond > 59
 			|| stSysTime.wMilliseconds > 999)
 			return L"N/A";
 
 		std::wstring_view wstrFmt;
-		switch (dwDateFormat)
+		switch (dwFormat)
 		{
 		case 0:	//0:Month/Day/Year HH:MM:SS.mmm
-			wstrFmt = L"{1:02d}/{0:02d}/{2} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
+			wstrFmt = L"{1:02d}{7}{0:02d}{7}{2} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
 			break;
 		case 1: //1:Day/Month/Year HH:MM:SS.mmm
-			wstrFmt = L"{0:02d}/{1:02d}/{2} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
+			wstrFmt = L"{0:02d}{7}{1:02d}{7}{2} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
 			break;
 		case 2: //2:Year/Month/Day HH:MM:SS.mmm
-			wstrFmt = L"{2}/{1:02d}/{0:02d} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
+			wstrFmt = L"{2}{7}{1:02d}{7}{0:02d} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
 			break;
 		}
 
 		return std::format(wstrFmt, stSysTime.wDay, stSysTime.wMonth, stSysTime.wYear,
-			stSysTime.wHour, stSysTime.wMinute, stSysTime.wSecond, stSysTime.wMilliseconds);
+			stSysTime.wHour, stSysTime.wMinute, stSysTime.wSecond, stSysTime.wMilliseconds, wchSepar);
 	}
 
-	auto GetDateFormatString(DWORD dwDateFormat)->std::wstring
+	auto GetDateFormatString(DWORD dwDateFormat, wchar_t wcDateSeparator)->std::wstring
 	{
-		std::wstring wstrFormat;
+		std::wstring_view wstrFmt;
 		switch (dwDateFormat)
 		{
 		case 0:	//Month-Day-Year
-			wstrFormat = L"MM/DD/YYYY HH:MM:SS.mmm";
+			wstrFmt = L"MM{0}DD{0}YYYY HH:MM:SS.mmm";
 			break;
 		case 1: //Day-Month-Year
-			wstrFormat = L"DD/MM/YYYY HH:MM:SS.mmm";
+			wstrFmt = L"DD{0}MM{0}YYYY HH:MM:SS.mmm";
 			break;
 		case 2:	//Year-Month-Day
-			wstrFormat = L"YYYY/MM/DD HH:MM:SS.mmm";
+			wstrFmt = L"YYYY{0}MM{0}DD HH:MM:SS.mmm";
 			break;
 		default:
 			assert(true);
 			break;
 		}
-		return wstrFormat;
+		return std::format(wstrFmt, wcDateSeparator);
 	}
 }

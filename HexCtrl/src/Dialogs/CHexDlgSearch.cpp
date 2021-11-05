@@ -591,7 +591,8 @@ void CHexDlgSearch::OnComboModeSelChange()
 	//Assist user with required date format.
 	if (eMode == EMode::SEARCH_FILETIME)
 	{
-		const auto wstr = GetDateFormatString(GetHexCtrl()->GetDateInfo());
+		const auto [dwFormat, wchSepar] = GetHexCtrl()->GetDateInfo();
+		const auto wstr = GetDateFormatString(dwFormat, wchSepar);
 		m_stComboSearch.SetCueBanner(wstr.data());
 		m_stComboReplace.SetCueBanner(wstr.data());
 	}
@@ -1155,13 +1156,13 @@ bool CHexDlgSearch::PrepareFILETIME()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	DWORD dwDateFormat { GetHexCtrl()->GetDateInfo() };
+	const auto [dwFormat, wchSepar] = GetHexCtrl()->GetDateInfo();
 
-	const auto optFTSearch = StringToFileTime(m_wstrTextSearch, dwDateFormat);
-	const auto optFTReplace = StringToFileTime(m_wstrTextReplace, dwDateFormat);
+	const auto optFTSearch = StringToFileTime(m_wstrTextSearch, dwFormat);
+	const auto optFTReplace = StringToFileTime(m_wstrTextReplace, dwFormat);
 	if (!optFTSearch || (m_fReplace && !optFTReplace))
 	{
-		std::wstring wstr = L"Wrong FILETIME format.\r\nA correct format is: " + GetDateFormatString(dwDateFormat);
+		std::wstring wstr = L"Wrong FILETIME format.\r\nA correct format is: " + GetDateFormatString(dwFormat, wchSepar);
 		MessageBoxW(wstr.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 
 		return false;
@@ -1614,14 +1615,14 @@ FOUND:
 }
 
 void CHexDlgSearch::UpdateSearchReplaceControls()
-{		
+{
 	const auto fMutable = GetHexCtrl()->IsMutable();
 	m_stComboReplace.EnableWindow(fMutable);
-	
+
 	CStringW wstrTextSearch;
 	m_stComboSearch.GetWindowTextW(wstrTextSearch);
 	const auto fSearchEnabled = !wstrTextSearch.IsEmpty();
-	
+
 	CStringW wstrTextReplace;
 	m_stComboReplace.GetWindowTextW(wstrTextReplace);
 	const auto fReplaceEnabled = fMutable && fSearchEnabled && !wstrTextReplace.IsEmpty();

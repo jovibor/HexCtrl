@@ -44,18 +44,19 @@ namespace HEXCTRL::INTERNAL
 	[[nodiscard]] std::wstring str2wstr(std::string_view str, UINT uCodePage = CP_UTF8);
 
 	//Convert string into FILETIME struct.
-	[[nodiscard]] auto StringToFileTime(std::wstring_view wstr, DWORD dwDateFormat)->std::optional<FILETIME>;
+	[[nodiscard]] auto StringToFileTime(std::wstring_view wstr, DWORD dwFormat)->std::optional<FILETIME>;
 
 	//Convert string into SYSTEMTIME struct.
-	[[nodiscard]] auto StringToSystemTime(std::wstring_view wstr, DWORD dwDateFormat)->std::optional<SYSTEMTIME>;
+	[[nodiscard]] auto StringToSystemTime(std::wstring_view wstr, DWORD dwFormat)->std::optional<SYSTEMTIME>;
 
 	//Convert FILETIME struct to a readable string.
-	[[nodiscard]] auto FileTimeToString(const FILETIME& stFileTime, DWORD dwDateFormat)->std::wstring;
+	[[nodiscard]] auto FileTimeToString(const FILETIME& stFileTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring;
 
 	//Convert SYSTEMTIME struct to a readable string.
-	[[nodiscard]] auto SystemTimeToString(const SYSTEMTIME& stSysTime, DWORD dwDateFormat)->std::wstring;
+	[[nodiscard]] auto SystemTimeToString(const SYSTEMTIME& stSysTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring;
 
-	[[nodiscard]] auto GetDateFormatString(DWORD dwDateFormat)->std::wstring;
+	//String of date/time in given format with given date separator.
+	[[nodiscard]] auto GetDateFormatString(DWORD dwFormat, wchar_t wchSepar)->std::wstring;
 
 	//Get data from IHexCtrl's given offset converted to necessary type.
 	template<typename T>

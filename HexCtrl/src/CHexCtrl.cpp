@@ -377,6 +377,13 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_pScrollV->AddSibling(m_pScrollH.get());
 	m_pScrollH->AddSibling(m_pScrollV.get());
 
+	m_fCreated = true; //Main creation flag.
+
+	SetGroupMode(m_enGroupMode);
+	SetEncoding(-1);
+	SetConfig(L"");
+	SetDateInfo(0xFFFFFFFF, L'/');
+
 	//All dialogs are created after the main window, to set the parent window correctly.
 	m_pDlgBkmMgr->Create(IDD_HEXCTRL_BKMMGR, this, &*m_pBookmarks);
 	m_pDlgEncoding->Create(IDD_HEXCTRL_ENCODING, this, this);
@@ -386,12 +393,6 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this, this);
 	m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, this, this);
 	m_pBookmarks->Attach(this);
-	m_fCreated = true;
-
-	SetGroupMode(m_enGroupMode);
-	SetEncoding(-1);
-	SetConfig(L"");
-	SetDateInfo(0xFFFFFFFF);
 
 	return true;
 }
@@ -686,13 +687,12 @@ auto CHexCtrl::GetDataSize()const->ULONGLONG
 	return m_spnData.size();
 }
 
-DWORD CHexCtrl::GetDateInfo()const
+auto CHexCtrl::GetDateInfo()const->std::tuple<DWORD, wchar_t>
 {
 	assert(IsCreated());
-	if (!IsCreated())
-		return 0xFFFFFFFF;
 
-	return m_dwDateFormat;
+	//Returns defaults even if is not IsCreated.
+	return { m_dwDateFormat, m_wchDateSepar };
 }
 
 int CHexCtrl::GetEncoding()const
@@ -1719,19 +1719,20 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 	RecalcAll();
 }
 
-void CHexCtrl::SetDateInfo(DWORD dwDateFormat)
+void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
-	assert(dwDateFormat <= 2 || dwDateFormat == 0xFFFFFFFF);
-	if (dwDateFormat > 2 && dwDateFormat != 0xFFFFFFFF)
+	//dwFormat: -1 = User default, 0 = MMddYYYY, 1 = ddMMYYYY, 2 = YYYYMMdd
+	assert(dwFormat <= 2 || dwFormat == 0xFFFFFFFF);
+	if (dwFormat > 2 && dwFormat != 0xFFFFFFFF)
 		return;
 
-	if (dwDateFormat == 0xFFFFFFFF)
+	if (dwFormat == 0xFFFFFFFF)
 	{
-		//Determine current user locale specific date format.
+		//Determine current user locale-specific date format.
 		if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
 			reinterpret_cast<LPWSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat)) == 0)
 		{
@@ -1739,7 +1740,11 @@ void CHexCtrl::SetDateInfo(DWORD dwDateFormat)
 		}
 	}
 	else
-		m_dwDateFormat = dwDateFormat;
+		m_dwDateFormat = dwFormat;
+
+	if (wchSepar == L'\0')
+		wchSepar = L'/';
+	m_wchDateSepar = wchSepar;
 }
 
 void CHexCtrl::SetEncoding(int iCodePage)

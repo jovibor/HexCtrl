@@ -446,9 +446,9 @@ Returns currently set data size.
 
 ### [](#)GetDateInfo
 ```cpp
-DWORD GetDateInfo()const;
+GetDateInfo()const->std::tuple<DWORD, wchar_t>;
 ```
-Returns current [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate).
+Returns [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate), and date separator.
 
 ### [](#)GetEncoding
 ```cpp
@@ -629,9 +629,9 @@ Main method to set a data to display in read-only or mutable modes. Takes [`HEXD
 
 ## [](#)SetDateInfo
 ```cpp
-void SetDateInfo(DWORD dwDateFormat);
+void SetDateInfo(DWORD dwFormat, wchar_t wchSepar);
 ```
-Sets current [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate).
+Sets [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate), along with date separator.
 
 ### [](#)SetEncoding
 ```cpp

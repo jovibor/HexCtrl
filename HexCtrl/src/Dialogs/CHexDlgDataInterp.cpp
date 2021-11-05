@@ -217,33 +217,31 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"GUID v1 UTC time:", L"0"), EGroup::TIME, EName::NAME_GUIDTIME, ESize::SIZE_DQWORD, true);
 
 	m_stCtrlGrid.EnableHeaderCtrl(TRUE, L"Data type", L"Value");
-	HDITEMW hdItemPropGrid { };
-	hdItemPropGrid.mask = HDI_WIDTH;
-	hdItemPropGrid.cxy = 150;
+	HDITEMW hdItemPropGrid { .mask = HDI_WIDTH, .cxy = 150 };
 	m_stCtrlGrid.GetHeaderCtrl().SetItem(0, &hdItemPropGrid); //Property grid column size.
 
-		//Digits group
+	//Digits group.
 	auto pDigits = new CMFCPropertyGridProperty(L"Digits:");
 	for (const auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::DIGITS && !iter.fChild)
 			pDigits->AddSubItem(iter.pProp);
 	m_stCtrlGrid.AddProperty(pDigits);
 
-	//Floats group
+	//Floats group.
 	auto pFloats = new CMFCPropertyGridProperty(L"Floats:");
 	for (const auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::FLOAT && !iter.fChild)
 			pFloats->AddSubItem(iter.pProp);
 	m_stCtrlGrid.AddProperty(pFloats);
 
-	//Time group
+	//Time group.
 	auto pTime = new CMFCPropertyGridProperty(L"Time:");
 	for (const auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::TIME && !iter.fChild)
 			pTime->AddSubItem(iter.pProp);
 	m_stCtrlGrid.AddProperty(pTime);
 
-	//Miscellaneous group
+	//Miscellaneous group.
 	auto pMisc = new CMFCPropertyGridProperty(L"Misc:");
 	for (const auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::MISC && !iter.fChild)
@@ -261,6 +259,10 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 		}
 	m_stCtrlGrid.AddProperty(pMisc);
 
+	const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
+	m_dwDateFormat = dwFormat;
+	m_wchDateSepar = wchSepar;
+
 	return TRUE;
 }
 
@@ -275,9 +277,10 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 	{
 		if (m_pHexCtrl->IsCreated())
 		{
-			const auto wstrTitle = L"Date/Time format is: " + GetDateFormatString(m_pHexCtrl->GetDateInfo());
+			const auto wstrTitle = L"Date/Time format is: " + GetDateFormatString(m_dwDateFormat, m_wchDateSepar);
 			SetWindowTextW(wstrTitle.data()); //Update dialog title to reflect current date format.
-			InspectOffset(m_pHexCtrl->GetCaretPos());
+			if (m_pHexCtrl->IsDataSet())
+				InspectOffset(m_pHexCtrl->GetCaretPos());
 		}
 	}
 
@@ -567,7 +570,7 @@ bool CHexDlgDataInterp::SetDataDOUBLE(const std::wstring& wstr)const
 bool CHexDlgDataInterp::SetDataTIME32T(std::wstring_view wstr)const
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
+	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -589,7 +592,7 @@ bool CHexDlgDataInterp::SetDataTIME32T(std::wstring_view wstr)const
 
 	if (lTicks.QuadPart < LONG_MAX)
 	{
-		LONG lTime32 = static_cast<LONG>(lTicks.QuadPart);
+		auto lTime32 = static_cast<__time32_t>(lTicks.QuadPart);
 
 		if (m_fBigEndian)
 			lTime32 = _byteswap_ulong(lTime32);
@@ -603,7 +606,7 @@ bool CHexDlgDataInterp::SetDataTIME32T(std::wstring_view wstr)const
 bool CHexDlgDataInterp::SetDataTIME64T(std::wstring_view wstr)const
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
+	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -622,7 +625,7 @@ bool CHexDlgDataInterp::SetDataTIME64T(std::wstring_view wstr)const
 	lTicks.LowPart = ftTime.dwLowDateTime;
 	lTicks.QuadPart /= m_uFTTicksPerSec;
 	lTicks.QuadPart -= m_ullUnixEpochDiff;
-	auto llTime64 = static_cast<LONGLONG>(lTicks.QuadPart);
+	auto llTime64 = static_cast<__time64_t>(lTicks.QuadPart);
 
 	if (m_fBigEndian)
 		llTime64 = _byteswap_uint64(llTime64);
@@ -634,7 +637,7 @@ bool CHexDlgDataInterp::SetDataTIME64T(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataFILETIME(std::wstring_view wstr)const
 {
-	const auto optFileTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
+	const auto optFileTime = StringToFileTime(wstr, m_dwDateFormat);
 	if (!optFileTime)
 		return false;
 
@@ -652,7 +655,7 @@ bool CHexDlgDataInterp::SetDataFILETIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataOLEDATETIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
+	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -673,7 +676,7 @@ bool CHexDlgDataInterp::SetDataOLEDATETIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataJAVATIME(std::wstring_view wstr)const
 {
-	const auto optFileTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
+	const auto optFileTime = StringToFileTime(wstr, m_dwDateFormat);
 	if (!optFileTime)
 		return false;
 
@@ -704,7 +707,7 @@ bool CHexDlgDataInterp::SetDataJAVATIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wstr)const
 {
-	const auto optFileTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
+	const auto optFileTime = StringToFileTime(wstr, m_dwDateFormat);
 	if (!optFileTime)
 		return false;
 
@@ -721,7 +724,7 @@ bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
+	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -743,7 +746,7 @@ bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wstr)const
 
 bool CHexDlgDataInterp::SetDataSYSTEMTIME(std::wstring_view wstr)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_pHexCtrl->GetDateInfo());
+	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -770,7 +773,7 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wstr)const
 	//
 	//Both FILETIME and GUID time are based upon 100ns intervals
 	//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Add 6653 days to convert to GUID time
-	const auto optFTime = StringToFileTime(wstr, m_pHexCtrl->GetDateInfo());
+	const auto optFTime = StringToFileTime(wstr, m_dwDateFormat);
 	if (!optFTime)
 		return false;
 
@@ -869,24 +872,24 @@ void CHexDlgDataInterp::ShowValueTIME32(DWORD dword)const
 	std::wstring wstrTime = L"N/A";
 
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This is signed and wraps on 19 January 2038 
-	const auto lDiffSeconds = static_cast<LONG>(dword);
+	const auto lTime32 = static_cast<__time32_t>(dword);
 
 	//Unix times are signed and value before 1st January 1970 is not considered valid
 	//This is apparently because early complilers didn't support unsigned types. _mktime32() has the same limit
-	if (lDiffSeconds >= 0)
+	if (lTime32 >= 0)
 	{
 		//Add seconds from epoch time
 		LARGE_INTEGER Time;
 		Time.HighPart = m_ulFileTime1970_HIGH;
 		Time.LowPart = m_ulFileTime1970_LOW;
-		Time.QuadPart += static_cast<LONGLONG>(lDiffSeconds) * m_uFTTicksPerSec;
+		Time.QuadPart += static_cast<LONGLONG>(lTime32) * m_uFTTicksPerSec;
 
 		//Convert to FILETIME
 		FILETIME ftTime;
 		ftTime.dwHighDateTime = Time.HighPart;
 		ftTime.dwLowDateTime = Time.LowPart;
 
-		wstrTime = FileTimeToString(ftTime, m_pHexCtrl->GetDateInfo());
+		wstrTime = FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
@@ -902,7 +905,7 @@ void CHexDlgDataInterp::ShowValueMSDOSTIME(DWORD dword)const
 	msdosDateTime.dwTimeDate = dword;
 	if (DosDateTimeToFileTime(msdosDateTime.TimeDate.wDate, msdosDateTime.TimeDate.wTime, &ftMSDOS))
 	{
-		wstrTime = FileTimeToString(ftMSDOS, m_pHexCtrl->GetDateInfo());
+		wstrTime = FileTimeToString(ftMSDOS, m_dwDateFormat, m_wchDateSepar);
 	}
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
@@ -930,7 +933,7 @@ void CHexDlgDataInterp::ShowValueMSDTTMTIME(DWORD dword)const
 		stSysTime.wSecond = 0;
 		stSysTime.wMilliseconds = 0;
 
-		wstrTime = SystemTimeToString(stSysTime, m_pHexCtrl->GetDateInfo());
+		wstrTime = SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
@@ -964,24 +967,24 @@ void CHexDlgDataInterp::ShowValueTIME64(QWORD qword)const
 	std::wstring wstrTime = L"N/A";
 
 	//The number of seconds since midnight January 1st 1970 UTC (64-bit). This is signed
-	const auto llDiffSeconds = static_cast<LONGLONG>(qword);
+	const auto llTime64 = static_cast<__time64_t>(qword);
 
 	//Unix times are signed and value before 1st January 1970 is not considered valid
 	//This is apparently because early complilers didn't support unsigned types. _mktime64() has the same limit
-	if (llDiffSeconds >= 0)
+	if (llTime64 >= 0)
 	{
 		//Add seconds from epoch time
 		LARGE_INTEGER Time;
 		Time.HighPart = m_ulFileTime1970_HIGH;
 		Time.LowPart = m_ulFileTime1970_LOW;
-		Time.QuadPart += llDiffSeconds * m_uFTTicksPerSec;
+		Time.QuadPart += llTime64 * m_uFTTicksPerSec;
 
 		//Convert to FILETIME
 		FILETIME ftTime;
 		ftTime.dwHighDateTime = Time.HighPart;
 		ftTime.dwLowDateTime = Time.LowPart;
 
-		wstrTime = FileTimeToString(ftTime, m_pHexCtrl->GetDateInfo());
+		wstrTime = FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
@@ -993,7 +996,7 @@ void CHexDlgDataInterp::ShowValueFILETIME(QWORD qword)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_FILETIME; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(FileTimeToString(std::bit_cast<FILETIME>(qword), m_pHexCtrl->GetDateInfo()).data());
+		iter->pProp->SetValue(FileTimeToString(std::bit_cast<FILETIME>(qword), m_dwDateFormat, m_wchDateSepar).data());
 }
 
 void CHexDlgDataInterp::ShowValueOLEDATETIME(QWORD qword)const
@@ -1010,7 +1013,7 @@ void CHexDlgDataInterp::ShowValueOLEDATETIME(QWORD qword)const
 
 	SYSTEMTIME stSysTime { };
 	if (dt.GetAsSystemTime(stSysTime))
-		wstrTime = SystemTimeToString(stSysTime, m_pHexCtrl->GetDateInfo());
+		wstrTime = SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_OLEDATETIME; }); iter != m_vecProp.end())
@@ -1038,7 +1041,7 @@ void CHexDlgDataInterp::ShowValueJAVATIME(QWORD qword)const
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_JAVATIME; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(FileTimeToString(ftJavaTime, m_pHexCtrl->GetDateInfo()).data());
+		iter->pProp->SetValue(FileTimeToString(ftJavaTime, m_dwDateFormat, m_wchDateSepar).data());
 }
 
 void CHexDlgDataInterp::ShowValueGUID(const UDQWORD& dqword)const
@@ -1086,7 +1089,7 @@ void CHexDlgDataInterp::ShowValueGUIDTIME(const UDQWORD& dqword)const
 		ftGUIDTime.dwHighDateTime = qwGUIDTime.HighPart;
 		ftGUIDTime.dwLowDateTime = qwGUIDTime.LowPart;
 
-		wstrTime = FileTimeToString(ftGUIDTime, m_pHexCtrl->GetDateInfo());
+		wstrTime = FileTimeToString(ftGUIDTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
@@ -1098,7 +1101,7 @@ void CHexDlgDataInterp::ShowValueSYSTEMTIME(const UDQWORD& dqword)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_SYSTEMTIME; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(SystemTimeToString(std::bit_cast<SYSTEMTIME>(dqword), m_pHexCtrl->GetDateInfo()).data());
+		iter->pProp->SetValue(SystemTimeToString(std::bit_cast<SYSTEMTIME>(dqword), m_dwDateFormat, m_wchDateSepar).data());
 }
 
 void CHexDlgDataInterp::UpdateHexCtrl()const

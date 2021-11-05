@@ -55,7 +55,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetColors()const->HEXCOLORS override;          //Current colors.
 		[[nodiscard]] auto GetData(HEXSPAN hss)const->std::span<std::byte> override; //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;        //Get currently set data size.
-		[[nodiscard]] DWORD GetDateInfo()const override;                  //Determine current date format.
+		[[nodiscard]] auto GetDateInfo()const->std::tuple<DWORD, wchar_t> override; //Get date format and separator info.
 		[[nodiscard]] int GetEncoding()const override;                    //Get current code page ID.
 		void GetFont(LOGFONTW& lf)override;                               //Get current font.
 		[[nodiscard]] auto GetGroupMode()const->EHexDataSize override;    //Retrieves current data grouping mode.
@@ -83,7 +83,7 @@ namespace HEXCTRL::INTERNAL
 		void SetColors(const HEXCOLORS& clr)override;       //Set all the control's colors.
 		bool SetConfig(std::wstring_view wstrPath)override; //Set configuration file, or "" for defaults.
 		void SetData(const HEXDATA& hds)override;           //Main method for setting data to display (and edit).
-		void SetDateInfo(DWORD dwDateFormat)override;       //Change current date format. e.g. -1=User default, 0=MMddYYYY, 1=ddMMYYYY, 2=YYYYMMdd
+		void SetDateInfo(DWORD dwFormat, wchar_t wchSepar)override; //Set date format and date separator.
 		void SetEncoding(int iCodePage)override;            //Code-page for text area.
 		void SetFont(const LOGFONTW& lf)override;           //Set the control's new font. This font has to be monospaced.
 		void SetGroupMode(EHexDataSize enGroupMode)override;//Set current "Group Data By" mode.
@@ -242,7 +242,7 @@ namespace HEXCTRL::INTERNAL
 		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
 		DWORD m_dwPageSize { 0 };             //Size of a page to print additional lines between.
 		DWORD m_dwCacheSize { };              //Cache size for virtual and message modes, set in SetData.
-		DWORD m_dwDateFormat { };             //Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
+		DWORD m_dwDateFormat { 0xFFFFFFFF };  //Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 		SIZE m_sizeLetter { 1, 1 };           //Current font's letter size (width, height).
 		int m_iSizeFirstHalf { };             //Size in px of the first half of the capacity.
 		int m_iSizeHexByte { };               //Size in px of two hex letters representing one byte.
@@ -275,6 +275,7 @@ namespace HEXCTRL::INTERNAL
 		std::unordered_map<int, SHBITMAP> m_umapHBITMAP;           //Images for the Menu.
 		std::vector<SKEYBIND> m_vecKeyBind { }; //Vector of key bindings.
 		wchar_t m_wchUnprintable { L'.' };    //Replacement char for unprintable characters.
+		wchar_t m_wchDateSepar { L'/' };      //Date separator.
 		bool m_fCreated { false };            //Is control created or not yet.
 		bool m_fDataSet { false };            //Is data set or not.
 		bool m_fMutable { false };            //Is control works in Edit or Read mode.

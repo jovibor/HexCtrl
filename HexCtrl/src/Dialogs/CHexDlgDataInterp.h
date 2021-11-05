@@ -159,6 +159,8 @@ namespace HEXCTRL::INTERNAL
 		CMFCPropertyGridProperty* m_pPropChanged { };
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullSize { };
+		DWORD m_dwDateFormat { };   //Date format.
+		wchar_t m_wchDateSepar { }; //Date separator.
 		bool m_fBigEndian { false };
 		bool m_fShowAsHex { true };
 	};
