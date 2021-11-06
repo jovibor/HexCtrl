@@ -1168,8 +1168,8 @@ bool CHexDlgSearch::PrepareFILETIME()
 		return false;
 	}
 
-	FILETIME stFTSearch { *optFTSearch };
-	FILETIME stFTReplace { optFTReplace ? *optFTReplace : FILETIME{} };
+	auto stFTSearch = *optFTSearch;
+	auto stFTReplace = optFTReplace.value_or(FILETIME { }); //optFTReplace is nullopt in RO mode.
 	if (m_fBigEndian)
 	{
 		stFTSearch.dwLowDateTime = _byteswap_ulong(stFTSearch.dwLowDateTime);
