@@ -816,8 +816,9 @@ Structure is used in [`HitTest`](#hittest) method.
 ```cpp
 struct HEXHITTEST
 {
-    ULONGLONG ullOffset { };      //Offset.
-    bool      fIsAscii { false }; //Is cursor at ASCII part or at Hex.
+    ULONGLONG ullOffset { };     //Offset.
+    bool      fIsText { false }; //Is cursor at Text or Hex area.
+    bool      fIsHigh { false }; //Is it High or Low part of the byte.
 };
 ```
 

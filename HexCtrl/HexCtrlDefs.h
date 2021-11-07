@@ -219,9 +219,9 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXHITTEST
 	{
-		ULONGLONG ullOffset { };      //Offset.
-		bool      fIsAscii { false }; //Is cursor at ASCII part or at Hex.
-		bool      fIsHigh { false };  //Is it High or Low part of the byte.
+		ULONGLONG ullOffset { };     //Offset.
+		bool      fIsText { false }; //Is cursor at Text or Hex area.
+		bool      fIsHigh { false }; //Is it High or Low part of the byte.
 	};
 
 	/********************************************************************************************
