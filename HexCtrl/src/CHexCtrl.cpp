@@ -2979,10 +2979,8 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 
 void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
 {
-	std::vector<POLYTEXTW> vecPolySelHex;
-	std::vector<POLYTEXTW> vecPolySelText;
-	std::vector<std::unique_ptr<std::wstring>> vecWstrSelHex; //unique_ptr to avoid wstring ptr invalidation.
-	std::vector<std::unique_ptr<std::wstring>> vecWstrSelText;
+	std::vector<POLYTEXTW> vecPolySel;
+	std::vector<std::unique_ptr<std::wstring>> vecWstrSel; //unique_ptr to avoid wstring ptr invalidation.
 	const auto ullStartOffset = ullStartLine * m_dwCapacity;
 	size_t sIndexToPrint { };
 
@@ -2997,14 +2995,14 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 		const auto lmbPoly = [&]()
 		{
 			//Hex selection Poly.
-			vecWstrSelHex.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexSelToPrint)));
-			vecPolySelHex.emplace_back(iSelHexPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstrSelHex.back()->size()), vecWstrSelHex.back()->data(), 0, RECT { }, nullptr);
+			vecWstrSel.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexSelToPrint)));
+			vecPolySel.emplace_back(iSelHexPosToPrintX, iPosToPrintY,
+				static_cast<UINT>(vecWstrSel.back()->size()), vecWstrSel.back()->data(), 0, RECT { }, nullptr);
 
 			//Text selection Poly.
-			vecWstrSelText.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextSelToPrint)));
-			vecPolySelText.emplace_back(iSelTextPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstrSelText.back()->size()), vecWstrSelText.back()->data(), 0, RECT { }, nullptr);
+			vecWstrSel.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextSelToPrint)));
+			vecPolySel.emplace_back(iSelTextPosToPrintX, iPosToPrintY,
+				static_cast<UINT>(vecWstrSel.back()->size()), vecWstrSel.back()->data(), 0, RECT { }, nullptr);
 		};
 
 		//Main loop for printing Hex chunks and Text chars.
@@ -3057,13 +3055,12 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 	}
 
 	//Selection printing.
-	if (!vecPolySelHex.empty())
+	if (!vecPolySel.empty())
 	{
 		pDC->SelectObject(pFont);
 		pDC->SetTextColor(m_stColor.clrFontSelect);
 		pDC->SetBkColor(m_stColor.clrBkSelect);
-		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size()));   //Hex selection printing.
-		PolyTextOutW(pDC->m_hDC, vecPolySelText.data(), static_cast<UINT>(vecPolySelText.size())); //Text selection printing.
+		PolyTextOutW(pDC->m_hDC, vecPolySel.data(), static_cast<UINT>(vecPolySel.size())); //Hex/Text selection printing.
 	}
 }
 
@@ -3072,10 +3069,8 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	if (!m_pSelection->HasSelHighlight())
 		return;
 
-	std::vector<POLYTEXTW> vecPolySelHex;
-	std::vector<POLYTEXTW> vecPolySelText;
-	std::vector<std::unique_ptr<std::wstring>> vecWstrSelHex; //unique_ptr to avoid wstring ptr invalidation.
-	std::vector<std::unique_ptr<std::wstring>> vecWstrSelText;
+	std::vector<POLYTEXTW> vecPolySelHgl;
+	std::vector<std::unique_ptr<std::wstring>> vecWstrSelHgl; //unique_ptr to avoid wstring ptr invalidation.
 	const auto ullStartOffset = ullStartLine * m_dwCapacity;
 	size_t sIndexToPrint { };
 
@@ -3090,14 +3085,14 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 		const auto lmbPoly = [&]()
 		{
 			//Hex selection highlight Poly.
-			vecWstrSelHex.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexSelToPrint)));
-			vecPolySelHex.emplace_back(iSelHexPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstrSelHex.back()->size()), vecWstrSelHex.back()->data(), 0, RECT { }, nullptr);
+			vecWstrSelHgl.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexSelToPrint)));
+			vecPolySelHgl.emplace_back(iSelHexPosToPrintX, iPosToPrintY,
+				static_cast<UINT>(vecWstrSelHgl.back()->size()), vecWstrSelHgl.back()->data(), 0, RECT { }, nullptr);
 
 			//Text selection highlight Poly.
-			vecWstrSelText.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextSelToPrint)));
-			vecPolySelText.emplace_back(iSelTextPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstrSelText.back()->size()), vecWstrSelText.back()->data(), 0, RECT { }, nullptr);
+			vecWstrSelHgl.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextSelToPrint)));
+			vecPolySelHgl.emplace_back(iSelTextPosToPrintX, iPosToPrintY,
+				static_cast<UINT>(vecWstrSelHgl.back()->size()), vecWstrSelHgl.back()->data(), 0, RECT { }, nullptr);
 		};
 
 		//Main loop for printing Hex chunks and Text chars.
@@ -3150,14 +3145,13 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	}
 
 	//Selection highlight printing.
-	if (!vecPolySelHex.empty())
+	if (!vecPolySelHgl.empty())
 	{
-		//Colors are inverted colors of the selection.
+		//Colors are the inverted selection colors.
 		pDC->SelectObject(pFont);
 		pDC->SetTextColor(m_stColor.clrBkSelect);
 		pDC->SetBkColor(m_stColor.clrFontSelect);
-		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size()));   //Hex selection highlight printing.
-		PolyTextOutW(pDC->m_hDC, vecPolySelText.data(), static_cast<UINT>(vecPolySelText.size())); //Text selection highlight printing.
+		PolyTextOutW(pDC->m_hDC, vecPolySelHgl.data(), static_cast<UINT>(vecPolySelHgl.size())); //Hex/Text selection highlight printing.
 	}
 }
 

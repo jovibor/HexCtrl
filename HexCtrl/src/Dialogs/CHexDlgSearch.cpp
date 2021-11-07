@@ -739,10 +739,13 @@ void CHexDlgSearch::Prepare()
 	m_stComboSearch.GetWindowTextW(wstrTextSearch);
 	if (wstrTextSearch.IsEmpty())
 		return;
+
+	bool fNewSearchStr { false };
 	if (wstrTextSearch.Compare(m_wstrTextSearch.data()) != 0)
 	{
 		ResetSearch();
 		m_wstrTextSearch = wstrTextSearch;
+		fNewSearchStr = true;
 	}
 	ComboSearchFill(wstrTextSearch);
 
@@ -838,12 +841,11 @@ void CHexDlgSearch::Prepare()
 
 		auto& refFront = vecSel.front();
 
-		//If the current selection differs from the previous one, or if FindAll.
-		if (m_stSelSpan.ullOffset != refFront.ullOffset || m_stSelSpan.ullSize != refFront.ullSize || m_fAll)
+		//If the current selection differs from the previous one, or if FindAll, or new search string.
+		if (fNewSearchStr || m_stSelSpan.ullOffset != refFront.ullOffset
+			|| m_stSelSpan.ullSize != refFront.ullSize || m_fAll)
 		{
-			ClearList();
-			m_dwCount = 0;
-			m_fSecondMatch = false;
+			ResetSearch();
 			m_stSelSpan = refFront;
 			m_ullOffsetCurr = refFront.ullOffset;
 		}
@@ -1207,8 +1209,7 @@ void CHexDlgSearch::ResetSearch()
 	m_fSecondMatch = { false };
 	m_fFound = { false };
 	m_fDoCount = { true };
-	m_pListMain->SetItemCountEx(0);
-	m_vecSearchRes.clear();
+	ClearList();
 	GetHexCtrl()->SetSelection({ }, false, true); //Clear selection highlight.
 	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_RESULT)->SetWindowTextW(L"");
 }
