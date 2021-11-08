@@ -16,7 +16,7 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
-		[[nodiscard]] ULONGLONG GetSize()const;
+		[[nodiscard]] ULONGLONG GetDataSize()const;
 		void InspectOffset(ULONGLONG ullOffset);
 	private:
 #pragma pack(push, 1)
@@ -158,9 +158,9 @@ namespace HEXCTRL::INTERNAL
 		CHexPropGridCtrl m_stCtrlGrid;
 		CMFCPropertyGridProperty* m_pPropChanged { };
 		ULONGLONG m_ullOffset { };
-		ULONGLONG m_ullSize { };
-		DWORD m_dwDateFormat { };   //Date format.
-		wchar_t m_wchDateSepar { }; //Date separator.
+		ULONGLONG m_ullDataSize { }; //Size of the currently interpreted data.
+		DWORD m_dwDateFormat { };    //Date format.
+		wchar_t m_wchDateSepar { };  //Date separator.
 		bool m_fBigEndian { false };
 		bool m_fShowAsHex { true };
 	};

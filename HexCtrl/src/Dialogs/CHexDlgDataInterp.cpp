@@ -41,9 +41,9 @@ BOOL CHexDlgDataInterp::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCt
 	return CDialogEx::Create(nIDTemplate, pParent);
 }
 
-ULONGLONG CHexDlgDataInterp::GetSize()const
+ULONGLONG CHexDlgDataInterp::GetDataSize()const
 {
-	return m_ullSize;
+	return m_ullDataSize;
 }
 
 void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
@@ -270,7 +270,7 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 {
 	if (nState == WA_INACTIVE)
 	{
-		m_ullSize = 0;
+		m_ullDataSize = 0;
 		UpdateHexCtrl();
 	}
 	else
@@ -389,7 +389,7 @@ void CHexDlgDataInterp::OnClickRadioHexDec()
 
 void CHexDlgDataInterp::OnClose()
 {
-	m_ullSize = 0;
+	m_ullDataSize = 0;
 
 	CDialogEx::OnClose();
 }
@@ -414,7 +414,7 @@ BOOL CHexDlgDataInterp::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 			[this](const SGRIDDATA& refData)
 			{return refData.pProp == m_stCtrlGrid.GetCurrentProp(); }); pData != m_vecProp.end())
 		{
-			m_ullSize = static_cast<ULONGLONG>(pData->eSize);
+			m_ullDataSize = static_cast<ULONGLONG>(pData->eSize);
 			UpdateHexCtrl();
 		}
 	}
