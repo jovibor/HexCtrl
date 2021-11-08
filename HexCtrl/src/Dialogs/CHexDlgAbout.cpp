@@ -7,6 +7,7 @@
 #include "stdafx.h"
 #include "../HexUtility.h"
 #include "CHexDlgAbout.h"
+#include <string>
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
@@ -18,8 +19,10 @@ BOOL CHexDlgAbout::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-#define HEXCTRL_VERSION_DESCR HEXCTRL_VERSION_WSTR L"\r\nAuthor: " HEXCTRL_COPYRIGHT_NAME
-	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(HEXCTRL_VERSION_DESCR);
+	std::wstring wstrDescr = WSTR_HEXCTRL_FULL_VERSION;
+	wstrDescr += L"\r\nAuthor: ";
+	wstrDescr += WSTR_HEXCTRL_COPYRIGHT_NAME;
+	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(wstrDescr.data());
 
 	return TRUE;
 }

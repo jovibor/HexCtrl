@@ -5,13 +5,13 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #pragma once
-#include <Windows.h>
+#include <afxwin.h>
 #include <cstdint>
 #include <span>
 #include <string>
 #include <vector>
 
-#if !defined(__cpp_lib_span) || !defined(__cpp_lib_bit_cast)
+#if !defined(__cpp_lib_format) || !defined(__cpp_lib_span) || !defined(__cpp_lib_bit_cast)
 #error "C++20 compiler is required for HexCtrl."
 #endif
 
