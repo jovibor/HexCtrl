@@ -277,8 +277,15 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 	{
 		if (m_pHexCtrl->IsCreated())
 		{
-			const auto wstrTitle = L"Date/Time format is: " + GetDateFormatString(m_dwDateFormat, m_wchDateSepar);
-			SetWindowTextW(wstrTitle.data()); //Update dialog title to reflect current date format.
+			//Update date format. This may have changed since dialog was created
+			const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
+			m_dwDateFormat = dwFormat;
+			m_wchDateSepar = wchSepar;
+
+			//Update dialog title to reflect current date format
+			const auto wstrTitle = L"Date/Time format: " + GetDateFormatString(m_dwDateFormat, m_wchDateSepar);
+			SetWindowTextW(wstrTitle.data());
+			
 			if (m_pHexCtrl->IsDataSet())
 				InspectOffset(m_pHexCtrl->GetCaretPos());
 		}
