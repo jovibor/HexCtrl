@@ -84,12 +84,12 @@ namespace HEXCTRL
 		//Key bindings.
 		struct CHexCtrl::SKEYBIND
 		{
-			EHexCmd       eCmd { };
-			WORD          wMenuID { };
-			unsigned char uKey { };
-			bool          fCtrl { };
-			bool          fShift { };
-			bool          fAlt { };
+			EHexCmd eCmd { };
+			WORD    wMenuID { };
+			UINT    uKey { };
+			bool    fCtrl { };
+			bool    fShift { };
+			bool    fAlt { };
 		};
 
 		constexpr auto HEXCTRL_CLASSNAME_WSTR { L"HexCtrl" }; //HexControl Class name.
@@ -1503,7 +1503,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ "CMD_SCROLL_PAGEDOWN", { EHexCmd::CMD_SCROLL_PAGEDOWN, static_cast<WORD>(0) } }
 	};
 
-	const std::unordered_map<std::string_view, std::pair<UCHAR, std::wstring_view>> umapKeys
+	const std::unordered_map<std::string_view, std::pair<UINT, std::wstring_view>> umapKeys
 	{
 		{ { "ctrl" }, { VK_CONTROL, { L"Ctrl" } } },
 		{ { "shift" }, { VK_SHIFT, { L"Shift" } } },
@@ -1678,7 +1678,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 					{ return ref.second.first == iterMain.uKey; }); iterUmap != umapKeys.end())
 					wstr += iterUmap->second.second;
 				else
-					wstr += iterMain.uKey;
+					wstr += static_cast<unsigned char>(iterMain.uKey);
 
 				//Modify menu with a new name (with shortcut appended) and old bitmap.
 				MENUITEMINFOW mii { };
@@ -3379,11 +3379,11 @@ auto CHexCtrl::GetBottomLine()const->ULONGLONG
 	return ullEndLine;
 }
 
-auto CHexCtrl::GetCommand(UCHAR uChar, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>
+auto CHexCtrl::GetCommand(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>
 {
-	std::optional<EHexCmd> optRet { };
+	std::optional<EHexCmd> optRet { std::nullopt };
 	if (auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref)
-		{return ref.fCtrl == fCtrl && ref.fShift == fShift && ref.fAlt == fAlt && ref.uKey == uChar; });
+		{return ref.fCtrl == fCtrl && ref.fShift == fShift && ref.fAlt == fAlt && ref.uKey == uKey; });
 		iter != m_vecKeyBind.end())
 		optRet = iter->eCmd;
 
@@ -4743,8 +4743,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 	if (nFlags & 0x4000)
 		m_fKeyDownAtm = true;
 
-	if (auto optCmd = GetCommand(static_cast<BYTE>(nChar),
-		GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd)
+	if (auto optCmd = GetCommand(nChar, GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd)
 		ExecuteCmd(*optCmd);
 	else if (IsDataSet() && IsMutable() && !IsCurTextArea()) //If caret is in Hex area, just one part (High/Low) of byte must be changed.
 	{
@@ -5147,8 +5146,7 @@ void CHexCtrl::OnSize(UINT /*nType*/, int cx, int cy)
 
 void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {
-	if (auto optCmd = GetCommand(static_cast<BYTE>(nChar),
-		GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, true); optCmd)
+	if (auto optCmd = GetCommand(nChar, GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, true); optCmd)
 		ExecuteCmd(*optCmd);
 }
 

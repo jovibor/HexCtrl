@@ -122,7 +122,6 @@ void CHexDlgEncoding::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	if (pItem->mask & LVIF_TEXT)
 	{
 		const auto nItemID = static_cast<size_t>(pItem->iItem);
-		const auto nMaxLengh = static_cast<size_t>(pItem->cchTextMax);
 		switch (pItem->iSubItem)
 		{
 		case 0: //Code page ID.

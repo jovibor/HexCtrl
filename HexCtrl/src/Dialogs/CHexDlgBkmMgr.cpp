@@ -189,7 +189,6 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	if (pItem->mask & LVIF_TEXT)
 	{
 		const auto iItemID = pItem->iItem;
-		const auto nMaxLength = static_cast<size_t>(pItem->cchTextMax);
 		const auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(iItemID));
 		if (pBkm == nullptr)
 			return;
