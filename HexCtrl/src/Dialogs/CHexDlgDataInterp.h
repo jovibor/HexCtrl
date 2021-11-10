@@ -84,6 +84,7 @@ namespace HEXCTRL::INTERNAL
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		LRESULT OnPropertyChanged(WPARAM wParam, LPARAM lParam);
 		afx_msg void OnSize(UINT nType, int cx, int cy);
+		void RedrawHexCtrl()const;
 		template <typename T>
 		void SetTData(T tData)const;
 		[[nodiscard]] bool SetDataBINARY(const std::wstring& wstr)const;
@@ -128,7 +129,6 @@ namespace HEXCTRL::INTERNAL
 		void ShowValueGUID(const UDQWORD& dqword)const;
 		void ShowValueGUIDTIME(const UDQWORD& dqword)const;
 		void ShowValueSYSTEMTIME(const UDQWORD& dqword)const;
-		void UpdateHexCtrl()const;
 		DECLARE_MESSAGE_MAP()
 	private:
 		enum class EGroup : std::uint8_t { DIGITS, FLOAT, TIME, MISC };

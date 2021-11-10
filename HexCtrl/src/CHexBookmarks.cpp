@@ -24,7 +24,7 @@ void CHexBookmarks::Attach(IHexCtrl* pHexCtrl)
 
 ULONGLONG CHexBookmarks::Add(const HEXBKM& hbs, bool fRedraw)
 {
-	if (!m_pHexCtrl || !m_pHexCtrl->IsDataSet())
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
 		return 0;
 
 	ULONGLONG ullID { static_cast<ULONGLONG>(-1) };
@@ -46,8 +46,9 @@ ULONGLONG CHexBookmarks::Add(const HEXBKM& hbs, bool fRedraw)
 			HEXBKM { hbs.vecSpan, hbs.wstrDesc, ullID, hbs.ullData, hbs.clrBk, hbs.clrText });
 	}
 
-	if (fRedraw && m_pHexCtrl)
+	if (fRedraw)
 		m_pHexCtrl->Redraw();
+
 	m_time = _time64(nullptr);
 
 	return ullID;
@@ -63,8 +64,9 @@ void CHexBookmarks::ClearAll()
 	else
 		m_deqBookmarks.clear();
 
-	if (m_pHexCtrl)
+	if (m_pHexCtrl && m_pHexCtrl->IsCreated())
 		m_pHexCtrl->Redraw();
+
 	m_time = _time64(nullptr);
 }
 
@@ -123,7 +125,7 @@ auto CHexBookmarks::GetTouchTime()const->__time64_t
 
 void CHexBookmarks::GoBookmark(ULONGLONG ullIndex)
 {
-	if (!m_pHexCtrl)
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
 		return;
 
 	if (const auto* const pBkm = GetByIndex(ullIndex); pBkm != nullptr)
@@ -138,7 +140,7 @@ void CHexBookmarks::GoBookmark(ULONGLONG ullIndex)
 
 void CHexBookmarks::GoNext()
 {
-	if (!m_pHexCtrl)
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
 		return;
 
 	if (++m_llIndexCurr >= static_cast<LONGLONG>(GetCount()))
@@ -155,7 +157,7 @@ void CHexBookmarks::GoNext()
 
 void CHexBookmarks::GoPrev()
 {
-	if (!m_pHexCtrl)
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
 		return;
 
 	if (--m_llIndexCurr; m_llIndexCurr < 0 || m_llIndexCurr >= static_cast<LONGLONG>(GetCount()))
@@ -213,7 +215,7 @@ bool CHexBookmarks::IsVirtual()const
 
 void CHexBookmarks::Remove(ULONGLONG ullOffset)
 {
-	if (!m_pHexCtrl || !m_pHexCtrl->IsDataSet())
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
 		return;
 
 	if (m_fVirtual)
@@ -239,13 +241,15 @@ void CHexBookmarks::Remove(ULONGLONG ullOffset)
 			m_deqBookmarks.erase((rIter + 1).base()); //Weird notation for reverse_iterator to work in erase() (acc to standard).
 	}
 
-	if (m_pHexCtrl)
-		m_pHexCtrl->Redraw();
+	m_pHexCtrl->Redraw();
 	m_time = _time64(nullptr);
 }
 
 void CHexBookmarks::RemoveByID(ULONGLONG ullID)
 {
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
+		return;
+
 	if (m_fVirtual)
 	{
 		if (m_pVirtual)
@@ -261,8 +265,7 @@ void CHexBookmarks::RemoveByID(ULONGLONG ullID)
 			m_deqBookmarks.erase(iter);
 	}
 
-	if (m_pHexCtrl)
-		m_pHexCtrl->Redraw();
+	m_pHexCtrl->Redraw();
 	m_time = _time64(nullptr);
 }
 
@@ -317,6 +320,9 @@ void CHexBookmarks::SortData(int iColumn, bool fAscending)
 
 void CHexBookmarks::Update(ULONGLONG ullID, const HEXBKM& stBookmark)
 {
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
+		return;
+
 	if (m_fVirtual || m_deqBookmarks.empty())
 		return;
 
@@ -326,7 +332,6 @@ void CHexBookmarks::Update(ULONGLONG ullID, const HEXBKM& stBookmark)
 	if (iter != m_deqBookmarks.end())
 		*iter = stBookmark;
 
-	if (m_pHexCtrl)
-		m_pHexCtrl->Redraw();
+	m_pHexCtrl->Redraw();
 	m_time = _time64(nullptr);
 }

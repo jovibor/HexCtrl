@@ -4635,11 +4635,11 @@ void CHexCtrl::OnDestroy()
 	m_vecKeyBind.clear();
 	m_pDlgBkmMgr->DestroyWindow();
 	m_pDlgDataInterp->DestroyWindow();
-	m_pDlgFillData->DestroyWindow();
 	m_pDlgEncoding->DestroyWindow();
+	m_pDlgFillData->DestroyWindow();
+	m_pDlgGoTo->DestroyWindow();
 	m_pDlgOpers->DestroyWindow();
 	m_pDlgSearch->DestroyWindow();
-	m_pDlgGoTo->DestroyWindow();
 	m_pScrollV->DestroyWindow();
 	m_pScrollH->DestroyWindow();
 

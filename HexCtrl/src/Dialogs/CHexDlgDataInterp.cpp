@@ -259,10 +259,6 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 		}
 	m_stCtrlGrid.AddProperty(pMisc);
 
-	const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
-	m_dwDateFormat = dwFormat;
-	m_wchDateSepar = wchSepar;
-
 	return TRUE;
 }
 
@@ -270,13 +266,17 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 {
 	if (nState == WA_INACTIVE)
 	{
-		m_ullDataSize = 0;
-		UpdateHexCtrl();
+		m_ullDataSize = 0; //Remove Data Interpreter data highlighting when its window is inactive.
+		RedrawHexCtrl();
 	}
 	else
 	{
 		if (m_pHexCtrl->IsCreated())
 		{
+			const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
+			m_dwDateFormat = dwFormat;
+			m_wchDateSepar = wchSepar;
+
 			const auto wstrTitle = L"Date/Time format is: " + GetDateFormatString(m_dwDateFormat, m_wchDateSepar);
 			SetWindowTextW(wstrTitle.data()); //Update dialog title to reflect current date format.
 			if (m_pHexCtrl->IsDataSet())
@@ -289,7 +289,7 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 
 void CHexDlgDataInterp::OnOK()
 {
-	if (!m_pHexCtrl->IsMutable() || !m_pPropChanged)
+	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet() || !m_pHexCtrl->IsMutable() || !m_pPropChanged)
 		return;
 
 	const auto itGridData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
@@ -370,7 +370,7 @@ void CHexDlgDataInterp::OnOK()
 	if (!fSuccess)
 		MessageBoxW(L"Wrong number format or out of range.", L"Data error...", MB_ICONERROR);
 	else
-		UpdateHexCtrl();
+		RedrawHexCtrl();
 
 	InspectOffset(m_ullOffset);
 }
@@ -415,7 +415,7 @@ BOOL CHexDlgDataInterp::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 			{return refData.pProp == m_stCtrlGrid.GetCurrentProp(); }); pData != m_vecProp.end())
 		{
 			m_ullDataSize = static_cast<ULONGLONG>(pData->eSize);
-			UpdateHexCtrl();
+			RedrawHexCtrl();
 		}
 	}
 
@@ -436,6 +436,12 @@ LRESULT CHexDlgDataInterp::OnPropertyChanged(WPARAM wParam, LPARAM lParam)
 void CHexDlgDataInterp::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
+}
+
+void CHexDlgDataInterp::RedrawHexCtrl()const
+{
+	if (m_pHexCtrl != nullptr && m_pHexCtrl->IsCreated())
+		m_pHexCtrl->Redraw();
 }
 
 template<typename T>
@@ -1102,10 +1108,4 @@ void CHexDlgDataInterp::ShowValueSYSTEMTIME(const UDQWORD& dqword)const
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_SYSTEMTIME; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(SystemTimeToString(std::bit_cast<SYSTEMTIME>(dqword), m_dwDateFormat, m_wchDateSepar).data());
-}
-
-void CHexDlgDataInterp::UpdateHexCtrl()const
-{
-	if (m_pHexCtrl && m_pHexCtrl->IsCreated())
-		m_pHexCtrl->Redraw();
 }

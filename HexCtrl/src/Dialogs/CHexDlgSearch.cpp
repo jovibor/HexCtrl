@@ -482,10 +482,6 @@ BOOL CHexDlgSearch::OnInitDialog()
 
 void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	const auto* const pHexCtrl = GetHexCtrl();
-	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
-		return;
-
 	if (nState == WA_INACTIVE)
 		SetLayeredWindowAttributes(0, 150, LWA_ALPHA);
 	else
@@ -1617,7 +1613,11 @@ FOUND:
 
 void CHexDlgSearch::UpdateSearchReplaceControls()
 {
-	const auto fMutable = GetHexCtrl()->IsMutable();
+	const auto* const pHexCtrl = GetHexCtrl();
+	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
+		return;
+
+	const auto fMutable = pHexCtrl->IsMutable();
 	m_stComboReplace.EnableWindow(fMutable);
 
 	CStringW wstrTextSearch;

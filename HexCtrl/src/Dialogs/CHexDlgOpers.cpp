@@ -81,15 +81,15 @@ BOOL CHexDlgOpers::OnInitDialog()
 
 void CHexDlgOpers::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
-		return;
-
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE)
 	{
-		const auto fSelection { m_pHexCtrl->HasSelection() };
-		CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_ALL, IDC_HEXCTRL_OPERS_RADIO_SEL,
-			fSelection ? IDC_HEXCTRL_OPERS_RADIO_SEL : IDC_HEXCTRL_OPERS_RADIO_ALL);
-		GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_SEL)->EnableWindow(fSelection);
+		if (m_pHexCtrl->IsCreated() && m_pHexCtrl->IsDataSet())
+		{
+			const auto fSelection { m_pHexCtrl->HasSelection() };
+			CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_ALL, IDC_HEXCTRL_OPERS_RADIO_SEL,
+				fSelection ? IDC_HEXCTRL_OPERS_RADIO_SEL : IDC_HEXCTRL_OPERS_RADIO_ALL);
+			GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_SEL)->EnableWindow(fSelection);
+		}
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
@@ -126,6 +126,9 @@ BOOL CHexDlgOpers::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 
 void CHexDlgOpers::OnOK()
 {
+	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
+		return;
+
 	const auto eOperMode = GetOperMode();
 	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
 	const auto iRadioByteOrder = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_LE, IDC_HEXCTRL_OPERS_RADIO_BE);
@@ -221,11 +224,6 @@ void CHexDlgOpers::OnOK()
 	CDialogEx::OnOK();
 }
 
-EHexOperMode CHexDlgOpers::GetOperMode()const
-{
-	return static_cast<EHexOperMode>(m_stComboOper.GetItemData(m_stComboOper.GetCurSel()));
-}
-
 void CHexDlgOpers::CheckWndAvail()const
 {
 	BOOL fEditEnable = TRUE;
@@ -248,4 +246,9 @@ void CHexDlgOpers::CheckWndAvail()const
 
 	GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_LE)->EnableWindow(fBELEEnable);
 	GetDlgItem(IDC_HEXCTRL_OPERS_RADIO_BE)->EnableWindow(fBELEEnable);
+}
+
+EHexOperMode CHexDlgOpers::GetOperMode()const
+{
+	return static_cast<EHexOperMode>(m_stComboOper.GetItemData(m_stComboOper.GetCurSel()));
 }

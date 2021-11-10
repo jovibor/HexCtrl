@@ -67,15 +67,15 @@ BOOL CHexDlgFillData::OnInitDialog()
 
 void CHexDlgFillData::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
-		return;
-
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE)
 	{
-		const auto fSelection { m_pHexCtrl->HasSelection() };
-		CheckRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_ALL, IDC_HEXCTRL_FILLDATA_RADIO_SEL,
-			fSelection ? IDC_HEXCTRL_FILLDATA_RADIO_SEL : IDC_HEXCTRL_FILLDATA_RADIO_ALL);
-		GetDlgItem(IDC_HEXCTRL_FILLDATA_RADIO_SEL)->EnableWindow(fSelection);
+		if (m_pHexCtrl->IsCreated() && m_pHexCtrl->IsDataSet())
+		{
+			const auto fSelection { m_pHexCtrl->HasSelection() };
+			CheckRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_ALL, IDC_HEXCTRL_FILLDATA_RADIO_SEL,
+				fSelection ? IDC_HEXCTRL_FILLDATA_RADIO_SEL : IDC_HEXCTRL_FILLDATA_RADIO_ALL);
+			GetDlgItem(IDC_HEXCTRL_FILLDATA_RADIO_SEL)->EnableWindow(fSelection);
+		}
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
@@ -107,6 +107,9 @@ BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
 
 void CHexDlgFillData::OnOK()
 {
+	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
+		return;
+
 	wchar_t pwszComboText[MAX_PATH * 2];
 	if (m_stComboData.IsWindowEnabled() && m_stComboData.GetWindowTextW(pwszComboText, MAX_PATH) == 0) //No text.
 	{

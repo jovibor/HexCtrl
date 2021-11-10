@@ -21,8 +21,8 @@ namespace HEXCTRL::INTERNAL
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		void OnOK()override;
-		[[nodiscard]] EHexOperMode GetOperMode()const;
 		void CheckWndAvail()const;
+		[[nodiscard]] auto GetOperMode()const->EHexOperMode;
 		DECLARE_MESSAGE_MAP()
 	private:
 		IHexCtrl* m_pHexCtrl { };

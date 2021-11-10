@@ -81,16 +81,19 @@ BOOL CHexDlgEncoding::OnInitDialog()
 
 void CHexDlgEncoding::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	if (m_pHexCtrl->IsCreated() && (nState == WA_ACTIVE || nState == WA_CLICKACTIVE))
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE)
 	{
-		m_pListMain->SetItemState(-1, 0, LVIS_SELECTED);
-		if (auto iter = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
-			[this](const SCODEPAGE& ref) { return ref.iCPID == m_pHexCtrl->GetEncoding(); });
-			iter != m_vecCodePage.end())
+		if (m_pHexCtrl->IsCreated())
 		{
-			const auto iItem = static_cast<int>(iter - m_vecCodePage.begin());
-			m_pListMain->SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
-			m_pListMain->EnsureVisible(iItem, FALSE);
+			m_pListMain->SetItemState(-1, 0, LVIS_SELECTED);
+			if (auto iter = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
+				[this](const SCODEPAGE& ref) { return ref.iCPID == m_pHexCtrl->GetEncoding(); });
+				iter != m_vecCodePage.end())
+			{
+				const auto iItem = static_cast<int>(iter - m_vecCodePage.begin());
+				m_pListMain->SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
+				m_pListMain->EnsureVisible(iItem, FALSE);
+			}
 		}
 	}
 
