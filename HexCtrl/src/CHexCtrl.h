@@ -266,6 +266,7 @@ namespace HEXCTRL::INTERNAL
 		int m_iThirdVertLine { };             //Third vert line indent.
 		int m_iFourthVertLine { };            //Fourth vert line indent.
 		int m_iCodePage { -1 };               //Current code-page for Text area. -1 for default.
+		int m_iLOGPIXELSY { };                //GetDeviceCaps(LOGPIXELSY) constant.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfo { };          //Info text (bottom rect).
 		std::wstring m_wstrPageName { };      //Name of the sector/page.

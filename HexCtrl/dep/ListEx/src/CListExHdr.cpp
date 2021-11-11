@@ -54,12 +54,6 @@ END_MESSAGE_MAP()
 
 CListExHdr::CListExHdr()
 {
-	NONCLIENTMETRICSW ncm { };
-	ncm.cbSize = sizeof(NONCLIENTMETRICSW);
-	SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, ncm.cbSize, &ncm, 0);
-	ncm.lfMessageFont.lfHeight = 16; //For some weird reason above func returns this value as MAX_LONG.
-
-	m_fontHdr.CreateFontIndirectW(&ncm.lfMessageFont);
 	m_penGrid.CreatePen(PS_SOLID, 2, RGB(220, 220, 220));
 	m_penLight.CreatePen(PS_SOLID, 1, GetSysColor(COLOR_3DHILIGHT));
 	m_penShadow.CreatePen(PS_SOLID, 1, GetSysColor(COLOR_3DSHADOW));
@@ -139,6 +133,133 @@ bool CListExHdr::IsColumnHidden(int iIndex)
 bool CListExHdr::IsColumnSortable(int iIndex)const
 {
 	return IsSortable(ColumnIndexToID(iIndex));
+}
+
+void CListExHdr::SetFont(const LOGFONTW * pLogFont)
+{
+	if (!pLogFont)
+		return;
+
+	m_fontHdr.DeleteObject();
+	m_fontHdr.CreateFontIndirectW(pLogFont);
+
+	//If new font's height is higher than current height (m_dwHeaderHeight), we adjust current height as well.
+	TEXTMETRICW tm;
+	auto pDC = GetDC();
+	pDC->SelectObject(m_fontHdr);
+	pDC->GetTextMetricsW(&tm);
+	ReleaseDC(pDC);
+	const DWORD dwHeightFont = tm.tmHeight + tm.tmExternalLeading + 4;
+	if (dwHeightFont > m_dwHeaderHeight)
+		SetHeight(dwHeightFont);
+}
+
+void CListExHdr::SetHeight(DWORD dwHeight)
+{
+	m_dwHeaderHeight = dwHeight;
+}
+
+void CListExHdr::SetColor(const LISTEXCOLORS & lcs)
+{
+	m_clrText = lcs.clrHdrText;
+	m_clrBk = lcs.clrHdrBk;
+	m_clrBkNWA = lcs.clrNWABk;
+	m_clrHglInactive = lcs.clrHdrHglInact;
+	m_clrHglActive = lcs.clrHdrHglAct;
+
+	RedrawWindow();
+}
+
+void CListExHdr::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
+{
+	const auto ID = ColumnIndexToID(iColumn);
+
+	assert(ID > 0);
+	if (ID == 0)
+		return;
+
+	if (clrText == -1)
+		clrText = m_clrText;
+
+	m_umapColors[ID] = SHDRCOLOR { clrBk, clrText };
+	RedrawWindow();
+}
+
+void CListExHdr::SetColumnIcon(int iColumn, const LISTEXHDRICON & stIcon)
+{
+	const auto ID = ColumnIndexToID(iColumn);
+	assert(ID > 0);
+	if (ID == 0)
+		return;
+
+	if (stIcon.iIndex == -1) //If column already has icon.
+		m_umapIcons.erase(ID);
+	else
+	{
+		SHDRICON stHdrIcon;
+		stHdrIcon.stIcon = stIcon;
+		m_umapIcons[ID] = stHdrIcon;
+	}
+	RedrawWindow();
+}
+
+void CListExHdr::SetColumnSortable(int iColumn, bool fSortable)
+{
+	const auto ID = ColumnIndexToID(iColumn);
+	assert(ID > 0);
+	if (ID == 0)
+		return;
+
+	m_umapIsSort[ID] = fSortable;
+}
+
+void CListExHdr::SetSortable(bool fSortable)
+{
+	m_fSortable = fSortable;
+	RedrawWindow();
+}
+
+void CListExHdr::SetSortArrow(int iColumn, bool fAscending)
+{
+	UINT ID { 0 };
+	if (iColumn >= 0)
+	{
+		ID = ColumnIndexToID(iColumn);
+		assert(ID > 0);
+		if (ID == 0)
+			return;
+	}
+	m_uSortColumn = ID;
+	m_fSortAscending = fAscending;
+	RedrawWindow();
+}
+
+
+//Private methods.
+
+UINT CListExHdr::ColumnIndexToID(int iIndex)const
+{
+	//Each column has unique internal identifier in HDITEMW::lParam
+	UINT uRet { 0 };
+	HDITEMW hdi { HDI_LPARAM };
+	if (GetItem(iIndex, &hdi) != FALSE)
+		uRet = static_cast<UINT>(hdi.lParam);
+
+	return uRet;
+}
+
+int CListExHdr::ColumnIDToIndex(UINT uID)const
+{
+	int iRet { -1 };
+	for (int i = 0; i < GetItemCount(); ++i)
+	{
+		HDITEMW hdi { HDI_LPARAM };
+		GetItem(i, &hdi);
+		if (static_cast<UINT>(hdi.lParam) == uID)
+			iRet = i;
+	}
+
+	return iRet;
 }
 
 void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed, BOOL bIsHighlighted)
@@ -368,31 +489,6 @@ void CListExHdr::OnDestroy()
 	m_umapHidden.clear();
 }
 
-UINT CListExHdr::ColumnIndexToID(int iIndex)const
-{
-	//Each column has unique internal identifier in HDITEMW::lParam
-	UINT uRet { 0 };
-	HDITEMW hdi { HDI_LPARAM };
-	if (GetItem(iIndex, &hdi) != FALSE)
-		uRet = static_cast<UINT>(hdi.lParam);
-
-	return uRet;
-}
-
-int CListExHdr::ColumnIDToIndex(UINT uID)const
-{
-	int iRet { -1 };
-	for (int i = 0; i < GetItemCount(); ++i)
-	{
-		HDITEMW hdi { HDI_LPARAM };
-		GetItem(i, &hdi);
-		if (static_cast<UINT>(hdi.lParam) == uID)
-			iRet = i;
-	}
-
-	return iRet;
-}
-
 auto CListExHdr::HasColor(UINT ID)->CListExHdr::SHDRCOLOR*
 {
 	SHDRCOLOR* pRet { };
@@ -426,104 +522,4 @@ bool CListExHdr::IsSortable(UINT ID)const
 	const auto iter = m_umapIsSort.find(ID); //It's sortable unless found explicitly as false.
 
 	return 	iter == m_umapIsSort.end() || iter->second;
-}
-
-void CListExHdr::SetHeight(DWORD dwHeight)
-{
-	m_dwHeaderHeight = dwHeight;
-}
-
-void CListExHdr::SetColor(const LISTEXCOLORS & lcs)
-{
-	m_clrText = lcs.clrHdrText;
-	m_clrBk = lcs.clrHdrBk;
-	m_clrBkNWA = lcs.clrNWABk;
-	m_clrHglInactive = lcs.clrHdrHglInact;
-	m_clrHglActive = lcs.clrHdrHglAct;
-
-	RedrawWindow();
-}
-
-void CListExHdr::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
-{
-	const auto ID = ColumnIndexToID(iColumn);
-
-	assert(ID > 0);
-	if (ID == 0)
-		return;
-
-	if (clrText == -1)
-		clrText = m_clrText;
-
-	m_umapColors[ID] = SHDRCOLOR { clrBk, clrText };
-	RedrawWindow();
-}
-
-void CListExHdr::SetColumnIcon(int iColumn, const LISTEXHDRICON & stIcon)
-{
-	const auto ID = ColumnIndexToID(iColumn);
-	assert(ID > 0);
-	if (ID == 0)
-		return;
-
-	if (stIcon.iIndex == -1) //If column already has icon.
-		m_umapIcons.erase(ID);
-	else
-	{
-		SHDRICON stHdrIcon;
-		stHdrIcon.stIcon = stIcon;
-		m_umapIcons[ID] = stHdrIcon;
-	}
-	RedrawWindow();
-}
-
-void CListExHdr::SetColumnSortable(int iColumn, bool fSortable)
-{
-	const auto ID = ColumnIndexToID(iColumn);
-	assert(ID > 0);
-	if (ID == 0)
-		return;
-
-	m_umapIsSort[ID] = fSortable;
-}
-
-void CListExHdr::SetSortable(bool fSortable)
-{
-	m_fSortable = fSortable;
-	RedrawWindow();
-}
-
-void CListExHdr::SetSortArrow(int iColumn, bool fAscending)
-{
-	UINT ID { 0 };
-	if (iColumn >= 0)
-	{
-		ID = ColumnIndexToID(iColumn);
-		assert(ID > 0);
-		if (ID == 0)
-			return;
-	}
-	m_uSortColumn = ID;
-	m_fSortAscending = fAscending;
-	RedrawWindow();
-}
-
-void CListExHdr::SetFont(const LOGFONTW * pLogFontNew)
-{
-	if (!pLogFontNew)
-		return;
-
-	m_fontHdr.DeleteObject();
-	m_fontHdr.CreateFontIndirectW(pLogFontNew);
-
-	//If new font's height is higher than current height (m_dwHeaderHeight)
-	//we adjust current height as well.
-	TEXTMETRICW tm;
-	CDC* pDC = GetDC();
-	pDC->SelectObject(m_fontHdr);
-	pDC->GetTextMetricsW(&tm);
-	ReleaseDC(pDC);
-	const DWORD dwHeightFont = tm.tmHeight + tm.tmExternalLeading + 1;
-	if (dwHeightFont > m_dwHeaderHeight)
-		SetHeight(dwHeightFont);
 }

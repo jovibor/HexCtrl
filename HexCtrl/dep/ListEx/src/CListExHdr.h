@@ -48,14 +48,13 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		[[nodiscard]] auto HasIcon(UINT ID)->SHDRICON*;
 		[[nodiscard]] auto IsHidden(UINT ID)->std::optional<SHIDDEN*>; //Internal ColumnID.
 		[[nodiscard]] bool IsSortable(UINT ID)const;
-	protected:
+		afx_msg void OnDestroy();
 		afx_msg void OnDrawItem(CDC* pDC, int iItem, CRect rcOrig, BOOL bIsPressed, BOOL bIsHighlighted)override;
 		afx_msg LRESULT OnLayout(WPARAM wParam, LPARAM lParam);
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 		afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
 		afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
-		afx_msg void OnDestroy();
 		DECLARE_MESSAGE_MAP()
 	private:
 		CFont m_fontHdr;

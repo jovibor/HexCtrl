@@ -343,14 +343,14 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	//Font related.//////////////////////////////////////////////
 	auto pDC = GetDC();
-	const auto iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
+	m_iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
 	ReleaseDC(pDC);
 
 	LOGFONTW lfMain { };
 	if (hcs.pLogFont == nullptr) //Creating default main font.
 	{
 		StringCchCopyW(lfMain.lfFaceName, LF_FACESIZE, L"Consolas");
-		lfMain.lfHeight = -MulDiv(11, iLOGPIXELSY, 72);
+		lfMain.lfHeight = -MulDiv(11, m_iLOGPIXELSY, 72);
 		lfMain.lfPitchAndFamily = FIXED_PITCH;
 	}
 	else
@@ -359,7 +359,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	LOGFONTW lfInfo { }; //Info area font, independent from the main font.
 	StringCchCopyW(lfInfo.lfFaceName, LF_FACESIZE, L"Consolas");
-	lfInfo.lfHeight = -MulDiv(11, iLOGPIXELSY, 72) + 1; //Size is less by 1 than the default main font.
+	lfInfo.lfHeight = -MulDiv(11, m_iLOGPIXELSY, 72) + 1; //Size is less by 1 than the default main font.
 	lfInfo.lfPitchAndFamily = FIXED_PITCH;
 	m_fontInfo.CreateFontIndirectW(&lfInfo);
 	//End of font related.///////////////////////////////////////
@@ -893,7 +893,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	switch (eCmd)
 	{
 	case EHexCmd::CMD_BKM_REMOVE:
-		fAvail = m_pBookmarks->HitTest(m_fMenuCMD ? *m_optRMouseClick : GetCaretPos()) != nullptr;
+		fAvail = m_pBookmarks->HasBookmarks() && m_pBookmarks->HitTest(m_fMenuCMD ? *m_optRMouseClick : GetCaretPos()) != nullptr;
 		break;
 	case EHexCmd::CMD_BKM_NEXT:
 	case EHexCmd::CMD_BKM_PREV:
@@ -3353,12 +3353,14 @@ void CHexCtrl::FillWithZeros()
 
 void CHexCtrl::FontSizeIncDec(bool fInc)
 {
-	//https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-logfontw#members
-	auto lFontSize = GetFontSize();
-	if (fInc)
-		lFontSize = lFontSize < 0 ? lFontSize - 1 : lFontSize + 2;
-	else
-		lFontSize = lFontSize < 0 ? lFontSize + 1 : lFontSize - 2;
+	auto lFontSize = MulDiv(-GetFontSize(), 72, m_iLOGPIXELSY);
+	if (fInc) {
+		++lFontSize;
+	}
+	else {
+		--lFontSize;
+	}
+
 	SetFontSize(lFontSize);
 }
 
@@ -3736,16 +3738,15 @@ void CHexCtrl::Print()
 	CRect rcPrint(CPoint(GetDeviceCaps(dcPr, PHYSICALOFFSETX), GetDeviceCaps(dcPr, PHYSICALOFFSETY)),
 		CSize(GetDeviceCaps(dcPr, HORZRES), GetDeviceCaps(dcPr, VERTRES)));
 	auto pCurrDC = GetDC();
-	const auto iScreenDpiY = GetDeviceCaps(pCurrDC->m_hDC, LOGPIXELSY);
 	ReleaseDC(pCurrDC);
-	const int iRatio = sizePrintDpi.cy / iScreenDpiY;
+	const int iRatio = sizePrintDpi.cy / m_iLOGPIXELSY;
 
-	CFont fontMain; //Main font for printing
+	CFont fontMain; //Main font for printing.
 	LOGFONTW lf { };
 	m_fontMain.GetLogFont(&lf);
 	lf.lfHeight *= iRatio;
 	fontMain.CreateFontIndirectW(&lf);
-	CFont fontInfo; //Info font for printing
+	CFont fontInfo; //Info font for printing.
 	LOGFONTW lfInfo { };
 	m_fontInfo.GetLogFont(&lfInfo);
 	lfInfo.lfHeight *= iRatio;
@@ -4357,20 +4358,12 @@ void CHexCtrl::SetFontSize(long lSize)
 		return;
 
 	//Prevent font size from being too small or too big.
-	if (lSize < 0)
-	{
-		if (lSize < -100/*Max size*/ || lSize > -7/*Min size*/)
-			return;
-	}
-	else if (lSize > 0)
-	{
-		if (lSize < 9/*Min size*/ || lSize > 75/*Max size*/)
-			return;
-	}
+	if (lSize < 4 || lSize > 64)
+		return;
 
 	LOGFONTW lf;
 	GetFont(lf);
-	lf.lfHeight = lSize;
+	lf.lfHeight = -MulDiv(lSize, m_iLOGPIXELSY, 72);
 	SetFont(lf);
 }
 
@@ -4693,7 +4686,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_LINEBEG, IsCmdAvail(EHexCmd::CMD_NAV_LINEBEG) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_LINEEND, IsCmdAvail(EHexCmd::CMD_NAV_LINEEND) ? MF_ENABLED : MF_GRAYED);
 		break;
-	case 4:	//Bookmarks
+	case 4:	//Bookmarks.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_ADD, IsCmdAvail(EHexCmd::CMD_BKM_ADD) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_REMOVE, IsCmdAvail(EHexCmd::CMD_BKM_REMOVE) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_NEXT, IsCmdAvail(EHexCmd::CMD_BKM_NEXT) ? MF_ENABLED : MF_GRAYED);
@@ -4701,7 +4694,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_CLEARALL, IsCmdAvail(EHexCmd::CMD_BKM_CLEARALL) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_DLG_MANAGER, IsCmdAvail(EHexCmd::CMD_BKM_DLG_MANAGER) ? MF_ENABLED : MF_GRAYED);
 		break;
-	case 5:	//Clipboard
+	case 5:	//Clipboard.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEX, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYHEX) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXLE, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYHEXLE) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXFMT, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYHEXFMT) ? MF_ENABLED : MF_GRAYED);
@@ -4714,14 +4707,14 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTEHEX, IsCmdAvail(EHexCmd::CMD_CLPBRD_PASTEHEX) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTETEXT, IsCmdAvail(EHexCmd::CMD_CLPBRD_PASTETEXT) ? MF_ENABLED : MF_GRAYED);
 		break;
-	case 6: //Modify
+	case 6: //Modify.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(EHexCmd::CMD_MODIFY_FILLZEROS) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLG_FILLDATA, IsCmdAvail(EHexCmd::CMD_MODIFY_DLG_FILLDATA) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLG_OPERS, IsCmdAvail(EHexCmd::CMD_MODIFY_DLG_OPERS) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(EHexCmd::CMD_MODIFY_UNDO) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(EHexCmd::CMD_MODIFY_REDO) ? MF_ENABLED : MF_GRAYED);
 		break;
-	case 7: //Selection
+	case 7: //Selection.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKSTART, IsCmdAvail(EHexCmd::CMD_SEL_MARKSTART) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKEND, IsCmdAvail(EHexCmd::CMD_SEL_MARKEND) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(EHexCmd::CMD_SEL_ALL) ? MF_ENABLED : MF_GRAYED);

@@ -151,33 +151,59 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 
 	m_dwGridWidth = lcs.dwListGridWidth;
 
-	LOGFONTW lf;
-	if (lcs.pListLogFont)
-		lf = *lcs.pListLogFont;
+	NONCLIENTMETRICSW ncm { };
+	ncm.cbSize = sizeof(NONCLIENTMETRICSW);
+	SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, ncm.cbSize, &ncm, 0);
+
+	auto pDC = GetDC();
+	m_iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
+	CFont fontDefault;
+	fontDefault.CreateFontIndirectW(&ncm.lfMessageFont);
+	TEXTMETRICW tm;
+	pDC->SelectObject(fontDefault);
+	GetTextMetricsW(pDC->m_hDC, &tm);
+	const DWORD dwHdrHeight = lcs.dwHdrHeight == 0 ? tm.tmHeight + tm.tmExternalLeading + 4 : lcs.dwHdrHeight; //Header is a bit higher than list rows.
+	ReleaseDC(pDC);
+
+	LOGFONT lfList; //Font for a List.
+	if (lcs.pListLogFont == nullptr)
+	{
+		lfList = ncm.lfMessageFont;
+		lfList.lfHeight = -MulDiv(10, m_iLOGPIXELSY, 72); //Font height for list.
+	}
 	else
 	{
-		NONCLIENTMETRICSW ncm { };
-		ncm.cbSize = sizeof(NONCLIENTMETRICSW);
-		SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, ncm.cbSize, &ncm, 0);
-		ncm.lfMessageFont.lfHeight = 18; //For some weird reason above func returns this value as MAX_LONG.
-		lf = ncm.lfMessageFont;
+		lfList = *lcs.pListLogFont;
 	}
 
-	m_lSizeFont = lf.lfHeight;
-	m_fontList.CreateFontIndirectW(&lf);
-	lf.lfUnderline = 1;
-	m_fontListUnderline.CreateFontIndirectW(&lf);
+	LOGFONT lfHdr; //Font for a Header.
+	if (lcs.pHdrLogFont == nullptr)
+	{
+		lfHdr = ncm.lfMessageFont;
+		lfHdr.lfHeight = -MulDiv(9, m_iLOGPIXELSY, 72); //Font height for a header.
+	}
+	else
+	{
+		lfHdr = *lcs.pHdrLogFont;
+	}
+
+	m_fontList.CreateFontIndirectW(&lfList);
+	lfList.lfUnderline = 1;
+	m_fontListUnderline.CreateFontIndirectW(&lfList);
+
 	m_penGrid.CreatePen(PS_SOLID, m_dwGridWidth, m_stColors.clrListGrid);
 	m_cursorDefault = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 	m_cursorHand = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 	SetClassLongPtrW(m_hWnd, GCLP_HCURSOR, 0); //To prevent cursor from blinking.
 
+	RecalcMeasure();
+
 	m_fCreated = true;
 
-	SetHdrHeight(lcs.dwHdrHeight);
-	SetHdrFont(lcs.pHdrLogFont);
 	GetHeaderCtrl().SetColor(lcs.stColor);
 	GetHeaderCtrl().SetSortable(lcs.fSortable);
+	SetHdrHeight(dwHdrHeight);
+	SetHdrFont(&lfHdr);
 	Update(0);
 
 	return true;
@@ -327,13 +353,12 @@ EListExSortMode CListEx::GetColumnSortMode(int iColumn)const
 	return enMode;
 }
 
-UINT CListEx::GetFontSize()const
+long CListEx::GetFontSize()
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return 0;
+	LOGFONTW lf;
+	m_fontList.GetLogFont(&lf);
 
-	return m_lSizeFont;
+	return lf.lfHeight;
 }
 
 int CListEx::GetSortColumn()const
@@ -585,48 +610,7 @@ void CListEx::SetFont(const LOGFONTW* pLogFontNew)
 	m_fontList.DeleteObject();
 	m_fontList.CreateFontIndirectW(pLogFontNew);
 
-	//To get WM_MEASUREITEM msg after changing font.
-	CRect rc;
-	GetWindowRect(&rc);
-	WINDOWPOS wp;
-	wp.hwnd = m_hWnd;
-	wp.cx = rc.Width();
-	wp.cy = rc.Height();
-	wp.flags = SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER;
-	SendMessageW(WM_WINDOWPOSCHANGED, 0, reinterpret_cast<LPARAM>(&wp));
-
-	Update(0);
-}
-
-void CListEx::SetFontSize(UINT uiSize)
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
-
-	//Prevent size from being too small or too big.
-	if (uiSize < 9 || uiSize > 75)
-		return;
-
-	LOGFONTW lf;
-	m_fontList.GetLogFont(&lf);
-	lf.lfHeight = m_lSizeFont = uiSize;
-	m_fontList.DeleteObject();
-	m_fontList.CreateFontIndirectW(&lf);
-	lf.lfUnderline = 1;
-	m_fontListUnderline.DeleteObject();
-	m_fontListUnderline.CreateFontIndirectW(&lf);
-
-	//To get WM_MEASUREITEM msg after changing font.
-	CRect rc;
-	GetWindowRect(&rc);
-	WINDOWPOS wp;
-	wp.hwnd = m_hWnd;
-	wp.cx = rc.Width();
-	wp.cy = rc.Height();
-	wp.flags = SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER;
-	SendMessageW(WM_WINDOWPOSCHANGED, 0, reinterpret_cast<LPARAM>(&wp));
-
+	RecalcMeasure();
 	Update(0);
 }
 
@@ -708,286 +692,8 @@ void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMo
 
 
 //////////////////////////////////////////////////////////////
-//Protected methods:
+//Private methods:
 //////////////////////////////////////////////////////////////
-void CListEx::InitHeader()
-{
-	GetHeaderCtrl().SubclassDlgItem(0, this);
-}
-
-auto CListEx::HasColor(int iItem, int iSubItem)->std::optional<PLISTEXCOLOR>
-{
-	if (iItem < 0 || iSubItem < 0)
-		return std::nullopt;
-
-	std::optional<PLISTEXCOLOR> opt { };
-	if (m_fVirtual) //In Virtual mode asking parent for color.
-	{
-		const auto iCtrlID = GetDlgCtrlID();
-		NMITEMACTIVATE nmii { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_GETCOLOR } };
-		nmii.iItem = iItem;
-		nmii.iSubItem = iSubItem;
-		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&nmii));
-		if (nmii.lParam != 0)
-			opt = reinterpret_cast<PLISTEXCOLOR>(nmii.lParam);
-	}
-	else
-	{
-		const auto ID = MapIndexToID(static_cast<UINT>(iItem));
-		if (const auto itItem = m_umapCellColor.find(ID); itItem != m_umapCellColor.end())
-		{
-			const auto itSubItem = itItem->second.find(iSubItem);
-
-			//If subitem id found.
-			if (itSubItem != itItem->second.end())
-				opt = &itSubItem->second;
-		}
-
-		if (!opt)
-		{
-			const auto itColumn = m_umapColumnColor.find(iSubItem);
-			const auto itRow = m_umapRowColor.find(ID);
-
-			if (itColumn != m_umapColumnColor.end() && itRow != m_umapRowColor.end())
-				opt = itColumn->second.time > itRow->second.time ? &itColumn->second.clr : &itRow->second.clr;
-			else if (itColumn != m_umapColumnColor.end())
-				opt = &itColumn->second.clr;
-			else if (itRow != m_umapRowColor.end())
-				opt = &itRow->second.clr;
-		}
-	}
-
-	return opt;
-}
-
-auto CListEx::HasTooltip(int iItem, int iSubItem)->std::optional<PLISTEXTOOLTIP>
-{
-	if (iItem < 0 || iSubItem < 0)
-		return std::nullopt;
-
-	std::optional<PLISTEXTOOLTIP> opt { };
-	if (m_fVirtual) //In Virtual mode asking parent for tooltip.
-	{
-		const auto iCtrlID = GetDlgCtrlID();
-		NMITEMACTIVATE nmii { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_GETTOOLTIP } };
-		nmii.iItem = iItem;
-		nmii.iSubItem = iSubItem;
-		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&nmii));
-		if (nmii.lParam != 0)
-			opt = reinterpret_cast<PLISTEXTOOLTIP>(nmii.lParam);
-	}
-	else
-	{
-		const auto ID = MapIndexToID(iItem);
-		if (const auto itItem = m_umapCellTt.find(ID); itItem != m_umapCellTt.end())
-			if (const auto itSubItem = itItem->second.find(iSubItem); itSubItem != itItem->second.end())
-				opt = &itSubItem->second;
-	}
-
-	return opt;
-}
-
-int CListEx::HasIcon(int iItem, int iSubItem)
-{
-	if (GetImageList(LVSIL_NORMAL) == nullptr)
-		return -1;
-
-	int iRet { -1 }; //-1 is default, when no image for cell set.
-
-	if (m_fVirtual) //In Virtual List mode asking parent for the icon index in image list.
-	{
-		const auto uCtrlID = static_cast<UINT>(GetDlgCtrlID());
-		NMITEMACTIVATE nmii { { m_hWnd, uCtrlID, LISTEX_MSG_GETICON } };
-		nmii.iItem = iItem;
-		nmii.iSubItem = iSubItem;
-		nmii.lParam = -1; //Default, no icon.
-		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlID), reinterpret_cast<LPARAM>(&nmii));
-		iRet = static_cast<int>(nmii.lParam);
-	}
-	else
-	{
-		const auto ID = MapIndexToID(iItem);
-		if (const auto it = m_umapCellIcon.find(ID); it != m_umapCellIcon.end())
-			if (const auto itInner = it->second.find(iSubItem); itInner != it->second.end())
-				iRet = itInner->second;
-	}
-
-	return iRet;
-}
-
-auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEMDATA>
-{
-	std::vector<SITEMDATA> vecData { };
-	auto CStringText = GetItemText(iItem, iSubitem);
-	const std::wstring_view wstrText = CStringText.GetString();
-	CRect rcTextOrig;  //Original rect of the subitem's text.
-	GetSubItemRect(iItem, iSubitem, LVIR_LABEL, rcTextOrig);
-	constexpr auto iIndentRc { 4 };
-	if (iSubitem != 0) //Not needed for item itself (not subitem).
-		rcTextOrig.left += iIndentRc;
-
-	if (const auto iIndex = HasIcon(iItem, iSubitem); iIndex > -1) //If cell has icon.
-	{
-		IMAGEINFO stIMG;
-		GetImageList(LVSIL_NORMAL)->GetImageInfo(iIndex, &stIMG);
-		vecData.emplace_back(iIndex, rcTextOrig);
-		rcTextOrig.left += (stIMG.rcImage.right - stIMG.rcImage.left) + iIndentRc; //Indent a rect for image width.
-	}
-
-	size_t nPosCurr { 0 }; //Current position in the parsed string.
-	CRect rcTextCurr { };  //Current rect.
-
-	while (nPosCurr != std::wstring_view::npos)
-	{
-		constexpr std::wstring_view wstrTagLink { L"<link=" };
-		constexpr std::wstring_view wstrTagFirstClose { L">" };
-		constexpr std::wstring_view wstrTagLast { L"</link>" };
-		constexpr std::wstring_view wstrTagTitle { L"title=" };
-		constexpr std::wstring_view wstrQuote { L"\"" };
-
-		//Searching the string for a <link=...></link> pattern.
-		if (size_t nPosTagLink { }, //Start position of the opening tag "<link=".
-			nPosLinkOpenQuote { },  //Position of the (link="<-) open quote.
-			nPosLinkCloseQuote { }, //Position of the (link=""<-) close quote.
-			nPosTagFirstClose { },  //Start position of the opening tag's closing bracket ">".
-			nPosTagLast { };        //Start position of the enclosing tag "</link>".
-			(nPosTagLink = wstrText.find(wstrTagLink, nPosCurr)) != std::wstring_view::npos
-			&& (nPosLinkOpenQuote = wstrText.find(wstrQuote, nPosTagLink)) != std::wstring_view::npos
-			&& (nPosLinkCloseQuote = wstrText.find(wstrQuote, nPosLinkOpenQuote + wstrQuote.size())) != std::wstring_view::npos
-			&& (nPosTagFirstClose = wstrText.find(wstrTagFirstClose, nPosLinkCloseQuote + wstrQuote.size())) != std::wstring_view::npos
-			&& (nPosTagLast = wstrText.find(wstrTagLast, nPosTagFirstClose + wstrTagFirstClose.size())) != std::wstring_view::npos)
-		{
-			auto pDC = GetDC();
-			pDC->SelectObject(m_fontList);
-			SIZE size;
-
-			//Any text before found tag.
-			if (nPosTagLink > nPosCurr)
-			{
-				auto wstrTextBefore = wstrText.substr(nPosCurr, nPosTagLink - nPosCurr);
-				GetTextExtentPoint32W(pDC->m_hDC, wstrTextBefore.data(), static_cast<int>(wstrTextBefore.size()), &size);
-				if (rcTextCurr.IsRectNull())
-					rcTextCurr.SetRect(rcTextOrig.left, rcTextOrig.top, rcTextOrig.left + size.cx, rcTextOrig.bottom);
-				else
-				{
-					rcTextCurr.left = rcTextCurr.right;
-					rcTextCurr.right += size.cx;
-				}
-				vecData.emplace_back(wstrTextBefore, L"", L"", rcTextCurr);
-			}
-
-			//The clickable/linked text, that between <link=...>textFromHere</link> tags.
-			auto wstrTextBetweenTags = wstrText.substr(nPosTagFirstClose + wstrTagFirstClose.size(),
-				nPosTagLast - (nPosTagFirstClose + wstrTagFirstClose.size()));
-			GetTextExtentPoint32W(pDC->m_hDC, wstrTextBetweenTags.data(), static_cast<int>(wstrTextBetweenTags.size()), &size);
-			ReleaseDC(pDC);
-
-			if (rcTextCurr.IsRectNull())
-				rcTextCurr.SetRect(rcTextOrig.left, rcTextOrig.top, rcTextOrig.left + size.cx, rcTextOrig.bottom);
-			else
-			{
-				rcTextCurr.left = rcTextCurr.right;
-				rcTextCurr.right += size.cx;
-			}
-
-			//Link tag text (linkID) between quotes: <link="textFromHere">
-			auto wstrTextLink = wstrText.substr(nPosLinkOpenQuote + wstrQuote.size(),
-				nPosLinkCloseQuote - nPosLinkOpenQuote - wstrQuote.size());
-			nPosCurr = nPosLinkCloseQuote + wstrQuote.size();
-
-			//Searching for title "<link=...title="">" tag.
-			bool fTitle { false };
-			std::wstring_view wstrTextTitle { };
-
-			if (size_t nPosTagTitle { }, //Position of the (title=) tag beginning.
-				nPosTitleOpenQuote { },  //Position of the (title="<-) opening quote.
-				nPosTitleCloseQuote { }; //Position of the (title=""<-) closing equote.
-				(nPosTagTitle = wstrText.find(wstrTagTitle, nPosCurr)) != std::wstring_view::npos
-				&& (nPosTitleOpenQuote = wstrText.find(wstrQuote, nPosTagTitle)) != std::wstring_view::npos
-				&& (nPosTitleCloseQuote = wstrText.find(wstrQuote, nPosTitleOpenQuote + wstrQuote.size())) != std::wstring_view::npos)
-			{
-				//Title tag text between quotes: <...title="textFromHere">
-				wstrTextTitle = wstrText.substr(nPosTitleOpenQuote + wstrQuote.size(),
-					nPosTitleCloseQuote - nPosTitleOpenQuote - wstrQuote.size());
-				fTitle = true;
-			}
-
-			vecData.emplace_back(wstrTextBetweenTags, wstrTextLink, wstrTextTitle, rcTextCurr, true, fTitle);
-			nPosCurr = nPosTagLast + wstrTagLast.size();
-		}
-		else
-		{
-			auto wstrTextAfter = wstrText.substr(nPosCurr, wstrText.size() - nPosCurr);
-
-			if (rcTextCurr.IsRectNull())
-				rcTextCurr = rcTextOrig;
-			else
-			{
-				auto pDC = GetDC();
-				SIZE size;
-				pDC->SelectObject(m_fontList);
-				GetTextExtentPoint32W(pDC->m_hDC, wstrTextAfter.data(), static_cast<int>(wstrTextAfter.size()), &size);
-				ReleaseDC(pDC);
-
-				rcTextCurr.left = rcTextCurr.right;
-				rcTextCurr.right += size.cx;
-			}
-
-			vecData.emplace_back(wstrTextAfter, L"", L"", rcTextCurr);
-			nPosCurr = std::wstring_view::npos;
-		}
-	}
-
-	return vecData;
-}
-
-void CListEx::TtLinkHide()
-{
-	m_fTtLinkShown = false;
-	m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoLink));
-	KillTimer(ID_TIMER_TT_LINK_CHECK);
-
-	m_stCurrLink.iItem = -1;
-	m_stCurrLink.iSubItem = -1;
-	m_rcLinkCurr.SetRectEmpty();
-}
-
-void CListEx::TtCellHide()
-{
-	m_fTtCellShown = false;
-	m_stCurrCell.iItem = -1;
-	m_stCurrCell.iSubItem = -1;
-
-	m_stWndTtCell.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoCell));
-	KillTimer(ID_TIMER_TT_CELL_CHECK);
-}
-
-void CListEx::TtRowShow(bool fShow, UINT uRow)
-{
-	if (fShow)
-	{
-		CPoint ptScreen;
-		GetCursorPos(&ptScreen);
-
-		wchar_t warrOffset[32] { L"Row: " };
-		swprintf_s(&warrOffset[5], 24, L"%u", uRow);
-		m_stToolInfoRow.lpszText = warrOffset;
-		m_stWndTtRow.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
-		m_stWndTtRow.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoRow));
-	}
-	m_stWndTtRow.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_stToolInfoRow));
-}
-
-void CListEx::MeasureItem(LPMEASUREITEMSTRUCT lpMIS)
-{
-	//Set row height according to current font's height.
-	TEXTMETRICW tm;
-	CDC* pDC = GetDC();
-	pDC->SelectObject(&m_fontList);
-	GetTextMetricsW(pDC->m_hDC, &tm);
-	lpMIS->itemHeight = tm.tmHeight + tm.tmExternalLeading + 1;
-	ReleaseDC(pDC);
-}
 
 void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 {
@@ -1097,11 +803,140 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 	}
 }
 
+void CListEx::FontSizeIncDec(bool fInc)
+{
+	auto lFontSize = MulDiv(-GetFontSize(), 72, m_iLOGPIXELSY);
+	if (fInc) {
+		++lFontSize;
+	}
+	else {
+		--lFontSize;
+	}
+
+	SetFontSize(lFontSize);
+}
+
+auto CListEx::HasColor(int iItem, int iSubItem)->std::optional<PLISTEXCOLOR>
+{
+	if (iItem < 0 || iSubItem < 0)
+		return std::nullopt;
+
+	std::optional<PLISTEXCOLOR> opt { };
+	if (m_fVirtual) //In Virtual mode asking parent for color.
+	{
+		const auto iCtrlID = GetDlgCtrlID();
+		NMITEMACTIVATE nmii { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_GETCOLOR } };
+		nmii.iItem = iItem;
+		nmii.iSubItem = iSubItem;
+		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&nmii));
+		if (nmii.lParam != 0)
+			opt = reinterpret_cast<PLISTEXCOLOR>(nmii.lParam);
+	}
+	else
+	{
+		const auto ID = MapIndexToID(static_cast<UINT>(iItem));
+		if (const auto itItem = m_umapCellColor.find(ID); itItem != m_umapCellColor.end())
+		{
+			const auto itSubItem = itItem->second.find(iSubItem);
+
+			//If subitem id found.
+			if (itSubItem != itItem->second.end())
+				opt = &itSubItem->second;
+		}
+
+		if (!opt)
+		{
+			const auto itColumn = m_umapColumnColor.find(iSubItem);
+			const auto itRow = m_umapRowColor.find(ID);
+
+			if (itColumn != m_umapColumnColor.end() && itRow != m_umapRowColor.end())
+				opt = itColumn->second.time > itRow->second.time ? &itColumn->second.clr : &itRow->second.clr;
+			else if (itColumn != m_umapColumnColor.end())
+				opt = &itColumn->second.clr;
+			else if (itRow != m_umapRowColor.end())
+				opt = &itRow->second.clr;
+		}
+	}
+
+	return opt;
+}
+
+auto CListEx::HasTooltip(int iItem, int iSubItem)->std::optional<PLISTEXTOOLTIP>
+{
+	if (iItem < 0 || iSubItem < 0)
+		return std::nullopt;
+
+	std::optional<PLISTEXTOOLTIP> opt { };
+	if (m_fVirtual) //In Virtual mode asking parent for tooltip.
+	{
+		const auto iCtrlID = GetDlgCtrlID();
+		NMITEMACTIVATE nmii { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_GETTOOLTIP } };
+		nmii.iItem = iItem;
+		nmii.iSubItem = iSubItem;
+		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&nmii));
+		if (nmii.lParam != 0)
+			opt = reinterpret_cast<PLISTEXTOOLTIP>(nmii.lParam);
+	}
+	else
+	{
+		const auto ID = MapIndexToID(iItem);
+		if (const auto itItem = m_umapCellTt.find(ID); itItem != m_umapCellTt.end())
+			if (const auto itSubItem = itItem->second.find(iSubItem); itSubItem != itItem->second.end())
+				opt = &itSubItem->second;
+	}
+
+	return opt;
+}
+
+int CListEx::HasIcon(int iItem, int iSubItem)
+{
+	if (GetImageList(LVSIL_NORMAL) == nullptr)
+		return -1;
+
+	int iRet { -1 }; //-1 is default, when no image for cell set.
+
+	if (m_fVirtual) //In Virtual List mode asking parent for the icon index in image list.
+	{
+		const auto uCtrlID = static_cast<UINT>(GetDlgCtrlID());
+		NMITEMACTIVATE nmii { { m_hWnd, uCtrlID, LISTEX_MSG_GETICON } };
+		nmii.iItem = iItem;
+		nmii.iSubItem = iSubItem;
+		nmii.lParam = -1; //Default, no icon.
+		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlID), reinterpret_cast<LPARAM>(&nmii));
+		iRet = static_cast<int>(nmii.lParam);
+	}
+	else
+	{
+		const auto ID = MapIndexToID(iItem);
+		if (const auto it = m_umapCellIcon.find(ID); it != m_umapCellIcon.end())
+			if (const auto itInner = it->second.find(iSubItem); itInner != it->second.end())
+				iRet = itInner->second;
+	}
+
+	return iRet;
+}
+
+void CListEx::InitHeader()
+{
+	GetHeaderCtrl().SubclassDlgItem(0, this);
+}
+
+void CListEx::MeasureItem(LPMEASUREITEMSTRUCT lpMIS)
+{
+	//Set row height according to current font's height.
+	TEXTMETRICW tm;
+	auto pDC = GetDC();
+	pDC->SelectObject(m_fontList);
+	GetTextMetricsW(pDC->m_hDC, &tm);
+	ReleaseDC(pDC);
+	lpMIS->itemHeight = tm.tmHeight + tm.tmExternalLeading + 1;
+}
+
 BOOL CListEx::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
 	if (nFlags == MK_CONTROL)
 	{
-		SetFontSize(GetFontSize() + zDelta / WHEEL_DELTA * 2);
+		FontSizeIncDec(zDelta > 0);
 		return TRUE;
 	}
 
@@ -1439,4 +1274,203 @@ void CListEx::OnDestroy()
 	m_umapColumnColor.clear();
 
 	m_fCreated = false;
+}
+
+auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEMDATA>
+{
+	std::vector<SITEMDATA> vecData { };
+	auto CStringText = GetItemText(iItem, iSubitem);
+	const std::wstring_view wstrText = CStringText.GetString();
+	CRect rcTextOrig;  //Original rect of the subitem's text.
+	GetSubItemRect(iItem, iSubitem, LVIR_LABEL, rcTextOrig);
+	constexpr auto iIndentRc { 4 };
+	if (iSubitem != 0) //Not needed for item itself (not subitem).
+		rcTextOrig.left += iIndentRc;
+
+	if (const auto iIndex = HasIcon(iItem, iSubitem); iIndex > -1) //If cell has icon.
+	{
+		IMAGEINFO stIMG;
+		GetImageList(LVSIL_NORMAL)->GetImageInfo(iIndex, &stIMG);
+		vecData.emplace_back(iIndex, rcTextOrig);
+		rcTextOrig.left += (stIMG.rcImage.right - stIMG.rcImage.left) + iIndentRc; //Indent a rect for image width.
+	}
+
+	size_t nPosCurr { 0 }; //Current position in the parsed string.
+	CRect rcTextCurr { };  //Current rect.
+
+	while (nPosCurr != std::wstring_view::npos)
+	{
+		constexpr std::wstring_view wstrTagLink { L"<link=" };
+		constexpr std::wstring_view wstrTagFirstClose { L">" };
+		constexpr std::wstring_view wstrTagLast { L"</link>" };
+		constexpr std::wstring_view wstrTagTitle { L"title=" };
+		constexpr std::wstring_view wstrQuote { L"\"" };
+
+		//Searching the string for a <link=...></link> pattern.
+		if (size_t nPosTagLink { }, //Start position of the opening tag "<link=".
+			nPosLinkOpenQuote { },  //Position of the (link="<-) open quote.
+			nPosLinkCloseQuote { }, //Position of the (link=""<-) close quote.
+			nPosTagFirstClose { },  //Start position of the opening tag's closing bracket ">".
+			nPosTagLast { };        //Start position of the enclosing tag "</link>".
+			(nPosTagLink = wstrText.find(wstrTagLink, nPosCurr)) != std::wstring_view::npos
+			&& (nPosLinkOpenQuote = wstrText.find(wstrQuote, nPosTagLink)) != std::wstring_view::npos
+			&& (nPosLinkCloseQuote = wstrText.find(wstrQuote, nPosLinkOpenQuote + wstrQuote.size())) != std::wstring_view::npos
+			&& (nPosTagFirstClose = wstrText.find(wstrTagFirstClose, nPosLinkCloseQuote + wstrQuote.size())) != std::wstring_view::npos
+			&& (nPosTagLast = wstrText.find(wstrTagLast, nPosTagFirstClose + wstrTagFirstClose.size())) != std::wstring_view::npos)
+		{
+			auto pDC = GetDC();
+			pDC->SelectObject(m_fontList);
+			SIZE size;
+
+			//Any text before found tag.
+			if (nPosTagLink > nPosCurr)
+			{
+				auto wstrTextBefore = wstrText.substr(nPosCurr, nPosTagLink - nPosCurr);
+				GetTextExtentPoint32W(pDC->m_hDC, wstrTextBefore.data(), static_cast<int>(wstrTextBefore.size()), &size);
+				if (rcTextCurr.IsRectNull())
+					rcTextCurr.SetRect(rcTextOrig.left, rcTextOrig.top, rcTextOrig.left + size.cx, rcTextOrig.bottom);
+				else
+				{
+					rcTextCurr.left = rcTextCurr.right;
+					rcTextCurr.right += size.cx;
+				}
+				vecData.emplace_back(wstrTextBefore, L"", L"", rcTextCurr);
+			}
+
+			//The clickable/linked text, that between <link=...>textFromHere</link> tags.
+			auto wstrTextBetweenTags = wstrText.substr(nPosTagFirstClose + wstrTagFirstClose.size(),
+				nPosTagLast - (nPosTagFirstClose + wstrTagFirstClose.size()));
+			GetTextExtentPoint32W(pDC->m_hDC, wstrTextBetweenTags.data(), static_cast<int>(wstrTextBetweenTags.size()), &size);
+			ReleaseDC(pDC);
+
+			if (rcTextCurr.IsRectNull())
+				rcTextCurr.SetRect(rcTextOrig.left, rcTextOrig.top, rcTextOrig.left + size.cx, rcTextOrig.bottom);
+			else
+			{
+				rcTextCurr.left = rcTextCurr.right;
+				rcTextCurr.right += size.cx;
+			}
+
+			//Link tag text (linkID) between quotes: <link="textFromHere">
+			auto wstrTextLink = wstrText.substr(nPosLinkOpenQuote + wstrQuote.size(),
+				nPosLinkCloseQuote - nPosLinkOpenQuote - wstrQuote.size());
+			nPosCurr = nPosLinkCloseQuote + wstrQuote.size();
+
+			//Searching for title "<link=...title="">" tag.
+			bool fTitle { false };
+			std::wstring_view wstrTextTitle { };
+
+			if (size_t nPosTagTitle { }, //Position of the (title=) tag beginning.
+				nPosTitleOpenQuote { },  //Position of the (title="<-) opening quote.
+				nPosTitleCloseQuote { }; //Position of the (title=""<-) closing equote.
+				(nPosTagTitle = wstrText.find(wstrTagTitle, nPosCurr)) != std::wstring_view::npos
+				&& (nPosTitleOpenQuote = wstrText.find(wstrQuote, nPosTagTitle)) != std::wstring_view::npos
+				&& (nPosTitleCloseQuote = wstrText.find(wstrQuote, nPosTitleOpenQuote + wstrQuote.size())) != std::wstring_view::npos)
+			{
+				//Title tag text between quotes: <...title="textFromHere">
+				wstrTextTitle = wstrText.substr(nPosTitleOpenQuote + wstrQuote.size(),
+					nPosTitleCloseQuote - nPosTitleOpenQuote - wstrQuote.size());
+				fTitle = true;
+			}
+
+			vecData.emplace_back(wstrTextBetweenTags, wstrTextLink, wstrTextTitle, rcTextCurr, true, fTitle);
+			nPosCurr = nPosTagLast + wstrTagLast.size();
+		}
+		else
+		{
+			auto wstrTextAfter = wstrText.substr(nPosCurr, wstrText.size() - nPosCurr);
+
+			if (rcTextCurr.IsRectNull())
+				rcTextCurr = rcTextOrig;
+			else
+			{
+				auto pDC = GetDC();
+				SIZE size;
+				pDC->SelectObject(m_fontList);
+				GetTextExtentPoint32W(pDC->m_hDC, wstrTextAfter.data(), static_cast<int>(wstrTextAfter.size()), &size);
+				ReleaseDC(pDC);
+
+				rcTextCurr.left = rcTextCurr.right;
+				rcTextCurr.right += size.cx;
+			}
+
+			vecData.emplace_back(wstrTextAfter, L"", L"", rcTextCurr);
+			nPosCurr = std::wstring_view::npos;
+		}
+	}
+
+	return vecData;
+}
+
+void CListEx::RecalcMeasure()
+{
+	//To get WM_MEASUREITEM msg after changing the font.
+	CRect rc;
+	GetWindowRect(&rc);
+	WINDOWPOS wp;
+	wp.hwnd = m_hWnd;
+	wp.cx = rc.Width();
+	wp.cy = rc.Height();
+	wp.flags = SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER;
+	SendMessageW(WM_WINDOWPOSCHANGED, 0, reinterpret_cast<LPARAM>(&wp));
+}
+
+void CListEx::SetFontSize(long lSize)
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
+	//Prevent font size from being too small or too big.
+	if (lSize < 4 || lSize > 64)
+		return;
+
+	LOGFONTW lf;
+	m_fontList.GetLogFont(&lf);
+	lf.lfHeight = -MulDiv(lSize, m_iLOGPIXELSY, 72);;
+	m_fontList.DeleteObject();
+	m_fontList.CreateFontIndirectW(&lf);
+	lf.lfUnderline = 1;
+	m_fontListUnderline.DeleteObject();
+	m_fontListUnderline.CreateFontIndirectW(&lf);
+
+	RecalcMeasure();
+	Update(0);
+}
+
+void CListEx::TtLinkHide()
+{
+	m_fTtLinkShown = false;
+	m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoLink));
+	KillTimer(ID_TIMER_TT_LINK_CHECK);
+
+	m_stCurrLink.iItem = -1;
+	m_stCurrLink.iSubItem = -1;
+	m_rcLinkCurr.SetRectEmpty();
+}
+
+void CListEx::TtCellHide()
+{
+	m_fTtCellShown = false;
+	m_stCurrCell.iItem = -1;
+	m_stCurrCell.iSubItem = -1;
+
+	m_stWndTtCell.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoCell));
+	KillTimer(ID_TIMER_TT_CELL_CHECK);
+}
+
+void CListEx::TtRowShow(bool fShow, UINT uRow)
+{
+	if (fShow)
+	{
+		CPoint ptScreen;
+		GetCursorPos(&ptScreen);
+
+		wchar_t warrOffset[32] { L"Row: " };
+		swprintf_s(&warrOffset[5], 24, L"%u", uRow);
+		m_stToolInfoRow.lpszText = warrOffset;
+		m_stWndTtRow.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
+		m_stWndTtRow.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoRow));
+	}
+	m_stWndTtRow.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_stToolInfoRow));
 }

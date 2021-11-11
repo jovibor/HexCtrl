@@ -66,7 +66,7 @@ namespace HEXCTRL::LISTEX
 		UINT         uID { };                 //List control ID.
 		DWORD        dwStyle { };             //Control's styles. Zero for default.
 		DWORD        dwListGridWidth { 1 };   //Width of the list grid.
-		DWORD        dwHdrHeight { 20 };      //Header height.
+		DWORD        dwHdrHeight { };         //Header height.
 		bool         fDialogCtrl { false };   //If it's a list within dialog.
 		bool         fSortable { false };     //Is list sortable, by clicking on the header column?
 		bool         fLinkUnderline { true }; //Links are displayed underlined or not.
@@ -109,7 +109,6 @@ namespace HEXCTRL::LISTEX
 		[[nodiscard]] virtual ULONGLONG GetCellData(int iItem, int iSubitem)const = 0;
 		[[nodiscard]] virtual LISTEXCOLORS GetColors()const = 0;
 		[[nodiscard]] virtual EListExSortMode GetColumnSortMode(int iColumn)const = 0;
-		[[nodiscard]] virtual UINT GetFontSize()const = 0;
 		[[nodiscard]] virtual int GetSortColumn()const = 0;
 		[[nodiscard]] virtual bool GetSortAscending()const = 0;
 		virtual void HideColumn(int iIndex, bool fHide) = 0;
@@ -126,7 +125,6 @@ namespace HEXCTRL::LISTEX
 		virtual void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enSortMode = { }) = 0;
 		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0;
-		virtual void SetFontSize(UINT uiSize) = 0;
 		virtual void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon) = 0; //Icon for a given column.
 		virtual void SetHdrFont(const LOGFONTW* pLogFontNew) = 0;

@@ -30,7 +30,6 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		[[nodiscard]] ULONGLONG GetCellData(int iItem, int iSubItem)const override;
 		[[nodiscard]] LISTEXCOLORS GetColors()const override;
 		[[nodiscard]] EListExSortMode GetColumnSortMode(int iColumn)const override;
-		[[nodiscard]] UINT GetFontSize()const override;
 		[[nodiscard]] int GetSortColumn()const override;
 		[[nodiscard]] bool GetSortAscending()const override;
 		void HideColumn(int iIndex, bool fHide)override;
@@ -47,7 +46,6 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
 		void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enSortMode = { })override;
 		void SetFont(const LOGFONTW* pLogFontNew)override;
-		void SetFontSize(UINT uiSize)override;
 		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1)override;
 		void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)override; //Icon for a given column.
 		void SetHdrFont(const LOGFONTW* pLogFontNew)override;
@@ -58,12 +56,16 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		DECLARE_DYNAMIC(CListEx)
 		DECLARE_MESSAGE_MAP()
 	protected:
+		[[nodiscard]] long GetFontSize();
 		CListExHdr& GetHeaderCtrl()override { return m_stListHeader; }
+		void FontSizeIncDec(bool fInc);
 		void InitHeader()override;
 		auto HasColor(int iItem, int iSubItem)->std::optional<PLISTEXCOLOR>;
 		auto HasTooltip(int iItem, int iSubItem)->std::optional<PLISTEXTOOLTIP>;
 		int HasIcon(int iItem, int iSubItem); //Does cell have an icon associated.
 		auto ParseItemText(int iItem, int iSubitem)->std::vector<SITEMDATA>;
+		void RecalcMeasure();
+		void SetFontSize(long lSize);
 		void TtLinkHide();
 		void TtCellHide();
 		void TtRowShow(bool fShow, UINT uRow); //Tooltips for HighLatency mode.
@@ -105,7 +107,6 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		LVHITTESTINFO m_stCurrLink { }; //Cell's link hit struct for tool-tip.
 		DWORD m_dwGridWidth { 1 };		//Grid width.
 		int m_iSortColumn { };          //Currently clicked header column.
-		long m_lSizeFont { };           //Font size.
 		PFNLVCOMPARE m_pfnCompare { nullptr };  //Pointer to user provided compare func.
 		EListExSortMode m_enDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
 		CRect m_rcLinkCurr { };         //Current link's rect;
@@ -116,6 +117,8 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		std::unordered_map<int, SCOLROWCLR> m_umapColumnColor { };                //Column colors.
 		std::unordered_map<int, std::unordered_map<int, int>> m_umapCellIcon { }; //Cell's icon.
 		std::unordered_map<int, EListExSortMode> m_umapColumnSortMode { };        //Column sorting mode.
+		UINT m_uHLItem { };            //High latency Vscroll item.
+		int m_iLOGPIXELSY { };         //GetDeviceCaps(LOGPIXELSY) constant.
 		bool m_fCreated { false };     //Is created.
 		bool m_fHighLatency { };       //High latency flag.
 		bool m_fSortable { false };    //Is list sortable.
@@ -127,10 +130,9 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		bool m_fTtLinkShown { false }; //Is link's tool-tip shown atm.
 		bool m_fLDownAtLink { false }; //Left mouse down on link.
 		bool m_fHLFlag { };            //High latency Vscroll flag.
-		UINT m_uHLItem { };            //High latency Vscroll item.
 	};
 
-			/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
+	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #ifdef _UNICODE
 #if defined _M_IX86
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")

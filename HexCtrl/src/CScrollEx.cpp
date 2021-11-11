@@ -29,12 +29,13 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		IDT_CLICKREPEAT = 0x7ff1
 	};
 
+	constexpr auto BMP_ARROW_SIZE_PX { 34 }; //Arrow rect size in pixels in the loaded arrows bitmap.
 	constexpr auto THUMB_POS_MAX = 0x7FFFFFFF;
 }
 
 BEGIN_MESSAGE_MAP(CScrollEx, CWnd)
-	ON_WM_TIMER()
 	ON_WM_DESTROY()
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 void CScrollEx::AddSibling(CScrollEx* pSibling)
@@ -202,8 +203,7 @@ void CScrollEx::OnNcActivate(BOOL /*bActive*/)const
 	if (!m_fCreated)
 		return;
 
-	//To repaint NC area.
-	GetParent()->SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+	Redraw(); //To repaint NC area.
 }
 
 void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS* lpncsp)
@@ -282,6 +282,7 @@ void CScrollEx::OnSetCursor(CWnd* /*pWnd*/, UINT nHitTest, UINT message)
 		GetCursorPos(&pt);
 		pParent->ScreenToClient(&pt);
 		pParent->SetFocus();
+		constexpr auto uTimerFirstClick { 200U }; //Milliseconds for WM_TIMER for first channel click.
 
 		if (GetThumbRect(true).PtInRect(pt))
 		{
@@ -294,28 +295,28 @@ void CScrollEx::OnSetCursor(CWnd* /*pWnd*/, UINT nHitTest, UINT message)
 			ScrollLineUp();
 			m_enState = EState::FIRSTARROW_CLICK;
 			pParent->SetCapture();
-			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
+			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
 		else if (GetLastArrowRect(true).PtInRect(pt))
 		{
 			ScrollLineDown();
 			m_enState = EState::LASTARROW_CLICK;
 			pParent->SetCapture();
-			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
+			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
 		else if (GetFirstChannelRect(true).PtInRect(pt))
 		{
 			ScrollPageUp();
 			m_enState = EState::FIRSTCHANNEL_CLICK;
 			pParent->SetCapture();
-			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
+			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
 		else if (GetLastChannelRect(true).PtInRect(pt))
 		{
 			ScrollPageDown();
 			m_enState = EState::LASTCHANNEL_CLICK;
 			pParent->SetCapture();
-			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), m_iTimerFirstClick, nullptr);
+			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
 	}
 	break;
@@ -334,9 +335,7 @@ void CScrollEx::SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG u
 	m_ullScrollPage = ullPage;
 	m_ullScrollSizeMax = ullSizeMax;
 
-	auto* pWnd = GetParent();
-	if (pWnd != nullptr) //To repaint NC area.
-		pWnd->SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+	Redraw(); //To repaint NC area.
 }
 
 ULONGLONG CScrollEx::SetScrollPos(ULONGLONG ullNewPos)
@@ -476,6 +475,8 @@ void CScrollEx::DrawScrollBar()const
 	if (!IsVisible())
 		return;
 
+	constexpr auto clrBkScrollBar = RGB(241, 241, 241); //Color of the scrollbar.
+
 	const auto pParent = GetParent();
 	CWindowDC dcParent(pParent);
 	CDC dcMem;
@@ -489,7 +490,7 @@ void CScrollEx::DrawScrollBar()const
 	const auto rcSNC = GetScrollRect(true);	//Scroll bar with any additional non client area, to fill it below.
 	pDC->FillSolidRect(&rcSNC, m_clrBkNC);	//Scroll bar with NC Bk.
 	const auto rcS = GetScrollRect();
-	pDC->FillSolidRect(&rcS, m_clrBkScrollBar); //Scroll bar Bk.
+	pDC->FillSolidRect(&rcS, clrBkScrollBar); //Scroll bar Bk.
 	DrawArrows(pDC);
 	DrawThumb(pDC);
 
@@ -504,15 +505,21 @@ void CScrollEx::DrawArrows(CDC* pDC)const
 	dcCompat.CreateCompatibleDC(pDC);
 	dcCompat.SelectObject(m_bmpArrows);
 
+	constexpr auto iLastArrowOffsetPx = BMP_ARROW_SIZE_PX; //Offset of the last arrow in pixels in the loaded arrows bitmap.
 	int iFirstBtnWH;
-	int iLastBtnOffsetDrawX, iLastBtnOffsetDrawY, iLastBtnWH, iLastBtnBmpOffsetX, iLastBtnBmpOffsetY;
+	int iLastBtnOffsetDrawX;
+	int iLastBtnOffsetDrawY;
+	int iLastBtnWH;
+	int iLastBtnBmpOffsetX;
+	int iLastBtnBmpOffsetY;
+
 	if (IsVert())
 	{
 		//First arrow button: offsets in bitmap to take from and screen coords to print to.
 		iFirstBtnWH = rcScroll.Width();
 
 		iLastBtnBmpOffsetX = 0;
-		iLastBtnBmpOffsetY = m_uiLastArrowOffset;
+		iLastBtnBmpOffsetY = iLastArrowOffsetPx;
 		iLastBtnOffsetDrawX = rcScroll.left;
 		iLastBtnOffsetDrawY = rcScroll.bottom - rcScroll.Width();
 		iLastBtnWH = rcScroll.Width();
@@ -521,30 +528,40 @@ void CScrollEx::DrawArrows(CDC* pDC)const
 	{
 		iFirstBtnWH = rcScroll.Height();
 
-		iLastBtnBmpOffsetX = m_uiLastArrowOffset;
+		iLastBtnBmpOffsetX = iLastArrowOffsetPx;
 		iLastBtnBmpOffsetY = 0;
 		iLastBtnOffsetDrawX = rcScroll.right - rcScroll.Height();
 		iLastBtnOffsetDrawY = rcScroll.top;
 		iLastBtnWH = rcScroll.Height();
 	}
 
-	constexpr int iFirstBtnBmpOffsetX { 0 }, iFirstBtnBmpOffsetY { 0 };
+	constexpr auto iFirstBtnBmpOffsetX { 0 };
+	constexpr auto iFirstBtnBmpOffsetY { 0 };
 	const int iFirstBtnOffsetDrawX { rcScroll.left }, iFirstBtnOffsetDrawY { rcScroll.top };
+
+	pDC->SetStretchBltMode(HALFTONE); //To stretch bmp at max quality, without artifacts.
+
+	//https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setstretchbltmode
+	//After setting the HALFTONE stretching mode, an application must call the Win32 function
+	//SetBrushOrgEx to set the brush origin. If it fails to do so, brush misalignment occurs.
+	SetBrushOrgEx(pDC->m_hDC, 0, 0, nullptr);
 
 	//First arrow button.
 	pDC->StretchBlt(iFirstBtnOffsetDrawX, iFirstBtnOffsetDrawY, iFirstBtnWH, iFirstBtnWH,
-		&dcCompat, iFirstBtnBmpOffsetX, iFirstBtnBmpOffsetY, m_uiArrowSize, m_uiArrowSize, SRCCOPY);
+		&dcCompat, iFirstBtnBmpOffsetX, iFirstBtnBmpOffsetY, BMP_ARROW_SIZE_PX, BMP_ARROW_SIZE_PX, SRCCOPY);
 
 	//Last arrow button.
 	pDC->StretchBlt(iLastBtnOffsetDrawX, iLastBtnOffsetDrawY, iLastBtnWH, iLastBtnWH,
-		&dcCompat, iLastBtnBmpOffsetX, iLastBtnBmpOffsetY, m_uiArrowSize, m_uiArrowSize, SRCCOPY);
+		&dcCompat, iLastBtnBmpOffsetX, iLastBtnBmpOffsetY, BMP_ARROW_SIZE_PX, BMP_ARROW_SIZE_PX, SRCCOPY);
 }
 
 void CScrollEx::DrawThumb(CDC* pDC)const
 {
+	constexpr auto clrThumb = RGB(192, 192, 192); //Scroll thumb color.
+
 	auto rcThumb = GetThumbRect();
 	if (!rcThumb.IsRectNull())
-		pDC->FillSolidRect(rcThumb, m_clrThumb);
+		pDC->FillSolidRect(rcThumb, clrThumb);
 }
 
 CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
@@ -608,7 +625,7 @@ UINT CScrollEx::GetScrollWorkAreaSizeWH()const
 {
 	const auto uiScrollSize = GetScrollSizeWH();
 
-	return uiScrollSize <= m_uiArrowSize * 2 ? 0 : uiScrollSize - m_uiArrowSize * 2; //Minus two arrow's size.
+	return uiScrollSize <= m_uiScrollBarSizeWH * 2 ? 0 : uiScrollSize - m_uiScrollBarSizeWH * 2; //Minus two arrow's size.
 }
 
 CRect CScrollEx::GetThumbRect(bool fClientCoord)const
@@ -643,6 +660,8 @@ CRect CScrollEx::GetThumbRect(bool fClientCoord)const
 
 UINT CScrollEx::GetThumbSizeWH()const
 {
+	constexpr auto uThumbSizeMin = 15U; //Minimum allowed thumb size.
+
 	const auto uiScrollWorkAreaSizeWH = GetScrollWorkAreaSizeWH();
 	const auto rcParent = GetParentRect();
 	const long double dDelta { IsVert() ?
@@ -651,7 +670,7 @@ UINT CScrollEx::GetThumbSizeWH()const
 
 	const UINT uiThumbSize { static_cast<UINT>(std::lroundl(uiScrollWorkAreaSizeWH * dDelta)) };
 
-	return uiThumbSize < m_uiThumbSizeMin ? m_uiThumbSizeMin : uiThumbSize;
+	return uiThumbSize < uThumbSizeMin ? uThumbSizeMin : uiThumbSize;
 }
 
 int CScrollEx::GetThumbPos()const
@@ -708,9 +727,9 @@ CRect CScrollEx::GetFirstArrowRect(bool fClientCoord)const
 {
 	auto rc = GetScrollRect();
 	if (IsVert())
-		rc.bottom = rc.top + m_uiArrowSize;
+		rc.bottom = rc.top + m_uiScrollBarSizeWH;
 	else
-		rc.right = rc.left + m_uiArrowSize;
+		rc.right = rc.left + m_uiScrollBarSizeWH;
 
 	if (fClientCoord)
 		rc.OffsetRect(-GetLeftDelta(), -GetTopDelta());
@@ -722,9 +741,9 @@ CRect CScrollEx::GetLastArrowRect(bool fClientCoord)const
 {
 	CRect rc = GetScrollRect();
 	if (IsVert())
-		rc.top = rc.bottom - m_uiArrowSize;
+		rc.top = rc.bottom - m_uiScrollBarSizeWH;
 	else
-		rc.left = rc.right - m_uiArrowSize;
+		rc.left = rc.right - m_uiScrollBarSizeWH;
 
 	if (fClientCoord)
 		rc.OffsetRect(-GetLeftDelta(), -GetTopDelta());
@@ -806,6 +825,14 @@ bool CScrollEx::IsSiblingVisible()const
 	return m_pSibling ? m_pSibling->IsVisible() : false;
 }
 
+void CScrollEx::Redraw()const
+{
+	//To repaint NC area.
+	auto* pWnd = GetParent();
+	if (pWnd != nullptr)
+		pWnd->SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+}
+
 void CScrollEx::SendParentScrollMsg()const
 {
 	if (!m_fCreated)
@@ -816,11 +843,13 @@ void CScrollEx::SendParentScrollMsg()const
 
 void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 {
+	constexpr auto uTimerRepeat { 50U }; //Milliseconds for repeat when click and hold on channel.
+
 	switch (nIDEvent)
 	{
 	case (static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK)):
 		KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
-		SetTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT), m_iTimerRepeat, nullptr);
+		SetTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT), uTimerRepeat, nullptr);
 		break;
 	case (static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT)):
 		switch (m_enState)

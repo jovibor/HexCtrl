@@ -190,6 +190,7 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	{
 		const auto iItemID = pItem->iItem;
 		const auto pBkm = m_pBookmarks->GetByIndex(static_cast<ULONGLONG>(iItemID));
+
 		if (pBkm == nullptr)
 			return;
 
