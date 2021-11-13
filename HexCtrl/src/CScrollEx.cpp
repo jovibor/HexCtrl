@@ -8,6 +8,7 @@
 #include "CScrollEx.h"
 #include <cassert>
 #include <cmath>
+#include <memory>
 
 using namespace HEXCTRL::INTERNAL::SCROLLEX;
 
@@ -29,8 +30,10 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		IDT_CLICKREPEAT = 0x7ff1
 	};
 
-	constexpr auto BMP_ARROW_SIZE_PX { 34 }; //Arrow rect size in pixels in the loaded arrows bitmap.
-	constexpr auto THUMB_POS_MAX = 0x7FFFFFFF;
+	constexpr auto SIZE_PX_BMP_ARROW { 34 }; //Arrow rect size in pixels, in the loaded arrow bitmap.
+	constexpr auto CLR_SCROLL_BK { RGB(241, 241, 241) };    //Scrollbar Bk color.
+	constexpr auto CLR_SCROLL_THUMB { RGB(192, 192, 192) }; //Scrollbar thumb color.
+	constexpr auto THUMB_POS_MAX { 0x7FFFFFFF };
 }
 
 BEGIN_MESSAGE_MAP(CScrollEx, CWnd)
@@ -47,7 +50,7 @@ void CScrollEx::AddSibling(CScrollEx* pSibling)
 	m_pSibling = pSibling;
 }
 
-bool CScrollEx::Create(CWnd* pParent, bool fVert, UINT uiResBmp,
+bool CScrollEx::Create(CWnd* pParent, bool fVert, int iIDRESArrow,
 	ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
 {
 	assert(!m_fCreated); //Already created
@@ -61,7 +64,8 @@ bool CScrollEx::Create(CWnd* pParent, bool fVert, UINT uiResBmp,
 	m_fScrollVert = fVert;
 	m_pwndParent = pParent;
 	m_uiScrollBarSizeWH = GetSystemMetrics(fVert ? SM_CXVSCROLL : SM_CXHSCROLL);
-	if (!m_bmpArrows.LoadBitmapW(uiResBmp))
+
+	if (!CreateArrows(iIDRESArrow, fVert))
 		return false;
 
 	m_fCreated = true;
@@ -467,15 +471,80 @@ void CScrollEx::SetScrollPageSize(ULONGLONG ullSize)
 	m_ullScrollPage = ullSize;
 }
 
+
 /********************************************************************
 * Private methods.
 ********************************************************************/
+
+bool CScrollEx::CreateArrows(int iIDRESArrow, bool fVert)
+{
+	CBitmap bmpArrow; //Bitmap of the arrow.
+	if (!bmpArrow.LoadBitmapW(iIDRESArrow))
+		return false;
+
+	BITMAP hBitmap;
+	bmpArrow.GetBitmap(&hBitmap); //hBitmap.bmBits is nullptr here.
+	const auto iWidth = static_cast<std::size_t>(hBitmap.bmWidth);
+	const auto iHeight = static_cast<std::size_t>(hBitmap.bmHeight);
+	const auto dwBytesBmp = hBitmap.bmWidthBytes * hBitmap.bmHeight;
+	const auto dwPixels = iWidth * iHeight;
+	const auto pOrigCOLOR = std::make_unique<COLORREF []>(dwPixels);
+	bmpArrow.GetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
+
+	m_bmpArrowFirst.CreateBitmapIndirect(&hBitmap);
+	m_bmpArrowLast.CreateBitmapIndirect(&hBitmap);
+
+	const auto lmb180 = [](const COLORREF* pDataIn, COLORREF* pDataOut, std::size_t iWidth, std::size_t iHeight)
+	{
+		//Rotating bitmap 180 degree.
+		const auto nPixels = iWidth * iHeight;
+		for (std::size_t i = 0U; i < nPixels; ++i)
+		{
+			pDataOut[i] = pDataIn[nPixels - i - 1];
+		}
+	};
+	const auto lmbCW90 = [](const COLORREF* pDataIn, COLORREF* pDataOut, std::size_t iWidth, std::size_t iHeight)
+	{
+		//Rotating bitmap CW 90 degree.
+		for (std::size_t iterRow = 0U; iterRow < iHeight; ++iterRow)
+		{
+			for (std::size_t iterCol = 0U; iterCol < iWidth; iterCol++)
+			{
+				pDataOut[iterCol * iHeight + (iHeight - iterRow - 1)] = pDataIn[iterRow * iWidth + iterCol];
+			}
+		}
+	};
+
+	if (fVert)
+	{
+		//First/UP arrow.
+		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
+
+		//Last/DOWN arrow.
+		const auto pDownCOLOR = std::make_unique<COLORREF []>(dwPixels);
+		lmb180(pOrigCOLOR.get(), pDownCOLOR.get(), iWidth, iHeight);
+		m_bmpArrowLast.SetBitmapBits(dwBytesBmp, pDownCOLOR.get());
+	}
+	else
+	{
+		//Last/Right arrow.
+		const auto pRightCOLOR = std::make_unique<COLORREF []>(dwPixels);
+		lmbCW90(pOrigCOLOR.get(), pRightCOLOR.get(), iWidth, iHeight);
+		m_bmpArrowLast.SetBitmapBits(dwBytesBmp, pRightCOLOR.get());
+
+		//First/Left arrow.
+		const auto pLeftCOLOR = std::make_unique<COLORREF []>(dwPixels);
+		lmb180(pRightCOLOR.get(), pLeftCOLOR.get(), iWidth, iHeight);
+		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pLeftCOLOR.get());
+	}
+
+	return true;
+}
+
 void CScrollEx::DrawScrollBar()const
 {
 	if (!IsVisible())
 		return;
-
-	constexpr auto clrBkScrollBar = RGB(241, 241, 241); //Color of the scrollbar.
 
 	const auto pParent = GetParent();
 	CWindowDC dcParent(pParent);
@@ -490,7 +559,7 @@ void CScrollEx::DrawScrollBar()const
 	const auto rcSNC = GetScrollRect(true);	//Scroll bar with any additional non client area, to fill it below.
 	pDC->FillSolidRect(&rcSNC, m_clrBkNC);	//Scroll bar with NC Bk.
 	const auto rcS = GetScrollRect();
-	pDC->FillSolidRect(&rcS, clrBkScrollBar); //Scroll bar Bk.
+	pDC->FillSolidRect(&rcS, CLR_SCROLL_BK); //Scroll bar Bk.
 	DrawArrows(pDC);
 	DrawThumb(pDC);
 
@@ -501,43 +570,25 @@ void CScrollEx::DrawScrollBar()const
 void CScrollEx::DrawArrows(CDC* pDC)const
 {
 	const auto rcScroll = GetScrollRect();
-	CDC dcCompat;
-	dcCompat.CreateCompatibleDC(pDC);
-	dcCompat.SelectObject(m_bmpArrows);
-
-	constexpr auto iLastArrowOffsetPx = BMP_ARROW_SIZE_PX; //Offset of the last arrow in pixels in the loaded arrows bitmap.
 	int iFirstBtnWH;
+	int iLastBtnWH;
 	int iLastBtnOffsetDrawX;
 	int iLastBtnOffsetDrawY;
-	int iLastBtnWH;
-	int iLastBtnBmpOffsetX;
-	int iLastBtnBmpOffsetY;
+	const auto iFirstBtnOffsetDrawX = rcScroll.left;
+	const auto iFirstBtnOffsetDrawY = rcScroll.top;
 
 	if (IsVert())
 	{
-		//First arrow button: offsets in bitmap to take from and screen coords to print to.
-		iFirstBtnWH = rcScroll.Width();
-
-		iLastBtnBmpOffsetX = 0;
-		iLastBtnBmpOffsetY = iLastArrowOffsetPx;
+		iFirstBtnWH = iLastBtnWH = rcScroll.Width();
 		iLastBtnOffsetDrawX = rcScroll.left;
 		iLastBtnOffsetDrawY = rcScroll.bottom - rcScroll.Width();
-		iLastBtnWH = rcScroll.Width();
 	}
 	else
 	{
-		iFirstBtnWH = rcScroll.Height();
-
-		iLastBtnBmpOffsetX = iLastArrowOffsetPx;
-		iLastBtnBmpOffsetY = 0;
+		iFirstBtnWH = iLastBtnWH = rcScroll.Height();
 		iLastBtnOffsetDrawX = rcScroll.right - rcScroll.Height();
 		iLastBtnOffsetDrawY = rcScroll.top;
-		iLastBtnWH = rcScroll.Height();
 	}
-
-	constexpr auto iFirstBtnBmpOffsetX { 0 };
-	constexpr auto iFirstBtnBmpOffsetY { 0 };
-	const int iFirstBtnOffsetDrawX { rcScroll.left }, iFirstBtnOffsetDrawY { rcScroll.top };
 
 	pDC->SetStretchBltMode(HALFTONE); //To stretch bmp at max quality, without artifacts.
 
@@ -546,22 +597,23 @@ void CScrollEx::DrawArrows(CDC* pDC)const
 	//SetBrushOrgEx to set the brush origin. If it fails to do so, brush misalignment occurs.
 	SetBrushOrgEx(pDC->m_hDC, 0, 0, nullptr);
 
-	//First arrow button.
-	pDC->StretchBlt(iFirstBtnOffsetDrawX, iFirstBtnOffsetDrawY, iFirstBtnWH, iFirstBtnWH,
-		&dcCompat, iFirstBtnBmpOffsetX, iFirstBtnBmpOffsetY, BMP_ARROW_SIZE_PX, BMP_ARROW_SIZE_PX, SRCCOPY);
+	CDC dcSource;
+	dcSource.CreateCompatibleDC(pDC);
 
-	//Last arrow button.
+	dcSource.SelectObject(m_bmpArrowFirst);	//First arrow button.
+	pDC->StretchBlt(iFirstBtnOffsetDrawX, iFirstBtnOffsetDrawY, iFirstBtnWH, iFirstBtnWH,
+		&dcSource, 0, 0, SIZE_PX_BMP_ARROW, SIZE_PX_BMP_ARROW, SRCCOPY);
+
+	dcSource.SelectObject(m_bmpArrowLast); //Last arrow button.
 	pDC->StretchBlt(iLastBtnOffsetDrawX, iLastBtnOffsetDrawY, iLastBtnWH, iLastBtnWH,
-		&dcCompat, iLastBtnBmpOffsetX, iLastBtnBmpOffsetY, BMP_ARROW_SIZE_PX, BMP_ARROW_SIZE_PX, SRCCOPY);
+		&dcSource, 0, 0, SIZE_PX_BMP_ARROW, SIZE_PX_BMP_ARROW, SRCCOPY);
 }
 
 void CScrollEx::DrawThumb(CDC* pDC)const
 {
-	constexpr auto clrThumb = RGB(192, 192, 192); //Scroll thumb color.
-
 	auto rcThumb = GetThumbRect();
 	if (!rcThumb.IsRectNull())
-		pDC->FillSolidRect(rcThumb, clrThumb);
+		pDC->FillSolidRect(rcThumb, CLR_SCROLL_THUMB);
 }
 
 CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
@@ -909,6 +961,7 @@ void CScrollEx::OnDestroy()
 {
 	CWnd::OnDestroy();
 
-	m_bmpArrows.DeleteObject();
+	m_bmpArrowFirst.DeleteObject();
+	m_bmpArrowLast.DeleteObject();
 	m_fCreated = false;
 }

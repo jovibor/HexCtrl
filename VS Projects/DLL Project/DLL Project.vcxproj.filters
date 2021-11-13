@@ -168,27 +168,24 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\HexCtrl\res\HexCtrlIcon.bmp">
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_ICON_MAIN.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\MenuCopy.bmp">
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_COPY.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\MenuFillZeros.bmp">
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_FILLZEROS.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\MenuPaste.bmp">
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_PASTE.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\ScrollExH.bmp">
-      <Filter>HexCtrl\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\res\ScrollExV.bmp">
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SCROLL_ARROW.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\HexCtrl\res\keybind.json">
+    <None Include="..\..\HexCtrl\res\IDR_HEXCTRL_JSON_KEYBIND.json">
       <Filter>HexCtrl\res</Filter>
     </None>
   </ItemGroup>

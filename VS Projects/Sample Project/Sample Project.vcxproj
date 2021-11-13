@@ -293,18 +293,15 @@
     <ResourceCompile Include="HexSample.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\HexCtrl\res\keybind.json">
-      <FileType>Document</FileType>
-    </None>
+    <None Include="..\..\HexCtrl\res\IDR_HEXCTRL_JSON_KEYBIND.json" />
     <None Include="res\HexSample.rc2" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\HexCtrl\res\HexCtrlIcon.bmp" />
-    <Image Include="..\..\HexCtrl\res\MenuCopy.bmp" />
-    <Image Include="..\..\HexCtrl\res\MenuFillZeros.bmp" />
-    <Image Include="..\..\HexCtrl\res\MenuPaste.bmp" />
-    <Image Include="..\..\HexCtrl\res\ScrollExH.bmp" />
-    <Image Include="..\..\HexCtrl\res\ScrollExV.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_ICON_MAIN.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_COPY.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_FILLZEROS.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_PASTE.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SCROLL_ARROW.bmp" />
     <Image Include="res\HexSample.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

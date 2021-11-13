@@ -2,12 +2,11 @@
 // Microsoft Visual C++ generated include file.
 // Used by HexCtrl.rc
 //
-#define IDB_HEXCTRL_ICON                9001
+#define IDB_HEXCTRL_ICON_MAIN           9001
 #define IDB_HEXCTRL_MENU_COPY           9002
 #define IDB_HEXCTRL_MENU_PASTE          9003
 #define IDB_HEXCTRL_MENU_FILLZEROS      9004
-#define IDB_HEXCTRL_SCROLL_V            9005
-#define IDB_HEXCTRL_SCROLL_H            9006
+#define IDB_HEXCTRL_SCROLL_ARROW        9005
 #define IDD_HEXCTRL_SEARCH              9101
 #define IDD_HEXCTRL_ABOUT               9102
 #define IDD_HEXCTRL_OPERATIONS          9103

@@ -277,17 +277,14 @@
     <ResourceCompile Include="..\..\HexCtrl\res\HexCtrl.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\HexCtrl\res\HexCtrlIcon.bmp" />
-    <Image Include="..\..\HexCtrl\res\MenuCopy.bmp" />
-    <Image Include="..\..\HexCtrl\res\MenuFillZeros.bmp" />
-    <Image Include="..\..\HexCtrl\res\MenuPaste.bmp" />
-    <Image Include="..\..\HexCtrl\res\ScrollExH.bmp" />
-    <Image Include="..\..\HexCtrl\res\ScrollExV.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_ICON_MAIN.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_COPY.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_FILLZEROS.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_PASTE.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SCROLL_ARROW.bmp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\HexCtrl\res\keybind.json">
-      <FileType>Document</FileType>
-    </None>
+    <None Include="..\..\HexCtrl\res\IDR_HEXCTRL_JSON_KEYBIND.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

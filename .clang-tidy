@@ -1,5 +1,6 @@
 Checks: '*,
 -cppcoreguidelines-*,-google-*,-fuchsia-*,-hicpp-*,-cert-*,-clang-*,-llvmlibc-*,-altera-*,
+-bugprone-easily-swappable-parameters,
 -bugprone-narrowing-conversions,
 -bugprone-use-after-move,-llvm-header-guard,
 -llvm-namespace-comment,

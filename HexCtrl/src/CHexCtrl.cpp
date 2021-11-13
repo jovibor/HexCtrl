@@ -372,8 +372,8 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 
 	//ScrollBars should be created here, after the main window has already been created (to attach to), to avoid assertions.
-	m_pScrollV->Create(this, true, IDB_HEXCTRL_SCROLL_V, 0, 0, 0); //Actual sizes are set in RecalcAll().
-	m_pScrollH->Create(this, false, IDB_HEXCTRL_SCROLL_H, 0, 0, 0);
+	m_pScrollV->Create(this, true, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0); //Actual sizes are set in RecalcAll().
+	m_pScrollH->Create(this, false, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0);
 	m_pScrollV->AddSibling(m_pScrollH.get());
 	m_pScrollH->AddSibling(m_pScrollV.get());
 
