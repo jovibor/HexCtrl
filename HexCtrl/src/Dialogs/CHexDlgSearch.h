@@ -36,7 +36,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
 		void HexCtrlHighlight(const std::vector<HEXSPAN>& vecSel); //Highlight found occurence in HexCtrl.
-		template<std::uint16_t uiType>
+		template<std::uint16_t uCmpType>
 		[[nodiscard]] bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -57,13 +57,13 @@ namespace HEXCTRL::INTERNAL
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		void Prepare();
 		[[nodiscard]] bool PrepareHexBytes();
-		[[nodiscard]] bool PrepareASCII();
-		[[nodiscard]] bool PrepareWCHAR();
-		[[nodiscard]] bool PrepareUTF8();
-		[[nodiscard]] bool PrepareBYTE();
-		[[nodiscard]] bool PrepareWORD();
-		[[nodiscard]] bool PrepareDWORD();
-		[[nodiscard]] bool PrepareQWORD();
+		[[nodiscard]] bool PrepareTextASCII();
+		[[nodiscard]] bool PrepareTextUTF16();
+		[[nodiscard]] bool PrepareTextUTF8();
+		[[nodiscard]] bool PrepareINT8();
+		[[nodiscard]] bool PrepareINT16();
+		[[nodiscard]] bool PrepareINT32();
+		[[nodiscard]] bool PrepareINT64();
 		[[nodiscard]] bool PrepareFloat();
 		[[nodiscard]] bool PrepareDouble();
 		[[nodiscard]] bool PrepareFILETIME();
@@ -71,7 +71,7 @@ namespace HEXCTRL::INTERNAL
 		void ResetSearch();
 		void Search();
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
-		template<std::uint16_t uiType>
+		template<std::uint16_t uCmpType>
 		void ThreadRun(STHREADRUN* pStThread);
 		void UpdateSearchReplaceControls();
 		DECLARE_MESSAGE_MAP()
@@ -80,6 +80,7 @@ namespace HEXCTRL::INTERNAL
 		EMode m_eSearchMode { };
 		IListExPtr m_pListMain { CreateListEx() };
 		std::vector<ULONGLONG> m_vecSearchRes { }; //Search results.
+		CMenu m_stMenuList;         //Menu for the list control.
 		CComboBox m_stComboSearch;  //Combo box "Search".
 		CComboBox m_stComboReplace; //Combo box "Replace".
 		CComboBox m_stComboMode;    //Combo box "Search mode".
@@ -91,29 +92,17 @@ namespace HEXCTRL::INTERNAL
 		CEdit m_stEditStep;         //Edit box "Step".
 		CEdit m_stEditLimit;        //Edit box "Limit search hit".
 		CBrush m_stBrushDefault;
-		CMenu m_stMenuList;
 		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
 		ULONGLONG m_ullBoundBegin { };  //Search start boundary.
 		ULONGLONG m_ullBoundEnd { };    //Search end boundary.
 		ULONGLONG m_ullOffsetCurr { };  //Current offset a search should start from.
-		ULONGLONG m_ullEndSentinel { }; //Maximum offset that search can't cross.
+		ULONGLONG m_ullSizeSentinel { };//Maximum size that search can't cross.
 		ULONGLONG m_ullStep { 1 };      //Search step (default is 1 byte).
 		DWORD m_dwCount { };            //How many, or what index number.
 		DWORD m_dwReplaced { };         //Replaced amount;
 		DWORD m_dwFoundLimit { 10000 }; //Maximum found search occurences.
 		int m_iDirection { };           //Search direction: 1 = Forward, -1 = Backward.
 		int m_iWrap { };                //Wrap direction: -1 = Beginning, 1 = End.
-		bool m_fSecondMatch { false };  //First or subsequent match. 
-		bool m_fFound { false };        //Found or not.
-		bool m_fDoCount { true };       //Do we count matches or just print "Found".
-		bool m_fReplace { false };      //Find or Find and Replace with...?
-		bool m_fAll { false };          //Find/Replace one by one, or all?
-		bool m_fSelection { false };    //"In selection" check box.
-		bool m_fWildcard { false };     //"Wildcard" check box.
-		bool m_fBigEndian { false };    //"Big-endian" check box.
-		bool m_fMatchCase { false };    //"Match case" check box.
-		bool m_fInverted { false };     //"Inverted" check box
-		bool m_fReplaceWarn { true };   //Show "Replace string size exceeds..." warning message or not.
 		std::span<std::byte> m_spnSearch;    //"Search" span.
 		std::span<std::byte> m_spnReplace;   //"Replace" span.
 		std::string m_strSearch;             //Actual string to search after all conversions.
@@ -123,8 +112,19 @@ namespace HEXCTRL::INTERNAL
 		std::wstring m_wstrTextSearch { };   //Text from "Search" box.
 		std::wstring m_wstrTextReplace { };  //Text from "Replace with..." box.
 		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
-		const std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		HEXSPAN m_stSelSpan { };             //Previous selection.
 		void(CHexDlgSearch::*m_pfnThread)(STHREADRUN* pThread); //Func pointer to the ThreadRun<> for the Search thread.
+		const std::byte m_uWildcard { '?' }; //Wildcard symbol.
+		bool m_fSecondMatch { false }; //First or subsequent match. 
+		bool m_fFound { false };       //Found or not.
+		bool m_fDoCount { true };      //Do we count matches or just print "Found".
+		bool m_fReplace { false };     //Find or Find and Replace with...?
+		bool m_fAll { false };         //Find/Replace one by one, or all?
+		bool m_fSelection { false };   //"In selection" check box.
+		bool m_fWildcard { false };    //"Wildcard" check box.
+		bool m_fBigEndian { false };   //"Big-endian" check box.
+		bool m_fMatchCase { false };   //"Match case" check box.
+		bool m_fInverted { false };    //"Inverted" check box
+		bool m_fReplaceWarn { true };  //Show "Replace string size exceeds..." warning message or not.
 	};
 }
