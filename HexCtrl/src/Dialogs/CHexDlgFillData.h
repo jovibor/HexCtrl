@@ -12,10 +12,10 @@ namespace HEXCTRL::INTERNAL
 {
 	class CHexDlgFillData final : public CDialogEx
 	{
-		enum class EFillType : std::uint8_t;
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 	private:
+		enum class EFillType : std::uint8_t; //Forward declaration.
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);

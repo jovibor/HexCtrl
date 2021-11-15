@@ -147,17 +147,16 @@ void CHexDlgEncoding::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED))
 	{
-		const auto sIndex = static_cast<size_t>(pNMI->iItem);
-		if (const auto uMaxChars = m_vecCodePage[sIndex].uMaxChars; uMaxChars == 1)
-			m_pHexCtrl->SetEncoding(m_vecCodePage[sIndex].iCPID);
+		m_pHexCtrl->SetEncoding(m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].iCPID);
 	}
 }
 
 void CHexDlgEncoding::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); m_vecCodePage[static_cast<size_t>(pNMI->iItem)].uMaxChars > 1)
+	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+		m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].uMaxChars > 1)
 	{
-		static LISTEXCOLOR stClr { RGB(240, 240, 240), RGB(70, 70, 70) };
+		static LISTEXCOLOR stClr { RGB(245, 245, 245), RGB(70, 70, 70) };
 		pNMI->lParam = reinterpret_cast<LPARAM>(&stClr);
 	}
 }

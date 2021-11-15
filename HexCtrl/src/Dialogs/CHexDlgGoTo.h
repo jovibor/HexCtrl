@@ -16,7 +16,7 @@ namespace HEXCTRL::INTERNAL
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsRepeatAvail()const;
 		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
-	protected:
+	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -26,7 +26,6 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioBackCurr();
 		afx_msg void OnClickRadioBackEnd();
 		DECLARE_MESSAGE_MAP()
-	private:
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		void HexCtrlGoOffset(ULONGLONG ullOffset);
 		void SetRangesText()const;

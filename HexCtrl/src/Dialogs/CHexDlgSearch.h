@@ -14,25 +14,25 @@ namespace HEXCTRL::INTERNAL
 	using namespace LISTEX;
 	class CHexDlgSearch final : public CDialogEx
 	{
-		enum class EMode : std::uint8_t;
-		struct SFINDRESULT;
-		struct STHREADRUN;
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
 		void SearchNextPrev(bool fForward);
 		BOOL ShowWindow(int nCmdShow);
 	private:
+		enum class EMode : std::uint8_t; //Forward declarations.
+		enum class ECmpType : std::uint16_t;
+		enum class EMenuID : std::uint16_t;
+		struct SFINDRESULT;
+		struct STHREADRUN;
 		void DoDataExchange(CDataExchange* pDX)override;
 		void AddToList(ULONGLONG ullOffset);
 		void ClearList();
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
-
 		//Main routine for finding stuff.
 		[[nodiscard]] SFINDRESULT Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, std::span<std::byte> spnSearch,
 			bool fForward = true, CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true);
-
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
 		void HexCtrlHighlight(const std::vector<HEXSPAN>& vecSel); //Highlight found occurence in HexCtrl.

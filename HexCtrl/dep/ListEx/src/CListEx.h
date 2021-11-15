@@ -55,7 +55,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode enSortMode)override;
 		DECLARE_DYNAMIC(CListEx)
 		DECLARE_MESSAGE_MAP()
-	protected:
+	private:
 		[[nodiscard]] long GetFontSize();
 		CListExHdr& GetHeaderCtrl()override { return m_stListHeader; }
 		void FontSizeIncDec(bool fInc);

@@ -18,7 +18,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsCanceled()const;
 		void SetProgress(ULONGLONG ullProgCurr);
 		void ExitDlg();
-	protected:
+	private:
 		BOOL OnInitDialog()override;
 		void DoDataExchange(CDataExchange* pDX)override;
 		void OnBtnCancel();

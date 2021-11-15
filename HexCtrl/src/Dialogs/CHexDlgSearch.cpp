@@ -32,7 +32,7 @@ namespace HEXCTRL::INTERNAL
 		SEARCH_FLOAT, SEARCH_DOUBLE, SEARCH_FILETIME, SEARCH_IOTEST//REMOVELATER:
 	};
 
-	enum class ECmpType : std::uint16_t //Flags for the instantiations of templated MemCmp<>.
+	enum class CHexDlgSearch::ECmpType : std::uint16_t //Flags for the instantiations of templated MemCmp<>.
 	{
 		TYPE_CHAR_LOOP = 0x0001,
 		TYPE_WCHAR_LOOP = 0x0002,
@@ -44,7 +44,7 @@ namespace HEXCTRL::INTERNAL
 		TYPE_INT64 = 0x0080
 	};
 
-	enum class EMenuID : std::uint16_t
+	enum class CHexDlgSearch::EMenuID : std::uint16_t
 	{
 		IDM_SEARCH_ADDBKM = 0x8000, IDM_SEARCH_SELECTALL = 0x8001, IDM_SEARCH_CLEARALL = 0x8002
 	};

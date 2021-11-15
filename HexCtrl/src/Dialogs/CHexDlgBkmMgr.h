@@ -17,20 +17,20 @@ namespace HEXCTRL::INTERNAL
 		enum class EMenuID : std::uint16_t;
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks);
-	protected:
+	private:
 		void DoDataExchange(CDataExchange* pDX)override;
-		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
+		afx_msg void OnClickRadioHexDec();
 		afx_msg void OnDestroy();
+		BOOL OnInitDialog()override;
 		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListLClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListDblClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListGetColor(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnClickRadioHexDec();
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		void UpdateList();
 		void SortBookmarks();
 		DECLARE_MESSAGE_MAP()

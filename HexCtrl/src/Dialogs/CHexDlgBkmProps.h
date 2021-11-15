@@ -16,7 +16,7 @@ namespace HEXCTRL::INTERNAL
 	public:
 		explicit CHexDlgBkmProps(CWnd* pParent = nullptr) : CDialogEx(IDD_HEXCTRL_BKMPROPS, pParent) {}
 		INT_PTR DoModal(HEXBKM& hbs, bool fShowAsHex);
-	protected:
+	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
 		void OnOK()override;

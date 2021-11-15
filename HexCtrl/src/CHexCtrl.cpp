@@ -92,9 +92,9 @@ namespace HEXCTRL
 			bool    fAlt { };
 		};
 
-		constexpr auto HEXCTRL_CLASSNAME_WSTR { L"HexCtrl" }; //HexControl Class name.
-		constexpr auto ID_TOOLTIP_BKM { 0x01ULL };            //Tooltip ID for bookmarks.
-		constexpr auto ID_TOOLTIP_OFFSET { 0x02ULL };         //Tooltip ID for offset.
+		constexpr auto WSTR_HEXCTRL_CLASSNAME { L"HexCtrl" }; //HexControl Class name.
+		constexpr auto ID_TOOLTIP_BKM { 0x01UL };             //Tooltip ID for bookmarks.
+		constexpr auto ID_TOOLTIP_OFFSET { 0x02UL };          //Tooltip ID for offset.
 	}
 }
 
@@ -145,7 +145,7 @@ CHexCtrl::CHexCtrl()
 
 	const auto hInst = AfxGetInstanceHandle();
 	WNDCLASSEXW wc { };
-	if (!::GetClassInfoExW(hInst, HEXCTRL_CLASSNAME_WSTR, &wc))
+	if (!::GetClassInfoExW(hInst, WSTR_HEXCTRL_CLASSNAME, &wc))
 	{
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
@@ -156,7 +156,7 @@ CHexCtrl::CHexCtrl()
 		wc.hCursor = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 		wc.hbrBackground = nullptr;
 		wc.lpszMenuName = nullptr;
-		wc.lpszClassName = HEXCTRL_CLASSNAME_WSTR;
+		wc.lpszClassName = WSTR_HEXCTRL_CLASSNAME;
 		if (!RegisterClassExW(&wc)) {
 			MessageBoxW(L"HexControl RegisterClassExW error.", L"Error", MB_ICONERROR);
 			return;
@@ -301,7 +301,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	std::wstring wstrError;
 	const auto lmbCreateWnd = [&](UINT uID, DWORD dwStyle)
 	{
-		if (!CWnd::CreateEx(hcs.dwExStyle, HEXCTRL_CLASSNAME_WSTR, L"HexControl", dwStyle, hcs.rect,
+		if (!CWnd::CreateEx(hcs.dwExStyle, WSTR_HEXCTRL_CLASSNAME, L"HexControl", dwStyle, hcs.rect,
 			CWnd::FromHandle(hcs.hwndParent), uID))
 			wstrError = std::format(L"HexCtrl (ID: {}) CreateEx failed.\r\nCheck HEXCREATE parameters.", uID);
 	};
@@ -1753,11 +1753,11 @@ void CHexCtrl::SetEncoding(int iCodePage)
 	if (!IsCreated())
 		return;
 
-	CPINFOEXW stCPInfo { };
+	CPINFOEXW stCPInfo;
 	std::wstring_view wstrFormat { };
 	if (iCodePage == -1)
 		wstrFormat = L"ASCII";
-	else if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != FALSE && stCPInfo.MaxCharSize == 1)
+	else if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != FALSE)
 		wstrFormat = L"Codepage {}";
 
 	if (!wstrFormat.empty())
@@ -1919,34 +1919,39 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 		return { };
 
 	const auto ullOffsetStart = ullStartLine * m_dwCapacity; //Offset of the visible data to print.
+	const auto ullDataSize = GetDataSize();
 	std::size_t sSizeDataToPrint = static_cast<std::size_t>(iLines) * static_cast<std::size_t>(m_dwCapacity); //Size of the visible data to print.
-	if (ullOffsetStart + sSizeDataToPrint > GetDataSize())
-		sSizeDataToPrint = static_cast<std::size_t>(GetDataSize() - ullOffsetStart);
+
+	if (ullOffsetStart + sSizeDataToPrint > ullDataSize)
+		sSizeDataToPrint = static_cast<std::size_t>(ullDataSize - ullOffsetStart);
 
 	const auto spnData = GetData({ ullOffsetStart, sSizeDataToPrint }); //Span data to print.
 	assert(!spnData.empty());
 	assert(spnData.size() == sSizeDataToPrint);
 
-	const auto pData = reinterpret_cast<PBYTE>(spnData.data()); //Pointer to data to print.
+	const auto pDataBegin = reinterpret_cast<unsigned char*>(spnData.data()); //Pointer to data to print.
+	const auto pDataEnd = pDataBegin + sSizeDataToPrint;
+
+	//Hex Bytes to print.
 	std::wstring wstrHex { };
 	wstrHex.reserve(sSizeDataToPrint * 2);
-	for (auto iterpData = pData; iterpData < pData + sSizeDataToPrint; ++iterpData) //Converting bytes to Hexes.
+	for (auto iterData = pDataBegin; iterData < pDataEnd; ++iterData) //Converting bytes to Hexes.
 	{
-		wstrHex.push_back(g_pwszHexMap[(*iterpData >> 4) & 0x0F]);
-		wstrHex.push_back(g_pwszHexMap[*iterpData & 0x0F]);
+		wstrHex.push_back(g_pwszHexMap[(*iterData >> 4) & 0x0F]);
+		wstrHex.push_back(g_pwszHexMap[*iterData & 0x0F]);
 	}
 
-	//Converting bytes to Text.
+	//Text to print.
 	std::wstring wstrText { };
 	const auto iEncoding = GetEncoding();
-	if (iEncoding == -1) //If default ASCII codepage, simply assigning pData to wstrText w/o any conversion.
+	if (iEncoding == -1) //If it's default ASCII codepage we simply assigning [pDataBegin...pDataEnd) to wstrText w/o any conversion.
 	{
-		wstrText.assign(pData, pData + sSizeDataToPrint);
+		wstrText.assign(pDataBegin, pDataEnd);
 	}
 	else
 	{
 		wstrText.resize(sSizeDataToPrint);
-		MultiByteToWideChar(iEncoding, 0, reinterpret_cast<LPCCH>(pData),
+		MultiByteToWideChar(iEncoding, 0, reinterpret_cast<LPCCH>(pDataBegin),
 			static_cast<int>(sSizeDataToPrint), wstrText.data(), static_cast<int>(sSizeDataToPrint));
 	}
 	ReplaceUnprintable(wstrText, iEncoding == -1, true);

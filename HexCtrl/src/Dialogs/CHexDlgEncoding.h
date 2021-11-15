@@ -14,12 +14,6 @@ namespace HEXCTRL::INTERNAL
 	using namespace HEXCTRL::LISTEX;
 	class CHexDlgEncoding final : public CDialogEx
 	{
-		struct SCODEPAGE
-		{
-			int iCPID { };
-			std::wstring wstrName { };
-			UINT uMaxChars { };
-		};
 	public:
 		void AddCP(std::wstring_view wstr);
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
@@ -37,6 +31,11 @@ namespace HEXCTRL::INTERNAL
 		DECLARE_MESSAGE_MAP()
 		void SortList();
 	private:
+		struct SCODEPAGE {
+			int iCPID { };
+			std::wstring wstrName { };
+			UINT uMaxChars { };
+		};
 		inline static CHexDlgEncoding* m_pThis { };
 		IHexCtrl* m_pHexCtrl { };
 		IListExPtr m_pListMain { CreateListEx() };
