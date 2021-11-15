@@ -484,58 +484,62 @@ bool CScrollEx::CreateArrows(int iIDRESArrow, bool fVert)
 
 	BITMAP hBitmap;
 	bmpArrow.GetBitmap(&hBitmap); //hBitmap.bmBits is nullptr here.
-	const auto iWidth = static_cast<std::size_t>(hBitmap.bmWidth);
-	const auto iHeight = static_cast<std::size_t>(hBitmap.bmHeight);
+	const auto nWidth = static_cast<std::size_t>(hBitmap.bmWidth);
+	const auto nHeight = static_cast<std::size_t>(hBitmap.bmHeight);
 	const auto dwBytesBmp = hBitmap.bmWidthBytes * hBitmap.bmHeight;
-	const auto dwPixels = iWidth * iHeight;
+	const auto dwPixels = nWidth * nHeight;
 	const auto pOrigCOLOR = std::make_unique<COLORREF []>(dwPixels);
 	bmpArrow.GetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
 
+	const auto lmbTranspose = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight)
+	{
+		for (std::size_t itHeight = 0; itHeight < nHeight; ++itHeight) //Transpose matrix.
+			for (std::size_t j = itHeight; j < nWidth; ++j)
+				std::swap(pInOut[itHeight * nHeight + j], pInOut[j * nHeight + itHeight]);
+	};
+	const auto lmbFlipVert = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight)
+	{
+		for (std::size_t itWidth = 0; itWidth < nWidth; ++itWidth) //Flip matrix' columns.
+			for (std::size_t itHeight = 0, itHeightBack = nHeight - 1; itHeight < itHeightBack; ++itHeight, --itHeightBack)
+				std::swap(pInOut[itHeight * nHeight + itWidth], pInOut[itHeightBack * nWidth + itWidth]);
+	};
+	const auto lmbFlipHorz = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight)
+	{
+		for (std::size_t itHeight = 0; itHeight < nHeight; ++itHeight) //Flip matrix' rows.
+			for (std::size_t itWidth = 0, itWidthBack = nWidth - 1; itWidth < itWidthBack; ++itWidth, --itWidthBack)
+				std::swap(pInOut[itHeight * nWidth + itWidth], pInOut[itHeight * nWidth + itWidthBack]);
+	};
+	const auto lmb90CW = [&](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight)
+	{
+		lmbFlipVert(pInOut, nWidth, nHeight);
+		lmbTranspose(pInOut, nWidth, nHeight);
+	};
+	const auto lmb90CCW = [&](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight)
+	{
+		lmbTranspose(pInOut, nWidth, nHeight);
+		lmbFlipVert(pInOut, nWidth, nHeight);
+	};
+
 	m_bmpArrowFirst.CreateBitmapIndirect(&hBitmap);
 	m_bmpArrowLast.CreateBitmapIndirect(&hBitmap);
-
-	const auto lmb180 = [](const COLORREF* pDataIn, COLORREF* pDataOut, std::size_t iWidth, std::size_t iHeight)
-	{
-		//Rotating bitmap 180 degree.
-		const auto nPixels = iWidth * iHeight;
-		for (std::size_t i = 0U; i < nPixels; ++i)
-		{
-			pDataOut[i] = pDataIn[nPixels - i - 1];
-		}
-	};
-	const auto lmbCW90 = [](const COLORREF* pDataIn, COLORREF* pDataOut, std::size_t iWidth, std::size_t iHeight)
-	{
-		//Rotating bitmap CW 90 degree.
-		for (std::size_t iterRow = 0U; iterRow < iHeight; ++iterRow)
-		{
-			for (std::size_t iterCol = 0U; iterCol < iWidth; iterCol++)
-			{
-				pDataOut[iterCol * iHeight + (iHeight - iterRow - 1)] = pDataIn[iterRow * iWidth + iterCol];
-			}
-		}
-	};
-
 	if (fVert)
 	{
-		//First/UP arrow.
+		//Up arrow.
 		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
 
-		//Last/DOWN arrow.
-		const auto pDownCOLOR = std::make_unique<COLORREF []>(dwPixels);
-		lmb180(pOrigCOLOR.get(), pDownCOLOR.get(), iWidth, iHeight);
-		m_bmpArrowLast.SetBitmapBits(dwBytesBmp, pDownCOLOR.get());
+		//Down arrow.
+		lmbFlipVert(pOrigCOLOR.get(), nWidth, nHeight);
+		m_bmpArrowLast.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
 	}
 	else
 	{
-		//Last/Right arrow.
-		const auto pRightCOLOR = std::make_unique<COLORREF []>(dwPixels);
-		lmbCW90(pOrigCOLOR.get(), pRightCOLOR.get(), iWidth, iHeight);
-		m_bmpArrowLast.SetBitmapBits(dwBytesBmp, pRightCOLOR.get());
+		//Left arrow.
+		lmb90CCW(pOrigCOLOR.get(), nWidth, nHeight);
+		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
 
-		//First/Left arrow.
-		const auto pLeftCOLOR = std::make_unique<COLORREF []>(dwPixels);
-		lmb180(pRightCOLOR.get(), pLeftCOLOR.get(), iWidth, iHeight);
-		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pLeftCOLOR.get());
+		//Right arrow.
+		lmbFlipHorz(pOrigCOLOR.get(), nWidth, nHeight);
+		m_bmpArrowLast.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
 	}
 
 	return true;
