@@ -15,7 +15,10 @@ namespace HEXCTRL::INTERNAL
 	public:
 		explicit CHexDlgAbout(CWnd* pParent) : CDialogEx(IDD_HEXCTRL_ABOUT, pParent) {}
 	private:
+		afx_msg void OnDestroy();
 		BOOL OnInitDialog()override;
 		DECLARE_MESSAGE_MAP()
+	private:
+		HBITMAP m_bmpLogo { }; //Logo bitmap.
 	};
 }
