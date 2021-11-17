@@ -168,16 +168,16 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_ICON_MAIN.bmp">
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_COPY.bmp">
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_FILLZEROS.bmp">
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_LOGO.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_PASTE.bmp">
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SCROLL_ARROW.bmp">

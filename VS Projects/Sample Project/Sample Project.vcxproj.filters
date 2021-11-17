@@ -200,19 +200,19 @@
     <Image Include="res\HexSample.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_ICON_MAIN.bmp">
-      <Filter>HexCtrl\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_COPY.bmp">
-      <Filter>HexCtrl\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_FILLZEROS.bmp">
-      <Filter>HexCtrl\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MENU_PASTE.bmp">
-      <Filter>HexCtrl\res</Filter>
-    </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SCROLL_ARROW.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_LOGO.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
   </ItemGroup>

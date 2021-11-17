@@ -269,30 +269,6 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	if (IsCreated())
 		return false;
 
-	//Menus
-	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCEW(IDR_HEXCTRL_MENU)))
-	{
-		MessageBoxW(L"HexControl LoadMenu(IDR_HEXCTRL_MENU) failed.", L"Error", MB_ICONERROR);
-		return false;
-	}
-	MENUITEMINFOW mii { };
-	mii.cbSize = sizeof(MENUITEMINFOW);
-	mii.fMask = MIIM_BITMAP;
-
-	const auto hInst = AfxGetInstanceHandle();
-	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLPBRD_COPYHEX] =
-		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MENU_COPY), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_COPYHEX, &mii);
-	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLPBRD_PASTEHEX] =
-		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MENU_PASTE), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_PASTEHEX, &mii);
-	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_MODIFY_FILLZEROS] =
-		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MENU_FILLZEROS), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
-
-	m_stColor = hcs.stColor;
-	m_dbWheelRatio = hcs.dbWheelRatio;
-
 	//1. WS_POPUP style is vital for GetParent to work properly in EHexCreateMode::CREATE_POPUP mode.
 	//   Without this style GetParent/GetOwner always return 0, no matter whether pParentWnd is provided to CreateWindowEx or not.
 	//2. Created HexCtrl window will always overlap (be on top of) its parent, or owner, window 
@@ -341,11 +317,41 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_wndTtOffset.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
 	m_wndTtOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 
-	//Font related.//////////////////////////////////////////////
+	m_stColor = hcs.stColor;
+	m_dbWheelRatio = hcs.dbWheelRatio;
+
 	auto pDC = GetDC();
 	m_iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
 	ReleaseDC(pDC);
 
+	//Menu related.//////////////////////////////////////////////
+	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCEW(IDR_HEXCTRL_MENU)))
+	{
+		MessageBoxW(L"HexControl LoadMenuW(IDR_HEXCTRL_MENU) failed.", L"Error", MB_ICONERROR);
+		return false;
+	}
+
+	MENUITEMINFOW mii { .cbSize = sizeof(MENUITEMINFOW), .fMask = MIIM_BITMAP };
+	const auto hInst = AfxGetInstanceHandle();
+	const auto fScale = m_iLOGPIXELSY / 96.0f; //Scale factor for HighDPI displays.
+	const auto iSizeIcon = static_cast<int>(16 * fScale);
+
+	//"Clipboard->Copy as Hex" menu icon.
+	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLPBRD_COPYHEX] =
+		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_COPYHEX, &mii);
+
+	//"Clipboard->Paste as Hex" menu icon.
+	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLPBRD_PASTEHEX] =
+		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_PASTEHEX), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_PASTEHEX, &mii);
+
+	//"Modify->Fill with Zeros" menu icon.
+	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_MODIFY_FILLZEROS] =
+		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
+
+	//Font related.//////////////////////////////////////////////
 	LOGFONTW lfMain { };
 	if (hcs.pLogFont == nullptr) //Creating default main font.
 	{
@@ -389,7 +395,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_pDlgEncoding->Create(IDD_HEXCTRL_ENCODING, this, this);
 	m_pDlgDataInterp->Create(IDD_HEXCTRL_DATAINTERP, this, this);
 	m_pDlgFillData->Create(IDD_HEXCTRL_FILLDATA, this, this);
-	m_pDlgOpers->Create(IDD_HEXCTRL_OPERATIONS, this, this);
+	m_pDlgOpers->Create(IDD_HEXCTRL_OPERS, this, this);
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this, this);
 	m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, this, this);
 	m_pBookmarks->Attach(this);

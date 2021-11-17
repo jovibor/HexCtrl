@@ -211,8 +211,8 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"MS-DOS time:", L"0"), EGroup::TIME, EName::NAME_MSDOSTIME, ESize::SIZE_QWORD);
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"MS-UDTTM time:", L"0"), EGroup::TIME, EName::NAME_MSDTTMTIME, ESize::SIZE_DWORD);
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"Windows SYSTEMTIME:", L"0"), EGroup::TIME, EName::NAME_SYSTEMTIME, ESize::SIZE_DQWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"Float:", L"0"), EGroup::FLOAT, EName::NAME_FLOAT, ESize::SIZE_DWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"Double:", L"0"), EGroup::FLOAT, EName::NAME_DOUBLE, ESize::SIZE_QWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"float:", L"0"), EGroup::FLOAT, EName::NAME_FLOAT, ESize::SIZE_DWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"double:", L"0"), EGroup::FLOAT, EName::NAME_DOUBLE, ESize::SIZE_QWORD);
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"GUID:", L"0"), EGroup::MISC, EName::NAME_GUID, ESize::SIZE_DQWORD);
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"GUID v1 UTC time:", L"0"), EGroup::TIME, EName::NAME_GUIDTIME, ESize::SIZE_DQWORD, true);
 
@@ -221,14 +221,14 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	m_stCtrlGrid.GetHeaderCtrl().SetItem(0, &hdItemPropGrid); //Property grid column size.
 
 	//Digits group.
-	auto pDigits = new CMFCPropertyGridProperty(L"Digits:");
+	auto pDigits = new CMFCPropertyGridProperty(L"Integral types:");
 	for (const auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::DIGITS && !iter.fChild)
 			pDigits->AddSubItem(iter.pProp);
 	m_stCtrlGrid.AddProperty(pDigits);
 
 	//Floats group.
-	auto pFloats = new CMFCPropertyGridProperty(L"Floats:");
+	auto pFloats = new CMFCPropertyGridProperty(L"Floating-point types:");
 	for (const auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::FLOAT && !iter.fChild)
 			pFloats->AddSubItem(iter.pProp);
