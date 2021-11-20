@@ -62,70 +62,45 @@ namespace HEXCTRL::INTERNAL
 	template bool wstr2num<float>(const std::wstring& wstr, float& t, int iBase);
 	template bool wstr2num<double>(const std::wstring& wstr, double& t, int iBase);
 
-	template<typename T>
-	bool str2num(const std::string& str, T& tData, int iBase)
+	bool wstr2hex(std::wstring_view wstrIn, std::string& strHex, bool fWc, char chWc)
 	{
-		char* pEndPtr;
-		if constexpr (std::is_same_v<T, ULONGLONG>)
-		{
-			tData = std::strtoull(str.data(), &pEndPtr, iBase);
-			if ((tData == 0 && (pEndPtr == str.data() || *pEndPtr != '\0'))
-				|| (tData == ULLONG_MAX && errno == ERANGE))
-				return false;
-		}
-		else
-		{
-			const auto llData = std::strtoll(str.data(), &pEndPtr, iBase);
-			if ((llData == 0 && (pEndPtr == str.data() || *pEndPtr != '\0'))
-				|| ((llData == LLONG_MAX || llData == LLONG_MIN) && errno == ERANGE)
-				|| (llData > static_cast<LONGLONG>((std::numeric_limits<T>::max)()))
-				|| (llData < static_cast<LONGLONG>((std::numeric_limits<std::make_signed_t<T>>::min)()))
-				)
-				return false;
-			tData = static_cast<T>(llData);
-		}
-
-		return true;
-	}
-	//Explicit instantiations of templated func in .cpp.
-	template bool str2num<UCHAR>(const std::string& str, UCHAR& t, int iBase);
-
-	bool str2hex(std::string_view strIn, std::string& strToHex, bool fWc, char chWc)
-	{
-		std::string strFilter = "0123456789AaBbCcDdEeFf"; //Allowed characters.
+		std::wstring wstrFilter = L"0123456789AaBbCcDdEeFf"; //Allowed characters.
 		if (fWc)
-			strFilter += chWc;
-		if (strIn.find_first_not_of(strFilter) != std::string_view::npos)
+			wstrFilter += chWc;
+		if (wstrIn.find_first_not_of(wstrFilter) != std::string_view::npos)
 			return false;
 
-		std::string strTmp;
-		for (auto iterBegin = strIn.begin(); iterBegin != strIn.end();)
+		std::string strHexTmp;
+		for (auto iterBegin = wstrIn.begin(); iterBegin != wstrIn.end();)
 		{
 			if (fWc && *iterBegin == chWc) //Skip wildcard.
 			{
 				++iterBegin;
-				strTmp += chWc;
+				strHexTmp += chWc;
 				continue;
 			}
 
-			//Extract two current chars and pass it to str2num as string.
-			const size_t nOffsetCurr = iterBegin - strIn.begin();
-			const auto nSize = nOffsetCurr + 2 <= strIn.size() ? 2 : 1;
-			if (unsigned char chNumber;	str2num(std::string(strIn.substr(nOffsetCurr, nSize)), chNumber, 16))
+			//Extract two current wchars and pass it to wstr2num as wstring.
+			const std::size_t nOffsetCurr = iterBegin - wstrIn.begin();
+			const auto nSize = nOffsetCurr + 2 <= wstrIn.size() ? 2 : 1;
+			if (unsigned char chNumber; wstr2num(std::wstring(wstrIn.substr(nOffsetCurr, nSize)), chNumber, 16))
 			{
 				iterBegin += nSize;
-				strTmp += chNumber;
+				strHexTmp += chNumber;
 			}
 			else
 				return false;
 		}
-		strToHex = std::move(strTmp);
+		strHex = std::move(strHexTmp);
 
 		return true;
 	}
 
 	std::string wstr2str(std::wstring_view wstr, UINT uCodePage)
 	{
+		if (uCodePage == -1)
+			uCodePage = 1252; //ANSI-Latin codepage for default ASCII.
+
 		const auto iSize = WideCharToMultiByte(uCodePage, 0, wstr.data(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
 		WideCharToMultiByte(uCodePage, 0, wstr.data(), static_cast<int>(wstr.size()), &str[0], iSize, nullptr, nullptr);
@@ -135,6 +110,9 @@ namespace HEXCTRL::INTERNAL
 
 	std::wstring str2wstr(std::string_view str, UINT uCodePage)
 	{
+		if (uCodePage == -1)
+			uCodePage = 1252; //ANSI-Latin codepage for default ASCII.
+
 		const auto iSize = MultiByteToWideChar(uCodePage, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
 		std::wstring wstr(iSize, 0);
 		MultiByteToWideChar(uCodePage, 0, str.data(), static_cast<int>(str.size()), &wstr[0], iSize);

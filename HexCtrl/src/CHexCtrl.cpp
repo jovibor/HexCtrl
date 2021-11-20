@@ -60,8 +60,9 @@ namespace HEXCTRL
 	{
 		enum class CHexCtrl::EClipboard : std::uint8_t
 		{
-			COPY_HEX, COPY_HEXLE, COPY_HEXFMT, COPY_TEXT, COPY_BASE64,
-			COPY_CARR, COPY_GREPHEX, COPY_PRNTSCRN, COPY_OFFSET, PASTE_HEX, PASTE_TEXT
+			COPY_HEX, COPY_HEXLE, COPY_HEXFMT, COPY_BASE64, COPY_CARR,
+			COPY_GREPHEX, COPY_PRNTSCRN, COPY_OFFSET, COPY_TEXT_UTF16,
+			PASTE_HEX, PASTE_TEXT_UTF16, PASTE_TEXT_CP
 		};
 
 		//Struct for UNDO command routine.
@@ -92,6 +93,7 @@ namespace HEXCTRL
 			bool    fAlt { };
 		};
 
+		constexpr const wchar_t* const WSTR_HEXDIGITS { L"0123456789ABCDEF" }; //Hex digits wchars for fast lookup.
 		constexpr auto WSTR_HEXCTRL_CLASSNAME { L"HexCtrl" }; //HexControl Class name.
 		constexpr auto ID_TOOLTIP_BKM { 0x01UL };             //Tooltip ID for bookmarks.
 		constexpr auto ID_TOOLTIP_OFFSET { 0x02UL };          //Tooltip ID for offset.
@@ -499,38 +501,41 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case EHexCmd::CMD_BKM_DLG_MANAGER:
 		m_pDlgBkmMgr->ShowWindow(SW_SHOW);
 		break;
-	case EHexCmd::CMD_CLPBRD_COPYHEX:
+	case EHexCmd::CMD_CLPBRD_COPY_HEX:
 		ClipboardCopy(EClipboard::COPY_HEX);
 		break;
-	case EHexCmd::CMD_CLPBRD_COPYHEXLE:
+	case EHexCmd::CMD_CLPBRD_COPY_HEXLE:
 		ClipboardCopy(EClipboard::COPY_HEXLE);
 		break;
-	case EHexCmd::CMD_CLPBRD_COPYHEXFMT:
+	case EHexCmd::CMD_CLPBRD_COPY_HEXFMT:
 		ClipboardCopy(EClipboard::COPY_HEXFMT);
 		break;
-	case EHexCmd::CMD_CLPBRD_COPYTEXT:
-		ClipboardCopy(EClipboard::COPY_TEXT);
+	case EHexCmd::CMD_CLPBRD_COPY_TEXTUTF16:
+		ClipboardCopy(EClipboard::COPY_TEXT_UTF16);
 		break;
-	case EHexCmd::CMD_CLPBRD_COPYBASE64:
+	case EHexCmd::CMD_CLPBRD_COPY_BASE64:
 		ClipboardCopy(EClipboard::COPY_BASE64);
 		break;
-	case EHexCmd::CMD_CLPBRD_COPYCARR:
+	case EHexCmd::CMD_CLPBRD_COPY_CARR:
 		ClipboardCopy(EClipboard::COPY_CARR);
 		break;
-	case EHexCmd::CMD_CLPBRD_COPYGREPHEX:
+	case EHexCmd::CMD_CLPBRD_COPY_GREPHEX:
 		ClipboardCopy(EClipboard::COPY_GREPHEX);
 		break;
-	case EHexCmd::CMD_CLPBRD_COPYPRNTSCRN:
+	case EHexCmd::CMD_CLPBRD_COPY_PRNTSCRN:
 		ClipboardCopy(EClipboard::COPY_PRNTSCRN);
 		break;
-	case EHexCmd::CMD_CLPBRD_COPYOFFSET:
+	case EHexCmd::CMD_CLPBRD_COPY_OFFSET:
 		ClipboardCopy(EClipboard::COPY_OFFSET);
 		break;
-	case EHexCmd::CMD_CLPBRD_PASTEHEX:
+	case EHexCmd::CMD_CLPBRD_PASTE_HEX:
 		ClipboardPaste(EClipboard::PASTE_HEX);
 		break;
-	case EHexCmd::CMD_CLPBRD_PASTETEXT:
-		ClipboardPaste(EClipboard::PASTE_TEXT);
+	case EHexCmd::CMD_CLPBRD_PASTE_TEXTUTF16:
+		ClipboardPaste(EClipboard::PASTE_TEXT_UTF16);
+		break;
+	case EHexCmd::CMD_CLPBRD_PASTE_TEXTCP:
+		ClipboardPaste(EClipboard::PASTE_TEXT_CP);
 		break;
 	case EHexCmd::CMD_MODIFY_DLG_OPERS:
 		m_pDlgOpers->ShowWindow(SW_SHOW);
@@ -787,14 +792,14 @@ wchar_t CHexCtrl::GetUnprintableChar()const
 	return m_wchUnprintable;
 }
 
-HWND CHexCtrl::GetWindowHandle(EHexWnd enWnd)const
+HWND CHexCtrl::GetWindowHandle(EHexWnd eWnd)const
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return nullptr;
 
 	HWND hWnd { };
-	switch (enWnd)
+	switch (eWnd)
 	{
 	case EHexWnd::WND_MAIN:
 		hWnd = m_hWnd;
@@ -906,19 +911,20 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case EHexCmd::CMD_BKM_CLEARALL:
 		fAvail = m_pBookmarks->HasBookmarks();
 		break;
-	case EHexCmd::CMD_CLPBRD_COPYHEX:
-	case EHexCmd::CMD_CLPBRD_COPYHEXLE:
-	case EHexCmd::CMD_CLPBRD_COPYHEXFMT:
-	case EHexCmd::CMD_CLPBRD_COPYTEXT:
-	case EHexCmd::CMD_CLPBRD_COPYBASE64:
-	case EHexCmd::CMD_CLPBRD_COPYCARR:
-	case EHexCmd::CMD_CLPBRD_COPYGREPHEX:
-	case EHexCmd::CMD_CLPBRD_COPYPRNTSCRN:
+	case EHexCmd::CMD_CLPBRD_COPY_HEX:
+	case EHexCmd::CMD_CLPBRD_COPY_HEXLE:
+	case EHexCmd::CMD_CLPBRD_COPY_HEXFMT:
+	case EHexCmd::CMD_CLPBRD_COPY_TEXTUTF16:
+	case EHexCmd::CMD_CLPBRD_COPY_BASE64:
+	case EHexCmd::CMD_CLPBRD_COPY_CARR:
+	case EHexCmd::CMD_CLPBRD_COPY_GREPHEX:
+	case EHexCmd::CMD_CLPBRD_COPY_PRNTSCRN:
 		fAvail = fSelection;
 		break;
-	case EHexCmd::CMD_CLPBRD_PASTEHEX:
-	case EHexCmd::CMD_CLPBRD_PASTETEXT:
-		fAvail = fMutable && IsClipboardFormatAvailable(CF_TEXT);
+	case EHexCmd::CMD_CLPBRD_PASTE_HEX:
+	case EHexCmd::CMD_CLPBRD_PASTE_TEXTUTF16:
+	case EHexCmd::CMD_CLPBRD_PASTE_TEXTCP:
+		fAvail = fMutable && IsClipboardFormatAvailable(CF_UNICODETEXT);
 		break;
 	case EHexCmd::CMD_MODIFY_DLG_OPERS:
 	case EHexCmd::CMD_MODIFY_DLG_FILLDATA:
@@ -949,7 +955,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case EHexCmd::CMD_SEL_MARKEND:
 	case EHexCmd::CMD_SEL_ALL:
 	case EHexCmd::CMD_DLG_DATAINTERP:
-	case EHexCmd::CMD_CLPBRD_COPYOFFSET:
+	case EHexCmd::CMD_CLPBRD_COPY_OFFSET:
 		fAvail = fDataSet;
 		break;
 	case EHexCmd::CMD_SEARCH_NEXT:
@@ -1469,17 +1475,18 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ "CMD_BKM_PREV", { EHexCmd::CMD_BKM_PREV, static_cast<WORD>(IDM_HEXCTRL_BKM_PREV) } },
 		{ "CMD_BKM_CLEARALL", { EHexCmd::CMD_BKM_CLEARALL, static_cast<WORD>(IDM_HEXCTRL_BKM_CLEARALL) } },
 		{ "CMD_BKM_DLG_MANAGER", { EHexCmd::CMD_BKM_DLG_MANAGER, static_cast<WORD>(IDM_HEXCTRL_BKM_DLG_MANAGER) } },
-		{ "CMD_CLPBRD_COPYHEX", { EHexCmd::CMD_CLPBRD_COPYHEX, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYHEX) } },
-		{ "CMD_CLPBRD_COPYHEXLE", { EHexCmd::CMD_CLPBRD_COPYHEXLE, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYHEXLE) } },
-		{ "CMD_CLPBRD_COPYHEXFMT", { EHexCmd::CMD_CLPBRD_COPYHEXFMT, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYHEXFMT) } },
-		{ "CMD_CLPBRD_COPYTEXT", { EHexCmd::CMD_CLPBRD_COPYTEXT, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYTEXT) } },
-		{ "CMD_CLPBRD_COPYBASE64", { EHexCmd::CMD_CLPBRD_COPYBASE64, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYBASE64) } },
-		{ "CMD_CLPBRD_COPYCARR", { EHexCmd::CMD_CLPBRD_COPYCARR, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYCARR) } },
-		{ "CMD_CLPBRD_COPYGREPHEX", { EHexCmd::CMD_CLPBRD_COPYGREPHEX, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYGREPHEX) } },
-		{ "CMD_CLPBRD_COPYPRNTSCRN", { EHexCmd::CMD_CLPBRD_COPYPRNTSCRN, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN) } },
-		{ "CMD_CLPBRD_COPYOFFSET", { EHexCmd::CMD_CLPBRD_COPYOFFSET, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYOFFSET) } },
-		{ "CMD_CLPBRD_PASTEHEX", { EHexCmd::CMD_CLPBRD_PASTEHEX, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_PASTEHEX) } },
-		{ "CMD_CLPBRD_PASTETEXT", { EHexCmd::CMD_CLPBRD_PASTETEXT, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_PASTETEXT) } },
+		{ "CMD_CLPBRD_COPY_HEX", { EHexCmd::CMD_CLPBRD_COPY_HEX, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYHEX) } },
+		{ "CMD_CLPBRD_COPY_HEXLE", { EHexCmd::CMD_CLPBRD_COPY_HEXLE, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYHEXLE) } },
+		{ "CMD_CLPBRD_COPY_HEXFMT", { EHexCmd::CMD_CLPBRD_COPY_HEXFMT, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYHEXFMT) } },
+		{ "CMD_CLPBRD_COPY_TEXTUTF16", { EHexCmd::CMD_CLPBRD_COPY_TEXTUTF16, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYTEXT) } },
+		{ "CMD_CLPBRD_COPY_BASE64", { EHexCmd::CMD_CLPBRD_COPY_BASE64, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYBASE64) } },
+		{ "CMD_CLPBRD_COPY_CARR", { EHexCmd::CMD_CLPBRD_COPY_CARR, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYCARR) } },
+		{ "CMD_CLPBRD_COPY_GREPHEX", { EHexCmd::CMD_CLPBRD_COPY_GREPHEX, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYGREPHEX) } },
+		{ "CMD_CLPBRD_COPY_PRNTSCRN", { EHexCmd::CMD_CLPBRD_COPY_PRNTSCRN, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN) } },
+		{ "CMD_CLPBRD_COPY_OFFSET", { EHexCmd::CMD_CLPBRD_COPY_OFFSET, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_COPYOFFSET) } },
+		{ "CMD_CLPBRD_PASTE_HEX", { EHexCmd::CMD_CLPBRD_PASTE_HEX, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_PASTEHEX) } },
+		{ "CMD_CLPBRD_PASTE_TEXTUTF16", { EHexCmd::CMD_CLPBRD_PASTE_TEXTUTF16, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_PASTETEXTUTF16) } },
+		{ "CMD_CLPBRD_PASTE_TEXTCP", { EHexCmd::CMD_CLPBRD_PASTE_TEXTCP, static_cast<WORD>(IDM_HEXCTRL_CLPBRD_PASTETEXTCP) } },
 		{ "CMD_MODIFY_DLG_OPERS", { EHexCmd::CMD_MODIFY_DLG_OPERS, static_cast<WORD>(IDM_HEXCTRL_MODIFY_DLG_OPERS) } },
 		{ "CMD_MODIFY_FILLZEROS", { EHexCmd::CMD_MODIFY_FILLZEROS, static_cast<WORD>(IDM_HEXCTRL_MODIFY_FILLZEROS) } },
 		{ "CMD_MODIFY_DLG_FILLDATA", { EHexCmd::CMD_MODIFY_DLG_FILLDATA, static_cast<WORD>(IDM_HEXCTRL_MODIFY_DLG_FILLDATA) } },
@@ -1760,16 +1767,25 @@ void CHexCtrl::SetEncoding(int iCodePage)
 		return;
 
 	CPINFOEXW stCPInfo;
-	std::wstring_view wstrFormat { };
-	if (iCodePage == -1)
-		wstrFormat = L"ASCII";
-	else if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != FALSE)
-		wstrFormat = L"Codepage {}";
+	std::wstring_view wstrFmt;
+	switch (iCodePage)
+	{
+	case -1:
+		wstrFmt = L"ASCII";
+		break;
+	case 0:
+		wstrFmt = L"UTF-16";
+		break;
+	default:
+		if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != FALSE)
+			wstrFmt = L"Codepage {}";
+		break;
+	}
 
-	if (!wstrFormat.empty())
+	if (!wstrFmt.empty())
 	{
 		m_iCodePage = iCodePage;
-		m_wstrTextTitle = std::format(wstrFormat, m_iCodePage);
+		m_wstrTextTitle = std::format(wstrFmt, m_iCodePage);
 		Redraw();
 	}
 }
@@ -1787,14 +1803,14 @@ void CHexCtrl::SetFont(const LOGFONTW& lf)
 	ParentNotify(HEXCTRL_MSG_VIEWCHANGE);
 }
 
-void CHexCtrl::SetGroupMode(EHexDataSize enGroupMode)
+void CHexCtrl::SetGroupMode(EHexDataSize eGroupMode)
 {
 	assert(IsCreated());
-	assert(enGroupMode <= EHexDataSize::SIZE_QWORD);
-	if (!IsCreated() || enGroupMode > EHexDataSize::SIZE_QWORD)
+	assert(eGroupMode <= EHexDataSize::SIZE_QWORD);
+	if (!IsCreated() || eGroupMode > EHexDataSize::SIZE_QWORD)
 		return;
 
-	m_enGroupMode = enGroupMode;
+	m_enGroupMode = eGroupMode;
 
 	//Getting the "Show data as..." menu pointer independent of position.
 	const auto* const pMenuMain = m_menuMain.GetSubMenu(0);
@@ -1817,7 +1833,7 @@ void CHexCtrl::SetGroupMode(EHexDataSize enGroupMode)
 			pMenuShowDataAs->CheckMenuItem(i, MF_UNCHECKED | MF_BYPOSITION);
 
 		UINT ID { };
-		switch (enGroupMode)
+		switch (eGroupMode)
 		{
 		case EHexDataSize::SIZE_BYTE:
 			ID = IDM_HEXCTRL_GROUPBY_BYTE;
@@ -1943,16 +1959,23 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 	wstrHex.reserve(sSizeDataToPrint * 2);
 	for (auto iterData = pDataBegin; iterData < pDataEnd; ++iterData) //Converting bytes to Hexes.
 	{
-		wstrHex.push_back(g_pwszHexMap[(*iterData >> 4) & 0x0F]);
-		wstrHex.push_back(g_pwszHexMap[*iterData & 0x0F]);
+		wstrHex.push_back(WSTR_HEXDIGITS[(*iterData >> 4) & 0x0F]);
+		wstrHex.push_back(WSTR_HEXDIGITS[*iterData & 0x0F]);
 	}
 
 	//Text to print.
-	std::wstring wstrText { };
+	std::wstring wstrText;
 	const auto iEncoding = GetEncoding();
-	if (iEncoding == -1) //If it's default ASCII codepage we simply assigning [pDataBegin...pDataEnd) to wstrText w/o any conversion.
+	if (iEncoding == -1) //ASCII codepage: we simply assigning [pDataBegin...pDataEnd) to wstrText w/o any conversion.
 	{
 		wstrText.assign(pDataBegin, pDataEnd);
+	}
+	else if (iEncoding == 0) //UTF-16.
+	{
+		const auto pDataUTF16Beg = reinterpret_cast<wchar_t*>(pDataBegin);
+		const auto pDataUTF16End = reinterpret_cast<wchar_t*>((sSizeDataToPrint % 2) == 0 ? pDataEnd : pDataEnd - 1);
+		wstrText.assign(pDataUTF16Beg, pDataUTF16End);
+		wstrText.resize(sSizeDataToPrint);
 	}
 	else
 	{
@@ -2147,7 +2170,7 @@ void CHexCtrl::ChooseFontDlg()
 	}
 }
 
-void CHexCtrl::ClipboardCopy(EClipboard enType)const
+void CHexCtrl::ClipboardCopy(EClipboard eType)const
 {
 	if (m_pSelection->GetSelSize() > 1024 * 1024 * 8) //8MB
 	{
@@ -2156,7 +2179,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)const
 	}
 
 	std::wstring wstrData { };
-	switch (enType)
+	switch (eType)
 	{
 	case EClipboard::COPY_HEX:
 		wstrData = CopyHex();
@@ -2165,10 +2188,10 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)const
 		wstrData = CopyHexLE();
 		break;
 	case EClipboard::COPY_HEXFMT:
-		wstrData = CopyHexFormatted();
+		wstrData = CopyHexFmt();
 		break;
-	case EClipboard::COPY_TEXT:
-		wstrData = CopyText();
+	case EClipboard::COPY_TEXT_UTF16:
+		wstrData = CopyTextUTF16();
 		break;
 	case EClipboard::COPY_BASE64:
 		wstrData = CopyBase64();
@@ -2190,7 +2213,7 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)const
 	}
 
 	constexpr auto sCharSize = sizeof(wchar_t);
-	const size_t sMemSize = wstrData.size() * sCharSize + sCharSize;
+	const std::size_t sMemSize = wstrData.size() * sCharSize + sCharSize;
 	const auto hMem = GlobalAlloc(GMEM_MOVEABLE, sMemSize);
 	if (!hMem)
 	{
@@ -2213,80 +2236,64 @@ void CHexCtrl::ClipboardCopy(EClipboard enType)const
 	CloseClipboard();
 }
 
-void CHexCtrl::ClipboardPaste(EClipboard enType)
+void CHexCtrl::ClipboardPaste(EClipboard eType)
 {
 	if (!IsMutable() || !::OpenClipboard(m_hWnd))
 		return;
 
-	const auto hClipboard = GetClipboardData(CF_TEXT);
-	if (!hClipboard)
+	const auto hClpbrd = GetClipboardData(CF_UNICODETEXT);
+	if (!hClpbrd)
 		return;
 
-	const auto pszClipboardData = static_cast<LPSTR>(GlobalLock(hClipboard));
-	if (pszClipboardData == nullptr)
+	const auto pDataClpbrd = static_cast<wchar_t*>(GlobalLock(hClpbrd));
+	if (pDataClpbrd == nullptr)
 	{
 		CloseClipboard();
 		return;
 	}
 
-	ULONGLONG ullSize = strlen(pszClipboardData);
-	ULONGLONG ullSizeToModify { };
-	HEXMODIFY hmd;
-	std::string strData; //Actual data to paste, must outlive hmd.
-
+	const auto sSizeClpbrd = wcslen(pDataClpbrd) * sizeof(wchar_t);
 	const auto ullDataSize = GetDataSize();
-	switch (enType)
-	{
-	case EClipboard::PASTE_TEXT:
-		if (m_ullCaretPos + ullSize > ullDataSize)
-			ullSize = ullDataSize - m_ullCaretPos;
+	const auto ullCaretPos = GetCaretPos();
+	HEXMODIFY hmd { };
+	ULONGLONG ullSizeModify;
+	std::string strDataModify; //Actual data to paste, must outlive hmd.
 
-		hmd.spnData = { reinterpret_cast<std::byte*>(pszClipboardData), static_cast<std::size_t>(ullSize) };
-		ullSizeToModify = ullSize;
+	switch (eType)
+	{
+	case EClipboard::PASTE_TEXT_UTF16:
+		ullSizeModify = sSizeClpbrd;
+		if (ullCaretPos + sSizeClpbrd > ullDataSize)
+			ullSizeModify = ullDataSize - ullCaretPos;
+		hmd.spnData = { reinterpret_cast<std::byte*>(pDataClpbrd), static_cast<std::size_t>(ullSizeModify) };
+		break;
+	case EClipboard::PASTE_TEXT_CP:
+		strDataModify = wstr2str(pDataClpbrd, GetEncoding());
+		ullSizeModify = strDataModify.size();
+		if (ullCaretPos + ullSizeModify > ullDataSize)
+			ullSizeModify = ullDataSize - ullCaretPos;
+		hmd.spnData = { reinterpret_cast<std::byte*>(strDataModify.data()), static_cast<std::size_t>(ullSizeModify) };
 		break;
 	case EClipboard::PASTE_HEX:
-	{
-		const ULONGLONG ullRealSize = ullSize / 2 + ullSize % 2;
-		if (m_ullCaretPos + ullRealSize > ullDataSize)
-			ullSize = (ullDataSize - m_ullCaretPos) * 2;
-
-		const auto nIterations = static_cast<size_t>(ullSize / 2 + ullSize % 2);
-		char chToUL[3] { }; //Array for actual Text chars to convert from.
-		for (size_t i = 0; i < nIterations; ++i)
+		if (!wstr2hex(pDataClpbrd, strDataModify))
 		{
-			if (i + 2 <= ullSize)
-			{
-				chToUL[0] = pszClipboardData[i * 2];
-				chToUL[1] = pszClipboardData[i * 2 + 1];
-			}
-			else
-			{
-				chToUL[0] = pszClipboardData[i * 2];
-				chToUL[1] = '\0';
-			}
-
-			unsigned char chNumber;
-			if (!str2num(chToUL, chNumber, 16))
-			{
-				GlobalUnlock(hClipboard);
-				CloseClipboard();
-				return;
-			}
-			strData += chNumber;
+			GlobalUnlock(hClpbrd);
+			CloseClipboard();
+			return;
 		}
-
-		hmd.spnData = { reinterpret_cast<std::byte*>(strData.data()), strData.size() };
-		ullSizeToModify = strData.size();
-	}
-	break;
+		ullSizeModify = strDataModify.size();
+		if (ullCaretPos + ullSizeModify > ullDataSize)
+			ullSizeModify = ullDataSize - ullCaretPos;
+		hmd.spnData = { reinterpret_cast<std::byte*>(strDataModify.data()), ullSizeModify };
+		break;
 	default:
 		break;
 	}
 
-	hmd.vecSpan.emplace_back(GetCaretPos(), ullSizeToModify);
+	hmd.vecSpan.emplace_back(ullCaretPos, ullSizeModify);
 	ModifyData(hmd);
 
-	GlobalUnlock(hClipboard);
+	GlobalUnlock(hClpbrd);
 	CloseClipboard();
 	RedrawWindow();
 }
@@ -2331,8 +2338,8 @@ auto CHexCtrl::CopyCArr()const->std::wstring
 	{
 		wstrData += L"0x";
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
-		wstrData += g_pwszHexMap[(chByte & 0xF0) >> 4];
-		wstrData += g_pwszHexMap[(chByte & 0x0F)];
+		wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
+		wstrData += WSTR_HEXDIGITS[(chByte & 0x0F)];
 		if (i < ullSelSize - 1)
 			wstrData += L",";
 		if ((i + 1) % 16 == 0)
@@ -2357,8 +2364,8 @@ auto CHexCtrl::CopyGrepHex()const->std::wstring
 	{
 		wstrData += L"\\x";
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
-		wstrData += g_pwszHexMap[(chByte & 0xF0) >> 4];
-		wstrData += g_pwszHexMap[(chByte & 0x0F)];
+		wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
+		wstrData += WSTR_HEXDIGITS[(chByte & 0x0F)];
 	}
 
 	return wstrData;
@@ -2373,14 +2380,14 @@ auto CHexCtrl::CopyHex()const->std::wstring
 	for (unsigned i = 0; i < ullSelSize; ++i)
 	{
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
-		wstrData += g_pwszHexMap[(chByte & 0xF0) >> 4];
-		wstrData += g_pwszHexMap[(chByte & 0x0F)];
+		wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
+		wstrData += WSTR_HEXDIGITS[(chByte & 0x0F)];
 	}
 
 	return wstrData;
 }
 
-auto CHexCtrl::CopyHexFormatted()const->std::wstring
+auto CHexCtrl::CopyHexFmt()const->std::wstring
 {
 	std::wstring wstrData;
 	const auto ullSelStart = m_pSelection->GetSelStart();
@@ -2393,8 +2400,8 @@ auto CHexCtrl::CopyHexFormatted()const->std::wstring
 		for (unsigned i = 0; i < ullSelSize; ++i)
 		{
 			const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
-			wstrData += g_pwszHexMap[(chByte & 0xF0) >> 4];
-			wstrData += g_pwszHexMap[(chByte & 0x0F)];
+			wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
+			wstrData += WSTR_HEXDIGITS[(chByte & 0x0F)];
 
 			if (i < (ullSelSize - 1) && (dwTail - 1) != 0)
 				if (((m_pSelection->GetLineLength() - dwTail + 1) % static_cast<DWORD>(m_enGroupMode)) == 0) //Add space after hex full chunk, ShowAs_size depending.
@@ -2427,8 +2434,8 @@ auto CHexCtrl::CopyHexFormatted()const->std::wstring
 		for (unsigned i = 0; i < ullSelSize; ++i)
 		{
 			const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
-			wstrData += g_pwszHexMap[(chByte & 0xF0) >> 4];
-			wstrData += g_pwszHexMap[(chByte & 0x0F)];
+			wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
+			wstrData += WSTR_HEXDIGITS[(chByte & 0x0F)];
 
 			if (i < (ullSelSize - 1) && (dwTail - 1) != 0)
 			{
@@ -2457,8 +2464,8 @@ auto CHexCtrl::CopyHexLE()const->std::wstring
 	for (auto i = ullSelSize; i > 0; --i)
 	{
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i - 1));
-		wstrData += g_pwszHexMap[(chByte & 0xF0) >> 4];
-		wstrData += g_pwszHexMap[(chByte & 0x0F)];
+		wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
+		wstrData += WSTR_HEXDIGITS[(chByte & 0x0F)];
 	}
 
 	return wstrData;
@@ -2552,7 +2559,7 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 	return wstrRet;
 }
 
-auto CHexCtrl::CopyText()const->std::wstring
+auto CHexCtrl::CopyTextUTF16()const->std::wstring
 {
 	const auto ullSelSize = m_pSelection->GetSelSize();
 	std::string strData;
@@ -2561,11 +2568,18 @@ auto CHexCtrl::CopyText()const->std::wstring
 	for (auto i = 0; i < ullSelSize; ++i)
 		strData.push_back(GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i)));
 
-	std::wstring wstrText { };
+	std::wstring wstrText;
 	const auto iEncoding = GetEncoding();
-	if (iEncoding == -1) //If default ASCII codepage, simply assigning strData to wstrText w/o any conversion.
+	if (iEncoding == -1) //ASCII codepage: we simply assigning [strData.begin()...strData.end()) to wstrText w/o any conversion.
 	{
 		wstrText.assign(strData.begin(), strData.end());
+	}
+	else if (iEncoding == 0) //UTF-16.
+	{
+		const auto sSizeWstr = (strData.size() % 2) == 0 ? strData.size() / sizeof(wchar_t) : (strData.size() - 1) / sizeof(wchar_t);
+		const auto pDataUTF16Beg = reinterpret_cast<wchar_t*>(strData.data());
+		const auto pDataUTF16End = pDataUTF16Beg + sSizeWstr;
+		wstrText.assign(pDataUTF16Beg, pDataUTF16End);
 	}
 	else
 	{
@@ -4706,17 +4720,18 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_DLG_MANAGER, IsCmdAvail(EHexCmd::CMD_BKM_DLG_MANAGER) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 5:	//Clipboard.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEX, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYHEX) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXLE, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYHEXLE) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXFMT, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYHEXFMT) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYTEXT, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYTEXT) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYBASE64, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYBASE64) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYCARR, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYCARR) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYGREPHEX, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYGREPHEX) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYPRNTSCRN) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYOFFSET, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPYOFFSET) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTEHEX, IsCmdAvail(EHexCmd::CMD_CLPBRD_PASTEHEX) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTETEXT, IsCmdAvail(EHexCmd::CMD_CLPBRD_PASTETEXT) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEX, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPY_HEX) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXLE, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPY_HEXLE) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXFMT, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPY_HEXFMT) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYTEXT, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPY_TEXTUTF16) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYBASE64, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPY_BASE64) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYCARR, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPY_CARR) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYGREPHEX, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPY_GREPHEX) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPY_PRNTSCRN) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYOFFSET, IsCmdAvail(EHexCmd::CMD_CLPBRD_COPY_OFFSET) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTEHEX, IsCmdAvail(EHexCmd::CMD_CLPBRD_PASTE_HEX) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTETEXTUTF16, IsCmdAvail(EHexCmd::CMD_CLPBRD_PASTE_TEXTUTF16) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTETEXTCP, IsCmdAvail(EHexCmd::CMD_CLPBRD_PASTE_TEXTCP) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 6: //Modify.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(EHexCmd::CMD_MODIFY_FILLZEROS) ? MF_ENABLED : MF_GRAYED);

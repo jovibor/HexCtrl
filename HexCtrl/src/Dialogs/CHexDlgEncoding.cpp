@@ -33,9 +33,9 @@ BOOL CHexDlgEncoding::EnumCodePagesProc(LPWSTR pwszCP)
 
 void CHexDlgEncoding::AddCP(std::wstring_view wstr)
 {
-	if (UINT uCPID { };	wstr2num(std::wstring { wstr }, uCPID))
-		if (CPINFOEXW stCP { }; GetCPInfoExW(uCPID, 0, &stCP) != 0)
-			m_vecCodePage.emplace_back(SCODEPAGE { static_cast<int>(uCPID), stCP.CodePageName, stCP.MaxCharSize });
+	if (UINT uCPID;	wstr2num(std::wstring { wstr }, uCPID))
+		if (CPINFOEXW stCP; GetCPInfoExW(uCPID, 0, &stCP) != FALSE)
+			m_vecCodePage.emplace_back(static_cast<int>(uCPID), stCP.CodePageName, stCP.MaxCharSize);
 }
 
 BOOL CHexDlgEncoding::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
@@ -70,8 +70,8 @@ BOOL CHexDlgEncoding::OnInitDialog()
 	m_pListMain->InsertColumn(1, L"Name", 0, 280);
 	m_pListMain->InsertColumn(2, L"Max chars", 0, 80);
 
-	m_vecCodePage.emplace_back(
-		SCODEPAGE { -1, L"<link=\"https://en.wikipedia.org/wiki/ASCII\">ASCII 7-bit</link> (default)", 1 });
+	m_vecCodePage.emplace_back(-1, L"<link=\"https://en.wikipedia.org/wiki/ASCII\">ASCII 7-bit</link> (default)", 1);
+	m_vecCodePage.emplace_back(0, L"Windows Internal UTF-16 (wchar_t)", 4);
 	m_pThis = this;
 	EnumSystemCodePagesW(EnumCodePagesProc, CP_INSTALLED);
 	m_pListMain->SetItemCountEx(static_cast<int>(m_vecCodePage.size()), LVSICF_NOSCROLL);

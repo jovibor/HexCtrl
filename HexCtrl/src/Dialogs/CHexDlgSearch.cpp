@@ -891,16 +891,14 @@ bool CHexDlgSearch::PrepareHexBytes()
 {
 	constexpr auto wstrWrongInput { L"Unacceptable input character.\r\nAllowed characters are: 0123456789AaBbCcDdEeFf" };
 	m_fMatchCase = false;
-	m_strSearch = wstr2str(m_wstrTextSearch);
-	m_strReplace = wstr2str(m_wstrTextReplace);
-	if (!str2hex(m_strSearch, m_strSearch, m_fWildcard, static_cast<char>(m_uWildcard)))
+	if (!wstr2hex(m_wstrTextSearch, m_strSearch, m_fWildcard, static_cast<char>(m_uWildcard)))
 	{
 		m_iWrap = 1;
 		MessageBoxW(wstrWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
 
-	if ((m_fReplace && !str2hex(m_strReplace, m_strReplace)))
+	if ((m_fReplace && !wstr2hex(m_wstrTextReplace, m_strReplace)))
 	{
 		MessageBoxW(wstrWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		m_stComboReplace.SetFocus();

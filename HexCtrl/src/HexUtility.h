@@ -18,7 +18,7 @@
 #define HEXCTRL_COPYRIGHT_NAME  	L"(C) 2018-2021 Jovibor"
 #define HEXCTRL_VERSION_MAJOR		3
 #define HEXCTRL_VERSION_MINOR		0
-#define HEXCTRL_VERSION_MAINTENANCE	0
+#define HEXCTRL_VERSION_MAINTENANCE	1
 
 #define TO_WSTR_HELPER(x) L## #x
 #define TO_WSTR(x) TO_WSTR_HELPER(x)
@@ -39,20 +39,13 @@ namespace HEXCTRL::INTERNAL
 	constexpr auto WSTR_HEXCTRL_FULL_VERSION = HEXCTRL_FULL_VERSION_RAW L" (x86)";
 #endif
 
-	//Fast lookup wchar_t array.
-	constexpr const wchar_t* const g_pwszHexMap { L"0123456789ABCDEF" };
-
 	//Converts wide string to template's numeric data type.
 	template<typename T>
 	bool wstr2num(const std::wstring& wstr, T& tData, int iBase = 0);
 
-	//Converts multibyte string to template's numeric data type.
-	template<typename T>
-	bool str2num(const std::string& str, T& tData, int iBase = 0);
-
-	//Converts every two numeric chars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
+	//Converts every two numeric wchars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
 	//fWc means that wildcards are allowed, uWc - the wildcard.
-	bool str2hex(std::string_view strIn, std::string& strToHex, bool fWc = false, char chWc = '?');
+	bool wstr2hex(std::wstring_view wstrIn, std::string& strHex, bool fWc = false, char chWc = '?');
 
 	//Wide to Multibyte string convertion.
 	[[nodiscard]] std::string wstr2str(std::wstring_view wstr, UINT uCodePage = CP_UTF8);

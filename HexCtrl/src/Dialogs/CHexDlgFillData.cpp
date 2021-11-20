@@ -131,12 +131,12 @@ void CHexDlgFillData::OnOK()
 		hms.vecSpan = m_pHexCtrl->GetSelection();
 
 	std::wstring wstrFillWith = pwszComboText;
-	std::string strFillWith = wstr2str(wstrFillWith);
+	std::string strFillWith;
 	switch (GetFillType())
 	{
 	case EFillType::FILL_HEX:
 	{
-		if (!str2hex(strFillWith, strFillWith))
+		if (!wstr2hex(wstrFillWith, strFillWith))
 		{
 			MessageBoxW(L"Wrong Hex format!", L"Format Error", MB_ICONERROR);
 			return;

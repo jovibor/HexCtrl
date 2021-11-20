@@ -65,7 +65,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] DWORD GetPageSize()const override;                  //Current page size.
 		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPAN> override; //Gets current selection.
 		[[nodiscard]] wchar_t GetUnprintableChar()const override;         //Get unprintable replacement character.
-		[[nodiscard]] HWND GetWindowHandle(EHexWnd enWnd)const override;  //Retrieves control's window/dialog handle.
+		[[nodiscard]] HWND GetWindowHandle(EHexWnd eWnd)const override;   //Retrieves control's window/dialog handle.
 		void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0)override;    //Go (scroll) to a given offset.
 		[[nodiscard]] bool HasSelection()const override;                  //Does currently have any selection or not.
 		[[nodiscard]] auto HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST> override; //HitTest given point.
@@ -86,7 +86,7 @@ namespace HEXCTRL::INTERNAL
 		void SetDateInfo(DWORD dwFormat, wchar_t wchSepar)override; //Set date format and date separator.
 		void SetEncoding(int iCodePage)override;            //Code-page for text area.
 		void SetFont(const LOGFONTW& lf)override;           //Set the control's new font. This font has to be monospaced.
-		void SetGroupMode(EHexDataSize enGroupMode)override;//Set current "Group Data By" mode.
+		void SetGroupMode(EHexDataSize eGroupMode)override; //Set current "Group Data By" mode.
 		void SetMutable(bool fEnable)override;              //Enable or disable mutable/editable mode.
 		void SetOffsetMode(bool fHex)override;              //Set offset being shown as Hex or as Decimal.
 		void SetPageSize(DWORD dwSize, std::wstring_view wstrName)override;  //Set page size and name to draw the line between.
@@ -111,17 +111,17 @@ namespace HEXCTRL::INTERNAL
 		void CaretToPageBeg(); //Set caret to a current page beginning.
 		void CaretToPageEnd(); //Set caret to a current page end.
 		void ChooseFontDlg();  //The "ChooseFont" dialog.
-		void ClipboardCopy(EClipboard enType)const;
-		void ClipboardPaste(EClipboard enType);
+		void ClipboardCopy(EClipboard eType)const;
+		void ClipboardPaste(EClipboard eType);
 		[[nodiscard]] auto CopyBase64()const->std::wstring;
 		[[nodiscard]] auto CopyCArr()const->std::wstring;
 		[[nodiscard]] auto CopyGrepHex()const->std::wstring;
 		[[nodiscard]] auto CopyHex()const->std::wstring;
-		[[nodiscard]] auto CopyHexFormatted()const->std::wstring;
+		[[nodiscard]] auto CopyHexFmt()const->std::wstring;
 		[[nodiscard]] auto CopyHexLE()const->std::wstring;
 		[[nodiscard]] auto CopyOffset()const->std::wstring;
 		[[nodiscard]] auto CopyPrintScreen()const->std::wstring;
-		[[nodiscard]] auto CopyText()const->std::wstring;
+		[[nodiscard]] auto CopyTextUTF16()const->std::wstring;
 		void DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo)const;
 		void DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines)const;
 		void DrawHexText(CDC* pDC, CFont* pFont, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
