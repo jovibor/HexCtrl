@@ -360,6 +360,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		StringCchCopyW(lfMain.lfFaceName, LF_FACESIZE, L"Consolas");
 		lfMain.lfHeight = -MulDiv(11, m_iLOGPIXELSY, 72);
 		lfMain.lfPitchAndFamily = FIXED_PITCH;
+		lfMain.lfCharSet = DEFAULT_CHARSET;
 	}
 	else
 		lfMain = *hcs.pLogFont;
@@ -369,6 +370,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	StringCchCopyW(lfInfo.lfFaceName, LF_FACESIZE, L"Consolas");
 	lfInfo.lfHeight = -MulDiv(11, m_iLOGPIXELSY, 72) + 1; //Size is less by 1 than the default main font.
 	lfInfo.lfPitchAndFamily = FIXED_PITCH;
+	lfInfo.lfCharSet = DEFAULT_CHARSET;
 	m_fontInfo.CreateFontIndirectW(&lfInfo);
 	//End of font related.///////////////////////////////////////
 
@@ -2151,16 +2153,12 @@ void CHexCtrl::CaretToPageEnd()
 
 void CHexCtrl::ChooseFontDlg()
 {
-	CHOOSEFONTW chf { };
 	LOGFONTW lf { };
 	GetFont(lf);
 	auto stClr = GetColors();
-	chf.lStructSize = sizeof(CHOOSEFONTW);
-	chf.hwndOwner = m_hWnd;
-	chf.lpLogFont = &lf;
-	chf.rgbColors = stClr.clrFontHex;
-	chf.Flags = CF_FIXEDPITCHONLY | CF_NOSCRIPTSEL | CF_NOSIMULATIONS | CF_EFFECTS
-		| CF_INITTOLOGFONTSTRUCT | CF_FORCEFONTEXIST;
+	CHOOSEFONTW chf { .lStructSize = sizeof(CHOOSEFONTW), .hwndOwner = m_hWnd, .lpLogFont = &lf,
+		.Flags = CF_EFFECTS | CF_FIXEDPITCHONLY | CF_FORCEFONTEXIST | CF_INITTOLOGFONTSTRUCT | CF_NOSIMULATIONS,
+		.rgbColors = stClr.clrFontHex };
 
 	if (ChooseFontW(&chf) != FALSE)
 	{

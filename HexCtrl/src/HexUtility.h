@@ -68,9 +68,9 @@ namespace HEXCTRL::INTERNAL
 	//String of date/time in given format with given date separator.
 	[[nodiscard]] auto GetDateFormatString(DWORD dwFormat, wchar_t wchSepar)->std::wstring;
 
-	//Get data from IHexCtrl's given offset converted to necessary type.
+	//Get data from IHexCtrl's given offset converted to a necessary type.
 	template<typename T>
-	[[nodiscard]] T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
+	[[nodiscard]] inline T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
 	{
 		T tData { };
 		const auto spnData = refHexCtrl.GetData({ ullOffset, sizeof(T) });
@@ -81,19 +81,17 @@ namespace HEXCTRL::INTERNAL
 		return tData;
 	}
 
-	//Set data to IHexCtrl's given offset converted to necessary type.
+	//Set data of a necessary type to IHexCtrl's given offset.
 	template<typename T>
-	void SetIHexTData(IHexCtrl& refHexCtrl, ULONGLONG ullOffset, T tData)
+	inline void SetIHexTData(IHexCtrl& refHexCtrl, ULONGLONG ullOffset, T tData)
 	{
 		//Data overflow check.
 		assert(ullOffset + sizeof(T) <= refHexCtrl.GetDataSize());
 		if (ullOffset + sizeof(T) > refHexCtrl.GetDataSize())
 			return;
 
-		HEXMODIFY hms;
-		hms.enModifyMode = EHexModifyMode::MODIFY_ONCE;
-		hms.spnData = { reinterpret_cast<std::byte*>(&tData), sizeof(T) };
-		hms.vecSpan.emplace_back(ullOffset, sizeof(T));
-		refHexCtrl.ModifyData(hms);
+		refHexCtrl.ModifyData({ .enModifyMode = EHexModifyMode::MODIFY_ONCE,
+			.spnData = { reinterpret_cast<std::byte*>(&tData), sizeof(T) },
+			.vecSpan = { { ullOffset, sizeof(T) } } });
 	}
 };
