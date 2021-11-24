@@ -335,7 +335,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	MENUITEMINFOW mii { .cbSize = sizeof(MENUITEMINFOW), .fMask = MIIM_BITMAP };
 	const auto hInst = AfxGetInstanceHandle();
-	const auto fScale = m_iLOGPIXELSY / 96.0f; //Scale factor for HighDPI displays.
+	const auto fScale = m_iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
 	const auto iSizeIcon = static_cast<int>(16 * fScale);
 
 	//"Clipboard->Copy as Hex" menu icon.
@@ -360,7 +360,6 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		StringCchCopyW(lfMain.lfFaceName, LF_FACESIZE, L"Consolas");
 		lfMain.lfHeight = -MulDiv(11, m_iLOGPIXELSY, 72);
 		lfMain.lfPitchAndFamily = FIXED_PITCH;
-		lfMain.lfCharSet = DEFAULT_CHARSET;
 	}
 	else
 		lfMain = *hcs.pLogFont;
@@ -370,7 +369,6 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	StringCchCopyW(lfInfo.lfFaceName, LF_FACESIZE, L"Consolas");
 	lfInfo.lfHeight = -MulDiv(11, m_iLOGPIXELSY, 72) + 1; //Size is less by 1 than the default main font.
 	lfInfo.lfPitchAndFamily = FIXED_PITCH;
-	lfInfo.lfCharSet = DEFAULT_CHARSET;
 	m_fontInfo.CreateFontIndirectW(&lfInfo);
 	//End of font related.///////////////////////////////////////
 
@@ -2750,7 +2748,10 @@ void CHexCtrl::DrawHexText(CDC* pDC, CFont* pFont, int iLines, std::wstring_view
 
 	//Text printing.
 	pDC->SetTextColor(m_stColor.clrFontText);
-	PolyTextOutW(pDC->m_hDC, vecPolyText.data(), static_cast<UINT>(vecPolyText.size()));
+	for (const auto& iter : vecPolyText)
+	{
+		ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx);
+	}
 }
 
 void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
@@ -2866,13 +2867,15 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 	if (!vecBkmHex.empty())
 	{
 		pDC->SelectObject(pFont);
-		size_t index { 0 }; //Index for vecBkmText, its size is always equal to vecBkmHex.
-		for (const auto& iter : vecBkmHex)
+		std::size_t index { 0 }; //Index for vecBkmText, its size is always equal to vecBkmHex.
+		for (const auto& iter : vecBkmHex) //Loop is needed because bkms have different colors.
 		{
 			pDC->SetTextColor(iter.clrText);
 			pDC->SetBkColor(iter.clrBk);
-			PolyTextOutW(pDC->m_hDC, &iter.stPoly, 1); //Hex bookmarks printing.
-			PolyTextOutW(pDC->m_hDC, &vecBkmText[index++].stPoly, 1); //Text bookmarks printing.
+			const auto& refH = iter.stPoly;
+			ExtTextOutW(pDC->m_hDC, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex bookmarks printing.
+			const auto& refT = vecBkmText[index++].stPoly;
+			ExtTextOutW(pDC->m_hDC, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text bookmarks printing.
 		}
 	}
 }
@@ -2893,7 +2896,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	std::vector<std::unique_ptr<std::wstring>> vecWstrColorsHex; //unique_ptr to avoid wstring ptr invalidation.
 	std::vector<std::unique_ptr<std::wstring>> vecWstrColorsText;
 	const auto ullStartOffset = ullStartLine * m_dwCapacity;
-	size_t sIndexToPrint { };
+	std::size_t sIndexToPrint { };
 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
 	{
@@ -2993,12 +2996,14 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	{
 		pDC->SelectObject(pFont);
 		size_t index { 0 }; //Index for vecColorsText, its size is always equal to vecColorsHex.
-		for (const auto& iter : vecColorsHex)
+		for (const auto& iter : vecColorsHex) //Loop is needed because because of different colors.
 		{
 			pDC->SetTextColor(iter.clr.clrText);
 			pDC->SetBkColor(iter.clr.clrBk);
-			PolyTextOutW(pDC->m_hDC, &iter.stPoly, 1); //Hex colors printing.
-			PolyTextOutW(pDC->m_hDC, &vecColorsText[index++].stPoly, 1); //Text colors printing.
+			const auto& refH = iter.stPoly;
+			ExtTextOutW(pDC->m_hDC, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex colors printing.
+			const auto& refT = vecColorsText[index++].stPoly;
+			ExtTextOutW(pDC->m_hDC, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text colors printing.
 		}
 	}
 }
@@ -3008,10 +3013,11 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 	if (!HasSelection())
 		return;
 
-	std::vector<POLYTEXTW> vecPolySel;
+	std::vector<POLYTEXTW> vecPolySelHex;
+	std::vector<POLYTEXTW> vecPolySelText;
 	std::vector<std::unique_ptr<std::wstring>> vecWstrSel; //unique_ptr to avoid wstring ptr invalidation.
 	const auto ullStartOffset = ullStartLine * m_dwCapacity;
-	size_t sIndexToPrint { };
+	std::size_t sIndexToPrint { };
 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
 	{
@@ -3025,12 +3031,12 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 		{
 			//Hex selection Poly.
 			vecWstrSel.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexSelToPrint)));
-			vecPolySel.emplace_back(iSelHexPosToPrintX, iPosToPrintY,
+			vecPolySelHex.emplace_back(iSelHexPosToPrintX, iPosToPrintY,
 				static_cast<UINT>(vecWstrSel.back()->size()), vecWstrSel.back()->data(), 0, RECT { }, nullptr);
 
 			//Text selection Poly.
 			vecWstrSel.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextSelToPrint)));
-			vecPolySel.emplace_back(iSelTextPosToPrintX, iPosToPrintY,
+			vecPolySelText.emplace_back(iSelTextPosToPrintX, iPosToPrintY,
 				static_cast<UINT>(vecWstrSel.back()->size()), vecWstrSel.back()->data(), 0, RECT { }, nullptr);
 		};
 
@@ -3084,12 +3090,16 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 	}
 
 	//Selection printing.
-	if (!vecPolySel.empty())
+	if (!vecPolySelHex.empty())
 	{
 		pDC->SelectObject(pFont);
 		pDC->SetTextColor(m_stColor.clrFontSelect);
 		pDC->SetBkColor(m_stColor.clrBkSelect);
-		PolyTextOutW(pDC->m_hDC, vecPolySel.data(), static_cast<UINT>(vecPolySel.size())); //Hex/Text selection printing.
+		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size())); //Hex selection printing.
+		for (const auto& iter : vecPolySelText)
+		{
+			ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Text selection printing.
+		}
 	}
 }
 
@@ -3098,10 +3108,11 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	if (!m_pSelection->HasSelHighlight())
 		return;
 
-	std::vector<POLYTEXTW> vecPolySelHgl;
+	std::vector<POLYTEXTW> vecPolySelHexHgl;
+	std::vector<POLYTEXTW> vecPolySelTextHgl;
 	std::vector<std::unique_ptr<std::wstring>> vecWstrSelHgl; //unique_ptr to avoid wstring ptr invalidation.
 	const auto ullStartOffset = ullStartLine * m_dwCapacity;
-	size_t sIndexToPrint { };
+	std::size_t sIndexToPrint { };
 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
 	{
@@ -3115,12 +3126,12 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 		{
 			//Hex selection highlight Poly.
 			vecWstrSelHgl.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexSelToPrint)));
-			vecPolySelHgl.emplace_back(iSelHexPosToPrintX, iPosToPrintY,
+			vecPolySelHexHgl.emplace_back(iSelHexPosToPrintX, iPosToPrintY,
 				static_cast<UINT>(vecWstrSelHgl.back()->size()), vecWstrSelHgl.back()->data(), 0, RECT { }, nullptr);
 
 			//Text selection highlight Poly.
 			vecWstrSelHgl.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextSelToPrint)));
-			vecPolySelHgl.emplace_back(iSelTextPosToPrintX, iPosToPrintY,
+			vecPolySelTextHgl.emplace_back(iSelTextPosToPrintX, iPosToPrintY,
 				static_cast<UINT>(vecWstrSelHgl.back()->size()), vecWstrSelHgl.back()->data(), 0, RECT { }, nullptr);
 		};
 
@@ -3174,13 +3185,17 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	}
 
 	//Selection highlight printing.
-	if (!vecPolySelHgl.empty())
+	if (!vecPolySelHexHgl.empty())
 	{
 		//Colors are the inverted selection colors.
 		pDC->SelectObject(pFont);
 		pDC->SetTextColor(m_stColor.clrBkSelect);
 		pDC->SetBkColor(m_stColor.clrFontSelect);
-		PolyTextOutW(pDC->m_hDC, vecPolySelHgl.data(), static_cast<UINT>(vecPolySelHgl.size())); //Hex/Text selection highlight printing.
+		PolyTextOutW(pDC->m_hDC, vecPolySelHexHgl.data(), static_cast<UINT>(vecPolySelHexHgl.size())); //Hex selection highlight printing.
+		for (const auto& iter : vecPolySelTextHgl)
+		{
+			ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Text selection highlight printing.
+		}
 	}
 }
 
@@ -3226,7 +3241,10 @@ void CHexCtrl::DrawCaret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, std::ws
 	pDC->SelectObject(pFont);
 	pDC->SetTextColor(m_stColor.clrFontCaret);
 	pDC->SetBkColor(clrBkCaret);
-	PolyTextOutW(pDC->m_hDC, arrPolyCaret, 2);
+	for (const auto iter : arrPolyCaret)
+	{
+		ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Hex/Text caret printing.
+	}
 }
 
 void CHexCtrl::DrawDataInterp(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
@@ -3245,7 +3263,7 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, in
 	vecWstrDataInterp.reserve(2); //One DataInterp string for Hex and one for Text area.
 
 	const auto ullStartOffset = ullStartLine * m_dwCapacity;
-	size_t sIndexToPrint { };
+	std::size_t sIndexToPrint { };
 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
 	{
@@ -3304,7 +3322,10 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, in
 		pDC->SelectObject(pFont);
 		pDC->SetTextColor(m_stColor.clrFontDataInterp);
 		pDC->SetBkColor(m_stColor.clrBkDataInterp);
-		PolyTextOutW(pDC->m_hDC, vecPolyDataInterp.data(), static_cast<UINT>(vecPolyDataInterp.size()));
+		for (const auto& iter : vecPolyDataInterp)
+		{
+			ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Hex/Text Data Interpreter printing.
+		}
 	}
 }
 
@@ -4359,7 +4380,7 @@ void CHexCtrl::SelAddUp()
 	}
 }
 
-void CHexCtrl::SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss)
+void CHexCtrl::SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss)const
 {
 	//Note: Since this method can be executed asynchronously (in search/replace, etc...),
 	//the SendMesage(parent, ...) is impossible here because receiver window
@@ -4368,10 +4389,7 @@ void CHexCtrl::SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss)
 	if (!IsVirtual())
 		return;
 
-	HEXDATAINFO hdi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
-	hdi.stHexSpan = hss;
-	hdi.spnData = spnData;
-	m_pHexVirtData->OnHexSetData(hdi);
+	m_pHexVirtData->OnHexSetData({ .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) }, .stHexSpan { hss }, .spnData { spnData } });
 }
 
 void CHexCtrl::SetFontSize(long lSize)

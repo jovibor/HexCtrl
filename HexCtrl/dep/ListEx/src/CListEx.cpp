@@ -225,20 +225,20 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 	const auto iSortColumn = pListCtrl->GetSortColumn();
 	const auto enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
 
-	const std::wstring_view wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn).GetString();
-	const std::wstring_view wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn).GetString();
+	const auto wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn);
+	const auto wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn);
 
 	int iCompare { };
 	switch (enSortMode)
 	{
 	case EListExSortMode::SORT_LEX:
-		iCompare = wstrItem1.compare(wstrItem2);
+		iCompare = wstrItem1.Compare(wstrItem2);
 		break;
 	case EListExSortMode::SORT_NUMERIC:
 	{
 		LONGLONG llData1 { }, llData2 { };
-		StrToInt64ExW(wstrItem1.data(), STIF_SUPPORT_HEX, &llData1);
-		StrToInt64ExW(wstrItem2.data(), STIF_SUPPORT_HEX, &llData2);
+		StrToInt64ExW(wstrItem1, STIF_SUPPORT_HEX, &llData1);
+		StrToInt64ExW(wstrItem2, STIF_SUPPORT_HEX, &llData2);
 		iCompare = llData1 != llData2 ? (llData1 - llData2 < 0 ? -1 : 1) : 0;
 	}
 	break;
@@ -262,6 +262,7 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 
 	return iResult;
 }
+
 
 BOOL CListEx::DeleteAllItems()
 {

@@ -165,7 +165,7 @@ namespace HEXCTRL::INTERNAL
 		void SelAddLeft();       //Left Key pressed with the Shift.
 		void SelAddRight();      //Right Key pressed with the Shift.
 		void SelAddUp();         //Up Key pressed with the Shift.
-		void SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss); //Sets data (notifies back) in Virtual mode.
+		void SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss)const; //Sets data (notifies back) in Virtual mode.
 		void SetFontSize(long lSize); //Set current font size.
 		void SnapshotUndo(const std::vector<HEXSPAN>& vecSpan); //Takes currently modifiable data snapshot.
 		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;     //Point of the text chunk.
