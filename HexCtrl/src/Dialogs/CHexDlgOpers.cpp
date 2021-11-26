@@ -136,9 +136,7 @@ void CHexDlgOpers::OnOK()
 	auto fBigEndian = iRadioByteOrder == IDC_HEXCTRL_OPERS_RADIO_BE && iRadioDataSize != IDC_HEXCTRL_OPERS_RADIO_BYTE
 		&& eOperMode != EHexOperMode::OPER_NOT && eOperMode != EHexOperMode::OPER_SWAP;
 
-	HEXMODIFY hms;
-	hms.enModifyMode = EHexModifyMode::MODIFY_OPERATION;
-	hms.enOperMode = eOperMode;
+	HEXMODIFY hms { .enModifyMode = EHexModifyMode::MODIFY_OPERATION, .enOperMode = eOperMode };
 	switch (iRadioDataSize)
 	{
 	case IDC_HEXCTRL_OPERS_RADIO_BYTE:
@@ -166,9 +164,9 @@ void CHexDlgOpers::OnOK()
 		std::wstring wstrErr { };
 		if (pwszEditText[0] == L'\0') //Edit field emptiness check.
 			wstrErr = L"Missing Operand!";
-		else if (!wstr2num(pwszEditText, llData))
+		else if (const auto optData = wstr2num<LONGLONG>(pwszEditText); !optData)
 			wstrErr = L"Wrong number format!";
-		else if (hms.enOperMode == EHexOperMode::OPER_DIVIDE && llData == 0) //Division by zero check.
+		else if (llData = *optData; hms.enOperMode == EHexOperMode::OPER_DIVIDE && llData == 0) //Division by zero check.
 			wstrErr = L"Wrong number format! Can not divide by zero!";
 		if (!wstrErr.empty())
 		{

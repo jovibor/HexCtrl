@@ -108,11 +108,13 @@ void CHexDlgGoTo::OnOK()
 
 	CStringW wstr;
 	GetDlgItemTextW(IDC_HEXCTRL_GOTO_EDIT_GOTO, wstr);
-	if (!wstr2num(wstr.GetString(), m_ullData)) {
+	const auto optData = wstr2num<ULONGLONG>(wstr.GetString());
+	if (!optData) {
 		MessageBox(L"Invalid number format", L"Error", MB_ICONERROR);
 		return;
 	}
 
+	m_ullData = *optData;
 	auto ullRangeFrom { 0ULL };
 	auto ullRangeTo { 0ULL };
 	auto ullMul { 0ULL };

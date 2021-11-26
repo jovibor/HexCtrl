@@ -76,27 +76,28 @@ void CHexDlgBkmProps::OnOK()
 
 	auto pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_OFFSET));
 	pEdit->GetWindowTextW(pwszBuff, NUMBER_MAX_CHARS);
-	ULONGLONG ullOffset;
-	if (!wstr2num(pwszBuff, ullOffset)) {
+	const auto optOffset = wstr2num<ULONGLONG>(pwszBuff);
+	if (!optOffset) {
 		MessageBoxW(L"Invalid offset format", L"Format Error", MB_ICONERROR);
 		return;
 	}
+
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_LENGTH));
 	pEdit->GetWindowTextW(pwszBuff, NUMBER_MAX_CHARS);
-	ULONGLONG ullSize;
-	if (!wstr2num(pwszBuff, ullSize)) {
-		MessageBoxW(L"Invalid length format", L"Format Error", MB_ICONERROR);
+	const auto optSize = wstr2num<ULONGLONG>(pwszBuff);
+	if (!optSize) {
+		MessageBoxW(L"Invalid length format.", L"Format Error", MB_ICONERROR);
 		return;
 	}
-	if (ullSize == 0) {
+	if (*optSize == 0) {
 		MessageBoxW(L"Length can not be zero!", L"Format Error", MB_ICONERROR);
 		return;
 	}
 
-	if (m_ullOffset != ullOffset || m_ullSize != ullSize)
+	if (m_ullOffset != *optOffset || m_ullSize != *optSize)
 	{
 		m_pHBS->vecSpan.clear();
-		m_pHBS->vecSpan.emplace_back(ullOffset, ullSize);
+		m_pHBS->vecSpan.emplace_back(*optOffset, *optSize);
 	}
 
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_DESCR));

@@ -696,9 +696,10 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 			//Do not yet add selected (clicked) item (in multiselect), will add it after the loop,
 			//so that it's always last in vec, to highlight it in HexCtrlHighlight.
-			if (pNMI->iItem != nItem)
+			if (pNMI->iItem != nItem) {
 				vecSpan.emplace_back(m_vecSearchRes.at(static_cast<size_t>(nItem)),
 					m_fReplace ? m_spnReplace.size() : m_spnSearch.size());
+			}
 		}
 		vecSpan.emplace_back(m_vecSearchRes.at(static_cast<size_t>(pNMI->iItem)),
 			m_fReplace ? m_spnReplace.size() : m_spnSearch.size());
@@ -756,20 +757,26 @@ void CHexDlgSearch::Prepare()
 		m_stEditStart.GetWindowTextW(wstrStart);
 		if (wstrStart.IsEmpty())
 			m_ullOffsetCurr = 0;
-		else if (!wstr2num(wstrStart.GetString(), m_ullOffsetCurr))
+		else if (const auto optStart = wstr2num<ULONGLONG>(wstrStart.GetString()); optStart)
+			m_ullOffsetCurr = *optStart;
+		else
 			return;
 	}
 
 	//Step.
 	CStringW wstrStep;
 	m_stEditStep.GetWindowTextW(wstrStep);
-	if (wstrStep.IsEmpty() || !wstr2num(wstrStep.GetString(), m_ullStep))
+	if (const auto optStep = wstr2num<ULONGLONG>(wstrStep.GetString()); optStep)
+		m_ullStep = *optStep;
+	else
 		return;
 
 	//Limit.
 	CStringW wstrLimit;
 	m_stEditLimit.GetWindowTextW(wstrLimit);
-	if (wstrStep.IsEmpty() || !wstr2num(wstrLimit.GetString(), m_dwFoundLimit))
+	if (const auto optLimit = wstr2num<unsigned int>(wstrLimit.GetString()); optLimit)
+		m_dwFoundLimit = *optLimit;
+	else
 		return;
 
 	if (m_fReplace)
@@ -990,15 +997,15 @@ bool CHexDlgSearch::PrepareINT8()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	BYTE bData { };
-	BYTE bDataRep { };
-	if (!wstr2num(m_wstrTextSearch, bData) || (m_fReplace && !wstr2num(m_wstrTextReplace, bDataRep)))
+	const auto optData = wstr2num<unsigned char>(m_wstrTextSearch);
+	const auto optDataRepl = wstr2num<unsigned char>(m_wstrTextReplace);
+	if (!optData || (m_fReplace && !optDataRepl))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
-	m_strSearch = bData;
-	m_strReplace = bDataRep;
+	m_strSearch = *optData;
+	m_strReplace = optDataRepl.value_or(0);
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
@@ -1012,22 +1019,24 @@ bool CHexDlgSearch::PrepareINT16()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	WORD wData { };
-	WORD wDataRep { };
-	if (!wstr2num(m_wstrTextSearch, wData) || (m_fReplace && !wstr2num(m_wstrTextReplace, wDataRep)))
+	const auto optData = wstr2num<unsigned short>(m_wstrTextSearch);
+	const auto optDataRepl = wstr2num<unsigned short>(m_wstrTextReplace);
+	if (!optData || (m_fReplace && !optDataRepl))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
 
+	unsigned short wData = *optData;
+	unsigned short wDataRep = optDataRepl.value_or(0);
 	if (m_fBigEndian)
 	{
 		wData = _byteswap_ushort(wData);
 		wDataRep = _byteswap_ushort(wDataRep);
 	}
 
-	m_strSearch.assign(reinterpret_cast<char*>(&wData), sizeof(WORD));
-	m_strReplace.assign(reinterpret_cast<char*>(&wDataRep), sizeof(WORD));
+	m_strSearch.assign(reinterpret_cast<char*>(&wData), sizeof(wData));
+	m_strReplace.assign(reinterpret_cast<char*>(&wDataRep), sizeof(wDataRep));
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
@@ -1041,22 +1050,24 @@ bool CHexDlgSearch::PrepareINT32()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	DWORD dwData { };
-	DWORD dwDataRep { };
-	if (!wstr2num(m_wstrTextSearch, dwData) || (m_fReplace && !wstr2num(m_wstrTextReplace, dwDataRep)))
+	const auto optData = wstr2num<unsigned int>(m_wstrTextSearch);
+	const auto optDataRepl = wstr2num<unsigned int>(m_wstrTextReplace);
+	if (!optData || (m_fReplace && !optDataRepl))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
 
+	unsigned int dwData = *optData;
+	unsigned int dwDataRep = optDataRepl.value_or(0);
 	if (m_fBigEndian)
 	{
 		dwData = _byteswap_ulong(dwData);
 		dwDataRep = _byteswap_ulong(dwDataRep);
 	}
 
-	m_strSearch.assign(reinterpret_cast<char*>(&dwData), sizeof(DWORD));
-	m_strReplace.assign(reinterpret_cast<char*>(&dwDataRep), sizeof(DWORD));
+	m_strSearch.assign(reinterpret_cast<char*>(&dwData), sizeof(dwData));
+	m_strReplace.assign(reinterpret_cast<char*>(&dwDataRep), sizeof(dwDataRep));
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
@@ -1070,22 +1081,24 @@ bool CHexDlgSearch::PrepareINT64()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	QWORD qwData { };
-	QWORD qwDataRep { };
-	if (!wstr2num(m_wstrTextSearch, qwData) || (m_fReplace && !wstr2num(m_wstrTextReplace, qwDataRep)))
+	const auto optData = wstr2num<unsigned long long>(m_wstrTextSearch);
+	const auto optDataRepl = wstr2num<unsigned long long>(m_wstrTextReplace);
+	if (!optData || (m_fReplace && !optDataRepl))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
 
+	unsigned long long ullData = *optData;
+	unsigned long long ullDataRep = optDataRepl.value_or(0);
 	if (m_fBigEndian)
 	{
-		qwData = _byteswap_uint64(qwData);
-		qwDataRep = _byteswap_uint64(qwDataRep);
+		ullData = _byteswap_uint64(ullData);
+		ullDataRep = _byteswap_uint64(ullDataRep);
 	}
 
-	m_strSearch.assign(reinterpret_cast<char*>(&qwData), sizeof(QWORD));
-	m_strReplace.assign(reinterpret_cast<char*>(&qwDataRep), sizeof(QWORD));
+	m_strSearch.assign(reinterpret_cast<char*>(&ullData), sizeof(ullData));
+	m_strReplace.assign(reinterpret_cast<char*>(&ullDataRep), sizeof(ullDataRep));
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
@@ -1099,22 +1112,24 @@ bool CHexDlgSearch::PrepareFloat()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	float flData { };
-	float flDataRep { };
-	if (!wstr2num(m_wstrTextSearch, flData) || (m_fReplace && !wstr2num(m_wstrTextReplace, flDataRep)))
+	const auto optData = wstr2num<float>(m_wstrTextSearch);
+	const auto optDataRepl = wstr2num<float>(m_wstrTextReplace);
+	if (!optData || (m_fReplace && !optDataRepl))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
 
+	float flData = *optData;
+	float flDataRep = optDataRepl.value_or(0.0F);
 	if (m_fBigEndian)
 	{
 		flData = std::bit_cast<float>(_byteswap_ulong(std::bit_cast<unsigned long>(flData)));
 		flDataRep = std::bit_cast<float>(_byteswap_ulong(std::bit_cast<unsigned long>(flDataRep)));
 	}
 
-	m_strSearch.assign(reinterpret_cast<char*>(&flData), sizeof(float));
-	m_strReplace.assign(reinterpret_cast<char*>(&flDataRep), sizeof(float));
+	m_strSearch.assign(reinterpret_cast<char*>(&flData), sizeof(flData));
+	m_strReplace.assign(reinterpret_cast<char*>(&flDataRep), sizeof(flDataRep));
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
@@ -1128,22 +1143,24 @@ bool CHexDlgSearch::PrepareDouble()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	double ddData { };
-	double ddDataRep { };
-	if (!wstr2num(m_wstrTextSearch, ddData) || (m_fReplace && !wstr2num(m_wstrTextReplace, ddDataRep)))
+	const auto optData = wstr2num<double>(m_wstrTextSearch);
+	const auto optDataRepl = wstr2num<double>(m_wstrTextReplace);
+	if (!optData || (m_fReplace && !optDataRepl))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
 
+	double ddData = *optData;
+	double ddDataRep = optDataRepl.value_or(0.0F);
 	if (m_fBigEndian)
 	{
 		ddData = std::bit_cast<double>(_byteswap_uint64(std::bit_cast<unsigned long long>(ddData)));
 		ddDataRep = std::bit_cast<double>(_byteswap_uint64(std::bit_cast<unsigned long long>(ddDataRep)));
 	}
 
-	m_strSearch.assign(reinterpret_cast<char*>(&ddData), sizeof(double));
-	m_strReplace.assign(reinterpret_cast<char*>(&ddDataRep), sizeof(double));
+	m_strSearch.assign(reinterpret_cast<char*>(&ddData), sizeof(ddData));
+	m_strReplace.assign(reinterpret_cast<char*>(&ddDataRep), sizeof(ddDataRep));
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
@@ -1179,8 +1196,8 @@ bool CHexDlgSearch::PrepareFILETIME()
 		stFTReplace.dwHighDateTime = _byteswap_ulong(stFTReplace.dwHighDateTime);
 	}
 
-	m_strSearch.assign(reinterpret_cast<char*>(&stFTSearch), sizeof(FILETIME));
-	m_strReplace.assign(reinterpret_cast<char*>(&stFTReplace), sizeof(FILETIME));
+	m_strSearch.assign(reinterpret_cast<char*>(&stFTSearch), sizeof(stFTSearch));
+	m_strReplace.assign(reinterpret_cast<char*>(&stFTReplace), sizeof(stFTReplace));
 	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
 	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
@@ -1192,11 +1209,8 @@ bool CHexDlgSearch::PrepareFILETIME()
 
 void CHexDlgSearch::Replace(ULONGLONG ullIndex, const std::span<std::byte> spnReplace)const
 {
-	HEXMODIFY hms;
-	hms.enModifyMode = EHexModifyMode::MODIFY_ONCE;
-	hms.vecSpan.emplace_back(ullIndex, spnReplace.size());
-	hms.spnData = spnReplace;
-	GetHexCtrl()->ModifyData(hms);
+	GetHexCtrl()->ModifyData({ .enModifyMode { EHexModifyMode::MODIFY_ONCE }, .spnData { spnReplace },
+		.vecSpan { { ullIndex, spnReplace.size() } } });
 }
 
 void CHexDlgSearch::ResetSearch()

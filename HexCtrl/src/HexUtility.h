@@ -39,9 +39,9 @@ namespace HEXCTRL::INTERNAL
 	constexpr auto WSTR_HEXCTRL_FULL_VERSION = HEXCTRL_FULL_VERSION_RAW L" (x86)";
 #endif
 
-	//Converts wide string to template's numeric data type.
-	template<typename T>
-	bool wstr2num(const std::wstring& wstr, T& tData, int iBase = 0);
+	//Converts wide string to a templated arithmetic data type.
+	template<typename TArithmetic> requires std::is_arithmetic_v<TArithmetic>
+	[[nodiscard]] auto wstr2num(const std::wstring& wstr, int iBase = 0)->std::optional<TArithmetic>;
 
 	//Converts every two numeric wchars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
 	//fWc means that wildcards are allowed, uWc - the wildcard.

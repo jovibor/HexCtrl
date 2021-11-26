@@ -3386,12 +3386,9 @@ void CHexCtrl::FillWithZeros()
 	if (!IsDataSet())
 		return;
 
-	HEXMODIFY hms;
-	hms.vecSpan = GetSelection();
-	hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 	std::byte byteZero { 0 };
-	hms.spnData = { &byteZero, sizeof(byteZero) };
-	ModifyData(hms);
+	ModifyData({ .enModifyMode { EHexModifyMode::MODIFY_REPEAT }, .spnData { &byteZero, sizeof(byteZero) },
+		.vecSpan { GetSelection() } });
 	Redraw();
 }
 
@@ -4597,15 +4594,14 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	if (!IsDataSet() || !IsMutable() || !IsCurTextArea() || (GetKeyState(VK_CONTROL) < 0))
 		return;
 
-	BYTE chByte = nChar & 0xFF;
-	WCHAR warrCurrLocaleID[KL_NAMELENGTH];
+	unsigned char chByte = nChar & 0xFF;
+	wchar_t warrCurrLocaleID[KL_NAMELENGTH];
 	GetKeyboardLayoutNameW(warrCurrLocaleID); //Current langID as wstring.
-	LCID dwCurrLocaleID { };
-	if (wstr2num(warrCurrLocaleID, dwCurrLocaleID, 16)) //Convert langID from wstr to number.
+	if (const auto optLocID = wstr2num<unsigned int>(warrCurrLocaleID, 16); optLocID) //Convert langID from wstr to number.
 	{
 		UINT uCurrCodePage { };
-		constexpr int iSize = sizeof(uCurrCodePage) / sizeof(WCHAR);
-		if (GetLocaleInfoW(dwCurrLocaleID, LOCALE_IDEFAULTANSICODEPAGE | LOCALE_RETURN_NUMBER,
+		constexpr int iSize = sizeof(uCurrCodePage) / sizeof(wchar_t);
+		if (GetLocaleInfoW(*optLocID, LOCALE_IDEFAULTANSICODEPAGE | LOCALE_RETURN_NUMBER,
 			reinterpret_cast<LPWSTR>(&uCurrCodePage), iSize) == iSize) //ANSI code page for the current langID (if any).
 		{
 			const wchar_t wch { static_cast<wchar_t>(nChar) };
@@ -4615,10 +4611,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 		}
 	}
 
-	HEXMODIFY hms;
-	hms.vecSpan.emplace_back(m_ullCaretPos, 1);
-	hms.spnData = { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) };
-	ModifyData(hms);
+	ModifyData({ .spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { m_ullCaretPos, 1 } } });
 	CaretMoveRight();
 }
 
@@ -4633,9 +4626,8 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 	else
 	{	//For user defined custom menu we notifying parent window.
-		HEXMENUINFO hmi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK } };
-		hmi.wMenuID = wMenuID;
-		hmi.pt = m_stMenuClickedPt;
+		HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK },
+			.pt { m_stMenuClickedPt }, .wMenuID { wMenuID } };
 		ParentNotify(hmi);
 	}
 
@@ -4645,8 +4637,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 {
 	//Notify parent that we are about to display a context menu.
-	HEXMENUINFO hmi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU } };
-	hmi.pt = m_stMenuClickedPt = point;
+	HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU }, .pt { m_stMenuClickedPt = point } };
 	ParentNotify(hmi);
 	m_menuMain.GetSubMenu(0)->TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
 }
@@ -4782,7 +4773,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 		ExecuteCmd(*optCmd);
 	else if (IsDataSet() && IsMutable() && !IsCurTextArea()) //If caret is in Hex area, just one part (High/Low) of byte must be changed.
 	{
-		BYTE chByte = nChar & 0xFF;
+		unsigned char chByte = nChar & 0xFF;
 		//Normalizing all input in Hex area, reducing it to 0-15 (0x0-F) digit range.
 		//Allowing only [0-9][A-F][NUM0-NUM9].
 		if (chByte >= 0x30 && chByte <= 0x39)      //Digits [0-9].
@@ -4794,16 +4785,13 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 		else
 			return;
 
-		auto chByteCurr = GetIHexTData<BYTE>(*this, m_ullCaretPos);
+		auto chByteCurr = GetIHexTData<unsigned char>(*this, m_ullCaretPos);
 		if (m_fCaretHigh)
 			chByte = (chByte << 4) | (chByteCurr & 0x0F);
 		else
 			chByte = (chByte & 0x0F) | (chByteCurr & 0xF0);
 
-		HEXMODIFY hms;
-		hms.vecSpan.emplace_back(m_ullCaretPos, 1);
-		hms.spnData = { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) };
-		ModifyData(hms);
+		ModifyData({ .spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { m_ullCaretPos, 1 } } });
 		CaretMoveRight();
 	}
 

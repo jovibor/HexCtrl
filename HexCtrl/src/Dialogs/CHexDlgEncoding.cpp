@@ -33,9 +33,9 @@ BOOL CHexDlgEncoding::EnumCodePagesProc(LPWSTR pwszCP)
 
 void CHexDlgEncoding::AddCP(std::wstring_view wstr)
 {
-	if (UINT uCPID;	wstr2num(std::wstring { wstr }, uCPID))
-		if (CPINFOEXW stCP; GetCPInfoExW(uCPID, 0, &stCP) != FALSE)
-			m_vecCodePage.emplace_back(static_cast<int>(uCPID), stCP.CodePageName, stCP.MaxCharSize);
+	if (const auto optCPID = wstr2num<UINT>(std::wstring { wstr }); optCPID)
+		if (CPINFOEXW stCP; GetCPInfoExW(*optCPID, 0, &stCP) != FALSE)
+			m_vecCodePage.emplace_back(static_cast<int>(*optCPID), stCP.CodePageName, stCP.MaxCharSize);
 }
 
 BOOL CHexDlgEncoding::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)

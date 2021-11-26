@@ -12,55 +12,55 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	template<typename T>
-	bool wstr2num(const std::wstring& wstr, T& tData, int iBase)
+	template<typename TArithmetic> requires std::is_arithmetic_v<TArithmetic>
+	auto wstr2num(const std::wstring& wstr, int iBase)->std::optional<TArithmetic>
 	{
+		TArithmetic tData;
 		wchar_t* pEndPtr;
-		if constexpr (std::is_same_v<T, ULONGLONG>)
+		if constexpr (std::is_same_v<TArithmetic, float>)
+		{
+			tData = std::wcstof(wstr.data(), &pEndPtr);
+			if (tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+				return std::nullopt;
+		}
+		else if constexpr (std::is_same_v<TArithmetic, double>)
+		{
+			tData = std::wcstod(wstr.data(), &pEndPtr);
+			if (tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
+				return std::nullopt;
+		}
+		else if constexpr (std::is_same_v<TArithmetic, unsigned long long>)
 		{
 			tData = std::wcstoull(wstr.data(), &pEndPtr, iBase);
 			if ((tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
 				|| (tData == ULLONG_MAX && errno == ERANGE))
-				return false;
+				return std::nullopt;
 		}
-		else if constexpr (std::is_same_v<T, float>)
-		{
-			tData = wcstof(wstr.data(), &pEndPtr);
-			if (tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
-				return false;
-		}
-		else if constexpr (std::is_same_v<T, double>)
-		{
-			tData = wcstod(wstr.data(), &pEndPtr);
-			if (tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
-				return false;
-		}
-		else
+		else //For all the rest cases we use std::wcstoll.
 		{
 			const auto llData = std::wcstoll(wstr.data(), &pEndPtr, iBase);
 			if ((llData == 0 && (pEndPtr == wstr.data() || *pEndPtr != L'\0'))
 				|| ((llData == LLONG_MAX || llData == LLONG_MIN) && errno == ERANGE)
-				|| (llData > static_cast<LONGLONG>((std::numeric_limits<T>::max)()))
-				|| (llData < static_cast<LONGLONG>((std::numeric_limits<std::make_signed_t<T>>::min)())))
-				return false;
-			tData = static_cast<T>(llData);
+				|| (llData > static_cast<LONGLONG>((std::numeric_limits<TArithmetic>::max)()))
+				|| (llData < static_cast<LONGLONG>((std::numeric_limits<std::make_signed_t<TArithmetic>>::min)())))
+				return std::nullopt;
+
+			tData = static_cast<TArithmetic>(llData);
 		}
 
-		return true;
+		return tData;
 	}
 	//Explicit instantiations of templated func in .cpp.
-	template bool wstr2num<CHAR>(const std::wstring& wstr, CHAR& t, int iBase);
-	template bool wstr2num<UCHAR>(const std::wstring& wstr, UCHAR& t, int iBase);
-	template bool wstr2num<SHORT>(const std::wstring& wstr, SHORT& t, int iBase);
-	template bool wstr2num<USHORT>(const std::wstring& wstr, USHORT& t, int iBase);
-	template bool wstr2num<LONG>(const std::wstring& wstr, LONG& t, int iBase);
-	template bool wstr2num<ULONG>(const std::wstring& wstr, ULONG& t, int iBase);
-	template bool wstr2num<INT>(const std::wstring& wstr, INT& t, int iBase);
-	template bool wstr2num<UINT>(const std::wstring& wstr, UINT& t, int iBase);
-	template bool wstr2num<LONGLONG>(const std::wstring& wstr, LONGLONG& t, int iBase);
-	template bool wstr2num<ULONGLONG>(const std::wstring& wstr, ULONGLONG& t, int iBase);
-	template bool wstr2num<float>(const std::wstring& wstr, float& t, int iBase);
-	template bool wstr2num<double>(const std::wstring& wstr, double& t, int iBase);
+	template auto wstr2num<char>(const std::wstring& wstr, int iBase)->std::optional<char>;
+	template auto wstr2num<unsigned char>(const std::wstring & wstr, int iBase)->std::optional<unsigned char>;
+	template auto wstr2num<short>(const std::wstring& wstr, int iBase)->std::optional<short>;
+	template auto wstr2num<unsigned short>(const std::wstring& wstr, int iBase)->std::optional<unsigned short>;
+	template auto wstr2num<int>(const std::wstring& wstr, int iBase)->std::optional<int>;
+	template auto wstr2num<unsigned int>(const std::wstring& wstr, int iBase)->std::optional<unsigned int>;
+	template auto wstr2num<long long>(const std::wstring& wstr, int iBase)->std::optional<long long>;
+	template auto wstr2num<unsigned long long>(const std::wstring& wstr, int iBase)->std::optional<unsigned long long>;
+	template auto wstr2num<float>(const std::wstring& wstr, int iBase)->std::optional<float>;
+	template auto wstr2num<double>(const std::wstring& wstr, int iBase)->std::optional<double>;
 
 	bool wstr2hex(std::wstring_view wstrIn, std::string& strHex, bool fWc, char chWc)
 	{
@@ -83,10 +83,10 @@ namespace HEXCTRL::INTERNAL
 			//Extract two current wchars and pass it to wstr2num as wstring.
 			const std::size_t nOffsetCurr = iterBegin - wstrIn.begin();
 			const auto nSize = nOffsetCurr + 2 <= wstrIn.size() ? 2 : 1;
-			if (unsigned char chNumber; wstr2num(std::wstring(wstrIn.substr(nOffsetCurr, nSize)), chNumber, 16))
+			if (const auto optNumber = wstr2num<unsigned char>(std::wstring(wstrIn.substr(nOffsetCurr, nSize)), 16); optNumber)
 			{
 				iterBegin += nSize;
-				strHexTmp += chNumber;
+				strHexTmp += *optNumber;
 			}
 			else
 				return false;

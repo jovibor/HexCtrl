@@ -465,112 +465,112 @@ bool CHexDlgDataInterp::SetDataBINARY(const std::wstring& wstr)const
 	if (wstr.size() != 8 || wstr.find_first_not_of(L"01") != std::wstring_view::npos)
 		return false;
 
-	bool fSuccess;
-	UCHAR uchData;
-	if (fSuccess = wstr2num(wstr, uchData, 2); fSuccess)
-		SetTData(uchData);
+	const auto optData = wstr2num<unsigned char>(wstr, 2);
+	if (!optData)
+		return false;
 
-	return fSuccess;
+	SetTData(*optData);
+	return true;
 }
 
 bool CHexDlgDataInterp::SetDataCHAR(const std::wstring& wstr)const
 {
-	bool fSuccess;
-	CHAR chData;
-	if (fSuccess = wstr2num(wstr, chData); fSuccess)
-		SetTData(chData);
+	const auto optData = wstr2num<char>(wstr);
+	if (!optData)
+		return false;
 
-	return fSuccess;
+	SetTData(*optData);
+	return true;
 }
 
 bool CHexDlgDataInterp::SetDataUCHAR(const std::wstring& wstr)const
 {
-	bool fSuccess;
-	UCHAR uchData;
-	if (fSuccess = wstr2num(wstr, uchData); fSuccess)
-		SetTData(uchData);
+	const auto optData = wstr2num<unsigned char>(wstr);
+	if (!optData)
+		return false;
 
-	return fSuccess;
+	SetTData(*optData);
+	return true;
 }
 
 bool CHexDlgDataInterp::SetDataSHORT(const std::wstring& wstr)const
 {
-	bool fSuccess;
-	SHORT shData;
-	if (fSuccess = wstr2num(wstr, shData); fSuccess)
-		SetTData(shData);
+	const auto optData = wstr2num<short>(wstr);
+	if (!optData)
+		return false;
 
-	return fSuccess;
+	SetTData(*optData);
+	return true;
 }
 
 bool CHexDlgDataInterp::SetDataUSHORT(const std::wstring& wstr)const
 {
-	bool fSuccess;
-	USHORT ushData;
-	if (fSuccess = wstr2num(wstr, ushData); fSuccess)
-		SetTData(ushData);
+	const auto optData = wstr2num<unsigned short>(wstr);
+	if (!optData)
+		return false;
 
-	return fSuccess;
+	SetTData(*optData);
+	return true;
 }
 
 bool CHexDlgDataInterp::SetDataLONG(const std::wstring& wstr)const
 {
-	bool fSuccess;
-	LONG lData;
-	if (fSuccess = wstr2num(wstr, lData); fSuccess)
-		SetTData(lData);
+	const auto optData = wstr2num<int>(wstr);
+	if (!optData)
+		return false;
 
-	return fSuccess;
+	SetTData(*optData);
+	return true;
 }
 
 bool CHexDlgDataInterp::SetDataULONG(const std::wstring& wstr)const
 {
-	bool fSuccess;
-	ULONG ulData;
-	if (fSuccess = wstr2num(wstr, ulData); fSuccess)
-		SetTData(ulData);
+	const auto optData = wstr2num<unsigned int>(wstr);
+	if (!optData)
+		return false;
 
-	return fSuccess;
+	SetTData(*optData);
+	return true;
 }
 
 bool CHexDlgDataInterp::SetDataLONGLONG(const std::wstring& wstr)const
 {
-	bool fSuccess;
-	LONGLONG llData;
-	if (fSuccess = wstr2num(wstr, llData); fSuccess)
-		SetTData(llData);
+	const auto optData = wstr2num<long long>(wstr);
+	if (!optData)
+		return false;
 
-	return fSuccess;
+	SetTData(*optData);
+	return true;
 }
 
 bool CHexDlgDataInterp::SetDataULONGLONG(const std::wstring& wstr)const
 {
-	bool fSuccess;
-	ULONGLONG ullData;
-	if (fSuccess = wstr2num(wstr, ullData); fSuccess)
-		SetTData(ullData);
+	const auto optData = wstr2num<unsigned long long>(wstr);
+	if (!optData)
+		return false;
 
-	return fSuccess;
+	SetTData(*optData);
+	return true;
 }
 
 bool CHexDlgDataInterp::SetDataFLOAT(const std::wstring& wstr)const
 {
-	bool fSuccess;
-	float fl;
-	if (fSuccess = wstr2num(wstr, fl); fSuccess)
-		SetTData(fl);
+	const auto optData = wstr2num<float>(wstr);
+	if (!optData)
+		return false;
 
-	return fSuccess;
+	SetTData(*optData);
+	return true;
 }
 
 bool CHexDlgDataInterp::SetDataDOUBLE(const std::wstring& wstr)const
 {
-	bool fSuccess;
-	double dd;
-	if (fSuccess = wstr2num(wstr, dd); fSuccess)
-		SetTData(dd);
+	const auto optData = wstr2num<double>(wstr);
+	if (!optData)
+		return false;
 
-	return fSuccess;
+	SetTData(*optData);
+	return true;
 }
 
 bool CHexDlgDataInterp::SetDataTIME32T(std::wstring_view wstr)const
@@ -595,16 +595,11 @@ bool CHexDlgDataInterp::SetDataTIME32T(std::wstring_view wstr)const
 	lTicks.LowPart = ftTime.dwLowDateTime;
 	lTicks.QuadPart /= m_uFTTicksPerSec;
 	lTicks.QuadPart -= m_ullUnixEpochDiff;
+	if (lTicks.QuadPart >= LONG_MAX)
+		return false;
 
-	if (lTicks.QuadPart < LONG_MAX)
-	{
-		auto lTime32 = static_cast<__time32_t>(lTicks.QuadPart);
-
-		if (m_fBigEndian)
-			lTime32 = _byteswap_ulong(lTime32);
-
-		SetIHexTData(*m_pHexCtrl, m_ullOffset, lTime32);
-	}
+	const auto lTime32 = static_cast<__time32_t>(lTicks.QuadPart);
+	SetTData(lTime32);
 
 	return true;
 }
@@ -631,12 +626,8 @@ bool CHexDlgDataInterp::SetDataTIME64T(std::wstring_view wstr)const
 	lTicks.LowPart = ftTime.dwLowDateTime;
 	lTicks.QuadPart /= m_uFTTicksPerSec;
 	lTicks.QuadPart -= m_ullUnixEpochDiff;
-	auto llTime64 = static_cast<__time64_t>(lTicks.QuadPart);
-
-	if (m_fBigEndian)
-		llTime64 = _byteswap_uint64(llTime64);
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, llTime64);
+	const auto llTime64 = static_cast<__time64_t>(lTicks.QuadPart);
+	SetTData(llTime64);
 
 	return true;
 }
@@ -650,11 +641,7 @@ bool CHexDlgDataInterp::SetDataFILETIME(std::wstring_view wstr)const
 	ULARGE_INTEGER stLITime;
 	stLITime.LowPart = optFileTime->dwLowDateTime;
 	stLITime.HighPart = optFileTime->dwHighDateTime;
-
-	if (m_fBigEndian)
-		stLITime.QuadPart = _byteswap_uint64(stLITime.QuadPart);
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, stLITime.QuadPart);
+	SetTData(stLITime.QuadPart);
 
 	return true;
 }
@@ -671,11 +658,7 @@ bool CHexDlgDataInterp::SetDataOLEDATETIME(std::wstring_view wstr)const
 
 	ULONGLONG ullValue;
 	std::memcpy(&ullValue, &dt.m_dt, sizeof(dt.m_dt));
-
-	if (m_fBigEndian)
-		ullValue = _byteswap_uint64(ullValue);
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, ullValue);
+	SetTData(ullValue);
 
 	return true;
 }
@@ -701,12 +684,8 @@ bool CHexDlgDataInterp::SetDataJAVATIME(std::wstring_view wstr)const
 	else
 		llDiffTicks = lJavaTicks.QuadPart - lEpochTicks.QuadPart;
 
-	LONGLONG llDiffMillis = llDiffTicks / m_uFTTicksPerMS;
-
-	if (m_fBigEndian)
-		llDiffMillis = _byteswap_uint64(llDiffMillis);
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, llDiffMillis);
+	const auto llDiffMillis = llDiffTicks / m_uFTTicksPerMS;
+	SetTData(llDiffMillis);
 
 	return true;
 }
@@ -722,7 +701,6 @@ bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wstr)const
 		return false;
 
 	//Note: Big-endian is not currently supported. This has never existed in the "wild".
-
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, msdosDateTime.dwTimeDate);
 
 	return true;
@@ -744,7 +722,6 @@ bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wstr)const
 	dttm.components.minute = optSysTime->wMinute;
 
 	//Note: Big-endian is not currently supported. This has never existed in the "wild".
-
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, dttm.dwValue);
 
 	return true;
@@ -757,7 +734,6 @@ bool CHexDlgDataInterp::SetDataSYSTEMTIME(std::wstring_view wstr)const
 		return false;
 
 	//Note: Big-endian is not currently supported. This has never existed in the "wild".
-
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, *optSysTime);
 
 	return true;
