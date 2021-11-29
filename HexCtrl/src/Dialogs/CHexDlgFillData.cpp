@@ -136,12 +136,12 @@ void CHexDlgFillData::OnOK()
 	{
 	case EFillType::FILL_HEX:
 	{
-		if (!wstr2hex(wstrFillWith, strFillWith))
-		{
+		const auto optData = StringToHex(wstrFillWith);
+		if (!optData) {
 			MessageBoxW(L"Wrong Hex format!", L"Format Error", MB_ICONERROR);
 			return;
 		}
-
+		strFillWith = std::move(*optData);
 		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 		hms.spnData = { reinterpret_cast<std::byte*>(strFillWith.data()), strFillWith.size() };
 	}

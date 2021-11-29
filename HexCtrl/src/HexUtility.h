@@ -41,17 +41,17 @@ namespace HEXCTRL::INTERNAL
 
 	//Converts wide string to a templated arithmetic data type.
 	template<typename TArithmetic> requires std::is_arithmetic_v<TArithmetic>
-	[[nodiscard]] auto wstr2num(const std::wstring& wstr, int iBase = 0)->std::optional<TArithmetic>;
+	[[nodiscard]] auto StringToNum(const std::wstring& wstr, int iBase = 0)->std::optional<TArithmetic>;
 
 	//Converts every two numeric wchars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
-	//fWc means that wildcards are allowed, uWc - the wildcard.
-	bool wstr2hex(std::wstring_view wstrIn, std::string& strHex, bool fWc = false, char chWc = '?');
+	//fWc means that wildcards are allowed, chWc - the wildcard.
+	[[nodiscard]] auto StringToHex(std::wstring_view wstr, bool fWc = false, char chWc = '?')->std::optional<std::string>;
 
 	//Wide to Multibyte string convertion.
-	[[nodiscard]] std::string wstr2str(std::wstring_view wstr, UINT uCodePage = CP_UTF8);
+	[[nodiscard]] std::string WstrToStr(std::wstring_view wstr, UINT uCodePage = CP_UTF8);
 
 	//Multibyte to Wide string convertion.
-	[[nodiscard]] std::wstring str2wstr(std::string_view str, UINT uCodePage = CP_UTF8);
+	[[nodiscard]] std::wstring StrToWstr(std::string_view str, UINT uCodePage = CP_UTF8);
 
 	//Convert string into FILETIME struct.
 	[[nodiscard]] auto StringToFileTime(std::wstring_view wstr, DWORD dwFormat)->std::optional<FILETIME>;

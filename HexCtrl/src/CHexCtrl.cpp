@@ -1966,8 +1966,7 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 	//Text to print.
 	std::wstring wstrText;
 	const auto iEncoding = GetEncoding();
-	if (iEncoding == -1) //ASCII codepage: we simply assigning [pDataBegin...pDataEnd) to wstrText w/o any conversion.
-	{
+	if (iEncoding == -1) { //ASCII codepage: we simply assigning [pDataBegin...pDataEnd) to wstrText w/o any conversion.
 		wstrText.assign(pDataBegin, pDataEnd);
 	}
 	else if (iEncoding == 0) //UTF-16.
@@ -2254,34 +2253,52 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 	HEXMODIFY hmd { };
 	ULONGLONG ullSizeModify;
 	std::string strDataModify; //Actual data to paste, must outlive hmd.
-
-	switch (eType)
+	const auto lmbPasteUTF16 = [&]()
 	{
-	case EClipboard::PASTE_TEXT_UTF16:
 		ullSizeModify = sSizeClpbrd;
 		if (ullCaretPos + sSizeClpbrd > ullDataSize)
 			ullSizeModify = ullDataSize - ullCaretPos;
 		hmd.spnData = { reinterpret_cast<std::byte*>(pDataClpbrd), static_cast<std::size_t>(ullSizeModify) };
+	};
+
+	switch (eType)
+	{
+	case EClipboard::PASTE_TEXT_UTF16:
+		lmbPasteUTF16();
 		break;
 	case EClipboard::PASTE_TEXT_CP:
-		strDataModify = wstr2str(pDataClpbrd, GetEncoding());
+	{
+		auto iEncoding = GetEncoding();
+		if (iEncoding == 0) { //UTF-16.
+			lmbPasteUTF16();
+			break;
+		}
+
+		if (iEncoding == -1) { //ASCII.
+			iEncoding = 1252;  //ANSI-Latin codepage for default ASCII.
+		}
+		strDataModify = WstrToStr(pDataClpbrd, iEncoding);
 		ullSizeModify = strDataModify.size();
 		if (ullCaretPos + ullSizeModify > ullDataSize)
 			ullSizeModify = ullDataSize - ullCaretPos;
 		hmd.spnData = { reinterpret_cast<std::byte*>(strDataModify.data()), static_cast<std::size_t>(ullSizeModify) };
-		break;
+	}
+	break;
 	case EClipboard::PASTE_HEX:
-		if (!wstr2hex(pDataClpbrd, strDataModify))
-		{
+	{
+		const auto optData = StringToHex(pDataClpbrd);
+		if (!optData) {
 			GlobalUnlock(hClpbrd);
 			CloseClipboard();
 			return;
 		}
+		strDataModify = std::move(*optData);
 		ullSizeModify = strDataModify.size();
 		if (ullCaretPos + ullSizeModify > ullDataSize)
 			ullSizeModify = ullDataSize - ullCaretPos;
 		hmd.spnData = { reinterpret_cast<std::byte*>(strDataModify.data()), ullSizeModify };
-		break;
+	}
+	break;
 	default:
 		break;
 	}
@@ -2566,8 +2583,7 @@ auto CHexCtrl::CopyTextUTF16()const->std::wstring
 
 	std::wstring wstrText;
 	const auto iEncoding = GetEncoding();
-	if (iEncoding == -1) //ASCII codepage: we simply assigning [strData.begin()...strData.end()) to wstrText w/o any conversion.
-	{
+	if (iEncoding == -1) { //ASCII codepage: we simply assigning [strData.begin()...strData.end()) to wstrText w/o any conversion.
 		wstrText.assign(strData.begin(), strData.end());
 	}
 	else if (iEncoding == 0) //UTF-16.
@@ -2577,9 +2593,8 @@ auto CHexCtrl::CopyTextUTF16()const->std::wstring
 		const auto pDataUTF16End = pDataUTF16Beg + sSizeWstr;
 		wstrText.assign(pDataUTF16Beg, pDataUTF16End);
 	}
-	else
-	{
-		wstrText = str2wstr(strData, iEncoding);
+	else {
+		wstrText = StrToWstr(strData, iEncoding);
 	}
 	ReplaceUnprintable(wstrText, iEncoding == -1, false);
 
@@ -4597,7 +4612,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	unsigned char chByte = nChar & 0xFF;
 	wchar_t warrCurrLocaleID[KL_NAMELENGTH];
 	GetKeyboardLayoutNameW(warrCurrLocaleID); //Current langID as wstring.
-	if (const auto optLocID = wstr2num<unsigned int>(warrCurrLocaleID, 16); optLocID) //Convert langID from wstr to number.
+	if (const auto optLocID = StringToNum<unsigned int>(warrCurrLocaleID, 16); optLocID) //Convert langID from wstr to number.
 	{
 		UINT uCurrCodePage { };
 		constexpr int iSize = sizeof(uCurrCodePage) / sizeof(wchar_t);
@@ -4606,7 +4621,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 		{
 			const wchar_t wch { static_cast<wchar_t>(nChar) };
 			//Convert input symbol (wchar) to char according to current Windows' code page.
-			if (auto str = wstr2str(&wch, uCurrCodePage); !str.empty())
+			if (auto str = WstrToStr(&wch, uCurrCodePage); !str.empty())
 				chByte = str[0];
 		}
 	}

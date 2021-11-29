@@ -13,7 +13,7 @@
 namespace HEXCTRL::INTERNAL
 {
 	template<typename TArithmetic> requires std::is_arithmetic_v<TArithmetic>
-	auto wstr2num(const std::wstring& wstr, int iBase)->std::optional<TArithmetic>
+	auto StringToNum(const std::wstring& wstr, int iBase)->std::optional<TArithmetic>
 	{
 		TArithmetic tData;
 		wchar_t* pEndPtr;
@@ -51,27 +51,28 @@ namespace HEXCTRL::INTERNAL
 		return tData;
 	}
 	//Explicit instantiations of templated func in .cpp.
-	template auto wstr2num<char>(const std::wstring& wstr, int iBase)->std::optional<char>;
-	template auto wstr2num<unsigned char>(const std::wstring & wstr, int iBase)->std::optional<unsigned char>;
-	template auto wstr2num<short>(const std::wstring& wstr, int iBase)->std::optional<short>;
-	template auto wstr2num<unsigned short>(const std::wstring& wstr, int iBase)->std::optional<unsigned short>;
-	template auto wstr2num<int>(const std::wstring& wstr, int iBase)->std::optional<int>;
-	template auto wstr2num<unsigned int>(const std::wstring& wstr, int iBase)->std::optional<unsigned int>;
-	template auto wstr2num<long long>(const std::wstring& wstr, int iBase)->std::optional<long long>;
-	template auto wstr2num<unsigned long long>(const std::wstring& wstr, int iBase)->std::optional<unsigned long long>;
-	template auto wstr2num<float>(const std::wstring& wstr, int iBase)->std::optional<float>;
-	template auto wstr2num<double>(const std::wstring& wstr, int iBase)->std::optional<double>;
+	template auto StringToNum<char>(const std::wstring& wstr, int iBase)->std::optional<char>;
+	template auto StringToNum<unsigned char>(const std::wstring & wstr, int iBase)->std::optional<unsigned char>;
+	template auto StringToNum<short>(const std::wstring& wstr, int iBase)->std::optional<short>;
+	template auto StringToNum<unsigned short>(const std::wstring& wstr, int iBase)->std::optional<unsigned short>;
+	template auto StringToNum<int>(const std::wstring& wstr, int iBase)->std::optional<int>;
+	template auto StringToNum<unsigned int>(const std::wstring& wstr, int iBase)->std::optional<unsigned int>;
+	template auto StringToNum<long long>(const std::wstring& wstr, int iBase)->std::optional<long long>;
+	template auto StringToNum<unsigned long long>(const std::wstring& wstr, int iBase)->std::optional<unsigned long long>;
+	template auto StringToNum<float>(const std::wstring& wstr, int iBase)->std::optional<float>;
+	template auto StringToNum<double>(const std::wstring& wstr, int iBase)->std::optional<double>;
 
-	bool wstr2hex(std::wstring_view wstrIn, std::string& strHex, bool fWc, char chWc)
+	auto StringToHex(std::wstring_view wstr, bool fWc, char chWc)->std::optional<std::string>
 	{
 		std::wstring wstrFilter = L"0123456789AaBbCcDdEeFf"; //Allowed characters.
 		if (fWc)
 			wstrFilter += chWc;
-		if (wstrIn.find_first_not_of(wstrFilter) != std::string_view::npos)
-			return false;
+
+		if (wstr.find_first_not_of(wstrFilter) != std::string_view::npos)
+			return std::nullopt;
 
 		std::string strHexTmp;
-		for (auto iterBegin = wstrIn.begin(); iterBegin != wstrIn.end();)
+		for (auto iterBegin = wstr.begin(); iterBegin != wstr.end();)
 		{
 			if (fWc && *iterBegin == chWc) //Skip wildcard.
 			{
@@ -80,43 +81,34 @@ namespace HEXCTRL::INTERNAL
 				continue;
 			}
 
-			//Extract two current wchars and pass it to wstr2num as wstring.
-			const std::size_t nOffsetCurr = iterBegin - wstrIn.begin();
-			const auto nSize = nOffsetCurr + 2 <= wstrIn.size() ? 2 : 1;
-			if (const auto optNumber = wstr2num<unsigned char>(std::wstring(wstrIn.substr(nOffsetCurr, nSize)), 16); optNumber)
+			//Extract two current wchars and pass it to StringToNum as wstring.
+			const std::size_t nOffsetCurr = iterBegin - wstr.begin();
+			const auto nSize = nOffsetCurr + 2 <= wstr.size() ? 2 : 1;
+			if (const auto optNumber = StringToNum<unsigned char>(std::wstring(wstr.substr(nOffsetCurr, nSize)), 16); optNumber)
 			{
 				iterBegin += nSize;
 				strHexTmp += *optNumber;
 			}
 			else
-				return false;
+				return std::nullopt;
 		}
-		strHex = std::move(strHexTmp);
 
-		return true;
+		return { std::move(strHexTmp) };
 	}
 
-	std::string wstr2str(std::wstring_view wstr, UINT uCodePage)
+	std::string WstrToStr(std::wstring_view wstr, UINT uCodePage)
 	{
-		if (uCodePage == -1)
-			uCodePage = 1252; //ANSI-Latin codepage for default ASCII.
-
 		const auto iSize = WideCharToMultiByte(uCodePage, 0, wstr.data(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
 		WideCharToMultiByte(uCodePage, 0, wstr.data(), static_cast<int>(wstr.size()), &str[0], iSize, nullptr, nullptr);
-
 		return str;
 	}
 
-	std::wstring str2wstr(std::string_view str, UINT uCodePage)
+	std::wstring StrToWstr(std::string_view str, UINT uCodePage)
 	{
-		if (uCodePage == -1)
-			uCodePage = 1252; //ANSI-Latin codepage for default ASCII.
-
 		const auto iSize = MultiByteToWideChar(uCodePage, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
 		std::wstring wstr(iSize, 0);
 		MultiByteToWideChar(uCodePage, 0, str.data(), static_cast<int>(str.size()), &wstr[0], iSize);
-
 		return wstr;
 	}
 

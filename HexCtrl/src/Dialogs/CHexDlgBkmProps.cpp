@@ -76,7 +76,7 @@ void CHexDlgBkmProps::OnOK()
 
 	auto pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_OFFSET));
 	pEdit->GetWindowTextW(pwszBuff, NUMBER_MAX_CHARS);
-	const auto optOffset = wstr2num<ULONGLONG>(pwszBuff);
+	const auto optOffset = StringToNum<ULONGLONG>(pwszBuff);
 	if (!optOffset) {
 		MessageBoxW(L"Invalid offset format", L"Format Error", MB_ICONERROR);
 		return;
@@ -84,7 +84,7 @@ void CHexDlgBkmProps::OnOK()
 
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_LENGTH));
 	pEdit->GetWindowTextW(pwszBuff, NUMBER_MAX_CHARS);
-	const auto optSize = wstr2num<ULONGLONG>(pwszBuff);
+	const auto optSize = StringToNum<ULONGLONG>(pwszBuff);
 	if (!optSize) {
 		MessageBoxW(L"Invalid length format.", L"Format Error", MB_ICONERROR);
 		return;

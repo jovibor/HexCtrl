@@ -164,7 +164,7 @@ void CHexDlgOpers::OnOK()
 		std::wstring wstrErr { };
 		if (pwszEditText[0] == L'\0') //Edit field emptiness check.
 			wstrErr = L"Missing Operand!";
-		else if (const auto optData = wstr2num<LONGLONG>(pwszEditText); !optData)
+		else if (const auto optData = StringToNum<LONGLONG>(pwszEditText); !optData)
 			wstrErr = L"Wrong number format!";
 		else if (llData = *optData; hms.enOperMode == EHexOperMode::OPER_DIVIDE && llData == 0) //Division by zero check.
 			wstrErr = L"Wrong number format! Can not divide by zero!";
