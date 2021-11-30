@@ -105,7 +105,6 @@
   * [HEXCTRL_MSG_MENUCLICK](#hexctrl_msg_menuclick)
   * [HEXCTRL_MSG_SELECTION](#hexctrl_msg_selection)
   * [HEXCTRL_MSG_SETDATA](#hexctrl_msg_setdata)
-  * [HEXCTRL_MSG_VIEWCHANGE](#hexctrl_msg_viewchange)
    </details>
 * [Exported Functions](#exported-functions) <details><summary>_Expand_</summary>
   * [CreateRawHexCtrl](#createrawhexctrl)
@@ -980,9 +979,6 @@ Sent when selection has been made. `LPARAM` will contain pointer to a `NMHDR` st
 
 ### [](#)HEXCTRL_MSG_SETDATA
 Sent to indicate that the data has changed. `LPARAM` will contain pointer to a `NMHDR` struct.
-
-### [](#)HEXCTRL_MSG_VIEWCHANGE
-Sent when **HexCtrl**'s view has changed, whether on resizing or scrolling. `LPARAM` will contain pointer to a `NMHDR` struct.
 
 ## [](#)Exported Functions
 **HexCtrl** has few `"C"` interface functions which it exports when built as *.dll*.

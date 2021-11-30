@@ -181,7 +181,6 @@ namespace HEXCTRL
 	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0104U };   //User defined custom menu clicked.
 	constexpr auto HEXCTRL_MSG_SELECTION { 0x0105U };   //Selection has been made.
 	constexpr auto HEXCTRL_MSG_SETDATA { 0x0106U };     //Indicates that the data has changed.
-	constexpr auto HEXCTRL_MSG_VIEWCHANGE { 0x0107U };  //View of the control has changed.
 
 	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")

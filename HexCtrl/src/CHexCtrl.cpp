@@ -680,8 +680,7 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->std::span<std::byte>
 		if (hss.ullSize == 0 || hss.ullSize > GetCacheSize())
 			hss.ullSize = GetCacheSize();
 
-		HEXDATAINFO hdi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
-		hdi.stHexSpan = hss;
+		HEXDATAINFO hdi;
 		m_pHexVirtData->OnHexGetData(hdi);
 		spnData = hdi.spnData;
 	}
@@ -1416,7 +1415,6 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 
 	FillCapacityString();
 	RecalcAll();
-	ParentNotify(HEXCTRL_MSG_VIEWCHANGE);
 }
 
 void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
@@ -1800,7 +1798,6 @@ void CHexCtrl::SetFont(const LOGFONTW& lf)
 	m_fontMain.CreateFontIndirectW(&lf);
 
 	RecalcAll();
-	ParentNotify(HEXCTRL_MSG_VIEWCHANGE);
 }
 
 void CHexCtrl::SetGroupMode(EHexDataSize eGroupMode)
@@ -2922,7 +2919,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 		bool fColor { false };  //Flag to show current Color in current Hex presence.
 		std::optional<HEXCOLOR> optColorCurr { }; //Current color.
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Text are the same.
-		HEXCOLORINFO hci { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
+		HEXCOLORINFO hci { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
 		const auto lmbPoly = [&]()
 		{
 			//Hex colors Poly.
@@ -3723,8 +3720,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 
 	if (auto pBkm = m_pBookmarks->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.
 	{
-		HEXBKMINFO hbi { { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK } };
-		hbi.pBkm = pBkm;
+		HEXBKMINFO hbi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK }, .pBkm { pBkm } };
 		ParentNotify(hbi);
 	}
 
@@ -3964,7 +3960,6 @@ void CHexCtrl::RecalcAll()
 	m_pScrollV->SetScrollPos(ullCurLineV * m_sizeLetter.cy);
 
 	Redraw();
-	ParentNotify(HEXCTRL_MSG_VIEWCHANGE);
 }
 
 void CHexCtrl::RecalcOffsetDigits()
@@ -5179,7 +5174,6 @@ void CHexCtrl::OnSize(UINT /*nType*/, int cx, int cy)
 	if (ullPageSize < m_sizeLetter.cy)
 		ullPageSize = m_sizeLetter.cy;
 	m_pScrollV->SetScrollPageSize(ullPageSize);
-	ParentNotify(HEXCTRL_MSG_VIEWCHANGE);
 }
 
 void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
@@ -5217,9 +5211,7 @@ void CHexCtrl::OnVScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollB
 		TtOffsetShow(!fRedraw);
 	}
 
-	if (fRedraw)
-	{
+	if (fRedraw) {
 		RedrawWindow();
-		ParentNotify(HEXCTRL_MSG_VIEWCHANGE); //Indicates to parent that view has changed.
 	}
 }
