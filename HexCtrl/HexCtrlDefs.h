@@ -243,8 +243,7 @@ namespace HEXCTRL
 	enum class EHexOperMode : std::uint8_t
 	{
 		OPER_ASSIGN, OPER_OR, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_ROTL,
-		OPER_ROTR, OPER_SWAP, OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE,
-		OPER_CEILING, OPER_FLOOR
+		OPER_ROTR, OPER_SWAP, OPER_ADD, OPER_SUB, OPER_MUL, OPER_DIV, OPER_CEIL, OPER_FLOOR
 	};
 
 	/********************************************************************************************
@@ -267,13 +266,13 @@ namespace HEXCTRL
 	* `010203040506070809`, and bytes pointed to by spnData.data() are `030405`, then after     *
 	* modification bytes at vecSpan.ullOffset will be `030405030405030405.                      *
 	* If enModifyMode is equal to MODIFY_OPERATION then enOperMode comes into play, showing     *
-	* what kind of operation must be performed on data, with the enOperSize showing the size.   *
+	* what kind of operation must be performed on data, with the enDataSize showing the size.   *
 	********************************************************************************************/
 	struct HEXMODIFY
 	{
 		EHexModifyMode       enModifyMode { EHexModifyMode::MODIFY_ONCE }; //Modify mode.
 		EHexOperMode         enOperMode { };       //Operation mode, used only in MODIFY_OPERATION mode.
-		EHexDataSize         enOperSize { };       //Operation data size.
+		EHexDataSize         enDataSize { };       //Operation data size.
 		std::span<std::byte> spnData { };          //Data span.
 		std::vector<HEXSPAN> vecSpan { };          //Vector of data offsets and sizes.
 		bool                 fBigEndian { false }; //Treat the data as a big endian, used only in MODIFY_OPERATION mode.

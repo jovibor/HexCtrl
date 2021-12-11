@@ -839,7 +839,7 @@ struct HEXMODIFY
 {
     EHexModifyMode       enModifyMode { EHexModifyMode::MODIFY_ONCE }; //Modify mode.
     EHexOperMode         enOperMode { };       //Operation mode, used only in MODIFY_OPERATION mode.
-    EHexDataSize         enOperSize { };       //Operation data size.
+    EHexDataSize         enDataSize { };       //Operation data size.
     std::span<std::byte> spnData { };          //Data span.
     std::vector<HEXSPAN> vecSpan { };          //Vector of data offsets and sizes.
     bool                 fBigEndian { false }; //Treat the data as a big endian, used only in MODIFY_OPERATION mode.
@@ -930,8 +930,7 @@ Enum of the data operation modes, used in [`HEXMODIFY`](#hexmodify) when `HEXMOD
 enum class EHexOperMode : std::uint8_t
 {
     OPER_ASSIGN, OPER_OR, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_ROTL,
-    OPER_ROTR, OPER_SWAP, OPER_ADD, OPER_SUBTRACT, OPER_MULTIPLY, OPER_DIVIDE,
-    OPER_CEILING, OPER_FLOOR
+    OPER_ROTR, OPER_SWAP, OPER_ADD, OPER_SUB, OPER_MUL, OPER_DIV, OPER_CEIL, OPER_FLOOR
 };
 ```
 

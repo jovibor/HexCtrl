@@ -38,39 +38,40 @@ BOOL CHexDlgOpers::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
+	using enum EHexOperMode;
 	auto iIndex = m_stComboOper.AddString(L"Assign");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_ASSIGN));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ASSIGN));
 	m_stComboOper.SetCurSel(iIndex);
 	iIndex = m_stComboOper.AddString(L"Add");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_ADD));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ADD));
 	iIndex = m_stComboOper.AddString(L"Subtract");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_SUBTRACT));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SUB));
 	iIndex = m_stComboOper.AddString(L"Multiply");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_MULTIPLY));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MUL));
 	iIndex = m_stComboOper.AddString(L"Divide");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_DIVIDE));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_DIV));
 	iIndex = m_stComboOper.AddString(L"Ceiling");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_CEILING));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_CEIL));
 	iIndex = m_stComboOper.AddString(L"Floor");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_FLOOR));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_FLOOR));
 	iIndex = m_stComboOper.AddString(L"OR");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_OR));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_OR));
 	iIndex = m_stComboOper.AddString(L"XOR");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_XOR));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_XOR));
 	iIndex = m_stComboOper.AddString(L"AND");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_AND));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_AND));
 	iIndex = m_stComboOper.AddString(L"NOT");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_NOT));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_NOT));
 	iIndex = m_stComboOper.AddString(L"SHL");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_SHL));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHL));
 	iIndex = m_stComboOper.AddString(L"SHR");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_SHR));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHR));
 	iIndex = m_stComboOper.AddString(L"ROTL");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_ROTL));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTL));
 	iIndex = m_stComboOper.AddString(L"ROTR");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_ROTR));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTR));
 	iIndex = m_stComboOper.AddString(L"Swap Bytes Order");
-	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(EHexOperMode::OPER_SWAP));
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SWAP));
 
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD, IDC_HEXCTRL_OPERS_RADIO_BYTE);
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RADIO_LE, IDC_HEXCTRL_OPERS_RADIO_BE, IDC_HEXCTRL_OPERS_RADIO_LE);
@@ -129,27 +130,29 @@ void CHexDlgOpers::OnOK()
 	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
 		return;
 
+	using enum EHexOperMode;
+	using enum EHexDataSize;
 	const auto eOperMode = GetOperMode();
 	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_BYTE, IDC_HEXCTRL_OPERS_RADIO_QWORD);
 	const auto iRadioByteOrder = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_LE, IDC_HEXCTRL_OPERS_RADIO_BE);
 	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RADIO_ALL, IDC_HEXCTRL_OPERS_RADIO_SEL);
 	auto fBigEndian = iRadioByteOrder == IDC_HEXCTRL_OPERS_RADIO_BE && iRadioDataSize != IDC_HEXCTRL_OPERS_RADIO_BYTE
-		&& eOperMode != EHexOperMode::OPER_NOT && eOperMode != EHexOperMode::OPER_SWAP;
+		&& eOperMode != OPER_NOT && eOperMode != OPER_SWAP;
 
 	HEXMODIFY hms { .enModifyMode = EHexModifyMode::MODIFY_OPERATION, .enOperMode = eOperMode };
 	switch (iRadioDataSize)
 	{
 	case IDC_HEXCTRL_OPERS_RADIO_BYTE:
-		hms.enOperSize = EHexDataSize::SIZE_BYTE;
+		hms.enDataSize = SIZE_BYTE;
 		break;
 	case IDC_HEXCTRL_OPERS_RADIO_WORD:
-		hms.enOperSize = EHexDataSize::SIZE_WORD;
+		hms.enDataSize = SIZE_WORD;
 		break;
 	case IDC_HEXCTRL_OPERS_RADIO_DWORD:
-		hms.enOperSize = EHexDataSize::SIZE_DWORD;
+		hms.enDataSize = SIZE_DWORD;
 		break;
 	case IDC_HEXCTRL_OPERS_RADIO_QWORD:
-		hms.enOperSize = EHexDataSize::SIZE_QWORD;
+		hms.enDataSize = SIZE_QWORD;
 		break;
 	default:
 		break;
@@ -166,7 +169,7 @@ void CHexDlgOpers::OnOK()
 			wstrErr = L"Missing Operand!";
 		else if (const auto optData = StringToNum<LONGLONG>(pwszEditText); !optData)
 			wstrErr = L"Wrong number format!";
-		else if (llData = *optData; hms.enOperMode == EHexOperMode::OPER_DIVIDE && llData == 0) //Division by zero check.
+		else if (llData = *optData; hms.enOperMode == OPER_DIV && llData == 0) //Division by zero check.
 			wstrErr = L"Wrong number format! Can not divide by zero!";
 		if (!wstrErr.empty())
 		{
@@ -182,19 +185,19 @@ void CHexDlgOpers::OnOK()
 			* Binary OR/XOR/AND are good examples, binary NOT doesn't need swap at all.
 			* The fSwapHere flag shows exactly this, that data can be swapped here.
 			***************************************************************************/
-			if (eOperMode == EHexOperMode::OPER_OR || eOperMode == EHexOperMode::OPER_XOR
-				|| eOperMode == EHexOperMode::OPER_AND || eOperMode == EHexOperMode::OPER_ASSIGN)
+			if (eOperMode == OPER_OR || eOperMode == OPER_XOR
+				|| eOperMode == OPER_AND || eOperMode == OPER_ASSIGN)
 			{
 				fBigEndian = false;
-				switch (hms.enOperSize)
+				switch (hms.enDataSize)
 				{
-				case EHexDataSize::SIZE_WORD:
+				case SIZE_WORD:
 					llData = static_cast<LONGLONG>(_byteswap_ushort(static_cast<WORD>(llData)));
 					break;
-				case EHexDataSize::SIZE_DWORD:
+				case SIZE_DWORD:
 					llData = static_cast<LONGLONG>(_byteswap_ulong(static_cast<DWORD>(llData)));
 					break;
-				case EHexDataSize::SIZE_QWORD:
+				case SIZE_QWORD:
 					llData = static_cast<LONGLONG>(_byteswap_uint64(static_cast<QWORD>(llData)));
 					break;
 				default:
