@@ -6,7 +6,6 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "CListEx.h"
-#include "strsafe.h"
 #include <algorithm>
 #include <cassert>
 #include <limits>

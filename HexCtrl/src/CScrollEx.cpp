@@ -53,8 +53,8 @@ void CScrollEx::AddSibling(CScrollEx* pSibling)
 bool CScrollEx::Create(CWnd* pParent, bool fVert, int iIDRESArrow,
 	ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
 {
-	assert(!m_fCreated); //Already created
-	assert(pParent);
+	assert(!m_fCreated); //Already created.
+	assert(pParent != nullptr);
 	if (m_fCreated || pParent == nullptr)
 		return false;
 
@@ -62,7 +62,7 @@ bool CScrollEx::Create(CWnd* pParent, bool fVert, int iIDRESArrow,
 		return false;
 
 	m_fScrollVert = fVert;
-	m_pwndParent = pParent;
+	m_pParent = pParent;
 	m_uiScrollBarSizeWH = GetSystemMetrics(fVert ? SM_CXVSCROLL : SM_CXHSCROLL);
 
 	if (!CreateArrows(iIDRESArrow, fVert))
@@ -80,7 +80,7 @@ CWnd* CScrollEx::GetParent()const
 	if (!m_fCreated)
 		return nullptr;
 
-	return m_pwndParent;
+	return m_pParent;
 }
 
 ULONGLONG CScrollEx::GetScrollPos()const
@@ -130,7 +130,6 @@ bool CScrollEx::IsThumbReleased()const
 
 bool CScrollEx::IsVisible()const
 {
-	assert(m_fCreated);
 	if (!m_fCreated)
 		return false;
 
@@ -207,7 +206,7 @@ void CScrollEx::OnNcActivate(BOOL /*bActive*/)const
 	if (!m_fCreated)
 		return;
 
-	Redraw(); //To repaint NC area.
+	RedrawNC(); //To repaint NC area.
 }
 
 void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS* lpncsp)
@@ -339,7 +338,7 @@ void CScrollEx::SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG u
 	m_ullScrollPage = ullPage;
 	m_ullScrollSizeMax = ullSizeMax;
 
-	Redraw(); //To repaint NC area.
+	RedrawNC(); //To repaint NC area.
 }
 
 ULONGLONG CScrollEx::SetScrollPos(ULONGLONG ullNewPos)
@@ -881,12 +880,12 @@ bool CScrollEx::IsSiblingVisible()const
 	return m_pSibling ? m_pSibling->IsVisible() : false;
 }
 
-void CScrollEx::Redraw()const
+void CScrollEx::RedrawNC()const
 {
 	//To repaint NC area.
-	auto* pWnd = GetParent();
-	if (pWnd != nullptr)
-		pWnd->SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+	if (auto* pWnd = GetParent(); pWnd != nullptr) {
+		pWnd->SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+	}
 }
 
 void CScrollEx::SendParentScrollMsg()const
@@ -963,9 +962,10 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 
 void CScrollEx::OnDestroy()
 {
-	CWnd::OnDestroy();
-
 	m_bmpArrowFirst.DeleteObject();
 	m_bmpArrowLast.DeleteObject();
+	m_pParent = nullptr;
 	m_fCreated = false;
+
+	CWnd::OnDestroy();
 }

@@ -16,6 +16,7 @@ BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_FILEOPENRW, &CHexSampleDlg::OnBnFileOpenRW)
 	ON_WM_SIZE()
 	ON_WM_CLOSE()
+	ON_BN_CLICKED(IDC_HEXPOPUP, &CHexSampleDlg::OnBnPopup)
 END_MESSAGE_MAP()
 
 CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/)
@@ -24,33 +25,34 @@ CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/)
 	m_hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
 }
 
-void CHexSampleDlg::OnHexGetColor(HEXCOLORINFO& hci)
+void CHexSampleDlg::CreateHexPopup()
 {
-	//Sample code for custom colors:
-	if (hci.ullOffset < 18)
-	{
-		static std::vector<HEXCOLOR> vec {
-			{ RGB(50, 0, 0), RGB(255, 255, 255) },
-			{ RGB(0, 150, 0), RGB(255, 255, 255) },
-			{ RGB(255, 255, 0), RGB(0, 0, 0) },
-			{ RGB(0, 0, 50), RGB(255, 255, 255) },
-			{ RGB(50, 50, 110), RGB(255, 255, 255) },
-			{ RGB(50, 250, 50), RGB(255, 255, 255) },
-			{ RGB(110, 0, 0), RGB(255, 255, 255) },
-			{ RGB(0, 110, 0), RGB(255, 255, 255) },
-			{ RGB(0, 0, 110), RGB(255, 255, 255) },
-			{ RGB(110, 110, 0), RGB(255, 255, 255) },
-			{ RGB(0, 110, 110), RGB(255, 255, 255) },
-			{ RGB(110, 110, 110), RGB(255, 255, 255) },
-			{ RGB(220, 0, 0), RGB(255, 255, 255) },
-			{ RGB(0, 220, 0), RGB(255, 255, 255) },
-			{ RGB(0, 0, 220), RGB(255, 255, 255) },
-			{ RGB(220, 220, 0), RGB(255, 255, 255) },
-			{ RGB(0, 220, 220), RGB(255, 255, 255) },
-			{ RGB(0, 250, 0), RGB(255, 255, 255) }
-		};
+	if (m_pHexPopup->IsCreated())
+		return;
 
-		hci.pClr = &vec[static_cast<size_t>(hci.ullOffset)];
+	const auto dwStyle = WS_POPUP | WS_OVERLAPPEDWINDOW;
+	const auto dwExStyle = WS_EX_APPWINDOW; //To force to the taskbar.
+
+	HEXCREATE hcs { .hWndParent { m_hWnd }, .dwStyle { dwStyle }, .dwExStyle { dwExStyle } };
+	m_pHexPopup->Create(hcs);
+	if (!m_hds.spnData.empty())
+		m_pHexPopup->SetData(m_hds);
+
+	const auto hWndHex = m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN);
+	const auto iWidthActual = m_pHexPopup->GetActualWidth() + GetSystemMetrics(SM_CXVSCROLL);
+	CRect rcHex(0, 0, iWidthActual, iWidthActual); //Square window.
+	AdjustWindowRectEx(rcHex, dwStyle, FALSE, dwExStyle);
+	const auto iWidth = rcHex.Width();
+	const auto iHeight = rcHex.Height() - rcHex.Height() / 3;
+	const auto iPosX = GetSystemMetrics(SM_CXSCREEN) / 2 - iWidth / 2;
+	const auto iPosY = GetSystemMetrics(SM_CYSCREEN) / 2 - iHeight / 2;
+	::SetWindowPos(hWndHex, m_hWnd, iPosX, iPosY, iWidth, iHeight, SWP_NOACTIVATE);
+
+	const auto hIconSmall = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(), MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 0, 0, 0));
+	const auto hIconBig = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(), MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 96, 96, 0));
+	if (hIconSmall != nullptr) {
+		::SendMessageW(hWndHex, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIconSmall));
+		::SendMessageW(hWndHex, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIconBig));
 	}
 }
 
@@ -66,17 +68,9 @@ BOOL CHexSampleDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);	 //Set big icon
 	SetIcon(m_hIcon, FALSE); //Set small icon
 
-	m_myHex->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
-
-	//Classical approach:
-/*	HEXCREATESTRUCT hcs;
-	hcs.hwndParent = m_hWnd;
-	hcs.uID = IDC_MY_HEX;
-	hcs.enCreateMode = EHexCreateMode::CREATE_CUSTOMCTRL;
-	m_myHex->Create(hcs);
-*/
-	//m_myHex->SetWheelRatio(0.5);
-	m_myHex->SetPageSize(64);
+	m_pHexChild->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
+	//m_pHexChild->SetWheelRatio(0.5);
+	m_pHexChild->SetPageSize(64);
 
 	//m_hds.pHexVirtColors = this;
 	//m_hds.fHighLatency = true;
@@ -114,34 +108,14 @@ HCURSOR CHexSampleDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-void CHexSampleDlg::OnBnSetDataRO()
+void CHexSampleDlg::OnBnClearData()
 {
-	if (IsFileOpen())
-		FileClose();
-	else if (m_myHex->IsDataSet())
-	{
-		m_myHex->SetMutable(false);
-		return;
-	}
+	FileClose();
+	m_pHexChild->ClearData();
+	if (m_pHexPopup->IsCreated())
+		m_pHexPopup->ClearData();
 
-	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
-	m_hds.fMutable = false;
-	m_myHex->SetData(m_hds);
-}
-
-void CHexSampleDlg::OnBnSetDataRW()
-{
-	if (IsFileOpen())
-		FileClose();
-	else if (m_myHex->IsDataSet())
-	{
-		m_myHex->SetMutable(true);
-		return;
-	}
-
-	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
-	m_hds.fMutable = true;
-	m_myHex->SetData(m_hds);
+	m_hds.spnData = { };
 }
 
 void CHexSampleDlg::OnBnFileOpenRO()
@@ -156,10 +130,84 @@ void CHexSampleDlg::OnBnFileOpenRW()
 		FileOpen(optFiles->front(), true);
 }
 
-void CHexSampleDlg::OnBnClearData()
+void CHexSampleDlg::OnBnPopup()
 {
-	FileClose();
-	m_myHex->ClearData();
+	if (!m_pHexPopup->IsCreated()) {
+		CreateHexPopup();
+		::ShowWindow(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), SW_SHOWNORMAL);
+	}
+	else {
+		const auto hWnd = m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN);
+		::ShowWindow(hWnd, ::IsWindowVisible(hWnd) ? SW_HIDE : SW_SHOWNORMAL);
+	}
+}
+
+void CHexSampleDlg::OnBnSetDataRO()
+{
+	if (IsFileOpen())
+		FileClose();
+	else if (m_pHexChild->IsDataSet())
+	{
+		m_pHexChild->SetMutable(false);
+		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet())
+			m_pHexPopup->SetMutable(false);
+		return;
+	}
+
+	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
+	m_hds.fMutable = false;
+	m_pHexChild->SetData(m_hds);
+	if (m_pHexPopup->IsCreated())
+		m_pHexPopup->SetData(m_hds);
+}
+
+void CHexSampleDlg::OnBnSetDataRW()
+{
+	if (IsFileOpen())
+		FileClose();
+	else if (m_pHexChild->IsDataSet())
+	{
+		m_pHexChild->SetMutable(true);
+		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet())
+			m_pHexPopup->SetMutable(true);
+		return;
+	}
+
+	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
+	m_hds.fMutable = true;
+	m_pHexChild->SetData(m_hds);
+	if (m_pHexPopup->IsCreated())
+		m_pHexPopup->SetData(m_hds);
+}
+
+void CHexSampleDlg::OnHexGetColor(HEXCOLORINFO& hci)
+{
+	//Sample code for custom colors:
+	if (hci.ullOffset < 18)
+	{
+		static std::vector<HEXCOLOR> vec {
+			{ RGB(50, 0, 0), RGB(255, 255, 255) },
+			{ RGB(0, 150, 0), RGB(255, 255, 255) },
+			{ RGB(255, 255, 0), RGB(0, 0, 0) },
+			{ RGB(0, 0, 50), RGB(255, 255, 255) },
+			{ RGB(50, 50, 110), RGB(255, 255, 255) },
+			{ RGB(50, 250, 50), RGB(255, 255, 255) },
+			{ RGB(110, 0, 0), RGB(255, 255, 255) },
+			{ RGB(0, 110, 0), RGB(255, 255, 255) },
+			{ RGB(0, 0, 110), RGB(255, 255, 255) },
+			{ RGB(110, 110, 0), RGB(255, 255, 255) },
+			{ RGB(0, 110, 110), RGB(255, 255, 255) },
+			{ RGB(110, 110, 110), RGB(255, 255, 255) },
+			{ RGB(220, 0, 0), RGB(255, 255, 255) },
+			{ RGB(0, 220, 0), RGB(255, 255, 255) },
+			{ RGB(0, 0, 220), RGB(255, 255, 255) },
+			{ RGB(220, 220, 0), RGB(255, 255, 255) },
+			{ RGB(0, 220, 220), RGB(255, 255, 255) },
+			{ RGB(0, 250, 0), RGB(255, 255, 255) }
+		};
+
+		hci.pClr = &vec[static_cast<size_t>(hci.ullOffset)];
+	}
 }
 
 void CHexSampleDlg::OnSize(UINT nType, int cx, int cy)
@@ -245,7 +293,9 @@ void CHexSampleDlg::FileOpen(std::wstring_view wstrPath, bool fRW)
 
 	m_hds.spnData = { static_cast<std::byte*>(m_lpBase), static_cast<std::size_t>(stFileSize.QuadPart) };
 	m_hds.fMutable = fRW;
-	m_myHex->SetData(m_hds);
+	m_pHexChild->SetData(m_hds);
+	if (m_pHexPopup->IsCreated())
+		m_pHexPopup->SetData(m_hds);
 }
 
 void CHexSampleDlg::FileClose()

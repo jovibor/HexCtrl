@@ -303,17 +303,6 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_
 
 		return !m_fInverted;
 	}
-
-#ifdef SEARCH_IO_TESTING
-	else if constexpr (uCmpType == 999) //REMOVELATER:
-	{
-		volatile auto ch = static_cast<char>(*pBuf1); //Attempt to trick optimizer.
-		(void)ch;
-
-		return false;
-	}
-#endif		
-
 	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT16)) > 0)
 	{
 		if (*reinterpret_cast<const std::uint16_t*>(pBuf1) != *reinterpret_cast<const std::uint16_t*>(pBuf2))
@@ -389,6 +378,15 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_
 		}
 		return !m_fInverted;
 	}
+#ifdef SEARCH_IO_TESTING
+	else if constexpr (uCmpType == 999) //REMOVELATER:
+	{
+		volatile auto ch = static_cast<char>(*pBuf1); //Attempt to trick optimizer.
+		(void)ch;
+
+		return false;
+	}
+#endif		
 }
 
 BOOL CHexDlgSearch::OnInitDialog()
@@ -892,7 +890,7 @@ void CHexDlgSearch::Prepare()
 
 	Search();
 	SetActiveWindow();
-}
+	}
 
 bool CHexDlgSearch::PrepareHexBytes()
 {

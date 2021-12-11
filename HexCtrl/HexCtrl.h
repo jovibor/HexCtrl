@@ -46,10 +46,11 @@ namespace HEXCTRL
 		virtual void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual = nullptr) = 0; //Enable/disable bookmarks virtual mode.
 		virtual void ClearData() = 0; //Clears all data from HexCtrl's view (not touching data itself).
 		virtual bool Create(const HEXCREATE& hcs) = 0;                       //Main initialization method.
-		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hParent) = 0;       //Сreates custom dialog control.
+		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent) = 0;    //Сreates custom dialog control.
 		virtual void Destroy() = 0;                                          //Deleter.
 		virtual void ExecuteCmd(EHexCmd eCmd) = 0;                           //Execute a command within the control.
-		[[nodiscard]] virtual auto GetCacheSize()const->DWORD = 0;           //Returns Virtual/Message mode cache size.
+		[[nodiscard]] virtual int GetActualWidth()const = 0;                 //Working area actual width.
+		[[nodiscard]] virtual auto GetCacheSize()const->DWORD = 0;           //Returns Virtual mode cache size.
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORS = 0;          //Current colors.

@@ -21,7 +21,6 @@
 #include "Dialogs/CHexDlgOpers.h"
 #include "Dialogs/CHexDlgSearch.h"
 #include "HexUtility.h"
-#include "strsafe.h"
 #include <bit>
 #include <cassert>
 #include <cwctype>
@@ -276,31 +275,21 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	//2. Created HexCtrl window will always overlap (be on top of) its parent, or owner, window 
 	//   if pParentWnd is set (is not nullptr) in CreateWindowEx.
 	//3. To force HexCtrl window on taskbar the WS_EX_APPWINDOW extended window style must be set.
-	std::wstring wstrError;
-	const auto lmbCreateWnd = [&](UINT uID, DWORD dwStyle)
+	if (hcs.fCustom)
 	{
-		if (!CWnd::CreateEx(hcs.dwExStyle, WSTR_HEXCTRL_CLASSNAME, L"HexControl", dwStyle, hcs.rect,
-			CWnd::FromHandle(hcs.hwndParent), uID))
-			wstrError = std::format(L"HexCtrl (ID: {}) CreateEx failed.\r\nCheck HEXCREATE parameters.", uID);
-	};
-	switch (hcs.enCreateMode)
-	{
-	case EHexCreateMode::CREATE_POPUP:
-		lmbCreateWnd(0, hcs.dwStyle | WS_VISIBLE | WS_POPUP | WS_OVERLAPPEDWINDOW);
-		break;
-	case EHexCreateMode::CREATE_CHILD:
-		lmbCreateWnd(hcs.uID, hcs.dwStyle | WS_VISIBLE | WS_CHILD);
-		break;
-	case EHexCreateMode::CREATE_CUSTOMCTRL:
 		//If it's a Custom Control in dialog, there is no need to create a window, just subclassing.
-		if (!SubclassDlgItem(hcs.uID, CWnd::FromHandle(hcs.hwndParent)))
-			wstrError = std::format(L"HexCtrl (ID: {}) SubclassDlgItem failed.\r\nCheck CreateDialogCtrl parameters.", hcs.uID);
-		break;
+		if (!SubclassDlgItem(hcs.uID, CWnd::FromHandle(hcs.hWndParent))) {
+			MessageBoxW(std::format(L"HexCtrl (ID: {}) SubclassDlgItem failed.\r\nCheck HEXCREATE or CreateDialogCtrl parameters.", hcs.uID).data(),
+				L"Error", MB_ICONERROR);
+			return false;
+		}
 	}
-	if (!wstrError.empty()) //If there was any creation error.
-	{
-		MessageBoxW(wstrError.data(), L"Error", MB_ICONERROR);
-		return false;
+	else {
+		if (!CWnd::CreateEx(hcs.dwExStyle, WSTR_HEXCTRL_CLASSNAME, L"HexControl", hcs.dwStyle, hcs.rect,
+			CWnd::FromHandle(hcs.hWndParent), hcs.uID)) {
+			MessageBoxW(std::format(L"HexCtrl (ID: {}) CreateWindowExW failed.\r\nCheck HEXCREATE struct parameters.", hcs.uID).data(), L"Error", MB_ICONERROR);
+			return false;
+		}
 	}
 
 	m_wndTtBkm.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
@@ -309,7 +298,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_stToolInfoBkm.uFlags = TTF_TRACK;
 	m_stToolInfoBkm.uId = ID_TOOLTIP_BKM;
 	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
+	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow use of newline \n.
 
 	m_wndTtOffset.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
@@ -317,7 +306,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_stToolInfoOffset.uFlags = TTF_TRACK;
 	m_stToolInfoOffset.uId = ID_TOOLTIP_OFFSET;
 	m_wndTtOffset.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
-	m_wndTtOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
+	m_wndTtOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow use of newline \n.
 
 	m_stColor = hcs.stColor;
 	m_dbWheelRatio = hcs.dbWheelRatio;
@@ -326,14 +315,13 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
 	ReleaseDC(pDC);
 
-	//Menu related.//////////////////////////////////////////////
-	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCEW(IDR_HEXCTRL_MENU)))
-	{
-		MessageBoxW(L"HexControl LoadMenuW(IDR_HEXCTRL_MENU) failed.", L"Error", MB_ICONERROR);
+	/*Menu related.*/
+	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCEW(IDR_HEXCTRL_MENU))) {
+		MessageBoxW(L"HexControl LoadMenuW failed.", L"Error", MB_ICONERROR);
 		return false;
 	}
 
-	MENUITEMINFOW mii { .cbSize = sizeof(MENUITEMINFOW), .fMask = MIIM_BITMAP };
+	MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_BITMAP } };
 	const auto hInst = AfxGetInstanceHandle();
 	const auto fScale = m_iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
 	const auto iSizeIcon = static_cast<int>(16 * fScale);
@@ -352,25 +340,17 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_MODIFY_FILLZEROS] =
 		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
+	/*End of menu related.*/
 
-	//Font related.//////////////////////////////////////////////
-	LOGFONTW lfMain { };
-	if (hcs.pLogFont == nullptr) //Creating default main font.
-	{
-		StringCchCopyW(lfMain.lfFaceName, LF_FACESIZE, L"Consolas");
-		lfMain.lfHeight = -MulDiv(11, m_iLOGPIXELSY, 72);
-		lfMain.lfPitchAndFamily = FIXED_PITCH;
-	}
-	else
-		lfMain = *hcs.pLogFont;
-	m_fontMain.CreateFontIndirectW(&lfMain);
+	/*Font related.*/
+	//Default main logfont.
+	const LOGFONTW lfMain { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
+	m_fontMain.CreateFontIndirectW(hcs.pLogFont != nullptr ? hcs.pLogFont : &lfMain);
 
-	LOGFONTW lfInfo { }; //Info area font, independent from the main font.
-	StringCchCopyW(lfInfo.lfFaceName, LF_FACESIZE, L"Consolas");
-	lfInfo.lfHeight = -MulDiv(11, m_iLOGPIXELSY, 72) + 1; //Size is less by 1 than the default main font.
-	lfInfo.lfPitchAndFamily = FIXED_PITCH;
+	//Info area font, independent from the main font, its size is a bit smaller than the default main font.
+	const LOGFONTW lfInfo { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) + 1 }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
 	m_fontInfo.CreateFontIndirectW(&lfInfo);
-	//End of font related.///////////////////////////////////////
+	/*End of font related.*/
 
 	m_penLines.CreatePen(PS_SOLID, 1, RGB(200, 200, 200));
 
@@ -405,17 +385,13 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	return true;
 }
 
-bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hParent)
+bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
 {
 	assert(!IsCreated());
 	if (IsCreated())
 		return false;
 
-	HEXCREATE hcs;
-	hcs.hwndParent = hParent;
-	hcs.uID = uCtrlID;
-	hcs.enCreateMode = EHexCreateMode::CREATE_CUSTOMCTRL;
-
+	HEXCREATE hcs { .hWndParent { hWndParent }, .uID { uCtrlID }, .dwStyle { WS_VISIBLE | WS_CHILD }, .fCustom { true } };
 	return Create(hcs);
 }
 
@@ -624,6 +600,15 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		m_pScrollV->ScrollPageDown();
 		break;
 	}
+}
+
+int CHexCtrl::GetActualWidth()const
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return -1;
+
+	return m_iFourthVertLine + 1; //+1px is the Pen width the line was drawn with.
 }
 
 auto CHexCtrl::GetCacheSize()const->DWORD
@@ -4083,7 +4068,7 @@ void CHexCtrl::Redo()
 	RedrawWindow();
 }
 
-void CHexCtrl::ReplaceUnprintable(std::wstring & wstr, bool fASCII, bool fCRLF)const
+void CHexCtrl::ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)const
 {
 	//If fASCII is true, then only wchars in 0x1F<...<0x7F range are considered printable.
 	//If fCRLF is false, then CR(0x0D) and LF(0x0A) wchars remain untouched.

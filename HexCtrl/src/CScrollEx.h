@@ -75,12 +75,12 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		[[nodiscard]] bool IsVert()const;           //Is vertical or horizontal scrollbar.
 		[[nodiscard]] bool IsThumbDragging()const;  //Is the thumb currently dragged by mouse.
 		[[nodiscard]] bool IsSiblingVisible()const; //Is sibling scrollbar currently visible or not.
-		void Redraw()const;
+		void RedrawNC()const;
 		void SendParentScrollMsg()const;            //Sends the WM_(V/H)SCROLL to the parent window.
 		afx_msg void OnDestroy();
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 	private:
-		CWnd* m_pwndParent { };                     //Parent window.
+		CWnd* m_pParent { };                     //Parent window.
 		CScrollEx* m_pSibling { };                  //Sibling scrollbar, added with AddSibling.
 		CBitmap m_bmpArrowFirst;                    //Up or Left arrow bitmap.
 		CBitmap m_bmpArrowLast;                     //Down or Right arrow bitmap.

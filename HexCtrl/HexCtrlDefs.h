@@ -39,14 +39,6 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* EHexCreateMode - Enum of HexCtrl creation mode.                                           *
-	********************************************************************************************/
-	enum class EHexCreateMode : std::uint8_t
-	{
-		CREATE_CHILD, CREATE_POPUP, CREATE_CUSTOMCTRL
-	};
-
-	/********************************************************************************************
 	* EHexWnd - HexControl's windows.                                                           *
 	********************************************************************************************/
 	enum class EHexWnd : std::uint8_t
@@ -190,15 +182,15 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXCREATE
 	{
-		EHexCreateMode enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
-		HEXCOLORS      stColor { };          //All the control's colors.
-		HWND           hwndParent { };       //Parent window handle.
-		PLOGFONTW      pLogFont { };         //Font to be used instead of default, it has to be monospaced.
-		RECT           rect { };             //Initial rect. If null, the window is screen centered.
-		UINT           uID { };              //Control ID.
-		DWORD          dwStyle { };          //Window styles, 0 for default.
-		DWORD          dwExStyle { };        //Extended window styles, 0 for default.
-		double         dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
+		HEXCOLORS stColor { };          //All HexCtrl colors.
+		HWND      hWndParent { };       //Parent window handle.
+		PLOGFONTW pLogFont { };         //Monospaced font to be used, or nullptr for default.
+		RECT      rect { };             //Initial window rect.
+		UINT      uID { };              //Control ID if it's a child window.
+		DWORD     dwStyle { };          //Window styles.
+		DWORD     dwExStyle { };        //Extended window styles.
+		double    dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
+		bool      fCustom { false };    //If it's a custom control in a dialog.
 	};
 
 	/********************************************************************************************

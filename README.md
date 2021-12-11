@@ -28,6 +28,7 @@
   * [CreateDialogCtrl](#createdialogctrl)
   * [Destroy](#destroy)
   * [ExecuteCmd](#executecmd)
+  * [GetActualWidth](#getactualwidth)
   * [GetCacheSize](#getcachesize)
   * [GetCapacity](#getcapacity)
   * [GetCaretPos](#getcaretpos)
@@ -91,7 +92,6 @@
   </details>
 * [Enums](#enums) <details><summary>_Expand_</summary>
   * [EHexCmd](#ehexcmd)
-  * [EHexCreateMode](#ehexcreatemode)
   * [EHexDataSize](#ehexdatasize)
   * [EHexModifyMode](#ehexmodifymode)
   * [EHexOperMode](#ehexopermode)
@@ -200,16 +200,9 @@ using namespace HEXCTRL;
 ## [](#)Creating
 
 ### [](#)Classic Approach
-[`Create`](#create) is the first method you call to create **HexCtrl** instance. It takes [`HEXCREATE`](#hexcreate) reference as an argument.
-
-You can choose whether control will behave as a *child* or independent *popup* window, by setting `enCreateMode` member of this struct to [`EHexCreateMode::CREATE_CHILD`](#ehexcreatemode) or [`EHexCreateMode::CREATE_POPUP`](#ehexcreatemode) respectively.
-```cpp
-HEXCREATE hcs;
-hcs.enCreateMode = EHexCreateMode::CREATE_POPUP;
-hcs.hwndParent = m_hWnd;
-m_myHex->Create(hcs);
-```
-For all available options see [`HEXCREATE`](#hexcreate) description.
+The [`Create`](#create) method is the first method you call to create **HexCtrl** instance. It takes [`HEXCREATE`](#hexcreate) struct as an argument which provides all necessary information for the creation process.  
+The `HEXCREATE::dwStyle` and `HEXCREATE::dwExStyle` are [Window](https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles) and [Extended Window](https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles) styles respectively, they will be passed to the **HexCtrl**'s window creating function, set these styles according to your needs.  
+For all available creation options see the [`HEXCREATE`](#hexcreate) struct description.
 
 ### [](#)In Dialog
 To use **HexCtrl** within *Dialog* you can, of course, create it with the [Classic Approach](#classic-approach), call [`Create`](#create) method and provide all the necessary information.
@@ -403,6 +396,12 @@ If you use **HexCtrl** in standard way, through the [`IHexCtrlPtr`](#ihexctrlptr
 void ExecuteCmd(EHexCmd enCmd)const;
 ```
 Executes one of the predefined commands of [`EHexCmd`](#ehexcmd) enum. All these commands are basically replicating control's inner menu.
+
+### [](#)GetActualWidth
+```cpp
+int GetActualWidth()const;
+```
+Returns the width of the **HexCtrl** bounding rectangle, i.e. the width of the drawn working area.
 
 ### [](#)GetCacheSize
 ```cpp
@@ -773,15 +772,15 @@ The main initialization struct used for control creation.
 ```cpp
 struct HEXCREATE
 {
-    EHexCreateMode  enCreateMode { EHexCreateMode::CREATE_CHILD }; //Creation mode of the HexCtrl window.
-    HEXCOLORS       stColor { };          //All the control's colors.
-    HWND            hwndParent { };       //Parent window pointer.
-    const LOGFONTW* pLogFont { };         //Font to be used instead of default, it has to be monospaced.
-    RECT            rect { };             //Initial rect. If null, the window is screen centered.
-    UINT            uID { };              //Control ID.
-    DWORD           dwStyle { };          //Window styles, 0 for default.
-    DWORD           dwExStyle { };        //Extended window styles, 0 for default.
-    double          dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
+    HEXCOLORS stColor { };          //All HexCtrl colors.
+    HWND      hWndParent { };       //Parent window handle.
+    PLOGFONTW pLogFont { };         //Monospaced font to be used, or nullptr for default.
+    RECT      rect { };             //Initial window rect.
+    UINT      uID { };              //Control ID if it's a child window.
+    DWORD     dwStyle { };          //Window styles.
+    DWORD     dwExStyle { };        //Extended window styles.
+    double    dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
+    bool      fCustom { false };    //If it's a custom control in a dialog.
 };
 ```
 
@@ -904,15 +903,6 @@ enum class EHexCmd : std::uint8_t
     CMD_APPEAR_CAPACINC, CMD_APPEAR_CAPACDEC, CMD_DLG_PRINT, CMD_DLG_ABOUT,
     CMD_CARET_LEFT, CMD_CARET_RIGHT, CMD_CARET_UP, CMD_CARET_DOWN,
     CMD_SCROLL_PAGEUP, CMD_SCROLL_PAGEDOWN
-};
-```
-
-### [](#)EHexCreateMode
-Enum represents the modes that **HexCtrl**'s window can be created in.
-```cpp
-enum class EHexCreateMode : std::uint8_t
-{
-    CREATE_CHILD, CREATE_POPUP, CREATE_CUSTOMCTRL
 };
 ```
 

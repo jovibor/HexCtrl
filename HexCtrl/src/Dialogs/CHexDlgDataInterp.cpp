@@ -8,7 +8,6 @@
 #include "../../res/HexCtrlRes.h"
 #include "../HexUtility.h"
 #include "CHexDlgDataInterp.h"
-#include "strsafe.h"
 #include <algorithm>
 #include <bit>
 #include <cassert>
