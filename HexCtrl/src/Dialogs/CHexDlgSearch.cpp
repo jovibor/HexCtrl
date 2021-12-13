@@ -614,7 +614,7 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
 			HEXBKM hbs { .vecSpan = { HEXSPAN { m_vecSearchRes.at(static_cast<size_t>(nItem)),
 				m_fReplace ? m_spnReplace.size() : m_spnSearch.size() } }, .wstrDesc = m_wstrTextSearch };
-			GetHexCtrl()->BkmAdd(hbs, false);
+			GetHexCtrl()->GetBookmarks()->AddBkm(hbs, false);
 		}
 		GetHexCtrl()->Redraw();
 	}
@@ -890,7 +890,7 @@ void CHexDlgSearch::Prepare()
 
 	Search();
 	SetActiveWindow();
-	}
+}
 
 bool CHexDlgSearch::PrepareHexBytes()
 {

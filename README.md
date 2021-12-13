@@ -15,20 +15,13 @@
 * [Virtual Bookmarks](#virtual-bookmarks)
 * [Custom Colors](#custom-colors)
 * [Methods](#methods) <details><summary>_Expand_</summary>
-  * [BkmAdd](#bkmadd)
-  * [BkmClearAll](#bkmclearall)
-  * [BkmGetByID](#bkmgetbyid)
-  * [BkmGetByIndex](#bkmgetbyindex)
-  * [BkmGetCount](#bkmgetcount)
-  * [BkmHitTest](#bkmhittest)
-  * [BkmRemoveByID](#bkmremovebyid)
-  * [BkmSetVirtual](#bkmsetvirtual)
   * [ClearData](#cleardata)
   * [Create](#create)
   * [CreateDialogCtrl](#createdialogctrl)
   * [Destroy](#destroy)
   * [ExecuteCmd](#executecmd)
   * [GetActualWidth](#getactualwidth)
+  * [GetBookmarks](#getbookmarks)
   * [GetCacheSize](#getcachesize)
   * [GetCapacity](#getcapacity)
   * [GetCaretPos](#getcaretpos)
@@ -70,6 +63,7 @@
   * [SetMutable](#setmutable)
   * [SetOffsetMode](#setoffsetmode)
   * [SetPageSize](#setpagesize)
+  * [SetVirtualBkm](#setvirtualbkm)
   * [SetRedraw](#setredraw)
   * [SetSelection](#setselection)
   * [SetUnprintableChar](#setunprintablechar)
@@ -89,6 +83,11 @@
   * [HEXMODIFY](#hexmodify)
   * [HEXSPAN](#hexspan)
   * [HEXVISION](#hexvision)
+  </details>
+* [Interfaces](#interfaces) <details><summary>_Expand_</summary>
+  * [IHexBookmarks](#ihexbookmarks)
+  * [IHexVirtColors](#ihexvirtcolors)
+  * [IHexVirtData](#ihexvirtdata)
   </details>
 * [Enums](#enums) <details><summary>_Expand_</summary>
   * [EHexCmd](#ehexcmd)
@@ -235,7 +234,7 @@ The code below shows how to construct [`HexCtrl`](#ihexctrlptr) object and displ
 IHexCtrlPtr myHex { CreateHexCtrl() };
 
 HEXCREATE hcs;
-hcs.hwndParent = m_hWnd;
+hcs.hWndParent = m_hWnd;
 hcs.rect = {0, 0, 600, 400}; //Window rect.
 myHex->Create(hcs);
 
@@ -255,111 +254,20 @@ myHex->SetData(hds);
 Besides the standard default mode, when **HexCtrl** just holds a pointer to some bytes in memory, it also has additional Virtual mode.  
 This mode can be quite useful, for instance in cases where you need to display a very large amount of data that can't fit in memory all at once.
 
-If `HEXDATA::pHexVirtData` pointer is set then all the data routine will be done through it. This pointer is of `IHexVirtData` class type, which is a pure abstract base class.
+If `HEXDATA::pHexVirtData` pointer is set then all the data routine will be done through it. This pointer is of [`IHexVirtData`](#ihexvirtdata) class type, which is a pure abstract base class.
 You have to derive your own class from it and implement all its public methods.
-```cpp
-class IHexVirtData
-{
-public:
-    virtual void OnHexGetData(HEXDATAINFO&) = 0;       //Data to get.
-    virtual void OnHexSetData(const HEXDATAINFO&) = 0; //Data to set, if mutable.
-};
-```
 Then provide a pointer to the created object of this derived class prior to call to [`SetData`](#setdata) method, through the `HEXDATA::pHexVirtData`.
 
 ## [](#)Virtual Bookmarks
 **HexCtrl** has innate functional to work with any amount of bookmarked regions. These regions can be assigned with individual background and text colors and description.
 
-But if you have some big and complicated data logic and want to handle all these regions yourself, you can do it with the help of Virtual Bookmarks. To enable it call the [`BkmSetVirtual`](#bkmsetvirtual) method.  
+But if you have big and complicated data logic and want to handle all these bookmarks yourself, you can do it with the help of the virtual bookmarks mode. In this mode all bookmark's burden is handled by yourself, by implementing the [`IHexBookmarks`](#ihexbookmarks) interface and providing pointer to this implementation to the **HexCtrl** by calling [`SetVirtualBkm`](#setvirtualbkm) method.
 
-The main method of the `IHexVirtBkm` interface is `HitTest`. It takes data offset and returns pointer to [`HEXBKM`](#hexbkm) if there is a bookmark, or `nullptr` otherwise.
-
-```cpp
-class IHexVirtBkm
-{
-public:
-    virtual ULONGLONG OnHexBkmAdd(const HEXBKM& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
-    virtual void OnHexBkmClearAll() = 0; //Clear all bookmarks.
-    [[nodiscard]] virtual ULONGLONG OnHexBkmGetCount() = 0; //Get total bookmarks count.
-    [[nodiscard]] virtual auto OnHexBkmGetByID(ULONGLONG ullID)->HEXBKM* = 0; //Bookmark by ID.
-    [[nodiscard]] virtual auto OnHexBkmGetByIndex(ULONGLONG ullIndex)->HEXBKM* = 0; //Bookmark by index (in inner list).
-    [[nodiscard]] virtual auto OnHexBkmHitTest(ULONGLONG ullOffset)->HEXBKM* = 0;   //Does given offset have a bookmark?
-    virtual void OnHexBkmRemoveByID(ULONGLONG ullID) = 0; //Remove bookmark by given ID (returned by Add()).
-};
-```
 ## [](#)Custom Colors
-### [](#)IHexVirtColors
-This interface is used to set custom bk/text colors for the data offset.  
-In order to use this feature the [`HEXDATA::pHexVirtColors`](#hexdata) member must be set to a valid class inherited from this interface prior to calling [`SetData`](#setdata) method.
-```cpp
-class IHexVirtColors
-{
-public:
-    void OnHexGetColor(HEXCOLORINFO&) = 0;
-};
-```
-The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinfo) struct as an argument. The `pClr` member of this struct must point to a valid [`HEXCOLOR`](#hexcolor) struct after method completes, or `nullptr` for default colors.
+If you'd like to colorize your data with custom bk/text colors, you have to resort to the [`IHexVirtColors`](#ihexvirtcolors) interface help. Please see the interface description, it's very simple to use.
 
 ## [](#)Methods
 The **HexCtrl** has plenty of methods that you can use to customize its appearance, and to manage its behavior.
-
-### [](#)BkmAdd
-```cpp
-ULONGLONG BkmAdd(const HEXBKM& hbs, bool fRedraw = false)
-```
-Adds new bookmark to the control. Uses [`HEXBKM`](#hexbkm) as an argument. Returns created bookmark's id.
-#### Example
-```cpp
-HEXBKM hbs;
-hbs.vecSpan.emplace_back(HEXSPAN { 0x1, 10 });
-hbs.clrBk = RGB(0, 255, 0);
-hbs.clrText = RGB(255, 255, 255);
-hbs.wstrDesc = L"My first bookmark, with green bk and white text.";
-
-myHex.BkmAdd(hbs);
-```
-
-### [](#)BkmClearAll
-```cpp
-void BkmClearAll();
-```
-Clears all bookmarks.
-
-### [](#)BkmGetByID
-```cpp
-BkmGetByID(ULONGLONG ullID)->HEXBKM*;
-```
-Get bookmark by ID.
-
-### [](#)BkmGetByIndex
-```cpp
-auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBKM*;
-```
-Get bookmark by Index.
-
-### [](#)BkmGetCount
-```cpp
-ULONGLONG BkmGetCount()const;
-```
-Get bookmarks' count.
-
-### [](#)BkmHitTest
-```cpp
-auto BkmHitTest(ULONGLONG ullOffset)->HEXBKM*;
-```
-Test given offset and retrieves pointer to [`HEXBKM`](#hexbkm) if it contains a bookmark.
-
-### [](#)BkmRemoveByID
-```cpp
-void BkmRemoveByID(ULONGLONG ullID);
-```
-Removes bookmark by the given ID.
-
-### [](#)BkmSetVirtual
-```cpp
-void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual = nullptr);
-```
-Enables or disables bookmarks virtual mode.
 
 ### [](#)ClearData
 ```cpp
@@ -402,6 +310,12 @@ Executes one of the predefined commands of [`EHexCmd`](#ehexcmd) enum. All these
 int GetActualWidth()const;
 ```
 Returns the width of the **HexCtrl** bounding rectangle, i.e. the width of the drawn working area.
+
+### [](#)GetBookmarks
+```cpp
+auto GetBookmarks()const->IHexBookmarks*;
+```
+Returns pointer to the [`IHexBookmarks`](#ihexbookmarks) interface, which responds for the bookmarks machinery.
 
 ### [](#)GetCacheSize
 ```cpp
@@ -670,6 +584,12 @@ void SetPageSize(DWORD dwSize, const wchar_t* wstrName = L"Page");
 Sets the size of the page to draw the divider line between. This size should be multiple to the current [capacity](#setcapacity) size to take effect. The second argument sets the name to be displayed in the bottom info area of the **HexCtrl** ("Page", "Sector", etc...).  
 To remove the divider just set `dwSize` to 0.
 
+### [](#)SetVirtualBkm
+```cpp
+void SetVirtualBkm(IHexBookmarks* pVirtBkm);
+```
+Sets a pointer for the [Virtual Bookmarks](#virtual-bookmarks) mode, or disables this mode if `nullptr` is set.
+
 ### [](#)SetRedraw
 ```cpp
 void SetRedraw(bool fRedraw);
@@ -879,6 +799,99 @@ struct HEXVISION
     std::int8_t i8Vert { }; //Vertical offset.
     std::int8_t i8Horz { }; //Horizontal offset.
     operator bool() { return i8Vert == 0 && i8Horz == 0; }; //For test simplicity: if(IsOffsetVisible()).
+};
+```
+
+## [](#)Interfaces
+
+### [](#)IHexBookmarks
+The `IHexBookmarks` interface responds for the **HexCtrl**'s bookmarks machinery. To obtain pointer to this interface use the [`GetBookmarks`](#getbookmarks) method.
+```cpp
+class IHexBookmarks
+{
+public:
+    virtual ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw = true) = 0;   //Add new bookmark, returns the new bookmark's ID.
+    virtual void ClearAll() = 0;                                            //Clear all bookmarks.
+    [[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->HEXBKM* = 0;       //Get bookmark by ID.
+    [[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->HEXBKM* = 0; //Get bookmark by index.
+    [[nodiscard]] virtual ULONGLONG GetCount()const = 0;                    //Get bookmarks count.
+    [[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->HEXBKM* = 0;   //HitTest for given offset.
+    virtual void RemoveByID(ULONGLONG ullID) = 0;                           //Remove bookmark by a given ID.
+};
+```
+
+#### [](#)IHexBookmarks::AddBkm
+```cpp
+ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw = false)
+```
+Adds new bookmark to the control, returns created bookmark's ID.
+
+**Example:**
+```cpp
+HEXBKM hbs;
+hbs.vecSpan.emplace_back(0x1, 10);
+hbs.clrBk = RGB(0, 255, 0);
+hbs.clrText = RGB(255, 255, 255);
+hbs.wstrDesc = L"My bookmark, with green bk and white text.";
+myHex->GetBookmarks()->Add(hbs);
+```
+
+#### [](#)IHexBookmarks::ClearAll
+```cpp
+void ClearAll();
+```
+Clear all bookmarks.
+
+#### [](#)IHexBookmarks::GetByID
+```cpp
+GetByID(ULONGLONG ullID)->HEXBKM*;
+```
+Get bookmark by ID.
+
+#### [](#)IHexBookmarks::GetByIndex
+```cpp
+auto GetByIndex(ULONGLONG ullIndex)->HEXBKM*;
+```
+Get bookmark by index.
+
+#### [](#)IHexBookmarks::GetCount
+```cpp
+ULONGLONG GetCount()const;
+```
+Get bookmarks' count.
+
+#### [](#)IHexBookmarks::HitTest
+```cpp
+auto HitTest(ULONGLONG ullOffset)->HEXBKM*;
+```
+Test given offset and retrieves a pointer to [`HEXBKM`](#hexbkm) if offset contains a bookmark.
+
+#### [](#)IHexBookmarks::RemoveByID
+```cpp
+void RemoveByID(ULONGLONG ullID);
+```
+Removes bookmark with the given ID.
+
+### [](#)IHexVirtColors
+```cpp
+class IHexVirtColors
+{
+public:
+    void OnHexGetColor(HEXCOLORINFO&) = 0;
+};
+```
+This interface is used to set custom bk/text colors for the data regions.  
+To use this feature set the [`HEXDATA::pHexVirtColors`](#hexdata) member to a valid instance of your class implementing this interface, prior to calling the [`SetData`](#setdata) method.
+
+The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinfo) struct as an argument. The `pClr` member of this struct must point to a valid [`HEXCOLOR`](#hexcolor) struct after method completes, or `nullptr` for default colors.
+
+### [](#)IHexVirtData
+```cpp
+class IHexVirtData
+{
+public:
+    virtual void OnHexGetData(HEXDATAINFO&) = 0;       //Data to get.
+    virtual void OnHexSetData(const HEXDATAINFO&) = 0; //Data to set, if mutable.
 };
 ```
 

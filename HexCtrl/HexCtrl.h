@@ -36,20 +36,13 @@ namespace HEXCTRL
 	class IHexCtrl
 	{
 	public:
-		virtual ULONGLONG BkmAdd(const HEXBKM& hbs, bool fRedraw = false) = 0;     //Adds new bookmark.
-		virtual void BkmClearAll() = 0;                                            //Clear all bookmarks.
-		[[nodiscard]] virtual auto BkmGetByID(ULONGLONG ullID)->HEXBKM* = 0;       //Get bookmark by ID.
-		[[nodiscard]] virtual auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBKM* = 0; //Get bookmark by Index.
-		[[nodiscard]] virtual ULONGLONG BkmGetCount()const = 0;                    //Get bookmarks count.
-		[[nodiscard]] virtual auto BkmHitTest(ULONGLONG ullOffset)->HEXBKM* = 0;   //HitTest for given offset.
-		virtual void BkmRemoveByID(ULONGLONG ullID) = 0;                           //Remove bookmark by the given ID.
-		virtual void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual = nullptr) = 0; //Enable/disable bookmarks virtual mode.
 		virtual void ClearData() = 0; //Clears all data from HexCtrl's view (not touching data itself).
 		virtual bool Create(const HEXCREATE& hcs) = 0;                       //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent) = 0;    //Сreates custom dialog control.
 		virtual void Destroy() = 0;                                          //Deleter.
 		virtual void ExecuteCmd(EHexCmd eCmd) = 0;                           //Execute a command within the control.
 		[[nodiscard]] virtual int GetActualWidth()const = 0;                 //Working area actual width.
+		[[nodiscard]] virtual auto GetBookmarks()const->IHexBookmarks* = 0;  //Get Bookmarks interface.
 		[[nodiscard]] virtual auto GetCacheSize()const->DWORD = 0;           //Returns Virtual mode cache size.
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
@@ -91,6 +84,7 @@ namespace HEXCTRL
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
 		virtual void SetOffsetMode(bool fHex) = 0;             //Set offset being shown as Hex or as Decimal.
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wstrName = L"Page") = 0; //Set page size and name to draw the lines in-between.
+		virtual void SetVirtualBkm(IHexBookmarks* pVirtBkm) = 0; //Set pointer for Bookmarks Virtual Mode.
 		virtual void SetRedraw(bool fRedraw) = 0;              //Handle WM_PAINT message or not.
 		virtual void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
 		virtual void SetUnprintableChar(wchar_t wch) = 0;      //Set unprintable replacement character.

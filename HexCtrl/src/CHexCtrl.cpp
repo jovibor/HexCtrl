@@ -165,78 +165,6 @@ CHexCtrl::CHexCtrl()
 	}
 }
 
-ULONGLONG CHexCtrl::BkmAdd(const HEXBKM& hbs, bool fRedraw)
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
-
-	return m_pBookmarks->Add(hbs, fRedraw);
-}
-
-void CHexCtrl::BkmClearAll()
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
-
-	m_pBookmarks->ClearAll();
-}
-
-auto CHexCtrl::BkmGetByID(ULONGLONG ullID)->HEXBKM*
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return nullptr;
-
-	return m_pBookmarks->GetByID(ullID);
-}
-
-auto CHexCtrl::BkmGetByIndex(ULONGLONG ullIndex)->HEXBKM*
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return nullptr;
-
-	return m_pBookmarks->GetByIndex(ullIndex);
-}
-
-ULONGLONG CHexCtrl::BkmGetCount() const
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
-
-	return m_pBookmarks->GetCount();
-}
-
-auto CHexCtrl::BkmHitTest(ULONGLONG ullOffset)->HEXBKM*
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return nullptr;
-
-	return m_pBookmarks->HitTest(ullOffset);
-}
-
-void CHexCtrl::BkmRemoveByID(ULONGLONG ullID)
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
-
-	m_pBookmarks->RemoveByID(ullID);
-}
-
-void CHexCtrl::BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual)
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
-
-	m_pBookmarks->SetVirtual(fEnable, pVirtual);
-}
-
 void CHexCtrl::ClearData()
 {
 	assert(IsCreated());
@@ -458,11 +386,11 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		SetGroupMode(EHexDataSize::SIZE_QWORD);
 		break;
 	case CMD_BKM_ADD:
-		m_pBookmarks->Add(HEXBKM { HasSelection() ? GetSelection()
-			: std::vector<HEXSPAN> { { GetCaretPos(), 1 } } });
+		m_pBookmarks->AddBkm(HEXBKM { HasSelection() ? GetSelection()
+			: std::vector<HEXSPAN> { { GetCaretPos(), 1 } } }, true);
 		break;
 	case CMD_BKM_REMOVE:
-		m_pBookmarks->Remove(m_fMenuCMD ? m_optRMouseClick.value() : GetCaretPos());
+		m_pBookmarks->RemoveByOffset(m_fMenuCMD ? m_optRMouseClick.value() : GetCaretPos());
 		m_optRMouseClick.reset();
 		m_fMenuCMD = false;
 		break;
@@ -610,6 +538,11 @@ int CHexCtrl::GetActualWidth()const
 		return -1;
 
 	return m_iFourthVertLine + 1; //+1px is the Pen width the line was drawn with.
+}
+
+auto CHexCtrl::GetBookmarks()const->IHexBookmarks*
+{
+	return &*m_pBookmarks;
 }
 
 auto CHexCtrl::GetCacheSize()const->DWORD
@@ -1872,6 +1805,15 @@ void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wstrName)
 	m_wstrPageName = wstrName;
 	if (IsDataSet())
 		Redraw();
+}
+
+void CHexCtrl::SetVirtualBkm(IHexBookmarks* pVirtBkm)
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
+	m_pBookmarks->SetVirtual(pVirtBkm);
 }
 
 void CHexCtrl::SetRedraw(bool fRedraw)

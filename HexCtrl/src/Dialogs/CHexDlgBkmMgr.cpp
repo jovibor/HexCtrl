@@ -107,7 +107,7 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		CHexDlgBkmProps dlgBkmEdit;
 		if (dlgBkmEdit.DoModal(hbs, m_fShowAsHex) == IDOK)
 		{
-			m_pBookmarks->Add(hbs);
+			m_pBookmarks->AddBkm(hbs, true);
 			UpdateList();
 		}
 	}

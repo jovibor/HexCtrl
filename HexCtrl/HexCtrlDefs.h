@@ -79,7 +79,7 @@ namespace HEXCTRL
 	};
 
 	/********************************************************************************************
-	* HEXBKM - Bookmarks.                                                                       *
+	* HEXBKM - Bookmarks main struct.                                                           *
 	********************************************************************************************/
 	struct HEXBKM
 	{
@@ -93,18 +93,18 @@ namespace HEXCTRL
 	using PHEXBKM = HEXBKM*;
 
 	/********************************************************************************************
-	* IHexVirtBkm - Pure abstract class for virtual bookmarks.                                  *
+	* IHexBookmarks - Abstract base interface, represents HexCtrl bookmarks.                    *
 	********************************************************************************************/
-	class IHexVirtBkm
+	class IHexBookmarks
 	{
 	public:
-		virtual ULONGLONG OnHexBkmAdd(const HEXBKM& stBookmark) = 0; //Add new bookmark, return new bookmark's ID.
-		virtual void OnHexBkmClearAll() = 0; //Clear all bookmarks.
-		[[nodiscard]] virtual ULONGLONG OnHexBkmGetCount() = 0; //Get total bookmarks count.
-		[[nodiscard]] virtual auto OnHexBkmGetByID(ULONGLONG ullID)->HEXBKM* = 0; //Bookmark by ID.
-		[[nodiscard]] virtual auto OnHexBkmGetByIndex(ULONGLONG ullIndex)->HEXBKM* = 0; //Bookmark by index (in inner list).
-		[[nodiscard]] virtual auto OnHexBkmHitTest(ULONGLONG ullOffset)->HEXBKM* = 0;   //Does given offset have a bookmark?
-		virtual void OnHexBkmRemoveByID(ULONGLONG ullID) = 0; //Remove bookmark by given ID (returned by Add()).
+		virtual ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw = true) = 0;   //Add new bookmark, returns the new bookmark's ID.
+		virtual void ClearAll() = 0;                                            //Clear all bookmarks.
+		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->HEXBKM* = 0;       //Get bookmark by ID.
+		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->HEXBKM* = 0; //Get bookmark by index.
+		[[nodiscard]] virtual ULONGLONG GetCount()const = 0;                    //Get bookmarks count.
+		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->HEXBKM* = 0;   //HitTest for given offset.
+		virtual void RemoveByID(ULONGLONG ullID) = 0;                           //Remove bookmark by a given ID.
 	};
 
 	/********************************************************************************************
@@ -198,12 +198,12 @@ namespace HEXCTRL
 	********************************************************************************************/
 	struct HEXDATA
 	{
-		std::span<std::byte> spnData { };              //Data to display.
-		IHexVirtData*        pHexVirtData { };         //Pointer for Virtual mode.
-		IHexVirtColors*      pHexVirtColors { };       //Pointer for Custom Colors class.
-		DWORD                dwCacheSize { 0x800000 }; //In Virtual mode max cached size of data to fetch.
-		bool                 fMutable { false };       //Is data mutable (editable) or read-only.
-		bool                 fHighLatency { false };   //Do not redraw window until scrolling completes.
+		std::span<std::byte> spnData { };               //Data to display.
+		IHexVirtData*        pHexVirtData { };          //Pointer for Virtual mode.
+		IHexVirtColors*      pHexVirtColors { };        //Pointer for Custom Colors class.
+		DWORD                dwCacheSize { 0x800000U }; //In Virtual mode max cached size of data to fetch.
+		bool                 fMutable { false };        //Is data mutable (editable) or read-only.
+		bool                 fHighLatency { false };    //Do not redraw window until scrolling completes.
 	};
 
 	/********************************************************************************************

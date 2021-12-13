@@ -36,20 +36,13 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexCtrl();
-		ULONGLONG BkmAdd(const HEXBKM& hbs, bool fRedraw)override;
-		void BkmClearAll()override;
-		[[nodiscard]] auto BkmGetByID(ULONGLONG ullID)->HEXBKM* override;
-		[[nodiscard]] auto BkmGetByIndex(ULONGLONG ullIndex)->HEXBKM* override;
-		[[nodiscard]] ULONGLONG BkmGetCount()const override;
-		[[nodiscard]] auto BkmHitTest(ULONGLONG ullOffset)->HEXBKM* override;
-		void BkmRemoveByID(ULONGLONG ullID)override;
-		void BkmSetVirtual(bool fEnable, IHexVirtBkm* pVirtual)override;
 		void ClearData()override;
 		bool Create(const HEXCREATE& hcs)override;
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)override;
 		void Destroy()override;
 		void ExecuteCmd(EHexCmd eCmd)override;
 		[[nodiscard]] int GetActualWidth()const override;
+		[[nodiscard]] auto GetBookmarks()const->IHexBookmarks* override;
 		[[nodiscard]] auto GetCacheSize()const->DWORD override;
 		[[nodiscard]] DWORD GetCapacity()const override;
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;
@@ -91,6 +84,7 @@ namespace HEXCTRL::INTERNAL
 		void SetMutable(bool fEnable)override;
 		void SetOffsetMode(bool fHex)override;
 		void SetPageSize(DWORD dwSize, std::wstring_view wstrName)override;
+		void SetVirtualBkm(IHexBookmarks* pVirtBkm)override;
 		void SetRedraw(bool fRedraw)override;
 		void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false)override;
 		void SetUnprintableChar(wchar_t wch)override;
