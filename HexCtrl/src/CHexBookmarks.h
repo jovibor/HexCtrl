@@ -19,16 +19,16 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw)override; //Returns new bookmark Id.
 		void Attach(IHexCtrl* pHexCtrl);
 		void ClearAll()override;
-		[[nodiscard]] auto GetByID(ULONGLONG ullID)->HEXBKM* override;       //Bookmark by ID.
-		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex)->HEXBKM* override; //Bookmark by index (in inner list).
-		[[nodiscard]] ULONGLONG GetCount()const override;
+		[[nodiscard]] auto GetByID(ULONGLONG ullID)->PHEXBKM override;       //Bookmark by ID.
+		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex)->PHEXBKM override; //Bookmark by index (in inner list).
+		[[nodiscard]] ULONGLONG GetCount()override;
 		[[nodiscard]] ULONGLONG GetCurrent()const;
 		[[nodiscard]] auto GetTouchTime()const->__time64_t;
 		void GoBookmark(ULONGLONG ullIndex);
 		void GoNext();
 		void GoPrev();
 		[[nodiscard]] bool HasBookmarks()const;
-		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)->HEXBKM* override;
+		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)->PHEXBKM override;
 		[[nodiscard]] bool IsVirtual()const;
 		void RemoveByOffset(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID)override;

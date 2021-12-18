@@ -80,7 +80,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		afx_msg void OnDestroy();
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 	private:
-		CWnd* m_pParent { };                     //Parent window.
+		CWnd* m_pParent { };                        //Parent window.
 		CScrollEx* m_pSibling { };                  //Sibling scrollbar, added with AddSibling.
 		CBitmap m_bmpArrowFirst;                    //Up or Left arrow bitmap.
 		CBitmap m_bmpArrowLast;                     //Down or Right arrow bitmap.

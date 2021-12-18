@@ -2724,7 +2724,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 		int iBkmHexPosToPrintX { -1 };
 		int iBkmTextPosToPrintX { };
 		bool fBookmark { false };  //Flag to show current Bookmark in current Hex presence.
-		const HEXBKM* pBkmCurr { };
+		PHEXBKM pBkmCurr { };
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines; //Hex and Text are the same.
 		const auto lmbPoly = [&]()
 		{
@@ -2745,7 +2745,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wstrText.size(); ++iterChunks, ++sIndexToPrint)
 		{
 			//Bookmarks.
-			if (const auto* const pBkm = m_pBookmarks->HitTest(ullStartOffset + sIndexToPrint); pBkm != nullptr)
+			if (auto* pBkm = m_pBookmarks->HitTest(ullStartOffset + sIndexToPrint); pBkm != nullptr)
 			{
 				//If it's nested bookmark.
 				if (pBkmCurr != nullptr && pBkmCurr != pBkm)

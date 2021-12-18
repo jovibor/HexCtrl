@@ -132,7 +132,7 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	break;
 	case EMenuID::IDM_BKMMGR_REMOVE:
 	{
-		std::vector<HEXBKM*> vecBkm { };
+		std::vector<PHEXBKM> vecBkm { };
 		int nItem { -1 };
 		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i)
 		{

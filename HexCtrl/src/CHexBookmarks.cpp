@@ -65,9 +65,9 @@ void CHexBookmarks::ClearAll()
 	m_time = _time64(nullptr);
 }
 
-auto CHexBookmarks::GetByID(ULONGLONG ullID)->HEXBKM*
+auto CHexBookmarks::GetByID(ULONGLONG ullID)->PHEXBKM
 {
-	HEXBKM* pBkm { };
+	PHEXBKM pBkm { };
 	if (m_pVirtual) {
 		pBkm = m_pVirtual->GetByID(ullID);
 	}
@@ -78,9 +78,9 @@ auto CHexBookmarks::GetByID(ULONGLONG ullID)->HEXBKM*
 	return pBkm;
 }
 
-auto CHexBookmarks::GetByIndex(ULONGLONG ullIndex)->HEXBKM*
+auto CHexBookmarks::GetByIndex(ULONGLONG ullIndex)->PHEXBKM
 {
-	HEXBKM* pBkm { };
+	PHEXBKM pBkm { };
 	if (m_pVirtual) {
 		pBkm = m_pVirtual->GetByIndex(ullIndex);
 	}
@@ -90,7 +90,7 @@ auto CHexBookmarks::GetByIndex(ULONGLONG ullIndex)->HEXBKM*
 	return pBkm;
 }
 
-ULONGLONG CHexBookmarks::GetCount()const
+ULONGLONG CHexBookmarks::GetCount()
 {
 	return IsVirtual() ? m_pVirtual->GetCount() : m_deqBookmarks.size();
 }
@@ -159,9 +159,9 @@ bool CHexBookmarks::HasBookmarks()const
 	return IsVirtual() ? m_pVirtual->GetCount() > 0 : !m_deqBookmarks.empty();
 }
 
-auto CHexBookmarks::HitTest(ULONGLONG ullOffset)->HEXBKM*
+auto CHexBookmarks::HitTest(ULONGLONG ullOffset)->PHEXBKM
 {
-	HEXBKM* pBkm { };
+	PHEXBKM pBkm { };
 	if (m_pVirtual) {
 		pBkm = m_pVirtual->HitTest(ullOffset);
 	}

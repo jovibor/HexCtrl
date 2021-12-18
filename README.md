@@ -812,10 +812,10 @@ class IHexBookmarks
 public:
     virtual ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw = true) = 0;   //Add new bookmark, returns the new bookmark's ID.
     virtual void ClearAll() = 0;                                            //Clear all bookmarks.
-    [[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->HEXBKM* = 0;       //Get bookmark by ID.
-    [[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->HEXBKM* = 0; //Get bookmark by index.
-    [[nodiscard]] virtual ULONGLONG GetCount()const = 0;                    //Get bookmarks count.
-    [[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->HEXBKM* = 0;   //HitTest for given offset.
+    [[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->PHEXBKM = 0;       //Get bookmark by ID.
+    [[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->PHEXBKM = 0; //Get bookmark by index.
+    [[nodiscard]] virtual ULONGLONG GetCount() = 0;                         //Get bookmarks count.
+    [[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->PHEXBKM = 0;   //HitTest for given offset.
     virtual void RemoveByID(ULONGLONG ullID) = 0;                           //Remove bookmark by a given ID.
 };
 ```
@@ -856,7 +856,7 @@ Get bookmark by index.
 
 #### [](#)IHexBookmarks::GetCount
 ```cpp
-ULONGLONG GetCount()const;
+ULONGLONG GetCount();
 ```
 Get bookmarks' count.
 

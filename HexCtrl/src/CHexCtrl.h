@@ -226,7 +226,7 @@ namespace HEXCTRL::INTERNAL
 		CMenu m_menuMain;                     //Main popup menu.
 		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		CPen m_penLines;                      //Pen for lines.
-		HEXBKM* m_pBkmTtCurr { };             //Currently shown bookmark's tooltip;
+		PHEXBKM m_pBkmTtCurr { };             //Currently shown bookmark's tooltip;
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		std::optional<ULONGLONG> m_optRMouseClick { }; //Right mouse clicked chunk. Used in bookmarking.
 		ULONGLONG m_ullCaretPos { };          //Current caret position.

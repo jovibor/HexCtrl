@@ -22,7 +22,7 @@ namespace HEXCTRL::INTERNAL
 		void OnOK()override;
 		DECLARE_MESSAGE_MAP()
 	private:
-		HEXBKM* m_pHBS { };
+		PHEXBKM m_pHBS { };
 		ULONGLONG m_ullOffset { };  //Current offset to compare on exit.
 		ULONGLONG m_ullSize { };
 		bool m_fShowAsHex { };

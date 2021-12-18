@@ -523,23 +523,16 @@ bool CScrollEx::CreateArrows(int iIDRESArrow, bool fVert)
 	m_bmpArrowLast.CreateBitmapIndirect(&hBitmap);
 	if (fVert)
 	{
-		//Up arrow.
-		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
-
-		//Down arrow.
-		lmbFlipVert(pOrigCOLOR.get(), nWidth, nHeight);
-		m_bmpArrowLast.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
+		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get()); //Up arrow.
+		lmbFlipVert(pOrigCOLOR.get(), nWidth, nHeight);              //Down arrow.
 	}
 	else
 	{
-		//Left arrow.
 		lmb90CCW(pOrigCOLOR.get(), nWidth, nHeight);
-		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
-
-		//Right arrow.
-		lmbFlipHorz(pOrigCOLOR.get(), nWidth, nHeight);
-		m_bmpArrowLast.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
+		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get()); //Left arrow.
+		lmbFlipHorz(pOrigCOLOR.get(), nWidth, nHeight);              //Right arrow.
 	}
+	m_bmpArrowLast.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
 
 	return true;
 }
