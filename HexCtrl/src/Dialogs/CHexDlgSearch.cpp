@@ -296,33 +296,17 @@ template<std::uint16_t uCmpType>
 bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const
 {
 	using enum ECmpType;
-	if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT8)) > 0)
-	{
-		if (*reinterpret_cast<const std::uint8_t*>(pBuf1) != *reinterpret_cast<const std::uint8_t*>(pBuf2))
-			return m_fInverted;
-
-		return !m_fInverted;
+	if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT8)) > 0) {
+		return *reinterpret_cast<const std::uint8_t*>(pBuf1) == *reinterpret_cast<const std::uint8_t*>(pBuf2);
 	}
-	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT16)) > 0)
-	{
-		if (*reinterpret_cast<const std::uint16_t*>(pBuf1) != *reinterpret_cast<const std::uint16_t*>(pBuf2))
-			return m_fInverted;
-
-		return !m_fInverted;
+	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT16)) > 0) {
+		return *reinterpret_cast<const std::uint16_t*>(pBuf1) == *reinterpret_cast<const std::uint16_t*>(pBuf2);
 	}
-	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT32)) > 0)
-	{
-		if (*reinterpret_cast<const std::uint32_t*>(pBuf1) != *reinterpret_cast<const std::uint32_t*>(pBuf2))
-			return m_fInverted;
-
-		return !m_fInverted;
+	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT32)) > 0) {
+		return *reinterpret_cast<const std::uint32_t*>(pBuf1) == *reinterpret_cast<const std::uint32_t*>(pBuf2);
 	}
-	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT64)) > 0)
-	{
-		if (*reinterpret_cast<const std::uint64_t*>(pBuf1) != *reinterpret_cast<const std::uint64_t*>(pBuf2))
-			return m_fInverted;
-
-		return !m_fInverted;
+	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT64)) > 0) {
+		return *reinterpret_cast<const std::uint64_t*>(pBuf1) == *reinterpret_cast<const std::uint64_t*>(pBuf2);
 	}
 	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_CHAR_LOOP)) > 0)
 	{
@@ -340,15 +324,14 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_
 				if (ch >= 0x41 && ch <= 0x5A) //IsUpper.
 					ch += 32;
 				if (ch != static_cast<char>(*pBuf2))
-					return m_fInverted;
+					return false;
 			}
-			else
-			{
+			else {
 				if (*pBuf1 != *pBuf2)
-					return m_fInverted;
+					return false;
 			}
 		}
-		return !m_fInverted;
+		return true;
 	}
 	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)) > 0)
 	{
@@ -368,15 +351,15 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_
 				if (wch >= 0x41 && wch <= 0x5A) //IsUpper.
 					wch += 32;
 				if (wch != *pBuf2wch)
-					return m_fInverted;
+					return false;
 			}
 			else
 			{
 				if (*pBuf1wch != *pBuf2wch)
-					return m_fInverted;
+					return false;
 			}
 		}
-		return !m_fInverted;
+		return true;
 	}
 #ifdef SEARCH_IO_TESTING
 	else if constexpr (uCmpType == 999) //REMOVELATER:
@@ -1475,28 +1458,28 @@ void CHexDlgSearch::ThreadRun(STHREADRUN* pStThread)
 			for (auto iterData = 0ULL; iterData <= pStThread->ullLoopChunkSize; iterData += llStep * LOOP_UNROLL_SIZE)
 			{
 				//Unrolling the loop, making LOOP_UNROLL_SIZE comparisons at a time.
-				if (MemCmp<uCmpType>(spnData.data() + iterData, pDataSearch, nSizeSearch))
+				if (MemCmp<uCmpType>(spnData.data() + iterData, pDataSearch, nSizeSearch) == !m_fInverted)
 				{
 					pStThread->ullStart = ullOffsetSearch + iterData;
 					pStThread->fResult = true;
 					goto FOUND;
 				}
 				if ((iterData + llStep <= pStThread->ullLoopChunkSize)
-					&& MemCmp<uCmpType>(spnData.data() + iterData + llStep, pDataSearch, nSizeSearch))
+					&& (MemCmp<uCmpType>(spnData.data() + iterData + llStep, pDataSearch, nSizeSearch) == !m_fInverted))
 				{
 					pStThread->ullStart = ullOffsetSearch + iterData + llStep;
 					pStThread->fResult = true;
 					goto FOUND;
 				}
 				if ((iterData + llStep * 2 <= pStThread->ullLoopChunkSize)
-					&& MemCmp<uCmpType>(spnData.data() + iterData + llStep * 2, pDataSearch, nSizeSearch))
+					&& (MemCmp<uCmpType>(spnData.data() + iterData + llStep * 2, pDataSearch, nSizeSearch) == !m_fInverted))
 				{
 					pStThread->ullStart = ullOffsetSearch + iterData + llStep * 2;
 					pStThread->fResult = true;
 					goto FOUND;
 				}
 				if ((iterData + llStep * 3 <= pStThread->ullLoopChunkSize)
-					&& MemCmp<uCmpType>(spnData.data() + iterData + llStep * 3, pDataSearch, nSizeSearch))
+					&& (MemCmp<uCmpType>(spnData.data() + iterData + llStep * 3, pDataSearch, nSizeSearch) == !m_fInverted))
 				{
 					pStThread->ullStart = ullOffsetSearch + iterData + llStep * 3;
 					pStThread->fResult = true;
@@ -1554,28 +1537,28 @@ void CHexDlgSearch::ThreadRun(STHREADRUN* pStThread)
 
 			for (auto iterData = static_cast<LONGLONG>(pStThread->ullLoopChunkSize); iterData >= 0; iterData -= llStep * LOOP_UNROLL_SIZE) //iterData might be negative.
 			{
-				if (MemCmp<uCmpType>(spnData.data() + iterData, pDataSearch, nSizeSearch))
+				if (MemCmp<uCmpType>(spnData.data() + iterData, pDataSearch, nSizeSearch) == !m_fInverted)
 				{
 					pStThread->ullStart = ullOffsetSearch + iterData;
 					pStThread->fResult = true;
 					goto FOUND;
 				}
 				if ((iterData - llStep >= 0)
-					&& MemCmp<uCmpType>(spnData.data() + (iterData - llStep), pDataSearch, nSizeSearch))
+					&& (MemCmp<uCmpType>(spnData.data() + (iterData - llStep), pDataSearch, nSizeSearch) == !m_fInverted))
 				{
 					pStThread->ullStart = ullOffsetSearch + iterData - llStep;
 					pStThread->fResult = true;
 					goto FOUND;
 				}
 				if ((iterData - llStep * 2 >= 0)
-					&& MemCmp<uCmpType>(spnData.data() + (iterData - llStep * 2), pDataSearch, nSizeSearch))
+					&& (MemCmp<uCmpType>(spnData.data() + (iterData - llStep * 2), pDataSearch, nSizeSearch) == !m_fInverted))
 				{
 					pStThread->ullStart = ullOffsetSearch + iterData - llStep * 2;
 					pStThread->fResult = true;
 					goto FOUND;
 				}
 				if ((iterData - llStep * 3 >= 0)
-					&& MemCmp<uCmpType>(spnData.data() + (iterData - llStep * 3), pDataSearch, nSizeSearch))
+					&& (MemCmp<uCmpType>(spnData.data() + (iterData - llStep * 3), pDataSearch, nSizeSearch) == !m_fInverted))
 				{
 					pStThread->ullStart = ullOffsetSearch + iterData - llStep * 3;
 					pStThread->fResult = true;
