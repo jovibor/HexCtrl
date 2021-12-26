@@ -268,7 +268,7 @@ namespace HEXCTRL::INTERNAL
 		std::wstring m_wstrTextTitle { };     //Text area title.
 		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqRedo; //Redo deque.
-		std::unordered_map<int, SHBITMAP> m_umapHBITMAP;           //Images for the Menu.
+		std::vector<std::unique_ptr<SHBITMAP>> m_vecHBITMAP { }; //Icons for the Menu.
 		std::vector<SKEYBIND> m_vecKeyBind { }; //Vector of key bindings.
 		wchar_t m_wchUnprintable { L'.' };    //Replacement char for unprintable characters.
 		wchar_t m_wchDateSepar { L'/' };      //Date separator.

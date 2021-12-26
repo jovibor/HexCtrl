@@ -200,7 +200,7 @@
     <Image Include="res\HexSample.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SCROLL_ARROW.bmp">
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_BKMS.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp">
@@ -209,10 +209,25 @@
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_DLG_DATAINTERP.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_GROUP.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_LOGO.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SCROLL_ARROW.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SEARCH.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
   </ItemGroup>

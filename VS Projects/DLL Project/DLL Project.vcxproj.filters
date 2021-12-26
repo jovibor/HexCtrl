@@ -168,6 +168,14 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\HexCtrl\res\IDR_HEXCTRL_JSON_KEYBIND.json">
+      <Filter>HexCtrl\res</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_BKMS.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
@@ -177,16 +185,23 @@
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_LOGO.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SCROLL_ARROW.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\HexCtrl\res\IDR_HEXCTRL_JSON_KEYBIND.json">
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SEARCH.bmp">
       <Filter>HexCtrl\res</Filter>
-    </None>
+    </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_DLG_DATAINTERP.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_GROUP.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
   </ItemGroup>
 </Project>

@@ -7,6 +7,11 @@
 #define IDB_HEXCTRL_CLPBRD_PASTEHEX     9003
 #define IDB_HEXCTRL_MODIFY_FILLZEROS    9004
 #define IDB_HEXCTRL_SCROLL_ARROW        9005
+#define IDB_HEXCTRL_SEARCH              9006
+#define IDB_HEXCTRL_BKMS                9007
+#define IDB_HEXCTRL_MODIFY              9008
+#define IDB_HEXCTRL_DLG_DATAINTERP      9009
+#define IDB_HEXCTRL_GROUP               9010
 #define IDD_HEXCTRL_SEARCH              9101
 #define IDD_HEXCTRL_ABOUT               9102
 #define IDD_HEXCTRL_OPERS               9103
@@ -138,7 +143,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        9262
+#define _APS_NEXT_RESOURCE_VALUE        9264
 #define _APS_NEXT_COMMAND_VALUE         32820
 #define _APS_NEXT_CONTROL_VALUE         9264
 #define _APS_NEXT_SYMED_VALUE           9333

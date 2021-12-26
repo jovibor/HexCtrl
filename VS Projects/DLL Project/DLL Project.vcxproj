@@ -277,14 +277,19 @@
     <ResourceCompile Include="..\..\HexCtrl\res\HexCtrl.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp" />
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp" />
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_LOGO.bmp" />
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp" />
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SCROLL_ARROW.bmp" />
+    <None Include="..\..\HexCtrl\res\IDR_HEXCTRL_JSON_KEYBIND.json" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\HexCtrl\res\IDR_HEXCTRL_JSON_KEYBIND.json" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_BKMS.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_GROUP.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_LOGO.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SCROLL_ARROW.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SEARCH.bmp" />
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_DLG_DATAINTERP.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

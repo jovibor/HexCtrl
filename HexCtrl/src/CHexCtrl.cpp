@@ -74,10 +74,8 @@ namespace HEXCTRL
 		//Struct for resources auto deletion on destruction.
 		struct CHexCtrl::SHBITMAP
 		{
-			SHBITMAP() = default;
+			SHBITMAP(HBITMAP hBmp) { m_hBmp = hBmp; }
 			~SHBITMAP() { ::DeleteObject(m_hBmp); }
-			SHBITMAP& operator=(HBITMAP hBmp) { m_hBmp = hBmp; return *this; }
-			operator HBITMAP()const { return m_hBmp; }
 			HBITMAP m_hBmp { };
 		};
 
@@ -253,21 +251,50 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	const auto hInst = AfxGetInstanceHandle();
 	const auto fScale = m_iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
 	const auto iSizeIcon = static_cast<int>(16 * fScale);
+	const auto pMenuTop = m_menuMain.GetSubMenu(0); //Context sub-menu handle.
+
+	//"Search" menu icon.
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	pMenuTop->SetMenuItemInfoW(0, &mii, TRUE); //"Search" parent menu icon.
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_DLG_SEARCH, &mii);
+	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+
+	//"Group Data" menu icon.
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_GROUP), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	pMenuTop->SetMenuItemInfoW(2, &mii, TRUE); //"Group Data" parent menu icon.
+	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+
+	//"Bookmarks->Add" menu icon.
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_BKMS), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	pMenuTop->SetMenuItemInfoW(4, &mii, TRUE); //"Bookmarks" parent menu icon.
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_BKM_ADD, &mii);
+	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
 
 	//"Clipboard->Copy as Hex" menu icon.
-	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLPBRD_COPYHEX] =
-		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	pMenuTop->SetMenuItemInfoW(5, &mii, TRUE); //"Clipboard" parent menu icon.
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_COPYHEX, &mii);
+	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
 
 	//"Clipboard->Paste as Hex" menu icon.
-	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_CLPBRD_PASTEHEX] =
-		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_PASTEHEX), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_PASTEHEX), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_PASTEHEX, &mii);
+	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+
+	//"Modify" parent menu icon.
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	pMenuTop->SetMenuItemInfoW(6, &mii, TRUE);
+	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
 
 	//"Modify->Fill with Zeros" menu icon.
-	mii.hbmpItem = m_umapHBITMAP[IDM_HEXCTRL_MODIFY_FILLZEROS] =
-		static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
+	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+
+	//"Data View->Data Interpreter" menu icon.
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_DLG_DATAINTERP), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_DLG_DATAINTERP, &mii);
+	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
 	/*End of menu related.*/
 
 	/*Font related.*/
@@ -4598,7 +4625,7 @@ void CHexCtrl::OnDestroy()
 	m_fontMain.DeleteObject();
 	m_fontInfo.DeleteObject();
 	m_penLines.DeleteObject();
-	m_umapHBITMAP.clear();
+	m_vecHBITMAP.clear();
 	m_vecKeyBind.clear();
 	m_pDlgBkmMgr->DestroyWindow();
 	m_pDlgDataInterp->DestroyWindow();
