@@ -72,13 +72,9 @@ namespace HEXCTRL::INTERNAL
 	template<typename T>
 	[[nodiscard]] inline T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
 	{
-		T tData { };
 		const auto spnData = refHexCtrl.GetData({ ullOffset, sizeof(T) });
 		assert(!spnData.empty());
-		if (!spnData.empty())
-			tData = *reinterpret_cast<T*>(spnData.data());
-
-		return tData;
+		return *reinterpret_cast<T*>(spnData.data());
 	}
 
 	//Set data of a necessary type to IHexCtrl's given offset.

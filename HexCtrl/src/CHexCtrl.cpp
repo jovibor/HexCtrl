@@ -3319,7 +3319,7 @@ void CHexCtrl::DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines)
 		if ((((ullStartLine + iterLines) * m_dwCapacity) % m_dwPageSize == 0) && iterLines > 0)
 		{
 			const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeLetter.cy * iterLines;
-			vecPageLines.emplace_back(SPAGELINES { { m_iFirstVertLine, iPosToPrintY }, { m_iFourthVertLine, iPosToPrintY } });
+			vecPageLines.emplace_back(POINT { m_iFirstVertLine, iPosToPrintY }, POINT { m_iFourthVertLine, iPosToPrintY });
 		}
 	}
 
