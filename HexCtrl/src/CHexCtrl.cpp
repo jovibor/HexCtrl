@@ -2252,7 +2252,7 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 		ullSizeModify = strDataModify.size();
 		if (ullCaretPos + ullSizeModify > ullDataSize)
 			ullSizeModify = ullDataSize - ullCaretPos;
-		hmd.spnData = { reinterpret_cast<std::byte*>(strDataModify.data()), ullSizeModify };
+		hmd.spnData = { reinterpret_cast<std::byte*>(strDataModify.data()), static_cast<std::size_t>(ullSizeModify) };
 	}
 	break;
 	default:
@@ -3183,7 +3183,7 @@ void CHexCtrl::DrawCaret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, std::ws
 	HexChunkPoint(ullCaretPos, iCaretHexPosToPrintX, iCaretHexPosToPrintY);
 	TextChunkPoint(ullCaretPos, iCaretTextPosToPrintX, iCaretTextPosToPrintY);
 
-	const auto sIndexToPrint = ullCaretPos - (ullStartLine * m_dwCapacity);
+	const auto sIndexToPrint = static_cast<std::size_t>(ullCaretPos - (ullStartLine * m_dwCapacity));
 	std::wstring wstrHexCaretToPrint;
 	std::wstring wstrTextCaretToPrint;
 	if (m_fCaretHigh)
@@ -4376,7 +4376,7 @@ void CHexCtrl::SetFontSize(long lSize)
 
 void CHexCtrl::SnapshotUndo(const std::vector<HEXSPAN>& vecSpan)
 {
-	constexpr DWORD dwUndoMax { 500 }; //How many Undo states to preserve.
+	constexpr auto dwUndoMax { 500U }; //How many Undo states to preserve.
 	const auto ullTotalSize = std::accumulate(vecSpan.begin(), vecSpan.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPAN& ref) {return ullSumm + ref.ullSize; });
 
@@ -4397,8 +4397,28 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPAN>& vecSpan)
 	{
 		for (const auto& iterSel : vecSpan) //vecSpan.size() amount of continuous areas to preserve.
 		{
-			refUndo->emplace_back(SUNDO { iterSel.ullOffset, { } });
-			refUndo->back().vecData.resize(static_cast<size_t>(iterSel.ullSize));
+			auto& refUNDO = refUndo->emplace_back(SUNDO { iterSel.ullOffset, { } });
+			refUNDO.vecData.resize(static_cast<size_t>(iterSel.ullSize));
+
+			//In Virtual mode processing data chunk by chunk.
+			if (IsVirtual() && iterSel.ullSize > GetCacheSize())
+			{
+				const auto dwSizeChunk = GetCacheSize();
+				const auto ullMod = iterSel.ullSize % dwSizeChunk;
+				auto ullChunks = iterSel.ullSize / dwSizeChunk + (ullMod > 0 ? 1 : 0);
+				ULONGLONG ullOffset { 0 };
+				while (ullChunks-- > 0)
+				{
+					const auto ullSize = (ullChunks == 1 && ullMod > 0) ? ullMod : dwSizeChunk;
+					if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
+						std::copy_n(spnData.data(), ullSize, refUNDO.vecData.data() + static_cast<std::size_t>(ullOffset));
+					ullOffset += ullSize;
+				}
+			}
+			else {
+				if (const auto spnData = GetData(iterSel); !spnData.empty())
+					std::copy_n(spnData.data(), iterSel.ullSize, refUNDO.vecData.data());
+			}
 		}
 	}
 	catch (const std::bad_alloc&)
@@ -4406,31 +4426,6 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPAN>& vecSpan)
 		m_deqUndo.clear();
 		m_deqRedo.clear();
 		return;
-	}
-
-	std::size_t ullIndex { 0 };
-	for (const auto& iterSel : vecSpan)
-	{
-		//In Virtual mode processing data chunk by chunk.
-		if (IsVirtual() && iterSel.ullSize > GetCacheSize())
-		{
-			const auto dwSizeChunk = GetCacheSize();
-			const auto ullMod = iterSel.ullSize % dwSizeChunk;
-			auto ullChunks = iterSel.ullSize / dwSizeChunk + (ullMod > 0 ? 1 : 0);
-			ULONGLONG ullOffset { 0 };
-			while (ullChunks-- > 0)
-			{
-				const auto ullSize = (ullChunks == 1 && ullMod > 0) ? ullMod : dwSizeChunk;
-				if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
-					std::copy_n(spnData.data(), ullSize, refUndo->at(ullIndex).vecData.begin() + static_cast<std::size_t>(ullOffset));
-				ullOffset += ullSize;
-			}
-		}
-		else {
-			if (const auto spnData = GetData(iterSel); !spnData.empty())
-				std::copy_n(spnData.data(), iterSel.ullSize, refUndo->at(ullIndex).vecData.begin());
-		}
-		++ullIndex;
 	}
 }
 
@@ -4487,19 +4482,47 @@ void CHexCtrl::Undo()
 	if (m_deqUndo.empty())
 		return;
 
-	const auto& refUndo = m_deqUndo.back();
-
-	//Making new Redo data snapshot.
-	const auto& refRedo = m_deqRedo.emplace_back(std::make_unique<std::vector<SUNDO>>());
-
 	//Bad alloc may happen here!!!
 	//If there is no more free memory, just clear the vec and return.
 	try
 	{
-		for (auto& i : *refUndo)
+		//Making new Redo data snapshot.
+		const auto& refRedo = m_deqRedo.emplace_back(std::make_unique<std::vector<SUNDO>>());
+
+		for (const auto& iter : *m_deqUndo.back())
 		{
-			refRedo->emplace_back(SUNDO { i.ullOffset, { } });
-			refRedo->back().vecData.resize(i.vecData.size());
+			auto& refRedoBack = refRedo->emplace_back(SUNDO { iter.ullOffset, { } });
+			refRedoBack.vecData.resize(iter.vecData.size());
+			const auto& refUndoData = iter.vecData;
+
+			//In Virtual mode processing data chunk by chunk.
+			if (IsVirtual() && refUndoData.size() > GetCacheSize())
+			{
+				const auto ullSizeChunk = GetCacheSize();
+				const auto iMod = refUndoData.size() % ullSizeChunk;
+				auto ullChunks = refUndoData.size() / ullSizeChunk + (iMod > 0 ? 1 : 0);
+				std::size_t ullOffset = 0;
+				while (ullChunks-- > 0)
+				{
+					const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
+					if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
+					{
+						std::copy_n(spnData.data(), ullSize, refRedoBack.vecData.begin() + ullOffset); //Fill Redo with the data.
+						std::copy_n(refUndoData.begin() + ullOffset, ullSize, spnData.data()); //Undo the data.
+						SetDataVirtual(spnData, { ullOffset, ullSize });
+					}
+					ullOffset += ullSize;
+				}
+			}
+			else
+			{
+				if (const auto spnData = GetData({ iter.ullOffset, refUndoData.size() }); !spnData.empty())
+				{
+					std::copy_n(spnData.data(), refUndoData.size(), refRedoBack.vecData.begin()); //Fill Redo with the data.
+					std::copy_n(refUndoData.begin(), refUndoData.size(), spnData.data()); //Undo the data.
+					SetDataVirtual(spnData, { iter.ullOffset, refUndoData.size() });
+				}
+			}
 		}
 	}
 	catch (const std::bad_alloc&)
@@ -4508,40 +4531,6 @@ void CHexCtrl::Undo()
 		return;
 	}
 
-	std::size_t ullIndex { 0 };
-	for (const auto& iter : *refUndo)
-	{
-		const auto& refUndoData = iter.vecData;
-
-		//In Virtual mode processing data chunk by chunk.
-		if (IsVirtual() && refUndoData.size() > GetCacheSize())
-		{
-			const auto ullSizeChunk = GetCacheSize();
-			const auto iMod = refUndoData.size() % ullSizeChunk;
-			auto ullChunks = refUndoData.size() / ullSizeChunk + (iMod > 0 ? 1 : 0);
-			std::size_t ullOffset = 0;
-			while (ullChunks-- > 0)
-			{
-				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
-				if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
-				{
-					std::copy_n(spnData.data(), ullSize, refRedo->at(ullIndex).vecData.begin() + ullOffset); //Fill Redo with the data.
-					std::copy_n(refUndoData.begin() + ullOffset, ullSize, spnData.data()); //Undo the data.
-					SetDataVirtual(spnData, { ullOffset, ullSize });
-				}
-				ullOffset += ullSize;
-			}
-		}
-		else {
-			if (const auto spnData = GetData({ iter.ullOffset, refUndoData.size() }); !spnData.empty())
-			{
-				std::copy_n(spnData.data(), refUndoData.size(), refRedo->at(ullIndex).vecData.begin()); //Fill Redo with the data.
-				std::copy_n(refUndoData.begin(), refUndoData.size(), spnData.data()); //Undo the data.
-				SetDataVirtual(spnData, { iter.ullOffset, refUndoData.size() });
-			}
-		}
-		++ullIndex;
-	}
 	m_deqUndo.pop_back();
 	ParentNotify(HEXCTRL_MSG_SETDATA);
 	RedrawWindow();
