@@ -803,42 +803,43 @@ void CHexDlgDataInterp::ShowValueCHAR(BYTE byte)const
 	//https://github.com/microsoft/STL/issues/2320
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_CHAR; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#04X}" : L"{:d}", static_cast<int>(static_cast<char>(byte))).data());
+		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"{:#04X}" : L"{:d}",
+			std::make_wformat_args(static_cast<int>(static_cast<char>(byte)))).data());
 }
 
 void CHexDlgDataInterp::ShowValueUCHAR(BYTE byte)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_UCHAR; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#04X}" : L"{:d}", byte).data());
+		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"{:#04X}" : L"{:d}", std::make_wformat_args(byte)).data());
 }
 
 void CHexDlgDataInterp::ShowValueSHORT(WORD word)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_SHORT; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#06X}" : L"{:d}", static_cast<short>(word)).data());
+		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"{:#06X}" : L"{:d}", std::make_wformat_args(static_cast<short>(word))).data());
 }
 
 void CHexDlgDataInterp::ShowValueUSHORT(WORD word)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_USHORT; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#06X}" : L"{:d}", word).data());
+		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"{:#06X}" : L"{:d}", std::make_wformat_args(word)).data());
 }
 
 void CHexDlgDataInterp::ShowValueLONG(DWORD dword)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_LONG; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#010X}" : L"{:d}", static_cast<int>(dword)).data());
+		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"{:#010X}" : L"{:d}", std::make_wformat_args(static_cast<int>(dword))).data());
 }
 
 void CHexDlgDataInterp::ShowValueULONG(DWORD dword)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_ULONG; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#010X}" : L"{:d}", dword).data());
+		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"{:#010X}" : L"{:d}", std::make_wformat_args(dword)).data());
 }
 
 void CHexDlgDataInterp::ShowValueFLOAT(DWORD dword)const
@@ -926,14 +927,14 @@ void CHexDlgDataInterp::ShowValueLONGLONG(QWORD qword)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_LONGLONG; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#018X}" : L"{:d}", static_cast<long long>(qword)).data());
+		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"{:#018X}" : L"{:d}", std::make_wformat_args(static_cast<long long>(qword))).data());
 }
 
 void CHexDlgDataInterp::ShowValueULONGLONG(QWORD qword)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_ULONGLONG; }); iter != m_vecProp.end())
-		iter->pProp->SetValue(std::format(m_fShowAsHex ? L"{:#018X}" : L"{:d}", qword).data());
+		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"{:#018X}" : L"{:d}", std::make_wformat_args(qword)).data());
 }
 
 void CHexDlgDataInterp::ShowValueDOUBLE(QWORD qword)const

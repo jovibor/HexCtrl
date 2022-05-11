@@ -414,7 +414,7 @@ int CListEx::InsertColumn(int nCol, const LVCOLUMN* pColumn)
 
 	HDITEMW hdi { };
 	hdi.mask = HDI_LPARAM;
-	hdi.lParam = distrib(gen);
+	hdi.lParam = static_cast<LPARAM>(distrib(gen));
 	refHdr.SetItem(iNewIndex, &hdi);
 
 	return iNewIndex;
@@ -445,7 +445,7 @@ int CListEx::InsertColumn(int nCol, LPCTSTR lpszColumnHeading, int nFormat, int 
 
 	HDITEMW hdi { };
 	hdi.mask = HDI_LPARAM;
-	hdi.lParam = distrib(gen);
+	hdi.lParam = static_cast<LPARAM>(distrib(gen));
 	refHdr.SetItem(iNewIndex, &hdi);
 
 	return iNewIndex;
@@ -1216,9 +1216,9 @@ BOOL CListEx::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 	{
 		if (IsColumnSortable(pNMLV->iItem))
 		{
-			m_iSortColumn = pNMLV->iItem;
 			m_fSortAscending = pNMLV->iItem == m_iSortColumn ? !m_fSortAscending : true;
-			GetHeaderCtrl().SetSortArrow(m_iSortColumn, m_fSortAscending);
+			GetHeaderCtrl().SetSortArrow(pNMLV->iItem, m_fSortAscending);
+			m_iSortColumn = pNMLV->iItem;
 		}
 		else
 			m_iSortColumn = -1;

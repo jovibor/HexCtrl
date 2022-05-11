@@ -310,7 +310,7 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_
 	}
 	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_CHAR_LOOP)) > 0)
 	{
-		for (auto i { 0U }; i < nSize; ++i, ++pBuf1, ++pBuf2)
+		for (std::size_t i { 0 }; i < nSize; ++i, ++pBuf1, ++pBuf2)
 		{
 			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0)
 			{
@@ -337,7 +337,7 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_
 	{
 		auto pBuf1wch = reinterpret_cast<const wchar_t*>(pBuf1);
 		auto pBuf2wch = reinterpret_cast<const wchar_t*>(pBuf2);
-		for (auto i { 0U }; i < nSize / sizeof(wchar_t); ++i, ++pBuf1wch, ++pBuf2wch)
+		for (std::size_t i { 0 }; i < (nSize / sizeof(wchar_t)); ++i, ++pBuf1wch, ++pBuf2wch)
 		{
 			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0)
 			{

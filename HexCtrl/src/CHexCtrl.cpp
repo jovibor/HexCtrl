@@ -1316,18 +1316,18 @@ void CHexCtrl::Redraw()
 
 	if (IsDataSet())
 	{
-		m_wstrInfo = std::format(IsOffsetAsHex() ? L"Caret: 0x{:X}; " : L"Caret: {}; ", GetCaretPos());
+		m_wstrInfo = std::vformat(IsOffsetAsHex() ? L"Caret: 0x{:X}; " : L"Caret: {}; ", std::make_wformat_args(GetCaretPos()));
 
 		if (IsPageVisible()) //Page/Sector.
 		{
-			m_wstrInfo += std::format(IsOffsetAsHex() ? L"{}: 0x{:X}/0x{:X}; " : L"{}: {}/{}; ",
-				m_wstrPageName, GetPagePos(), GetPagesCount());
+			m_wstrInfo += std::vformat(IsOffsetAsHex() ? L"{}: 0x{:X}/0x{:X}; " : L"{}: {}/{}; ",
+				std::make_wformat_args(m_wstrPageName, GetPagePos(), GetPagesCount()));
 		}
 
 		if (HasSelection())
 		{
-			m_wstrInfo += std::format(IsOffsetAsHex() ? L"Selected: 0x{:X} [0x{:X}-0x{:X}]; " : L"Selected: {} [{}-{}]; ",
-				m_pSelection->GetSelSize(), m_pSelection->GetSelStart(), m_pSelection->GetSelEnd());
+			m_wstrInfo += std::vformat(IsOffsetAsHex() ? L"Selected: 0x{:X} [0x{:X}-0x{:X}]; " : L"Selected: {} [{}-{}]; ",
+				std::make_wformat_args(m_pSelection->GetSelSize(), m_pSelection->GetSelStart(), m_pSelection->GetSelEnd()));
 		}
 
 		m_wstrInfo += IsMutable() ? L"RW;" : L"RO;"; //Mutable state.
@@ -1733,7 +1733,7 @@ void CHexCtrl::SetEncoding(int iCodePage)
 	if (!wstrFmt.empty())
 	{
 		m_iCodePage = iCodePage;
-		m_wstrTextTitle = std::format(wstrFmt, m_iCodePage);
+		m_wstrTextTitle = std::vformat(wstrFmt, std::make_wformat_args(m_iCodePage));
 		Redraw();
 	}
 }
@@ -3340,7 +3340,7 @@ void CHexCtrl::FillCapacityString()
 	m_wstrCapacity.reserve(static_cast<size_t>(m_dwCapacity) * 3);
 	for (auto iter { 0U }; iter < m_dwCapacity; ++iter)
 	{
-		m_wstrCapacity += std::format(IsOffsetAsHex() ? L"{: >2X}" : L"{: >2d}", iter);
+		m_wstrCapacity += std::vformat(IsOffsetAsHex() ? L"{: >2X}" : L"{: >2d}", std::make_wformat_args(iter));
 
 		//Additional space between hex chunk blocks.
 		if ((((iter + 1) % static_cast<DWORD>(m_enGroupMode)) == 0) && (iter < (m_dwCapacity - 1)))
@@ -3666,8 +3666,8 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const std:
 
 void CHexCtrl::OffsetToString(ULONGLONG ullOffset, wchar_t* buffOut)const
 {
-	//Null terminated, as by default format_to does not null terminate formatted data.
-	*std::format_to(buffOut, IsOffsetAsHex() ? "{:0>{}X}" : "{:0>{}}", ullOffset, m_dwOffsetDigits) = L'\0';
+	//Null terminated as by default format_to does not null terminate formatted data.
+	*std::vformat_to(buffOut, IsOffsetAsHex() ? L"{:0>{}X}" : L"{:0>{}}", std::make_wformat_args(ullOffset, m_dwOffsetDigits)) = L'\0';
 }
 
 void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)

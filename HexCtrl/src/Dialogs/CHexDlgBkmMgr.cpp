@@ -204,13 +204,13 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		case 1: //Offset.
 			if (!pBkm->vecSpan.empty())
 				ullOffset = pBkm->vecSpan.front().ullOffset;
-			*std::format_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", ullOffset) = L'\0';
+			*std::vformat_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(ullOffset)) = L'\0';
 			break;
 		case 2: //Size.
 			if (!pBkm->vecSpan.empty())
 				ullSize = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
 					[](auto ullTotal, const HEXSPAN& ref) {return ullTotal + ref.ullSize; });
-			*std::format_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", ullSize) = L'\0';
+			*std::vformat_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(ullSize)) = L'\0';
 			break;
 		case 3: //Description.
 			pItem->pszText = const_cast<wchar_t*>(pBkm->wstrDesc.data());

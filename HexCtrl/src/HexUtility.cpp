@@ -208,8 +208,8 @@ namespace HEXCTRL::INTERNAL
 			break;
 		}
 
-		return std::format(wstrFmt, stSysTime.wDay, stSysTime.wMonth, stSysTime.wYear,
-			stSysTime.wHour, stSysTime.wMinute, stSysTime.wSecond, stSysTime.wMilliseconds, wchSepar);
+		return std::vformat(wstrFmt, std::make_wformat_args(stSysTime.wDay, stSysTime.wMonth, stSysTime.wYear,
+			stSysTime.wHour, stSysTime.wMinute, stSysTime.wSecond, stSysTime.wMilliseconds, wchSepar));
 	}
 
 	auto GetDateFormatString(DWORD dwDateFormat, wchar_t wcDateSeparator)->std::wstring
@@ -230,6 +230,6 @@ namespace HEXCTRL::INTERNAL
 			assert(true);
 			break;
 		}
-		return std::format(wstrFmt, wcDateSeparator);
+		return std::vformat(wstrFmt, std::make_wformat_args(wcDateSeparator));
 	}
 }

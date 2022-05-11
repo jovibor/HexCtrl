@@ -53,10 +53,10 @@ BOOL CHexDlgBkmProps::OnInitDialog()
 	}
 
 	auto pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_OFFSET));
-	pEdit->SetWindowTextW(std::format(m_fShowAsHex ? L"0x{:X}" : L"{}", m_ullOffset).data());
+	pEdit->SetWindowTextW(std::vformat(m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(m_ullOffset)).data());
 
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_LENGTH));
-	pEdit->SetWindowTextW(std::format(m_fShowAsHex ? L"0x{:X}" : L"{}", m_ullSize).data());
+	pEdit->SetWindowTextW(std::vformat(m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(m_ullSize)).data());
 
 	pEdit = static_cast<CEdit*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_EDIT_DESCR));
 	pEdit->SetWindowTextW(m_pHBS->wstrDesc.data());

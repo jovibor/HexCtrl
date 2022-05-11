@@ -21,6 +21,7 @@ Checks: '*,
 -readability-convert-member-functions-to-static,
 -readability-misleading-indentation,
 -readability-function-cognitive-complexity,
+-readability-identifier-length,
 
 google-readability-casting'
 
