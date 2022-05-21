@@ -36,8 +36,7 @@ using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL
 {
-	extern "C" HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl()
-	{
+	extern "C" HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl() {
 		return new CHexCtrl();
 	};
 

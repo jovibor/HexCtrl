@@ -10,14 +10,7 @@
 #include <optional>
 
 /**********************************************************************
-* If HEXCTRL_IHEXCTRLPTR_UNIQUEPTR defined then IHexCtrlPtr is        *
-* resolved to std::unique_ptr. Otherwise it's std::shared_ptr.        *
-**********************************************************************/
-#define HEXCTRL_IHEXCTRLPTR_UNIQUEPTR
-
-/**********************************************************************
-* If HexCtrl is to be used as a .dll, then include this header,       *
-* and uncomment the line below.                                       *
+* If HexCtrl is to be used as a .dll                                  *
 **********************************************************************/
 //#define HEXCTRL_SHARED_DLL
 
@@ -127,19 +120,11 @@ namespace HEXCTRL
 #endif
 
 	extern "C" HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl();
-	using IHexCtrlUnPtr = std::unique_ptr < IHexCtrl, decltype([](IHexCtrl* p) { p->Destroy(); }) > ;
-	using IHexCtrlShPtr = std::shared_ptr<IHexCtrl>;
+	using IHexCtrlPtr = std::unique_ptr < IHexCtrl, decltype([](IHexCtrl* p) { p->Destroy(); }) > ;
 
-	inline IHexCtrlUnPtr CreateHexCtrl()
-	{
-		return IHexCtrlUnPtr(CreateRawHexCtrl());
+	inline IHexCtrlPtr CreateHexCtrl() {
+		return IHexCtrlPtr { CreateRawHexCtrl() };
 	};
-
-#ifdef HEXCTRL_IHEXCTRLPTR_UNIQUEPTR
-	using IHexCtrlPtr = IHexCtrlUnPtr;
-#else
-	using IHexCtrlPtr = IHexCtrlShPtr;
-#endif
 
 	/********************************************
 	* HEXCTRLINFO: service info structure.      *
