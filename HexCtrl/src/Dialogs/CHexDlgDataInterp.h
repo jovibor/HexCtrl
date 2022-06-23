@@ -87,17 +87,17 @@ namespace HEXCTRL::INTERNAL
 		void RedrawHexCtrl()const;
 		template <typename T>
 		void SetTData(T tData)const;
-		[[nodiscard]] bool SetDataBINARY(const std::wstring& wstr)const;
-		[[nodiscard]] bool SetDataCHAR(const std::wstring& wstr)const;
-		[[nodiscard]] bool SetDataUCHAR(const std::wstring& wstr)const;
-		[[nodiscard]] bool SetDataSHORT(const std::wstring& wstr)const;
-		[[nodiscard]] bool SetDataUSHORT(const std::wstring& wstr)const;
-		[[nodiscard]] bool SetDataLONG(const std::wstring& wstr)const;
-		[[nodiscard]] bool SetDataULONG(const std::wstring& wstr)const;
-		[[nodiscard]] bool SetDataLONGLONG(const std::wstring& wstr)const;
-		[[nodiscard]] bool SetDataULONGLONG(const std::wstring& wstr)const;
-		[[nodiscard]] bool SetDataFLOAT(const std::wstring& wstr)const;
-		[[nodiscard]] bool SetDataDOUBLE(const std::wstring& wstr)const;
+		[[nodiscard]] bool SetDataBINARY(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataCHAR(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataUCHAR(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataSHORT(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataUSHORT(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataLONG(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataULONG(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataLONGLONG(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataULONGLONG(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataFLOAT(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataDOUBLE(std::wstring_view wstr)const;
 		[[nodiscard]] bool SetDataTIME32T(std::wstring_view wstr)const;
 		[[nodiscard]] bool SetDataTIME64T(std::wstring_view wstr)const;
 		[[nodiscard]] bool SetDataFILETIME(std::wstring_view wstr)const;
@@ -107,7 +107,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool SetDataMSDTTMTIME(std::wstring_view wstr)const;
 		[[nodiscard]] bool SetDataSYSTEMTIME(std::wstring_view wstr)const;
 		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataGUID(const std::wstring& wstr)const;
+		[[nodiscard]] bool SetDataGUID(std::wstring_view wstr)const;
 		void ShowValueBINARY(BYTE byte)const;
 		void ShowValueCHAR(BYTE byte)const;
 		void ShowValueUCHAR(BYTE byte)const;

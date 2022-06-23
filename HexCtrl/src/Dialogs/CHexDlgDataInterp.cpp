@@ -296,7 +296,8 @@ void CHexDlgDataInterp::OnOK()
 	if (itGridData == m_vecProp.end())
 		return;
 
-	std::wstring wstr = static_cast<CStringW>(m_pPropChanged->GetValue()).GetString();
+	const auto& refStrProp = static_cast<const CStringW&>(m_pPropChanged->GetValue());
+	std::wstring_view wstr = refStrProp.GetString();
 
 	bool fSuccess { false };
 	switch (itGridData->eName)
@@ -459,12 +460,12 @@ void CHexDlgDataInterp::SetTData(T tData)const
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, tData);
 }
 
-bool CHexDlgDataInterp::SetDataBINARY(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataBINARY(std::wstring_view wstr)const
 {
 	if (wstr.size() != 8 || wstr.find_first_not_of(L"01") != std::wstring_view::npos)
 		return false;
 
-	const auto optData = StringToNum<unsigned char>(wstr, 2);
+	const auto optData = StrToUChar(wstr, 2);
 	if (!optData)
 		return false;
 
@@ -472,9 +473,9 @@ bool CHexDlgDataInterp::SetDataBINARY(const std::wstring& wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataCHAR(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataCHAR(std::wstring_view wstr)const
 {
-	const auto optData = StringToNum<char>(wstr);
+	const auto optData = StrToChar(wstr);
 	if (!optData)
 		return false;
 
@@ -482,9 +483,9 @@ bool CHexDlgDataInterp::SetDataCHAR(const std::wstring& wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataUCHAR(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataUCHAR(std::wstring_view wstr)const
 {
-	const auto optData = StringToNum<unsigned char>(wstr);
+	const auto optData = StrToUChar(wstr);
 	if (!optData)
 		return false;
 
@@ -492,9 +493,9 @@ bool CHexDlgDataInterp::SetDataUCHAR(const std::wstring& wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataSHORT(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataSHORT(std::wstring_view wstr)const
 {
-	const auto optData = StringToNum<short>(wstr);
+	const auto optData = StrToShort(wstr);
 	if (!optData)
 		return false;
 
@@ -502,9 +503,9 @@ bool CHexDlgDataInterp::SetDataSHORT(const std::wstring& wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataUSHORT(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataUSHORT(std::wstring_view wstr)const
 {
-	const auto optData = StringToNum<unsigned short>(wstr);
+	const auto optData = StrToUShort(wstr);
 	if (!optData)
 		return false;
 
@@ -512,9 +513,9 @@ bool CHexDlgDataInterp::SetDataUSHORT(const std::wstring& wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataLONG(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataLONG(std::wstring_view wstr)const
 {
-	const auto optData = StringToNum<int>(wstr);
+	const auto optData = StrToInt(wstr);
 	if (!optData)
 		return false;
 
@@ -522,9 +523,9 @@ bool CHexDlgDataInterp::SetDataLONG(const std::wstring& wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataULONG(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataULONG(std::wstring_view wstr)const
 {
-	const auto optData = StringToNum<unsigned int>(wstr);
+	const auto optData = StrToUInt(wstr);
 	if (!optData)
 		return false;
 
@@ -532,9 +533,9 @@ bool CHexDlgDataInterp::SetDataULONG(const std::wstring& wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataLONGLONG(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataLONGLONG(std::wstring_view wstr)const
 {
-	const auto optData = StringToNum<long long>(wstr);
+	const auto optData = StrToLL(wstr);
 	if (!optData)
 		return false;
 
@@ -542,9 +543,9 @@ bool CHexDlgDataInterp::SetDataLONGLONG(const std::wstring& wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataULONGLONG(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataULONGLONG(std::wstring_view wstr)const
 {
-	const auto optData = StringToNum<unsigned long long>(wstr);
+	const auto optData = StrToULL(wstr);
 	if (!optData)
 		return false;
 
@@ -552,9 +553,9 @@ bool CHexDlgDataInterp::SetDataULONGLONG(const std::wstring& wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataFLOAT(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataFLOAT(std::wstring_view wstr)const
 {
-	const auto optData = StringToNum<float>(wstr);
+	const auto optData = StrToFloat(wstr);
 	if (!optData)
 		return false;
 
@@ -562,9 +563,9 @@ bool CHexDlgDataInterp::SetDataFLOAT(const std::wstring& wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataDOUBLE(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataDOUBLE(std::wstring_view wstr)const
 {
-	const auto optData = StringToNum<double>(wstr);
+	const auto optData = StrToDouble(wstr);
 	if (!optData)
 		return false;
 
@@ -779,7 +780,7 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataGUID(const std::wstring& wstr)const
+bool CHexDlgDataInterp::SetDataGUID(std::wstring_view wstr)const
 {
 	GUID guid;
 	if (IIDFromString(wstr.data(), &guid) != S_OK)

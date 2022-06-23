@@ -108,7 +108,7 @@ void CHexDlgGoTo::OnOK()
 
 	CStringW wstr;
 	GetDlgItemTextW(IDC_HEXCTRL_GOTO_EDIT_GOTO, wstr);
-	const auto optData = StringToNum<ULONGLONG>(wstr.GetString());
+	const auto optData = StrToULL(wstr.GetString());
 	if (!optData) {
 		MessageBox(L"Invalid number format", L"Error", MB_ICONERROR);
 		return;

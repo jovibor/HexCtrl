@@ -4,10 +4,10 @@
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
-/****************************************************************************************
-* Here dwells some useful helper stuff for HexCtrl.                                     *
-****************************************************************************************/
+
+// Here dwells some useful helper stuff for HexCtrl.
 #pragma once
+#include "../dep/StrToNum/StrToNum.h"
 #include "../HexCtrl.h"
 #include <afxwin.h>
 #include <cassert>
@@ -39,19 +39,17 @@ namespace HEXCTRL::INTERNAL
 	constexpr auto WSTR_HEXCTRL_FULL_VERSION = HEXCTRL_FULL_VERSION_RAW L" (x86)";
 #endif
 
-	//Converts wide string to a templated arithmetic data type.
-	template<typename TArithmetic> requires std::is_arithmetic_v<TArithmetic>
-	[[nodiscard]] auto StringToNum(const std::wstring& wstr, int iBase = 0)->std::optional<TArithmetic>;
+	using namespace stn; //To enable StrTo* methods internally.
 
 	//Converts every two numeric wchars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
 	//fWc means that wildcards are allowed, chWc - the wildcard.
-	[[nodiscard]] auto StringToHex(std::wstring_view wstr, bool fWc = false, char chWc = '?')->std::optional<std::string>;
+	[[nodiscard]] auto NumStrToHex(std::wstring_view wstr, bool fWc = false, char chWc = '?')->std::optional<std::string>;
 
 	//Wide to Multibyte string convertion.
-	[[nodiscard]] std::string WstrToStr(std::wstring_view wstr, UINT uCodePage = CP_UTF8);
+	[[nodiscard]] auto WstrToStr(std::wstring_view wstr, UINT uCodePage = CP_UTF8)->std::string;
 
 	//Multibyte to Wide string convertion.
-	[[nodiscard]] std::wstring StrToWstr(std::string_view str, UINT uCodePage = CP_UTF8);
+	[[nodiscard]] auto StrToWstr(std::string_view str, UINT uCodePage = CP_UTF8)->std::wstring;
 
 	//Convert string into FILETIME struct.
 	[[nodiscard]] auto StringToFileTime(std::wstring_view wstr, DWORD dwFormat)->std::optional<FILETIME>;

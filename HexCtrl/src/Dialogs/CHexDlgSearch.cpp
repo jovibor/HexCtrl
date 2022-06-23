@@ -738,7 +738,7 @@ void CHexDlgSearch::Prepare()
 		m_stEditStart.GetWindowTextW(wstrStart);
 		if (wstrStart.IsEmpty())
 			m_ullOffsetCurr = 0;
-		else if (const auto optStart = StringToNum<ULONGLONG>(wstrStart.GetString()); optStart)
+		else if (const auto optStart = StrToULL(wstrStart.GetString()); optStart)
 			m_ullOffsetCurr = *optStart;
 		else
 			return;
@@ -747,7 +747,7 @@ void CHexDlgSearch::Prepare()
 	//Step.
 	CStringW wstrStep;
 	m_stEditStep.GetWindowTextW(wstrStep);
-	if (const auto optStep = StringToNum<ULONGLONG>(wstrStep.GetString()); optStep)
+	if (const auto optStep = StrToULL(wstrStep.GetString()); optStep)
 		m_ullStep = *optStep;
 	else
 		return;
@@ -755,7 +755,7 @@ void CHexDlgSearch::Prepare()
 	//Limit.
 	CStringW wstrLimit;
 	m_stEditLimit.GetWindowTextW(wstrLimit);
-	if (const auto optLimit = StringToNum<unsigned int>(wstrLimit.GetString()); optLimit)
+	if (const auto optLimit = StrToUInt(wstrLimit.GetString()); optLimit)
 		m_dwFoundLimit = *optLimit;
 	else
 		return;
@@ -879,7 +879,7 @@ bool CHexDlgSearch::PrepareHexBytes()
 {
 	constexpr auto wstrWrongInput { L"Unacceptable input character.\r\nAllowed characters are: 0123456789AaBbCcDdEeFf" };
 	m_fMatchCase = false;
-	const auto optData = StringToHex(m_wstrTextSearch, m_fWildcard, static_cast<char>(m_uWildcard));
+	const auto optData = NumStrToHex(m_wstrTextSearch, m_fWildcard, static_cast<char>(m_uWildcard));
 	if (!optData) {
 		m_iWrap = 1;
 		MessageBoxW(wstrWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
@@ -889,7 +889,7 @@ bool CHexDlgSearch::PrepareHexBytes()
 
 	if (m_fReplace)
 	{
-		const auto optDataRepl = StringToHex(m_wstrTextReplace);
+		const auto optDataRepl = NumStrToHex(m_wstrTextReplace);
 		if (!optDataRepl) {
 			MessageBoxW(wstrWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			m_stComboReplace.SetFocus();
@@ -983,8 +983,8 @@ bool CHexDlgSearch::PrepareINT8()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	const auto optData = StringToNum<unsigned char>(m_wstrTextSearch);
-	const auto optDataRepl = StringToNum<unsigned char>(m_wstrTextReplace);
+	const auto optData = StrToUChar(m_wstrTextSearch);
+	const auto optDataRepl = StrToUChar(m_wstrTextReplace);
 	if (!optData || (m_fReplace && !optDataRepl))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
@@ -1005,8 +1005,8 @@ bool CHexDlgSearch::PrepareINT16()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	const auto optData = StringToNum<unsigned short>(m_wstrTextSearch);
-	const auto optDataRepl = StringToNum<unsigned short>(m_wstrTextReplace);
+	const auto optData = StrToUShort(m_wstrTextSearch);
+	const auto optDataRepl = StrToUShort(m_wstrTextReplace);
 	if (!optData || (m_fReplace && !optDataRepl))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
@@ -1036,8 +1036,8 @@ bool CHexDlgSearch::PrepareINT32()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	const auto optData = StringToNum<unsigned int>(m_wstrTextSearch);
-	const auto optDataRepl = StringToNum<unsigned int>(m_wstrTextReplace);
+	const auto optData = StrToUInt(m_wstrTextSearch);
+	const auto optDataRepl = StrToUInt(m_wstrTextReplace);
 	if (!optData || (m_fReplace && !optDataRepl))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
@@ -1067,8 +1067,8 @@ bool CHexDlgSearch::PrepareINT64()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	const auto optData = StringToNum<unsigned long long>(m_wstrTextSearch);
-	const auto optDataRepl = StringToNum<unsigned long long>(m_wstrTextReplace);
+	const auto optData = StrToULL(m_wstrTextSearch);
+	const auto optDataRepl = StrToULL(m_wstrTextReplace);
 	if (!optData || (m_fReplace && !optDataRepl))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
@@ -1098,8 +1098,8 @@ bool CHexDlgSearch::PrepareFloat()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	const auto optData = StringToNum<float>(m_wstrTextSearch);
-	const auto optDataRepl = StringToNum<float>(m_wstrTextReplace);
+	const auto optData = StrToFloat(m_wstrTextSearch);
+	const auto optDataRepl = StrToFloat(m_wstrTextReplace);
 	if (!optData || (m_fReplace && !optDataRepl))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
@@ -1129,8 +1129,8 @@ bool CHexDlgSearch::PrepareDouble()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	const auto optData = StringToNum<double>(m_wstrTextSearch);
-	const auto optDataRepl = StringToNum<double>(m_wstrTextReplace);
+	const auto optData = StrToDouble(m_wstrTextSearch);
+	const auto optDataRepl = StrToDouble(m_wstrTextReplace);
 	if (!optData || (m_fReplace && !optDataRepl))
 	{
 		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);

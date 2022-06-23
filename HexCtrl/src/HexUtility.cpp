@@ -6,63 +6,12 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "HexUtility.h"
-#include <algorithm>
 #include <format>
 #include <limits>
 
 namespace HEXCTRL::INTERNAL
 {
-	template<typename TArithmetic> requires std::is_arithmetic_v<TArithmetic>
-	auto StringToNum(const std::wstring& wstr, int iBase)->std::optional<TArithmetic>
-	{
-		TArithmetic tData;
-		wchar_t* pEndPtr;
-		if constexpr (std::is_same_v<TArithmetic, float>)
-		{
-			tData = std::wcstof(wstr.data(), &pEndPtr);
-			if (tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
-				return std::nullopt;
-		}
-		else if constexpr (std::is_same_v<TArithmetic, double>)
-		{
-			tData = std::wcstod(wstr.data(), &pEndPtr);
-			if (tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
-				return std::nullopt;
-		}
-		else if constexpr (std::is_same_v<TArithmetic, unsigned long long>)
-		{
-			tData = std::wcstoull(wstr.data(), &pEndPtr, iBase);
-			if ((tData == 0 && (pEndPtr == wstr.data() || *pEndPtr != '\0'))
-				|| (tData == ULLONG_MAX && errno == ERANGE))
-				return std::nullopt;
-		}
-		else //For all the rest cases we use std::wcstoll.
-		{
-			const auto llData = std::wcstoll(wstr.data(), &pEndPtr, iBase);
-			if ((llData == 0 && (pEndPtr == wstr.data() || *pEndPtr != L'\0'))
-				|| ((llData == LLONG_MAX || llData == LLONG_MIN) && errno == ERANGE)
-				|| (llData > static_cast<LONGLONG>((std::numeric_limits<TArithmetic>::max)()))
-				|| (llData < static_cast<LONGLONG>((std::numeric_limits<std::make_signed_t<TArithmetic>>::min)())))
-				return std::nullopt;
-
-			tData = static_cast<TArithmetic>(llData);
-		}
-
-		return tData;
-	}
-	//Explicit instantiations of templated func in .cpp.
-	template auto StringToNum<char>(const std::wstring& wstr, int iBase)->std::optional<char>;
-	template auto StringToNum<unsigned char>(const std::wstring & wstr, int iBase)->std::optional<unsigned char>;
-	template auto StringToNum<short>(const std::wstring& wstr, int iBase)->std::optional<short>;
-	template auto StringToNum<unsigned short>(const std::wstring& wstr, int iBase)->std::optional<unsigned short>;
-	template auto StringToNum<int>(const std::wstring& wstr, int iBase)->std::optional<int>;
-	template auto StringToNum<unsigned int>(const std::wstring& wstr, int iBase)->std::optional<unsigned int>;
-	template auto StringToNum<long long>(const std::wstring& wstr, int iBase)->std::optional<long long>;
-	template auto StringToNum<unsigned long long>(const std::wstring& wstr, int iBase)->std::optional<unsigned long long>;
-	template auto StringToNum<float>(const std::wstring& wstr, int iBase)->std::optional<float>;
-	template auto StringToNum<double>(const std::wstring& wstr, int iBase)->std::optional<double>;
-
-	auto StringToHex(std::wstring_view wstr, bool fWc, char chWc)->std::optional<std::string>
+	auto NumStrToHex(std::wstring_view wstr, bool fWc, char chWc)->std::optional<std::string>
 	{
 		std::wstring wstrFilter = L"0123456789AaBbCcDdEeFf"; //Allowed characters.
 		if (fWc)
@@ -84,7 +33,7 @@ namespace HEXCTRL::INTERNAL
 			//Extract two current wchars and pass it to StringToNum as wstring.
 			const std::size_t nOffsetCurr = iterBegin - wstr.begin();
 			const auto nSize = nOffsetCurr + 2 <= wstr.size() ? 2 : 1;
-			if (const auto optNumber = StringToNum<unsigned char>(std::wstring(wstr.substr(nOffsetCurr, nSize)), 16); optNumber)
+			if (const auto optNumber = StrToUChar(wstr.substr(nOffsetCurr, nSize), 16); optNumber)
 			{
 				iterBegin += nSize;
 				strHexTmp += *optNumber;
@@ -96,7 +45,7 @@ namespace HEXCTRL::INTERNAL
 		return { std::move(strHexTmp) };
 	}
 
-	std::string WstrToStr(std::wstring_view wstr, UINT uCodePage)
+	auto WstrToStr(std::wstring_view wstr, UINT uCodePage)->std::string
 	{
 		const auto iSize = WideCharToMultiByte(uCodePage, 0, wstr.data(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
@@ -104,7 +53,7 @@ namespace HEXCTRL::INTERNAL
 		return str;
 	}
 
-	std::wstring StrToWstr(std::string_view str, UINT uCodePage)
+	auto StrToWstr(std::string_view str, UINT uCodePage)->std::wstring
 	{
 		const auto iSize = MultiByteToWideChar(uCodePage, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
 		std::wstring wstr(iSize, 0);
