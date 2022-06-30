@@ -235,8 +235,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\HexCtrl\dep\ListEx\ListEx.h" />
-    <ClInclude Include="..\..\HexCtrl\dep\ListEx\src\CListEx.h" />
-    <ClInclude Include="..\..\HexCtrl\dep\ListEx\src\CListExHdr.h" />
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\HexCtrlDefs.h" />
     <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h" />
@@ -263,8 +261,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\HexCtrl\dep\ListEx\src\CListEx.cpp" />
-    <ClCompile Include="..\..\HexCtrl\dep\ListEx\src\CListExHdr.cpp" />
+    <ClCompile Include="..\..\HexCtrl\dep\ListEx\CListEx.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexBookmarks.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexSelection.cpp" />

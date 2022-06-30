@@ -1,9 +1,9 @@
-/****************************************************************************************
-* Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
-* This is very extended and featured version of CMFCListCtrl class.                     *
-* Official git repository: https://github.com/jovibor/ListEx/                           *
-* This class is available under the "MIT License".                                      *
-****************************************************************************************/
+/*************************************************************************************
+* Copyright © 2018-2022 Jovibor https://github.com/jovibor/                          *
+* This is very extended and featured version of CMFCListCtrl class.                  *
+* Official git repository: https://github.com/jovibor/ListEx/                        *
+* This code is available under the "MIT License".                                    *
+*************************************************************************************/
 #pragma once
 #include <afxcontrolbars.h>
 #include <memory>
@@ -11,9 +11,9 @@
 
 namespace HEXCTRL::LISTEX
 {
-	/********************************************************************************************
-	* EListExSortMode - Sorting mode.                                                           *
-	********************************************************************************************/
+	/*********************************************************************************
+	* EListExSortMode - Sorting mode.                                                *
+	*********************************************************************************/
 	enum class EListExSortMode : std::uint8_t
 	{
 		SORT_LEX, SORT_NUMERIC
@@ -29,9 +29,9 @@ namespace HEXCTRL::LISTEX
 	};
 	using PLISTEXCOLOR = LISTEXCOLOR*;
 
-	/********************************************************************************************
-	* LISTEXCOLORS - All ListEx colors.                                                         *
-	********************************************************************************************/
+	/**********************************************************************************
+	* LISTEXCOLORS - All ListEx colors.                                               *
+	**********************************************************************************/
 	struct LISTEXCOLORS
 	{
 		COLORREF clrListText { GetSysColor(COLOR_WINDOWTEXT) };       //List text color.
@@ -53,10 +53,10 @@ namespace HEXCTRL::LISTEX
 		COLORREF clrNWABk { GetSysColor(COLOR_WINDOW) };              //Bk of Non Working Area.
 	};
 
-	/********************************************************************************************
-	* LISTEXCREATESTRUCT - Main initialization helper struct for CListEx::Create method.		*
-	********************************************************************************************/
-	struct LISTEXCREATESTRUCT
+	/**********************************************************************************
+	* LISTEXCREATE - Main initialization helper struct for CListEx::Create method.    *
+	**********************************************************************************/
+	struct LISTEXCREATE
 	{
 		LISTEXCOLORS stColor { };             //All control's colors.
 		CRect        rect;                    //Initial rect.
@@ -100,7 +100,7 @@ namespace HEXCTRL::LISTEX
 	class IListEx : public CMFCListCtrl
 	{
 	public:
-		virtual bool Create(const LISTEXCREATESTRUCT& lcs) = 0;
+		virtual bool Create(const LISTEXCREATE& lcs) = 0;
 		virtual void CreateDialogCtrl(UINT uCtrlID, CWnd* pParent) = 0;
 		virtual BOOL DeleteAllItems() = 0;
 		virtual BOOL DeleteColumn(int nCol) = 0;
@@ -135,26 +135,18 @@ namespace HEXCTRL::LISTEX
 			EListExSortMode enSortMode = EListExSortMode::SORT_LEX) = 0;
 	};
 
-	/********************************************************************************************
-	* Factory function CreateListEx returns IListExUnPtr - unique_ptr with custom deleter .		*
-	* In client code you should use IListExPtr type which is an alias to either IListExUnPtr	*
-	* - a unique_ptr, or IListExShPtr - a shared_ptr. Uncomment what serves best for you,		*
-	* and comment out the other.																*
-	* If you, for some reason, need raw pointer, you can directly call CreateRawListEx			*
-	* function, which returns IListEx interface pointer, but in this case you will need to		*
-	* call IListEx::Destroy method	afterwards - to manually delete ListEx object.				*
-	********************************************************************************************/
+	/***************************************************************************************
+	* Factory function CreateListEx returns IListExPtr - unique_ptr with custom deleter.   *
+	* If you, for some reason, need raw pointer, you can directly call CreateRawListEx()   *
+	* function, which returns IListEx interface pointer, but in this case you will need to *
+	* call IListEx::Destroy method	afterwards - to manually delete ListEx object.         *
+	***************************************************************************************/
 	IListEx* CreateRawListEx();
-	using IListExUnPtr = std::unique_ptr<IListEx, void(*)(IListEx*)>;
-	using IListExShPtr = std::shared_ptr<IListEx>;
+	using IListExPtr = std::unique_ptr<IListEx, void(*)(IListEx*)>;
 
-	inline IListExUnPtr CreateListEx()
-	{
-		return IListExUnPtr(CreateRawListEx(), [](IListEx* p) { p->Destroy(); });
+	inline IListExPtr CreateListEx() {
+		return IListExPtr(CreateRawListEx(), [](IListEx* p) { p->Destroy(); });
 	};
-
-	using IListExPtr = IListExUnPtr;
-	//using IListExPtr = IListExShPtr;
 
 	/****************************************************************************
 	* WM_NOTIFY codes (NMHDR.code values)										*

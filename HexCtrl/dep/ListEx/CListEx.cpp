@@ -1,66 +1,752 @@
 /****************************************************************************************
-* Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2022 Jovibor https://github.com/jovibor/                             *
 * This is very extended and featured version of CMFCListCtrl class.                     *
 * Official git repository: https://github.com/jovibor/ListEx/                           *
-* This class is available under the "MIT License".                                      *
+* This code is available under the "MIT License".                                       *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "CListEx.h"
+#include "ListEx.h"
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <limits>
+#include <optional>
 #include <random>
+#include <unordered_map>
 
-using namespace HEXCTRL::LISTEX;
-using namespace HEXCTRL::LISTEX::INTERNAL;
+namespace HEXCTRL::LISTEX::INTERNAL
+{
+	class CListExHdr final : public CMFCHeaderCtrl
+	{
+	public:
+		explicit CListExHdr();
+		~CListExHdr();
+		void DeleteColumn(int iIndex);
+		[[nodiscard]] UINT GetHiddenCount()const;
+		void HideColumn(int iIndex, bool fHide);
+		[[nodiscard]] bool IsColumnHidden(int iIndex); //Column index.
+		[[nodiscard]] bool IsColumnSortable(int iIndex)const;
+		void SetHeight(DWORD dwHeight);
+		void SetFont(const LOGFONTW* pLogFontNew);
+		void SetColor(const LISTEXCOLORS& lcs);
+		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText);
+		void SetColumnIcon(int iColumn, const LISTEXHDRICON& stIcon);
+		void SetColumnSortable(int iColumn, bool fSortable);
+		void SetSortable(bool fSortable);
+		void SetSortArrow(int iColumn, bool fAscending);
+	private:
+		struct SHDRCOLOR;
+		struct SHDRICON;
+		struct SHIDDEN;
+		[[nodiscard]] UINT ColumnIndexToID(int iIndex)const; //Returns unique column ID. Must be > 0.
+		[[nodiscard]] int ColumnIDToIndex(UINT uID)const;
+		[[nodiscard]] auto HasColor(UINT ID)->SHDRCOLOR*;
+		[[nodiscard]] auto HasIcon(UINT ID)->SHDRICON*;
+		[[nodiscard]] auto IsHidden(UINT ID)->std::optional<SHIDDEN*>; //Internal ColumnID.
+		[[nodiscard]] bool IsSortable(UINT ID)const;
+		afx_msg void OnDestroy();
+		afx_msg void OnDrawItem(CDC* pDC, int iItem, CRect rcOrig, BOOL bIsPressed, BOOL bIsHighlighted)override;
+		afx_msg LRESULT OnLayout(WPARAM wParam, LPARAM lParam);
+		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+		afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
+		afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
+		DECLARE_MESSAGE_MAP()
+	private:
+		CFont m_fontHdr;
+		CPen m_penGrid;
+		CPen m_penLight;
+		CPen m_penShadow;
+		COLORREF m_clrBkNWA { }; //Bk of non working area.
+		COLORREF m_clrText { };
+		COLORREF m_clrBk { };
+		COLORREF m_clrHglInactive { };
+		COLORREF m_clrHglActive { };
+		DWORD m_dwHeaderHeight { 19 }; //Standard (default) height.
+		std::unordered_map<UINT, SHDRCOLOR> m_umapColors { }; //Colors for columns.
+		std::unordered_map<UINT, SHDRICON> m_umapIcons { };   //Icons for columns.
+		std::unordered_map<UINT, bool> m_umapIsSort { };      //Is column sortable.
+		std::unordered_map<UINT, SHIDDEN> m_umapHidden { };   //Hidden columns.
+		UINT m_uSortColumn { 0 };   //ColumnID to draw sorting triangle at. 0 is to avoid triangle before first clicking.
+		bool m_fSortable { false }; //List-is-sortable global flog. Need to draw sortable triangle or not?
+		bool m_fSortAscending { };  //Sorting type.
+	};
+
+	class CListEx final : public IListEx
+	{
+	public:
+		bool Create(const LISTEXCREATE& lcs)override;
+		void CreateDialogCtrl(UINT uCtrlID, CWnd* pParent)override;
+		static int CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
+		BOOL DeleteAllItems()override;
+		BOOL DeleteColumn(int iIndex)override;
+		BOOL DeleteItem(int iItem)override;
+		void Destroy()override;
+		[[nodiscard]] auto GetCellData(int iItem, int iSubItem)const->ULONGLONG override;
+		[[nodiscard]] auto GetColors()const->LISTEXCOLORS override;
+		[[nodiscard]] auto GetColumnSortMode(int iColumn)const->EListExSortMode override;
+		[[nodiscard]] int GetSortColumn()const override;
+		[[nodiscard]] bool GetSortAscending()const override;
+		void HideColumn(int iIndex, bool fHide)override;
+		int InsertColumn(int nCol, const LVCOLUMN* pColumn)override;
+		int InsertColumn(int nCol, LPCTSTR lpszColumnHeading, int nFormat = LVCFMT_LEFT, int nWidth = -1, int nSubItem = -1)override;
+		[[nodiscard]] bool IsCreated()const override;
+		[[nodiscard]] bool IsColumnSortable(int iColumn)override;
+		void ResetSort()override; //Reset all the sort by any column to its default state.
+		void SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clrText)override;
+		void SetCellData(int iItem, int iSubItem, ULONGLONG ullData)override;
+		void SetCellIcon(int iItem, int iSubItem, int iIndex)override; //Icon index in list's image list.
+		void SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTooltip, std::wstring_view wstrCaption)override;
+		void SetColors(const LISTEXCOLORS& lcs)override;
+		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
+		void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enSortMode = { })override;
+		void SetFont(const LOGFONTW* pLogFontNew)override;
+		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1)override;
+		void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)override; //Icon for a given column.
+		void SetHdrFont(const LOGFONTW* pLogFontNew)override;
+		void SetHdrHeight(DWORD dwHeight)override;
+		void SetHdrImageList(CImageList* pList)override;
+		void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)override;
+		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode enSortMode)override;
+		DECLARE_DYNAMIC(CListEx)
+		DECLARE_MESSAGE_MAP()
+	private:
+		struct SCOLROWCLR;
+		struct SITEMDATA;
+		[[nodiscard]] long GetFontSize();
+		[[nodiscard]] auto GetHeaderCtrl()->CListExHdr & override { return m_stListHeader; }
+		void FontSizeIncDec(bool fInc);
+		void InitHeader()override;
+		auto HasColor(int iItem, int iSubItem)->std::optional<PLISTEXCOLOR>;
+		auto HasTooltip(int iItem, int iSubItem)->std::optional<PLISTEXTOOLTIP>;
+		int HasIcon(int iItem, int iSubItem); //Does cell have an icon associated.
+		auto ParseItemText(int iItem, int iSubitem)->std::vector<SITEMDATA>;
+		void RecalcMeasure();
+		void SetFontSize(long lSize);
+		void TtLinkHide();
+		void TtCellHide();
+		void TtRowShow(bool fShow, UINT uRow); //Tooltips for HighLatency mode.
+		void DrawItem(LPDRAWITEMSTRUCT pDIS)override;
+		afx_msg void OnPaint();
+		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+		afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
+		afx_msg void OnKillFocus(CWnd* pNewWnd);
+		afx_msg void OnLButtonDown(UINT nFlags, CPoint pt);
+		afx_msg void OnLButtonUp(UINT nFlags, CPoint pt);
+		afx_msg void OnRButtonDown(UINT nFlags, CPoint pt);
+		afx_msg void OnMouseMove(UINT nFlags, CPoint pt);
+		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+		afx_msg void OnTimer(UINT_PTR nIDEvent);
+		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+		afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+		afx_msg void MeasureItem(LPMEASUREITEMSTRUCT lpMIS);
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
+		afx_msg void OnLvnColumnClick(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnHdnBegindrag(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnHdnBegintrack(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnDestroy();
+	private:
+		CListExHdr m_stListHeader;
+		LISTEXCOLORS m_stColors { };
+		CFont m_fontList;               //Default list font.
+		CFont m_fontListUnderline;      //Underlined list font, for links.
+		CPen m_penGrid;                 //Pen for list lines between cells.
+		CWnd m_stWndTtCell;             //Cells' tool-tip window.
+		TTTOOLINFOW m_stTInfoCell { };  //Cells' tool-tip info struct.
+		CWnd m_stWndTtLink;             //Link tool-tip window.
+		TTTOOLINFOW m_stTInfoLink { };  //Link's tool-tip info struct.
+		CWnd m_stWndTtRow { };          //Tooltip window for row in m_fHighLatency mode.
+		TTTOOLINFOW m_stToolInfoRow { };//Tooltips struct.
+		std::wstring m_wstrTtText { };  //Link's tool-tip current text.
+		HCURSOR m_cursorHand { };       //Hand cursor handle.
+		HCURSOR m_cursorDefault { };    //Standard (default) cursor handle.
+		LVHITTESTINFO m_stCurrCell { }; //Cell's hit struct for tool-tip.
+		LVHITTESTINFO m_stCurrLink { }; //Cell's link hit struct for tool-tip.
+		DWORD m_dwGridWidth { 1 };		//Grid width.
+		int m_iSortColumn { -1 };       //Currently clicked header column.
+		PFNLVCOMPARE m_pfnCompare { nullptr };  //Pointer to user provided compare func.
+		EListExSortMode m_enDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
+		CRect m_rcLinkCurr { };         //Current link's rect;
+		std::unordered_map<int, std::unordered_map<int, LISTEXTOOLTIP>> m_umapCellTt { };  //Cell's tooltips.
+		std::unordered_map<int, std::unordered_map<int, ULONGLONG>> m_umapCellData { };    //Cell's custom data.
+		std::unordered_map<int, std::unordered_map<int, LISTEXCOLOR>> m_umapCellColor { }; //Cell's colors.
+		std::unordered_map<int, SCOLROWCLR> m_umapRowColor { };                   //Row colors.
+		std::unordered_map<int, SCOLROWCLR> m_umapColumnColor { };                //Column colors.
+		std::unordered_map<int, std::unordered_map<int, int>> m_umapCellIcon { }; //Cell's icon.
+		std::unordered_map<int, EListExSortMode> m_umapColumnSortMode { };        //Column sorting mode.
+		UINT m_uHLItem { };            //High latency Vscroll item.
+		int m_iLOGPIXELSY { };         //GetDeviceCaps(LOGPIXELSY) constant.
+		bool m_fCreated { false };     //Is created.
+		bool m_fHighLatency { };       //High latency flag.
+		bool m_fSortable { false };    //Is list sortable.
+		bool m_fSortAscending { };     //Sorting type (ascending, descending).
+		bool m_fLinksUnderline { };    //Links are displayed underlined or not.
+		bool m_fLinkTooltip { };       //Show links toolips.
+		bool m_fVirtual { false };     //Whether list is virtual (LVS_OWNERDATA) or not.
+		bool m_fTtCellShown { false }; //Is cell's tool-tip shown atm.
+		bool m_fTtLinkShown { false }; //Is link's tool-tip shown atm.
+		bool m_fLDownAtLink { false }; //Left mouse down on link.
+		bool m_fHLFlag { };            //High latency Vscroll flag.
+	};
+
+	//Header column colors.
+	struct CListExHdr::SHDRCOLOR {
+		COLORREF clrBk { };   //Background color.
+		COLORREF clrText { }; //Text color.
+	};
+
+	//Header column icons.
+	struct CListExHdr::SHDRICON {
+		LISTEXHDRICON stIcon { };   //Icon data struct.
+		bool  fLMPressed { false }; //Left mouse button pressed atm.
+	};
+
+	//Hidden columns.
+	struct CListExHdr::SHIDDEN {
+		int iPrevPos { };
+		int iPrevWidth { };
+	};
+
+	//Colors for the row/column.
+	struct CListEx::SCOLROWCLR {
+		LISTEXCOLOR clr { }; //Colors
+		std::chrono::high_resolution_clock::time_point time { }; //Time when added.
+	};
+
+	//Text and links in the cell.
+	struct CListEx::SITEMDATA {
+		SITEMDATA(int iIconIndex, CRect rect) : iIconIndex(iIconIndex), rect(rect) {}; //Ctor for just image index.
+		SITEMDATA(std::wstring_view wstrText, std::wstring_view wstrLink, std::wstring_view wstrTitle,
+			CRect rect, bool fLink = false, bool fTitle = false) :
+			wstrText(wstrText), wstrLink(wstrLink), wstrTitle(wstrTitle), rect(rect), fLink(fLink), fTitle(fTitle) {}
+		std::wstring wstrText { };  //Visible text.
+		std::wstring wstrLink { };  //Text within link <link="textFromHere"> tag.
+		std::wstring wstrTitle { }; //Text within title <...title="textFromHere"> tag.
+		CRect rect { };             //Rect text belongs to.
+		int iIconIndex { -1 };      //Icon index in the image list, if any.
+		bool fLink { false };       //Is it just a text (wstrLink is empty) or text with link?
+		bool fTitle { false };      //Is it link with custom title (wstrTitle is not empty)?
+	};
+
+	constexpr ULONG_PTR ID_TIMER_TT_CELL_CHECK { 0x01 };    //Cell tool-tip check-timer ID.
+	constexpr ULONG_PTR ID_TIMER_TT_LINK_CHECK { 0x02 };    //Link tool-tip check-timer ID.
+	constexpr ULONG_PTR ID_TIMER_TT_LINK_ACTIVATE { 0x03 }; //Link tool-tip activate-timer ID.
+
+
+	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
+#ifdef _UNICODE
+#if defined _M_IX86
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#elif defined _M_X64
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#else
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
+#endif
+}
 
 namespace HEXCTRL::LISTEX
 {
-	/********************************************
-	* CreateRawListEx function implementation.	*
-	********************************************/
-	IListEx* CreateRawListEx()
-	{
-		return new CListEx();
-	}
-
-	namespace INTERNAL
-	{
-		/********************************************
-		* SCOLROWCLR - colors for the row/column.   *
-		********************************************/
-		struct CListEx::SCOLROWCLR
-		{
-			LISTEXCOLOR clr { }; //Colors
-			std::chrono::high_resolution_clock::time_point time { }; //Time when added.
-		};
-
-		/********************************************
-		* SITEMTEXT - text and links in the cell.   *
-		********************************************/
-		struct CListEx::SITEMDATA
-		{
-			SITEMDATA(int iIconIndex, CRect rect) : iIconIndex(iIconIndex), rect(rect) {}; //Ctor for just image index.
-			SITEMDATA(std::wstring_view wstrText, std::wstring_view wstrLink, std::wstring_view wstrTitle,
-				CRect rect, bool fLink = false, bool fTitle = false) :
-				wstrText(wstrText), wstrLink(wstrLink), wstrTitle(wstrTitle), rect(rect), fLink(fLink), fTitle(fTitle) {}
-			std::wstring wstrText { };  //Visible text.
-			std::wstring wstrLink { };  //Text within link <link="textFromHere"> tag.
-			std::wstring wstrTitle { }; //Text within title <...title="textFromHere"> tag.
-			CRect rect { };             //Rect text belongs to.
-			int iIconIndex { -1 };      //Icon index in the image list, if any.
-			bool fLink { false };       //Is it just a text (wstrLink is empty) or text with link?
-			bool fTitle { false };      //Is it link with custom title (wstrTitle is not empty)?
-		};
-
-		constexpr ULONG_PTR ID_TIMER_TT_CELL_CHECK { 0x01 };    //Cell tool-tip check-timer ID.
-		constexpr ULONG_PTR ID_TIMER_TT_LINK_CHECK { 0x02 };    //Link tool-tip check-timer ID.
-		constexpr ULONG_PTR ID_TIMER_TT_LINK_ACTIVATE { 0x03 }; //Link tool-tip activate-timer ID.
+	IListEx* CreateRawListEx() {
+		return new LISTEX::INTERNAL::CListEx();
 	}
 }
 
+using namespace HEXCTRL::LISTEX::INTERNAL;
+
+
 /****************************************************
-* CListEx class implementation.						*
+* CListExHdr implementation.                        *
+****************************************************/
+
+BEGIN_MESSAGE_MAP(CListExHdr, CMFCHeaderCtrl)
+	ON_MESSAGE(HDM_LAYOUT, &CListExHdr::OnLayout)
+	ON_WM_HSCROLL()
+	ON_WM_DESTROY()
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
+	ON_WM_RBUTTONUP()
+	ON_WM_RBUTTONDOWN()
+END_MESSAGE_MAP()
+
+CListExHdr::CListExHdr()
+{
+	m_penGrid.CreatePen(PS_SOLID, 2, RGB(220, 220, 220));
+	m_penLight.CreatePen(PS_SOLID, 1, GetSysColor(COLOR_3DHILIGHT));
+	m_penShadow.CreatePen(PS_SOLID, 1, GetSysColor(COLOR_3DSHADOW));
+}
+
+CListExHdr::~CListExHdr() = default;
+
+void CListExHdr::DeleteColumn(int iIndex)
+{
+	if (const auto ID = ColumnIndexToID(iIndex); ID > 0)
+	{
+		m_umapColors.erase(ID);
+		m_umapIcons.erase(ID);
+		m_umapIsSort.erase(ID);
+		m_umapHidden.erase(ID);
+	}
+}
+
+UINT CListExHdr::GetHiddenCount()const
+{
+	return static_cast<UINT>(m_umapHidden.size());
+}
+
+void CListExHdr::HideColumn(int iIndex, bool fHide)
+{
+	const auto iItemsCount = GetItemCount();
+	if (iIndex >= iItemsCount)
+		return;
+
+	const auto ID = ColumnIndexToID(iIndex);
+	std::vector<int> vecInt(iItemsCount, 0);
+	ListView_GetColumnOrderArray(GetParent()->m_hWnd, iItemsCount, vecInt.data());
+	HDITEMW hdi { HDI_WIDTH };
+	GetItem(iIndex, &hdi);
+
+	if (fHide) //Hide column.
+	{
+		m_umapHidden[ID].iPrevWidth = hdi.cxy;
+		if (const auto iter = std::find(vecInt.begin(), vecInt.end(), iIndex); iter != vecInt.end())
+		{
+			m_umapHidden[ID].iPrevPos = static_cast<int>(iter - vecInt.begin());
+			std::rotate(iter, iter + 1, vecInt.end()); //Moving hiding column to the end of the column array.
+		}
+
+		ListView_SetColumnOrderArray(GetParent()->m_hWnd, iItemsCount, vecInt.data());
+		hdi.cxy = 0;
+		SetItem(iIndex, &hdi);
+	}
+	else //Show column.
+	{
+		const auto opt = IsHidden(ID);
+		if (!opt) //No such column is hidden.
+			return;
+
+		if (const auto iterRight = std::find(vecInt.rbegin(), vecInt.rend(), iIndex); iterRight != vecInt.rend())
+		{
+			const auto iterMid = iterRight + 1;
+			const auto iterEnd = vecInt.rend() - (*opt)->iPrevPos;
+			if (iterMid < iterEnd)
+				std::rotate(iterRight, iterMid, iterEnd); //Moving hidden column id back to its previous place.
+		}
+
+		ListView_SetColumnOrderArray(GetParent()->m_hWnd, iItemsCount, vecInt.data());
+		hdi.cxy = (*opt)->iPrevWidth;
+		SetItem(iIndex, &hdi);
+		m_umapHidden.erase(ID);
+	}
+
+	RedrawWindow();
+}
+
+bool CListExHdr::IsColumnHidden(int iIndex)
+{
+	return IsHidden(ColumnIndexToID(iIndex)).has_value();
+}
+
+bool CListExHdr::IsColumnSortable(int iIndex)const
+{
+	return IsSortable(ColumnIndexToID(iIndex));
+}
+
+void CListExHdr::SetFont(const LOGFONTW * pLogFont)
+{
+	if (!pLogFont)
+		return;
+
+	m_fontHdr.DeleteObject();
+	m_fontHdr.CreateFontIndirectW(pLogFont);
+
+	//If new font's height is higher than current height (m_dwHeaderHeight), we adjust current height as well.
+	TEXTMETRICW tm;
+	auto pDC = GetDC();
+	pDC->SelectObject(m_fontHdr);
+	pDC->GetTextMetricsW(&tm);
+	ReleaseDC(pDC);
+	const DWORD dwHeightFont = tm.tmHeight + tm.tmExternalLeading + 4;
+	if (dwHeightFont > m_dwHeaderHeight)
+		SetHeight(dwHeightFont);
+}
+
+void CListExHdr::SetHeight(DWORD dwHeight)
+{
+	m_dwHeaderHeight = dwHeight;
+}
+
+void CListExHdr::SetColor(const LISTEXCOLORS & lcs)
+{
+	m_clrText = lcs.clrHdrText;
+	m_clrBk = lcs.clrHdrBk;
+	m_clrBkNWA = lcs.clrNWABk;
+	m_clrHglInactive = lcs.clrHdrHglInact;
+	m_clrHglActive = lcs.clrHdrHglAct;
+
+	RedrawWindow();
+}
+
+void CListExHdr::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
+{
+	const auto ID = ColumnIndexToID(iColumn);
+
+	assert(ID > 0);
+	if (ID == 0)
+		return;
+
+	if (clrText == -1)
+		clrText = m_clrText;
+
+	m_umapColors[ID] = SHDRCOLOR { clrBk, clrText };
+	RedrawWindow();
+}
+
+void CListExHdr::SetColumnIcon(int iColumn, const LISTEXHDRICON & stIcon)
+{
+	const auto ID = ColumnIndexToID(iColumn);
+	assert(ID > 0);
+	if (ID == 0)
+		return;
+
+	if (stIcon.iIndex == -1) //If column already has icon.
+		m_umapIcons.erase(ID);
+	else
+	{
+		SHDRICON stHdrIcon;
+		stHdrIcon.stIcon = stIcon;
+		m_umapIcons[ID] = stHdrIcon;
+	}
+	RedrawWindow();
+}
+
+void CListExHdr::SetColumnSortable(int iColumn, bool fSortable)
+{
+	const auto ID = ColumnIndexToID(iColumn);
+	assert(ID > 0);
+	if (ID == 0)
+		return;
+
+	m_umapIsSort[ID] = fSortable;
+}
+
+void CListExHdr::SetSortable(bool fSortable)
+{
+	m_fSortable = fSortable;
+	RedrawWindow();
+}
+
+void CListExHdr::SetSortArrow(int iColumn, bool fAscending)
+{
+	UINT ID { 0 };
+	if (iColumn >= 0)
+	{
+		ID = ColumnIndexToID(iColumn);
+		assert(ID > 0);
+		if (ID == 0)
+			return;
+	}
+	m_uSortColumn = ID;
+	m_fSortAscending = fAscending;
+	RedrawWindow();
+}
+
+
+//////////////////////////////////////////////////////////////
+//CListExHdr private methods:
+//////////////////////////////////////////////////////////////
+
+UINT CListExHdr::ColumnIndexToID(int iIndex)const
+{
+	//Each column has unique internal identifier in HDITEMW::lParam
+	UINT uRet { 0 };
+	HDITEMW hdi { HDI_LPARAM };
+	if (GetItem(iIndex, &hdi) != FALSE)
+		uRet = static_cast<UINT>(hdi.lParam);
+
+	return uRet;
+}
+
+int CListExHdr::ColumnIDToIndex(UINT uID)const
+{
+	int iRet { -1 };
+	for (int i = 0; i < GetItemCount(); ++i)
+	{
+		HDITEMW hdi { HDI_LPARAM };
+		GetItem(i, &hdi);
+		if (static_cast<UINT>(hdi.lParam) == uID)
+			iRet = i;
+	}
+
+	return iRet;
+}
+
+void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed, BOOL bIsHighlighted)
+{
+	//Non working area after last column. Or if column resized to zero.
+	if (iItem < 0 || rcOrig.IsRectEmpty())
+	{
+		pDC->FillSolidRect(&rcOrig, m_clrBkNWA);
+		return;
+	}
+
+	CMemDC memDC(*pDC, rcOrig);
+	auto& rDC = memDC.GetDC();
+	const auto ID = ColumnIndexToID(iItem);
+
+	auto const pClr = HasColor(ID);
+	const COLORREF clrText { pClr != nullptr ? pClr->clrText : m_clrText };
+	const COLORREF clrBk { bIsHighlighted ? (bIsPressed ? m_clrHglActive : m_clrHglInactive) : (pClr != nullptr ? pClr->clrBk : m_clrBk) };
+
+	rDC.FillSolidRect(&rcOrig, clrBk);
+	rDC.SetTextColor(clrText);
+	rDC.SelectObject(m_fontHdr);
+
+	//Set item's text buffer first char to zero, then getting item's text and Draw it.
+	wchar_t warrHdrText[MAX_PATH];
+	warrHdrText[0] = L'\0';
+	HDITEMW hdItem { HDI_FORMAT | HDI_TEXT, 0, warrHdrText, nullptr, MAX_PATH };
+	GetItem(iItem, &hdItem);
+
+	UINT uFormat { };
+	switch (hdItem.fmt & HDF_JUSTIFYMASK)
+	{
+	case HDF_LEFT:
+		uFormat = DT_LEFT;
+		break;
+	case HDF_CENTER:
+		uFormat = DT_CENTER;
+		break;
+	case HDF_RIGHT:
+		uFormat = DT_RIGHT;
+		break;
+	default:
+		break;
+	}
+
+	//Draw icon for column, if any.
+	long lIndentTextLeft { 4 }; //Left text indent.
+	if (const auto pData = HasIcon(ID); pData != nullptr) //If column has an icon.
+	{
+		const auto pImgList = GetImageList(LVSIL_NORMAL);
+		int iCX { };
+		int iCY { };
+		ImageList_GetIconSize(pImgList->m_hImageList, &iCX, &iCY); //Icon dimensions.
+		pImgList->DrawEx(&rDC, pData->stIcon.iIndex, rcOrig.TopLeft() + pData->stIcon.pt, { }, CLR_NONE, CLR_NONE, ILD_NORMAL);
+		lIndentTextLeft += pData->stIcon.pt.x + iCX;
+	}
+
+	constexpr long lIndentTextRight = 4;
+	CRect rcText { rcOrig.left + lIndentTextLeft, rcOrig.top, rcOrig.right - lIndentTextRight, rcOrig.bottom };
+	if (StrStrW(warrHdrText, L"\n"))
+	{	//If it's multiline text, first — calculate rect for the text,
+		//with DT_CALCRECT flag (not drawing anything),
+		//and then calculate rect for final vertical text alignment.
+		CRect rcCalcText;
+		rDC.DrawTextW(warrHdrText, &rcCalcText, uFormat | DT_CALCRECT);
+		rcText.top = rcText.Height() / 2 - rcCalcText.Height() / 2;
+		rDC.DrawTextW(warrHdrText, &rcOrig, uFormat);
+	}
+	else
+		rDC.DrawTextW(warrHdrText, &rcText, uFormat | DT_VCENTER | DT_SINGLELINE);
+
+	//Draw sortable triangle (arrow).
+	if (m_fSortable && IsSortable(ID) && ID == m_uSortColumn)
+	{
+		rDC.SelectObject(m_penLight);
+		const auto iOffset = rcOrig.Height() / 4;
+
+		if (m_fSortAscending)
+		{
+			//Draw the UP arrow.
+			rDC.MoveTo(rcOrig.right - 2 * iOffset, iOffset);
+			rDC.LineTo(rcOrig.right - iOffset, rcOrig.bottom - iOffset - 1);
+			rDC.LineTo(rcOrig.right - 3 * iOffset - 2, rcOrig.bottom - iOffset - 1);
+			rDC.SelectObject(m_penShadow);
+			rDC.MoveTo(rcOrig.right - 3 * iOffset - 1, rcOrig.bottom - iOffset - 1);
+			rDC.LineTo(rcOrig.right - 2 * iOffset, iOffset - 1);
+		}
+		else
+		{
+			//Draw the DOWN arrow.
+			rDC.MoveTo(rcOrig.right - iOffset - 1, iOffset);
+			rDC.LineTo(rcOrig.right - 2 * iOffset - 1, rcOrig.bottom - iOffset);
+			rDC.SelectObject(m_penShadow);
+			rDC.MoveTo(rcOrig.right - 2 * iOffset - 2, rcOrig.bottom - iOffset);
+			rDC.LineTo(rcOrig.right - 3 * iOffset - 1, iOffset);
+			rDC.LineTo(rcOrig.right - iOffset - 1, iOffset);
+		}
+	}
+
+	//rDC.DrawEdge(&rect, EDGE_RAISED, BF_RECT); //3D look edges.
+	rDC.SelectObject(m_penGrid);
+	rDC.MoveTo(rcOrig.TopLeft());
+	rDC.LineTo(rcOrig.left, rcOrig.bottom);
+	if (iItem == GetItemCount() - 1) //Last item.
+	{
+		rDC.MoveTo(rcOrig.right, rcOrig.top);
+		rDC.LineTo(rcOrig.BottomRight());
+	}
+}
+
+LRESULT CListExHdr::OnLayout(WPARAM /*wParam*/, LPARAM lParam)
+{
+	CMFCHeaderCtrl::DefWindowProcW(HDM_LAYOUT, 0, lParam);
+
+	auto pHDL = reinterpret_cast<LPHDLAYOUT>(lParam);
+	pHDL->pwpos->cy = m_dwHeaderHeight;	//New header height.
+	pHDL->prc->top = m_dwHeaderHeight;  //Decreasing list's height begining by the new header's height.
+
+	return 0;
+}
+
+void CListExHdr::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	HDHITTESTINFO ht { };
+	ht.pt = point;
+	HitTest(&ht);
+	if (ht.iItem >= 0)
+	{
+		const auto ID = ColumnIndexToID(ht.iItem);
+		if (const auto pData = HasIcon(ID); pData != nullptr && pData->stIcon.fClickable && !IsHidden(ID))
+		{
+			int iCX { };
+			int iCY { };
+			ImageList_GetIconSize(GetImageList()->m_hImageList, &iCX, &iCY);
+			CRect rcColumn;
+			GetItemRect(ht.iItem, rcColumn);
+			CRect rcIcon(rcColumn.TopLeft() + pData->stIcon.pt, SIZE { iCX, iCY });
+
+			if (rcIcon.PtInRect(point))
+			{
+				pData->fLMPressed = true;
+				return; //Do not invoke default handler.
+			}
+		}
+	}
+
+	CMFCHeaderCtrl::OnLButtonDown(nFlags, point);
+}
+
+void CListExHdr::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	HDHITTESTINFO ht { };
+	ht.pt = point;
+	HitTest(&ht);
+	if (ht.iItem >= 0)
+	{
+		for (auto& iter : m_umapIcons)
+		{
+			if (!iter.second.fLMPressed)
+				continue;
+
+			int iCX { };
+			int iCY { };
+			ImageList_GetIconSize(GetImageList()->m_hImageList, &iCX, &iCY);
+			CRect rcColumn;
+			GetItemRect(ht.iItem, rcColumn);
+			CRect rcIcon(rcColumn.TopLeft() + iter.second.stIcon.pt, SIZE { iCX, iCY });
+
+			if (rcIcon.PtInRect(point))
+			{
+				for (auto& iterData : m_umapIcons)
+					iterData.second.fLMPressed = false; //Remove fLMPressed flag from all columns.
+
+				if (auto pParent = GetParent(); pParent != nullptr) //List control pointer.
+				{
+					const auto uCtrlId = static_cast<UINT>(pParent->GetDlgCtrlID());
+					NMHEADERW hdr { { pParent->m_hWnd, uCtrlId, LISTEX_MSG_HDRICONCLICK } };
+					hdr.iItem = ColumnIDToIndex(iter.first);
+					pParent->GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&hdr));
+				}
+			}
+
+			break;
+		}
+	}
+
+	CMFCHeaderCtrl::OnLButtonUp(nFlags, point);
+}
+
+void CListExHdr::OnRButtonDown(UINT /*nFlags*/, CPoint point)
+{
+	const auto pParent = GetParent();
+	if (pParent == nullptr) //List control pointer.
+		return;
+
+	const auto uCtrlId = static_cast<UINT>(pParent->GetDlgCtrlID());
+	NMHEADERW hdr { { pParent->m_hWnd, uCtrlId, LISTEX_MSG_HDRRBTNDOWN } };
+	HDHITTESTINFO ht { };
+	ht.pt = point;
+	HitTest(&ht);
+	hdr.iItem = ht.iItem;
+	pParent->GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&hdr));
+}
+
+void CListExHdr::OnRButtonUp(UINT /*nFlags*/, CPoint point)
+{
+	const auto pParent = GetParent();
+	if (pParent == nullptr) //List control pointer.
+		return;
+
+	const auto uCtrlId = static_cast<UINT>(pParent->GetDlgCtrlID());
+	NMHEADERW hdr { { pParent->m_hWnd, uCtrlId, LISTEX_MSG_HDRRBTNUP } };
+	HDHITTESTINFO ht { };
+	ht.pt = point;
+	HitTest(&ht);
+	hdr.iItem = ht.iItem;
+	pParent->GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&hdr));
+}
+
+void CListExHdr::OnDestroy()
+{
+	CMFCHeaderCtrl::OnDestroy();
+
+	m_umapColors.clear();
+	m_umapIcons.clear();
+	m_umapIsSort.clear();
+	m_umapHidden.clear();
+}
+
+auto CListExHdr::HasColor(UINT ID)->CListExHdr::SHDRCOLOR*
+{
+	SHDRCOLOR* pRet { };
+	if (const auto it = m_umapColors.find(ID); it != m_umapColors.end())
+		pRet = &it->second;
+
+	return pRet;
+}
+
+auto CListExHdr::HasIcon(UINT ID)->CListExHdr::SHDRICON*
+{
+	if (GetImageList() == nullptr)
+		return nullptr;
+
+	SHDRICON* pRet { };
+	if (const auto it = m_umapIcons.find(ID); it != m_umapIcons.end())
+		pRet = &it->second;
+
+	return pRet;
+}
+
+auto CListExHdr::IsHidden(UINT ID)->std::optional<SHIDDEN*>
+{
+	auto iter = m_umapHidden.find(ID);
+
+	return iter != m_umapHidden.end() ? &iter->second : std::optional<SHIDDEN*> { };
+}
+
+bool CListExHdr::IsSortable(UINT ID)const
+{
+	const auto iter = m_umapIsSort.find(ID); //It's sortable unless found explicitly as false.
+
+	return 	iter == m_umapIsSort.end() || iter->second;
+}
+
+
+
+/****************************************************
+* CListEx implementation.                           *
 ****************************************************/
 IMPLEMENT_DYNAMIC(CListEx, CMFCListCtrl)
 
@@ -92,7 +778,7 @@ void CListEx::ResetSort()
 	GetHeaderCtrl().SetSortArrow(-1, false);
 }
 
-bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
+bool CListEx::Create(const LISTEXCREATE& lcs)
 {
 	assert(!IsCreated());
 	if (IsCreated())
@@ -210,7 +896,7 @@ bool CListEx::Create(const LISTEXCREATESTRUCT& lcs)
 
 void CListEx::CreateDialogCtrl(UINT uCtrlID, CWnd* pParent)
 {
-	LISTEXCREATESTRUCT lcs;
+	LISTEXCREATE lcs;
 	lcs.pParent = pParent;
 	lcs.uID = uCtrlID;
 	lcs.fDialogCtrl = true;
@@ -261,7 +947,6 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 
 	return iResult;
 }
-
 
 BOOL CListEx::DeleteAllItems()
 {
@@ -334,12 +1019,11 @@ ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)const
 	return 0;
 }
 
-LISTEXCOLORS CListEx::GetColors() const
-{
+auto CListEx::GetColors()const->LISTEXCOLORS {
 	return m_stColors;
 }
 
-EListExSortMode CListEx::GetColumnSortMode(int iColumn)const
+auto CListEx::GetColumnSortMode(int iColumn)const->EListExSortMode
 {
 	assert(IsCreated());
 
@@ -692,7 +1376,7 @@ void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMo
 
 
 //////////////////////////////////////////////////////////////
-//Private methods:
+//CListEx private methods:
 //////////////////////////////////////////////////////////////
 
 void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)

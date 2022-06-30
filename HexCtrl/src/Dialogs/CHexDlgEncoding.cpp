@@ -59,7 +59,7 @@ BOOL CHexDlgEncoding::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	LISTEXCREATESTRUCT lcs;
+	LISTEXCREATE lcs;
 	lcs.uID = IDC_HEXCTRL_ENCODING_LIST;
 	lcs.pParent = this;
 	lcs.fDialogCtrl = true;
