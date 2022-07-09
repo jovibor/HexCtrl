@@ -1325,8 +1325,15 @@ void CHexCtrl::Redraw()
 
 		if (HasSelection())
 		{
-			m_wstrInfo += std::vformat(IsOffsetAsHex() ? L"Selected: 0x{:X} [0x{:X}-0x{:X}]; " : L"Selected: {} [{}-{}]; ",
-				std::make_wformat_args(m_pSelection->GetSelSize(), m_pSelection->GetSelStart(), m_pSelection->GetSelEnd()));
+			const auto ullSelSize = m_pSelection->GetSelSize();
+			if (ullSelSize == 1) { //In case of just one byte selected.
+				m_wstrInfo += std::vformat(IsOffsetAsHex() ? L"Selected: 0x{:X} [0x{:X}]; " : L"Selected: {} [{}]; ",
+					std::make_wformat_args(ullSelSize, m_pSelection->GetSelStart()));
+			}
+			else {
+				m_wstrInfo += std::vformat(IsOffsetAsHex() ? L"Selected: 0x{:X} [0x{:X}-0x{:X}]; " : L"Selected: {} [{}-{}]; ",
+					std::make_wformat_args(ullSelSize, m_pSelection->GetSelStart(), m_pSelection->GetSelEnd()));
+			}
 		}
 
 		m_wstrInfo += IsMutable() ? L"RW;" : L"RO;"; //Mutable state.
