@@ -89,6 +89,7 @@ namespace HEXCTRL::INTERNAL
 		void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false)override;
 		void SetUnprintableChar(wchar_t wch)override;
 		void SetWheelRatio(double dbRatio)override;
+		void ShowInfoBar(bool fShow)override;
 	private:
 		struct SHBITMAP;
 		struct SUNDO;
@@ -117,7 +118,8 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto CopyOffset()const->std::wstring;
 		[[nodiscard]] auto CopyPrintScreen()const->std::wstring;
 		[[nodiscard]] auto CopyTextUTF16()const->std::wstring;
-		void DrawWindow(CDC* pDC, CFont* pFont, CFont* pFontInfo)const;
+		void DrawWindow(CDC* pDC, CFont* pFont)const;
+		void DrawInfoBar(CDC* pDC, CFont* pFont)const;
 		void DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines)const;
 		void DrawHexText(CDC* pDC, CFont* pFont, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
@@ -139,6 +141,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTEST>; //Is any hex chunk withing given point?
 		[[nodiscard]] bool IsCurTextArea()const;               //Whether last focus was set at Text or Hex chunks area.
 		[[nodiscard]] bool IsDrawable()const;                  //Should WM_PAINT be handled atm or not.
+		[[nodiscard]] bool IsInfoBar()const;                   //Should bottom Info rect be painted or not.
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
 		template<typename T>
 		void ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, std::span<std::byte> spnDataToOperWith); //Main "modify" method with different workers.
@@ -151,7 +154,7 @@ namespace HEXCTRL::INTERNAL
 		void RecalcAll();                                      //Recalcs all inner draw and data related values.
 		void RecalcOffsetDigits();                             //How many digits in Offset (depends on Hex or Decimals).
 		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc); //Recalc routine for printing.
-		void RecalcWorkArea(int iHeight, int iWidth);
+		void RecalcClientArea(int iHeight, int iWidth);
 		void Redo();
 		void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)const; //Substitute all unprintable wchar symbols with specified wchar.
 		void ScrollOffsetH(ULONGLONG ullOffset); //Scroll horizontally to given offset.
@@ -201,13 +204,13 @@ namespace HEXCTRL::INTERNAL
 		const std::unique_ptr<CHexDlgEncoding> m_pDlgEncoding { std::make_unique<CHexDlgEncoding>() };       //"Encoding" dialog.
 		const std::unique_ptr<CHexDlgDataInterp> m_pDlgDataInterp { std::make_unique<CHexDlgDataInterp>() }; //"Data interpreter" dialog.
 		const std::unique_ptr<CHexDlgFillData> m_pDlgFillData { std::make_unique<CHexDlgFillData>() };       //"Fill with..." dialog.
-		const std::unique_ptr<CHexDlgOpers> m_pDlgOpers { std::make_unique<CHexDlgOpers>() };    //"Operations" dialog.
-		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() }; //"Search..." dialog.
-		const std::unique_ptr<CHexDlgGoTo> m_pDlgGoTo { std::make_unique<CHexDlgGoTo>() };       //"GoTo..." dialog.
-		const std::unique_ptr<CHexBookmarks> m_pBookmarks { std::make_unique<CHexBookmarks>() }; //Bookmarks.
-		const std::unique_ptr<CHexSelection> m_pSelection { std::make_unique<CHexSelection>() }; //Selection class.
-		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollV { std::make_unique<SCROLLEX::CScrollEx>() }; //Vertical scroll bar.
-		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollH { std::make_unique<SCROLLEX::CScrollEx>() }; //Horizontal scroll bar.
+		const std::unique_ptr<CHexDlgOpers> m_pDlgOpers { std::make_unique<CHexDlgOpers>() };                //"Operations" dialog.
+		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };             //"Search..." dialog.
+		const std::unique_ptr<CHexDlgGoTo> m_pDlgGoTo { std::make_unique<CHexDlgGoTo>() };                   //"GoTo..." dialog.
+		const std::unique_ptr<CHexBookmarks> m_pBookmarks { std::make_unique<CHexBookmarks>() };             //Bookmarks.
+		const std::unique_ptr<CHexSelection> m_pSelection { std::make_unique<CHexSelection>() };             //Selection class.
+		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollV { std::make_unique<SCROLLEX::CScrollEx>() };   //Vertical scroll bar.
+		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollH { std::make_unique<SCROLLEX::CScrollEx>() };   //Horizontal scroll bar.
 		const int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
 		const int m_iFirstHorzLine { 0 };     //First horizontal line indent.
 		const int m_iFirstVertLine { 0 };     //First vertical line indent.
@@ -222,7 +225,7 @@ namespace HEXCTRL::INTERNAL
 		CWnd m_wndTtOffset { };               //Tooltip window for Offset in m_fHighLatency mode.
 		TTTOOLINFOW m_stToolInfoOffset { };   //Tooltip info for Offset.
 		CFont m_fontMain;                     //Main Hex chunks font.
-		CFont m_fontInfo;                     //Font for bottom Info rect.
+		CFont m_fontInfo;                     //Font for bottom Info bar.
 		CMenu m_menuMain;                     //Main popup menu.
 		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		CPen m_penLines;                      //Pen for lines.
@@ -238,7 +241,8 @@ namespace HEXCTRL::INTERNAL
 		DWORD m_dwPageSize { 0 };             //Size of a page to print additional lines between.
 		DWORD m_dwCacheSize { };              //Cache size for virtual and message modes, set in SetData.
 		DWORD m_dwDateFormat { 0xFFFFFFFF };  //Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
-		SIZE m_sizeLetter { 1, 1 };           //Current font's letter size (width, height).
+		SIZE m_sizeFontMain { 1, 1 };         //Main font letter's size (width, height).
+		SIZE m_sizeFontInfo { 1, 1 };         //Info window font letter's size (width, height).
 		int m_iSizeFirstHalf { };             //Size in px of the first half of the capacity.
 		int m_iSizeHexByte { };               //Size in px of two hex letters representing one byte.
 		int m_iIndentTextX { };               //Indent in px of the text (ASCII) beginning.
@@ -254,16 +258,18 @@ namespace HEXCTRL::INTERNAL
 		int m_iHeightClientArea { };          //Height of the Control's window client area.
 		int m_iHeightTopRect { };             //Height of the header where offsets (0 1 2... D E F...) reside.
 		int m_iHeightWorkArea { };            //Height in px of the working area where all drawing occurs.
-		int m_iHeightBottomRect { };          //Height of bottom Info rect.
+		int m_iHeightInfoBar { };            //Height of the bottom Info rect.
 		int m_iHeightBottomOffArea { };       //Height of the not visible rect from window's bottom to m_iThirdHorizLine.
-		int m_iSecondHorzLine { };            //Secont horizontal line indent.
+		int m_iSecondHorzLine { };            //Second horizontal line indent.
+		int m_iThirdHorzLine { };             //Third horizontal line indent.
+		int m_iFourthHorzLine { };            //Fourth horizontal line indent.
 		int m_iSecondVertLine { };            //Second vert line indent.
 		int m_iThirdVertLine { };             //Third vert line indent.
 		int m_iFourthVertLine { };            //Fourth vert line indent.
 		int m_iCodePage { -1 };               //Current code-page for Text area. -1 for default.
 		int m_iLOGPIXELSY { };                //GetDeviceCaps(LOGPIXELSY) constant.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
-		std::wstring m_wstrInfo { };          //Info text (bottom rect).
+		std::wstring m_wstrInfoBar { };       //Info bar text.
 		std::wstring m_wstrPageName { };      //Name of the sector/page.
 		std::wstring m_wstrTextTitle { };     //Text area title.
 		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqUndo; //Undo deque.
@@ -274,7 +280,8 @@ namespace HEXCTRL::INTERNAL
 		wchar_t m_wchDateSepar { L'/' };      //Date separator.
 		bool m_fCreated { false };            //Is control created or not yet.
 		bool m_fDataSet { false };            //Is data set or not.
-		bool m_fMutable { false };            //Is control works in Edit or Read mode.
+		bool m_fMutable { };                  //Does control work in Edit or ReadOnly mode.
+		bool m_fInfoBar { };                  //Show bottom Info window or not.
 		bool m_fCaretHigh { true };           //Caret's High or Low bits position (first or last digit in hex chunk).
 		bool m_fCursorTextArea { false };     //Whether last focus was set at ASCII or Hex chunks area.
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.

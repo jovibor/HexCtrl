@@ -68,6 +68,7 @@
   * [SetSelection](#setselection)
   * [SetUnprintableChar](#setunprintablechar)
   * [SetWheelRatio](#setwheelratio)
+  * [ShowInfoBar](#showinfobar)
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
   * [HEXBKM](#hexbkm)
@@ -614,6 +615,12 @@ void SetWheelRatio(double dbRatio)
 ```
 Sets the ratio for how much to scroll with mouse-wheel.
 
+### [](#)ShowInfoBar
+```cpp
+void ShowInfoBar(bool fShow);
+```
+Show/hide bottom Info bar.
+
 ## [](#)Structures
 Below are listed all **HexCtrl**'s structures.
 
@@ -667,28 +674,29 @@ struct HEXCOLORINFO
 ```
 
 ### [](#)HEXCOLORS
-This structure describes all control's colors. All these colors have their default values.
+This structure describes all **HexCtrl** colors. All these colors have their default values.
 ```cpp
 struct HEXCOLORS
 {
-    COLORREF clrTextHex { GetSysColor(COLOR_WINDOWTEXT) };       //Hex chunks text color.
-    COLORREF clrTextASCII { GetSysColor(COLOR_WINDOWTEXT) };     //ASCII text color.
-    COLORREF clrTextSelect { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected text color.
-    COLORREF clrTextDataInterp { RGB(250, 250, 250) };           //Data Interpreter text color.
-    COLORREF clrTextCaption { RGB(0, 0, 180) };                  //Caption text color
-    COLORREF clrTextInfoRect { GetSysColor(COLOR_WINDOWTEXT) };  //Text color of the bottom "Info" rect.
-    COLORREF clrTextCaret { RGB(255, 255, 255) };                //Caret text color.
-    COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                //Background color.
-    COLORREF clrBkSelected { GetSysColor(COLOR_HIGHLIGHT) };     //Background color of the selected Hex/ASCII.
-    COLORREF clrBkDataInterp { RGB(147, 58, 22) };               //Data Interpreter Bk color.
-    COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };       //Background color of the bottom "Info" rect.
-    COLORREF clrBkCaret { RGB(0, 0, 255) };                      //Caret background color.
-    COLORREF clrBkCaretSelect { RGB(0, 0, 200) };                //Caret background color in selection.
+    COLORREF clrFontHex { GetSysColor(COLOR_WINDOWTEXT) };      //Hex-chunks font color.
+    COLORREF clrFontText { GetSysColor(COLOR_WINDOWTEXT) };     //Text font color.
+    COLORREF clrFontSel { GetSysColor(COLOR_HIGHLIGHTTEXT) };   //Selected hex/text font color.
+    COLORREF clrFontDataInterp { RGB(250, 250, 250) };          //Data Interpreter text/hex font color.
+    COLORREF clrFontCaption { RGB(0, 0, 180) };                 //Caption font color
+    COLORREF clrFontInfoName { GetSysColor(COLOR_WINDOWTEXT) }; //Font color of the Info bar parameters.
+    COLORREF clrFontInfoData { RGB(0, 0, 180) };                //Font color of the Info bar data.
+    COLORREF clrFontCaret { RGB(255, 255, 255) };               //Caret font color.
+    COLORREF clrBk { GetSysColor(COLOR_WINDOW) };               //Background color.
+    COLORREF clrBkSel { GetSysColor(COLOR_HIGHLIGHT) };         //Background color of the selected Hex/ASCII.
+    COLORREF clrBkDataInterp { RGB(147, 58, 22) };              //Data Interpreter Bk color.
+    COLORREF clrBkInfoBar { GetSysColor(COLOR_BTNFACE) };       //Background color of the bottom Info bar.
+    COLORREF clrBkCaret { RGB(0, 0, 255) };                     //Caret background color.
+    COLORREF clrBkCaretSel { RGB(0, 0, 200) };                  //Caret background color in selection.
 };
 ```
 
 ### [](#)HEXCREATE
-The main initialization struct used for control creation.
+The main initialization struct used for **HexCtrl** creation.
 ```cpp
 struct HEXCREATE
 {
@@ -700,6 +708,7 @@ struct HEXCREATE
     DWORD     dwStyle { };          //Window styles.
     DWORD     dwExStyle { };        //Extended window styles.
     double    dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
+    bool      fInfoBar { true };    //Show bottom Info bar or not.
     bool      fCustom { false };    //If it's a custom control in a dialog.
 };
 ```

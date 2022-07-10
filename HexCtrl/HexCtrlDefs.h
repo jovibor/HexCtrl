@@ -164,17 +164,18 @@ namespace HEXCTRL
 	{
 		COLORREF clrFontHex { GetSysColor(COLOR_WINDOWTEXT) };       //Hex-chunks font color.
 		COLORREF clrFontText { GetSysColor(COLOR_WINDOWTEXT) };      //Text font color.
-		COLORREF clrFontSelect { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected hex/text font color.
+		COLORREF clrFontSel { GetSysColor(COLOR_HIGHLIGHTTEXT) };    //Selected hex/text font color.
 		COLORREF clrFontDataInterp { RGB(250, 250, 250) };           //Data Interpreter text/hex font color.
 		COLORREF clrFontCaption { RGB(0, 0, 180) };                  //Caption font color
-		COLORREF clrFontInfoRect { GetSysColor(COLOR_WINDOWTEXT) };  //Font color of the bottom "Info" rect.
+		COLORREF clrFontInfoParam { GetSysColor(COLOR_WINDOWTEXT) }; //Font color of the Info bar parameters.
+		COLORREF clrFontInfoData { RGB(0, 0, 150) };                 //Font color of the Info bar data.
 		COLORREF clrFontCaret { RGB(255, 255, 255) };                //Caret font color.
 		COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                //Background color.
-		COLORREF clrBkSelect { GetSysColor(COLOR_HIGHLIGHT) };       //Background color of the selected Hex/ASCII.
+		COLORREF clrBkSel { GetSysColor(COLOR_HIGHLIGHT) };          //Background color of the selected Hex/ASCII.
 		COLORREF clrBkDataInterp { RGB(147, 58, 22) };               //Data Interpreter Bk color.
-		COLORREF clrBkInfoRect { GetSysColor(COLOR_BTNFACE) };       //Background color of the bottom "Info" rect.
+		COLORREF clrBkInfoBar { GetSysColor(COLOR_BTNFACE) };        //Background color of the bottom Info bar.
 		COLORREF clrBkCaret { RGB(0, 0, 255) };                      //Caret background color.
-		COLORREF clrBkCaretSelect { RGB(0, 0, 200) };                //Caret background color in selection.
+		COLORREF clrBkCaretSel { RGB(0, 0, 200) };                   //Caret background color in selection.
 	};
 
 	/********************************************************************************************
@@ -190,6 +191,7 @@ namespace HEXCTRL
 		DWORD     dwStyle { };          //Window styles.
 		DWORD     dwExStyle { };        //Extended window styles.
 		double    dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
+		bool      fInfoBar { true };    //Show bottom Info bar or not.
 		bool      fCustom { false };    //If it's a custom control in a dialog.
 	};
 
