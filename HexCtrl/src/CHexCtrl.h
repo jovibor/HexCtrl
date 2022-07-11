@@ -118,16 +118,16 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto CopyOffset()const->std::wstring;
 		[[nodiscard]] auto CopyPrintScreen()const->std::wstring;
 		[[nodiscard]] auto CopyTextUTF16()const->std::wstring;
-		void DrawWindow(CDC* pDC, CFont* pFont)const;
-		void DrawInfoBar(CDC* pDC, CFont* pFont)const;
-		void DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines)const;
-		void DrawHexText(CDC* pDC, CFont* pFont, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawCaret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawDataInterp(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawWindow(CDC* pDC)const;
+		void DrawInfoBar(CDC* pDC)const;
+		void DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const;
+		void DrawHexText(CDC* pDC, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawCustomColors(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines);
 		void FillCapacityString();  //Fill m_wstrCapacity according to current m_dwCapacity.
 		void FillWithZeros();       //Fill selection with zeros.
@@ -151,9 +151,7 @@ namespace HEXCTRL::INTERNAL
 		void ParentNotify(const T& t)const;                    //Notify routine used to send messages to Parent window.
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 		void Print();                                          //Printing routine.
-		void RecalcAll();                                      //Recalcs all inner draw and data related values.
-		void RecalcOffsetDigits();                             //How many digits in Offset (depends on Hex or Decimals).
-		void RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc); //Recalc routine for printing.
+		void RecalcAll(CDC* pDC = nullptr, const CRect* pRect = nullptr); //Recalculates all drawing sizes for given DC.
 		void RecalcClientArea(int iHeight, int iWidth);
 		void Redo();
 		void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)const; //Substitute all unprintable wchar symbols with specified wchar.
@@ -225,7 +223,7 @@ namespace HEXCTRL::INTERNAL
 		CWnd m_wndTtOffset { };               //Tooltip window for Offset in m_fHighLatency mode.
 		TTTOOLINFOW m_stToolInfoOffset { };   //Tooltip info for Offset.
 		CFont m_fontMain;                     //Main Hex chunks font.
-		CFont m_fontInfo;                     //Font for bottom Info bar.
+		CFont m_fontInfoBar;                  //Font for bottom Info bar.
 		CMenu m_menuMain;                     //Main popup menu.
 		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		CPen m_penLines;                      //Pen for lines.
@@ -258,7 +256,7 @@ namespace HEXCTRL::INTERNAL
 		int m_iHeightClientArea { };          //Height of the Control's window client area.
 		int m_iHeightTopRect { };             //Height of the header where offsets (0 1 2... D E F...) reside.
 		int m_iHeightWorkArea { };            //Height in px of the working area where all drawing occurs.
-		int m_iHeightInfoBar { };            //Height of the bottom Info rect.
+		int m_iHeightInfoBar { };             //Height of the bottom Info rect.
 		int m_iHeightBottomOffArea { };       //Height of the not visible rect from window's bottom to m_iThirdHorizLine.
 		int m_iSecondHorzLine { };            //Second horizontal line indent.
 		int m_iThirdHorzLine { };             //Third horizontal line indent.

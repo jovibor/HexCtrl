@@ -304,7 +304,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	//Info area font, independent from the main font, its size is a bit smaller than the default main font.
 	const LOGFONTW lfInfo { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) + 1 }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
-	m_fontInfo.CreateFontIndirectW(&lfInfo);
+	m_fontInfoBar.CreateFontIndirectW(&lfInfo);
 	/***End of font related.***/
 
 	m_penLines.CreatePen(PS_SOLID, 1, RGB(200, 200, 200));
@@ -2574,7 +2574,7 @@ auto CHexCtrl::CopyTextUTF16()const->std::wstring
 	return wstrText;
 }
 
-void CHexCtrl::DrawWindow(CDC* pDC, CFont* pFont)const
+void CHexCtrl::DrawWindow(CDC* pDC)const
 {
 	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
 	CRect rcWnd(m_iFirstVertLine, m_iFirstHorzLine,
@@ -2617,7 +2617,7 @@ void CHexCtrl::DrawWindow(CDC* pDC, CFont* pFont)const
 
 	//«Offset» text.
 	CRect rcOffset(m_iFirstVertLine - iScrollH, m_iFirstHorzLine, m_iSecondVertLine - iScrollH, m_iSecondHorzLine);
-	pDC->SelectObject(pFont);
+	pDC->SelectObject(m_fontMain);
 	pDC->SetTextColor(m_stColor.clrFontCaption);
 	pDC->SetBkColor(m_stColor.clrBk);
 	pDC->DrawTextW(L"Offset", 6, rcOffset, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
@@ -2631,7 +2631,7 @@ void CHexCtrl::DrawWindow(CDC* pDC, CFont* pFont)const
 	pDC->DrawTextW(m_wstrTextTitle.data(), static_cast<int>(m_wstrTextTitle.size()), rcText, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
-void CHexCtrl::DrawInfoBar(CDC* pDC, CFont* pFont)const
+void CHexCtrl::DrawInfoBar(CDC* pDC)const
 {
 	if (!IsInfoBar())
 		return;
@@ -2644,7 +2644,7 @@ void CHexCtrl::DrawInfoBar(CDC* pDC, CFont* pFont)const
 	CRect rcText = rcInfoBar;
 	rcText.left = m_iFirstVertLine + 5; //Draw the text beginning with little indent.
 	rcText.right = m_iFirstVertLine + m_iWidthClientArea; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
-	pDC->SelectObject(pFont);
+	pDC->SelectObject(m_fontInfoBar);
 	pDC->SetBkColor(m_stColor.clrBkInfoBar);
 
 	size_t sCurrPosBegin { };
@@ -2672,7 +2672,7 @@ void CHexCtrl::DrawInfoBar(CDC* pDC, CFont* pFont)const
 	}
 }
 
-void CHexCtrl::DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines)const
+void CHexCtrl::DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const
 {
 	const auto ullStartOffset = ullStartLine * m_dwCapacity;
 	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
@@ -2696,7 +2696,7 @@ void CHexCtrl::DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int i
 		//Left column offset printing (00000001...0000FFFF).
 		wchar_t pwszBuff[32]; //To be enough for max as Hex and as Decimals.
 		OffsetToString((ullStartLine + iterLines) * m_dwCapacity, pwszBuff);
-		pDC->SelectObject(pFont);
+		pDC->SelectObject(m_fontMain);
 		pDC->SetTextColor(clrTextOffset);
 		pDC->SetBkColor(clrBkOffset);
 		ExtTextOutW(pDC->m_hDC, m_iFirstVertLine + m_sizeFontMain.cx - iScrollH, m_iStartWorkAreaY + (m_sizeFontMain.cy * iterLines),
@@ -2704,7 +2704,7 @@ void CHexCtrl::DrawOffsets(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int i
 	}
 }
 
-void CHexCtrl::DrawHexText(CDC* pDC, CFont* pFont, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
+void CHexCtrl::DrawHexText(CDC* pDC, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
 {
 	std::vector<POLYTEXTW> vecPolyHex;
 	std::vector<POLYTEXTW> vecPolyText;
@@ -2758,7 +2758,7 @@ void CHexCtrl::DrawHexText(CDC* pDC, CFont* pFont, int iLines, std::wstring_view
 	}
 
 	//Hex printing.
-	pDC->SelectObject(pFont);
+	pDC->SelectObject(m_fontMain);
 	pDC->SetTextColor(m_stColor.clrFontHex);
 	pDC->SetBkColor(m_stColor.clrBk);
 	PolyTextOutW(pDC->m_hDC, vecPolyHex.data(), static_cast<UINT>(vecPolyHex.size()));
@@ -2771,7 +2771,7 @@ void CHexCtrl::DrawHexText(CDC* pDC, CFont* pFont, int iLines, std::wstring_view
 	}
 }
 
-void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
+void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
 {
 	if (!m_pBookmarks->HasBookmarks())
 		return;
@@ -2883,7 +2883,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 	//Bookmarks printing.
 	if (!vecBkmHex.empty())
 	{
-		pDC->SelectObject(pFont);
+		pDC->SelectObject(m_fontMain);
 		std::size_t index { 0 }; //Index for vecBkmText, its size is always equal to vecBkmHex.
 		for (const auto& iter : vecBkmHex) //Loop is needed because bkms have different colors.
 		{
@@ -2897,7 +2897,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 	}
 }
 
-void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
+void CHexCtrl::DrawCustomColors(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
 {
 	if (m_pHexVirtColors == nullptr)
 		return;
@@ -3011,7 +3011,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	//Colors printing.
 	if (!vecColorsHex.empty())
 	{
-		pDC->SelectObject(pFont);
+		pDC->SelectObject(m_fontMain);
 		size_t index { 0 }; //Index for vecColorsText, its size is always equal to vecColorsHex.
 		for (const auto& iter : vecColorsHex) //Loop is needed because because of different colors.
 		{
@@ -3025,7 +3025,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	}
 }
 
-void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
+void CHexCtrl::DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
 {
 	if (!HasSelection())
 		return;
@@ -3109,7 +3109,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 	//Selection printing.
 	if (!vecPolySelHex.empty())
 	{
-		pDC->SelectObject(pFont);
+		pDC->SelectObject(m_fontMain);
 		pDC->SetTextColor(m_stColor.clrFontSel);
 		pDC->SetBkColor(m_stColor.clrBkSel);
 		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size())); //Hex selection printing.
@@ -3120,7 +3120,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int
 	}
 }
 
-void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
+void CHexCtrl::DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
 {
 	if (!m_pSelection->HasSelHighlight())
 		return;
@@ -3205,7 +3205,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	if (!vecPolySelHexHgl.empty())
 	{
 		//Colors are the inverted selection colors.
-		pDC->SelectObject(pFont);
+		pDC->SelectObject(m_fontMain);
 		pDC->SetTextColor(m_stColor.clrBkSel);
 		pDC->SetBkColor(m_stColor.clrFontSel);
 		PolyTextOutW(pDC->m_hDC, vecPolySelHexHgl.data(), static_cast<UINT>(vecPolySelHexHgl.size())); //Hex selection highlight printing.
@@ -3216,7 +3216,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, 
 	}
 }
 
-void CHexCtrl::DrawCaret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, std::wstring_view wstrHex, std::wstring_view wstrText)const
+void CHexCtrl::DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wstrHex, std::wstring_view wstrText)const
 {
 	const auto ullCaretPos = GetCaretPos();
 	if (!IsOffsetVisible(ullCaretPos))
@@ -3255,7 +3255,7 @@ void CHexCtrl::DrawCaret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, std::ws
 	const auto clrBkCaret = m_pSelection->HitTest(ullCaretPos) ? m_stColor.clrBkCaretSel : m_stColor.clrBkCaret;
 
 	//Caret printing.
-	pDC->SelectObject(pFont);
+	pDC->SelectObject(m_fontMain);
 	pDC->SetTextColor(m_stColor.clrFontCaret);
 	pDC->SetBkColor(clrBkCaret);
 	for (const auto iter : arrPolyCaret)
@@ -3264,7 +3264,7 @@ void CHexCtrl::DrawCaret(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, std::ws
 	}
 }
 
-void CHexCtrl::DrawDataInterp(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
+void CHexCtrl::DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
 {
 	const auto ullDISize = m_pDlgDataInterp->GetDataSize();
 	if (ullDISize == 0)
@@ -3336,7 +3336,7 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, CFont* pFont, ULONGLONG ullStartLine, in
 	//Data Interpreter printing.
 	if (!vecPolyDataInterp.empty())
 	{
-		pDC->SelectObject(pFont);
+		pDC->SelectObject(m_fontMain);
 		pDC->SetTextColor(m_stColor.clrFontDataInterp);
 		pDC->SetBkColor(m_stColor.clrBkDataInterp);
 		for (const auto& iter : vecPolyDataInterp)
@@ -3767,65 +3767,59 @@ void CHexCtrl::Print()
 	}
 
 	//User pressed "Cancel", or "Apply" and then "Cancel".
-	if (dlg.m_pdex.dwResultAction == PD_RESULT_CANCEL || dlg.m_pdex.dwResultAction == PD_RESULT_APPLY)
-	{
+	if (dlg.m_pdex.dwResultAction == PD_RESULT_CANCEL || dlg.m_pdex.dwResultAction == PD_RESULT_APPLY) {
 		DeleteDC(dlg.m_pdex.hDC);
 		return;
 	}
 
-	auto hdcPrinter = dlg.GetPrinterDC();
-	if (hdcPrinter == nullptr)
-	{
+	const auto hdcPrinter = dlg.GetPrinterDC();
+	if (hdcPrinter == nullptr) {
 		MessageBoxW(L"No printer found!");
 		return;
 	}
 
-	CDC dcPr;
-	dcPr.Attach(hdcPrinter);
-	auto pDC = &dcPr;
-
+	CDC dcPrint;
+	dcPrint.Attach(hdcPrinter);
+	const auto pDC = &dcPrint;
 	DOCINFOW di { };
 	di.cbSize = sizeof(DOCINFOW);
 	di.lpszDocName = L"HexCtrl";
 
-	if (dcPr.StartDocW(&di) < 0) {
-		dcPr.AbortDoc();
-		dcPr.DeleteDC();
+	if (dcPrint.StartDocW(&di) < 0) {
+		dcPrint.AbortDoc();
+		dcPrint.DeleteDC();
 		return;
 	}
 
-	const CSize sizePrintDpi = { GetDeviceCaps(dcPr, LOGPIXELSX), GetDeviceCaps(dcPr, LOGPIXELSY) };
-	//const CSize sizePaper = { GetDeviceCaps(dcPr, PHYSICALWIDTH), GetDeviceCaps(dcPr, PHYSICALHEIGHT) };
-	CRect rcPrint(CPoint(GetDeviceCaps(dcPr, PHYSICALOFFSETX), GetDeviceCaps(dcPr, PHYSICALOFFSETY)),
-		CSize(GetDeviceCaps(dcPr, HORZRES), GetDeviceCaps(dcPr, VERTRES)));
-	auto pCurrDC = GetDC();
-	ReleaseDC(pCurrDC);
-	const int iRatio = sizePrintDpi.cy / m_iLOGPIXELSY;
+	constexpr auto iMarginX = 150;
+	constexpr auto iMarginY = 150;
+	const CRect rcPrint(CPoint(0, 0), CSize(GetDeviceCaps(dcPrint, HORZRES) - iMarginX * 2, GetDeviceCaps(dcPrint, VERTRES) - iMarginY * 2));
+	const CSize sizePrintDpi = { GetDeviceCaps(dcPrint, LOGPIXELSX), GetDeviceCaps(dcPrint, LOGPIXELSY) };
+	const auto iRatio = sizePrintDpi.cy / m_iLOGPIXELSY;
 
-	CFont fontMain; //Main font for printing.
-	LOGFONTW lf { };
-	m_fontMain.GetLogFont(&lf);
-	lf.lfHeight *= iRatio;
-	fontMain.CreateFontIndirectW(&lf);
-	CFont fontInfo; //Info font for printing.
-	LOGFONTW lfInfo;
-	m_fontInfo.GetLogFont(&lfInfo);
-	lfInfo.lfHeight *= iRatio;
-	fontInfo.CreateFontIndirectW(&lfInfo);
+	/***Changing Main and Info Bar fonts***/
+	LOGFONTW lfMainOrig;
+	m_fontMain.GetLogFont(&lfMainOrig);
+	LOGFONTW lfMain { lfMainOrig };
+	lfMain.lfHeight *= iRatio;
+	m_fontMain.DeleteObject();
+	m_fontMain.CreateFontIndirectW(&lfMain);
+	LOGFONTW lfInfoBarOrig;
+	m_fontInfoBar.GetLogFont(&lfInfoBarOrig);
+	LOGFONTW lfInfoBar { lfInfoBarOrig };
+	lfInfoBar.lfHeight *= iRatio;
+	m_fontInfoBar.DeleteObject();
+	m_fontInfoBar.CreateFontIndirectW(&lfInfoBar);
+	/***Changing Main and Info Bar fonts END***/
 
 	auto ullStartLine = GetTopLine();
-	ULONGLONG ullEndLine { };
-	const auto stOldLetter = m_sizeFontMain;
 	const auto ullTotalLines = GetDataSize() / m_dwCapacity;
-
-	rcPrint.bottom -= 200; //Ajust bottom indent of the printing rect.
-	RecalcPrint(pDC, &fontMain, &fontInfo, rcPrint);
+	RecalcAll(pDC, &rcPrint);
 	const auto iLinesInPage = m_iHeightWorkArea / m_sizeFontMain.cy;
-	const ULONGLONG ullTotalPages = ullTotalLines / iLinesInPage + 1;
+	const auto ullTotalPages = ullTotalLines / iLinesInPage + 1;
 	int iPagesToPrint { };
 
-	if (dlg.PrintAll())
-	{
+	if (dlg.PrintAll()) {
 		iPagesToPrint = static_cast<int>(ullTotalPages);
 		ullStartLine = 0;
 	}
@@ -3842,20 +3836,17 @@ void CHexCtrl::Print()
 		ullStartLine = iFromPage * iLinesInPage;
 	}
 
-	constexpr auto iIndentX = 100;
-	constexpr auto iIndentY = 100;
 	pDC->SetMapMode(MM_TEXT);
+	pDC->SetViewportOrg(iMarginX, iMarginY); //Move a viewport to have some indent from the edge.
 	if (dlg.PrintSelection())
 	{
 		pDC->StartPage();
-		pDC->OffsetViewportOrg(iIndentX, iIndentY);
-
 		const auto ullSelStart = m_pSelection->GetSelStart();
 		const auto ullSelSize = m_pSelection->GetSelSize();
 		ullStartLine = ullSelStart / m_dwCapacity;
 
 		const DWORD dwModStart = ullSelStart % m_dwCapacity;
-		DWORD dwLines = static_cast<DWORD>(ullSelSize) / m_dwCapacity;
+		auto dwLines = static_cast<DWORD>(ullSelSize) / m_dwCapacity;
 		if ((dwModStart + static_cast<DWORD>(ullSelSize)) > m_dwCapacity)
 			++dwLines;
 		if ((ullSelSize % m_dwCapacity) + dwModStart > m_dwCapacity)
@@ -3863,30 +3854,28 @@ void CHexCtrl::Print()
 		if (!dwLines)
 			dwLines = 1;
 
-		ullEndLine = ullStartLine + dwLines;
+		const auto ullEndLine = ullStartLine + dwLines;
 		const auto iLines = static_cast<int>(ullEndLine - ullStartLine);
 		const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
 
-		DrawWindow(pDC, &fontMain);
-		DrawInfoBar(pDC, &fontInfo);
+		DrawWindow(pDC);
+		DrawInfoBar(pDC);
 		const auto clBkOld = m_stColor.clrBkSel;
 		const auto clTextOld = m_stColor.clrFontSel;
 		m_stColor.clrBkSel = m_stColor.clrBk;
 		m_stColor.clrFontSel = m_stColor.clrFontHex;
-		DrawOffsets(pDC, &fontMain, ullStartLine, iLines);
-		DrawSelection(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
+		DrawOffsets(pDC, ullStartLine, iLines);
+		DrawSelection(pDC, ullStartLine, iLines, wstrHex, wstrText);
 		m_stColor.clrBkSel = clBkOld;
 		m_stColor.clrFontSel = clTextOld;
-
 		pDC->EndPage();
 	}
 	else
 	{
-		for (int i = 0; i < iPagesToPrint; ++i)
+		for (auto iterPage = 0; iterPage < iPagesToPrint; ++iterPage)
 		{
 			pDC->StartPage();
-			pDC->OffsetViewportOrg(iIndentX, iIndentY);
-			ullEndLine = ullStartLine + iLinesInPage;
+			auto ullEndLine = ullStartLine + iLinesInPage;
 
 			//If m_dwDataCount is really small we adjust ullEndLine to be not bigger than maximum allowed.
 			if (ullEndLine > ullTotalLines)
@@ -3895,49 +3884,49 @@ void CHexCtrl::Print()
 			const auto iLines = static_cast<int>(ullEndLine - ullStartLine);
 			const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
 
-			DrawWindow(pDC, &fontMain); //Draw the window with all layouts.
-			DrawInfoBar(pDC, &fontInfo);
+			DrawWindow(pDC); //Draw the window with all layouts.
+			DrawInfoBar(pDC);
 
 			if (IsDataSet()) {
-				DrawOffsets(pDC, &fontMain, ullStartLine, iLines);
-				DrawHexText(pDC, &fontMain, iLines, wstrHex, wstrText);
-				DrawBookmarks(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
-				DrawCustomColors(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
-				DrawSelection(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
-				DrawSelHighlight(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
-				DrawCaret(pDC, &fontMain, ullStartLine, wstrHex, wstrText);
-				DrawDataInterp(pDC, &fontMain, ullStartLine, iLines, wstrHex, wstrText);
+				DrawOffsets(pDC, ullStartLine, iLines);
+				DrawHexText(pDC, iLines, wstrHex, wstrText);
+				DrawBookmarks(pDC, ullStartLine, iLines, wstrHex, wstrText);
+				DrawCustomColors(pDC, ullStartLine, iLines, wstrHex, wstrText);
+				DrawSelection(pDC, ullStartLine, iLines, wstrHex, wstrText);
+				DrawSelHighlight(pDC, ullStartLine, iLines, wstrHex, wstrText);
+				DrawCaret(pDC, ullStartLine, wstrHex, wstrText);
+				DrawDataInterp(pDC, ullStartLine, iLines, wstrHex, wstrText);
 				DrawPageLines(pDC, ullStartLine, iLines);
 			}
 			ullStartLine += iLinesInPage;
-			pDC->OffsetViewportOrg(-iIndentX, -iIndentY);
 			pDC->EndPage();
 		}
 	}
-
 	pDC->EndDoc();
 	pDC->DeleteDC();
 
-	m_sizeFontMain = stOldLetter;
+	/***Changing Main and Info Bar fonts back to originals.***/
+	m_fontMain.DeleteObject();
+	m_fontMain.CreateFontIndirectW(&lfMainOrig);
+	m_fontInfoBar.DeleteObject();
+	m_fontInfoBar.CreateFontIndirectW(&lfInfoBarOrig);
+
 	RecalcAll();
 }
 
-void CHexCtrl::RecalcAll()
+void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
 {
+	auto* const pDCCurr = pDC == nullptr ? GetDC() : pDC;
 	const auto ullCurLineV = GetTopLine();
-
-	//Current font size related.
-	auto* const pDC = GetDC();
 	TEXTMETRICW tm;
-	pDC->SelectObject(m_fontMain);
-	pDC->GetTextMetricsW(&tm);
+	pDCCurr->SelectObject(m_fontMain);
+	pDCCurr->GetTextMetricsW(&tm);
 	m_sizeFontMain.cx = tm.tmAveCharWidth;
 	m_sizeFontMain.cy = tm.tmHeight + tm.tmExternalLeading;
-	pDC->SelectObject(m_fontInfo);
-	pDC->GetTextMetricsW(&tm);
+	pDCCurr->SelectObject(m_fontInfoBar);
+	pDCCurr->GetTextMetricsW(&tm);
 	m_sizeFontInfo.cx = tm.tmAveCharWidth;
 	m_sizeFontInfo.cy = tm.tmHeight + tm.tmExternalLeading;
-	ReleaseDC(pDC);
 
 	if (IsInfoBar()) {
 		m_iHeightInfoBar = m_sizeFontInfo.cy;
@@ -3948,7 +3937,23 @@ void CHexCtrl::RecalcAll()
 	}
 	m_iHeightBottomOffArea = m_iHeightInfoBar + m_iIndentBottomLine;
 
-	RecalcOffsetDigits();
+	const auto ullDataSize = GetDataSize();
+	const auto fAsHex = IsOffsetAsHex();
+	if (ullDataSize <= 0xffffffffUL) {
+		m_dwOffsetDigits = fAsHex ? 8 : 10;
+	}
+	else if (ullDataSize <= 0xffffffffffUL) {
+		m_dwOffsetDigits = fAsHex ? 10 : 13;
+	}
+	else if (ullDataSize <= 0xffffffffffffUL) {
+		m_dwOffsetDigits = fAsHex ? 12 : 15;
+	}
+	else if (ullDataSize <= 0xffffffffffffffUL) {
+		m_dwOffsetDigits = fAsHex ? 14 : 17;
+	}
+	else {
+		m_dwOffsetDigits = fAsHex ? 16 : 19;
+	}
 
 	m_iSecondVertLine = m_iFirstVertLine + m_dwOffsetDigits * m_sizeFontMain.cx + m_sizeFontMain.cx * 2;
 	m_iSizeHexByte = m_sizeFontMain.cx * 2;
@@ -3969,80 +3974,23 @@ void CHexCtrl::RecalcAll()
 	m_iIndentCapTextY = m_iHeightTopRect / 2 - (m_sizeFontMain.cy / 2);
 
 	CRect rc;
-	GetClientRect(rc);
+	if (pRect == nullptr)
+		GetClientRect(rc);
+	else
+		rc = *pRect;
 	RecalcClientArea(rc.Height(), rc.Width());
 
-	//Scroll sizes according to current font size.
-	m_pScrollV->SetScrollSizes(m_sizeFontMain.cy, static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio),
-		static_cast<ULONGLONG>(m_iStartWorkAreaY) + m_iHeightBottomOffArea + m_sizeFontMain.cy *
-		(GetDataSize() / m_dwCapacity + (GetDataSize() % m_dwCapacity == 0 ? 1 : 2)));
-	m_pScrollH->SetScrollSizes(m_sizeFontMain.cx, rc.Width(), static_cast<ULONGLONG>(m_iFourthVertLine) + 1);
-	m_pScrollV->SetScrollPos(ullCurLineV * m_sizeFontMain.cy);
+	//Scrolls, ReleaseDC and Redraw only for current DC, not for PrintingDC.
+	if (pDC == nullptr) {
+		m_pScrollV->SetScrollSizes(m_sizeFontMain.cy, static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio),
+			static_cast<ULONGLONG>(m_iStartWorkAreaY) + m_iHeightBottomOffArea + m_sizeFontMain.cy *
+			(ullDataSize / m_dwCapacity + (ullDataSize % m_dwCapacity == 0 ? 1 : 2)));
+		m_pScrollH->SetScrollSizes(m_sizeFontMain.cx, rc.Width(), static_cast<ULONGLONG>(m_iFourthVertLine) + 1);
+		m_pScrollV->SetScrollPos(ullCurLineV * m_sizeFontMain.cy);
 
-	Redraw();
-}
-
-void CHexCtrl::RecalcOffsetDigits()
-{
-	const auto ullDataSize = GetDataSize();
-	if (ullDataSize <= 0xffffffffUL) {
-		m_dwOffsetDigits = IsOffsetAsHex() ? 8 : 10;
+		ReleaseDC(pDCCurr);
+		Redraw();
 	}
-	else if (ullDataSize <= 0xffffffffffUL) {
-		m_dwOffsetDigits = IsOffsetAsHex() ? 10 : 13;
-	}
-	else if (ullDataSize <= 0xffffffffffffUL) {
-		m_dwOffsetDigits = IsOffsetAsHex() ? 12 : 15;
-	}
-	else if (ullDataSize <= 0xffffffffffffffUL) {
-		m_dwOffsetDigits = IsOffsetAsHex() ? 14 : 17;
-	}
-	else {
-		m_dwOffsetDigits = IsOffsetAsHex() ? 16 : 19;
-	}
-}
-
-void CHexCtrl::RecalcPrint(CDC* pDC, CFont* pFontMain, CFont* pFontInfo, const CRect& rc)
-{
-	pDC->SelectObject(pFontMain);
-	TEXTMETRICW tm;
-	pDC->GetTextMetricsW(&tm);
-	m_sizeFontMain.cx = tm.tmAveCharWidth;
-	m_sizeFontMain.cy = tm.tmHeight + tm.tmExternalLeading;
-	pDC->SelectObject(pFontInfo);
-	pDC->GetTextMetricsW(&tm);
-	m_sizeFontInfo.cx = tm.tmAveCharWidth;
-	m_sizeFontInfo.cy = tm.tmHeight + tm.tmExternalLeading;
-
-	if (IsInfoBar()) {
-		m_iHeightInfoBar = m_sizeFontInfo.cy;
-		m_iHeightInfoBar += m_iHeightInfoBar / 3;
-	}
-	else { //If Info window is disabled, we set its height to zero.
-		m_iHeightInfoBar = 0;
-	}
-	m_iHeightBottomOffArea = m_iHeightInfoBar + m_iIndentBottomLine;
-
-	RecalcOffsetDigits();
-	m_iSecondVertLine = m_iFirstVertLine + m_dwOffsetDigits * m_sizeFontMain.cx + m_sizeFontMain.cx * 2;
-	m_iSizeHexByte = m_sizeFontMain.cx * 2;
-	m_iSpaceBetweenBlocks = (m_enGroupMode == EHexDataSize::SIZE_BYTE && m_dwCapacity > 1) ? m_sizeFontMain.cx * 2 : 0;
-	m_iSpaceBetweenHexChunks = m_sizeFontMain.cx;
-	m_iDistanceBetweenHexChunks = m_iSizeHexByte * static_cast<DWORD>(m_enGroupMode) + m_iSpaceBetweenHexChunks;
-	m_iThirdVertLine = m_iSecondVertLine + m_iDistanceBetweenHexChunks * (m_dwCapacity / static_cast<DWORD>(m_enGroupMode))
-		+ m_sizeFontMain.cx + m_iSpaceBetweenBlocks;
-	m_iIndentTextX = m_iThirdVertLine + m_sizeFontMain.cx;
-	m_iDistanceBetweenChars = m_sizeFontMain.cx;
-	m_iFourthVertLine = m_iIndentTextX + (m_iDistanceBetweenChars * m_dwCapacity) + m_sizeFontMain.cx;
-	m_iIndentFirstHexChunkX = m_iSecondVertLine + m_sizeFontMain.cx;
-	m_iSizeFirstHalf = m_iIndentFirstHexChunkX + m_dwCapacityBlockSize * (m_sizeFontMain.cx * 2) +
-		(m_dwCapacityBlockSize / static_cast<DWORD>(m_enGroupMode) - 1) * m_iSpaceBetweenHexChunks;
-	m_iHeightTopRect = std::lround(m_sizeFontMain.cy * 1.5);
-	m_iStartWorkAreaY = m_iFirstHorzLine + m_iHeightTopRect;
-	m_iSecondHorzLine = m_iStartWorkAreaY - 1;
-	m_iIndentCapTextY = m_iHeightTopRect / 2 - (m_sizeFontMain.cy / 2);
-
-	RecalcClientArea(rc.Height(), rc.Width());
 }
 
 void CHexCtrl::RecalcClientArea(int iHeight, int iWidth)
@@ -4676,7 +4624,7 @@ void CHexCtrl::OnDestroy()
 	m_wndTtOffset.DestroyWindow();
 	m_menuMain.DestroyMenu();
 	m_fontMain.DeleteObject();
-	m_fontInfo.DeleteObject();
+	m_fontInfoBar.DeleteObject();
 	m_penLines.DeleteObject();
 	m_vecHBITMAP.clear();
 	m_vecKeyBind.clear();
@@ -5140,21 +5088,21 @@ void CHexCtrl::OnPaint()
 	//Drawing through CMemDC to avoid flickering.
 	CMemDC memDC(dc, rcClient);
 	auto pDC = &memDC.GetDC();
-	DrawWindow(pDC, &m_fontMain);
-	DrawInfoBar(pDC, &m_fontInfo);
+	DrawWindow(pDC);
+	DrawInfoBar(pDC);
 
 	if (!IsDataSet())
 		return;
 
-	DrawOffsets(pDC, &m_fontMain, ullStartLine, iLines);
+	DrawOffsets(pDC, ullStartLine, iLines);
 	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
-	DrawHexText(pDC, &m_fontMain, iLines, wstrHex, wstrText);
-	DrawBookmarks(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
-	DrawCustomColors(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
-	DrawSelection(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
-	DrawSelHighlight(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
-	DrawCaret(pDC, &m_fontMain, ullStartLine, wstrHex, wstrText);
-	DrawDataInterp(pDC, &m_fontMain, ullStartLine, iLines, wstrHex, wstrText);
+	DrawHexText(pDC, iLines, wstrHex, wstrText);
+	DrawBookmarks(pDC, ullStartLine, iLines, wstrHex, wstrText);
+	DrawCustomColors(pDC, ullStartLine, iLines, wstrHex, wstrText);
+	DrawSelection(pDC, ullStartLine, iLines, wstrHex, wstrText);
+	DrawSelHighlight(pDC, ullStartLine, iLines, wstrHex, wstrText);
+	DrawCaret(pDC, ullStartLine, wstrHex, wstrText);
+	DrawDataInterp(pDC, ullStartLine, iLines, wstrHex, wstrText);
 	DrawPageLines(pDC, ullStartLine, iLines);
 }
 
