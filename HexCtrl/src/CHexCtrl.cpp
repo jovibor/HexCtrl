@@ -3762,7 +3762,7 @@ void CHexCtrl::Print()
 	dlg.m_pdex.lpPageRanges = &ppr;
 
 	if (dlg.DoModal() != S_OK) {
-		MessageBoxW(L"Internal printer initialization error", L"Error", MB_ICONERROR);
+		MessageBoxW(L"Internal printer initialization error!", L"Error", MB_ICONERROR);
 		return;
 	}
 

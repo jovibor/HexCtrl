@@ -29,7 +29,7 @@
       <UniqueIdentifier>{984a8795-1189-4850-81e8-b2f14ebf46b6}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\dep\ListEx">
-      <UniqueIdentifier>{0aa4d850-08a9-4935-84eb-764893c515d6}</UniqueIdentifier>
+      <UniqueIdentifier>{3e97ec96-7cff-4b05-8e71-94e34fb97804}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -87,20 +87,14 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgOpers.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\dep\ListEx\src\CListEx.h">
-      <Filter>HexCtrl\dep\ListEx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\dep\ListEx\src\CListExHdr.h">
-      <Filter>HexCtrl\dep\ListEx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\dep\ListEx\ListEx.h">
-      <Filter>HexCtrl\dep\ListEx</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\HexCtrl\HexCtrlDefs.h">
       <Filter>HexCtrl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\HexCtrl\src\HexUtility.h">
       <Filter>HexCtrl\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\HexCtrl\dep\ListEx\ListEx.h">
+      <Filter>HexCtrl\dep\ListEx</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -152,14 +146,11 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgOpers.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\dep\ListEx\src\CListEx.cpp">
-      <Filter>HexCtrl\dep\ListEx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\dep\ListEx\src\CListExHdr.cpp">
-      <Filter>HexCtrl\dep\ListEx</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\HexUtility.cpp">
       <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\dep\ListEx\CListEx.cpp">
+      <Filter>HexCtrl\dep\ListEx</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
