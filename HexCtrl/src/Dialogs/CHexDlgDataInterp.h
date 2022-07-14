@@ -126,9 +126,9 @@ namespace HEXCTRL::INTERNAL
 		void ShowValueFILETIME(QWORD qword)const;
 		void ShowValueOLEDATETIME(QWORD qword)const;
 		void ShowValueJAVATIME(QWORD qword)const;
-		void ShowValueGUID(const UDQWORD& dqword)const;
-		void ShowValueGUIDTIME(const UDQWORD& dqword)const;
-		void ShowValueSYSTEMTIME(const UDQWORD& dqword)const;
+		void ShowValueGUID(UDQWORD dqword)const;
+		void ShowValueGUIDTIME(UDQWORD dqword)const;
+		void ShowValueSYSTEMTIME(UDQWORD dqword)const;
 		DECLARE_MESSAGE_MAP()
 	private:
 		enum class EGroup : std::uint8_t { DIGITS, FLOAT, TIME, MISC };

@@ -125,7 +125,7 @@ namespace HEXCTRL::INTERNAL
 		return stSysTime;
 	}
 
-	auto FileTimeToString(const FILETIME& stFileTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring
+	auto FileTimeToString(FILETIME stFileTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring
 	{
 		std::wstring wstrTime;
 		if (SYSTEMTIME stSysTime { }; FileTimeToSystemTime(&stFileTime, &stSysTime) != FALSE)
@@ -136,7 +136,7 @@ namespace HEXCTRL::INTERNAL
 		return wstrTime;
 	}
 
-	auto SystemTimeToString(const SYSTEMTIME& stSysTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring
+	auto SystemTimeToString(SYSTEMTIME stSysTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring
 	{
 		if (dwFormat > 2 || stSysTime.wDay == 0 || stSysTime.wDay > 31 || stSysTime.wMonth == 0 || stSysTime.wMonth > 12
 			|| stSysTime.wYear > 9999 || stSysTime.wHour > 23 || stSysTime.wMinute > 59 || stSysTime.wSecond > 59

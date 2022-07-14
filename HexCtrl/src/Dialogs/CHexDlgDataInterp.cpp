@@ -1027,7 +1027,7 @@ void CHexDlgDataInterp::ShowValueJAVATIME(QWORD qword)const
 		iter->pProp->SetValue(FileTimeToString(ftJavaTime, m_dwDateFormat, m_wchDateSepar).data());
 }
 
-void CHexDlgDataInterp::ShowValueGUID(const UDQWORD& dqword)const
+void CHexDlgDataInterp::ShowValueGUID(UDQWORD dqword)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_GUID; }); iter != m_vecProp.end())
@@ -1040,7 +1040,7 @@ void CHexDlgDataInterp::ShowValueGUID(const UDQWORD& dqword)const
 	}
 }
 
-void CHexDlgDataInterp::ShowValueGUIDTIME(const UDQWORD& dqword)const
+void CHexDlgDataInterp::ShowValueGUIDTIME(UDQWORD dqword)const
 {
 	//Guid v1 Datetime UTC
 	//The time structure within the NAME_GUID.
@@ -1080,7 +1080,7 @@ void CHexDlgDataInterp::ShowValueGUIDTIME(const UDQWORD& dqword)const
 		iter->pProp->SetValue(wstrTime.data());
 }
 
-void CHexDlgDataInterp::ShowValueSYSTEMTIME(const UDQWORD& dqword)const
+void CHexDlgDataInterp::ShowValueSYSTEMTIME(UDQWORD dqword)const
 {
 	if (auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) {return refData.eName == EName::NAME_SYSTEMTIME; }); iter != m_vecProp.end())
