@@ -1,6 +1,8 @@
-//SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-//Copyright © 2022 Jovibor https://github.com/jovibor/
-//StrToNum library, https://github.com/jovibor/StrToNum
+/**********************************************************
+* SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception *
+* Copyright Â© 2022 Jovibor https://github.com/jovibor/    *
+* StrToNum library, https://github.com/jovibor/StrToNum   *
+**********************************************************/
 #pragma once
 #include <cassert>
 #include <string_view>
@@ -41,7 +43,7 @@ namespace HEXCTRL::stn //String to Num.
 	{
 		[[nodiscard]] inline unsigned char _Digit_from_char(const wchar_t _Ch) noexcept {
 			// convert ['0', '9'] ['A', 'Z'] ['a', 'z'] to [0, 35], everything else to 255
-			static constexpr unsigned char _Digit_from_byte [] = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+			static constexpr unsigned char _Digit_from_byte[] = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
 				255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
 				255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 255, 255,
 				255, 255, 255, 255, 255, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
@@ -526,7 +528,7 @@ namespace HEXCTRL::stn //String to Num.
 			// The minimum value representable with double-precision is 5E-324.
 			// With this table we can thus compute most multiplications with a single multiply.
 
-			static constexpr uint32_t _Large_power_data [] = { 0x540be400, 0x00000002, 0x63100000, 0x6bc75e2d, 0x00000005,
+			static constexpr uint32_t _Large_power_data[] = { 0x540be400, 0x00000002, 0x63100000, 0x6bc75e2d, 0x00000005,
 				0x40000000, 0x4674edea, 0x9f2c9cd0, 0x0000000c, 0xb9f56100, 0x5ca4bfab, 0x6329f1c3, 0x0000001d, 0xb5640000,
 				0xc40534fd, 0x926687d2, 0x6c3b15f9, 0x00000044, 0x10000000, 0x946590d9, 0xd762422c, 0x9a224501, 0x4f272617,
 				0x0000009f, 0x07950240, 0x245689c1, 0xc5faa71c, 0x73c86d67, 0xebad6ddc, 0x00000172, 0xcec10000, 0x63a22764,
@@ -598,7 +600,7 @@ namespace HEXCTRL::stn //String to Num.
 				uint8_t _Size; // The number of elements present for this power
 			};
 
-			static constexpr _Unpack_index _Large_power_indices [] = { { 0, 0, 2 }, { 2, 0, 3 }, { 5, 0, 4 }, { 9, 1, 4 }, { 13, 1, 5 },
+			static constexpr _Unpack_index _Large_power_indices[] = { { 0, 0, 2 }, { 2, 0, 3 }, { 5, 0, 4 }, { 9, 1, 4 }, { 13, 1, 5 },
 				{ 18, 1, 6 }, { 24, 2, 6 }, { 30, 2, 7 }, { 37, 2, 8 }, { 45, 3, 8 }, { 53, 3, 9 }, { 62, 3, 10 }, { 72, 4, 10 }, { 82, 4, 11 },
 				{ 93, 4, 12 }, { 105, 5, 12 }, { 117, 5, 13 }, { 130, 5, 14 }, { 144, 5, 15 }, { 159, 6, 15 }, { 174, 6, 16 }, { 190, 6, 17 },
 				{ 207, 7, 17 }, { 224, 7, 18 }, { 242, 7, 19 }, { 261, 8, 19 }, { 280, 8, 21 }, { 301, 8, 22 }, { 323, 9, 22 }, { 345, 9, 23 },
