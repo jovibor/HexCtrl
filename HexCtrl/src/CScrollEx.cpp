@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -487,7 +487,7 @@ bool CScrollEx::CreateArrows(int iIDRESArrow, bool fVert)
 	const auto nHeight = static_cast<std::size_t>(hBitmap.bmHeight);
 	const auto dwBytesBmp = hBitmap.bmWidthBytes * hBitmap.bmHeight;
 	const auto dwPixels = nWidth * nHeight;
-	const auto pOrigCOLOR = std::make_unique<COLORREF []>(dwPixels);
+	const auto pOrigCOLOR = std::make_unique<COLORREF[]>(dwPixels);
 	bmpArrow.GetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
 
 	const auto lmbTranspose = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight)

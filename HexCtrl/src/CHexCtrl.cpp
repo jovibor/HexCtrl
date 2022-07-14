@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2021 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -1085,7 +1085,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			//Then clone this buffer to the destination data.
 			//Buffer is allocated with alignment for maximum performance.
 			constexpr auto ulSizeRandBuff = 1024U * 1024U; //1MB.
-			std::unique_ptr < std::byte [], decltype([](std::byte* pData) { _aligned_free(pData); }) >
+			std::unique_ptr < std::byte[], decltype([](std::byte* pData) { _aligned_free(pData); }) >
 				uptrRandData(static_cast<std::byte*>(_aligned_malloc(ulSizeRandBuff, 32)));
 
 			for (auto iter = 0UL; iter < ulSizeRandBuff; iter += sizeof(std::uint64_t))
