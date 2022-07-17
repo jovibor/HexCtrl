@@ -327,6 +327,8 @@ IDB_HEXCTRL_DLG_DATAINTERP BITMAP                  "IDB_HEXCTRL_DLG_DATAINTERP.b
 
 IDB_HEXCTRL_GROUP       BITMAP                  "IDB_HEXCTRL_GROUP.bmp"
 
+IDB_HEXCTRL_APPEAR_FONTCHOOSE BITMAP                  "IDB_HEXCTRL_APPEAR_FONTCHOOSE.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //

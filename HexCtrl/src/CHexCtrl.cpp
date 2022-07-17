@@ -219,7 +219,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	m_wndTtBkm.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
-	m_stToolInfoBkm.cbSize = TTTOOLINFOW_V1_SIZE;
+	m_stToolInfoBkm.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoBkm.uFlags = TTF_TRACK;
 	m_stToolInfoBkm.uId = ID_TOOLTIP_BKM;
 	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
@@ -227,7 +227,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	m_wndTtOffset.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
-	m_stToolInfoOffset.cbSize = TTTOOLINFOW_V1_SIZE;
+	m_stToolInfoOffset.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoOffset.uFlags = TTF_TRACK;
 	m_stToolInfoOffset.uId = ID_TOOLTIP_OFFSET;
 	m_wndTtOffset.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
@@ -237,7 +237,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_dbWheelRatio = hcs.dbWheelRatio;
 	m_fInfoBar = hcs.fInfoBar;
 
-	auto pDC = GetDC();
+	const auto pDC = GetDC();
 	m_iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
 	ReleaseDC(pDC);
 
@@ -294,6 +294,11 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	//"Data View->Data Interpreter" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_DLG_DATAINTERP), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_DLG_DATAINTERP, &mii);
+	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+
+	//"Appearance->Choose Font" menu icon.
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_APPEAR_FONTCHOOSE), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_APPEAR_FONTCHOOSE, &mii);
 	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
 	/***End of menu related.***/
 

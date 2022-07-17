@@ -12,6 +12,7 @@
 #define IDB_HEXCTRL_MODIFY              9008
 #define IDB_HEXCTRL_DLG_DATAINTERP      9009
 #define IDB_HEXCTRL_GROUP               9010
+#define IDB_HEXCTRL_APPEAR_FONTCHOOSE   9011
 #define IDD_HEXCTRL_SEARCH              9101
 #define IDD_HEXCTRL_ABOUT               9102
 #define IDD_HEXCTRL_OPERS               9103

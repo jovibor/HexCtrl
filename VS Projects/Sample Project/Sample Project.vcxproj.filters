@@ -221,5 +221,8 @@
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_APPEAR_FONTCHOOSE.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
   </ItemGroup>
 </Project>
