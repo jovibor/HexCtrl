@@ -484,8 +484,7 @@ int CListExHdr::ColumnIDToIndex(UINT uID)const
 void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed, BOOL bIsHighlighted)
 {
 	//Non working area after last column. Or if column resized to zero.
-	if (iItem < 0 || rcOrig.IsRectEmpty())
-	{
+	if (iItem < 0 || rcOrig.IsRectEmpty()) {
 		pDC->FillSolidRect(&rcOrig, m_clrBkNWA);
 		return;
 	}
@@ -1825,15 +1824,17 @@ BOOL CListEx::OnEraseBkgnd(CDC* /*pDC*/)
 
 void CListEx::OnPaint()
 {
-	//To avoid flickering.
-	//Drawing to CMemDC, excluding list header area (rcHdr).
-	CRect rcClient, rcHdr;
+	CPaintDC dc(this);
+
+	CRect rcClient;
+	CRect rcHdr;
 	GetClientRect(&rcClient);
 	GetHeaderCtrl().GetClientRect(rcHdr);
 	rcClient.top += rcHdr.Height();
+	if (rcClient.IsRectEmpty())
+		return;
 
-	CPaintDC dc(this);
-	CMemDC memDC(dc, rcClient);
+	CMemDC memDC(dc, rcClient); //To avoid flickering drawing to CMemDC, excluding list header area (rcHdr).
 	CDC& rDC = memDC.GetDC();
 	rDC.GetClipBox(&rcClient);
 	rDC.FillSolidRect(rcClient, m_stColors.clrNWABk);

@@ -3429,17 +3429,17 @@ void CHexCtrl::FontSizeIncDec(bool fInc)
 
 auto CHexCtrl::GetBottomLine()const->ULONGLONG
 {
-	ULONGLONG ullEndLine { };
-	if (IsDataSet())
-	{
-		ullEndLine = GetTopLine() + m_iHeightWorkArea / m_sizeFontMain.cy;
-		if (ullEndLine > 0) //To avoid underflow.
-			--ullEndLine;
-		//If m_ullDataSize is really small, or we at the scroll end,
-		//we adjust ullEndLine to be not bigger than maximum allowed.
-		if (const auto ullSize = GetDataSize(); ullEndLine >= (ullSize / m_dwCapacity))
-			ullEndLine = (ullSize % m_dwCapacity) ? ullSize / m_dwCapacity : ullSize / m_dwCapacity - 1;
-	}
+	if (!IsDataSet())
+		return { };
+
+	auto ullEndLine = GetTopLine();
+	if (const auto iLines = m_iHeightWorkArea / m_sizeFontMain.cy; iLines > 0) //How many visible lines.
+		ullEndLine += iLines - 1;
+
+	const auto ullDataSize = GetDataSize();
+	const auto ullTotalLines = ullDataSize / m_dwCapacity;
+	if (ullEndLine >= ullTotalLines) //If ullDataSize is really small, or we at the scroll end, adjust ullEndLine to be not bigger than maximum possible.
+		ullEndLine = ullTotalLines - ((ullDataSize % m_dwCapacity) == 0 ? 1 : 0);
 
 	return ullEndLine;
 }
@@ -5076,7 +5076,7 @@ void CHexCtrl::OnPaint()
 	}
 
 	//To prevent drawing in too small window (can cause hangs).
-	if (rcClient.IsRectEmpty() || rcClient.Height() < m_iHeightTopRect + m_iHeightBottomOffArea)
+	if (rcClient.IsRectEmpty() || rcClient.Height() <= m_iHeightTopRect + m_iHeightBottomOffArea)
 		return;
 
 	const auto ullStartLine = GetTopLine();
