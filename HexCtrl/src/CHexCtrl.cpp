@@ -701,7 +701,7 @@ auto CHexCtrl::GetPagesCount()const->ULONGLONG
 
 	const auto ullSize = GetDataSize();
 
-	return (ullSize % m_dwPageSize) ? ullSize / m_dwPageSize + 1 : ullSize / m_dwPageSize;
+	return ullSize / m_dwPageSize + ((ullSize % m_dwPageSize) ? 1 : 0);
 }
 
 auto CHexCtrl::GetPagePos()const->ULONGLONG
@@ -1073,15 +1073,14 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		{
 			ModifyWorker(hms, lmbRandUInt64, { static_cast<std::byte*>(nullptr), sizeof(std::uint64_t) });
 
-			if (const auto iRem = refHexSpan.ullSize % sizeof(std::uint64_t); iRem > 0) //Remainder.
+			if (const auto dwRem = refHexSpan.ullSize % sizeof(std::uint64_t); dwRem > 0) //Remainder.
 			{
-				const auto ullOffset = refHexSpan.ullOffset + refHexSpan.ullSize - iRem;
-				const auto spnData = GetData({ ullOffset, iRem });
-				for (std::size_t iterRem = 0; iterRem < iRem; ++iterRem)
-				{
+				const auto ullOffset = refHexSpan.ullOffset + refHexSpan.ullSize - dwRem;
+				const auto spnData = GetData({ ullOffset, dwRem });
+				for (std::size_t iterRem = 0; iterRem < dwRem; ++iterRem) {
 					spnData.data()[iterRem] = static_cast<std::byte>(distUInt64(gen));
 				}
-				SetDataVirtual(spnData, { ullOffset, iRem });
+				SetDataVirtual(spnData, { ullOffset, dwRem });
 			}
 		}
 		else if (hms.enModifyMode == MODIFY_RAND_FAST && hms.vecSpan.size() == 1 && refHexSpan.ullSize >= GetCacheSize())
@@ -1101,26 +1100,26 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			ModifyWorker(hms, lmbRandFast, { uptrRandData.get(), ulSizeRandBuff });
 
 			//Filling the remainder data.
-			if (const auto iRem = refHexSpan.ullSize % ulSizeRandBuff; iRem > 0) //Remainder.
+			if (const auto dwRem = refHexSpan.ullSize % ulSizeRandBuff; dwRem > 0) //Remainder.
 			{
-				if (iRem <= GetCacheSize())
+				if (dwRem <= GetCacheSize())
 				{
-					const auto ullOffsetCurr = refHexSpan.ullOffset + refHexSpan.ullSize - iRem;
-					const auto spnData = GetData({ ullOffsetCurr, iRem });
+					const auto ullOffsetCurr = refHexSpan.ullOffset + refHexSpan.ullSize - dwRem;
+					const auto spnData = GetData({ ullOffsetCurr, dwRem });
 					assert(!spnData.empty());
-					std::copy_n(uptrRandData.get(), iRem, spnData.data());
-					SetDataVirtual(spnData, { ullOffsetCurr, iRem });
+					std::copy_n(uptrRandData.get(), dwRem, spnData.data());
+					SetDataVirtual(spnData, { ullOffsetCurr, dwRem });
 				}
 				else
 				{
 					const auto ullSizeCache = GetCacheSize();
-					const auto iMod = iRem % ullSizeCache;
-					auto ullChunks = iRem / ullSizeCache + (iMod > 0 ? 1 : 0);
-					auto ullOffsetCurr = refHexSpan.ullOffset + refHexSpan.ullSize - iRem;
+					const auto dwModCache = dwRem % ullSizeCache;
+					auto ullChunks = dwRem / ullSizeCache + (dwModCache > 0 ? 1 : 0);
+					auto ullOffsetCurr = refHexSpan.ullOffset + refHexSpan.ullSize - dwRem;
 					auto ullOffsetRandCurr = 0ULL;
 					while (ullChunks-- > 0)
 					{
-						const auto ullSizeToModify = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeCache;
+						const auto ullSizeToModify = (ullChunks == 1 && dwModCache > 0) ? dwModCache : ullSizeCache;
 						const auto spnData = GetData({ ullOffsetCurr, ullSizeToModify });
 						assert(!spnData.empty());
 						std::copy_n(uptrRandData.get() + ullOffsetRandCurr, ullSizeToModify, spnData.data());
@@ -1165,15 +1164,14 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 
 			ModifyWorker(hms, lmbRepeat, { buffFillData, ulSizeBuffFastFill });
 
-			if (const auto iRem = ullSizeToModify % ulSizeBuffFastFill; iRem >= ullSizeToFillWith) //Remainder.
+			if (const auto dwRem = ullSizeToModify % ulSizeBuffFastFill; dwRem >= ullSizeToFillWith) //Remainder.
 			{
-				const auto ullOffset = ullOffsetToModify + ullSizeToModify - iRem;
-				const auto spnData = GetData({ ullOffset, iRem });
-				for (std::size_t iterRem = 0; iterRem < (iRem / ullSizeToFillWith); ++iterRem) //Works only if iRem >= ullSizeToFillWith.
-				{
+				const auto ullOffset = ullOffsetToModify + ullSizeToModify - dwRem;
+				const auto spnData = GetData({ ullOffset, dwRem });
+				for (std::size_t iterRem = 0; iterRem < (dwRem / ullSizeToFillWith); ++iterRem) { //Works only if dwRem >= ullSizeToFillWith.
 					std::copy_n(hms.spnData.data(), ullSizeToFillWith, spnData.data() + (iterRem * ullSizeToFillWith));
 				}
-				SetDataVirtual(spnData, { ullOffset, iRem - (iRem % ullSizeToFillWith) });
+				SetDataVirtual(spnData, { ullOffset, dwRem - (dwRem % ullSizeToFillWith) });
 			}
 		}
 		else {
@@ -1360,10 +1358,11 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 		return;
 
 	//Setting capacity according to current m_enGroupMode.
+	const auto dwRem = dwCapacity % static_cast<DWORD>(m_enGroupMode);
 	if (dwCapacity < m_dwCapacity)
-		dwCapacity -= dwCapacity % static_cast<DWORD>(m_enGroupMode);
-	else if (dwCapacity % static_cast<DWORD>(m_enGroupMode))
-		dwCapacity += static_cast<DWORD>(m_enGroupMode) - (dwCapacity % static_cast<DWORD>(m_enGroupMode));
+		dwCapacity -= dwRem;
+	else if (dwRem > 0)
+		dwCapacity += static_cast<DWORD>(m_enGroupMode) - dwRem;
 
 	//To prevent under/over flow.
 	if (dwCapacity < static_cast<DWORD>(m_enGroupMode))
@@ -1682,11 +1681,11 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 	m_fMutable = hds.fMutable;
 	m_pHexVirtData = hds.pHexVirtData;
 	m_pHexVirtColors = hds.pHexVirtColors;
-	m_dwCacheSize = hds.dwCacheSize; //Cache size must be at least sizeof(std::uint64_t) aligned.
-	if (m_dwCacheSize < 0x10000 || (m_dwCacheSize % sizeof(std::uint64_t)) != 0)
-	{
-		m_dwCacheSize = 0x10000; //64Kb is the minimum default size.
-	}
+
+	constexpr auto dwCacheMinSize = 1024U * 64U; //64Kb is the minimum default cache size.
+	m_dwCacheSize = ((hds.dwCacheSize < dwCacheMinSize)	//Cache size must be at least sizeof(std::uint64_t) aligned.
+		|| (hds.dwCacheSize % sizeof(std::uint64_t) != 0)) ? dwCacheMinSize : hds.dwCacheSize;
+
 	m_fHighLatency = hds.fHighLatency;
 
 	RecalcAll();
@@ -3476,7 +3475,7 @@ auto CHexCtrl::GetTopLine()const->ULONGLONG
 
 void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 {	//This func computes x and y pos of given Hex chunk.
-	DWORD dwMod = ullOffset % m_dwCapacity;
+	const DWORD dwMod = ullOffset % m_dwCapacity;
 	int iBetweenBlocks { 0 };
 	if (dwMod >= m_dwCapacityBlockSize)
 		iBetweenBlocks = m_iSpaceBetweenBlocks;
@@ -3501,23 +3500,23 @@ auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTEST>
 	if ((iX >= m_iIndentFirstHexChunkX) && (iX < m_iThirdVertLine) && (iY >= m_iStartWorkAreaY) && (iY <= m_iEndWorkArea))
 	{
 		int iTotalSpaceBetweenChunks { 0 };
-		for (auto i = 0U; i < m_dwCapacity; ++i)
+		for (auto iterCapacity = 0U; iterCapacity < m_dwCapacity; ++iterCapacity)
 		{
-			if (i > 0 && (i % static_cast<DWORD>(m_enGroupMode)) == 0)
+			if (iterCapacity > 0 && (iterCapacity % static_cast<DWORD>(m_enGroupMode)) == 0)
 			{
 				iTotalSpaceBetweenChunks += m_iSpaceBetweenHexChunks;
-				if (m_enGroupMode == EHexDataSize::SIZE_BYTE && i == m_dwCapacityBlockSize)
+				if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterCapacity == m_dwCapacityBlockSize)
 					iTotalSpaceBetweenChunks += m_iSpaceBetweenBlocks;
 			}
 
-			const auto iCurrChunkBegin = m_iIndentFirstHexChunkX + (m_iSizeHexByte * i) + iTotalSpaceBetweenChunks;
+			const auto iCurrChunkBegin = m_iIndentFirstHexChunkX + (m_iSizeHexByte * iterCapacity) + iTotalSpaceBetweenChunks;
 			const auto iCurrChunkEnd = iCurrChunkBegin + m_iSizeHexByte +
-				(((i + 1) % static_cast<DWORD>(m_enGroupMode)) == 0 ? m_iSpaceBetweenHexChunks : 0)
-				+ ((m_enGroupMode == EHexDataSize::SIZE_BYTE && (i + 1) == m_dwCapacityBlockSize) ? m_iSpaceBetweenBlocks : 0);
+				(((iterCapacity + 1) % static_cast<DWORD>(m_enGroupMode)) == 0 ? m_iSpaceBetweenHexChunks : 0)
+				+ ((m_enGroupMode == EHexDataSize::SIZE_BYTE && (iterCapacity + 1) == m_dwCapacityBlockSize) ? m_iSpaceBetweenBlocks : 0);
 
 			if (static_cast<unsigned int>(iX) < iCurrChunkEnd) //If iX lays in-between [iCurrChunkBegin...iCurrChunkEnd).
 			{
-				stHit.ullOffset = static_cast<ULONGLONG>(i) + ((iY - m_iStartWorkAreaY) / m_sizeFontMain.cy) *
+				stHit.ullOffset = static_cast<ULONGLONG>(iterCapacity) + ((iY - m_iStartWorkAreaY) / m_sizeFontMain.cy) *
 					m_dwCapacity + (ullCurLine * m_dwCapacity);
 
 				if ((iX - iCurrChunkBegin) < static_cast<DWORD>(m_sizeFontMain.cx)) //Check byte's High or Low half was hit.
@@ -4448,10 +4447,10 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPAN>& vecSpan)
 
 void CHexCtrl::TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 {	//This func computes x and y pos of given Text chunk.
-	DWORD dwMod = ullOffset % m_dwCapacity;
+	const DWORD dwMod = ullOffset % m_dwCapacity;
 	iCx = static_cast<int>((m_iIndentTextX + dwMod * m_sizeFontMain.cx) - m_pScrollH->GetScrollPos());
 
-	auto ullScrollV = m_pScrollV->GetScrollPos();
+	const auto ullScrollV = m_pScrollV->GetScrollPos();
 	iCy = static_cast<int>((m_iStartWorkAreaY + (ullOffset / m_dwCapacity) * m_sizeFontMain.cy) -
 		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
@@ -4924,37 +4923,39 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 			return;
 
 		m_ullCursorNow = optHit->ullOffset;
-		const auto ullHit = optHit->ullOffset;
+		const auto ullOffsetHit = optHit->ullOffset;
 		ULONGLONG ullClick, ullStart, ullSize, ullLines;
-		if (m_fSelectionBlock) //Select block (with Alt)
+		if (m_fSelectionBlock) //Select block (with Alt).
 		{
 			ullClick = m_ullCursorPrev;
-			if (ullHit >= ullClick)
+			const DWORD dwModOffset = ullOffsetHit % m_dwCapacity;
+			const DWORD dwModClick = ullClick % m_dwCapacity;
+			if (ullOffsetHit >= ullClick)
 			{
-				if (ullHit % m_dwCapacity <= ullClick % m_dwCapacity)
+				if (dwModOffset <= dwModClick)
 				{
-					const DWORD dwModStart = ullClick % m_dwCapacity - ullHit % m_dwCapacity;
+					const auto dwModStart = dwModClick - dwModOffset;
 					ullStart = ullClick - dwModStart;
 					ullSize = dwModStart + 1;
 				}
 				else
 				{
 					ullStart = ullClick;
-					ullSize = ullHit % m_dwCapacity - ullClick % m_dwCapacity + 1;
+					ullSize = dwModOffset - dwModClick + 1;
 				}
-				ullLines = (ullHit - ullStart) / m_dwCapacity + 1;
+				ullLines = (ullOffsetHit - ullStart) / m_dwCapacity + 1;
 			}
 			else
 			{
-				if (ullHit % m_dwCapacity <= ullClick % m_dwCapacity)
+				if (dwModOffset <= dwModClick)
 				{
-					ullStart = ullHit;
-					ullSize = ullClick % m_dwCapacity - ullStart % m_dwCapacity + 1;
+					ullStart = ullOffsetHit;
+					ullSize = dwModClick - ullStart % m_dwCapacity + 1;
 				}
 				else
 				{
-					const DWORD dwModStart = ullHit % m_dwCapacity - ullClick % m_dwCapacity;
-					ullStart = ullHit - dwModStart;
+					const auto dwModStart = dwModOffset - dwModClick;
+					ullStart = ullOffsetHit - dwModStart;
 					ullSize = dwModStart + 1;
 				}
 				ullLines = (ullClick - ullStart) / m_dwCapacity + 1;
@@ -4962,17 +4963,17 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 		}
 		else
 		{
-			if (ullHit <= m_ullCursorPrev)
+			if (ullOffsetHit <= m_ullCursorPrev)
 			{
 				ullClick = m_ullCursorPrev;
-				ullStart = ullHit;
+				ullStart = ullOffsetHit;
 				ullSize = ullClick - ullStart + 1;
 			}
 			else
 			{
 				ullClick = m_ullCursorPrev;
 				ullStart = m_ullCursorPrev;
-				ullSize = ullHit - ullClick + 1;
+				ullSize = ullOffsetHit - ullClick + 1;
 			}
 			ullLines = 1;
 		}
@@ -4987,8 +4988,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 	}
 	else
 	{
-		if (optHit)
-		{
+		if (optHit) {
 			if (const auto pBkm = m_pBookmarks->HitTest(optHit->ullOffset); pBkm != nullptr)
 			{
 				if (m_pBkmTtCurr != pBkm)

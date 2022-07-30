@@ -131,7 +131,7 @@ void CHexDlgFillData::OnOK()
 		hms.vecSpan = m_pHexCtrl->GetSelection();
 
 	std::wstring wstrFillWith = pwszComboText;
-	std::string strFillWith;
+	std::string strFillWith; //Data holder for FILL_HEX and FILL_ASCII modes.
 	switch (GetFillType())
 	{
 	case EFillType::FILL_HEX:
@@ -148,6 +148,7 @@ void CHexDlgFillData::OnOK()
 	break;
 	case EFillType::FILL_ASCII:
 	{
+		strFillWith = WstrToStr(wstrFillWith);
 		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
 		hms.spnData = { reinterpret_cast<std::byte*>(strFillWith.data()), strFillWith.size() };
 	}
