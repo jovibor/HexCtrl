@@ -87,7 +87,7 @@ void CHexDlgEncoding::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 		if (m_pHexCtrl->IsCreated())
 		{
 			m_pListMain->SetItemState(-1, 0, LVIS_SELECTED);
-			if (auto iter = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
+			if (const auto iter = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
 				[this](const SCODEPAGE& ref) { return ref.iCPID == m_pHexCtrl->GetEncoding(); });
 				iter != m_vecCodePage.end())
 			{
@@ -146,8 +146,7 @@ void CHexDlgEncoding::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 void CHexDlgEncoding::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED))
-	{
+		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED)) {
 		m_pHexCtrl->SetEncoding(m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].iCPID);
 	}
 }

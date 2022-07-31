@@ -1092,8 +1092,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			std::unique_ptr < std::byte[], decltype([](std::byte* pData) { _aligned_free(pData); }) >
 				uptrRandData(static_cast<std::byte*>(_aligned_malloc(ulSizeRandBuff, 32)));
 
-			for (auto iter = 0UL; iter < ulSizeRandBuff; iter += sizeof(std::uint64_t))
-			{
+			for (auto iter = 0UL; iter < ulSizeRandBuff; iter += sizeof(std::uint64_t)) {
 				*reinterpret_cast<std::uint64_t*>(&uptrRandData[iter]) = distUInt64(gen);
 			};
 
@@ -1157,8 +1156,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			&& ullSizeToFillWith < ulSizeBuffFastFill && (ulSizeBuffFastFill % ullSizeToFillWith) == 0)
 		{
 			alignas(32) std::byte buffFillData[ulSizeBuffFastFill]; //Buffer for fast data fill.
-			for (auto iter = 0ULL; iter < ulSizeBuffFastFill; iter += ullSizeToFillWith)
-			{
+			for (auto iter = 0ULL; iter < ulSizeBuffFastFill; iter += ullSizeToFillWith) {
 				std::copy_n(hms.spnData.data(), ullSizeToFillWith, buffFillData + iter);
 			}
 
@@ -1579,7 +1577,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		//Remove everything from vecMain that exists in vecFrom.
 		for (const auto& iterFrom : vecFrom)
 			vecMain.erase(std::remove_if(vecMain.begin(), vecMain.end(),
-				[&](const SKEYBIND& ref) {return ref.eCmd == iterFrom.eCmd; }),
+				[&](const SKEYBIND& ref) { return ref.eCmd == iterFrom.eCmd; }),
 				vecMain.end());
 
 		//Add everything from vecFrom to vecMain.
@@ -1626,7 +1624,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{
 			//Check for previous same menu ID, to assign only one (first) keybinding for menu name.
 			const auto iterEnd = m_vecKeyBind.begin() + i++;
-			if (auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd,
+			if (const auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd,
 				[&](const SKEYBIND& ref) { return ref.wMenuID == iterMain.wMenuID; });
 				iterTmp == iterEnd && iterMain.wMenuID != 0 && iterMain.uKey != 0)
 			{
@@ -1646,7 +1644,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 
 				//Search for any special key names: 'Tab', 'Enter', etc...
 				//If not found then it's just a char.
-				if (auto iterUmap = std::find_if(umapKeys.begin(), umapKeys.end(), [&](const auto& ref)
+				if (const auto iterUmap = std::find_if(umapKeys.begin(), umapKeys.end(), [&](const auto& ref)
 					{ return ref.second.first == iterMain.uKey; }); iterUmap != umapKeys.end())
 					wstr += iterUmap->second.second;
 				else
@@ -3446,8 +3444,8 @@ auto CHexCtrl::GetBottomLine()const->ULONGLONG
 auto CHexCtrl::GetCommand(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>
 {
 	std::optional<EHexCmd> optRet { std::nullopt };
-	if (auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref)
-		{return ref.fCtrl == fCtrl && ref.fShift == fShift && ref.fAlt == fAlt && ref.uKey == uKey; });
+	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref)
+		{ return ref.fCtrl == fCtrl && ref.fShift == fShift && ref.fAlt == fAlt && ref.uKey == uKey; });
 		iter != m_vecKeyBind.end())
 		optRet = iter->eCmd;
 
@@ -3574,7 +3572,7 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const std:
 
 	const auto& vecSpanRef = hms.vecSpan;
 	const auto ullTotalSize = std::accumulate(vecSpanRef.begin(), vecSpanRef.end(), 0ULL,
-		[](ULONGLONG ullSumm, const HEXSPAN& ref) {return ullSumm + ref.ullSize; });
+		[](ULONGLONG ullSumm, const HEXSPAN& ref) { return ullSumm + ref.ullSize; });
 	assert(ullTotalSize <= GetDataSize());
 
 	CHexDlgCallback dlgClbk(L"Modifying...", vecSpanRef.back().ullOffset,
@@ -4065,12 +4063,12 @@ void CHexCtrl::ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)co
 	if (fASCII)
 	{
 		std::replace_if(wstr.begin(), wstr.end(), [=](wchar_t wch) //All non ASCII.
-			{return (wch <= 0x1F || wch >= 0x7F) && (fCRLF || (wch != 0x0D && wch != 0x0A)); }, m_wchUnprintable);
+			{ return (wch <= 0x1F || wch >= 0x7F) && (fCRLF || (wch != 0x0D && wch != 0x0A)); }, m_wchUnprintable);
 	}
 	else
 	{
 		std::replace_if(wstr.begin(), wstr.end(), [=](wchar_t wch) //All non printable wchars.
-			{return !std::iswprint(wch) && (fCRLF || (wch != 0x0D && wch != 0x0A)); }, m_wchUnprintable);
+			{ return !std::iswprint(wch) && (fCRLF || (wch != 0x0D && wch != 0x0A)); }, m_wchUnprintable);
 	}
 }
 
@@ -4394,7 +4392,7 @@ void CHexCtrl::SnapshotUndo(const std::vector<HEXSPAN>& vecSpan)
 {
 	constexpr auto dwUndoMax { 500U }; //How many Undo states to preserve.
 	const auto ullTotalSize = std::accumulate(vecSpan.begin(), vecSpan.end(), 0ULL,
-		[](ULONGLONG ullSumm, const HEXSPAN& ref) {return ullSumm + ref.ullSize; });
+		[](ULONGLONG ullSumm, const HEXSPAN& ref) { return ullSumm + ref.ullSize; });
 
 	//Check for very big undo size.
 	if (ullTotalSize > 1024 * 1024 * 10)
@@ -4592,8 +4590,8 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	const auto wMenuID = LOWORD(wParam);
-	if (auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref)
-		{return ref.wMenuID == wMenuID;	}); iter != m_vecKeyBind.end())
+	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref)
+		{ return ref.wMenuID == wMenuID;	}); iter != m_vecKeyBind.end())
 	{
 		m_fMenuCMD = true;
 		ExecuteCmd(iter->eCmd);

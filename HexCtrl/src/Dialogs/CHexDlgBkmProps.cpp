@@ -43,7 +43,7 @@ BOOL CHexDlgBkmProps::OnInitDialog()
 	{
 		m_ullOffset = m_pHBS->vecSpan.front().ullOffset;
 		m_ullSize = std::accumulate(m_pHBS->vecSpan.begin(), m_pHBS->vecSpan.end(), ULONGLONG { },
-			[](auto ullTotal, const HEXSPAN& ref) {return ullTotal + ref.ullSize; });
+			[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
 	}
 	else
 	{

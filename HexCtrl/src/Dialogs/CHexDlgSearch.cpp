@@ -21,15 +21,13 @@
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
-//#define SEARCH_IO_TESTING
-
 namespace HEXCTRL::INTERNAL
 {
 	enum class CHexDlgSearch::EMode : std::uint8_t
 	{
 		SEARCH_HEXBYTES, SEARCH_ASCII, SEARCH_UTF8, SEARCH_UTF16,
 		SEARCH_INT8, SEARCH_INT16, SEARCH_INT32, SEARCH_INT64,
-		SEARCH_FLOAT, SEARCH_DOUBLE, SEARCH_FILETIME, SEARCH_IOTEST//REMOVELATER:
+		SEARCH_FLOAT, SEARCH_DOUBLE, SEARCH_FILETIME
 	};
 
 	enum class CHexDlgSearch::ECmpType : std::uint16_t //Flags for the instantiations of templated MemCmp<>.
@@ -155,7 +153,7 @@ void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 {
 	int iHighlight { -1 };
-	if (auto iter = std::find(m_vecSearchRes.begin(), m_vecSearchRes.end(), ullOffset);
+	if (const auto iter = std::find(m_vecSearchRes.begin(), m_vecSearchRes.end(), ullOffset);
 		iter == m_vecSearchRes.end()) //Max-found search occurences.
 	{
 		if (m_vecSearchRes.size() < static_cast<size_t>(m_dwFoundLimit))
@@ -361,15 +359,6 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_
 		}
 		return true;
 	}
-#ifdef SEARCH_IO_TESTING
-	else if constexpr (uCmpType == 999) //REMOVELATER:
-	{
-		volatile auto ch = static_cast<char>(*pBuf1); //Attempt to trick optimizer.
-		(void)ch;
-
-		return false;
-	}
-#endif		
 }
 
 BOOL CHexDlgSearch::OnInitDialog()
@@ -404,11 +393,6 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_DOUBLE));
 	iIndex = m_stComboMode.AddString(L"FILETIME struct");
 	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_FILETIME));
-
-#ifdef SEARCH_IO_TESTING
-	iIndex = m_stComboMode.AddString(L"_READONLY(IO SPEED)_"); //REMOVELATER:
-	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_IOTEST));
-#endif //SEARCH_IO_TESTING
 
 	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_SEARCH_LIST_MAIN, this);
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
@@ -811,13 +795,6 @@ void CHexDlgSearch::Prepare()
 	case EMode::SEARCH_FILETIME:
 		fSuccess = PrepareFILETIME();
 		break;
-#ifdef SEARCH_IO_TESTING
-	case EMode::SEARCH_IOTEST: //REMOVELATER:
-		fSuccess = true;
-		m_spnSearch = { static_cast<std::byte*>(nullptr), 1 };
-		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(999)>;
-		break;
-#endif
 	}
 	if (!fSuccess)
 		return;

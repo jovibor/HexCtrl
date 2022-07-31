@@ -209,7 +209,7 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		case 2: //Size.
 			if (!pBkm->vecSpan.empty())
 				ullSize = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
-					[](auto ullTotal, const HEXSPAN& ref) {return ullTotal + ref.ullSize; });
+					[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
 			*std::vformat_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(ullSize)) = L'\0';
 			break;
 		case 3: //Description.

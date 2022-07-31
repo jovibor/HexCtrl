@@ -35,9 +35,9 @@ ULONGLONG CHexBookmarks::AddBkm(const HEXBKM& hbs, bool fRedraw)
 	{
 		ullID = 1; //Bookmarks' ID starts from 1.
 
-		if (auto iter = std::max_element(m_deqBookmarks.begin(), m_deqBookmarks.end(),
+		if (const auto iter = std::max_element(m_deqBookmarks.begin(), m_deqBookmarks.end(),
 			[](const HEXBKM& ref1, const HEXBKM& ref2)
-			{return ref1.ullID < ref2.ullID; }); iter != m_deqBookmarks.end())
+			{ return ref1.ullID < ref2.ullID; }); iter != m_deqBookmarks.end())
 			ullID = iter->ullID + 1; //Increasing next bookmark's ID by 1.
 
 		m_deqBookmarks.emplace_back(hbs.vecSpan, hbs.wstrDesc, ullID, hbs.ullData, hbs.clrBk, hbs.clrText);
@@ -71,8 +71,8 @@ auto CHexBookmarks::GetByID(ULONGLONG ullID)->PHEXBKM
 	if (m_pVirtual) {
 		pBkm = m_pVirtual->GetByID(ullID);
 	}
-	else if (auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-		[ullID](const HEXBKM& ref) {return ullID == ref.ullID; }); iter != m_deqBookmarks.end())
+	else if (const auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
+		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); iter != m_deqBookmarks.end())
 		pBkm = &*iter;
 
 	return pBkm;
@@ -167,7 +167,7 @@ auto CHexBookmarks::HitTest(ULONGLONG ullOffset)->PHEXBKM
 	}
 	else
 	{
-		if (auto rIter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
+		if (const auto rIter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
 			[ullOffset](const HEXBKM& ref)
 			{ return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPAN& refV)
@@ -199,11 +199,11 @@ void CHexBookmarks::RemoveByOffset(ULONGLONG ullOffset)
 			return;
 
 		//Searching from the end, to remove last added bookmark if few at the given offset.
-		if (auto rIter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
+		if (const auto rIter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
 			[ullOffset](const HEXBKM& ref)
-			{return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
+			{ return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPAN& refV)
-				{return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
+				{ return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
 			}); rIter != m_deqBookmarks.rend())
 			m_deqBookmarks.erase((rIter + 1).base()); //Weird notation for reverse_iterator to work in erase() (acc to standard).
 	}
@@ -225,8 +225,8 @@ void CHexBookmarks::RemoveByID(ULONGLONG ullID)
 		if (m_deqBookmarks.empty())
 			return;
 
-		if (auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-			[ullID](const HEXBKM& ref) {return ullID == ref.ullID; }); iter != m_deqBookmarks.end())
+		if (const auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
+			[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); iter != m_deqBookmarks.end())
 			m_deqBookmarks.erase(iter);
 	}
 
@@ -267,9 +267,9 @@ void CHexBookmarks::SortData(int iColumn, bool fAscending)
 				if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
 				{
 					auto ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
-						[](auto ullTotal, const HEXSPAN& ref) {return ullTotal + ref.ullSize; });
+						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
 					auto ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
-						[](auto ullTotal, const HEXSPAN& ref) {return ullTotal + ref.ullSize; });
+						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
 					iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
 				}
 				break;
@@ -293,7 +293,7 @@ void CHexBookmarks::Update(ULONGLONG ullID, const HEXBKM& stBookmark)
 		return;
 
 	auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-		[ullID](const HEXBKM& ref) {return ullID == ref.ullID; });
+		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; });
 
 	if (iter != m_deqBookmarks.end())
 		*iter = stBookmark;
