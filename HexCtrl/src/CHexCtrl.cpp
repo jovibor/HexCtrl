@@ -1472,9 +1472,8 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ "CMD_SCROLL_PAGEUP", { CMD_SCROLL_PAGEUP, 0 } },
 		{ "CMD_SCROLL_PAGEDOWN", { CMD_SCROLL_PAGEDOWN, 0 } }
 	};
-
-	const std::unordered_map<std::string_view, std::pair<UINT, std::wstring_view>> umapKeys
-	{
+	//Mapping between JSON-data Command Names and actual keyboard codes with the names that appear in the menu.
+	const std::unordered_map<std::string_view, std::pair<UINT, std::wstring_view>> umapKeys {
 		{ { "ctrl" }, { VK_CONTROL, { L"Ctrl" } } },
 		{ { "shift" }, { VK_SHIFT, { L"Shift" } } },
 		{ { "alt" }, { VK_MENU, { L"Alt" } } },
@@ -1509,51 +1508,47 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ { "num_minus" }, { VK_SUBTRACT, { L"Num Minus" } } }
 	};
 
-	const auto lmbJson = [&](auto&& refJson, auto&& lmbParse)
+	const auto lmbJsonParse = [&](auto&& refJsonDoc, auto&& lmbParseStr)->std::vector<SKEYBIND>
 	{
 		std::vector<SKEYBIND> vecRet { };
-		for (auto iterJ = refJson.MemberBegin(); iterJ != refJson.MemberEnd(); ++iterJ) //JSON data iterating.
+		for (auto iterJ = refJsonDoc.MemberBegin(); iterJ != refJsonDoc.MemberEnd(); ++iterJ) //JSON data iterating.
 		{
-			if (const auto iterCmd = umapCmdMenu.find(iterJ->name.GetString()); iterCmd != umapCmdMenu.end())
-				for (auto iterValue = iterJ->value.Begin(); iterValue != iterJ->value.End(); ++iterValue) //Array iterating.
-					if (auto opt = lmbParse(iterValue->GetString()); opt)
+			if (const auto iterCmd = umapCmdMenu.find(iterJ->name.GetString()); iterCmd != umapCmdMenu.end()) {
+				for (auto iterValue = iterJ->value.Begin(); iterValue != iterJ->value.End(); ++iterValue) { //Array iterating.
+					if (const auto opt = lmbParseStr(iterValue->GetString()); opt)
 					{
 						auto stKeyBind = opt.value();
 						stKeyBind.eCmd = iterCmd->second.first;
 						stKeyBind.wMenuID = static_cast<WORD>(iterCmd->second.second);
 						vecRet.emplace_back(stKeyBind);
 					}
+				}
+			}
 		}
-
 		return vecRet;
 	};
-	const auto lmbParse = [&](std::string_view str)->std::optional<SKEYBIND>
+	const auto lmbParseStr = [&](std::string_view str)->std::optional<SKEYBIND>
 	{
 		if (str.empty())
 			return { };
 
 		SKEYBIND stRet { };
-		const auto iSize = str.size();
+		const auto nSize = str.size();
 		size_t nPosStart { 0 }; //Next position to start search for '+' sign.
 		const auto nSubWords = std::count(str.begin(), str.end(), '+') + 1; //How many sub-words (divided by '+')?
 		for (auto i = 0; i < nSubWords; ++i)
 		{
-			size_t nSizeSubWord;
 			const auto nPosNext = str.find('+', nPosStart);
-			if (nPosNext == std::string_view::npos)
-				nSizeSubWord = iSize - nPosStart;
-			else
-				nSizeSubWord = nPosNext - nPosStart;
-
+			const auto nSizeSubWord = nPosNext == std::string_view::npos ? nSize - nPosStart : nPosNext - nPosStart;
 			const auto strSubWord = str.substr(nPosStart, nSizeSubWord);
 			nPosStart = nPosNext + 1;
 
-			if (strSubWord.size() == 1)
+			if (strSubWord.size() == 1) {
 				stRet.uKey = static_cast<UCHAR>(std::toupper(strSubWord[0])); //Binding keys are in uppercase.
+			}
 			else if (const auto iter = umapKeys.find(strSubWord); iter != umapKeys.end())
 			{
-				const auto uChar = iter->second.first;
-				switch (uChar)
+				switch (const auto uChar = iter->second.first; uChar)
 				{
 				case VK_CONTROL:
 					stRet.fCtrl = true;
@@ -1572,19 +1567,8 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 
 		return stRet;
 	};
-	const auto lmbVecEqualize = [](std::vector<SKEYBIND>& vecMain, const std::vector<SKEYBIND>& vecFrom)
-	{
-		//Remove everything from vecMain that exists in vecFrom.
-		for (const auto& iterFrom : vecFrom)
-			vecMain.erase(std::remove_if(vecMain.begin(), vecMain.end(),
-				[&](const SKEYBIND& ref) { return ref.eCmd == iterFrom.eCmd; }),
-				vecMain.end());
 
-		//Add everything from vecFrom to vecMain.
-		vecMain.insert(vecMain.end(), vecFrom.begin(), vecFrom.end());
-	};
-
-	rapidjson::Document doc;
+	rapidjson::Document docJSON;
 	bool fRet { false };
 	if (wstrPath.empty()) //Default keybind.json from resources.
 	{
@@ -1595,12 +1579,10 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 			{
 				const auto nSize = static_cast<std::size_t>(SizeofResource(hInst, hRes));
 				const auto* const pData = static_cast<char*>(LockResource(hData));
-
-				if (doc.Parse(pData, nSize); !doc.IsNull()) //Parse all default keybindings.
+				if (docJSON.Parse(pData, nSize); !docJSON.IsNull()) //Parse all default keybindings.
 				{
 					m_vecKeyBind.clear();
-					for (const auto& iter : umapCmdMenu) //Fill m_vecKeyBind with all possible commands from umapCmdMenu.
-					{
+					for (const auto& iter : umapCmdMenu) { //Fill m_vecKeyBind with all possible commands from umapCmdMenu.
 						m_vecKeyBind.emplace_back(iter.second.first, static_cast<WORD>(iter.second.second));
 					}
 					fRet = true;
@@ -1611,21 +1593,26 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 	else if (std::ifstream ifs(std::wstring { wstrPath }); ifs.is_open())
 	{
 		rapidjson::IStreamWrapper isw { ifs };
-		if (doc.ParseStream(isw); !doc.IsNull())
+		if (docJSON.ParseStream(isw); !docJSON.IsNull())
 			fRet = true;
 	}
 
 	if (fRet)
 	{
-		lmbVecEqualize(m_vecKeyBind, lmbJson(doc, lmbParse));
+		const auto vecFromJSON = lmbJsonParse(docJSON, lmbParseStr);
+		for (const auto& iterFrom : vecFromJSON) { //Remove everything in m_vecKeyBind that exists in vecFromJSON.
+			std::erase_if(m_vecKeyBind, [&](const SKEYBIND& ref) { return ref.eCmd == iterFrom.eCmd; });
+		}
+		m_vecKeyBind.insert(m_vecKeyBind.end(), vecFromJSON.begin(), vecFromJSON.end()); //Add everything from vecFrom to vecMain.
 
 		std::size_t i { 0 };
 		for (const auto& iterMain : m_vecKeyBind)
 		{
-			//Check for previous same menu ID, to assign only one (first) keybinding for menu name.
+			//Check for previous same menu ID. To assign only one, first, keybinding for menu name.
+			//With `"ctrl+f", "ctrl+h"` in JSON, only the "Ctrl+F" will be assigned as the menu name.
 			const auto iterEnd = m_vecKeyBind.begin() + i++;
-			if (const auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd,
-				[&](const SKEYBIND& ref) { return ref.wMenuID == iterMain.wMenuID; });
+			if (const auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd, [&](const SKEYBIND& ref)
+				{ return ref.wMenuID == iterMain.wMenuID; });
 				iterTmp == iterEnd && iterMain.wMenuID != 0 && iterMain.uKey != 0)
 			{
 				CStringW wstrMenuName;
