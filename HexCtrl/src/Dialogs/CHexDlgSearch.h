@@ -126,5 +126,6 @@ namespace HEXCTRL::INTERNAL
 		bool m_fMatchCase { false };   //"Match case" check box.
 		bool m_fInverted { false };    //"Inverted" check box
 		bool m_fReplaceWarn { true };  //Show "Replace string size exceeds..." warning message or not.
+		bool m_fSearchNext { false };  //Search through Next/Prev menu.
 	};
 }

@@ -1508,102 +1508,84 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ { "num_minus" }, { VK_SUBTRACT, { L"Num Minus" } } }
 	};
 
-	const auto lmbJsonParse = [&](auto&& refJsonDoc, auto&& lmbParseStr)->std::vector<SKEYBIND>
-	{
-		std::vector<SKEYBIND> vecRet { };
-		for (auto iterJ = refJsonDoc.MemberBegin(); iterJ != refJsonDoc.MemberEnd(); ++iterJ) //JSON data iterating.
-		{
-			if (const auto iterCmd = umapCmdMenu.find(iterJ->name.GetString()); iterCmd != umapCmdMenu.end()) {
-				for (auto iterValue = iterJ->value.Begin(); iterValue != iterJ->value.End(); ++iterValue) { //Array iterating.
-					if (const auto opt = lmbParseStr(iterValue->GetString()); opt)
-					{
-						auto stKeyBind = opt.value();
-						stKeyBind.eCmd = iterCmd->second.first;
-						stKeyBind.wMenuID = static_cast<WORD>(iterCmd->second.second);
-						vecRet.emplace_back(stKeyBind);
-					}
-				}
-			}
-		}
-		return vecRet;
-	};
-	const auto lmbParseStr = [&](std::string_view str)->std::optional<SKEYBIND>
-	{
-		if (str.empty())
-			return { };
-
-		SKEYBIND stRet { };
-		const auto nSize = str.size();
-		size_t nPosStart { 0 }; //Next position to start search for '+' sign.
-		const auto nSubWords = std::count(str.begin(), str.end(), '+') + 1; //How many sub-words (divided by '+')?
-		for (auto i = 0; i < nSubWords; ++i)
-		{
-			const auto nPosNext = str.find('+', nPosStart);
-			const auto nSizeSubWord = nPosNext == std::string_view::npos ? nSize - nPosStart : nPosNext - nPosStart;
-			const auto strSubWord = str.substr(nPosStart, nSizeSubWord);
-			nPosStart = nPosNext + 1;
-
-			if (strSubWord.size() == 1) {
-				stRet.uKey = static_cast<UCHAR>(std::toupper(strSubWord[0])); //Binding keys are in uppercase.
-			}
-			else if (const auto iter = umapKeys.find(strSubWord); iter != umapKeys.end())
-			{
-				switch (const auto uChar = iter->second.first; uChar)
-				{
-				case VK_CONTROL:
-					stRet.fCtrl = true;
-					break;
-				case VK_SHIFT:
-					stRet.fShift = true;
-					break;
-				case VK_MENU:
-					stRet.fAlt = true;
-					break;
-				default:
-					stRet.uKey = uChar;
-				}
-			}
-		}
-
-		return stRet;
-	};
-
 	rapidjson::Document docJSON;
-	bool fRet { false };
-	if (wstrPath.empty()) //Default keybind.json from resources.
+	bool fJSONParsed { false };
+	if (wstrPath.empty()) //Default IDR_HEXCTRL_JSON_KEYBIND.json, from resources.
 	{
 		const auto hInst = AfxGetInstanceHandle();
-		if (const auto hRes = FindResourceW(hInst, MAKEINTRESOURCEW(IDR_HEXCTRL_JSON_KEYBIND), L"JSON"); hRes != nullptr)
-		{
+		if (const auto hRes = FindResourceW(hInst, MAKEINTRESOURCEW(IDR_HEXCTRL_JSON_KEYBIND), L"JSON"); hRes != nullptr) {
 			if (const auto hData = LoadResource(hInst, hRes); hData != nullptr)
 			{
 				const auto nSize = static_cast<std::size_t>(SizeofResource(hInst, hRes));
 				const auto* const pData = static_cast<char*>(LockResource(hData));
-				if (docJSON.Parse(pData, nSize); !docJSON.IsNull()) //Parse all default keybindings.
-				{
-					m_vecKeyBind.clear();
-					for (const auto& iter : umapCmdMenu) { //Fill m_vecKeyBind with all possible commands from umapCmdMenu.
-						m_vecKeyBind.emplace_back(iter.second.first, static_cast<WORD>(iter.second.second));
-					}
-					fRet = true;
+				if (docJSON.Parse(pData, nSize); !docJSON.IsNull()) { //Parse all default keybindings.
+					fJSONParsed = true;
 				}
 			}
 		}
 	}
-	else if (std::ifstream ifs(std::wstring { wstrPath }); ifs.is_open())
-	{
+	else if (std::ifstream ifs(std::wstring { wstrPath }); ifs.is_open()) {
 		rapidjson::IStreamWrapper isw { ifs };
 		if (docJSON.ParseStream(isw); !docJSON.IsNull())
-			fRet = true;
+			fJSONParsed = true;
 	}
+	assert(fJSONParsed);
 
-	if (fRet)
+	if (fJSONParsed)
 	{
-		const auto vecFromJSON = lmbJsonParse(docJSON, lmbParseStr);
-		for (const auto& iterFrom : vecFromJSON) { //Remove everything in m_vecKeyBind that exists in vecFromJSON.
-			std::erase_if(m_vecKeyBind, [&](const SKEYBIND& ref) { return ref.eCmd == iterFrom.eCmd; });
+		m_vecKeyBind.clear();
+		const auto lmbParseStr = [&](std::string_view str)->std::optional<SKEYBIND>
+		{
+			if (str.empty())
+				return { };
+
+			SKEYBIND stRet { };
+			const auto nSize = str.size();
+			size_t nPosStart { 0 }; //Next position to start search for '+' sign.
+			const auto nSubWords = std::count(str.begin(), str.end(), '+') + 1; //How many sub-words (divided by '+')?
+			for (auto i = 0; i < nSubWords; ++i)
+			{
+				const auto nPosNext = str.find('+', nPosStart);
+				const auto nSizeSubWord = nPosNext == std::string_view::npos ? nSize - nPosStart : nPosNext - nPosStart;
+				const auto strSubWord = str.substr(nPosStart, nSizeSubWord);
+				nPosStart = nPosNext + 1;
+
+				if (strSubWord.size() == 1) {
+					stRet.uKey = static_cast<UCHAR>(std::toupper(strSubWord[0])); //Binding keys are in uppercase.
+				}
+				else if (const auto iter = umapKeys.find(strSubWord); iter != umapKeys.end())
+				{
+					switch (const auto uChar = iter->second.first; uChar)
+					{
+					case VK_CONTROL:
+						stRet.fCtrl = true;
+						break;
+					case VK_SHIFT:
+						stRet.fShift = true;
+						break;
+					case VK_MENU:
+						stRet.fAlt = true;
+						break;
+					default:
+						stRet.uKey = uChar;
+					}
+				}
+			}
+
+			return stRet;
+		};
+		for (auto iterJ = docJSON.MemberBegin(); iterJ != docJSON.MemberEnd(); ++iterJ) //JSON data iterating.
+		{
+			if (const auto iterCmd = umapCmdMenu.find(iterJ->name.GetString()); iterCmd != umapCmdMenu.end()) {
+				for (auto iterValue = iterJ->value.Begin(); iterValue != iterJ->value.End(); ++iterValue) { //Array iterating.
+					if (auto optKey = lmbParseStr(iterValue->GetString()); optKey) {
+						optKey->eCmd = iterCmd->second.first;
+						optKey->wMenuID = static_cast<WORD>(iterCmd->second.second);
+						m_vecKeyBind.emplace_back(*optKey);
+					}
+				}
+			}
 		}
-		m_vecKeyBind.insert(m_vecKeyBind.end(), vecFromJSON.begin(), vecFromJSON.end()); //Add everything from vecFrom to vecMain.
 
 		std::size_t i { 0 };
 		for (const auto& iterMain : m_vecKeyBind)
@@ -1629,8 +1611,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 				if (iterMain.fAlt)
 					wstr += L"Alt+";
 
-				//Search for any special key names: 'Tab', 'Enter', etc...
-				//If not found then it's just a char.
+				//Search for any special key names: 'Tab', 'Enter', etc... If not found then it's just a char.
 				if (const auto iterUmap = std::find_if(umapKeys.begin(), umapKeys.end(), [&](const auto& ref)
 					{ return ref.second.first == iterMain.uKey; }); iterUmap != umapKeys.end())
 					wstr += iterUmap->second.second;
@@ -1648,7 +1629,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		}
 	}
 
-	return fRet;
+	return fJSONParsed;
 }
 
 void CHexCtrl::SetData(const HEXDATA& hds)

@@ -115,6 +115,7 @@ void CHexDlgSearch::SearchNextPrev(bool fForward)
 	m_iDirection = fForward ? 1 : -1;
 	m_fReplace = false;
 	m_fAll = false;
+	m_fSearchNext = true;
 	Search();
 }
 
@@ -213,7 +214,6 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, std::span<std:
 	if (nSizeSearch > SEARCH_SIZE_LIMIT)
 		return { false, false };
 
-	assert(ullStart + nSizeSearch <= m_ullSizeSentinel);
 	if (ullStart + nSizeSearch > m_ullSizeSentinel)
 		return { false, false };
 
@@ -720,10 +720,16 @@ void CHexDlgSearch::Prepare()
 	{
 		CStringW wstrStart;
 		m_stEditStart.GetWindowTextW(wstrStart);
-		if (wstrStart.IsEmpty())
+		if (wstrStart.IsEmpty()) {
 			m_ullOffsetCurr = 0;
-		else if (const auto optStart = StrToULL(wstrStart.GetString()); optStart)
+		}
+		else if (const auto optStart = StrToULL(wstrStart.GetString()); optStart) {
+			if (*optStart >= ullDataSize) {
+				MessageBoxW(L"\"Start search at\" offset is bigger than the data size!", L"Incorrect offset", MB_ICONERROR);
+				return;
+			}
 			m_ullOffsetCurr = *optStart;
+		}
 		else
 			return;
 	}
@@ -1203,8 +1209,7 @@ void CHexDlgSearch::Search()
 
 	const auto lmbFindForward = [&]()
 	{
-		if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_spnSearch);
-			stFind.fFound)
+		if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_spnSearch); stFind.fFound)
 		{
 			m_fFound = true;
 			m_fSecondMatch = true;
@@ -1406,8 +1411,11 @@ void CHexDlgSearch::Search()
 	}
 
 	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_RESULT)->SetWindowTextW(wstrInfo.data());
-	SetForegroundWindow();
-	SetFocus();
+	if (!m_fSearchNext) {
+		SetForegroundWindow();
+		SetFocus();
+	}
+	else { m_fSearchNext = false; }
 }
 
 void CHexDlgSearch::SetEditStartAt(ULONGLONG ullOffset)

@@ -532,7 +532,7 @@ Sets the path to a JSON config file with keybindings to use in **HexCtrl**, or e
     "CMD_SEARCH_PREV": [ "shift+f3" ]
 }
 ```
-For default values see the [`HexCtrl/res/keybind.json`](https://github.com/jovibor/HexCtrl/blob/master/HexCtrl/res/keybind.json) file from the project sources.
+For default values see the [`IDR_HEXCTRL_JSON_KEYBIND.json`](https://github.com/jovibor/HexCtrl/blob/master/HexCtrl/res/IDR_HEXCTRL_JSON_KEYBIND.json) file from the project sources.
 
 ### [](#)SetData
 ```cpp
