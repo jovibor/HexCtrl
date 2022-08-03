@@ -5,7 +5,6 @@
 * [Installation](#installation)
   * [Building From The Sources](#building-from-the-sources)
   * [Dynamic Link Library](#dynamic-link-library)
-  * [IHexCtrlPtr](#ihexctrlptr)
   * [Namespace](#namespace)
 * [Creating](#creating)
   * [Classic Approach](#classic-approach)
@@ -150,7 +149,7 @@ The building process is quite simple:
 *HexCtrl/dep/rapidjson/rapidjson-amalgam.h* (header-only lib).
 3. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the **HexCtrl**.
 4. Declare [**HexCtrl**'s namespace](#namespace): `using namespace HEXCTRL;`
-5. Declare [`IHexCtrlPtr`](#ihexctrlptr) member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
+5. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
 6. [Create](#creating) control instance.
 
 If you want to build **HexCtrl** from the sources in non **MFC** app you will have to:
@@ -167,7 +166,7 @@ To use **HexCtrl** as the *.dll* do the following:
 #define HEXCTRL_SHARED_DLL //You can alternatively uncomment this line in HexCtrl.h.
 #include "HexCtrl.h"` 
 ```
-5. Declare [`IHexCtrlPtr`](#ihexctrlptr) member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
+5. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
 6. [Create](#creating) control instance.
 
 To build *HexCtrl.dll* and *HexCtrl.lib* use the *DLL Project/DLL Project.vcxproj* **Visual Studio** project file.
@@ -176,15 +175,6 @@ To build *HexCtrl.dll* and *HexCtrl.lib* use the *DLL Project/DLL Project.vcxpro
 **HexCtrl**'s *.dll* is built with **MFC Static Linking**. So even if you are to use it in your own **MFC** project, even with different **MFC** version, there should not be any interferences
 
 Building **HexCtrl** with **MFC Shared DLL** turned out to be a little tricky. Even with the help of `AFX_MANAGE_STATE(AfxGetStaticModuleState())` macro there always were **MFC** debug assertions, which origins quite hard to comprehend.
-
-### [](#)IHexCtrlPtr
-`IHexCtrlPtr` is, in fact, a pointer to a `IHexCtrl` pure abstract base class, wrapped either in `std::unique_ptr` or `std::shared_ptr`. You can choose whatever is best for your needs by define or undefine/comment-out the `HEXCTRL_IHEXCTRLPTR_UNIQUEPTR` macro in *HexCtrl.h*.  
-By default `HEXCTRL_IHEXCTRLPTR_UNIQUEPTR` is defined, thus `IHexCtrlPtr` is an alias for `std::unique_ptr<IHexCtrl>`.
-
-This wrapper is used mainly for convenience, so you don't have to bother about object lifetime, it will be destroyed automatically.
-That's why there is a call to the factory function `CreateHexCtrl()` - to properly initialize a pointer.
-
-If you, for some reason, need a raw interface pointer, you can directly call [`CreateRawHexCtrl`](#createrawhexctrl) function, which returns `IHexCtrl` interface pointer, but in this case you will need to call [`Destroy`](#destroy) method manually afterwards, to destroy `IHexCtrl` object.
 
 ### [](#)Namespace
 **HexCtrl** uses its own namespace `HEXCTRL`.  
@@ -214,7 +204,7 @@ But there is another option you can use:
 Give the control appropriate **ID** of your choice (<kbd>IDC_MY_HEX</kbd> in this example).  
 Also, here you can set the control's **Dynamic Layout** properties, so that control behaves appropriately when dialog is being resized.  
 ![](docs/img/hexctrl_vsproperties.jpg)
-3. Declare [`IHexCtrlPtr`](#ihexctrlptr) member variable within your dialog class:
+3. Declare `IHexCtrlPtr` member variable within your dialog class:
 ```cpp
 IHexCtrlPtr m_myHex { CreateHexCtrl() };
 ```
@@ -230,7 +220,7 @@ BOOL CMyDialog::OnInitDialog()
 
 ## [](#)Set the Data
 To set a data for the **HexCtrl** the [`SetData`](#setdata) method is used.  
-The code below shows how to construct [`HexCtrl`](#ihexctrlptr) object and display first `0x1FF` bytes of the current app's memory:
+The code below shows how to construct `HexCtrl` object and display first `0x1FF` bytes of the current app's memory:
 ```cpp
 IHexCtrlPtr myHex { CreateHexCtrl() };
 
@@ -297,8 +287,7 @@ Destroys the control.
 You only invoke this method if you use a raw `IHexCtrl` pointer obtained by the call to `CreateRawHexCtrl` function. Otherwise don't use it.
 
 **Remarks**  
-You usually don't need to call this method unless you use **HexCtrl** through the raw pointer obtained by [`CreateRawHexCtrl`](#createrawhexctrl) factory function.  
-If you use **HexCtrl** in standard way, through the [`IHexCtrlPtr`](#ihexctrlptr) pointer, obtained by `CreateHexCtrl` function, this method will be called automatically.
+You usually don't need to call this method unless you use **HexCtrl** through the raw pointer obtained by [`CreateRawHexCtrl`](#createrawhexctrl) factory function. If you use **HexCtrl** in the standard way, through the `IHexCtrlPtr` pointer obtained by `CreateHexCtrl` function, this method will be called automatically.
 
 ### [](#)ExecuteCmd
 ```cpp
@@ -998,8 +987,7 @@ Sent to indicate that the data has changed. `LPARAM` will contain pointer to a `
 ```cpp
 extern "C" HEXCTRLAPI IHexCtrl* __cdecl CreateRawHexCtrl();
 ```
-Main function that creates raw `IHexCtrl` interface pointer. You barely need to use this function in your code.  
-See the [`IHexCtrlPtr`](#ihexctrlptr) section for more info.
+Main function that creates raw `IHexCtrl` interface pointer. You barely need to use this function in your code. Although if you do, you need to manually call the [`Destroy`](#destroy) method afterwards.
 
 ### [](#)GetHexCtrlInfo
 ```cpp
