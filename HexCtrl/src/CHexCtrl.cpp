@@ -1409,7 +1409,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 
 	using enum EHexCmd;
 	//Mapping between stringified EHexCmd::* and its value-menuID pairs.
-	const std::unordered_map<std::string_view, std::pair<EHexCmd, int>> umapCmdMenu {
+	const std::unordered_map<std::string_view, std::pair<EHexCmd, DWORD>> umapCmdMenu {
 		{ "CMD_DLG_SEARCH", { CMD_DLG_SEARCH, IDM_HEXCTRL_DLG_SEARCH } },
 		{ "CMD_SEARCH_NEXT", { CMD_SEARCH_NEXT, IDM_HEXCTRL_SEARCH_NEXT } },
 		{ "CMD_SEARCH_PREV", { CMD_SEARCH_PREV, IDM_HEXCTRL_SEARCH_PREV } },
@@ -1508,6 +1508,14 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ { "num_minus" }, { VK_SUBTRACT, { L"Num Minus" } } }
 	};
 
+	//Filling m_vecKeyBind with ALL available commands/menus.
+	//This is vital for ExecuteCmd to work properly.
+	m_vecKeyBind.clear();
+	m_vecKeyBind.reserve(umapCmdMenu.size());
+	for (const auto& itMap : umapCmdMenu) {
+		m_vecKeyBind.emplace_back(SKEYBIND { .eCmd { itMap.second.first }, .wMenuID { static_cast<WORD>(itMap.second.second) } });
+	}
+
 	rapidjson::Document docJSON;
 	bool fJSONParsed { false };
 	if (wstrPath.empty()) //Default IDR_HEXCTRL_JSON_KEYBIND.json, from resources.
@@ -1533,7 +1541,6 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 
 	if (fJSONParsed)
 	{
-		m_vecKeyBind.clear();
 		const auto lmbParseStr = [&](std::string_view str)->std::optional<SKEYBIND>
 		{
 			if (str.empty())
@@ -1581,7 +1588,17 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 					if (auto optKey = lmbParseStr(iterValue->GetString()); optKey) {
 						optKey->eCmd = iterCmd->second.first;
 						optKey->wMenuID = static_cast<WORD>(iterCmd->second.second);
-						m_vecKeyBind.emplace_back(*optKey);
+						if (auto it = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [&optKey](const SKEYBIND& ref)
+							{ return ref.eCmd == optKey->eCmd; }); it != m_vecKeyBind.end()) {
+							if (it->uKey == 0) {
+								*it = *optKey; //Adding keybindings from JSON to m_vecKeyBind.
+							}
+							else {
+								//If such command with some key from JSON already exist, we adding another one
+								//same command but with different key, like Ctrl+F/Ctrl+H for Search.
+								m_vecKeyBind.emplace_back(*optKey);
+							}
+						}
 					}
 				}
 			}
