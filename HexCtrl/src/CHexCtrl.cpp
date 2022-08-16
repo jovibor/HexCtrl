@@ -1051,7 +1051,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	{
 		std::random_device rd;
 		std::mt19937 gen(rd());
-		const std::uniform_int_distribution<std::uint64_t> distUInt64(0, (std::numeric_limits<std::uint64_t>::max)());
+		std::uniform_int_distribution<std::uint64_t> distUInt64(0, (std::numeric_limits<std::uint64_t>::max)());
 		const auto lmbRandUInt64 = [&](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> /**/)
 		{
 			assert(pData != nullptr);
