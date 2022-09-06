@@ -41,27 +41,27 @@ namespace HEXCTRL::stn //String to Num.
 
 	namespace impl
 	{
-		[[nodiscard]] inline unsigned char _Digit_from_char(const wchar_t _Ch) noexcept {
-			// convert ['0', '9'] ['A', 'Z'] ['a', 'z'] to [0, 35], everything else to 255
-			static constexpr unsigned char _Digit_from_byte[] = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-				255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-				255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 255, 255,
-				255, 255, 255, 255, 255, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
-				32, 33, 34, 35, 255, 255, 255, 255, 255, 255, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
-				26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-				255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-				255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-				255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-				255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-				255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-				255, 255, 255, 255, 255, 255, 255, 255, 255 };
-			static_assert(std::size(_Digit_from_byte) == 256);
+		inline constexpr unsigned char _Digit_from_byte[] = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+			255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+			255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 255, 255,
+			255, 255, 255, 255, 255, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+			32, 33, 34, 35, 255, 255, 255, 255, 255, 255, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+			26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+			255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+			255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+			255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+			255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+			255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+			255, 255, 255, 255, 255, 255, 255, 255, 255 };
+		static_assert(std::size(_Digit_from_byte) == 256);
 
+		[[nodiscard]] inline constexpr unsigned char _Digit_from_char(const wchar_t _Ch) noexcept {
+			// convert ['0', '9'] ['A', 'Z'] ['a', 'z'] to [0, 35], everything else to 255
 			return _Digit_from_byte[static_cast<unsigned char>(_Ch)];
 		}
 
 		template <class _RawTy, class CharT>
-		[[nodiscard]] from_chars_result<CharT> _Integer_from_chars(
+		[[nodiscard]] constexpr from_chars_result<CharT> _Integer_from_chars(
 			const CharT* const _First, const CharT* const _Last, _RawTy& _Raw_value, int _Base) noexcept {
 			assert(_Base == 0 || (_Base >= 2 && _Base <= 36));
 
@@ -1657,10 +1657,11 @@ namespace HEXCTRL::stn //String to Num.
 		}
 	};
 
+
 	//Main converting methods.
 
 	template<typename IntegralT> requires std::is_integral_v<IntegralT>
-	[[nodiscard]] auto StrToNum(std::string_view str, int iBase = 0)noexcept
+	[[nodiscard]] constexpr auto StrToNum(std::string_view str, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(IntegralT, char)
 	{
 		assert(!str.empty());
@@ -1674,7 +1675,7 @@ namespace HEXCTRL::stn //String to Num.
 	}
 
 	template<typename IntegralT> requires std::is_integral_v<IntegralT>
-	[[nodiscard]] auto StrToNum(std::wstring_view wstr, int iBase = 0)noexcept
+	[[nodiscard]] constexpr auto StrToNum(std::wstring_view wstr, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(IntegralT, wchar_t)
 	{
 		assert(!wstr.empty());
@@ -1718,82 +1719,82 @@ namespace HEXCTRL::stn //String to Num.
 
 	//Aliases with predefined types, for convenience.
 
-	[[nodiscard]] inline auto StrToChar(std::string_view str, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToChar(std::string_view str, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(char, char) {
 		return StrToNum<char>(str, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToChar(std::wstring_view wstr, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToChar(std::wstring_view wstr, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(char, wchar_t) {
 		return StrToNum<char>(wstr, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToUChar(std::string_view str, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToUChar(std::string_view str, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(unsigned char, char) {
 		return StrToNum<unsigned char>(str, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToUChar(std::wstring_view wstr, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToUChar(std::wstring_view wstr, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(unsigned char, wchar_t) {
 		return StrToNum<unsigned char>(wstr, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToShort(std::string_view str, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToShort(std::string_view str, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(short, char) {
 		return StrToNum<short>(str, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToShort(std::wstring_view wstr, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToShort(std::wstring_view wstr, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(short, wchar_t) {
 		return StrToNum<short>(wstr, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToUShort(std::string_view str, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToUShort(std::string_view str, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(unsigned short, char) {
 		return StrToNum<unsigned short>(str, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToUShort(std::wstring_view wstr, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToUShort(std::wstring_view wstr, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(unsigned short, wchar_t) {
 		return StrToNum<unsigned short>(wstr, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToInt(std::string_view str, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToInt(std::string_view str, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(int, char) {
 		return StrToNum<int>(str, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToInt(std::wstring_view wstr, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToInt(std::wstring_view wstr, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(int, wchar_t) {
 		return StrToNum<int>(wstr, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToUInt(std::string_view str, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToUInt(std::string_view str, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(unsigned int, char) {
 		return StrToNum<unsigned int>(str, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToUInt(std::wstring_view wstr, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToUInt(std::wstring_view wstr, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(unsigned int, wchar_t) {
 		return StrToNum<unsigned int>(wstr, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToLL(std::string_view str, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToLL(std::string_view str, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(long long, char) {
 		return StrToNum<long long>(str, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToLL(std::wstring_view wstr, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToLL(std::wstring_view wstr, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(long long, wchar_t) {
 		return StrToNum<long long>(wstr, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToULL(std::string_view str, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToULL(std::string_view str, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(unsigned long long, char) {
 		return StrToNum<unsigned long long>(str, iBase);
 	}
 
-	[[nodiscard]] inline auto StrToULL(std::wstring_view wstr, int iBase = 0)noexcept
+	[[nodiscard]] inline constexpr auto StrToULL(std::wstring_view wstr, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(unsigned long long, wchar_t) {
 		return StrToNum<unsigned long long>(wstr, iBase);
 	}

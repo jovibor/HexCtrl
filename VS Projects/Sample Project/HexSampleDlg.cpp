@@ -9,8 +9,8 @@
 BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDC_SETDATARO, &CHexSampleDlg::OnBnSetDataRO)
-	ON_BN_CLICKED(IDC_SETDATARW, &CHexSampleDlg::OnBnSetDataRW)
+	ON_BN_CLICKED(IDC_SETDATARO, &CHexSampleDlg::OnBnSetRndDataRO)
+	ON_BN_CLICKED(IDC_SETDATARW, &CHexSampleDlg::OnBnSetRndDataRW)
 	ON_BN_CLICKED(IDC_CLEARDATA, &CHexSampleDlg::OnBnClearData)
 	ON_BN_CLICKED(IDC_FILEOPENRO, &CHexSampleDlg::OnBnFileOpenRO)
 	ON_BN_CLICKED(IDC_FILEOPENRW, &CHexSampleDlg::OnBnFileOpenRW)
@@ -112,22 +112,27 @@ void CHexSampleDlg::OnBnClearData()
 {
 	FileClose();
 	m_pHexChild->ClearData();
-	if (m_pHexPopup->IsCreated())
+	if (m_pHexPopup->IsCreated()) {
 		m_pHexPopup->ClearData();
+		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"");
+	}
 
 	m_hds.spnData = { };
+	SetWindowTextW(L"HexCtrl Sample Dialog");
 }
 
 void CHexSampleDlg::OnBnFileOpenRO()
 {
-	if (auto optFiles = OpenFileDlg(); optFiles)
+	if (auto optFiles = OpenFileDlg(); optFiles) {
 		FileOpen(optFiles->front(), false);
+	}
 }
 
 void CHexSampleDlg::OnBnFileOpenRW()
 {
-	if (auto optFiles = OpenFileDlg(); optFiles)
+	if (auto optFiles = OpenFileDlg(); optFiles) {
 		FileOpen(optFiles->front(), true);
+	}
 }
 
 void CHexSampleDlg::OnBnPopup()
@@ -142,42 +147,58 @@ void CHexSampleDlg::OnBnPopup()
 	}
 }
 
-void CHexSampleDlg::OnBnSetDataRO()
+void CHexSampleDlg::OnBnSetRndDataRO()
 {
 	if (IsFileOpen())
 		FileClose();
 	else if (m_pHexChild->IsDataSet())
 	{
 		m_pHexChild->SetMutable(false);
-		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet())
+		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet()) {
 			m_pHexPopup->SetMutable(false);
+			::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"Random data: RO");
+		}
+
+		SetWindowTextW(L"Random data: RO");
 		return;
 	}
 
 	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
 	m_hds.fMutable = false;
 	m_pHexChild->SetData(m_hds);
-	if (m_pHexPopup->IsCreated())
+	if (m_pHexPopup->IsCreated()) {
 		m_pHexPopup->SetData(m_hds);
+		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"Random data: RO");
+	}
+
+	SetWindowTextW(L"Random data: RO");
 }
 
-void CHexSampleDlg::OnBnSetDataRW()
+void CHexSampleDlg::OnBnSetRndDataRW()
 {
 	if (IsFileOpen())
 		FileClose();
 	else if (m_pHexChild->IsDataSet())
 	{
 		m_pHexChild->SetMutable(true);
-		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet())
+		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet()) {
 			m_pHexPopup->SetMutable(true);
+			::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"Random data: RW");
+		}
+
+		SetWindowTextW(L"Random data: RW");
 		return;
 	}
 
 	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
 	m_hds.fMutable = true;
 	m_pHexChild->SetData(m_hds);
-	if (m_pHexPopup->IsCreated())
+	if (m_pHexPopup->IsCreated()) {
 		m_pHexPopup->SetData(m_hds);
+		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"Random data: RW");
+	}
+
+	SetWindowTextW(L"Random data: RW");
 }
 
 void CHexSampleDlg::OnHexGetColor(HEXCOLORINFO& hci)
@@ -221,38 +242,6 @@ void CHexSampleDlg::OnClose()
 	CDialogEx::OnClose();
 }
 
-auto CHexSampleDlg::OpenFileDlg()const->std::optional<std::vector<std::wstring>>
-{
-	CFileDialog fd(TRUE, nullptr, nullptr,
-		OFN_OVERWRITEPROMPT | OFN_EXPLORER | OFN_DONTADDTORECENT | OFN_ENABLESIZING
-		| OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST, L"All files (*.*)|*.*||");
-
-	std::vector<std::wstring> vecFiles { };
-	if (fd.DoModal() == IDOK)
-	{
-		CComPtr<IFileOpenDialog> pIFOD = fd.GetIFileOpenDialog();
-		CComPtr<IShellItemArray> pResults;
-		pIFOD->GetResults(&pResults);
-
-		DWORD dwCount { };
-		pResults->GetCount(&dwCount);
-		for (unsigned i = 0; i < dwCount; i++)
-		{
-			CComPtr<IShellItem> pItem;
-			pResults->GetItemAt(i, &pItem);
-			CComHeapPtr<wchar_t> pwstrPath;
-			pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwstrPath);
-			vecFiles.emplace_back(pwstrPath);
-		}
-	}
-
-	std::optional<std::vector<std::wstring>> optRet { };
-	if (!vecFiles.empty())
-		optRet = std::move(vecFiles);
-
-	return optRet;
-}
-
 bool CHexSampleDlg::IsFileOpen()const
 {
 	return m_fFileOpen;
@@ -264,28 +253,26 @@ void CHexSampleDlg::FileOpen(std::wstring_view wstrPath, bool fRW)
 
 	m_hFile = CreateFileW(wstrPath.data(), fRW ? GENERIC_READ | GENERIC_WRITE : GENERIC_READ,
 		FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-	if (m_hFile == INVALID_HANDLE_VALUE)
-	{
+	if (m_hFile == INVALID_HANDLE_VALUE) {
 		MessageBoxW(L"CreateFile call failed.\r\nFile might be already opened by another process.", L"Error", MB_ICONERROR);
 		return;
 	}
 
 	m_hMapObject = CreateFileMappingW(m_hFile, nullptr, fRW ? PAGE_READWRITE : PAGE_READONLY, 0, 0, nullptr);
-	if (!m_hMapObject)
-	{
+	if (!m_hMapObject) {
 		CloseHandle(m_hFile);
 		MessageBoxW(L"CreateFileMapping call failed.", L"Error", MB_ICONERROR);
 		return;
 	}
 
 	m_lpBase = MapViewOfFile(m_hMapObject, fRW ? FILE_MAP_WRITE : FILE_MAP_READ, 0, 0, 0);
-	if (!m_lpBase)
-	{
+	if (!m_lpBase) {
 		MessageBoxW(L"MapViewOfFile failed.\r\n File might be too big to fit in memory.", L"Error", MB_ICONERROR);
 		CloseHandle(m_hMapObject);
 		CloseHandle(m_hFile);
 		return;
 	}
+
 	m_fFileOpen = true;
 
 	LARGE_INTEGER stFileSize;
@@ -294,8 +281,12 @@ void CHexSampleDlg::FileOpen(std::wstring_view wstrPath, bool fRW)
 	m_hds.spnData = { static_cast<std::byte*>(m_lpBase), static_cast<std::size_t>(stFileSize.QuadPart) };
 	m_hds.fMutable = fRW;
 	m_pHexChild->SetData(m_hds);
-	if (m_pHexPopup->IsCreated())
+	if (m_pHexPopup->IsCreated()) {
 		m_pHexPopup->SetData(m_hds);
+		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), wstrPath.data());
+	}
+
+	SetWindowTextW(wstrPath.data());
 }
 
 void CHexSampleDlg::FileClose()
@@ -311,4 +302,36 @@ void CHexSampleDlg::FileClose()
 		CloseHandle(m_hFile);
 
 	m_fFileOpen = false;
+}
+
+auto CHexSampleDlg::OpenFileDlg()->std::optional<std::vector<std::wstring>>
+{
+	CFileDialog fd(TRUE, nullptr, nullptr,
+		OFN_OVERWRITEPROMPT | OFN_EXPLORER | OFN_DONTADDTORECENT | OFN_ENABLESIZING
+		| OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST, L"All files (*.*)|*.*||");
+
+	std::vector<std::wstring> vecFiles { };
+	if (fd.DoModal() == IDOK)
+	{
+		CComPtr<IFileOpenDialog> pIFOD = fd.GetIFileOpenDialog();
+		CComPtr<IShellItemArray> pResults;
+		pIFOD->GetResults(&pResults);
+
+		DWORD dwCount { };
+		pResults->GetCount(&dwCount);
+		for (unsigned i = 0; i < dwCount; ++i)
+		{
+			CComPtr<IShellItem> pItem;
+			pResults->GetItemAt(i, &pItem);
+			CComHeapPtr<wchar_t> pwstrPath;
+			pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwstrPath);
+			vecFiles.emplace_back(pwstrPath);
+		}
+	}
+
+	std::optional<std::vector<std::wstring>> optRet { };
+	if (!vecFiles.empty())
+		optRet = std::move(vecFiles);
+
+	return optRet;
 }

@@ -14,19 +14,19 @@ private:
 	void DoDataExchange(CDataExchange* pDX)override;
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
-	afx_msg void OnBnSetDataRO();
-	afx_msg void OnBnSetDataRW();
+	afx_msg void OnBnSetRndDataRO();
+	afx_msg void OnBnSetRndDataRW();
 	afx_msg void OnBnFileOpenRO();
 	afx_msg void OnBnFileOpenRW();
 	afx_msg void OnBnClearData();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnClose();
 	afx_msg void OnBnPopup();
-	DECLARE_MESSAGE_MAP()
-	[[nodiscard]] auto OpenFileDlg()const->std::optional<std::vector<std::wstring>>;
 	[[nodiscard]] bool IsFileOpen()const;
 	void FileOpen(std::wstring_view wstrPath, bool fRW);
 	void FileClose();
+	[[nodiscard]] static auto OpenFileDlg()->std::optional<std::vector<std::wstring>>;
+	DECLARE_MESSAGE_MAP()
 private:
 	IHexCtrlPtr m_pHexChild { CreateHexCtrl() };
 	IHexCtrlPtr m_pHexPopup { CreateHexCtrl() };
