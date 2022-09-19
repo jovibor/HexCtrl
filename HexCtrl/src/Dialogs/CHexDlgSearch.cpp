@@ -862,7 +862,7 @@ bool CHexDlgSearch::PrepareHexBytes()
 {
 	constexpr auto wstrWrongInput { L"Unacceptable input character.\r\nAllowed characters are: 0123456789AaBbCcDdEeFf" };
 	m_fMatchCase = false;
-	const auto optData = NumStrToHex(m_wstrTextSearch, m_fWildcard, static_cast<char>(m_uWildcard));
+	auto optData = NumStrToHex(m_wstrTextSearch, m_fWildcard, static_cast<char>(m_uWildcard));
 	if (!optData) {
 		m_iWrap = 1;
 		MessageBoxW(wstrWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
@@ -872,7 +872,7 @@ bool CHexDlgSearch::PrepareHexBytes()
 
 	if (m_fReplace)
 	{
-		const auto optDataRepl = NumStrToHex(m_wstrTextReplace);
+		auto optDataRepl = NumStrToHex(m_wstrTextReplace);
 		if (!optDataRepl) {
 			MessageBoxW(wstrWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			m_stComboReplace.SetFocus();

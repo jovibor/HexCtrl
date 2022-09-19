@@ -2127,8 +2127,7 @@ void CHexCtrl::ChooseFontDlg()
 
 void CHexCtrl::ClipboardCopy(EClipboard eType)const
 {
-	if (m_pSelection->GetSelSize() > 1024 * 1024 * 8) //8MB
-	{
+	if (m_pSelection->GetSelSize() > 1024 * 1024 * 8) { //8MB
 		::MessageBoxW(nullptr, L"Selection size is too big to copy.\r\nTry to select less.", L"Error", MB_ICONERROR);
 		return;
 	}
@@ -2170,15 +2169,13 @@ void CHexCtrl::ClipboardCopy(EClipboard eType)const
 	constexpr auto sCharSize = sizeof(wchar_t);
 	const std::size_t sMemSize = wstrData.size() * sCharSize + sCharSize;
 	const auto hMem = GlobalAlloc(GMEM_MOVEABLE, sMemSize);
-	if (!hMem)
-	{
+	if (!hMem) {
 		::MessageBoxW(nullptr, L"GlobalAlloc error.", L"Error", MB_ICONERROR);
 		return;
 	}
 
 	const auto lpMemLock = GlobalLock(hMem);
-	if (!lpMemLock)
-	{
+	if (!lpMemLock) {
 		::MessageBoxW(nullptr, L"GlobalLock error.", L"Error", MB_ICONERROR);
 		return;
 	}

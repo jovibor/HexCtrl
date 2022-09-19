@@ -134,9 +134,8 @@ void CHexDlgGoTo::OnOK()
 		break;
 	}
 
-	if (m_ullData < ullRangeFrom || m_ullData > ullRangeTo || m_ullData == 0)
-	{
-		MessageBox(L"Incorrect input range", L"Error", MB_ICONERROR);
+	if (m_ullData < ullRangeFrom || m_ullData > ullRangeTo || m_ullData == 0) {
+		MessageBoxW(L"Incorrect input range", L"Error", MB_ICONERROR);
 		return;
 	}
 

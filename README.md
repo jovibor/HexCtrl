@@ -117,7 +117,7 @@
 ## [](#)Introduction
 **HexCtrl** is a very featured hex viewer/editor control written in **C++** with the help of the **MFC** library.
 
-It's implemented as a pure abstract interface and therefore can be used in your app even if you don't use **MFC** directly. It's written with **/std:c++20** standard in **Visual Studio 2019**.
+It's implemented as a pure abstract interface and therefore can be used in your app even if you don't use **MFC** directly. It's written with **/std:c++20** standard in **Visual Studio 2022**.
 
 ### The main features of the **HexCtrl**:
 * View and edit data up to **16EB** (exabyte)

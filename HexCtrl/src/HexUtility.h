@@ -5,7 +5,7 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 
-// Here dwells some useful helper stuff for HexCtrl.
+//Here dwells some useful helper stuff for HexCtrl.
 #pragma once
 #include "../dep/StrToNum/StrToNum.h"
 #include "../HexCtrl.h"
@@ -28,8 +28,8 @@
 namespace HEXCTRL::INTERNAL
 {
 	//HexCtrl version and name constants for exporting.
-	constexpr auto WSTR_HEXCTRL_PRODUCT_NAME = L"" HEXCTRL_PRODUCT_NAME;
-	constexpr auto WSTR_HEXCTRL_COPYRIGHT_NAME = L"" HEXCTRL_COPYRIGHT_NAME;
+	constexpr auto WSTR_HEXCTRL_PRODUCT_NAME = HEXCTRL_PRODUCT_NAME;
+	constexpr auto WSTR_HEXCTRL_COPYRIGHT_NAME = HEXCTRL_COPYRIGHT_NAME;
 	constexpr auto ID_HEXCTRL_VERSION_MAJOR = HEXCTRL_VERSION_MAJOR;
 	constexpr auto ID_HEXCTRL_VERSION_MINOR = HEXCTRL_VERSION_MINOR;
 	constexpr auto ID_HEXCTRL_VERSION_MAINTENANCE = HEXCTRL_VERSION_MAINTENANCE;
