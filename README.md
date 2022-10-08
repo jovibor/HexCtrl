@@ -110,12 +110,11 @@
   * [GetHexCtrlInfo](#gethexctrlinfo)
   * [HEXCTRLINFO](#hexctrlinfo)
    </details>
-* [Positioning and Sizing](#positioning-and-sizing)
 * [Appearance](#appearance)
 * [Licensing](#licensing)
 
 ## [](#)Introduction
-**HexCtrl** is a very featured hex viewer/editor control written in **C++** with the help of the **MFC** library.
+**HexCtrl** is a very featured hex viewer/editor control written in **C++/MFC**.
 
 It's implemented as a pure abstract interface and therefore can be used in your app even if you don't use **MFC** directly. It's written with **/std:c++20** standard in **Visual Studio 2022**.
 
@@ -140,34 +139,33 @@ It's implemented as a pure abstract interface and therefore can be used in your 
 ## [](#)Installation
 The **HexCtrl** can be used in two different ways:  
 * Building from the sources as a part of your project 
-* Using as a *.dll*.
+* Using as a Dynamic Link Library *.dll*.
 
 ### [](#)Building From The Sources
 The building process is quite simple:
 1. Copy *HexCtrl* folder into your project's directory.
-2. Add all files from the *HexCtrl* folder into your project, except for  
-*HexCtrl/dep/rapidjson/rapidjson-amalgam.h* (header-only lib).
-3. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the **HexCtrl**.
-4. Declare [**HexCtrl**'s namespace](#namespace): `using namespace HEXCTRL;`
-5. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
-6. [Create](#creating) control instance.
+1. Add all files from the *HexCtrl* folder into your project (you can skip  
+*HexCtrl/dep/rapidjson/rapidjson-amalgam.h* header-only lib).
+1. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the **HexCtrl**.
+1. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };`
+1. [Create](#creating) control instance.
 
 If you want to build **HexCtrl** from the sources in non **MFC** app you will have to:
 1. Add support for **Use MFC in a Shared DLL** in your project settings.
-2. Uncomment the line `//#define HEXCTRL_MANUAL_MFC_INIT` in `HexCtrl.h` header file.
+1. Uncomment the line `//#define HEXCTRL_MANUAL_MFC_INIT` in `HexCtrl.h` header file.
 
 ### [](#)Dynamic Link Library
 To use **HexCtrl** as the *.dll* do the following:
 1. Copy *HexCtrl.h* and *HexCtrlDefs.h* files into your project's folder.
-2. Copy *HexCtrl.lib* file into your project's folder, so that linker can see it.
-3. Put *HexCtrl.dll* file next to your *.exe* file.
-4. Add the following line where you suppose to use the control:
+1. Copy *HexCtrl.lib* file into your project's folder, so that linker can see it.
+1. Put *HexCtrl.dll* file next to your *.exe* file.
+1. Add the following line where you suppose to use the control:
 ```cpp
 #define HEXCTRL_SHARED_DLL //You can alternatively uncomment this line in HexCtrl.h.
 #include "HexCtrl.h"` 
 ```
-5. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { CreateHexCtrl() };`
-6. [Create](#creating) control instance.
+1. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };`
+1. [Create](#creating) control instance.
 
 To build *HexCtrl.dll* and *HexCtrl.lib* use the *DLL Project/DLL Project.vcxproj* **Visual Studio** project file.
 
@@ -177,8 +175,7 @@ To build *HexCtrl.dll* and *HexCtrl.lib* use the *DLL Project/DLL Project.vcxpro
 Building **HexCtrl** with **MFC Shared DLL** turned out to be a little tricky. Even with the help of `AFX_MANAGE_STATE(AfxGetStaticModuleState())` macro there always were **MFC** debug assertions, which origins quite hard to comprehend.
 
 ### [](#)Namespace
-**HexCtrl** uses its own namespace `HEXCTRL`.  
-So it's up to you, whether to use namespace prefix before declarations:
+**HexCtrl** uses its own namespace `HEXCTRL`. So it's up to you, whether to use namespace prefix before declarations:
 ```cpp
 HEXCTRL::
 ```
@@ -190,7 +187,7 @@ using namespace HEXCTRL;
 ## [](#)Creating
 
 ### [](#)Classic Approach
-The [`Create`](#create) method is the first method you call to create **HexCtrl** instance. It takes [`HEXCREATE`](#hexcreate) struct as an argument which provides all necessary information for the creation process.  
+The [`Create`](#create) method is the first method you call to create **HexCtrl** instance. It takes [`HEXCREATE`](#hexcreate) struct as an argument which provides all necessary information for the control.  
 The `HEXCREATE::dwStyle` and `HEXCREATE::dwExStyle` are [Window](https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles) and [Extended Window](https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles) styles respectively, they will be passed to the **HexCtrl**'s window creating function, set these styles according to your needs.  
 For all available creation options see the [`HEXCREATE`](#hexcreate) struct description.
 
@@ -1011,16 +1008,6 @@ struct HEXCTRLINFO
         }stVersion;
     };
 };
-```
-
-## [](#)Positioning and Sizing
-To properly resize and position your **HexCtrl**'s window you may have to handle `WM_SIZE` message in its parent window, in something like this way:
-```cpp
-void CMyWnd::OnSize(UINT nType, int cx, int cy)
-{
-    //...
-    ::SetWindowPos(m_myHex->GetWindowHandle(EHexWnd::WND_MAIN), this->m_hWnd, 0, 0, cx, cy, SWP_NOACTIVATE | SWP_NOZORDER);
-}
 ```
 
 ## [](#)Appearance

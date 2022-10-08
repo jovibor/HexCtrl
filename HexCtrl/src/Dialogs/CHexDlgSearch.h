@@ -93,39 +93,39 @@ namespace HEXCTRL::INTERNAL
 		CEdit m_stEditLimit;        //Edit box "Limit search hit".
 		CBrush m_stBrushDefault;
 		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
-		ULONGLONG m_ullBoundBegin { };  //Search start boundary.
-		ULONGLONG m_ullBoundEnd { };    //Search end boundary.
-		ULONGLONG m_ullOffsetCurr { };  //Current offset a search should start from.
-		ULONGLONG m_ullSizeSentinel { };//Maximum size that search can't cross.
-		ULONGLONG m_ullStep { 1 };      //Search step (default is 1 byte).
-		DWORD m_dwCount { };            //How many, or what index number.
-		DWORD m_dwReplaced { };         //Replaced amount;
-		DWORD m_dwFoundLimit { 10000 }; //Maximum found search occurences.
-		int m_iDirection { };           //Search direction: 1 = Forward, -1 = Backward.
-		int m_iWrap { };                //Wrap direction: -1 = Beginning, 1 = End.
+		ULONGLONG m_ullBoundBegin { };       //Search start boundary.
+		ULONGLONG m_ullBoundEnd { };         //Search end boundary.
+		ULONGLONG m_ullOffsetCurr { };       //Current offset a search should start from.
+		ULONGLONG m_ullSizeSentinel { };     //Maximum size that search can't cross.
+		ULONGLONG m_ullStep { 1 };           //Search step (default is 1 byte).
+		DWORD m_dwCount { };                 //How many, or what index number.
+		DWORD m_dwReplaced { };              //Replaced amount;
+		DWORD m_dwFoundLimit { 10000 };      //Maximum found search occurences.
+		int m_iDirection { };                //Search direction: 1 = Forward, -1 = Backward.
+		int m_iWrap { };                     //Wrap direction: -1 = Beginning, 1 = End.
 		std::span<std::byte> m_spnSearch;    //"Search" span.
 		std::span<std::byte> m_spnReplace;   //"Replace" span.
 		std::string m_strSearch;             //Actual string to search after all conversions.
 		std::string m_strReplace;            //Actual string to replace.
 		std::wstring m_wstrSearch;           //Actual wstring to search.
 		std::wstring m_wstrReplace;          //Actual wstring to replace.
-		std::wstring m_wstrTextSearch { };   //Text from "Search" box.
-		std::wstring m_wstrTextReplace { };  //Text from "Replace with..." box.
+		std::wstring m_wstrTextSearch;       //Text from "Search" box.
+		std::wstring m_wstrTextReplace;      //Text from "Replace with..." box.
 		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
 		HEXSPAN m_stSelSpan { };             //Previous selection.
 		void(CHexDlgSearch::*m_pfnThread)(STHREADRUN* pThread); //Func pointer to the ThreadRun<> for the Search thread.
 		const std::byte m_uWildcard { '?' }; //Wildcard symbol.
-		bool m_fSecondMatch { false }; //First or subsequent match. 
-		bool m_fFound { false };       //Found or not.
-		bool m_fDoCount { true };      //Do we count matches or just print "Found".
-		bool m_fReplace { false };     //Find or Find and Replace with...?
-		bool m_fAll { false };         //Find/Replace one by one, or all?
-		bool m_fSelection { false };   //"In selection" check box.
-		bool m_fWildcard { false };    //"Wildcard" check box.
-		bool m_fBigEndian { false };   //"Big-endian" check box.
-		bool m_fMatchCase { false };   //"Match case" check box.
-		bool m_fInverted { false };    //"Inverted" check box
-		bool m_fReplaceWarn { true };  //Show "Replace string size exceeds..." warning message or not.
-		bool m_fSearchNext { false };  //Search through Next/Prev menu.
+		bool m_fSecondMatch { false };       //First or subsequent match. 
+		bool m_fFound { false };             //Found or not.
+		bool m_fDoCount { true };            //Do we count matches or just print "Found".
+		bool m_fReplace { false };           //Find or Find and Replace with...?
+		bool m_fAll { false };               //Find/Replace one by one, or all?
+		bool m_fSelection { false };         //"In selection" check box.
+		bool m_fWildcard { false };          //"Wildcard" check box.
+		bool m_fBigEndian { false };         //"Big-endian" check box.
+		bool m_fMatchCase { false };         //"Match case" check box.
+		bool m_fInverted { false };          //"Inverted" check box
+		bool m_fReplaceWarn { true };        //Show "Replace string size exceeds..." warning message or not.
+		bool m_fSearchNext { false };        //Search through Next/Prev menu.
 	};
 }

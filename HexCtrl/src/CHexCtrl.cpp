@@ -315,7 +315,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_penLines.CreatePen(PS_SOLID, 1, RGB(200, 200, 200));
 
 	//Removing window's border frame.
-	MARGINS marg { 0, 0, 0, 1 };
+	const MARGINS marg { 0, 0, 0, 1 };
 	DwmExtendFrameIntoClientArea(m_hWnd, &marg);
 	SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 
@@ -351,7 +351,7 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
 	if (IsCreated())
 		return false;
 
-	HEXCREATE hcs { .hWndParent { hWndParent }, .uID { uCtrlID }, .dwStyle { WS_VISIBLE | WS_CHILD }, .fCustom { true } };
+	const HEXCREATE hcs { .hWndParent { hWndParent }, .uID { uCtrlID }, .dwStyle { WS_VISIBLE | WS_CHILD }, .fCustom { true } };
 	return Create(hcs);
 }
 
@@ -1089,7 +1089,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			//Then clone this buffer to the destination data.
 			//Buffer is allocated with alignment for maximum performance.
 			constexpr auto ulSizeRandBuff = 1024U * 1024U; //1MB.
-			std::unique_ptr < std::byte[], decltype([](std::byte* pData) { _aligned_free(pData); }) >
+			const std::unique_ptr < std::byte[], decltype([](std::byte* pData) { _aligned_free(pData); }) >
 				uptrRandData(static_cast<std::byte*>(_aligned_malloc(ulSizeRandBuff, 32)));
 
 			for (auto iter = 0UL; iter < ulSizeRandBuff; iter += sizeof(std::uint64_t)) {
@@ -2243,7 +2243,7 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 	break;
 	case EClipboard::PASTE_HEX:
 	{
-		const auto optData = NumStrToHex(pDataClpbrd);
+		auto optData = NumStrToHex(pDataClpbrd);
 		if (!optData) {
 			GlobalUnlock(hClpbrd);
 			CloseClipboard();
@@ -3714,7 +3714,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 
 	if (auto pBkm = m_pBookmarks->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.
 	{
-		HEXBKMINFO hbi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK }, .pBkm { pBkm } };
+		const HEXBKMINFO hbi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK }, .pBkm { pBkm } };
 		ParentNotify(hbi);
 	}
 
@@ -3729,7 +3729,7 @@ void CHexCtrl::ParentNotify(const T& t)const
 
 void CHexCtrl::ParentNotify(UINT uCode)const
 {
-	NMHDR nmhdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), uCode };
+	const NMHDR nmhdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), uCode };
 	ParentNotify(nmhdr);
 }
 
@@ -4580,7 +4580,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 	else
 	{	//For user defined custom menu we notifying parent window.
-		HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK },
+		const HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK },
 			.pt { m_stMenuClickedPt }, .wMenuID { wMenuID } };
 		ParentNotify(hmi);
 	}
@@ -4591,7 +4591,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 {
 	//Notify parent that we are about to display a context menu.
-	HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU }, .pt { m_stMenuClickedPt = point } };
+	const HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU }, .pt { m_stMenuClickedPt = point } };
 	ParentNotify(hmi);
 	m_menuMain.GetSubMenu(0)->TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
 }

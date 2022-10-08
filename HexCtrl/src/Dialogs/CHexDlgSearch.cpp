@@ -107,7 +107,7 @@ BOOL CHexDlgSearch::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
 bool CHexDlgSearch::IsSearchAvail()const
 {
 	const auto* const pHexCtrl = GetHexCtrl();
-	return !(m_wstrTextSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffsetCurr >= pHexCtrl->GetDataSize());
+	return pHexCtrl->IsDataSet() && !m_wstrTextSearch.empty() && m_ullOffsetCurr < pHexCtrl->GetDataSize();
 }
 
 void CHexDlgSearch::SearchNextPrev(bool fForward)
@@ -579,7 +579,7 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i)
 		{
 			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
-			HEXBKM hbs { .vecSpan = { HEXSPAN { m_vecSearchRes.at(static_cast<size_t>(nItem)),
+			const HEXBKM hbs { .vecSpan = { HEXSPAN { m_vecSearchRes.at(static_cast<size_t>(nItem)),
 				m_fReplace ? m_spnReplace.size() : m_spnSearch.size() } }, .wstrDesc = m_wstrTextSearch };
 			GetHexCtrl()->GetBookmarks()->AddBkm(hbs, false);
 		}

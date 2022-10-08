@@ -136,7 +136,7 @@ void CHexDlgFillData::OnOK()
 	{
 	case EFillType::FILL_HEX:
 	{
-		const auto optData = NumStrToHex(wstrFillWith);
+		auto optData = NumStrToHex(wstrFillWith);
 		if (!optData) {
 			MessageBoxW(L"Wrong Hex format!", L"Format Error", MB_ICONERROR);
 			return;
