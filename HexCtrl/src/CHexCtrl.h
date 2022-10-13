@@ -18,14 +18,15 @@ namespace HEXCTRL::INTERNAL
 	/*********************************
 	* Forward declarations.          *
 	*********************************/
+	class CHexBookmarks;
 	class CHexDlgBkmMgr;
-	class CHexDlgEncoding;
 	class CHexDlgDataInterp;
+	class CHexDlgEncoding;
 	class CHexDlgFillData;
+	class CHexDlgGoTo;
 	class CHexDlgOpers;
 	class CHexDlgSearch;
-	class CHexDlgGoTo;
-	class CHexBookmarks;
+	class CHexDlgTemplMgr;
 	class CHexSelection;
 	namespace SCROLLEX { class CScrollEx; };
 
@@ -58,6 +59,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetPagePos()const->ULONGLONG override;
 		[[nodiscard]] DWORD GetPageSize()const override;
 		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPAN> override;
+		[[nodiscard]] auto GetTemplates()const->IHexTemplates* override;
 		[[nodiscard]] wchar_t GetUnprintableChar()const override;
 		[[nodiscard]] HWND GetWindowHandle(EHexWnd eWnd)const override;
 		void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0)override;
@@ -122,6 +124,7 @@ namespace HEXCTRL::INTERNAL
 		void DrawInfoBar(CDC* pDC)const;
 		void DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const;
 		void DrawHexText(CDC* pDC, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawDataTemplate(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawCustomColors(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
 		void DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
@@ -168,7 +171,7 @@ namespace HEXCTRL::INTERNAL
 		void TtBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip bookmark show/hide.
 		void TtOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();
-		DECLARE_MESSAGE_MAP()
+		DECLARE_MESSAGE_MAP();
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
@@ -202,9 +205,10 @@ namespace HEXCTRL::INTERNAL
 		const std::unique_ptr<CHexDlgEncoding> m_pDlgEncoding { std::make_unique<CHexDlgEncoding>() };       //"Encoding" dialog.
 		const std::unique_ptr<CHexDlgDataInterp> m_pDlgDataInterp { std::make_unique<CHexDlgDataInterp>() }; //"Data interpreter" dialog.
 		const std::unique_ptr<CHexDlgFillData> m_pDlgFillData { std::make_unique<CHexDlgFillData>() };       //"Fill with..." dialog.
+		const std::unique_ptr<CHexDlgGoTo> m_pDlgGoTo { std::make_unique<CHexDlgGoTo>() };                   //"GoTo..." dialog.
 		const std::unique_ptr<CHexDlgOpers> m_pDlgOpers { std::make_unique<CHexDlgOpers>() };                //"Operations" dialog.
 		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };             //"Search..." dialog.
-		const std::unique_ptr<CHexDlgGoTo> m_pDlgGoTo { std::make_unique<CHexDlgGoTo>() };                   //"GoTo..." dialog.
+		const std::unique_ptr<CHexDlgTemplMgr> m_pDlgTemplMgr { std::make_unique<CHexDlgTemplMgr>() };       //"Template manager..." dialog.
 		const std::unique_ptr<CHexBookmarks> m_pBookmarks { std::make_unique<CHexBookmarks>() };             //Bookmarks.
 		const std::unique_ptr<CHexSelection> m_pSelection { std::make_unique<CHexSelection>() };             //Selection class.
 		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollV { std::make_unique<SCROLLEX::CScrollEx>() };   //Vertical scroll bar.
@@ -227,6 +231,7 @@ namespace HEXCTRL::INTERNAL
 		CMenu m_menuMain;                     //Main popup menu.
 		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		CPen m_penLines;                      //Pen for lines.
+		CPen m_penDataTempl;                  //Pen for templates' fields (vertical lines).
 		PHEXBKM m_pBkmTtCurr { };             //Currently shown bookmark's tooltip;
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		std::optional<ULONGLONG> m_optRMouseClick { }; //Right mouse clicked chunk. Used in bookmarking.

@@ -241,6 +241,7 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgGoTo.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgOpers.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\src\HexUtility.h" />
     <ClInclude Include="..\Sample Project\stdafx.h" />
@@ -261,6 +262,7 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgGoTo.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgOpers.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexPropGridCtrl.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\HexUtility.cpp" />
     <ClCompile Include="..\Sample Project\stdafx.cpp">

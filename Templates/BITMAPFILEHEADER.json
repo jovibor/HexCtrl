@@ -1,0 +1,63 @@
+{
+    "TemplateName": "BITMAPFILEHEADER",
+    "clrBkDefault": "#909090",
+    "clrTextDefault": "#FFFFFF",
+    "Fields": {
+        "bfType": {
+            "size": 2
+        },
+        "bfSize": {
+            "size": 4
+        },
+        "bfReserved1": {
+            "size": 2
+        },
+        "bfReserved2": {
+            "size": 2
+        },
+        "bfOffBits": {
+            "size": 4
+        },
+        "BITMAPINFOHEADER": {
+            "clrBkDefault": "#C0C0C0",
+            "clrTextDefault": "#FFFFFF",
+            "Fields": {
+                "biSize": {
+                    "size": 4
+                },
+                "biWidth": {
+                    "size": 4
+                },
+                "biHeight": {
+                    "size": 4
+                },
+                "biPlanes": {
+                    "size": 2
+                },
+                "biBitCount": {
+                    "size": 2
+                },
+                "biCompression": {
+                    "size": 4
+                },
+                "biSizeImage": {
+                    "size": 4,
+                    "clrBk": "#BB0000",
+                    "clrText": "#FFFFFF"
+                },
+                "biXPelsPerMeter": {
+                    "size": 4
+                },
+                "biYPelsPerMeter": {
+                    "size": 4
+                },
+                "biClrUsed": {
+                    "size": 4
+                },
+                "biClrImportant": {
+                    "size": 4
+                }
+            }
+        }
+    }
+}

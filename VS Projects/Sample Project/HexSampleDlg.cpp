@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "HexSample.h"
 #include "HexSampleDlg.h"
+#include <filesystem>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -71,6 +72,23 @@ BOOL CHexSampleDlg::OnInitDialog()
 	m_pHexChild->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
 	//m_pHexChild->SetWheelRatio(0.5);
 	m_pHexChild->SetPageSize(64);
+
+	wchar_t buff[MAX_PATH];
+	GetModuleFileNameW(nullptr, buff, MAX_PATH);
+	std::wstring wstrPath = buff;
+	wstrPath = wstrPath.substr(0, wstrPath.find_last_of(L'\\'));
+	wstrPath += L"\\Templates\\";
+	if (const std::filesystem::path pathTemplates { wstrPath }; std::filesystem::exists(pathTemplates)) {
+		const auto pTempl = m_pHexChild->GetTemplates();
+		for (const auto& entry : std::filesystem::directory_iterator { pathTemplates }) {
+			std::wstring_view wsvFile = entry.path().c_str();
+			if (const auto npos = wsvFile.find_last_of(L'.'); npos != wsvFile.npos) {
+				if (wsvFile.substr(npos + 1) == L"json") { //Check json extension of templates.
+					pTempl->LoadTemplate(wsvFile.data());
+				}
+			}
+		}
+	}
 
 	//m_hds.pHexVirtColors = this;
 	//m_hds.fHighLatency = true;

@@ -20,6 +20,7 @@
 #include "Dialogs/CHexDlgGoTo.h"
 #include "Dialogs/CHexDlgOpers.h"
 #include "Dialogs/CHexDlgSearch.h"
+#include "Dialogs/CHexDlgTemplMgr.h"
 #include "HexUtility.h"
 #include <bit>
 #include <cassert>
@@ -256,7 +257,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	//"Search" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	pMenuTop->SetMenuItemInfoW(0, &mii, TRUE); //"Search" parent menu icon.
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_DLG_SEARCH, &mii);
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_SEARCH_DLGSEARCH, &mii);
 	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
 
 	//"Group Data" menu icon.
@@ -293,7 +294,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	//"Data View->Data Interpreter" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_DLG_DATAINTERP), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_DLG_DATAINTERP, &mii);
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_DLGDATAINTERP, &mii);
 	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
 
 	//"Appearance->Choose Font" menu icon.
@@ -313,6 +314,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	/***End of font related.***/
 
 	m_penLines.CreatePen(PS_SOLID, 1, RGB(200, 200, 200));
+	m_penDataTempl.CreatePen(PS_SOLID, 1, RGB(50, 50, 50));
 
 	//Removing window's border frame.
 	const MARGINS marg { 0, 0, 0, 1 };
@@ -340,6 +342,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_pDlgOpers->Create(IDD_HEXCTRL_OPERS, this, this);
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this, this);
 	m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, this, this);
+	m_pDlgTemplMgr->Create(IDD_HEXCTRL_TEMPLMGR, this, this);
 	m_pBookmarks->Attach(this);
 
 	return true;
@@ -560,6 +563,20 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case CMD_SCROLL_PAGEDOWN:
 		m_pScrollV->ScrollPageDown();
 		break;
+	case CMD_TEMPL_APPLYCURR:
+		m_pDlgTemplMgr->ApplyCurr(m_fMenuCMD ? m_optRMouseClick.value() : GetCaretPos());
+		break;
+	case CMD_TEMPL_DISAPPLY:
+		m_pDlgTemplMgr->DisapplyByOffset(m_fMenuCMD ? m_optRMouseClick.value() : GetCaretPos());
+		m_optRMouseClick.reset();
+		m_fMenuCMD = false;
+		break;
+	case CMD_TEMPL_CLEARALL:
+		m_pDlgTemplMgr->ClearAll();
+		break;
+	case CMD_DLG_TEMPLMGR:
+		m_pDlgTemplMgr->ShowWindow(SW_SHOW);
+		break;
 	}
 }
 
@@ -733,6 +750,11 @@ auto CHexCtrl::GetSelection()const->std::vector<HEXSPAN>
 	return m_pSelection->GetData();
 }
 
+auto CHexCtrl::GetTemplates()const->IHexTemplates*
+{
+	return &*m_pDlgTemplMgr;
+}
+
 wchar_t CHexCtrl::GetUnprintableChar()const
 {
 	assert(IsCreated());
@@ -774,6 +796,9 @@ HWND CHexCtrl::GetWindowHandle(EHexWnd eWnd)const
 		break;
 	case EHexWnd::DLG_GOTO:
 		hWnd = m_pDlgGoTo->m_hWnd;
+		break;
+	case EHexWnd::DLG_TEMPLMGR:
+		hWnd = m_pDlgTemplMgr->m_hWnd;
 		break;
 	}
 
@@ -907,6 +932,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case CMD_SEL_ALL:
 	case CMD_DLG_DATAINTERP:
 	case CMD_CLPBRD_COPY_OFFSET:
+	case CMD_TEMPL_APPLYCURR:
 		fAvail = fDataSet;
 		break;
 	case CMD_SEARCH_NEXT:
@@ -920,6 +946,13 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case CMD_NAV_REPFWD:
 	case CMD_NAV_REPBKW:
 		fAvail = fDataSet && m_pDlgGoTo->IsRepeatAvail();
+		break;
+	case CMD_TEMPL_DISAPPLY:
+		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied()
+			&& m_pDlgTemplMgr->HitTest(m_fMenuCMD ? *m_optRMouseClick : GetCaretPos()) != nullptr;
+		break;
+	case CMD_TEMPL_CLEARALL:
+		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied();
 		break;
 	default:
 		fAvail = true;
@@ -1410,10 +1443,10 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 	using enum EHexCmd;
 	//Mapping between stringified EHexCmd::* and its value-menuID pairs.
 	const std::unordered_map<std::string_view, std::pair<EHexCmd, DWORD>> umapCmdMenu {
-		{ "CMD_DLG_SEARCH", { CMD_DLG_SEARCH, IDM_HEXCTRL_DLG_SEARCH } },
+		{ "CMD_DLG_SEARCH", { CMD_DLG_SEARCH, IDM_HEXCTRL_SEARCH_DLGSEARCH } },
 		{ "CMD_SEARCH_NEXT", { CMD_SEARCH_NEXT, IDM_HEXCTRL_SEARCH_NEXT } },
 		{ "CMD_SEARCH_PREV", { CMD_SEARCH_PREV, IDM_HEXCTRL_SEARCH_PREV } },
-		{ "CMD_NAV_DLG_GOTO", { CMD_NAV_DLG_GOTO, IDM_HEXCTRL_NAV_DLG_GOTO } },
+		{ "CMD_NAV_DLG_GOTO", { CMD_NAV_DLG_GOTO, IDM_HEXCTRL_NAV_DLGGOTO } },
 		{ "CMD_NAV_REPFWD", { CMD_NAV_REPFWD, IDM_HEXCTRL_NAV_REPFWD } },
 		{ "CMD_NAV_REPBKW", { CMD_NAV_REPBKW, IDM_HEXCTRL_NAV_REPBKW } },
 		{ "CMD_NAV_DATABEG", { CMD_NAV_DATABEG, IDM_HEXCTRL_NAV_DATABEG } },
@@ -1431,7 +1464,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ "CMD_BKM_NEXT", { CMD_BKM_NEXT, IDM_HEXCTRL_BKM_NEXT } },
 		{ "CMD_BKM_PREV", { CMD_BKM_PREV, IDM_HEXCTRL_BKM_PREV } },
 		{ "CMD_BKM_CLEARALL", { CMD_BKM_CLEARALL, IDM_HEXCTRL_BKM_CLEARALL } },
-		{ "CMD_BKM_DLG_MANAGER", { CMD_BKM_DLG_MANAGER, IDM_HEXCTRL_BKM_DLG_MANAGER } },
+		{ "CMD_BKM_DLG_MANAGER", { CMD_BKM_DLG_MANAGER, IDM_HEXCTRL_BKM_DLGMGR } },
 		{ "CMD_CLPBRD_COPY_HEX", { CMD_CLPBRD_COPY_HEX, IDM_HEXCTRL_CLPBRD_COPYHEX } },
 		{ "CMD_CLPBRD_COPY_HEXLE", { CMD_CLPBRD_COPY_HEXLE, IDM_HEXCTRL_CLPBRD_COPYHEXLE } },
 		{ "CMD_CLPBRD_COPY_HEXFMT", { CMD_CLPBRD_COPY_HEXFMT, IDM_HEXCTRL_CLPBRD_COPYHEXFMT } },
@@ -1444,9 +1477,9 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ "CMD_CLPBRD_PASTE_HEX", { CMD_CLPBRD_PASTE_HEX, IDM_HEXCTRL_CLPBRD_PASTEHEX } },
 		{ "CMD_CLPBRD_PASTE_TEXTUTF16", { CMD_CLPBRD_PASTE_TEXTUTF16, IDM_HEXCTRL_CLPBRD_PASTETEXTUTF16 } },
 		{ "CMD_CLPBRD_PASTE_TEXTCP", { CMD_CLPBRD_PASTE_TEXTCP, IDM_HEXCTRL_CLPBRD_PASTETEXTCP } },
-		{ "CMD_MODIFY_DLG_OPERS", { CMD_MODIFY_DLG_OPERS, IDM_HEXCTRL_MODIFY_DLG_OPERS } },
+		{ "CMD_MODIFY_DLG_OPERS", { CMD_MODIFY_DLG_OPERS, IDM_HEXCTRL_MODIFY_DLGOPERS } },
 		{ "CMD_MODIFY_FILLZEROS", { CMD_MODIFY_FILLZEROS, IDM_HEXCTRL_MODIFY_FILLZEROS } },
-		{ "CMD_MODIFY_DLG_FILLDATA", { CMD_MODIFY_DLG_FILLDATA, IDM_HEXCTRL_MODIFY_DLG_FILLDATA } },
+		{ "CMD_MODIFY_DLG_FILLDATA", { CMD_MODIFY_DLG_FILLDATA, IDM_HEXCTRL_MODIFY_DLGFILLDATA } },
 		{ "CMD_MODIFY_UNDO", { CMD_MODIFY_UNDO, IDM_HEXCTRL_MODIFY_UNDO } },
 		{ "CMD_MODIFY_REDO", { CMD_MODIFY_REDO, IDM_HEXCTRL_MODIFY_REDO } },
 		{ "CMD_SEL_MARKSTART", { CMD_SEL_MARKSTART, IDM_HEXCTRL_SEL_MARKSTART } },
@@ -1456,21 +1489,25 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ "CMD_SEL_ADDRIGHT", { CMD_SEL_ADDRIGHT, 0 } },
 		{ "CMD_SEL_ADDUP", { CMD_SEL_ADDUP, 0 } },
 		{ "CMD_SEL_ADDDOWN", { CMD_SEL_ADDDOWN, 0 } },
-		{ "CMD_DLG_DATAINTERPRET", { CMD_DLG_DATAINTERP, IDM_HEXCTRL_DLG_DATAINTERP } },
-		{ "CMD_DLG_ENCODING", { CMD_DLG_ENCODING, IDM_HEXCTRL_DLG_ENCODING } },
+		{ "CMD_DLG_DATAINTERPRET", { CMD_DLG_DATAINTERP, IDM_HEXCTRL_DLGDATAINTERP } },
+		{ "CMD_DLG_ENCODING", { CMD_DLG_ENCODING, IDM_HEXCTRL_DLGENCODING } },
 		{ "CMD_APPEAR_FONTCHOOSE", { CMD_APPEAR_FONTCHOOSE, IDM_HEXCTRL_APPEAR_FONTCHOOSE } },
 		{ "CMD_APPEAR_FONTINC", { CMD_APPEAR_FONTINC, IDM_HEXCTRL_APPEAR_FONTINC } },
 		{ "CMD_APPEAR_FONTDEC", { CMD_APPEAR_FONTDEC, IDM_HEXCTRL_APPEAR_FONTDEC } },
 		{ "CMD_APPEAR_CAPACINC", { CMD_APPEAR_CAPACINC, IDM_HEXCTRL_APPEAR_CAPACINC } },
 		{ "CMD_APPEAR_CAPACDEC", { CMD_APPEAR_CAPACDEC, IDM_HEXCTRL_APPEAR_CAPACDEC } },
-		{ "CMD_DLG_PRINT", { CMD_DLG_PRINT, IDM_HEXCTRL_DLG_PRINT } },
-		{ "CMD_DLG_ABOUT", { CMD_DLG_ABOUT, IDM_HEXCTRL_DLG_ABOUT } },
+		{ "CMD_DLG_PRINT", { CMD_DLG_PRINT, IDM_HEXCTRL_OTHER_DLGPRINT } },
+		{ "CMD_DLG_ABOUT", { CMD_DLG_ABOUT, IDM_HEXCTRL_OTHER_DLGABOUT } },
 		{ "CMD_CARET_LEFT", { CMD_CARET_LEFT, 0 } },
 		{ "CMD_CARET_RIGHT", { CMD_CARET_RIGHT, 0 } },
 		{ "CMD_CARET_UP", { CMD_CARET_UP, 0 } },
 		{ "CMD_CARET_DOWN", { CMD_CARET_DOWN, 0 } },
 		{ "CMD_SCROLL_PAGEUP", { CMD_SCROLL_PAGEUP, 0 } },
-		{ "CMD_SCROLL_PAGEDOWN", { CMD_SCROLL_PAGEDOWN, 0 } }
+		{ "CMD_SCROLL_PAGEDOWN", { CMD_SCROLL_PAGEDOWN, 0 } },
+		{ "CMD_TEMPL_APPLYCURR", { CMD_TEMPL_APPLYCURR, IDM_HEXCTRL_TEMPL_APPLYCURR } },
+		{ "CMD_TEMPL_DISAPPLY", { CMD_TEMPL_DISAPPLY, IDM_HEXCTRL_TEMPL_DISAPPLY } },
+		{ "CMD_TEMPL_CLEARALL", { CMD_TEMPL_CLEARALL, IDM_HEXCTRL_TEMPL_CLEARALL } },
+		{ "CMD_DLG_TEMPLMGR", { CMD_DLG_TEMPLMGR, IDM_HEXCTRL_TEMPL_DLGMGR } }
 	};
 	//Mapping between JSON-data Command Names and actual keyboard codes with the names that appear in the menu.
 	const std::unordered_map<std::string_view, std::pair<UINT, std::wstring_view>> umapKeys {
@@ -2749,9 +2786,164 @@ void CHexCtrl::DrawHexText(CDC* pDC, int iLines, std::wstring_view wstrHex, std:
 
 	//Text printing.
 	pDC->SetTextColor(m_stColor.clrFontText);
-	for (const auto& iter : vecPolyText)
-	{
+	for (const auto& iter : vecPolyText) {
 		ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx);
+	}
+}
+
+void CHexCtrl::DrawDataTemplate(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
+{
+	if (!m_pDlgTemplMgr->HasApplied())
+		return;
+
+	struct SFIELDS //Struct for fields.
+	{
+		POLYTEXTW stPoly { };
+		COLORREF  clrBk { };
+		COLORREF  clrText { };
+		//Flag to avoid print vert line at the beginnig of the line if this line is just a continuation
+		//of the previous line above.
+		bool      fPrintVertLine { true };
+	};
+	std::vector<SFIELDS> vecFieldsHex;
+	std::vector<SFIELDS> vecFieldsText;
+	std::vector<std::unique_ptr<std::wstring>> vecWstrFieldsHex; //unique_ptr to avoid wstring ptr invalidation.
+	std::vector<std::unique_ptr<std::wstring>> vecWstrFieldsText;
+	const auto ullStartOffset = ullStartLine * m_dwCapacity;
+	size_t sIndexToPrint { };
+	const STEMPLATEFIELD* pFieldCurr { };
+
+	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
+	{
+		std::wstring wstrHexFieldToPrint;
+		std::wstring wstrTextFieldToPrint;
+		int iFieldHexPosToPrintX { -1 };
+		int iFieldTextPosToPrintX { };
+		bool fField { false };  //Flag to show current Field in current Hex presence.
+		bool fPrintVertLine { true };
+		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
+		const auto lmbPoly = [&]()
+		{
+			//Hex Fields Poly.
+			vecWstrFieldsHex.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexFieldToPrint)));
+			vecFieldsHex.emplace_back(POLYTEXTW { iFieldHexPosToPrintX, iPosToPrintY,
+				static_cast<UINT>(vecWstrFieldsHex.back()->size()), vecWstrFieldsHex.back()->data(), 0, { }, nullptr },
+				pFieldCurr->clrBk, pFieldCurr->clrText, fPrintVertLine);
+
+			//Text Fields Poly.
+			vecWstrFieldsText.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextFieldToPrint)));
+			vecFieldsText.emplace_back(POLYTEXTW { iFieldTextPosToPrintX, iPosToPrintY,
+				static_cast<UINT>(vecWstrFieldsText.back()->size()), vecWstrFieldsText.back()->data(), 0, { }, nullptr },
+				pFieldCurr->clrBk, pFieldCurr->clrText, fPrintVertLine);
+
+			fPrintVertLine = true;
+		};
+
+		//Main loop for printing Hex chunks and Text chars.
+		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wstrText.size(); ++iterChunks, ++sIndexToPrint)
+		{
+			//Fields.
+			if (auto pField = m_pDlgTemplMgr->HitTest(ullStartOffset + sIndexToPrint); pField != nullptr)
+			{
+				if (iterChunks == 0 && pField == pFieldCurr) {
+					fPrintVertLine = false;
+				}
+
+				//If it's nested Field.
+				if (pFieldCurr != nullptr && pFieldCurr != pField)
+				{
+					if (!wstrHexFieldToPrint.empty()) //Only adding spaces if there are chars beforehead.
+					{
+						if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0)
+							wstrHexFieldToPrint += L" ";
+
+						//Additional space between capacity halves, only with SIZE_BYTE representation.
+						if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterChunks == m_dwCapacityBlockSize)
+							wstrHexFieldToPrint += L"  ";
+					}
+
+					lmbPoly();
+					iFieldHexPosToPrintX = -1;
+				}
+
+				pFieldCurr = pField;
+
+				if (iFieldHexPosToPrintX == -1) { //For just one time exec.
+					int iCy;
+					HexChunkPoint(sIndexToPrint, iFieldHexPosToPrintX, iCy);
+					TextChunkPoint(sIndexToPrint, iFieldTextPosToPrintX, iCy);
+				}
+
+				if (!wstrHexFieldToPrint.empty()) { //Only adding spaces if there are chars beforehead.
+					if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0)
+						wstrHexFieldToPrint += L" ";
+
+					//Additional space between capacity halves, only with SIZE_BYTE representation.
+					if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterChunks == m_dwCapacityBlockSize)
+						wstrHexFieldToPrint += L"  ";
+				}
+				wstrHexFieldToPrint += wstrHex[sIndexToPrint * 2];
+				wstrHexFieldToPrint += wstrHex[sIndexToPrint * 2 + 1];
+				wstrTextFieldToPrint += wstrText[sIndexToPrint];
+				fField = true;
+			}
+			else if (fField)
+			{
+				//There can be multiple Fields in one line. 
+				//So, if there already were Field bytes in the current line, we Poly them.
+				//Same Poly mechanism presents at the end of the current (iterLines) loop,
+				//to Poly Fields that end at the line's end.
+
+				lmbPoly();
+				iFieldHexPosToPrintX = -1;
+				fField = false;
+				pFieldCurr = nullptr;
+			}
+		}
+
+		//Fields Poly.
+		if (!wstrHexFieldToPrint.empty()) {
+			lmbPoly();
+		}
+	}
+
+	//Fieds printing.
+	if (!vecFieldsHex.empty())
+	{
+		pDC->SelectObject(m_fontMain);
+		std::size_t index { 0 }; //Index for vecFieldsText, its size is always equal to vecFieldsHex.
+		const auto penOld = SelectObject(pDC->m_hDC, m_penDataTempl);
+		for (const auto& iter : vecFieldsHex) //Loop is needed because different Fields can have different colors.
+		{
+			pDC->SetTextColor(iter.clrText);
+			pDC->SetBkColor(iter.clrBk);
+
+			const auto& refH = iter.stPoly;
+			ExtTextOutW(pDC->m_hDC, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex Field printing.
+			const auto& refT = vecFieldsText[index++].stPoly;
+			ExtTextOutW(pDC->m_hDC, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text Field printing.
+
+			if (iter.fPrintVertLine) {
+				const auto iFieldLineHexX = refH.x - 2; //Little indent before vert line.
+				MoveToEx(pDC->m_hDC, iFieldLineHexX, refH.y, nullptr);
+				LineTo(pDC->m_hDC, iFieldLineHexX, refH.y + m_sizeFontMain.cy);
+
+				const auto iFieldLineTextX = refT.x;
+				MoveToEx(pDC->m_hDC, iFieldLineTextX, refH.y, nullptr);
+				LineTo(pDC->m_hDC, iFieldLineTextX, refH.y + m_sizeFontMain.cy);
+			}
+
+			if (index == vecFieldsHex.size()) { //Last vertical Field line.
+				const auto iFieldLastLineHexX = refH.x + refH.n * m_sizeFontMain.cx + 1; //Little indent after vert line.
+				MoveToEx(pDC->m_hDC, iFieldLastLineHexX, refH.y, nullptr);
+				LineTo(pDC->m_hDC, iFieldLastLineHexX, refH.y + m_sizeFontMain.cy);
+
+				const auto iFieldLastLineTextX = refT.x + refT.n * m_sizeFontMain.cx;
+				MoveToEx(pDC->m_hDC, iFieldLastLineTextX, refH.y, nullptr);
+				LineTo(pDC->m_hDC, iFieldLastLineTextX, refH.y + m_sizeFontMain.cy);
+			}
+		}
+		SelectObject(pDC->m_hDC, penOld);
 	}
 }
 
@@ -2858,8 +3050,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 		}
 
 		//Bookmarks Poly.
-		if (!wstrHexBkmToPrint.empty())
-		{
+		if (!wstrHexBkmToPrint.empty()) {
 			lmbPoly();
 		}
 	}
@@ -2997,7 +3188,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 	{
 		pDC->SelectObject(m_fontMain);
 		size_t index { 0 }; //Index for vecColorsText, its size is always equal to vecColorsHex.
-		for (const auto& iter : vecColorsHex) //Loop is needed because because of different colors.
+		for (const auto& iter : vecColorsHex) //Loop is needed because of different colors.
 		{
 			pDC->SetTextColor(iter.clr.clrText);
 			pDC->SetBkColor(iter.clr.clrBk);
@@ -3097,8 +3288,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 		pDC->SetTextColor(m_stColor.clrFontSel);
 		pDC->SetBkColor(m_stColor.clrBkSel);
 		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size())); //Hex selection printing.
-		for (const auto& iter : vecPolySelText)
-		{
+		for (const auto& iter : vecPolySelText) {
 			ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Text selection printing.
 		}
 	}
@@ -3193,8 +3383,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 		pDC->SetTextColor(m_stColor.clrBkSel);
 		pDC->SetBkColor(m_stColor.clrFontSel);
 		PolyTextOutW(pDC->m_hDC, vecPolySelHexHgl.data(), static_cast<UINT>(vecPolySelHexHgl.size())); //Hex selection highlight printing.
-		for (const auto& iter : vecPolySelTextHgl)
-		{
+		for (const auto& iter : vecPolySelTextHgl) {
 			ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Text selection highlight printing.
 		}
 	}
@@ -3242,8 +3431,7 @@ void CHexCtrl::DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wst
 	pDC->SelectObject(m_fontMain);
 	pDC->SetTextColor(m_stColor.clrFontCaret);
 	pDC->SetBkColor(clrBkCaret);
-	for (const auto iter : arrPolyCaret)
-	{
+	for (const auto iter : arrPolyCaret) {
 		ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Hex/Text caret printing.
 	}
 }
@@ -3323,8 +3511,7 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std:
 		pDC->SelectObject(m_fontMain);
 		pDC->SetTextColor(m_stColor.clrFontDataInterp);
 		pDC->SetBkColor(m_stColor.clrBkDataInterp);
-		for (const auto& iter : vecPolyDataInterp)
-		{
+		for (const auto& iter : vecPolyDataInterp) {
 			ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Hex/Text Data Interpreter printing.
 		}
 	}
@@ -3428,8 +3615,9 @@ auto CHexCtrl::GetCommand(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->s
 	std::optional<EHexCmd> optRet { std::nullopt };
 	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref)
 		{ return ref.fCtrl == fCtrl && ref.fShift == fShift && ref.fAlt == fAlt && ref.uKey == uKey; });
-		iter != m_vecKeyBind.end())
+		iter != m_vecKeyBind.end()) {
 		optRet = iter->eCmd;
+	}
 
 	return optRet;
 }
@@ -3874,6 +4062,7 @@ void CHexCtrl::Print()
 			if (IsDataSet()) {
 				DrawOffsets(pDC, ullStartLine, iLines);
 				DrawHexText(pDC, iLines, wstrHex, wstrText);
+				DrawDataTemplate(pDC, ullStartLine, iLines, wstrHex, wstrText);
 				DrawBookmarks(pDC, ullStartLine, iLines, wstrHex, wstrText);
 				DrawCustomColors(pDC, ullStartLine, iLines, wstrHex, wstrText);
 				DrawSelection(pDC, ullStartLine, iLines, wstrHex, wstrText);
@@ -4610,6 +4799,7 @@ void CHexCtrl::OnDestroy()
 	m_fontMain.DeleteObject();
 	m_fontInfoBar.DeleteObject();
 	m_penLines.DeleteObject();
+	m_penDataTempl.DeleteObject();
 	m_vecHBITMAP.clear();
 	m_vecKeyBind.clear();
 	m_pDlgBkmMgr->DestroyWindow();
@@ -4658,12 +4848,12 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 	switch (nIndex)
 	{
 	case 0:	//Search.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLG_SEARCH, IsCmdAvail(CMD_DLG_SEARCH) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_DLGSEARCH, IsCmdAvail(CMD_DLG_SEARCH) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_NEXT, IsCmdAvail(CMD_SEARCH_NEXT) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_PREV, IsCmdAvail(CMD_SEARCH_PREV) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 3:	//Navigation.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DLG_GOTO, IsCmdAvail(CMD_NAV_DLG_GOTO) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DLGGOTO, IsCmdAvail(CMD_NAV_DLG_GOTO) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_REPFWD, IsCmdAvail(CMD_NAV_REPFWD) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_REPBKW, IsCmdAvail(CMD_NAV_REPBKW) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DATABEG, IsCmdAvail(CMD_NAV_DATABEG) ? MF_ENABLED : MF_GRAYED);
@@ -4679,7 +4869,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_NEXT, IsCmdAvail(CMD_BKM_NEXT) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_PREV, IsCmdAvail(CMD_BKM_PREV) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_CLEARALL, IsCmdAvail(CMD_BKM_CLEARALL) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_DLG_MANAGER, IsCmdAvail(CMD_BKM_DLG_MANAGER) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_DLGMGR, IsCmdAvail(CMD_BKM_DLG_MANAGER) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 5:	//Clipboard.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEX, IsCmdAvail(CMD_CLPBRD_COPY_HEX) ? MF_ENABLED : MF_GRAYED);
@@ -4697,8 +4887,8 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		break;
 	case 6: //Modify.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(CMD_MODIFY_FILLZEROS) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLG_FILLDATA, IsCmdAvail(CMD_MODIFY_DLG_FILLDATA) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLG_OPERS, IsCmdAvail(CMD_MODIFY_DLG_OPERS) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLGFILLDATA, IsCmdAvail(CMD_MODIFY_DLG_FILLDATA) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLGOPERS, IsCmdAvail(CMD_MODIFY_DLG_OPERS) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(CMD_MODIFY_UNDO) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(CMD_MODIFY_REDO) ? MF_ENABLED : MF_GRAYED);
 		break;
@@ -4707,9 +4897,15 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKEND, IsCmdAvail(CMD_SEL_MARKEND) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(CMD_SEL_ALL) ? MF_ENABLED : MF_GRAYED);
 		break;
-	case 8: //Data Presentation.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLG_DATAINTERP, IsCmdAvail(CMD_DLG_DATAINTERP) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLG_ENCODING, IsCmdAvail(CMD_DLG_ENCODING) ? MF_ENABLED : MF_GRAYED);
+	case 8: //Templates.
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_APPLYCURR, IsCmdAvail(CMD_TEMPL_APPLYCURR) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DISAPPLY, IsCmdAvail(CMD_TEMPL_DISAPPLY) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_CLEARALL, IsCmdAvail(CMD_TEMPL_CLEARALL) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DLGMGR, IsCmdAvail(CMD_DLG_TEMPLMGR) ? MF_ENABLED : MF_GRAYED);
+		break;
+	case 9: //Data Presentation.
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLGDATAINTERP, IsCmdAvail(CMD_DLG_DATAINTERP) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLGENCODING, IsCmdAvail(CMD_DLG_ENCODING) ? MF_ENABLED : MF_GRAYED);
 		break;
 	default:
 		break;
@@ -4724,7 +4920,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 	if (nFlags & 0x4000)
 		m_fKeyDownAtm = true;
 
-	if (auto optCmd = GetCommand(nChar, GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd)
+	if (const auto optCmd = GetCommand(nChar, GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd)
 		ExecuteCmd(*optCmd);
 	else if (IsDataSet() && IsMutable() && !IsCurTextArea()) //If caret is in Hex area, just one part (High/Low) of byte must be changed.
 	{
@@ -5082,6 +5278,7 @@ void CHexCtrl::OnPaint()
 	DrawOffsets(pDC, ullStartLine, iLines);
 	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
 	DrawHexText(pDC, iLines, wstrHex, wstrText);
+	DrawDataTemplate(pDC, ullStartLine, iLines, wstrHex, wstrText);
 	DrawBookmarks(pDC, ullStartLine, iLines, wstrHex, wstrText);
 	DrawCustomColors(pDC, ullStartLine, iLines, wstrHex, wstrText);
 	DrawSelection(pDC, ullStartLine, iLines, wstrHex, wstrText);

@@ -35,7 +35,8 @@ namespace HEXCTRL
 		CMD_DLG_DATAINTERP, CMD_DLG_ENCODING, CMD_APPEAR_FONTCHOOSE, CMD_APPEAR_FONTINC, CMD_APPEAR_FONTDEC,
 		CMD_APPEAR_CAPACINC, CMD_APPEAR_CAPACDEC, CMD_DLG_PRINT, CMD_DLG_ABOUT,
 		CMD_CARET_LEFT, CMD_CARET_RIGHT, CMD_CARET_UP, CMD_CARET_DOWN,
-		CMD_SCROLL_PAGEUP, CMD_SCROLL_PAGEDOWN
+		CMD_SCROLL_PAGEUP, CMD_SCROLL_PAGEDOWN,
+		CMD_TEMPL_APPLYCURR, CMD_TEMPL_DISAPPLY, CMD_TEMPL_CLEARALL, CMD_DLG_TEMPLMGR
 	};
 
 	/********************************************************************************************
@@ -44,7 +45,7 @@ namespace HEXCTRL
 	enum class EHexWnd : std::uint8_t
 	{
 		WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_FILLDATA,
-		DLG_OPERS, DLG_SEARCH, DLG_ENCODING, DLG_GOTO
+		DLG_OPERS, DLG_SEARCH, DLG_ENCODING, DLG_GOTO, DLG_TEMPLMGR
 	};
 
 	/********************************************************************************************
@@ -155,6 +156,19 @@ namespace HEXCTRL
 	{
 	public:
 		virtual void OnHexGetColor(HEXCOLORINFO&) = 0;
+	};
+
+	/********************************************************************************************
+	* IHexTemplates - Abstract base interface for HexCtrl data templates.                       *
+	********************************************************************************************/
+	class IHexTemplates
+	{
+	public:
+		virtual int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) = 0; //Apply template to a given offset.
+		virtual void DisapplyByID(int iAppliedID) = 0;
+		virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
+		virtual int LoadTemplate(const wchar_t* pFilePath) = 0; //Returns loaded template ID on success, zero otherwise.
+		virtual void UnloadTemplate(int iTemplateID) = 0;       //Unload/remove loaded template from memory.
 	};
 
 	/********************************************************************************************
