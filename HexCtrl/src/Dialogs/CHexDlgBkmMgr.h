@@ -5,19 +5,36 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #pragma once
-#include "../CHexBookmarks.h"
 #include "../../dep/ListEx/ListEx.h"
+#include "../../HexCtrl.h"
 #include <afxdialogex.h>
+#include <deque>
 
 namespace HEXCTRL::INTERNAL
 {
-	using namespace HEXCTRL::LISTEX;
-	class CHexDlgBkmMgr final : public CDialogEx
+	class CHexDlgBkmMgr final : public CDialogEx, public IHexBookmarks
 	{
-		enum class EMenuID : std::uint16_t;
 	public:
-		BOOL Create(UINT nIDTemplate, CWnd* pParent, CHexBookmarks* pBookmarks);
+		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
+		ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw)override; //Returns new bookmark Id.
+		void ClearAll()override;
+		[[nodiscard]] auto GetByID(ULONGLONG ullID)->PHEXBKM override;       //Bookmark by ID.
+		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex)->PHEXBKM override; //Bookmark by index (in inner list).
+		[[nodiscard]] ULONGLONG GetCount()override;
+		[[nodiscard]] ULONGLONG GetCurrent()const;
+		void GoBookmark(ULONGLONG ullIndex);
+		void GoNext();
+		void GoPrev();
+		[[nodiscard]] bool HasBookmarks()const;
+		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)->PHEXBKM override;
+		[[nodiscard]] bool IsVirtual()const;
+		void RemoveByOffset(ULONGLONG ullOffset);
+		void RemoveByID(ULONGLONG ullID)override;
+		void SetVirtual(IHexBookmarks* pVirtBkm);
+		void SortData(int iColumn, bool fAscending);
+		void Update(ULONGLONG ullID, const HEXBKM& stBookmark);
 	private:
+		enum class EMenuID : std::uint16_t;
 		void DoDataExchange(CDataExchange* pDX)override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
@@ -35,11 +52,13 @@ namespace HEXCTRL::INTERNAL
 		void SortBookmarks();
 		DECLARE_MESSAGE_MAP()
 	private:
-		IListExPtr m_pListMain { CreateListEx() };
-		CHexBookmarks* m_pBookmarks { };
+		std::deque<HEXBKM> m_deqBookmarks;
+		IHexCtrl* m_pHexCtrl { };
+		IHexBookmarks* m_pVirtual { };
+		LONGLONG m_llIndexCurr { }; //Current bookmark position index, to move next/prev.
+		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
 		CMenu m_stMenuList;
-		__time64_t m_time { };
-		LISTEXCOLOR m_stCellClr { };
+		LISTEX::LISTEXCOLOR m_stCellClr { };
 		bool m_fShowAsHex { true };
 	};
 }

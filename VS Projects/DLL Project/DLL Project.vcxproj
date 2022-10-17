@@ -227,7 +227,6 @@
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\HexCtrlDefs.h" />
     <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h" />
-    <ClInclude Include="..\..\HexCtrl\src\CHexBookmarks.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexSelection.h" />
     <ClInclude Include="..\..\HexCtrl\src\CScrollEx.h" />
@@ -248,7 +247,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\HexCtrl\dep\ListEx\CListEx.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\CHexBookmarks.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexSelection.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CScrollEx.cpp" />

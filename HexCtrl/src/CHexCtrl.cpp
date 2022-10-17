@@ -7,7 +7,6 @@
 #include "stdafx.h"
 #include "../dep/rapidjson/rapidjson-amalgam.h"
 #include "../res/HexCtrlRes.h"
-#include "CHexBookmarks.h"
 #include "CHexCtrl.h"
 #include "CHexSelection.h"
 #include "CScrollEx.h"
@@ -185,7 +184,7 @@ void CHexCtrl::ClearData()
 	m_pScrollV->SetScrollPos(0);
 	m_pScrollH->SetScrollPos(0);
 	m_pScrollV->SetScrollSizes(0, 0, 0);
-	m_pBookmarks->ClearAll();
+	m_pDlgBkmMgr->ClearAll();
 	m_pSelection->ClearAll();
 	Redraw();
 }
@@ -335,7 +334,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	SetDateInfo(0xFFFFFFFF, L'/');
 
 	//All dialogs are created after the main window, to set the parent window correctly.
-	m_pDlgBkmMgr->Create(IDD_HEXCTRL_BKMMGR, this, &*m_pBookmarks);
+	m_pDlgBkmMgr->Create(IDD_HEXCTRL_BKMMGR, this, this);
 	m_pDlgEncoding->Create(IDD_HEXCTRL_ENCODING, this, this);
 	m_pDlgDataInterp->Create(IDD_HEXCTRL_DATAINTERP, this, this);
 	m_pDlgFillData->Create(IDD_HEXCTRL_FILLDATA, this, this);
@@ -343,7 +342,6 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this, this);
 	m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, this, this);
 	m_pDlgTemplMgr->Create(IDD_HEXCTRL_TEMPLMGR, this, this);
-	m_pBookmarks->Attach(this);
 
 	return true;
 }
@@ -421,22 +419,22 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		SetGroupMode(EHexDataSize::SIZE_QWORD);
 		break;
 	case CMD_BKM_ADD:
-		m_pBookmarks->AddBkm(HEXBKM { HasSelection() ? GetSelection()
+		m_pDlgBkmMgr->AddBkm(HEXBKM { HasSelection() ? GetSelection()
 			: std::vector<HEXSPAN> { { GetCaretPos(), 1 } } }, true);
 		break;
 	case CMD_BKM_REMOVE:
-		m_pBookmarks->RemoveByOffset(m_fMenuCMD ? m_optRMouseClick.value() : GetCaretPos());
+		m_pDlgBkmMgr->RemoveByOffset(m_fMenuCMD && m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos());
 		m_optRMouseClick.reset();
 		m_fMenuCMD = false;
 		break;
 	case CMD_BKM_NEXT:
-		m_pBookmarks->GoNext();
+		m_pDlgBkmMgr->GoNext();
 		break;
 	case CMD_BKM_PREV:
-		m_pBookmarks->GoPrev();
+		m_pDlgBkmMgr->GoPrev();
 		break;
 	case CMD_BKM_CLEARALL:
-		m_pBookmarks->ClearAll();
+		m_pDlgBkmMgr->ClearAll();
 		break;
 	case CMD_BKM_DLG_MANAGER:
 		m_pDlgBkmMgr->ShowWindow(SW_SHOW);
@@ -564,10 +562,12 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		m_pScrollV->ScrollPageDown();
 		break;
 	case CMD_TEMPL_APPLYCURR:
-		m_pDlgTemplMgr->ApplyCurr(m_fMenuCMD ? m_optRMouseClick.value() : GetCaretPos());
+		m_pDlgTemplMgr->ApplyCurr(m_fMenuCMD && m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos());
+		m_optRMouseClick.reset();
+		m_fMenuCMD = false;
 		break;
 	case CMD_TEMPL_DISAPPLY:
-		m_pDlgTemplMgr->DisapplyByOffset(m_fMenuCMD ? m_optRMouseClick.value() : GetCaretPos());
+		m_pDlgTemplMgr->DisapplyByOffset(m_fMenuCMD && m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos());
 		m_optRMouseClick.reset();
 		m_fMenuCMD = false;
 		break;
@@ -591,7 +591,7 @@ int CHexCtrl::GetActualWidth()const
 
 auto CHexCtrl::GetBookmarks()const->IHexBookmarks*
 {
-	return &*m_pBookmarks;
+	return &*m_pDlgBkmMgr;
 }
 
 auto CHexCtrl::GetCacheSize()const->DWORD
@@ -880,12 +880,14 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	switch (eCmd)
 	{
 	case CMD_BKM_REMOVE:
-		fAvail = m_pBookmarks->HasBookmarks() && m_pBookmarks->HitTest(m_fMenuCMD ? *m_optRMouseClick : GetCaretPos()) != nullptr;
+		fAvail = m_pDlgBkmMgr->HasBookmarks() 
+			&& m_pDlgBkmMgr->HitTest(m_fMenuCMD 
+				&& m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos()) != nullptr;
 		break;
 	case CMD_BKM_NEXT:
 	case CMD_BKM_PREV:
 	case CMD_BKM_CLEARALL:
-		fAvail = m_pBookmarks->HasBookmarks();
+		fAvail = m_pDlgBkmMgr->HasBookmarks();
 		break;
 	case CMD_CLPBRD_COPY_HEX:
 	case CMD_CLPBRD_COPY_HEXLE:
@@ -949,7 +951,8 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		break;
 	case CMD_TEMPL_DISAPPLY:
 		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied()
-			&& m_pDlgTemplMgr->HitTest(m_fMenuCMD ? *m_optRMouseClick : GetCaretPos()) != nullptr;
+			&& m_pDlgTemplMgr->HitTest(m_fMenuCMD 
+				&& m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos()) != nullptr;
 		break;
 	case CMD_TEMPL_CLEARALL:
 		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied();
@@ -1871,7 +1874,7 @@ void CHexCtrl::SetVirtualBkm(IHexBookmarks* pVirtBkm)
 	if (!IsCreated())
 		return;
 
-	m_pBookmarks->SetVirtual(pVirtBkm);
+	m_pDlgBkmMgr->SetVirtual(pVirtBkm);
 }
 
 void CHexCtrl::SetRedraw(bool fRedraw)
@@ -2949,7 +2952,7 @@ void CHexCtrl::DrawDataTemplate(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 
 void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const
 {
-	if (!m_pBookmarks->HasBookmarks())
+	if (!m_pDlgBkmMgr->HasBookmarks())
 		return;
 
 	struct SBOOKMARKS //Struct for Bookmarks.
@@ -2994,7 +2997,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wstrText.size(); ++iterChunks, ++sIndexToPrint)
 		{
 			//Bookmarks.
-			if (auto* pBkm = m_pBookmarks->HitTest(ullStartOffset + sIndexToPrint); pBkm != nullptr)
+			if (auto* pBkm = m_pDlgBkmMgr->HitTest(ullStartOffset + sIndexToPrint); pBkm != nullptr)
 			{
 				//If it's nested bookmark.
 				if (pBkmCurr != nullptr && pBkmCurr != pBkm)
@@ -3900,7 +3903,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 	if (!m_fKeyDownAtm && m_pDlgDataInterp->IsWindowVisible())
 		m_pDlgDataInterp->InspectOffset(ullOffset);
 
-	if (auto pBkm = m_pBookmarks->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.
+	if (auto pBkm = m_pDlgBkmMgr->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.
 	{
 		const HEXBKMINFO hbi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK }, .pBkm { pBkm } };
 		ParentNotify(hbi);
@@ -5165,7 +5168,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 	else
 	{
 		if (optHit) {
-			if (const auto pBkm = m_pBookmarks->HitTest(optHit->ullOffset); pBkm != nullptr)
+			if (const auto pBkm = m_pDlgBkmMgr->HitTest(optHit->ullOffset); pBkm != nullptr)
 			{
 				if (m_pBkmTtCurr != pBkm)
 				{

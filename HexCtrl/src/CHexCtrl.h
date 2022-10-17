@@ -18,7 +18,6 @@ namespace HEXCTRL::INTERNAL
 	/*********************************
 	* Forward declarations.          *
 	*********************************/
-	class CHexBookmarks;
 	class CHexDlgBkmMgr;
 	class CHexDlgDataInterp;
 	class CHexDlgEncoding;
@@ -209,7 +208,6 @@ namespace HEXCTRL::INTERNAL
 		const std::unique_ptr<CHexDlgOpers> m_pDlgOpers { std::make_unique<CHexDlgOpers>() };                //"Operations" dialog.
 		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };             //"Search..." dialog.
 		const std::unique_ptr<CHexDlgTemplMgr> m_pDlgTemplMgr { std::make_unique<CHexDlgTemplMgr>() };       //"Template manager..." dialog.
-		const std::unique_ptr<CHexBookmarks> m_pBookmarks { std::make_unique<CHexBookmarks>() };             //Bookmarks.
 		const std::unique_ptr<CHexSelection> m_pSelection { std::make_unique<CHexSelection>() };             //Selection class.
 		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollV { std::make_unique<SCROLLEX::CScrollEx>() };   //Vertical scroll bar.
 		const std::unique_ptr<SCROLLEX::CScrollEx> m_pScrollH { std::make_unique<SCROLLEX::CScrollEx>() };   //Horizontal scroll bar.

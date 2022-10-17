@@ -39,9 +39,6 @@
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h">
       <Filter>HexCtrl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\src\CHexBookmarks.h">
-      <Filter>HexCtrl\src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\HexCtrl\src\CHexCtrl.h">
       <Filter>HexCtrl\src</Filter>
     </ClInclude>
@@ -103,9 +100,6 @@
   <ItemGroup>
     <ClCompile Include="..\Sample Project\stdafx.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\CHexBookmarks.cpp">
-      <Filter>HexCtrl\src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp">
       <Filter>HexCtrl\src</Filter>
