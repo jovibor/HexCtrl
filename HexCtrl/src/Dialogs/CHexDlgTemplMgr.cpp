@@ -180,7 +180,9 @@ void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		return;
 
 	const auto ullOffset = m_vecTemplatesApplied.at(iItem).ullOffset;
-	m_pHexCtrl->GoToOffset(ullOffset, -1);
+	if (m_pHexCtrl->IsDataSet()) {
+		m_pHexCtrl->GoToOffset(ullOffset, -1);
+	}
 }
 
 void CHexDlgTemplMgr::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
@@ -423,11 +425,11 @@ void CHexDlgTemplMgr::DisapplyByID(int iAppliedID)
 
 void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 {
-	if (const auto iter = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
+	if (const auto rIter = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
 		[ullOffset](const STEMPLATESAPPLIED& refTempl)
 		{ return ullOffset >= refTempl.ullOffset && ullOffset < refTempl.ullOffset + refTempl.ullSizeTotal; });
-		iter != m_vecTemplatesApplied.rend()) {
-		m_vecTemplatesApplied.erase(iter.base());
+		rIter != m_vecTemplatesApplied.rend()) {
+		m_vecTemplatesApplied.erase(std::next(rIter).base());
 		m_pListApplied->SetItemCountEx(static_cast<int>(m_vecTemplatesApplied.size()));
 		if (m_pHexCtrl->IsDataSet()) {
 			m_pHexCtrl->Redraw();
@@ -438,6 +440,11 @@ void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 bool CHexDlgTemplMgr::HasApplied()const
 {
 	return !m_vecTemplatesApplied.empty();
+}
+
+bool CHexDlgTemplMgr::HasTemplates() const
+{
+	return !m_vecTemplates.empty();
 }
 
 auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->const STEMPLATEFIELD*

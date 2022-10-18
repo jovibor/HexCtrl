@@ -40,6 +40,7 @@ namespace HEXCTRL::INTERNAL
 		void ClearAll();
 		void DisapplyByOffset(ULONGLONG ullOffset);
 		[[nodiscard]] bool HasApplied()const;
+		[[nodiscard]] bool HasTemplates()const;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->const STEMPLATEFIELD*; //Template field by offset.
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;

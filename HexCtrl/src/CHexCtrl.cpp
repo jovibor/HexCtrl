@@ -934,7 +934,6 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case CMD_SEL_ALL:
 	case CMD_DLG_DATAINTERP:
 	case CMD_CLPBRD_COPY_OFFSET:
-	case CMD_TEMPL_APPLYCURR:
 		fAvail = fDataSet;
 		break;
 	case CMD_SEARCH_NEXT:
@@ -948,6 +947,9 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case CMD_NAV_REPFWD:
 	case CMD_NAV_REPBKW:
 		fAvail = fDataSet && m_pDlgGoTo->IsRepeatAvail();
+		break;
+	case CMD_TEMPL_APPLYCURR:
+		fAvail = fDataSet && m_pDlgTemplMgr->HasTemplates();
 		break;
 	case CMD_TEMPL_DISAPPLY:
 		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied()

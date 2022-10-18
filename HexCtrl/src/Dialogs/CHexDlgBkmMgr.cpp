@@ -466,7 +466,7 @@ void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset)
 				[ullOffset](const HEXSPAN& refV)
 				{ return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
 			}); rIter != m_deqBookmarks.rend())
-			m_deqBookmarks.erase((rIter + 1).base()); //Weird notation for reverse_iterator to work in erase() (acc to standard).
+			m_deqBookmarks.erase(std::next(rIter).base());
 	}
 
 	m_pHexCtrl->Redraw();
