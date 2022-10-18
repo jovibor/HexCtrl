@@ -60,7 +60,7 @@
   "CMD_CARET_DOWN": [ "down" ],
   "CMD_SCROLL_PAGEUP": [ "pageup" ],
   "CMD_SCROLL_PAGEDOWN": [ "pagedown" ],
-  "CMD_TEMPL_APPLYCURR": [ "" ],
+  "CMD_TEMPL_APPLYCURR": [ "ctrl+alt+c" ],
   "CMD_TEMPL_DISAPPLY": [ "" ],
   "CMD_TEMPL_CLEARALL": [ "" ],
   "CMD_DLG_TEMPLMGR": [ "ctrl+alt+t" ]

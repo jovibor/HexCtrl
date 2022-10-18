@@ -41,7 +41,7 @@ namespace HEXCTRL::INTERNAL
 		void DisapplyByOffset(ULONGLONG ullOffset);
 		[[nodiscard]] bool HasApplied()const;
 		[[nodiscard]] bool HasTemplates()const;
-		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->const STEMPLATEFIELD*; //Template field by offset.
+		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->STEMPLATEFIELD*; //Template field by offset.
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;

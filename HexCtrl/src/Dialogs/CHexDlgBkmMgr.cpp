@@ -426,15 +426,15 @@ auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM
 	if (m_pVirtual) {
 		pBkm = m_pVirtual->HitTest(ullOffset);
 	}
-	else
-	{
+	else {
 		if (const auto rIter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
 			[ullOffset](const HEXBKM& ref)
 			{ return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPAN& refV)
 				{ return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
-			}); rIter != m_deqBookmarks.rend())
+			}); rIter != m_deqBookmarks.rend()) {
 			pBkm = &*rIter;
+		}
 	}
 
 	return pBkm;

@@ -27,6 +27,7 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgSearch;
 	class CHexDlgTemplMgr;
 	class CHexSelection;
+	struct STEMPLATEFIELD;
 	namespace SCROLLEX { class CScrollEx; };
 
 	/********************************************************************************************
@@ -167,8 +168,9 @@ namespace HEXCTRL::INTERNAL
 		void SetFontSize(long lSize); //Set current font size.
 		void SnapshotUndo(const std::vector<HEXSPAN>& vecSpan); //Takes currently modifiable data snapshot.
 		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;     //Point of the text chunk.
-		void TtBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip bookmark show/hide.
-		void TtOffsetShow(bool fShow); //Tooltip Offset show/hide.
+		void ToolTipBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip for bookmark show/hide.
+		void ToolTipTemplShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip for templates show/hide.
+		void ToolTipOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();
 		DECLARE_MESSAGE_MAP();
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -221,7 +223,12 @@ namespace HEXCTRL::INTERNAL
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
 		CWnd m_wndTtBkm { };                  //Tooltip window for bookmarks description.
 		TTTOOLINFOW m_stToolInfoBkm { };      //Tooltip info for Bookmarks.
-		std::time_t m_tmBkmTt { };            //A beginning time to calc the diff, for hiding bkm tooltip after.
+		std::time_t m_tmTtBkm { };            //Time beginning to calc the diff for hiding bkm tooltip after.
+		PHEXBKM m_pBkmTtCurr { };             //Currently shown bookmark's tooltip;
+		CWnd m_wndTtTempl { };                //Tooltip window for Templates' fields.
+		TTTOOLINFOW m_stToolInfoTempl { };    //Tooltip info for Templates.
+		std::time_t m_tmTtTempl { };          //Time beginning to calc the diff for hiding template tooltip after.
+		STEMPLATEFIELD* m_pTFieldTtCurr { };  //Currently shown Template field's tooltip;
 		CWnd m_wndTtOffset { };               //Tooltip window for Offset in m_fHighLatency mode.
 		TTTOOLINFOW m_stToolInfoOffset { };   //Tooltip info for Offset.
 		CFont m_fontMain;                     //Main Hex chunks font.
@@ -230,7 +237,6 @@ namespace HEXCTRL::INTERNAL
 		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		CPen m_penLines;                      //Pen for lines.
 		CPen m_penDataTempl;                  //Pen for templates' fields (vertical lines).
-		PHEXBKM m_pBkmTtCurr { };             //Currently shown bookmark's tooltip;
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		std::optional<ULONGLONG> m_optRMouseClick { }; //Right mouse clicked chunk. Used in bookmarking.
 		ULONGLONG m_ullCaretPos { };          //Current caret position.

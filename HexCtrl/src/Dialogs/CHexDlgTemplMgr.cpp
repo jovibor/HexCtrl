@@ -447,7 +447,7 @@ bool CHexDlgTemplMgr::HasTemplates() const
 	return !m_vecTemplates.empty();
 }
 
-auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->const STEMPLATEFIELD*
+auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->STEMPLATEFIELD*
 {
 	if (const auto iterTemplate = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
 		[ullOffset](const STEMPLATESAPPLIED& refTempl)
@@ -455,26 +455,26 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->const STEMPLATEFIELD*
 		iterTemplate != m_vecTemplatesApplied.rend())
 	{
 		const auto ullTemplStartOffset = iterTemplate->ullOffset;
-		const auto& refVec = iterTemplate->pTemplate->vecFields;
+		auto& refVec = iterTemplate->pTemplate->vecFields;
 		auto ullOffsetCurr = iterTemplate->ullOffset;
 
 		const auto lmbFind = [ullTemplStartOffset, ullOffset, &ullOffsetCurr]
-		(const std::vector<STEMPLATEFIELD>& vecRef)->const STEMPLATEFIELD* {
+		(std::vector<STEMPLATEFIELD>& vecRef)->STEMPLATEFIELD*
+		{
 			const auto _lmbFind = [ullTemplStartOffset, ullOffset, &ullOffsetCurr]
-			(const auto& lmbSelf, const std::vector<STEMPLATEFIELD>& vecRef)->const STEMPLATEFIELD* {
-				for (const auto& iter : vecRef)
-				{
-					if (!iter.vecInner.empty()) {
-						if (const auto pRet = lmbSelf(lmbSelf, iter.vecInner); pRet != nullptr) {
+			(const auto& lmbSelf, std::vector<STEMPLATEFIELD>& vecRef)->STEMPLATEFIELD* {
+				for (auto& refField : vecRef) {
+					if (!refField.vecInner.empty()) {
+						if (const auto pRet = lmbSelf(lmbSelf, refField.vecInner); pRet != nullptr) {
 							return pRet; //Return only if we Hit a pointer in the inner lambda, continue the loop otherwise.
 						}
 					}
 					else {
-						if (ullOffset < (ullOffsetCurr + iter.iSize)) {
-							return &iter;
+						if (ullOffset < (ullOffsetCurr + refField.iSize)) {
+							return &refField;
 						}
 
-						ullOffsetCurr += iter.iSize;
+						ullOffsetCurr += refField.iSize;
 					}
 				}
 				return nullptr;
