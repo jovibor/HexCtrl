@@ -123,14 +123,14 @@ namespace HEXCTRL::INTERNAL
 		void DrawWindow(CDC* pDC)const;
 		void DrawInfoBar(CDC* pDC)const;
 		void DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const;
-		void DrawHexText(CDC* pDC, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawDataTemplate(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawCustomColors(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wstrHex, std::wstring_view wstrText)const;
-		void DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wstrHex, std::wstring_view wstrText)const;
+		void DrawHexText(CDC* pDC, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawDataTemplate(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawCustomColors(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
 		void DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines);
 		void FillCapacityString();  //Fill m_wstrCapacity according to current m_dwCapacity.
 		void FillWithZeros();       //Fill selection with zeros.
