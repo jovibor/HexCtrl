@@ -14,11 +14,6 @@ CMFCPropertyGridProperty* CHexPropGridCtrl::GetCurrentProp()
 	return m_pNewSel;
 }
 
-void CHexPropGridCtrl::OnPropertyChanged(CMFCPropertyGridProperty* pProp) const
-{
-	return CMFCPropertyGridCtrl::OnPropertyChanged(pProp);
-}
-
 void CHexPropGridCtrl::OnChangeSelection(CMFCPropertyGridProperty* pNewSel, CMFCPropertyGridProperty* /*pOldSel*/)
 {
 	m_pNewSel = pNewSel;

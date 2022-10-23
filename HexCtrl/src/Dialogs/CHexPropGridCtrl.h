@@ -14,7 +14,6 @@ namespace HEXCTRL::INTERNAL
 	public:
 		CMFCPropertyGridProperty* GetCurrentProp();
 	private:
-		void OnPropertyChanged(CMFCPropertyGridProperty* pProp)const override;
 		void OnChangeSelection(CMFCPropertyGridProperty* pNewSel, CMFCPropertyGridProperty* pOldSel)override;
 	private:
 		CMFCPropertyGridProperty* m_pNewSel { };

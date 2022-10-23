@@ -164,7 +164,7 @@ namespace HEXCTRL
 	class IHexTemplates
 	{
 	public:
-		virtual int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) = 0; //Apply template to a given offset.
+		virtual int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID, bool fToolTips) = 0; //Apply template to a given offset.
 		virtual void DisapplyByID(int iAppliedID) = 0;
 		virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
 		virtual int LoadTemplate(const wchar_t* pFilePath) = 0; //Returns loaded template ID on success, zero otherwise.

@@ -963,7 +963,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case CMD_TEMPL_DISAPPLY:
 		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied()
 			&& m_pDlgTemplMgr->HitTest(m_fMenuCMD
-				&& m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos()) != nullptr;
+				&& m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos()).pField != nullptr;
 		break;
 	case CMD_TEMPL_CLEARALL:
 		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied();
@@ -2867,8 +2867,9 @@ void CHexCtrl::DrawDataTemplate(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint)
 		{
 			//Fields.
-			if (auto pField = m_pDlgTemplMgr->HitTest(ullStartOffset + sIndexToPrint); pField != nullptr)
+			if (auto stHT = m_pDlgTemplMgr->HitTest(ullStartOffset + sIndexToPrint); stHT.pField != nullptr)
 			{
+				const auto pField = stHT.pField;
 				if (iterChunks == 0 && pField == pFieldCurr) {
 					fPrintVertLine = false;
 				}
@@ -5156,7 +5157,9 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 	else
 	{
 		if (optHit) {
-			if (const auto pField = m_pDlgTemplMgr->HitTest(optHit->ullOffset); pField != nullptr) {
+			if (const auto stHT = m_pDlgTemplMgr->HitTest(optHit->ullOffset); stHT.pField != nullptr
+				&& stHT.pApplied->fToolTips) {
+				const auto pField = stHT.pField;
 				if (m_pTFieldTtCurr != pField) {
 					m_pTFieldTtCurr = pField;
 					CPoint ptScreen = point;
