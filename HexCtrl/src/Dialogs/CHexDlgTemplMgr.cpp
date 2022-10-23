@@ -25,8 +25,9 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListItemChanged)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetColor)
-	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListDblClick)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListRClick)
+	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListDblClick)
+	ON_NOTIFY(NM_RETURN, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListEnterPressed)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, &CHexDlgTemplMgr::OnTreeRClick)
 	ON_NOTIFY(TVN_GETDISPINFOW, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, &CHexDlgTemplMgr::OnTreeGetDispInfo)
 	ON_NOTIFY(TVN_SELCHANGEDW, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, &CHexDlgTemplMgr::OnTreeSelChanged)
@@ -51,10 +52,10 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID, bool fT
 	if (const auto iter = std::max_element(m_vecTemplatesApplied.begin(), m_vecTemplatesApplied.end(),
 		[](const std::unique_ptr<STEMPLATEAPPLIED>& ref1, const std::unique_ptr<STEMPLATEAPPLIED>& ref2)
 		{ return ref1->iAppliedID < ref2->iAppliedID; }); iter != m_vecTemplatesApplied.end()) {
-		iTemplateID = iter->get()->iAppliedID + 1; //Increasing next AppliedID by 1.
+		iAppliedID = iter->get()->iAppliedID + 1; //Increasing next AppliedID by 1.
 	}
 
-	const auto pTemplApplied = m_vecTemplatesApplied.emplace_back(
+	const auto pApplied = m_vecTemplatesApplied.emplace_back(
 		std::make_unique<STEMPLATEAPPLIED>(ullOffset, pTemplate, ullTotalSize, iAppliedID, fToolTips)).get();
 
 	TVINSERTSTRUCTW tvi { }; //Tree root node.
@@ -62,7 +63,7 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID, bool fT
 	tvi.itemex.mask = TVIF_CHILDREN | TVIF_TEXT | TVIF_PARAM;
 	tvi.itemex.cChildren = static_cast<int>(pTemplate->vecFields.size());
 	tvi.itemex.pszText = LPSTR_TEXTCALLBACK;
-	tvi.itemex.lParam = reinterpret_cast<LPARAM>(pTemplApplied); //Tree root node has STEMPLATEAPPLIED* ptr.
+	tvi.itemex.lParam = reinterpret_cast<LPARAM>(pApplied); //Tree root node has PSTEMPLATEAPPLIED ptr.
 	const auto hTreeRootNode = m_stTreeApplied.InsertItem(&tvi);
 
 	const auto lmbFill = [&](HTREEITEM hTreeRoot, VecFields& refVecFields)->void {
@@ -70,7 +71,7 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID, bool fT
 			for (auto& field : refVecFields) {
 				tvi.hParent = hTreeRoot;
 				tvi.itemex.cChildren = static_cast<int>(field->vecInner.size());
-				tvi.itemex.lParam = reinterpret_cast<LPARAM>(field.get()); //Tre child nodes have STEMPLATEFIELD* ptr.
+				tvi.itemex.lParam = reinterpret_cast<LPARAM>(field.get()); //Tre child nodes have PSTEMPLATEAPPLIED ptr.
 				const auto hCurrentRoot = m_stTreeApplied.InsertItem(&tvi);
 				if (tvi.itemex.cChildren > 0) {
 					lmbSelf(lmbSelf, hCurrentRoot, field->vecInner);
@@ -435,6 +436,8 @@ void CHexDlgTemplMgr::RemoveNodeWithAppliedID(int iAppliedID)
 					m_pListApplied->RedrawWindow();
 					m_pAppliedCurr = nullptr;
 					m_pVecCurrFields = nullptr;
+					m_hTreeCurrNode = nullptr;
+					m_hTreeCurrParent = nullptr;
 				}
 				m_stTreeApplied.DeleteItem(hItem);
 				break;
@@ -449,12 +452,14 @@ bool CHexDlgTemplMgr::GetShowTooltipsCheck()const
 	return m_stCheckTtShow.GetCheck() == BST_CHECKED;
 }
 
-auto CHexDlgTemplMgr::GetCurrentTreeParent()const->HTREEITEM
+auto CHexDlgTemplMgr::TreeItemFromListItem(int iListItem)const->HTREEITEM
 {
-	const auto hParent = m_stTreeApplied.GetParentItem(m_hTreeCurrNode);
-	const auto hRealParent = hParent == nullptr ? m_hTreeCurrNode : hParent;
+	auto hChildItem = m_stTreeApplied.GetNextItem(m_hTreeCurrParent, TVGN_CHILD);
+	for (auto iterListItems = 0; iterListItems < iListItem; ++iterListItems) {
+		hChildItem = m_stTreeApplied.GetNextSiblingItem(hChildItem);
+	}
 
-	return hRealParent;
+	return hChildItem;
 }
 
 BOOL CHexDlgTemplMgr::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
@@ -596,7 +601,8 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		*std::format_to(pItem->pszText, L"{}", refVecField[nItemID]->iSize) = L'\0';
 		break;
 	case 3: { //Data.
-		if (!m_pHexCtrl->IsDataSet())
+		if (!m_pHexCtrl->IsDataSet() 
+			|| m_pAppliedCurr->ullOffset + m_pAppliedCurr->iSizeTotal > m_pHexCtrl->GetDataSize()) //Size overflow check.
 			break;
 
 		const auto ullOffset = m_pAppliedCurr->ullOffset + refVecField[nItemID]->iOffset;
@@ -621,31 +627,6 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
-{
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto iItem = pNMI->iItem;
-	if (iItem < 0)
-		return;
-
-	const auto& refVec = *m_pVecCurrFields;
-	const auto hCurr = refVec.empty() ? m_stTreeApplied.GetParentItem(m_hTreeCurrNode) : m_hTreeCurrNode;
-	if (auto hChildItem = m_stTreeApplied.GetNextItem(hCurr, TVGN_CHILD); hChildItem) {
-		for (auto iterListItems = 0; iterListItems < pNMI->iItem; ++iterListItems) {
-			hChildItem = m_stTreeApplied.GetNextSiblingItem(hChildItem);
-		}
-		if (hChildItem) {
-			m_stTreeApplied.SelectItem(hChildItem);
-		}
-	}
-
-	if (m_pHexCtrl->IsDataSet()) {
-		const auto ullOffset = m_pAppliedCurr->ullOffset + refVec[iItem]->iOffset;
-		const auto ullSize = static_cast<ULONGLONG>(refVec[iItem]->iSize);
-		m_pHexCtrl->SetSelection({ { ullOffset, ullSize } });
-	}
-}
-
 void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
@@ -664,6 +645,31 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
 }
 
+void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	const auto iItem = pNMI->iItem;
+	if (iItem < 0)
+		return;
+
+	if (m_fListProtectEvent) {
+		m_fListProtectEvent = false;
+		return;
+	}
+
+	m_stTreeApplied.SelectItem(TreeItemFromListItem(iItem));
+
+	if (m_pHexCtrl->IsDataSet()) {
+		const auto& refVec = *m_pVecCurrFields;
+		const auto ullOffset = m_pAppliedCurr->ullOffset + refVec[iItem]->iOffset;
+		const auto ullSize = static_cast<ULONGLONG>(refVec[iItem]->iSize);
+		m_pHexCtrl->SetSelection({ { ullOffset, ullSize } });
+		if (!m_pHexCtrl->IsOffsetVisible(ullOffset)) {
+			m_pHexCtrl->GoToOffset(ullOffset, -1);
+		}
+	}
+}
+
 void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
@@ -672,38 +678,52 @@ void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		return;
 
 	const auto& refVec = *m_pVecCurrFields;
+	if (refVec[iItem]->vecInner.empty())
+		return;
 
-	if (!refVec[iItem]->vecInner.empty()) {
-		m_pVecCurrFields = &refVec[iItem]->vecInner;
+	m_fListProtectEvent = true; //To prevent nasty OnListItemChanged to fire after this method ends.
+	m_pVecCurrFields = &refVec[iItem]->vecInner;
 
-		auto hChild = m_stTreeApplied.GetNextItem(GetCurrentTreeParent(), TVGN_CHILD);
-		auto pField = reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(hChild));
-		while (&pField->vecInner != m_pVecCurrFields) {
-			hChild = m_stTreeApplied.GetNextSiblingItem(hChild);
-			pField = reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(hChild));
-		}
-		m_hTreeCurrNode = hChild;
-		m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecCurrFields->size()));
-		m_pListApplied->RedrawWindow();
-	}
+	const auto hItem = TreeItemFromListItem(iItem);
+	m_hTreeCurrParent = hItem;
+	m_hTreeCurrNode = hItem;
+	m_stTreeApplied.Expand(hItem, TVE_EXPAND);
+
+	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
+	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecCurrFields->size()));
+	m_pListApplied->RedrawWindow();
+}
+
+void CHexDlgTemplMgr::OnListEnterPressed(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
+{
+	const auto uSelected = m_pListApplied->GetSelectedCount();
+	if (uSelected != 1)
+		return;
+
+	//Simulate DblClick in List with Enter key.
+	NMITEMACTIVATE nmii { .iItem = m_pListApplied->GetSelectionMark() };
+	OnListDblClick(&nmii.hdr, nullptr);
 }
 
 void CHexDlgTemplMgr::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 {
 }
 
-void CHexDlgTemplMgr::OnTreeRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	POINT pt;
-	GetCursorPos(&pt);
-	POINT ptTree = pt;
-	m_stTreeApplied.ScreenToClient(&ptTree);
-	const auto fHitTest = m_stTreeApplied.HitTest(ptTree) != nullptr;
-	const auto fHasApplied = HasApplied();
-	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_DISAPPLY),
-		(fHasApplied && fHitTest ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_CLEARALL), (fHasApplied ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
+	const auto pDispInfo = reinterpret_cast<NMTVDISPINFOW*>(pNMHDR);
+	const auto pItem = &pDispInfo->item;
+	if ((pItem->mask & TVIF_TEXT) == 0)
+		return;
+
+	if (m_stTreeApplied.GetParentItem(pItem->hItem) == nullptr) { //Root node.
+		const auto pTemplApplied = reinterpret_cast<PSTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(pItem->hItem));
+		StringCchCopyW(pItem->pszText, pItem->cchTextMax, pTemplApplied->pTemplate->wstrName.data());
+	}
+	else {
+		const auto pTemplField = reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(pItem->hItem));
+		StringCchCopyW(pItem->pszText, pItem->cchTextMax, pTemplField->wstrName.data());
+	}
 }
 
 void CHexDlgTemplMgr::OnTreeSelChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
@@ -735,9 +755,18 @@ void CHexDlgTemplMgr::OnTreeSelChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		}
 	}
 
+	if (m_stTreeApplied.ItemHasChildren(pItem->hItem)) {
+		m_hTreeCurrParent = pItem->hItem;
+	}
+	else {
+		const auto hCurr = m_stTreeApplied.GetParentItem(pItem->hItem);
+		m_hTreeCurrParent = hCurr != nullptr ? hCurr : pItem->hItem;
+	}
+
 	m_pAppliedCurr = GetAppliedFromItem(pItem->hItem);
 	m_hTreeCurrNode = pItem->hItem;
-	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED); //Deselect all items.
+	m_fListProtectEvent = true;
+	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
 	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecCurrFields->size()), LVSICF_NOSCROLL);
 
 	if (!fRootNodeClick) {
@@ -753,21 +782,18 @@ void CHexDlgTemplMgr::OnTreeSelChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	m_pListApplied->RedrawWindow();
 }
 
-void CHexDlgTemplMgr::OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnTreeRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 {
-	const auto pDispInfo = reinterpret_cast<NMTVDISPINFOW*>(pNMHDR);
-	const auto pItem = &pDispInfo->item;
-	if ((pItem->mask & TVIF_TEXT) == 0)
-		return;
-
-	if (m_stTreeApplied.GetParentItem(pItem->hItem) == nullptr) { //Root node.
-		const auto pTemplApplied = reinterpret_cast<PSTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(pItem->hItem));
-		StringCchCopyW(pItem->pszText, pItem->cchTextMax, pTemplApplied->pTemplate->wstrName.data());
-	}
-	else {
-		const auto pTemplField = reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(pItem->hItem));
-		StringCchCopyW(pItem->pszText, pItem->cchTextMax, pTemplField->wstrName.data());
-	}
+	POINT pt;
+	GetCursorPos(&pt);
+	POINT ptTree = pt;
+	m_stTreeApplied.ScreenToClient(&ptTree);
+	const auto fHitTest = m_stTreeApplied.HitTest(ptTree) != nullptr;
+	const auto fHasApplied = HasApplied();
+	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_DISAPPLY),
+		(fHasApplied && fHitTest ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_CLEARALL), (fHasApplied ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
 }
 
 void CHexDlgTemplMgr::OnLButtonDown(UINT nFlags, CPoint point)
@@ -829,6 +855,15 @@ void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)
 	}
 
 	CDialogEx::OnMouseMove(nFlags, point);
+}
+
+void CHexDlgTemplMgr::OnOK()
+{
+	//When Enter is pressed anywhere in dialog and focus is on the m_pListApplied,
+	//we simulate pressing Enter in the list by sending WM_KEYDOWN/VK_RETURN to it.
+	if (GetFocus() == &*m_pListApplied) {
+		m_pListApplied->SendMessageW(WM_KEYDOWN, VK_RETURN);
+	}
 }
 
 void CHexDlgTemplMgr::OnDestroy()

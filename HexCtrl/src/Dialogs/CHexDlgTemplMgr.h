@@ -68,16 +68,18 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnBnUnloadTemplate();
 		afx_msg void OnBnApply();
 		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListDblClick(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListEnterPressed(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnTreeRClick(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnTreeSelChanged(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnTreeSelChanged(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnTreeRClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+		void OnOK()override;
 		afx_msg void OnDestroy();
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
 		void UnloadTemplate(int iTemplateID)override;       //Unload/remove loaded template from memory.
@@ -87,7 +89,7 @@ namespace HEXCTRL::INTERNAL
 		void RemoveNodeWithAppliedID(int iAppliedID);
 		void DisapplyByID(int iAppliedID)override; //Stop one template with the given AppliedID from applying.
 		[[nodiscard]] bool GetShowTooltipsCheck()const;
-		[[nodiscard]] auto GetCurrentTreeParent()const->HTREEITEM;
+		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
 		DECLARE_MESSAGE_MAP();
 	private:
 		enum class EMenuID : std::uint16_t { IDM_APPLIED_DISAPPLY = 0x8000, IDM_APPLIED_CLEARALL = 0x8001 };
@@ -106,7 +108,9 @@ namespace HEXCTRL::INTERNAL
 		PSTEMPLATEAPPLIED m_pAppliedCurr { }; //Currently selected PApplied.
 		PVecFields m_pVecCurrFields { };      //Pointer to currently selected vector with fields.
 		HTREEITEM m_hTreeCurrNode { };        //Currently selected Tree node.
+		HTREEITEM m_hTreeCurrParent { };      //Currently selected Tree node's parent.
 		bool m_fCurInSplitter { };
 		bool m_fLMDownResize { };
+		bool m_fListProtectEvent { false };   //Flag to not trigger unnecessary OnListItemChanged.
 	};
 }
