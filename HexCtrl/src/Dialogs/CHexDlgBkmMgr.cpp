@@ -288,6 +288,7 @@ void CHexDlgBkmMgr::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
+	ClearAll();
 	m_pListMain->DestroyWindow();
 	m_stMenuList.DestroyMenu();
 }

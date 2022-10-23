@@ -90,6 +90,8 @@ namespace HEXCTRL::INTERNAL
 		void DisapplyByID(int iAppliedID)override; //Stop one template with the given AppliedID from applying.
 		[[nodiscard]] bool GetShowTooltipsCheck()const;
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
+		void SetHexSelection(int iCurrFieldIndex);
+		static LRESULT TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 		DECLARE_MESSAGE_MAP();
 	private:
 		enum class EMenuID : std::uint16_t { IDM_APPLIED_DISAPPLY = 0x8000, IDM_APPLIED_CLEARALL = 0x8001 };
