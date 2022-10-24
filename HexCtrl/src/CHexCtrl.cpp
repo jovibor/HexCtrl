@@ -3864,7 +3864,6 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const std:
 
 void CHexCtrl::OffsetToString(ULONGLONG ullOffset, wchar_t* buffOut)const
 {
-	//Null terminated as by default format_to does not null terminate formatted data.
 	*std::vformat_to(buffOut, IsOffsetAsHex() ? L"{:0>{}X}" : L"{:0>{}}", std::make_wformat_args(ullOffset, m_dwOffsetDigits)) = L'\0';
 }
 
@@ -3872,11 +3871,11 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 {
 	//To prevent inspecting while key is pressed continuously.
 	//Only when one time pressing.
-	if (!m_fKeyDownAtm && m_pDlgDataInterp->IsWindowVisible())
+	if (!m_fKeyDownAtm && m_pDlgDataInterp->IsWindowVisible()) {
 		m_pDlgDataInterp->InspectOffset(ullOffset);
+	}
 
-	if (auto pBkm = m_pDlgBkmMgr->HitTest(ullOffset); pBkm != nullptr) //If clicked on bookmark.
-	{
+	if (auto pBkm = m_pDlgBkmMgr->HitTest(ullOffset); pBkm != nullptr) { //If clicked on bookmark.
 		const HEXBKMINFO hbi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK }, .pBkm { pBkm } };
 		ParentNotify(hbi);
 	}
@@ -4730,8 +4729,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	unsigned char chByte = nChar & 0xFF;
 	wchar_t warrCurrLocaleID[KL_NAMELENGTH];
 	GetKeyboardLayoutNameW(warrCurrLocaleID); //Current langID as wstring.
-	if (const auto optLocID = StrToUInt(warrCurrLocaleID, 16); optLocID) //Convert langID from wstr to number.
-	{
+	if (const auto optLocID = StrToUInt(warrCurrLocaleID, 16); optLocID) { //Convert langID from wstr to number.
 		UINT uCurrCodePage { };
 		constexpr int iSize = sizeof(uCurrCodePage) / sizeof(wchar_t);
 		if (GetLocaleInfoW(*optLocID, LOCALE_IDEFAULTANSICODEPAGE | LOCALE_RETURN_NUMBER,
@@ -4744,8 +4742,9 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 		}
 	}
 
-	ModifyData({ .spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { m_ullCaretPos, 1 } } });
+	ModifyData({ .spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { GetCaretPos(), 1 } } });
 	CaretMoveRight();
+	m_pDlgTemplMgr->RefreshData();
 }
 
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
@@ -4908,13 +4907,15 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 {
 	//Bit 14 indicates that the key was pressed continuously.
 	//0x4000 == 0100 0000 0000 0000.
-	if (nFlags & 0x4000)
+	if (nFlags & 0x4000) {
 		m_fKeyDownAtm = true;
+	}
 
-	if (const auto optCmd = GetCommand(nChar, GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd)
+	if (const auto optCmd = GetCommand(nChar, GetAsyncKeyState(VK_CONTROL) < 0,
+		GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd) {
 		ExecuteCmd(*optCmd);
-	else if (IsDataSet() && IsMutable() && !IsCurTextArea()) //If caret is in Hex area, just one part (High/Low) of byte must be changed.
-	{
+	}
+	else if (IsDataSet() && IsMutable() && !IsCurTextArea()) { //If caret is in Hex area, just one part (High/Low) of the byte must be changed.
 		unsigned char chByte = nChar & 0xFF;
 		//Normalizing all input in Hex area, reducing it to 0-15 (0x0-F) digit range.
 		//Allowing only [0-9][A-F][NUM0-NUM9].
@@ -4927,14 +4928,16 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 		else
 			return;
 
-		auto chByteCurr = GetIHexTData<unsigned char>(*this, m_ullCaretPos);
-		if (m_fCaretHigh)
+		auto chByteCurr = GetIHexTData<unsigned char>(*this, GetCaretPos());
+		if (m_fCaretHigh) {
 			chByte = (chByte << 4) | (chByteCurr & 0x0F);
-		else
+		}
+		else {
 			chByte = (chByte & 0x0F) | (chByteCurr & 0xF0);
-
-		ModifyData({ .spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { m_ullCaretPos, 1 } } });
+		}
+		ModifyData({ .spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { GetCaretPos(), 1 } } });
 		CaretMoveRight();
+		m_pDlgTemplMgr->RefreshData();
 	}
 
 	m_optRMouseClick.reset(); //Reset right mouse click.

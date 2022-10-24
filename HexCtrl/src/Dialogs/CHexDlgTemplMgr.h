@@ -55,6 +55,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool HasTemplates()const;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->PSTEMPLATEFIELD; //Template hittest by offset.
 		[[nodiscard]] bool IsTooltips()const;
+		void RefreshData();
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;

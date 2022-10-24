@@ -434,6 +434,13 @@ bool CHexDlgTemplMgr::IsTooltips()const
 	return m_fTooltips;
 }
 
+void CHexDlgTemplMgr::RefreshData()
+{
+	if (IsWindowVisible()) {
+		m_pListApplied->RedrawWindow();
+	}
+}
+
 void CHexDlgTemplMgr::RemoveNodesWithTemplateID(int iTemplateID)
 {
 	std::vector<HTREEITEM> vecToRemove;
