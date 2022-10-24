@@ -128,6 +128,9 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	auto& refFields = pTemplateUnPtr->vecFields;
 
 	if (const auto it = docJSON.FindMember("TemplateName"); it != docJSON.MemberEnd()) {
+		if (!it->value.IsString()) {
+			return 0; //"TemplateName" must be a string.
+		}
 		pTemplateUnPtr->wstrName = StrToWstr(it->value.GetString());
 	}
 	else {
@@ -171,7 +174,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	(auto& refJSON, VecFields& vecFields)->bool {
 		const auto _lmbParse = [&lmbStrToRGB, &lmbTotalSize, pTemplate](const auto& lmbSelf, auto& refJSON,
 			VecFields& vecFields, COLORREF clrBkDefault, COLORREF clrTextDefault, int& iOffset,
-			STEMPLATEFIELD* pFieldParent = nullptr)->bool
+			PSTEMPLATEFIELD pFieldParent = nullptr)->bool
 		{
 			for (auto iterFields = refJSON->value.MemberBegin(); iterFields != refJSON->value.MemberEnd(); ++iterFields)
 			{
@@ -188,6 +191,9 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					COLORREF clrTextDefaultInner { };
 					if (const auto itClrBkDefault = iterFields->value.FindMember("clrBkDefault");
 						itClrBkDefault != iterFields->value.MemberEnd()) {
+						if (!itClrBkDefault->value.IsString()) {
+							return false; //"clrBkDefault" is not a string.
+						}
 						clrBkDefaultInner = lmbStrToRGB(itClrBkDefault->value.GetString());
 					}
 					else { clrBkDefaultInner = clrBkDefault; }
@@ -195,6 +201,9 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 
 					if (const auto itClrTextDefault = iterFields->value.FindMember("clrTextDefault");
 						itClrTextDefault != iterFields->value.MemberEnd()) {
+						if (!itClrTextDefault->value.IsString()) {
+							return false; //"clrTextDefault" is not a string.
+						}
 						clrTextDefaultInner = lmbStrToRGB(itClrTextDefault->value.GetString());
 					}
 					else { clrTextDefaultInner = clrTextDefault; }
@@ -210,7 +219,20 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 				else {
 					if (const auto itFieldSize = iterFields->value.FindMember("size");
 						itFieldSize != iterFields->value.MemberEnd()) {
-						refBack->iSize = itFieldSize->value.GetInt();
+						if (itFieldSize->value.IsInt()) {
+							refBack->iSize = itFieldSize->value.GetInt();
+						}
+						else if (itFieldSize->value.IsString()) {
+							if (const auto optInt = StrToInt(itFieldSize->value.GetString()); optInt) {
+								refBack->iSize = *optInt;
+							}
+							else {
+								return false; //"size" field is a non-convertible string to int.
+							}
+						}
+						else {
+							return false; //"size" field neither int nor string.
+						}
 						iOffset += refBack->iSize;
 					}
 					else {
@@ -219,6 +241,9 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 
 					if (const auto itClrBk = iterFields->value.FindMember("clrBk");
 						itClrBk != iterFields->value.MemberEnd()) {
+						if (!itClrBk->value.IsString()) {
+							return false; //"clrBk" is not a string.
+						}
 						refBack->clrBk = lmbStrToRGB(itClrBk->value.GetString());
 					}
 					else {
@@ -227,6 +252,9 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 
 					if (const auto itClrText = iterFields->value.FindMember("clrText");
 						itClrText != iterFields->value.MemberEnd()) {
+						if (!itClrText->value.IsString()) {
+							return false; //"clrText" is not a string.
+						}
 						refBack->clrText = lmbStrToRGB(itClrText->value.GetString());
 					}
 					else {
@@ -480,7 +508,7 @@ LRESULT CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
 	UINT_PTR /*uIdSubclass*/, DWORD_PTR /*dwRefData*/)
 {
 	switch (uMsg) {
-	case WM_KILLFOCUS: 
+	case WM_KILLFOCUS:
 		return 0; //Do nothing when Tree loses focus, to save current selection.
 	case WM_LBUTTONDOWN:
 		::SetFocus(hWnd);
@@ -527,7 +555,7 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_pListApplied->InsertColumn(3, L"Data", LVCFMT_LEFT, 100);
 	m_pListApplied->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 60);
 	m_pListApplied->InsertColumn(5, L"Text color", LVCFMT_LEFT, 60);
-	
+
 	m_stMenuList.CreatePopupMenu();
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_DISAPPLY), L"Disapply template");
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_CLEARALL), L"Clear all");
@@ -584,7 +612,7 @@ void CHexDlgTemplMgr::OnBnLoadTemplate()
 		CComHeapPtr<wchar_t> pwstrPath;
 		pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwstrPath);
 		if (LoadTemplate(pwstrPath) == 0) {
-			MessageBoxW(L"Error when trying parsing a template.", pwstrPath, MB_ICONERROR);
+			MessageBoxW(L"Error when trying to load a template.", pwstrPath, MB_ICONERROR);
 		}
 	}
 }

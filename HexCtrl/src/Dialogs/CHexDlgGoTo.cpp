@@ -110,7 +110,7 @@ void CHexDlgGoTo::OnOK()
 	GetDlgItemTextW(IDC_HEXCTRL_GOTO_EDIT_GOTO, wstr);
 	const auto optData = StrToULL(wstr.GetString());
 	if (!optData) {
-		MessageBox(L"Invalid number format", L"Error", MB_ICONERROR);
+		MessageBoxW(L"Invalid number format", L"Error", MB_ICONERROR);
 		return;
 	}
 
