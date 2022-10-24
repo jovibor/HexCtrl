@@ -963,7 +963,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case CMD_TEMPL_DISAPPLY:
 		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied()
 			&& m_pDlgTemplMgr->HitTest(m_fMenuCMD
-				&& m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos()).pField != nullptr;
+				&& m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos()) != nullptr;
 		break;
 	case CMD_TEMPL_CLEARALL:
 		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied();
@@ -2867,9 +2867,8 @@ void CHexCtrl::DrawDataTemplate(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint)
 		{
 			//Fields.
-			if (auto stHT = m_pDlgTemplMgr->HitTest(ullStartOffset + sIndexToPrint); stHT.pField != nullptr)
+			if (auto pField = m_pDlgTemplMgr->HitTest(ullStartOffset + sIndexToPrint); pField != nullptr)
 			{
-				const auto pField = stHT.pField;
 				if (iterChunks == 0 && pField == pFieldCurr) {
 					fPrintVertLine = false;
 				}
@@ -5154,22 +5153,21 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 			vecSel.emplace_back(ullStart + m_dwCapacity * iterLines, ullSize);
 		SetSelection(vecSel);
 	}
-	else
-	{
+	else {
 		if (optHit) {
-			if (const auto stHT = m_pDlgTemplMgr->HitTest(optHit->ullOffset); stHT.pField != nullptr
-				&& stHT.pApplied->fToolTips) {
-				const auto pField = stHT.pField;
-				if (m_pTFieldTtCurr != pField) {
-					m_pTFieldTtCurr = pField;
-					CPoint ptScreen = point;
-					ClientToScreen(&ptScreen);
-					m_stToolInfoTempl.lpszText = pField->wstrName.data();
-					ToolTipTemplShow(true, POINT { ptScreen.x, ptScreen.y });
+			if (m_pDlgTemplMgr->IsTooltips()) {
+				if (const auto pField = m_pDlgTemplMgr->HitTest(optHit->ullOffset); pField != nullptr) {
+					if (m_pTFieldTtCurr != pField) {
+						m_pTFieldTtCurr = pField;
+						CPoint ptScreen = point;
+						ClientToScreen(&ptScreen);
+						m_stToolInfoTempl.lpszText = pField->wstrName.data();
+						ToolTipTemplShow(true, POINT { ptScreen.x, ptScreen.y });
+					}
 				}
-			}
-			else if (m_pTFieldTtCurr != nullptr) {
-				ToolTipTemplShow(false);
+				else if (m_pTFieldTtCurr != nullptr) {
+					ToolTipTemplShow(false);
+				}
 			}
 			else if (const auto pBkm = m_pDlgBkmMgr->HitTest(optHit->ullOffset); pBkm != nullptr) {
 				if (m_pBkmTtCurr != pBkm) {

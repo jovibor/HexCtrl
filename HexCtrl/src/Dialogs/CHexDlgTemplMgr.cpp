@@ -22,6 +22,7 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_LOAD, &CHexDlgTemplMgr::OnBnLoadTemplate)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD, &CHexDlgTemplMgr::OnBnUnloadTemplate)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_APPLY, &CHexDlgTemplMgr::OnBnApply)
+	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, &CHexDlgTemplMgr::OnCheckTtShow)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListItemChanged)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetColor)
@@ -37,7 +38,7 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_WM_LBUTTONUP()
 END_MESSAGE_MAP()
 
-int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID, bool fToolTips)
+int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 {
 	const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
 		[iTemplateID](const std::unique_ptr<SHEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
@@ -56,7 +57,7 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID, bool fT
 	}
 
 	const auto pApplied = m_vecTemplatesApplied.emplace_back(
-		std::make_unique<STEMPLATEAPPLIED>(ullOffset, pTemplate, ullTotalSize, iAppliedID, fToolTips)).get();
+		std::make_unique<STEMPLATEAPPLIED>(ullOffset, pTemplate, ullTotalSize, iAppliedID)).get();
 
 	TVINSERTSTRUCTW tvi { }; //Tree root node.
 	tvi.hParent = TVI_ROOT;
@@ -96,7 +97,7 @@ void CHexDlgTemplMgr::ApplyCurr(ULONGLONG ullOffset)
 		return;
 
 	const auto iTemplateID = static_cast<int>(m_stComboTemplates.GetItemData(iIndex));
-	ApplyTemplate(ullOffset, iTemplateID, GetShowTooltipsCheck());
+	ApplyTemplate(ullOffset, iTemplateID);
 }
 
 void CHexDlgTemplMgr::ClearAll()
@@ -387,7 +388,7 @@ bool CHexDlgTemplMgr::HasTemplates()const
 	return !m_vecTemplates.empty();
 }
 
-auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->STEMPLHITTEST
+auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PSTEMPLATEFIELD
 {
 	if (const auto itTemplApplied = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
 		[ullOffset](const std::unique_ptr<STEMPLATEAPPLIED>& refTempl)
@@ -422,10 +423,15 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->STEMPLHITTEST
 			return _lmbFind(_lmbFind, vecRef);
 		};
 
-		return { pTemplApplied, lmbFind(refVec) };
+		return lmbFind(refVec);
 	}
 
-	return { };
+	return nullptr;
+}
+
+bool CHexDlgTemplMgr::IsTooltips()const
+{
+	return m_fTooltips;
 }
 
 void CHexDlgTemplMgr::RemoveNodesWithTemplateID(int iTemplateID)
@@ -475,11 +481,6 @@ void CHexDlgTemplMgr::RemoveNodeWithAppliedID(int iAppliedID)
 	}
 }
 
-bool CHexDlgTemplMgr::GetShowTooltipsCheck()const
-{
-	return m_stCheckTtShow.GetCheck() == BST_CHECKED;
-}
-
 auto CHexDlgTemplMgr::TreeItemFromListItem(int iListItem)const->HTREEITEM
 {
 	auto hChildItem = m_stTreeApplied.GetNextItem(m_hTreeCurrParent, TVGN_CHILD);
@@ -502,6 +503,11 @@ void CHexDlgTemplMgr::SetHexSelection(int iCurrFieldIndex)
 	if (!m_pHexCtrl->IsOffsetVisible(ullOffset)) {
 		m_pHexCtrl->GoToOffset(ullOffset, -1);
 	}
+}
+
+void CHexDlgTemplMgr::ShowTooltips(bool fShow)
+{
+	m_fTooltips = fShow;
 }
 
 LRESULT CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
@@ -561,7 +567,7 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_CLEARALL), L"Clear all");
 
 	m_stEditOffset.SetWindowTextW(L"0x0");
-	m_stCheckTtShow.SetCheck(BST_CHECKED);
+	m_stCheckTtShow.SetCheck(IsTooltips() ? BST_CHECKED : BST_UNCHECKED);
 
 	m_hCurResize = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
 	m_hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
@@ -638,7 +644,12 @@ void CHexDlgTemplMgr::OnBnApply()
 		return;
 
 	const auto iTemplateID = static_cast<int>(m_stComboTemplates.GetItemData(iIndex));
-	ApplyTemplate(*opt, iTemplateID, GetShowTooltipsCheck());
+	ApplyTemplate(*opt, iTemplateID);
+}
+
+void CHexDlgTemplMgr::OnCheckTtShow()
+{
+	ShowTooltips(m_stCheckTtShow.GetCheck() == BST_CHECKED);
 }
 
 void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)

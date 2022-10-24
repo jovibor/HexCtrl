@@ -13,6 +13,7 @@
 * [Virtual Data Mode](#virtual-data-mode)
 * [Virtual Bookmarks](#virtual-bookmarks)
 * [Custom Colors](#custom-colors)
+* [Templates](#templates)
 * [Methods](#methods) <details><summary>_Expand_</summary>
   * [ClearData](#cleardata)
   * [Create](#create)
@@ -132,8 +133,9 @@ It's implemented as a pure abstract interface and therefore can be used in your 
 * Ability to visually divide data into [pages](#setpagesize)
 * Print whole document/pages range/selection
 * Set individual colors for the data chunks with [**Custom Colors**](#ihexvirtcolors)
-* Customizable look and appearance
+* Powerful system of customizable [Templates](#templates)
 * [Assignable keyboard shortcuts](#setconfig) via external config file
+* Customizable look and appearance
 * Written with **/std:c++20** standard conformance
 
 ![](docs/img/hexctrl_operationswnd.jpg)
@@ -255,6 +257,31 @@ But if you have big and complicated data logic and want to handle all these book
 
 ## [](#)Custom Colors
 If you'd like to colorize your data with custom bk/text colors, you have to resort to the [`IHexVirtColors`](#ihexvirtcolors) interface help. Please see the interface description, it's very simple to use.
+
+## [](#)Templates
+**HexCtrl**'s templates is a powerful system of a data structures' description with a simple `.json` files. These files can be loaded through the **HexControl**'s internal template manager, or through the [API](#gettemplates).  
+```json
+{
+    "TemplateName": "MyDataStruct",
+    "clrBkDefault": "#909090",
+    "clrTextDefault": "#FFFFFF",
+    "Fields": {
+        "int x": {
+            "size": 4,
+            "clrBk": "#BB0000",
+            "clrText": "#FFFFFF"
+        },
+        "DWORD field2": {
+            "size": 4
+        },
+        "char[2] someArray": {
+            "size": 2
+        }
+    }
+}
+```
+
+For the available templates check the `Templates` directory.
 
 ## [](#)Methods
 The **HexCtrl** has plenty of methods that you can use to customize its appearance, and to manage its behavior.
@@ -884,6 +911,7 @@ public:
     virtual void DisapplyByID(int iAppliedID) = 0;
     virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
     virtual int LoadTemplate(const wchar_t* pFilePath) = 0; //Returns loaded template ID on success, zero otherwise.
+    virtual void ShowTooltips(bool fShow) = 0;
     virtual void UnloadTemplate(int iTemplateID) = 0;       //Unload/remove loaded template from memory.
 };
 ```

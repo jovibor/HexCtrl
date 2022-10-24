@@ -40,26 +40,21 @@ namespace HEXCTRL::INTERNAL
 		PHEXTEMPLATE pTemplate;  //Template pointer in the m_vecTemplates.
 		int          iSizeTotal; //Total size of all template fields, assingned by framework.
 		int          iAppliedID; //Applied/runtime ID. Any template can be applied more than once, assingned by framework.
-		bool         fToolTips;  //Show tooltips or not.
 	};
 	using PSTEMPLATEAPPLIED = STEMPLATEAPPLIED*;
-
-	struct STEMPLHITTEST {
-		PSTEMPLATEAPPLIED pApplied { };
-		PSTEMPLATEFIELD   pField { };
-	};
 
 	class CHexDlgTemplMgr : public CDialogEx, public IHexTemplates
 	{
 	public:
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 		void ApplyCurr(ULONGLONG ullOffset); //Apply currently selected template to offset.
-		int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID, bool fToolTips)override; //Apply template to a given offset.
+		int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)override; //Apply template to a given offset.
 		void ClearAll();
 		void DisapplyByOffset(ULONGLONG ullOffset)override;
 		[[nodiscard]] bool HasApplied()const;
 		[[nodiscard]] bool HasTemplates()const;
-		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->STEMPLHITTEST; //Template hittest by offset.
+		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->PSTEMPLATEFIELD; //Template hittest by offset.
+		[[nodiscard]] bool IsTooltips()const;
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
@@ -67,6 +62,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnBnLoadTemplate();
 		afx_msg void OnBnUnloadTemplate();
 		afx_msg void OnBnApply();
+		afx_msg void OnCheckTtShow();
 		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
@@ -88,9 +84,9 @@ namespace HEXCTRL::INTERNAL
 		void RemoveNodesWithTemplateID(int iTemplateID);
 		void RemoveNodeWithAppliedID(int iAppliedID);
 		void DisapplyByID(int iAppliedID)override; //Stop one template with the given AppliedID from applying.
-		[[nodiscard]] bool GetShowTooltipsCheck()const;
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
 		void SetHexSelection(int iCurrFieldIndex);
+		void ShowTooltips(bool fShow)override;
 		static LRESULT TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 		DECLARE_MESSAGE_MAP();
 	private:
@@ -111,8 +107,9 @@ namespace HEXCTRL::INTERNAL
 		PVecFields m_pVecCurrFields { };      //Pointer to currently selected vector with fields.
 		HTREEITEM m_hTreeCurrNode { };        //Currently selected Tree node.
 		HTREEITEM m_hTreeCurrParent { };      //Currently selected Tree node's parent.
-		bool m_fCurInSplitter { };
-		bool m_fLMDownResize { };
+		bool m_fCurInSplitter { };            //Indicates that mouse cursor is in the splitter area.
+		bool m_fLMDownResize { };             //Left mouse pressed in splitter area to resize.
 		bool m_fListProtectEvent { false };   //Flag to not trigger unnecessary OnListItemChanged.
+		bool m_fTooltips { true };            //Show tooltips or not. 
 	};
 }
