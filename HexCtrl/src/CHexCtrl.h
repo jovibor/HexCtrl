@@ -150,6 +150,7 @@ namespace HEXCTRL::INTERNAL
 		void ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, std::span<std::byte> spnDataToOperWith); //Main "modify" method with different workers.
 		void OffsetToString(ULONGLONG ullOffset, wchar_t* buffOut)const; //Format offset to wchar_t string.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
+		void OnModifyData();                                   //When data has been modified.
 		template<typename T>
 		void ParentNotify(const T& t)const;                    //Notify routine used to send messages to Parent window.
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.

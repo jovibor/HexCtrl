@@ -1351,7 +1351,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	}
 	SetRedraw(true);
 
-	ParentNotify(HEXCTRL_MSG_SETDATA);
+	OnModifyData();
 }
 
 void CHexCtrl::Redraw()
@@ -3883,6 +3883,12 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 	ParentNotify(HEXCTRL_MSG_CARETCHANGE);
 }
 
+void CHexCtrl::OnModifyData()
+{
+	ParentNotify(HEXCTRL_MSG_SETDATA);
+	m_pDlgTemplMgr->RefreshData();
+}
+
 template<typename T>
 void CHexCtrl::ParentNotify(const T& t)const
 {
@@ -4197,7 +4203,7 @@ void CHexCtrl::Redo()
 	}
 
 	m_deqRedo.pop_back();
-	ParentNotify(HEXCTRL_MSG_SETDATA);
+	OnModifyData();
 	RedrawWindow();
 }
 
@@ -4706,7 +4712,7 @@ void CHexCtrl::Undo()
 	}
 
 	m_deqUndo.pop_back();
-	ParentNotify(HEXCTRL_MSG_SETDATA);
+	OnModifyData();
 	RedrawWindow();
 }
 
@@ -4744,7 +4750,6 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 
 	ModifyData({ .spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { GetCaretPos(), 1 } } });
 	CaretMoveRight();
-	m_pDlgTemplMgr->RefreshData();
 }
 
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
@@ -4937,7 +4942,6 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 		}
 		ModifyData({ .spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { GetCaretPos(), 1 } } });
 		CaretMoveRight();
-		m_pDlgTemplMgr->RefreshData();
 	}
 
 	m_optRMouseClick.reset(); //Reset right mouse click.
