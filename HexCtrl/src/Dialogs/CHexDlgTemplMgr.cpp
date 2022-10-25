@@ -23,6 +23,7 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD, &CHexDlgTemplMgr::OnBnUnloadTemplate)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_APPLY, &CHexDlgTemplMgr::OnBnApply)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, &CHexDlgTemplMgr::OnCheckTtShow)
+	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, &CHexDlgTemplMgr::OnCheckHglSel)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListItemChanged)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetColor)
@@ -31,7 +32,7 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_NOTIFY(NM_RETURN, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListEnterPressed)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, &CHexDlgTemplMgr::OnTreeRClick)
 	ON_NOTIFY(TVN_GETDISPINFOW, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, &CHexDlgTemplMgr::OnTreeGetDispInfo)
-	ON_NOTIFY(TVN_SELCHANGEDW, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, &CHexDlgTemplMgr::OnTreeSelChanged)
+	ON_NOTIFY(TVN_SELCHANGEDW, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, &CHexDlgTemplMgr::OnTreeItemChanged)
 	ON_WM_DESTROY()
 	ON_WM_MOUSEMOVE()
 	ON_WM_LBUTTONDOWN()
@@ -46,8 +47,6 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 		return 0;
 
 	const auto pTemplate = iterTempl->get();
-	const auto ullTotalSize = std::accumulate(pTemplate->vecFields.begin(), pTemplate->vecFields.end(), 0,
-		[](auto iTotal, const std::unique_ptr<STEMPLATEFIELD>& refField) { return iTotal + refField->iSize; });
 
 	auto iAppliedID = 1; //AppliedID starts at 1.
 	if (const auto iter = std::max_element(m_vecTemplatesApplied.begin(), m_vecTemplatesApplied.end(),
@@ -57,7 +56,7 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 	}
 
 	const auto pApplied = m_vecTemplatesApplied.emplace_back(
-		std::make_unique<STEMPLATEAPPLIED>(ullOffset, pTemplate, ullTotalSize, iAppliedID)).get();
+		std::make_unique<STEMPLATEAPPLIED>(ullOffset, pTemplate, iAppliedID)).get();
 
 	TVINSERTSTRUCTW tvi { }; //Tree root node.
 	tvi.hParent = TVI_ROOT;
@@ -282,6 +281,8 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		rootFields != docJSON.MemberEnd() && rootFields->value.IsObject()) {
 		if (lmbParseFields(rootFields, refFields)) {
 			pTemplateUnPtr->iTemplateID = iTemplateID;
+			pTemplateUnPtr->iSizeTotal = std::accumulate(pTemplateUnPtr->vecFields.begin(), pTemplateUnPtr->vecFields.end(), 0,
+				[](auto iTotal, const std::unique_ptr<STEMPLATEFIELD>& refField) { return iTotal + refField->iSize; });
 			const auto iIndex = m_stComboTemplates.AddString(pTemplateUnPtr->wstrName.data());
 			m_vecTemplates.emplace_back(std::move(pTemplateUnPtr));
 			m_stComboTemplates.SetItemData(iIndex, static_cast<DWORD_PTR>(iTemplateID));
@@ -364,11 +365,16 @@ void CHexDlgTemplMgr::DisapplyByID(int iAppliedID)
 	}
 }
 
+bool CHexDlgTemplMgr::IsHighlight()const
+{
+	return m_fHighlightSel;
+}
+
 void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 {
 	if (const auto rIter = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
 		[ullOffset](const std::unique_ptr<STEMPLATEAPPLIED>& refTempl)
-		{return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->iSizeTotal; });
+		{return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
 		rIter != m_vecTemplatesApplied.rend()) {
 		RemoveNodeWithAppliedID(rIter->get()->iAppliedID);
 		m_vecTemplatesApplied.erase(std::next(rIter).base());
@@ -392,7 +398,7 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PSTEMPLATEFIELD
 {
 	if (const auto itTemplApplied = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
 		[ullOffset](const std::unique_ptr<STEMPLATEAPPLIED>& refTempl)
-		{ return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->iSizeTotal; });
+		{ return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
 		itTemplApplied != m_vecTemplatesApplied.rend())
 	{
 		const auto pTemplApplied = itTemplApplied->get();
@@ -498,14 +504,29 @@ auto CHexDlgTemplMgr::TreeItemFromListItem(int iListItem)const->HTREEITEM
 	return hChildItem;
 }
 
-void CHexDlgTemplMgr::SetHexSelection(int iCurrFieldIndex)
+void CHexDlgTemplMgr::SetHexSelByListItem(int iCurrListItem)
 {
-	if (!m_pHexCtrl->IsDataSet())
+	if (!IsHighlight() || !m_pHexCtrl->IsDataSet())
 		return;
 
 	const auto& refVec = *m_pVecCurrFields;
-	const auto ullOffset = m_pAppliedCurr->ullOffset + refVec[iCurrFieldIndex]->iOffset;
-	const auto ullSize = static_cast<ULONGLONG>(refVec[iCurrFieldIndex]->iSize);
+	const auto ullOffset = m_pAppliedCurr->ullOffset + refVec[iCurrListItem]->iOffset;
+	const auto ullSize = static_cast<ULONGLONG>(refVec[iCurrListItem]->iSize);
+
+	m_pHexCtrl->SetSelection({ { ullOffset, ullSize } });
+	if (!m_pHexCtrl->IsOffsetVisible(ullOffset)) {
+		m_pHexCtrl->GoToOffset(ullOffset, -1);
+	}
+}
+
+void CHexDlgTemplMgr::SetHexSelByField(PSTEMPLATEFIELD pField)
+{
+	if (!IsHighlight() || !m_pHexCtrl->IsDataSet() || pField == nullptr)
+		return;
+
+	const auto ullOffset = m_pAppliedCurr->ullOffset + pField->iOffset;
+	const auto ullSize = static_cast<ULONGLONG>(pField->iSize);
+
 	m_pHexCtrl->SetSelection({ { ullOffset, ullSize } });
 	if (!m_pHexCtrl->IsOffsetVisible(ullOffset)) {
 		m_pHexCtrl->GoToOffset(ullOffset, -1);
@@ -554,6 +575,7 @@ void CHexDlgTemplMgr::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET, m_stEditOffset);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, m_stTreeApplied);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, m_stCheckTtShow);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, m_stCheckHglSel);
 }
 
 BOOL CHexDlgTemplMgr::OnInitDialog()
@@ -575,6 +597,7 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 
 	m_stEditOffset.SetWindowTextW(L"0x0");
 	m_stCheckTtShow.SetCheck(IsTooltips() ? BST_CHECKED : BST_UNCHECKED);
+	m_stCheckHglSel.SetCheck(IsHighlight() ? BST_CHECKED : BST_UNCHECKED);
 
 	m_hCurResize = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
 	m_hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
@@ -659,6 +682,11 @@ void CHexDlgTemplMgr::OnCheckTtShow()
 	ShowTooltips(m_stCheckTtShow.GetCheck() == BST_CHECKED);
 }
 
+void CHexDlgTemplMgr::OnCheckHglSel()
+{
+	m_fHighlightSel = m_stCheckHglSel.GetCheck() == BST_CHECKED;
+}
+
 void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
@@ -682,7 +710,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		break;
 	case 3: { //Data.
 		if (!m_pHexCtrl->IsDataSet()
-			|| m_pAppliedCurr->ullOffset + m_pAppliedCurr->iSizeTotal > m_pHexCtrl->GetDataSize()) //Size overflow check.
+			|| m_pAppliedCurr->ullOffset + m_pAppliedCurr->pTemplate->iSizeTotal > m_pHexCtrl->GetDataSize()) //Size overflow check.
 			break;
 
 		const auto ullOffset = m_pAppliedCurr->ullOffset + refVecField[nItemID]->iOffset;
@@ -738,7 +766,7 @@ void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 
 	m_stTreeApplied.SelectItem(TreeItemFromListItem(iItem));
-	SetHexSelection(iItem);
+	SetHexSelByListItem(iItem);
 }
 
 void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
@@ -797,13 +825,14 @@ void CHexDlgTemplMgr::OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgTemplMgr::OnTreeSelChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pTree = reinterpret_cast<LPNMTREEVIEWW>(pNMHDR);
 	if (pTree->action == TVC_UNKNOWN)
 		return;
 
 	bool fRootNodeClick { false };
+	PSTEMPLATEFIELD pFieldToHighlight { };
 	const auto pItem = &pTree->itemNew;
 	m_hTreeCurrNode = pItem->hItem;
 
@@ -814,16 +843,24 @@ void CHexDlgTemplMgr::OnTreeSelChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 	else { //Child items.
 		const auto pField = reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(pItem->hItem));
-		if (pField->pFieldParent != nullptr) { //If it's inner Field, set m_pVecCurrFields to parent Fields' vecInner.
-			m_pVecCurrFields = &pField->pFieldParent->vecInner;
-		}
-		else {
-			if (!pField->vecInner.empty()) { //If it's nested Fields vector, set m_pVecCurrFields to it.
+		if (pField->pFieldParent == nullptr) {
+			if (pField->vecInner.empty()) { //On first level child items, set m_pVecCurrFields to Template's main vecFields.
+				m_pVecCurrFields = &pField->pTemplate->vecFields;
+			}
+			else { //If it's nested Fields vector, set m_pVecCurrFields to it.
 				fRootNodeClick = true;
 				m_pVecCurrFields = &pField->vecInner;
+				pFieldToHighlight = pField;
 			}
-			else { //On first level child items, set m_pVecCurrFields to Template's main vecFields.
-				m_pVecCurrFields = &pField->pTemplate->vecFields;
+		}
+		else { //If it's inner Field, set m_pVecCurrFields to parent Fields' vecInner.
+			if (pField->vecInner.empty()) {
+				m_pVecCurrFields = &pField->pFieldParent->vecInner;
+			}
+			else {
+				fRootNodeClick = true;
+				m_pVecCurrFields = &pField->vecInner;
+				pFieldToHighlight = pField;
 			}
 		}
 	}
@@ -839,7 +876,9 @@ void CHexDlgTemplMgr::OnTreeSelChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	m_pAppliedCurr = GetAppliedFromItem(pItem->hItem);
 
 	if (m_pListApplied->GetSelectedCount() > 0) {
-		m_fListProtectEvent = true;
+		if (!fRootNodeClick) {
+			m_fListProtectEvent = true;
+		}
 		m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
 	}
 	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecCurrFields->size()), LVSICF_NOSCROLL);
@@ -852,7 +891,10 @@ void CHexDlgTemplMgr::OnTreeSelChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			hChild = m_stTreeApplied.GetNextSiblingItem(hChild);
 		}
 		m_pListApplied->SetItemState(iIndexHighlight, LVIS_SELECTED, LVIS_SELECTED);
-		SetHexSelection(iIndexHighlight);
+		SetHexSelByListItem(iIndexHighlight);
+	}
+	else {
+		SetHexSelByField(pFieldToHighlight);
 	}
 
 	m_pListApplied->RedrawWindow();

@@ -32,13 +32,13 @@ namespace HEXCTRL::INTERNAL
 	struct SHEXTEMPLATE {
 		std::wstring wstrName;    //Template name.
 		VecFields    vecFields;   //Template fields.
+		int          iSizeTotal;  //Total size of all Template's fields, assigned internally by framework.
 		int          iTemplateID; //Template ID, assigned internally by framework.
 	};
 
 	struct STEMPLATEAPPLIED {
 		ULONGLONG    ullOffset;  //Offset, where to apply a template.
 		PHEXTEMPLATE pTemplate;  //Template pointer in the m_vecTemplates.
-		int          iSizeTotal; //Total size of all template fields, assingned by framework.
 		int          iAppliedID; //Applied/runtime ID. Any template can be applied more than once, assingned by framework.
 	};
 	using PSTEMPLATEAPPLIED = STEMPLATEAPPLIED*;
@@ -64,6 +64,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnBnUnloadTemplate();
 		afx_msg void OnBnApply();
 		afx_msg void OnCheckTtShow();
+		afx_msg void OnCheckHglSel();
 		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
@@ -71,7 +72,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListEnterPressed(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnTreeSelChanged(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnTreeRClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
@@ -85,8 +86,10 @@ namespace HEXCTRL::INTERNAL
 		void RemoveNodesWithTemplateID(int iTemplateID);
 		void RemoveNodeWithAppliedID(int iAppliedID);
 		void DisapplyByID(int iAppliedID)override; //Stop one template with the given AppliedID from applying.
+		[[nodiscard]] bool IsHighlight()const;
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
-		void SetHexSelection(int iCurrFieldIndex);
+		void SetHexSelByListItem(int iCurrListItem);
+		void SetHexSelByField(PSTEMPLATEFIELD pField);
 		void ShowTooltips(bool fShow)override;
 		static LRESULT TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 		DECLARE_MESSAGE_MAP();
@@ -98,6 +101,7 @@ namespace HEXCTRL::INTERNAL
 		CComboBox m_stComboTemplates; //Currently available templates list.
 		CEdit m_stEditOffset;         //"Offset" edit box.
 		CButton m_stCheckTtShow;      //Check-box "Show tooltips"
+		CButton m_stCheckHglSel;      //Check-box "Highlight selected"
 		LISTEX::IListExPtr m_pListApplied { LISTEX::CreateListEx() };
 		LISTEX::LISTEXCOLOR m_stCellClr { };
 		CTreeCtrl m_stTreeApplied;
@@ -111,6 +115,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fCurInSplitter { };            //Indicates that mouse cursor is in the splitter area.
 		bool m_fLMDownResize { };             //Left mouse pressed in splitter area to resize.
 		bool m_fListProtectEvent { false };   //Flag to not trigger unnecessary OnListItemChanged.
-		bool m_fTooltips { true };            //Show tooltips or not. 
+		bool m_fTooltips { true };            //Show tooltips or not.
+		bool m_fHighlightSel { true };        //Highlight selected fields with a selection.
 	};
 }
