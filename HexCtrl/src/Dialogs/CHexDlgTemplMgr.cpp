@@ -24,6 +24,8 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_APPLY, &CHexDlgTemplMgr::OnBnApply)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, &CHexDlgTemplMgr::OnCheckTtShow)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, &CHexDlgTemplMgr::OnCheckHglSel)
+	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_RAD_HEX, &CHexDlgTemplMgr::OnClickRadHexDec)
+	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_RAD_DEC, &CHexDlgTemplMgr::OnClickRadHexDec)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListItemChanged)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetColor)
@@ -569,12 +571,12 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 
 	m_pListApplied->CreateDialogCtrl(IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, this);
 	m_pListApplied->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
-	m_pListApplied->InsertColumn(0, L"Name", 0, 150);
+	m_pListApplied->InsertColumn(0, L"Name", 0, 300);
 	m_pListApplied->InsertColumn(1, L"Offset", 0, 50);
 	m_pListApplied->InsertColumn(2, L"Size", LVCFMT_LEFT, 50);
-	m_pListApplied->InsertColumn(3, L"Data", LVCFMT_LEFT, 100);
-	m_pListApplied->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 60);
-	m_pListApplied->InsertColumn(5, L"Text color", LVCFMT_LEFT, 60);
+	m_pListApplied->InsertColumn(3, L"Data", LVCFMT_LEFT, 120);
+	m_pListApplied->InsertColumn(4, L"BkClr", LVCFMT_LEFT, 45);
+	m_pListApplied->InsertColumn(5, L"TextClr", LVCFMT_LEFT, 45);
 
 	m_stMenuList.CreatePopupMenu();
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_DISAPPLY), L"Disapply template");
@@ -586,6 +588,10 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 
 	m_hCurResize = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
 	m_hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
+
+	if (auto pRadHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_RAD_HEX)); pRadHex != nullptr) {
+		pRadHex->SetCheck(BST_CHECKED);
+	}
 
 	EnableDynamicLayoutHelper(true);
 
@@ -662,6 +668,12 @@ void CHexDlgTemplMgr::OnBnApply()
 	ApplyTemplate(*opt, iTemplateID);
 }
 
+void CHexDlgTemplMgr::OnClickRadHexDec()
+{
+	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_RAD_HEX))->GetCheck() == BST_CHECKED;
+	m_pListApplied->RedrawWindow();
+}
+
 void CHexDlgTemplMgr::OnCheckTtShow()
 {
 	ShowTooltips(m_stCheckTtShow.GetCheck() == BST_CHECKED);
@@ -682,16 +694,17 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	const auto nItemID = static_cast<size_t>(pItem->iItem);
 	const auto& refVecField = *m_pVecCurrFields;
+	const auto wsvFmt = m_fShowAsHex ? L"0x{:X}" : L"{}";
 	switch (pItem->iSubItem)
 	{
 	case 0: //Name.
 		pItem->pszText = refVecField[nItemID]->wstrName.data();
 		break;
 	case 1: //Offset.
-		*std::format_to(pItem->pszText, L"{}", refVecField[nItemID]->iOffset) = L'\0';
+		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(refVecField[nItemID]->iOffset)) = L'\0';
 		break;
 	case 2: //Size.
-		*std::format_to(pItem->pszText, L"{}", refVecField[nItemID]->iSize) = L'\0';
+		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(refVecField[nItemID]->iSize)) = L'\0';
 		break;
 	case 3: { //Data.
 		if (!m_pHexCtrl->IsDataSet()
@@ -701,16 +714,16 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		const auto ullOffset = m_pAppliedCurr->ullOffset + refVecField[nItemID]->iOffset;
 		switch (refVecField[nItemID]->iSize) {
 		case 1:
-			*std::format_to(pItem->pszText, L"0x{:X}", GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset)) = L'\0';
+			*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset))) = L'\0';
 			break;
 		case 2:
-			*std::format_to(pItem->pszText, L"0x{:X}", GetIHexTData<WORD>(*m_pHexCtrl, ullOffset)) = L'\0';
+			*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<WORD>(*m_pHexCtrl, ullOffset))) = L'\0';
 			break;
 		case 4:
-			*std::format_to(pItem->pszText, L"0x{:X}", GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset)) = L'\0';
+			*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset))) = L'\0';
 			break;
 		case 8:
-			*std::format_to(pItem->pszText, L"0x{:X}", GetIHexTData<QWORD>(*m_pHexCtrl, ullOffset)) = L'\0';
+			*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<QWORD>(*m_pHexCtrl, ullOffset))) = L'\0';
 			break;
 		}
 	}

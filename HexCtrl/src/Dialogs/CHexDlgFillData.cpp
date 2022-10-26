@@ -59,7 +59,7 @@ BOOL CHexDlgFillData::OnInitDialog()
 	iIndex = m_stComboType.AddString(L"Pseudo Random Data (fast, but less secure)");
 	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_FAST));
 
-	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_ALL, IDC_HEXCTRL_FILLDATA_RADIO_SEL, IDC_HEXCTRL_FILLDATA_RADIO_ALL);
+	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL, IDC_HEXCTRL_FILLDATA_RAD_ALL);
 	m_stComboData.LimitText(512); //Max characters of combo-box.
 
 	return TRUE;
@@ -72,9 +72,9 @@ void CHexDlgFillData::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 		if (m_pHexCtrl->IsCreated() && m_pHexCtrl->IsDataSet())
 		{
 			const auto fSelection { m_pHexCtrl->HasSelection() };
-			CheckRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_ALL, IDC_HEXCTRL_FILLDATA_RADIO_SEL,
-				fSelection ? IDC_HEXCTRL_FILLDATA_RADIO_SEL : IDC_HEXCTRL_FILLDATA_RADIO_ALL);
-			GetDlgItem(IDC_HEXCTRL_FILLDATA_RADIO_SEL)->EnableWindow(fSelection);
+			CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL,
+				fSelection ? IDC_HEXCTRL_FILLDATA_RAD_SEL : IDC_HEXCTRL_FILLDATA_RAD_ALL);
+			GetDlgItem(IDC_HEXCTRL_FILLDATA_RAD_SEL)->EnableWindow(fSelection);
 		}
 	}
 
@@ -118,8 +118,8 @@ void CHexDlgFillData::OnOK()
 	}
 
 	HEXMODIFY hms;
-	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RADIO_ALL, IDC_HEXCTRL_FILLDATA_RADIO_SEL);
-	if (iRadioAllOrSel == IDC_HEXCTRL_FILLDATA_RADIO_ALL)
+	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL);
+	if (iRadioAllOrSel == IDC_HEXCTRL_FILLDATA_RAD_ALL)
 	{
 		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify All data?",
 			MB_YESNO | MB_ICONWARNING) == IDNO)

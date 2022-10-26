@@ -15,10 +15,10 @@ using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgGoTo, CDialogEx)
-	ON_COMMAND(IDC_HEXCTRL_GOTO_RADIO_ABS, &CHexDlgGoTo::OnClickRadioAbs)
-	ON_COMMAND(IDC_HEXCTRL_GOTO_RADIO_FWDCURR, &CHexDlgGoTo::OnClickRadioFwdCurr)
-	ON_COMMAND(IDC_HEXCTRL_GOTO_RADIO_BACKCURR, &CHexDlgGoTo::OnClickRadioBackCurr)
-	ON_COMMAND(IDC_HEXCTRL_GOTO_RADIO_BACKEND, &CHexDlgGoTo::OnClickRadioBackEnd)
+	ON_COMMAND(IDC_HEXCTRL_GOTO_RAD_ABS, &CHexDlgGoTo::OnClickRadioAbs)
+	ON_COMMAND(IDC_HEXCTRL_GOTO_RAD_FWDCURR, &CHexDlgGoTo::OnClickRadioFwdCurr)
+	ON_COMMAND(IDC_HEXCTRL_GOTO_RAD_BACKCURR, &CHexDlgGoTo::OnClickRadioBackCurr)
+	ON_COMMAND(IDC_HEXCTRL_GOTO_RAD_BACKEND, &CHexDlgGoTo::OnClickRadioBackEnd)
 	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
@@ -42,10 +42,10 @@ BOOL CHexDlgGoTo::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RADIO_OFFSET)); pRadio)
+	if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RAD_OFFSET)); pRadio)
 		pRadio->SetCheck(BST_CHECKED);
 
-	if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RADIO_ABS)); pRadio)
+	if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RAD_ABS)); pRadio)
 		pRadio->SetCheck(BST_CHECKED);
 
 	return TRUE;
@@ -66,7 +66,7 @@ void CHexDlgGoTo::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 			//In case of no page size, disable "Page" radio.
 			if (pHexCtrl->GetPagesCount() == 0)
 			{
-				if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RADIO_PAGE)); pRadio)
+				if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RAD_PAGE)); pRadio)
 					pRadio->EnableWindow(FALSE);
 				wstr = L"Not available";
 			}
@@ -77,18 +77,18 @@ void CHexDlgGoTo::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 			wstr = std::format(L"0x{:X}", pHexCtrl->GetDataSize());
 			GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_OFFTOTAL)->SetWindowTextW(wstr.data());
 
-			switch (GetCheckedRadioButton(IDC_HEXCTRL_GOTO_RADIO_ABS, IDC_HEXCTRL_GOTO_RADIO_BACKEND))
+			switch (GetCheckedRadioButton(IDC_HEXCTRL_GOTO_RAD_ABS, IDC_HEXCTRL_GOTO_RAD_BACKEND))
 			{
-			case IDC_HEXCTRL_GOTO_RADIO_ABS:
+			case IDC_HEXCTRL_GOTO_RAD_ABS:
 				OnClickRadioAbs();
 				break;
-			case IDC_HEXCTRL_GOTO_RADIO_FWDCURR:
+			case IDC_HEXCTRL_GOTO_RAD_FWDCURR:
 				OnClickRadioFwdCurr();
 				break;
-			case IDC_HEXCTRL_GOTO_RADIO_BACKCURR:
+			case IDC_HEXCTRL_GOTO_RAD_BACKCURR:
 				OnClickRadioBackCurr();
 				break;
-			case IDC_HEXCTRL_GOTO_RADIO_BACKEND:
+			case IDC_HEXCTRL_GOTO_RAD_BACKEND:
 				OnClickRadioBackEnd();
 				break;
 			default:
@@ -118,14 +118,14 @@ void CHexDlgGoTo::OnOK()
 	auto ullRangeFrom { 0ULL };
 	auto ullRangeTo { 0ULL };
 	auto ullMul { 0ULL };
-	switch (GetCheckedRadioButton(IDC_HEXCTRL_GOTO_RADIO_OFFSET, IDC_HEXCTRL_GOTO_RADIO_PAGE))
+	switch (GetCheckedRadioButton(IDC_HEXCTRL_GOTO_RAD_OFFSET, IDC_HEXCTRL_GOTO_RAD_PAGE))
 	{
-	case IDC_HEXCTRL_GOTO_RADIO_OFFSET:
+	case IDC_HEXCTRL_GOTO_RAD_OFFSET:
 		ullRangeFrom = m_ullOffsetsFrom;
 		ullRangeTo = m_ullOffsetsTo;
 		ullMul = 1;
 		break;
-	case IDC_HEXCTRL_GOTO_RADIO_PAGE:
+	case IDC_HEXCTRL_GOTO_RAD_PAGE:
 		ullRangeFrom = m_ullPagesFrom;
 		ullRangeTo = m_ullPagesTo;
 		ullMul = pHexCtrl->GetPageSize();
@@ -140,21 +140,21 @@ void CHexDlgGoTo::OnOK()
 	}
 
 	ULONGLONG ullResult { };
-	switch (GetCheckedRadioButton(IDC_HEXCTRL_GOTO_RADIO_ABS, IDC_HEXCTRL_GOTO_RADIO_BACKEND))
+	switch (GetCheckedRadioButton(IDC_HEXCTRL_GOTO_RAD_ABS, IDC_HEXCTRL_GOTO_RAD_BACKEND))
 	{
-	case IDC_HEXCTRL_GOTO_RADIO_ABS:
+	case IDC_HEXCTRL_GOTO_RAD_ABS:
 		ullResult = m_ullData * ullMul;
 		m_iRepeat = 0;
 		break;
-	case IDC_HEXCTRL_GOTO_RADIO_FWDCURR:
+	case IDC_HEXCTRL_GOTO_RAD_FWDCURR:
 		ullResult = pHexCtrl->GetCaretPos() + (m_ullData * ullMul);
 		m_iRepeat = 1;
 		break;
-	case IDC_HEXCTRL_GOTO_RADIO_BACKCURR:
+	case IDC_HEXCTRL_GOTO_RAD_BACKCURR:
 		ullResult = pHexCtrl->GetCaretPos() - (m_ullData * ullMul);
 		m_iRepeat = -1;
 		break;
-	case IDC_HEXCTRL_GOTO_RADIO_BACKEND:
+	case IDC_HEXCTRL_GOTO_RAD_BACKEND:
 		ullResult = pHexCtrl->GetDataSize() - (m_ullData * ullMul) - 1;
 		m_iRepeat = 0;
 		break;
@@ -165,18 +165,18 @@ void CHexDlgGoTo::OnOK()
 	HexCtrlGoOffset(ullResult);
 
 	//To renew static text.
-	switch (GetCheckedRadioButton(IDC_HEXCTRL_GOTO_RADIO_ABS, IDC_HEXCTRL_GOTO_RADIO_BACKEND))
+	switch (GetCheckedRadioButton(IDC_HEXCTRL_GOTO_RAD_ABS, IDC_HEXCTRL_GOTO_RAD_BACKEND))
 	{
-	case IDC_HEXCTRL_GOTO_RADIO_ABS:
+	case IDC_HEXCTRL_GOTO_RAD_ABS:
 		OnClickRadioAbs();
 		break;
-	case IDC_HEXCTRL_GOTO_RADIO_FWDCURR:
+	case IDC_HEXCTRL_GOTO_RAD_FWDCURR:
 		OnClickRadioFwdCurr();
 		break;
-	case IDC_HEXCTRL_GOTO_RADIO_BACKCURR:
+	case IDC_HEXCTRL_GOTO_RAD_BACKCURR:
 		OnClickRadioBackCurr();
 		break;
-	case IDC_HEXCTRL_GOTO_RADIO_BACKEND:
+	case IDC_HEXCTRL_GOTO_RAD_BACKEND:
 		OnClickRadioBackEnd();
 		break;
 	default:

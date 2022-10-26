@@ -19,12 +19,12 @@ namespace HEXCTRL::INTERNAL
 	using PSTEMPLATEFIELD = STEMPLATEFIELD*;
 
 	struct STEMPLATEFIELD {
-		std::wstring    wstrName { }; //Field name.
-		int             iSize { };    //Field size.
-		int             iOffset { };  //Field offset relative to Template beginning.
-		COLORREF        clrBk { };
-		COLORREF        clrText { };
-		VecFields       vecInner { }; //Vector for nested fields.
+		std::wstring    wstrName { };     //Field name.
+		int             iSize { };        //Field size.
+		int             iOffset { };      //Field offset relative to Template beginning.
+		COLORREF        clrBk { };        //Background color in HexCtrl.
+		COLORREF        clrText { };      //Text color in HexCtrl.
+		VecFields       vecInner { };     //Vector for nested fields.
 		PSTEMPLATEFIELD pFieldParent { }; //Parent field in case of nested.
 		PHEXTEMPLATE    pTemplate { };    //Template this field belongs to.
 	};
@@ -39,7 +39,7 @@ namespace HEXCTRL::INTERNAL
 	struct STEMPLATEAPPLIED {
 		ULONGLONG    ullOffset;  //Offset, where to apply a template.
 		PHEXTEMPLATE pTemplate;  //Template pointer in the m_vecTemplates.
-		int          iAppliedID; //Applied/runtime ID. Any template can be applied more than once, assingned by framework.
+		int          iAppliedID; //Applied/runtime ID. Any template can be applied more than once, assigned by framework.
 	};
 	using PSTEMPLATEAPPLIED = STEMPLATEAPPLIED*;
 
@@ -63,6 +63,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnBnLoadTemplate();
 		afx_msg void OnBnUnloadTemplate();
 		afx_msg void OnBnApply();
+		afx_msg void OnClickRadHexDec();
 		afx_msg void OnCheckTtShow();
 		afx_msg void OnCheckHglSel();
 		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
@@ -116,5 +117,6 @@ namespace HEXCTRL::INTERNAL
 		bool m_fListGuardEvent { false };     //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
 		bool m_fTooltips { true };            //Show tooltips or not.
 		bool m_fHighlightSel { true };        //Highlight selected fields with a selection.
+		bool m_fShowAsHex { true };
 	};
 }

@@ -31,8 +31,8 @@ BEGIN_MESSAGE_MAP(CHexDlgBkmMgr, CDialogEx)
 	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListDblClick)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListRClick)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListGetColor)
-	ON_BN_CLICKED(IDC_HEXCTRL_BKMMGR_RADIO_DEC, &CHexDlgBkmMgr::OnClickRadioHexDec)
-	ON_BN_CLICKED(IDC_HEXCTRL_BKMMGR_RADIO_HEX, &CHexDlgBkmMgr::OnClickRadioHexDec)
+	ON_BN_CLICKED(IDC_HEXCTRL_BKMMGR_RAD_DEC, &CHexDlgBkmMgr::OnClickRadioHexDec)
+	ON_BN_CLICKED(IDC_HEXCTRL_BKMMGR_RAD_HEX, &CHexDlgBkmMgr::OnClickRadioHexDec)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -72,7 +72,7 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	m_stMenuList.AppendMenuW(MF_SEPARATOR);
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_CLEARALL), L"Clear All");
 
-	if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RADIO_HEX)); pRadio)
+	if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RAD_HEX)); pRadio)
 		pRadio->SetCheck(BST_CHECKED);
 
 	return TRUE;
@@ -158,7 +158,7 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 
 void CHexDlgBkmMgr::OnClickRadioHexDec()
 {
-	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RADIO_HEX))->GetCheck() == BST_CHECKED;
+	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RAD_HEX))->GetCheck() == BST_CHECKED;
 	m_pListMain->RedrawWindow();
 }
 
