@@ -88,7 +88,6 @@ namespace HEXCTRL::INTERNAL
 		void DisapplyByID(int iAppliedID)override; //Stop one template with the given AppliedID from applying.
 		[[nodiscard]] bool IsHighlight()const;
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
-		void SetHexSelByListItem(int iCurrListItem);
 		void SetHexSelByField(PSTEMPLATEFIELD pField);
 		void ShowTooltips(bool fShow)override;
 		static LRESULT TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
@@ -114,7 +113,7 @@ namespace HEXCTRL::INTERNAL
 		HTREEITEM m_hTreeCurrParent { };      //Currently selected Tree node's parent.
 		bool m_fCurInSplitter { };            //Indicates that mouse cursor is in the splitter area.
 		bool m_fLMDownResize { };             //Left mouse pressed in splitter area to resize.
-		bool m_fListProtectEvent { false };   //Flag to not trigger unnecessary OnListItemChanged.
+		bool m_fListGuardEvent { false };     //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
 		bool m_fTooltips { true };            //Show tooltips or not.
 		bool m_fHighlightSel { true };        //Highlight selected fields with a selection.
 	};

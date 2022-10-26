@@ -2911,16 +2911,15 @@ void CHexCtrl::DrawDataTemplate(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 		if (!wstrHexFieldToPrint.empty()) {
 			lmbPoly();
 		}
+		pFieldCurr = nullptr;
 	}
 
 	//Fieds printing.
-	if (!vecFieldsHex.empty())
-	{
+	if (!vecFieldsHex.empty()) {
 		pDC->SelectObject(m_fontMain);
 		std::size_t index { 0 }; //Index for vecFieldsText, its size is always equal to vecFieldsHex.
 		const auto penOld = SelectObject(pDC->m_hDC, m_penDataTempl);
-		for (const auto& iter : vecFieldsHex) //Loop is needed because different Fields can have different colors.
-		{
+		for (const auto& iter : vecFieldsHex) { //Loop is needed because different Fields can have different colors.
 			pDC->SetTextColor(iter.clrText);
 			pDC->SetBkColor(iter.clrBk);
 
@@ -3017,6 +3016,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 					lmbPoly();
 					iBkmHexPosToPrintX = -1;
 				}
+
 				pBkmCurr = pBkm;
 
 				if (iBkmHexPosToPrintX == -1) { //For just one time exec.
@@ -3048,15 +3048,14 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 		if (!wstrHexBkmToPrint.empty()) {
 			lmbPoly();
 		}
+		pBkmCurr = nullptr;
 	}
 
 	//Bookmarks printing.
-	if (!vecBkmHex.empty())
-	{
+	if (!vecBkmHex.empty()) {
 		pDC->SelectObject(m_fontMain);
 		std::size_t index { 0 }; //Index for vecBkmText, its size is always equal to vecBkmHex.
-		for (const auto& iter : vecBkmHex) //Loop is needed because bkms have different colors.
-		{
+		for (const auto& iter : vecBkmHex) { //Loop is needed because bkms have different colors.
 			pDC->SetTextColor(iter.clrText);
 			pDC->SetBkColor(iter.clrBk);
 			const auto& refH = iter.stPoly;
@@ -3261,8 +3260,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 	}
 
 	//Selection printing.
-	if (!vecPolySelHex.empty())
-	{
+	if (!vecPolySelHex.empty()) {
 		pDC->SelectObject(m_fontMain);
 		pDC->SetTextColor(m_stColor.clrFontSel);
 		pDC->SetBkColor(m_stColor.clrBkSel);
@@ -3352,8 +3350,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 	}
 
 	//Selection highlight printing.
-	if (!vecPolySelHexHgl.empty())
-	{
+	if (!vecPolySelHexHgl.empty()) {
 		//Colors are the inverted selection colors.
 		pDC->SelectObject(m_fontMain);
 		pDC->SetTextColor(m_stColor.clrBkSel);
@@ -3381,10 +3378,10 @@ void CHexCtrl::DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wsv
 	const auto sIndexToPrint = static_cast<std::size_t>(ullCaretPos - (ullStartLine * m_dwCapacity));
 	std::wstring wstrHexCaretToPrint;
 	std::wstring wstrTextCaretToPrint;
-	if (m_fCaretHigh)
+	if (m_fCaretHigh) {
 		wstrHexCaretToPrint = wsvHex[sIndexToPrint * 2];
-	else
-	{
+	}
+	else {
 		wstrHexCaretToPrint = wsvHex[sIndexToPrint * 2 + 1];
 		iCaretHexPosToPrintX += m_sizeFontMain.cx;
 	}
@@ -3481,8 +3478,7 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std:
 	}
 
 	//Data Interpreter printing.
-	if (!vecPolyDataInterp.empty())
-	{
+	if (!vecPolyDataInterp.empty()) {
 		pDC->SelectObject(m_fontMain);
 		pDC->SetTextColor(m_stColor.clrFontDataInterp);
 		pDC->SetBkColor(m_stColor.clrBkDataInterp);
@@ -3505,21 +3501,17 @@ void CHexCtrl::DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines)
 	std::vector<SPAGELINES> vecPageLines;
 
 	//Loop for printing Hex chunks and Text chars line by line.
-	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
-	{
+	for (auto iterLines = 0; iterLines < iLines; ++iterLines) {
 		//Page's lines vector to print.
-		if ((((ullStartLine + iterLines) * m_dwCapacity) % m_dwPageSize == 0) && iterLines > 0)
-		{
+		if ((((ullStartLine + iterLines) * m_dwCapacity) % m_dwPageSize == 0) && iterLines > 0) {
 			const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeFontMain.cy * iterLines;
 			vecPageLines.emplace_back(POINT { m_iFirstVertLine, iPosToPrintY }, POINT { m_iFourthVertLine, iPosToPrintY });
 		}
 	}
 
 	//Page lines printing.
-	if (!vecPageLines.empty())
-	{
-		for (const auto& iter : vecPageLines)
-		{
+	if (!vecPageLines.empty()) {
+		for (const auto& iter : vecPageLines) {
 			pDC->MoveTo(iter.ptStart.x, iter.ptStart.y);
 			pDC->LineTo(iter.ptEnd.x, iter.ptEnd.y);
 		}
@@ -5162,31 +5154,32 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 	}
 	else {
 		if (optHit) {
-			if (m_pDlgTemplMgr->IsTooltips()) {
-				if (const auto pField = m_pDlgTemplMgr->HitTest(optHit->ullOffset); pField != nullptr) {
-					if (m_pTFieldTtCurr != pField) {
-						m_pTFieldTtCurr = pField;
-						CPoint ptScreen = point;
-						ClientToScreen(&ptScreen);
-						m_stToolInfoTempl.lpszText = pField->wstrName.data();
-						ToolTipTemplShow(true, POINT { ptScreen.x, ptScreen.y });
-					}
-				}
-				else if (m_pTFieldTtCurr != nullptr) {
-					ToolTipTemplShow(false);
-				}
-			}
-			else if (const auto pBkm = m_pDlgBkmMgr->HitTest(optHit->ullOffset); pBkm != nullptr) {
+			if (const auto pBkm = m_pDlgBkmMgr->HitTest(optHit->ullOffset); pBkm != nullptr) {
 				if (m_pBkmTtCurr != pBkm) {
 					m_pBkmTtCurr = pBkm;
 					CPoint ptScreen = point;
 					ClientToScreen(&ptScreen);
+					ptScreen.Offset(3, 3);
 					m_stToolInfoBkm.lpszText = pBkm->wstrDesc.data();
-					ToolTipBkmShow(true, POINT { ptScreen.x, ptScreen.y });
+					ToolTipBkmShow(true, ptScreen);
 				}
 			}
 			else if (m_pBkmTtCurr != nullptr) {
 				ToolTipBkmShow(false);
+			}
+			else if (const auto pField = m_pDlgTemplMgr->HitTest(optHit->ullOffset);
+				m_pDlgTemplMgr->IsTooltips() && pField != nullptr) {
+				if (m_pTFieldTtCurr != pField) {
+					m_pTFieldTtCurr = pField;
+					CPoint ptScreen = point;
+					ClientToScreen(&ptScreen);
+					ptScreen.Offset(3, 3);
+					m_stToolInfoTempl.lpszText = pField->wstrName.data();
+					ToolTipTemplShow(true, ptScreen);
+				}
+			}
+			else if (m_pTFieldTtCurr != nullptr) {
+				ToolTipTemplShow(false);
 			}
 		}
 		else {

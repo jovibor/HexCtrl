@@ -504,21 +504,6 @@ auto CHexDlgTemplMgr::TreeItemFromListItem(int iListItem)const->HTREEITEM
 	return hChildItem;
 }
 
-void CHexDlgTemplMgr::SetHexSelByListItem(int iCurrListItem)
-{
-	if (!IsHighlight() || !m_pHexCtrl->IsDataSet())
-		return;
-
-	const auto& refVec = *m_pVecCurrFields;
-	const auto ullOffset = m_pAppliedCurr->ullOffset + refVec[iCurrListItem]->iOffset;
-	const auto ullSize = static_cast<ULONGLONG>(refVec[iCurrListItem]->iSize);
-
-	m_pHexCtrl->SetSelection({ { ullOffset, ullSize } });
-	if (!m_pHexCtrl->IsOffsetVisible(ullOffset)) {
-		m_pHexCtrl->GoToOffset(ullOffset, -1);
-	}
-}
-
 void CHexDlgTemplMgr::SetHexSelByField(PSTEMPLATEFIELD pField)
 {
 	if (!IsHighlight() || !m_pHexCtrl->IsDataSet() || pField == nullptr)
@@ -757,16 +742,10 @@ void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	const auto iItem = pNMI->iItem;
-	if (iItem < 0)
+	if (iItem < 0 || m_fListGuardEvent)
 		return;
-
-	if (m_fListProtectEvent) {
-		m_fListProtectEvent = false;
-		return;
-	}
 
 	m_stTreeApplied.SelectItem(TreeItemFromListItem(iItem));
-	SetHexSelByListItem(iItem);
 }
 
 void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
@@ -780,7 +759,7 @@ void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	if (refVec[iItem]->vecInner.empty())
 		return;
 
-	m_fListProtectEvent = true; //To prevent nasty OnListItemChanged to fire after this method ends.
+	m_fListGuardEvent = true; //To prevent nasty OnListItemChanged to fire after this method ends.
 	m_pVecCurrFields = &refVec[iItem]->vecInner;
 
 	const auto hItem = TreeItemFromListItem(iItem);
@@ -791,6 +770,7 @@ void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
 	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecCurrFields->size()));
 	m_pListApplied->RedrawWindow();
+	m_fListGuardEvent = false;
 }
 
 void CHexDlgTemplMgr::OnListEnterPressed(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
@@ -828,59 +808,52 @@ void CHexDlgTemplMgr::OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pTree = reinterpret_cast<LPNMTREEVIEWW>(pNMHDR);
-	if (pTree->action == TVC_UNKNOWN)
-		return;
-
-	bool fRootNodeClick { false };
-	PSTEMPLATEFIELD pFieldToHighlight { };
 	const auto pItem = &pTree->itemNew;
 	m_hTreeCurrNode = pItem->hItem;
+
+	if (pTree->action == TVC_UNKNOWN) { //Item was changed by m_stTreeApplied.SelectItem(...) from the list.
+		SetHexSelByField(reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(m_hTreeCurrNode)));
+		return;
+	}
+
+	m_fListGuardEvent = true; //To not trigger OnListItemChanged on the way.
+	bool fRootNodeClick { false };
+	PSTEMPLATEFIELD pFieldCurr { };
 
 	if (m_stTreeApplied.GetParentItem(pItem->hItem) == nullptr) { //Root item.
 		fRootNodeClick = true;
 		const auto pApplied = reinterpret_cast<PSTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(pItem->hItem));
 		m_pVecCurrFields = &pApplied->pTemplate->vecFields; //On Root item click, set m_pVecCurrFields to Template's main vecFields.
+		m_hTreeCurrParent = pItem->hItem;
 	}
 	else { //Child items.
-		const auto pField = reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(pItem->hItem));
-		if (pField->pFieldParent == nullptr) {
-			if (pField->vecInner.empty()) { //On first level child items, set m_pVecCurrFields to Template's main vecFields.
-				m_pVecCurrFields = &pField->pTemplate->vecFields;
+		pFieldCurr = reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(pItem->hItem));
+		if (pFieldCurr->pFieldParent == nullptr) {
+			if (pFieldCurr->vecInner.empty()) { //On first level child items, set m_pVecCurrFields to Template's main vecFields.
+				m_pVecCurrFields = &pFieldCurr->pTemplate->vecFields;
+				m_hTreeCurrParent = m_stTreeApplied.GetParentItem(pItem->hItem);
 			}
 			else { //If it's nested Fields vector, set m_pVecCurrFields to it.
 				fRootNodeClick = true;
-				m_pVecCurrFields = &pField->vecInner;
-				pFieldToHighlight = pField;
+				m_pVecCurrFields = &pFieldCurr->vecInner;
+				m_hTreeCurrParent = pItem->hItem;
 			}
 		}
 		else { //If it's inner Field, set m_pVecCurrFields to parent Fields' vecInner.
-			if (pField->vecInner.empty()) {
-				m_pVecCurrFields = &pField->pFieldParent->vecInner;
+			if (pFieldCurr->vecInner.empty()) {
+				m_pVecCurrFields = &pFieldCurr->pFieldParent->vecInner;
+				m_hTreeCurrParent = m_stTreeApplied.GetParentItem(pItem->hItem);
 			}
 			else {
 				fRootNodeClick = true;
-				m_pVecCurrFields = &pField->vecInner;
-				pFieldToHighlight = pField;
+				m_pVecCurrFields = &pFieldCurr->vecInner;
+				m_hTreeCurrParent = pItem->hItem;
 			}
 		}
 	}
 
-	if (m_stTreeApplied.ItemHasChildren(pItem->hItem)) {
-		m_hTreeCurrParent = pItem->hItem;
-	}
-	else {
-		const auto hCurr = m_stTreeApplied.GetParentItem(pItem->hItem);
-		m_hTreeCurrParent = hCurr != nullptr ? hCurr : pItem->hItem;
-	}
-
 	m_pAppliedCurr = GetAppliedFromItem(pItem->hItem);
-
-	if (m_pListApplied->GetSelectedCount() > 0) {
-		if (!fRootNodeClick) {
-			m_fListProtectEvent = true;
-		}
-		m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
-	}
+	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
 	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecCurrFields->size()), LVSICF_NOSCROLL);
 
 	if (!fRootNodeClick) {
@@ -891,13 +864,13 @@ void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			hChild = m_stTreeApplied.GetNextSiblingItem(hChild);
 		}
 		m_pListApplied->SetItemState(iIndexHighlight, LVIS_SELECTED, LVIS_SELECTED);
-		SetHexSelByListItem(iIndexHighlight);
-	}
-	else {
-		SetHexSelByField(pFieldToHighlight);
+		m_pListApplied->EnsureVisible(iIndexHighlight, FALSE);
 	}
 
+	SetHexSelByField(pFieldCurr);
+
 	m_pListApplied->RedrawWindow();
+	m_fListGuardEvent = false;
 }
 
 void CHexDlgTemplMgr::OnTreeRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
