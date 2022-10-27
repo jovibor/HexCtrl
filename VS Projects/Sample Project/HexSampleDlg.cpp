@@ -34,7 +34,7 @@ void CHexSampleDlg::CreateHexPopup()
 	const auto dwStyle = WS_POPUP | WS_OVERLAPPEDWINDOW;
 	const auto dwExStyle = WS_EX_APPWINDOW; //To force to the taskbar.
 
-	HEXCREATE hcs { .hWndParent { m_hWnd }, .dwStyle { dwStyle }, .dwExStyle { dwExStyle } };
+	const HEXCREATE hcs { .hWndParent { m_hWnd }, .dwStyle { dwStyle }, .dwExStyle { dwExStyle } };
 	m_pHexPopup->Create(hcs);
 	if (!m_hds.spnData.empty())
 		m_pHexPopup->SetData(m_hds);
@@ -81,8 +81,8 @@ BOOL CHexSampleDlg::OnInitDialog()
 	if (const std::filesystem::path pathTemplates { wstrPath }; std::filesystem::exists(pathTemplates)) {
 		const auto pTempl = m_pHexChild->GetTemplates();
 		for (const auto& entry : std::filesystem::directory_iterator { pathTemplates }) {
-			std::wstring_view wsvFile = entry.path().c_str();
-			if (const auto npos = wsvFile.find_last_of(L'.'); npos != wsvFile.npos) {
+			const std::wstring_view wsvFile = entry.path().c_str();
+			if (const auto npos = wsvFile.find_last_of(L'.'); npos != std::wstring_view::npos) {
 				if (wsvFile.substr(npos + 1) == L"json") { //Check json extension of templates.
 					pTempl->LoadTemplate(wsvFile.data());
 				}
@@ -331,7 +331,7 @@ auto CHexSampleDlg::OpenFileDlg()->std::optional<std::vector<std::wstring>>
 	std::vector<std::wstring> vecFiles { };
 	if (fd.DoModal() == IDOK)
 	{
-		CComPtr<IFileOpenDialog> pIFOD = fd.GetIFileOpenDialog();
+		const CComPtr<IFileOpenDialog> pIFOD = fd.GetIFileOpenDialog();
 		CComPtr<IShellItemArray> pResults;
 		pIFOD->GetResults(&pResults);
 

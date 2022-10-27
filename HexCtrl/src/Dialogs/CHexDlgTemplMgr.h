@@ -91,6 +91,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
 		void SetHexSelByField(PSTEMPLATEFIELD pField);
 		void ShowTooltips(bool fShow)override;
+		void UpdateStaticText();
 		static LRESULT TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 		DECLARE_MESSAGE_MAP();
 	private:
@@ -102,6 +103,8 @@ namespace HEXCTRL::INTERNAL
 		CEdit m_stEditOffset;         //"Offset" edit box.
 		CButton m_stCheckTtShow;      //Check-box "Show tooltips"
 		CButton m_stCheckHglSel;      //Check-box "Highlight selected"
+		CButton m_stStaticOffset;     //Static text "Template offset:".
+		CButton m_stStaticSize;       //Static text Template size:".
 		LISTEX::IListExPtr m_pListApplied { LISTEX::CreateListEx() };
 		LISTEX::LISTEXCOLOR m_stCellClr { };
 		CTreeCtrl m_stTreeApplied;

@@ -41,6 +41,446 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_WM_LBUTTONUP()
 END_MESSAGE_MAP()
 
+BOOL CHexDlgTemplMgr::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
+{
+	assert(pHexCtrl);
+	if (pHexCtrl == nullptr)
+		return FALSE;
+
+	m_pHexCtrl = pHexCtrl;
+
+	return CDialogEx::Create(nIDTemplate, pParent);
+}
+
+void CHexDlgTemplMgr::DoDataExchange(CDataExchange* pDX)
+{
+	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES, m_stComboTemplates);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET, m_stEditOffset);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, m_stTreeApplied);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, m_stCheckTtShow);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, m_stCheckHglSel);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSET, m_stStaticOffset);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_STATIC_SIZE, m_stStaticSize);
+}
+
+BOOL CHexDlgTemplMgr::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	m_pListApplied->CreateDialogCtrl(IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, this);
+	m_pListApplied->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
+	m_pListApplied->InsertColumn(0, L"Name", 0, 300);
+	m_pListApplied->InsertColumn(1, L"Offset", 0, 50);
+	m_pListApplied->InsertColumn(2, L"Size", LVCFMT_LEFT, 50);
+	m_pListApplied->InsertColumn(3, L"Data", LVCFMT_LEFT, 120);
+	m_pListApplied->InsertColumn(4, L"BkClr", LVCFMT_LEFT, 45);
+	m_pListApplied->InsertColumn(5, L"TextClr", LVCFMT_LEFT, 45);
+
+	m_stMenuList.CreatePopupMenu();
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_DISAPPLY), L"Disapply template");
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_CLEARALL), L"Clear all");
+
+	m_stEditOffset.SetWindowTextW(L"0x0");
+	m_stCheckTtShow.SetCheck(IsTooltips() ? BST_CHECKED : BST_UNCHECKED);
+	m_stCheckHglSel.SetCheck(IsHighlight() ? BST_CHECKED : BST_UNCHECKED);
+
+	m_hCurResize = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
+	m_hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
+
+	if (auto pRadHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_RAD_HEX)); pRadHex != nullptr) {
+		pRadHex->SetCheck(BST_CHECKED);
+	}
+
+	EnableDynamicLayoutHelper(true);
+
+	::SetWindowSubclass(m_stTreeApplied, TreeSubclassProc, 0, 0);
+
+	return TRUE;
+}
+
+BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
+{
+	using enum EMenuID;
+	switch (static_cast<EMenuID>(LOWORD(wParam)))
+	{
+	case IDM_APPLIED_DISAPPLY:
+		if (const auto pApplied = GetAppliedFromItem(m_stTreeApplied.GetSelectedItem()); pApplied != nullptr) {
+			DisapplyByID(pApplied->iAppliedID);
+		}
+		return TRUE;
+	case IDM_APPLIED_CLEARALL:
+		ClearAll();
+		return TRUE;
+	}
+
+	return CDialogEx::OnCommand(wParam, lParam);
+}
+
+void CHexDlgTemplMgr::OnBnLoadTemplate()
+{
+	CFileDialog fd(TRUE, nullptr, nullptr,
+		OFN_OVERWRITEPROMPT | OFN_EXPLORER | OFN_ALLOWMULTISELECT | OFN_DONTADDTORECENT | OFN_ENABLESIZING
+		| OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST, L"All files (*.*)|*.*||");
+
+	if (fd.DoModal() != IDOK)
+		return;
+
+	const CComPtr<IFileOpenDialog> pIFOD = fd.GetIFileOpenDialog();
+	CComPtr<IShellItemArray> pResults;
+	pIFOD->GetResults(&pResults);
+
+	DWORD dwCount { };
+	pResults->GetCount(&dwCount);
+	for (unsigned iterFiles = 0; iterFiles < dwCount; ++iterFiles) {
+		CComPtr<IShellItem> pItem;
+		pResults->GetItemAt(iterFiles, &pItem);
+		CComHeapPtr<wchar_t> pwstrPath;
+		pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwstrPath);
+		if (LoadTemplate(pwstrPath) == 0) {
+			MessageBoxW(L"Error when trying to load a template.", pwstrPath, MB_ICONERROR);
+		}
+	}
+}
+
+void CHexDlgTemplMgr::OnBnUnloadTemplate()
+{
+	if (const auto iIndex = m_stComboTemplates.GetCurSel(); iIndex != CB_ERR) {
+		const auto iTemplateID = static_cast<int>(m_stComboTemplates.GetItemData(iIndex));
+		UnloadTemplate(iTemplateID);
+	}
+}
+
+void CHexDlgTemplMgr::OnBnApply()
+{
+	CString wstrText;
+	m_stEditOffset.GetWindowTextW(wstrText);
+	const auto opt = StrToULL(wstrText.GetString());
+	if (!opt)
+		return;
+
+	const auto iIndex = m_stComboTemplates.GetCurSel();
+	if (iIndex == CB_ERR)
+		return;
+
+	const auto iTemplateID = static_cast<int>(m_stComboTemplates.GetItemData(iIndex));
+	ApplyTemplate(*opt, iTemplateID);
+}
+
+void CHexDlgTemplMgr::OnClickRadHexDec()
+{
+	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_RAD_HEX))->GetCheck() == BST_CHECKED;
+	UpdateStaticText();
+	m_pListApplied->RedrawWindow();
+}
+
+void CHexDlgTemplMgr::OnCheckTtShow()
+{
+	ShowTooltips(m_stCheckTtShow.GetCheck() == BST_CHECKED);
+}
+
+void CHexDlgTemplMgr::OnCheckHglSel()
+{
+	m_fHighlightSel = m_stCheckHglSel.GetCheck() == BST_CHECKED;
+}
+
+void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+{
+	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
+	const auto pItem = &pDispInfo->item;
+
+	if ((pItem->mask & LVIF_TEXT) == 0)
+		return;
+
+	const auto nItemID = static_cast<size_t>(pItem->iItem);
+	const auto& refVecField = *m_pVecCurrFields;
+	const auto wsvFmt = m_fShowAsHex ? L"0x{:X}" : L"{}";
+	switch (pItem->iSubItem)
+	{
+	case 0: //Name.
+		pItem->pszText = refVecField[nItemID]->wstrName.data();
+		break;
+	case 1: //Offset.
+		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(refVecField[nItemID]->iOffset)) = L'\0';
+		break;
+	case 2: //Size.
+		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(refVecField[nItemID]->iSize)) = L'\0';
+		break;
+	case 3: { //Data.
+		if (!m_pHexCtrl->IsDataSet()
+			|| m_pAppliedCurr->ullOffset + m_pAppliedCurr->pTemplate->iSizeTotal > m_pHexCtrl->GetDataSize()) //Size overflow check.
+			break;
+
+		const auto ullOffset = m_pAppliedCurr->ullOffset + refVecField[nItemID]->iOffset;
+		switch (refVecField[nItemID]->iSize) {
+		case 1:
+			*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset))) = L'\0';
+			break;
+		case 2:
+			*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<WORD>(*m_pHexCtrl, ullOffset))) = L'\0';
+			break;
+		case 4:
+			*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset))) = L'\0';
+			break;
+		case 8:
+			*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<QWORD>(*m_pHexCtrl, ullOffset))) = L'\0';
+			break;
+		}
+	}
+		  break;
+	default:
+		break;
+	}
+}
+
+void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	if (pNMI->iSubItem != 4 && pNMI->iSubItem != 5)
+		return;
+
+	const auto& refVecField = *m_pVecCurrFields;
+	switch (pNMI->iSubItem) {
+	case 4: //Bk color.
+		m_stCellClr.clrBk = refVecField[pNMI->iItem]->clrBk;
+		break;
+	case 5: //Text color
+		m_stCellClr.clrBk = refVecField[pNMI->iItem]->clrText;
+		break;
+	}
+	pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
+}
+
+void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	const auto iItem = pNMI->iItem;
+	if (iItem < 0 || m_fListGuardEvent)
+		return;
+
+	m_stTreeApplied.SelectItem(TreeItemFromListItem(iItem));
+}
+
+void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	const auto iItem = pNMI->iItem;
+	if (iItem < 0)
+		return;
+
+	const auto& refVec = *m_pVecCurrFields;
+	if (refVec[iItem]->vecInner.empty())
+		return;
+
+	m_fListGuardEvent = true; //To prevent nasty OnListItemChanged to fire after this method ends.
+	m_pVecCurrFields = &refVec[iItem]->vecInner;
+
+	const auto hItem = TreeItemFromListItem(iItem);
+	m_hTreeCurrParent = hItem;
+	m_hTreeCurrNode = hItem;
+	m_stTreeApplied.Expand(hItem, TVE_EXPAND);
+
+	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
+	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecCurrFields->size()));
+	m_pListApplied->RedrawWindow();
+	m_fListGuardEvent = false;
+}
+
+void CHexDlgTemplMgr::OnListEnterPressed(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
+{
+	const auto uSelected = m_pListApplied->GetSelectedCount();
+	if (uSelected != 1)
+		return;
+
+	//Simulate DblClick in List with Enter key.
+	NMITEMACTIVATE nmii { .iItem = m_pListApplied->GetSelectionMark() };
+	OnListDblClick(&nmii.hdr, nullptr);
+}
+
+void CHexDlgTemplMgr::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
+{
+}
+
+void CHexDlgTemplMgr::OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+{
+	const auto pDispInfo = reinterpret_cast<NMTVDISPINFOW*>(pNMHDR);
+	const auto pItem = &pDispInfo->item;
+	if ((pItem->mask & TVIF_TEXT) == 0)
+		return;
+
+	if (m_stTreeApplied.GetParentItem(pItem->hItem) == nullptr) { //Root node.
+		const auto pTemplApplied = reinterpret_cast<PSTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(pItem->hItem));
+		StringCchCopyW(pItem->pszText, pItem->cchTextMax, pTemplApplied->pTemplate->wstrName.data());
+	}
+	else {
+		const auto pTemplField = reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(pItem->hItem));
+		StringCchCopyW(pItem->pszText, pItem->cchTextMax, pTemplField->wstrName.data());
+	}
+}
+
+void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+{
+	const auto pTree = reinterpret_cast<LPNMTREEVIEWW>(pNMHDR);
+	const auto pItem = &pTree->itemNew;
+	m_hTreeCurrNode = pItem->hItem;
+
+	if (pTree->action == TVC_UNKNOWN) { //Item was changed by m_stTreeApplied.SelectItem(...) from the list.
+		SetHexSelByField(reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(m_hTreeCurrNode)));
+		return;
+	}
+
+	m_fListGuardEvent = true; //To not trigger OnListItemChanged on the way.
+	bool fRootNodeClick { false };
+	PSTEMPLATEFIELD pFieldCurr { };
+
+	if (m_stTreeApplied.GetParentItem(pItem->hItem) == nullptr) { //Root item.
+		fRootNodeClick = true;
+		const auto pApplied = reinterpret_cast<PSTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(pItem->hItem));
+		m_pVecCurrFields = &pApplied->pTemplate->vecFields; //On Root item click, set m_pVecCurrFields to Template's main vecFields.
+		m_hTreeCurrParent = pItem->hItem;
+	}
+	else { //Child items.
+		pFieldCurr = reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(pItem->hItem));
+		if (pFieldCurr->pFieldParent == nullptr) {
+			if (pFieldCurr->vecInner.empty()) { //On first level child items, set m_pVecCurrFields to Template's main vecFields.
+				m_pVecCurrFields = &pFieldCurr->pTemplate->vecFields;
+				m_hTreeCurrParent = m_stTreeApplied.GetParentItem(pItem->hItem);
+			}
+			else { //If it's nested Fields vector, set m_pVecCurrFields to it.
+				fRootNodeClick = true;
+				m_pVecCurrFields = &pFieldCurr->vecInner;
+				m_hTreeCurrParent = pItem->hItem;
+			}
+		}
+		else { //If it's inner Field, set m_pVecCurrFields to parent Fields' vecInner.
+			if (pFieldCurr->vecInner.empty()) {
+				m_pVecCurrFields = &pFieldCurr->pFieldParent->vecInner;
+				m_hTreeCurrParent = m_stTreeApplied.GetParentItem(pItem->hItem);
+			}
+			else {
+				fRootNodeClick = true;
+				m_pVecCurrFields = &pFieldCurr->vecInner;
+				m_hTreeCurrParent = pItem->hItem;
+			}
+		}
+	}
+
+	m_pAppliedCurr = GetAppliedFromItem(pItem->hItem);
+	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
+	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecCurrFields->size()), LVSICF_NOSCROLL);
+	UpdateStaticText();
+
+	if (!fRootNodeClick) {
+		int iIndexHighlight { 0 }; //Index to highlight in the list.
+		auto hChild = m_stTreeApplied.GetNextItem(m_stTreeApplied.GetParentItem(pItem->hItem), TVGN_CHILD);
+		while (hChild != pItem->hItem) { //Checking for currently selected item in the tree.
+			++iIndexHighlight;
+			hChild = m_stTreeApplied.GetNextSiblingItem(hChild);
+		}
+		m_pListApplied->SetItemState(iIndexHighlight, LVIS_SELECTED, LVIS_SELECTED);
+		m_pListApplied->EnsureVisible(iIndexHighlight, FALSE);
+	}
+
+	SetHexSelByField(pFieldCurr);
+
+	m_pListApplied->RedrawWindow();
+	m_fListGuardEvent = false;
+}
+
+void CHexDlgTemplMgr::OnTreeRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
+{
+	POINT pt;
+	GetCursorPos(&pt);
+	POINT ptTree = pt;
+	m_stTreeApplied.ScreenToClient(&ptTree);
+	const auto fHitTest = m_stTreeApplied.HitTest(ptTree) != nullptr;
+	const auto fHasApplied = HasApplied();
+	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_DISAPPLY),
+		(fHasApplied && fHitTest ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_CLEARALL), (fHasApplied ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
+}
+
+void CHexDlgTemplMgr::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	if (m_fCurInSplitter) {
+		m_fLMDownResize = true;
+		SetCapture();
+		EnableDynamicLayoutHelper(false);
+	}
+
+	CDialogEx::OnLButtonDown(nFlags, point);
+}
+
+void CHexDlgTemplMgr::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	m_fLMDownResize = false;
+	ReleaseCapture();
+	EnableDynamicLayoutHelper(true);
+
+	CDialogEx::OnLButtonUp(nFlags, point);
+}
+
+void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)
+{
+	constexpr auto iResAreaHalfWidth = 15;       //Area where cursor turns into resizable (IDC_SIZEWE).
+	constexpr auto iWidthBetweenTreeAndList = 1; //Width between tree and list after resizing.
+	constexpr auto iMinTreeWidth = 100;          //Tree control minimum width.
+
+	CRect rcList;
+	m_pListApplied->GetWindowRect(rcList);
+	ScreenToClient(rcList);
+
+	if (m_fLMDownResize) {
+		CRect rcTree;
+		m_stTreeApplied.GetWindowRect(rcTree);
+		ScreenToClient(rcTree);
+		rcTree.right = point.x - iWidthBetweenTreeAndList;
+		if (rcTree.Width() >= iMinTreeWidth) {
+			m_stTreeApplied.SetWindowPos(nullptr, rcTree.left, rcTree.top,
+				rcTree.Width(), rcTree.Height(), SWP_NOACTIVATE);
+
+			rcList.left = point.x;
+			m_pListApplied->SetWindowPos(nullptr, rcList.left, rcList.top,
+				rcList.Width(), rcList.Height(), SWP_NOACTIVATE);
+		}
+	}
+	else {
+		const CRect rcSplitter(rcList.left - iResAreaHalfWidth, rcList.top,
+			rcList.left + iResAreaHalfWidth, rcList.bottom);
+		if (rcSplitter.PtInRect(point)) {
+			m_fCurInSplitter = true;
+			SetCursor(m_hCurResize);
+			SetCapture();
+		}
+		else {
+			m_fCurInSplitter = false;
+			SetCursor(m_hCurArrow);
+			ReleaseCapture();
+		}
+	}
+
+	CDialogEx::OnMouseMove(nFlags, point);
+}
+
+void CHexDlgTemplMgr::OnOK()
+{
+	//When Enter is pressed anywhere in dialog and focus is on the m_pListApplied,
+	//we simulate pressing Enter in the list by sending WM_KEYDOWN/VK_RETURN to it.
+	if (GetFocus() == &*m_pListApplied) {
+		m_pListApplied->SendMessageW(WM_KEYDOWN, VK_RETURN);
+	}
+}
+
+void CHexDlgTemplMgr::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	ClearAll();
+	m_pListApplied->DestroyWindow();
+	m_stMenuList.DestroyMenu();
+}
+
 int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 {
 	const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
@@ -106,6 +546,11 @@ void CHexDlgTemplMgr::ClearAll()
 	m_stTreeApplied.DeleteAllItems();
 	m_pListApplied->SetItemCountEx(0);
 	m_vecTemplatesApplied.clear();
+	m_pAppliedCurr = nullptr;
+	m_pVecCurrFields = nullptr;
+	m_hTreeCurrNode = nullptr;
+	m_hTreeCurrParent = nullptr;
+	UpdateStaticText();
 
 	if (m_pHexCtrl->IsDataSet()) {
 		m_pHexCtrl->Redraw();
@@ -340,6 +785,8 @@ void CHexDlgTemplMgr::EnableDynamicLayoutHelper(bool fEnable)
 			CMFCDynamicLayout::SizeHorizontalAndVertical(100, 100));
 		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, CMFCDynamicLayout::MoveNone(),
 			CMFCDynamicLayout::SizeVertical(100));
+		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP, CMFCDynamicLayout::MoveNone(),
+			CMFCDynamicLayout::SizeHorizontal(100));
 	}
 }
 
@@ -367,11 +814,6 @@ void CHexDlgTemplMgr::DisapplyByID(int iAppliedID)
 	}
 }
 
-bool CHexDlgTemplMgr::IsHighlight()const
-{
-	return m_fHighlightSel;
-}
-
 void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 {
 	if (const auto rIter = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
@@ -384,6 +826,11 @@ void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 			m_pHexCtrl->Redraw();
 		}
 	}
+}
+
+bool CHexDlgTemplMgr::IsHighlight()const
+{
+	return m_fHighlightSel;
 }
 
 bool CHexDlgTemplMgr::HasApplied()const
@@ -464,6 +911,9 @@ void CHexDlgTemplMgr::RemoveNodesWithTemplateID(int iTemplateID)
 				m_pListApplied->RedrawWindow();
 				m_pAppliedCurr = nullptr;
 				m_pVecCurrFields = nullptr;
+				m_hTreeCurrNode = nullptr;
+				m_hTreeCurrParent = nullptr;
+				UpdateStaticText();
 			}
 
 			hItem = m_stTreeApplied.GetNextItem(hItem, TVGN_NEXT); //Get next Root sibling item.
@@ -487,6 +937,7 @@ void CHexDlgTemplMgr::RemoveNodeWithAppliedID(int iAppliedID)
 					m_pVecCurrFields = nullptr;
 					m_hTreeCurrNode = nullptr;
 					m_hTreeCurrParent = nullptr;
+					UpdateStaticText();
 				}
 				m_stTreeApplied.DeleteItem(hItem);
 				break;
@@ -525,6 +976,20 @@ void CHexDlgTemplMgr::ShowTooltips(bool fShow)
 	m_fTooltips = fShow;
 }
 
+void CHexDlgTemplMgr::UpdateStaticText()
+{
+	std::wstring wstrOffset { };
+	std::wstring wstrSize { };
+
+	if (m_pAppliedCurr != nullptr) { //If m_pAppliedCurr == nullptr set empty text.
+		wstrOffset = std::vformat(m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(m_pAppliedCurr->ullOffset));
+		wstrSize = std::vformat(m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(m_pAppliedCurr->pTemplate->iSizeTotal));
+	}
+
+	m_stStaticOffset.SetWindowTextW(wstrOffset.data());
+	m_stStaticSize.SetWindowTextW(wstrSize.data());
+}
+
 LRESULT CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 	UINT_PTR /*uIdSubclass*/, DWORD_PTR /*dwRefData*/)
 {
@@ -542,439 +1007,4 @@ LRESULT CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
 	}
 
 	return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
-}
-
-BOOL CHexDlgTemplMgr::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
-{
-	assert(pHexCtrl);
-	if (pHexCtrl == nullptr)
-		return FALSE;
-
-	m_pHexCtrl = pHexCtrl;
-
-	return CDialogEx::Create(nIDTemplate, pParent);
-}
-
-void CHexDlgTemplMgr::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES, m_stComboTemplates);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET, m_stEditOffset);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, m_stTreeApplied);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, m_stCheckTtShow);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, m_stCheckHglSel);
-}
-
-BOOL CHexDlgTemplMgr::OnInitDialog()
-{
-	CDialogEx::OnInitDialog();
-
-	m_pListApplied->CreateDialogCtrl(IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, this);
-	m_pListApplied->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
-	m_pListApplied->InsertColumn(0, L"Name", 0, 300);
-	m_pListApplied->InsertColumn(1, L"Offset", 0, 50);
-	m_pListApplied->InsertColumn(2, L"Size", LVCFMT_LEFT, 50);
-	m_pListApplied->InsertColumn(3, L"Data", LVCFMT_LEFT, 120);
-	m_pListApplied->InsertColumn(4, L"BkClr", LVCFMT_LEFT, 45);
-	m_pListApplied->InsertColumn(5, L"TextClr", LVCFMT_LEFT, 45);
-
-	m_stMenuList.CreatePopupMenu();
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_DISAPPLY), L"Disapply template");
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_CLEARALL), L"Clear all");
-
-	m_stEditOffset.SetWindowTextW(L"0x0");
-	m_stCheckTtShow.SetCheck(IsTooltips() ? BST_CHECKED : BST_UNCHECKED);
-	m_stCheckHglSel.SetCheck(IsHighlight() ? BST_CHECKED : BST_UNCHECKED);
-
-	m_hCurResize = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
-	m_hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
-
-	if (auto pRadHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_RAD_HEX)); pRadHex != nullptr) {
-		pRadHex->SetCheck(BST_CHECKED);
-	}
-
-	EnableDynamicLayoutHelper(true);
-
-	::SetWindowSubclass(m_stTreeApplied, TreeSubclassProc, 0, 0);
-
-	return TRUE;
-}
-
-BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
-{
-	using enum EMenuID;
-	switch (static_cast<EMenuID>(LOWORD(wParam)))
-	{
-	case IDM_APPLIED_DISAPPLY:
-		if (const auto pApplied = GetAppliedFromItem(m_stTreeApplied.GetSelectedItem()); pApplied != nullptr) {
-			DisapplyByID(pApplied->iAppliedID);
-		}
-		return TRUE;
-	case IDM_APPLIED_CLEARALL:
-		ClearAll();
-		return TRUE;
-	}
-
-	return CDialogEx::OnCommand(wParam, lParam);
-}
-
-void CHexDlgTemplMgr::OnBnLoadTemplate()
-{
-	CFileDialog fd(TRUE, nullptr, nullptr,
-		OFN_OVERWRITEPROMPT | OFN_EXPLORER | OFN_ALLOWMULTISELECT | OFN_DONTADDTORECENT | OFN_ENABLESIZING
-		| OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST, L"All files (*.*)|*.*||");
-
-	if (fd.DoModal() != IDOK)
-		return;
-
-	const CComPtr<IFileOpenDialog> pIFOD = fd.GetIFileOpenDialog();
-	CComPtr<IShellItemArray> pResults;
-	pIFOD->GetResults(&pResults);
-
-	DWORD dwCount { };
-	pResults->GetCount(&dwCount);
-	for (unsigned iterFiles = 0; iterFiles < dwCount; ++iterFiles) {
-		CComPtr<IShellItem> pItem;
-		pResults->GetItemAt(iterFiles, &pItem);
-		CComHeapPtr<wchar_t> pwstrPath;
-		pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwstrPath);
-		if (LoadTemplate(pwstrPath) == 0) {
-			MessageBoxW(L"Error when trying to load a template.", pwstrPath, MB_ICONERROR);
-		}
-	}
-}
-
-void CHexDlgTemplMgr::OnBnUnloadTemplate()
-{
-	if (const auto iIndex = m_stComboTemplates.GetCurSel(); iIndex != CB_ERR) {
-		const auto iTemplateID = static_cast<int>(m_stComboTemplates.GetItemData(iIndex));
-		UnloadTemplate(iTemplateID);
-	}
-}
-
-void CHexDlgTemplMgr::OnBnApply()
-{
-	CString wstrText;
-	m_stEditOffset.GetWindowTextW(wstrText);
-	const auto opt = StrToULL(wstrText.GetString());
-	if (!opt)
-		return;
-
-	const auto iIndex = m_stComboTemplates.GetCurSel();
-	if (iIndex == CB_ERR)
-		return;
-
-	const auto iTemplateID = static_cast<int>(m_stComboTemplates.GetItemData(iIndex));
-	ApplyTemplate(*opt, iTemplateID);
-}
-
-void CHexDlgTemplMgr::OnClickRadHexDec()
-{
-	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_RAD_HEX))->GetCheck() == BST_CHECKED;
-	m_pListApplied->RedrawWindow();
-}
-
-void CHexDlgTemplMgr::OnCheckTtShow()
-{
-	ShowTooltips(m_stCheckTtShow.GetCheck() == BST_CHECKED);
-}
-
-void CHexDlgTemplMgr::OnCheckHglSel()
-{
-	m_fHighlightSel = m_stCheckHglSel.GetCheck() == BST_CHECKED;
-}
-
-void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
-{
-	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
-	const auto pItem = &pDispInfo->item;
-
-	if ((pItem->mask & LVIF_TEXT) == 0)
-		return;
-
-	const auto nItemID = static_cast<size_t>(pItem->iItem);
-	const auto& refVecField = *m_pVecCurrFields;
-	const auto wsvFmt = m_fShowAsHex ? L"0x{:X}" : L"{}";
-	switch (pItem->iSubItem)
-	{
-	case 0: //Name.
-		pItem->pszText = refVecField[nItemID]->wstrName.data();
-		break;
-	case 1: //Offset.
-		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(refVecField[nItemID]->iOffset)) = L'\0';
-		break;
-	case 2: //Size.
-		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(refVecField[nItemID]->iSize)) = L'\0';
-		break;
-	case 3: { //Data.
-		if (!m_pHexCtrl->IsDataSet()
-			|| m_pAppliedCurr->ullOffset + m_pAppliedCurr->pTemplate->iSizeTotal > m_pHexCtrl->GetDataSize()) //Size overflow check.
-			break;
-
-		const auto ullOffset = m_pAppliedCurr->ullOffset + refVecField[nItemID]->iOffset;
-		switch (refVecField[nItemID]->iSize) {
-		case 1:
-			*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset))) = L'\0';
-			break;
-		case 2:
-			*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<WORD>(*m_pHexCtrl, ullOffset))) = L'\0';
-			break;
-		case 4:
-			*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset))) = L'\0';
-			break;
-		case 8:
-			*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<QWORD>(*m_pHexCtrl, ullOffset))) = L'\0';
-			break;
-		}
-	}
-		  break;
-	default:
-		break;
-	}
-}
-
-void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
-{
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	if (pNMI->iSubItem != 4 && pNMI->iSubItem != 5)
-		return;
-
-	const auto& refVecField = *m_pVecCurrFields;
-	switch (pNMI->iSubItem) {
-	case 4: //Bk color.
-		m_stCellClr.clrBk = refVecField[pNMI->iItem]->clrBk;
-		break;
-	case 5: //Text color
-		m_stCellClr.clrBk = refVecField[pNMI->iItem]->clrText;
-		break;
-	}
-	pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
-}
-
-void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
-{
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto iItem = pNMI->iItem;
-	if (iItem < 0 || m_fListGuardEvent)
-		return;
-
-	m_stTreeApplied.SelectItem(TreeItemFromListItem(iItem));
-}
-
-void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
-{
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto iItem = pNMI->iItem;
-	if (iItem < 0)
-		return;
-
-	const auto& refVec = *m_pVecCurrFields;
-	if (refVec[iItem]->vecInner.empty())
-		return;
-
-	m_fListGuardEvent = true; //To prevent nasty OnListItemChanged to fire after this method ends.
-	m_pVecCurrFields = &refVec[iItem]->vecInner;
-
-	const auto hItem = TreeItemFromListItem(iItem);
-	m_hTreeCurrParent = hItem;
-	m_hTreeCurrNode = hItem;
-	m_stTreeApplied.Expand(hItem, TVE_EXPAND);
-
-	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
-	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecCurrFields->size()));
-	m_pListApplied->RedrawWindow();
-	m_fListGuardEvent = false;
-}
-
-void CHexDlgTemplMgr::OnListEnterPressed(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
-{
-	const auto uSelected = m_pListApplied->GetSelectedCount();
-	if (uSelected != 1)
-		return;
-
-	//Simulate DblClick in List with Enter key.
-	NMITEMACTIVATE nmii { .iItem = m_pListApplied->GetSelectionMark() };
-	OnListDblClick(&nmii.hdr, nullptr);
-}
-
-void CHexDlgTemplMgr::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
-{
-}
-
-void CHexDlgTemplMgr::OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
-{
-	const auto pDispInfo = reinterpret_cast<NMTVDISPINFOW*>(pNMHDR);
-	const auto pItem = &pDispInfo->item;
-	if ((pItem->mask & TVIF_TEXT) == 0)
-		return;
-
-	if (m_stTreeApplied.GetParentItem(pItem->hItem) == nullptr) { //Root node.
-		const auto pTemplApplied = reinterpret_cast<PSTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(pItem->hItem));
-		StringCchCopyW(pItem->pszText, pItem->cchTextMax, pTemplApplied->pTemplate->wstrName.data());
-	}
-	else {
-		const auto pTemplField = reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(pItem->hItem));
-		StringCchCopyW(pItem->pszText, pItem->cchTextMax, pTemplField->wstrName.data());
-	}
-}
-
-void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
-{
-	const auto pTree = reinterpret_cast<LPNMTREEVIEWW>(pNMHDR);
-	const auto pItem = &pTree->itemNew;
-	m_hTreeCurrNode = pItem->hItem;
-
-	if (pTree->action == TVC_UNKNOWN) { //Item was changed by m_stTreeApplied.SelectItem(...) from the list.
-		SetHexSelByField(reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(m_hTreeCurrNode)));
-		return;
-	}
-
-	m_fListGuardEvent = true; //To not trigger OnListItemChanged on the way.
-	bool fRootNodeClick { false };
-	PSTEMPLATEFIELD pFieldCurr { };
-
-	if (m_stTreeApplied.GetParentItem(pItem->hItem) == nullptr) { //Root item.
-		fRootNodeClick = true;
-		const auto pApplied = reinterpret_cast<PSTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(pItem->hItem));
-		m_pVecCurrFields = &pApplied->pTemplate->vecFields; //On Root item click, set m_pVecCurrFields to Template's main vecFields.
-		m_hTreeCurrParent = pItem->hItem;
-	}
-	else { //Child items.
-		pFieldCurr = reinterpret_cast<PSTEMPLATEFIELD>(m_stTreeApplied.GetItemData(pItem->hItem));
-		if (pFieldCurr->pFieldParent == nullptr) {
-			if (pFieldCurr->vecInner.empty()) { //On first level child items, set m_pVecCurrFields to Template's main vecFields.
-				m_pVecCurrFields = &pFieldCurr->pTemplate->vecFields;
-				m_hTreeCurrParent = m_stTreeApplied.GetParentItem(pItem->hItem);
-			}
-			else { //If it's nested Fields vector, set m_pVecCurrFields to it.
-				fRootNodeClick = true;
-				m_pVecCurrFields = &pFieldCurr->vecInner;
-				m_hTreeCurrParent = pItem->hItem;
-			}
-		}
-		else { //If it's inner Field, set m_pVecCurrFields to parent Fields' vecInner.
-			if (pFieldCurr->vecInner.empty()) {
-				m_pVecCurrFields = &pFieldCurr->pFieldParent->vecInner;
-				m_hTreeCurrParent = m_stTreeApplied.GetParentItem(pItem->hItem);
-			}
-			else {
-				fRootNodeClick = true;
-				m_pVecCurrFields = &pFieldCurr->vecInner;
-				m_hTreeCurrParent = pItem->hItem;
-			}
-		}
-	}
-
-	m_pAppliedCurr = GetAppliedFromItem(pItem->hItem);
-	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
-	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecCurrFields->size()), LVSICF_NOSCROLL);
-
-	if (!fRootNodeClick) {
-		int iIndexHighlight { 0 }; //Index to highlight in the list.
-		auto hChild = m_stTreeApplied.GetNextItem(m_stTreeApplied.GetParentItem(pItem->hItem), TVGN_CHILD);
-		while (hChild != pItem->hItem) { //Checking for currently selected item in the tree.
-			++iIndexHighlight;
-			hChild = m_stTreeApplied.GetNextSiblingItem(hChild);
-		}
-		m_pListApplied->SetItemState(iIndexHighlight, LVIS_SELECTED, LVIS_SELECTED);
-		m_pListApplied->EnsureVisible(iIndexHighlight, FALSE);
-	}
-
-	SetHexSelByField(pFieldCurr);
-
-	m_pListApplied->RedrawWindow();
-	m_fListGuardEvent = false;
-}
-
-void CHexDlgTemplMgr::OnTreeRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
-{
-	POINT pt;
-	GetCursorPos(&pt);
-	POINT ptTree = pt;
-	m_stTreeApplied.ScreenToClient(&ptTree);
-	const auto fHitTest = m_stTreeApplied.HitTest(ptTree) != nullptr;
-	const auto fHasApplied = HasApplied();
-	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_DISAPPLY),
-		(fHasApplied && fHitTest ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_CLEARALL), (fHasApplied ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
-}
-
-void CHexDlgTemplMgr::OnLButtonDown(UINT nFlags, CPoint point)
-{
-	if (m_fCurInSplitter) {
-		m_fLMDownResize = true;
-		SetCapture();
-		EnableDynamicLayoutHelper(false);
-	}
-
-	CDialogEx::OnLButtonDown(nFlags, point);
-}
-
-void CHexDlgTemplMgr::OnLButtonUp(UINT nFlags, CPoint point)
-{
-	m_fLMDownResize = false;
-	ReleaseCapture();
-	EnableDynamicLayoutHelper(true);
-
-	CDialogEx::OnLButtonUp(nFlags, point);
-}
-
-void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)
-{
-	constexpr auto iResizeAreaWidth = 15;        //Area where cursor turns into resizable (IDC_SIZEWE).
-	constexpr auto iWidthBetweenTreeAndList = 1; //Width between tree and list after resizing.
-	constexpr auto iMinTreeWidth = 100;          //Tree control minimum width.
-
-	CRect rcList;
-	m_pListApplied->GetWindowRect(rcList);
-	ScreenToClient(rcList);
-
-	if (m_fLMDownResize) {
-		CRect rcTree;
-		m_stTreeApplied.GetWindowRect(rcTree);
-		ScreenToClient(rcTree);
-		rcTree.right = point.x - iWidthBetweenTreeAndList;
-		if (rcTree.Width() >= iMinTreeWidth) {
-			m_stTreeApplied.SetWindowPos(nullptr, rcTree.left, rcTree.top,
-				rcTree.Width(), rcTree.Height(), SWP_NOACTIVATE);
-
-			rcList.left = point.x;
-			m_pListApplied->SetWindowPos(nullptr, rcList.left, rcList.top,
-				rcList.Width(), rcList.Height(), SWP_NOACTIVATE);
-		}
-	}
-	else {
-		const CRect rcSplitter(rcList.left - iResizeAreaWidth, rcList.top, rcList.left, rcList.bottom);
-		if (rcSplitter.PtInRect(point)) {
-			m_fCurInSplitter = true;
-			SetCursor(m_hCurResize);
-			SetCapture();
-		}
-		else {
-			m_fCurInSplitter = false;
-			SetCursor(m_hCurArrow);
-			ReleaseCapture();
-		}
-	}
-
-	CDialogEx::OnMouseMove(nFlags, point);
-}
-
-void CHexDlgTemplMgr::OnOK()
-{
-	//When Enter is pressed anywhere in dialog and focus is on the m_pListApplied,
-	//we simulate pressing Enter in the list by sending WM_KEYDOWN/VK_RETURN to it.
-	if (GetFocus() == &*m_pListApplied) {
-		m_pListApplied->SendMessageW(WM_KEYDOWN, VK_RETURN);
-	}
-}
-
-void CHexDlgTemplMgr::OnDestroy()
-{
-	CDialogEx::OnDestroy();
-
-	ClearAll();
-	m_pListApplied->DestroyWindow();
-	m_stMenuList.DestroyMenu();
 }

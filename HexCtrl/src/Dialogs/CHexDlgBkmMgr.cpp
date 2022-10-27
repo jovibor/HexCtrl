@@ -80,10 +80,10 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 
 void CHexDlgBkmMgr::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	if (nState == WA_INACTIVE)
+	if (nState == WA_INACTIVE) {
 		SetLayeredWindowAttributes(0, 150, LWA_ALPHA);
-	else
-	{
+	}
+	else {
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 		UpdateList();
 
@@ -104,8 +104,7 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 		HEXBKM hbs;
 		CHexDlgBkmProps dlgBkmEdit;
-		if (dlgBkmEdit.DoModal(hbs, m_fShowAsHex) == IDOK)
-		{
+		if (dlgBkmEdit.DoModal(hbs, m_fShowAsHex) == IDOK) {
 			AddBkm(hbs, true);
 			UpdateList();
 		}
@@ -117,12 +116,10 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 			break;
 
 		const auto nItem = m_pListMain->GetNextItem(-1, LVNI_SELECTED);
-		if (const auto* const pBkm = GetByIndex(nItem); pBkm != nullptr)
-		{
+		if (const auto* const pBkm = GetByIndex(nItem); pBkm != nullptr) {
 			CHexDlgBkmProps dlgBkmEdit;
 			auto stBkm = *pBkm; //Pass a copy to dlgBkmEdit to avoid changing the original, from list.
-			if (dlgBkmEdit.DoModal(stBkm, m_fShowAsHex) == IDOK)
-			{
+			if (dlgBkmEdit.DoModal(stBkm, m_fShowAsHex) == IDOK) {
 				Update(pBkm->ullID, stBkm);
 				UpdateList();
 			}
@@ -133,8 +130,7 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 		std::vector<PHEXBKM> vecBkm { };
 		int nItem { -1 };
-		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i)
-		{
+		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i) {
 			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
 			if (const auto pBkm = GetByIndex(nItem); pBkm != nullptr)
 				vecBkm.emplace_back(pBkm);
@@ -164,8 +160,7 @@ void CHexDlgBkmMgr::OnClickRadioHexDec()
 
 BOOL CHexDlgBkmMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
-	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_BKMMGR_LIST)
-	{
+	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_BKMMGR_LIST) {
 		switch (pNMI->hdr.code)
 		{
 		case LVN_COLUMNCLICK: //ON_NOTIFY(LVN_COLUMNCLICK...) macro doesn't seem to work, for no obvious reason.
@@ -185,38 +180,37 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
 
-	if (pItem->mask & LVIF_TEXT)
+	if ((pItem->mask & LVIF_TEXT) == 0)
+		return;
+
+	const auto iItemID = pItem->iItem;
+	const auto pBkm = GetByIndex(static_cast<ULONGLONG>(iItemID));
+	if (pBkm == nullptr)
+		return;
+
+	ULONGLONG ullOffset { 0 };
+	ULONGLONG ullSize { 0 };
+	switch (pItem->iSubItem)
 	{
-		const auto iItemID = pItem->iItem;
-		const auto pBkm = GetByIndex(static_cast<ULONGLONG>(iItemID));
-
-		if (pBkm == nullptr)
-			return;
-
-		ULONGLONG ullOffset { 0 };
-		ULONGLONG ullSize { 0 };
-		switch (pItem->iSubItem)
-		{
-		case 0: //Index number.
-			*std::format_to(pItem->pszText, L"{}", iItemID + 1) = L'\0';
-			break;
-		case 1: //Offset.
-			if (!pBkm->vecSpan.empty())
-				ullOffset = pBkm->vecSpan.front().ullOffset;
-			*std::vformat_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(ullOffset)) = L'\0';
-			break;
-		case 2: //Size.
-			if (!pBkm->vecSpan.empty())
-				ullSize = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
-					[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
-			*std::vformat_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(ullSize)) = L'\0';
-			break;
-		case 3: //Description.
-			pItem->pszText = const_cast<wchar_t*>(pBkm->wstrDesc.data());
-			break;
-		default:
-			break;
-		}
+	case 0: //Index number.
+		*std::format_to(pItem->pszText, L"{}", iItemID + 1) = L'\0';
+		break;
+	case 1: //Offset.
+		if (!pBkm->vecSpan.empty())
+			ullOffset = pBkm->vecSpan.front().ullOffset;
+		*std::vformat_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(ullOffset)) = L'\0';
+		break;
+	case 2: //Size.
+		if (!pBkm->vecSpan.empty())
+			ullSize = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
+				[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+		*std::vformat_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(ullSize)) = L'\0';
+		break;
+	case 3: //Description.
+		pItem->pszText = const_cast<wchar_t*>(pBkm->wstrDesc.data());
+		break;
+	default:
+		break;
 	}
 }
 
@@ -261,10 +255,8 @@ void CHexDlgBkmMgr::OnListRClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iSubItem == 4)
-	{
-		if (const auto* const pBkm = GetByIndex(static_cast<size_t>(pNMI->iItem)); pBkm != nullptr)
-		{
+	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iSubItem == 4) {
+		if (const auto* const pBkm = GetByIndex(static_cast<size_t>(pNMI->iItem)); pBkm != nullptr) {
 			m_stCellClr.clrBk = pBkm->clrBk;
 			m_stCellClr.clrText = pBkm->clrText;
 			pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
@@ -308,13 +300,15 @@ ULONGLONG CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)
 
 		if (const auto iter = std::max_element(m_deqBookmarks.begin(), m_deqBookmarks.end(),
 			[](const HEXBKM& ref1, const HEXBKM& ref2)
-			{ return ref1.ullID < ref2.ullID; }); iter != m_deqBookmarks.end())
+			{ return ref1.ullID < ref2.ullID; }); iter != m_deqBookmarks.end()) {
 			ullID = iter->ullID + 1; //Increasing next bookmark's ID by 1.
+		}
 
 		m_deqBookmarks.emplace_back(hbs.vecSpan, hbs.wstrDesc, ullID, hbs.ullData, hbs.clrBk, hbs.clrText);
 
-		if (fRedraw)
+		if (fRedraw) {
 			m_pHexCtrl->Redraw();
+		}
 	}
 
 	return ullID;
@@ -325,8 +319,9 @@ void CHexDlgBkmMgr::ClearAll()
 	if (m_pVirtual) {
 		m_pVirtual->ClearAll();
 	}
-	else
+	else {
 		m_deqBookmarks.clear();
+	}
 
 	if (m_pHexCtrl && m_pHexCtrl->IsCreated())
 		m_pHexCtrl->Redraw();
@@ -339,8 +334,9 @@ auto CHexDlgBkmMgr::GetByID(ULONGLONG ullID)->PHEXBKM
 		pBkm = m_pVirtual->GetByID(ullID);
 	}
 	else if (const auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); iter != m_deqBookmarks.end())
+		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); iter != m_deqBookmarks.end()) {
 		pBkm = &*iter;
+	}
 
 	return pBkm;
 }
@@ -351,8 +347,9 @@ auto CHexDlgBkmMgr::GetByIndex(ULONGLONG ullIndex)->PHEXBKM
 	if (m_pVirtual) {
 		pBkm = m_pVirtual->GetByIndex(ullIndex);
 	}
-	else if (ullIndex < m_deqBookmarks.size())
+	else if (ullIndex < m_deqBookmarks.size()) {
 		pBkm = &m_deqBookmarks[static_cast<size_t>(ullIndex)];
+	}
 
 	return pBkm;
 }
@@ -372,13 +369,13 @@ void CHexDlgBkmMgr::GoBookmark(ULONGLONG ullIndex)
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
 		return;
 
-	if (const auto* const pBkm = GetByIndex(ullIndex); pBkm != nullptr)
-	{
+	if (const auto* const pBkm = GetByIndex(ullIndex); pBkm != nullptr) {
 		m_llIndexCurr = static_cast<LONGLONG>(ullIndex);
 		const auto ullOffset = pBkm->vecSpan.front().ullOffset;
 		m_pHexCtrl->SetCaretPos(ullOffset);
-		if (!m_pHexCtrl->IsOffsetVisible(ullOffset))
+		if (!m_pHexCtrl->IsOffsetVisible(ullOffset)) {
 			m_pHexCtrl->GoToOffset(ullOffset);
+		}
 	}
 }
 
@@ -390,8 +387,7 @@ void CHexDlgBkmMgr::GoNext()
 	if (++m_llIndexCurr >= static_cast<LONGLONG>(GetCount()))
 		m_llIndexCurr = 0;
 
-	if (const auto* const pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr)
-	{
+	if (const auto* const pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr) {
 		const auto ullOffset = pBkm->vecSpan.front().ullOffset;
 		m_pHexCtrl->SetCaretPos(ullOffset);
 		if (!m_pHexCtrl->IsOffsetVisible(ullOffset))
@@ -407,8 +403,7 @@ void CHexDlgBkmMgr::GoPrev()
 	if (--m_llIndexCurr; m_llIndexCurr < 0 || m_llIndexCurr >= static_cast<LONGLONG>(GetCount()))
 		m_llIndexCurr = static_cast<LONGLONG>(GetCount()) - 1;
 
-	if (const auto* const pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr)
-	{
+	if (const auto* const pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr) {
 		const auto ullOffset = pBkm->vecSpan.front().ullOffset;
 		m_pHexCtrl->SetCaretPos(ullOffset);
 		if (!m_pHexCtrl->IsOffsetVisible(ullOffset))
@@ -455,8 +450,7 @@ void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset)
 		if (const auto* const pBkm = m_pVirtual->HitTest(ullOffset); pBkm != nullptr)
 			m_pVirtual->RemoveByID(pBkm->ullID);
 	}
-	else
-	{
+	else {
 		if (m_deqBookmarks.empty())
 			return;
 
@@ -466,8 +460,9 @@ void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset)
 			{ return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPAN& refV)
 				{ return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
-			}); rIter != m_deqBookmarks.rend())
+			}); rIter != m_deqBookmarks.rend()) {
 			m_deqBookmarks.erase(std::next(rIter).base());
+		}
 	}
 
 	m_pHexCtrl->Redraw();
@@ -481,14 +476,14 @@ void CHexDlgBkmMgr::RemoveByID(ULONGLONG ullID)
 	if (m_pVirtual) {
 		m_pVirtual->RemoveByID(ullID);
 	}
-	else
-	{
+	else {
 		if (m_deqBookmarks.empty())
 			return;
 
 		if (const auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-			[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); iter != m_deqBookmarks.end())
+			[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); iter != m_deqBookmarks.end()) {
 			m_deqBookmarks.erase(iter);
+		}
 	}
 
 	m_pHexCtrl->Redraw();
@@ -545,17 +540,12 @@ void CHexDlgBkmMgr::SortData(int iColumn, bool fAscending)
 
 void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& stBookmark)
 {
-	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet() || IsVirtual() || m_deqBookmarks.empty())
 		return;
 
-	if (IsVirtual() || m_deqBookmarks.empty())
-		return;
-
-	auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; });
-
-	if (iter != m_deqBookmarks.end())
+	if (const auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
+		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); iter != m_deqBookmarks.end()) {
 		*iter = stBookmark;
-
-	m_pHexCtrl->Redraw();
+		m_pHexCtrl->Redraw();
+	}
 }
