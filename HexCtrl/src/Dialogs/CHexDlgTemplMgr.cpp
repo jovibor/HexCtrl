@@ -74,8 +74,7 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_pListApplied->InsertColumn(1, L"Offset", 0, 50);
 	m_pListApplied->InsertColumn(2, L"Size", LVCFMT_LEFT, 50);
 	m_pListApplied->InsertColumn(3, L"Data", LVCFMT_LEFT, 120);
-	m_pListApplied->InsertColumn(4, L"BkClr", LVCFMT_LEFT, 45);
-	m_pListApplied->InsertColumn(5, L"TextClr", LVCFMT_LEFT, 45);
+	m_pListApplied->InsertColumn(4, L"Colors", LVCFMT_LEFT, 57);
 
 	m_stMenuList.CreatePopupMenu();
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_DISAPPLY), L"Disapply template");
@@ -228,6 +227,13 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		}
 	}
 		  break;
+	case 4: { //Colors.
+		const auto bR = static_cast<unsigned char>(refVecField[nItemID]->clrText & 0x000000FFU);
+		const auto bG = static_cast<unsigned char>((refVecField[nItemID]->clrText & 0x0000FF00U) >> 8);
+		const auto bB = static_cast<unsigned char>((refVecField[nItemID]->clrText & 0x00FF0000U) >> 16);
+		*std::format_to(pItem->pszText, L"#{:02X}{:02X}{:02X}", bR, bG, bB) = L'\0';
+	}
+		  break;
 	default:
 		break;
 	}
@@ -241,11 +247,9 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	const auto& refVecField = *m_pVecCurrFields;
 	switch (pNMI->iSubItem) {
-	case 4: //Bk color.
+	case 4: //Colors.
 		m_stCellClr.clrBk = refVecField[pNMI->iItem]->clrBk;
-		break;
-	case 5: //Text color
-		m_stCellClr.clrBk = refVecField[pNMI->iItem]->clrText;
+		m_stCellClr.clrText = refVecField[pNMI->iItem]->clrText;
 		break;
 	}
 	pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
@@ -584,6 +588,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		return 0; //Template must have a name.
 	}
 
+	//Convert color string #AABBCC to RGB COLORREF.
 	const auto lmbStrToRGB = [](std::string_view sv)->COLORREF {
 		if (sv.empty() || sv.size() != 7 || sv[0] != '#')
 			return { };
@@ -597,10 +602,10 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 
 	COLORREF clrBkDefault { };
 	COLORREF clrTextDefault { };
-	if (const auto it = docJSON.FindMember("clrBkDefault"); it != docJSON.MemberEnd()) {
+	if (const auto it = docJSON.FindMember("clrBkDefault"); it != docJSON.MemberEnd() && it->value.IsString()) {
 		clrBkDefault = lmbStrToRGB(it->value.GetString());
 	}
-	if (const auto it = docJSON.FindMember("clrTextDefault"); it != docJSON.MemberEnd()) {
+	if (const auto it = docJSON.FindMember("clrTextDefault"); it != docJSON.MemberEnd() && it->value.IsString()) {
 		clrTextDefault = lmbStrToRGB(it->value.GetString());
 	}
 
@@ -617,27 +622,44 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		return _lmbCount(_lmbCount, vecRef);
 	};
 
+	using IterJSONMember = rapidjson::Value::ConstMemberIterator;
 	const auto lmbParseFields = [&lmbStrToRGB, &lmbTotalSize, clrBkDefault, clrTextDefault, pTemplate]
-	(auto& refJSON, VecFields& vecFields)->bool {
-		const auto _lmbParse = [&lmbStrToRGB, &lmbTotalSize, pTemplate](const auto& lmbSelf, auto& refJSON,
+	(const IterJSONMember iterFieldsArray, VecFields& vecFields)->bool {
+		const auto _lmbParse = [&lmbStrToRGB, &lmbTotalSize, pTemplate](const auto& lmbSelf, const IterJSONMember iterFieldsArray,
 			VecFields& vecFields, COLORREF clrBkDefault, COLORREF clrTextDefault, int& iOffset,
 			PSTEMPLATEFIELD pFieldParent = nullptr)->bool
 		{
-			for (auto iterFields = refJSON->value.MemberBegin(); iterFields != refJSON->value.MemberEnd(); ++iterFields)
+			for (auto iterArrCurr = iterFieldsArray->value.Begin(); iterArrCurr != iterFieldsArray->value.End(); ++iterArrCurr)
 			{
+				if (!iterArrCurr->IsObject()) {
+					return false; //Each array entry must be an Object {}.
+				}
+
 				auto& refBack = vecFields.emplace_back(std::make_unique<STEMPLATEFIELD>());
-				refBack->wstrName = StrToWstr(iterFields->name.GetString()); //Name of the field with inner "Fields" field.
+
+				if (const auto itName = iterArrCurr->FindMember("name");
+					itName != iterArrCurr->MemberEnd() && itName->value.IsString()) {
+					refBack->wstrName = StrToWstr(itName->value.GetString());
+				}
+				else {
+					return false; //Each array entry (Object) must have a "name" string.
+				}
+
 				refBack->pTemplate = pTemplate;
 				refBack->pFieldParent = pFieldParent;
 				refBack->iOffset = iOffset;
 
-				if (const auto innerFields = iterFields->value.FindMember("Fields");
-					innerFields != iterFields->value.MemberEnd() && innerFields->value.IsObject()) {
+				if (const auto iterInnerFields = iterArrCurr->FindMember("Fields");
+					iterInnerFields != iterArrCurr->MemberEnd()) {
+
+					if (!iterInnerFields->value.IsArray()) {
+						return false; //Each "Fields" must be an Array.
+					}
 
 					COLORREF clrBkDefaultInner { };   //Default colors in inner structs.
 					COLORREF clrTextDefaultInner { };
-					if (const auto itClrBkDefault = iterFields->value.FindMember("clrBkDefault");
-						itClrBkDefault != iterFields->value.MemberEnd()) {
+					if (const auto itClrBkDefault = iterArrCurr->FindMember("clrBkDefault");
+						itClrBkDefault != iterArrCurr->MemberEnd()) {
 						if (!itClrBkDefault->value.IsString()) {
 							return false; //"clrBkDefault" is not a string.
 						}
@@ -646,8 +668,8 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					else { clrBkDefaultInner = clrBkDefault; }
 					refBack->clrBk = clrBkDefaultInner;
 
-					if (const auto itClrTextDefault = iterFields->value.FindMember("clrTextDefault");
-						itClrTextDefault != iterFields->value.MemberEnd()) {
+					if (const auto itClrTextDefault = iterArrCurr->FindMember("clrTextDefault");
+						itClrTextDefault != iterArrCurr->MemberEnd()) {
 						if (!itClrTextDefault->value.IsString()) {
 							return false; //"clrTextDefault" is not a string.
 						}
@@ -657,20 +679,20 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					refBack->clrText = clrTextDefaultInner;
 
 					//Recursion lambda for nested structs starts here.
-					if (!lmbSelf(lmbSelf, innerFields, refBack->vecInner,
+					if (!lmbSelf(lmbSelf, iterInnerFields, refBack->vecInner,
 						clrBkDefaultInner, clrTextDefaultInner, iOffset, refBack.get())) {
 						return false;
 					}
 					refBack->iSize = lmbTotalSize(refBack->vecInner); //Total size of all inner fields.
 				}
 				else {
-					if (const auto itFieldSize = iterFields->value.FindMember("size");
-						itFieldSize != iterFields->value.MemberEnd()) {
-						if (itFieldSize->value.IsInt()) {
-							refBack->iSize = itFieldSize->value.GetInt();
+					if (const auto iterSize = iterArrCurr->FindMember("size");
+						iterSize != iterArrCurr->MemberEnd()) {
+						if (iterSize->value.IsInt()) {
+							refBack->iSize = iterSize->value.GetInt();
 						}
-						else if (itFieldSize->value.IsString()) {
-							if (const auto optInt = StrToInt(itFieldSize->value.GetString()); optInt) {
+						else if (iterSize->value.IsString()) {
+							if (const auto optInt = StrToInt(iterSize->value.GetString()); optInt) {
 								refBack->iSize = *optInt;
 							}
 							else {
@@ -680,16 +702,17 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 						else {
 							return false; //"size" field neither int nor string.
 						}
+
 						iOffset += refBack->iSize;
 					}
 					else {
-						return false; //Every field must have a "size". }
+						return false; //Every Object must have a "size". }
 					}
 
-					if (const auto itClrBk = iterFields->value.FindMember("clrBk");
-						itClrBk != iterFields->value.MemberEnd()) {
+					if (const auto itClrBk = iterArrCurr->FindMember("clrBk");
+						itClrBk != iterArrCurr->MemberEnd()) {
 						if (!itClrBk->value.IsString()) {
-							return false; //"clrBk" is not a string.
+							return false; //"clrBk" must be a string.
 						}
 						refBack->clrBk = lmbStrToRGB(itClrBk->value.GetString());
 					}
@@ -697,10 +720,10 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 						refBack->clrBk = clrBkDefault;
 					}
 
-					if (const auto itClrText = iterFields->value.FindMember("clrText");
-						itClrText != iterFields->value.MemberEnd()) {
+					if (const auto itClrText = iterArrCurr->FindMember("clrText");
+						itClrText != iterArrCurr->MemberEnd()) {
 						if (!itClrText->value.IsString()) {
-							return false; //"clrText" is not a string.
+							return false; //"clrText" must be a string.
 						}
 						refBack->clrText = lmbStrToRGB(itClrText->value.GetString());
 					}
@@ -714,7 +737,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		};
 
 		int iOffset = 0;
-		return _lmbParse(_lmbParse, refJSON, vecFields, clrBkDefault, clrTextDefault, iOffset);
+		return _lmbParse(_lmbParse, iterFieldsArray, vecFields, clrBkDefault, clrTextDefault, iOffset);
 	};
 
 	auto iTemplateID = 1; //ID starts at 1.
@@ -724,21 +747,28 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		iTemplateID = iter->get()->iTemplateID + 1; //Increasing next Template's ID by 1.
 	}
 
-	if (const auto rootFields = docJSON.FindMember("Fields");
-		rootFields != docJSON.MemberEnd() && rootFields->value.IsObject()) {
-		if (lmbParseFields(rootFields, refFields)) {
-			pTemplateUnPtr->iTemplateID = iTemplateID;
-			pTemplateUnPtr->iSizeTotal = std::accumulate(pTemplateUnPtr->vecFields.begin(), pTemplateUnPtr->vecFields.end(), 0,
-				[](auto iTotal, const std::unique_ptr<STEMPLATEFIELD>& refField) { return iTotal + refField->iSize; });
-			const auto iIndex = m_stComboTemplates.AddString(pTemplateUnPtr->wstrName.data());
-			m_vecTemplates.emplace_back(std::move(pTemplateUnPtr));
-			m_stComboTemplates.SetItemData(iIndex, static_cast<DWORD_PTR>(iTemplateID));
-			m_stComboTemplates.SetCurSel(iIndex);
-			return iTemplateID;
-		}
+	const auto rootFields = docJSON.FindMember("Fields");
+	if (rootFields == docJSON.MemberEnd()) {
+		return 0; //No "Fields" member in template.
 	}
 
-	return 0;
+	if (!rootFields->value.IsArray()) {
+		return 0; //"Fields" member must be an Array.
+	}
+
+	if (!lmbParseFields(rootFields, refFields)) {
+		return 0; //Something went wrong during template parsing.
+	}
+
+	pTemplateUnPtr->iTemplateID = iTemplateID;
+	pTemplateUnPtr->iSizeTotal = std::accumulate(pTemplateUnPtr->vecFields.begin(), pTemplateUnPtr->vecFields.end(), 0,
+		[](auto iTotal, const std::unique_ptr<STEMPLATEFIELD>& refField) { return iTotal + refField->iSize; });
+	const auto iIndex = m_stComboTemplates.AddString(pTemplateUnPtr->wstrName.data());
+	m_stComboTemplates.SetItemData(iIndex, static_cast<DWORD_PTR>(iTemplateID));
+	m_stComboTemplates.SetCurSel(iIndex);
+	m_vecTemplates.emplace_back(std::move(pTemplateUnPtr));
+
+	return iTemplateID;
 }
 
 void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
@@ -926,24 +956,23 @@ void CHexDlgTemplMgr::RemoveNodesWithTemplateID(int iTemplateID)
 
 void CHexDlgTemplMgr::RemoveNodeWithAppliedID(int iAppliedID)
 {
-	if (auto hItem = m_stTreeApplied.GetRootItem(); hItem != nullptr) {
-		while (hItem != nullptr) {
-			const auto pApplied = reinterpret_cast<PSTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(hItem));
-			if (pApplied->iAppliedID == iAppliedID) {
-				if (m_pAppliedCurr == pApplied) {
-					m_pListApplied->SetItemCountEx(0);
-					m_pListApplied->RedrawWindow();
-					m_pAppliedCurr = nullptr;
-					m_pVecCurrFields = nullptr;
-					m_hTreeCurrNode = nullptr;
-					m_hTreeCurrParent = nullptr;
-					UpdateStaticText();
-				}
-				m_stTreeApplied.DeleteItem(hItem);
-				break;
+	auto hItem = m_stTreeApplied.GetRootItem();
+	while (hItem != nullptr) {
+		const auto pApplied = reinterpret_cast<PSTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(hItem));
+		if (pApplied->iAppliedID == iAppliedID) {
+			m_stTreeApplied.DeleteItem(hItem);
+			if (m_pAppliedCurr == pApplied) {
+				m_pListApplied->SetItemCountEx(0);
+				m_pListApplied->RedrawWindow();
+				m_pAppliedCurr = nullptr;
+				m_pVecCurrFields = nullptr;
+				m_hTreeCurrNode = nullptr;
+				m_hTreeCurrParent = nullptr;
+				UpdateStaticText();
 			}
-			hItem = m_stTreeApplied.GetNextItem(hItem, TVGN_NEXT); //Get next Root sibling item.
+			break;
 		}
+		hItem = m_stTreeApplied.GetNextItem(hItem, TVGN_NEXT); //Get next Root sibling item.
 	}
 }
 
@@ -959,7 +988,7 @@ auto CHexDlgTemplMgr::TreeItemFromListItem(int iListItem)const->HTREEITEM
 
 void CHexDlgTemplMgr::SetHexSelByField(PSTEMPLATEFIELD pField)
 {
-	if (!IsHighlight() || !m_pHexCtrl->IsDataSet() || pField == nullptr)
+	if (!IsHighlight() || !m_pHexCtrl->IsDataSet() || pField == nullptr || m_pAppliedCurr == nullptr)
 		return;
 
 	const auto ullOffset = m_pAppliedCurr->ullOffset + pField->iOffset;

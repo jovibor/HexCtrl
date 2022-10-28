@@ -2,285 +2,371 @@
     "TemplateName": "IMAGE_NT_HEADERS64",
     "clrBkDefault": "#606060",
     "clrTextDefault": "#FFFFFF",
-    "Fields": {
-        "DWORD Signature": {
+    "Fields": [
+        {
+            "name": "DWORD Signature",
             "size": 4
         },
-        "IMAGE_FILE_HEADER FileHeader": {
+        {
+            "name": "IMAGE_FILE_HEADER FileHeader",
             "clrBkDefault": "#909090",
-            "Fields": {
-                "WORD Machine": {
+            "Fields": [
+                {
+                    "name": "WORD Machine",
                     "size": 2
                 },
-                "WORD NumberOfSections": {
+                {
+                    "name": "WORD NumberOfSections",
                     "size": 2
                 },
-                "DWORD TimeDateStamp": {
+                {
+                    "name": "DWORD TimeDateStamp",
                     "size": 4
                 },
-                "DWORD PointerToSymbolTable": {
+                {
+                    "name": "DWORD PointerToSymbolTable",
                     "size": 4
                 },
-                "DWORD NumberOfSymbols": {
+                {
+                    "name": "DWORD NumberOfSymbols",
                     "size": 4
                 },
-                "WORD SizeOfOptionalHeader": {
+                {
+                    "name": "WORD SizeOfOptionalHeader",
                     "size": 2
                 },
-                "WORD Characteristics": {
+                {
+                    "name": "WORD Characteristics",
                     "size": 2
                 }
-            }
+            ]
         },
-        "IMAGE_OPTIONAL_HEADER64 OptionalHeader": {
+        {
+            "name": "IMAGE_OPTIONAL_HEADER64 OptionalHeader",
             "clrBkDefault": "#C0C0C0",
-            "Fields": {
-                "WORD Magic": {
+            "Fields": [
+                {
+                    "name": "WORD Magic",
                     "size": 2
                 },
-                "BYTE MajorLinkerVersion": {
+                {
+                    "name": "BYTE MajorLinkerVersion",
                     "size": 1
                 },
-                "BYTE MinorLinkerVersion": {
+                {
+                    "name": "BYTE MinorLinkerVersion",
                     "size": 1
                 },
-                "DWORD SizeOfCode": {
+                {
+                    "name": "DWORD SizeOfCode",
                     "size": 4
                 },
-                "DWORD SizeOfInitializedData": {
+                {
+                    "name": "DWORD SizeOfInitializedData",
                     "size": 4
                 },
-                "DWORD SizeOfUninitializedData": {
+                {
+                    "name": "DWORD SizeOfUninitializedData",
                     "size": 4
                 },
-                "DWORD AddressOfEntryPoint": {
+                {
+                    "name": "DWORD AddressOfEntryPoint",
                     "size": 4
                 },
-                "DWORD BaseOfCode": {
+                {
+                    "name": "DWORD BaseOfCode",
                     "size": 4
                 },
-                "ULONGLONG ImageBase": {
+                {
+                    "name": "ULONGLONG ImageBase",
                     "size": 8
                 },
-                "DWORD SectionAlignment": {
+                {
+                    "name": "DWORD SectionAlignment",
                     "size": 4
                 },
-                "DWORD FileAlignment": {
+                {
+                    "name": "DWORD FileAlignment",
                     "size": 4
                 },
-                "WORD MajorOperatingSystemVersion": {
+                {
+                    "name": "WORD MajorOperatingSystemVersion",
                     "size": 2
                 },
-                "WORD MinorOperatingSystemVersion": {
+                {
+                    "name": "WORD MinorOperatingSystemVersion",
                     "size": 2
                 },
-                "WORD MajorImageVersion": {
+                {
+                    "name": "WORD MajorImageVersion",
                     "size": 2
                 },
-                "WORD MinorImageVersion": {
+                {
+                    "name": "WORD MinorImageVersion",
                     "size": 2
                 },
-                "WORD MajorSubsystemVersion": {
+                {
+                    "name": "WORD MajorSubsystemVersion",
                     "size": 2
                 },
-                "WORD MinorSubsystemVersion": {
+                {
+                    "name": "WORD MinorSubsystemVersion",
                     "size": 2
                 },
-                "DWORD Win32VersionValue": {
+                {
+                    "name": "DWORD Win32VersionValue",
                     "size": 4
                 },
-                "DWORD SizeOfImage": {
+                {
+                    "name": "DWORD SizeOfImage",
                     "size": 4
                 },
-                "DWORD SizeOfHeaders": {
+                {
+                    "name": "DWORD SizeOfHeaders",
                     "size": 4
                 },
-                "DWORD CheckSum": {
+                {
+                    "name": "DWORD CheckSum",
                     "size": 4
                 },
-                "WORD Subsystem": {
+                {
+                    "name": "WORD Subsystem",
                     "size": 2
                 },
-                "WORD DllCharacteristics": {
+                {
+                    "name": "WORD DllCharacteristics",
                     "size": 2
                 },
-                "ULONGLONG SizeOfStackReserve": {
+                {
+                    "name": "ULONGLONG SizeOfStackReserve",
                     "size": 8
                 },
-                "ULONGLONG SizeOfStackCommit": {
+                {
+                    "name": "ULONGLONG SizeOfStackCommit",
                     "size": 8
                 },
-                "ULONGLONG SizeOfHeapReserve": {
+                {
+                    "name": "ULONGLONG SizeOfHeapReserve",
                     "size": 8
                 },
-                "ULONGLONG SizeOfHeapCommit": {
+                {
+                    "name": "ULONGLONG SizeOfHeapCommit",
                     "size": 8
                 },
-                "DWORD LoaderFlags": {
+                {
+                    "name": "DWORD LoaderFlags",
                     "size": 4
                 },
-                "DWORD NumberOfRvaAndSizes": {
+                {
+                    "name": "DWORD NumberOfRvaAndSizes",
                     "size": 4,
                     "clrBk": "#00AA00"
                 },
-                "IMAGE_DATA_DIRECTORY[16]": {
-                    "Fields": {
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_EXPORT]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                {
+                    "name": "IMAGE_DATA_DIRECTORY[16]",
+                    "Fields": [
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_EXPORT]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_IMPORT]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_IMPORT]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_RESOURCE]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_RESOURCE]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_EXCEPTION]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_EXCEPTION]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_SECURITY]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_SECURITY]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_BASERELOC]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_BASERELOC]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_DEBUG]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_DEBUG]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_ARCHITECTURE]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_ARCHITECTURE]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_GLOBALPTR]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_GLOBALPTR]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_TLS]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_TLS]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_IAT]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_IAT]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR]": {
-                            "Fields": {
-                                "DWORD VirtualAddress": {
+                        {
+                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR]",
+                            "Fields": [
+                                {
+                                    "name": "DWORD VirtualAddress",
                                     "size": 4
                                 },
-                                "DWORD Size": {
+                                {
+                                    "name": "DWORD Size",
                                     "size": 4
                                 }
-                            }
+                            ]
                         },
-                        "Reserved": {
+                        {
+                            "name": "Reserved",
                             "size": 8
                         }
-                    }
+                    ]
                 }
-            }
+            ]
         }
-    }
+    ]
 }

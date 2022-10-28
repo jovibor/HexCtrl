@@ -265,19 +265,22 @@ If you'd like to colorize your data with custom bk/text colors, you have to reso
     "TemplateName": "MyDataStruct",
     "clrBkDefault": "#909090",
     "clrTextDefault": "#FFFFFF",
-    "Fields": {
-        "int x": {
+    "Fields": [
+        {
+            "name": "int x",
             "size": 4,
             "clrBk": "#BB0000",
             "clrText": "#FFFFFF"
         },
-        "DWORD field2": {
+        {
+            "name": "DWORD field2",
             "size": 4
         },
-        "char[2] someArray": {
+        {
+            "name": "char[2] someArray",
             "size": 2
         }
-    }
+    ]
 }
 ```
 
