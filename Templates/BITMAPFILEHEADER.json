@@ -1,4 +1,5 @@
 {
+    "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
     "TemplateName": "BITMAPFILEHEADER",
     "clrBkDefault": "#909090",
     "clrTextDefault": "#FFFFFF",
