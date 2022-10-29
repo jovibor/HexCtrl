@@ -2,6 +2,60 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://github.com/jovibor/HexCtrl/blob/master/docs/HexCtrl.Templates.Schema.json",
     "title": "HexCtrl Templates Schema",
+    "$defs": {
+        "Fields": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "size": {
+                        "type": [
+                            "integer",
+                            "string"
+                        ],
+                        "minimum": 1
+                    },
+                    "clrBk": {
+                        "type": "string",
+                        "format": "color"
+                    },
+                    "clrText": {
+                        "type": "string",
+                        "format": "color"
+                    },
+                    "clrBkDefault": {
+                        "type": "string",
+                        "format": "color"
+                    },
+                    "clrTextDefault": {
+                        "type": "string",
+                        "format": "color"
+                    },
+                    "Fields": {
+                        "$ref": "#/$defs/Fields"
+                    }
+                },
+                "required": [
+                    "name"
+                ],
+                "oneOf": [
+                    {
+                        "required": [
+                            "size"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "Fields"
+                        ]
+                    }
+                ]
+            }
+        }
+    },
     "type": "object",
     "properties": {
         "TemplateName": {
@@ -16,7 +70,7 @@
             "format": "color"
         },
         "Fields": {
-            "$ref": "HexCtrl.Templates.Fields.Schema.json"
+            "$ref": "#/$defs/Fields"
         }
     },
     "required": [
