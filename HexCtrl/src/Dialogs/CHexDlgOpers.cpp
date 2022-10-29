@@ -192,13 +192,13 @@ void CHexDlgOpers::OnOK()
 				switch (hms.enDataSize)
 				{
 				case SIZE_WORD:
-					llData = static_cast<LONGLONG>(_byteswap_ushort(static_cast<WORD>(llData)));
+					llData = static_cast<LONGLONG>(ByteSwap(static_cast<WORD>(llData)));
 					break;
 				case SIZE_DWORD:
-					llData = static_cast<LONGLONG>(_byteswap_ulong(static_cast<DWORD>(llData)));
+					llData = static_cast<LONGLONG>(ByteSwap(static_cast<DWORD>(llData)));
 					break;
 				case SIZE_QWORD:
-					llData = static_cast<LONGLONG>(_byteswap_uint64(static_cast<QWORD>(llData)));
+					llData = static_cast<LONGLONG>(ByteSwap(static_cast<QWORD>(llData)));
 					break;
 				default:
 					break;

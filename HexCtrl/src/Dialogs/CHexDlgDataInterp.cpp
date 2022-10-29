@@ -82,17 +82,14 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 
 	auto word = GetIHexTData<WORD>(*m_pHexCtrl, ullOffset);
 	if (m_fBigEndian)
-		word = _byteswap_ushort(word);
+		word = ByteSwap(word);
 
 	ShowValueSHORT(word);
 	ShowValueUSHORT(word);
 
-	if (ullOffset + static_cast<unsigned>(ESize::SIZE_DWORD) > ullDataSize)
-	{
-		for (const auto& iter : m_vecProp)
-		{
-			if (iter.eSize >= ESize::SIZE_DWORD)
-			{
+	if (ullOffset + static_cast<unsigned>(ESize::SIZE_DWORD) > ullDataSize) {
+		for (const auto& iter : m_vecProp) {
+			if (iter.eSize >= ESize::SIZE_DWORD) {
 				iter.pProp->SetValue(L"0");
 				iter.pProp->Enable(FALSE);
 			}
@@ -101,13 +98,14 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 	}
 
 	//ESize::SIZE_DWORD//////////////////////////////////////////////
-	for (const auto& iter : m_vecProp)
+	for (const auto& iter : m_vecProp) {
 		if (iter.eSize == ESize::SIZE_DWORD)
 			iter.pProp->Enable(TRUE);
+	}
 
 	auto dword = GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset);
 	if (m_fBigEndian)
-		dword = _byteswap_ulong(dword);
+		dword = ByteSwap(dword);
 
 	ShowValueLONG(dword);
 	ShowValueULONG(dword);
@@ -116,12 +114,9 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 	ShowValueMSDOSTIME(dword);
 	ShowValueMSDTTMTIME(dword);
 
-	if (ullOffset + static_cast<unsigned>(ESize::SIZE_QWORD) > ullDataSize)
-	{
-		for (const auto& iter : m_vecProp)
-		{
-			if (iter.eSize >= ESize::SIZE_QWORD)
-			{
+	if (ullOffset + static_cast<unsigned>(ESize::SIZE_QWORD) > ullDataSize) {
+		for (const auto& iter : m_vecProp) {
+			if (iter.eSize >= ESize::SIZE_QWORD) {
 				iter.pProp->SetValue(L"0");
 				iter.pProp->Enable(FALSE);
 			}
@@ -130,13 +125,14 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 	}
 
 	//ESize::SIZE_QWORD//////////////////////////////////////////////////
-	for (const auto& iter : m_vecProp)
+	for (const auto& iter : m_vecProp) {
 		if (iter.eSize == ESize::SIZE_QWORD)
 			iter.pProp->Enable(TRUE);
+	}
 
 	auto qword = GetIHexTData<QWORD>(*m_pHexCtrl, ullOffset);
 	if (m_fBigEndian)
-		qword = _byteswap_uint64(qword);
+		qword = ByteSwap(qword);
 
 	ShowValueLONGLONG(qword);
 	ShowValueULONGLONG(qword);
@@ -146,12 +142,9 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 	ShowValueOLEDATETIME(qword);
 	ShowValueJAVATIME(qword);
 
-	if (ullOffset + static_cast<unsigned>(ESize::SIZE_DQWORD) > ullDataSize)
-	{
-		for (const auto& iter : m_vecProp)
-		{
-			if (iter.eSize >= ESize::SIZE_DQWORD)
-			{
+	if (ullOffset + static_cast<unsigned>(ESize::SIZE_DQWORD) > ullDataSize) {
+		for (const auto& iter : m_vecProp) {
+			if (iter.eSize >= ESize::SIZE_DQWORD) {
 				iter.pProp->SetValue(L"0");
 				iter.pProp->Enable(FALSE);
 			}
@@ -160,17 +153,17 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 	}
 
 	//ESize::SIZE_DQWORD//////////////////////////////////////////////////
-	for (const auto& iter : m_vecProp)
+	for (const auto& iter : m_vecProp) {
 		if (iter.eSize == ESize::SIZE_DQWORD)
 			iter.pProp->Enable(TRUE);
+	}
 
 	auto dqword = GetIHexTData<UDQWORD>(*m_pHexCtrl, ullOffset);
-	if (m_fBigEndian)
-	{
+	if (m_fBigEndian) {
 		//TODO: Test this thoroughly
 		const auto tmp = dqword.Value.qwLow;
-		dqword.Value.qwLow = _byteswap_uint64(dqword.Value.qwHigh);
-		dqword.Value.qwHigh = _byteswap_uint64(tmp);
+		dqword.Value.qwLow = ByteSwap(dqword.Value.qwHigh);
+		dqword.Value.qwHigh = ByteSwap(tmp);
 	}
 
 	ShowValueGUID(dqword);
@@ -447,14 +440,8 @@ void CHexDlgDataInterp::RedrawHexCtrl()const
 template<typename T>
 void CHexDlgDataInterp::SetTData(T tData)const
 {
-	if (m_fBigEndian)
-	{
-		if constexpr (sizeof(T) == sizeof(WORD))
-			tData = static_cast<T>(_byteswap_ushort(static_cast<WORD>(tData)));
-		else if constexpr (sizeof(T) == sizeof(DWORD))
-			tData = static_cast<T>(_byteswap_ulong(static_cast<DWORD>(tData)));
-		else if constexpr (sizeof(T) == sizeof(QWORD))
-			tData = static_cast<T>(_byteswap_uint64(static_cast<QWORD>(tData)));
+	if (m_fBigEndian) {
+		tData = ByteSwap(tData);
 	}
 
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, tData);

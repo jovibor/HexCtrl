@@ -1226,121 +1226,92 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	break;
 	case MODIFY_OPERATION:
 	{
-		constexpr auto lmbOperData = [](std::byte* pData, const HEXMODIFY& hms, std::span<std::byte>/**/)
-		{
+		constexpr auto lmbOperData = [](std::byte* pData, const HEXMODIFY& hms, std::span<std::byte>/**/) {
 			assert(pData != nullptr);
 
-			constexpr auto lmbSwap = []<typename T>(T * pData)
+			constexpr auto lmbOper = []<typename T>(T * pData, const HEXMODIFY & hms)
 			{
-				if constexpr (sizeof(T) == sizeof(WORD))
-					*pData = _byteswap_ushort(*pData);
-				else if constexpr (sizeof(T) == sizeof(DWORD))
-					*pData = _byteswap_ulong(*pData);
-				else if constexpr (sizeof(T) == sizeof(QWORD))
-					*pData = _byteswap_uint64(*pData);
-			};
+				T tData = hms.fBigEndian ? ByteSwap(*pData) : *pData;
+				T tDataOper = *reinterpret_cast<T*>(hms.spnData.data());
 
-			constexpr auto lmbOper = []<typename T>(T * pData, const EHexOperMode eOper, const T tDataOper, const auto lmbSwap)
-			{
 				using enum EHexOperMode;
-				switch (eOper)
+				switch (hms.enOperMode)
 				{
 				case OPER_ASSIGN:
-					*pData = tDataOper;
+					tData = tDataOper;
 					break;
 				case OPER_OR:
-					*pData |= tDataOper;
+					tData |= tDataOper;
 					break;
 				case OPER_XOR:
-					*pData ^= tDataOper;
+					tData ^= tDataOper;
 					break;
 				case OPER_AND:
-					*pData &= tDataOper;
+					tData &= tDataOper;
 					break;
 				case OPER_NOT:
-					*pData = ~*pData;
+					tData = ~tData;
 					break;
 				case OPER_SHL:
-					*pData <<= tDataOper;
+					tData <<= tDataOper;
 					break;
 				case OPER_SHR:
-					*pData >>= tDataOper;
+					tData >>= tDataOper;
 					break;
 				case OPER_ROTL:
-					*pData = std::rotl(*pData, static_cast<int>(tDataOper));
+					tData = std::rotl(tData, static_cast<int>(tDataOper));
 					break;
 				case OPER_ROTR:
-					*pData = std::rotr(*pData, static_cast<int>(tDataOper));
+					tData = std::rotr(tData, static_cast<int>(tDataOper));
 					break;
 				case OPER_SWAP:
-					lmbSwap(pData);
+					tData = ByteSwap(tData);
 					break;
 				case OPER_ADD:
-					*pData += tDataOper;
+					tData += tDataOper;
 					break;
 				case OPER_SUB:
-					*pData -= tDataOper;
+					tData -= tDataOper;
 					break;
 				case OPER_MUL:
-					*pData *= tDataOper;
+					tData *= tDataOper;
 					break;
 				case OPER_DIV:
 					if (tDataOper > 0) //Division by zero check.
-						*pData /= tDataOper;
+						tData /= tDataOper;
 					break;
 				case OPER_CEIL:
-					if (*pData > tDataOper)
-						*pData = tDataOper;
+					if (tData > tDataOper)
+						tData = tDataOper;
 					break;
 				case OPER_FLOOR:
-					if (*pData < tDataOper)
-						*pData = tDataOper;
+					if (tData < tDataOper)
+						tData = tDataOper;
 					break;
 				}
+
+				if (hms.fBigEndian) { //Swap bytes back.
+					tData = ByteSwap(tData);
+				}
+
+				*pData = tData;
 			};
 
 			using enum EHexDataSize;
-			if (hms.fBigEndian)
+			switch (hms.enDataSize)
 			{
-				switch (hms.enDataSize)
-				{
-				case SIZE_BYTE:
-					lmbOper(reinterpret_cast<PBYTE>(pData), hms.enOperMode, *reinterpret_cast<PBYTE>(hms.spnData.data()), lmbSwap);
-					break;
-				case SIZE_WORD:
-					lmbSwap(reinterpret_cast<PWORD>(pData));
-					lmbOper(reinterpret_cast<PWORD>(pData), hms.enOperMode, *reinterpret_cast<PWORD>(hms.spnData.data()), lmbSwap);
-					lmbSwap(reinterpret_cast<PWORD>(pData));
-					break;
-				case SIZE_DWORD:
-					lmbSwap(reinterpret_cast<PDWORD>(pData));
-					lmbOper(reinterpret_cast<PDWORD>(pData), hms.enOperMode, *reinterpret_cast<PDWORD>(hms.spnData.data()), lmbSwap);
-					lmbSwap(reinterpret_cast<PDWORD>(pData));
-					break;
-				case SIZE_QWORD:
-					lmbSwap(reinterpret_cast<PQWORD>(pData));
-					lmbOper(reinterpret_cast<PQWORD>(pData), hms.enOperMode, *reinterpret_cast<PQWORD>(hms.spnData.data()), lmbSwap);
-					lmbSwap(reinterpret_cast<PQWORD>(pData));
-					break;
-				}
-			}
-			else
-			{
-				switch (hms.enDataSize)
-				{
-				case SIZE_BYTE:
-					lmbOper(reinterpret_cast<PBYTE>(pData), hms.enOperMode, *reinterpret_cast<PBYTE>(hms.spnData.data()), lmbSwap);
-					break;
-				case SIZE_WORD:
-					lmbOper(reinterpret_cast<PWORD>(pData), hms.enOperMode, *reinterpret_cast<PWORD>(hms.spnData.data()), lmbSwap);
-					break;
-				case SIZE_DWORD:
-					lmbOper(reinterpret_cast<PDWORD>(pData), hms.enOperMode, *reinterpret_cast<PDWORD>(hms.spnData.data()), lmbSwap);
-					break;
-				case SIZE_QWORD:
-					lmbOper(reinterpret_cast<PQWORD>(pData), hms.enOperMode, *reinterpret_cast<PQWORD>(hms.spnData.data()), lmbSwap);
-					break;
-				}
+			case SIZE_BYTE:
+				lmbOper(reinterpret_cast<PBYTE>(pData), hms);
+				break;
+			case SIZE_WORD:
+				lmbOper(reinterpret_cast<PWORD>(pData), hms);
+				break;
+			case SIZE_DWORD:
+				lmbOper(reinterpret_cast<PDWORD>(pData), hms);
+				break;
+			case SIZE_QWORD:
+				lmbOper(reinterpret_cast<PQWORD>(pData), hms);
+				break;
 			}
 		};
 		ModifyWorker(hms, lmbOperData, { static_cast<std::byte*>(nullptr), static_cast<std::size_t>(hms.enDataSize) });
@@ -1569,12 +1540,10 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 
 	rapidjson::Document docJSON;
 	bool fJSONParsed { false };
-	if (wstrPath.empty()) //Default IDR_HEXCTRL_JSON_KEYBIND.json, from resources.
-	{
+	if (wstrPath.empty()) { //Default IDR_HEXCTRL_JSON_KEYBIND.json, from resources.
 		const auto hInst = AfxGetInstanceHandle();
 		if (const auto hRes = FindResourceW(hInst, MAKEINTRESOURCEW(IDR_HEXCTRL_JSON_KEYBIND), L"JSON"); hRes != nullptr) {
-			if (const auto hData = LoadResource(hInst, hRes); hData != nullptr)
-			{
+			if (const auto hData = LoadResource(hInst, hRes); hData != nullptr) {
 				const auto nSize = static_cast<std::size_t>(SizeofResource(hInst, hRes));
 				const auto* const pData = static_cast<char*>(LockResource(hData));
 				if (docJSON.Parse(pData, nSize); !docJSON.IsNull()) { //Parse all default keybindings.
@@ -1585,15 +1554,14 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 	}
 	else if (std::ifstream ifs(std::wstring { wstrPath }); ifs.is_open()) {
 		rapidjson::IStreamWrapper isw { ifs };
-		if (docJSON.ParseStream(isw); !docJSON.IsNull())
+		if (docJSON.ParseStream(isw); !docJSON.IsNull()) {
 			fJSONParsed = true;
+		}
 	}
 	assert(fJSONParsed);
 
-	if (fJSONParsed)
-	{
-		const auto lmbParseStr = [&](std::string_view str)->std::optional<SKEYBIND>
-		{
+	if (fJSONParsed) {
+		const auto lmbParseStr = [&](std::string_view str)->std::optional<SKEYBIND> {
 			if (str.empty())
 				return { };
 
@@ -1601,8 +1569,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 			const auto nSize = str.size();
 			size_t nPosStart { 0 }; //Next position to start search for '+' sign.
 			const auto nSubWords = std::count(str.begin(), str.end(), '+') + 1; //How many sub-words (divided by '+')?
-			for (auto i = 0; i < nSubWords; ++i)
-			{
+			for (auto iterSubWords = 0; iterSubWords < nSubWords; ++iterSubWords) {
 				const auto nPosNext = str.find('+', nPosStart);
 				const auto nSizeSubWord = nPosNext == std::string_view::npos ? nSize - nPosStart : nPosNext - nPosStart;
 				const auto strSubWord = str.substr(nPosStart, nSizeSubWord);
@@ -1611,8 +1578,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 				if (strSubWord.size() == 1) {
 					stRet.uKey = static_cast<UCHAR>(std::toupper(strSubWord[0])); //Binding keys are in uppercase.
 				}
-				else if (const auto iter = umapKeys.find(strSubWord); iter != umapKeys.end())
-				{
+				else if (const auto iter = umapKeys.find(strSubWord); iter != umapKeys.end()) {
 					switch (const auto uChar = iter->second.first; uChar)
 					{
 					case VK_CONTROL:
@@ -1632,11 +1598,11 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 
 			return stRet;
 		};
-		for (auto iterJ = docJSON.MemberBegin(); iterJ != docJSON.MemberEnd(); ++iterJ) //JSON data iterating.
-		{
-			if (const auto iterCmd = umapCmdMenu.find(iterJ->name.GetString()); iterCmd != umapCmdMenu.end()) {
-				for (auto iterValue = iterJ->value.Begin(); iterValue != iterJ->value.End(); ++iterValue) { //Array iterating.
-					if (auto optKey = lmbParseStr(iterValue->GetString()); optKey) {
+
+		for (auto iterMembers = docJSON.MemberBegin(); iterMembers != docJSON.MemberEnd(); ++iterMembers) { //JSON data iterating.
+			if (const auto iterCmd = umapCmdMenu.find(iterMembers->name.GetString()); iterCmd != umapCmdMenu.end()) {
+				for (auto iterArrCurr = iterMembers->value.Begin(); iterArrCurr != iterMembers->value.End(); ++iterArrCurr) { //Array iterating.
+					if (auto optKey = lmbParseStr(iterArrCurr->GetString()); optKey) {
 						optKey->eCmd = iterCmd->second.first;
 						optKey->wMenuID = static_cast<WORD>(iterCmd->second.second);
 						if (auto it = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [&optKey](const SKEYBIND& ref)
@@ -1656,8 +1622,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		}
 
 		std::size_t i { 0 };
-		for (const auto& iterMain : m_vecKeyBind)
-		{
+		for (const auto& iterMain : m_vecKeyBind) {
 			//Check for previous same menu ID. To assign only one, first, keybinding for menu name.
 			//With `"ctrl+f", "ctrl+h"` in JSON, only the "Ctrl+F" will be assigned as the menu name.
 			const auto iterEnd = m_vecKeyBind.begin() + i++;

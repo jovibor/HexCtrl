@@ -624,12 +624,12 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 
 	using IterJSONMember = rapidjson::Value::ConstMemberIterator;
 	const auto lmbParseFields = [&lmbStrToRGB, &lmbTotalSize, clrBkDefault, clrTextDefault, pTemplate]
-	(const IterJSONMember iterFieldsArray, VecFields& vecFields)->bool {
-		const auto _lmbParse = [&lmbStrToRGB, &lmbTotalSize, pTemplate](const auto& lmbSelf, const IterJSONMember iterFieldsArray,
+	(const IterJSONMember iterMemberFields, VecFields& vecFields)->bool {
+		const auto _lmbParse = [&lmbStrToRGB, &lmbTotalSize, pTemplate](const auto& lmbSelf, const IterJSONMember iterMemberFields,
 			VecFields& vecFields, COLORREF clrBkDefault, COLORREF clrTextDefault, int& iOffset,
 			PSTEMPLATEFIELD pFieldParent = nullptr)->bool
 		{
-			for (auto iterArrCurr = iterFieldsArray->value.Begin(); iterArrCurr != iterFieldsArray->value.End(); ++iterArrCurr)
+			for (auto iterArrCurr = iterMemberFields->value.Begin(); iterArrCurr != iterMemberFields->value.End(); ++iterArrCurr)
 			{
 				if (!iterArrCurr->IsObject()) {
 					return false; //Each array entry must be an Object {}.
@@ -651,7 +651,6 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 
 				if (const auto iterInnerFields = iterArrCurr->FindMember("Fields");
 					iterInnerFields != iterArrCurr->MemberEnd()) {
-
 					if (!iterInnerFields->value.IsArray()) {
 						return false; //Each "Fields" must be an Array.
 					}
@@ -661,7 +660,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					if (const auto itClrBkDefault = iterArrCurr->FindMember("clrBkDefault");
 						itClrBkDefault != iterArrCurr->MemberEnd()) {
 						if (!itClrBkDefault->value.IsString()) {
-							return false; //"clrBkDefault" is not a string.
+							return false; //"clrBkDefault" must be a string.
 						}
 						clrBkDefaultInner = lmbStrToRGB(itClrBkDefault->value.GetString());
 					}
@@ -671,7 +670,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					if (const auto itClrTextDefault = iterArrCurr->FindMember("clrTextDefault");
 						itClrTextDefault != iterArrCurr->MemberEnd()) {
 						if (!itClrTextDefault->value.IsString()) {
-							return false; //"clrTextDefault" is not a string.
+							return false; //"clrTextDefault" must be a string.
 						}
 						clrTextDefaultInner = lmbStrToRGB(itClrTextDefault->value.GetString());
 					}
@@ -737,7 +736,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		};
 
 		int iOffset = 0;
-		return _lmbParse(_lmbParse, iterFieldsArray, vecFields, clrBkDefault, clrTextDefault, iOffset);
+		return _lmbParse(_lmbParse, iterMemberFields, vecFields, clrBkDefault, clrTextDefault, iOffset);
 	};
 
 	auto iTemplateID = 1; //ID starts at 1.

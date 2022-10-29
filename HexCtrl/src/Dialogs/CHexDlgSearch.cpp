@@ -1000,8 +1000,8 @@ bool CHexDlgSearch::PrepareINT16()
 	unsigned short wDataRep = optDataRepl.value_or(0);
 	if (m_fBigEndian)
 	{
-		wData = _byteswap_ushort(wData);
-		wDataRep = _byteswap_ushort(wDataRep);
+		wData = ByteSwap(wData);
+		wDataRep = ByteSwap(wDataRep);
 	}
 
 	m_strSearch.assign(reinterpret_cast<char*>(&wData), sizeof(wData));
@@ -1031,8 +1031,8 @@ bool CHexDlgSearch::PrepareINT32()
 	unsigned int dwDataRep = optDataRepl.value_or(0);
 	if (m_fBigEndian)
 	{
-		dwData = _byteswap_ulong(dwData);
-		dwDataRep = _byteswap_ulong(dwDataRep);
+		dwData = ByteSwap(dwData);
+		dwDataRep = ByteSwap(dwDataRep);
 	}
 
 	m_strSearch.assign(reinterpret_cast<char*>(&dwData), sizeof(dwData));
@@ -1062,8 +1062,8 @@ bool CHexDlgSearch::PrepareINT64()
 	unsigned long long ullDataRep = optDataRepl.value_or(0);
 	if (m_fBigEndian)
 	{
-		ullData = _byteswap_uint64(ullData);
-		ullDataRep = _byteswap_uint64(ullDataRep);
+		ullData = ByteSwap(ullData);
+		ullDataRep = ByteSwap(ullDataRep);
 	}
 
 	m_strSearch.assign(reinterpret_cast<char*>(&ullData), sizeof(ullData));
@@ -1093,8 +1093,8 @@ bool CHexDlgSearch::PrepareFloat()
 	float flDataRep = optDataRepl.value_or(0.0F);
 	if (m_fBigEndian)
 	{
-		flData = std::bit_cast<float>(_byteswap_ulong(std::bit_cast<unsigned long>(flData)));
-		flDataRep = std::bit_cast<float>(_byteswap_ulong(std::bit_cast<unsigned long>(flDataRep)));
+		flData = std::bit_cast<float>(ByteSwap(std::bit_cast<unsigned long>(flData)));
+		flDataRep = std::bit_cast<float>(ByteSwap(std::bit_cast<unsigned long>(flDataRep)));
 	}
 
 	m_strSearch.assign(reinterpret_cast<char*>(&flData), sizeof(flData));
@@ -1124,8 +1124,8 @@ bool CHexDlgSearch::PrepareDouble()
 	double ddDataRep = optDataRepl.value_or(0.0F);
 	if (m_fBigEndian)
 	{
-		ddData = std::bit_cast<double>(_byteswap_uint64(std::bit_cast<unsigned long long>(ddData)));
-		ddDataRep = std::bit_cast<double>(_byteswap_uint64(std::bit_cast<unsigned long long>(ddDataRep)));
+		ddData = std::bit_cast<double>(ByteSwap(std::bit_cast<unsigned long long>(ddData)));
+		ddDataRep = std::bit_cast<double>(ByteSwap(std::bit_cast<unsigned long long>(ddDataRep)));
 	}
 
 	m_strSearch.assign(reinterpret_cast<char*>(&ddData), sizeof(ddData));
@@ -1159,10 +1159,10 @@ bool CHexDlgSearch::PrepareFILETIME()
 	auto stFTReplace = optFTReplace.value_or(FILETIME { }); //optFTReplace is nullopt in RO mode.
 	if (m_fBigEndian)
 	{
-		stFTSearch.dwLowDateTime = _byteswap_ulong(stFTSearch.dwLowDateTime);
-		stFTSearch.dwHighDateTime = _byteswap_ulong(stFTSearch.dwHighDateTime);
-		stFTReplace.dwLowDateTime = _byteswap_ulong(stFTReplace.dwLowDateTime);
-		stFTReplace.dwHighDateTime = _byteswap_ulong(stFTReplace.dwHighDateTime);
+		stFTSearch.dwLowDateTime = ByteSwap(stFTSearch.dwLowDateTime);
+		stFTSearch.dwHighDateTime = ByteSwap(stFTSearch.dwHighDateTime);
+		stFTReplace.dwLowDateTime = ByteSwap(stFTReplace.dwLowDateTime);
+		stFTReplace.dwHighDateTime = ByteSwap(stFTReplace.dwHighDateTime);
 	}
 
 	m_strSearch.assign(reinterpret_cast<char*>(&stFTSearch), sizeof(stFTSearch));
