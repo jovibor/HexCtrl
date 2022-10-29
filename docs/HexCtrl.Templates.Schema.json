@@ -16,34 +16,7 @@
             "format": "color"
         },
         "Fields": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string"
-                    },
-                    "size": {
-                        "type": [
-                            "integer",
-                            "string"
-                        ],
-                        "minimum": 1
-                    },
-                    "clrBk": {
-                        "type": "string",
-                        "format": "color"
-                    },
-                    "clrText": {
-                        "type": "string",
-                        "format": "color"
-                    }
-                },
-                "required": [
-                    "name",
-                    "size"
-                ]
-            }
+            "$ref": "HexCtrl.Templates.Fields.Schema.json"
         }
     },
     "required": [
