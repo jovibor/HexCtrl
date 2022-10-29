@@ -11,37 +11,37 @@
 namespace HEXCTRL::INTERNAL
 {
 	//Forward declarations.
-	struct SHEXTEMPLATE;
-	using PHEXTEMPLATE = SHEXTEMPLATE*;
-	struct STEMPLATEFIELD;
-	using VecFields = std::vector<std::unique_ptr<STEMPLATEFIELD>>; //Vector for the Fields.
+	struct HEXTEMPLATE;
+	using PHEXTEMPLATE = HEXTEMPLATE*;
+	struct HEXTEMPLATEFIELD;
+	using VecFields = std::vector<std::unique_ptr<HEXTEMPLATEFIELD>>; //Vector for the Fields.
 	using PVecFields = VecFields*;
-	using PSTEMPLATEFIELD = STEMPLATEFIELD*;
+	using PHEXTEMPLATEFIELD = HEXTEMPLATEFIELD*;
 
-	struct STEMPLATEFIELD {
-		std::wstring    wstrName { };     //Field name.
-		int             iSize { };        //Field size.
-		int             iOffset { };      //Field offset relative to Template beginning.
-		COLORREF        clrBk { };        //Background color in HexCtrl.
-		COLORREF        clrText { };      //Text color in HexCtrl.
-		VecFields       vecInner { };     //Vector for nested fields.
-		PSTEMPLATEFIELD pFieldParent { }; //Parent field in case of nested.
-		PHEXTEMPLATE    pTemplate { };    //Template this field belongs to.
+	struct HEXTEMPLATEFIELD {
+		std::wstring      wstrName { };     //Field name.
+		int               iSize { };        //Field size.
+		int               iOffset { };      //Field offset relative to Template beginning.
+		COLORREF          clrBk { };        //Background color in HexCtrl.
+		COLORREF          clrText { };      //Text color in HexCtrl.
+		VecFields         vecInner { };     //Vector for nested fields.
+		PHEXTEMPLATEFIELD pFieldParent { }; //Parent field in case of nested.
+		PHEXTEMPLATE      pTemplate { };    //Template this field belongs to.
 	};
 
-	struct SHEXTEMPLATE {
+	struct HEXTEMPLATE {
 		std::wstring wstrName;    //Template name.
 		VecFields    vecFields;   //Template fields.
 		int          iSizeTotal;  //Total size of all Template's fields, assigned internally by framework.
 		int          iTemplateID; //Template ID, assigned internally by framework.
 	};
 
-	struct STEMPLATEAPPLIED {
+	struct HEXTEMPLATEAPPLIED {
 		ULONGLONG    ullOffset;  //Offset, where to apply a template.
 		PHEXTEMPLATE pTemplate;  //Template pointer in the m_vecTemplates.
 		int          iAppliedID; //Applied/runtime ID. Any template can be applied more than once, assigned by framework.
 	};
-	using PSTEMPLATEAPPLIED = STEMPLATEAPPLIED*;
+	using PHEXTEMPLATEAPPLIED = HEXTEMPLATEAPPLIED*;
 
 	class CHexDlgTemplMgr : public CDialogEx, public IHexTemplates
 	{
@@ -53,7 +53,7 @@ namespace HEXCTRL::INTERNAL
 		void DisapplyByOffset(ULONGLONG ullOffset)override;
 		[[nodiscard]] bool HasApplied()const;
 		[[nodiscard]] bool HasTemplates()const;
-		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->PSTEMPLATEFIELD; //Template hittest by offset.
+		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD; //Template hittest by offset.
 		[[nodiscard]] bool IsTooltips()const;
 		void RefreshData();
 	private:
@@ -63,7 +63,8 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnBnLoadTemplate();
 		afx_msg void OnBnUnloadTemplate();
 		afx_msg void OnBnApply();
-		afx_msg void OnClickRadHexDec();
+		afx_msg void OnCheckHexadecimal();
+		afx_msg void OnCheckBigEndian();
 		afx_msg void OnCheckTtShow();
 		afx_msg void OnCheckHglSel();
 		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
@@ -83,13 +84,13 @@ namespace HEXCTRL::INTERNAL
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
 		void UnloadTemplate(int iTemplateID)override;       //Unload/remove loaded template from memory.
 		void EnableDynamicLayoutHelper(bool fEnable);
-		auto GetAppliedFromItem(HTREEITEM hTreeItem)->PSTEMPLATEAPPLIED;
+		auto GetAppliedFromItem(HTREEITEM hTreeItem)->PHEXTEMPLATEAPPLIED;
 		void RemoveNodesWithTemplateID(int iTemplateID);
 		void RemoveNodeWithAppliedID(int iAppliedID);
 		void DisapplyByID(int iAppliedID)override; //Stop one template with the given AppliedID from applying.
 		[[nodiscard]] bool IsHighlight()const;
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
-		void SetHexSelByField(PSTEMPLATEFIELD pField);
+		void SetHexSelByField(PHEXTEMPLATEFIELD pField);
 		void ShowTooltips(bool fShow)override;
 		void UpdateStaticText();
 		static LRESULT TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
@@ -97,8 +98,8 @@ namespace HEXCTRL::INTERNAL
 	private:
 		enum class EMenuID : std::uint16_t { IDM_APPLIED_DISAPPLY = 0x8000, IDM_APPLIED_CLEARALL = 0x8001 };
 		IHexCtrl* m_pHexCtrl { };
-		std::vector<std::unique_ptr<SHEXTEMPLATE>> m_vecTemplates;            //Loaded Templates.
-		std::vector<std::unique_ptr<STEMPLATEAPPLIED>> m_vecTemplatesApplied; //Currently Applied Templates.
+		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;            //Loaded Templates.
+		std::vector<std::unique_ptr<HEXTEMPLATEAPPLIED>> m_vecTemplatesApplied; //Currently Applied Templates.
 		CComboBox m_stComboTemplates; //Currently available templates list.
 		CEdit m_stEditOffset;         //"Offset" edit box.
 		CButton m_stCheckTtShow;      //Check-box "Show tooltips"
@@ -111,7 +112,7 @@ namespace HEXCTRL::INTERNAL
 		CMenu m_stMenuList;   //Menu for the list control.
 		HCURSOR m_hCurResize;
 		HCURSOR m_hCurArrow;
-		PSTEMPLATEAPPLIED m_pAppliedCurr { }; //Currently selected PApplied.
+		PHEXTEMPLATEAPPLIED m_pAppliedCurr { }; //Currently selected PApplied.
 		PVecFields m_pVecCurrFields { };      //Pointer to currently selected vector with fields.
 		HTREEITEM m_hTreeCurrNode { };        //Currently selected Tree node.
 		HTREEITEM m_hTreeCurrParent { };      //Currently selected Tree node's parent.
@@ -121,5 +122,6 @@ namespace HEXCTRL::INTERNAL
 		bool m_fTooltips { true };            //Show tooltips or not.
 		bool m_fHighlightSel { true };        //Highlight selected fields with a selection.
 		bool m_fShowAsHex { true };
+		bool m_fBigEndian { false };
 	};
 }

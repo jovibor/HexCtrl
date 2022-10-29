@@ -2790,7 +2790,7 @@ void CHexCtrl::DrawDataTemplate(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 	std::vector<std::unique_ptr<std::wstring>> vecWstrFieldsText;
 	const auto ullStartOffset = ullStartLine * m_dwCapacity;
 	size_t sIndexToPrint { };
-	const STEMPLATEFIELD* pFieldCurr { };
+	const HEXTEMPLATEFIELD* pFieldCurr { };
 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines)
 	{

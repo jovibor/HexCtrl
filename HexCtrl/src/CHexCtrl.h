@@ -27,7 +27,7 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgSearch;
 	class CHexDlgTemplMgr;
 	class CHexSelection;
-	struct STEMPLATEFIELD;
+	struct HEXTEMPLATEFIELD;
 	namespace SCROLLEX { class CScrollEx; };
 
 	/********************************************************************************************
@@ -229,7 +229,7 @@ namespace HEXCTRL::INTERNAL
 		CWnd m_wndTtTempl { };                //Tooltip window for Templates' fields.
 		TTTOOLINFOW m_stToolInfoTempl { };    //Tooltip info for Templates.
 		std::time_t m_tmTtTempl { };          //Time beginning to calc the diff for hiding template tooltip after.
-		STEMPLATEFIELD* m_pTFieldTtCurr { };  //Currently shown Template field's tooltip;
+		HEXTEMPLATEFIELD* m_pTFieldTtCurr { };//Currently shown Template field's tooltip;
 		CWnd m_wndTtOffset { };               //Tooltip window for Offset in m_fHighLatency mode.
 		TTTOOLINFOW m_stToolInfoOffset { };   //Tooltip info for Offset.
 		CFont m_fontMain;                     //Main Hex chunks font.
