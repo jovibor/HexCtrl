@@ -26,18 +26,11 @@
                         "type": "string",
                         "format": "color"
                     },
-                    "clrBkDefault": {
-                        "type": "string",
-                        "format": "color"
-                    },
-                    "clrTextDefault": {
-                        "type": "string",
-                        "format": "color"
-                    },
                     "Fields": {
                         "$ref": "#/$defs/Fields"
                     }
                 },
+                "additionalProperties": false,
                 "required": [
                     "name"
                 ],
@@ -58,14 +51,17 @@
     },
     "type": "object",
     "properties": {
+        "$schema": {
+            "type": "string"
+        },
         "TemplateName": {
             "type": "string"
         },
-        "clrBkDefault": {
+        "clrBk": {
             "type": "string",
             "format": "color"
         },
-        "clrTextDefault": {
+        "clrText": {
             "type": "string",
             "format": "color"
         },
@@ -73,6 +69,7 @@
             "$ref": "#/$defs/Fields"
         }
     },
+    "additionalProperties": false,
     "required": [
         "TemplateName",
         "Fields"

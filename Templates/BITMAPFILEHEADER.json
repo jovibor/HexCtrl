@@ -1,8 +1,8 @@
 {
     "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
     "TemplateName": "BITMAPFILEHEADER",
-    "clrBkDefault": "#909090",
-    "clrTextDefault": "#FFFFFF",
+    "clrBk": "#909090",
+    "clrText": "#FFFFFF",
     "Fields": [
         {
             "name": "bfType",
@@ -26,8 +26,8 @@
         },
         {
             "name": "BITMAPINFOHEADER",
-            "clrBkDefault": "#C0C0C0",
-            "clrTextDefault": "#FFFFFF",
+            "clrBk": "#C0C0C0",
+            "clrText": "#FFFFFF",
             "Fields": [
                 {
                     "name": "biSize",

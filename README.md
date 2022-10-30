@@ -263,8 +263,8 @@ If you'd like to colorize your data with custom bk/text colors, you have to reso
 ```json
 {
     "TemplateName": "MyDataStruct",
-    "clrBkDefault": "#909090",
-    "clrTextDefault": "#FFFFFF",
+    "clrBk": "#909090",
+    "clrText": "#FFFFFF",
     "Fields": [
         {
             "name": "int x",

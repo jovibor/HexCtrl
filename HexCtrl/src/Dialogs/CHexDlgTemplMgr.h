@@ -24,7 +24,7 @@ namespace HEXCTRL::INTERNAL
 		int               iOffset { };      //Field offset relative to Template beginning.
 		COLORREF          clrBk { };        //Background color in HexCtrl.
 		COLORREF          clrText { };      //Text color in HexCtrl.
-		VecFields         vecInner { };     //Vector for nested fields.
+		VecFields         vecNested { };    //Vector for nested fields.
 		PHEXTEMPLATEFIELD pFieldParent { }; //Parent field in case of nested.
 		PHEXTEMPLATE      pTemplate { };    //Template this field belongs to.
 	};

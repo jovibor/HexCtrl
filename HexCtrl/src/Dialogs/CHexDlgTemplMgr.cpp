@@ -296,11 +296,11 @@ void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		return;
 
 	const auto& refVec = *m_pVecCurrFields;
-	if (refVec[iItem]->vecInner.empty())
+	if (refVec[iItem]->vecNested.empty())
 		return;
 
 	m_fListGuardEvent = true; //To prevent nasty OnListItemChanged to fire after this method ends.
-	m_pVecCurrFields = &refVec[iItem]->vecInner;
+	m_pVecCurrFields = &refVec[iItem]->vecNested;
 
 	const auto hItem = TreeItemFromListItem(iItem);
 	m_hTreeCurrParent = hItem;
@@ -369,24 +369,24 @@ void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	else { //Child items.
 		pFieldCurr = reinterpret_cast<PHEXTEMPLATEFIELD>(m_stTreeApplied.GetItemData(pItem->hItem));
 		if (pFieldCurr->pFieldParent == nullptr) {
-			if (pFieldCurr->vecInner.empty()) { //On first level child items, set m_pVecCurrFields to Template's main vecFields.
+			if (pFieldCurr->vecNested.empty()) { //On first level child items, set m_pVecCurrFields to Template's main vecFields.
 				m_pVecCurrFields = &pFieldCurr->pTemplate->vecFields;
 				m_hTreeCurrParent = m_stTreeApplied.GetParentItem(pItem->hItem);
 			}
 			else { //If it's nested Fields vector, set m_pVecCurrFields to it.
 				fRootNodeClick = true;
-				m_pVecCurrFields = &pFieldCurr->vecInner;
+				m_pVecCurrFields = &pFieldCurr->vecNested;
 				m_hTreeCurrParent = pItem->hItem;
 			}
 		}
-		else { //If it's inner Field, set m_pVecCurrFields to parent Fields' vecInner.
-			if (pFieldCurr->vecInner.empty()) {
-				m_pVecCurrFields = &pFieldCurr->pFieldParent->vecInner;
+		else { //If it's nested Field, set m_pVecCurrFields to parent Fields' vecNested.
+			if (pFieldCurr->vecNested.empty()) {
+				m_pVecCurrFields = &pFieldCurr->pFieldParent->vecNested;
 				m_hTreeCurrParent = m_stTreeApplied.GetParentItem(pItem->hItem);
 			}
 			else {
 				fRootNodeClick = true;
-				m_pVecCurrFields = &pFieldCurr->vecInner;
+				m_pVecCurrFields = &pFieldCurr->vecNested;
 				m_hTreeCurrParent = pItem->hItem;
 			}
 		}
@@ -539,11 +539,11 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 		const auto _lmbFill = [&](const auto& lmbSelf, HTREEITEM hTreeRoot, VecFields& refVecFields)->void {
 			for (auto& field : refVecFields) {
 				tvi.hParent = hTreeRoot;
-				tvi.itemex.cChildren = static_cast<int>(field->vecInner.size());
+				tvi.itemex.cChildren = static_cast<int>(field->vecNested.size());
 				tvi.itemex.lParam = reinterpret_cast<LPARAM>(field.get()); //Tree child nodes have PHEXTEMPLATEAPPLIED ptr.
 				const auto hCurrentRoot = m_stTreeApplied.InsertItem(&tvi);
 				if (tvi.itemex.cChildren > 0) {
-					lmbSelf(lmbSelf, hCurrentRoot, field->vecInner);
+					lmbSelf(lmbSelf, hCurrentRoot, field->vecNested);
 				}
 			}
 		};
@@ -625,10 +625,10 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 
 	COLORREF clrBkDefault { };
 	COLORREF clrTextDefault { };
-	if (const auto it = docJSON.FindMember("clrBkDefault"); it != docJSON.MemberEnd() && it->value.IsString()) {
+	if (const auto it = docJSON.FindMember("clrBk"); it != docJSON.MemberEnd() && it->value.IsString()) {
 		clrBkDefault = lmbStrToRGB(it->value.GetString());
 	}
-	if (const auto it = docJSON.FindMember("clrTextDefault"); it != docJSON.MemberEnd() && it->value.IsString()) {
+	if (const auto it = docJSON.FindMember("clrText"); it != docJSON.MemberEnd() && it->value.IsString()) {
 		clrTextDefault = lmbStrToRGB(it->value.GetString());
 	}
 
@@ -637,8 +637,8 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		const auto _lmbCount = [](const auto& lmbSelf, const VecFields& vecRef)->int {
 			return std::accumulate(vecRef.begin(), vecRef.end(), 0,
 				[&lmbSelf](auto ullTotal, const std::unique_ptr<HEXTEMPLATEFIELD>& refField) {
-					if (!refField->vecInner.empty()) {
-						return ullTotal + lmbSelf(lmbSelf, refField->vecInner);
+					if (!refField->vecNested.empty()) {
+						return ullTotal + lmbSelf(lmbSelf, refField->vecNested);
 					}
 					return ullTotal + refField->iSize; });
 		};
@@ -672,40 +672,40 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 				refBack->pFieldParent = pFieldParent;
 				refBack->iOffset = iOffset;
 
-				if (const auto iterInnerFields = iterArrCurr->FindMember("Fields");
-					iterInnerFields != iterArrCurr->MemberEnd()) {
-					if (!iterInnerFields->value.IsArray()) {
+				if (const auto iterNestedFields = iterArrCurr->FindMember("Fields");
+					iterNestedFields != iterArrCurr->MemberEnd()) {
+					if (!iterNestedFields->value.IsArray()) {
 						return false; //Each "Fields" must be an Array.
 					}
 
-					COLORREF clrBkDefaultInner { };   //Default colors in inner structs.
-					COLORREF clrTextDefaultInner { };
-					if (const auto itClrBkDefault = iterArrCurr->FindMember("clrBkDefault");
+					COLORREF clrBkDefaultNested { };   //Default colors in nested structs.
+					COLORREF clrTextDefaultNested { };
+					if (const auto itClrBkDefault = iterArrCurr->FindMember("clrBk");
 						itClrBkDefault != iterArrCurr->MemberEnd()) {
 						if (!itClrBkDefault->value.IsString()) {
-							return false; //"clrBkDefault" must be a string.
+							return false; //"clrBk" must be a string.
 						}
-						clrBkDefaultInner = lmbStrToRGB(itClrBkDefault->value.GetString());
+						clrBkDefaultNested = lmbStrToRGB(itClrBkDefault->value.GetString());
 					}
-					else { clrBkDefaultInner = clrBkDefault; }
-					refBack->clrBk = clrBkDefaultInner;
+					else { clrBkDefaultNested = clrBkDefault; }
+					refBack->clrBk = clrBkDefaultNested;
 
-					if (const auto itClrTextDefault = iterArrCurr->FindMember("clrTextDefault");
+					if (const auto itClrTextDefault = iterArrCurr->FindMember("clrText");
 						itClrTextDefault != iterArrCurr->MemberEnd()) {
 						if (!itClrTextDefault->value.IsString()) {
-							return false; //"clrTextDefault" must be a string.
+							return false; //"clrText" must be a string.
 						}
-						clrTextDefaultInner = lmbStrToRGB(itClrTextDefault->value.GetString());
+						clrTextDefaultNested = lmbStrToRGB(itClrTextDefault->value.GetString());
 					}
-					else { clrTextDefaultInner = clrTextDefault; }
-					refBack->clrText = clrTextDefaultInner;
+					else { clrTextDefaultNested = clrTextDefault; }
+					refBack->clrText = clrTextDefaultNested;
 
 					//Recursion lambda for nested structs starts here.
-					if (!lmbSelf(lmbSelf, iterInnerFields, refBack->vecInner,
-						clrBkDefaultInner, clrTextDefaultInner, iOffset, refBack.get())) {
+					if (!lmbSelf(lmbSelf, iterNestedFields, refBack->vecNested,
+						clrBkDefaultNested, clrTextDefaultNested, iOffset, refBack.get())) {
 						return false;
 					}
-					refBack->iSize = lmbTotalSize(refBack->vecInner); //Total size of all inner fields.
+					refBack->iSize = lmbTotalSize(refBack->vecNested); //Total size of all nested fields.
 				}
 				else {
 					if (const auto iterSize = iterArrCurr->FindMember("size");
@@ -912,8 +912,8 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD
 			const auto _lmbFind = [ullTemplStartOffset, ullOffset, &ullOffsetCurr]
 			(const auto& lmbSelf, VecFields& vecRef)->PHEXTEMPLATEFIELD {
 				for (auto& refField : vecRef) {
-					if (!refField->vecInner.empty()) {
-						if (const auto pRet = lmbSelf(lmbSelf, refField->vecInner); pRet != nullptr) {
+					if (!refField->vecNested.empty()) {
+						if (const auto pRet = lmbSelf(lmbSelf, refField->vecNested); pRet != nullptr) {
 							return pRet; //Return only if we Hit a pointer in the inner lambda, continue the loop otherwise.
 						}
 					}

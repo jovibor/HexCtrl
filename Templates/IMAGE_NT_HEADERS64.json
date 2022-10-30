@@ -1,8 +1,8 @@
 {
     "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
     "TemplateName": "IMAGE_NT_HEADERS64",
-    "clrBkDefault": "#606060",
-    "clrTextDefault": "#FFFFFF",
+    "clrBk": "#606060",
+    "clrText": "#FFFFFF",
     "Fields": [
         {
             "name": "DWORD Signature",
@@ -10,7 +10,7 @@
         },
         {
             "name": "IMAGE_FILE_HEADER FileHeader",
-            "clrBkDefault": "#909090",
+            "clrBk": "#909090",
             "Fields": [
                 {
                     "name": "WORD Machine",
@@ -44,7 +44,7 @@
         },
         {
             "name": "IMAGE_OPTIONAL_HEADER64 OptionalHeader",
-            "clrBkDefault": "#C0C0C0",
+            "clrBk": "#C0C0C0",
             "Fields": [
                 {
                     "name": "WORD Magic",
