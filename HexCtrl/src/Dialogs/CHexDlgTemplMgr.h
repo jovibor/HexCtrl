@@ -83,6 +83,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnDestroy();
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
 		void UnloadTemplate(int iTemplateID)override;       //Unload/remove loaded template from memory.
+		void OnTemplateLoadUnload(bool fLoad);              //Callback on template's successful load or unload.
 		void EnableDynamicLayoutHelper(bool fEnable);
 		auto GetAppliedFromItem(HTREEITEM hTreeItem)->PHEXTEMPLATEAPPLIED;
 		void RemoveNodesWithTemplateID(int iTemplateID);
@@ -104,6 +105,7 @@ namespace HEXCTRL::INTERNAL
 		CEdit m_stEditOffset;         //"Offset" edit box.
 		CButton m_stCheckTtShow;      //Check-box "Show tooltips"
 		CButton m_stCheckHglSel;      //Check-box "Highlight selected"
+		CButton m_stCheckHex;         //Check-box "Highlight selected"
 		CButton m_stStaticOffset;     //Static text "Template offset:".
 		CButton m_stStaticSize;       //Static text Template size:".
 		LISTEX::IListExPtr m_pListApplied { LISTEX::CreateListEx() };
@@ -114,7 +116,6 @@ namespace HEXCTRL::INTERNAL
 		HCURSOR m_hCurArrow;
 		PHEXTEMPLATEAPPLIED m_pAppliedCurr { }; //Currently selected PApplied.
 		PVecFields m_pVecCurrFields { };      //Pointer to currently selected vector with fields.
-		HTREEITEM m_hTreeCurrNode { };        //Currently selected Tree node.
 		HTREEITEM m_hTreeCurrParent { };      //Currently selected Tree node's parent.
 		bool m_fCurInSplitter { };            //Indicates that mouse cursor is in the splitter area.
 		bool m_fLMDownResize { };             //Left mouse pressed in splitter area to resize.

@@ -434,7 +434,6 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case CMD_BKM_REMOVE:
 		m_pDlgBkmMgr->RemoveByOffset(m_fMenuCMD && m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos());
 		m_optRMouseClick.reset();
-		m_fMenuCMD = false;
 		break;
 	case CMD_BKM_NEXT:
 		m_pDlgBkmMgr->GoNext();
@@ -571,14 +570,12 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		m_pScrollV->ScrollPageDown();
 		break;
 	case CMD_TEMPL_APPLYCURR:
-		m_pDlgTemplMgr->ApplyCurr(m_fMenuCMD && m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos());
+		m_pDlgTemplMgr->ApplyCurr(GetCaretPos());
 		m_optRMouseClick.reset();
-		m_fMenuCMD = false;
 		break;
 	case CMD_TEMPL_DISAPPLY:
 		m_pDlgTemplMgr->DisapplyByOffset(m_fMenuCMD && m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos());
 		m_optRMouseClick.reset();
-		m_fMenuCMD = false;
 		break;
 	case CMD_TEMPL_CLEARALL:
 		m_pDlgTemplMgr->ClearAll();
@@ -4713,13 +4710,12 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	const auto wMenuID = LOWORD(wParam);
 	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref)
-		{ return ref.wMenuID == wMenuID;	}); iter != m_vecKeyBind.end())
-	{
+		{ return ref.wMenuID == wMenuID;	}); iter != m_vecKeyBind.end()) {
 		m_fMenuCMD = true;
 		ExecuteCmd(iter->eCmd);
+		m_fMenuCMD = false;
 	}
-	else
-	{	//For user defined custom menu we notifying parent window.
+	else { //For user defined custom menu we notifying parent window.
 		const HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK },
 			.pt { m_stMenuClickedPt }, .wMenuID { wMenuID } };
 		ParentNotify(hmi);
