@@ -43,19 +43,19 @@ namespace HEXCTRL::INTERNAL
 
 	//Converts every two numeric wchars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
 	//fWc means that wildcards are allowed, chWc - the wildcard.
-	[[nodiscard]] auto NumStrToHex(std::wstring_view wstr, bool fWc = false, char chWc = '?')->std::optional<std::string>;
+	[[nodiscard]] auto NumStrToHex(std::wstring_view wsv, bool fWc = false, char chWc = '?')->std::optional<std::string>;
 
 	//Wide to Multibyte string convertion.
-	[[nodiscard]] auto WstrToStr(std::wstring_view wstr, UINT uCodePage = CP_UTF8)->std::string;
+	[[nodiscard]] auto WstrToStr(std::wstring_view wsv, UINT uCodePage = CP_UTF8)->std::string;
 
 	//Multibyte to Wide string convertion.
-	[[nodiscard]] auto StrToWstr(std::string_view str, UINT uCodePage = CP_UTF8)->std::wstring;
+	[[nodiscard]] auto StrToWstr(std::string_view sv, UINT uCodePage = CP_UTF8)->std::wstring;
 
 	//Convert string into FILETIME struct.
-	[[nodiscard]] auto StringToFileTime(std::wstring_view wstr, DWORD dwFormat)->std::optional<FILETIME>;
+	[[nodiscard]] auto StringToFileTime(std::wstring_view wsv, DWORD dwFormat)->std::optional<FILETIME>;
 
 	//Convert string into SYSTEMTIME struct.
-	[[nodiscard]] auto StringToSystemTime(std::wstring_view wstr, DWORD dwFormat)->std::optional<SYSTEMTIME>;
+	[[nodiscard]] auto StringToSystemTime(std::wstring_view wsv, DWORD dwFormat)->std::optional<SYSTEMTIME>;
 
 	//Convert FILETIME struct to a readable string.
 	[[nodiscard]] auto FileTimeToString(FILETIME stFileTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring;

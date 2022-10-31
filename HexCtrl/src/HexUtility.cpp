@@ -11,17 +11,17 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	auto NumStrToHex(std::wstring_view wstr, bool fWc, char chWc)->std::optional<std::string>
+	auto NumStrToHex(std::wstring_view wsv, bool fWc, char chWc)->std::optional<std::string>
 	{
 		std::wstring wstrFilter = L"0123456789AaBbCcDdEeFf"; //Allowed characters.
 		if (fWc)
 			wstrFilter += chWc;
 
-		if (wstr.find_first_not_of(wstrFilter) != std::string_view::npos)
+		if (wsv.find_first_not_of(wstrFilter) != std::string_view::npos)
 			return std::nullopt;
 
 		std::string strHexTmp;
-		for (auto iterBegin = wstr.begin(); iterBegin != wstr.end();)
+		for (auto iterBegin = wsv.begin(); iterBegin != wsv.end();)
 		{
 			if (fWc && *iterBegin == chWc) //Skip wildcard.
 			{
@@ -31,9 +31,9 @@ namespace HEXCTRL::INTERNAL
 			}
 
 			//Extract two current wchars and pass it to StringToNum as wstring.
-			const std::size_t nOffsetCurr = iterBegin - wstr.begin();
-			const auto nSize = nOffsetCurr + 2 <= wstr.size() ? 2 : 1;
-			if (const auto optNumber = StrToUChar(wstr.substr(nOffsetCurr, nSize), 16); optNumber)
+			const std::size_t nOffsetCurr = iterBegin - wsv.begin();
+			const auto nSize = nOffsetCurr + 2 <= wsv.size() ? 2 : 1;
+			if (const auto optNumber = StrToUChar(wsv.substr(nOffsetCurr, nSize), 16); optNumber)
 			{
 				iterBegin += nSize;
 				strHexTmp += *optNumber;
@@ -45,26 +45,26 @@ namespace HEXCTRL::INTERNAL
 		return { std::move(strHexTmp) };
 	}
 
-	auto WstrToStr(std::wstring_view wstr, UINT uCodePage)->std::string
+	auto WstrToStr(std::wstring_view wsv, UINT uCodePage)->std::string
 	{
-		const auto iSize = WideCharToMultiByte(uCodePage, 0, wstr.data(), static_cast<int>(wstr.size()), nullptr, 0, nullptr, nullptr);
+		const auto iSize = WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
-		WideCharToMultiByte(uCodePage, 0, wstr.data(), static_cast<int>(wstr.size()), &str[0], iSize, nullptr, nullptr);
+		WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), &str[0], iSize, nullptr, nullptr);
 		return str;
 	}
 
-	auto StrToWstr(std::string_view str, UINT uCodePage)->std::wstring
+	auto StrToWstr(std::string_view sv, UINT uCodePage)->std::wstring
 	{
-		const auto iSize = MultiByteToWideChar(uCodePage, 0, str.data(), static_cast<int>(str.size()), nullptr, 0);
+		const auto iSize = MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), nullptr, 0);
 		std::wstring wstr(iSize, 0);
-		MultiByteToWideChar(uCodePage, 0, str.data(), static_cast<int>(str.size()), &wstr[0], iSize);
+		MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), &wstr[0], iSize);
 		return wstr;
 	}
 
-	auto StringToFileTime(std::wstring_view wstr, DWORD dwDateFormat)->std::optional<FILETIME>
+	auto StringToFileTime(std::wstring_view wsv, DWORD dwDateFormat)->std::optional<FILETIME>
 	{
 		std::optional<FILETIME> optFT { std::nullopt };
-		if (auto optSysTime = StringToSystemTime(wstr, dwDateFormat); optSysTime)
+		if (auto optSysTime = StringToSystemTime(wsv, dwDateFormat); optSysTime)
 		{
 			FILETIME ftTime;
 			if (SystemTimeToFileTime(&*optSysTime, &ftTime) != FALSE)
@@ -76,17 +76,17 @@ namespace HEXCTRL::INTERNAL
 		return optFT;
 	}
 
-	auto StringToSystemTime(const std::wstring_view wstr, const DWORD dwDateFormat)->std::optional<SYSTEMTIME>
+	auto StringToSystemTime(const std::wstring_view wsv, const DWORD dwDateFormat)->std::optional<SYSTEMTIME>
 	{
 		//dwDateFormat is a locale specific date format https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 
-		if (wstr.empty())
+		if (wsv.empty())
 			return std::nullopt;
 
 		//Normalise the input string by replacing non-numeric characters except space with a `/`.
 		//This should regardless of the current date/time separator character.
 		std::wstring wstrDateTimeCooked { };
-		for (const auto iter : wstr)
+		for (const auto iter : wsv)
 			wstrDateTimeCooked += (iswdigit(iter) || iter == L' ') ? iter : L'/';
 
 		SYSTEMTIME stSysTime { };

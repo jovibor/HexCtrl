@@ -2767,7 +2767,7 @@ void CHexCtrl::DrawHexText(CDC* pDC, int iLines, std::wstring_view wsvHex, std::
 	}
 }
 
-void CHexCtrl::DrawDataTemplate(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
+void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
 	if (!m_pDlgTemplMgr->HasApplied())
 		return;
@@ -3996,7 +3996,7 @@ void CHexCtrl::Print()
 			if (IsDataSet()) {
 				DrawOffsets(pDC, ullStartLine, iLines);
 				DrawHexText(pDC, iLines, wstrHex, wstrText);
-				DrawDataTemplate(pDC, ullStartLine, iLines, wstrHex, wstrText);
+				DrawTemplates(pDC, ullStartLine, iLines, wstrHex, wstrText);
 				DrawBookmarks(pDC, ullStartLine, iLines, wstrHex, wstrText);
 				DrawCustomColors(pDC, ullStartLine, iLines, wstrHex, wstrText);
 				DrawSelection(pDC, ullStartLine, iLines, wstrHex, wstrText);
@@ -5248,7 +5248,7 @@ void CHexCtrl::OnPaint()
 	DrawOffsets(pDC, ullStartLine, iLines);
 	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
 	DrawHexText(pDC, iLines, wstrHex, wstrText);
-	DrawDataTemplate(pDC, ullStartLine, iLines, wstrHex, wstrText);
+	DrawTemplates(pDC, ullStartLine, iLines, wstrHex, wstrText);
 	DrawBookmarks(pDC, ullStartLine, iLines, wstrHex, wstrText);
 	DrawCustomColors(pDC, ullStartLine, iLines, wstrHex, wstrText);
 	DrawSelection(pDC, ullStartLine, iLines, wstrHex, wstrText);

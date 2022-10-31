@@ -259,7 +259,7 @@ But if you have big and complicated data logic and want to handle all these book
 If you'd like to colorize your data with custom bk/text colors, you have to resort to the [`IHexVirtColors`](#ihexvirtcolors) interface help. Please see the interface description, it's very simple to use.
 
 ## [](#)Templates
-**HexCtrl**'s templates is a powerful system of a data structures' description with a simple `.json` files. These files can be loaded through the **HexControl**'s internal template manager, or through the [API](#gettemplates).  
+**HexCtrl**'s templates is a powerful system of a data structures description with a simple `.json` files. These files can be loaded through the **HexControl**'s internal template manager, or through the [API](#gettemplates).  
 ```json
 {
     "TemplateName": "MyDataStruct",
@@ -283,6 +283,17 @@ If you'd like to colorize your data with custom bk/text colors, you have to reso
     ]
 }
 ```
+Every such file contains necessary properties:  
+- **TemplateName** is the name of the template.  
+- **Fields** is an array of objects where every object represents a struct data member. Any such object can have its own **Fields** sub-objects, nested structs.  
+
+The object's properties include:
+- **name** - mandatory, name of the field
+- **size** - mandatory, size of the field in bytes
+- **clrBk** - field background color
+- **clrText** - field text color
+
+If object has **clrBk** and **Fields** properties simultaneously, the **clrBk** property will mean a default background color for all the **Fields** objects, the same goes for  **clrText**.  
 
 For the available templates check the `Templates` directory.
 
