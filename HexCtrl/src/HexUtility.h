@@ -106,7 +106,7 @@ namespace HEXCTRL::INTERNAL
 		else if constexpr (sizeof(T) == sizeof(unsigned short)) {
 			auto wData = std::bit_cast<unsigned short>(tData);
 			if (std::is_constant_evaluated()) {
-				wData = (wData << 8) | (wData >> 8);
+				wData = static_cast<unsigned short>((wData << 8) | (wData >> 8));
 				return std::bit_cast<T>(wData);
 			}
 			return std::bit_cast<T>(_byteswap_ushort(wData));
@@ -114,7 +114,7 @@ namespace HEXCTRL::INTERNAL
 		else if constexpr (sizeof(T) == sizeof(unsigned long)) {
 			auto ulData = std::bit_cast<unsigned long>(tData);
 			if (std::is_constant_evaluated()) {
-				ulData = (ulData << 24) | ((ulData << 8) & 0x00FF'0000) | ((ulData >> 8) & 0x0000'FF00) | (ulData >> 24);
+				ulData = (ulData << 24) | ((ulData << 8) & 0x00FF'0000UL) | ((ulData >> 8) & 0x0000'FF00UL) | (ulData >> 24);
 				return std::bit_cast<T>(ulData);
 			}
 			return std::bit_cast<T>(_byteswap_ulong(ulData));
@@ -122,10 +122,10 @@ namespace HEXCTRL::INTERNAL
 		else if constexpr (sizeof(T) == sizeof(unsigned long long)) {
 			auto ullData = std::bit_cast<unsigned long long>(tData);
 			if (std::is_constant_evaluated()) {
-				ullData = (ullData << 56) | ((ullData << 40) & 0x00FF'0000'0000'0000)
-					| ((ullData << 24) & 0x0000'FF00'0000'0000)
-					| ((ullData << 8) & 0x0000'00FF'0000'0000) | ((ullData >> 8) & 0x0000'0000'FF00'0000)
-					| ((ullData >> 24) & 0x0000'0000'00FF'0000) | ((ullData >> 40) & 0x0000'0000'0000'FF00) | (ullData >> 56);
+				ullData = (ullData << 56) | ((ullData << 40) & 0x00FF'0000'0000'0000ULL)
+					| ((ullData << 24) & 0x0000'FF00'0000'0000ULL) | ((ullData << 8) & 0x0000'00FF'0000'0000ULL)
+					| ((ullData >> 8) & 0x0000'0000'FF00'0000ULL) | ((ullData >> 24) & 0x0000'0000'00FF'0000ULL)
+					| ((ullData >> 40) & 0x0000'0000'0000'FF00ULL) | (ullData >> 56);
 				return std::bit_cast<T>(ullData);
 			}
 			return std::bit_cast<T>(_byteswap_uint64(ullData));

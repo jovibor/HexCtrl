@@ -19,26 +19,24 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] ULONGLONG GetDataSize()const;
 		void InspectOffset(ULONGLONG ullOffset);
 	private:
-#pragma pack(push, 1)
-		union UMSDOSDATETIME //MS-DOS Date+Time structure (as used in FAT file system directory entry)
-		{				    //See: https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
-			struct
-			{
+	#pragma pack(push, 1)
+		//MS-DOS Date+Time structure (as used in FAT file system directory entry)
+		//See: https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
+		union UMSDOSDATETIME {
+			struct {
 				WORD wTime;	//Time component
 				WORD wDate;	//Date component
 			} TimeDate;
 			DWORD dwTimeDate;
 		};
 		using PMSDOSDATETIME = UMSDOSDATETIME*;
-#pragma pack(pop)
+	#pragma pack(pop)
 
-		//Microsoft UDTTM time (as used by Microsoft Compound Document format)
-		//See: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/164c0c2e-6031-439e-88ad-69d00b69f414
-#pragma pack(push, 1)
-		union UDTTM
-		{
-			struct
-			{
+			//Microsoft UDTTM time (as used by Microsoft Compound Document format)
+			//See: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/164c0c2e-6031-439e-88ad-69d00b69f414
+	#pragma pack(push, 1)
+		union UDTTM {
+			struct {
 				unsigned long minute : 6; //6+5+5+4+9+3=32
 				unsigned long hour : 5;
 				unsigned long dayofmonth : 5;
@@ -49,21 +47,19 @@ namespace HEXCTRL::INTERNAL
 			unsigned long dwValue;
 		};
 		using PDTTM = UDTTM*;
-#pragma pack(pop)
+	#pragma pack(pop)
 
-#pragma pack(push, 1)
-		union UDQWORD
-		{
-			struct
-			{
+	#pragma pack(push, 1)
+		union UDQWORD {
+			struct {
 				QWORD qwLow;
 				QWORD qwHigh;
 			} Value;
 			GUID gGUID;
 		};
 		using PDQWORD = UDQWORD*;
-#pragma pack(pop)
-		//Time calculation constants
+	#pragma pack(pop)
+			//Time calculation constants
 		static constexpr auto m_uFTTicksPerMS = 10000U;             //Number of 100ns intervals in a milli-second
 		static constexpr auto m_uFTTicksPerSec = 10000000UL;        //Number of 100ns intervals in a second
 		static constexpr auto m_uHoursPerDay = 24U;                 //24 hours per day
@@ -132,21 +128,18 @@ namespace HEXCTRL::INTERNAL
 		DECLARE_MESSAGE_MAP()
 	private:
 		enum class EGroup : std::uint8_t { DIGITS, FLOAT, TIME, MISC };
-		enum class EName : std::uint8_t
-		{
+		enum class EName : std::uint8_t {
 			NAME_BINARY, NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
 			NAME_LONG, NAME_ULONG, NAME_LONGLONG, NAME_ULONGLONG,
 			NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
 			NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
 			NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID
 		};
-		enum class ESize : std::uint8_t
-		{
+		enum class ESize : std::uint8_t {
 			SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4,
 			SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10
 		};
-		struct SGRIDDATA
-		{
+		struct SGRIDDATA {
 			CMFCPropertyGridProperty* pProp { };
 			EGroup eGroup { };
 			EName eName { };

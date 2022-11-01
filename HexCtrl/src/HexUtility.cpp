@@ -21,10 +21,8 @@ namespace HEXCTRL::INTERNAL
 			return std::nullopt;
 
 		std::string strHexTmp;
-		for (auto iterBegin = wsv.begin(); iterBegin != wsv.end();)
-		{
-			if (fWc && *iterBegin == chWc) //Skip wildcard.
-			{
+		for (auto iterBegin = wsv.begin(); iterBegin != wsv.end();) {
+			if (fWc && static_cast<char>(*iterBegin) == chWc) { //Skip wildcard.
 				++iterBegin;
 				strHexTmp += chWc;
 				continue;
@@ -33,8 +31,7 @@ namespace HEXCTRL::INTERNAL
 			//Extract two current wchars and pass it to StringToNum as wstring.
 			const std::size_t nOffsetCurr = iterBegin - wsv.begin();
 			const auto nSize = nOffsetCurr + 2 <= wsv.size() ? 2 : 1;
-			if (const auto optNumber = StrToUChar(wsv.substr(nOffsetCurr, nSize), 16); optNumber)
-			{
+			if (const auto optNumber = StrToUChar(wsv.substr(nOffsetCurr, nSize), 16); optNumber) {
 				iterBegin += nSize;
 				strHexTmp += *optNumber;
 			}
@@ -49,7 +46,7 @@ namespace HEXCTRL::INTERNAL
 	{
 		const auto iSize = WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
-		WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), &str[0], iSize, nullptr, nullptr);
+		WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), str.data(), iSize, nullptr, nullptr);
 		return str;
 	}
 
@@ -57,28 +54,25 @@ namespace HEXCTRL::INTERNAL
 	{
 		const auto iSize = MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), nullptr, 0);
 		std::wstring wstr(iSize, 0);
-		MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), &wstr[0], iSize);
+		MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), wstr.data(), iSize);
 		return wstr;
 	}
 
-	auto StringToFileTime(std::wstring_view wsv, DWORD dwDateFormat)->std::optional<FILETIME>
+	auto StringToFileTime(std::wstring_view wsv, DWORD dwFormat)->std::optional<FILETIME>
 	{
 		std::optional<FILETIME> optFT { std::nullopt };
-		if (auto optSysTime = StringToSystemTime(wsv, dwDateFormat); optSysTime)
-		{
+		if (auto optSysTime = StringToSystemTime(wsv, dwFormat); optSysTime) {
 			FILETIME ftTime;
-			if (SystemTimeToFileTime(&*optSysTime, &ftTime) != FALSE)
-			{
+			if (SystemTimeToFileTime(&*optSysTime, &ftTime) != FALSE) {
 				optFT = ftTime;
 			}
 		}
-
 		return optFT;
 	}
 
-	auto StringToSystemTime(const std::wstring_view wsv, const DWORD dwDateFormat)->std::optional<SYSTEMTIME>
+	auto StringToSystemTime(const std::wstring_view wsv, const DWORD dwFormat)->std::optional<SYSTEMTIME>
 	{
-		//dwDateFormat is a locale specific date format https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
+		//dwFormat is a locale specific date format https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 
 		if (wsv.empty())
 			return std::nullopt;
@@ -93,7 +87,7 @@ namespace HEXCTRL::INTERNAL
 		int iParsedArgs { };
 
 		//Parse date component
-		switch (dwDateFormat)
+		switch (dwFormat)
 		{
 		case 0:	//Month-Day-Year
 			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &stSysTime.wMonth, &stSysTime.wDay, &stSysTime.wYear);
@@ -128,10 +122,12 @@ namespace HEXCTRL::INTERNAL
 	auto FileTimeToString(FILETIME stFileTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring
 	{
 		std::wstring wstrTime;
-		if (SYSTEMTIME stSysTime { }; FileTimeToSystemTime(&stFileTime, &stSysTime) != FALSE)
+		if (SYSTEMTIME stSysTime { }; FileTimeToSystemTime(&stFileTime, &stSysTime) != FALSE) {
 			wstrTime = SystemTimeToString(stSysTime, dwFormat, wchSepar);
-		else
+		}
+		else {
 			wstrTime = L"N/A";
+		}
 
 		return wstrTime;
 	}
@@ -161,10 +157,10 @@ namespace HEXCTRL::INTERNAL
 			stSysTime.wHour, stSysTime.wMinute, stSysTime.wSecond, stSysTime.wMilliseconds, wchSepar));
 	}
 
-	auto GetDateFormatString(DWORD dwDateFormat, wchar_t wcDateSeparator)->std::wstring
+	auto GetDateFormatString(DWORD dwFormat, wchar_t wchSepar)->std::wstring
 	{
 		std::wstring_view wstrFmt;
-		switch (dwDateFormat)
+		switch (dwFormat)
 		{
 		case 0:	//Month-Day-Year
 			wstrFmt = L"MM{0}DD{0}YYYY HH:MM:SS.mmm";
@@ -179,6 +175,7 @@ namespace HEXCTRL::INTERNAL
 			assert(true);
 			break;
 		}
-		return std::vformat(wstrFmt, std::make_wformat_args(wcDateSeparator));
+
+		return std::vformat(wstrFmt, std::make_wformat_args(wchSepar));
 	}
 }
