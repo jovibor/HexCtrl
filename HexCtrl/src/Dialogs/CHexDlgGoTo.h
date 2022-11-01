@@ -26,7 +26,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioBackCurr();
 		afx_msg void OnClickRadioBackEnd();
 		DECLARE_MESSAGE_MAP()
-		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
+			[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		void HexCtrlGoOffset(ULONGLONG ullOffset);
 		void SetRangesText()const;
 	private:

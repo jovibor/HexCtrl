@@ -62,12 +62,9 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 	ShowValueCHAR(byte);
 	ShowValueUCHAR(byte);
 
-	if (ullOffset + static_cast<unsigned>(ESize::SIZE_WORD) > ullDataSize)
-	{
-		for (const auto& iter : m_vecProp)
-		{
-			if (iter.eSize >= ESize::SIZE_WORD)
-			{
+	if (ullOffset + static_cast<unsigned>(ESize::SIZE_WORD) > ullDataSize) {
+		for (const auto& iter : m_vecProp) {
+			if (iter.eSize >= ESize::SIZE_WORD) {
 				iter.pProp->SetValue(L"0");
 				iter.pProp->Enable(FALSE);
 			}
@@ -236,11 +233,9 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	//Miscellaneous group.
 	auto pMisc = new CMFCPropertyGridProperty(L"Misc:");
 	for (const auto& iter : m_vecProp)
-		if (iter.eGroup == EGroup::MISC && !iter.fChild)
-		{
+		if (iter.eGroup == EGroup::MISC && !iter.fChild) {
 			pMisc->AddSubItem(iter.pProp);
-			if (iter.eName == EName::NAME_GUID)
-			{
+			if (iter.eName == EName::NAME_GUID) {
 				//GUID Time sub-group.
 				auto pGUIDsub = new CMFCPropertyGridProperty(L"GUID Time (built in GUID):");
 				if (const auto iterTime = std::find_if(m_vecProp.begin(), m_vecProp.end(),
@@ -256,15 +251,12 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 
 void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	if (nState == WA_INACTIVE)
-	{
+	if (nState == WA_INACTIVE) {
 		m_ullDataSize = 0; //Remove Data Interpreter data highlighting when its window is inactive.
 		RedrawHexCtrl();
 	}
-	else
-	{
-		if (m_pHexCtrl->IsCreated())
-		{
+	else {
+		if (m_pHexCtrl->IsCreated()) {
 			const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
 			m_dwDateFormat = dwFormat;
 			m_wchDateSepar = wchSepar;
@@ -293,8 +285,7 @@ void CHexDlgDataInterp::OnOK()
 	std::wstring_view wstr = refStrProp.GetString();
 
 	bool fSuccess { false };
-	switch (itGridData->eName)
-	{
+	switch (itGridData->eName) {
 	case EName::NAME_BINARY:
 		fSuccess = SetDataBINARY(wstr);
 		break;
@@ -397,16 +388,14 @@ void CHexDlgDataInterp::OnDestroy()
 
 BOOL CHexDlgDataInterp::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
-	if (wParam == IDC_HEXCTRL_DATAINTERP_PROPDATA)
-	{
+	if (wParam == IDC_HEXCTRL_DATAINTERP_PROPDATA) {
 		const auto* const pHdr = reinterpret_cast<NMHDR*>(lParam);
 		if (pHdr->code != MSG_PROPGRIDCTRL_SELCHANGED)
 			return FALSE;
 
 		if (const auto pData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-			[this](const SGRIDDATA& refData)
-			{ return refData.pProp == m_stCtrlGrid.GetCurrentProp(); }); pData != m_vecProp.end())
-		{
+			[this](const SGRIDDATA& refData) { return refData.pProp == m_stCtrlGrid.GetCurrentProp(); }); 
+			pData != m_vecProp.end()) {
 			m_ullDataSize = static_cast<ULONGLONG>(pData->eSize);
 			RedrawHexCtrl();
 		}
@@ -417,8 +406,7 @@ BOOL CHexDlgDataInterp::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 
 LRESULT CHexDlgDataInterp::OnPropertyChanged(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam == IDC_HEXCTRL_DATAINTERP_PROPDATA)
-	{
+	if (wParam == IDC_HEXCTRL_DATAINTERP_PROPDATA) {
 		m_pPropChanged = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
 		OnOK();
 	}
@@ -846,8 +834,7 @@ void CHexDlgDataInterp::ShowValueTIME32(DWORD dword)const
 
 	//Unix times are signed and value before 1st January 1970 is not considered valid
 	//This is apparently because early complilers didn't support unsigned types. _mktime32() has the same limit
-	if (lTime32 >= 0)
-	{
+	if (lTime32 >= 0) {
 		//Add seconds from epoch time
 		LARGE_INTEGER Time;
 		Time.HighPart = m_ulFileTime1970_HIGH;
@@ -873,8 +860,7 @@ void CHexDlgDataInterp::ShowValueMSDOSTIME(DWORD dword)const
 	FILETIME ftMSDOS;
 	UMSDOSDATETIME msdosDateTime;
 	msdosDateTime.dwTimeDate = dword;
-	if (DosDateTimeToFileTime(msdosDateTime.TimeDate.wDate, msdosDateTime.TimeDate.wTime, &ftMSDOS))
-	{
+	if (DosDateTimeToFileTime(msdosDateTime.TimeDate.wDate, msdosDateTime.TimeDate.wTime, &ftMSDOS)) {
 		wstrTime = FileTimeToString(ftMSDOS, m_dwDateFormat, m_wchDateSepar);
 	}
 
@@ -891,8 +877,7 @@ void CHexDlgDataInterp::ShowValueMSDTTMTIME(DWORD dword)const
 	dttm.dwValue = dword;
 	if (dttm.components.dayofmonth > 0 && dttm.components.dayofmonth < 32
 		&& dttm.components.hour < 24 && dttm.components.minute < 60
-		&& dttm.components.month>0 && dttm.components.month < 13 && dttm.components.weekday < 7)
-	{
+		&& dttm.components.month>0 && dttm.components.month < 13 && dttm.components.weekday < 7) {
 		SYSTEMTIME stSysTime { };
 		stSysTime.wYear = 1900 + static_cast<WORD>(dttm.components.year);
 		stSysTime.wMonth = dttm.components.month;
@@ -941,8 +926,7 @@ void CHexDlgDataInterp::ShowValueTIME64(QWORD qword)const
 
 	//Unix times are signed and value before 1st January 1970 is not considered valid
 	//This is apparently because early complilers didn't support unsigned types. _mktime64() has the same limit
-	if (llTime64 >= 0)
-	{
+	if (llTime64 >= 0) {
 		//Add seconds from epoch time
 		LARGE_INTEGER Time;
 		Time.HighPart = m_ulFileTime1970_HIGH;
@@ -1017,8 +1001,7 @@ void CHexDlgDataInterp::ShowValueJAVATIME(QWORD qword)const
 void CHexDlgDataInterp::ShowValueGUID(UDQWORD dqword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_GUID; }); iter != m_vecProp.end())
-	{
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_GUID; }); iter != m_vecProp.end()) {
 		const auto wstr = std::format(L"{{{:0>8x}-{:0>4x}-{:0>4x}-{:0>2x}{:0>2x}-{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}}}",
 			dqword.gGUID.Data1, dqword.gGUID.Data2, dqword.gGUID.Data3, dqword.gGUID.Data4[0],
 			dqword.gGUID.Data4[1], dqword.gGUID.Data4[2], dqword.gGUID.Data4[3], dqword.gGUID.Data4[4],
@@ -1035,8 +1018,7 @@ void CHexDlgDataInterp::ShowValueGUIDTIME(UDQWORD dqword)const
 	std::wstring wstrTime = L"N/A";
 	const unsigned short unGuidVersion = (dqword.gGUID.Data3 & 0xf000) >> 12;
 
-	if (unGuidVersion == 1)
-	{
+	if (unGuidVersion == 1) {
 		LARGE_INTEGER qwGUIDTime;
 		qwGUIDTime.LowPart = dqword.gGUID.Data1;
 		qwGUIDTime.HighPart = dqword.gGUID.Data3 & 0x0fff;

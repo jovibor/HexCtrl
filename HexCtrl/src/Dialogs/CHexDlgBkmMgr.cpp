@@ -98,8 +98,7 @@ void CHexDlgBkmMgr::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	bool fMsgHere { true }; //Process message here, and not pass further, to parent.
-	switch (static_cast<EMenuID>(LOWORD(wParam)))
-	{
+	switch (static_cast<EMenuID>(LOWORD(wParam))) {
 	case EMenuID::IDM_BKMMGR_NEW:
 	{
 		HEXBKM hbs;
@@ -161,8 +160,7 @@ void CHexDlgBkmMgr::OnClickRadioHexDec()
 BOOL CHexDlgBkmMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_BKMMGR_LIST) {
-		switch (pNMI->hdr.code)
-		{
+		switch (pNMI->hdr.code) {
 		case LVN_COLUMNCLICK: //ON_NOTIFY(LVN_COLUMNCLICK...) macro doesn't seem to work, for no obvious reason.
 			if (!IsVirtual())
 				SortBookmarks();
@@ -190,8 +188,7 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	ULONGLONG ullOffset { 0 };
 	ULONGLONG ullSize { 0 };
-	switch (pItem->iSubItem)
-	{
+	switch (pItem->iSubItem) {
 	case 0: //Index number.
 		*std::format_to(pItem->pszText, L"{}", iItemID + 1) = L'\0';
 		break;
@@ -294,13 +291,12 @@ ULONGLONG CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)
 	if (m_pVirtual) {
 		ullID = m_pVirtual->AddBkm(hbs, fRedraw);
 	}
-	else
-	{
+	else {
 		ullID = 1; //Bookmarks' ID starts from 1.
 
 		if (const auto iter = std::max_element(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-			[](const HEXBKM& ref1, const HEXBKM& ref2)
-			{ return ref1.ullID < ref2.ullID; }); iter != m_deqBookmarks.end()) {
+			[](const HEXBKM& ref1, const HEXBKM& ref2) {
+				return ref1.ullID < ref2.ullID; }); iter != m_deqBookmarks.end()) {
 			ullID = iter->ullID + 1; //Increasing next bookmark's ID by 1.
 		}
 
@@ -424,10 +420,9 @@ auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM
 	}
 	else {
 		if (const auto rIter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
-			[ullOffset](const HEXBKM& ref)
-			{ return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
-				[ullOffset](const HEXSPAN& refV)
-				{ return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
+			[ullOffset](const HEXBKM& ref) { return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
+				[ullOffset](const HEXSPAN& refV) {
+					return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
 			}); rIter != m_deqBookmarks.rend()) {
 			pBkm = &*rIter;
 		}
@@ -456,10 +451,9 @@ void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset)
 
 		//Searching from the end, to remove last added bookmark if few at the given offset.
 		if (const auto rIter = std::find_if(m_deqBookmarks.rbegin(), m_deqBookmarks.rend(),
-			[ullOffset](const HEXBKM& ref)
-			{ return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
-				[ullOffset](const HEXSPAN& refV)
-				{ return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
+			[ullOffset](const HEXBKM& ref) { return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
+				[ullOffset](const HEXSPAN& refV) {
+					return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); });
 			}); rIter != m_deqBookmarks.rend()) {
 			m_deqBookmarks.erase(std::next(rIter).base());
 		}
@@ -502,24 +496,20 @@ void CHexDlgBkmMgr::SortData(int iColumn, bool fAscending)
 {
 	//iColumn is column number in CHexDlgBkmMgr::m_pListMain.
 	std::sort(m_deqBookmarks.begin(), m_deqBookmarks.end(),
-		[iColumn, fAscending](const HEXBKM& st1, const HEXBKM& st2)
-		{
+		[iColumn, fAscending](const HEXBKM& st1, const HEXBKM& st2) {
 			int iCompare { };
-			switch (iColumn)
-			{
+			switch (iColumn) {
 			case 0:
 				break;
 			case 1: //Offset.
-				if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
-				{
+				if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
 					const auto ullOffset1 = st1.vecSpan.front().ullOffset;
 					const auto ullOffset2 = st2.vecSpan.front().ullOffset;
 					iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
 				}
 				break;
 			case 2: //Size.
-				if (!st1.vecSpan.empty() && !st2.vecSpan.empty())
-				{
+				if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
 					auto ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
 						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
 					auto ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,

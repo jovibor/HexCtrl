@@ -108,8 +108,8 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		void SetHdrImageList(CImageList* pList)override;
 		void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)override;
 		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode enSortMode)override;
-		DECLARE_DYNAMIC(CListEx)
-		DECLARE_MESSAGE_MAP()
+		DECLARE_DYNAMIC(CListEx);
+		DECLARE_MESSAGE_MAP();
 	private:
 		struct SCOLROWCLR;
 		struct SITEMDATA;
@@ -280,8 +280,7 @@ CListExHdr::~CListExHdr() = default;
 
 void CListExHdr::DeleteColumn(int iIndex)
 {
-	if (const auto ID = ColumnIndexToID(iIndex); ID > 0)
-	{
+	if (const auto ID = ColumnIndexToID(iIndex); ID > 0) {
 		m_umapColors.erase(ID);
 		m_umapIcons.erase(ID);
 		m_umapIsSort.erase(ID);
@@ -306,11 +305,9 @@ void CListExHdr::HideColumn(int iIndex, bool fHide)
 	HDITEMW hdi { HDI_WIDTH };
 	GetItem(iIndex, &hdi);
 
-	if (fHide) //Hide column.
-	{
+	if (fHide) { //Hide column.
 		m_umapHidden[ID].iPrevWidth = hdi.cxy;
-		if (const auto iter = std::find(vecInt.begin(), vecInt.end(), iIndex); iter != vecInt.end())
-		{
+		if (const auto iter = std::find(vecInt.begin(), vecInt.end(), iIndex); iter != vecInt.end()) {
 			m_umapHidden[ID].iPrevPos = static_cast<int>(iter - vecInt.begin());
 			std::rotate(iter, iter + 1, vecInt.end()); //Moving hiding column to the end of the column array.
 		}
@@ -319,14 +316,12 @@ void CListExHdr::HideColumn(int iIndex, bool fHide)
 		hdi.cxy = 0;
 		SetItem(iIndex, &hdi);
 	}
-	else //Show column.
-	{
+	else { //Show column.
 		const auto opt = IsHidden(ID);
 		if (!opt) //No such column is hidden.
 			return;
 
-		if (const auto iterRight = std::find(vecInt.rbegin(), vecInt.rend(), iIndex); iterRight != vecInt.rend())
-		{
+		if (const auto iterRight = std::find(vecInt.rbegin(), vecInt.rend(), iIndex); iterRight != vecInt.rend()) {
 			const auto iterMid = iterRight + 1;
 			const auto iterEnd = vecInt.rend() - (*opt)->iPrevPos;
 			if (iterMid < iterEnd)
@@ -411,8 +406,7 @@ void CListExHdr::SetColumnIcon(int iColumn, const LISTEXHDRICON & stIcon)
 
 	if (stIcon.iIndex == -1) //If column already has icon.
 		m_umapIcons.erase(ID);
-	else
-	{
+	else {
 		SHDRICON stHdrIcon;
 		stHdrIcon.stIcon = stIcon;
 		m_umapIcons[ID] = stHdrIcon;
@@ -439,8 +433,7 @@ void CListExHdr::SetSortable(bool fSortable)
 void CListExHdr::SetSortArrow(int iColumn, bool fAscending)
 {
 	UINT ID { 0 };
-	if (iColumn >= 0)
-	{
+	if (iColumn >= 0) {
 		ID = ColumnIndexToID(iColumn);
 		assert(ID > 0);
 		if (ID == 0)
@@ -470,8 +463,7 @@ UINT CListExHdr::ColumnIndexToID(int iIndex)const
 int CListExHdr::ColumnIDToIndex(UINT uID)const
 {
 	int iRet { -1 };
-	for (int i = 0; i < GetItemCount(); ++i)
-	{
+	for (int i = 0; i < GetItemCount(); ++i) {
 		HDITEMW hdi { HDI_LPARAM };
 		GetItem(i, &hdi);
 		if (static_cast<UINT>(hdi.lParam) == uID)
@@ -508,8 +500,7 @@ void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed,
 	GetItem(iItem, &hdItem);
 
 	UINT uFormat { };
-	switch (hdItem.fmt & HDF_JUSTIFYMASK)
-	{
+	switch (hdItem.fmt & HDF_JUSTIFYMASK) {
 	case HDF_LEFT:
 		uFormat = DT_LEFT;
 		break;
@@ -525,8 +516,7 @@ void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed,
 
 	//Draw icon for column, if any.
 	long lIndentTextLeft { 4 }; //Left text indent.
-	if (const auto pData = HasIcon(ID); pData != nullptr) //If column has an icon.
-	{
+	if (const auto pData = HasIcon(ID); pData != nullptr) { //If column has an icon.
 		const auto pImgList = GetImageList(LVSIL_NORMAL);
 		int iCX { };
 		int iCY { };
@@ -537,8 +527,7 @@ void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed,
 
 	constexpr long lIndentTextRight = 4;
 	CRect rcText { rcOrig.left + lIndentTextLeft, rcOrig.top, rcOrig.right - lIndentTextRight, rcOrig.bottom };
-	if (StrStrW(warrHdrText, L"\n"))
-	{	//If it's multiline text, first — calculate rect for the text,
+	if (StrStrW(warrHdrText, L"\n")) {	//If it's multiline text, first — calculate rect for the text,
 		//with DT_CALCRECT flag (not drawing anything),
 		//and then calculate rect for final vertical text alignment.
 		CRect rcCalcText;
@@ -550,13 +539,11 @@ void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed,
 		rDC.DrawTextW(warrHdrText, &rcText, uFormat | DT_VCENTER | DT_SINGLELINE);
 
 	//Draw sortable triangle (arrow).
-	if (m_fSortable && IsSortable(ID) && ID == m_uSortColumn)
-	{
+	if (m_fSortable && IsSortable(ID) && ID == m_uSortColumn) {
 		rDC.SelectObject(m_penLight);
 		const auto iOffset = rcOrig.Height() / 4;
 
-		if (m_fSortAscending)
-		{
+		if (m_fSortAscending) {
 			//Draw the UP arrow.
 			rDC.MoveTo(rcOrig.right - 2 * iOffset, iOffset);
 			rDC.LineTo(rcOrig.right - iOffset, rcOrig.bottom - iOffset - 1);
@@ -565,8 +552,7 @@ void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed,
 			rDC.MoveTo(rcOrig.right - 3 * iOffset - 1, rcOrig.bottom - iOffset - 1);
 			rDC.LineTo(rcOrig.right - 2 * iOffset, iOffset - 1);
 		}
-		else
-		{
+		else {
 			//Draw the DOWN arrow.
 			rDC.MoveTo(rcOrig.right - iOffset - 1, iOffset);
 			rDC.LineTo(rcOrig.right - 2 * iOffset - 1, rcOrig.bottom - iOffset);
@@ -581,8 +567,7 @@ void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed,
 	rDC.SelectObject(m_penGrid);
 	rDC.MoveTo(rcOrig.TopLeft());
 	rDC.LineTo(rcOrig.left, rcOrig.bottom);
-	if (iItem == GetItemCount() - 1) //Last item.
-	{
+	if (iItem == GetItemCount() - 1) { //Last item.
 		rDC.MoveTo(rcOrig.right, rcOrig.top);
 		rDC.LineTo(rcOrig.BottomRight());
 	}
@@ -604,11 +589,9 @@ void CListExHdr::OnLButtonDown(UINT nFlags, CPoint point)
 	HDHITTESTINFO ht { };
 	ht.pt = point;
 	HitTest(&ht);
-	if (ht.iItem >= 0)
-	{
+	if (ht.iItem >= 0) {
 		const auto ID = ColumnIndexToID(ht.iItem);
-		if (const auto pData = HasIcon(ID); pData != nullptr && pData->stIcon.fClickable && !IsHidden(ID))
-		{
+		if (const auto pData = HasIcon(ID); pData != nullptr && pData->stIcon.fClickable && !IsHidden(ID)) {
 			int iCX { };
 			int iCY { };
 			ImageList_GetIconSize(GetImageList()->m_hImageList, &iCX, &iCY);
@@ -616,8 +599,7 @@ void CListExHdr::OnLButtonDown(UINT nFlags, CPoint point)
 			GetItemRect(ht.iItem, rcColumn);
 			CRect rcIcon(rcColumn.TopLeft() + pData->stIcon.pt, SIZE { iCX, iCY });
 
-			if (rcIcon.PtInRect(point))
-			{
+			if (rcIcon.PtInRect(point)) {
 				pData->fLMPressed = true;
 				return; //Do not invoke default handler.
 			}
@@ -632,10 +614,8 @@ void CListExHdr::OnLButtonUp(UINT nFlags, CPoint point)
 	HDHITTESTINFO ht { };
 	ht.pt = point;
 	HitTest(&ht);
-	if (ht.iItem >= 0)
-	{
-		for (auto& iter : m_umapIcons)
-		{
+	if (ht.iItem >= 0) {
+		for (auto& iter : m_umapIcons) {
 			if (!iter.second.fLMPressed)
 				continue;
 
@@ -646,13 +626,11 @@ void CListExHdr::OnLButtonUp(UINT nFlags, CPoint point)
 			GetItemRect(ht.iItem, rcColumn);
 			CRect rcIcon(rcColumn.TopLeft() + iter.second.stIcon.pt, SIZE { iCX, iCY });
 
-			if (rcIcon.PtInRect(point))
-			{
+			if (rcIcon.PtInRect(point)) {
 				for (auto& iterData : m_umapIcons)
 					iterData.second.fLMPressed = false; //Remove fLMPressed flag from all columns.
 
-				if (auto pParent = GetParent(); pParent != nullptr) //List control pointer.
-				{
+				if (auto pParent = GetParent(); pParent != nullptr) { //List control pointer.
 					const auto uCtrlId = static_cast<UINT>(pParent->GetDlgCtrlID());
 					NMHEADERW hdr { { pParent->m_hWnd, uCtrlId, LISTEX_MSG_HDRICONCLICK } };
 					hdr.iItem = ColumnIDToIndex(iter.first);
@@ -784,8 +762,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 		return false;
 
 	auto dwStyle = static_cast<LONG_PTR>(lcs.dwStyle);
-	if (lcs.fDialogCtrl)
-	{
+	if (lcs.fDialogCtrl) {
 		SubclassDlgItem(lcs.uID, lcs.pParent);
 		dwStyle = GetWindowLongPtrW(m_hWnd, GWL_STYLE);
 		SetWindowLongPtrW(m_hWnd, GWL_STYLE, dwStyle | LVS_OWNERDRAWFIXED | LVS_REPORT);
@@ -822,8 +799,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 	m_stWndTtLink.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stTInfoLink));
 	m_stWndTtLink.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 
-	if (m_fHighLatency) //Tooltip for HighLatency mode.
-	{
+	if (m_fHighLatency) { //Tooltip for HighLatency mode.
 		if (!m_stWndTtRow.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
 			CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr))
 			return false;
@@ -850,24 +826,20 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 	ReleaseDC(pDC);
 
 	LOGFONT lfList; //Font for a List.
-	if (lcs.pListLogFont == nullptr)
-	{
+	if (lcs.pListLogFont == nullptr) {
 		lfList = ncm.lfMessageFont;
 		lfList.lfHeight = -MulDiv(10, m_iLOGPIXELSY, 72); //Font height for list.
 	}
-	else
-	{
+	else {
 		lfList = *lcs.pListLogFont;
 	}
 
 	LOGFONT lfHdr; //Font for a Header.
-	if (lcs.pHdrLogFont == nullptr)
-	{
+	if (lcs.pHdrLogFont == nullptr) {
 		lfHdr = ncm.lfMessageFont;
 		lfHdr.lfHeight = -MulDiv(9, m_iLOGPIXELSY, 72); //Font height for a header.
 	}
-	else
-	{
+	else {
 		lfHdr = *lcs.pHdrLogFont;
 	}
 
@@ -913,8 +885,7 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 	const auto wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn);
 
 	int iCompare { };
-	switch (enSortMode)
-	{
+	switch (enSortMode) {
 	case EListExSortMode::SORT_LEX:
 		iCompare = wstrItem1.Compare(wstrItem2);
 		break;
@@ -929,15 +900,13 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 	}
 
 	int iResult = 0;
-	if (pListCtrl->GetSortAscending())
-	{
+	if (pListCtrl->GetSortAscending()) {
 		if (iCompare < 0)
 			iResult = -1;
 		else if (iCompare > 0)
 			iResult = 1;
 	}
-	else
-	{
+	else {
 		if (iCompare < 0)
 			iResult = 1;
 		else if (iCompare > 0)
@@ -1006,8 +975,7 @@ ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)const
 	const auto ID = MapIndexToID(iItem);
 	const auto it = m_umapCellData.find(ID);
 
-	if (it != m_umapCellData.end())
-	{
+	if (it != m_umapCellData.end()) {
 		const auto itInner = it->second.find(iSubItem);
 
 		//If subitem id found.
@@ -1083,8 +1051,7 @@ int CListEx::InsertColumn(int nCol, const LVCOLUMN* pColumn)
 
 	//Checking that the new column ID (nCol) not greater than the count of 
 	//the header items minus count of the already hidden columns.
-	if (refHdr.GetHiddenCount() > 0 && nCol >= static_cast<int>(refHdr.GetItemCount() - nHiddenCount))
-	{
+	if (refHdr.GetHiddenCount() > 0 && nCol >= static_cast<int>(refHdr.GetItemCount() - nHiddenCount)) {
 		nCol = refHdr.GetItemCount() - nHiddenCount;
 	}
 
@@ -1114,8 +1081,7 @@ int CListEx::InsertColumn(int nCol, LPCTSTR lpszColumnHeading, int nFormat, int 
 
 	//Checking that the new column ID (nCol) not greater than the count of 
 	//the header items minus count of the already hidden columns.
-	if (refHdr.GetHiddenCount() > 0 && nCol >= static_cast<int>(refHdr.GetItemCount() - nHiddenCount))
-	{
+	if (refHdr.GetHiddenCount() > 0 && nCol >= static_cast<int>(refHdr.GetItemCount() - nHiddenCount)) {
 		nCol = refHdr.GetItemCount() - nHiddenCount;
 	}
 
@@ -1157,13 +1123,11 @@ void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clr
 	const auto ID = MapIndexToID(static_cast<UINT>(iItem));
 
 	//If there is no color for such item/subitem we just set it.
-	if (const auto it = m_umapCellColor.find(ID); it == m_umapCellColor.end())
-	{	//Initializing inner map.
+	if (const auto it = m_umapCellColor.find(ID); it == m_umapCellColor.end()) {	//Initializing inner map.
 		std::unordered_map<int, LISTEXCOLOR> umapInner { { iSubItem, { clrBk, clrText } } };
 		m_umapCellColor.insert({ ID, std::move(umapInner) });
 	}
-	else
-	{
+	else {
 		const auto itInner = it->second.find(iSubItem);
 
 		if (itInner == it->second.end())
@@ -1188,8 +1152,7 @@ void CListEx::SetCellData(int iItem, int iSubItem, ULONGLONG ullData)
 	//If there is no data for such item/subitem we just set it.
 	if (const auto it = m_umapCellData.find(ID); it == m_umapCellData.end())
 		m_umapCellData.insert({ ID, { { iSubItem, ullData } } });
-	else
-	{
+	else {
 		if (const auto itInner = it->second.find(iSubItem); itInner == it->second.end())
 			it->second.insert({ iSubItem, ullData });
 		else //If there is already exist this cell's data -> changing.
@@ -1209,8 +1172,7 @@ void CListEx::SetCellIcon(int iItem, int iSubItem, int iIndex)
 	//If there is no icon index for such item we just set it.
 	if (const auto it = m_umapCellIcon.find(ID); it == m_umapCellIcon.end())
 		m_umapCellIcon.insert({ ID, { { iSubItem, iIndex } } });
-	else
-	{
+	else {
 		if (const auto itInner = it->second.find(iSubItem); itInner == it->second.end())
 			it->second.insert({ iSubItem, iIndex });
 		else
@@ -1228,27 +1190,22 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTool
 	const auto ID = MapIndexToID(iItem);
 
 	//If there is no tooltip for such item/subitem we just set it.
-	if (const auto it = m_umapCellTt.find(ID); it == m_umapCellTt.end())
-	{
-		if (!wstrTooltip.empty() || !wstrCaption.empty())
-		{	//Initializing inner map.
+	if (const auto it = m_umapCellTt.find(ID); it == m_umapCellTt.end()) {
+		if (!wstrTooltip.empty() || !wstrCaption.empty()) {	//Initializing inner map.
 			std::unordered_map<int, LISTEXTOOLTIP> umapInner {
 				{ iSubItem, { std::wstring { wstrTooltip }, std::wstring { wstrCaption } } }
 			};
 			m_umapCellTt.insert({ ID, std::move(umapInner) });
 		}
 	}
-	else
-	{
+	else {
 		//If there is Item's tooltip but no Subitem's tooltip
 		//inserting new Subitem into inner map.
-		if (const auto itInner = it->second.find(iSubItem);	itInner == it->second.end())
-		{
+		if (const auto itInner = it->second.find(iSubItem);	itInner == it->second.end()) {
 			if (!wstrTooltip.empty() || !wstrCaption.empty())
 				it->second.insert({ iSubItem, { std::wstring { wstrTooltip }, std::wstring { wstrCaption } } });
 		}
-		else
-		{	//If there is already exist this Item-Subitem's tooltip:
+		else {	//If there is already exist this Item-Subitem's tooltip:
 			//change or erase it, depending on pwszTooltip emptiness.
 			if (!wstrTooltip.empty())
 				itInner->second = { std::wstring { wstrTooltip }, std::wstring { wstrCaption } };
@@ -1383,8 +1340,7 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 	if (pDIS->itemID == -1)
 		return;
 
-	switch (pDIS->itemAction)
-	{
+	switch (pDIS->itemAction) {
 	case ODA_SELECT:
 	case ODA_DRAWENTIRE:
 	{
@@ -1392,8 +1348,7 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 		const auto clrBkCurrRow = (pDIS->itemID % 2) ? m_stColors.clrListBkRow2 : m_stColors.clrListBkRow1;
 		const auto iColumns = GetHeaderCtrl().GetItemCount();
 
-		for (auto iColumn = 0; iColumn < iColumns; ++iColumn)
-		{
+		for (auto iColumn = 0; iColumn < iColumns; ++iColumn) {
 			if (GetHeaderCtrl().IsColumnHidden(iColumn))
 				continue;
 
@@ -1403,30 +1358,24 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 
 			//Subitems' draw routine. 
 			//Colors depending on whether subitem selected or not, and has tooltip or not.
-			if (pDIS->itemState & ODS_SELECTED)
-			{
+			if (pDIS->itemState & ODS_SELECTED) {
 				clrText = m_stColors.clrListTextSel;
 				clrBk = m_stColors.clrListBkSel;
 				clrTextLink = m_stColors.clrListTextLinkSel;
 			}
-			else
-			{
+			else {
 				clrTextLink = m_stColors.clrListTextLink;
 
-				if (const auto opt = HasColor(pDIS->itemID, iColumn); opt)
-				{
+				if (const auto opt = HasColor(pDIS->itemID, iColumn); opt) {
 					clrText = (*opt)->clrText;
 					clrBk = (*opt)->clrBk;
 				}
-				else
-				{
-					if (HasTooltip(pDIS->itemID, iColumn))
-					{
+				else {
+					if (HasTooltip(pDIS->itemID, iColumn)) {
 						clrText = m_stColors.clrListTextCellTt;
 						clrBk = m_stColors.clrListBkCellTt;
 					}
-					else
-					{
+					else {
 						clrText = m_stColors.clrListText;
 						clrBk = clrBkCurrRow;
 					}
@@ -1441,22 +1390,18 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 			if (iColumn != 0) //Not needed for item itself (not subitem).
 				rcText.left += 4;
 
-			for (const auto& iter : ParseItemText(pDIS->itemID, iColumn))
-			{
-				if (iter.iIconIndex > -1)
-				{
+			for (const auto& iter : ParseItemText(pDIS->itemID, iColumn)) {
+				if (iter.iIconIndex > -1) {
 					GetImageList(LVSIL_NORMAL)->DrawEx(
 						pDC, iter.iIconIndex, { iter.rect.left, iter.rect.top }, { }, CLR_NONE, CLR_NONE, ILD_NORMAL);
 					continue;
 				}
-				if (iter.fLink)
-				{
+				if (iter.fLink) {
 					pDC->SetTextColor(clrTextLink);
 					if (m_fLinksUnderline)
 						pDC->SelectObject(m_fontListUnderline);
 				}
-				else
-				{
+				else {
 					pDC->SetTextColor(clrText);
 					pDC->SelectObject(m_fontList);
 				}
@@ -1515,11 +1460,9 @@ auto CListEx::HasColor(int iItem, int iSubItem)->std::optional<PLISTEXCOLOR>
 		if (nmii.lParam != 0)
 			opt = reinterpret_cast<PLISTEXCOLOR>(nmii.lParam);
 	}
-	else
-	{
+	else {
 		const auto ID = MapIndexToID(static_cast<UINT>(iItem));
-		if (const auto itItem = m_umapCellColor.find(ID); itItem != m_umapCellColor.end())
-		{
+		if (const auto itItem = m_umapCellColor.find(ID); itItem != m_umapCellColor.end()) {
 			const auto itSubItem = itItem->second.find(iSubItem);
 
 			//If subitem id found.
@@ -1527,8 +1470,7 @@ auto CListEx::HasColor(int iItem, int iSubItem)->std::optional<PLISTEXCOLOR>
 				opt = &itSubItem->second;
 		}
 
-		if (!opt)
-		{
+		if (!opt) {
 			const auto itColumn = m_umapColumnColor.find(iSubItem);
 			const auto itRow = m_umapRowColor.find(ID);
 
@@ -1560,8 +1502,7 @@ auto CListEx::HasTooltip(int iItem, int iSubItem)->std::optional<PLISTEXTOOLTIP>
 		if (nmii.lParam != 0)
 			opt = reinterpret_cast<PLISTEXTOOLTIP>(nmii.lParam);
 	}
-	else
-	{
+	else {
 		const auto ID = MapIndexToID(iItem);
 		if (const auto itItem = m_umapCellTt.find(ID); itItem != m_umapCellTt.end())
 			if (const auto itSubItem = itItem->second.find(iSubItem); itSubItem != itItem->second.end())
@@ -1588,8 +1529,7 @@ int CListEx::HasIcon(int iItem, int iSubItem)
 		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlID), reinterpret_cast<LPARAM>(&nmii));
 		iRet = static_cast<int>(nmii.lParam);
 	}
-	else
-	{
+	else {
 		const auto ID = MapIndexToID(iItem);
 		if (const auto it = m_umapCellIcon.find(ID); it != m_umapCellIcon.end())
 			if (const auto itInner = it->second.find(iSubItem); itInner != it->second.end())
@@ -1617,8 +1557,7 @@ void CListEx::MeasureItem(LPMEASUREITEMSTRUCT lpMIS)
 
 BOOL CListEx::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
-	if (nFlags == MK_CONTROL)
-	{
+	if (nFlags == MK_CONTROL) {
 		FontSizeIncDec(zDelta > 0);
 		return TRUE;
 	}
@@ -1635,12 +1574,9 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 
 	bool fLink { false }; //Cursor at link's rect area.
 	auto vecText = ParseItemText(hi.iItem, hi.iSubItem);
-	if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](SITEMDATA& iter)
-		{ return iter.fLink && iter.rect.PtInRect(pt); }); iterFind != vecText.end())
-	{
+	if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](SITEMDATA& iter) { return iter.fLink && iter.rect.PtInRect(pt); }); iterFind != vecText.end()) {
 		fLink = true;
-		if (m_fLinkTooltip && !m_fLDownAtLink && m_rcLinkCurr != iterFind->rect)
-		{
+		if (m_fLinkTooltip && !m_fLDownAtLink && m_rcLinkCurr != iterFind->rect) {
 			TtLinkHide();
 			m_rcLinkCurr = iterFind->rect;
 			m_stCurrLink.iItem = hi.iItem;
@@ -1654,8 +1590,7 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 	SetCursor(fLink ? m_cursorHand : m_cursorDefault);
 
 	//Link's tooltip area is under cursor.
-	if (fLink)
-	{
+	if (fLink) {
 		//If there is cell's tooltip atm hide it.
 		if (m_fTtCellShown)
 			TtCellHide();
@@ -1669,11 +1604,9 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 	if (m_fTtLinkShown)
 		TtLinkHide();
 
-	if (auto opt = HasTooltip(hi.iItem, hi.iSubItem); opt)
-	{
+	if (auto opt = HasTooltip(hi.iItem, hi.iSubItem); opt) {
 		//Check if cursor is still in the same cell's rect. If so - just leave.
-		if (m_stCurrCell.iItem != hi.iItem || m_stCurrCell.iSubItem != hi.iSubItem)
-		{
+		if (m_stCurrCell.iItem != hi.iItem || m_stCurrCell.iSubItem != hi.iSubItem) {
 			m_fTtCellShown = true;
 			m_stCurrCell.iItem = hi.iItem;
 			m_stCurrCell.iSubItem = hi.iSubItem;
@@ -1689,12 +1622,10 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 			SetTimer(ID_TIMER_TT_CELL_CHECK, 200, nullptr);
 		}
 	}
-	else
-	{
+	else {
 		if (m_fTtCellShown)
 			TtCellHide();
-		else
-		{
+		else {
 			m_stCurrCell.iItem = -1;
 			m_stCurrCell.iSubItem = -1;
 		}
@@ -1705,12 +1636,9 @@ void CListEx::OnLButtonDown(UINT nFlags, CPoint pt)
 {
 	bool fLinkDown { false };
 	LVHITTESTINFO hi { pt };
-	if (SubItemHitTest(&hi) != -1)
-	{
+	if (SubItemHitTest(&hi) != -1) {
 		auto vecText = ParseItemText(hi.iItem, hi.iSubItem);
-		if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](SITEMDATA& iter)
-			{ return iter.fLink && iter.rect.PtInRect(pt); }); iterFind != vecText.end())
-		{
+		if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](SITEMDATA& iter) { return iter.fLink && iter.rect.PtInRect(pt); }); iterFind != vecText.end()) {
 			m_fLDownAtLink = true;
 			m_rcLinkCurr = iterFind->rect;
 			fLinkDown = true;
@@ -1724,21 +1652,17 @@ void CListEx::OnLButtonDown(UINT nFlags, CPoint pt)
 void CListEx::OnLButtonUp(UINT nFlags, CPoint pt)
 {
 	bool fLinkUp { false };
-	if (m_fLDownAtLink)
-	{
+	if (m_fLDownAtLink) {
 		LVHITTESTINFO hi { };
 		hi.pt = pt;
 		ListView_SubItemHitTest(m_hWnd, &hi);
-		if (hi.iSubItem == -1 || hi.iItem == -1)
-		{
+		if (hi.iSubItem == -1 || hi.iItem == -1) {
 			m_fLDownAtLink = false;
 			return;
 		}
 
 		auto vecText = ParseItemText(hi.iItem, hi.iSubItem);
-		if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](SITEMDATA& iter)
-			{ return iter.fLink && iter.rect == m_rcLinkCurr; }); iterFind != vecText.end())
-		{
+		if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](SITEMDATA& iter) { return iter.fLink && iter.rect == m_rcLinkCurr; }); iterFind != vecText.end()) {
 			m_rcLinkCurr.SetRectEmpty();
 			fLinkUp = true;
 			const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
@@ -1773,8 +1697,7 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 
 	//Checking if mouse left list's subitem rect,
 	//if so — hiding tooltip and killing timer.
-	switch (nIDEvent)
-	{
+	switch (nIDEvent) {
 	case ID_TIMER_TT_CELL_CHECK:
 		//If cursor is still hovers subitem then do nothing.
 		if (m_stCurrCell.iItem != hitInfo.iItem || m_stCurrCell.iSubItem != hitInfo.iSubItem)
@@ -1786,8 +1709,7 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 			TtLinkHide();
 		break;
 	case ID_TIMER_TT_LINK_ACTIVATE:
-		if (m_rcLinkCurr.PtInRect(ptClient))
-		{
+		if (m_rcLinkCurr.PtInRect(ptClient)) {
 			m_fTtLinkShown = true;
 
 			m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoLink));
@@ -1844,15 +1766,12 @@ void CListEx::OnPaint()
 
 void CListEx::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
-	if (m_fVirtual && m_fHighLatency)
-	{
-		if (nSBCode != SB_THUMBTRACK)
-		{
+	if (m_fVirtual && m_fHighLatency) {
+		if (nSBCode != SB_THUMBTRACK) {
 			//If there was SB_THUMBTRACK message previously, calculate the scroll amount (up/down)
 			//by multiplying item's row height by difference between current (top) and nPos row.
 			//Scroll may be negative therefore.
-			if (m_fHLFlag)
-			{
+			if (m_fHLFlag) {
 				CRect rc;
 				GetItemRect(m_uHLItem, rc, LVIR_LABEL);
 				CSize size(0, (m_uHLItem - GetTopIndex()) * rc.Height());
@@ -1862,8 +1781,7 @@ void CListEx::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 			TtRowShow(false, 0);
 			CMFCListCtrl::OnVScroll(nSBCode, nPos, pScrollBar);
 		}
-		else
-		{
+		else {
 			m_fHLFlag = true;
 			SCROLLINFO si { };
 			si.cbSize = sizeof(SCROLLINFO);
@@ -1897,10 +1815,8 @@ BOOL CListEx::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 	//So briefly, ON_NOTIFY_REFLECT(LVN_COLUMNCLICK, &CListEx::OnLvnColumnClick) fires up
 	//only AFTER LVN_COLUMNCLICK sent to the parent.
 	const auto* const pNMLV = reinterpret_cast<LPNMHEADERW>(lParam);
-	if (m_fSortable && (pNMLV->hdr.code == HDN_ITEMCLICKW || pNMLV->hdr.code == HDN_ITEMCLICKA))
-	{
-		if (IsColumnSortable(pNMLV->iItem))
-		{
+	if (m_fSortable && (pNMLV->hdr.code == HDN_ITEMCLICKW || pNMLV->hdr.code == HDN_ITEMCLICKA)) {
+		if (IsColumnSortable(pNMLV->iItem)) {
 			m_fSortAscending = pNMLV->iItem == m_iSortColumn ? !m_fSortAscending : true;
 			GetHeaderCtrl().SetSortArrow(pNMLV->iItem, m_fSortAscending);
 			m_iSortColumn = pNMLV->iItem;
@@ -1983,8 +1899,7 @@ auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 	size_t nPosCurr { 0 }; //Current position in the parsed string.
 	CRect rcTextCurr { };  //Current rect.
 
-	while (nPosCurr != std::wstring_view::npos)
-	{
+	while (nPosCurr != std::wstring_view::npos) {
 		constexpr std::wstring_view wstrTagLink { L"<link=" };
 		constexpr std::wstring_view wstrTagFirstClose { L">" };
 		constexpr std::wstring_view wstrTagLast { L"</link>" };
@@ -2001,21 +1916,18 @@ auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 			&& (nPosLinkOpenQuote = wstrText.find(wstrQuote, nPosTagLink)) != std::wstring_view::npos
 			&& (nPosLinkCloseQuote = wstrText.find(wstrQuote, nPosLinkOpenQuote + wstrQuote.size())) != std::wstring_view::npos
 			&& (nPosTagFirstClose = wstrText.find(wstrTagFirstClose, nPosLinkCloseQuote + wstrQuote.size())) != std::wstring_view::npos
-			&& (nPosTagLast = wstrText.find(wstrTagLast, nPosTagFirstClose + wstrTagFirstClose.size())) != std::wstring_view::npos)
-		{
+			&& (nPosTagLast = wstrText.find(wstrTagLast, nPosTagFirstClose + wstrTagFirstClose.size())) != std::wstring_view::npos) {
 			auto pDC = GetDC();
 			pDC->SelectObject(m_fontList);
 			SIZE size;
 
 			//Any text before found tag.
-			if (nPosTagLink > nPosCurr)
-			{
+			if (nPosTagLink > nPosCurr) {
 				auto wstrTextBefore = wstrText.substr(nPosCurr, nPosTagLink - nPosCurr);
 				GetTextExtentPoint32W(pDC->m_hDC, wstrTextBefore.data(), static_cast<int>(wstrTextBefore.size()), &size);
 				if (rcTextCurr.IsRectNull())
 					rcTextCurr.SetRect(rcTextOrig.left, rcTextOrig.top, rcTextOrig.left + size.cx, rcTextOrig.bottom);
-				else
-				{
+				else {
 					rcTextCurr.left = rcTextCurr.right;
 					rcTextCurr.right += size.cx;
 				}
@@ -2030,8 +1942,7 @@ auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 
 			if (rcTextCurr.IsRectNull())
 				rcTextCurr.SetRect(rcTextOrig.left, rcTextOrig.top, rcTextOrig.left + size.cx, rcTextOrig.bottom);
-			else
-			{
+			else {
 				rcTextCurr.left = rcTextCurr.right;
 				rcTextCurr.right += size.cx;
 			}
@@ -2050,8 +1961,7 @@ auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 				nPosTitleCloseQuote { }; //Position of the (title=""<-) closing equote.
 				(nPosTagTitle = wstrText.find(wstrTagTitle, nPosCurr)) != std::wstring_view::npos
 				&& (nPosTitleOpenQuote = wstrText.find(wstrQuote, nPosTagTitle)) != std::wstring_view::npos
-				&& (nPosTitleCloseQuote = wstrText.find(wstrQuote, nPosTitleOpenQuote + wstrQuote.size())) != std::wstring_view::npos)
-			{
+				&& (nPosTitleCloseQuote = wstrText.find(wstrQuote, nPosTitleOpenQuote + wstrQuote.size())) != std::wstring_view::npos) {
 				//Title tag text between quotes: <...title="textFromHere">
 				wstrTextTitle = wstrText.substr(nPosTitleOpenQuote + wstrQuote.size(),
 					nPosTitleCloseQuote - nPosTitleOpenQuote - wstrQuote.size());
@@ -2061,14 +1971,12 @@ auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 			vecData.emplace_back(wstrTextBetweenTags, wstrTextLink, wstrTextTitle, rcTextCurr, true, fTitle);
 			nPosCurr = nPosTagLast + wstrTagLast.size();
 		}
-		else
-		{
+		else {
 			auto wstrTextAfter = wstrText.substr(nPosCurr, wstrText.size() - nPosCurr);
 
 			if (rcTextCurr.IsRectNull())
 				rcTextCurr = rcTextOrig;
-			else
-			{
+			else {
 				auto pDC = GetDC();
 				SIZE size;
 				pDC->SelectObject(m_fontList);
@@ -2146,8 +2054,7 @@ void CListEx::TtCellHide()
 
 void CListEx::TtRowShow(bool fShow, UINT uRow)
 {
-	if (fShow)
-	{
+	if (fShow) {
 		CPoint ptScreen;
 		GetCursorPos(&ptScreen);
 

@@ -82,10 +82,8 @@ BOOL CHexDlgOpers::OnInitDialog()
 
 void CHexDlgOpers::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE)
-	{
-		if (m_pHexCtrl->IsCreated() && m_pHexCtrl->IsDataSet())
-		{
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+		if (m_pHexCtrl->IsCreated() && m_pHexCtrl->IsDataSet()) {
 			const auto fSelection { m_pHexCtrl->HasSelection() };
 			CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL,
 				fSelection ? IDC_HEXCTRL_OPERS_RAD_SEL : IDC_HEXCTRL_OPERS_RAD_ALL);
@@ -140,8 +138,7 @@ void CHexDlgOpers::OnOK()
 		&& eOperMode != OPER_NOT && eOperMode != OPER_SWAP;
 
 	HEXMODIFY hms { .enModifyMode = EHexModifyMode::MODIFY_OPERATION, .enOperMode = eOperMode };
-	switch (iRadioDataSize)
-	{
+	switch (iRadioDataSize) {
 	case IDC_HEXCTRL_OPERS_RAD_BYTE:
 		hms.enDataSize = SIZE_BYTE;
 		break;
@@ -159,8 +156,7 @@ void CHexDlgOpers::OnOK()
 	}
 
 	LONGLONG llData { };
-	if (GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_DATA)->IsWindowEnabled())
-	{
+	if (GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_DATA)->IsWindowEnabled()) {
 		WCHAR pwszEditText[32];
 		GetDlgItemTextW(IDC_HEXCTRL_OPERS_EDIT_DATA, pwszEditText, static_cast<int>(std::size(pwszEditText)));
 
@@ -171,14 +167,12 @@ void CHexDlgOpers::OnOK()
 			wstrErr = L"Wrong number format!";
 		else if (llData = *optData; hms.enOperMode == OPER_DIV && llData == 0) //Division by zero check.
 			wstrErr = L"Wrong number format! Can not divide by zero!";
-		if (!wstrErr.empty())
-		{
+		if (!wstrErr.empty()) {
 			MessageBoxW(wstrErr.data(), L"Operand Error!", MB_ICONERROR);
 			return;
 		}
 
-		if (fBigEndian)
-		{
+		if (fBigEndian) {
 			/***************************************************************************
 			* Some operations don't need to swap the whole data in big-endian mode.
 			* Instead the Operand data-bytes can be swapped here just once.
@@ -186,11 +180,9 @@ void CHexDlgOpers::OnOK()
 			* The fSwapHere flag shows exactly this, that data can be swapped here.
 			***************************************************************************/
 			if (eOperMode == OPER_OR || eOperMode == OPER_XOR
-				|| eOperMode == OPER_AND || eOperMode == OPER_ASSIGN)
-			{
+				|| eOperMode == OPER_AND || eOperMode == OPER_ASSIGN) {
 				fBigEndian = false;
-				switch (hms.enDataSize)
-				{
+				switch (hms.enDataSize) {
 				case SIZE_WORD:
 					llData = static_cast<LONGLONG>(ByteSwap(static_cast<WORD>(llData)));
 					break;
@@ -207,9 +199,9 @@ void CHexDlgOpers::OnOK()
 		}
 	}
 
-	if (iRadioAllOrSel == IDC_HEXCTRL_OPERS_RAD_ALL)
-	{
-		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify All data?", MB_YESNO | MB_ICONWARNING) == IDNO)
+	if (iRadioAllOrSel == IDC_HEXCTRL_OPERS_RAD_ALL) {
+		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", 
+			L"Modify All data?", MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
 		hms.vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
 	}
@@ -229,8 +221,7 @@ void CHexDlgOpers::CheckWndAvail()const
 {
 	BOOL fEditEnable = TRUE;
 	BOOL fBELEEnable = TRUE;
-	switch (GetOperMode())
-	{
+	switch (GetOperMode()) {
 	case EHexOperMode::OPER_NOT:
 	case EHexOperMode::OPER_SWAP:
 		fEditEnable = FALSE;

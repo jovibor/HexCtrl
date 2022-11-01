@@ -160,38 +160,30 @@ void CScrollEx::OnMouseMove(UINT /*nFlags*/, CPoint point)
 	const auto iCurrPos = GetThumbPos();
 	int iNewPos;
 
-	if (IsVert())
-	{
-		if (point.y < rc.top)
-		{
+	if (IsVert()) {
+		if (point.y < rc.top) {
 			iNewPos = 0;
 			m_ptCursorCur.y = rc.top;
 		}
-		else if (point.y > rc.bottom)
-		{
+		else if (point.y > rc.bottom) {
 			iNewPos = THUMB_POS_MAX;
 			m_ptCursorCur.y = rc.bottom;
 		}
-		else
-		{
+		else {
 			iNewPos = iCurrPos + (point.y - m_ptCursorCur.y);
 			m_ptCursorCur.y = point.y;
 		}
 	}
-	else
-	{
-		if (point.x < rc.left)
-		{
+	else {
+		if (point.x < rc.left) {
 			iNewPos = 0;
 			m_ptCursorCur.x = rc.left;
 		}
-		else if (point.x > rc.right)
-		{
+		else if (point.x > rc.right) {
 			iNewPos = THUMB_POS_MAX;
 			m_ptCursorCur.x = rc.right;
 		}
-		else
-		{
+		else {
 			iNewPos = iCurrPos + (point.x - m_ptCursorCur.x);
 			m_ptCursorCur.x = point.x;
 		}
@@ -216,11 +208,9 @@ void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS* lpncsp
 
 	const CRect rc = lpncsp->rgrc[0];
 	const auto ullCurPos = GetScrollPos();
-	if (IsVert())
-	{
+	if (IsVert()) {
 		const UINT uiHeight { IsSiblingVisible() ? rc.Height() - m_uiScrollBarSizeWH : rc.Height() };
-		if (uiHeight < m_ullScrollSizeMax)
-		{
+		if (uiHeight < m_ullScrollSizeMax) {
 			m_fVisible = true;
 			if (ullCurPos + uiHeight > m_ullScrollSizeMax)
 				SetScrollPos(m_ullScrollSizeMax - uiHeight);
@@ -228,17 +218,14 @@ void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS* lpncsp
 				DrawScrollBar();
 			lpncsp->rgrc[0].right -= m_uiScrollBarSizeWH;
 		}
-		else
-		{
+		else {
 			SetScrollPos(0);
 			m_fVisible = false;
 		}
 	}
-	else
-	{
+	else {
 		const UINT uiWidth { IsSiblingVisible() ? rc.Width() - m_uiScrollBarSizeWH : rc.Width() };
-		if (uiWidth < m_ullScrollSizeMax)
-		{
+		if (uiWidth < m_ullScrollSizeMax) {
 			m_fVisible = true;
 			if (ullCurPos + uiWidth > m_ullScrollSizeMax)
 				SetScrollPos(m_ullScrollSizeMax - uiWidth);
@@ -246,8 +233,7 @@ void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS* lpncsp
 				DrawScrollBar();
 			lpncsp->rgrc[0].bottom -= m_uiScrollBarSizeWH;
 		}
-		else
-		{
+		else {
 			SetScrollPos(0);
 			m_fVisible = false;
 		}
@@ -273,8 +259,7 @@ void CScrollEx::OnSetCursor(CWnd* /*pWnd*/, UINT nHitTest, UINT message)
 		|| nHitTest == HTBOTTOM || nHitTest == HTSIZE || !IsVisible())
 		return;
 
-	switch (message)
-	{
+	switch (message) {
 	case WM_LBUTTONDOWN:
 	{
 		const auto pParent = GetParent();
@@ -287,35 +272,30 @@ void CScrollEx::OnSetCursor(CWnd* /*pWnd*/, UINT nHitTest, UINT message)
 		pParent->SetFocus();
 		constexpr auto uTimerFirstClick { 200U }; //Milliseconds for WM_TIMER for first channel click.
 
-		if (GetThumbRect(true).PtInRect(pt))
-		{
+		if (GetThumbRect(true).PtInRect(pt)) {
 			m_ptCursorCur = pt;
 			m_enState = EState::THUMB_CLICK;
 			pParent->SetCapture();
 		}
-		else if (GetFirstArrowRect(true).PtInRect(pt))
-		{
+		else if (GetFirstArrowRect(true).PtInRect(pt)) {
 			ScrollLineUp();
 			m_enState = EState::FIRSTARROW_CLICK;
 			pParent->SetCapture();
 			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
-		else if (GetLastArrowRect(true).PtInRect(pt))
-		{
+		else if (GetLastArrowRect(true).PtInRect(pt)) {
 			ScrollLineDown();
 			m_enState = EState::LASTARROW_CLICK;
 			pParent->SetCapture();
 			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
-		else if (GetFirstChannelRect(true).PtInRect(pt))
-		{
+		else if (GetFirstChannelRect(true).PtInRect(pt)) {
 			ScrollPageUp();
 			m_enState = EState::FIRSTCHANNEL_CLICK;
 			pParent->SetCapture();
 			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
-		else if (GetLastChannelRect(true).PtInRect(pt))
-		{
+		else if (GetLastChannelRect(true).PtInRect(pt)) {
 			ScrollPageDown();
 			m_enState = EState::LASTCHANNEL_CLICK;
 			pParent->SetCapture();
@@ -490,44 +470,37 @@ bool CScrollEx::CreateArrows(int iIDRESArrow, bool fVert)
 	const auto pOrigCOLOR = std::make_unique<COLORREF[]>(dwPixels);
 	bmpArrow.GetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
 
-	const auto lmbTranspose = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight)
-	{
+	const auto lmbTranspose = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
 		for (std::size_t itHeight = 0; itHeight < nHeight; ++itHeight) //Transpose matrix.
 			for (std::size_t j = itHeight; j < nWidth; ++j)
 				std::swap(pInOut[itHeight * nHeight + j], pInOut[j * nHeight + itHeight]);
 	};
-	const auto lmbFlipVert = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight)
-	{
+	const auto lmbFlipVert = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
 		for (std::size_t itWidth = 0; itWidth < nWidth; ++itWidth) //Flip matrix' columns.
 			for (std::size_t itHeight = 0, itHeightBack = nHeight - 1; itHeight < itHeightBack; ++itHeight, --itHeightBack)
 				std::swap(pInOut[itHeight * nHeight + itWidth], pInOut[itHeightBack * nWidth + itWidth]);
 	};
-	const auto lmbFlipHorz = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight)
-	{
+	const auto lmbFlipHorz = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
 		for (std::size_t itHeight = 0; itHeight < nHeight; ++itHeight) //Flip matrix' rows.
 			for (std::size_t itWidth = 0, itWidthBack = nWidth - 1; itWidth < itWidthBack; ++itWidth, --itWidthBack)
 				std::swap(pInOut[itHeight * nWidth + itWidth], pInOut[itHeight * nWidth + itWidthBack]);
 	};
-	const auto lmb90CW = [&](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight)
-	{
+	const auto lmb90CW = [&](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
 		lmbFlipVert(pInOut, nWidth, nHeight);
 		lmbTranspose(pInOut, nWidth, nHeight);
 	};
-	const auto lmb90CCW = [&](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight)
-	{
+	const auto lmb90CCW = [&](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
 		lmbTranspose(pInOut, nWidth, nHeight);
 		lmbFlipVert(pInOut, nWidth, nHeight);
 	};
 
 	m_bmpArrowFirst.CreateBitmapIndirect(&hBitmap);
 	m_bmpArrowLast.CreateBitmapIndirect(&hBitmap);
-	if (fVert)
-	{
+	if (fVert) {
 		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get()); //Up arrow.
 		lmbFlipVert(pOrigCOLOR.get(), nWidth, nHeight);              //Down arrow.
 	}
-	else
-	{
+	else {
 		lmb90CCW(pOrigCOLOR.get(), nWidth, nHeight);
 		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get()); //Left arrow.
 		lmbFlipHorz(pOrigCOLOR.get(), nWidth, nHeight);              //Right arrow.
@@ -573,14 +546,12 @@ void CScrollEx::DrawArrows(CDC* pDC)const
 	const auto iFirstBtnOffsetDrawX = rcScroll.left;
 	const auto iFirstBtnOffsetDrawY = rcScroll.top;
 
-	if (IsVert())
-	{
+	if (IsVert()) {
 		iFirstBtnWH = iLastBtnWH = rcScroll.Width();
 		iLastBtnOffsetDrawX = rcScroll.left;
 		iLastBtnOffsetDrawY = rcScroll.bottom - rcScroll.Width();
 	}
-	else
-	{
+	else {
 		iFirstBtnWH = iLastBtnWH = rcScroll.Height();
 		iLastBtnOffsetDrawX = rcScroll.right - rcScroll.Height();
 		iLastBtnOffsetDrawY = rcScroll.top;
@@ -625,8 +596,7 @@ CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
 	const auto iLeftDelta = GetLeftDelta();
 
 	CRect rcScroll;
-	if (IsVert())
-	{
+	if (IsVert()) {
 		rcScroll.left = rcClient.right + iLeftDelta;
 		rcScroll.top = rcClient.top + iTopDelta;
 		rcScroll.right = rcScroll.left + m_uiScrollBarSizeWH;
@@ -635,8 +605,7 @@ CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
 		else
 			rcScroll.bottom = rcScroll.top + rcClient.Height();
 	}
-	else
-	{
+	else {
 		rcScroll.left = rcClient.left + iLeftDelta;
 		rcScroll.top = rcClient.bottom + iTopDelta;
 		rcScroll.bottom = rcScroll.top + m_uiScrollBarSizeWH;
@@ -684,8 +653,7 @@ CRect CScrollEx::GetThumbRect(bool fClientCoord)const
 		return rc;
 
 	const auto rcScrollWA = GetScrollWorkAreaRect();
-	if (IsVert())
-	{
+	if (IsVert()) {
 		rc.left = rcScrollWA.left;
 		rc.top = rcScrollWA.top + GetThumbPos();
 		rc.right = rc.left + m_uiScrollBarSizeWH;
@@ -693,8 +661,7 @@ CRect CScrollEx::GetThumbRect(bool fClientCoord)const
 		if (rc.bottom > rcScrollWA.bottom)
 			rc.bottom = rcScrollWA.bottom;
 	}
-	else
-	{
+	else {
 		rc.left = rcScrollWA.left + GetThumbPos();
 		rc.top = rcScrollWA.top;
 		rc.right = rc.left + uiThumbSize;
@@ -742,15 +709,12 @@ void CScrollEx::SetThumbPos(int iPos)
 		ullNewScrollPos = 0;
 	else if (iPos == THUMB_POS_MAX)
 		ullNewScrollPos = m_ullScrollSizeMax;
-	else
-	{
-		if (IsVert())
-		{
+	else {
+		if (IsVert()) {
 			if (iPos + static_cast<int>(uiThumbSize) > rcWorkArea.Height())
 				iPos = rcWorkArea.Height() - uiThumbSize;
 		}
-		else
-		{
+		else {
 			if (iPos + static_cast<int>(uiThumbSize) > rcWorkArea.Width())
 				iPos = rcWorkArea.Width() - uiThumbSize;
 		}
@@ -893,15 +857,13 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 {
 	constexpr auto uTimerRepeat { 50U }; //Milliseconds for repeat when click and hold on channel.
 
-	switch (nIDEvent)
-	{
+	switch (nIDEvent) {
 	case (static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK)):
 		KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
 		SetTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT), uTimerRepeat, nullptr);
 		break;
 	case (static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT)):
-		switch (m_enState)
-		{
+		switch (m_enState) {
 		case EState::FIRSTARROW_CLICK:
 			ScrollLineUp();
 			break;
@@ -930,13 +892,11 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 			GetCursorPos(&pt);
 			CRect rc = GetThumbRect(true);
 			GetParent()->ClientToScreen(rc);
-			if (IsVert())
-			{
+			if (IsVert()) {
 				if (pt.y > rc.bottom)
 					ScrollPageDown();
 			}
-			else
-			{
+			else {
 				if (pt.x > rc.right)
 					ScrollPageDown();
 			}

@@ -111,7 +111,7 @@ namespace HEXCTRL::INTERNAL
 		LISTEX::IListExPtr m_pListApplied { LISTEX::CreateListEx() };
 		LISTEX::LISTEXCOLOR m_stCellClr { };
 		CTreeCtrl m_stTreeApplied;
-		CMenu m_stMenuList;   //Menu for the list control.
+		CMenu m_stMenuTree;           //Menu for the tree control.
 		HCURSOR m_hCurResize;
 		HCURSOR m_hCurArrow;
 		PHEXTEMPLATEAPPLIED m_pAppliedCurr { }; //Currently selected PApplied.

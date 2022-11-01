@@ -87,8 +87,7 @@ namespace HEXCTRL::INTERNAL
 		int iParsedArgs { };
 
 		//Parse date component
-		switch (dwFormat)
-		{
+		switch (dwFormat) {
 		case 0:	//Month-Day-Year
 			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &stSysTime.wMonth, &stSysTime.wDay, &stSysTime.wYear);
 			break;
@@ -106,8 +105,7 @@ namespace HEXCTRL::INTERNAL
 			return std::nullopt;
 
 		//Find time seperator, if present.
-		if (const auto nPos = wstrDateTimeCooked.find(L' '); nPos != std::wstring::npos)
-		{
+		if (const auto nPos = wstrDateTimeCooked.find(L' '); nPos != std::wstring::npos) {
 			wstrDateTimeCooked = wstrDateTimeCooked.substr(nPos + 1);
 
 			//Parse time component HH:MM:SS.mmm
@@ -140,8 +138,7 @@ namespace HEXCTRL::INTERNAL
 			return L"N/A";
 
 		std::wstring_view wstrFmt;
-		switch (dwFormat)
-		{
+		switch (dwFormat) {
 		case 0:	//0:Month/Day/Year HH:MM:SS.mmm
 			wstrFmt = L"{1:02d}{7}{0:02d}{7}{2} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
 			break;
@@ -160,8 +157,7 @@ namespace HEXCTRL::INTERNAL
 	auto GetDateFormatString(DWORD dwFormat, wchar_t wchSepar)->std::wstring
 	{
 		std::wstring_view wstrFmt;
-		switch (dwFormat)
-		{
+		switch (dwFormat) {
 		case 0:	//Month-Day-Year
 			wstrFmt = L"MM{0}DD{0}YYYY HH:MM:SS.mmm";
 			break;

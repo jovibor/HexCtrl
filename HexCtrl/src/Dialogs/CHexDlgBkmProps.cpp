@@ -39,14 +39,12 @@ BOOL CHexDlgBkmProps::OnInitDialog()
 	if (auto pClrBtn = static_cast<CMFCColorButton*>(GetDlgItem(IDC_HEXCTRL_BKMPROPS_COLOR_TEXT)); pClrBtn != nullptr)
 		pClrBtn->SetColor(m_pHBS->clrText);
 
-	if (!m_pHBS->vecSpan.empty())
-	{
+	if (!m_pHBS->vecSpan.empty()) {
 		m_ullOffset = m_pHBS->vecSpan.front().ullOffset;
 		m_ullSize = std::accumulate(m_pHBS->vecSpan.begin(), m_pHBS->vecSpan.end(), ULONGLONG { },
 			[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
 	}
-	else
-	{
+	else {
 		m_ullOffset = 0;
 		m_ullSize = 1;
 		m_pHBS->vecSpan.emplace_back(m_ullOffset, m_ullSize);
@@ -94,8 +92,7 @@ void CHexDlgBkmProps::OnOK()
 		return;
 	}
 
-	if (m_ullOffset != *optOffset || m_ullSize != *optSize)
-	{
+	if (m_ullOffset != *optOffset || m_ullSize != *optSize) {
 		m_pHBS->vecSpan.clear();
 		m_pHBS->vecSpan.emplace_back(*optOffset, *optSize);
 	}

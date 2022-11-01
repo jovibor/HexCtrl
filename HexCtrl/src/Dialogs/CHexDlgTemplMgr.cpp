@@ -77,9 +77,9 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_pListApplied->InsertColumn(3, L"Data", LVCFMT_LEFT, 120);
 	m_pListApplied->InsertColumn(4, L"Colors", LVCFMT_LEFT, 57);
 
-	m_stMenuList.CreatePopupMenu();
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_DISAPPLY), L"Disapply template");
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_CLEARALL), L"Clear all");
+	m_stMenuTree.CreatePopupMenu();
+	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_DISAPPLY), L"Disapply template");
+	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_CLEARALL), L"Clear all");
 
 	m_stEditOffset.SetWindowTextW(L"0x0");
 	m_stCheckTtShow.SetCheck(IsTooltips() ? BST_CHECKED : BST_UNCHECKED);
@@ -99,8 +99,7 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	using enum EMenuID;
-	switch (static_cast<EMenuID>(LOWORD(wParam)))
-	{
+	switch (static_cast<EMenuID>(LOWORD(wParam))) {
 	case IDM_APPLIED_DISAPPLY:
 		if (const auto pApplied = GetAppliedFromItem(m_stTreeApplied.GetSelectedItem()); pApplied != nullptr) {
 			DisapplyByID(pApplied->iAppliedID);
@@ -198,8 +197,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	const auto nItemID = static_cast<size_t>(pItem->iItem);
 	const auto& refVecField = *m_pVecCurrFields;
 	const auto wsvFmt = m_fShowAsHex ? L"0x{:X}" : L"{}";
-	switch (pItem->iSubItem)
-	{
+	switch (pItem->iSubItem) {
 	case 0: //Name.
 		pItem->pszText = refVecField[nItemID]->wstrName.data();
 		break;
@@ -427,10 +425,10 @@ void CHexDlgTemplMgr::OnTreeRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 	if (hTreeItem != nullptr) {
 		m_stTreeApplied.SelectItem(hTreeItem);
 	}
-	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_DISAPPLY),
+	m_stMenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_DISAPPLY),
 		(fHasApplied && fHitTest ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_CLEARALL), (fHasApplied ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
+	m_stMenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_CLEARALL), (fHasApplied ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuTree.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
 }
 
 void CHexDlgTemplMgr::OnLButtonDown(UINT nFlags, CPoint point)
@@ -514,7 +512,7 @@ void CHexDlgTemplMgr::OnDestroy()
 
 	ClearAll();
 	m_pListApplied->DestroyWindow();
-	m_stMenuList.DestroyMenu();
+	m_stMenuTree.DestroyMenu();
 	m_vecTemplates.clear();
 }
 
@@ -529,8 +527,8 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 
 	auto iAppliedID = 1; //AppliedID starts at 1.
 	if (const auto iter = std::max_element(m_vecTemplatesApplied.begin(), m_vecTemplatesApplied.end(),
-		[](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref1, const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref2)
-		{ return ref1->iAppliedID < ref2->iAppliedID; }); iter != m_vecTemplatesApplied.end()) {
+		[](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref1, const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref2) {
+			return ref1->iAppliedID < ref2->iAppliedID; }); iter != m_vecTemplatesApplied.end()) {
 		iAppliedID = iter->get()->iAppliedID + 1; //Increasing next AppliedID by 1.
 	}
 
@@ -657,114 +655,113 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	using IterJSONMember = rapidjson::Value::ConstMemberIterator;
 	const auto lmbParseFields = [&lmbStrToRGB, &lmbTotalSize, clrBkDefault, clrTextDefault, pTemplate]
 	(const IterJSONMember iterMemberFields, VecFields& vecFields)->bool {
-		const auto _lmbParse = [&lmbStrToRGB, &lmbTotalSize, pTemplate](const auto& lmbSelf, const IterJSONMember iterMemberFields,
+		const auto _lmbParse = [&lmbStrToRGB, &lmbTotalSize, pTemplate]
+		(const auto& lmbSelf, const IterJSONMember iterMemberFields,
 			VecFields& vecFields, COLORREF clrBkDefault, COLORREF clrTextDefault, int& iOffset,
-			PHEXTEMPLATEFIELD pFieldParent = nullptr)->bool
-		{
-			for (auto iterArrCurr = iterMemberFields->value.Begin(); iterArrCurr != iterMemberFields->value.End(); ++iterArrCurr)
-			{
-				if (!iterArrCurr->IsObject()) {
-					return false; //Each array entry must be an Object {}.
-				}
-
-				auto& refBack = vecFields.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
-
-				if (const auto itName = iterArrCurr->FindMember("name");
-					itName != iterArrCurr->MemberEnd() && itName->value.IsString()) {
-					refBack->wstrName = StrToWstr(itName->value.GetString());
-				}
-				else {
-					return false; //Each array entry (Object) must have a "name" string.
-				}
-
-				refBack->pTemplate = pTemplate;
-				refBack->pFieldParent = pFieldParent;
-				refBack->iOffset = iOffset;
-
-				if (const auto iterNestedFields = iterArrCurr->FindMember("Fields");
-					iterNestedFields != iterArrCurr->MemberEnd()) {
-					if (!iterNestedFields->value.IsArray()) {
-						return false; //Each "Fields" must be an Array.
+			PHEXTEMPLATEFIELD pFieldParent = nullptr)->bool {
+				for (auto iterArrCurr = iterMemberFields->value.Begin(); iterArrCurr != iterMemberFields->value.End(); ++iterArrCurr) {
+					if (!iterArrCurr->IsObject()) {
+						return false; //Each array entry must be an Object {}.
 					}
 
-					COLORREF clrBkDefaultNested { };   //Default colors in nested structs.
-					COLORREF clrTextDefaultNested { };
-					if (const auto itClrBkDefault = iterArrCurr->FindMember("clrBk");
-						itClrBkDefault != iterArrCurr->MemberEnd()) {
-						if (!itClrBkDefault->value.IsString()) {
-							return false; //"clrBk" must be a string.
+					auto& refBack = vecFields.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
+
+					if (const auto itName = iterArrCurr->FindMember("name");
+						itName != iterArrCurr->MemberEnd() && itName->value.IsString()) {
+						refBack->wstrName = StrToWstr(itName->value.GetString());
+					}
+					else {
+						return false; //Each array entry (Object) must have a "name" string.
+					}
+
+					refBack->pTemplate = pTemplate;
+					refBack->pFieldParent = pFieldParent;
+					refBack->iOffset = iOffset;
+
+					if (const auto iterNestedFields = iterArrCurr->FindMember("Fields");
+						iterNestedFields != iterArrCurr->MemberEnd()) {
+						if (!iterNestedFields->value.IsArray()) {
+							return false; //Each "Fields" must be an Array.
 						}
-						clrBkDefaultNested = lmbStrToRGB(itClrBkDefault->value.GetString());
-					}
-					else { clrBkDefaultNested = clrBkDefault; }
-					refBack->clrBk = clrBkDefaultNested;
 
-					if (const auto itClrTextDefault = iterArrCurr->FindMember("clrText");
-						itClrTextDefault != iterArrCurr->MemberEnd()) {
-						if (!itClrTextDefault->value.IsString()) {
-							return false; //"clrText" must be a string.
+						COLORREF clrBkDefaultNested { };   //Default colors in nested structs.
+						COLORREF clrTextDefaultNested { };
+						if (const auto itClrBkDefault = iterArrCurr->FindMember("clrBk");
+							itClrBkDefault != iterArrCurr->MemberEnd()) {
+							if (!itClrBkDefault->value.IsString()) {
+								return false; //"clrBk" must be a string.
+							}
+							clrBkDefaultNested = lmbStrToRGB(itClrBkDefault->value.GetString());
 						}
-						clrTextDefaultNested = lmbStrToRGB(itClrTextDefault->value.GetString());
-					}
-					else { clrTextDefaultNested = clrTextDefault; }
-					refBack->clrText = clrTextDefaultNested;
+						else { clrBkDefaultNested = clrBkDefault; }
+						refBack->clrBk = clrBkDefaultNested;
 
-					//Recursion lambda for nested structs starts here.
-					if (!lmbSelf(lmbSelf, iterNestedFields, refBack->vecNested,
-						clrBkDefaultNested, clrTextDefaultNested, iOffset, refBack.get())) {
-						return false;
-					}
-					refBack->iSize = lmbTotalSize(refBack->vecNested); //Total size of all nested fields.
-				}
-				else {
-					if (const auto iterSize = iterArrCurr->FindMember("size");
-						iterSize != iterArrCurr->MemberEnd()) {
-						if (iterSize->value.IsInt()) {
-							refBack->iSize = iterSize->value.GetInt();
+						if (const auto itClrTextDefault = iterArrCurr->FindMember("clrText");
+							itClrTextDefault != iterArrCurr->MemberEnd()) {
+							if (!itClrTextDefault->value.IsString()) {
+								return false; //"clrText" must be a string.
+							}
+							clrTextDefaultNested = lmbStrToRGB(itClrTextDefault->value.GetString());
 						}
-						else if (iterSize->value.IsString()) {
-							if (const auto optInt = StrToInt(iterSize->value.GetString()); optInt) {
-								refBack->iSize = *optInt;
+						else { clrTextDefaultNested = clrTextDefault; }
+						refBack->clrText = clrTextDefaultNested;
+
+						//Recursion lambda for nested structs starts here.
+						if (!lmbSelf(lmbSelf, iterNestedFields, refBack->vecNested,
+							clrBkDefaultNested, clrTextDefaultNested, iOffset, refBack.get())) {
+							return false;
+						}
+						refBack->iSize = lmbTotalSize(refBack->vecNested); //Total size of all nested fields.
+					}
+					else {
+						if (const auto iterSize = iterArrCurr->FindMember("size");
+							iterSize != iterArrCurr->MemberEnd()) {
+							if (iterSize->value.IsInt()) {
+								refBack->iSize = iterSize->value.GetInt();
+							}
+							else if (iterSize->value.IsString()) {
+								if (const auto optInt = StrToInt(iterSize->value.GetString()); optInt) {
+									refBack->iSize = *optInt;
+								}
+								else {
+									return false; //"size" field is a non-convertible string to int.
+								}
 							}
 							else {
-								return false; //"size" field is a non-convertible string to int.
+								return false; //"size" field neither int nor string.
 							}
+
+							iOffset += refBack->iSize;
 						}
 						else {
-							return false; //"size" field neither int nor string.
+							return false; //Every Object must have a "size". }
 						}
 
-						iOffset += refBack->iSize;
-					}
-					else {
-						return false; //Every Object must have a "size". }
-					}
-
-					if (const auto itClrBk = iterArrCurr->FindMember("clrBk");
-						itClrBk != iterArrCurr->MemberEnd()) {
-						if (!itClrBk->value.IsString()) {
-							return false; //"clrBk" must be a string.
+						if (const auto itClrBk = iterArrCurr->FindMember("clrBk");
+							itClrBk != iterArrCurr->MemberEnd()) {
+							if (!itClrBk->value.IsString()) {
+								return false; //"clrBk" must be a string.
+							}
+							refBack->clrBk = lmbStrToRGB(itClrBk->value.GetString());
 						}
-						refBack->clrBk = lmbStrToRGB(itClrBk->value.GetString());
-					}
-					else {
-						refBack->clrBk = clrBkDefault;
-					}
-
-					if (const auto itClrText = iterArrCurr->FindMember("clrText");
-						itClrText != iterArrCurr->MemberEnd()) {
-						if (!itClrText->value.IsString()) {
-							return false; //"clrText" must be a string.
+						else {
+							refBack->clrBk = clrBkDefault;
 						}
-						refBack->clrText = lmbStrToRGB(itClrText->value.GetString());
-					}
-					else {
-						refBack->clrText = clrTextDefault;
+
+						if (const auto itClrText = iterArrCurr->FindMember("clrText");
+							itClrText != iterArrCurr->MemberEnd()) {
+							if (!itClrText->value.IsString()) {
+								return false; //"clrText" must be a string.
+							}
+							refBack->clrText = lmbStrToRGB(itClrText->value.GetString());
+						}
+						else {
+							refBack->clrText = clrTextDefault;
+						}
 					}
 				}
-			}
 
-			return true;
+				return true;
 		};
 
 		int iOffset = 0;
@@ -773,8 +770,8 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 
 	auto iTemplateID = 1; //ID starts at 1.
 	if (const auto iter = std::max_element(m_vecTemplates.begin(), m_vecTemplates.end(),
-		[](const std::unique_ptr<HEXTEMPLATE>& ref1, const std::unique_ptr<HEXTEMPLATE>& ref2)
-		{ return ref1->iTemplateID < ref2->iTemplateID; }); iter != m_vecTemplates.end()) {
+		[](const std::unique_ptr<HEXTEMPLATE>& ref1, const std::unique_ptr<HEXTEMPLATE>& ref2) {
+			return ref1->iTemplateID < ref2->iTemplateID; }); iter != m_vecTemplates.end()) {
 		iTemplateID = iter->get()->iTemplateID + 1; //Increasing next Template's ID by 1.
 	}
 
@@ -814,8 +811,8 @@ void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 	RemoveNodesWithTemplateID(pTemplate->iTemplateID);
 
 	//Remove all applied templates from m_vecTemplatesApplied, if any, with the given iTemplateID.
-	if (std::erase_if(m_vecTemplatesApplied, [pTemplate](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref)
-		{ return ref->pTemplate == pTemplate; }) > 0) {
+	if (std::erase_if(m_vecTemplatesApplied, [pTemplate](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref) {
+		return ref->pTemplate == pTemplate; }) > 0) {
 		if (m_pHexCtrl->IsDataSet()) {
 			m_pHexCtrl->Redraw();
 		}
@@ -892,8 +889,8 @@ void CHexDlgTemplMgr::DisapplyByID(int iAppliedID)
 void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 {
 	if (const auto rIter = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
-		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl)
-		{return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
+		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
+			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
 		rIter != m_vecTemplatesApplied.rend()) {
 		RemoveNodeWithAppliedID(rIter->get()->iAppliedID);
 		m_vecTemplatesApplied.erase(std::next(rIter).base());
@@ -921,10 +918,9 @@ bool CHexDlgTemplMgr::HasTemplates()const
 auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD
 {
 	if (const auto itTemplApplied = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
-		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl)
-		{ return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
-		itTemplApplied != m_vecTemplatesApplied.rend())
-	{
+		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
+			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
+		itTemplApplied != m_vecTemplatesApplied.rend()) {
 		const auto pTemplApplied = itTemplApplied->get();
 		const auto ullTemplStartOffset = pTemplApplied->ullOffset;
 		auto& refVec = pTemplApplied->pTemplate->vecFields;

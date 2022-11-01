@@ -67,10 +67,8 @@ BOOL CHexDlgFillData::OnInitDialog()
 
 void CHexDlgFillData::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE)
-	{
-		if (m_pHexCtrl->IsCreated() && m_pHexCtrl->IsDataSet())
-		{
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+		if (m_pHexCtrl->IsCreated() && m_pHexCtrl->IsDataSet()) {
 			const auto fSelection { m_pHexCtrl->HasSelection() };
 			CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL,
 				fSelection ? IDC_HEXCTRL_FILLDATA_RAD_SEL : IDC_HEXCTRL_FILLDATA_RAD_ALL);
@@ -84,8 +82,7 @@ void CHexDlgFillData::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
 {
 	using enum EFillType;
-	switch (LOWORD(wParam))
-	{
+	switch (LOWORD(wParam)) {
 	case IDC_HEXCTRL_FILLDATA_COMBO_TYPE:
 	{
 		const auto enFillType = GetFillType();
@@ -119,8 +116,7 @@ void CHexDlgFillData::OnOK()
 
 	HEXMODIFY hms;
 	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL);
-	if (iRadioAllOrSel == IDC_HEXCTRL_FILLDATA_RAD_ALL)
-	{
+	if (iRadioAllOrSel == IDC_HEXCTRL_FILLDATA_RAD_ALL) {
 		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify All data?",
 			MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
@@ -132,8 +128,7 @@ void CHexDlgFillData::OnOK()
 
 	std::wstring wstrFillWith = pwszComboText;
 	std::string strFillWith; //Data holder for FILL_HEX and FILL_ASCII modes.
-	switch (GetFillType())
-	{
+	switch (GetFillType()) {
 	case EFillType::FILL_HEX:
 	{
 		auto optData = NumStrToHex(wstrFillWith);
@@ -166,16 +161,14 @@ void CHexDlgFillData::OnOK()
 	}
 
 	//Insert wstring into ComboBox only if it's not already presented.
-	if (m_stComboData.FindStringExact(0, wstrFillWith.data()) == CB_ERR)
-	{
+	if (m_stComboData.FindStringExact(0, wstrFillWith.data()) == CB_ERR) {
 		//Keep max 50 strings in list.
 		if (m_stComboData.GetCount() == 50)
 			m_stComboData.DeleteString(49);
 		m_stComboData.InsertString(0, wstrFillWith.data());
 	}
 
-	if (hms.spnData.size() > hms.vecSpan.back().ullSize)
-	{
+	if (hms.spnData.size() > hms.vecSpan.back().ullSize) {
 		MessageBoxW(L"Fill data size is bigger than the region selected for modification, please select a larger region.",
 			L"Data region size error.", MB_ICONERROR);
 		return;

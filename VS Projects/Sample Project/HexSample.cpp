@@ -45,8 +45,7 @@ BOOL CHexSampleApp::InitInstance()
 	auto dlg = new CHexSampleDlg;
 	m_pMainWnd = dlg;
 	const auto nResponse = dlg->DoModal();
-	if (nResponse == -1)
-	{
+	if (nResponse == -1) {
 		TRACE(traceAppMsg, 0, "Warning: dialog creation failed, so application is terminating unexpectedly.\n");
 		TRACE(traceAppMsg, 0, "Warning: if you are using MFC controls on the dialog, you cannot #define _AFX_NO_MFC_CONTROLS_IN_DIALOGS.\n");
 	}

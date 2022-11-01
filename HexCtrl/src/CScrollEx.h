@@ -52,7 +52,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		void SetScrollPageSize(ULONGLONG ullSize);
 	private:
 		DECLARE_MESSAGE_MAP()
-		[[nodiscard]] bool CreateArrows(int iIDRESArrow, bool fVert);
+			[[nodiscard]] bool CreateArrows(int iIDRESArrow, bool fVert);
 		void DrawScrollBar()const;      //Draws the whole Scrollbar.
 		void DrawArrows(CDC* pDC)const; //Draws arrows.
 		void DrawThumb(CDC* pDC)const;  //Draws the Scroll thumb.

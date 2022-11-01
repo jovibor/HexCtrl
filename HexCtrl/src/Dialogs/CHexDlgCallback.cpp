@@ -54,8 +54,7 @@ void CHexDlgCallback::DoDataExchange(CDataExchange* pDX)
 
 void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 {
-	if (nIDEvent == IDT_EXITCHECK && m_fCancel)
-	{
+	if (nIDEvent == IDT_EXITCHECK && m_fCancel) {
 		KillTimer(IDT_EXITCHECK);
 		OnCancel();
 	}
@@ -80,8 +79,7 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 		*std::format_to(buff, L"{:.2f} GB/s", static_cast<float>(iSpeedMBS) / iMBInGB) = L'\0';
 		wstrDisplay += buff;
 	}
-	else
-	{
+	else {
 		*std::format_to(buff, L"{} MB/s", iSpeedMBS) = L'\0';
 		wstrDisplay += buff;
 	}

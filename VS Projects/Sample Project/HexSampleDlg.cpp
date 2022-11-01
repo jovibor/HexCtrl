@@ -98,8 +98,7 @@ BOOL CHexSampleDlg::OnInitDialog()
 
 void CHexSampleDlg::OnPaint()
 {
-	if (IsIconic())
-	{
+	if (IsIconic()) {
 		CPaintDC dc(this);
 
 		SendMessageW(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
@@ -115,8 +114,7 @@ void CHexSampleDlg::OnPaint()
 		// Draw the icon
 		dc.DrawIcon(x, y, m_hIcon);
 	}
-	else
-	{
+	else {
 		CDialogEx::OnPaint();
 	}
 }
@@ -169,8 +167,7 @@ void CHexSampleDlg::OnBnSetRndDataRO()
 {
 	if (IsFileOpen())
 		FileClose();
-	else if (m_pHexChild->IsDataSet())
-	{
+	else if (m_pHexChild->IsDataSet()) {
 		m_pHexChild->SetMutable(false);
 		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet()) {
 			m_pHexPopup->SetMutable(false);
@@ -196,8 +193,7 @@ void CHexSampleDlg::OnBnSetRndDataRW()
 {
 	if (IsFileOpen())
 		FileClose();
-	else if (m_pHexChild->IsDataSet())
-	{
+	else if (m_pHexChild->IsDataSet()) {
 		m_pHexChild->SetMutable(true);
 		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet()) {
 			m_pHexPopup->SetMutable(true);
@@ -222,8 +218,7 @@ void CHexSampleDlg::OnBnSetRndDataRW()
 void CHexSampleDlg::OnHexGetColor(HEXCOLORINFO& hci)
 {
 	//Sample code for custom colors:
-	if (hci.ullOffset < 18)
-	{
+	if (hci.ullOffset < 18) {
 		static std::vector<HEXCOLOR> vec {
 			{ RGB(50, 0, 0), RGB(255, 255, 255) },
 			{ RGB(0, 150, 0), RGB(255, 255, 255) },
@@ -329,16 +324,14 @@ auto CHexSampleDlg::OpenFileDlg()->std::optional<std::vector<std::wstring>>
 		| OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST, L"All files (*.*)|*.*||");
 
 	std::vector<std::wstring> vecFiles { };
-	if (fd.DoModal() == IDOK)
-	{
+	if (fd.DoModal() == IDOK) {
 		const CComPtr<IFileOpenDialog> pIFOD = fd.GetIFileOpenDialog();
 		CComPtr<IShellItemArray> pResults;
 		pIFOD->GetResults(&pResults);
 
 		DWORD dwCount { };
 		pResults->GetCount(&dwCount);
-		for (unsigned i = 0; i < dwCount; ++i)
-		{
+		for (unsigned i = 0; i < dwCount; ++i) {
 			CComPtr<IShellItem> pItem;
 			pResults->GetItemAt(i, &pItem);
 			CComHeapPtr<wchar_t> pwstrPath;

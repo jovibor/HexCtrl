@@ -82,15 +82,12 @@ BOOL CHexDlgEncoding::OnInitDialog()
 
 void CHexDlgEncoding::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE)
-	{
-		if (m_pHexCtrl->IsCreated())
-		{
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+		if (m_pHexCtrl->IsCreated()) {
 			m_pListMain->SetItemState(-1, 0, LVIS_SELECTED);
 			if (const auto iter = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
 				[this](const SCODEPAGE& ref) { return ref.iCPID == m_pHexCtrl->GetEncoding(); });
-				iter != m_vecCodePage.end())
-			{
+				iter != m_vecCodePage.end()) {
 				const auto iItem = static_cast<int>(iter - m_vecCodePage.begin());
 				m_pListMain->SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
 				m_pListMain->EnsureVisible(iItem, FALSE);
@@ -103,10 +100,8 @@ void CHexDlgEncoding::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 
 BOOL CHexDlgEncoding::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
-	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_ENCODING_LIST)
-	{
-		switch (pNMI->hdr.code)
-		{
+	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_ENCODING_LIST) {
+		switch (pNMI->hdr.code) {
 		case LVN_COLUMNCLICK:
 			SortList();
 			break;
@@ -123,11 +118,9 @@ void CHexDlgEncoding::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
 
-	if (pItem->mask & LVIF_TEXT)
-	{
+	if (pItem->mask & LVIF_TEXT) {
 		const auto nItemID = static_cast<size_t>(pItem->iItem);
-		switch (pItem->iSubItem)
-		{
+		switch (pItem->iSubItem) {
 		case 0: //Code page ID.
 			*std::format_to(pItem->pszText, L"{}", m_vecCodePage[nItemID].iCPID) = L'\0';
 			break;
@@ -154,8 +147,7 @@ void CHexDlgEncoding::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 void CHexDlgEncoding::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-		m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].uMaxChars > 1)
-	{
+		m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].uMaxChars > 1) {
 		static LISTEXCOLOR stClr { RGB(245, 245, 245), RGB(70, 70, 70) };
 		pNMI->lParam = reinterpret_cast<LPARAM>(&stClr);
 	}
@@ -172,11 +164,9 @@ void CHexDlgEncoding::SortList()
 	const auto iColumn = m_pListMain->GetSortColumn();
 	const auto fAscending = m_pListMain->GetSortAscending();
 	std::sort(m_vecCodePage.begin() + 1, m_vecCodePage.end(),
-		[iColumn, fAscending](const SCODEPAGE& st1, const SCODEPAGE& st2)
-		{
+		[iColumn, fAscending](const SCODEPAGE& st1, const SCODEPAGE& st2) {
 			int iCompare { };
-			switch (iColumn)
-			{
+			switch (iColumn) {
 			case 0: //CP ID.
 				iCompare = st1.iCPID != st2.iCPID ? (st1.iCPID < st2.iCPID ? -1 : 1) : 0;
 				break;
