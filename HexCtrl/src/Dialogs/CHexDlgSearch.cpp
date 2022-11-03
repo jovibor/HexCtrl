@@ -237,8 +237,7 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, std::span<std:
 			stThread.ullMemToAcquire = ullSizeTotal;
 		stThread.ullLoopChunkSize = stThread.ullMemToAcquire - nSizeSearch;
 
-		if (ullStep > stThread.ullLoopChunkSize) //For very big steps.
-		{
+		if (ullStep > stThread.ullLoopChunkSize) { //For very big steps.
 			stThread.ullMemChunks = ullSizeTotal > ullStep ? ullSizeTotal / ullStep
 				+ ((ullSizeTotal % ullStep) ? 1 : 0) : 1;
 			stThread.fBigStep = true;
@@ -248,8 +247,7 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, std::span<std:
 			+ ((ullSizeTotal % stThread.ullLoopChunkSize) ? 1 : 0) : 1;
 	}
 
-	if (pDlgClbk == nullptr && ullSizeTotal > iSizeQuick) //Showing "Cancel" dialog only when data > iSizeQuick
-	{
+	if (pDlgClbk == nullptr && ullSizeTotal > iSizeQuick) { //Showing "Cancel" dialog only when data > iSizeQuick
 		CHexDlgCallback dlgClbk(L"Searching...", fForward ? ullStart : ullEnd, fForward ? ullEnd : ullStart);
 		stThread.pDlgClbk = &dlgClbk;
 		std::thread thrd(m_pfnThread, this, &stThread);
@@ -687,8 +685,7 @@ void CHexDlgSearch::Prepare()
 	ComboSearchFill(wstrTextSearch);
 
 	//Start at.
-	if (!m_fSelection) //Do not use "Start at" field when in the selection.
-	{
+	if (!m_fSelection) { //Do not use "Start at" field when in the selection.
 		CStringW wstrStart;
 		m_stEditStart.GetWindowTextW(wstrStart);
 		if (wstrStart.IsEmpty()) {
@@ -773,8 +770,7 @@ void CHexDlgSearch::Prepare()
 	if (!fSuccess)
 		return;
 
-	if (m_fSelection) //Search in selection.
-	{
+	if (m_fSelection) { //Search in selection.
 		const auto vecSel = pHexCtrl->GetSelection();
 		if (vecSel.empty()) //No selection.
 			return;
@@ -1208,10 +1204,8 @@ void CHexDlgSearch::Search()
 
 	pHexCtrl->SetRedraw(false);
 
-	if (m_fReplace) //Replace
-	{
-		if (m_fAll) //Replace All
-		{
+	if (m_fReplace) { //Replace
+		if (m_fAll) { //Replace All
 			auto ullStart = m_ullOffsetCurr;
 			const auto lmbReplaceAll = [&](CHexDlgCallback* pDlgClbk) {
 				if (pDlgClbk == nullptr)
@@ -1238,8 +1232,7 @@ void CHexDlgSearch::Search()
 			dlgClbk.DoModal();
 			thrd.join();
 		}
-		else if (m_iDirection == 1) //Forward only direction.
-		{
+		else if (m_iDirection == 1) { //Forward only direction.
 			lmbFindForward();
 			if (m_fFound) {
 				Replace(m_ullOffsetCurr, m_spnReplace);
@@ -1249,8 +1242,7 @@ void CHexDlgSearch::Search()
 			}
 		}
 	}
-	else //Search.
-	{
+	else { //Search.
 		if (m_fAll) {
 			ClearList(); //Clearing all results.
 			m_dwCount = 0;
@@ -1283,14 +1275,12 @@ void CHexDlgSearch::Search()
 			thrd.join();
 		}
 		else {
-			if (m_iDirection == 1) //Forward direction.
-			{
-				//If previously anything was found we increase m_ullOffsetCurr by m_ullStep.
+			if (m_iDirection == 1) { //Forward direction.
+							//If previously anything was found we increase m_ullOffsetCurr by m_ullStep.
 				m_ullOffsetCurr = m_fSecondMatch ? m_ullOffsetCurr + m_ullStep : m_ullOffsetCurr;
 				lmbFindForward();
 			}
-			else if (m_iDirection == -1) //Backward direction
-			{
+			else if (m_iDirection == -1) { //Backward direction.
 				lmbFindBackward();
 			}
 		}
@@ -1356,8 +1346,7 @@ void CHexDlgSearch::ThreadRun(STHREADRUN* pStThread)
 	const auto llStep = static_cast<LONGLONG>(m_ullStep); //Search step, must be signed here.
 	constexpr auto LOOP_UNROLL_SIZE = 4; //How many comparisons we do at one loop step.
 
-	if (pStThread->fForward) //Forward search.
-	{
+	if (pStThread->fForward) { //Forward search.
 		auto ullOffsetSearch = pStThread->ullStart;
 		for (auto iterChunk = 0ULL; iterChunk < pStThread->ullMemChunks; ++iterChunk) {
 			const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, pStThread->ullMemToAcquire });

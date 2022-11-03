@@ -108,8 +108,7 @@ void CHexDlgFillData::OnOK()
 		return;
 
 	wchar_t pwszComboText[MAX_PATH * 2];
-	if (m_stComboData.IsWindowEnabled() && m_stComboData.GetWindowTextW(pwszComboText, MAX_PATH) == 0) //No text.
-	{
+	if (m_stComboData.IsWindowEnabled() && m_stComboData.GetWindowTextW(pwszComboText, MAX_PATH) == 0) { //No text.
 		MessageBoxW(L"Missing Fill Data!", L"Data Error!", MB_ICONERROR);
 		return;
 	}

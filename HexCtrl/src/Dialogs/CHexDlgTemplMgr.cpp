@@ -39,6 +39,7 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_WM_LBUTTONUP()
 	ON_WM_MOUSEMOVE()
 	ON_WM_DESTROY()
+	ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
 
 BOOL CHexDlgTemplMgr::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
@@ -111,6 +112,18 @@ BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 
 	return CDialogEx::OnCommand(wParam, lParam);
+}
+
+HBRUSH CHexDlgTemplMgr::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	const auto hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
+
+	//Template's applied offset and total size static text color.
+	if (pWnd == &m_stStaticOffset || pWnd == &m_stStaticSize) {
+		pDC->SetTextColor(RGB(0, 0, 150));
+	}
+
+	return hbr;
 }
 
 void CHexDlgTemplMgr::OnBnLoadTemplate()

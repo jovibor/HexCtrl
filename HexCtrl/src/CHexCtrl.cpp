@@ -1098,8 +1098,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		if (hms.enModifyMode == MODIFY_RAND_MT19937 && hms.vecSpan.size() == 1 && refHexSpan.ullSize >= sizeof(std::uint64_t)) {
 			ModifyWorker(hms, lmbRandUInt64, { static_cast<std::byte*>(nullptr), sizeof(std::uint64_t) });
 
-			if (const auto dwRem = refHexSpan.ullSize % sizeof(std::uint64_t); dwRem > 0) //Remainder.
-			{
+			if (const auto dwRem = refHexSpan.ullSize % sizeof(std::uint64_t); dwRem > 0) { //Remainder.
 				const auto ullOffset = refHexSpan.ullOffset + refHexSpan.ullSize - dwRem;
 				const auto spnData = GetData({ ullOffset, dwRem });
 				for (std::size_t iterRem = 0; iterRem < dwRem; ++iterRem) {
@@ -1123,8 +1122,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			ModifyWorker(hms, lmbRandFast, { uptrRandData.get(), ulSizeRandBuff });
 
 			//Filling the remainder data.
-			if (const auto dwRem = refHexSpan.ullSize % ulSizeRandBuff; dwRem > 0) //Remainder.
-			{
+			if (const auto dwRem = refHexSpan.ullSize % ulSizeRandBuff; dwRem > 0) { //Remainder.
 				if (dwRem <= GetCacheSize()) {
 					const auto ullOffsetCurr = refHexSpan.ullOffset + refHexSpan.ullSize - dwRem;
 					const auto spnData = GetData({ ullOffsetCurr, dwRem });
@@ -1200,10 +1198,9 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		constexpr auto lmbOperData = [](std::byte* pData, const HEXMODIFY& hms, std::span<std::byte>/**/) {
 			assert(pData != nullptr);
 
-			constexpr auto lmbOper = []<typename T>(T * pData, const HEXMODIFY & hms)
-			{
+			constexpr auto lmbOper = []<typename T>(T * pData, const HEXMODIFY & hms) {
 				T tData = hms.fBigEndian ? ByteSwap(*pData) : *pData;
-				T tDataOper = *reinterpret_cast<T*>(hms.spnData.data());
+				const T tDataOper = *reinterpret_cast<T*>(hms.spnData.data());
 
 				using enum EHexOperMode;
 				switch (hms.enOperMode) {
@@ -1592,7 +1589,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 			//Check for previous same menu ID. To assign only one, first, keybinding for menu name.
 			//With `"ctrl+f", "ctrl+h"` in JSON, only the "Ctrl+F" will be assigned as the menu name.
 			const auto iterEnd = m_vecKeyBind.begin() + i++;
-			if (const auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd, [&](const SKEYBIND& ref) { 
+			if (const auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd, [&](const SKEYBIND& ref) {
 				return ref.wMenuID == iterMain.wMenuID; });
 				iterTmp == iterEnd && iterMain.wMenuID != 0 && iterMain.uKey != 0) {
 				CStringW wstrMenuName;
@@ -1610,7 +1607,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 					wstr += L"Alt+";
 
 				//Search for any special key names: 'Tab', 'Enter', etc... If not found then it's just a char.
-				if (const auto iterUmap = std::find_if(umapKeys.begin(), umapKeys.end(), [&](const auto& ref) { 
+				if (const auto iterUmap = std::find_if(umapKeys.begin(), umapKeys.end(), [&](const auto& ref) {
 					return ref.second.first == iterMain.uKey; }); iterUmap != umapKeys.end())
 					wstr += iterUmap->second.second;
 				else
@@ -3430,7 +3427,9 @@ auto CHexCtrl::GetBottomLine()const->ULONGLONG
 
 	const auto ullDataSize = GetDataSize();
 	const auto ullTotalLines = ullDataSize / m_dwCapacity;
-	if (ullEndLine >= ullTotalLines) //If ullDataSize is really small, or we at the scroll end, adjust ullEndLine to be not bigger than maximum possible.
+
+	//If ullDataSize is really small, or we at the scroll end, adjust ullEndLine to be not bigger than maximum possible.
+	if (ullEndLine >= ullTotalLines)
 		ullEndLine = ullTotalLines - ((ullDataSize % m_dwCapacity) == 0 ? 1 : 0);
 
 	return ullEndLine;
@@ -3439,7 +3438,7 @@ auto CHexCtrl::GetBottomLine()const->ULONGLONG
 auto CHexCtrl::GetCommand(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>
 {
 	std::optional<EHexCmd> optRet { std::nullopt };
-	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref) { 
+	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref) {
 		return ref.fCtrl == fCtrl && ref.fShift == fShift && ref.fAlt == fAlt && ref.uKey == uKey; });
 		iter != m_vecKeyBind.end()) {
 		optRet = iter->eCmd;

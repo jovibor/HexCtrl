@@ -20,7 +20,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 	{
 	public:
 		explicit CListExHdr();
-		~CListExHdr();
+		~CListExHdr()final = default;
 		void DeleteColumn(int iIndex);
 		[[nodiscard]] UINT GetHiddenCount()const;
 		void HideColumn(int iIndex, bool fHide);
@@ -276,8 +276,6 @@ CListExHdr::CListExHdr()
 	m_penShadow.CreatePen(PS_SOLID, 1, GetSysColor(COLOR_3DSHADOW));
 }
 
-CListExHdr::~CListExHdr() = default;
-
 void CListExHdr::DeleteColumn(int iIndex)
 {
 	if (const auto ID = ColumnIndexToID(iIndex); ID > 0) {
@@ -499,11 +497,8 @@ void CListExHdr::OnDrawItem(CDC * pDC, int iItem, CRect rcOrig, BOOL bIsPressed,
 	HDITEMW hdItem { HDI_FORMAT | HDI_TEXT, 0, warrHdrText, nullptr, MAX_PATH };
 	GetItem(iItem, &hdItem);
 
-	UINT uFormat { };
+	UINT uFormat { DT_LEFT };
 	switch (hdItem.fmt & HDF_JUSTIFYMASK) {
-	case HDF_LEFT:
-		uFormat = DT_LEFT;
-		break;
 	case HDF_CENTER:
 		uFormat = DT_CENTER;
 		break;
@@ -577,7 +572,7 @@ LRESULT CListExHdr::OnLayout(WPARAM /*wParam*/, LPARAM lParam)
 {
 	CMFCHeaderCtrl::DefWindowProcW(HDM_LAYOUT, 0, lParam);
 
-	auto pHDL = reinterpret_cast<LPHDLAYOUT>(lParam);
+	const auto pHDL = reinterpret_cast<LPHDLAYOUT>(lParam);
 	pHDL->pwpos->cy = m_dwHeaderHeight;	//New header height.
 	pHDL->prc->top = m_dwHeaderHeight;  //Decreasing list's height begining by the new header's height.
 
@@ -597,7 +592,7 @@ void CListExHdr::OnLButtonDown(UINT nFlags, CPoint point)
 			ImageList_GetIconSize(GetImageList()->m_hImageList, &iCX, &iCY);
 			CRect rcColumn;
 			GetItemRect(ht.iItem, rcColumn);
-			CRect rcIcon(rcColumn.TopLeft() + pData->stIcon.pt, SIZE { iCX, iCY });
+			const CRect rcIcon(rcColumn.TopLeft() + pData->stIcon.pt, SIZE { iCX, iCY });
 
 			if (rcIcon.PtInRect(point)) {
 				pData->fLMPressed = true;
@@ -624,7 +619,7 @@ void CListExHdr::OnLButtonUp(UINT nFlags, CPoint point)
 			ImageList_GetIconSize(GetImageList()->m_hImageList, &iCX, &iCY);
 			CRect rcColumn;
 			GetItemRect(ht.iItem, rcColumn);
-			CRect rcIcon(rcColumn.TopLeft() + iter.second.stIcon.pt, SIZE { iCX, iCY });
+			const CRect rcIcon(rcColumn.TopLeft() + iter.second.stIcon.pt, SIZE { iCX, iCY });
 
 			if (rcIcon.PtInRect(point)) {
 				for (auto& iterData : m_umapIcons)
@@ -708,7 +703,7 @@ auto CListExHdr::HasIcon(UINT ID)->CListExHdr::SHDRICON*
 
 auto CListExHdr::IsHidden(UINT ID)->std::optional<SHIDDEN*>
 {
-	auto iter = m_umapHidden.find(ID);
+	const auto iter = m_umapHidden.find(ID);
 
 	return iter != m_umapHidden.end() ? &iter->second : std::optional<SHIDDEN*> { };
 }
@@ -1051,7 +1046,7 @@ int CListEx::InsertColumn(int nCol, const LVCOLUMN* pColumn)
 
 	//Checking that the new column ID (nCol) not greater than the count of 
 	//the header items minus count of the already hidden columns.
-	if (refHdr.GetHiddenCount() > 0 && nCol >= static_cast<int>(refHdr.GetItemCount() - nHiddenCount)) {
+	if (nHiddenCount > 0 && nCol >= static_cast<int>(refHdr.GetItemCount() - nHiddenCount)) {
 		nCol = refHdr.GetItemCount() - nHiddenCount;
 	}
 
@@ -1450,8 +1445,7 @@ auto CListEx::HasColor(int iItem, int iSubItem)->std::optional<PLISTEXCOLOR>
 		return std::nullopt;
 
 	std::optional<PLISTEXCOLOR> opt { };
-	if (m_fVirtual) //In Virtual mode asking parent for color.
-	{
+	if (m_fVirtual) { //In Virtual mode asking parent for color.
 		const auto iCtrlID = GetDlgCtrlID();
 		NMITEMACTIVATE nmii { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_GETCOLOR } };
 		nmii.iItem = iItem;
@@ -1492,8 +1486,7 @@ auto CListEx::HasTooltip(int iItem, int iSubItem)->std::optional<PLISTEXTOOLTIP>
 		return std::nullopt;
 
 	std::optional<PLISTEXTOOLTIP> opt { };
-	if (m_fVirtual) //In Virtual mode asking parent for tooltip.
-	{
+	if (m_fVirtual) { //In Virtual mode asking parent for tooltip.
 		const auto iCtrlID = GetDlgCtrlID();
 		NMITEMACTIVATE nmii { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_GETTOOLTIP } };
 		nmii.iItem = iItem;
@@ -1519,8 +1512,7 @@ int CListEx::HasIcon(int iItem, int iSubItem)
 
 	int iRet { -1 }; //-1 is default, when no image for cell set.
 
-	if (m_fVirtual) //In Virtual List mode asking parent for the icon index in image list.
-	{
+	if (m_fVirtual) { //In Virtual List mode asking parent for the icon index in image list.
 		const auto uCtrlID = static_cast<UINT>(GetDlgCtrlID());
 		NMITEMACTIVATE nmii { { m_hWnd, uCtrlID, LISTEX_MSG_GETICON } };
 		nmii.iItem = iItem;
@@ -1774,7 +1766,7 @@ void CListEx::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 			if (m_fHLFlag) {
 				CRect rc;
 				GetItemRect(m_uHLItem, rc, LVIR_LABEL);
-				CSize size(0, (m_uHLItem - GetTopIndex()) * rc.Height());
+				const CSize size(0, (m_uHLItem - GetTopIndex()) * rc.Height());
 				Scroll(size);
 				m_fHLFlag = false;
 			}
@@ -1888,8 +1880,7 @@ auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 	if (iSubitem != 0) //Not needed for item itself (not subitem).
 		rcTextOrig.left += iIndentRc;
 
-	if (const auto iIndex = HasIcon(iItem, iSubitem); iIndex > -1) //If cell has icon.
-	{
+	if (const auto iIndex = HasIcon(iItem, iSubitem); iIndex > -1) { //If cell has icon.
 		IMAGEINFO stIMG;
 		GetImageList(LVSIL_NORMAL)->GetImageInfo(iIndex, &stIMG);
 		vecData.emplace_back(iIndex, rcTextOrig);
@@ -1907,17 +1898,18 @@ auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 		constexpr std::wstring_view wstrQuote { L"\"" };
 
 		//Searching the string for a <link=...></link> pattern.
-		if (size_t nPosTagLink { }, //Start position of the opening tag "<link=".
-			nPosLinkOpenQuote { },  //Position of the (link="<-) open quote.
-			nPosLinkCloseQuote { }, //Position of the (link=""<-) close quote.
-			nPosTagFirstClose { },  //Start position of the opening tag's closing bracket ">".
-			nPosTagLast { };        //Start position of the enclosing tag "</link>".
-			(nPosTagLink = wstrText.find(wstrTagLink, nPosCurr)) != std::wstring_view::npos
-			&& (nPosLinkOpenQuote = wstrText.find(wstrQuote, nPosTagLink)) != std::wstring_view::npos
-			&& (nPosLinkCloseQuote = wstrText.find(wstrQuote, nPosLinkOpenQuote + wstrQuote.size())) != std::wstring_view::npos
-			&& (nPosTagFirstClose = wstrText.find(wstrTagFirstClose, nPosLinkCloseQuote + wstrQuote.size())) != std::wstring_view::npos
-			&& (nPosTagLast = wstrText.find(wstrTagLast, nPosTagFirstClose + wstrTagFirstClose.size())) != std::wstring_view::npos) {
-			auto pDC = GetDC();
+		if (const std::size_t nPosTagLink { wstrText.find(wstrTagLink, nPosCurr) }, //Start position of the opening tag "<link=".
+			nPosLinkOpenQuote { wstrText.find(wstrQuote, nPosTagLink) }, //Position of the (link="<-) open quote.
+			//Position of the (link=""<-) close quote.
+			nPosLinkCloseQuote { wstrText.find(wstrQuote, nPosLinkOpenQuote + wstrQuote.size()) },
+			//Start position of the opening tag's closing bracket ">".
+			nPosTagFirstClose { wstrText.find(wstrTagFirstClose, nPosLinkCloseQuote + wstrQuote.size()) },
+			//Start position of the enclosing tag "</link>".
+			nPosTagLast { wstrText.find(wstrTagLast, nPosTagFirstClose + wstrTagFirstClose.size()) };
+			nPosTagLink != std::wstring_view::npos && nPosLinkOpenQuote != std::wstring_view::npos
+			&& nPosLinkCloseQuote != std::wstring_view::npos && nPosTagFirstClose != std::wstring_view::npos
+			&& nPosTagLast != std::wstring_view::npos) {
+			const auto pDC = GetDC();
 			pDC->SelectObject(m_fontList);
 			SIZE size;
 
@@ -1956,12 +1948,11 @@ auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 			bool fTitle { false };
 			std::wstring_view wstrTextTitle { };
 
-			if (size_t nPosTagTitle { }, //Position of the (title=) tag beginning.
-				nPosTitleOpenQuote { },  //Position of the (title="<-) opening quote.
-				nPosTitleCloseQuote { }; //Position of the (title=""<-) closing equote.
-				(nPosTagTitle = wstrText.find(wstrTagTitle, nPosCurr)) != std::wstring_view::npos
-				&& (nPosTitleOpenQuote = wstrText.find(wstrQuote, nPosTagTitle)) != std::wstring_view::npos
-				&& (nPosTitleCloseQuote = wstrText.find(wstrQuote, nPosTitleOpenQuote + wstrQuote.size())) != std::wstring_view::npos) {
+			if (const std::size_t nPosTagTitle { wstrText.find(wstrTagTitle, nPosCurr) }, //Position of the (title=) tag beginning.
+				nPosTitleOpenQuote { wstrText.find(wstrQuote, nPosTagTitle) },  //Position of the (title="<-) opening quote.
+				nPosTitleCloseQuote { wstrText.find(wstrQuote, nPosTitleOpenQuote + wstrQuote.size()) }; //Position of the (title=""<-) closing quote.
+				nPosTagTitle != std::wstring_view::npos && nPosTitleOpenQuote != std::wstring_view::npos
+				&& nPosTitleCloseQuote != std::wstring_view::npos) {
 				//Title tag text between quotes: <...title="textFromHere">
 				wstrTextTitle = wstrText.substr(nPosTitleOpenQuote + wstrQuote.size(),
 					nPosTitleCloseQuote - nPosTitleOpenQuote - wstrQuote.size());

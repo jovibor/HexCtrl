@@ -60,6 +60,7 @@ namespace HEXCTRL::INTERNAL
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
+		afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		afx_msg void OnBnLoadTemplate();
 		afx_msg void OnBnUnloadTemplate();
 		afx_msg void OnBnApply();
@@ -106,8 +107,8 @@ namespace HEXCTRL::INTERNAL
 		CButton m_stCheckTtShow;      //Check-box "Show tooltips"
 		CButton m_stCheckHglSel;      //Check-box "Highlight selected"
 		CButton m_stCheckHex;         //Check-box "Highlight selected"
-		CButton m_stStaticOffset;     //Static text "Template offset:".
-		CButton m_stStaticSize;       //Static text Template size:".
+		CWnd m_stStaticOffset;        //Static text "Template offset:".
+		CWnd m_stStaticSize;          //Static text Template size:".
 		LISTEX::IListExPtr m_pListApplied { LISTEX::CreateListEx() };
 		LISTEX::LISTEXCOLOR m_stCellClr { };
 		CTreeCtrl m_stTreeApplied;

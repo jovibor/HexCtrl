@@ -250,8 +250,7 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 		return;
 
 	const auto* const pHexCtrl = GetHexCtrl();
-	if (fFwd) //Repeat the last command (forward or backward) as is.
-	{
+	if (fFwd) { //Repeat the last command (forward or backward) as is.
 		switch (m_iRepeat) {
 		case -1:
 			if (m_ullCurrOffset < m_ullData) //To avoid underflow.
