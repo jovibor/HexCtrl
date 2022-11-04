@@ -18,7 +18,7 @@
 #endif
 
 
-namespace HEXCTRL::stn //String to Num.
+namespace stn //String to Num.
 {
 	enum class errc { // names for generic error codes
 		invalid_argument = 22,   // EINVAL
@@ -41,7 +41,7 @@ namespace HEXCTRL::stn //String to Num.
 
 	namespace impl
 	{
-		inline constexpr unsigned char _Digit_from_byte[] = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+		inline constexpr unsigned char Digit_from_byte[] = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
 			255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
 			255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 255, 255,
 			255, 255, 255, 255, 255, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
@@ -53,339 +53,339 @@ namespace HEXCTRL::stn //String to Num.
 			255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
 			255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
 			255, 255, 255, 255, 255, 255, 255, 255, 255 };
-		static_assert(std::size(_Digit_from_byte) == 256);
+		static_assert(std::size(Digit_from_byte) == 256);
 
-		[[nodiscard]] inline constexpr unsigned char _Digit_from_char(const wchar_t _Ch) noexcept {
+		[[nodiscard]] inline constexpr unsigned char Digit_from_char(const wchar_t Ch) noexcept {
 			// convert ['0', '9'] ['A', 'Z'] ['a', 'z'] to [0, 35], everything else to 255
-			return _Digit_from_byte[static_cast<unsigned char>(_Ch)];
+			return Digit_from_byte[static_cast<unsigned char>(Ch)];
 		}
 
-		template <class _RawTy, class CharT>
-		[[nodiscard]] constexpr from_chars_result<CharT> _Integer_from_chars(
-			const CharT* const _First, const CharT* const _Last, _RawTy& _Raw_value, int _Base) noexcept {
-			assert(_Base == 0 || (_Base >= 2 && _Base <= 36));
+		template <class RawTy, class CharT>
+		[[nodiscard]] constexpr from_chars_result<CharT> Integer_from_chars(
+			const CharT* const First, const CharT* const Last, RawTy& Raw_value, int Base) noexcept {
+			assert(Base == 0 || (Base >= 2 && Base <= 36));
 
-			bool _Minus_sign = false;
+			bool Minus_sign = false;
 
-			const auto* _Next = _First;
+			const auto* Next = First;
 
-			if constexpr (std::is_signed_v<_RawTy>) {
-				if (_Next != _Last && *_Next == '-') {
-					_Minus_sign = true;
-					++_Next;
+			if constexpr (std::is_signed_v<RawTy>) {
+				if (Next != Last && *Next == '-') {
+					Minus_sign = true;
+					++Next;
 				}
 			}
 
-			//Checking for '0x'/'0X' prefix if _Base == 0 or 16.
+			//Checking for '0x'/'0X' prefix if Base == 0 or 16.
 			constexpr auto lmbCheck16 = [](const CharT* const pFirst, const CharT* const pLast) {
 				return (pFirst != pLast && (pFirst + 1) != pLast && (*pFirst == '0' && (*(pFirst + 1) == 'x' || *(pFirst + 1) == 'X')));
 			};
 
-			if (_Base == 0) {
-				if (lmbCheck16(_Next, _Last)) {
-					_Next += 2;
-					_Base = 16;
+			if (Base == 0) {
+				if (lmbCheck16(Next, Last)) {
+					Next += 2;
+					Base = 16;
 				}
 				else {
-					_Base = 10;
+					Base = 10;
 				}
 			}
-			else if (_Base == 16) { //Base16 string may or may not contain the `0x` prefix.
-				if (lmbCheck16(_Next, _Last)) {
-					_Next += 2;
+			else if (Base == 16) { //Base16 string may or may not contain the `0x` prefix.
+				if (lmbCheck16(Next, Last)) {
+					Next += 2;
 				}
 			}
 			//End of '0x'/'0X' prefix checking.
 
-			using _Unsigned = std::make_unsigned_t<_RawTy>;
+			using Unsigned = std::make_unsigned_t<RawTy>;
 
-			constexpr _Unsigned _Uint_max = static_cast<_Unsigned>(-1);
-			constexpr _Unsigned _Int_max = static_cast<_Unsigned>(_Uint_max >> 1);
-			constexpr _Unsigned _Abs_int_min = static_cast<_Unsigned>(_Int_max + 1);
+			constexpr Unsigned Uint_max = static_cast<Unsigned>(-1);
+			constexpr Unsigned Int_max = static_cast<Unsigned>(Uint_max >> 1);
+			constexpr Unsigned Abs_int_min = static_cast<Unsigned>(Int_max + 1);
 
-			_Unsigned _Risky_val;
-			_Unsigned _Max_digit;
+			Unsigned Risky_val;
+			Unsigned Max_digit;
 
-			if constexpr (std::is_signed_v<_RawTy>) {
-				if (_Minus_sign) {
-					_Risky_val = static_cast<_Unsigned>(_Abs_int_min / _Base);
-					_Max_digit = static_cast<_Unsigned>(_Abs_int_min % _Base);
+			if constexpr (std::is_signed_v<RawTy>) {
+				if (Minus_sign) {
+					Risky_val = static_cast<Unsigned>(Abs_int_min / Base);
+					Max_digit = static_cast<Unsigned>(Abs_int_min % Base);
 				}
 				else {
-					_Risky_val = static_cast<_Unsigned>(_Int_max / _Base);
-					_Max_digit = static_cast<_Unsigned>(_Int_max % _Base);
+					Risky_val = static_cast<Unsigned>(Int_max / Base);
+					Max_digit = static_cast<Unsigned>(Int_max % Base);
 				}
 			}
 			else {
-				_Risky_val = static_cast<_Unsigned>(_Uint_max / _Base);
-				_Max_digit = static_cast<_Unsigned>(_Uint_max % _Base);
+				Risky_val = static_cast<Unsigned>(Uint_max / Base);
+				Max_digit = static_cast<Unsigned>(Uint_max % Base);
 			}
 
-			_Unsigned _Value = 0;
+			Unsigned Value = 0;
 
-			bool _Overflowed = false;
+			bool Overflowed = false;
 
-			for (; _Next != _Last; ++_Next) {
-				const unsigned char _Digit = _Digit_from_char(*_Next);
+			for (; Next != Last; ++Next) {
+				const unsigned char Digit = Digit_from_char(*Next);
 
-				if (_Digit >= _Base) {
+				if (Digit >= Base) {
 					break;
 				}
 
-				if (_Value < _Risky_val // never overflows
-					|| (_Value == _Risky_val && _Digit <= _Max_digit)) { // overflows for certain digits
-					_Value = static_cast<_Unsigned>(_Value * _Base + _Digit);
+				if (Value < Risky_val // never overflows
+					|| (Value == Risky_val && Digit <= Max_digit)) { // overflows for certain digits
+					Value = static_cast<Unsigned>(Value * Base + Digit);
 				}
-				else { // _Value > _Risky_val always overflows
-					_Overflowed = true; // keep going, _Next still needs to be updated, _Value is now irrelevant
-				}
-			}
-
-			if (_Next - _First == static_cast<ptrdiff_t>(_Minus_sign)) {
-				return { _First, errc::invalid_argument };
-			}
-
-			if (_Overflowed) {
-				return { _Next, errc::result_out_of_range };
-			}
-
-			if constexpr (std::is_signed_v<_RawTy>) {
-				if (_Minus_sign) {
-					_Value = static_cast<_Unsigned>(0 - _Value);
+				else { // Value > Risky_val always overflows
+					Overflowed = true; // keep going, Next still needs to be updated, Value is now irrelevant
 				}
 			}
 
-			_Raw_value = static_cast<_RawTy>(_Value); // implementation-defined for negative, N4713 7.8 [conv.integral]/3
+			if (Next - First == static_cast<ptrdiff_t>(Minus_sign)) {
+				return { First, errc::invalid_argument };
+			}
 
-			return { _Next, errc { } };
+			if (Overflowed) {
+				return { Next, errc::result_out_of_range };
+			}
+
+			if constexpr (std::is_signed_v<RawTy>) {
+				if (Minus_sign) {
+					Value = static_cast<Unsigned>(0 - Value);
+				}
+			}
+
+			Raw_value = static_cast<RawTy>(Value); // implementation-defined for negative, N4713 7.8 [conv.integral]/3
+
+			return { Next, errc { } };
 		}
 
-		template <class _FloatingType>
-		struct _Floating_type_traits;
+		template <class FloatingType>
+		struct Floating_type_traits;
 
 		template <>
-		struct _Floating_type_traits<float> {
-			static constexpr int32_t _Mantissa_bits = 24; // FLT_MANT_DIG
-			static constexpr int32_t _Exponent_bits = 8; // sizeof(float) * CHAR_BIT - FLT_MANT_DIG
-			static constexpr int32_t _Maximum_binary_exponent = 127; // FLT_MAX_EXP - 1
-			static constexpr int32_t _Minimum_binary_exponent = -126; // FLT_MIN_EXP - 1
-			static constexpr int32_t _Exponent_bias = 127;
-			static constexpr int32_t _Sign_shift = 31; // _Exponent_bits + _Mantissa_bits - 1
-			static constexpr int32_t _Exponent_shift = 23; // _Mantissa_bits - 1
+		struct Floating_type_traits<float> {
+			static constexpr int32_t Mantissa_bits = 24; // FLT_MANT_DIG
+			static constexpr int32_t Exponent_bits = 8; // sizeof(float) * CHAR_BIT - FLT_MANT_DIG
+			static constexpr int32_t Maximum_binary_exponent = 127; // FLT_MAX_EXP - 1
+			static constexpr int32_t Minimum_binary_exponent = -126; // FLT_MIN_EXP - 1
+			static constexpr int32_t Exponent_bias = 127;
+			static constexpr int32_t Sign_shift = 31; // Exponent_bits + Mantissa_bits - 1
+			static constexpr int32_t Exponent_shift = 23; // Mantissa_bits - 1
 
-			using _Uint_type = uint32_t;
+			using Uint_type = uint32_t;
 
-			static constexpr uint32_t _Exponent_mask = 0x000000FFu; // (1u << _Exponent_bits) - 1
-			static constexpr uint32_t _Normal_mantissa_mask = 0x00FFFFFFu; // (1u << _Mantissa_bits) - 1
-			static constexpr uint32_t _Denormal_mantissa_mask = 0x007FFFFFu; // (1u << (_Mantissa_bits - 1)) - 1
-			static constexpr uint32_t _Special_nan_mantissa_mask = 0x00400000u; // 1u << (_Mantissa_bits - 2)
-			static constexpr uint32_t _Shifted_sign_mask = 0x80000000u; // 1u << _Sign_shift
-			static constexpr uint32_t _Shifted_exponent_mask = 0x7F800000u; // _Exponent_mask << _Exponent_shift
+			static constexpr uint32_t Exponent_mask = 0x000000FFu; // (1u << Exponent_bits) - 1
+			static constexpr uint32_t Normal_mantissa_mask = 0x00FFFFFFu; // (1u << Mantissa_bits) - 1
+			static constexpr uint32_t Denormal_mantissa_mask = 0x007FFFFFu; // (1u << (Mantissa_bits - 1)) - 1
+			static constexpr uint32_t Special_nan_mantissa_mask = 0x00400000u; // 1u << (Mantissa_bits - 2)
+			static constexpr uint32_t Shifted_sign_mask = 0x80000000u; // 1u << Sign_shift
+			static constexpr uint32_t Shifted_exponent_mask = 0x7F800000u; // Exponent_mask << Exponent_shift
 		};
 
 		template <>
-		struct _Floating_type_traits<double> {
-			static constexpr int32_t _Mantissa_bits = 53; // DBL_MANT_DIG
-			static constexpr int32_t _Exponent_bits = 11; // sizeof(double) * CHAR_BIT - DBL_MANT_DIG
-			static constexpr int32_t _Maximum_binary_exponent = 1023; // DBL_MAX_EXP - 1
-			static constexpr int32_t _Minimum_binary_exponent = -1022; // DBL_MIN_EXP - 1
-			static constexpr int32_t _Exponent_bias = 1023;
-			static constexpr int32_t _Sign_shift = 63; // _Exponent_bits + _Mantissa_bits - 1
-			static constexpr int32_t _Exponent_shift = 52; // _Mantissa_bits - 1
+		struct Floating_type_traits<double> {
+			static constexpr int32_t Mantissa_bits = 53; // DBL_MANT_DIG
+			static constexpr int32_t Exponent_bits = 11; // sizeof(double) * CHAR_BIT - DBL_MANT_DIG
+			static constexpr int32_t Maximum_binary_exponent = 1023; // DBL_MAX_EXP - 1
+			static constexpr int32_t Minimum_binary_exponent = -1022; // DBL_MIN_EXP - 1
+			static constexpr int32_t Exponent_bias = 1023;
+			static constexpr int32_t Sign_shift = 63; // Exponent_bits + Mantissa_bits - 1
+			static constexpr int32_t Exponent_shift = 52; // Mantissa_bits - 1
 
-			using _Uint_type = uint64_t;
+			using Uint_type = uint64_t;
 
-			static constexpr uint64_t _Exponent_mask = 0x00000000000007FFu; // (1ULL << _Exponent_bits) - 1
-			static constexpr uint64_t _Normal_mantissa_mask = 0x001FFFFFFFFFFFFFu; // (1ULL << _Mantissa_bits) - 1
-			static constexpr uint64_t _Denormal_mantissa_mask = 0x000FFFFFFFFFFFFFu; // (1ULL << (_Mantissa_bits - 1)) - 1
-			static constexpr uint64_t _Special_nan_mantissa_mask = 0x0008000000000000u; // 1ULL << (_Mantissa_bits - 2)
-			static constexpr uint64_t _Shifted_sign_mask = 0x8000000000000000u; // 1ULL << _Sign_shift
-			static constexpr uint64_t _Shifted_exponent_mask = 0x7FF0000000000000u; // _Exponent_mask << _Exponent_shift
+			static constexpr uint64_t Exponent_mask = 0x00000000000007FFu; // (1ULL << Exponent_bits) - 1
+			static constexpr uint64_t Normal_mantissa_mask = 0x001FFFFFFFFFFFFFu; // (1ULL << Mantissa_bits) - 1
+			static constexpr uint64_t Denormal_mantissa_mask = 0x000FFFFFFFFFFFFFu; // (1ULL << (Mantissa_bits - 1)) - 1
+			static constexpr uint64_t Special_nan_mantissa_mask = 0x0008000000000000u; // 1ULL << (Mantissa_bits - 2)
+			static constexpr uint64_t Shifted_sign_mask = 0x8000000000000000u; // 1ULL << Sign_shift
+			static constexpr uint64_t Shifted_exponent_mask = 0x7FF0000000000000u; // Exponent_mask << Exponent_shift
 		};
 
 		template <>
-		struct _Floating_type_traits<long double> : _Floating_type_traits<double> {};
+		struct Floating_type_traits<long double> : Floating_type_traits<double> {};
 
-		struct _Big_integer_flt {
-			_Big_integer_flt() noexcept : _Myused(0) {}
+		struct Big_integer_flt {
+			Big_integer_flt() noexcept : Myused(0) {}
 
-			_Big_integer_flt(const _Big_integer_flt& _Other) noexcept : _Myused(_Other._Myused) {
-				std::memcpy(_Mydata, _Other._Mydata, _Other._Myused * sizeof(uint32_t));
+			Big_integer_flt(const Big_integer_flt& Other) noexcept : Myused(Other.Myused) {
+				std::memcpy(Mydata, Other.Mydata, Other.Myused * sizeof(uint32_t));
 			}
 
-			_Big_integer_flt& operator=(const _Big_integer_flt& _Other) noexcept {
-				_Myused = _Other._Myused;
-				std::memmove(_Mydata, _Other._Mydata, _Other._Myused * sizeof(uint32_t));
+			Big_integer_flt& operator=(const Big_integer_flt& Other) noexcept {
+				Myused = Other.Myused;
+				std::memmove(Mydata, Other.Mydata, Other.Myused * sizeof(uint32_t));
 				return *this;
 			}
 
-			[[nodiscard]] bool operator<(const _Big_integer_flt& _Rhs) const noexcept {
-				if (_Myused != _Rhs._Myused) {
-					return _Myused < _Rhs._Myused;
+			[[nodiscard]] bool operator<(const Big_integer_flt& Rhs) const noexcept {
+				if (Myused != Rhs.Myused) {
+					return Myused < Rhs.Myused;
 				}
 
-				for (uint32_t _Ix = _Myused - 1; _Ix != static_cast<uint32_t>(-1); --_Ix) {
-					if (_Mydata[_Ix] != _Rhs._Mydata[_Ix]) {
-						return _Mydata[_Ix] < _Rhs._Mydata[_Ix];
+				for (uint32_t Ix = Myused - 1; Ix != static_cast<uint32_t>(-1); --Ix) {
+					if (Mydata[Ix] != Rhs.Mydata[Ix]) {
+						return Mydata[Ix] < Rhs.Mydata[Ix];
 					}
 				}
 
 				return false;
 			}
 
-			static constexpr uint32_t _Maximum_bits = 1074 // 1074 bits required to represent 2^1074
+			static constexpr uint32_t Maximum_bits = 1074 // 1074 bits required to represent 2^1074
 				+ 2552 // ceil(log2(10^768))
 				+ 54; // shift space
 
-			static constexpr uint32_t _Element_bits = 32;
+			static constexpr uint32_t Element_bits = 32;
 
-			static constexpr uint32_t _Element_count = (_Maximum_bits + _Element_bits - 1) / _Element_bits;
+			static constexpr uint32_t Element_count = (Maximum_bits + Element_bits - 1) / Element_bits;
 
-			uint32_t _Myused; // The number of elements currently in use
-			uint32_t _Mydata[_Element_count]; // The number, stored in little-endian form
+			uint32_t Myused; // The number of elements currently in use
+			uint32_t Mydata[Element_count]; // The number, stored in little-endian form
 		};
 
-		[[nodiscard]] inline _Big_integer_flt _Make_big_integer_flt_one() noexcept {
-			_Big_integer_flt _Xval { };
-			_Xval._Mydata[0] = 1;
-			_Xval._Myused = 1;
-			return _Xval;
+		[[nodiscard]] inline Big_integer_flt Make_big_integer_flt_one() noexcept {
+			Big_integer_flt Xval { };
+			Xval.Mydata[0] = 1;
+			Xval.Myused = 1;
+			return Xval;
 		}
 
-		[[nodiscard]] inline uint32_t _Bit_scan_reverse(const uint32_t _Value) noexcept {
-			unsigned long _Index; // Intentionally uninitialized for better codegen
+		[[nodiscard]] inline uint32_t Bit_scan_reverse(const uint32_t Value) noexcept {
+			unsigned long Index; // Intentionally uninitialized for better codegen
 
-			if (_BitScanReverse(&_Index, _Value)) {
-				return _Index + 1;
+			if (_BitScanReverse(&Index, Value)) {
+				return Index + 1;
 			}
 
 			return 0;
 		}
 
-		[[nodiscard]] inline uint32_t _Bit_scan_reverse(const uint64_t _Value) noexcept {
-			unsigned long _Index; // Intentionally uninitialized for better codegen
+		[[nodiscard]] inline uint32_t Bit_scan_reverse(const uint64_t Value) noexcept {
+			unsigned long Index; // Intentionally uninitialized for better codegen
 
-#ifdef _WIN64
-			if (_BitScanReverse64(&_Index, _Value)) {
-				return _Index + 1;
+		#ifdef WIN64
+			if (BitScanReverse64(&Index, Value)) {
+				return Index + 1;
 			}
-#else // ^^^ 64-bit ^^^ / vvv 32-bit vvv
-			uint32_t _Ui32 = static_cast<uint32_t>(_Value >> 32);
+		#else // ^^^ 64-bit ^^^ / vvv 32-bit vvv
+			uint32_t Ui32 = static_cast<uint32_t>(Value >> 32);
 
-			if (_BitScanReverse(&_Index, _Ui32)) {
-				return _Index + 1 + 32;
+			if (_BitScanReverse(&Index, Ui32)) {
+				return Index + 1 + 32;
 			}
 
-			_Ui32 = static_cast<uint32_t>(_Value);
+			Ui32 = static_cast<uint32_t>(Value);
 
-			if (_BitScanReverse(&_Index, _Ui32)) {
-				return _Index + 1;
+			if (_BitScanReverse(&Index, Ui32)) {
+				return Index + 1;
 			}
-#endif // ^^^ 32-bit ^^^
+		#endif // ^^^ 32-bit ^^^
 
 			return 0;
 		}
 
-		[[nodiscard]] inline uint32_t _Bit_scan_reverse(const _Big_integer_flt& _Xval) noexcept {
-			if (_Xval._Myused == 0) {
+		[[nodiscard]] inline uint32_t Bit_scan_reverse(const Big_integer_flt& Xval) noexcept {
+			if (Xval.Myused == 0) {
 				return 0;
 			}
 
-			const uint32_t _Bx = _Xval._Myused - 1;
+			const uint32_t Bx = Xval.Myused - 1;
 
-			assert(_Xval._Mydata[_Bx] != 0); // _Big_integer_flt should always be trimmed
+			assert(Xval.Mydata[Bx] != 0); // Big_integer_flt should always be trimmed
 
-			unsigned long _Index; // Intentionally uninitialized for better codegen
+			unsigned long Index; // Intentionally uninitialized for better codegen
 
-			_BitScanReverse(&_Index, _Xval._Mydata[_Bx]); // assumes _Xval._Mydata[_Bx] != 0
+			_BitScanReverse(&Index, Xval.Mydata[Bx]); // assumes Xval.Mydata[Bx] != 0
 
-			return _Index + 1 + _Bx * _Big_integer_flt::_Element_bits;
+			return Index + 1 + Bx * Big_integer_flt::Element_bits;
 		}
 
-		[[nodiscard]] inline bool _Shift_left(_Big_integer_flt& _Xval, const uint32_t _Nx) noexcept {
-			if (_Xval._Myused == 0) {
+		[[nodiscard]] inline bool Shift_left(Big_integer_flt& Xval, const uint32_t Nx) noexcept {
+			if (Xval.Myused == 0) {
 				return true;
 			}
 
-			const uint32_t _Unit_shift = _Nx / _Big_integer_flt::_Element_bits;
-			const uint32_t _Bit_shift = _Nx % _Big_integer_flt::_Element_bits;
+			const uint32_t Unit_shift = Nx / Big_integer_flt::Element_bits;
+			const uint32_t Bit_shift = Nx % Big_integer_flt::Element_bits;
 
-			if (_Xval._Myused + _Unit_shift > _Big_integer_flt::_Element_count) {
+			if (Xval.Myused + Unit_shift > Big_integer_flt::Element_count) {
 				// Unit shift will overflow.
-				_Xval._Myused = 0;
+				Xval.Myused = 0;
 				return false;
 			}
 
-			if (_Bit_shift == 0) {
-				std::memmove(_Xval._Mydata + _Unit_shift, _Xval._Mydata, _Xval._Myused * sizeof(uint32_t));
-				_Xval._Myused += _Unit_shift;
+			if (Bit_shift == 0) {
+				std::memmove(Xval.Mydata + Unit_shift, Xval.Mydata, Xval.Myused * sizeof(uint32_t));
+				Xval.Myused += Unit_shift;
 			}
 			else {
-				const bool _Bit_shifts_into_next_unit =
-					_Bit_shift > (_Big_integer_flt::_Element_bits - _Bit_scan_reverse(_Xval._Mydata[_Xval._Myused - 1]));
+				const bool Bit_shifts_into_next_unit =
+					Bit_shift > (Big_integer_flt::Element_bits - Bit_scan_reverse(Xval.Mydata[Xval.Myused - 1]));
 
-				const uint32_t _New_used = _Xval._Myused + _Unit_shift + static_cast<uint32_t>(_Bit_shifts_into_next_unit);
+				const uint32_t New_used = Xval.Myused + Unit_shift + static_cast<uint32_t>(Bit_shifts_into_next_unit);
 
-				if (_New_used > _Big_integer_flt::_Element_count) {
+				if (New_used > Big_integer_flt::Element_count) {
 					// Bit shift will overflow.
-					_Xval._Myused = 0;
+					Xval.Myused = 0;
 					return false;
 				}
 
-				const uint32_t _Msb_bits = _Bit_shift;
-				const uint32_t _Lsb_bits = _Big_integer_flt::_Element_bits - _Msb_bits;
+				const uint32_t Msb_bits = Bit_shift;
+				const uint32_t Lsb_bits = Big_integer_flt::Element_bits - Msb_bits;
 
-				const uint32_t _Lsb_mask = (1UL << _Lsb_bits) - 1UL;
-				const uint32_t _Msb_mask = ~_Lsb_mask;
+				const uint32_t Lsb_mask = (1UL << Lsb_bits) - 1UL;
+				const uint32_t Msb_mask = ~Lsb_mask;
 
-				// If _Unit_shift == 0, this will wraparound, which is okay.
-				for (uint32_t _Dest_index = _New_used - 1; _Dest_index != _Unit_shift - 1; --_Dest_index) {
+				// If Unit_shift == 0, this will wraparound, which is okay.
+				for (uint32_t Dest_index = New_used - 1; Dest_index != Unit_shift - 1; --Dest_index) {
 					// performance note: PSLLDQ and PALIGNR instructions could be more efficient here
 
-					// If _Bit_shifts_into_next_unit, the first iteration will trigger the bounds check below, which is okay.
-					const uint32_t _Upper_source_index = _Dest_index - _Unit_shift;
+					// If Bit_shifts_into_next_unit, the first iteration will trigger the bounds check below, which is okay.
+					const uint32_t Upper_source_index = Dest_index - Unit_shift;
 
-					// When _Dest_index == _Unit_shift, this will wraparound, which is okay (see bounds check below).
-					const uint32_t _Lower_source_index = _Dest_index - _Unit_shift - 1;
+					// When Dest_index == Unit_shift, this will wraparound, which is okay (see bounds check below).
+					const uint32_t Lower_source_index = Dest_index - Unit_shift - 1;
 
-					const uint32_t _Upper_source = _Upper_source_index < _Xval._Myused ? _Xval._Mydata[_Upper_source_index] : 0;
-					const uint32_t _Lower_source = _Lower_source_index < _Xval._Myused ? _Xval._Mydata[_Lower_source_index] : 0;
+					const uint32_t Upper_source = Upper_source_index < Xval.Myused ? Xval.Mydata[Upper_source_index] : 0;
+					const uint32_t Lower_source = Lower_source_index < Xval.Myused ? Xval.Mydata[Lower_source_index] : 0;
 
-					const uint32_t _Shifted_upper_source = (_Upper_source & _Lsb_mask) << _Msb_bits;
-					const uint32_t _Shifted_lower_source = (_Lower_source & _Msb_mask) >> _Lsb_bits;
+					const uint32_t Shifted_upper_source = (Upper_source & Lsb_mask) << Msb_bits;
+					const uint32_t Shifted_lower_source = (Lower_source & Msb_mask) >> Lsb_bits;
 
-					const uint32_t _Combined_shifted_source = _Shifted_upper_source | _Shifted_lower_source;
+					const uint32_t Combined_shifted_source = Shifted_upper_source | Shifted_lower_source;
 
-					_Xval._Mydata[_Dest_index] = _Combined_shifted_source;
+					Xval.Mydata[Dest_index] = Combined_shifted_source;
 				}
 
-				_Xval._Myused = _New_used;
+				Xval.Myused = New_used;
 			}
 
-			std::memset(_Xval._Mydata, 0, _Unit_shift * sizeof(uint32_t));
+			std::memset(Xval.Mydata, 0, Unit_shift * sizeof(uint32_t));
 
 			return true;
 		}
 
-		[[nodiscard]] inline bool _Add(_Big_integer_flt& _Xval, const uint32_t _Value) noexcept {
-			if (_Value == 0) {
+		[[nodiscard]] inline bool Add(Big_integer_flt& Xval, const uint32_t Value) noexcept {
+			if (Value == 0) {
 				return true;
 			}
 
-			uint32_t _Carry = _Value;
-			for (uint32_t _Ix = 0; _Ix != _Xval._Myused; ++_Ix) {
-				const uint64_t _Result = static_cast<uint64_t>(_Xval._Mydata[_Ix]) + _Carry;
-				_Xval._Mydata[_Ix] = static_cast<uint32_t>(_Result);
-				_Carry = static_cast<uint32_t>(_Result >> 32);
+			uint32_t Carry = Value;
+			for (uint32_t Ix = 0; Ix != Xval.Myused; ++Ix) {
+				const uint64_t Result = static_cast<uint64_t>(Xval.Mydata[Ix]) + Carry;
+				Xval.Mydata[Ix] = static_cast<uint32_t>(Result);
+				Carry = static_cast<uint32_t>(Result >> 32);
 			}
 
-			if (_Carry != 0) {
-				if (_Xval._Myused < _Big_integer_flt::_Element_count) {
-					_Xval._Mydata[_Xval._Myused] = _Carry;
-					++_Xval._Myused;
+			if (Carry != 0) {
+				if (Xval.Myused < Big_integer_flt::Element_count) {
+					Xval.Mydata[Xval.Myused] = Carry;
+					++Xval.Myused;
 				}
 				else {
-					_Xval._Myused = 0;
+					Xval.Myused = 0;
 					return false;
 				}
 			}
@@ -393,53 +393,53 @@ namespace HEXCTRL::stn //String to Num.
 			return true;
 		}
 
-		[[nodiscard]] inline uint32_t _Add_carry(uint32_t& _Ux1, const uint32_t _Ux2, const uint32_t _U_carry) noexcept {
-			const uint64_t _Uu = static_cast<uint64_t>(_Ux1) + _Ux2 + _U_carry;
-			_Ux1 = static_cast<uint32_t>(_Uu);
-			return static_cast<uint32_t>(_Uu >> 32);
+		[[nodiscard]] inline uint32_t Add_carry(uint32_t& Ux1, const uint32_t Ux2, const uint32_t U_carry) noexcept {
+			const uint64_t Uu = static_cast<uint64_t>(Ux1) + Ux2 + U_carry;
+			Ux1 = static_cast<uint32_t>(Uu);
+			return static_cast<uint32_t>(Uu >> 32);
 		}
 
-		[[nodiscard]] inline uint32_t _Add_multiply_carry(
-			uint32_t& _U_add, const uint32_t _U_mul_1, const uint32_t _U_mul_2, const uint32_t _U_carry) noexcept {
-			const uint64_t _Uu_res = static_cast<uint64_t>(_U_mul_1) * _U_mul_2 + _U_add + _U_carry;
-			_U_add = static_cast<uint32_t>(_Uu_res);
-			return static_cast<uint32_t>(_Uu_res >> 32);
+		[[nodiscard]] inline uint32_t Add_multiply_carry(
+			uint32_t& U_add, const uint32_t U_mul_1, const uint32_t U_mul_2, const uint32_t U_carry) noexcept {
+			const uint64_t Uu_res = static_cast<uint64_t>(U_mul_1) * U_mul_2 + U_add + U_carry;
+			U_add = static_cast<uint32_t>(Uu_res);
+			return static_cast<uint32_t>(Uu_res >> 32);
 		}
 
-		[[nodiscard]] inline uint32_t _Multiply_core(
-			uint32_t* const _Multiplicand, const uint32_t _Multiplicand_count, const uint32_t _Multiplier) noexcept {
-			uint32_t _Carry = 0;
-			for (uint32_t _Ix = 0; _Ix != _Multiplicand_count; ++_Ix) {
-				const uint64_t _Result = static_cast<uint64_t>(_Multiplicand[_Ix]) * _Multiplier + _Carry;
-				_Multiplicand[_Ix] = static_cast<uint32_t>(_Result);
-				_Carry = static_cast<uint32_t>(_Result >> 32);
+		[[nodiscard]] inline uint32_t Multiply_core(
+			uint32_t* const Multiplicand, const uint32_t Multiplicand_count, const uint32_t Multiplier) noexcept {
+			uint32_t Carry = 0;
+			for (uint32_t Ix = 0; Ix != Multiplicand_count; ++Ix) {
+				const uint64_t Result = static_cast<uint64_t>(Multiplicand[Ix]) * Multiplier + Carry;
+				Multiplicand[Ix] = static_cast<uint32_t>(Result);
+				Carry = static_cast<uint32_t>(Result >> 32);
 			}
 
-			return _Carry;
+			return Carry;
 		}
 
-		[[nodiscard]] inline bool _Multiply(_Big_integer_flt& _Multiplicand, const uint32_t _Multiplier) noexcept {
-			if (_Multiplier == 0) {
-				_Multiplicand._Myused = 0;
+		[[nodiscard]] inline bool Multiply(Big_integer_flt& Multiplicand, const uint32_t Multiplier) noexcept {
+			if (Multiplier == 0) {
+				Multiplicand.Myused = 0;
 				return true;
 			}
 
-			if (_Multiplier == 1) {
+			if (Multiplier == 1) {
 				return true;
 			}
 
-			if (_Multiplicand._Myused == 0) {
+			if (Multiplicand.Myused == 0) {
 				return true;
 			}
 
-			const uint32_t _Carry = _Multiply_core(_Multiplicand._Mydata, _Multiplicand._Myused, _Multiplier);
-			if (_Carry != 0) {
-				if (_Multiplicand._Myused < _Big_integer_flt::_Element_count) {
-					_Multiplicand._Mydata[_Multiplicand._Myused] = _Carry;
-					++_Multiplicand._Myused;
+			const uint32_t Carry = Multiply_core(Multiplicand.Mydata, Multiplicand.Myused, Multiplier);
+			if (Carry != 0) {
+				if (Multiplicand.Myused < Big_integer_flt::Element_count) {
+					Multiplicand.Mydata[Multiplicand.Myused] = Carry;
+					++Multiplicand.Myused;
 				}
 				else {
-					_Multiplicand._Myused = 0;
+					Multiplicand.Myused = 0;
 					return false;
 				}
 			}
@@ -447,80 +447,80 @@ namespace HEXCTRL::stn //String to Num.
 			return true;
 		}
 
-		[[nodiscard]] inline bool _Multiply(_Big_integer_flt& _Multiplicand, const _Big_integer_flt& _Multiplier) noexcept {
-			if (_Multiplicand._Myused == 0) {
+		[[nodiscard]] inline bool Multiply(Big_integer_flt& Multiplicand, const Big_integer_flt& Multiplier) noexcept {
+			if (Multiplicand.Myused == 0) {
 				return true;
 			}
 
-			if (_Multiplier._Myused == 0) {
-				_Multiplicand._Myused = 0;
+			if (Multiplier.Myused == 0) {
+				Multiplicand.Myused = 0;
 				return true;
 			}
 
-			if (_Multiplier._Myused == 1) {
-				return _Multiply(_Multiplicand, _Multiplier._Mydata[0]); // when overflow occurs, resets to zero
+			if (Multiplier.Myused == 1) {
+				return Multiply(Multiplicand, Multiplier.Mydata[0]); // when overflow occurs, resets to zero
 			}
 
-			if (_Multiplicand._Myused == 1) {
-				const uint32_t _Small_multiplier = _Multiplicand._Mydata[0];
-				_Multiplicand = _Multiplier;
-				return _Multiply(_Multiplicand, _Small_multiplier); // when overflow occurs, resets to zero
+			if (Multiplicand.Myused == 1) {
+				const uint32_t Small_multiplier = Multiplicand.Mydata[0];
+				Multiplicand = Multiplier;
+				return Multiply(Multiplicand, Small_multiplier); // when overflow occurs, resets to zero
 			}
 
 			// We prefer more iterations on the inner loop and fewer on the outer:
-			const bool _Multiplier_is_shorter = _Multiplier._Myused < _Multiplicand._Myused;
-			const uint32_t* const _Rgu1 = _Multiplier_is_shorter ? _Multiplier._Mydata : _Multiplicand._Mydata;
-			const uint32_t* const _Rgu2 = _Multiplier_is_shorter ? _Multiplicand._Mydata : _Multiplier._Mydata;
+			const bool Multiplier_is_shorter = Multiplier.Myused < Multiplicand.Myused;
+			const uint32_t* const Rgu1 = Multiplier_is_shorter ? Multiplier.Mydata : Multiplicand.Mydata;
+			const uint32_t* const Rgu2 = Multiplier_is_shorter ? Multiplicand.Mydata : Multiplier.Mydata;
 
-			const uint32_t _Cu1 = _Multiplier_is_shorter ? _Multiplier._Myused : _Multiplicand._Myused;
-			const uint32_t _Cu2 = _Multiplier_is_shorter ? _Multiplicand._Myused : _Multiplier._Myused;
+			const uint32_t Cu1 = Multiplier_is_shorter ? Multiplier.Myused : Multiplicand.Myused;
+			const uint32_t Cu2 = Multiplier_is_shorter ? Multiplicand.Myused : Multiplier.Myused;
 
-			_Big_integer_flt _Result { };
-			for (uint32_t _Iu1 = 0; _Iu1 != _Cu1; ++_Iu1) {
-				const uint32_t _U_cur = _Rgu1[_Iu1];
-				if (_U_cur == 0) {
-					if (_Iu1 == _Result._Myused) {
-						_Result._Mydata[_Iu1] = 0;
-						_Result._Myused = _Iu1 + 1;
+			Big_integer_flt Result { };
+			for (uint32_t Iu1 = 0; Iu1 != Cu1; ++Iu1) {
+				const uint32_t U_cur = Rgu1[Iu1];
+				if (U_cur == 0) {
+					if (Iu1 == Result.Myused) {
+						Result.Mydata[Iu1] = 0;
+						Result.Myused = Iu1 + 1;
 					}
 
 					continue;
 				}
 
-				uint32_t _U_carry = 0;
-				uint32_t _Iu_res = _Iu1;
-				for (uint32_t _Iu2 = 0; _Iu2 != _Cu2 && _Iu_res != _Big_integer_flt::_Element_count; ++_Iu2, ++_Iu_res) {
-					if (_Iu_res == _Result._Myused) {
-						_Result._Mydata[_Iu_res] = 0;
-						_Result._Myused = _Iu_res + 1;
+				uint32_t U_carry = 0;
+				uint32_t Iu_res = Iu1;
+				for (uint32_t Iu2 = 0; Iu2 != Cu2 && Iu_res != Big_integer_flt::Element_count; ++Iu2, ++Iu_res) {
+					if (Iu_res == Result.Myused) {
+						Result.Mydata[Iu_res] = 0;
+						Result.Myused = Iu_res + 1;
 					}
 
-					_U_carry = _Add_multiply_carry(_Result._Mydata[_Iu_res], _U_cur, _Rgu2[_Iu2], _U_carry);
+					U_carry = Add_multiply_carry(Result.Mydata[Iu_res], U_cur, Rgu2[Iu2], U_carry);
 				}
 
-				while (_U_carry != 0 && _Iu_res != _Big_integer_flt::_Element_count) {
-					if (_Iu_res == _Result._Myused) {
-						_Result._Mydata[_Iu_res] = 0;
-						_Result._Myused = _Iu_res + 1;
+				while (U_carry != 0 && Iu_res != Big_integer_flt::Element_count) {
+					if (Iu_res == Result.Myused) {
+						Result.Mydata[Iu_res] = 0;
+						Result.Myused = Iu_res + 1;
 					}
 
-					_U_carry = _Add_carry(_Result._Mydata[_Iu_res++], 0, _U_carry);
+					U_carry = Add_carry(Result.Mydata[Iu_res++], 0, U_carry);
 				}
 
-				if (_Iu_res == _Big_integer_flt::_Element_count) {
-					_Multiplicand._Myused = 0;
+				if (Iu_res == Big_integer_flt::Element_count) {
+					Multiplicand.Myused = 0;
 					return false;
 				}
 			}
 
-			// Store the _Result in the _Multiplicand and compute the actual number of elements used:
-			_Multiplicand = _Result;
+			// Store the Result in the Multiplicand and compute the actual number of elements used:
+			Multiplicand = Result;
 			return true;
 		}
 
-		[[nodiscard]] inline bool _Multiply_by_power_of_ten(_Big_integer_flt& _Xval, const uint32_t _Power) noexcept {
+		[[nodiscard]] inline bool Multiply_by_power_of_ten(Big_integer_flt& Xval, const uint32_t Power) noexcept {
 			// To improve performance, we use a table of precomputed powers of ten, from 10^10 through 10^380, in increments
-			// of ten. In its unpacked form, as an array of _Big_integer_flt objects, this table consists mostly of zero
+			// of ten. In its unpacked form, as an array of Big_integer_flt objects, this table consists mostly of zero
 			// elements. Thus, we store the table in a packed form, trimming leading and trailing zero elements. We provide an
 			// index that is used to unpack powers from the table, using the function that appears after this function in this
 			// file.
@@ -528,7 +528,7 @@ namespace HEXCTRL::stn //String to Num.
 			// The minimum value representable with double-precision is 5E-324.
 			// With this table we can thus compute most multiplications with a single multiply.
 
-			static constexpr uint32_t _Large_power_data[] = { 0x540be400, 0x00000002, 0x63100000, 0x6bc75e2d, 0x00000005,
+			static constexpr uint32_t Large_power_data[] = { 0x540be400, 0x00000002, 0x63100000, 0x6bc75e2d, 0x00000005,
 				0x40000000, 0x4674edea, 0x9f2c9cd0, 0x0000000c, 0xb9f56100, 0x5ca4bfab, 0x6329f1c3, 0x0000001d, 0xb5640000,
 				0xc40534fd, 0x926687d2, 0x6c3b15f9, 0x00000044, 0x10000000, 0x946590d9, 0xd762422c, 0x9a224501, 0x4f272617,
 				0x0000009f, 0x07950240, 0x245689c1, 0xc5faa71c, 0x73c86d67, 0xebad6ddc, 0x00000172, 0xcec10000, 0x63a22764,
@@ -594,300 +594,300 @@ namespace HEXCTRL::stn //String to Num.
 				0xe82d6dd3, 0x177d180c, 0x5e69946f, 0x648e2ce1, 0x95a13948, 0x340fe011, 0xb4173c58, 0x2748f694, 0x7c2657bd,
 				0x758bda2e, 0x3b8090a0, 0x2ddbb613, 0x6dcf4890, 0x24e4047e, 0x00005099 };
 
-			struct _Unpack_index {
-				uint16_t _Offset; // The offset of this power's initial element in the array
-				uint8_t _Zeroes; // The number of omitted leading zero elements
-				uint8_t _Size; // The number of elements present for this power
+			struct Unpack_index {
+				uint16_t Offset; // The offset of this power's initial element in the array
+				uint8_t Zeroes; // The number of omitted leading zero elements
+				uint8_t Size; // The number of elements present for this power
 			};
 
-			static constexpr _Unpack_index _Large_power_indices[] = { { 0, 0, 2 }, { 2, 0, 3 }, { 5, 0, 4 }, { 9, 1, 4 }, { 13, 1, 5 },
+			static constexpr Unpack_index Large_power_indices[] = { { 0, 0, 2 }, { 2, 0, 3 }, { 5, 0, 4 }, { 9, 1, 4 }, { 13, 1, 5 },
 				{ 18, 1, 6 }, { 24, 2, 6 }, { 30, 2, 7 }, { 37, 2, 8 }, { 45, 3, 8 }, { 53, 3, 9 }, { 62, 3, 10 }, { 72, 4, 10 }, { 82, 4, 11 },
 				{ 93, 4, 12 }, { 105, 5, 12 }, { 117, 5, 13 }, { 130, 5, 14 }, { 144, 5, 15 }, { 159, 6, 15 }, { 174, 6, 16 }, { 190, 6, 17 },
 				{ 207, 7, 17 }, { 224, 7, 18 }, { 242, 7, 19 }, { 261, 8, 19 }, { 280, 8, 21 }, { 301, 8, 22 }, { 323, 9, 22 }, { 345, 9, 23 },
 				{ 368, 9, 24 }, { 392, 10, 24 }, { 416, 10, 25 }, { 441, 10, 26 }, { 467, 10, 27 }, { 494, 11, 27 }, { 521, 11, 28 },
 				{ 549, 11, 29 } };
 
-			for (uint32_t _Large_power = _Power / 10; _Large_power != 0;) {
-				const uint32_t _Current_power =
-					(_STD min)(_Large_power, static_cast<uint32_t>(_STD size(_Large_power_indices)));
+			for (uint32_t Large_power = Power / 10; Large_power != 0;) {
+				const uint32_t Current_power =
+					(std::min)(Large_power, static_cast<uint32_t>(std::size(Large_power_indices)));
 
-				const _Unpack_index& _Index = _Large_power_indices[_Current_power - 1];
-				_Big_integer_flt _Multiplier { };
-				_Multiplier._Myused = static_cast<uint32_t>(_Index._Size + _Index._Zeroes);
+				const Unpack_index& Index = Large_power_indices[Current_power - 1];
+				Big_integer_flt Multiplier { };
+				Multiplier.Myused = static_cast<uint32_t>(Index.Size + Index.Zeroes);
 
-				const uint32_t* const _Source = _Large_power_data + _Index._Offset;
+				const uint32_t* const Source = Large_power_data + Index.Offset;
 
-				std::memset(_Multiplier._Mydata, 0, _Index._Zeroes * sizeof(uint32_t));
-				std::memcpy(_Multiplier._Mydata + _Index._Zeroes, _Source, _Index._Size * sizeof(uint32_t));
+				std::memset(Multiplier.Mydata, 0, Index.Zeroes * sizeof(uint32_t));
+				std::memcpy(Multiplier.Mydata + Index.Zeroes, Source, Index.Size * sizeof(uint32_t));
 
-				if (!_Multiply(_Xval, _Multiplier)) { // when overflow occurs, resets to zero
+				if (!Multiply(Xval, Multiplier)) { // when overflow occurs, resets to zero
 					return false;
 				}
 
-				_Large_power -= _Current_power;
+				Large_power -= Current_power;
 			}
 
-			static constexpr uint32_t _Small_powers_of_ten[9] = {
+			static constexpr uint32_t Small_powers_of_ten[9] = {
 				10, 100, 1'000, 10'000, 100'000, 1'000'000, 10'000'000, 100'000'000, 1'000'000'000 };
 
-			const uint32_t _Small_power = _Power % 10;
+			const uint32_t Small_power = Power % 10;
 
-			if (_Small_power == 0) {
+			if (Small_power == 0) {
 				return true;
 			}
 
-			return _Multiply(_Xval, _Small_powers_of_ten[_Small_power - 1]); // when overflow occurs, resets to zero
+			return Multiply(Xval, Small_powers_of_ten[Small_power - 1]); // when overflow occurs, resets to zero
 		}
 
-		[[nodiscard]] inline uint32_t _Count_sequential_high_zeroes(const uint32_t _Ux) noexcept {
-			unsigned long _Index; // Intentionally uninitialized for better codegen
-			return _BitScanReverse(&_Index, _Ux) ? 31 - _Index : 32;
+		[[nodiscard]] inline uint32_t Count_sequential_high_zeroes(const uint32_t Ux) noexcept {
+			unsigned long Index; // Intentionally uninitialized for better codegen
+			return _BitScanReverse(&Index, Ux) ? 31 - Index : 32;
 		}
 
-		[[nodiscard]] inline uint64_t _Divide(_Big_integer_flt& _Numerator, const _Big_integer_flt& _Denominator) noexcept {
-			// If the _Numerator is zero, then both the quotient and remainder are zero:
-			if (_Numerator._Myused == 0) {
+		[[nodiscard]] inline uint64_t Divide(Big_integer_flt& Numerator, const Big_integer_flt& Denominator) noexcept {
+			// If the Numerator is zero, then both the quotient and remainder are zero:
+			if (Numerator.Myused == 0) {
 				return 0;
 			}
 
-			// If the _Denominator is zero, then uh oh. We can't divide by zero:
-			assert(_Denominator._Myused != 0); // Division by zero
+			// If the Denominator is zero, then uh oh. We can't divide by zero:
+			assert(Denominator.Myused != 0); // Division by zero
 
-			uint32_t _Max_numerator_element_index = _Numerator._Myused - 1;
-			const uint32_t _Max_denominator_element_index = _Denominator._Myused - 1;
+			uint32_t Max_numerator_element_index = Numerator.Myused - 1;
+			const uint32_t Max_denominator_element_index = Denominator.Myused - 1;
 
-			// The _Numerator and _Denominator are both nonzero.
-			// If the _Denominator is only one element wide, we can take the fast route:
-			if (_Max_denominator_element_index == 0) {
-				const uint32_t _Small_denominator = _Denominator._Mydata[0];
+			// The Numerator and Denominator are both nonzero.
+			// If the Denominator is only one element wide, we can take the fast route:
+			if (Max_denominator_element_index == 0) {
+				const uint32_t Small_denominator = Denominator.Mydata[0];
 
-				if (_Max_numerator_element_index == 0) {
-					const uint32_t _Small_numerator = _Numerator._Mydata[0];
+				if (Max_numerator_element_index == 0) {
+					const uint32_t Small_numerator = Numerator.Mydata[0];
 
-					if (_Small_denominator == 1) {
-						_Numerator._Myused = 0;
-						return _Small_numerator;
+					if (Small_denominator == 1) {
+						Numerator.Myused = 0;
+						return Small_numerator;
 					}
 
-					_Numerator._Mydata[0] = _Small_numerator % _Small_denominator;
-					_Numerator._Myused = _Numerator._Mydata[0] > 0 ? 1u : 0u;
-					return _Small_numerator / _Small_denominator;
+					Numerator.Mydata[0] = Small_numerator % Small_denominator;
+					Numerator.Myused = Numerator.Mydata[0] > 0 ? 1u : 0u;
+					return Small_numerator / Small_denominator;
 				}
 
-				if (_Small_denominator == 1) {
-					uint64_t _Quotient = _Numerator._Mydata[1];
-					_Quotient <<= 32;
-					_Quotient |= _Numerator._Mydata[0];
-					_Numerator._Myused = 0;
-					return _Quotient;
+				if (Small_denominator == 1) {
+					uint64_t Quotient = Numerator.Mydata[1];
+					Quotient <<= 32;
+					Quotient |= Numerator.Mydata[0];
+					Numerator.Myused = 0;
+					return Quotient;
 				}
 
-				// We count down in the next loop, so the last assignment to _Quotient will be the correct one.
-				uint64_t _Quotient = 0;
+				// We count down in the next loop, so the last assignment to Quotient will be the correct one.
+				uint64_t Quotient = 0;
 
-				uint64_t _Uu = 0;
-				for (uint32_t _Iv = _Max_numerator_element_index; _Iv != static_cast<uint32_t>(-1); --_Iv) {
-					_Uu = (_Uu << 32) | _Numerator._Mydata[_Iv];
-					_Quotient = (_Quotient << 32) + static_cast<uint32_t>(_Uu / _Small_denominator);
-					_Uu %= _Small_denominator;
+				uint64_t Uu = 0;
+				for (uint32_t Iv = Max_numerator_element_index; Iv != static_cast<uint32_t>(-1); --Iv) {
+					Uu = (Uu << 32) | Numerator.Mydata[Iv];
+					Quotient = (Quotient << 32) + static_cast<uint32_t>(Uu / Small_denominator);
+					Uu %= Small_denominator;
 				}
 
-				_Numerator._Mydata[1] = static_cast<uint32_t>(_Uu >> 32);
-				_Numerator._Mydata[0] = static_cast<uint32_t>(_Uu);
+				Numerator.Mydata[1] = static_cast<uint32_t>(Uu >> 32);
+				Numerator.Mydata[0] = static_cast<uint32_t>(Uu);
 
-				if (_Numerator._Mydata[1] > 0) {
-					_Numerator._Myused = 2u;
+				if (Numerator.Mydata[1] > 0) {
+					Numerator.Myused = 2u;
 				}
-				else if (_Numerator._Mydata[0] > 0) {
-					_Numerator._Myused = 1u;
+				else if (Numerator.Mydata[0] > 0) {
+					Numerator.Myused = 1u;
 				}
 				else {
-					_Numerator._Myused = 0u;
+					Numerator.Myused = 0u;
 				}
 
-				return _Quotient;
+				return Quotient;
 			}
 
-			if (_Max_denominator_element_index > _Max_numerator_element_index) {
+			if (Max_denominator_element_index > Max_numerator_element_index) {
 				return 0;
 			}
 
-			const uint32_t _Cu_den = _Max_denominator_element_index + 1;
-			const int32_t _Cu_diff = static_cast<int32_t>(_Max_numerator_element_index - _Max_denominator_element_index);
+			const uint32_t Cu_den = Max_denominator_element_index + 1;
+			const int32_t Cu_diff = static_cast<int32_t>(Max_numerator_element_index - Max_denominator_element_index);
 
-			// Determine whether the result will have _Cu_diff or _Cu_diff + 1 digits:
-			int32_t _Cu_quo = _Cu_diff;
-			for (int32_t _Iu = static_cast<int32_t>(_Max_numerator_element_index);; --_Iu) {
-				if (_Iu < _Cu_diff) {
-					++_Cu_quo;
+			// Determine whether the result will have Cu_diff or Cu_diff + 1 digits:
+			int32_t Cu_quo = Cu_diff;
+			for (int32_t Iu = static_cast<int32_t>(Max_numerator_element_index);; --Iu) {
+				if (Iu < Cu_diff) {
+					++Cu_quo;
 					break;
 				}
 
-				if (_Denominator._Mydata[_Iu - _Cu_diff] != _Numerator._Mydata[_Iu]) {
-					if (_Denominator._Mydata[_Iu - _Cu_diff] < _Numerator._Mydata[_Iu]) {
-						++_Cu_quo;
+				if (Denominator.Mydata[Iu - Cu_diff] != Numerator.Mydata[Iu]) {
+					if (Denominator.Mydata[Iu - Cu_diff] < Numerator.Mydata[Iu]) {
+						++Cu_quo;
 					}
 
 					break;
 				}
 			}
 
-			if (_Cu_quo == 0) {
+			if (Cu_quo == 0) {
 				return 0;
 			}
 
 			// Get the uint to use for the trial divisions. We normalize so the high bit is set:
-			uint32_t _U_den = _Denominator._Mydata[_Cu_den - 1];
-			uint32_t _U_den_next = _Denominator._Mydata[_Cu_den - 2];
+			uint32_t U_den = Denominator.Mydata[Cu_den - 1];
+			uint32_t U_den_next = Denominator.Mydata[Cu_den - 2];
 
-			const uint32_t _Cbit_shift_left = _Count_sequential_high_zeroes(_U_den);
-			const uint32_t _Cbit_shift_right = 32 - _Cbit_shift_left;
-			if (_Cbit_shift_left > 0) {
-				_U_den = (_U_den << _Cbit_shift_left) | (_U_den_next >> _Cbit_shift_right);
-				_U_den_next <<= _Cbit_shift_left;
+			const uint32_t Cbit_shift_left = Count_sequential_high_zeroes(U_den);
+			const uint32_t Cbit_shift_right = 32 - Cbit_shift_left;
+			if (Cbit_shift_left > 0) {
+				U_den = (U_den << Cbit_shift_left) | (U_den_next >> Cbit_shift_right);
+				U_den_next <<= Cbit_shift_left;
 
-				if (_Cu_den > 2) {
-					_U_den_next |= _Denominator._Mydata[_Cu_den - 3] >> _Cbit_shift_right;
+				if (Cu_den > 2) {
+					U_den_next |= Denominator.Mydata[Cu_den - 3] >> Cbit_shift_right;
 				}
 			}
 
-			uint64_t _Quotient = 0;
-			for (int32_t _Iu = _Cu_quo; --_Iu >= 0;) {
-				// Get the high (normalized) bits of the _Numerator:
-				const uint32_t _U_num_hi =
-					(_Iu + _Cu_den <= _Max_numerator_element_index) ? _Numerator._Mydata[_Iu + _Cu_den] : 0;
+			uint64_t Quotient = 0;
+			for (int32_t Iu = Cu_quo; --Iu >= 0;) {
+				// Get the high (normalized) bits of the Numerator:
+				const uint32_t U_num_hi =
+					(Iu + Cu_den <= Max_numerator_element_index) ? Numerator.Mydata[Iu + Cu_den] : 0;
 
-				uint64_t _Uu_num =
-					(static_cast<uint64_t>(_U_num_hi) << 32) | static_cast<uint64_t>(_Numerator._Mydata[_Iu + _Cu_den - 1]);
+				uint64_t Uu_num =
+					(static_cast<uint64_t>(U_num_hi) << 32) | static_cast<uint64_t>(Numerator.Mydata[Iu + Cu_den - 1]);
 
-				uint32_t _U_num_next = _Numerator._Mydata[_Iu + _Cu_den - 2];
-				if (_Cbit_shift_left > 0) {
-					_Uu_num = (_Uu_num << _Cbit_shift_left) | (_U_num_next >> _Cbit_shift_right);
-					_U_num_next <<= _Cbit_shift_left;
+				uint32_t U_num_next = Numerator.Mydata[Iu + Cu_den - 2];
+				if (Cbit_shift_left > 0) {
+					Uu_num = (Uu_num << Cbit_shift_left) | (U_num_next >> Cbit_shift_right);
+					U_num_next <<= Cbit_shift_left;
 
-					if (_Iu + _Cu_den >= 3) {
-						_U_num_next |= _Numerator._Mydata[_Iu + _Cu_den - 3] >> _Cbit_shift_right;
+					if (Iu + Cu_den >= 3) {
+						U_num_next |= Numerator.Mydata[Iu + Cu_den - 3] >> Cbit_shift_right;
 					}
 				}
 
 				// Divide to get the quotient digit:
-				uint64_t _Uu_quo = _Uu_num / _U_den;
-				uint64_t _Uu_rem = static_cast<uint32_t>(_Uu_num % _U_den);
+				uint64_t Uu_quo = Uu_num / U_den;
+				uint64_t Uu_rem = static_cast<uint32_t>(Uu_num % U_den);
 
-				if (_Uu_quo > UINT32_MAX) {
-					_Uu_rem += _U_den * (_Uu_quo - UINT32_MAX);
-					_Uu_quo = UINT32_MAX;
+				if (Uu_quo > UINT32_MAX) {
+					Uu_rem += U_den * (Uu_quo - UINT32_MAX);
+					Uu_quo = UINT32_MAX;
 				}
 
-				while (_Uu_rem <= UINT32_MAX && _Uu_quo * _U_den_next > ((_Uu_rem << 32) | _U_num_next)) {
-					--_Uu_quo;
-					_Uu_rem += _U_den;
+				while (Uu_rem <= UINT32_MAX && Uu_quo * U_den_next > ((Uu_rem << 32) | U_num_next)) {
+					--Uu_quo;
+					Uu_rem += U_den;
 				}
 
-				// Multiply and subtract. Note that _Uu_quo may be one too large.
-				// If we have a borrow at the end, we'll add the _Denominator back on and decrement _Uu_quo.
-				if (_Uu_quo > 0) {
-					uint64_t _Uu_borrow = 0;
+				// Multiply and subtract. Note that Uu_quo may be one too large.
+				// If we have a borrow at the end, we'll add the Denominator back on and decrement Uu_quo.
+				if (Uu_quo > 0) {
+					uint64_t Uu_borrow = 0;
 
-					for (uint32_t _Iu2 = 0; _Iu2 < _Cu_den; ++_Iu2) {
-						_Uu_borrow += _Uu_quo * _Denominator._Mydata[_Iu2];
+					for (uint32_t Iu2 = 0; Iu2 < Cu_den; ++Iu2) {
+						Uu_borrow += Uu_quo * Denominator.Mydata[Iu2];
 
-						const uint32_t _U_sub = static_cast<uint32_t>(_Uu_borrow);
-						_Uu_borrow >>= 32;
-						if (_Numerator._Mydata[_Iu + _Iu2] < _U_sub) {
-							++_Uu_borrow;
+						const uint32_t U_sub = static_cast<uint32_t>(Uu_borrow);
+						Uu_borrow >>= 32;
+						if (Numerator.Mydata[Iu + Iu2] < U_sub) {
+							++Uu_borrow;
 						}
 
-						_Numerator._Mydata[_Iu + _Iu2] -= _U_sub;
+						Numerator.Mydata[Iu + Iu2] -= U_sub;
 					}
 
-					if (_U_num_hi < _Uu_borrow) {
+					if (U_num_hi < Uu_borrow) {
 						// Add, tracking carry:
-						uint32_t _U_carry = 0;
-						for (uint32_t _Iu2 = 0; _Iu2 < _Cu_den; ++_Iu2) {
-							const uint64_t _Sum = static_cast<uint64_t>(_Numerator._Mydata[_Iu + _Iu2])
-								+ static_cast<uint64_t>(_Denominator._Mydata[_Iu2]) + _U_carry;
+						uint32_t U_carry = 0;
+						for (uint32_t Iu2 = 0; Iu2 < Cu_den; ++Iu2) {
+							const uint64_t Sum = static_cast<uint64_t>(Numerator.Mydata[Iu + Iu2])
+								+ static_cast<uint64_t>(Denominator.Mydata[Iu2]) + U_carry;
 
-							_Numerator._Mydata[_Iu + _Iu2] = static_cast<uint32_t>(_Sum);
-							_U_carry = static_cast<uint32_t>(_Sum >> 32);
+							Numerator.Mydata[Iu + Iu2] = static_cast<uint32_t>(Sum);
+							U_carry = static_cast<uint32_t>(Sum >> 32);
 						}
 
-						--_Uu_quo;
+						--Uu_quo;
 					}
 
-					_Max_numerator_element_index = _Iu + _Cu_den - 1;
+					Max_numerator_element_index = Iu + Cu_den - 1;
 				}
 
-				_Quotient = (_Quotient << 32) + static_cast<uint32_t>(_Uu_quo);
+				Quotient = (Quotient << 32) + static_cast<uint32_t>(Uu_quo);
 			}
 
 			// Trim the remainder:
-			for (uint32_t _Ix = _Max_numerator_element_index + 1; _Ix < _Numerator._Myused; ++_Ix) {
-				_Numerator._Mydata[_Ix] = 0;
+			for (uint32_t Ix = Max_numerator_element_index + 1; Ix < Numerator.Myused; ++Ix) {
+				Numerator.Mydata[Ix] = 0;
 			}
 
-			uint32_t _Used = _Max_numerator_element_index + 1;
+			uint32_t Used = Max_numerator_element_index + 1;
 
-			while (_Used != 0 && _Numerator._Mydata[_Used - 1] == 0) {
-				--_Used;
+			while (Used != 0 && Numerator.Mydata[Used - 1] == 0) {
+				--Used;
 			}
 
-			_Numerator._Myused = _Used;
+			Numerator.Myused = Used;
 
-			return _Quotient;
+			return Quotient;
 		}
 
-		struct _Floating_point_string {
-			bool _Myis_negative;
-			int32_t _Myexponent;
-			uint32_t _Mymantissa_count;
-			uint8_t _Mymantissa[768];
+		struct Floating_point_string {
+			bool Myis_negative;
+			int32_t Myexponent;
+			uint32_t Mymantissa_count;
+			uint8_t Mymantissa[768];
 		};
 
-		template <class _FloatingType>
-		void _Assemble_floating_point_zero(const bool _Is_negative, _FloatingType& _Result) noexcept {
-			using _Floating_traits = _Floating_type_traits<_FloatingType>;
-			using _Uint_type = typename _Floating_traits::_Uint_type;
+		template <class FloatingType>
+		void Assemble_floating_point_zero(const bool Is_negative, FloatingType& Result) noexcept {
+			using Floating_traits = Floating_type_traits<FloatingType>;
+			using Uint_type = typename Floating_traits::Uint_type;
 
-			_Uint_type _Sign_component = _Is_negative;
-			_Sign_component <<= _Floating_traits::_Sign_shift;
+			Uint_type Sign_component = Is_negative;
+			Sign_component <<= Floating_traits::Sign_shift;
 
-			_Result = std::bit_cast<_FloatingType>(_Sign_component);
+			Result = std::bit_cast<FloatingType>(Sign_component);
 		}
 
-		template <class _FloatingType>
-		void _Assemble_floating_point_infinity(const bool _Is_negative, _FloatingType& _Result) noexcept {
-			using _Floating_traits = _Floating_type_traits<_FloatingType>;
-			using _Uint_type = typename _Floating_traits::_Uint_type;
+		template <class FloatingType>
+		void Assemble_floating_point_infinity(const bool Is_negative, FloatingType& Result) noexcept {
+			using Floating_traits = Floating_type_traits<FloatingType>;
+			using Uint_type = typename Floating_traits::Uint_type;
 
-			_Uint_type _Sign_component = _Is_negative;
-			_Sign_component <<= _Floating_traits::_Sign_shift;
+			Uint_type Sign_component = Is_negative;
+			Sign_component <<= Floating_traits::Sign_shift;
 
-			const _Uint_type _Exponent_component = _Floating_traits::_Shifted_exponent_mask;
+			const Uint_type Exponent_component = Floating_traits::Shifted_exponent_mask;
 
-			_Result = std::bit_cast<_FloatingType>(_Sign_component | _Exponent_component);
+			Result = std::bit_cast<FloatingType>(Sign_component | Exponent_component);
 		}
 
-		[[nodiscard]] inline bool _Should_round_up(
-			const bool _Lsb_bit, const bool _Round_bit, const bool _Has_tail_bits) noexcept {
+		[[nodiscard]] inline bool Should_round_up(
+			const bool Lsb_bit, const bool Round_bit, const bool Has_tail_bits) noexcept {
 
-			return _Round_bit && (_Has_tail_bits || _Lsb_bit);
+			return Round_bit && (Has_tail_bits || Lsb_bit);
 		}
 
-		[[nodiscard]] inline uint64_t _Right_shift_with_rounding(
-			const uint64_t _Value, const uint32_t _Shift, const bool _Has_zero_tail) noexcept {
-			constexpr uint32_t _Total_number_of_bits = 64;
-			if (_Shift >= _Total_number_of_bits) {
-				if (_Shift == _Total_number_of_bits) {
-					constexpr uint64_t _Extra_bits_mask = (1ULL << (_Total_number_of_bits - 1)) - 1;
-					constexpr uint64_t _Round_bit_mask = (1ULL << (_Total_number_of_bits - 1));
+		[[nodiscard]] inline uint64_t Right_shift_with_rounding(
+			const uint64_t Value, const uint32_t Shift, const bool Has_zero_tail) noexcept {
+			constexpr uint32_t Total_number_of_bits = 64;
+			if (Shift >= Total_number_of_bits) {
+				if (Shift == Total_number_of_bits) {
+					constexpr uint64_t Extra_bits_mask = (1ULL << (Total_number_of_bits - 1)) - 1;
+					constexpr uint64_t Round_bit_mask = (1ULL << (Total_number_of_bits - 1));
 
-					const bool _Round_bit = (_Value & _Round_bit_mask) != 0;
-					const bool _Tail_bits = !_Has_zero_tail || (_Value & _Extra_bits_mask) != 0;
+					const bool Round_bit = (Value & Round_bit_mask) != 0;
+					const bool Tail_bits = !Has_zero_tail || (Value & Extra_bits_mask) != 0;
 
 					// We round up the answer to 1 if the answer is greater than 0.5. Otherwise, we round down the answer to 0
 					// if either [1] the answer is less than 0.5 or [2] the answer is exactly 0.5.
-					return static_cast<uint64_t>(_Round_bit && _Tail_bits);
+					return static_cast<uint64_t>(Round_bit && Tail_bits);
 				}
 				else {
 					// If we'd need to shift 65 or more bits, the answer is less than 0.5 and is always rounded to zero:
@@ -895,17 +895,17 @@ namespace HEXCTRL::stn //String to Num.
 				}
 			}
 
-			const uint64_t _Lsb_bit = _Value;
-			const uint64_t _Round_bit = _Value << 1;
-			const uint64_t _Has_tail_bits = _Round_bit - static_cast<uint64_t>(_Has_zero_tail);
-			const uint64_t _Should_round = ((_Round_bit & (_Has_tail_bits | _Lsb_bit)) >> _Shift) & uint64_t { 1 };
+			const uint64_t Lsb_bit = Value;
+			const uint64_t Round_bit = Value << 1;
+			const uint64_t Has_tail_bits = Round_bit - static_cast<uint64_t>(Has_zero_tail);
+			const uint64_t Should_round = ((Round_bit & (Has_tail_bits | Lsb_bit)) >> Shift) & uint64_t { 1 };
 
-			return (_Value >> _Shift) + _Should_round;
+			return (Value >> Shift) + Should_round;
 		}
 
-		template <class _FloatingType>
-		void _Assemble_floating_point_value_no_shift(const bool _Is_negative, const int32_t _Exponent,
-			const typename _Floating_type_traits<_FloatingType>::_Uint_type _Mantissa, _FloatingType& _Result) noexcept {
+		template <class FloatingType>
+		void Assemble_floating_point_value_no_shift(const bool Is_negative, const int32_t Exponent,
+			const typename Floating_type_traits<FloatingType>::Uint_type Mantissa, FloatingType& Result) noexcept {
 			// The following code assembles floating-point values based on an alternative interpretation of the IEEE 754 binary
 			// floating-point format. It is valid for all of the following cases:
 			// [1] normal value,
@@ -923,59 +923,59 @@ namespace HEXCTRL::stn //String to Num.
 			// | [3]  | 1.ffffffp+127 |   +127   |    253     | 0x7e800000 | 0x1000000 | 0x7f800000  |     inf         |
 			// | [4]  | 0.fffffep-126 |   -126   |      0     | 0x00000000 |  0x7fffff | 0x007fffff  | 0x0.fffffep-126 |
 			// | [5]  | 0.ffffffp-126 |   -126   |      0     | 0x00000000 |  0x800000 | 0x00800000  | 0x1.000000p-126 |
-			using _Floating_traits = _Floating_type_traits<_FloatingType>;
-			using _Uint_type = typename _Floating_traits::_Uint_type;
+			using Floating_traits = Floating_type_traits<FloatingType>;
+			using Uint_type = typename Floating_traits::Uint_type;
 
-			_Uint_type _Sign_component = _Is_negative;
-			_Sign_component <<= _Floating_traits::_Sign_shift;
+			Uint_type Sign_component = Is_negative;
+			Sign_component <<= Floating_traits::Sign_shift;
 
-			_Uint_type _Exponent_component = static_cast<uint32_t>(_Exponent + (_Floating_traits::_Exponent_bias - 1));
-			_Exponent_component <<= _Floating_traits::_Exponent_shift;
+			Uint_type Exponent_component = static_cast<uint32_t>(Exponent + (Floating_traits::Exponent_bias - 1));
+			Exponent_component <<= Floating_traits::Exponent_shift;
 
-			_Result = std::bit_cast<_FloatingType>(_Sign_component | (_Exponent_component + _Mantissa));
+			Result = std::bit_cast<FloatingType>(Sign_component | (Exponent_component + Mantissa));
 		}
 
-		template <class _FloatingType>
-		[[nodiscard]] errc _Assemble_floating_point_value(const uint64_t _Initial_mantissa, const int32_t _Initial_exponent,
-			const bool _Is_negative, const bool _Has_zero_tail, _FloatingType& _Result) noexcept {
-			using _Traits = _Floating_type_traits<_FloatingType>;
+		template <class FloatingType>
+		[[nodiscard]] errc Assemble_floating_point_value(const uint64_t Initial_mantissa, const int32_t Initial_exponent,
+			const bool Is_negative, const bool Has_zero_tail, FloatingType& Result) noexcept {
+			using Traits = Floating_type_traits<FloatingType>;
 
 			// Assume that the number is representable as a normal value.
 			// Compute the number of bits by which we must adjust the mantissa to shift it into the correct position,
 			// and compute the resulting base two exponent for the normalized mantissa:
-			const uint32_t _Initial_mantissa_bits = _Bit_scan_reverse(_Initial_mantissa);
-			const int32_t _Normal_mantissa_shift = static_cast<int32_t>(_Traits::_Mantissa_bits - _Initial_mantissa_bits);
-			const int32_t _Normal_exponent = _Initial_exponent - _Normal_mantissa_shift;
+			const uint32_t Initial_mantissa_bits = Bit_scan_reverse(Initial_mantissa);
+			const int32_t Normal_mantissa_shift = static_cast<int32_t>(Traits::Mantissa_bits - Initial_mantissa_bits);
+			const int32_t Normal_exponent = Initial_exponent - Normal_mantissa_shift;
 
-			if (_Normal_exponent > _Traits::_Maximum_binary_exponent) {
+			if (Normal_exponent > Traits::Maximum_binary_exponent) {
 				// The exponent is too large to be represented by the floating-point type; report the overflow condition:
-				_Assemble_floating_point_infinity(_Is_negative, _Result);
+				Assemble_floating_point_infinity(Is_negative, Result);
 				return errc::result_out_of_range; // Overflow example: "1e+1000"
 			}
 
-			uint64_t _Mantissa = _Initial_mantissa;
-			int32_t _Exponent = _Normal_exponent;
-			errc _Error_code { };
+			uint64_t Mantissa = Initial_mantissa;
+			int32_t Exponent = Normal_exponent;
+			errc Error_code { };
 
-			if (_Normal_exponent < _Traits::_Minimum_binary_exponent) {
+			if (Normal_exponent < Traits::Minimum_binary_exponent) {
 				// The exponent is too small to be represented by the floating-point type as a normal value, but it may be
 				// representable as a denormal value.
 
 				// The exponent of subnormal values (as defined by the mathematical model of floating-point numbers, not the
 				// exponent field in the bit representation) is equal to the minimum exponent of normal values.
-				_Exponent = _Traits::_Minimum_binary_exponent;
+				Exponent = Traits::Minimum_binary_exponent;
 
 				// Compute the number of bits by which we need to shift the mantissa in order to form a denormal number.
-				const int32_t _Denormal_mantissa_shift = _Initial_exponent - _Exponent;
+				const int32_t Denormal_mantissa_shift = Initial_exponent - Exponent;
 
-				if (_Denormal_mantissa_shift < 0) {
-					_Mantissa =
-						_Right_shift_with_rounding(_Mantissa, static_cast<uint32_t>(-_Denormal_mantissa_shift), _Has_zero_tail);
+				if (Denormal_mantissa_shift < 0) {
+					Mantissa =
+						Right_shift_with_rounding(Mantissa, static_cast<uint32_t>(-Denormal_mantissa_shift), Has_zero_tail);
 
 					// from_chars in MSVC STL and strto[f|d|ld] in UCRT reports underflow only when the result is zero after
 					// rounding to the floating-point format. This behavior is different from IEEE 754 underflow exception.
-					if (_Mantissa == 0) {
-						_Error_code = errc::result_out_of_range; // Underflow example: "1e-1000"
+					if (Mantissa == 0) {
+						Error_code = errc::result_out_of_range; // Underflow example: "1e-1000"
 					}
 
 					// When we round the mantissa, the result may be so large that the number becomes a normal value.
@@ -989,188 +989,188 @@ namespace HEXCTRL::stn //String to Num.
 					// Thus, we have rounded our denormal number into a normal number.
 
 					// We detect this case here and re-adjust the mantissa and exponent appropriately, to form a normal number.
-					// This is handled by _Assemble_floating_point_value_no_shift.
+					// This is handled by Assemble_floating_point_value_no_shift.
 				}
 				else {
-					_Mantissa <<= _Denormal_mantissa_shift;
+					Mantissa <<= Denormal_mantissa_shift;
 				}
 			}
 			else {
-				if (_Normal_mantissa_shift < 0) {
-					_Mantissa =
-						_Right_shift_with_rounding(_Mantissa, static_cast<uint32_t>(-_Normal_mantissa_shift), _Has_zero_tail);
+				if (Normal_mantissa_shift < 0) {
+					Mantissa =
+						Right_shift_with_rounding(Mantissa, static_cast<uint32_t>(-Normal_mantissa_shift), Has_zero_tail);
 
 					// When we round the mantissa, it may produce a result that is too large. In this case,
 					// we divide the mantissa by two and increment the exponent (this does not change the value).
-					// This is handled by _Assemble_floating_point_value_no_shift.
+					// This is handled by Assemble_floating_point_value_no_shift.
 
 					// The increment of the exponent may have generated a value too large to be represented.
 					// In this case, report the overflow:
-					if (_Mantissa > _Traits::_Normal_mantissa_mask && _Exponent == _Traits::_Maximum_binary_exponent) {
-						_Error_code = errc::result_out_of_range; // Overflow example: "1.ffffffp+127" for float
+					if (Mantissa > Traits::Normal_mantissa_mask && Exponent == Traits::Maximum_binary_exponent) {
+						Error_code = errc::result_out_of_range; // Overflow example: "1.ffffffp+127" for float
 																 // Overflow example: "1.fffffffffffff8p+1023" for double
 					}
 				}
 				else {
-					_Mantissa <<= _Normal_mantissa_shift;
+					Mantissa <<= Normal_mantissa_shift;
 				}
 			}
 
 			// Assemble the floating-point value from the computed components:
-			using _Uint_type = typename _Traits::_Uint_type;
+			using Uint_type = typename Traits::Uint_type;
 
-			_Assemble_floating_point_value_no_shift(_Is_negative, _Exponent, static_cast<_Uint_type>(_Mantissa), _Result);
+			Assemble_floating_point_value_no_shift(Is_negative, Exponent, static_cast<Uint_type>(Mantissa), Result);
 
-			return _Error_code;
+			return Error_code;
 		}
 
-		template <class _FloatingType>
-		[[nodiscard]] errc _Assemble_floating_point_value_from_big_integer_flt(const _Big_integer_flt& _Integer_value,
-			const uint32_t _Integer_bits_of_precision, const bool _Is_negative, const bool _Has_nonzero_fractional_part,
-			_FloatingType& _Result) noexcept {
-			using _Traits = _Floating_type_traits<_FloatingType>;
+		template <class FloatingType>
+		[[nodiscard]] errc Assemble_floating_point_value_from_big_integer_flt(const Big_integer_flt& Integer_value,
+			const uint32_t Integer_bits_of_precision, const bool Is_negative, const bool Has_nonzero_fractional_part,
+			FloatingType& Result) noexcept {
+			using Traits = Floating_type_traits<FloatingType>;
 
-			const int32_t _Base_exponent = _Traits::_Mantissa_bits - 1;
+			const int32_t Base_exponent = Traits::Mantissa_bits - 1;
 
 			// Very fast case: If we have 64 bits of precision or fewer,
-			// we can just take the two low order elements from the _Big_integer_flt:
-			if (_Integer_bits_of_precision <= 64) {
-				const int32_t _Exponent = _Base_exponent;
+			// we can just take the two low order elements from the Big_integer_flt:
+			if (Integer_bits_of_precision <= 64) {
+				const int32_t Exponent = Base_exponent;
 
-				const uint32_t _Mantissa_low = _Integer_value._Myused > 0 ? _Integer_value._Mydata[0] : 0;
-				const uint32_t _Mantissa_high = _Integer_value._Myused > 1 ? _Integer_value._Mydata[1] : 0;
-				const uint64_t _Mantissa = _Mantissa_low + (static_cast<uint64_t>(_Mantissa_high) << 32);
+				const uint32_t Mantissa_low = Integer_value.Myused > 0 ? Integer_value.Mydata[0] : 0;
+				const uint32_t Mantissa_high = Integer_value.Myused > 1 ? Integer_value.Mydata[1] : 0;
+				const uint64_t Mantissa = Mantissa_low + (static_cast<uint64_t>(Mantissa_high) << 32);
 
-				return _Assemble_floating_point_value(
-					_Mantissa, _Exponent, _Is_negative, !_Has_nonzero_fractional_part, _Result);
+				return Assemble_floating_point_value(
+					Mantissa, Exponent, Is_negative, !Has_nonzero_fractional_part, Result);
 			}
 
-			const uint32_t _Top_element_bits = _Integer_bits_of_precision % 32;
-			const uint32_t _Top_element_index = _Integer_bits_of_precision / 32;
+			const uint32_t Top_element_bits = Integer_bits_of_precision % 32;
+			const uint32_t Top_element_index = Integer_bits_of_precision / 32;
 
-			const uint32_t _Middle_element_index = _Top_element_index - 1;
-			const uint32_t _Bottom_element_index = _Top_element_index - 2;
+			const uint32_t Middle_element_index = Top_element_index - 1;
+			const uint32_t Bottom_element_index = Top_element_index - 2;
 
 			// Pretty fast case: If the top 64 bits occupy only two elements, we can just combine those two elements:
-			if (_Top_element_bits == 0) {
-				const int32_t _Exponent = static_cast<int32_t>(_Base_exponent + _Bottom_element_index * 32);
+			if (Top_element_bits == 0) {
+				const int32_t Exponent = static_cast<int32_t>(Base_exponent + Bottom_element_index * 32);
 
-				const uint64_t _Mantissa = _Integer_value._Mydata[_Bottom_element_index]
-					+ (static_cast<uint64_t>(_Integer_value._Mydata[_Middle_element_index]) << 32);
+				const uint64_t Mantissa = Integer_value.Mydata[Bottom_element_index]
+					+ (static_cast<uint64_t>(Integer_value.Mydata[Middle_element_index]) << 32);
 
-				bool _Has_zero_tail = !_Has_nonzero_fractional_part;
-				for (uint32_t _Ix = 0; _Has_zero_tail && _Ix != _Bottom_element_index; ++_Ix) {
-					_Has_zero_tail = _Integer_value._Mydata[_Ix] == 0;
+				bool Has_zero_tail = !Has_nonzero_fractional_part;
+				for (uint32_t Ix = 0; Has_zero_tail && Ix != Bottom_element_index; ++Ix) {
+					Has_zero_tail = Integer_value.Mydata[Ix] == 0;
 				}
 
-				return _Assemble_floating_point_value(_Mantissa, _Exponent, _Is_negative, _Has_zero_tail, _Result);
+				return Assemble_floating_point_value(Mantissa, Exponent, Is_negative, Has_zero_tail, Result);
 			}
 
-			// Not quite so fast case: The top 64 bits span three elements in the _Big_integer_flt. Assemble the three pieces:
-			const uint32_t _Top_element_mask = (1u << _Top_element_bits) - 1;
-			const uint32_t _Top_element_shift = 64 - _Top_element_bits; // Left
+			// Not quite so fast case: The top 64 bits span three elements in the Big_integer_flt. Assemble the three pieces:
+			const uint32_t Top_element_mask = (1u << Top_element_bits) - 1;
+			const uint32_t Top_element_shift = 64 - Top_element_bits; // Left
 
-			const uint32_t _Middle_element_shift = _Top_element_shift - 32; // Left
+			const uint32_t Middle_element_shift = Top_element_shift - 32; // Left
 
-			const uint32_t _Bottom_element_bits = 32 - _Top_element_bits;
-			const uint32_t _Bottom_element_mask = ~_Top_element_mask;
-			const uint32_t _Bottom_element_shift = 32 - _Bottom_element_bits; // Right
+			const uint32_t Bottom_element_bits = 32 - Top_element_bits;
+			const uint32_t Bottom_element_mask = ~Top_element_mask;
+			const uint32_t Bottom_element_shift = 32 - Bottom_element_bits; // Right
 
-			const int32_t _Exponent = static_cast<int32_t>(_Base_exponent + _Bottom_element_index * 32 + _Top_element_bits);
+			const int32_t Exponent = static_cast<int32_t>(Base_exponent + Bottom_element_index * 32 + Top_element_bits);
 
-			const uint64_t _Mantissa =
-				(static_cast<uint64_t>(_Integer_value._Mydata[_Top_element_index] & _Top_element_mask) << _Top_element_shift)
-				+ (static_cast<uint64_t>(_Integer_value._Mydata[_Middle_element_index]) << _Middle_element_shift)
-				+ (static_cast<uint64_t>(_Integer_value._Mydata[_Bottom_element_index] & _Bottom_element_mask)
-					>> _Bottom_element_shift);
+			const uint64_t Mantissa =
+				(static_cast<uint64_t>(Integer_value.Mydata[Top_element_index] & Top_element_mask) << Top_element_shift)
+				+ (static_cast<uint64_t>(Integer_value.Mydata[Middle_element_index]) << Middle_element_shift)
+				+ (static_cast<uint64_t>(Integer_value.Mydata[Bottom_element_index] & Bottom_element_mask)
+					>> Bottom_element_shift);
 
-			bool _Has_zero_tail =
-				!_Has_nonzero_fractional_part && (_Integer_value._Mydata[_Bottom_element_index] & _Top_element_mask) == 0;
+			bool Has_zero_tail =
+				!Has_nonzero_fractional_part && (Integer_value.Mydata[Bottom_element_index] & Top_element_mask) == 0;
 
-			for (uint32_t _Ix = 0; _Has_zero_tail && _Ix != _Bottom_element_index; ++_Ix) {
-				_Has_zero_tail = _Integer_value._Mydata[_Ix] == 0;
+			for (uint32_t Ix = 0; Has_zero_tail && Ix != Bottom_element_index; ++Ix) {
+				Has_zero_tail = Integer_value.Mydata[Ix] == 0;
 			}
 
-			return _Assemble_floating_point_value(_Mantissa, _Exponent, _Is_negative, _Has_zero_tail, _Result);
+			return Assemble_floating_point_value(Mantissa, Exponent, Is_negative, Has_zero_tail, Result);
 		}
 
-		inline void _Accumulate_decimal_digits_into_big_integer_flt(
-			const uint8_t* const _First_digit, const uint8_t* const _Last_digit, _Big_integer_flt& _Result) noexcept {
+		inline void Accumulate_decimal_digits_into_big_integer_flt(
+			const uint8_t* const First_digit, const uint8_t* const Last_digit, Big_integer_flt& Result) noexcept {
 			// We accumulate nine digit chunks, transforming the base ten string into base one billion on the fly,
 			// allowing us to reduce the number of high-precision multiplication and addition operations by 8/9.
-			uint32_t _Accumulator = 0;
-			uint32_t _Accumulator_count = 0;
-			for (const uint8_t* _It = _First_digit; _It != _Last_digit; ++_It) {
-				if (_Accumulator_count == 9) {
-					[[maybe_unused]] const bool _Success1 = _Multiply(_Result, 1'000'000'000); // assumes no overflow
-					assert(_Success1);
-					[[maybe_unused]] const bool _Success2 = _Add(_Result, _Accumulator); // assumes no overflow
-					assert(_Success2);
+			uint32_t Accumulator = 0;
+			uint32_t Accumulator_count = 0;
+			for (const uint8_t* It = First_digit; It != Last_digit; ++It) {
+				if (Accumulator_count == 9) {
+					[[maybe_unused]] const bool Success1 = Multiply(Result, 1'000'000'000); // assumes no overflow
+					assert(Success1);
+					[[maybe_unused]] const bool Success2 = Add(Result, Accumulator); // assumes no overflow
+					assert(Success2);
 
-					_Accumulator = 0;
-					_Accumulator_count = 0;
+					Accumulator = 0;
+					Accumulator_count = 0;
 				}
 
-				_Accumulator *= 10;
-				_Accumulator += *_It;
-				++_Accumulator_count;
+				Accumulator *= 10;
+				Accumulator += *It;
+				++Accumulator_count;
 			}
 
-			if (_Accumulator_count != 0) {
-				[[maybe_unused]] const bool _Success3 =
-					_Multiply_by_power_of_ten(_Result, _Accumulator_count); // assumes no overflow
-				assert(_Success3);
-				[[maybe_unused]] const bool _Success4 = _Add(_Result, _Accumulator); // assumes no overflow
-				assert(_Success4);
+			if (Accumulator_count != 0) {
+				[[maybe_unused]] const bool Success3 =
+					Multiply_by_power_of_ten(Result, Accumulator_count); // assumes no overflow
+				assert(Success3);
+				[[maybe_unused]] const bool Success4 = Add(Result, Accumulator); // assumes no overflow
+				assert(Success4);
 			}
 		}
 
-		template <class _FloatingType>
-		[[nodiscard]] errc _Convert_decimal_string_to_floating_type(
-			const _Floating_point_string& _Data, _FloatingType& _Result, bool _Has_zero_tail) noexcept {
-			using _Traits = _Floating_type_traits<_FloatingType>;
+		template <class FloatingType>
+		[[nodiscard]] errc Convert_decimal_string_to_floating_type(
+			const Floating_point_string& Data, FloatingType& Result, bool Has_zero_tail) noexcept {
+			using Traits = Floating_type_traits<FloatingType>;
 
 			// To generate an N bit mantissa we require N + 1 bits of precision. The extra bit is used to correctly round
 			// the mantissa (if there are fewer bits than this available, then that's totally okay;
 			// in that case we use what we have and we don't need to round).
-			const uint32_t _Required_bits_of_precision = static_cast<uint32_t>(_Traits::_Mantissa_bits + 1);
+			const uint32_t Required_bits_of_precision = static_cast<uint32_t>(Traits::Mantissa_bits + 1);
 
 			// The input is of the form 0.mantissa * 10^exponent, where 'mantissa' are the decimal digits of the mantissa
 			// and 'exponent' is the decimal exponent. We decompose the mantissa into two parts: an integer part and a
 			// fractional part. If the exponent is positive, then the integer part consists of the first 'exponent' digits,
 			// or all present digits if there are fewer digits. If the exponent is zero or negative, then the integer part
 			// is empty. In either case, the remaining digits form the fractional part of the mantissa.
-			const uint32_t _Positive_exponent = static_cast<uint32_t>((_STD max)(0, _Data._Myexponent));
-			const uint32_t _Integer_digits_present = (_STD min)(_Positive_exponent, _Data._Mymantissa_count);
-			const uint32_t _Integer_digits_missing = _Positive_exponent - _Integer_digits_present;
-			const uint8_t* const _Integer_first = _Data._Mymantissa;
-			const uint8_t* const _Integer_last = _Data._Mymantissa + _Integer_digits_present;
+			const uint32_t Positive_exponent = static_cast<uint32_t>((std::max)(0, Data.Myexponent));
+			const uint32_t Integer_digits_present = (std::min)(Positive_exponent, Data.Mymantissa_count);
+			const uint32_t Integer_digits_missing = Positive_exponent - Integer_digits_present;
+			const uint8_t* const Integer_first = Data.Mymantissa;
+			const uint8_t* const Integer_last = Data.Mymantissa + Integer_digits_present;
 
-			const uint8_t* const _Fractional_first = _Integer_last;
-			const uint8_t* const _Fractional_last = _Data._Mymantissa + _Data._Mymantissa_count;
-			const uint32_t _Fractional_digits_present = static_cast<uint32_t>(_Fractional_last - _Fractional_first);
+			const uint8_t* const Fractional_first = Integer_last;
+			const uint8_t* const Fractional_last = Data.Mymantissa + Data.Mymantissa_count;
+			const uint32_t Fractional_digits_present = static_cast<uint32_t>(Fractional_last - Fractional_first);
 
-			// First, we accumulate the integer part of the mantissa into a _Big_integer_flt:
-			_Big_integer_flt _Integer_value { };
-			_Accumulate_decimal_digits_into_big_integer_flt(_Integer_first, _Integer_last, _Integer_value);
+			// First, we accumulate the integer part of the mantissa into a Big_integer_flt:
+			Big_integer_flt Integer_value { };
+			Accumulate_decimal_digits_into_big_integer_flt(Integer_first, Integer_last, Integer_value);
 
-			if (_Integer_digits_missing > 0) {
-				if (!_Multiply_by_power_of_ten(_Integer_value, _Integer_digits_missing)) {
-					_Assemble_floating_point_infinity(_Data._Myis_negative, _Result);
+			if (Integer_digits_missing > 0) {
+				if (!Multiply_by_power_of_ten(Integer_value, Integer_digits_missing)) {
+					Assemble_floating_point_infinity(Data.Myis_negative, Result);
 					return errc::result_out_of_range; // Overflow example: "1e+2000"
 				}
 			}
 
-			// At this point, the _Integer_value contains the value of the integer part of the mantissa. If either
+			// At this point, the Integer_value contains the value of the integer part of the mantissa. If either
 			// [1] this number has more than the required number of bits of precision or
 			// [2] the mantissa has no fractional part, then we can assemble the result immediately:
-			const uint32_t _Integer_bits_of_precision = _Bit_scan_reverse(_Integer_value);
+			const uint32_t Integer_bits_of_precision = Bit_scan_reverse(Integer_value);
 			{
-				const bool _Has_zero_fractional_part = _Fractional_digits_present == 0 && _Has_zero_tail;
+				const bool Has_zero_fractional_part = Fractional_digits_present == 0 && Has_zero_tail;
 
-				if (_Integer_bits_of_precision >= _Required_bits_of_precision || _Has_zero_fractional_part) {
-					return _Assemble_floating_point_value_from_big_integer_flt(
-						_Integer_value, _Integer_bits_of_precision, _Data._Myis_negative, !_Has_zero_fractional_part, _Result);
+				if (Integer_bits_of_precision >= Required_bits_of_precision || Has_zero_fractional_part) {
+					return Assemble_floating_point_value_from_big_integer_flt(
+						Integer_value, Integer_bits_of_precision, Data.Myis_negative, !Has_zero_fractional_part, Result);
 				}
 			}
 
@@ -1179,18 +1179,18 @@ namespace HEXCTRL::stn //String to Num.
 			// the fractional part into an actual fraction N/M, where the numerator N is computed from the digits of the
 			// fractional part, and the denominator M is computed as the power of 10 such that N/M is equal to the value
 			// of the fractional part of the mantissa.
-			_Big_integer_flt _Fractional_numerator { };
-			_Accumulate_decimal_digits_into_big_integer_flt(_Fractional_first, _Fractional_last, _Fractional_numerator);
+			Big_integer_flt Fractional_numerator { };
+			Accumulate_decimal_digits_into_big_integer_flt(Fractional_first, Fractional_last, Fractional_numerator);
 
-			const uint32_t _Fractional_denominator_exponent =
-				_Data._Myexponent < 0 ? _Fractional_digits_present + static_cast<uint32_t>(-_Data._Myexponent)
-				: _Fractional_digits_present;
+			const uint32_t Fractional_denominator_exponent =
+				Data.Myexponent < 0 ? Fractional_digits_present + static_cast<uint32_t>(-Data.Myexponent)
+				: Fractional_digits_present;
 
-			_Big_integer_flt _Fractional_denominator = _Make_big_integer_flt_one();
-			if (!_Multiply_by_power_of_ten(_Fractional_denominator, _Fractional_denominator_exponent)) {
+			Big_integer_flt Fractional_denominator = Make_big_integer_flt_one();
+			if (!Multiply_by_power_of_ten(Fractional_denominator, Fractional_denominator_exponent)) {
 				// If there were any digits in the integer part, it is impossible to underflow (because the exponent
 				// cannot possibly be small enough), so if we underflow here it is a true underflow and we return zero.
-				_Assemble_floating_point_zero(_Data._Myis_negative, _Result);
+				Assemble_floating_point_zero(Data.Myis_negative, Result);
 				return errc::result_out_of_range; // Underflow example: "1e-2000"
 			}
 
@@ -1198,23 +1198,23 @@ namespace HEXCTRL::stn //String to Num.
 			// than the denominator. We normalize the fraction such that the most significant bit of the numerator is in the
 			// same position as the most significant bit in the denominator. This ensures that when we later shift the
 			// numerator N bits to the left, we will produce N bits of precision.
-			const uint32_t _Fractional_numerator_bits = _Bit_scan_reverse(_Fractional_numerator);
-			const uint32_t _Fractional_denominator_bits = _Bit_scan_reverse(_Fractional_denominator);
+			const uint32_t Fractional_numerator_bits = Bit_scan_reverse(Fractional_numerator);
+			const uint32_t Fractional_denominator_bits = Bit_scan_reverse(Fractional_denominator);
 
-			const uint32_t _Fractional_shift = _Fractional_denominator_bits > _Fractional_numerator_bits
-				? _Fractional_denominator_bits - _Fractional_numerator_bits
+			const uint32_t Fractional_shift = Fractional_denominator_bits > Fractional_numerator_bits
+				? Fractional_denominator_bits - Fractional_numerator_bits
 				: 0;
 
-			if (_Fractional_shift > 0) {
-				[[maybe_unused]] const bool _Shift_success1 =
-					_Shift_left(_Fractional_numerator, _Fractional_shift); // assumes no overflow
-				assert(_Shift_success1);
+			if (Fractional_shift > 0) {
+				[[maybe_unused]] const bool Shift_success1 =
+					Shift_left(Fractional_numerator, Fractional_shift); // assumes no overflow
+				assert(Shift_success1);
 			}
 
-			const uint32_t _Required_fractional_bits_of_precision = _Required_bits_of_precision - _Integer_bits_of_precision;
+			const uint32_t Required_fractional_bits_of_precision = Required_bits_of_precision - Integer_bits_of_precision;
 
-			uint32_t _Remaining_bits_of_precision_required = _Required_fractional_bits_of_precision;
-			if (_Integer_bits_of_precision > 0) {
+			uint32_t Remaining_bits_of_precision_required = Required_fractional_bits_of_precision;
+			if (Integer_bits_of_precision > 0) {
 				// If the fractional part of the mantissa provides no bits of precision and cannot affect rounding,
 				// we can just take whatever bits we got from the integer part of the mantissa. This is the case for numbers
 				// like 5.0000000000000000000001, where the significant digits of the fractional part start so far to the
@@ -1224,43 +1224,43 @@ namespace HEXCTRL::stn //String to Num.
 				// then no fractional bits will be part of the result, but the result may affect rounding.
 				// This is e.g. the case for large, odd integers with a fractional part greater than or equal to .5.
 				// Thus, we need to do the division to correctly round the result.
-				if (_Fractional_shift > _Remaining_bits_of_precision_required) {
-					return _Assemble_floating_point_value_from_big_integer_flt(_Integer_value, _Integer_bits_of_precision,
-						_Data._Myis_negative, _Fractional_digits_present != 0 || !_Has_zero_tail, _Result);
+				if (Fractional_shift > Remaining_bits_of_precision_required) {
+					return Assemble_floating_point_value_from_big_integer_flt(Integer_value, Integer_bits_of_precision,
+						Data.Myis_negative, Fractional_digits_present != 0 || !Has_zero_tail, Result);
 				}
 
-				_Remaining_bits_of_precision_required -= _Fractional_shift;
+				Remaining_bits_of_precision_required -= Fractional_shift;
 			}
 
 			// If there was no integer part of the mantissa, we will need to compute the exponent from the fractional part.
 			// The fractional exponent is the power of two by which we must multiply the fractional part to move it into the
 			// range [1.0, 2.0). This will either be the same as the shift we computed earlier, or one greater than that shift:
-			const uint32_t _Fractional_exponent =
-				_Fractional_numerator < _Fractional_denominator ? _Fractional_shift + 1 : _Fractional_shift;
+			const uint32_t Fractional_exponent =
+				Fractional_numerator < Fractional_denominator ? Fractional_shift + 1 : Fractional_shift;
 
-			[[maybe_unused]] const bool _Shift_success2 =
-				_Shift_left(_Fractional_numerator, _Remaining_bits_of_precision_required); // assumes no overflow
-			assert(_Shift_success2);
+			[[maybe_unused]] const bool Shift_success2 =
+				Shift_left(Fractional_numerator, Remaining_bits_of_precision_required); // assumes no overflow
+			assert(Shift_success2);
 
-			uint64_t _Fractional_mantissa = _Divide(_Fractional_numerator, _Fractional_denominator);
+			uint64_t Fractional_mantissa = Divide(Fractional_numerator, Fractional_denominator);
 
-			_Has_zero_tail = _Has_zero_tail && _Fractional_numerator._Myused == 0;
+			Has_zero_tail = Has_zero_tail && Fractional_numerator.Myused == 0;
 
 			// We may have produced more bits of precision than were required. Check, and remove any "extra" bits:
-			const uint32_t _Fractional_mantissa_bits = _Bit_scan_reverse(_Fractional_mantissa);
-			if (_Fractional_mantissa_bits > _Required_fractional_bits_of_precision) {
-				const uint32_t _Shift = _Fractional_mantissa_bits - _Required_fractional_bits_of_precision;
-				_Has_zero_tail = _Has_zero_tail && (_Fractional_mantissa & ((1ULL << _Shift) - 1)) == 0;
-				_Fractional_mantissa >>= _Shift;
+			const uint32_t Fractional_mantissa_bits = Bit_scan_reverse(Fractional_mantissa);
+			if (Fractional_mantissa_bits > Required_fractional_bits_of_precision) {
+				const uint32_t Shift = Fractional_mantissa_bits - Required_fractional_bits_of_precision;
+				Has_zero_tail = Has_zero_tail && (Fractional_mantissa & ((1ULL << Shift) - 1)) == 0;
+				Fractional_mantissa >>= Shift;
 			}
 
 			// Compose the mantissa from the integer and fractional parts:
-			const uint32_t _Integer_mantissa_low = _Integer_value._Myused > 0 ? _Integer_value._Mydata[0] : 0;
-			const uint32_t _Integer_mantissa_high = _Integer_value._Myused > 1 ? _Integer_value._Mydata[1] : 0;
-			const uint64_t _Integer_mantissa = _Integer_mantissa_low + (static_cast<uint64_t>(_Integer_mantissa_high) << 32);
+			const uint32_t Integer_mantissa_low = Integer_value.Myused > 0 ? Integer_value.Mydata[0] : 0;
+			const uint32_t Integer_mantissa_high = Integer_value.Myused > 1 ? Integer_value.Mydata[1] : 0;
+			const uint64_t Integer_mantissa = Integer_mantissa_low + (static_cast<uint64_t>(Integer_mantissa_high) << 32);
 
-			const uint64_t _Complete_mantissa =
-				(_Integer_mantissa << _Required_fractional_bits_of_precision) + _Fractional_mantissa;
+			const uint64_t Complete_mantissa =
+				(Integer_mantissa << Required_fractional_bits_of_precision) + Fractional_mantissa;
 
 			// Compute the final exponent:
 			// * If the mantissa had an integer part, then the exponent is one less than the number of bits we obtained
@@ -1269,311 +1269,311 @@ namespace HEXCTRL::stn //String to Num.
 			// * If the mantissa had no integer part, then the exponent is the fractional exponent that we computed.
 			// Then, in both cases, we subtract an additional one from the exponent,
 			// to account for the fact that we've generated an extra bit of precision, for use in rounding.
-			const int32_t _Final_exponent = _Integer_bits_of_precision > 0
-				? static_cast<int32_t>(_Integer_bits_of_precision - 2)
-				: -static_cast<int32_t>(_Fractional_exponent) - 1;
+			const int32_t Final_exponent = Integer_bits_of_precision > 0
+				? static_cast<int32_t>(Integer_bits_of_precision - 2)
+				: -static_cast<int32_t>(Fractional_exponent) - 1;
 
-			return _Assemble_floating_point_value(
-				_Complete_mantissa, _Final_exponent, _Data._Myis_negative, _Has_zero_tail, _Result);
+			return Assemble_floating_point_value(
+				Complete_mantissa, Final_exponent, Data.Myis_negative, Has_zero_tail, Result);
 		}
 
-		template <class _FloatingType>
-		[[nodiscard]] errc _Convert_hexadecimal_string_to_floating_type(
-			const _Floating_point_string& _Data, _FloatingType& _Result, bool _Has_zero_tail) noexcept {
-			using _Traits = _Floating_type_traits<_FloatingType>;
+		template <class FloatingType>
+		[[nodiscard]] errc Convert_hexadecimal_string_to_floating_type(
+			const Floating_point_string& Data, FloatingType& Result, bool Has_zero_tail) noexcept {
+			using Traits = Floating_type_traits<FloatingType>;
 
-			uint64_t _Mantissa = 0;
-			int32_t _Exponent = _Data._Myexponent + _Traits::_Mantissa_bits - 1;
+			uint64_t Mantissa = 0;
+			int32_t Exponent = Data.Myexponent + Traits::Mantissa_bits - 1;
 
 			// Accumulate bits into the mantissa buffer
-			const uint8_t* const _Mantissa_last = _Data._Mymantissa + _Data._Mymantissa_count;
-			const uint8_t* _Mantissa_it = _Data._Mymantissa;
-			while (_Mantissa_it != _Mantissa_last && _Mantissa <= _Traits::_Normal_mantissa_mask) {
-				_Mantissa *= 16;
-				_Mantissa += *_Mantissa_it++;
-				_Exponent -= 4; // The exponent is in binary; log2(16) == 4
+			const uint8_t* const Mantissa_last = Data.Mymantissa + Data.Mymantissa_count;
+			const uint8_t* Mantissa_it = Data.Mymantissa;
+			while (Mantissa_it != Mantissa_last && Mantissa <= Traits::Normal_mantissa_mask) {
+				Mantissa *= 16;
+				Mantissa += *Mantissa_it++;
+				Exponent -= 4; // The exponent is in binary; log2(16) == 4
 			}
 
-			while (_Has_zero_tail && _Mantissa_it != _Mantissa_last) {
-				_Has_zero_tail = *_Mantissa_it++ == 0;
+			while (Has_zero_tail && Mantissa_it != Mantissa_last) {
+				Has_zero_tail = *Mantissa_it++ == 0;
 			}
 
-			return _Assemble_floating_point_value(_Mantissa, _Exponent, _Data._Myis_negative, _Has_zero_tail, _Result);
+			return Assemble_floating_point_value(Mantissa, Exponent, Data.Myis_negative, Has_zero_tail, Result);
 		}
 
-		template <class _Floating, class CharT>
-		[[nodiscard]] from_chars_result<CharT> _Ordinary_floating_from_chars(const CharT* const _First, const CharT* const _Last,
-			_Floating& _Value, const chars_format _Fmt, const bool _Minus_sign, const CharT* _Next) noexcept {
+		template <class Floating, class CharT>
+		[[nodiscard]] from_chars_result<CharT> Ordinary_floating_from_chars(const CharT* const First, const CharT* const Last,
+			Floating& Value, const chars_format Fmt, const bool Minus_sign, const CharT* Next) noexcept {
 			// vvvvvvvvvv DERIVED FROM corecrt_internal_strtox.h WITH SIGNIFICANT MODIFICATIONS vvvvvvvvvv
 
-			const bool _Is_hexadecimal = _Fmt == chars_format::hex;
-			const int _Base { _Is_hexadecimal ? 16 : 10 };
+			const bool Is_hexadecimal = Fmt == chars_format::hex;
+			const int Base { Is_hexadecimal ? 16 : 10 };
 
-			// PERFORMANCE NOTE: _Fp_string is intentionally left uninitialized. Zero-initialization is quite expensive
+			// PERFORMANCE NOTE: Fp_string is intentionally left uninitialized. Zero-initialization is quite expensive
 			// and is unnecessary. The benefit of not zero-initializing is greatest for short inputs.
-			_Floating_point_string _Fp_string;
+			Floating_point_string Fp_string;
 
 			// Record the optional minus sign:
-			_Fp_string._Myis_negative = _Minus_sign;
+			Fp_string.Myis_negative = Minus_sign;
 
-			uint8_t* const _Mantissa_first = _Fp_string._Mymantissa;
-			uint8_t* const _Mantissa_last = _STD end(_Fp_string._Mymantissa);
-			uint8_t* _Mantissa_it = _Mantissa_first;
+			uint8_t* const Mantissa_first = Fp_string.Mymantissa;
+			uint8_t* const Mantissa_last = std::end(Fp_string.Mymantissa);
+			uint8_t* Mantissa_it = Mantissa_first;
 
-			// [_Whole_begin, _Whole_end) will contain 0 or more digits/hexits
-			const auto* const _Whole_begin = _Next;
+			// [Whole_begin, Whole_end) will contain 0 or more digits/hexits
+			const auto* const Whole_begin = Next;
 
 			// Skip past any leading zeroes in the mantissa:
-			for (; _Next != _Last && *_Next == '0'; ++_Next) {
+			for (; Next != Last && *Next == '0'; ++Next) {
 			}
-			const auto* const _Leading_zero_end = _Next;
+			const auto* const Leading_zero_end = Next;
 
 			// Scan the integer part of the mantissa:
-			for (; _Next != _Last; ++_Next) {
-				const unsigned char _Digit_value = _Digit_from_char(*_Next);
+			for (; Next != Last; ++Next) {
+				const unsigned char Digit_value = Digit_from_char(*Next);
 
-				if (_Digit_value >= _Base) {
+				if (Digit_value >= Base) {
 					break;
 				}
 
-				if (_Mantissa_it != _Mantissa_last) {
-					*_Mantissa_it++ = _Digit_value;
+				if (Mantissa_it != Mantissa_last) {
+					*Mantissa_it++ = Digit_value;
 				}
 			}
-			const auto* const _Whole_end = _Next;
+			const auto* const Whole_end = Next;
 
-			// Defend against _Exponent_adjustment integer overflow. (These values don't need to be strict.)
-			constexpr ptrdiff_t _Maximum_adjustment = 1'000'000;
-			constexpr ptrdiff_t _Minimum_adjustment = -1'000'000;
+			// Defend against Exponent_adjustment integer overflow. (These values don't need to be strict.)
+			constexpr ptrdiff_t Maximum_adjustment = 1'000'000;
+			constexpr ptrdiff_t Minimum_adjustment = -1'000'000;
 
 			// The exponent adjustment holds the number of digits in the mantissa buffer that appeared before the radix point.
 			// It can be negative, and leading zeroes in the integer part are ignored. Examples:
 			// For "03333.111", it is 4.
 			// For "00000.111", it is 0.
 			// For "00000.001", it is -2.
-			int _Exponent_adjustment = static_cast<int>((_STD min)(_Whole_end - _Leading_zero_end, _Maximum_adjustment));
+			int Exponent_adjustment = static_cast<int>((std::min)(Whole_end - Leading_zero_end, Maximum_adjustment));
 
-			// [_Whole_end, _Dot_end) will contain 0 or 1 '.' characters
-			if (_Next != _Last && *_Next == '.') {
-				++_Next;
+			// [Whole_end, Dot_end) will contain 0 or 1 '.' characters
+			if (Next != Last && *Next == '.') {
+				++Next;
 			}
-			const auto* const _Dot_end = _Next;
+			const auto* const Dot_end = Next;
 
-			// [_Dot_end, _Frac_end) will contain 0 or more digits/hexits
+			// [Dot_end, Frac_end) will contain 0 or more digits/hexits
 
 			// If we haven't yet scanned any nonzero digits, continue skipping over zeroes,
 			// updating the exponent adjustment to account for the zeroes we are skipping:
-			if (_Exponent_adjustment == 0) {
-				for (; _Next != _Last && *_Next == '0'; ++_Next) {
+			if (Exponent_adjustment == 0) {
+				for (; Next != Last && *Next == '0'; ++Next) {
 				}
 
-				_Exponent_adjustment = static_cast<int>((_STD max)(_Dot_end - _Next, _Minimum_adjustment));
+				Exponent_adjustment = static_cast<int>((std::max)(Dot_end - Next, Minimum_adjustment));
 			}
 
 			// Scan the fractional part of the mantissa:
-			bool _Has_zero_tail = true;
+			bool Has_zero_tail = true;
 
-			for (; _Next != _Last; ++_Next) {
-				const unsigned char _Digit_value = _Digit_from_char(*_Next);
+			for (; Next != Last; ++Next) {
+				const unsigned char Digit_value = Digit_from_char(*Next);
 
-				if (_Digit_value >= _Base) {
+				if (Digit_value >= Base) {
 					break;
 				}
 
-				if (_Mantissa_it != _Mantissa_last) {
-					*_Mantissa_it++ = _Digit_value;
+				if (Mantissa_it != Mantissa_last) {
+					*Mantissa_it++ = Digit_value;
 				}
 				else {
-					_Has_zero_tail = _Has_zero_tail && _Digit_value == 0;
+					Has_zero_tail = Has_zero_tail && Digit_value == 0;
 				}
 			}
-			const auto* const _Frac_end = _Next;
+			const auto* const Frac_end = Next;
 
 			// We must have at least 1 digit/hexit
-			if (_Whole_begin == _Whole_end && _Dot_end == _Frac_end) {
-				return { _First, errc::invalid_argument };
+			if (Whole_begin == Whole_end && Dot_end == Frac_end) {
+				return { First, errc::invalid_argument };
 			}
 
-			const char _Exponent_prefix { _Is_hexadecimal ? 'p' : 'e' };
+			const char Exponent_prefix { Is_hexadecimal ? 'p' : 'e' };
 
-			bool _Exponent_is_negative = false;
-			int _Exponent = 0;
+			bool Exponent_is_negative = false;
+			int Exponent = 0;
 
-			constexpr int _Maximum_temporary_decimal_exponent = 5200;
-			constexpr int _Minimum_temporary_decimal_exponent = -5200;
+			constexpr int Maximum_temporary_decimal_exponent = 5200;
+			constexpr int Minimum_temporary_decimal_exponent = -5200;
 
-			if (_Fmt != chars_format::fixed // N4713 23.20.3 [charconv.from.chars]/7.3
+			if (Fmt != chars_format::fixed // N4713 23.20.3 [charconv.from.chars]/7.3
 											// "if fmt has chars_format::fixed set but not chars_format::scientific,
 											// the optional exponent part shall not appear"
-				&& _Next != _Last && (static_cast<unsigned char>(*_Next) | 0x20) == _Exponent_prefix) { // found exponent prefix
-				const auto* _Unread = _Next + 1;
+				&& Next != Last && (static_cast<unsigned char>(*Next) | 0x20) == Exponent_prefix) { // found exponent prefix
+				const auto* Unread = Next + 1;
 
-				if (_Unread != _Last && (*_Unread == '+' || *_Unread == '-')) { // found optional sign
-					_Exponent_is_negative = *_Unread == '-';
-					++_Unread;
+				if (Unread != Last && (*Unread == '+' || *Unread == '-')) { // found optional sign
+					Exponent_is_negative = *Unread == '-';
+					++Unread;
 				}
 
-				while (_Unread != _Last) {
-					const unsigned char _Digit_value = _Digit_from_char(*_Unread);
+				while (Unread != Last) {
+					const unsigned char Digit_value = Digit_from_char(*Unread);
 
-					if (_Digit_value >= 10) {
+					if (Digit_value >= 10) {
 						break;
 					}
 
 					// found decimal digit
 
-					if (_Exponent <= _Maximum_temporary_decimal_exponent) {
-						_Exponent = _Exponent * 10 + _Digit_value;
+					if (Exponent <= Maximum_temporary_decimal_exponent) {
+						Exponent = Exponent * 10 + Digit_value;
 					}
 
-					++_Unread;
-					_Next = _Unread; // consume exponent-part/binary-exponent-part
+					++Unread;
+					Next = Unread; // consume exponent-part/binary-exponent-part
 				}
 
-				if (_Exponent_is_negative) {
-					_Exponent = -_Exponent;
+				if (Exponent_is_negative) {
+					Exponent = -Exponent;
 				}
 			}
 
-			// [_Frac_end, _Exponent_end) will either be empty or contain "[EPep] sign[opt] digit-sequence"
-			const auto* const _Exponent_end = _Next;
+			// [Frac_end, Exponent_end) will either be empty or contain "[EPep] sign[opt] digit-sequence"
+			const auto* const Exponent_end = Next;
 
-			if (_Fmt == chars_format::scientific
-				&& _Frac_end == _Exponent_end) { // N4713 23.20.3 [charconv.from.chars]/7.2
+			if (Fmt == chars_format::scientific
+				&& Frac_end == Exponent_end) { // N4713 23.20.3 [charconv.from.chars]/7.2
 												 // "if fmt has chars_format::scientific set but not chars_format::fixed,
 												 // the otherwise optional exponent part shall appear"
-				return { _First, errc::invalid_argument };
+				return { First, errc::invalid_argument };
 			}
 
 			// Remove trailing zeroes from mantissa:
-			while (_Mantissa_it != _Mantissa_first && *(_Mantissa_it - 1) == 0) {
-				--_Mantissa_it;
+			while (Mantissa_it != Mantissa_first && *(Mantissa_it - 1) == 0) {
+				--Mantissa_it;
 			}
 
 			// If the mantissa buffer is empty, the mantissa was composed of all zeroes (so the mantissa is 0).
 			// All such strings have the value zero, regardless of what the exponent is (because 0 * b^n == 0 for all b and n).
 			// We can return now. Note that we defer this check until after we scan the exponent, so that we can correctly
-			// update _Next to point past the end of the exponent.
-			if (_Mantissa_it == _Mantissa_first) {
-				assert(_Has_zero_tail);
-				_Assemble_floating_point_zero(_Fp_string._Myis_negative, _Value);
-				return { _Next, errc { } };
+			// update Next to point past the end of the exponent.
+			if (Mantissa_it == Mantissa_first) {
+				assert(Has_zero_tail);
+				Assemble_floating_point_zero(Fp_string.Myis_negative, Value);
+				return { Next, errc { } };
 			}
 
 			// Before we adjust the exponent, handle the case where we detected a wildly
 			// out of range exponent during parsing and clamped the value:
-			if (_Exponent > _Maximum_temporary_decimal_exponent) {
-				_Assemble_floating_point_infinity(_Fp_string._Myis_negative, _Value);
-				return { _Next, errc::result_out_of_range }; // Overflow example: "1e+9999"
+			if (Exponent > Maximum_temporary_decimal_exponent) {
+				Assemble_floating_point_infinity(Fp_string.Myis_negative, Value);
+				return { Next, errc::result_out_of_range }; // Overflow example: "1e+9999"
 			}
 
-			if (_Exponent < _Minimum_temporary_decimal_exponent) {
-				_Assemble_floating_point_zero(_Fp_string._Myis_negative, _Value);
-				return { _Next, errc::result_out_of_range }; // Underflow example: "1e-9999"
+			if (Exponent < Minimum_temporary_decimal_exponent) {
+				Assemble_floating_point_zero(Fp_string.Myis_negative, Value);
+				return { Next, errc::result_out_of_range }; // Underflow example: "1e-9999"
 			}
 
 			// In hexadecimal floating constants, the exponent is a base 2 exponent. The exponent adjustment computed during
 			// parsing has the same base as the mantissa (so, 16 for hexadecimal floating constants).
 			// We therefore need to scale the base 16 multiplier to base 2 by multiplying by log2(16):
-			const int _Exponent_adjustment_multiplier { _Is_hexadecimal ? 4 : 1 };
+			const int Exponent_adjustment_multiplier { Is_hexadecimal ? 4 : 1 };
 
-			_Exponent += _Exponent_adjustment * _Exponent_adjustment_multiplier;
+			Exponent += Exponent_adjustment * Exponent_adjustment_multiplier;
 
 			// Verify that after adjustment the exponent isn't wildly out of range (if it is, it isn't representable
 			// in any supported floating-point format).
-			if (_Exponent > _Maximum_temporary_decimal_exponent) {
-				_Assemble_floating_point_infinity(_Fp_string._Myis_negative, _Value);
-				return { _Next, errc::result_out_of_range }; // Overflow example: "10e+5199"
+			if (Exponent > Maximum_temporary_decimal_exponent) {
+				Assemble_floating_point_infinity(Fp_string.Myis_negative, Value);
+				return { Next, errc::result_out_of_range }; // Overflow example: "10e+5199"
 			}
 
-			if (_Exponent < _Minimum_temporary_decimal_exponent) {
-				_Assemble_floating_point_zero(_Fp_string._Myis_negative, _Value);
-				return { _Next, errc::result_out_of_range }; // Underflow example: "0.001e-5199"
+			if (Exponent < Minimum_temporary_decimal_exponent) {
+				Assemble_floating_point_zero(Fp_string.Myis_negative, Value);
+				return { Next, errc::result_out_of_range }; // Underflow example: "0.001e-5199"
 			}
 
-			_Fp_string._Myexponent = _Exponent;
-			_Fp_string._Mymantissa_count = static_cast<uint32_t>(_Mantissa_it - _Mantissa_first);
+			Fp_string.Myexponent = Exponent;
+			Fp_string.Mymantissa_count = static_cast<uint32_t>(Mantissa_it - Mantissa_first);
 
-			if (_Is_hexadecimal) {
-				const errc _Ec = _Convert_hexadecimal_string_to_floating_type(_Fp_string, _Value, _Has_zero_tail);
-				return { _Next, _Ec };
+			if (Is_hexadecimal) {
+				const errc Ec = Convert_hexadecimal_string_to_floating_type(Fp_string, Value, Has_zero_tail);
+				return { Next, Ec };
 			}
 			else {
-				const errc _Ec = _Convert_decimal_string_to_floating_type(_Fp_string, _Value, _Has_zero_tail);
-				return { _Next, _Ec };
+				const errc Ec = Convert_decimal_string_to_floating_type(Fp_string, Value, Has_zero_tail);
+				return { Next, Ec };
 			}
 
 			// ^^^^^^^^^^ DERIVED FROM corecrt_internal_strtox.h WITH SIGNIFICANT MODIFICATIONS ^^^^^^^^^^
 		}
 
 		template <class CharT>
-		[[nodiscard]] inline bool _Starts_with_case_insensitive(
-			const CharT* _First, const CharT* const _Last, const char* _Lowercase) noexcept {
-			// pre: _Lowercase contains only ['a', 'z'] and is null-terminated
-			for (; _First != _Last && *_Lowercase != '\0'; ++_First, ++_Lowercase) {
-				if ((static_cast<unsigned char>(*_First) | 0x20) != *_Lowercase) {
+		[[nodiscard]] inline bool Starts_with_case_insensitive(
+			const CharT* First, const CharT* const Last, const char* Lowercase) noexcept {
+			// pre: Lowercase contains only ['a', 'z'] and is null-terminated
+			for (; First != Last && *Lowercase != '\0'; ++First, ++Lowercase) {
+				if ((static_cast<unsigned char>(*First) | 0x20) != *Lowercase) {
 					return false;
 				}
 			}
 
-			return *_Lowercase == '\0';
+			return *Lowercase == '\0';
 		}
 
-		template <class _Floating, class CharT>
-		[[nodiscard]] from_chars_result<CharT> _Infinity_from_chars(const CharT* const _First, const CharT* const _Last, _Floating& _Value,
-			const bool _Minus_sign, const CharT* _Next) noexcept {
-			// pre: _Next points at 'i' (case-insensitively)
-			if (!_Starts_with_case_insensitive(_Next + 1, _Last, "nf")) { // definitely invalid
-				return { _First, errc::invalid_argument };
+		template <class Floating, class CharT>
+		[[nodiscard]] from_chars_result<CharT> Infinity_from_chars(const CharT* const First, const CharT* const Last, Floating& Value,
+			const bool Minus_sign, const CharT* Next) noexcept {
+			// pre: Next points at 'i' (case-insensitively)
+			if (!Starts_with_case_insensitive(Next + 1, Last, "nf")) { // definitely invalid
+				return { First, errc::invalid_argument };
 			}
 
 			// definitely inf
-			_Next += 3;
+			Next += 3;
 
-			if (_Starts_with_case_insensitive(_Next, _Last, "inity")) { // definitely infinity
-				_Next += 5;
+			if (Starts_with_case_insensitive(Next, Last, "inity")) { // definitely infinity
+				Next += 5;
 			}
 
-			_Assemble_floating_point_infinity(_Minus_sign, _Value);
+			Assemble_floating_point_infinity(Minus_sign, Value);
 
-			return { _Next, errc { } };
+			return { Next, errc { } };
 		}
 
-		template <class _Floating, class CharT>
-		[[nodiscard]] from_chars_result<CharT> _Nan_from_chars(const CharT* const _First, const CharT* const _Last, _Floating& _Value,
-			bool _Minus_sign, const CharT* _Next) noexcept {
-			// pre: _Next points at 'n' (case-insensitively)
-			if (!_Starts_with_case_insensitive(_Next + 1, _Last, "an")) { // definitely invalid
-				return { _First, errc::invalid_argument };
+		template <class Floating, class CharT>
+		[[nodiscard]] from_chars_result<CharT> Nan_from_chars(const CharT* const First, const CharT* const Last, Floating& Value,
+			bool Minus_sign, const CharT* Next) noexcept {
+			// pre: Next points at 'n' (case-insensitively)
+			if (!Starts_with_case_insensitive(Next + 1, Last, "an")) { // definitely invalid
+				return { First, errc::invalid_argument };
 			}
 
 			// definitely nan
-			_Next += 3;
+			Next += 3;
 
-			bool _Quiet = true;
+			bool Quiet = true;
 
-			if (_Next != _Last && *_Next == '(') { // possibly nan(n-char-sequence[opt])
-				const auto* const _Seq_begin = _Next + 1;
+			if (Next != Last && *Next == '(') { // possibly nan(n-char-sequence[opt])
+				const auto* const Seq_begin = Next + 1;
 
-				for (const auto* _Temp = _Seq_begin; _Temp != _Last; ++_Temp) {
-					if (*_Temp == ')') { // definitely nan(n-char-sequence[opt])
-						_Next = _Temp + 1;
+				for (const auto* Temp = Seq_begin; Temp != Last; ++Temp) {
+					if (*Temp == ')') { // definitely nan(n-char-sequence[opt])
+						Next = Temp + 1;
 
-						if (_Temp - _Seq_begin == 3
-							&& _Starts_with_case_insensitive(_Seq_begin, _Temp, "ind")) { // definitely nan(ind)
+						if (Temp - Seq_begin == 3
+							&& Starts_with_case_insensitive(Seq_begin, Temp, "ind")) { // definitely nan(ind)
 							// The UCRT considers indeterminate NaN to be negative quiet NaN with no payload bits set.
 							// It parses "nan(ind)" and "-nan(ind)" identically.
-							_Minus_sign = true;
+							Minus_sign = true;
 						}
-						else if (_Temp - _Seq_begin == 4
-							&& _Starts_with_case_insensitive(_Seq_begin, _Temp, "snan")) { // definitely nan(snan)
-							_Quiet = false;
+						else if (Temp - Seq_begin == 4
+							&& Starts_with_case_insensitive(Seq_begin, Temp, "snan")) { // definitely nan(snan)
+							Quiet = false;
 						}
 
 						break;
 					}
-					else if (*_Temp == '_' || ('0' <= *_Temp && *_Temp <= '9') || ('A' <= *_Temp && *_Temp <= 'Z')
-						|| ('a' <= *_Temp && *_Temp <= 'z')) { // possibly nan(n-char-sequence[opt]), keep going
+					else if (*Temp == '_' || ('0' <= *Temp && *Temp <= '9') || ('A' <= *Temp && *Temp <= 'Z')
+						|| ('a' <= *Temp && *Temp <= 'z')) { // possibly nan(n-char-sequence[opt]), keep going
 					}
 					else { // definitely nan, not nan(n-char-sequence[opt])
 						break;
@@ -1586,48 +1586,48 @@ namespace HEXCTRL::stn //String to Num.
 			// numeric_limits::quiet_NaN() returns a quiet NaN with no payload bits set.
 			// This implementation of from_chars() has chosen to be consistent with numeric_limits.
 
-			using _Traits = _Floating_type_traits<_Floating>;
-			using _Uint_type = typename _Traits::_Uint_type;
+			using Traits = Floating_type_traits<Floating>;
+			using Uint_type = typename Traits::Uint_type;
 
-			_Uint_type _Uint_value = _Traits::_Shifted_exponent_mask;
+			Uint_type Uint_value = Traits::Shifted_exponent_mask;
 
-			if (_Minus_sign) {
-				_Uint_value |= _Traits::_Shifted_sign_mask;
+			if (Minus_sign) {
+				Uint_value |= Traits::Shifted_sign_mask;
 			}
 
-			if (_Quiet) {
-				_Uint_value |= _Traits::_Special_nan_mantissa_mask;
+			if (Quiet) {
+				Uint_value |= Traits::Special_nan_mantissa_mask;
 			}
 			else {
-				_Uint_value |= 1;
+				Uint_value |= 1;
 			}
 
-			_Value = std::bit_cast<_Floating>(_Uint_value);
+			Value = std::bit_cast<Floating>(Uint_value);
 
-			return { _Next, errc { } };
+			return { Next, errc { } };
 		}
 
-		template <class _Floating, class CharT>
-		[[nodiscard]] from_chars_result<CharT> _Floating_from_chars(
-			const CharT* const _First, const CharT* const _Last, _Floating& _Value, const chars_format _Fmt) noexcept {
+		template <class Floating, class CharT>
+		[[nodiscard]] from_chars_result<CharT> Floating_from_chars(
+			const CharT* const First, const CharT* const Last, Floating& Value, const chars_format Fmt) noexcept {
 
-			assert(_Fmt == chars_format::general || _Fmt == chars_format::scientific || _Fmt == chars_format::fixed
-				|| _Fmt == chars_format::hex);
+			assert(Fmt == chars_format::general || Fmt == chars_format::scientific || Fmt == chars_format::fixed
+				|| Fmt == chars_format::hex);
 
-			bool _Minus_sign = false;
+			bool Minus_sign = false;
 
-			const auto* _Next = _First;
+			const auto* Next = First;
 
-			if (_Next == _Last) {
-				return { _First, errc::invalid_argument };
+			if (Next == Last) {
+				return { First, errc::invalid_argument };
 			}
 
-			if (*_Next == '-') {
-				_Minus_sign = true;
-				++_Next;
+			if (*Next == '-') {
+				Minus_sign = true;
+				++Next;
 
-				if (_Next == _Last) {
-					return { _First, errc::invalid_argument };
+				if (Next == Last) {
+					return { First, errc::invalid_argument };
 				}
 			}
 
@@ -1640,19 +1640,19 @@ namespace HEXCTRL::stn //String to Num.
 			// inf/nan starting characters are folded to ['i'] ['n']
 			// These are ordered: ['.'] ['0', '9'] ['a', 'f'] < ['i'] ['n']
 			// Note that invalid starting characters end up on both sides of this test.
-			const unsigned char _Folded_start = static_cast<unsigned char>(static_cast<unsigned char>(*_Next) | 0x20);
+			const unsigned char Folded_start = static_cast<unsigned char>(static_cast<unsigned char>(*Next) | 0x20);
 
-			if (_Folded_start <= 'f') { // possibly an ordinary number
-				return _Ordinary_floating_from_chars(_First, _Last, _Value, _Fmt, _Minus_sign, _Next);
+			if (Folded_start <= 'f') { // possibly an ordinary number
+				return Ordinary_floating_from_chars(First, Last, Value, Fmt, Minus_sign, Next);
 			}
-			else if (_Folded_start == 'i') { // possibly inf
-				return _Infinity_from_chars(_First, _Last, _Value, _Minus_sign, _Next);
+			else if (Folded_start == 'i') { // possibly inf
+				return Infinity_from_chars(First, Last, Value, Minus_sign, Next);
 			}
-			else if (_Folded_start == 'n') { // possibly nan
-				return _Nan_from_chars(_First, _Last, _Value, _Minus_sign, _Next);
+			else if (Folded_start == 'n') { // possibly nan
+				return Nan_from_chars(First, Last, Value, Minus_sign, Next);
 			}
 			else { // definitely invalid
-				return { _First, errc::invalid_argument };
+				return { First, errc::invalid_argument };
 			}
 		}
 	};
@@ -1667,7 +1667,7 @@ namespace HEXCTRL::stn //String to Num.
 		assert(!str.empty());
 
 		IntegralT TData;
-		const auto result = impl::_Integer_from_chars(str.data(), str.data() + str.size(), TData, iBase);
+		const auto result = impl::Integer_from_chars(str.data(), str.data() + str.size(), TData, iBase);
 		if (result.ec == errc()) {
 			return TData;
 		}
@@ -1681,7 +1681,7 @@ namespace HEXCTRL::stn //String to Num.
 		assert(!wstr.empty());
 
 		IntegralT TData;
-		const auto result = impl::_Integer_from_chars(wstr.data(), wstr.data() + wstr.size(), TData, iBase);
+		const auto result = impl::Integer_from_chars(wstr.data(), wstr.data() + wstr.size(), TData, iBase);
 		if (result.ec == errc()) {
 			return TData;
 		}
@@ -1695,7 +1695,7 @@ namespace HEXCTRL::stn //String to Num.
 		assert(!str.empty());
 
 		FloatingT TData;
-		const auto result = impl::_Floating_from_chars(str.data(), str.data() + str.size(), TData, fmt);
+		const auto result = impl::Floating_from_chars(str.data(), str.data() + str.size(), TData, fmt);
 		if (result.ec == errc()) {
 			return TData;
 		}
@@ -1709,7 +1709,7 @@ namespace HEXCTRL::stn //String to Num.
 		assert(!wstr.empty());
 
 		FloatingT TData;
-		const auto result = impl::_Floating_from_chars(wstr.data(), wstr.data() + wstr.size(), TData, fmt);
+		const auto result = impl::Floating_from_chars(wstr.data(), wstr.data() + wstr.size(), TData, fmt);
 		if (result.ec == errc()) {
 			return TData;
 		}

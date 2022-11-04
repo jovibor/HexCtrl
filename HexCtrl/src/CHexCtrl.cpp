@@ -573,8 +573,8 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		m_pDlgTemplMgr->DisapplyByOffset(m_fMenuCMD && m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos());
 		m_optRMouseClick.reset();
 		break;
-	case CMD_TEMPL_CLEARALL:
-		m_pDlgTemplMgr->ClearAll();
+	case CMD_TEMPL_DISAPPALL:
+		m_pDlgTemplMgr->DisapplyAll();
 		break;
 	case CMD_DLG_TEMPLMGR:
 		m_pDlgTemplMgr->ShowWindow(SW_SHOW);
@@ -951,7 +951,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 			&& m_pDlgTemplMgr->HitTest(m_fMenuCMD
 				&& m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos()) != nullptr;
 		break;
-	case CMD_TEMPL_CLEARALL:
+	case CMD_TEMPL_DISAPPALL:
 		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied();
 		break;
 	default:
@@ -1455,7 +1455,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 		{ "CMD_SCROLL_PAGEDOWN", { CMD_SCROLL_PAGEDOWN, 0 } },
 		{ "CMD_TEMPL_APPLYCURR", { CMD_TEMPL_APPLYCURR, IDM_HEXCTRL_TEMPL_APPLYCURR } },
 		{ "CMD_TEMPL_DISAPPLY", { CMD_TEMPL_DISAPPLY, IDM_HEXCTRL_TEMPL_DISAPPLY } },
-		{ "CMD_TEMPL_CLEARALL", { CMD_TEMPL_CLEARALL, IDM_HEXCTRL_TEMPL_CLEARALL } },
+		{ "CMD_TEMPL_DISAPPALL", { CMD_TEMPL_DISAPPALL, IDM_HEXCTRL_TEMPL_DISAPPALL } },
 		{ "CMD_DLG_TEMPLMGR", { CMD_DLG_TEMPLMGR, IDM_HEXCTRL_TEMPL_DLGMGR } }
 	};
 	//Mapping between JSON-data Command Names and actual keyboard codes with the names that appear in the menu.
@@ -4665,7 +4665,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 	case 8: //Templates.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_APPLYCURR, IsCmdAvail(CMD_TEMPL_APPLYCURR) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DISAPPLY, IsCmdAvail(CMD_TEMPL_DISAPPLY) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_CLEARALL, IsCmdAvail(CMD_TEMPL_CLEARALL) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DISAPPALL, IsCmdAvail(CMD_TEMPL_DISAPPALL) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DLGMGR, IsCmdAvail(CMD_DLG_TEMPLMGR) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 9: //Data Presentation.

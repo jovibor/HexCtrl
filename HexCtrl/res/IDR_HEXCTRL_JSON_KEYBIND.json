@@ -62,6 +62,6 @@
   "CMD_SCROLL_PAGEDOWN": [ "pagedown" ],
   "CMD_TEMPL_APPLYCURR": [ "ctrl+alt+c" ],
   "CMD_TEMPL_DISAPPLY": [ "" ],
-  "CMD_TEMPL_CLEARALL": [ "" ],
+  "CMD_TEMPL_DISAPPALL": [ "" ],
   "CMD_DLG_TEMPLMGR": [ "ctrl+alt+t" ]
 }

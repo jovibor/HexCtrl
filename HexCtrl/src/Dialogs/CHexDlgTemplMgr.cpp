@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright Â© 2018-2023 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -80,7 +80,7 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 
 	m_stMenuTree.CreatePopupMenu();
 	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_DISAPPLY), L"Disapply template");
-	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_CLEARALL), L"Clear all");
+	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_DISAPPALL), L"Clear all");
 
 	m_stEditOffset.SetWindowTextW(L"0x0");
 	m_stCheckTtShow.SetCheck(IsTooltips() ? BST_CHECKED : BST_UNCHECKED);
@@ -106,8 +106,8 @@ BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 			DisapplyByID(pApplied->iAppliedID);
 		}
 		return TRUE;
-	case IDM_APPLIED_CLEARALL:
-		ClearAll();
+	case IDM_APPLIED_DISAPPALL:
+		DisapplyAll();
 		return TRUE;
 	}
 
@@ -440,7 +440,7 @@ void CHexDlgTemplMgr::OnTreeRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 	}
 	m_stMenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_DISAPPLY),
 		(fHasApplied && fHitTest ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_CLEARALL), (fHasApplied ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_DISAPPALL), (fHasApplied ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_stMenuTree.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
 }
 
@@ -523,7 +523,7 @@ void CHexDlgTemplMgr::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
-	ClearAll();
+	DisapplyAll();
 	m_pListApplied->DestroyWindow();
 	m_stMenuTree.DestroyMenu();
 	m_vecTemplates.clear();
@@ -589,7 +589,7 @@ void CHexDlgTemplMgr::ApplyCurr(ULONGLONG ullOffset)
 	ApplyTemplate(ullOffset, iTemplateID);
 }
 
-void CHexDlgTemplMgr::ClearAll()
+void CHexDlgTemplMgr::DisapplyAll()
 {
 	m_stTreeApplied.DeleteAllItems();
 	m_pListApplied->SetItemCountEx(0);

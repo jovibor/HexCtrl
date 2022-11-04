@@ -36,7 +36,7 @@ namespace HEXCTRL
 		CMD_APPEAR_CAPACINC, CMD_APPEAR_CAPACDEC, CMD_DLG_PRINT, CMD_DLG_ABOUT,
 		CMD_CARET_LEFT, CMD_CARET_RIGHT, CMD_CARET_UP, CMD_CARET_DOWN,
 		CMD_SCROLL_PAGEUP, CMD_SCROLL_PAGEDOWN,
-		CMD_TEMPL_APPLYCURR, CMD_TEMPL_DISAPPLY, CMD_TEMPL_CLEARALL, CMD_DLG_TEMPLMGR
+		CMD_TEMPL_APPLYCURR, CMD_TEMPL_DISAPPLY, CMD_TEMPL_DISAPPALL, CMD_DLG_TEMPLMGR
 	};
 
 	/********************************************************************************************
@@ -165,6 +165,7 @@ namespace HEXCTRL
 	{
 	public:
 		virtual int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) = 0; //Apply template to a given offset.
+		virtual void DisapplyAll() = 0;
 		virtual void DisapplyByID(int iAppliedID) = 0;
 		virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
 		virtual int LoadTemplate(const wchar_t* pFilePath) = 0; //Returns loaded template ID on success, zero otherwise.

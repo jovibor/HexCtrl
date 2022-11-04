@@ -523,7 +523,8 @@ BEGIN
         BEGIN
             MENUITEM "Apply Current Template",      IDM_HEXCTRL_TEMPL_APPLYCURR
             MENUITEM "Disapply Template",           IDM_HEXCTRL_TEMPL_DISAPPLY
-            MENUITEM "Clear All",                   IDM_HEXCTRL_TEMPL_CLEARALL
+            MENUITEM SEPARATOR
+            MENUITEM "Disapply All Templates",      IDM_HEXCTRL_TEMPL_DISAPPALL
             MENUITEM SEPARATOR
             MENUITEM "Template Manager...",         IDM_HEXCTRL_TEMPL_DLGMGR
         END

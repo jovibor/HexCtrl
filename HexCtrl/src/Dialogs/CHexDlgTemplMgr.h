@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright Â© 2018-2023 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -49,7 +49,8 @@ namespace HEXCTRL::INTERNAL
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 		void ApplyCurr(ULONGLONG ullOffset); //Apply currently selected template to offset.
 		int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)override; //Apply template to a given offset.
-		void ClearAll();
+		void DisapplyAll()override;
+		void DisapplyByID(int iAppliedID)override; //Disapply template with the given AppliedID.
 		void DisapplyByOffset(ULONGLONG ullOffset)override;
 		[[nodiscard]] bool HasApplied()const;
 		[[nodiscard]] bool HasTemplates()const;
@@ -89,7 +90,6 @@ namespace HEXCTRL::INTERNAL
 		auto GetAppliedFromItem(HTREEITEM hTreeItem)->PHEXTEMPLATEAPPLIED;
 		void RemoveNodesWithTemplateID(int iTemplateID);
 		void RemoveNodeWithAppliedID(int iAppliedID);
-		void DisapplyByID(int iAppliedID)override; //Stop one template with the given AppliedID from applying.
 		[[nodiscard]] bool IsHighlight()const;
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
 		void SetHexSelByField(PHEXTEMPLATEFIELD pField);
@@ -98,7 +98,7 @@ namespace HEXCTRL::INTERNAL
 		static LRESULT TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 		DECLARE_MESSAGE_MAP();
 	private:
-		enum class EMenuID : std::uint16_t { IDM_APPLIED_DISAPPLY = 0x8000, IDM_APPLIED_CLEARALL = 0x8001 };
+		enum class EMenuID : std::uint16_t { IDM_APPLIED_DISAPPLY = 0x8000, IDM_APPLIED_DISAPPALL = 0x8001 };
 		IHexCtrl* m_pHexCtrl { };
 		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;            //Loaded Templates.
 		std::vector<std::unique_ptr<HEXTEMPLATEAPPLIED>> m_vecTemplatesApplied; //Currently Applied Templates.
