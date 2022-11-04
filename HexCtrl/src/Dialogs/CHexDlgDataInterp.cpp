@@ -24,9 +24,10 @@ BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_RAD_HEX, &CHexDlgDataInterp::OnClickRadioHexDec)
 	ON_WM_CLOSE()
 	ON_WM_DESTROY()
-	ON_REGISTERED_MESSAGE(AFX_WM_PROPERTY_CHANGED, &CHexDlgDataInterp::OnPropertyChanged)
 	ON_WM_SHOWWINDOW()
 	ON_WM_SIZE()
+	ON_REGISTERED_MESSAGE(AFX_WM_PROPERTY_CHANGED, &CHexDlgDataInterp::OnPropertyDataChanged)
+	ON_MESSAGE(WM_PROPGRID_PROPERTY_SELECTED, &CHexDlgDataInterp::OnPropertySelected)
 END_MESSAGE_MAP()
 
 BOOL CHexDlgDataInterp::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
@@ -210,28 +211,28 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	m_stCtrlGrid.GetHeaderCtrl().SetItem(0, &hdItemPropGrid); //Property grid column size.
 
 	//Digits group.
-	auto pDigits = new CMFCPropertyGridProperty(L"Integral types:");
+	const auto pDigits = new CMFCPropertyGridProperty(L"Integral types:");
 	for (const auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::DIGITS && !iter.fChild)
 			pDigits->AddSubItem(iter.pProp);
 	m_stCtrlGrid.AddProperty(pDigits);
 
 	//Floats group.
-	auto pFloats = new CMFCPropertyGridProperty(L"Floating-point types:");
+	const auto pFloats = new CMFCPropertyGridProperty(L"Floating-point types:");
 	for (const auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::FLOAT && !iter.fChild)
 			pFloats->AddSubItem(iter.pProp);
 	m_stCtrlGrid.AddProperty(pFloats);
 
 	//Time group.
-	auto pTime = new CMFCPropertyGridProperty(L"Time:");
+	const auto pTime = new CMFCPropertyGridProperty(L"Time:");
 	for (const auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::TIME && !iter.fChild)
 			pTime->AddSubItem(iter.pProp);
 	m_stCtrlGrid.AddProperty(pTime);
 
 	//Miscellaneous group.
-	auto pMisc = new CMFCPropertyGridProperty(L"Misc:");
+	const auto pMisc = new CMFCPropertyGridProperty(L"Misc:");
 	for (const auto& iter : m_vecProp)
 		if (iter.eGroup == EGroup::MISC && !iter.fChild) {
 			pMisc->AddSubItem(iter.pProp);
@@ -273,90 +274,6 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 
 void CHexDlgDataInterp::OnOK()
 {
-	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet() || !m_pHexCtrl->IsMutable() || !m_pPropChanged)
-		return;
-
-	const auto itGridData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[this](const SGRIDDATA& refData) { return refData.pProp == m_pPropChanged; });
-	if (itGridData == m_vecProp.end())
-		return;
-
-	const auto& refStrProp = static_cast<const CStringW&>(m_pPropChanged->GetValue());
-	std::wstring_view wstr = refStrProp.GetString();
-
-	bool fSuccess { false };
-	switch (itGridData->eName) {
-	case EName::NAME_BINARY:
-		fSuccess = SetDataBINARY(wstr);
-		break;
-	case EName::NAME_CHAR:
-		fSuccess = SetDataCHAR(wstr);
-		break;
-	case EName::NAME_UCHAR:
-		fSuccess = SetDataUCHAR(wstr);
-		break;
-	case EName::NAME_SHORT:
-		fSuccess = SetDataSHORT(wstr);
-		break;
-	case EName::NAME_USHORT:
-		fSuccess = SetDataUSHORT(wstr);
-		break;
-	case EName::NAME_LONG:
-		fSuccess = SetDataLONG(wstr);
-		break;
-	case EName::NAME_ULONG:
-		fSuccess = SetDataULONG(wstr);
-		break;
-	case EName::NAME_LONGLONG:
-		fSuccess = SetDataLONGLONG(wstr);
-		break;
-	case EName::NAME_ULONGLONG:
-		fSuccess = SetDataULONGLONG(wstr);
-		break;
-	case EName::NAME_FLOAT:
-		fSuccess = SetDataFLOAT(wstr);
-		break;
-	case EName::NAME_DOUBLE:
-		fSuccess = SetDataDOUBLE(wstr);
-		break;
-	case EName::NAME_TIME32T:
-		fSuccess = SetDataTIME32T(wstr);
-		break;
-	case EName::NAME_TIME64T:
-		fSuccess = SetDataTIME64T(wstr);
-		break;
-	case EName::NAME_FILETIME:
-		fSuccess = SetDataFILETIME(wstr);
-		break;
-	case EName::NAME_OLEDATETIME:
-		fSuccess = SetDataOLEDATETIME(wstr);
-		break;
-	case EName::NAME_JAVATIME:
-		fSuccess = SetDataJAVATIME(wstr);
-		break;
-	case EName::NAME_MSDOSTIME:
-		fSuccess = SetDataMSDOSTIME(wstr);
-		break;
-	case EName::NAME_MSDTTMTIME:
-		fSuccess = SetDataMSDTTMTIME(wstr);
-		break;
-	case EName::NAME_SYSTEMTIME:
-		fSuccess = SetDataSYSTEMTIME(wstr);
-		break;
-	case EName::NAME_GUIDTIME:
-		fSuccess = SetDataGUIDTIME(wstr);
-		break;
-	case EName::NAME_GUID:
-		fSuccess = SetDataGUID(wstr);
-		break;
-	};
-
-	if (!fSuccess)
-		MessageBoxW(L"Wrong number format or out of range.", L"Data error...", MB_ICONERROR);
-	else
-		RedrawHexCtrl();
-
-	InspectOffset(m_ullOffset);
 }
 
 void CHexDlgDataInterp::OnClickRadioBeLe()
@@ -386,32 +303,115 @@ void CHexDlgDataInterp::OnDestroy()
 	m_vecProp.clear();
 }
 
-BOOL CHexDlgDataInterp::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+LRESULT CHexDlgDataInterp::OnPropertyDataChanged(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam == IDC_HEXCTRL_DATAINTERP_PROPDATA) {
-		const auto* const pHdr = reinterpret_cast<NMHDR*>(lParam);
-		if (pHdr->code != MSG_PROPGRIDCTRL_SELCHANGED)
-			return FALSE;
+	if (wParam != IDC_HEXCTRL_DATAINTERP_PROPDATA)
+		return FALSE;
 
-		if (const auto pData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-			[this](const SGRIDDATA& refData) { return refData.pProp == m_stCtrlGrid.GetCurrentProp(); }); 
-			pData != m_vecProp.end()) {
-			m_ullDataSize = static_cast<ULONGLONG>(pData->eSize);
-			RedrawHexCtrl();
-		}
-	}
+	const auto pPropNew = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
+	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet() || !m_pHexCtrl->IsMutable() || !pPropNew)
+		return TRUE;
 
-	return CDialogEx::OnNotify(wParam, lParam, pResult);
+	const auto itGridData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[pPropNew](const SGRIDDATA& refData) { return refData.pProp == pPropNew; });
+	if (itGridData == m_vecProp.end())
+		return TRUE;
+
+	const auto& refStrProp = static_cast<const CStringW&>(pPropNew->GetValue());
+	std::wstring_view wsv = refStrProp.GetString();
+
+	bool fSuccess { false };
+	switch (itGridData->eName) {
+	case EName::NAME_BINARY:
+		fSuccess = SetDataBINARY(wsv);
+		break;
+	case EName::NAME_CHAR:
+		fSuccess = SetDataCHAR(wsv);
+		break;
+	case EName::NAME_UCHAR:
+		fSuccess = SetDataUCHAR(wsv);
+		break;
+	case EName::NAME_SHORT:
+		fSuccess = SetDataSHORT(wsv);
+		break;
+	case EName::NAME_USHORT:
+		fSuccess = SetDataUSHORT(wsv);
+		break;
+	case EName::NAME_LONG:
+		fSuccess = SetDataLONG(wsv);
+		break;
+	case EName::NAME_ULONG:
+		fSuccess = SetDataULONG(wsv);
+		break;
+	case EName::NAME_LONGLONG:
+		fSuccess = SetDataLONGLONG(wsv);
+		break;
+	case EName::NAME_ULONGLONG:
+		fSuccess = SetDataULONGLONG(wsv);
+		break;
+	case EName::NAME_FLOAT:
+		fSuccess = SetDataFLOAT(wsv);
+		break;
+	case EName::NAME_DOUBLE:
+		fSuccess = SetDataDOUBLE(wsv);
+		break;
+	case EName::NAME_TIME32T:
+		fSuccess = SetDataTIME32T(wsv);
+		break;
+	case EName::NAME_TIME64T:
+		fSuccess = SetDataTIME64T(wsv);
+		break;
+	case EName::NAME_FILETIME:
+		fSuccess = SetDataFILETIME(wsv);
+		break;
+	case EName::NAME_OLEDATETIME:
+		fSuccess = SetDataOLEDATETIME(wsv);
+		break;
+	case EName::NAME_JAVATIME:
+		fSuccess = SetDataJAVATIME(wsv);
+		break;
+	case EName::NAME_MSDOSTIME:
+		fSuccess = SetDataMSDOSTIME(wsv);
+		break;
+	case EName::NAME_MSDTTMTIME:
+		fSuccess = SetDataMSDTTMTIME(wsv);
+		break;
+	case EName::NAME_SYSTEMTIME:
+		fSuccess = SetDataSYSTEMTIME(wsv);
+		break;
+	case EName::NAME_GUIDTIME:
+		fSuccess = SetDataGUIDTIME(wsv);
+		break;
+	case EName::NAME_GUID:
+		fSuccess = SetDataGUID(wsv);
+		break;
+	};
+
+	if (!fSuccess)
+		MessageBoxW(L"Wrong number format or out of range.", L"Data error...", MB_ICONERROR);
+	else
+		RedrawHexCtrl();
+
+	InspectOffset(m_ullOffset);
+
+	return TRUE;
 }
 
-LRESULT CHexDlgDataInterp::OnPropertyChanged(WPARAM wParam, LPARAM lParam)
+LRESULT CHexDlgDataInterp::OnPropertySelected(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam == IDC_HEXCTRL_DATAINTERP_PROPDATA) {
-		m_pPropChanged = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
-		OnOK();
+	if (wParam != IDC_HEXCTRL_DATAINTERP_PROPDATA)
+		return FALSE;
+
+	const auto pNewSel = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
+
+	if (const auto pData = std::find_if(m_vecProp.begin(), m_vecProp.end(),
+		[pNewSel](const SGRIDDATA& refData) { return refData.pProp == pNewSel; });
+		pData != m_vecProp.end()) {
+		m_ullDataSize = static_cast<ULONGLONG>(pData->eSize);
+		RedrawHexCtrl();
 	}
 
-	return 0;
+	return TRUE;
 }
 
 void CHexDlgDataInterp::OnSize(UINT nType, int cx, int cy)
@@ -435,12 +435,12 @@ void CHexDlgDataInterp::SetTData(T tData)const
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, tData);
 }
 
-bool CHexDlgDataInterp::SetDataBINARY(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataBINARY(std::wstring_view wsv)const
 {
-	if (wstr.size() != 8 || wstr.find_first_not_of(L"01") != std::wstring_view::npos)
+	if (wsv.size() != 8 || wsv.find_first_not_of(L"01") != std::wstring_view::npos)
 		return false;
 
-	const auto optData = StrToUChar(wstr, 2);
+	const auto optData = StrToUChar(wsv, 2);
 	if (!optData)
 		return false;
 
@@ -448,9 +448,9 @@ bool CHexDlgDataInterp::SetDataBINARY(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataCHAR(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataCHAR(std::wstring_view wsv)const
 {
-	const auto optData = StrToChar(wstr);
+	const auto optData = StrToChar(wsv);
 	if (!optData)
 		return false;
 
@@ -458,9 +458,9 @@ bool CHexDlgDataInterp::SetDataCHAR(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataUCHAR(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataUCHAR(std::wstring_view wsv)const
 {
-	const auto optData = StrToUChar(wstr);
+	const auto optData = StrToUChar(wsv);
 	if (!optData)
 		return false;
 
@@ -468,9 +468,9 @@ bool CHexDlgDataInterp::SetDataUCHAR(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataSHORT(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataSHORT(std::wstring_view wsv)const
 {
-	const auto optData = StrToShort(wstr);
+	const auto optData = StrToShort(wsv);
 	if (!optData)
 		return false;
 
@@ -478,9 +478,9 @@ bool CHexDlgDataInterp::SetDataSHORT(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataUSHORT(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataUSHORT(std::wstring_view wsv)const
 {
-	const auto optData = StrToUShort(wstr);
+	const auto optData = StrToUShort(wsv);
 	if (!optData)
 		return false;
 
@@ -488,9 +488,9 @@ bool CHexDlgDataInterp::SetDataUSHORT(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataLONG(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataLONG(std::wstring_view wsv)const
 {
-	const auto optData = StrToInt(wstr);
+	const auto optData = StrToInt(wsv);
 	if (!optData)
 		return false;
 
@@ -498,9 +498,9 @@ bool CHexDlgDataInterp::SetDataLONG(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataULONG(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataULONG(std::wstring_view wsv)const
 {
-	const auto optData = StrToUInt(wstr);
+	const auto optData = StrToUInt(wsv);
 	if (!optData)
 		return false;
 
@@ -508,9 +508,9 @@ bool CHexDlgDataInterp::SetDataULONG(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataLONGLONG(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataLONGLONG(std::wstring_view wsv)const
 {
-	const auto optData = StrToLL(wstr);
+	const auto optData = StrToLL(wsv);
 	if (!optData)
 		return false;
 
@@ -518,9 +518,9 @@ bool CHexDlgDataInterp::SetDataLONGLONG(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataULONGLONG(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataULONGLONG(std::wstring_view wsv)const
 {
-	const auto optData = StrToULL(wstr);
+	const auto optData = StrToULL(wsv);
 	if (!optData)
 		return false;
 
@@ -528,9 +528,9 @@ bool CHexDlgDataInterp::SetDataULONGLONG(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataFLOAT(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataFLOAT(std::wstring_view wsv)const
 {
-	const auto optData = StrToFloat(wstr);
+	const auto optData = StrToFloat(wsv);
 	if (!optData)
 		return false;
 
@@ -538,9 +538,9 @@ bool CHexDlgDataInterp::SetDataFLOAT(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataDOUBLE(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataDOUBLE(std::wstring_view wsv)const
 {
-	const auto optData = StrToDouble(wstr);
+	const auto optData = StrToDouble(wsv);
 	if (!optData)
 		return false;
 
@@ -548,10 +548,10 @@ bool CHexDlgDataInterp::SetDataDOUBLE(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataTIME32T(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataTIME32T(std::wstring_view wsv)const
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -579,10 +579,10 @@ bool CHexDlgDataInterp::SetDataTIME32T(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataTIME64T(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataTIME64T(std::wstring_view wsv)const
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038 
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -607,9 +607,9 @@ bool CHexDlgDataInterp::SetDataTIME64T(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataFILETIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataFILETIME(std::wstring_view wsv)const
 {
-	const auto optFileTime = StringToFileTime(wstr, m_dwDateFormat);
+	const auto optFileTime = StringToFileTime(wsv, m_dwDateFormat);
 	if (!optFileTime)
 		return false;
 
@@ -621,9 +621,9 @@ bool CHexDlgDataInterp::SetDataFILETIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataOLEDATETIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataOLEDATETIME(std::wstring_view wsv)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -638,9 +638,9 @@ bool CHexDlgDataInterp::SetDataOLEDATETIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataJAVATIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataJAVATIME(std::wstring_view wsv)const
 {
-	const auto optFileTime = StringToFileTime(wstr, m_dwDateFormat);
+	const auto optFileTime = StringToFileTime(wsv, m_dwDateFormat);
 	if (!optFileTime)
 		return false;
 
@@ -665,9 +665,9 @@ bool CHexDlgDataInterp::SetDataJAVATIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wsv)const
 {
-	const auto optFileTime = StringToFileTime(wstr, m_dwDateFormat);
+	const auto optFileTime = StringToFileTime(wsv, m_dwDateFormat);
 	if (!optFileTime)
 		return false;
 
@@ -681,9 +681,9 @@ bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wsv)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -702,9 +702,9 @@ bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataSYSTEMTIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataSYSTEMTIME(std::wstring_view wsv)const
 {
-	const auto optSysTime = StringToSystemTime(wstr, m_dwDateFormat);
+	const auto optSysTime = StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -714,7 +714,7 @@ bool CHexDlgDataInterp::SetDataSYSTEMTIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 {
 	//This time is within NAME_GUID structure, and it depends on it.
 	//We can not just set a NAME_GUIDTIME for data range if it's not 
@@ -730,7 +730,7 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wstr)const
 	//
 	//Both FILETIME and GUID time are based upon 100ns intervals
 	//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Add 6653 days to convert to GUID time
-	const auto optFTime = StringToFileTime(wstr, m_dwDateFormat);
+	const auto optFTime = StringToFileTime(wsv, m_dwDateFormat);
 	if (!optFTime)
 		return false;
 
@@ -755,10 +755,10 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wstr)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataGUID(std::wstring_view wstr)const
+bool CHexDlgDataInterp::SetDataGUID(std::wstring_view wsv)const
 {
 	GUID guid;
-	if (IIDFromString(wstr.data(), &guid) != S_OK)
+	if (IIDFromString(wsv.data(), &guid) != S_OK)
 		return false;
 
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, guid);
@@ -775,8 +775,6 @@ void CHexDlgDataInterp::ShowValueBINARY(BYTE byte)const
 
 void CHexDlgDataInterp::ShowValueCHAR(BYTE byte)const
 {
-	//TODO: Remove static_cast<int> when bug in <format> is resolved.
-	//https://github.com/microsoft/STL/issues/2320
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_CHAR; }); iter != m_vecProp.end())
 		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"{:#04X}" : L"{:d}",

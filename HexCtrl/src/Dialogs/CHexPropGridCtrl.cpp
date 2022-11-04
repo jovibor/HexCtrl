@@ -9,14 +9,7 @@
 
 using namespace HEXCTRL::INTERNAL;
 
-CMFCPropertyGridProperty* CHexPropGridCtrl::GetCurrentProp()
+void CHexPropGridCtrl::OnChangeSelection(CMFCPropertyGridProperty* pNewProp, CMFCPropertyGridProperty* /*pOldProp*/)
 {
-	return m_pNewSel;
-}
-
-void CHexPropGridCtrl::OnChangeSelection(CMFCPropertyGridProperty* pNewSel, CMFCPropertyGridProperty* /*pOldSel*/)
-{
-	m_pNewSel = pNewSel;
-	NMHDR nmhdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), MSG_PROPGRIDCTRL_SELCHANGED };
-	GetParent()->SendMessageW(WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&nmhdr));
+	GetParent()->SendMessageW(WM_PROPGRID_PROPERTY_SELECTED, GetDlgCtrlID(), reinterpret_cast<LPARAM>(pNewProp));
 }

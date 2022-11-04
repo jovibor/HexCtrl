@@ -59,7 +59,7 @@ namespace HEXCTRL::INTERNAL
 		};
 		using PDQWORD = UDQWORD*;
 	#pragma pack(pop)
-			//Time calculation constants
+		//Time calculation constants
 		static constexpr auto m_uFTTicksPerMS = 10000U;             //Number of 100ns intervals in a milli-second
 		static constexpr auto m_uFTTicksPerSec = 10000000UL;        //Number of 100ns intervals in a second
 		static constexpr auto m_uHoursPerDay = 24U;                 //24 hours per day
@@ -77,33 +77,33 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioHexDec();
 		afx_msg void OnClose();
 		afx_msg void OnDestroy();
-		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
-		LRESULT OnPropertyChanged(WPARAM wParam, LPARAM lParam);
+		LRESULT OnPropertyDataChanged(WPARAM wParam, LPARAM lParam);
+		LRESULT OnPropertySelected(WPARAM wParam, LPARAM lParam);
 		afx_msg void OnSize(UINT nType, int cx, int cy);
 		void RedrawHexCtrl()const;
 		template <typename T>
 		void SetTData(T tData)const;
-		[[nodiscard]] bool SetDataBINARY(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataCHAR(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataUCHAR(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataSHORT(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataUSHORT(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataLONG(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataULONG(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataLONGLONG(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataULONGLONG(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataFLOAT(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataDOUBLE(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataTIME32T(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataTIME64T(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataFILETIME(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataOLEDATETIME(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataJAVATIME(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataMSDOSTIME(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataMSDTTMTIME(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataSYSTEMTIME(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wstr)const;
-		[[nodiscard]] bool SetDataGUID(std::wstring_view wstr)const;
+		[[nodiscard]] bool SetDataBINARY(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataCHAR(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataUCHAR(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataSHORT(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataUSHORT(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataLONG(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataULONG(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataLONGLONG(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataULONGLONG(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataFLOAT(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataDOUBLE(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataTIME32T(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataTIME64T(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataFILETIME(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataOLEDATETIME(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataJAVATIME(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataMSDOSTIME(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataMSDTTMTIME(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataSYSTEMTIME(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataGUID(std::wstring_view wsv)const;
 		void ShowValueBINARY(BYTE byte)const;
 		void ShowValueCHAR(BYTE byte)const;
 		void ShowValueUCHAR(BYTE byte)const;
@@ -125,7 +125,7 @@ namespace HEXCTRL::INTERNAL
 		void ShowValueGUID(UDQWORD dqword)const;
 		void ShowValueGUIDTIME(UDQWORD dqword)const;
 		void ShowValueSYSTEMTIME(UDQWORD dqword)const;
-		DECLARE_MESSAGE_MAP()
+		DECLARE_MESSAGE_MAP();
 	private:
 		enum class EGroup : std::uint8_t { DIGITS, FLOAT, TIME, MISC };
 		enum class EName : std::uint8_t {
@@ -149,7 +149,6 @@ namespace HEXCTRL::INTERNAL
 		std::vector<SGRIDDATA> m_vecProp;
 		IHexCtrl* m_pHexCtrl { };
 		CHexPropGridCtrl m_stCtrlGrid;
-		CMFCPropertyGridProperty* m_pPropChanged { };
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullDataSize { }; //Size of the currently interpreted data.
 		DWORD m_dwDateFormat { };    //Date format.

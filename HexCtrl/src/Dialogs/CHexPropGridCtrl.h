@@ -11,12 +11,8 @@ namespace HEXCTRL::INTERNAL
 {
 	class CHexPropGridCtrl final : public CMFCPropertyGridCtrl
 	{
-	public:
-		CMFCPropertyGridProperty* GetCurrentProp();
 	private:
-		void OnChangeSelection(CMFCPropertyGridProperty* pNewSel, CMFCPropertyGridProperty* pOldSel)override;
-	private:
-		CMFCPropertyGridProperty* m_pNewSel { };
+		void OnChangeSelection(CMFCPropertyGridProperty* pNewProp, CMFCPropertyGridProperty* pOldProp)override;
 	};
-	constexpr UINT MSG_PROPGRIDCTRL_SELCHANGED = 0xF002U; //Code for NMHDR, when selection changed.
+	constexpr auto WM_PROPGRID_PROPERTY_SELECTED = 0x0401U; //Message to parent when new property selected.
 }

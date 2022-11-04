@@ -3282,9 +3282,7 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std:
 		return;
 
 	std::vector<POLYTEXTW> vecPolyDataInterp;
-	vecPolyDataInterp.reserve(2);
-	std::vector<std::wstring> vecWstrDataInterp;
-	vecWstrDataInterp.reserve(2); //One DataInterp string for Hex and one for Text area.
+	std::vector<std::unique_ptr<std::wstring>> vecWstrDataInterp;
 
 	const auto ullStartOffset = ullStartLine * m_dwCapacity;
 	std::size_t sIndexToPrint { };
@@ -3323,14 +3321,14 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std:
 		//Data Interpreter Poly.
 		if (!wstrHexDataInterpToPrint.empty()) {
 			//Hex Data Interpreter Poly.
-			vecWstrDataInterp.emplace_back(std::move(wstrHexDataInterpToPrint));
+			vecWstrDataInterp.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexDataInterpToPrint)));
 			vecPolyDataInterp.emplace_back(iDataInterpHexPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstrDataInterp.back().size()), vecWstrDataInterp.back().data(), 0, RECT { }, nullptr);
+				static_cast<UINT>(vecWstrDataInterp.back()->size()), vecWstrDataInterp.back()->data(), 0, RECT { }, nullptr);
 
 			//Text Data Interpreter Poly.
-			vecWstrDataInterp.emplace_back(std::move(wstrTextDataInterpToPrint));
+			vecWstrDataInterp.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextDataInterpToPrint)));
 			vecPolyDataInterp.emplace_back(iDataInterpTextPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstrDataInterp.back().size()), vecWstrDataInterp.back().data(), 0, RECT { }, nullptr);
+				static_cast<UINT>(vecWstrDataInterp.back()->size()), vecWstrDataInterp.back()->data(), 0, RECT { }, nullptr);
 		}
 	}
 
