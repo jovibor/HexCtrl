@@ -74,7 +74,11 @@ namespace HEXCTRL::INTERNAL
 		template<std::uint16_t uCmpType>
 		void ThreadRun(STHREADRUN* pStThread);
 		void UpdateSearchReplaceControls();
-		DECLARE_MESSAGE_MAP()
+		[[nodiscard]] static std::vector<std::byte> RangeToVecBytes(const std::string& str);
+		[[nodiscard]] static std::vector<std::byte> RangeToVecBytes(const std::wstring& wstr);
+		template<typename T>
+		[[nodiscard]] static std::vector<std::byte> RangeToVecBytes(T tData);
+		DECLARE_MESSAGE_MAP();
 	private:
 		IHexCtrl* m_pHexCtrl { };
 		EMode m_eSearchMode { };
@@ -103,15 +107,11 @@ namespace HEXCTRL::INTERNAL
 		DWORD m_dwFoundLimit { 10000 };      //Maximum found search occurences.
 		int m_iDirection { };                //Search direction: 1 = Forward, -1 = Backward.
 		int m_iWrap { };                     //Wrap direction: -1 = Beginning, 1 = End.
-		std::span<std::byte> m_spnSearch;    //"Search" span.
-		std::span<std::byte> m_spnReplace;   //"Replace" span.
-		std::string m_strSearch;             //Actual string to search after all conversions.
-		std::string m_strReplace;            //Actual string to replace.
-		std::wstring m_wstrSearch;           //Actual wstring to search.
-		std::wstring m_wstrReplace;          //Actual wstring to replace.
+		std::vector<std::byte> m_vecSearchData;  //Data to search for.
+		std::vector<std::byte> m_vecReplaceData; //Data to replace with.
 		std::wstring m_wstrTextSearch;       //Text from "Search" box.
 		std::wstring m_wstrTextReplace;      //Text from "Replace with..." box.
-		std::wstring_view m_wstrWrongInput { L"Wrong input data!" };
+		const wchar_t* const m_pwszWrongInput { L"Wrong input data!" };
 		HEXSPAN m_stSelSpan { };             //Previous selection.
 		void(CHexDlgSearch::*m_pfnThread)(STHREADRUN* pThread); //Func pointer to the ThreadRun<> for the Search thread.
 		const std::byte m_uWildcard { '?' }; //Wildcard symbol.

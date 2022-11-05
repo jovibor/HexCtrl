@@ -555,7 +555,7 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i) {
 			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
 			const HEXBKM hbs { .vecSpan = { HEXSPAN { m_vecSearchRes.at(static_cast<size_t>(nItem)),
-				m_fReplace ? m_spnReplace.size() : m_spnSearch.size() } }, .wstrDesc = m_wstrTextSearch };
+				m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size() } }, .wstrDesc = m_wstrTextSearch };
 			GetHexCtrl()->GetBookmarks()->AddBkm(hbs, false);
 		}
 		GetHexCtrl()->Redraw();
@@ -633,11 +633,11 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			//so that it's always last in vec, to highlight it in HexCtrlHighlight.
 			if (pNMI->iItem != nItem) {
 				vecSpan.emplace_back(m_vecSearchRes.at(static_cast<size_t>(nItem)),
-					m_fReplace ? m_spnReplace.size() : m_spnSearch.size());
+					m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size());
 			}
 		}
 		vecSpan.emplace_back(m_vecSearchRes.at(static_cast<size_t>(pNMI->iItem)),
-			m_fReplace ? m_spnReplace.size() : m_spnSearch.size());
+			m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size());
 
 		HexCtrlHighlight(vecSpan);
 	}
@@ -723,7 +723,7 @@ void CHexDlgSearch::Prepare()
 		GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_REPLACE, warrReplace, static_cast<int>(std::size(warrReplace)));
 		m_wstrTextReplace = warrReplace;
 		if (m_wstrTextReplace.empty()) {
-			MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			m_stComboReplace.SetFocus();
 			return;
 		}
@@ -786,27 +786,26 @@ void CHexDlgSearch::Prepare()
 		}
 
 		const auto ullSelSize = refFront.ullSize;
-		if (ullSelSize < m_spnSearch.size()) //Selection is too small.
+		if (ullSelSize < m_vecSearchData.size()) //Selection is too small.
 			return;
 
 		m_ullBoundBegin = refFront.ullOffset;
-		m_ullBoundEnd = m_ullBoundBegin + ullSelSize - m_spnSearch.size();
+		m_ullBoundEnd = m_ullBoundBegin + ullSelSize - m_vecSearchData.size();
 		m_ullSizeSentinel = m_ullBoundBegin + ullSelSize;
 	}
-	else //Search in a whole data.
-	{
+	else { //Search in a whole data.
 		m_ullBoundBegin = 0;
-		m_ullBoundEnd = ullDataSize - m_spnSearch.size();
+		m_ullBoundEnd = ullDataSize - m_vecSearchData.size();
 		m_ullSizeSentinel = ullDataSize;
 	}
 
-	if (m_ullOffsetCurr + m_spnSearch.size() > ullDataSize || m_ullOffsetCurr + m_spnReplace.size() > ullDataSize) {
+	if (m_ullOffsetCurr + m_vecSearchData.size() > ullDataSize || m_ullOffsetCurr + m_vecReplaceData.size() > ullDataSize) {
 		m_ullOffsetCurr = 0;
 		m_fSecondMatch = false;
 		return;
 	}
 
-	if (m_fReplaceWarn && m_fReplace && (m_spnReplace.size() > m_spnSearch.size())) {
+	if (m_fReplaceWarn && m_fReplace && (m_vecReplaceData.size() > m_vecSearchData.size())) {
 		constexpr auto wstrReplaceWarning { L"The replacing string is longer than searching string.\r\n"
 			"Do you want to overwrite the bytes following search occurrence?\r\n"
 			"Choosing \"No\" will cancel search." };
@@ -821,28 +820,26 @@ void CHexDlgSearch::Prepare()
 
 bool CHexDlgSearch::PrepareHexBytes()
 {
-	constexpr auto wstrWrongInput { L"Unacceptable input character.\r\nAllowed characters are: 0123456789AaBbCcDdEeFf" };
+	constexpr auto pwszWrongInput { L"Unacceptable input character.\r\nAllowed characters are: 0123456789AaBbCcDdEeFf" };
 	m_fMatchCase = false;
 	auto optData = NumStrToHex(m_wstrTextSearch, m_fWildcard, static_cast<char>(m_uWildcard));
 	if (!optData) {
 		m_iWrap = 1;
-		MessageBoxW(wstrWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		MessageBoxW(pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
-	m_strSearch = std::move(*optData);
+
+	m_vecSearchData = RangeToVecBytes(*optData);
 
 	if (m_fReplace) {
 		auto optDataRepl = NumStrToHex(m_wstrTextReplace);
 		if (!optDataRepl) {
-			MessageBoxW(wstrWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			MessageBoxW(pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			m_stComboReplace.SetFocus();
 			return false;
 		}
-		m_strReplace = std::move(*optDataRepl);
+		m_vecReplaceData = RangeToVecBytes(*optDataRepl);
 	}
-
-	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
-	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
 
 	using enum ECmpType;
 	if (!m_fWildcard)
@@ -856,14 +853,14 @@ bool CHexDlgSearch::PrepareHexBytes()
 
 bool CHexDlgSearch::PrepareTextASCII()
 {
-	m_strSearch = WstrToStr(m_wstrTextSearch, CP_ACP); //Convert to the system default Windows ANSI code page.
-	if (!m_fMatchCase) //Make the string lowercase.
-		std::transform(m_strSearch.begin(), m_strSearch.end(), m_strSearch.begin(),
+	auto strSearch = WstrToStr(m_wstrTextSearch, CP_ACP); //Convert to the system default Windows ANSI code page.
+	if (!m_fMatchCase) { //Make the string lowercase.
+		std::transform(strSearch.begin(), strSearch.end(), strSearch.begin(),
 			[](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+	}
 
-	m_strReplace = WstrToStr(m_wstrTextReplace, CP_ACP);
-	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
-	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
+	m_vecSearchData = RangeToVecBytes(strSearch);
+	m_vecReplaceData = RangeToVecBytes(WstrToStr(m_wstrTextReplace, CP_ACP));
 
 	using enum ECmpType;
 	if (m_fMatchCase && !m_fWildcard)
@@ -883,13 +880,12 @@ bool CHexDlgSearch::PrepareTextASCII()
 
 bool CHexDlgSearch::PrepareTextUTF16()
 {
-	m_wstrSearch = m_wstrTextSearch;
+	auto m_wstrSearch = m_wstrTextSearch;
 	if (!m_fMatchCase) //Make the string lowercase.
 		std::transform(m_wstrSearch.begin(), m_wstrSearch.end(), m_wstrSearch.begin(), std::towlower);
 
-	m_wstrReplace = m_wstrTextReplace;
-	m_spnSearch = { reinterpret_cast<std::byte*>(m_wstrSearch.data()), m_wstrSearch.size() * sizeof(wchar_t) };
-	m_spnReplace = { reinterpret_cast<std::byte*>(m_wstrReplace.data()), m_wstrReplace.size() * sizeof(wchar_t) };
+	m_vecSearchData = RangeToVecBytes(m_wstrSearch);
+	m_vecReplaceData = RangeToVecBytes(m_wstrTextReplace);
 
 	using enum ECmpType;
 	if (m_fMatchCase && !m_fWildcard)
@@ -911,10 +907,8 @@ bool CHexDlgSearch::PrepareTextUTF8()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	m_strSearch = WstrToStr(m_wstrTextSearch, CP_UTF8); //Convert to UTF-8 string.
-	m_strReplace = WstrToStr(m_wstrTextReplace, CP_UTF8);
-	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
-	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
+	m_vecSearchData = RangeToVecBytes(WstrToStr(m_wstrTextSearch, CP_UTF8)); //Convert to UTF-8 string.
+	m_vecReplaceData = RangeToVecBytes(WstrToStr(m_wstrTextReplace, CP_UTF8));
 
 	using enum ECmpType;
 	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)>;
@@ -927,15 +921,20 @@ bool CHexDlgSearch::PrepareINT8()
 	m_fMatchCase = false;
 	m_fWildcard = false;
 	const auto optData = StrToUChar(m_wstrTextSearch);
-	const auto optDataRepl = StrToUChar(m_wstrTextReplace);
-	if (!optData || (m_fReplace && !optDataRepl)) {
-		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+	if (!optData) {
+		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
-	m_strSearch = *optData;
-	m_strReplace = optDataRepl.value_or(0);
-	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
-	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
+	m_vecSearchData = RangeToVecBytes(*optData);
+
+	if (m_fReplace) {
+		const auto optDataRepl = StrToUChar(m_wstrTextReplace);
+		if (!optDataRepl) {
+			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			return false;
+		}
+		m_vecReplaceData = RangeToVecBytes(*optDataRepl);
+	}
 
 	using enum ECmpType;
 	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT8)>;
@@ -948,23 +947,29 @@ bool CHexDlgSearch::PrepareINT16()
 	m_fMatchCase = false;
 	m_fWildcard = false;
 	const auto optData = StrToUShort(m_wstrTextSearch);
-	const auto optDataRepl = StrToUShort(m_wstrTextReplace);
-	if (!optData || (m_fReplace && !optDataRepl)) {
-		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+	if (!optData) {
+		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
-
 	unsigned short wData = *optData;
-	unsigned short wDataRep = optDataRepl.value_or(0);
+	unsigned short wDataRep { 0 };
+
+	if (m_fReplace) {
+		const auto optDataRepl = StrToUShort(m_wstrTextReplace);
+		if (!optDataRepl) {
+			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			return false;
+		}
+		wDataRep = *optDataRepl;
+	}
+
 	if (m_fBigEndian) {
 		wData = ByteSwap(wData);
 		wDataRep = ByteSwap(wDataRep);
 	}
 
-	m_strSearch.assign(reinterpret_cast<char*>(&wData), sizeof(wData));
-	m_strReplace.assign(reinterpret_cast<char*>(&wDataRep), sizeof(wDataRep));
-	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
-	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
+	m_vecSearchData = RangeToVecBytes(wData);
+	m_vecReplaceData = RangeToVecBytes(wDataRep);
 
 	using enum ECmpType;
 	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT16)>;
@@ -977,23 +982,29 @@ bool CHexDlgSearch::PrepareINT32()
 	m_fMatchCase = false;
 	m_fWildcard = false;
 	const auto optData = StrToUInt(m_wstrTextSearch);
-	const auto optDataRepl = StrToUInt(m_wstrTextReplace);
-	if (!optData || (m_fReplace && !optDataRepl)) {
-		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+	if (!optData) {
+		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
-
 	unsigned int dwData = *optData;
-	unsigned int dwDataRep = optDataRepl.value_or(0);
+	unsigned int dwDataRep { 0 };
+
+	if (m_fReplace) {
+		const auto optDataRepl = StrToUInt(m_wstrTextReplace);
+		if (!optDataRepl) {
+			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			return false;
+		}
+		dwDataRep = *optDataRepl;
+	}
+
 	if (m_fBigEndian) {
 		dwData = ByteSwap(dwData);
 		dwDataRep = ByteSwap(dwDataRep);
 	}
 
-	m_strSearch.assign(reinterpret_cast<char*>(&dwData), sizeof(dwData));
-	m_strReplace.assign(reinterpret_cast<char*>(&dwDataRep), sizeof(dwDataRep));
-	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
-	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
+	m_vecSearchData = RangeToVecBytes(dwData);
+	m_vecReplaceData = RangeToVecBytes(dwDataRep);
 
 	using enum ECmpType;
 	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT32)>;
@@ -1006,24 +1017,29 @@ bool CHexDlgSearch::PrepareINT64()
 	m_fMatchCase = false;
 	m_fWildcard = false;
 	const auto optData = StrToULL(m_wstrTextSearch);
-	const auto optDataRepl = StrToULL(m_wstrTextReplace);
-	if (!optData || (m_fReplace && !optDataRepl)) {
-		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+	if (!optData) {
+		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
-
 	unsigned long long ullData = *optData;
-	unsigned long long ullDataRep = optDataRepl.value_or(0);
+	unsigned long long ullDataRep { 0 };
+
+	if (m_fReplace) {
+		const auto optDataRepl = StrToULL(m_wstrTextReplace);
+		if (!optDataRepl) {
+			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			return false;
+		}
+		ullDataRep = *optDataRepl;
+	}
+
 	if (m_fBigEndian) {
 		ullData = ByteSwap(ullData);
 		ullDataRep = ByteSwap(ullDataRep);
 	}
 
-	m_strSearch.assign(reinterpret_cast<char*>(&ullData), sizeof(ullData));
-	m_strReplace.assign(reinterpret_cast<char*>(&ullDataRep), sizeof(ullDataRep));
-	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
-	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
-
+	m_vecSearchData = RangeToVecBytes(ullData);
+	m_vecReplaceData = RangeToVecBytes(ullDataRep);
 	using enum ECmpType;
 	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT64)>;
 
@@ -1035,23 +1051,29 @@ bool CHexDlgSearch::PrepareFloat()
 	m_fMatchCase = false;
 	m_fWildcard = false;
 	const auto optData = StrToFloat(m_wstrTextSearch);
-	const auto optDataRepl = StrToFloat(m_wstrTextReplace);
-	if (!optData || (m_fReplace && !optDataRepl)) {
-		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+	if (!optData) {
+		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
-
 	float flData = *optData;
-	float flDataRep = optDataRepl.value_or(0.0F);
-	if (m_fBigEndian) {
-		flData = std::bit_cast<float>(ByteSwap(std::bit_cast<unsigned long>(flData)));
-		flDataRep = std::bit_cast<float>(ByteSwap(std::bit_cast<unsigned long>(flDataRep)));
+	float flDataRep { 0.0F };
+
+	if (m_fReplace) {
+		const auto optDataRepl = StrToFloat(m_wstrTextReplace);
+		if (!optDataRepl) {
+			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			return false;
+		}
+		flDataRep = *optDataRepl;
 	}
 
-	m_strSearch.assign(reinterpret_cast<char*>(&flData), sizeof(flData));
-	m_strReplace.assign(reinterpret_cast<char*>(&flDataRep), sizeof(flDataRep));
-	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
-	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
+	if (m_fBigEndian) {
+		flData = ByteSwap(flData);
+		flDataRep = ByteSwap(flDataRep);
+	}
+
+	m_vecSearchData = RangeToVecBytes(flData);
+	m_vecReplaceData = RangeToVecBytes(flDataRep);
 
 	using enum ECmpType;
 	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT32)>;
@@ -1064,23 +1086,29 @@ bool CHexDlgSearch::PrepareDouble()
 	m_fMatchCase = false;
 	m_fWildcard = false;
 	const auto optData = StrToDouble(m_wstrTextSearch);
-	const auto optDataRepl = StrToDouble(m_wstrTextReplace);
-	if (!optData || (m_fReplace && !optDataRepl)) {
-		MessageBoxW(m_wstrWrongInput.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+	if (!optData) {
+		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
+	double dblData = *optData;
+	double dblDataRep { 0.0F };
 
-	double ddData = *optData;
-	double ddDataRep = optDataRepl.value_or(0.0F);
-	if (m_fBigEndian) {
-		ddData = std::bit_cast<double>(ByteSwap(std::bit_cast<unsigned long long>(ddData)));
-		ddDataRep = std::bit_cast<double>(ByteSwap(std::bit_cast<unsigned long long>(ddDataRep)));
+	if (m_fReplace) {
+		const auto optDataRepl = StrToDouble(m_wstrTextReplace);
+		if (!optDataRepl) {
+			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			return false;
+		}
+		dblDataRep = *optDataRepl;
 	}
 
-	m_strSearch.assign(reinterpret_cast<char*>(&ddData), sizeof(ddData));
-	m_strReplace.assign(reinterpret_cast<char*>(&ddDataRep), sizeof(ddDataRep));
-	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
-	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
+	if (m_fBigEndian) {
+		dblData = ByteSwap(dblData);
+		dblDataRep = ByteSwap(dblDataRep);
+	}
+
+	m_vecSearchData = RangeToVecBytes(dblData);
+	m_vecReplaceData = RangeToVecBytes(dblDataRep);
 
 	using enum ECmpType;
 	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT64)>;
@@ -1093,18 +1121,24 @@ bool CHexDlgSearch::PrepareFILETIME()
 	m_fMatchCase = false;
 	m_fWildcard = false;
 	const auto [dwFormat, wchSepar] = GetHexCtrl()->GetDateInfo();
-
+	const std::wstring wstrErr = L"Wrong FILETIME format.\r\nA correct format is: " + GetDateFormatString(dwFormat, wchSepar);
 	const auto optFTSearch = StringToFileTime(m_wstrTextSearch, dwFormat);
-	const auto optFTReplace = StringToFileTime(m_wstrTextReplace, dwFormat);
-	if (!optFTSearch || (m_fReplace && !optFTReplace)) {
-		std::wstring wstr = L"Wrong FILETIME format.\r\nA correct format is: " + GetDateFormatString(dwFormat, wchSepar);
-		MessageBoxW(wstr.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
-
+	if (!optFTSearch) {
+		MessageBoxW(wstrErr.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
+	FILETIME stFTSearch = *optFTSearch;
+	FILETIME stFTReplace { };
 
-	auto stFTSearch = *optFTSearch;
-	auto stFTReplace = optFTReplace.value_or(FILETIME { }); //optFTReplace is nullopt in RO mode.
+	if (m_fReplace) {
+		const auto optFTReplace = StringToFileTime(m_wstrTextReplace, dwFormat);
+		if (!optFTReplace) {
+			MessageBoxW(wstrErr.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			return false;
+		}
+		stFTReplace = *optFTReplace;
+	}
+
 	if (m_fBigEndian) {
 		stFTSearch.dwLowDateTime = ByteSwap(stFTSearch.dwLowDateTime);
 		stFTSearch.dwHighDateTime = ByteSwap(stFTSearch.dwHighDateTime);
@@ -1112,10 +1146,8 @@ bool CHexDlgSearch::PrepareFILETIME()
 		stFTReplace.dwHighDateTime = ByteSwap(stFTReplace.dwHighDateTime);
 	}
 
-	m_strSearch.assign(reinterpret_cast<char*>(&stFTSearch), sizeof(stFTSearch));
-	m_strReplace.assign(reinterpret_cast<char*>(&stFTReplace), sizeof(stFTReplace));
-	m_spnSearch = { reinterpret_cast<std::byte*>(m_strSearch.data()), m_strSearch.size() };
-	m_spnReplace = { reinterpret_cast<std::byte*>(m_strReplace.data()), m_strReplace.size() };
+	m_vecSearchData = RangeToVecBytes(stFTSearch);
+	m_vecReplaceData = RangeToVecBytes(stFTReplace);
 
 	using enum ECmpType;
 	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT64)>;
@@ -1155,7 +1187,7 @@ void CHexDlgSearch::Search()
 	SFINDRESULT stFind;
 
 	const auto lmbFindForward = [&]() {
-		if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_spnSearch); stFind.fFound) {
+		if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_vecSearchData); stFind.fFound) {
 			m_fFound = true;
 			m_fSecondMatch = true;
 			m_dwCount++;
@@ -1166,7 +1198,7 @@ void CHexDlgSearch::Search()
 
 			if (m_fSecondMatch && !stFind.fCanceled) {
 				m_ullOffsetCurr = m_ullBoundBegin; //Starting from the beginning.
-				if (Finder(m_ullOffsetCurr, ullUntil, m_spnSearch)) {
+				if (Finder(m_ullOffsetCurr, ullUntil, m_vecSearchData)) {
 					m_fFound = true;
 					m_fDoCount = true;
 					m_dwCount = 1;
@@ -1179,7 +1211,7 @@ void CHexDlgSearch::Search()
 		ullUntil = m_ullBoundBegin;
 		if (m_fSecondMatch && m_ullOffsetCurr - m_ullStep < m_ullOffsetCurr) {
 			m_ullOffsetCurr -= m_ullStep;
-			if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_spnSearch, false);
+			if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_vecSearchData, false);
 				stFind.fFound) {
 				m_fFound = true;
 				m_dwCount--;
@@ -1191,7 +1223,7 @@ void CHexDlgSearch::Search()
 
 			if (!stFind.fCanceled) {
 				m_ullOffsetCurr = m_ullBoundEnd;
-				if (Finder(m_ullOffsetCurr, ullUntil, m_spnSearch, false)) {
+				if (Finder(m_ullOffsetCurr, ullUntil, m_vecSearchData, false)) {
 					m_fFound = true;
 					m_fSecondMatch = true;
 					m_fDoCount = false;
@@ -1212,9 +1244,9 @@ void CHexDlgSearch::Search()
 					return;
 
 				while (true) {
-					if (Finder(ullStart, ullUntil, m_spnSearch, true, pDlgClbk, false)) {
-						Replace(ullStart, m_spnReplace);
-						ullStart += m_spnReplace.size() <= m_ullStep ? m_ullStep : m_spnReplace.size();
+					if (Finder(ullStart, ullUntil, m_vecSearchData, true, pDlgClbk, false)) {
+						Replace(ullStart, m_vecReplaceData);
+						ullStart += m_vecReplaceData.size() <= m_ullStep ? m_ullStep : m_vecReplaceData.size();
 						m_fFound = true;
 						++m_dwReplaced;
 						if (ullStart > ullUntil || m_dwReplaced >= m_dwFoundLimit || pDlgClbk->IsCanceled())
@@ -1235,9 +1267,9 @@ void CHexDlgSearch::Search()
 		else if (m_iDirection == 1) { //Forward only direction.
 			lmbFindForward();
 			if (m_fFound) {
-				Replace(m_ullOffsetCurr, m_spnReplace);
+				Replace(m_ullOffsetCurr, m_vecReplaceData);
 				//Increase next search step to replaced or m_ullStep amount.
-				m_ullOffsetCurr += m_spnReplace.size() <= m_ullStep ? m_ullStep : m_spnReplace.size();
+				m_ullOffsetCurr += m_vecReplaceData.size() <= m_ullStep ? m_ullStep : m_vecReplaceData.size();
 				++m_dwReplaced;
 			}
 		}
@@ -1252,7 +1284,7 @@ void CHexDlgSearch::Search()
 					return;
 
 				while (true) {
-					if (Finder(ullStart, ullUntil, m_spnSearch, true, pDlgClbk, false)) {
+					if (Finder(ullStart, ullUntil, m_vecSearchData, true, pDlgClbk, false)) {
 						m_vecSearchRes.emplace_back(ullStart); //Filling the vector of Found occurences.
 						ullStart += m_ullStep;
 						m_fFound = true;
@@ -1307,7 +1339,7 @@ void CHexDlgSearch::Search()
 			else
 				wstrInfo = L"Search found occurrence.";
 
-			HexCtrlHighlight({ { ullOffsetFound, m_fReplace ? m_spnReplace.size() : m_spnSearch.size() } });
+			HexCtrlHighlight({ { ullOffsetFound, m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size() } });
 			AddToList(ullOffsetFound);
 			SetEditStartAt(m_ullOffsetCurr);
 		}
@@ -1511,4 +1543,29 @@ void CHexDlgSearch::UpdateSearchReplaceControls()
 	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_FINDALL)->EnableWindow(fSearchEnabled);
 	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE)->EnableWindow(fReplaceEnabled);
 	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL)->EnableWindow(fReplaceEnabled);
+}
+
+std::vector<std::byte> CHexDlgSearch::RangeToVecBytes(const std::string& str)
+{
+	const auto pBegin = reinterpret_cast<const std::byte*>(str.data());
+	const auto pEnd = pBegin + str.size();
+
+	return std::vector<std::byte>(pBegin, pEnd);
+}
+
+std::vector<std::byte> CHexDlgSearch::RangeToVecBytes(const std::wstring& wstr)
+{
+	const auto pBegin = reinterpret_cast<const std::byte*>(wstr.data());
+	const auto pEnd = pBegin + wstr.size() * sizeof(wchar_t);
+
+	return std::vector<std::byte>(pBegin, pEnd);
+}
+
+template<typename T>
+std::vector<std::byte> CHexDlgSearch::RangeToVecBytes(T tData)
+{
+	const auto pBegin = reinterpret_cast<std::byte*>(&tData);
+	const auto pEnd = pBegin + sizeof(tData);
+
+	return std::vector<std::byte>(pBegin, pEnd);
 }
