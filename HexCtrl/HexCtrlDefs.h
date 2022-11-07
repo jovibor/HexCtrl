@@ -20,8 +20,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* EHexCmd - Enum of the commands that can be executed within HexCtrl, used in ExecuteCmd.   *
 	********************************************************************************************/
-	enum class EHexCmd : std::uint8_t
-	{
+	enum class EHexCmd : std::uint8_t {
 		CMD_DLG_SEARCH = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV,
 		CMD_NAV_DLG_GOTO, CMD_NAV_REPFWD, CMD_NAV_REPBKW, CMD_NAV_DATABEG, CMD_NAV_DATAEND,
 		CMD_NAV_PAGEBEG, CMD_NAV_PAGEEND, CMD_NAV_LINEBEG, CMD_NAV_LINEEND,
@@ -42,8 +41,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* EHexWnd - HexControl's windows.                                                           *
 	********************************************************************************************/
-	enum class EHexWnd : std::uint8_t
-	{
+	enum class EHexWnd : std::uint8_t {
 		WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_FILLDATA,
 		DLG_OPERS, DLG_SEARCH, DLG_ENCODING, DLG_GOTO, DLG_TEMPLMGR
 	};
@@ -51,8 +49,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXSPAN - Data offset and size, used in some data/size related routines.                  *
 	********************************************************************************************/
-	struct HEXSPAN
-	{
+	struct HEXSPAN {
 		ULONGLONG ullOffset { };
 		ULONGLONG ullSize { };
 	};
@@ -60,8 +57,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXDATAINFO - struct for a data information used in IHexVirtData.                         *
 	********************************************************************************************/
-	struct HEXDATAINFO
-	{
+	struct HEXDATAINFO {
 		NMHDR                hdr { };       //Standard Windows header.
 		HEXSPAN              stHexSpan { }; //Offset and size of the data bytes.
 		std::span<std::byte> spnData { };   //Data span.
@@ -82,8 +78,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXBKM - Bookmarks main struct.                                                           *
 	********************************************************************************************/
-	struct HEXBKM
-	{
+	struct HEXBKM {
 		std::vector<HEXSPAN> vecSpan { };                //Vector of offsets and sizes.
 		std::wstring         wstrDesc { };               //Bookmark description.
 		ULONGLONG            ullID { };                  //Bookmark ID, assigned internally by framework.
@@ -111,8 +106,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXBKMINFO - Bookmarks info.                                                              *
 	********************************************************************************************/
-	struct HEXBKMINFO
-	{
+	struct HEXBKMINFO {
 		NMHDR   hdr { };  //Standard Windows header.
 		PHEXBKM pBkm { }; //Bookmark pointer.
 	};
@@ -121,8 +115,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXMENUINFO - Menu info.                                                                  *
 	********************************************************************************************/
-	struct HEXMENUINFO
-	{
+	struct HEXMENUINFO {
 		NMHDR hdr { };     //Standard Windows header.
 		POINT pt { };      //Mouse position when clicked.
 		WORD  wMenuID { }; //Menu identifier.
@@ -132,8 +125,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXCOLOR - used with the IHexVirtColors interface.                                        *
 	********************************************************************************************/
-	struct HEXCOLOR
-	{
+	struct HEXCOLOR {
 		COLORREF clrBk { };   //Bk color.
 		COLORREF clrText { }; //Text color.
 	};
@@ -142,8 +134,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXCOLORINFO - struct for hex chunks' color information.                                  *
 	********************************************************************************************/
-	struct HEXCOLORINFO
-	{
+	struct HEXCOLORINFO {
 		NMHDR     hdr { };       //Standard Windows header.
 		ULONGLONG ullOffset { }; //Offset for the color.
 		PHEXCOLOR pClr { };      //Pointer to the color struct.
@@ -176,8 +167,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXCOLORS - All HexCtrl colors.                                                           *
 	********************************************************************************************/
-	struct HEXCOLORS
-	{
+	struct HEXCOLORS {
 		COLORREF clrFontHex { GetSysColor(COLOR_WINDOWTEXT) };       //Hex-chunks font color.
 		COLORREF clrFontText { GetSysColor(COLOR_WINDOWTEXT) };      //Text font color.
 		COLORREF clrFontSel { GetSysColor(COLOR_HIGHLIGHTTEXT) };    //Selected hex/text font color.
@@ -197,8 +187,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXCREATE - for IHexCtrl::Create method.                                                  *
 	********************************************************************************************/
-	struct HEXCREATE
-	{
+	struct HEXCREATE {
 		HEXCOLORS stColor { };          //All HexCtrl colors.
 		HWND      hWndParent { };       //Parent window handle.
 		PLOGFONTW pLogFont { };         //Monospaced font to be used, or nullptr for default.
@@ -214,8 +203,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXDATA - for IHexCtrl::SetData method.                                                   *
 	********************************************************************************************/
-	struct HEXDATA
-	{
+	struct HEXDATA {
 		std::span<std::byte> spnData { };               //Data to display.
 		IHexVirtData*        pHexVirtData { };          //Pointer for Virtual mode.
 		IHexVirtColors*      pHexVirtColors { };        //Pointer for Custom Colors class.
@@ -227,8 +215,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* HEXHITTEST - used in HitTest method.                                                      *
 	********************************************************************************************/
-	struct HEXHITTEST
-	{
+	struct HEXHITTEST {
 		ULONGLONG ullOffset { };     //Offset.
 		bool      fIsText { false }; //Is cursor at Text or Hex area.
 		bool      fIsHigh { false }; //Is it High or Low part of the byte.
@@ -240,8 +227,7 @@ namespace HEXCTRL
 	*  1 - lower, or at the right.                                                              *
 	*  0 - visible.                                                                             *
 	********************************************************************************************/
-	struct HEXVISION
-	{
+	struct HEXVISION {
 		std::int8_t i8Vert { }; //Vertical offset.
 		std::int8_t i8Horz { }; //Horizontal offset.
 		operator bool()const { return i8Vert == 0 && i8Horz == 0; }; //For test simplicity: if(IsOffsetVisible()).
@@ -250,16 +236,14 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* EHexModifyMode - Enum of the data modification mode, used in HEXMODIFY.                   *
 	********************************************************************************************/
-	enum class EHexModifyMode : std::uint8_t
-	{
+	enum class EHexModifyMode : std::uint8_t {
 		MODIFY_ONCE, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RAND_MT19937, MODIFY_RAND_FAST
 	};
 
 	/********************************************************************************************
 	* EHexOperMode - Data Operation mode, used in EHexModifyMode::MODIFY_OPERATION mode.        *
 	********************************************************************************************/
-	enum class EHexOperMode : std::uint8_t
-	{
+	enum class EHexOperMode : std::uint8_t {
 		OPER_ASSIGN, OPER_OR, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_ROTL,
 		OPER_ROTR, OPER_SWAP, OPER_ADD, OPER_SUB, OPER_MUL, OPER_DIV, OPER_CEIL, OPER_FLOOR
 	};
@@ -268,8 +252,7 @@ namespace HEXCTRL
 	* EHexDataSize - Data size to operate on, used in EHexModifyMode::MODIFY_OPERATION mode.    *
 	* Also used to set data grouping mode, in SetGroupMode method.                              *
 	********************************************************************************************/
-	enum class EHexDataSize : std::uint8_t
-	{
+	enum class EHexDataSize : std::uint8_t {
 		SIZE_BYTE = 0x01, SIZE_WORD = 0x02, SIZE_DWORD = 0x04, SIZE_QWORD = 0x08
 	};
 
@@ -286,8 +269,7 @@ namespace HEXCTRL
 	* If enModifyMode is equal to MODIFY_OPERATION then enOperMode comes into play, showing     *
 	* what kind of operation must be performed on data, with the enDataSize showing the size.   *
 	********************************************************************************************/
-	struct HEXMODIFY
-	{
+	struct HEXMODIFY {
 		EHexModifyMode       enModifyMode { EHexModifyMode::MODIFY_ONCE }; //Modify mode.
 		EHexOperMode         enOperMode { };       //Operation mode, used only in MODIFY_OPERATION mode.
 		EHexDataSize         enDataSize { };       //Operation data size.
