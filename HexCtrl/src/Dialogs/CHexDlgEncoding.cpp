@@ -67,9 +67,9 @@ BOOL CHexDlgEncoding::OnInitDialog()
 	m_pListMain->Create(lcs);
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 
-	m_pListMain->InsertColumn(0, L"Code page", 0, 80);
-	m_pListMain->InsertColumn(1, L"Name", 0, 280);
-	m_pListMain->InsertColumn(2, L"Max chars", 0, 80);
+	m_pListMain->InsertColumn(0, L"Code page", LVCFMT_LEFT, 80);
+	m_pListMain->InsertColumn(1, L"Name", LVCFMT_LEFT, 280);
+	m_pListMain->InsertColumn(2, L"Max chars", LVCFMT_LEFT, 80);
 
 	m_vecCodePage.emplace_back(-1, L"<link=\"https://en.wikipedia.org/wiki/ASCII\">ASCII 7-bit</link> (default)", 1);
 	m_vecCodePage.emplace_back(0, L"Windows Internal UTF-16 (wchar_t)", 4);

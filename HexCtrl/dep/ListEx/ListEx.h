@@ -14,16 +14,14 @@ namespace HEXCTRL::LISTEX
 	/*********************************************************************************
 	* EListExSortMode - Sorting mode.                                                *
 	*********************************************************************************/
-	enum class EListExSortMode : std::uint8_t
-	{
+	enum class EListExSortMode : std::uint8_t {
 		SORT_LEX, SORT_NUMERIC
 	};
 
 	/********************************************
 	* LISTEXCOLOR - colors for the cell.        *
 	********************************************/
-	struct LISTEXCOLOR
-	{
+	struct LISTEXCOLOR {
 		COLORREF clrBk { };
 		COLORREF clrText { };
 	};
@@ -32,8 +30,7 @@ namespace HEXCTRL::LISTEX
 	/**********************************************************************************
 	* LISTEXCOLORS - All ListEx colors.                                               *
 	**********************************************************************************/
-	struct LISTEXCOLORS
-	{
+	struct LISTEXCOLORS {
 		COLORREF clrListText { GetSysColor(COLOR_WINDOWTEXT) };       //List text color.
 		COLORREF clrListTextLink { RGB(0, 0, 200) };                  //List hyperlink text color.
 		COLORREF clrListTextSel { GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Selected item text color.
@@ -44,8 +41,8 @@ namespace HEXCTRL::LISTEX
 		COLORREF clrListBkSel { GetSysColor(COLOR_HIGHLIGHT) };       //Selected item bk color.
 		COLORREF clrListBkCellTt { RGB(170, 170, 230) };              //Bk color of a cell that has tooltip.
 		COLORREF clrListGrid { RGB(220, 220, 220) };                  //List grid color.
-		COLORREF clrTooltipText { GetSysColor(COLOR_INFOTEXT) };      //Tooltip window text color.
-		COLORREF clrTooltipBk { GetSysColor(COLOR_INFOBK) };          //Tooltip window bk color.
+		COLORREF clrTooltipText { 0xFFFFFFFFUL };                     //Tooltip text color, 0xFFFFFFFFUL for current Theme color.
+		COLORREF clrTooltipBk { 0xFFFFFFFFUL };                       //Tooltip bk color, 0xFFFFFFFFUL for current Theme color.
 		COLORREF clrHdrText { GetSysColor(COLOR_WINDOWTEXT) };        //List header text color.
 		COLORREF clrHdrBk { GetSysColor(COLOR_WINDOW) };              //List header bk color.
 		COLORREF clrHdrHglInact { GetSysColor(COLOR_GRADIENTINACTIVECAPTION) };//Header highlight inactive.
@@ -56,8 +53,7 @@ namespace HEXCTRL::LISTEX
 	/**********************************************************************************
 	* LISTEXCREATE - Main initialization helper struct for CListEx::Create method.    *
 	**********************************************************************************/
-	struct LISTEXCREATE
-	{
+	struct LISTEXCREATE {
 		LISTEXCOLORS stColor { };             //All control's colors.
 		CRect        rect;                    //Initial rect.
 		CWnd*        pParent { };             //Parent window.
@@ -70,6 +66,7 @@ namespace HEXCTRL::LISTEX
 		bool         fDialogCtrl { false };   //If it's a list within dialog.
 		bool         fSortable { false };     //Is list sortable, by clicking on the header column?
 		bool         fLinkUnderline { true }; //Links are displayed underlined or not.
+		bool         fTooltipBaloon { true }; //Baloon type tooltip for cells.
 		bool         fLinkTooltip { true };   //Show links' toolips.
 		bool         fHighLatency { false };  //Do not redraw window until scrolling completes.
 	};
@@ -77,8 +74,7 @@ namespace HEXCTRL::LISTEX
 	/********************************************
 	* LISTEXTOOLTIP - tool-tips for the cell.   *
 	********************************************/
-	struct LISTEXTOOLTIP
-	{
+	struct LISTEXTOOLTIP {
 		std::wstring wstrText;
 		std::wstring wstrCaption;
 	};
@@ -87,8 +83,7 @@ namespace HEXCTRL::LISTEX
 	/********************************************
 	* LISTEXHDRICON - Icon for header column.   *
 	********************************************/
-	struct LISTEXHDRICON
-	{
+	struct LISTEXHDRICON {
 		POINT pt { };              //Coords of the icon's top-left corner in the header item's rect.
 		int   iIndex { };          //Icon index in the header's image list.
 		bool  fClickable { true }; //Is icon sending LISTEX_MSG_HDRICONCLICK message when clicked.
@@ -112,8 +107,9 @@ namespace HEXCTRL::LISTEX
 		[[nodiscard]] virtual int GetSortColumn()const = 0;
 		[[nodiscard]] virtual bool GetSortAscending()const = 0;
 		virtual void HideColumn(int iIndex, bool fHide) = 0;
-		virtual int InsertColumn(int nCol, const LVCOLUMN* pColumn) = 0;
-		virtual int InsertColumn(int nCol, LPCTSTR lpszColumnHeading, int nFormat = LVCFMT_LEFT, int nWidth = -1, int nSubItem = -1) = 0;
+		virtual int InsertColumn(int nCol, const LVCOLUMNW* pColumn, int iDataAlign = LVCFMT_LEFT) = 0;
+		virtual int InsertColumn(int nCol, LPCTSTR lpszColumnHeading, int nFormat = LVCFMT_LEFT,
+			int nWidth = -1, int nSubItem = -1, int iDataAlign = LVCFMT_LEFT) = 0;
 		[[nodiscard]] virtual bool IsCreated()const = 0;
 		[[nodiscard]] virtual bool IsColumnSortable(int iColumn) = 0;
 		virtual void ResetSort() = 0; //Reset all the sort by any column to its default state.
@@ -123,6 +119,7 @@ namespace HEXCTRL::LISTEX
 		virtual void SetCellTooltip(int iItem, int iSubitem, std::wstring_view wstrTooltip, std::wstring_view wstrCaption = L"") = 0;
 		virtual void SetColors(const LISTEXCOLORS& lcs) = 0;
 		virtual void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
+		virtual void SetColumnEditable(int iColumn, bool fEditable) = 0;
 		virtual void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enSortMode = { }) = 0;
 		virtual void SetFont(const LOGFONTW* pLogFontNew) = 0;
 		virtual void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
@@ -152,11 +149,13 @@ namespace HEXCTRL::LISTEX
 	* WM_NOTIFY codes (NMHDR.code values)										*
 	****************************************************************************/
 
-	constexpr auto LISTEX_MSG_GETCOLOR = 0x1000U;     //Get cell color.
-	constexpr auto LISTEX_MSG_GETICON = 0x1001U;      //Get cell icon.
-	constexpr auto LISTEX_MSG_GETTOOLTIP = 0x1002U;   //Get cell tool-tip data.
-	constexpr auto LISTEX_MSG_LINKCLICK = 0x1003U;    //Hyperlink has been clicked.
-	constexpr auto LISTEX_MSG_HDRICONCLICK = 0x1004U; //Header's icon has been clicked.
-	constexpr auto LISTEX_MSG_HDRRBTNDOWN = 0x1005U;  //Header's WM_RBUTTONDOWN message.
-	constexpr auto LISTEX_MSG_HDRRBTNUP = 0x1006U;    //Header's WM_RBUTTONUP message.
+	constexpr auto LISTEX_MSG_GETCOLOR = 0x1000U;    //Get cell color.
+	constexpr auto LISTEX_MSG_GETICON = 0x1001U;     //Get cell icon.
+	constexpr auto LISTEX_MSG_GETTOOLTIP = 0x1002U;  //Get cell tool-tip data.
+	constexpr auto LISTEX_MSG_LINKCLICK = 0x1003U;   //Hyperlink has been clicked.
+	constexpr auto LISTEX_MSG_HDRICONCLICK = 0x1004U;//Header's icon has been clicked.
+	constexpr auto LISTEX_MSG_HDRRBTNDOWN = 0x1005U; //Header's WM_RBUTTONDOWN message.
+	constexpr auto LISTEX_MSG_HDRRBTNUP = 0x1006U;   //Header's WM_RBUTTONUP message.
+	constexpr auto LISTEX_MSG_EDITBEGIN = 0x1007U;   //Edit in-place field is about to display.
+	constexpr auto LISTEX_MSG_DATACHANGED = 0x1008U; //Item text has been edited/changed.
 }

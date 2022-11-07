@@ -72,6 +72,8 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListEditBegin(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListDataChanged(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListDblClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListEnterPressed(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);

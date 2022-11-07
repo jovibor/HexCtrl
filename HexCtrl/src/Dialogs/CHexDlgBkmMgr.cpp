@@ -59,10 +59,10 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_BKMMGR_LIST, this);
 	m_pListMain->SetSortable(true);
 	m_pListMain->InsertColumn(0, L"\u2116", LVCFMT_LEFT, 40);
-	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_CENTER, 80);
-	m_pListMain->InsertColumn(2, L"Size", LVCFMT_CENTER, 80);
+	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 80);
+	m_pListMain->InsertColumn(2, L"Size", LVCFMT_LEFT, 80);
 	m_pListMain->InsertColumn(3, L"Description", LVCFMT_LEFT, 210);
-	m_pListMain->InsertColumn(4, L"Bk color", LVCFMT_CENTER, 65);
+	m_pListMain->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 65);
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 
 	m_stMenuList.CreatePopupMenu();

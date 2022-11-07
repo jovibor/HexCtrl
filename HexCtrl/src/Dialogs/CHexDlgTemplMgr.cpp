@@ -29,6 +29,8 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListItemChanged)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetColor)
+	ON_NOTIFY(LISTEX::LISTEX_MSG_EDITBEGIN, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListEditBegin)
+	ON_NOTIFY(LISTEX::LISTEX_MSG_DATACHANGED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListDataChanged)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListRClick)
 	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListDblClick)
 	ON_NOTIFY(NM_RETURN, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListEnterPressed)
@@ -72,10 +74,11 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 
 	m_pListApplied->CreateDialogCtrl(IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, this);
 	m_pListApplied->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
-	m_pListApplied->InsertColumn(0, L"Name", 0, 300);
-	m_pListApplied->InsertColumn(1, L"Offset", 0, 50);
+	m_pListApplied->InsertColumn(0, L"Name", LVCFMT_LEFT, 300);
+	m_pListApplied->InsertColumn(1, L"Offset", LVCFMT_LEFT, 50);
 	m_pListApplied->InsertColumn(2, L"Size", LVCFMT_LEFT, 50);
 	m_pListApplied->InsertColumn(3, L"Data", LVCFMT_LEFT, 120);
+	m_pListApplied->SetColumnEditable(3, true);
 	m_pListApplied->InsertColumn(4, L"Colors", LVCFMT_LEFT, 57);
 
 	m_stMenuTree.CreatePopupMenu();
@@ -295,6 +298,59 @@ void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		return;
 
 	m_stTreeApplied.SelectItem(TreeItemFromListItem(iItem));
+}
+
+void CHexDlgTemplMgr::OnListEditBegin(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	if (pNMI->iSubItem != 3) { //Data.
+		pNMI->lParam = FALSE;
+		return;
+	}
+
+	const auto iItem = pNMI->iItem;
+	const auto& refVec = *m_pVecCurrFields;
+	if (!refVec[iItem]->vecNested.empty()) {
+		pNMI->lParam = FALSE; //Do not show edit-box in nested fields.
+	}
+}
+
+void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	if (pNMI->iSubItem != 3) //Data.
+		return;
+
+	const auto iItem = pNMI->iItem;
+	const auto pwszText = reinterpret_cast<LPCWSTR>(pNMI->lParam);
+	const auto& refVecField = *m_pVecCurrFields;
+	const auto ullOffset = m_pAppliedCurr->ullOffset + refVecField[iItem]->iOffset;
+
+	switch (refVecField[iItem]->iSize) {
+	case 1:
+		if (const auto opt = StrToUChar(pwszText); opt) {
+			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		}
+		break;
+	case 2:
+		if (const auto opt = StrToUShort(pwszText); opt) {
+			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		}
+		break;
+	case 4:
+		if (const auto opt = StrToUInt(pwszText); opt) {
+			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		}
+		break;
+	case 8:
+		if (const auto opt = StrToULL(pwszText); opt) {
+			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		}
+		break;
+	default:
+		return;
+	}
+	m_pHexCtrl->Redraw();
 }
 
 void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)

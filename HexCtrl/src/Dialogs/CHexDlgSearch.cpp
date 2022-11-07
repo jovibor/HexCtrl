@@ -378,7 +378,7 @@ BOOL CHexDlgSearch::OnInitDialog()
 
 	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_SEARCH_LIST_MAIN, this);
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
-	m_pListMain->InsertColumn(0, L"\u2116", 0, 40);
+	m_pListMain->InsertColumn(0, L"\u2116", LVCFMT_LEFT, 40);
 	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 455);
 
 	m_stMenuList.CreatePopupMenu();
