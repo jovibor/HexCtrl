@@ -55,31 +55,27 @@ namespace HEXCTRL
 	********************************************/
 	namespace INTERNAL
 	{
-		enum class CHexCtrl::EClipboard : std::uint8_t
-		{
+		enum class CHexCtrl::EClipboard : std::uint8_t {
 			COPY_HEX, COPY_HEXLE, COPY_HEXFMT, COPY_BASE64, COPY_CARR,
 			COPY_GREPHEX, COPY_PRNTSCRN, COPY_OFFSET, COPY_TEXT_UTF16,
 			PASTE_HEX, PASTE_TEXT_UTF16, PASTE_TEXT_CP
 		};
 
 		//Struct for UNDO command routine.
-		struct CHexCtrl::SUNDO
-		{
+		struct CHexCtrl::SUNDO {
 			ULONGLONG              ullOffset { }; //Start byte to apply Undo to.
 			std::vector<std::byte> vecData { };   //Data for Undo.
 		};
 
 		//Struct for resources auto deletion on destruction.
-		struct CHexCtrl::SHBITMAP
-		{
+		struct CHexCtrl::SHBITMAP {
 			SHBITMAP(HBITMAP hBmp) { m_hBmp = hBmp; }
 			~SHBITMAP() { ::DeleteObject(m_hBmp); }
 			HBITMAP m_hBmp { };
 		};
 
 		//Key bindings.
-		struct CHexCtrl::SKEYBIND
-		{
+		struct CHexCtrl::SKEYBIND {
 			EHexCmd eCmd { };
 			WORD    wMenuID { };
 			UINT    uKey { };
@@ -127,10 +123,15 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_VSCROLL()
 END_MESSAGE_MAP()
 
-//CWinApp object is vital for manual MFC, and for in-.dll work,
-//to run properly (Resources handling and assertions.)
+//CWinApp object is vital for manual MFC and for in-DLL work,
+//to run properly (Resources handling and assertions).
 #if defined HEXCTRL_MANUAL_MFC_INIT || defined HEXCTRL_SHARED_DLL
 CWinApp theApp;
+
+extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg) {
+	AFX_MANAGE_STATE(AfxGetStaticModuleState());
+	return theApp.PreTranslateMessage(pMsg);
+}
 #endif
 
 CHexCtrl::CHexCtrl()

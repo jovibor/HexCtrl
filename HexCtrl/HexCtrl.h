@@ -121,18 +121,28 @@ namespace HEXCTRL
 #define	HEXCTRLAPI
 #endif
 
+#if defined HEXCTRL_MANUAL_MFC_INIT || defined HEXCTRL_SHARED_DLL
+//Because MFC PreTranslateMessage doesn't work in a DLLs
+//this exported function should be called from the app's main message loop.
+//Something like that:
+//BOOL CMyApp::PreTranslateMessage(MSG* pMsg) {
+//	if (HexCtrlPreTranslateMessage(pMsg))
+//		return TRUE;
+//	return CWinApp::PreTranslateMessage(pMsg);
+//}
+	extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg);
+#endif
+
 	extern "C" HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl();
 	using IHexCtrlPtr = std::unique_ptr < IHexCtrl, decltype([](IHexCtrl* p) { p->Destroy(); }) > ;
 
 	inline IHexCtrlPtr CreateHexCtrl() {
 		return IHexCtrlPtr { CreateRawHexCtrl() };
 	};
-
 	/********************************************
 	* HEXCTRLINFO: service info structure.      *
 	********************************************/
-	struct HEXCTRLINFO
-	{
+	struct HEXCTRLINFO {
 		const wchar_t* pwszVersion { };        //WCHAR version string.
 		union {
 			unsigned long long ullVersion { }; //ULONGLONG version number.
