@@ -263,6 +263,7 @@ If you'd like to colorize your data with custom bk/text colors, you have to reso
 ```json
 {
     "TemplateName": "MyDataStruct",
+   	"Endianness": "little",
     "clrBk": "#909090",
     "clrText": "#FFFFFF",
     "Fields": [
@@ -288,12 +289,13 @@ Every such file contains necessary properties:
 - **Fields** is an array of objects where every object represents a struct data member. Any such object can have its own **Fields** sub-objects, nested structs.  
 
 The object's properties include:
-- **name** - mandatory, name of the field
-- **size** - mandatory, size of the field in bytes
+- **name** - [mandatory] - name of the field
+- **size** - [mandatory] - size of the field in bytes
+- **endianness** - field endianness, can be "little" or "big". By default all fields are little-endian
 - **clrBk** - field background color
 - **clrText** - field text color
 
-If object has **clrBk** and **Fields** properties simultaneously, the **clrBk** property will mean a default background color for all the **Fields** objects, the same goes for  **clrText**.  
+If object has **clrBk** and **Fields** properties simultaneously, the **clrBk** property will mean a default background color for all the **Fields** objects, the same goes for  **clrText** and **endianness** properties.  
 
 For the available templates check the `Templates` directory.
 

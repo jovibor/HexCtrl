@@ -533,6 +533,17 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rcOrig, BOOL bIsPressed, 
 	HDITEMW hdItem { HDI_FORMAT | HDI_TEXT, 0, warrHdrText, nullptr, MAX_PATH };
 	GetItem(iItem, &hdItem);
 
+	//Draw icon for column, if any.
+	long lIndentTextLeft { 4 }; //Left text indent.
+	if (const auto pData = HasIcon(ID); pData != nullptr) { //If column has an icon.
+		const auto pImgList = GetImageList(LVSIL_NORMAL);
+		int iCX { };
+		int iCY { };
+		ImageList_GetIconSize(pImgList->m_hImageList, &iCX, &iCY); //Icon dimensions.
+		pImgList->DrawEx(&rDC, pData->stIcon.iIndex, rcOrig.TopLeft() + pData->stIcon.pt, { }, CLR_NONE, CLR_NONE, ILD_NORMAL);
+		lIndentTextLeft += pData->stIcon.pt.x + iCX;
+	}
+
 	UINT uFormat { DT_LEFT };
 	switch (hdItem.fmt & HDF_JUSTIFYMASK) {
 	case HDF_CENTER:
@@ -545,29 +556,22 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rcOrig, BOOL bIsPressed, 
 		break;
 	}
 
-	//Draw icon for column, if any.
-	long lIndentTextLeft { 4 }; //Left text indent.
-	if (const auto pData = HasIcon(ID); pData != nullptr) { //If column has an icon.
-		const auto pImgList = GetImageList(LVSIL_NORMAL);
-		int iCX { };
-		int iCY { };
-		ImageList_GetIconSize(pImgList->m_hImageList, &iCX, &iCY); //Icon dimensions.
-		pImgList->DrawEx(&rDC, pData->stIcon.iIndex, rcOrig.TopLeft() + pData->stIcon.pt, { }, CLR_NONE, CLR_NONE, ILD_NORMAL);
-		lIndentTextLeft += pData->stIcon.pt.x + iCX;
-	}
-
 	constexpr long lIndentTextRight = 4;
 	CRect rcText { rcOrig.left + lIndentTextLeft, rcOrig.top, rcOrig.right - lIndentTextRight, rcOrig.bottom };
-	if (StrStrW(warrHdrText, L"\n")) {	//If it's multiline text, first — calculate rect for the text,
+	if (StrStrW(warrHdrText, L"\n") != nullptr) {
+		//If it's multiline text, first — calculate rect for the text,
 		//with DT_CALCRECT flag (not drawing anything),
 		//and then calculate rect for final vertical text alignment.
 		CRect rcCalcText;
-		rDC.DrawTextW(warrHdrText, &rcCalcText, uFormat | DT_CALCRECT);
+		rDC.DrawTextW(warrHdrText, rcCalcText, uFormat | DT_CALCRECT);
 		rcText.top = rcText.Height() / 2 - rcCalcText.Height() / 2;
-		rDC.DrawTextW(warrHdrText, &rcOrig, uFormat);
 	}
-	else
-		rDC.DrawTextW(warrHdrText, &rcText, uFormat | DT_VCENTER | DT_SINGLELINE);
+	else {
+		uFormat |= DT_VCENTER | DT_SINGLELINE;
+	}
+
+	//Draw Header Text.
+	rDC.DrawTextW(warrHdrText, rcText, uFormat);
 
 	//Draw sortable triangle (arrow).
 	if (m_fSortable && IsSortable(ID) && ID == m_uSortColumn) {

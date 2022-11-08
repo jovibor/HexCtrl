@@ -12,10 +12,7 @@
                         "type": "string"
                     },
                     "size": {
-                        "type": [
-                            "integer",
-                            "string"
-                        ],
+                        "type": [ "integer", "string" ],
                         "minimum": 1
                     },
                     "clrBk": {
@@ -31,21 +28,8 @@
                     }
                 },
                 "additionalProperties": false,
-                "required": [
-                    "name"
-                ],
-                "oneOf": [
-                    {
-                        "required": [
-                            "size"
-                        ]
-                    },
-                    {
-                        "required": [
-                            "Fields"
-                        ]
-                    }
-                ]
+                "required": [ "name" ],
+                "oneOf": [ { "required": [ "size" ] }, { "required": [ "Fields" ] } ]
             }
         }
     },
@@ -56,6 +40,10 @@
         },
         "TemplateName": {
             "type": "string"
+        },
+        "Endianness": {
+            "type": "string",
+            "enum": [ "little", "big" ]
         },
         "clrBk": {
             "type": "string",
@@ -70,8 +58,5 @@
         }
     },
     "additionalProperties": false,
-    "required": [
-        "TemplateName",
-        "Fields"
-    ]
+    "required": [ "TemplateName", "Fields" ]
 }

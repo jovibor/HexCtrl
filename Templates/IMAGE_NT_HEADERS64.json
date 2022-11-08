@@ -1,6 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
     "TemplateName": "IMAGE_NT_HEADERS64",
+    "endianness": "little",
     "clrBk": "#606060",
     "clrText": "#FFFFFF",
     "Fields": [

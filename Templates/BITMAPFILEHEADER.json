@@ -1,6 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
     "TemplateName": "BITMAPFILEHEADER",
+    "endianness": "little",
     "clrBk": "#909090",
     "clrText": "#FFFFFF",
     "Fields": [

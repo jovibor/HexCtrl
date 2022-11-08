@@ -27,6 +27,7 @@ namespace HEXCTRL::INTERNAL
 		VecFields         vecNested { };    //Vector for nested fields.
 		PHEXTEMPLATEFIELD pFieldParent { }; //Parent field in case of nested.
 		PHEXTEMPLATE      pTemplate { };    //Template this field belongs to.
+		bool              fBigEndian { };   //Field endianness.
 	};
 
 	struct HEXTEMPLATE {
@@ -126,6 +127,6 @@ namespace HEXCTRL::INTERNAL
 		bool m_fTooltips { true };            //Show tooltips or not.
 		bool m_fHighlightSel { true };        //Highlight selected fields with a selection.
 		bool m_fShowAsHex { true };
-		bool m_fBigEndian { false };
+		bool m_fSwapEndian { false };
 	};
 }
