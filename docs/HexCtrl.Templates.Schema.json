@@ -15,6 +15,10 @@
                         "type": [ "integer", "string" ],
                         "minimum": 1
                     },
+                    "endianness": {
+                        "type": "string",
+                        "enum": [ "little", "big" ]
+                    },
                     "clrBk": {
                         "type": "string",
                         "format": "color"
@@ -41,7 +45,7 @@
         "TemplateName": {
             "type": "string"
         },
-        "Endianness": {
+        "endianness": {
             "type": "string",
             "enum": [ "little", "big" ]
         },

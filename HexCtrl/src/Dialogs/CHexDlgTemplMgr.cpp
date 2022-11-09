@@ -330,12 +330,8 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		return;
 
 	const auto& refVecField = *m_pVecCurrFields;
-	switch (pNMI->iSubItem) {
-	case ID_LISTAPPLIED_FIELD_COLORS: //Colors.
-		m_stCellClr.clrBk = refVecField[pNMI->iItem]->clrBk;
-		m_stCellClr.clrText = refVecField[pNMI->iItem]->clrText;
-		break;
-	}
+	m_stCellClr.clrBk = refVecField[pNMI->iItem]->clrBk;
+	m_stCellClr.clrText = refVecField[pNMI->iItem]->clrText;
 	pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
 }
 
@@ -859,7 +855,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					refBack->fBigEndian = fBigEndianDefaultNested;
 
 					//Setting defaults for the next nested struct.
-					DEFPROPERTIES stDefsNested { .clrBkDefault { clrBkDefaultNested }, .clrTextDefault { clrTextDefaultNested },
+					const DEFPROPERTIES stDefsNested { .clrBkDefault { clrBkDefaultNested }, .clrTextDefault { clrTextDefaultNested },
 						.pFieldParent { refBack.get() }, .fBigEndian { fBigEndianDefaultNested } };
 					//Recursion lambda for nested structs starts here.
 					if (!lmbSelf(lmbSelf, iterNestedFields, refBack->vecNested, iOffset, stDefsNested)) {
