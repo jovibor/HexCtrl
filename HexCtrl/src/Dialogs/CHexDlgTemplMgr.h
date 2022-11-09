@@ -75,6 +75,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListEditBegin(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListDataChanged(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListHdrRClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListDblClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListEnterPressed(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
@@ -90,7 +91,7 @@ namespace HEXCTRL::INTERNAL
 		void UnloadTemplate(int iTemplateID)override;       //Unload/remove loaded template from memory.
 		void OnTemplateLoadUnload(bool fLoad);              //Callback on template's successful load or unload.
 		void EnableDynamicLayoutHelper(bool fEnable);
-		auto GetAppliedFromItem(HTREEITEM hTreeItem)->PHEXTEMPLATEAPPLIED;
+		auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PHEXTEMPLATEAPPLIED;
 		void RemoveNodesWithTemplateID(int iTemplateID);
 		void RemoveNodeWithAppliedID(int iAppliedID);
 		[[nodiscard]] bool IsHighlight()const;
@@ -101,7 +102,7 @@ namespace HEXCTRL::INTERNAL
 		static LRESULT TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 		DECLARE_MESSAGE_MAP();
 	private:
-		enum class EMenuID : std::uint16_t { IDM_APPLIED_DISAPPLY = 0x8000, IDM_APPLIED_DISAPPALL = 0x8001 };
+		enum class EMenuID : std::uint16_t;
 		IHexCtrl* m_pHexCtrl { };
 		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;            //Loaded Templates.
 		std::vector<std::unique_ptr<HEXTEMPLATEAPPLIED>> m_vecTemplatesApplied; //Currently Applied Templates.
@@ -116,6 +117,7 @@ namespace HEXCTRL::INTERNAL
 		LISTEX::LISTEXCOLOR m_stCellClr { };
 		CTreeCtrl m_stTreeApplied;
 		CMenu m_stMenuTree;           //Menu for the tree control.
+		CMenu m_menuHdr;              //Menu for the list header.
 		HCURSOR m_hCurResize;
 		HCURSOR m_hCurArrow;
 		PHEXTEMPLATEAPPLIED m_pAppliedCurr { }; //Currently selected PApplied.

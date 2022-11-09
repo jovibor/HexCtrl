@@ -263,7 +263,7 @@ If you'd like to colorize your data with custom bk/text colors, you have to reso
 ```json
 {
     "TemplateName": "MyDataStruct",
-   	"Endianness": "little",
+    "endianness": "little",
     "clrBk": "#909090",
     "clrText": "#FFFFFF",
     "Fields": [
@@ -274,6 +274,7 @@ If you'd like to colorize your data with custom bk/text colors, you have to reso
             "clrText": "#FFFFFF"
         },
         {
+            "endianness": "big",
             "name": "DWORD field2",
             "size": 4
         },

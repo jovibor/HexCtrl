@@ -20,6 +20,12 @@ using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL
 {
+	enum class CHexDlgTemplMgr::EMenuID : std::uint16_t {
+		IDM_TREEAPPLIED_DISAPPLY = 0x8000, IDM_TREEAPPLIED_DISAPPLYALL = 0x8001,
+		IDM_LISTAPPLIED_HDR_NAME = 0x8100, IDM_LISTAPPLIED_HDR_OFFSET, IDM_LISTAPPLIED_HDR_SIZE,
+		IDM_LISTAPPLIED_HDR_DATA, IDM_LISTAPPLIED_HDR_ENDIANNESS, IDM_LISTAPPLIED_HDR_COLORS
+	};
+
 	constexpr auto ID_LISTAPPLIED_FIELD_DATA { 3 };
 	constexpr auto ID_LISTAPPLIED_FIELD_COLORS { 5 };
 };
@@ -37,6 +43,7 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetColor)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_EDITBEGIN, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListEditBegin)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_DATACHANGED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListDataChanged)
+	ON_NOTIFY(LISTEX::LISTEX_MSG_HDRRBTNUP, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListHdrRClick)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListRClick)
 	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListDblClick)
 	ON_NOTIFY(NM_RETURN, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListEnterPressed)
@@ -88,9 +95,24 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_pListApplied->InsertColumn(4, L"Endianness", LVCFMT_CENTER, 65, -1, LVCFMT_CENTER);
 	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_COLORS, L"Colors", LVCFMT_LEFT, 57);
 
+	using enum EMenuID;
+	m_menuHdr.CreatePopupMenu();
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), L"Name");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), MF_CHECKED | MF_BYCOMMAND);
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_OFFSET), L"Offset");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_OFFSET), MF_CHECKED | MF_BYCOMMAND);
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_SIZE), L"Size");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_SIZE), MF_CHECKED | MF_BYCOMMAND);
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_DATA), L"Data");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_DATA), MF_CHECKED | MF_BYCOMMAND);
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_ENDIANNESS), L"Endianness");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_ENDIANNESS), MF_CHECKED | MF_BYCOMMAND);
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_COLORS), L"Colors");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_COLORS), MF_CHECKED | MF_BYCOMMAND);
+
 	m_stMenuTree.CreatePopupMenu();
-	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_DISAPPLY), L"Disapply template");
-	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_APPLIED_DISAPPALL), L"Disapply all");
+	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLY), L"Disapply template");
+	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLYALL), L"Disapply all");
 
 	m_stEditOffset.SetWindowTextW(L"0x0");
 	m_stCheckTtShow.SetCheck(IsTooltips() ? BST_CHECKED : BST_UNCHECKED);
@@ -110,15 +132,28 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	using enum EMenuID;
-	switch (static_cast<EMenuID>(LOWORD(wParam))) {
-	case IDM_APPLIED_DISAPPLY:
+	const auto wMenuID = LOWORD(wParam);
+	switch (static_cast<EMenuID>(wMenuID)) {
+	case IDM_TREEAPPLIED_DISAPPLY:
 		if (const auto pApplied = GetAppliedFromItem(m_stTreeApplied.GetSelectedItem()); pApplied != nullptr) {
 			DisapplyByID(pApplied->iAppliedID);
 		}
 		return TRUE;
-	case IDM_APPLIED_DISAPPALL:
+	case IDM_TREEAPPLIED_DISAPPLYALL:
 		DisapplyAll();
 		return TRUE;
+	case IDM_LISTAPPLIED_HDR_NAME:
+	case IDM_LISTAPPLIED_HDR_OFFSET:
+	case IDM_LISTAPPLIED_HDR_SIZE:
+	case IDM_LISTAPPLIED_HDR_DATA:
+	case IDM_LISTAPPLIED_HDR_ENDIANNESS:
+	case IDM_LISTAPPLIED_HDR_COLORS:
+	{
+		const auto fChecked = m_menuHdr.GetMenuState(wMenuID, MF_BYCOMMAND) & MF_CHECKED;
+		m_pListApplied->HideColumn(wMenuID - static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), fChecked);
+		m_menuHdr.CheckMenuItem(wMenuID, (fChecked ? MF_UNCHECKED : MF_CHECKED) | MF_BYCOMMAND);
+	}
+	break;
 	}
 
 	return CDialogEx::OnCommand(wParam, lParam);
@@ -367,6 +402,13 @@ void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	m_pHexCtrl->Redraw();
 }
 
+void CHexDlgTemplMgr::OnListHdrRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
+{
+	CPoint pt;
+	GetCursorPos(&pt);
+	m_menuHdr.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, pt.x, pt.y, this);
+}
+
 void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
@@ -508,9 +550,9 @@ void CHexDlgTemplMgr::OnTreeRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 	if (hTreeItem != nullptr) {
 		m_stTreeApplied.SelectItem(hTreeItem);
 	}
-	m_stMenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_DISAPPLY),
+	m_stMenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_TREEAPPLIED_DISAPPLY),
 		(fHasApplied && fHitTest ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_APPLIED_DISAPPALL), (fHasApplied ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_stMenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_TREEAPPLIED_DISAPPLYALL), (fHasApplied ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_stMenuTree.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
 }
 
@@ -724,7 +766,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	}
 
 	bool fBigEndian { false };
-	if (const auto it = docJSON.FindMember("Endianness"); it != docJSON.MemberEnd() && it->value.IsString()) {
+	if (const auto it = docJSON.FindMember("endianness"); it != docJSON.MemberEnd() && it->value.IsString()) {
 		fBigEndian = std::string_view { it->value.GetString() } == "big";
 	}
 
@@ -736,7 +778,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					if (!refField->vecNested.empty()) {
 						return ullTotal + lmbSelf(lmbSelf, refField->vecNested);
 					}
-					return ullTotal + refField->iSize; });
+			return ullTotal + refField->iSize; });
 		};
 		return _lmbCount(_lmbCount, vecRef);
 	};
@@ -753,12 +795,11 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	DEFPROPERTIES stProps { .clrBkDefault { clrBkDefault }, .clrTextDefault { clrTextDefault },
 		.pTemplate { pTemplate }, .fBigEndian { fBigEndian } };
 
-
 	using IterJSONMember = rapidjson::Value::ConstMemberIterator;
 	const auto lmbParseFields = [&lmbStrToRGB, &lmbTotalSize, &stProps]
 	(const IterJSONMember iterMemberFields, VecFields& vecFields)->bool {
 		const auto _lmbParse = [&lmbStrToRGB, &lmbTotalSize]
-		(const auto& lmbSelf, const IterJSONMember iterMemberFields, VecFields& vecFields, int& iOffset, DEFPROPERTIES stProps)->bool {
+		(const auto& lmbSelf, const IterJSONMember iterMemberFields, VecFields& vecFields, int& iOffset, DEFPROPERTIES& refDefs)->bool {
 			for (auto iterArrCurr = iterMemberFields->value.Begin(); iterArrCurr != iterMemberFields->value.End(); ++iterArrCurr) {
 				if (!iterArrCurr->IsObject()) {
 					return false; //Each array entry must be an Object {}.
@@ -774,8 +815,8 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					return false; //Each array entry (Object) must have a "name" string.
 				}
 
-				refBack->pTemplate = stProps.pTemplate;
-				refBack->pFieldParent = stProps.pFieldParent;
+				refBack->pTemplate = refDefs.pTemplate;
+				refBack->pFieldParent = refDefs.pFieldParent;
 				refBack->iOffset = iOffset;
 
 				if (const auto iterNestedFields = iterArrCurr->FindMember("Fields");
@@ -792,7 +833,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 						}
 						clrBkDefaultNested = lmbStrToRGB(itClrBkDefault->value.GetString());
 					}
-					else { clrBkDefaultNested = stProps.clrBkDefault; }
+					else { clrBkDefaultNested = refDefs.clrBkDefault; }
 					refBack->clrBk = clrBkDefaultNested;
 
 					COLORREF clrTextDefaultNested { }; //Default color in nested struct.
@@ -803,26 +844,27 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 						}
 						clrTextDefaultNested = lmbStrToRGB(itClrTextDefault->value.GetString());
 					}
-					else { clrTextDefaultNested = stProps.clrTextDefault; }
+					else { clrTextDefaultNested = refDefs.clrTextDefault; }
 					refBack->clrText = clrTextDefaultNested;
 
 					bool fBigEndianDefaultNested { false };
-					if (const auto itEndiannessDefaultNested = iterArrCurr->FindMember("Endianness");
+					if (const auto itEndiannessDefaultNested = iterArrCurr->FindMember("endianness");
 						itEndiannessDefaultNested != iterArrCurr->MemberEnd()) {
 						if (!itEndiannessDefaultNested->value.IsString()) {
 							return false; //"Endianness" must be a string.
 						}
 						fBigEndianDefaultNested = std::string_view { itEndiannessDefaultNested->value.GetString() } == "big";
 					}
-					else { fBigEndianDefaultNested = stProps.fBigEndian; }
+					else { fBigEndianDefaultNested = refDefs.fBigEndian; }
 					refBack->fBigEndian = fBigEndianDefaultNested;
 
-					stProps.clrBkDefault = clrBkDefaultNested;
-					stProps.clrTextDefault = clrTextDefaultNested;
-					stProps.pFieldParent = refBack.get();
-					stProps.fBigEndian = fBigEndianDefaultNested;
+					//Setting defaults for the next nested struct.
+					refDefs.clrBkDefault = clrBkDefaultNested;
+					refDefs.clrTextDefault = clrTextDefaultNested;
+					refDefs.pFieldParent = refBack.get();
+					refDefs.fBigEndian = fBigEndianDefaultNested;
 					//Recursion lambda for nested structs starts here.
-					if (!lmbSelf(lmbSelf, iterNestedFields, refBack->vecNested, iOffset, stProps)) {
+					if (!lmbSelf(lmbSelf, iterNestedFields, refBack->vecNested, iOffset, refDefs)) {
 						return false;
 					}
 					refBack->iSize = lmbTotalSize(refBack->vecNested); //Total size of all nested fields.
@@ -859,7 +901,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 						refBack->clrBk = lmbStrToRGB(itClrBk->value.GetString());
 					}
 					else {
-						refBack->clrBk = stProps.clrBkDefault;
+						refBack->clrBk = refDefs.clrBkDefault;
 					}
 
 					if (const auto itClrText = iterArrCurr->FindMember("clrText");
@@ -870,10 +912,10 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 						refBack->clrText = lmbStrToRGB(itClrText->value.GetString());
 					}
 					else {
-						refBack->clrText = stProps.clrTextDefault;
+						refBack->clrText = refDefs.clrTextDefault;
 					}
 
-					if (const auto itEndianness = iterArrCurr->FindMember("Endianness");
+					if (const auto itEndianness = iterArrCurr->FindMember("endianness");
 						itEndianness != iterArrCurr->MemberEnd()) {
 						if (!itEndianness->value.IsString()) {
 							return false; //"Endianness" must be a string.
@@ -881,7 +923,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 						refBack->fBigEndian = std::string_view { itEndianness->value.GetString() } == "big";
 					}
 					else {
-						refBack->fBigEndian = stProps.fBigEndian;
+						refBack->fBigEndian = refDefs.fBigEndian;
 					}
 				}
 			}
@@ -1016,7 +1058,7 @@ void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 	if (const auto rIter = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
 		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
 			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
-		rIter != m_vecTemplatesApplied.rend()) {
+			rIter != m_vecTemplatesApplied.rend()) {
 		RemoveNodeWithAppliedID(rIter->get()->iAppliedID);
 		m_vecTemplatesApplied.erase(std::next(rIter).base());
 		if (m_pHexCtrl->IsDataSet()) {
@@ -1045,7 +1087,7 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD
 	if (const auto itTemplApplied = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
 		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
 			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
-		itTemplApplied != m_vecTemplatesApplied.rend()) {
+			itTemplApplied != m_vecTemplatesApplied.rend()) {
 		const auto pTemplApplied = itTemplApplied->get();
 		const auto ullTemplStartOffset = pTemplApplied->ullOffset;
 		auto& refVec = pTemplApplied->pTemplate->vecFields;
