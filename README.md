@@ -268,35 +268,40 @@ If you'd like to colorize your data with custom bk/text colors, you have to reso
     "clrText": "#FFFFFF",
     "Fields": [
         {
-            "name": "int x",
+            "name": "field1",
             "size": 4,
             "clrBk": "#BB0000",
             "clrText": "#FFFFFF"
         },
         {
+            "name": "field2",
             "endianness": "big",
-            "name": "DWORD field2",
             "size": 4
         },
         {
-            "name": "char[2] someArray",
-            "size": 2
+            "name": "NestedStruct",
+            "Fields": [
+                {
+                    "name": "NestedField1",
+                    "size": 4
+                }
+            ]
         }
     ]
 }
 ```
 Every such file contains necessary properties:  
 - **TemplateName** is the name of the template.  
-- **Fields** is an array of objects where every object represents a struct data member. Any such object can have its own **Fields** sub-objects, nested structs.  
+- **Fields** is an array of objects where every object represents a struct data member. Any such object can have its own **Fields** sub-objects which will represent nested structs.  
 
 The object's properties include:
 - **name** - [mandatory] - name of the field
 - **size** - [mandatory] - size of the field in bytes
-- **endianness** - field endianness, can be "little" or "big". By default all fields are little-endian
+- **endianness** - field endianness, can be "little" or "big". By default all fields are little-endian.
 - **clrBk** - field background color
 - **clrText** - field text color
 
-If object has **clrBk** and **Fields** properties simultaneously, the **clrBk** property will mean a default background color for all the **Fields** objects, the same goes for  **clrText** and **endianness** properties.  
+All the object properties that locate at the same level with the **Fields** property would mean the default properties for all the **Fields** objects of that level and below the line, unless they explicitly redefined in the field itself.  
 
 For the available templates check the `Templates` directory.
 

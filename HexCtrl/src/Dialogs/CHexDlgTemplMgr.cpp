@@ -792,14 +792,14 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		bool              fBigEndian { false };
 	};
 
-	DEFPROPERTIES stProps { .clrBkDefault { clrBkDefault }, .clrTextDefault { clrTextDefault },
+	DEFPROPERTIES stDefs { .clrBkDefault { clrBkDefault }, .clrTextDefault { clrTextDefault },
 		.pTemplate { pTemplate }, .fBigEndian { fBigEndian } };
 
 	using IterJSONMember = rapidjson::Value::ConstMemberIterator;
-	const auto lmbParseFields = [&lmbStrToRGB, &lmbTotalSize, &stProps]
+	const auto lmbParseFields = [&lmbStrToRGB, &lmbTotalSize, &stDefs]
 	(const IterJSONMember iterMemberFields, VecFields& vecFields)->bool {
 		const auto _lmbParse = [&lmbStrToRGB, &lmbTotalSize]
-		(const auto& lmbSelf, const IterJSONMember iterMemberFields, VecFields& vecFields, int& iOffset, DEFPROPERTIES& refDefs)->bool {
+		(const auto& lmbSelf, const IterJSONMember iterMemberFields, VecFields& vecFields, int& iOffset, const DEFPROPERTIES& refDefs)->bool {
 			for (auto iterArrCurr = iterMemberFields->value.Begin(); iterArrCurr != iterMemberFields->value.End(); ++iterArrCurr) {
 				if (!iterArrCurr->IsObject()) {
 					return false; //Each array entry must be an Object {}.
@@ -859,12 +859,10 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					refBack->fBigEndian = fBigEndianDefaultNested;
 
 					//Setting defaults for the next nested struct.
-					refDefs.clrBkDefault = clrBkDefaultNested;
-					refDefs.clrTextDefault = clrTextDefaultNested;
-					refDefs.pFieldParent = refBack.get();
-					refDefs.fBigEndian = fBigEndianDefaultNested;
+					DEFPROPERTIES stDefsNested { .clrBkDefault { clrBkDefaultNested }, .clrTextDefault { clrTextDefaultNested },
+						.pFieldParent { refBack.get() }, .fBigEndian { fBigEndianDefaultNested } };
 					//Recursion lambda for nested structs starts here.
-					if (!lmbSelf(lmbSelf, iterNestedFields, refBack->vecNested, iOffset, refDefs)) {
+					if (!lmbSelf(lmbSelf, iterNestedFields, refBack->vecNested, iOffset, stDefsNested)) {
 						return false;
 					}
 					refBack->iSize = lmbTotalSize(refBack->vecNested); //Total size of all nested fields.
@@ -873,10 +871,18 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					if (const auto iterSize = iterArrCurr->FindMember("size");
 						iterSize != iterArrCurr->MemberEnd()) {
 						if (iterSize->value.IsInt()) {
+							assert(iterSize->value.GetInt() > 0); //Size must be > 0.
+							if (iterSize->value.GetInt() < 1)
+								return false;
+
 							refBack->iSize = iterSize->value.GetInt();
 						}
 						else if (iterSize->value.IsString()) {
 							if (const auto optInt = StrToInt(iterSize->value.GetString()); optInt) {
+								assert(*optInt > 0); //Size must be > 0.
+								if (*optInt < 1)
+									return false;
+
 								refBack->iSize = *optInt;
 							}
 							else {
@@ -932,7 +938,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		};
 
 		int iOffset = 0;
-		return _lmbParse(_lmbParse, iterMemberFields, vecFields, iOffset, stProps);
+		return _lmbParse(_lmbParse, iterMemberFields, vecFields, iOffset, stDefs);
 	};
 
 	auto iTemplateID = 1; //ID starts at 1.
