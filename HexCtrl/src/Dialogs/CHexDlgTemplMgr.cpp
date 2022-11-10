@@ -14,6 +14,7 @@
 #include <format>
 #include <fstream>
 #include <numeric>
+#include <random>
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
@@ -33,6 +34,7 @@ namespace HEXCTRL::INTERNAL
 BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_LOAD, &CHexDlgTemplMgr::OnBnLoadTemplate)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD, &CHexDlgTemplMgr::OnBnUnloadTemplate)
+	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR, &CHexDlgTemplMgr::OnBnRandomizeColors)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_APPLY, &CHexDlgTemplMgr::OnBnApply)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, &CHexDlgTemplMgr::OnCheckTtShow)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, &CHexDlgTemplMgr::OnCheckHglSel)
@@ -202,6 +204,14 @@ void CHexDlgTemplMgr::OnBnUnloadTemplate()
 	if (const auto iIndex = m_stComboTemplates.GetCurSel(); iIndex != CB_ERR) {
 		const auto iTemplateID = static_cast<int>(m_stComboTemplates.GetItemData(iIndex));
 		UnloadTemplate(iTemplateID);
+	}
+}
+
+void CHexDlgTemplMgr::OnBnRandomizeColors()
+{
+	if (const auto iIndex = m_stComboTemplates.GetCurSel(); iIndex != CB_ERR) {
+		const auto iTemplateID = static_cast<int>(m_stComboTemplates.GetItemData(iIndex));
+		RandomizeTemplateColors(iTemplateID);
 	}
 }
 
@@ -999,6 +1009,34 @@ void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 	}
 
 	OnTemplateLoadUnload(false);
+}
+
+void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
+{
+	const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
+	[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
+	if (iterTempl == m_vecTemplates.end())
+		return;
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<unsigned int> distrib(50, 230);
+
+	const auto lmbRndColors = [&distrib, &gen](const VecFields& vecRef) {
+		const auto _lmbCount = [&distrib, &gen](const auto& lmbSelf, const VecFields& vecRef)->void {
+			for (auto& refField : vecRef) {
+				if (refField->vecNested.empty()) {
+					refField->clrBk = RGB(distrib(gen), distrib(gen), distrib(gen));
+				}
+				else { lmbSelf(lmbSelf, refField->vecNested); }
+			}
+		};
+		return _lmbCount(_lmbCount, vecRef);
+	};
+
+	lmbRndColors(iterTempl->get()->vecFields);
+	m_pListApplied->RedrawWindow();
+	m_pHexCtrl->Redraw();
 }
 
 void CHexDlgTemplMgr::OnTemplateLoadUnload(bool /*fLoad*/)

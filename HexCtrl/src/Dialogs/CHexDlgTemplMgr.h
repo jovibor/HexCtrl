@@ -65,6 +65,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		afx_msg void OnBnLoadTemplate();
 		afx_msg void OnBnUnloadTemplate();
+		afx_msg void OnBnRandomizeColors();
 		afx_msg void OnBnApply();
 		afx_msg void OnCheckHexadecimal();
 		afx_msg void OnCheckBigEndian();
@@ -89,6 +90,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnDestroy();
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
 		void UnloadTemplate(int iTemplateID)override;       //Unload/remove loaded template from memory.
+		void RandomizeTemplateColors(int iTemplateID);
 		void OnTemplateLoadUnload(bool fLoad);              //Callback on template's successful load or unload.
 		void EnableDynamicLayoutHelper(bool fEnable);
 		auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PHEXTEMPLATEAPPLIED;
