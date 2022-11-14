@@ -874,7 +874,7 @@ void CHexDlgTemplMgr::ShowListDataLL(LPWSTR pwsz, long long llData, bool fShould
 	if (fShouldSwap) {
 		llData = ByteSwap(llData);
 	}
-	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{0:16X}" : L"{1}",
+	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{0:016X}" : L"{1}",
 		std::make_wformat_args(static_cast<unsigned long long>(llData), llData)) = L'\0';
 }
 
