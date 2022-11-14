@@ -213,7 +213,11 @@ void CHexDlgTemplMgr::OnBnLoadTemplate()
 		CComHeapPtr<wchar_t> pwstrPath;
 		pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwstrPath);
 		if (LoadTemplate(pwstrPath) == 0) {
-			MessageBoxW(L"Error when trying to load a template.", pwstrPath, MB_ICONERROR);
+			std::wstring wstrErr = L"Error loading a template:\n";
+			wstrErr += pwstrPath;
+			std::wstring_view wsvFileName = pwstrPath.m_pData;
+			wsvFileName = wsvFileName.substr(wsvFileName.find_last_of('\\') + 1);
+			MessageBoxW(wstrErr.data(), wsvFileName.data(), MB_ICONERROR);
 		}
 	}
 }
