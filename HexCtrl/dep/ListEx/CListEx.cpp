@@ -10,7 +10,6 @@
 #include <cassert>
 #include <chrono>
 #include <limits>
-#include <optional>
 #include <random>
 #include <unordered_map>
 
@@ -44,11 +43,11 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		struct SHIDDEN;
 		[[nodiscard]] UINT ColumnIndexToID(int iIndex)const; //Returns unique column ID. Must be > 0.
 		[[nodiscard]] int ColumnIDToIndex(UINT uID)const;
-		[[nodiscard]] auto HasColor(UINT ID)->SHDRCOLOR*;
-		[[nodiscard]] auto HasIcon(UINT ID)->SHDRICON*;
-		[[nodiscard]] auto IsHidden(UINT ID)->std::optional<SHIDDEN*>; //Internal ColumnID.
-		[[nodiscard]] bool IsSortable(UINT ID)const;
+		[[nodiscard]] auto HasColor(UINT ID) -> SHDRCOLOR*;
+		[[nodiscard]] auto HasIcon(UINT ID) -> SHDRICON*;
 		[[nodiscard]] bool IsEditable(UINT ID)const;
+		[[nodiscard]] auto IsHidden(UINT ID) -> SHIDDEN*; //Internal ColumnID.
+		[[nodiscard]] bool IsSortable(UINT ID)const;
 		afx_msg void OnDestroy();
 		afx_msg void OnDrawItem(CDC* pDC, int iItem, CRect rcOrig, BOOL bIsPressed, BOOL bIsHighlighted)override;
 		afx_msg LRESULT OnLayout(WPARAM wParam, LPARAM lParam);
@@ -123,13 +122,13 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		struct SCOLROWCLR;
 		struct SITEMDATA;
 		[[nodiscard]] long GetFontSize();
-		[[nodiscard]] auto GetHeaderCtrl()->CListExHdr & override { return m_stListHeader; }
+		[[nodiscard]] auto GetHeaderCtrl() -> CListExHdr & override { return m_stListHeader; }
 		void FontSizeIncDec(bool fInc);
 		void InitHeader()override;
-		auto HasColor(int iItem, int iSubItem)->std::optional<PLISTEXCOLOR>;
-		auto HasTooltip(int iItem, int iSubItem)->std::optional<PLISTEXTOOLTIP>;
+		auto HasColor(int iItem, int iSubItem) -> PLISTEXCOLOR;
+		auto HasTooltip(int iItem, int iSubItem) -> PLISTEXTOOLTIP;
 		int HasIcon(int iItem, int iSubItem); //Does cell have an icon associated.
-		auto ParseItemText(int iItem, int iSubitem)->std::vector<SITEMDATA>;
+		auto ParseItemText(int iItem, int iSubitem) -> std::vector<SITEMDATA>;
 		void RecalcMeasure();
 		void SetFontSize(long lSize);
 		void TtLinkHide();
@@ -330,19 +329,19 @@ void CListExHdr::HideColumn(int iIndex, bool fHide)
 		SetItem(iIndex, &hdi);
 	}
 	else { //Show column.
-		const auto opt = IsHidden(ID);
-		if (!opt) //No such column is hidden.
+		const auto pHidden = IsHidden(ID);
+		if (pHidden == nullptr) //No such column is hidden.
 			return;
 
 		if (const auto iterRight = std::find(vecInt.rbegin(), vecInt.rend(), iIndex); iterRight != vecInt.rend()) {
 			const auto iterMid = iterRight + 1;
-			const auto iterEnd = vecInt.rend() - (*opt)->iPrevPos;
+			const auto iterEnd = vecInt.rend() - pHidden->iPrevPos;
 			if (iterMid < iterEnd)
 				std::rotate(iterRight, iterMid, iterEnd); //Moving hidden column id back to its previous place.
 		}
 
 		ListView_SetColumnOrderArray(GetParent()->m_hWnd, iColumnsCount, vecInt.data());
-		hdi.cxy = (*opt)->iPrevWidth;
+		hdi.cxy = pHidden->iPrevWidth;
 		SetItem(iIndex, &hdi);
 		m_umapHidden.erase(ID);
 	}
@@ -352,7 +351,7 @@ void CListExHdr::HideColumn(int iIndex, bool fHide)
 
 bool CListExHdr::IsColumnHidden(int iIndex)
 {
-	return IsHidden(ColumnIndexToID(iIndex)).has_value();
+	return IsHidden(ColumnIndexToID(iIndex)) != nullptr;
 }
 
 bool CListExHdr::IsColumnSortable(int iIndex)const
@@ -626,7 +625,8 @@ void CListExHdr::OnLButtonDown(UINT nFlags, CPoint point)
 	HitTest(&ht);
 	if (ht.iItem >= 0) {
 		const auto ID = ColumnIndexToID(ht.iItem);
-		if (const auto pData = HasIcon(ID); pData != nullptr && pData->stIcon.fClickable && !IsHidden(ID)) {
+		if (const auto pData = HasIcon(ID); pData != nullptr
+			&& pData->stIcon.fClickable && IsHidden(ID) == nullptr) {
 			int iCX { };
 			int iCY { };
 			ImageList_GetIconSize(GetImageList()->m_hImageList, &iCX, &iCY);
@@ -743,10 +743,10 @@ auto CListExHdr::HasIcon(UINT ID)->CListExHdr::SHDRICON*
 	return pRet;
 }
 
-auto CListExHdr::IsHidden(UINT ID)->std::optional<SHIDDEN*>
+auto CListExHdr::IsHidden(UINT ID)->SHIDDEN*
 {
 	const auto iter = m_umapHidden.find(ID);
-	return iter != m_umapHidden.end() ? &iter->second : std::optional<SHIDDEN*> { };
+	return iter != m_umapHidden.end() ? &iter->second : nullptr;
 }
 
 bool CListExHdr::IsSortable(UINT ID)const
@@ -1425,12 +1425,13 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 			else {
 				clrTextLink = m_stColors.clrListTextLink;
 
-				if (const auto opt = HasColor(pDIS->itemID, iColumn); opt) {
-					clrText = (*opt)->clrText;
-					clrBk = (*opt)->clrBk;
+				if (const auto pClr = HasColor(pDIS->itemID, iColumn); pClr != nullptr) {
+					//Check for default colors (-1).
+					clrText = pClr->clrText == -1 ? m_stColors.clrListText : pClr->clrText;
+					clrBk = pClr->clrBk == -1 ? clrBkCurrRow : pClr->clrBk;
 				}
 				else {
-					if (HasTooltip(pDIS->itemID, iColumn)) {
+					if (HasTooltip(pDIS->itemID, iColumn) != nullptr) {
 						clrText = m_stColors.clrListTextCellTt;
 						clrBk = m_stColors.clrListBkCellTt;
 					}
@@ -1503,12 +1504,12 @@ void CListEx::FontSizeIncDec(bool fInc)
 	SetFontSize(lFontSize);
 }
 
-auto CListEx::HasColor(int iItem, int iSubItem)->std::optional<PLISTEXCOLOR>
+auto CListEx::HasColor(int iItem, int iSubItem)->PLISTEXCOLOR
 {
 	if (iItem < 0 || iSubItem < 0)
-		return std::nullopt;
+		return nullptr;
 
-	std::optional<PLISTEXCOLOR> opt { };
+	PLISTEXCOLOR pClr { };
 	if (m_fVirtual) { //In Virtual mode asking parent for color.
 		const auto iCtrlID = GetDlgCtrlID();
 		NMITEMACTIVATE nmii { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_GETCOLOR } };
@@ -1516,7 +1517,7 @@ auto CListEx::HasColor(int iItem, int iSubItem)->std::optional<PLISTEXCOLOR>
 		nmii.iSubItem = iSubItem;
 		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&nmii));
 		if (nmii.lParam != 0)
-			opt = reinterpret_cast<PLISTEXCOLOR>(nmii.lParam);
+			pClr = reinterpret_cast<PLISTEXCOLOR>(nmii.lParam);
 	}
 	else {
 		const auto ID = MapIndexToID(static_cast<UINT>(iItem));
@@ -1525,31 +1526,31 @@ auto CListEx::HasColor(int iItem, int iSubItem)->std::optional<PLISTEXCOLOR>
 
 			//If subitem id found.
 			if (itSubItem != itItem->second.end())
-				opt = &itSubItem->second;
+				pClr = &itSubItem->second;
 		}
 
-		if (!opt) {
+		if (pClr == nullptr) {
 			const auto itColumn = m_umapColumnColor.find(iSubItem);
 			const auto itRow = m_umapRowColor.find(ID);
 
 			if (itColumn != m_umapColumnColor.end() && itRow != m_umapRowColor.end())
-				opt = itColumn->second.time > itRow->second.time ? &itColumn->second.clr : &itRow->second.clr;
+				pClr = itColumn->second.time > itRow->second.time ? &itColumn->second.clr : &itRow->second.clr;
 			else if (itColumn != m_umapColumnColor.end())
-				opt = &itColumn->second.clr;
+				pClr = &itColumn->second.clr;
 			else if (itRow != m_umapRowColor.end())
-				opt = &itRow->second.clr;
+				pClr = &itRow->second.clr;
 		}
 	}
 
-	return opt;
+	return pClr;
 }
 
-auto CListEx::HasTooltip(int iItem, int iSubItem)->std::optional<PLISTEXTOOLTIP>
+auto CListEx::HasTooltip(int iItem, int iSubItem)->PLISTEXTOOLTIP
 {
 	if (iItem < 0 || iSubItem < 0)
-		return std::nullopt;
+		return nullptr;
 
-	std::optional<PLISTEXTOOLTIP> opt { };
+	PLISTEXTOOLTIP pTooltip { };
 	if (m_fVirtual) { //In Virtual mode asking parent for tooltip.
 		const auto iCtrlID = GetDlgCtrlID();
 		NMITEMACTIVATE nmii { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_GETTOOLTIP } };
@@ -1557,19 +1558,19 @@ auto CListEx::HasTooltip(int iItem, int iSubItem)->std::optional<PLISTEXTOOLTIP>
 		nmii.iSubItem = iSubItem;
 		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&nmii));
 		if (nmii.lParam != 0) {
-			opt = reinterpret_cast<PLISTEXTOOLTIP>(nmii.lParam);
+			pTooltip = reinterpret_cast<PLISTEXTOOLTIP>(nmii.lParam);
 		}
 	}
 	else {
 		const auto ID = MapIndexToID(iItem);
 		if (const auto itItem = m_umapCellTt.find(ID); itItem != m_umapCellTt.end()) {
 			if (const auto itSubItem = itItem->second.find(iSubItem); itSubItem != itItem->second.end()) {
-				opt = &itSubItem->second;
+				pTooltip = &itSubItem->second;
 			}
 		}
 	}
 
-	return opt;
+	return pTooltip;
 }
 
 int CListEx::HasIcon(int iItem, int iSubItem)
@@ -1688,18 +1689,18 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 	if (m_fTtLinkShown)
 		TtLinkHide();
 
-	if (auto opt = HasTooltip(hi.iItem, hi.iSubItem); opt) {
+	if (const auto pTooltip = HasTooltip(hi.iItem, hi.iSubItem); pTooltip != nullptr) {
 		//Check if cursor is still in the same cell's rect. If so - just leave.
 		if (m_stCurrCell.iItem != hi.iItem || m_stCurrCell.iSubItem != hi.iSubItem) {
 			m_fTtCellShown = true;
 			m_stCurrCell.iItem = hi.iItem;
 			m_stCurrCell.iSubItem = hi.iSubItem;
-			m_stTInfoCell.lpszText = (*opt)->wstrText.data();
+			m_stTInfoCell.lpszText = pTooltip->wstrText.data();
 
 			ClientToScreen(&pt);
 			m_stWndTtCell.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(pt.x, pt.y));
 			m_stWndTtCell.SendMessageW(TTM_SETTITLE, static_cast<WPARAM>(TTI_NONE),
-				reinterpret_cast<LPARAM>((*opt)->wstrCaption.data()));
+				reinterpret_cast<LPARAM>(pTooltip->wstrCaption.data()));
 			m_stWndTtCell.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stTInfoCell));
 			m_stWndTtCell.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stTInfoCell));
 

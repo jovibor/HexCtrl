@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://github.com/jovibor/HexCtrl/blob/master/docs/HexCtrl.Templates.Schema.json",
+    "$id": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
     "title": "HexCtrl Templates Schema",
     "$defs": {
         "Fields": {
@@ -10,6 +10,12 @@
                 "properties": {
                     "name": {
                         "type": "string"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [ "bool", "char", "unsigned char", "byte", "short", "unsigned short", "WORD", "long", "unsigned long",
+                            "int", "unsigned int", "DWORD", "long long", "unsigned long long", "QWORD", "float", "double",
+                            "__time32_t", "__time64_t", "FILETIME", "SYSTEMTIME", "GUID", "custom" ]
                     },
                     "size": {
                         "type": [ "integer", "string" ],
@@ -33,7 +39,7 @@
                 },
                 "additionalProperties": false,
                 "required": [ "name" ],
-                "oneOf": [ { "required": [ "size" ] }, { "required": [ "Fields" ] } ]
+                "oneOf": [ { "anyOf": [ { "required": [ "type" ] }, { "required": [ "size" ] } ] }, { "required": [ "Fields" ] } ]
             }
         }
     },

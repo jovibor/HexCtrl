@@ -41,30 +41,40 @@ namespace HEXCTRL::INTERNAL
 
 	using namespace stn; //To enable StrTo* methods internally.
 
+	//Time calculation constants and structs.
+	constexpr auto g_uFTTicksPerMS = 10000U;             //Number of 100ns intervals in a milli-second
+	constexpr auto g_uFTTicksPerSec = 10000000UL;        //Number of 100ns intervals in a second
+	constexpr auto g_uHoursPerDay = 24U;                 //24 hours per day
+	constexpr auto g_uSecondsPerHour = 3600U;            //3600 seconds per hour
+	constexpr auto g_uFileTime1582OffsetDays = 6653U;    //FILETIME is based upon 1 Jan 1601 whilst GUID time is from 15 Oct 1582. Add 6653 days to convert to GUID time
+	constexpr auto g_ulFileTime1970_LOW = 0xd53e8000UL;  //1st Jan 1970 as FILETIME
+	constexpr auto g_ulFileTime1970_HIGH = 0x019db1deUL; //Used for Unix and Java times
+	constexpr auto g_ullUnixEpochDiff = 11644473600ULL;  //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970
+
 	//Converts every two numeric wchars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
 	//fWc means that wildcards are allowed, chWc - the wildcard.
-	[[nodiscard]] auto NumStrToHex(std::wstring_view wsv, bool fWc = false, char chWc = '?')->std::optional<std::string>;
+	[[nodiscard]] auto NumStrToHex(std::wstring_view wsv, bool fWc = false, char chWc = '?') -> std::optional<std::string>;
 
 	//Wide to Multibyte string convertion.
-	[[nodiscard]] auto WstrToStr(std::wstring_view wsv, UINT uCodePage = CP_UTF8)->std::string;
+	[[nodiscard]] auto WstrToStr(std::wstring_view wsv, UINT uCodePage = CP_UTF8) -> std::string;
 
 	//Multibyte to Wide string convertion.
-	[[nodiscard]] auto StrToWstr(std::string_view sv, UINT uCodePage = CP_UTF8)->std::wstring;
+	[[nodiscard]] auto StrToWstr(std::string_view sv, UINT uCodePage = CP_UTF8) -> std::wstring;
 
 	//Convert string into FILETIME struct.
-	[[nodiscard]] auto StringToFileTime(std::wstring_view wsv, DWORD dwFormat)->std::optional<FILETIME>;
+	[[nodiscard]] auto StringToFileTime(std::wstring_view wsv, DWORD dwFormat) -> std::optional<FILETIME>;
 
 	//Convert string into SYSTEMTIME struct.
-	[[nodiscard]] auto StringToSystemTime(std::wstring_view wsv, DWORD dwFormat)->std::optional<SYSTEMTIME>;
+	[[nodiscard]] auto StringToSystemTime(std::wstring_view wsv, DWORD dwFormat) -> std::optional<SYSTEMTIME>;
 
 	//Convert FILETIME struct to a readable string.
-	[[nodiscard]] auto FileTimeToString(FILETIME stFileTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring;
+	[[nodiscard]] auto FileTimeToString(FILETIME stFileTime, DWORD dwFormat, wchar_t wchSepar) -> std::wstring;
 
 	//Convert SYSTEMTIME struct to a readable string.
-	[[nodiscard]] auto SystemTimeToString(SYSTEMTIME stSysTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring;
+	[[nodiscard]] auto SystemTimeToString(SYSTEMTIME stSysTime, DWORD dwFormat, wchar_t wchSepar) -> std::wstring;
 
 	//String of date/time in given format with given date separator.
-	[[nodiscard]] auto GetDateFormatString(DWORD dwFormat, wchar_t wchSepar)->std::wstring;
+	[[nodiscard]] auto GetDateFormatString(DWORD dwFormat, wchar_t wchSepar) -> std::wstring;
 
 	//Get data from IHexCtrl's given offset converted to a necessary type.
 	template<typename T>

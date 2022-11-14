@@ -269,7 +269,7 @@ If you'd like to colorize your data with custom bk/text colors, you have to reso
     "Fields": [
         {
             "name": "field1",
-            "size": 4,
+            "type": "int",
             "clrBk": "#BB0000",
             "clrText": "#FFFFFF"
         },
@@ -283,7 +283,7 @@ If you'd like to colorize your data with custom bk/text colors, you have to reso
             "Fields": [
                 {
                     "name": "NestedField1",
-                    "size": 4
+                    "type": "double"
                 }
             ]
         }
@@ -296,12 +296,13 @@ Every such file contains necessary properties:
 
 The object's properties include:
 - **name** - [mandatory] - name of the field
-- **size** - [mandatory] - size of the field in bytes
+- **type** - field type, such as **int**, **unsigned int**, **float**, etc...
+- **size** - size of the field in bytes if the **type** field is not provided or set to **custom**
 - **endianness** - field endianness, can be "little" or "big". By default all fields are little-endian.
 - **clrBk** - field background color
 - **clrText** - field text color
 
-All the object properties that locate at the same level with the **Fields** property would mean the default properties for all the **Fields** objects of that level and below the line, unless they explicitly redefined in the field itself.  
+The **endianness**, **clrBk** and **clrText** properties that locate at the same level with the **Fields** property would mean the default properties for all the **Fields** objects of that level and below the line, unless they explicitly redefined in the field itself.  
 
 For the available templates check the `Templates` directory.
 

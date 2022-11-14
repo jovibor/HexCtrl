@@ -6,40 +6,40 @@
     "clrText": "#FFFFFF",
     "Fields": [
         {
-            "name": "DWORD Signature",
-            "size": 4
+            "name": "Signature",
+            "type": "DWORD"
         },
         {
             "name": "IMAGE_FILE_HEADER FileHeader",
             "clrBk": "#909090",
             "Fields": [
                 {
-                    "name": "WORD Machine",
-                    "size": 2
+                    "name": "Machine",
+                    "type": "WORD"
                 },
                 {
-                    "name": "WORD NumberOfSections",
-                    "size": 2
+                    "name": "NumberOfSections",
+                    "type": "WORD"
                 },
                 {
-                    "name": "DWORD TimeDateStamp",
-                    "size": 4
+                    "name": "TimeDateStamp",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "DWORD PointerToSymbolTable",
-                    "size": 4
+                    "name": "PointerToSymbolTable",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "DWORD NumberOfSymbols",
-                    "size": 4
+                    "name": "NumberOfSymbols",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "WORD SizeOfOptionalHeader",
-                    "size": 2
+                    "name": "SizeOfOptionalHeader",
+                    "type": "WORD"
                 },
                 {
-                    "name": "WORD Characteristics",
-                    "size": 2
+                    "name": "Characteristics",
+                    "type": "WORD"
                 }
             ]
         },
@@ -48,120 +48,120 @@
             "clrBk": "#C0C0C0",
             "Fields": [
                 {
-                    "name": "WORD Magic",
-                    "size": 2
+                    "name": "Magic",
+                    "type": "WORD"
                 },
                 {
-                    "name": "BYTE MajorLinkerVersion",
-                    "size": 1
+                    "name": "MajorLinkerVersion",
+                    "type": "byte"
                 },
                 {
-                    "name": "BYTE MinorLinkerVersion",
-                    "size": 1
+                    "name": "MinorLinkerVersion",
+                    "type": "byte"
                 },
                 {
-                    "name": "DWORD SizeOfCode",
-                    "size": 4
+                    "name": "SizeOfCode",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "DWORD SizeOfInitializedData",
-                    "size": 4
+                    "name": "SizeOfInitializedData",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "DWORD SizeOfUninitializedData",
-                    "size": 4
+                    "name": "SizeOfUninitializedData",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "DWORD AddressOfEntryPoint",
-                    "size": 4
+                    "name": "AddressOfEntryPoint",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "DWORD BaseOfCode",
-                    "size": 4
+                    "name": "BaseOfCode",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "ULONGLONG ImageBase",
-                    "size": 8
+                    "name": "ImageBase",
+                    "type": "QWORD"
                 },
                 {
-                    "name": "DWORD SectionAlignment",
-                    "size": 4
+                    "name": "SectionAlignment",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "DWORD FileAlignment",
-                    "size": 4
+                    "name": "FileAlignment",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "WORD MajorOperatingSystemVersion",
-                    "size": 2
+                    "name": "MajorOperatingSystemVersion",
+                    "type": "WORD"
                 },
                 {
-                    "name": "WORD MinorOperatingSystemVersion",
-                    "size": 2
+                    "name": "MinorOperatingSystemVersion",
+                    "type": "WORD"
                 },
                 {
-                    "name": "WORD MajorImageVersion",
-                    "size": 2
+                    "name": "MajorImageVersion",
+                    "type": "WORD"
                 },
                 {
-                    "name": "WORD MinorImageVersion",
-                    "size": 2
+                    "name": "MinorImageVersion",
+                    "type": "WORD"
                 },
                 {
-                    "name": "WORD MajorSubsystemVersion",
-                    "size": 2
+                    "name": "MajorSubsystemVersion",
+                    "type": "WORD"
                 },
                 {
-                    "name": "WORD MinorSubsystemVersion",
-                    "size": 2
+                    "name": "MinorSubsystemVersion",
+                    "type": "WORD"
                 },
                 {
-                    "name": "DWORD Win32VersionValue",
-                    "size": 4
+                    "name": "Win32VersionValue",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "DWORD SizeOfImage",
-                    "size": 4
+                    "name": "SizeOfImage",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "DWORD SizeOfHeaders",
-                    "size": 4
+                    "name": "SizeOfHeaders",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "DWORD CheckSum",
-                    "size": 4
+                    "name": "CheckSum",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "WORD Subsystem",
-                    "size": 2
+                    "name": "Subsystem",
+                    "type": "WORD"
                 },
                 {
-                    "name": "WORD DllCharacteristics",
-                    "size": 2
+                    "name": "DllCharacteristics",
+                    "type": "WORD"
                 },
                 {
-                    "name": "ULONGLONG SizeOfStackReserve",
-                    "size": 8
+                    "name": "SizeOfStackReserve",
+                    "type": "QWORD"
                 },
                 {
-                    "name": "ULONGLONG SizeOfStackCommit",
-                    "size": 8
+                    "name": "SizeOfStackCommit",
+                    "type": "QWORD"
                 },
                 {
-                    "name": "ULONGLONG SizeOfHeapReserve",
-                    "size": 8
+                    "name": "SizeOfHeapReserve",
+                    "type": "QWORD"
                 },
                 {
-                    "name": "ULONGLONG SizeOfHeapCommit",
-                    "size": 8
+                    "name": "SizeOfHeapCommit",
+                    "type": "QWORD"
                 },
                 {
-                    "name": "DWORD LoaderFlags",
-                    "size": 4
+                    "name": "LoaderFlags",
+                    "type": "DWORD"
                 },
                 {
-                    "name": "DWORD NumberOfRvaAndSizes",
-                    "size": 4,
+                    "name": "NumberOfRvaAndSizes",
+                    "type": "DWORD",
                     "clrBk": "#00AA00"
                 },
                 {
@@ -171,12 +171,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_EXPORT]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -184,12 +184,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_IMPORT]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -197,12 +197,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_RESOURCE]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -210,12 +210,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_EXCEPTION]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -223,12 +223,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_SECURITY]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -236,12 +236,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_BASERELOC]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -249,12 +249,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_DEBUG]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -262,12 +262,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_ARCHITECTURE]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -275,12 +275,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_GLOBALPTR]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -288,12 +288,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_TLS]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -301,12 +301,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -314,12 +314,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -327,12 +327,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_IAT]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -340,12 +340,12 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
@@ -353,18 +353,18 @@
                             "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR]",
                             "Fields": [
                                 {
-                                    "name": "DWORD VirtualAddress",
-                                    "size": 4
+                                    "name": "VirtualAddress",
+                                    "type": "DWORD"
                                 },
                                 {
-                                    "name": "DWORD Size",
-                                    "size": 4
+                                    "name": "Size",
+                                    "type": "DWORD"
                                 }
                             ]
                         },
                         {
                             "name": "Reserved",
-                            "size": 8
+                            "type": "QWORD"
                         }
                     ]
                 }

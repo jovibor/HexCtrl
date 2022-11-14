@@ -57,25 +57,6 @@ namespace HEXCTRL::INTERNAL
 		using PDTTM = UDTTM*;
 	#pragma pack(pop)
 
-	#pragma pack(push, 1)
-		union UDQWORD {
-			struct {
-				QWORD qwLow;
-				QWORD qwHigh;
-			} Value;
-			GUID gGUID;
-		};
-		using PDQWORD = UDQWORD*;
-	#pragma pack(pop)
-		//Time calculation constants
-		static constexpr auto m_uFTTicksPerMS = 10000U;             //Number of 100ns intervals in a milli-second
-		static constexpr auto m_uFTTicksPerSec = 10000000UL;        //Number of 100ns intervals in a second
-		static constexpr auto m_uHoursPerDay = 24U;                 //24 hours per day
-		static constexpr auto m_uSecondsPerHour = 3600U;            //3600 seconds per hour
-		static constexpr auto m_uFileTime1582OffsetDays = 6653U;    //FILETIME is based upon 1 Jan 1601 whilst GUID time is from 15 Oct 1582. Add 6653 days to convert to GUID time
-		static constexpr auto m_ulFileTime1970_LOW = 0xd53e8000UL;  //1st Jan 1970 as FILETIME
-		static constexpr auto m_ulFileTime1970_HIGH = 0x019db1deUL; //Used for Unix and Java times
-		static constexpr auto m_ullUnixEpochDiff = 11644473600ULL;  //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
@@ -89,56 +70,56 @@ namespace HEXCTRL::INTERNAL
 		LRESULT OnPropertySelected(WPARAM wParam, LPARAM lParam);
 		afx_msg void OnSize(UINT nType, int cx, int cy);
 		void RedrawHexCtrl()const;
+		void ShowValueBinary(BYTE byte)const;
+		void ShowValueChar(BYTE byte)const;
+		void ShowValueUChar(BYTE byte)const;
+		void ShowValueShort(WORD word)const;
+		void ShowValueUShort(WORD word)const;
+		void ShowValueInt(DWORD dword)const;
+		void ShowValueUInt(DWORD dword)const;
+		void ShowValueLL(QWORD qword)const;
+		void ShowValueULL(QWORD qword)const;
+		void ShowValueFloat(DWORD dword)const;
+		void ShowValueDouble(QWORD qword)const;
+		void ShowValueTime32(DWORD dword)const;
+		void ShowValueTime64(QWORD qword)const;
+		void ShowValueFILETIME(QWORD qword)const;
+		void ShowValueOLEDATETIME(QWORD qword)const;
+		void ShowValueJAVATIME(QWORD qword)const;
+		void ShowValueMSDOSTIME(DWORD dword)const;
+		void ShowValueMSDTTMTIME(DWORD dword)const;
+		void ShowValueSYSTEMTIME(SYSTEMTIME stSysTime)const;
+		void ShowValueGUID(GUID stGUID)const;
+		void ShowValueGUIDTIME(GUID stGUID)const;
 		template <typename T>
 		void SetTData(T tData)const;
-		[[nodiscard]] bool SetDataBINARY(std::wstring_view wsv)const;
-		[[nodiscard]] bool SetDataCHAR(std::wstring_view wsv)const;
-		[[nodiscard]] bool SetDataUCHAR(std::wstring_view wsv)const;
-		[[nodiscard]] bool SetDataSHORT(std::wstring_view wsv)const;
-		[[nodiscard]] bool SetDataUSHORT(std::wstring_view wsv)const;
-		[[nodiscard]] bool SetDataLONG(std::wstring_view wsv)const;
-		[[nodiscard]] bool SetDataULONG(std::wstring_view wsv)const;
-		[[nodiscard]] bool SetDataLONGLONG(std::wstring_view wsv)const;
-		[[nodiscard]] bool SetDataULONGLONG(std::wstring_view wsv)const;
-		[[nodiscard]] bool SetDataFLOAT(std::wstring_view wsv)const;
-		[[nodiscard]] bool SetDataDOUBLE(std::wstring_view wsv)const;
-		[[nodiscard]] bool SetDataTIME32T(std::wstring_view wsv)const;
-		[[nodiscard]] bool SetDataTIME64T(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataBinary(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataChar(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataUChar(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataShort(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataUShort(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataInt(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataUInt(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataLL(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataULL(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataFloat(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataDouble(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataTime32(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataTime64(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataFILETIME(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataOLEDATETIME(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataJAVATIME(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataMSDOSTIME(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataMSDTTMTIME(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataSYSTEMTIME(std::wstring_view wsv)const;
-		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataGUID(std::wstring_view wsv)const;
-		void ShowValueBINARY(BYTE byte)const;
-		void ShowValueCHAR(BYTE byte)const;
-		void ShowValueUCHAR(BYTE byte)const;
-		void ShowValueSHORT(WORD word)const;
-		void ShowValueUSHORT(WORD word)const;
-		void ShowValueLONG(DWORD dword)const;
-		void ShowValueULONG(DWORD dword)const;
-		void ShowValueFLOAT(DWORD dword)const;
-		void ShowValueTIME32(DWORD dword)const;
-		void ShowValueMSDOSTIME(DWORD dword)const;
-		void ShowValueMSDTTMTIME(DWORD dword)const;
-		void ShowValueLONGLONG(QWORD qword)const;
-		void ShowValueULONGLONG(QWORD qword)const;
-		void ShowValueDOUBLE(QWORD qword)const;
-		void ShowValueTIME64(QWORD qword)const;
-		void ShowValueFILETIME(QWORD qword)const;
-		void ShowValueOLEDATETIME(QWORD qword)const;
-		void ShowValueJAVATIME(QWORD qword)const;
-		void ShowValueGUID(UDQWORD dqword)const;
-		void ShowValueGUIDTIME(UDQWORD dqword)const;
-		void ShowValueSYSTEMTIME(UDQWORD dqword)const;
+		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wsv)const;
 		DECLARE_MESSAGE_MAP();
 	private:
 		enum class EGroup : std::uint8_t { DIGITS, FLOAT, TIME, MISC };
 		enum class EName : std::uint8_t {
 			NAME_BINARY, NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
-			NAME_LONG, NAME_ULONG, NAME_LONGLONG, NAME_ULONGLONG,
+			NAME_INT, NAME_UINT, NAME_LONGLONG, NAME_ULONGLONG,
 			NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
 			NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
 			NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID

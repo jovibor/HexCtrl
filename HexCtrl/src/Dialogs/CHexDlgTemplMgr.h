@@ -18,6 +18,13 @@ namespace HEXCTRL::INTERNAL
 	using PVecFields = VecFields*;
 	using PHEXTEMPLATEFIELD = HEXTEMPLATEFIELD*;
 
+	enum class EType : std::uint8_t {
+		custom_size,
+		type_bool, type_char, type_uchar, type_short, type_ushort, type_int,
+		type_uint, type_ll, type_ull, type_float, type_double, type_time32,
+		type_time64, type_filetime, type_systemtime, type_guid
+	};
+
 	struct HEXTEMPLATEFIELD {
 		std::wstring      wstrName { };     //Field name.
 		int               iSize { };        //Field size.
@@ -28,6 +35,7 @@ namespace HEXCTRL::INTERNAL
 		PHEXTEMPLATEFIELD pFieldParent { }; //Parent field in case of nested.
 		PHEXTEMPLATE      pTemplate { };    //Template this field belongs to.
 		bool              fBigEndian { };   //Field endianness.
+		EType             eType { };        //Field type.
 	};
 
 	struct HEXTEMPLATE {
@@ -61,6 +69,7 @@ namespace HEXCTRL::INTERNAL
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		afx_msg void OnBnLoadTemplate();
@@ -88,6 +97,38 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 		void OnOK()override;
 		afx_msg void OnDestroy();
+		void ShowListDataBool(LPWSTR pwsz, unsigned char uchData)const;
+		void ShowListDataChar(LPWSTR pwsz, char chData)const;
+		void ShowListDataUChar(LPWSTR pwsz, unsigned char uchData)const;
+		void ShowListDataShort(LPWSTR pwsz, short shortData, bool fShouldSwap)const;
+		void ShowListDataUShort(LPWSTR pwsz, unsigned short wData, bool fShouldSwap)const;
+		void ShowListDataInt(LPWSTR pwsz, int intData, bool fShouldSwap)const;
+		void ShowListDataUInt(LPWSTR pwsz, unsigned int dwData, bool fShouldSwap)const;
+		void ShowListDataLL(LPWSTR pwsz, long long llData, bool fShouldSwap)const;
+		void ShowListDataULL(LPWSTR pwsz, unsigned long long ullData, bool fShouldSwap)const;
+		void ShowListDataFloat(LPWSTR pwsz, float flData, bool fShouldSwap)const;
+		void ShowListDataDouble(LPWSTR pwsz, double dblData, bool fShouldSwap)const;
+		void ShowListDataTime32(LPWSTR pwsz, __time32_t lTime32, bool fShouldSwap)const;
+		void ShowListDataTime64(LPWSTR pwsz, __time64_t llTime64, bool fShouldSwap)const;
+		void ShowListDataFILETIME(LPWSTR pwsz, FILETIME stFTime, bool fShouldSwap)const;
+		void ShowListDataSYSTEMTIME(LPWSTR pwsz, SYSTEMTIME stSTime, bool fShouldSwap)const;
+		void ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset)const;
+		[[nodiscard]] bool SetDataChar(LPCWSTR pwszText, ULONGLONG ullOffset)const;
+		[[nodiscard]] bool SetDataUChar(LPCWSTR pwszText, ULONGLONG ullOffset)const;
+		[[nodiscard]] bool SetDataShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataUShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataUInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataLL(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataULL(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataFloat(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataDouble(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataFILETIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataSYSTEMTIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
+		[[nodiscard]] bool SetDataGUID(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
 		void UnloadTemplate(int iTemplateID)override;       //Unload/remove loaded template from memory.
 		void RandomizeTemplateColors(int iTemplateID);
@@ -101,7 +142,7 @@ namespace HEXCTRL::INTERNAL
 		void SetHexSelByField(PHEXTEMPLATEFIELD pField);
 		void ShowTooltips(bool fShow)override;
 		void UpdateStaticText();
-		static LRESULT TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
+		static LRESULT CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 		DECLARE_MESSAGE_MAP();
 	private:
 		enum class EMenuID : std::uint16_t;
@@ -125,6 +166,8 @@ namespace HEXCTRL::INTERNAL
 		PHEXTEMPLATEAPPLIED m_pAppliedCurr { }; //Currently selected PApplied.
 		PVecFields m_pVecCurrFields { };      //Pointer to currently selected vector with fields.
 		HTREEITEM m_hTreeCurrParent { };      //Currently selected Tree node's parent.
+		DWORD m_dwDateFormat { };             //Date format.
+		wchar_t m_wchDateSepar { };           //Date separator.
 		bool m_fCurInSplitter { };            //Indicates that mouse cursor is in the splitter area.
 		bool m_fLMDownResize { };             //Left mouse pressed in splitter area to resize.
 		bool m_fListGuardEvent { false };     //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
