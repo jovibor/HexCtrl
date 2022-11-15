@@ -24,8 +24,8 @@ namespace HEXCTRL::INTERNAL
 {
 	enum class CHexDlgTemplMgr::EMenuID : std::uint16_t {
 		IDM_TREEAPPLIED_DISAPPLY = 0x8000, IDM_TREEAPPLIED_DISAPPLYALL = 0x8001,
-		IDM_LISTAPPLIED_HDR_NAME = 0x8100, IDM_LISTAPPLIED_HDR_OFFSET, IDM_LISTAPPLIED_HDR_SIZE,
-		IDM_LISTAPPLIED_HDR_DATA, IDM_LISTAPPLIED_HDR_ENDIANNESS, IDM_LISTAPPLIED_HDR_COLORS
+		IDM_LISTAPPLIED_HDR_TYPE = 0x8100, IDM_LISTAPPLIED_HDR_NAME, IDM_LISTAPPLIED_HDR_OFFSET,
+		IDM_LISTAPPLIED_HDR_SIZE, IDM_LISTAPPLIED_HDR_DATA, IDM_LISTAPPLIED_HDR_ENDIANNESS, IDM_LISTAPPLIED_HDR_COLORS
 	};
 
 	constexpr auto ID_LISTAPPLIED_FIELD_TYPE { 0 };
@@ -103,6 +103,8 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 
 	using enum EMenuID;
 	m_menuHdr.CreatePopupMenu();
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_TYPE), L"Type");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_TYPE), MF_CHECKED | MF_BYCOMMAND);
 	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), L"Name");
 	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), MF_CHECKED | MF_BYCOMMAND);
 	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_OFFSET), L"Offset");
@@ -163,6 +165,7 @@ BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	case IDM_TREEAPPLIED_DISAPPLYALL:
 		DisapplyAll();
 		return TRUE;
+	case IDM_LISTAPPLIED_HDR_TYPE:
 	case IDM_LISTAPPLIED_HDR_NAME:
 	case IDM_LISTAPPLIED_HDR_OFFSET:
 	case IDM_LISTAPPLIED_HDR_SIZE:
@@ -171,7 +174,7 @@ BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	case IDM_LISTAPPLIED_HDR_COLORS:
 	{
 		const auto fChecked = m_menuHdr.GetMenuState(wMenuID, MF_BYCOMMAND) & MF_CHECKED;
-		m_pListApplied->HideColumn(wMenuID - static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), fChecked);
+		m_pListApplied->HideColumn(wMenuID - static_cast<int>(IDM_LISTAPPLIED_HDR_TYPE), fChecked);
 		m_menuHdr.CheckMenuItem(wMenuID, (fChecked ? MF_UNCHECKED : MF_CHECKED) | MF_BYCOMMAND);
 	}
 	break;

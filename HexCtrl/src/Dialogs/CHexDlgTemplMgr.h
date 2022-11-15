@@ -142,7 +142,8 @@ namespace HEXCTRL::INTERNAL
 		void SetHexSelByField(PHEXTEMPLATEFIELD pField);
 		void ShowTooltips(bool fShow)override;
 		void UpdateStaticText();
-		static LRESULT CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
+		static LRESULT CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+			UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 		DECLARE_MESSAGE_MAP();
 	private:
 		enum class EMenuID : std::uint16_t;
