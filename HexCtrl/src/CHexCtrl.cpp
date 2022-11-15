@@ -175,7 +175,6 @@ void CHexCtrl::ClearData()
 	m_pHexVirtColors = nullptr;
 	m_fHighLatency = false;
 	m_ullCursorPrev = 0;
-	m_optRMouseClick.reset();
 	m_ullCaretPos = 0;
 	m_ullCursorNow = 0;
 
@@ -242,6 +241,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	m_stColor = hcs.stColor;
 	m_dbWheelRatio = hcs.dbWheelRatio;
+	m_fPageLines = hcs.fPageLines;
 	m_fInfoBar = hcs.fInfoBar;
 
 	const auto pDC = GetDC();
@@ -429,8 +429,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 			: std::vector<HEXSPAN> { { GetCaretPos(), 1 } } }, true);
 		break;
 	case CMD_BKM_REMOVE:
-		m_pDlgBkmMgr->RemoveByOffset(m_fMenuCMD && m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos());
-		m_optRMouseClick.reset();
+		m_pDlgBkmMgr->RemoveByOffset(GetCaretPos());
 		break;
 	case CMD_BKM_NEXT:
 		m_pDlgBkmMgr->GoNext();
@@ -568,11 +567,9 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_TEMPL_APPLYCURR:
 		m_pDlgTemplMgr->ApplyCurr(GetCaretPos());
-		m_optRMouseClick.reset();
 		break;
 	case CMD_TEMPL_DISAPPLY:
-		m_pDlgTemplMgr->DisapplyByOffset(m_fMenuCMD && m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos());
-		m_optRMouseClick.reset();
+		m_pDlgTemplMgr->DisapplyByOffset(GetCaretPos());
 		break;
 	case CMD_TEMPL_DISAPPALL:
 		m_pDlgTemplMgr->DisapplyAll();
@@ -876,9 +873,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	using enum EHexCmd;
 	switch (eCmd) {
 	case CMD_BKM_REMOVE:
-		fAvail = m_pDlgBkmMgr->HasBookmarks()
-			&& m_pDlgBkmMgr->HitTest(m_fMenuCMD
-				&& m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos()) != nullptr;
+		fAvail = m_pDlgBkmMgr->HasBookmarks() && m_pDlgBkmMgr->HitTest(GetCaretPos()) != nullptr;
 		break;
 	case CMD_BKM_NEXT:
 	case CMD_BKM_PREV:
@@ -948,9 +943,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		fAvail = fDataSet && m_pDlgTemplMgr->HasTemplates();
 		break;
 	case CMD_TEMPL_DISAPPLY:
-		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied()
-			&& m_pDlgTemplMgr->HitTest(m_fMenuCMD
-				&& m_optRMouseClick.has_value() ? *m_optRMouseClick : GetCaretPos()) != nullptr;
+		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied() && m_pDlgTemplMgr->HitTest(GetCaretPos()) != nullptr;
 		break;
 	case CMD_TEMPL_DISAPPALL:
 		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied();
@@ -1841,14 +1834,26 @@ void CHexCtrl::SetUnprintableChar(wchar_t wch)
 	m_wchUnprintable = wch;
 }
 
-void CHexCtrl::SetWheelRatio(double dbRatio)
+void CHexCtrl::SetWheelRatio(double dbRatio, bool fLines)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
 	m_dbWheelRatio = dbRatio;
-	SendMessageW(WM_SIZE);   //To recalc ScrollPageSize (m_pScrollV->SetScrollPageSize(...);)
+	m_fPageLines = fLines;
+	ULONGLONG ullScrollPageSize;
+	if (m_fPageLines) { //How many text lines to scroll.
+		ullScrollPageSize = m_sizeFontMain.cy * static_cast<LONG>(dbRatio); //How many text lines to scroll.
+		if (ullScrollPageSize < m_sizeFontMain.cy) {
+			ullScrollPageSize = m_sizeFontMain.cy;
+		}
+	}
+	else { //How mane screens to scroll.
+		const auto ullSizeInScreens = static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio);
+		ullScrollPageSize = ullSizeInScreens < m_sizeFontMain.cy ? m_sizeFontMain.cy : ullSizeInScreens;
+	}
+	m_pScrollV->SetScrollPageSize(ullScrollPageSize);
 }
 
 void CHexCtrl::ShowInfoBar(bool fShow)
@@ -3954,7 +3959,19 @@ void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
 
 	//Scrolls, ReleaseDC and Redraw only for current DC, not for PrintingDC.
 	if (pDC == nullptr) {
-		m_pScrollV->SetScrollSizes(m_sizeFontMain.cy, static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio),
+		ULONGLONG ullScrollPageSize;
+		if (m_fPageLines) { //How many text lines to scroll.
+			ullScrollPageSize = m_sizeFontMain.cy * static_cast<LONG>(m_dbWheelRatio);
+			if (ullScrollPageSize < m_sizeFontMain.cy) {
+				ullScrollPageSize = m_sizeFontMain.cy;
+			}
+		}
+		else { //How mane screens to scroll.
+			const auto ullSizeInScreens = static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio);
+			ullScrollPageSize = ullSizeInScreens < m_sizeFontMain.cy ? m_sizeFontMain.cy : ullSizeInScreens;
+		}
+
+		m_pScrollV->SetScrollSizes(m_sizeFontMain.cy, ullScrollPageSize,
 			static_cast<ULONGLONG>(m_iStartWorkAreaY) + m_iHeightBottomOffArea + m_sizeFontMain.cy *
 			(ullDataSize / m_dwCapacity + (ullDataSize % m_dwCapacity == 0 ? 1 : 2)));
 		m_pScrollH->SetScrollSizes(m_sizeFontMain.cx, rc.Width(), static_cast<ULONGLONG>(m_iFourthVertLine) + 1);
@@ -4528,9 +4545,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	const auto wMenuID = LOWORD(wParam);
 	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref) { return ref.wMenuID == wMenuID;	}); iter != m_vecKeyBind.end()) {
-		m_fMenuCMD = true;
 		ExecuteCmd(iter->eCmd);
-		m_fMenuCMD = false;
 	}
 	else { //For user defined custom menu we notifying parent window.
 		const HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK },
@@ -4608,7 +4623,6 @@ void CHexCtrl::OnHScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollB
 void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMenu*/)
 {
 	using enum EHexCmd;
-	m_fMenuCMD = true;
 	//The nIndex specifies the zero-based relative position of the menu item that opens the drop-down menu or submenu.
 	switch (nIndex) {
 	case 0:	//Search.
@@ -4674,7 +4688,6 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 	default:
 		break;
 	}
-	m_fMenuCMD = false;
 }
 
 void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
@@ -4712,8 +4725,6 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 		ModifyData({ .spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { GetCaretPos(), 1 } } });
 		CaretMoveRight();
 	}
-
-	m_optRMouseClick.reset(); //Reset right mouse click.
 }
 
 void CHexCtrl::OnKeyUp(UINT /*nChar*/, UINT /*nRepCnt*/, UINT /*nFlags*/)
@@ -4738,7 +4749,6 @@ void CHexCtrl::OnLButtonDblClk(UINT nFlags, CPoint point)
 		m_fLMousePressed = true;
 		m_ullCaretPos = optHit->ullOffset;
 		m_fCursorTextArea = optHit->fIsText;
-		m_optRMouseClick.reset();
 		if (!optHit->fIsText)
 			m_fCaretHigh = optHit->fIsHigh;
 
@@ -4770,7 +4780,6 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	m_fLMousePressed = true;
 	m_ullCursorNow = m_ullCaretPos = optHit->ullOffset;
 	m_fCursorTextArea = optHit->fIsText;
-	m_optRMouseClick.reset();
 	if (!optHit->fIsText)
 		m_fCaretHigh = optHit->fIsHigh;
 	m_fSelectionBlock = GetAsyncKeyState(VK_MENU) < 0;
@@ -5052,10 +5061,8 @@ void CHexCtrl::OnPaint()
 	DrawPageLines(pDC, ullStartLine, iLines);
 }
 
-void CHexCtrl::OnRButtonDown(UINT /*nFlags*/, CPoint point)
+void CHexCtrl::OnRButtonDown(UINT /*nFlags*/, CPoint /*point*/)
 {
-	const auto optHit = HitTest(point);
-	m_optRMouseClick = optHit ? optHit->ullOffset : std::optional<ULONGLONG> { };
 }
 
 BOOL CHexCtrl::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
@@ -5072,10 +5079,10 @@ void CHexCtrl::OnSize(UINT /*nType*/, int cx, int cy)
 		return;
 
 	RecalcClientArea(cy, cx);
-	auto ullPageSize = static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio);
-	if (ullPageSize < m_sizeFontMain.cy)
-		ullPageSize = m_sizeFontMain.cy;
-	m_pScrollV->SetScrollPageSize(ullPageSize);
+	if (!m_fPageLines) {
+		const auto ullPageSize = static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio);
+		m_pScrollV->SetScrollPageSize(ullPageSize < m_sizeFontMain.cy ? m_sizeFontMain.cy : ullPageSize);
+	}
 }
 
 void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)

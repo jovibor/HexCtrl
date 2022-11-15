@@ -96,10 +96,10 @@ namespace HEXCTRL
 	public:
 		virtual ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw = true) = 0;   //Add new bookmark, returns the new bookmark's ID.
 		virtual void ClearAll() = 0;                                            //Clear all bookmarks.
-		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->PHEXBKM = 0;       //Get bookmark by ID.
-		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->PHEXBKM = 0; //Get bookmark by index.
+		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID) -> PHEXBKM = 0;       //Get bookmark by ID.
+		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM = 0; //Get bookmark by index.
 		[[nodiscard]] virtual ULONGLONG GetCount() = 0;                         //Get bookmarks count.
-		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->PHEXBKM = 0;   //HitTest for given offset.
+		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset) -> PHEXBKM = 0;   //HitTest for given offset.
 		virtual void RemoveByID(ULONGLONG ullID) = 0;                           //Remove bookmark by a given ID.
 	};
 
@@ -195,7 +195,8 @@ namespace HEXCTRL
 		UINT      uID { };              //Control ID if it's a child window.
 		DWORD     dwStyle { };          //Window styles.
 		DWORD     dwExStyle { };        //Extended window styles.
-		double    dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
+		double    dbWheelRatio { 1.0 }; //Either screen-ratio or lines amount to scroll with Page-scroll.
+		bool      fPageLines { false }; //Treat dbWheelRatio as a screen-ratio (false) or as amount of lines.
 		bool      fInfoBar { true };    //Show bottom Info bar or not.
 		bool      fCustom { false };    //If it's a custom control in a dialog.
 	};

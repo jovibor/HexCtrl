@@ -655,9 +655,10 @@ Sets replacement char for unprintable characters.
 
 ### [](#)SetWheelRatio
 ```cpp
-void SetWheelRatio(double dbRatio)
+void SetWheelRatio(double dbRatio, bool fLines);
 ```
-Sets the ratio for how much to scroll with mouse-wheel.
+Sets the scroll amount for one scroll-page.  
+Page is one mouse-wheel tick or a Page-down key.   When `fLines` is `true` the `dbRatio` is the amount of text lines to scroll. When it's `false` `dbRatio` shows a ratio of visible screen height to scroll.
 
 ### [](#)ShowInfoBar
 ```cpp
@@ -751,7 +752,8 @@ struct HEXCREATE
     UINT      uID { };              //Control ID if it's a child window.
     DWORD     dwStyle { };          //Window styles.
     DWORD     dwExStyle { };        //Extended window styles.
-    double    dbWheelRatio { 1.0 }; //Ratio for how much to scroll with mouse-wheel.
+    double    dbWheelRatio { 1.0 }; //Either screen-ratio or lines amount to scroll with Page-scroll.
+    bool      fPageLines { false }; //Treat dbWheelRatio as a screen-ratio (false) or as amount of lines.
     bool      fInfoBar { true };    //Show bottom Info bar or not.
     bool      fCustom { false };    //If it's a custom control in a dialog.
 };

@@ -90,7 +90,7 @@ namespace HEXCTRL::INTERNAL
 		void SetRedraw(bool fRedraw)override;
 		void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false)override;
 		void SetUnprintableChar(wchar_t wch)override;
-		void SetWheelRatio(double dbRatio)override;
+		void SetWheelRatio(double dbRatio, bool fLines)override;
 		void ShowInfoBar(bool fShow)override;
 	private:
 		struct SHBITMAP;
@@ -239,7 +239,6 @@ namespace HEXCTRL::INTERNAL
 		CPen m_penLines;                      //Pen for lines.
 		CPen m_penDataTempl;                  //Pen for templates' fields (vertical lines).
 		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
-		std::optional<ULONGLONG> m_optRMouseClick { }; //Right mouse clicked chunk. Used in bookmarking.
 		ULONGLONG m_ullCaretPos { };          //Current caret position.
 		ULONGLONG m_ullCursorNow { };         //The cursor's current clicked pos.
 		ULONGLONG m_ullCursorPrev { };        //The cursor's previously clicked pos, used in selection resolutions.
@@ -297,7 +296,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
 		bool m_fHighLatency { false };        //Reflects HEXDATA::fHighLatency.
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
-		bool m_fMenuCMD { false };            //Command to be executed through menu, not through key-shortcut.
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
+		bool m_fPageLines { false };          //Page scroll in screens * m_dbWheelRatio or in lines. 
 	};
 }

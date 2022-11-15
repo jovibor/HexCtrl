@@ -70,7 +70,7 @@ BOOL CHexSampleDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE); //Set small icon
 
 	m_pHexChild->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
-	//m_pHexChild->SetWheelRatio(0.5);
+	m_pHexChild->SetWheelRatio(2, true); //Two lines scroll with mouse-wheel.
 	m_pHexChild->SetPageSize(64);
 
 	wchar_t buff[MAX_PATH];
