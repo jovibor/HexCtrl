@@ -18,15 +18,15 @@ namespace HEXCTRL::INTERNAL
 		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 		ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw)override; //Returns new bookmark Id.
 		void ClearAll()override;
-		[[nodiscard]] auto GetByID(ULONGLONG ullID)->PHEXBKM override;       //Bookmark by ID.
-		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex)->PHEXBKM override; //Bookmark by index (in inner list).
+		[[nodiscard]] auto GetByID(ULONGLONG ullID) -> PHEXBKM override;       //Bookmark by ID.
+		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM override; //Bookmark by index (in inner list).
 		[[nodiscard]] ULONGLONG GetCount()override;
 		[[nodiscard]] ULONGLONG GetCurrent()const;
 		void GoBookmark(ULONGLONG ullIndex);
 		void GoNext();
 		void GoPrev();
 		[[nodiscard]] bool HasBookmarks()const;
-		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)->PHEXBKM override;
+		[[nodiscard]] auto HitTest(ULONGLONG ullOffset) -> PHEXBKM override;
 		[[nodiscard]] bool IsVirtual()const;
 		void RemoveByOffset(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID)override;
@@ -36,21 +36,21 @@ namespace HEXCTRL::INTERNAL
 	private:
 		enum class EMenuID : std::uint16_t;
 		void DoDataExchange(CDataExchange* pDX)override;
+		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		afx_msg void OnClickRadioHexDec();
-		afx_msg void OnDestroy();
-		BOOL OnInitDialog()override;
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
+		afx_msg void OnClickCheckHex();
 		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListLClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListDblClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListGetColor(NMHDR *pNMHDR, LRESULT *pResult);
-		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
+		afx_msg void OnDestroy();
 		void UpdateList();
 		void SortBookmarks();
-		DECLARE_MESSAGE_MAP()
+		DECLARE_MESSAGE_MAP();
 	private:
 		std::deque<HEXBKM> m_deqBookmarks;
 		IHexCtrl* m_pHexCtrl { };

@@ -18,10 +18,8 @@ using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
 	ON_WM_ACTIVATE()
-	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_RAD_LE, &CHexDlgDataInterp::OnClickRadioBeLe)
-	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_RAD_BE, &CHexDlgDataInterp::OnClickRadioBeLe)
-	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_RAD_DEC, &CHexDlgDataInterp::OnClickRadioHexDec)
-	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_RAD_HEX, &CHexDlgDataInterp::OnClickRadioHexDec)
+	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_HEX, &CHexDlgDataInterp::OnClickCheckHex)
+	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_BE, &CHexDlgDataInterp::OnClickCheckBe)
 	ON_WM_CLOSE()
 	ON_WM_DESTROY()
 	ON_WM_SHOWWINDOW()
@@ -176,10 +174,10 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RAD_LE)); pRadio)
-		pRadio->SetCheck(BST_CHECKED);
-	if (auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RAD_HEX)); pRadio)
-		pRadio->SetCheck(BST_CHECKED);
+	if (const auto pChk = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX)); pChk)
+		pChk->SetCheck(BST_CHECKED);
+	if (const auto pChk = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE)); pChk)
+		pChk->SetCheck(BST_UNCHECKED);
 
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"binary:", L"0"), EGroup::DIGITS, EName::NAME_BINARY, ESize::SIZE_BYTE);
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"char:", L"0"), EGroup::DIGITS, EName::NAME_CHAR, ESize::SIZE_BYTE);
@@ -273,15 +271,15 @@ void CHexDlgDataInterp::OnOK()
 {
 }
 
-void CHexDlgDataInterp::OnClickRadioBeLe()
+void CHexDlgDataInterp::OnClickCheckHex()
 {
-	m_fBigEndian = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RAD_BE))->GetCheck() == BST_CHECKED;
+	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX))->GetCheck() == BST_CHECKED;
 	InspectOffset(m_ullOffset);
 }
 
-void CHexDlgDataInterp::OnClickRadioHexDec()
+void CHexDlgDataInterp::OnClickCheckBe()
 {
-	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_RAD_HEX))->GetCheck() == BST_CHECKED;
+	m_fBigEndian = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE))->GetCheck() == BST_CHECKED;
 	InspectOffset(m_ullOffset);
 }
 

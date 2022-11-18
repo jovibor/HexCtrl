@@ -62,8 +62,8 @@ namespace HEXCTRL::INTERNAL
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnOK()override;
-		afx_msg void OnClickRadioBeLe();
-		afx_msg void OnClickRadioHexDec();
+		afx_msg void OnClickCheckHex();
+		afx_msg void OnClickCheckBe();
 		afx_msg void OnClose();
 		afx_msg void OnDestroy();
 		LRESULT OnPropertyDataChanged(WPARAM wParam, LPARAM lParam);

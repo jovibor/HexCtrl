@@ -31,8 +31,7 @@ BEGIN_MESSAGE_MAP(CHexDlgBkmMgr, CDialogEx)
 	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListDblClick)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListRClick)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListGetColor)
-	ON_BN_CLICKED(IDC_HEXCTRL_BKMMGR_RAD_DEC, &CHexDlgBkmMgr::OnClickRadioHexDec)
-	ON_BN_CLICKED(IDC_HEXCTRL_BKMMGR_RAD_HEX, &CHexDlgBkmMgr::OnClickRadioHexDec)
+	ON_BN_CLICKED(IDC_HEXCTRL_BKMMGR_CHK_HEX, &CHexDlgBkmMgr::OnClickCheckHex)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -61,8 +60,8 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	m_pListMain->InsertColumn(0, L"\u2116", LVCFMT_LEFT, 40);
 	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 80);
 	m_pListMain->InsertColumn(2, L"Size", LVCFMT_LEFT, 80);
-	m_pListMain->InsertColumn(3, L"Description", LVCFMT_LEFT, 210);
-	m_pListMain->InsertColumn(4, L"Bk color", LVCFMT_LEFT, 65);
+	m_pListMain->InsertColumn(3, L"Description", LVCFMT_LEFT, 250);
+	m_pListMain->InsertColumn(4, L"Colors", LVCFMT_LEFT, 65);
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 
 	m_stMenuList.CreatePopupMenu();
@@ -72,8 +71,8 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	m_stMenuList.AppendMenuW(MF_SEPARATOR);
 	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_CLEARALL), L"Clear All");
 
-	if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RAD_HEX)); pRadio)
-		pRadio->SetCheck(BST_CHECKED);
+	if (const auto pChk = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_CHK_HEX)); pChk)
+		pChk->SetCheck(BST_CHECKED);
 
 	return TRUE;
 }
@@ -151,9 +150,9 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	return fMsgHere ? TRUE : CDialogEx::OnCommand(wParam, lParam);
 }
 
-void CHexDlgBkmMgr::OnClickRadioHexDec()
+void CHexDlgBkmMgr::OnClickCheckHex()
 {
-	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_RAD_HEX))->GetCheck() == BST_CHECKED;
+	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_CHK_HEX))->GetCheck() == BST_CHECKED;
 	m_pListMain->RedrawWindow();
 }
 
@@ -205,6 +204,9 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		break;
 	case 3: //Description.
 		pItem->pszText = const_cast<wchar_t*>(pBkm->wstrDesc.data());
+		break;
+	case 4: //Color.
+		*std::format_to(pItem->pszText, L"#Text") = L'\0';
 		break;
 	default:
 		break;
@@ -498,34 +500,33 @@ void CHexDlgBkmMgr::SortData(int iColumn, bool fAscending)
 	std::sort(m_deqBookmarks.begin(), m_deqBookmarks.end(),
 		[iColumn, fAscending](const HEXBKM& st1, const HEXBKM& st2) {
 			int iCompare { };
-			switch (iColumn) {
-			case 0:
-				break;
-			case 1: //Offset.
-				if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
-					const auto ullOffset1 = st1.vecSpan.front().ullOffset;
-					const auto ullOffset2 = st2.vecSpan.front().ullOffset;
-					iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
-				}
-				break;
-			case 2: //Size.
-				if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
-					auto ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
-						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
-					auto ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
-						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
-					iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
-				}
-				break;
-			case 3: //Description.
-				iCompare = st1.wstrDesc.compare(st2.wstrDesc);
-				break;
-			default:
-				break;
-			}
+	switch (iColumn) {
+	case 0:
+		break;
+	case 1: //Offset.
+		if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
+			const auto ullOffset1 = st1.vecSpan.front().ullOffset;
+			const auto ullOffset2 = st2.vecSpan.front().ullOffset;
+			iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
+		}
+		break;
+	case 2: //Size.
+		if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
+			auto ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
+				[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+			auto ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
+				[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+			iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
+		}
+		break;
+	case 3: //Description.
+		iCompare = st1.wstrDesc.compare(st2.wstrDesc);
+		break;
+	default:
+		break;
+	}
 
-			return fAscending ? iCompare < 0 : iCompare > 0;
-		});
+	return fAscending ? iCompare < 0 : iCompare > 0; });
 }
 
 void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& stBookmark)
