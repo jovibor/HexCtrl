@@ -818,6 +818,7 @@ void CHexDlgTemplMgr::OnDestroy()
 	DisapplyAll();
 	m_pListApplied->DestroyWindow();
 	m_stMenuTree.DestroyMenu();
+	m_menuHdr.DestroyMenu();
 	m_vecTemplates.clear();
 }
 

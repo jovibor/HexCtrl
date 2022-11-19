@@ -210,7 +210,8 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	else {
 		if (!CWnd::CreateEx(hcs.dwExStyle, WSTR_HEXCTRL_CLASSNAME, L"HexControl", hcs.dwStyle, hcs.rect,
 			CWnd::FromHandle(hcs.hWndParent), hcs.uID)) {
-			MessageBoxW(std::format(L"HexCtrl (ID: {}) CreateWindowExW failed.\r\nCheck HEXCREATE struct parameters.", hcs.uID).data(), L"Error", MB_ICONERROR);
+			MessageBoxW(std::format(L"HexCtrl (ID: {}) CreateWindowExW failed.\r\nCheck HEXCREATE struct parameters.", hcs.uID).data(),
+				L"Error", MB_ICONERROR);
 			return false;
 		}
 	}
@@ -248,7 +249,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
 	ReleaseDC(pDC);
 
-	/***Menu related.***/
+	//Menu related.
 	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCEW(IDR_HEXCTRL_MENU))) {
 		MessageBoxW(L"HexControl LoadMenuW failed.", L"Error", MB_ICONERROR);
 		return false;
@@ -307,9 +308,9 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_APPEAR_FONTCHOOSE), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_APPEAR_FONTCHOOSE, &mii);
 	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
-	/***End of menu related.***/
+	//End of menu related.
 
-	/***Font related.***/
+	//Font related.
 	//Default main logfont.
 	const LOGFONTW lfMain { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
 	m_fontMain.CreateFontIndirectW(hcs.pLogFont != nullptr ? hcs.pLogFont : &lfMain);
@@ -317,7 +318,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	//Info area font, independent from the main font, its size is a bit smaller than the default main font.
 	const LOGFONTW lfInfo { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) + 1 }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
 	m_fontInfoBar.CreateFontIndirectW(&lfInfo);
-	/***End of font related.***/
+	//End of font related.
 
 	m_penLines.CreatePen(PS_SOLID, 1, RGB(200, 200, 200));
 	m_penDataTempl.CreatePen(PS_SOLID, 1, RGB(50, 50, 50));
@@ -338,7 +339,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	SetGroupMode(m_enGroupMode);
 	SetEncoding(-1);
 	SetConfig(L"");
-	SetDateInfo(0xFFFFFFFF, L'/');
+	SetDateInfo(0xFFFFFFFFUL, L'/');
 
 	//All dialogs are created after the main window, to set the parent window correctly.
 	m_pDlgBkmMgr->Create(IDD_HEXCTRL_BKMMGR, this, this);
