@@ -131,8 +131,8 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
 
 	EnableDynamicLayoutHelper(true);
-
 	::SetWindowSubclass(m_stTreeApplied, TreeSubclassProc, 0, 0);
+	SetDlgButtonStates();
 
 	return TRUE;
 }
@@ -199,7 +199,7 @@ void CHexDlgTemplMgr::OnBnLoadTemplate()
 {
 	CFileDialog fd(TRUE, nullptr, nullptr,
 		OFN_OVERWRITEPROMPT | OFN_EXPLORER | OFN_ALLOWMULTISELECT | OFN_DONTADDTORECENT | OFN_ENABLESIZING
-		| OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST, L"All files (*.*)|*.*||");
+		| OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST, L"Template files (*.json)|*.json|All files (*.*)|*.*||");
 
 	if (fd.DoModal() != IDOK)
 		return;
@@ -1457,6 +1457,123 @@ void CHexDlgTemplMgr::DisapplyAll()
 	}
 }
 
+void CHexDlgTemplMgr::DisapplyByID(int iAppliedID)
+{
+	if (const auto iter = std::find_if(m_vecTemplatesApplied.begin(), m_vecTemplatesApplied.end(),
+		[iAppliedID](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref) { return ref->iAppliedID == iAppliedID; });
+		iter != m_vecTemplatesApplied.end()) {
+		RemoveNodeWithAppliedID(iAppliedID);
+		m_vecTemplatesApplied.erase(iter);
+		if (m_pHexCtrl->IsDataSet()) {
+			m_pHexCtrl->Redraw();
+		}
+	}
+}
+
+void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
+{
+	if (const auto rIter = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
+		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
+			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
+			rIter != m_vecTemplatesApplied.rend()) {
+		RemoveNodeWithAppliedID(rIter->get()->iAppliedID);
+		m_vecTemplatesApplied.erase(std::next(rIter).base());
+		if (m_pHexCtrl->IsDataSet()) {
+			m_pHexCtrl->Redraw();
+		}
+	}
+}
+
+void CHexDlgTemplMgr::EnableDynamicLayoutHelper(bool fEnable)
+{
+	if (fEnable && IsDynamicLayoutEnabled())
+		return;
+
+	EnableDynamicLayout(fEnable ? TRUE : FALSE);
+
+	if (fEnable) {
+		const auto pLayout = GetDynamicLayout();
+		pLayout->Create(this);
+		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, CMFCDynamicLayout::MoveNone(),
+			CMFCDynamicLayout::SizeHorizontalAndVertical(100, 100));
+		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, CMFCDynamicLayout::MoveNone(),
+			CMFCDynamicLayout::SizeVertical(100));
+		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP, CMFCDynamicLayout::MoveNone(),
+			CMFCDynamicLayout::SizeHorizontal(100));
+	}
+}
+
+auto CHexDlgTemplMgr::GetAppliedFromItem(HTREEITEM hTreeItem)->PHEXTEMPLATEAPPLIED
+{
+	auto hRoot = hTreeItem;
+	while (hRoot != nullptr) { //Root node.
+		hTreeItem = hRoot;
+		hRoot = m_stTreeApplied.GetNextItem(hTreeItem, TVGN_PARENT);
+	}
+
+	return reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(hTreeItem));
+}
+
+bool CHexDlgTemplMgr::HasApplied()const
+{
+	return !m_vecTemplatesApplied.empty();
+}
+
+bool CHexDlgTemplMgr::HasTemplates()const
+{
+	return !m_vecTemplates.empty();
+}
+
+auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD
+{
+	if (const auto itTemplApplied = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
+		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
+			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
+			itTemplApplied != m_vecTemplatesApplied.rend()) {
+		const auto pTemplApplied = itTemplApplied->get();
+		const auto ullTemplStartOffset = pTemplApplied->ullOffset;
+		auto& refVec = pTemplApplied->pTemplate->vecFields;
+		auto ullOffsetCurr = pTemplApplied->ullOffset;
+
+		const auto lmbFind = [ullTemplStartOffset, ullOffset, &ullOffsetCurr]
+		(VecFields& vecRef)->PHEXTEMPLATEFIELD {
+			const auto _lmbFind = [ullTemplStartOffset, ullOffset, &ullOffsetCurr]
+			(const auto& lmbSelf, VecFields& vecRef)->PHEXTEMPLATEFIELD {
+				for (auto& refField : vecRef) {
+					if (!refField->vecNested.empty()) {
+						if (const auto pRet = lmbSelf(lmbSelf, refField->vecNested); pRet != nullptr) {
+							return pRet; //Return only if we Hit a pointer in the inner lambda, continue the loop otherwise.
+						}
+					}
+					else {
+						if (ullOffset < (ullOffsetCurr + refField->iSize)) {
+							return refField.get();
+						}
+
+						ullOffsetCurr += refField->iSize;
+					}
+				}
+				return nullptr;
+			};
+			return _lmbFind(_lmbFind, vecRef);
+		};
+
+		return lmbFind(refVec);
+	}
+
+	return nullptr;
+}
+
+bool CHexDlgTemplMgr::IsHighlight()const
+{
+	return m_fHighlightSel;
+}
+
+bool CHexDlgTemplMgr::IsTooltips()const
+{
+	return m_fTooltips;
+}
+
 int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 {
 	std::ifstream ifs(pFilePath);
@@ -1770,41 +1887,9 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	m_stComboTemplates.SetItemData(iIndex, static_cast<DWORD_PTR>(iTemplateID));
 	m_stComboTemplates.SetCurSel(iIndex);
 	m_vecTemplates.emplace_back(std::move(pTemplateUnPtr));
-	OnTemplateLoadUnload(true);
+	SetDlgButtonStates();
 
 	return iTemplateID;
-}
-
-void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
-{
-	const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
-		[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
-	if (iterTempl == m_vecTemplates.end())
-		return;
-
-	const auto pTemplate = iterTempl->get();
-	RemoveNodesWithTemplateID(pTemplate->iTemplateID);
-
-	//Remove all applied templates from m_vecTemplatesApplied, if any, with the given iTemplateID.
-	if (std::erase_if(m_vecTemplatesApplied, [pTemplate](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref) {
-		return ref->pTemplate == pTemplate; }) > 0) {
-		if (m_pHexCtrl->IsDataSet()) {
-			m_pHexCtrl->Redraw();
-		}
-	}
-
-	m_vecTemplates.erase(iterTempl); //Remove template itself.
-
-	//Remove Template name from ComboBox.
-	for (auto iIndex = 0; iIndex < m_stComboTemplates.GetCount(); ++iIndex) {
-		if (const auto iItemData = static_cast<int>(m_stComboTemplates.GetItemData(iIndex)); iItemData == iTemplateID) {
-			m_stComboTemplates.DeleteString(iIndex);
-			m_stComboTemplates.SetCurSel(0);
-			break;
-		}
-	}
-
-	OnTemplateLoadUnload(false);
 }
 
 void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
@@ -1833,140 +1918,6 @@ void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 	lmbRndColors(iterTempl->get()->vecFields);
 	m_pListApplied->RedrawWindow();
 	m_pHexCtrl->Redraw();
-}
-
-void CHexDlgTemplMgr::OnTemplateLoadUnload(bool /*fLoad*/)
-{
-	if (const auto pBtnApply = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_APPLY));
-		pBtnApply != nullptr) {
-		pBtnApply->EnableWindow(HasTemplates());
-	}
-	if (const auto pBtnUnload = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD));
-		pBtnUnload != nullptr) {
-		pBtnUnload->EnableWindow(HasTemplates());
-	}
-	if (const auto pBtnRandom = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR));
-		pBtnRandom != nullptr) {
-		pBtnRandom->EnableWindow(HasTemplates());
-	}
-	m_stEditOffset.EnableWindow(HasTemplates());
-}
-
-void CHexDlgTemplMgr::EnableDynamicLayoutHelper(bool fEnable)
-{
-	if (fEnable && IsDynamicLayoutEnabled())
-		return;
-
-	EnableDynamicLayout(fEnable ? TRUE : FALSE);
-
-	if (fEnable) {
-		const auto pLayout = GetDynamicLayout();
-		pLayout->Create(this);
-		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, CMFCDynamicLayout::MoveNone(),
-			CMFCDynamicLayout::SizeHorizontalAndVertical(100, 100));
-		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, CMFCDynamicLayout::MoveNone(),
-			CMFCDynamicLayout::SizeVertical(100));
-		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP, CMFCDynamicLayout::MoveNone(),
-			CMFCDynamicLayout::SizeHorizontal(100));
-	}
-}
-
-auto CHexDlgTemplMgr::GetAppliedFromItem(HTREEITEM hTreeItem)->PHEXTEMPLATEAPPLIED
-{
-	auto hRoot = hTreeItem;
-	while (hRoot != nullptr) { //Root node.
-		hTreeItem = hRoot;
-		hRoot = m_stTreeApplied.GetNextItem(hTreeItem, TVGN_PARENT);
-	}
-
-	return reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(hTreeItem));
-}
-
-void CHexDlgTemplMgr::DisapplyByID(int iAppliedID)
-{
-	if (const auto iter = std::find_if(m_vecTemplatesApplied.begin(), m_vecTemplatesApplied.end(),
-		[iAppliedID](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref) { return ref->iAppliedID == iAppliedID; });
-		iter != m_vecTemplatesApplied.end()) {
-		RemoveNodeWithAppliedID(iAppliedID);
-		m_vecTemplatesApplied.erase(iter);
-		if (m_pHexCtrl->IsDataSet()) {
-			m_pHexCtrl->Redraw();
-		}
-	}
-}
-
-void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
-{
-	if (const auto rIter = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
-		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
-			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
-			rIter != m_vecTemplatesApplied.rend()) {
-		RemoveNodeWithAppliedID(rIter->get()->iAppliedID);
-		m_vecTemplatesApplied.erase(std::next(rIter).base());
-		if (m_pHexCtrl->IsDataSet()) {
-			m_pHexCtrl->Redraw();
-		}
-	}
-}
-
-bool CHexDlgTemplMgr::IsHighlight()const
-{
-	return m_fHighlightSel;
-}
-
-bool CHexDlgTemplMgr::HasApplied()const
-{
-	return !m_vecTemplatesApplied.empty();
-}
-
-bool CHexDlgTemplMgr::HasTemplates()const
-{
-	return !m_vecTemplates.empty();
-}
-
-auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD
-{
-	if (const auto itTemplApplied = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
-		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
-			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
-			itTemplApplied != m_vecTemplatesApplied.rend()) {
-		const auto pTemplApplied = itTemplApplied->get();
-		const auto ullTemplStartOffset = pTemplApplied->ullOffset;
-		auto& refVec = pTemplApplied->pTemplate->vecFields;
-		auto ullOffsetCurr = pTemplApplied->ullOffset;
-
-		const auto lmbFind = [ullTemplStartOffset, ullOffset, &ullOffsetCurr]
-		(VecFields& vecRef)->PHEXTEMPLATEFIELD {
-			const auto _lmbFind = [ullTemplStartOffset, ullOffset, &ullOffsetCurr]
-			(const auto& lmbSelf, VecFields& vecRef)->PHEXTEMPLATEFIELD {
-				for (auto& refField : vecRef) {
-					if (!refField->vecNested.empty()) {
-						if (const auto pRet = lmbSelf(lmbSelf, refField->vecNested); pRet != nullptr) {
-							return pRet; //Return only if we Hit a pointer in the inner lambda, continue the loop otherwise.
-						}
-					}
-					else {
-						if (ullOffset < (ullOffsetCurr + refField->iSize)) {
-							return refField.get();
-						}
-
-						ullOffsetCurr += refField->iSize;
-					}
-				}
-				return nullptr;
-			};
-			return _lmbFind(_lmbFind, vecRef);
-		};
-
-		return lmbFind(refVec);
-	}
-
-	return nullptr;
-}
-
-bool CHexDlgTemplMgr::IsTooltips()const
-{
-	return m_fTooltips;
 }
 
 void CHexDlgTemplMgr::RefreshData()
@@ -2024,14 +1975,21 @@ void CHexDlgTemplMgr::RemoveNodeWithAppliedID(int iAppliedID)
 	}
 }
 
-auto CHexDlgTemplMgr::TreeItemFromListItem(int iListItem)const->HTREEITEM
+void CHexDlgTemplMgr::SetDlgButtonStates()
 {
-	auto hChildItem = m_stTreeApplied.GetNextItem(m_hTreeCurrParent, TVGN_CHILD);
-	for (auto iterListItems = 0; iterListItems < iListItem; ++iterListItems) {
-		hChildItem = m_stTreeApplied.GetNextSiblingItem(hChildItem);
+	if (const auto pBtnApply = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_APPLY));
+		pBtnApply != nullptr) {
+		pBtnApply->EnableWindow(HasTemplates());
 	}
-
-	return hChildItem;
+	if (const auto pBtnUnload = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD));
+		pBtnUnload != nullptr) {
+		pBtnUnload->EnableWindow(HasTemplates());
+	}
+	if (const auto pBtnRandom = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR));
+		pBtnRandom != nullptr) {
+		pBtnRandom->EnableWindow(HasTemplates());
+	}
+	m_stEditOffset.EnableWindow(HasTemplates());
 }
 
 void CHexDlgTemplMgr::SetHexSelByField(PHEXTEMPLATEFIELD pField)
@@ -2051,6 +2009,48 @@ void CHexDlgTemplMgr::SetHexSelByField(PHEXTEMPLATEFIELD pField)
 void CHexDlgTemplMgr::ShowTooltips(bool fShow)
 {
 	m_fTooltips = fShow;
+}
+
+auto CHexDlgTemplMgr::TreeItemFromListItem(int iListItem)const->HTREEITEM
+{
+	auto hChildItem = m_stTreeApplied.GetNextItem(m_hTreeCurrParent, TVGN_CHILD);
+	for (auto iterListItems = 0; iterListItems < iListItem; ++iterListItems) {
+		hChildItem = m_stTreeApplied.GetNextSiblingItem(hChildItem);
+	}
+
+	return hChildItem;
+}
+
+void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
+{
+	const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
+		[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
+	if (iterTempl == m_vecTemplates.end())
+		return;
+
+	const auto pTemplate = iterTempl->get();
+	RemoveNodesWithTemplateID(pTemplate->iTemplateID);
+
+	//Remove all applied templates from m_vecTemplatesApplied, if any, with the given iTemplateID.
+	if (std::erase_if(m_vecTemplatesApplied, [pTemplate](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref) {
+		return ref->pTemplate == pTemplate; }) > 0) {
+		if (m_pHexCtrl->IsDataSet()) {
+			m_pHexCtrl->Redraw();
+		}
+	}
+
+	m_vecTemplates.erase(iterTempl); //Remove template itself.
+
+	//Remove Template name from ComboBox.
+	for (auto iIndex = 0; iIndex < m_stComboTemplates.GetCount(); ++iIndex) {
+		if (const auto iItemData = static_cast<int>(m_stComboTemplates.GetItemData(iIndex)); iItemData == iTemplateID) {
+			m_stComboTemplates.DeleteString(iIndex);
+			m_stComboTemplates.SetCurSel(0);
+			break;
+		}
+	}
+
+	SetDlgButtonStates();
 }
 
 void CHexDlgTemplMgr::UpdateStaticText()

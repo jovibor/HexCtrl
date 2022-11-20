@@ -129,18 +129,18 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool SetDataFILETIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
 		[[nodiscard]] bool SetDataSYSTEMTIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
 		[[nodiscard]] bool SetDataGUID(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
-		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
-		void UnloadTemplate(int iTemplateID)override;       //Unload/remove loaded template from memory.
-		void RandomizeTemplateColors(int iTemplateID);
-		void OnTemplateLoadUnload(bool fLoad);              //Callback on template's successful load or unload.
 		void EnableDynamicLayoutHelper(bool fEnable);
 		auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PHEXTEMPLATEAPPLIED;
+		[[nodiscard]] bool IsHighlight()const;
+		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
+		void RandomizeTemplateColors(int iTemplateID);
 		void RemoveNodesWithTemplateID(int iTemplateID);
 		void RemoveNodeWithAppliedID(int iAppliedID);
-		[[nodiscard]] bool IsHighlight()const;
-		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
+		void SetDlgButtonStates(); //Enable/disable button states depending on templates existence.
 		void SetHexSelByField(PHEXTEMPLATEFIELD pField);
 		void ShowTooltips(bool fShow)override;
+		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
+		void UnloadTemplate(int iTemplateID)override;       //Unload/remove loaded template from memory.
 		void UpdateStaticText();
 		static LRESULT CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
