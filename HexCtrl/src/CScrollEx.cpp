@@ -14,8 +14,7 @@ using namespace HEXCTRL::INTERNAL::SCROLLEX;
 
 namespace HEXCTRL::INTERNAL::SCROLLEX
 {
-	enum class CScrollEx::EState : std::uint8_t
-	{
+	enum class CScrollEx::EState : std::uint8_t {
 		STATE_DEFAULT,
 		FIRSTARROW_HOVER, FIRSTARROW_CLICK,
 		FIRSTCHANNEL_CLICK,
@@ -24,10 +23,8 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		LASTARROW_CLICK, LASTARROW_HOVER
 	};
 
-	enum class ETimer : std::uint16_t
-	{
-		IDT_FIRSTCLICK = 0x7ff0,
-		IDT_CLICKREPEAT = 0x7ff1
+	enum class ETimer : std::uint16_t {
+		IDT_FIRSTCLICK = 0x7ff0, IDT_CLICKREPEAT = 0x7ff1
 	};
 
 	constexpr auto SIZE_PX_BMP_ARROW { 34 }; //Arrow rect size in pixels, in the loaded arrow bitmap.

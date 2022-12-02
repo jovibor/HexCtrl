@@ -259,9 +259,10 @@ But if you have big and complicated data logic and want to handle all these book
 If you'd like to colorize your data with custom bk/text colors, you have to resort to the [`IHexVirtColors`](#ihexvirtcolors) interface help. Please see the interface description, it's very simple to use.
 
 ## [](#)Templates
-**HexCtrl**'s templates is a powerful system of a data structures description with a simple `.json` files. These files can be loaded through the **HexControl**'s internal template manager, or through the [API](#gettemplates).  
+**HexCtrl**'s templates is a powerful system of a data structures' description with a simple `.json` files. These files can be loaded through the **HexControl**'s internal template manager, or through the [API](#gettemplates).  
 ```json
 {
+    "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
     "TemplateName": "MyDataStruct",
     "endianness": "little",
     "clrBk": "#909090",
@@ -296,7 +297,8 @@ Every such file contains necessary properties:
 
 The object's properties include:
 - **name** - [mandatory] - name of the field
-- **type** - field type, such as **int**, **unsigned int**, **float**, etc...
+- **type** - field type, such as:  
+`bool`, `char`, `unsigned char`, `byte`, `short`, `unsigned short`, `WORD`, `long`, `unsigned long`, `int`, `unsigned int`, `DWORD`, `long long`, `unsigned long long`, `QWORD`, `float`, `double`, `time32_t`, `time64_t`, `FILETIME`, `SYSTEMTIME`, `GUID`, `custom`
 - **size** - size of the field in bytes if the **type** field is not provided or set to **custom**
 - **endianness** - field endianness, can be "little" or "big". By default all fields are little-endian.
 - **clrBk** - field background color

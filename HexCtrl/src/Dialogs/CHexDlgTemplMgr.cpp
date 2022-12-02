@@ -294,14 +294,15 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	const auto fShouldSwap = refVecField[iItem]->fBigEndian == !m_fSwapEndian;
 
 	using enum EType;
+
 	//EType converter to actual wstring for the list.
 	static const std::unordered_map<EType, const wchar_t*> umapETypeToWstr {
 		{ custom_size, L"custom size" },
 		{ type_bool, L"bool" }, { type_char, L"char" }, { type_uchar, L"unsigned char" },
 		{ type_short, L"short" }, { type_ushort, L"unsigned short" }, { type_int, L"int" },
 		{ type_uint, L"unsigned int" }, { type_ll, L"long long" }, { type_ull, L"unsigned long long" },
-		{ type_float, L"float" }, { type_double, L"double" }, { type_time32, L"__time32_t" },
-		{ type_time64, L"__time64_t" }, { type_filetime, L"FILETIME" }, { type_systemtime, L"SYSTEMTIME" },
+		{ type_float, L"float" }, { type_double, L"double" }, { type_time32, L"time32_t" },
+		{ type_time64, L"time64_t" }, { type_filetime, L"FILETIME" }, { type_systemtime, L"SYSTEMTIME" },
 		{ type_guid, L"GUID" }
 	};
 
@@ -1595,7 +1596,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		{ "long", type_int }, { "unsigned long", type_uint }, { "int", type_int },
 		{ "unsigned int", type_uint }, { "DWORD", type_uint }, { "long long", type_ll },
 		{ "unsigned long long", type_ull }, { "QWORD", type_ull }, { "float", type_float },
-		{ "double", type_double }, { "__time32_t", type_time32 }, { "__time64_t", type_time64 },
+		{ "double", type_double }, { "time32_t", type_time32 }, { "time64_t", type_time64 },
 		{ "FILETIME", type_filetime }, { "SYSTEMTIME", type_systemtime }, { "GUID", type_guid } };
 
 	static const std::unordered_map<EType, int> umapTypeToSize { //Types sizes.

@@ -15,7 +15,7 @@
                         "type": "string",
                         "enum": [ "bool", "char", "unsigned char", "byte", "short", "unsigned short", "WORD", "long", "unsigned long",
                             "int", "unsigned int", "DWORD", "long long", "unsigned long long", "QWORD", "float", "double",
-                            "__time32_t", "__time64_t", "FILETIME", "SYSTEMTIME", "GUID", "custom" ]
+                            "time32_t", "time64_t", "FILETIME", "SYSTEMTIME", "GUID", "custom" ]
                     },
                     "size": {
                         "type": [ "integer", "string" ],
