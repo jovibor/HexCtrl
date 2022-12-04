@@ -297,14 +297,15 @@ Every such file contains necessary properties:
 
 The object's properties include:
 - **name** - [mandatory] - name of the field
-- **type** - field type, such as:  
+- **description** - [optional] - field description
+- **type** - [optional] - field type, such as:  
 `bool`, `char`, `unsigned char`, `byte`, `short`, `unsigned short`, `WORD`, `long`, `unsigned long`, `int`, `unsigned int`, `DWORD`, `long long`, `unsigned long long`, `QWORD`, `float`, `double`, `time32_t`, `time64_t`, `FILETIME`, `SYSTEMTIME`, `GUID`, `custom`
-- **size** - size of the field in bytes if the **type** field is not provided or set to **custom**
-- **endianness** - field endianness, can be "little" or "big". By default all fields are little-endian.
-- **clrBk** - field background color
-- **clrText** - field text color
+- **size** - [optional] - size of the field in bytes if the **type** field is not provided or set to **custom**
+- **endianness** - [optional] - field endianness, can be "little" or "big". By default all fields are little-endian.
+- **clrBk** - [optional] - field background color
+- **clrText** - [optional] - field text color
 
-The **endianness**, **clrBk** and **clrText** properties that locate at the same level with the **Fields** property would mean the default properties for all the **Fields** objects of that level and below the line, unless they explicitly redefined in the field itself.  
+The **endianness**, **clrBk** and **clrText** properties that locate at the same level as the **Fields** property, would mean the default properties for all the **Fields** objects of that level and below the line, unless they explicitly redefined in the field itself.  
 
 For the available templates check the `Templates` directory.
 

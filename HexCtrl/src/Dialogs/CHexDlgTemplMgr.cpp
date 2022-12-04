@@ -30,7 +30,8 @@ namespace HEXCTRL::INTERNAL
 
 	constexpr auto ID_LISTAPPLIED_FIELD_TYPE { 0 };
 	constexpr auto ID_LISTAPPLIED_FIELD_DATA { 4 };
-	constexpr auto ID_LISTAPPLIED_FIELD_COLORS { 6 };
+	constexpr auto ID_LISTAPPLIED_FIELD_DESCR { 6 };
+	constexpr auto ID_LISTAPPLIED_FIELD_COLORS { 7 };
 };
 
 BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
@@ -99,6 +100,8 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_DATA, L"Data", LVCFMT_LEFT, 120);
 	m_pListApplied->SetColumnEditable(ID_LISTAPPLIED_FIELD_DATA, true);
 	m_pListApplied->InsertColumn(5, L"Endianness", LVCFMT_CENTER, 65, -1, LVCFMT_CENTER);
+	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_DESCR, L"Description", LVCFMT_LEFT, 100);
+	m_pListApplied->SetColumnEditable(ID_LISTAPPLIED_FIELD_DESCR, true);
 	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_COLORS, L"Colors", LVCFMT_LEFT, 57);
 
 	using enum EMenuID;
@@ -418,6 +421,9 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		*std::vformat_to(pItem->pszText, fShouldSwap ? L"big" : L"little",
 			std::make_wformat_args()) = L'\0';
 		break;
+	case 6: //Description.
+		*std::format_to(pItem->pszText, L"{}", refVecField[iItem]->wstrDescr) = L'\0';
+		break;
 	case ID_LISTAPPLIED_FIELD_COLORS: //Colors.
 		*std::format_to(pItem->pszText, L"#Text") = L'\0';
 		break;
@@ -470,114 +476,113 @@ void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 void CHexDlgTemplMgr::OnListEditBegin(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	if (pNMI->iSubItem != ID_LISTAPPLIED_FIELD_DATA) { //Data.
-		pNMI->lParam = FALSE;
-		return;
-	}
-
-	const auto iItem = pNMI->iItem;
 	const auto& refVec = *m_pVecCurrFields;
-	if (!refVec[iItem]->vecNested.empty()) {
-		pNMI->lParam = FALSE; //Do not show edit-box in nested fields.
+
+	if (!refVec[pNMI->iItem]->vecNested.empty()) {
+		pNMI->lParam = FALSE; //Do not show edit-box if clicked on nested fields.
 	}
 }
 
 void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	if (pNMI->iSubItem != ID_LISTAPPLIED_FIELD_DATA) //Data.
-		return;
-
 	const auto iItem = pNMI->iItem;
-	const auto pwszText = reinterpret_cast<LPCWSTR>(pNMI->lParam);
 	const auto& refVecField = *m_pVecCurrFields;
-	const auto ullOffset = m_pAppliedCurr->ullOffset + refVecField[iItem]->iOffset;
-	const auto fShouldSwap = refVecField[iItem]->fBigEndian == !m_fSwapEndian;
+	const auto pwszText = reinterpret_cast<LPCWSTR>(pNMI->lParam); //lParam holds wchar_t* to a new text from list's subitem.
 
-	bool fSetRet { };
-	using enum EType;
-	switch (refVecField[iItem]->eType) {
-	case custom_size:
-		fSetRet = true;
-		switch (refVecField[iItem]->iSize) {
-		case 1:
-			if (const auto opt = StrToUChar(pwszText); opt) {
-				SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+	if (pNMI->iSubItem == ID_LISTAPPLIED_FIELD_DATA) //Data.
+	{
+		const auto ullOffset = m_pAppliedCurr->ullOffset + refVecField[iItem]->iOffset;
+		const auto fShouldSwap = refVecField[iItem]->fBigEndian == !m_fSwapEndian;
+
+		bool fSetRet { };
+		using enum EType;
+		switch (refVecField[iItem]->eType) {
+		case custom_size:
+			fSetRet = true;
+			switch (refVecField[iItem]->iSize) {
+			case 1:
+				if (const auto opt = StrToUChar(pwszText); opt) {
+					SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+				}
+				break;
+			case 2:
+				if (const auto opt = StrToUShort(pwszText); opt) {
+					SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+				}
+				break;
+			case 4:
+				if (const auto opt = StrToUInt(pwszText); opt) {
+					SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+				}
+				break;
+			case 8:
+				if (const auto opt = StrToULL(pwszText); opt) {
+					SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+				}
+				break;
+			default:
+				fSetRet = false;
+				break;
 			}
 			break;
-		case 2:
-			if (const auto opt = StrToUShort(pwszText); opt) {
-				SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
-			}
+		case type_bool:
+			fSetRet = SetDataBool(pwszText, ullOffset);
 			break;
-		case 4:
-			if (const auto opt = StrToUInt(pwszText); opt) {
-				SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
-			}
+		case type_char:
+			fSetRet = SetDataChar(pwszText, ullOffset);
 			break;
-		case 8:
-			if (const auto opt = StrToULL(pwszText); opt) {
-				SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
-			}
+		case type_uchar:
+			fSetRet = SetDataUChar(pwszText, ullOffset);
 			break;
-		default:
-			fSetRet = false;
+		case type_short:
+			fSetRet = SetDataShort(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_ushort:
+			fSetRet = SetDataUShort(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_int:
+			fSetRet = SetDataInt(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_uint:
+			fSetRet = SetDataUInt(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_ll:
+			fSetRet = SetDataLL(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_ull:
+			fSetRet = SetDataULL(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_float:
+			fSetRet = SetDataFloat(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_double:
+			fSetRet = SetDataDouble(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_time32:
+			fSetRet = SetDataTime32(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_time64:
+			fSetRet = SetDataTime64(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_filetime:
+			fSetRet = SetDataFILETIME(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_systemtime:
+			fSetRet = SetDataSYSTEMTIME(pwszText, ullOffset, fShouldSwap);
+			break;
+		case type_guid:
+			fSetRet = SetDataGUID(pwszText, ullOffset, fShouldSwap);
 			break;
 		}
-		break;
-	case type_bool:
-		fSetRet = SetDataBool(pwszText, ullOffset);
-		break;
-	case type_char:
-		fSetRet = SetDataChar(pwszText, ullOffset);
-		break;
-	case type_uchar:
-		fSetRet = SetDataUChar(pwszText, ullOffset);
-		break;
-	case type_short:
-		fSetRet = SetDataShort(pwszText, ullOffset, fShouldSwap);
-		break;
-	case type_ushort:
-		fSetRet = SetDataUShort(pwszText, ullOffset, fShouldSwap);
-		break;
-	case type_int:
-		fSetRet = SetDataInt(pwszText, ullOffset, fShouldSwap);
-		break;
-	case type_uint:
-		fSetRet = SetDataUInt(pwszText, ullOffset, fShouldSwap);
-		break;
-	case type_ll:
-		fSetRet = SetDataLL(pwszText, ullOffset, fShouldSwap);
-		break;
-	case type_ull:
-		fSetRet = SetDataULL(pwszText, ullOffset, fShouldSwap);
-		break;
-	case type_float:
-		fSetRet = SetDataFloat(pwszText, ullOffset, fShouldSwap);
-		break;
-	case type_double:
-		fSetRet = SetDataDouble(pwszText, ullOffset, fShouldSwap);
-		break;
-	case type_time32:
-		fSetRet = SetDataTime32(pwszText, ullOffset, fShouldSwap);
-		break;
-	case type_time64:
-		fSetRet = SetDataTime64(pwszText, ullOffset, fShouldSwap);
-		break;
-	case type_filetime:
-		fSetRet = SetDataFILETIME(pwszText, ullOffset, fShouldSwap);
-		break;
-	case type_systemtime:
-		fSetRet = SetDataSYSTEMTIME(pwszText, ullOffset, fShouldSwap);
-		break;
-	case type_guid:
-		fSetRet = SetDataGUID(pwszText, ullOffset, fShouldSwap);
-		break;
-	}
 
-	if (!fSetRet) {
-		MessageBoxW(L"Incorrect input data.", L"Incorrect input", MB_ICONERROR);
-		return;
+		if (!fSetRet) {
+			MessageBoxW(L"Incorrect input data.", L"Incorrect input", MB_ICONERROR);
+			return;
+		}
+	}
+	else if (pNMI->iSubItem == ID_LISTAPPLIED_FIELD_DESCR) { //Description.
+		refVecField[iItem]->wstrDescr = pwszText;
 	}
 
 	m_pHexCtrl->Redraw();
@@ -1754,6 +1759,11 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					refBack->iSize = lmbTotalSize(refBack->vecNested); //Total size of all nested fields.
 				}
 				else {
+					if (const auto iterDescr = iterArrCurr->FindMember("description");
+						iterDescr != iterArrCurr->MemberEnd() && iterDescr->value.IsString()) {
+						refBack->wstrDescr = StrToWstr(iterDescr->value.GetString());
+					}
+
 					const auto lmbSize = [&iterArrCurr]() {
 						const auto iterSize = iterArrCurr->FindMember("size");
 						if (iterSize == iterArrCurr->MemberEnd()) {

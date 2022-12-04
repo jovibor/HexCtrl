@@ -27,28 +27,29 @@ namespace HEXCTRL::INTERNAL
 
 	struct HEXTEMPLATEFIELD {
 		std::wstring      wstrName { };     //Field name.
+		std::wstring      wstrDescr { };    //Field description.
 		int               iSize { };        //Field size.
-		int               iOffset { };      //Field offset relative to Template beginning.
+		int               iOffset { };      //Field offset relative to the Template's beginning.
 		COLORREF          clrBk { };        //Background color in HexCtrl.
 		COLORREF          clrText { };      //Text color in HexCtrl.
 		VecFields         vecNested { };    //Vector for nested fields.
-		PHEXTEMPLATEFIELD pFieldParent { }; //Parent field in case of nested.
-		PHEXTEMPLATE      pTemplate { };    //Template this field belongs to.
-		bool              fBigEndian { };   //Field endianness.
+		PHEXTEMPLATEFIELD pFieldParent { }; //Parent field, in case of nested.
+		PHEXTEMPLATE      pTemplate { };    //Template pointer, this field belongs to.
 		EType             eType { };        //Field type.
+		bool              fBigEndian { };   //Field endianness.
 	};
 
 	struct HEXTEMPLATE {
 		std::wstring wstrName;    //Template name.
 		VecFields    vecFields;   //Template fields.
 		int          iSizeTotal;  //Total size of all Template's fields, assigned internally by framework.
-		int          iTemplateID; //Template ID, assigned internally by framework.
+		int          iTemplateID; //Template ID, assigned by framework.
 	};
 
 	struct HEXTEMPLATEAPPLIED {
 		ULONGLONG    ullOffset;  //Offset, where to apply a template.
-		PHEXTEMPLATE pTemplate;  //Template pointer in the m_vecTemplates.
-		int          iAppliedID; //Applied/runtime ID. Any template can be applied more than once, assigned by framework.
+		PHEXTEMPLATE pTemplate;  //Template pointer.
+		int          iAppliedID; //Applied/runtime ID, assigned by framework. Any template can be applied more than once.
 	};
 	using PHEXTEMPLATEAPPLIED = HEXTEMPLATEAPPLIED*;
 
@@ -148,7 +149,7 @@ namespace HEXCTRL::INTERNAL
 	private:
 		enum class EMenuID : std::uint16_t;
 		IHexCtrl* m_pHexCtrl { };
-		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;            //Loaded Templates.
+		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;               //Loaded Templates.
 		std::vector<std::unique_ptr<HEXTEMPLATEAPPLIED>> m_vecTemplatesApplied; //Currently Applied Templates.
 		CComboBox m_stComboTemplates; //Currently available templates list.
 		CEdit m_stEditOffset;         //"Offset" edit box.

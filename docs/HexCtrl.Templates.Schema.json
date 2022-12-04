@@ -11,6 +11,9 @@
                     "name": {
                         "type": "string"
                     },
+                    "description": {
+                        "type": "string"
+                    },
                     "type": {
                         "type": "string",
                         "enum": [ "bool", "char", "unsigned char", "byte", "short", "unsigned short", "WORD", "long", "unsigned long",

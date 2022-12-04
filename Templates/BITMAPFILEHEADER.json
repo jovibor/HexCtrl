@@ -56,6 +56,7 @@
                 },
                 {
                     "name": "biSizeImage",
+                    "description": "Bitmap size in bytes, can be 0 for uncompressed RGB bitmaps.",
                     "type": "DWORD",
                     "clrBk": "#BB0000",
                     "clrText": "#FFFFFF"
