@@ -133,10 +133,10 @@ namespace HEXCTRL
 	extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg);
 #endif
 
-	extern "C" HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl();
+	extern "C" [[nodiscard]] HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl();
 	using IHexCtrlPtr = std::unique_ptr < IHexCtrl, decltype([](IHexCtrl* p) { p->Destroy(); }) > ;
 
-	inline IHexCtrlPtr CreateHexCtrl() {
+	[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl() {
 		return IHexCtrlPtr { CreateRawHexCtrl() };
 	};
 	/********************************************
@@ -150,8 +150,7 @@ namespace HEXCTRL
 				short wMajor;
 				short wMinor;
 				short wMaintenance;
-				short wRevision;
-			}stVersion;
+			} stVersion;
 		};
 	};
 
@@ -159,7 +158,7 @@ namespace HEXCTRL
 	* Service info export/import function.       *
 	* Returns pointer to PCHEXCTRL_INFO struct.  *
 	*********************************************/
-	extern "C" HEXCTRLAPI HEXCTRLINFO * __cdecl GetHexCtrlInfo();
+	extern "C" [[nodiscard]] HEXCTRLAPI HEXCTRLINFO __cdecl GetHexCtrlInfo();
 
 	/********************************************************************************************
 	* WM_NOTIFY message codes (NMHDR.code values).                                              *

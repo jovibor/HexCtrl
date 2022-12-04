@@ -40,14 +40,12 @@ namespace HEXCTRL
 		return new CHexCtrl();
 	};
 
-	extern "C" HEXCTRLAPI HEXCTRLINFO * __cdecl GetHexCtrlInfo() {
-		static HEXCTRLINFO stVersion { WSTR_HEXCTRL_FULL_VERSION,
+	extern "C" HEXCTRLAPI HEXCTRLINFO __cdecl GetHexCtrlInfo() {
+		return HEXCTRLINFO { WSTR_HEXCTRL_FULL_VERSION,
 			{ static_cast<ULONGLONG>((static_cast<ULONGLONG>(ID_HEXCTRL_VERSION_MAJOR) << 48)
 				| (static_cast<ULONGLONG>(ID_HEXCTRL_VERSION_MINOR) << 32)
 				| (static_cast<ULONGLONG>(ID_HEXCTRL_VERSION_MAINTENANCE) << 16)) }
 		};
-
-		return &stVersion;
 	};
 
 	/********************************************

@@ -1066,12 +1066,12 @@ Main function that creates raw `IHexCtrl` interface pointer. You barely need to 
 
 ### [](#)GetHexCtrlInfo
 ```cpp
-extern "C" HEXCTRLAPI HEXCTRLINFO* __cdecl GetHexCtrlInfo();
+extern "C" HEXCTRLAPI HEXCTRLINFO __cdecl GetHexCtrlInfo();
 ```
-Returns pointer to [`HEXCTRLINFO`](#hexctrlinfo), which is the **HexCtrl**'s service information structure.
+Returns [`HEXCTRLINFO`](#hexctrlinfo) struct, which contains the **HexCtrl**'s version information.
 
 ### [](#)HEXCTRLINFO
-Service structure for **HexCtrl**'s version information.
+Service structure with the **HexCtrl**'s version information.
 ```cpp
 struct HEXCTRLINFO
 {
@@ -1082,7 +1082,6 @@ struct HEXCTRLINFO
             short wMajor;
             short wMinor;
             short wMaintenance;
-            short wRevision;
         }stVersion;
     };
 };
