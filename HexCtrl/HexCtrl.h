@@ -139,6 +139,7 @@ namespace HEXCTRL
 	[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl() {
 		return IHexCtrlPtr { CreateRawHexCtrl() };
 	};
+
 	/********************************************
 	* HEXCTRLINFO: service info structure.      *
 	********************************************/
@@ -154,10 +155,9 @@ namespace HEXCTRL
 		};
 	};
 
-	/*********************************************
-	* Service info export/import function.       *
-	* Returns pointer to PCHEXCTRL_INFO struct.  *
-	*********************************************/
+	/****************************************************************
+	* GetHexCtrlInfo: returns HEXCTRLINFO struct with version info. *
+	****************************************************************/
 	extern "C" [[nodiscard]] HEXCTRLAPI HEXCTRLINFO __cdecl GetHexCtrlInfo();
 
 	/********************************************************************************************

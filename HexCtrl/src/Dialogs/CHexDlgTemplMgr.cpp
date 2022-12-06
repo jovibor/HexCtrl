@@ -300,7 +300,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	//EType converter to actual wstring for the list.
 	static const std::unordered_map<EType, const wchar_t*> umapETypeToWstr {
-		{ custom_size, L"custom size" },
+		{ type_custom, L"custom" },
 		{ type_bool, L"bool" }, { type_char, L"char" }, { type_uchar, L"unsigned char" },
 		{ type_short, L"short" }, { type_ushort, L"unsigned short" }, { type_int, L"int" },
 		{ type_uint, L"unsigned int" }, { type_ll, L"long long" }, { type_ull, L"unsigned long long" },
@@ -333,7 +333,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		const auto ullOffset = m_pAppliedCurr->ullOffset + refVecField[iItem]->iOffset;
 		const auto eType = refVecField[iItem]->eType;
 		switch (eType) {
-		case custom_size: //If field of custom type, we cycling through the size field.
+		case type_custom: //If field of custom type, we cycling through the size field.
 			switch (refVecField[iItem]->iSize) {
 			case 1:
 				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset))) = L'\0';
@@ -447,7 +447,7 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	switch (pNMI->iSubItem) {
 	case ID_LISTAPPLIED_FIELD_TYPE:
-		if (refVecField[pNMI->iItem]->eType != EType::custom_size) {
+		if (refVecField[pNMI->iItem]->eType != EType::type_custom) {
 			m_stCellClr.clrText = RGB(16, 42, 255);        //Bluish text.
 			m_stCellClr.clrBk = static_cast<COLORREF>(-1); //Default bk color.
 			pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
@@ -498,7 +498,7 @@ void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		bool fSetRet { };
 		using enum EType;
 		switch (refVecField[iItem]->eType) {
-		case custom_size:
+		case type_custom:
 			fSetRet = true;
 			switch (refVecField[iItem]->iSize) {
 			case 1:
@@ -1595,7 +1595,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 
 	using enum EType;
 	static const std::unordered_map<std::string_view, EType> umapStrToEType { //From JSON string to EType conversion.
-		{ "custom", custom_size }, { "bool", type_bool },
+		{ "custom", type_custom }, { "bool", type_bool },
 		{ "char", type_char }, { "unsigned char", type_uchar }, { "byte", type_uchar },
 		{ "short", type_short }, { "unsigned short", type_ushort }, { "WORD", type_ushort },
 		{ "long", type_int }, { "unsigned long", type_uint }, { "int", type_int },
@@ -1605,7 +1605,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		{ "FILETIME", type_filetime }, { "SYSTEMTIME", type_systemtime }, { "GUID", type_guid } };
 
 	static const std::unordered_map<EType, int> umapTypeToSize { //Types sizes.
-		{ custom_size, -1 },
+		{ type_custom, -1 },
 		{ type_bool, static_cast<int>(sizeof(bool)) }, { type_char, static_cast<int>(sizeof(char)) },
 		{ type_uchar, static_cast<int>(sizeof(char)) }, { type_short, static_cast<int>(sizeof(short)) },
 		{ type_ushort, static_cast<int>(sizeof(short)) }, { type_int, static_cast<int>(sizeof(int)) },
@@ -1797,7 +1797,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					};
 
 					auto iSize { 0 }; //Current field size, via "type" or "size" property.
-					EType eType = custom_size; //Current field default "type".
+					EType eType = type_custom; //Current field default "type".
 					if (const auto iterType = iterArrCurr->FindMember("type");
 						iterType != iterArrCurr->MemberEnd()) {
 						if (!iterType->value.IsString()) {
@@ -1809,7 +1809,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 							return false; //Unsupported "type".
 						}
 
-						if (iterMapType->second == custom_size) {
+						if (iterMapType->second == type_custom) {
 							if (iSize = lmbSize(); iSize == 0) {
 								return false; //Property "size" was not found or data is wrong.
 							}

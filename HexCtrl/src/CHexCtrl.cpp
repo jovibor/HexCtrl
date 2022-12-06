@@ -10,7 +10,6 @@
 #include "CHexCtrl.h"
 #include "CHexSelection.h"
 #include "CScrollEx.h"
-#include "Dialogs/CHexDlgAbout.h"
 #include "Dialogs/CHexDlgBkmMgr.h"
 #include "Dialogs/CHexDlgCallback.h"
 #include "Dialogs/CHexDlgDataInterp.h"
@@ -48,11 +47,49 @@ namespace HEXCTRL
 		};
 	};
 
-	/********************************************
-	* Internal enums and structs.               *
-	********************************************/
 	namespace INTERNAL
 	{
+		class CHexDlgAbout final : public CDialogEx
+		{
+		public:
+			explicit CHexDlgAbout(CWnd* pParent) : CDialogEx(IDD_HEXCTRL_ABOUT, pParent) {}
+		private:
+			afx_msg void OnDestroy() {
+				DeleteObject(m_bmpLogo);
+				CDialogEx::OnDestroy();
+			};
+			BOOL OnInitDialog()override;
+			DECLARE_MESSAGE_MAP()
+		private:
+			HBITMAP m_bmpLogo { }; //Logo bitmap.
+		};
+
+		BEGIN_MESSAGE_MAP(CHexDlgAbout, CDialogEx)
+			ON_WM_DESTROY()
+		END_MESSAGE_MAP()
+
+		BOOL CHexDlgAbout::OnInitDialog()
+		{
+			CDialogEx::OnInitDialog();
+
+			std::wstring wstrDescr = WSTR_HEXCTRL_FULL_VERSION;
+			wstrDescr += L"\r\nAuthor: ";
+			wstrDescr += WSTR_HEXCTRL_COPYRIGHT_NAME;
+			GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(wstrDescr.data());
+
+			auto pDC = GetDC();
+			const auto iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
+			ReleaseDC(pDC);
+
+			const auto fScale = iLOGPIXELSY / 96.0f; //Scale factor for HighDPI displays.
+			const auto iSizeIcon = static_cast<int>(32 * fScale);
+			m_bmpLogo = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
+				MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+			static_cast<CStatic*>(GetDlgItem(IDC_HEXCTRL_ABOUT_LOGO))->SetBitmap(m_bmpLogo);
+
+			return TRUE;
+		}
+
 		enum class CHexCtrl::EClipboard : std::uint8_t {
 			COPY_HEX, COPY_HEXLE, COPY_HEXFMT, COPY_BASE64, COPY_CARR,
 			COPY_GREPHEX, COPY_PRNTSCRN, COPY_OFFSET, COPY_TEXT_UTF16,
@@ -63,13 +100,6 @@ namespace HEXCTRL
 		struct CHexCtrl::SUNDO {
 			ULONGLONG              ullOffset { }; //Start byte to apply Undo to.
 			std::vector<std::byte> vecData { };   //Data for Undo.
-		};
-
-		//Struct for resources auto deletion on destruction.
-		struct CHexCtrl::SHBITMAP {
-			SHBITMAP(HBITMAP hBmp) { m_hBmp = hBmp; }
-			~SHBITMAP() { ::DeleteObject(m_hBmp); }
-			HBITMAP m_hBmp { };
 		};
 
 		//Key bindings.
@@ -263,49 +293,49 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	pMenuTop->SetMenuItemInfoW(0, &mii, TRUE); //"Search" parent menu icon.
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_SEARCH_DLGSEARCH, &mii);
-	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Group Data" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_GROUP), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	pMenuTop->SetMenuItemInfoW(2, &mii, TRUE); //"Group Data" parent menu icon.
-	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Bookmarks->Add" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_BKMS), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	pMenuTop->SetMenuItemInfoW(4, &mii, TRUE); //"Bookmarks" parent menu icon.
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_BKM_ADD, &mii);
-	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Clipboard->Copy as Hex" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	pMenuTop->SetMenuItemInfoW(5, &mii, TRUE); //"Clipboard" parent menu icon.
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_COPYHEX, &mii);
-	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Clipboard->Paste as Hex" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_PASTEHEX), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_PASTEHEX, &mii);
-	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Modify" parent menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	pMenuTop->SetMenuItemInfoW(6, &mii, TRUE);
-	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Modify->Fill with Zeros" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
-	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Data View->Data Interpreter" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_DLG_DATAINTERP), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_DLGDATAINTERP, &mii);
-	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Appearance->Choose Font" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_APPEAR_FONTCHOOSE), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_APPEAR_FONTCHOOSE, &mii);
-	m_vecHBITMAP.emplace_back(std::make_unique<SHBITMAP>(mii.hbmpItem));
+	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 	//End of menu related.
 
 	//Font related.

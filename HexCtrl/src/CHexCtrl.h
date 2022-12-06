@@ -15,9 +15,7 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	/*********************************
-	* Forward declarations.          *
-	*********************************/
+	//Forward declarations.
 	class CHexDlgBkmMgr;
 	class CHexDlgDataInterp;
 	class CHexDlgEncoding;
@@ -93,7 +91,6 @@ namespace HEXCTRL::INTERNAL
 		void SetWheelRatio(double dbRatio, bool fLines)override;
 		void ShowInfoBar(bool fShow)override;
 	private:
-		struct SHBITMAP;
 		struct SUNDO;
 		struct SKEYBIND;
 		enum class EClipboard : std::uint8_t;
@@ -281,7 +278,8 @@ namespace HEXCTRL::INTERNAL
 		std::wstring m_wstrTextTitle { };     //Text area title.
 		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqUndo; //Undo deque.
 		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqRedo; //Redo deque.
-		std::vector<std::unique_ptr<SHBITMAP>> m_vecHBITMAP { }; //Icons for the Menu.
+		std::vector < std::unique_ptr < std::remove_pointer<HBITMAP>::type,
+			decltype([](const HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP { }; //Icons for the Menu.
 		std::vector<SKEYBIND> m_vecKeyBind { }; //Vector of key bindings.
 		wchar_t m_wchUnprintable { L'.' };    //Replacement char for unprintable characters.
 		wchar_t m_wchDateSepar { L'/' };      //Date separator.

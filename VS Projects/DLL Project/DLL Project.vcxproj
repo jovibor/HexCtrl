@@ -234,7 +234,6 @@
     <ClInclude Include="..\..\HexCtrl\src\CHexCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexSelection.h" />
     <ClInclude Include="..\..\HexCtrl\src\CScrollEx.h" />
-    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgAbout.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmProps.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.h" />
@@ -253,7 +252,6 @@
     <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexSelection.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CScrollEx.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgAbout.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmProps.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.cpp" />
