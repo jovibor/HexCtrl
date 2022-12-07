@@ -369,15 +369,15 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	SetConfig(L"");
 	SetDateInfo(0xFFFFFFFFUL, L'/');
 
-	//All dialogs are created after the main window, to set the parent window correctly.
-	m_pDlgBkmMgr->Create(IDD_HEXCTRL_BKMMGR, this, this);
-	m_pDlgEncoding->Create(IDD_HEXCTRL_ENCODING, this, this);
-	m_pDlgDataInterp->Create(IDD_HEXCTRL_DATAINTERP, this, this);
-	m_pDlgFillData->Create(IDD_HEXCTRL_FILLDATA, this, this);
-	m_pDlgOpers->Create(IDD_HEXCTRL_OPERS, this, this);
-	m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, this, this);
-	m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, this, this);
-	m_pDlgTemplMgr->Create(IDD_HEXCTRL_TEMPLMGR, this, this);
+	//All dialogs are initialized after the main window, to set the parent window correctly.
+	m_pDlgBkmMgr->Initialize(IDD_HEXCTRL_BKMMGR, this);
+	m_pDlgDataInterp->Initialize(IDD_HEXCTRL_DATAINTERP, this);
+	m_pDlgEncoding->Initialize(IDD_HEXCTRL_ENCODING, this);
+	m_pDlgFillData->Initialize(IDD_HEXCTRL_FILLDATA, this);
+	m_pDlgGoTo->Initialize(IDD_HEXCTRL_GOTO, this);
+	m_pDlgOpers->Initialize(IDD_HEXCTRL_OPERS, this);
+	m_pDlgSearch->Initialize(IDD_HEXCTRL_SEARCH, this);
+	m_pDlgTemplMgr->Initialize(IDD_HEXCTRL_TEMPLMGR, this);
 
 	return true;
 }
@@ -388,7 +388,8 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
 	if (IsCreated())
 		return false;
 
-	const HEXCREATE hcs { .hWndParent { hWndParent }, .uID { uCtrlID }, .dwStyle { WS_VISIBLE | WS_CHILD }, .fCustom { true } };
+	const HEXCREATE hcs { .hWndParent { hWndParent }, .uID { uCtrlID },
+		.dwStyle { WS_VISIBLE | WS_CHILD }, .fCustom { true } };
 	return Create(hcs);
 }
 
@@ -969,7 +970,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		fAvail = fDataSet && m_pDlgGoTo->IsRepeatAvail();
 		break;
 	case CMD_TEMPL_APPLYCURR:
-		fAvail = fDataSet && m_pDlgTemplMgr->HasTemplates();
+		fAvail = fDataSet && m_pDlgTemplMgr->HasCurrent();
 		break;
 	case CMD_TEMPL_DISAPPLY:
 		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied() && m_pDlgTemplMgr->HitTest(GetCaretPos()) != nullptr;
@@ -3729,7 +3730,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 {
 	//To prevent inspecting while key is pressed continuously.
 	//Only when one time pressing.
-	if (!m_fKeyDownAtm && m_pDlgDataInterp->IsWindowVisible()) {
+	if (!m_fKeyDownAtm && ::IsWindowVisible(m_pDlgDataInterp->m_hWnd)) {
 		m_pDlgDataInterp->InspectOffset(ullOffset);
 	}
 
@@ -4595,15 +4596,11 @@ void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 
 void CHexCtrl::OnDestroy()
 {
-	//All these cleanups below are important in case of HexCtrl 
-	//being destroyed as a window but not as an object itself.
-	//When a window is destroyed, the HexCtrl object itself is still alive if the IHexCtrl::Destroy() 
-	//method was not called.
+	//All these cleanups below are important in case when HexCtrl window is destroyed 
+	//but IHexCtrl object itself is still alive. When a window is destroyed, the IHexCtrl object 
+	//is alive unless the IHexCtrl::Destroy() method is called.
 
 	ClearData();
-	m_wndTtBkm.DestroyWindow();
-	m_wndTtTempl.DestroyWindow();
-	m_wndTtOffset.DestroyWindow();
 	m_menuMain.DestroyMenu();
 	m_fontMain.DeleteObject();
 	m_fontInfoBar.DeleteObject();
@@ -4611,13 +4608,7 @@ void CHexCtrl::OnDestroy()
 	m_penDataTempl.DeleteObject();
 	m_vecHBITMAP.clear();
 	m_vecKeyBind.clear();
-	m_pDlgBkmMgr->DestroyWindow();
-	m_pDlgDataInterp->DestroyWindow();
-	m_pDlgEncoding->DestroyWindow();
-	m_pDlgFillData->DestroyWindow();
-	m_pDlgGoTo->DestroyWindow();
-	m_pDlgOpers->DestroyWindow();
-	m_pDlgSearch->DestroyWindow();
+	m_pDlgTemplMgr->UnloadAll(); //Explicitly unloading all loaded Templates.
 	m_pScrollV->DestroyWindow();
 	m_pScrollH->DestroyWindow();
 

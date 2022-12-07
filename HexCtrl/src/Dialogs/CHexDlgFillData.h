@@ -13,7 +13,8 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgFillData final : public CDialogEx
 	{
 	public:
-		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
+		void Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl);
+		BOOL ShowWindow(int nCmdShow);
 	private:
 		enum class EFillType : std::uint8_t; //Forward declaration.
 		void DoDataExchange(CDataExchange* pDX)override;
@@ -27,5 +28,6 @@ namespace HEXCTRL::INTERNAL
 		IHexCtrl* m_pHexCtrl { };
 		CComboBox m_stComboType;  //Fill type combo-box.
 		CComboBox m_stComboData;  //Data combo-box.
+		UINT m_nIDTemplate { }; //Resource ID of the Dialog, for creation.
 	};
 }

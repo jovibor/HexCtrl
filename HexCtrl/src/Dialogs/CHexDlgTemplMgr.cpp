@@ -63,17 +63,6 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
-BOOL CHexDlgTemplMgr::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
-{
-	assert(pHexCtrl);
-	if (pHexCtrl == nullptr)
-		return FALSE;
-
-	m_pHexCtrl = pHexCtrl;
-
-	return CDialogEx::Create(nIDTemplate, pParent);
-}
-
 void CHexDlgTemplMgr::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
@@ -105,21 +94,21 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_COLORS, L"Colors", LVCFMT_LEFT, 57);
 
 	using enum EMenuID;
-	m_menuHdr.CreatePopupMenu();
-	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_TYPE), L"Type");
-	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_TYPE), MF_CHECKED | MF_BYCOMMAND);
-	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), L"Name");
-	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), MF_CHECKED | MF_BYCOMMAND);
-	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_OFFSET), L"Offset");
-	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_OFFSET), MF_CHECKED | MF_BYCOMMAND);
-	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_SIZE), L"Size");
-	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_SIZE), MF_CHECKED | MF_BYCOMMAND);
-	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_DATA), L"Data");
-	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_DATA), MF_CHECKED | MF_BYCOMMAND);
-	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_ENDIANNESS), L"Endianness");
-	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_ENDIANNESS), MF_CHECKED | MF_BYCOMMAND);
-	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_COLORS), L"Colors");
-	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_COLORS), MF_CHECKED | MF_BYCOMMAND);
+	m_stMenuHdr.CreatePopupMenu();
+	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_TYPE), L"Type");
+	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_TYPE), MF_CHECKED | MF_BYCOMMAND);
+	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), L"Name");
+	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), MF_CHECKED | MF_BYCOMMAND);
+	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_OFFSET), L"Offset");
+	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_OFFSET), MF_CHECKED | MF_BYCOMMAND);
+	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_SIZE), L"Size");
+	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_SIZE), MF_CHECKED | MF_BYCOMMAND);
+	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_DATA), L"Data");
+	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_DATA), MF_CHECKED | MF_BYCOMMAND);
+	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_ENDIANNESS), L"Endianness");
+	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_ENDIANNESS), MF_CHECKED | MF_BYCOMMAND);
+	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_COLORS), L"Colors");
+	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_COLORS), MF_CHECKED | MF_BYCOMMAND);
 
 	m_stMenuTree.CreatePopupMenu();
 	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLY), L"Disapply template");
@@ -136,6 +125,10 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	EnableDynamicLayoutHelper(true);
 	::SetWindowSubclass(m_stTreeApplied, TreeSubclassProc, 0, 0);
 	SetDlgButtonStates();
+
+	for (const auto& ref : m_vecTemplates) {
+		OnTemplateLoadUnload(ref->iTemplateID, true);
+	}
 
 	return TRUE;
 }
@@ -176,9 +169,9 @@ BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	case IDM_LISTAPPLIED_HDR_ENDIANNESS:
 	case IDM_LISTAPPLIED_HDR_COLORS:
 	{
-		const auto fChecked = m_menuHdr.GetMenuState(wMenuID, MF_BYCOMMAND) & MF_CHECKED;
+		const auto fChecked = m_stMenuHdr.GetMenuState(wMenuID, MF_BYCOMMAND) & MF_CHECKED;
 		m_pListApplied->HideColumn(wMenuID - static_cast<int>(IDM_LISTAPPLIED_HDR_TYPE), fChecked);
-		m_menuHdr.CheckMenuItem(wMenuID, (fChecked ? MF_UNCHECKED : MF_CHECKED) | MF_BYCOMMAND);
+		m_stMenuHdr.CheckMenuItem(wMenuID, (fChecked ? MF_UNCHECKED : MF_CHECKED) | MF_BYCOMMAND);
 	}
 	break;
 	}
@@ -592,7 +585,7 @@ void CHexDlgTemplMgr::OnListHdrRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 {
 	CPoint pt;
 	GetCursorPos(&pt);
-	m_menuHdr.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, pt.x, pt.y, this);
+	m_stMenuHdr.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, pt.x, pt.y, this);
 }
 
 void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
@@ -817,15 +810,46 @@ void CHexDlgTemplMgr::OnOK()
 	}
 }
 
+void CHexDlgTemplMgr::OnTemplateLoadUnload(int iTemplateID, bool fLoad)
+{
+	if (!IsWindow(m_hWnd)) //Only if dialog window is created and alive we proceed with its members.
+		return;
+
+	if (fLoad) {
+		const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
+			[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
+		if (iterTempl == m_vecTemplates.end())
+			return;
+
+		const auto iIndex = m_stComboTemplates.AddString(iterTempl->get()->wstrName.data());
+		m_stComboTemplates.SetItemData(iIndex, static_cast<DWORD_PTR>(iTemplateID));
+		m_stComboTemplates.SetCurSel(iIndex);
+		SetDlgButtonStates();
+	}
+	else {
+		RemoveNodesWithTemplateID(iTemplateID);
+
+		for (auto iIndex = 0; iIndex < m_stComboTemplates.GetCount(); ++iIndex) { //Remove Template name from ComboBox.
+			if (const auto iItemData = static_cast<int>(m_stComboTemplates.GetItemData(iIndex)); iItemData == iTemplateID) {
+				m_stComboTemplates.DeleteString(iIndex);
+				m_stComboTemplates.SetCurSel(0);
+				break;
+			}
+		}
+
+		SetDlgButtonStates();
+	}
+}
+
 void CHexDlgTemplMgr::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
-	DisapplyAll();
-	m_pListApplied->DestroyWindow();
 	m_stMenuTree.DestroyMenu();
-	m_menuHdr.DestroyMenu();
-	m_vecTemplates.clear();
+	m_stMenuHdr.DestroyMenu();
+	m_pAppliedCurr = nullptr;
+	m_pVecCurrFields = nullptr;
+	m_hTreeCurrParent = nullptr;
 }
 
 void CHexDlgTemplMgr::ShowListDataBool(LPWSTR pwsz, unsigned char uchData) const
@@ -1440,6 +1464,9 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 
 void CHexDlgTemplMgr::ApplyCurr(ULONGLONG ullOffset)
 {
+	if (!IsWindow(m_hWnd))
+		return;
+
 	const auto iIndex = m_stComboTemplates.GetCurSel();
 	if (iIndex == CB_ERR)
 		return;
@@ -1450,13 +1477,16 @@ void CHexDlgTemplMgr::ApplyCurr(ULONGLONG ullOffset)
 
 void CHexDlgTemplMgr::DisapplyAll()
 {
-	m_stTreeApplied.DeleteAllItems();
-	m_pListApplied->SetItemCountEx(0);
-	m_vecTemplatesApplied.clear();
+	if (IsWindow(m_hWnd)) { //Dialog must be created and alive to work with its members.
+		m_stTreeApplied.DeleteAllItems();
+		m_pListApplied->SetItemCountEx(0);
+		UpdateStaticText();
+	}
+
 	m_pAppliedCurr = nullptr;
 	m_pVecCurrFields = nullptr;
 	m_hTreeCurrParent = nullptr;
-	UpdateStaticText();
+	m_vecTemplatesApplied.clear();
 
 	if (m_pHexCtrl->IsDataSet()) {
 		m_pHexCtrl->Redraw();
@@ -1525,6 +1555,11 @@ bool CHexDlgTemplMgr::HasApplied()const
 	return !m_vecTemplatesApplied.empty();
 }
 
+bool CHexDlgTemplMgr::HasCurrent()const
+{
+	return IsWindow(m_hWnd) && HasTemplates();
+}
+
 bool CHexDlgTemplMgr::HasTemplates()const
 {
 	return !m_vecTemplates.empty();
@@ -1568,6 +1603,17 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD
 	}
 
 	return nullptr;
+}
+
+void CHexDlgTemplMgr::Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl)
+{
+	assert(pHexCtrl);
+	assert(nIDTemplate > 0);
+	if (pHexCtrl == nullptr)
+		return;
+
+	m_nIDTemplate = nIDTemplate;
+	m_pHexCtrl = pHexCtrl;
 }
 
 bool CHexDlgTemplMgr::IsHighlight()const
@@ -1894,11 +1940,9 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	pTemplateUnPtr->iTemplateID = iTemplateID;
 	pTemplateUnPtr->iSizeTotal = std::accumulate(pTemplateUnPtr->vecFields.begin(), pTemplateUnPtr->vecFields.end(), 0,
 		[](auto iTotal, const std::unique_ptr<HEXTEMPLATEFIELD>& refField) { return iTotal + refField->iSize; });
-	const auto iIndex = m_stComboTemplates.AddString(pTemplateUnPtr->wstrName.data());
-	m_stComboTemplates.SetItemData(iIndex, static_cast<DWORD_PTR>(iTemplateID));
-	m_stComboTemplates.SetCurSel(iIndex);
 	m_vecTemplates.emplace_back(std::move(pTemplateUnPtr));
-	SetDlgButtonStates();
+
+	OnTemplateLoadUnload(iTemplateID, true);
 
 	return iTemplateID;
 }
@@ -2022,6 +2066,15 @@ void CHexDlgTemplMgr::ShowTooltips(bool fShow)
 	m_fTooltips = fShow;
 }
 
+BOOL CHexDlgTemplMgr::ShowWindow(int nCmdShow)
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(m_nIDTemplate, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	return CDialogEx::ShowWindow(nCmdShow);
+}
+
 auto CHexDlgTemplMgr::TreeItemFromListItem(int iListItem)const->HTREEITEM
 {
 	auto hChildItem = m_stTreeApplied.GetNextItem(m_hTreeCurrParent, TVGN_CHILD);
@@ -2032,6 +2085,20 @@ auto CHexDlgTemplMgr::TreeItemFromListItem(int iListItem)const->HTREEITEM
 	return hChildItem;
 }
 
+void CHexDlgTemplMgr::UnloadAll()
+{
+	DisapplyAll();
+
+	for (const auto& refTempl : m_vecTemplates) {
+		OnTemplateLoadUnload(refTempl->iTemplateID, false);
+	}
+	m_vecTemplates.clear();
+
+	if (m_pHexCtrl->IsDataSet()) {
+		m_pHexCtrl->Redraw();
+	}
+}
+
 void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 {
 	const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
@@ -2039,11 +2106,8 @@ void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 	if (iterTempl == m_vecTemplates.end())
 		return;
 
-	const auto pTemplate = iterTempl->get();
-	RemoveNodesWithTemplateID(pTemplate->iTemplateID);
-
 	//Remove all applied templates from m_vecTemplatesApplied, if any, with the given iTemplateID.
-	if (std::erase_if(m_vecTemplatesApplied, [pTemplate](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref) {
+	if (std::erase_if(m_vecTemplatesApplied, [pTemplate = iterTempl->get()](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref) {
 		return ref->pTemplate == pTemplate; }) > 0) {
 		if (m_pHexCtrl->IsDataSet()) {
 			m_pHexCtrl->Redraw();
@@ -2051,17 +2115,7 @@ void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 	}
 
 	m_vecTemplates.erase(iterTempl); //Remove template itself.
-
-	//Remove Template name from ComboBox.
-	for (auto iIndex = 0; iIndex < m_stComboTemplates.GetCount(); ++iIndex) {
-		if (const auto iItemData = static_cast<int>(m_stComboTemplates.GetItemData(iIndex)); iItemData == iTemplateID) {
-			m_stComboTemplates.DeleteString(iIndex);
-			m_stComboTemplates.SetCurSel(0);
-			break;
-		}
-	}
-
-	SetDlgButtonStates();
+	OnTemplateLoadUnload(iTemplateID, false);
 }
 
 void CHexDlgTemplMgr::UpdateStaticText()

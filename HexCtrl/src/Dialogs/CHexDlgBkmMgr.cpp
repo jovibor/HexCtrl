@@ -35,17 +35,6 @@ BEGIN_MESSAGE_MAP(CHexDlgBkmMgr, CDialogEx)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
-BOOL CHexDlgBkmMgr::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
-{
-	assert(pHexCtrl);
-	if (pHexCtrl == nullptr)
-		return FALSE;
-
-	m_pHexCtrl = pHexCtrl;
-
-	return CDialogEx::Create(nIDTemplate, pParent);
-}
-
 void CHexDlgBkmMgr::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
@@ -280,7 +269,6 @@ void CHexDlgBkmMgr::OnDestroy()
 	CDialogEx::OnDestroy();
 
 	ClearAll();
-	m_pListMain->DestroyWindow();
 	m_stMenuList.DestroyMenu();
 }
 
@@ -433,6 +421,17 @@ auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM
 	return pBkm;
 }
 
+void CHexDlgBkmMgr::Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl)
+{
+	assert(pHexCtrl);
+	assert(nIDTemplate > 0);
+	if (pHexCtrl == nullptr)
+		return;
+
+	m_nIDTemplate = nIDTemplate;
+	m_pHexCtrl = pHexCtrl;
+}
+
 bool CHexDlgBkmMgr::IsVirtual()const
 {
 	return m_pVirtual != nullptr;
@@ -492,6 +491,15 @@ void CHexDlgBkmMgr::SetVirtual(IHexBookmarks* pVirtBkm)
 		return;
 
 	m_pVirtual = pVirtBkm;
+}
+
+BOOL CHexDlgBkmMgr::ShowWindow(int nCmdShow)
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(m_nIDTemplate, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	return CDialogEx::ShowWindow(nCmdShow);
 }
 
 void CHexDlgBkmMgr::SortData(int iColumn, bool fAscending)

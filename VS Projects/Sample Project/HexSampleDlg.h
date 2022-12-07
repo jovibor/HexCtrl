@@ -25,8 +25,9 @@ private:
 	[[nodiscard]] bool IsFileOpen()const;
 	void FileOpen(std::wstring_view wstrPath, bool fRW);
 	void FileClose();
-	[[nodiscard]] static auto OpenFileDlg()->std::optional<std::vector<std::wstring>>;
-	DECLARE_MESSAGE_MAP()
+	void LoadTemplates(IHexCtrl* pHexCtrl);
+	[[nodiscard]] static auto OpenFileDlg() -> std::optional<std::vector<std::wstring>>;
+	DECLARE_MESSAGE_MAP();
 private:
 	IHexCtrlPtr m_pHexChild { CreateHexCtrl() };
 	IHexCtrlPtr m_pHexPopup { CreateHexCtrl() };

@@ -13,9 +13,10 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgGoTo final : public CDialogEx
 	{
 	public:
-		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
+		void Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsRepeatAvail()const;
 		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
+		BOOL ShowWindow(int nCmdShow);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
@@ -25,10 +26,10 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnClickRadioFwdCurr();
 		afx_msg void OnClickRadioBackCurr();
 		afx_msg void OnClickRadioBackEnd();
-		DECLARE_MESSAGE_MAP()
-			[[nodiscard]] IHexCtrl* GetHexCtrl()const;
+		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		void HexCtrlGoOffset(ULONGLONG ullOffset);
 		void SetRangesText()const;
+		DECLARE_MESSAGE_MAP();
 	private:
 		IHexCtrl* m_pHexCtrl { };
 		ULONGLONG m_ullData { };
@@ -38,5 +39,6 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullPagesFrom { };
 		ULONGLONG m_ullPagesTo { };
 		int m_iRepeat { 0 };
+		UINT m_nIDTemplate { }; //Resource ID of the Dialog, for creation.
 	};
 }

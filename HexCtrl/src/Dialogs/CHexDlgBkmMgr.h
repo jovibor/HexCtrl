@@ -15,7 +15,6 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgBkmMgr final : public CDialogEx, public IHexBookmarks
 	{
 	public:
-		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 		ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw)override; //Returns new bookmark Id.
 		void ClearAll()override;
 		[[nodiscard]] auto GetByID(ULONGLONG ullID) -> PHEXBKM override;       //Bookmark by ID.
@@ -27,10 +26,12 @@ namespace HEXCTRL::INTERNAL
 		void GoPrev();
 		[[nodiscard]] bool HasBookmarks()const;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset) -> PHEXBKM override;
+		void Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsVirtual()const;
 		void RemoveByOffset(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID)override;
 		void SetVirtual(IHexBookmarks* pVirtBkm);
+		BOOL ShowWindow(int nCmdShow);
 		void SortData(int iColumn, bool fAscending);
 		void Update(ULONGLONG ullID, const HEXBKM& stBookmark);
 	private:
@@ -59,6 +60,7 @@ namespace HEXCTRL::INTERNAL
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
 		CMenu m_stMenuList;
 		LISTEX::LISTEXCOLOR m_stCellClr { };
+		UINT m_nIDTemplate { }; //Resource ID of the Dialog, for creation.
 		bool m_fShowAsHex { true };
 	};
 }

@@ -22,17 +22,6 @@ BEGIN_MESSAGE_MAP(CHexDlgGoTo, CDialogEx)
 	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
-BOOL CHexDlgGoTo::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
-{
-	assert(pHexCtrl);
-	if (pHexCtrl == nullptr)
-		return FALSE;
-
-	m_pHexCtrl = pHexCtrl;
-
-	return CDialogEx::Create(nIDTemplate, pParent);
-}
-
 void CHexDlgGoTo::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
@@ -239,6 +228,17 @@ void CHexDlgGoTo::OnClickRadioBackEnd()
 	SetRangesText();
 }
 
+void CHexDlgGoTo::Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl)
+{
+	assert(pHexCtrl);
+	assert(nIDTemplate > 0);
+	if (pHexCtrl == nullptr)
+		return;
+
+	m_nIDTemplate = nIDTemplate;
+	m_pHexCtrl = pHexCtrl;
+}
+
 bool CHexDlgGoTo::IsRepeatAvail()const
 {
 	return m_iRepeat != 0;
@@ -285,6 +285,15 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 	}
 
 	HexCtrlGoOffset(m_ullCurrOffset);
+}
+
+BOOL CHexDlgGoTo::ShowWindow(int nCmdShow)
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(m_nIDTemplate, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	return CDialogEx::ShowWindow(nCmdShow);
 }
 
 IHexCtrl* CHexDlgGoTo::GetHexCtrl()const

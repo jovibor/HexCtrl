@@ -93,15 +93,15 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
-BOOL CHexDlgSearch::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
+void CHexDlgSearch::Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
+	assert(nIDTemplate > 0);
 	if (pHexCtrl == nullptr)
-		return FALSE;
+		return;
 
+	m_nIDTemplate = nIDTemplate;
 	m_pHexCtrl = pHexCtrl;
-
-	return CDialogEx::Create(nIDTemplate, pParent);
 }
 
 bool CHexDlgSearch::IsSearchAvail()const
@@ -121,6 +121,10 @@ void CHexDlgSearch::SearchNextPrev(bool fForward)
 
 BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
 {
+	if (!IsWindow(m_hWnd)) {
+		Create(m_nIDTemplate, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
 	if (nCmdShow == SW_SHOW) {
 		int iChkStatus { BST_UNCHECKED };
 		const auto* const pHexCtrl = GetHexCtrl();
@@ -593,7 +597,6 @@ void CHexDlgSearch::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
-	m_pListMain->DestroyWindow();
 	m_stBrushDefault.DeleteObject();
 	m_stMenuList.DestroyMenu();
 }
@@ -1308,7 +1311,7 @@ void CHexDlgSearch::Search()
 		}
 		else {
 			if (m_iDirection == 1) { //Forward direction.
-							//If previously anything was found we increase m_ullOffsetCurr by m_ullStep.
+				//If previously anything was found we increase m_ullOffsetCurr by m_ullStep.
 				m_ullOffsetCurr = m_fSecondMatch ? m_ullOffsetCurr + m_ullStep : m_ullOffsetCurr;
 				lmbFindForward();
 			}

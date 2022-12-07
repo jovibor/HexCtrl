@@ -28,17 +28,6 @@ BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
 	ON_MESSAGE(WM_PROPGRID_PROPERTY_SELECTED, &CHexDlgDataInterp::OnPropertySelected)
 END_MESSAGE_MAP()
 
-BOOL CHexDlgDataInterp::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
-{
-	assert(pHexCtrl);
-	if (pHexCtrl == nullptr)
-		return FALSE;
-
-	m_pHexCtrl = pHexCtrl;
-
-	return CDialogEx::Create(nIDTemplate, pParent);
-}
-
 ULONGLONG CHexDlgDataInterp::GetDataSize()const
 {
 	return m_ullDataSize;
@@ -162,6 +151,26 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 	ShowValueSYSTEMTIME(dblQWORD);
 	ShowValueGUID(std::bit_cast<GUID>(dblQWORD));
 	ShowValueGUIDTIME(std::bit_cast<GUID>(dblQWORD));
+}
+
+void CHexDlgDataInterp::Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl)
+{
+	assert(pHexCtrl);
+	assert(nIDTemplate > 0);
+	if (pHexCtrl == nullptr)
+		return;
+
+	m_nIDTemplate = nIDTemplate;
+	m_pHexCtrl = pHexCtrl;
+}
+
+BOOL CHexDlgDataInterp::ShowWindow(int nCmdShow)
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(m_nIDTemplate, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	return CDialogEx::ShowWindow(nCmdShow);
 }
 
 void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
@@ -294,7 +303,6 @@ void CHexDlgDataInterp::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
-	m_stCtrlGrid.DestroyWindow();
 	m_vecProp.clear();
 }
 

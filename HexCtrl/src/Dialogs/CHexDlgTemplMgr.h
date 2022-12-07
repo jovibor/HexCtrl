@@ -57,17 +57,20 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgTemplMgr : public CDialogEx, public IHexTemplates
 	{
 	public:
-		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
 		void ApplyCurr(ULONGLONG ullOffset); //Apply currently selected template to offset.
 		int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)override; //Apply template to a given offset.
 		void DisapplyAll()override;
 		void DisapplyByID(int iAppliedID)override; //Disapply template with the given AppliedID.
 		void DisapplyByOffset(ULONGLONG ullOffset)override;
 		[[nodiscard]] bool HasApplied()const;
+		[[nodiscard]] bool HasCurrent()const;
 		[[nodiscard]] bool HasTemplates()const;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD; //Template hittest by offset.
+		void Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsTooltips()const;
 		void RefreshData();
+		BOOL ShowWindow(int nCmdShow);
+		void UnloadAll()override;
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
@@ -98,6 +101,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 		void OnOK()override;
+		void OnTemplateLoadUnload(int iTemplateID, bool fLoad);
 		afx_msg void OnDestroy();
 		void ShowListDataBool(LPWSTR pwsz, unsigned char uchData)const;
 		void ShowListDataChar(LPWSTR pwsz, char chData)const;
@@ -159,23 +163,24 @@ namespace HEXCTRL::INTERNAL
 		CButton m_stCheckHex;         //Check-box "Highlight selected"
 		CWnd m_stStaticOffset;        //Static text "Template offset:".
 		CWnd m_stStaticSize;          //Static text Template size:".
+		UINT m_nIDTemplate { };       //Resource ID of the Dialog, for creation.
 		LISTEX::IListExPtr m_pListApplied { LISTEX::CreateListEx() };
 		LISTEX::LISTEXCOLOR m_stCellClr { };
 		CTreeCtrl m_stTreeApplied;
 		CMenu m_stMenuTree;           //Menu for the tree control.
-		CMenu m_menuHdr;              //Menu for the list header.
+		CMenu m_stMenuHdr;            //Menu for the list header.
 		HCURSOR m_hCurResize;
 		HCURSOR m_hCurArrow;
 		PHEXTEMPLATEAPPLIED m_pAppliedCurr { }; //Currently selected PApplied.
-		PVecFields m_pVecCurrFields { };      //Pointer to currently selected vector with fields.
-		HTREEITEM m_hTreeCurrParent { };      //Currently selected Tree node's parent.
-		DWORD m_dwDateFormat { };             //Date format.
-		wchar_t m_wchDateSepar { };           //Date separator.
-		bool m_fCurInSplitter { };            //Indicates that mouse cursor is in the splitter area.
-		bool m_fLMDownResize { };             //Left mouse pressed in splitter area to resize.
-		bool m_fListGuardEvent { false };     //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
-		bool m_fTooltips { true };            //Show tooltips or not.
-		bool m_fHighlightSel { true };        //Highlight selected fields with a selection.
+		PVecFields m_pVecCurrFields { };        //Pointer to currently selected vector with fields.
+		HTREEITEM m_hTreeCurrParent { };        //Currently selected Tree node's parent.
+		DWORD m_dwDateFormat { };               //Date format.
+		wchar_t m_wchDateSepar { };             //Date separator.
+		bool m_fCurInSplitter { };              //Indicates that mouse cursor is in the splitter area.
+		bool m_fLMDownResize { };               //Left mouse pressed in splitter area to resize.
+		bool m_fListGuardEvent { false };       //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
+		bool m_fTooltips { true };              //Show tooltips or not.
+		bool m_fHighlightSel { true };          //Highlight selected fields with a selection.
 		bool m_fShowAsHex { true };
 		bool m_fSwapEndian { false };
 	};

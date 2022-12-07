@@ -13,7 +13,8 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgOpers final : public CDialogEx
 	{
 	public:
-		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
+		void Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl);
+		BOOL ShowWindow(int nCmdShow);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
@@ -23,9 +24,10 @@ namespace HEXCTRL::INTERNAL
 		void OnOK()override;
 		void CheckWndAvail()const;
 		[[nodiscard]] auto GetOperMode()const->EHexOperMode;
-		DECLARE_MESSAGE_MAP()
+		DECLARE_MESSAGE_MAP();
 	private:
 		IHexCtrl* m_pHexCtrl { };
 		CComboBox m_stComboOper;  //Data operation combo-box.
+		UINT m_nIDTemplate { }; //Resource ID of the Dialog, for creation.
 	};
 }

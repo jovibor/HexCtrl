@@ -15,7 +15,7 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgSearch final : public CDialogEx
 	{
 	public:
-		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
+		void Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
 		void SearchNextPrev(bool fForward);
 		BOOL ShowWindow(int nCmdShow);
@@ -107,6 +107,7 @@ namespace HEXCTRL::INTERNAL
 		DWORD m_dwFoundLimit { 10000 };      //Maximum found search occurences.
 		int m_iDirection { };                //Search direction: 1 = Forward, -1 = Backward.
 		int m_iWrap { };                     //Wrap direction: -1 = Beginning, 1 = End.
+		UINT m_nIDTemplate { };              //Resource ID of the Dialog, for creation.
 		std::vector<std::byte> m_vecSearchData;  //Data to search for.
 		std::vector<std::byte> m_vecReplaceData; //Data to replace with.
 		std::wstring m_wstrTextSearch;       //Text from "Search" box.

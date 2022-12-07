@@ -16,7 +16,8 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		void AddCP(std::wstring_view wstr);
-		BOOL Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl);
+		void Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl);
+		BOOL ShowWindow(int nCmdShow);
 	private:
 		inline static BOOL CALLBACK EnumCodePagesProc(LPWSTR pwszCP);
 		void DoDataExchange(CDataExchange* pDX)override;
@@ -40,5 +41,6 @@ namespace HEXCTRL::INTERNAL
 		IHexCtrl* m_pHexCtrl { };
 		IListExPtr m_pListMain { CreateListEx() };
 		std::vector<SCODEPAGE> m_vecCodePage { };
+		UINT m_nIDTemplate { }; //Resource ID of the Dialog, for creation.
 	};
 }

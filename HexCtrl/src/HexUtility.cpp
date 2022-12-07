@@ -11,7 +11,7 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	auto NumStrToHex(std::wstring_view wsv, bool fWc, char chWc)->std::optional<std::string>
+	auto NumStrToHex(std::wstring_view wsv, bool fWc, char chWc) -> std::optional<std::string>
 	{
 		std::wstring wstrFilter = L"0123456789AaBbCcDdEeFf"; //Allowed characters.
 		if (fWc)
@@ -42,7 +42,7 @@ namespace HEXCTRL::INTERNAL
 		return { std::move(strHexTmp) };
 	}
 
-	auto WstrToStr(std::wstring_view wsv, UINT uCodePage)->std::string
+	auto WstrToStr(std::wstring_view wsv, UINT uCodePage) -> std::string
 	{
 		const auto iSize = WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
@@ -50,7 +50,7 @@ namespace HEXCTRL::INTERNAL
 		return str;
 	}
 
-	auto StrToWstr(std::string_view sv, UINT uCodePage)->std::wstring
+	auto StrToWstr(std::string_view sv, UINT uCodePage) -> std::wstring
 	{
 		const auto iSize = MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), nullptr, 0);
 		std::wstring wstr(iSize, 0);
@@ -58,7 +58,7 @@ namespace HEXCTRL::INTERNAL
 		return wstr;
 	}
 
-	auto StringToFileTime(std::wstring_view wsv, DWORD dwFormat)->std::optional<FILETIME>
+	auto StringToFileTime(std::wstring_view wsv, DWORD dwFormat) -> std::optional<FILETIME>
 	{
 		std::optional<FILETIME> optFT { std::nullopt };
 		if (auto optSysTime = StringToSystemTime(wsv, dwFormat); optSysTime) {
@@ -70,7 +70,7 @@ namespace HEXCTRL::INTERNAL
 		return optFT;
 	}
 
-	auto StringToSystemTime(const std::wstring_view wsv, const DWORD dwFormat)->std::optional<SYSTEMTIME>
+	auto StringToSystemTime(const std::wstring_view wsv, const DWORD dwFormat) -> std::optional<SYSTEMTIME>
 	{
 		//dwFormat is a locale specific date format https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 
@@ -117,7 +117,7 @@ namespace HEXCTRL::INTERNAL
 		return stSysTime;
 	}
 
-	auto FileTimeToString(FILETIME stFileTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring
+	auto FileTimeToString(FILETIME stFileTime, DWORD dwFormat, wchar_t wchSepar) -> std::wstring
 	{
 		std::wstring wstrTime;
 		if (SYSTEMTIME stSysTime { }; FileTimeToSystemTime(&stFileTime, &stSysTime) != FALSE) {
@@ -130,7 +130,7 @@ namespace HEXCTRL::INTERNAL
 		return wstrTime;
 	}
 
-	auto SystemTimeToString(SYSTEMTIME stSysTime, DWORD dwFormat, wchar_t wchSepar)->std::wstring
+	auto SystemTimeToString(SYSTEMTIME stSysTime, DWORD dwFormat, wchar_t wchSepar) -> std::wstring
 	{
 		if (dwFormat > 2 || stSysTime.wDay == 0 || stSysTime.wDay > 31 || stSysTime.wMonth == 0 || stSysTime.wMonth > 12
 			|| stSysTime.wYear > 9999 || stSysTime.wHour > 23 || stSysTime.wMinute > 59 || stSysTime.wSecond > 59
@@ -154,7 +154,7 @@ namespace HEXCTRL::INTERNAL
 			stSysTime.wHour, stSysTime.wMinute, stSysTime.wSecond, stSysTime.wMilliseconds, wchSepar));
 	}
 
-	auto GetDateFormatString(DWORD dwFormat, wchar_t wchSepar)->std::wstring
+	auto GetDateFormatString(DWORD dwFormat, wchar_t wchSepar) -> std::wstring
 	{
 		std::wstring_view wstrFmt;
 		switch (dwFormat) {

@@ -25,22 +25,31 @@ BEGIN_MESSAGE_MAP(CHexDlgFillData, CDialogEx)
 	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
+void CHexDlgFillData::Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl)
+{
+	assert(pHexCtrl);
+	assert(nIDTemplate > 0);
+	if (pHexCtrl == nullptr)
+		return;
+
+	m_nIDTemplate = nIDTemplate;
+	m_pHexCtrl = pHexCtrl;
+}
+
+BOOL CHexDlgFillData::ShowWindow(int nCmdShow)
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(m_nIDTemplate, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	return CDialogEx::ShowWindow(nCmdShow);
+}
+
 void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_FILLDATA_COMBO_TYPE, m_stComboType);
 	DDX_Control(pDX, IDC_HEXCTRL_FILLDATA_COMBO_DATA, m_stComboData);
-}
-
-BOOL CHexDlgFillData::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
-{
-	assert(pHexCtrl);
-	if (pHexCtrl == nullptr)
-		return FALSE;
-
-	m_pHexCtrl = pHexCtrl;
-
-	return CDialogEx::Create(nIDTemplate, pParent);
 }
 
 BOOL CHexDlgFillData::OnInitDialog()

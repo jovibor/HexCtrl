@@ -17,21 +17,30 @@ BEGIN_MESSAGE_MAP(CHexDlgOpers, CDialogEx)
 	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
+void CHexDlgOpers::Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl)
+{
+	assert(pHexCtrl);
+	assert(nIDTemplate > 0);
+	if (pHexCtrl == nullptr)
+		return;
+
+	m_nIDTemplate = nIDTemplate;
+	m_pHexCtrl = pHexCtrl;
+}
+
+BOOL CHexDlgOpers::ShowWindow(int nCmdShow)
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(m_nIDTemplate, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	return CDialogEx::ShowWindow(nCmdShow);
+}
+
 void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_OPERS_COMBO_OPER, m_stComboOper);
-}
-
-BOOL CHexDlgOpers::Create(UINT nIDTemplate, CWnd* pParent, IHexCtrl* pHexCtrl)
-{
-	assert(pHexCtrl);
-	if (pHexCtrl == nullptr)
-		return FALSE;
-
-	m_pHexCtrl = pHexCtrl;
-
-	return CDialogEx::Create(nIDTemplate, pParent);
 }
 
 BOOL CHexDlgOpers::OnInitDialog()
@@ -200,7 +209,7 @@ void CHexDlgOpers::OnOK()
 	}
 
 	if (iRadioAllOrSel == IDC_HEXCTRL_OPERS_RAD_ALL) {
-		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", 
+		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?",
 			L"Modify All data?", MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
 		hms.vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
