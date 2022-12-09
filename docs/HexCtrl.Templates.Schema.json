@@ -18,10 +18,14 @@
                         "type": "string",
                         "enum": [ "bool", "char", "unsigned char", "byte", "short", "unsigned short", "WORD", "long", "unsigned long",
                             "int", "unsigned int", "DWORD", "long long", "unsigned long long", "QWORD", "float", "double",
-                            "time32_t", "time64_t", "FILETIME", "SYSTEMTIME", "GUID", "custom" ]
+                            "time32_t", "time64_t", "FILETIME", "SYSTEMTIME", "GUID" ]
                     },
                     "size": {
-                        "type": [ "integer", "string" ],
+                        "type": [ "integer" ],
+                        "minimum": 1
+                    },
+                    "array": {
+                        "type": [ "integer" ],
                         "minimum": 1
                     },
                     "endianness": {

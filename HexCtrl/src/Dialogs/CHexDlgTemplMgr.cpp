@@ -14,6 +14,7 @@
 #include <format>
 #include <fstream>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <unordered_map>
 
@@ -289,10 +290,10 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	const auto wsvFmt = m_fShowAsHex ? L"0x{:X}" : L"{}";
 	const auto fShouldSwap = refVecField[iItem]->fBigEndian == !m_fSwapEndian;
 
-	using enum EType;
+	using enum EFieldType;
 
-	//EType converter to actual wstring for the list.
-	static const std::unordered_map<EType, const wchar_t*> umapETypeToWstr {
+	//EFieldType converter to actual wstring for the list.
+	static const std::unordered_map<EFieldType, const wchar_t*> umapETypeToWstr {
 		{ type_custom, L"custom" },
 		{ type_bool, L"bool" }, { type_char, L"char" }, { type_uchar, L"unsigned char" },
 		{ type_short, L"short" }, { type_ushort, L"unsigned short" }, { type_int, L"int" },
@@ -322,6 +323,10 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		if (!m_pHexCtrl->IsDataSet()
 			|| m_pAppliedCurr->ullOffset + m_pAppliedCurr->pTemplate->iSizeTotal > m_pHexCtrl->GetDataSize()) //Size overflow check.
 			break;
+
+		if (!refVecField[iItem]->vecNested.empty()) {
+			break; //Doing nothing (no data fetch) for nested structs.
+		}
 
 		const auto ullOffset = m_pAppliedCurr->ullOffset + refVecField[iItem]->iOffset;
 		const auto eType = refVecField[iItem]->eType;
@@ -440,7 +445,7 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	switch (pNMI->iSubItem) {
 	case ID_LISTAPPLIED_FIELD_TYPE:
-		if (refVecField[pNMI->iItem]->eType != EType::type_custom) {
+		if (refVecField[pNMI->iItem]->eType != EFieldType::type_custom) {
 			m_stCellClr.clrText = RGB(16, 42, 255);        //Bluish text.
 			m_stCellClr.clrBk = static_cast<COLORREF>(-1); //Default bk color.
 			pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
@@ -489,7 +494,7 @@ void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		const auto fShouldSwap = refVecField[iItem]->fBigEndian == !m_fSwapEndian;
 
 		bool fSetRet { };
-		using enum EType;
+		using enum EFieldType;
 		switch (refVecField[iItem]->eType) {
 		case type_custom:
 			fSetRet = true;
@@ -1639,9 +1644,9 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		return 0;
 	}
 
-	using enum EType;
-	static const std::unordered_map<std::string_view, EType> umapStrToEType { //From JSON string to EType conversion.
-		{ "custom", type_custom }, { "bool", type_bool },
+	using enum EFieldType;
+	static const std::unordered_map<std::string_view, EFieldType> umapStrToEType { //From JSON string to EFieldType conversion.
+		{ "bool", type_bool },
 		{ "char", type_char }, { "unsigned char", type_uchar }, { "byte", type_uchar },
 		{ "short", type_short }, { "unsigned short", type_ushort }, { "WORD", type_ushort },
 		{ "long", type_int }, { "unsigned long", type_uint }, { "int", type_int },
@@ -1650,7 +1655,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		{ "double", type_double }, { "time32_t", type_time32 }, { "time64_t", type_time64 },
 		{ "FILETIME", type_filetime }, { "SYSTEMTIME", type_systemtime }, { "GUID", type_guid } };
 
-	static const std::unordered_map<EType, int> umapTypeToSize { //Types sizes.
+	static const std::unordered_map<EFieldType, int> umapTypeToSize { //Types sizes.
 		{ type_custom, -1 },
 		{ type_bool, static_cast<int>(sizeof(bool)) }, { type_char, static_cast<int>(sizeof(char)) },
 		{ type_uchar, static_cast<int>(sizeof(char)) }, { type_short, static_cast<int>(sizeof(short)) },
@@ -1742,7 +1747,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					return false; //Each array entry must be an Object {}.
 				}
 
-				auto& refBack = vecFields.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
+				const auto& refBack = vecFields.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
 
 				if (const auto itName = iterArrCurr->FindMember("name");
 					itName != iterArrCurr->MemberEnd() && itName->value.IsString()) {
@@ -1752,8 +1757,41 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 					return false; //Each array entry (Object) must have a "name" string.
 				}
 
+				const auto lmbEndianness = [](const rapidjson::Value* iter)->std::optional<bool> {
+					const auto itEndianness = iter->FindMember("endianness");
+					if (itEndianness == iter->MemberEnd()) {
+						return false; //If no "endianness" property then it's "little" by default.
+					}
+
+					if (!itEndianness->value.IsString()) {
+						return std::nullopt; //"endianness" must be a string.
+					}
+
+					const std::string_view svEndianness = itEndianness->value.GetString();
+					if (svEndianness != "big" && svEndianness != "little") {
+						return std::nullopt; //Wrong "endianness" type.
+					}
+
+					return svEndianness == "big";
+				};
+				const auto lmbClrBkText = [&lmbStrToRGB](const rapidjson::Value* iter, const char* pszName)->std::optional<COLORREF> {
+					const auto itClr = iter->FindMember(pszName);
+					if (itClr == iter->MemberEnd()) {
+						return std::nullopt;
+					}
+
+					if (!itClr->value.IsString()) {
+						return std::nullopt; //"clrBk/clrText" must be a string.
+					}
+
+					return lmbStrToRGB(itClr->value.GetString());
+				};
+
 				refBack->pTemplate = refDefs.pTemplate;
 				refBack->pFieldParent = refDefs.pFieldParent;
+				refBack->clrBk = lmbClrBkText(iterArrCurr, "clrBk").value_or(refDefs.clrBkDefault);
+				refBack->clrText = lmbClrBkText(iterArrCurr, "clrText").value_or(refDefs.clrTextDefault);
+				refBack->fBigEndian = lmbEndianness(iterArrCurr).value_or(refDefs.fBigEndian);
 				refBack->iOffset = iOffset;
 
 				if (const auto iterNestedFields = iterArrCurr->FindMember("Fields");
@@ -1762,46 +1800,15 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 						return false; //Each "Fields" must be an Array.
 					}
 
-					COLORREF clrBkDefaultNested { }; //Default color in nested struct.
-					if (const auto itClrBkDefault = iterArrCurr->FindMember("clrBk");
-						itClrBkDefault != iterArrCurr->MemberEnd()) {
-						if (!itClrBkDefault->value.IsString()) {
-							return false; //"clrBk" must be a string.
-						}
-						clrBkDefaultNested = lmbStrToRGB(itClrBkDefault->value.GetString());
-					}
-					else { clrBkDefaultNested = refDefs.clrBkDefault; }
-					refBack->clrBk = clrBkDefaultNested;
-
-					COLORREF clrTextDefaultNested { }; //Default color in nested struct.
-					if (const auto itClrTextDefault = iterArrCurr->FindMember("clrText");
-						itClrTextDefault != iterArrCurr->MemberEnd()) {
-						if (!itClrTextDefault->value.IsString()) {
-							return false; //"clrText" must be a string.
-						}
-						clrTextDefaultNested = lmbStrToRGB(itClrTextDefault->value.GetString());
-					}
-					else { clrTextDefaultNested = refDefs.clrTextDefault; }
-					refBack->clrText = clrTextDefaultNested;
-
-					bool fBigEndianDefaultNested { false };
-					if (const auto itEndiannessDefaultNested = iterArrCurr->FindMember("endianness");
-						itEndiannessDefaultNested != iterArrCurr->MemberEnd()) {
-						if (!itEndiannessDefaultNested->value.IsString()) {
-							return false; //"Endianness" must be a string.
-						}
-						fBigEndianDefaultNested = std::string_view { itEndiannessDefaultNested->value.GetString() } == "big";
-					}
-					else { fBigEndianDefaultNested = refDefs.fBigEndian; }
-					refBack->fBigEndian = fBigEndianDefaultNested;
-
 					//Setting defaults for the next nested struct.
-					const DEFPROPERTIES stDefsNested { .clrBkDefault { clrBkDefaultNested }, .clrTextDefault { clrTextDefaultNested },
-						.pFieldParent { refBack.get() }, .fBigEndian { fBigEndianDefaultNested } };
+					const DEFPROPERTIES stDefsNested { .clrBkDefault { refBack->clrBk }, .clrTextDefault { refBack->clrText },
+						.pFieldParent { refBack.get() }, .fBigEndian { refBack->fBigEndian } };
+
 					//Recursion lambda for nested structs starts here.
 					if (!lmbSelf(lmbSelf, iterNestedFields, refBack->vecNested, iOffset, stDefsNested)) {
 						return false;
 					}
+
 					refBack->iSize = lmbTotalSize(refBack->vecNested); //Total size of all nested fields.
 				}
 				else {
@@ -1810,40 +1817,23 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 						refBack->wstrDescr = StrToWstr(iterDescr->value.GetString());
 					}
 
-					const auto lmbSize = [&iterArrCurr]() {
-						const auto iterSize = iterArrCurr->FindMember("size");
-						if (iterSize == iterArrCurr->MemberEnd()) {
-							return 0; //No "size" field.
+					const auto lmbSize = [](const rapidjson::Value* iter) {
+						const auto iterSize = iter->FindMember("size");
+						if (iterSize == iter->MemberEnd()) {
+							return 0; //No "size" property.
 						}
 
-						if (iterSize->value.IsInt()) {
-							assert(iterSize->value.GetInt() > 0); //Size must be > 0.
-							if (iterSize->value.GetInt() < 1) {
-								return 0;
-							}
-
-							return iterSize->value.GetInt();
+						if (!iterSize->value.IsInt()) {
+							return 0; //"size" must be int.
 						}
 
-						if (!iterSize->value.IsString()) {
-							return 0; //"size" field neither int nor string.
-						}
-
-						const auto optInt = StrToInt(iterSize->value.GetString());
-						if (!optInt) {
-							return 0; //"size" field is a non-convertible string to int.
-						}
-
-						assert(*optInt > 0); //Size must be > 0.
-						if (*optInt < 1) {
-							return 0;
-						}
-
-						return *optInt;
+						const auto iFieldSize = iterSize->value.GetInt();
+						assert(iFieldSize > 0); //"size" must be > 0.
+						return iFieldSize < 1 ? 0 : iFieldSize;
 					};
 
 					auto iSize { 0 }; //Current field size, via "type" or "size" property.
-					EType eType = type_custom; //Current field default "type".
+					EFieldType eType = type_custom; //Current field's default "type".
 					if (const auto iterType = iterArrCurr->FindMember("type");
 						iterType != iterArrCurr->MemberEnd()) {
 						if (!iterType->value.IsString()) {
@@ -1852,61 +1842,40 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 
 						const auto iterMapType = umapStrToEType.find(iterType->value.GetString());
 						if (iterMapType == umapStrToEType.end()) {
-							return false; //Unsupported "type".
+							return false; //Undefined/unknown "type".
 						}
 
-						if (iterMapType->second == type_custom) {
-							if (iSize = lmbSize(); iSize == 0) {
-								return false; //Property "size" was not found or data is wrong.
-							}
-						}
-						else {
-							eType = iterMapType->second;
-							iSize = umapTypeToSize.at(iterMapType->second);
-						}
+						eType = iterMapType->second;
+						iSize = umapTypeToSize.at(iterMapType->second);
 					}
 					else { //No "type" property was found.
-						if (iSize = lmbSize(); iSize == 0) {
-							return false; //Neither property "type" nor "size" was found.
+						if (iSize = lmbSize(iterArrCurr); iSize == 0) {
+							return false; //Neither property "type" nor "size" was found, or "size" is bogus.
 						}
+					}
+
+					if (const auto itArray = iterArrCurr->FindMember("array");
+						itArray != iterArrCurr->MemberEnd() && itArray->value.IsInt() && itArray->value.GetInt() > 1) {
+						const auto iArraySize = itArray->value.GetInt();
+						for (auto iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
+							const auto& refBackArray = refBack->vecNested.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
+							refBackArray->pTemplate = refBack->pTemplate;
+							refBackArray->pFieldParent = refBack.get();
+							refBackArray->clrBk = refBack->clrBk;
+							refBackArray->clrText = refBack->clrText;
+							refBackArray->fBigEndian = refBack->fBigEndian;
+							refBackArray->eType = eType;
+							refBackArray->iOffset = iOffset + iArrIndex * iSize;
+							refBackArray->iSize = iSize;
+							refBackArray->wstrName = std::format(L"{}[{}]", refBack->wstrName, iArrIndex);
+						}
+						refBack->wstrName = std::format(L"{}[{}]", refBack->wstrName, iArraySize);
+						iSize *= iArraySize;
 					}
 
 					refBack->eType = eType;
 					refBack->iSize = iSize;
 					iOffset += iSize;
-
-					if (const auto itClrBk = iterArrCurr->FindMember("clrBk");
-						itClrBk != iterArrCurr->MemberEnd()) {
-						if (!itClrBk->value.IsString()) {
-							return false; //"clrBk" must be a string.
-						}
-						refBack->clrBk = lmbStrToRGB(itClrBk->value.GetString());
-					}
-					else {
-						refBack->clrBk = refDefs.clrBkDefault;
-					}
-
-					if (const auto itClrText = iterArrCurr->FindMember("clrText");
-						itClrText != iterArrCurr->MemberEnd()) {
-						if (!itClrText->value.IsString()) {
-							return false; //"clrText" must be a string.
-						}
-						refBack->clrText = lmbStrToRGB(itClrText->value.GetString());
-					}
-					else {
-						refBack->clrText = refDefs.clrTextDefault;
-					}
-
-					if (const auto itEndianness = iterArrCurr->FindMember("endianness");
-						itEndianness != iterArrCurr->MemberEnd()) {
-						if (!itEndianness->value.IsString()) {
-							return false; //"Endianness" must be a string.
-						}
-						refBack->fBigEndian = std::string_view { itEndianness->value.GetString() } == "big";
-					}
-					else {
-						refBack->fBigEndian = refDefs.fBigEndian;
-					}
 				}
 			}
 
@@ -2101,6 +2070,8 @@ void CHexDlgTemplMgr::UnloadAll()
 
 void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 {
+	OnTemplateLoadUnload(iTemplateID, false); //All the GUI stuff first, only then delete template.
+
 	const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
 		[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
 	if (iterTempl == m_vecTemplates.end())
@@ -2113,9 +2084,7 @@ void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 			m_pHexCtrl->Redraw();
 		}
 	}
-
 	m_vecTemplates.erase(iterTempl); //Remove template itself.
-	OnTemplateLoadUnload(iTemplateID, false);
 }
 
 void CHexDlgTemplMgr::UpdateStaticText()

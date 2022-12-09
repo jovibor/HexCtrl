@@ -19,7 +19,7 @@ namespace HEXCTRL::INTERNAL
 	using PVecFields = VecFields*;
 	using PHEXTEMPLATEFIELD = HEXTEMPLATEFIELD*;
 
-	enum class EType : std::uint8_t {
+	enum class EFieldType : std::uint8_t {
 		type_custom,
 		type_bool, type_char, type_uchar, type_short, type_ushort, type_int,
 		type_uint, type_ll, type_ull, type_float, type_double, type_time32,
@@ -36,7 +36,7 @@ namespace HEXCTRL::INTERNAL
 		VecFields         vecNested { };    //Vector for nested fields.
 		PHEXTEMPLATEFIELD pFieldParent { }; //Parent field, in case of nested.
 		PHEXTEMPLATE      pTemplate { };    //Template pointer, this field belongs to.
-		EType             eType { };        //Field type.
+		EFieldType        eType { };        //Field type.
 		bool              fBigEndian { };   //Field endianness.
 	};
 

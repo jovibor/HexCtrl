@@ -296,14 +296,15 @@ Every such file contains necessary properties:
 - **Fields** is an array of objects where every object represents a struct data member. Any such object can have its own **Fields** sub-objects which will represent nested structs.  
 
 The object's properties include:
-- **name** - [mandatory] - name of the field
-- **description** - [optional] - field description
-- **type** - [optional] - field type, such as:  
+- **name** - [mandatory, string] - name of the field
+- **description** - [optional, string] - field description
+- **type** - [optional, string] - field type, such as:  
 `bool`, `char`, `unsigned char`, `byte`, `short`, `unsigned short`, `WORD`, `long`, `unsigned long`, `int`, `unsigned int`, `DWORD`, `long long`, `unsigned long long`, `QWORD`, `float`, `double`, `time32_t`, `time64_t`, `FILETIME`, `SYSTEMTIME`, `GUID`, `custom`
-- **size** - [optional] - size of the field in bytes if the **type** field is not provided or set to **custom**
-- **endianness** - [optional] - field endianness, can be "little" or "big". By default all fields are little-endian.
-- **clrBk** - [optional] - field background color
-- **clrText** - [optional] - field text color
+- **size** - [optional, int] - size of the field in bytes, if the **type** field is not provided
+- **array** - [optional, int] - size of the array, if the given field is an array of fields
+- **endianness** - [optional, string] - field endianness, "little" or "big". By default all fields are little-endian.
+- **clrBk** - [optional, string] - field background color
+- **clrText** - [optional, string] - field text color
 
 The **endianness**, **clrBk** and **clrText** properties that locate at the same level as the **Fields** property, would mean the default properties for all the **Fields** objects of that level and below the line, unless they explicitly redefined in the field itself.  
 
