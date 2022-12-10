@@ -294,7 +294,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	//EFieldType converter to actual wstring for the list.
 	static const std::unordered_map<EFieldType, const wchar_t*> umapETypeToWstr {
-		{ type_custom, L"custom" },
+		{ custom_size, L"custom size" }, { type_custom, L"custom type" },
 		{ type_bool, L"bool" }, { type_char, L"char" }, { type_uchar, L"unsigned char" },
 		{ type_short, L"short" }, { type_ushort, L"unsigned short" }, { type_int, L"int" },
 		{ type_uint, L"unsigned int" }, { type_ll, L"long long" }, { type_ull, L"unsigned long long" },
@@ -305,9 +305,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	switch (pItem->iSubItem) {
 	case ID_LISTAPPLIED_FIELD_TYPE: //Type.
-		if (refVecField[iItem]->vecNested.empty()) {
-			pItem->pszText = const_cast<LPWSTR>(umapETypeToWstr.at(refVecField[iItem]->eType));
-		}
+		pItem->pszText = const_cast<LPWSTR>(umapETypeToWstr.at(refVecField[iItem]->eType));
 		break;
 	case 1: //Name.
 		pItem->pszText = refVecField[iItem]->wstrName.data();
@@ -331,7 +329,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		const auto ullOffset = m_pAppliedCurr->ullOffset + refVecField[iItem]->iOffset;
 		const auto eType = refVecField[iItem]->eType;
 		switch (eType) {
-		case type_custom: //If field of custom type, we cycling through the size field.
+		case custom_size: //If field of a custom size we cycling through the size field.
 			switch (refVecField[iItem]->iSize) {
 			case 1:
 				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset))) = L'\0';
@@ -432,21 +430,28 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
+	constexpr auto clrText = RGB(16, 42, 255); //Bluish text.
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	const auto& refVecField = *m_pVecCurrFields;
+	const auto eType = refVecField[pNMI->iItem]->eType;
+	using enum EFieldType;
+
+	m_stCellClr.clrText = static_cast<COLORREF>(-1); //Default text color.
 
 	//List items with nested structs color separately with greyish bk.
 	if (!refVecField[pNMI->iItem]->vecNested.empty() && pNMI->iSubItem != ID_LISTAPPLIED_FIELD_COLORS) {
-		m_stCellClr.clrBk = RGB(235, 235, 235);          //Greyish.
-		m_stCellClr.clrText = static_cast<COLORREF>(-1); //Default text color.
+		m_stCellClr.clrBk = RGB(235, 235, 235); //Greyish.
+		if (pNMI->iSubItem == ID_LISTAPPLIED_FIELD_TYPE && eType != type_custom && eType != custom_size) {
+			m_stCellClr.clrText = clrText;
+		}
 		pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
 		return;
 	}
 
 	switch (pNMI->iSubItem) {
 	case ID_LISTAPPLIED_FIELD_TYPE:
-		if (refVecField[pNMI->iItem]->eType != EFieldType::type_custom) {
-			m_stCellClr.clrText = RGB(16, 42, 255);        //Bluish text.
+		if (eType != type_custom && eType != custom_size) {
+			m_stCellClr.clrText = clrText;
 			m_stCellClr.clrBk = static_cast<COLORREF>(-1); //Default bk color.
 			pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
 		}
@@ -496,7 +501,7 @@ void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		bool fSetRet { };
 		using enum EFieldType;
 		switch (refVecField[iItem]->eType) {
-		case type_custom:
+		case custom_size:
 			fSetRet = true;
 			switch (refVecField[iItem]->iSize) {
 			case 1:
@@ -1656,7 +1661,6 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 		{ "FILETIME", type_filetime }, { "SYSTEMTIME", type_systemtime }, { "GUID", type_guid } };
 
 	static const std::unordered_map<EFieldType, int> umapTypeToSize { //Types sizes.
-		{ type_custom, -1 },
 		{ type_bool, static_cast<int>(sizeof(bool)) }, { type_char, static_cast<int>(sizeof(char)) },
 		{ type_uchar, static_cast<int>(sizeof(char)) }, { type_short, static_cast<int>(sizeof(short)) },
 		{ type_ushort, static_cast<int>(sizeof(short)) }, { type_int, static_cast<int>(sizeof(int)) },
@@ -1793,6 +1797,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 				refBack->clrText = lmbClrBkText(iterArrCurr, "clrText").value_or(refDefs.clrTextDefault);
 				refBack->fBigEndian = lmbEndianness(iterArrCurr).value_or(refDefs.fBigEndian);
 				refBack->iOffset = iOffset;
+				refBack->eType = type_custom;
 
 				if (const auto iterNestedFields = iterArrCurr->FindMember("Fields");
 					iterNestedFields != iterArrCurr->MemberEnd()) {
@@ -1832,8 +1837,8 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 						return iFieldSize < 1 ? 0 : iFieldSize;
 					};
 
-					auto iSize { 0 }; //Current field size, via "type" or "size" property.
-					EFieldType eType = type_custom; //Current field's default "type".
+					auto iSize { 0 }; //Current field's size, via "type" or "size" property.
+					EFieldType eType; //Current field's "type".
 					if (const auto iterType = iterArrCurr->FindMember("type");
 						iterType != iterArrCurr->MemberEnd()) {
 						if (!iterType->value.IsString()) {
@@ -1852,6 +1857,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 						if (iSize = lmbSize(iterArrCurr); iSize == 0) {
 							return false; //Neither property "type" nor "size" was found, or "size" is bogus.
 						}
+						eType = custom_size;
 					}
 
 					if (const auto itArray = iterArrCurr->FindMember("array");

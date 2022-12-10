@@ -20,7 +20,7 @@ namespace HEXCTRL::INTERNAL
 	using PHEXTEMPLATEFIELD = HEXTEMPLATEFIELD*;
 
 	enum class EFieldType : std::uint8_t {
-		type_custom,
+		custom_size, type_custom,
 		type_bool, type_char, type_uchar, type_short, type_ushort, type_int,
 		type_uint, type_ll, type_ull, type_float, type_double, type_time32,
 		type_time64, type_filetime, type_systemtime, type_guid
