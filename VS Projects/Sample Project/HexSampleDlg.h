@@ -29,7 +29,7 @@ private:
 	[[nodiscard]] static auto OpenFileDlg() -> std::optional<std::vector<std::wstring>>;
 	DECLARE_MESSAGE_MAP();
 private:
-	IHexCtrlPtr m_pHexChild { CreateHexCtrl() };
+	IHexCtrlPtr m_pHexDlg { CreateHexCtrl() };
 	IHexCtrlPtr m_pHexPopup { CreateHexCtrl() };
 	HEXDATA m_hds;
 	BYTE m_RandomData[16 * 1024];

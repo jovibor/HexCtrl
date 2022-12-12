@@ -69,11 +69,13 @@ BOOL CHexSampleDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);	 //Set big icon
 	SetIcon(m_hIcon, FALSE); //Set small icon
 
-	m_pHexChild->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
-	m_pHexChild->SetWheelRatio(2, true); //Two lines scroll with mouse-wheel.
-	m_pHexChild->SetPageSize(64);
+	m_pHexDlg->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
+	m_pHexDlg->SetWheelRatio(2, true); //Two lines scroll with mouse-wheel.
+	m_pHexDlg->SetPageSize(64);
 
-	LoadTemplates(&*m_pHexChild);
+	LoadTemplates(&*m_pHexDlg);
+	//OnBnSetRndDataRW();
+	//m_pHexDlg->ExecuteCmd(EHexCmd::CMD_DLG_TEMPLMGR);
 
 	//m_hds.pHexVirtColors = this;
 	//m_hds.fHighLatency = true;
@@ -112,7 +114,7 @@ HCURSOR CHexSampleDlg::OnQueryDragIcon()
 void CHexSampleDlg::OnBnClearData()
 {
 	FileClose();
-	m_pHexChild->ClearData();
+	m_pHexDlg->ClearData();
 	if (m_pHexPopup->IsCreated()) {
 		m_pHexPopup->ClearData();
 		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"");
@@ -153,8 +155,8 @@ void CHexSampleDlg::OnBnSetRndDataRO()
 {
 	if (IsFileOpen())
 		FileClose();
-	else if (m_pHexChild->IsDataSet()) {
-		m_pHexChild->SetMutable(false);
+	else if (m_pHexDlg->IsDataSet()) {
+		m_pHexDlg->SetMutable(false);
 		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet()) {
 			m_pHexPopup->SetMutable(false);
 			::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"Random data: RO");
@@ -166,7 +168,7 @@ void CHexSampleDlg::OnBnSetRndDataRO()
 
 	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
 	m_hds.fMutable = false;
-	m_pHexChild->SetData(m_hds);
+	m_pHexDlg->SetData(m_hds);
 	if (m_pHexPopup->IsCreated()) {
 		m_pHexPopup->SetData(m_hds);
 		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"Random data: RO");
@@ -179,8 +181,8 @@ void CHexSampleDlg::OnBnSetRndDataRW()
 {
 	if (IsFileOpen())
 		FileClose();
-	else if (m_pHexChild->IsDataSet()) {
-		m_pHexChild->SetMutable(true);
+	else if (m_pHexDlg->IsDataSet()) {
+		m_pHexDlg->SetMutable(true);
 		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet()) {
 			m_pHexPopup->SetMutable(true);
 			::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"Random data: RW");
@@ -192,7 +194,7 @@ void CHexSampleDlg::OnBnSetRndDataRW()
 
 	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
 	m_hds.fMutable = true;
-	m_pHexChild->SetData(m_hds);
+	m_pHexDlg->SetData(m_hds);
 	if (m_pHexPopup->IsCreated()) {
 		m_pHexPopup->SetData(m_hds);
 		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"Random data: RW");
@@ -279,7 +281,7 @@ void CHexSampleDlg::FileOpen(std::wstring_view wstrPath, bool fRW)
 
 	m_hds.spnData = { static_cast<std::byte*>(m_lpBase), static_cast<std::size_t>(stFileSize.QuadPart) };
 	m_hds.fMutable = fRW;
-	m_pHexChild->SetData(m_hds);
+	m_pHexDlg->SetData(m_hds);
 	if (m_pHexPopup->IsCreated()) {
 		m_pHexPopup->SetData(m_hds);
 		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), wstrPath.data());

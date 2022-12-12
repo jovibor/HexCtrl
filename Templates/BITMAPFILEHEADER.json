@@ -1,32 +1,40 @@
 {
     "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
     "TemplateName": "BITMAPFILEHEADER",
-    "endianness": "little",
-    "clrBk": "#909090",
-    "clrText": "#FFFFFF",
-    "Fields": [
+    "Data": {
+        "endianness": "little",
+        "clrBk": "#909090",
+        "clrText": "#FFFFFF",
+        "Fields": [
+            {
+                "name": "bfType",
+                "type": "WORD"
+            },
+            {
+                "name": "bfSize",
+                "type": "DWORD"
+            },
+            {
+                "name": "bfReserved1",
+                "type": "WORD"
+            },
+            {
+                "name": "bfReserved2",
+                "type": "WORD"
+            },
+            {
+                "name": "bfOffBits",
+                "type": "DWORD"
+            },
+            {
+                "name": "bmih",
+                "type": "BITMAPINFOHEADER"
+            }
+        ]
+    },
+    "CustomTypes": [
         {
-            "name": "bfType",
-            "type": "WORD"
-        },
-        {
-            "name": "bfSize",
-            "type": "DWORD"
-        },
-        {
-            "name": "bfReserved1",
-            "type": "WORD"
-        },
-        {
-            "name": "bfReserved2",
-            "type": "WORD"
-        },
-        {
-            "name": "bfOffBits",
-            "type": "DWORD"
-        },
-        {
-            "name": "BITMAPINFOHEADER",
+            "TypeName": "BITMAPINFOHEADER",
             "clrBk": "#C0C0C0",
             "clrText": "#FFFFFF",
             "Fields": [

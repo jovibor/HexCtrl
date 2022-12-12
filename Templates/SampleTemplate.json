@@ -1,0 +1,150 @@
+{
+    "$schema": "HexCtrl.Templates.Schema.json",
+    "TemplateName": "SampleTemplate",
+    "Data": {
+        "endianness": "little",
+        "clrBk": "#999999",
+        "clrText": "#FFFFFF",
+        "Fields": [
+            {
+                "name": "MyCustomDataSingle",
+                "type": "MyCustomType"
+            },
+            {
+                "name": "CustomComplexData",
+                "type": "MyCustomComplexType"
+            },
+            {
+                "name": "ArrayOfDWORDs",
+                "type": "DWORD",
+                "array": 10
+            },
+            {
+                "name": "MyCustomDataArray",
+                "type": "MyCustomType",
+                "array": 4
+            },
+            {
+                "name": "FieldCustom",
+                "endianness": "little",
+                "size": 16,
+                "clrBk": "#ffff00",
+                "clrText": "#000000"
+            },
+            {
+                "name": "FieldBool",
+                "type": "bool"
+            },
+            {
+                "name": "FieldChar",
+                "type": "char"
+            },
+            {
+                "name": "FieldUChar",
+                "type": "unsigned char"
+            },
+            {
+                "name": "FieldShort",
+                "type": "short"
+            },
+            {
+                "name": "FieldUshort",
+                "type": "unsigned short"
+            },
+            {
+                "name": "FieldInt",
+                "type": "int"
+            },
+            {
+                "name": "FieldDWORD",
+                "type": "DWORD"
+            },
+            {
+                "name": "FieldLL",
+                "type": "long long"
+            },
+            {
+                "name": "FieldULL",
+                "type": "QWORD"
+            },
+            {
+                "name": "FieldTime32",
+                "type": "time32_t"
+            },
+            {
+                "name": "FieldTime64",
+                "type": "time64_t"
+            },
+            {
+                "name": "FieldFloat",
+                "type": "float"
+            },
+            {
+                "name": "FieldDouble",
+                "type": "double"
+            },
+            {
+                "name": "FieldFiletime",
+                "type": "FILETIME"
+            },
+            {
+                "name": "FieldSystemtime",
+                "type": "SYSTEMTIME"
+            },
+            {
+                "name": "FieldGuid",
+                "type": "GUID"
+            },
+            {
+                "name": "StructNested",
+                "endianness": "big",
+                "clrText": "#00ff00",
+                "clrBk": "#ff0000",
+                "Fields": [
+                    {
+                        "name": "Nested1",
+                        "size": 16,
+                        "clrBk": "#000000",
+                        "clrText": "#FFFFFF"
+                    },
+                    {
+                        "name": "Nested2",
+                        "size": 2
+                    }
+                ]
+            },
+            {
+                "name": "FieldAfterNested",
+                "size": 1
+            }
+        ]
+    },
+    "CustomTypes": [
+        {
+            "TypeName": "MyCustomType",
+            "Fields": [
+                {
+                    "name": "myCustomTypeField1",
+                    "type": "DWORD"
+                },
+                {
+                    "name": "myCustomTypeField2",
+                    "type": "DWORD"
+                }
+            ]
+        },
+        {
+            "TypeName": "MyCustomComplexType",
+            "Fields": [
+                {
+                    "name": "MyCustomTypeData1",
+                    "type": "MyCustomType"
+                },
+                {
+                    "name": "MyCustomTypeData2",
+                    "type": "MyCustomType"
+                }
+            ]
+        }
+    ]
+}

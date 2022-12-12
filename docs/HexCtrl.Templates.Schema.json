@@ -15,10 +15,7 @@
                         "type": "string"
                     },
                     "type": {
-                        "type": "string",
-                        "enum": [ "bool", "char", "unsigned char", "byte", "short", "unsigned short", "WORD", "long", "unsigned long",
-                            "int", "unsigned int", "DWORD", "long long", "unsigned long long", "QWORD", "float", "double",
-                            "time32_t", "time64_t", "FILETIME", "SYSTEMTIME", "GUID" ]
+                        "type": "string"
                     },
                     "size": {
                         "type": [ "integer" ],
@@ -58,22 +55,55 @@
         "TemplateName": {
             "type": "string"
         },
-        "endianness": {
-            "type": "string",
-            "enum": [ "little", "big" ]
+        "Data": {
+            "type": "object",
+            "properties": {
+                "endianness": {
+                    "type": "string",
+                    "enum": [ "little", "big" ]
+                },
+                "clrBk": {
+                    "type": "string",
+                    "format": "color"
+                },
+                "clrText": {
+                    "type": "string",
+                    "format": "color"
+                },
+                "Fields": {
+                    "$ref": "#/$defs/Fields"
+                }
+            },
+            "additionalProperties": false
         },
-        "clrBk": {
-            "type": "string",
-            "format": "color"
-        },
-        "clrText": {
-            "type": "string",
-            "format": "color"
-        },
-        "Fields": {
-            "$ref": "#/$defs/Fields"
+        "CustomTypes": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "TypeName": {
+                        "type":"string"
+                    },
+                    "endianness": {
+                        "type": "string",
+                        "enum": [ "little", "big" ]
+                    },
+                    "clrBk": {
+                        "type": "string",
+                        "format": "color"
+                    },
+                    "clrText": {
+                        "type": "string",
+                        "format": "color"
+                    },
+                    "Fields": {
+                        "$ref": "#/$defs/Fields"
+                    }
+                },
+                "additionalProperties": false
+            }
         }
     },
     "additionalProperties": false,
-    "required": [ "TemplateName", "Fields" ]
+    "required": [ "TemplateName", "Data" ]
 }

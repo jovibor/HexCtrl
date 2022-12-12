@@ -259,47 +259,81 @@ But if you have big and complicated data logic and want to handle all these book
 If you'd like to colorize your data with custom bk/text colors, you have to resort to the [`IHexVirtColors`](#ihexvirtcolors) interface help. Please see the interface description, it's very simple to use.
 
 ## [](#)Templates
-**HexCtrl**'s templates is a powerful system of a data structures' description with a simple `.json` files. These files can be loaded through the **HexControl**'s internal template manager, or through the [API](#gettemplates).  
+**HexCtrl**'s templates is a powerful system of a data structures' description with a simple `.json` file. These files can be loaded through the **HexControl**'s internal template manager, or through the [API](#gettemplates).  
 ```json
 {
     "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
-    "TemplateName": "MyDataStruct",
-    "endianness": "little",
-    "clrBk": "#909090",
-    "clrText": "#FFFFFF",
-    "Fields": [
+    "TemplateName": "SampleTemplate",
+    "Data": {
+        "endianness": "little",
+        "clrBk": "#999999",
+        "clrText": "#FFFFFF",
+        "Fields": [
+            {
+                "name": "MyCustomDataSingle",
+                "type": "MyCustomType"
+            },
+            {
+                "name": "CustomComplexData",
+                "type": "MyCustomComplexType"
+            },
+            {
+                "name": "ArrayOfDWORDs",
+                "type": "DWORD",
+                "array": 10
+            },
+            {
+                "name": "MyCustomDataArray",
+                "type": "MyCustomType",
+                "array": 4
+            }
+        ]
+    },
+    "CustomTypes": [
         {
-            "name": "field1",
-            "type": "int",
-            "clrBk": "#BB0000",
-            "clrText": "#FFFFFF"
-        },
-        {
-            "name": "field2",
-            "endianness": "big",
-            "size": 4
-        },
-        {
-            "name": "NestedStruct",
+            "TypeName": "MyCustomType",
             "Fields": [
                 {
-                    "name": "NestedField1",
-                    "type": "double"
+                    "name": "myCustomTypeField1",
+                    "type": "DWORD"
+                },
+                {
+                    "name": "myCustomTypeField2",
+                    "type": "DWORD"
+                }
+            ]
+        },
+        {
+            "TypeName": "MyCustomComplexType",
+            "Fields": [
+                {
+                    "name": "MyCustomTypeData1",
+                    "type": "MyCustomType"
+                },
+                {
+                    "name": "MyCustomTypeData2",
+                    "type": "MyCustomType"
                 }
             ]
         }
     ]
 }
 ```
-Every such file contains necessary properties:  
-- **TemplateName** is the name of the template.  
-- **Fields** is an array of objects where every object represents a struct data member. Any such object can have its own **Fields** sub-objects which will represent nested structs.  
+Every such file contains the following properties:  
+- **TemplateName** [mandatory, string] - the name of the template
+- **Data** [mandatory, object] - main object that contains all template field's information
+- **CustomTypes** [optional, array] - array of a user defined types, that can be then referenced in the **type** property of the **Fields**
 
-The object's properties include:
+**CustomTypes** objects are the same as **Fields** objects, the only difference is the **TypeName** property which **Fields** objects don't have.  
+
+Every **Data** or **CustomType** object contains **Fields** property with actual struct members.  
+
+**Fields** [array] - is an array of objects where every object represents a struct data member. Any such object can have its own **Fields** sub-objects, which will represent nested structs.  
+The **Fields**'s properties include:
 - **name** - [mandatory, string] - name of the field
 - **description** - [optional, string] - field description
 - **type** - [optional, string] - field type, such as:  
-`bool`, `char`, `unsigned char`, `byte`, `short`, `unsigned short`, `WORD`, `long`, `unsigned long`, `int`, `unsigned int`, `DWORD`, `long long`, `unsigned long long`, `QWORD`, `float`, `double`, `time32_t`, `time64_t`, `FILETIME`, `SYSTEMTIME`, `GUID`, `custom`
+`bool`, `char`, `unsigned char`, `byte`, `short`, `unsigned short`, `WORD`, `long`, `unsigned long`, `int`, `unsigned int`, `DWORD`, `long long`, `unsigned long long`, `QWORD`, `float`, `double`, `time32_t`, `time64_t`, `FILETIME`, `SYSTEMTIME`, `GUID`, or any custom type defined in the **CustomTypes** section
 - **size** - [optional, int] - size of the field in bytes, if the **type** field is not provided
 - **array** - [optional, int] - size of the array, if the given field is an array of fields
 - **endianness** - [optional, string] - field endianness, "little" or "big". By default all fields are little-endian.

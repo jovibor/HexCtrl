@@ -13,11 +13,13 @@ namespace HEXCTRL::INTERNAL
 {
 	//Forward declarations.
 	struct HEXTEMPLATE;
-	using PHEXTEMPLATE = HEXTEMPLATE*;
 	struct HEXTEMPLATEFIELD;
-	using VecFields = std::vector<std::unique_ptr<HEXTEMPLATEFIELD>>; //Vector for the Fields.
+	using PHEXTEMPLATE = HEXTEMPLATE*;
+	using PtrField = std::unique_ptr<HEXTEMPLATEFIELD>;
+	using VecFields = std::vector<PtrField>; //Vector for the Fields.
 	using PVecFields = VecFields*;
 	using PHEXTEMPLATEFIELD = HEXTEMPLATEFIELD*;
+	using PCHEXTEMPLATEFIELD = const HEXTEMPLATEFIELD*;
 
 	enum class EFieldType : std::uint8_t {
 		custom_size, type_custom,
@@ -25,6 +27,12 @@ namespace HEXCTRL::INTERNAL
 		type_uint, type_ll, type_ull, type_float, type_double, type_time32,
 		type_time64, type_filetime, type_systemtime, type_guid
 	};
+
+	struct HEXCUSTOMTYPE {
+		std::wstring wstrTypeName;
+		std::uint8_t uTypeID { };
+	};
+	using VecCT = std::vector<HEXCUSTOMTYPE>;
 
 	struct HEXTEMPLATEFIELD {
 		std::wstring      wstrName { };     //Field name.
@@ -37,14 +45,16 @@ namespace HEXCTRL::INTERNAL
 		PHEXTEMPLATEFIELD pFieldParent { }; //Parent field, in case of nested.
 		PHEXTEMPLATE      pTemplate { };    //Template pointer, this field belongs to.
 		EFieldType        eType { };        //Field type.
+		std::uint8_t      uTypeID { };      //Type ID for custom types.
 		bool              fBigEndian { };   //Field endianness.
 	};
 
 	struct HEXTEMPLATE {
-		std::wstring wstrName;    //Template name.
-		VecFields    vecFields;   //Template fields.
-		int          iSizeTotal;  //Total size of all Template's fields, assigned internally by framework.
-		int          iTemplateID; //Template ID, assigned by framework.
+		std::wstring wstrName;      //Template name.
+		VecFields    vecFields;     //Template fields.
+		VecCT        vecCustomType; //Custom types of this template.
+		int          iSizeTotal;    //Total size of all Template's fields, assigned internally by framework.
+		int          iTemplateID;   //Template ID, assigned by framework.
 	};
 
 	struct HEXTEMPLATEAPPLIED {
@@ -143,7 +153,7 @@ namespace HEXCTRL::INTERNAL
 		void RemoveNodesWithTemplateID(int iTemplateID);
 		void RemoveNodeWithAppliedID(int iAppliedID);
 		void SetDlgButtonStates(); //Enable/disable button states depending on templates existence.
-		void SetHexSelByField(PHEXTEMPLATEFIELD pField);
+		void SetHexSelByField(PCHEXTEMPLATEFIELD pField);
 		void ShowTooltips(bool fShow)override;
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
 		void UnloadTemplate(int iTemplateID)override;       //Unload/remove loaded template from memory.

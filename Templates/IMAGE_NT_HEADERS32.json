@@ -1,50 +1,41 @@
 {
     "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
     "TemplateName": "IMAGE_NT_HEADERS32",
-    "endianness": "little",
-    "clrBk": "#606060",
-    "clrText": "#FFFFFF",
-    "Fields": [
+    "Data": {
+        "endianness": "little",
+        "clrBk": "#606060",
+        "clrText": "#FFFFFF",
+        "Fields": [
+            {
+                "name": "Signature",
+                "type": "DWORD"
+            },
+            {
+                "name": "FileHeader",
+                "type": "IMAGE_FILE_HEADER"
+            },
+            {
+                "name": "OptionalHeader",
+                "type": "IMAGE_OPTIONAL_HEADER32"
+            }
+        ]
+    },
+    "CustomTypes": [
         {
-            "name": "Signature",
-            "type": "DWORD"
-        },
-        {
-            "name": "IMAGE_FILE_HEADER FileHeader",
-            "clrBk": "#909090",
+            "TypeName": "IMAGE_DATA_DIRECTORY",
             "Fields": [
                 {
-                    "name": "Machine",
-                    "type": "WORD"
-                },
-                {
-                    "name": "NumberOfSections",
-                    "type": "WORD"
-                },
-                {
-                    "name": "TimeDateStamp",
+                    "name": "VirtualAddress",
                     "type": "DWORD"
                 },
                 {
-                    "name": "PointerToSymbolTable",
+                    "name": "Size",
                     "type": "DWORD"
-                },
-                {
-                    "name": "NumberOfSymbols",
-                    "type": "DWORD"
-                },
-                {
-                    "name": "SizeOfOptionalHeader",
-                    "type": "WORD"
-                },
-                {
-                    "name": "Characteristics",
-                    "type": "WORD"
                 }
             ]
         },
         {
-            "name": "IMAGE_OPTIONAL_HEADER32 OptionalHeader",
+            "TypeName": "IMAGE_OPTIONAL_HEADER32",
             "clrBk": "#C0C0C0",
             "Fields": [
                 {
@@ -169,208 +160,43 @@
                     "clrBk": "#00AA00"
                 },
                 {
-                    "name": "IMAGE_DATA_DIRECTORY[16]",
-                    "Fields": [
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_EXPORT]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_IMPORT]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_RESOURCE]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_EXCEPTION]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_SECURITY]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_BASERELOC]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_DEBUG]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_ARCHITECTURE]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_GLOBALPTR]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_TLS]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_IAT]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "IMAGE_DATA_DIRECTORY [IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR]",
-                            "Fields": [
-                                {
-                                    "name": "VirtualAddress",
-                                    "type": "DWORD"
-                                },
-                                {
-                                    "name": "Size",
-                                    "type": "DWORD"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "Reserved",
-                            "type": "QWORD"
-                        }
-                    ]
+                    "name": "DataDirectory",
+                    "type": "IMAGE_DATA_DIRECTORY",
+                    "array": 16
+                }
+            ]
+        },
+        {
+            "TypeName": "IMAGE_FILE_HEADER",
+            "clrBk": "#909090",
+            "Fields": [
+                {
+                    "name": "Machine",
+                    "type": "WORD"
+                },
+                {
+                    "name": "NumberOfSections",
+                    "type": "WORD"
+                },
+                {
+                    "name": "TimeDateStamp",
+                    "type": "DWORD"
+                },
+                {
+                    "name": "PointerToSymbolTable",
+                    "type": "DWORD"
+                },
+                {
+                    "name": "NumberOfSymbols",
+                    "type": "DWORD"
+                },
+                {
+                    "name": "SizeOfOptionalHeader",
+                    "type": "WORD"
+                },
+                {
+                    "name": "Characteristics",
+                    "type": "WORD"
                 }
             ]
         }
