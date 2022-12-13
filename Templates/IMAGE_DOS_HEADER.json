@@ -1,85 +1,89 @@
 {
     "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
     "TemplateName": "IMAGE_DOS_HEADER",
-    "endianness": "little",
-    "clrBk": "#C0C0C0",
-    "clrText": "#FFFFFF",
-    "Fields": [
-        {
-            "name": "e_magic",
-            "type": "WORD"
-        },
-        {
-            "name": "e_cblp",
-            "type": "WORD"
-        },
-        {
-            "name": "e_cp",
-            "type": "WORD"
-        },
-        {
-            "name": "e_crlc",
-            "type": "WORD"
-        },
-        {
-            "name": "e_cparhdr",
-            "type": "WORD"
-        },
-        {
-            "name": "e_minalloc",
-            "type": "WORD"
-        },
-        {
-            "name": "e_maxalloc",
-            "type": "WORD"
-        },
-        {
-            "name": "e_ss",
-            "type": "WORD"
-        },
-        {
-            "name": "e_sp",
-            "type": "WORD"
-        },
-        {
-            "name": "e_csum",
-            "type": "WORD"
-        },
-        {
-            "name": "e_ip",
-            "type": "WORD"
-        },
-        {
-            "name": "e_cs",
-            "type": "WORD"
-        },
-        {
-            "name": "e_lfarlc",
-            "type": "WORD"
-        },
-        {
-            "name": "e_ovno",
-            "type": "WORD"
-        },
-        {
-            "name": "e_res[4]",
-            "size": 8
-        },
-        {
-            "name": "e_oemid",
-            "type": "WORD"
-        },
-        {
-            "name": "e_oeminfo",
-            "type": "WORD"
-        },
-        {
-            "name": "e_res2[10]",
-            "size": 20
-        },
-        {
-            "name": "e_lfanew",
-            "type": "long"
-        }
-    ]
+    "Data": {
+        "endianness": "little",
+        "clrBk": "#C0C0C0",
+        "clrText": "#FFFFFF",
+        "Fields": [
+            {
+                "name": "e_magic",
+                "type": "WORD"
+            },
+            {
+                "name": "e_cblp",
+                "type": "WORD"
+            },
+            {
+                "name": "e_cp",
+                "type": "WORD"
+            },
+            {
+                "name": "e_crlc",
+                "type": "WORD"
+            },
+            {
+                "name": "e_cparhdr",
+                "type": "WORD"
+            },
+            {
+                "name": "e_minalloc",
+                "type": "WORD"
+            },
+            {
+                "name": "e_maxalloc",
+                "type": "WORD"
+            },
+            {
+                "name": "e_ss",
+                "type": "WORD"
+            },
+            {
+                "name": "e_sp",
+                "type": "WORD"
+            },
+            {
+                "name": "e_csum",
+                "type": "WORD"
+            },
+            {
+                "name": "e_ip",
+                "type": "WORD"
+            },
+            {
+                "name": "e_cs",
+                "type": "WORD"
+            },
+            {
+                "name": "e_lfarlc",
+                "type": "WORD"
+            },
+            {
+                "name": "e_ovno",
+                "type": "WORD"
+            },
+            {
+                "name": "e_res",
+                "type": "WORD",
+                "array": 4
+            },
+            {
+                "name": "e_oemid",
+                "type": "WORD"
+            },
+            {
+                "name": "e_oeminfo",
+                "type": "WORD"
+            },
+            {
+                "name": "e_res2",
+                "type": "WORD",
+                "array": 10
+            },
+            {
+                "name": "e_lfanew",
+                "type": "long"
+            }
+        ]
+    }
 }
