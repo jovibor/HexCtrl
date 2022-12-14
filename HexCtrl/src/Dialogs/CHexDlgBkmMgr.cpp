@@ -192,7 +192,7 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		*std::vformat_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(ullSize)) = L'\0';
 		break;
 	case 3: //Description.
-		pItem->pszText = const_cast<wchar_t*>(pBkm->wstrDesc.data());
+		pItem->pszText = pBkm->wstrDesc.data();
 		break;
 	case 4: //Color.
 		*std::format_to(pItem->pszText, L"#Text") = L'\0';

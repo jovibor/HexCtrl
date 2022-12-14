@@ -40,7 +40,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
 		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORS = 0;          //Current colors.
-		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->std::span<std::byte> = 0; //Get pointer to data offset, no matter what mode the control works in.
+		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->SpanByte = 0;  //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual auto GetDateInfo()const->std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
 		[[nodiscard]] virtual int GetEncoding()const = 0;                    //Get current code page ID.
@@ -50,7 +50,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual auto GetPagesCount()const->ULONGLONG = 0;      //Get count of pages.
 		[[nodiscard]] virtual auto GetPagePos()const->ULONGLONG = 0;         //Get current page a cursor stays at.
 		[[nodiscard]] virtual DWORD GetPageSize()const = 0;                  //Current page size.
-		[[nodiscard]] virtual auto GetSelection()const->std::vector<HEXSPAN> = 0; //Get current selection.
+		[[nodiscard]] virtual auto GetSelection()const->VecSpan = 0;         //Get current selection.
 		[[nodiscard]] virtual auto GetTemplates()const->IHexTemplates* = 0;  //Get Templates interface.
 		[[nodiscard]] virtual wchar_t GetUnprintableChar()const = 0;         //Get unprintable replacement character.
 		[[nodiscard]] virtual HWND GetWindowHandle(EHexWnd eWnd)const = 0;   //Retrieves control's window/dialog handle.
@@ -80,7 +80,7 @@ namespace HEXCTRL
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wstrName = L"Page") = 0; //Set page size and name to draw the lines in-between.
 		virtual void SetVirtualBkm(IHexBookmarks* pVirtBkm) = 0; //Set pointer for Bookmarks Virtual Mode.
 		virtual void SetRedraw(bool fRedraw) = 0;              //Handle WM_PAINT message or not.
-		virtual void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
+		virtual void SetSelection(const VecSpan& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
 		virtual void SetUnprintableChar(wchar_t wch) = 0;      //Set unprintable replacement character.
 		virtual void SetWheelRatio(double dbRatio, bool fLines) = 0; //Set mouse-wheel scroll ratio in screens or lines if fLines=true.
 		virtual void ShowInfoBar(bool fShow) = 0;              //Show/hide bottom Info bar.

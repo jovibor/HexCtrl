@@ -292,7 +292,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	using enum EFieldType;
 
 	//EFieldType converter to actual wstring for the list.
-	static const std::unordered_map<EFieldType, const wchar_t*> umapETypeToWstr {
+	static const std::unordered_map<EFieldType, const wchar_t* const> umapETypeToWstr {
 		{ custom_size, L"custom size" }, { type_custom, L"custom type" },
 		{ type_bool, L"bool" }, { type_char, L"char" }, { type_uchar, L"unsigned char" },
 		{ type_short, L"short" }, { type_ushort, L"unsigned short" }, { type_int, L"int" },
@@ -1970,7 +1970,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 				wstrTypeName = StrToWstr(itName->value.GetString());
 			}
 			else {
-				return 0; //Each array entry (Object) must have a "TypeName" string.
+				return 0; //Each array entry (Object) must have a "TypeName" property.
 			}
 
 			const auto clrBk = lmbClrBkText(iterTypes, "clrBk").value_or(-1);
@@ -1986,7 +1986,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 			const DEFPROPERTIES stDefTypes { .clrBk { clrBk }, .clrText { clrText },
 				.pTemplate { pTemplate }, .fBigEndian { fBigEndian } };
 			lmbParseFields(iterFields, umapCT[uCustomTypeID], stDefTypes, umapCT);
-			pTemplate->vecCustomType.emplace_back(HEXCUSTOMTYPE { .wstrTypeName = std::move(wstrTypeName), .uTypeID = uCustomTypeID });
+			pTemplate->vecCustomType.emplace_back(std::move(wstrTypeName), uCustomTypeID);
 		}
 	}
 

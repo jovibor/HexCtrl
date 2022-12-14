@@ -305,7 +305,7 @@ void CHexSampleDlg::FileClose()
 	m_fFileOpen = false;
 }
 
-void CHexSampleDlg::LoadTemplates(IHexCtrl* pHexCtrl)
+void CHexSampleDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
 {
 	wchar_t buff[MAX_PATH];
 	GetModuleFileNameW(nullptr, buff, MAX_PATH);

@@ -31,11 +31,11 @@ namespace HEXCTRL::INTERNAL
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
 		//Main routine for finding stuff.
-		[[nodiscard]] SFINDRESULT Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, std::span<std::byte> spnSearch,
+		[[nodiscard]] SFINDRESULT Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnSearch,
 			bool fForward = true, CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true);
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
-		void HexCtrlHighlight(const std::vector<HEXSPAN>& vecSel); //Highlight found occurence in HexCtrl.
+		void HexCtrlHighlight(const VecSpan& vecSel); //Highlight found occurence in HexCtrl.
 		template<std::uint16_t uCmpType>
 		[[nodiscard]] bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const;
 		BOOL OnInitDialog()override;
@@ -67,7 +67,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool PrepareFloat();
 		[[nodiscard]] bool PrepareDouble();
 		[[nodiscard]] bool PrepareFILETIME();
-		void Replace(ULONGLONG ullIndex, std::span<std::byte> spnReplace)const;
+		void Replace(ULONGLONG ullIndex, SpanCByte spnReplace)const;
 		void ResetSearch();
 		void Search();
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.

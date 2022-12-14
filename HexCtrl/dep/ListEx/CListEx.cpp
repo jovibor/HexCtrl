@@ -95,7 +95,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		[[nodiscard]] bool GetSortAscending()const override;
 		void HideColumn(int iIndex, bool fHide)override;
 		int InsertColumn(int nCol, const LVCOLUMNW* pColumn, int iDataAlign = LVCFMT_LEFT)override;
-		int InsertColumn(int nCol, LPCTSTR lpszColumnHeading, int nFormat = LVCFMT_LEFT,
+		int InsertColumn(int nCol, LPCWSTR lpszColumnHeading, int nFormat = LVCFMT_LEFT,
 			int nWidth = -1, int nSubItem = -1, int iDataAlign = LVCFMT_LEFT)override;
 		[[nodiscard]] bool IsCreated()const override;
 		[[nodiscard]] bool IsColumnSortable(int iColumn)override;
@@ -1118,7 +1118,7 @@ int CListEx::InsertColumn(int nCol, const LVCOLUMNW* pColumn, int iDataAlign)
 	return iNewIndex;
 }
 
-int CListEx::InsertColumn(int nCol, LPCTSTR lpszColumnHeading, int nFormat, int nWidth, int nSubItem, int iDataAlign)
+int CListEx::InsertColumn(int nCol, LPCWSTR lpszColumnHeading, int nFormat, int nWidth, int nSubItem, int iDataAlign)
 {
 	assert(IsCreated());
 	if (!IsCreated())

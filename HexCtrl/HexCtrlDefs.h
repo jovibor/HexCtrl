@@ -17,6 +17,9 @@
 
 namespace HEXCTRL
 {
+	using SpanByte = std::span<std::byte>;
+	using SpanCByte = std::span<const std::byte>;
+
 	/********************************************************************************************
 	* EHexCmd - Enum of the commands that can be executed within HexCtrl, used in ExecuteCmd.   *
 	********************************************************************************************/
@@ -53,14 +56,15 @@ namespace HEXCTRL
 		ULONGLONG ullOffset { };
 		ULONGLONG ullSize { };
 	};
+	using VecSpan = std::vector<HEXSPAN>;
 
 	/********************************************************************************************
 	* HEXDATAINFO - struct for a data information used in IHexVirtData.                         *
 	********************************************************************************************/
 	struct HEXDATAINFO {
-		NMHDR                hdr { };       //Standard Windows header.
-		HEXSPAN              stHexSpan { }; //Offset and size of the data bytes.
-		std::span<std::byte> spnData { };   //Data span.
+		NMHDR    hdr { };       //Standard Windows header.
+		HEXSPAN  stHexSpan { }; //Offset and size of the data bytes.
+		SpanByte spnData { };   //Data span.
 	};
 
 	/********************************************************************************************
@@ -79,12 +83,12 @@ namespace HEXCTRL
 	* HEXBKM - Bookmarks main struct.                                                           *
 	********************************************************************************************/
 	struct HEXBKM {
-		std::vector<HEXSPAN> vecSpan { };                //Vector of offsets and sizes.
-		std::wstring         wstrDesc { };               //Bookmark description.
-		ULONGLONG            ullID { };                  //Bookmark ID, assigned internally by framework.
-		ULONGLONG            ullData { };                //User defined custom data.
-		COLORREF             clrBk { RGB(240, 240, 0) }; //Bk color.
-		COLORREF             clrText { RGB(0, 0, 0) };   //Text color.
+		VecSpan      vecSpan { };                //Vector of offsets and sizes.
+		std::wstring wstrDesc { };               //Bookmark description.
+		ULONGLONG    ullID { };                  //Bookmark ID, assigned internally by framework.
+		ULONGLONG    ullData { };                //User defined custom data.
+		COLORREF     clrBk { RGB(240, 240, 0) }; //Bk color.
+		COLORREF     clrText { RGB(0, 0, 0) };   //Text color.
 	};
 	using PHEXBKM = HEXBKM*;
 
@@ -206,12 +210,12 @@ namespace HEXCTRL
 	* HEXDATA - for IHexCtrl::SetData method.                                                   *
 	********************************************************************************************/
 	struct HEXDATA {
-		std::span<std::byte> spnData { };               //Data to display.
-		IHexVirtData*        pHexVirtData { };          //Pointer for Virtual mode.
-		IHexVirtColors*      pHexVirtColors { };        //Pointer for Custom Colors class.
-		DWORD                dwCacheSize { 0x800000U }; //In Virtual mode max cached size of data to fetch.
-		bool                 fMutable { false };        //Is data mutable (editable) or read-only.
-		bool                 fHighLatency { false };    //Do not redraw window until scrolling completes.
+		SpanByte        spnData { };               //Data to display.
+		IHexVirtData*   pHexVirtData { };          //Pointer for Virtual mode.
+		IHexVirtColors* pHexVirtColors { };        //Pointer for Custom Colors class.
+		DWORD           dwCacheSize { 0x800000U }; //In Virtual mode max cached size of data to fetch.
+		bool            fMutable { false };        //Is data mutable (editable) or read-only.
+		bool            fHighLatency { false };    //Do not redraw window until scrolling completes.
 	};
 
 	/********************************************************************************************
@@ -272,11 +276,11 @@ namespace HEXCTRL
 	* what kind of operation must be performed on data, with the enDataSize showing the size.   *
 	********************************************************************************************/
 	struct HEXMODIFY {
-		EHexModifyMode       enModifyMode { EHexModifyMode::MODIFY_ONCE }; //Modify mode.
-		EHexOperMode         enOperMode { };       //Operation mode, used only in MODIFY_OPERATION mode.
-		EHexDataSize         enDataSize { };       //Operation data size.
-		std::span<std::byte> spnData { };          //Data span.
-		std::vector<HEXSPAN> vecSpan { };          //Vector of data offsets and sizes.
-		bool                 fBigEndian { false }; //Treat the data as a big endian, used only in MODIFY_OPERATION mode.
+		EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_ONCE }; //Modify mode.
+		EHexOperMode   enOperMode { };       //Operation mode, used only in MODIFY_OPERATION mode.
+		EHexDataSize   enDataSize { };       //Operation data size.
+		SpanCByte      spnData { };          //Span of the data to modify from.
+		VecSpan        vecSpan { };          //Vector of data offsets and sizes.
+		bool           fBigEndian { false }; //Treat the data as a big endian, used only in MODIFY_OPERATION mode.
 	};
 };

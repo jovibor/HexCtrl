@@ -456,7 +456,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_BKM_ADD:
 		m_pDlgBkmMgr->AddBkm(HEXBKM { HasSelection() ? GetSelection()
-			: std::vector<HEXSPAN> { { GetCaretPos(), 1 } } }, true);
+			: VecSpan { { GetCaretPos(), 1 } } }, true);
 		break;
 	case CMD_BKM_REMOVE:
 		m_pDlgBkmMgr->RemoveByOffset(GetCaretPos());
@@ -660,14 +660,14 @@ auto CHexCtrl::GetColors()const->HEXCOLORS
 	return m_stColor;
 }
 
-auto CHexCtrl::GetData(HEXSPAN hss)const->std::span<std::byte>
+auto CHexCtrl::GetData(HEXSPAN hss)const->SpanByte
 {
 	assert(IsCreated());
 	assert(IsDataSet());
 	if (!IsCreated() || !IsDataSet())
 		return { };
 
-	std::span<std::byte> spnData;
+	SpanByte spnData;
 	if (!IsVirtual()) {
 		if (hss.ullOffset + hss.ullSize <= GetDataSize())
 			spnData = { m_spnData.data() + hss.ullOffset, static_cast<std::size_t>(hss.ullSize) };
@@ -768,7 +768,7 @@ DWORD CHexCtrl::GetPageSize()const
 	return m_dwPageSize;
 }
 
-auto CHexCtrl::GetSelection()const->std::vector<HEXSPAN>
+auto CHexCtrl::GetSelection()const->VecSpan
 {
 	assert(IsCreated());
 	assert(IsDataSet());
@@ -1105,15 +1105,15 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		std::random_device rd;
 		std::mt19937 gen(rd());
 		std::uniform_int_distribution<std::uint64_t> distUInt64(0, (std::numeric_limits<std::uint64_t>::max)());
-		const auto lmbRandUInt64 = [&](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> /**/) {
+		const auto lmbRandUInt64 = [&](std::byte* pData, const HEXMODIFY& /**/, SpanCByte /**/) {
 			assert(pData != nullptr);
 			*reinterpret_cast<std::uint64_t*>(pData) = distUInt64(gen);
 		};
-		const auto lmbRandByte = [&](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> /**/) {
+		const auto lmbRandByte = [&](std::byte* pData, const HEXMODIFY& /**/, SpanCByte /**/) {
 			assert(pData != nullptr);
 			*pData = static_cast<std::byte>(distUInt64(gen));
 		};
-		const auto lmbRandFast = [](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> spnDataFrom) {
+		const auto lmbRandFast = [](std::byte* pData, const HEXMODIFY& /**/, SpanCByte spnDataFrom) {
 			assert(pData != nullptr);
 			std::copy_n(spnDataFrom.data(), spnDataFrom.size(), pData);
 		};
@@ -1179,7 +1179,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	break;
 	case MODIFY_REPEAT:
 	{
-		constexpr auto lmbRepeat = [](std::byte* pData, const HEXMODIFY& /**/, std::span<std::byte> spnDataFrom) {
+		constexpr auto lmbRepeat = [](std::byte* pData, const HEXMODIFY& /**/, SpanCByte spnDataFrom) {
 			assert(pData != nullptr);
 			std::copy_n(spnDataFrom.data(), spnDataFrom.size(), pData);
 		};
@@ -1219,12 +1219,12 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	break;
 	case MODIFY_OPERATION:
 	{
-		constexpr auto lmbOperData = [](std::byte* pData, const HEXMODIFY& hms, std::span<std::byte>/**/) {
+		constexpr auto lmbOperData = [](std::byte* pData, const HEXMODIFY& hms, SpanCByte/**/) {
 			assert(pData != nullptr);
 
 			constexpr auto lmbOper = []<typename T>(T * pData, const HEXMODIFY & hms) {
 				T tData = hms.fBigEndian ? ByteSwap(*pData) : *pData;
-				const T tDataOper = *reinterpret_cast<T*>(hms.spnData.data());
+				const T tDataOper = *reinterpret_cast<const T*>(hms.spnData.data());
 
 				using enum EHexOperMode;
 				switch (hms.enOperMode) {
@@ -1840,7 +1840,7 @@ void CHexCtrl::SetRedraw(bool fRedraw)
 	m_fRedraw = fRedraw;
 }
 
-void CHexCtrl::SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw, bool fHighlight)
+void CHexCtrl::SetSelection(const VecSpan& vecSel, bool fRedraw, bool fHighlight)
 {
 	assert(IsCreated());
 	assert(IsDataSet());
@@ -2230,7 +2230,7 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 		ullSizeModify = strDataModify.size();
 		if (ullCaretPos + ullSizeModify > ullDataSize)
 			ullSizeModify = ullDataSize - ullCaretPos;
-		hmd.spnData = { reinterpret_cast<std::byte*>(strDataModify.data()), static_cast<std::size_t>(ullSizeModify) };
+		hmd.spnData = { reinterpret_cast<const std::byte*>(strDataModify.data()), static_cast<std::size_t>(ullSizeModify) };
 	}
 	break;
 	case EClipboard::PASTE_HEX:
@@ -2245,7 +2245,7 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 		ullSizeModify = strDataModify.size();
 		if (ullCaretPos + ullSizeModify > ullDataSize)
 			ullSizeModify = ullDataSize - ullCaretPos;
-		hmd.spnData = { reinterpret_cast<std::byte*>(strDataModify.data()), static_cast<std::size_t>(ullSizeModify) };
+		hmd.spnData = { reinterpret_cast<const std::byte*>(strDataModify.data()), static_cast<std::size_t>(ullSizeModify) };
 	}
 	break;
 	default:
@@ -2521,7 +2521,7 @@ auto CHexCtrl::CopyTextUTF16()const->std::wstring
 	}
 	else if (iEncoding == 0) { //UTF-16.
 		const auto sSizeWstr = (strData.size() % 2) == 0 ? strData.size() / sizeof(wchar_t) : (strData.size() - 1) / sizeof(wchar_t);
-		const auto pDataUTF16Beg = reinterpret_cast<wchar_t*>(strData.data());
+		const auto pDataUTF16Beg = reinterpret_cast<const wchar_t*>(strData.data());
 		const auto pDataUTF16End = pDataUTF16Beg + sSizeWstr;
 		wstrText.assign(pDataUTF16Beg, pDataUTF16End);
 	}
@@ -3588,7 +3588,7 @@ bool CHexCtrl::IsPageVisible()const
 }
 
 template<typename T>
-void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const std::span<std::byte> spnDataToOperWith)
+void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const SpanCByte spnDataToOperWith)
 {
 	assert(!spnDataToOperWith.empty());
 	if (spnDataToOperWith.empty())
@@ -4030,7 +4030,7 @@ void CHexCtrl::Redo()
 
 	const auto& refRedo = m_deqRedo.back();
 
-	std::vector<HEXSPAN> vecSpan { };
+	VecSpan vecSpan { };
 	std::transform(refRedo->begin(), refRedo->end(), std::back_inserter(vecSpan),
 		[](SUNDO& ref) { return HEXSPAN { ref.ullOffset, ref.vecData.size() }; });
 
@@ -4343,7 +4343,7 @@ void CHexCtrl::SelAddUp()
 	}
 }
 
-void CHexCtrl::SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss)const
+void CHexCtrl::SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const
 {
 	//Note: Since this method can be executed asynchronously (in search/replace, etc...),
 	//the SendMesage(parent, ...) is impossible here because receiver window
@@ -4371,7 +4371,7 @@ void CHexCtrl::SetFontSize(long lSize)
 	SetFont(lf);
 }
 
-void CHexCtrl::SnapshotUndo(const std::vector<HEXSPAN>& vecSpan)
+void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 {
 	constexpr auto dwUndoMax { 500U }; //How many Undo states to preserve.
 	const auto ullTotalSize = std::accumulate(vecSpan.begin(), vecSpan.end(), 0ULL,
@@ -4805,7 +4805,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	m_fSelectionBlock = GetAsyncKeyState(VK_MENU) < 0;
 	SetCapture();
 
-	std::vector<HEXSPAN> vecSel { };
+	VecSpan vecSel;
 	if (nFlags & MK_SHIFT) {
 		ULONGLONG ullSelStart;
 		ULONGLONG ullSelEnd;
@@ -4932,7 +4932,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 
 		m_ullCursorPrev = ullClick;
 		m_ullCaretPos = ullStart;
-		std::vector<HEXSPAN> vecSel;
+		VecSpan vecSel;
 		vecSel.reserve(static_cast<size_t>(ullLines));
 		for (auto iterLines = 0ULL; iterLines < ullLines; ++iterLines)
 			vecSel.emplace_back(ullStart + m_dwCapacity * iterLines, ullSize);

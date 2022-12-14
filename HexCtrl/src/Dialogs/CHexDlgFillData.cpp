@@ -146,17 +146,17 @@ void CHexDlgFillData::OnOK()
 		}
 		strFillWith = std::move(*optData);
 		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
-		hms.spnData = { reinterpret_cast<std::byte*>(strFillWith.data()), strFillWith.size() };
+		hms.spnData = { reinterpret_cast<const std::byte*>(strFillWith.data()), strFillWith.size() };
 	}
 	break;
 	case EFillType::FILL_ASCII:
 		strFillWith = WstrToStr(wstrFillWith);
 		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
-		hms.spnData = { reinterpret_cast<std::byte*>(strFillWith.data()), strFillWith.size() };
+		hms.spnData = { reinterpret_cast<const std::byte*>(strFillWith.data()), strFillWith.size() };
 		break;
 	case EFillType::FILL_WCHAR:
 		hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
-		hms.spnData = { reinterpret_cast<std::byte*>(wstrFillWith.data()), wstrFillWith.size() * sizeof(WCHAR) };
+		hms.spnData = { reinterpret_cast<const std::byte*>(wstrFillWith.data()), wstrFillWith.size() * sizeof(WCHAR) };
 		break;
 	case EFillType::FILL_RAND_MT19937:
 		hms.enModifyMode = EHexModifyMode::MODIFY_RAND_MT19937;

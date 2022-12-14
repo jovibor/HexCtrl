@@ -25,7 +25,7 @@ private:
 	[[nodiscard]] bool IsFileOpen()const;
 	void FileOpen(std::wstring_view wstrPath, bool fRW);
 	void FileClose();
-	void LoadTemplates(IHexCtrl* pHexCtrl);
+	void LoadTemplates(const IHexCtrl* pHexCtrl);
 	[[nodiscard]] static auto OpenFileDlg() -> std::optional<std::vector<std::wstring>>;
 	DECLARE_MESSAGE_MAP();
 private:

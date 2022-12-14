@@ -46,7 +46,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] DWORD GetCapacity()const override;
 		[[nodiscard]] ULONGLONG GetCaretPos()const override;
 		[[nodiscard]] auto GetColors()const->HEXCOLORS override;
-		[[nodiscard]] auto GetData(HEXSPAN hss)const->std::span<std::byte> override;
+		[[nodiscard]] auto GetData(HEXSPAN hss)const->SpanByte override;
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;
 		[[nodiscard]] auto GetDateInfo()const->std::tuple<DWORD, wchar_t> override;
 		[[nodiscard]] int GetEncoding()const override;
@@ -56,7 +56,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetPagesCount()const->ULONGLONG override;
 		[[nodiscard]] auto GetPagePos()const->ULONGLONG override;
 		[[nodiscard]] DWORD GetPageSize()const override;
-		[[nodiscard]] auto GetSelection()const->std::vector<HEXSPAN> override;
+		[[nodiscard]] auto GetSelection()const->VecSpan override;
 		[[nodiscard]] auto GetTemplates()const->IHexTemplates* override;
 		[[nodiscard]] wchar_t GetUnprintableChar()const override;
 		[[nodiscard]] HWND GetWindowHandle(EHexWnd eWnd)const override;
@@ -86,7 +86,7 @@ namespace HEXCTRL::INTERNAL
 		void SetPageSize(DWORD dwSize, std::wstring_view wstrName)override;
 		void SetVirtualBkm(IHexBookmarks* pVirtBkm)override;
 		void SetRedraw(bool fRedraw)override;
-		void SetSelection(const std::vector<HEXSPAN>& vecSel, bool fRedraw = true, bool fHighlight = false)override;
+		void SetSelection(const VecSpan& vecSel, bool fRedraw = true, bool fHighlight = false)override;
 		void SetUnprintableChar(wchar_t wch)override;
 		void SetWheelRatio(double dbRatio, bool fLines)override;
 		void ShowInfoBar(bool fShow)override;
@@ -144,7 +144,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsInfoBar()const;                   //Should bottom Info rect be painted or not.
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
 		template<typename T>
-		void ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, std::span<std::byte> spnDataToOperWith); //Main "modify" method with different workers.
+		void ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, SpanCByte spnDataToOperWith); //Main "modify" method with different workers.
 		void OffsetToString(ULONGLONG ullOffset, wchar_t* buffOut)const; //Format offset to wchar_t string.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		void OnModifyData();                                   //When data has been modified.
@@ -162,9 +162,9 @@ namespace HEXCTRL::INTERNAL
 		void SelAddLeft();       //Left Key pressed with the Shift.
 		void SelAddRight();      //Right Key pressed with the Shift.
 		void SelAddUp();         //Up Key pressed with the Shift.
-		void SetDataVirtual(std::span<std::byte> spnData, const HEXSPAN& hss)const; //Sets data (notifies back) in Virtual mode.
+		void SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const; //Sets data (notifies back) in Virtual mode.
 		void SetFontSize(long lSize); //Set current font size.
-		void SnapshotUndo(const std::vector<HEXSPAN>& vecSpan); //Takes currently modifiable data snapshot.
+		void SnapshotUndo(const VecSpan& vecSpan); //Takes currently modifiable data snapshot.
 		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;     //Point of the text chunk.
 		void ToolTipBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip for bookmark show/hide.
 		void ToolTipTemplShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip for templates show/hide.
@@ -214,7 +214,7 @@ namespace HEXCTRL::INTERNAL
 		const int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
 		const int m_iFirstHorzLine { 0 };     //First horizontal line indent.
 		const int m_iFirstVertLine { 0 };     //First vertical line indent.
-		std::span<std::byte> m_spnData { };   //Main data span.
+		SpanByte m_spnData { };               //Main data span.
 		HEXCOLORS m_stColor;                  //All control related colors.
 		EHexDataSize m_enGroupMode { EHexDataSize::SIZE_BYTE }; //Current "Group Data By" mode.
 		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.

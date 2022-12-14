@@ -102,12 +102,12 @@ ULONGLONG CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const
 	return ullOffset;
 }
 
-auto CHexSelection::GetData()const->std::vector<HEXSPAN>
+auto CHexSelection::GetData()const->VecSpan
 {
 	return m_vecSelection;
 }
 
-void CHexSelection::SetSelection(const std::vector<HEXSPAN>& vecSel, bool fHighlight)
+void CHexSelection::SetSelection(const VecSpan& vecSel, bool fHighlight)
 {
 	if (fHighlight)
 		m_vecSelHighlight = vecSel;

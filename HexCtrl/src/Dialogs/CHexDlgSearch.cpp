@@ -63,7 +63,7 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG ullMemChunks { };     //How many such memory chunks, to search in.
 		ULONGLONG ullSizeSentinel { };  //Maximum size that search can't cross
 		CHexDlgCallback* pDlgClbk { };
-		std::span<std::byte> spnSearch { };
+		SpanCByte spnSearch { };
 		bool fForward { };
 		bool fBigStep { };
 		bool fCanceled { };
@@ -204,7 +204,7 @@ void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
 	}
 }
 
-auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, std::span<std::byte> spnSearch,
+auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnSearch,
 	bool fForward, CHexDlgCallback* pDlgClbk, bool fDlgExit)->SFINDRESULT
 {	//ullStart will keep index of found occurence, if any.
 
@@ -276,7 +276,7 @@ auto CHexDlgSearch::GetSearchMode()const->CHexDlgSearch::EMode
 	return static_cast<EMode>(m_stComboMode.GetItemData(m_stComboMode.GetCurSel()));
 }
 
-void CHexDlgSearch::HexCtrlHighlight(const std::vector<HEXSPAN>& vecSel)
+void CHexDlgSearch::HexCtrlHighlight(const VecSpan& vecSel)
 {
 	const auto pHexCtrl = GetHexCtrl();
 	pHexCtrl->SetSelection(vecSel, true, m_fSelection); //Highlight selection?
@@ -627,7 +627,7 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED)) {
 		SetEditStartAt(m_vecSearchRes[static_cast<size_t>(pNMI->iItem)]);
 
-		std::vector<HEXSPAN> vecSpan { };
+		VecSpan vecSpan;
 		int nItem = -1;
 		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i) {
 			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
@@ -1158,7 +1158,7 @@ bool CHexDlgSearch::PrepareFILETIME()
 	return true;
 }
 
-void CHexDlgSearch::Replace(ULONGLONG ullIndex, const std::span<std::byte> spnReplace)const
+void CHexDlgSearch::Replace(ULONGLONG ullIndex, const SpanCByte spnReplace)const
 {
 	GetHexCtrl()->ModifyData({ .enModifyMode { EHexModifyMode::MODIFY_ONCE }, .spnData { spnReplace },
 		.vecSpan { { ullIndex, spnReplace.size() } } });
