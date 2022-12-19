@@ -5,9 +5,11 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #pragma once
+#include "../../dep/rapidjson/rapidjson-amalgam.h"
 #include "../../dep/ListEx/ListEx.h"
 #include "../../HexCtrl.h"
 #include <afxdialogex.h>
+#include <unordered_map>
 
 namespace HEXCTRL::INTERNAL
 {
@@ -20,6 +22,8 @@ namespace HEXCTRL::INTERNAL
 	using PVecFields = VecFields*;
 	using PHEXTEMPLATEFIELD = HEXTEMPLATEFIELD*;
 	using PCHEXTEMPLATEFIELD = const HEXTEMPLATEFIELD*;
+	using IterJSONMember = rapidjson::Value::ConstMemberIterator;
+	using UmapCustomTypes = std::unordered_map<std::uint8_t, VecFields>;
 
 	enum class EFieldType : std::uint8_t {
 		custom_size, type_custom,
@@ -37,8 +41,8 @@ namespace HEXCTRL::INTERNAL
 	struct HEXTEMPLATEFIELD {
 		std::wstring      wstrName { };     //Field name.
 		std::wstring      wstrDescr { };    //Field description.
-		int               iSize { };        //Field size.
 		int               iOffset { };      //Field offset relative to the Template's beginning.
+		int               iSize { };        //Field size.
 		COLORREF          clrBk { };        //Background color in HexCtrl.
 		COLORREF          clrText { };      //Text color in HexCtrl.
 		VecFields         vecNested { };    //Vector for nested fields.
@@ -63,6 +67,14 @@ namespace HEXCTRL::INTERNAL
 		int          iAppliedID; //Applied/runtime ID, assigned by framework. Any template can be applied more than once.
 	};
 	using PHEXTEMPLATEAPPLIED = HEXTEMPLATEAPPLIED*;
+
+	struct FIELDSDEFPROPS { //Helper struct for convenient argument passing through recursive fields' parsing.
+		COLORREF          clrBk { };
+		COLORREF          clrText { };
+		PHEXTEMPLATE      pTemplate { }; //Same for all fields.
+		PHEXTEMPLATEFIELD pFieldParent { };
+		bool              fBigEndian { false };
+	};
 
 	class CHexDlgTemplMgr : public CDialogEx, public IHexTemplates
 	{
@@ -156,8 +168,12 @@ namespace HEXCTRL::INTERNAL
 		void SetHexSelByField(PCHEXTEMPLATEFIELD pField);
 		void ShowTooltips(bool fShow)override;
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
-		void UnloadTemplate(int iTemplateID)override;       //Unload/remove loaded template from memory.
+		void UnloadTemplate(int iTemplateID)override; //Unload/remove loaded template from memory.
 		void UpdateStaticText();
+		[[nodiscard]] bool JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& refVecFields,
+			const FIELDSDEFPROPS& refStDefs, UmapCustomTypes& refUmapCT, int* pOffset = nullptr)const;
+		[[nodiscard]] auto JSONEndianness(const rapidjson::Value& value)const->std::optional<bool>;
+		[[nodiscard]] auto JSONColors(const rapidjson::Value& value, const char* pszColorName)const->std::optional<COLORREF>;
 		static LRESULT CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 		DECLARE_MESSAGE_MAP();

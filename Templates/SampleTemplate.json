@@ -1,5 +1,5 @@
 {
-    "$schema": "HexCtrl.Templates.Schema.json",
+    "$schema": "https://raw.githubusercontent.com/jovibor/HexCtrl/master/docs/HexCtrl.Templates.Schema.json",
     "TemplateName": "SampleTemplate",
     "Data": {
         "endianness": "little",
