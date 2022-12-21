@@ -29,6 +29,11 @@ namespace HEXCTRL
 	class IHexCtrl
 	{
 	public:
+		IHexCtrl() = default;
+		IHexCtrl(const IHexCtrl&) = delete;
+		IHexCtrl(IHexCtrl&&) = delete;
+		IHexCtrl& operator=(const IHexCtrl&) = delete;
+		IHexCtrl& operator=(IHexCtrl&&) = delete;
 		virtual void ClearData() = 0; //Clears all data from HexCtrl's view (not touching data itself).
 		virtual bool Create(const HEXCREATE& hcs) = 0;                       //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent) = 0;    //Сreates custom dialog control.

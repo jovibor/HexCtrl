@@ -35,6 +35,10 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		explicit CHexCtrl();
+		CHexCtrl(const CHexCtrl&) = delete;
+		CHexCtrl(CHexCtrl&&) = delete;
+		CHexCtrl& operator=(const CHexCtrl&) = delete;
+		CHexCtrl& operator=(CHexCtrl&&) = delete;
 		void ClearData()override;
 		bool Create(const HEXCREATE& hcs)override;
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)override;

@@ -55,7 +55,7 @@ namespace HEXCTRL::LISTEX
 	**********************************************************************************/
 	struct LISTEXCREATE {
 		LISTEXCOLORS stColor { };             //All control's colors.
-		CRect        rect;                    //Initial rect.
+		CRect        rect { };                //Initial rect.
 		CWnd*        pParent { };             //Parent window.
 		LOGFONTW*    pListLogFont { };        //List font.
 		LOGFONTW*    pHdrLogFont { };         //Header font.
@@ -66,8 +66,8 @@ namespace HEXCTRL::LISTEX
 		bool         fDialogCtrl { false };   //If it's a list within dialog.
 		bool         fSortable { false };     //Is list sortable, by clicking on the header column?
 		bool         fLinkUnderline { true }; //Links are displayed underlined or not.
+		bool         fLinkTooltip { true };   //Show links' toolips or not.
 		bool         fTooltipBaloon { true }; //Baloon type tooltip for cells.
-		bool         fLinkTooltip { true };   //Show links' toolips.
 		bool         fHighLatency { false };  //Do not redraw window until scrolling completes.
 	};
 
@@ -108,8 +108,8 @@ namespace HEXCTRL::LISTEX
 		[[nodiscard]] virtual bool GetSortAscending()const = 0;
 		virtual void HideColumn(int iIndex, bool fHide) = 0;
 		virtual int InsertColumn(int nCol, const LVCOLUMNW* pColumn, int iDataAlign = LVCFMT_LEFT) = 0;
-		virtual int InsertColumn(int nCol, LPCTSTR lpszColumnHeading, int nFormat = LVCFMT_LEFT,
-			int nWidth = -1, int nSubItem = -1, int iDataAlign = LVCFMT_LEFT) = 0;
+		virtual int InsertColumn(int nCol, LPCWSTR pwszName, int nFormat = LVCFMT_LEFT, int nWidth = -1,
+			int nSubItem = -1, int iDataAlign = LVCFMT_LEFT) = 0;
 		[[nodiscard]] virtual bool IsCreated()const = 0;
 		[[nodiscard]] virtual bool IsColumnSortable(int iColumn) = 0;
 		virtual void ResetSort() = 0; //Reset all the sort by any column to its default state.
