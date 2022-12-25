@@ -27,7 +27,7 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	//HexCtrl version and name constants for exporting.
+	//HexCtrl version and name constants, for module exporting.
 	constexpr auto WSTR_HEXCTRL_PRODUCT_NAME = HEXCTRL_PRODUCT_NAME;
 	constexpr auto WSTR_HEXCTRL_COPYRIGHT_NAME = HEXCTRL_COPYRIGHT_NAME;
 	constexpr auto ID_HEXCTRL_VERSION_MAJOR = HEXCTRL_VERSION_MAJOR;
