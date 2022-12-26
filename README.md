@@ -435,7 +435,7 @@ Returns currently set data size.
 
 ### [](#)GetDateInfo
 ```cpp
-GetDateInfo()const->std::tuple<DWORD, wchar_t>;
+auto GetDateInfo()const->std::tuple<DWORD, wchar_t>;
 ```
 Returns [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate), and date separator.
 
@@ -447,9 +447,9 @@ Get code page that is currently in use.
 
 ### [](#)GetFont
 ```cpp
-void GetFont(LOGFONTW& lf);
+auto GetFont()->LOGFONTW;
 ```
-Retrieves current font through `lf` arg.
+Retrieves current font's `LOGFONTW`.
 
 ### [](#)GetGroupMode
 ```cpp
@@ -562,7 +562,7 @@ Is "Offset" currently represented (shown) as Hex or as Decimal. It can be change
 
 ### [](#)IsOffsetVisible
 ```cpp
-HEXVISION IsOffsetVisible(ULONGLONG ullOffset)const;
+auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION;
 ```
 Checks for offset visibility and returns [`HEXVISION`](#hexvision) as a result.
 

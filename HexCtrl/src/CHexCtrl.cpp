@@ -81,7 +81,7 @@ namespace HEXCTRL
 			const auto iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
 			ReleaseDC(pDC);
 
-			const auto fScale = iLOGPIXELSY / 96.0f; //Scale factor for HighDPI displays.
+			const auto fScale = iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
 			const auto iSizeIcon = static_cast<int>(32 * fScale);
 			m_bmpLogo = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
 				MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
@@ -634,14 +634,14 @@ auto CHexCtrl::GetCacheSize()const->DWORD
 	return m_dwCacheSize;
 }
 
-DWORD CHexCtrl::GetCapacity()const
+auto CHexCtrl::GetCapacity()const->DWORD
 {
 	assert(IsCreated());
 
 	return m_dwCapacity;
 }
 
-ULONGLONG CHexCtrl::GetCaretPos()const
+auto CHexCtrl::GetCaretPos()const->ULONGLONG
 {
 	assert(IsCreated());
 	assert(IsDataSet());
@@ -710,13 +710,15 @@ int CHexCtrl::GetEncoding()const
 	return m_iCodePage;
 }
 
-void CHexCtrl::GetFont(LOGFONTW& lf)
+auto CHexCtrl::GetFont()->LOGFONTW
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return;
+		return{ };
 
+	LOGFONTW lf;
 	m_fontMain.GetLogFont(&lf);
+	return lf;
 }
 
 auto CHexCtrl::GetGroupMode()const->EHexDataSize
@@ -728,7 +730,7 @@ auto CHexCtrl::GetGroupMode()const->EHexDataSize
 	return m_enGroupMode;
 }
 
-HMENU CHexCtrl::GetMenuHandle()const
+auto CHexCtrl::GetMenuHandle()const->HMENU
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -759,7 +761,7 @@ auto CHexCtrl::GetPagePos()const->ULONGLONG
 	return GetCaretPos() / GetPageSize();
 }
 
-DWORD CHexCtrl::GetPageSize()const
+auto CHexCtrl::GetPageSize()const->DWORD
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -783,7 +785,7 @@ auto CHexCtrl::GetTemplates()const->IHexTemplates*
 	return &*m_pDlgTemplMgr;
 }
 
-wchar_t CHexCtrl::GetUnprintableChar()const
+auto CHexCtrl::GetUnprintableChar()const->wchar_t
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -792,7 +794,7 @@ wchar_t CHexCtrl::GetUnprintableChar()const
 	return m_wchUnprintable;
 }
 
-HWND CHexCtrl::GetWindowHandle(EHexWnd eWnd)const
+auto CHexCtrl::GetWindowHandle(EHexWnd eWnd)const->HWND
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -1407,7 +1409,7 @@ void CHexCtrl::SetColors(const HEXCOLORS& clr)
 	RedrawWindow();
 }
 
-bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
+bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -1528,7 +1530,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 
 	rapidjson::Document docJSON;
 	bool fJSONParsed { false };
-	if (wstrPath.empty()) { //Default IDR_HEXCTRL_JSON_KEYBIND.json, from resources.
+	if (wsvPath.empty()) { //Default IDR_HEXCTRL_JSON_KEYBIND.json, from resources.
 		const auto hInst = AfxGetInstanceHandle();
 		if (const auto hRes = FindResourceW(hInst, MAKEINTRESOURCEW(IDR_HEXCTRL_JSON_KEYBIND), L"JSON"); hRes != nullptr) {
 			if (const auto hData = LoadResource(hInst, hRes); hData != nullptr) {
@@ -1540,7 +1542,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wstrPath)
 			}
 		}
 	}
-	else if (std::ifstream ifs(std::wstring { wstrPath }); ifs.is_open()) {
+	else if (std::ifstream ifs(std::wstring { wsvPath }); ifs.is_open()) {
 		rapidjson::IStreamWrapper isw { ifs };
 		if (docJSON.ParseStream(isw); !docJSON.IsNull()) {
 			fJSONParsed = true;
@@ -1810,14 +1812,14 @@ void CHexCtrl::SetOffsetMode(bool fHex)
 	RecalcAll();
 }
 
-void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wstrName)
+void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wsvName)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
 	m_dwPageSize = dwSize;
-	m_wstrPageName = wstrName;
+	m_wstrPageName = wsvName;
 	if (IsDataSet())
 		Redraw();
 }
@@ -2107,8 +2109,7 @@ void CHexCtrl::CaretToPageEnd()
 
 void CHexCtrl::ChooseFontDlg()
 {
-	LOGFONTW lf { };
-	GetFont(lf);
+	auto lf = GetFont();
 	auto stClr = GetColors();
 	CHOOSEFONTW chf { .lStructSize = sizeof(CHOOSEFONTW), .hwndOwner = m_hWnd, .lpLogFont = &lf,
 		.Flags = CF_EFFECTS | CF_FIXEDPITCHONLY | CF_FORCEFONTEXIST | CF_INITTOLOGFONTSTRUCT | CF_NOSIMULATIONS,
@@ -3483,10 +3484,7 @@ auto CHexCtrl::GetCommand(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->s
 
 long CHexCtrl::GetFontSize()
 {
-	LOGFONTW lf;
-	GetFont(lf);
-
-	return lf.lfHeight;
+	return GetFont().lfHeight;
 }
 
 CRect CHexCtrl::GetRectTextCaption()const
@@ -4030,7 +4028,7 @@ void CHexCtrl::Redo()
 
 	const auto& refRedo = m_deqRedo.back();
 
-	VecSpan vecSpan { };
+	VecSpan vecSpan;
 	std::transform(refRedo->begin(), refRedo->end(), std::back_inserter(vecSpan),
 		[](SUNDO& ref) { return HEXSPAN { ref.ullOffset, ref.vecData.size() }; });
 
@@ -4365,8 +4363,7 @@ void CHexCtrl::SetFontSize(long lSize)
 	if (lSize < 4 || lSize > 64)
 		return;
 
-	LOGFONTW lf;
-	GetFont(lf);
+	auto lf = GetFont();
 	lf.lfHeight = -MulDiv(lSize, m_iLOGPIXELSY, 72);
 	SetFont(lf);
 }

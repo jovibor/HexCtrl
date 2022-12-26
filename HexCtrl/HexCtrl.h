@@ -39,26 +39,26 @@ namespace HEXCTRL
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent) = 0;    //Сreates custom dialog control.
 		virtual void Destroy() = 0;                                          //Deleter.
 		virtual void ExecuteCmd(EHexCmd eCmd) = 0;                           //Execute a command within the control.
-		[[nodiscard]] virtual int GetActualWidth()const = 0;                 //Working area actual width.
+		[[nodiscard]] virtual auto GetActualWidth()const->int = 0;           //Working area actual width.
 		[[nodiscard]] virtual auto GetBookmarks()const->IHexBookmarks* = 0;  //Get Bookmarks interface.
 		[[nodiscard]] virtual auto GetCacheSize()const->DWORD = 0;           //Returns Virtual mode cache size.
-		[[nodiscard]] virtual DWORD GetCapacity()const = 0;                  //Current capacity.
-		[[nodiscard]] virtual ULONGLONG GetCaretPos()const = 0;              //Cursor position.
+		[[nodiscard]] virtual auto GetCapacity()const->DWORD = 0;            //Current capacity.
+		[[nodiscard]] virtual auto GetCaretPos()const->ULONGLONG = 0;        //Cursor position.
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORS = 0;          //Current colors.
 		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->SpanByte = 0;  //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual auto GetDateInfo()const->std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
-		[[nodiscard]] virtual int GetEncoding()const = 0;                    //Get current code page ID.
-		virtual void GetFont(LOGFONTW& lf) = 0;                              //Get current font.
+		[[nodiscard]] virtual auto GetEncoding()const->int = 0;              //Get current code page ID.
+		[[nodiscard]] virtual auto GetFont() -> LOGFONTW = 0;                //Get current font.
 		[[nodiscard]] virtual auto GetGroupMode()const->EHexDataSize = 0;    //Retrieves current data grouping mode.
-		[[nodiscard]] virtual HMENU GetMenuHandle()const = 0;                //Context menu handle.
+		[[nodiscard]] virtual auto GetMenuHandle()const->HMENU = 0;          //Context menu handle.
 		[[nodiscard]] virtual auto GetPagesCount()const->ULONGLONG = 0;      //Get count of pages.
 		[[nodiscard]] virtual auto GetPagePos()const->ULONGLONG = 0;         //Get current page a cursor stays at.
-		[[nodiscard]] virtual DWORD GetPageSize()const = 0;                  //Current page size.
+		[[nodiscard]] virtual auto GetPageSize()const->DWORD = 0;            //Current page size.
 		[[nodiscard]] virtual auto GetSelection()const->VecSpan = 0;         //Get current selection.
 		[[nodiscard]] virtual auto GetTemplates()const->IHexTemplates* = 0;  //Get Templates interface.
-		[[nodiscard]] virtual wchar_t GetUnprintableChar()const = 0;         //Get unprintable replacement character.
-		[[nodiscard]] virtual HWND GetWindowHandle(EHexWnd eWnd)const = 0;   //Retrieves control's window/dialog handle.
+		[[nodiscard]] virtual auto GetUnprintableChar()const->wchar_t = 0;   //Get unprintable replacement character.
+		[[nodiscard]] virtual auto GetWindowHandle(EHexWnd eWnd)const->HWND = 0; //Retrieves control's window/dialog handle.
 		virtual void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0) = 0;   //Go (scroll) to a given offset.
 		[[nodiscard]] virtual bool HasSelection()const = 0;    //Does currently have any selection or not.
 		[[nodiscard]] virtual auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTEST> = 0; //HitTest given point.
@@ -74,7 +74,7 @@ namespace HEXCTRL
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
 		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true) = 0; //Set the caret position.
 		virtual void SetColors(const HEXCOLORS& clr) = 0;      //Set all the control's colors.
-		virtual bool SetConfig(std::wstring_view wstrPath) = 0;//Set configuration file, or "" for defaults.
+		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).
 		virtual void SetDateInfo(DWORD dwFormat, wchar_t wchSepar) = 0; //Set date format and date separator.
 		virtual void SetEncoding(int iCodePage) = 0;           //Code-page for text area.
@@ -82,7 +82,7 @@ namespace HEXCTRL
 		virtual void SetGroupMode(EHexDataSize eMode) = 0;     //Set current "Group Data By" mode.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
 		virtual void SetOffsetMode(bool fHex) = 0;             //Set offset being shown as Hex or as Decimal.
-		virtual void SetPageSize(DWORD dwSize, std::wstring_view wstrName = L"Page") = 0; //Set page size and name to draw the lines in-between.
+		virtual void SetPageSize(DWORD dwSize, std::wstring_view wsvName = L"Page") = 0; //Set page size and name to draw the lines in-between.
 		virtual void SetVirtualBkm(IHexBookmarks* pVirtBkm) = 0; //Set pointer for Bookmarks Virtual Mode.
 		virtual void SetRedraw(bool fRedraw) = 0;              //Handle WM_PAINT message or not.
 		virtual void SetSelection(const VecSpan& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.

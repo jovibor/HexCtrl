@@ -8,6 +8,7 @@
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgBkmMgr.h"
 #include "CHexDlgBkmProps.h"
+#include <algorithm>
 #include <cassert>
 #include <format>
 #include <numeric>
