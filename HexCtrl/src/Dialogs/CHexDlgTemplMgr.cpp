@@ -420,6 +420,8 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		case type_guid:
 			ShowListDataGUID(pItem->pszText, GetIHexTData<GUID>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
+		default:
+			break;
 		}
 	}
 	break;
@@ -596,6 +598,8 @@ void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			break;
 		case type_guid:
 			fSetRet = SetDataGUID(pwszText, ullOffset, fShouldSwap);
+			break;
+		default:
 			break;
 		}
 

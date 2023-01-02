@@ -127,14 +127,14 @@ void CHexSampleDlg::OnBnClearData()
 void CHexSampleDlg::OnBnFileOpenRO()
 {
 	if (auto optFiles = OpenFileDlg(); optFiles) {
-		FileOpen(optFiles->front(), false);
+		FileOpen(optFiles->front().data(), false);
 	}
 }
 
 void CHexSampleDlg::OnBnFileOpenRW()
 {
 	if (auto optFiles = OpenFileDlg(); optFiles) {
-		FileOpen(optFiles->front(), true);
+		FileOpen(optFiles->front().data(), true);
 	}
 }
 
@@ -248,11 +248,11 @@ bool CHexSampleDlg::IsFileOpen()const
 	return m_fFileOpen;
 }
 
-void CHexSampleDlg::FileOpen(std::wstring_view wstrPath, bool fRW)
+void CHexSampleDlg::FileOpen(LPCWSTR pwszPath, bool fRW)
 {
 	FileClose();
 
-	m_hFile = CreateFileW(wstrPath.data(), fRW ? GENERIC_READ | GENERIC_WRITE : GENERIC_READ,
+	m_hFile = CreateFileW(pwszPath, fRW ? GENERIC_READ | GENERIC_WRITE : GENERIC_READ,
 		FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (m_hFile == INVALID_HANDLE_VALUE) {
 		MessageBoxW(L"CreateFile call failed.\r\nFile might be already opened by another process.", L"Error", MB_ICONERROR);
@@ -284,10 +284,10 @@ void CHexSampleDlg::FileOpen(std::wstring_view wstrPath, bool fRW)
 	m_pHexDlg->SetData(m_hds);
 	if (m_pHexPopup->IsCreated()) {
 		m_pHexPopup->SetData(m_hds);
-		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), wstrPath.data());
+		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), pwszPath);
 	}
 
-	SetWindowTextW(wstrPath.data());
+	SetWindowTextW(pwszPath);
 }
 
 void CHexSampleDlg::FileClose()

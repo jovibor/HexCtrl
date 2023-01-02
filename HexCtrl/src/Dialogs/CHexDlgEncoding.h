@@ -15,7 +15,7 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgEncoding final : public CDialogEx
 	{
 	public:
-		void AddCP(std::wstring_view wstr);
+		void AddCP(std::wstring_view wsv);
 		void Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl);
 		BOOL ShowWindow(int nCmdShow);
 	private:

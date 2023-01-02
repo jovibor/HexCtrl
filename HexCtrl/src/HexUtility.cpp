@@ -137,41 +137,41 @@ namespace HEXCTRL::INTERNAL
 			|| stSysTime.wMilliseconds > 999)
 			return L"N/A";
 
-		std::wstring_view wstrFmt;
+		std::wstring_view wsvFmt;
 		switch (dwFormat) {
 		case 0:	//0:Month/Day/Year HH:MM:SS.mmm
-			wstrFmt = L"{1:02d}{7}{0:02d}{7}{2} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
+			wsvFmt = L"{1:02d}{7}{0:02d}{7}{2} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
 			break;
 		case 1: //1:Day/Month/Year HH:MM:SS.mmm
-			wstrFmt = L"{0:02d}{7}{1:02d}{7}{2} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
+			wsvFmt = L"{0:02d}{7}{1:02d}{7}{2} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
 			break;
 		case 2: //2:Year/Month/Day HH:MM:SS.mmm
-			wstrFmt = L"{2}{7}{1:02d}{7}{0:02d} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
+			wsvFmt = L"{2}{7}{1:02d}{7}{0:02d} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
 			break;
 		}
 
-		return std::vformat(wstrFmt, std::make_wformat_args(stSysTime.wDay, stSysTime.wMonth, stSysTime.wYear,
+		return std::vformat(wsvFmt, std::make_wformat_args(stSysTime.wDay, stSysTime.wMonth, stSysTime.wYear,
 			stSysTime.wHour, stSysTime.wMinute, stSysTime.wSecond, stSysTime.wMilliseconds, wchSepar));
 	}
 
 	auto GetDateFormatString(DWORD dwFormat, wchar_t wchSepar) -> std::wstring
 	{
-		std::wstring_view wstrFmt;
+		std::wstring_view wsvFmt;
 		switch (dwFormat) {
 		case 0:	//Month-Day-Year
-			wstrFmt = L"MM{0}DD{0}YYYY HH:MM:SS.mmm";
+			wsvFmt = L"MM{0}DD{0}YYYY HH:MM:SS.mmm";
 			break;
 		case 1: //Day-Month-Year
-			wstrFmt = L"DD{0}MM{0}YYYY HH:MM:SS.mmm";
+			wsvFmt = L"DD{0}MM{0}YYYY HH:MM:SS.mmm";
 			break;
 		case 2:	//Year-Month-Day
-			wstrFmt = L"YYYY{0}MM{0}DD HH:MM:SS.mmm";
+			wsvFmt = L"YYYY{0}MM{0}DD HH:MM:SS.mmm";
 			break;
 		default:
 			assert(true);
 			break;
 		}
 
-		return std::vformat(wstrFmt, std::make_wformat_args(wchSepar));
+		return std::vformat(wsvFmt, std::make_wformat_args(wchSepar));
 	}
 }

@@ -23,7 +23,7 @@ private:
 	afx_msg void OnClose();
 	afx_msg void OnBnPopup();
 	[[nodiscard]] bool IsFileOpen()const;
-	void FileOpen(std::wstring_view wstrPath, bool fRW);
+	void FileOpen(LPCWSTR pwszPath, bool fRW);
 	void FileClose();
 	void LoadTemplates(const IHexCtrl* pHexCtrl);
 	[[nodiscard]] static auto OpenFileDlg() -> std::optional<std::vector<std::wstring>>;

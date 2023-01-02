@@ -482,14 +482,6 @@ bool CScrollEx::CreateArrows(int iIDRESArrow, bool fVert)
 			for (std::size_t itWidth = 0, itWidthBack = nWidth - 1; itWidth < itWidthBack; ++itWidth, --itWidthBack)
 				std::swap(pInOut[itHeight * nWidth + itWidth], pInOut[itHeight * nWidth + itWidthBack]);
 	};
-	const auto lmb90CW = [&](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
-		lmbFlipVert(pInOut, nWidth, nHeight);
-		lmbTranspose(pInOut, nWidth, nHeight);
-	};
-	const auto lmb90CCW = [&](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
-		lmbTranspose(pInOut, nWidth, nHeight);
-		lmbFlipVert(pInOut, nWidth, nHeight);
-	};
 
 	m_bmpArrowFirst.CreateBitmapIndirect(&hBitmap);
 	m_bmpArrowLast.CreateBitmapIndirect(&hBitmap);
@@ -498,7 +490,8 @@ bool CScrollEx::CreateArrows(int iIDRESArrow, bool fVert)
 		lmbFlipVert(pOrigCOLOR.get(), nWidth, nHeight);              //Down arrow.
 	}
 	else {
-		lmb90CCW(pOrigCOLOR.get(), nWidth, nHeight);
+		lmbTranspose(pOrigCOLOR.get(), nWidth, nHeight);
+		lmbFlipVert(pOrigCOLOR.get(), nWidth, nHeight);
 		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get()); //Left arrow.
 		lmbFlipHorz(pOrigCOLOR.get(), nWidth, nHeight);              //Right arrow.
 	}

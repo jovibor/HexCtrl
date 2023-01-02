@@ -1551,18 +1551,18 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 	assert(fJSONParsed);
 
 	if (fJSONParsed) {
-		const auto lmbParseStr = [&](std::string_view str)->std::optional<SKEYBIND> {
-			if (str.empty())
+		const auto lmbParseStr = [&](std::string_view sv)->std::optional<SKEYBIND> {
+			if (sv.empty())
 				return { };
 
 			SKEYBIND stRet { };
-			const auto nSize = str.size();
+			const auto nSize = sv.size();
 			size_t nPosStart { 0 }; //Next position to start search for '+' sign.
-			const auto nSubWords = std::count(str.begin(), str.end(), '+') + 1; //How many sub-words (divided by '+')?
+			const auto nSubWords = std::count(sv.begin(), sv.end(), '+') + 1; //How many sub-words (divided by '+')?
 			for (auto iterSubWords = 0; iterSubWords < nSubWords; ++iterSubWords) {
-				const auto nPosNext = str.find('+', nPosStart);
+				const auto nPosNext = sv.find('+', nPosStart);
 				const auto nSizeSubWord = nPosNext == std::string_view::npos ? nSize - nPosStart : nPosNext - nPosStart;
-				const auto strSubWord = str.substr(nPosStart, nSizeSubWord);
+				const auto strSubWord = sv.substr(nPosStart, nSizeSubWord);
 				nPosStart = nPosNext + 1;
 
 				if (strSubWord.size() == 1) {
@@ -1711,23 +1711,24 @@ void CHexCtrl::SetEncoding(int iCodePage)
 		return;
 
 	CPINFOEXW stCPInfo;
-	std::wstring_view wstrFmt;
+	std::wstring_view wsvFmt;
 	switch (iCodePage) {
 	case -1:
-		wstrFmt = L"ASCII";
+		wsvFmt = L"ASCII";
 		break;
 	case 0:
-		wstrFmt = L"UTF-16";
+		wsvFmt = L"UTF-16";
 		break;
 	default:
-		if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != FALSE)
-			wstrFmt = L"Codepage {}";
+		if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != FALSE) {
+			wsvFmt = L"Codepage {}";
+		}
 		break;
 	}
 
-	if (!wstrFmt.empty()) {
+	if (!wsvFmt.empty()) {
 		m_iCodePage = iCodePage;
-		m_wstrTextTitle = std::vformat(wstrFmt, std::make_wformat_args(m_iCodePage));
+		m_wstrTextTitle = std::vformat(wsvFmt, std::make_wformat_args(m_iCodePage));
 		Redraw();
 	}
 }

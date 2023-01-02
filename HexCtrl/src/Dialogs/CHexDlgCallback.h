@@ -13,7 +13,7 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgCallback final : public CDialogEx
 	{
 	public:
-		explicit CHexDlgCallback(std::wstring_view wstrOperName,
+		explicit CHexDlgCallback(std::wstring_view wsvOperName,
 			ULONGLONG ullProgBarMin, ULONGLONG ullProgBarMax, CWnd* pParent = nullptr);
 		[[nodiscard]] bool IsCanceled()const;
 		void SetProgress(ULONGLONG ullProgCurr);
@@ -26,12 +26,12 @@ namespace HEXCTRL::INTERNAL
 		DECLARE_MESSAGE_MAP()
 	private:
 		CProgressCtrl m_stProgBar;
+		std::wstring m_wstrOperName { };
 		ULONGLONG m_ullProgBarMin { };
-		ULONGLONG m_ullProgBarMax { };
 		ULONGLONG m_ullProgBarCurr { };
+		ULONGLONG m_ullProgBarMax { };
 		ULONGLONG m_ullThousandth { };   //One thousandth part.
 		bool m_fCancel { false };
-		std::wstring m_wstrOperName { };
 		const UINT_PTR IDT_EXITCHECK { 0x1 };
 		long long m_llTicks { 0LL }; //How many ticks have passed since dialog beginning.
 		int m_iTicksInSecond { };    //How many ticks in one second.

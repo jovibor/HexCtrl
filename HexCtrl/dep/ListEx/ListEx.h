@@ -1,5 +1,5 @@
 /*************************************************************************************
-* Copyright © 2018-2022 Jovibor https://github.com/jovibor/                          *
+* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                          *
 * This is very extended and featured version of CMFCListCtrl class.                  *
 * Official git repository: https://github.com/jovibor/ListEx/                        *
 * This code is available under the "MIT License".                                    *
@@ -116,7 +116,7 @@ namespace HEXCTRL::LISTEX
 		virtual void SetCellColor(int iItem, int iSubitem, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetCellData(int iItem, int iSubitem, ULONGLONG ullData) = 0;
 		virtual void SetCellIcon(int iItem, int iSubitem, int iIndex) = 0;
-		virtual void SetCellTooltip(int iItem, int iSubitem, std::wstring_view wstrTooltip, std::wstring_view wstrCaption = L"") = 0;
+		virtual void SetCellTooltip(int iItem, int iSubitem, std::wstring_view wsvTooltip, std::wstring_view wsvCaption = L"") = 0;
 		virtual void SetColors(const LISTEXCOLORS& lcs) = 0;
 		virtual void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetColumnEditable(int iColumn, bool fEditable) = 0;

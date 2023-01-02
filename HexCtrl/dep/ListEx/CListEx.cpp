@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2022 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
 * This is very extended and featured version of CMFCListCtrl class.                     *
 * Official git repository: https://github.com/jovibor/ListEx/                           *
 * This code is available under the "MIT License".                                       *
@@ -103,7 +103,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		void SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clrText)override;
 		void SetCellData(int iItem, int iSubItem, ULONGLONG ullData)override;
 		void SetCellIcon(int iItem, int iSubItem, int iIndex)override; //Icon index in list's image list.
-		void SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTooltip, std::wstring_view wstrCaption)override;
+		void SetCellTooltip(int iItem, int iSubItem, std::wstring_view wsvTooltip, std::wstring_view wsvCaption)override;
 		void SetColors(const LISTEXCOLORS& lcs)override;
 		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
 		void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enSortMode = { })override;
@@ -227,16 +227,16 @@ namespace HEXCTRL::LISTEX::INTERNAL
 	//Text and links in the cell.
 	struct CListEx::SITEMDATA {
 		SITEMDATA(int iIconIndex, CRect rect) : iIconIndex(iIconIndex), rect(rect) {}; //Ctor for just image index.
-		SITEMDATA(std::wstring_view wstrText, std::wstring_view wstrLink, std::wstring_view wstrTitle,
+		SITEMDATA(std::wstring_view wsvText, std::wstring_view wsvLink, std::wstring_view wsvTitle,
 			CRect rect, bool fLink = false, bool fTitle = false) :
-			wstrText(wstrText), wstrLink(wstrLink), wstrTitle(wstrTitle), rect(rect), fLink(fLink), fTitle(fTitle) {}
+			wstrText(wsvText), wstrLink(wsvLink), wstrTitle(wsvTitle), rect(rect), fLink(fLink), fTitle(fTitle) {}
 		std::wstring wstrText { };  //Visible text.
 		std::wstring wstrLink { };  //Text within link <link="textFromHere"> tag.
 		std::wstring wstrTitle { }; //Text within title <...title="textFromHere"> tag.
 		CRect rect { };             //Rect text belongs to.
 		int iIconIndex { -1 };      //Icon index in the image list, if any.
-		bool fLink { false };       //Is it just a text (wstrLink is empty) or text with link?
-		bool fTitle { false };      //Is it link with custom title (wstrTitle is not empty)?
+		bool fLink { false };       //Is it just a text (wsvLink is empty) or text with link?
+		bool fTitle { false };      //Is it link with custom title (wsvTitle is not empty)?
 	};
 
 	constexpr ULONG_PTR ID_TIMER_TT_CELL_CHECK { 0x01 };    //Cell tool-tip check-timer ID.
@@ -1213,7 +1213,7 @@ void CListEx::SetCellIcon(int iItem, int iSubItem, int iIndex)
 	}
 }
 
-void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTooltip, std::wstring_view wstrCaption)
+void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wsvTooltip, std::wstring_view wsvCaption)
 {
 	assert(IsCreated());
 	assert(!m_fVirtual);
@@ -1224,9 +1224,9 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTool
 
 	//If there is no tooltip for such item/subitem we just set it.
 	if (const auto it = m_umapCellTt.find(ID); it == m_umapCellTt.end()) {
-		if (!wstrTooltip.empty() || !wstrCaption.empty()) {	//Initializing inner map.
+		if (!wsvTooltip.empty() || !wsvCaption.empty()) {	//Initializing inner map.
 			std::unordered_map<int, LISTEXTOOLTIP> umapInner {
-				{ iSubItem, { std::wstring { wstrTooltip }, std::wstring { wstrCaption } } }
+				{ iSubItem, { std::wstring { wsvTooltip }, std::wstring { wsvCaption } } }
 			};
 			m_umapCellTt.insert({ ID, std::move(umapInner) });
 		}
@@ -1235,13 +1235,13 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wstrTool
 		//If there is Item's tooltip but no Subitem's tooltip
 		//inserting new Subitem into inner map.
 		if (const auto itInner = it->second.find(iSubItem);	itInner == it->second.end()) {
-			if (!wstrTooltip.empty() || !wstrCaption.empty())
-				it->second.insert({ iSubItem, { std::wstring { wstrTooltip }, std::wstring { wstrCaption } } });
+			if (!wsvTooltip.empty() || !wsvCaption.empty())
+				it->second.insert({ iSubItem, { std::wstring { wsvTooltip }, std::wstring { wsvCaption } } });
 		}
 		else {	//If there is already exist this Item-Subitem's tooltip:
 			//change or erase it, depending on pwszTooltip emptiness.
-			if (!wstrTooltip.empty())
-				itInner->second = { std::wstring { wstrTooltip }, std::wstring { wstrCaption } };
+			if (!wsvTooltip.empty())
+				itInner->second = { std::wstring { wsvTooltip }, std::wstring { wsvCaption } };
 			else
 				it->second.erase(itInner);
 		}
@@ -1997,7 +1997,7 @@ auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 {
 	constexpr auto iIndentRc { 4 };
 	const auto cstrText = GetItemText(iItem, iSubitem);
-	const std::wstring_view wstrText = cstrText.GetString();
+	const std::wstring_view wsvText = cstrText.GetString();
 	CRect rcTextOrig;  //Original rect of the subitem's text.
 	GetSubItemRect(iItem, iSubitem, LVIR_LABEL, rcTextOrig);
 	if (iSubitem != 0) { //Not needed for item itself (not subitem).
@@ -2019,21 +2019,21 @@ auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 	CRect rcTextCurr { };  //Current rect.
 
 	while (nPosCurr != std::wstring_view::npos) {
-		constexpr std::wstring_view wstrTagLink { L"<link=" };
-		constexpr std::wstring_view wstrTagFirstClose { L">" };
-		constexpr std::wstring_view wstrTagLast { L"</link>" };
-		constexpr std::wstring_view wstrTagTitle { L"title=" };
-		constexpr std::wstring_view wstrQuote { L"\"" };
+		constexpr std::wstring_view wsvTagLink { L"<link=" };
+		constexpr std::wstring_view wsvTagFirstClose { L">" };
+		constexpr std::wstring_view wsvTagLast { L"</link>" };
+		constexpr std::wstring_view wsvTagTitle { L"title=" };
+		constexpr std::wstring_view wsvQuote { L"\"" };
 
 		//Searching the string for a <link=...></link> pattern.
-		if (const std::size_t nPosTagLink { wstrText.find(wstrTagLink, nPosCurr) }, //Start position of the opening tag "<link=".
-			nPosLinkOpenQuote { wstrText.find(wstrQuote, nPosTagLink) }, //Position of the (link="<-) open quote.
+		if (const std::size_t nPosTagLink { wsvText.find(wsvTagLink, nPosCurr) }, //Start position of the opening tag "<link=".
+			nPosLinkOpenQuote { wsvText.find(wsvQuote, nPosTagLink) }, //Position of the (link="<-) open quote.
 			//Position of the (link=""<-) close quote.
-			nPosLinkCloseQuote { wstrText.find(wstrQuote, nPosLinkOpenQuote + wstrQuote.size()) },
+			nPosLinkCloseQuote { wsvText.find(wsvQuote, nPosLinkOpenQuote + wsvQuote.size()) },
 			//Start position of the opening tag's closing bracket ">".
-			nPosTagFirstClose { wstrText.find(wstrTagFirstClose, nPosLinkCloseQuote + wstrQuote.size()) },
+			nPosTagFirstClose { wsvText.find(wsvTagFirstClose, nPosLinkCloseQuote + wsvQuote.size()) },
 			//Start position of the enclosing tag "</link>".
-			nPosTagLast { wstrText.find(wstrTagLast, nPosTagFirstClose + wstrTagFirstClose.size()) };
+			nPosTagLast { wsvText.find(wsvTagLast, nPosTagFirstClose + wsvTagFirstClose.size()) };
 			nPosTagLink != std::wstring_view::npos && nPosLinkOpenQuote != std::wstring_view::npos
 			&& nPosLinkCloseQuote != std::wstring_view::npos && nPosTagFirstClose != std::wstring_view::npos
 			&& nPosTagLast != std::wstring_view::npos) {
@@ -2043,21 +2043,21 @@ auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 
 			//Any text before found tag.
 			if (nPosTagLink > nPosCurr) {
-				auto wstrTextBefore = wstrText.substr(nPosCurr, nPosTagLink - nPosCurr);
-				GetTextExtentPoint32W(pDC->m_hDC, wstrTextBefore.data(), static_cast<int>(wstrTextBefore.size()), &size);
+				auto wsvTextBefore = wsvText.substr(nPosCurr, nPosTagLink - nPosCurr);
+				GetTextExtentPoint32W(pDC->m_hDC, wsvTextBefore.data(), static_cast<int>(wsvTextBefore.size()), &size);
 				if (rcTextCurr.IsRectNull())
 					rcTextCurr.SetRect(rcTextOrig.left, rcTextOrig.top, rcTextOrig.left + size.cx, rcTextOrig.bottom);
 				else {
 					rcTextCurr.left = rcTextCurr.right;
 					rcTextCurr.right += size.cx;
 				}
-				vecData.emplace_back(wstrTextBefore, L"", L"", rcTextCurr);
+				vecData.emplace_back(wsvTextBefore, L"", L"", rcTextCurr);
 			}
 
 			//The clickable/linked text, that between <link=...>textFromHere</link> tags.
-			auto wstrTextBetweenTags = wstrText.substr(nPosTagFirstClose + wstrTagFirstClose.size(),
-				nPosTagLast - (nPosTagFirstClose + wstrTagFirstClose.size()));
-			GetTextExtentPoint32W(pDC->m_hDC, wstrTextBetweenTags.data(), static_cast<int>(wstrTextBetweenTags.size()), &size);
+			auto wsvTextBetweenTags = wsvText.substr(nPosTagFirstClose + wsvTagFirstClose.size(),
+				nPosTagLast - (nPosTagFirstClose + wsvTagFirstClose.size()));
+			GetTextExtentPoint32W(pDC->m_hDC, wsvTextBetweenTags.data(), static_cast<int>(wsvTextBetweenTags.size()), &size);
 			ReleaseDC(pDC);
 
 			if (rcTextCurr.IsRectNull())
@@ -2068,34 +2068,34 @@ auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 			}
 
 			//Link tag text (linkID) between quotes: <link="textFromHere">
-			auto wstrTextLink = wstrText.substr(nPosLinkOpenQuote + wstrQuote.size(),
-				nPosLinkCloseQuote - nPosLinkOpenQuote - wstrQuote.size());
-			nPosCurr = nPosLinkCloseQuote + wstrQuote.size();
+			auto wsvTextLink = wsvText.substr(nPosLinkOpenQuote + wsvQuote.size(),
+				nPosLinkCloseQuote - nPosLinkOpenQuote - wsvQuote.size());
+			nPosCurr = nPosLinkCloseQuote + wsvQuote.size();
 
 			//Searching for title "<link=...title="">" tag.
 			bool fTitle { false };
-			std::wstring_view wstrTextTitle { };
+			std::wstring_view wsvTextTitle { };
 
-			if (const std::size_t nPosTagTitle { wstrText.find(wstrTagTitle, nPosCurr) }, //Position of the (title=) tag beginning.
-				nPosTitleOpenQuote { wstrText.find(wstrQuote, nPosTagTitle) },  //Position of the (title="<-) opening quote.
-				nPosTitleCloseQuote { wstrText.find(wstrQuote, nPosTitleOpenQuote + wstrQuote.size()) }; //Position of the (title=""<-) closing quote.
+			if (const std::size_t nPosTagTitle { wsvText.find(wsvTagTitle, nPosCurr) }, //Position of the (title=) tag beginning.
+				nPosTitleOpenQuote { wsvText.find(wsvQuote, nPosTagTitle) },  //Position of the (title="<-) opening quote.
+				nPosTitleCloseQuote { wsvText.find(wsvQuote, nPosTitleOpenQuote + wsvQuote.size()) }; //Position of the (title=""<-) closing quote.
 				nPosTagTitle != std::wstring_view::npos && nPosTitleOpenQuote != std::wstring_view::npos
 				&& nPosTitleCloseQuote != std::wstring_view::npos) {
 				//Title tag text between quotes: <...title="textFromHere">
-				wstrTextTitle = wstrText.substr(nPosTitleOpenQuote + wstrQuote.size(),
-					nPosTitleCloseQuote - nPosTitleOpenQuote - wstrQuote.size());
+				wsvTextTitle = wsvText.substr(nPosTitleOpenQuote + wsvQuote.size(),
+					nPosTitleCloseQuote - nPosTitleOpenQuote - wsvQuote.size());
 				fTitle = true;
 			}
 
-			vecData.emplace_back(wstrTextBetweenTags, wstrTextLink, wstrTextTitle, rcTextCurr, true, fTitle);
-			nPosCurr = nPosTagLast + wstrTagLast.size();
+			vecData.emplace_back(wsvTextBetweenTags, wsvTextLink, wsvTextTitle, rcTextCurr, true, fTitle);
+			nPosCurr = nPosTagLast + wsvTagLast.size();
 		}
 		else {
-			auto wstrTextAfter = wstrText.substr(nPosCurr, wstrText.size() - nPosCurr);
+			auto wsvTextAfter = wsvText.substr(nPosCurr, wsvText.size() - nPosCurr);
 			auto pDC = GetDC();
 			SIZE size;
 			pDC->SelectObject(m_fontList);
-			GetTextExtentPoint32W(pDC->m_hDC, wstrTextAfter.data(), static_cast<int>(wstrTextAfter.size()), &size);
+			GetTextExtentPoint32W(pDC->m_hDC, wsvTextAfter.data(), static_cast<int>(wsvTextAfter.size()), &size);
 			ReleaseDC(pDC);
 
 			if (rcTextCurr.IsRectNull())
@@ -2105,7 +2105,7 @@ auto CListEx::ParseItemText(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 				rcTextCurr.right += size.cx;
 			}
 
-			vecData.emplace_back(wstrTextAfter, L"", L"", rcTextCurr);
+			vecData.emplace_back(wsvTextAfter, L"", L"", rcTextCurr);
 			nPosCurr = std::wstring_view::npos;
 		}
 	}
