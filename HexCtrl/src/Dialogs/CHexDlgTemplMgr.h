@@ -170,8 +170,8 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
 		void UnloadTemplate(int iTemplateID)override; //Unload/remove loaded template from memory.
 		void UpdateStaticText();
-		[[nodiscard]] bool JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& refVecFields,
-			const FIELDSDEFPROPS& refStDefs, UmapCustomTypes& refUmapCT, int* pOffset = nullptr)const;
+		[[nodiscard]] bool JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& vecFields,
+			const FIELDSDEFPROPS& stDefault, UmapCustomTypes& umapCustomT, int* pOffset = nullptr)const;
 		[[nodiscard]] auto JSONEndianness(const rapidjson::Value& value)const->std::optional<bool>;
 		[[nodiscard]] auto JSONColors(const rapidjson::Value& value, const char* pszColorName)const->std::optional<COLORREF>;
 		static LRESULT CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,

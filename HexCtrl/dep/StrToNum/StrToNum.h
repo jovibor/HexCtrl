@@ -55,6 +55,12 @@ namespace stn //String to Num.
 			255, 255, 255, 255, 255, 255, 255, 255, 255 };
 		static_assert(std::size(Digit_from_byte) == 256);
 
+		template <class CharT>
+		[[nodiscard]] inline constexpr bool HasHexPrefix(const CharT* const pFirst, const CharT* const pLast) {
+			return (pFirst != pLast && (pFirst + 1) != pLast
+				&& (*pFirst == '0' && (*(pFirst + 1) == 'x' || *(pFirst + 1) == 'X')));
+		};
+
 		[[nodiscard]] inline constexpr unsigned char Digit_from_char(const wchar_t Ch) noexcept {
 			// convert ['0', '9'] ['A', 'Z'] ['a', 'z'] to [0, 35], everything else to 255
 			return Digit_from_byte[static_cast<unsigned char>(Ch)];
@@ -76,13 +82,9 @@ namespace stn //String to Num.
 				}
 			}
 
-			//Checking for '0x'/'0X' prefix if Base == 0 or 16.
-			constexpr auto lmbCheck16 = [](const CharT* const pFirst, const CharT* const pLast) {
-				return (pFirst != pLast && (pFirst + 1) != pLast && (*pFirst == '0' && (*(pFirst + 1) == 'x' || *(pFirst + 1) == 'X')));
-			};
-
+			//Checking for '0x'/'0X' hex prefix, when Base == 0 or 16.
 			if (Base == 0) {
-				if (lmbCheck16(Next, Last)) {
+				if (HasHexPrefix(Next, Last)) {
 					Next += 2;
 					Base = 16;
 				}
@@ -91,11 +93,10 @@ namespace stn //String to Num.
 				}
 			}
 			else if (Base == 16) { //Base16 string may or may not contain the `0x` prefix.
-				if (lmbCheck16(Next, Last)) {
+				if (HasHexPrefix(Next, Last)) {
 					Next += 2;
 				}
-			}
-			//End of '0x'/'0X' prefix checking.
+			} //End of '0x'/'0X' prefix checking.
 
 			using Unsigned = std::make_unsigned_t<RawTy>;
 
@@ -1308,6 +1309,11 @@ namespace stn //String to Num.
 
 			const bool Is_hexadecimal = Fmt == chars_format::hex;
 			const int Base { Is_hexadecimal ? 16 : 10 };
+
+			//Checking for '0x'/'0X' hex prefix, when Fmt == chars_format::hex.
+			if (Is_hexadecimal && HasHexPrefix(Next, Last)) {
+				Next += 2;
+			}
 
 			// PERFORMANCE NOTE: Fp_string is intentionally left uninitialized. Zero-initialization is quite expensive
 			// and is unnecessary. The benefit of not zero-initializing is greatest for short inputs.
