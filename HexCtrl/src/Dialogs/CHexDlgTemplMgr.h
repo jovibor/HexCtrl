@@ -198,7 +198,7 @@ namespace HEXCTRL::INTERNAL
 		HCURSOR m_hCurResize;
 		HCURSOR m_hCurArrow;
 		PHEXTEMPLATEAPPLIED m_pAppliedCurr { }; //Currently selected PApplied.
-		PVecFields m_pVecCurrFields { };        //Pointer to currently selected vector with fields.
+		PVecFields m_pVecFieldsCurr { };        //Pointer to currently selected vector with fields.
 		HTREEITEM m_hTreeCurrParent { };        //Currently selected Tree node's parent.
 		DWORD m_dwDateFormat { };               //Date format.
 		wchar_t m_wchDateSepar { };             //Date separator.

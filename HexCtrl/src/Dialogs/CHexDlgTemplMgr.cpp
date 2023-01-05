@@ -283,10 +283,9 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	if ((pItem->mask & LVIF_TEXT) == 0)
 		return;
 
-	const auto iItem = static_cast<size_t>(pItem->iItem);
-	const auto& pCurrField = (*m_pVecCurrFields)[iItem];
+	const auto& pField = (*m_pVecFieldsCurr)[pItem->iItem];
 	const auto wsvFmt = m_fShowAsHex ? L"0x{:X}" : L"{}";
-	const auto fShouldSwap = pCurrField->fBigEndian == !m_fSwapEndian;
+	const auto fShouldSwap = pField->fBigEndian == !m_fSwapEndian;
 	using enum EFieldType;
 
 	//EFieldType converter to actual wstring for the list.
@@ -302,29 +301,29 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	switch (pItem->iSubItem) {
 	case ID_LISTAPPLIED_FIELD_TYPE: //Type.
-		if (pCurrField->eType == type_custom) {
-			auto& refVecCT = pCurrField->pTemplate->vecCustomType;
+		if (pField->eType == type_custom) {
+			auto& refVecCT = pField->pTemplate->vecCustomType;
 			if (const auto iter = std::find_if(refVecCT.begin(), refVecCT.end(),
-				[uTypeID = pCurrField->uTypeID](const HEXCUSTOMTYPE& ref) {
+				[uTypeID = pField->uTypeID](const HEXCUSTOMTYPE& ref) {
 					return ref.uTypeID == uTypeID; }); iter != refVecCT.end()) {
 				pItem->pszText = iter->wstrTypeName.data();
 			}
 			else {
-				pItem->pszText = const_cast<LPWSTR>(umapETypeToWstr.at(pCurrField->eType));
+				pItem->pszText = const_cast<LPWSTR>(umapETypeToWstr.at(pField->eType));
 			}
 		}
 		else {
-			pItem->pszText = const_cast<LPWSTR>(umapETypeToWstr.at(pCurrField->eType));
+			pItem->pszText = const_cast<LPWSTR>(umapETypeToWstr.at(pField->eType));
 		}
 		break;
 	case 1: //Name.
-		pItem->pszText = pCurrField->wstrName.data();
+		pItem->pszText = pField->wstrName.data();
 		break;
 	case 2: //Offset.
-		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(pCurrField->iOffset)) = L'\0';
+		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(pField->iOffset)) = L'\0';
 		break;
 	case 3: //Size.
-		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(pCurrField->iSize)) = L'\0';
+		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(pField->iSize)) = L'\0';
 		break;
 	case ID_LISTAPPLIED_FIELD_DATA: //Data.
 	{
@@ -332,15 +331,15 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			|| m_pAppliedCurr->ullOffset + m_pAppliedCurr->pTemplate->iSizeTotal > m_pHexCtrl->GetDataSize()) //Size overflow check.
 			break;
 
-		if (!pCurrField->vecNested.empty()) {
+		if (!pField->vecNested.empty()) {
 			break; //Doing nothing (no data fetch) for nested structs.
 		}
 
-		const auto ullOffset = m_pAppliedCurr->ullOffset + pCurrField->iOffset;
-		const auto eType = pCurrField->eType;
+		const auto ullOffset = m_pAppliedCurr->ullOffset + pField->iOffset;
+		const auto eType = pField->eType;
 		switch (eType) {
 		case custom_size: //If field of a custom size we cycling through the size field.
-			switch (pCurrField->iSize) {
+			switch (pField->iSize) {
 			case 1:
 				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset))) = L'\0';
 				break;
@@ -430,7 +429,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			std::make_wformat_args()) = L'\0';
 		break;
 	case 6: //Description.
-		*std::format_to(pItem->pszText, L"{}", pCurrField->wstrDescr) = L'\0';
+		*std::format_to(pItem->pszText, L"{}", pField->wstrDescr) = L'\0';
 		break;
 	case ID_LISTAPPLIED_FIELD_COLORS: //Colors.
 		*std::format_to(pItem->pszText, L"#Text") = L'\0';
@@ -447,18 +446,18 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	constexpr auto clrBkGreyish = RGB(235, 235, 235); //Grayish bk.
 
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto& pCurrField = (*m_pVecCurrFields)[pNMI->iItem];
-	const auto eType = pCurrField->eType;
+	const auto& pField = (*m_pVecFieldsCurr)[pNMI->iItem];
+	const auto eType = pField->eType;
 	using enum EFieldType;
 
 	m_stCellClr.clrText = static_cast<COLORREF>(-1); //Default text color.
 
 	//List items with nested structs color separately with greyish bk.
-	if (!pCurrField->vecNested.empty() && pNMI->iSubItem != ID_LISTAPPLIED_FIELD_COLORS) {
+	if (!pField->vecNested.empty() && pNMI->iSubItem != ID_LISTAPPLIED_FIELD_COLORS) {
 		m_stCellClr.clrBk = clrBkGreyish;
 		if (pNMI->iSubItem == ID_LISTAPPLIED_FIELD_TYPE) {
 			if (eType == type_custom) {
-				if (pCurrField->uTypeID > 0) {
+				if (pField->uTypeID > 0) {
 					m_stCellClr.clrText = clrTextGreenish;
 				}
 			}
@@ -479,8 +478,8 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		}
 		break;
 	case ID_LISTAPPLIED_FIELD_COLORS:
-		m_stCellClr.clrBk = pCurrField->clrBk;
-		m_stCellClr.clrText = pCurrField->clrText;
+		m_stCellClr.clrBk = pField->clrBk;
+		m_stCellClr.clrText = pField->clrText;
 		pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
 		break;
 	default:
@@ -501,9 +500,10 @@ void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 void CHexDlgTemplMgr::OnListEditBegin(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto& refVec = *m_pVecCurrFields;
+	const auto& pField = (*m_pVecFieldsCurr)[pNMI->iItem];
 
-	if (!refVec[pNMI->iItem]->vecNested.empty()) {
+	if (!pField->vecNested.empty() || (pField->eType == EFieldType::custom_size
+		&& pField->iSize != 1 && pField->iSize != 2 && pField->iSize != 4 && pField->iSize != 8)) {
 		pNMI->lParam = FALSE; //Do not show edit-box if clicked on nested fields.
 	}
 }
@@ -511,21 +511,20 @@ void CHexDlgTemplMgr::OnListEditBegin(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto iItem = pNMI->iItem;
-	const auto& refVecField = *m_pVecCurrFields;
 	const auto pwszText = reinterpret_cast<LPCWSTR>(pNMI->lParam); //lParam holds wchar_t* to a new text from list's subitem.
+	const auto& pField = (*m_pVecFieldsCurr)[pNMI->iItem];
 
 	if (pNMI->iSubItem == ID_LISTAPPLIED_FIELD_DATA) //Data.
 	{
-		const auto ullOffset = m_pAppliedCurr->ullOffset + refVecField[iItem]->iOffset;
-		const auto fShouldSwap = refVecField[iItem]->fBigEndian == !m_fSwapEndian;
+		const auto ullOffset = m_pAppliedCurr->ullOffset + pField->iOffset;
+		const auto fShouldSwap = pField->fBigEndian == !m_fSwapEndian;
 
 		bool fSetRet { };
 		using enum EFieldType;
-		switch (refVecField[iItem]->eType) {
+		switch (pField->eType) {
 		case custom_size:
 			fSetRet = true;
-			switch (refVecField[iItem]->iSize) {
+			switch (pField->iSize) {
 			case 1:
 				if (const auto opt = StrToUChar(pwszText); opt) {
 					SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
@@ -609,7 +608,7 @@ void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		}
 	}
 	else if (pNMI->iSubItem == ID_LISTAPPLIED_FIELD_DESCR) { //Description.
-		refVecField[iItem]->wstrDescr = pwszText;
+		pField->wstrDescr = pwszText;
 	}
 
 	m_pHexCtrl->Redraw();
@@ -629,19 +628,19 @@ void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	if (iItem < 0)
 		return;
 
-	const auto& refVec = *m_pVecCurrFields;
+	const auto& refVec = *m_pVecFieldsCurr;
 	if (refVec[iItem]->vecNested.empty())
 		return;
 
 	m_fListGuardEvent = true; //To prevent nasty OnListItemChanged to fire after this method ends.
-	m_pVecCurrFields = &refVec[iItem]->vecNested;
+	m_pVecFieldsCurr = &refVec[iItem]->vecNested;
 
 	const auto hItem = TreeItemFromListItem(iItem);
 	m_hTreeCurrParent = hItem;
 	m_stTreeApplied.Expand(hItem, TVE_EXPAND);
 
 	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
-	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecCurrFields->size()));
+	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()));
 	m_pListApplied->RedrawWindow();
 	m_fListGuardEvent = false;
 }
@@ -731,9 +730,9 @@ void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	m_pAppliedCurr = GetAppliedFromItem(pItem->hItem);
 	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
-	if (pVecCurrFields != m_pVecCurrFields) { //To not trigger SetItemCountEx (which is slow) if it's the same count.
-		m_pVecCurrFields = pVecCurrFields;
-		m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecCurrFields->size()), LVSICF_NOSCROLL);
+	if (pVecCurrFields != m_pVecFieldsCurr) { //To not trigger SetItemCountEx (which is slow) if it's the same count.
+		m_pVecFieldsCurr = pVecCurrFields;
+		m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()), LVSICF_NOSCROLL);
 	}
 
 	UpdateStaticText();
@@ -885,7 +884,7 @@ void CHexDlgTemplMgr::OnDestroy()
 	m_stMenuTree.DestroyMenu();
 	m_stMenuHdr.DestroyMenu();
 	m_pAppliedCurr = nullptr;
-	m_pVecCurrFields = nullptr;
+	m_pVecFieldsCurr = nullptr;
 	m_hTreeCurrParent = nullptr;
 }
 
@@ -1521,7 +1520,7 @@ void CHexDlgTemplMgr::DisapplyAll()
 	}
 
 	m_pAppliedCurr = nullptr;
-	m_pVecCurrFields = nullptr;
+	m_pVecFieldsCurr = nullptr;
 	m_hTreeCurrParent = nullptr;
 	m_vecTemplatesApplied.clear();
 
@@ -1807,7 +1806,7 @@ void CHexDlgTemplMgr::RemoveNodesWithTemplateID(int iTemplateID)
 				m_pListApplied->SetItemCountEx(0);
 				m_pListApplied->RedrawWindow();
 				m_pAppliedCurr = nullptr;
-				m_pVecCurrFields = nullptr;
+				m_pVecFieldsCurr = nullptr;
 				m_hTreeCurrParent = nullptr;
 				UpdateStaticText();
 			}
@@ -1830,7 +1829,7 @@ void CHexDlgTemplMgr::RemoveNodeWithAppliedID(int iAppliedID)
 				m_pListApplied->SetItemCountEx(0);
 				m_pListApplied->RedrawWindow();
 				m_pAppliedCurr = nullptr;
-				m_pVecCurrFields = nullptr;
+				m_pVecFieldsCurr = nullptr;
 				m_hTreeCurrParent = nullptr;
 				UpdateStaticText();
 			}
