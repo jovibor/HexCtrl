@@ -25,7 +25,7 @@ namespace HEXCTRL::LISTEX
 		COLORREF clrBk { };
 		COLORREF clrText { };
 	};
-	using PLISTEXCOLOR = LISTEXCOLOR*;
+	using PLISTEXCOLOR = const LISTEXCOLOR*;
 
 	/**********************************************************************************
 	* LISTEXCOLORS - All ListEx colors.                                               *
@@ -78,7 +78,7 @@ namespace HEXCTRL::LISTEX
 		std::wstring wstrText;
 		std::wstring wstrCaption;
 	};
-	using PLISTEXTOOLTIP = LISTEXTOOLTIP*;
+	using PLISTEXTOOLTIP = const LISTEXTOOLTIP*;
 
 	/********************************************
 	* LISTEXHDRICON - Icon for header column.   *
@@ -107,9 +107,9 @@ namespace HEXCTRL::LISTEX
 		[[nodiscard]] virtual int GetSortColumn()const = 0;
 		[[nodiscard]] virtual bool GetSortAscending()const = 0;
 		virtual void HideColumn(int iIndex, bool fHide) = 0;
-		virtual int InsertColumn(int nCol, const LVCOLUMNW* pColumn, int iDataAlign = LVCFMT_LEFT) = 0;
+		virtual int InsertColumn(int nCol, const LVCOLUMNW* pColumn, int iDataAlign = LVCFMT_LEFT, bool fEditable = false) = 0;
 		virtual int InsertColumn(int nCol, LPCWSTR pwszName, int nFormat = LVCFMT_LEFT, int nWidth = -1,
-			int nSubItem = -1, int iDataAlign = LVCFMT_LEFT) = 0;
+			int nSubItem = -1, int iDataAlign = LVCFMT_LEFT, bool fEditable = false) = 0;
 		[[nodiscard]] virtual bool IsCreated()const = 0;
 		[[nodiscard]] virtual bool IsColumnSortable(int iColumn) = 0;
 		virtual void ResetSort() = 0; //Reset all the sort by any column to its default state.

@@ -85,11 +85,9 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_pListApplied->InsertColumn(1, L"Name", LVCFMT_LEFT, 200);
 	m_pListApplied->InsertColumn(2, L"Offset", LVCFMT_LEFT, 50);
 	m_pListApplied->InsertColumn(3, L"Size", LVCFMT_LEFT, 50);
-	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_DATA, L"Data", LVCFMT_LEFT, 120);
-	m_pListApplied->SetColumnEditable(ID_LISTAPPLIED_FIELD_DATA, true);
+	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_DATA, L"Data", LVCFMT_LEFT, 120, -1, LVCFMT_LEFT, true);
 	m_pListApplied->InsertColumn(5, L"Endianness", LVCFMT_CENTER, 65, -1, LVCFMT_CENTER);
-	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_DESCR, L"Description", LVCFMT_LEFT, 100);
-	m_pListApplied->SetColumnEditable(ID_LISTAPPLIED_FIELD_DESCR, true);
+	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_DESCR, L"Description", LVCFMT_LEFT, 100, -1, LVCFMT_LEFT, true);
 	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_COLORS, L"Colors", LVCFMT_LEFT, 57);
 
 	using enum EMenuID;
@@ -504,7 +502,7 @@ void CHexDlgTemplMgr::OnListEditBegin(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	if (!pField->vecNested.empty() || (pField->eType == EFieldType::custom_size
 		&& pField->iSize != 1 && pField->iSize != 2 && pField->iSize != 4 && pField->iSize != 8)) {
-		pNMI->lParam = FALSE; //Do not show edit-box if clicked on nested fields.
+		pNMI->lParam = 0; //Do not show edit-box if clicked on nested fields.
 	}
 }
 
@@ -514,8 +512,11 @@ void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	const auto pwszText = reinterpret_cast<LPCWSTR>(pNMI->lParam); //lParam holds wchar_t* to a new text from list's subitem.
 	const auto& pField = (*m_pVecFieldsCurr)[pNMI->iItem];
 
-	if (pNMI->iSubItem == ID_LISTAPPLIED_FIELD_DATA) //Data.
-	{
+	if (pNMI->iSubItem == ID_LISTAPPLIED_FIELD_DATA) { //Data.
+		if (!m_pHexCtrl->IsDataSet()) {
+			return;
+		}
+
 		const auto ullOffset = m_pAppliedCurr->ullOffset + pField->iOffset;
 		const auto fShouldSwap = pField->fBigEndian == !m_fSwapEndian;
 

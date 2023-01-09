@@ -17,7 +17,7 @@ namespace HEXCTRL::INTERNAL
 		if (fWc)
 			wstrFilter += chWc;
 
-		if (wsv.find_first_not_of(wstrFilter) != std::string_view::npos)
+		if (wsv.find_first_not_of(wstrFilter) != std::wstring_view::npos)
 			return std::nullopt;
 
 		std::string strHexTmp;
