@@ -508,22 +508,21 @@ int CListExHdr::ColumnIDToIndex(UINT uID)const
 
 void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rcOrig, BOOL bIsPressed, BOOL bIsHighlighted)
 {
-	//Non working area after last column. Or if column resized to zero.
+	//Non working area after last column. Or if column is resized to zero width.
 	if (iItem < 0 || rcOrig.IsRectEmpty()) {
-		pDC->FillSolidRect(&rcOrig, m_clrBkNWA);
+		pDC->FillSolidRect(rcOrig, m_clrBkNWA);
 		return;
 	}
 
 	CMemDC memDC(*pDC, rcOrig);
 	auto& rDC = memDC.GetDC();
 	const auto ID = ColumnIndexToID(iItem);
-
-	auto const pClr = GetHdrColor(ID);
+	const auto pClr = GetHdrColor(ID);
 	const COLORREF clrText { pClr != nullptr ? pClr->clrText : m_clrText };
 	const COLORREF clrBk { bIsHighlighted ? (bIsPressed ? m_clrHglActive : m_clrHglInactive)
 		: (pClr != nullptr ? pClr->clrBk : m_clrBk) };
 
-	rDC.FillSolidRect(&rcOrig, clrBk);
+	rDC.FillSolidRect(rcOrig, clrBk);
 	rDC.SetTextColor(clrText);
 	rDC.SelectObject(m_fontHdr);
 
@@ -556,7 +555,7 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rcOrig, BOOL bIsPressed, 
 		break;
 	}
 
-	constexpr long lIndentTextRight = 4;
+	constexpr long lIndentTextRight { 4 };
 	CRect rcText { rcOrig.left + lIndentTextLeft, rcOrig.top, rcOrig.right - lIndentTextRight, rcOrig.bottom };
 	if (StrStrW(warrHdrText, L"\n") != nullptr) {
 		//If it's multiline text, first — calculate rect for the text,
@@ -598,7 +597,6 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rcOrig, BOOL bIsPressed, 
 		}
 	}
 
-	//rDC.DrawEdge(&rect, EDGE_RAISED, BF_RECT); //3D look edges.
 	rDC.SelectObject(m_penGrid);
 	rDC.MoveTo(rcOrig.TopLeft());
 	rDC.LineTo(rcOrig.left, rcOrig.bottom);
@@ -1425,7 +1423,7 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 			COLORREF clrBk;
 			COLORREF clrTextLink;
 
-			//Subitems' draw routine. 
+			//Subitems' draw routine.
 			//Colors depending on whether subitem selected or not, and has tooltip or not.
 			if (pDIS->itemState & ODS_SELECTED) {
 				clrText = m_stColors.clrListTextSel;
@@ -1451,15 +1449,10 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 					}
 				}
 			}
+
 			CRect rcBounds;
 			GetSubItemRect(iItem, iSubitem, LVIR_BOUNDS, rcBounds);
 			pDC->FillSolidRect(rcBounds, clrBk);
-
-			CRect rcText;
-			GetSubItemRect(iItem, iSubitem, LVIR_LABEL, rcText);
-			if (iSubitem != 0) { //Not needed for item itself (not subitem).
-				rcText.left += 4;
-			}
 
 			for (const auto& itItemData : ParseItemData(iItem, iSubitem)) {
 				if (itItemData.iIconIndex > -1) {
@@ -1467,6 +1460,7 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 						{ itItemData.rect.left, itItemData.rect.top }, { }, CLR_NONE, CLR_NONE, ILD_NORMAL);
 					continue;
 				}
+
 				if (itItemData.fLink) {
 					pDC->SetTextColor(clrTextLink);
 					if (m_fLinksUnderline) {
@@ -1478,19 +1472,22 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 					pDC->SelectObject(m_fontList);
 				}
 				ExtTextOutW(pDC->m_hDC, itItemData.rect.left, itItemData.rect.top, ETO_CLIPPED,
-					rcText, itItemData.wstrText.data(), static_cast<UINT>(itItemData.wstrText.size()), nullptr);
+					rcBounds, itItemData.wstrText.data(), static_cast<UINT>(itItemData.wstrText.size()), nullptr);
 			}
 
 			//Drawing subitem's rect lines.
 			pDC->SelectObject(m_penGrid);
 			pDC->MoveTo(rcBounds.TopLeft());
-			pDC->LineTo(rcBounds.right, rcBounds.top);
+			pDC->LineTo(rcBounds.right, rcBounds.top);   //Top line.
 			pDC->MoveTo(rcBounds.TopLeft());
-			pDC->LineTo(rcBounds.left, rcBounds.bottom);
+			pDC->LineTo(rcBounds.left, rcBounds.bottom); //Left line.
 			pDC->MoveTo(rcBounds.left, rcBounds.bottom);
-			pDC->LineTo(rcBounds.BottomRight());
-			pDC->MoveTo(rcBounds.right, rcBounds.top);
-			pDC->LineTo(rcBounds.BottomRight());
+			pDC->LineTo(rcBounds.BottomRight());         //Bottom line.
+			if (iSubitem == iColumns - 1) { //Drawing a right line only for the last column.
+				rcBounds.right -= 1; //To overcome a glitch with a last line disappearing if resizing a header.
+				pDC->MoveTo(rcBounds.right, rcBounds.top);
+				pDC->LineTo(rcBounds.BottomRight());     //Right line.
+			}
 
 			//Draw focus rect (marquee).
 			if ((pDIS->itemState & ODS_FOCUS) && !(pDIS->itemState & ODS_SELECTED)) {
@@ -2020,7 +2017,7 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 	const std::wstring_view wsvText = cstrText.GetString();
 	CRect rcTextOrig;  //Original rect of the subitem's text.
 	GetSubItemRect(iItem, iSubitem, LVIR_LABEL, rcTextOrig);
-	if (iSubitem != 0) { //Not needed for item itself (not subitem).
+	if (iSubitem > 0) { //Not needed for item itself (not subitem).
 		rcTextOrig.left += iIndentRc;
 	}
 	std::vector<SITEMDATA> vecData;
@@ -2065,8 +2062,9 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 			if (nPosTagLink > nPosCurr) {
 				const auto wsvTextBefore = wsvText.substr(nPosCurr, nPosTagLink - nPosCurr);
 				GetTextExtentPoint32W(pDC->m_hDC, wsvTextBefore.data(), static_cast<int>(wsvTextBefore.size()), &size);
-				if (rcTextCurr.IsRectNull())
+				if (rcTextCurr.IsRectNull()) {
 					rcTextCurr.SetRect(rcTextOrig.left, rcTextOrig.top, rcTextOrig.left + size.cx, rcTextOrig.bottom);
+				}
 				else {
 					rcTextCurr.left = rcTextCurr.right;
 					rcTextCurr.right += size.cx;
@@ -2115,8 +2113,9 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 			SIZE size;
 			GetTextExtentPoint32W(pDC->m_hDC, wsvTextAfter.data(), static_cast<int>(wsvTextAfter.size()), &size);
 
-			if (rcTextCurr.IsRectNull())
+			if (rcTextCurr.IsRectNull()) {
 				rcTextCurr.SetRect(rcTextOrig.left, rcTextOrig.top, rcTextOrig.left + size.cx, rcTextOrig.bottom);
+			}
 			else {
 				rcTextCurr.left = rcTextCurr.right;
 				rcTextCurr.right += size.cx;

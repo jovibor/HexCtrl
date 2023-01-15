@@ -42,6 +42,7 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, &CHexDlgTemplMgr::OnCheckHglSel)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_HEX, &CHexDlgTemplMgr::OnCheckHexadecimal)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_SWAP, &CHexDlgTemplMgr::OnCheckBigEndian)
+	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX, &CHexDlgTemplMgr::OnCheckMinMax)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListItemChanged)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetColor)
@@ -60,6 +61,7 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_WM_DESTROY()
 	ON_WM_CTLCOLOR()
 	ON_WM_ACTIVATE()
+	ON_WM_NCHITTEST()
 END_MESSAGE_MAP()
 
 void CHexDlgTemplMgr::DoDataExchange(CDataExchange* pDX)
@@ -71,8 +73,8 @@ void CHexDlgTemplMgr::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, m_stCheckTtShow);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, m_stCheckHglSel);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HEX, m_stCheckHex);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSET, m_stStaticOffset);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_STATIC_SIZE, m_stStaticSize);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETNUM, m_stStaticOffset);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_STATIC_SIZENUM, m_stStaticSize);
 }
 
 BOOL CHexDlgTemplMgr::OnInitDialog()
@@ -121,11 +123,18 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 
 	EnableDynamicLayoutHelper(true);
 	::SetWindowSubclass(m_stTreeApplied, TreeSubclassProc, 0, 0);
-	SetDlgButtonStates();
+	SetDlgButtonsState();
 
-	for (const auto& ref : m_vecTemplates) {
-		OnTemplateLoadUnload(ref->iTemplateID, true);
+	for (const auto& pTempl : m_vecTemplates) {
+		OnTemplateLoadUnload(pTempl->iTemplateID, true);
 	}
+
+	const auto pChkMinMax = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX));
+	CRect rcWnd;
+	pChkMinMax->GetWindowRect(rcWnd);
+	m_hBITMAPMinMax = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
+		MAKEINTRESOURCEW(IDB_HEXCTRL_SCROLL_ARROW), IMAGE_BITMAP, rcWnd.Width(), rcWnd.Height(), 0));
+	pChkMinMax->SetBitmap(m_hBITMAPMinMax); //Set arrow bitmap to the min-max checkbox.
 
 	return TRUE;
 }
@@ -238,6 +247,8 @@ void CHexDlgTemplMgr::OnBnApply()
 {
 	CString wstrText;
 	m_stEditOffset.GetWindowTextW(wstrText);
+	if (wstrText.IsEmpty())
+		return;
 	const auto opt = StrToULL(wstrText.GetString());
 	if (!opt)
 		return;
@@ -271,6 +282,67 @@ void CHexDlgTemplMgr::OnCheckTtShow()
 void CHexDlgTemplMgr::OnCheckHglSel()
 {
 	m_fHighlightSel = m_stCheckHglSel.GetCheck() == BST_CHECKED;
+}
+
+void CHexDlgTemplMgr::OnCheckMinMax()
+{
+	const auto fMinimize = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX))->GetCheck() == BST_CHECKED;
+	constexpr int iIDsToHide[] { IDC_HEXCTRL_TEMPLMGR_STATIC_AVAIL, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES,
+		IDC_HEXCTRL_TEMPLMGR_BTN_LOAD, IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD, IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR,
+		IDC_HEXCTRL_TEMPLMGR_STATIC_APPLY, IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET, IDC_HEXCTRL_TEMPLMGR_BTN_APPLY,
+		IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, IDC_HEXCTRL_TEMPLMGR_CHK_HEX,
+		IDC_HEXCTRL_TEMPLMGR_CHK_SWAP, IDC_HEXCTRL_TEMPLMGR_GRB_TOP };
+	for (const auto id : iIDsToHide) {
+		GetDlgItem(id)->ShowWindow(fMinimize ? SW_HIDE : SW_SHOW);
+	}
+
+	const auto lmbHeightDiff = [this]()->int {
+		CRect rcMinMax;
+		GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX)->GetWindowRect(rcMinMax);
+		CRect rcHighestToLift;
+		GetDlgItem(IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETTXT)->GetWindowRect(rcHighestToLift);
+		return rcHighestToLift.top - rcMinMax.top; //The height all the controls will be lifted to.
+	};
+	static const auto iHeightDiff = lmbHeightDiff();
+
+	constexpr int iIDsToMove[] { IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETTXT, IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETNUM,
+		IDC_HEXCTRL_TEMPLMGR_STATIC_SIZETXT, IDC_HEXCTRL_TEMPLMGR_STATIC_SIZENUM, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED,
+		IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED };
+
+	for (const auto id : iIDsToMove) {
+		const auto pWnd = GetDlgItem(id);
+		CRect rcWnd;
+		pWnd->GetWindowRect(rcWnd);
+		ScreenToClient(rcWnd);
+		const auto iNewPosY = fMinimize ? rcWnd.top - iHeightDiff : rcWnd.top + iHeightDiff;
+		pWnd->SetWindowPos(nullptr, rcWnd.left, iNewPosY, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+	}
+
+	const auto lmbChangeStyle = [=]() {
+		const auto llStyle = GetWindowLongPtrW(m_hWnd, GWL_STYLE);
+		const auto llStyleNew = fMinimize ? llStyle & ~(WS_BORDER | WS_DLGFRAME) : llStyle | WS_BORDER | WS_DLGFRAME;
+		SetWindowLongPtrW(m_hWnd, GWL_STYLE, llStyleNew);
+		SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+	};
+
+	//For everything to work fine and right, the style-changing order is important.
+	//When maximizing, we first adjust styles and then resize the dialog window,
+	//when minimizing, we first resizing and only then changing styles, otherwise 
+	//a child-controls glitches may occur.
+	if (!fMinimize) {
+		lmbChangeStyle();
+	}
+
+	CRect rcWnd;
+	GetWindowRect(rcWnd);
+	const auto iHightNew = fMinimize ? rcWnd.Height() - iHeightDiff : rcWnd.Height() + iHeightDiff;
+	EnableDynamicLayoutHelper(false); //Otherwise SetWindowPos will also change the pos of all dynamic windows.
+	SetWindowPos(nullptr, rcWnd.left, rcWnd.top, rcWnd.Width(), iHightNew, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_FRAMECHANGED);
+	EnableDynamicLayoutHelper(true);
+
+	if (fMinimize) {
+		lmbChangeStyle();
+	}
 }
 
 void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
@@ -834,6 +906,22 @@ void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)
 	CDialogEx::OnMouseMove(nFlags, point);
 }
 
+LRESULT CHexDlgTemplMgr::OnNcHitTest(CPoint point)
+{
+	//Code for moving the dialog by clicking in a client area.
+	CRect rcList;
+	m_pListApplied->GetWindowRect(rcList);
+	CRect rcWnd;
+	GetWindowRect(rcWnd);
+	constexpr auto iBuffer { 10 }; //10px buffer zone, for left/right resizing to work.
+	if (point.y < rcList.top && point.x > rcWnd.left + iBuffer
+		&& point.x < rcWnd.right - iBuffer) { //If clicked anywhere above the m_pListApplied.
+		return HTCAPTION;
+	}
+
+	return CDialogEx::OnNcHitTest(point);
+}
+
 void CHexDlgTemplMgr::OnOK()
 {
 	const auto pWndFocus = GetFocus();
@@ -861,7 +949,7 @@ void CHexDlgTemplMgr::OnTemplateLoadUnload(int iTemplateID, bool fLoad)
 		const auto iIndex = m_stComboTemplates.AddString(iterTempl->get()->wstrName.data());
 		m_stComboTemplates.SetItemData(iIndex, static_cast<DWORD_PTR>(iTemplateID));
 		m_stComboTemplates.SetCurSel(iIndex);
-		SetDlgButtonStates();
+		SetDlgButtonsState();
 	}
 	else {
 		RemoveNodesWithTemplateID(iTemplateID);
@@ -874,7 +962,7 @@ void CHexDlgTemplMgr::OnTemplateLoadUnload(int iTemplateID, bool fLoad)
 			}
 		}
 
-		SetDlgButtonStates();
+		SetDlgButtonsState();
 	}
 }
 
@@ -887,6 +975,7 @@ void CHexDlgTemplMgr::OnDestroy()
 	m_pAppliedCurr = nullptr;
 	m_pVecFieldsCurr = nullptr;
 	m_hTreeCurrParent = nullptr;
+	DeleteObject(m_hBITMAPMinMax);
 }
 
 void CHexDlgTemplMgr::ShowListDataBool(LPWSTR pwsz, unsigned char uchData) const
@@ -1573,6 +1662,8 @@ void CHexDlgTemplMgr::EnableDynamicLayoutHelper(bool fEnable)
 			CMFCDynamicLayout::SizeVertical(100));
 		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP, CMFCDynamicLayout::MoveNone(),
 			CMFCDynamicLayout::SizeHorizontal(100));
+		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX, CMFCDynamicLayout::MoveHorizontal(100),
+			CMFCDynamicLayout::SizeNone());
 	}
 }
 
@@ -1841,21 +1932,22 @@ void CHexDlgTemplMgr::RemoveNodeWithAppliedID(int iAppliedID)
 	}
 }
 
-void CHexDlgTemplMgr::SetDlgButtonStates()
+void CHexDlgTemplMgr::SetDlgButtonsState()
 {
+	const auto fHasTempl = HasTemplates();
 	if (const auto pBtnApply = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_APPLY));
 		pBtnApply != nullptr) {
-		pBtnApply->EnableWindow(HasTemplates());
+		pBtnApply->EnableWindow(fHasTempl);
 	}
 	if (const auto pBtnUnload = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD));
 		pBtnUnload != nullptr) {
-		pBtnUnload->EnableWindow(HasTemplates());
+		pBtnUnload->EnableWindow(fHasTempl);
 	}
 	if (const auto pBtnRandom = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR));
 		pBtnRandom != nullptr) {
-		pBtnRandom->EnableWindow(HasTemplates());
+		pBtnRandom->EnableWindow(fHasTempl);
 	}
-	m_stEditOffset.EnableWindow(HasTemplates());
+	m_stEditOffset.EnableWindow(fHasTempl);
 }
 
 void CHexDlgTemplMgr::SetHexSelByField(PCHEXTEMPLATEFIELD pField)
@@ -1927,6 +2019,10 @@ void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 		}
 	}
 	m_vecTemplates.erase(iterTempl); //Remove template itself.
+
+	//This needed because SetDlgButtonsState checks m_vecTemplates.empty(), which was erased just line above.
+	//OnTemplateLoadUnload at the beginning doesn't know yet that it's empty (when all templates are unloaded).
+	SetDlgButtonsState();
 }
 
 void CHexDlgTemplMgr::UpdateStaticText()

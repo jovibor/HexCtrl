@@ -107,6 +107,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnCheckBigEndian();
 		afx_msg void OnCheckTtShow();
 		afx_msg void OnCheckHglSel();
+		afx_msg void OnCheckMinMax();
 		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
@@ -120,6 +121,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnTreeRClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+		afx_msg LRESULT OnNcHitTest(CPoint point);
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 		void OnOK()override;
@@ -164,7 +166,7 @@ namespace HEXCTRL::INTERNAL
 		void RandomizeTemplateColors(int iTemplateID);
 		void RemoveNodesWithTemplateID(int iTemplateID);
 		void RemoveNodeWithAppliedID(int iAppliedID);
-		void SetDlgButtonStates(); //Enable/disable button states depending on templates existence.
+		void SetDlgButtonsState(); //Enable/disable button states depending on templates existence.
 		void SetHexSelByField(PCHEXTEMPLATEFIELD pField);
 		void ShowTooltips(bool fShow)override;
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
@@ -187,6 +189,7 @@ namespace HEXCTRL::INTERNAL
 		CButton m_stCheckTtShow;      //Check-box "Show tooltips"
 		CButton m_stCheckHglSel;      //Check-box "Highlight selected"
 		CButton m_stCheckHex;         //Check-box "Highlight selected"
+		HBITMAP m_hBITMAPMinMax { };  //Bitmap for the min-max checkbox.
 		CWnd m_stStaticOffset;        //Static text "Template offset:".
 		CWnd m_stStaticSize;          //Static text Template size:".
 		UINT m_nIDTemplate { };       //Resource ID of the Dialog, for creation.
