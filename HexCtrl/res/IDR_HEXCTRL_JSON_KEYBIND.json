@@ -19,8 +19,8 @@
   "CMD_BKM_REMOVE": [ "ctrl+n" ],
   "CMD_BKM_NEXT": [ "f2" ],
   "CMD_BKM_PREV": [ "shift+f2" ],
-  "CMD_BKM_CLEARALL": [ "" ],
-  "CMD_BKM_DLG_MANAGER": [ "" ],
+  "CMD_BKM_REMOVEALL": [ "" ],
+  "CMD_BKM_DLG_MGR": [ "" ],
   "CMD_CLPBRD_COPY_HEX": [ "ctrl+c" ],
   "CMD_CLPBRD_COPY_HEXLE": [ "" ],
   "CMD_CLPBRD_COPY_HEXFMT": [ "" ],
@@ -63,5 +63,5 @@
   "CMD_TEMPL_APPLYCURR": [ "ctrl+alt+c" ],
   "CMD_TEMPL_DISAPPLY": [ "" ],
   "CMD_TEMPL_DISAPPALL": [ "" ],
-  "CMD_DLG_TEMPLMGR": [ "ctrl+alt+t" ]
+  "CMD_TEMPL_DLG_MGR": [ "ctrl+alt+t" ]
 }

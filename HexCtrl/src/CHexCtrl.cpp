@@ -211,7 +211,7 @@ void CHexCtrl::ClearData()
 	m_pScrollV->SetScrollPos(0);
 	m_pScrollH->SetScrollPos(0);
 	m_pScrollV->SetScrollSizes(0, 0, 0);
-	m_pDlgBkmMgr->ClearAll();
+	m_pDlgBkmMgr->RemoveAll();
 	m_pSelection->ClearAll();
 	Redraw();
 }
@@ -467,10 +467,10 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case CMD_BKM_PREV:
 		m_pDlgBkmMgr->GoPrev();
 		break;
-	case CMD_BKM_CLEARALL:
-		m_pDlgBkmMgr->ClearAll();
+	case CMD_BKM_REMOVEALL:
+		m_pDlgBkmMgr->RemoveAll();
 		break;
-	case CMD_BKM_DLG_MANAGER:
+	case CMD_BKM_DLG_MGR:
 		m_pDlgBkmMgr->ShowWindow(SW_SHOW);
 		break;
 	case CMD_CLPBRD_COPY_HEX:
@@ -604,7 +604,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case CMD_TEMPL_DISAPPALL:
 		m_pDlgTemplMgr->DisapplyAll();
 		break;
-	case CMD_DLG_TEMPLMGR:
+	case CMD_TEMPL_DLG_MGR:
 		m_pDlgTemplMgr->ShowWindow(SW_SHOW);
 		break;
 	}
@@ -909,7 +909,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		break;
 	case CMD_BKM_NEXT:
 	case CMD_BKM_PREV:
-	case CMD_BKM_CLEARALL:
+	case CMD_BKM_REMOVEALL:
 		fAvail = m_pDlgBkmMgr->HasBookmarks();
 		break;
 	case CMD_CLPBRD_COPY_HEX:
@@ -951,7 +951,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case CMD_NAV_DATAEND:
 	case CMD_NAV_LINEBEG:
 	case CMD_NAV_LINEEND:
-	case CMD_BKM_DLG_MANAGER:
+	case CMD_BKM_DLG_MGR:
 	case CMD_SEL_MARKSTART:
 	case CMD_SEL_MARKEND:
 	case CMD_SEL_ALL:
@@ -1438,8 +1438,8 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		{ "CMD_BKM_REMOVE", { CMD_BKM_REMOVE, IDM_HEXCTRL_BKM_REMOVE } },
 		{ "CMD_BKM_NEXT", { CMD_BKM_NEXT, IDM_HEXCTRL_BKM_NEXT } },
 		{ "CMD_BKM_PREV", { CMD_BKM_PREV, IDM_HEXCTRL_BKM_PREV } },
-		{ "CMD_BKM_CLEARALL", { CMD_BKM_CLEARALL, IDM_HEXCTRL_BKM_CLEARALL } },
-		{ "CMD_BKM_DLG_MANAGER", { CMD_BKM_DLG_MANAGER, IDM_HEXCTRL_BKM_DLGMGR } },
+		{ "CMD_BKM_REMOVEALL", { CMD_BKM_REMOVEALL, IDM_HEXCTRL_BKM_REMOVEALL } },
+		{ "CMD_BKM_DLG_MGR", { CMD_BKM_DLG_MGR, IDM_HEXCTRL_BKM_DLGMGR } },
 		{ "CMD_CLPBRD_COPY_HEX", { CMD_CLPBRD_COPY_HEX, IDM_HEXCTRL_CLPBRD_COPYHEX } },
 		{ "CMD_CLPBRD_COPY_HEXLE", { CMD_CLPBRD_COPY_HEXLE, IDM_HEXCTRL_CLPBRD_COPYHEXLE } },
 		{ "CMD_CLPBRD_COPY_HEXFMT", { CMD_CLPBRD_COPY_HEXFMT, IDM_HEXCTRL_CLPBRD_COPYHEXFMT } },
@@ -1482,7 +1482,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		{ "CMD_TEMPL_APPLYCURR", { CMD_TEMPL_APPLYCURR, IDM_HEXCTRL_TEMPL_APPLYCURR } },
 		{ "CMD_TEMPL_DISAPPLY", { CMD_TEMPL_DISAPPLY, IDM_HEXCTRL_TEMPL_DISAPPLY } },
 		{ "CMD_TEMPL_DISAPPALL", { CMD_TEMPL_DISAPPALL, IDM_HEXCTRL_TEMPL_DISAPPALL } },
-		{ "CMD_DLG_TEMPLMGR", { CMD_DLG_TEMPLMGR, IDM_HEXCTRL_TEMPL_DLGMGR } }
+		{ "CMD_TEMPL_DLG_MGR", { CMD_TEMPL_DLG_MGR, IDM_HEXCTRL_TEMPL_DLGMGR } }
 	};
 	//Mapping between JSON-data Command Names and actual keyboard codes with the names that appear in the menu.
 	const std::unordered_map<std::string_view, std::pair<UINT, std::wstring_view>> umapKeys {
@@ -4664,8 +4664,8 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_REMOVE, IsCmdAvail(CMD_BKM_REMOVE) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_NEXT, IsCmdAvail(CMD_BKM_NEXT) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_PREV, IsCmdAvail(CMD_BKM_PREV) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_CLEARALL, IsCmdAvail(CMD_BKM_CLEARALL) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_DLGMGR, IsCmdAvail(CMD_BKM_DLG_MANAGER) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_REMOVEALL, IsCmdAvail(CMD_BKM_REMOVEALL) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_DLGMGR, IsCmdAvail(CMD_BKM_DLG_MGR) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 5:	//Clipboard.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEX, IsCmdAvail(CMD_CLPBRD_COPY_HEX) ? MF_ENABLED : MF_GRAYED);
@@ -4697,7 +4697,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_APPLYCURR, IsCmdAvail(CMD_TEMPL_APPLYCURR) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DISAPPLY, IsCmdAvail(CMD_TEMPL_DISAPPLY) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DISAPPALL, IsCmdAvail(CMD_TEMPL_DISAPPALL) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DLGMGR, IsCmdAvail(CMD_DLG_TEMPLMGR) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DLGMGR, IsCmdAvail(CMD_TEMPL_DLG_MGR) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 9: //Data Presentation.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLGDATAINTERP, IsCmdAvail(CMD_DLG_DATAINTERP) ? MF_ENABLED : MF_GRAYED);

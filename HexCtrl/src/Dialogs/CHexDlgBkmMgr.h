@@ -16,7 +16,7 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw)override; //Returns new bookmark Id.
-		void ClearAll()override;
+		void RemoveAll()override;
 		[[nodiscard]] auto GetByID(ULONGLONG ullID) -> PHEXBKM override;       //Bookmark by ID.
 		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM override; //Bookmark by index (in inner list).
 		[[nodiscard]] ULONGLONG GetCount()override;
@@ -41,7 +41,9 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
-		afx_msg void OnClickCheckHex();
+		afx_msg void OnCheckHex();
+		afx_msg void OnCheckMinMax();
+		afx_msg void OnBtnSave();
 		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListLClick(NMHDR *pNMHDR, LRESULT *pResult);
@@ -49,6 +51,9 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListGetColor(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnDestroy();
+		void EnableBottomArea(bool fEnable);
+		void EnableDynamicLayoutHelper(bool fEnable);
+		void FillBkmData(int iBkmIndex);
 		void UpdateList();
 		void SortBookmarks();
 		DECLARE_MESSAGE_MAP();
@@ -56,11 +61,19 @@ namespace HEXCTRL::INTERNAL
 		std::deque<HEXBKM> m_deqBookmarks;
 		IHexCtrl* m_pHexCtrl { };
 		IHexBookmarks* m_pVirtual { };
+		CButton m_btnMinMax;
+		CEdit m_editOffset;
+		CEdit m_editSize;
+		CEdit m_editDescr;
+		CMFCColorButton m_clrBk;
+		CMFCColorButton m_clrTxt;
 		LONGLONG m_llIndexCurr { }; //Current bookmark position index, to move next/prev.
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
-		CMenu m_stMenuList;
 		LISTEX::LISTEXCOLOR m_stCellClr { };
-		UINT m_nIDTemplate { }; //Resource ID of the Dialog, for creation.
+		CMenu m_stMenuList;
+		HBITMAP m_hBITMAPMinMax { };  //Bitmap for the min-max checkbox.
+		UINT m_nIDTemplate { };       //Resource ID of the Dialog, for creation.
+		int m_iBkmCurr { -1 };        //Currently selected in list bookmark index;
 		bool m_fShowAsHex { true };
 	};
 }

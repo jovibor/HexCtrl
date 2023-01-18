@@ -28,7 +28,7 @@ namespace HEXCTRL
 		CMD_NAV_DLG_GOTO, CMD_NAV_REPFWD, CMD_NAV_REPBKW, CMD_NAV_DATABEG, CMD_NAV_DATAEND,
 		CMD_NAV_PAGEBEG, CMD_NAV_PAGEEND, CMD_NAV_LINEBEG, CMD_NAV_LINEEND,
 		CMD_GROUPBY_BYTE, CMD_GROUPBY_WORD, CMD_GROUPBY_DWORD, CMD_GROUPBY_QWORD,
-		CMD_BKM_ADD, CMD_BKM_REMOVE, CMD_BKM_NEXT, CMD_BKM_PREV, CMD_BKM_CLEARALL, CMD_BKM_DLG_MANAGER,
+		CMD_BKM_ADD, CMD_BKM_REMOVE, CMD_BKM_NEXT, CMD_BKM_PREV, CMD_BKM_REMOVEALL, CMD_BKM_DLG_MGR,
 		CMD_CLPBRD_COPY_HEX, CMD_CLPBRD_COPY_HEXLE, CMD_CLPBRD_COPY_HEXFMT, CMD_CLPBRD_COPY_TEXTUTF16,
 		CMD_CLPBRD_COPY_BASE64, CMD_CLPBRD_COPY_CARR, CMD_CLPBRD_COPY_GREPHEX, CMD_CLPBRD_COPY_PRNTSCRN,
 		CMD_CLPBRD_COPY_OFFSET, CMD_CLPBRD_PASTE_HEX, CMD_CLPBRD_PASTE_TEXTUTF16, CMD_CLPBRD_PASTE_TEXTCP,
@@ -38,7 +38,7 @@ namespace HEXCTRL
 		CMD_APPEAR_CAPACINC, CMD_APPEAR_CAPACDEC, CMD_DLG_PRINT, CMD_DLG_ABOUT,
 		CMD_CARET_LEFT, CMD_CARET_RIGHT, CMD_CARET_UP, CMD_CARET_DOWN,
 		CMD_SCROLL_PAGEUP, CMD_SCROLL_PAGEDOWN,
-		CMD_TEMPL_APPLYCURR, CMD_TEMPL_DISAPPLY, CMD_TEMPL_DISAPPALL, CMD_DLG_TEMPLMGR
+		CMD_TEMPL_APPLYCURR, CMD_TEMPL_DISAPPLY, CMD_TEMPL_DISAPPALL, CMD_TEMPL_DLG_MGR
 	};
 
 	/********************************************************************************************
@@ -98,13 +98,13 @@ namespace HEXCTRL
 	class IHexBookmarks
 	{
 	public:
-		virtual ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw = true) = 0;   //Add new bookmark, returns the new bookmark's ID.
-		virtual void ClearAll() = 0;                                            //Clear all bookmarks.
+		virtual ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw = true) = 0;     //Add new bookmark, returns the new bookmark's ID.
 		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID) -> PHEXBKM = 0;       //Get bookmark by ID.
 		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM = 0; //Get bookmark by index.
-		[[nodiscard]] virtual ULONGLONG GetCount() = 0;                         //Get bookmarks count.
+		[[nodiscard]] virtual ULONGLONG GetCount() = 0;                           //Get bookmarks count.
 		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset) -> PHEXBKM = 0;   //HitTest for given offset.
-		virtual void RemoveByID(ULONGLONG ullID) = 0;                           //Remove bookmark by a given ID.
+		virtual void RemoveAll() = 0;                                             //Remove all bookmarks.
+		virtual void RemoveByID(ULONGLONG ullID) = 0;                             //Remove by a given ID.
 	};
 
 	/********************************************************************************************

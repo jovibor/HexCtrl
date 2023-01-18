@@ -38,10 +38,10 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD, &CHexDlgTemplMgr::OnBnUnloadTemplate)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR, &CHexDlgTemplMgr::OnBnRandomizeColors)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_APPLY, &CHexDlgTemplMgr::OnBnApply)
-	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, &CHexDlgTemplMgr::OnCheckTtShow)
+	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, &CHexDlgTemplMgr::OnCheckShowTt)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, &CHexDlgTemplMgr::OnCheckHglSel)
-	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_HEX, &CHexDlgTemplMgr::OnCheckHexadecimal)
-	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_SWAP, &CHexDlgTemplMgr::OnCheckBigEndian)
+	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_HEX, &CHexDlgTemplMgr::OnCheckHex)
+	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_SWAP, &CHexDlgTemplMgr::OnCheckSwapEndian)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX, &CHexDlgTemplMgr::OnCheckMinMax)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListItemChanged)
@@ -67,14 +67,14 @@ END_MESSAGE_MAP()
 void CHexDlgTemplMgr::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES, m_stComboTemplates);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET, m_stEditOffset);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES, m_comboTemplates);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET, m_editOffset);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, m_stTreeApplied);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, m_stCheckTtShow);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, m_stCheckHglSel);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HEX, m_stCheckHex);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETNUM, m_stStaticOffset);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_STATIC_SIZENUM, m_stStaticSize);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, m_btnShowTT);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, m_btnHglSel);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HEX, m_btnHex);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETNUM, m_wndStaticOffset);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_STATIC_SIZENUM, m_wndStaticSize);
 }
 
 BOOL CHexDlgTemplMgr::OnInitDialog()
@@ -113,10 +113,10 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLY), L"Disapply template");
 	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLYALL), L"Disapply all");
 
-	m_stEditOffset.SetWindowTextW(L"0x0");
-	m_stCheckTtShow.SetCheck(IsTooltips() ? BST_CHECKED : BST_UNCHECKED);
-	m_stCheckHglSel.SetCheck(IsHighlight() ? BST_CHECKED : BST_UNCHECKED);
-	m_stCheckHex.SetCheck(m_fShowAsHex ? BST_CHECKED : BST_UNCHECKED);
+	m_editOffset.SetWindowTextW(L"0x0");
+	m_btnShowTT.SetCheck(IsTooltips() ? BST_CHECKED : BST_UNCHECKED);
+	m_btnHglSel.SetCheck(IsHighlight() ? BST_CHECKED : BST_UNCHECKED);
+	m_btnHex.SetCheck(m_fShowAsHex ? BST_CHECKED : BST_UNCHECKED);
 
 	m_hCurResize = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
 	m_hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
@@ -129,12 +129,13 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 		OnTemplateLoadUnload(pTempl->iTemplateID, true);
 	}
 
-	const auto pChkMinMax = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX));
-	CRect rcWnd;
-	pChkMinMax->GetWindowRect(rcWnd);
-	m_hBITMAPMinMax = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
-		MAKEINTRESOURCEW(IDB_HEXCTRL_SCROLL_ARROW), IMAGE_BITMAP, rcWnd.Width(), rcWnd.Height(), 0));
-	pChkMinMax->SetBitmap(m_hBITMAPMinMax); //Set arrow bitmap to the min-max checkbox.
+	if (const auto pChkMinMax = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX)); pChkMinMax) {
+		CRect rcWnd;
+		pChkMinMax->GetWindowRect(rcWnd);
+		m_hBITMAPMinMax = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
+			MAKEINTRESOURCEW(IDB_HEXCTRL_SCROLL_ARROW), IMAGE_BITMAP, rcWnd.Width(), rcWnd.Height(), 0));
+		pChkMinMax->SetBitmap(m_hBITMAPMinMax); //Set arrow bitmap to the min-max checkbox.
+	}
 
 	return TRUE;
 }
@@ -190,7 +191,7 @@ HBRUSH CHexDlgTemplMgr::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 	const auto hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
 
 	//Template's applied offset and total size static text color.
-	if (pWnd == &m_stStaticOffset || pWnd == &m_stStaticSize) {
+	if (pWnd == &m_wndStaticOffset || pWnd == &m_wndStaticSize) {
 		pDC->SetTextColor(RGB(0, 0, 150));
 	}
 
@@ -229,16 +230,16 @@ void CHexDlgTemplMgr::OnBnLoadTemplate()
 
 void CHexDlgTemplMgr::OnBnUnloadTemplate()
 {
-	if (const auto iIndex = m_stComboTemplates.GetCurSel(); iIndex != CB_ERR) {
-		const auto iTemplateID = static_cast<int>(m_stComboTemplates.GetItemData(iIndex));
+	if (const auto iIndex = m_comboTemplates.GetCurSel(); iIndex != CB_ERR) {
+		const auto iTemplateID = static_cast<int>(m_comboTemplates.GetItemData(iIndex));
 		UnloadTemplate(iTemplateID);
 	}
 }
 
 void CHexDlgTemplMgr::OnBnRandomizeColors()
 {
-	if (const auto iIndex = m_stComboTemplates.GetCurSel(); iIndex != CB_ERR) {
-		const auto iTemplateID = static_cast<int>(m_stComboTemplates.GetItemData(iIndex));
+	if (const auto iIndex = m_comboTemplates.GetCurSel(); iIndex != CB_ERR) {
+		const auto iTemplateID = static_cast<int>(m_comboTemplates.GetItemData(iIndex));
 		RandomizeTemplateColors(iTemplateID);
 	}
 }
@@ -246,42 +247,42 @@ void CHexDlgTemplMgr::OnBnRandomizeColors()
 void CHexDlgTemplMgr::OnBnApply()
 {
 	CString wstrText;
-	m_stEditOffset.GetWindowTextW(wstrText);
+	m_editOffset.GetWindowTextW(wstrText);
 	if (wstrText.IsEmpty())
 		return;
 	const auto opt = StrToULL(wstrText.GetString());
 	if (!opt)
 		return;
 
-	const auto iIndex = m_stComboTemplates.GetCurSel();
+	const auto iIndex = m_comboTemplates.GetCurSel();
 	if (iIndex == CB_ERR)
 		return;
 
-	const auto iTemplateID = static_cast<int>(m_stComboTemplates.GetItemData(iIndex));
+	const auto iTemplateID = static_cast<int>(m_comboTemplates.GetItemData(iIndex));
 	ApplyTemplate(*opt, iTemplateID);
 }
 
-void CHexDlgTemplMgr::OnCheckHexadecimal()
+void CHexDlgTemplMgr::OnCheckHex()
 {
-	m_fShowAsHex = m_stCheckHex.GetCheck() == BST_CHECKED;
+	m_fShowAsHex = m_btnHex.GetCheck() == BST_CHECKED;
 	UpdateStaticText();
 	m_pListApplied->RedrawWindow();
 }
 
-void CHexDlgTemplMgr::OnCheckBigEndian()
+void CHexDlgTemplMgr::OnCheckSwapEndian()
 {
 	m_fSwapEndian = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_SWAP))->GetCheck() == BST_CHECKED;
 	m_pListApplied->RedrawWindow();
 }
 
-void CHexDlgTemplMgr::OnCheckTtShow()
+void CHexDlgTemplMgr::OnCheckShowTt()
 {
-	ShowTooltips(m_stCheckTtShow.GetCheck() == BST_CHECKED);
+	ShowTooltips(m_btnShowTT.GetCheck() == BST_CHECKED);
 }
 
 void CHexDlgTemplMgr::OnCheckHglSel()
 {
-	m_fHighlightSel = m_stCheckHglSel.GetCheck() == BST_CHECKED;
+	m_fHighlightSel = m_btnHglSel.GetCheck() == BST_CHECKED;
 }
 
 void CHexDlgTemplMgr::OnCheckMinMax()
@@ -343,6 +344,18 @@ void CHexDlgTemplMgr::OnCheckMinMax()
 	if (fMinimize) {
 		lmbChangeStyle();
 	}
+}
+
+void CHexDlgTemplMgr::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	m_stMenuTree.DestroyMenu();
+	m_stMenuHdr.DestroyMenu();
+	m_pAppliedCurr = nullptr;
+	m_pVecFieldsCurr = nullptr;
+	m_hTreeCurrParent = nullptr;
+	DeleteObject(m_hBITMAPMinMax);
 }
 
 void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
@@ -733,6 +746,128 @@ void CHexDlgTemplMgr::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 {
 }
 
+void CHexDlgTemplMgr::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	if (m_fCurInSplitter) {
+		m_fLMDownResize = true;
+		SetCapture();
+		EnableDynamicLayoutHelper(false);
+	}
+
+	CDialogEx::OnLButtonDown(nFlags, point);
+}
+
+void CHexDlgTemplMgr::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	m_fLMDownResize = false;
+	ReleaseCapture();
+	EnableDynamicLayoutHelper(true);
+
+	CDialogEx::OnLButtonUp(nFlags, point);
+}
+
+void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)
+{
+	constexpr auto iResAreaHalfWidth = 15;       //Area where cursor turns into resizable (IDC_SIZEWE).
+	constexpr auto iWidthBetweenTreeAndList = 1; //Width between tree and list after resizing.
+	constexpr auto iMinTreeWidth = 100;          //Tree control minimum width.
+
+	CRect rcList;
+	m_pListApplied->GetWindowRect(rcList);
+	ScreenToClient(rcList);
+
+	if (m_fLMDownResize) {
+		CRect rcTree;
+		m_stTreeApplied.GetWindowRect(rcTree);
+		ScreenToClient(rcTree);
+		rcTree.right = point.x - iWidthBetweenTreeAndList;
+		if (rcTree.Width() >= iMinTreeWidth) {
+			m_stTreeApplied.SetWindowPos(nullptr, rcTree.left, rcTree.top,
+				rcTree.Width(), rcTree.Height(), SWP_NOACTIVATE);
+
+			rcList.left = point.x;
+			m_pListApplied->SetWindowPos(nullptr, rcList.left, rcList.top,
+				rcList.Width(), rcList.Height(), SWP_NOACTIVATE);
+		}
+	}
+	else {
+		const CRect rcSplitter(rcList.left - iResAreaHalfWidth, rcList.top,
+			rcList.left + iResAreaHalfWidth, rcList.bottom);
+		if (rcSplitter.PtInRect(point)) {
+			m_fCurInSplitter = true;
+			SetCursor(m_hCurResize);
+			SetCapture();
+		}
+		else {
+			m_fCurInSplitter = false;
+			SetCursor(m_hCurArrow);
+			ReleaseCapture();
+		}
+	}
+
+	CDialogEx::OnMouseMove(nFlags, point);
+}
+
+LRESULT CHexDlgTemplMgr::OnNcHitTest(CPoint point)
+{
+	//Code for moving the dialog by clicking in a client area.
+	CRect rcList;
+	m_pListApplied->GetWindowRect(rcList);
+	CRect rcWnd;
+	GetWindowRect(rcWnd);
+	constexpr auto iBuffer { 10 }; //10px buffer zone, for left/right resizing to work.
+	if (point.y < rcList.top && point.x > rcWnd.left + iBuffer
+		&& point.x < rcWnd.right - iBuffer) { //If clicked anywhere above the m_pListApplied.
+		return HTCAPTION;
+	}
+
+	return CDialogEx::OnNcHitTest(point);
+}
+
+void CHexDlgTemplMgr::OnOK()
+{
+	const auto pWndFocus = GetFocus();
+	//When Enter is pressed anywhere in the dialog, and focus is on the m_pListApplied,
+	//we simulate pressing Enter in the list by sending WM_KEYDOWN/VK_RETURN to it.
+	if (pWndFocus == &*m_pListApplied) {
+		m_pListApplied->SendMessageW(WM_KEYDOWN, VK_RETURN);
+	}
+	else if (pWndFocus == &m_editOffset) { //Focus is on the "Offset" edit-box.
+		OnBnApply();
+	}
+}
+
+void CHexDlgTemplMgr::OnTemplateLoadUnload(int iTemplateID, bool fLoad)
+{
+	if (!IsWindow(m_hWnd)) //Only if dialog window is created and alive we proceed with its members.
+		return;
+
+	if (fLoad) {
+		const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
+			[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
+		if (iterTempl == m_vecTemplates.end())
+			return;
+
+		const auto iIndex = m_comboTemplates.AddString(iterTempl->get()->wstrName.data());
+		m_comboTemplates.SetItemData(iIndex, static_cast<DWORD_PTR>(iTemplateID));
+		m_comboTemplates.SetCurSel(iIndex);
+		SetDlgButtonsState();
+	}
+	else {
+		RemoveNodesWithTemplateID(iTemplateID);
+
+		for (auto iIndex = 0; iIndex < m_comboTemplates.GetCount(); ++iIndex) { //Remove Template name from ComboBox.
+			if (const auto iItemData = static_cast<int>(m_comboTemplates.GetItemData(iIndex)); iItemData == iTemplateID) {
+				m_comboTemplates.DeleteString(iIndex);
+				m_comboTemplates.SetCurSel(0);
+				break;
+			}
+		}
+
+		SetDlgButtonsState();
+	}
+}
+
 void CHexDlgTemplMgr::OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pDispInfo = reinterpret_cast<NMTVDISPINFOW*>(pNMHDR);
@@ -842,140 +977,6 @@ void CHexDlgTemplMgr::OnTreeRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 		(fHasApplied && fHitTest ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_stMenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_TREEAPPLIED_DISAPPLYALL), (fHasApplied ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_stMenuTree.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
-}
-
-void CHexDlgTemplMgr::OnLButtonDown(UINT nFlags, CPoint point)
-{
-	if (m_fCurInSplitter) {
-		m_fLMDownResize = true;
-		SetCapture();
-		EnableDynamicLayoutHelper(false);
-	}
-
-	CDialogEx::OnLButtonDown(nFlags, point);
-}
-
-void CHexDlgTemplMgr::OnLButtonUp(UINT nFlags, CPoint point)
-{
-	m_fLMDownResize = false;
-	ReleaseCapture();
-	EnableDynamicLayoutHelper(true);
-
-	CDialogEx::OnLButtonUp(nFlags, point);
-}
-
-void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)
-{
-	constexpr auto iResAreaHalfWidth = 15;       //Area where cursor turns into resizable (IDC_SIZEWE).
-	constexpr auto iWidthBetweenTreeAndList = 1; //Width between tree and list after resizing.
-	constexpr auto iMinTreeWidth = 100;          //Tree control minimum width.
-
-	CRect rcList;
-	m_pListApplied->GetWindowRect(rcList);
-	ScreenToClient(rcList);
-
-	if (m_fLMDownResize) {
-		CRect rcTree;
-		m_stTreeApplied.GetWindowRect(rcTree);
-		ScreenToClient(rcTree);
-		rcTree.right = point.x - iWidthBetweenTreeAndList;
-		if (rcTree.Width() >= iMinTreeWidth) {
-			m_stTreeApplied.SetWindowPos(nullptr, rcTree.left, rcTree.top,
-				rcTree.Width(), rcTree.Height(), SWP_NOACTIVATE);
-
-			rcList.left = point.x;
-			m_pListApplied->SetWindowPos(nullptr, rcList.left, rcList.top,
-				rcList.Width(), rcList.Height(), SWP_NOACTIVATE);
-		}
-	}
-	else {
-		const CRect rcSplitter(rcList.left - iResAreaHalfWidth, rcList.top,
-			rcList.left + iResAreaHalfWidth, rcList.bottom);
-		if (rcSplitter.PtInRect(point)) {
-			m_fCurInSplitter = true;
-			SetCursor(m_hCurResize);
-			SetCapture();
-		}
-		else {
-			m_fCurInSplitter = false;
-			SetCursor(m_hCurArrow);
-			ReleaseCapture();
-		}
-	}
-
-	CDialogEx::OnMouseMove(nFlags, point);
-}
-
-LRESULT CHexDlgTemplMgr::OnNcHitTest(CPoint point)
-{
-	//Code for moving the dialog by clicking in a client area.
-	CRect rcList;
-	m_pListApplied->GetWindowRect(rcList);
-	CRect rcWnd;
-	GetWindowRect(rcWnd);
-	constexpr auto iBuffer { 10 }; //10px buffer zone, for left/right resizing to work.
-	if (point.y < rcList.top && point.x > rcWnd.left + iBuffer
-		&& point.x < rcWnd.right - iBuffer) { //If clicked anywhere above the m_pListApplied.
-		return HTCAPTION;
-	}
-
-	return CDialogEx::OnNcHitTest(point);
-}
-
-void CHexDlgTemplMgr::OnOK()
-{
-	const auto pWndFocus = GetFocus();
-	//When Enter is pressed anywhere in the dialog, and focus is on the m_pListApplied,
-	//we simulate pressing Enter in the list by sending WM_KEYDOWN/VK_RETURN to it.
-	if (pWndFocus == &*m_pListApplied) {
-		m_pListApplied->SendMessageW(WM_KEYDOWN, VK_RETURN);
-	}
-	else if (pWndFocus == &m_stEditOffset) { //Focus is on the "Offset" edit-box.
-		OnBnApply();
-	}
-}
-
-void CHexDlgTemplMgr::OnTemplateLoadUnload(int iTemplateID, bool fLoad)
-{
-	if (!IsWindow(m_hWnd)) //Only if dialog window is created and alive we proceed with its members.
-		return;
-
-	if (fLoad) {
-		const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
-			[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
-		if (iterTempl == m_vecTemplates.end())
-			return;
-
-		const auto iIndex = m_stComboTemplates.AddString(iterTempl->get()->wstrName.data());
-		m_stComboTemplates.SetItemData(iIndex, static_cast<DWORD_PTR>(iTemplateID));
-		m_stComboTemplates.SetCurSel(iIndex);
-		SetDlgButtonsState();
-	}
-	else {
-		RemoveNodesWithTemplateID(iTemplateID);
-
-		for (auto iIndex = 0; iIndex < m_stComboTemplates.GetCount(); ++iIndex) { //Remove Template name from ComboBox.
-			if (const auto iItemData = static_cast<int>(m_stComboTemplates.GetItemData(iIndex)); iItemData == iTemplateID) {
-				m_stComboTemplates.DeleteString(iIndex);
-				m_stComboTemplates.SetCurSel(0);
-				break;
-			}
-		}
-
-		SetDlgButtonsState();
-	}
-}
-
-void CHexDlgTemplMgr::OnDestroy()
-{
-	CDialogEx::OnDestroy();
-
-	m_stMenuTree.DestroyMenu();
-	m_stMenuHdr.DestroyMenu();
-	m_pAppliedCurr = nullptr;
-	m_pVecFieldsCurr = nullptr;
-	m_hTreeCurrParent = nullptr;
-	DeleteObject(m_hBITMAPMinMax);
 }
 
 void CHexDlgTemplMgr::ShowListDataBool(LPWSTR pwsz, unsigned char uchData) const
@@ -1593,11 +1594,11 @@ void CHexDlgTemplMgr::ApplyCurr(ULONGLONG ullOffset)
 	if (!IsWindow(m_hWnd))
 		return;
 
-	const auto iIndex = m_stComboTemplates.GetCurSel();
+	const auto iIndex = m_comboTemplates.GetCurSel();
 	if (iIndex == CB_ERR)
 		return;
 
-	const auto iTemplateID = static_cast<int>(m_stComboTemplates.GetItemData(iIndex));
+	const auto iTemplateID = static_cast<int>(m_comboTemplates.GetItemData(iIndex));
 	ApplyTemplate(ullOffset, iTemplateID);
 }
 
@@ -1947,7 +1948,7 @@ void CHexDlgTemplMgr::SetDlgButtonsState()
 		pBtnRandom != nullptr) {
 		pBtnRandom->EnableWindow(fHasTempl);
 	}
-	m_stEditOffset.EnableWindow(fHasTempl);
+	m_editOffset.EnableWindow(fHasTempl);
 }
 
 void CHexDlgTemplMgr::SetHexSelByField(PCHEXTEMPLATEFIELD pField)
@@ -2035,8 +2036,8 @@ void CHexDlgTemplMgr::UpdateStaticText()
 		wstrSize = std::vformat(m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(m_pAppliedCurr->pTemplate->iSizeTotal));
 	}
 
-	m_stStaticOffset.SetWindowTextW(wstrOffset.data());
-	m_stStaticSize.SetWindowTextW(wstrSize.data());
+	m_wndStaticOffset.SetWindowTextW(wstrOffset.data());
+	m_wndStaticSize.SetWindowTextW(wstrSize.data());
 }
 
 bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& vecFields,

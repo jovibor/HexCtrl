@@ -103,11 +103,12 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnBnUnloadTemplate();
 		afx_msg void OnBnRandomizeColors();
 		afx_msg void OnBnApply();
-		afx_msg void OnCheckHexadecimal();
-		afx_msg void OnCheckBigEndian();
-		afx_msg void OnCheckTtShow();
+		afx_msg void OnCheckHex();
 		afx_msg void OnCheckHglSel();
+		afx_msg void OnCheckSwapEndian();
+		afx_msg void OnCheckShowTt();
 		afx_msg void OnCheckMinMax();
+		afx_msg void OnDestroy();
 		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
@@ -117,16 +118,15 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListDblClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListEnterPressed(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnTreeRClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 		afx_msg LRESULT OnNcHitTest(CPoint point);
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 		void OnOK()override;
 		void OnTemplateLoadUnload(int iTemplateID, bool fLoad);
-		afx_msg void OnDestroy();
+		afx_msg void OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnTreeRClick(NMHDR* pNMHDR, LRESULT* pResult);
 		void ShowListDataBool(LPWSTR pwsz, unsigned char uchData)const;
 		void ShowListDataChar(LPWSTR pwsz, char chData)const;
 		void ShowListDataUChar(LPWSTR pwsz, unsigned char uchData)const;
@@ -184,15 +184,15 @@ namespace HEXCTRL::INTERNAL
 		IHexCtrl* m_pHexCtrl { };
 		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;               //Loaded Templates.
 		std::vector<std::unique_ptr<HEXTEMPLATEAPPLIED>> m_vecTemplatesApplied; //Currently Applied Templates.
-		CComboBox m_stComboTemplates; //Currently available templates list.
-		CEdit m_stEditOffset;         //"Offset" edit box.
-		CButton m_stCheckTtShow;      //Check-box "Show tooltips"
-		CButton m_stCheckHglSel;      //Check-box "Highlight selected"
-		CButton m_stCheckHex;         //Check-box "Highlight selected"
-		HBITMAP m_hBITMAPMinMax { };  //Bitmap for the min-max checkbox.
-		CWnd m_stStaticOffset;        //Static text "Template offset:".
-		CWnd m_stStaticSize;          //Static text Template size:".
-		UINT m_nIDTemplate { };       //Resource ID of the Dialog, for creation.
+		CComboBox m_comboTemplates;  //Currently available templates list.
+		CEdit m_editOffset;          //"Offset" edit box.
+		CButton m_btnShowTT;         //Check-box "Show tooltips"
+		CButton m_btnHglSel;         //Check-box "Highlight selected"
+		CButton m_btnHex;            //Check-box "Highlight selected"
+		CWnd m_wndStaticOffset;      //Static text "Template offset:".
+		CWnd m_wndStaticSize;        //Static text Template size:".
+		HBITMAP m_hBITMAPMinMax { }; //Bitmap for the min-max checkbox.
+		UINT m_nIDTemplate { };      //Resource ID of the Dialog, for creation.
 		LISTEX::IListExPtr m_pListApplied { LISTEX::CreateListEx() };
 		LISTEX::LISTEXCOLOR m_stCellClr { };
 		CTreeCtrl m_stTreeApplied;

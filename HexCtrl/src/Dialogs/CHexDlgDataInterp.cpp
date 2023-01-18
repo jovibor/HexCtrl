@@ -18,8 +18,8 @@ using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
 	ON_WM_ACTIVATE()
-	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_HEX, &CHexDlgDataInterp::OnClickCheckHex)
-	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_BE, &CHexDlgDataInterp::OnClickCheckBe)
+	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_HEX, &CHexDlgDataInterp::OnCheckHex)
+	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_BE, &CHexDlgDataInterp::OnCheckBe)
 	ON_WM_CLOSE()
 	ON_WM_DESTROY()
 	ON_WM_SHOWWINDOW()
@@ -280,13 +280,13 @@ void CHexDlgDataInterp::OnOK()
 {
 }
 
-void CHexDlgDataInterp::OnClickCheckHex()
+void CHexDlgDataInterp::OnCheckHex()
 {
 	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX))->GetCheck() == BST_CHECKED;
 	InspectOffset(m_ullOffset);
 }
 
-void CHexDlgDataInterp::OnClickCheckBe()
+void CHexDlgDataInterp::OnCheckBe()
 {
 	m_fBigEndian = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE))->GetCheck() == BST_CHECKED;
 	InspectOffset(m_ullOffset);
