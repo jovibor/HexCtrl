@@ -117,14 +117,14 @@ void CHexDlgFillData::OnOK()
 
 	wchar_t pwszComboText[MAX_PATH * 2];
 	if (m_stComboData.IsWindowEnabled() && m_stComboData.GetWindowTextW(pwszComboText, MAX_PATH) == 0) { //No text.
-		MessageBoxW(L"Missing Fill Data!", L"Data Error!", MB_ICONERROR);
+		MessageBoxW(L"Missing Fill data!", L"Data error!", MB_ICONERROR);
 		return;
 	}
 
 	HEXMODIFY hms;
 	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL);
 	if (iRadioAllOrSel == IDC_HEXCTRL_FILLDATA_RAD_ALL) {
-		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify All data?",
+		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify all data?",
 			MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
 

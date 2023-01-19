@@ -292,7 +292,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	//"Search" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	pMenuTop->SetMenuItemInfoW(0, &mii, TRUE); //"Search" parent menu icon.
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_SEARCH_DLGSEARCH, &mii);
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_SEARCH_DLG, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Group Data" menu icon.
@@ -406,7 +406,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 
 	using enum EHexCmd;
 	switch (eCmd) {
-	case CMD_DLG_SEARCH:
+	case CMD_SEARCH_DLG:
 		m_pDlgSearch->ShowWindow(SW_SHOW);
 		break;
 	case CMD_SEARCH_NEXT:
@@ -415,7 +415,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case CMD_SEARCH_PREV:
 		m_pDlgSearch->SearchNextPrev(false);
 		break;
-	case CMD_NAV_DLG_GOTO:
+	case CMD_NAV_GOTO_DLG:
 		m_pDlgGoTo->ShowWindow(SW_SHOW);
 		break;
 	case CMD_NAV_REPFWD:
@@ -509,13 +509,13 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case CMD_CLPBRD_PASTE_TEXTCP:
 		ClipboardPaste(EClipboard::PASTE_TEXT_CP);
 		break;
-	case CMD_MODIFY_DLG_OPERS:
+	case CMD_MODIFY_OPERS_DLG:
 		m_pDlgOpers->ShowWindow(SW_SHOW);
 		break;
 	case CMD_MODIFY_FILLZEROS:
 		FillWithZeros();
 		break;
-	case CMD_MODIFY_DLG_FILLDATA:
+	case CMD_MODIFY_FILLDATA_DLG:
 		m_pDlgFillData->ShowWindow(SW_SHOW);
 		break;
 	case CMD_MODIFY_UNDO:
@@ -547,10 +547,10 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case CMD_SEL_ADDDOWN:
 		SelAddDown();
 		break;
-	case CMD_DLG_DATAINTERP:
+	case CMD_DATAINTERP_DLG:
 		m_pDlgDataInterp->ShowWindow(SW_SHOW);
 		break;
-	case CMD_DLG_ENCODING:
+	case CMD_ENCODING_DLG:
 		m_pDlgEncoding->ShowWindow(SW_SHOW);
 		break;
 	case CMD_APPEAR_FONTCHOOSE:
@@ -568,10 +568,10 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case CMD_APPEAR_CAPACDEC:
 		SetCapacity(GetCapacity() - 1);
 		break;
-	case CMD_DLG_PRINT:
+	case CMD_PRINT_DLG:
 		Print();
 		break;
-	case CMD_DLG_ABOUT:
+	case CMD_ABOUT_DLG:
 	{
 		CHexDlgAbout dlgAbout(this);
 		dlgAbout.DoModal();
@@ -927,8 +927,8 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case CMD_CLPBRD_PASTE_TEXTCP:
 		fAvail = fMutable && IsClipboardFormatAvailable(CF_UNICODETEXT);
 		break;
-	case CMD_MODIFY_DLG_OPERS:
-	case CMD_MODIFY_DLG_FILLDATA:
+	case CMD_MODIFY_OPERS_DLG:
+	case CMD_MODIFY_FILLDATA_DLG:
 		fAvail = fMutable;
 		break;
 	case CMD_MODIFY_FILLZEROS:
@@ -945,8 +945,8 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case CMD_CARET_LEFT:
 	case CMD_CARET_DOWN:
 	case CMD_CARET_UP:
-	case CMD_DLG_SEARCH:
-	case CMD_NAV_DLG_GOTO:
+	case CMD_SEARCH_DLG:
+	case CMD_NAV_GOTO_DLG:
 	case CMD_NAV_DATABEG:
 	case CMD_NAV_DATAEND:
 	case CMD_NAV_LINEBEG:
@@ -955,7 +955,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case CMD_SEL_MARKSTART:
 	case CMD_SEL_MARKEND:
 	case CMD_SEL_ALL:
-	case CMD_DLG_DATAINTERP:
+	case CMD_DATAINTERP_DLG:
 	case CMD_CLPBRD_COPY_OFFSET:
 		fAvail = fDataSet;
 		break;
@@ -1418,10 +1418,10 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 	using enum EHexCmd;
 	//Mapping between stringified EHexCmd::* and its value-menuID pairs.
 	const std::unordered_map<std::string_view, std::pair<EHexCmd, DWORD>> umapCmdMenu {
-		{ "CMD_DLG_SEARCH", { CMD_DLG_SEARCH, IDM_HEXCTRL_SEARCH_DLGSEARCH } },
+		{ "CMD_SEARCH_DLG", { CMD_SEARCH_DLG, IDM_HEXCTRL_SEARCH_DLG } },
 		{ "CMD_SEARCH_NEXT", { CMD_SEARCH_NEXT, IDM_HEXCTRL_SEARCH_NEXT } },
 		{ "CMD_SEARCH_PREV", { CMD_SEARCH_PREV, IDM_HEXCTRL_SEARCH_PREV } },
-		{ "CMD_NAV_DLG_GOTO", { CMD_NAV_DLG_GOTO, IDM_HEXCTRL_NAV_DLGGOTO } },
+		{ "CMD_NAV_GOTO_DLG", { CMD_NAV_GOTO_DLG, IDM_HEXCTRL_NAV_DLGGOTO } },
 		{ "CMD_NAV_REPFWD", { CMD_NAV_REPFWD, IDM_HEXCTRL_NAV_REPFWD } },
 		{ "CMD_NAV_REPBKW", { CMD_NAV_REPBKW, IDM_HEXCTRL_NAV_REPBKW } },
 		{ "CMD_NAV_DATABEG", { CMD_NAV_DATABEG, IDM_HEXCTRL_NAV_DATABEG } },
@@ -1452,9 +1452,9 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		{ "CMD_CLPBRD_PASTE_HEX", { CMD_CLPBRD_PASTE_HEX, IDM_HEXCTRL_CLPBRD_PASTEHEX } },
 		{ "CMD_CLPBRD_PASTE_TEXTUTF16", { CMD_CLPBRD_PASTE_TEXTUTF16, IDM_HEXCTRL_CLPBRD_PASTETEXTUTF16 } },
 		{ "CMD_CLPBRD_PASTE_TEXTCP", { CMD_CLPBRD_PASTE_TEXTCP, IDM_HEXCTRL_CLPBRD_PASTETEXTCP } },
-		{ "CMD_MODIFY_DLG_OPERS", { CMD_MODIFY_DLG_OPERS, IDM_HEXCTRL_MODIFY_DLGOPERS } },
+		{ "CMD_MODIFY_OPERS_DLG", { CMD_MODIFY_OPERS_DLG, IDM_HEXCTRL_MODIFY_DLGOPERS } },
 		{ "CMD_MODIFY_FILLZEROS", { CMD_MODIFY_FILLZEROS, IDM_HEXCTRL_MODIFY_FILLZEROS } },
-		{ "CMD_MODIFY_DLG_FILLDATA", { CMD_MODIFY_DLG_FILLDATA, IDM_HEXCTRL_MODIFY_DLGFILLDATA } },
+		{ "CMD_MODIFY_FILLDATA_DLG", { CMD_MODIFY_FILLDATA_DLG, IDM_HEXCTRL_MODIFY_DLGFILLDATA } },
 		{ "CMD_MODIFY_UNDO", { CMD_MODIFY_UNDO, IDM_HEXCTRL_MODIFY_UNDO } },
 		{ "CMD_MODIFY_REDO", { CMD_MODIFY_REDO, IDM_HEXCTRL_MODIFY_REDO } },
 		{ "CMD_SEL_MARKSTART", { CMD_SEL_MARKSTART, IDM_HEXCTRL_SEL_MARKSTART } },
@@ -1464,15 +1464,15 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		{ "CMD_SEL_ADDRIGHT", { CMD_SEL_ADDRIGHT, 0 } },
 		{ "CMD_SEL_ADDUP", { CMD_SEL_ADDUP, 0 } },
 		{ "CMD_SEL_ADDDOWN", { CMD_SEL_ADDDOWN, 0 } },
-		{ "CMD_DLG_DATAINTERPRET", { CMD_DLG_DATAINTERP, IDM_HEXCTRL_DLGDATAINTERP } },
-		{ "CMD_DLG_ENCODING", { CMD_DLG_ENCODING, IDM_HEXCTRL_DLGENCODING } },
+		{ "CMD_DATAINTERP_DLG", { CMD_DATAINTERP_DLG, IDM_HEXCTRL_DLGDATAINTERP } },
+		{ "CMD_ENCODING_DLG", { CMD_ENCODING_DLG, IDM_HEXCTRL_DLGENCODING } },
 		{ "CMD_APPEAR_FONTCHOOSE", { CMD_APPEAR_FONTCHOOSE, IDM_HEXCTRL_APPEAR_FONTCHOOSE } },
 		{ "CMD_APPEAR_FONTINC", { CMD_APPEAR_FONTINC, IDM_HEXCTRL_APPEAR_FONTINC } },
 		{ "CMD_APPEAR_FONTDEC", { CMD_APPEAR_FONTDEC, IDM_HEXCTRL_APPEAR_FONTDEC } },
 		{ "CMD_APPEAR_CAPACINC", { CMD_APPEAR_CAPACINC, IDM_HEXCTRL_APPEAR_CAPACINC } },
 		{ "CMD_APPEAR_CAPACDEC", { CMD_APPEAR_CAPACDEC, IDM_HEXCTRL_APPEAR_CAPACDEC } },
-		{ "CMD_DLG_PRINT", { CMD_DLG_PRINT, IDM_HEXCTRL_OTHER_DLGPRINT } },
-		{ "CMD_DLG_ABOUT", { CMD_DLG_ABOUT, IDM_HEXCTRL_OTHER_DLGABOUT } },
+		{ "CMD_PRINT_DLG", { CMD_PRINT_DLG, IDM_HEXCTRL_OTHER_DLGPRINT } },
+		{ "CMD_ABOUT_DLG", { CMD_ABOUT_DLG, IDM_HEXCTRL_OTHER_DLGABOUT } },
 		{ "CMD_CARET_LEFT", { CMD_CARET_LEFT, 0 } },
 		{ "CMD_CARET_RIGHT", { CMD_CARET_RIGHT, 0 } },
 		{ "CMD_CARET_UP", { CMD_CARET_UP, 0 } },
@@ -4644,12 +4644,12 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 	//The nIndex specifies the zero-based relative position of the menu item that opens the drop-down menu or submenu.
 	switch (nIndex) {
 	case 0:	//Search.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_DLGSEARCH, IsCmdAvail(CMD_DLG_SEARCH) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_DLG, IsCmdAvail(CMD_SEARCH_DLG) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_NEXT, IsCmdAvail(CMD_SEARCH_NEXT) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_PREV, IsCmdAvail(CMD_SEARCH_PREV) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 3:	//Navigation.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DLGGOTO, IsCmdAvail(CMD_NAV_DLG_GOTO) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DLGGOTO, IsCmdAvail(CMD_NAV_GOTO_DLG) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_REPFWD, IsCmdAvail(CMD_NAV_REPFWD) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_REPBKW, IsCmdAvail(CMD_NAV_REPBKW) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DATABEG, IsCmdAvail(CMD_NAV_DATABEG) ? MF_ENABLED : MF_GRAYED);
@@ -4683,8 +4683,8 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		break;
 	case 6: //Modify.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(CMD_MODIFY_FILLZEROS) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLGFILLDATA, IsCmdAvail(CMD_MODIFY_DLG_FILLDATA) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLGOPERS, IsCmdAvail(CMD_MODIFY_DLG_OPERS) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLGFILLDATA, IsCmdAvail(CMD_MODIFY_FILLDATA_DLG) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLGOPERS, IsCmdAvail(CMD_MODIFY_OPERS_DLG) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(CMD_MODIFY_UNDO) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(CMD_MODIFY_REDO) ? MF_ENABLED : MF_GRAYED);
 		break;
@@ -4700,8 +4700,8 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DLGMGR, IsCmdAvail(CMD_TEMPL_DLG_MGR) ? MF_ENABLED : MF_GRAYED);
 		break;
 	case 9: //Data Presentation.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLGDATAINTERP, IsCmdAvail(CMD_DLG_DATAINTERP) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLGENCODING, IsCmdAvail(CMD_DLG_ENCODING) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLGDATAINTERP, IsCmdAvail(CMD_DATAINTERP_DLG) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLGENCODING, IsCmdAvail(CMD_ENCODING_DLG) ? MF_ENABLED : MF_GRAYED);
 		break;
 	default:
 		break;
@@ -4761,7 +4761,7 @@ void CHexCtrl::OnLButtonDblClk(UINT nFlags, CPoint point)
 		SetOffsetMode(!IsOffsetAsHex());
 	}
 	else if (GetRectTextCaption().PtInRect(point) != FALSE) { //DblClick on codepage caption area.
-		ExecuteCmd(EHexCmd::CMD_DLG_ENCODING);
+		ExecuteCmd(EHexCmd::CMD_ENCODING_DLG);
 	}
 	else if (const auto optHit = HitTest(point); optHit) { //DblClick on hex/text area.
 		m_fLMousePressed = true;

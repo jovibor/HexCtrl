@@ -91,9 +91,12 @@ void CHexDlgGoTo::OnOK()
 	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
 		return;
 
-	CStringW wstr;
-	GetDlgItemTextW(IDC_HEXCTRL_GOTO_EDIT_GOTO, wstr);
-	const auto optData = StrToULL(wstr.GetString());
+	CStringW cstr;
+	GetDlgItemTextW(IDC_HEXCTRL_GOTO_EDIT_GOTO, cstr);
+	if (cstr.GetLength() == 0)
+		return;
+
+	const auto optData = StrToULL(cstr.GetString());
 	if (!optData) {
 		MessageBoxW(L"Invalid number format", L"Error", MB_ICONERROR);
 		return;

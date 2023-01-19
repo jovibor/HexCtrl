@@ -429,7 +429,7 @@ BEGIN
     BEGIN
         POPUP "Search and Replace"
         BEGIN
-            MENUITEM "Search and Replace...",       IDM_HEXCTRL_SEARCH_DLGSEARCH
+            MENUITEM "Search and Replace...",       IDM_HEXCTRL_SEARCH_DLG
             MENUITEM SEPARATOR
             MENUITEM "Search Next",                 IDM_HEXCTRL_SEARCH_NEXT
             MENUITEM "Search Previous",             IDM_HEXCTRL_SEARCH_PREV
