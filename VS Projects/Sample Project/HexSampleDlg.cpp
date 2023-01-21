@@ -75,6 +75,7 @@ BOOL CHexSampleDlg::OnInitDialog()
 
 	LoadTemplates(&*m_pHexDlg);
 	//OnBnSetRndDataRW();
+	//m_pHexDlg->ExecuteCmd(EHexCmd::CMD_TEMPL_DLG_MGR);
 
 	//m_hds.pHexVirtColors = this;
 	//m_hds.fHighLatency = true;

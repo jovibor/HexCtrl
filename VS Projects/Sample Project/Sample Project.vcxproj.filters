@@ -165,7 +165,7 @@
     <None Include="res\HexSample.rc2">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="..\..\HexCtrl\res\IDR_HEXCTRL_JSON_KEYBIND.json">
+    <None Include="..\..\HexCtrl\res\IDJ_HEXCTRL_KEYBIND.json">
       <Filter>HexCtrl\res</Filter>
     </None>
   </ItemGroup>
@@ -182,7 +182,7 @@
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_DLG_DATAINTERP.bmp">
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_DATAINTERP.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_GROUP.bmp">
@@ -203,7 +203,7 @@
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_APPEAR_FONTCHOOSE.bmp">
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_FONTCHOOSE.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
   </ItemGroup>

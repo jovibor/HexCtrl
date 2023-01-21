@@ -98,10 +98,10 @@ namespace HEXCTRL
 	class IHexBookmarks
 	{
 	public:
-		virtual ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw = true) = 0;     //Add new bookmark, returns the new bookmark's ID.
+		virtual auto AddBkm(const HEXBKM& hbs, bool fRedraw = true) -> ULONGLONG = 0; //Add new bookmark, returns the new bookmark's ID.
 		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID) -> PHEXBKM = 0;       //Get bookmark by ID.
 		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM = 0; //Get bookmark by index.
-		[[nodiscard]] virtual ULONGLONG GetCount() = 0;                           //Get bookmarks count.
+		[[nodiscard]] virtual auto GetCount() -> ULONGLONG = 0;                   //Get bookmarks count.
 		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset) -> PHEXBKM = 0;   //HitTest for given offset.
 		virtual void RemoveAll() = 0;                                             //Remove all bookmarks.
 		virtual void RemoveByID(ULONGLONG ullID) = 0;                             //Remove by a given ID.

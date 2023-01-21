@@ -15,12 +15,12 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgBkmMgr final : public CDialogEx, public IHexBookmarks
 	{
 	public:
-		ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw)override; //Returns new bookmark Id.
+		auto AddBkm(const HEXBKM& hbs, bool fRedraw) -> ULONGLONG override; //Returns new bookmark Id.
 		void RemoveAll()override;
 		[[nodiscard]] auto GetByID(ULONGLONG ullID) -> PHEXBKM override;       //Bookmark by ID.
 		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM override; //Bookmark by index (in inner list).
-		[[nodiscard]] ULONGLONG GetCount()override;
-		[[nodiscard]] ULONGLONG GetCurrent()const;
+		[[nodiscard]] auto GetCount() -> ULONGLONG override;
+		[[nodiscard]] auto GetCurrent()const->ULONGLONG;
 		void GoBookmark(ULONGLONG ullIndex);
 		void GoNext();
 		void GoPrev();
@@ -33,7 +33,7 @@ namespace HEXCTRL::INTERNAL
 		void SetVirtual(IHexBookmarks* pVirtBkm);
 		BOOL ShowWindow(int nCmdShow);
 		void SortData(int iColumn, bool fAscending);
-		void Update(ULONGLONG ullID, const HEXBKM& stBookmark);
+		void Update(ULONGLONG ullID, const HEXBKM& bkm);
 	private:
 		enum class EMenuID : std::uint16_t;
 		void DoDataExchange(CDataExchange* pDX)override;

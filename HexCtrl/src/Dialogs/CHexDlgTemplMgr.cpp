@@ -297,25 +297,20 @@ void CHexDlgTemplMgr::OnCheckMinMax()
 		GetDlgItem(id)->ShowWindow(fMinimize ? SW_HIDE : SW_SHOW);
 	}
 
-	const auto lmbHeightDiff = [this]()->int {
-		CRect rcMinMax;
-		GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX)->GetWindowRect(rcMinMax);
-		CRect rcHighestToLift;
-		GetDlgItem(IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETTXT)->GetWindowRect(rcHighestToLift);
-		return rcHighestToLift.top - rcMinMax.top; //The height all the controls will be lifted to.
-	};
-	static const auto iHeightDiff = lmbHeightDiff();
-
 	constexpr int iIDsToMove[] { IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETTXT, IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETNUM,
 		IDC_HEXCTRL_TEMPLMGR_STATIC_SIZETXT, IDC_HEXCTRL_TEMPLMGR_STATIC_SIZENUM, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED,
 		IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED };
+
+	CRect rcGRB;
+	GetDlgItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP)->GetClientRect(rcGRB);
+	const auto iHeightGRB = rcGRB.Height();
 
 	for (const auto id : iIDsToMove) {
 		const auto pWnd = GetDlgItem(id);
 		CRect rcWnd;
 		pWnd->GetWindowRect(rcWnd);
 		ScreenToClient(rcWnd);
-		const auto iNewPosY = fMinimize ? rcWnd.top - iHeightDiff : rcWnd.top + iHeightDiff;
+		const auto iNewPosY = fMinimize ? rcWnd.top - iHeightGRB : rcWnd.top + iHeightGRB;
 		pWnd->SetWindowPos(nullptr, rcWnd.left, iNewPosY, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
 	}
 
@@ -336,7 +331,7 @@ void CHexDlgTemplMgr::OnCheckMinMax()
 
 	CRect rcWnd;
 	GetWindowRect(rcWnd);
-	const auto iHightNew = fMinimize ? rcWnd.Height() - iHeightDiff : rcWnd.Height() + iHeightDiff;
+	const auto iHightNew = fMinimize ? rcWnd.Height() - iHeightGRB : rcWnd.Height() + iHeightGRB;
 	EnableDynamicLayoutHelper(false); //Otherwise SetWindowPos will also change the pos of all dynamic windows.
 	SetWindowPos(nullptr, rcWnd.left, rcWnd.top, rcWnd.Width(), iHightNew, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_FRAMECHANGED);
 	EnableDynamicLayoutHelper(true);

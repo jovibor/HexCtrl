@@ -427,7 +427,7 @@ void CHexDlgBkmMgr::SortBookmarks()
 	m_pListMain->RedrawWindow();
 }
 
-ULONGLONG CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)
+auto CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)->ULONGLONG
 {
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
 		return 0;
@@ -496,12 +496,12 @@ auto CHexDlgBkmMgr::GetByIndex(ULONGLONG ullIndex)->PHEXBKM
 	return pBkm;
 }
 
-ULONGLONG CHexDlgBkmMgr::GetCount()
+auto CHexDlgBkmMgr::GetCount()->ULONGLONG
 {
 	return IsVirtual() ? m_pVirtual->GetCount() : m_deqBookmarks.size();
 }
 
-ULONGLONG CHexDlgBkmMgr::GetCurrent()const
+auto CHexDlgBkmMgr::GetCurrent()const->ULONGLONG
 {
 	return static_cast<ULONGLONG>(m_llIndexCurr);
 }
@@ -698,14 +698,14 @@ void CHexDlgBkmMgr::SortData(int iColumn, bool fAscending)
 	return fAscending ? iCompare < 0 : iCompare > 0; });
 }
 
-void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& stBookmark)
+void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm)
 {
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet() || IsVirtual() || m_deqBookmarks.empty())
 		return;
 
 	if (const auto iter = std::find_if(m_deqBookmarks.begin(), m_deqBookmarks.end(),
 		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); iter != m_deqBookmarks.end()) {
-		*iter = stBookmark;
+		*iter = bkm;
 		m_pHexCtrl->Redraw();
 	}
 }

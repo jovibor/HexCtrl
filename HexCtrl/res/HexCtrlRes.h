@@ -10,9 +10,9 @@
 #define IDB_HEXCTRL_SEARCH              9006
 #define IDB_HEXCTRL_BKMS                9007
 #define IDB_HEXCTRL_MODIFY              9008
-#define IDB_HEXCTRL_DLG_DATAINTERP      9009
+#define IDB_HEXCTRL_DATAINTERP          9009
 #define IDB_HEXCTRL_GROUP               9010
-#define IDB_HEXCTRL_APPEAR_FONTCHOOSE   9011
+#define IDB_HEXCTRL_FONTCHOOSE          9011
 #define IDD_HEXCTRL_SEARCH              9101
 #define IDD_HEXCTRL_ABOUT               9102
 #define IDD_HEXCTRL_OPERS               9103
@@ -24,7 +24,7 @@
 #define IDD_HEXCTRL_GOTO                9109
 #define IDD_HEXCTRL_TEMPLMGR            9110
 #define IDR_HEXCTRL_MENU                9111
-#define IDR_HEXCTRL_JSON_KEYBIND        9112
+#define IDJ_HEXCTRL_KEYBIND             9112
 #define IDC_HEXCTRL_SEARCH_CHECK_INV    9200
 #define IDC_HEXCTRL_SEARCH_BTN_SEARCH_F 9201
 #define IDC_HEXCTRL_SEARCH_BTN_SEARCH_B 9202
