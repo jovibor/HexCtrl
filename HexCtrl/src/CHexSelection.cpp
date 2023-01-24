@@ -54,32 +54,36 @@ bool CHexSelection::HitTestRange(const HEXSPAN& hss)const
 
 ULONGLONG CHexSelection::GetSelEnd()const
 {
-	if (!HasSelection())
+	if (!HasSelection()) {
 		return 0xFFFFFFFFFFFFFFFFULL;
+	}
 
 	return m_vecSelection.back().ullOffset + m_vecSelection.back().ullSize - 1;
 }
 
 ULONGLONG CHexSelection::GetSelSize()const
 {
-	if (!HasSelection())
-		return 0;
+	if (!HasSelection()) {
+		return 0ULL;
+	}
 
 	return m_vecSelection.size() * m_vecSelection.at(0).ullSize;
 }
 
 ULONGLONG CHexSelection::GetSelStart()const
 {
-	if (!HasSelection())
+	if (!HasSelection()) {
 		return 0xFFFFFFFFFFFFFFFFULL;
+	}
 
 	return m_vecSelection.front().ullOffset;
 }
 
 DWORD CHexSelection::GetLineLength()const
 {
-	if (!HasSelection())
-		return 0;
+	if (!HasSelection()) {
+		return 0UL;
+	}
 
 	return static_cast<DWORD>(m_vecSelection.front().ullSize);
 }
@@ -87,12 +91,10 @@ DWORD CHexSelection::GetLineLength()const
 ULONGLONG CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const
 {
 	ULONGLONG ullOffset { 0xFFFFFFFFFFFFFFFFULL };
-
 	if (ullIndex >= GetSelSize())
 		return ullOffset;
 
-	ULONGLONG ullTotal { };
-	for (const auto& iterData : m_vecSelection) {
+	for (ULONGLONG ullTotal { }; const auto & iterData : m_vecSelection) {
 		ullTotal += iterData.ullSize;
 		if (ullIndex < ullTotal) {
 			ullOffset = iterData.ullOffset + (ullIndex - (ullTotal - iterData.ullSize));
@@ -109,8 +111,9 @@ auto CHexSelection::GetData()const->VecSpan
 
 void CHexSelection::SetSelection(const VecSpan& vecSel, bool fHighlight)
 {
-	if (fHighlight)
+	if (fHighlight) {
 		m_vecSelHighlight = vecSel;
+	}
 	else {
 		m_vecSelHighlight.clear(); //On new selection clear all highlights.
 		m_vecSelection = vecSel;

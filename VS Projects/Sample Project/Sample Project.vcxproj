@@ -236,7 +236,6 @@
   <ItemGroup>
     <ClInclude Include="..\..\HexCtrl\dep\ListEx\ListEx.h" />
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h" />
-    <ClInclude Include="..\..\HexCtrl\HexCtrlDefs.h" />
     <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexSelection.h" />

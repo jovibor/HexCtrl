@@ -75,9 +75,6 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgOpers.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\HexCtrlDefs.h">
-      <Filter>HexCtrl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\HexCtrl\src\HexUtility.h">
       <Filter>HexCtrl\src</Filter>
     </ClInclude>
