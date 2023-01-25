@@ -1263,7 +1263,7 @@ bool CHexDlgTemplMgr::SetDataInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fSh
 		}
 	}
 	else {
-		if (auto opt = stn::StrToInt(pwszText); opt) {
+		if (auto opt = StrToNum<int>(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}

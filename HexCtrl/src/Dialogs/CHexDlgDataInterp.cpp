@@ -830,7 +830,7 @@ bool CHexDlgDataInterp::SetDataInt(std::wstring_view wsv)const
 		}
 	}
 	else {
-		if (const auto optData = stn::StrToInt(wsv); optData) {
+		if (const auto optData = StrToNum<int>(wsv); optData) {
 			SetTData(*optData);
 			return true;
 		}
