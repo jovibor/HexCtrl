@@ -122,9 +122,10 @@ namespace HEXCTRL
 	* HEXMENUINFO - Menu info.                                                                  *
 	********************************************************************************************/
 	struct HEXMENUINFO {
-		NMHDR hdr { };     //Standard Windows header.
-		POINT pt { };      //Mouse position when clicked.
-		WORD  wMenuID { }; //Menu identifier.
+		NMHDR hdr { };        //Standard Windows header.
+		POINT pt { };         //Mouse position when clicked.
+		WORD  wMenuID { };    //Menu identifier.
+		bool  fShow { true }; //Whether to show menu or not, in case of HEXCTRL_MSG_CONTEXTMENU.
 	};
 	using PHEXMENUINFO = HEXMENUINFO*;
 

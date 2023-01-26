@@ -36,8 +36,9 @@ void CHexSampleDlg::CreateHexPopup()
 
 	const HEXCREATE hcs { .hWndParent { m_hWnd }, .dwStyle { dwStyle }, .dwExStyle { dwExStyle } };
 	m_pHexPopup->Create(hcs);
-	if (!m_hds.spnData.empty())
+	if (!m_hds.spnData.empty()) {
 		m_pHexPopup->SetData(m_hds);
+	}
 
 	const auto hWndHex = m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN);
 	const auto iWidthActual = m_pHexPopup->GetActualWidth() + GetSystemMetrics(SM_CXVSCROLL);
@@ -203,6 +204,22 @@ void CHexSampleDlg::OnBnSetRndDataRW()
 	SetWindowTextW(L"Random data: RW");
 }
 
+void CHexSampleDlg::OnClose()
+{
+	FileClose();
+	CDialogEx::OnClose();
+}
+
+BOOL CHexSampleDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+{
+	const auto pNMHDR = reinterpret_cast<PHEXMENUINFO>(lParam);
+	if (pNMHDR->hdr.idFrom == IDC_MY_HEX && pNMHDR->hdr.code == HEXCTRL_MSG_CONTEXTMENU) {
+		// pNMHDR->fShow = false; //Ability to disable context menu.
+	}
+
+	return CDialogEx::OnNotify(wParam, lParam, pResult);
+}
+
 void CHexSampleDlg::OnHexGetColor(HEXCOLORINFO& hci)
 {
 	//Sample code for custom colors:
@@ -237,11 +254,6 @@ void CHexSampleDlg::OnSize(UINT nType, int cx, int cy)
 	CDialogEx::OnSize(nType, cx, cy);
 }
 
-void CHexSampleDlg::OnClose()
-{
-	FileClose();
-	CDialogEx::OnClose();
-}
 
 bool CHexSampleDlg::IsFileOpen()const
 {

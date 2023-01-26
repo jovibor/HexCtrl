@@ -465,7 +465,7 @@ Retrieves the `HMENU` handle of the control's context menu. You can use this han
 
 Control's internal menu uses menu `ID`s in range starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.
 
-When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXMENUINFO`](#hexmenuinfo) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`. `wMenuID` field will be holding `ID` of the menu clicked.
+When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXMENUINFO`](#hexmenuinfo) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`, and `wMenuID` field containinng `ID` of the menu clicked.
 
 ### [](#)GetPagesCount
 ```cpp
@@ -864,9 +864,10 @@ Menu information struct.
 ```cpp
 struct HEXMENUINFO
 {
-    NMHDR hdr { };     //Standard Windows header.
-    POINT pt { };      //Mouse position when clicked.
-    WORD  wMenuID { }; //Menu identifier.
+    NMHDR hdr { };        //Standard Windows header.
+    POINT pt { };         //Mouse position when clicked.
+    WORD  wMenuID { };    //Menu identifier.
+    bool  fShow { true }; //Whether to show menu or not, in case of HEXCTRL_MSG_CONTEXTMENU.
 };
 ```
 
@@ -1076,13 +1077,14 @@ Sent if bookmark is clicked. `LPARAM` will contain pointer to a [`HEXBKMINFO`](#
 Sent when caret position has changed. `LPARAM` will contain pointer to a `NMHDR` struct.
 
 ### [](#)HEXCTRL_MSG_CONTEXTMENU
-Sent when context menu is about to be displayed. `LPARAM` will contain pointer to a [`HEXMENUINFO`](#hexmenuinfo) struct.
+Sent when a context menu is about to be displayed. `LPARAM` will contain pointer to a [`HEXMENUINFO`](#hexmenuinfo) struct. 
+You can disable context menu showing up by setting the `PHEXMENUINFO->fShow` flag to `false` in response.
 
 ### [](#)HEXCTRL_MSG_DESTROY
 Sent to indicate that **HexCtrl** window is about to be destroyed. `LPARAM` will contain pointer to a `NMHDR` struct.
 
 ### [](#)HEXCTRL_MSG_MENUCLICK
-Sent when user defined custom menu has been clicked. `LPARAM` will contain pointer to a [`HEXMENUINFO`](#hexmenuinfo) struct.
+Sent when the user-defined custom menu has been clicked. `LPARAM` will contain pointer to a [`HEXMENUINFO`](#hexmenuinfo) struct.
 
 ### [](#)HEXCTRL_MSG_SELECTION
 Sent when selection has been made. `LPARAM` will contain pointer to a `NMHDR` struct.

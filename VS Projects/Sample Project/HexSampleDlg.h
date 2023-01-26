@@ -19,8 +19,9 @@ private:
 	afx_msg void OnBnFileOpenRO();
 	afx_msg void OnBnFileOpenRW();
 	afx_msg void OnBnClearData();
-	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnClose();
+	BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnBnPopup();
 	[[nodiscard]] bool IsFileOpen()const;
 	void FileOpen(LPCWSTR pwszPath, bool fRW);

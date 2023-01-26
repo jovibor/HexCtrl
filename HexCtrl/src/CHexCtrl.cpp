@@ -288,50 +288,59 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	const auto pMenuTop = m_menuMain.GetSubMenu(0); //Context sub-menu handle.
 
 	//"Search" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	pMenuTop->SetMenuItemInfoW(0, &mii, TRUE); //"Search" parent menu icon.
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_SEARCH_DLG, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Group Data" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_GROUP), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_GROUP), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	pMenuTop->SetMenuItemInfoW(2, &mii, TRUE); //"Group Data" parent menu icon.
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Bookmarks->Add" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_BKMS), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_BKMS), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	pMenuTop->SetMenuItemInfoW(4, &mii, TRUE); //"Bookmarks" parent menu icon.
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_BKM_ADD, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Clipboard->Copy as Hex" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	pMenuTop->SetMenuItemInfoW(5, &mii, TRUE); //"Clipboard" parent menu icon.
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_COPYHEX, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Clipboard->Paste as Hex" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_PASTEHEX), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_PASTEHEX), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_PASTEHEX, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Modify" parent menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	pMenuTop->SetMenuItemInfoW(6, &mii, TRUE);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Modify->Fill with Zeros" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Data View->Data Interpreter" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_DATAINTERP), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_DATAINTERP), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_DLGDATAINTERP, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Appearance->Choose Font" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_FONTCHOOSE), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_FONTCHOOSE), IMAGE_BITMAP,
+		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_APPEAR_FONTCHOOSE, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 	//End of menu related.
@@ -2638,7 +2647,7 @@ void CHexCtrl::DrawInfoBar(CDC* pDC)const
 		return;
 
 	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
-	CRect rcInfoBar(m_iFirstVertLine + 1 - iScrollH, m_iThirdHorzLine + 1, m_iFourthVertLine, m_iFourthHorzLine); //Fill Info bar until m_iFourthHorizLine.
+	CRect rcInfoBar(m_iFirstVertLine + 1 - iScrollH, m_iThirdHorzLine + 1, m_iFourthVertLine, m_iFourthHorzLine); //Info bar rc until m_iFourthHorizLine.
 	pDC->FillSolidRect(rcInfoBar, m_stColor.clrBkInfoBar);
 	pDC->DrawEdge(rcInfoBar, BDR_RAISEDINNER, BF_TOP);
 
@@ -4644,7 +4653,8 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	const auto wMenuID = LOWORD(wParam);
-	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref) { return ref.wMenuID == wMenuID;	}); iter != m_vecKeyBind.end()) {
+	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(),
+		[=](const SKEYBIND& ref) { return ref.wMenuID == wMenuID; }); iter != m_vecKeyBind.end()) {
 		ExecuteCmd(iter->eCmd);
 	}
 	else { //For user defined custom menu we notifying parent window.
@@ -4659,9 +4669,12 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
 void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 {
 	//Notify parent that we are about to display a context menu.
-	const HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU }, .pt { m_stMenuClickedPt = point } };
+	const HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU },
+		.pt { m_stMenuClickedPt = point }, .fShow { true } };
 	ParentNotify(hmi);
-	m_menuMain.GetSubMenu(0)->TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
+	if (hmi.fShow) { //Parent window can disable context menu showing up.
+		m_menuMain.GetSubMenu(0)->TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
+	}
 }
 
 void CHexCtrl::OnDestroy()
