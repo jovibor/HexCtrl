@@ -398,7 +398,7 @@ auto CHexSampleDlg::OpenFileDlg()->std::optional<std::vector<std::wstring>>
 {
 	CFileDialog fd(TRUE, nullptr, nullptr,
 		OFN_OVERWRITEPROMPT | OFN_EXPLORER | OFN_DONTADDTORECENT | OFN_ENABLESIZING
-		| OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST, L"All files (*.*)|*.*||");
+		| OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NODEREFERENCELINKS, L"All files (*.*)|*.*||");
 
 	std::vector<std::wstring> vecFiles { };
 	if (fd.DoModal() == IDOK) {
