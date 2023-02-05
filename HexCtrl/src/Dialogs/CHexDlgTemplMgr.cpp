@@ -1875,7 +1875,7 @@ void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 
 void CHexDlgTemplMgr::RefreshData()
 {
-	if (IsWindowVisible()) {
+	if (::IsWindowVisible(m_hWnd)) {
 		m_pListApplied->RedrawWindow();
 	}
 }

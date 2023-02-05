@@ -107,11 +107,11 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		void SetColors(const LISTEXCOLORS& lcs)override;
 		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
 		void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enSortMode = { })override;
-		void SetFont(const LOGFONTW* pLogFontNew)override;
+		void SetFont(const LOGFONTW* pLogFont)override;
 		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1)override;
 		void SetColumnEditable(int iColumn, bool fEditable)override;
 		void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)override; //Icon for a given column.
-		void SetHdrFont(const LOGFONTW* pLogFontNew)override;
+		void SetHdrFont(const LOGFONTW* pLogFont)override;
 		void SetHdrHeight(DWORD dwHeight)override;
 		void SetHdrImageList(CImageList* pList)override;
 		void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)override;
@@ -1282,15 +1282,15 @@ void CListEx::SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enS
 	GetHeaderCtrl().SetColumnSortable(iColumn, fSortable);
 }
 
-void CListEx::SetFont(const LOGFONTW* pLogFontNew)
+void CListEx::SetFont(const LOGFONTW* pLogFont)
 {
 	assert(IsCreated());
-	assert(pLogFontNew);
-	if (!IsCreated() || !pLogFontNew)
+	assert(pLogFont);
+	if (!IsCreated() || !pLogFont)
 		return;
 
 	m_fontList.DeleteObject();
-	m_fontList.CreateFontIndirectW(pLogFontNew);
+	m_fontList.CreateFontIndirectW(pLogFont);
 
 	RecalcMeasure();
 	Update(0);
@@ -1316,13 +1316,13 @@ void CListEx::SetHdrImageList(CImageList* pList)
 	GetHeaderCtrl().SetImageList(pList);
 }
 
-void CListEx::SetHdrFont(const LOGFONTW* pLogFontNew)
+void CListEx::SetHdrFont(const LOGFONTW* pLogFont)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
-	GetHeaderCtrl().SetFont(pLogFontNew);
+	GetHeaderCtrl().SetFont(pLogFont);
 	Update(0);
 	GetHeaderCtrl().RedrawWindow();
 }
@@ -1412,7 +1412,7 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 	case ODA_DRAWENTIRE:
 	{
 		const auto pDC = CDC::FromHandle(pDIS->hDC);
-		const auto clrBkCurrRow = (iItem % 2) ? m_stColors.clrListBkRow2 : m_stColors.clrListBkRow1;
+		const auto clrBkCurrRow = (iItem % 2) ? m_stColors.clrListBkEven : m_stColors.clrListBkOdd;
 		const auto& refHdr = GetHeaderCtrl();
 		const auto iColumns = refHdr.GetItemCount();
 		for (auto iSubitem = 0; iSubitem < iColumns; ++iSubitem) {
@@ -1757,7 +1757,7 @@ void CListEx::OnLButtonDblClk(UINT nFlags, CPoint point)
 	const DWORD dwStyle = iAlignment == LVCFMT_LEFT ? ES_LEFT : (iAlignment == LVCFMT_RIGHT ? ES_RIGHT : ES_CENTER);
 	CRect rcCell;
 	GetSubItemRect(m_htiInPlaceEdit.iItem, m_htiInPlaceEdit.iSubItem, LVIR_BOUNDS, rcCell);
-	if (m_htiInPlaceEdit.iSubItem == 0) { //Clickecd on item (first column).
+	if (m_htiInPlaceEdit.iSubItem == 0) { //Clicked on item (first column).
 		CRect rcLabel;
 		GetItemRect(m_htiInPlaceEdit.iItem, rcLabel, LVIR_LABEL);
 		rcCell.right = rcLabel.right;
@@ -1951,11 +1951,13 @@ BOOL CListEx::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 			GetHeaderCtrl().SetSortArrow(pNMLV->iItem, m_fSortAscending);
 			m_iSortColumn = pNMLV->iItem;
 		}
-		else
+		else {
 			m_iSortColumn = -1;
+		}
 
-		if (!m_fVirtual)
+		if (!m_fVirtual) {
 			return SortItemsEx(m_pfnCompare ? m_pfnCompare : DefCompareFunc, reinterpret_cast<DWORD_PTR>(this));
+		}
 	}
 
 	return CMFCListCtrl::OnNotify(wParam, lParam, pResult);
@@ -2175,7 +2177,7 @@ void CListEx::RecalcMeasure()const
 {
 	//To get WM_MEASUREITEM msg after changing the font.
 	CRect rc;
-	GetWindowRect(&rc);
+	GetWindowRect(rc);
 	WINDOWPOS wp;
 	wp.hwnd = m_hWnd;
 	wp.cx = rc.Width();
@@ -2205,6 +2207,18 @@ void CListEx::SetFontSize(long lSize)
 
 	RecalcMeasure();
 	Update(0);
+
+	if (IsWindow(m_stEditInPlace)) { //If m_stEditInPlace is active, ammend its rect.
+		CRect rcCell;
+		GetSubItemRect(m_htiInPlaceEdit.iItem, m_htiInPlaceEdit.iSubItem, LVIR_BOUNDS, rcCell);
+		if (m_htiInPlaceEdit.iSubItem == 0) { //Clicked on item (first column).
+			CRect rcLabel;
+			GetItemRect(m_htiInPlaceEdit.iItem, rcLabel, LVIR_LABEL);
+			rcCell.right = rcLabel.right;
+		}
+		m_stEditInPlace.SetWindowPos(nullptr, rcCell.left, rcCell.top, rcCell.Width(), rcCell.Height(), SWP_NOZORDER);
+		m_stEditInPlace.SetFont(&m_fontList, FALSE);
+	}
 }
 
 void CListEx::TtLinkHide()

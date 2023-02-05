@@ -1,6 +1,6 @@
 #include "stdafx.h"
-#include "HexSample.h"
 #include "HexSampleDlg.h"
+#include "Resource.h"
 #include <filesystem>
 
 #ifdef _DEBUG
@@ -8,17 +8,20 @@
 #endif
 
 BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
+	ON_WM_CLOSE()
+	ON_BN_CLICKED(IDC_SETDATARND, &CHexSampleDlg::OnBnSetRndData)
+	ON_BN_CLICKED(IDC_CLEARDATA, &CHexSampleDlg::OnBnClearData)
+	ON_BN_CLICKED(IDC_FILEOPEN, &CHexSampleDlg::OnBnFileOpen)
+	ON_BN_CLICKED(IDC_HEXPOPUP, &CHexSampleDlg::OnBnPopup)
+	ON_BN_CLICKED(IDC_CHK_RW, &CHexSampleDlg::OnChkRW)
+	ON_WM_DROPFILES()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDC_SETDATARO, &CHexSampleDlg::OnBnSetRndDataRO)
-	ON_BN_CLICKED(IDC_SETDATARW, &CHexSampleDlg::OnBnSetRndDataRW)
-	ON_BN_CLICKED(IDC_CLEARDATA, &CHexSampleDlg::OnBnClearData)
-	ON_BN_CLICKED(IDC_FILEOPENRO, &CHexSampleDlg::OnBnFileOpenRO)
-	ON_BN_CLICKED(IDC_FILEOPENRW, &CHexSampleDlg::OnBnFileOpenRW)
 	ON_WM_SIZE()
-	ON_WM_CLOSE()
-	ON_BN_CLICKED(IDC_HEXPOPUP, &CHexSampleDlg::OnBnPopup)
 END_MESSAGE_MAP()
+
+constexpr const auto WstrTextRO { L"Random data: RO" };
+constexpr const auto WstrTextRW { L"Random data: RW" };
 
 CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_HEXSAMPLE_DIALOG, pParent)
@@ -26,49 +29,28 @@ CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/)
 	m_hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
 }
 
-void CHexSampleDlg::CreateHexPopup()
-{
-	if (m_pHexPopup->IsCreated())
-		return;
-
-	const auto dwStyle = WS_POPUP | WS_OVERLAPPEDWINDOW;
-	const auto dwExStyle = WS_EX_APPWINDOW; //To force to the taskbar.
-
-	const HEXCREATE hcs { .hWndParent { m_hWnd }, .dwStyle { dwStyle }, .dwExStyle { dwExStyle } };
-	m_pHexPopup->Create(hcs);
-	if (!m_hds.spnData.empty()) {
-		m_pHexPopup->SetData(m_hds);
-	}
-
-	const auto hWndHex = m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN);
-	const auto iWidthActual = m_pHexPopup->GetActualWidth() + GetSystemMetrics(SM_CXVSCROLL);
-	CRect rcHex(0, 0, iWidthActual, iWidthActual); //Square window.
-	AdjustWindowRectEx(rcHex, dwStyle, FALSE, dwExStyle);
-	const auto iWidth = rcHex.Width();
-	const auto iHeight = rcHex.Height() - rcHex.Height() / 3;
-	const auto iPosX = GetSystemMetrics(SM_CXSCREEN) / 2 - iWidth / 2;
-	const auto iPosY = GetSystemMetrics(SM_CYSCREEN) / 2 - iHeight / 2;
-	::SetWindowPos(hWndHex, m_hWnd, iPosX, iPosY, iWidth, iHeight, SWP_NOACTIVATE);
-
-	const auto hIconSmall = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(), MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 0, 0, 0));
-	const auto hIconBig = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(), MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 96, 96, 0));
-	if (hIconSmall != nullptr) {
-		::SendMessageW(hWndHex, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIconSmall));
-		::SendMessageW(hWndHex, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIconBig));
-	}
-}
-
 void CHexSampleDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_CHK_RW, m_chkRW);
+	DDX_Control(pDX, IDC_CHK_LNK, m_chkLnk);
 }
 
 BOOL CHexSampleDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
+	CoInitialize(nullptr);
+
 	SetIcon(m_hIcon, TRUE);	 //Set big icon
 	SetIcon(m_hIcon, FALSE); //Set small icon
+
+	//For Drag'n Drop to work even in elevated mode.
+	//https://helgeklein.com/blog/2010/03/how-to-enable-drag-and-drop-for-an-elevated-mfc-application-on-vistawindows-7/
+	ChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
+	ChangeWindowMessageFilter(WM_COPYDATA, MSGFLT_ADD);
+	ChangeWindowMessageFilter(0x0049, MSGFLT_ADD);
+	DragAcceptFiles(TRUE);
 
 	m_pHexDlg->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
 	m_pHexDlg->SetWheelRatio(2, true); //Two lines scroll with mouse-wheel.
@@ -80,6 +62,12 @@ BOOL CHexSampleDlg::OnInitDialog()
 
 	//m_hds.pHexVirtColors = this;
 	//m_hds.fHighLatency = true;
+
+	m_chkLnk.SetCheck(BST_CHECKED);
+
+	if (!m_wstrStartupFile.empty()) {
+		FileOpen(m_wstrStartupFile, IsLnk());
+	}
 
 	return TRUE;
 }
@@ -125,17 +113,38 @@ void CHexSampleDlg::OnBnClearData()
 	SetWindowTextW(L"HexCtrl Sample Dialog");
 }
 
-void CHexSampleDlg::OnBnFileOpenRO()
+void CHexSampleDlg::OnBnSetRndData()
 {
-	if (auto optFiles = OpenFileDlg(); optFiles) {
-		FileOpen(optFiles->front().data(), false);
+	if (IsFileOpen()) {
+		FileClose();
+	}
+	else if (m_pHexDlg->IsDataSet()) {
+		m_pHexDlg->SetMutable(IsRW());
+		SetWindowTextW(IsRW() ? WstrTextRW : WstrTextRO);
+
+		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet()) {
+			m_pHexPopup->SetMutable(IsRW());
+			::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), IsRW() ? WstrTextRW : WstrTextRO);
+		}
+
+		return;
+	}
+
+	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
+	m_hds.fMutable = IsRW();
+	m_pHexDlg->SetData(m_hds);
+	SetWindowTextW(IsRW() ? WstrTextRW : WstrTextRO);
+
+	if (m_pHexPopup->IsCreated()) {
+		m_pHexPopup->SetData(m_hds);
+		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), IsRW() ? WstrTextRW : WstrTextRO);
 	}
 }
 
-void CHexSampleDlg::OnBnFileOpenRW()
+void CHexSampleDlg::OnBnFileOpen()
 {
 	if (auto optFiles = OpenFileDlg(); optFiles) {
-		FileOpen(optFiles->front().data(), true);
+		FileOpen(optFiles->front(), IsLnk());
 	}
 }
 
@@ -152,62 +161,45 @@ void CHexSampleDlg::OnBnPopup()
 	}
 }
 
-void CHexSampleDlg::OnBnSetRndDataRO()
+void CHexSampleDlg::OnChkRW()
 {
-	if (IsFileOpen())
-		FileClose();
-	else if (m_pHexDlg->IsDataSet()) {
-		m_pHexDlg->SetMutable(false);
-		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet()) {
-			m_pHexPopup->SetMutable(false);
-			::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"Random data: RO");
+	if (m_pHexDlg->IsDataSet()) {
+		m_pHexDlg->SetMutable(IsRW());
+		if (!IsFileOpen()) {
+			SetWindowTextW(IsRW() ? WstrTextRW : WstrTextRO);
 		}
 
-		SetWindowTextW(L"Random data: RO");
-		return;
-	}
-
-	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
-	m_hds.fMutable = false;
-	m_pHexDlg->SetData(m_hds);
-	if (m_pHexPopup->IsCreated()) {
-		m_pHexPopup->SetData(m_hds);
-		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"Random data: RO");
-	}
-
-	SetWindowTextW(L"Random data: RO");
-}
-
-void CHexSampleDlg::OnBnSetRndDataRW()
-{
-	if (IsFileOpen())
-		FileClose();
-	else if (m_pHexDlg->IsDataSet()) {
-		m_pHexDlg->SetMutable(true);
 		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet()) {
-			m_pHexPopup->SetMutable(true);
-			::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"Random data: RW");
+			m_pHexPopup->SetMutable(IsRW());
+			if (!IsFileOpen()) {
+				::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), IsRW() ? WstrTextRW : WstrTextRO);
+			}
 		}
-
-		SetWindowTextW(L"Random data: RW");
-		return;
 	}
-
-	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
-	m_hds.fMutable = true;
-	m_pHexDlg->SetData(m_hds);
-	if (m_pHexPopup->IsCreated()) {
-		m_pHexPopup->SetData(m_hds);
-		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"Random data: RW");
-	}
-
-	SetWindowTextW(L"Random data: RW");
 }
 
 void CHexSampleDlg::OnClose()
 {
 	FileClose();
 	CDialogEx::OnClose();
+}
+
+void CHexSampleDlg::OnDropFiles(HDROP hDropInfo)
+{
+	PVOID pOldValue;
+	Wow64DisableWow64FsRedirection(&pOldValue);
+
+	const auto nFilesDropped = DragQueryFileW(hDropInfo, 0xFFFFFFFF, nullptr, 0);
+	if (nFilesDropped > 0) { //If more than one file, we only use the first.
+		const auto nBuffer = DragQueryFileW(hDropInfo, 0, nullptr, 0);
+		std::wstring wstrFile(nBuffer, '\0');
+		DragQueryFileW(hDropInfo, 0, wstrFile.data(), nBuffer + 1);
+		FileOpen(wstrFile, IsLnk());
+	}
+	DragFinish(hDropInfo);
+
+	CDialogEx::OnDropFiles(hDropInfo);
+	Wow64RevertWow64FsRedirection(pOldValue);
 }
 
 BOOL CHexSampleDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
@@ -254,31 +246,72 @@ void CHexSampleDlg::OnSize(UINT nType, int cx, int cy)
 	CDialogEx::OnSize(nType, cx, cy);
 }
 
+void CHexSampleDlg::SetStartupFile(LPCWSTR pwszFile)
+{
+	m_wstrStartupFile = pwszFile;
+}
+
+void CHexSampleDlg::CreateHexPopup()
+{
+	if (m_pHexPopup->IsCreated())
+		return;
+
+	const auto dwStyle = WS_POPUP | WS_OVERLAPPEDWINDOW;
+	const auto dwExStyle = WS_EX_APPWINDOW; //To force to the taskbar.
+
+	const HEXCREATE hcs { .hWndParent { m_hWnd }, .dwStyle { dwStyle }, .dwExStyle { dwExStyle } };
+	m_pHexPopup->Create(hcs);
+	if (!m_hds.spnData.empty()) {
+		m_pHexPopup->SetData(m_hds);
+	}
+
+	const auto hWndHex = m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN);
+	const auto iWidthActual = m_pHexPopup->GetActualWidth() + GetSystemMetrics(SM_CXVSCROLL);
+	CRect rcHex(0, 0, iWidthActual, iWidthActual); //Square window.
+	AdjustWindowRectEx(rcHex, dwStyle, FALSE, dwExStyle);
+	const auto iWidth = rcHex.Width();
+	const auto iHeight = rcHex.Height() - rcHex.Height() / 3;
+	const auto iPosX = GetSystemMetrics(SM_CXSCREEN) / 2 - iWidth / 2;
+	const auto iPosY = GetSystemMetrics(SM_CYSCREEN) / 2 - iHeight / 2;
+	::SetWindowPos(hWndHex, m_hWnd, iPosX, iPosY, iWidth, iHeight, SWP_NOACTIVATE);
+
+	const auto hIconSmall = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(), MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 0, 0, 0));
+	const auto hIconBig = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(), MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 96, 96, 0));
+	if (hIconSmall != nullptr) {
+		::SendMessageW(hWndHex, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIconSmall));
+		::SendMessageW(hWndHex, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIconBig));
+	}
+}
 
 bool CHexSampleDlg::IsFileOpen()const
 {
 	return m_fFileOpen;
 }
 
-void CHexSampleDlg::FileOpen(LPCWSTR pwszPath, bool fRW)
+void CHexSampleDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 {
 	FileClose();
 
-	m_hFile = CreateFileW(pwszPath, fRW ? GENERIC_READ | GENERIC_WRITE : GENERIC_READ,
+	std::wstring wstrPath(wsvPath);
+	if (fResolveLnk && wstrPath.ends_with(L".lnk")) {
+		wstrPath = LnkToPath(wstrPath.data());
+	}
+
+	m_hFile = CreateFileW(wstrPath.data(), GENERIC_READ | GENERIC_WRITE,
 		FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (m_hFile == INVALID_HANDLE_VALUE) {
 		MessageBoxW(L"CreateFile call failed.\r\nFile might be already opened by another process.", L"Error", MB_ICONERROR);
 		return;
 	}
 
-	m_hMapObject = CreateFileMappingW(m_hFile, nullptr, fRW ? PAGE_READWRITE : PAGE_READONLY, 0, 0, nullptr);
+	m_hMapObject = CreateFileMappingW(m_hFile, nullptr, PAGE_READWRITE, 0, 0, nullptr);
 	if (!m_hMapObject) {
 		CloseHandle(m_hFile);
 		MessageBoxW(L"CreateFileMapping call failed.", L"Error", MB_ICONERROR);
 		return;
 	}
 
-	m_lpBase = MapViewOfFile(m_hMapObject, fRW ? FILE_MAP_WRITE : FILE_MAP_READ, 0, 0, 0);
+	m_lpBase = MapViewOfFile(m_hMapObject, FILE_MAP_WRITE, 0, 0, 0);
 	if (!m_lpBase) {
 		MessageBoxW(L"MapViewOfFile failed.\r\n File might be too big to fit in memory.", L"Error", MB_ICONERROR);
 		CloseHandle(m_hMapObject);
@@ -292,14 +325,14 @@ void CHexSampleDlg::FileOpen(LPCWSTR pwszPath, bool fRW)
 	::GetFileSizeEx(m_hFile, &stFileSize);
 
 	m_hds.spnData = { static_cast<std::byte*>(m_lpBase), static_cast<std::size_t>(stFileSize.QuadPart) };
-	m_hds.fMutable = fRW;
+	m_hds.fMutable = IsRW();
 	m_pHexDlg->SetData(m_hds);
 	if (m_pHexPopup->IsCreated()) {
 		m_pHexPopup->SetData(m_hds);
-		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), pwszPath);
+		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), wstrPath.data());
 	}
 
-	SetWindowTextW(pwszPath);
+	SetWindowTextW(wstrPath.data());
 }
 
 void CHexSampleDlg::FileClose()
@@ -335,6 +368,30 @@ void CHexSampleDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
 			}
 		}
 	}
+}
+
+bool CHexSampleDlg::IsRW()const
+{
+	return m_chkRW.GetCheck() == BST_CHECKED;
+}
+
+bool CHexSampleDlg::IsLnk() const
+{
+	return m_chkLnk.GetCheck() == BST_CHECKED;
+}
+
+std::wstring CHexSampleDlg::LnkToPath(LPCWSTR pwszLnk)
+{
+	CComPtr<IShellLinkW> psl;
+	psl.CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER);
+	CComPtr<IPersistFile> ppf;
+	psl->QueryInterface(IID_PPV_ARGS(&ppf));
+	ppf->Load(pwszLnk, STGM_READ);
+
+	std::wstring wstrPath(MAX_PATH, L'\0');
+	psl->GetPath(wstrPath.data(), MAX_PATH, nullptr, 0);
+
+	return wstrPath;
 }
 
 auto CHexSampleDlg::OpenFileDlg()->std::optional<std::vector<std::wstring>>

@@ -40,8 +40,9 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 		return;
 
 	const auto fMutable = m_pHexCtrl->IsMutable();
-	for (const auto& iter : m_vecProp)
+	for (const auto& iter : m_vecProp) {
 		iter.pProp->AllowEdit(fMutable ? TRUE : FALSE);
+	}
 
 	m_ullOffset = ullOffset;
 	const auto byte = GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset);
@@ -61,13 +62,16 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 	}
 
 	//ESize::SIZE_WORD////////////////////////////////////////////
-	for (const auto& iter : m_vecProp)
-		if (iter.eSize == ESize::SIZE_WORD)
+	for (const auto& iter : m_vecProp) {
+		if (iter.eSize == ESize::SIZE_WORD) {
 			iter.pProp->Enable(TRUE);
+		}
+	}
 
 	auto word = GetIHexTData<WORD>(*m_pHexCtrl, ullOffset);
-	if (m_fBigEndian)
+	if (m_fBigEndian) {
 		word = ByteSwap(word);
+	}
 
 	ShowValueShort(word);
 	ShowValueUShort(word);
@@ -84,13 +88,15 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 
 	//ESize::SIZE_DWORD//////////////////////////////////////////////
 	for (const auto& iter : m_vecProp) {
-		if (iter.eSize == ESize::SIZE_DWORD)
+		if (iter.eSize == ESize::SIZE_DWORD) {
 			iter.pProp->Enable(TRUE);
+		}
 	}
 
 	auto dword = GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset);
-	if (m_fBigEndian)
+	if (m_fBigEndian) {
 		dword = ByteSwap(dword);
+	}
 
 	ShowValueInt(dword);
 	ShowValueUInt(dword);
@@ -111,13 +117,15 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 
 	//ESize::SIZE_QWORD//////////////////////////////////////////////////
 	for (const auto& iter : m_vecProp) {
-		if (iter.eSize == ESize::SIZE_QWORD)
+		if (iter.eSize == ESize::SIZE_QWORD) {
 			iter.pProp->Enable(TRUE);
+		}
 	}
 
 	auto qword = GetIHexTData<QWORD>(*m_pHexCtrl, ullOffset);
-	if (m_fBigEndian)
+	if (m_fBigEndian) {
 		qword = ByteSwap(qword);
+	}
 
 	ShowValueLL(qword);
 	ShowValueULL(qword);
@@ -139,8 +147,9 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 
 	//ESize::SIZE_DQWORD//////////////////////////////////////////////////
 	for (const auto& iter : m_vecProp) {
-		if (iter.eSize == ESize::SIZE_DQWORD)
+		if (iter.eSize == ESize::SIZE_DQWORD) {
 			iter.pProp->Enable(TRUE);
+		}
 	}
 
 	//Getting DQWORD size of data in form of SYSTEMTIME.

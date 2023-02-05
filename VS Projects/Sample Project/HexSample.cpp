@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "HexSample.h"
 #include "HexSampleDlg.h"
+#include "Resource.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -43,6 +44,12 @@ BOOL CHexSampleApp::InitInstance()
 	SetRegistryKey(_T("HexCtrl Sample Project"));
 
 	auto dlg = new CHexSampleDlg;
+	CCommandLineInfo cmdInfo;
+	ParseCommandLine(cmdInfo);
+	if (!cmdInfo.m_strFileName.IsEmpty()) {
+		dlg->SetStartupFile(cmdInfo.m_strFileName);
+	}
+
 	m_pMainWnd = dlg;
 	const auto nResponse = dlg->DoModal();
 	if (nResponse == -1) {
