@@ -1,5 +1,5 @@
 ## **Hex Control, C++/MFC**
-![](docs/img/hexctrl_mainwnd.jpg)
+![](docs/img/HexCtrl_MainWnd.jpg)
 ## Table of Contents
 * [Introduction](#introduction)
 * [Installation](#installation)
@@ -138,7 +138,7 @@ It's implemented as a pure abstract interface and therefore can be used in your 
 * Customizable look and appearance
 * Written with **/std:c++20** standard conformance
 
-![](docs/img/hexctrl_operationswnd.jpg)
+![](docs/img/HexCtrl_OperationsWnd.jpg)
 
 ## [](#)Installation
 The **HexCtrl** can be used in two different ways:  
@@ -200,11 +200,11 @@ To use **HexCtrl** within *Dialog* you can, of course, create it with the [Class
 
 But there is another option you can use:
 1. Put **Custom Control** from the **Toolbox** in **Visual Studio** dialog designer into your dialog template and make it desirable size.  
-![](docs/img/hexctrl_vstoolbox.jpg) ![](docs/img/hexctrl_vscustomctrl.jpg)
+![](docs/img/HexCtrl_VSToolbox.jpg) ![](docs/img/HexCtrl_VSCustomCtrl.jpg)
 2. Go to the **Properties** of that control and in the **Class** field, within the **Misc** section, type: <kbd>HexCtrl</kbd>.  
 Give the control appropriate **ID** of your choice (<kbd>IDC_MY_HEX</kbd> in this example).  
 Also, here you can set the control's **Dynamic Layout** properties, so that control behaves appropriately when dialog is being resized.  
-![](docs/img/hexctrl_vsproperties.jpg)
+![](docs/img/HexCtrl_VSProperties.jpg)
 3. Declare `IHexCtrlPtr` member variable within your dialog class:
 ```cpp
 IHexCtrlPtr m_myHex { CreateHexCtrl() };
@@ -256,9 +256,10 @@ Then provide a pointer to the created object of this derived class prior to call
 But if you have big and complicated data logic and want to handle all these bookmarks yourself, you can do it with the help of the virtual bookmarks mode. In this mode all bookmark's burden is handled by yourself, by implementing the [`IHexBookmarks`](#ihexbookmarks) interface and providing pointer to this implementation to the **HexCtrl** by calling [`SetVirtualBkm`](#setvirtualbkm) method.
 
 ## [](#)Custom Colors
-If you'd like to colorize your data with custom bk/text colors, you have to resort to the [`IHexVirtColors`](#ihexvirtcolors) interface help. Please see the interface description, it's very simple to use.
+If you'd like to colorize your data with custom colors, you have to resort to a help of the [`IHexVirtColors`](#ihexvirtcolors) interface.
 
 ## [](#)Templates
+![](docs/img/HexCtrl_Templates.jpg)  
 **HexCtrl**'s templates is a powerful system of a data structures' description with a simple `.json` file. These files can be loaded through the **HexControl**'s internal template manager, or through the [API](#gettemplates).  
 ```json
 {
