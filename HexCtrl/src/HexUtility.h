@@ -17,8 +17,8 @@
 #define HEXCTRL_PRODUCT_NAME		L"Hex Control for MFC/Win32"
 #define HEXCTRL_COPYRIGHT_NAME  	L"(C) 2018-2023 Jovibor"
 #define HEXCTRL_VERSION_MAJOR		3
-#define HEXCTRL_VERSION_MINOR		2
-#define HEXCTRL_VERSION_MAINTENANCE	2
+#define HEXCTRL_VERSION_MINOR		3
+#define HEXCTRL_VERSION_MAINTENANCE	0
 
 #define TO_WSTR_HELPER(x) L## #x
 #define TO_WSTR(x) TO_WSTR_HELPER(x)
@@ -107,9 +107,9 @@ namespace HEXCTRL::INTERNAL
 	template <class T>
 	[[nodiscard]] constexpr T ByteSwap(T tData)noexcept
 	{
-		//Since a converting type can be any type of 2, 4, or 8 size length,
-		//we first bit_cast this type to a corresponding integral type of equal size.
-		//Then byteswapping and then bit_cast to the original type back before return.
+		//Since a swapping-data type can be any type of 2, 4, or 8 bytes size,
+		//we first bit_cast swapping-data to an integral type of the same size,
+		//then byte-swapping and then bit_cast to the original type back.
 		if constexpr (sizeof(T) == sizeof(unsigned char)) {
 			return tData;
 		}
@@ -124,7 +124,8 @@ namespace HEXCTRL::INTERNAL
 		else if constexpr (sizeof(T) == sizeof(unsigned long)) {
 			auto ulData = std::bit_cast<unsigned long>(tData);
 			if (std::is_constant_evaluated()) {
-				ulData = (ulData << 24) | ((ulData << 8) & 0x00FF'0000UL) | ((ulData >> 8) & 0x0000'FF00UL) | (ulData >> 24);
+				ulData = (ulData << 24) | ((ulData << 8) & 0x00FF'0000UL)
+					| ((ulData >> 8) & 0x0000'FF00UL) | (ulData >> 24);
 				return std::bit_cast<T>(ulData);
 			}
 			return std::bit_cast<T>(_byteswap_ulong(ulData));
