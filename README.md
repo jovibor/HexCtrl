@@ -5,7 +5,6 @@
 * [Installation](#installation)
   * [Building From The Sources](#building-from-the-sources)
   * [Dynamic Link Library](#dynamic-link-library)
-  * [Namespace](#namespace)
 * [Creating](#creating)
   * [Classic Approach](#classic-approach)
   * [In Dialog](#in-dialog)
@@ -113,13 +112,12 @@
   * [GetHexCtrlInfo](#gethexctrlinfo)
   * [HEXCTRLINFO](#hexctrlinfo)
    </details>
-* [Appearance](#appearance)
 * [Licensing](#licensing)
 
 ## [](#)Introduction
-**HexCtrl** is a very featured hex editor control, written in **C++/MFC**.
+**HexCtrl** is a fully featured Hex-Editor Control written in **C++/MFC**.
 
-It's implemented as a pure abstract interface and therefore can be used in your app even if you don't use **MFC** directly. It's written with **/std:c++20** standard in **Visual Studio 2022**.
+It's implemented as a pure abstract interface and can be used in your app even if you don't use **MFC** directly. **HexCtrl** is being developed with a **/std:c++20** standard in **Visual Studio 2022**.
 
 ### The main features of the **HexCtrl**:
 * View and edit data up to **16EB** (exabyte)
@@ -133,7 +131,7 @@ It's implemented as a pure abstract interface and therefore can be used in your 
 * Ability to visually divide data into [pages](#setpagesize)
 * Print whole document/pages range/selection
 * Set individual colors for the data chunks with [**Custom Colors**](#ihexvirtcolors)
-* Powerful system of customizable [Templates](#templates)
+* Powerful system of [Templates](#templates)
 * [Assignable keyboard shortcuts](#setconfig) via external config file
 * Customizable look and appearance
 * Written with **/std:c++20** standard conformance
@@ -148,8 +146,8 @@ The **HexCtrl** can be used in two different ways:
 ### [](#)Building From The Sources
 The building process is quite simple:
 1. Copy *HexCtrl* folder into your project's directory.
-1. Add all files from the *HexCtrl* folder into your project (you can skip  
-*HexCtrl/dep/rapidjson/rapidjson-amalgam.h* header-only lib).
+1. Add all files from the *HexCtrl* folder into your project (you can skip adding 
+*/dep/rapidjson/rapidjson-amalgam.h* and */dep/StrToNum/StrToNum.h*).
 1. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the **HexCtrl**.
 1. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };`
 1. [Create](#creating) control instance.
@@ -177,16 +175,6 @@ To build *HexCtrl.dll* and *HexCtrl.lib* use the *DLL Project/DLL Project.vcxpro
 **HexCtrl**'s *.dll* is built with **MFC Static Linking**. So even if you are to use it in your own **MFC** project, even with different **MFC** version, there should not be any interferences
 
 Building **HexCtrl** with **MFC Shared DLL** turned out to be a little tricky. Even with the help of `AFX_MANAGE_STATE(AfxGetStaticModuleState())` macro there always were **MFC** debug assertions, which origins quite hard to comprehend.
-
-### [](#)Namespace
-**HexCtrl** uses its own namespace `HEXCTRL`. So it's up to you, whether to use namespace prefix before declarations:
-```cpp
-HEXCTRL::
-```
-or to define namespace globally, in the source file's beginning:
-```cpp
-using namespace HEXCTRL;
-```
 
 ## [](#)Creating
 
@@ -1113,7 +1101,7 @@ Service structure with the **HexCtrl**'s version information.
 ```cpp
 struct HEXCTRLINFO
 {
-    const wchar_t* pwszVersion { };        //WCHAR version string.
+    const wchar_t* pwszVersion { };        //wchar_t version string.
     union {
         unsigned long long ullVersion { }; //ULONGLONG version number.
         struct {
@@ -1124,10 +1112,6 @@ struct HEXCTRLINFO
     };
 };
 ```
-
-## [](#)Appearance
-To change control's font size — <kbd>Ctrl+MouseWheel</kbd>  
-To change control's capacity — <kbd>Ctrl+Shift+MouseWheel</kbd>
 
 ## [](#)Licensing
 This software is available under **"The HexCtrl License"**, it is free for any **NON-COMMERCIAL** use.  

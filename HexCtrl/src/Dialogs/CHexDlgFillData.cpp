@@ -130,8 +130,9 @@ void CHexDlgFillData::OnOK()
 
 		hms.vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
 	}
-	else
+	else {
 		hms.vecSpan = m_pHexCtrl->GetSelection();
+	}
 
 	std::wstring wstrFillWith = pwszComboText;
 	std::string strFillWith; //Data holder for FILL_HEX and FILL_ASCII modes.
@@ -170,8 +171,9 @@ void CHexDlgFillData::OnOK()
 	//Insert wstring into ComboBox only if it's not already presented.
 	if (m_stComboData.FindStringExact(0, wstrFillWith.data()) == CB_ERR) {
 		//Keep max 50 strings in list.
-		if (m_stComboData.GetCount() == 50)
+		if (m_stComboData.GetCount() == 50) {
 			m_stComboData.DeleteString(49);
+		}
 		m_stComboData.InsertString(0, wstrFillWith.data());
 	}
 

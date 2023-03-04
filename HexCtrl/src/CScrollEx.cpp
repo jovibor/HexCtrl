@@ -41,8 +41,9 @@ END_MESSAGE_MAP()
 void CScrollEx::AddSibling(CScrollEx* pSibling)
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	m_pSibling = pSibling;
 }
@@ -52,18 +53,21 @@ bool CScrollEx::Create(CWnd* pParent, bool fVert, int iIDRESArrow,
 {
 	assert(!m_fCreated); //Already created.
 	assert(pParent != nullptr);
-	if (m_fCreated || pParent == nullptr)
+	if (m_fCreated || pParent == nullptr) {
 		return false;
+	}
 
-	if (!CWnd::CreateEx(0, AfxRegisterWndClass(0), nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr))
+	if (!CWnd::CreateEx(0, AfxRegisterWndClass(0), nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr)) {
 		return false;
+	}
 
 	m_fScrollVert = fVert;
 	m_pParent = pParent;
 	m_uiScrollBarSizeWH = GetSystemMetrics(fVert ? SM_CXVSCROLL : SM_CXHSCROLL);
 
-	if (!CreateArrows(iIDRESArrow, fVert))
+	if (!CreateArrows(iIDRESArrow, fVert)) {
 		return false;
+	}
 
 	m_fCreated = true;
 	SetScrollSizes(ullScrolline, ullScrollPage, ullScrollSizeMax);
@@ -74,8 +78,9 @@ bool CScrollEx::Create(CWnd* pParent, bool fVert, int iIDRESArrow,
 CWnd* CScrollEx::GetParent()const
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return nullptr;
+	}
 
 	return m_pParent;
 }
@@ -83,8 +88,9 @@ CWnd* CScrollEx::GetParent()const
 ULONGLONG CScrollEx::GetScrollPos()const
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return { };
+	}
 
 	return m_ullScrollPosCur;
 }
@@ -92,8 +98,9 @@ ULONGLONG CScrollEx::GetScrollPos()const
 LONGLONG CScrollEx::GetScrollPosDelta()const
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return { };
+	}
 
 	return static_cast<LONGLONG>(m_ullScrollPosCur - m_ullScrollPosPrev);
 }
@@ -101,8 +108,9 @@ LONGLONG CScrollEx::GetScrollPosDelta()const
 ULONGLONG CScrollEx::GetScrollLineSize()const
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return { };
+	}
 
 	return m_ullScrollLine;
 }
@@ -110,8 +118,9 @@ ULONGLONG CScrollEx::GetScrollLineSize()const
 ULONGLONG CScrollEx::GetScrollPageSize()const
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return { };
+	}
 
 	return m_ullScrollPage;
 }
@@ -119,16 +128,18 @@ ULONGLONG CScrollEx::GetScrollPageSize()const
 bool CScrollEx::IsThumbReleased()const
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return false;
+	}
 
 	return m_enState != EState::THUMB_CLICK;
 }
 
 bool CScrollEx::IsVisible()const
 {
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return false;
+	}
 
 	return m_fVisible;
 }
@@ -136,8 +147,9 @@ bool CScrollEx::IsVisible()const
 void CScrollEx::OnLButtonUp(UINT /*nFlags*/, CPoint /*point*/)
 {
 	assert(m_fCreated);
-	if (!m_fCreated || m_enState == EState::STATE_DEFAULT)
+	if (!m_fCreated || m_enState == EState::STATE_DEFAULT) {
 		return;
+	}
 
 	m_enState = EState::STATE_DEFAULT;
 	SendParentScrollMsg(); //For parent to check IsThumbReleased.
@@ -150,8 +162,9 @@ void CScrollEx::OnLButtonUp(UINT /*nFlags*/, CPoint /*point*/)
 void CScrollEx::OnMouseMove(UINT /*nFlags*/, CPoint point)
 {
 	assert(m_fCreated);
-	if (!m_fCreated || !IsThumbDragging())
+	if (!m_fCreated || !IsThumbDragging()) {
 		return;
+	}
 
 	const auto rc = GetScrollWorkAreaRect(true);
 	const auto iCurrPos = GetThumbPos();
@@ -186,22 +199,25 @@ void CScrollEx::OnMouseMove(UINT /*nFlags*/, CPoint point)
 		}
 	}
 
-	if (iNewPos != iCurrPos)  //Set new thumb pos only if it has been changed.
+	if (iNewPos != iCurrPos) {  //Set new thumb pos only if it has been changed.
 		SetThumbPos(iNewPos);
+	}
 }
 
 void CScrollEx::OnNcActivate(BOOL /*bActive*/)const
 {
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	RedrawNC(); //To repaint NC area.
 }
 
 void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS* lpncsp)
 {
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	const CRect rc = lpncsp->rgrc[0];
 	const auto ullCurPos = GetScrollPos();
@@ -209,10 +225,12 @@ void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS* lpncsp
 		const UINT uiHeight { IsSiblingVisible() ? rc.Height() - m_uiScrollBarSizeWH : rc.Height() };
 		if (uiHeight < m_ullScrollSizeMax) {
 			m_fVisible = true;
-			if (ullCurPos + uiHeight > m_ullScrollSizeMax)
+			if (ullCurPos + uiHeight > m_ullScrollSizeMax) {
 				SetScrollPos(m_ullScrollSizeMax - uiHeight);
-			else
+			}
+			else {
 				DrawScrollBar();
+			}
 			lpncsp->rgrc[0].right -= m_uiScrollBarSizeWH;
 		}
 		else {
@@ -224,10 +242,12 @@ void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS* lpncsp
 		const UINT uiWidth { IsSiblingVisible() ? rc.Width() - m_uiScrollBarSizeWH : rc.Width() };
 		if (uiWidth < m_ullScrollSizeMax) {
 			m_fVisible = true;
-			if (ullCurPos + uiWidth > m_ullScrollSizeMax)
+			if (ullCurPos + uiWidth > m_ullScrollSizeMax) {
 				SetScrollPos(m_ullScrollSizeMax - uiWidth);
-			else
+			}
+			else {
 				DrawScrollBar();
+			}
 			lpncsp->rgrc[0].bottom -= m_uiScrollBarSizeWH;
 		}
 		else {
@@ -239,8 +259,9 @@ void CScrollEx::OnNcCalcSize(BOOL /*bCalcValidRects*/, NCCALCSIZE_PARAMS* lpncsp
 
 void CScrollEx::OnNcPaint()const
 {
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	DrawScrollBar();
 }
@@ -248,20 +269,23 @@ void CScrollEx::OnNcPaint()const
 void CScrollEx::OnSetCursor(CWnd* /*pWnd*/, UINT nHitTest, UINT message)
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	if (nHitTest == HTTOPLEFT || nHitTest == HTLEFT || nHitTest == HTBOTTOMLEFT
 		|| nHitTest == HTTOPRIGHT || nHitTest == HTRIGHT || nHitTest == HTBOTTOMRIGHT
-		|| nHitTest == HTBOTTOM || nHitTest == HTSIZE || !IsVisible())
+		|| nHitTest == HTBOTTOM || nHitTest == HTSIZE || !IsVisible()) {
 		return;
+	}
 
 	switch (message) {
 	case WM_LBUTTONDOWN:
 	{
 		const auto pParent = GetParent();
-		if (pParent == nullptr)
+		if (pParent == nullptr) {
 			return;
+		}
 
 		POINT pt;
 		GetCursorPos(&pt);
@@ -308,8 +332,9 @@ void CScrollEx::OnSetCursor(CWnd* /*pWnd*/, UINT nHitTest, UINT message)
 void CScrollEx::SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG ullSizeMax)
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	m_ullScrollLine = ullLine;
 	m_ullScrollPage = ullPage;
@@ -321,12 +346,14 @@ void CScrollEx::SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG u
 ULONGLONG CScrollEx::SetScrollPos(ULONGLONG ullNewPos)
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return { };
+	}
 
 	m_ullScrollPosPrev = m_ullScrollPosCur;
-	if (m_ullScrollPosCur == ullNewPos)
+	if (m_ullScrollPosCur == ullNewPos) {
 		return m_ullScrollPosPrev;
+	}
 
 	m_ullScrollPosCur = ullNewPos;
 
@@ -334,8 +361,9 @@ ULONGLONG CScrollEx::SetScrollPos(ULONGLONG ullNewPos)
 	const auto iScreenSize { IsVert() ? rc.Height() : rc.Width() };
 	const ULONGLONG ullMax { iScreenSize > m_ullScrollSizeMax ? 0 : m_ullScrollSizeMax - iScreenSize };
 
-	if (m_ullScrollPosCur > ullMax)
+	if (m_ullScrollPosCur > ullMax) {
 		m_ullScrollPosCur = ullMax;
+	}
 
 	SendParentScrollMsg();
 	DrawScrollBar();
@@ -346,8 +374,9 @@ ULONGLONG CScrollEx::SetScrollPos(ULONGLONG ullNewPos)
 void CScrollEx::ScrollLineDown()
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	const auto ullCur = GetScrollPos();
 	const ULONGLONG ullNew { ULONGLONG_MAX - ullCur < m_ullScrollLine ? ULONGLONG_MAX : ullCur + m_ullScrollLine };
@@ -357,8 +386,9 @@ void CScrollEx::ScrollLineDown()
 void CScrollEx::ScrollLineRight()
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	ScrollLineDown();
 }
@@ -366,8 +396,9 @@ void CScrollEx::ScrollLineRight()
 void CScrollEx::ScrollLineUp()
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	const auto ullCur = GetScrollPos();
 	SetScrollPos(m_ullScrollLine > ullCur ? 0 : ullCur - m_ullScrollLine);
@@ -376,8 +407,9 @@ void CScrollEx::ScrollLineUp()
 void CScrollEx::ScrollLineLeft()
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	ScrollLineUp();
 }
@@ -385,8 +417,9 @@ void CScrollEx::ScrollLineLeft()
 void CScrollEx::ScrollPageDown()
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	const auto ullCur = GetScrollPos();
 	SetScrollPos(ULONGLONG_MAX - ullCur < m_ullScrollPage ? ULONGLONG_MAX : ullCur + m_ullScrollPage);
@@ -395,8 +428,9 @@ void CScrollEx::ScrollPageDown()
 void CScrollEx::ScrollPageLeft()
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	ScrollPageUp();
 }
@@ -404,8 +438,9 @@ void CScrollEx::ScrollPageLeft()
 void CScrollEx::ScrollPageRight()
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	ScrollPageDown();
 }
@@ -413,8 +448,9 @@ void CScrollEx::ScrollPageRight()
 void CScrollEx::ScrollPageUp()
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	const auto ullCur = GetScrollPos();
 	SetScrollPos(m_ullScrollPage > ullCur ? 0 : ullCur - m_ullScrollPage);
@@ -423,8 +459,9 @@ void CScrollEx::ScrollPageUp()
 void CScrollEx::ScrollHome()
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	SetScrollPos(0);
 }
@@ -432,8 +469,9 @@ void CScrollEx::ScrollHome()
 void CScrollEx::ScrollEnd()
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	SetScrollPos(m_ullScrollSizeMax);
 }
@@ -441,8 +479,9 @@ void CScrollEx::ScrollEnd()
 void CScrollEx::SetScrollPageSize(ULONGLONG ullSize)
 {
 	assert(m_fCreated);
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	m_ullScrollPage = ullSize;
 }
@@ -455,8 +494,9 @@ void CScrollEx::SetScrollPageSize(ULONGLONG ullSize)
 bool CScrollEx::CreateArrows(int iIDRESArrow, bool fVert)
 {
 	CBitmap bmpArrow; //Bitmap of the arrow.
-	if (!bmpArrow.LoadBitmapW(iIDRESArrow))
+	if (!bmpArrow.LoadBitmapW(iIDRESArrow)) {
 		return false;
+	}
 
 	BITMAP hBitmap;
 	bmpArrow.GetBitmap(&hBitmap); //hBitmap.bmBits is nullptr here.
@@ -468,19 +508,25 @@ bool CScrollEx::CreateArrows(int iIDRESArrow, bool fVert)
 	bmpArrow.GetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
 
 	const auto lmbTranspose = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
-		for (std::size_t itHeight = 0; itHeight < nHeight; ++itHeight) //Transpose matrix.
-			for (std::size_t j = itHeight; j < nWidth; ++j)
+		for (std::size_t itHeight = 0; itHeight < nHeight; ++itHeight) { //Transpose matrix.
+			for (std::size_t j = itHeight; j < nWidth; ++j) {
 				std::swap(pInOut[itHeight * nHeight + j], pInOut[j * nHeight + itHeight]);
+			}
+		}
 	};
 	const auto lmbFlipVert = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
-		for (std::size_t itWidth = 0; itWidth < nWidth; ++itWidth) //Flip matrix' columns.
-			for (std::size_t itHeight = 0, itHeightBack = nHeight - 1; itHeight < itHeightBack; ++itHeight, --itHeightBack)
+		for (std::size_t itWidth = 0; itWidth < nWidth; ++itWidth) { //Flip matrix' columns.
+			for (std::size_t itHeight = 0, itHeightBack = nHeight - 1; itHeight < itHeightBack; ++itHeight, --itHeightBack) {
 				std::swap(pInOut[itHeight * nHeight + itWidth], pInOut[itHeightBack * nWidth + itWidth]);
+			}
+		}
 	};
 	const auto lmbFlipHorz = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
-		for (std::size_t itHeight = 0; itHeight < nHeight; ++itHeight) //Flip matrix' rows.
-			for (std::size_t itWidth = 0, itWidthBack = nWidth - 1; itWidth < itWidthBack; ++itWidth, --itWidthBack)
+		for (std::size_t itHeight = 0; itHeight < nHeight; ++itHeight) { //Flip matrix' rows.
+			for (std::size_t itWidth = 0, itWidthBack = nWidth - 1; itWidth < itWidthBack; ++itWidth, --itWidthBack) {
 				std::swap(pInOut[itHeight * nWidth + itWidth], pInOut[itHeight * nWidth + itWidthBack]);
+			}
+		}
 	};
 
 	m_bmpArrowFirst.CreateBitmapIndirect(&hBitmap);
@@ -502,8 +548,9 @@ bool CScrollEx::CreateArrows(int iIDRESArrow, bool fVert)
 
 void CScrollEx::DrawScrollBar()const
 {
-	if (!IsVisible())
+	if (!IsVisible()) {
 		return;
+	}
 
 	const auto pParent = GetParent();
 	CWindowDC dcParent(pParent);
@@ -569,14 +616,16 @@ void CScrollEx::DrawArrows(CDC* pDC)const
 void CScrollEx::DrawThumb(CDC* pDC)const
 {
 	auto rcThumb = GetThumbRect();
-	if (!rcThumb.IsRectNull())
+	if (!rcThumb.IsRectNull()) {
 		pDC->FillSolidRect(rcThumb, CLR_SCROLL_THUMB);
+	}
 }
 
 CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
 {
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return { };
+	}
 
 	const auto* const pParent = GetParent();
 	auto rcClient = GetParentRect();
@@ -590,19 +639,23 @@ CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
 		rcScroll.left = rcClient.right + iLeftDelta;
 		rcScroll.top = rcClient.top + iTopDelta;
 		rcScroll.right = rcScroll.left + m_uiScrollBarSizeWH;
-		if (fWithNCArea) //Adding difference here to gain equality in coords when call to pParent->ScreenToClient below.
+		if (fWithNCArea) { //Adding difference here to gain equality in coords when call to pParent->ScreenToClient below.
 			rcScroll.bottom = rcWnd.bottom + iTopDelta;
-		else
+		}
+		else {
 			rcScroll.bottom = rcScroll.top + rcClient.Height();
+		}
 	}
 	else {
 		rcScroll.left = rcClient.left + iLeftDelta;
 		rcScroll.top = rcClient.bottom + iTopDelta;
 		rcScroll.bottom = rcScroll.top + m_uiScrollBarSizeWH;
-		if (fWithNCArea)
+		if (fWithNCArea) {
 			rcScroll.right = rcWnd.right + iLeftDelta;
-		else
+		}
+		else {
 			rcScroll.right = rcScroll.left + rcClient.Width();
+		}
 	}
 	pParent->ScreenToClient(&rcScroll);
 
@@ -612,13 +665,16 @@ CRect CScrollEx::GetScrollRect(bool fWithNCArea)const
 CRect CScrollEx::GetScrollWorkAreaRect(bool fClientCoord)const
 {
 	auto rc = GetScrollRect();
-	if (IsVert())
+	if (IsVert()) {
 		rc.DeflateRect(0, m_uiScrollBarSizeWH, 0, m_uiScrollBarSizeWH);
-	else
+	}
+	else {
 		rc.DeflateRect(m_uiScrollBarSizeWH, 0, m_uiScrollBarSizeWH, 0);
+	}
 
-	if (fClientCoord)
+	if (fClientCoord) {
 		rc.OffsetRect(-GetLeftDelta(), -GetTopDelta());
+	}
 
 	return rc;
 }
@@ -639,8 +695,9 @@ CRect CScrollEx::GetThumbRect(bool fClientCoord)const
 {
 	CRect rc { };
 	const auto uiThumbSize = GetThumbSizeWH();
-	if (!uiThumbSize)
+	if (!uiThumbSize) {
 		return rc;
+	}
 
 	const auto rcScrollWA = GetScrollWorkAreaRect();
 	if (IsVert()) {
@@ -648,8 +705,9 @@ CRect CScrollEx::GetThumbRect(bool fClientCoord)const
 		rc.top = rcScrollWA.top + GetThumbPos();
 		rc.right = rc.left + m_uiScrollBarSizeWH;
 		rc.bottom = rc.top + uiThumbSize;
-		if (rc.bottom > rcScrollWA.bottom)
+		if (rc.bottom > rcScrollWA.bottom) {
 			rc.bottom = rcScrollWA.bottom;
+		}
 	}
 	else {
 		rc.left = rcScrollWA.left + GetThumbPos();
@@ -657,8 +715,9 @@ CRect CScrollEx::GetThumbRect(bool fClientCoord)const
 		rc.right = rc.left + uiThumbSize;
 		rc.bottom = rc.top + m_uiScrollBarSizeWH;
 	}
-	if (fClientCoord)
+	if (fClientCoord) {
 		rc.OffsetRect(-GetLeftDelta(), -GetTopDelta());
+	}
 
 	return rc;
 }
@@ -688,25 +747,30 @@ int CScrollEx::GetThumbPos()const
 
 void CScrollEx::SetThumbPos(int iPos)
 {
-	if (iPos == GetThumbPos())
+	if (iPos == GetThumbPos()) {
 		return;
+	}
 
 	const auto rcWorkArea = GetScrollWorkAreaRect();
 	const auto uiThumbSize = GetThumbSizeWH();
 	ULONGLONG ullNewScrollPos;
 
-	if (iPos < 0)
+	if (iPos < 0) {
 		ullNewScrollPos = 0;
-	else if (iPos == THUMB_POS_MAX)
+	}
+	else if (iPos == THUMB_POS_MAX) {
 		ullNewScrollPos = m_ullScrollSizeMax;
+	}
 	else {
 		if (IsVert()) {
-			if (iPos + static_cast<int>(uiThumbSize) > rcWorkArea.Height())
+			if (iPos + static_cast<int>(uiThumbSize) > rcWorkArea.Height()) {
 				iPos = rcWorkArea.Height() - uiThumbSize;
+			}
 		}
 		else {
-			if (iPos + static_cast<int>(uiThumbSize) > rcWorkArea.Width())
+			if (iPos + static_cast<int>(uiThumbSize) > rcWorkArea.Width()) {
 				iPos = rcWorkArea.Width() - uiThumbSize;
+			}
 		}
 		ullNewScrollPos = static_cast<ULONGLONG>(std::llroundl(iPos * GetThumbScrollingSize()));
 	}
@@ -716,8 +780,9 @@ void CScrollEx::SetThumbPos(int iPos)
 
 long double CScrollEx::GetThumbScrollingSize()const
 {
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return 0;
+	}
 
 	const auto uiWAWOThumb = GetScrollWorkAreaSizeWH() - GetThumbSizeWH(); //Work area without thumb.
 	const auto iPage { IsVert() ? GetParentRect().Height() : GetParentRect().Width() };
@@ -728,13 +793,16 @@ long double CScrollEx::GetThumbScrollingSize()const
 CRect CScrollEx::GetFirstArrowRect(bool fClientCoord)const
 {
 	auto rc = GetScrollRect();
-	if (IsVert())
+	if (IsVert()) {
 		rc.bottom = rc.top + m_uiScrollBarSizeWH;
-	else
+	}
+	else {
 		rc.right = rc.left + m_uiScrollBarSizeWH;
+	}
 
-	if (fClientCoord)
+	if (fClientCoord) {
 		rc.OffsetRect(-GetLeftDelta(), -GetTopDelta());
+	}
 
 	return rc;
 }
@@ -742,13 +810,16 @@ CRect CScrollEx::GetFirstArrowRect(bool fClientCoord)const
 CRect CScrollEx::GetLastArrowRect(bool fClientCoord)const
 {
 	CRect rc = GetScrollRect();
-	if (IsVert())
+	if (IsVert()) {
 		rc.top = rc.bottom - m_uiScrollBarSizeWH;
-	else
+	}
+	else {
 		rc.left = rc.right - m_uiScrollBarSizeWH;
+	}
 
-	if (fClientCoord)
+	if (fClientCoord) {
 		rc.OffsetRect(-GetLeftDelta(), -GetTopDelta());
+	}
 
 	return rc;
 }
@@ -758,13 +829,16 @@ CRect CScrollEx::GetFirstChannelRect(bool fClientCoord)const
 	const auto rcThumb = GetThumbRect();
 	const auto rcArrow = GetFirstArrowRect();
 	CRect rc;
-	if (IsVert())
+	if (IsVert()) {
 		rc.SetRect(rcArrow.left, rcArrow.bottom, rcArrow.right, rcThumb.top);
-	else
+	}
+	else {
 		rc.SetRect(rcArrow.right, rcArrow.top, rcThumb.left, rcArrow.bottom);
+	}
 
-	if (fClientCoord)
+	if (fClientCoord) {
 		rc.OffsetRect(-GetLeftDelta(), -GetTopDelta());
+	}
 
 	return rc;
 }
@@ -774,13 +848,16 @@ CRect CScrollEx::GetLastChannelRect(bool fClientCoord)const
 	const auto rcThumb = GetThumbRect();
 	const auto rcArrow = GetLastArrowRect();
 	CRect rc;
-	if (IsVert())
+	if (IsVert()) {
 		rc.SetRect(rcArrow.left, rcThumb.bottom, rcArrow.right, rcArrow.top);
-	else
+	}
+	else {
 		rc.SetRect(rcThumb.left, rcArrow.top, rcArrow.left, rcArrow.bottom);
+	}
 
-	if (fClientCoord)
+	if (fClientCoord) {
 		rc.OffsetRect(-GetLeftDelta(), -GetTopDelta());
+	}
 
 	return rc;
 }
@@ -788,10 +865,12 @@ CRect CScrollEx::GetLastChannelRect(bool fClientCoord)const
 CRect CScrollEx::GetParentRect(bool fClient)const
 {
 	CRect rc;
-	if (fClient)
+	if (fClient) {
 		GetParent()->GetClientRect(&rc);
-	else
+	}
+	else {
 		GetParent()->GetWindowRect(&rc);
+	}
 
 	return rc;
 }
@@ -837,8 +916,9 @@ void CScrollEx::RedrawNC()const
 
 void CScrollEx::SendParentScrollMsg()const
 {
-	if (!m_fCreated)
+	if (!m_fCreated) {
 		return;
+	}
 
 	GetParent()->SendMessageW(IsVert() ? WM_VSCROLL : WM_HSCROLL);
 }
@@ -867,12 +947,14 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 			CRect rc = GetThumbRect(true);
 			GetParent()->ClientToScreen(rc);
 			if (IsVert()) {
-				if (pt.y < rc.top)
+				if (pt.y < rc.top) {
 					ScrollPageUp();
+				}
 			}
 			else {
-				if (pt.x < rc.left)
+				if (pt.x < rc.left) {
 					ScrollPageUp();
+				}
 			}
 		}
 		break;
@@ -883,12 +965,14 @@ void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 			CRect rc = GetThumbRect(true);
 			GetParent()->ClientToScreen(rc);
 			if (IsVert()) {
-				if (pt.y > rc.bottom)
+				if (pt.y > rc.bottom) {
 					ScrollPageDown();
+				}
 			}
 			else {
-				if (pt.x > rc.right)
+				if (pt.x > rc.right) {
 					ScrollPageDown();
+				}
 			}
 		}
 		break;

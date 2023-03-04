@@ -250,6 +250,7 @@ void CHexDlgTemplMgr::OnBnApply()
 	m_editOffset.GetWindowTextW(wstrText);
 	if (wstrText.IsEmpty())
 		return;
+
 	const auto opt = StrToULL(wstrText.GetString());
 	if (!opt)
 		return;
@@ -811,8 +812,9 @@ LRESULT CHexDlgTemplMgr::OnNcHitTest(CPoint point)
 	CRect rcWnd;
 	GetWindowRect(rcWnd);
 	constexpr auto iBuffer { 10 }; //10px buffer zone, for left/right resizing to work.
-	if (point.y < rcList.top && point.x > rcWnd.left + iBuffer
-		&& point.x < rcWnd.right - iBuffer) { //If clicked anywhere above the m_pListApplied.
+
+	//If clicked anywhere above the m_pListApplied.
+	if (point.y < rcList.top && point.x > rcWnd.left + iBuffer && point.x < rcWnd.right - iBuffer) {
 		return HTCAPTION;
 	}
 
@@ -2066,7 +2068,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 					if (!refField->vecNested.empty()) {
 						return ullTotal + lmbSelf(lmbSelf, refField->vecNested);
 					}
-			return ullTotal + refField->iSize; });
+					return ullTotal + refField->iSize; });
 		};
 		return _lmbTotalSize(_lmbTotalSize, vecFields);
 	};

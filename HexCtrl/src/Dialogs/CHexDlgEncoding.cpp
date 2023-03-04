@@ -34,8 +34,9 @@ BOOL CHexDlgEncoding::EnumCodePagesProc(LPWSTR pwszCP)
 void CHexDlgEncoding::AddCP(std::wstring_view wsv)
 {
 	if (const auto optCPID = StrToUInt(wsv); optCPID) {
-		if (CPINFOEXW stCP; GetCPInfoExW(*optCPID, 0, &stCP) != FALSE)
+		if (CPINFOEXW stCP; GetCPInfoExW(*optCPID, 0, &stCP) != FALSE) {
 			m_vecCodePage.emplace_back(static_cast<int>(*optCPID), stCP.CodePageName, stCP.MaxCharSize);
+		}
 	}
 }
 
@@ -175,21 +176,21 @@ void CHexDlgEncoding::SortList()
 	std::sort(m_vecCodePage.begin() + 1, m_vecCodePage.end(),
 		[iColumn, fAscending](const SCODEPAGE& st1, const SCODEPAGE& st2) {
 			int iCompare { };
-	switch (iColumn) {
-	case 0: //CP ID.
-		iCompare = st1.iCPID != st2.iCPID ? (st1.iCPID < st2.iCPID ? -1 : 1) : 0;
-		break;
-	case 1: //CP name.
-		iCompare = st1.wstrName.compare(st2.wstrName);
-		break;
-	case 2: //Max chars.
-		iCompare = st1.uMaxChars != st2.uMaxChars ? (st1.uMaxChars < st2.uMaxChars ? -1 : 1) : 0;
-		break;
-	default:
-		break;
-	}
+			switch (iColumn) {
+			case 0: //CP ID.
+				iCompare = st1.iCPID != st2.iCPID ? (st1.iCPID < st2.iCPID ? -1 : 1) : 0;
+				break;
+			case 1: //CP name.
+				iCompare = st1.wstrName.compare(st2.wstrName);
+				break;
+			case 2: //Max chars.
+				iCompare = st1.uMaxChars != st2.uMaxChars ? (st1.uMaxChars < st2.uMaxChars ? -1 : 1) : 0;
+				break;
+			default:
+				break;
+			}
 
-	return fAscending ? iCompare < 0 : iCompare > 0;
+			return fAscending ? iCompare < 0 : iCompare > 0;
 		});
 
 	m_pListMain->RedrawWindow();

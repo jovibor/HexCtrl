@@ -170,12 +170,15 @@ void CHexDlgOpers::OnOK()
 		GetDlgItemTextW(IDC_HEXCTRL_OPERS_EDIT_DATA, pwszEditText, static_cast<int>(std::size(pwszEditText)));
 
 		std::wstring wstrErr { };
-		if (pwszEditText[0] == L'\0') //Edit field emptiness check.
+		if (pwszEditText[0] == L'\0') { //Edit field emptiness check.
 			wstrErr = L"Missing Operand!";
-		else if (const auto optData = StrToLL(pwszEditText); !optData)
+		}
+		else if (const auto optData = StrToLL(pwszEditText); !optData) {
 			wstrErr = L"Wrong number format!";
-		else if (llData = *optData; hms.enOperMode == OPER_DIV && llData == 0) //Division by zero check.
+		}
+		else if (llData = *optData; hms.enOperMode == OPER_DIV && llData == 0) { //Division by zero check.
 			wstrErr = L"Wrong number format! Can not divide by zero!";
+		}
 		if (!wstrErr.empty()) {
 			MessageBoxW(wstrErr.data(), L"Operand Error!", MB_ICONERROR);
 			return;
@@ -188,8 +191,7 @@ void CHexDlgOpers::OnOK()
 			* Binary OR/XOR/AND are good examples, binary NOT doesn't need swap at all.
 			* The fSwapHere flag shows exactly this, that data can be swapped here.
 			***************************************************************************/
-			if (eOperMode == OPER_OR || eOperMode == OPER_XOR
-				|| eOperMode == OPER_AND || eOperMode == OPER_ASSIGN) {
+			if (eOperMode == OPER_OR || eOperMode == OPER_XOR || eOperMode == OPER_AND || eOperMode == OPER_ASSIGN) {
 				fBigEndian = false;
 				switch (hms.enDataSize) {
 				case SIZE_WORD:
@@ -212,10 +214,12 @@ void CHexDlgOpers::OnOK()
 		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?",
 			L"Modify All data?", MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
+
 		hms.vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
 	}
-	else
+	else {
 		hms.vecSpan = m_pHexCtrl->GetSelection();
+	}
 
 	hms.fBigEndian = fBigEndian;
 	hms.spnData = { reinterpret_cast<std::byte*>(&llData), sizeof(llData) };
@@ -240,8 +244,9 @@ void CHexDlgOpers::CheckWndAvail()const
 	GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_DATA)->EnableWindow(fEditEnable);
 
 	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_BYTE, IDC_HEXCTRL_OPERS_RAD_QWORD);
-	if (fBELEEnable)
+	if (fBELEEnable) {
 		fBELEEnable = iRadioDataSize != IDC_HEXCTRL_OPERS_RAD_BYTE;
+	}
 
 	GetDlgItem(IDC_HEXCTRL_OPERS_RAD_LE)->EnableWindow(fBELEEnable);
 	GetDlgItem(IDC_HEXCTRL_OPERS_RAD_BE)->EnableWindow(fBELEEnable);

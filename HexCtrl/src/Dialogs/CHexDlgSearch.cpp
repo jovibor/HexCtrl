@@ -23,15 +23,13 @@ using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL
 {
-	enum class CHexDlgSearch::EMode : std::uint8_t
-	{
+	enum class CHexDlgSearch::EMode : std::uint8_t {
 		SEARCH_HEXBYTES, SEARCH_ASCII, SEARCH_UTF8, SEARCH_UTF16,
 		SEARCH_INT8, SEARCH_INT16, SEARCH_INT32, SEARCH_INT64,
 		SEARCH_FLOAT, SEARCH_DOUBLE, SEARCH_FILETIME
 	};
 
-	enum class CHexDlgSearch::ECmpType : std::uint16_t //Flags for the instantiations of templated MemCmp<>.
-	{
+	enum class CHexDlgSearch::ECmpType : std::uint16_t { //Flags for the instantiations of templated MemCmp<>.
 		TYPE_CHAR_LOOP = 0x0001,
 		TYPE_WCHAR_LOOP = 0x0002,
 		TYPE_CASE_INSENSITIVE = 0x0004,
@@ -42,20 +40,17 @@ namespace HEXCTRL::INTERNAL
 		TYPE_INT64 = 0x0080
 	};
 
-	enum class CHexDlgSearch::EMenuID : std::uint16_t
-	{
+	enum class CHexDlgSearch::EMenuID : std::uint16_t {
 		IDM_SEARCH_ADDBKM = 0x8000, IDM_SEARCH_SELECTALL = 0x8001, IDM_SEARCH_CLEARALL = 0x8002
 	};
 
-	struct CHexDlgSearch::SFINDRESULT
-	{
+	struct CHexDlgSearch::SFINDRESULT {
 		bool fFound { };
 		bool fCanceled { }; //Search was canceled by pressing "Cancel".
 		operator bool()const { return fFound; };
 	};
 
-	struct CHexDlgSearch::STHREADRUN
-	{
+	struct CHexDlgSearch::STHREADRUN {
 		ULONGLONG ullStart { };
 		ULONGLONG ullEnd { };
 		ULONGLONG ullLoopChunkSize { }; //Actual data size for a `for()` loop.
@@ -128,8 +123,9 @@ BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
 	if (nCmdShow == SW_SHOW) {
 		int iChkStatus { BST_UNCHECKED };
 		const auto* const pHexCtrl = GetHexCtrl();
-		if (auto vecSel = pHexCtrl->GetSelection(); vecSel.size() == 1 && vecSel.back().ullSize > 1)
+		if (auto vecSel = pHexCtrl->GetSelection(); vecSel.size() == 1 && vecSel.back().ullSize > 1) {
 			iChkStatus = BST_CHECKED;
+		}
 
 		m_stCheckSel.SetCheck(iChkStatus);
 		m_stEditStart.EnableWindow(iChkStatus == BST_CHECKED ? 0 : 1);
@@ -158,16 +154,16 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 {
 	int iHighlight { -1 };
 	if (const auto iter = std::find(m_vecSearchRes.begin(), m_vecSearchRes.end(), ullOffset);
-		iter == m_vecSearchRes.end()) //Max-found search occurences.
-	{
+		iter == m_vecSearchRes.end()) { //Max-found search occurences.
 		if (m_vecSearchRes.size() < static_cast<size_t>(m_dwFoundLimit)) {
 			m_vecSearchRes.emplace_back(ullOffset);
 			iHighlight = static_cast<int>(m_vecSearchRes.size());
 			m_pListMain->SetItemCountEx(iHighlight--);
 		}
 	}
-	else
+	else {
 		iHighlight = static_cast<int>(iter - m_vecSearchRes.begin());
+	}
 
 	if (iHighlight != -1) {
 		m_pListMain->SetItemState(-1, 0, LVIS_SELECTED);
@@ -187,8 +183,9 @@ void CHexDlgSearch::ComboSearchFill(LPCWSTR pwsz)
 	//Insert wstring into ComboBox only if it's not already presented.
 	if (m_stComboSearch.FindStringExact(0, pwsz) == CB_ERR) {
 		//Keep max 50 strings in list.
-		if (m_stComboSearch.GetCount() == 50)
+		if (m_stComboSearch.GetCount() == 50) {
 			m_stComboSearch.DeleteString(49);
+		}
 		m_stComboSearch.InsertString(0, pwsz);
 	}
 }
@@ -198,8 +195,9 @@ void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
 	//Insert wstring into ComboBox only if it's not already presented.
 	if (m_stComboReplace.FindStringExact(0, pwsz) == CB_ERR) {
 		//Keep max 50 strings in list.
-		if (m_stComboReplace.GetCount() == 50)
+		if (m_stComboReplace.GetCount() == 50) {
 			m_stComboReplace.DeleteString(49);
+		}
 		m_stComboReplace.InsertString(0, pwsz);
 	}
 }
@@ -237,8 +235,9 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnS
 	}
 	else {
 		stThread.ullMemToAcquire = pHexCtrl->GetCacheSize();
-		if (stThread.ullMemToAcquire > ullSizeTotal)
+		if (stThread.ullMemToAcquire > ullSizeTotal) {
 			stThread.ullMemToAcquire = ullSizeTotal;
+		}
 		stThread.ullLoopChunkSize = stThread.ullMemToAcquire - nSizeSearch;
 
 		if (ullStep > stThread.ullLoopChunkSize) { //For very big steps.
@@ -246,9 +245,10 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnS
 				+ ((ullSizeTotal % ullStep) ? 1 : 0) : 1;
 			stThread.fBigStep = true;
 		}
-		else
+		else {
 			stThread.ullMemChunks = ullSizeTotal > stThread.ullLoopChunkSize ? ullSizeTotal / stThread.ullLoopChunkSize
-			+ ((ullSizeTotal % stThread.ullLoopChunkSize) ? 1 : 0) : 1;
+				+ ((ullSizeTotal % stThread.ullLoopChunkSize) ? 1 : 0) : 1;
+		}
 	}
 
 	if (pDlgClbk == nullptr && ullSizeTotal > iSizeQuick) { //Showing "Cancel" dialog only when data > iSizeQuick
@@ -258,8 +258,9 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnS
 		dlgClbk.DoModal();
 		thrd.join();
 	}
-	else
+	else {
 		(this->*m_pfnThread)(&stThread);
+	}
 
 	ullStart = stThread.ullStart;
 
@@ -281,8 +282,9 @@ void CHexDlgSearch::HexCtrlHighlight(const VecSpan& vecSel)
 	const auto pHexCtrl = GetHexCtrl();
 	pHexCtrl->SetSelection(vecSel, true, m_fSelection); //Highlight selection?
 
-	if (!pHexCtrl->IsOffsetVisible(vecSel.back().ullOffset))
+	if (!pHexCtrl->IsOffsetVisible(vecSel.back().ullOffset)) {
 		pHexCtrl->GoToOffset(vecSel.back().ullOffset);
+	}
 }
 
 template<std::uint16_t uCmpType>
@@ -310,8 +312,10 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_
 
 			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
 				auto ch = static_cast<char>(*pBuf1);
-				if (ch >= 0x41 && ch <= 0x5A) //IsUpper.
+				if (ch >= 0x41 && ch <= 0x5A) { //IsUpper.
 					ch += 32;
+				}
+
 				if (ch != static_cast<char>(*pBuf2))
 					return false;
 			}
@@ -333,8 +337,10 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_
 
 			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
 				auto wch = *pBuf1wch;
-				if (wch >= 0x41 && wch <= 0x5A) //IsUpper.
+				if (wch >= 0x41 && wch <= 0x5A) { //IsUpper.
 					wch += 32;
+				}
+
 				if (wch != *pBuf2wch)
 					return false;
 			}
@@ -437,8 +443,9 @@ BOOL CHexDlgSearch::OnInitDialog()
 
 void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	if (nState == WA_INACTIVE)
+	if (nState == WA_INACTIVE) {
 		SetLayeredWindowAttributes(0, 150, LWA_ALPHA);
+	}
 	else {
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 		m_stComboSearch.SetFocus();
@@ -708,16 +715,18 @@ void CHexDlgSearch::Prepare()
 	//Step.
 	CStringW wstrStep;
 	m_stEditStep.GetWindowTextW(wstrStep);
-	if (const auto optStep = StrToULL(wstrStep.GetString()); optStep)
+	if (const auto optStep = StrToULL(wstrStep.GetString()); optStep) {
 		m_ullStep = *optStep;
+	}
 	else
 		return;
 
 	//Limit.
 	CStringW wstrLimit;
 	m_stEditLimit.GetWindowTextW(wstrLimit);
-	if (const auto optLimit = StrToUInt(wstrLimit.GetString()); optLimit)
+	if (const auto optLimit = StrToUInt(wstrLimit.GetString()); optLimit) {
 		m_dwFoundLimit = *optLimit;
+	}
 	else
 		return;
 
@@ -814,6 +823,7 @@ void CHexDlgSearch::Prepare()
 			"Choosing \"No\" will cancel search." };
 		if (IDNO == MessageBoxW(wstrReplaceWarning, L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST))
 			return;
+
 		m_fReplaceWarn = false;
 	}
 
@@ -845,11 +855,13 @@ bool CHexDlgSearch::PrepareHexBytes()
 	}
 
 	using enum ECmpType;
-	if (!m_fWildcard)
+	if (!m_fWildcard) {
 		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)>;
-	else
+	}
+	else {
 		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
-		static_cast<std::uint16_t>(TYPE_WILDCARD)>;
+			static_cast<std::uint16_t>(TYPE_WILDCARD)>;
+	}
 
 	return true;
 }
@@ -866,17 +878,21 @@ bool CHexDlgSearch::PrepareTextASCII()
 	m_vecReplaceData = RangeToVecBytes(WstrToStr(m_wstrTextReplace, CP_ACP));
 
 	using enum ECmpType;
-	if (m_fMatchCase && !m_fWildcard)
+	if (m_fMatchCase && !m_fWildcard) {
 		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)>;
-	else if (m_fMatchCase && m_fWildcard)
+	}
+	else if (m_fMatchCase && m_fWildcard) {
 		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
-		| static_cast<std::uint16_t>(TYPE_WILDCARD)>;
-	else if (!m_fMatchCase && m_fWildcard)
+			| static_cast<std::uint16_t>(TYPE_WILDCARD)>;
+	}
+	else if (!m_fMatchCase && m_fWildcard) {
 		m_pfnThread = &CHexDlgSearch::ThreadRun< static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
-		static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD)>;
-	else if (!m_fMatchCase && !m_fWildcard)
+			static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD)>;
+	}
+	else if (!m_fMatchCase && !m_fWildcard) {
 		m_pfnThread = &CHexDlgSearch::ThreadRun< static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
-		| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)>;
+			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)>;
+	}
 
 	return true;
 }
@@ -884,24 +900,29 @@ bool CHexDlgSearch::PrepareTextASCII()
 bool CHexDlgSearch::PrepareTextUTF16()
 {
 	auto m_wstrSearch = m_wstrTextSearch;
-	if (!m_fMatchCase) //Make the string lowercase.
+	if (!m_fMatchCase) { //Make the string lowercase.
 		std::transform(m_wstrSearch.begin(), m_wstrSearch.end(), m_wstrSearch.begin(), std::towlower);
+	}
 
 	m_vecSearchData = RangeToVecBytes(m_wstrSearch);
 	m_vecReplaceData = RangeToVecBytes(m_wstrTextReplace);
 
 	using enum ECmpType;
-	if (m_fMatchCase && !m_fWildcard)
+	if (m_fMatchCase && !m_fWildcard) {
 		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)>;
-	else if (m_fMatchCase && m_fWildcard)
+	}
+	else if (m_fMatchCase && m_fWildcard) {
 		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
-		| static_cast<std::uint16_t>(TYPE_WILDCARD)>;
-	else if (!m_fMatchCase && m_fWildcard)
+			| static_cast<std::uint16_t>(TYPE_WILDCARD)>;
+	}
+	else if (!m_fMatchCase && m_fWildcard) {
 		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
-		| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD)>;
-	else if (!m_fMatchCase && !m_fWildcard)
+			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD)>;
+	}
+	else if (!m_fMatchCase && !m_fWildcard) {
 		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
-		| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)>;
+			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)>;
+	}
 
 	return true;
 }
@@ -1337,10 +1358,12 @@ void CHexDlgSearch::Search()
 			}
 		}
 		else {
-			if (m_fDoCount)
+			if (m_fDoCount) {
 				wstrInfo = std::format(L"Found occurrence \u2116 {} from the beginning.", m_dwCount);
-			else
+			}
+			else {
 				wstrInfo = L"Search found occurrence.";
+			}
 
 			HexCtrlHighlight({ { ullOffsetFound, m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size() } });
 			AddToList(ullOffsetFound);
@@ -1348,13 +1371,17 @@ void CHexDlgSearch::Search()
 		}
 	}
 	else {
-		if (stFind.fCanceled)
+		if (stFind.fCanceled) {
 			wstrInfo = L"Didn't find any occurrence, search was canceled.";
+		}
 		else {
-			if (m_iWrap == 1)
+			if (m_iWrap == 1) {
 				wstrInfo = L"Didn't find any occurrence, the end is reached.";
-			else if (m_iWrap == -1)
+			}
+			else if (m_iWrap == -1) {
 				wstrInfo = L"Didn't find any occurrence, the begining is reached.";
+			}
+
 			ResetSearch();
 		}
 	}
@@ -1438,8 +1465,7 @@ void CHexDlgSearch::ThreadRun(STHREADRUN* pStThread)
 			}
 		}
 	}
-	else //Backward search.
-	{
+	else { //Backward search.
 		ULONGLONG ullOffsetSearch;
 		if ((pStThread->ullStart - pStThread->ullLoopChunkSize) < pStThread->ullEnd
 			|| ((pStThread->ullStart - pStThread->ullLoopChunkSize) >
@@ -1448,15 +1474,16 @@ void CHexDlgSearch::ThreadRun(STHREADRUN* pStThread)
 			pStThread->ullLoopChunkSize = pStThread->ullMemToAcquire - nSizeSearch;
 			ullOffsetSearch = pStThread->ullEnd;
 		}
-		else
+		else {
 			ullOffsetSearch = pStThread->ullStart - pStThread->ullLoopChunkSize;
+		}
 
 		for (auto iterChunk = pStThread->ullMemChunks; iterChunk > 0; --iterChunk) {
 			const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, pStThread->ullMemToAcquire });
 			assert(!spnData.empty());
 
-			for (auto iterData = static_cast<LONGLONG>(pStThread->ullLoopChunkSize); iterData >= 0; iterData -= llStep * LOOP_UNROLL_SIZE) //iterData might be negative.
-			{
+			for (auto iterData = static_cast<LONGLONG>(pStThread->ullLoopChunkSize); iterData >= 0;
+				iterData -= llStep * LOOP_UNROLL_SIZE) { //iterData might be negative.
 				if (MemCmp<uCmpType>(spnData.data() + iterData, pDataSearch, nSizeSearch) == !m_fInverted) {
 					pStThread->ullStart = ullOffsetSearch + iterData;
 					pStThread->fResult = true;
@@ -1505,16 +1532,18 @@ void CHexDlgSearch::ThreadRun(STHREADRUN* pStThread)
 					pStThread->ullLoopChunkSize = pStThread->ullMemToAcquire - nSizeSearch;
 					ullOffsetSearch = pStThread->ullEnd;
 				}
-				else
+				else {
 					ullOffsetSearch -= pStThread->ullLoopChunkSize;
+				}
 			}
 		}
 	}
 
 FOUND:
 	if (pStThread->pDlgClbk != nullptr) {
-		if (pStThread->fDlgExit)
+		if (pStThread->fDlgExit) {
 			pStThread->pDlgClbk->ExitDlg();
+		}
 		else {
 			//If MemCmp returns true at the very first hit, we don't reach the SetProgress in the main loop.
 			//It might be the case for the "Find/Replace All" for example.

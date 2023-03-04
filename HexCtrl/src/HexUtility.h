@@ -4,8 +4,6 @@
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
-
-//Here dwells some useful helper stuff for HexCtrl.
 #pragma once
 #include "../dep/StrToNum/StrToNum.h"
 #include "../HexCtrl.h"
@@ -18,7 +16,7 @@
 #define HEXCTRL_COPYRIGHT_NAME  	L"(C) 2018-2023 Jovibor"
 #define HEXCTRL_VERSION_MAJOR		3
 #define HEXCTRL_VERSION_MINOR		3
-#define HEXCTRL_VERSION_MAINTENANCE	0
+#define HEXCTRL_VERSION_MAINTENANCE	1
 
 #define TO_WSTR_HELPER(x) L## #x
 #define TO_WSTR(x) TO_WSTR_HELPER(x)

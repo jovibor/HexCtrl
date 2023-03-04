@@ -192,10 +192,13 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	if (const auto pChk = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX)); pChk)
+	if (const auto pChk = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX)); pChk != nullptr) {
 		pChk->SetCheck(BST_CHECKED);
-	if (const auto pChk = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE)); pChk)
+	}
+
+	if (const auto pChk = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE)); pChk != nullptr) {
 		pChk->SetCheck(BST_UNCHECKED);
+	}
 
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"binary:", L"0"), EGroup::DIGITS, EName::NAME_BINARY, ESize::SIZE_BYTE);
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"char:", L"0"), EGroup::DIGITS, EName::NAME_CHAR, ESize::SIZE_BYTE);
@@ -225,39 +228,47 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 
 	//Digits group.
 	const auto pDigits = new CMFCPropertyGridProperty(L"Integral types:");
-	for (const auto& iter : m_vecProp)
-		if (iter.eGroup == EGroup::DIGITS && !iter.fChild)
+	for (const auto& iter : m_vecProp) {
+		if (iter.eGroup == EGroup::DIGITS && !iter.fChild) {
 			pDigits->AddSubItem(iter.pProp);
+		}
+	}
 	m_stCtrlGrid.AddProperty(pDigits);
 
 	//Floats group.
 	const auto pFloats = new CMFCPropertyGridProperty(L"Floating-point types:");
-	for (const auto& iter : m_vecProp)
-		if (iter.eGroup == EGroup::FLOAT && !iter.fChild)
+	for (const auto& iter : m_vecProp) {
+		if (iter.eGroup == EGroup::FLOAT && !iter.fChild) {
 			pFloats->AddSubItem(iter.pProp);
+		}
+	}
 	m_stCtrlGrid.AddProperty(pFloats);
 
 	//Time group.
 	const auto pTime = new CMFCPropertyGridProperty(L"Time:");
-	for (const auto& iter : m_vecProp)
-		if (iter.eGroup == EGroup::TIME && !iter.fChild)
+	for (const auto& iter : m_vecProp) {
+		if (iter.eGroup == EGroup::TIME && !iter.fChild) {
 			pTime->AddSubItem(iter.pProp);
+		}
+	}
 	m_stCtrlGrid.AddProperty(pTime);
 
 	//Miscellaneous group.
 	const auto pMisc = new CMFCPropertyGridProperty(L"Misc:");
-	for (const auto& iter : m_vecProp)
+	for (const auto& iter : m_vecProp) {
 		if (iter.eGroup == EGroup::MISC && !iter.fChild) {
 			pMisc->AddSubItem(iter.pProp);
 			if (iter.eName == EName::NAME_GUID) {
 				//GUID Time sub-group.
 				auto pGUIDsub = new CMFCPropertyGridProperty(L"GUID Time (built in GUID):");
 				if (const auto iterTime = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-					[](const SGRIDDATA& ref) { return ref.eName == EName::NAME_GUIDTIME; }); iterTime != m_vecProp.end())
+					[](const SGRIDDATA& ref) { return ref.eName == EName::NAME_GUIDTIME; }); iterTime != m_vecProp.end()) {
 					pGUIDsub->AddSubItem(iterTime->pProp);
+				}
 				pMisc->AddSubItem(pGUIDsub);
 			}
 		}
+	}
 	m_stCtrlGrid.AddProperty(pMisc);
 
 	return TRUE;
@@ -277,8 +288,9 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 
 			const auto wstrTitle = L"Date/Time format is: " + GetDateFormatString(m_dwDateFormat, m_wchDateSepar);
 			SetWindowTextW(wstrTitle.data()); //Update dialog title to reflect current date format.
-			if (m_pHexCtrl->IsDataSet())
+			if (m_pHexCtrl->IsDataSet()) {
 				InspectOffset(m_pHexCtrl->GetCaretPos());
+			}
 		}
 	}
 
@@ -399,10 +411,12 @@ LRESULT CHexDlgDataInterp::OnPropertyDataChanged(WPARAM wParam, LPARAM lParam)
 		break;
 	};
 
-	if (!fSuccess)
+	if (!fSuccess) {
 		MessageBoxW(L"Wrong number format or out of range.", L"Data error...", MB_ICONERROR);
-	else
+	}
+	else {
 		RedrawHexCtrl();
+	}
 
 	InspectOffset(m_ullOffset);
 
@@ -433,91 +447,103 @@ void CHexDlgDataInterp::OnSize(UINT nType, int cx, int cy)
 
 void CHexDlgDataInterp::RedrawHexCtrl()const
 {
-	if (m_pHexCtrl != nullptr && m_pHexCtrl->IsCreated())
+	if (m_pHexCtrl != nullptr && m_pHexCtrl->IsCreated()) {
 		m_pHexCtrl->Redraw();
+	}
 }
 
 void CHexDlgDataInterp::ShowValueBinary(BYTE byte)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_BINARY; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_BINARY; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(std::format(L"{:08b}", byte).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueChar(BYTE byte)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_CHAR; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_CHAR; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{0:02X}" : L"{1}",
 			std::make_wformat_args(byte, static_cast<int>(static_cast<char>(byte)))).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueUChar(BYTE byte)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_UCHAR; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_UCHAR; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{:02X}" : L"{}", std::make_wformat_args(byte)).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueShort(WORD word)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_SHORT; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_SHORT; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{0:04X}" : L"{1}",
 			std::make_wformat_args(word, static_cast<short>(word))).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueUShort(WORD word)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_USHORT; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_USHORT; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{:04X}" : L"{}", std::make_wformat_args(word)).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueInt(DWORD dword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_INT; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_INT; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{0:08X}" : L"{1}",
 			std::make_wformat_args(dword, static_cast<int>(dword))).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueUInt(DWORD dword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_UINT; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_UINT; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{:08X}" : L"{}", std::make_wformat_args(dword)).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueLL(QWORD qword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_LONGLONG; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_LONGLONG; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{0:016X}" : L"{1}",
 			std::make_wformat_args(qword, static_cast<long long>(qword))).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueULL(QWORD qword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_ULONGLONG; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_ULONGLONG; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{:016X}" : L"{}", std::make_wformat_args(qword)).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueFloat(DWORD dword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_FLOAT; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_FLOAT; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{0:08X}" : L"{1:.9e}",
 			std::make_wformat_args(dword, std::bit_cast<float>(dword))).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueDouble(QWORD qword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_DOUBLE; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_DOUBLE; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{0:08X}" : L"{1:.18e}",
 			std::make_wformat_args(qword, std::bit_cast<double>(qword))).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueTime32(DWORD dword)const
@@ -545,8 +571,9 @@ void CHexDlgDataInterp::ShowValueTime32(DWORD dword)const
 	}
 
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_TIME32T; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_TIME32T; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(wstrTime.data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueTime64(QWORD qword)const
@@ -574,15 +601,17 @@ void CHexDlgDataInterp::ShowValueTime64(QWORD qword)const
 	}
 
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_TIME64T; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_TIME64T; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(wstrTime.data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueFILETIME(QWORD qword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_FILETIME; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_FILETIME; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(FileTimeToString(std::bit_cast<FILETIME>(qword), m_dwDateFormat, m_wchDateSepar).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueOLEDATETIME(QWORD qword)const
@@ -599,12 +628,14 @@ void CHexDlgDataInterp::ShowValueOLEDATETIME(QWORD qword)const
 	const COleDateTime dt(date);
 
 	SYSTEMTIME stSysTime { };
-	if (dt.GetAsSystemTime(stSysTime))
+	if (dt.GetAsSystemTime(stSysTime)) {
 		wstrTime = SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
+	}
 
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_OLEDATETIME; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_OLEDATETIME; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(wstrTime.data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueJAVATIME(QWORD qword)const
@@ -616,10 +647,12 @@ void CHexDlgDataInterp::ShowValueJAVATIME(QWORD qword)const
 	LARGE_INTEGER Time;
 	Time.HighPart = g_ulFileTime1970_HIGH;
 	Time.LowPart = g_ulFileTime1970_LOW;
-	if (static_cast<LONGLONG>(qword) >= 0)
+	if (static_cast<LONGLONG>(qword) >= 0) {
 		Time.QuadPart += qword * g_uFTTicksPerMS;
-	else
+	}
+	else {
 		Time.QuadPart -= qword * g_uFTTicksPerMS;
+	}
 
 	//Convert to FILETIME.
 	FILETIME ftJavaTime;
@@ -627,8 +660,9 @@ void CHexDlgDataInterp::ShowValueJAVATIME(QWORD qword)const
 	ftJavaTime.dwLowDateTime = Time.LowPart;
 
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_JAVATIME; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_JAVATIME; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(FileTimeToString(ftJavaTime, m_dwDateFormat, m_wchDateSepar).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueMSDOSTIME(DWORD dword)const
@@ -642,8 +676,9 @@ void CHexDlgDataInterp::ShowValueMSDOSTIME(DWORD dword)const
 	}
 
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_MSDOSTIME; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_MSDOSTIME; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(wstrTime.data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueMSDTTMTIME(DWORD dword)const
@@ -669,8 +704,9 @@ void CHexDlgDataInterp::ShowValueMSDTTMTIME(DWORD dword)const
 	}
 
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_MSDTTMTIME; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_MSDTTMTIME; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(wstrTime.data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueSYSTEMTIME(SYSTEMTIME stSysTime)const
@@ -687,8 +723,9 @@ void CHexDlgDataInterp::ShowValueSYSTEMTIME(SYSTEMTIME stSysTime)const
 	}
 
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_SYSTEMTIME; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_SYSTEMTIME; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar).data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueGUID(GUID stGUID)const
@@ -749,8 +786,9 @@ void CHexDlgDataInterp::ShowValueGUIDTIME(GUID stGUID)const
 	}
 
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_GUIDTIME; }); iter != m_vecProp.end())
+		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_GUIDTIME; }); iter != m_vecProp.end()) {
 		iter->pProp->SetValue(wstrTime.data());
+	}
 }
 
 template<typename T>
@@ -1025,10 +1063,12 @@ bool CHexDlgDataInterp::SetDataJAVATIME(std::wstring_view wsv)const
 	lEpochTicks.LowPart = g_ulFileTime1970_LOW;
 
 	LONGLONG llDiffTicks;
-	if (lEpochTicks.QuadPart > lJavaTicks.QuadPart)
+	if (lEpochTicks.QuadPart > lJavaTicks.QuadPart) {
 		llDiffTicks = -(lEpochTicks.QuadPart - lJavaTicks.QuadPart);
-	else
+	}
+	else {
 		llDiffTicks = lJavaTicks.QuadPart - lEpochTicks.QuadPart;
+	}
 
 	const auto llDiffMillis = llDiffTicks / g_uFTTicksPerMS;
 	SetTData(llDiffMillis);

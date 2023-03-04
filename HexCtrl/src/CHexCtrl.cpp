@@ -676,12 +676,14 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->SpanByte
 
 	SpanByte spnData;
 	if (!IsVirtual()) {
-		if (hss.ullOffset + hss.ullSize <= GetDataSize())
+		if (hss.ullOffset + hss.ullSize <= GetDataSize()) {
 			spnData = { m_spnData.data() + hss.ullOffset, static_cast<std::size_t>(hss.ullSize) };
+		}
 	}
 	else {
-		if (hss.ullSize == 0 || hss.ullSize > GetCacheSize())
+		if (hss.ullSize == 0 || hss.ullSize > GetCacheSize()) {
 			hss.ullSize = GetCacheSize();
+		}
 
 		HEXDATAINFO hdi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) }, .stHexSpan { hss } };
 		m_pHexVirtData->OnHexGetData(hdi);
@@ -732,7 +734,7 @@ auto CHexCtrl::GetGroupMode()const->EHexDataSize
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return EHexDataSize { };
+		return { };
 
 	return m_enGroupMode;
 }
@@ -892,8 +894,9 @@ auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST>
 	if (!IsCreated() || !IsDataSet())
 		return std::nullopt;
 
-	if (fScreen)
+	if (fScreen) {
 		ScreenToClient(&pt);
+	}
 
 	return HitTest(pt);
 }
@@ -1277,16 +1280,19 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					tData *= tDataOper;
 					break;
 				case OPER_DIV:
-					if (tDataOper > 0) //Division by zero check.
+					if (tDataOper > 0) { //Division by zero check.
 						tData /= tDataOper;
+					}
 					break;
 				case OPER_CEIL:
-					if (tData > tDataOper)
+					if (tData > tDataOper) {
 						tData = tDataOper;
+					}
 					break;
 				case OPER_FLOOR:
-					if (tData < tDataOper)
+					if (tData < tDataOper) {
 						tData = tDataOper;
+					}
 					break;
 				}
 
@@ -1372,16 +1378,20 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 
 	//Setting capacity according to current m_enGroupMode.
 	const auto dwRem = dwCapacity % static_cast<DWORD>(m_enGroupMode);
-	if (dwCapacity < m_dwCapacity)
+	if (dwCapacity < m_dwCapacity) {
 		dwCapacity -= dwRem;
-	else if (dwRem > 0)
+	}
+	else if (dwRem > 0) {
 		dwCapacity += static_cast<DWORD>(m_enGroupMode) - dwRem;
+	}
 
 	//To prevent under/over flow.
-	if (dwCapacity < static_cast<DWORD>(m_enGroupMode))
+	if (dwCapacity < static_cast<DWORD>(m_enGroupMode)) {
 		dwCapacity = static_cast<DWORD>(m_enGroupMode);
-	else if (dwCapacity > dwCapacityMax)
+	}
+	else if (dwCapacity > dwCapacityMax) {
 		dwCapacity = dwCapacityMax;
+	}
 
 	m_dwCapacity = dwCapacity;
 	m_dwCapacityBlockSize = m_dwCapacity / 2;
@@ -1400,8 +1410,9 @@ void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
 	m_ullCaretPos = ullOffset;
 	m_fCaretHigh = fHighLow;
 
-	if (fRedraw)
+	if (fRedraw) {
 		Redraw();
+	}
 
 	OnCaretPosChange(ullOffset);
 }
@@ -1628,8 +1639,9 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 				CStringW wstrMenuName;
 				m_menuMain.GetMenuStringW(iterMain.wMenuID, wstrMenuName, MF_BYCOMMAND);
 				std::wstring wstr = wstrMenuName.GetString();
-				if (const auto nPos = wstr.find('\t'); nPos != std::wstring::npos)
+				if (const auto nPos = wstr.find('\t'); nPos != std::wstring::npos) {
 					wstr.erase(nPos);
+				}
 
 				wstr += L'\t';
 				if (iterMain.fCtrl) {
@@ -2238,8 +2250,9 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 	std::string strDataModify; //Actual data to paste, must outlive hmd.
 	const auto lmbPasteUTF16 = [&]() {
 		ullSizeModify = sSizeClpbrd;
-		if (ullCaretPos + sSizeClpbrd > ullDataSize)
+		if (ullCaretPos + sSizeClpbrd > ullDataSize) {
 			ullSizeModify = ullDataSize - ullCaretPos;
+		}
 		hmd.spnData = { reinterpret_cast<std::byte*>(pDataClpbrd), static_cast<std::size_t>(ullSizeModify) };
 	};
 
@@ -2782,8 +2795,7 @@ void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 	if (!m_pDlgTemplMgr->HasApplied())
 		return;
 
-	struct SFIELDS //Struct for fields.
-	{
+	struct SFIELDS { //Struct for fields.
 		POLYTEXTW stPoly { };
 		COLORREF  clrBk { };
 		COLORREF  clrText { };
@@ -3075,12 +3087,14 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 		};
 		const auto lmbHexSpaces = [&](const unsigned iterChunks) {
 			if (!wstrHexColorToPrint.empty()) { //Only adding spaces if there are chars beforehead.
-				if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0)
+				if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0) {
 					wstrHexColorToPrint += L' ';
+				}
 
 				//Additional space between capacity halves, only with SIZE_BYTE representation.
-				if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterChunks == m_dwCapacityBlockSize)
+				if (m_enGroupMode == EHexDataSize::SIZE_BYTE && iterChunks == m_dwCapacityBlockSize) {
 					wstrHexColorToPrint += L"  ";
+				}
 			}
 		};
 
@@ -3688,8 +3702,9 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const Span
 				if (ullSizeCache >= ullSizeToOperWith) {
 					ullSizeCache -= ullSizeCache % ullSizeToOperWith; //Aligning chunk size to ullSizeToOperWith.
 
-					if (ullSizeToModify < ullSizeCache)
+					if (ullSizeToModify < ullSizeCache) {
 						ullSizeCache = ullSizeToModify;
+					}
 					ullChunks = ullSizeToModify / ullSizeCache + ((ullSizeToModify % ullSizeCache) ? 1 : 0);
 				}
 				else {
@@ -3902,8 +3917,9 @@ void CHexCtrl::Print()
 		const auto iToPage = ppr.nToPage;
 		if (iFromPage <= ullTotalPages) { //Checks for out-of-range pages user input.
 			iPagesToPrint = iToPage - iFromPage;
-			if (iPagesToPrint + iFromPage > ullTotalPages)
+			if (iPagesToPrint + iFromPage > ullTotalPages) {
 				iPagesToPrint = static_cast<int>(ullTotalPages - iFromPage);
+			}
 		}
 		ullStartLine = iFromPage * iLinesInPage;
 	}
@@ -4215,9 +4231,9 @@ void CHexCtrl::SelAddDown()
 		}
 	};
 
-	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart
-		|| m_ullCaretPos == m_pSelection->GetSelEnd())
+	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_pSelection->GetSelEnd()) {
 		lmbSelection();
+	}
 	else {
 		ullClick = ullStart = m_ullCaretPos;
 		ullSize = 1;
@@ -4234,8 +4250,9 @@ void CHexCtrl::SelAddDown()
 
 		const auto stOld = IsOffsetVisible(ullOldPos);
 		const auto stNew = IsOffsetVisible(ullNewPos);
-		if (stNew.i8Vert != 0 && stOld.i8Vert == 0)
+		if (stNew.i8Vert != 0 && stOld.i8Vert == 0) {
 			m_pScrollV->ScrollLineDown();
+		}
 		Redraw();
 		OnCaretPosChange(GetCaretPos());
 	}
@@ -4266,10 +4283,9 @@ void CHexCtrl::SelAddLeft()
 		}
 	};
 
-	if (m_ullCaretPos == m_ullCursorPrev
-		|| m_ullCaretPos == ullSelStart
-		|| m_ullCaretPos == m_pSelection->GetSelEnd())
+	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_pSelection->GetSelEnd()) {
 		lmbSelection();
+	}
 	else {
 		ullClick = ullStart = m_ullCaretPos;
 		ullSize = 1;
@@ -4469,8 +4485,7 @@ void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 
 	//Bad alloc may happen here!!!
 	try {
-		for (const auto& iterSel : vecSpan) //vecSpan.size() amount of continuous areas to preserve.
-		{
+		for (const auto& iterSel : vecSpan) { //vecSpan.size() amount of continuous areas to preserve.
 			auto& refUNDO = refUndo->emplace_back(SUNDO { iterSel.ullOffset, { } });
 			refUNDO.vecData.resize(static_cast<size_t>(iterSel.ullSize));
 
@@ -4482,8 +4497,9 @@ void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 				ULONGLONG ullOffset { 0 };
 				while (ullChunks-- > 0) {
 					const auto ullSize = (ullChunks == 1 && ullMod > 0) ? ullMod : dwSizeChunk;
-					if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty())
+					if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty()) {
 						std::copy_n(spnData.data(), ullSize, refUNDO.vecData.data() + static_cast<std::size_t>(ullOffset));
+					}
 					ullOffset += ullSize;
 				}
 			}
@@ -4855,8 +4871,9 @@ void CHexCtrl::OnLButtonDblClk(UINT nFlags, CPoint point)
 		m_fLMousePressed = true;
 		m_ullCaretPos = optHit->ullOffset;
 		m_fCursorTextArea = optHit->fIsText;
-		if (!optHit->fIsText)
+		if (!optHit->fIsText) {
 			m_fCaretHigh = optHit->fIsHigh;
+		}
 
 		HEXSPAN hs;
 		if (nFlags & MK_SHIFT) {
