@@ -288,7 +288,7 @@ void CHexDlgSearch::HexCtrlHighlight(const VecSpan& vecSel)
 }
 
 template<std::uint16_t uCmpType>
-bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const
+bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize)const
 {
 	using enum ECmpType;
 	if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT8)) > 0) {

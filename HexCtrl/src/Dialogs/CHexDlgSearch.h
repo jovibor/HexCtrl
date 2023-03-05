@@ -37,7 +37,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
 		void HexCtrlHighlight(const VecSpan& vecSel); //Highlight found occurence in HexCtrl.
 		template<std::uint16_t uCmpType>
-		[[nodiscard]] bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, size_t nSize)const;
+		[[nodiscard]] bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize)const;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnButtonSearchF();

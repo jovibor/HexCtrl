@@ -1575,7 +1575,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 
 			SKEYBIND stRet { };
 			const auto nSize = sv.size();
-			size_t nPosStart { 0 }; //Next position to start search for '+' sign.
+			std::size_t nPosStart { 0 }; //Next position to start search for '+' sign.
 			const auto nSubWords = std::count(sv.begin(), sv.end(), '+') + 1; //How many sub-words (divided by '+')?
 			for (auto iterSubWords = 0; iterSubWords < nSubWords; ++iterSubWords) {
 				const auto nPosNext = sv.find('+', nPosStart);
@@ -2525,7 +2525,7 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 
 	const auto ullStartLine = ullSelStart / m_dwCapacity;
 	std::wstring wstrDataText;
-	size_t sIndexToPrint { };
+	std::size_t sIndexToPrint { };
 	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, static_cast<int>(dwLines));
 
 	for (DWORD iterLines = 0; iterLines < dwLines; ++iterLines) {
@@ -2670,15 +2670,15 @@ void CHexCtrl::DrawInfoBar(CDC* pDC)const
 	pDC->SelectObject(m_fontInfoBar);
 	pDC->SetBkColor(m_stColor.clrBkInfoBar);
 
-	size_t sCurrPosBegin { };
-	size_t sCurrPosEnd { };
+	std::size_t sCurrPosBegin { };
+	std::size_t sCurrPosEnd { };
 	while (sCurrPosBegin != std::wstring::npos) {
 		if (sCurrPosBegin = m_wstrInfoBar.find_first_of('^', sCurrPosBegin); sCurrPosBegin != std::wstring::npos) {
 			if (sCurrPosEnd = m_wstrInfoBar.find_first_of('^', sCurrPosBegin + 1); sCurrPosEnd != std::wstring::npos) {
-				const auto size = sCurrPosEnd - sCurrPosBegin - 1;
+				const auto iSize = static_cast<int>(sCurrPosEnd - sCurrPosBegin - 1);
 				pDC->SetTextColor(m_stColor.clrFontInfoParam);
-				pDC->DrawTextW(m_wstrInfoBar.data() + sCurrPosBegin + 1, static_cast<int>(size), rcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-				rcText.left += static_cast<long>(size * m_sizeFontInfo.cx);
+				pDC->DrawTextW(m_wstrInfoBar.data() + sCurrPosBegin + 1, iSize, rcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+				rcText.left += iSize * m_sizeFontInfo.cx;
 			}
 			sCurrPosBegin = sCurrPosEnd + 1;
 		}
@@ -2737,7 +2737,7 @@ void CHexCtrl::DrawHexText(CDC* pDC, int iLines, std::wstring_view wsvHex, std::
 	vecWstrText.reserve(static_cast<size_t>(iLines));
 
 	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
-	size_t sIndexToPrint { };
+	std::size_t sIndexToPrint { };
 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines) {
 		std::wstring wstrHexToPrint;  //Hex/Text wstrings to print.
@@ -2808,7 +2808,7 @@ void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 	std::vector<std::unique_ptr<std::wstring>> vecWstrFieldsHex; //unique_ptr to avoid wstring ptr invalidation.
 	std::vector<std::unique_ptr<std::wstring>> vecWstrFieldsText;
 	const auto ullStartOffset = ullStartLine * m_dwCapacity;
-	size_t sIndexToPrint { };
+	std::size_t sIndexToPrint { };
 	const HEXTEMPLATEFIELD* pFieldCurr { };
 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines) {
@@ -2950,7 +2950,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 	std::vector<std::unique_ptr<std::wstring>> vecWstrBkmHex; //unique_ptr to avoid wstring ptr invalidation.
 	std::vector<std::unique_ptr<std::wstring>> vecWstrBkmText;
 	const auto ullStartOffset = ullStartLine * m_dwCapacity;
-	size_t sIndexToPrint { };
+	std::size_t sIndexToPrint { };
 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines) {
 		std::wstring wstrHexBkmToPrint;
@@ -3146,7 +3146,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 	//Colors printing.
 	if (!vecColorsHex.empty()) {
 		pDC->SelectObject(m_fontMain);
-		size_t index { 0 }; //Index for vecColorsText, its size is always equal to vecColorsHex.
+		std::size_t index { 0 }; //Index for vecColorsText, its size is always equal to vecColorsHex.
 		for (const auto& iter : vecColorsHex) { //Loop is needed because of different colors.
 			pDC->SetTextColor(iter.clr.clrText);
 			pDC->SetBkColor(iter.clr.clrBk);

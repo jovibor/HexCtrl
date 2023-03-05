@@ -428,7 +428,7 @@ namespace HEXCTRL
 	* HEXCTRLINFO: service info structure.      *
 	********************************************/
 	struct HEXCTRLINFO {
-		const wchar_t* pwszVersion { };        //WCHAR version string.
+		const wchar_t* pwszVersion { };        //wchar_t version string.
 		union {
 			unsigned long long ullVersion { }; //ULONGLONG version number.
 			struct {
