@@ -36,8 +36,6 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
 		void HexCtrlHighlight(const VecSpan& vecSel); //Highlight found occurence in HexCtrl.
-		template<std::uint16_t uCmpType>
-		[[nodiscard]] bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize)const;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnButtonSearchF();
@@ -71,15 +69,19 @@ namespace HEXCTRL::INTERNAL
 		void ResetSearch();
 		void Search();
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
-		template<std::uint16_t uCmpType>
-		void ThreadRun(STHREADRUN* pStThread);
+		template<std::uint16_t uCmpType> void ThreadRun(STHREADRUN* pStThread);
 		void UpdateSearchReplaceControls();
+		template<std::uint16_t uCmpType>
+		[[nodiscard]] static bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize);
 		[[nodiscard]] static std::vector<std::byte> RangeToVecBytes(const std::string& str);
 		[[nodiscard]] static std::vector<std::byte> RangeToVecBytes(const std::wstring& wstr);
 		template<typename T>
 		[[nodiscard]] static std::vector<std::byte> RangeToVecBytes(T tData);
 		DECLARE_MESSAGE_MAP();
 	private:
+		static constexpr std::byte m_uWildcard { '?' }; //Wildcard symbol.
+		static constexpr auto m_pwszWrongInput { L"Wrong input data!" };
+		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
 		IHexCtrl* m_pHexCtrl { };
 		EMode m_eSearchMode { };
 		IListExPtr m_pListMain { CreateListEx() };
@@ -96,7 +98,6 @@ namespace HEXCTRL::INTERNAL
 		CEdit m_stEditStep;         //Edit box "Step".
 		CEdit m_stEditLimit;        //Edit box "Limit search hit".
 		CBrush m_stBrushDefault;
-		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
 		ULONGLONG m_ullBoundBegin { };       //Search start boundary.
 		ULONGLONG m_ullBoundEnd { };         //Search end boundary.
 		ULONGLONG m_ullOffsetCurr { };       //Current offset a search should start from.
@@ -112,10 +113,8 @@ namespace HEXCTRL::INTERNAL
 		std::vector<std::byte> m_vecReplaceData; //Data to replace with.
 		std::wstring m_wstrTextSearch;       //Text from "Search" box.
 		std::wstring m_wstrTextReplace;      //Text from "Replace with..." box.
-		const wchar_t* const m_pwszWrongInput { L"Wrong input data!" };
 		HEXSPAN m_stSelSpan { };             //Previous selection.
 		void(CHexDlgSearch::*m_pfnThread)(STHREADRUN* pThread); //Func pointer to the ThreadRun<> for the Search thread.
-		const std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		bool m_fSecondMatch { false };       //First or subsequent match. 
 		bool m_fFound { false };             //Found or not.
 		bool m_fDoCount { true };            //Do we count matches or just print "Found".

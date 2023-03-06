@@ -25,15 +25,15 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		DECLARE_MESSAGE_MAP()
 	private:
+		static constexpr UINT_PTR IDT_EXITCHECK { 0x1 };
 		CProgressCtrl m_stProgBar;
 		std::wstring m_wstrOperName { };
 		ULONGLONG m_ullProgBarMin { };
 		ULONGLONG m_ullProgBarCurr { };
 		ULONGLONG m_ullProgBarMax { };
-		ULONGLONG m_ullThousandth { };   //One thousandth part.
+		ULONGLONG m_ullThousandth { }; //One thousandth part.
 		bool m_fCancel { false };
-		const UINT_PTR IDT_EXITCHECK { 0x1 };
-		long long m_llTicks { 0LL }; //How many ticks have passed since dialog beginning.
-		int m_iTicksInSecond { };    //How many ticks in one second.
+		long long m_llTicks { 0LL };   //How many ticks have passed since dialog beginning.
+		int m_iTicksInSecond { };      //How many ticks in one second.
 	};
 }

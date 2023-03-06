@@ -287,72 +287,6 @@ void CHexDlgSearch::HexCtrlHighlight(const VecSpan& vecSel)
 	}
 }
 
-template<std::uint16_t uCmpType>
-bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize)const
-{
-	using enum ECmpType;
-	if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT8)) > 0) {
-		return *reinterpret_cast<const std::uint8_t*>(pBuf1) == *reinterpret_cast<const std::uint8_t*>(pBuf2);
-	}
-	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT16)) > 0) {
-		return *reinterpret_cast<const std::uint16_t*>(pBuf1) == *reinterpret_cast<const std::uint16_t*>(pBuf2);
-	}
-	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT32)) > 0) {
-		return *reinterpret_cast<const std::uint32_t*>(pBuf1) == *reinterpret_cast<const std::uint32_t*>(pBuf2);
-	}
-	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT64)) > 0) {
-		return *reinterpret_cast<const std::uint64_t*>(pBuf1) == *reinterpret_cast<const std::uint64_t*>(pBuf2);
-	}
-	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_CHAR_LOOP)) > 0) {
-		for (std::size_t i { 0 }; i < nSize; ++i, ++pBuf1, ++pBuf2) {
-			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0) {
-				if (*pBuf2 == m_uWildcard) //Checking for wildcard match.
-					continue;
-			}
-
-			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
-				auto ch = static_cast<char>(*pBuf1);
-				if (ch >= 0x41 && ch <= 0x5A) { //IsUpper.
-					ch += 32;
-				}
-
-				if (ch != static_cast<char>(*pBuf2))
-					return false;
-			}
-			else {
-				if (*pBuf1 != *pBuf2)
-					return false;
-			}
-		}
-		return true;
-	}
-	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)) > 0) {
-		auto pBuf1wch = reinterpret_cast<const wchar_t*>(pBuf1);
-		auto pBuf2wch = reinterpret_cast<const wchar_t*>(pBuf2);
-		for (std::size_t i { 0 }; i < (nSize / sizeof(wchar_t)); ++i, ++pBuf1wch, ++pBuf2wch) {
-			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0) {
-				if (*pBuf2wch == static_cast<wchar_t>(m_uWildcard)) //Checking for wildcard match.
-					continue;
-			}
-
-			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
-				auto wch = *pBuf1wch;
-				if (wch >= 0x41 && wch <= 0x5A) { //IsUpper.
-					wch += 32;
-				}
-
-				if (wch != *pBuf2wch)
-					return false;
-			}
-			else {
-				if (*pBuf1wch != *pBuf2wch)
-					return false;
-			}
-		}
-		return true;
-	}
-}
-
 BOOL CHexDlgSearch::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -1575,6 +1509,72 @@ void CHexDlgSearch::UpdateSearchReplaceControls()
 	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_FINDALL)->EnableWindow(fSearchEnabled);
 	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE)->EnableWindow(fReplaceEnabled);
 	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL)->EnableWindow(fReplaceEnabled);
+}
+
+template<std::uint16_t uCmpType>
+bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize)
+{
+	using enum ECmpType;
+	if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT8)) > 0) {
+		return *reinterpret_cast<const std::uint8_t*>(pBuf1) == *reinterpret_cast<const std::uint8_t*>(pBuf2);
+	}
+	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT16)) > 0) {
+		return *reinterpret_cast<const std::uint16_t*>(pBuf1) == *reinterpret_cast<const std::uint16_t*>(pBuf2);
+	}
+	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT32)) > 0) {
+		return *reinterpret_cast<const std::uint32_t*>(pBuf1) == *reinterpret_cast<const std::uint32_t*>(pBuf2);
+	}
+	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT64)) > 0) {
+		return *reinterpret_cast<const std::uint64_t*>(pBuf1) == *reinterpret_cast<const std::uint64_t*>(pBuf2);
+	}
+	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_CHAR_LOOP)) > 0) {
+		for (std::size_t i { 0 }; i < nSize; ++i, ++pBuf1, ++pBuf2) {
+			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0) {
+				if (*pBuf2 == m_uWildcard) //Checking for wildcard match.
+					continue;
+			}
+
+			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
+				auto ch = static_cast<char>(*pBuf1);
+				if (ch >= 0x41 && ch <= 0x5A) { //IsUpper.
+					ch += 32;
+				}
+
+				if (ch != static_cast<char>(*pBuf2))
+					return false;
+			}
+			else {
+				if (*pBuf1 != *pBuf2)
+					return false;
+			}
+		}
+		return true;
+	}
+	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)) > 0) {
+		auto pBuf1wch = reinterpret_cast<const wchar_t*>(pBuf1);
+		auto pBuf2wch = reinterpret_cast<const wchar_t*>(pBuf2);
+		for (std::size_t i { 0 }; i < (nSize / sizeof(wchar_t)); ++i, ++pBuf1wch, ++pBuf2wch) {
+			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0) {
+				if (*pBuf2wch == static_cast<wchar_t>(m_uWildcard)) //Checking for wildcard match.
+					continue;
+			}
+
+			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
+				auto wch = *pBuf1wch;
+				if (wch >= 0x41 && wch <= 0x5A) { //IsUpper.
+					wch += 32;
+				}
+
+				if (wch != *pBuf2wch)
+					return false;
+			}
+			else {
+				if (*pBuf1wch != *pBuf2wch)
+					return false;
+			}
+		}
+		return true;
+	}
 }
 
 std::vector<std::byte> CHexDlgSearch::RangeToVecBytes(const std::string& str)
