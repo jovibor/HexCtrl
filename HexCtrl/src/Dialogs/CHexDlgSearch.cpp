@@ -214,7 +214,7 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnS
 	if (ullStart + nSizeSearch > m_ullSizeSentinel)
 		return { false, false };
 
-	constexpr auto iSizeQuick { 1024 * 256 }; //256KB.
+	constexpr auto iSizeQuick { 1024 * 1024 * 10 }; //10MB.
 	const auto ullSizeTotal = m_ullSizeSentinel - (fForward ? ullStart : ullEnd); //Depends on search direction.
 	const auto pHexCtrl = GetHexCtrl();
 	const auto ullStep = m_ullStep; //Search step.
