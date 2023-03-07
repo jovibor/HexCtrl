@@ -37,8 +37,6 @@ namespace HEXCTRL::INTERNAL
 	constexpr auto WSTR_HEXCTRL_FULL_VERSION = HEXCTRL_FULL_VERSION_RAW L" (x86)";
 #endif
 
-	using namespace stn; //To enable StrTo* methods internally.
-
 	//Time calculation constants and structs.
 	constexpr auto g_uFTTicksPerMS = 10000U;             //Number of 100ns intervals in a milli-second
 	constexpr auto g_uFTTicksPerSec = 10000000UL;        //Number of 100ns intervals in a second

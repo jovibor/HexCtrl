@@ -173,7 +173,7 @@ void CHexDlgOpers::OnOK()
 		if (pwszEditText[0] == L'\0') { //Edit field emptiness check.
 			wstrErr = L"Missing Operand!";
 		}
-		else if (const auto optData = StrToLL(pwszEditText); !optData) {
+		else if (const auto optData = stn::StrToLL(pwszEditText); !optData) {
 			wstrErr = L"Wrong number format!";
 		}
 		else if (llData = *optData; hms.enOperMode == OPER_DIV && llData == 0) { //Division by zero check.

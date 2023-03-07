@@ -181,14 +181,14 @@ void CHexDlgBkmMgr::OnBtnSave()
 
 	CStringW cstr;
 	m_editOffset.GetWindowTextW(cstr);
-	const auto optOffset = StrToULL(cstr.GetString());
+	const auto optOffset = stn::StrToULL(cstr.GetString());
 	if (!optOffset) {
 		MessageBoxW(L"Invalid offset format.", L"Format error", MB_ICONERROR);
 		return;
 	}
 
 	m_editSize.GetWindowTextW(cstr);
-	const auto optSize = StrToULL(cstr.GetString());
+	const auto optSize = stn::StrToULL(cstr.GetString());
 	if (!optSize) {
 		MessageBoxW(L"Invalid size format.", L"Format error", MB_ICONERROR);
 		return;
@@ -669,33 +669,34 @@ void CHexDlgBkmMgr::SortData(int iColumn, bool fAscending)
 	std::sort(m_deqBookmarks.begin(), m_deqBookmarks.end(),
 		[iColumn, fAscending](const HEXBKM& st1, const HEXBKM& st2) {
 			int iCompare { };
-	switch (iColumn) {
-	case 0:
-		break;
-	case 1: //Offset.
-		if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
-			const auto ullOffset1 = st1.vecSpan.front().ullOffset;
-			const auto ullOffset2 = st2.vecSpan.front().ullOffset;
-			iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
-		}
-		break;
-	case 2: //Size.
-		if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
-			auto ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
-				[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
-			auto ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
-				[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
-			iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
-		}
-		break;
-	case 3: //Description.
-		iCompare = st1.wstrDesc.compare(st2.wstrDesc);
-		break;
-	default:
-		break;
-	}
+			switch (iColumn) {
+			case 0:
+				break;
+			case 1: //Offset.
+				if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
+					const auto ullOffset1 = st1.vecSpan.front().ullOffset;
+					const auto ullOffset2 = st2.vecSpan.front().ullOffset;
+					iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
+				}
+				break;
+			case 2: //Size.
+				if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
+					auto ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
+						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+					auto ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
+						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+					iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
+				}
+				break;
+			case 3: //Description.
+				iCompare = st1.wstrDesc.compare(st2.wstrDesc);
+				break;
+			default:
+				break;
+			}
 
-	return fAscending ? iCompare < 0 : iCompare > 0; });
+			return fAscending ? iCompare < 0 : iCompare > 0;
+		});
 }
 
 void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm)

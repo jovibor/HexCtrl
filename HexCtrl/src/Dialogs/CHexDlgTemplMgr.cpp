@@ -251,7 +251,7 @@ void CHexDlgTemplMgr::OnBnApply()
 	if (wstrText.IsEmpty())
 		return;
 
-	const auto opt = StrToULL(wstrText.GetString());
+	const auto opt = stn::StrToULL(wstrText.GetString());
 	if (!opt)
 		return;
 
@@ -608,22 +608,22 @@ void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			fSetRet = true;
 			switch (pField->iSize) {
 			case 1:
-				if (const auto opt = StrToUChar(pwszText); opt) {
+				if (const auto opt = stn::StrToUChar(pwszText); opt) {
 					SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
 				}
 				break;
 			case 2:
-				if (const auto opt = StrToUShort(pwszText); opt) {
+				if (const auto opt = stn::StrToUShort(pwszText); opt) {
 					SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
 				}
 				break;
 			case 4:
-				if (const auto opt = StrToUInt(pwszText); opt) {
+				if (const auto opt = stn::StrToUInt(pwszText); opt) {
 					SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
 				}
 				break;
 			case 8:
-				if (const auto opt = StrToULL(pwszText); opt) {
+				if (const auto opt = stn::StrToULL(pwszText); opt) {
 					SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
 				}
 				break;
@@ -1166,7 +1166,7 @@ void CHexDlgTemplMgr::ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwa
 bool CHexDlgTemplMgr::SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset) const
 {
 	if (m_fShowAsHex) {
-		if (const auto opt = StrToUChar(pwszText); opt) {
+		if (const auto opt = stn::StrToUChar(pwszText); opt) {
 			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
 			return true;
 		}
@@ -1195,13 +1195,13 @@ bool CHexDlgTemplMgr::SetDataChar(LPCWSTR pwszText, ULONGLONG ullOffset)const
 	//Otherwise, setting a values like 0xFF in hex mode would be impossible, because such values
 	//are bigger then `signed` type's max value, they can't be converted to it.
 	if (m_fShowAsHex) {
-		if (const auto opt = StrToUChar(pwszText); opt) {
+		if (const auto opt = stn::StrToUChar(pwszText); opt) {
 			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto opt = StrToChar(pwszText); opt) {
+		if (const auto opt = stn::StrToChar(pwszText); opt) {
 			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
 			return true;
 		}
@@ -1211,7 +1211,7 @@ bool CHexDlgTemplMgr::SetDataChar(LPCWSTR pwszText, ULONGLONG ullOffset)const
 
 bool CHexDlgTemplMgr::SetDataUChar(LPCWSTR pwszText, ULONGLONG ullOffset)const
 {
-	if (const auto opt = StrToUChar(pwszText); opt) {
+	if (const auto opt = stn::StrToUChar(pwszText); opt) {
 		SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
 		return true;
 	}
@@ -1221,7 +1221,7 @@ bool CHexDlgTemplMgr::SetDataUChar(LPCWSTR pwszText, ULONGLONG ullOffset)const
 bool CHexDlgTemplMgr::SetDataShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (m_fShowAsHex) {
-		if (auto opt = StrToUShort(pwszText); opt) {
+		if (auto opt = stn::StrToUShort(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}
@@ -1230,7 +1230,7 @@ bool CHexDlgTemplMgr::SetDataShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool f
 		}
 	}
 	else {
-		if (auto opt = StrToShort(pwszText); opt) {
+		if (auto opt = stn::StrToShort(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}
@@ -1243,7 +1243,7 @@ bool CHexDlgTemplMgr::SetDataShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool f
 
 bool CHexDlgTemplMgr::SetDataUShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	if (auto opt = StrToUShort(pwszText); opt) {
+	if (auto opt = stn::StrToUShort(pwszText); opt) {
 		if (fShouldSwap) {
 			*opt = ByteSwap(*opt);
 		}
@@ -1256,7 +1256,7 @@ bool CHexDlgTemplMgr::SetDataUShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 bool CHexDlgTemplMgr::SetDataInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (m_fShowAsHex) {
-		if (auto opt = StrToUInt(pwszText); opt) {
+		if (auto opt = stn::StrToUInt(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}
@@ -1265,7 +1265,7 @@ bool CHexDlgTemplMgr::SetDataInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fSh
 		}
 	}
 	else {
-		if (auto opt = StrToNum<int>(pwszText); opt) {
+		if (auto opt = stn::StrToNum<int>(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}
@@ -1278,7 +1278,7 @@ bool CHexDlgTemplMgr::SetDataInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fSh
 
 bool CHexDlgTemplMgr::SetDataUInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	if (auto opt = StrToUInt(pwszText); opt) {
+	if (auto opt = stn::StrToUInt(pwszText); opt) {
 		if (fShouldSwap) {
 			*opt = ByteSwap(*opt);
 		}
@@ -1291,7 +1291,7 @@ bool CHexDlgTemplMgr::SetDataUInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fS
 bool CHexDlgTemplMgr::SetDataLL(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (m_fShowAsHex) {
-		if (auto opt = StrToULL(pwszText); opt) {
+		if (auto opt = stn::StrToULL(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}
@@ -1300,7 +1300,7 @@ bool CHexDlgTemplMgr::SetDataLL(LPCWSTR pwszText, ULONGLONG ullOffset, bool fSho
 		}
 	}
 	else {
-		if (auto opt = StrToLL(pwszText); opt) {
+		if (auto opt = stn::StrToLL(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}
@@ -1313,7 +1313,7 @@ bool CHexDlgTemplMgr::SetDataLL(LPCWSTR pwszText, ULONGLONG ullOffset, bool fSho
 
 bool CHexDlgTemplMgr::SetDataULL(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	if (auto opt = StrToULL(pwszText); opt) {
+	if (auto opt = stn::StrToULL(pwszText); opt) {
 		if (fShouldSwap) {
 			*opt = ByteSwap(*opt);
 		}
@@ -1328,7 +1328,7 @@ bool CHexDlgTemplMgr::SetDataFloat(LPCWSTR pwszText, ULONGLONG ullOffset, bool f
 	//Convert hex text to float is impossible, therefore we convert it to
 	//unsigned type of the same size - uint.
 	if (m_fShowAsHex) {
-		if (auto opt = StrToUInt(pwszText); opt) {
+		if (auto opt = stn::StrToUInt(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}
@@ -1337,7 +1337,7 @@ bool CHexDlgTemplMgr::SetDataFloat(LPCWSTR pwszText, ULONGLONG ullOffset, bool f
 		}
 	}
 	else {
-		if (auto opt = StrToFloat(pwszText); opt) {
+		if (auto opt = stn::StrToFloat(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}
@@ -1353,7 +1353,7 @@ bool CHexDlgTemplMgr::SetDataDouble(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 	//Convert hex text to double is impossible, therefore we convert it to
 	//unsigned type of the same size - ULL.
 	if (m_fShowAsHex) {
-		if (auto opt = StrToULL(pwszText); opt) {
+		if (auto opt = stn::StrToULL(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}
@@ -1362,7 +1362,7 @@ bool CHexDlgTemplMgr::SetDataDouble(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 		}
 	}
 	else {
-		if (auto opt = StrToDouble(pwszText); opt) {
+		if (auto opt = stn::StrToDouble(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}
@@ -1376,7 +1376,7 @@ bool CHexDlgTemplMgr::SetDataDouble(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 bool CHexDlgTemplMgr::SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (m_fShowAsHex) {
-		if (auto opt = StrToUInt(pwszText); opt) {
+		if (auto opt = stn::StrToUInt(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}
@@ -1423,7 +1423,7 @@ bool CHexDlgTemplMgr::SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 bool CHexDlgTemplMgr::SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (m_fShowAsHex) {
-		if (auto opt = StrToULL(pwszText); opt) {
+		if (auto opt = stn::StrToULL(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}
@@ -1468,7 +1468,7 @@ bool CHexDlgTemplMgr::SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 bool CHexDlgTemplMgr::SetDataFILETIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (m_fShowAsHex) {
-		if (auto opt = StrToULL(pwszText); opt) {
+		if (auto opt = stn::StrToULL(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
 			}
@@ -2281,9 +2281,9 @@ auto CHexDlgTemplMgr::JSONColors(const rapidjson::Value& value, const char* pszC
 	if (sv.empty() || sv.size() != 7 || sv[0] != '#')
 		return std::nullopt;
 
-	const auto R = *StrToUInt(sv.substr(1, 2), 16);
-	const auto G = *StrToUInt(sv.substr(3, 2), 16);
-	const auto B = *StrToUInt(sv.substr(5, 2), 16);
+	const auto R = *stn::StrToUInt(sv.substr(1, 2), 16);
+	const auto G = *stn::StrToUInt(sv.substr(3, 2), 16);
+	const auto B = *stn::StrToUInt(sv.substr(5, 2), 16);
 
 	return RGB(R, G, B);
 }

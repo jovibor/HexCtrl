@@ -11,7 +11,6 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	using namespace LISTEX;
 	class CHexDlgSearch final : public CDialogEx
 	{
 	public:
@@ -84,7 +83,7 @@ namespace HEXCTRL::INTERNAL
 		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
 		IHexCtrl* m_pHexCtrl { };
 		EMode m_eSearchMode { };
-		IListExPtr m_pListMain { CreateListEx() };
+		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
 		std::vector<ULONGLONG> m_vecSearchRes { }; //Search results.
 		CMenu m_stMenuList;         //Menu for the list control.
 		CComboBox m_stComboSearch;  //Combo box "Search".

@@ -31,7 +31,7 @@ namespace HEXCTRL::INTERNAL
 			//Extract two current wchars and pass it to StringToNum as wstring.
 			const std::size_t nOffsetCurr = iterBegin - wsv.begin();
 			const auto nSize = nOffsetCurr + 2 <= wsv.size() ? 2 : 1;
-			if (const auto optNumber = StrToUChar(wsv.substr(nOffsetCurr, nSize), 16); optNumber) {
+			if (const auto optNumber = stn::StrToUChar(wsv.substr(nOffsetCurr, nSize), 16); optNumber) {
 				iterBegin += nSize;
 				strHexTmp += *optNumber;
 			}

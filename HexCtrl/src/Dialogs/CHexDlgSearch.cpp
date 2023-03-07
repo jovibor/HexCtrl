@@ -635,7 +635,7 @@ void CHexDlgSearch::Prepare()
 		if (wstrStart.IsEmpty()) {
 			m_ullOffsetCurr = 0;
 		}
-		else if (const auto optStart = StrToULL(wstrStart.GetString()); optStart) {
+		else if (const auto optStart = stn::StrToULL(wstrStart.GetString()); optStart) {
 			if (*optStart >= ullDataSize) {
 				MessageBoxW(L"\"Start search at\" offset is bigger than the data size!", L"Incorrect offset", MB_ICONERROR);
 				return;
@@ -649,7 +649,7 @@ void CHexDlgSearch::Prepare()
 	//Step.
 	CStringW wstrStep;
 	m_stEditStep.GetWindowTextW(wstrStep);
-	if (const auto optStep = StrToULL(wstrStep.GetString()); optStep) {
+	if (const auto optStep = stn::StrToULL(wstrStep.GetString()); optStep) {
 		m_ullStep = *optStep;
 	}
 	else
@@ -658,7 +658,7 @@ void CHexDlgSearch::Prepare()
 	//Limit.
 	CStringW wstrLimit;
 	m_stEditLimit.GetWindowTextW(wstrLimit);
-	if (const auto optLimit = StrToUInt(wstrLimit.GetString()); optLimit) {
+	if (const auto optLimit = stn::StrToUInt(wstrLimit.GetString()); optLimit) {
 		m_dwFoundLimit = *optLimit;
 	}
 	else
@@ -878,7 +878,7 @@ bool CHexDlgSearch::PrepareINT8()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	const auto optData = StrToUChar(m_wstrTextSearch);
+	const auto optData = stn::StrToUChar(m_wstrTextSearch);
 	if (!optData) {
 		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
@@ -886,7 +886,7 @@ bool CHexDlgSearch::PrepareINT8()
 	m_vecSearchData = RangeToVecBytes(*optData);
 
 	if (m_fReplace) {
-		const auto optDataRepl = StrToUChar(m_wstrTextReplace);
+		const auto optDataRepl = stn::StrToUChar(m_wstrTextReplace);
 		if (!optDataRepl) {
 			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			return false;
@@ -904,7 +904,7 @@ bool CHexDlgSearch::PrepareINT16()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	const auto optData = StrToUShort(m_wstrTextSearch);
+	const auto optData = stn::StrToUShort(m_wstrTextSearch);
 	if (!optData) {
 		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
@@ -913,7 +913,7 @@ bool CHexDlgSearch::PrepareINT16()
 	unsigned short wDataRep { 0 };
 
 	if (m_fReplace) {
-		const auto optDataRepl = StrToUShort(m_wstrTextReplace);
+		const auto optDataRepl = stn::StrToUShort(m_wstrTextReplace);
 		if (!optDataRepl) {
 			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			return false;
@@ -939,7 +939,7 @@ bool CHexDlgSearch::PrepareINT32()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	const auto optData = StrToUInt(m_wstrTextSearch);
+	const auto optData = stn::StrToUInt(m_wstrTextSearch);
 	if (!optData) {
 		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
@@ -948,7 +948,7 @@ bool CHexDlgSearch::PrepareINT32()
 	unsigned int dwDataRep { 0 };
 
 	if (m_fReplace) {
-		const auto optDataRepl = StrToUInt(m_wstrTextReplace);
+		const auto optDataRepl = stn::StrToUInt(m_wstrTextReplace);
 		if (!optDataRepl) {
 			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			return false;
@@ -974,7 +974,7 @@ bool CHexDlgSearch::PrepareINT64()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	const auto optData = StrToULL(m_wstrTextSearch);
+	const auto optData = stn::StrToULL(m_wstrTextSearch);
 	if (!optData) {
 		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
@@ -983,7 +983,7 @@ bool CHexDlgSearch::PrepareINT64()
 	unsigned long long ullDataRep { 0 };
 
 	if (m_fReplace) {
-		const auto optDataRepl = StrToULL(m_wstrTextReplace);
+		const auto optDataRepl = stn::StrToULL(m_wstrTextReplace);
 		if (!optDataRepl) {
 			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			return false;
@@ -1008,7 +1008,7 @@ bool CHexDlgSearch::PrepareFloat()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	const auto optData = StrToFloat(m_wstrTextSearch);
+	const auto optData = stn::StrToFloat(m_wstrTextSearch);
 	if (!optData) {
 		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
@@ -1017,7 +1017,7 @@ bool CHexDlgSearch::PrepareFloat()
 	float flDataRep { 0.0F };
 
 	if (m_fReplace) {
-		const auto optDataRepl = StrToFloat(m_wstrTextReplace);
+		const auto optDataRepl = stn::StrToFloat(m_wstrTextReplace);
 		if (!optDataRepl) {
 			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			return false;
@@ -1043,7 +1043,7 @@ bool CHexDlgSearch::PrepareDouble()
 {
 	m_fMatchCase = false;
 	m_fWildcard = false;
-	const auto optData = StrToDouble(m_wstrTextSearch);
+	const auto optData = stn::StrToDouble(m_wstrTextSearch);
 	if (!optData) {
 		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
@@ -1052,7 +1052,7 @@ bool CHexDlgSearch::PrepareDouble()
 	double dblDataRep { 0.0F };
 
 	if (m_fReplace) {
-		const auto optDataRepl = StrToDouble(m_wstrTextReplace);
+		const auto optDataRepl = stn::StrToDouble(m_wstrTextReplace);
 		if (!optDataRepl) {
 			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			return false;

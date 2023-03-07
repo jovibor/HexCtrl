@@ -806,7 +806,7 @@ bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
 	if (wsv.size() != 8 || wsv.find_first_not_of(L"01") != std::wstring_view::npos)
 		return false;
 
-	const auto optData = StrToUChar(wsv, 2);
+	const auto optData = stn::StrToUChar(wsv, 2);
 	if (!optData)
 		return false;
 
@@ -817,13 +817,13 @@ bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataChar(std::wstring_view wsv)const
 {
 	if (m_fShowAsHex) {
-		if (auto opt = StrToUChar(wsv); opt) {
+		if (auto opt = stn::StrToUChar(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto optData = StrToChar(wsv); optData) {
+		if (const auto optData = stn::StrToChar(wsv); optData) {
 			SetTData(*optData);
 			return true;
 		}
@@ -833,7 +833,7 @@ bool CHexDlgDataInterp::SetDataChar(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataUChar(std::wstring_view wsv)const
 {
-	const auto optData = StrToUChar(wsv);
+	const auto optData = stn::StrToUChar(wsv);
 	if (!optData)
 		return false;
 
@@ -844,13 +844,13 @@ bool CHexDlgDataInterp::SetDataUChar(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataShort(std::wstring_view wsv)const
 {
 	if (m_fShowAsHex) {
-		if (auto opt = StrToUShort(wsv); opt) {
+		if (auto opt = stn::StrToUShort(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto optData = StrToShort(wsv); optData) {
+		if (const auto optData = stn::StrToShort(wsv); optData) {
 			SetTData(*optData);
 			return true;
 		}
@@ -860,7 +860,7 @@ bool CHexDlgDataInterp::SetDataShort(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataUShort(std::wstring_view wsv)const
 {
-	const auto optData = StrToUShort(wsv);
+	const auto optData = stn::StrToUShort(wsv);
 	if (!optData)
 		return false;
 
@@ -871,13 +871,13 @@ bool CHexDlgDataInterp::SetDataUShort(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataInt(std::wstring_view wsv)const
 {
 	if (m_fShowAsHex) {
-		if (auto opt = StrToUInt(wsv); opt) {
+		if (auto opt = stn::StrToUInt(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto optData = StrToNum<int>(wsv); optData) {
+		if (const auto optData = stn::StrToNum<int>(wsv); optData) {
 			SetTData(*optData);
 			return true;
 		}
@@ -887,7 +887,7 @@ bool CHexDlgDataInterp::SetDataInt(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataUInt(std::wstring_view wsv)const
 {
-	const auto optData = StrToUInt(wsv);
+	const auto optData = stn::StrToUInt(wsv);
 	if (!optData)
 		return false;
 
@@ -898,13 +898,13 @@ bool CHexDlgDataInterp::SetDataUInt(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataLL(std::wstring_view wsv)const
 {
 	if (m_fShowAsHex) {
-		if (auto opt = StrToULL(wsv); opt) {
+		if (auto opt = stn::StrToULL(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto optData = StrToLL(wsv); optData) {
+		if (const auto optData = stn::StrToLL(wsv); optData) {
 			SetTData(*optData);
 			return true;
 		}
@@ -914,7 +914,7 @@ bool CHexDlgDataInterp::SetDataLL(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataULL(std::wstring_view wsv)const
 {
-	const auto optData = StrToULL(wsv);
+	const auto optData = stn::StrToULL(wsv);
 	if (!optData)
 		return false;
 
@@ -925,13 +925,13 @@ bool CHexDlgDataInterp::SetDataULL(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataFloat(std::wstring_view wsv)const
 {
 	if (m_fShowAsHex) {
-		if (auto opt = StrToUInt(wsv); opt) {
+		if (auto opt = stn::StrToUInt(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto opt = StrToFloat(wsv); opt) {
+		if (const auto opt = stn::StrToFloat(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
@@ -943,13 +943,13 @@ bool CHexDlgDataInterp::SetDataFloat(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataDouble(std::wstring_view wsv)const
 {
 	if (m_fShowAsHex) {
-		if (auto opt = StrToULL(wsv); opt) {
+		if (auto opt = stn::StrToULL(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto opt = StrToDouble(wsv); opt) {
+		if (const auto opt = stn::StrToDouble(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
