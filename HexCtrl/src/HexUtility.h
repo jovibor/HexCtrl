@@ -47,9 +47,9 @@ namespace HEXCTRL::INTERNAL
 	constexpr auto g_ulFileTime1970_HIGH = 0x019db1deUL; //Used for Unix and Java times
 	constexpr auto g_ullUnixEpochDiff = 11644473600ULL;  //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970
 
-	//Converts every two numeric wchars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A)
-	//fWc means that wildcards are allowed, chWc - the wildcard.
-	[[nodiscard]] auto NumStrToHex(std::wstring_view wsv, bool fWc = false, char chWc = '?') -> std::optional<std::string>;
+	//Converts every two numeric wchars to one respective hex character: "56"->V(0x56), "7A"->z(0x7A), etc...
+	//chWc - a wildcard if any.
+	[[nodiscard]] auto NumStrToHex(std::wstring_view wsv, char chWc = 0) -> std::optional<std::string>;
 
 	//Wide to Multibyte string convertion.
 	[[nodiscard]] auto WstrToStr(std::wstring_view wsv, UINT uCodePage = CP_UTF8) -> std::string;

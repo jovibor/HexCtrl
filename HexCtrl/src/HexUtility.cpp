@@ -11,11 +11,14 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	auto NumStrToHex(std::wstring_view wsv, bool fWc, char chWc) -> std::optional<std::string>
+	auto NumStrToHex(std::wstring_view wsv, char chWc) -> std::optional<std::string>
 	{
+		const auto fWc = chWc != 0; //Is wildcard used?
 		std::wstring wstrFilter = L"0123456789AaBbCcDdEeFf"; //Allowed characters.
-		if (fWc)
+
+		if (fWc) {
 			wstrFilter += chWc;
+		}
 
 		if (wsv.find_first_not_of(wstrFilter) != std::wstring_view::npos)
 			return std::nullopt;
@@ -70,7 +73,7 @@ namespace HEXCTRL::INTERNAL
 		return optFT;
 	}
 
-	auto StringToSystemTime(const std::wstring_view wsv, const DWORD dwFormat) -> std::optional<SYSTEMTIME>
+	auto StringToSystemTime(std::wstring_view wsv, DWORD dwFormat) -> std::optional<SYSTEMTIME>
 	{
 		//dwFormat is a locale specific date format https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 
@@ -119,15 +122,11 @@ namespace HEXCTRL::INTERNAL
 
 	auto FileTimeToString(FILETIME stFileTime, DWORD dwFormat, wchar_t wchSepar) -> std::wstring
 	{
-		std::wstring wstrTime;
 		if (SYSTEMTIME stSysTime { }; FileTimeToSystemTime(&stFileTime, &stSysTime) != FALSE) {
-			wstrTime = SystemTimeToString(stSysTime, dwFormat, wchSepar);
-		}
-		else {
-			wstrTime = L"N/A";
+			return SystemTimeToString(stSysTime, dwFormat, wchSepar);
 		}
 
-		return wstrTime;
+		return L"N/A";
 	}
 
 	auto SystemTimeToString(SYSTEMTIME stSysTime, DWORD dwFormat, wchar_t wchSepar) -> std::wstring

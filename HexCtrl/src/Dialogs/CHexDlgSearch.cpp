@@ -769,7 +769,7 @@ bool CHexDlgSearch::PrepareHexBytes()
 {
 	constexpr auto pwszWrongInput { L"Unacceptable input character.\r\nAllowed characters are: 0123456789AaBbCcDdEeFf" };
 	m_fMatchCase = false;
-	auto optData = NumStrToHex(m_wstrTextSearch, m_fWildcard, static_cast<char>(m_uWildcard));
+	auto optData = NumStrToHex(m_wstrTextSearch, m_fWildcard ? static_cast<char>(m_uWildcard) : 0);
 	if (!optData) {
 		m_iWrap = 1;
 		MessageBoxW(pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
