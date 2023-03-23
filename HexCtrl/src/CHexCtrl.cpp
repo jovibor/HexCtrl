@@ -204,8 +204,8 @@ void CHexCtrl::ClearData()
 	m_ullCaretPos = 0;
 	m_ullCursorNow = 0;
 
-	m_deqUndo.clear();
-	m_deqRedo.clear();
+	m_vecUndo.clear();
+	m_vecRedo.clear();
 	m_pScrollV->SetScrollPos(0);
 	m_pScrollH->SetScrollPos(0);
 	m_pScrollV->SetScrollSizes(0, 0, 0);
@@ -945,10 +945,10 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		fAvail = fMutable && fSelection;
 		break;
 	case CMD_MODIFY_UNDO:
-		fAvail = !m_deqUndo.empty();
+		fAvail = !m_vecUndo.empty();
 		break;
 	case CMD_MODIFY_REDO:
-		fAvail = !m_deqRedo.empty();
+		fAvail = !m_vecRedo.empty();
 		break;
 	case CMD_BKM_ADD:
 	case CMD_CARET_RIGHT:
@@ -1071,7 +1071,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	if (!IsMutable() || hms.vecSpan.empty())
 		return;
 
-	m_deqRedo.clear(); //No Redo unless we make Undo.
+	m_vecRedo.clear(); //No Redo unless we make Undo.
 	SnapshotUndo(hms.vecSpan);
 
 	SetRedraw(false);
@@ -4110,10 +4110,10 @@ void CHexCtrl::RecalcClientArea(int iHeight, int iWidth)
 
 void CHexCtrl::Redo()
 {
-	if (m_deqRedo.empty())
+	if (m_vecRedo.empty())
 		return;
 
-	const auto& refRedo = m_deqRedo.back();
+	const auto& refRedo = m_vecRedo.back();
 
 	VecSpan vecSpan;
 	std::transform(refRedo->begin(), refRedo->end(), std::back_inserter(vecSpan),
@@ -4148,7 +4148,7 @@ void CHexCtrl::Redo()
 		}
 	}
 
-	m_deqRedo.pop_back();
+	m_vecRedo.pop_back();
 	OnModifyData();
 	RedrawWindow();
 }
@@ -4466,7 +4466,7 @@ void CHexCtrl::SetFontSize(long lSize)
 
 void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 {
-	constexpr auto dwUndoMax { 500U }; //How many Undo states to preserve.
+	constexpr auto dwUndoMax { 512U }; //Undo's max limit.
 	const auto ullTotalSize = std::accumulate(vecSpan.begin(), vecSpan.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPAN& ref) { return ullSumm + ref.ullSize; });
 
@@ -4474,14 +4474,15 @@ void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 	if (ullTotalSize > 1024 * 1024 * 10)
 		return;
 
-	//If Undo deque size is exceeding max limit,
-	//remove first snapshot from the beginning (the oldest one).
-	if (m_deqUndo.size() > static_cast<size_t>(dwUndoMax)) {
-		m_deqUndo.pop_front();
+	//If Undo vec's size is exceeding Undo's max limit, remove first 64 snapshots (the oldest ones).
+	if (m_vecUndo.size() >= static_cast<std::size_t>(dwUndoMax)) {
+		const auto iterFirst = m_vecUndo.begin();
+		const auto iterLast = iterFirst + 64U;
+		m_vecUndo.erase(iterFirst, iterLast);
 	}
 
 	//Making new Undo data snapshot.
-	const auto& refUndo = m_deqUndo.emplace_back(std::make_unique<std::vector<SUNDO>>());
+	const auto& refUndo = m_vecUndo.emplace_back(std::make_unique<std::vector<SUNDO>>());
 
 	//Bad alloc may happen here!!!
 	try {
@@ -4511,8 +4512,8 @@ void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 		}
 	}
 	catch (const std::bad_alloc&) {
-		m_deqUndo.clear();
-		m_deqRedo.clear();
+		m_vecUndo.clear();
+		m_vecRedo.clear();
 		return;
 	}
 }
@@ -4582,16 +4583,16 @@ void CHexCtrl::ToolTipOffsetShow(bool fShow)
 
 void CHexCtrl::Undo()
 {
-	if (m_deqUndo.empty())
+	if (m_vecUndo.empty())
 		return;
 
 	//Bad alloc may happen here!!!
 	//If there is no more free memory, just clear the vec and return.
 	try {
 		//Making new Redo data snapshot.
-		const auto& refRedo = m_deqRedo.emplace_back(std::make_unique<std::vector<SUNDO>>());
+		const auto& refRedo = m_vecRedo.emplace_back(std::make_unique<std::vector<SUNDO>>());
 
-		for (const auto& iter : *m_deqUndo.back()) {
+		for (const auto& iter : *m_vecUndo.back()) {
 			auto& refRedoBack = refRedo->emplace_back(SUNDO { iter.ullOffset, { } });
 			refRedoBack.vecData.resize(iter.vecData.size());
 			const auto& refUndoData = iter.vecData;
@@ -4622,11 +4623,11 @@ void CHexCtrl::Undo()
 		}
 	}
 	catch (const std::bad_alloc&) {
-		m_deqRedo.clear();
+		m_vecRedo.clear();
 		return;
 	}
 
-	m_deqUndo.pop_back();
+	m_vecUndo.pop_back();
 	OnModifyData();
 	RedrawWindow();
 }

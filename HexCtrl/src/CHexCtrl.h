@@ -8,10 +8,10 @@
 #include "../HexCtrl.h"
 #include <afxwin.h>      //MFC core and standard components.
 #include <algorithm>
-#include <deque>
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace HEXCTRL::INTERNAL
 {
@@ -278,8 +278,8 @@ namespace HEXCTRL::INTERNAL
 		std::wstring m_wstrInfoBar { };       //Info bar text.
 		std::wstring m_wstrPageName { };      //Name of the sector/page.
 		std::wstring m_wstrTextTitle { };     //Text area title.
-		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqUndo; //Undo deque.
-		std::deque<std::unique_ptr<std::vector<SUNDO>>> m_deqRedo; //Redo deque.
+		std::vector<std::unique_ptr<std::vector<SUNDO>>> m_vecUndo; //Undo data.
+		std::vector<std::unique_ptr<std::vector<SUNDO>>> m_vecRedo; //Redo data.
 		std::vector < std::unique_ptr < std::remove_pointer<HBITMAP>::type,
 			decltype([](const HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP { }; //Icons for the Menu.
 		std::vector<SKEYBIND> m_vecKeyBind { }; //Vector of key bindings.

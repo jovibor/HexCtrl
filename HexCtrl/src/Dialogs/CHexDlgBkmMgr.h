@@ -8,7 +8,7 @@
 #include "../../dep/ListEx/ListEx.h"
 #include "../../HexCtrl.h"
 #include <afxdialogex.h>
-#include <deque>
+#include <vector>
 
 namespace HEXCTRL::INTERNAL
 {
@@ -58,7 +58,7 @@ namespace HEXCTRL::INTERNAL
 		void SortBookmarks();
 		DECLARE_MESSAGE_MAP();
 	private:
-		std::deque<HEXBKM> m_deqBookmarks;
+		std::vector<HEXBKM> m_vecBookmarks; //Bookmarks data.
 		IHexCtrl* m_pHexCtrl { };
 		IHexBookmarks* m_pVirtual { };
 		CButton m_btnMinMax;
@@ -67,7 +67,7 @@ namespace HEXCTRL::INTERNAL
 		CEdit m_editDescr;
 		CMFCColorButton m_clrBk;
 		CMFCColorButton m_clrTxt;
-		LONGLONG m_llIndexCurr { }; //Current bookmark position index, to move next/prev.
+		LONGLONG m_llIndexCurr { }; //Current bookmark's position index, to move next/prev.
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
 		LISTEX::LISTEXCOLOR m_stCellClr { };
 		CMenu m_stMenuList;
