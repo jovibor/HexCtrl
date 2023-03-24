@@ -407,7 +407,7 @@ void CHexDlgBkmMgr::OnListRClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR); pNMI->iSubItem == 4) {
-		if (const auto* const pBkm = GetByIndex(static_cast<size_t>(pNMI->iItem)); pBkm != nullptr) {
+		if (const auto* const pBkm = GetByIndex(static_cast<std::size_t>(pNMI->iItem)); pBkm != nullptr) {
 			m_stCellClr.clrBk = pBkm->clrBk;
 			m_stCellClr.clrText = pBkm->clrText;
 			pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
@@ -490,7 +490,7 @@ auto CHexDlgBkmMgr::GetByIndex(ULONGLONG ullIndex)->PHEXBKM
 		pBkm = m_pVirtual->GetByIndex(ullIndex);
 	}
 	else if (ullIndex < m_vecBookmarks.size()) {
-		pBkm = &m_vecBookmarks[static_cast<size_t>(ullIndex)];
+		pBkm = &m_vecBookmarks[static_cast<std::size_t>(ullIndex)];
 	}
 
 	return pBkm;

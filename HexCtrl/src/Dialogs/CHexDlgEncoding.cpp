@@ -129,7 +129,7 @@ void CHexDlgEncoding::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	const auto pItem = &pDispInfo->item;
 
 	if (pItem->mask & LVIF_TEXT) {
-		const auto nItemID = static_cast<size_t>(pItem->iItem);
+		const auto nItemID = static_cast<std::size_t>(pItem->iItem);
 		switch (pItem->iSubItem) {
 		case 0: //Code page ID.
 			*std::format_to(pItem->pszText, L"{}", m_vecCodePage[nItemID].iCPID) = L'\0';

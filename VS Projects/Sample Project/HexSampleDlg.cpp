@@ -237,7 +237,7 @@ void CHexSampleDlg::OnHexGetColor(HEXCOLORINFO& hci)
 			{ RGB(0, 250, 0), RGB(255, 255, 255) }
 		};
 
-		hci.pClr = &vec[static_cast<size_t>(hci.ullOffset)];
+		hci.pClr = &vec[static_cast<std::size_t>(hci.ullOffset)];
 	}
 }
 

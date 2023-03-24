@@ -1106,7 +1106,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		else {
 			const auto spnData = GetData({ ullOffsetToModify, ullSizeToModify });
 			assert(!spnData.empty());
-			std::copy_n(hms.spnData.data(), static_cast<size_t>(ullSizeToModify), spnData.data());
+			std::copy_n(hms.spnData.data(), static_cast<std::size_t>(ullSizeToModify), spnData.data());
 			SetDataVirtual(spnData, { ullOffsetToModify, ullSizeToModify });
 		}
 	}
@@ -2312,7 +2312,7 @@ auto CHexCtrl::CopyBase64()const->std::wstring
 	std::wstring wstrData;
 	const auto ullSelSize = m_pSelection->GetSelSize();
 
-	wstrData.reserve(static_cast<size_t>(ullSelSize) * 2);
+	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	constexpr const wchar_t* const pwszBase64Map { L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
 	unsigned int uValA = 0;
 	int iValB = -6;
@@ -2340,7 +2340,7 @@ auto CHexCtrl::CopyCArr()const->std::wstring
 	std::wstring wstrData;
 	const auto ullSelSize = m_pSelection->GetSelSize();
 
-	wstrData.reserve(static_cast<size_t>(ullSelSize) * 3 + 64);
+	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 3 + 64);
 	wstrData = std::format(L"unsigned char data[{}] = {{\r\n", ullSelSize);
 
 	for (unsigned i = 0; i < ullSelSize; ++i) {
@@ -2372,7 +2372,7 @@ auto CHexCtrl::CopyGrepHex()const->std::wstring
 	std::wstring wstrData;
 	const auto ullSelSize = m_pSelection->GetSelSize();
 
-	wstrData.reserve(static_cast<size_t>(ullSelSize) * 2);
+	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (unsigned i = 0; i < ullSelSize; ++i) {
 		wstrData += L"\\x";
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
@@ -2388,7 +2388,7 @@ auto CHexCtrl::CopyHex()const->std::wstring
 	std::wstring wstrData;
 	const auto ullSelSize = m_pSelection->GetSelSize();
 
-	wstrData.reserve(static_cast<size_t>(ullSelSize) * 2);
+	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (unsigned i = 0; i < ullSelSize; ++i) {
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
 		wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
@@ -2404,7 +2404,7 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 	const auto ullSelStart = m_pSelection->GetSelStart();
 	const auto ullSelSize = m_pSelection->GetSelSize();
 
-	wstrData.reserve(static_cast<size_t>(ullSelSize) * 3);
+	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 3);
 	if (m_fSelectionBlock) {
 		auto dwTail = m_pSelection->GetLineLength();
 		for (unsigned i = 0; i < ullSelSize; ++i) {
@@ -2436,7 +2436,7 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 			DWORD dwCount = dwModStart * 2 + dwModStart / static_cast<DWORD>(m_enGroupMode);
 			//Additional spaces between halves. Only in SIZE_BYTE's view mode.
 			dwCount += (m_enGroupMode == EHexDataSize::SIZE_BYTE) ? (dwTail <= m_dwCapacityBlockSize ? 2 : 0) : 0;
-			wstrData.insert(0, static_cast<size_t>(dwCount), ' ');
+			wstrData.insert(0, static_cast<std::size_t>(dwCount), ' ');
 		}
 
 		for (unsigned i = 0; i < ullSelSize; ++i) {
@@ -2467,7 +2467,7 @@ auto CHexCtrl::CopyHexLE()const->std::wstring
 	std::wstring wstrData;
 	const auto ullSelSize = m_pSelection->GetSelSize();
 
-	wstrData.reserve(static_cast<size_t>(ullSelSize) * 2);
+	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (auto i = ullSelSize; i > 0; --i) {
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i - 1));
 		wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
@@ -2496,15 +2496,15 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 	const auto ullSelSize = m_pSelection->GetSelSize();
 
 	std::wstring wstrRet { };
-	wstrRet.reserve(static_cast<size_t>(ullSelSize) * 4);
+	wstrRet.reserve(static_cast<std::size_t>(ullSelSize) * 4);
 	wstrRet = L"Offset";
-	wstrRet.insert(0, (static_cast<size_t>(m_dwOffsetDigits) - wstrRet.size()) / 2, ' ');
-	wstrRet.insert(wstrRet.size(), static_cast<size_t>(m_dwOffsetDigits) - wstrRet.size(), ' ');
+	wstrRet.insert(0, (static_cast<std::size_t>(m_dwOffsetDigits) - wstrRet.size()) / 2, ' ');
+	wstrRet.insert(wstrRet.size(), static_cast<std::size_t>(m_dwOffsetDigits) - wstrRet.size(), ' ');
 	wstrRet += L"   "; //Spaces to Capacity.
 	wstrRet += m_wstrCapacity;
 	wstrRet += L"   "; //Spaces to Text.
 	if (const auto iSize = static_cast<int>(m_dwCapacity) - static_cast<int>(m_wstrTextTitle.size()); iSize > 0) {
-		wstrRet.insert(wstrRet.size(), static_cast<size_t>(iSize / 2), ' ');
+		wstrRet.insert(wstrRet.size(), static_cast<std::size_t>(iSize / 2), ' ');
 	}
 	wstrRet += m_wstrTextTitle;
 	wstrRet += L"\r\n";
@@ -2572,7 +2572,7 @@ auto CHexCtrl::CopyTextUTF16()const->std::wstring
 {
 	const auto ullSelSize = m_pSelection->GetSelSize();
 	std::string strData;
-	strData.reserve(static_cast<size_t>(ullSelSize));
+	strData.reserve(static_cast<std::size_t>(ullSelSize));
 
 	for (auto i = 0; i < ullSelSize; ++i) {
 		strData.push_back(GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i)));
@@ -2728,13 +2728,13 @@ void CHexCtrl::DrawHexText(CDC* pDC, int iLines, std::wstring_view wsvHex, std::
 {
 	std::vector<POLYTEXTW> vecPolyHex;
 	std::vector<POLYTEXTW> vecPolyText;
-	vecPolyHex.reserve(static_cast<size_t>(iLines));
-	vecPolyText.reserve(static_cast<size_t>(iLines));
+	vecPolyHex.reserve(static_cast<std::size_t>(iLines));
+	vecPolyText.reserve(static_cast<std::size_t>(iLines));
 
 	std::vector<std::wstring> vecWstrHex;
 	std::vector<std::wstring> vecWstrText;
-	vecWstrHex.reserve(static_cast<size_t>(iLines));  //Amount of strings is exactly the same as iLines.
-	vecWstrText.reserve(static_cast<size_t>(iLines));
+	vecWstrHex.reserve(static_cast<std::size_t>(iLines));  //Amount of strings is exactly the same as iLines.
+	vecWstrText.reserve(static_cast<std::size_t>(iLines));
 
 	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
 	std::size_t sIndexToPrint { };
@@ -3484,7 +3484,7 @@ void CHexCtrl::DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines)
 void CHexCtrl::FillCapacityString()
 {
 	m_wstrCapacity.clear();
-	m_wstrCapacity.reserve(static_cast<size_t>(m_dwCapacity) * 3);
+	m_wstrCapacity.reserve(static_cast<std::size_t>(m_dwCapacity) * 3);
 	for (auto iter { 0U }; iter < m_dwCapacity; ++iter) {
 		m_wstrCapacity += std::vformat(IsOffsetAsHex() ? L"{: >2X}" : L"{: >2d}", std::make_wformat_args(iter));
 
@@ -4488,7 +4488,7 @@ void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 	try {
 		for (const auto& iterSel : vecSpan) { //vecSpan.size() amount of continuous areas to preserve.
 			auto& refUNDO = refUndo->emplace_back(SUNDO { iterSel.ullOffset, { } });
-			refUNDO.vecData.resize(static_cast<size_t>(iterSel.ullSize));
+			refUNDO.vecData.resize(static_cast<std::size_t>(iterSel.ullSize));
 
 			//In Virtual mode processing data chunk by chunk.
 			if (IsVirtual() && iterSel.ullSize > GetCacheSize()) {
@@ -5037,7 +5037,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 		m_ullCursorPrev = ullClick;
 		m_ullCaretPos = ullStart;
 		VecSpan vecSel;
-		vecSel.reserve(static_cast<size_t>(ullLines));
+		vecSel.reserve(static_cast<std::size_t>(ullLines));
 		for (auto iterLines = 0ULL; iterLines < ullLines; ++iterLines) {
 			vecSel.emplace_back(ullStart + m_dwCapacity * iterLines, ullSize);
 		}

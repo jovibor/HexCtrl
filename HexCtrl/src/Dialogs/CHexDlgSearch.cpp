@@ -155,7 +155,7 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 	int iHighlight { -1 };
 	if (const auto iter = std::find(m_vecSearchRes.begin(), m_vecSearchRes.end(), ullOffset);
 		iter == m_vecSearchRes.end()) { //Max-found search occurences.
-		if (m_vecSearchRes.size() < static_cast<size_t>(m_dwFoundLimit)) {
+		if (m_vecSearchRes.size() < static_cast<std::size_t>(m_dwFoundLimit)) {
 			m_vecSearchRes.emplace_back(ullOffset);
 			iHighlight = static_cast<int>(m_vecSearchRes.size());
 			m_pListMain->SetItemCountEx(iHighlight--);
@@ -499,7 +499,7 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 		int nItem { -1 };
 		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i) {
 			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
-			const HEXBKM hbs { .vecSpan = { HEXSPAN { m_vecSearchRes.at(static_cast<size_t>(nItem)),
+			const HEXBKM hbs { .vecSpan = { HEXSPAN { m_vecSearchRes.at(static_cast<std::size_t>(nItem)),
 				m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size() } }, .wstrDesc = m_wstrTextSearch };
 			GetHexCtrl()->GetBookmarks()->AddBkm(hbs, false);
 		}
@@ -548,7 +548,7 @@ void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	const auto* const pItem = &pDispInfo->item;
 
 	if (pItem->mask & LVIF_TEXT) {
-		const auto nItemID = static_cast<size_t>(pItem->iItem);
+		const auto nItemID = static_cast<std::size_t>(pItem->iItem);
 		switch (pItem->iSubItem) {
 		case 0: //Index value.
 			*std::format_to(pItem->pszText, L"{}", nItemID + 1) = L'\0';
@@ -566,7 +566,7 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED)) {
-		SetEditStartAt(m_vecSearchRes[static_cast<size_t>(pNMI->iItem)]);
+		SetEditStartAt(m_vecSearchRes[static_cast<std::size_t>(pNMI->iItem)]);
 
 		VecSpan vecSpan;
 		int nItem = -1;
@@ -576,11 +576,11 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			//Do not yet add selected (clicked) item (in multiselect), will add it after the loop,
 			//so that it's always last in vec, to highlight it in HexCtrlHighlight.
 			if (pNMI->iItem != nItem) {
-				vecSpan.emplace_back(m_vecSearchRes.at(static_cast<size_t>(nItem)),
+				vecSpan.emplace_back(m_vecSearchRes.at(static_cast<std::size_t>(nItem)),
 					m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size());
 			}
 		}
-		vecSpan.emplace_back(m_vecSearchRes.at(static_cast<size_t>(pNMI->iItem)),
+		vecSpan.emplace_back(m_vecSearchRes.at(static_cast<std::size_t>(pNMI->iItem)),
 			m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size());
 
 		HexCtrlHighlight(vecSpan);
