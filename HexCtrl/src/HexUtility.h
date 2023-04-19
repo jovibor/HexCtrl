@@ -12,31 +12,8 @@
 #include <optional>
 #include <string>
 
-#define HEXCTRL_PRODUCT_NAME		L"Hex Control for MFC/Win32"
-#define HEXCTRL_COPYRIGHT_NAME  	L"(C) 2018-2023 Jovibor"
-#define HEXCTRL_VERSION_MAJOR		3
-#define HEXCTRL_VERSION_MINOR		3
-#define HEXCTRL_VERSION_MAINTENANCE	1
-
-#define TO_WSTR_HELPER(x) L## #x
-#define TO_WSTR(x) TO_WSTR_HELPER(x)
-#define HEXCTRL_FULL_VERSION_RAW HEXCTRL_PRODUCT_NAME L", v" TO_WSTR(HEXCTRL_VERSION_MAJOR) L"."\
-		TO_WSTR(HEXCTRL_VERSION_MINOR) L"." TO_WSTR(HEXCTRL_VERSION_MAINTENANCE)
-
 namespace HEXCTRL::INTERNAL
 {
-	//HexCtrl version and name constants, for module exporting.
-	constexpr auto WSTR_HEXCTRL_PRODUCT_NAME = HEXCTRL_PRODUCT_NAME;
-	constexpr auto WSTR_HEXCTRL_COPYRIGHT_NAME = HEXCTRL_COPYRIGHT_NAME;
-	constexpr auto ID_HEXCTRL_VERSION_MAJOR = HEXCTRL_VERSION_MAJOR;
-	constexpr auto ID_HEXCTRL_VERSION_MINOR = HEXCTRL_VERSION_MINOR;
-	constexpr auto ID_HEXCTRL_VERSION_MAINTENANCE = HEXCTRL_VERSION_MAINTENANCE;
-#ifdef _WIN64
-	constexpr auto WSTR_HEXCTRL_FULL_VERSION = HEXCTRL_FULL_VERSION_RAW L" (x64)";
-#else
-	constexpr auto WSTR_HEXCTRL_FULL_VERSION = HEXCTRL_FULL_VERSION_RAW L" (x86)";
-#endif
-
 	//Time calculation constants and structs.
 	constexpr auto g_uFTTicksPerMS = 10000U;             //Number of 100ns intervals in a milli-second
 	constexpr auto g_uFTTicksPerSec = 10000000UL;        //Number of 100ns intervals in a second

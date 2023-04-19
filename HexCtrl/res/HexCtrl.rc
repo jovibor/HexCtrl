@@ -92,7 +92,7 @@ BEGIN
     LTEXT           "<--Version-->",IDC_HEXCTRL_ABOUT_STATIC_VERSION,41,10,138,16
     CONTROL         "",IDC_HEXCTRL_ABOUT_LOGO,"Static",SS_BITMAP | SS_CENTERIMAGE,13,10,23,23
     CONTROL         "https://github.com/jovibor/HexCtrl",IDC_HEXCTRL_ABOUT_LINKGITHUB,
-                    "MfcLink",WS_TABSTOP,40,25,116,11
+                    "MfcLink",WS_TABSTOP,40,26,116,11
 END
 
 IDD_HEXCTRL_OPERS DIALOGEX 0, 0, 251, 141

@@ -19,6 +19,10 @@
 
 namespace HEXCTRL
 {
+	constexpr auto HEXCTRL_VERSION_MAJOR = 3;
+	constexpr auto HEXCTRL_VERSION_MINOR = 4;
+	constexpr auto HEXCTRL_VERSION_PATCH = 0;
+
 	using SpanByte = std::span<std::byte>;
 	using SpanCByte = std::span<const std::byte>;
 
@@ -418,31 +422,12 @@ namespace HEXCTRL
 #endif
 
 	extern "C" [[nodiscard]] HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl();
+
 	using IHexCtrlPtr = std::unique_ptr < IHexCtrl, decltype([](IHexCtrl* p) { p->Destroy(); }) > ;
 
 	[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl() {
 		return IHexCtrlPtr { CreateRawHexCtrl() };
 	};
-
-	/********************************************
-	* HEXCTRLINFO: service info structure.      *
-	********************************************/
-	struct HEXCTRLINFO {
-		const wchar_t* pwszVersion { };        //wchar_t version string.
-		union {
-			unsigned long long ullVersion { }; //ULONGLONG version number.
-			struct {
-				short wMajor;
-				short wMinor;
-				short wMaintenance;
-			} stVersion;
-		};
-	};
-
-	/****************************************************************
-	* GetHexCtrlInfo: returns HEXCTRLINFO struct with version info. *
-	****************************************************************/
-	extern "C" [[nodiscard]] HEXCTRLAPI HEXCTRLINFO __cdecl GetHexCtrlInfo();
 
 	/********************************************************************************************
 	* WM_NOTIFY message codes (NMHDR.code values).                                              *

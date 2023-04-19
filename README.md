@@ -8,6 +8,8 @@
 * [Creating](#creating)
   * [Classic Approach](#classic-approach)
   * [In Dialog](#in-dialog)
+  * [CreateHexCtrl](#createhexctrl)
+  * [CreateRawHexCtrl](#createrawhexctrl)
 * [Set The Data](#set-the-data)
 * [Virtual Data Mode](#virtual-data-mode)
 * [Virtual Bookmarks](#virtual-bookmarks)
@@ -107,11 +109,6 @@
   * [HEXCTRL_MSG_SELECTION](#hexctrl_msg_selection)
   * [HEXCTRL_MSG_SETDATA](#hexctrl_msg_setdata)
    </details>
-* [Exported Functions](#exported-functions) <details><summary>_Expand_</summary>
-  * [CreateRawHexCtrl](#createrawhexctrl)
-  * [GetHexCtrlInfo](#gethexctrlinfo)
-  * [HEXCTRLINFO](#hexctrlinfo)
-   </details>
 * [Licensing](#licensing)
 
 ## [](#)Introduction
@@ -141,7 +138,7 @@ It's implemented as a pure abstract interface and can be used in your app even i
 ## [](#)Installation
 The **HexCtrl** can be used in two different ways:  
 * Building from the sources as a part of your project 
-* Using as a Dynamic Link Library *.dll*.
+* Using as a Dynamic Link Library (*\*.dll*).
 
 ### [](#)Building From The Sources
 The building process is quite simple:
@@ -206,6 +203,18 @@ BOOL CMyDialog::OnInitDialog()
     m_myHex->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
 }
 ```
+
+### [](#)CreateHexCtrl
+```cpp
+[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl();
+```
+Factory function for creating a **HexCtrl** instance in form of `IHexCtrlPtr`.
+
+### [](#)CreateRawHexCtrl
+```cpp
+extern "C" [[nodiscard]] HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl();
+```
+Function that creates a raw `IHexCtrl` instance. You barely need to use this function in your code, although if you do you need to manually call the [`Destroy`](#destroy) method afterwards.
 
 ## [](#)Set the Data
 To set a data for the **HexCtrl** the [`SetData`](#setdata) method is used.  
@@ -1080,38 +1089,6 @@ Sent when selection has been made. `LPARAM` will contain pointer to a `NMHDR` st
 
 ### [](#)HEXCTRL_MSG_SETDATA
 Sent to indicate that the data has changed. `LPARAM` will contain pointer to a `NMHDR` struct.
-
-## [](#)Exported Functions
-**HexCtrl** has few `"C"` interface functions which it exports when built as *.dll*.
-
-### [](#)CreateRawHexCtrl
-```cpp
-extern "C" HEXCTRLAPI IHexCtrl* __cdecl CreateRawHexCtrl();
-```
-Main function that creates raw `IHexCtrl` interface pointer. You barely need to use this function in your code. Although if you do, you need to manually call the [`Destroy`](#destroy) method afterwards.
-
-### [](#)GetHexCtrlInfo
-```cpp
-extern "C" HEXCTRLAPI HEXCTRLINFO __cdecl GetHexCtrlInfo();
-```
-Returns [`HEXCTRLINFO`](#hexctrlinfo) struct, which contains the **HexCtrl**'s version information.
-
-### [](#)HEXCTRLINFO
-Service structure with the **HexCtrl**'s version information.
-```cpp
-struct HEXCTRLINFO
-{
-    const wchar_t* pwszVersion { };        //wchar_t version string.
-    union {
-        unsigned long long ullVersion { }; //ULONGLONG version number.
-        struct {
-            short wMajor;
-            short wMinor;
-            short wMaintenance;
-        }stVersion;
-    };
-};
-```
 
 ## [](#)Licensing
 This software is available under **"The HexCtrl License"**, it is free for any **NON-COMMERCIAL** use.  

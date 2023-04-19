@@ -39,14 +39,6 @@ namespace HEXCTRL
 		return new CHexCtrl();
 	};
 
-	extern "C" HEXCTRLAPI HEXCTRLINFO __cdecl GetHexCtrlInfo() {
-		return HEXCTRLINFO { WSTR_HEXCTRL_FULL_VERSION,
-			{ static_cast<ULONGLONG>((static_cast<ULONGLONG>(ID_HEXCTRL_VERSION_MAJOR) << 48)
-				| (static_cast<ULONGLONG>(ID_HEXCTRL_VERSION_MINOR) << 32)
-				| (static_cast<ULONGLONG>(ID_HEXCTRL_VERSION_MAINTENANCE) << 16)) }
-		};
-	};
-
 	namespace INTERNAL
 	{
 		class CHexDlgAbout final : public CDialogEx
@@ -72,10 +64,9 @@ namespace HEXCTRL
 		{
 			CDialogEx::OnInitDialog();
 
-			std::wstring wstrDescr = WSTR_HEXCTRL_FULL_VERSION;
-			wstrDescr += L"\r\nAuthor: ";
-			wstrDescr += WSTR_HEXCTRL_COPYRIGHT_NAME;
-			GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(wstrDescr.data());
+			const auto wstrVersion = std::format(L"Hex Control for MFC/Win32: v{}.{}.{}\r\nCopyright: (C)2018 - 2023 Jovibor",
+				HEXCTRL_VERSION_MAJOR, HEXCTRL_VERSION_MINOR, HEXCTRL_VERSION_PATCH);
+			GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(wstrVersion.data());
 
 			auto pDC = GetDC();
 			const auto iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
