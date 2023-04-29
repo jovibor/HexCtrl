@@ -1328,7 +1328,7 @@ void CListEx::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 		clrText = m_stColors.clrListText;
 	}
 
-	m_umapColumnColor[iColumn] = SCOLROWCLR { clrBk, clrText, std::chrono::high_resolution_clock::now() };
+	m_umapColumnColor[iColumn] = SCOLROWCLR { { clrBk, clrText }, std::chrono::high_resolution_clock::now() };
 }
 
 void CListEx::SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enSortMode)
@@ -1429,7 +1429,7 @@ void CListEx::SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)
 		clrText = m_stColors.clrListText;
 	}
 
-	m_umapRowColor[dwRow] = SCOLROWCLR { clrBk, clrText, std::chrono::high_resolution_clock::now() };
+	m_umapRowColor[dwRow] = SCOLROWCLR { { clrBk, clrText }, std::chrono::high_resolution_clock::now() };
 }
 
 void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode enSortMode)

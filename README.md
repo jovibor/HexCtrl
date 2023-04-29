@@ -136,17 +136,19 @@ It's implemented as a pure abstract interface and can be used in your app even i
 ![](docs/img/HexCtrl_OperationsWnd.jpg)
 
 ## [](#)Installation
+`git clone https://github.com/jovibor/HexCtrl.git --recurse-submodules`  
+
 The **HexCtrl** can be used in two different ways:  
-* Building from the sources as a part of your project 
+* Building from the sources as the part of your project
 * Using as a Dynamic Link Library (*\*.dll*).
 
 ### [](#)Building From The Sources
 The building process is quite simple:
 1. Copy *HexCtrl* folder into your project's directory.
 1. Add all files from the *HexCtrl* folder into your project (you can skip adding 
-*/dep/rapidjson/rapidjson-amalgam.h* and */dep/StrToNum/StrToNum.h*).
+*/dep/rapidjson/rapidjson-amalgam.h* and */dep/StrToNum/StrToNum/StrToNum.h*).
 1. Add `#include "HexCtrl/HexCtrl.h"` where you suppose to use the **HexCtrl**.
-1. Declare `IHexCtrlPtr` member variable: `IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };`
+1. Declare `IHexCtrlPtr` object: `IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };`
 1. [Create](#creating) control instance.
 
 If you want to build **HexCtrl** from the sources in non **MFC** app you will have to:

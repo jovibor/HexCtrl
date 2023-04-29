@@ -5,7 +5,7 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #pragma once
-#include "../dep/StrToNum/StrToNum.h"
+#include "../dep/StrToNum/StrToNum/StrToNum.h"
 #include "../HexCtrl.h"
 #include <afxwin.h>
 #include <cassert>

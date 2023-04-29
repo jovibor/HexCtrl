@@ -1,0 +1,3 @@
+[submodule "HexCtrl/dep/StrToNum"]
+	path = HexCtrl/dep/StrToNum
+	url = https://github.com/jovibor/StrToNum.git
