@@ -15,13 +15,13 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 	public:
 		void AddSibling(CScrollEx* pSibling);
 		bool Create(CWnd* pParent, bool fVert, int iIDRESArrow, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
-		[[nodiscard]] CWnd* GetParent()const;
-		[[nodiscard]] ULONGLONG GetScrollPos()const;
-		[[nodiscard]] LONGLONG GetScrollPosDelta()const;
-		[[nodiscard]] ULONGLONG GetScrollLineSize()const;
-		[[nodiscard]] ULONGLONG GetScrollPageSize()const;
-		[[nodiscard]] bool IsThumbReleased()const;
-		[[nodiscard]] bool IsVisible()const;
+		[[nodiscard]] auto GetParent()const->CWnd*;
+		[[nodiscard]] auto GetScrollPos()const->ULONGLONG;
+		[[nodiscard]] auto GetScrollPosDelta()const->LONGLONG;
+		[[nodiscard]] auto GetScrollLineSize()const->ULONGLONG;
+		[[nodiscard]] auto GetScrollPageSize()const->ULONGLONG;
+		[[nodiscard]] auto IsThumbReleased()const->bool;
+		[[nodiscard]] auto IsVisible()const->bool;
 
 		/************************************************************************************
 		* CALLBACK METHODS:                                                                 *
@@ -38,7 +38,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		************************************************************************************/
 
 		void SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG ullSizeMax);
-		ULONGLONG SetScrollPos(ULONGLONG ullNewPos);
+		auto SetScrollPos(ULONGLONG ullNewPos) -> ULONGLONG;
 		void ScrollLineUp();
 		void ScrollLineDown();
 		void ScrollLineLeft();
@@ -51,8 +51,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		void ScrollEnd();
 		void SetScrollPageSize(ULONGLONG ullSize);
 	private:
-		DECLARE_MESSAGE_MAP()
-			[[nodiscard]] bool CreateArrows(int iIDRESArrow, bool fVert);
+		[[nodiscard]] bool CreateArrows(int iIDRESArrow, bool fVert);
 		void DrawScrollBar()const;      //Draws the whole Scrollbar.
 		void DrawArrows(CDC* pDC)const; //Draws arrows.
 		void DrawThumb(CDC* pDC)const;  //Draws the Scroll thumb.
@@ -79,6 +78,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		void SendParentScrollMsg()const;            //Sends the WM_(V/H)SCROLL to the parent window.
 		afx_msg void OnDestroy();
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
+		DECLARE_MESSAGE_MAP();
 	private:
 		CWnd* m_pParent { };                        //Parent window.
 		CScrollEx* m_pSibling { };                  //Sibling scrollbar, added with AddSibling.

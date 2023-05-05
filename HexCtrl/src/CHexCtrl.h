@@ -202,9 +202,9 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	private:
-		static constexpr int m_iIndentBottomLine { 1 };  //Bottom line indent from window's bottom.
-		static constexpr int m_iFirstHorzLine { 0 };     //First horizontal line indent.
-		static constexpr int m_iFirstVertLine { 0 };     //First vertical line indent.
+		static constexpr int m_iIndentBottomLine { 1 }; //Bottom line indent from window's bottom.
+		static constexpr int m_iFirstHorzLine { 0 };    //First horizontal line indent.
+		static constexpr int m_iFirstVertLine { 0 };    //First vertical line indent.
 		const std::unique_ptr<CHexDlgBkmMgr> m_pDlgBkmMgr { std::make_unique<CHexDlgBkmMgr>() };             //"Bookmark manager" dialog.
 		const std::unique_ptr<CHexDlgEncoding> m_pDlgEncoding { std::make_unique<CHexDlgEncoding>() };       //"Encoding" dialog.
 		const std::unique_ptr<CHexDlgDataInterp> m_pDlgDataInterp { std::make_unique<CHexDlgDataInterp>() }; //"Data interpreter" dialog.
@@ -242,7 +242,7 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullCursorNow { };         //The cursor's current clicked pos.
 		ULONGLONG m_ullCursorPrev { };        //The cursor's previously clicked pos, used in selection resolutions.
 		DWORD m_dwCapacity { 0x10 };          //How many bytes displayed in one row
-		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of block before space delimiter.
+		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of the block before a space delimiter.
 		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
 		DWORD m_dwPageSize { 0 };             //Size of a page to print additional lines between.
 		DWORD m_dwCacheSize { };              //Cache size for virtual and message modes, set in SetData.
