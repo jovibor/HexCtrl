@@ -26,11 +26,6 @@ namespace HEXCTRL::INTERNAL
 		IDM_LISTAPPLIED_HDR_TYPE = 0x8100, IDM_LISTAPPLIED_HDR_NAME, IDM_LISTAPPLIED_HDR_OFFSET,
 		IDM_LISTAPPLIED_HDR_SIZE, IDM_LISTAPPLIED_HDR_DATA, IDM_LISTAPPLIED_HDR_ENDIANNESS, IDM_LISTAPPLIED_HDR_COLORS
 	};
-
-	constexpr auto ID_LISTAPPLIED_FIELD_TYPE { 0 };
-	constexpr auto ID_LISTAPPLIED_FIELD_DATA { 4 };
-	constexpr auto ID_LISTAPPLIED_FIELD_DESCR { 6 };
-	constexpr auto ID_LISTAPPLIED_FIELD_COLORS { 7 };
 };
 
 BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
@@ -83,14 +78,14 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 
 	m_pListApplied->CreateDialogCtrl(IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, this);
 	m_pListApplied->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
-	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_TYPE, L"Type", LVCFMT_LEFT, 85);
+	m_pListApplied->InsertColumn(m_iIDListApplFieldType, L"Type", LVCFMT_LEFT, 85);
 	m_pListApplied->InsertColumn(1, L"Name", LVCFMT_LEFT, 200);
 	m_pListApplied->InsertColumn(2, L"Offset", LVCFMT_LEFT, 50);
 	m_pListApplied->InsertColumn(3, L"Size", LVCFMT_LEFT, 50);
-	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_DATA, L"Data", LVCFMT_LEFT, 120, -1, LVCFMT_LEFT, true);
+	m_pListApplied->InsertColumn(m_iIDListApplFieldData, L"Data", LVCFMT_LEFT, 120, -1, LVCFMT_LEFT, true);
 	m_pListApplied->InsertColumn(5, L"Endianness", LVCFMT_CENTER, 65, -1, LVCFMT_CENTER);
-	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_DESCR, L"Description", LVCFMT_LEFT, 100, -1, LVCFMT_LEFT, true);
-	m_pListApplied->InsertColumn(ID_LISTAPPLIED_FIELD_COLORS, L"Colors", LVCFMT_LEFT, 57);
+	m_pListApplied->InsertColumn(m_iIDListApplFieldDescr, L"Description", LVCFMT_LEFT, 100, -1, LVCFMT_LEFT, true);
+	m_pListApplied->InsertColumn(m_iIDListApplFieldClrs, L"Colors", LVCFMT_LEFT, 57);
 
 	using enum EMenuID;
 	m_stMenuHdr.CreatePopupMenu();
@@ -289,7 +284,7 @@ void CHexDlgTemplMgr::OnCheckHglSel()
 void CHexDlgTemplMgr::OnCheckMinMax()
 {
 	const auto fMinimize = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX))->GetCheck() == BST_CHECKED;
-	constexpr int iIDsToHide[] { IDC_HEXCTRL_TEMPLMGR_STATIC_AVAIL, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES,
+	static constexpr int iIDsToHide[] { IDC_HEXCTRL_TEMPLMGR_STATIC_AVAIL, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES,
 		IDC_HEXCTRL_TEMPLMGR_BTN_LOAD, IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD, IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR,
 		IDC_HEXCTRL_TEMPLMGR_STATIC_APPLY, IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET, IDC_HEXCTRL_TEMPLMGR_BTN_APPLY,
 		IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, IDC_HEXCTRL_TEMPLMGR_CHK_HEX,
@@ -298,7 +293,7 @@ void CHexDlgTemplMgr::OnCheckMinMax()
 		GetDlgItem(id)->ShowWindow(fMinimize ? SW_HIDE : SW_SHOW);
 	}
 
-	constexpr int iIDsToMove[] { IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETTXT, IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETNUM,
+	static constexpr int iIDsToMove[] { IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETTXT, IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETNUM,
 		IDC_HEXCTRL_TEMPLMGR_STATIC_SIZETXT, IDC_HEXCTRL_TEMPLMGR_STATIC_SIZENUM, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED,
 		IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED };
 
@@ -379,7 +374,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	};
 
 	switch (pItem->iSubItem) {
-	case ID_LISTAPPLIED_FIELD_TYPE: //Type.
+	case m_iIDListApplFieldType: //Type.
 		if (pField->eType == type_custom) {
 			auto& refVecCT = pField->pTemplate->vecCustomType;
 			if (const auto iter = std::find_if(refVecCT.begin(), refVecCT.end(),
@@ -404,7 +399,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	case 3: //Size.
 		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(pField->iSize)) = L'\0';
 		break;
-	case ID_LISTAPPLIED_FIELD_DATA: //Data.
+	case m_iIDListApplFieldData: //Data.
 	{
 		if (!m_pHexCtrl->IsDataSet()
 			|| m_pAppliedCurr->ullOffset + m_pAppliedCurr->pTemplate->iSizeTotal > m_pHexCtrl->GetDataSize()) //Size overflow check.
@@ -510,7 +505,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	case 6: //Description.
 		*std::format_to(pItem->pszText, L"{}", pField->wstrDescr) = L'\0';
 		break;
-	case ID_LISTAPPLIED_FIELD_COLORS: //Colors.
+	case m_iIDListApplFieldClrs: //Colors.
 		*std::format_to(pItem->pszText, L"#Text") = L'\0';
 		break;
 	default:
@@ -520,9 +515,9 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	constexpr auto clrTextBluish = RGB(16, 42, 255);  //Bluish text.
-	constexpr auto clrTextGreenish = RGB(0, 110, 0);  //Green text.
-	constexpr auto clrBkGreyish = RGB(235, 235, 235); //Grayish bk.
+	constexpr auto clrTextBluish { RGB(16, 42, 255) };  //Bluish text.
+	constexpr auto clrTextGreenish { RGB(0, 110, 0) };  //Green text.
+	constexpr auto clrBkGreyish { RGB(235, 235, 235) }; //Grayish bk.
 
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	const auto& pField = (*m_pVecFieldsCurr)[pNMI->iItem];
@@ -532,9 +527,9 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	m_stCellClr.clrText = static_cast<COLORREF>(-1); //Default text color.
 
 	//List items with nested structs color separately with greyish bk.
-	if (!pField->vecNested.empty() && pNMI->iSubItem != ID_LISTAPPLIED_FIELD_COLORS) {
+	if (!pField->vecNested.empty() && pNMI->iSubItem != m_iIDListApplFieldClrs) {
 		m_stCellClr.clrBk = clrBkGreyish;
-		if (pNMI->iSubItem == ID_LISTAPPLIED_FIELD_TYPE) {
+		if (pNMI->iSubItem == m_iIDListApplFieldType) {
 			if (eType == type_custom) {
 				if (pField->uTypeID > 0) {
 					m_stCellClr.clrText = clrTextGreenish;
@@ -549,14 +544,14 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 
 	switch (pNMI->iSubItem) {
-	case ID_LISTAPPLIED_FIELD_TYPE:
+	case m_iIDListApplFieldType:
 		if (eType != type_custom && eType != custom_size) {
 			m_stCellClr.clrText = clrTextBluish;
 			m_stCellClr.clrBk = static_cast<COLORREF>(-1); //Default bk color.
 			pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
 		}
 		break;
-	case ID_LISTAPPLIED_FIELD_COLORS:
+	case m_iIDListApplFieldClrs:
 		m_stCellClr.clrBk = pField->clrBk;
 		m_stCellClr.clrText = pField->clrText;
 		pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
@@ -593,7 +588,7 @@ void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	const auto pwszText = reinterpret_cast<LPCWSTR>(pNMI->lParam); //lParam holds wchar_t* to a new text from list's subitem.
 	const auto& pField = (*m_pVecFieldsCurr)[pNMI->iItem];
 
-	if (pNMI->iSubItem == ID_LISTAPPLIED_FIELD_DATA) { //Data.
+	if (pNMI->iSubItem == m_iIDListApplFieldData) { //Data.
 		if (!m_pHexCtrl->IsDataSet()) {
 			return;
 		}
@@ -689,7 +684,7 @@ void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			return;
 		}
 	}
-	else if (pNMI->iSubItem == ID_LISTAPPLIED_FIELD_DESCR) { //Description.
+	else if (pNMI->iSubItem == m_iIDListApplFieldDescr) { //Description.
 		pField->wstrDescr = pwszText;
 	}
 

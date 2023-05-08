@@ -202,9 +202,13 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	private:
-		static constexpr int m_iIndentBottomLine { 1 }; //Bottom line indent from window's bottom.
-		static constexpr int m_iFirstHorzLine { 0 };    //First horizontal line indent.
-		static constexpr int m_iFirstVertLine { 0 };    //First vertical line indent.
+		static constexpr auto m_pwszHexChars { L"0123456789ABCDEF" }; //Hex digits wchars for fast lookup.
+		static constexpr auto m_pwszClassName { L"HexCtrl" }; //HexControl Class name.
+		static constexpr auto m_uiIDTTBkm { 0x01UL };    //Tooltip ID for Bookmarks.
+		static constexpr auto m_uiIDTTTempl { 0x03UL };  //Tooltip ID for Templates.
+		static constexpr auto m_iIndentBottomLine { 1 }; //Bottom line indent from window's bottom.
+		static constexpr auto m_iFirstHorzLine { 0 };    //First horizontal line indent.
+		static constexpr auto m_iFirstVertLine { 0 };    //First vertical line indent.
 		const std::unique_ptr<CHexDlgBkmMgr> m_pDlgBkmMgr { std::make_unique<CHexDlgBkmMgr>() };             //"Bookmark manager" dialog.
 		const std::unique_ptr<CHexDlgEncoding> m_pDlgEncoding { std::make_unique<CHexDlgEncoding>() };       //"Encoding" dialog.
 		const std::unique_ptr<CHexDlgDataInterp> m_pDlgDataInterp { std::make_unique<CHexDlgDataInterp>() }; //"Data interpreter" dialog.

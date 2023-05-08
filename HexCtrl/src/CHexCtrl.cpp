@@ -102,12 +102,6 @@ namespace HEXCTRL
 			bool    fShift { };
 			bool    fAlt { };
 		};
-
-		constexpr const wchar_t* const WSTR_HEXDIGITS { L"0123456789ABCDEF" }; //Hex digits wchars for fast lookup.
-		constexpr auto WSTR_HEXCTRL_CLASSNAME { L"HexCtrl" }; //HexControl Class name.
-		constexpr auto IDC_TOOLTIP_BKM { 0x01UL };            //Tooltip ID for Bookmarks.
-		constexpr auto IDC_TOOLTIP_OFFSET { 0x02UL };         //Tooltip ID for offset.
-		constexpr auto IDC_TOOLTIP_TEMPL { 0x03UL };          //Tooltip ID for Templates.
 	}
 }
 
@@ -161,7 +155,7 @@ CHexCtrl::CHexCtrl()
 
 	const auto hInst = AfxGetInstanceHandle();
 	WNDCLASSEXW wc { };
-	if (!::GetClassInfoExW(hInst, WSTR_HEXCTRL_CLASSNAME, &wc)) {
+	if (!::GetClassInfoExW(hInst, m_pwszClassName, &wc)) {
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
 		wc.lpfnWndProc = ::DefWindowProcW;
@@ -171,7 +165,7 @@ CHexCtrl::CHexCtrl()
 		wc.hCursor = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 		wc.hbrBackground = nullptr;
 		wc.lpszMenuName = nullptr;
-		wc.lpszClassName = WSTR_HEXCTRL_CLASSNAME;
+		wc.lpszClassName = m_pwszClassName;
 		if (!RegisterClassExW(&wc)) {
 			MessageBoxW(L"HexControl RegisterClassExW error.", L"Error", MB_ICONERROR);
 			return;
@@ -225,7 +219,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		}
 	}
 	else {
-		if (!CWnd::CreateEx(hcs.dwExStyle, WSTR_HEXCTRL_CLASSNAME, L"HexControl", hcs.dwStyle, hcs.rect,
+		if (!CWnd::CreateEx(hcs.dwExStyle, m_pwszClassName, L"HexControl", hcs.dwStyle, hcs.rect,
 			CWnd::FromHandle(hcs.hWndParent), hcs.uID)) {
 			MessageBoxW(std::format(L"HexCtrl (ID: {}) CreateWindowExW failed.\r\nCheck HEXCREATE struct parameters.", hcs.uID).data(),
 				L"Error", MB_ICONERROR);
@@ -237,7 +231,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
 	m_stToolInfoBkm.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoBkm.uFlags = TTF_TRACK;
-	m_stToolInfoBkm.uId = IDC_TOOLTIP_BKM;
+	m_stToolInfoBkm.uId = m_uiIDTTBkm;
 	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
@@ -245,7 +239,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
 	m_stToolInfoTempl.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoTempl.uFlags = TTF_TRACK;
-	m_stToolInfoTempl.uId = IDC_TOOLTIP_TEMPL;
+	m_stToolInfoTempl.uId = m_uiIDTTTempl;
 	m_wndTtTempl.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
 	m_wndTtTempl.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
@@ -253,7 +247,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
 	m_stToolInfoOffset.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoOffset.uFlags = TTF_TRACK;
-	m_stToolInfoOffset.uId = IDC_TOOLTIP_OFFSET;
+	m_stToolInfoOffset.uId = 0x02UL; //Tooltip ID for offset.
 	m_wndTtOffset.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
 	m_wndTtOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
@@ -1138,7 +1132,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			//Fill the uptrRandData buffer with true random data of ulSizeRandBuff size.
 			//Then clone this buffer to the destination data.
 			//Buffer is allocated with alignment for maximum performance.
-			constexpr auto ulSizeRandBuff = 1024U * 1024U; //1MB.
+			constexpr auto ulSizeRandBuff { 1024U * 1024U }; //1MB.
 			const std::unique_ptr < std::byte[], decltype([](std::byte* pData) { _aligned_free(pData); }) >
 				uptrRandData(static_cast<std::byte*>(_aligned_malloc(ulSizeRandBuff, 32)));
 
@@ -1362,7 +1356,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	if (!IsCreated())
 		return;
 
-	constexpr DWORD dwCapacityMax { 0x64U }; //Maximum capacity allowed.
+	constexpr auto dwCapacityMax { 0x64U }; //Maximum capacity allowed.
 
 	if (dwCapacity < 1 || dwCapacity > dwCapacityMax)
 		return;
@@ -1682,7 +1676,7 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 	m_pHexVirtData = hds.pHexVirtData;
 	m_pHexVirtColors = hds.pHexVirtColors;
 
-	constexpr auto dwCacheMinSize = 1024U * 64U; //64Kb is the minimum default cache size.
+	constexpr auto dwCacheMinSize { 1024U * 64U }; //64Kb is the minimum default cache size.
 	m_dwCacheSize = ((hds.dwCacheSize < dwCacheMinSize)	//Cache size must be at least sizeof(std::uint64_t) aligned.
 		|| (hds.dwCacheSize % sizeof(std::uint64_t) != 0)) ? dwCacheMinSize : hds.dwCacheSize;
 
@@ -1947,8 +1941,8 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 	std::wstring wstrHex { };
 	wstrHex.reserve(sSizeDataToPrint * 2);
 	for (auto iterData = pDataBegin; iterData < pDataEnd; ++iterData) { //Converting bytes to Hexes.
-		wstrHex.push_back(WSTR_HEXDIGITS[(*iterData >> 4) & 0x0F]);
-		wstrHex.push_back(WSTR_HEXDIGITS[*iterData & 0x0F]);
+		wstrHex.push_back(m_pwszHexChars[(*iterData >> 4) & 0x0F]);
+		wstrHex.push_back(m_pwszHexChars[*iterData & 0x0F]);
 	}
 
 	//Text to print.
@@ -2196,7 +2190,7 @@ void CHexCtrl::ClipboardCopy(EClipboard eType)const
 		break;
 	}
 
-	constexpr auto sCharSize = sizeof(wchar_t);
+	constexpr auto sCharSize { sizeof(wchar_t) };
 	const std::size_t sMemSize = wstrData.size() * sCharSize + sCharSize;
 	const auto hMem = GlobalAlloc(GMEM_MOVEABLE, sMemSize);
 	if (!hMem) {
@@ -2300,11 +2294,10 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 
 auto CHexCtrl::CopyBase64()const->std::wstring
 {
-	std::wstring wstrData;
+	static constexpr auto pwszBase64Map { L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
 	const auto ullSelSize = m_pSelection->GetSelSize();
-
+	std::wstring wstrData;
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
-	constexpr const wchar_t* const pwszBase64Map { L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
 	unsigned int uValA = 0;
 	int iValB = -6;
 	for (unsigned i = 0; i < ullSelSize; ++i) {
@@ -2337,8 +2330,8 @@ auto CHexCtrl::CopyCArr()const->std::wstring
 	for (unsigned i = 0; i < ullSelSize; ++i) {
 		wstrData += L"0x";
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
-		wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
-		wstrData += WSTR_HEXDIGITS[(chByte & 0x0F)];
+		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
+		wstrData += m_pwszHexChars[(chByte & 0x0F)];
 		if (i < ullSelSize - 1) {
 			wstrData += L",";
 		}
@@ -2367,8 +2360,8 @@ auto CHexCtrl::CopyGrepHex()const->std::wstring
 	for (unsigned i = 0; i < ullSelSize; ++i) {
 		wstrData += L"\\x";
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
-		wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
-		wstrData += WSTR_HEXDIGITS[(chByte & 0x0F)];
+		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
+		wstrData += m_pwszHexChars[(chByte & 0x0F)];
 	}
 
 	return wstrData;
@@ -2382,8 +2375,8 @@ auto CHexCtrl::CopyHex()const->std::wstring
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (unsigned i = 0; i < ullSelSize; ++i) {
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
-		wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
-		wstrData += WSTR_HEXDIGITS[(chByte & 0x0F)];
+		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
+		wstrData += m_pwszHexChars[(chByte & 0x0F)];
 	}
 
 	return wstrData;
@@ -2400,8 +2393,8 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 		auto dwTail = m_pSelection->GetLineLength();
 		for (unsigned i = 0; i < ullSelSize; ++i) {
 			const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
-			wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
-			wstrData += WSTR_HEXDIGITS[(chByte & 0x0F)];
+			wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
+			wstrData += m_pwszHexChars[(chByte & 0x0F)];
 
 			if (i < (ullSelSize - 1) && (dwTail - 1) != 0) {
 				if (((m_pSelection->GetLineLength() - dwTail + 1) % static_cast<DWORD>(m_enGroupMode)) == 0) { //Add space after hex full chunk, ShowAs_size depending.
@@ -2432,8 +2425,8 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 
 		for (unsigned i = 0; i < ullSelSize; ++i) {
 			const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
-			wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
-			wstrData += WSTR_HEXDIGITS[(chByte & 0x0F)];
+			wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
+			wstrData += m_pwszHexChars[(chByte & 0x0F)];
 
 			if (i < (ullSelSize - 1) && (dwTail - 1) != 0) {
 				if (m_enGroupMode == EHexDataSize::SIZE_BYTE && dwTail == dwNextBlock) {
@@ -2461,8 +2454,8 @@ auto CHexCtrl::CopyHexLE()const->std::wstring
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (auto i = ullSelSize; i > 0; --i) {
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i - 1));
-		wstrData += WSTR_HEXDIGITS[(chByte & 0xF0) >> 4];
-		wstrData += WSTR_HEXDIGITS[(chByte & 0x0F)];
+		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
+		wstrData += m_pwszHexChars[(chByte & 0x0F)];
 	}
 
 	return wstrData;
@@ -4526,7 +4519,7 @@ void CHexCtrl::ToolTipBkmShow(bool fShow, POINT pt, bool fTimerCancel)
 		m_wndTtBkm.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x, pt.y)));
 		m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-		SetTimer(IDC_TOOLTIP_BKM, 300, nullptr);
+		SetTimer(m_uiIDTTBkm, 300, nullptr);
 	}
 	else if (fTimerCancel) { //Tooltip was canceled by the timer, not mouse move.
 		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
@@ -4534,7 +4527,7 @@ void CHexCtrl::ToolTipBkmShow(bool fShow, POINT pt, bool fTimerCancel)
 	else {
 		m_pBkmTtCurr = nullptr;
 		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-		KillTimer(IDC_TOOLTIP_BKM);
+		KillTimer(m_uiIDTTBkm);
 	}
 }
 
@@ -4545,7 +4538,7 @@ void CHexCtrl::ToolTipTemplShow(bool fShow, POINT pt, bool fTimerCancel)
 		m_wndTtTempl.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x, pt.y)));
 		m_wndTtTempl.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
 		m_wndTtTempl.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
-		SetTimer(IDC_TOOLTIP_TEMPL, 300, nullptr);
+		SetTimer(m_uiIDTTTempl, 300, nullptr);
 	}
 	else if (fTimerCancel) { //Tooltip was canceled by the timer, not mouse move.
 		m_wndTtTempl.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
@@ -4553,7 +4546,7 @@ void CHexCtrl::ToolTipTemplShow(bool fShow, POINT pt, bool fTimerCancel)
 	else {
 		m_pTFieldTtCurr = nullptr;
 		m_wndTtTempl.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
-		KillTimer(IDC_TOOLTIP_TEMPL);
+		KillTimer(m_uiIDTTTempl);
 	}
 }
 
@@ -5218,7 +5211,7 @@ void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 	GetCursorPos(&ptCursor);
 
 	switch (nIDEvent) {
-	case IDC_TOOLTIP_BKM:
+	case m_uiIDTTBkm:
 		if (!rcClient.PtInRect(ptCursor)) { //Checking if cursor has left client rect.
 			ToolTipBkmShow(false);
 		}
@@ -5227,7 +5220,7 @@ void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 			ToolTipBkmShow(false, { }, true);
 		}
 		break;
-	case IDC_TOOLTIP_TEMPL:
+	case m_uiIDTTTempl:
 		if (!rcClient.PtInRect(ptCursor)) { //Checking if cursor has left client rect.
 			ToolTipTemplShow(false);
 		}

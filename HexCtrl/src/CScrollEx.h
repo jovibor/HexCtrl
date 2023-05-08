@@ -80,21 +80,21 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		DECLARE_MESSAGE_MAP();
 	private:
-		CWnd* m_pParent { };                        //Parent window.
-		CScrollEx* m_pSibling { };                  //Sibling scrollbar, added with AddSibling.
-		CBitmap m_bmpArrowFirst;                    //Up or Left arrow bitmap.
-		CBitmap m_bmpArrowLast;                     //Down or Right arrow bitmap.
-		EState m_enState { };                       //Current state.
-		CPoint m_ptCursorCur { };                   //Cursor's current position.
-		UINT m_uiScrollBarSizeWH { };               //Scrollbar size (width if vertical, height if horz).
-		ULONGLONG m_ullScrollPosCur { 0 };          //Current scroll position.
-		ULONGLONG m_ullScrollPosPrev { };           //Previous scroll position.
-		ULONGLONG m_ullScrollLine { };              //Size of one line scroll, when clicking arrow.
-		ULONGLONG m_ullScrollPage { };              //Size of page scroll, when clicking channel.
-		ULONGLONG m_ullScrollSizeMax { };           //Maximum scroll size (limit).
-		const COLORREF m_clrBkNC { GetSysColor(COLOR_3DFACE) }; //Bk color of the non client area. 
-		bool m_fCreated { false };                  //Main creation flag.
-		bool m_fVisible { false };                  //Is visible at the moment or not.
-		bool m_fScrollVert { };                     //Scrollbar type, horizontal or vertical.
+		static constexpr auto m_iThumbPosMax { 0x7FFFFFFF };
+		CWnd* m_pParent { };               //Parent window.
+		CScrollEx* m_pSibling { };         //Sibling scrollbar, added with AddSibling.
+		CBitmap m_bmpArrowFirst;           //Up or Left arrow bitmap.
+		CBitmap m_bmpArrowLast;            //Down or Right arrow bitmap.
+		EState m_enState { };              //Current state.
+		CPoint m_ptCursorCur { };          //Cursor's current position.
+		UINT m_uiScrollBarSizeWH { };      //Scrollbar size (width if vertical, height if horz).
+		ULONGLONG m_ullScrollPosCur { 0 }; //Current scroll position.
+		ULONGLONG m_ullScrollPosPrev { };  //Previous scroll position.
+		ULONGLONG m_ullScrollLine { };     //Size of one line scroll, when clicking arrow.
+		ULONGLONG m_ullScrollPage { };     //Size of page scroll, when clicking channel.
+		ULONGLONG m_ullScrollSizeMax { };  //Maximum scroll size (limit).
+		bool m_fCreated { false };         //Main creation flag.
+		bool m_fVisible { false };         //Is visible at the moment or not.
+		bool m_fScrollVert { };            //Scrollbar type, horizontal or vertical.
 	};
 }

@@ -25,7 +25,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		DECLARE_MESSAGE_MAP()
 	private:
-		static constexpr UINT_PTR IDT_EXITCHECK { 0x1 };
+		static constexpr UINT_PTR m_uTIDExitCheck { 0x1 };
 		CProgressCtrl m_stProgBar;
 		std::wstring m_wstrOperName { };
 		ULONGLONG m_ullProgBarMin { };

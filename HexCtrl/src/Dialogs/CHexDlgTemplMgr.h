@@ -180,6 +180,10 @@ namespace HEXCTRL::INTERNAL
 			UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 		DECLARE_MESSAGE_MAP();
 	private:
+		static constexpr auto m_iIDListApplFieldType { 0 }; //ID of the Type field in the m_pListApplied.
+		static constexpr auto m_iIDListApplFieldData { 4 };
+		static constexpr auto m_iIDListApplFieldDescr { 6 };
+		static constexpr auto m_iIDListApplFieldClrs { 7 };
 		enum class EMenuID : std::uint16_t;
 		IHexCtrl* m_pHexCtrl { };
 		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;               //Loaded Templates.

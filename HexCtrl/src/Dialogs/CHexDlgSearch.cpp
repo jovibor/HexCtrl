@@ -65,8 +65,6 @@ namespace HEXCTRL::INTERNAL
 		bool fDlgExit { };
 		bool fResult { };
 	};
-
-	constexpr auto SEARCH_SIZE_LIMIT = 256U;
 };
 
 BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
@@ -206,15 +204,17 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnS
 	bool fForward, CHexDlgCallback* pDlgClbk, bool fDlgExit)->SFINDRESULT
 {	//ullStart will keep index of found occurence, if any.
 
+	constexpr auto uSearchSizeLimit { 256U };
+	constexpr auto iSizeQuick { 1024 * 1024 * 10 }; //10MB.
+
 	const auto nSizeSearch = spnSearch.size();
-	assert(nSizeSearch <= SEARCH_SIZE_LIMIT);
-	if (nSizeSearch > SEARCH_SIZE_LIMIT)
+	assert(nSizeSearch <= uSearchSizeLimit);
+	if (nSizeSearch > uSearchSizeLimit)
 		return { false, false };
 
 	if (ullStart + nSizeSearch > m_ullSizeSentinel)
 		return { false, false };
 
-	constexpr auto iSizeQuick { 1024 * 1024 * 10 }; //10MB.
 	const auto ullSizeTotal = m_ullSizeSentinel - (fForward ? ullStart : ullEnd); //Depends on search direction.
 	const auto pHexCtrl = GetHexCtrl();
 	const auto ullStep = m_ullStep; //Search step.
@@ -291,8 +291,9 @@ BOOL CHexDlgSearch::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_stBrushDefault.CreateSolidBrush(m_clrBkTextArea);
 	constexpr auto iTextLimit { 512 };
+
+	m_stBrushDefault.CreateSolidBrush(m_clrBkTextArea);
 	m_stComboSearch.LimitText(iTextLimit);
 	m_stComboReplace.LimitText(iTextLimit);
 
@@ -523,11 +524,8 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 HBRUSH CHexDlgSearch::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
 	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_SEARCH_STATIC_RESULT) {
-		constexpr auto clrFound { RGB(0, 200, 0) };
-		constexpr auto clrFailed { RGB(200, 0, 0) };
-
 		pDC->SetBkColor(m_clrBkTextArea);
-		pDC->SetTextColor(m_fFound ? clrFound : clrFailed);
+		pDC->SetTextColor(m_fFound ? RGB(0, 200, 0) : RGB(200, 0, 0));
 		return m_stBrushDefault;
 	}
 
@@ -752,9 +750,8 @@ void CHexDlgSearch::Prepare()
 	}
 
 	if (m_fReplaceWarn && m_fReplace && (m_vecReplaceData.size() > m_vecSearchData.size())) {
-		constexpr auto wstrReplaceWarning { L"The replacing string is longer than searching string.\r\n"
-			"Do you want to overwrite the bytes following search occurrence?\r\n"
-			"Choosing \"No\" will cancel search." };
+		static constexpr auto wstrReplaceWarning { L"The replacing string is longer than searching string.\r\n"
+			"Do you want to overwrite the bytes following search occurrence?\r\nChoosing \"No\" will cancel search." };
 		if (IDNO == MessageBoxW(wstrReplaceWarning, L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST))
 			return;
 
@@ -767,7 +764,7 @@ void CHexDlgSearch::Prepare()
 
 bool CHexDlgSearch::PrepareHexBytes()
 {
-	constexpr auto pwszWrongInput { L"Unacceptable input character.\r\nAllowed characters are: 0123456789AaBbCcDdEeFf" };
+	static constexpr auto pwszWrongInput { L"Unacceptable input character.\r\nAllowed characters are: 0123456789AaBbCcDdEeFf" };
 	m_fMatchCase = false;
 	auto optData = NumStrToHex(m_wstrTextSearch, m_fWildcard ? static_cast<char>(m_uWildcard) : 0);
 	if (!optData) {

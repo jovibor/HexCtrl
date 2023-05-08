@@ -155,6 +155,10 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		afx_msg void OnHdnBegintrack(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnDestroy();
 	private:
+		static constexpr ULONG_PTR m_uIDTimerTTCellCheck { 0x01 };    //Cell tool-tip check-timer ID.
+		static constexpr ULONG_PTR m_uIDTimerTTLinkCheck { 0x02 };    //Link tool-tip check-timer ID.
+		static constexpr ULONG_PTR m_uIDTimerTTLinkActivate { 0x03 }; //Link tool-tip activate-timer ID.
+		static constexpr auto m_uIDEditInPlace { 0x01U };             //Inplace edit-box ID.
 		CListExHdr m_stListHeader;
 		LISTEXCOLORS m_stColors { };
 		CFont m_fontList;               //Default list font.
@@ -238,12 +242,6 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		bool fLink { false };       //Is it just a text (wsvLink is empty) or text with link?
 		bool fTitle { false };      //Is it link with custom title (wsvTitle is not empty)?
 	};
-
-	constexpr ULONG_PTR ID_TIMER_TT_CELL_CHECK { 0x01 };    //Cell tool-tip check-timer ID.
-	constexpr ULONG_PTR ID_TIMER_TT_LINK_CHECK { 0x02 };    //Link tool-tip check-timer ID.
-	constexpr ULONG_PTR ID_TIMER_TT_LINK_ACTIVATE { 0x03 }; //Link tool-tip activate-timer ID.
-	constexpr auto IDC_EDIT_INPLACE { 0x01U }; //Inplace edit-box ID.
-
 
 	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -802,7 +800,7 @@ BEGIN_MESSAGE_MAP(CListEx, CMFCListCtrl)
 	ON_NOTIFY(HDN_BEGINTRACKA, 0, &CListEx::OnHdnBegintrack)
 	ON_NOTIFY(HDN_BEGINTRACKW, 0, &CListEx::OnHdnBegintrack)
 	ON_NOTIFY_REFLECT(LVN_COLUMNCLICK, &CListEx::OnLvnColumnClick)
-	ON_EN_KILLFOCUS(IDC_EDIT_INPLACE, &CListEx::OnEditInPlaceKillFocus)
+	ON_EN_KILLFOCUS(m_uIDEditInPlace, &CListEx::OnEditInPlaceKillFocus)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -1754,7 +1752,7 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 				m_stCurrLink.iSubItem = hi.iSubItem;
 				m_wstrTtText = iterFind->fTitle ? iterFind->wstrTitle : iterFind->wstrLink;
 				m_stTInfoLink.lpszText = m_wstrTtText.data();
-				SetTimer(ID_TIMER_TT_LINK_ACTIVATE, 400, nullptr); //Activate (show) tooltip after delay.
+				SetTimer(m_uIDTimerTTLinkActivate, 400, nullptr); //Activate (show) tooltip after delay.
 			}
 		}
 	}
@@ -1792,7 +1790,7 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 			m_stWndTtCell.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stTInfoCell));
 
 			//Timer to check whether mouse has left subitem's rect.
-			SetTimer(ID_TIMER_TT_CELL_CHECK, 200, nullptr);
+			SetTimer(m_uIDTimerTTCellCheck, 200, nullptr);
 		}
 	}
 	else {
@@ -1836,7 +1834,7 @@ void CListEx::OnLButtonDblClk(UINT nFlags, CPoint point)
 
 	const auto str = GetItemText(m_htiInPlaceEdit.iItem, m_htiInPlaceEdit.iSubItem);
 	m_stEditInPlace.DestroyWindow();
-	m_stEditInPlace.Create(dwStyle | WS_BORDER | WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, rcCell, this, IDC_EDIT_INPLACE);
+	m_stEditInPlace.Create(dwStyle | WS_BORDER | WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, rcCell, this, m_uIDEditInPlace);
 	m_stEditInPlace.SetFont(&m_fontList, FALSE);
 	m_stEditInPlace.SetWindowTextW(str);
 	m_stEditInPlace.SetFocus();
@@ -1909,19 +1907,19 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 	//Checking if mouse left list's subitem rect,
 	//if so — hiding tooltip and killing timer.
 	switch (nIDEvent) {
-	case ID_TIMER_TT_CELL_CHECK:
+	case m_uIDTimerTTCellCheck:
 		//If cursor is still hovers subitem then do nothing.
 		if (m_stCurrCell.iItem != hitInfo.iItem || m_stCurrCell.iSubItem != hitInfo.iSubItem) {
 			TtCellHide();
 		}
 		break;
-	case ID_TIMER_TT_LINK_CHECK:
+	case m_uIDTimerTTLinkCheck:
 		//If cursor has left link subitem's rect.
 		if (m_stCurrLink.iItem != hitInfo.iItem || m_stCurrLink.iSubItem != hitInfo.iSubItem) {
 			TtLinkHide();
 		}
 		break;
-	case ID_TIMER_TT_LINK_ACTIVATE:
+	case m_uIDTimerTTLinkActivate:
 		if (m_rcLinkCurr.PtInRect(ptClient)) {
 			m_fTtLinkShown = true;
 
@@ -1931,13 +1929,13 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 			m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stTInfoLink));
 
 			//Timer to check whether mouse left link subitems's rect.
-			SetTimer(ID_TIMER_TT_LINK_CHECK, 200, nullptr);
+			SetTimer(m_uIDTimerTTLinkCheck, 200, nullptr);
 		}
 		else {
 			m_rcLinkCurr.SetRectEmpty();
 		}
 
-		KillTimer(ID_TIMER_TT_LINK_ACTIVATE);
+		KillTimer(m_uIDTimerTTLinkActivate);
 		break;
 	default:
 		break;
@@ -2306,7 +2304,7 @@ void CListEx::TtLinkHide()
 {
 	m_fTtLinkShown = false;
 	m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoLink));
-	KillTimer(ID_TIMER_TT_LINK_CHECK);
+	KillTimer(m_uIDTimerTTLinkCheck);
 
 	m_stCurrLink.iItem = -1;
 	m_stCurrLink.iSubItem = -1;
@@ -2320,7 +2318,7 @@ void CListEx::TtCellHide()
 	m_stCurrCell.iSubItem = -1;
 
 	m_stWndTtCell.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoCell));
-	KillTimer(ID_TIMER_TT_CELL_CHECK);
+	KillTimer(m_uIDTimerTTCellCheck);
 }
 
 void CListEx::TtRowShow(bool fShow, UINT uRow)

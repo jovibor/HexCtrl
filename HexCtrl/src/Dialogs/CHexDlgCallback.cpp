@@ -32,7 +32,7 @@ BOOL CHexDlgCallback::OnInitDialog()
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPERNAME)->SetWindowTextW(m_wstrOperName.data());
 
 	constexpr auto iElapse { 100 }; //Milliseconds for the timer.
-	SetTimer(IDT_EXITCHECK, iElapse, nullptr);
+	SetTimer(m_uTIDExitCheck, iElapse, nullptr);
 	m_iTicksInSecond = 1000 / iElapse;
 
 	constexpr auto iRange { 1000 };
@@ -53,8 +53,8 @@ void CHexDlgCallback::DoDataExchange(CDataExchange* pDX)
 
 void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 {
-	if (nIDEvent == IDT_EXITCHECK && m_fCancel) {
-		KillTimer(IDT_EXITCHECK);
+	if (nIDEvent == m_uTIDExitCheck && m_fCancel) {
+		KillTimer(m_uTIDExitCheck);
 		OnCancel();
 	}
 
@@ -63,10 +63,10 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 	auto iPos = static_cast<int>(ullCurDiff / m_ullThousandth);
 	m_stProgBar.SetPos(iPos);
 
-	constexpr auto iBytesInMB = 1024 * 1024; //(B in KB) * (KB in MB)
+	constexpr auto iBytesInMB { 1024 * 1024 }; //(B in KB) * (KB in MB)
 	const auto iSpeedMBS = ((ullCurDiff / ++m_llTicks) * m_iTicksInSecond) / iBytesInMB; //Speed in MB/s.
 	std::wstring wstrDisplay = m_wstrOperName;
-	constexpr auto iMBInGB = 1024; //How many MB in one GB.
+	constexpr auto iMBInGB { 1024 }; //How many MB in one GB.
 	wchar_t buff[64];
 
 	if (iSpeedMBS < 1) { //If speed is less than 1 MB/s.

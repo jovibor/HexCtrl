@@ -26,11 +26,6 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 	enum class ETimer : std::uint16_t {
 		IDT_FIRSTCLICK = 0x7ff0, IDT_CLICKREPEAT = 0x7ff1
 	};
-
-	constexpr auto SIZE_PX_BMP_ARROW { 34 }; //Arrow rect size in pixels, in the loaded arrow bitmap.
-	constexpr auto CLR_SCROLL_BK { RGB(241, 241, 241) };    //Scrollbar Bk color.
-	constexpr auto CLR_SCROLL_THUMB { RGB(192, 192, 192) }; //Scrollbar thumb color.
-	constexpr auto THUMB_POS_MAX { 0x7FFFFFFF };
 }
 
 BEGIN_MESSAGE_MAP(CScrollEx, CWnd)
@@ -286,7 +281,7 @@ void CScrollEx::OnMouseMove(UINT /*nFlags*/, CPoint point)
 			m_ptCursorCur.y = rc.top;
 		}
 		else if (point.y > rc.bottom) {
-			iNewPos = THUMB_POS_MAX;
+			iNewPos = m_iThumbPosMax;
 			m_ptCursorCur.y = rc.bottom;
 		}
 		else {
@@ -300,7 +295,7 @@ void CScrollEx::OnMouseMove(UINT /*nFlags*/, CPoint point)
 			m_ptCursorCur.x = rc.left;
 		}
 		else if (point.x > rc.right) {
-			iNewPos = THUMB_POS_MAX;
+			iNewPos = m_iThumbPosMax;
 			m_ptCursorCur.x = rc.right;
 		}
 		else {
@@ -552,6 +547,7 @@ void CScrollEx::DrawScrollBar()const
 		return;
 	}
 
+	static const auto clrBkNC { GetSysColor(COLOR_3DFACE) }; //Bk color of the non client area. 
 	const auto pParent = GetParent();
 	CWindowDC dcParent(pParent);
 	CDC dcMem;
@@ -563,18 +559,19 @@ void CScrollEx::DrawScrollBar()const
 	const auto pDC = &dcMem;
 
 	const auto rcSNC = GetScrollRect(true);	//Scroll bar with any additional non client area, to fill it below.
-	pDC->FillSolidRect(&rcSNC, m_clrBkNC);	//Scroll bar with NC Bk.
+	pDC->FillSolidRect(rcSNC, clrBkNC);	//Scroll bar with NC Bk.
 	const auto rcS = GetScrollRect();
-	pDC->FillSolidRect(&rcS, CLR_SCROLL_BK); //Scroll bar Bk.
+	pDC->FillSolidRect(rcS, RGB(241, 241, 241)); //Scroll bar Bk.
 	DrawArrows(pDC);
 	DrawThumb(pDC);
 
-	//Copy drawn Scrollbar from dcMem to parent window.
+	//Copy drawn Scrollbar from dcMem to the parent window.
 	dcParent.BitBlt(rcSNC.left, rcSNC.top, rcSNC.Width(), rcSNC.Height(), &dcMem, rcSNC.left, rcSNC.top, SRCCOPY);
 }
 
 void CScrollEx::DrawArrows(CDC* pDC)const
 {
+	constexpr auto iArrowRCSizePx { 34 }; //Arrow bitmap size in pixels.
 	const auto rcScroll = GetScrollRect();
 	int iFirstBtnWH;
 	int iLastBtnWH;
@@ -605,17 +602,17 @@ void CScrollEx::DrawArrows(CDC* pDC)const
 	dcSource.CreateCompatibleDC(pDC);
 	dcSource.SelectObject(m_bmpArrowFirst);	//First arrow button.
 	pDC->StretchBlt(iFirstBtnOffsetDrawX, iFirstBtnOffsetDrawY, iFirstBtnWH, iFirstBtnWH,
-		&dcSource, 0, 0, SIZE_PX_BMP_ARROW, SIZE_PX_BMP_ARROW, SRCCOPY);
+		&dcSource, 0, 0, iArrowRCSizePx, iArrowRCSizePx, SRCCOPY);
 	dcSource.SelectObject(m_bmpArrowLast); //Last arrow button.
 	pDC->StretchBlt(iLastBtnOffsetDrawX, iLastBtnOffsetDrawY, iLastBtnWH, iLastBtnWH,
-		&dcSource, 0, 0, SIZE_PX_BMP_ARROW, SIZE_PX_BMP_ARROW, SRCCOPY);
+		&dcSource, 0, 0, iArrowRCSizePx, iArrowRCSizePx, SRCCOPY);
 }
 
 void CScrollEx::DrawThumb(CDC* pDC)const
 {
 	auto rcThumb = GetThumbRect();
 	if (!rcThumb.IsRectNull()) {
-		pDC->FillSolidRect(rcThumb, CLR_SCROLL_THUMB);
+		pDC->FillSolidRect(rcThumb, RGB(192, 192, 192)); //Scrollbar thumb color.
 	}
 }
 
@@ -723,7 +720,6 @@ CRect CScrollEx::GetThumbRect(bool fClientCoord)const
 UINT CScrollEx::GetThumbSizeWH()const
 {
 	constexpr auto uThumbSizeMin = 15U; //Minimum allowed thumb size.
-
 	const auto uiScrollWorkAreaSizeWH = GetScrollWorkAreaSizeWH();
 	const auto rcParent = GetParentRect();
 	const long double dDelta { IsVert() ? static_cast<long double>(rcParent.Height()) / m_ullScrollSizeMax :
@@ -754,7 +750,7 @@ void CScrollEx::SetThumbPos(int iPos)
 	if (iPos < 0) {
 		ullNewScrollPos = 0;
 	}
-	else if (iPos == THUMB_POS_MAX) {
+	else if (iPos == m_iThumbPosMax) {
 		ullNewScrollPos = m_ullScrollSizeMax;
 	}
 	else {
