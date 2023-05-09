@@ -2510,6 +2510,7 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 	const auto ullStartLine = ullSelStart / m_dwCapacity;
 	std::wstring wstrDataText;
 	std::size_t sIndexToPrint { };
+	std::size_t sIndexOffset = dwModStart;
 	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, static_cast<int>(dwLines));
 
 	for (DWORD iterLines = 0; iterLines < dwLines; ++iterLines) {
@@ -2520,9 +2521,9 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 
 		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks) {
 			if (dwModStart == 0 && sIndexToPrint < ullSelSize) {
-				wstrRet += wstrHex[sIndexToPrint * 2];
-				wstrRet += wstrHex[sIndexToPrint * 2 + 1];
-				wstrDataText += wstrText[sIndexToPrint];
+				wstrRet += wstrHex[(sIndexToPrint+sIndexOffset) * 2];
+				wstrRet += wstrHex[(sIndexToPrint+ sIndexOffset) * 2 + 1];
+				wstrDataText += wstrText[sIndexToPrint+ sIndexOffset];
 				++sIndexToPrint;
 			}
 			else {
