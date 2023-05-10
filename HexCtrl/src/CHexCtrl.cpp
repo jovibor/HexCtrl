@@ -2496,7 +2496,7 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 	//How many spaces are needed to be inserted at the beginning.
 	DWORD dwModStart = ullSelStart % m_dwCapacity;
 
-	DWORD dwLines = static_cast<DWORD>(ullSelSize) / m_dwCapacity;
+	auto dwLines = static_cast<DWORD>(ullSelSize) / m_dwCapacity;
 	if ((dwModStart + static_cast<DWORD>(ullSelSize)) > m_dwCapacity) {
 		++dwLines;
 	}
@@ -2508,21 +2508,22 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 	}
 
 	const auto ullStartLine = ullSelStart / m_dwCapacity;
-	std::wstring wstrDataText;
-	std::size_t sIndexToPrint { };
+	const auto dwStartOffset = dwModStart; //Offset from the line start in the wstrHex.
 	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, static_cast<int>(dwLines));
+	std::wstring wstrDataText;
+	std::size_t sIndexToPrint { 0 };
 
-	for (DWORD iterLines = 0; iterLines < dwLines; ++iterLines) {
+	for (auto iterLines { 0UL }; iterLines < dwLines; ++iterLines) {
 		wchar_t pwszBuff[32]; //To be enough for max as Hex and as Decimals.
 		OffsetToString(ullStartLine * m_dwCapacity + m_dwCapacity * iterLines, pwszBuff);
 		wstrRet += pwszBuff;
 		wstrRet.insert(wstrRet.size(), 3, ' ');
 
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity; ++iterChunks) {
+		for (auto iterChunks { 0UL }; iterChunks < m_dwCapacity; ++iterChunks) {
 			if (dwModStart == 0 && sIndexToPrint < ullSelSize) {
-				wstrRet += wstrHex[sIndexToPrint * 2];
-				wstrRet += wstrHex[sIndexToPrint * 2 + 1];
-				wstrDataText += wstrText[sIndexToPrint];
+				wstrRet += wstrHex[(sIndexToPrint + dwStartOffset) * 2];
+				wstrRet += wstrHex[(sIndexToPrint + dwStartOffset) * 2 + 1];
+				wstrDataText += wstrText[sIndexToPrint + dwStartOffset];
 				++sIndexToPrint;
 			}
 			else {
