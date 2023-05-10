@@ -208,7 +208,7 @@ void CHexDlgTemplMgr::OnBnLoadTemplate()
 
 	DWORD dwCount { };
 	pResults->GetCount(&dwCount);
-	for (unsigned iterFiles = 0; iterFiles < dwCount; ++iterFiles) {
+	for (auto iterFiles { 0U }; iterFiles < dwCount; ++iterFiles) {
 		CComPtr<IShellItem> pItem;
 		pResults->GetItemAt(iterFiles, &pItem);
 		CComHeapPtr<wchar_t> pwstrPath;

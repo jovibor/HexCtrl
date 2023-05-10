@@ -2298,9 +2298,9 @@ auto CHexCtrl::CopyBase64()const->std::wstring
 	const auto ullSelSize = m_pSelection->GetSelSize();
 	std::wstring wstrData;
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
-	unsigned int uValA = 0;
-	int iValB = -6;
-	for (unsigned i = 0; i < ullSelSize; ++i) {
+	auto uValA = 0U;
+	auto iValB = -6;
+	for (auto i { 0U }; i < ullSelSize; ++i) {
 		uValA = (uValA << 8) + GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
 		iValB += 8;
 		while (iValB >= 0) {
@@ -2323,11 +2323,10 @@ auto CHexCtrl::CopyCArr()const->std::wstring
 {
 	std::wstring wstrData;
 	const auto ullSelSize = m_pSelection->GetSelSize();
-
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 3 + 64);
 	wstrData = std::format(L"unsigned char data[{}] = {{\r\n", ullSelSize);
 
-	for (unsigned i = 0; i < ullSelSize; ++i) {
+	for (auto i { 0U }; i < ullSelSize; ++i) {
 		wstrData += L"0x";
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
 		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
@@ -2357,7 +2356,7 @@ auto CHexCtrl::CopyGrepHex()const->std::wstring
 	const auto ullSelSize = m_pSelection->GetSelSize();
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
-	for (unsigned i = 0; i < ullSelSize; ++i) {
+	for (auto i { 0U }; i < ullSelSize; ++i) {
 		wstrData += L"\\x";
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
 		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
@@ -2373,7 +2372,7 @@ auto CHexCtrl::CopyHex()const->std::wstring
 	const auto ullSelSize = m_pSelection->GetSelSize();
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
-	for (unsigned i = 0; i < ullSelSize; ++i) {
+	for (auto i { 0U }; i < ullSelSize; ++i) {
 		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
 		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 		wstrData += m_pwszHexChars[(chByte & 0x0F)];
@@ -2391,7 +2390,7 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 3);
 	if (m_fSelectionBlock) {
 		auto dwTail = m_pSelection->GetLineLength();
-		for (unsigned i = 0; i < ullSelSize; ++i) {
+		for (auto i { 0U }; i < ullSelSize; ++i) {
 			const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
 			wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 			wstrData += m_pwszHexChars[(chByte & 0x0F)];
@@ -2423,7 +2422,7 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 			wstrData.insert(0, static_cast<std::size_t>(dwCount), ' ');
 		}
 
-		for (unsigned i = 0; i < ullSelSize; ++i) {
+		for (auto i { 0U }; i < ullSelSize; ++i) {
 			const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
 			wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 			wstrData += m_pwszHexChars[(chByte & 0x0F)];
@@ -2513,13 +2512,13 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 	std::wstring wstrDataText;
 	std::size_t sIndexToPrint { 0 };
 
-	for (auto iterLines { 0UL }; iterLines < dwLines; ++iterLines) {
+	for (auto iterLines { 0U }; iterLines < dwLines; ++iterLines) {
 		wchar_t pwszBuff[32]; //To be enough for max as Hex and as Decimals.
 		OffsetToString(ullStartLine * m_dwCapacity + m_dwCapacity * iterLines, pwszBuff);
 		wstrRet += pwszBuff;
 		wstrRet.insert(wstrRet.size(), 3, ' ');
 
-		for (auto iterChunks { 0UL }; iterChunks < m_dwCapacity; ++iterChunks) {
+		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity; ++iterChunks) {
 			if (dwModStart == 0 && sIndexToPrint < ullSelSize) {
 				wstrRet += wstrHex[(sIndexToPrint + dwStartOffset) * 2];
 				wstrRet += wstrHex[(sIndexToPrint + dwStartOffset) * 2 + 1];
@@ -2732,7 +2731,7 @@ void CHexCtrl::DrawHexText(CDC* pDC, int iLines, std::wstring_view wsvHex, std::
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
+		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
 			//Hex chunk to print.
 			wstrHexToPrint += wsvHex[sIndexToPrint * 2];
 			wstrHexToPrint += wsvHex[sIndexToPrint * 2 + 1];
@@ -2833,7 +2832,7 @@ void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 		};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
+		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
 			//Fields.
 			if (auto pField = m_pDlgTemplMgr->HitTest(ullStartOffset + sIndexToPrint); pField != nullptr) {
 				if (iterChunks == 0 && pField == pFieldCurr) {
@@ -2972,7 +2971,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 		};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
+		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
 			//Bookmarks.
 			if (auto* pBkm = m_pDlgBkmMgr->HitTest(ullStartOffset + sIndexToPrint); pBkm != nullptr) {
 				//If it's nested bookmark.
@@ -3084,7 +3083,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 		};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
+		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
 			//Colors.
 			hci.ullOffset = ullStartOffset + sIndexToPrint;
 			hci.pClr = nullptr; //Nullify for the next iteration.
@@ -3174,7 +3173,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 		};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
+		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
 			//Selection.
 			if (m_pSelection->HitTest(ullStartOffset + sIndexToPrint)) {
 				if (iSelHexPosToPrintX == -1) { //For just one time exec.
@@ -3260,7 +3259,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 		};
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
+		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
 			//Selection highlights.
 			if (m_pSelection->HitTestHighlight(ullStartOffset + sIndexToPrint)) {
 				if (iSelHexPosToPrintX == -1) { //For just one time exec.
@@ -3387,7 +3386,7 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std:
 		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
 
 		//Main loop for printing Hex chunks and Text chars.
-		for (unsigned iterChunks = 0; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
+		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
 			const auto ullOffsetCurr = ullStartOffset + sIndexToPrint;
 			if (ullOffsetCurr >= ullCaretPos && ullOffsetCurr < (ullCaretPos + ullDISize)) {
 				if (iDataInterpHexPosToPrintX == -1) { //For just one time exec.
@@ -4301,7 +4300,9 @@ void CHexCtrl::SelAddRight()
 	const auto fHasSel = HasSelection();
 	const auto ullSelStart = fHasSel ? m_pSelection->GetSelStart() : m_ullCaretPos;
 	const auto ullSelSize = fHasSel ? m_pSelection->GetSelSize() : 1;
-	ULONGLONG ullClick { }, ullStart { }, ullSize { 0UL };
+	ULONGLONG ullClick { };
+	ULONGLONG ullStart { };
+	ULONGLONG ullSize { 0ULL };
 	ULONGLONG ullNewPos { }; //Future pos of selection start.
 	ULONGLONG ullOldPos { }; //Current pos of selection start.
 

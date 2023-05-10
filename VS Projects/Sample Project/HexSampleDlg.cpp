@@ -408,7 +408,7 @@ auto CHexSampleDlg::OpenFileDlg()->std::optional<std::vector<std::wstring>>
 
 		DWORD dwCount { };
 		pResults->GetCount(&dwCount);
-		for (unsigned i = 0; i < dwCount; ++i) {
+		for (auto i { 0U }; i < dwCount; ++i) {
 			CComPtr<IShellItem> pItem;
 			pResults->GetItemAt(i, &pItem);
 			CComHeapPtr<wchar_t> pwstrPath;
