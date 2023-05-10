@@ -120,7 +120,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto CopyHexLE()const->std::wstring;
 		[[nodiscard]] auto CopyOffset()const->std::wstring;
 		[[nodiscard]] auto CopyPrintScreen()const->std::wstring;
-		[[nodiscard]] auto CopyTextUTF16()const->std::wstring;
+		[[nodiscard]] auto CopyTextCP()const->std::wstring;
 		void DrawWindow(CDC* pDC)const;
 		void DrawInfoBar(CDC* pDC)const;
 		void DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const;

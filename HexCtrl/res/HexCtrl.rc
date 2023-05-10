@@ -475,7 +475,7 @@ BEGIN
             MENUITEM "Copy as Hex Bytes (LE)",      IDM_HEXCTRL_CLPBRD_COPYHEXLE
             MENUITEM "Copy as Hex Formatted",       IDM_HEXCTRL_CLPBRD_COPYHEXFMT
             MENUITEM SEPARATOR
-            MENUITEM "Copy as Text UTF-16",         IDM_HEXCTRL_CLPBRD_COPYTEXT
+            MENUITEM "Copy as Text CP",             IDM_HEXCTRL_CLPBRD_COPYTEXTCP
             MENUITEM "Copy as Base64",              IDM_HEXCTRL_CLPBRD_COPYBASE64
             MENUITEM "Copy as ""C"" Array",         IDM_HEXCTRL_CLPBRD_COPYCARR
             MENUITEM "Copy as Grep Hex",            IDM_HEXCTRL_CLPBRD_COPYGREPHEX
@@ -485,7 +485,7 @@ BEGIN
             MENUITEM SEPARATOR
             MENUITEM "Paste as Hex Bytes",          IDM_HEXCTRL_CLPBRD_PASTEHEX
             MENUITEM "Paste as Text UTF-16",        IDM_HEXCTRL_CLPBRD_PASTETEXTUTF16
-            MENUITEM "Paste as Text Codepage",      IDM_HEXCTRL_CLPBRD_PASTETEXTCP
+            MENUITEM "Paste as Text CP",            IDM_HEXCTRL_CLPBRD_PASTETEXTCP
         END
         POPUP "Modify"
         BEGIN

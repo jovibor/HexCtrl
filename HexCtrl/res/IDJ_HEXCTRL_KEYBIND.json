@@ -24,7 +24,7 @@
   "CMD_CLPBRD_COPY_HEX": [ "ctrl+c" ],
   "CMD_CLPBRD_COPY_HEXLE": [ "" ],
   "CMD_CLPBRD_COPY_HEXFMT": [ "" ],
-  "CMD_CLPBRD_COPY_TEXT": [ "" ],
+  "CMD_CLPBRD_COPY_TEXTCP": [ "" ],
   "CMD_CLPBRD_COPY_BASE64": [ "" ],
   "CMD_CLPBRD_COPY_CARR": [ "" ],
   "CMD_CLPBRD_COPY_GREPHEX": [ "" ],
