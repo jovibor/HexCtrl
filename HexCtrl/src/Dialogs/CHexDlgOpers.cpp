@@ -37,6 +37,8 @@ BOOL CHexDlgOpers::ShowWindow(int nCmdShow)
 	return CDialogEx::ShowWindow(nCmdShow);
 }
 
+//Private methods.
+
 void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
@@ -48,43 +50,44 @@ BOOL CHexDlgOpers::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	using enum EHexOperMode;
-	auto iIndex = m_stComboOper.AddString(L"Assign");
+	auto iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_ASSIGN).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ASSIGN));
 	m_stComboOper.SetCurSel(iIndex);
-	iIndex = m_stComboOper.AddString(L"Add");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_ADD).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ADD));
-	iIndex = m_stComboOper.AddString(L"Subtract");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_SUB).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SUB));
-	iIndex = m_stComboOper.AddString(L"Multiply");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_MUL).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MUL));
-	iIndex = m_stComboOper.AddString(L"Divide");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_DIV).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_DIV));
-	iIndex = m_stComboOper.AddString(L"Ceiling");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_CEIL).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_CEIL));
-	iIndex = m_stComboOper.AddString(L"Floor");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_FLOOR).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_FLOOR));
-	iIndex = m_stComboOper.AddString(L"OR");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_OR).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_OR));
-	iIndex = m_stComboOper.AddString(L"XOR");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_XOR).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_XOR));
-	iIndex = m_stComboOper.AddString(L"AND");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_AND).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_AND));
-	iIndex = m_stComboOper.AddString(L"NOT");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_NOT).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_NOT));
-	iIndex = m_stComboOper.AddString(L"SHL");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_SHL).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHL));
-	iIndex = m_stComboOper.AddString(L"SHR");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_SHR).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHR));
-	iIndex = m_stComboOper.AddString(L"ROTL");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_ROTL).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTL));
-	iIndex = m_stComboOper.AddString(L"ROTR");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_ROTR).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTR));
-	iIndex = m_stComboOper.AddString(L"Swap Bytes Order");
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_SWAP).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SWAP));
 
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_BYTE, IDC_HEXCTRL_OPERS_RAD_QWORD, IDC_HEXCTRL_OPERS_RAD_BYTE);
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_LE, IDC_HEXCTRL_OPERS_RAD_BE, IDC_HEXCTRL_OPERS_RAD_LE);
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL, IDC_HEXCTRL_OPERS_RAD_ALL);
+	SetOKButtonName();
 
 	return TRUE;
 }
@@ -97,6 +100,7 @@ void CHexDlgOpers::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 			CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL,
 				fSelection ? IDC_HEXCTRL_OPERS_RAD_SEL : IDC_HEXCTRL_OPERS_RAD_ALL);
 			GetDlgItem(IDC_HEXCTRL_OPERS_RAD_SEL)->EnableWindow(fSelection);
+			SetOKButtonName();
 		}
 	}
 
@@ -113,6 +117,9 @@ BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
 	case IDC_HEXCTRL_OPERS_RAD_QWORD:
 	case IDC_HEXCTRL_OPERS_COMBO_OPER:
 		CheckWndAvail();
+		if (HIWORD(wParam) == CBN_SELCHANGE) { //Combo-box selection changed.
+			SetOKButtonName();
+		}
 		break;
 	case IDOK:
 		OnOK();
@@ -125,11 +132,6 @@ BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
 	}
 
 	return TRUE;
-}
-
-BOOL CHexDlgOpers::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
-{
-	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
 void CHexDlgOpers::OnOK()
@@ -255,4 +257,9 @@ void CHexDlgOpers::CheckWndAvail()const
 EHexOperMode CHexDlgOpers::GetOperMode()const
 {
 	return static_cast<EHexOperMode>(m_stComboOper.GetItemData(m_stComboOper.GetCurSel()));
+}
+
+void CHexDlgOpers::SetOKButtonName()
+{
+	GetDlgItem(IDOK)->SetWindowTextW(m_mapNames.at(GetOperMode()).data());
 }
