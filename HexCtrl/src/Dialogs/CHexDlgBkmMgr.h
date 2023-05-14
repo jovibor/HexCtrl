@@ -26,7 +26,7 @@ namespace HEXCTRL::INTERNAL
 		void GoPrev();
 		[[nodiscard]] bool HasBookmarks()const;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset) -> PHEXBKM override;
-		void Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl);
+		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsVirtual()const;
 		void RemoveByOffset(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID)override;
@@ -72,7 +72,6 @@ namespace HEXCTRL::INTERNAL
 		LISTEX::LISTEXCOLOR m_stCellClr { };
 		CMenu m_stMenuList;
 		HBITMAP m_hBITMAPMinMax { };  //Bitmap for the min-max checkbox.
-		UINT m_nIDTemplate { };       //Resource ID of the Dialog, for creation.
 		int m_iBkmCurr { -1 };        //Currently selected in list bookmark index;
 		bool m_fShowAsHex { true };
 	};

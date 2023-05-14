@@ -40,7 +40,7 @@ namespace HEXCTRL
 		CMD_CLPBRD_COPY_OFFSET, CMD_CLPBRD_PASTE_HEX, CMD_CLPBRD_PASTE_TEXTUTF16, CMD_CLPBRD_PASTE_TEXTCP,
 		CMD_MODIFY_OPERS_DLG, CMD_MODIFY_FILLZEROS, CMD_MODIFY_FILLDATA_DLG, CMD_MODIFY_UNDO, CMD_MODIFY_REDO,
 		CMD_SEL_MARKSTART, CMD_SEL_MARKEND, CMD_SEL_ALL, CMD_SEL_ADDLEFT, CMD_SEL_ADDRIGHT, CMD_SEL_ADDUP,
-		CMD_SEL_ADDDOWN, CMD_DATAINTERP_DLG, CMD_ENCODING_DLG, CMD_APPEAR_FONTCHOOSE, CMD_APPEAR_FONTINC,
+		CMD_SEL_ADDDOWN, CMD_DATAINTERP_DLG, CMD_ENCODING_DLG, CMD_APPEAR_FONT_DLG, CMD_APPEAR_FONTINC,
 		CMD_APPEAR_FONTDEC, CMD_APPEAR_CAPACINC, CMD_APPEAR_CAPACDEC, CMD_PRINT_DLG, CMD_ABOUT_DLG,
 		CMD_CARET_LEFT, CMD_CARET_RIGHT, CMD_CARET_UP, CMD_CARET_DOWN,
 		CMD_SCROLL_PAGEUP, CMD_SCROLL_PAGEDOWN,
@@ -51,8 +51,8 @@ namespace HEXCTRL
 	* EHexWnd - HexControl's windows.                                                           *
 	********************************************************************************************/
 	enum class EHexWnd : std::uint8_t {
-		WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_FILLDATA,
-		DLG_OPERS, DLG_SEARCH, DLG_ENCODING, DLG_GOTO, DLG_TEMPLMGR
+		WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_MODIFY,
+		DLG_SEARCH, DLG_ENCODING, DLG_GOTO, DLG_TEMPLMGR
 	};
 
 	/********************************************************************************************
@@ -410,14 +410,14 @@ namespace HEXCTRL
 #endif
 
 #if defined HEXCTRL_MANUAL_MFC_INIT || defined HEXCTRL_SHARED_DLL
-//Because MFC PreTranslateMessage doesn't work in a DLLs
-//this exported function should be called from the app's main message loop.
-//Something like that:
-//BOOL CMyApp::PreTranslateMessage(MSG* pMsg) {
-//	if (HexCtrlPreTranslateMessage(pMsg))
-//		return TRUE;
-//	return CWinApp::PreTranslateMessage(pMsg);
-//}
+	//Because MFC PreTranslateMessage doesn't work in a DLLs
+	//this exported function should be called from the app's main message loop.
+	//Something like that:
+	//BOOL CMyApp::PreTranslateMessage(MSG* pMsg) {
+	//	if (HexCtrlPreTranslateMessage(pMsg))
+	//		return TRUE;
+	//	return CWinApp::PreTranslateMessage(pMsg);
+	//}
 	extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg);
 #endif
 
@@ -442,6 +442,6 @@ namespace HEXCTRL
 	constexpr auto HEXCTRL_MSG_SELECTION { 0x0105U };   //Selection has been made.
 	constexpr auto HEXCTRL_MSG_SETDATA { 0x0106U };     //Indicates that the data has changed.
 
-	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
+	//Setting a manifest for the ComCtl32.dll version 6.
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 }

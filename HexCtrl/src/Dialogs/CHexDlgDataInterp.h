@@ -25,7 +25,7 @@ namespace HEXCTRL::INTERNAL
 	public:
 		[[nodiscard]] ULONGLONG GetDataSize()const;
 		void InspectOffset(ULONGLONG ullOffset);
-		void Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl);
+		void Initialize(IHexCtrl* pHexCtrl);
 		BOOL ShowWindow(int nCmdShow);
 	private:
 	#pragma pack(push, 1)
@@ -139,7 +139,6 @@ namespace HEXCTRL::INTERNAL
 		std::vector<SGRIDDATA> m_vecProp;
 		IHexCtrl* m_pHexCtrl { };
 		CHexPropGridCtrl m_stCtrlGrid;
-		UINT m_nIDTemplate { }; //Resource ID of the Dialog, for creation.
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullDataSize { }; //Size of the currently interpreted data.
 		DWORD m_dwDateFormat { };    //Date format.

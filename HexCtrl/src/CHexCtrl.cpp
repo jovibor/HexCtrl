@@ -14,9 +14,8 @@
 #include "Dialogs/CHexDlgCallback.h"
 #include "Dialogs/CHexDlgDataInterp.h"
 #include "Dialogs/CHexDlgEncoding.h"
-#include "Dialogs/CHexDlgFillData.h"
 #include "Dialogs/CHexDlgGoTo.h"
-#include "Dialogs/CHexDlgOpers.h"
+#include "Dialogs/CHexDlgModify.h"
 #include "Dialogs/CHexDlgSearch.h"
 #include "Dialogs/CHexDlgTemplMgr.h"
 #include "HexUtility.h"
@@ -276,7 +275,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	pMenuTop->SetMenuItemInfoW(0, &mii, TRUE); //"Search" parent menu icon.
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_SEARCH_DLG, &mii);
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_SEARCH_DLGSEARCH, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Group Data" menu icon.
@@ -326,7 +325,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	//"Appearance->Choose Font" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_FONTCHOOSE), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_APPEAR_FONTCHOOSE, &mii);
+	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_APPEAR_DLGFONT, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 	//End of menu related.
 
@@ -362,14 +361,13 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	SetDateInfo(0xFFFFFFFFUL, L'/');
 
 	//All dialogs are initialized after the main window, to set the parent window correctly.
-	m_pDlgBkmMgr->Initialize(IDD_HEXCTRL_BKMMGR, this);
-	m_pDlgDataInterp->Initialize(IDD_HEXCTRL_DATAINTERP, this);
-	m_pDlgEncoding->Initialize(IDD_HEXCTRL_ENCODING, this);
-	m_pDlgFillData->Initialize(IDD_HEXCTRL_FILLDATA, this);
-	m_pDlgGoTo->Initialize(IDD_HEXCTRL_GOTO, this);
-	m_pDlgOpers->Initialize(IDD_HEXCTRL_OPERS, this);
-	m_pDlgSearch->Initialize(IDD_HEXCTRL_SEARCH, this);
-	m_pDlgTemplMgr->Initialize(IDD_HEXCTRL_TEMPLMGR, this);
+	m_pDlgBkmMgr->Initialize(this);
+	m_pDlgDataInterp->Initialize(this);
+	m_pDlgEncoding->Initialize(this);
+	m_pDlgGoTo->Initialize(this);
+	m_pDlgSearch->Initialize(this);
+	m_pDlgTemplMgr->Initialize(this);
+	m_pDlgModify->Initialize(this);
 
 	return true;
 }
@@ -502,13 +500,13 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		ClipboardPaste(EClipboard::PASTE_TEXT_CP);
 		break;
 	case CMD_MODIFY_OPERS_DLG:
-		m_pDlgOpers->ShowWindow(SW_SHOW);
+		m_pDlgModify->ShowWindow(SW_SHOW, 0);
 		break;
 	case CMD_MODIFY_FILLZEROS:
 		FillWithZeros();
 		break;
 	case CMD_MODIFY_FILLDATA_DLG:
-		m_pDlgFillData->ShowWindow(SW_SHOW);
+		m_pDlgModify->ShowWindow(SW_SHOW, 1);
 		break;
 	case CMD_MODIFY_UNDO:
 		Undo();
@@ -545,7 +543,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case CMD_ENCODING_DLG:
 		m_pDlgEncoding->ShowWindow(SW_SHOW);
 		break;
-	case CMD_APPEAR_FONTCHOOSE:
+	case CMD_APPEAR_FONT_DLG:
 		ChooseFontDlg();
 		break;
 	case CMD_APPEAR_FONTINC:
@@ -794,38 +792,26 @@ auto CHexCtrl::GetWindowHandle(EHexWnd eWnd)const->HWND
 	if (!IsCreated())
 		return nullptr;
 
-	HWND hWnd { };
 	switch (eWnd) {
 	case EHexWnd::WND_MAIN:
-		hWnd = m_hWnd;
-		break;
+		return m_hWnd;
 	case EHexWnd::DLG_BKMMANAGER:
-		hWnd = m_pDlgBkmMgr->m_hWnd;
-		break;
+		return m_pDlgBkmMgr->m_hWnd;
 	case EHexWnd::DLG_DATAINTERP:
-		hWnd = m_pDlgDataInterp->m_hWnd;
-		break;
-	case EHexWnd::DLG_FILLDATA:
-		hWnd = m_pDlgFillData->m_hWnd;
-		break;
-	case EHexWnd::DLG_OPERS:
-		hWnd = m_pDlgOpers->m_hWnd;
-		break;
+		return m_pDlgDataInterp->m_hWnd;
+	case EHexWnd::DLG_MODIFY:
+		return m_pDlgModify->m_hWnd;
 	case EHexWnd::DLG_SEARCH:
-		hWnd = m_pDlgSearch->m_hWnd;
-		break;
+		return m_pDlgSearch->m_hWnd;
 	case EHexWnd::DLG_ENCODING:
-		hWnd = m_pDlgEncoding->m_hWnd;
-		break;
+		return m_pDlgEncoding->m_hWnd;
 	case EHexWnd::DLG_GOTO:
-		hWnd = m_pDlgGoTo->m_hWnd;
-		break;
+		return m_pDlgGoTo->m_hWnd;
 	case EHexWnd::DLG_TEMPLMGR:
-		hWnd = m_pDlgTemplMgr->m_hWnd;
-		break;
+		return m_pDlgTemplMgr->m_hWnd;
+	default:
+		return { };
 	}
-
-	return hWnd;
 }
 
 void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iRelPos)
@@ -1421,7 +1407,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 	using enum EHexCmd;
 	//Mapping between stringified EHexCmd::* and its value-menuID pairs.
 	const std::unordered_map<std::string_view, std::pair<EHexCmd, DWORD>> umapCmdMenu {
-		{ "CMD_SEARCH_DLG", { CMD_SEARCH_DLG, IDM_HEXCTRL_SEARCH_DLG } },
+		{ "CMD_SEARCH_DLG", { CMD_SEARCH_DLG, IDM_HEXCTRL_SEARCH_DLGSEARCH } },
 		{ "CMD_SEARCH_NEXT", { CMD_SEARCH_NEXT, IDM_HEXCTRL_SEARCH_NEXT } },
 		{ "CMD_SEARCH_PREV", { CMD_SEARCH_PREV, IDM_HEXCTRL_SEARCH_PREV } },
 		{ "CMD_NAV_GOTO_DLG", { CMD_NAV_GOTO_DLG, IDM_HEXCTRL_NAV_DLGGOTO } },
@@ -1469,7 +1455,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		{ "CMD_SEL_ADDDOWN", { CMD_SEL_ADDDOWN, 0 } },
 		{ "CMD_DATAINTERP_DLG", { CMD_DATAINTERP_DLG, IDM_HEXCTRL_DLGDATAINTERP } },
 		{ "CMD_ENCODING_DLG", { CMD_ENCODING_DLG, IDM_HEXCTRL_DLGENCODING } },
-		{ "CMD_APPEAR_FONTCHOOSE", { CMD_APPEAR_FONTCHOOSE, IDM_HEXCTRL_APPEAR_FONTCHOOSE } },
+		{ "CMD_APPEAR_FONT_DLG", { CMD_APPEAR_FONT_DLG, IDM_HEXCTRL_APPEAR_DLGFONT } },
 		{ "CMD_APPEAR_FONTINC", { CMD_APPEAR_FONTINC, IDM_HEXCTRL_APPEAR_FONTINC } },
 		{ "CMD_APPEAR_FONTDEC", { CMD_APPEAR_FONTDEC, IDM_HEXCTRL_APPEAR_FONTDEC } },
 		{ "CMD_APPEAR_CAPACINC", { CMD_APPEAR_CAPACINC, IDM_HEXCTRL_APPEAR_CAPACINC } },
@@ -4653,20 +4639,21 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	CaretMoveRight();
 }
 
-BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM lParam)
+BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
 {
 	const auto wMenuID = LOWORD(wParam);
 	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(),
 		[=](const SKEYBIND& ref) { return ref.wMenuID == wMenuID; }); iter != m_vecKeyBind.end()) {
 		ExecuteCmd(iter->eCmd);
-	}
-	else { //For user defined custom menu we notifying parent window.
-		const HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK },
-			.pt { m_stMenuClickedPt }, .wMenuID { wMenuID } };
-		ParentNotify(hmi);
+		return TRUE;
 	}
 
-	return CWnd::OnCommand(wParam, lParam);
+	//For a user defined custom menu we notify the parent window.
+	const HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK },
+		.pt { m_stMenuClickedPt }, .wMenuID { wMenuID } };
+	ParentNotify(hmi);
+
+	return TRUE; //An application returns nonzero if it processes this message; (c) Microsoft.
 }
 
 void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
@@ -4732,7 +4719,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 	//The nIndex specifies the zero-based relative position of the menu item that opens the drop-down menu or submenu.
 	switch (nIndex) {
 	case 0:	//Search.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_DLG, IsCmdAvail(CMD_SEARCH_DLG) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_DLGSEARCH, IsCmdAvail(CMD_SEARCH_DLG) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_NEXT, IsCmdAvail(CMD_SEARCH_NEXT) ? MF_ENABLED : MF_GRAYED);
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_PREV, IsCmdAvail(CMD_SEARCH_PREV) ? MF_ENABLED : MF_GRAYED);
 		break;

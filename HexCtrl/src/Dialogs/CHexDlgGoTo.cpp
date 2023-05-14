@@ -242,15 +242,13 @@ void CHexDlgGoTo::OnClickRadioBackEnd()
 	SetRangesText();
 }
 
-void CHexDlgGoTo::Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl)
+void CHexDlgGoTo::Initialize(IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
-	assert(nIDTemplate > 0);
 	if (pHexCtrl == nullptr) {
 		return;
 	}
 
-	m_nIDTemplate = nIDTemplate;
 	m_pHexCtrl = pHexCtrl;
 }
 
@@ -309,7 +307,7 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 BOOL CHexDlgGoTo::ShowWindow(int nCmdShow)
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(m_nIDTemplate, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_GOTO, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
 	}
 
 	return CDialogEx::ShowWindow(nCmdShow);

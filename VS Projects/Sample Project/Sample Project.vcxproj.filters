@@ -96,6 +96,9 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgModify.h">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HexSample.cpp">
@@ -147,6 +150,9 @@
       <Filter>HexCtrl\dep\ListEx</Filter>
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgModify.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
   </ItemGroup>

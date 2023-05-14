@@ -19,9 +19,8 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgBkmMgr;
 	class CHexDlgDataInterp;
 	class CHexDlgEncoding;
-	class CHexDlgFillData;
+	class CHexDlgModify;
 	class CHexDlgGoTo;
-	class CHexDlgOpers;
 	class CHexDlgSearch;
 	class CHexDlgTemplMgr;
 	class CHexSelection;
@@ -161,11 +160,11 @@ namespace HEXCTRL::INTERNAL
 		void Redo();
 		void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)const; //Substitute all unprintable wchar symbols with specified wchar.
 		void ScrollOffsetH(ULONGLONG ullOffset); //Scroll horizontally to given offset.
-		void SelAll();           //Select all.
-		void SelAddDown();       //Down Key pressed with the Shift.
-		void SelAddLeft();       //Left Key pressed with the Shift.
-		void SelAddRight();      //Right Key pressed with the Shift.
-		void SelAddUp();         //Up Key pressed with the Shift.
+		void SelAll();      //Select all.
+		void SelAddDown();  //Down Key pressed with the Shift.
+		void SelAddLeft();  //Left Key pressed with the Shift.
+		void SelAddRight(); //Right Key pressed with the Shift.
+		void SelAddUp();    //Up Key pressed with the Shift.
 		void SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const; //Sets data (notifies back) in Virtual mode.
 		void SetFontSize(long lSize); //Set current font size.
 		void SnapshotUndo(const VecSpan& vecSpan); //Takes currently modifiable data snapshot.
@@ -212,9 +211,8 @@ namespace HEXCTRL::INTERNAL
 		const std::unique_ptr<CHexDlgBkmMgr> m_pDlgBkmMgr { std::make_unique<CHexDlgBkmMgr>() };             //"Bookmark manager" dialog.
 		const std::unique_ptr<CHexDlgEncoding> m_pDlgEncoding { std::make_unique<CHexDlgEncoding>() };       //"Encoding" dialog.
 		const std::unique_ptr<CHexDlgDataInterp> m_pDlgDataInterp { std::make_unique<CHexDlgDataInterp>() }; //"Data interpreter" dialog.
-		const std::unique_ptr<CHexDlgFillData> m_pDlgFillData { std::make_unique<CHexDlgFillData>() };       //"Fill with..." dialog.
+		const std::unique_ptr<CHexDlgModify> m_pDlgModify { std::make_unique<CHexDlgModify>() };             //"Modify..." dialog.
 		const std::unique_ptr<CHexDlgGoTo> m_pDlgGoTo { std::make_unique<CHexDlgGoTo>() };                   //"GoTo..." dialog.
-		const std::unique_ptr<CHexDlgOpers> m_pDlgOpers { std::make_unique<CHexDlgOpers>() };                //"Operations" dialog.
 		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };             //"Search..." dialog.
 		const std::unique_ptr<CHexDlgTemplMgr> m_pDlgTemplMgr { std::make_unique<CHexDlgTemplMgr>() };       //"Template manager..." dialog.
 		const std::unique_ptr<CHexSelection> m_pSelection { std::make_unique<CHexSelection>() };             //Selection class.

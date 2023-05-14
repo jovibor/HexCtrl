@@ -7,26 +7,27 @@
 #pragma once
 #include "../../HexCtrl.h"
 #include <afxdialogex.h>
+#include "CHexDlgFillData.h"
+#include "CHexDlgOpers.h"
 
 namespace HEXCTRL::INTERNAL
 {
-	class CHexDlgFillData final : public CDialogEx
+	class CHexDlgModify final : public CDialogEx
 	{
 	public:
-		void Create(CWnd* pParent, IHexCtrl* pHexCtrl);
-		void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		void Initialize(IHexCtrl* pHexCtrl);
+		BOOL ShowWindow(int nCmdShow, int iTab);
 	private:
-		enum class EFillType : std::uint8_t; //Forward declaration.
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
-		void OnCancel()override;
-		void OnOK()override;
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		[[nodiscard]] auto GetFillType()const->EFillType;
+		afx_msg void OnTabSelChanged(NMHDR* pNMHDR, LRESULT* pResult);
+		void SetCurrentTab(int iTab);
 		DECLARE_MESSAGE_MAP();
 	private:
 		IHexCtrl* m_pHexCtrl { };
-		CComboBox m_stComboType; //Fill type combo-box.
-		CComboBox m_stComboData; //Data combo-box.
+		CTabCtrl m_tabMain;
+		const std::unique_ptr<CHexDlgFillData> m_pDlgFillData { std::make_unique<CHexDlgFillData>() }; //"Fill with" tab dialog.
+		const std::unique_ptr<CHexDlgOpers> m_pDlgOpers { std::make_unique<CHexDlgOpers>() }; //"Operations" tab dialog.
 	};
 }

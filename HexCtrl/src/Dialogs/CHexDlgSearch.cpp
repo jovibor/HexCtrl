@@ -86,14 +86,12 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
-void CHexDlgSearch::Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl)
+void CHexDlgSearch::Initialize(IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
-	assert(nIDTemplate > 0);
 	if (pHexCtrl == nullptr)
 		return;
 
-	m_nIDTemplate = nIDTemplate;
 	m_pHexCtrl = pHexCtrl;
 }
 
@@ -115,7 +113,7 @@ void CHexDlgSearch::SearchNextPrev(bool fForward)
 BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(m_nIDTemplate, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
 	}
 
 	if (nCmdShow == SW_SHOW) {
@@ -133,20 +131,8 @@ BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
 	return CDialogEx::ShowWindow(nCmdShow);
 }
 
-void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_SEL, m_stCheckSel);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_WILDCARD, m_stCheckWcard);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_BE, m_stCheckBE);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_MATCHCASE, m_stCheckMatchC);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_SEARCH, m_stComboSearch);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_REPLACE, m_stComboReplace);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_MODE, m_stComboMode);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_START, m_stEditStart);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_STEP, m_stEditStep);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_LIMIT, m_stEditLimit);
-}
+
+//Private methods.
 
 void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 {
@@ -168,6 +154,21 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 		m_pListMain->SetItemState(iHighlight, LVIS_SELECTED, LVIS_SELECTED);
 		m_pListMain->EnsureVisible(iHighlight, TRUE);
 	}
+}
+
+void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
+{
+	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_SEL, m_stCheckSel);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_WILDCARD, m_stCheckWcard);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_BE, m_stCheckBE);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_MATCHCASE, m_stCheckMatchC);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_SEARCH, m_stComboSearch);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_REPLACE, m_stComboReplace);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_MODE, m_stComboMode);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_START, m_stEditStart);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_STEP, m_stEditStep);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_LIMIT, m_stEditLimit);
 }
 
 void CHexDlgSearch::ClearList()
@@ -287,95 +288,6 @@ void CHexDlgSearch::HexCtrlHighlight(const VecSpan& vecSel)
 	}
 }
 
-BOOL CHexDlgSearch::OnInitDialog()
-{
-	CDialogEx::OnInitDialog();
-
-	constexpr auto iTextLimit { 512 };
-
-	m_stBrushDefault.CreateSolidBrush(m_clrBkTextArea);
-	m_stComboSearch.LimitText(iTextLimit);
-	m_stComboReplace.LimitText(iTextLimit);
-
-	auto iIndex = m_stComboMode.AddString(L"Hex Bytes");
-	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_HEXBYTES));
-	m_stComboMode.SetCurSel(iIndex);
-	iIndex = m_stComboMode.AddString(L"Text ASCII");
-	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_ASCII));
-	iIndex = m_stComboMode.AddString(L"Text UTF-8");
-	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_UTF8));
-	iIndex = m_stComboMode.AddString(L"Text UTF-16");
-	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_UTF16));
-	iIndex = m_stComboMode.AddString(L"Int8 value");
-	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_INT8));
-	iIndex = m_stComboMode.AddString(L"Int16 value");
-	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_INT16));
-	iIndex = m_stComboMode.AddString(L"Int32 value");
-	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_INT32));
-	iIndex = m_stComboMode.AddString(L"Int64 value");
-	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_INT64));
-	iIndex = m_stComboMode.AddString(L"Float value");
-	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_FLOAT));
-	iIndex = m_stComboMode.AddString(L"Double value");
-	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_DOUBLE));
-	iIndex = m_stComboMode.AddString(L"FILETIME struct");
-	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_FILETIME));
-
-	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_SEARCH_LIST_MAIN, this);
-	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
-	m_pListMain->InsertColumn(0, L"\u2116", LVCFMT_LEFT, 40);
-	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 455);
-
-	m_stMenuList.CreatePopupMenu();
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_ADDBKM), L"Add bookmark(s)");
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_SELECTALL), L"Select All");
-	m_stMenuList.AppendMenuW(MF_SEPARATOR);
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_CLEARALL), L"Clear All");
-
-	//"Step" edit box text.
-	m_stEditStep.SetWindowTextW(std::format(L"{}", m_ullStep).data());
-
-	//"Limit search hit" edit box text.
-	m_stEditLimit.SetWindowTextW(std::format(L"{}", m_dwFoundLimit).data());
-
-	const auto hwndTipWC = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr);
-	const auto hwndTipInv = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr);
-	if (hwndTipWC == nullptr || hwndTipInv == nullptr)
-		return FALSE;
-
-	TTTOOLINFOW stToolInfo { };
-	stToolInfo.cbSize = sizeof(TTTOOLINFOW);
-	stToolInfo.hwnd = m_hWnd;
-	stToolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
-
-	//"Wildcard" check box tooltip.
-	stToolInfo.uId = reinterpret_cast<UINT_PTR>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_WILDCARD)->m_hWnd);
-	std::wstring wstrToolText { };
-	//"Wildcard" tooltip text.
-	wstrToolText += L"Use ";
-	wstrToolText += static_cast<wchar_t>(m_uWildcard);
-	wstrToolText += L" character to match any symbol, or any byte if in \"Hex Bytes\" search mode.\r\n";
-	wstrToolText += L"Example:\r\n";
-	wstrToolText += L"  Hex Bytes: 11?11 will match: 112211, 113311, 114411, 119711, etc...\r\n";
-	wstrToolText += L"  ASCII Text: sa??le will match: sample, saAAle, saxale, saZble, etc...\r\n";
-	stToolInfo.lpszText = wstrToolText.data();
-	::SendMessageW(hwndTipWC, TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&stToolInfo));
-	::SendMessageW(hwndTipWC, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
-	::SendMessageW(hwndTipWC, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
-
-	stToolInfo.uId = reinterpret_cast<UINT_PTR>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_INV)->m_hWnd);
-	//"Inverted" tooltip text.
-	wstrToolText = L"Search for the non-matching occurences.\r\nThat is everything that doesn't match search conditions.";
-	stToolInfo.lpszText = wstrToolText.data();
-	::SendMessageW(hwndTipInv, TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&stToolInfo));
-	::SendMessageW(hwndTipInv, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
-	::SendMessageW(hwndTipInv, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
-
-	return TRUE;
-}
-
 void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
 	if (nState == WA_INACTIVE) {
@@ -493,7 +405,6 @@ void CHexDlgSearch::OnComboModeSelChange()
 
 BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-	bool fMsgHere { true };
 	switch (static_cast<EMenuID>(LOWORD(wParam))) {
 	case EMenuID::IDM_SEARCH_ADDBKM:
 	{
@@ -506,19 +417,19 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 		}
 		GetHexCtrl()->Redraw();
 	}
-	break;
+	return TRUE;
 	case EMenuID::IDM_SEARCH_SELECTALL:
 		m_pListMain->SetItemState(-1, LVIS_SELECTED, LVIS_SELECTED);
-		break;
+		return TRUE;
 	case EMenuID::IDM_SEARCH_CLEARALL:
 		ClearList();
 		m_fSecondMatch = false; //To be able to search from the zero offset.
-		break;
+		return TRUE;
 	default:
-		fMsgHere = false;
+		break;
 	}
 
-	return fMsgHere ? TRUE : CDialogEx::OnCommand(wParam, lParam);
+	return CDialogEx::OnCommand(wParam, lParam);
 }
 
 HBRUSH CHexDlgSearch::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
@@ -538,6 +449,95 @@ void CHexDlgSearch::OnDestroy()
 
 	m_stBrushDefault.DeleteObject();
 	m_stMenuList.DestroyMenu();
+}
+
+BOOL CHexDlgSearch::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	constexpr auto iTextLimit { 512 };
+
+	m_stBrushDefault.CreateSolidBrush(m_clrBkTextArea);
+	m_stComboSearch.LimitText(iTextLimit);
+	m_stComboReplace.LimitText(iTextLimit);
+
+	auto iIndex = m_stComboMode.AddString(L"Hex Bytes");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_HEXBYTES));
+	m_stComboMode.SetCurSel(iIndex);
+	iIndex = m_stComboMode.AddString(L"Text ASCII");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_ASCII));
+	iIndex = m_stComboMode.AddString(L"Text UTF-8");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_UTF8));
+	iIndex = m_stComboMode.AddString(L"Text UTF-16");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_UTF16));
+	iIndex = m_stComboMode.AddString(L"Int8 value");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_INT8));
+	iIndex = m_stComboMode.AddString(L"Int16 value");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_INT16));
+	iIndex = m_stComboMode.AddString(L"Int32 value");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_INT32));
+	iIndex = m_stComboMode.AddString(L"Int64 value");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_INT64));
+	iIndex = m_stComboMode.AddString(L"Float value");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_FLOAT));
+	iIndex = m_stComboMode.AddString(L"Double value");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_DOUBLE));
+	iIndex = m_stComboMode.AddString(L"FILETIME struct");
+	m_stComboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(EMode::SEARCH_FILETIME));
+
+	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_SEARCH_LIST_MAIN, this);
+	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
+	m_pListMain->InsertColumn(0, L"\u2116", LVCFMT_LEFT, 40);
+	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 455);
+
+	m_stMenuList.CreatePopupMenu();
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_ADDBKM), L"Add bookmark(s)");
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_SELECTALL), L"Select All");
+	m_stMenuList.AppendMenuW(MF_SEPARATOR);
+	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_CLEARALL), L"Clear All");
+
+	//"Step" edit box text.
+	m_stEditStep.SetWindowTextW(std::format(L"{}", m_ullStep).data());
+
+	//"Limit search hit" edit box text.
+	m_stEditLimit.SetWindowTextW(std::format(L"{}", m_dwFoundLimit).data());
+
+	const auto hwndTipWC = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr);
+	const auto hwndTipInv = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr);
+	if (hwndTipWC == nullptr || hwndTipInv == nullptr)
+		return FALSE;
+
+	TTTOOLINFOW stToolInfo { };
+	stToolInfo.cbSize = sizeof(TTTOOLINFOW);
+	stToolInfo.hwnd = m_hWnd;
+	stToolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
+
+	//"Wildcard" check box tooltip.
+	stToolInfo.uId = reinterpret_cast<UINT_PTR>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_WILDCARD)->m_hWnd);
+	std::wstring wstrToolText { };
+	//"Wildcard" tooltip text.
+	wstrToolText += L"Use ";
+	wstrToolText += static_cast<wchar_t>(m_uWildcard);
+	wstrToolText += L" character to match any symbol, or any byte if in \"Hex Bytes\" search mode.\r\n";
+	wstrToolText += L"Example:\r\n";
+	wstrToolText += L"  Hex Bytes: 11?11 will match: 112211, 113311, 114411, 119711, etc...\r\n";
+	wstrToolText += L"  ASCII Text: sa??le will match: sample, saAAle, saxale, saZble, etc...\r\n";
+	stToolInfo.lpszText = wstrToolText.data();
+	::SendMessageW(hwndTipWC, TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&stToolInfo));
+	::SendMessageW(hwndTipWC, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
+	::SendMessageW(hwndTipWC, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
+
+	stToolInfo.uId = reinterpret_cast<UINT_PTR>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_INV)->m_hWnd);
+	//"Inverted" tooltip text.
+	wstrToolText = L"Search for the non-matching occurences.\r\nThat is everything that doesn't match search conditions.";
+	stToolInfo.lpszText = wstrToolText.data();
+	::SendMessageW(hwndTipInv, TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&stToolInfo));
+	::SendMessageW(hwndTipInv, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
+	::SendMessageW(hwndTipInv, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
+
+	return TRUE;
 }
 
 void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)

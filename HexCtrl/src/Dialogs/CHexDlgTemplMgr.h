@@ -88,7 +88,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool HasCurrent()const;
 		[[nodiscard]] bool HasTemplates()const;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD; //Template hittest by offset.
-		void Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl);
+		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsTooltips()const;
 		void RefreshData();
 		BOOL ShowWindow(int nCmdShow);
@@ -196,7 +196,6 @@ namespace HEXCTRL::INTERNAL
 		CWnd m_wndStaticOffset;      //Static text "Template offset:".
 		CWnd m_wndStaticSize;        //Static text Template size:".
 		HBITMAP m_hBITMAPMinMax { }; //Bitmap for the min-max checkbox.
-		UINT m_nIDTemplate { };      //Resource ID of the Dialog, for creation.
 		LISTEX::IListExPtr m_pListApplied { LISTEX::CreateListEx() };
 		LISTEX::LISTEXCOLOR m_stCellClr { };
 		CTreeCtrl m_stTreeApplied;

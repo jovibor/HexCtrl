@@ -17,25 +17,32 @@ BEGIN_MESSAGE_MAP(CHexDlgOpers, CDialogEx)
 	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
-void CHexDlgOpers::Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl)
+void CHexDlgOpers::Create(CWnd* pParent, IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
-	assert(nIDTemplate > 0);
+	assert(pParent);
 	if (pHexCtrl == nullptr)
 		return;
 
-	m_nIDTemplate = nIDTemplate;
 	m_pHexCtrl = pHexCtrl;
+	CDialogEx::Create(IDD_HEXCTRL_OPERS, pParent);
 }
 
-BOOL CHexDlgOpers::ShowWindow(int nCmdShow)
+void CHexDlgOpers::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimized*/)
 {
-	if (!IsWindow(m_hWnd)) {
-		Create(m_nIDTemplate, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
-	}
+	if (m_pHexCtrl == nullptr)
+		return;
 
-	return CDialogEx::ShowWindow(nCmdShow);
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+		if (m_pHexCtrl->IsCreated() && m_pHexCtrl->IsDataSet()) {
+			const auto fSelection { m_pHexCtrl->HasSelection() };
+			CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL,
+				fSelection ? IDC_HEXCTRL_OPERS_RAD_SEL : IDC_HEXCTRL_OPERS_RAD_ALL);
+			GetDlgItem(IDC_HEXCTRL_OPERS_RAD_SEL)->EnableWindow(fSelection);
+		}
+	}
 }
+
 
 //Private methods.
 
@@ -43,6 +50,7 @@ void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_OPERS_COMBO_OPER, m_stComboOper);
+	DDX_Control(pDX, IDC_HEXCTRL_OPERS_COMBO_SIZE, m_stComboSize);
 }
 
 BOOL CHexDlgOpers::OnInitDialog()
@@ -84,54 +92,44 @@ BOOL CHexDlgOpers::OnInitDialog()
 	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_SWAP).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SWAP));
 
-	CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_BYTE, IDC_HEXCTRL_OPERS_RAD_QWORD, IDC_HEXCTRL_OPERS_RAD_BYTE);
-	CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_LE, IDC_HEXCTRL_OPERS_RAD_BE, IDC_HEXCTRL_OPERS_RAD_LE);
+	using enum EHexDataSize;
+	iIndex = m_stComboSize.AddString(L"BYTE");
+	m_stComboSize.SetItemData(iIndex, static_cast<DWORD_PTR>(SIZE_BYTE));
+	m_stComboSize.SetCurSel(iIndex);
+	iIndex = m_stComboSize.AddString(L"WORD");
+	m_stComboSize.SetItemData(iIndex, static_cast<DWORD_PTR>(SIZE_WORD));
+	iIndex = m_stComboSize.AddString(L"DWORD");
+	m_stComboSize.SetItemData(iIndex, static_cast<DWORD_PTR>(SIZE_DWORD));
+	iIndex = m_stComboSize.AddString(L"QWORD");
+	m_stComboSize.SetItemData(iIndex, static_cast<DWORD_PTR>(SIZE_QWORD));
+
 	CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL, IDC_HEXCTRL_OPERS_RAD_ALL);
 	SetOKButtonName();
 
 	return TRUE;
 }
 
-void CHexDlgOpers::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
-{
-	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
-		if (m_pHexCtrl->IsCreated() && m_pHexCtrl->IsDataSet()) {
-			const auto fSelection { m_pHexCtrl->HasSelection() };
-			CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL,
-				fSelection ? IDC_HEXCTRL_OPERS_RAD_SEL : IDC_HEXCTRL_OPERS_RAD_ALL);
-			GetDlgItem(IDC_HEXCTRL_OPERS_RAD_SEL)->EnableWindow(fSelection);
-			SetOKButtonName();
-		}
-	}
-
-	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
-}
-
-BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
+BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	switch (LOWORD(wParam)) //Control ID.
 	{
-	case IDC_HEXCTRL_OPERS_RAD_BYTE:
-	case IDC_HEXCTRL_OPERS_RAD_WORD:
-	case IDC_HEXCTRL_OPERS_RAD_DWORD:
-	case IDC_HEXCTRL_OPERS_RAD_QWORD:
 	case IDC_HEXCTRL_OPERS_COMBO_OPER:
+	case IDC_HEXCTRL_OPERS_COMBO_SIZE:
 		CheckWndAvail();
 		if (HIWORD(wParam) == CBN_SELCHANGE) { //Combo-box selection changed.
 			SetOKButtonName();
 		}
-		break;
-	case IDOK:
-		OnOK();
-		break;
-	case IDCANCEL:
-		CDialogEx::OnCancel();
-		break;
+		return TRUE;
 	default:
 		break;
 	}
 
-	return TRUE;
+	return CDialogEx::OnCommand(wParam, lParam);
+}
+
+void CHexDlgOpers::OnCancel()
+{
+	static_cast<CDialogEx*>(GetParentOwner())->EndDialog(IDCANCEL);
 }
 
 void CHexDlgOpers::OnOK()
@@ -142,29 +140,12 @@ void CHexDlgOpers::OnOK()
 	using enum EHexOperMode;
 	using enum EHexDataSize;
 	const auto eOperMode = GetOperMode();
-	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_BYTE, IDC_HEXCTRL_OPERS_RAD_QWORD);
-	const auto iRadioByteOrder = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_LE, IDC_HEXCTRL_OPERS_RAD_BE);
-	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL);
-	auto fBigEndian = iRadioByteOrder == IDC_HEXCTRL_OPERS_RAD_BE && iRadioDataSize != IDC_HEXCTRL_OPERS_RAD_BYTE
-		&& eOperMode != OPER_NOT && eOperMode != OPER_SWAP;
+	const auto eDataSize = GetDataSize();
+	const auto fCheckBE = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE))->GetCheck() == BST_CHECKED;
+	auto fBigEndian = fCheckBE && eDataSize != SIZE_BYTE && eOperMode != OPER_NOT && eOperMode != OPER_SWAP;
 
-	HEXMODIFY hms { .enModifyMode = EHexModifyMode::MODIFY_OPERATION, .enOperMode = eOperMode };
-	switch (iRadioDataSize) {
-	case IDC_HEXCTRL_OPERS_RAD_BYTE:
-		hms.enDataSize = SIZE_BYTE;
-		break;
-	case IDC_HEXCTRL_OPERS_RAD_WORD:
-		hms.enDataSize = SIZE_WORD;
-		break;
-	case IDC_HEXCTRL_OPERS_RAD_DWORD:
-		hms.enDataSize = SIZE_DWORD;
-		break;
-	case IDC_HEXCTRL_OPERS_RAD_QWORD:
-		hms.enDataSize = SIZE_QWORD;
-		break;
-	default:
-		break;
-	}
+	HEXMODIFY hms { .enModifyMode = EHexModifyMode::MODIFY_OPERATION, .enOperMode = eOperMode,
+		.enDataSize = eDataSize };
 
 	LONGLONG llData { };
 	if (GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_DATA)->IsWindowEnabled()) {
@@ -212,6 +193,7 @@ void CHexDlgOpers::OnOK()
 		}
 	}
 
+	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL);
 	if (iRadioAllOrSel == IDC_HEXCTRL_OPERS_RAD_ALL) {
 		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?",
 			L"Modify All data?", MB_YESNO | MB_ICONWARNING) == IDNO)
@@ -220,6 +202,9 @@ void CHexDlgOpers::OnOK()
 		hms.vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
 	}
 	else {
+		if (!m_pHexCtrl->HasSelection())
+			return;
+
 		hms.vecSpan = m_pHexCtrl->GetSelection();
 	}
 
@@ -227,36 +212,30 @@ void CHexDlgOpers::OnOK()
 	hms.spnData = { reinterpret_cast<std::byte*>(&llData), sizeof(llData) };
 	m_pHexCtrl->ModifyData(hms);
 	m_pHexCtrl->Redraw();
-	::SetFocus(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN));
 }
 
 void CHexDlgOpers::CheckWndAvail()const
 {
 	BOOL fEditEnable = TRUE;
-	BOOL fBELEEnable = TRUE;
 	switch (GetOperMode()) {
 	case EHexOperMode::OPER_NOT:
 	case EHexOperMode::OPER_SWAP:
 		fEditEnable = FALSE;
-		fBELEEnable = FALSE;
 		break;
 	default:
 		break;
 	};
 	GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_DATA)->EnableWindow(fEditEnable);
-
-	const auto iRadioDataSize = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_BYTE, IDC_HEXCTRL_OPERS_RAD_QWORD);
-	if (fBELEEnable) {
-		fBELEEnable = iRadioDataSize != IDC_HEXCTRL_OPERS_RAD_BYTE;
-	}
-
-	GetDlgItem(IDC_HEXCTRL_OPERS_RAD_LE)->EnableWindow(fBELEEnable);
-	GetDlgItem(IDC_HEXCTRL_OPERS_RAD_BE)->EnableWindow(fBELEEnable);
 }
 
-EHexOperMode CHexDlgOpers::GetOperMode()const
+auto CHexDlgOpers::GetOperMode()const->EHexOperMode
 {
 	return static_cast<EHexOperMode>(m_stComboOper.GetItemData(m_stComboOper.GetCurSel()));
+}
+
+auto CHexDlgOpers::GetDataSize()const->EHexDataSize
+{
+	return static_cast<EHexDataSize>(m_stComboSize.GetItemData(m_stComboSize.GetCurSel()));
 }
 
 void CHexDlgOpers::SetOKButtonName()

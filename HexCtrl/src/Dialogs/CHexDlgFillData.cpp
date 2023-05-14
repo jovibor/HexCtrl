@@ -24,25 +24,34 @@ BEGIN_MESSAGE_MAP(CHexDlgFillData, CDialogEx)
 	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
-void CHexDlgFillData::Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl)
+void CHexDlgFillData::Create(CWnd* pParent, IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
-	assert(nIDTemplate > 0);
+	assert(pParent);
 	if (pHexCtrl == nullptr)
 		return;
 
-	m_nIDTemplate = nIDTemplate;
 	m_pHexCtrl = pHexCtrl;
+	CDialogEx::Create(IDD_HEXCTRL_FILLDATA, pParent);
 }
 
-BOOL CHexDlgFillData::ShowWindow(int nCmdShow)
+void CHexDlgFillData::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimized*/)
 {
-	if (!IsWindow(m_hWnd)) {
-		Create(m_nIDTemplate, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
-	}
+	if (m_pHexCtrl == nullptr)
+		return;
 
-	return CDialogEx::ShowWindow(nCmdShow);
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+		if (m_pHexCtrl->IsCreated() && m_pHexCtrl->IsDataSet()) {
+			const auto fSelection { m_pHexCtrl->HasSelection() };
+			CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL,
+				fSelection ? IDC_HEXCTRL_FILLDATA_RAD_SEL : IDC_HEXCTRL_FILLDATA_RAD_ALL);
+			GetDlgItem(IDC_HEXCTRL_FILLDATA_RAD_SEL)->EnableWindow(fSelection);
+		}
+	}
 }
+
+
+//Private methods.
 
 void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
 {
@@ -73,21 +82,12 @@ BOOL CHexDlgFillData::OnInitDialog()
 	return TRUE;
 }
 
-void CHexDlgFillData::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+void CHexDlgFillData::OnCancel()
 {
-	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
-		if (m_pHexCtrl->IsCreated() && m_pHexCtrl->IsDataSet()) {
-			const auto fSelection { m_pHexCtrl->HasSelection() };
-			CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL,
-				fSelection ? IDC_HEXCTRL_FILLDATA_RAD_SEL : IDC_HEXCTRL_FILLDATA_RAD_ALL);
-			GetDlgItem(IDC_HEXCTRL_FILLDATA_RAD_SEL)->EnableWindow(fSelection);
-		}
-	}
-
-	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
+	static_cast<CDialogEx*>(GetParentOwner())->EndDialog(IDCANCEL);
 }
 
-BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
+BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	using enum EFillType;
 	switch (LOWORD(wParam)) {
@@ -96,18 +96,12 @@ BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
 		const auto enFillType = GetFillType();
 		m_stComboData.EnableWindow(enFillType != FILL_RAND_MT19937 && enFillType != FILL_RAND_FAST);
 	}
-	break;
-	case IDOK:
-		OnOK();
-		break;
-	case IDCANCEL:
-		CDialogEx::OnCancel();
-		break;
+	return TRUE;
 	default:
 		break;
 	}
 
-	return TRUE;
+	return CDialogEx::OnCommand(wParam, lParam);;
 }
 
 void CHexDlgFillData::OnOK()
@@ -131,6 +125,9 @@ void CHexDlgFillData::OnOK()
 		hms.vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
 	}
 	else {
+		if (!m_pHexCtrl->HasSelection())
+			return;
+
 		hms.vecSpan = m_pHexCtrl->GetSelection();
 	}
 
@@ -188,7 +185,7 @@ void CHexDlgFillData::OnOK()
 	::SetFocus(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN));
 }
 
-CHexDlgFillData::EFillType CHexDlgFillData::GetFillType()const
+auto CHexDlgFillData::GetFillType()const->CHexDlgFillData::EFillType
 {
 	return static_cast<EFillType>(m_stComboType.GetItemData(m_stComboType.GetCurSel()));
 }

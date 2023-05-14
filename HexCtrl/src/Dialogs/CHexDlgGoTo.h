@@ -13,7 +13,7 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgGoTo final : public CDialogEx
 	{
 	public:
-		void Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl);
+		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsRepeatAvail()const;
 		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
 		BOOL ShowWindow(int nCmdShow);
@@ -39,6 +39,5 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullPagesFrom { };
 		ULONGLONG m_ullPagesTo { };
 		int m_iRepeat { 0 };
-		UINT m_nIDTemplate { }; //Resource ID of the Dialog, for creation.
 	};
 }

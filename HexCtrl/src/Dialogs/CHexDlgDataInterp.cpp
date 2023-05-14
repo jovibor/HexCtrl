@@ -162,21 +162,19 @@ void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
 	ShowValueGUIDTIME(std::bit_cast<GUID>(dblQWORD));
 }
 
-void CHexDlgDataInterp::Initialize(UINT nIDTemplate, IHexCtrl* pHexCtrl)
+void CHexDlgDataInterp::Initialize(IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
-	assert(nIDTemplate > 0);
 	if (pHexCtrl == nullptr)
 		return;
 
-	m_nIDTemplate = nIDTemplate;
 	m_pHexCtrl = pHexCtrl;
 }
 
 BOOL CHexDlgDataInterp::ShowWindow(int nCmdShow)
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(m_nIDTemplate, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
 	}
 
 	return CDialogEx::ShowWindow(nCmdShow);
