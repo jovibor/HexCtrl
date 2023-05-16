@@ -1044,25 +1044,25 @@ During its work the **HexCtrl** sends notification messages to its parent window
 The `LPARAM` of the `WM_NOTIFY` message contains a pointer to the **[NMHDR](https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-nmhdr)** standard Windows struct. Depending on the notification message `LPARAM` can then be casted to a pointer to another struct, see the messages description for details.
 
 ### [](#)HEXCTRL_MSG_BKMCLICK
-Sent if a bookmark is clicked, `LPARAM` contains a pointer to a [`HEXBKMINFO`](#hexbkminfo) struct.
+Sent if a bookmark is clicked, `LPARAM` contains a pointer to the [`HEXBKMINFO`](#hexbkminfo) struct.
 
 ### [](#)HEXCTRL_MSG_CARETCHANGE
-Sent when a caret position has changed, `LPARAM` contains a pointer to a `NMHDR` struct.
+Sent when the caret position has changed, `LPARAM` contains a pointer to the `NMHDR` struct.
 
 ### [](#)HEXCTRL_MSG_CONTEXTMENU
-Sent when a context menu is about to be displayed, `LPARAM` contains a pointer to a [`HEXMENUINFO`](#hexmenuinfo) struct. You can disable menu showing-up by setting the `PHEXMENUINFO->fShow` flag to a `false` in response to this message.
+Sent when the context menu is about to be displayed, `LPARAM` contains a pointer to the [`HEXMENUINFO`](#hexmenuinfo) struct. You can disable menu showing-up by setting the `PHEXMENUINFO->fShow` flag to a `false` in response to this message.
 
 ### [](#)HEXCTRL_MSG_DESTROY
-Sent to indicate that the **HexCtrl**'s window is about to be destroyed, `LPARAM` contains a pointer to a `NMHDR` struct.
+Sent to indicate that the **HexCtrl**'s window is about to be destroyed, `LPARAM` contains a pointer to the `NMHDR` struct.
 
 ### [](#)HEXCTRL_MSG_MENUCLICK
-Sent when a user-defined custom menu has been clicked, `LPARAM` contains a pointer to a [`HEXMENUINFO`](#hexmenuinfo) struct.
+Sent when a user-defined custom menu has been clicked, `LPARAM` contains a pointer to the [`HEXMENUINFO`](#hexmenuinfo) struct.
 
 ### [](#)HEXCTRL_MSG_SELECTION
-Sent when a selection has been made, `LPARAM` contains a pointer to a `NMHDR` struct.
+Sent when a selection has been made, `LPARAM` contains a pointer to the `NMHDR` struct.
 
 ### [](#)HEXCTRL_MSG_SETDATA
-Sent to indicate that the data has changed, `LPARAM` contains a pointer to a `NMHDR` struct.
+Sent to indicate that the data has changed, `LPARAM` contains a pointer to the `NMHDR` struct.
 
 ## [](#)Licensing
 This software is available under **"The HexCtrl License"**, it is free for any **NON-COMMERCIAL** use.  

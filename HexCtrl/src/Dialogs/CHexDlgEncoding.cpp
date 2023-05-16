@@ -156,7 +156,7 @@ void CHexDlgEncoding::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].uMaxChars > 1) {
-		static LISTEXCOLOR stClr { RGB(235, 235, 235), RGB(55, 55, 55) };
+		static const LISTEXCOLOR stClr { RGB(200, 80, 80), RGB(255, 255, 255) };
 		pNMI->lParam = reinterpret_cast<LPARAM>(&stClr);
 	}
 }

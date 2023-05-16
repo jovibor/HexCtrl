@@ -19,7 +19,6 @@ namespace HEXCTRL::INTERNAL
 		void Initialize(IHexCtrl* pHexCtrl);
 		BOOL ShowWindow(int nCmdShow);
 	private:
-		inline static BOOL CALLBACK EnumCodePagesProc(LPWSTR pwszCP);
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -30,6 +29,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListLinkClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnDestroy();
 		void SortList();
+		static BOOL CALLBACK EnumCodePagesProc(LPWSTR pwszCP);
 		DECLARE_MESSAGE_MAP();
 	private:
 		struct SCODEPAGE {
