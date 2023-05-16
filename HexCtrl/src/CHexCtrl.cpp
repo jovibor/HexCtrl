@@ -146,7 +146,7 @@ extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg) {
 
 CHexCtrl::CHexCtrl()
 {
-	//MFC initialization, if HexCtrl is used in non MFC project with a "Shared MFC" linking.
+	//MFC initialization, if HexCtrl is used in non MFC project with the "Shared MFC" linking.
 #if defined HEXCTRL_MANUAL_MFC_INIT
 	if (!AfxGetModuleState()->m_lpszCurrentAppName)
 		AfxWinInit(::GetModuleHandleW(nullptr), nullptr, ::GetCommandLineW(), 0);

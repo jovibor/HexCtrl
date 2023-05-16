@@ -292,18 +292,6 @@ namespace HEXCTRL
 	};
 };
 
-/**********************************************************************
-* If HexCtrl is to be used as a .dll                                  *
-**********************************************************************/
-//#define HEXCTRL_SHARED_DLL
-
-/**********************************************************************
-* For manually initialize MFC.                                        *
-* This macro is used only for Win32 non MFC projects, with HexCtrl    *
-* built from sources, with "Use MFC in a Shared DLL" setting.         *
-**********************************************************************/
-//#define HEXCTRL_MANUAL_MFC_INIT
-
 namespace HEXCTRL
 {
 	/********************************************************************************************
