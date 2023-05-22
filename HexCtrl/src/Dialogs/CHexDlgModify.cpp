@@ -64,10 +64,10 @@ BOOL CHexDlgModify::OnInitDialog()
 	CRect rcTab;
 	m_tabMain.GetItemRect(0, rcTab);
 
-	m_pDlgOpers->Create(&m_tabMain, m_pHexCtrl);
+	m_pDlgOpers->Create(this, m_pHexCtrl);
 	m_pDlgOpers->SetWindowPos(nullptr, rcTab.left, rcTab.bottom + 1, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
 	m_pDlgOpers->OnActivate(WA_ACTIVE, nullptr, 0); //To properly activate "All-Selection" radios on the first launch.
-	m_pDlgFillData->Create(&m_tabMain, m_pHexCtrl);
+	m_pDlgFillData->Create(this, m_pHexCtrl);
 	m_pDlgFillData->SetWindowPos(nullptr, rcTab.left, rcTab.bottom + 1, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_HIDEWINDOW);
 	m_pDlgFillData->OnActivate(WA_ACTIVE, nullptr, 0); //To properly activate "All-Selection" radios on the first launch.
 
