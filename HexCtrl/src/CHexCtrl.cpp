@@ -1214,6 +1214,30 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				case OPER_ASSIGN:
 					tData = tDataOper;
 					break;
+				case OPER_ADD:
+					tData += tDataOper;
+					break;
+				case OPER_SUB:
+					tData -= tDataOper;
+					break;
+				case OPER_MUL:
+					tData *= tDataOper;
+					break;
+				case OPER_DIV:
+					if (tDataOper > 0) { //Division by zero check.
+						tData /= tDataOper;
+					}
+					break;
+				case OPER_CEIL:
+					if (tData > tDataOper) {
+						tData = tDataOper;
+					}
+					break;
+				case OPER_FLOOR:
+					if (tData < tDataOper) {
+						tData = tDataOper;
+					}
+					break;
 				case OPER_OR:
 					tData |= tDataOper;
 					break;
@@ -1241,29 +1265,10 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				case OPER_SWAP:
 					tData = ByteSwap(tData);
 					break;
-				case OPER_ADD:
-					tData += tDataOper;
+				case OPER_BITREV:
+					tData = BitReverse(tData);
 					break;
-				case OPER_SUB:
-					tData -= tDataOper;
-					break;
-				case OPER_MUL:
-					tData *= tDataOper;
-					break;
-				case OPER_DIV:
-					if (tDataOper > 0) { //Division by zero check.
-						tData /= tDataOper;
-					}
-					break;
-				case OPER_CEIL:
-					if (tData > tDataOper) {
-						tData = tDataOper;
-					}
-					break;
-				case OPER_FLOOR:
-					if (tData < tDataOper) {
-						tData = tDataOper;
-					}
+				default:
 					break;
 				}
 
@@ -3779,7 +3784,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 	//To prevent inspecting while key is pressed continuously.
 	//Only when one time pressing.
 	if (!m_fKeyDownAtm && ::IsWindowVisible(m_pDlgDataInterp->m_hWnd)) {
-		m_pDlgDataInterp->InspectOffset(ullOffset);
+		m_pDlgDataInterp->UpdateData();
 	}
 
 	if (auto pBkm = m_pDlgBkmMgr->HitTest(ullOffset); pBkm != nullptr) { //If clicked on bookmark.
@@ -3793,7 +3798,8 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 void CHexCtrl::OnModifyData()
 {
 	ParentNotify(HEXCTRL_MSG_SETDATA);
-	m_pDlgTemplMgr->RefreshData();
+	m_pDlgTemplMgr->UpdateData();
+	m_pDlgDataInterp->UpdateData();
 }
 
 template<typename T>
@@ -4829,7 +4835,7 @@ void CHexCtrl::OnKeyUp(UINT /*nChar*/, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	//Inspecting current caret position.
 	if (m_fKeyDownAtm && IsDataSet()) {
 		m_fKeyDownAtm = false;
-		m_pDlgDataInterp->InspectOffset(GetCaretPos());
+		m_pDlgDataInterp->UpdateData();
 	}
 }
 

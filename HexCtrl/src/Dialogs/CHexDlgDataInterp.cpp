@@ -28,18 +28,17 @@ BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
 	ON_MESSAGE(WM_PROPGRID_PROPERTY_SELECTED, &CHexDlgDataInterp::OnPropertySelected)
 END_MESSAGE_MAP()
 
-ULONGLONG CHexDlgDataInterp::GetDataSize()const
+auto CHexDlgDataInterp::GetDataSize()const->ULONGLONG
 {
 	return m_ullDataSize;
 }
 
-void CHexDlgDataInterp::InspectOffset(ULONGLONG ullOffset)
+void CHexDlgDataInterp::UpdateData()
 {
+	const auto ullOffset = m_pHexCtrl->GetCaretPos();
 	const auto ullDataSize = m_pHexCtrl->GetDataSize();
-	if (ullOffset >= ullDataSize) //Out of data bounds.
-		return;
-
 	const auto fMutable = m_pHexCtrl->IsMutable();
+
 	for (const auto& iter : m_vecProp) {
 		iter.pProp->AllowEdit(fMutable ? TRUE : FALSE);
 	}
@@ -287,7 +286,7 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 			const auto wstrTitle = L"Date/Time format is: " + GetDateFormatString(m_dwDateFormat, m_wchDateSepar);
 			SetWindowTextW(wstrTitle.data()); //Update dialog title to reflect current date format.
 			if (m_pHexCtrl->IsDataSet()) {
-				InspectOffset(m_pHexCtrl->GetCaretPos());
+				UpdateData();
 			}
 		}
 	}
@@ -302,13 +301,13 @@ void CHexDlgDataInterp::OnOK()
 void CHexDlgDataInterp::OnCheckHex()
 {
 	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX))->GetCheck() == BST_CHECKED;
-	InspectOffset(m_ullOffset);
+	UpdateData();
 }
 
 void CHexDlgDataInterp::OnCheckBe()
 {
 	m_fBigEndian = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE))->GetCheck() == BST_CHECKED;
-	InspectOffset(m_ullOffset);
+	UpdateData();
 }
 
 void CHexDlgDataInterp::OnClose()
@@ -416,7 +415,7 @@ LRESULT CHexDlgDataInterp::OnPropertyDataChanged(WPARAM wParam, LPARAM lParam)
 		RedrawHexCtrl();
 	}
 
-	InspectOffset(m_ullOffset);
+	UpdateData();
 
 	return TRUE;
 }

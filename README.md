@@ -112,13 +112,13 @@
 * [Licensing](#licensing)
 
 ## [](#)Introduction
-**HexCtrl** is a fully featured Hex-Editor Control written in **C++/MFC**. It's implemented as a pure abstract interface and can be used even if you don't use **MFC** directly.
+**HexCtrl** is a fully-featured Hex-Editor Control written in **C++/MFC**. It's implemented as a pure abstract interface and can be used even if you don't use **MFC** directly.
 
 ### The main features of the **HexCtrl**:
 * View and edit data up to **16EB** (exabyte)
-* Works in two data modes, **Memory** and [**Virtual Data Mode**](#virtual-data-mode)
-* Fully featured **Bookmarks Manager**
-* Fully featured **Search and Replace**
+* Two working modes: **Memory** and [**Virtual Data Mode**](#virtual-data-mode)
+* Fully-featured **Bookmarks Manager**
+* Fully-featured **Search and Replace**
 * Changeable encoding for the text area
 * Many options to **Copy/Paste** to/from clipboard
 * **Undo/Redo**
@@ -1025,8 +1025,9 @@ enum class EHexModifyMode : std::uint8_t {
 Enum of the data operation modes, used in [`HEXMODIFY`](#hexmodify) when `HEXMODIFY::enModifyMode` is set to `MODIFY_OPERATION`.
 ```cpp
 enum class EHexOperMode : std::uint8_t {
-    OPER_ASSIGN, OPER_OR, OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_ROTL,
-    OPER_ROTR, OPER_SWAP, OPER_ADD, OPER_SUB, OPER_MUL, OPER_DIV, OPER_CEIL, OPER_FLOOR
+    OPER_ASSIGN, OPER_ADD, OPER_SUB, OPER_MUL, OPER_DIV, OPER_CEIL, OPER_FLOOR, OPER_OR,
+    OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_ROTL, OPER_ROTR, OPER_SWAP,
+    OPER_BITREV
 };
 ```
 

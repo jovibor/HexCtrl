@@ -91,6 +91,8 @@ BOOL CHexDlgOpers::OnInitDialog()
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTR));
 	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_SWAP).data());
 	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SWAP));
+	iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_BITREV).data());
+	m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_BITREV));
 
 	using enum EHexDataSize;
 	iIndex = m_stComboSize.AddString(L"BYTE");
@@ -142,26 +144,28 @@ void CHexDlgOpers::OnOK()
 	const auto eOperMode = GetOperMode();
 	const auto eDataSize = GetDataSize();
 	const auto fCheckBE = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE))->GetCheck() == BST_CHECKED;
-	auto fBigEndian = fCheckBE && eDataSize != SIZE_BYTE && eOperMode != OPER_NOT && eOperMode != OPER_SWAP;
+	auto fBigEndian = fCheckBE && eDataSize != SIZE_BYTE && eOperMode != OPER_NOT && eOperMode != OPER_SWAP
+		&& eOperMode != OPER_BITREV;
 
 	HEXMODIFY hms { .enModifyMode = EHexModifyMode::MODIFY_OPERATION, .enOperMode = eOperMode,
 		.enDataSize = eDataSize };
 
-	LONGLONG llData { };
-	if (GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_DATA)->IsWindowEnabled()) {
-		WCHAR pwszEditText[32];
-		GetDlgItemTextW(IDC_HEXCTRL_OPERS_EDIT_DATA, pwszEditText, static_cast<int>(std::size(pwszEditText)));
+	LONGLONG llOperand { };
+	if (const auto pWndOperand = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND); pWndOperand->IsWindowEnabled()) {
+		wchar_t buffOperand[32];
+		pWndOperand->GetWindowTextW(buffOperand, static_cast<int>(std::size(buffOperand)));
 
-		std::wstring wstrErr { };
-		if (pwszEditText[0] == L'\0') { //Edit field emptiness check.
+		std::wstring wstrErr;
+		if (buffOperand[0] == L'\0') { //Operand field emptiness check.
 			wstrErr = L"Missing Operand!";
 		}
-		else if (const auto optData = stn::StrToLL(pwszEditText); !optData) {
+		else if (const auto optOperand = stn::StrToLL(buffOperand); !optOperand) {
 			wstrErr = L"Wrong number format!";
 		}
-		else if (llData = *optData; hms.enOperMode == OPER_DIV && llData == 0) { //Division by zero check.
+		else if (llOperand = *optOperand; hms.enOperMode == OPER_DIV && llOperand == 0) { //Division by zero check.
 			wstrErr = L"Wrong number format! Can not divide by zero!";
 		}
+
 		if (!wstrErr.empty()) {
 			MessageBoxW(wstrErr.data(), L"Operand Error!", MB_ICONERROR);
 			return;
@@ -170,21 +174,21 @@ void CHexDlgOpers::OnOK()
 		if (fBigEndian) {
 			/***************************************************************************
 			* Some operations don't need to swap the whole data in big-endian mode.
-			* Instead the Operand data-bytes can be swapped here just once.
+			* Instead, the operand can be swapped here just once.
 			* Binary OR/XOR/AND are good examples, binary NOT doesn't need swap at all.
-			* The fSwapHere flag shows exactly this, that data can be swapped here.
+			* The fSwapHere flag shows exactly this, that the operand can be swapped here.
 			***************************************************************************/
 			if (eOperMode == OPER_OR || eOperMode == OPER_XOR || eOperMode == OPER_AND || eOperMode == OPER_ASSIGN) {
 				fBigEndian = false;
 				switch (hms.enDataSize) {
 				case SIZE_WORD:
-					llData = static_cast<LONGLONG>(ByteSwap(static_cast<WORD>(llData)));
+					llOperand = static_cast<LONGLONG>(ByteSwap(static_cast<WORD>(llOperand)));
 					break;
 				case SIZE_DWORD:
-					llData = static_cast<LONGLONG>(ByteSwap(static_cast<DWORD>(llData)));
+					llOperand = static_cast<LONGLONG>(ByteSwap(static_cast<DWORD>(llOperand)));
 					break;
 				case SIZE_QWORD:
-					llData = static_cast<LONGLONG>(ByteSwap(static_cast<QWORD>(llData)));
+					llOperand = static_cast<LONGLONG>(ByteSwap(static_cast<QWORD>(llOperand)));
 					break;
 				default:
 					break;
@@ -209,23 +213,28 @@ void CHexDlgOpers::OnOK()
 	}
 
 	hms.fBigEndian = fBigEndian;
-	hms.spnData = { reinterpret_cast<std::byte*>(&llData), sizeof(llData) };
+	hms.spnData = { reinterpret_cast<std::byte*>(&llOperand), sizeof(llOperand) };
 	m_pHexCtrl->ModifyData(hms);
 	m_pHexCtrl->Redraw();
 }
 
 void CHexDlgOpers::CheckWndAvail()const
 {
-	BOOL fEditEnable = TRUE;
+	using enum EHexOperMode;
+	using enum EHexDataSize;
+	BOOL fOperandEnable = TRUE;
 	switch (GetOperMode()) {
-	case EHexOperMode::OPER_NOT:
-	case EHexOperMode::OPER_SWAP:
-		fEditEnable = FALSE;
+	case OPER_NOT:
+	case OPER_SWAP:
+	case OPER_BITREV:
+		fOperandEnable = FALSE;
 		break;
 	default:
 		break;
 	};
-	GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_DATA)->EnableWindow(fEditEnable);
+
+	GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND)->EnableWindow(fOperandEnable);
+	GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE)->EnableWindow(GetDataSize() == SIZE_BYTE ? FALSE : fOperandEnable);
 }
 
 auto CHexDlgOpers::GetOperMode()const->EHexOperMode

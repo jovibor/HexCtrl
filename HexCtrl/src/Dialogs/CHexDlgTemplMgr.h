@@ -90,7 +90,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD; //Template hittest by offset.
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsTooltips()const;
-		void RefreshData();
+		void UpdateData();
 		BOOL ShowWindow(int nCmdShow);
 		void UnloadAll()override;
 	private:

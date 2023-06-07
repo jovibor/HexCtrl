@@ -240,7 +240,7 @@ bool CHexDlgTemplMgr::IsTooltips()const
 	return m_fTooltips;
 }
 
-void CHexDlgTemplMgr::RefreshData()
+void CHexDlgTemplMgr::UpdateData()
 {
 	if (::IsWindowVisible(m_hWnd)) {
 		m_pListApplied->RedrawWindow();

@@ -118,4 +118,14 @@ namespace HEXCTRL::INTERNAL
 			static_assert(StaticAssertFalse<T>, "Unexpected data size.");
 		}
 	}
+
+	template <class T>
+	[[nodiscard]] constexpr T BitReverse(T tData) {
+		T tReversed { };
+		constexpr auto iBitsCount = sizeof(T) * 8;
+		for (auto i = 0; i < iBitsCount; ++i, tData >>= 1) {
+			tReversed = (tReversed << 1) | (tData & 1);
+		}
+		return tReversed;
+	}
 };

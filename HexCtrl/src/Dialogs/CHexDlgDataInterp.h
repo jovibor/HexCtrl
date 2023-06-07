@@ -23,8 +23,8 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgDataInterp final : public CDialogEx
 	{
 	public:
-		[[nodiscard]] ULONGLONG GetDataSize()const;
-		void InspectOffset(ULONGLONG ullOffset);
+		[[nodiscard]] auto GetDataSize()const->ULONGLONG;
+		void UpdateData();
 		void Initialize(IHexCtrl* pHexCtrl);
 		BOOL ShowWindow(int nCmdShow);
 	private:
