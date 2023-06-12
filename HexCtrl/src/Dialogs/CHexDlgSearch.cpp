@@ -491,10 +491,10 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 455);
 
 	m_stMenuList.CreatePopupMenu();
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_ADDBKM), L"Add bookmark(s)");
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_SELECTALL), L"Select All");
+	m_stMenuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_ADDBKM), L"Add bookmark(s)");
+	m_stMenuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_SELECTALL), L"Select All");
 	m_stMenuList.AppendMenuW(MF_SEPARATOR);
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_CLEARALL), L"Clear All");
+	m_stMenuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_CLEARALL), L"Clear All");
 
 	//"Step" edit box text.
 	m_stEditStep.SetWindowTextW(std::format(L"{}", m_ullStep).data());

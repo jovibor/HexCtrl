@@ -915,8 +915,8 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_COLORS), MF_CHECKED | MF_BYCOMMAND);
 
 	m_stMenuTree.CreatePopupMenu();
-	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLY), L"Disapply template");
-	m_stMenuTree.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLYALL), L"Disapply all");
+	m_stMenuTree.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLY), L"Disapply template");
+	m_stMenuTree.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLYALL), L"Disapply all");
 
 	m_editOffset.SetWindowTextW(L"0x0");
 	m_btnShowTT.SetCheck(IsTooltips() ? BST_CHECKED : BST_UNCHECKED);

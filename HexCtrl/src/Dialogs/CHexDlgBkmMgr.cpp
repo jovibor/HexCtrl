@@ -559,9 +559,9 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 
 	m_stMenuList.CreatePopupMenu();
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVE), L"Remove");
+	m_stMenuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVE), L"Remove");
 	m_stMenuList.AppendMenuW(MF_SEPARATOR);
-	m_stMenuList.AppendMenuW(MF_BYPOSITION, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVEALL), L"Remove All");
+	m_stMenuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVEALL), L"Remove All");
 
 	if (const auto pChkHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_CHK_HEX)); pChkHex) {
 		pChkHex->SetCheck(BST_CHECKED);

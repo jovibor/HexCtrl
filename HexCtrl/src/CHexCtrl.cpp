@@ -1658,19 +1658,17 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 		return;
 
 	ClearData();
-	if (hds.spnData.empty()) //If data size is zero we do nothing further, just return after ClearData.
+	if (hds.spnData.empty()) //If the data size is zero we do nothing further.
 		return;
 
 	m_fDataSet = true;
 	m_spnData = hds.spnData;
-	m_fMutable = hds.fMutable;
 	m_pHexVirtData = hds.pHexVirtData;
 	m_pHexVirtColors = hds.pHexVirtColors;
-
-	constexpr auto dwCacheMinSize { 1024U * 64U }; //64Kb is the minimum default cache size.
+	constexpr auto dwCacheMinSize { 1024U * 64U };      //64Kb is the minimum default cache size.
 	m_dwCacheSize = ((hds.dwCacheSize < dwCacheMinSize)	//Cache size must be at least sizeof(std::uint64_t) aligned.
 		|| (hds.dwCacheSize % sizeof(std::uint64_t) != 0)) ? dwCacheMinSize : hds.dwCacheSize;
-
+	m_fMutable = hds.fMutable;
 	m_fHighLatency = hds.fHighLatency;
 
 	RecalcAll();
@@ -1758,7 +1756,7 @@ void CHexCtrl::SetGroupMode(EHexDataSize eGroupMode)
 	const auto* const pMenuMain = m_menuMain.GetSubMenu(0);
 	CMenu* pMenuShowDataAs { };
 	for (int i = 0; i < pMenuMain->GetMenuItemCount(); ++i) {
-		//Searching through all submenus whose first menuID is IDM_HEXCTRL_SHOWAS_BYTE.
+		//Searching through all submenus whose first menuID is IDM_HEXCTRL_GROUPBY_BYTE.
 		if (const auto pSubMenu = pMenuMain->GetSubMenu(i); pSubMenu != nullptr) {
 			if (pSubMenu->GetMenuItemID(0) == IDM_HEXCTRL_GROUPBY_BYTE) {
 				pMenuShowDataAs = pSubMenu;
@@ -1915,7 +1913,7 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 
 	const auto ullOffsetStart = ullStartLine * m_dwCapacity; //Offset of the visible data to print.
 	const auto ullDataSize = GetDataSize();
-	std::size_t sSizeDataToPrint = static_cast<std::size_t>(iLines) * static_cast<std::size_t>(m_dwCapacity); //Size of the visible data to print.
+	auto sSizeDataToPrint = static_cast<std::size_t>(iLines) * m_dwCapacity; //Size of the visible data to print.
 
 	if (ullOffsetStart + sSizeDataToPrint > ullDataSize) {
 		sSizeDataToPrint = static_cast<std::size_t>(ullDataSize - ullOffsetStart);
@@ -1923,7 +1921,7 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 
 	const auto spnData = GetData({ ullOffsetStart, sSizeDataToPrint }); //Span data to print.
 	assert(!spnData.empty());
-	assert(spnData.size() == sSizeDataToPrint);
+	assert(spnData.size() >= sSizeDataToPrint);
 
 	const auto pDataBegin = reinterpret_cast<unsigned char*>(spnData.data()); //Pointer to data to print.
 	const auto pDataEnd = pDataBegin + sSizeDataToPrint;
