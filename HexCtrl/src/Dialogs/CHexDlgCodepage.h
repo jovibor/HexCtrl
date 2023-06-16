@@ -12,7 +12,7 @@
 namespace HEXCTRL::INTERNAL
 {
 	using namespace HEXCTRL::LISTEX;
-	class CHexDlgEncoding final : public CDialogEx
+	class CHexDlgCodepage final : public CDialogEx
 	{
 	public:
 		void AddCP(std::wstring_view wsv);
@@ -37,7 +37,7 @@ namespace HEXCTRL::INTERNAL
 			std::wstring wstrName { };
 			UINT uMaxChars { };
 		};
-		inline static CHexDlgEncoding* m_pThis { };
+		inline static CHexDlgCodepage* m_pThis { };
 		IHexCtrl* m_pHexCtrl { };
 		IListExPtr m_pListMain { CreateListEx() };
 		std::vector<SCODEPAGE> m_vecCodePage { };

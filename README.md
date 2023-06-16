@@ -26,11 +26,11 @@
   * [GetCacheSize](#getcachesize)
   * [GetCapacity](#getcapacity)
   * [GetCaretPos](#getcaretpos)
+  * [GetCodepage](#getcodepage)
   * [GetColors](#getcolors)
   * [GetData](#getdata)
   * [GetDataSize](#getdatasize)
   * [GetDateInfo](#getdateinfo)
-  * [GetEncoding](#getencoding)
   * [GetFont](#getfont)
   * [GetGroupMode](#getgroupmode)
   * [GetMenuHandle](#getmenuhandle)
@@ -55,11 +55,11 @@
   * [Redraw](#redraw)
   * [SetCapacity](#setcapacity)
   * [SetCaretPos](#setcaretpos)
+  * [SetCodepage](#setcodepage)
   * [SetColors](#setcolors)
   * [SetConfig](#setconfig)
   * [SetData](#setdata)
   * [SetDateInfo](#setdateinfo)
-  * [SetEncoding](#setencoding)
   * [SetFont](#setfont)
   * [SetGroupMode](#setgroupmode)
   * [SetMutable](#setmutable)
@@ -102,12 +102,16 @@
    </details>
 * [Notification Messages](#notification-messages) <details><summary>_Expand_</summary>
   * [HEXCTRL_MSG_BKMCLICK](#hexctrl_msg_bkmclicked) 
-  * [HEXCTRL_MSG_CARETCHANGE](#hexctrl_msg_caretchange)
   * [HEXCTRL_MSG_CONTEXTMENU](#hexctrl_msg_contextmenu)
   * [HEXCTRL_MSG_DESTROY](#hexctrl_msg_destroy)
   * [HEXCTRL_MSG_MENUCLICK](#hexctrl_msg_menuclick)
-  * [HEXCTRL_MSG_SELECTION](#hexctrl_msg_selection)
+  * [HEXCTRL_MSG_SETCAPACITY](#hexctrl_msg_setcapacity)
+  * [HEXCTRL_MSG_SETCARET](#hexctrl_msg_setcaret)
+  * [HEXCTRL_MSG_SETCODEPAGE](#hexctrl_msg_setcodepage)
   * [HEXCTRL_MSG_SETDATA](#hexctrl_msg_setdata)
+  * [HEXCTRL_MSG_SETFONT](#hexctrl_msg_setfont)
+  * [HEXCTRL_MSG_SETGROUPMODE](#hexctrl_msg_setgroupmode)
+  * [HEXCTRL_MSG_SETSELECTION](#hexctrl_msg_setselection)
    </details>
 * [Licensing](#licensing)
 
@@ -427,9 +431,9 @@ Returns currently set data size.
 ```
 Returns [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate), and date separator.
 
-### [](#)GetEncoding
+### [](#)GetCodepage
 ```cpp
-[[nodiscard]] auto GetEncoding()const->int;
+[[nodiscard]] auto GetCodepage()const->int;
 ```
 Get code page that is currently in use.
 
@@ -616,9 +620,9 @@ void SetDateInfo(DWORD dwFormat, wchar_t wchSepar);
 ```
 Sets [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate), along with date separator.
 
-### [](#)SetEncoding
+### [](#)SetCodepage
 ```cpp
-void SetEncoding(int iCodePage);
+void SetCodepage(int iCodePage);
 ```
 Sets the code page for the **HexCtrl**'s text area. Takes [code page identifier](https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers) as an argument, or `-1` for default ASCII-only characters.  
 
@@ -1047,9 +1051,6 @@ The `LPARAM` of the `WM_NOTIFY` message contains a pointer to the **[NMHDR](http
 ### [](#)HEXCTRL_MSG_BKMCLICK
 Sent if a bookmark is clicked, `LPARAM` contains a pointer to the [`HEXBKMINFO`](#hexbkminfo) struct.
 
-### [](#)HEXCTRL_MSG_CARETCHANGE
-Sent when the caret position has changed, `LPARAM` contains a pointer to the `NMHDR` struct.
-
 ### [](#)HEXCTRL_MSG_CONTEXTMENU
 Sent when the context menu is about to be displayed, `LPARAM` contains a pointer to the [`HEXMENUINFO`](#hexmenuinfo) struct. You can disable menu showing-up by setting the `PHEXMENUINFO->fShow` flag to a `false` in response to this message.
 
@@ -1059,11 +1060,27 @@ Sent to indicate that the **HexCtrl**'s window is about to be destroyed, `LPARAM
 ### [](#)HEXCTRL_MSG_MENUCLICK
 Sent when a user-defined custom menu has been clicked, `LPARAM` contains a pointer to the [`HEXMENUINFO`](#hexmenuinfo) struct.
 
-### [](#)HEXCTRL_MSG_SELECTION
-Sent when a selection has been made, `LPARAM` contains a pointer to the `NMHDR` struct.
+### [](#)HEXCTRL_MSG_SETCAPACITY
+Sent when the capacity has changed, `LPARAM` contains a pointer to the `NMHDR` struct.
+
+### [](#)HEXCTRL_MSG_SETCARET
+Sent when the caret position has changed, `LPARAM` contains a pointer to the `NMHDR` struct.
+
+### [](#)HEXCTRL_MSG_SETCODEPAGE
+Sent when the codepage of the text area has changed, `LPARAM` contains a pointer to the `NMHDR` struct.
 
 ### [](#)HEXCTRL_MSG_SETDATA
 Sent to indicate that the data has changed, `LPARAM` contains a pointer to the `NMHDR` struct.
+
+### [](#)HEXCTRL_MSG_SETFONT
+Sent when font has changed, `LPARAM` contains a pointer to the `NMHDR` struct.
+
+### [](#)HEXCTRL_MSG_SETGROUPMODE
+Sent when the data grouping mode has changed, `LPARAM` contains a pointer to the `NMHDR` struct.
+
+### [](#)HEXCTRL_MSG_SETSELECTION
+Sent when a selection has been made, `LPARAM` contains a pointer to the `NMHDR` struct.
+
 
 ## [](#)Licensing
 This software is available under **"The HexCtrl License"**, it is free for any **NON-COMMERCIAL** use.  

@@ -12,8 +12,8 @@
 #include "CScrollEx.h"
 #include "Dialogs/CHexDlgBkmMgr.h"
 #include "Dialogs/CHexDlgCallback.h"
+#include "Dialogs/CHexDlgCodepage.h"
 #include "Dialogs/CHexDlgDataInterp.h"
-#include "Dialogs/CHexDlgEncoding.h"
 #include "Dialogs/CHexDlgGoTo.h"
 #include "Dialogs/CHexDlgModify.h"
 #include "Dialogs/CHexDlgSearch.h"
@@ -356,14 +356,14 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_fCreated = true; //Main creation flag.
 
 	SetGroupMode(m_enGroupMode);
-	SetEncoding(-1);
+	SetCodepage(-1);
 	SetConfig(L"");
 	SetDateInfo(0xFFFFFFFFUL, L'/');
 
 	//All dialogs are initialized after the main window, to set the parent window correctly.
 	m_pDlgBkmMgr->Initialize(this);
 	m_pDlgDataInterp->Initialize(this);
-	m_pDlgEncoding->Initialize(this);
+	m_pDlgCodepage->Initialize(this);
 	m_pDlgGoTo->Initialize(this);
 	m_pDlgSearch->Initialize(this);
 	m_pDlgTemplMgr->Initialize(this);
@@ -378,9 +378,7 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
 	if (IsCreated())
 		return false;
 
-	const HEXCREATE hcs { .hWndParent { hWndParent }, .uID { uCtrlID },
-		.dwStyle { WS_VISIBLE | WS_CHILD }, .fCustom { true } };
-	return Create(hcs);
+	return Create({ .hWndParent { hWndParent }, .uID { uCtrlID }, .dwStyle { WS_VISIBLE | WS_CHILD }, .fCustom { true } });
 }
 
 void CHexCtrl::Destroy()
@@ -540,8 +538,8 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case CMD_DATAINTERP_DLG:
 		m_pDlgDataInterp->ShowWindow(SW_SHOW);
 		break;
-	case CMD_ENCODING_DLG:
-		m_pDlgEncoding->ShowWindow(SW_SHOW);
+	case CMD_CODEPAGE_DLG:
+		m_pDlgCodepage->ShowWindow(SW_SHOW);
 		break;
 	case CMD_APPEAR_FONT_DLG:
 		ChooseFontDlg();
@@ -641,6 +639,15 @@ auto CHexCtrl::GetCaretPos()const->ULONGLONG
 	return m_ullCaretPos;
 }
 
+int CHexCtrl::GetCodepage()const
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
+	return m_iCodePage;
+}
+
 auto CHexCtrl::GetColors()const->HEXCOLORS
 {
 	assert(IsCreated());
@@ -691,15 +698,6 @@ auto CHexCtrl::GetDateInfo()const->std::tuple<DWORD, wchar_t>
 
 	//Returns defaults even if is not IsCreated.
 	return { m_dwDateFormat, m_wchDateSepar };
-}
-
-int CHexCtrl::GetEncoding()const
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
-
-	return m_iCodePage;
 }
 
 auto CHexCtrl::GetFont()->LOGFONTW
@@ -803,8 +801,8 @@ auto CHexCtrl::GetWindowHandle(EHexWnd eWnd)const->HWND
 		return m_pDlgModify->m_hWnd;
 	case EHexWnd::DLG_SEARCH:
 		return m_pDlgSearch->m_hWnd;
-	case EHexWnd::DLG_ENCODING:
-		return m_pDlgEncoding->m_hWnd;
+	case EHexWnd::DLG_CODEPAGE:
+		return m_pDlgCodepage->m_hWnd;
 	case EHexWnd::DLG_GOTO:
 		return m_pDlgGoTo->m_hWnd;
 	case EHexWnd::DLG_TEMPLMGR:
@@ -1374,6 +1372,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 
 	FillCapacityString();
 	RecalcAll();
+	ParentNotify(HEXCTRL_MSG_SETCAPACITY);
 }
 
 void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
@@ -1391,6 +1390,37 @@ void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
 	}
 
 	OnCaretPosChange(ullOffset);
+}
+
+void CHexCtrl::SetCodepage(int iCodePage)
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
+	CPINFOEXW stCPInfo;
+	std::wstring_view wsvFmt;
+	switch (iCodePage) {
+	case -1:
+		wsvFmt = L"ASCII";
+		break;
+	case 0:
+		wsvFmt = L"UTF-16";
+		break;
+	default:
+		if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != FALSE) {
+			wsvFmt = L"Codepage {}";
+		}
+		break;
+	}
+
+	if (!wsvFmt.empty()) {
+		m_iCodePage = iCodePage;
+		m_wstrTextTitle = std::vformat(wsvFmt, std::make_wformat_args(m_iCodePage));
+		Redraw();
+	}
+
+	ParentNotify(HEXCTRL_MSG_SETCODEPAGE);
 }
 
 void CHexCtrl::SetColors(const HEXCOLORS& clr)
@@ -1459,7 +1489,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		{ "CMD_SEL_ADDUP", { CMD_SEL_ADDUP, 0 } },
 		{ "CMD_SEL_ADDDOWN", { CMD_SEL_ADDDOWN, 0 } },
 		{ "CMD_DATAINTERP_DLG", { CMD_DATAINTERP_DLG, IDM_HEXCTRL_DLGDATAINTERP } },
-		{ "CMD_ENCODING_DLG", { CMD_ENCODING_DLG, IDM_HEXCTRL_DLGENCODING } },
+		{ "CMD_CODEPAGE_DLG", { CMD_CODEPAGE_DLG, IDM_HEXCTRL_DLGCODEPAGE } },
 		{ "CMD_APPEAR_FONT_DLG", { CMD_APPEAR_FONT_DLG, IDM_HEXCTRL_APPEAR_DLGFONT } },
 		{ "CMD_APPEAR_FONTINC", { CMD_APPEAR_FONTINC, IDM_HEXCTRL_APPEAR_FONTINC } },
 		{ "CMD_APPEAR_FONTDEC", { CMD_APPEAR_FONTDEC, IDM_HEXCTRL_APPEAR_FONTDEC } },
@@ -1702,35 +1732,6 @@ void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 	m_wchDateSepar = wchSepar;
 }
 
-void CHexCtrl::SetEncoding(int iCodePage)
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
-
-	CPINFOEXW stCPInfo;
-	std::wstring_view wsvFmt;
-	switch (iCodePage) {
-	case -1:
-		wsvFmt = L"ASCII";
-		break;
-	case 0:
-		wsvFmt = L"UTF-16";
-		break;
-	default:
-		if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != FALSE) {
-			wsvFmt = L"Codepage {}";
-		}
-		break;
-	}
-
-	if (!wsvFmt.empty()) {
-		m_iCodePage = iCodePage;
-		m_wstrTextTitle = std::vformat(wsvFmt, std::make_wformat_args(m_iCodePage));
-		Redraw();
-	}
-}
-
 void CHexCtrl::SetFont(const LOGFONTW& lf)
 {
 	assert(IsCreated());
@@ -1741,6 +1742,7 @@ void CHexCtrl::SetFont(const LOGFONTW& lf)
 	m_fontMain.CreateFontIndirectW(&lf);
 
 	RecalcAll();
+	ParentNotify(HEXCTRL_MSG_SETFONT);
 }
 
 void CHexCtrl::SetGroupMode(EHexDataSize eGroupMode)
@@ -1789,6 +1791,7 @@ void CHexCtrl::SetGroupMode(EHexDataSize eGroupMode)
 		pMenuShowDataAs->CheckMenuItem(ID, MF_CHECKED | MF_BYCOMMAND);
 	}
 	SetCapacity(m_dwCapacity); //To recalc current representation.
+	ParentNotify(HEXCTRL_MSG_SETGROUPMODE);
 }
 
 void CHexCtrl::SetMutable(bool fEnable)
@@ -1857,7 +1860,7 @@ void CHexCtrl::SetSelection(const VecSpan& vecSel, bool fRedraw, bool fHighlight
 		Redraw();
 	}
 
-	ParentNotify(HEXCTRL_MSG_SELECTION);
+	ParentNotify(HEXCTRL_MSG_SETSELECTION);
 }
 
 void CHexCtrl::SetUnprintableChar(wchar_t wch)
@@ -1936,11 +1939,11 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 
 	//Text to print.
 	std::wstring wstrText;
-	const auto iEncoding = GetEncoding();
-	if (iEncoding == -1) { //ASCII codepage: we simply assigning [pDataBegin...pDataEnd) to wstrText w/o any conversion.
+	const auto iCodepage = GetCodepage();
+	if (iCodepage == -1) { //ASCII codepage: we simply assigning [pDataBegin...pDataEnd) to wstrText w/o any conversion.
 		wstrText.assign(pDataBegin, pDataEnd);
 	}
-	else if (iEncoding == 0) { //UTF-16.
+	else if (iCodepage == 0) { //UTF-16.
 		const auto pDataUTF16Beg = reinterpret_cast<wchar_t*>(pDataBegin);
 		const auto pDataUTF16End = reinterpret_cast<wchar_t*>((sSizeDataToPrint % 2) == 0 ? pDataEnd : pDataEnd - 1);
 		wstrText.assign(pDataUTF16Beg, pDataUTF16End);
@@ -1948,10 +1951,10 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 	}
 	else {
 		wstrText.resize(sSizeDataToPrint);
-		MultiByteToWideChar(iEncoding, 0, reinterpret_cast<LPCCH>(pDataBegin),
+		MultiByteToWideChar(iCodepage, 0, reinterpret_cast<LPCCH>(pDataBegin),
 			static_cast<int>(sSizeDataToPrint), wstrText.data(), static_cast<int>(sSizeDataToPrint));
 	}
-	ReplaceUnprintable(wstrText, iEncoding == -1, true);
+	ReplaceUnprintable(wstrText, iCodepage == -1, true);
 
 	return { std::move(wstrHex), std::move(wstrText) };
 }
@@ -2236,16 +2239,16 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 		break;
 	case EClipboard::PASTE_TEXT_CP:
 	{
-		auto iEncoding = GetEncoding();
-		if (iEncoding == 0) { //UTF-16.
+		auto iCodepage = GetCodepage();
+		if (iCodepage == 0) { //UTF-16.
 			lmbPasteUTF16();
 			break;
 		}
 
-		if (iEncoding == -1) { //ASCII.
-			iEncoding = 1252;  //ANSI-Latin codepage for default ASCII.
+		if (iCodepage == -1) { //ASCII.
+			iCodepage = 1252;  //ANSI-Latin codepage for default ASCII.
 		}
-		strDataModify = WstrToStr(pDataClpbrd, iEncoding);
+		strDataModify = WstrToStr(pDataClpbrd, iCodepage);
 		ullSizeModify = strDataModify.size();
 		if (ullCaretPos + ullSizeModify > ullDataSize) {
 			ullSizeModify = ullDataSize - ullCaretPos;
@@ -2552,20 +2555,20 @@ auto CHexCtrl::CopyTextCP()const->std::wstring
 	}
 
 	std::wstring wstrText;
-	const auto iEncoding = GetEncoding();
-	if (iEncoding == -1) { //ASCII codepage: we simply assigning [strData.begin()...strData.end()) to wstrText w/o any conversion.
+	const auto iCodepage = GetCodepage();
+	if (iCodepage == -1) { //ASCII codepage: we simply assigning [strData.begin()...strData.end()) to wstrText w/o any conversion.
 		wstrText.assign(strData.begin(), strData.end());
 	}
-	else if (iEncoding == 0) { //UTF-16.
+	else if (iCodepage == 0) { //UTF-16.
 		const auto sSizeWstr = (strData.size() - (strData.size() % 2)) / sizeof(wchar_t);
 		const auto pDataUTF16Beg = reinterpret_cast<const wchar_t*>(strData.data());
 		const auto pDataUTF16End = pDataUTF16Beg + sSizeWstr;
 		wstrText.assign(pDataUTF16Beg, pDataUTF16End);
 	}
 	else {
-		wstrText = StrToWstr(strData, iEncoding);
+		wstrText = StrToWstr(strData, iCodepage);
 	}
-	ReplaceUnprintable(wstrText, iEncoding == -1, false);
+	ReplaceUnprintable(wstrText, iCodepage == -1, false);
 
 	return wstrText;
 }
@@ -3790,7 +3793,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 		ParentNotify(hbi);
 	}
 
-	ParentNotify(HEXCTRL_MSG_CARETCHANGE);
+	ParentNotify(HEXCTRL_MSG_SETCARET);
 }
 
 void CHexCtrl::OnModifyData()
@@ -3803,13 +3806,12 @@ void CHexCtrl::OnModifyData()
 template<typename T>
 void CHexCtrl::ParentNotify(const T& t)const
 {
-	::SendMessageW(GetParent()->GetSafeHwnd(), WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));
+	::SendMessageW(GetParent()->m_hWnd, WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));
 }
 
 void CHexCtrl::ParentNotify(UINT uCode)const
 {
-	const NMHDR nmhdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), uCode };
-	ParentNotify(nmhdr);
+	ParentNotify(NMHDR { .hwndFrom { m_hWnd }, .idFrom { static_cast<UINT>(GetDlgCtrlID()) }, .code { uCode } });
 }
 
 void CHexCtrl::Print()
@@ -4653,9 +4655,8 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
 	}
 
 	//For a user defined custom menu we notify the parent window.
-	const HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK },
-		.pt { m_stMenuClickedPt }, .wMenuID { wMenuID } };
-	ParentNotify(hmi);
+	ParentNotify(HEXMENUINFO { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK },
+		.pt { m_stMenuClickedPt }, .wMenuID { wMenuID } });
 
 	return TRUE; //An application returns nonzero if it processes this message; (c) Microsoft.
 }
@@ -4780,7 +4781,7 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 		break;
 	case 9: //Data Presentation.
 		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLGDATAINTERP, IsCmdAvail(CMD_DATAINTERP_DLG) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLGENCODING, IsCmdAvail(CMD_ENCODING_DLG) ? MF_ENABLED : MF_GRAYED);
+		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLGCODEPAGE, IsCmdAvail(CMD_CODEPAGE_DLG) ? MF_ENABLED : MF_GRAYED);
 		break;
 	default:
 		break;
@@ -4843,7 +4844,7 @@ void CHexCtrl::OnLButtonDblClk(UINT nFlags, CPoint point)
 		SetOffsetMode(!IsOffsetAsHex());
 	}
 	else if (GetRectTextCaption().PtInRect(point) != FALSE) { //DblClick on codepage caption area.
-		ExecuteCmd(EHexCmd::CMD_ENCODING_DLG);
+		ExecuteCmd(EHexCmd::CMD_CODEPAGE_DLG);
 	}
 	else if (const auto optHit = HitTest(point); optHit) { //DblClick on hex/text area.
 		m_fLMousePressed = true;

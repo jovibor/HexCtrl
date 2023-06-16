@@ -69,7 +69,7 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgEncoding.h">
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgCodepage.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgFillData.h">
@@ -128,7 +128,7 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgEncoding.cpp">
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgCodepage.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgFillData.cpp">

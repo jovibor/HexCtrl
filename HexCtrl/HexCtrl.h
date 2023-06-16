@@ -40,7 +40,7 @@ namespace HEXCTRL
 		CMD_CLPBRD_COPY_OFFSET, CMD_CLPBRD_PASTE_HEX, CMD_CLPBRD_PASTE_TEXTUTF16, CMD_CLPBRD_PASTE_TEXTCP,
 		CMD_MODIFY_OPERS_DLG, CMD_MODIFY_FILLZEROS, CMD_MODIFY_FILLDATA_DLG, CMD_MODIFY_UNDO, CMD_MODIFY_REDO,
 		CMD_SEL_MARKSTART, CMD_SEL_MARKEND, CMD_SEL_ALL, CMD_SEL_ADDLEFT, CMD_SEL_ADDRIGHT, CMD_SEL_ADDUP,
-		CMD_SEL_ADDDOWN, CMD_DATAINTERP_DLG, CMD_ENCODING_DLG, CMD_APPEAR_FONT_DLG, CMD_APPEAR_FONTINC,
+		CMD_SEL_ADDDOWN, CMD_DATAINTERP_DLG, CMD_CODEPAGE_DLG, CMD_APPEAR_FONT_DLG, CMD_APPEAR_FONTINC,
 		CMD_APPEAR_FONTDEC, CMD_APPEAR_CAPACINC, CMD_APPEAR_CAPACDEC, CMD_PRINT_DLG, CMD_ABOUT_DLG,
 		CMD_CARET_LEFT, CMD_CARET_RIGHT, CMD_CARET_UP, CMD_CARET_DOWN,
 		CMD_SCROLL_PAGEUP, CMD_SCROLL_PAGEDOWN,
@@ -52,7 +52,7 @@ namespace HEXCTRL
 	********************************************************************************************/
 	enum class EHexWnd : std::uint8_t {
 		WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_MODIFY,
-		DLG_SEARCH, DLG_ENCODING, DLG_GOTO, DLG_TEMPLMGR
+		DLG_SEARCH, DLG_CODEPAGE, DLG_GOTO, DLG_TEMPLMGR
 	};
 
 	/********************************************************************************************
@@ -316,11 +316,11 @@ namespace HEXCTRL
 		[[nodiscard]] virtual auto GetCacheSize()const->DWORD = 0;           //Returns Virtual mode cache size.
 		[[nodiscard]] virtual auto GetCapacity()const->DWORD = 0;            //Current capacity.
 		[[nodiscard]] virtual auto GetCaretPos()const->ULONGLONG = 0;        //Cursor position.
+		[[nodiscard]] virtual auto GetCodepage()const->int = 0;              //Get current codepage ID.
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORS = 0;          //Current colors.
 		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->SpanByte = 0;  //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual auto GetDateInfo()const->std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
-		[[nodiscard]] virtual auto GetEncoding()const->int = 0;              //Get current code page ID.
 		[[nodiscard]] virtual auto GetFont() -> LOGFONTW = 0;                //Get current font.
 		[[nodiscard]] virtual auto GetGroupMode()const->EHexDataSize = 0;    //Retrieves current data grouping mode.
 		[[nodiscard]] virtual auto GetMenuHandle()const->HMENU = 0;          //Context menu handle.
@@ -345,11 +345,11 @@ namespace HEXCTRL
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
 		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true) = 0; //Set the caret position.
+		virtual void SetCodepage(int iCodePage) = 0;           //Codepage for text area.
 		virtual void SetColors(const HEXCOLORS& clr) = 0;      //Set all the control's colors.
 		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).
 		virtual void SetDateInfo(DWORD dwFormat, wchar_t wchSepar) = 0; //Set date format and date separator.
-		virtual void SetEncoding(int iCodePage) = 0;           //Code-page for text area.
 		virtual void SetFont(const LOGFONTW& lf) = 0;          //Set the control's new font. This font has to be monospaced.
 		virtual void SetGroupMode(EHexDataSize eMode) = 0;     //Set current "Group Data By" mode.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
@@ -423,13 +423,17 @@ namespace HEXCTRL
 	* These codes are used to notify m_hwndMsg window about control's states.                   *
 	********************************************************************************************/
 
-	constexpr auto HEXCTRL_MSG_BKMCLICK { 0x0100U };    //Bookmark clicked.
-	constexpr auto HEXCTRL_MSG_CARETCHANGE { 0x0101U }; //Caret position changed.
-	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0102U }; //OnContextMenu triggered.
-	constexpr auto HEXCTRL_MSG_DESTROY { 0x0103U };     //Indicates that HexCtrl is being destroyed.
-	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0104U };   //User defined custom menu clicked.
-	constexpr auto HEXCTRL_MSG_SELECTION { 0x0105U };   //Selection has been made.
-	constexpr auto HEXCTRL_MSG_SETDATA { 0x0106U };     //Indicates that the data has changed.
+	constexpr auto HEXCTRL_MSG_BKMCLICK { 0x0100U };     //Bookmark is clicked.
+	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0101U };  //OnContextMenu has triggered.
+	constexpr auto HEXCTRL_MSG_DESTROY { 0x0102U };      //Indicates that the HexCtrl is being destroyed.
+	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0103U };    //User defined custom menu has clicked.
+	constexpr auto HEXCTRL_MSG_SETCAPACITY { 0x0104U };  //Capacity has changed.
+	constexpr auto HEXCTRL_MSG_SETCARET { 0x0105U };     //Caret position has changed.
+	constexpr auto HEXCTRL_MSG_SETCODEPAGE { 0x0106U };  //Codepage has changed.
+	constexpr auto HEXCTRL_MSG_SETDATA { 0x0107U };      //Indicates that the data has changed.
+	constexpr auto HEXCTRL_MSG_SETFONT { 0x0108U };      //Font has changed.
+	constexpr auto HEXCTRL_MSG_SETGROUPMODE { 0x0109U }; //Data group mode has changed.
+	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x010AU }; //Selection has been made.
 
 	//Setting a manifest for the ComCtl32.dll version 6.
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")

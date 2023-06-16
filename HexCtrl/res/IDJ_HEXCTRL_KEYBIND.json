@@ -46,7 +46,7 @@
   "CMD_SEL_ADDUP": [ "shift+up" ],
   "CMD_SEL_ADDDOWN": [ "shift+down" ],
   "CMD_DATAINTERP_DLG": [ "" ],
-  "CMD_ENCODING_DLG": [ "" ],
+  "CMD_CODEPAGE_DLG": [ "" ],
   "CMD_APPEAR_FONT_DLG": [ "" ],
   "CMD_APPEAR_FONTINC": [ "" ],
   "CMD_APPEAR_FONTDEC": [ "" ],

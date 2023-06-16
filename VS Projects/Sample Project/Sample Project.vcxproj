@@ -243,7 +243,7 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.h" />
-    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgEncoding.h" />
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgCodepage.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgFillData.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgGoTo.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgModify.h" />
@@ -265,7 +265,7 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgEncoding.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgCodepage.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgFillData.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgGoTo.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgModify.cpp" />

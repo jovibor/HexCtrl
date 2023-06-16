@@ -17,8 +17,8 @@ namespace HEXCTRL::INTERNAL
 {
 	//Forward declarations.
 	class CHexDlgBkmMgr;
+	class CHexDlgCodepage;
 	class CHexDlgDataInterp;
-	class CHexDlgEncoding;
 	class CHexDlgModify;
 	class CHexDlgGoTo;
 	class CHexDlgSearch;
@@ -48,11 +48,11 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetCacheSize()const->DWORD override;
 		[[nodiscard]] auto GetCapacity()const->DWORD override;
 		[[nodiscard]] auto GetCaretPos()const->ULONGLONG override;
+		[[nodiscard]] auto GetCodepage()const->int override;
 		[[nodiscard]] auto GetColors()const->HEXCOLORS override;
 		[[nodiscard]] auto GetData(HEXSPAN hss)const->SpanByte override;
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;
 		[[nodiscard]] auto GetDateInfo()const->std::tuple<DWORD, wchar_t> override;
-		[[nodiscard]] auto GetEncoding()const->int override;
 		[[nodiscard]] auto GetFont() -> LOGFONTW override;
 		[[nodiscard]] auto GetGroupMode()const->EHexDataSize override;
 		[[nodiscard]] auto GetMenuHandle()const->HMENU override;
@@ -77,11 +77,11 @@ namespace HEXCTRL::INTERNAL
 		void Redraw()override;
 		void SetCapacity(DWORD dwCapacity)override;
 		void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true)override;
+		void SetCodepage(int iCodePage)override;
 		void SetColors(const HEXCOLORS& clr)override;
 		bool SetConfig(std::wstring_view wsvPath)override;
 		void SetData(const HEXDATA& hds)override;
 		void SetDateInfo(DWORD dwFormat, wchar_t wchSepar)override;
-		void SetEncoding(int iCodePage)override;
 		void SetFont(const LOGFONTW& lf)override;
 		void SetGroupMode(EHexDataSize eGroupMode)override;
 		void SetMutable(bool fEnable)override;
@@ -209,7 +209,7 @@ namespace HEXCTRL::INTERNAL
 		static constexpr auto m_iFirstHorzLine { 0 };    //First horizontal line indent.
 		static constexpr auto m_iFirstVertLine { 0 };    //First vertical line indent.
 		const std::unique_ptr<CHexDlgBkmMgr> m_pDlgBkmMgr { std::make_unique<CHexDlgBkmMgr>() };             //"Bookmark manager" dialog.
-		const std::unique_ptr<CHexDlgEncoding> m_pDlgEncoding { std::make_unique<CHexDlgEncoding>() };       //"Encoding" dialog.
+		const std::unique_ptr<CHexDlgCodepage> m_pDlgCodepage { std::make_unique<CHexDlgCodepage>() };       //"Codepage" dialog.
 		const std::unique_ptr<CHexDlgDataInterp> m_pDlgDataInterp { std::make_unique<CHexDlgDataInterp>() }; //"Data interpreter" dialog.
 		const std::unique_ptr<CHexDlgModify> m_pDlgModify { std::make_unique<CHexDlgModify>() };             //"Modify..." dialog.
 		const std::unique_ptr<CHexDlgGoTo> m_pDlgGoTo { std::make_unique<CHexDlgGoTo>() };                   //"GoTo..." dialog.

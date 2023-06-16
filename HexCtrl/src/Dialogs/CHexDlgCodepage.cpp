@@ -7,7 +7,7 @@
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
 #include "../HexUtility.h"
-#include "CHexDlgEncoding.h"
+#include "CHexDlgCodepage.h"
 #include <algorithm>
 #include <cassert>
 #include <format>
@@ -15,23 +15,23 @@
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
-BEGIN_MESSAGE_MAP(CHexDlgEncoding, CDialogEx)
+BEGIN_MESSAGE_MAP(CHexDlgCodepage, CDialogEx)
 	ON_WM_ACTIVATE()
-	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_ENCODING_LIST, &CHexDlgEncoding::OnListGetDispInfo)
-	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_ENCODING_LIST, &CHexDlgEncoding::OnListItemChanged)
-	ON_NOTIFY(LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_ENCODING_LIST, &CHexDlgEncoding::OnListGetColor)
-	ON_NOTIFY(LISTEX_MSG_LINKCLICK, IDC_HEXCTRL_ENCODING_LIST, &CHexDlgEncoding::OnListLinkClick)
+	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListGetDispInfo)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListItemChanged)
+	ON_NOTIFY(LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListGetColor)
+	ON_NOTIFY(LISTEX_MSG_LINKCLICK, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListLinkClick)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
-BOOL CHexDlgEncoding::EnumCodePagesProc(LPWSTR pwszCP)
+BOOL CHexDlgCodepage::EnumCodePagesProc(LPWSTR pwszCP)
 {
 	m_pThis->AddCP(pwszCP);
 
 	return TRUE;
 }
 
-void CHexDlgEncoding::AddCP(std::wstring_view wsv)
+void CHexDlgCodepage::AddCP(std::wstring_view wsv)
 {
 	if (const auto optCPID = stn::StrToUInt(wsv); optCPID) {
 		if (CPINFOEXW stCP; GetCPInfoExW(*optCPID, 0, &stCP) != FALSE) {
@@ -40,7 +40,7 @@ void CHexDlgEncoding::AddCP(std::wstring_view wsv)
 	}
 }
 
-void CHexDlgEncoding::Initialize(IHexCtrl* pHexCtrl)
+void CHexDlgCodepage::Initialize(IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
 	if (pHexCtrl == nullptr)
@@ -49,26 +49,26 @@ void CHexDlgEncoding::Initialize(IHexCtrl* pHexCtrl)
 	m_pHexCtrl = pHexCtrl;
 }
 
-BOOL CHexDlgEncoding::ShowWindow(int nCmdShow)
+BOOL CHexDlgCodepage::ShowWindow(int nCmdShow)
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_ENCODING, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_CODEPAGE, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
 	}
 
 	return CDialogEx::ShowWindow(nCmdShow);
 }
 
-void CHexDlgEncoding::DoDataExchange(CDataExchange* pDX)
+void CHexDlgCodepage::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 }
 
-BOOL CHexDlgEncoding::OnInitDialog()
+BOOL CHexDlgCodepage::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
 	LISTEXCREATE lcs;
-	lcs.uID = IDC_HEXCTRL_ENCODING_LIST;
+	lcs.uID = IDC_HEXCTRL_CODEPAGE_LIST;
 	lcs.pParent = this;
 	lcs.fDialogCtrl = true;
 	lcs.fSortable = true;
@@ -88,13 +88,13 @@ BOOL CHexDlgEncoding::OnInitDialog()
 	return TRUE;
 }
 
-void CHexDlgEncoding::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+void CHexDlgCodepage::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
 		if (m_pHexCtrl->IsCreated()) {
 			m_pListMain->SetItemState(-1, 0, LVIS_SELECTED);
 			if (const auto iter = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
-				[this](const SCODEPAGE& ref) { return ref.iCPID == m_pHexCtrl->GetEncoding(); });
+				[this](const SCODEPAGE& ref) { return ref.iCPID == m_pHexCtrl->GetCodepage(); });
 				iter != m_vecCodePage.end()) {
 				const auto iItem = static_cast<int>(iter - m_vecCodePage.begin());
 				m_pListMain->SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
@@ -106,9 +106,9 @@ void CHexDlgEncoding::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
 }
 
-BOOL CHexDlgEncoding::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+BOOL CHexDlgCodepage::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
-	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_ENCODING_LIST) {
+	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_CODEPAGE_LIST) {
 		switch (pNMI->hdr.code) {
 		case LVN_COLUMNCLICK:
 			SortList();
@@ -121,7 +121,7 @@ BOOL CHexDlgEncoding::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
-void CHexDlgEncoding::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgCodepage::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
@@ -144,15 +144,15 @@ void CHexDlgEncoding::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgEncoding::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgCodepage::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED)) {
-		m_pHexCtrl->SetEncoding(m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].iCPID);
+		m_pHexCtrl->SetCodepage(m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].iCPID);
 	}
 }
 
-void CHexDlgEncoding::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgCodepage::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].uMaxChars > 1) {
@@ -161,13 +161,13 @@ void CHexDlgEncoding::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgEncoding::OnListLinkClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgCodepage::OnListLinkClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	ShellExecuteW(nullptr, L"open", reinterpret_cast<LPWSTR>(pNMI->lParam), nullptr, nullptr, SW_SHOWNORMAL);
 }
 
-void CHexDlgEncoding::SortList()
+void CHexDlgCodepage::SortList()
 {
 	const auto iColumn = m_pListMain->GetSortColumn();
 	const auto fAscending = m_pListMain->GetSortAscending();
@@ -194,7 +194,7 @@ void CHexDlgEncoding::SortList()
 	m_pListMain->RedrawWindow();
 }
 
-void CHexDlgEncoding::OnDestroy()
+void CHexDlgCodepage::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
