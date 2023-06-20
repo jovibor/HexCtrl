@@ -116,18 +116,6 @@ BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
 		Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
 	}
 
-	if (nCmdShow == SW_SHOW) {
-		int iChkStatus { BST_UNCHECKED };
-		const auto* const pHexCtrl = GetHexCtrl();
-		if (auto vecSel = pHexCtrl->GetSelection(); vecSel.size() == 1 && vecSel.back().ullSize > 1) {
-			iChkStatus = BST_CHECKED;
-		}
-
-		m_stCheckSel.SetCheck(iChkStatus);
-		m_stEditStart.EnableWindow(iChkStatus == BST_CHECKED ? 0 : 1);
-		BringWindowToTop();
-	}
-
 	return CDialogEx::ShowWindow(nCmdShow);
 }
 
@@ -297,6 +285,10 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 		m_stComboSearch.SetFocus();
 		UpdateSearchReplaceControls();
+
+		const auto iChecked { GetHexCtrl()->HasSelection() ? BST_CHECKED : BST_UNCHECKED };
+		m_stCheckSel.SetCheck(iChecked);
+		m_stEditStart.EnableWindow(iChecked);
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);

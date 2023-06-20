@@ -794,21 +794,42 @@ auto CHexCtrl::GetWindowHandle(EHexWnd eWnd)const->HWND
 	case EHexWnd::WND_MAIN:
 		return m_hWnd;
 	case EHexWnd::DLG_BKMMANAGER:
+		if (!IsWindow(m_pDlgBkmMgr->m_hWnd)) {
+			m_pDlgBkmMgr->Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_hWnd));
+		}
 		return m_pDlgBkmMgr->m_hWnd;
 	case EHexWnd::DLG_DATAINTERP:
+		if (!IsWindow(m_pDlgDataInterp->m_hWnd)) {
+			m_pDlgDataInterp->Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_hWnd));
+		}
 		return m_pDlgDataInterp->m_hWnd;
 	case EHexWnd::DLG_MODIFY:
+		if (!IsWindow(m_pDlgModify->m_hWnd)) {
+			m_pDlgModify->Create(IDD_HEXCTRL_MODIFY, CWnd::FromHandle(m_hWnd));
+		}
 		return m_pDlgModify->m_hWnd;
 	case EHexWnd::DLG_SEARCH:
+		if (!IsWindow(m_pDlgSearch->m_hWnd)) {
+			m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_hWnd));
+		}
 		return m_pDlgSearch->m_hWnd;
 	case EHexWnd::DLG_CODEPAGE:
+		if (!IsWindow(m_pDlgCodepage->m_hWnd)) {
+			m_pDlgCodepage->Create(IDD_HEXCTRL_CODEPAGE, CWnd::FromHandle(m_hWnd));
+		}
 		return m_pDlgCodepage->m_hWnd;
 	case EHexWnd::DLG_GOTO:
+		if (!IsWindow(m_pDlgGoTo->m_hWnd)) {
+			m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, CWnd::FromHandle(m_hWnd));
+		}
 		return m_pDlgGoTo->m_hWnd;
 	case EHexWnd::DLG_TEMPLMGR:
+		if (!IsWindow(m_pDlgTemplMgr->m_hWnd)) {
+			m_pDlgTemplMgr->Create(IDD_HEXCTRL_TEMPLMGR, CWnd::FromHandle(m_hWnd));
+		}
 		return m_pDlgTemplMgr->m_hWnd;
 	default:
-		return { };
+		return nullptr;
 	}
 }
 
