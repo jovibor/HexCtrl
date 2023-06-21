@@ -11,7 +11,6 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	using namespace HEXCTRL::LISTEX;
 	class CHexDlgCodepage final : public CDialogEx
 	{
 	public:
@@ -39,7 +38,7 @@ namespace HEXCTRL::INTERNAL
 		};
 		inline static CHexDlgCodepage* m_pThis { };
 		IHexCtrl* m_pHexCtrl { };
-		IListExPtr m_pListMain { CreateListEx() };
+		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
 		std::vector<SCODEPAGE> m_vecCodePage { };
 	};
 }

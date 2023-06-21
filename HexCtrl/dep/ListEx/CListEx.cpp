@@ -242,9 +242,6 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		bool fLink { false };       //Is it just a text (wsvLink is empty) or text with link?
 		bool fTitle { false };      //Is it link with custom title (wsvTitle is not empty)?
 	};
-
-	/*******************Setting a manifest for ComCtl32.dll version 6.***********************/
-#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 }
 
 namespace HEXCTRL::LISTEX
@@ -2115,11 +2112,11 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::SITEM
 	const auto pDC = GetDC();
 
 	while (nPosCurr != std::wstring_view::npos) {
-		constexpr std::wstring_view wsvTagLink { L"<link=" };
-		constexpr std::wstring_view wsvTagFirstClose { L">" };
-		constexpr std::wstring_view wsvTagLast { L"</link>" };
-		constexpr std::wstring_view wsvTagTitle { L"title=" };
-		constexpr std::wstring_view wsvQuote { L"\"" };
+		static constexpr std::wstring_view wsvTagLink { L"<link=" };
+		static constexpr std::wstring_view wsvTagFirstClose { L">" };
+		static constexpr std::wstring_view wsvTagLast { L"</link>" };
+		static constexpr std::wstring_view wsvTagTitle { L"title=" };
+		static constexpr std::wstring_view wsvQuote { L"\"" };
 
 		//Searching the string for a <link=...></link> pattern.
 		if (const std::size_t nPosTagLink { wsvText.find(wsvTagLink, nPosCurr) }, //Start position of the opening tag "<link=".

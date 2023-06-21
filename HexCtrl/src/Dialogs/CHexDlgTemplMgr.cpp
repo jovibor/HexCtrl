@@ -808,7 +808,7 @@ void CHexDlgTemplMgr::OnCheckMinMax()
 	//For everything to work fine and right, the style-changing order is important.
 	//When maximizing, we first adjust styles and then resize the dialog window,
 	//when minimizing, we first resizing and only then changing styles, otherwise 
-	//a child-controls glitches may occur.
+	//child-controls glitches may occur.
 	if (!fMinimize) {
 		lmbChangeStyle();
 	}

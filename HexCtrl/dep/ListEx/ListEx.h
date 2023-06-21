@@ -149,13 +149,16 @@ namespace HEXCTRL::LISTEX
 	* WM_NOTIFY codes (NMHDR.code values)										*
 	****************************************************************************/
 
-	constexpr auto LISTEX_MSG_GETCOLOR = 0x1000U;    //Get cell color.
-	constexpr auto LISTEX_MSG_GETICON = 0x1001U;     //Get cell icon.
-	constexpr auto LISTEX_MSG_GETTOOLTIP = 0x1002U;  //Get cell tool-tip data.
-	constexpr auto LISTEX_MSG_LINKCLICK = 0x1003U;   //Hyperlink has been clicked.
-	constexpr auto LISTEX_MSG_HDRICONCLICK = 0x1004U;//Header's icon has been clicked.
-	constexpr auto LISTEX_MSG_HDRRBTNDOWN = 0x1005U; //Header's WM_RBUTTONDOWN message.
-	constexpr auto LISTEX_MSG_HDRRBTNUP = 0x1006U;   //Header's WM_RBUTTONUP message.
-	constexpr auto LISTEX_MSG_EDITBEGIN = 0x1007U;   //Edit in-place field is about to display.
-	constexpr auto LISTEX_MSG_DATACHANGED = 0x1008U; //Item text has been edited/changed.
+	constexpr auto LISTEX_MSG_GETCOLOR = 0x1000U;     //Get cell color.
+	constexpr auto LISTEX_MSG_GETICON = 0x1001U;      //Get cell icon.
+	constexpr auto LISTEX_MSG_GETTOOLTIP = 0x1002U;   //Get cell tool-tip data.
+	constexpr auto LISTEX_MSG_LINKCLICK = 0x1003U;    //Hyperlink has been clicked.
+	constexpr auto LISTEX_MSG_HDRICONCLICK = 0x1004U; //Header's icon has been clicked.
+	constexpr auto LISTEX_MSG_HDRRBTNDOWN = 0x1005U;  //Header's WM_RBUTTONDOWN message.
+	constexpr auto LISTEX_MSG_HDRRBTNUP = 0x1006U;    //Header's WM_RBUTTONUP message.
+	constexpr auto LISTEX_MSG_EDITBEGIN = 0x1007U;    //Edit in-place field is about to display.
+	constexpr auto LISTEX_MSG_DATACHANGED = 0x1008U;  //Item text has been edited/changed.
+
+	//Setting a manifest for the ComCtl32.dll version 6.
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 }

@@ -396,6 +396,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	switch (eCmd) {
 	case CMD_SEARCH_DLG:
 		m_pDlgSearch->ShowWindow(SW_SHOW);
+		ParentNotify(HEXCTRL_MSG_DLGSEARCH);
 		break;
 	case CMD_SEARCH_NEXT:
 		m_pDlgSearch->SearchNextPrev(true);
@@ -405,6 +406,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_NAV_GOTO_DLG:
 		m_pDlgGoTo->ShowWindow(SW_SHOW);
+		ParentNotify(HEXCTRL_MSG_DLGGOTO);
 		break;
 	case CMD_NAV_REPFWD:
 		m_pDlgGoTo->Repeat();
@@ -460,6 +462,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_BKM_DLG_MGR:
 		m_pDlgBkmMgr->ShowWindow(SW_SHOW);
+		ParentNotify(HEXCTRL_MSG_DLGBKMMGR);
 		break;
 	case CMD_CLPBRD_COPY_HEX:
 		ClipboardCopy(EClipboard::COPY_HEX);
@@ -499,12 +502,14 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_MODIFY_OPERS_DLG:
 		m_pDlgModify->ShowWindow(SW_SHOW, 0);
+		ParentNotify(HEXCTRL_MSG_DLGMODIFY);
 		break;
 	case CMD_MODIFY_FILLZEROS:
 		FillWithZeros();
 		break;
 	case CMD_MODIFY_FILLDATA_DLG:
 		m_pDlgModify->ShowWindow(SW_SHOW, 1);
+		ParentNotify(HEXCTRL_MSG_DLGMODIFY);
 		break;
 	case CMD_MODIFY_UNDO:
 		Undo();
@@ -537,9 +542,11 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_DATAINTERP_DLG:
 		m_pDlgDataInterp->ShowWindow(SW_SHOW);
+		ParentNotify(HEXCTRL_MSG_DLGDATAINTERP);
 		break;
 	case CMD_CODEPAGE_DLG:
 		m_pDlgCodepage->ShowWindow(SW_SHOW);
+		ParentNotify(HEXCTRL_MSG_DLGCODEPAGE);
 		break;
 	case CMD_APPEAR_FONT_DLG:
 		ChooseFontDlg();
@@ -594,6 +601,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_TEMPL_DLG_MGR:
 		m_pDlgTemplMgr->ShowWindow(SW_SHOW);
+		ParentNotify(HEXCTRL_MSG_DLGTEMPLMGR);
 		break;
 	}
 }
@@ -3824,7 +3832,7 @@ void CHexCtrl::OnModifyData()
 	m_pDlgDataInterp->UpdateData();
 }
 
-template<typename T>
+template<typename T> requires std::is_class_v<T>
 void CHexCtrl::ParentNotify(const T& t)const
 {
 	::SendMessageW(GetParent()->m_hWnd, WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));

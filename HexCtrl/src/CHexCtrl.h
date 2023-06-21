@@ -151,7 +151,7 @@ namespace HEXCTRL::INTERNAL
 		void OffsetToString(ULONGLONG ullOffset, wchar_t* buffOut)const; //Format offset to wchar_t string.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		void OnModifyData();                                   //When data has been modified.
-		template<typename T>
+		template<typename T> requires std::is_class_v<T>
 		void ParentNotify(const T& t)const;                    //Notify routine used to send messages to Parent window.
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 		void Print();                                          //Printing routine.

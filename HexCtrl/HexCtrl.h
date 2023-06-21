@@ -423,17 +423,24 @@ namespace HEXCTRL
 	* These codes are used to notify m_hwndMsg window about control's states.                   *
 	********************************************************************************************/
 
-	constexpr auto HEXCTRL_MSG_BKMCLICK { 0x0100U };     //Bookmark is clicked.
-	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0101U };  //OnContextMenu has triggered.
-	constexpr auto HEXCTRL_MSG_DESTROY { 0x0102U };      //Indicates that the HexCtrl is being destroyed.
-	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x0103U };    //User defined custom menu has clicked.
-	constexpr auto HEXCTRL_MSG_SETCAPACITY { 0x0104U };  //Capacity has changed.
-	constexpr auto HEXCTRL_MSG_SETCARET { 0x0105U };     //Caret position has changed.
-	constexpr auto HEXCTRL_MSG_SETCODEPAGE { 0x0106U };  //Codepage has changed.
-	constexpr auto HEXCTRL_MSG_SETDATA { 0x0107U };      //Indicates that the data has changed.
-	constexpr auto HEXCTRL_MSG_SETFONT { 0x0108U };      //Font has changed.
-	constexpr auto HEXCTRL_MSG_SETGROUPMODE { 0x0109U }; //Data group mode has changed.
-	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x010AU }; //Selection has been made.
+	constexpr auto HEXCTRL_MSG_BKMCLICK { 0x0100U };      //Bookmark is clicked.
+	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0101U };   //OnContextMenu has triggered.
+	constexpr auto HEXCTRL_MSG_DESTROY { 0x0102U };       //Indicates that the HexCtrl is being destroyed.
+	constexpr auto HEXCTRL_MSG_DLGBKMMGR { 0x0103U };     //"Bookmark manager" dialog displayed.
+	constexpr auto HEXCTRL_MSG_DLGCODEPAGE { 0x0104U };   //"Codepage" dialog displayed.
+	constexpr auto HEXCTRL_MSG_DLGDATAINTERP { 0x0105U }; //"Data Interpreter" dialog displayed.
+	constexpr auto HEXCTRL_MSG_DLGGOTO { 0x0106U };       //"GoTo" dialog displayed.
+	constexpr auto HEXCTRL_MSG_DLGMODIFY { 0x0107U };     //"Modify Data" dialog displayed.
+	constexpr auto HEXCTRL_MSG_DLGSEARCH { 0x0108U };     //"Search" dialog displayed.
+	constexpr auto HEXCTRL_MSG_DLGTEMPLMGR { 0x0109U };   //"Template manager" dialog displayed.
+	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x010AU };     //User defined custom menu has clicked.
+	constexpr auto HEXCTRL_MSG_SETCAPACITY { 0x010BU };   //Capacity has changed.
+	constexpr auto HEXCTRL_MSG_SETCARET { 0x010CU };      //Caret position has changed.
+	constexpr auto HEXCTRL_MSG_SETCODEPAGE { 0x010DU };   //Codepage has changed.
+	constexpr auto HEXCTRL_MSG_SETDATA { 0x010EU };       //Indicates that the data has changed.
+	constexpr auto HEXCTRL_MSG_SETFONT { 0x010FU };       //Font has changed.
+	constexpr auto HEXCTRL_MSG_SETGROUPMODE { 0x0110U };  //Data group mode has changed.
+	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0111U };  //Selection has been made.
 
 	//Setting a manifest for the ComCtl32.dll version 6.
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")

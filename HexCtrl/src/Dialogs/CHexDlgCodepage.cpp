@@ -19,8 +19,8 @@ BEGIN_MESSAGE_MAP(CHexDlgCodepage, CDialogEx)
 	ON_WM_ACTIVATE()
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListItemChanged)
-	ON_NOTIFY(LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListGetColor)
-	ON_NOTIFY(LISTEX_MSG_LINKCLICK, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListLinkClick)
+	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListGetColor)
+	ON_NOTIFY(LISTEX::LISTEX_MSG_LINKCLICK, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListLinkClick)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -67,7 +67,7 @@ BOOL CHexDlgCodepage::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	LISTEXCREATE lcs;
+	LISTEX::LISTEXCREATE lcs;
 	lcs.uID = IDC_HEXCTRL_CODEPAGE_LIST;
 	lcs.pParent = this;
 	lcs.fDialogCtrl = true;
@@ -156,7 +156,7 @@ void CHexDlgCodepage::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].uMaxChars > 1) {
-		static const LISTEXCOLOR stClr { RGB(200, 80, 80), RGB(255, 255, 255) };
+		static const LISTEX::LISTEXCOLOR stClr { RGB(200, 80, 80), RGB(255, 255, 255) };
 		pNMI->lParam = reinterpret_cast<LPARAM>(&stClr);
 	}
 }
