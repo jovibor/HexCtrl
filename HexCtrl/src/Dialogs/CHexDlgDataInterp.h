@@ -117,7 +117,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wsv)const;
 		DECLARE_MESSAGE_MAP();
 	private:
-		enum class EGroup : std::uint8_t { DIGITS, FLOAT, TIME, MISC };
+		enum class EGroup : std::uint8_t { GR_INTEGRAL, GR_FLOAT, GR_TIME, GR_MISC, GR_GUIDTIME };
 		enum class EName : std::uint8_t {
 			NAME_BINARY, NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
 			NAME_INT, NAME_UINT, NAME_LONGLONG, NAME_ULONGLONG,
@@ -134,7 +134,6 @@ namespace HEXCTRL::INTERNAL
 			EGroup eGroup { };
 			EName eName { };
 			ESize eSize { };
-			bool fChild { false };
 		};
 		std::vector<SGRIDDATA> m_vecProp;
 		IHexCtrl* m_pHexCtrl { };

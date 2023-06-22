@@ -196,28 +196,30 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	if (const auto pChk = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE)); pChk != nullptr) {
 		pChk->SetCheck(BST_UNCHECKED);
 	}
-
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"binary:", L"0"), EGroup::DIGITS, EName::NAME_BINARY, ESize::SIZE_BYTE);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"char:", L"0"), EGroup::DIGITS, EName::NAME_CHAR, ESize::SIZE_BYTE);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"unsigned char:", L"0"), EGroup::DIGITS, EName::NAME_UCHAR, ESize::SIZE_BYTE);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"short:", L"0"), EGroup::DIGITS, EName::NAME_SHORT, ESize::SIZE_WORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"unsigned short:", L"0"), EGroup::DIGITS, EName::NAME_USHORT, ESize::SIZE_WORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"int:", L"0"), EGroup::DIGITS, EName::NAME_INT, ESize::SIZE_DWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"unsigned int:", L"0"), EGroup::DIGITS, EName::NAME_UINT, ESize::SIZE_DWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"long long:", L"0"), EGroup::DIGITS, EName::NAME_LONGLONG, ESize::SIZE_QWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"unsigned long long:", L"0"), EGroup::DIGITS, EName::NAME_ULONGLONG, ESize::SIZE_QWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"time32_t:", L"0"), EGroup::TIME, EName::NAME_TIME32T, ESize::SIZE_DWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"time64_t:", L"0"), EGroup::TIME, EName::NAME_TIME64T, ESize::SIZE_QWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"FILETIME:", L"0"), EGroup::TIME, EName::NAME_FILETIME, ESize::SIZE_QWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"OLE time:", L"0"), EGroup::TIME, EName::NAME_OLEDATETIME, ESize::SIZE_QWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"Java time:", L"0"), EGroup::TIME, EName::NAME_JAVATIME, ESize::SIZE_QWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"MS-DOS time:", L"0"), EGroup::TIME, EName::NAME_MSDOSTIME, ESize::SIZE_QWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"MS-UDTTM time:", L"0"), EGroup::TIME, EName::NAME_MSDTTMTIME, ESize::SIZE_DWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"Windows SYSTEMTIME:", L"0"), EGroup::TIME, EName::NAME_SYSTEMTIME, ESize::SIZE_DQWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"float:", L"0"), EGroup::FLOAT, EName::NAME_FLOAT, ESize::SIZE_DWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"double:", L"0"), EGroup::FLOAT, EName::NAME_DOUBLE, ESize::SIZE_QWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"GUID:", L"0"), EGroup::MISC, EName::NAME_GUID, ESize::SIZE_DQWORD);
-	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"GUID v1 UTC time:", L"0"), EGroup::TIME, EName::NAME_GUIDTIME, ESize::SIZE_DQWORD, true);
+	using enum EGroup;
+	using enum EName;
+	using enum ESize;
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"binary:", L"0"), GR_INTEGRAL, NAME_BINARY, SIZE_BYTE);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"char:", L"0"), GR_INTEGRAL, NAME_CHAR, SIZE_BYTE);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"unsigned char:", L"0"), GR_INTEGRAL, NAME_UCHAR, SIZE_BYTE);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"short:", L"0"), GR_INTEGRAL, NAME_SHORT, SIZE_WORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"unsigned short:", L"0"), GR_INTEGRAL, NAME_USHORT, SIZE_WORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"int:", L"0"), GR_INTEGRAL, NAME_INT, SIZE_DWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"unsigned int:", L"0"), GR_INTEGRAL, NAME_UINT, SIZE_DWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"long long:", L"0"), GR_INTEGRAL, NAME_LONGLONG, SIZE_QWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"unsigned long long:", L"0"), GR_INTEGRAL, NAME_ULONGLONG, SIZE_QWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"time32_t:", L"0"), GR_TIME, NAME_TIME32T, SIZE_DWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"time64_t:", L"0"), GR_TIME, NAME_TIME64T, SIZE_QWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"FILETIME:", L"0"), GR_TIME, NAME_FILETIME, SIZE_QWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"OLE time:", L"0"), GR_TIME, NAME_OLEDATETIME, SIZE_QWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"Java time:", L"0"), GR_TIME, NAME_JAVATIME, SIZE_QWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"MS-DOS time:", L"0"), GR_TIME, NAME_MSDOSTIME, SIZE_QWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"MS-UDTTM time:", L"0"), GR_TIME, NAME_MSDTTMTIME, SIZE_DWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"Windows SYSTEMTIME:", L"0"), GR_TIME, NAME_SYSTEMTIME, SIZE_DQWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"float:", L"0"), GR_FLOAT, NAME_FLOAT, SIZE_DWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"double:", L"0"), GR_FLOAT, NAME_DOUBLE, SIZE_QWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"GUID:", L"0"), GR_MISC, NAME_GUID, SIZE_DQWORD);
+	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"GUID v1 UTC time:", L"0"), GR_GUIDTIME, NAME_GUIDTIME, SIZE_DQWORD);
 
 	m_stCtrlGrid.EnableHeaderCtrl(TRUE, L"Data type", L"Value");
 	HDITEMW hdItemPropGrid { .mask = HDI_WIDTH, .cxy = 150 };
@@ -226,7 +228,7 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	//Digits group.
 	const auto pDigits = new CMFCPropertyGridProperty(L"Integral types:");
 	for (const auto& iter : m_vecProp) {
-		if (iter.eGroup == EGroup::DIGITS && !iter.fChild) {
+		if (iter.eGroup == GR_INTEGRAL) {
 			pDigits->AddSubItem(iter.pProp);
 		}
 	}
@@ -235,7 +237,7 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	//Floats group.
 	const auto pFloats = new CMFCPropertyGridProperty(L"Floating-point types:");
 	for (const auto& iter : m_vecProp) {
-		if (iter.eGroup == EGroup::FLOAT && !iter.fChild) {
+		if (iter.eGroup == GR_FLOAT) {
 			pFloats->AddSubItem(iter.pProp);
 		}
 	}
@@ -244,7 +246,7 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	//Time group.
 	const auto pTime = new CMFCPropertyGridProperty(L"Time:");
 	for (const auto& iter : m_vecProp) {
-		if (iter.eGroup == EGroup::TIME && !iter.fChild) {
+		if (iter.eGroup == GR_TIME) {
 			pTime->AddSubItem(iter.pProp);
 		}
 	}
@@ -253,14 +255,14 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	//Miscellaneous group.
 	const auto pMisc = new CMFCPropertyGridProperty(L"Misc:");
 	for (const auto& iter : m_vecProp) {
-		if (iter.eGroup == EGroup::MISC && !iter.fChild) {
+		if (iter.eGroup == GR_MISC) {
 			pMisc->AddSubItem(iter.pProp);
-			if (iter.eName == EName::NAME_GUID) {
-				//GUID Time sub-group.
-				auto pGUIDsub = new CMFCPropertyGridProperty(L"GUID Time (built in GUID):");
-				if (const auto iterTime = std::find_if(m_vecProp.begin(), m_vecProp.end(),
-					[](const SGRIDDATA& ref) { return ref.eName == EName::NAME_GUIDTIME; }); iterTime != m_vecProp.end()) {
-					pGUIDsub->AddSubItem(iterTime->pProp);
+			if (iter.eName == NAME_GUID) {
+				auto pGUIDsub = new CMFCPropertyGridProperty(L"GUID Time (built in GUID):"); //GUID Time sub-group.
+				for (const auto& itGUIDTime : m_vecProp) {
+					if (itGUIDTime.eGroup == GR_GUIDTIME) {
+						pGUIDsub->AddSubItem(itGUIDTime.pProp);
+					}
 				}
 				pMisc->AddSubItem(pGUIDsub);
 			}
@@ -296,6 +298,7 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 
 void CHexDlgDataInterp::OnOK()
 {
+	//Must be empty to avoid dialog window close on Enter.
 }
 
 void CHexDlgDataInterp::OnCheckHex()
@@ -341,69 +344,70 @@ LRESULT CHexDlgDataInterp::OnPropertyDataChanged(WPARAM wParam, LPARAM lParam)
 	const auto& refStrProp = static_cast<const CStringW&>(pPropNew->GetValue());
 	const std::wstring_view wsv = refStrProp.GetString();
 
+	using enum EName;
 	bool fSuccess { false };
 	switch (itGridData->eName) {
-	case EName::NAME_BINARY:
+	case NAME_BINARY:
 		fSuccess = SetDataBinary(wsv);
 		break;
-	case EName::NAME_CHAR:
+	case NAME_CHAR:
 		fSuccess = SetDataChar(wsv);
 		break;
-	case EName::NAME_UCHAR:
+	case NAME_UCHAR:
 		fSuccess = SetDataUChar(wsv);
 		break;
-	case EName::NAME_SHORT:
+	case NAME_SHORT:
 		fSuccess = SetDataShort(wsv);
 		break;
-	case EName::NAME_USHORT:
+	case NAME_USHORT:
 		fSuccess = SetDataUShort(wsv);
 		break;
-	case EName::NAME_INT:
+	case NAME_INT:
 		fSuccess = SetDataInt(wsv);
 		break;
-	case EName::NAME_UINT:
+	case NAME_UINT:
 		fSuccess = SetDataUInt(wsv);
 		break;
-	case EName::NAME_LONGLONG:
+	case NAME_LONGLONG:
 		fSuccess = SetDataLL(wsv);
 		break;
-	case EName::NAME_ULONGLONG:
+	case NAME_ULONGLONG:
 		fSuccess = SetDataULL(wsv);
 		break;
-	case EName::NAME_FLOAT:
+	case NAME_FLOAT:
 		fSuccess = SetDataFloat(wsv);
 		break;
-	case EName::NAME_DOUBLE:
+	case NAME_DOUBLE:
 		fSuccess = SetDataDouble(wsv);
 		break;
-	case EName::NAME_TIME32T:
+	case NAME_TIME32T:
 		fSuccess = SetDataTime32(wsv);
 		break;
-	case EName::NAME_TIME64T:
+	case NAME_TIME64T:
 		fSuccess = SetDataTime64(wsv);
 		break;
-	case EName::NAME_FILETIME:
+	case NAME_FILETIME:
 		fSuccess = SetDataFILETIME(wsv);
 		break;
-	case EName::NAME_OLEDATETIME:
+	case NAME_OLEDATETIME:
 		fSuccess = SetDataOLEDATETIME(wsv);
 		break;
-	case EName::NAME_JAVATIME:
+	case NAME_JAVATIME:
 		fSuccess = SetDataJAVATIME(wsv);
 		break;
-	case EName::NAME_MSDOSTIME:
+	case NAME_MSDOSTIME:
 		fSuccess = SetDataMSDOSTIME(wsv);
 		break;
-	case EName::NAME_MSDTTMTIME:
+	case NAME_MSDTTMTIME:
 		fSuccess = SetDataMSDTTMTIME(wsv);
 		break;
-	case EName::NAME_SYSTEMTIME:
+	case NAME_SYSTEMTIME:
 		fSuccess = SetDataSYSTEMTIME(wsv);
 		break;
-	case EName::NAME_GUIDTIME:
+	case NAME_GUIDTIME:
 		fSuccess = SetDataGUIDTIME(wsv);
 		break;
-	case EName::NAME_GUID:
+	case NAME_GUID:
 		fSuccess = SetDataGUID(wsv);
 		break;
 	};
