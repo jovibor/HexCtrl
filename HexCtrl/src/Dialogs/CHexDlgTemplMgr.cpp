@@ -1405,7 +1405,8 @@ LRESULT CHexDlgTemplMgr::OnNcHitTest(CPoint point)
 	constexpr auto iBuffer { 10 }; //10px buffer zone, for left/right resizing to work.
 
 	//If clicked anywhere above the m_pListApplied.
-	if (point.y < rcList.top && point.x > rcWnd.left + iBuffer && point.x < rcWnd.right - iBuffer) {
+	if (point.y < rcList.top && point.y > rcWnd.top + iBuffer
+		&& point.x > rcWnd.left + iBuffer && point.x < rcWnd.right - iBuffer) {
 		return HTCAPTION;
 	}
 

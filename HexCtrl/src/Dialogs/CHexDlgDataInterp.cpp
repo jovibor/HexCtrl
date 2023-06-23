@@ -196,9 +196,8 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	if (const auto pChk = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE)); pChk != nullptr) {
 		pChk->SetCheck(BST_UNCHECKED);
 	}
-	using enum EGroup;
-	using enum EName;
-	using enum ESize;
+
+	using enum EGroup; using enum EName; using enum ESize;
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"binary:", L"0"), GR_INTEGRAL, NAME_BINARY, SIZE_BYTE);
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"char:", L"0"), GR_INTEGRAL, NAME_CHAR, SIZE_BYTE);
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"unsigned char:", L"0"), GR_INTEGRAL, NAME_UCHAR, SIZE_BYTE);
@@ -269,6 +268,17 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 		}
 	}
 	m_stCtrlGrid.AddProperty(pMisc);
+
+	//Dynamic Layout.
+	EnableDynamicLayout(TRUE);
+	const auto pLayout = GetDynamicLayout();
+	pLayout->Create(this);
+	pLayout->AddItem(IDC_HEXCTRL_DATAINTERP_PROPDATA, CMFCDynamicLayout::MoveNone(),
+		CMFCDynamicLayout::SizeHorizontalAndVertical(100, 100));
+	pLayout->AddItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX, CMFCDynamicLayout::MoveVertical(100),
+		CMFCDynamicLayout::SizeNone());
+	pLayout->AddItem(IDC_HEXCTRL_DATAINTERP_CHK_BE, CMFCDynamicLayout::MoveVertical(100),
+		CMFCDynamicLayout::SizeNone());
 
 	return TRUE;
 }
@@ -444,6 +454,11 @@ LRESULT CHexDlgDataInterp::OnPropertySelected(WPARAM wParam, LPARAM lParam)
 void CHexDlgDataInterp::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
+
+	if (auto& refHdr = m_stCtrlGrid.GetHeaderCtrl(); IsWindow(refHdr.m_hWnd)) {
+		HDITEMW hdItemPropGrid { .mask = HDI_WIDTH, .cxy = 150 };
+		refHdr.SetItem(0, &hdItemPropGrid); //Property grid column size.
+	}
 }
 
 void CHexDlgDataInterp::RedrawHexCtrl()const
