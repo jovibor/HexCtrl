@@ -296,6 +296,11 @@ void CHexDlgTemplMgr::EnableDynamicLayoutHelper(bool fEnable)
 	if (fEnable) {
 		const auto pLayout = GetDynamicLayout();
 		pLayout->Create(this);
+
+		//This is needed for cases when dialog size is so small that tree/list aren't visible.
+		//In such cases when OnCheckMinMax is hit the tree/list are handled/sized wrong.
+		pLayout->SetMinSize({ 0, m_iDynLayoutMinY });
+
 		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, CMFCDynamicLayout::MoveNone(),
 			CMFCDynamicLayout::SizeHorizontalAndVertical(100, 100));
 		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, CMFCDynamicLayout::MoveNone(),
@@ -782,13 +787,11 @@ void CHexDlgTemplMgr::OnCheckMinMax()
 	}
 
 	static constexpr int iIDsToMove[] { IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETTXT, IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETNUM,
-		IDC_HEXCTRL_TEMPLMGR_STATIC_SIZETXT, IDC_HEXCTRL_TEMPLMGR_STATIC_SIZENUM, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED,
-		IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED };
+		IDC_HEXCTRL_TEMPLMGR_STATIC_SIZETXT, IDC_HEXCTRL_TEMPLMGR_STATIC_SIZENUM };
 
-	CRect rcGRB;
+	CRect rcGRB; //Top Group Box rect.
 	GetDlgItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP)->GetClientRect(rcGRB);
 	const auto iHeightGRB = rcGRB.Height();
-
 	for (const auto id : iIDsToMove) {
 		const auto pWnd = GetDlgItem(id);
 		CRect rcWnd;
@@ -798,31 +801,17 @@ void CHexDlgTemplMgr::OnCheckMinMax()
 		pWnd->SetWindowPos(nullptr, rcWnd.left, iNewPosY, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
 	}
 
-	const auto lmbChangeStyle = [=]() {
-		const auto llStyle = GetWindowLongPtrW(m_hWnd, GWL_STYLE);
-		const auto llStyleNew = fMinimize ? llStyle & ~(WS_BORDER | WS_DLGFRAME) : llStyle | WS_BORDER | WS_DLGFRAME;
-		SetWindowLongPtrW(m_hWnd, GWL_STYLE, llStyleNew);
-		SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
-	};
-
-	//For everything to work fine and right, the style-changing order is important.
-	//When maximizing, we first adjust styles and then resize the dialog window,
-	//when minimizing, we first resizing and only then changing styles, otherwise 
-	//child-controls glitches may occur.
-	if (!fMinimize) {
-		lmbChangeStyle();
+	static constexpr int iIDsToResize[] { IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED };
+	EnableDynamicLayoutHelper(false); //Otherwise DynamicLayout won't know that all dynamic windows have changed.
+	for (const auto id : iIDsToResize) {
+		const auto pWnd = GetDlgItem(id);
+		CRect rcWnd;
+		pWnd->GetWindowRect(rcWnd);
+		rcWnd.top += fMinimize ? -iHeightGRB : iHeightGRB;
+		ScreenToClient(rcWnd);
+		pWnd->SetWindowPos(nullptr, rcWnd.left, rcWnd.top, rcWnd.Width(), rcWnd.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
 	}
-
-	CRect rcWnd;
-	GetWindowRect(rcWnd);
-	const auto iHightNew = fMinimize ? rcWnd.Height() - iHeightGRB : rcWnd.Height() + iHeightGRB;
-	EnableDynamicLayoutHelper(false); //Otherwise SetWindowPos will also change the pos of all dynamic windows.
-	SetWindowPos(nullptr, rcWnd.left, rcWnd.top, rcWnd.Width(), iHightNew, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_FRAMECHANGED);
 	EnableDynamicLayoutHelper(true);
-
-	if (fMinimize) {
-		lmbChangeStyle();
-	}
 }
 
 BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
@@ -926,6 +915,10 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_hCurResize = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
 	m_hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
 
+	CRect rcTree;
+	m_stTreeApplied.GetWindowRect(rcTree);
+	ScreenToClient(rcTree);
+	m_iDynLayoutMinY = rcTree.top + 5;
 	EnableDynamicLayoutHelper(true);
 	::SetWindowSubclass(m_stTreeApplied, TreeSubclassProc, 0, 0);
 	SetDlgButtonsState();
@@ -1393,24 +1386,6 @@ void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)
 	}
 
 	CDialogEx::OnMouseMove(nFlags, point);
-}
-
-LRESULT CHexDlgTemplMgr::OnNcHitTest(CPoint point)
-{
-	//Code for moving the dialog by clicking in a client area.
-	CRect rcList;
-	m_pListApplied->GetWindowRect(rcList);
-	CRect rcWnd;
-	GetWindowRect(rcWnd);
-	constexpr auto iBuffer { 10 }; //10px buffer zone, for left/right resizing to work.
-
-	//If clicked anywhere above the m_pListApplied.
-	if (point.y < rcList.top && point.y > rcWnd.top + iBuffer
-		&& point.x > rcWnd.left + iBuffer && point.x < rcWnd.right - iBuffer) {
-		return HTCAPTION;
-	}
-
-	return CDialogEx::OnNcHitTest(point);
 }
 
 void CHexDlgTemplMgr::OnOK()

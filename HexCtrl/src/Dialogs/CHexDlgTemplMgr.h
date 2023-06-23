@@ -119,7 +119,6 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListEnterPressed(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-		afx_msg LRESULT OnNcHitTest(CPoint point);
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 		void OnOK()override;
@@ -207,6 +206,7 @@ namespace HEXCTRL::INTERNAL
 		PVecFields m_pVecFieldsCurr { };        //Pointer to currently selected vector with fields.
 		HTREEITEM m_hTreeCurrParent { };        //Currently selected Tree node's parent.
 		DWORD m_dwDateFormat { };               //Date format.
+		int m_iDynLayoutMinY { };               //For DynamicLayout::SetMinSize.
 		wchar_t m_wchDateSepar { };             //Date separator.
 		bool m_fCurInSplitter { };              //Indicates that mouse cursor is in the splitter area.
 		bool m_fLMDownResize { };               //Left mouse pressed in splitter area to resize.

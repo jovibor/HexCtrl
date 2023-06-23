@@ -612,7 +612,7 @@ void CScrollEx::DrawThumb(CDC* pDC)const
 {
 	auto rcThumb = GetThumbRect();
 	if (!rcThumb.IsRectNull()) {
-		pDC->FillSolidRect(rcThumb, RGB(192, 192, 192)); //Scrollbar thumb color.
+		pDC->FillSolidRect(rcThumb, RGB(200, 200, 200)); //Scrollbar thumb color.
 	}
 }
 
