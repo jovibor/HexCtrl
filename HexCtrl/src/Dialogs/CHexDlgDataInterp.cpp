@@ -269,16 +269,9 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	}
 	m_stCtrlGrid.AddProperty(pMisc);
 
-	//Dynamic Layout.
-	EnableDynamicLayout(TRUE);
-	const auto pLayout = GetDynamicLayout();
-	pLayout->Create(this);
-	pLayout->AddItem(IDC_HEXCTRL_DATAINTERP_PROPDATA, CMFCDynamicLayout::MoveNone(),
-		CMFCDynamicLayout::SizeHorizontalAndVertical(100, 100));
-	pLayout->AddItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX, CMFCDynamicLayout::MoveVertical(100),
-		CMFCDynamicLayout::SizeNone());
-	pLayout->AddItem(IDC_HEXCTRL_DATAINTERP_CHK_BE, CMFCDynamicLayout::MoveVertical(100),
-		CMFCDynamicLayout::SizeNone());
+	if (const auto pDL = GetDynamicLayout(); pDL != nullptr) {
+		pDL->SetMinSize({ 0, 0 });
+	}
 
 	return TRUE;
 }

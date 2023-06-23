@@ -40,8 +40,6 @@ BOOL CHexSampleDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	CoInitialize(nullptr);
-
 	SetIcon(m_hIcon, TRUE);	 //Set big icon
 	SetIcon(m_hIcon, FALSE); //Set small icon
 
@@ -57,8 +55,8 @@ BOOL CHexSampleDlg::OnInitDialog()
 	m_pHexDlg->SetPageSize(64);
 
 	LoadTemplates(&*m_pHexDlg);
-	//OnBnSetRndDataRW();
-	//m_pHexDlg->ExecuteCmd(EHexCmd::CMD_TEMPL_DLG_MGR);
+	//OnBnSetRndData();
+	//m_pHexDlg->ExecuteCmd(EHexCmd::CMD_BKM_DLG_MGR);
 
 	//m_hds.pHexVirtColors = this;
 	//m_hds.fHighLatency = true;
@@ -67,6 +65,10 @@ BOOL CHexSampleDlg::OnInitDialog()
 
 	if (!m_wstrStartupFile.empty()) {
 		FileOpen(m_wstrStartupFile, IsLnk());
+	}
+
+	if (const auto pDL = GetDynamicLayout(); pDL != nullptr) {
+		pDL->SetMinSize({ 0, 0 });
 	}
 
 	return TRUE;

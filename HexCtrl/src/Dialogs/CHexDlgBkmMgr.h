@@ -42,18 +42,13 @@ namespace HEXCTRL::INTERNAL
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		afx_msg void OnCheckHex();
-		afx_msg void OnCheckMinMax();
-		afx_msg void OnBtnSave();
-		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListLClick(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListDblClick(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListGetColor(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListDblClick(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListDataChanged(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnDestroy();
-		void EnableBottomArea(bool fEnable);
-		void EnableDynamicLayoutHelper(bool fEnable);
-		void FillBkmData(int iBkmIndex);
 		void UpdateList();
 		void SortBookmarks();
 		DECLARE_MESSAGE_MAP();
@@ -61,18 +56,9 @@ namespace HEXCTRL::INTERNAL
 		std::vector<HEXBKM> m_vecBookmarks; //Bookmarks data.
 		IHexCtrl* m_pHexCtrl { };
 		IHexBookmarks* m_pVirtual { };
-		CButton m_btnMinMax;
-		CEdit m_editOffset;
-		CEdit m_editSize;
-		CEdit m_editDescr;
-		CMFCColorButton m_clrBk;
-		CMFCColorButton m_clrTxt;
-		LONGLONG m_llIndexCurr { }; //Current bookmark's position index, to move next/prev.
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
-		LISTEX::LISTEXCOLOR m_stCellClr { };
+		LONGLONG m_llIndexCurr { }; //Current bookmark's position index, to move next/prev.
 		CMenu m_stMenuList;
-		HBITMAP m_hBITMAPMinMax { };  //Bitmap for the min-max checkbox.
-		int m_iBkmCurr { -1 };        //Currently selected in list bookmark index;
 		bool m_fShowAsHex { true };
 	};
 }
