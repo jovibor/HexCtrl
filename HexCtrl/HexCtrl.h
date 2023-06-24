@@ -321,6 +321,7 @@ namespace HEXCTRL
 		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->SpanByte = 0;  //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual auto GetDateInfo()const->std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
+		[[nodiscard]] virtual auto GetDlgData(EHexWnd eWnd)const->std::uint64_t = 0; //Data from the internal dialogs.
 		[[nodiscard]] virtual auto GetFont() -> LOGFONTW = 0;                //Get current font.
 		[[nodiscard]] virtual auto GetGroupMode()const->EHexDataSize = 0;    //Retrieves current data grouping mode.
 		[[nodiscard]] virtual auto GetMenuHandle()const->HMENU = 0;          //Context menu handle.
@@ -350,6 +351,7 @@ namespace HEXCTRL
 		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).
 		virtual void SetDateInfo(DWORD dwFormat, wchar_t wchSepar) = 0; //Set date format and date separator.
+		virtual auto SetDlgData(EHexWnd eWnd, std::uint64_t ullData) -> HWND = 0; //Data for the internal dialogs.
 		virtual void SetFont(const LOGFONTW& lf) = 0;          //Set the control's new font. This font has to be monospaced.
 		virtual void SetGroupMode(EHexDataSize eMode) = 0;     //Set current "Group Data By" mode.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
@@ -441,6 +443,22 @@ namespace HEXCTRL
 	constexpr auto HEXCTRL_MSG_SETFONT { 0x010FU };       //Font has changed.
 	constexpr auto HEXCTRL_MSG_SETGROUPMODE { 0x0110U };  //Data group mode has changed.
 	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0111U };  //Selection has been made.
+
+
+	/*********************************************************
+	* Flags for the internal Dialogs, used with SetDlgData.  *
+	*********************************************************/
+
+	//Template Manager.
+	constexpr auto HEXCTRL_FLAG_TEMPLMGR_MINIMIZED { 0x1ULL };
+	constexpr auto HEXCTRL_FLAG_TEMPLMGR_HEXNUMS { 0x2ULL };
+	constexpr auto HEXCTRL_FLAG_TEMPLMGR_SHOWTT { 0x4ULL };
+	constexpr auto HEXCTRL_FLAG_TEMPLMGR_HGLSEL { 0x8ULL };
+	constexpr auto HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN { 0x10ULL };
+
+	//Data Interpreter.
+	constexpr auto HEXCTRL_FLAG_DATAINTERP_HEXNUMS { 0x1ULL };
+	constexpr auto HEXCTRL_FLAG_DATAINTERP_BE { 0x2ULL };
 
 	//Setting a manifest for the ComCtl32.dll version 6.
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")

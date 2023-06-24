@@ -24,9 +24,11 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG;
-		void UpdateData();
+		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void Initialize(IHexCtrl* pHexCtrl);
+		auto SetDlgData(std::uint64_t ullData) -> HWND;
 		BOOL ShowWindow(int nCmdShow);
+		void UpdateData();
 	private:
 	#pragma pack(push, 1)
 		//MS-DOS Date+Time structure (as used in FAT file system directory entry)
@@ -57,14 +59,15 @@ namespace HEXCTRL::INTERNAL
 		};
 		using PDTTM = UDTTM*;
 	#pragma pack(pop)
-
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
+		[[nodiscard]] bool IsShowAsHex()const;
+		[[nodiscard]] bool IsBigEndian()const;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnOK()override;
 		afx_msg void OnCheckHex();
-		afx_msg void OnCheckBe();
+		afx_msg void OnCheckBigEndian();
 		afx_msg void OnClose();
 		afx_msg void OnDestroy();
 		LRESULT OnPropertyDataChanged(WPARAM wParam, LPARAM lParam);

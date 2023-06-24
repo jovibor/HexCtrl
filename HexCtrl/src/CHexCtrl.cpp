@@ -708,6 +708,32 @@ auto CHexCtrl::GetDateInfo()const->std::tuple<DWORD, wchar_t>
 	return { m_dwDateFormat, m_wchDateSepar };
 }
 
+auto CHexCtrl::GetDlgData(EHexWnd eWnd)const->std::uint64_t
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
+	switch (eWnd) {
+	case EHexWnd::DLG_BKMMANAGER:
+	//	return m_pDlgBkmMgr->GetDlgData();
+	case EHexWnd::DLG_DATAINTERP:
+		return m_pDlgDataInterp->GetDlgData();
+	case EHexWnd::DLG_MODIFY:
+	//	return m_pDlgModify->GetDlgData();
+	case EHexWnd::DLG_SEARCH:
+	//	return m_pDlgSearch->GetDlgData();
+	case EHexWnd::DLG_CODEPAGE:
+	//	return m_pDlgCodepage->GetDlgData();
+	case EHexWnd::DLG_GOTO:
+	//	return m_pDlgGoTo->GetDlgData();
+	case EHexWnd::DLG_TEMPLMGR:
+		return m_pDlgTemplMgr->GetDlgData();
+	default:
+		return { };
+	}
+}
+
 auto CHexCtrl::GetFont()->LOGFONTW
 {
 	assert(IsCreated());
@@ -796,7 +822,7 @@ auto CHexCtrl::GetWindowHandle(EHexWnd eWnd)const->HWND
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return nullptr;
+		return { };
 
 	switch (eWnd) {
 	case EHexWnd::WND_MAIN:
@@ -837,7 +863,7 @@ auto CHexCtrl::GetWindowHandle(EHexWnd eWnd)const->HWND
 		}
 		return m_pDlgTemplMgr->m_hWnd;
 	default:
-		return nullptr;
+		return { };
 	}
 }
 
@@ -1759,6 +1785,49 @@ void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 		wchSepar = L'/';
 	}
 	m_wchDateSepar = wchSepar;
+}
+
+auto CHexCtrl::SetDlgData(EHexWnd eWnd, std::uint64_t ullData)->HWND
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
+	switch (eWnd) {
+	case EHexWnd::WND_MAIN:
+		return m_hWnd;
+	case EHexWnd::DLG_BKMMANAGER:
+		if (!IsWindow(m_pDlgBkmMgr->m_hWnd)) {
+			m_pDlgBkmMgr->Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_hWnd));
+		}
+		return m_pDlgBkmMgr->m_hWnd;
+	case EHexWnd::DLG_DATAINTERP:
+		return m_pDlgDataInterp->SetDlgData(ullData);
+	case EHexWnd::DLG_MODIFY:
+		if (!IsWindow(m_pDlgModify->m_hWnd)) {
+			m_pDlgModify->Create(IDD_HEXCTRL_MODIFY, CWnd::FromHandle(m_hWnd));
+		}
+		return m_pDlgModify->m_hWnd;
+	case EHexWnd::DLG_SEARCH:
+		if (!IsWindow(m_pDlgSearch->m_hWnd)) {
+			m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_hWnd));
+		}
+		return m_pDlgSearch->m_hWnd;
+	case EHexWnd::DLG_CODEPAGE:
+		if (!IsWindow(m_pDlgCodepage->m_hWnd)) {
+			m_pDlgCodepage->Create(IDD_HEXCTRL_CODEPAGE, CWnd::FromHandle(m_hWnd));
+		}
+		return m_pDlgCodepage->m_hWnd;
+	case EHexWnd::DLG_GOTO:
+		if (!IsWindow(m_pDlgGoTo->m_hWnd)) {
+			m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, CWnd::FromHandle(m_hWnd));
+		}
+		return m_pDlgGoTo->m_hWnd;
+	case EHexWnd::DLG_TEMPLMGR:
+		return m_pDlgTemplMgr->SetDlgData(ullData);
+	default:
+		return { };
+	}
 }
 
 void CHexCtrl::SetFont(const LOGFONTW& lf)

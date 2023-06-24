@@ -159,13 +159,40 @@ void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 	if (const auto rIter = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
 		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
 			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
-			rIter != m_vecTemplatesApplied.rend()) {
+		rIter != m_vecTemplatesApplied.rend()) {
 		RemoveNodeWithAppliedID(rIter->get()->iAppliedID);
 		m_vecTemplatesApplied.erase(std::next(rIter).base());
 		if (m_pHexCtrl->IsDataSet()) {
 			m_pHexCtrl->Redraw();
 		}
 	}
+}
+
+auto CHexDlgTemplMgr::GetDlgData()const->std::uint64_t
+{
+	std::uint64_t ullData { };
+
+	if (IsMinimized()) {
+		ullData |= HEXCTRL_FLAG_TEMPLMGR_MINIMIZED;
+	}
+
+	if (IsShowAsHex()) {
+		ullData |= HEXCTRL_FLAG_TEMPLMGR_HEXNUMS;
+	}
+
+	if (IsTooltips()) {
+		ullData |= HEXCTRL_FLAG_TEMPLMGR_SHOWTT;
+	}
+
+	if (IsHglSel()) {
+		ullData |= HEXCTRL_FLAG_TEMPLMGR_HGLSEL;
+	}
+
+	if (IsSwapEndian()) {
+		ullData |= HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN;
+	}
+
+	return ullData;
 }
 
 bool CHexDlgTemplMgr::HasApplied()const
@@ -230,11 +257,6 @@ void CHexDlgTemplMgr::Initialize(IHexCtrl* pHexCtrl)
 	m_pHexCtrl = pHexCtrl;
 }
 
-bool CHexDlgTemplMgr::IsHighlight()const
-{
-	return m_fHighlightSel;
-}
-
 bool CHexDlgTemplMgr::IsTooltips()const
 {
 	return m_fTooltips;
@@ -245,6 +267,35 @@ void CHexDlgTemplMgr::UpdateData()
 	if (::IsWindowVisible(m_hWnd)) {
 		m_pListApplied->RedrawWindow();
 	}
+}
+
+auto CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData) -> HWND
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(IDD_HEXCTRL_TEMPLMGR, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_MINIMIZED) != IsMinimized()) {
+		OnCheckMinMax();
+	}
+
+	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_HEXNUMS) > 0 != IsShowAsHex()) {
+		OnCheckHex();
+	}
+
+	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_SHOWTT) > 0 != IsTooltips()) {
+		OnCheckShowTt();
+	}
+
+	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_HGLSEL) > 0 != IsHglSel()) {
+		OnCheckHglSel();
+	}
+
+	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN) > 0 != IsSwapEndian()) {
+		OnCheckSwapEndian();
+	}
+
+	return m_hWnd;
 }
 
 BOOL CHexDlgTemplMgr::ShowWindow(int nCmdShow)
@@ -273,12 +324,13 @@ void CHexDlgTemplMgr::UnloadAll()
 
 //Private methods.
 
-void CHexDlgTemplMgr::DoDataExchange(CDataExchange* pDX)
+void CHexDlgTemplMgr::DoDataExchange(CDataExchange * pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES, m_comboTemplates);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET, m_editOffset);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, m_stTreeApplied);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX, m_btnMinMax);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, m_btnShowTT);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, m_btnHglSel);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HEX, m_btnHex);
@@ -323,8 +375,28 @@ auto CHexDlgTemplMgr::GetAppliedFromItem(HTREEITEM hTreeItem)->PHEXTEMPLATEAPPLI
 	return reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(hTreeItem));
 }
 
-bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& vecFields,
-	const FIELDSDEFPROPS& stDefault, UmapCustomTypes& umapCustomT, int* pOffset)const
+bool CHexDlgTemplMgr::IsHglSel()const
+{
+	return m_fHglSel;
+}
+
+bool CHexDlgTemplMgr::IsMinimized()const
+{
+	return m_btnMinMax.GetCheck() == BST_CHECKED;
+}
+
+bool CHexDlgTemplMgr::IsShowAsHex()const
+{
+	return m_fShowAsHex;
+}
+
+bool CHexDlgTemplMgr::IsSwapEndian()const
+{
+	return m_fSwapEndian;
+}
+
+bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecFields & vecFields,
+	const FIELDSDEFPROPS & stDefault, UmapCustomTypes & umapCustomT, int* pOffset)const
 {
 	using enum EFieldType;
 	static const std::unordered_map<std::string_view, EFieldType> umapStrToEType { //From JSON string to EFieldType conversion.
@@ -537,7 +609,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 	return true;
 }
 
-auto CHexDlgTemplMgr::JSONEndianness(const rapidjson::Value& value)const->std::optional<bool>
+auto CHexDlgTemplMgr::JSONEndianness(const rapidjson::Value & value)const->std::optional<bool>
 {
 	const auto itEndianness = value.FindMember("endianness");
 	if (itEndianness == value.MemberEnd()) {
@@ -556,7 +628,7 @@ auto CHexDlgTemplMgr::JSONEndianness(const rapidjson::Value& value)const->std::o
 	return svEndianness == "big";
 }
 
-auto CHexDlgTemplMgr::JSONColors(const rapidjson::Value& value, const char* pszColorName)const->std::optional<COLORREF>
+auto CHexDlgTemplMgr::JSONColors(const rapidjson::Value & value, const char* pszColorName)const->std::optional<COLORREF>
 {
 	const auto itClr = value.FindMember(pszColorName);
 	if (itClr == value.MemberEnd() || !itClr->value.IsString()) {
@@ -671,7 +743,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	return iTemplateID;
 }
 
-void CHexDlgTemplMgr::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+void CHexDlgTemplMgr::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)
 {
 	if (nState == WA_INACTIVE) {
 	}
@@ -771,12 +843,12 @@ void CHexDlgTemplMgr::OnCheckShowTt()
 
 void CHexDlgTemplMgr::OnCheckHglSel()
 {
-	m_fHighlightSel = m_btnHglSel.GetCheck() == BST_CHECKED;
+	m_fHglSel = m_btnHglSel.GetCheck() == BST_CHECKED;
 }
 
 void CHexDlgTemplMgr::OnCheckMinMax()
 {
-	const auto fMinimize = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX))->GetCheck() == BST_CHECKED;
+	const auto fMinimize = IsMinimized();
 	static constexpr int iIDsToHide[] { IDC_HEXCTRL_TEMPLMGR_STATIC_AVAIL, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES,
 		IDC_HEXCTRL_TEMPLMGR_BTN_LOAD, IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD, IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR,
 		IDC_HEXCTRL_TEMPLMGR_STATIC_APPLY, IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET, IDC_HEXCTRL_TEMPLMGR_BTN_APPLY,
@@ -847,7 +919,7 @@ BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	return CDialogEx::OnCommand(wParam, lParam);
 }
 
-HBRUSH CHexDlgTemplMgr::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+HBRUSH CHexDlgTemplMgr::OnCtlColor(CDC * pDC, CWnd * pWnd, UINT nCtlColor)
 {
 	const auto hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
 
@@ -909,8 +981,8 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 
 	m_editOffset.SetWindowTextW(L"0x0");
 	m_btnShowTT.SetCheck(IsTooltips() ? BST_CHECKED : BST_UNCHECKED);
-	m_btnHglSel.SetCheck(IsHighlight() ? BST_CHECKED : BST_UNCHECKED);
-	m_btnHex.SetCheck(m_fShowAsHex ? BST_CHECKED : BST_UNCHECKED);
+	m_btnHglSel.SetCheck(IsHglSel() ? BST_CHECKED : BST_UNCHECKED);
+	m_btnHex.SetCheck(IsShowAsHex() ? BST_CHECKED : BST_UNCHECKED);
 
 	m_hCurResize = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
 	m_hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
@@ -927,18 +999,16 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 		OnTemplateLoadUnload(pTempl->iTemplateID, true);
 	}
 
-	if (const auto pChkMinMax = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX)); pChkMinMax) {
-		CRect rcWnd;
-		pChkMinMax->GetWindowRect(rcWnd);
-		m_hBITMAPMinMax = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
-			MAKEINTRESOURCEW(IDB_HEXCTRL_SCROLL_ARROW), IMAGE_BITMAP, rcWnd.Width(), rcWnd.Height(), 0));
-		pChkMinMax->SetBitmap(m_hBITMAPMinMax); //Set arrow bitmap to the min-max checkbox.
-	}
+	CRect rcWnd;
+	m_btnMinMax.GetWindowRect(rcWnd);
+	m_hBITMAPMinMax = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
+		MAKEINTRESOURCEW(IDB_HEXCTRL_SCROLL_ARROW), IMAGE_BITMAP, rcWnd.Width(), rcWnd.Height(), 0));
+	m_btnMinMax.SetBitmap(m_hBITMAPMinMax); //Set arrow bitmap to the min-max checkbox.
 
 	return TRUE;
 }
 
-void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR * pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
@@ -947,8 +1017,8 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		return;
 
 	const auto& pField = (*m_pVecFieldsCurr)[pItem->iItem];
-	const auto wsvFmt = m_fShowAsHex ? L"0x{:X}" : L"{}";
-	const auto fShouldSwap = pField->fBigEndian == !m_fSwapEndian;
+	const auto wsvFmt = IsShowAsHex() ? L"0x{:X}" : L"{}";
+	const auto fShouldSwap = pField->fBigEndian == !IsSwapEndian();
 	using enum EFieldType;
 
 	//EFieldType converter to actual wstring for the list.
@@ -1102,7 +1172,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnListGetColor(NMHDR * pNMHDR, LRESULT* /*pResult*/)
 {
 	constexpr auto clrTextBluish { RGB(16, 42, 255) };  //Bluish text.
 	constexpr auto clrTextGreenish { RGB(0, 110, 0) };  //Green text.
@@ -1150,7 +1220,7 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnListItemChanged(NMHDR * pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	const auto iItem = pNMI->iItem;
@@ -1160,7 +1230,7 @@ void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	m_stTreeApplied.SelectItem(TreeItemFromListItem(iItem));
 }
 
-void CHexDlgTemplMgr::OnListEditBegin(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnListEditBegin(NMHDR * pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	const auto& pField = (*m_pVecFieldsCurr)[pNMI->iItem];
@@ -1171,7 +1241,7 @@ void CHexDlgTemplMgr::OnListEditBegin(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnListDataChanged(NMHDR * pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	const auto pwszText = reinterpret_cast<LPCWSTR>(pNMI->lParam); //lParam holds wchar_t* to a new text from list's subitem.
@@ -1183,7 +1253,7 @@ void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		}
 
 		const auto ullOffset = m_pAppliedCurr->ullOffset + pField->iOffset;
-		const auto fShouldSwap = pField->fBigEndian == !m_fSwapEndian;
+		const auto fShouldSwap = pField->fBigEndian == !IsSwapEndian();
 
 		bool fSetRet { };
 		using enum EFieldType;
@@ -1287,7 +1357,7 @@ void CHexDlgTemplMgr::OnListHdrRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 	m_stMenuHdr.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, pt.x, pt.y, this);
 }
 
-void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnListDblClick(NMHDR * pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	const auto iItem = pNMI->iItem;
@@ -1432,7 +1502,7 @@ void CHexDlgTemplMgr::OnTemplateLoadUnload(int iTemplateID, bool fLoad)
 	}
 }
 
-void CHexDlgTemplMgr::OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnTreeGetDispInfo(NMHDR * pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pDispInfo = reinterpret_cast<NMTVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
@@ -1449,7 +1519,7 @@ void CHexDlgTemplMgr::OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR * pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pTree = reinterpret_cast<LPNMTREEVIEWW>(pNMHDR);
 	const auto pItem = &pTree->itemNew;
@@ -1546,7 +1616,7 @@ void CHexDlgTemplMgr::OnTreeRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 {
 	const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
-	[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
+		[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
 	if (iterTempl == m_vecTemplates.end())
 		return;
 
@@ -1621,7 +1691,7 @@ void CHexDlgTemplMgr::RemoveNodeWithAppliedID(int iAppliedID)
 
 bool CHexDlgTemplMgr::SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset) const
 {
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (const auto opt = stn::StrToUChar(pwszText); opt) {
 			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
 			return true;
@@ -1647,10 +1717,10 @@ bool CHexDlgTemplMgr::SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset) const
 
 bool CHexDlgTemplMgr::SetDataChar(LPCWSTR pwszText, ULONGLONG ullOffset)const
 {
-	//When m_fShowAsHex is true, we deliberately convert text to an 'unsigned' corresponding type.
+	//When IsShowAsHex() is true, we deliberately convert text to an 'unsigned' corresponding type.
 	//Otherwise, setting a values like 0xFF in hex mode would be impossible, because such values
 	//are bigger then `signed` type's max value, they can't be converted to it.
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (const auto opt = stn::StrToUChar(pwszText); opt) {
 			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
 			return true;
@@ -1676,7 +1746,7 @@ bool CHexDlgTemplMgr::SetDataUChar(LPCWSTR pwszText, ULONGLONG ullOffset)const
 
 bool CHexDlgTemplMgr::SetDataShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToUShort(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
@@ -1711,7 +1781,7 @@ bool CHexDlgTemplMgr::SetDataUShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 
 bool CHexDlgTemplMgr::SetDataInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToUInt(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
@@ -1746,7 +1816,7 @@ bool CHexDlgTemplMgr::SetDataUInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fS
 
 bool CHexDlgTemplMgr::SetDataLL(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToULL(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
@@ -1783,7 +1853,7 @@ bool CHexDlgTemplMgr::SetDataFloat(LPCWSTR pwszText, ULONGLONG ullOffset, bool f
 {
 	//Convert hex text to float is impossible, therefore we convert it to
 	//unsigned type of the same size - uint.
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToUInt(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
@@ -1808,7 +1878,7 @@ bool CHexDlgTemplMgr::SetDataDouble(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 {
 	//Convert hex text to double is impossible, therefore we convert it to
 	//unsigned type of the same size - ULL.
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToULL(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
@@ -1831,7 +1901,7 @@ bool CHexDlgTemplMgr::SetDataDouble(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 
 bool CHexDlgTemplMgr::SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToUInt(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
@@ -1878,7 +1948,7 @@ bool CHexDlgTemplMgr::SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 
 bool CHexDlgTemplMgr::SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToULL(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
@@ -1923,7 +1993,7 @@ bool CHexDlgTemplMgr::SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 
 bool CHexDlgTemplMgr::SetDataFILETIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToULL(pwszText); opt) {
 			if (fShouldSwap) {
 				*opt = ByteSwap(*opt);
@@ -2012,7 +2082,7 @@ void CHexDlgTemplMgr::SetDlgButtonsState()
 
 void CHexDlgTemplMgr::SetHexSelByField(PCHEXTEMPLATEFIELD pField)
 {
-	if (!IsHighlight() || !m_pHexCtrl->IsDataSet() || pField == nullptr || m_pAppliedCurr == nullptr)
+	if (!IsHglSel() || !m_pHexCtrl->IsDataSet() || pField == nullptr || m_pAppliedCurr == nullptr)
 		return;
 
 	const auto ullOffset = m_pAppliedCurr->ullOffset + pField->iOffset;
@@ -2026,19 +2096,19 @@ void CHexDlgTemplMgr::SetHexSelByField(PCHEXTEMPLATEFIELD pField)
 
 void CHexDlgTemplMgr::ShowListDataBool(LPWSTR pwsz, unsigned char uchData) const
 {
-	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{0:02X}" : L"{1}",
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:02X}" : L"{1}",
 		std::make_wformat_args(uchData, static_cast<bool>(uchData))) = L'\0';
 }
 
 void CHexDlgTemplMgr::ShowListDataChar(LPWSTR pwsz, char chData)const
 {
-	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{0:02X}" : L"{1}",
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:02X}" : L"{1}",
 		std::make_wformat_args(static_cast<unsigned char>(chData), static_cast<int>(chData))) = L'\0';
 }
 
 void CHexDlgTemplMgr::ShowListDataUChar(LPWSTR pwsz, unsigned char uchData)const
 {
-	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{:02X}" : L"{}", std::make_wformat_args(uchData)) = L'\0';
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{:02X}" : L"{}", std::make_wformat_args(uchData)) = L'\0';
 }
 
 void CHexDlgTemplMgr::ShowListDataShort(LPWSTR pwsz, short shortData, bool fShouldSwap)const
@@ -2046,7 +2116,7 @@ void CHexDlgTemplMgr::ShowListDataShort(LPWSTR pwsz, short shortData, bool fShou
 	if (fShouldSwap) {
 		shortData = ByteSwap(shortData);
 	}
-	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{0:04X}" : L"{1}",
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:04X}" : L"{1}",
 		std::make_wformat_args(static_cast<unsigned short>(shortData), shortData)) = L'\0';
 }
 
@@ -2055,7 +2125,7 @@ void CHexDlgTemplMgr::ShowListDataUShort(LPWSTR pwsz, unsigned short wData, bool
 	if (fShouldSwap) {
 		wData = ByteSwap(wData);
 	}
-	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{:04X}" : L"{}", std::make_wformat_args(wData)) = L'\0';
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{:04X}" : L"{}", std::make_wformat_args(wData)) = L'\0';
 }
 
 void CHexDlgTemplMgr::ShowListDataInt(LPWSTR pwsz, int intData, bool fShouldSwap)const
@@ -2063,7 +2133,7 @@ void CHexDlgTemplMgr::ShowListDataInt(LPWSTR pwsz, int intData, bool fShouldSwap
 	if (fShouldSwap) {
 		intData = ByteSwap(intData);
 	}
-	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{0:08X}" : L"{1}",
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:08X}" : L"{1}",
 		std::make_wformat_args(static_cast<unsigned int>(intData), intData)) = L'\0';
 }
 
@@ -2072,7 +2142,7 @@ void CHexDlgTemplMgr::ShowListDataUInt(LPWSTR pwsz, unsigned int dwData, bool fS
 	if (fShouldSwap) {
 		dwData = ByteSwap(dwData);
 	}
-	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{:08X}" : L"{}", std::make_wformat_args(dwData)) = L'\0';
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{:08X}" : L"{}", std::make_wformat_args(dwData)) = L'\0';
 }
 
 void CHexDlgTemplMgr::ShowListDataLL(LPWSTR pwsz, long long llData, bool fShouldSwap)const
@@ -2080,7 +2150,7 @@ void CHexDlgTemplMgr::ShowListDataLL(LPWSTR pwsz, long long llData, bool fShould
 	if (fShouldSwap) {
 		llData = ByteSwap(llData);
 	}
-	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{0:016X}" : L"{1}",
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:016X}" : L"{1}",
 		std::make_wformat_args(static_cast<unsigned long long>(llData), llData)) = L'\0';
 }
 
@@ -2089,7 +2159,7 @@ void CHexDlgTemplMgr::ShowListDataULL(LPWSTR pwsz, unsigned long long ullData, b
 	if (fShouldSwap) {
 		ullData = ByteSwap(ullData);
 	}
-	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{:016X}" : L"{}", std::make_wformat_args(ullData)) = L'\0';
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{:016X}" : L"{}", std::make_wformat_args(ullData)) = L'\0';
 }
 
 void CHexDlgTemplMgr::ShowListDataFloat(LPWSTR pwsz, float flData, bool fShouldSwap)const
@@ -2097,7 +2167,7 @@ void CHexDlgTemplMgr::ShowListDataFloat(LPWSTR pwsz, float flData, bool fShouldS
 	if (fShouldSwap) {
 		flData = ByteSwap(flData);
 	}
-	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{0:08X}" : L"{1:.9e}",
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:08X}" : L"{1:.9e}",
 		std::make_wformat_args(std::bit_cast<unsigned long>(flData), flData)) = L'\0';
 }
 
@@ -2106,7 +2176,7 @@ void CHexDlgTemplMgr::ShowListDataDouble(LPWSTR pwsz, double dblData, bool fShou
 	if (fShouldSwap) {
 		dblData = ByteSwap(dblData);
 	}
-	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{0:016X}" : L"{1:.18e}",
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:016X}" : L"{1:.18e}",
 		std::make_wformat_args(std::bit_cast<unsigned long long>(dblData), dblData)) = L'\0';
 }
 
@@ -2116,7 +2186,7 @@ void CHexDlgTemplMgr::ShowListDataTime32(LPWSTR pwsz, __time32_t lTime32, bool f
 		lTime32 = ByteSwap(lTime32);
 	}
 
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		*std::format_to(pwsz, L"0x{:08X}", static_cast<unsigned long>(lTime32)) = L'\0';
 		return;
 	}
@@ -2146,7 +2216,7 @@ void CHexDlgTemplMgr::ShowListDataTime64(LPWSTR pwsz, __time64_t llTime64, bool 
 		llTime64 = ByteSwap(llTime64);
 	}
 
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		*std::format_to(pwsz, L"0x{:016X}", static_cast<unsigned long long>(llTime64)) = L'\0';
 		return;
 	}
@@ -2175,7 +2245,7 @@ void CHexDlgTemplMgr::ShowListDataFILETIME(LPWSTR pwsz, FILETIME stFTime, bool f
 	if (fShouldSwap) {
 		stFTime = ByteSwap(stFTime);
 	}
-	*std::vformat_to(pwsz, m_fShowAsHex ? L"0x{0:016X}" : L"{}",
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:016X}" : L"{}",
 		std::make_wformat_args(std::bit_cast<unsigned long long>(stFTime),
 			FileTimeToString(stFTime, m_dwDateFormat, m_wchDateSepar))) = L'\0';
 }
@@ -2207,7 +2277,7 @@ void CHexDlgTemplMgr::ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwa
 	}
 
 	*std::format_to(pwsz, L"{{{:0>8x}-{:0>4x}-{:0>4x}-{:0>2x}{:0>2x}-{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}}}",
-			stGUID.Data1, stGUID.Data2, stGUID.Data3, stGUID.Data4[0], stGUID.Data4[1], stGUID.Data4[2],
+		stGUID.Data1, stGUID.Data2, stGUID.Data3, stGUID.Data4[0], stGUID.Data4[1], stGUID.Data4[2],
 		stGUID.Data4[3], stGUID.Data4[4], stGUID.Data4[5], stGUID.Data4[6], stGUID.Data4[7]) = L'\0';
 }
 
@@ -2255,8 +2325,8 @@ void CHexDlgTemplMgr::UpdateStaticText()
 	std::wstring wstrSize { };
 
 	if (m_pAppliedCurr != nullptr) { //If m_pAppliedCurr == nullptr set empty text.
-		wstrOffset = std::vformat(m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(m_pAppliedCurr->ullOffset));
-		wstrSize = std::vformat(m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(m_pAppliedCurr->pTemplate->iSizeTotal));
+		wstrOffset = std::vformat(IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(m_pAppliedCurr->ullOffset));
+		wstrSize = std::vformat(IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(m_pAppliedCurr->pTemplate->iSizeTotal));
 	}
 
 	m_wndStaticOffset.SetWindowTextW(wstrOffset.data());

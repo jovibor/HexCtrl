@@ -19,7 +19,7 @@ using namespace HEXCTRL::INTERNAL;
 BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
 	ON_WM_ACTIVATE()
 	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_HEX, &CHexDlgDataInterp::OnCheckHex)
-	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_BE, &CHexDlgDataInterp::OnCheckBe)
+	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_BE, &CHexDlgDataInterp::OnCheckBigEndian)
 	ON_WM_CLOSE()
 	ON_WM_DESTROY()
 	ON_WM_SHOWWINDOW()
@@ -31,6 +31,56 @@ END_MESSAGE_MAP()
 auto CHexDlgDataInterp::GetDataSize()const->ULONGLONG
 {
 	return m_ullDataSize;
+}
+
+auto CHexDlgDataInterp::GetDlgData()const -> std::uint64_t
+{
+	std::uint64_t ullData { };
+
+	if (IsShowAsHex()) {
+		ullData |= HEXCTRL_FLAG_DATAINTERP_HEXNUMS;
+	}
+
+	if (IsBigEndian()) {
+		ullData |= HEXCTRL_FLAG_DATAINTERP_BE;
+	}
+
+	return ullData;
+}
+
+void CHexDlgDataInterp::Initialize(IHexCtrl* pHexCtrl)
+{
+	assert(pHexCtrl);
+	if (pHexCtrl == nullptr)
+		return;
+
+	m_pHexCtrl = pHexCtrl;
+}
+
+auto CHexDlgDataInterp::SetDlgData(std::uint64_t ullData)->HWND
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	if ((ullData & HEXCTRL_FLAG_DATAINTERP_HEXNUMS) > 0 != IsShowAsHex()) {
+		OnCheckHex();
+	}
+
+	if ((ullData & HEXCTRL_FLAG_DATAINTERP_BE) > 0 != IsBigEndian()) {
+		OnCheckBigEndian();
+	}
+
+	return m_hWnd;
+}
+
+BOOL CHexDlgDataInterp::ShowWindow(int nCmdShow)
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	return CDialogEx::ShowWindow(nCmdShow);
 }
 
 void CHexDlgDataInterp::UpdateData()
@@ -68,7 +118,7 @@ void CHexDlgDataInterp::UpdateData()
 	}
 
 	auto word = GetIHexTData<WORD>(*m_pHexCtrl, ullOffset);
-	if (m_fBigEndian) {
+	if (IsBigEndian()) {
 		word = ByteSwap(word);
 	}
 
@@ -93,7 +143,7 @@ void CHexDlgDataInterp::UpdateData()
 	}
 
 	auto dword = GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset);
-	if (m_fBigEndian) {
+	if (IsBigEndian()) {
 		dword = ByteSwap(dword);
 	}
 
@@ -122,7 +172,7 @@ void CHexDlgDataInterp::UpdateData()
 	}
 
 	auto qword = GetIHexTData<QWORD>(*m_pHexCtrl, ullOffset);
-	if (m_fBigEndian) {
+	if (IsBigEndian()) {
 		qword = ByteSwap(qword);
 	}
 
@@ -161,28 +211,23 @@ void CHexDlgDataInterp::UpdateData()
 	ShowValueGUIDTIME(std::bit_cast<GUID>(dblQWORD));
 }
 
-void CHexDlgDataInterp::Initialize(IHexCtrl* pHexCtrl)
-{
-	assert(pHexCtrl);
-	if (pHexCtrl == nullptr)
-		return;
 
-	m_pHexCtrl = pHexCtrl;
-}
-
-BOOL CHexDlgDataInterp::ShowWindow(int nCmdShow)
-{
-	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
-	}
-
-	return CDialogEx::ShowWindow(nCmdShow);
-}
+//Private methods.
 
 void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_PROPDATA, m_stCtrlGrid);
+}
+
+bool CHexDlgDataInterp::IsShowAsHex()const
+{
+	return m_fShowAsHex;
+}
+
+bool CHexDlgDataInterp::IsBigEndian()const
+{
+	return m_fBigEndian;
 }
 
 BOOL CHexDlgDataInterp::OnInitDialog()
@@ -310,7 +355,7 @@ void CHexDlgDataInterp::OnCheckHex()
 	UpdateData();
 }
 
-void CHexDlgDataInterp::OnCheckBe()
+void CHexDlgDataInterp::OnCheckBigEndian()
 {
 	m_fBigEndian = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE))->GetCheck() == BST_CHECKED;
 	UpdateData();
@@ -473,7 +518,7 @@ void CHexDlgDataInterp::ShowValueChar(BYTE byte)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_CHAR; }); iter != m_vecProp.end()) {
-		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{0:02X}" : L"{1}",
+		iter->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:02X}" : L"{1}",
 			std::make_wformat_args(byte, static_cast<int>(static_cast<char>(byte)))).data());
 	}
 }
@@ -482,7 +527,7 @@ void CHexDlgDataInterp::ShowValueUChar(BYTE byte)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_UCHAR; }); iter != m_vecProp.end()) {
-		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{:02X}" : L"{}", std::make_wformat_args(byte)).data());
+		iter->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{:02X}" : L"{}", std::make_wformat_args(byte)).data());
 	}
 }
 
@@ -490,7 +535,7 @@ void CHexDlgDataInterp::ShowValueShort(WORD word)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_SHORT; }); iter != m_vecProp.end()) {
-		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{0:04X}" : L"{1}",
+		iter->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:04X}" : L"{1}",
 			std::make_wformat_args(word, static_cast<short>(word))).data());
 	}
 }
@@ -499,7 +544,7 @@ void CHexDlgDataInterp::ShowValueUShort(WORD word)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_USHORT; }); iter != m_vecProp.end()) {
-		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{:04X}" : L"{}", std::make_wformat_args(word)).data());
+		iter->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{:04X}" : L"{}", std::make_wformat_args(word)).data());
 	}
 }
 
@@ -507,7 +552,7 @@ void CHexDlgDataInterp::ShowValueInt(DWORD dword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_INT; }); iter != m_vecProp.end()) {
-		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{0:08X}" : L"{1}",
+		iter->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:08X}" : L"{1}",
 			std::make_wformat_args(dword, static_cast<int>(dword))).data());
 	}
 }
@@ -516,7 +561,7 @@ void CHexDlgDataInterp::ShowValueUInt(DWORD dword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_UINT; }); iter != m_vecProp.end()) {
-		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{:08X}" : L"{}", std::make_wformat_args(dword)).data());
+		iter->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{:08X}" : L"{}", std::make_wformat_args(dword)).data());
 	}
 }
 
@@ -524,7 +569,7 @@ void CHexDlgDataInterp::ShowValueLL(QWORD qword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_LONGLONG; }); iter != m_vecProp.end()) {
-		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{0:016X}" : L"{1}",
+		iter->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:016X}" : L"{1}",
 			std::make_wformat_args(qword, static_cast<long long>(qword))).data());
 	}
 }
@@ -533,7 +578,7 @@ void CHexDlgDataInterp::ShowValueULL(QWORD qword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_ULONGLONG; }); iter != m_vecProp.end()) {
-		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{:016X}" : L"{}", std::make_wformat_args(qword)).data());
+		iter->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{:016X}" : L"{}", std::make_wformat_args(qword)).data());
 	}
 }
 
@@ -541,7 +586,7 @@ void CHexDlgDataInterp::ShowValueFloat(DWORD dword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_FLOAT; }); iter != m_vecProp.end()) {
-		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{0:08X}" : L"{1:.9e}",
+		iter->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:08X}" : L"{1:.9e}",
 			std::make_wformat_args(dword, std::bit_cast<float>(dword))).data());
 	}
 }
@@ -550,7 +595,7 @@ void CHexDlgDataInterp::ShowValueDouble(QWORD qword)const
 {
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const SGRIDDATA& refData) { return refData.eName == EName::NAME_DOUBLE; }); iter != m_vecProp.end()) {
-		iter->pProp->SetValue(std::vformat(m_fShowAsHex ? L"0x{0:08X}" : L"{1:.18e}",
+		iter->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:08X}" : L"{1:.18e}",
 			std::make_wformat_args(qword, std::bit_cast<double>(qword))).data());
 	}
 }
@@ -720,7 +765,7 @@ void CHexDlgDataInterp::ShowValueMSDTTMTIME(DWORD dword)const
 
 void CHexDlgDataInterp::ShowValueSYSTEMTIME(SYSTEMTIME stSysTime)const
 {
-	if (m_fBigEndian) {
+	if (IsBigEndian()) {
 		stSysTime.wYear = ByteSwap(stSysTime.wYear);
 		stSysTime.wMonth = ByteSwap(stSysTime.wMonth);
 		stSysTime.wDayOfWeek = ByteSwap(stSysTime.wDayOfWeek);
@@ -739,7 +784,7 @@ void CHexDlgDataInterp::ShowValueSYSTEMTIME(SYSTEMTIME stSysTime)const
 
 void CHexDlgDataInterp::ShowValueGUID(GUID stGUID)const
 {
-	if (m_fBigEndian) {
+	if (IsBigEndian()) {
 		stGUID.Data1 = ByteSwap(stGUID.Data1);
 		stGUID.Data2 = ByteSwap(stGUID.Data2);
 		stGUID.Data3 = ByteSwap(stGUID.Data3);
@@ -757,7 +802,7 @@ void CHexDlgDataInterp::ShowValueGUID(GUID stGUID)const
 
 void CHexDlgDataInterp::ShowValueGUIDTIME(GUID stGUID)const
 {
-	if (m_fBigEndian) {
+	if (IsBigEndian()) {
 		stGUID.Data1 = ByteSwap(stGUID.Data1);
 		stGUID.Data2 = ByteSwap(stGUID.Data2);
 		stGUID.Data3 = ByteSwap(stGUID.Data3);
@@ -803,7 +848,7 @@ void CHexDlgDataInterp::ShowValueGUIDTIME(GUID stGUID)const
 template<typename T>
 void CHexDlgDataInterp::SetTData(T tData)const
 {
-	if (m_fBigEndian) {
+	if (IsBigEndian()) {
 		tData = ByteSwap(tData);
 	}
 
@@ -825,7 +870,7 @@ bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataChar(std::wstring_view wsv)const
 {
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToUChar(wsv); opt) {
 			SetTData(*opt);
 			return true;
@@ -852,7 +897,7 @@ bool CHexDlgDataInterp::SetDataUChar(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataShort(std::wstring_view wsv)const
 {
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToUShort(wsv); opt) {
 			SetTData(*opt);
 			return true;
@@ -879,7 +924,7 @@ bool CHexDlgDataInterp::SetDataUShort(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataInt(std::wstring_view wsv)const
 {
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToUInt(wsv); opt) {
 			SetTData(*opt);
 			return true;
@@ -906,7 +951,7 @@ bool CHexDlgDataInterp::SetDataUInt(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataLL(std::wstring_view wsv)const
 {
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToULL(wsv); opt) {
 			SetTData(*opt);
 			return true;
@@ -933,7 +978,7 @@ bool CHexDlgDataInterp::SetDataULL(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataFloat(std::wstring_view wsv)const
 {
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToUInt(wsv); opt) {
 			SetTData(*opt);
 			return true;
@@ -951,7 +996,7 @@ bool CHexDlgDataInterp::SetDataFloat(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataDouble(std::wstring_view wsv)const
 {
-	if (m_fShowAsHex) {
+	if (IsShowAsHex()) {
 		if (auto opt = stn::StrToULL(wsv); opt) {
 			SetTData(*opt);
 			return true;
@@ -1129,7 +1174,7 @@ bool CHexDlgDataInterp::SetDataSYSTEMTIME(std::wstring_view wsv)const
 		return false;
 
 	auto stSTime = *optSysTime;
-	if (m_fBigEndian) {
+	if (IsBigEndian()) {
 		stSTime.wYear = ByteSwap(stSTime.wYear);
 		stSTime.wMonth = ByteSwap(stSTime.wMonth);
 		stSTime.wDayOfWeek = ByteSwap(stSTime.wDayOfWeek);
@@ -1150,7 +1195,7 @@ bool CHexDlgDataInterp::SetDataGUID(std::wstring_view wsv)const
 	if (IIDFromString(wsv.data(), &stGUID) != S_OK)
 		return false;
 
-	if (m_fBigEndian) {
+	if (IsBigEndian()) {
 		stGUID.Data1 = ByteSwap(stGUID.Data1);
 		stGUID.Data2 = ByteSwap(stGUID.Data2);
 		stGUID.Data3 = ByteSwap(stGUID.Data3);
@@ -1168,7 +1213,7 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 
 	auto dqword = GetIHexTData<GUID>(*m_pHexCtrl, m_ullOffset);
 
-	if (m_fBigEndian) { //Swap before any processing.
+	if (IsBigEndian()) { //Swap before any processing.
 		dqword.Data1 = ByteSwap(dqword.Data1);
 		dqword.Data2 = ByteSwap(dqword.Data2);
 		dqword.Data3 = ByteSwap(dqword.Data3);
@@ -1203,7 +1248,7 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 	dqword.Data2 = qwGUIDTime.HighPart & 0xffff;
 	dqword.Data3 = ((qwGUIDTime.HighPart >> 16) & 0x0fff) | 0x1000; //Including Type 1 flag (0x1000)
 
-	if (m_fBigEndian) { //After processing swap back.
+	if (IsBigEndian()) { //After processing swap back.
 		dqword.Data1 = ByteSwap(dqword.Data1);
 		dqword.Data2 = ByteSwap(dqword.Data2);
 		dqword.Data3 = ByteSwap(dqword.Data3);

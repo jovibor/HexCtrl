@@ -84,6 +84,7 @@ namespace HEXCTRL::INTERNAL
 		void DisapplyAll()override;
 		void DisapplyByID(int iAppliedID)override; //Disapply template with the given AppliedID.
 		void DisapplyByOffset(ULONGLONG ullOffset)override;
+		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		[[nodiscard]] bool HasApplied()const;
 		[[nodiscard]] bool HasCurrent()const;
 		[[nodiscard]] bool HasTemplates()const;
@@ -91,6 +92,7 @@ namespace HEXCTRL::INTERNAL
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsTooltips()const;
 		void UpdateData();
+		auto SetDlgData(std::uint64_t ullData) -> HWND;
 		BOOL ShowWindow(int nCmdShow);
 		void UnloadAll()override;
 	private:
@@ -160,7 +162,10 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool SetDataGUID(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
 		void EnableDynamicLayoutHelper(bool fEnable);
 		auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PHEXTEMPLATEAPPLIED;
-		[[nodiscard]] bool IsHighlight()const;
+		[[nodiscard]] bool IsHglSel()const;
+		[[nodiscard]] bool IsMinimized()const;
+		[[nodiscard]] bool IsShowAsHex()const;
+		[[nodiscard]] bool IsSwapEndian()const;
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
 		void RandomizeTemplateColors(int iTemplateID);
 		void RemoveNodesWithTemplateID(int iTemplateID);
@@ -189,6 +194,7 @@ namespace HEXCTRL::INTERNAL
 		std::vector<std::unique_ptr<HEXTEMPLATEAPPLIED>> m_vecTemplatesApplied; //Currently Applied Templates.
 		CComboBox m_comboTemplates;  //Currently available templates list.
 		CEdit m_editOffset;          //"Offset" edit box.
+		CButton m_btnMinMax;         //Check-box min-max.
 		CButton m_btnShowTT;         //Check-box "Show tooltips"
 		CButton m_btnHglSel;         //Check-box "Highlight selected"
 		CButton m_btnHex;            //Check-box "Highlight selected"
@@ -212,7 +218,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fLMDownResize { };               //Left mouse pressed in splitter area to resize.
 		bool m_fListGuardEvent { false };       //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
 		bool m_fTooltips { true };              //Show tooltips or not.
-		bool m_fHighlightSel { true };          //Highlight selected fields with a selection.
+		bool m_fHglSel { true };          //Highlight selected fields with a selection.
 		bool m_fShowAsHex { true };
 		bool m_fSwapEndian { false };
 	};
