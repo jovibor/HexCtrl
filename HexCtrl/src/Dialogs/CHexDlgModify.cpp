@@ -17,10 +17,24 @@ BEGIN_MESSAGE_MAP(CHexDlgModify, CDialogEx)
 	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
+auto CHexDlgModify::GetDlgData()const->std::uint64_t
+{
+	return { };
+}
+
 void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
 	m_pHexCtrl = pHexCtrl;
+}
+
+auto CHexDlgModify::SetDlgData(std::uint64_t /*ullData*/)->HWND
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(IDD_HEXCTRL_MODIFY, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	return m_hWnd;
 }
 
 BOOL CHexDlgModify::ShowWindow(int nCmdShow, int iTab)

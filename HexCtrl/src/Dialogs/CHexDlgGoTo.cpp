@@ -242,6 +242,11 @@ void CHexDlgGoTo::OnClickRadioBackEnd()
 	SetRangesText();
 }
 
+auto CHexDlgGoTo::GetDlgData()const->std::uint64_t
+{
+	return { };
+}
+
 void CHexDlgGoTo::Initialize(IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
@@ -302,6 +307,15 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 	}
 
 	HexCtrlGoOffset(m_ullCurrOffset);
+}
+
+auto CHexDlgGoTo::SetDlgData(std::uint64_t /*ullData*/)->HWND
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(IDD_HEXCTRL_GOTO, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	return m_hWnd;
 }
 
 BOOL CHexDlgGoTo::ShowWindow(int nCmdShow)

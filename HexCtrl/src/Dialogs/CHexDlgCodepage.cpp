@@ -40,6 +40,11 @@ void CHexDlgCodepage::AddCP(std::wstring_view wsv)
 	}
 }
 
+auto CHexDlgCodepage::GetDlgData()const->std::uint64_t
+{
+	return { };
+}
+
 void CHexDlgCodepage::Initialize(IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
@@ -47,6 +52,15 @@ void CHexDlgCodepage::Initialize(IHexCtrl* pHexCtrl)
 		return;
 
 	m_pHexCtrl = pHexCtrl;
+}
+
+auto CHexDlgCodepage::SetDlgData(std::uint64_t /*ullData*/)->HWND
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(IDD_HEXCTRL_CODEPAGE, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	return m_hWnd;
 }
 
 BOOL CHexDlgCodepage::ShowWindow(int nCmdShow)

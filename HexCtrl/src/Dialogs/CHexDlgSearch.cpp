@@ -86,6 +86,11 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
+auto CHexDlgSearch::GetDlgData()const->std::uint64_t
+{
+	return { };
+}
+
 void CHexDlgSearch::Initialize(IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
@@ -108,6 +113,15 @@ void CHexDlgSearch::SearchNextPrev(bool fForward)
 	m_fAll = false;
 	m_fSearchNext = true;
 	Search();
+}
+
+auto CHexDlgSearch::SetDlgData(std::uint64_t /*ullData*/)->HWND
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	return m_hWnd;
 }
 
 BOOL CHexDlgSearch::ShowWindow(int nCmdShow)

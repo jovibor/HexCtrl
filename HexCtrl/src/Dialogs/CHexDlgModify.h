@@ -15,7 +15,9 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgModify final : public CDialogEx
 	{
 	public:
+		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void Initialize(IHexCtrl* pHexCtrl);
+		auto SetDlgData(std::uint64_t ullData) -> HWND;
 		BOOL ShowWindow(int nCmdShow, int iTab);
 	private:
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);

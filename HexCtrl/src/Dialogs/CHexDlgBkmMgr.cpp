@@ -114,6 +114,11 @@ auto CHexDlgBkmMgr::GetCurrent()const->ULONGLONG
 	return static_cast<ULONGLONG>(m_llIndexCurr);
 }
 
+auto CHexDlgBkmMgr::GetDlgData()const->std::uint64_t
+{
+	return { };
+}
+
 void CHexDlgBkmMgr::GoBookmark(ULONGLONG ullIndex)
 {
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
@@ -181,7 +186,7 @@ auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM
 			[ullOffset](const HEXBKM& ref) { return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPAN& refV) {
 					return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
-					rIter != m_vecBookmarks.rend()) {
+			rIter != m_vecBookmarks.rend()) {
 			pBkm = &*rIter;
 		}
 	}
@@ -222,7 +227,7 @@ void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset)
 			[ullOffset](const HEXBKM& ref) { return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPAN& refV) {
 					return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
-					rIter != m_vecBookmarks.rend()) {
+			rIter != m_vecBookmarks.rend()) {
 			m_vecBookmarks.erase(std::next(rIter).base());
 		}
 	}
@@ -249,6 +254,15 @@ void CHexDlgBkmMgr::RemoveByID(ULONGLONG ullID)
 	}
 
 	m_pHexCtrl->Redraw();
+}
+
+auto CHexDlgBkmMgr::SetDlgData(std::uint64_t /*ullData*/)->HWND
+{
+	if (!IsWindow(m_hWnd)) {
+		Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	return m_hWnd;
 }
 
 void CHexDlgBkmMgr::SetVirtual(IHexBookmarks* pVirtBkm)
@@ -585,7 +599,7 @@ void CHexDlgBkmMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		const auto ullOffsetCurr = pBkm->vecSpan.front().ullOffset;
 		if (ullOffsetCurr != *optOffset) {
 			const auto ullSizeCurr = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
-							[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+				[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
 			pBkm->vecSpan.clear();
 			pBkm->vecSpan.emplace_back(*optOffset, ullSizeCurr);
 		}

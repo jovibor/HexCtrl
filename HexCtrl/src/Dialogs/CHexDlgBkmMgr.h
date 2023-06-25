@@ -16,11 +16,11 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		auto AddBkm(const HEXBKM& hbs, bool fRedraw) -> ULONGLONG override; //Returns new bookmark Id.
-		void RemoveAll()override;
 		[[nodiscard]] auto GetByID(ULONGLONG ullID) -> PHEXBKM override;       //Bookmark by ID.
 		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM override; //Bookmark by index (in inner list).
 		[[nodiscard]] auto GetCount() -> ULONGLONG override;
 		[[nodiscard]] auto GetCurrent()const->ULONGLONG;
+		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void GoBookmark(ULONGLONG ullIndex);
 		void GoNext();
 		void GoPrev();
@@ -28,8 +28,10 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset) -> PHEXBKM override;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsVirtual()const;
+		void RemoveAll()override;
 		void RemoveByOffset(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID)override;
+		auto SetDlgData(std::uint64_t ullData) -> HWND;
 		void SetVirtual(IHexBookmarks* pVirtBkm);
 		BOOL ShowWindow(int nCmdShow);
 		void SortData(int iColumn, bool fAscending);

@@ -64,10 +64,12 @@ auto CHexDlgDataInterp::SetDlgData(std::uint64_t ullData)->HWND
 	}
 
 	if ((ullData & HEXCTRL_FLAG_DATAINTERP_HEXNUMS) > 0 != IsShowAsHex()) {
+		m_btnHex.SetCheck(m_btnHex.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
 		OnCheckHex();
 	}
 
 	if ((ullData & HEXCTRL_FLAG_DATAINTERP_BE) > 0 != IsBigEndian()) {
+		m_btnBE.SetCheck(m_btnBE.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
 		OnCheckBigEndian();
 	}
 
@@ -218,6 +220,8 @@ void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_PROPDATA, m_stCtrlGrid);
+	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_CHK_HEX, m_btnHex);
+	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_CHK_BE, m_btnBE);
 }
 
 bool CHexDlgDataInterp::IsShowAsHex()const

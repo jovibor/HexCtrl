@@ -716,17 +716,17 @@ auto CHexCtrl::GetDlgData(EHexWnd eWnd)const->std::uint64_t
 
 	switch (eWnd) {
 	case EHexWnd::DLG_BKMMANAGER:
-	//	return m_pDlgBkmMgr->GetDlgData();
+		return m_pDlgBkmMgr->GetDlgData();
 	case EHexWnd::DLG_DATAINTERP:
 		return m_pDlgDataInterp->GetDlgData();
 	case EHexWnd::DLG_MODIFY:
-	//	return m_pDlgModify->GetDlgData();
+		return m_pDlgModify->GetDlgData();
 	case EHexWnd::DLG_SEARCH:
-	//	return m_pDlgSearch->GetDlgData();
+		return m_pDlgSearch->GetDlgData();
 	case EHexWnd::DLG_CODEPAGE:
-	//	return m_pDlgCodepage->GetDlgData();
+		return m_pDlgCodepage->GetDlgData();
 	case EHexWnd::DLG_GOTO:
-	//	return m_pDlgGoTo->GetDlgData();
+		return m_pDlgGoTo->GetDlgData();
 	case EHexWnd::DLG_TEMPLMGR:
 		return m_pDlgTemplMgr->GetDlgData();
 	default:
@@ -1797,32 +1797,17 @@ auto CHexCtrl::SetDlgData(EHexWnd eWnd, std::uint64_t ullData)->HWND
 	case EHexWnd::WND_MAIN:
 		return m_hWnd;
 	case EHexWnd::DLG_BKMMANAGER:
-		if (!IsWindow(m_pDlgBkmMgr->m_hWnd)) {
-			m_pDlgBkmMgr->Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_hWnd));
-		}
-		return m_pDlgBkmMgr->m_hWnd;
+		return m_pDlgBkmMgr->SetDlgData(ullData);
 	case EHexWnd::DLG_DATAINTERP:
 		return m_pDlgDataInterp->SetDlgData(ullData);
 	case EHexWnd::DLG_MODIFY:
-		if (!IsWindow(m_pDlgModify->m_hWnd)) {
-			m_pDlgModify->Create(IDD_HEXCTRL_MODIFY, CWnd::FromHandle(m_hWnd));
-		}
-		return m_pDlgModify->m_hWnd;
+		return m_pDlgModify->SetDlgData(ullData);
 	case EHexWnd::DLG_SEARCH:
-		if (!IsWindow(m_pDlgSearch->m_hWnd)) {
-			m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_hWnd));
-		}
-		return m_pDlgSearch->m_hWnd;
+		return m_pDlgSearch->SetDlgData(ullData);
 	case EHexWnd::DLG_CODEPAGE:
-		if (!IsWindow(m_pDlgCodepage->m_hWnd)) {
-			m_pDlgCodepage->Create(IDD_HEXCTRL_CODEPAGE, CWnd::FromHandle(m_hWnd));
-		}
-		return m_pDlgCodepage->m_hWnd;
+		return m_pDlgCodepage->SetDlgData(ullData);
 	case EHexWnd::DLG_GOTO:
-		if (!IsWindow(m_pDlgGoTo->m_hWnd)) {
-			m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, CWnd::FromHandle(m_hWnd));
-		}
-		return m_pDlgGoTo->m_hWnd;
+		return m_pDlgGoTo->SetDlgData(ullData);
 	case EHexWnd::DLG_TEMPLMGR:
 		return m_pDlgTemplMgr->SetDlgData(ullData);
 	default:

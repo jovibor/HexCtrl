@@ -195,9 +195,10 @@ namespace HEXCTRL::INTERNAL
 		CComboBox m_comboTemplates;  //Currently available templates list.
 		CEdit m_editOffset;          //"Offset" edit box.
 		CButton m_btnMinMax;         //Check-box min-max.
-		CButton m_btnShowTT;         //Check-box "Show tooltips"
-		CButton m_btnHglSel;         //Check-box "Highlight selected"
-		CButton m_btnHex;            //Check-box "Highlight selected"
+		CButton m_btnShowTT;         //Check-box "Show tooltips".
+		CButton m_btnHglSel;         //Check-box "Highlight selected".
+		CButton m_btnHex;            //Check-box "Hex numbers".
+		CButton m_btnSwapEndian;     //Check-box "Swap endian".
 		CWnd m_wndStaticOffset;      //Static text "Template offset:".
 		CWnd m_wndStaticSize;        //Static text Template size:".
 		HBITMAP m_hBITMAPMinMax { }; //Bitmap for the min-max checkbox.

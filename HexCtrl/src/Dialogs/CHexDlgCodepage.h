@@ -15,7 +15,9 @@ namespace HEXCTRL::INTERNAL
 	{
 	public:
 		void AddCP(std::wstring_view wsv);
+		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void Initialize(IHexCtrl* pHexCtrl);
+		auto SetDlgData(std::uint64_t ullData) -> HWND;
 		BOOL ShowWindow(int nCmdShow);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;

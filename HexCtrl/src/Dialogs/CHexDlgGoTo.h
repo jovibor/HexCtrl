@@ -13,9 +13,11 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgGoTo final : public CDialogEx
 	{
 	public:
+		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsRepeatAvail()const;
 		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
+		auto SetDlgData(std::uint64_t ullData) -> HWND;
 		BOOL ShowWindow(int nCmdShow);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;

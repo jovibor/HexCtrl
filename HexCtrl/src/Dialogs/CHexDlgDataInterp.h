@@ -141,6 +141,8 @@ namespace HEXCTRL::INTERNAL
 		std::vector<SGRIDDATA> m_vecProp;
 		IHexCtrl* m_pHexCtrl { };
 		CHexPropGridCtrl m_stCtrlGrid;
+		CButton m_btnHex;            //Check-box "Hex numbers".
+		CButton m_btnBE;             //Check-box "Big endian".
 		ULONGLONG m_ullOffset { };
 		ULONGLONG m_ullDataSize { }; //Size of the currently interpreted data.
 		DWORD m_dwDateFormat { };    //Date format.

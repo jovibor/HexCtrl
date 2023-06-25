@@ -14,9 +14,11 @@ namespace HEXCTRL::INTERNAL
 	class CHexDlgSearch final : public CDialogEx
 	{
 	public:
+		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
 		void SearchNextPrev(bool fForward);
+		auto SetDlgData(std::uint64_t ullData) -> HWND;
 		BOOL ShowWindow(int nCmdShow);
 	private:
 		enum class EMode : std::uint8_t; //Forward declarations.
