@@ -395,8 +395,8 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	using enum EHexCmd;
 	switch (eCmd) {
 	case CMD_SEARCH_DLG:
-		m_pDlgSearch->ShowWindow(SW_SHOW);
 		ParentNotify(HEXCTRL_MSG_DLGSEARCH);
+		m_pDlgSearch->ShowWindow(SW_SHOW);
 		break;
 	case CMD_SEARCH_NEXT:
 		m_pDlgSearch->SearchNextPrev(true);
@@ -405,8 +405,8 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		m_pDlgSearch->SearchNextPrev(false);
 		break;
 	case CMD_NAV_GOTO_DLG:
-		m_pDlgGoTo->ShowWindow(SW_SHOW);
 		ParentNotify(HEXCTRL_MSG_DLGGOTO);
+		m_pDlgGoTo->ShowWindow(SW_SHOW);
 		break;
 	case CMD_NAV_REPFWD:
 		m_pDlgGoTo->Repeat();
@@ -461,8 +461,8 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		m_pDlgBkmMgr->RemoveAll();
 		break;
 	case CMD_BKM_DLG_MGR:
-		m_pDlgBkmMgr->ShowWindow(SW_SHOW);
 		ParentNotify(HEXCTRL_MSG_DLGBKMMGR);
+		m_pDlgBkmMgr->ShowWindow(SW_SHOW);
 		break;
 	case CMD_CLPBRD_COPY_HEX:
 		ClipboardCopy(EClipboard::COPY_HEX);
@@ -501,15 +501,15 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		ClipboardPaste(EClipboard::PASTE_TEXT_CP);
 		break;
 	case CMD_MODIFY_OPERS_DLG:
-		m_pDlgModify->ShowWindow(SW_SHOW, 0);
 		ParentNotify(HEXCTRL_MSG_DLGMODIFY);
+		m_pDlgModify->ShowWindow(SW_SHOW, 0);
 		break;
 	case CMD_MODIFY_FILLZEROS:
 		FillWithZeros();
 		break;
 	case CMD_MODIFY_FILLDATA_DLG:
-		m_pDlgModify->ShowWindow(SW_SHOW, 1);
 		ParentNotify(HEXCTRL_MSG_DLGMODIFY);
+		m_pDlgModify->ShowWindow(SW_SHOW, 1);
 		break;
 	case CMD_MODIFY_UNDO:
 		Undo();
@@ -541,12 +541,12 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		SelAddDown();
 		break;
 	case CMD_DATAINTERP_DLG:
-		m_pDlgDataInterp->ShowWindow(SW_SHOW);
 		ParentNotify(HEXCTRL_MSG_DLGDATAINTERP);
+		m_pDlgDataInterp->ShowWindow(SW_SHOW);
 		break;
 	case CMD_CODEPAGE_DLG:
-		m_pDlgCodepage->ShowWindow(SW_SHOW);
 		ParentNotify(HEXCTRL_MSG_DLGCODEPAGE);
+		m_pDlgCodepage->ShowWindow(SW_SHOW);
 		break;
 	case CMD_APPEAR_FONT_DLG:
 		ChooseFontDlg();
@@ -600,8 +600,8 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		m_pDlgTemplMgr->DisapplyAll();
 		break;
 	case CMD_TEMPL_DLG_MGR:
-		m_pDlgTemplMgr->ShowWindow(SW_SHOW);
 		ParentNotify(HEXCTRL_MSG_DLGTEMPLMGR);
+		m_pDlgTemplMgr->ShowWindow(SW_SHOW);
 		break;
 	}
 }
