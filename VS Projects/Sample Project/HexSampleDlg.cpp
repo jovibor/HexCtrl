@@ -40,6 +40,8 @@ BOOL CHexSampleDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
+	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+
 	SetIcon(m_hIcon, TRUE);	 //Set big icon
 	SetIcon(m_hIcon, FALSE); //Set small icon
 
