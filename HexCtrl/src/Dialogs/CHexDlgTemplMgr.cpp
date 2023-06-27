@@ -170,6 +170,10 @@ void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 
 auto CHexDlgTemplMgr::GetDlgData()const->std::uint64_t
 {
+	if (!IsWindow(m_hWnd)) {
+		return { };
+	}
+
 	std::uint64_t ullData { };
 
 	if (IsMinimized()) {

@@ -31,6 +31,7 @@
   * [GetData](#getdata)
   * [GetDataSize](#getdatasize)
   * [GetDateInfo](#getdateinfo)
+  * [GetDlgData](#getdlgdata)
   * [GetFont](#getfont)
   * [GetGroupMode](#getgroupmode)
   * [GetMenuHandle](#getmenuhandle)
@@ -60,6 +61,7 @@
   * [SetConfig](#setconfig)
   * [SetData](#setdata)
   * [SetDateInfo](#setdateinfo)
+  * [SetDlgData](#setdlgdata)
   * [SetFont](#setfont)
   * [SetGroupMode](#setgroupmode)
   * [SetMutable](#setmutable)
@@ -431,6 +433,12 @@ Returns currently set data size.
 ```
 Returns [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate), and date separator.
 
+### [](#)GetDlgData
+```cpp
+auto GetDlgData(EHexWnd eWnd)const->std::uint64_t;
+```
+Returns data related to one of the internal dialogs.
+
 ### [](#)GetCodepage
 ```cpp
 [[nodiscard]] auto GetCodepage()const->int;
@@ -588,6 +596,14 @@ void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true)
 ```
 Sets the caret to the given offset. The `fHighLow` flag shows which part of the hex chunk, low or high, a caret must be set to.
 
+### [](#)SetCodepage
+```cpp
+void SetCodepage(int iCodePage);
+```
+Sets the code page for the **HexCtrl**'s text area. Takes [code page identifier](https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers) as an argument, or `-1` for default ASCII-only characters.  
+
+**Note:** Code page identifier must represent [Single-byte Character Set](https://docs.microsoft.com/en-us/windows/win32/intl/single-byte-character-sets). Multi-byte character sets are not currently supported.
+
 ### [](#)SetColors
 ```cpp
 void SetColors(const HEXCOLORS& clr);
@@ -614,19 +630,17 @@ void SetData(const HEXDATA& hds);
 ```
 Main method to set a data to display in read-only or mutable modes. Takes [`HEXDATA`](#hexdata) as an  argument.
 
-## [](#)SetDateInfo
+### [](#)SetDateInfo
 ```cpp
 void SetDateInfo(DWORD dwFormat, wchar_t wchSepar);
 ```
 Sets [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate), along with date separator.
 
-### [](#)SetCodepage
+### [](#)SetDlgData
 ```cpp
-void SetCodepage(int iCodePage);
+auto SetDlgData(EHexWnd eWnd, std::uint64_t ullData)->HWND;
 ```
-Sets the code page for the **HexCtrl**'s text area. Takes [code page identifier](https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers) as an argument, or `-1` for default ASCII-only characters.  
-
-**Note:** Code page identifier must represent [Single-byte Character Set](https://docs.microsoft.com/en-us/windows/win32/intl/single-byte-character-sets). Multi-byte character sets are not currently supported.
+Sets a data to one of the internal dialogs. Returns a window handle of that dialog.
 
 ### [](#)SetFont
 ```cpp

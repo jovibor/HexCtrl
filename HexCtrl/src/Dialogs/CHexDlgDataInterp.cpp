@@ -33,8 +33,12 @@ auto CHexDlgDataInterp::GetDataSize()const->ULONGLONG
 	return m_ullDataSize;
 }
 
-auto CHexDlgDataInterp::GetDlgData()const -> std::uint64_t
+auto CHexDlgDataInterp::GetDlgData()const->std::uint64_t
 {
+	if (!IsWindow(m_hWnd)) {
+		return { };
+	}
+
 	std::uint64_t ullData { };
 
 	if (IsShowAsHex()) {

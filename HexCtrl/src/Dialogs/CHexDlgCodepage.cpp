@@ -42,6 +42,10 @@ void CHexDlgCodepage::AddCP(std::wstring_view wsv)
 
 auto CHexDlgCodepage::GetDlgData()const->std::uint64_t
 {
+	if (!IsWindow(m_hWnd)) {
+		return { };
+	}
+
 	return { };
 }
 

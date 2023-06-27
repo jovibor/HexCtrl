@@ -88,6 +88,10 @@ END_MESSAGE_MAP()
 
 auto CHexDlgSearch::GetDlgData()const->std::uint64_t
 {
+	if (!IsWindow(m_hWnd)) {
+		return { };
+	}
+
 	return { };
 }
 

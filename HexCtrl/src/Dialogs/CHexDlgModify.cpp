@@ -19,6 +19,10 @@ END_MESSAGE_MAP()
 
 auto CHexDlgModify::GetDlgData()const->std::uint64_t
 {
+	if (!IsWindow(m_hWnd)) {
+		return { };
+	}
+
 	return { };
 }
 

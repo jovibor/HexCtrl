@@ -116,6 +116,10 @@ auto CHexDlgBkmMgr::GetCurrent()const->ULONGLONG
 
 auto CHexDlgBkmMgr::GetDlgData()const->std::uint64_t
 {
+	if (!IsWindow(m_hWnd)) {
+		return { };
+	}
+
 	return { };
 }
 

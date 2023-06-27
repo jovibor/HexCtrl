@@ -244,6 +244,10 @@ void CHexDlgGoTo::OnClickRadioBackEnd()
 
 auto CHexDlgGoTo::GetDlgData()const->std::uint64_t
 {
+	if (!IsWindow(m_hWnd)) {
+		return { };
+	}
+
 	return { };
 }
 
