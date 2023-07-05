@@ -16,6 +16,10 @@
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
+BEGIN_MESSAGE_MAP(CHexPropGridCtrl, CMFCPropertyGridCtrl)
+	ON_WM_SIZE()
+END_MESSAGE_MAP()
+
 BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
 	ON_WM_ACTIVATE()
 	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_HEX, &CHexDlgDataInterp::OnCheckHex)
@@ -23,7 +27,6 @@ BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
 	ON_WM_CLOSE()
 	ON_WM_DESTROY()
 	ON_WM_SHOWWINDOW()
-	ON_WM_SIZE()
 	ON_REGISTERED_MESSAGE(AFX_WM_PROPERTY_CHANGED, &CHexDlgDataInterp::OnPropertyDataChanged)
 	ON_MESSAGE(WM_PROPGRID_PROPERTY_SELECTED, &CHexDlgDataInterp::OnPropertySelected)
 END_MESSAGE_MAP()
@@ -495,16 +498,6 @@ LRESULT CHexDlgDataInterp::OnPropertySelected(WPARAM wParam, LPARAM lParam)
 	}
 
 	return TRUE;
-}
-
-void CHexDlgDataInterp::OnSize(UINT nType, int cx, int cy)
-{
-	CDialogEx::OnSize(nType, cx, cy);
-
-	if (auto& refHdr = m_stCtrlGrid.GetHeaderCtrl(); IsWindow(refHdr.m_hWnd)) {
-		HDITEMW hdItemPropGrid { .mask = HDI_WIDTH, .cxy = 150 };
-		refHdr.SetItem(0, &hdItemPropGrid); //Property grid column size.
-	}
 }
 
 void CHexDlgDataInterp::RedrawHexCtrl()const

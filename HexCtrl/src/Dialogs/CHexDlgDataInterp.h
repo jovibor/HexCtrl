@@ -18,6 +18,11 @@ namespace HEXCTRL::INTERNAL
 		void OnChangeSelection(CMFCPropertyGridProperty* pNewProp, CMFCPropertyGridProperty* /*pOldProp*/)override {
 			GetParent()->SendMessageW(WM_PROPGRID_PROPERTY_SELECTED, GetDlgCtrlID(), reinterpret_cast<LPARAM>(pNewProp));
 		}
+		void OnSize(UINT /*f*/, int /*cx*/, int /*cy*/) {
+			EndEditItem();
+			AdjustLayout();
+		}
+		DECLARE_MESSAGE_MAP();
 	};
 
 	class CHexDlgDataInterp final : public CDialogEx
@@ -72,7 +77,6 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnDestroy();
 		LRESULT OnPropertyDataChanged(WPARAM wParam, LPARAM lParam);
 		LRESULT OnPropertySelected(WPARAM wParam, LPARAM lParam);
-		afx_msg void OnSize(UINT nType, int cx, int cy);
 		void RedrawHexCtrl()const;
 		void ShowValueBinary(BYTE byte)const;
 		void ShowValueChar(BYTE byte)const;
