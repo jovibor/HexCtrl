@@ -43,7 +43,24 @@ void CScrollEx::AddSibling(CScrollEx* pSibling)
 	m_pSibling = pSibling;
 }
 
-bool CScrollEx::Create(CWnd* pParent, bool fVert, int iIDRESArrow,
+bool CScrollEx::Create(CWnd* pParent, bool fVert, UINT uIDArrow,
+	ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
+{
+	assert(!m_fCreated); //Already created.
+	assert(pParent != nullptr);
+	if (m_fCreated || pParent == nullptr) {
+		return false;
+	}
+
+	CBitmap bmpArrow; //Bitmap of the arrow.
+	if (!bmpArrow.LoadBitmapW(uIDArrow)) {
+		return false;
+	}
+
+	return Create(pParent, fVert, bmpArrow, ullScrolline, ullScrollPage, ullScrollSizeMax);
+}
+
+bool CScrollEx::Create(CWnd* pParent, bool fVert, HBITMAP hArrow,
 	ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
 {
 	assert(!m_fCreated); //Already created.
@@ -60,7 +77,7 @@ bool CScrollEx::Create(CWnd* pParent, bool fVert, int iIDRESArrow,
 	m_pParent = pParent;
 	m_uiScrollBarSizeWH = GetSystemMetrics(fVert ? SM_CXVSCROLL : SM_CXHSCROLL);
 
-	if (!CreateArrows(iIDRESArrow, fVert)) {
+	if (!CreateArrows(hArrow, fVert)) {
 		return false;
 	}
 
@@ -486,21 +503,17 @@ void CScrollEx::SetScrollPageSize(ULONGLONG ullSize)
 * Private methods.
 ********************************************************************/
 
-bool CScrollEx::CreateArrows(int iIDRESArrow, bool fVert)
+bool CScrollEx::CreateArrows(HBITMAP hArrow, bool fVert)
 {
-	CBitmap bmpArrow; //Bitmap of the arrow.
-	if (!bmpArrow.LoadBitmapW(iIDRESArrow)) {
-		return false;
-	}
-
-	BITMAP hBitmap;
-	bmpArrow.GetBitmap(&hBitmap); //hBitmap.bmBits is nullptr here.
-	const auto nWidth = static_cast<std::size_t>(hBitmap.bmWidth);
-	const auto nHeight = static_cast<std::size_t>(hBitmap.bmHeight);
-	const auto dwBytesBmp = hBitmap.bmWidthBytes * hBitmap.bmHeight;
+	const auto pBitmap = CBitmap::FromHandle(hArrow);
+	BITMAP stBMP { };
+	pBitmap->GetBitmap(&stBMP); //stBMP.bmBits is nullptr here.
+	const auto nWidth = static_cast<std::size_t>(stBMP.bmWidth);
+	const auto nHeight = static_cast<std::size_t>(stBMP.bmHeight);
+	const auto dwBytesBmp = stBMP.bmWidthBytes * stBMP.bmHeight;
 	const auto dwPixels = nWidth * nHeight;
-	const auto pOrigCOLOR = std::make_unique<COLORREF[]>(dwPixels);
-	bmpArrow.GetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
+	const auto pPixelsOrig = std::make_unique<COLORREF[]>(dwPixels);
+	pBitmap->GetBitmapBits(dwBytesBmp, pPixelsOrig.get());
 
 	const auto lmbTranspose = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
 		for (std::size_t itHeight = 0; itHeight < nHeight; ++itHeight) { //Transpose matrix.
@@ -524,19 +537,21 @@ bool CScrollEx::CreateArrows(int iIDRESArrow, bool fVert)
 		}
 	};
 
-	m_bmpArrowFirst.CreateBitmapIndirect(&hBitmap);
-	m_bmpArrowLast.CreateBitmapIndirect(&hBitmap);
+	m_bmpArrowFirst.CreateBitmapIndirect(&stBMP);
+	m_bmpArrowLast.CreateBitmapIndirect(&stBMP);
+
 	if (fVert) {
-		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get()); //Up arrow.
-		lmbFlipVert(pOrigCOLOR.get(), nWidth, nHeight);              //Down arrow.
+		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pPixelsOrig.get()); //Up arrow.
+		lmbFlipVert(pPixelsOrig.get(), nWidth, nHeight);              //Down arrow.
 	}
 	else {
-		lmbTranspose(pOrigCOLOR.get(), nWidth, nHeight);
-		lmbFlipVert(pOrigCOLOR.get(), nWidth, nHeight);
-		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get()); //Left arrow.
-		lmbFlipHorz(pOrigCOLOR.get(), nWidth, nHeight);              //Right arrow.
+		lmbTranspose(pPixelsOrig.get(), nWidth, nHeight);
+		lmbFlipVert(pPixelsOrig.get(), nWidth, nHeight);
+		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pPixelsOrig.get()); //Left arrow.
+		lmbFlipHorz(pPixelsOrig.get(), nWidth, nHeight);              //Right arrow.
 	}
-	m_bmpArrowLast.SetBitmapBits(dwBytesBmp, pOrigCOLOR.get());
+
+	m_bmpArrowLast.SetBitmapBits(dwBytesBmp, pPixelsOrig.get());
 
 	return true;
 }

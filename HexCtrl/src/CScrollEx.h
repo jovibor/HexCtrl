@@ -14,7 +14,8 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		enum class EState : std::uint8_t; //Forward declaration.
 	public:
 		void AddSibling(CScrollEx* pSibling);
-		bool Create(CWnd* pParent, bool fVert, int iIDRESArrow, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
+		bool Create(CWnd* pParent, bool fVert, UINT uIDArrow, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
+		bool Create(CWnd* pParent, bool fVert, HBITMAP hArrow, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
 		[[nodiscard]] auto GetParent()const->CWnd*;
 		[[nodiscard]] auto GetScrollPos()const->ULONGLONG;
 		[[nodiscard]] auto GetScrollPosDelta()const->LONGLONG;
@@ -51,7 +52,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		void ScrollEnd();
 		void SetScrollPageSize(ULONGLONG ullSize);
 	private:
-		[[nodiscard]] bool CreateArrows(int iIDRESArrow, bool fVert);
+		[[nodiscard]] bool CreateArrows(HBITMAP hArrow, bool fVert);
 		void DrawScrollBar()const;      //Draws the whole Scrollbar.
 		void DrawArrows(CDC* pDC)const; //Draws arrows.
 		void DrawThumb(CDC* pDC)const;  //Draws the Scroll thumb.
