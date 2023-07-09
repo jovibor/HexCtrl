@@ -417,6 +417,7 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_BKMMGR_LIST, this);
+	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 	m_pListMain->SetSortable(true);
 	m_pListMain->InsertColumn(0, L"\u2116", LVCFMT_LEFT, 40);
 	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 80, -1, 0, true);
@@ -424,7 +425,6 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	m_pListMain->InsertColumn(3, L"Description", LVCFMT_LEFT, 250, -1, 0, true);
 	m_pListMain->InsertColumn(4, L"Bk", LVCFMT_LEFT, 30);
 	m_pListMain->InsertColumn(5, L"Text", LVCFMT_LEFT, 30);
-	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 
 	m_stMenuList.CreatePopupMenu();
 	m_stMenuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVE), L"Remove");

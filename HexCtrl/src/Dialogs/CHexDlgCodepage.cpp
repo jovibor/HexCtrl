@@ -85,14 +85,9 @@ BOOL CHexDlgCodepage::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	LISTEX::LISTEXCREATE lcs;
-	lcs.uID = IDC_HEXCTRL_CODEPAGE_LIST;
-	lcs.pParent = this;
-	lcs.fDialogCtrl = true;
-	lcs.fSortable = true;
-	m_pListMain->Create(lcs);
+	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_CODEPAGE_LIST, this);
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
-
+	m_pListMain->SetSortable(true);
 	m_pListMain->InsertColumn(0, L"Code page", LVCFMT_LEFT, 80);
 	m_pListMain->InsertColumn(1, L"Name", LVCFMT_LEFT, 280);
 	m_pListMain->InsertColumn(2, L"Max chars", LVCFMT_LEFT, 80);
