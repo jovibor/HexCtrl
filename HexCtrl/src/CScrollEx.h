@@ -9,8 +9,7 @@
 
 namespace HEXCTRL::INTERNAL::SCROLLEX
 {
-	class CScrollEx : public CWnd
-	{
+	class CScrollEx : public CWnd {
 		enum class EState : std::uint8_t; //Forward declaration.
 	public:
 		void AddSibling(CScrollEx* pSibling);

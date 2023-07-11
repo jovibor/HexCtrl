@@ -10,8 +10,7 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	class CHexDlgFillData final : public CDialogEx
-	{
+	class CHexDlgFillData final : public CDialogEx {
 	public:
 		void Create(CWnd* pParent, IHexCtrl* pHexCtrl);
 		void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);

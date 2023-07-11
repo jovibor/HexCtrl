@@ -11,8 +11,7 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	class CHexDlgCodepage final : public CDialogEx
-	{
+	class CHexDlgCodepage final : public CDialogEx {
 	public:
 		void AddCP(std::wstring_view wsv);
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;

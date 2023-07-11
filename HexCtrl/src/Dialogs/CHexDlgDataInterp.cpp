@@ -45,7 +45,7 @@ auto CHexDlgDataInterp::GetDlgData()const->std::uint64_t
 	std::uint64_t ullData { };
 
 	if (IsShowAsHex()) {
-		ullData |= HEXCTRL_FLAG_DATAINTERP_HEXNUMS;
+		ullData |= HEXCTRL_FLAG_DATAINTERP_HEXNUM;
 	}
 
 	if (IsBigEndian()) {
@@ -70,7 +70,7 @@ auto CHexDlgDataInterp::SetDlgData(std::uint64_t ullData)->HWND
 		Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
 	}
 
-	if ((ullData & HEXCTRL_FLAG_DATAINTERP_HEXNUMS) > 0 != IsShowAsHex()) {
+	if ((ullData & HEXCTRL_FLAG_DATAINTERP_HEXNUM) > 0 != IsShowAsHex()) {
 		m_btnHex.SetCheck(m_btnHex.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
 		OnCheckHex();
 	}
@@ -245,13 +245,8 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	if (const auto pChk = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX)); pChk != nullptr) {
-		pChk->SetCheck(BST_CHECKED);
-	}
-
-	if (const auto pChk = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE)); pChk != nullptr) {
-		pChk->SetCheck(BST_UNCHECKED);
-	}
+	m_btnHex.SetCheck(BST_CHECKED);
+	m_btnBE.SetCheck(BST_UNCHECKED);
 
 	using enum EGroup; using enum EName; using enum ESize;
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"binary:", L"0"), GR_INTEGRAL, NAME_BINARY, SIZE_BYTE);
@@ -362,13 +357,13 @@ void CHexDlgDataInterp::OnOK()
 
 void CHexDlgDataInterp::OnCheckHex()
 {
-	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX))->GetCheck() == BST_CHECKED;
+	m_fShowAsHex = m_btnHex.GetCheck() == BST_CHECKED;
 	UpdateData();
 }
 
 void CHexDlgDataInterp::OnCheckBigEndian()
 {
-	m_fBigEndian = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE))->GetCheck() == BST_CHECKED;
+	m_fBigEndian = m_btnBE.GetCheck() == BST_CHECKED;
 	UpdateData();
 }
 

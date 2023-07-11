@@ -12,8 +12,7 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	class CHexDlgBkmMgr final : public CDialogEx, public IHexBookmarks
-	{
+	class CHexDlgBkmMgr final : public CDialogEx, public IHexBookmarks {
 	public:
 		auto AddBkm(const HEXBKM& hbs, bool fRedraw) -> ULONGLONG override; //Returns new bookmark Id.
 		[[nodiscard]] auto GetByID(ULONGLONG ullID) -> PHEXBKM override;       //Bookmark by ID.
@@ -39,6 +38,7 @@ namespace HEXCTRL::INTERNAL
 	private:
 		enum class EMenuID : std::uint16_t;
 		void DoDataExchange(CDataExchange* pDX)override;
+		[[nodiscard]] bool IsShowAsHex()const;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
@@ -61,6 +61,7 @@ namespace HEXCTRL::INTERNAL
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
 		LONGLONG m_llIndexCurr { }; //Current bookmark's position index, to move next/prev.
 		CMenu m_stMenuList;
+		CButton m_btnHex;           //Check-box "Hex numbers".
 		bool m_fShowAsHex { true };
 	};
 }

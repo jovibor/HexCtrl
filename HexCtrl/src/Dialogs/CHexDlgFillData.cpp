@@ -101,7 +101,7 @@ BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM lParam)
 		break;
 	}
 
-	return CDialogEx::OnCommand(wParam, lParam);;
+	return CDialogEx::OnCommand(wParam, lParam);
 }
 
 void CHexDlgFillData::OnOK()

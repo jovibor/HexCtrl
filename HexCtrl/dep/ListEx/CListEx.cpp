@@ -15,8 +15,7 @@
 
 namespace HEXCTRL::LISTEX::INTERNAL
 {
-	class CListExHdr final : public CMFCHeaderCtrl
-	{
+	class CListExHdr final : public CMFCHeaderCtrl {
 	public:
 		explicit CListExHdr();
 		~CListExHdr()final = default;
@@ -78,8 +77,7 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		bool m_fSortAscending { };  //Sorting type.
 	};
 
-	class CListEx final : public IListEx
-	{
+	class CListEx final : public IListEx {
 	public:
 		bool Create(const LISTEXCREATE& lcs)override;
 		void CreateDialogCtrl(UINT uCtrlID, CWnd* pParent)override;
@@ -1754,7 +1752,7 @@ void CListEx::OnLButtonDblClk(UINT nFlags, CPoint point)
 	nmii.lParam = 1; //Set explicitly to 1, to show our intension to display edit-box.
 	GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&nmii));
 	if (nmii.lParam == 0) { //User set it to zero, explicitly declined to display edit-box.
-		return CMFCListCtrl::OnLButtonDblClk(nFlags, point);;
+		return CMFCListCtrl::OnLButtonDblClk(nFlags, point);
 	}
 
 	//Get Column data alignment.

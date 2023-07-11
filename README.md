@@ -897,16 +897,15 @@ struct HEXVISION {
 ### [](#)IHexBookmarks
 The `IHexBookmarks` interface responds for the **HexCtrl**'s bookmarks machinery. To obtain pointer to this interface use the [`GetBookmarks`](#getbookmarks) method.
 ```cpp
-class IHexBookmarks
-{
+class IHexBookmarks {
 public:
-    virtual ULONGLONG AddBkm(const HEXBKM& hbs, bool fRedraw = true) = 0;   //Add new bookmark, returns the new bookmark's ID.
-    virtual void ClearAll() = 0;                                            //Clear all bookmarks.
-    [[nodiscard]] virtual auto GetByID(ULONGLONG ullID)->PHEXBKM = 0;       //Get bookmark by ID.
-    [[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex)->PHEXBKM = 0; //Get bookmark by index.
-    [[nodiscard]] virtual ULONGLONG GetCount() = 0;                         //Get bookmarks count.
-    [[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset)->PHEXBKM = 0;   //HitTest for given offset.
-    virtual void RemoveByID(ULONGLONG ullID) = 0;                           //Remove bookmark by a given ID.
+    virtual auto AddBkm(const HEXBKM& hbs, bool fRedraw = true) -> ULONGLONG = 0; //Add new bookmark, returns the new bookmark's ID.
+    [[nodiscard]] virtual auto GetByID(ULONGLONG ullID) -> PHEXBKM = 0;           //Get bookmark by ID.
+    [[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM = 0;     //Get bookmark by index.
+    [[nodiscard]] virtual auto GetCount() -> ULONGLONG = 0;                       //Get bookmarks count.
+    [[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset) -> PHEXBKM = 0;       //HitTest for given offset.
+    virtual void RemoveAll() = 0;                                                 //Remove all bookmarks.
+    virtual void RemoveByID(ULONGLONG ullID) = 0;                                 //Remove by a given ID.
 };
 ```
 
@@ -964,13 +963,12 @@ Removes bookmark with the given ID.
 
 ### [](#)IHexTemplates
 ```cpp
-class IHexTemplates
-{
+class IHexTemplates {
 public:
-    virtual int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) = 0; //Apply template to a given offset.
+    virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)->int = 0; //Apply template to a given offset.
     virtual void DisapplyByID(int iAppliedID) = 0;
     virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
-    virtual int LoadTemplate(const wchar_t* pFilePath) = 0; //Returns loaded template ID on success, zero otherwise.
+    virtual auto LoadTemplate(const wchar_t* pFilePath)->int = 0; //Returns loaded template ID on success, zero otherwise.
     virtual void ShowTooltips(bool fShow) = 0;
     virtual void UnloadTemplate(int iTemplateID) = 0;       //Unload/remove loaded template from memory.
 };
@@ -978,8 +976,7 @@ public:
 
 ### [](#)IHexVirtColors
 ```cpp
-class IHexVirtColors
-{
+class IHexVirtColors {
 public:
     void OnHexGetColor(HEXCOLORINFO&) = 0;
 };
@@ -991,8 +988,7 @@ The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinf
 
 ### [](#)IHexVirtData
 ```cpp
-class IHexVirtData
-{
+class IHexVirtData {
 public:
     virtual void OnHexGetData(HEXDATAINFO&) = 0;       //Data to get.
     virtual void OnHexSetData(const HEXDATAINFO&) = 0; //Data to set, if mutable.
@@ -1027,7 +1023,7 @@ enum class EHexCmd : std::uint8_t {
 Data size to operate on, used in `EHexModifyMode::MODIFY_OPERATION` mode. Also used to set data grouping mode, in [`SetGroupMode`](#setgroupmode) method.
 ```cpp
 enum class EHexDataSize : std::uint8_t {
-    SIZE_BYTE = 0x01, SIZE_WORD = 0x02, SIZE_DWORD = 0x04, SIZE_QWORD = 0x08
+    SIZE_BYTE = 0x1U, SIZE_WORD = 0x2U, SIZE_DWORD = 0x4U, SIZE_QWORD = 0x8U
 };
 ```
 
@@ -1053,7 +1049,7 @@ enum class EHexOperMode : std::uint8_t {
 Enum of all **HexCtrl**'s internal windows. This enum is used as an arg in [`GetWindowHandle`](#getwindowhandle) method to retrieve window's handle. 
 ```cpp
 enum class EHexWnd : std::uint8_t {
-    WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_MODIFY,
+    WND_MAIN, DLG_BKMMGR, DLG_DATAINTERP, DLG_MODIFY,
     DLG_SEARCH, DLG_ENCODING, DLG_GOTO, DLG_TEMPLMGR
 };
 ```

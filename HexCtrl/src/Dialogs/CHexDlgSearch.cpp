@@ -525,7 +525,7 @@ BOOL CHexDlgSearch::OnInitDialog()
 	stToolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
 
 	//"Wildcard" check box tooltip.
-	stToolInfo.uId = reinterpret_cast<UINT_PTR>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_WILDCARD)->m_hWnd);
+	stToolInfo.uId = reinterpret_cast<UINT_PTR>(m_stCheckWcard.m_hWnd);
 	std::wstring wstrToolText { };
 	//"Wildcard" tooltip text.
 	wstrToolText += L"Use ";
@@ -674,7 +674,7 @@ void CHexDlgSearch::Prepare()
 
 	if (m_fReplace) {
 		wchar_t warrReplace[64];
-		GetDlgItemTextW(IDC_HEXCTRL_SEARCH_COMBO_REPLACE, warrReplace, static_cast<int>(std::size(warrReplace)));
+		m_stComboReplace.GetWindowTextW(warrReplace, static_cast<int>(std::size(warrReplace)));
 		m_wstrTextReplace = warrReplace;
 		if (m_wstrTextReplace.empty()) {
 			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);

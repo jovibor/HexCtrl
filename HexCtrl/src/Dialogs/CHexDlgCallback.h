@@ -10,8 +10,7 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	class CHexDlgCallback final : public CDialogEx
-	{
+	class CHexDlgCallback final : public CDialogEx {
 	public:
 		explicit CHexDlgCallback(std::wstring_view wsvOperName,
 			ULONGLONG ullProgBarMin, ULONGLONG ullProgBarMax, CWnd* pParent = nullptr);

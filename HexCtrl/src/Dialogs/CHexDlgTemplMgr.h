@@ -76,8 +76,7 @@ namespace HEXCTRL::INTERNAL
 		bool              fBigEndian { false };
 	};
 
-	class CHexDlgTemplMgr : public CDialogEx, public IHexTemplates
-	{
+	class CHexDlgTemplMgr : public CDialogEx, public IHexTemplates {
 	public:
 		void ApplyCurr(ULONGLONG ullOffset); //Apply currently selected template to offset.
 		int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)override; //Apply template to a given offset.

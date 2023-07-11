@@ -181,7 +181,7 @@ auto CHexDlgTemplMgr::GetDlgData()const->std::uint64_t
 	}
 
 	if (IsShowAsHex()) {
-		ullData |= HEXCTRL_FLAG_TEMPLMGR_HEXNUMS;
+		ullData |= HEXCTRL_FLAG_TEMPLMGR_HEXNUM;
 	}
 
 	if (IsTooltips()) {
@@ -284,7 +284,7 @@ auto CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData) -> HWND
 		OnCheckMinMax();
 	}
 
-	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_HEXNUMS) > 0 != IsShowAsHex()) {
+	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_HEXNUM) > 0 != IsShowAsHex()) {
 		m_btnHex.SetCheck(m_btnHex.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
 		OnCheckHex();
 	}

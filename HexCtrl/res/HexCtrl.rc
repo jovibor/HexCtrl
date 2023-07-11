@@ -166,13 +166,13 @@ BEGIN
 END
 
 IDD_HEXCTRL_CODEPAGE DIALOGEX 0, 0, 315, 329
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Codepage"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_HEXCTRL_CODEPAGE_LIST,"SysListView32",LVS_ALIGNLEFT | LVS_OWNERDATA | WS_BORDER | WS_TABSTOP,4,32,311,297
-    LTEXT           "Below are listed all codepages that are installed in the system.\r\nCodepages with the max chars more than one byte are only partially supported, without proper indentation, such codepages are red color highlighted.",IDC_STATIC,6,4,308,26
+    CONTROL         "",IDC_HEXCTRL_CODEPAGE_LIST,"SysListView32",LVS_ALIGNLEFT | LVS_OWNERDATA | WS_BORDER | WS_TABSTOP,0,32,315,297
+    LTEXT           "Below are listed all codepages that are installed in the system.\r\nCodepages with the max chars more than one byte are only partially supported, without proper indentation, such codepages are red color highlighted.",IDC_STATIC,5,4,310,26
 END
 
 IDD_HEXCTRL_GOTO DIALOGEX 0, 0, 269, 97
@@ -558,7 +558,9 @@ END
 
 IDD_HEXCTRL_CODEPAGE AFX_DIALOG_LAYOUT
 BEGIN
-    0
+    0,
+    0, 0, 100, 100,
+    0, 0, 0, 0
 END
 
 IDD_HEXCTRL_MODIFY AFX_DIALOG_LAYOUT

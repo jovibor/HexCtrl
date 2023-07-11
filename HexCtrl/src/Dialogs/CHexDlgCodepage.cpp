@@ -98,6 +98,10 @@ BOOL CHexDlgCodepage::OnInitDialog()
 	EnumSystemCodePagesW(EnumCodePagesProc, CP_INSTALLED);
 	m_pListMain->SetItemCountEx(static_cast<int>(m_vecCodePage.size()), LVSICF_NOSCROLL);
 
+	if (const auto pLayout = GetDynamicLayout(); pLayout != nullptr) {
+		pLayout->SetMinSize({ 0, 0 });
+	}
+
 	return TRUE;
 }
 

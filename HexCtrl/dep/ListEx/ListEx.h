@@ -92,8 +92,7 @@ namespace HEXCTRL::LISTEX
 	/********************************************
 	* IListEx pure virtual base class.          *
 	********************************************/
-	class IListEx : public CMFCListCtrl
-	{
+	class IListEx : public CMFCListCtrl {
 	public:
 		virtual bool Create(const LISTEXCREATE& lcs) = 0;
 		virtual void CreateDialogCtrl(UINT uCtrlID, CWnd* pParent) = 0;

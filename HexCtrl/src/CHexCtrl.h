@@ -30,8 +30,7 @@ namespace HEXCTRL::INTERNAL
 	/********************************************************************************************
 	* CHexCtrl class is an implementation of the IHexCtrl interface.                            *
 	********************************************************************************************/
-	class CHexCtrl final : public CWnd, public IHexCtrl
-	{
+	class CHexCtrl final : public CWnd, public IHexCtrl {
 	public:
 		explicit CHexCtrl();
 		CHexCtrl(const CHexCtrl&) = delete;

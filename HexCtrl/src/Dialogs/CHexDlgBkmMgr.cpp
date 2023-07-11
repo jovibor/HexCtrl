@@ -63,20 +63,6 @@ auto CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)->ULONGLONG
 	return ullID;
 }
 
-void CHexDlgBkmMgr::RemoveAll()
-{
-	if (m_pVirtual) {
-		m_pVirtual->RemoveAll();
-	}
-	else {
-		m_vecBookmarks.clear();
-	}
-
-	if (m_pHexCtrl && m_pHexCtrl->IsCreated()) {
-		m_pHexCtrl->Redraw();
-	}
-}
-
 auto CHexDlgBkmMgr::GetByID(ULONGLONG ullID)->PHEXBKM
 {
 	PHEXBKM pBkm { };
@@ -120,7 +106,13 @@ auto CHexDlgBkmMgr::GetDlgData()const->std::uint64_t
 		return { };
 	}
 
-	return { };
+	std::uint64_t ullData { };
+
+	if (IsShowAsHex()) {
+		ullData |= HEXCTRL_FLAG_BKMMGR_HEXNUM;
+	}
+
+	return ullData;
 }
 
 void CHexDlgBkmMgr::GoBookmark(ULONGLONG ullIndex)
@@ -212,6 +204,20 @@ bool CHexDlgBkmMgr::IsVirtual()const
 	return m_pVirtual != nullptr;
 }
 
+void CHexDlgBkmMgr::RemoveAll()
+{
+	if (m_pVirtual) {
+		m_pVirtual->RemoveAll();
+	}
+	else {
+		m_vecBookmarks.clear();
+	}
+
+	if (m_pHexCtrl && m_pHexCtrl->IsCreated()) {
+		m_pHexCtrl->Redraw();
+	}
+}
+
 void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset)
 {
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
@@ -260,10 +266,15 @@ void CHexDlgBkmMgr::RemoveByID(ULONGLONG ullID)
 	m_pHexCtrl->Redraw();
 }
 
-auto CHexDlgBkmMgr::SetDlgData(std::uint64_t /*ullData*/)->HWND
+auto CHexDlgBkmMgr::SetDlgData(std::uint64_t ullData)->HWND
 {
 	if (!IsWindow(m_hWnd)) {
 		Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+	}
+
+	if ((ullData & HEXCTRL_FLAG_BKMMGR_HEXNUM) > 0 != IsShowAsHex()) {
+		m_btnHex.SetCheck(m_btnHex.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
+		OnCheckHex();
 	}
 
 	return m_hWnd;
@@ -341,6 +352,12 @@ void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm)
 void CHexDlgBkmMgr::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_HEXCTRL_BKMMGR_CHK_HEX, m_btnHex);
+}
+
+bool CHexDlgBkmMgr::IsShowAsHex()const
+{
+	return m_fShowAsHex;
 }
 
 void CHexDlgBkmMgr::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
@@ -395,12 +412,12 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 		break;
 	}
 
-	return CDialogEx::OnCommand(wParam, lParam);;
+	return CDialogEx::OnCommand(wParam, lParam);
 }
 
 void CHexDlgBkmMgr::OnCheckHex()
 {
-	m_fShowAsHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_CHK_HEX))->GetCheck() == BST_CHECKED;
+	m_fShowAsHex = m_btnHex.GetCheck() == BST_CHECKED;
 	m_pListMain->RedrawWindow();
 }
 
@@ -431,9 +448,7 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	m_stMenuList.AppendMenuW(MF_SEPARATOR);
 	m_stMenuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVEALL), L"Remove All");
 
-	if (const auto pChkHex = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_BKMMGR_CHK_HEX)); pChkHex) {
-		pChkHex->SetCheck(BST_CHECKED);
-	}
+	m_btnHex.SetCheck(BST_CHECKED);
 
 	if (const auto pDL = GetDynamicLayout(); pDL != nullptr) {
 		pDL->SetMinSize({ 0, 0 });
@@ -482,14 +497,14 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		if (!pBkm->vecSpan.empty()) {
 			ullOffset = pBkm->vecSpan.front().ullOffset;
 		}
-		*std::vformat_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(ullOffset)) = L'\0';
+		*std::vformat_to(pItem->pszText, IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(ullOffset)) = L'\0';
 		break;
 	case 2: //Size.
 		if (!pBkm->vecSpan.empty()) {
 			ullSize = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
 				[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
 		}
-		*std::vformat_to(pItem->pszText, m_fShowAsHex ? L"0x{:X}" : L"{}", std::make_wformat_args(ullSize)) = L'\0';
+		*std::vformat_to(pItem->pszText, IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(ullSize)) = L'\0';
 		break;
 	case 3: //Description.
 		pItem->pszText = pBkm->wstrDesc.data();

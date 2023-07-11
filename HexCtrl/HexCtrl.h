@@ -51,7 +51,7 @@ namespace HEXCTRL
 	* EHexWnd - HexControl's windows.                                                           *
 	********************************************************************************************/
 	enum class EHexWnd : std::uint8_t {
-		WND_MAIN, DLG_BKMMANAGER, DLG_DATAINTERP, DLG_MODIFY,
+		WND_MAIN, DLG_BKMMGR, DLG_DATAINTERP, DLG_MODIFY,
 		DLG_SEARCH, DLG_CODEPAGE, DLG_GOTO, DLG_TEMPLMGR
 	};
 
@@ -78,8 +78,7 @@ namespace HEXCTRL
 	* to set its own data handler routines.	Pointer to this class can be set in SetData method. *
 	* All virtual functions must be defined in client's derived class.                          *
 	********************************************************************************************/
-	class IHexVirtData
-	{
+	class IHexVirtData {
 	public:
 		virtual void OnHexGetData(HEXDATAINFO&) = 0;       //Data to get.
 		virtual void OnHexSetData(const HEXDATAINFO&) = 0; //Data to set, if mutable.
@@ -101,16 +100,15 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* IHexBookmarks - Abstract base interface, represents HexCtrl bookmarks.                    *
 	********************************************************************************************/
-	class IHexBookmarks
-	{
+	class IHexBookmarks {
 	public:
 		virtual auto AddBkm(const HEXBKM& hbs, bool fRedraw = true) -> ULONGLONG = 0; //Add new bookmark, returns the new bookmark's ID.
-		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID) -> PHEXBKM = 0;       //Get bookmark by ID.
-		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM = 0; //Get bookmark by index.
-		[[nodiscard]] virtual auto GetCount() -> ULONGLONG = 0;                   //Get bookmarks count.
-		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset) -> PHEXBKM = 0;   //HitTest for given offset.
-		virtual void RemoveAll() = 0;                                             //Remove all bookmarks.
-		virtual void RemoveByID(ULONGLONG ullID) = 0;                             //Remove by a given ID.
+		[[nodiscard]] virtual auto GetByID(ULONGLONG ullID) -> PHEXBKM = 0;           //Get bookmark by ID.
+		[[nodiscard]] virtual auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM = 0;     //Get bookmark by index.
+		[[nodiscard]] virtual auto GetCount() -> ULONGLONG = 0;                       //Get bookmarks count.
+		[[nodiscard]] virtual auto HitTest(ULONGLONG ullOffset) -> PHEXBKM = 0;       //HitTest for given offset.
+		virtual void RemoveAll() = 0;                                                 //Remove all bookmarks.
+		virtual void RemoveByID(ULONGLONG ullID) = 0;                                 //Remove by a given ID.
 	};
 
 	/********************************************************************************************
@@ -154,8 +152,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* IHexVirtColors - Pure abstract class for chunk colors.                                    *
 	********************************************************************************************/
-	class IHexVirtColors
-	{
+	class IHexVirtColors {
 	public:
 		virtual void OnHexGetColor(HEXCOLORINFO&) = 0;
 	};
@@ -163,14 +160,13 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* IHexTemplates - Abstract base interface for HexCtrl data templates.                       *
 	********************************************************************************************/
-	class IHexTemplates
-	{
+	class IHexTemplates {
 	public:
-		virtual int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) = 0; //Apply template to a given offset.
+		virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Apply template to a given offset.
 		virtual void DisapplyAll() = 0;
 		virtual void DisapplyByID(int iAppliedID) = 0;
 		virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
-		virtual int LoadTemplate(const wchar_t* pFilePath) = 0; //Returns loaded template ID on success, zero otherwise.
+		virtual auto LoadTemplate(const wchar_t* pFilePath) -> int = 0; //Returns loaded template ID on success, zero otherwise.
 		virtual void ShowTooltips(bool fShow) = 0;
 		virtual void UnloadAll() = 0;                           //Unload all templates.
 		virtual void UnloadTemplate(int iTemplateID) = 0;       //Unload/remove loaded template from memory.
@@ -267,7 +263,7 @@ namespace HEXCTRL
 	* Also used to set data grouping mode, in SetGroupMode method.                              *
 	********************************************************************************************/
 	enum class EHexDataSize : std::uint8_t {
-		SIZE_BYTE = 0x01, SIZE_WORD = 0x02, SIZE_DWORD = 0x04, SIZE_QWORD = 0x08
+		SIZE_BYTE = 0x1U, SIZE_WORD = 0x2U, SIZE_DWORD = 0x4U, SIZE_QWORD = 0x8U
 	};
 
 	/********************************************************************************************
@@ -298,8 +294,7 @@ namespace HEXCTRL
 	/********************************************************************************************
 	* IHexCtrl - pure abstract base class.                                                      *
 	********************************************************************************************/
-	class IHexCtrl
-	{
+	class IHexCtrl {
 	public:
 		IHexCtrl() = default;
 		IHexCtrl(const IHexCtrl&) = delete;
@@ -446,19 +441,22 @@ namespace HEXCTRL
 
 
 	/*********************************************************
-	* Flags for the internal Dialogs, used with SetDlgData.  *
+	* Flags for the internal dialogs, used with SetDlgData.  *
 	*********************************************************/
 
 	//Template Manager.
 	constexpr auto HEXCTRL_FLAG_TEMPLMGR_MINIMIZED { 0x1ULL };
-	constexpr auto HEXCTRL_FLAG_TEMPLMGR_HEXNUMS { 0x2ULL };
+	constexpr auto HEXCTRL_FLAG_TEMPLMGR_HEXNUM { 0x2ULL };
 	constexpr auto HEXCTRL_FLAG_TEMPLMGR_SHOWTT { 0x4ULL };
 	constexpr auto HEXCTRL_FLAG_TEMPLMGR_HGLSEL { 0x8ULL };
 	constexpr auto HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN { 0x10ULL };
 
 	//Data Interpreter.
-	constexpr auto HEXCTRL_FLAG_DATAINTERP_HEXNUMS { 0x1ULL };
+	constexpr auto HEXCTRL_FLAG_DATAINTERP_HEXNUM { 0x1ULL };
 	constexpr auto HEXCTRL_FLAG_DATAINTERP_BE { 0x2ULL };
+
+	//Bookmark Manager.
+	constexpr auto HEXCTRL_FLAG_BKMMGR_HEXNUM { 0x1ULL };
 
 	//Setting a manifest for the ComCtl32.dll version 6.
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")

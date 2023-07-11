@@ -10,8 +10,7 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	class CHexSelection final
-	{
+	class CHexSelection final {
 	public:
 		void ClearAll();
 		[[nodiscard]] ULONGLONG GetSelEnd()const;

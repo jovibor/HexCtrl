@@ -40,8 +40,7 @@ namespace HEXCTRL
 
 	namespace INTERNAL
 	{
-		class CHexDlgAbout final : public CDialogEx
-		{
+		class CHexDlgAbout final : public CDialogEx {
 		public:
 			explicit CHexDlgAbout(CWnd* pParent) : CDialogEx(IDD_HEXCTRL_ABOUT, pParent) {}
 		private:
@@ -715,7 +714,7 @@ auto CHexCtrl::GetDlgData(EHexWnd eWnd)const->std::uint64_t
 		return { };
 
 	switch (eWnd) {
-	case EHexWnd::DLG_BKMMANAGER:
+	case EHexWnd::DLG_BKMMGR:
 		return m_pDlgBkmMgr->GetDlgData();
 	case EHexWnd::DLG_DATAINTERP:
 		return m_pDlgDataInterp->GetDlgData();
@@ -827,7 +826,7 @@ auto CHexCtrl::GetWindowHandle(EHexWnd eWnd)const->HWND
 	switch (eWnd) {
 	case EHexWnd::WND_MAIN:
 		return m_hWnd;
-	case EHexWnd::DLG_BKMMANAGER:
+	case EHexWnd::DLG_BKMMGR:
 		if (!IsWindow(m_pDlgBkmMgr->m_hWnd)) {
 			m_pDlgBkmMgr->Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_hWnd));
 		}
@@ -1796,7 +1795,7 @@ auto CHexCtrl::SetDlgData(EHexWnd eWnd, std::uint64_t ullData)->HWND
 	switch (eWnd) {
 	case EHexWnd::WND_MAIN:
 		return m_hWnd;
-	case EHexWnd::DLG_BKMMANAGER:
+	case EHexWnd::DLG_BKMMGR:
 		return m_pDlgBkmMgr->SetDlgData(ullData);
 	case EHexWnd::DLG_DATAINTERP:
 		return m_pDlgDataInterp->SetDlgData(ullData);

@@ -12,8 +12,7 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	class CHexDlgModify final : public CDialogEx
-	{
+	class CHexDlgModify final : public CDialogEx {
 	public:
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void Initialize(IHexCtrl* pHexCtrl);

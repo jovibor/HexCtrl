@@ -12,8 +12,7 @@
 namespace HEXCTRL::INTERNAL
 {
 	constexpr auto WM_PROPGRID_PROPERTY_SELECTED = 0x0401U; //Message to parent when new property selected.
-	class CHexPropGridCtrl final : public CMFCPropertyGridCtrl
-	{
+	class CHexPropGridCtrl final : public CMFCPropertyGridCtrl {
 	private:
 		void OnChangeSelection(CMFCPropertyGridProperty* pNewProp, CMFCPropertyGridProperty* /*pOldProp*/)override {
 			GetParent()->SendMessageW(WM_PROPGRID_PROPERTY_SELECTED, GetDlgCtrlID(), reinterpret_cast<LPARAM>(pNewProp));
@@ -25,8 +24,7 @@ namespace HEXCTRL::INTERNAL
 		DECLARE_MESSAGE_MAP();
 	};
 
-	class CHexDlgDataInterp final : public CDialogEx
-	{
+	class CHexDlgDataInterp final : public CDialogEx {
 	public:
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG;
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
