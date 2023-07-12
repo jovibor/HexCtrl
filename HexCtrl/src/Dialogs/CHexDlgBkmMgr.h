@@ -39,20 +39,21 @@ namespace HEXCTRL::INTERNAL
 		enum class EMenuID : std::uint16_t;
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] bool IsShowAsHex()const;
-		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		afx_msg void OnCheckHex();
+		afx_msg void OnDestroy();
+		BOOL OnInitDialog()override;
 		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListDblClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListDataChanged(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnDestroy();
-		void UpdateList();
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
+		void OnOK()override;
 		void SortBookmarks();
+		void UpdateList();
 		DECLARE_MESSAGE_MAP();
 	private:
 		std::vector<HEXBKM> m_vecBookmarks; //Bookmarks data.

@@ -129,7 +129,7 @@ BOOL CHexDlgCodepage::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 		switch (pNMI->hdr.code) {
 		case LVN_COLUMNCLICK:
 			SortList();
-			break;
+			return TRUE;
 		default:
 			break;
 		}

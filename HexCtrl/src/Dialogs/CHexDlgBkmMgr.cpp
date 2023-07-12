@@ -457,23 +457,6 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	return TRUE;
 }
 
-BOOL CHexDlgBkmMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
-{
-	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_BKMMGR_LIST) {
-		switch (pNMI->hdr.code) {
-		case LVN_COLUMNCLICK: //ON_NOTIFY(LVN_COLUMNCLICK...) macro doesn't seem to work, for no obvious reason.
-			if (!IsVirtual()) {
-				SortBookmarks();
-			}
-			break;
-		default:
-			break;
-		}
-	}
-
-	return CDialogEx::OnNotify(wParam, lParam, pResult);
-}
-
 void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
@@ -654,6 +637,30 @@ void CHexDlgBkmMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 
 	m_pHexCtrl->Redraw();
+}
+
+BOOL CHexDlgBkmMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+{
+	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_BKMMGR_LIST) {
+		switch (pNMI->hdr.code) {
+		//ON_NOTIFY(LVN_COLUMNCLICK, ...) macro doesn't work for CMFCListCtrl in neither virtual nor default mode.
+		//But it works for vanilla CListCtrl. Obviously it's MFC quirks.
+		case LVN_COLUMNCLICK:
+			if (!IsVirtual()) {
+				SortBookmarks();
+			}
+			return TRUE;
+		default:
+			break;
+		}
+	}
+
+	return CDialogEx::OnNotify(wParam, lParam, pResult);
+}
+
+void CHexDlgBkmMgr::OnOK()
+{
+	//Empty to avoid dialog closing on Enter.
 }
 
 void CHexDlgBkmMgr::SortBookmarks()

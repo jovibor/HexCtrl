@@ -226,7 +226,7 @@ void CHexDlgDataInterp::UpdateData()
 void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_PROPDATA, m_stCtrlGrid);
+	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_GRID, m_stCtrlGrid);
 	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_CHK_HEX, m_btnHex);
 	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_CHK_BE, m_btnBE);
 }
@@ -352,7 +352,7 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 
 void CHexDlgDataInterp::OnOK()
 {
-	//Must be empty to avoid dialog window close on Enter.
+	//Empty to avoid dialog closing on Enter.
 }
 
 void CHexDlgDataInterp::OnCheckHex()
@@ -383,7 +383,7 @@ void CHexDlgDataInterp::OnDestroy()
 
 LRESULT CHexDlgDataInterp::OnPropertyDataChanged(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam != IDC_HEXCTRL_DATAINTERP_PROPDATA)
+	if (wParam != IDC_HEXCTRL_DATAINTERP_GRID)
 		return FALSE;
 
 	const auto pPropNew = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
@@ -480,7 +480,7 @@ LRESULT CHexDlgDataInterp::OnPropertyDataChanged(WPARAM wParam, LPARAM lParam)
 
 LRESULT CHexDlgDataInterp::OnPropertySelected(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam != IDC_HEXCTRL_DATAINTERP_PROPDATA)
+	if (wParam != IDC_HEXCTRL_DATAINTERP_GRID)
 		return FALSE;
 
 	const auto pNewSel = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
