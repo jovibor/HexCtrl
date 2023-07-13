@@ -755,9 +755,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 
 void CHexDlgTemplMgr::OnActivate(UINT nState, CWnd * pWndOther, BOOL bMinimized)
 {
-	if (nState == WA_INACTIVE) {
-	}
-	else {
+	if (nState != WA_INACTIVE) {
 		if (m_pHexCtrl->IsCreated()) {
 			const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
 			m_dwDateFormat = dwFormat;

@@ -39,7 +39,6 @@ namespace HEXCTRL::INTERNAL
 		enum class EMenuID : std::uint16_t;
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] bool IsShowAsHex()const;
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		afx_msg void OnCheckHex();
 		afx_msg void OnDestroy();
@@ -52,14 +51,15 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListDataChanged(NMHDR* pNMHDR, LRESULT* pResult);
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		void OnOK()override;
+		void RemoveBookmark(std::uint64_t ullID);
 		void SortBookmarks();
-		void UpdateList();
+		void UpdateListCount(bool fPreserveSelected = false);
 		DECLARE_MESSAGE_MAP();
 	private:
 		std::vector<HEXBKM> m_vecBookmarks; //Bookmarks data.
 		IHexCtrl* m_pHexCtrl { };
 		IHexBookmarks* m_pVirtual { };
-		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
+		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
 		LONGLONG m_llIndexCurr { }; //Current bookmark's position index, to move next/prev.
 		CMenu m_stMenuList;
 		CButton m_btnHex;           //Check-box "Hex numbers".
