@@ -24,13 +24,6 @@ BEGIN_MESSAGE_MAP(CHexDlgCodepage, CDialogEx)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
-BOOL CHexDlgCodepage::EnumCodePagesProc(LPWSTR pwszCP)
-{
-	m_pThis->AddCP(pwszCP);
-
-	return TRUE;
-}
-
 void CHexDlgCodepage::AddCP(std::wstring_view wsv)
 {
 	if (const auto optCPID = stn::StrToUInt(wsv); optCPID) {
@@ -75,6 +68,9 @@ BOOL CHexDlgCodepage::ShowWindow(int nCmdShow)
 
 	return CDialogEx::ShowWindow(nCmdShow);
 }
+
+
+//Private methods.
 
 void CHexDlgCodepage::DoDataExchange(CDataExchange* pDX)
 {
@@ -184,6 +180,13 @@ void CHexDlgCodepage::OnListLinkClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	ShellExecuteW(nullptr, L"open", reinterpret_cast<LPWSTR>(pNMI->lParam), nullptr, nullptr, SW_SHOWNORMAL);
 }
 
+void CHexDlgCodepage::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	m_vecCodePage.clear();
+}
+
 void CHexDlgCodepage::SortList()
 {
 	const auto iColumn = m_pListMain->GetSortColumn();
@@ -211,9 +214,9 @@ void CHexDlgCodepage::SortList()
 	m_pListMain->RedrawWindow();
 }
 
-void CHexDlgCodepage::OnDestroy()
+BOOL CHexDlgCodepage::EnumCodePagesProc(LPWSTR pwszCP)
 {
-	CDialogEx::OnDestroy();
+	m_pThis->AddCP(pwszCP);
 
-	m_vecCodePage.clear();
+	return TRUE;
 }

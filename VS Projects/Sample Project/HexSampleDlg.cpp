@@ -40,7 +40,7 @@ BOOL CHexSampleDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+	CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
 	SetIcon(m_hIcon, TRUE);	 //Set big icon
 	SetIcon(m_hIcon, FALSE); //Set small icon
@@ -147,8 +147,8 @@ void CHexSampleDlg::OnBnSetRndData()
 
 void CHexSampleDlg::OnBnFileOpen()
 {
-	if (auto optFiles = OpenFileDlg(); optFiles) {
-		FileOpen(optFiles->front(), IsLnk());
+	if (auto vecFiles = OpenFileDlg(); !vecFiles.empty()) {
+		FileOpen(vecFiles.front(), IsLnk());
 	}
 }
 
@@ -398,13 +398,13 @@ std::wstring CHexSampleDlg::LnkToPath(LPCWSTR pwszLnk)
 	return wstrPath;
 }
 
-auto CHexSampleDlg::OpenFileDlg()->std::optional<std::vector<std::wstring>>
+auto CHexSampleDlg::OpenFileDlg()->std::vector<std::wstring>
 {
 	CFileDialog fd(TRUE, nullptr, nullptr,
 		OFN_OVERWRITEPROMPT | OFN_EXPLORER | OFN_DONTADDTORECENT | OFN_ENABLESIZING
 		| OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NODEREFERENCELINKS, L"All files (*.*)|*.*||");
 
-	std::vector<std::wstring> vecFiles { };
+	std::vector<std::wstring> vecFiles;
 	if (fd.DoModal() == IDOK) {
 		const CComPtr<IFileOpenDialog> pIFOD = fd.GetIFileOpenDialog();
 		CComPtr<IShellItemArray> pResults;
@@ -412,6 +412,7 @@ auto CHexSampleDlg::OpenFileDlg()->std::optional<std::vector<std::wstring>>
 
 		DWORD dwCount { };
 		pResults->GetCount(&dwCount);
+		vecFiles.reserve(dwCount);
 		for (auto i { 0U }; i < dwCount; ++i) {
 			CComPtr<IShellItem> pItem;
 			pResults->GetItemAt(i, &pItem);
@@ -421,9 +422,5 @@ auto CHexSampleDlg::OpenFileDlg()->std::optional<std::vector<std::wstring>>
 		}
 	}
 
-	std::optional<std::vector<std::wstring>> optRet { };
-	if (!vecFiles.empty())
-		optRet = std::move(vecFiles);
-
-	return optRet;
+	return vecFiles;
 }

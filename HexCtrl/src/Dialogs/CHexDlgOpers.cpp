@@ -46,11 +46,63 @@ void CHexDlgOpers::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimize
 
 //Private methods.
 
+void CHexDlgOpers::CheckWndAvail()const
+{
+	using enum EHexOperMode;
+	using enum EHexDataSize;
+	BOOL fOperandEnable = TRUE;
+	switch (GetOperMode()) {
+	case OPER_NOT:
+	case OPER_SWAP:
+	case OPER_BITREV:
+		fOperandEnable = FALSE;
+		break;
+	default:
+		break;
+	};
+
+	GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND)->EnableWindow(fOperandEnable);
+	GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE)->EnableWindow(GetDataSize() == SIZE_BYTE ? FALSE : fOperandEnable);
+}
+
 void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_OPERS_COMBO_OPER, m_stComboOper);
 	DDX_Control(pDX, IDC_HEXCTRL_OPERS_COMBO_SIZE, m_stComboSize);
+}
+
+auto CHexDlgOpers::GetOperMode()const->EHexOperMode
+{
+	return static_cast<EHexOperMode>(m_stComboOper.GetItemData(m_stComboOper.GetCurSel()));
+}
+
+auto CHexDlgOpers::GetDataSize()const->EHexDataSize
+{
+	return static_cast<EHexDataSize>(m_stComboSize.GetItemData(m_stComboSize.GetCurSel()));
+}
+
+void CHexDlgOpers::OnCancel()
+{
+	static_cast<CDialogEx*>(GetParentOwner())->EndDialog(IDCANCEL);
+}
+
+BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
+{
+	switch (LOWORD(wParam)) //Control ID.
+	{
+	case IDC_HEXCTRL_OPERS_COMBO_OPER:
+	case IDC_HEXCTRL_OPERS_COMBO_SIZE:
+		CheckWndAvail();
+		if (HIWORD(wParam) == CBN_SELCHANGE) { //Combo-box selection changed.
+			SetOKButtonName();
+		}
+		return TRUE;
+	default:
+		break;
+	}
+
+	return CDialogEx::OnCommand(wParam, lParam);
 }
 
 BOOL CHexDlgOpers::OnInitDialog()
@@ -109,29 +161,6 @@ BOOL CHexDlgOpers::OnInitDialog()
 	SetOKButtonName();
 
 	return TRUE;
-}
-
-BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
-{
-	switch (LOWORD(wParam)) //Control ID.
-	{
-	case IDC_HEXCTRL_OPERS_COMBO_OPER:
-	case IDC_HEXCTRL_OPERS_COMBO_SIZE:
-		CheckWndAvail();
-		if (HIWORD(wParam) == CBN_SELCHANGE) { //Combo-box selection changed.
-			SetOKButtonName();
-		}
-		return TRUE;
-	default:
-		break;
-	}
-
-	return CDialogEx::OnCommand(wParam, lParam);
-}
-
-void CHexDlgOpers::OnCancel()
-{
-	static_cast<CDialogEx*>(GetParentOwner())->EndDialog(IDCANCEL);
 }
 
 void CHexDlgOpers::OnOK()
@@ -216,35 +245,6 @@ void CHexDlgOpers::OnOK()
 	hms.spnData = { reinterpret_cast<std::byte*>(&llOperand), sizeof(llOperand) };
 	m_pHexCtrl->ModifyData(hms);
 	m_pHexCtrl->Redraw();
-}
-
-void CHexDlgOpers::CheckWndAvail()const
-{
-	using enum EHexOperMode;
-	using enum EHexDataSize;
-	BOOL fOperandEnable = TRUE;
-	switch (GetOperMode()) {
-	case OPER_NOT:
-	case OPER_SWAP:
-	case OPER_BITREV:
-		fOperandEnable = FALSE;
-		break;
-	default:
-		break;
-	};
-
-	GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND)->EnableWindow(fOperandEnable);
-	GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE)->EnableWindow(GetDataSize() == SIZE_BYTE ? FALSE : fOperandEnable);
-}
-
-auto CHexDlgOpers::GetOperMode()const->EHexOperMode
-{
-	return static_cast<EHexOperMode>(m_stComboOper.GetItemData(m_stComboOper.GetCurSel()));
-}
-
-auto CHexDlgOpers::GetDataSize()const->EHexDataSize
-{
-	return static_cast<EHexDataSize>(m_stComboSize.GetItemData(m_stComboSize.GetCurSel()));
 }
 
 void CHexDlgOpers::SetOKButtonName()

@@ -4,8 +4,7 @@
 
 using namespace HEXCTRL;
 
-class CHexSampleDlg : public CDialogEx, public IHexVirtColors
-{
+class CHexSampleDlg : public CDialogEx, public IHexVirtColors {
 public:
 	explicit CHexSampleDlg(CWnd* pParent = nullptr);
 	void SetStartupFile(LPCWSTR pwszFile);
@@ -32,7 +31,7 @@ private:
 	void LoadTemplates(const IHexCtrl* pHexCtrl);
 	bool IsRW()const;
 	bool IsLnk()const;
-	[[nodiscard]] static auto OpenFileDlg() -> std::optional<std::vector<std::wstring>>;
+	[[nodiscard]] static auto OpenFileDlg() -> std::vector<std::wstring>;
 	DECLARE_MESSAGE_MAP();
 private:
 	IHexCtrlPtr m_pHexDlg { CreateHexCtrl() };

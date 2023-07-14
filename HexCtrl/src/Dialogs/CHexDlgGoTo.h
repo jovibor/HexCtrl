@@ -20,21 +20,18 @@ namespace HEXCTRL::INTERNAL
 		BOOL ShowWindow(int nCmdShow);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
-		BOOL OnInitDialog()override;
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		void OnOK()override;
-		afx_msg void OnClickRadioAbs();
-		afx_msg void OnClickRadioFwdCurr();
-		afx_msg void OnClickRadioBackCurr();
-		afx_msg void OnClickRadioBackEnd();
-		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
+		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
 		void HexCtrlGoOffset(ULONGLONG ullOffset);
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		BOOL OnInitDialog()override;
+		void OnOK()override;
+		afx_msg void OnRadioRangeAddrType(UINT uID);
 		void SetRangesText()const;
 		DECLARE_MESSAGE_MAP();
 	private:
 		IHexCtrl* m_pHexCtrl { };
 		ULONGLONG m_ullData { };
-		ULONGLONG m_ullCurrOffset { }; //Offset that was set when OnGo was called last time.
+		ULONGLONG m_ullCurrOffset { }; //Offset that was set when OnOK was called last time.
 		ULONGLONG m_ullOffsetsFrom { };
 		ULONGLONG m_ullOffsetsTo { };
 		ULONGLONG m_ullPagesFrom { };

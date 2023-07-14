@@ -60,26 +60,9 @@ void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_HEXCTRL_FILLDATA_COMBO_DATA, m_stComboData);
 }
 
-BOOL CHexDlgFillData::OnInitDialog()
+auto CHexDlgFillData::GetFillType()const->CHexDlgFillData::EFillType
 {
-	CDialogEx::OnInitDialog();
-
-	auto iIndex = m_stComboType.AddString(L"Hex Values");
-	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_HEX));
-	m_stComboType.SetCurSel(iIndex);
-	iIndex = m_stComboType.AddString(L"ASCII Text");
-	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_ASCII));
-	iIndex = m_stComboType.AddString(L"UTF-16 Text");
-	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_WCHAR));
-	iIndex = m_stComboType.AddString(L"Random Data (MT19937)");
-	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_MT19937));
-	iIndex = m_stComboType.AddString(L"Pseudo Random Data (fast, but less secure)");
-	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_FAST));
-
-	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL, IDC_HEXCTRL_FILLDATA_RAD_ALL);
-	m_stComboData.LimitText(512); //Max characters of combo-box.
-
-	return TRUE;
+	return static_cast<EFillType>(m_stComboType.GetItemData(m_stComboType.GetCurSel()));
 }
 
 void CHexDlgFillData::OnCancel()
@@ -102,6 +85,28 @@ BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 
 	return CDialogEx::OnCommand(wParam, lParam);
+}
+
+BOOL CHexDlgFillData::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	auto iIndex = m_stComboType.AddString(L"Hex Values");
+	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_HEX));
+	m_stComboType.SetCurSel(iIndex);
+	iIndex = m_stComboType.AddString(L"ASCII Text");
+	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_ASCII));
+	iIndex = m_stComboType.AddString(L"UTF-16 Text");
+	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_WCHAR));
+	iIndex = m_stComboType.AddString(L"Random Data (MT19937)");
+	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_MT19937));
+	iIndex = m_stComboType.AddString(L"Pseudo Random Data (fast, but less secure)");
+	m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_FAST));
+
+	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL, IDC_HEXCTRL_FILLDATA_RAD_ALL);
+	m_stComboData.LimitText(512); //Max characters of combo-box.
+
+	return TRUE;
 }
 
 void CHexDlgFillData::OnOK()
@@ -183,9 +188,4 @@ void CHexDlgFillData::OnOK()
 	m_pHexCtrl->ModifyData(hms);
 	m_pHexCtrl->Redraw();
 	::SetFocus(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN));
-}
-
-auto CHexDlgFillData::GetFillType()const->CHexDlgFillData::EFillType
-{
-	return static_cast<EFillType>(m_stComboType.GetItemData(m_stComboType.GetCurSel()));
 }

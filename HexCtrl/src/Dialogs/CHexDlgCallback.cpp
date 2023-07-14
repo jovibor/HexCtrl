@@ -24,6 +24,30 @@ CHexDlgCallback::CHexDlgCallback(std::wstring_view wsvOperName, ULONGLONG ullPro
 	assert(ullProgBarMin <= ullProgBarMax);
 }
 
+void CHexDlgCallback::ExitDlg()
+{
+	OnBtnCancel();
+}
+
+bool CHexDlgCallback::IsCanceled()const
+{
+	return m_fCancel;
+}
+
+void CHexDlgCallback::SetProgress(ULONGLONG ullProgCurr)
+{
+	m_ullProgBarCurr = ullProgCurr;
+}
+
+
+//Private methods.
+
+void CHexDlgCallback::DoDataExchange(CDataExchange* pDX)
+{
+	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_HEXCTRL_CALLBACK_PROGBAR, m_stProgBar);
+}
+
 BOOL CHexDlgCallback::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -44,13 +68,6 @@ BOOL CHexDlgCallback::OnInitDialog()
 	return TRUE;
 }
 
-void CHexDlgCallback::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-
-	DDX_Control(pDX, IDC_HEXCTRL_CALLBACK_PROGBAR, m_stProgBar);
-}
-
 void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 {
 	if (nIDEvent == m_uTIDExitCheck && m_fCancel) {
@@ -59,26 +76,22 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 	}
 
 	const auto ullCurDiff = m_ullProgBarCurr - m_ullProgBarMin;
-	//How many thousandth parts have already passed.
-	auto iPos = static_cast<int>(ullCurDiff / m_ullThousandth);
+	const auto iPos = static_cast<int>(ullCurDiff / m_ullThousandth); //How many thousandth parts have already passed.
 	m_stProgBar.SetPos(iPos);
 
-	constexpr auto iBytesInMB { 1024 * 1024 }; //(B in KB) * (KB in MB)
-	const auto iSpeedMBS = ((ullCurDiff / ++m_llTicks) * m_iTicksInSecond) / iBytesInMB; //Speed in MB/s.
-	std::wstring wstrDisplay = m_wstrOperName;
-	constexpr auto iMBInGB { 1024 }; //How many MB in one GB.
-	wchar_t buff[64];
+	constexpr auto iBInMB { 1024 * 1024 }; //Bytes in MB.
+	constexpr auto iMBInGB { 1024 };       //MB in GB.
+	const auto iSpeedMBS = ((ullCurDiff / ++m_llTicks) * m_iTicksInSecond) / iBInMB; //Speed in MB/s.
 
+	std::wstring wstrDisplay = m_wstrOperName;
 	if (iSpeedMBS < 1) { //If speed is less than 1 MB/s.
 		wstrDisplay += L"< 1 MB/s";
 	}
 	else if (iSpeedMBS > iMBInGB) { //More than 1 GB/s.
-		*std::format_to(buff, L"{:.2f} GB/s", static_cast<float>(iSpeedMBS) / iMBInGB) = L'\0';
-		wstrDisplay += buff;
+		wstrDisplay += std::format(L"{:.2f} GB/s", static_cast<float>(iSpeedMBS) / iMBInGB);
 	}
 	else {
-		*std::format_to(buff, L"{} MB/s", iSpeedMBS) = L'\0';
-		wstrDisplay += buff;
+		wstrDisplay += std::format(L"{} MB/s", iSpeedMBS);
 	}
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPERNAME)->SetWindowTextW(wstrDisplay.data());
 
@@ -88,19 +101,4 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 void CHexDlgCallback::OnBtnCancel()
 {
 	m_fCancel = true;
-}
-
-bool CHexDlgCallback::IsCanceled()const
-{
-	return m_fCancel;
-}
-
-void CHexDlgCallback::SetProgress(ULONGLONG ullProgCurr)
-{
-	m_ullProgBarCurr = ullProgCurr;
-}
-
-void CHexDlgCallback::ExitDlg()
-{
-	OnBtnCancel();
 }

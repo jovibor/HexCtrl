@@ -14,15 +14,15 @@ namespace HEXCTRL::INTERNAL
 	public:
 		explicit CHexDlgCallback(std::wstring_view wsvOperName,
 			ULONGLONG ullProgBarMin, ULONGLONG ullProgBarMax, CWnd* pParent = nullptr);
+		void ExitDlg();
 		[[nodiscard]] bool IsCanceled()const;
 		void SetProgress(ULONGLONG ullProgCurr);
-		void ExitDlg();
 	private:
-		BOOL OnInitDialog()override;
 		void DoDataExchange(CDataExchange* pDX)override;
 		void OnBtnCancel();
+		BOOL OnInitDialog()override;
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
-		DECLARE_MESSAGE_MAP()
+		DECLARE_MESSAGE_MAP();
 	private:
 		static constexpr UINT_PTR m_uTIDExitCheck { 0x1 };
 		CProgressCtrl m_stProgBar;
@@ -31,8 +31,8 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullProgBarCurr { };
 		ULONGLONG m_ullProgBarMax { };
 		ULONGLONG m_ullThousandth { }; //One thousandth part.
-		bool m_fCancel { false };
 		long long m_llTicks { 0LL };   //How many ticks have passed since dialog beginning.
 		int m_iTicksInSecond { };      //How many ticks in one second.
+		bool m_fCancel { false };
 	};
 }

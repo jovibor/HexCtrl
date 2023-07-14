@@ -20,6 +20,63 @@ void CHexSelection::ClearAll()
 	m_ullMarkSelEnd = 0xFFFFFFFFFFFFFFFFULL;
 }
 
+auto CHexSelection::GetData()const->VecSpan
+{
+	return m_vecSelection;
+}
+
+DWORD CHexSelection::GetLineLength()const
+{
+	if (!HasSelection()) {
+		return 0UL;
+	}
+
+	return static_cast<DWORD>(m_vecSelection.front().ullSize);
+}
+
+ULONGLONG CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const
+{
+	ULONGLONG ullOffset { 0xFFFFFFFFFFFFFFFFULL };
+	if (ullIndex >= GetSelSize())
+		return ullOffset;
+
+	for (ULONGLONG ullTotal { }; const auto & iterData : m_vecSelection) {
+		ullTotal += iterData.ullSize;
+		if (ullIndex < ullTotal) {
+			ullOffset = iterData.ullOffset + (ullIndex - (ullTotal - iterData.ullSize));
+			break;
+		}
+	}
+	return ullOffset;
+}
+
+ULONGLONG CHexSelection::GetSelEnd()const
+{
+	if (!HasSelection()) {
+		return 0xFFFFFFFFFFFFFFFFULL;
+	}
+
+	return m_vecSelection.back().ullOffset + m_vecSelection.back().ullSize - 1;
+}
+
+ULONGLONG CHexSelection::GetSelSize()const
+{
+	if (!HasSelection()) {
+		return 0ULL;
+	}
+
+	return m_vecSelection.size() * m_vecSelection.at(0).ullSize;
+}
+
+ULONGLONG CHexSelection::GetSelStart()const
+{
+	if (!HasSelection()) {
+		return 0xFFFFFFFFFFFFFFFFULL;
+	}
+
+	return m_vecSelection.front().ullOffset;
+}
+
 bool CHexSelection::HasSelection()const
 {
 	return !m_vecSelection.empty();
@@ -50,63 +107,6 @@ bool CHexSelection::HitTestRange(const HEXSPAN& hss)const
 				|| (ref.ullOffset >= hss.ullOffset && ref.ullOffset < (hss.ullOffset + hss.ullSize))
 				|| (hss.ullOffset + hss.ullSize > ref.ullOffset && hss.ullOffset + hss.ullSize <= (ref.ullOffset + ref.ullSize));
 		});
-}
-
-ULONGLONG CHexSelection::GetSelEnd()const
-{
-	if (!HasSelection()) {
-		return 0xFFFFFFFFFFFFFFFFULL;
-	}
-
-	return m_vecSelection.back().ullOffset + m_vecSelection.back().ullSize - 1;
-}
-
-ULONGLONG CHexSelection::GetSelSize()const
-{
-	if (!HasSelection()) {
-		return 0ULL;
-	}
-
-	return m_vecSelection.size() * m_vecSelection.at(0).ullSize;
-}
-
-ULONGLONG CHexSelection::GetSelStart()const
-{
-	if (!HasSelection()) {
-		return 0xFFFFFFFFFFFFFFFFULL;
-	}
-
-	return m_vecSelection.front().ullOffset;
-}
-
-DWORD CHexSelection::GetLineLength()const
-{
-	if (!HasSelection()) {
-		return 0UL;
-	}
-
-	return static_cast<DWORD>(m_vecSelection.front().ullSize);
-}
-
-ULONGLONG CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const
-{
-	ULONGLONG ullOffset { 0xFFFFFFFFFFFFFFFFULL };
-	if (ullIndex >= GetSelSize())
-		return ullOffset;
-
-	for (ULONGLONG ullTotal { }; const auto & iterData : m_vecSelection) {
-		ullTotal += iterData.ullSize;
-		if (ullIndex < ullTotal) {
-			ullOffset = iterData.ullOffset + (ullIndex - (ullTotal - iterData.ullSize));
-			break;
-		}
-	}
-	return ullOffset;
-}
-
-auto CHexSelection::GetData()const->VecSpan
-{
-	return m_vecSelection;
 }
 
 void CHexSelection::SetSelection(const VecSpan& vecSel, bool fHighlight)

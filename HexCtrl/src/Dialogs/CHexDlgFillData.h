@@ -17,11 +17,11 @@ namespace HEXCTRL::INTERNAL
 	private:
 		enum class EFillType : std::uint8_t; //Forward declaration.
 		void DoDataExchange(CDataExchange* pDX)override;
-		BOOL OnInitDialog()override;
-		void OnCancel()override;
-		void OnOK()override;
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		[[nodiscard]] auto GetFillType()const->EFillType;
+		void OnCancel()override;
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
+		BOOL OnInitDialog()override;
+		void OnOK()override;
 		DECLARE_MESSAGE_MAP();
 	private:
 		IHexCtrl* m_pHexCtrl { };
