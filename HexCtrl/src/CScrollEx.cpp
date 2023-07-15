@@ -243,7 +243,7 @@ void CScrollEx::OnSetCursor(CWnd* /*pWnd*/, UINT nHitTest, UINT message)
 		GetCursorPos(&pt);
 		pParent->ScreenToClient(&pt);
 		pParent->SetFocus();
-		constexpr auto uTimerFirstClick { 200U }; //Milliseconds for WM_TIMER for first channel click.
+		static constexpr auto uTimerFirstClick { 200U }; //Milliseconds for WM_TIMER for first channel click.
 
 		if (GetThumbRect(true).PtInRect(pt)) {
 			m_ptCursorCur = pt;
@@ -510,9 +510,10 @@ bool CScrollEx::CreateArrows(HBITMAP hArrow, bool fVert)
 	pBitmap->GetBitmap(&stBMP); //stBMP.bmBits is nullptr here.
 	const auto nWidth = static_cast<std::size_t>(stBMP.bmWidth);
 	const auto nHeight = static_cast<std::size_t>(stBMP.bmHeight);
-	const auto dwBytesBmp = stBMP.bmWidthBytes * stBMP.bmHeight;
 	const auto dwPixels = nWidth * nHeight;
+	const auto dwBytesBmp = stBMP.bmWidthBytes * stBMP.bmHeight;
 	const auto pPixelsOrig = std::make_unique<COLORREF[]>(dwPixels);
+	m_iArrowRCSizePx = stBMP.bmWidth;
 	pBitmap->GetBitmapBits(dwBytesBmp, pPixelsOrig.get());
 
 	const auto lmbTranspose = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
@@ -586,14 +587,13 @@ void CScrollEx::DrawScrollBar()const
 
 void CScrollEx::DrawArrows(CDC* pDC)const
 {
-	constexpr auto iArrowRCSizePx { 34 }; //Arrow bitmap size in pixels.
 	const auto rcScroll = GetScrollRect();
+	const auto iFirstBtnOffsetDrawX = rcScroll.left;
+	const auto iFirstBtnOffsetDrawY = rcScroll.top;
 	int iFirstBtnWH;
 	int iLastBtnWH;
 	int iLastBtnOffsetDrawX;
 	int iLastBtnOffsetDrawY;
-	const auto iFirstBtnOffsetDrawX = rcScroll.left;
-	const auto iFirstBtnOffsetDrawY = rcScroll.top;
 
 	if (IsVert()) {
 		iFirstBtnWH = iLastBtnWH = rcScroll.Width();
@@ -617,10 +617,10 @@ void CScrollEx::DrawArrows(CDC* pDC)const
 	dcSource.CreateCompatibleDC(pDC);
 	dcSource.SelectObject(m_bmpArrowFirst);	//First arrow button.
 	pDC->StretchBlt(iFirstBtnOffsetDrawX, iFirstBtnOffsetDrawY, iFirstBtnWH, iFirstBtnWH,
-		&dcSource, 0, 0, iArrowRCSizePx, iArrowRCSizePx, SRCCOPY);
+		&dcSource, 0, 0, m_iArrowRCSizePx, m_iArrowRCSizePx, SRCCOPY);
 	dcSource.SelectObject(m_bmpArrowLast); //Last arrow button.
 	pDC->StretchBlt(iLastBtnOffsetDrawX, iLastBtnOffsetDrawY, iLastBtnWH, iLastBtnWH,
-		&dcSource, 0, 0, iArrowRCSizePx, iArrowRCSizePx, SRCCOPY);
+		&dcSource, 0, 0, m_iArrowRCSizePx, m_iArrowRCSizePx, SRCCOPY);
 }
 
 void CScrollEx::DrawThumb(CDC* pDC)const
@@ -734,7 +734,7 @@ CRect CScrollEx::GetThumbRect(bool fClientCoord)const
 
 UINT CScrollEx::GetThumbSizeWH()const
 {
-	constexpr auto uThumbSizeMin = 15U; //Minimum allowed thumb size.
+	static constexpr auto uThumbSizeMin = 15U; //Minimum allowed thumb size.
 	const auto uiScrollWorkAreaSizeWH = GetScrollWorkAreaSizeWH();
 	const auto rcParent = GetParentRect();
 	const long double dDelta { IsVert() ? static_cast<long double>(rcParent.Height()) / m_ullScrollSizeMax :
@@ -932,7 +932,7 @@ void CScrollEx::SendParentScrollMsg()const
 
 void CScrollEx::OnTimer(UINT_PTR nIDEvent)
 {
-	constexpr auto uTimerRepeat { 50U }; //Milliseconds for repeat when click and hold on channel.
+	static constexpr auto uTimerRepeat { 50U }; //Milliseconds for repeat when click and hold on channel.
 
 	switch (nIDEvent) {
 	case (static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK)):

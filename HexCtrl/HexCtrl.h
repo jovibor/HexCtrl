@@ -168,8 +168,8 @@ namespace HEXCTRL
 		virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
 		virtual auto LoadTemplate(const wchar_t* pFilePath) -> int = 0; //Returns loaded template ID on success, zero otherwise.
 		virtual void ShowTooltips(bool fShow) = 0;
-		virtual void UnloadAll() = 0;                           //Unload all templates.
-		virtual void UnloadTemplate(int iTemplateID) = 0;       //Unload/remove loaded template from memory.
+		virtual void UnloadAll() = 0;                     //Unload all templates.
+		virtual void UnloadTemplate(int iTemplateID) = 0; //Unload/remove loaded template from memory.
 	};
 
 	/********************************************************************************************

@@ -88,6 +88,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		EState m_enState { };              //Current state.
 		CPoint m_ptCursorCur { };          //Cursor's current position.
 		UINT m_uiScrollBarSizeWH { };      //Scrollbar size (width if vertical, height if horz).
+		int m_iArrowRCSizePx { };          //Arrow bitmap side size (it's a square) in pixels.
 		ULONGLONG m_ullScrollPosCur { 0 }; //Current scroll position.
 		ULONGLONG m_ullScrollPosPrev { };  //Previous scroll position.
 		ULONGLONG m_ullScrollLine { };     //Size of one line scroll, when clicking arrow.

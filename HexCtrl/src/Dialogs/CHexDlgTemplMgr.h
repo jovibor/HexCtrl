@@ -90,26 +90,34 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD; //Template hittest by offset.
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsTooltips()const;
+		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
 		void UpdateData();
 		auto SetDlgData(std::uint64_t ullData) -> HWND;
+		void ShowTooltips(bool fShow)override;
 		BOOL ShowWindow(int nCmdShow);
 		void UnloadAll()override;
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
-		BOOL OnInitDialog()override;
+		void EnableDynamicLayoutHelper(bool fEnable);
+		auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PHEXTEMPLATEAPPLIED;
+		[[nodiscard]] bool IsHglSel()const;
+		[[nodiscard]] bool IsMinimized()const;
+		[[nodiscard]] bool IsShowAsHex()const;
+		[[nodiscard]] bool IsSwapEndian()const;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		afx_msg void OnBnLoadTemplate();
 		afx_msg void OnBnUnloadTemplate();
 		afx_msg void OnBnRandomizeColors();
 		afx_msg void OnBnApply();
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
+		afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		afx_msg void OnCheckHex();
 		afx_msg void OnCheckHglSel();
 		afx_msg void OnCheckSwapEndian();
 		afx_msg void OnCheckShowTt();
 		afx_msg void OnCheckMinMax();
 		afx_msg void OnDestroy();
+		BOOL OnInitDialog()override;
 		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
@@ -119,30 +127,17 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListDblClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListEnterPressed(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 		void OnOK()override;
 		void OnTemplateLoadUnload(int iTemplateID, bool fLoad);
 		afx_msg void OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnTreeRClick(NMHDR* pNMHDR, LRESULT* pResult);
-		void ShowListDataBool(LPWSTR pwsz, unsigned char uchData)const;
-		void ShowListDataChar(LPWSTR pwsz, char chData)const;
-		void ShowListDataUChar(LPWSTR pwsz, unsigned char uchData)const;
-		void ShowListDataShort(LPWSTR pwsz, short shortData, bool fShouldSwap)const;
-		void ShowListDataUShort(LPWSTR pwsz, unsigned short wData, bool fShouldSwap)const;
-		void ShowListDataInt(LPWSTR pwsz, int intData, bool fShouldSwap)const;
-		void ShowListDataUInt(LPWSTR pwsz, unsigned int dwData, bool fShouldSwap)const;
-		void ShowListDataLL(LPWSTR pwsz, long long llData, bool fShouldSwap)const;
-		void ShowListDataULL(LPWSTR pwsz, unsigned long long ullData, bool fShouldSwap)const;
-		void ShowListDataFloat(LPWSTR pwsz, float flData, bool fShouldSwap)const;
-		void ShowListDataDouble(LPWSTR pwsz, double dblData, bool fShouldSwap)const;
-		void ShowListDataTime32(LPWSTR pwsz, __time32_t lTime32, bool fShouldSwap)const;
-		void ShowListDataTime64(LPWSTR pwsz, __time64_t llTime64, bool fShouldSwap)const;
-		void ShowListDataFILETIME(LPWSTR pwsz, FILETIME stFTime, bool fShouldSwap)const;
-		void ShowListDataSYSTEMTIME(LPWSTR pwsz, SYSTEMTIME stSTime, bool fShouldSwap)const;
-		void ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwap)const;
+		void RandomizeTemplateColors(int iTemplateID);
+		void RemoveNodesWithTemplateID(int iTemplateID);
+		void RemoveNodeWithAppliedID(int iAppliedID);
 		[[nodiscard]] bool SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset)const;
 		[[nodiscard]] bool SetDataChar(LPCWSTR pwszText, ULONGLONG ullOffset)const;
 		[[nodiscard]] bool SetDataUChar(LPCWSTR pwszText, ULONGLONG ullOffset)const;
@@ -159,26 +154,32 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool SetDataFILETIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
 		[[nodiscard]] bool SetDataSYSTEMTIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
 		[[nodiscard]] bool SetDataGUID(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
-		void EnableDynamicLayoutHelper(bool fEnable);
-		auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PHEXTEMPLATEAPPLIED;
-		[[nodiscard]] bool IsHglSel()const;
-		[[nodiscard]] bool IsMinimized()const;
-		[[nodiscard]] bool IsShowAsHex()const;
-		[[nodiscard]] bool IsSwapEndian()const;
-		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
-		void RandomizeTemplateColors(int iTemplateID);
-		void RemoveNodesWithTemplateID(int iTemplateID);
-		void RemoveNodeWithAppliedID(int iAppliedID);
 		void SetDlgButtonsState(); //Enable/disable button states depending on templates existence.
 		void SetHexSelByField(PCHEXTEMPLATEFIELD pField);
-		void ShowTooltips(bool fShow)override;
+		void ShowListDataBool(LPWSTR pwsz, unsigned char uchData)const;
+		void ShowListDataChar(LPWSTR pwsz, char chData)const;
+		void ShowListDataUChar(LPWSTR pwsz, unsigned char uchData)const;
+		void ShowListDataShort(LPWSTR pwsz, short shortData, bool fShouldSwap)const;
+		void ShowListDataUShort(LPWSTR pwsz, unsigned short wData, bool fShouldSwap)const;
+		void ShowListDataInt(LPWSTR pwsz, int intData, bool fShouldSwap)const;
+		void ShowListDataUInt(LPWSTR pwsz, unsigned int dwData, bool fShouldSwap)const;
+		void ShowListDataLL(LPWSTR pwsz, long long llData, bool fShouldSwap)const;
+		void ShowListDataULL(LPWSTR pwsz, unsigned long long ullData, bool fShouldSwap)const;
+		void ShowListDataFloat(LPWSTR pwsz, float flData, bool fShouldSwap)const;
+		void ShowListDataDouble(LPWSTR pwsz, double dblData, bool fShouldSwap)const;
+		void ShowListDataTime32(LPWSTR pwsz, __time32_t lTime32, bool fShouldSwap)const;
+		void ShowListDataTime64(LPWSTR pwsz, __time64_t llTime64, bool fShouldSwap)const;
+		void ShowListDataFILETIME(LPWSTR pwsz, FILETIME stFTime, bool fShouldSwap)const;
+		void ShowListDataSYSTEMTIME(LPWSTR pwsz, SYSTEMTIME stSTime, bool fShouldSwap)const;
+		void ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwap)const;
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
 		void UnloadTemplate(int iTemplateID)override; //Unload/remove loaded template from memory.
 		void UpdateStaticText();
-		[[nodiscard]] bool JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& vecFields,
-			const FIELDSDEFPROPS& stDefault, UmapCustomTypes& umapCustomT, int* pOffset = nullptr)const;
-		[[nodiscard]] auto JSONEndianness(const rapidjson::Value& value)const->std::optional<bool>;
-		[[nodiscard]] auto JSONColors(const rapidjson::Value& value, const char* pszColorName)const->std::optional<COLORREF>;
+		[[nodiscard]] static bool JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& vecFields,
+				const FIELDSDEFPROPS& stDefault, UmapCustomTypes& umapCustomT, int* pOffset = nullptr);
+		[[nodiscard]] static auto JSONEndianness(const rapidjson::Value& value) -> std::optional<bool>;
+		[[nodiscard]] static auto JSONColors(const rapidjson::Value& value, const char* pszColorName) -> std::optional<COLORREF>;
+		[[nodiscard]] static auto LoadFromFile(const wchar_t* pFilePath) -> std::unique_ptr<HEXTEMPLATE>;
 		static LRESULT CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 		DECLARE_MESSAGE_MAP();
