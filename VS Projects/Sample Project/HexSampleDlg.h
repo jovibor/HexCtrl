@@ -11,7 +11,7 @@ public:
 	static std::wstring LnkToPath(LPCWSTR pwszLnk);
 private:
 	void CreateHexPopup();
-	void OnHexGetColor(HEXCOLORINFO& hci)override;
+	bool OnHexGetColor(HEXCOLORINFO& hci)override;
 	BOOL OnInitDialog()override;
 	void DoDataExchange(CDataExchange* pDX)override;
 	afx_msg void OnPaint();

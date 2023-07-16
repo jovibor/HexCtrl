@@ -3158,17 +3158,15 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
-			//Colors.
 			hci.ullOffset = ullStartOffset + sIndexToPrint;
-			hci.pClr = nullptr; //Nullify for the next iteration.
-			if (m_pHexVirtColors->OnHexGetColor(hci); hci.pClr != nullptr) {
+			if (m_pHexVirtColors->OnHexGetColor(hci)) {
 				//If it's different color.
-				if (optColorCurr && (optColorCurr->clrBk != hci.pClr->clrBk || optColorCurr->clrText != hci.pClr->clrText)) {
+				if (optColorCurr && (optColorCurr->clrBk != hci.stClr.clrBk || optColorCurr->clrText != hci.stClr.clrText)) {
 					lmbHexSpaces(iterChunks);
 					lmbPoly();
 					iColorHexPosToPrintX = -1;
 				}
-				optColorCurr = *hci.pClr;
+				optColorCurr = hci.stClr;
 
 				if (iColorHexPosToPrintX == -1) { //For just one time exec.
 					int iCy;

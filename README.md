@@ -755,7 +755,7 @@ Struct for hex chunks' color information.
 struct HEXCOLORINFO {
     NMHDR     hdr { };       //Standard Windows header.
     ULONGLONG ullOffset { }; //Offset for the color.
-    PHEXCOLOR pClr { };      //Pointer to the color struct.
+    HEXCOLOR  stClr { };     //Colors of the given offset.
 };
 ```
 
@@ -978,13 +978,13 @@ public:
 ```cpp
 class IHexVirtColors {
 public:
-    void OnHexGetColor(HEXCOLORINFO&) = 0;
+    virtual bool OnHexGetColor(HEXCOLORINFO&) = 0; //Should return true if colors are set.
 };
 ```
-This interface is used to set custom bk/text colors for the data regions.  
+This interface is used to set custom bk/text colors for data regions.  
 To use this feature set the [`HEXDATA::pHexVirtColors`](#hexdata) member to a valid instance of your class implementing this interface, prior to calling the [`SetData`](#setdata) method.
 
-The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinfo) struct as an argument. The `pClr` member of this struct must point to a valid [`HEXCOLOR`](#hexcolor) struct after method completes, or `nullptr` for default colors.
+The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinfo) struct as an argument and should return `true` if it sets custom colors.
 
 ### [](#)IHexVirtData
 ```cpp

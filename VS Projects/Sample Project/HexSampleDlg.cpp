@@ -210,13 +210,13 @@ BOOL CHexSampleDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	const auto pNMHDR = reinterpret_cast<PHEXMENUINFO>(lParam);
 	if (pNMHDR->hdr.idFrom == IDC_MY_HEX && pNMHDR->hdr.code == HEXCTRL_MSG_CONTEXTMENU) {
-		// pNMHDR->fShow = false; //Ability to disable context menu.
+		// pNMHDR->fShow = false; //Ability to disable HexCtrl context menu.
 	}
 
 	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
-void CHexSampleDlg::OnHexGetColor(HEXCOLORINFO& hci)
+bool CHexSampleDlg::OnHexGetColor(HEXCOLORINFO& hci)
 {
 	//Sample code for custom colors:
 	if (hci.ullOffset < 18) {
@@ -241,8 +241,11 @@ void CHexSampleDlg::OnHexGetColor(HEXCOLORINFO& hci)
 			{ RGB(0, 250, 0), RGB(255, 255, 255) }
 		};
 
-		hci.pClr = &vec[static_cast<std::size_t>(hci.ullOffset)];
+		hci.stClr = vec[static_cast<std::size_t>(hci.ullOffset)];
+		return true;
 	}
+
+	return false;
 }
 
 void CHexSampleDlg::OnSize(UINT nType, int cx, int cy)

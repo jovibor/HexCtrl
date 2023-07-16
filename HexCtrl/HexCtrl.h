@@ -146,7 +146,7 @@ namespace HEXCTRL
 	struct HEXCOLORINFO {
 		NMHDR     hdr { };       //Standard Windows header.
 		ULONGLONG ullOffset { }; //Offset for the color.
-		PHEXCOLOR pClr { };      //Pointer to the color struct.
+		HEXCOLOR  stClr { };     //Colors of the given offset.
 	};
 
 	/********************************************************************************************
@@ -154,7 +154,7 @@ namespace HEXCTRL
 	********************************************************************************************/
 	class IHexVirtColors {
 	public:
-		virtual void OnHexGetColor(HEXCOLORINFO&) = 0;
+		virtual bool OnHexGetColor(HEXCOLORINFO&) = 0; //Should return true if colors are set.
 	};
 
 	/********************************************************************************************
