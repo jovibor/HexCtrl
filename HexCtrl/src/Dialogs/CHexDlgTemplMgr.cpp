@@ -40,10 +40,10 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX, &CHexDlgTemplMgr::OnCheckMinMax)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListItemChanged)
-	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetColor)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_EDITBEGIN, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListEditBegin)
-	ON_NOTIFY(LISTEX::LISTEX_MSG_DATACHANGED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListDataChanged)
+	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetColor)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_HDRRBTNUP, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListHdrRClick)
+	ON_NOTIFY(LISTEX::LISTEX_MSG_SETDATA, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListSetData)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListRClick)
 	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListDblClick)
 	ON_NOTIFY(NM_RETURN, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListEnterPressed)
@@ -701,6 +701,72 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	return TRUE;
 }
 
+void CHexDlgTemplMgr::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	if (m_fCurInSplitter) {
+		m_fLMDownResize = true;
+		SetCapture();
+		EnableDynamicLayoutHelper(false);
+	}
+
+	CDialogEx::OnLButtonDown(nFlags, point);
+}
+
+void CHexDlgTemplMgr::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	m_fLMDownResize = false;
+	ReleaseCapture();
+	EnableDynamicLayoutHelper(true);
+
+	CDialogEx::OnLButtonUp(nFlags, point);
+}
+
+void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+{
+	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	const auto iItem = pNMI->iItem;
+	if (iItem < 0)
+		return;
+
+	const auto& refVec = *m_pVecFieldsCurr;
+	if (refVec[iItem]->vecNested.empty())
+		return;
+
+	m_fListGuardEvent = true; //To prevent nasty OnListItemChanged to fire after this method ends.
+	m_pVecFieldsCurr = &refVec[iItem]->vecNested;
+
+	const auto hItem = TreeItemFromListItem(iItem);
+	m_hTreeCurrParent = hItem;
+	m_stTreeApplied.Expand(hItem, TVE_EXPAND);
+
+	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
+	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()));
+	m_pListApplied->RedrawWindow();
+	m_fListGuardEvent = false;
+}
+
+void CHexDlgTemplMgr::OnListEditBegin(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+{
+	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
+	const auto& pField = (*m_pVecFieldsCurr)[pLDI->iItem];
+
+	if (!pField->vecNested.empty() || (pField->eType == EFieldType::custom_size
+		&& pField->iSize != 1 && pField->iSize != 2 && pField->iSize != 4 && pField->iSize != 8)) {
+		pLDI->fAllowEdit = false; //Do not show edit-box if clicked on nested fields.
+	}
+}
+
+void CHexDlgTemplMgr::OnListEnterPressed(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
+{
+	const auto uSelected = m_pListApplied->GetSelectedCount();
+	if (uSelected != 1)
+		return;
+
+	//Simulate DblClick in List with Enter key.
+	NMITEMACTIVATE nmii { .iItem = m_pListApplied->GetSelectionMark() };
+	OnListDblClick(&nmii.hdr, nullptr);
+}
+
 void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
@@ -865,52 +931,61 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	static constexpr auto clrTextBluish { RGB(16, 42, 255) };  //Bluish text.
 	static constexpr auto clrTextGreenish { RGB(0, 110, 0) };  //Green text.
 	static constexpr auto clrBkGreyish { RGB(235, 235, 235) }; //Grayish bk.
 
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto& pField = (*m_pVecFieldsCurr)[pNMI->iItem];
+	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
+	const auto& pField = (*m_pVecFieldsCurr)[pLCI->iItem];
 	const auto eType = pField->eType;
 	using enum EFieldType;
 
-	m_stCellClr.clrText = static_cast<COLORREF>(-1); //Default text color.
+	pLCI->stClr.clrText = static_cast<COLORREF>(-1); //Default text color.
 
-	//List items with nested structs color separately with greyish bk.
-	if (!pField->vecNested.empty() && pNMI->iSubItem != m_iIDListApplFieldClrs) {
-		m_stCellClr.clrBk = clrBkGreyish;
-		if (pNMI->iSubItem == m_iIDListApplFieldType) {
+	//List items with nested structs colored separately with greyish bk.
+	if (!pField->vecNested.empty() && pLCI->iSubItem != m_iIDListApplFieldClrs) {
+		pLCI->stClr.clrBk = clrBkGreyish;
+		if (pLCI->iSubItem == m_iIDListApplFieldType) {
 			if (eType == type_custom) {
 				if (pField->uTypeID > 0) {
-					m_stCellClr.clrText = clrTextGreenish;
+					pLCI->stClr.clrText = clrTextGreenish;
 				}
 			}
 			else if (eType != custom_size) {
-				m_stCellClr.clrText = clrTextBluish;
+				pLCI->stClr.clrText = clrTextBluish;
 			}
 		}
-		pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
+		*pResult = TRUE;
+
 		return;
 	}
 
-	switch (pNMI->iSubItem) {
+	switch (pLCI->iSubItem) {
 	case m_iIDListApplFieldType:
 		if (eType != type_custom && eType != custom_size) {
-			m_stCellClr.clrText = clrTextBluish;
-			m_stCellClr.clrBk = static_cast<COLORREF>(-1); //Default bk color.
-			pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
+			pLCI->stClr.clrText = clrTextBluish;
+			pLCI->stClr.clrBk = static_cast<COLORREF>(-1); //Default bk color.
+			*pResult = TRUE;
+			return;
 		}
 		break;
 	case m_iIDListApplFieldClrs:
-		m_stCellClr.clrBk = pField->clrBk;
-		m_stCellClr.clrText = pField->clrText;
-		pNMI->lParam = reinterpret_cast<LPARAM>(&m_stCellClr);
-		break;
+		pLCI->stClr.clrBk = pField->clrBk;
+		pLCI->stClr.clrText = pField->clrText;
+		*pResult = TRUE;
+		return;
 	default:
 		break;
 	}
+}
+
+void CHexDlgTemplMgr::OnListHdrRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
+{
+	CPoint pt;
+	GetCursorPos(&pt);
+	m_stMenuHdr.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, pt.x, pt.y, this);
 }
 
 void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
@@ -923,24 +998,17 @@ void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	m_stTreeApplied.SelectItem(TreeItemFromListItem(iItem));
 }
 
-void CHexDlgTemplMgr::OnListEditBegin(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 {
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto& pField = (*m_pVecFieldsCurr)[pNMI->iItem];
-
-	if (!pField->vecNested.empty() || (pField->eType == EFieldType::custom_size
-		&& pField->iSize != 1 && pField->iSize != 2 && pField->iSize != 4 && pField->iSize != 8)) {
-		pNMI->lParam = 0; //Do not show edit-box if clicked on nested fields.
-	}
 }
 
-void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgTemplMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto pwszText = reinterpret_cast<LPCWSTR>(pNMI->lParam); //lParam holds wchar_t* to a new text from list's subitem.
-	const auto& pField = (*m_pVecFieldsCurr)[pNMI->iItem];
+	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
+	const auto pwszText = pLDI->pwszData;
+	const auto& pField = (*m_pVecFieldsCurr)[pLDI->iItem];
 
-	if (pNMI->iSubItem == m_iIDListApplFieldData) { //Data.
+	if (pLDI->iSubItem == m_iIDListApplFieldData) { //Data.
 		if (!m_pHexCtrl->IsDataSet()) {
 			return;
 		}
@@ -1036,77 +1104,11 @@ void CHexDlgTemplMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			return;
 		}
 	}
-	else if (pNMI->iSubItem == m_iIDListApplFieldDescr) { //Description.
+	else if (pLDI->iSubItem == m_iIDListApplFieldDescr) { //Description.
 		pField->wstrDescr = pwszText;
 	}
 
 	m_pHexCtrl->Redraw();
-}
-
-void CHexDlgTemplMgr::OnListHdrRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
-{
-	CPoint pt;
-	GetCursorPos(&pt);
-	m_stMenuHdr.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, pt.x, pt.y, this);
-}
-
-void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
-{
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto iItem = pNMI->iItem;
-	if (iItem < 0)
-		return;
-
-	const auto& refVec = *m_pVecFieldsCurr;
-	if (refVec[iItem]->vecNested.empty())
-		return;
-
-	m_fListGuardEvent = true; //To prevent nasty OnListItemChanged to fire after this method ends.
-	m_pVecFieldsCurr = &refVec[iItem]->vecNested;
-
-	const auto hItem = TreeItemFromListItem(iItem);
-	m_hTreeCurrParent = hItem;
-	m_stTreeApplied.Expand(hItem, TVE_EXPAND);
-
-	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
-	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()));
-	m_pListApplied->RedrawWindow();
-	m_fListGuardEvent = false;
-}
-
-void CHexDlgTemplMgr::OnListEnterPressed(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
-{
-	const auto uSelected = m_pListApplied->GetSelectedCount();
-	if (uSelected != 1)
-		return;
-
-	//Simulate DblClick in List with Enter key.
-	NMITEMACTIVATE nmii { .iItem = m_pListApplied->GetSelectionMark() };
-	OnListDblClick(&nmii.hdr, nullptr);
-}
-
-void CHexDlgTemplMgr::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
-{
-}
-
-void CHexDlgTemplMgr::OnLButtonDown(UINT nFlags, CPoint point)
-{
-	if (m_fCurInSplitter) {
-		m_fLMDownResize = true;
-		SetCapture();
-		EnableDynamicLayoutHelper(false);
-	}
-
-	CDialogEx::OnLButtonDown(nFlags, point);
-}
-
-void CHexDlgTemplMgr::OnLButtonUp(UINT nFlags, CPoint point)
-{
-	m_fLMDownResize = false;
-	ReleaseCapture();
-	EnableDynamicLayoutHelper(true);
-
-	CDialogEx::OnLButtonUp(nFlags, point);
 }
 
 void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)

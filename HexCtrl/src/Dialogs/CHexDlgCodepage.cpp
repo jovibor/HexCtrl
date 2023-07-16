@@ -165,12 +165,13 @@ void CHexDlgCodepage::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgCodepage::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgCodepage::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-		m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].uMaxChars > 1) {
-		static const LISTEX::LISTEXCOLOR stClr { RGB(200, 80, 80), RGB(255, 255, 255) };
-		pNMI->lParam = reinterpret_cast<LPARAM>(&stClr);
+	if (const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
+		m_vecCodePage[static_cast<std::size_t>(pLCI->iItem)].uMaxChars > 1) {
+		pLCI->stClr = { RGB(200, 80, 80), RGB(255, 255, 255) };
+		*pResult = TRUE;
+		return;
 	}
 }
 

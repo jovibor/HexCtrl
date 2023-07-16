@@ -118,17 +118,17 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnCheckMinMax();
 		afx_msg void OnDestroy();
 		BOOL OnInitDialog()override;
-		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListEditBegin(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListDataChanged(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListHdrRClick(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListDblClick(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListEnterPressed(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+		afx_msg void OnListDblClick(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListEditBegin(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListEnterPressed(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListHdrRClick(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListSetData(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 		void OnOK()override;
 		void OnTemplateLoadUnload(int iTemplateID, bool fLoad);
@@ -203,7 +203,6 @@ namespace HEXCTRL::INTERNAL
 		CWnd m_wndStaticSize;        //Static text Template size:".
 		HBITMAP m_hBITMAPMinMax { }; //Bitmap for the min-max checkbox.
 		LISTEX::IListExPtr m_pListApplied { LISTEX::CreateListEx() };
-		LISTEX::LISTEXCOLOR m_stCellClr { };
 		CTreeCtrl m_stTreeApplied;
 		CMenu m_stMenuTree;           //Menu for the tree control.
 		CMenu m_stMenuHdr;            //Menu for the list header.

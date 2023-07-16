@@ -48,7 +48,7 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnListDblClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListDataChanged(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnListSetData(NMHDR* pNMHDR, LRESULT* pResult);
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
 		void OnOK()override;
 		void RemoveBookmark(std::uint64_t ullID);

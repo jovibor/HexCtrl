@@ -30,7 +30,7 @@ BEGIN_MESSAGE_MAP(CHexDlgBkmMgr, CDialogEx)
 	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListDblClick)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListRClick)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListGetColor)
-	ON_NOTIFY(LISTEX::LISTEX_MSG_DATACHANGED, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListDataChanged)
+	ON_NOTIFY(LISTEX::LISTEX_MSG_SETDATA, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListSetData)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -487,7 +487,7 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 void CHexDlgBkmMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	//Go selected bookmark only with keyboard arrows and LMouse clicks.
-	//Does not trigger (LVN_ITEMCHANGED event) when updating bookmark: !(pNMI->uNewState & LVIS_SELECTED)
+	//Does not trigger (LVN_ITEMCHANGED event) when updating bookmark: !(pLCI->uNewState & LVIS_SELECTED)
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem >= 0 && pNMI->iSubItem >= 0 && (pNMI->uNewState & LVIS_SELECTED)) {
 		GoBookmark(static_cast<ULONGLONG>(pNMI->iItem));
@@ -545,22 +545,23 @@ void CHexDlgBkmMgr::OnListRClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	m_stMenuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
 }
 
-void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	static LISTEX::LISTEXCOLOR stClrCell { };
+	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
 
-	switch (pNMI->iSubItem) {
+	switch (pLCI->iSubItem) {
 	case 4: //Bk color.
-		if (const auto* const pBkm = GetByIndex(static_cast<std::size_t>(pNMI->iItem)); pBkm != nullptr) {
-			stClrCell.clrBk = pBkm->clrBk;
-			pNMI->lParam = reinterpret_cast<LPARAM>(&stClrCell);
+		if (const auto* const pBkm = GetByIndex(static_cast<std::size_t>(pLCI->iItem)); pBkm != nullptr) {
+			pLCI->stClr.clrBk = pBkm->clrBk;
+			*pResult = TRUE;
+			return;
 		}
 		break;
 	case 5: //Text color.
-		if (const auto* const pBkm = GetByIndex(static_cast<std::size_t>(pNMI->iItem)); pBkm != nullptr) {
-			stClrCell.clrBk = pBkm->clrText;
-			pNMI->lParam = reinterpret_cast<LPARAM>(&stClrCell);
+		if (const auto* const pBkm = GetByIndex(static_cast<std::size_t>(pLCI->iItem)); pBkm != nullptr) {
+			pLCI->stClr.clrBk = pBkm->clrText;
+			*pResult = TRUE;
+			return;
 		}
 		break;
 	default:
@@ -568,18 +569,18 @@ void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgBkmMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgBkmMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	const auto pBkm = GetByIndex(static_cast<std::size_t>(pNMI->iItem));
+	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
+	const auto pBkm = GetByIndex(static_cast<std::size_t>(pLDI->iItem));
 	if (pBkm == nullptr) {
 		return;
 	}
 
-	switch (pNMI->iSubItem) {
+	switch (pLDI->iSubItem) {
 	case 1: //Offset.
 	{
-		const auto optOffset = stn::StrToULL(reinterpret_cast<LPCWSTR>(pNMI->lParam));
+		const auto optOffset = stn::StrToULL(pLDI->pwszData);
 		if (!optOffset) {
 			MessageBoxW(L"Invalid offset format.", L"Format error", MB_ICONERROR);
 			return;
@@ -596,7 +597,7 @@ void CHexDlgBkmMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	break;
 	case 2: //Size.
 	{
-		const auto optSize = stn::StrToULL(reinterpret_cast<LPCWSTR>(pNMI->lParam));
+		const auto optSize = stn::StrToULL(pLDI->pwszData);
 		if (!optSize) {
 			MessageBoxW(L"Invalid size format.", L"Format error", MB_ICONERROR);
 			return;
@@ -617,7 +618,7 @@ void CHexDlgBkmMgr::OnListDataChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 	break;
 	case 3: //Description.
-		pBkm->wstrDesc = reinterpret_cast<LPCWSTR>(pNMI->lParam);
+		pBkm->wstrDesc = pLDI->pwszData;
 		break;
 	default:
 		return;
