@@ -50,6 +50,9 @@ namespace HEXCTRL::LISTEX
 	};
 	using PLISTEXDATAINFO = LISTEXDATAINFO*;
 
+	/****************************************************************
+	* LISTEXICONINFO - struct for the LISTEX_MSG_GETICON message.   *
+	****************************************************************/
 	struct LISTEXICONINFO {
 		NMHDR hdr { };
 		int   iItem { };
@@ -57,6 +60,34 @@ namespace HEXCTRL::LISTEX
 		int   iIconIndex { -1 }; //Icon index in the list internal image-list.
 	};
 	using PLISTEXICONINFO = LISTEXICONINFO*;
+
+	/****************************************************************
+	* LISTEXTTINFO - struct for the LISTEX_MSG_GETTOOLTIP message.  *
+	****************************************************************/
+	//Tooltips data.
+	struct LISTEXTTDATA {
+		LPCWSTR pwszText { };    //Tooltip text.
+		LPCWSTR pwszCaption { }; //Tooltip caption.
+	};
+	struct LISTEXTTINFO {
+		NMHDR        hdr { };
+		int          iItem { };
+		int          iSubItem { };
+		LISTEXTTDATA stData { };
+	};
+	using PLISTEXTTINFO = LISTEXTTINFO*;
+
+	/****************************************************************
+	* LISTEXLINKINFO - struct for the LISTEX_MSG_LINKCLICK message. *
+	****************************************************************/
+	struct LISTEXLINKINFO {
+		NMHDR   hdr { };
+		int     iItem { };
+		int     iSubItem { };
+		POINT   ptClick { };  //A point where the link was clicked.
+		LPCWSTR pwszText { }; //Link text.
+	};
+	using PLISTEXLINKINFO = LISTEXLINKINFO*;
 
 	/**********************************************************************************
 	* LISTEXCOLORS - All ListEx colors.                                               *
@@ -101,15 +132,6 @@ namespace HEXCTRL::LISTEX
 		bool         fTooltipBaloon { true }; //Baloon type tooltip for cells.
 		bool         fHighLatency { false };  //Do not redraw window until scrolling completes.
 	};
-
-	/********************************************
-	* LISTEXTOOLTIP - tool-tips for the cell.   *
-	********************************************/
-	struct LISTEXTOOLTIP {
-		std::wstring wstrText;
-		std::wstring wstrCaption;
-	};
-	using PLISTEXTOOLTIP = const LISTEXTOOLTIP*;
 
 	/********************************************
 	* LISTEXHDRICON - Icon for header column.   *

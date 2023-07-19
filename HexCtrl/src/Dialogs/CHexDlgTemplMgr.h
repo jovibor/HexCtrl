@@ -25,7 +25,7 @@ namespace HEXCTRL::INTERNAL
 	using IterJSONMember = rapidjson::Value::ConstMemberIterator;
 	using UmapCustomTypes = std::unordered_map<std::uint8_t, VecFields>;
 
-	enum class EFieldType : std::uint8_t {
+	enum class EHexFieldType : std::uint8_t {
 		custom_size, type_custom,
 		type_bool, type_char, type_uchar, type_short, type_ushort, type_int,
 		type_uint, type_ll, type_ull, type_float, type_double, type_time32,
@@ -48,7 +48,7 @@ namespace HEXCTRL::INTERNAL
 		VecFields         vecNested { };    //Vector for nested fields.
 		PHEXTEMPLATEFIELD pFieldParent { }; //Parent field, in case of nested.
 		PHEXTEMPLATE      pTemplate { };    //Template pointer, this field belongs to.
-		EFieldType        eType { };        //Field type.
+		EHexFieldType     eType { };        //Field type.
 		std::uint8_t      uTypeID { };      //Type ID for custom types.
 		bool              fBigEndian { };   //Field endianness.
 	};
@@ -67,14 +67,6 @@ namespace HEXCTRL::INTERNAL
 		int          iAppliedID; //Applied/runtime ID, assigned by framework. Any template can be applied more than once.
 	};
 	using PHEXTEMPLATEAPPLIED = HEXTEMPLATEAPPLIED*;
-
-	struct FIELDSDEFPROPS { //Helper struct for convenient argument passing through recursive fields' parsing.
-		COLORREF          clrBk { };
-		COLORREF          clrText { };
-		PHEXTEMPLATE      pTemplate { }; //Same for all fields.
-		PHEXTEMPLATEFIELD pFieldParent { };
-		bool              fBigEndian { false };
-	};
 
 	class CHexDlgTemplMgr : public CDialogEx, public IHexTemplates {
 	public:
@@ -97,6 +89,7 @@ namespace HEXCTRL::INTERNAL
 		BOOL ShowWindow(int nCmdShow);
 		void UnloadAll()override;
 	private:
+		struct FIELDSDEFPROPS; //Forward declaration.
 		void DoDataExchange(CDataExchange* pDX)override;
 		void EnableDynamicLayoutHelper(bool fEnable);
 		auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PHEXTEMPLATEAPPLIED;
@@ -201,7 +194,8 @@ namespace HEXCTRL::INTERNAL
 		CButton m_btnSwapEndian;     //Check-box "Swap endian".
 		CWnd m_wndStaticOffset;      //Static text "Template offset:".
 		CWnd m_wndStaticSize;        //Static text Template size:".
-		HBITMAP m_hBITMAPMinMax { }; //Bitmap for the min-max checkbox.
+		HBITMAP m_hBITMAPMin { };    //Bitmap for the min checkbox.
+		HBITMAP m_hBITMAPMax { };    //Bitmap for the max checkbox.
 		LISTEX::IListExPtr m_pListApplied { LISTEX::CreateListEx() };
 		CTreeCtrl m_stTreeApplied;
 		CMenu m_stMenuTree;           //Menu for the tree control.

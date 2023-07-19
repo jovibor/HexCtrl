@@ -26,6 +26,14 @@ namespace HEXCTRL::INTERNAL
 		IDM_LISTAPPLIED_HDR_TYPE = 0x8100, IDM_LISTAPPLIED_HDR_NAME, IDM_LISTAPPLIED_HDR_OFFSET,
 		IDM_LISTAPPLIED_HDR_SIZE, IDM_LISTAPPLIED_HDR_DATA, IDM_LISTAPPLIED_HDR_ENDIANNESS, IDM_LISTAPPLIED_HDR_COLORS
 	};
+
+	struct CHexDlgTemplMgr::FIELDSDEFPROPS { //Helper struct for convenient argument passing through recursive fields' parsing.
+		COLORREF          clrBk { };
+		COLORREF          clrText { };
+		PHEXTEMPLATE      pTemplate { }; //Same for all fields.
+		PHEXTEMPLATEFIELD pFieldParent { };
+		bool              fBigEndian { false };
+	};
 };
 
 BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
@@ -577,6 +585,8 @@ void CHexDlgTemplMgr::OnCheckMinMax()
 		pWnd->SetWindowPos(nullptr, rcWnd.left, rcWnd.top, rcWnd.Width(), rcWnd.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
 	}
 	EnableDynamicLayoutHelper(true);
+
+	m_btnMinMax.SetBitmap(fMinimize ? m_hBITMAPMax : m_hBITMAPMin); //Set arrow bitmap to the min-max checkbox.
 }
 
 BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
@@ -633,7 +643,8 @@ void CHexDlgTemplMgr::OnDestroy()
 	m_pAppliedCurr = nullptr;
 	m_pVecFieldsCurr = nullptr;
 	m_hTreeCurrParent = nullptr;
-	DeleteObject(m_hBITMAPMinMax);
+	DeleteObject(m_hBITMAPMin);
+	DeleteObject(m_hBITMAPMax);
 }
 
 BOOL CHexDlgTemplMgr::OnInitDialog()
@@ -694,9 +705,27 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 
 	CRect rcWnd;
 	m_btnMinMax.GetWindowRect(rcWnd);
-	m_hBITMAPMinMax = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
-		MAKEINTRESOURCEW(IDB_HEXCTRL_SCROLL_ARROW), IMAGE_BITMAP, rcWnd.Width(), rcWnd.Height(), 0));
-	m_btnMinMax.SetBitmap(m_hBITMAPMinMax); //Set arrow bitmap to the min-max checkbox.
+	m_hBITMAPMin = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
+		MAKEINTRESOURCEW(IDB_HEXCTRL_SCROLL_ARROW), IMAGE_BITMAP, rcWnd.Width(), rcWnd.Width(), 0));
+
+	//Flipping m_hBITMAPMin bits vertically and creating m_hBITMAPMax bitmap.
+	BITMAP stBMP { };
+	GetObjectW(m_hBITMAPMin, sizeof(BITMAP), &stBMP); //stBMP.bmBits is nullptr here.
+	const auto dwWidth = static_cast<DWORD>(stBMP.bmWidth);
+	const auto dwHeight = static_cast<DWORD>(stBMP.bmHeight);
+	const auto dwPixels = dwWidth * dwHeight;
+	const auto dwBytesBmp = stBMP.bmWidthBytes * stBMP.bmHeight;
+	const auto pPixelsOrig = std::make_unique<COLORREF[]>(dwPixels);
+	GetBitmapBits(m_hBITMAPMin, dwBytesBmp, pPixelsOrig.get());
+	for (auto itWidth = 0UL; itWidth < dwWidth; ++itWidth) { //Flip matrix' columns (flip vert).
+		for (auto itHeight = 0UL, itHeightBack = dwHeight - 1; itHeight < itHeightBack; ++itHeight, --itHeightBack) {
+			std::swap(pPixelsOrig[itHeight * dwHeight + itWidth], pPixelsOrig[itHeightBack * dwWidth + itWidth]);
+		}
+	}
+	m_hBITMAPMax = CreateBitmapIndirect(&stBMP);
+	SetBitmapBits(m_hBITMAPMax, dwBytesBmp, pPixelsOrig.get());
+
+	m_btnMinMax.SetBitmap(m_hBITMAPMin); //Set the min arrow bitmap to the min-max checkbox.
 
 	return TRUE;
 }
@@ -750,7 +779,7 @@ void CHexDlgTemplMgr::OnListEditBegin(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
 	const auto& pField = (*m_pVecFieldsCurr)[pLDI->iItem];
 
-	if (!pField->vecNested.empty() || (pField->eType == EFieldType::custom_size
+	if (!pField->vecNested.empty() || (pField->eType == EHexFieldType::custom_size
 		&& pField->iSize != 1 && pField->iSize != 2 && pField->iSize != 4 && pField->iSize != 8)) {
 		pLDI->fAllowEdit = false; //Do not show edit-box if clicked on nested fields.
 	}
@@ -778,10 +807,10 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	const auto& pField = (*m_pVecFieldsCurr)[pItem->iItem];
 	const auto wsvFmt = IsShowAsHex() ? L"0x{:X}" : L"{}";
 	const auto fShouldSwap = pField->fBigEndian == !IsSwapEndian();
-	using enum EFieldType;
+	using enum EHexFieldType;
 
-	//EFieldType converter to actual wstring for the list.
-	static const std::unordered_map<EFieldType, const wchar_t* const> umapETypeToWstr {
+	//EHexFieldType converter to actual wstring for the list.
+	static const std::unordered_map<EHexFieldType, const wchar_t* const> umapETypeToWstr {
 		{ custom_size, L"custom size" }, { type_custom, L"custom type" },
 		{ type_bool, L"bool" }, { type_char, L"char" }, { type_uchar, L"unsigned char" },
 		{ type_short, L"short" }, { type_ushort, L"unsigned short" }, { type_int, L"int" },
@@ -940,7 +969,7 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)
 	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
 	const auto& pField = (*m_pVecFieldsCurr)[pLCI->iItem];
 	const auto eType = pField->eType;
-	using enum EFieldType;
+	using enum EHexFieldType;
 
 	pLCI->stClr.clrText = static_cast<COLORREF>(-1); //Default text color.
 
@@ -1017,7 +1046,7 @@ void CHexDlgTemplMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		const auto fShouldSwap = pField->fBigEndian == !IsSwapEndian();
 
 		bool fSetRet { };
-		using enum EFieldType;
+		using enum EHexFieldType;
 		switch (pField->eType) {
 		case custom_size:
 			fSetRet = true;
@@ -2026,8 +2055,8 @@ void CHexDlgTemplMgr::UpdateStaticText()
 bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& vecFields,
 	const FIELDSDEFPROPS& stDefault, UmapCustomTypes& umapCustomT, int* pOffset)
 {
-	using enum EFieldType;
-	static const std::unordered_map<std::string_view, EFieldType> umapStrToEType { //From JSON string to EFieldType conversion.
+	using enum EHexFieldType;
+	static const std::unordered_map<std::string_view, EHexFieldType> umapStrToEType { //From JSON string to EHexFieldType conversion.
 		{ "bool", type_bool },
 		{ "char", type_char }, { "unsigned char", type_uchar }, { "byte", type_uchar },
 		{ "short", type_short }, { "unsigned short", type_ushort }, { "WORD", type_ushort },
@@ -2036,7 +2065,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 		{ "unsigned long long", type_ull }, { "QWORD", type_ull }, { "float", type_float },
 		{ "double", type_double }, { "time32_t", type_time32 }, { "time64_t", type_time64 },
 		{ "FILETIME", type_filetime }, { "SYSTEMTIME", type_systemtime }, { "GUID", type_guid } };
-	static const std::unordered_map<EFieldType, int> umapTypeToSize { //Types sizes.
+	static const std::unordered_map<EHexFieldType, int> umapTypeToSize { //Types sizes.
 		{ type_bool, static_cast<int>(sizeof(bool)) }, { type_char, static_cast<int>(sizeof(char)) },
 		{ type_uchar, static_cast<int>(sizeof(char)) }, { type_short, static_cast<int>(sizeof(short)) },
 		{ type_ushort, static_cast<int>(sizeof(short)) }, { type_int, static_cast<int>(sizeof(int)) },
@@ -2328,7 +2357,7 @@ auto CHexDlgTemplMgr::LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HE
 				return { }; //Each "Fields" must be an array.
 			}
 
-			umapCT.emplace(uCustomTypeID, VecFields { });
+			umapCT.try_emplace(uCustomTypeID, VecFields { });
 			const FIELDSDEFPROPS stDefTypes { .clrBk { clrBk }, .clrText { clrText },
 				.pTemplate { pTemplate }, .fBigEndian { fBigEndian } };
 			if (!JSONParseFields(iterFieldsArray, umapCT[uCustomTypeID], stDefTypes, umapCT)) {

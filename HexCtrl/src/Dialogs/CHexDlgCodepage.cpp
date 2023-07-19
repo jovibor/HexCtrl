@@ -177,8 +177,8 @@ void CHexDlgCodepage::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CHexDlgCodepage::OnListLinkClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	ShellExecuteW(nullptr, L"open", reinterpret_cast<LPWSTR>(pNMI->lParam), nullptr, nullptr, SW_SHOWNORMAL);
+	const auto* const pLLI = reinterpret_cast<LISTEX::PLISTEXLINKINFO>(pNMHDR);
+	ShellExecuteW(nullptr, L"open", pLLI->pwszText, nullptr, nullptr, SW_SHOWNORMAL);
 }
 
 void CHexDlgCodepage::OnDestroy()

@@ -10,7 +10,6 @@
 namespace HEXCTRL::INTERNAL::SCROLLEX
 {
 	class CScrollEx : public CWnd {
-		enum class EState : std::uint8_t; //Forward declaration.
 	public:
 		void AddSibling(CScrollEx* pSibling);
 		bool Create(CWnd* pParent, bool fVert, UINT uIDArrow, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
@@ -81,6 +80,8 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		DECLARE_MESSAGE_MAP();
 	private:
 		static constexpr auto m_iThumbPosMax { 0x7FFFFFFF };
+		enum class EState : std::uint8_t; //Forward declaration.
+		enum class ETimer : std::uint16_t;
 		CWnd* m_pParent { };               //Parent window.
 		CScrollEx* m_pSibling { };         //Sibling scrollbar, added with AddSibling.
 		CBitmap m_bmpArrowFirst;           //Up or Left arrow bitmap.

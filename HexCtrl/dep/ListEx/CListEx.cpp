@@ -78,131 +78,6 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		bool m_fSortAscending { };  //Sorting type.
 	};
 
-	class CListEx final : public IListEx {
-	public:
-		bool Create(const LISTEXCREATE& lcs)override;
-		void CreateDialogCtrl(UINT uCtrlID, CWnd* pParent)override;
-		BOOL DeleteAllItems()override;
-		BOOL DeleteColumn(int iIndex)override;
-		BOOL DeleteItem(int iItem)override;
-		void Destroy()override;
-		[[nodiscard]] auto GetCellData(int iItem, int iSubItem)const->ULONGLONG override;
-		[[nodiscard]] auto GetColors()const->LISTEXCOLORS override;
-		[[nodiscard]] auto GetColumnSortMode(int iColumn)const->EListExSortMode override;
-		[[nodiscard]] int GetSortColumn()const override;
-		[[nodiscard]] bool GetSortAscending()const override;
-		void HideColumn(int iIndex, bool fHide)override;
-		int InsertColumn(int nCol, const LVCOLUMNW* pColumn, int iDataAlign = LVCFMT_LEFT, bool fEditable = false)override;
-		int InsertColumn(int nCol, LPCWSTR pwszName, int nFormat = LVCFMT_LEFT, int nWidth = -1,
-			int nSubItem = -1, int iDataAlign = LVCFMT_LEFT, bool fEditable = false)override;
-		[[nodiscard]] bool IsCreated()const override;
-		[[nodiscard]] bool IsColumnSortable(int iColumn)override;
-		void ResetSort()override; //Reset all the sort by any column to its default state.
-		void SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clrText)override;
-		void SetCellData(int iItem, int iSubItem, ULONGLONG ullData)override;
-		void SetCellIcon(int iItem, int iSubItem, int iIndex)override; //Icon index in list's image list.
-		void SetCellTooltip(int iItem, int iSubItem, std::wstring_view wsvTooltip, std::wstring_view wsvCaption)override;
-		void SetColors(const LISTEXCOLORS& lcs)override;
-		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
-		void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enSortMode = { })override;
-		void SetFont(const LOGFONTW* pLogFont)override;
-		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1)override;
-		void SetColumnEditable(int iColumn, bool fEditable)override;
-		void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)override; //Icon for a given column.
-		void SetHdrFont(const LOGFONTW* pLogFont)override;
-		void SetHdrHeight(DWORD dwHeight)override;
-		void SetHdrImageList(CImageList* pList)override;
-		void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)override;
-		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode enSortMode)override;
-		static int CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
-		DECLARE_DYNAMIC(CListEx);
-		DECLARE_MESSAGE_MAP();
-	private:
-		struct SCOLROWCLR;
-		struct ITEMDATA;
-		void DrawItem(LPDRAWITEMSTRUCT pDIS)override;
-		[[nodiscard]] long GetFontSize();
-		[[nodiscard]] auto GetHeaderCtrl() -> CListExHdr & override { return m_stListHeader; }
-		void FontSizeIncDec(bool fInc);
-		void InitHeader()override;
-		[[nodiscard]] auto GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEXCOLOR>;
-		[[nodiscard]] auto GetTooltip(int iItem, int iSubItem)const->PLISTEXTOOLTIP;
-		[[nodiscard]] int GetIcon(int iItem, int iSubItem)const; //Does cell have an icon associated.
-		afx_msg void MeasureItem(LPMEASUREITEMSTRUCT lpMIS);
-		afx_msg void OnDestroy();
-		void OnEditInPlaceEnterPressed();
-		afx_msg void OnEditInPlaceKillFocus();
-		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
-		afx_msg void OnHdnBegindrag(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnHdnBegintrack(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-		afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
-		afx_msg void OnLButtonDown(UINT nFlags, CPoint pt);
-		afx_msg void OnLButtonUp(UINT nFlags, CPoint pt);
-		afx_msg void OnLvnColumnClick(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnMouseMove(UINT nFlags, CPoint pt);
-		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
-		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
-		afx_msg void OnPaint();
-		afx_msg void OnTimer(UINT_PTR nIDEvent);
-		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-		auto ParseItemData(int iItem, int iSubitem) -> std::vector<ITEMDATA>;
-		BOOL PreTranslateMessage(MSG* pMsg)override;
-		void RecalcMeasure()const;
-		void SetFontSize(long lSize);
-		void TtLinkHide();
-		void TtCellHide();
-		void TtRowShow(bool fShow, UINT uRow); //Tooltips for HighLatency mode.
-	private:
-		static constexpr ULONG_PTR m_uIDTimerTTCellCheck { 0x01 };    //Cell tool-tip check-timer ID.
-		static constexpr ULONG_PTR m_uIDTimerTTLinkCheck { 0x02 };    //Link tool-tip check-timer ID.
-		static constexpr ULONG_PTR m_uIDTimerTTLinkActivate { 0x03 }; //Link tool-tip activate-timer ID.
-		static constexpr auto m_uIDEditInPlace { 0x01U };             //Inplace edit-box ID.
-		CListExHdr m_stListHeader;
-		LISTEXCOLORS m_stColors { };
-		CFont m_fontList;               //Default list font.
-		CFont m_fontListUnderline;      //Underlined list font, for links.
-		CPen m_penGrid;                 //Pen for list lines between cells.
-		CWnd m_stWndTtCell;             //Cells' tool-tip window.
-		TTTOOLINFOW m_stTInfoCell { };  //Cells' tool-tip info struct.
-		CWnd m_stWndTtLink;             //Link tool-tip window.
-		TTTOOLINFOW m_stTInfoLink { };  //Link's tool-tip info struct.
-		CWnd m_stWndTtRow { };          //Tooltip window for row in m_fHighLatency mode.
-		TTTOOLINFOW m_stToolInfoRow { };//Tooltips struct.
-		std::wstring m_wstrTtText { };  //Link's tool-tip current text.
-		HCURSOR m_cursorHand { };       //Hand cursor handle.
-		HCURSOR m_cursorDefault { };    //Standard (default) cursor handle.
-		LVHITTESTINFO m_stCurrCell { }; //Cell's hit struct for tool-tip.
-		LVHITTESTINFO m_stCurrLink { }; //Cell's link hit struct for tool-tip.
-		LVHITTESTINFO m_htiInPlaceEdit; //Cell's hit struct for in-place editing.
-		CEdit m_stEditInPlace;          //Edit box for in-place cells editing.
-		DWORD m_dwGridWidth { 1 };		//Grid width.
-		int m_iSortColumn { -1 };       //Currently clicked header column.
-		PFNLVCOMPARE m_pfnCompare { };  //Pointer to a user provided compare func.
-		EListExSortMode m_enDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
-		CRect m_rcLinkCurr { };         //Current link's rect;
-		std::unordered_map<UINT, std::unordered_map<int, LISTEXTOOLTIP>> m_umapCellTt { };  //Cell's tooltips.
-		std::unordered_map<UINT, std::unordered_map<int, ULONGLONG>> m_umapCellData { };    //Cell's custom data.
-		std::unordered_map<UINT, std::unordered_map<int, LISTEXCOLOR>> m_umapCellColor { }; //Cell's colors.
-		std::unordered_map<UINT, SCOLROWCLR> m_umapRowColor { };                   //Row colors.
-		std::unordered_map<UINT, std::unordered_map<int, int>> m_umapCellIcon { }; //Cell's icon.
-		std::unordered_map<int, SCOLROWCLR> m_umapColumnColor { };                 //Column colors.
-		std::unordered_map<int, EListExSortMode> m_umapColumnSortMode { };         //Column sorting mode.
-		UINT m_uHLItem { };            //High latency Vscroll item.
-		int m_iLOGPIXELSY { };         //GetDeviceCaps(LOGPIXELSY) constant.
-		bool m_fCreated { false };     //Is created.
-		bool m_fHighLatency { };       //High latency flag.
-		bool m_fSortable { false };    //Is list sortable.
-		bool m_fSortAscending { };     //Sorting type (ascending, descending).
-		bool m_fLinksUnderline { };    //Links are displayed underlined or not.
-		bool m_fLinkTooltip { };       //Show links toolips.
-		bool m_fVirtual { false };     //Whether list is virtual (LVS_OWNERDATA) or not.
-		bool m_fTtCellShown { false }; //Is cell's tool-tip shown atm.
-		bool m_fTtLinkShown { false }; //Is link's tool-tip shown atm.
-		bool m_fLDownAtLink { false }; //Left mouse down on link.
-		bool m_fHLFlag { };            //High latency Vscroll flag.
-	};
-
 	//Header column colors.
 	struct CListExHdr::SHDRCOLOR {
 		COLORREF clrBk { };   //Background color.
@@ -220,34 +95,6 @@ namespace HEXCTRL::LISTEX::INTERNAL
 		int iPrevPos { };
 		int iPrevWidth { };
 	};
-
-	//Colors for the row/column.
-	struct CListEx::SCOLROWCLR {
-		LISTEXCOLOR clr { }; //Colors
-		std::chrono::high_resolution_clock::time_point time { }; //Time when added.
-	};
-
-	//Text and links in the cell.
-	struct CListEx::ITEMDATA {
-		ITEMDATA(int iIconIndex, CRect rect) : rect(rect), iIconIndex(iIconIndex) {}; //Ctor for just image index.
-		ITEMDATA(std::wstring_view wsvText, std::wstring_view wsvLink, std::wstring_view wsvTitle,
-			CRect rect, bool fLink = false, bool fTitle = false) :
-			wstrText(wsvText), wstrLink(wsvLink), wstrTitle(wsvTitle), rect(rect), fLink(fLink), fTitle(fTitle) {}
-		std::wstring wstrText { };  //Visible text.
-		std::wstring wstrLink { };  //Text within link <link="textFromHere"> tag.
-		std::wstring wstrTitle { }; //Text within title <...title="textFromHere"> tag.
-		CRect rect { };             //Rect text belongs to.
-		int iIconIndex { -1 };      //Icon index in the image list, if any.
-		bool fLink { false };       //Is it just a text (wsvLink is empty) or text with link?
-		bool fTitle { false };      //Is it link with custom title (wsvTitle is not empty)?
-	};
-}
-
-namespace HEXCTRL::LISTEX
-{
-	IListEx* CreateRawListEx() {
-		return new LISTEX::INTERNAL::CListEx();
-	}
 }
 
 using namespace HEXCTRL::LISTEX::INTERNAL;
@@ -769,9 +616,167 @@ void CListExHdr::OnRButtonUp(UINT /*nFlags*/, CPoint point)
 }
 
 
-/****************************************************
-* CListEx implementation.                           *
-****************************************************/
+//CListEx.
+namespace HEXCTRL::LISTEX::INTERNAL {
+	class CListEx final : public IListEx {
+	public:
+		bool Create(const LISTEXCREATE& lcs)override;
+		void CreateDialogCtrl(UINT uCtrlID, CWnd* pParent)override;
+		BOOL DeleteAllItems()override;
+		BOOL DeleteColumn(int iIndex)override;
+		BOOL DeleteItem(int iItem)override;
+		void Destroy()override;
+		[[nodiscard]] auto GetCellData(int iItem, int iSubItem)const->ULONGLONG override;
+		[[nodiscard]] auto GetColors()const->LISTEXCOLORS override;
+		[[nodiscard]] auto GetColumnSortMode(int iColumn)const->EListExSortMode override;
+		[[nodiscard]] int GetSortColumn()const override;
+		[[nodiscard]] bool GetSortAscending()const override;
+		void HideColumn(int iIndex, bool fHide)override;
+		int InsertColumn(int nCol, const LVCOLUMNW* pColumn, int iDataAlign = LVCFMT_LEFT, bool fEditable = false)override;
+		int InsertColumn(int nCol, LPCWSTR pwszName, int nFormat = LVCFMT_LEFT, int nWidth = -1,
+			int nSubItem = -1, int iDataAlign = LVCFMT_LEFT, bool fEditable = false)override;
+		[[nodiscard]] bool IsCreated()const override;
+		[[nodiscard]] bool IsColumnSortable(int iColumn)override;
+		void ResetSort()override; //Reset all the sort by any column to its default state.
+		void SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clrText)override;
+		void SetCellData(int iItem, int iSubItem, ULONGLONG ullData)override;
+		void SetCellIcon(int iItem, int iSubItem, int iIndex)override; //Icon index in list's image list.
+		void SetCellTooltip(int iItem, int iSubItem, std::wstring_view wsvTooltip, std::wstring_view wsvCaption)override;
+		void SetColors(const LISTEXCOLORS& lcs)override;
+		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
+		void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enSortMode = { })override;
+		void SetFont(const LOGFONTW* pLogFont)override;
+		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1)override;
+		void SetColumnEditable(int iColumn, bool fEditable)override;
+		void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)override; //Icon for a given column.
+		void SetHdrFont(const LOGFONTW* pLogFont)override;
+		void SetHdrHeight(DWORD dwHeight)override;
+		void SetHdrImageList(CImageList* pList)override;
+		void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)override;
+		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode enSortMode)override;
+		static int CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
+		DECLARE_DYNAMIC(CListEx);
+		DECLARE_MESSAGE_MAP();
+	private:
+		struct SCOLROWCLR;
+		struct ITEMDATA;
+		struct TOOLTIPS;
+		void DrawItem(LPDRAWITEMSTRUCT pDIS)override;
+		[[nodiscard]] long GetFontSize();
+		[[nodiscard]] auto GetHeaderCtrl() -> CListExHdr & override { return m_stListHeader; }
+		void FontSizeIncDec(bool fInc);
+		void InitHeader()override;
+		[[nodiscard]] auto GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEXCOLOR>;
+		[[nodiscard]] auto GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDATA>;
+		[[nodiscard]] int GetIcon(int iItem, int iSubItem)const; //Does cell have an icon associated.
+		afx_msg void MeasureItem(LPMEASUREITEMSTRUCT lpMIS);
+		afx_msg void OnDestroy();
+		void OnEditInPlaceEnterPressed();
+		afx_msg void OnEditInPlaceKillFocus();
+		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+		afx_msg void OnHdnBegindrag(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnHdnBegintrack(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+		afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
+		afx_msg void OnLButtonDown(UINT nFlags, CPoint pt);
+		afx_msg void OnLButtonUp(UINT nFlags, CPoint pt);
+		afx_msg void OnLvnColumnClick(NMHDR* pNMHDR, LRESULT* pResult);
+		afx_msg void OnMouseMove(UINT nFlags, CPoint pt);
+		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
+		afx_msg void OnPaint();
+		afx_msg void OnTimer(UINT_PTR nIDEvent);
+		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+		auto ParseItemData(int iItem, int iSubitem) -> std::vector<ITEMDATA>;
+		BOOL PreTranslateMessage(MSG* pMsg)override;
+		void RecalcMeasure()const;
+		void SetFontSize(long lSize);
+		void TtLinkHide();
+		void TtCellHide();
+		void TtRowShow(bool fShow, UINT uRow); //Tooltips for HighLatency mode.
+	private:
+		static constexpr ULONG_PTR m_uIDTimerTTCellCheck { 0x01 };    //Cell tool-tip check-timer ID.
+		static constexpr ULONG_PTR m_uIDTimerTTLinkCheck { 0x02 };    //Link tool-tip check-timer ID.
+		static constexpr ULONG_PTR m_uIDTimerTTLinkActivate { 0x03 }; //Link tool-tip activate-timer ID.
+		static constexpr auto m_uIDEditInPlace { 0x01U };             //Inplace edit-box ID.
+		CListExHdr m_stListHeader;
+		LISTEXCOLORS m_stColors { };
+		CFont m_fontList;               //Default list font.
+		CFont m_fontListUnderline;      //Underlined list font, for links.
+		CPen m_penGrid;                 //Pen for list lines between cells.
+		CWnd m_stWndTtCell;             //Cells' tool-tip window.
+		TTTOOLINFOW m_stTInfoCell { };  //Cells' tool-tip info struct.
+		CWnd m_stWndTtLink;             //Link tool-tip window.
+		TTTOOLINFOW m_stTInfoLink { };  //Link's tool-tip info struct.
+		CWnd m_stWndTtRow { };          //Tooltip window for row in m_fHighLatency mode.
+		TTTOOLINFOW m_stToolInfoRow { };//Tooltips struct.
+		std::wstring m_wstrTtText { };  //Link's tool-tip current text.
+		HCURSOR m_cursorHand { };       //Hand cursor handle.
+		HCURSOR m_cursorDefault { };    //Standard (default) cursor handle.
+		LVHITTESTINFO m_stCurrCell { }; //Cell's hit struct for tool-tip.
+		LVHITTESTINFO m_stCurrLink { }; //Cell's link hit struct for tool-tip.
+		LVHITTESTINFO m_htiInPlaceEdit; //Cell's hit struct for in-place editing.
+		CEdit m_stEditInPlace;          //Edit box for in-place cells editing.
+		DWORD m_dwGridWidth { 1 };		//Grid width.
+		int m_iSortColumn { -1 };       //Currently clicked header column.
+		PFNLVCOMPARE m_pfnCompare { };  //Pointer to a user provided compare func.
+		EListExSortMode m_enDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
+		CRect m_rcLinkCurr { };         //Current link's rect;
+		std::unordered_map<UINT, std::unordered_map<int, TOOLTIPS>> m_umapCellTt { };  //Cell's tooltips.
+		std::unordered_map<UINT, std::unordered_map<int, ULONGLONG>> m_umapCellData { };    //Cell's custom data.
+		std::unordered_map<UINT, std::unordered_map<int, LISTEXCOLOR>> m_umapCellColor { }; //Cell's colors.
+		std::unordered_map<UINT, SCOLROWCLR> m_umapRowColor { };                   //Row colors.
+		std::unordered_map<UINT, std::unordered_map<int, int>> m_umapCellIcon { }; //Cell's icon.
+		std::unordered_map<int, SCOLROWCLR> m_umapColumnColor { };                 //Column colors.
+		std::unordered_map<int, EListExSortMode> m_umapColumnSortMode { };         //Column sorting mode.
+		UINT m_uHLItem { };            //High latency Vscroll item.
+		int m_iLOGPIXELSY { };         //GetDeviceCaps(LOGPIXELSY) constant.
+		bool m_fCreated { false };     //Is created.
+		bool m_fHighLatency { };       //High latency flag.
+		bool m_fSortable { false };    //Is list sortable.
+		bool m_fSortAscending { };     //Sorting type (ascending, descending).
+		bool m_fLinksUnderline { };    //Links are displayed underlined or not.
+		bool m_fLinkTooltip { };       //Show links toolips.
+		bool m_fVirtual { false };     //Whether list is virtual (LVS_OWNERDATA) or not.
+		bool m_fTtCellShown { false }; //Is cell's tool-tip shown atm.
+		bool m_fTtLinkShown { false }; //Is link's tool-tip shown atm.
+		bool m_fLDownAtLink { false }; //Left mouse down on link.
+		bool m_fHLFlag { };            //High latency Vscroll flag.
+	};
+
+	//Colors for the row/column.
+	struct CListEx::SCOLROWCLR {
+		LISTEXCOLOR clr { }; //Colors
+		std::chrono::high_resolution_clock::time_point time { }; //Time when added.
+	};
+
+	//Text and links in the cell.
+	struct CListEx::ITEMDATA {
+		ITEMDATA(int iIconIndex, CRect rect) : rect(rect), iIconIndex(iIconIndex) {}; //Ctor for just image index.
+		ITEMDATA(std::wstring_view wsvText, std::wstring_view wsvLink, std::wstring_view wsvTitle,
+			CRect rect, bool fLink = false, bool fTitle = false) :
+			wstrText(wsvText), wstrLink(wsvLink), wstrTitle(wsvTitle), rect(rect), fLink(fLink), fTitle(fTitle) {}
+		std::wstring wstrText { };  //Visible text.
+		std::wstring wstrLink { };  //Text within link <link="textFromHere"> tag.
+		std::wstring wstrTitle { }; //Text within title <...title="textFromHere"> tag.
+		CRect rect { };             //Rect text belongs to.
+		int iIconIndex { -1 };      //Icon index in the image list, if any.
+		bool fLink { false };       //Is it just a text (wsvLink is empty) or text with link?
+		bool fTitle { false };      //Is it link with custom title (wsvTitle is not empty)?
+	};
+
+	//List tooltips.
+	struct CListEx::TOOLTIPS {
+		std::wstring wstrText;
+		std::wstring wstrCaption;
+	};
+}
+
+namespace HEXCTRL::LISTEX {
+	IListEx* CreateRawListEx() {
+		return new LISTEX::INTERNAL::CListEx();
+	}
+}
 
 IMPLEMENT_DYNAMIC(CListEx, CMFCListCtrl)
 
@@ -1227,7 +1232,7 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wsvToolt
 	//If there is no tooltip for such item/subitem we just set it.
 	if (const auto it = m_umapCellTt.find(ID); it == m_umapCellTt.end()) {
 		if (!wsvTooltip.empty() || !wsvCaption.empty()) {	//Initializing inner map.
-			std::unordered_map<int, LISTEXTOOLTIP> umapInner {
+			std::unordered_map<int, TOOLTIPS> umapInner {
 				{ iSubItem, { std::wstring { wsvTooltip }, std::wstring { wsvCaption } } }
 			};
 			m_umapCellTt.insert({ ID, std::move(umapInner) });
@@ -1474,7 +1479,7 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 					clrBk = optClr->clrBk == -1 ? clrBkCurrRow : optClr->clrBk;
 				}
 				else {
-					if (GetTooltip(iItem, iSubitem) != nullptr) {
+					if (GetTooltip(iItem, iSubitem)) {
 						clrText = m_stColors.clrListTextCellTt;
 						clrBk = m_stColors.clrListBkCellTt;
 					}
@@ -1584,33 +1589,31 @@ auto CListEx::GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEX
 	return std::nullopt;
 }
 
-auto CListEx::GetTooltip(int iItem, int iSubItem)const->PLISTEXTOOLTIP
+auto CListEx::GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDATA>
 {
 	if (iItem < 0 || iSubItem < 0) {
-		return nullptr;
+		return std::nullopt;
 	}
 
-	PLISTEXTOOLTIP pTooltip { };
 	if (m_fVirtual) { //In Virtual mode asking parent for tooltip.
 		const auto iCtrlID = GetDlgCtrlID();
-		NMITEMACTIVATE nmii { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_GETTOOLTIP } };
-		nmii.iItem = iItem;
-		nmii.iSubItem = iSubItem;
-		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&nmii));
-		if (nmii.lParam != 0) {
-			pTooltip = reinterpret_cast<PLISTEXTOOLTIP>(nmii.lParam);
+		LISTEXTTINFO ltti { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_GETTOOLTIP } };
+		ltti.iItem = iItem;
+		ltti.iSubItem = iSubItem;
+		if (GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&ltti)) == TRUE) {
+			return ltti.stData;
 		}
 	}
 	else {
 		const auto ID = MapIndexToID(iItem);
 		if (const auto itItem = m_umapCellTt.find(ID); itItem != m_umapCellTt.end()) {
 			if (const auto itSubItem = itItem->second.find(iSubItem); itSubItem != itItem->second.end()) {
-				pTooltip = &itSubItem->second;
+				return { LISTEXTTDATA { itSubItem->second.wstrText.data(), itSubItem->second.wstrCaption.data() } };
 			}
 		}
 	}
 
-	return pTooltip;
+	return std::nullopt;
 }
 
 int CListEx::GetIcon(int iItem, int iSubItem)const
@@ -1624,8 +1627,9 @@ int CListEx::GetIcon(int iItem, int iSubItem)const
 		LISTEXICONINFO lii { { m_hWnd, uCtrlID, LISTEX_MSG_GETICON } };
 		lii.iItem = iItem;
 		lii.iSubItem = iSubItem;
-		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlID), reinterpret_cast<LPARAM>(&lii));
-		return lii.iIconIndex;
+		if (GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlID), reinterpret_cast<LPARAM>(&lii)) == TRUE) {
+			return lii.iIconIndex;
+		}
 	}
 	else {
 		const auto ID = MapIndexToID(iItem);
@@ -1805,12 +1809,12 @@ void CListEx::OnLButtonUp(UINT nFlags, CPoint pt)
 			m_rcLinkCurr.SetRectEmpty();
 			fLinkUp = true;
 			const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
-			NMITEMACTIVATE nmii { { m_hWnd, uCtrlId, LISTEX_MSG_LINKCLICK } };
-			nmii.iItem = hi.iItem;
-			nmii.iSubItem = hi.iSubItem;
-			nmii.ptAction = pt;
-			nmii.lParam = reinterpret_cast<LPARAM>(iterFind->wstrLink.data());
-			GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&nmii));
+			LISTEXLINKINFO lli { { m_hWnd, uCtrlId, LISTEX_MSG_LINKCLICK } };
+			lli.iItem = hi.iItem;
+			lli.iSubItem = hi.iSubItem;
+			lli.ptClick = pt;
+			lli.pwszText = iterFind->wstrLink.data();
+			GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&lli));
 		}
 	}
 
@@ -1885,18 +1889,18 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 		TtLinkHide();
 	}
 
-	if (const auto pTooltip = GetTooltip(hi.iItem, hi.iSubItem); pTooltip != nullptr) {
+	if (const auto optTT = GetTooltip(hi.iItem, hi.iSubItem); optTT) {
 		//Check if cursor is still in the same cell's rect. If so - just leave.
 		if (m_stCurrCell.iItem != hi.iItem || m_stCurrCell.iSubItem != hi.iSubItem) {
 			m_fTtCellShown = true;
 			m_stCurrCell.iItem = hi.iItem;
 			m_stCurrCell.iSubItem = hi.iSubItem;
-			m_stTInfoCell.lpszText = const_cast<LPWSTR>(pTooltip->wstrText.data());
+			m_stTInfoCell.lpszText = const_cast<LPWSTR>(optTT->pwszText);
 
 			ClientToScreen(&pt);
 			m_stWndTtCell.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(pt.x, pt.y));
 			m_stWndTtCell.SendMessageW(TTM_SETTITLE, static_cast<WPARAM>(TTI_NONE),
-				reinterpret_cast<LPARAM>(pTooltip->wstrCaption.data()));
+				reinterpret_cast<LPARAM>(optTT->pwszCaption));
 			m_stWndTtCell.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stTInfoCell));
 			m_stWndTtCell.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stTInfoCell));
 

@@ -23,7 +23,7 @@ namespace HEXCTRL::INTERNAL::SCROLLEX
 		LASTARROW_CLICK, LASTARROW_HOVER
 	};
 
-	enum class ETimer : std::uint16_t {
+	enum class CScrollEx::ETimer : std::uint16_t {
 		IDT_FIRSTCLICK = 0x7ff0, IDT_CLICKREPEAT = 0x7ff1
 	};
 }
@@ -505,35 +505,34 @@ void CScrollEx::SetScrollPageSize(ULONGLONG ullSize)
 
 bool CScrollEx::CreateArrows(HBITMAP hArrow, bool fVert)
 {
-	const auto pBitmap = CBitmap::FromHandle(hArrow);
 	BITMAP stBMP { };
-	pBitmap->GetBitmap(&stBMP); //stBMP.bmBits is nullptr here.
-	const auto nWidth = static_cast<std::size_t>(stBMP.bmWidth);
-	const auto nHeight = static_cast<std::size_t>(stBMP.bmHeight);
-	const auto dwPixels = nWidth * nHeight;
+	GetObjectW(hArrow, sizeof(BITMAP), &stBMP); //stBMP.bmBits is nullptr here.
+	const auto dwWidth = static_cast<DWORD>(stBMP.bmWidth);
+	const auto dwHeight = static_cast<DWORD>(stBMP.bmHeight);
+	const auto dwPixels = dwWidth * dwHeight;
 	const auto dwBytesBmp = stBMP.bmWidthBytes * stBMP.bmHeight;
 	const auto pPixelsOrig = std::make_unique<COLORREF[]>(dwPixels);
 	m_iArrowRCSizePx = stBMP.bmWidth;
-	pBitmap->GetBitmapBits(dwBytesBmp, pPixelsOrig.get());
+	GetBitmapBits(hArrow, dwBytesBmp, pPixelsOrig.get());
 
-	const auto lmbTranspose = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
-		for (std::size_t itHeight = 0; itHeight < nHeight; ++itHeight) { //Transpose matrix.
-			for (std::size_t j = itHeight; j < nWidth; ++j) {
-				std::swap(pInOut[itHeight * nHeight + j], pInOut[j * nHeight + itHeight]);
+	const auto lmbTranspose = [](COLORREF* pInOut, DWORD dwWidth, DWORD dwHeight) {
+		for (auto itHeight = 0UL; itHeight < dwHeight; ++itHeight) { //Transpose matrix.
+			for (auto j = itHeight; j < dwWidth; ++j) {
+				std::swap(pInOut[itHeight * dwHeight + j], pInOut[j * dwHeight + itHeight]);
 			}
 		}
 	};
-	const auto lmbFlipVert = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
-		for (std::size_t itWidth = 0; itWidth < nWidth; ++itWidth) { //Flip matrix' columns.
-			for (std::size_t itHeight = 0, itHeightBack = nHeight - 1; itHeight < itHeightBack; ++itHeight, --itHeightBack) {
-				std::swap(pInOut[itHeight * nHeight + itWidth], pInOut[itHeightBack * nWidth + itWidth]);
+	const auto lmbFlipVert = [](COLORREF* pInOut, DWORD dwWidth, DWORD dwHeight) {
+		for (auto itWidth = 0UL; itWidth < dwWidth; ++itWidth) { //Flip matrix' columns.
+			for (auto itHeight = 0UL, itHeightBack = dwHeight - 1; itHeight < itHeightBack; ++itHeight, --itHeightBack) {
+				std::swap(pInOut[itHeight * dwHeight + itWidth], pInOut[itHeightBack * dwWidth + itWidth]);
 			}
 		}
 	};
-	const auto lmbFlipHorz = [](COLORREF* pInOut, std::size_t nWidth, std::size_t nHeight) {
-		for (std::size_t itHeight = 0; itHeight < nHeight; ++itHeight) { //Flip matrix' rows.
-			for (std::size_t itWidth = 0, itWidthBack = nWidth - 1; itWidth < itWidthBack; ++itWidth, --itWidthBack) {
-				std::swap(pInOut[itHeight * nWidth + itWidth], pInOut[itHeight * nWidth + itWidthBack]);
+	const auto lmbFlipHorz = [](COLORREF* pInOut, DWORD dwWidth, DWORD dwHeight) {
+		for (auto itHeight = 0UL; itHeight < dwHeight; ++itHeight) { //Flip matrix' rows.
+			for (auto itWidth = 0UL, itWidthBack = dwWidth - 1; itWidth < itWidthBack; ++itWidth, --itWidthBack) {
+				std::swap(pInOut[itHeight * dwWidth + itWidth], pInOut[itHeight * dwWidth + itWidthBack]);
 			}
 		}
 	};
@@ -543,13 +542,13 @@ bool CScrollEx::CreateArrows(HBITMAP hArrow, bool fVert)
 
 	if (fVert) {
 		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pPixelsOrig.get()); //Up arrow.
-		lmbFlipVert(pPixelsOrig.get(), nWidth, nHeight);              //Down arrow.
+		lmbFlipVert(pPixelsOrig.get(), dwWidth, dwHeight);              //Down arrow.
 	}
 	else {
-		lmbTranspose(pPixelsOrig.get(), nWidth, nHeight);
-		lmbFlipVert(pPixelsOrig.get(), nWidth, nHeight);
+		lmbTranspose(pPixelsOrig.get(), dwWidth, dwHeight);
+		lmbFlipVert(pPixelsOrig.get(), dwWidth, dwHeight);
 		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pPixelsOrig.get()); //Left arrow.
-		lmbFlipHorz(pPixelsOrig.get(), nWidth, nHeight);              //Right arrow.
+		lmbFlipHorz(pPixelsOrig.get(), dwWidth, dwHeight);              //Right arrow.
 	}
 
 	m_bmpArrowLast.SetBitmapBits(dwBytesBmp, pPixelsOrig.get());
