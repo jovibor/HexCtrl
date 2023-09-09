@@ -444,20 +444,19 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 
 HBRUSH CHexDlgSearch::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
+	const auto hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
+
 	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_SEARCH_STATIC_RESULT) {
-		pDC->SetBkColor(m_clrBkTextArea);
 		pDC->SetTextColor(m_fFound ? RGB(0, 200, 0) : RGB(200, 0, 0));
-		return m_stBrushDefault;
 	}
 
-	return CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
+	return hbr;
 }
 
 void CHexDlgSearch::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
-	m_stBrushDefault.DeleteObject();
 	m_stMenuList.DestroyMenu();
 }
 
@@ -467,7 +466,6 @@ BOOL CHexDlgSearch::OnInitDialog()
 
 	constexpr auto iTextLimit { 512 };
 
-	m_stBrushDefault.CreateSolidBrush(m_clrBkTextArea);
 	m_stComboSearch.LimitText(iTextLimit);
 	m_stComboReplace.LimitText(iTextLimit);
 
@@ -1171,7 +1169,7 @@ void CHexDlgSearch::Search()
 				}
 			}
 		}
-	};
+		};
 	const auto lmbFindBackward = [&]() {
 		ullUntil = m_ullBoundBegin;
 		if (m_fSecondMatch && m_ullOffsetCurr - m_ullStep < m_ullOffsetCurr) {
@@ -1197,7 +1195,7 @@ void CHexDlgSearch::Search()
 				}
 			}
 		}
-	};
+		};
 
 	pHexCtrl->SetRedraw(false);
 
@@ -1222,7 +1220,7 @@ void CHexDlgSearch::Search()
 				}
 
 				pDlgClbk->ExitDlg();
-			};
+				};
 
 			CHexDlgCallback dlgClbk(L"Replacing...", ullStart, ullUntil, this);
 			std::thread thrd(lmbReplaceAll, &dlgClbk);
@@ -1264,7 +1262,7 @@ void CHexDlgSearch::Search()
 
 				pDlgClbk->ExitDlg();
 				m_pListMain->SetItemCountEx(static_cast<int>(m_dwCount));
-			};
+				};
 
 			CHexDlgCallback dlgClbk(L"Searching...", ullStart, ullUntil, this);
 			std::thread thrd(lmbSearchAll, &dlgClbk);

@@ -81,7 +81,6 @@ namespace HEXCTRL::INTERNAL
 	private:
 		static constexpr std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		static constexpr auto m_pwszWrongInput { L"Wrong input data!" };
-		const COLORREF m_clrBkTextArea { GetSysColor(COLOR_MENU) };
 		IHexCtrl* m_pHexCtrl { };
 		EMode m_eSearchMode { };
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
@@ -97,7 +96,6 @@ namespace HEXCTRL::INTERNAL
 		CEdit m_stEditStart;        //Edit box "Start search at".
 		CEdit m_stEditStep;         //Edit box "Step".
 		CEdit m_stEditLimit;        //Edit box "Limit search hit".
-		CBrush m_stBrushDefault;
 		ULONGLONG m_ullBoundBegin { };       //Search start boundary.
 		ULONGLONG m_ullBoundEnd { };         //Search end boundary.
 		ULONGLONG m_ullOffsetCurr { };       //Current offset a search should start from.

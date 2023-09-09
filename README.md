@@ -612,7 +612,7 @@ Sets all the colors for the control. Takes [`HEXCOLORS`](#hexcolors) as the argu
 
 ### [](#)SetConfig
 ```cpp
-bool SetConfig(std::wstring_view wstrPath);
+bool SetConfig(std::wstring_view wsvPath);
 ```
 Sets the path to a JSON config file with keybindings to use in **HexCtrl**, or empty path (`L""`) for default. This file is using [`EHexCmd`](#ehexcmd) enum values as keys and strings array as values:
 ```json

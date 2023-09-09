@@ -20,7 +20,7 @@
 namespace HEXCTRL
 {
 	constexpr auto HEXCTRL_VERSION_MAJOR = 3;
-	constexpr auto HEXCTRL_VERSION_MINOR = 4;
+	constexpr auto HEXCTRL_VERSION_MINOR = 5;
 	constexpr auto HEXCTRL_VERSION_PATCH = 0;
 
 	using SpanByte = std::span<std::byte>;
@@ -341,7 +341,7 @@ namespace HEXCTRL
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
 		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true) = 0; //Set the caret position.
-		virtual void SetCodepage(int iCodePage) = 0;           //Codepage for text area.
+		virtual void SetCodepage(int iCodepage) = 0;           //Codepage for text area.
 		virtual void SetColors(const HEXCOLORS& clr) = 0;      //Set all the control's colors.
 		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).

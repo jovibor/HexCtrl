@@ -1446,7 +1446,7 @@ void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
 	OnCaretPosChange(ullOffset);
 }
 
-void CHexCtrl::SetCodepage(int iCodePage)
+void CHexCtrl::SetCodepage(int iCodepage)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -1454,7 +1454,7 @@ void CHexCtrl::SetCodepage(int iCodePage)
 
 	CPINFOEXW stCPInfo;
 	std::wstring_view wsvFmt;
-	switch (iCodePage) {
+	switch (iCodepage) {
 	case -1:
 		wsvFmt = L"ASCII";
 		break;
@@ -1462,14 +1462,14 @@ void CHexCtrl::SetCodepage(int iCodePage)
 		wsvFmt = L"UTF-16";
 		break;
 	default:
-		if (GetCPInfoExW(static_cast<UINT>(iCodePage), 0, &stCPInfo) != FALSE) {
+		if (GetCPInfoExW(static_cast<UINT>(iCodepage), 0, &stCPInfo) != FALSE) {
 			wsvFmt = L"Codepage {}";
 		}
 		break;
 	}
 
 	if (!wsvFmt.empty()) {
-		m_iCodePage = iCodePage;
+		m_iCodePage = iCodepage;
 		m_wstrTextTitle = std::vformat(wsvFmt, std::make_wformat_args(m_iCodePage));
 		Redraw();
 	}

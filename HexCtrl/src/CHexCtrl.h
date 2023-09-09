@@ -77,7 +77,7 @@ namespace HEXCTRL::INTERNAL
 		void Redraw()override;
 		void SetCapacity(DWORD dwCapacity)override;
 		void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true)override;
-		void SetCodepage(int iCodePage)override;
+		void SetCodepage(int iCodepage)override;
 		void SetColors(const HEXCOLORS& clr)override;
 		bool SetConfig(std::wstring_view wsvPath)override;
 		void SetData(const HEXDATA& hds)override;
