@@ -2,6 +2,7 @@
 #include "HexSampleDlg.h"
 #include "Resource.h"
 #include <filesystem>
+#include <random>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -44,6 +45,13 @@ BOOL CHexSampleDlg::OnInitDialog()
 
 	SetIcon(m_hIcon, TRUE);	 //Set big icon
 	SetIcon(m_hIcon, FALSE); //Set small icon
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> distInt(0, (std::numeric_limits<std::uint8_t>::max)());
+	for (auto& byte : m_RandomData) {
+		byte = static_cast<std::byte>(distInt(gen));
+	}
 
 	//For Drag'n Drop to work even in elevated mode.
 	//https://helgeklein.com/blog/2010/03/how-to-enable-drag-and-drop-for-an-elevated-mfc-application-on-vistawindows-7/

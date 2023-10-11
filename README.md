@@ -140,14 +140,14 @@
 ![](docs/img/HexCtrl_OperationsWnd.jpg)
 
 ## [](#)Installation
+Clone the repo with all submodules:  
 `git clone https://github.com/jovibor/HexCtrl.git --recurse-submodules`  
 
 The **HexCtrl** can be used in two different ways:  
-* Building from the sources as a part of your project
-* Using as a Dynamic Link Library (*HexCtrl.dll*).
+1. Building from the sources as a part of your project
+1. Using as a Dynamic Link Library (*HexCtrl.dll*).
 
 ### [](#)Building From The Sources
-The building process is quite simple:
 1. Copy *HexCtrl* folder into your project's directory.
 1. Add all files from the *HexCtrl* folder into your project  
 (you can skip adding *rapidjson-amalgam.h* and *StrToNum.h*).
@@ -155,7 +155,7 @@ The building process is quite simple:
 1. Declare `IHexCtrlPtr` object: `IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };`
 1. [Create](#creating) control instance.
 
-If you want to build **HexCtrl** from the sources in non **MFC** app:
+If you want to build **HexCtrl** from the sources in non-**MFC** app:
 1. Add support for the **Use MFC in a Shared DLL** in your project settings.
 1. Add the `#define HEXCTRL_MANUAL_MFC_INIT` before the `#include "HexCtrl.h"`.
 

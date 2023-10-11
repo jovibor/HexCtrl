@@ -1582,27 +1582,27 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::
 	}
 }
 
-std::vector<std::byte> CHexDlgSearch::RangeToVecBytes(const std::string& str)
+auto CHexDlgSearch::RangeToVecBytes(const std::string& str)->std::vector<std::byte>
 {
 	const auto pBegin = reinterpret_cast<const std::byte*>(str.data());
 	const auto pEnd = pBegin + str.size();
 
-	return std::vector<std::byte>(pBegin, pEnd);
+	return { pBegin, pEnd };
 }
 
-std::vector<std::byte> CHexDlgSearch::RangeToVecBytes(const std::wstring& wstr)
+auto CHexDlgSearch::RangeToVecBytes(const std::wstring& wstr)->std::vector<std::byte>
 {
 	const auto pBegin = reinterpret_cast<const std::byte*>(wstr.data());
 	const auto pEnd = pBegin + wstr.size() * sizeof(wchar_t);
 
-	return std::vector<std::byte>(pBegin, pEnd);
+	return { pBegin, pEnd };
 }
 
 template<typename T>
-std::vector<std::byte> CHexDlgSearch::RangeToVecBytes(T tData)
+auto CHexDlgSearch::RangeToVecBytes(T tData)->std::vector<std::byte>
 {
 	const auto pBegin = reinterpret_cast<std::byte*>(&tData);
 	const auto pEnd = pBegin + sizeof(tData);
 
-	return std::vector<std::byte>(pBegin, pEnd);
+	return { pBegin, pEnd };
 }

@@ -1143,15 +1143,15 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		const auto lmbRandUInt64 = [&](std::byte* pData, const HEXMODIFY& /**/, SpanCByte /**/) {
 			assert(pData != nullptr);
 			*reinterpret_cast<std::uint64_t*>(pData) = distUInt64(gen);
-		};
+			};
 		const auto lmbRandByte = [&](std::byte* pData, const HEXMODIFY& /**/, SpanCByte /**/) {
 			assert(pData != nullptr);
 			*pData = static_cast<std::byte>(distUInt64(gen));
-		};
+			};
 		const auto lmbRandFast = [](std::byte* pData, const HEXMODIFY& /**/, SpanCByte spnDataFrom) {
 			assert(pData != nullptr);
 			std::copy_n(spnDataFrom.data(), spnDataFrom.size(), pData);
-		};
+			};
 
 		const auto& refHexSpan = hms.vecSpan.back();
 		if (hms.enModifyMode == MODIFY_RAND_MT19937 && hms.vecSpan.size() == 1 && refHexSpan.ullSize >= sizeof(std::uint64_t)) {
@@ -1217,7 +1217,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		constexpr auto lmbRepeat = [](std::byte* pData, const HEXMODIFY& /**/, SpanCByte spnDataFrom) {
 			assert(pData != nullptr);
 			std::copy_n(spnDataFrom.data(), spnDataFrom.size(), pData);
-		};
+			};
 
 		//In cases where only one affected data region (hms.vecSpan.size()==1) is used,
 		//and the size of the repeated data is equal to the extent of 2,
@@ -1346,7 +1346,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				lmbOper(reinterpret_cast<PQWORD>(pData), hms);
 				break;
 			}
-		};
+			};
 		ModifyWorker(hms, lmbOperData, { static_cast<std::byte*>(nullptr), static_cast<std::size_t>(hms.enDataSize) });
 	}
 	break;
@@ -1664,7 +1664,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 			}
 
 			return stRet;
-		};
+			};
 
 		for (auto iterMembers = docJSON.MemberBegin(); iterMembers != docJSON.MemberEnd(); ++iterMembers) { //JSON data iterating.
 			if (const auto iterCmd = umapCmdMenu.find(iterMembers->name.GetString()); iterCmd != umapCmdMenu.end()) {
@@ -2313,7 +2313,7 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 			ullSizeModify = ullDataSize - ullCaretPos;
 		}
 		hmd.spnData = { reinterpret_cast<std::byte*>(pDataClpbrd), static_cast<std::size_t>(ullSizeModify) };
-	};
+		};
 
 	switch (eType) {
 	case EClipboard::PASTE_TEXT_UTF16:
@@ -2891,7 +2891,7 @@ void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 				pFieldCurr->clrBk, pFieldCurr->clrText, fPrintVertLine);
 
 			fPrintVertLine = true;
-		};
+			};
 		const auto lmbHexSpaces = [&](const unsigned iterChunks) {
 			if (!wstrHexFieldToPrint.empty()) { //Only adding spaces if there are chars beforehead.
 				if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0) {
@@ -2903,7 +2903,7 @@ void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 					wstrHexFieldToPrint += L"  ";
 				}
 			}
-		};
+			};
 
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
@@ -3030,7 +3030,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 			vecBkmText.emplace_back(POLYTEXTW { iBkmTextPosToPrintX, iPosToPrintY,
 				static_cast<UINT>(vecWstrBkmText.back()->size()), vecWstrBkmText.back()->data(), 0, { }, nullptr },
 				pBkmCurr->clrBk, pBkmCurr->clrText);
-		};
+			};
 		const auto lmbHexSpaces = [&](const unsigned iterChunks) {
 			if (!wstrHexBkmToPrint.empty()) { //Only adding spaces if there are chars beforehead.
 				if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0) {
@@ -3042,7 +3042,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 					wstrHexBkmToPrint += L"  ";
 				}
 			}
-		};
+			};
 
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
@@ -3142,7 +3142,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 			vecColorsText.emplace_back(POLYTEXTW { iColorTextPosToPrintX, iPosToPrintY,
 				static_cast<UINT>(vecWstrColorsText.back()->size()), vecWstrColorsText.back()->data(), 0, { }, nullptr },
 				*optColorCurr);
-		};
+			};
 		const auto lmbHexSpaces = [&](const unsigned iterChunks) {
 			if (!wstrHexColorToPrint.empty()) { //Only adding spaces if there are chars beforehead.
 				if ((iterChunks % static_cast<DWORD>(m_enGroupMode)) == 0) {
@@ -3154,7 +3154,7 @@ void CHexCtrl::DrawCustomColors(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 					wstrHexColorToPrint += L"  ";
 				}
 			}
-		};
+			};
 
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
@@ -3242,7 +3242,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 			vecWstrSel.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextSelToPrint)));
 			vecPolySelText.emplace_back(iSelTextPosToPrintX, iPosToPrintY,
 				static_cast<UINT>(vecWstrSel.back()->size()), vecWstrSel.back()->data(), 0, RECT { }, nullptr);
-		};
+			};
 
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
@@ -3328,7 +3328,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 			vecWstrSelHgl.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextSelToPrint)));
 			vecPolySelTextHgl.emplace_back(iSelTextPosToPrintX, iPosToPrintY,
 				static_cast<UINT>(vecWstrSelHgl.back()->size()), vecWstrSelHgl.back()->data(), 0, RECT { }, nullptr);
-		};
+			};
 
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto iterChunks { 0U }; iterChunks < m_dwCapacity && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
@@ -3842,7 +3842,7 @@ void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const Span
 		}
 	exit:
 		dlgClbk.ExitDlg();
-	};
+		};
 
 	constexpr auto iSizeToRunThread { 1024 * 1024 }; //1MB.
 	if (ullTotalSize > iSizeToRunThread) { //Spawning new thread only if data size is big enough.
@@ -4285,7 +4285,7 @@ void CHexCtrl::SelAddDown()
 			ullOldPos = ullSelStart;
 			ullNewPos = ullOldPos + m_dwCapacity;
 		}
-	};
+		};
 
 	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_pSelection->GetSelEnd()) {
 		lmbSelection();
@@ -4337,7 +4337,7 @@ void CHexCtrl::SelAddLeft()
 			ullNewPos = ullStart;
 			ullOldPos = ullNewPos + 1;
 		}
-	};
+		};
 
 	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_pSelection->GetSelEnd()) {
 		lmbSelection();
@@ -4394,7 +4394,7 @@ void CHexCtrl::SelAddRight()
 			ullOldPos = ullSelStart;
 			ullNewPos = ullOldPos + 1;
 		}
-	};
+		};
 
 	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_pSelection->GetSelEnd()) {
 		lmbSelection();
@@ -4470,7 +4470,7 @@ void CHexCtrl::SelAddUp()
 			ullOldPos = ullSelStart + ullSelSize - 1;
 			ullNewPos = ullOldPos - m_dwCapacity;
 		}
-	};
+		};
 
 	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_pSelection->GetSelEnd()) {
 		lmbSelection();
@@ -5276,7 +5276,7 @@ void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 
 void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 {
-	constexpr auto tmSecToShow { 5.0 }; //How many seconds to show the Tooltip.
+	static constexpr auto dbSecToShow { 5.0 }; //How many seconds to show the Tooltip.
 
 	CRect rcClient;
 	GetClientRect(rcClient);
@@ -5289,8 +5289,8 @@ void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 		if (!rcClient.PtInRect(ptCursor)) { //Checking if cursor has left client rect.
 			ToolTipBkmShow(false);
 		}
-		//Or more than tmSecToShow seconds have passed since bkm toolip is shown.
-		else if (std::difftime(std::time(nullptr), m_tmTtBkm) >= tmSecToShow) {
+		//Or more than dbSecToShow seconds have passed since bkm toolip is shown.
+		else if (std::difftime(std::time(nullptr), m_tmTtBkm) >= dbSecToShow) {
 			ToolTipBkmShow(false, { }, true);
 		}
 		break;
@@ -5298,10 +5298,12 @@ void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 		if (!rcClient.PtInRect(ptCursor)) { //Checking if cursor has left client rect.
 			ToolTipTemplShow(false);
 		}
-		//Or more than tmSecToShow seconds have passed since template toolip is shown.
-		else if (std::difftime(std::time(nullptr), m_tmTtTempl) >= tmSecToShow) {
+		//Or more than dbSecToShow seconds have passed since template toolip is shown.
+		else if (std::difftime(std::time(nullptr), m_tmTtTempl) >= dbSecToShow) {
 			ToolTipTemplShow(false, { }, true);
 		}
+		break;
+	default:
 		break;
 	}
 }

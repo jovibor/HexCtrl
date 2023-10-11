@@ -147,6 +147,8 @@ namespace HEXCTRL::INTERNAL
 		case 2: //2:Year/Month/Day HH:MM:SS.mmm
 			wsvFmt = L"{2}{7}{1:02d}{7}{0:02d} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
 			break;
+		default:
+			break;
 		}
 
 		return std::vformat(wsvFmt, std::make_wformat_args(stSysTime.wDay, stSysTime.wMonth, stSysTime.wYear,
