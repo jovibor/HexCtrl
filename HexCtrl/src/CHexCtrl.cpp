@@ -9,7 +9,6 @@
 #include "../res/HexCtrlRes.h"
 #include "CHexCtrl.h"
 #include "CHexSelection.h"
-#include "CScrollEx.h"
 #include "Dialogs/CHexDlgBkmMgr.h"
 #include "Dialogs/CHexDlgCallback.h"
 #include "Dialogs/CHexDlgCodepage.h"
@@ -28,6 +27,8 @@
 #include <random>
 #include <thread>
 #pragma comment(lib, "Dwmapi.lib")
+
+import HEXCTRL.CHexScroll;
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
