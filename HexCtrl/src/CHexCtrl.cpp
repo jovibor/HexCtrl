@@ -5,6 +5,7 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #include "stdafx.h"
+#include "../dep/StrToNum/StrToNum/StrToNum.h"
 #include "../dep/rapidjson/rapidjson-amalgam.h"
 #include "../res/HexCtrlRes.h"
 #include "CHexCtrl.h"
@@ -17,7 +18,6 @@
 #include "Dialogs/CHexDlgModify.h"
 #include "Dialogs/CHexDlgSearch.h"
 #include "Dialogs/CHexDlgTemplMgr.h"
-#include "HexUtility.h"
 #include <bit>
 #include <cassert>
 #include <cwctype>
@@ -29,6 +29,7 @@
 #pragma comment(lib, "Dwmapi.lib")
 
 import HEXCTRL.CHexScroll;
+import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;

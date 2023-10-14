@@ -6,9 +6,10 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
-#include "../HexUtility.h"
 #include "CHexDlgFillData.h"
 #include <cassert>
+
+import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;

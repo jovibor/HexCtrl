@@ -242,7 +242,6 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgOpers.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.h" />
-    <ClInclude Include="..\..\HexCtrl\src\HexUtility.h" />
     <ClInclude Include="..\Sample Project\stdafx.h" />
   </ItemGroup>
   <ItemGroup>
@@ -266,7 +265,13 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgOpers.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\HexUtility.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\HexUtility.ixx">
+      <FileType>Document</FileType>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\Sample Project\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

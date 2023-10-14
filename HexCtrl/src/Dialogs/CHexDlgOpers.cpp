@@ -5,10 +5,12 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #include "stdafx.h"
+#include "../../dep/StrToNum/StrToNum/StrToNum.h"
 #include "../../res/HexCtrlRes.h"
-#include "../HexUtility.h"
 #include "CHexDlgOpers.h"
 #include <cassert>
+
+import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;

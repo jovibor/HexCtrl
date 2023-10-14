@@ -5,8 +5,8 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #include "stdafx.h"
+#include "../../dep/StrToNum/StrToNum/StrToNum.h"
 #include "../../res/HexCtrlRes.h"
-#include "../HexUtility.h"
 #include "CHexDlgTemplMgr.h"
 #include "strsafe.h"
 #include <algorithm>
@@ -15,6 +15,8 @@
 #include <numeric>
 #include <optional>
 #include <random>
+
+import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
@@ -119,9 +121,9 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 					lmbSelf(lmbSelf, hCurrentRoot, field->vecNested);
 				}
 			}
-		};
+			};
 		_lmbFill(_lmbFill, hTreeRoot, refVecFields);
-	};
+		};
 	lmbFill(hTreeRootNode, pTemplate->vecFields);
 
 	if (m_pHexCtrl->IsDataSet()) {
@@ -253,9 +255,9 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD
 				}
 			}
 			return nullptr;
-		};
+			};
 		return _lmbFind(_lmbFind, vecFields);
-	};
+		};
 
 	return lmbFind(vecFields);
 }
@@ -1356,9 +1358,9 @@ void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 				}
 				else { lmbSelf(lmbSelf, refField->vecNested); }
 			}
-		};
+			};
 		return _lmbCount(_lmbCount, vecRef);
-	};
+		};
 
 	lmbRndColors(iterTempl->get()->vecFields);
 	m_pListApplied->RedrawWindow();
@@ -2084,9 +2086,9 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 						return ullTotal + lmbSelf(lmbSelf, refField->vecNested);
 					}
 					return ullTotal + refField->iSize; });
-		};
+			};
 		return _lmbTotalSize(_lmbTotalSize, vecFields);
-	};
+		};
 
 	int iOffset { 0 }; //Default starting offset.
 	if (pOffset == nullptr) {
@@ -2191,9 +2193,9 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 									lmbSelf(lmbSelf, pCustomField->vecNested, pNewField, iOffset);
 								}
 							}
-						};
+							};
 						_lmbCustomTypeCopy(_lmbCustomTypeCopy, vecCustomFields, pField, iOffset);
-					};
+						};
 
 					auto iOffsetCustomType = *pOffset;
 					if (iArraySize <= 1) {
