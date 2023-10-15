@@ -9,7 +9,6 @@
 #include "../dep/rapidjson/rapidjson-amalgam.h"
 #include "../res/HexCtrlRes.h"
 #include "CHexCtrl.h"
-#include "CHexSelection.h"
 #include "Dialogs/CHexDlgBkmMgr.h"
 #include "Dialogs/CHexDlgCallback.h"
 #include "Dialogs/CHexDlgCodepage.h"
@@ -29,6 +28,7 @@
 #pragma comment(lib, "Dwmapi.lib")
 
 import HEXCTRL.CHexScroll;
+import HEXCTRL.CHexSelection;
 import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL;

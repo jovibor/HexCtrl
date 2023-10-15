@@ -238,7 +238,13 @@
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexCtrl.h" />
-    <ClInclude Include="..\..\HexCtrl\src\CHexSelection.h" />
+    <ClCompile Include="..\..\HexCtrl\src\CHexSelection.ixx">
+      <FileType>Document</FileType>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\CHexScroll.ixx">
       <FileType>Document</FileType>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
@@ -272,7 +278,6 @@
   <ItemGroup>
     <ClCompile Include="..\..\HexCtrl\dep\ListEx\CListEx.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp" />
-    <ClCompile Include="..\..\HexCtrl\src\CHexSelection.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.cpp" />

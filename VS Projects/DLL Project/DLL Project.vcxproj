@@ -231,7 +231,6 @@
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h" />
     <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h" />
     <ClInclude Include="..\..\HexCtrl\src\CHexCtrl.h" />
-    <ClInclude Include="..\..\HexCtrl\src\CHexSelection.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.h" />
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.h" />
@@ -254,7 +253,13 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\CHexSelection.cpp" />
+    <ClCompile Include="..\..\HexCtrl\src\CHexSelection.ixx">
+      <FileType>Document</FileType>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.cpp" />
