@@ -287,10 +287,8 @@ namespace HEXCTRL
 		VecSpan        vecSpan { };          //Vector of data offsets and sizes.
 		bool           fBigEndian { false }; //Treat the data as a big endian, used only in MODIFY_OPERATION mode.
 	};
-};
 
-namespace HEXCTRL
-{
+
 	/********************************************************************************************
 	* IHexCtrl - pure abstract base class.                                                      *
 	********************************************************************************************/

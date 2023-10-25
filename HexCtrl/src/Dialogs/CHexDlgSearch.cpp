@@ -55,10 +55,10 @@ namespace HEXCTRL::INTERNAL
 	struct CHexDlgSearch::STHREADRUN {
 		ULONGLONG ullStart { };
 		ULONGLONG ullEnd { };
-		ULONGLONG ullLoopChunkSize { }; //Actual data size for a `for()` loop.
-		ULONGLONG ullMemToAcquire { };  //Size of a memory to acquire, to search in.
-		ULONGLONG ullMemChunks { };     //How many such memory chunks, to search in.
-		ULONGLONG ullSizeSentinel { };  //Maximum size that search can't cross
+		ULONGLONG ullLoopChunkSize { };  //Actual data size for a `for()` loop.
+		ULONGLONG ullMemToAcquire { };   //Size of a memory to acquire, to search in.
+		ULONGLONG ullMemChunks { };      //How many such memory chunks, to search in.
+		ULONGLONG ullOffsetSentinel { }; //The maximum offset that search can't cross.
 		CHexDlgCallback* pDlgClbk { };
 		SpanCByte spnSearch { };
 		bool fForward { };
@@ -175,6 +175,7 @@ void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_REPLACE, m_stComboReplace);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_MODE, m_stComboMode);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_START, m_stEditStart);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_END, m_stEditEnd);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_STEP, m_stEditStep);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_LIMIT, m_stEditLimit);
 }
@@ -221,21 +222,15 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnS
 	if (nSizeSearch > uSearchSizeLimit)
 		return { false, false };
 
-	if (ullStart + nSizeSearch > m_ullSizeSentinel)
+	if (ullStart + nSizeSearch > m_ullOffsetSentinel)
 		return { false, false };
 
-	const auto ullSizeTotal = m_ullSizeSentinel - (fForward ? ullStart : ullEnd); //Depends on search direction.
+	const auto ullSizeTotal = m_ullOffsetSentinel - (fForward ? ullStart : ullEnd); //Depends on search direction.
 	const auto pHexCtrl = GetHexCtrl();
 	const auto ullStep = m_ullStep; //Search step.
 
-	STHREADRUN stThread;
-	stThread.ullStart = ullStart;
-	stThread.ullEnd = ullEnd;
-	stThread.ullSizeSentinel = m_ullSizeSentinel;
-	stThread.pDlgClbk = pDlgClbk;
-	stThread.fDlgExit = fDlgExit;
-	stThread.fForward = fForward;
-	stThread.spnSearch = spnSearch;
+	STHREADRUN stThread { .ullStart { ullStart }, .ullEnd { ullEnd }, .ullOffsetSentinel { m_ullOffsetSentinel },
+		.pDlgClbk { pDlgClbk }, .spnSearch { spnSearch }, .fForward { fForward }, .fDlgExit { fDlgExit } };
 
 	if (!pHexCtrl->IsVirtual()) {
 		stThread.ullMemToAcquire = ullSizeTotal;
@@ -305,10 +300,6 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 		m_stComboSearch.SetFocus();
 		UpdateSearchReplaceControls();
-
-		const auto iChecked { GetHexCtrl()->HasSelection() ? BST_CHECKED : BST_UNCHECKED };
-		m_stCheckSel.SetCheck(iChecked);
-		m_stEditStart.EnableWindow(iChecked);
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
@@ -363,7 +354,9 @@ void CHexDlgSearch::OnCancel()
 
 void CHexDlgSearch::OnCheckSel()
 {
-	m_stEditStart.EnableWindow(m_stCheckSel.GetCheck() == BST_CHECKED ? 0 : 1);
+	m_fSelection = m_stCheckSel.GetCheck() == BST_CHECKED;
+	m_stEditStart.EnableWindow(!m_fSelection);
+	m_stEditEnd.EnableWindow(!m_fSelection);
 }
 
 void CHexDlgSearch::OnComboModeSelChange()
@@ -615,9 +608,23 @@ void CHexDlgSearch::OnOK()
 void CHexDlgSearch::Prepare()
 {
 	const auto* const pHexCtrl = GetHexCtrl();
-	const auto ullDataSize = pHexCtrl->GetDataSize();
+	auto ullDataSize { 0ULL }; //Actual data size for the search.
+	if (m_stEditEnd.GetWindowTextLengthW() > 0) {
+		CStringW wstrEndOffset;
+		m_stEditEnd.GetWindowTextW(wstrEndOffset);
+		const auto optEnd = stn::StrToULL(wstrEndOffset.GetString());
+		if (!optEnd) {
+			MessageBoxW(L"End offset is wrong.", L"Incorrect offset", MB_ICONERROR);
+			return;
+		}
+
+		ullDataSize = (std::min)(pHexCtrl->GetDataSize(), *optEnd + 1); //Not more than GetDataSize().
+	}
+	else {
+		ullDataSize = pHexCtrl->GetDataSize();
+	}
+
 	m_fWildcard = m_stCheckWcard.GetCheck() == BST_CHECKED;
-	m_fSelection = m_stCheckSel.GetCheck() == BST_CHECKED;
 	m_fBigEndian = m_stCheckBE.GetCheck() == BST_CHECKED;
 	m_fMatchCase = m_stCheckMatchC.GetCheck() == BST_CHECKED;
 	m_fInverted = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_INV))->GetCheck() == BST_CHECKED;
@@ -637,15 +644,15 @@ void CHexDlgSearch::Prepare()
 	ComboSearchFill(wstrTextSearch);
 
 	//Start at.
-	if (!m_fSelection) { //Do not use "Start at" field when in the selection.
-		CStringW wstrStart;
-		m_stEditStart.GetWindowTextW(wstrStart);
-		if (wstrStart.IsEmpty()) {
+	if (!m_fSelection) { //Do not use "Start offset" field when in the selection.
+		CStringW wstrStartOffset;
+		m_stEditStart.GetWindowTextW(wstrStartOffset);
+		if (wstrStartOffset.IsEmpty()) {
 			m_ullOffsetCurr = 0;
 		}
-		else if (const auto optStart = stn::StrToULL(wstrStart.GetString()); optStart) {
+		else if (const auto optStart = stn::StrToULL(wstrStartOffset.GetString()); optStart) {
 			if (*optStart >= ullDataSize) {
-				MessageBoxW(L"\"Start search at\" offset is bigger than the data size!", L"Incorrect offset", MB_ICONERROR);
+				MessageBoxW(L"Start offset is bigger than the data size.", L"Incorrect offset", MB_ICONERROR);
 				return;
 			}
 			m_ullOffsetCurr = *optStart;
@@ -743,14 +750,14 @@ void CHexDlgSearch::Prepare()
 		if (ullSelSize < m_vecSearchData.size()) //Selection is too small.
 			return;
 
-		m_ullBoundBegin = refFront.ullOffset;
-		m_ullBoundEnd = m_ullBoundBegin + ullSelSize - m_vecSearchData.size();
-		m_ullSizeSentinel = m_ullBoundBegin + ullSelSize;
+		m_ullOffsetBoundBegin = refFront.ullOffset;
+		m_ullOffsetBoundEnd = m_ullOffsetBoundBegin + ullSelSize - m_vecSearchData.size();
+		m_ullOffsetSentinel = m_ullOffsetBoundBegin + ullSelSize;
 	}
 	else { //Search in a whole data.
-		m_ullBoundBegin = 0;
-		m_ullBoundEnd = ullDataSize - m_vecSearchData.size();
-		m_ullSizeSentinel = ullDataSize;
+		m_ullOffsetBoundBegin = 0;
+		m_ullOffsetBoundEnd = ullDataSize - m_vecSearchData.size();
+		m_ullOffsetSentinel = ullDataSize;
 	}
 
 	if (m_ullOffsetCurr + m_vecSearchData.size() > ullDataSize || m_ullOffsetCurr + m_vecReplaceData.size() > ullDataSize) {
@@ -1147,7 +1154,7 @@ void CHexDlgSearch::Search()
 		return;
 
 	m_fFound = false;
-	auto ullUntil = m_ullBoundEnd;
+	auto ullUntil = m_ullOffsetBoundEnd;
 	auto ullOffsetFound { 0ULL };
 	SFINDRESULT stFind;
 
@@ -1162,7 +1169,7 @@ void CHexDlgSearch::Search()
 			m_iWrap = 1;
 
 			if (m_fSecondMatch && !stFind.fCanceled) {
-				m_ullOffsetCurr = m_ullBoundBegin; //Starting from the beginning.
+				m_ullOffsetCurr = m_ullOffsetBoundBegin; //Starting from the beginning.
 				if (Finder(m_ullOffsetCurr, ullUntil, m_vecSearchData)) {
 					m_fFound = true;
 					m_fDoCount = true;
@@ -1173,7 +1180,7 @@ void CHexDlgSearch::Search()
 		}
 		};
 	const auto lmbFindBackward = [&]() {
-		ullUntil = m_ullBoundBegin;
+		ullUntil = m_ullOffsetBoundBegin;
 		if (m_fSecondMatch && m_ullOffsetCurr - m_ullStep < m_ullOffsetCurr) {
 			m_ullOffsetCurr -= m_ullStep;
 			if (stFind = Finder(m_ullOffsetCurr, ullUntil, m_vecSearchData, false);
@@ -1187,7 +1194,7 @@ void CHexDlgSearch::Search()
 			m_iWrap = -1;
 
 			if (!stFind.fCanceled) {
-				m_ullOffsetCurr = m_ullBoundEnd;
+				m_ullOffsetCurr = m_ullOffsetBoundEnd;
 				if (Finder(m_ullOffsetCurr, ullUntil, m_vecSearchData, false)) {
 					m_fFound = true;
 					m_fSecondMatch = true;
@@ -1400,8 +1407,8 @@ void CHexDlgSearch::ThreadRun(STHREADRUN* pStThread)
 				ullOffsetSearch += pStThread->ullLoopChunkSize;
 			}
 
-			if (ullOffsetSearch + pStThread->ullMemToAcquire > pStThread->ullSizeSentinel) {
-				pStThread->ullMemToAcquire = pStThread->ullSizeSentinel - ullOffsetSearch;
+			if (ullOffsetSearch + pStThread->ullMemToAcquire > pStThread->ullOffsetSentinel) {
+				pStThread->ullMemToAcquire = pStThread->ullOffsetSentinel - ullOffsetSearch;
 				pStThread->ullLoopChunkSize = pStThread->ullMemToAcquire - nSizeSearch;
 			}
 		}
@@ -1501,16 +1508,10 @@ void CHexDlgSearch::UpdateSearchReplaceControls()
 		return;
 
 	const auto fMutable = pHexCtrl->IsMutable();
+	const auto fSearchEnabled = m_stComboSearch.GetWindowTextLengthW() > 0;
+	const auto fReplaceEnabled = fMutable && fSearchEnabled && m_stComboReplace.GetWindowTextLengthW() > 0;
+
 	m_stComboReplace.EnableWindow(fMutable);
-
-	CStringW wstrTextSearch;
-	m_stComboSearch.GetWindowTextW(wstrTextSearch);
-	const auto fSearchEnabled = !wstrTextSearch.IsEmpty();
-
-	CStringW wstrTextReplace;
-	m_stComboReplace.GetWindowTextW(wstrTextReplace);
-	const auto fReplaceEnabled = fMutable && fSearchEnabled && !wstrTextReplace.IsEmpty();
-
 	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCH_F)->EnableWindow(fSearchEnabled);
 	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCH_B)->EnableWindow(fSearchEnabled);
 	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_FINDALL)->EnableWindow(fSearchEnabled);

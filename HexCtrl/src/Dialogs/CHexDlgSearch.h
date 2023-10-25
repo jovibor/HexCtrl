@@ -85,21 +85,22 @@ namespace HEXCTRL::INTERNAL
 		EMode m_eSearchMode { };
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
 		std::vector<ULONGLONG> m_vecSearchRes { }; //Search results.
-		CMenu m_stMenuList;         //Menu for the list control.
-		CComboBox m_stComboSearch;  //Combo box "Search".
-		CComboBox m_stComboReplace; //Combo box "Replace".
-		CComboBox m_stComboMode;    //Combo box "Search mode".
-		CButton m_stCheckSel;       //Check box "In selection".
-		CButton m_stCheckWcard;     //Check box "Wildcard".
-		CButton m_stCheckBE;        //Check box "Big-endian".
-		CButton m_stCheckMatchC;    //Check box "Match case".
-		CEdit m_stEditStart;        //Edit box "Start search at".
-		CEdit m_stEditStep;         //Edit box "Step".
-		CEdit m_stEditLimit;        //Edit box "Limit search hit".
-		ULONGLONG m_ullBoundBegin { };       //Search start boundary.
-		ULONGLONG m_ullBoundEnd { };         //Search end boundary.
-		ULONGLONG m_ullOffsetCurr { };       //Current offset a search should start from.
-		ULONGLONG m_ullSizeSentinel { };     //Maximum size that search can't cross.
+		CMenu m_stMenuList;                  //Menu for the list control.
+		CComboBox m_stComboSearch;           //Combo box "Search".
+		CComboBox m_stComboReplace;          //Combo box "Replace".
+		CComboBox m_stComboMode;             //Combo box "Search mode".
+		CButton m_stCheckSel;                //Check box "In selection".
+		CButton m_stCheckWcard;              //Check box "Wildcard".
+		CButton m_stCheckBE;                 //Check box "Big-endian".
+		CButton m_stCheckMatchC;             //Check box "Match case".
+		CEdit m_stEditStart;                 //Edit box "Start offset".
+		CEdit m_stEditEnd;                   //Edit box "End offset".
+		CEdit m_stEditStep;                  //Edit box "Step".
+		CEdit m_stEditLimit;                 //Edit box "Limit search hits".
+		ULONGLONG m_ullOffsetBoundBegin { }; //Search-start offset boundary.
+		ULONGLONG m_ullOffsetBoundEnd { };   //Search-end offset boundary.
+		ULONGLONG m_ullOffsetCurr { };       //Current offset that search should start from.
+		ULONGLONG m_ullOffsetSentinel { };   //The maximum offset that search can't cross.
 		ULONGLONG m_ullStep { 1 };           //Search step (default is 1 byte).
 		DWORD m_dwCount { };                 //How many, or what index number.
 		DWORD m_dwReplaced { };              //Replaced amount;
