@@ -36,6 +36,11 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
 		void HexCtrlHighlight(const VecSpan& vecSel); //Highlight found occurence in HexCtrl.
+		[[nodiscard]] bool IsBigEndian()const;
+		[[nodiscard]] bool IsInverted()const;
+		[[nodiscard]] bool IsMatchCase()const;
+		[[nodiscard]] bool IsSelection()const;
+		[[nodiscard]] bool IsWildcard()const;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnButtonSearchF();
@@ -44,6 +49,10 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnButtonReplace();
 		afx_msg void OnButtonReplaceAll();
 		afx_msg void OnCheckSel();
+		afx_msg void OnCheckWildcard();
+		afx_msg void OnCheckBigEndian();
+		afx_msg void OnCheckMatchCase();
+		afx_msg void OnCheckInverted();
 		afx_msg void OnComboModeSelChange();
 		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
@@ -85,18 +94,18 @@ namespace HEXCTRL::INTERNAL
 		EMode m_eSearchMode { };
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
 		std::vector<ULONGLONG> m_vecSearchRes { }; //Search results.
-		CMenu m_stMenuList;                  //Menu for the list control.
-		CComboBox m_stComboSearch;           //Combo box "Search".
-		CComboBox m_stComboReplace;          //Combo box "Replace".
-		CComboBox m_stComboMode;             //Combo box "Search mode".
-		CButton m_stCheckSel;                //Check box "In selection".
-		CButton m_stCheckWcard;              //Check box "Wildcard".
-		CButton m_stCheckBE;                 //Check box "Big-endian".
-		CButton m_stCheckMatchC;             //Check box "Match case".
-		CEdit m_stEditStart;                 //Edit box "Start offset".
-		CEdit m_stEditEnd;                   //Edit box "End offset".
-		CEdit m_stEditStep;                  //Edit box "Step".
-		CEdit m_stEditLimit;                 //Edit box "Limit search hits".
+		CMenu m_menuList;                    //Menu for the list control.
+		CComboBox m_comboSearch;             //Combo box "Search".
+		CComboBox m_comboReplace;            //Combo box "Replace".
+		CComboBox m_comboMode;               //Combo box "Search mode".
+		CButton m_btnSel;                    //Check box "In selection".
+		CButton m_btnWC;                     //Check box "Wildcard".
+		CButton m_btnBE;                     //Check box "Big-endian".
+		CButton m_btnMC;                     //Check box "Match case".
+		CEdit m_editStart;                   //Edit box "Start offset".
+		CEdit m_editEnd;                     //Edit box "End offset".
+		CEdit m_editStep;                    //Edit box "Step".
+		CEdit m_editLimit;                   //Edit box "Limit search hits".
 		ULONGLONG m_ullOffsetBoundBegin { }; //Search-start offset boundary.
 		ULONGLONG m_ullOffsetBoundEnd { };   //Search-end offset boundary.
 		ULONGLONG m_ullOffsetCurr { };       //Current offset that search should start from.
@@ -118,12 +127,12 @@ namespace HEXCTRL::INTERNAL
 		bool m_fDoCount { true };            //Do we count matches or just print "Found".
 		bool m_fReplace { false };           //Find or Find and Replace with...?
 		bool m_fAll { false };               //Find/Replace one by one, or all?
-		bool m_fSelection { false };         //"In selection" check box.
-		bool m_fWildcard { false };          //"Wildcard" check box.
-		bool m_fBigEndian { false };         //"Big-endian" check box.
-		bool m_fMatchCase { false };         //"Match case" check box.
-		bool m_fInverted { false };          //"Inverted" check box
 		bool m_fReplaceWarn { true };        //Show "Replace string size exceeds..." warning message or not.
 		bool m_fSearchNext { false };        //Search through Next/Prev menu.
+		bool m_fBigEndian { false };         //"Big-endian" check box.
+		bool m_fInverted { false };          //"Inverted" check box
+		bool m_fMatchCase { false };         //"Match case" check box.
+		bool m_fSelection { false };         //"In selection" check box.
+		bool m_fWildcard { false };          //"Wildcard" check box.
 	};
 }

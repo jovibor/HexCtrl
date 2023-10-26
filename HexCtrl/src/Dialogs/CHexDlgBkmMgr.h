@@ -61,7 +61,7 @@ namespace HEXCTRL::INTERNAL
 		IHexBookmarks* m_pVirtual { };
 		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
 		LONGLONG m_llIndexCurr { }; //Current bookmark's position index, to move next/prev.
-		CMenu m_stMenuList;
+		CMenu m_menuList;
 		CButton m_btnHex;           //Check-box "Hex numbers".
 		bool m_fShowAsHex { true };
 	};

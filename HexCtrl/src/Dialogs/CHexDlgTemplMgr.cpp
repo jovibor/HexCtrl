@@ -318,27 +318,27 @@ auto CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData) -> HWND
 	}
 
 	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_MINIMIZED) > 0 != IsMinimized()) {
-		m_btnMinMax.SetCheck(m_btnMinMax.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
+		m_btnMinMax.SetCheck(!IsMinimized());
 		OnCheckMinMax();
 	}
 
 	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_HEXNUM) > 0 != IsShowAsHex()) {
-		m_btnHex.SetCheck(m_btnHex.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
+		m_btnHex.SetCheck(!IsShowAsHex());
 		OnCheckHex();
 	}
 
 	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_SHOWTT) > 0 != IsTooltips()) {
-		m_btnShowTT.SetCheck(m_btnShowTT.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
+		m_btnShowTT.SetCheck(!IsTooltips());
 		OnCheckShowTt();
 	}
 
 	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_HGLSEL) > 0 != IsHglSel()) {
-		m_btnHglSel.SetCheck(m_btnHglSel.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
+		m_btnHglSel.SetCheck(!IsHglSel());
 		OnCheckHglSel();
 	}
 
 	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN) > 0 != IsSwapEndian()) {
-		m_btnSwapEndian.SetCheck(m_btnSwapEndian.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
+		m_btnSwapEndian.SetCheck(!IsSwapEndian());
 		OnCheckSwapEndian();
 	}
 
@@ -686,9 +686,9 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_stMenuTree.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLYALL), L"Disapply all");
 
 	m_editOffset.SetWindowTextW(L"0x0");
-	m_btnShowTT.SetCheck(IsTooltips() ? BST_CHECKED : BST_UNCHECKED);
-	m_btnHglSel.SetCheck(IsHglSel() ? BST_CHECKED : BST_UNCHECKED);
-	m_btnHex.SetCheck(IsShowAsHex() ? BST_CHECKED : BST_UNCHECKED);
+	m_btnShowTT.SetCheck(IsTooltips());
+	m_btnHglSel.SetCheck(IsHglSel());
+	m_btnHex.SetCheck(IsShowAsHex());
 
 	m_hCurResize = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
 	m_hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));

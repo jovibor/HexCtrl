@@ -271,7 +271,7 @@ auto CHexDlgBkmMgr::SetDlgData(std::uint64_t ullData)->HWND
 	}
 
 	if ((ullData & HEXCTRL_FLAG_BKMMGR_HEXNUM) > 0 != IsShowAsHex()) {
-		m_btnHex.SetCheck(m_btnHex.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
+		m_btnHex.SetCheck(!IsShowAsHex());
 		OnCheckHex();
 	}
 
@@ -413,7 +413,7 @@ void CHexDlgBkmMgr::OnDestroy()
 	CDialogEx::OnDestroy();
 
 	RemoveAll();
-	m_stMenuList.DestroyMenu();
+	m_menuList.DestroyMenu();
 }
 
 BOOL CHexDlgBkmMgr::OnInitDialog()
@@ -430,10 +430,10 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	m_pList->InsertColumn(4, L"Bk", LVCFMT_LEFT, 30);
 	m_pList->InsertColumn(5, L"Text", LVCFMT_LEFT, 30);
 
-	m_stMenuList.CreatePopupMenu();
-	m_stMenuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVE), L"Remove");
-	m_stMenuList.AppendMenuW(MF_SEPARATOR);
-	m_stMenuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVEALL), L"Remove All");
+	m_menuList.CreatePopupMenu();
+	m_menuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVE), L"Remove");
+	m_menuList.AppendMenuW(MF_SEPARATOR);
+	m_menuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVEALL), L"Remove All");
 
 	m_btnHex.SetCheck(BST_CHECKED);
 
@@ -538,13 +538,13 @@ void CHexDlgBkmMgr::OnListRClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 
 	//Edit menu enabled only when one item selected.
-	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVE), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVEALL),
+	m_menuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVE), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_menuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVEALL),
 		(m_pList->GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 
 	POINT pt;
 	GetCursorPos(&pt);
-	m_stMenuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
+	m_menuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
 }
 
 void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)

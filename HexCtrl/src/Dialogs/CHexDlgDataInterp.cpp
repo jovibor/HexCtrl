@@ -73,12 +73,12 @@ auto CHexDlgDataInterp::SetDlgData(std::uint64_t ullData)->HWND
 	}
 
 	if ((ullData & HEXCTRL_FLAG_DATAINTERP_HEXNUM) > 0 != IsShowAsHex()) {
-		m_btnHex.SetCheck(m_btnHex.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
+		m_btnHex.SetCheck(!IsShowAsHex());
 		OnCheckHex();
 	}
 
 	if ((ullData & HEXCTRL_FLAG_DATAINTERP_BE) > 0 != IsBigEndian()) {
-		m_btnBE.SetCheck(m_btnBE.GetCheck() == BST_CHECKED ? BST_UNCHECKED : BST_CHECKED);
+		m_btnBE.SetCheck(!IsBigEndian());
 		OnCheckBigEndian();
 	}
 
@@ -247,8 +247,8 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_btnHex.SetCheck(BST_CHECKED);
-	m_btnBE.SetCheck(BST_UNCHECKED);
+	m_btnBE.SetCheck(IsBigEndian());
+	m_btnHex.SetCheck(IsShowAsHex());
 
 	using enum EGroup; using enum EName; using enum ESize;
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"binary:", L"0"), GR_INTEGRAL, NAME_BINARY, SIZE_BYTE);

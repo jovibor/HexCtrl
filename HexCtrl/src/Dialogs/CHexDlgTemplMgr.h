@@ -212,7 +212,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fLMDownResize { };               //Left mouse pressed in splitter area to resize.
 		bool m_fListGuardEvent { false };       //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
 		bool m_fTooltips { true };              //Show tooltips or not.
-		bool m_fHglSel { true };          //Highlight selected fields with a selection.
+		bool m_fHglSel { true };                //Highlight selected fields with a selection.
 		bool m_fShowAsHex { true };
 		bool m_fSwapEndian { false };
 	};
