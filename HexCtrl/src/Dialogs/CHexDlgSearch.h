@@ -34,7 +34,7 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] SFINDRESULT Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnSearch,
 			bool fForward = true, CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true);
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
-		[[nodiscard]] EMode GetSearchMode()const; //Returns current search mode.
+		[[nodiscard]] EMode GetSearchMode()const;     //Returns current search mode.
 		void HexCtrlHighlight(const VecSpan& vecSel); //Highlight found occurence in HexCtrl.
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsInverted()const;
@@ -100,6 +100,7 @@ namespace HEXCTRL::INTERNAL
 		CComboBox m_comboMode;               //Combo box "Search mode".
 		CButton m_btnSel;                    //Check box "In selection".
 		CButton m_btnWC;                     //Check box "Wildcard".
+		CButton m_btnInv;                    //Check box "Inverted".
 		CButton m_btnBE;                     //Check box "Big-endian".
 		CButton m_btnMC;                     //Check box "Match case".
 		CEdit m_editStart;                   //Edit box "Start offset".

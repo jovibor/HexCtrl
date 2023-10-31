@@ -173,6 +173,7 @@ void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_SEL, m_btnSel);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_WILDCARD, m_btnWC);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_INV, m_btnInv);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_BE, m_btnBE);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_MATCHCASE, m_btnMC);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_SEARCH, m_comboSearch);
@@ -405,7 +406,7 @@ void CHexDlgSearch::OnCheckMatchCase()
 
 void CHexDlgSearch::OnCheckInverted()
 {
-	m_fInverted = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_INV))->GetCheck() == BST_CHECKED;
+	m_fInverted = m_btnInv.GetCheck() == BST_CHECKED;
 }
 
 void CHexDlgSearch::OnComboModeSelChange()
@@ -548,28 +549,22 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_menuList.AppendMenuW(MF_SEPARATOR);
 	m_menuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_CLEARALL), L"Clear All");
 
-	//"Step" edit box text.
-	m_editStep.SetWindowTextW(std::format(L"{}", m_ullStep).data());
-
-	//"Limit search hit" edit box text.
-	m_editLimit.SetWindowTextW(std::format(L"{}", m_dwFoundLimit).data());
+	m_editStep.SetWindowTextW(std::format(L"{}", m_ullStep).data()); //"Step" edit box text.
+	m_editLimit.SetWindowTextW(std::format(L"{}", m_dwFoundLimit).data()); //"Limit search hits" edit box text.
 
 	const auto hwndTipWC = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr);
 	const auto hwndTipInv = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr);
-	if (hwndTipWC == nullptr || hwndTipInv == nullptr)
+	const auto hwndTipEndOffset = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr);
+	if (hwndTipWC == nullptr || hwndTipInv == nullptr || hwndTipEndOffset == nullptr)
 		return FALSE;
 
-	TTTOOLINFOW stToolInfo { };
-	stToolInfo.cbSize = sizeof(TTTOOLINFOW);
-	stToolInfo.hwnd = m_hWnd;
-	stToolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
+	TTTOOLINFOW stToolInfo { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { TTF_IDISHWND | TTF_SUBCLASS }, .hwnd { m_hWnd },
+		.uId { reinterpret_cast<UINT_PTR>(m_btnWC.m_hWnd) } }; //"Wildcard" check box tooltip.
 
-	//"Wildcard" check box tooltip.
-	stToolInfo.uId = reinterpret_cast<UINT_PTR>(m_btnWC.m_hWnd);
-	std::wstring wstrToolText { };
-	//"Wildcard" tooltip text.
+	std::wstring wstrToolText;
 	wstrToolText += L"Use ";
 	wstrToolText += static_cast<wchar_t>(m_uWildcard);
 	wstrToolText += L" character to match any symbol, or any byte if in \"Hex Bytes\" search mode.\r\n";
@@ -577,17 +572,23 @@ BOOL CHexDlgSearch::OnInitDialog()
 	wstrToolText += L"  Hex Bytes: 11?11 will match: 112211, 113311, 114411, 119711, etc...\r\n";
 	wstrToolText += L"  ASCII Text: sa??le will match: sample, saAAle, saxale, saZble, etc...\r\n";
 	stToolInfo.lpszText = wstrToolText.data();
-	::SendMessageW(hwndTipWC, TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&stToolInfo));
+	::SendMessageW(hwndTipWC, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&stToolInfo));
 	::SendMessageW(hwndTipWC, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
 	::SendMessageW(hwndTipWC, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
 
-	stToolInfo.uId = reinterpret_cast<UINT_PTR>(GetDlgItem(IDC_HEXCTRL_SEARCH_CHECK_INV)->m_hWnd);
-	//"Inverted" tooltip text.
+	stToolInfo.uId = reinterpret_cast<UINT_PTR>(m_btnInv.m_hWnd); //"Inverted" check box tooltip.
 	wstrToolText = L"Search for the non-matching occurences.\r\nThat is everything that doesn't match search conditions.";
 	stToolInfo.lpszText = wstrToolText.data();
-	::SendMessageW(hwndTipInv, TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&stToolInfo));
+	::SendMessageW(hwndTipInv, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&stToolInfo));
 	::SendMessageW(hwndTipInv, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
 	::SendMessageW(hwndTipInv, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
+
+	stToolInfo.uId = reinterpret_cast<UINT_PTR>(m_editEnd.m_hWnd); //"End offset" edit box tooltip.
+	wstrToolText = L"The last offset for the search.\r\nEmpty means the whole data.";
+	stToolInfo.lpszText = wstrToolText.data();
+	::SendMessageW(hwndTipEndOffset, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&stToolInfo));
+	::SendMessageW(hwndTipEndOffset, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
+	::SendMessageW(hwndTipEndOffset, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
 
 	return TRUE;
 }

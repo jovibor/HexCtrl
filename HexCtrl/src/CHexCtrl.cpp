@@ -232,7 +232,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_stToolInfoBkm.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoBkm.uFlags = TTF_TRACK;
 	m_stToolInfoBkm.uId = m_uiIDTTBkm;
-	m_wndTtBkm.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
+	m_wndTtBkm.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
 	m_wndTtTempl.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
@@ -240,7 +240,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_stToolInfoTempl.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoTempl.uFlags = TTF_TRACK;
 	m_stToolInfoTempl.uId = m_uiIDTTTempl;
-	m_wndTtTempl.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
+	m_wndTtTempl.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
 	m_wndTtTempl.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
 	m_wndTtOffset.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
@@ -248,7 +248,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_stToolInfoOffset.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoOffset.uFlags = TTF_TRACK;
 	m_stToolInfoOffset.uId = 0x02UL; //Tooltip ID for offset.
-	m_wndTtOffset.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
+	m_wndTtOffset.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
 	m_wndTtOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
 	m_stColor = hcs.stColor;
