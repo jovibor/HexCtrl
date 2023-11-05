@@ -48,25 +48,6 @@ void CHexDlgOpers::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimize
 
 //Private methods.
 
-void CHexDlgOpers::CheckWndAvail()const
-{
-	using enum EHexOperMode;
-	using enum EHexDataSize;
-	BOOL fOperandEnable = TRUE;
-	switch (GetOperMode()) {
-	case OPER_NOT:
-	case OPER_SWAP:
-	case OPER_BITREV:
-		fOperandEnable = FALSE;
-		break;
-	default:
-		break;
-	};
-
-	GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND)->EnableWindow(fOperandEnable);
-	GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE)->EnableWindow(GetDataSize() == SIZE_BYTE ? FALSE : fOperandEnable);
-}
-
 void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
@@ -84,18 +65,13 @@ auto CHexDlgOpers::GetDataSize()const->EHexDataSize
 	return static_cast<EHexDataSize>(m_stComboSize.GetItemData(m_stComboSize.GetCurSel()));
 }
 
-void CHexDlgOpers::OnCancel()
-{
-	static_cast<CDialogEx*>(GetParentOwner())->EndDialog(IDCANCEL);
-}
-
 BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	switch (LOWORD(wParam)) //Control ID.
 	{
 	case IDC_HEXCTRL_OPERS_COMBO_OPER:
 	case IDC_HEXCTRL_OPERS_COMBO_SIZE:
-		CheckWndAvail();
+		SetControlsState();
 		if (HIWORD(wParam) == CBN_SELCHANGE) { //Combo-box selection changed.
 			SetOKButtonName();
 		}
@@ -249,7 +225,32 @@ void CHexDlgOpers::OnOK()
 	m_pHexCtrl->Redraw();
 }
 
-void CHexDlgOpers::SetOKButtonName()
+void CHexDlgOpers::SetControlsState()const
+{
+	using enum EHexOperMode; using enum EHexDataSize;
+	const auto eDataSize = GetDataSize();
+	auto fOperandEnable = TRUE;
+	auto fBtnEnable = TRUE;
+
+	switch (GetOperMode()) {
+	case OPER_NOT:
+	case OPER_BITREV:
+		fOperandEnable = FALSE;
+		break;
+	case OPER_SWAP:
+		fOperandEnable = FALSE;
+		fBtnEnable = eDataSize != SIZE_BYTE;
+		break;
+	default:
+		break;
+	};
+
+	GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND)->EnableWindow(fOperandEnable);
+	GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE)->EnableWindow(eDataSize == SIZE_BYTE ? FALSE : fOperandEnable);
+	GetDlgItem(IDOK)->EnableWindow(fBtnEnable);
+}
+
+void CHexDlgOpers::SetOKButtonName()const
 {
 	GetDlgItem(IDOK)->SetWindowTextW(m_mapNames.at(GetOperMode()).data());
 }

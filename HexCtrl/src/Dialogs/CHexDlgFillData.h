@@ -18,7 +18,6 @@ namespace HEXCTRL::INTERNAL
 		enum class EFillType : std::uint8_t; //Forward declaration.
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] auto GetFillType()const->EFillType;
-		void OnCancel()override;
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		BOOL OnInitDialog()override;
 		void OnOK()override;

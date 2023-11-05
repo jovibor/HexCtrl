@@ -18,13 +18,12 @@ namespace HEXCTRL::INTERNAL
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		BOOL OnInitDialog()override;
-		void OnCancel()override;
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		void OnOK()override;
-		void CheckWndAvail()const;
 		[[nodiscard]] auto GetOperMode()const->EHexOperMode;
 		[[nodiscard]] auto GetDataSize()const->EHexDataSize;
-		void SetOKButtonName();
+		void SetControlsState()const;
+		void SetOKButtonName()const;
 		DECLARE_MESSAGE_MAP();
 	private:
 		IHexCtrl* m_pHexCtrl { };

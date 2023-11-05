@@ -66,11 +66,6 @@ auto CHexDlgFillData::GetFillType()const->CHexDlgFillData::EFillType
 	return static_cast<EFillType>(m_stComboType.GetItemData(m_stComboType.GetCurSel()));
 }
 
-void CHexDlgFillData::OnCancel()
-{
-	static_cast<CDialogEx*>(GetParentOwner())->EndDialog(IDCANCEL);
-}
-
 BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	using enum EFillType;
