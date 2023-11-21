@@ -23,15 +23,15 @@ namespace HEXCTRL::INTERNAL
 		enum class EMode : std::uint8_t; //Forward declarations.
 		enum class ECmpType : std::uint16_t;
 		enum class EMenuID : std::uint16_t;
-		struct SFINDRESULT;
-		struct STHREADRUN;
+		struct FINDRESULT;
+		struct THREADRUN;
 		void DoDataExchange(CDataExchange* pDX)override;
 		void AddToList(ULONGLONG ullOffset);
 		void ClearList();
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
 		//Main routine for finding stuff.
-		[[nodiscard]] SFINDRESULT Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnSearch,
+		[[nodiscard]] FINDRESULT Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnSearch,
 			bool fForward = true, CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true);
 		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
 		[[nodiscard]] EMode GetSearchMode()const;     //Returns current search mode.
@@ -78,7 +78,7 @@ namespace HEXCTRL::INTERNAL
 		void ResetSearch();
 		void Search();
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
-		template<std::uint16_t uCmpType> void ThreadRun(STHREADRUN* pStThread);
+		template<std::uint16_t uCmpType> void ThreadRun(THREADRUN* pStThread);
 		void UpdateSearchReplaceControls();
 		template<std::uint16_t uCmpType>
 		[[nodiscard]] static bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize);
@@ -122,7 +122,7 @@ namespace HEXCTRL::INTERNAL
 		std::wstring m_wstrTextSearch;       //Text from "Search" box.
 		std::wstring m_wstrTextReplace;      //Text from "Replace with..." box.
 		HEXSPAN m_stSelSpan { };             //Previous selection.
-		void(CHexDlgSearch::*m_pfnThread)(STHREADRUN* pThread); //Func pointer to the ThreadRun<> for the Search thread.
+		void(CHexDlgSearch::*m_pfnThread)(THREADRUN* pThread); //Func pointer to the ThreadRun<> for the Search thread.
 		bool m_fSecondMatch { false };       //First or subsequent match. 
 		bool m_fFound { false };             //Found or not.
 		bool m_fDoCount { true };            //Do we count matches or just print "Found".

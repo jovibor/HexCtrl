@@ -88,13 +88,13 @@ namespace HEXCTRL
 		};
 
 		//Struct for UNDO command routine.
-		struct CHexCtrl::SUNDO {
+		struct CHexCtrl::UNDO {
 			ULONGLONG              ullOffset { }; //Start byte to apply Undo to.
 			std::vector<std::byte> vecData { };   //Data for Undo.
 		};
 
 		//Key bindings.
-		struct CHexCtrl::SKEYBIND {
+		struct CHexCtrl::KEYBIND {
 			EHexCmd eCmd { };
 			WORD    wMenuID { };
 			UINT    uKey { };
@@ -1605,7 +1605,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 	m_vecKeyBind.clear();
 	m_vecKeyBind.reserve(umapCmdMenu.size());
 	for (const auto& itMap : umapCmdMenu) {
-		m_vecKeyBind.emplace_back(SKEYBIND { .eCmd { itMap.second.first }, .wMenuID { static_cast<WORD>(itMap.second.second) } });
+		m_vecKeyBind.emplace_back(KEYBIND { .eCmd { itMap.second.first }, .wMenuID { static_cast<WORD>(itMap.second.second) } });
 	}
 
 	rapidjson::Document docJSON;
@@ -1631,11 +1631,11 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 	assert(fJSONParsed);
 
 	if (fJSONParsed) {
-		const auto lmbParseStr = [&](std::string_view sv)->std::optional<SKEYBIND> {
+		const auto lmbParseStr = [&](std::string_view sv)->std::optional<KEYBIND> {
 			if (sv.empty())
 				return { };
 
-			SKEYBIND stRet { };
+			KEYBIND stRet { };
 			const auto nSize = sv.size();
 			std::size_t nPosStart { 0 }; //Next position to start search for '+' sign.
 			const auto nSubWords = std::count(sv.begin(), sv.end(), '+') + 1; //How many sub-words (divided by '+')?
@@ -1674,7 +1674,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 					if (auto optKey = lmbParseStr(iterArrCurr->GetString()); optKey) {
 						optKey->eCmd = iterCmd->second.first;
 						optKey->wMenuID = static_cast<WORD>(iterCmd->second.second);
-						if (auto it = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [&optKey](const SKEYBIND& ref) {
+						if (auto it = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [&optKey](const KEYBIND& ref) {
 							return ref.eCmd == optKey->eCmd; }); it != m_vecKeyBind.end()) {
 							if (it->uKey == 0) {
 								*it = *optKey; //Adding keybindings from JSON to m_vecKeyBind.
@@ -1695,7 +1695,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 			//Check for previous same menu ID. To assign only one, first, keybinding for menu name.
 			//With `"ctrl+f", "ctrl+h"` in JSON, only the "Ctrl+F" will be assigned as the menu name.
 			const auto iterEnd = m_vecKeyBind.begin() + i++;
-			if (const auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd, [&](const SKEYBIND& ref) {
+			if (const auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd, [&](const KEYBIND& ref) {
 				return ref.wMenuID == iterMain.wMenuID; });
 				iterTmp == iterEnd && iterMain.wMenuID != 0 && iterMain.uKey != 0) {
 				CStringW wstrMenuName;
@@ -3606,7 +3606,7 @@ auto CHexCtrl::GetBottomLine()const->ULONGLONG
 auto CHexCtrl::GetCommand(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>
 {
 	std::optional<EHexCmd> optRet { std::nullopt };
-	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const SKEYBIND& ref) {
+	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const KEYBIND& ref) {
 		return ref.fCtrl == fCtrl && ref.fShift == fShift && ref.fAlt == fAlt && ref.uKey == uKey; });
 		iter != m_vecKeyBind.end()) {
 		optRet = iter->eCmd;
@@ -4175,7 +4175,7 @@ void CHexCtrl::Redo()
 
 	VecSpan vecSpan;
 	std::transform(refRedo->begin(), refRedo->end(), std::back_inserter(vecSpan),
-		[](SUNDO& ref) { return HEXSPAN { ref.ullOffset, ref.vecData.size() }; });
+		[](UNDO& ref) { return HEXSPAN { ref.ullOffset, ref.vecData.size() }; });
 
 	//Making new Undo data snapshot.
 	SnapshotUndo(vecSpan);
@@ -4542,12 +4542,12 @@ void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 	}
 
 	//Making new Undo data snapshot.
-	const auto& refUndo = m_vecUndo.emplace_back(std::make_unique<std::vector<SUNDO>>());
+	const auto& refUndo = m_vecUndo.emplace_back(std::make_unique<std::vector<UNDO>>());
 
 	//Bad alloc may happen here!!!
 	try {
 		for (const auto& iterSel : vecSpan) { //vecSpan.size() amount of continuous areas to preserve.
-			auto& refUNDO = refUndo->emplace_back(SUNDO { iterSel.ullOffset, { } });
+			auto& refUNDO = refUndo->emplace_back(UNDO { iterSel.ullOffset, { } });
 			refUNDO.vecData.resize(static_cast<std::size_t>(iterSel.ullSize));
 
 			//In Virtual mode processing data chunk by chunk.
@@ -4650,10 +4650,10 @@ void CHexCtrl::Undo()
 	//If there is no more free memory, just clear the vec and return.
 	try {
 		//Making new Redo data snapshot.
-		const auto& refRedo = m_vecRedo.emplace_back(std::make_unique<std::vector<SUNDO>>());
+		const auto& refRedo = m_vecRedo.emplace_back(std::make_unique<std::vector<UNDO>>());
 
 		for (const auto& iter : *m_vecUndo.back()) {
-			auto& refRedoBack = refRedo->emplace_back(SUNDO { iter.ullOffset, { } });
+			auto& refRedoBack = refRedo->emplace_back(UNDO { iter.ullOffset, { } });
 			refRedoBack.vecData.resize(iter.vecData.size());
 			const auto& refUndoData = iter.vecData;
 
@@ -4731,7 +4731,7 @@ BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
 {
 	const auto wMenuID = LOWORD(wParam);
 	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(),
-		[=](const SKEYBIND& ref) { return ref.wMenuID == wMenuID; }); iter != m_vecKeyBind.end()) {
+		[=](const KEYBIND& ref) { return ref.wMenuID == wMenuID; }); iter != m_vecKeyBind.end()) {
 		ExecuteCmd(iter->eCmd);
 		return TRUE;
 	}

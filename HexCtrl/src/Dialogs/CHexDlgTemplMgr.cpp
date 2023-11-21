@@ -169,7 +169,7 @@ void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 	if (const auto rIter = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
 		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
 			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
-		rIter != m_vecTemplatesApplied.rend()) {
+			rIter != m_vecTemplatesApplied.rend()) {
 		RemoveNodeWithAppliedID(rIter->get()->iAppliedID);
 		m_vecTemplatesApplied.erase(std::next(rIter).base());
 		if (m_pHexCtrl->IsDataSet()) {
@@ -509,7 +509,7 @@ void CHexDlgTemplMgr::OnBnRandomizeColors()
 
 void CHexDlgTemplMgr::OnBnApply()
 {
-	CString wstrText;
+	CStringW wstrText;
 	m_editOffset.GetWindowTextW(wstrText);
 	if (wstrText.IsEmpty())
 		return;
@@ -1652,9 +1652,7 @@ bool CHexDlgTemplMgr::SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 			return false;
 
 		//Convert ticks to seconds and adjust epoch.
-		LARGE_INTEGER lTicks;
-		lTicks.HighPart = ftTime.dwHighDateTime;
-		lTicks.LowPart = ftTime.dwLowDateTime;
+		LARGE_INTEGER lTicks { .LowPart { ftTime.dwLowDateTime }, .HighPart { static_cast<LONG>(ftTime.dwHighDateTime) } };
 		lTicks.QuadPart /= g_uFTTicksPerSec;
 		lTicks.QuadPart -= g_ullUnixEpochDiff;
 		if (lTicks.QuadPart >= LONG_MAX)
@@ -1699,9 +1697,7 @@ bool CHexDlgTemplMgr::SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 			return false;
 
 		//Convert ticks to seconds and adjust epoch.
-		LARGE_INTEGER lTicks;
-		lTicks.HighPart = ftTime.dwHighDateTime;
-		lTicks.LowPart = ftTime.dwLowDateTime;
+		LARGE_INTEGER lTicks { .LowPart { ftTime.dwLowDateTime }, .HighPart { static_cast<LONG>(ftTime.dwHighDateTime) } };
 		lTicks.QuadPart /= g_uFTTicksPerSec;
 		lTicks.QuadPart -= g_ullUnixEpochDiff;
 
@@ -1733,14 +1729,11 @@ bool CHexDlgTemplMgr::SetDataFILETIME(LPCWSTR pwszText, ULONGLONG ullOffset, boo
 		if (!optFileTime)
 			return false;
 
-		ULARGE_INTEGER stLITime;
-		stLITime.LowPart = optFileTime->dwLowDateTime;
-		stLITime.HighPart = optFileTime->dwHighDateTime;
-
+		ULARGE_INTEGER uliTime { .LowPart { optFileTime->dwLowDateTime }, .HighPart { optFileTime->dwHighDateTime } };
 		if (fShouldSwap) {
-			stLITime.QuadPart = ByteSwap(stLITime.QuadPart);
+			uliTime.QuadPart = ByteSwap(uliTime.QuadPart);
 		}
-		SetIHexTData(*m_pHexCtrl, ullOffset, stLITime.QuadPart);
+		SetIHexTData(*m_pHexCtrl, ullOffset, uliTime.QuadPart);
 	}
 
 	return false;
@@ -1922,17 +1915,12 @@ void CHexDlgTemplMgr::ShowListDataTime32(LPWSTR pwsz, __time32_t lTime32, bool f
 		return;
 	}
 
-	//Add seconds from epoch time
-	LARGE_INTEGER Time;
-	Time.HighPart = g_ulFileTime1970_HIGH;
-	Time.LowPart = g_ulFileTime1970_LOW;
+	//Add seconds from epoch time.
+	LARGE_INTEGER Time { .LowPart { g_ulFileTime1970_LOW }, .HighPart { g_ulFileTime1970_HIGH } };
 	Time.QuadPart += static_cast<LONGLONG>(lTime32) * g_uFTTicksPerSec;
 
-	//Convert to FILETIME
-	FILETIME ftTime;
-	ftTime.dwHighDateTime = Time.HighPart;
-	ftTime.dwLowDateTime = Time.LowPart;
-
+	//Convert to FILETIME.
+	const FILETIME ftTime { .dwLowDateTime { Time.LowPart }, .dwHighDateTime = static_cast<DWORD>(Time.HighPart) };
 	*std::format_to(pwsz, L"{}", FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar)) = L'\0';
 }
 
@@ -1952,17 +1940,12 @@ void CHexDlgTemplMgr::ShowListDataTime64(LPWSTR pwsz, __time64_t llTime64, bool 
 		return;
 	}
 
-	//Add seconds from epoch time
-	LARGE_INTEGER Time;
-	Time.HighPart = g_ulFileTime1970_HIGH;
-	Time.LowPart = g_ulFileTime1970_LOW;
+	//Add seconds from epoch time.
+	LARGE_INTEGER Time { .LowPart { g_ulFileTime1970_LOW }, .HighPart { g_ulFileTime1970_HIGH } };
 	Time.QuadPart += llTime64 * g_uFTTicksPerSec;
 
-	//Convert to FILETIME
-	FILETIME ftTime;
-	ftTime.dwHighDateTime = Time.HighPart;
-	ftTime.dwLowDateTime = Time.LowPart;
-
+	//Convert to FILETIME.
+	const FILETIME ftTime { .dwLowDateTime { Time.LowPart }, .dwHighDateTime { static_cast<DWORD>(Time.HighPart) } };
 	*std::format_to(pwsz, L"{}", FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar)) = L'\0';
 }
 

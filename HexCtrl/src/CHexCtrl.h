@@ -95,8 +95,8 @@ namespace HEXCTRL::INTERNAL
 		void SetWheelRatio(double dbRatio, bool fLines)override;
 		void ShowInfoBar(bool fShow)override;
 	private:
-		struct SUNDO;
-		struct SKEYBIND;
+		struct UNDO;
+		struct KEYBIND;
 		enum class EClipboard : std::uint8_t;
 		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tuple<std::wstring, std::wstring>;
 		void CaretMoveDown();  //Set caret one line down.
@@ -281,11 +281,11 @@ namespace HEXCTRL::INTERNAL
 		std::wstring m_wstrInfoBar { };       //Info bar text.
 		std::wstring m_wstrPageName { };      //Name of the sector/page.
 		std::wstring m_wstrTextTitle { };     //Text area title.
-		std::vector<std::unique_ptr<std::vector<SUNDO>>> m_vecUndo; //Undo data.
-		std::vector<std::unique_ptr<std::vector<SUNDO>>> m_vecRedo; //Redo data.
+		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecUndo; //Undo data.
+		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecRedo; //Redo data.
 		std::vector < std::unique_ptr < std::remove_pointer<HBITMAP>::type,
 			decltype([](const HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP { }; //Icons for the Menu.
-		std::vector<SKEYBIND> m_vecKeyBind { }; //Vector of key bindings.
+		std::vector<KEYBIND> m_vecKeyBind { }; //Vector of key bindings.
 		wchar_t m_wchUnprintable { L'.' };    //Replacement char for unprintable characters.
 		wchar_t m_wchDateSepar { L'/' };      //Date separator.
 		bool m_fCreated { false };            //Is control created or not yet.

@@ -9,9 +9,10 @@ module;
 #include "../dep/StrToNum/StrToNum/StrToNum.h"
 #include "../HexCtrl.h"
 #include <afxwin.h>
+#include <bit>
 #include <cassert>
+#include <cwctype>
 #include <format>
-#include <limits>
 #include <optional>
 #include <string>
 export module HEXCTRL.HexUtility;
@@ -19,14 +20,14 @@ export module HEXCTRL.HexUtility;
 export namespace HEXCTRL::INTERNAL
 {
 	//Time calculation constants and structs.
-	constexpr auto g_uFTTicksPerMS = 10000U;             //Number of 100ns intervals in a milli-second
-	constexpr auto g_uFTTicksPerSec = 10000000UL;        //Number of 100ns intervals in a second
-	constexpr auto g_uHoursPerDay = 24U;                 //24 hours per day
-	constexpr auto g_uSecondsPerHour = 3600U;            //3600 seconds per hour
-	constexpr auto g_uFileTime1582OffsetDays = 6653U;    //FILETIME is based upon 1 Jan 1601 whilst GUID time is from 15 Oct 1582. Add 6653 days to convert to GUID time
-	constexpr auto g_ulFileTime1970_LOW = 0xd53e8000UL;  //1st Jan 1970 as FILETIME
-	constexpr auto g_ulFileTime1970_HIGH = 0x019db1deUL; //Used for Unix and Java times
-	constexpr auto g_ullUnixEpochDiff = 11644473600ULL;  //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970
+	constexpr auto g_uFTTicksPerMS = 10000U;             //Number of 100ns intervals in a milli-second.
+	constexpr auto g_uFTTicksPerSec = 10000000UL;        //Number of 100ns intervals in a second.
+	constexpr auto g_uHoursPerDay = 24U;                 //24 hours per day.
+	constexpr auto g_uSecondsPerHour = 3600U;            //3600 seconds per hour.
+	constexpr auto g_uFileTime1582OffsetDays = 6653U;    //FILETIME is based upon 1 Jan 1601 whilst GUID time is from 15 Oct 1582. Add 6653 days to convert to GUID time.
+	constexpr auto g_ulFileTime1970_LOW = 0xd53e8000UL;  //1st Jan 1970 as FILETIME.
+	constexpr auto g_ulFileTime1970_HIGH = 0x019db1deUL; //Used for Unix and Java times.
+	constexpr auto g_ullUnixEpochDiff = 11644473600ULL;  //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970.
 
 	//Get data from IHexCtrl's given offset converted to a necessary type.
 	template<typename T>
@@ -169,22 +170,23 @@ export namespace HEXCTRL::INTERNAL
 
 		//Normalise the input string by replacing non-numeric characters except space with a `/`.
 		//This should regardless of the current date/time separator character.
-		std::wstring wstrDateTimeCooked { };
-		for (const auto iter : wsv)
-			wstrDateTimeCooked += (iswdigit(iter) || iter == L' ') ? iter : L'/';
+		std::wstring wstrDateTimeCooked;
+		for (const auto wch : wsv) {
+			wstrDateTimeCooked += (std::iswdigit(wch) || wch == L' ') ? wch : L'/';
+		}
 
 		SYSTEMTIME stSysTime { };
 		int iParsedArgs { };
 
-		//Parse date component
+		//Parse date component.
 		switch (dwFormat) {
-		case 0:	//Month-Day-Year
+		case 0:	//Month-Day-Year.
 			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &stSysTime.wMonth, &stSysTime.wDay, &stSysTime.wYear);
 			break;
-		case 1: //Day-Month-Year
+		case 1: //Day-Month-Year.
 			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &stSysTime.wDay, &stSysTime.wMonth, &stSysTime.wYear);
 			break;
-		case 2:	//Year-Month-Day 
+		case 2:	//Year-Month-Day.
 			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%4hu/%2hu/%2hu", &stSysTime.wYear, &stSysTime.wMonth, &stSysTime.wDay);
 			break;
 		default:
@@ -198,7 +200,7 @@ export namespace HEXCTRL::INTERNAL
 		if (const auto nPos = wstrDateTimeCooked.find(L' '); nPos != std::wstring::npos) {
 			wstrDateTimeCooked = wstrDateTimeCooked.substr(nPos + 1);
 
-			//Parse time component HH:MM:SS.mmm
+			//Parse time component HH:MM:SS.mmm.
 			if (swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%2hu/%3hu", &stSysTime.wHour, &stSysTime.wMinute,
 				&stSysTime.wSecond, &stSysTime.wMilliseconds) != 4)
 				return std::nullopt;
@@ -211,8 +213,7 @@ export namespace HEXCTRL::INTERNAL
 	{
 		std::optional<FILETIME> optFT { std::nullopt };
 		if (auto optSysTime = StringToSystemTime(wsv, dwFormat); optSysTime) {
-			FILETIME ftTime;
-			if (SystemTimeToFileTime(&*optSysTime, &ftTime) != FALSE) {
+			if (FILETIME ftTime; SystemTimeToFileTime(&*optSysTime, &ftTime) != FALSE) {
 				optFT = ftTime;
 			}
 		}
@@ -228,13 +229,13 @@ export namespace HEXCTRL::INTERNAL
 
 		std::wstring_view wsvFmt;
 		switch (dwFormat) {
-		case 0:	//0:Month/Day/Year HH:MM:SS.mmm
+		case 0:	//0:Month/Day/Year HH:MM:SS.mmm.
 			wsvFmt = L"{1:02d}{7}{0:02d}{7}{2} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
 			break;
-		case 1: //1:Day/Month/Year HH:MM:SS.mmm
+		case 1: //1:Day/Month/Year HH:MM:SS.mmm.
 			wsvFmt = L"{0:02d}{7}{1:02d}{7}{2} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
 			break;
-		case 2: //2:Year/Month/Day HH:MM:SS.mmm
+		case 2: //2:Year/Month/Day HH:MM:SS.mmm.
 			wsvFmt = L"{2}{7}{1:02d}{7}{0:02d} {3:02d}:{4:02d}:{5:02d}.{6:03d}";
 			break;
 		default:
@@ -247,7 +248,7 @@ export namespace HEXCTRL::INTERNAL
 
 	[[nodiscard]] auto FileTimeToString(FILETIME stFileTime, DWORD dwFormat, wchar_t wchSepar) -> std::wstring
 	{
-		if (SYSTEMTIME stSysTime { }; FileTimeToSystemTime(&stFileTime, &stSysTime) != FALSE) {
+		if (SYSTEMTIME stSysTime; FileTimeToSystemTime(&stFileTime, &stSysTime) != FALSE) {
 			return SystemTimeToString(stSysTime, dwFormat, wchSepar);
 		}
 
@@ -259,13 +260,13 @@ export namespace HEXCTRL::INTERNAL
 	{
 		std::wstring_view wsvFmt;
 		switch (dwFormat) {
-		case 0:	//Month-Day-Year
+		case 0:	//Month-Day-Year.
 			wsvFmt = L"MM{0}DD{0}YYYY HH:MM:SS.mmm";
 			break;
-		case 1: //Day-Month-Year
+		case 1: //Day-Month-Year.
 			wsvFmt = L"DD{0}MM{0}YYYY HH:MM:SS.mmm";
 			break;
-		case 2:	//Year-Month-Day
+		case 2:	//Year-Month-Day.
 			wsvFmt = L"YYYY{0}MM{0}DD HH:MM:SS.mmm";
 			break;
 		default:

@@ -32,7 +32,7 @@ namespace HEXCTRL::INTERNAL
 		static BOOL CALLBACK EnumCodePagesProc(LPWSTR pwszCP);
 		DECLARE_MESSAGE_MAP();
 	private:
-		struct SCODEPAGE {
+		struct CODEPAGE {
 			int iCPID { };
 			std::wstring wstrName { };
 			UINT uMaxChars { };
@@ -40,6 +40,6 @@ namespace HEXCTRL::INTERNAL
 		inline static CHexDlgCodepage* m_pThis { };
 		IHexCtrl* m_pHexCtrl { };
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
-		std::vector<SCODEPAGE> m_vecCodePage { };
+		std::vector<CODEPAGE> m_vecCodePage { };
 	};
 }

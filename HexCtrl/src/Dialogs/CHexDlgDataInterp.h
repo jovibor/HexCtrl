@@ -134,13 +134,13 @@ namespace HEXCTRL::INTERNAL
 			SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4,
 			SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10
 		};
-		struct SGRIDDATA {
+		struct GRIDDATA {
 			CMFCPropertyGridProperty* pProp { };
 			EGroup eGroup { };
 			EName eName { };
 			ESize eSize { };
 		};
-		std::vector<SGRIDDATA> m_vecProp;
+		std::vector<GRIDDATA> m_vecProp;
 		IHexCtrl* m_pHexCtrl { };
 		CHexPropGridCtrl m_stCtrlGrid;
 		CButton m_btnHex;            //Check-box "Hex numbers".

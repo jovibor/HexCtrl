@@ -109,7 +109,7 @@ void CHexDlgCodepage::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 		if (m_pHexCtrl->IsCreated()) {
 			m_pListMain->SetItemState(-1, 0, LVIS_SELECTED);
 			if (const auto iter = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
-				[this](const SCODEPAGE& ref) { return ref.iCPID == m_pHexCtrl->GetCodepage(); });
+				[this](const CODEPAGE& ref) { return ref.iCPID == m_pHexCtrl->GetCodepage(); });
 				iter != m_vecCodePage.end()) {
 				const auto iItem = static_cast<int>(iter - m_vecCodePage.begin());
 				m_pListMain->SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
@@ -195,7 +195,7 @@ void CHexDlgCodepage::SortList()
 	const auto iColumn = m_pListMain->GetSortColumn();
 	const auto fAscending = m_pListMain->GetSortAscending();
 	std::sort(m_vecCodePage.begin() + 1, m_vecCodePage.end(),
-		[iColumn, fAscending](const SCODEPAGE& st1, const SCODEPAGE& st2) {
+		[iColumn, fAscending](const CODEPAGE& st1, const CODEPAGE& st2) {
 			int iCompare { };
 			switch (iColumn) {
 			case 0: //CP ID.

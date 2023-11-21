@@ -180,7 +180,7 @@ auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM
 			[ullOffset](const HEXBKM& ref) { return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPAN& refV) {
 					return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
-			rIter != m_vecBookmarks.rend()) {
+					rIter != m_vecBookmarks.rend()) {
 			pBkm = &*rIter;
 		}
 	}
