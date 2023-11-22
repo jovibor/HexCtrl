@@ -31,7 +31,7 @@ export namespace HEXCTRL::INTERNAL
 
 	//Get data from IHexCtrl's given offset converted to a necessary type.
 	template<typename T>
-	[[nodiscard]] inline T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
+	[[nodiscard]] T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
 	{
 		const auto spnData = refHexCtrl.GetData({ ullOffset, sizeof(T) });
 		assert(!spnData.empty());
@@ -40,7 +40,7 @@ export namespace HEXCTRL::INTERNAL
 
 	//Set data of a necessary type to IHexCtrl's given offset.
 	template<typename T>
-	inline void SetIHexTData(IHexCtrl& refHexCtrl, ULONGLONG ullOffset, T tData)
+	void SetIHexTData(IHexCtrl& refHexCtrl, ULONGLONG ullOffset, T tData)
 	{
 		//Data overflow check.
 		assert(ullOffset + sizeof(T) <= refHexCtrl.GetDataSize());
@@ -52,21 +52,19 @@ export namespace HEXCTRL::INTERNAL
 			.vecSpan = { { ullOffset, sizeof(T) } } });
 	}
 
-	//False value for static_assert.
-	template <class>
-	inline constexpr bool StaticAssertFalse = false;
+	template<typename T> concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);
 
 	//Byte swap for types of 2, 4, or 8 byte size.
-	template <class T>
+	template<TSize1248 T>
 	[[nodiscard]] constexpr T ByteSwap(T tData)noexcept
 	{
 		//Since a swapping-data type can be any type of 2, 4, or 8 bytes size,
 		//we first bit_cast swapping-data to an integral type of the same size,
 		//then byte-swapping and then bit_cast to the original type back.
-		if constexpr (sizeof(T) == sizeof(unsigned char)) {
+		if constexpr (sizeof(T) == sizeof(unsigned char)) { //1 byte.
 			return tData;
 		}
-		else if constexpr (sizeof(T) == sizeof(unsigned short)) {
+		else if constexpr (sizeof(T) == sizeof(unsigned short)) { //2 bytes.
 			auto wData = std::bit_cast<unsigned short>(tData);
 			if (std::is_constant_evaluated()) {
 				wData = static_cast<unsigned short>((wData << 8) | (wData >> 8));
@@ -74,7 +72,7 @@ export namespace HEXCTRL::INTERNAL
 			}
 			return std::bit_cast<T>(_byteswap_ushort(wData));
 		}
-		else if constexpr (sizeof(T) == sizeof(unsigned long)) {
+		else if constexpr (sizeof(T) == sizeof(unsigned long)) { //4 bytes.
 			auto ulData = std::bit_cast<unsigned long>(tData);
 			if (std::is_constant_evaluated()) {
 				ulData = (ulData << 24) | ((ulData << 8) & 0x00FF'0000UL)
@@ -83,7 +81,7 @@ export namespace HEXCTRL::INTERNAL
 			}
 			return std::bit_cast<T>(_byteswap_ulong(ulData));
 		}
-		else if constexpr (sizeof(T) == sizeof(unsigned long long)) {
+		else if constexpr (sizeof(T) == sizeof(unsigned long long)) { //8 bytes.
 			auto ullData = std::bit_cast<unsigned long long>(tData);
 			if (std::is_constant_evaluated()) {
 				ullData = (ullData << 56) | ((ullData << 40) & 0x00FF'0000'0000'0000ULL)
@@ -94,12 +92,9 @@ export namespace HEXCTRL::INTERNAL
 			}
 			return std::bit_cast<T>(_byteswap_uint64(ullData));
 		}
-		else {
-			static_assert(StaticAssertFalse<T>, "Unexpected data size.");
-		}
 	}
 
-	template <class T>
+	template<TSize1248 T>
 	[[nodiscard]] constexpr T BitReverse(T tData) {
 		T tReversed { };
 		constexpr auto iBitsCount = sizeof(T) * 8;

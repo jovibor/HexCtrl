@@ -12,16 +12,16 @@ module;
 #include <vector>
 export module HEXCTRL.CHexSelection;
 
-export namespace HEXCTRL::INTERNAL
+namespace HEXCTRL::INTERNAL
 {
-	class CHexSelection final {
+	export class CHexSelection final {
 	public:
 		void ClearAll();
-		[[nodiscard]] ULONGLONG GetSelEnd()const;
-		[[nodiscard]] ULONGLONG GetSelSize()const;
-		[[nodiscard]] ULONGLONG GetSelStart()const;
-		[[nodiscard]] DWORD GetLineLength()const;  //Length of the selected line. Used in block selection (with Alt).
-		[[nodiscard]] ULONGLONG GetOffsetByIndex(ULONGLONG ullIndex)const;  //Retrieves selection's offset by index [0...GetSelSize())
+		[[nodiscard]] auto GetSelEnd()const->ULONGLONG;
+		[[nodiscard]] auto GetSelSize()const->ULONGLONG;
+		[[nodiscard]] auto GetSelStart()const->ULONGLONG;
+		[[nodiscard]] auto GetLineLength()const->DWORD; //Length of the selected line. Used in block selection (with Alt).
+		[[nodiscard]] auto GetOffsetByIndex(ULONGLONG ullIndex)const->ULONGLONG; //Retrieves selection's offset by index [0...GetSelSize())
 		[[nodiscard]] auto GetData()const->VecSpan;
 		[[nodiscard]] bool HasSelection()const;
 		[[nodiscard]] bool HasSelHighlight()const;
@@ -37,7 +37,6 @@ export namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullMarkSelEnd { 0xFFFFFFFFFFFFFFFFULL };           //For SetSelStartEnd().
 	};
 
-
 	void CHexSelection::ClearAll()
 	{
 		m_vecSelection.clear();
@@ -51,7 +50,7 @@ export namespace HEXCTRL::INTERNAL
 		return m_vecSelection;
 	}
 
-	DWORD CHexSelection::GetLineLength()const
+	auto CHexSelection::GetLineLength()const->DWORD
 	{
 		if (!HasSelection()) {
 			return 0UL;
@@ -60,7 +59,7 @@ export namespace HEXCTRL::INTERNAL
 		return static_cast<DWORD>(m_vecSelection.front().ullSize);
 	}
 
-	ULONGLONG CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const
+	auto CHexSelection::GetOffsetByIndex(ULONGLONG ullIndex)const->ULONGLONG
 	{
 		ULONGLONG ullOffset { 0xFFFFFFFFFFFFFFFFULL };
 		if (ullIndex >= GetSelSize())
@@ -76,7 +75,7 @@ export namespace HEXCTRL::INTERNAL
 		return ullOffset;
 	}
 
-	ULONGLONG CHexSelection::GetSelEnd()const
+	auto CHexSelection::GetSelEnd()const->ULONGLONG
 	{
 		if (!HasSelection()) {
 			return 0xFFFFFFFFFFFFFFFFULL;
@@ -85,7 +84,7 @@ export namespace HEXCTRL::INTERNAL
 		return m_vecSelection.back().ullOffset + m_vecSelection.back().ullSize - 1;
 	}
 
-	ULONGLONG CHexSelection::GetSelSize()const
+	auto CHexSelection::GetSelSize()const->ULONGLONG
 	{
 		if (!HasSelection()) {
 			return 0ULL;
@@ -94,7 +93,7 @@ export namespace HEXCTRL::INTERNAL
 		return m_vecSelection.size() * m_vecSelection.at(0).ullSize;
 	}
 
-	ULONGLONG CHexSelection::GetSelStart()const
+	auto CHexSelection::GetSelStart()const->ULONGLONG
 	{
 		if (!HasSelection()) {
 			return 0xFFFFFFFFFFFFFFFFULL;
