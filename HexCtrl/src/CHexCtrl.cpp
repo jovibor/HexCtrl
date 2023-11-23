@@ -31,7 +31,6 @@ import HEXCTRL.CHexScroll;
 import HEXCTRL.CHexSelection;
 import HEXCTRL.HexUtility;
 
-using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL
@@ -3723,7 +3722,7 @@ bool CHexCtrl::IsPageVisible()const
 }
 
 template<typename T>
-void CHexCtrl::ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, const SpanCByte spnDataToOperWith)
+void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const T& lmbWorker, const HEXCTRL::SpanCByte spnDataToOperWith)
 {
 	assert(!spnDataToOperWith.empty());
 	if (spnDataToOperWith.empty())

@@ -15,7 +15,6 @@
 
 import HEXCTRL.HexUtility;
 
-using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexPropGridCtrl, CMFCPropertyGridCtrl)

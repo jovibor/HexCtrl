@@ -147,8 +147,8 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool IsDrawable()const;                  //Should WM_PAINT be handled atm or not.
 		[[nodiscard]] bool IsInfoBar()const;                   //Should bottom Info rect be painted or not.
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
-		template<typename T>
-		void ModifyWorker(const HEXMODIFY& hms, const T& lmbWorker, SpanCByte spnDataToOperWith); //Main "modify" method with different workers.
+		template<typename T>                                   //Main "Modify" method with different workers.
+		void ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const T& lmbWorker, HEXCTRL::SpanCByte spnDataToOperWith);
 		void OffsetToString(ULONGLONG ullOffset, wchar_t* buffOut)const; //Format offset to wchar_t string.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		void OnModifyData();                                   //When data has been modified.

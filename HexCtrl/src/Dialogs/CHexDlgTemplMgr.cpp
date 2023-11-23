@@ -18,7 +18,6 @@
 
 import HEXCTRL.HexUtility;
 
-using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL

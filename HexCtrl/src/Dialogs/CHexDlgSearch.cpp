@@ -19,7 +19,6 @@
 
 import HEXCTRL.HexUtility;
 
-using namespace HEXCTRL;
 using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL
@@ -275,7 +274,7 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnS
 	return { stThread.fResult, stThread.fCanceled };
 }
 
-IHexCtrl* CHexDlgSearch::GetHexCtrl()const
+auto CHexDlgSearch::GetHexCtrl()const->IHexCtrl*
 {
 	return m_pHexCtrl;
 }

@@ -7,13 +7,16 @@
 #pragma once
 #include "../../HexCtrl.h"
 #include <afxdialogex.h>
-#include "CHexDlgFillData.h"
-#include "CHexDlgOpers.h"
+#include <memory>
 
 namespace HEXCTRL::INTERNAL
 {
+	class CHexDlgOpers;    //Forward declarations.
+	class CHexDlgFillData;
 	class CHexDlgModify final : public CDialogEx {
 	public:
+		CHexDlgModify();
+		~CHexDlgModify();
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void Initialize(IHexCtrl* pHexCtrl);
 		auto SetDlgData(std::uint64_t ullData) -> HWND;
@@ -28,7 +31,7 @@ namespace HEXCTRL::INTERNAL
 	private:
 		IHexCtrl* m_pHexCtrl { };
 		CTabCtrl m_tabMain;
-		const std::unique_ptr<CHexDlgFillData> m_pDlgFillData { std::make_unique<CHexDlgFillData>() }; //"Fill with" tab dialog.
-		const std::unique_ptr<CHexDlgOpers> m_pDlgOpers { std::make_unique<CHexDlgOpers>() }; //"Operations" tab dialog.
+		std::unique_ptr<CHexDlgOpers> m_pDlgOpers;       //"Operations" tab dialog.
+		std::unique_ptr<CHexDlgFillData> m_pDlgFillData; //"Fill with" tab dialog.
 	};
 }

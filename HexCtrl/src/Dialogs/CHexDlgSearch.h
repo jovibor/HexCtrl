@@ -33,9 +33,9 @@ namespace HEXCTRL::INTERNAL
 		//Main routine for finding stuff.
 		[[nodiscard]] FINDRESULT Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnSearch,
 			bool fForward = true, CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true);
-		[[nodiscard]] IHexCtrl* GetHexCtrl()const;
-		[[nodiscard]] EMode GetSearchMode()const;     //Returns current search mode.
-		void HexCtrlHighlight(const VecSpan& vecSel); //Highlight found occurence in HexCtrl.
+		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
+		[[nodiscard]] auto GetSearchMode()const->EMode; //Returns current search mode.
+		void HexCtrlHighlight(const VecSpan& vecSel);   //Highlight found occurence in HexCtrl.
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsInverted()const;
 		[[nodiscard]] bool IsMatchCase()const;
