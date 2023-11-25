@@ -47,7 +47,6 @@ namespace HEXCTRL::INTERNAL
 		COLORREF          clrText { };      //Text color in HexCtrl.
 		VecFields         vecNested { };    //Vector for nested fields.
 		PHEXTEMPLATEFIELD pFieldParent { }; //Parent field, in case of nested.
-		PHEXTEMPLATE      pTemplate { };    //Template pointer, this field belongs to.
 		EHexFieldType     eType { };        //Field type.
 		std::uint8_t      uTypeID { };      //Type ID for custom types.
 		bool              fBigEndian { };   //Field endianness.
@@ -197,13 +196,13 @@ namespace HEXCTRL::INTERNAL
 		HBITMAP m_hBITMAPMin { };    //Bitmap for the min checkbox.
 		HBITMAP m_hBITMAPMax { };    //Bitmap for the max checkbox.
 		LISTEX::IListExPtr m_pListApplied { LISTEX::CreateListEx() };
-		CTreeCtrl m_stTreeApplied;
-		CMenu m_stMenuTree;           //Menu for the tree control.
-		CMenu m_stMenuHdr;            //Menu for the list header.
+		CTreeCtrl m_treeApplied;
+		CMenu m_menuTree;            //Menu for the tree control.
+		CMenu m_menuHdr;             //Menu for the list header.
 		HCURSOR m_hCurResize;
 		HCURSOR m_hCurArrow;
-		PHEXTEMPLATEAPPLIED m_pAppliedCurr { }; //Currently selected PApplied.
-		PVecFields m_pVecFieldsCurr { };        //Pointer to currently selected vector with fields.
+		PHEXTEMPLATEAPPLIED m_pAppliedCurr { }; //Currently selected template in the applied Tree.
+		PVecFields m_pVecFieldsCurr { };        //Currently selected Fields vector.
 		HTREEITEM m_hTreeCurrParent { };        //Currently selected Tree node's parent.
 		DWORD m_dwDateFormat { };               //Date format.
 		int m_iDynLayoutMinY { };               //For DynamicLayout::SetMinSize.
@@ -213,7 +212,7 @@ namespace HEXCTRL::INTERNAL
 		bool m_fListGuardEvent { false };       //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
 		bool m_fTooltips { true };              //Show tooltips or not.
 		bool m_fHglSel { true };                //Highlight selected fields with a selection.
-		bool m_fShowAsHex { true };
-		bool m_fSwapEndian { false };
+		bool m_fShowAsHex { true };             //Show data in the list as Hex or decimal.
+		bool m_fSwapEndian { false };           //Swap data endianness in the list.
 	};
 }

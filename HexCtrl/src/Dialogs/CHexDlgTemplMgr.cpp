@@ -107,7 +107,7 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 	tvi.itemex.cChildren = static_cast<int>(pTemplate->vecFields.size());
 	tvi.itemex.pszText = LPSTR_TEXTCALLBACK;
 	tvi.itemex.lParam = reinterpret_cast<LPARAM>(pApplied); //Tree root node has PHEXTEMPLATEAPPLIED ptr.
-	const auto hTreeRootNode = m_stTreeApplied.InsertItem(&tvi);
+	const auto hTreeRootNode = m_treeApplied.InsertItem(&tvi);
 
 	const auto lmbFill = [&](HTREEITEM hTreeRoot, VecFields& refVecFields)->void {
 		const auto _lmbFill = [&](const auto& lmbSelf, HTREEITEM hTreeRoot, VecFields& refVecFields)->void {
@@ -115,7 +115,7 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 				tvi.hParent = hTreeRoot;
 				tvi.itemex.cChildren = static_cast<int>(field->vecNested.size());
 				tvi.itemex.lParam = reinterpret_cast<LPARAM>(field.get()); //Tree child nodes have PHEXTEMPLATEAPPLIED ptr.
-				const auto hCurrentRoot = m_stTreeApplied.InsertItem(&tvi);
+				const auto hCurrentRoot = m_treeApplied.InsertItem(&tvi);
 				if (tvi.itemex.cChildren > 0) {
 					lmbSelf(lmbSelf, hCurrentRoot, field->vecNested);
 				}
@@ -135,7 +135,7 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 void CHexDlgTemplMgr::DisapplyAll()
 {
 	if (IsWindow(m_hWnd)) { //Dialog must be created and alive to work with its members.
-		m_stTreeApplied.DeleteAllItems();
+		m_treeApplied.DeleteAllItems();
 		m_pListApplied->SetItemCountEx(0);
 		UpdateStaticText();
 	}
@@ -380,7 +380,7 @@ void CHexDlgTemplMgr::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES, m_comboTemplates);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET, m_editOffset);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, m_stTreeApplied);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, m_treeApplied);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX, m_btnMinMax);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, m_btnShowTT);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, m_btnHglSel);
@@ -421,10 +421,10 @@ auto CHexDlgTemplMgr::GetAppliedFromItem(HTREEITEM hTreeItem)->PHEXTEMPLATEAPPLI
 	auto hRoot = hTreeItem;
 	while (hRoot != nullptr) { //Root node.
 		hTreeItem = hRoot;
-		hRoot = m_stTreeApplied.GetNextItem(hTreeItem, TVGN_PARENT);
+		hRoot = m_treeApplied.GetNextItem(hTreeItem, TVGN_PARENT);
 	}
 
-	return reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(hTreeItem));
+	return reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_treeApplied.GetItemData(hTreeItem));
 }
 
 bool CHexDlgTemplMgr::IsHglSel()const
@@ -596,7 +596,7 @@ BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	const auto wMenuID = LOWORD(wParam);
 	switch (static_cast<EMenuID>(wMenuID)) {
 	case IDM_TREEAPPLIED_DISAPPLY:
-		if (const auto pApplied = GetAppliedFromItem(m_stTreeApplied.GetSelectedItem()); pApplied != nullptr) {
+		if (const auto pApplied = GetAppliedFromItem(m_treeApplied.GetSelectedItem()); pApplied != nullptr) {
 			DisapplyByID(pApplied->iAppliedID);
 		}
 		return TRUE;
@@ -611,9 +611,9 @@ BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	case IDM_LISTAPPLIED_HDR_ENDIANNESS:
 	case IDM_LISTAPPLIED_HDR_COLORS:
 	{
-		const auto fChecked = m_stMenuHdr.GetMenuState(wMenuID, MF_BYCOMMAND) & MF_CHECKED;
+		const auto fChecked = m_menuHdr.GetMenuState(wMenuID, MF_BYCOMMAND) & MF_CHECKED;
 		m_pListApplied->HideColumn(wMenuID - static_cast<int>(IDM_LISTAPPLIED_HDR_TYPE), fChecked);
-		m_stMenuHdr.CheckMenuItem(wMenuID, (fChecked ? MF_UNCHECKED : MF_CHECKED) | MF_BYCOMMAND);
+		m_menuHdr.CheckMenuItem(wMenuID, (fChecked ? MF_UNCHECKED : MF_CHECKED) | MF_BYCOMMAND);
 	}
 	return TRUE;
 	default:
@@ -639,8 +639,8 @@ void CHexDlgTemplMgr::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
-	m_stMenuTree.DestroyMenu();
-	m_stMenuHdr.DestroyMenu();
+	m_menuTree.DestroyMenu();
+	m_menuHdr.DestroyMenu();
 	m_pAppliedCurr = nullptr;
 	m_pVecFieldsCurr = nullptr;
 	m_hTreeCurrParent = nullptr;
@@ -664,25 +664,25 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_pListApplied->InsertColumn(m_iIDListApplFieldClrs, L"Colors", LVCFMT_LEFT, 57);
 
 	using enum EMenuID;
-	m_stMenuHdr.CreatePopupMenu();
-	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_TYPE), L"Type");
-	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_TYPE), MF_CHECKED | MF_BYCOMMAND);
-	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), L"Name");
-	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), MF_CHECKED | MF_BYCOMMAND);
-	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_OFFSET), L"Offset");
-	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_OFFSET), MF_CHECKED | MF_BYCOMMAND);
-	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_SIZE), L"Size");
-	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_SIZE), MF_CHECKED | MF_BYCOMMAND);
-	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_DATA), L"Data");
-	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_DATA), MF_CHECKED | MF_BYCOMMAND);
-	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_ENDIANNESS), L"Endianness");
-	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_ENDIANNESS), MF_CHECKED | MF_BYCOMMAND);
-	m_stMenuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_COLORS), L"Colors");
-	m_stMenuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_COLORS), MF_CHECKED | MF_BYCOMMAND);
+	m_menuHdr.CreatePopupMenu();
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_TYPE), L"Type");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_TYPE), MF_CHECKED | MF_BYCOMMAND);
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), L"Name");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_NAME), MF_CHECKED | MF_BYCOMMAND);
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_OFFSET), L"Offset");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_OFFSET), MF_CHECKED | MF_BYCOMMAND);
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_SIZE), L"Size");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_SIZE), MF_CHECKED | MF_BYCOMMAND);
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_DATA), L"Data");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_DATA), MF_CHECKED | MF_BYCOMMAND);
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_ENDIANNESS), L"Endianness");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_ENDIANNESS), MF_CHECKED | MF_BYCOMMAND);
+	m_menuHdr.AppendMenuW(MF_STRING, static_cast<int>(IDM_LISTAPPLIED_HDR_COLORS), L"Colors");
+	m_menuHdr.CheckMenuItem(static_cast<int>(IDM_LISTAPPLIED_HDR_COLORS), MF_CHECKED | MF_BYCOMMAND);
 
-	m_stMenuTree.CreatePopupMenu();
-	m_stMenuTree.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLY), L"Disapply template");
-	m_stMenuTree.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLYALL), L"Disapply all");
+	m_menuTree.CreatePopupMenu();
+	m_menuTree.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLY), L"Disapply template");
+	m_menuTree.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_TREEAPPLIED_DISAPPLYALL), L"Disapply all");
 
 	m_editOffset.SetWindowTextW(L"0x0");
 	m_btnShowTT.SetCheck(IsTooltips());
@@ -693,11 +693,11 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
 
 	CRect rcTree;
-	m_stTreeApplied.GetWindowRect(rcTree);
+	m_treeApplied.GetWindowRect(rcTree);
 	ScreenToClient(rcTree);
 	m_iDynLayoutMinY = rcTree.top + 5;
 	EnableDynamicLayoutHelper(true);
-	::SetWindowSubclass(m_stTreeApplied, TreeSubclassProc, 0, 0);
+	::SetWindowSubclass(m_treeApplied, TreeSubclassProc, 0, 0);
 	SetDlgButtonsState();
 
 	for (const auto& pTempl : m_vecTemplates) {
@@ -767,7 +767,7 @@ void CHexDlgTemplMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	const auto hItem = TreeItemFromListItem(iItem);
 	m_hTreeCurrParent = hItem;
-	m_stTreeApplied.Expand(hItem, TVE_EXPAND);
+	m_treeApplied.Expand(hItem, TVE_EXPAND);
 
 	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
 	m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()));
@@ -824,7 +824,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	switch (pItem->iSubItem) {
 	case m_iIDListApplFieldType: //Type.
 		if (pField->eType == type_custom) {
-			auto& refVecCT = pField->pTemplate->vecCustomType;
+			auto& refVecCT = m_pAppliedCurr->pTemplate->vecCustomType;
 			if (const auto iter = std::find_if(refVecCT.begin(), refVecCT.end(),
 				[uTypeID = pField->uTypeID](const HEXCUSTOMTYPE& ref) {
 					return ref.uTypeID == uTypeID; }); iter != refVecCT.end()) {
@@ -1015,7 +1015,7 @@ void CHexDlgTemplMgr::OnListHdrRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 {
 	CPoint pt;
 	GetCursorPos(&pt);
-	m_stMenuHdr.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, pt.x, pt.y, this);
+	m_menuHdr.TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, pt.x, pt.y, this);
 }
 
 void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
@@ -1025,7 +1025,7 @@ void CHexDlgTemplMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	if (iItem < 0 || m_fListGuardEvent)
 		return;
 
-	m_stTreeApplied.SelectItem(TreeItemFromListItem(iItem));
+	m_treeApplied.SelectItem(TreeItemFromListItem(iItem));
 }
 
 void CHexDlgTemplMgr::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
@@ -1153,11 +1153,11 @@ void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)
 
 	if (m_fLMDownResize) {
 		CRect rcTree;
-		m_stTreeApplied.GetWindowRect(rcTree);
+		m_treeApplied.GetWindowRect(rcTree);
 		ScreenToClient(rcTree);
 		rcTree.right = point.x - iWidthBetweenTreeAndList;
 		if (rcTree.Width() >= iMinTreeWidth) {
-			m_stTreeApplied.SetWindowPos(nullptr, rcTree.left, rcTree.top,
+			m_treeApplied.SetWindowPos(nullptr, rcTree.left, rcTree.top,
 				rcTree.Width(), rcTree.Height(), SWP_NOACTIVATE);
 
 			rcList.left = point.x;
@@ -1234,12 +1234,12 @@ void CHexDlgTemplMgr::OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	if ((pItem->mask & TVIF_TEXT) == 0)
 		return;
 
-	if (m_stTreeApplied.GetParentItem(pItem->hItem) == nullptr) { //Root node.
-		const auto pTemplApplied = reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(pItem->hItem));
+	if (m_treeApplied.GetParentItem(pItem->hItem) == nullptr) { //Root node.
+		const auto pTemplApplied = reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_treeApplied.GetItemData(pItem->hItem));
 		StringCchCopyW(pItem->pszText, pItem->cchTextMax, pTemplApplied->pTemplate->wstrName.data());
 	}
 	else {
-		const auto pTemplField = reinterpret_cast<PHEXTEMPLATEFIELD>(m_stTreeApplied.GetItemData(pItem->hItem));
+		const auto pTemplField = reinterpret_cast<PHEXTEMPLATEFIELD>(m_treeApplied.GetItemData(pItem->hItem));
 		StringCchCopyW(pItem->pszText, pItem->cchTextMax, pTemplField->wstrName.data());
 	}
 }
@@ -1249,10 +1249,10 @@ void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	const auto pTree = reinterpret_cast<LPNMTREEVIEWW>(pNMHDR);
 	const auto pItem = &pTree->itemNew;
 
-	//Item was changed by m_stTreeApplied.SelectItem(...) or by m_stTreeApplied.DeleteItem(...);
+	//Item was changed by m_treeApplied.SelectItem(...) or by m_treeApplied.DeleteItem(...);
 	if (pTree->action == TVC_UNKNOWN) {
-		if (m_stTreeApplied.GetParentItem(pItem->hItem) != nullptr) {
-			const auto dwItemData = m_stTreeApplied.GetItemData(pItem->hItem);
+		if (m_treeApplied.GetParentItem(pItem->hItem) != nullptr) {
+			const auto dwItemData = m_treeApplied.GetItemData(pItem->hItem);
 			SetHexSelByField(reinterpret_cast<PCHEXTEMPLATEFIELD>(dwItemData));
 		}
 		return;
@@ -1263,18 +1263,20 @@ void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	PHEXTEMPLATEFIELD pFieldCurr { };
 	PVecFields pVecCurrFields { };
 
-	if (m_stTreeApplied.GetParentItem(pItem->hItem) == nullptr) { //Root item.
+	m_pAppliedCurr = GetAppliedFromItem(pItem->hItem);
+	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
+
+	if (m_treeApplied.GetParentItem(pItem->hItem) == nullptr) { //Root item.
 		fRootNodeClick = true;
-		const auto pApplied = reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(pItem->hItem));
-		pVecCurrFields = &pApplied->pTemplate->vecFields; //On Root item click, set pVecCurrFields to Template's main vecFields.
+		pVecCurrFields = &m_pAppliedCurr->pTemplate->vecFields; //On Root item click, set pVecCurrFields to Template's main vecFields.
 		m_hTreeCurrParent = pItem->hItem;
 	}
 	else { //Child items.
-		pFieldCurr = reinterpret_cast<PHEXTEMPLATEFIELD>(m_stTreeApplied.GetItemData(pItem->hItem));
+		pFieldCurr = reinterpret_cast<PHEXTEMPLATEFIELD>(m_treeApplied.GetItemData(pItem->hItem));
 		if (pFieldCurr->pFieldParent == nullptr) {
 			if (pFieldCurr->vecNested.empty()) { //On first level child items, set pVecCurrFields to Template's main vecFields.
-				pVecCurrFields = &pFieldCurr->pTemplate->vecFields;
-				m_hTreeCurrParent = m_stTreeApplied.GetParentItem(pItem->hItem);
+				pVecCurrFields = &m_pAppliedCurr->pTemplate->vecFields;
+				m_hTreeCurrParent = m_treeApplied.GetParentItem(pItem->hItem);
 			}
 			else { //If it's nested Fields vector, set pVecCurrFields to it.
 				fRootNodeClick = true;
@@ -1285,7 +1287,7 @@ void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		else { //If it's nested Field, set pVecCurrFields to parent Fields' vecNested.
 			if (pFieldCurr->vecNested.empty()) {
 				pVecCurrFields = &pFieldCurr->pFieldParent->vecNested;
-				m_hTreeCurrParent = m_stTreeApplied.GetParentItem(pItem->hItem);
+				m_hTreeCurrParent = m_treeApplied.GetParentItem(pItem->hItem);
 			}
 			else {
 				fRootNodeClick = true;
@@ -1295,8 +1297,6 @@ void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		}
 	}
 
-	m_pAppliedCurr = GetAppliedFromItem(pItem->hItem);
-	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
 	if (pVecCurrFields != m_pVecFieldsCurr) { //To not trigger SetItemCountEx (which is slow) if it's the same count.
 		m_pVecFieldsCurr = pVecCurrFields;
 		m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()), LVSICF_NOSCROLL);
@@ -1306,10 +1306,10 @@ void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	if (!fRootNodeClick) {
 		int iIndexHighlight { 0 }; //Index to highlight in the list.
-		auto hChild = m_stTreeApplied.GetNextItem(m_stTreeApplied.GetParentItem(pItem->hItem), TVGN_CHILD);
+		auto hChild = m_treeApplied.GetNextItem(m_treeApplied.GetParentItem(pItem->hItem), TVGN_CHILD);
 		while (hChild != pItem->hItem) { //Checking for currently selected item in the tree.
 			++iIndexHighlight;
-			hChild = m_stTreeApplied.GetNextSiblingItem(hChild);
+			hChild = m_treeApplied.GetNextSiblingItem(hChild);
 		}
 		m_pListApplied->SetItemState(iIndexHighlight, LVIS_SELECTED, LVIS_SELECTED);
 		m_pListApplied->EnsureVisible(iIndexHighlight, FALSE);
@@ -1324,18 +1324,18 @@ void CHexDlgTemplMgr::OnTreeRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 	POINT pt;
 	GetCursorPos(&pt);
 	POINT ptTree = pt;
-	m_stTreeApplied.ScreenToClient(&ptTree);
-	const auto hTreeItem = m_stTreeApplied.HitTest(ptTree);
+	m_treeApplied.ScreenToClient(&ptTree);
+	const auto hTreeItem = m_treeApplied.HitTest(ptTree);
 	const auto fHitTest = hTreeItem != nullptr;
 	const auto fHasApplied = HasApplied();
 
 	if (hTreeItem != nullptr) {
-		m_stTreeApplied.SelectItem(hTreeItem);
+		m_treeApplied.SelectItem(hTreeItem);
 	}
-	m_stMenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_TREEAPPLIED_DISAPPLY),
+	m_menuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_TREEAPPLIED_DISAPPLY),
 		(fHasApplied && fHitTest ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_TREEAPPLIED_DISAPPLYALL), (fHasApplied ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_stMenuTree.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
+	m_menuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_TREEAPPLIED_DISAPPLYALL), (fHasApplied ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_menuTree.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
 }
 
 void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
@@ -1369,9 +1369,9 @@ void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 void CHexDlgTemplMgr::RemoveNodesWithTemplateID(int iTemplateID)
 {
 	std::vector<HTREEITEM> vecToRemove;
-	if (auto hItem = m_stTreeApplied.GetRootItem(); hItem != nullptr) {
+	if (auto hItem = m_treeApplied.GetRootItem(); hItem != nullptr) {
 		while (hItem != nullptr) {
-			const auto pApplied = reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(hItem));
+			const auto pApplied = reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_treeApplied.GetItemData(hItem));
 			if (pApplied->pTemplate->iTemplateID == iTemplateID) {
 				vecToRemove.emplace_back(hItem);
 			}
@@ -1385,19 +1385,19 @@ void CHexDlgTemplMgr::RemoveNodesWithTemplateID(int iTemplateID)
 				UpdateStaticText();
 			}
 
-			hItem = m_stTreeApplied.GetNextItem(hItem, TVGN_NEXT); //Get next Root sibling item.
+			hItem = m_treeApplied.GetNextItem(hItem, TVGN_NEXT); //Get next Root sibling item.
 		}
 		for (const auto item : vecToRemove) {
-			m_stTreeApplied.DeleteItem(item);
+			m_treeApplied.DeleteItem(item);
 		}
 	}
 }
 
 void CHexDlgTemplMgr::RemoveNodeWithAppliedID(int iAppliedID)
 {
-	auto hItem = m_stTreeApplied.GetRootItem();
+	auto hItem = m_treeApplied.GetRootItem();
 	while (hItem != nullptr) {
-		const auto pApplied = reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_stTreeApplied.GetItemData(hItem));
+		const auto pApplied = reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_treeApplied.GetItemData(hItem));
 		if (pApplied->iAppliedID == iAppliedID) {
 			if (m_pAppliedCurr == pApplied) {
 				m_pListApplied->SetItemCountEx(0);
@@ -1407,10 +1407,10 @@ void CHexDlgTemplMgr::RemoveNodeWithAppliedID(int iAppliedID)
 				m_hTreeCurrParent = nullptr;
 				UpdateStaticText();
 			}
-			m_stTreeApplied.DeleteItem(hItem);
+			m_treeApplied.DeleteItem(hItem);
 			break;
 		}
-		hItem = m_stTreeApplied.GetNextItem(hItem, TVGN_NEXT); //Get next Root sibling item.
+		hItem = m_treeApplied.GetNextItem(hItem, TVGN_NEXT); //Get next Root sibling item.
 	}
 }
 
@@ -1991,9 +1991,9 @@ void CHexDlgTemplMgr::ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwa
 
 auto CHexDlgTemplMgr::TreeItemFromListItem(int iListItem)const->HTREEITEM
 {
-	auto hChildItem = m_stTreeApplied.GetNextItem(m_hTreeCurrParent, TVGN_CHILD);
+	auto hChildItem = m_treeApplied.GetNextItem(m_hTreeCurrParent, TVGN_CHILD);
 	for (auto iterListItems = 0; iterListItems < iListItem; ++iterListItems) {
-		hChildItem = m_stTreeApplied.GetNextSiblingItem(hChildItem);
+		hChildItem = m_treeApplied.GetNextSiblingItem(hChildItem);
 	}
 
 	return hChildItem;
@@ -2093,7 +2093,6 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 
 		const auto& pNewField = vecFields.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
 		pNewField->wstrName = wstrNameField;
-		pNewField->pTemplate = stDefault.pTemplate;
 		pNewField->pFieldParent = stDefault.pFieldParent;
 		pNewField->clrBk = JSONColors(*pField, "clrBk").value_or(stDefault.clrBk);
 		pNewField->clrText = JSONColors(*pField, "clrText").value_or(stDefault.clrText);
@@ -2157,7 +2156,6 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 						(auto& lmbSelf, const VecFields& vecCustomFields, const PtrField& pField, int& iOffset)->void {
 							for (const auto& pCustomField : vecCustomFields) {
 								const auto& pNewField = pField->vecNested.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
-								pNewField->pTemplate = stDefault.pTemplate;
 								pNewField->pFieldParent = pField.get();
 								pNewField->clrBk = pCustomField->clrBk == -1 ? pField->clrBk : pCustomField->clrBk;
 								pNewField->clrText = pCustomField->clrText == -1 ? pField->clrText : pCustomField->clrText;
@@ -2186,7 +2184,6 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 					else { //Creating array of Custom Types.
 						for (int iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
 							const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
-							pFieldArray->pTemplate = pNewField->pTemplate;
 							pFieldArray->pFieldParent = pNewField.get();
 							pFieldArray->clrBk = pNewField->clrBk;
 							pFieldArray->clrText = pNewField->clrText;
@@ -2227,7 +2224,6 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 			if (iArraySize > 1 && pNewField->eType != type_custom) { //Creating array of standard/default types.
 				for (auto iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
 					const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
-					pFieldArray->pTemplate = pNewField->pTemplate;
 					pFieldArray->pFieldParent = pNewField.get();
 					pFieldArray->clrBk = pNewField->clrBk;
 					pFieldArray->clrText = pNewField->clrText;
