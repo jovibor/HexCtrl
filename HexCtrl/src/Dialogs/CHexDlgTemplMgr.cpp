@@ -1263,6 +1263,7 @@ void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	PHEXTEMPLATEFIELD pFieldCurr { };
 	PVecFields pVecCurrFields { };
 
+	const auto pAppliedPrev = m_pAppliedCurr;
 	m_pAppliedCurr = GetAppliedFromItem(pItem->hItem);
 	m_pListApplied->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
 
@@ -1297,7 +1298,9 @@ void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		}
 	}
 
-	if (pVecCurrFields != m_pVecFieldsCurr) { //To not trigger SetItemCountEx (which is slow) if it's the same count.
+	//To not trigger SetItemCountEx, which is slow, every time the Tree item changes.
+	//But only if Fields vector changes, or other applied template has been clicked.
+	if ((pVecCurrFields != m_pVecFieldsCurr) || (pAppliedPrev != m_pAppliedCurr)) {
 		m_pVecFieldsCurr = pVecCurrFields;
 		m_pListApplied->SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()), LVSICF_NOSCROLL);
 	}
