@@ -101,12 +101,10 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 	const auto pApplied = m_vecTemplatesApplied.emplace_back(
 		std::make_unique<HEXTEMPLATEAPPLIED>(ullOffset, pTemplate, iAppliedID)).get();
 
-	TVINSERTSTRUCTW tvi { }; //Tree root node.
-	tvi.hParent = TVI_ROOT;
-	tvi.itemex.mask = TVIF_CHILDREN | TVIF_TEXT | TVIF_PARAM;
-	tvi.itemex.cChildren = static_cast<int>(pTemplate->vecFields.size());
-	tvi.itemex.pszText = LPSTR_TEXTCALLBACK;
-	tvi.itemex.lParam = reinterpret_cast<LPARAM>(pApplied); //Tree root node has PHEXTEMPLATEAPPLIED ptr.
+	//Tree root node.
+	TVINSERTSTRUCTW tvi { .hParent = TVI_ROOT, .itemex { .mask = TVIF_CHILDREN | TVIF_TEXT | TVIF_PARAM,
+		.pszText = LPSTR_TEXTCALLBACK, .cChildren = static_cast<int>(pTemplate->vecFields.size()),
+		.lParam = reinterpret_cast<LPARAM>(pApplied) } }; //Tree root node has PHEXTEMPLATEAPPLIED ptr.
 	const auto hTreeRootNode = m_treeApplied.InsertItem(&tvi);
 
 	const auto lmbFill = [&](HTREEITEM hTreeRoot, VecFields& refVecFields)->void {

@@ -355,6 +355,11 @@ void CHexSampleDlg::FileClose()
 	if (!IsFileOpen())
 		return;
 
+	m_pHexDlg->ClearData();
+	if (m_pHexPopup->IsCreated()) {
+		m_pHexPopup->ClearData();
+	}
+
 	if (m_lpBase)
 		UnmapViewOfFile(m_lpBase);
 	if (m_hMapObject)

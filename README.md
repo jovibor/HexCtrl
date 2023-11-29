@@ -1,5 +1,5 @@
 ## **Hex Control, C++/MFC**
-![](docs/img/HexCtrl_MainWnd.jpg)
+![](docs/img/HexCtrl_Main.jpg)
 ## Table of Contents
 * [Introduction](#introduction)
 * [Installation](#installation)
@@ -137,7 +137,7 @@
 * Customizable look and appearance
 * Written with **/std:c++20** standard conformance
 
-![](docs/img/HexCtrl_OperationsWnd.jpg)
+![](docs/img/HexCtrl_Operations.jpg)
 
 ## [](#)Installation
 Clone the repo with all submodules:  
@@ -925,12 +925,6 @@ hbs.wstrDesc = L"My bookmark, with green bk and white text.";
 myHex->GetBookmarks()->Add(hbs);
 ```
 
-#### [](#)IHexBookmarks::ClearAll
-```cpp
-void ClearAll();
-```
-Clear all bookmarks.
-
 #### [](#)IHexBookmarks::GetByID
 ```cpp
 GetByID(ULONGLONG ullID)->HEXBKM*;
@@ -955,6 +949,12 @@ auto HitTest(ULONGLONG ullOffset)->HEXBKM*;
 ```
 Test given offset and retrieves a pointer to [`HEXBKM`](#hexbkm) if offset contains a bookmark.
 
+#### [](#)IHexBookmarks::RemoveAll
+```cpp
+void RemoveAll();
+```
+Removes all bookmarks.
+
 #### [](#)IHexBookmarks::RemoveByID
 ```cpp
 void RemoveByID(ULONGLONG ullID);
@@ -965,12 +965,14 @@ Removes bookmark with the given ID.
 ```cpp
 class IHexTemplates {
 public:
-    virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)->int = 0; //Apply template to a given offset.
+    virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Applies template to an offset, returns AppliedID.
+    virtual void DisapplyAll() = 0;
     virtual void DisapplyByID(int iAppliedID) = 0;
     virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
-    virtual auto LoadTemplate(const wchar_t* pFilePath)->int = 0; //Returns loaded template ID on success, zero otherwise.
+    virtual auto LoadTemplate(const wchar_t* pFilePath) -> int = 0; //Returns template ID on success, zero otherwise.
     virtual void ShowTooltips(bool fShow) = 0;
-    virtual void UnloadTemplate(int iTemplateID) = 0;       //Unload/remove loaded template from memory.
+    virtual void UnloadAll() = 0;                     //Unload all templates.
+    virtual void UnloadTemplate(int iTemplateID) = 0; //Unload/remove loaded template from memory.
 };
 ```
 

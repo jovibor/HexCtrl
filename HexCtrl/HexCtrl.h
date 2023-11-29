@@ -162,11 +162,11 @@ namespace HEXCTRL
 	********************************************************************************************/
 	class IHexTemplates {
 	public:
-		virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Apply template to a given offset.
+		virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Applies template to an offset, returns AppliedID.
 		virtual void DisapplyAll() = 0;
 		virtual void DisapplyByID(int iAppliedID) = 0;
 		virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
-		virtual auto LoadTemplate(const wchar_t* pFilePath) -> int = 0; //Returns loaded template ID on success, zero otherwise.
+		virtual auto LoadTemplate(const wchar_t* pFilePath) -> int = 0; //Returns template ID on success, zero otherwise.
 		virtual void ShowTooltips(bool fShow) = 0;
 		virtual void UnloadAll() = 0;                     //Unload all templates.
 		virtual void UnloadTemplate(int iTemplateID) = 0; //Unload/remove loaded template from memory.
