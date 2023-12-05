@@ -220,7 +220,7 @@ namespace HEXCTRL::INTERNAL
 		const std::unique_ptr<CHexScroll> m_pScrollV { std::make_unique<CHexScroll>() };                     //Vertical scroll bar.
 		const std::unique_ptr<CHexScroll> m_pScrollH { std::make_unique<CHexScroll>() };                     //Horizontal scroll bar.
 		SpanByte m_spnData { };               //Main data span.
-		HEXCOLORS m_stColor;                  //All control related colors.
+		HEXCOLORS m_stColors;                 //All HexCtrl colors.
 		EHexDataSize m_enGroupMode { EHexDataSize::SIZE_BYTE }; //Current "Group Data By" mode.
 		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.

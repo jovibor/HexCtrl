@@ -250,7 +250,10 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_wndTtOffset.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
 	m_wndTtOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
-	m_stColor = hcs.stColor;
+	if (hcs.pColors != nullptr) {
+		m_stColors = *hcs.pColors;
+	}
+
 	m_dbWheelRatio = hcs.dbWheelRatio;
 	m_fPageLines = hcs.fPageLines;
 	m_fInfoBar = hcs.fInfoBar;
@@ -331,11 +334,13 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	//Font related.
 	//Default main logfont.
-	const LOGFONTW lfMain { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
+	const LOGFONTW lfMain { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) }, .lfPitchAndFamily { FIXED_PITCH },
+		.lfFaceName { L"Consolas" } };
 	m_fontMain.CreateFontIndirectW(hcs.pLogFont != nullptr ? hcs.pLogFont : &lfMain);
 
 	//Info area font, independent from the main font, its size is a bit smaller than the default main font.
-	const LOGFONTW lfInfo { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) + 1 }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
+	const LOGFONTW lfInfo { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) + 1 }, .lfPitchAndFamily { FIXED_PITCH },
+		.lfFaceName { L"Consolas" } };
 	m_fontInfoBar.CreateFontIndirectW(&lfInfo);
 	//End of font related.
 
@@ -662,7 +667,7 @@ auto CHexCtrl::GetColors()const->HEXCOLORS
 	if (!IsCreated())
 		return { };
 
-	return m_stColor;
+	return m_stColors;
 }
 
 auto CHexCtrl::GetData(HEXSPAN hss)const->SpanByte
@@ -1484,7 +1489,7 @@ void CHexCtrl::SetColors(const HEXCOLORS& clr)
 	if (!IsCreated())
 		return;
 
-	m_stColor = clr;
+	m_stColors = clr;
 	RedrawWindow();
 }
 
@@ -2214,14 +2219,14 @@ void CHexCtrl::ChooseFontDlg()
 {
 	auto lf = GetFont();
 	auto stClr = GetColors();
-	CHOOSEFONTW chf { .lStructSize = sizeof(CHOOSEFONTW), .hwndOwner = m_hWnd, .lpLogFont = &lf,
-		.Flags = CF_EFFECTS | CF_FIXEDPITCHONLY | CF_FORCEFONTEXIST | CF_INITTOLOGFONTSTRUCT | CF_NOSIMULATIONS,
-		.rgbColors = stClr.clrFontHex };
+	CHOOSEFONTW chf { .lStructSize { sizeof(CHOOSEFONTW) }, .hwndOwner { m_hWnd }, .lpLogFont { &lf },
+		.Flags { CF_EFFECTS | CF_FIXEDPITCHONLY | CF_FORCEFONTEXIST | CF_INITTOLOGFONTSTRUCT | CF_NOSIMULATIONS },
+		.rgbColors { stClr.clrFontHex } };
 
 	if (ChooseFontW(&chf) != FALSE) {
-		SetFont(lf);
 		stClr.clrFontHex = stClr.clrFontText = chf.rgbColors;
 		SetColors(stClr);
+		SetFont(lf);
 	}
 }
 
@@ -2662,7 +2667,7 @@ void CHexCtrl::DrawWindow(CDC* pDC)const
 	CRect rcWnd(m_iFirstVertLine, m_iFirstHorzLine,
 		m_iFirstVertLine + m_iWidthClientArea, m_iFirstHorzLine + m_iHeightClientArea);
 
-	pDC->FillSolidRect(rcWnd, m_stColor.clrBk);
+	pDC->FillSolidRect(rcWnd, m_stColors.clrBk);
 	pDC->SelectObject(m_penLines);
 
 	//First horizontal line.
@@ -2700,8 +2705,8 @@ void CHexCtrl::DrawWindow(CDC* pDC)const
 	//«Offset» text.
 	CRect rcOffset(m_iFirstVertLine - iScrollH, m_iFirstHorzLine, m_iSecondVertLine - iScrollH, m_iSecondHorzLine);
 	pDC->SelectObject(m_fontMain);
-	pDC->SetTextColor(m_stColor.clrFontCaption);
-	pDC->SetBkColor(m_stColor.clrBk);
+	pDC->SetTextColor(m_stColors.clrFontCaption);
+	pDC->SetBkColor(m_stColors.clrBk);
 	pDC->DrawTextW(L"Offset", 6, rcOffset, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	//Capacity numbers.
@@ -2720,14 +2725,14 @@ void CHexCtrl::DrawInfoBar(CDC* pDC)const
 
 	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
 	CRect rcInfoBar(m_iFirstVertLine + 1 - iScrollH, m_iThirdHorzLine + 1, m_iFourthVertLine, m_iFourthHorzLine); //Info bar rc until m_iFourthHorizLine.
-	pDC->FillSolidRect(rcInfoBar, m_stColor.clrBkInfoBar);
+	pDC->FillSolidRect(rcInfoBar, m_stColors.clrBkInfoBar);
 	pDC->DrawEdge(rcInfoBar, BDR_RAISEDINNER, BF_TOP);
 
 	CRect rcText = rcInfoBar;
 	rcText.left = m_iFirstVertLine + 5; //Draw the text beginning with little indent.
 	rcText.right = m_iFirstVertLine + m_iWidthClientArea; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
 	pDC->SelectObject(m_fontInfoBar);
-	pDC->SetBkColor(m_stColor.clrBkInfoBar);
+	pDC->SetBkColor(m_stColors.clrBkInfoBar);
 
 	std::size_t sCurrPosBegin { };
 	std::size_t sCurrPosEnd { };
@@ -2735,7 +2740,7 @@ void CHexCtrl::DrawInfoBar(CDC* pDC)const
 		if (sCurrPosBegin = m_wstrInfoBar.find_first_of('^', sCurrPosBegin); sCurrPosBegin != std::wstring::npos) {
 			if (sCurrPosEnd = m_wstrInfoBar.find_first_of('^', sCurrPosBegin + 1); sCurrPosEnd != std::wstring::npos) {
 				const auto iSize = static_cast<int>(sCurrPosEnd - sCurrPosBegin - 1);
-				pDC->SetTextColor(m_stColor.clrFontInfoParam);
+				pDC->SetTextColor(m_stColors.clrFontInfoParam);
 				pDC->DrawTextW(m_wstrInfoBar.data() + sCurrPosBegin + 1, iSize, rcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 				rcText.left += iSize * m_sizeFontInfo.cx;
 			}
@@ -2745,7 +2750,7 @@ void CHexCtrl::DrawInfoBar(CDC* pDC)const
 		if (sCurrPosBegin = m_wstrInfoBar.find_first_of('`', sCurrPosBegin); sCurrPosBegin != std::wstring::npos) {
 			if (sCurrPosEnd = m_wstrInfoBar.find_first_of('`', sCurrPosBegin + 1); sCurrPosEnd != std::wstring::npos) {
 				const auto size = sCurrPosEnd - sCurrPosBegin - 1;
-				pDC->SetTextColor(m_stColor.clrFontInfoData);
+				pDC->SetTextColor(m_stColors.clrFontInfoData);
 				pDC->DrawTextW(m_wstrInfoBar.data() + sCurrPosBegin + 1, static_cast<int>(size), rcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 				rcText.left += static_cast<long>(size * m_sizeFontInfo.cx);
 			}
@@ -2764,12 +2769,12 @@ void CHexCtrl::DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const
 		COLORREF clrTextOffset;
 		COLORREF clrBkOffset;
 		if (m_pSelection->HitTestRange({ ullStartOffset + iterLines * m_dwCapacity, m_dwCapacity })) {
-			clrTextOffset = m_stColor.clrFontSel;
-			clrBkOffset = m_stColor.clrBkSel;
+			clrTextOffset = m_stColors.clrFontSel;
+			clrBkOffset = m_stColors.clrBkSel;
 		}
 		else {
-			clrTextOffset = m_stColor.clrFontCaption;
-			clrBkOffset = m_stColor.clrBk;
+			clrTextOffset = m_stColors.clrFontCaption;
+			clrBkOffset = m_stColors.clrBk;
 		}
 
 		//Left column offset printing (00000001...0000FFFF).
@@ -2838,12 +2843,12 @@ void CHexCtrl::DrawHexText(CDC* pDC, int iLines, std::wstring_view wsvHex, std::
 
 	//Hex printing.
 	pDC->SelectObject(m_fontMain);
-	pDC->SetTextColor(m_stColor.clrFontHex);
-	pDC->SetBkColor(m_stColor.clrBk);
+	pDC->SetTextColor(m_stColors.clrFontHex);
+	pDC->SetBkColor(m_stColors.clrBk);
 	PolyTextOutW(pDC->m_hDC, vecPolyHex.data(), static_cast<UINT>(vecPolyHex.size()));
 
 	//Text printing.
-	pDC->SetTextColor(m_stColor.clrFontText);
+	pDC->SetTextColor(m_stColors.clrFontText);
 	for (const auto& iter : vecPolyText) {
 		ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx);
 	}
@@ -3292,8 +3297,8 @@ void CHexCtrl::DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 	//Selection printing.
 	if (!vecPolySelHex.empty()) {
 		pDC->SelectObject(m_fontMain);
-		pDC->SetTextColor(m_stColor.clrFontSel);
-		pDC->SetBkColor(m_stColor.clrBkSel);
+		pDC->SetTextColor(m_stColors.clrFontSel);
+		pDC->SetBkColor(m_stColors.clrBkSel);
 		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size())); //Hex selection printing.
 		for (const auto& iter : vecPolySelText) {
 			ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Text selection printing.
@@ -3379,8 +3384,8 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 	if (!vecPolySelHexHgl.empty()) {
 		//Colors are the inverted selection colors.
 		pDC->SelectObject(m_fontMain);
-		pDC->SetTextColor(m_stColor.clrBkSel);
-		pDC->SetBkColor(m_stColor.clrFontSel);
+		pDC->SetTextColor(m_stColors.clrBkSel);
+		pDC->SetBkColor(m_stColors.clrFontSel);
 		PolyTextOutW(pDC->m_hDC, vecPolySelHexHgl.data(), static_cast<UINT>(vecPolySelHexHgl.size())); //Hex selection highlight printing.
 		for (const auto& iter : vecPolySelTextHgl) {
 			ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Text selection highlight printing.
@@ -3424,11 +3429,11 @@ void CHexCtrl::DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wsv
 		static_cast<UINT>(wstrTextCaretToPrint.size()), wstrTextCaretToPrint.data(), 0, RECT { }, nullptr };
 
 	//Caret color.
-	const auto clrBkCaret = m_pSelection->HitTest(ullCaretPos) ? m_stColor.clrBkCaretSel : m_stColor.clrBkCaret;
+	const auto clrBkCaret = m_pSelection->HitTest(ullCaretPos) ? m_stColors.clrBkCaretSel : m_stColors.clrBkCaret;
 
 	//Caret printing.
 	pDC->SelectObject(m_fontMain);
-	pDC->SetTextColor(m_stColor.clrFontCaret);
+	pDC->SetTextColor(m_stColors.clrFontCaret);
 	pDC->SetBkColor(clrBkCaret);
 	for (const auto iter : arrPolyCaret) {
 		ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Hex/Text caret printing.
@@ -3501,8 +3506,8 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std:
 	//Data Interpreter printing.
 	if (!vecPolyDataInterp.empty()) {
 		pDC->SelectObject(m_fontMain);
-		pDC->SetTextColor(m_stColor.clrFontDataInterp);
-		pDC->SetBkColor(m_stColor.clrBkDataInterp);
+		pDC->SetTextColor(m_stColors.clrFontDataInterp);
+		pDC->SetBkColor(m_stColors.clrBkDataInterp);
 		for (const auto& iter : vecPolyDataInterp) {
 			ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Hex/Text Data Interpreter printing.
 		}
@@ -4007,14 +4012,14 @@ void CHexCtrl::Print()
 
 		DrawWindow(pDC);
 		DrawInfoBar(pDC);
-		const auto clBkOld = m_stColor.clrBkSel;
-		const auto clTextOld = m_stColor.clrFontSel;
-		m_stColor.clrBkSel = m_stColor.clrBk;
-		m_stColor.clrFontSel = m_stColor.clrFontHex;
+		const auto clBkOld = m_stColors.clrBkSel;
+		const auto clTextOld = m_stColors.clrFontSel;
+		m_stColors.clrBkSel = m_stColors.clrBk;
+		m_stColors.clrFontSel = m_stColors.clrFontHex;
 		DrawOffsets(pDC, ullStartLine, iLines);
 		DrawSelection(pDC, ullStartLine, iLines, wstrHex, wstrText);
-		m_stColor.clrBkSel = clBkOld;
-		m_stColor.clrFontSel = clTextOld;
+		m_stColors.clrBkSel = clBkOld;
+		m_stColors.clrFontSel = clTextOld;
 		pDC->EndPage();
 	}
 	else {
@@ -4171,25 +4176,22 @@ void CHexCtrl::Redo()
 		return;
 
 	const auto& refRedo = m_vecRedo.back();
-
 	VecSpan vecSpan;
+	vecSpan.reserve(refRedo->size());
 	std::transform(refRedo->begin(), refRedo->end(), std::back_inserter(vecSpan),
 		[](UNDO& ref) { return HEXSPAN { ref.ullOffset, ref.vecData.size() }; });
-
-	//Making new Undo data snapshot.
-	SnapshotUndo(vecSpan);
+	SnapshotUndo(vecSpan); //Creating new Undo data snapshot.
 
 	for (const auto& iter : *refRedo) {
 		const auto& refRedoData = iter.vecData;
 
-		//In Virtual mode processing data chunk by chunk.
-		if (IsVirtual() && refRedoData.size() > GetCacheSize()) {
-			const auto ullSizeChunk = GetCacheSize();
-			const auto iMod = refRedoData.size() % ullSizeChunk;
-			auto ullChunks = refRedoData.size() / ullSizeChunk + (iMod > 0 ? 1 : 0);
+		if (IsVirtual() && refRedoData.size() > GetCacheSize()) { //In Virtual mode processing data chunk by chunk.
+			const auto dwSizeChunk = GetCacheSize();
+			const auto sMod = refRedoData.size() % dwSizeChunk;
+			auto ullChunks = refRedoData.size() / dwSizeChunk + (sMod > 0 ? 1 : 0);
 			std::size_t ullOffset = 0;
 			while (ullChunks-- > 0) {
-				const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
+				const auto ullSize = (ullChunks == 1 && sMod > 0) ? sMod : dwSizeChunk;
 				if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty()) {
 					std::copy_n(refRedoData.begin() + ullOffset, ullSize, spnData.data());
 					SetDataVirtual(spnData, { ullOffset, ullSize });
@@ -4645,25 +4647,22 @@ void CHexCtrl::Undo()
 	if (m_vecUndo.empty())
 		return;
 
-	//Bad alloc may happen here!!!
-	//If there is no more free memory, just clear the vec and return.
+	//Bad alloc may happen here! If there is no more free memory, just clear the vec and return.
 	try {
-		//Making new Redo data snapshot.
+		//Creating new Redo data snapshot.
 		const auto& refRedo = m_vecRedo.emplace_back(std::make_unique<std::vector<UNDO>>());
-
 		for (const auto& iter : *m_vecUndo.back()) {
 			auto& refRedoBack = refRedo->emplace_back(UNDO { iter.ullOffset, { } });
 			refRedoBack.vecData.resize(iter.vecData.size());
 			const auto& refUndoData = iter.vecData;
 
-			//In Virtual mode processing data chunk by chunk.
-			if (IsVirtual() && refUndoData.size() > GetCacheSize()) {
-				const auto ullSizeChunk = GetCacheSize();
-				const auto iMod = refUndoData.size() % ullSizeChunk;
-				auto ullChunks = refUndoData.size() / ullSizeChunk + (iMod > 0 ? 1 : 0);
+			if (IsVirtual() && refUndoData.size() > GetCacheSize()) { //In Virtual mode processing data chunk by chunk.
+				const auto dwSizeChunk = GetCacheSize();
+				const auto sMod = refUndoData.size() % dwSizeChunk;
+				auto ullChunks = refUndoData.size() / dwSizeChunk + (sMod > 0 ? 1 : 0);
 				std::size_t ullOffset = 0;
 				while (ullChunks-- > 0) {
-					const auto ullSize = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeChunk;
+					const auto ullSize = (ullChunks == 1 && sMod > 0) ? sMod : dwSizeChunk;
 					if (const auto spnData = GetData({ ullOffset, ullSize }); !spnData.empty()) {
 						std::copy_n(spnData.data(), ullSize, refRedoBack.vecData.begin() + ullOffset); //Fill Redo with the data.
 						std::copy_n(refUndoData.begin() + ullOffset, ullSize, spnData.data()); //Undo the data.

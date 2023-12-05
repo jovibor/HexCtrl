@@ -196,17 +196,17 @@ namespace HEXCTRL
 	* HEXCREATE - for IHexCtrl::Create method.                                                  *
 	********************************************************************************************/
 	struct HEXCREATE {
-		HEXCOLORS       stColor { };          //All HexCtrl colors.
-		HWND            hWndParent { };       //Parent window handle.
-		const LOGFONTW* pLogFont { };         //Monospaced font for HexCtrl, nullptr for default.
-		RECT            rect { };             //Initial window rect.
-		UINT            uID { };              //Control ID if it's a child window.
-		DWORD           dwStyle { };          //Window styles.
-		DWORD           dwExStyle { };        //Extended window styles.
-		double          dbWheelRatio { 1.0 }; //Either screen-ratio or lines amount to scroll with Page-scroll.
-		bool            fPageLines { false }; //Treat dbWheelRatio as a screen-ratio (false) or as amount of lines.
-		bool            fInfoBar { true };    //Show bottom Info bar or not.
-		bool            fCustom { false };    //If it's a custom control in a dialog.
+		HWND             hWndParent { };       //Parent window handle.
+		const HEXCOLORS* pColors { };          //HexCtrl colors, nullptr for default.
+		const LOGFONTW*  pLogFont { };         //Monospaced font for HexCtrl, nullptr for default.
+		RECT             rect { };             //Initial window rect.
+		UINT             uID { };              //Control ID if it's a child window.
+		DWORD            dwStyle { };          //Window styles.
+		DWORD            dwExStyle { };        //Extended window styles.
+		double           dbWheelRatio { 1.0 }; //Either screen-ratio or lines amount to scroll with Page-scroll.
+		bool             fPageLines { false }; //Treat dbWheelRatio as a screen-ratio (false) or as amount of lines.
+		bool             fInfoBar { true };    //Show bottom Info bar or not.
+		bool             fCustom { false };    //If it's a custom control in a dialog.
 	};
 
 	/********************************************************************************************

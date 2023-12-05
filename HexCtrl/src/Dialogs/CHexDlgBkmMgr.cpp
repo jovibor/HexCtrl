@@ -378,8 +378,8 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 			vecIndex.insert(vecIndex.begin(), nItem); //Last indexes go first.
 		}
 
-		for (const auto i : vecIndex) {
-			if (const auto pBkm = GetByIndex(i); pBkm != nullptr) {
+		for (const auto iIndexBkm : vecIndex) {
+			if (const auto pBkm = GetByIndex(iIndexBkm); pBkm != nullptr) {
 				RemoveBookmark(pBkm->ullID);
 			}
 		}

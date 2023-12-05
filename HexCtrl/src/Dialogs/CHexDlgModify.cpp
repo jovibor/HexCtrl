@@ -481,10 +481,8 @@ BEGIN_MESSAGE_MAP(CHexDlgModify, CDialogEx)
 	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
-CHexDlgModify::CHexDlgModify() {
-	m_pDlgOpers = std::make_unique<CHexDlgOpers>();
-	m_pDlgFillData = std::make_unique<CHexDlgFillData>();
-}
+CHexDlgModify::CHexDlgModify() : m_pDlgOpers { std::make_unique<CHexDlgOpers>() },
+m_pDlgFillData { std::make_unique<CHexDlgFillData>() } {}
 
 CHexDlgModify::~CHexDlgModify() = default;
 
