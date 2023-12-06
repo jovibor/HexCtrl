@@ -254,8 +254,8 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		m_stColors = *hcs.pColors;
 	}
 
-	m_dbWheelRatio = hcs.dbWheelRatio;
-	m_fPageLines = hcs.fPageLines;
+	m_flScrollRatio = hcs.flScrollRatio;
+	m_fScrollLines = hcs.fScrollLines;
 	m_fInfoBar = hcs.fInfoBar;
 
 	const auto pDC = GetDC();
@@ -1917,15 +1917,6 @@ void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wsvName)
 	}
 }
 
-void CHexCtrl::SetVirtualBkm(IHexBookmarks* pVirtBkm)
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
-
-	m_pDlgBkmMgr->SetVirtual(pVirtBkm);
-}
-
 void CHexCtrl::SetRedraw(bool fRedraw)
 {
 	assert(IsCreated());
@@ -1933,6 +1924,29 @@ void CHexCtrl::SetRedraw(bool fRedraw)
 		return;
 
 	m_fRedraw = fRedraw;
+}
+
+void CHexCtrl::SetScrollRatio(float flRatio, bool fLines)
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
+	m_flScrollRatio = flRatio;
+	m_fScrollLines = fLines;
+	ULONGLONG ullScrollPageSize;
+	if (m_fScrollLines) { //How many lines to scroll.
+		ullScrollPageSize = m_sizeFontMain.cy * static_cast<LONG>(m_flScrollRatio);
+		if (ullScrollPageSize < m_sizeFontMain.cy) {
+			ullScrollPageSize = m_sizeFontMain.cy;
+		}
+	}
+	else { //How many screens to scroll.
+		const auto ullSizeInScreens = static_cast<ULONGLONG>(m_iHeightWorkArea * m_flScrollRatio);
+		ullScrollPageSize = ullSizeInScreens < m_sizeFontMain.cy ? m_sizeFontMain.cy : ullSizeInScreens;
+	}
+
+	m_pScrollV->SetScrollPageSize(ullScrollPageSize);
 }
 
 void CHexCtrl::SetSelection(const VecSpan& vecSel, bool fRedraw, bool fHighlight)
@@ -1960,26 +1974,13 @@ void CHexCtrl::SetUnprintableChar(wchar_t wch)
 	m_wchUnprintable = wch;
 }
 
-void CHexCtrl::SetWheelRatio(double dbRatio, bool fLines)
+void CHexCtrl::SetVirtualBkm(IHexBookmarks* pVirtBkm)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
-	m_dbWheelRatio = dbRatio;
-	m_fPageLines = fLines;
-	ULONGLONG ullScrollPageSize;
-	if (m_fPageLines) { //How many text lines to scroll.
-		ullScrollPageSize = m_sizeFontMain.cy * static_cast<LONG>(dbRatio); //How many text lines to scroll.
-		if (ullScrollPageSize < m_sizeFontMain.cy) {
-			ullScrollPageSize = m_sizeFontMain.cy;
-		}
-	}
-	else { //How mane screens to scroll.
-		const auto ullSizeInScreens = static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio);
-		ullScrollPageSize = ullSizeInScreens < m_sizeFontMain.cy ? m_sizeFontMain.cy : ullSizeInScreens;
-	}
-	m_pScrollV->SetScrollPageSize(ullScrollPageSize);
+	m_pDlgBkmMgr->SetVirtual(pVirtBkm);
 }
 
 void CHexCtrl::ShowInfoBar(bool fShow)
@@ -4137,14 +4138,14 @@ void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
 	//Scrolls, ReleaseDC and Redraw only for current DC, not for PrintingDC.
 	if (pDC == nullptr) {
 		ULONGLONG ullScrollPageSize;
-		if (m_fPageLines) { //How many text lines to scroll.
-			ullScrollPageSize = m_sizeFontMain.cy * static_cast<LONG>(m_dbWheelRatio);
+		if (m_fScrollLines) { //How many lines to scroll.
+			ullScrollPageSize = m_sizeFontMain.cy * static_cast<LONG>(m_flScrollRatio);
 			if (ullScrollPageSize < m_sizeFontMain.cy) {
 				ullScrollPageSize = m_sizeFontMain.cy;
 			}
 		}
-		else { //How mane screens to scroll.
-			const auto ullSizeInScreens = static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio);
+		else { //How many screens to scroll.
+			const auto ullSizeInScreens = static_cast<ULONGLONG>(m_iHeightWorkArea * m_flScrollRatio);
 			ullScrollPageSize = ullSizeInScreens < m_sizeFontMain.cy ? m_sizeFontMain.cy : ullSizeInScreens;
 		}
 
@@ -5261,8 +5262,8 @@ void CHexCtrl::OnSize(UINT /*nType*/, int cx, int cy)
 		return;
 
 	RecalcClientArea(cy, cx);
-	if (!m_fPageLines) {
-		const auto ullPageSize = static_cast<ULONGLONG>(m_iHeightWorkArea * m_dbWheelRatio);
+	if (!m_fScrollLines) {
+		const auto ullPageSize = static_cast<ULONGLONG>(m_iHeightWorkArea * m_flScrollRatio);
 		m_pScrollV->SetScrollPageSize(ullPageSize < m_sizeFontMain.cy ? m_sizeFontMain.cy : ullPageSize);
 	}
 }

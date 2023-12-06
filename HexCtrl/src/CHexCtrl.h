@@ -88,11 +88,11 @@ namespace HEXCTRL::INTERNAL
 		void SetMutable(bool fEnable)override;
 		void SetOffsetMode(bool fHex)override;
 		void SetPageSize(DWORD dwSize, std::wstring_view wsvName)override;
-		void SetVirtualBkm(IHexBookmarks* pVirtBkm)override;
 		void SetRedraw(bool fRedraw)override;
+		void SetScrollRatio(float flRatio, bool fLines)override;
 		void SetSelection(const VecSpan& vecSel, bool fRedraw = true, bool fHighlight = false)override;
 		void SetUnprintableChar(wchar_t wch)override;
-		void SetWheelRatio(double dbRatio, bool fLines)override;
+		void SetVirtualBkm(IHexBookmarks* pVirtBkm)override;
 		void ShowInfoBar(bool fShow)override;
 	private:
 		struct UNDO;
@@ -240,7 +240,7 @@ namespace HEXCTRL::INTERNAL
 		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		CPen m_penLines;                      //Pen for lines.
 		CPen m_penDataTempl;                  //Pen for templates' fields (vertical lines).
-		double m_dbWheelRatio { };            //Ratio for how much to scroll with mouse-wheel.
+		float m_flScrollRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		ULONGLONG m_ullCaretPos { };          //Current caret position.
 		ULONGLONG m_ullCursorNow { };         //The cursor's current clicked pos.
 		ULONGLONG m_ullCursorPrev { };        //The cursor's previously clicked pos, used in selection resolutions.
@@ -300,6 +300,6 @@ namespace HEXCTRL::INTERNAL
 		bool m_fHighLatency { false };        //Reflects HEXDATA::fHighLatency.
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
-		bool m_fPageLines { false };          //Page scroll in screens * m_dbWheelRatio or in lines. 
+		bool m_fScrollLines { false };          //Page scroll in screens * m_dbWheelRatio or in lines. 
 	};
 }

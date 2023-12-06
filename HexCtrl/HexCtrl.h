@@ -196,17 +196,17 @@ namespace HEXCTRL
 	* HEXCREATE - for IHexCtrl::Create method.                                                  *
 	********************************************************************************************/
 	struct HEXCREATE {
-		HWND             hWndParent { };       //Parent window handle.
-		const HEXCOLORS* pColors { };          //HexCtrl colors, nullptr for default.
-		const LOGFONTW*  pLogFont { };         //Monospaced font for HexCtrl, nullptr for default.
-		RECT             rect { };             //Initial window rect.
-		UINT             uID { };              //Control ID if it's a child window.
-		DWORD            dwStyle { };          //Window styles.
-		DWORD            dwExStyle { };        //Extended window styles.
-		double           dbWheelRatio { 1.0 }; //Either screen-ratio or lines amount to scroll with Page-scroll.
-		bool             fPageLines { false }; //Treat dbWheelRatio as a screen-ratio (false) or as amount of lines.
-		bool             fInfoBar { true };    //Show bottom Info bar or not.
-		bool             fCustom { false };    //If it's a custom control in a dialog.
+		HWND             hWndParent { };         //Parent window handle.
+		const HEXCOLORS* pColors { };            //HexCtrl colors, nullptr for default.
+		const LOGFONTW*  pLogFont { };           //Monospaced font for HexCtrl, nullptr for default.
+		RECT             rect { };               //Initial window rect.
+		UINT             uID { };                //Control ID if it's a child window.
+		DWORD            dwStyle { };            //Window styles.
+		DWORD            dwExStyle { };          //Extended window styles.
+		float            flScrollRatio { 1.0F }; //Either a screen-ratio or lines amount to scroll with Page-scroll (mouse-wheel).
+		bool             fScrollLines { false }; //Treat flScrollRatio as screen-ratio (false) or as amount of lines (true).
+		bool             fInfoBar { true };      //Show bottom Info bar or not.
+		bool             fCustom { false };      //If it's a custom control in a dialog.
 	};
 
 	/********************************************************************************************
@@ -350,11 +350,11 @@ namespace HEXCTRL
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
 		virtual void SetOffsetMode(bool fHex) = 0;             //Set offset being shown as Hex or as Decimal.
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wsvName = L"Page") = 0; //Set page size and name to draw the lines in-between.
-		virtual void SetVirtualBkm(IHexBookmarks* pVirtBkm) = 0; //Set pointer for Bookmarks Virtual Mode.
 		virtual void SetRedraw(bool fRedraw) = 0;              //Handle WM_PAINT message or not.
+		virtual void SetScrollRatio(float flRatio, bool fLines) = 0; //Set mouse-wheel scroll ratio in screens or in lines, if fLines==true.
 		virtual void SetSelection(const VecSpan& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
 		virtual void SetUnprintableChar(wchar_t wch) = 0;      //Set unprintable replacement character.
-		virtual void SetWheelRatio(double dbRatio, bool fLines) = 0; //Set mouse-wheel scroll ratio in screens or lines if fLines=true.
+		virtual void SetVirtualBkm(IHexBookmarks* pVirtBkm) = 0; //Set pointer for Bookmarks Virtual Mode.
 		virtual void ShowInfoBar(bool fShow) = 0;              //Show/hide bottom Info bar.
 	};
 

@@ -61,7 +61,7 @@ BOOL CHexSampleDlg::OnInitDialog()
 	DragAcceptFiles(TRUE);
 
 	m_pHexDlg->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
-	m_pHexDlg->SetWheelRatio(2, true); //Two lines scroll with mouse-wheel.
+	m_pHexDlg->SetScrollRatio(2, true); //Two lines scroll with mouse-wheel.
 	m_pHexDlg->SetPageSize(64);
 
 	LoadTemplates(&*m_pHexDlg);

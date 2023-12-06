@@ -67,11 +67,11 @@
   * [SetMutable](#setmutable)
   * [SetOffsetMode](#setoffsetmode)
   * [SetPageSize](#setpagesize)
-  * [SetVirtualBkm](#setvirtualbkm)
   * [SetRedraw](#setredraw)
+  * [SetScrollRatio](#setscrollratio)
   * [SetSelection](#setselection)
   * [SetUnprintableChar](#setunprintablechar)
-  * [SetWheelRatio](#setwheelratio)
+  * [SetVirtualBkm](#setvirtualbkm)
   * [ShowInfoBar](#showinfobar)
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
@@ -469,13 +469,13 @@ When user clicks custom menu, control sends `WM_NOTIFY` message to its parent wi
 
 ### [](#)GetPagesCount
 ```cpp
-[[nodiscard]] auto GetPageSize()const->DWORD;
+[[nodiscard]] auto GetPagesCount()const->ULONGLONG;
 ```
 Get current count of pages set by [`SetPageSize`](#setpagesize).
 
 ### [](#)GetPagePos
 ```cpp
-[[nodiscard]] auto GetPagePos()->ULONGLONG const;
+[[nodiscard]] auto GetPagePos()const->ULONGLONG;
 ```
 Get current page a cursor stays at.
 
@@ -668,22 +668,22 @@ Sets offset area being shown as Hex (`fHex=true`) or as Decimal (`fHex=false`).
 
 ### [](#)SetPageSize
 ```cpp
-void SetPageSize(DWORD dwSize, const wchar_t* wstrName = L"Page");
+void SetPageSize(DWORD dwSize, std::wstring_view wsvName = L"Page");
 ```
 Sets the size of the page to draw the divider line between. This size should be multiple to the current [capacity](#setcapacity) size to take effect. The second argument sets the name to be displayed in the bottom info area of the **HexCtrl** ("Page", "Sector", etc...).  
 To remove the divider just set `dwSize` to 0.
-
-### [](#)SetVirtualBkm
-```cpp
-void SetVirtualBkm(IHexBookmarks* pVirtBkm);
-```
-Sets a pointer for the [Virtual Bookmarks](#virtual-bookmarks) mode, or disables this mode if `nullptr` is set.
 
 ### [](#)SetRedraw
 ```cpp
 void SetRedraw(bool fRedraw);
 ```
 Should the main **HexCtrl** window be redrawn or not. E.g. should the `WM_PAINT` message be handled or not.
+
+### [](#)SetScrollRatio
+```cpp
+void SetScrollRatio(float flRatio, bool fLines);
+```
+Sets the scroll amount for one scroll-page. Page is the one mouse-wheel tick or page-down key. When `fLines` is `true` the `flRatio` is the amount of text lines to scroll. When it's `false` `flRatio` is a ratio of visible screen height to scroll.
 
 ### [](#)SetSelection
 ```cpp
@@ -697,12 +697,11 @@ void SetUnprintableChar(wchar_t wch);
 ```
 Sets replacement char for unprintable characters.
 
-### [](#)SetWheelRatio
+### [](#)SetVirtualBkm
 ```cpp
-void SetWheelRatio(double dbRatio, bool fLines);
+void SetVirtualBkm(IHexBookmarks* pVirtBkm);
 ```
-Sets the scroll amount for one scroll-page.  
-Page is one mouse-wheel tick or a Page-down key.   When `fLines` is `true` the `dbRatio` is the amount of text lines to scroll. When it's `false` `dbRatio` shows a ratio of visible screen height to scroll.
+Sets a pointer for the [Virtual Bookmarks](#virtual-bookmarks) mode, or disables this mode if `nullptr` is set.
 
 ### [](#)ShowInfoBar
 ```cpp
@@ -784,17 +783,17 @@ struct HEXCOLORS {
 The main initialization struct used for the **HexCtrl** creation.
 ```cpp
 struct HEXCREATE {
-    HWND             hWndParent { };       //Parent window handle.
-    const HEXCOLORS* pColors { };          //HexCtrl colors, nullptr for default.
-    const LOGFONTW*  pLogFont { };         //Monospaced font for HexCtrl, nullptr for default.
-    RECT             rect { };             //Initial window rect.
-    UINT             uID { };              //Control ID if it's a child window.
-    DWORD            dwStyle { };          //Window styles.
-    DWORD            dwExStyle { };        //Extended window styles.
-    double           dbWheelRatio { 1.0 }; //Either screen-ratio or lines amount to scroll with Page-scroll.
-    bool             fPageLines { false }; //Treat dbWheelRatio as a screen-ratio (false) or as amount of lines.
-    bool             fInfoBar { true };    //Show bottom Info bar or not.
-    bool             fCustom { false };    //If it's a custom control in a dialog.
+    HWND             hWndParent { };         //Parent window handle.
+    const HEXCOLORS* pColors { };            //HexCtrl colors, nullptr for default.
+    const LOGFONTW*  pLogFont { };           //Monospaced font for HexCtrl, nullptr for default.
+    RECT             rect { };               //Initial window rect.
+    UINT             uID { };                //Control ID if it's a child window.
+    DWORD            dwStyle { };            //Window styles.
+    DWORD            dwExStyle { };          //Extended window styles.
+    float            flScrollRatio { 1.0F }; //Either a screen-ratio or lines amount to scroll with Page-scroll (mouse-wheel).
+    bool             fScrollLines { false }; //Treat flScrollRatio as screen-ratio (false) or as amount of lines (true).
+    bool             fInfoBar { true };      //Show bottom Info bar or not.
+    bool             fCustom { false };      //If it's a custom control in a dialog.
 };
 ```
 
