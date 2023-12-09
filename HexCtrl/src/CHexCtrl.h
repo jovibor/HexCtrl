@@ -139,7 +139,8 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;    //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCommand(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
 		[[nodiscard]] long GetFontSize();
-		[[nodiscard]] CRect GetRectTextCaption()const;         //Returns rect of the text caption area.
+		[[nodiscard]] auto GetRectTextCaption()const->CRect;   //Returns rect of the text caption area.
+		[[nodiscard]] auto GetScrollPageSize()const->ULONGLONG; //Get the "Page" size of the scroll.
 		[[nodiscard]] auto GetTopLine()const->ULONGLONG;       //Returns current top line number in view.
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Hex chunk.
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTEST>; //Is any hex chunk withing given point?
