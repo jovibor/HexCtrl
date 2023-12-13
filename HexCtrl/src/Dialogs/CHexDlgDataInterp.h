@@ -149,7 +149,5 @@ namespace HEXCTRL::INTERNAL
 		ULONGLONG m_ullDataSize { }; //Size of the currently interpreted data.
 		DWORD m_dwDateFormat { };    //Date format.
 		wchar_t m_wchDateSepar { };  //Date separator.
-		bool m_fBigEndian { false };
-		bool m_fShowAsHex { true };
 	};
 }

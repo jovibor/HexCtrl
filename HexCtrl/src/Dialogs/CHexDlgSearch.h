@@ -24,7 +24,7 @@ namespace HEXCTRL::INTERNAL
 		enum class ECmpType : std::uint16_t;
 		enum class EMenuID : std::uint16_t;
 		struct FINDRESULT;
-		struct THREADRUN;
+		struct SEARCHDATA;
 		void DoDataExchange(CDataExchange* pDX)override;
 		void AddToList(ULONGLONG ullOffset);
 		void ClearList();
@@ -49,10 +49,6 @@ namespace HEXCTRL::INTERNAL
 		afx_msg void OnButtonReplace();
 		afx_msg void OnButtonReplaceAll();
 		afx_msg void OnCheckSel();
-		afx_msg void OnCheckWildcard();
-		afx_msg void OnCheckBigEndian();
-		afx_msg void OnCheckMatchCase();
-		afx_msg void OnCheckInverted();
 		afx_msg void OnComboModeSelChange();
 		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
@@ -78,10 +74,11 @@ namespace HEXCTRL::INTERNAL
 		void ResetSearch();
 		void Search();
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
-		template<std::uint16_t uCmpType> void ThreadRun(THREADRUN* pStThread);
 		void UpdateSearchReplaceControls();
-		template<std::uint16_t uCmpType>
+		template<std::uint16_t tuCmpType>
 		[[nodiscard]] static bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize);
+		template<std::uint16_t tuCmpType, bool tfDlgClbck>
+		static void SearchFunc(SEARCHDATA* pSearch);
 		[[nodiscard]] static auto RangeToVecBytes(const std::string& str) -> std::vector<std::byte>;
 		[[nodiscard]] static auto RangeToVecBytes(const std::wstring& wstr) -> std::vector<std::byte>;
 		template<typename T>
@@ -122,7 +119,8 @@ namespace HEXCTRL::INTERNAL
 		std::wstring m_wstrTextSearch;       //Text from "Search" box.
 		std::wstring m_wstrTextReplace;      //Text from "Replace with..." box.
 		HEXSPAN m_stSelSpan { };             //Previous selection.
-		void(CHexDlgSearch::*m_pfnThread)(THREADRUN* pThread); //Func pointer to the ThreadRun<> for the Search thread.
+		void(*m_pfnSearchDlgClbck)(SEARCHDATA* pSearch); //Func pointer to the main SearchFunc<> with the callback dialog.
+		void(*m_pfnSearchNODlg)(SEARCHDATA* pSearch); //Func pointer to the main SearchFunc<> without callback dialog.
 		bool m_fSecondMatch { false };       //First or subsequent match. 
 		bool m_fFound { false };             //Found or not.
 		bool m_fDoCount { true };            //Do we count matches or just print "Found".
@@ -130,10 +128,5 @@ namespace HEXCTRL::INTERNAL
 		bool m_fAll { false };               //Find/Replace one by one, or all?
 		bool m_fReplaceWarn { true };        //Show "Replace string size exceeds..." warning message or not.
 		bool m_fSearchNext { false };        //Search through Next/Prev menu.
-		bool m_fBigEndian { false };         //"Big-endian" check box.
-		bool m_fInverted { false };          //"Inverted" check box
-		bool m_fMatchCase { false };         //"Match case" check box.
-		bool m_fSelection { false };         //"In selection" check box.
-		bool m_fWildcard { false };          //"Wildcard" check box.
 	};
 }

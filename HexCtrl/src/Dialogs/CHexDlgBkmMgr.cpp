@@ -361,7 +361,7 @@ void CHexDlgBkmMgr::DoDataExchange(CDataExchange* pDX)
 
 bool CHexDlgBkmMgr::IsShowAsHex()const
 {
-	return m_fShowAsHex;
+	return m_btnHex.GetCheck() == BST_CHECKED;
 }
 
 BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
@@ -403,7 +403,6 @@ BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 
 void CHexDlgBkmMgr::OnCheckHex()
 {
-	m_fShowAsHex = m_btnHex.GetCheck() == BST_CHECKED;
 	m_pList->RedrawWindow();
 }
 

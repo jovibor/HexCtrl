@@ -63,6 +63,5 @@ namespace HEXCTRL::INTERNAL
 		LONGLONG m_llIndexCurr { }; //Current bookmark's position index, to move next/prev.
 		CMenu m_menuList;
 		CButton m_btnHex;           //Check-box "Hex numbers".
-		bool m_fShowAsHex { true };
 	};
 }

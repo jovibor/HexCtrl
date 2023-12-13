@@ -104,7 +104,6 @@ namespace HEXCTRL::INTERNAL
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		afx_msg void OnCheckHex();
-		afx_msg void OnCheckHglSel();
 		afx_msg void OnCheckSwapEndian();
 		afx_msg void OnCheckShowTt();
 		afx_msg void OnCheckMinMax();
@@ -211,8 +210,5 @@ namespace HEXCTRL::INTERNAL
 		bool m_fLMDownResize { };               //Left mouse pressed in splitter area to resize.
 		bool m_fListGuardEvent { false };       //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
 		bool m_fTooltips { true };              //Show tooltips or not.
-		bool m_fHglSel { true };                //Highlight selected fields with a selection.
-		bool m_fShowAsHex { true };             //Show data in the list as Hex or decimal.
-		bool m_fSwapEndian { false };           //Swap data endianness in the list.
 	};
 }

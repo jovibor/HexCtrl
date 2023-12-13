@@ -50,17 +50,20 @@ namespace HEXCTRL::INTERNAL
 		operator bool()const { return fFound; };
 	};
 
-	struct CHexDlgSearch::THREADRUN {
+	struct CHexDlgSearch::SEARCHDATA {
 		ULONGLONG ullStart { };
 		ULONGLONG ullEnd { };
 		ULONGLONG ullLoopChunkSize { };  //Actual data size for a `for()` loop.
 		ULONGLONG ullMemToAcquire { };   //Size of a memory to acquire, to search in.
 		ULONGLONG ullMemChunks { };      //How many such memory chunks, to search in.
 		ULONGLONG ullOffsetSentinel { }; //The maximum offset that search can't cross.
+		LONGLONG llStep { };             //Search step, must be signed here.
+		IHexCtrl* pHexCtrl { };
 		CHexDlgCallback* pDlgClbk { };
 		SpanCByte spnSearch { };
 		bool fForward { };
 		bool fBigStep { };
+		bool fInverted { };
 		bool fCanceled { };
 		bool fDlgExit { };
 		bool fResult { };
@@ -77,10 +80,6 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLACE, &CHexDlgSearch::OnButtonReplace)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL, &CHexDlgSearch::OnButtonReplaceAll)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_CHECK_SEL, &CHexDlgSearch::OnCheckSel)
-	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_CHECK_WILDCARD, &CHexDlgSearch::OnCheckWildcard)
-	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_CHECK_BE, &CHexDlgSearch::OnCheckBigEndian)
-	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_CHECK_MATCHCASE, &CHexDlgSearch::OnCheckMatchCase)
-	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_CHECK_INV, &CHexDlgSearch::OnCheckInverted)
 	ON_CBN_SELCHANGE(IDC_HEXCTRL_SEARCH_COMBO_MODE, &CHexDlgSearch::OnComboModeSelChange)
 	ON_CBN_EDITUPDATE(IDC_HEXCTRL_SEARCH_COMBO_SEARCH, &CHexDlgSearch::UpdateSearchReplaceControls)
 	ON_CBN_EDITUPDATE(IDC_HEXCTRL_SEARCH_COMBO_REPLACE, &CHexDlgSearch::UpdateSearchReplaceControls)
@@ -215,10 +214,10 @@ void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
 
 auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnSearch,
 	bool fForward, CHexDlgCallback* pDlgClbk, bool fDlgExit)->FINDRESULT
-{	//ullStart will keep index of found occurence, if any.
+{	//ullStart will keep the index of found occurence, if any.
 
-	constexpr auto uSearchSizeLimit { 256U };
-	constexpr auto iSizeQuick { 1024 * 1024 * 10 }; //10MB.
+	static constexpr auto uSearchSizeLimit { 256U };
+	static constexpr auto uSizeQuick { 1024 * 1024 * 50U }; //50MB.
 
 	const auto nSizeSearch = spnSearch.size();
 	assert(nSizeSearch <= uSearchSizeLimit);
@@ -232,46 +231,52 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnS
 	const auto pHexCtrl = GetHexCtrl();
 	const auto ullStep = m_ullStep; //Search step.
 
-	THREADRUN stThread { .ullStart { ullStart }, .ullEnd { ullEnd }, .ullOffsetSentinel { m_ullOffsetSentinel },
-		.pDlgClbk { pDlgClbk }, .spnSearch { spnSearch }, .fForward { fForward }, .fDlgExit { fDlgExit } };
+	SEARCHDATA stSearch { .ullStart { ullStart }, .ullEnd { ullEnd }, .ullOffsetSentinel { m_ullOffsetSentinel },
+		.llStep { static_cast<LONGLONG>(m_ullStep) }, .pHexCtrl { GetHexCtrl() }, .pDlgClbk { pDlgClbk }, .spnSearch { spnSearch },
+		.fForward { fForward }, .fInverted { IsInverted() }, .fDlgExit { fDlgExit } };
 
 	if (!pHexCtrl->IsVirtual()) {
-		stThread.ullMemToAcquire = ullSizeTotal;
-		stThread.ullLoopChunkSize = ullSizeTotal - nSizeSearch;
-		stThread.ullMemChunks = 1;
+		stSearch.ullMemToAcquire = ullSizeTotal;
+		stSearch.ullLoopChunkSize = ullSizeTotal - nSizeSearch;
+		stSearch.ullMemChunks = 1;
 	}
 	else {
-		stThread.ullMemToAcquire = pHexCtrl->GetCacheSize();
-		if (stThread.ullMemToAcquire > ullSizeTotal) {
-			stThread.ullMemToAcquire = ullSizeTotal;
+		stSearch.ullMemToAcquire = pHexCtrl->GetCacheSize();
+		if (stSearch.ullMemToAcquire > ullSizeTotal) {
+			stSearch.ullMemToAcquire = ullSizeTotal;
 		}
-		stThread.ullLoopChunkSize = stThread.ullMemToAcquire - nSizeSearch;
+		stSearch.ullLoopChunkSize = stSearch.ullMemToAcquire - nSizeSearch;
 
-		if (ullStep > stThread.ullLoopChunkSize) { //For very big steps.
-			stThread.ullMemChunks = ullSizeTotal > ullStep ? ullSizeTotal / ullStep
+		if (ullStep > stSearch.ullLoopChunkSize) { //For very big steps.
+			stSearch.ullMemChunks = ullSizeTotal > ullStep ? ullSizeTotal / ullStep
 				+ ((ullSizeTotal % ullStep) ? 1 : 0) : 1;
-			stThread.fBigStep = true;
+			stSearch.fBigStep = true;
 		}
 		else {
-			stThread.ullMemChunks = ullSizeTotal > stThread.ullLoopChunkSize ? ullSizeTotal / stThread.ullLoopChunkSize
-				+ ((ullSizeTotal % stThread.ullLoopChunkSize) ? 1 : 0) : 1;
+			stSearch.ullMemChunks = ullSizeTotal > stSearch.ullLoopChunkSize ? ullSizeTotal / stSearch.ullLoopChunkSize
+				+ ((ullSizeTotal % stSearch.ullLoopChunkSize) ? 1 : 0) : 1;
 		}
 	}
 
-	if (pDlgClbk == nullptr && ullSizeTotal > iSizeQuick) { //Showing "Cancel" dialog only when data > iSizeQuick
-		CHexDlgCallback dlgClbk(L"Searching...", fForward ? ullStart : ullEnd, fForward ? ullEnd : ullStart);
-		stThread.pDlgClbk = &dlgClbk;
-		std::thread thrd(m_pfnThread, this, &stThread);
-		dlgClbk.DoModal();
-		thrd.join();
+	if (pDlgClbk == nullptr) {
+		if (ullSizeTotal > uSizeQuick) { //Showing the "Cancel" dialog only for big data sizes.
+			CHexDlgCallback dlgClbk(L"Searching...", fForward ? ullStart : ullEnd, fForward ? ullEnd : ullStart);
+			stSearch.pDlgClbk = &dlgClbk;
+			std::thread thrd(m_pfnSearchDlgClbck, &stSearch);
+			dlgClbk.DoModal();
+			thrd.join();
+		}
+		else {
+			m_pfnSearchNODlg(&stSearch);
+		}
 	}
 	else {
-		(this->*m_pfnThread)(&stThread);
+		m_pfnSearchDlgClbck(&stSearch);
 	}
 
-	ullStart = stThread.ullStart;
+	ullStart = stSearch.ullStart;
 
-	return { stThread.fResult, stThread.fCanceled };
+	return { stSearch.fResult, stSearch.fCanceled };
 }
 
 auto CHexDlgSearch::GetHexCtrl()const->IHexCtrl*
@@ -296,27 +301,27 @@ void CHexDlgSearch::HexCtrlHighlight(const VecSpan& vecSel)
 
 bool CHexDlgSearch::IsBigEndian()const
 {
-	return m_fBigEndian;
+	return m_btnBE.GetCheck() == BST_CHECKED;
 }
 
 bool CHexDlgSearch::IsInverted()const
 {
-	return m_fInverted;
+	return m_btnInv.GetCheck() == BST_CHECKED;
 }
 
 bool CHexDlgSearch::IsMatchCase()const
 {
-	return m_fMatchCase;
+	return m_btnMC.GetCheck() == BST_CHECKED;
 }
 
 bool CHexDlgSearch::IsSelection()const
 {
-	return m_fSelection;
+	return m_btnSel.GetCheck() == BST_CHECKED;
 }
 
 bool CHexDlgSearch::IsWildcard()const
 {
-	return m_fWildcard;
+	return m_btnWC.GetCheck() == BST_CHECKED;
 }
 
 void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
@@ -382,29 +387,8 @@ void CHexDlgSearch::OnCancel()
 
 void CHexDlgSearch::OnCheckSel()
 {
-	m_fSelection = m_btnSel.GetCheck() == BST_CHECKED;
 	m_editStart.EnableWindow(!IsSelection());
 	m_editEnd.EnableWindow(!IsSelection());
-}
-
-void CHexDlgSearch::OnCheckWildcard()
-{
-	m_fWildcard = m_btnWC.GetCheck() == BST_CHECKED;
-}
-
-void CHexDlgSearch::OnCheckBigEndian()
-{
-	m_fBigEndian = m_btnBE.GetCheck() == BST_CHECKED;
-}
-
-void CHexDlgSearch::OnCheckMatchCase()
-{
-	m_fMatchCase = m_btnMC.GetCheck() == BST_CHECKED;
-}
-
-void CHexDlgSearch::OnCheckInverted()
-{
-	m_fInverted = m_btnInv.GetCheck() == BST_CHECKED;
 }
 
 void CHexDlgSearch::OnComboModeSelChange()
@@ -723,15 +707,15 @@ void CHexDlgSearch::Prepare()
 		return;
 
 	if (m_fReplace) {
-		wchar_t warrReplace[64];
-		m_comboReplace.GetWindowTextW(warrReplace, static_cast<int>(std::size(warrReplace)));
-		m_wstrTextReplace = warrReplace;
+		CStringW wstrReplace;
+		m_comboReplace.GetWindowTextW(wstrReplace);
+		m_wstrTextReplace = wstrReplace;
 		if (m_wstrTextReplace.empty()) {
 			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			m_comboReplace.SetFocus();
 			return;
 		}
-		ComboReplaceFill(warrReplace);
+		ComboReplaceFill(wstrReplace);
 	}
 	m_comboSearch.SetFocus();
 
@@ -846,11 +830,14 @@ bool CHexDlgSearch::PrepareHexBytes()
 
 	using enum ECmpType;
 	if (!IsWildcard()) {
-		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)>;
+		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP), true>;
+		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP), false>;
 	}
 	else {
-		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
-			static_cast<std::uint16_t>(TYPE_WILDCARD)>;
+		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
+			static_cast<std::uint16_t>(TYPE_WILDCARD), true>;
+		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
+			static_cast<std::uint16_t>(TYPE_WILDCARD), false>;
 	}
 
 	return true;
@@ -869,19 +856,26 @@ bool CHexDlgSearch::PrepareTextASCII()
 
 	using enum ECmpType;
 	if (IsMatchCase() && !IsWildcard()) {
-		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)>;
+		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP), true>;
+		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP), false>;
 	}
 	else if (IsMatchCase() && IsWildcard()) {
-		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_WILDCARD)>;
+		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
+			| static_cast<std::uint16_t>(TYPE_WILDCARD), true>;
+		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
+			| static_cast<std::uint16_t>(TYPE_WILDCARD), false>;
 	}
 	else if (!IsMatchCase() && IsWildcard()) {
-		m_pfnThread = &CHexDlgSearch::ThreadRun< static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
-			static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD)>;
+		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc< static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
+			static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD), true>;
+		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc< static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
+			static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD), false>;
 	}
 	else if (!IsMatchCase() && !IsWildcard()) {
-		m_pfnThread = &CHexDlgSearch::ThreadRun< static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)>;
+		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc< static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
+			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE), true>;
+		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc< static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
+			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE), false>;
 	}
 
 	return true;
@@ -899,19 +893,26 @@ bool CHexDlgSearch::PrepareTextUTF16()
 
 	using enum ECmpType;
 	if (IsMatchCase() && !IsWildcard()) {
-		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)>;
+		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP), true>;
+		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP), false>;
 	}
 	else if (IsMatchCase() && IsWildcard()) {
-		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_WILDCARD)>;
+		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
+			| static_cast<std::uint16_t>(TYPE_WILDCARD), true>;
+		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
+			| static_cast<std::uint16_t>(TYPE_WILDCARD), false>;
 	}
 	else if (!IsMatchCase() && IsWildcard()) {
-		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD)>;
+		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
+			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD), true>;
+		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
+			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD), false>;
 	}
 	else if (!IsMatchCase() && !IsWildcard()) {
-		m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)>;
+		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
+			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE), true>;
+		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
+			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE), false>;
 	}
 
 	return true;
@@ -923,7 +924,8 @@ bool CHexDlgSearch::PrepareTextUTF8()
 	m_vecReplaceData = RangeToVecBytes(WstrToStr(m_wstrTextReplace, CP_UTF8));
 
 	using enum ECmpType;
-	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)>;
+	m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP), true>;
+	m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP), false>;
 
 	return true;
 }
@@ -947,7 +949,8 @@ bool CHexDlgSearch::PrepareINT8()
 	}
 
 	using enum ECmpType;
-	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT8)>;
+	m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT8), true>;
+	m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT8), false>;
 
 	return true;
 }
@@ -980,7 +983,8 @@ bool CHexDlgSearch::PrepareINT16()
 	m_vecReplaceData = RangeToVecBytes(wDataRep);
 
 	using enum ECmpType;
-	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT16)>;
+	m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT16), true>;
+	m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT16), false>;
 
 	return true;
 }
@@ -1013,7 +1017,8 @@ bool CHexDlgSearch::PrepareINT32()
 	m_vecReplaceData = RangeToVecBytes(dwDataRep);
 
 	using enum ECmpType;
-	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT32)>;
+	m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT32), true>;
+	m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT32), false>;
 
 	return true;
 }
@@ -1045,7 +1050,8 @@ bool CHexDlgSearch::PrepareINT64()
 	m_vecSearchData = RangeToVecBytes(ullData);
 	m_vecReplaceData = RangeToVecBytes(ullDataRep);
 	using enum ECmpType;
-	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT64)>;
+	m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT64), true>;
+	m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT64), false>;
 
 	return true;
 }
@@ -1078,7 +1084,8 @@ bool CHexDlgSearch::PrepareFloat()
 	m_vecReplaceData = RangeToVecBytes(flDataRep);
 
 	using enum ECmpType;
-	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT32)>;
+	m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT32), true>;
+	m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT32), false>;
 
 	return true;
 }
@@ -1111,7 +1118,8 @@ bool CHexDlgSearch::PrepareDouble()
 	m_vecReplaceData = RangeToVecBytes(dblDataRep);
 
 	using enum ECmpType;
-	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT64)>;
+	m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT64), true>;
+	m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT64), false>;
 
 	return true;
 }
@@ -1148,7 +1156,8 @@ bool CHexDlgSearch::PrepareFILETIME()
 	m_vecReplaceData = RangeToVecBytes(ftReplace);
 
 	using enum ECmpType;
-	m_pfnThread = &CHexDlgSearch::ThreadRun<static_cast<std::uint16_t>(TYPE_INT64)>;
+	m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT64), true>;
+	m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_INT64), false>;
 
 	return true;
 }
@@ -1373,160 +1382,6 @@ void CHexDlgSearch::SetEditStartAt(ULONGLONG ullOffset)
 	m_editStart.SetWindowTextW(std::format(L"0x{:X}", ullOffset).data());
 }
 
-template<std::uint16_t uCmpType>
-void CHexDlgSearch::ThreadRun(THREADRUN* pStThread)
-{
-	const auto pDataSearch = pStThread->spnSearch.data();
-	const auto nSizeSearch = pStThread->spnSearch.size();
-	const auto pHexCtrl = GetHexCtrl();
-	const auto llStep = static_cast<LONGLONG>(m_ullStep); //Search step, must be signed here.
-	constexpr auto LOOP_UNROLL_SIZE = 4; //How many comparisons we do at one loop step.
-
-	if (pStThread->fForward) { //Forward search.
-		auto ullOffsetSearch = pStThread->ullStart;
-		for (auto iterChunk = 0ULL; iterChunk < pStThread->ullMemChunks; ++iterChunk) {
-			const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, pStThread->ullMemToAcquire });
-			assert(!spnData.empty());
-
-			for (auto iterData = 0ULL; iterData <= pStThread->ullLoopChunkSize; iterData += llStep * LOOP_UNROLL_SIZE) {
-				//Unrolling the loop, making LOOP_UNROLL_SIZE comparisons at a time.
-				if (MemCmp<uCmpType>(spnData.data() + iterData, pDataSearch, nSizeSearch) == !IsInverted()) {
-					pStThread->ullStart = ullOffsetSearch + iterData;
-					pStThread->fResult = true;
-					goto FOUND;
-				}
-				if ((iterData + llStep <= pStThread->ullLoopChunkSize)
-					&& (MemCmp<uCmpType>(spnData.data() + iterData + llStep, pDataSearch, nSizeSearch) == !IsInverted())) {
-					pStThread->ullStart = ullOffsetSearch + iterData + llStep;
-					pStThread->fResult = true;
-					goto FOUND;
-				}
-				if ((iterData + llStep * 2 <= pStThread->ullLoopChunkSize)
-					&& (MemCmp<uCmpType>(spnData.data() + iterData + llStep * 2, pDataSearch, nSizeSearch) == !IsInverted())) {
-					pStThread->ullStart = ullOffsetSearch + iterData + llStep * 2;
-					pStThread->fResult = true;
-					goto FOUND;
-				}
-				if ((iterData + llStep * 3 <= pStThread->ullLoopChunkSize)
-					&& (MemCmp<uCmpType>(spnData.data() + iterData + llStep * 3, pDataSearch, nSizeSearch) == !IsInverted())) {
-					pStThread->ullStart = ullOffsetSearch + iterData + llStep * 3;
-					pStThread->fResult = true;
-					goto FOUND;
-				}
-
-				if (pStThread->pDlgClbk != nullptr) {
-					if (pStThread->pDlgClbk->IsCanceled()) {
-						pStThread->fCanceled = true;
-						return; //Breaking out from all level loops.
-					}
-					pStThread->pDlgClbk->SetProgress(ullOffsetSearch + iterData);
-				}
-			}
-
-			if (pStThread->fBigStep) {
-				if ((ullOffsetSearch + llStep) > pStThread->ullEnd)
-					break; //Upper bound reached.
-
-				ullOffsetSearch += llStep;
-			}
-			else {
-				ullOffsetSearch += pStThread->ullLoopChunkSize;
-			}
-
-			if (ullOffsetSearch + pStThread->ullMemToAcquire > pStThread->ullOffsetSentinel) {
-				pStThread->ullMemToAcquire = pStThread->ullOffsetSentinel - ullOffsetSearch;
-				pStThread->ullLoopChunkSize = pStThread->ullMemToAcquire - nSizeSearch;
-			}
-		}
-	}
-	else { //Backward search.
-		ULONGLONG ullOffsetSearch;
-		if ((pStThread->ullStart - pStThread->ullLoopChunkSize) < pStThread->ullEnd
-			|| ((pStThread->ullStart - pStThread->ullLoopChunkSize) >
-				((std::numeric_limits<ULONGLONG>::max)() - pStThread->ullLoopChunkSize))) {
-			pStThread->ullMemToAcquire = (pStThread->ullStart - pStThread->ullEnd) + nSizeSearch;
-			pStThread->ullLoopChunkSize = pStThread->ullMemToAcquire - nSizeSearch;
-			ullOffsetSearch = pStThread->ullEnd;
-		}
-		else {
-			ullOffsetSearch = pStThread->ullStart - pStThread->ullLoopChunkSize;
-		}
-
-		for (auto iterChunk = pStThread->ullMemChunks; iterChunk > 0; --iterChunk) {
-			const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, pStThread->ullMemToAcquire });
-			assert(!spnData.empty());
-
-			for (auto iterData = static_cast<LONGLONG>(pStThread->ullLoopChunkSize); iterData >= 0;
-				iterData -= llStep * LOOP_UNROLL_SIZE) { //iterData might be negative.
-				if (MemCmp<uCmpType>(spnData.data() + iterData, pDataSearch, nSizeSearch) == !IsInverted()) {
-					pStThread->ullStart = ullOffsetSearch + iterData;
-					pStThread->fResult = true;
-					goto FOUND;
-				}
-				if ((iterData - llStep >= 0)
-					&& (MemCmp<uCmpType>(spnData.data() + (iterData - llStep), pDataSearch, nSizeSearch) == !IsInverted())) {
-					pStThread->ullStart = ullOffsetSearch + iterData - llStep;
-					pStThread->fResult = true;
-					goto FOUND;
-				}
-				if ((iterData - llStep * 2 >= 0)
-					&& (MemCmp<uCmpType>(spnData.data() + (iterData - llStep * 2), pDataSearch, nSizeSearch) == !IsInverted())) {
-					pStThread->ullStart = ullOffsetSearch + iterData - llStep * 2;
-					pStThread->fResult = true;
-					goto FOUND;
-				}
-				if ((iterData - llStep * 3 >= 0)
-					&& (MemCmp<uCmpType>(spnData.data() + (iterData - llStep * 3), pDataSearch, nSizeSearch) == !IsInverted())) {
-					pStThread->ullStart = ullOffsetSearch + iterData - llStep * 3;
-					pStThread->fResult = true;
-					goto FOUND;
-				}
-
-				if (pStThread->pDlgClbk != nullptr) {
-					if (pStThread->pDlgClbk->IsCanceled()) {
-						pStThread->fCanceled = true;
-						return; //Breaking out from all level loops.
-					}
-					pStThread->pDlgClbk->SetProgress(pStThread->ullStart - (ullOffsetSearch + iterData));
-				}
-			}
-
-			if (pStThread->fBigStep) {
-				if ((ullOffsetSearch - llStep) < pStThread->ullEnd
-					|| (ullOffsetSearch - llStep) > ((std::numeric_limits<ULONGLONG>::max)() - llStep))
-					break; //Lower bound reached.
-
-				ullOffsetSearch -= pStThread->ullLoopChunkSize;
-			}
-			else {
-				if ((ullOffsetSearch - pStThread->ullLoopChunkSize) < pStThread->ullEnd
-					|| ((ullOffsetSearch - pStThread->ullLoopChunkSize) >
-						((std::numeric_limits<ULONGLONG>::max)() - pStThread->ullLoopChunkSize))) {
-					pStThread->ullMemToAcquire = (ullOffsetSearch - pStThread->ullEnd) + nSizeSearch;
-					pStThread->ullLoopChunkSize = pStThread->ullMemToAcquire - nSizeSearch;
-					ullOffsetSearch = pStThread->ullEnd;
-				}
-				else {
-					ullOffsetSearch -= pStThread->ullLoopChunkSize;
-				}
-			}
-		}
-	}
-
-FOUND:
-	if (pStThread->pDlgClbk != nullptr) {
-		if (pStThread->fDlgExit) {
-			pStThread->pDlgClbk->ExitDlg();
-		}
-		else {
-			//If MemCmp returns true at the very first hit, we don't reach the SetProgress in the main loop.
-			//It might be the case for the "Find/Replace All" for example.
-			//If the data all the same (e.g. 0xCDCDCDCD...) then MemCmp would return true every single step.
-			pStThread->pDlgClbk->SetProgress(pStThread->ullStart);
-		}
-	}
-}
-
 void CHexDlgSearch::UpdateSearchReplaceControls()
 {
 	const auto* const pHexCtrl = GetHexCtrl();
@@ -1545,30 +1400,30 @@ void CHexDlgSearch::UpdateSearchReplaceControls()
 	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL)->EnableWindow(fReplaceEnabled);
 }
 
-template<std::uint16_t uCmpType>
+template<std::uint16_t tuCmpType>
 bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize)
 {
 	using enum ECmpType;
-	if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT8)) > 0) {
+	if constexpr ((tuCmpType & static_cast<std::uint16_t>(TYPE_INT8)) > 0) {
 		return *reinterpret_cast<const std::uint8_t*>(pBuf1) == *reinterpret_cast<const std::uint8_t*>(pBuf2);
 	}
-	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT16)) > 0) {
+	else if constexpr ((tuCmpType & static_cast<std::uint16_t>(TYPE_INT16)) > 0) {
 		return *reinterpret_cast<const std::uint16_t*>(pBuf1) == *reinterpret_cast<const std::uint16_t*>(pBuf2);
 	}
-	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT32)) > 0) {
+	else if constexpr ((tuCmpType & static_cast<std::uint16_t>(TYPE_INT32)) > 0) {
 		return *reinterpret_cast<const std::uint32_t*>(pBuf1) == *reinterpret_cast<const std::uint32_t*>(pBuf2);
 	}
-	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_INT64)) > 0) {
+	else if constexpr ((tuCmpType & static_cast<std::uint16_t>(TYPE_INT64)) > 0) {
 		return *reinterpret_cast<const std::uint64_t*>(pBuf1) == *reinterpret_cast<const std::uint64_t*>(pBuf2);
 	}
-	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_CHAR_LOOP)) > 0) {
+	else if constexpr ((tuCmpType & static_cast<std::uint16_t>(TYPE_CHAR_LOOP)) > 0) {
 		for (std::size_t i { 0 }; i < nSize; ++i, ++pBuf1, ++pBuf2) {
-			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0) {
+			if constexpr ((tuCmpType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0) {
 				if (*pBuf2 == m_uWildcard) //Checking for wildcard match.
 					continue;
 			}
 
-			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
+			if constexpr ((tuCmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
 				auto ch = static_cast<char>(*pBuf1);
 				if (ch >= 0x41 && ch <= 0x5A) { //IsUpper.
 					ch += 32;
@@ -1584,16 +1439,16 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::
 		}
 		return true;
 	}
-	else if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)) > 0) {
+	else if constexpr ((tuCmpType & static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)) > 0) {
 		auto pBuf1wch = reinterpret_cast<const wchar_t*>(pBuf1);
 		auto pBuf2wch = reinterpret_cast<const wchar_t*>(pBuf2);
 		for (std::size_t i { 0 }; i < (nSize / sizeof(wchar_t)); ++i, ++pBuf1wch, ++pBuf2wch) {
-			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0) {
+			if constexpr ((tuCmpType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0) {
 				if (*pBuf2wch == static_cast<wchar_t>(m_uWildcard)) //Checking for wildcard match.
 					continue;
 			}
 
-			if constexpr ((uCmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
+			if constexpr ((tuCmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
 				auto wch = *pBuf1wch;
 				if (wch >= 0x41 && wch <= 0x5A) { //IsUpper.
 					wch += 32;
@@ -1608,6 +1463,206 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::
 			}
 		}
 		return true;
+	}
+}
+
+template<std::uint16_t tuCmpType, bool tfDlgClbck>
+void CHexDlgSearch::SearchFunc(SEARCHDATA* pSearch)
+{
+	static constexpr auto LOOP_UNROLL_SIZE = 4; //How many comparisons we do at one loop step.
+	const auto pDataSearch = pSearch->spnSearch.data();
+	const auto nSizeSearch = pSearch->spnSearch.size();
+	const auto pHexCtrl = pSearch->pHexCtrl;
+	const auto llStep = pSearch->llStep;
+	const auto fInverted = pSearch->fInverted;
+
+	if (pSearch->fForward) { //Forward search.
+		auto ullOffsetSearch = pSearch->ullStart;
+		for (auto iterChunk = 0ULL; iterChunk < pSearch->ullMemChunks; ++iterChunk) {
+			const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, pSearch->ullMemToAcquire });
+			assert(!spnData.empty());
+
+			//Unrolling the loop, making LOOP_UNROLL_SIZE comparisons at a time.
+			for (auto iterData = 0ULL; iterData <= pSearch->ullLoopChunkSize; iterData += llStep * LOOP_UNROLL_SIZE) {
+
+				//First memory comparison is always unconditional.
+				if (MemCmp<tuCmpType>(spnData.data() + iterData, pDataSearch, nSizeSearch) == !fInverted) {
+					pSearch->ullStart = ullOffsetSearch + iterData;
+					pSearch->fResult = true;
+					goto END;
+				}
+
+				//This branch allows to avoid "iterData + llStep * nStep <= pSearch->ullLoopChunkSize" check every step.
+				if ((iterData + llStep * LOOP_UNROLL_SIZE) <= pSearch->ullLoopChunkSize) {
+					if (MemCmp<tuCmpType>(spnData.data() + iterData + llStep * 1, pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 1;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if (MemCmp<tuCmpType>(spnData.data() + iterData + llStep * 2, pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 2;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if (MemCmp<tuCmpType>(spnData.data() + iterData + llStep * 3, pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 3;
+						pSearch->fResult = true;
+						goto END;
+					}
+				}
+				else {
+					if ((iterData + llStep * 1 <= pSearch->ullLoopChunkSize)
+						&& (MemCmp<tuCmpType>(spnData.data() + iterData + llStep * 1, pDataSearch, nSizeSearch) == !fInverted)) {
+						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 1;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if ((iterData + llStep * 2 <= pSearch->ullLoopChunkSize)
+						&& (MemCmp<tuCmpType>(spnData.data() + iterData + llStep * 2, pDataSearch, nSizeSearch) == !fInverted)) {
+						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 2;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if ((iterData + llStep * 3 <= pSearch->ullLoopChunkSize)
+						&& (MemCmp<tuCmpType>(spnData.data() + iterData + llStep * 3, pDataSearch, nSizeSearch) == !fInverted)) {
+						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 3;
+						pSearch->fResult = true;
+						goto END;
+					}
+				}
+
+				if constexpr (tfDlgClbck) {
+					if (pSearch->pDlgClbk->IsCanceled()) {
+						pSearch->fCanceled = true;
+						return;
+					}
+					pSearch->pDlgClbk->SetProgress(ullOffsetSearch + iterData);
+				}
+			}
+
+			if (pSearch->fBigStep) {
+				if ((ullOffsetSearch + llStep) > pSearch->ullEnd)
+					break; //Upper bound reached.
+
+				ullOffsetSearch += llStep;
+			}
+			else {
+				ullOffsetSearch += pSearch->ullLoopChunkSize;
+			}
+
+			if (ullOffsetSearch + pSearch->ullMemToAcquire > pSearch->ullOffsetSentinel) {
+				pSearch->ullMemToAcquire = pSearch->ullOffsetSentinel - ullOffsetSearch;
+				pSearch->ullLoopChunkSize = pSearch->ullMemToAcquire - nSizeSearch;
+			}
+		}
+	}
+	else { //Backward search.
+		ULONGLONG ullOffsetSearch;
+		if ((pSearch->ullStart - pSearch->ullLoopChunkSize) < pSearch->ullEnd
+			|| ((pSearch->ullStart - pSearch->ullLoopChunkSize) >
+				((std::numeric_limits<ULONGLONG>::max)() - pSearch->ullLoopChunkSize))) {
+			pSearch->ullMemToAcquire = (pSearch->ullStart - pSearch->ullEnd) + nSizeSearch;
+			pSearch->ullLoopChunkSize = pSearch->ullMemToAcquire - nSizeSearch;
+			ullOffsetSearch = pSearch->ullEnd;
+		}
+		else {
+			ullOffsetSearch = pSearch->ullStart - pSearch->ullLoopChunkSize;
+		}
+
+		for (auto iterChunk = pSearch->ullMemChunks; iterChunk > 0; --iterChunk) {
+			const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, pSearch->ullMemToAcquire });
+			assert(!spnData.empty());
+
+			for (auto iterData = static_cast<LONGLONG>(pSearch->ullLoopChunkSize); iterData >= 0;
+				iterData -= llStep * LOOP_UNROLL_SIZE) { //iterData might be negative.
+
+				//First memory comparison is always unconditional.
+				if (MemCmp<tuCmpType>(spnData.data() + iterData, pDataSearch, nSizeSearch) == !fInverted) {
+					pSearch->ullStart = ullOffsetSearch + iterData;
+					pSearch->fResult = true;
+					goto END;
+				}
+
+				if ((iterData - llStep * LOOP_UNROLL_SIZE) >= 0) {
+					if (MemCmp<tuCmpType>(spnData.data() + (iterData - llStep * 1), pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 1;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if (MemCmp<tuCmpType>(spnData.data() + (iterData - llStep * 2), pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 2;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if (MemCmp<tuCmpType>(spnData.data() + (iterData - llStep * 3), pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 3;
+						pSearch->fResult = true;
+						goto END;
+					}
+				}
+				else {
+					if ((iterData - llStep * 1 >= 0)
+						&& (MemCmp<tuCmpType>(spnData.data() + (iterData - llStep * 1), pDataSearch, nSizeSearch) == !fInverted)) {
+						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 1;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if ((iterData - llStep * 2 >= 0)
+						&& (MemCmp<tuCmpType>(spnData.data() + (iterData - llStep * 2), pDataSearch, nSizeSearch) == !fInverted)) {
+						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 2;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if ((iterData - llStep * 3 >= 0)
+						&& (MemCmp<tuCmpType>(spnData.data() + (iterData - llStep * 3), pDataSearch, nSizeSearch) == !fInverted)) {
+						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 3;
+						pSearch->fResult = true;
+						goto END;
+					}
+				}
+
+				if constexpr (tfDlgClbck) {
+					if (pSearch->pDlgClbk->IsCanceled()) {
+						pSearch->fCanceled = true;
+						return;
+					}
+					pSearch->pDlgClbk->SetProgress(pSearch->ullStart - (ullOffsetSearch + iterData));
+				}
+			}
+
+			if (pSearch->fBigStep) {
+				if ((ullOffsetSearch - llStep) < pSearch->ullEnd
+					|| (ullOffsetSearch - llStep) > ((std::numeric_limits<ULONGLONG>::max)() - llStep))
+					break; //Lower bound reached.
+
+				ullOffsetSearch -= pSearch->ullLoopChunkSize;
+			}
+			else {
+				if ((ullOffsetSearch - pSearch->ullLoopChunkSize) < pSearch->ullEnd
+					|| ((ullOffsetSearch - pSearch->ullLoopChunkSize) >
+						((std::numeric_limits<ULONGLONG>::max)() - pSearch->ullLoopChunkSize))) {
+					pSearch->ullMemToAcquire = (ullOffsetSearch - pSearch->ullEnd) + nSizeSearch;
+					pSearch->ullLoopChunkSize = pSearch->ullMemToAcquire - nSizeSearch;
+					ullOffsetSearch = pSearch->ullEnd;
+				}
+				else {
+					ullOffsetSearch -= pSearch->ullLoopChunkSize;
+				}
+			}
+		}
+	}
+
+END:
+	if constexpr (tfDlgClbck) {
+		if (pSearch->fDlgExit) {
+			pSearch->pDlgClbk->ExitDlg();
+		}
+		else {
+			//If MemCmp returns true at the very first hit, we don't reach the SetProgress in the main loop.
+			//It might be the case for the "Find/Replace All" for example.
+			//If the data all the same (e.g. 0xCDCDCDCD...) then MemCmp would return true every single step.
+			pSearch->pDlgClbk->SetProgress(pSearch->ullStart);
+		}
 	}
 }
 

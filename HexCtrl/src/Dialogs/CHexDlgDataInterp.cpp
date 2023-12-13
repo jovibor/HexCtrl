@@ -234,20 +234,20 @@ void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
 
 bool CHexDlgDataInterp::IsShowAsHex()const
 {
-	return m_fShowAsHex;
+	return m_btnHex.GetCheck() == BST_CHECKED;
 }
 
 bool CHexDlgDataInterp::IsBigEndian()const
 {
-	return m_fBigEndian;
+	return m_btnBE.GetCheck() == BST_CHECKED;
 }
 
 BOOL CHexDlgDataInterp::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_btnBE.SetCheck(IsBigEndian());
-	m_btnHex.SetCheck(IsShowAsHex());
+	m_btnHex.SetCheck(BST_CHECKED);
+	m_btnBE.SetCheck(BST_UNCHECKED);
 
 	using enum EGroup; using enum EName; using enum ESize;
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"binary:", L"0"), GR_INTEGRAL, NAME_BINARY, SIZE_BYTE);
@@ -358,13 +358,11 @@ void CHexDlgDataInterp::OnOK()
 
 void CHexDlgDataInterp::OnCheckHex()
 {
-	m_fShowAsHex = m_btnHex.GetCheck() == BST_CHECKED;
 	UpdateData();
 }
 
 void CHexDlgDataInterp::OnCheckBigEndian()
 {
-	m_fBigEndian = m_btnBE.GetCheck() == BST_CHECKED;
 	UpdateData();
 }
 
@@ -662,9 +660,7 @@ void CHexDlgDataInterp::ShowValueOLEDATETIME(QWORD qword)const
 		//See: https://docs.microsoft.com/en-us/cpp/atl-mfc-shared/date-type?view=vs-2019
 
 		std::wstring wstrTime = L"N/A";
-		DATE date;
-		std::memcpy(&date, &qword, sizeof(date));
-		const COleDateTime dt(date);
+		const COleDateTime dt(std::bit_cast<DATE>(qword));
 		if (SYSTEMTIME stSysTime { }; dt.GetAsSystemTime(stSysTime)) {
 			wstrTime = SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
 		}
@@ -717,8 +713,7 @@ void CHexDlgDataInterp::ShowValueMSDTTMTIME(DWORD dword)const
 
 		//Microsoft UDTTM time (as used by Microsoft Compound Document format)
 		std::wstring wstrTime = L"N/A";
-		UDTTM dttm;
-		dttm.dwValue = dword;
+		const UDTTM dttm { .dwValue { dword } };
 		if (dttm.components.dayofmonth > 0 && dttm.components.dayofmonth < 32
 			&& dttm.components.hour < 24 && dttm.components.minute < 60
 			&& dttm.components.month>0 && dttm.components.month < 13 && dttm.components.weekday < 7) {
@@ -790,7 +785,6 @@ void CHexDlgDataInterp::ShowValueGUIDTIME(GUID stGUID)const
 		//First, verify GUID is actually version 1 style.
 		std::wstring wstrTime = L"N/A";
 		const unsigned short unGuidVersion = (stGUID.Data3 & 0xf000) >> 12;
-
 		if (unGuidVersion == 1) {
 			LARGE_INTEGER qwGUIDTime { .LowPart { stGUID.Data1 }, .HighPart { stGUID.Data3 & 0x0fff } };
 			qwGUIDTime.HighPart = (qwGUIDTime.HighPart << 16) | stGUID.Data2;
@@ -829,25 +823,25 @@ bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
 	if (wsv.size() != 8 || wsv.find_first_not_of(L"01") != std::wstring_view::npos)
 		return false;
 
-	const auto optData = stn::StrToUChar(wsv, 2);
-	if (!optData)
+	const auto opt = stn::StrToUChar(wsv, 2);
+	if (!opt)
 		return false;
 
-	SetTData(*optData);
+	SetTData(*opt);
 	return true;
 }
 
 bool CHexDlgDataInterp::SetDataChar(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToUChar(wsv); opt) {
+		if (const auto opt = stn::StrToUChar(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto optData = stn::StrToChar(wsv); optData) {
-			SetTData(*optData);
+		if (const auto opt = stn::StrToChar(wsv); opt) {
+			SetTData(*opt);
 			return true;
 		}
 	}
@@ -856,25 +850,25 @@ bool CHexDlgDataInterp::SetDataChar(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataUChar(std::wstring_view wsv)const
 {
-	const auto optData = stn::StrToUChar(wsv);
-	if (!optData)
+	const auto opt = stn::StrToUChar(wsv);
+	if (!opt)
 		return false;
 
-	SetTData(*optData);
+	SetTData(*opt);
 	return true;
 }
 
 bool CHexDlgDataInterp::SetDataShort(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToUShort(wsv); opt) {
+		if (const auto opt = stn::StrToUShort(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto optData = stn::StrToShort(wsv); optData) {
-			SetTData(*optData);
+		if (const auto opt = stn::StrToShort(wsv); opt) {
+			SetTData(*opt);
 			return true;
 		}
 	}
@@ -883,25 +877,25 @@ bool CHexDlgDataInterp::SetDataShort(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataUShort(std::wstring_view wsv)const
 {
-	const auto optData = stn::StrToUShort(wsv);
-	if (!optData)
+	const auto opt = stn::StrToUShort(wsv);
+	if (!opt)
 		return false;
 
-	SetTData(*optData);
+	SetTData(*opt);
 	return true;
 }
 
 bool CHexDlgDataInterp::SetDataInt(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToUInt(wsv); opt) {
+		if (const auto opt = stn::StrToUInt(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto optData = stn::StrToNum<int>(wsv); optData) {
-			SetTData(*optData);
+		if (const auto opt = stn::StrToNum<int>(wsv); opt) {
+			SetTData(*opt);
 			return true;
 		}
 	}
@@ -910,25 +904,25 @@ bool CHexDlgDataInterp::SetDataInt(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataUInt(std::wstring_view wsv)const
 {
-	const auto optData = stn::StrToUInt(wsv);
-	if (!optData)
+	const auto opt = stn::StrToUInt(wsv);
+	if (!opt)
 		return false;
 
-	SetTData(*optData);
+	SetTData(*opt);
 	return true;
 }
 
 bool CHexDlgDataInterp::SetDataLL(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToULL(wsv); opt) {
+		if (const auto opt = stn::StrToULL(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto optData = stn::StrToLL(wsv); optData) {
-			SetTData(*optData);
+		if (const auto opt = stn::StrToLL(wsv); opt) {
+			SetTData(*opt);
 			return true;
 		}
 	}
@@ -937,18 +931,18 @@ bool CHexDlgDataInterp::SetDataLL(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataULL(std::wstring_view wsv)const
 {
-	const auto optData = stn::StrToULL(wsv);
-	if (!optData)
+	const auto opt = stn::StrToULL(wsv);
+	if (!opt)
 		return false;
 
-	SetTData(*optData);
+	SetTData(*opt);
 	return true;
 }
 
 bool CHexDlgDataInterp::SetDataFloat(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToUInt(wsv); opt) {
+		if (const auto opt = stn::StrToUInt(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
@@ -966,7 +960,7 @@ bool CHexDlgDataInterp::SetDataFloat(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataDouble(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToULL(wsv); opt) {
+		if (const auto opt = stn::StrToULL(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
@@ -1057,9 +1051,7 @@ bool CHexDlgDataInterp::SetDataOLEDATETIME(std::wstring_view wsv)const
 	if (dt.GetStatus() != COleDateTime::valid)
 		return false;
 
-	ULONGLONG ullValue;
-	std::memcpy(&ullValue, &dt.m_dt, sizeof(dt.m_dt));
-	SetTData(ullValue);
+	SetTData(dt.m_dt);
 
 	return true;
 }
@@ -1105,13 +1097,8 @@ bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wsv)const
 		return false;
 
 	//Microsoft UDTTM time (as used by Microsoft Compound Document format)
-	UDTTM dttm;
-	dttm.components.year = optSysTime->wYear - 1900;
-	dttm.components.month = optSysTime->wMonth;
-	dttm.components.weekday = optSysTime->wDayOfWeek;
-	dttm.components.dayofmonth = optSysTime->wDay;
-	dttm.components.hour = optSysTime->wHour;
-	dttm.components.minute = optSysTime->wMinute;
+	const UDTTM dttm { .components { .minute { optSysTime->wMinute }, .hour { optSysTime->wHour }, .dayofmonth { optSysTime->wDay },
+		.month { optSysTime->wMonth }, .year { optSysTime->wYear - 1900U }, .weekday { optSysTime->wDayOfWeek } } };
 
 	//Note: Big-endian is not currently supported. This has never existed in the "wild".
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, dttm.dwValue);

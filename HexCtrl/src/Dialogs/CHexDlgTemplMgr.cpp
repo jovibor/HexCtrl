@@ -43,7 +43,6 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR, &CHexDlgTemplMgr::OnBnRandomizeColors)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_APPLY, &CHexDlgTemplMgr::OnBnApply)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, &CHexDlgTemplMgr::OnCheckShowTt)
-	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, &CHexDlgTemplMgr::OnCheckHglSel)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_HEX, &CHexDlgTemplMgr::OnCheckHex)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_SWAP, &CHexDlgTemplMgr::OnCheckSwapEndian)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX, &CHexDlgTemplMgr::OnCheckMinMax)
@@ -331,7 +330,6 @@ auto CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData) -> HWND
 
 	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_HGLSEL) > 0 != IsHglSel()) {
 		m_btnHglSel.SetCheck(!IsHglSel());
-		OnCheckHglSel();
 	}
 
 	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN) > 0 != IsSwapEndian()) {
@@ -427,7 +425,7 @@ auto CHexDlgTemplMgr::GetAppliedFromItem(HTREEITEM hTreeItem)->PHEXTEMPLATEAPPLI
 
 bool CHexDlgTemplMgr::IsHglSel()const
 {
-	return m_fHglSel;
+	return m_btnHglSel.GetCheck() == BST_CHECKED;
 }
 
 bool CHexDlgTemplMgr::IsMinimized()const
@@ -437,12 +435,12 @@ bool CHexDlgTemplMgr::IsMinimized()const
 
 bool CHexDlgTemplMgr::IsShowAsHex()const
 {
-	return m_fShowAsHex;
+	return  m_btnHex.GetCheck() == BST_CHECKED;
 }
 
 bool CHexDlgTemplMgr::IsSwapEndian()const
 {
-	return m_fSwapEndian;
+	return m_btnSwapEndian.GetCheck() == BST_CHECKED;
 }
 
 void CHexDlgTemplMgr::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
@@ -525,25 +523,19 @@ void CHexDlgTemplMgr::OnBnApply()
 
 void CHexDlgTemplMgr::OnCheckHex()
 {
-	m_fShowAsHex = m_btnHex.GetCheck() == BST_CHECKED;
 	UpdateStaticText();
 	m_pListApplied->RedrawWindow();
 }
 
 void CHexDlgTemplMgr::OnCheckSwapEndian()
 {
-	m_fSwapEndian = m_btnSwapEndian.GetCheck() == BST_CHECKED;
 	m_pListApplied->RedrawWindow();
 }
 
 void CHexDlgTemplMgr::OnCheckShowTt()
 {
+	//Overriden IHexTemplates` interface method.
 	ShowTooltips(m_btnShowTT.GetCheck() == BST_CHECKED);
-}
-
-void CHexDlgTemplMgr::OnCheckHglSel()
-{
-	m_fHglSel = m_btnHglSel.GetCheck() == BST_CHECKED;
 }
 
 void CHexDlgTemplMgr::OnCheckMinMax()
