@@ -174,10 +174,10 @@ To use **HexCtrl** as a *.dll*:
 
 To build *HexCtrl.dll* and *HexCtrl.lib* use the *DLL Project/DLL Project.vcxproj* project.
 
-#### Remarks:
-**HexCtrl**'s *.dll* is built with **MFC Static Linking**. So even if you are to use it in your own **MFC** project, even with different **MFC** version, there should not be any interferences.
-
-Building **HexCtrl** with **MFC Shared DLL** turned out to be a little tricky. Even with the help of `AFX_MANAGE_STATE(AfxGetStaticModuleState())` macro there always were **MFC** debug assertions, which origins quite hard to comprehend.
+> [!NOTE]
+**HexCtrl**'s *.dll* is built with the **MFC Static Linking**.  
+So, even if you are to use it in your own **MFC** project (even with different **MFC** version) there should be no any **MFC** interferences.  
+Building **HexCtrl** with the **MFC Shared DLL** turned out to be a little tricky. Even with the help of the `AFX_MANAGE_STATE(AfxGetStaticModuleState())` macro there are always  **MFC** debug assertions, which origins are quite hard to comprehend.
 
 ## [](#)Creating
 
@@ -368,8 +368,8 @@ void Destroy();
 Destroys the control.  
 You only invoke this method if you use a raw `IHexCtrl` pointer obtained by the call to `CreateRawHexCtrl` function. Otherwise don't use it.
 
-**Remarks**  
-You usually don't need to call this method unless you use **HexCtrl** through the raw pointer obtained by [`CreateRawHexCtrl`](#createrawhexctrl) factory function. If you use **HexCtrl** in the standard way, through the `IHexCtrlPtr` pointer obtained by `CreateHexCtrl` function, this method will be called automatically.
+> [!IMPORTANT]
+You usually don't need to call this method unless you use the **HexCtrl** through a raw pointer obtained by the [`CreateRawHexCtrl`](#createrawhexctrl) factory function. If you use **HexCtrl** in the standard way, through the `IHexCtrlPtr` pointer obtained by the `CreateHexCtrl` function, this method will be called automatically.
 
 ### [](#)ExecuteCmd
 ```cpp
@@ -419,7 +419,8 @@ Returns current [`HEXCOLORS`](#hexcolors).
 ```
 Returns a pointer to the data offset no matter what mode the control works in.  
 
-Note that in the Virtual mode returned data size can not exceed current [cache size](#getcachesize), and therefore may be less than the size acquired. In the default mode returned pointer is just an offset from the data pointer set in the [`SetData`](#setdata) method.
+> [!NOTE]
+In the Virtual mode returned data size can not exceed current [cache size](#getcachesize), and therefore may be less than the size acquired. In the default mode returned pointer is just an offset from the data pointer set in the [`SetData`](#setdata) method.
 
 ### [](#)GetDataSize
 ```cpp
@@ -602,7 +603,8 @@ void SetCodepage(int iCodePage);
 ```
 Sets the code page for the **HexCtrl**'s text area. Takes [code page identifier](https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers) as an argument, or `-1` for default ASCII-only characters.  
 
-**Note:** Code page identifier must represent [Single-byte Character Set](https://docs.microsoft.com/en-us/windows/win32/intl/single-byte-character-sets). Multi-byte character sets are not currently supported.
+> [!NOTE]
+Code page identifier must represent [Single-byte Character Set](https://docs.microsoft.com/en-us/windows/win32/intl/single-byte-character-sets). Multi-byte character sets are not currently supported.
 
 ### [](#)SetColors
 ```cpp

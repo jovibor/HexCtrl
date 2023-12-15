@@ -302,9 +302,11 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 
 void CHexDlgTemplMgr::UpdateData()
 {
-	if (::IsWindowVisible(m_hWnd)) {
-		m_pListApplied->RedrawWindow();
+	if (!::IsWindowVisible(m_hWnd)) {
+		return;
 	}
+
+	m_pListApplied->RedrawWindow();
 }
 
 auto CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData) -> HWND

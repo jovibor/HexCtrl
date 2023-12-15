@@ -77,12 +77,10 @@ namespace HEXCTRL::INTERNAL
 		void UpdateSearchReplaceControls();
 		template<std::uint16_t tuCmpType>
 		[[nodiscard]] static bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize);
+		template<typename T>
+		[[nodiscard]] static auto RangeToVecBytes(const T& tData) -> std::vector<std::byte>;
 		template<std::uint16_t tuCmpType, bool tfDlgClbck>
 		static void SearchFunc(SEARCHDATA* pSearch);
-		[[nodiscard]] static auto RangeToVecBytes(const std::string& str) -> std::vector<std::byte>;
-		[[nodiscard]] static auto RangeToVecBytes(const std::wstring& wstr) -> std::vector<std::byte>;
-		template<typename T>
-		[[nodiscard]] static auto RangeToVecBytes(T tData) -> std::vector<std::byte>;
 		DECLARE_MESSAGE_MAP();
 	private:
 		static constexpr std::byte m_uWildcard { '?' }; //Wildcard symbol.

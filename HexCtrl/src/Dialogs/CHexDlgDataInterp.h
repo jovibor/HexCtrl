@@ -11,17 +11,26 @@
 
 namespace HEXCTRL::INTERNAL
 {
-	constexpr auto WM_PROPGRID_PROPERTY_SELECTED = 0x0401U; //Message to parent when new property selected.
+	constexpr auto WM_PROPGRID_PROPERTY_SELECTED = 0x0401U; //Message to a parent when new property is selected.
 	class CHexPropGridCtrl final : public CMFCPropertyGridCtrl {
+	public:
+		void SetRedraw(bool fRedraw) {
+			m_fRedraw = fRedraw;
+		}
 	private:
 		void OnChangeSelection(CMFCPropertyGridProperty* pNewProp, CMFCPropertyGridProperty* /*pOldProp*/)override {
 			GetParent()->SendMessageW(WM_PROPGRID_PROPERTY_SELECTED, GetDlgCtrlID(), reinterpret_cast<LPARAM>(pNewProp));
+		}
+		int OnDrawProperty(CDC* pDC, CMFCPropertyGridProperty* pProp)const override {
+			return m_fRedraw ? CMFCPropertyGridCtrl::OnDrawProperty(pDC, pProp) : TRUE;
 		}
 		void OnSize(UINT /*f*/, int /*cx*/, int /*cy*/) {
 			EndEditItem();
 			AdjustLayout();
 		}
 		DECLARE_MESSAGE_MAP();
+	private:
+		bool m_fRedraw { true };
 	};
 
 	class CHexDlgDataInterp final : public CDialogEx {
@@ -76,6 +85,7 @@ namespace HEXCTRL::INTERNAL
 		LRESULT OnPropertyDataChanged(WPARAM wParam, LPARAM lParam);
 		LRESULT OnPropertySelected(WPARAM wParam, LPARAM lParam);
 		void RedrawHexCtrl()const;
+		void SetRedraw(bool fRedraw);
 		void ShowValueBinary(BYTE byte)const;
 		void ShowValueChar(BYTE byte)const;
 		void ShowValueUChar(BYTE byte)const;
@@ -142,7 +152,7 @@ namespace HEXCTRL::INTERNAL
 		};
 		std::vector<GRIDDATA> m_vecProp;
 		IHexCtrl* m_pHexCtrl { };
-		CHexPropGridCtrl m_stCtrlGrid;
+		CHexPropGridCtrl m_gridCtrl;
 		CButton m_btnHex;            //Check-box "Hex numbers".
 		CButton m_btnBE;             //Check-box "Big endian".
 		ULONGLONG m_ullOffset { };

@@ -16,6 +16,7 @@
 #include <limits>
 #include <string>
 #include <thread>
+#include <type_traits>
 
 import HEXCTRL.HexUtility;
 
@@ -758,7 +759,7 @@ void CHexDlgSearch::Prepare()
 	if (!fSuccess)
 		return;
 
-	if (IsSelection()) { //Search in selection.
+	if (IsSelection()) { //Search in a selection.
 		const auto vecSel = pHexCtrl->GetSelection();
 		if (vecSel.empty()) //No selection.
 			return;
@@ -1466,6 +1467,27 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::
 	}
 }
 
+template<typename T>
+auto CHexDlgSearch::RangeToVecBytes(const T& tData)->std::vector<std::byte>
+{
+	const std::byte* pBegin;
+	const std::byte* pEnd;
+	if constexpr (std::is_same_v<T, std::string>) {
+		pBegin = reinterpret_cast<const std::byte*>(tData.data());
+		pEnd = pBegin + tData.size();
+	}
+	else if constexpr (std::is_same_v<T, std::wstring>) {
+		pBegin = reinterpret_cast<const std::byte*>(tData.data());
+		pEnd = pBegin + tData.size() * sizeof(wchar_t);
+	}
+	else {
+		pBegin = reinterpret_cast<const std::byte*>(&tData);
+		pEnd = pBegin + sizeof(tData);
+	}
+
+	return { pBegin, pEnd };
+}
+
 template<std::uint16_t tuCmpType, bool tfDlgClbck>
 void CHexDlgSearch::SearchFunc(SEARCHDATA* pSearch)
 {
@@ -1664,29 +1686,4 @@ END:
 			pSearch->pDlgClbk->SetProgress(pSearch->ullStart);
 		}
 	}
-}
-
-auto CHexDlgSearch::RangeToVecBytes(const std::string& str)->std::vector<std::byte>
-{
-	const auto pBegin = reinterpret_cast<const std::byte*>(str.data());
-	const auto pEnd = pBegin + str.size();
-
-	return { pBegin, pEnd };
-}
-
-auto CHexDlgSearch::RangeToVecBytes(const std::wstring& wstr)->std::vector<std::byte>
-{
-	const auto pBegin = reinterpret_cast<const std::byte*>(wstr.data());
-	const auto pEnd = pBegin + wstr.size() * sizeof(wchar_t);
-
-	return { pBegin, pEnd };
-}
-
-template<typename T>
-auto CHexDlgSearch::RangeToVecBytes(T tData)->std::vector<std::byte>
-{
-	const auto pBegin = reinterpret_cast<std::byte*>(&tData);
-	const auto pEnd = pBegin + sizeof(tData);
-
-	return { pBegin, pEnd };
 }

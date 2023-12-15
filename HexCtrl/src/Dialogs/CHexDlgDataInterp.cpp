@@ -90,12 +90,21 @@ BOOL CHexDlgDataInterp::ShowWindow(int nCmdShow)
 		Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
 	}
 
-	return CDialogEx::ShowWindow(nCmdShow);
+	const auto ret = CDialogEx::ShowWindow(nCmdShow);
+	UpdateData();
+
+	return ret;
 }
 
 void CHexDlgDataInterp::UpdateData()
 {
-	const auto ullOffset = m_pHexCtrl->GetCaretPos();
+	if (!::IsWindowVisible(m_hWnd)) {
+		return;
+	}
+
+	SetRedraw(false);
+
+	const auto ullOffset = m_ullOffset = m_pHexCtrl->GetCaretPos();
 	const auto ullDataSize = m_pHexCtrl->GetDataSize();
 	const auto fMutable = m_pHexCtrl->IsMutable();
 
@@ -103,9 +112,7 @@ void CHexDlgDataInterp::UpdateData()
 		iter.pProp->AllowEdit(fMutable ? TRUE : FALSE);
 	}
 
-	m_ullOffset = ullOffset;
 	const auto byte = GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset);
-
 	ShowValueBinary(byte);
 	ShowValueChar(byte);
 	ShowValueUChar(byte);
@@ -120,7 +127,7 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	//ESize::SIZE_WORD////////////////////////////////////////////
+	//ESize::SIZE_WORD
 	for (const auto& iter : m_vecProp) {
 		if (iter.eSize == ESize::SIZE_WORD) {
 			iter.pProp->Enable(TRUE);
@@ -145,7 +152,7 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	//ESize::SIZE_DWORD//////////////////////////////////////////////
+	//ESize::SIZE_DWORD
 	for (const auto& iter : m_vecProp) {
 		if (iter.eSize == ESize::SIZE_DWORD) {
 			iter.pProp->Enable(TRUE);
@@ -174,7 +181,7 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	//ESize::SIZE_QWORD//////////////////////////////////////////////////
+	//ESize::SIZE_QWORD
 	for (const auto& iter : m_vecProp) {
 		if (iter.eSize == ESize::SIZE_QWORD) {
 			iter.pProp->Enable(TRUE);
@@ -204,7 +211,7 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	//ESize::SIZE_DQWORD//////////////////////////////////////////////////
+	//ESize::SIZE_DQWORD
 	for (const auto& iter : m_vecProp) {
 		if (iter.eSize == ESize::SIZE_DQWORD) {
 			iter.pProp->Enable(TRUE);
@@ -219,6 +226,7 @@ void CHexDlgDataInterp::UpdateData()
 	ShowValueSYSTEMTIME(dblQWORD);
 	ShowValueGUID(std::bit_cast<GUID>(dblQWORD));
 	ShowValueGUIDTIME(std::bit_cast<GUID>(dblQWORD));
+	SetRedraw(true);
 }
 
 
@@ -227,7 +235,7 @@ void CHexDlgDataInterp::UpdateData()
 void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_GRID, m_stCtrlGrid);
+	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_GRID, m_gridCtrl);
 	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_CHK_HEX, m_btnHex);
 	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_CHK_BE, m_btnBE);
 }
@@ -272,9 +280,9 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"GUID:", L"0"), GR_MISC, NAME_GUID, SIZE_DQWORD);
 	m_vecProp.emplace_back(new CMFCPropertyGridProperty(L"GUID v1 UTC time:", L"0"), GR_GUIDTIME, NAME_GUIDTIME, SIZE_DQWORD);
 
-	m_stCtrlGrid.EnableHeaderCtrl(TRUE, L"Data type", L"Value");
+	m_gridCtrl.EnableHeaderCtrl(TRUE, L"Data type", L"Value");
 	HDITEMW hdItemPropGrid { .mask = HDI_WIDTH, .cxy = 150 };
-	m_stCtrlGrid.GetHeaderCtrl().SetItem(0, &hdItemPropGrid); //Property grid column size.
+	m_gridCtrl.GetHeaderCtrl().SetItem(0, &hdItemPropGrid); //Property grid column size.
 
 	//Digits group.
 	const auto pDigits = new CMFCPropertyGridProperty(L"Integral types:");
@@ -283,7 +291,7 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 			pDigits->AddSubItem(iter.pProp);
 		}
 	}
-	m_stCtrlGrid.AddProperty(pDigits);
+	m_gridCtrl.AddProperty(pDigits);
 
 	//Floats group.
 	const auto pFloats = new CMFCPropertyGridProperty(L"Floating-point types:");
@@ -292,7 +300,7 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 			pFloats->AddSubItem(iter.pProp);
 		}
 	}
-	m_stCtrlGrid.AddProperty(pFloats);
+	m_gridCtrl.AddProperty(pFloats);
 
 	//Time group.
 	const auto pTime = new CMFCPropertyGridProperty(L"Time:");
@@ -301,7 +309,7 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 			pTime->AddSubItem(iter.pProp);
 		}
 	}
-	m_stCtrlGrid.AddProperty(pTime);
+	m_gridCtrl.AddProperty(pTime);
 
 	//Miscellaneous group.
 	const auto pMisc = new CMFCPropertyGridProperty(L"Misc:");
@@ -319,7 +327,7 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 			}
 		}
 	}
-	m_stCtrlGrid.AddProperty(pMisc);
+	m_gridCtrl.AddProperty(pMisc);
 
 	if (const auto pDL = GetDynamicLayout(); pDL != nullptr) {
 		pDL->SetMinSize({ 0, 0 });
@@ -498,6 +506,14 @@ void CHexDlgDataInterp::RedrawHexCtrl()const
 {
 	if (m_pHexCtrl != nullptr && m_pHexCtrl->IsCreated()) {
 		m_pHexCtrl->Redraw();
+	}
+}
+
+void CHexDlgDataInterp::SetRedraw(bool fRedraw)
+{
+	m_gridCtrl.SetRedraw(fRedraw);
+	if (fRedraw) {
+		m_gridCtrl.RedrawWindow();
 	}
 }
 
