@@ -12,8 +12,7 @@ module;
 #include <memory>
 export module HEXCTRL.CHexScroll;
 
-namespace HEXCTRL::INTERNAL
-{
+namespace HEXCTRL::INTERNAL {
 	export class CHexScroll final : public CWnd {
 	public:
 		void AddSibling(CHexScroll* pSibling);
@@ -1092,4 +1091,4 @@ namespace HEXCTRL::INTERNAL
 
 		CWnd::OnDestroy();
 	}
-};
+}

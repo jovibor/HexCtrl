@@ -20,8 +20,7 @@ import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 
-namespace HEXCTRL::INTERNAL
-{
+namespace HEXCTRL::INTERNAL {
 	enum class CHexDlgTemplMgr::EMenuID : std::uint16_t {
 		IDM_TREEAPPLIED_DISAPPLY = 0x8000, IDM_TREEAPPLIED_DISAPPLYALL = 0x8001,
 		IDM_LISTAPPLIED_HDR_TYPE = 0x8100, IDM_LISTAPPLIED_HDR_NAME, IDM_LISTAPPLIED_HDR_OFFSET,
@@ -35,7 +34,7 @@ namespace HEXCTRL::INTERNAL
 		PHEXTEMPLATEFIELD pFieldParent { };
 		bool              fBigEndian { false };
 	};
-};
+}
 
 BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_LOAD, &CHexDlgTemplMgr::OnBnLoadTemplate)
@@ -1637,7 +1636,7 @@ bool CHexDlgTemplMgr::SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 			return false;
 
 		//Unix times are signed but value before 1st January 1970 is not considered valid.
-		//This is apparently because early complilers didn't support unsigned types. _mktime32() has the same limit.
+		//This is apparently because early compilers didn't support unsigned types. _mktime32() has the same limit.
 		if (optSysTime->wYear < 1970)
 			return false;
 
@@ -1682,7 +1681,7 @@ bool CHexDlgTemplMgr::SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 			return false;
 
 		//Unix times are signed but value before 1st January 1970 is not considered valid.
-		//This is apparently because early complilers didn't support unsigned types. _mktime64() has the same limit.
+		//This is apparently because early compilers didn't support unsigned types. _mktime64() has the same limit.
 		if (optSysTime->wYear < 1970)
 			return false;
 

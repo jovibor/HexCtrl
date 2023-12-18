@@ -9,8 +9,7 @@
 #include <memory>
 #include <string>
 
-namespace HEXCTRL::LISTEX
-{
+namespace HEXCTRL::LISTEX {
 	/*********************************************************************************
 	* EListExSortMode - Sorting mode.                                                *
 	*********************************************************************************/

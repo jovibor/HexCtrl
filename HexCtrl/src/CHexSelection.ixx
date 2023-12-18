@@ -12,8 +12,7 @@ module;
 #include <vector>
 export module HEXCTRL.CHexSelection;
 
-namespace HEXCTRL::INTERNAL
-{
+namespace HEXCTRL::INTERNAL {
 	export class CHexSelection final {
 	public:
 		void ClearAll();

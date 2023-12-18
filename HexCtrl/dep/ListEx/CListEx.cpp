@@ -14,8 +14,7 @@
 #include <random>
 #include <unordered_map>
 
-namespace HEXCTRL::LISTEX::INTERNAL
-{
+namespace HEXCTRL::LISTEX::INTERNAL {
 	class CListExHdr final : public CMFCHeaderCtrl {
 	public:
 		explicit CListExHdr();

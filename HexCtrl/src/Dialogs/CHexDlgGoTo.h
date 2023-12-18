@@ -8,8 +8,7 @@
 #include "../../HexCtrl.h"
 #include <afxdialogex.h>
 
-namespace HEXCTRL::INTERNAL
-{
+namespace HEXCTRL::INTERNAL {
 	class CHexDlgGoTo final : public CDialogEx {
 	public:
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;

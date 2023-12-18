@@ -13,8 +13,7 @@
 
 import HEXCTRL.HexUtility;
 
-namespace HEXCTRL::INTERNAL
-{
+namespace HEXCTRL::INTERNAL {
 	//CHexDlgOpers.
 	class CHexDlgOpers final : public CDialogEx {
 	public:

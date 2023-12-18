@@ -22,8 +22,7 @@ import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 
-namespace HEXCTRL::INTERNAL
-{
+namespace HEXCTRL::INTERNAL {
 	enum class CHexDlgSearch::EMode : std::uint8_t {
 		SEARCH_HEXBYTES, SEARCH_ASCII, SEARCH_UTF8, SEARCH_UTF16,
 		SEARCH_INT8, SEARCH_INT16, SEARCH_INT32, SEARCH_INT64,
@@ -69,7 +68,7 @@ namespace HEXCTRL::INTERNAL
 		bool fDlgExit { };
 		bool fResult { };
 	};
-};
+}
 
 BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_WM_ACTIVATE()

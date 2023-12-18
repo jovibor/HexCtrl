@@ -13,8 +13,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace HEXCTRL::INTERNAL
-{
+namespace HEXCTRL::INTERNAL {
 	//Forward declarations.
 	class CHexDlgBkmMgr;
 	class CHexDlgCodepage;

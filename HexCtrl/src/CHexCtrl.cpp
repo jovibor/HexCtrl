@@ -33,75 +33,71 @@ import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 
-namespace HEXCTRL
-{
-	extern "C" HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl() {
-		return new CHexCtrl();
+extern "C" HEXCTRLAPI HEXCTRL::IHexCtrl * __cdecl HEXCTRL::CreateRawHexCtrl() {
+	return new CHexCtrl();
+};
+
+namespace HEXCTRL::INTERNAL {
+	class CHexDlgAbout final : public CDialogEx {
+	public:
+		explicit CHexDlgAbout(CWnd* pParent) : CDialogEx(IDD_HEXCTRL_ABOUT, pParent) {}
+	private:
+		afx_msg void OnDestroy() {
+			DeleteObject(m_bmpLogo);
+			CDialogEx::OnDestroy();
+		};
+		BOOL OnInitDialog()override;
+		DECLARE_MESSAGE_MAP()
+	private:
+		HBITMAP m_bmpLogo { }; //Logo bitmap.
 	};
 
-	namespace INTERNAL
+	BEGIN_MESSAGE_MAP(CHexDlgAbout, CDialogEx)
+		ON_WM_DESTROY()
+	END_MESSAGE_MAP()
+
+	BOOL CHexDlgAbout::OnInitDialog()
 	{
-		class CHexDlgAbout final : public CDialogEx {
-		public:
-			explicit CHexDlgAbout(CWnd* pParent) : CDialogEx(IDD_HEXCTRL_ABOUT, pParent) {}
-		private:
-			afx_msg void OnDestroy() {
-				DeleteObject(m_bmpLogo);
-				CDialogEx::OnDestroy();
-			};
-			BOOL OnInitDialog()override;
-			DECLARE_MESSAGE_MAP()
-		private:
-			HBITMAP m_bmpLogo { }; //Logo bitmap.
-		};
+		CDialogEx::OnInitDialog();
 
-		BEGIN_MESSAGE_MAP(CHexDlgAbout, CDialogEx)
-			ON_WM_DESTROY()
-		END_MESSAGE_MAP()
+		const auto wstrVersion = std::format(L"Hex Control for MFC/Win32: v{}.{}.{}\r\nCopyright: (C)2018 - 2023 Jovibor",
+			HEXCTRL_VERSION_MAJOR, HEXCTRL_VERSION_MINOR, HEXCTRL_VERSION_PATCH);
+		GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(wstrVersion.data());
 
-		BOOL CHexDlgAbout::OnInitDialog()
-		{
-			CDialogEx::OnInitDialog();
+		auto pDC = GetDC();
+		const auto iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
+		ReleaseDC(pDC);
 
-			const auto wstrVersion = std::format(L"Hex Control for MFC/Win32: v{}.{}.{}\r\nCopyright: (C)2018 - 2023 Jovibor",
-				HEXCTRL_VERSION_MAJOR, HEXCTRL_VERSION_MINOR, HEXCTRL_VERSION_PATCH);
-			GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(wstrVersion.data());
+		const auto fScale = iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
+		const auto iSizeIcon = static_cast<int>(32 * fScale);
+		m_bmpLogo = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
+			MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+		static_cast<CStatic*>(GetDlgItem(IDC_HEXCTRL_ABOUT_LOGO))->SetBitmap(m_bmpLogo);
 
-			auto pDC = GetDC();
-			const auto iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
-			ReleaseDC(pDC);
-
-			const auto fScale = iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
-			const auto iSizeIcon = static_cast<int>(32 * fScale);
-			m_bmpLogo = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
-				MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-			static_cast<CStatic*>(GetDlgItem(IDC_HEXCTRL_ABOUT_LOGO))->SetBitmap(m_bmpLogo);
-
-			return TRUE;
-		}
-
-		enum class CHexCtrl::EClipboard : std::uint8_t {
-			COPY_HEX, COPY_HEXLE, COPY_HEXFMT, COPY_BASE64, COPY_CARR,
-			COPY_GREPHEX, COPY_PRNTSCRN, COPY_OFFSET, COPY_TEXT_CP,
-			PASTE_HEX, PASTE_TEXT_UTF16, PASTE_TEXT_CP
-		};
-
-		//Struct for UNDO command routine.
-		struct CHexCtrl::UNDO {
-			ULONGLONG              ullOffset { }; //Start byte to apply Undo to.
-			std::vector<std::byte> vecData { };   //Data for Undo.
-		};
-
-		//Key bindings.
-		struct CHexCtrl::KEYBIND {
-			EHexCmd eCmd { };
-			WORD    wMenuID { };
-			UINT    uKey { };
-			bool    fCtrl { };
-			bool    fShift { };
-			bool    fAlt { };
-		};
+		return TRUE;
 	}
+
+	enum class CHexCtrl::EClipboard : std::uint8_t {
+		COPY_HEX, COPY_HEXLE, COPY_HEXFMT, COPY_BASE64, COPY_CARR,
+		COPY_GREPHEX, COPY_PRNTSCRN, COPY_OFFSET, COPY_TEXT_CP,
+		PASTE_HEX, PASTE_TEXT_UTF16, PASTE_TEXT_CP
+	};
+
+	//Struct for UNDO command routine.
+	struct CHexCtrl::UNDO {
+		ULONGLONG              ullOffset { }; //Start byte to apply Undo to.
+		std::vector<std::byte> vecData { };   //Data for Undo.
+	};
+
+	//Key bindings.
+	struct CHexCtrl::KEYBIND {
+		EHexCmd eCmd { };
+		WORD    wMenuID { };
+		UINT    uKey { };
+		bool    fCtrl { };
+		bool    fShift { };
+		bool    fAlt { };
+	};
 }
 
 BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)

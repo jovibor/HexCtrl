@@ -9,8 +9,7 @@
 #include <afxcontrolbars.h>
 #include <afxdialogex.h>
 
-namespace HEXCTRL::INTERNAL
-{
+namespace HEXCTRL::INTERNAL {
 	constexpr auto WM_PROPGRID_PROPERTY_SELECTED = 0x0401U; //Message to a parent when new property is selected.
 	class CHexPropGridCtrl final : public CMFCPropertyGridCtrl {
 	public:
@@ -33,8 +32,11 @@ namespace HEXCTRL::INTERNAL
 		bool m_fRedraw { true };
 	};
 
+	//CHexDlgDataInterp.
 	class CHexDlgDataInterp final : public CDialogEx {
 	public:
+		CHexDlgDataInterp();
+		~CHexDlgDataInterp();
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG;
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void Initialize(IHexCtrl* pHexCtrl);
@@ -42,36 +44,12 @@ namespace HEXCTRL::INTERNAL
 		BOOL ShowWindow(int nCmdShow);
 		void UpdateData();
 	private:
-	#pragma pack(push, 1)
-		//MS-DOS Date+Time structure (as used in FAT file system directory entry)
-		//See: https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
-		union UMSDOSDATETIME {
-			struct {
-				WORD wTime;	//Time component
-				WORD wDate;	//Date component
-			} TimeDate;
-			DWORD dwTimeDate;
-		};
-		using PMSDOSDATETIME = UMSDOSDATETIME*;
-	#pragma pack(pop)
-
-			//Microsoft UDTTM time (as used by Microsoft Compound Document format)
-			//See: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/164c0c2e-6031-439e-88ad-69d00b69f414
-	#pragma pack(push, 1)
-		union UDTTM {
-			struct {
-				unsigned long minute : 6; //6+5+5+4+9+3=32
-				unsigned long hour : 5;
-				unsigned long dayofmonth : 5;
-				unsigned long month : 4;
-				unsigned long year : 9;
-				unsigned long weekday : 3;
-			} components;
-			unsigned long dwValue;
-		};
-		using PDTTM = UDTTM*;
-	#pragma pack(pop)
-	private:
+		union UMSDOSDateTime; //Forward declarations.
+		union UDTTM;
+		enum class EGroup : std::uint8_t;
+		enum class EName : std::uint8_t;
+		enum class ESize : std::uint8_t;
+		struct GRIDDATA;
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] bool IsShowAsHex()const;
 		[[nodiscard]] bool IsBigEndian()const;
@@ -132,24 +110,6 @@ namespace HEXCTRL::INTERNAL
 		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wsv)const;
 		DECLARE_MESSAGE_MAP();
 	private:
-		enum class EGroup : std::uint8_t { GR_INTEGRAL, GR_FLOAT, GR_TIME, GR_MISC, GR_GUIDTIME };
-		enum class EName : std::uint8_t {
-			NAME_BINARY, NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
-			NAME_INT, NAME_UINT, NAME_LONGLONG, NAME_ULONGLONG,
-			NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
-			NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
-			NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID
-		};
-		enum class ESize : std::uint8_t {
-			SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4,
-			SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10
-		};
-		struct GRIDDATA {
-			CMFCPropertyGridProperty* pProp { };
-			EGroup eGroup { };
-			EName eName { };
-			ESize eSize { };
-		};
 		std::vector<GRIDDATA> m_vecProp;
 		IHexCtrl* m_pHexCtrl { };
 		CHexPropGridCtrl m_gridCtrl;

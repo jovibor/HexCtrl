@@ -9,8 +9,7 @@
 #include <afxdialogex.h>
 #include <memory>
 
-namespace HEXCTRL::INTERNAL
-{
+namespace HEXCTRL::INTERNAL {
 	class CHexDlgOpers;    //Forward declarations.
 	class CHexDlgFillData;
 	class CHexDlgModify final : public CDialogEx {
@@ -22,8 +21,8 @@ namespace HEXCTRL::INTERNAL
 		auto SetDlgData(std::uint64_t ullData) -> HWND;
 		BOOL ShowWindow(int nCmdShow, int iTab);
 	private:
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		void DoDataExchange(CDataExchange* pDX)override;
+		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		BOOL OnInitDialog()override;
 		afx_msg void OnTabSelChanged(NMHDR* pNMHDR, LRESULT* pResult);
 		void SetCurrentTab(int iTab);

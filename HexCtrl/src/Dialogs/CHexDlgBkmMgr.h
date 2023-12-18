@@ -10,8 +10,7 @@
 #include <afxdialogex.h>
 #include <vector>
 
-namespace HEXCTRL::INTERNAL
-{
+namespace HEXCTRL::INTERNAL {
 	class CHexDlgBkmMgr final : public CDialogEx, public IHexBookmarks {
 	public:
 		auto AddBkm(const HEXBKM& hbs, bool fRedraw) -> ULONGLONG override; //Returns new bookmark Id.

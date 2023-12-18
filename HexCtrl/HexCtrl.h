@@ -17,8 +17,7 @@
 #error "C++20 compiler is required for HexCtrl."
 #endif
 
-namespace HEXCTRL
-{
+namespace HEXCTRL {
 	constexpr auto HEXCTRL_VERSION_MAJOR = 3;
 	constexpr auto HEXCTRL_VERSION_MINOR = 5;
 	constexpr auto HEXCTRL_VERSION_PATCH = 0;

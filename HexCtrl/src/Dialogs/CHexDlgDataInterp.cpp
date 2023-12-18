@@ -17,6 +17,56 @@ import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 
+namespace HEXCTRL::INTERNAL {
+	//MS-DOS Date+Time structure (as used in FAT file system directory entry).
+	//https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
+	union CHexDlgDataInterp::UMSDOSDateTime {
+		struct {
+			WORD wTime;	//Time component.
+			WORD wDate;	//Date component.
+		} TimeDate;
+		DWORD dwTimeDate;
+	};
+
+	//Microsoft UDTTM time (as used by Microsoft Compound Document format).
+	//https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/164c0c2e-6031-439e-88ad-69d00b69f414
+	union CHexDlgDataInterp::UDTTM {
+		struct {
+			unsigned long minute : 6; //6+5+5+4+9+3=32.
+			unsigned long hour : 5;
+			unsigned long dayofmonth : 5;
+			unsigned long month : 4;
+			unsigned long year : 9;
+			unsigned long weekday : 3;
+		} components;
+		unsigned long dwValue;
+	};
+
+	enum class CHexDlgDataInterp::EGroup : std::uint8_t {
+		GR_INTEGRAL, GR_FLOAT, GR_TIME, GR_MISC, GR_GUIDTIME
+	};
+
+	enum class CHexDlgDataInterp::EName : std::uint8_t {
+		NAME_BINARY, NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
+		NAME_INT, NAME_UINT, NAME_LONGLONG, NAME_ULONGLONG,
+		NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
+		NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
+		NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID
+	};
+
+	enum class CHexDlgDataInterp::ESize : std::uint8_t {
+		SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4,
+		SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10
+	};
+
+	struct CHexDlgDataInterp::GRIDDATA {
+		CMFCPropertyGridProperty* pProp { };
+		EGroup eGroup { };
+		EName eName { };
+		ESize eSize { };
+	};
+}
+
 BEGIN_MESSAGE_MAP(CHexPropGridCtrl, CMFCPropertyGridCtrl)
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
@@ -31,6 +81,10 @@ BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
 	ON_REGISTERED_MESSAGE(AFX_WM_PROPERTY_CHANGED, &CHexDlgDataInterp::OnPropertyDataChanged)
 	ON_MESSAGE(WM_PROPGRID_PROPERTY_SELECTED, &CHexDlgDataInterp::OnPropertySelected)
 END_MESSAGE_MAP()
+
+CHexDlgDataInterp::CHexDlgDataInterp() = default;
+
+CHexDlgDataInterp::~CHexDlgDataInterp() = default;
 
 auto CHexDlgDataInterp::GetDataSize()const->ULONGLONG
 {
@@ -619,8 +673,8 @@ void CHexDlgDataInterp::ShowValueTime32(DWORD dword)const
 		//The number of seconds since midnight January 1st 1970 UTC (32-bit). This is signed and wraps on 19 January 2038.
 		const auto lTime32 = static_cast<__time32_t>(dword);
 
-		//Unix times are signed and value before 1st January 1970 is not considered valid
-		//This is apparently because early complilers didn't support unsigned types. _mktime32() has the same limit
+		//Unix times are signed and value before 1st January 1970 is not considered valid.
+		//This is apparently because early compilers didn't support unsigned types. _mktime32() has the same limit.
 		if (lTime32 >= 0) {
 			//Add seconds from epoch time.
 			LARGE_INTEGER Time { .LowPart { g_ulFileTime1970_LOW }, .HighPart { g_ulFileTime1970_HIGH } };
@@ -642,8 +696,8 @@ void CHexDlgDataInterp::ShowValueTime64(QWORD qword)const
 		std::wstring wstrTime = L"N/A";
 		const auto llTime64 = static_cast<__time64_t>(qword); //The number of seconds since midnight January 1st 1970 UTC (64-bit).
 
-		//Unix times are signed and value before 1st January 1970 is not considered valid
-		//This is apparently because early complilers didn't support unsigned types. _mktime64() has the same limit
+		//Unix times are signed and value before 1st January 1970 is not considered valid.
+		//This is apparently because early compilers didn't support unsigned types. _mktime64() has the same limit.
 		if (llTime64 >= 0) {
 			//Add seconds from epoch time.
 			LARGE_INTEGER Time { { .LowPart { g_ulFileTime1970_LOW }, .HighPart { g_ulFileTime1970_HIGH } } };
@@ -695,12 +749,7 @@ void CHexDlgDataInterp::ShowValueJAVATIME(QWORD qword)const
 
 		//Add/subtract milliseconds from epoch time.
 		LARGE_INTEGER Time { { .LowPart { g_ulFileTime1970_LOW }, .HighPart { g_ulFileTime1970_HIGH } } };
-		if (static_cast<LONGLONG>(qword) >= 0) {
-			Time.QuadPart += qword * g_uFTTicksPerMS;
-		}
-		else {
-			Time.QuadPart -= qword * g_uFTTicksPerMS;
-		}
+		Time.QuadPart += qword * g_uFTTicksPerMS * (static_cast<LONGLONG>(qword) >= 0 ? 1 : -1);
 
 		//Convert to FILETIME.
 		const FILETIME ftJavaTime { .dwLowDateTime { Time.LowPart }, .dwHighDateTime { static_cast<DWORD>(Time.HighPart) } };
@@ -713,7 +762,7 @@ void CHexDlgDataInterp::ShowValueMSDOSTIME(DWORD dword)const
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) { return refData.eName == EName::NAME_MSDOSTIME; }); iter != m_vecProp.end()) {
 		std::wstring wstrTime = L"N/A";
-		const UMSDOSDATETIME msdosDateTime { .dwTimeDate { dword } };
+		const UMSDOSDateTime msdosDateTime { .dwTimeDate { dword } };
 		if (FILETIME ftMSDOS; DosDateTimeToFileTime(msdosDateTime.TimeDate.wDate, msdosDateTime.TimeDate.wTime, &ftMSDOS)) {
 			wstrTime = FileTimeToString(ftMSDOS, m_dwDateFormat, m_wchDateSepar);
 		}
@@ -727,7 +776,7 @@ void CHexDlgDataInterp::ShowValueMSDTTMTIME(DWORD dword)const
 	if (const auto iter = std::find_if(m_vecProp.begin(), m_vecProp.end(),
 		[](const GRIDDATA& refData) { return refData.eName == EName::NAME_MSDTTMTIME; }); iter != m_vecProp.end()) {
 
-		//Microsoft UDTTM time (as used by Microsoft Compound Document format)
+		//Microsoft UDTTM time (as used by Microsoft Compound Document format).
 		std::wstring wstrTime = L"N/A";
 		const UDTTM dttm { .dwValue { dword } };
 		if (dttm.components.dayofmonth > 0 && dttm.components.dayofmonth < 32
@@ -805,12 +854,11 @@ void CHexDlgDataInterp::ShowValueGUIDTIME(GUID stGUID)const
 			LARGE_INTEGER qwGUIDTime { .LowPart { stGUID.Data1 }, .HighPart { stGUID.Data3 & 0x0fff } };
 			qwGUIDTime.HighPart = (qwGUIDTime.HighPart << 16) | stGUID.Data2;
 
-			//RFC4122: The timestamp is a 60-bit value.  For UUID version 1, this is represented by Coordinated Universal Time (UTC) as a count of 100-
-			//nanosecond intervals since 00:00:00.00, 15 October 1582 (the date of Gregorian reform to the Christian calendar).
+			//RFC4122: The timestamp is a 60-bit value. For UUID version 1, this is represented by Coordinated Universal Time (UTC)
+			//as a count of 100-nanosecond intervals since 00:00:00.00, 15 October 1582 (the date of Gregorian reform to the Christian calendar).
 			//Both FILETIME and GUID time are based upon 100ns intervals.
 			//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Subtract 6653 days to convert from GUID time.
 			//NB: 6653 days from 15 Oct 1582 to 1 Jan 1601.
-			//
 			const ULARGE_INTEGER ullSubtractTicks { .QuadPart = static_cast<QWORD>(g_uFTTicksPerSec) * static_cast<QWORD>(g_uSecondsPerHour)
 				* static_cast<QWORD>(g_uHoursPerDay) * static_cast<QWORD>(g_uFileTime1582OffsetDays) };
 			qwGUIDTime.QuadPart -= ullSubtractTicks.QuadPart;
@@ -998,7 +1046,7 @@ bool CHexDlgDataInterp::SetDataTime32(std::wstring_view wsv)const
 		return false;
 
 	//Unix times are signed but value before 1st January 1970 is not considered valid.
-	//This is apparently because early complilers didn't support unsigned types. _mktime32() has the same limit.
+	//This is apparently because early compilers didn't support unsigned types. _mktime32() has the same limit.
 	if (optSysTime->wYear < 1970)
 		return false;
 
@@ -1027,7 +1075,7 @@ bool CHexDlgDataInterp::SetDataTime64(std::wstring_view wsv)const
 		return false;
 
 	//Unix times are signed but value before 1st January 1970 is not considered valid.
-	//This is apparently because early complilers didn't support unsigned types. _mktime64() has the same limit.
+	//This is apparently because early compilers didn't support unsigned types. _mktime64() has the same limit.
 	if (optSysTime->wYear < 1970)
 		return false;
 
@@ -1039,8 +1087,7 @@ bool CHexDlgDataInterp::SetDataTime64(std::wstring_view wsv)const
 	LARGE_INTEGER lTicks { .LowPart { ftTime.dwLowDateTime }, .HighPart { static_cast<LONG>(ftTime.dwHighDateTime) } };
 	lTicks.QuadPart /= g_uFTTicksPerSec;
 	lTicks.QuadPart -= g_ullUnixEpochDiff;
-	const auto llTime64 = static_cast<__time64_t>(lTicks.QuadPart);
-	SetTData(llTime64);
+	SetTData(lTicks.QuadPart);
 
 	return true;
 }
@@ -1096,7 +1143,7 @@ bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wsv)const
 	if (!optFileTime)
 		return false;
 
-	UMSDOSDATETIME msdosDateTime;
+	UMSDOSDateTime msdosDateTime;
 	if (!FileTimeToDosDateTime(&*optFileTime, &msdosDateTime.TimeDate.wDate, &msdosDateTime.TimeDate.wTime))
 		return false;
 
@@ -1112,7 +1159,7 @@ bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wsv)const
 	if (!optSysTime)
 		return false;
 
-	//Microsoft UDTTM time (as used by Microsoft Compound Document format)
+	//Microsoft UDTTM time (as used by Microsoft Compound Document format).
 	const UDTTM dttm { .components { .minute { optSysTime->wMinute }, .hour { optSysTime->wHour }, .dayofmonth { optSysTime->wDay },
 		.month { optSysTime->wMonth }, .year { optSysTime->wYear - 1900U }, .weekday { optSysTime->wDayOfWeek } } };
 
@@ -1178,10 +1225,11 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 	if (unGuidVersion != 1)
 		return false;
 
-	//RFC4122: The timestamp is a 60-bit value.  For UUID version 1, this is represented by Coordinated Universal Time (UTC) as a count of 100-
-	//nanosecond intervals since 00:00:00.00, 15 October 1582 (the date of Gregorian reform to the Christian calendar).
+	//RFC4122: The timestamp is a 60-bit value. For UUID version 1, this is represented by Coordinated Universal Time (UTC)
+	//as a count of 100-nanosecond intervals since 00:00:00.00, 15 October 1582 (the date of Gregorian reform to the Christian calendar).
 	//Both FILETIME and GUID time are based upon 100ns intervals.
 	//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Add 6653 days to convert to GUID time.
+	//NB: 6653 days from 15 Oct 1582 to 1 Jan 1601.
 	const auto optFTime = StringToFileTime(wsv, m_dwDateFormat);
 	if (!optFTime)
 		return false;

@@ -11,8 +11,7 @@
 #include <afxdialogex.h>
 #include <unordered_map>
 
-namespace HEXCTRL::INTERNAL
-{
+namespace HEXCTRL::INTERNAL {
 	//Forward declarations.
 	struct HEXTEMPLATE;
 	struct HEXTEMPLATEFIELD;

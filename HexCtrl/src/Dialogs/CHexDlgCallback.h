@@ -8,8 +8,7 @@
 #include <afxdialogex.h>
 #include <string>
 
-namespace HEXCTRL::INTERNAL
-{
+namespace HEXCTRL::INTERNAL {
 	class CHexDlgCallback final : public CDialogEx {
 	public:
 		explicit CHexDlgCallback(std::wstring_view wsvOperName,

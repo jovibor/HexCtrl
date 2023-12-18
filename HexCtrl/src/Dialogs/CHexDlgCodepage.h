@@ -9,8 +9,7 @@
 #include "../../dep/ListEx/ListEx.h"
 #include <afxdialogex.h>
 
-namespace HEXCTRL::INTERNAL
-{
+namespace HEXCTRL::INTERNAL {
 	class CHexDlgCodepage final : public CDialogEx {
 	public:
 		void AddCP(std::wstring_view wsv);

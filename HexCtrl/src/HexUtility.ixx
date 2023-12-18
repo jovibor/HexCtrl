@@ -17,8 +17,7 @@ module;
 #include <string>
 export module HEXCTRL.HexUtility;
 
-export namespace HEXCTRL::INTERNAL
-{
+export namespace HEXCTRL::INTERNAL {
 	//Time calculation constants and structs.
 	constexpr auto g_uFTTicksPerMS = 10000U;             //Number of 100ns intervals in a milli-second.
 	constexpr auto g_uFTTicksPerSec = 10000000UL;        //Number of 100ns intervals in a second.
@@ -271,4 +270,4 @@ export namespace HEXCTRL::INTERNAL
 
 		return std::vformat(wsvFmt, std::make_wformat_args(wchSepar));
 	}
-};
+}
