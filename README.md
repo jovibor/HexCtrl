@@ -33,7 +33,7 @@
   * [GetDateInfo](#getdateinfo)
   * [GetDlgData](#getdlgdata)
   * [GetFont](#getfont)
-  * [GetGroupMode](#getgroupmode)
+  * [GetGroupSize](#getgroupsize)
   * [GetMenuHandle](#getmenuhandle)
   * [GetPagesCount](#getpagescount)
   * [GetPagePos](#getpagepos)
@@ -63,7 +63,7 @@
   * [SetDateInfo](#setdateinfo)
   * [SetDlgData](#setdlgdata)
   * [SetFont](#setfont)
-  * [SetGroupMode](#setgroupmode)
+  * [SetGroupSize](#setgroupsize)
   * [SetMutable](#setmutable)
   * [SetOffsetMode](#setoffsetmode)
   * [SetPageSize](#setpagesize)
@@ -112,7 +112,7 @@
   * [HEXCTRL_MSG_SETCODEPAGE](#hexctrl_msg_setcodepage)
   * [HEXCTRL_MSG_SETDATA](#hexctrl_msg_setdata)
   * [HEXCTRL_MSG_SETFONT](#hexctrl_msg_setfont)
-  * [HEXCTRL_MSG_SETGROUPMODE](#hexctrl_msg_setgroupmode)
+  * [HEXCTRL_MSG_SETGROUPSIZE](#hexctrl_msg_setgroupsize)
   * [HEXCTRL_MSG_SETSELECTION](#hexctrl_msg_setselection)
    </details>
 * [Licensing](#licensing)
@@ -452,11 +452,11 @@ Get code page that is currently in use.
 ```
 Retrieves current font's `LOGFONTW`.
 
-### [](#)GetGroupMode
+### [](#)GetGroupSize
 ```cpp
-[[nodiscard]] auto GetGroupMode()const->EHexDataSize;
+[[nodiscard]] auto GetGroupSize()const->DWORD;
 ```
-Retrieves current data grouping mode.
+Retrieves current data grouping size.
 
 ### [](#)GetMenuHandle
 ```cpp
@@ -650,11 +650,11 @@ void SetFont(const LOGFONTW& lf);
 ```
 Sets a new font for the **HexCtrl**. This font has to be monospaced.
 
-### [](#)SetGroupMode
+### [](#)SetGroupSize
 ```cpp
-void SetGroupMode(EHexDataSize enGroupMode);
+void SetGroupSize(DWORD dwSize);
 ```
-Sets current data grouping mode. See [`EHexDataSize`](#ehexdatasize) for more info.
+Sets current data grouping size in bytes.
 
 ### [](#)SetMutable
 ```cpp
@@ -1023,7 +1023,7 @@ enum class EHexCmd : std::uint8_t {
 ```
 
 ### [](#)EHexDataSize
-Data size to operate on, used in `EHexModifyMode::MODIFY_OPERATION` mode. Also used to set data grouping mode, in [`SetGroupMode`](#setgroupmode) method.
+Data size to operate on, used in `EHexModifyMode::MODIFY_OPERATION` mode.
 ```cpp
 enum class EHexDataSize : std::uint8_t {
     SIZE_BYTE = 0x1U, SIZE_WORD = 0x2U, SIZE_DWORD = 0x4U, SIZE_QWORD = 0x8U
@@ -1088,8 +1088,8 @@ Sent to indicate that the data has changed, `LPARAM` contains a pointer to the `
 ### [](#)HEXCTRL_MSG_SETFONT
 Sent when font has changed, `LPARAM` contains a pointer to the `NMHDR` struct.
 
-### [](#)HEXCTRL_MSG_SETGROUPMODE
-Sent when the data grouping mode has changed, `LPARAM` contains a pointer to the `NMHDR` struct.
+### [](#)HEXCTRL_MSG_SETGROUPSIZE
+Sent when the data grouping size has changed, `LPARAM` contains a pointer to the `NMHDR` struct.
 
 ### [](#)HEXCTRL_MSG_SETSELECTION
 Sent when a selection has been made, `LPARAM` contains a pointer to the `NMHDR` struct.

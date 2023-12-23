@@ -53,7 +53,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetDateInfo()const->std::tuple<DWORD, wchar_t> override;
 		[[nodiscard]] auto GetDlgData(EHexWnd eWnd)const->std::uint64_t override;
 		[[nodiscard]] auto GetFont() -> LOGFONTW override;
-		[[nodiscard]] auto GetGroupMode()const->EHexDataSize override;
+		[[nodiscard]] auto GetGroupSize()const->DWORD override;
 		[[nodiscard]] auto GetMenuHandle()const->HMENU override;
 		[[nodiscard]] auto GetPagesCount()const->ULONGLONG override;
 		[[nodiscard]] auto GetPagePos()const->ULONGLONG override;
@@ -83,7 +83,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetDateInfo(DWORD dwFormat, wchar_t wchSepar)override;
 		auto SetDlgData(EHexWnd eWnd, std::uint64_t ullData) -> HWND override;
 		void SetFont(const LOGFONTW& lf)override;
-		void SetGroupMode(EHexDataSize eGroupMode)override;
+		void SetGroupSize(DWORD dwSize)override;
 		void SetMutable(bool fEnable)override;
 		void SetOffsetMode(bool fHex)override;
 		void SetPageSize(DWORD dwSize, std::wstring_view wsvName)override;
@@ -221,7 +221,6 @@ namespace HEXCTRL::INTERNAL {
 		const std::unique_ptr<CHexScroll> m_pScrollH { std::make_unique<CHexScroll>() };                     //Horizontal scroll bar.
 		SpanByte m_spnData { };               //Main data span.
 		HEXCOLORS m_stColors;                 //All HexCtrl colors.
-		EHexDataSize m_enGroupMode { EHexDataSize::SIZE_BYTE }; //Current "Group Data By" mode.
 		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
 		CWnd m_wndTtBkm { };                  //Tooltip window for bookmarks description.
@@ -244,6 +243,7 @@ namespace HEXCTRL::INTERNAL {
 		ULONGLONG m_ullCaretPos { };          //Current caret position.
 		ULONGLONG m_ullCursorNow { };         //The cursor's current clicked pos.
 		ULONGLONG m_ullCursorPrev { };        //The cursor's previously clicked pos, used in selection resolutions.
+		DWORD m_dwGroupSize { 1 };            //Current data grouping size.
 		DWORD m_dwCapacity { 0x10 };          //How many bytes displayed in one row
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of the block before a space delimiter.
 		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.

@@ -259,7 +259,6 @@ namespace HEXCTRL {
 
 	/********************************************************************************************
 	* EHexDataSize - Data size to operate on, used in EHexModifyMode::MODIFY_OPERATION mode.    *
-	* Also used to set data grouping mode, in SetGroupMode method.                              *
 	********************************************************************************************/
 	enum class EHexDataSize : std::uint8_t {
 		SIZE_BYTE = 0x1U, SIZE_WORD = 0x2U, SIZE_DWORD = 0x4U, SIZE_QWORD = 0x8U
@@ -315,7 +314,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetDateInfo()const->std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
 		[[nodiscard]] virtual auto GetDlgData(EHexWnd eWnd)const->std::uint64_t = 0; //Data from the internal dialogs.
 		[[nodiscard]] virtual auto GetFont() -> LOGFONTW = 0;                //Get current font.
-		[[nodiscard]] virtual auto GetGroupMode()const->EHexDataSize = 0;    //Retrieves current data grouping mode.
+		[[nodiscard]] virtual auto GetGroupSize()const->DWORD = 0;           //Retrieves current data grouping size.
 		[[nodiscard]] virtual auto GetMenuHandle()const->HMENU = 0;          //Context menu handle.
 		[[nodiscard]] virtual auto GetPagesCount()const->ULONGLONG = 0;      //Get count of pages.
 		[[nodiscard]] virtual auto GetPagePos()const->ULONGLONG = 0;         //Get current page a cursor stays at.
@@ -345,7 +344,7 @@ namespace HEXCTRL {
 		virtual void SetDateInfo(DWORD dwFormat, wchar_t wchSepar) = 0; //Set date format and date separator.
 		virtual auto SetDlgData(EHexWnd eWnd, std::uint64_t ullData) -> HWND = 0; //Data for the internal dialogs.
 		virtual void SetFont(const LOGFONTW& lf) = 0;          //Set the control's new font. This font has to be monospaced.
-		virtual void SetGroupMode(EHexDataSize eMode) = 0;     //Set current "Group Data By" mode.
+		virtual void SetGroupSize(DWORD dwSize) = 0;           //Set data grouping size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
 		virtual void SetOffsetMode(bool fHex) = 0;             //Set offset being shown as Hex or as Decimal.
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wsvName = L"Page") = 0; //Set page size and name to draw the lines in-between.
@@ -433,7 +432,7 @@ namespace HEXCTRL {
 	constexpr auto HEXCTRL_MSG_SETCODEPAGE { 0x010DU };   //Codepage has changed.
 	constexpr auto HEXCTRL_MSG_SETDATA { 0x010EU };       //Indicates that the data has changed.
 	constexpr auto HEXCTRL_MSG_SETFONT { 0x010FU };       //Font has changed.
-	constexpr auto HEXCTRL_MSG_SETGROUPMODE { 0x0110U };  //Data group mode has changed.
+	constexpr auto HEXCTRL_MSG_SETGROUPSIZE { 0x0110U };  //Data grouping size has changed.
 	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0111U };  //Selection has been made.
 
 
