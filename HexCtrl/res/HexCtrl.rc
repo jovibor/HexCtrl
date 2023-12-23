@@ -485,11 +485,11 @@ BEGIN
         POPUP "Appearance"
         BEGIN
             MENUITEM "Choose Font...",              IDM_HEXCTRL_APPEAR_DLGFONT
-            MENUITEM "Increase Font Size\tCtrl+MouseWheelUp", IDM_HEXCTRL_APPEAR_FONTINC
-            MENUITEM "Decrease Font Size\tCtrl+MouseWheelDown", IDM_HEXCTRL_APPEAR_FONTDEC
+            MENUITEM "Increase Font Size",          IDM_HEXCTRL_APPEAR_FONTINC
+            MENUITEM "Decrease Font Size",          IDM_HEXCTRL_APPEAR_FONTDEC
             MENUITEM SEPARATOR
-            MENUITEM "Increase Capacity\tCtrl+Shift+MouseWheelUp", IDM_HEXCTRL_APPEAR_CAPACINC
-            MENUITEM "Decrease Capacity\tCtrl+Shift+MouseWheelDown", IDM_HEXCTRL_APPEAR_CAPACDEC
+            MENUITEM "Increase Capacity",           IDM_HEXCTRL_APPEAR_CAPACINC
+            MENUITEM "Decrease Capacity",           IDM_HEXCTRL_APPEAR_CAPACDEC
         END
         MENUITEM SEPARATOR
         POPUP "Other"

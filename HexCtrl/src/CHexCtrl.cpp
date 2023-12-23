@@ -1575,40 +1575,42 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		{ "CMD_TEMPL_DLG_MGR", { CMD_TEMPL_DLG_MGR, IDM_HEXCTRL_TEMPL_DLGMGR } }
 	};
 
-	//Mapping between JSON-data Command Names and actual keyboard codes with the names that appear in the menu.
+	//Mapping between JSON-data commands and actual keyboard codes, with names that appear in the menu.
 	const std::unordered_map<std::string_view, std::pair<UINT, std::wstring_view>> umapKeys {
-		{ { "ctrl" }, { VK_CONTROL, { L"Ctrl" } } },
-		{ { "shift" }, { VK_SHIFT, { L"Shift" } } },
-		{ { "alt" }, { VK_MENU, { L"Alt" } } },
-		{ { "tab" }, { VK_TAB, { L"Tab" } } },
-		{ { "enter" }, { VK_RETURN, { L"Enter" } } },
-		{ { "esc" }, { VK_ESCAPE, { L"Esc" } } },
-		{ { "space" }, { VK_SPACE, { L"Space" } } },
-		{ { "backspace" }, { VK_BACK, { L"Backspace" } } },
-		{ { "delete" }, { VK_DELETE, { L"Delete" } } },
-		{ { "insert" }, { VK_INSERT, { L"Insert" } } },
-		{ { "f1" }, { VK_F1, { L"F1" } } },
-		{ { "f2" }, { VK_F2, { L"F2" } } },
-		{ { "f3" }, { VK_F3, { L"F3" } } },
-		{ { "f4" }, { VK_F4, { L"F4" } } },
-		{ { "f5" }, { VK_F5, { L"F5" } } },
-		{ { "f6" }, { VK_F6, { L"F6" } } },
-		{ { "f7" }, { VK_F7, { L"F7" } } },
-		{ { "f8" }, { VK_F8, { L"F8" } } },
-		{ { "f9" }, { VK_F9, { L"F9" } } },
-		{ { "f10" }, { VK_F10, { L"F10" } } },
-		{ { "right" }, { VK_RIGHT, { L"Right Arrow" } } },
-		{ { "left" }, { VK_LEFT, { L"Left Arrow" } } },
-		{ { "up" }, { VK_UP, { L"Up Arrow" } } },
-		{ { "down" }, { VK_DOWN, { L"Down Arrow" } } },
-		{ { "pageup" }, { VK_PRIOR, { L"PageUp" } } },
-		{ { "pagedown" }, { VK_NEXT, { L"PageDown" } } },
-		{ { "home" }, { VK_HOME, { L"Home" } } },
-		{ { "end" }, { VK_END, { L"End" } } },
-		{ { "plus" }, { VK_OEM_PLUS, { L"Plus" } } },
-		{ { "minus" }, { VK_OEM_MINUS, { L"Minus" } } },
-		{ { "num_plus" }, { VK_ADD, { L"Num Plus" } } },
-		{ { "num_minus" }, { VK_SUBTRACT, { L"Num Minus" } } }
+		{ { "ctrl" }, { VK_CONTROL, L"Ctrl" } },
+		{ { "shift" }, { VK_SHIFT, L"Shift" } },
+		{ { "alt" }, { VK_MENU, L"Alt" } },
+		{ { "tab" }, { VK_TAB, L"Tab" } },
+		{ { "enter" }, { VK_RETURN, L"Enter" } },
+		{ { "esc" }, { VK_ESCAPE, L"Esc" } },
+		{ { "space" }, { VK_SPACE, L"Space" } },
+		{ { "backspace" }, { VK_BACK, L"Backspace" } },
+		{ { "delete" }, { VK_DELETE, L"Delete" } },
+		{ { "insert" }, { VK_INSERT, L"Insert" } },
+		{ { "f1" }, { VK_F1, L"F1" } },
+		{ { "f2" }, { VK_F2, L"F2" } },
+		{ { "f3" }, { VK_F3, L"F3" } },
+		{ { "f4" }, { VK_F4, L"F4" } },
+		{ { "f5" }, { VK_F5, L"F5" } },
+		{ { "f6" }, { VK_F6, L"F6" } },
+		{ { "f7" }, { VK_F7, L"F7" } },
+		{ { "f8" }, { VK_F8, L"F8" } },
+		{ { "f9" }, { VK_F9, L"F9" } },
+		{ { "f10" }, { VK_F10, L"F10" } },
+		{ { "right" }, { VK_RIGHT, L"Right Arrow" } },
+		{ { "left" }, { VK_LEFT, L"Left Arrow" } },
+		{ { "up" }, { VK_UP, L"Up Arrow" } },
+		{ { "down" }, { VK_DOWN, L"Down Arrow" } },
+		{ { "pageup" }, { VK_PRIOR, L"PageUp" } },
+		{ { "pagedown" }, { VK_NEXT, L"PageDown" } },
+		{ { "home" }, { VK_HOME, L"Home" } },
+		{ { "end" }, { VK_END, L"End" } },
+		{ { "plus" }, { VK_OEM_PLUS, L"Plus" } },
+		{ { "minus" }, { VK_OEM_MINUS, L"Minus" } },
+		{ { "num_plus" }, { VK_ADD, L"Num Plus" } },
+		{ { "num_minus" }, { VK_SUBTRACT, L"Num Minus" } },
+		{ { "mouse_wheel_up" }, { m_dwVKMouseWheelUp, L"Mouse-Wheel Up" } },
+		{ { "mouse_wheel_down" }, { m_dwVKMouseWheelDown, L"Mouse-Wheel Down" } }
 	};
 
 	//Filling m_vecKeyBind with ALL available commands/menus.
@@ -3618,11 +3620,21 @@ auto CHexCtrl::GetBottomLine()const->ULONGLONG
 	return ullEndLine;
 }
 
-auto CHexCtrl::GetCommand(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>
+auto CHexCtrl::GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>
 {
 	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const KEYBIND& ref) {
 		return ref.fCtrl == fCtrl && ref.fShift == fShift && ref.fAlt == fAlt && ref.uKey == uKey; });
 		iter != m_vecKeyBind.end()) {
+		return iter->eCmd;
+	}
+
+	return std::nullopt;
+}
+
+auto CHexCtrl::GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>
+{
+	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const KEYBIND& ref) {
+		return ref.wMenuID == wMenuID; }); iter != m_vecKeyBind.end()) {
 		return iter->eCmd;
 	}
 
@@ -4748,9 +4760,8 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
 {
 	const auto wMenuID = LOWORD(wParam);
-	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(),
-		[=](const KEYBIND& ref) { return ref.wMenuID == wMenuID; }); iter != m_vecKeyBind.end()) {
-		ExecuteCmd(iter->eCmd);
+	if (const auto opt = GetCommandFromMenu(wMenuID); opt) {
+		ExecuteCmd(*opt);
 		return TRUE;
 	}
 
@@ -4896,7 +4907,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 		m_fKeyDownAtm = true;
 	}
 
-	if (const auto optCmd = GetCommand(nChar, GetAsyncKeyState(VK_CONTROL) < 0,
+	if (const auto optCmd = GetCommandFromKey(nChar, GetAsyncKeyState(VK_CONTROL) < 0,
 		GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd) {
 		ExecuteCmd(*optCmd);
 	}
@@ -5173,21 +5184,9 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 
 BOOL CHexCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
-	if (nFlags == MK_CONTROL) {
-		FontSizeIncDec(zDelta > 0);
-		return TRUE;
-	}
-
-	if (nFlags == (MK_CONTROL | MK_SHIFT)) {
-		SetCapacity(GetCapacity() + zDelta / WHEEL_DELTA);
-		return TRUE;
-	}
-
-	if (zDelta > 0) { //Scrolling Up.
-		m_pScrollV->ScrollPageUp();
-	}
-	else {
-		m_pScrollV->ScrollPageDown();
+	if (const auto opt = GetCommandFromKey(zDelta > 0 ? m_dwVKMouseWheelUp : m_dwVKMouseWheelDown,
+		nFlags & MK_CONTROL, nFlags & MK_SHIFT, false); opt) {
+		ExecuteCmd(*opt);
 	}
 
 	return CWnd::OnMouseWheel(nFlags, zDelta, pt);
@@ -5291,7 +5290,7 @@ void CHexCtrl::OnSize(UINT /*nType*/, int cx, int cy)
 
 void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {
-	if (auto optCmd = GetCommand(nChar, GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, true); optCmd) {
+	if (auto optCmd = GetCommandFromKey(nChar, GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, true); optCmd) {
 		ExecuteCmd(*optCmd);
 	}
 }

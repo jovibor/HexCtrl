@@ -136,7 +136,8 @@ namespace HEXCTRL::INTERNAL {
 		void FillWithZeros();       //Fill selection with zeros.
 		void FontSizeIncDec(bool fInc = true); //Increase os decrease font size by minimum amount.
 		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;    //Returns current bottom line number in view.
-		[[nodiscard]] auto GetCommand(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
+		[[nodiscard]] auto GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
+		[[nodiscard]] auto GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>; //Get command from menuID.
 		[[nodiscard]] long GetFontSize();
 		[[nodiscard]] auto GetRectTextCaption()const->CRect;   //Returns rect of the text caption area.
 		[[nodiscard]] auto GetScrollPageSize()const->ULONGLONG; //Get the "Page" size of the scroll.
@@ -209,6 +210,8 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr auto m_iIndentBottomLine { 1 }; //Bottom line indent from window's bottom.
 		static constexpr auto m_iFirstHorzLine { 0 };    //First horizontal line indent.
 		static constexpr auto m_iFirstVertLine { 0 };    //First vertical line indent.
+		static constexpr auto m_dwVKMouseWheelUp { 0x0100UL };   //Artificial Virtual Key for a Mouse-Wheel Up event.
+		static constexpr auto m_dwVKMouseWheelDown { 0x0101UL }; //Artificial Virtual Key for a Mouse-Wheel Down event.
 		const std::unique_ptr<CHexDlgBkmMgr> m_pDlgBkmMgr { std::make_unique<CHexDlgBkmMgr>() };             //"Bookmark manager" dialog.
 		const std::unique_ptr<CHexDlgCodepage> m_pDlgCodepage { std::make_unique<CHexDlgCodepage>() };       //"Codepage" dialog.
 		const std::unique_ptr<CHexDlgDataInterp> m_pDlgDataInterp { std::make_unique<CHexDlgDataInterp>() }; //"Data interpreter" dialog.
