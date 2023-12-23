@@ -3383,7 +3383,11 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 void CHexCtrl::DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
 	const auto ullCaretPos = GetCaretPos();
-	if (!IsOffsetVisible(ullCaretPos))
+
+	//If caret is higher or lower of the visible area we don't draw it.
+	//Otherwise, caret of the Hex area can be hidden but caret of the Text area can be visible,
+	//or vice-versa, so we proceed drawing it.
+	if (IsOffsetVisible(ullCaretPos).i8Vert != 0)
 		return;
 
 	int iCaretHexPosToPrintX;
@@ -4946,6 +4950,7 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	if (!optHit->fIsText) {
 		m_fCaretHigh = optHit->fIsHigh;
 	}
+
 	m_fSelectionBlock = GetAsyncKeyState(VK_MENU) < 0;
 	SetCapture();
 
