@@ -399,10 +399,13 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Group Data"
         BEGIN
-            MENUITEM "8bit Byte",                   IDM_HEXCTRL_GROUPBY_BYTE, CHECKED
-            MENUITEM "16bit Word",                  IDM_HEXCTRL_GROUPBY_WORD
-            MENUITEM "32bit Dword",                 IDM_HEXCTRL_GROUPBY_DWORD
-            MENUITEM "64bit Qword",                 IDM_HEXCTRL_GROUPBY_QWORD
+            MENUITEM "1 Byte",                      IDM_HEXCTRL_GROUPDATA_BYTE, CHECKED
+            MENUITEM "2 Bytes",                     IDM_HEXCTRL_GROUPDATA_WORD
+            MENUITEM "4 Bytes",                     IDM_HEXCTRL_GROUPDATA_DWORD
+            MENUITEM "8 Bytes",                     IDM_HEXCTRL_GROUPDATA_QWORD
+            MENUITEM SEPARATOR
+            MENUITEM "Increase Size",               IDM_HEXCTRL_GROUPDATA_INC
+            MENUITEM "Decrease Size",               IDM_HEXCTRL_GROUPDATA_DEC
         END
         POPUP "Navigation"
         BEGIN

@@ -433,17 +433,23 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case CMD_NAV_LINEEND:
 		CaretToLineEnd();
 		break;
-	case CMD_GROUPBY_BYTE:
+	case CMD_GROUPDATA_BYTE:
 		SetGroupSize(1);
 		break;
-	case CMD_GROUPBY_WORD:
+	case CMD_GROUPDATA_WORD:
 		SetGroupSize(2);
 		break;
-	case CMD_GROUPBY_DWORD:
+	case CMD_GROUPDATA_DWORD:
 		SetGroupSize(4);
 		break;
-	case CMD_GROUPBY_QWORD:
+	case CMD_GROUPDATA_QWORD:
 		SetGroupSize(8);
+		break;
+	case CMD_GROUPDATA_INC:
+		SetGroupSize(GetGroupSize() + 1);
+		break;
+	case CMD_GROUPDATA_DEC:
+		SetGroupSize(GetGroupSize() - 1);
 		break;
 	case CMD_BKM_ADD:
 		m_pDlgBkmMgr->AddBkm(HEXBKM { HasSelection() ? GetSelection()
@@ -1410,13 +1416,12 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	const auto dwGroupSize = GetGroupSize();
 	const auto dwCurrCapacity = GetCapacity();
 	const auto dwMod = dwCapacity % dwGroupSize; //Setting the capacity according to the current data grouping size.
-	const auto dwRem = dwMod > 0 ? dwGroupSize - dwMod : 0; //Remaining part. Actual only if dwMod > 0.
 
 	if (dwCapacity < dwCurrCapacity) {
 		dwCapacity -= dwMod;
 	}
 	else {
-		dwCapacity += dwRem;
+		dwCapacity += dwMod > 0 ? dwGroupSize - dwMod : 0; //Remaining part. Actual only if dwMod > 0.
 	}
 
 	if (dwCapacity < dwGroupSize) {
@@ -1513,10 +1518,12 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		{ "CMD_NAV_PAGEEND", { CMD_NAV_PAGEEND, IDM_HEXCTRL_NAV_PAGEEND } },
 		{ "CMD_NAV_LINEBEG", { CMD_NAV_LINEBEG, IDM_HEXCTRL_NAV_LINEBEG } },
 		{ "CMD_NAV_LINEEND", { CMD_NAV_LINEEND, IDM_HEXCTRL_NAV_LINEEND } },
-		{ "CMD_GROUPBY_BYTE", { CMD_GROUPBY_BYTE, IDM_HEXCTRL_GROUPBY_BYTE } },
-		{ "CMD_GROUPBY_WORD", { CMD_GROUPBY_WORD, IDM_HEXCTRL_GROUPBY_WORD } },
-		{ "CMD_GROUPBY_DWORD", { CMD_GROUPBY_DWORD, IDM_HEXCTRL_GROUPBY_DWORD } },
-		{ "CMD_GROUPBY_QWORD", { CMD_GROUPBY_QWORD, IDM_HEXCTRL_GROUPBY_QWORD } },
+		{ "CMD_GROUPDATA_BYTE", { CMD_GROUPDATA_BYTE, IDM_HEXCTRL_GROUPDATA_BYTE } },
+		{ "CMD_GROUPDATA_WORD", { CMD_GROUPDATA_WORD, IDM_HEXCTRL_GROUPDATA_WORD } },
+		{ "CMD_GROUPDATA_DWORD", { CMD_GROUPDATA_DWORD, IDM_HEXCTRL_GROUPDATA_DWORD } },
+		{ "CMD_GROUPDATA_QWORD", { CMD_GROUPDATA_QWORD, IDM_HEXCTRL_GROUPDATA_QWORD } },
+		{ "CMD_GROUPDATA_INC", { CMD_GROUPDATA_INC, IDM_HEXCTRL_GROUPDATA_INC } },
+		{ "CMD_GROUPDATA_DEC", { CMD_GROUPDATA_DEC, IDM_HEXCTRL_GROUPDATA_DEC } },
 		{ "CMD_BKM_ADD", { CMD_BKM_ADD, IDM_HEXCTRL_BKM_ADD } },
 		{ "CMD_BKM_REMOVE", { CMD_BKM_REMOVE, IDM_HEXCTRL_BKM_REMOVE } },
 		{ "CMD_BKM_NEXT", { CMD_BKM_NEXT, IDM_HEXCTRL_BKM_NEXT } },
@@ -1567,6 +1574,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		{ "CMD_TEMPL_DISAPPALL", { CMD_TEMPL_DISAPPALL, IDM_HEXCTRL_TEMPL_DISAPPALL } },
 		{ "CMD_TEMPL_DLG_MGR", { CMD_TEMPL_DLG_MGR, IDM_HEXCTRL_TEMPL_DLGMGR } }
 	};
+
 	//Mapping between JSON-data Command Names and actual keyboard codes with the names that appear in the menu.
 	const std::unordered_map<std::string_view, std::pair<UINT, std::wstring_view>> umapKeys {
 		{ { "ctrl" }, { VK_CONTROL, { L"Ctrl" } } },
@@ -1835,7 +1843,6 @@ void CHexCtrl::SetFont(const LOGFONTW& lf)
 void CHexCtrl::SetGroupSize(DWORD dwSize)
 {
 	assert(IsCreated());
-	assert(dwSize > 0 && dwSize <= 64);
 	if (!IsCreated() || dwSize == 0 || dwSize > 64)
 		return;
 
@@ -1845,9 +1852,9 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 	const auto* const pMenuMain = m_menuMain.GetSubMenu(0);
 	CMenu* pMenuShowDataAs { };
 	for (int i = 0; i < pMenuMain->GetMenuItemCount(); ++i) {
-		//Searching through all submenus whose first menuID is IDM_HEXCTRL_GROUPBY_BYTE.
+		//Searching through all submenus whose first menuID is IDM_HEXCTRL_GROUPDATA_BYTE.
 		if (const auto pSubMenu = pMenuMain->GetSubMenu(i); pSubMenu != nullptr) {
-			if (pSubMenu->GetMenuItemID(0) == IDM_HEXCTRL_GROUPBY_BYTE) {
+			if (pSubMenu->GetMenuItemID(0) == IDM_HEXCTRL_GROUPDATA_BYTE) {
 				pMenuShowDataAs = pSubMenu;
 				break;
 			}
@@ -1863,16 +1870,16 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 		UINT uIDToCheck { 0 };
 		switch (dwSize) {
 		case 1:
-			uIDToCheck = IDM_HEXCTRL_GROUPBY_BYTE;
+			uIDToCheck = IDM_HEXCTRL_GROUPDATA_BYTE;
 			break;
 		case 2:
-			uIDToCheck = IDM_HEXCTRL_GROUPBY_WORD;
+			uIDToCheck = IDM_HEXCTRL_GROUPDATA_WORD;
 			break;
 		case 4:
-			uIDToCheck = IDM_HEXCTRL_GROUPBY_DWORD;
+			uIDToCheck = IDM_HEXCTRL_GROUPDATA_DWORD;
 			break;
 		case 8:
-			uIDToCheck = IDM_HEXCTRL_GROUPBY_QWORD;
+			uIDToCheck = IDM_HEXCTRL_GROUPDATA_QWORD;
 			break;
 		default:
 			break;
@@ -3613,14 +3620,13 @@ auto CHexCtrl::GetBottomLine()const->ULONGLONG
 
 auto CHexCtrl::GetCommand(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>
 {
-	std::optional<EHexCmd> optRet { std::nullopt };
 	if (const auto iter = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [=](const KEYBIND& ref) {
 		return ref.fCtrl == fCtrl && ref.fShift == fShift && ref.fAlt == fAlt && ref.uKey == uKey; });
 		iter != m_vecKeyBind.end()) {
-		optRet = iter->eCmd;
+		return iter->eCmd;
 	}
 
-	return optRet;
+	return std::nullopt;
 }
 
 long CHexCtrl::GetFontSize()
