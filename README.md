@@ -26,6 +26,7 @@
   * [GetCacheSize](#getcachesize)
   * [GetCapacity](#getcapacity)
   * [GetCaretPos](#getcaretpos)
+  * [GetCharsExtraSpace](#getcharsextraspace)
   * [GetCodepage](#getcodepage)
   * [GetColors](#getcolors)
   * [GetData](#getdata)
@@ -56,6 +57,7 @@
   * [Redraw](#redraw)
   * [SetCapacity](#setcapacity)
   * [SetCaretPos](#setcaretpos)
+  * [SetCharsExtraSpace](#setcharsextraspace)
   * [SetCodepage](#setcodepage)
   * [SetColors](#setcolors)
   * [SetConfig](#setconfig)
@@ -407,6 +409,12 @@ Returns current capacity.
 ```
 Retrieves current caret position offset.
 
+### [](#)GetCharsExtraSpace
+```cpp
+[[nodiscard]] auto GetCharsExtraSpace()const->int;
+```
+Get extra space between chars, in pixels. This extra space can be set with the [`SetCharsExtraSpace`](#setcharsextraspace) method.
+
 ### [](#)GetColors
 ```cpp
 [[nodiscard]] auto GetColors()const->HEXCOLORS;
@@ -596,6 +604,12 @@ Sets **HexCtrl**'s current capacity.
 void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true);
 ```
 Sets the caret to the given offset. The `fHighLow` flag shows which part of the hex chunk, low or high, a caret must be set to.
+
+### [](#)SetCharsExtraSpace
+```cpp
+void SetCharsExtraSpace(int iSpacePx);
+```
+Sets extra space to add between chars, in pixels.
 
 ### [](#)SetCodepage
 ```cpp

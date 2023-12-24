@@ -46,6 +46,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetCacheSize()const->DWORD override;
 		[[nodiscard]] auto GetCapacity()const->DWORD override;
 		[[nodiscard]] auto GetCaretPos()const->ULONGLONG override;
+		[[nodiscard]] auto GetCharsExtraSpace()const->int override;
 		[[nodiscard]] auto GetCodepage()const->int override;
 		[[nodiscard]] auto GetColors()const->HEXCOLORS override;
 		[[nodiscard]] auto GetData(HEXSPAN hss)const->SpanByte override;
@@ -76,6 +77,7 @@ namespace HEXCTRL::INTERNAL {
 		void Redraw()override;
 		void SetCapacity(DWORD dwCapacity)override;
 		void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true)override;
+		void SetCharsExtraSpace(int iSpacePx)override;
 		void SetCodepage(int iCodepage)override;
 		void SetColors(const HEXCOLORS& clr)override;
 		bool SetConfig(std::wstring_view wsvPath)override;
@@ -136,6 +138,9 @@ namespace HEXCTRL::INTERNAL {
 		void FillWithZeros();       //Fill selection with zeros.
 		void FontSizeIncDec(bool fInc = true); //Increase os decrease font size by minimum amount.
 		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;    //Returns current bottom line number in view.
+		[[nodiscard]] auto GetCharsWidthArray()const->int*;
+		[[nodiscard]] auto GetCharWidthExtras()const->int;     //Width of the one char with extra space, in px.
+		[[nodiscard]] auto GetCharWidthNative()const->int;     //Width of the one char, in px.
 		[[nodiscard]] auto GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
 		[[nodiscard]] auto GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>; //Get command from menuID.
 		[[nodiscard]] long GetFontSize();
@@ -260,8 +265,7 @@ namespace HEXCTRL::INTERNAL {
 		int m_iIndentTextX { };               //Indent in px of the text (ASCII) beginning.
 		int m_iIndentFirstHexChunkX { };      //First hex chunk indent in px.
 		int m_iIndentCapTextY { };            //Caption text (0 1 2... D E F...) vertical offset.
-		int m_iDistanceBetweenHexChunks { };  //Distance between begining of the two hex chunks in px.
-		int m_iSpaceBetweenHexChunks { };     //Space between Hex chunks in px.
+		int m_iDistanceGroupedHexChunk { };   //Distance between begining of the two hex grouped chunks, in px.
 		int m_iDistanceBetweenChars { };      //Distance between beginning of the two text chars in px.
 		int m_iSpaceBetweenBlocks { };        //Additional space between hex chunks after half of capacity, in px.
 		int m_iWidthClientArea { };           //Width of the Control's window client area.
@@ -280,6 +284,7 @@ namespace HEXCTRL::INTERNAL {
 		int m_iFourthVertLine { };            //Fourth vert line indent.
 		int m_iCodePage { -1 };               //Current code-page for Text area. -1 for default.
 		int m_iLOGPIXELSY { };                //GetDeviceCaps(LOGPIXELSY) constant.
+		int m_iCharsExtraSpace { };           //Extra space between chars.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfoBar { };       //Info bar text.
 		std::wstring m_wstrPageName { };      //Name of the sector/page.
@@ -289,6 +294,7 @@ namespace HEXCTRL::INTERNAL {
 		std::vector < std::unique_ptr < std::remove_pointer<HBITMAP>::type,
 			decltype([](const HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP { }; //Icons for the Menu.
 		std::vector<KEYBIND> m_vecKeyBind { }; //Vector of key bindings.
+		std::vector<int> m_vecCharsWidth { }; //Vector of chars widths.
 		wchar_t m_wchUnprintable { L'.' };    //Replacement char for unprintable characters.
 		wchar_t m_wchDateSepar { L'/' };      //Date separator.
 		bool m_fCreated { false };            //Is control created or not yet.

@@ -306,7 +306,8 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetBookmarks()const->IHexBookmarks* = 0;  //Get Bookmarks interface.
 		[[nodiscard]] virtual auto GetCacheSize()const->DWORD = 0;           //Returns Virtual mode cache size.
 		[[nodiscard]] virtual auto GetCapacity()const->DWORD = 0;            //Current capacity.
-		[[nodiscard]] virtual auto GetCaretPos()const->ULONGLONG = 0;        //Cursor position.
+		[[nodiscard]] virtual auto GetCaretPos()const->ULONGLONG = 0;        //Caret position.
+		[[nodiscard]] virtual auto GetCharsExtraSpace()const->int = 0;       //Get extra space between chars, in pixels.
 		[[nodiscard]] virtual auto GetCodepage()const->int = 0;              //Get current codepage ID.
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORS = 0;          //Current colors.
 		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->SpanByte = 0;  //Get pointer to data offset, no matter what mode the control works in.
@@ -337,6 +338,7 @@ namespace HEXCTRL {
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
 		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true) = 0; //Set the caret position.
+		virtual void SetCharsExtraSpace(int iSpacePx) = 0;     //Extra space to add between chars, in pixels.
 		virtual void SetCodepage(int iCodepage) = 0;           //Codepage for text area.
 		virtual void SetColors(const HEXCOLORS& clr) = 0;      //Set all the control's colors.
 		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.
