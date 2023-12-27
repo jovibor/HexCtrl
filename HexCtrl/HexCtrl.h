@@ -184,7 +184,7 @@ namespace HEXCTRL {
 		COLORREF clrFontInfoData { RGB(0, 0, 150) };                 //Font color of the Info bar data.
 		COLORREF clrFontCaret { RGB(255, 255, 255) };                //Caret font color.
 		COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                //Background color.
-		COLORREF clrBkSel { GetSysColor(COLOR_HIGHLIGHT) };          //Background color of the selected Hex/ASCII.
+		COLORREF clrBkSel { GetSysColor(COLOR_HIGHLIGHT) };          //Background color of the selected Hex/Text.
 		COLORREF clrBkDataInterp { RGB(147, 58, 22) };               //Data Interpreter Bk color.
 		COLORREF clrBkInfoBar { GetSysColor(COLOR_BTNFACE) };        //Background color of the bottom Info bar.
 		COLORREF clrBkCaret { RGB(0, 0, 255) };                      //Caret background color.
@@ -202,9 +202,12 @@ namespace HEXCTRL {
 		UINT             uID { };                //Control ID if it's a child window.
 		DWORD            dwStyle { };            //Window styles.
 		DWORD            dwExStyle { };          //Extended window styles.
+		DWORD            dwCapacity { 16UL };    //Initial capacity size.
+		DWORD            dwGroupSize { 1UL };    //Initial data grouping size.
 		float            flScrollRatio { 1.0F }; //Either a screen-ratio or lines amount to scroll with Page-scroll (mouse-wheel).
 		bool             fScrollLines { false }; //Treat flScrollRatio as screen-ratio (false) or as amount of lines (true).
 		bool             fInfoBar { true };      //Show bottom Info bar or not.
+		bool             fOffsetHex { true };    //Show offset digits as Hex or Decimal.
 		bool             fCustom { false };      //If it's a custom control in a dialog.
 	};
 
@@ -307,7 +310,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetCacheSize()const->DWORD = 0;           //Returns Virtual mode cache size.
 		[[nodiscard]] virtual auto GetCapacity()const->DWORD = 0;            //Current capacity.
 		[[nodiscard]] virtual auto GetCaretPos()const->ULONGLONG = 0;        //Caret position.
-		[[nodiscard]] virtual auto GetCharsExtraSpace()const->int = 0;       //Get extra space between chars, in pixels.
+		[[nodiscard]] virtual auto GetCharsExtraSpace()const->DWORD = 0;     //Get extra space between chars, in pixels.
 		[[nodiscard]] virtual auto GetCodepage()const->int = 0;              //Get current codepage ID.
 		[[nodiscard]] virtual auto GetColors()const->HEXCOLORS = 0;          //Current colors.
 		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->SpanByte = 0;  //Get pointer to data offset, no matter what mode the control works in.
@@ -338,7 +341,7 @@ namespace HEXCTRL {
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
 		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true) = 0; //Set the caret position.
-		virtual void SetCharsExtraSpace(int iSpacePx) = 0;     //Extra space to add between chars, in pixels.
+		virtual void SetCharsExtraSpace(DWORD dwSpace) = 0;    //Extra space to add between chars, in pixels.
 		virtual void SetCodepage(int iCodepage) = 0;           //Codepage for text area.
 		virtual void SetColors(const HEXCOLORS& clr) = 0;      //Set all the control's colors.
 		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.

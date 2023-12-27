@@ -46,7 +46,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetCacheSize()const->DWORD override;
 		[[nodiscard]] auto GetCapacity()const->DWORD override;
 		[[nodiscard]] auto GetCaretPos()const->ULONGLONG override;
-		[[nodiscard]] auto GetCharsExtraSpace()const->int override;
+		[[nodiscard]] auto GetCharsExtraSpace()const->DWORD override;
 		[[nodiscard]] auto GetCodepage()const->int override;
 		[[nodiscard]] auto GetColors()const->HEXCOLORS override;
 		[[nodiscard]] auto GetData(HEXSPAN hss)const->SpanByte override;
@@ -77,7 +77,7 @@ namespace HEXCTRL::INTERNAL {
 		void Redraw()override;
 		void SetCapacity(DWORD dwCapacity)override;
 		void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true)override;
-		void SetCharsExtraSpace(int iSpacePx)override;
+		void SetCharsExtraSpace(DWORD dwSpace)override;
 		void SetCodepage(int iCodepage)override;
 		void SetColors(const HEXCOLORS& clr)override;
 		bool SetConfig(std::wstring_view wsvPath)override;
@@ -251,13 +251,14 @@ namespace HEXCTRL::INTERNAL {
 		ULONGLONG m_ullCaretPos { };          //Current caret position.
 		ULONGLONG m_ullCursorNow { };         //The cursor's current clicked pos.
 		ULONGLONG m_ullCursorPrev { };        //The cursor's previously clicked pos, used in selection resolutions.
-		DWORD m_dwGroupSize { 1 };            //Current data grouping size.
-		DWORD m_dwCapacity { 0x10 };          //How many bytes displayed in one row
+		DWORD m_dwGroupSize { };              //Current data grouping size.
+		DWORD m_dwCapacity { };               //How many bytes are displayed in one row.
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of the block before a space delimiter.
 		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
-		DWORD m_dwPageSize { 0 };             //Size of a page to print additional lines between.
+		DWORD m_dwPageSize { 0UL };           //Size of a page to print additional lines between.
 		DWORD m_dwCacheSize { };              //Cache size for virtual and message modes, set in SetData.
-		DWORD m_dwDateFormat { 0xFFFFFFFF };  //Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
+		DWORD m_dwDateFormat { 0xFFFFFFFFUL };//Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
+		DWORD m_dwCharsExtraSpace { };        //Extra space between chars.
 		SIZE m_sizeFontMain { 1, 1 };         //Main font letter's size (width, height).
 		SIZE m_sizeFontInfo { 1, 1 };         //Info window font letter's size (width, height).
 		int m_iSizeFirstHalf { };             //Size in px of the first half of the capacity.
@@ -284,7 +285,6 @@ namespace HEXCTRL::INTERNAL {
 		int m_iFourthVertLine { };            //Fourth vert line indent.
 		int m_iCodePage { -1 };               //Current code-page for Text area. -1 for default.
 		int m_iLOGPIXELSY { };                //GetDeviceCaps(LOGPIXELSY) constant.
-		int m_iCharsExtraSpace { };           //Extra space between chars.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.
 		std::wstring m_wstrInfoBar { };       //Info bar text.
 		std::wstring m_wstrPageName { };      //Name of the sector/page.
@@ -293,7 +293,7 @@ namespace HEXCTRL::INTERNAL {
 		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecRedo; //Redo data.
 		std::vector < std::unique_ptr < std::remove_pointer<HBITMAP>::type,
 			decltype([](const HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP { }; //Icons for the Menu.
-		std::vector<KEYBIND> m_vecKeyBind { }; //Vector of key bindings.
+		std::vector<KEYBIND> m_vecKeyBind { };//Vector of key bindings.
 		std::vector<int> m_vecCharsWidth { }; //Vector of chars widths.
 		wchar_t m_wchUnprintable { L'.' };    //Replacement char for unprintable characters.
 		wchar_t m_wchDateSepar { L'/' };      //Date separator.
@@ -305,10 +305,10 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fCursorTextArea { false };     //Whether last focus was set at ASCII or Hex chunks area.
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
-		bool m_fOffsetAsHex { true };         //Print offset numbers as Hex or as Decimals.
+		bool m_fOffsetHex { };                //Print offset numbers as Hex or as Decimals.
 		bool m_fHighLatency { false };        //Reflects HEXDATA::fHighLatency.
 		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
-		bool m_fScrollLines { false };          //Page scroll in screens * m_dbWheelRatio or in lines. 
+		bool m_fScrollLines { false };        //Page scroll in "Screen * m_flScrollRatio" or in lines. 
 	};
 }

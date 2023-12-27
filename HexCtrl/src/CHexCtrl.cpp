@@ -17,6 +17,7 @@
 #include "Dialogs/CHexDlgModify.h"
 #include "Dialogs/CHexDlgSearch.h"
 #include "Dialogs/CHexDlgTemplMgr.h"
+#include <algorithm>
 #include <bit>
 #include <cassert>
 #include <cwctype>
@@ -250,9 +251,12 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		m_stColors = *hcs.pColors;
 	}
 
+	m_dwCapacity = std::clamp(hcs.dwCapacity, 1UL, 100UL);
+	m_dwGroupSize = std::clamp(hcs.dwGroupSize, 1UL, 64UL);
 	m_flScrollRatio = hcs.flScrollRatio;
 	m_fScrollLines = hcs.fScrollLines;
 	m_fInfoBar = hcs.fInfoBar;
+	m_fOffsetHex = hcs.fOffsetHex;
 
 	const auto pDC = GetDC();
 	m_iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
@@ -654,10 +658,10 @@ auto CHexCtrl::GetCaretPos()const->ULONGLONG
 	return m_ullCaretPos;
 }
 
-auto CHexCtrl::GetCharsExtraSpace()const->int
+auto CHexCtrl::GetCharsExtraSpace()const->DWORD
 {
 	assert(IsCreated());
-	return m_iCharsExtraSpace;
+	return m_dwCharsExtraSpace;
 }
 
 int CHexCtrl::GetCodepage()const
@@ -1048,7 +1052,7 @@ bool CHexCtrl::IsOffsetAsHex()const
 	if (!IsCreated())
 		return false;
 
-	return m_fOffsetAsHex;
+	return m_fOffsetHex;
 }
 
 auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION
@@ -1398,11 +1402,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	if (!IsCreated())
 		return;
 
-	static constexpr auto dwCapacityMax { 0x64UL }; //Maximum capacity allowed.
-
-	if (dwCapacity < 1 || dwCapacity > dwCapacityMax)
-		return;
-
+	dwCapacity = std::clamp(dwCapacity, 1UL, 100UL);
 	const auto dwGroupSize = GetGroupSize();
 	const auto dwCurrCapacity = GetCapacity();
 	const auto dwMod = dwCapacity % dwGroupSize; //Setting the capacity according to the current data grouping size.
@@ -1417,7 +1417,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	if (dwCapacity < dwGroupSize) {
 		dwCapacity = dwGroupSize;
 	}
-	else if (dwCapacity > dwCapacityMax) {
+	else if (dwCapacity > 100UL) { //100UL is the maximum allowed capacity.
 		dwCapacity -= dwGroupSize;
 	}
 
@@ -1446,18 +1446,13 @@ void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
 	OnCaretPosChange(ullOffset);
 }
 
-void CHexCtrl::SetCharsExtraSpace(int iSpacePx)
+void CHexCtrl::SetCharsExtraSpace(DWORD dwSpace)
 {
 	assert(IsCreated());
-	assert(iSpacePx >= 0);
 	if (!IsCreated())
 		return;
 
-	if (iSpacePx > 10) {
-		iSpacePx = 10;
-	}
-
-	m_iCharsExtraSpace = iSpacePx;
+	m_dwCharsExtraSpace = (std::min)(dwSpace, 10UL);
 	RecalcAll();
 }
 
@@ -1699,7 +1694,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 							}
 							else {
 								//If such command with some key from JSON already exist, we adding another one
-								//same command but with different key, like Ctrl+F/Ctrl+H for Search.
+								//same command but with a different key, like Ctrl+F/Ctrl+H for Search.
 								m_vecKeyBind.emplace_back(*optKey);
 							}
 						}
@@ -1850,10 +1845,10 @@ void CHexCtrl::SetFont(const LOGFONTW& lf)
 void CHexCtrl::SetGroupSize(DWORD dwSize)
 {
 	assert(IsCreated());
-	if (!IsCreated() || dwSize == 0 || dwSize > 64)
+	if (!IsCreated())
 		return;
 
-	m_dwGroupSize = dwSize;
+	m_dwGroupSize = std::clamp(dwSize, 1UL, 64UL);
 
 	//Getting the "Show data as..." menu pointer independent of position.
 	const auto* const pMenuMain = m_menuMain.GetSubMenu(0);
@@ -1918,7 +1913,7 @@ void CHexCtrl::SetOffsetMode(bool fHex)
 	if (!IsCreated())
 		return;
 
-	m_fOffsetAsHex = fHex;
+	m_fOffsetHex = fHex;
 	FillCapacityString();
 	RecalcAll();
 }

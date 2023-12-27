@@ -411,7 +411,7 @@ Retrieves current caret position offset.
 
 ### [](#)GetCharsExtraSpace
 ```cpp
-[[nodiscard]] auto GetCharsExtraSpace()const->int;
+[[nodiscard]] auto GetCharsExtraSpace()const->DWORD;
 ```
 Get extra space between chars, in pixels. This extra space can be set with the [`SetCharsExtraSpace`](#setcharsextraspace) method.
 
@@ -607,7 +607,7 @@ Sets the caret to the given offset. The `fHighLow` flag shows which part of the 
 
 ### [](#)SetCharsExtraSpace
 ```cpp
-void SetCharsExtraSpace(int iSpacePx);
+void SetCharsExtraSpace(DWORD dwSpace);
 ```
 Sets extra space to add between chars, in pixels.
 
@@ -806,9 +806,12 @@ struct HEXCREATE {
     UINT             uID { };                //Control ID if it's a child window.
     DWORD            dwStyle { };            //Window styles.
     DWORD            dwExStyle { };          //Extended window styles.
+    DWORD            dwCapacity { 16UL };    //Initial capacity size.
+    DWORD            dwGroupSize { 1UL };    //Initial data grouping size.
     float            flScrollRatio { 1.0F }; //Either a screen-ratio or lines amount to scroll with Page-scroll (mouse-wheel).
     bool             fScrollLines { false }; //Treat flScrollRatio as screen-ratio (false) or as amount of lines (true).
     bool             fInfoBar { true };      //Show bottom Info bar or not.
+    bool             fOffsetHex { true };    //Show offset digits as Hex or Decimal.
     bool             fCustom { false };      //If it's a custom control in a dialog.
 };
 ```
