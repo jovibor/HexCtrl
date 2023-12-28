@@ -31,6 +31,7 @@ BEGIN_MESSAGE_MAP(CHexDlgBkmMgr, CDialogEx)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListRClick)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListGetColor)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_SETDATA, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListSetData)
+	ON_WM_CLOSE()
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -106,6 +107,10 @@ auto CHexDlgBkmMgr::GetDlgData()const->std::uint64_t
 
 	if (IsShowAsHex()) {
 		ullData |= HEXCTRL_FLAG_BKMMGR_HEXNUM;
+	}
+
+	if (IsNoEsc()) {
+		ullData |= HEXCTRL_FLAG_BKMMGR_NOESC;
 	}
 
 	return ullData;
@@ -273,6 +278,8 @@ auto CHexDlgBkmMgr::SetDlgData(std::uint64_t ullData)->HWND
 		OnCheckHex();
 	}
 
+	m_fNoEsc = ullData & HEXCTRL_FLAG_BKMMGR_NOESC;
+
 	return m_hWnd;
 }
 
@@ -358,9 +365,28 @@ void CHexDlgBkmMgr::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_HEXCTRL_BKMMGR_CHK_HEX, m_btnHex);
 }
 
+bool CHexDlgBkmMgr::IsNoEsc()const
+{
+	return m_fNoEsc;
+}
+
 bool CHexDlgBkmMgr::IsShowAsHex()const
 {
 	return m_btnHex.GetCheck() == BST_CHECKED;
+}
+
+void CHexDlgBkmMgr::OnCancel()
+{
+	if (IsNoEsc()) //Not closing Dialog on Escape key.
+		return;
+
+	CDialogEx::OnCancel();
+}
+
+void CHexDlgBkmMgr::OnClose()
+{
+	//Not calling base class CDialogEx::OnClose, to prevent calling OnCancel().
+	EndDialog(IDCANCEL);
 }
 
 BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
@@ -411,6 +437,12 @@ void CHexDlgBkmMgr::OnDestroy()
 
 	RemoveAll();
 	m_menuList.DestroyMenu();
+}
+
+void CHexDlgBkmMgr::OnOK()
+{
+	//Just an empty handler to prevent Dialog closing on Enter key.
+	//SetDefID() doesn't always work for no particular reason.
 }
 
 BOOL CHexDlgBkmMgr::OnInitDialog()
@@ -643,11 +675,6 @@ BOOL CHexDlgBkmMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 	}
 
 	return CDialogEx::OnNotify(wParam, lParam, pResult);
-}
-
-void CHexDlgBkmMgr::OnOK()
-{
-	//Empty to avoid dialog closing on Enter.
 }
 
 void CHexDlgBkmMgr::RemoveBookmark(std::uint64_t ullID)

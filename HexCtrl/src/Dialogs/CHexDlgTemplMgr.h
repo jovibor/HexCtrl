@@ -93,6 +93,7 @@ namespace HEXCTRL::INTERNAL {
 		auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PHEXTEMPLATEAPPLIED;
 		[[nodiscard]] bool IsHglSel()const;
 		[[nodiscard]] bool IsMinimized()const;
+		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
 		[[nodiscard]] bool IsSwapEndian()const;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
@@ -100,12 +101,14 @@ namespace HEXCTRL::INTERNAL {
 		afx_msg void OnBnUnloadTemplate();
 		afx_msg void OnBnRandomizeColors();
 		afx_msg void OnBnApply();
+		void OnCancel()override;
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 		afx_msg void OnCheckHex();
 		afx_msg void OnCheckSwapEndian();
 		afx_msg void OnCheckShowTt();
 		afx_msg void OnCheckMinMax();
+		afx_msg void OnClose();
 		afx_msg void OnDestroy();
 		BOOL OnInitDialog()override;
 		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
@@ -209,5 +212,6 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fLMDownResize { };               //Left mouse pressed in splitter area to resize.
 		bool m_fListGuardEvent { false };       //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
 		bool m_fTooltips { true };              //Show tooltips or not.
+		bool m_fNoEsc { false };                //Can Dialog be closed by pressing Escape or not.
 	};
 }

@@ -51,40 +51,20 @@ namespace HEXCTRL::INTERNAL {
 		enum class ESize : std::uint8_t;
 		struct GRIDDATA;
 		void DoDataExchange(CDataExchange* pDX)override;
-		[[nodiscard]] bool IsShowAsHex()const;
 		[[nodiscard]] bool IsBigEndian()const;
+		[[nodiscard]] bool IsNoEsc()const;
+		[[nodiscard]] bool IsShowAsHex()const;
 		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		afx_msg void OnOK()override;
+		void OnCancel()override;
 		afx_msg void OnCheckHex();
 		afx_msg void OnCheckBigEndian();
 		afx_msg void OnClose();
 		afx_msg void OnDestroy();
+		void OnOK()override;
 		LRESULT OnPropertyDataChanged(WPARAM wParam, LPARAM lParam);
 		LRESULT OnPropertySelected(WPARAM wParam, LPARAM lParam);
 		void RedrawHexCtrl()const;
-		void SetRedraw(bool fRedraw);
-		void ShowValueBinary(BYTE byte)const;
-		void ShowValueChar(BYTE byte)const;
-		void ShowValueUChar(BYTE byte)const;
-		void ShowValueShort(WORD word)const;
-		void ShowValueUShort(WORD word)const;
-		void ShowValueInt(DWORD dword)const;
-		void ShowValueUInt(DWORD dword)const;
-		void ShowValueLL(QWORD qword)const;
-		void ShowValueULL(QWORD qword)const;
-		void ShowValueFloat(DWORD dword)const;
-		void ShowValueDouble(QWORD qword)const;
-		void ShowValueTime32(DWORD dword)const;
-		void ShowValueTime64(QWORD qword)const;
-		void ShowValueFILETIME(QWORD qword)const;
-		void ShowValueOLEDATETIME(QWORD qword)const;
-		void ShowValueJAVATIME(QWORD qword)const;
-		void ShowValueMSDOSTIME(DWORD dword)const;
-		void ShowValueMSDTTMTIME(DWORD dword)const;
-		void ShowValueSYSTEMTIME(SYSTEMTIME stSysTime)const;
-		void ShowValueGUID(GUID stGUID)const;
-		void ShowValueGUIDTIME(GUID stGUID)const;
 		template <typename T>
 		void SetTData(T tData)const;
 		[[nodiscard]] bool SetDataBinary(std::wstring_view wsv)const;
@@ -108,6 +88,28 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool SetDataSYSTEMTIME(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataGUID(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wsv)const;
+		void SetRedraw(bool fRedraw);
+		void ShowValueBinary(BYTE byte)const;
+		void ShowValueChar(BYTE byte)const;
+		void ShowValueUChar(BYTE byte)const;
+		void ShowValueShort(WORD word)const;
+		void ShowValueUShort(WORD word)const;
+		void ShowValueInt(DWORD dword)const;
+		void ShowValueUInt(DWORD dword)const;
+		void ShowValueLL(QWORD qword)const;
+		void ShowValueULL(QWORD qword)const;
+		void ShowValueFloat(DWORD dword)const;
+		void ShowValueDouble(QWORD qword)const;
+		void ShowValueTime32(DWORD dword)const;
+		void ShowValueTime64(QWORD qword)const;
+		void ShowValueFILETIME(QWORD qword)const;
+		void ShowValueOLEDATETIME(QWORD qword)const;
+		void ShowValueJAVATIME(QWORD qword)const;
+		void ShowValueMSDOSTIME(DWORD dword)const;
+		void ShowValueMSDTTMTIME(DWORD dword)const;
+		void ShowValueSYSTEMTIME(SYSTEMTIME stSysTime)const;
+		void ShowValueGUID(GUID stGUID)const;
+		void ShowValueGUIDTIME(GUID stGUID)const;
 		DECLARE_MESSAGE_MAP();
 	private:
 		std::vector<GRIDDATA> m_vecProp;
@@ -119,5 +121,6 @@ namespace HEXCTRL::INTERNAL {
 		ULONGLONG m_ullDataSize { }; //Size of the currently interpreted data.
 		DWORD m_dwDateFormat { };    //Date format.
 		wchar_t m_wchDateSepar { };  //Date separator.
+		bool m_fNoEsc { false };     //Can Dialog be closed by pressing Escape or not.
 	};
 }

@@ -18,7 +18,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetProgress(ULONGLONG ullProgCurr);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
-		void OnBtnCancel();
+		void OnCancel()override;
 		BOOL OnInitDialog()override;
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		DECLARE_MESSAGE_MAP();

@@ -451,13 +451,16 @@ namespace HEXCTRL {
 	constexpr auto HEXCTRL_FLAG_TEMPLMGR_SHOWTT { 0x4ULL };
 	constexpr auto HEXCTRL_FLAG_TEMPLMGR_HGLSEL { 0x8ULL };
 	constexpr auto HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN { 0x10ULL };
+	constexpr auto HEXCTRL_FLAG_TEMPLMGR_NOESC { 0x20ULL };
 
 	//Data Interpreter.
 	constexpr auto HEXCTRL_FLAG_DATAINTERP_HEXNUM { 0x1ULL };
 	constexpr auto HEXCTRL_FLAG_DATAINTERP_BE { 0x2ULL };
+	constexpr auto HEXCTRL_FLAG_DATAINTERP_NOESC { 0x4ULL };
 
 	//Bookmark Manager.
 	constexpr auto HEXCTRL_FLAG_BKMMGR_HEXNUM { 0x1ULL };
+	constexpr auto HEXCTRL_FLAG_BKMMGR_NOESC { 0x2ULL };
 
 	//Setting a manifest for the ComCtl32.dll version 6.
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")

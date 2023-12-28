@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
 * This is very extended and featured version of CMFCListCtrl class.                     *
 * Official git repository: https://github.com/jovibor/ListEx/                           *
 * This code is available under the "MIT License".                                       *
@@ -654,8 +654,6 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)override;
 		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode enSortMode)override;
 		static int CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
-		DECLARE_DYNAMIC(CListEx);
-		DECLARE_MESSAGE_MAP();
 	private:
 		struct SCOLROWCLR;
 		struct ITEMDATA;
@@ -683,21 +681,25 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		afx_msg void OnMouseMove(UINT nFlags, CPoint pt);
 		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
+		afx_msg void OnNotifyEditInPlace(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnPaint();
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 		auto ParseItemData(int iItem, int iSubitem) -> std::vector<ITEMDATA>;
-		BOOL PreTranslateMessage(MSG* pMsg)override;
 		void RecalcMeasure()const;
 		void SetFontSize(long lSize);
 		void TtLinkHide();
 		void TtCellHide();
 		void TtRowShow(bool fShow, UINT uRow); //Tooltips for HighLatency mode.
+		static auto CALLBACK EditSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+			UINT_PTR uIdSubclass, DWORD_PTR dwRefData)->LRESULT;
+		DECLARE_DYNAMIC(CListEx);
+		DECLARE_MESSAGE_MAP();
 	private:
 		static constexpr ULONG_PTR m_uIDTimerTTCellCheck { 0x01 };    //Cell tool-tip check-timer ID.
 		static constexpr ULONG_PTR m_uIDTimerTTLinkCheck { 0x02 };    //Link tool-tip check-timer ID.
 		static constexpr ULONG_PTR m_uIDTimerTTLinkActivate { 0x03 }; //Link tool-tip activate-timer ID.
-		static constexpr auto m_uIDEditInPlace { 0x01U };             //Inplace edit-box ID.
+		static constexpr auto m_uIDEditInPlace { 0x01U };             //In place edit-box ID.
 		CListExHdr m_stListHeader;
 		LISTEXCOLORS m_stColors { };
 		CFont m_fontList;               //Default list font.
@@ -715,7 +717,7 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		LVHITTESTINFO m_stCurrCell { }; //Cell's hit struct for tool-tip.
 		LVHITTESTINFO m_stCurrLink { }; //Cell's link hit struct for tool-tip.
 		LVHITTESTINFO m_htiInPlaceEdit; //Cell's hit struct for in-place editing.
-		CEdit m_stEditInPlace;          //Edit box for in-place cells editing.
+		CEdit m_editInPlace;            //Edit box for in-place cells editing.
 		DWORD m_dwGridWidth { 1 };		//Grid width.
 		int m_iSortColumn { -1 };       //Currently clicked header column.
 		PFNLVCOMPARE m_pfnCompare { };  //Pointer to a user provided compare func.
@@ -772,7 +774,7 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 }
 
 namespace HEXCTRL::LISTEX {
-	IListEx* CreateRawListEx() {
+	LISTEX::IListEx* CreateRawListEx() {
 		return new LISTEX::INTERNAL::CListEx();
 	}
 }
@@ -781,6 +783,13 @@ IMPLEMENT_DYNAMIC(CListEx, CMFCListCtrl)
 
 BEGIN_MESSAGE_MAP(CListEx, CMFCListCtrl)
 	ON_EN_KILLFOCUS(m_uIDEditInPlace, &CListEx::OnEditInPlaceKillFocus)
+	ON_NOTIFY(HDN_BEGINDRAG, 0, &CListEx::OnHdnBegindrag)
+	ON_NOTIFY(HDN_BEGINTRACKA, 0, &CListEx::OnHdnBegintrack)
+	ON_NOTIFY(HDN_BEGINTRACKW, 0, &CListEx::OnHdnBegintrack)
+	ON_NOTIFY(VK_RETURN, m_uIDEditInPlace, &CListEx::OnNotifyEditInPlace)
+	ON_NOTIFY(VK_ESCAPE, m_uIDEditInPlace, &CListEx::OnNotifyEditInPlace)
+	ON_NOTIFY_REFLECT(LVN_COLUMNCLICK, &CListEx::OnLvnColumnClick)
+	ON_WM_DESTROY()
 	ON_WM_ERASEBKGND()
 	ON_WM_HSCROLL()
 	ON_WM_LBUTTONDBLCLK()
@@ -792,11 +801,6 @@ BEGIN_MESSAGE_MAP(CListEx, CMFCListCtrl)
 	ON_WM_PAINT()
 	ON_WM_TIMER()
 	ON_WM_VSCROLL()
-	ON_NOTIFY(HDN_BEGINDRAG, 0, &CListEx::OnHdnBegindrag)
-	ON_NOTIFY(HDN_BEGINTRACKA, 0, &CListEx::OnHdnBegintrack)
-	ON_NOTIFY(HDN_BEGINTRACKW, 0, &CListEx::OnHdnBegintrack)
-	ON_WM_DESTROY()
-	ON_NOTIFY_REFLECT(LVN_COLUMNCLICK, &CListEx::OnLvnColumnClick)
 END_MESSAGE_MAP()
 
 bool CListEx::Create(const LISTEXCREATE& lcs)
@@ -944,7 +948,7 @@ BOOL CListEx::DeleteAllItems()
 	m_umapCellColor.clear();
 	m_umapRowColor.clear();
 	m_umapCellIcon.clear();
-	m_stEditInPlace.DestroyWindow();
+	m_editInPlace.DestroyWindow();
 
 	return CMFCListCtrl::DeleteAllItems();
 }
@@ -1668,7 +1672,7 @@ void CListEx::OnDestroy()
 	m_fontList.DeleteObject();
 	m_fontListUnderline.DeleteObject();
 	m_penGrid.DeleteObject();
-	m_stEditInPlace.DestroyWindow();
+	m_editInPlace.DestroyWindow();
 
 	m_umapCellTt.clear();
 	m_umapCellData.clear();
@@ -1684,7 +1688,7 @@ void CListEx::OnDestroy()
 void CListEx::OnEditInPlaceEnterPressed()
 {
 	CStringW wstr;
-	m_stEditInPlace.GetWindowTextW(wstr);
+	m_editInPlace.GetWindowTextW(wstr);
 	if (m_fVirtual) {
 		const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
 		LISTEXDATAINFO ldi { { m_hWnd, uCtrlId, LISTEX_MSG_SETDATA } };
@@ -1702,7 +1706,7 @@ void CListEx::OnEditInPlaceEnterPressed()
 
 void CListEx::OnEditInPlaceKillFocus()
 {
-	m_stEditInPlace.DestroyWindow();
+	m_editInPlace.DestroyWindow();
 	RedrawWindow();
 }
 
@@ -1763,11 +1767,12 @@ void CListEx::OnLButtonDblClk(UINT nFlags, CPoint point)
 	}
 
 	const auto str = GetItemText(m_htiInPlaceEdit.iItem, m_htiInPlaceEdit.iSubItem);
-	m_stEditInPlace.DestroyWindow();
-	m_stEditInPlace.Create(dwStyle | WS_BORDER | WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, rcCell, this, m_uIDEditInPlace);
-	m_stEditInPlace.SetFont(&m_fontList, FALSE);
-	m_stEditInPlace.SetWindowTextW(str);
-	m_stEditInPlace.SetFocus();
+	m_editInPlace.DestroyWindow();
+	m_editInPlace.Create(dwStyle | WS_BORDER | WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, rcCell, this, m_uIDEditInPlace);
+	::SetWindowSubclass(m_editInPlace, EditSubclassProc, 0, m_uIDEditInPlace);
+	m_editInPlace.SetFont(&m_fontList, FALSE);
+	m_editInPlace.SetWindowTextW(str);
+	m_editInPlace.SetFocus();
 
 	CMFCListCtrl::OnLButtonDblClk(nFlags, point);
 }
@@ -1948,6 +1953,18 @@ BOOL CListEx::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 	}
 
 	return CMFCListCtrl::OnNotify(wParam, lParam, pResult);
+}
+
+void CListEx::OnNotifyEditInPlace(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+{
+	switch (pNMHDR->code) {
+	case VK_RETURN:
+		OnEditInPlaceEnterPressed();
+		break;
+	case VK_ESCAPE:
+		OnEditInPlaceKillFocus();
+		break;
+	}
 }
 
 void CListEx::OnPaint()
@@ -2217,25 +2234,6 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 	return vecData;
 }
 
-BOOL CListEx::PreTranslateMessage(MSG* pMsg)
-{
-	//Process Enter and Esc keys in m_stEditInPlace.
-	if (pMsg->message == WM_KEYDOWN && pMsg->hwnd == m_stEditInPlace.m_hWnd) {
-		switch (pMsg->wParam) {
-		case VK_RETURN:
-			OnEditInPlaceEnterPressed();
-			return TRUE;
-		case VK_ESCAPE:
-			OnEditInPlaceKillFocus();
-			return TRUE;
-		default:
-			break;
-		}
-	}
-
-	return CMFCListCtrl::PreTranslateMessage(pMsg);
-}
-
 void CListEx::RecalcMeasure()const
 {
 	//To get WM_MEASUREITEM msg after changing the font.
@@ -2273,7 +2271,7 @@ void CListEx::SetFontSize(long lSize)
 	RecalcMeasure();
 	Update(0);
 
-	if (IsWindow(m_stEditInPlace)) { //If m_stEditInPlace is active, ammend its rect.
+	if (IsWindow(m_editInPlace)) { //If m_editInPlace is active, ammend its rect.
 		CRect rcCell;
 		GetSubItemRect(m_htiInPlaceEdit.iItem, m_htiInPlaceEdit.iSubItem, LVIR_BOUNDS, rcCell);
 		if (m_htiInPlaceEdit.iSubItem == 0) { //Clicked on item (first column).
@@ -2281,8 +2279,8 @@ void CListEx::SetFontSize(long lSize)
 			GetItemRect(m_htiInPlaceEdit.iItem, rcLabel, LVIR_LABEL);
 			rcCell.right = rcLabel.right;
 		}
-		m_stEditInPlace.SetWindowPos(nullptr, rcCell.left, rcCell.top, rcCell.Width(), rcCell.Height(), SWP_NOZORDER);
-		m_stEditInPlace.SetFont(&m_fontList, FALSE);
+		m_editInPlace.SetWindowPos(nullptr, rcCell.left, rcCell.top, rcCell.Width(), rcCell.Height(), SWP_NOZORDER);
+		m_editInPlace.SetFont(&m_fontList, FALSE);
 	}
 }
 
@@ -2320,4 +2318,29 @@ void CListEx::TtRowShow(bool fShow, UINT uRow)
 		m_stWndTtRow.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoRow));
 	}
 	m_stWndTtRow.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_stToolInfoRow));
+}
+
+auto CListEx::EditSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+	UINT_PTR /*uIdSubclass*/, DWORD_PTR dwRefData)->LRESULT
+{
+	switch (uMsg) {
+	case WM_GETDLGCODE:
+		return DLGC_WANTALLKEYS;
+	case WM_KEYDOWN:
+		if (wParam == VK_ESCAPE || wParam == VK_RETURN) {
+			NMHDR hdr;
+			hdr.hwndFrom = hWnd;
+			hdr.idFrom = dwRefData;
+			hdr.code = static_cast<UINT>(wParam);
+			::SendMessageW(::GetParent(hWnd), WM_NOTIFY, 0, reinterpret_cast<LPARAM>(&hdr));
+		}
+		break;
+	case WM_NCDESTROY:
+		RemoveWindowSubclass(hWnd, EditSubclassProc, 0);
+		break;
+	default:
+		break;
+	}
+
+	return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }

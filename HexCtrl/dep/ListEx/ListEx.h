@@ -1,5 +1,5 @@
 /*************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                          *
+* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                          *
 * This is very extended and featured version of CMFCListCtrl class.                  *
 * Official git repository: https://github.com/jovibor/ListEx/                        *
 * This code is available under the "MIT License".                                    *
@@ -10,16 +10,16 @@
 #include <string>
 
 namespace HEXCTRL::LISTEX {
-	/*********************************************************************************
-	* EListExSortMode - Sorting mode.                                                *
-	*********************************************************************************/
+	/****************************************************************
+	* EListExSortMode - Sorting mode.                               *
+	****************************************************************/
 	enum class EListExSortMode : std::uint8_t {
 		SORT_LEX, SORT_NUMERIC
 	};
 
-	/********************************************
-	* LISTEXCOLOR - colors for the cell.        *
-	********************************************/
+	/****************************************************************
+	* LISTEXCOLOR - colors for the cell.                            *
+	****************************************************************/
 	struct LISTEXCOLOR {
 		COLORREF clrBk { };
 		COLORREF clrText { };

@@ -37,10 +37,14 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		enum class EMenuID : std::uint16_t;
 		void DoDataExchange(CDataExchange* pDX)override;
+		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
+		void OnCancel()override;
+		afx_msg void OnClose();
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		afx_msg void OnCheckHex();
 		afx_msg void OnDestroy();
+		void OnOK()override;
 		BOOL OnInitDialog()override;
 		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
@@ -49,7 +53,6 @@ namespace HEXCTRL::INTERNAL {
 		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
 		afx_msg void OnListSetData(NMHDR* pNMHDR, LRESULT* pResult);
 		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
-		void OnOK()override;
 		void RemoveBookmark(std::uint64_t ullID);
 		void SortBookmarks();
 		void UpdateListCount(bool fPreserveSelected = false);
@@ -62,5 +65,6 @@ namespace HEXCTRL::INTERNAL {
 		LONGLONG m_llIndexCurr { }; //Current bookmark's position index, to move next/prev.
 		CMenu m_menuList;
 		CButton m_btnHex;           //Check-box "Hex numbers".
+		bool m_fNoEsc { false };    //Can Dialog be closed by pressing Escape or not.
 	};
 }

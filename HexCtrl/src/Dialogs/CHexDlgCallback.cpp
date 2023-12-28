@@ -13,7 +13,6 @@
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgCallback, CDialogEx)
-	ON_COMMAND(IDCANCEL, &CHexDlgCallback::OnBtnCancel)
 	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
@@ -26,7 +25,7 @@ CHexDlgCallback::CHexDlgCallback(std::wstring_view wsvOperName, ULONGLONG ullPro
 
 void CHexDlgCallback::ExitDlg()
 {
-	OnBtnCancel();
+	OnCancel();
 }
 
 bool CHexDlgCallback::IsCanceled()const
@@ -46,6 +45,11 @@ void CHexDlgCallback::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_CALLBACK_PROGBAR, m_stProgBar);
+}
+
+void CHexDlgCallback::OnCancel()
+{
+	m_fCancel = true;
 }
 
 BOOL CHexDlgCallback::OnInitDialog()
@@ -72,7 +76,7 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 {
 	if (nIDEvent == m_uTIDExitCheck && m_fCancel) {
 		KillTimer(m_uTIDExitCheck);
-		OnCancel();
+		return EndDialog(IDCANCEL);
 	}
 
 	const auto ullCurDiff = m_ullProgBarCurr - m_ullProgBarMin;
@@ -93,12 +97,8 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 	else {
 		wstrDisplay += std::format(L"{} MB/s", iSpeedMBS);
 	}
+
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPERNAME)->SetWindowTextW(wstrDisplay.data());
 
 	CDialogEx::OnTimer(nIDEvent);
-}
-
-void CHexDlgCallback::OnBtnCancel()
-{
-	m_fCancel = true;
 }
