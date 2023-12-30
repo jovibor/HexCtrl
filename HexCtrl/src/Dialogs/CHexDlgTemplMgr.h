@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -81,11 +81,11 @@ namespace HEXCTRL::INTERNAL {
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsTooltips()const;
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
-		void UpdateData();
 		auto SetDlgData(std::uint64_t ullData) -> HWND;
 		void ShowTooltips(bool fShow)override;
 		BOOL ShowWindow(int nCmdShow);
 		void UnloadAll()override;
+		void UpdateData();
 	private:
 		struct FIELDSDEFPROPS; //Forward declaration.
 		void DoDataExchange(CDataExchange* pDX)override;

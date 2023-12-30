@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -24,11 +24,11 @@ namespace HEXCTRL::INTERNAL {
 		enum class EMenuID : std::uint16_t;
 		struct FINDRESULT;
 		struct SEARCHDATA;
-		void DoDataExchange(CDataExchange* pDX)override;
 		void AddToList(ULONGLONG ullOffset);
 		void ClearList();
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
+		void DoDataExchange(CDataExchange* pDX)override;
 		//Main routine for finding stuff.
 		[[nodiscard]] FINDRESULT Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnSearch,
 			bool fForward = true, CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true);
@@ -47,16 +47,16 @@ namespace HEXCTRL::INTERNAL {
 		afx_msg void OnButtonFindAll();
 		afx_msg void OnButtonReplace();
 		afx_msg void OnButtonReplaceAll();
+		afx_msg void OnCancel()override;
 		afx_msg void OnCheckSel();
 		afx_msg void OnComboModeSelChange();
-		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnOK()override;
-		afx_msg void OnCancel()override;
-		afx_msg void OnDestroy();
-		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+		afx_msg void OnDestroy();
+		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
+		afx_msg void OnOK()override;
 		void Prepare();
 		[[nodiscard]] bool PrepareHexBytes();
 		[[nodiscard]] bool PrepareTextASCII();

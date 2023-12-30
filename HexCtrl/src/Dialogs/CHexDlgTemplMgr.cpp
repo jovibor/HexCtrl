@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -93,7 +93,7 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 	auto iAppliedID = 1; //AppliedID starts at 1.
 	if (const auto iter = std::max_element(m_vecTemplatesApplied.begin(), m_vecTemplatesApplied.end(),
 		[](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref1, const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref2) {
-		return ref1->iAppliedID < ref2->iAppliedID; }); iter != m_vecTemplatesApplied.end()) {
+			return ref1->iAppliedID < ref2->iAppliedID; }); iter != m_vecTemplatesApplied.end()) {
 		iAppliedID = iter->get()->iAppliedID + 1; //Increasing next AppliedID by 1.
 	}
 
@@ -117,9 +117,9 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 					lmbSelf(lmbSelf, hCurrentRoot, field->vecNested);
 				}
 			}
-		};
+			};
 		_lmbFill(_lmbFill, hTreeRoot, refVecFields);
-	};
+		};
 	lmbFill(hTreeRootNode, pTemplate->vecFields);
 
 	if (m_pHexCtrl->IsDataSet()) {
@@ -164,8 +164,8 @@ void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 {
 	if (const auto rIter = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
 		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
-		return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
-		rIter != m_vecTemplatesApplied.rend()) {
+			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
+			rIter != m_vecTemplatesApplied.rend()) {
 		RemoveNodeWithAppliedID(rIter->get()->iAppliedID);
 		m_vecTemplatesApplied.erase(std::next(rIter).base());
 		if (m_pHexCtrl->IsDataSet()) {
@@ -228,7 +228,7 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD
 {
 	const auto iterApplied = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
 		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
-		return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
+			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
 	if (iterApplied == m_vecTemplatesApplied.rend()) {
 		return nullptr;
 	}
@@ -255,9 +255,9 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD
 				}
 			}
 			return nullptr;
-		};
+			};
 		return _lmbFind(_lmbFind, vecFields);
-	};
+		};
 
 	return lmbFind(vecFields);
 }
@@ -289,7 +289,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	auto iTemplateID = 1; //TemplateID starts at 1.
 	if (const auto iter = std::max_element(m_vecTemplates.begin(), m_vecTemplates.end(),
 		[](const std::unique_ptr<HEXTEMPLATE>& ref1, const std::unique_ptr<HEXTEMPLATE>& ref2) {
-		return ref1->iTemplateID < ref2->iTemplateID; }); iter != m_vecTemplates.end()) {
+			return ref1->iTemplateID < ref2->iTemplateID; }); iter != m_vecTemplates.end()) {
 		iTemplateID = iter->get()->iTemplateID + 1; //Increasing next Template's ID by 1.
 	}
 
@@ -302,15 +302,6 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	OnTemplateLoadUnload(iTemplateID, true);
 
 	return iTemplateID;
-}
-
-void CHexDlgTemplMgr::UpdateData()
-{
-	if (!::IsWindowVisible(m_hWnd)) {
-		return;
-	}
-
-	m_pListApplied->RedrawWindow();
 }
 
 auto CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData) -> HWND
@@ -374,6 +365,15 @@ void CHexDlgTemplMgr::UnloadAll()
 	if (m_pHexCtrl->IsDataSet()) {
 		m_pHexCtrl->Redraw();
 	}
+}
+
+void CHexDlgTemplMgr::UpdateData()
+{
+	if (!::IsWindowVisible(m_hWnd)) {
+		return;
+	}
+
+	m_pListApplied->RedrawWindow();
 }
 
 
@@ -458,12 +458,13 @@ bool CHexDlgTemplMgr::IsSwapEndian()const
 
 void CHexDlgTemplMgr::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	if (nState != WA_INACTIVE) {
-		if (m_pHexCtrl->IsCreated()) {
-			const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
-			m_dwDateFormat = dwFormat;
-			m_wchDateSepar = wchSepar;
-		}
+	if (!m_pHexCtrl->IsCreated())
+		return;
+
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+		const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
+		m_dwDateFormat = dwFormat;
+		m_wchDateSepar = wchSepar;
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
@@ -844,7 +845,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			auto& refVecCT = m_pAppliedCurr->pTemplate->vecCustomType;
 			if (const auto iter = std::find_if(refVecCT.begin(), refVecCT.end(),
 				[uTypeID = pField->uTypeID](const HEXCUSTOMTYPE& ref) {
-				return ref.uTypeID == uTypeID; }); iter != refVecCT.end()) {
+					return ref.uTypeID == uTypeID; }); iter != refVecCT.end()) {
 				pItem->pszText = iter->wstrTypeName.data();
 			}
 			else {
@@ -1377,9 +1378,9 @@ void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 				}
 				else { lmbSelf(lmbSelf, refField->vecNested); }
 			}
-		};
+			};
 		return _lmbCount(_lmbCount, vecRef);
-	};
+		};
 
 	lmbRndColors(iterTempl->get()->vecFields);
 	m_pListApplied->RedrawWindow();
@@ -2084,13 +2085,13 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 		const auto _lmbTotalSize = [](const auto& lmbSelf, const VecFields& vecFields)->int {
 			return std::accumulate(vecFields.begin(), vecFields.end(), 0,
 				[&lmbSelf](auto ullTotal, const std::unique_ptr<HEXTEMPLATEFIELD>& refField) {
-				if (!refField->vecNested.empty()) {
-					return ullTotal + lmbSelf(lmbSelf, refField->vecNested);
-				}
-				return ullTotal + refField->iSize; });
-		};
+					if (!refField->vecNested.empty()) {
+						return ullTotal + lmbSelf(lmbSelf, refField->vecNested);
+					}
+					return ullTotal + refField->iSize; });
+			};
 		return _lmbTotalSize(_lmbTotalSize, vecFields);
-	};
+		};
 
 	int iOffset { 0 }; //Default starting offset.
 	if (pOffset == nullptr) {
@@ -2193,9 +2194,9 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 									lmbSelf(lmbSelf, pCustomField->vecNested, pNewField, iOffset);
 								}
 							}
-						};
+							};
 						_lmbCustomTypeCopy(_lmbCustomTypeCopy, vecCustomFields, pField, iOffset);
-					};
+						};
 
 					auto iOffsetCustomType = *pOffset;
 					if (iArraySize <= 1) {

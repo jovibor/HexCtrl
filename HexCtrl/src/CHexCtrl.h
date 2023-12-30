@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -180,8 +180,8 @@ namespace HEXCTRL::INTERNAL {
 		void ToolTipTemplShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip for templates show/hide.
 		void ToolTipOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();
-		DECLARE_MESSAGE_MAP();
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+
+		//MFC message handlers.
 		afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
@@ -207,6 +207,7 @@ namespace HEXCTRL::INTERNAL {
 		afx_msg void OnSysKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+		DECLARE_MESSAGE_MAP();
 	private:
 		static constexpr auto m_pwszHexChars { L"0123456789ABCDEF" }; //Hex digits wchars for fast lookup.
 		static constexpr auto m_pwszClassName { L"HexCtrl" }; //HexControl Class name.

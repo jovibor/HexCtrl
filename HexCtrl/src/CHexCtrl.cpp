@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -102,7 +102,6 @@ namespace HEXCTRL::INTERNAL {
 }
 
 BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
-	ON_WM_ACTIVATE()
 	ON_WM_CHAR()
 	ON_WM_CLOSE()
 	ON_WM_CONTEXTMENU()
@@ -4740,12 +4739,6 @@ void CHexCtrl::Undo()
 
 
 //CHexCtrl MFC message handlers.
-
-void CHexCtrl::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
-{
-	SetFocus();
-	CWnd::OnActivate(nState, pWndOther, bMinimized);
-}
 
 void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {

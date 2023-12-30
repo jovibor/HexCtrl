@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -326,13 +326,16 @@ bool CHexDlgSearch::IsWildcard()const
 
 void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	if (nState == WA_INACTIVE) {
-		SetLayeredWindowAttributes(0, 150, LWA_ALPHA);
-	}
-	else {
+	if (!m_pHexCtrl->IsCreated())
+		return;
+
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
 		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 		m_comboSearch.SetFocus();
 		UpdateSearchReplaceControls();
+	}
+	else {
+		SetLayeredWindowAttributes(0, 150, LWA_ALPHA);
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);

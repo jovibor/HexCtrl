@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -78,6 +78,32 @@ void CHexDlgCodepage::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 }
 
+void CHexDlgCodepage::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+{
+	if (!m_pHexCtrl->IsCreated())
+		return;
+
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+		m_pListMain->SetItemState(-1, 0, LVIS_SELECTED);
+		if (const auto iter = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
+			[this](const CODEPAGE& ref) { return ref.iCPID == m_pHexCtrl->GetCodepage(); });
+			iter != m_vecCodePage.end()) {
+			const auto iItem = static_cast<int>(iter - m_vecCodePage.begin());
+			m_pListMain->SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
+			m_pListMain->EnsureVisible(iItem, FALSE);
+		}
+	}
+
+	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
+}
+
+void CHexDlgCodepage::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	m_vecCodePage.clear();
+}
+
 BOOL CHexDlgCodepage::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -100,39 +126,6 @@ BOOL CHexDlgCodepage::OnInitDialog()
 	}
 
 	return TRUE;
-}
-
-void CHexDlgCodepage::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
-{
-	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
-		if (m_pHexCtrl->IsCreated()) {
-			m_pListMain->SetItemState(-1, 0, LVIS_SELECTED);
-			if (const auto iter = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
-				[this](const CODEPAGE& ref) { return ref.iCPID == m_pHexCtrl->GetCodepage(); });
-				iter != m_vecCodePage.end()) {
-				const auto iItem = static_cast<int>(iter - m_vecCodePage.begin());
-				m_pListMain->SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
-				m_pListMain->EnsureVisible(iItem, FALSE);
-			}
-		}
-	}
-
-	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
-}
-
-BOOL CHexDlgCodepage::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
-{
-	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_CODEPAGE_LIST) {
-		switch (pNMI->hdr.code) {
-		case LVN_COLUMNCLICK:
-			SortList();
-			return TRUE;
-		default:
-			break;
-		}
-	}
-
-	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
 void CHexDlgCodepage::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
@@ -182,11 +175,19 @@ void CHexDlgCodepage::OnListLinkClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	ShellExecuteW(nullptr, L"open", pLLI->pwszText, nullptr, nullptr, SW_SHOWNORMAL);
 }
 
-void CHexDlgCodepage::OnDestroy()
+BOOL CHexDlgCodepage::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
-	CDialogEx::OnDestroy();
+	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_CODEPAGE_LIST) {
+		switch (pNMI->hdr.code) {
+		case LVN_COLUMNCLICK:
+			SortList();
+			return TRUE;
+		default:
+			break;
+		}
+	}
 
-	m_vecCodePage.clear();
+	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
 void CHexDlgCodepage::SortList()

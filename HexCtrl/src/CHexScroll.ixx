@@ -1,6 +1,6 @@
 module;
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -30,18 +30,19 @@ namespace HEXCTRL::INTERNAL {
 		* CALLBACK METHODS:                                                                 *
 		* These methods must be called from the corresponding methods of the parent window. *
 		************************************************************************************/
+		void OnLButtonUp(UINT nFlags, CPoint point);
+		void OnMouseMove(UINT nFlags, CPoint point);
 		void OnNcActivate(BOOL bActive)const;
 		void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
 		void OnNcPaint()const;
 		void OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
-		void OnMouseMove(UINT nFlags, CPoint point);
-		void OnLButtonUp(UINT nFlags, CPoint point);
 		/************************************************************************************
 		* END OF THE CALLBACK METHODS.                                                      *
 		************************************************************************************/
 
 		void SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG ullSizeMax);
 		auto SetScrollPos(ULONGLONG ullNewPos) -> ULONGLONG;
+		void ScrollEnd();
 		void ScrollLineUp();
 		void ScrollLineDown();
 		void ScrollLineLeft();
@@ -51,7 +52,6 @@ namespace HEXCTRL::INTERNAL {
 		void ScrollPageLeft();
 		void ScrollPageRight();
 		void ScrollHome();
-		void ScrollEnd();
 		void SetScrollPageSize(ULONGLONG ullSize);
 	private:
 		[[nodiscard]] bool CreateArrows(HBITMAP hArrow, bool fVert);
@@ -245,6 +245,66 @@ namespace HEXCTRL::INTERNAL {
 		return m_fVisible;
 	}
 
+	void CHexScroll::OnLButtonUp(UINT /*nFlags*/, CPoint /*point*/)
+	{
+		assert(m_fCreated);
+		if (!m_fCreated || m_enState == EState::STATE_DEFAULT) {
+			return;
+		}
+
+		m_enState = EState::STATE_DEFAULT;
+		SendParentScrollMsg(); //For parent to check IsThumbReleased.
+		KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
+		KillTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT));
+		ReleaseCapture();
+		DrawScrollBar();
+	}
+
+	void CHexScroll::OnMouseMove(UINT /*nFlags*/, CPoint point)
+	{
+		assert(m_fCreated);
+		if (!m_fCreated || !IsThumbDragging()) {
+			return;
+		}
+
+		const auto rc = GetScrollWorkAreaRect(true);
+		const auto iCurrPos = GetThumbPos();
+		int iNewPos;
+
+		if (IsVert()) {
+			if (point.y < rc.top) {
+				iNewPos = 0;
+				m_ptCursorCur.y = rc.top;
+			}
+			else if (point.y > rc.bottom) {
+				iNewPos = m_iThumbPosMax;
+				m_ptCursorCur.y = rc.bottom;
+			}
+			else {
+				iNewPos = iCurrPos + (point.y - m_ptCursorCur.y);
+				m_ptCursorCur.y = point.y;
+			}
+		}
+		else {
+			if (point.x < rc.left) {
+				iNewPos = 0;
+				m_ptCursorCur.x = rc.left;
+			}
+			else if (point.x > rc.right) {
+				iNewPos = m_iThumbPosMax;
+				m_ptCursorCur.x = rc.right;
+			}
+			else {
+				iNewPos = iCurrPos + (point.x - m_ptCursorCur.x);
+				m_ptCursorCur.x = point.x;
+			}
+		}
+
+		if (iNewPos != iCurrPos) {  //Set new thumb pos only if it has been changed.
+			SetThumbPos(iNewPos);
+		}
+	}
+
 	void CHexScroll::OnNcActivate(BOOL /*bActive*/)const
 	{
 		if (!m_fCreated) {
@@ -370,80 +430,6 @@ namespace HEXCTRL::INTERNAL {
 		}
 	}
 
-	void CHexScroll::OnMouseMove(UINT /*nFlags*/, CPoint point)
-	{
-		assert(m_fCreated);
-		if (!m_fCreated || !IsThumbDragging()) {
-			return;
-		}
-
-		const auto rc = GetScrollWorkAreaRect(true);
-		const auto iCurrPos = GetThumbPos();
-		int iNewPos;
-
-		if (IsVert()) {
-			if (point.y < rc.top) {
-				iNewPos = 0;
-				m_ptCursorCur.y = rc.top;
-			}
-			else if (point.y > rc.bottom) {
-				iNewPos = m_iThumbPosMax;
-				m_ptCursorCur.y = rc.bottom;
-			}
-			else {
-				iNewPos = iCurrPos + (point.y - m_ptCursorCur.y);
-				m_ptCursorCur.y = point.y;
-			}
-		}
-		else {
-			if (point.x < rc.left) {
-				iNewPos = 0;
-				m_ptCursorCur.x = rc.left;
-			}
-			else if (point.x > rc.right) {
-				iNewPos = m_iThumbPosMax;
-				m_ptCursorCur.x = rc.right;
-			}
-			else {
-				iNewPos = iCurrPos + (point.x - m_ptCursorCur.x);
-				m_ptCursorCur.x = point.x;
-			}
-		}
-
-		if (iNewPos != iCurrPos) {  //Set new thumb pos only if it has been changed.
-			SetThumbPos(iNewPos);
-		}
-	}
-
-	void CHexScroll::OnLButtonUp(UINT /*nFlags*/, CPoint /*point*/)
-	{
-		assert(m_fCreated);
-		if (!m_fCreated || m_enState == EState::STATE_DEFAULT) {
-			return;
-		}
-
-		m_enState = EState::STATE_DEFAULT;
-		SendParentScrollMsg(); //For parent to check IsThumbReleased.
-		KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
-		KillTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT));
-		ReleaseCapture();
-		DrawScrollBar();
-	}
-
-	void CHexScroll::SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG ullSizeMax)
-	{
-		assert(m_fCreated);
-		if (!m_fCreated) {
-			return;
-		}
-
-		m_ullScrollLine = ullLine;
-		m_ullScrollPage = ullPage;
-		m_ullScrollSizeMax = ullSizeMax;
-
-		RedrawNC(); //To repaint NC area.
-	}
-
 	auto CHexScroll::SetScrollPos(ULONGLONG ullNewPos)->ULONGLONG
 	{
 		assert(m_fCreated);
@@ -470,6 +456,30 @@ namespace HEXCTRL::INTERNAL {
 		DrawScrollBar();
 
 		return m_ullScrollPosPrev;
+	}
+
+	void CHexScroll::SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG ullSizeMax)
+	{
+		assert(m_fCreated);
+		if (!m_fCreated) {
+			return;
+		}
+
+		m_ullScrollLine = ullLine;
+		m_ullScrollPage = ullPage;
+		m_ullScrollSizeMax = ullSizeMax;
+
+		RedrawNC(); //To repaint NC area.
+	}
+
+	void CHexScroll::ScrollEnd()
+	{
+		assert(m_fCreated);
+		if (!m_fCreated) {
+			return;
+		}
+
+		SetScrollPos(m_ullScrollSizeMax);
 	}
 
 	void CHexScroll::ScrollLineUp()
@@ -565,16 +575,6 @@ namespace HEXCTRL::INTERNAL {
 		}
 
 		SetScrollPos(0);
-	}
-
-	void CHexScroll::ScrollEnd()
-	{
-		assert(m_fCreated);
-		if (!m_fCreated) {
-			return;
-		}
-
-		SetScrollPos(m_ullScrollSizeMax);
 	}
 
 	void CHexScroll::SetScrollPageSize(ULONGLONG ullSize)

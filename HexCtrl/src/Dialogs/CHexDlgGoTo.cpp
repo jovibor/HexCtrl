@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -135,12 +135,11 @@ void CHexDlgGoTo::HexCtrlGoOffset(ULONGLONG ullOffset)
 
 void CHexDlgGoTo::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	if (nState != WA_INACTIVE) {
-		const auto* const pHexCtrl = GetHexCtrl();
-		if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet()) {
-			return;
-		}
+	const auto* const pHexCtrl = GetHexCtrl();
+	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
+		return;
 
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
 		if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RAD_PAGE)); pRadio) {
 			pRadio->EnableWindow(pHexCtrl->GetPagesCount() > 0);
 		}

@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -10,26 +10,17 @@
 #include <afxdialogex.h>
 
 namespace HEXCTRL::INTERNAL {
-	constexpr auto WM_PROPGRID_PROPERTY_SELECTED = 0x0401U; //Message to a parent when new property is selected.
+	constexpr auto WM_PROPGRID_PROPERTY_SELECTED = WM_USER + 0x1U; //Message to the parent, when new property is selected.
 	class CHexPropGridCtrl final : public CMFCPropertyGridCtrl {
-	public:
-		void SetRedraw(bool fRedraw) {
-			m_fRedraw = fRedraw;
-		}
 	private:
 		void OnChangeSelection(CMFCPropertyGridProperty* pNewProp, CMFCPropertyGridProperty* /*pOldProp*/)override {
 			GetParent()->SendMessageW(WM_PROPGRID_PROPERTY_SELECTED, GetDlgCtrlID(), reinterpret_cast<LPARAM>(pNewProp));
-		}
-		int OnDrawProperty(CDC* pDC, CMFCPropertyGridProperty* pProp)const override {
-			return m_fRedraw ? CMFCPropertyGridCtrl::OnDrawProperty(pDC, pProp) : TRUE;
 		}
 		void OnSize(UINT /*f*/, int /*cx*/, int /*cy*/) {
 			EndEditItem();
 			AdjustLayout();
 		}
 		DECLARE_MESSAGE_MAP();
-	private:
-		bool m_fRedraw { true };
 	};
 
 	//CHexDlgDataInterp.
@@ -51,19 +42,20 @@ namespace HEXCTRL::INTERNAL {
 		enum class ESize : std::uint8_t;
 		struct GRIDDATA;
 		void DoDataExchange(CDataExchange* pDX)override;
+		[[nodiscard]] auto GetGridData(EName eName)const->const GRIDDATA*;
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
-		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		void OnCancel()override;
 		afx_msg void OnCheckHex();
 		afx_msg void OnCheckBigEndian();
 		afx_msg void OnClose();
 		afx_msg void OnDestroy();
+		BOOL OnInitDialog()override;
 		void OnOK()override;
-		LRESULT OnPropertyDataChanged(WPARAM wParam, LPARAM lParam);
-		LRESULT OnPropertySelected(WPARAM wParam, LPARAM lParam);
+		auto OnPropertyDataChanged(WPARAM wParam, LPARAM lParam) -> LRESULT;
+		auto OnPropertySelected(WPARAM wParam, LPARAM lParam) -> LRESULT;
 		void RedrawHexCtrl()const;
 		template <typename T>
 		void SetTData(T tData)const;
@@ -112,7 +104,7 @@ namespace HEXCTRL::INTERNAL {
 		void ShowValueGUIDTIME(GUID stGUID)const;
 		DECLARE_MESSAGE_MAP();
 	private:
-		std::vector<GRIDDATA> m_vecProp;
+		std::vector<GRIDDATA> m_vecGrid;
 		IHexCtrl* m_pHexCtrl { };
 		CHexPropGridCtrl m_gridCtrl;
 		CButton m_btnHex;            //Check-box "Hex numbers".

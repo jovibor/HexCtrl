@@ -1,5 +1,5 @@
 /****************************************************************************************
-* Copyright © 2018-2023 Jovibor https://github.com/jovibor/                             *
+* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
 * This is a Hex Control for MFC/Win32 applications.                                     *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
@@ -21,11 +21,11 @@ namespace HEXCTRL::INTERNAL {
 		void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
-		BOOL OnInitDialog()override;
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		void OnOK()override;
 		[[nodiscard]] auto GetOperMode()const->EHexOperMode;
 		[[nodiscard]] auto GetDataSize()const->EHexDataSize;
+		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
+		BOOL OnInitDialog()override;
+		void OnOK()override;
 		void SetControlsState()const;
 		void SetOKButtonName()const;
 		DECLARE_MESSAGE_MAP();
@@ -60,16 +60,14 @@ namespace HEXCTRL::INTERNAL {
 
 	void CHexDlgOpers::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimized*/)
 	{
-		if (m_pHexCtrl == nullptr)
+		if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
 			return;
 
 		if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
-			if (m_pHexCtrl->IsCreated() && m_pHexCtrl->IsDataSet()) {
-				const auto fSelection { m_pHexCtrl->HasSelection() };
-				CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL,
-					fSelection ? IDC_HEXCTRL_OPERS_RAD_SEL : IDC_HEXCTRL_OPERS_RAD_ALL);
-				GetDlgItem(IDC_HEXCTRL_OPERS_RAD_SEL)->EnableWindow(fSelection);
-			}
+			const auto fSelection { m_pHexCtrl->HasSelection() };
+			CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL,
+				fSelection ? IDC_HEXCTRL_OPERS_RAD_SEL : IDC_HEXCTRL_OPERS_RAD_ALL);
+			GetDlgItem(IDC_HEXCTRL_OPERS_RAD_SEL)->EnableWindow(fSelection);
 		}
 	}
 
@@ -324,16 +322,14 @@ namespace HEXCTRL::INTERNAL {
 
 	void CHexDlgFillData::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimized*/)
 	{
-		if (m_pHexCtrl == nullptr)
+		if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
 			return;
 
 		if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
-			if (m_pHexCtrl->IsCreated() && m_pHexCtrl->IsDataSet()) {
-				const auto fSelection { m_pHexCtrl->HasSelection() };
-				CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL,
-					fSelection ? IDC_HEXCTRL_FILLDATA_RAD_SEL : IDC_HEXCTRL_FILLDATA_RAD_ALL);
-				GetDlgItem(IDC_HEXCTRL_FILLDATA_RAD_SEL)->EnableWindow(fSelection);
-			}
+			const auto fSelection { m_pHexCtrl->HasSelection() };
+			CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL,
+				fSelection ? IDC_HEXCTRL_FILLDATA_RAD_SEL : IDC_HEXCTRL_FILLDATA_RAD_ALL);
+			GetDlgItem(IDC_HEXCTRL_FILLDATA_RAD_SEL)->EnableWindow(fSelection);
 		}
 	}
 
