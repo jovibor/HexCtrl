@@ -2225,7 +2225,7 @@ void CHexCtrl::ChooseFontDlg()
 		.rgbColors { stClr.clrFontHex } };
 
 	if (ChooseFontW(&chf) != FALSE) {
-		stClr.clrFontHex = stClr.clrFontText = chf.rgbColors;
+		stClr.clrFontHex = chf.rgbColors;
 		SetColors(stClr);
 		SetFont(lf);
 	}

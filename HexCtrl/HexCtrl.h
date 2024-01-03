@@ -215,12 +215,12 @@ namespace HEXCTRL {
 	* HEXDATA - for IHexCtrl::SetData method.                                                   *
 	********************************************************************************************/
 	struct HEXDATA {
-		SpanByte        spnData { };               //Data to display.
-		IHexVirtData*   pHexVirtData { };          //Pointer for Virtual mode.
-		IHexVirtColors* pHexVirtColors { };        //Pointer for Custom Colors class.
-		DWORD           dwCacheSize { 0x800000U }; //In Virtual mode max cached size of data to fetch.
-		bool            fMutable { false };        //Is data mutable (editable) or read-only.
-		bool            fHighLatency { false };    //Do not redraw window until scrolling completes.
+		SpanByte        spnData { };                //Data to display.
+		IHexVirtData*   pHexVirtData { };           //Pointer for Virtual mode.
+		IHexVirtColors* pHexVirtColors { };         //Pointer for Custom Colors class.
+		DWORD           dwCacheSize { 0x800000UL }; //In Virtual mode max cached size of data to fetch.
+		bool            fMutable { false };         //Is data mutable (editable) or read-only.
+		bool            fHighLatency { false };     //Do not redraw window until scrolling completes.
 	};
 
 	/********************************************************************************************

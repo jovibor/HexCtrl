@@ -2,8 +2,8 @@
 ![](docs/img/HexCtrl_Main.jpg)
 ## Table of Contents
 * [Introduction](#introduction)
-* [Installation](#installation)
-  * [Building From The Sources](#building-from-the-sources)
+* [How To Build](#how-to-build)
+  * [From The Sources](#from-the-sources)
   * [Dynamic Link Library](#dynamic-link-library)
 * [Creating](#creating)
   * [Classic Approach](#classic-approach)
@@ -137,22 +137,19 @@
 * Powerful system of [Templates](#templates)
 * [Assignable keyboard shortcuts](#setconfig) via external config file
 * Customizable look and appearance
-* Written with **/std:c++20** standard conformance
+* Written with the **/std:c++20** standard conformance
 
 ![](docs/img/HexCtrl_Operations.jpg)
 
-## [](#)Installation
+## [](#)How To Build
 Clone the repo with all submodules:  
 `git clone https://github.com/jovibor/HexCtrl.git --recurse-submodules`  
 
-The **HexCtrl** can be used in two different ways:  
-1. Building from the sources as a part of your project
-1. Using as a Dynamic Link Library (*HexCtrl.dll*).
-
-### [](#)Building From The Sources
+### [](#)From The Sources
+To build **HexCtrl** from the sources, as a part of your project:
 1. Copy *HexCtrl* folder into your project's directory.
 1. Add all files from the *HexCtrl* folder into your project  
-(you can skip adding *rapidjson-amalgam.h* and *StrToNum.h*).
+(can skip adding *rapidjson-amalgam.h* and *StrToNum.h*).
 1. Add `#include "HexCtrl/HexCtrl.h"`.
 1. Declare `IHexCtrlPtr` object: `IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };`
 1. [Create](#creating) control instance.
@@ -163,9 +160,10 @@ If you want to build **HexCtrl** from the sources in non-**MFC** app:
 
 ### [](#)Dynamic Link Library
 To use **HexCtrl** as a *.dll*:
+1. Build *HexCtrl.dll* and *HexCtrl.lib* using the *DLL Project/DLL Project.vcxproj* project.
+1. Copy *HexCtrl.lib* file into your project, so that the linker can see it.
+1. Put *HexCtrl.dll* file next to your project's *.exe* file.
 1. Copy *HexCtrl.h* into your project.
-1. Copy *HexCtrl.lib* file into your project, so the linker can see it.
-1. Put *HexCtrl.dll* file next to your *.exe* file.
 1. Add the following lines where you suppose to use the control:
     ```cpp
     #define HEXCTRL_SHARED_DLL
@@ -173,8 +171,6 @@ To use **HexCtrl** as a *.dll*:
     ```
 1. Declare `IHexCtrlPtr` object: `IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };`
 1. [Create](#creating) control instance.
-
-To build *HexCtrl.dll* and *HexCtrl.lib* use the *DLL Project/DLL Project.vcxproj* project.
 
 > [!NOTE]
 **HexCtrl**'s *.dll* is built with the **MFC Static Linking**.  
@@ -820,12 +816,12 @@ struct HEXCREATE {
 Main struct to set a data to display in the control.
 ```cpp
 struct HEXDATA {
-    SpanByte        spnData { };               //Data to display.
-    IHexVirtData*   pHexVirtData { };          //Pointer for Virtual mode.
-    IHexVirtColors* pHexVirtColors { };        //Pointer for Custom Colors class.
-    DWORD           dwCacheSize { 0x800000U }; //In Virtual mode max cached size of data to fetch.
-    bool            fMutable { false };        //Is data mutable (editable) or read-only.
-    bool            fHighLatency { false };    //Do not redraw window until scrolling completes.
+    SpanByte        spnData { };                //Data to display.
+    IHexVirtData*   pHexVirtData { };           //Pointer for Virtual mode.
+    IHexVirtColors* pHexVirtColors { };         //Pointer for Custom Colors class.
+    DWORD           dwCacheSize { 0x800000UL }; //In Virtual mode max cached size of data to fetch.
+    bool            fMutable { false };         //Is data mutable (editable) or read-only.
+    bool            fHighLatency { false };     //Do not redraw window until scrolling completes.
 };
 ```
 
