@@ -6,6 +6,7 @@
 ****************************************************************************************/
 #pragma once
 #include <afxwin.h>
+#include <compare>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -19,7 +20,7 @@
 
 namespace HEXCTRL {
 	constexpr auto HEXCTRL_VERSION_MAJOR = 3;
-	constexpr auto HEXCTRL_VERSION_MINOR = 5;
+	constexpr auto HEXCTRL_VERSION_MINOR = 6;
 	constexpr auto HEXCTRL_VERSION_PATCH = 0;
 
 	using SpanByte = std::span<std::byte>;
@@ -64,6 +65,16 @@ namespace HEXCTRL {
 	using VecSpan = std::vector<HEXSPAN>;
 
 	/********************************************************************************************
+	* HEXCOLOR - Background and Text color struct.                                              *
+	********************************************************************************************/
+	struct HEXCOLOR {
+		COLORREF clrBk { };   //Bk color.
+		COLORREF clrText { }; //Text color.
+		auto operator<=>(const HEXCOLOR&)const = default;
+	};
+	using PHEXCOLOR = HEXCOLOR*;
+
+	/********************************************************************************************
 	* HEXDATAINFO - struct for a data information used in IHexVirtData.                         *
 	********************************************************************************************/
 	struct HEXDATAINFO {
@@ -87,12 +98,11 @@ namespace HEXCTRL {
 	* HEXBKM - Bookmarks main struct.                                                           *
 	********************************************************************************************/
 	struct HEXBKM {
-		VecSpan      vecSpan { };                //Vector of offsets and sizes.
-		std::wstring wstrDesc { };               //Bookmark description.
-		ULONGLONG    ullID { };                  //Bookmark ID, assigned internally by framework.
-		ULONGLONG    ullData { };                //User defined custom data.
-		COLORREF     clrBk { RGB(240, 240, 0) }; //Bk color.
-		COLORREF     clrText { RGB(0, 0, 0) };   //Text color.
+		VecSpan      vecSpan { };  //Vector of offsets and sizes.
+		std::wstring wstrDesc { }; //Bookmark description.
+		ULONGLONG    ullID { };    //Bookmark ID, assigned internally by framework.
+		ULONGLONG    ullData { };  //User defined custom data.
+		HEXCOLOR     stClr { };    //Bookmark bk/text color.
 	};
 	using PHEXBKM = HEXBKM*;
 
@@ -129,15 +139,6 @@ namespace HEXCTRL {
 		bool  fShow { true }; //Whether to show menu or not, in case of HEXCTRL_MSG_CONTEXTMENU.
 	};
 	using PHEXMENUINFO = HEXMENUINFO*;
-
-	/********************************************************************************************
-	* HEXCOLOR - used with the IHexVirtColors interface.                                        *
-	********************************************************************************************/
-	struct HEXCOLOR {
-		COLORREF clrBk { };   //Bk color.
-		COLORREF clrText { }; //Text color.
-	};
-	using PHEXCOLOR = HEXCOLOR*;
 
 	/********************************************************************************************
 	* HEXCOLORINFO - struct for hex chunks' color information.                                  *
@@ -178,6 +179,7 @@ namespace HEXCTRL {
 		COLORREF clrFontHex { GetSysColor(COLOR_WINDOWTEXT) };       //Hex-chunks font color.
 		COLORREF clrFontText { GetSysColor(COLOR_WINDOWTEXT) };      //Text font color.
 		COLORREF clrFontSel { GetSysColor(COLOR_HIGHLIGHTTEXT) };    //Selected hex/text font color.
+		COLORREF clrFontBkm { RGB(0, 0, 0) };                        //Bookmarks font color.
 		COLORREF clrFontDataInterp { RGB(250, 250, 250) };           //Data Interpreter text/hex font color.
 		COLORREF clrFontCaption { RGB(0, 0, 180) };                  //Caption font color
 		COLORREF clrFontInfoParam { GetSysColor(COLOR_WINDOWTEXT) }; //Font color of the Info bar parameters.
@@ -185,6 +187,7 @@ namespace HEXCTRL {
 		COLORREF clrFontCaret { RGB(255, 255, 255) };                //Caret font color.
 		COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                //Background color.
 		COLORREF clrBkSel { GetSysColor(COLOR_HIGHLIGHT) };          //Background color of the selected Hex/Text.
+		COLORREF clrBkBkm { RGB(240, 240, 0) };                      //Bookmarks background color.
 		COLORREF clrBkDataInterp { RGB(147, 58, 22) };               //Data Interpreter Bk color.
 		COLORREF clrBkInfoBar { GetSysColor(COLOR_BTNFACE) };        //Background color of the bottom Info bar.
 		COLORREF clrBkCaret { RGB(0, 0, 255) };                      //Caret background color.
@@ -312,7 +315,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetCaretPos()const->ULONGLONG = 0;        //Caret position.
 		[[nodiscard]] virtual auto GetCharsExtraSpace()const->DWORD = 0;     //Get extra space between chars, in pixels.
 		[[nodiscard]] virtual auto GetCodepage()const->int = 0;              //Get current codepage ID.
-		[[nodiscard]] virtual auto GetColors()const->HEXCOLORS = 0;          //Current colors.
+		[[nodiscard]] virtual auto GetColors()const->const HEXCOLORS & = 0;  //All current colors.
 		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->SpanByte = 0;  //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual auto GetDateInfo()const->std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
@@ -343,7 +346,7 @@ namespace HEXCTRL {
 		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true) = 0; //Set the caret position.
 		virtual void SetCharsExtraSpace(DWORD dwSpace) = 0;    //Extra space to add between chars, in pixels.
 		virtual void SetCodepage(int iCodepage) = 0;           //Codepage for text area.
-		virtual void SetColors(const HEXCOLORS& clr) = 0;      //Set all the control's colors.
+		virtual void SetColors(const HEXCOLORS& hcs) = 0;      //Set all the control's colors.
 		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).
 		virtual void SetDateInfo(DWORD dwFormat, wchar_t wchSepar) = 0; //Set date format and date separator.

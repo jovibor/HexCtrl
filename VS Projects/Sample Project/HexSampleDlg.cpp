@@ -64,14 +64,14 @@ BOOL CHexSampleDlg::OnInitDialog()
 	m_pHexDlg->SetScrollRatio(2, true); //Two lines scroll with mouse-wheel.
 	m_pHexDlg->SetPageSize(64);
 //	m_pHexDlg->SetDlgData(EHexWnd::DLG_DATAINTERP, HEXCTRL_FLAG_DATAINTERP_NOESC);
-//	m_pHexDlg->SetCharsExtraSpace(1);
+//	m_pHexDlg->SetCharsExtraSpace(2);
 
 	LoadTemplates(&*m_pHexDlg);
 	//OnBnSetRndData();
 	//m_pHexDlg->ExecuteCmd(EHexCmd::CMD_BKM_DLG_MGR);
 
-	//m_hds.pHexVirtColors = this;
-	//m_hds.fHighLatency = true;
+//	m_hds.pHexVirtColors = this;
+//	m_hds.fHighLatency = true;
 
 	m_chkLnk.SetCheck(BST_CHECKED);
 

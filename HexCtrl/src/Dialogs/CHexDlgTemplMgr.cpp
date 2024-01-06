@@ -28,8 +28,7 @@ namespace HEXCTRL::INTERNAL {
 	};
 
 	struct CHexDlgTemplMgr::FIELDSDEFPROPS { //Helper struct for convenient argument passing through recursive fields' parsing.
-		COLORREF          clrBk { };
-		COLORREF          clrText { };
+		HEXCOLOR          stClr { };
 		PHEXTEMPLATE      pTemplate { }; //Same for all fields.
 		PHEXTEMPLATEFIELD pFieldParent { };
 		bool              fBigEndian { false };
@@ -1020,8 +1019,8 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)
 		}
 		break;
 	case m_iIDListApplFieldClrs:
-		pLCI->stClr.clrBk = pField->clrBk;
-		pLCI->stClr.clrText = pField->clrText;
+		pLCI->stClr.clrBk = pField->stClr.clrBk;
+		pLCI->stClr.clrText = pField->stClr.clrText;
 		*pResult = TRUE;
 		return;
 	default:
@@ -1374,7 +1373,7 @@ void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 		const auto _lmbCount = [&distrib, &gen](const auto& lmbSelf, const VecFields& vecRef)->void {
 			for (auto& refField : vecRef) {
 				if (refField->vecNested.empty()) {
-					refField->clrBk = RGB(distrib(gen), distrib(gen), distrib(gen));
+					refField->stClr.clrBk = RGB(distrib(gen), distrib(gen), distrib(gen));
 				}
 				else { lmbSelf(lmbSelf, refField->vecNested); }
 			}
@@ -2115,8 +2114,8 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 		const auto& pNewField = vecFields.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
 		pNewField->wstrName = wstrNameField;
 		pNewField->pFieldParent = stDefault.pFieldParent;
-		pNewField->clrBk = JSONColors(*pField, "clrBk").value_or(stDefault.clrBk);
-		pNewField->clrText = JSONColors(*pField, "clrText").value_or(stDefault.clrText);
+		pNewField->stClr.clrBk = JSONColors(*pField, "clrBk").value_or(stDefault.stClr.clrBk);
+		pNewField->stClr.clrText = JSONColors(*pField, "clrText").value_or(stDefault.stClr.clrText);
 		pNewField->fBigEndian = JSONEndianness(*pField).value_or(stDefault.fBigEndian);
 		pNewField->iOffset = *pOffset;
 		pNewField->eType = type_custom;
@@ -2128,8 +2127,8 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 			}
 
 			//Setting defaults for the next nested fields.
-			const FIELDSDEFPROPS stDefsNested { .clrBk { pNewField->clrBk }, .clrText { pNewField->clrText },
-				.pTemplate { stDefault.pTemplate }, .pFieldParent { pNewField.get() }, .fBigEndian { pNewField->fBigEndian } };
+			const FIELDSDEFPROPS stDefsNested { .stClr { pNewField->stClr }, .pTemplate { stDefault.pTemplate },
+				.pFieldParent { pNewField.get() }, .fBigEndian { pNewField->fBigEndian } };
 
 			//Recursion lambda for nested fields starts here.
 			if (!JSONParseFields(iterNestedFields, pNewField->vecNested, stDefsNested, umapCustomT, pOffset)) {
@@ -2178,8 +2177,10 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 							for (const auto& pCustomField : vecCustomFields) {
 								const auto& pNewField = pField->vecNested.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
 								pNewField->pFieldParent = pField.get();
-								pNewField->clrBk = pCustomField->clrBk == -1 ? pField->clrBk : pCustomField->clrBk;
-								pNewField->clrText = pCustomField->clrText == -1 ? pField->clrText : pCustomField->clrText;
+								pNewField->stClr.clrBk = pCustomField->stClr.clrBk == -1 ?
+									pField->stClr.clrBk : pCustomField->stClr.clrBk;
+								pNewField->stClr.clrText = pCustomField->stClr.clrText == -1 ?
+									pField->stClr.clrText : pCustomField->stClr.clrText;
 								pNewField->fBigEndian = pCustomField->fBigEndian;
 								pNewField->eType = pCustomField->eType;
 								pNewField->uTypeID = pCustomField->uTypeID;
@@ -2206,8 +2207,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 						for (int iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
 							const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
 							pFieldArray->pFieldParent = pNewField.get();
-							pFieldArray->clrBk = pNewField->clrBk;
-							pFieldArray->clrText = pNewField->clrText;
+							pFieldArray->stClr = pNewField->stClr;
 							pFieldArray->fBigEndian = pNewField->fBigEndian;
 							pFieldArray->eType = pNewField->eType;
 							pFieldArray->uTypeID = pNewField->uTypeID;
@@ -2246,8 +2246,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 				for (auto iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
 					const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
 					pFieldArray->pFieldParent = pNewField.get();
-					pFieldArray->clrBk = pNewField->clrBk;
-					pFieldArray->clrText = pNewField->clrText;
+					pFieldArray->stClr = pNewField->stClr;
 					pFieldArray->fBigEndian = pNewField->fBigEndian;
 					pFieldArray->eType = pNewField->eType;
 					pFieldArray->uTypeID = pNewField->uTypeID;
@@ -2359,8 +2358,7 @@ auto CHexDlgTemplMgr::LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HE
 			}
 
 			umapCT.try_emplace(uCustomTypeID, VecFields { });
-			const FIELDSDEFPROPS stDefTypes { .clrBk { clrBk }, .clrText { clrText },
-				.pTemplate { pTemplate }, .fBigEndian { fBigEndian } };
+			const FIELDSDEFPROPS stDefTypes { .stClr { clrBk, clrText }, .pTemplate { pTemplate }, .fBigEndian { fBigEndian } };
 			if (!JSONParseFields(iterFieldsArray, umapCT[uCustomTypeID], stDefTypes, umapCT)) {
 				return { }; //Something went wrong during template parsing.
 			}
@@ -2372,11 +2370,10 @@ auto CHexDlgTemplMgr::LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HE
 		const auto clrBk = JSONColors(objData->value, "clrBk").value_or(-1);
 		const auto clrText = JSONColors(objData->value, "clrText").value_or(-1);
 		const auto fBigEndian = JSONEndianness(objData->value).value_or(false);
-		const FIELDSDEFPROPS stDefsFields { .clrBk { clrBk }, .clrText { clrText },
-			.pTemplate { pTemplate }, .fBigEndian { fBigEndian } };
+		const FIELDSDEFPROPS stDefFields { .stClr { clrBk, clrText }, .pTemplate { pTemplate }, .fBigEndian { fBigEndian } };
 
 		const auto iterFieldsArray = objData->value.FindMember("Fields");
-		if (!JSONParseFields(iterFieldsArray, refVecFields, stDefsFields, umapCT)) {
+		if (!JSONParseFields(iterFieldsArray, refVecFields, stDefFields, umapCT)) {
 			return { }; //Something went wrong during template parsing.
 		}
 	}

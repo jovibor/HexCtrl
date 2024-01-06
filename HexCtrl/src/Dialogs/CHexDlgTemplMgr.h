@@ -42,8 +42,7 @@ namespace HEXCTRL::INTERNAL {
 		std::wstring      wstrDescr { };    //Field description.
 		int               iOffset { };      //Field offset relative to the Template's beginning.
 		int               iSize { };        //Field size.
-		COLORREF          clrBk { };        //Background color in HexCtrl.
-		COLORREF          clrText { };      //Text color in HexCtrl.
+		HEXCOLOR          stClr { };        //Field Bk and Text color.
 		VecFields         vecNested { };    //Vector for nested fields.
 		PHEXTEMPLATEFIELD pFieldParent { }; //Parent field, in case of nested.
 		EHexFieldType     eType { };        //Field type.

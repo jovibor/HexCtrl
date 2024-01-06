@@ -48,7 +48,7 @@ auto CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)->ULONGLONG
 				return ref1.ullID < ref2.ullID; }); iter != m_vecBookmarks.end()) {
 			ullID = iter->ullID + 1; //Increasing next bookmark's ID by 1.
 		}
-		m_vecBookmarks.emplace_back(hbs.vecSpan, hbs.wstrDesc, ullID, hbs.ullData, hbs.clrBk, hbs.clrText);
+		m_vecBookmarks.emplace_back(hbs.vecSpan, hbs.wstrDesc, ullID, hbs.ullData, hbs.stClr);
 	}
 
 	UpdateListCount(true);
@@ -540,10 +540,10 @@ void CHexDlgBkmMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	COLORREF* pClr { };
 	switch (pNMI->iSubItem) {
 	case 4: //Bk color.
-		pClr = &pBkm->clrBk;
+		pClr = &pBkm->stClr.clrBk;
 		break;
 	case 5: //Text color.
-		pClr = &pBkm->clrText;
+		pClr = &pBkm->stClr.clrText;
 		break;
 	default:
 		return;
@@ -583,14 +583,14 @@ void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)
 	switch (pLCI->iSubItem) {
 	case 4: //Bk color.
 		if (const auto* const pBkm = GetByIndex(static_cast<std::size_t>(pLCI->iItem)); pBkm != nullptr) {
-			pLCI->stClr.clrBk = pBkm->clrBk;
+			pLCI->stClr.clrBk = pBkm->stClr.clrBk;
 			*pResult = TRUE;
 			return;
 		}
 		break;
 	case 5: //Text color.
 		if (const auto* const pBkm = GetByIndex(static_cast<std::size_t>(pLCI->iItem)); pBkm != nullptr) {
-			pLCI->stClr.clrBk = pBkm->clrText;
+			pLCI->stClr.clrBk = pBkm->stClr.clrText;
 			*pResult = TRUE;
 			return;
 		}

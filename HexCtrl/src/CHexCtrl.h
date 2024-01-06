@@ -48,7 +48,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetCaretPos()const->ULONGLONG override;
 		[[nodiscard]] auto GetCharsExtraSpace()const->DWORD override;
 		[[nodiscard]] auto GetCodepage()const->int override;
-		[[nodiscard]] auto GetColors()const->HEXCOLORS override;
+		[[nodiscard]] auto GetColors()const->const HEXCOLORS & override;
 		[[nodiscard]] auto GetData(HEXSPAN hss)const->SpanByte override;
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;
 		[[nodiscard]] auto GetDateInfo()const->std::tuple<DWORD, wchar_t> override;
@@ -79,7 +79,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true)override;
 		void SetCharsExtraSpace(DWORD dwSpace)override;
 		void SetCodepage(int iCodepage)override;
-		void SetColors(const HEXCOLORS& clr)override;
+		void SetColors(const HEXCOLORS& hcs)override;
 		bool SetConfig(std::wstring_view wsvPath)override;
 		void SetData(const HEXDATA& hds)override;
 		void SetDateInfo(DWORD dwFormat, wchar_t wchSepar)override;
@@ -125,10 +125,9 @@ namespace HEXCTRL::INTERNAL {
 		void DrawWindow(CDC* pDC)const;
 		void DrawInfoBar(CDC* pDC)const;
 		void DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const;
-		void DrawHexText(CDC* pDC, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawHexText(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
 		void DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
 		void DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
-		void DrawCustomColors(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
 		void DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
 		void DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
 		void DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wsvHex, std::wstring_view wsvText)const;

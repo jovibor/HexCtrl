@@ -413,9 +413,9 @@ Get extra space between chars, in pixels. This extra space can be set with the [
 
 ### [](#)GetColors
 ```cpp
-[[nodiscard]] auto GetColors()const->HEXCOLORS;
+[[nodiscard]] auto GetColors()const->const HEXCOLORS&;
 ```
-Returns current [`HEXCOLORS`](#hexcolors).
+Returns reference to the current [`HEXCOLORS`](#hexcolors) struct.
 
 ### [](#)GetData
 ```cpp
@@ -440,9 +440,9 @@ Returns [date format-ordering specifier](https://docs.microsoft.com/en-us/window
 
 ### [](#)GetDlgData
 ```cpp
-auto GetDlgData(EHexWnd eWnd)const->std::uint64_t;
+[[nodiscard]] auto GetDlgData(EHexWnd eWnd)const->std::uint64_t;
 ```
-Returns data related to one of the internal dialogs.
+Returns data related to **HexCtrl**'s internal dialogs.
 
 ### [](#)GetCodepage
 ```cpp
@@ -652,7 +652,26 @@ Sets [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/w
 ```cpp
 auto SetDlgData(EHexWnd eWnd, std::uint64_t ullData)->HWND;
 ```
-Sets a data to one of the internal dialogs. Returns a window handle of that dialog.
+Changes state of the **HexCtrl**'s internal dialogs by setting control-flags, returns window handle of that dialog. Flags can be combined together with the `|`.  
+Available flags are:
+```cpp
+//Template Manager.
+HEXCTRL_FLAG_TEMPLMGR_MINIMIZED  //Show dialog in minimized mode. 
+HEXCTRL_FLAG_TEMPLMGR_HEXNUM     //Set "Hex numbers" checkbox.
+HEXCTRL_FLAG_TEMPLMGR_SHOWTT     //Set "Show tooltips" checkbox.
+HEXCTRL_FLAG_TEMPLMGR_HGLSEL     //Set "Highlight selection" checkbox.
+HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN //Set "Swap endianness" checkbox.
+HEXCTRL_FLAG_TEMPLMGR_NOESC      //Prevent dialog from closing on Esc key.
+
+//Data Interpreter.
+HEXCTRL_FLAG_DATAINTERP_HEXNUM //Set "Hex numbers" checkbox.
+HEXCTRL_FLAG_DATAINTERP_BE     //Set "Big-endian" checkbox.
+HEXCTRL_FLAG_DATAINTERP_NOESC  //Prevent dialog from closing on Esc key.
+
+//Bookmark Manager.
+HEXCTRL_FLAG_BKMMGR_HEXNUM //Set "Hex numbers" checkbox.
+HEXCTRL_FLAG_BKMMGR_NOESC  //Prevent dialog from closing on Esc key.
+```
 
 ### [](#)SetFont
 ```cpp
@@ -725,15 +744,14 @@ Show/hide bottom Info bar.
 Below are listed all **HexCtrl**'s structures.
 
 ### [](#)HEXBKM
-Structure for bookmarks, used in [`BkmAdd`](#BkmAdd) method.  
+Main bookmarks structure, used with the [IHexBookmarks](#ihexbookmarks) interface.
 ```cpp
 struct HEXBKM {
-    VecSpan      vecSpan { };                //Vector of offsets and sizes.
-    std::wstring wstrDesc { };               //Bookmark description.
-    ULONGLONG    ullID { };                  //Bookmark ID, assigned internally by framework.
-    ULONGLONG    ullData { };                //User defined custom data.
-    COLORREF     clrBk { RGB(240, 240, 0) }; //Bk color.
-    COLORREF     clrText { RGB(0, 0, 0) };   //Text color.
+    VecSpan      vecSpan { };  //Vector of offsets and sizes.
+    std::wstring wstrDesc { }; //Bookmark description.
+    ULONGLONG    ullID { };    //Bookmark ID, assigned internally by framework.
+    ULONGLONG    ullData { };  //User defined custom data.
+    HEXCOLOR     stClr { };    //Bookmark bk/text color.
 };
 using PHEXBKM = HEXBKM*;
 ```
@@ -751,11 +769,12 @@ using PHEXBKMINFO = HEXBKMINFO*;
 ```
 
 ### [](#)HEXCOLOR
-**HexCtrl** custom colors.
+Background and Text color struct.
 ```cpp
 struct HEXCOLOR {
     COLORREF clrBk { };   //Bk color.
     COLORREF clrText { }; //Text color.
+    auto operator<=>(const HEXCOLOR&)const = default;
 };
 using PHEXCOLOR = HEXCOLOR*;
 ```
@@ -777,13 +796,15 @@ struct HEXCOLORS {
     COLORREF clrFontHex { GetSysColor(COLOR_WINDOWTEXT) };       //Hex-chunks font color.
     COLORREF clrFontText { GetSysColor(COLOR_WINDOWTEXT) };      //Text font color.
     COLORREF clrFontSel { GetSysColor(COLOR_HIGHLIGHTTEXT) };    //Selected hex/text font color.
+    COLORREF clrFontBkm { RGB(0, 0, 0) };                        //Bookmarks font color.
     COLORREF clrFontDataInterp { RGB(250, 250, 250) };           //Data Interpreter text/hex font color.
     COLORREF clrFontCaption { RGB(0, 0, 180) };                  //Caption font color
     COLORREF clrFontInfoParam { GetSysColor(COLOR_WINDOWTEXT) }; //Font color of the Info bar parameters.
     COLORREF clrFontInfoData { RGB(0, 0, 150) };                 //Font color of the Info bar data.
     COLORREF clrFontCaret { RGB(255, 255, 255) };                //Caret font color.
     COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                //Background color.
-    COLORREF clrBkSel { GetSysColor(COLOR_HIGHLIGHT) };          //Background color of the selected Hex/ASCII.
+    COLORREF clrBkSel { GetSysColor(COLOR_HIGHLIGHT) };          //Background color of the selected Hex/Text.
+    COLORREF clrBkBkm { RGB(240, 240, 0) };                      //Bookmarks background color.
     COLORREF clrBkDataInterp { RGB(147, 58, 22) };               //Data Interpreter Bk color.
     COLORREF clrBkInfoBar { GetSysColor(COLOR_BTNFACE) };        //Background color of the bottom Info bar.
     COLORREF clrBkCaret { RGB(0, 0, 255) };                      //Caret background color.
