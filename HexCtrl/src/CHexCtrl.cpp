@@ -26,7 +26,6 @@
 #include <numeric>
 #include <random>
 #include <thread>
-#pragma comment(lib, "Dwmapi.lib")
 
 import HEXCTRL.CHexScroll;
 import HEXCTRL.CHexSelection;
@@ -200,11 +199,6 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	if (IsCreated())
 		return false;
 
-	//1. WS_POPUP style is vital for GetParent to work properly in EHexCreateMode::CREATE_POPUP mode.
-	//   Without this style GetParent/GetOwner always return 0, no matter whether pParentWnd is provided to CreateWindowEx or not.
-	//2. Created HexCtrl window will always overlap (be on top of) its parent, or owner, window 
-	//   if pParentWnd is set (is not nullptr) in CreateWindowEx.
-	//3. To force HexCtrl window on taskbar the WS_EX_APPWINDOW extended window style must be set.
 	if (hcs.fCustom) {
 		//If it's a Custom Control in dialog, there is no need to create a window, just subclassing.
 		if (!SubclassDlgItem(hcs.uID, CWnd::FromHandle(hcs.hWndParent))) {
@@ -267,12 +261,12 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		return false;
 	}
 
-	MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_BITMAP } };
 	const auto hInst = AfxGetInstanceHandle();
 	const auto fScale = m_iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
 	const auto iSizeIcon = static_cast<int>(16 * fScale);
 	const auto pMenuTop = m_menuMain.GetSubMenu(0); //Context sub-menu handle.
 
+	MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_BITMAP } };
 	//"Search" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
@@ -345,11 +339,6 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	m_penLines.CreatePen(PS_SOLID, 1, RGB(200, 200, 200));
 	m_penDataTempl.CreatePen(PS_SOLID, 1, RGB(50, 50, 50));
-
-	//Removing window's border frame.
-	const MARGINS marg { 0, 0, 0, 1 };
-	DwmExtendFrameIntoClientArea(m_hWnd, &marg);
-	SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 
 	//ScrollBars should be created here, after the main window has already been created (to attach to), to avoid assertions.
 	m_pScrollV->Create(this, true, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0); //Actual sizes are set in RecalcAll().
@@ -3105,7 +3094,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto iterChunks { 0U }; iterChunks < GetCapacity() && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
 			//Bookmarks.
-			if (auto* pBkm = m_pDlgBkmMgr->HitTest(ullStartOffset + sIndexToPrint); pBkm != nullptr) {
+			if (const auto pBkm = m_pDlgBkmMgr->HitTest(ullStartOffset + sIndexToPrint); pBkm != nullptr) {
 				//If it's nested bookmark.
 				if (pBkmCurr != nullptr && pBkmCurr != pBkm) {
 					lmbHexSpaces(iterChunks);
@@ -4725,18 +4714,19 @@ void CHexCtrl::OnDestroy()
 	//is alive unless the IHexCtrl::Destroy() method is called.
 
 	ClearData();
+	m_vecHBITMAP.clear();
+	m_vecKeyBind.clear();
+	m_vecUndo.clear();
+	m_vecRedo.clear();
+	m_vecCharsWidth.clear();
+	m_pDlgTemplMgr->UnloadAll(); //Explicitly unloading all loaded Templates.
 	m_menuMain.DestroyMenu();
 	m_fontMain.DeleteObject();
 	m_fontInfoBar.DeleteObject();
 	m_penLines.DeleteObject();
 	m_penDataTempl.DeleteObject();
-	m_vecHBITMAP.clear();
-	m_vecKeyBind.clear();
-	m_pDlgTemplMgr->UnloadAll(); //Explicitly unloading all loaded Templates.
 	m_pScrollV->DestroyWindow();
 	m_pScrollH->DestroyWindow();
-
-	m_dwCapacity = 0x10;
 	m_fCreated = false;
 
 	ParentNotify(HEXCTRL_MSG_DESTROY);

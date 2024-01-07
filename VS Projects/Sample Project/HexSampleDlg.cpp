@@ -273,8 +273,8 @@ void CHexSampleDlg::CreateHexPopup()
 	if (m_pHexPopup->IsCreated())
 		return;
 
-	const auto dwStyle = WS_POPUP | WS_OVERLAPPEDWINDOW;
-	const auto dwExStyle = WS_EX_APPWINDOW; //To force to the taskbar.
+	constexpr auto dwStyle = WS_POPUP | WS_OVERLAPPEDWINDOW;
+	constexpr auto dwExStyle = WS_EX_APPWINDOW; //To force entry to the taskbar.
 
 	const HEXCREATE hcs { .hWndParent { m_hWnd }, .dwStyle { dwStyle }, .dwExStyle { dwExStyle } };
 	m_pHexPopup->Create(hcs);

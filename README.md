@@ -108,6 +108,13 @@
   * [HEXCTRL_MSG_BKMCLICK](#hexctrl_msg_bkmclicked) 
   * [HEXCTRL_MSG_CONTEXTMENU](#hexctrl_msg_contextmenu)
   * [HEXCTRL_MSG_DESTROY](#hexctrl_msg_destroy)
+  * [HEXCTRL_MSG_DLGBKMMGR](#hexctrl_msg_dlgbkmmgr)
+  * [HEXCTRL_MSG_DLGCODEPAGE](#hexctrl_msg_dlgcodepage)
+  * [HEXCTRL_MSG_DLGDATAINTERP](#hexctrl_msg_dlgdatainterp)
+  * [HEXCTRL_MSG_DLGGOTO](#hexctrl_msg_dlggoto)
+  * [HEXCTRL_MSG_DLGMODIFY](#hexctrl_msg_dlgmodify)
+  * [HEXCTRL_MSG_DLGSEARCH](#hexctrl_msg_dlgsearch)
+  * [HEXCTRL_MSG_DLGTEMPLMGR](#hexctrl_msg_dlgtemplmgr)
   * [HEXCTRL_MSG_MENUCLICK](#hexctrl_msg_menuclick)
   * [HEXCTRL_MSG_SETCAPACITY](#hexctrl_msg_setcapacity)
   * [HEXCTRL_MSG_SETCARET](#hexctrl_msg_setcaret)
@@ -1099,10 +1106,31 @@ The `LPARAM` of the `WM_NOTIFY` message contains a pointer to the **[NMHDR](http
 Sent if a bookmark is clicked, `LPARAM` contains a pointer to the [`HEXBKMINFO`](#hexbkminfo) struct.
 
 ### [](#)HEXCTRL_MSG_CONTEXTMENU
-Sent when the context menu is about to be displayed, `LPARAM` contains a pointer to the [`HEXMENUINFO`](#hexmenuinfo) struct. You can disable menu showing-up by setting the `PHEXMENUINFO->fShow` flag to a `false` in response to this message.
+Sent when a context menu is about to be displayed, `LPARAM` contains a pointer to the [`HEXMENUINFO`](#hexmenuinfo) struct. You can disable menu showing-up by setting the `PHEXMENUINFO->fShow` flag to `false` in response to this message.
 
 ### [](#)HEXCTRL_MSG_DESTROY
 Sent to indicate that the **HexCtrl**'s window is about to be destroyed, `LPARAM` contains a pointer to the `NMHDR` struct.
+
+### [](#)HEXCTRL_MSG_DLGBKMMGR
+Sent to indicate that the **Bookmark Manager** dialog is about to be displayed, `LPARAM` contains a pointer to the `NMHDR` struct.
+
+### [](#)HEXCTRL_MSG_DLGCODEPAGE
+Sent to indicate that the **Codepage** dialog is about to be displayed, `LPARAM` contains a pointer to the `NMHDR` struct.
+
+### [](#)HEXCTRL_MSG_DLGDATAINTERP
+Sent to indicate that the **Data interpreter** dialog is about to be displayed, `LPARAM` contains a pointer to the `NMHDR` struct.
+
+### [](#)HEXCTRL_MSG_DLGGOTO
+Sent to indicate that the **Go to** dialog is about to be displayed, `LPARAM` contains a pointer to the `NMHDR` struct.
+
+### [](#)HEXCTRL_MSG_DLGMODIFY
+Sent to indicate that the **Modify Data** dialog is about to be displayed, `LPARAM` contains a pointer to the `NMHDR` struct.
+
+### [](#)HEXCTRL_MSG_DLGSEARCH
+Sent to indicate that the **Search** dialog is about to be displayed, `LPARAM` contains a pointer to the `NMHDR` struct.
+
+### [](#)HEXCTRL_MSG_DLGTEMPLMGR
+Sent to indicate that the **Template Manager** dialog is about to be displayed, `LPARAM` contains a pointer to the `NMHDR` struct.
 
 ### [](#)HEXCTRL_MSG_MENUCLICK
 Sent when a user-defined custom menu has been clicked, `LPARAM` contains a pointer to the [`HEXMENUINFO`](#hexmenuinfo) struct.

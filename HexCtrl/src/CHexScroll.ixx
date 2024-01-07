@@ -661,7 +661,6 @@ namespace HEXCTRL::INTERNAL {
 		bitmap.CreateCompatibleBitmap(&dcParent, rcWnd.Width(), rcWnd.Height());
 		dcMem.SelectObject(&bitmap);
 		const auto pDC = &dcMem;
-
 		const auto rcSNC = GetScrollRect(true);	//Scroll bar with any additional non client area, to fill it below.
 		pDC->FillSolidRect(rcSNC, clrBkNC);	//Scroll bar with NC Bk.
 		const auto rcS = GetScrollRect();
@@ -1004,7 +1003,7 @@ namespace HEXCTRL::INTERNAL {
 	void CHexScroll::RedrawNC()const
 	{
 		//To repaint NC area.
-		if (auto* pWnd = GetParent(); pWnd != nullptr) {
+		if (const auto pWnd = GetParent(); pWnd != nullptr) {
 			pWnd->SetWindowPos(nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 		}
 	}

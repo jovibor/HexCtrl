@@ -427,13 +427,13 @@ namespace HEXCTRL {
 	constexpr auto HEXCTRL_MSG_BKMCLICK { 0x0100U };      //Bookmark is clicked.
 	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0101U };   //OnContextMenu has triggered.
 	constexpr auto HEXCTRL_MSG_DESTROY { 0x0102U };       //Indicates that the HexCtrl is being destroyed.
-	constexpr auto HEXCTRL_MSG_DLGBKMMGR { 0x0103U };     //"Bookmark manager" dialog displayed.
-	constexpr auto HEXCTRL_MSG_DLGCODEPAGE { 0x0104U };   //"Codepage" dialog displayed.
-	constexpr auto HEXCTRL_MSG_DLGDATAINTERP { 0x0105U }; //"Data Interpreter" dialog displayed.
-	constexpr auto HEXCTRL_MSG_DLGGOTO { 0x0106U };       //"GoTo" dialog displayed.
-	constexpr auto HEXCTRL_MSG_DLGMODIFY { 0x0107U };     //"Modify Data" dialog displayed.
-	constexpr auto HEXCTRL_MSG_DLGSEARCH { 0x0108U };     //"Search" dialog displayed.
-	constexpr auto HEXCTRL_MSG_DLGTEMPLMGR { 0x0109U };   //"Template manager" dialog displayed.
+	constexpr auto HEXCTRL_MSG_DLGBKMMGR { 0x0103U };     //"Bookmark manager" dialog is about to be displayed.
+	constexpr auto HEXCTRL_MSG_DLGCODEPAGE { 0x0104U };   //"Codepage" dialog is about to be displayed.
+	constexpr auto HEXCTRL_MSG_DLGDATAINTERP { 0x0105U }; //"Data Interpreter" dialog is about to be displayed.
+	constexpr auto HEXCTRL_MSG_DLGGOTO { 0x0106U };       //"GoTo" dialog is about to be displayed.
+	constexpr auto HEXCTRL_MSG_DLGMODIFY { 0x0107U };     //"Modify Data" dialog is about to be displayed.
+	constexpr auto HEXCTRL_MSG_DLGSEARCH { 0x0108U };     //"Search" dialog is about to be displayed.
+	constexpr auto HEXCTRL_MSG_DLGTEMPLMGR { 0x0109U };   //"Template manager" dialog is about to be displayed.
 	constexpr auto HEXCTRL_MSG_MENUCLICK { 0x010AU };     //User defined custom menu has clicked.
 	constexpr auto HEXCTRL_MSG_SETCAPACITY { 0x010BU };   //Capacity has changed.
 	constexpr auto HEXCTRL_MSG_SETCARET { 0x010CU };      //Caret position has changed.
