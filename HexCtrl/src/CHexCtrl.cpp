@@ -60,7 +60,7 @@ namespace HEXCTRL::INTERNAL {
 	{
 		CDialogEx::OnInitDialog();
 
-		const auto wstrVersion = std::format(L"Hex Control for MFC/Win32: v{}.{}.{}\r\nCopyright: (C)2018 - 2023 Jovibor",
+		const auto wstrVersion = std::format(L"Hex Control for MFC/Win32: v{}.{}.{}\r\nCopyright © 2018-2024 Jovibor",
 			HEXCTRL_VERSION_MAJOR, HEXCTRL_VERSION_MINOR, HEXCTRL_VERSION_PATCH);
 		GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(wstrVersion.data());
 
@@ -2534,12 +2534,7 @@ auto CHexCtrl::CopyHexLE()const->std::wstring
 
 auto CHexCtrl::CopyOffset()const->std::wstring
 {
-	wchar_t pwszBuff[32];
-	OffsetToString(GetCaretPos(), pwszBuff);
-	std::wstring wstrData { IsOffsetAsHex() ? L"0x" : L"" };
-	wstrData += pwszBuff;
-
-	return wstrData;
+	return (IsOffsetAsHex() ? L"0x" : L"") + OffsetToWstr(GetCaretPos());
 }
 
 auto CHexCtrl::CopyPrintScreen()const->std::wstring
@@ -2586,9 +2581,7 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 	std::size_t sIndexToPrint { 0 };
 
 	for (auto iterLines { 0U }; iterLines < dwLines; ++iterLines) {
-		wchar_t pwszBuff[32]; //To be enough for max as Hex and as Decimals.
-		OffsetToString(ullStartLine * dwCapacity + dwCapacity * iterLines, pwszBuff);
-		wstrRet += pwszBuff;
+		wstrRet += OffsetToWstr(ullStartLine * dwCapacity + dwCapacity * iterLines);
 		wstrRet.insert(wstrRet.size(), 3, ' ');
 
 		for (auto iterChunks { 0U }; iterChunks < dwCapacity; ++iterChunks) {
@@ -2770,14 +2763,12 @@ void CHexCtrl::DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const
 			stClrOffset.clrText = m_stColors.clrFontCaption;
 		}
 
-		//Left column offset printing (00000001...0000FFFF).
-		wchar_t pwszBuff[32]; //To be enough for max as Hex and as Decimals.
-		OffsetToString((ullStartLine + iterLines) * dwCapacity, pwszBuff);
+		//Left column offset printing (00000000...0000FFFF).
 		pDC->SelectObject(m_fontMain);
 		pDC->SetTextColor(stClrOffset.clrText);
 		pDC->SetBkColor(stClrOffset.clrBk);
 		ExtTextOutW(pDC->m_hDC, m_iFirstVertLine + GetCharWidthNative() - iScrollH, m_iStartWorkAreaY + (m_sizeFontMain.cy * iterLines),
-			0, nullptr, pwszBuff, m_dwOffsetDigits, nullptr);
+			0, nullptr, OffsetToWstr((ullStartLine + iterLines) * dwCapacity).data(), m_dwOffsetDigits, nullptr);
 	}
 }
 
@@ -3822,16 +3813,15 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const T& lmbWorker, c
 	}
 }
 
-void CHexCtrl::OffsetToString(ULONGLONG ullOffset, wchar_t* buffOut)const
+auto CHexCtrl::OffsetToWstr(ULONGLONG ullOffset)const->std::wstring
 {
-	*std::vformat_to(buffOut, IsOffsetAsHex() ? L"{:0>{}X}" : L"{:0>{}}", std::make_wformat_args(ullOffset, m_dwOffsetDigits)) = L'\0';
+	return std::vformat(IsOffsetAsHex() ? L"{:0>{}X}" : L"{:0>{}}", std::make_wformat_args(ullOffset, m_dwOffsetDigits));
 }
 
 void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 {
-	//To prevent inspecting while key is pressed continuously.
-	//Only when one time pressing.
-	if (!m_fKeyDownAtm && ::IsWindowVisible(m_pDlgDataInterp->m_hWnd)) {
+	//To prevent UpdateData() while key is pressed continuously, only when one time pressed.
+	if (!m_fKeyDownAtm) {
 		m_pDlgDataInterp->UpdateData();
 	}
 
@@ -4595,13 +4585,12 @@ void CHexCtrl::ToolTipOffsetShow(bool fShow)
 	if (fShow) {
 		CPoint ptScreen;
 		GetCursorPos(&ptScreen);
-
-		wchar_t warrOffset[64] { L"Offset: " };
-		OffsetToString(GetTopLine() * GetCapacity(), &warrOffset[8]);
-		m_stToolInfoOffset.lpszText = warrOffset;
+		auto wstrOffset = (IsOffsetAsHex() ? L"Offset: 0x" : L"Offset: ") + OffsetToWstr(GetTopLine() * GetCapacity());
+		m_stToolInfoOffset.lpszText = wstrOffset.data();
 		m_wndTtOffset.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
 		m_wndTtOffset.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
 	}
+
 	m_wndTtOffset.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
 }
 
@@ -4826,9 +4815,8 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 
 void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 {
-	//Bit 14 indicates that the key was pressed continuously.
-	//0x4000 == 0100 0000 0000 0000.
-	if (nFlags & 0x4000) {
+	//KF_REPEAT indicates that the key was pressed continuously.
+	if (nFlags & KF_REPEAT) {
 		m_fKeyDownAtm = true;
 	}
 
@@ -4837,8 +4825,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 		ExecuteCmd(*optCmd);
 	}
 	else if (IsDataSet() && IsMutable() && !IsCurTextArea()) { //If caret is in Hex area, just one part (High/Low) of the byte must be changed.
-		//Normalizing all input in the Hex area to only [0x0-0xF] range.
-		//Allowing only: [0-9], [A-F], [NUM0-NUM9].
+		//Normalizing all input in the Hex area to only [0x0-0xF] range, allowing only [0-9], [A-F], [NUM0-NUM9].
 		unsigned char chByte = nChar & 0xFF;
 		if (chByte >= '0' && chByte <= '9') {
 			chByte -= '0';
@@ -4854,10 +4841,10 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 
 		auto chByteCurr = GetIHexTData<unsigned char>(*this, GetCaretPos());
 		if (m_fCaretHigh) {
-			chByte = (chByte << 4) | (chByteCurr & 0x0F);
+			chByte = (chByte << 4U) | (chByteCurr & 0x0FU);
 		}
 		else {
-			chByte = (chByte & 0x0F) | (chByteCurr & 0xF0);
+			chByte = (chByte & 0x0FU) | (chByteCurr & 0xF0U);
 		}
 		ModifyData({ .spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { GetCaretPos(), 1 } } });
 		CaretMoveRight();
@@ -4866,11 +4853,12 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 
 void CHexCtrl::OnKeyUp(UINT /*nChar*/, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {
-	//If some key was previously pressed for some time, and now is released.
-	//Inspecting current caret position.
-	if (m_fKeyDownAtm && IsDataSet()) {
-		m_fKeyDownAtm = false;
+	if (!IsDataSet())
+		return;
+
+	if (m_fKeyDownAtm) { //If a key was previously pressed continuously and is now released.
 		m_pDlgDataInterp->UpdateData();
+		m_fKeyDownAtm = false;
 	}
 }
 

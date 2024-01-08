@@ -154,7 +154,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
 		template<typename T>                                   //Main "Modify" method with different workers.
 		void ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const T& lmbWorker, HEXCTRL::SpanCByte spnDataToOperWith);
-		void OffsetToString(ULONGLONG ullOffset, wchar_t* buffOut)const; //Format offset to wchar_t string.
+		[[nodiscard]] auto OffsetToWstr(ULONGLONG ullOffset)const->std::wstring; //Format offset as std::wstring.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		void OnModifyData();                                   //When data has been modified.
 		template<typename T> requires std::is_class_v<T>
@@ -307,7 +307,7 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
 		bool m_fOffsetHex { };                //Print offset numbers as Hex or as Decimals.
 		bool m_fHighLatency { false };        //Reflects HEXDATA::fHighLatency.
-		bool m_fKeyDownAtm { false };         //Whether some key is down/pressed at the moment.
+		bool m_fKeyDownAtm { false };         //Whether a key is pressed at the moment.
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
 		bool m_fScrollLines { false };        //Page scroll in "Screen * m_flScrollRatio" or in lines. 
 	};
