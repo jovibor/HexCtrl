@@ -841,15 +841,15 @@ struct HEXCREATE {
 ```
 
 ### [](#)HEXDATA
-Main struct to set a data to display in the control.
+The main struct to set a data to display in the **HexCtrl**.
 ```cpp
 struct HEXDATA {
-    SpanByte        spnData { };                //Data to display.
-    IHexVirtData*   pHexVirtData { };           //Pointer for Virtual mode.
+    SpanByte        spnData { };                //Data span to display.
+    IHexVirtData*   pHexVirtData { };           //Pointer for VirtualData mode.
     IHexVirtColors* pHexVirtColors { };         //Pointer for Custom Colors class.
-    DWORD           dwCacheSize { 0x800000UL }; //In Virtual mode max cached size of data to fetch.
-    bool            fMutable { false };         //Is data mutable (editable) or read-only.
-    bool            fHighLatency { false };     //Do not redraw window until scrolling completes.
+    DWORD           dwCacheSize { 0x800000UL }; //Data cache size for VirtualData mode.
+    bool            fMutable { false };         //Is data mutable or read-only.
+    bool            fHighLatency { false };     //Do not redraw until scroll thumb is released.
 };
 ```
 

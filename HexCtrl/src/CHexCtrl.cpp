@@ -1748,15 +1748,14 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 	if (hds.spnData.empty()) //If the data size is zero we do nothing further.
 		return;
 
-	m_fDataSet = true;
 	m_spnData = hds.spnData;
-	m_pHexVirtData = hds.pHexVirtData;
 	m_pHexVirtColors = hds.pHexVirtColors;
-	constexpr auto dwCacheMinSize { 1024U * 64U };      //64Kb is the minimum default cache size.
-	m_dwCacheSize = ((hds.dwCacheSize < dwCacheMinSize)	//Cache size must be at least sizeof(std::uint64_t) aligned.
-		|| (hds.dwCacheSize % sizeof(std::uint64_t) != 0)) ? dwCacheMinSize : hds.dwCacheSize;
+	constexpr auto dwCacheMinSize { 1024U * 64U }; //Minimum data cache size for VirtualData mode.
+	m_dwCacheSize = (hds.dwCacheSize < dwCacheMinSize) ? dwCacheMinSize : hds.dwCacheSize;
+	m_pHexVirtData = hds.pHexVirtData;
 	m_fMutable = hds.fMutable;
 	m_fHighLatency = hds.fHighLatency;
+	m_fDataSet = true;
 
 	RecalcAll();
 }
@@ -3759,7 +3758,7 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const T& lmbWorker, c
 			}
 			else {
 				//It's a special case for when the ullSizeToOperWith is larger than
-				//the current cache size (only in Virtual mode).
+				//the current cache size (only in VirtualData mode).
 
 				const auto iSmallMod = ullSizeToOperWith % ullSizeCache;
 				const auto ullSmallChunks = ullSizeToOperWith / ullSizeCache + (iSmallMod > 0 ? 1 : 0);
@@ -4130,7 +4129,7 @@ void CHexCtrl::Redo()
 	for (const auto& iter : *refRedo) {
 		const auto& refRedoData = iter.vecData;
 
-		if (IsVirtual() && refRedoData.size() > GetCacheSize()) { //In Virtual mode processing data chunk by chunk.
+		if (IsVirtual() && refRedoData.size() > GetCacheSize()) { //In VirtualData mode processing data chunk by chunk.
 			const auto dwSizeChunk = GetCacheSize();
 			const auto sMod = refRedoData.size() % dwSizeChunk;
 			auto ullChunks = refRedoData.size() / dwSizeChunk + (sMod > 0 ? 1 : 0);
@@ -4504,7 +4503,7 @@ void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 			auto& refUNDO = refUndo->emplace_back(UNDO { iterSel.ullOffset, { } });
 			refUNDO.vecData.resize(static_cast<std::size_t>(iterSel.ullSize));
 
-			//In Virtual mode processing data chunk by chunk.
+			//In VirtualData mode processing data chunk by chunk.
 			if (IsVirtual() && iterSel.ullSize > GetCacheSize()) {
 				const auto dwSizeChunk = GetCacheSize();
 				const auto ullMod = iterSel.ullSize % dwSizeChunk;
@@ -4608,7 +4607,7 @@ void CHexCtrl::Undo()
 			refRedoBack.vecData.resize(iter.vecData.size());
 			const auto& refUndoData = iter.vecData;
 
-			if (IsVirtual() && refUndoData.size() > GetCacheSize()) { //In Virtual mode processing data chunk by chunk.
+			if (IsVirtual() && refUndoData.size() > GetCacheSize()) { //In VirtualData mode processing data chunk by chunk.
 				const auto dwSizeChunk = GetCacheSize();
 				const auto sMod = refUndoData.size() % dwSizeChunk;
 				auto ullChunks = refUndoData.size() / dwSizeChunk + (sMod > 0 ? 1 : 0);

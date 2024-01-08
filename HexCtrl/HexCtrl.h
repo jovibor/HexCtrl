@@ -218,12 +218,12 @@ namespace HEXCTRL {
 	* HEXDATA - for IHexCtrl::SetData method.                                                   *
 	********************************************************************************************/
 	struct HEXDATA {
-		SpanByte        spnData { };                //Data to display.
-		IHexVirtData*   pHexVirtData { };           //Pointer for Virtual mode.
+		SpanByte        spnData { };                //Data span to display.
+		IHexVirtData*   pHexVirtData { };           //Pointer for VirtualData mode.
 		IHexVirtColors* pHexVirtColors { };         //Pointer for Custom Colors class.
-		DWORD           dwCacheSize { 0x800000UL }; //In Virtual mode max cached size of data to fetch.
-		bool            fMutable { false };         //Is data mutable (editable) or read-only.
-		bool            fHighLatency { false };     //Do not redraw window until scrolling completes.
+		DWORD           dwCacheSize { 0x800000UL }; //Data cache size for VirtualData mode.
+		bool            fMutable { false };         //Is data mutable or read-only.
+		bool            fHighLatency { false };     //Do not redraw until scroll thumb is released.
 	};
 
 	/********************************************************************************************
@@ -310,7 +310,7 @@ namespace HEXCTRL {
 		virtual void ExecuteCmd(EHexCmd eCmd) = 0;                           //Execute a command within the control.
 		[[nodiscard]] virtual auto GetActualWidth()const->int = 0;           //Working area actual width.
 		[[nodiscard]] virtual auto GetBookmarks()const->IHexBookmarks* = 0;  //Get Bookmarks interface.
-		[[nodiscard]] virtual auto GetCacheSize()const->DWORD = 0;           //Returns Virtual mode cache size.
+		[[nodiscard]] virtual auto GetCacheSize()const->DWORD = 0;           //Returns VirtualData mode cache size.
 		[[nodiscard]] virtual auto GetCapacity()const->DWORD = 0;            //Current capacity.
 		[[nodiscard]] virtual auto GetCaretPos()const->ULONGLONG = 0;        //Caret position.
 		[[nodiscard]] virtual auto GetCharsExtraSpace()const->DWORD = 0;     //Get extra space between chars, in pixels.
@@ -339,7 +339,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
 		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION = 0; //Ensures that the given offset is visible.
-		[[nodiscard]] virtual bool IsVirtual()const = 0;       //Is working in Virtual or default mode.		
+		[[nodiscard]] virtual bool IsVirtual()const = 0;       //Is working in VirtualData or default mode.		
 		virtual void ModifyData(const HEXMODIFY& hms) = 0;     //Main routine to modify data in IsMutable()==true mode.
 		virtual void Redraw() = 0;                             //Redraw the control's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.

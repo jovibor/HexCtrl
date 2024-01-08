@@ -171,7 +171,7 @@ namespace HEXCTRL::INTERNAL {
 		void SelAddLeft();  //Left Key pressed with the Shift.
 		void SelAddRight(); //Right Key pressed with the Shift.
 		void SelAddUp();    //Up Key pressed with the Shift.
-		void SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const; //Sets data (notifies back) in Virtual mode.
+		void SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const; //Sets data (notifies back) in VirtualData mode.
 		void SetFontSize(long lSize); //Set current font size.
 		void SnapshotUndo(const VecSpan& vecSpan); //Takes currently modifiable data snapshot.
 		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;     //Point of the text chunk.
@@ -256,7 +256,7 @@ namespace HEXCTRL::INTERNAL {
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of the block before a space delimiter.
 		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
 		DWORD m_dwPageSize { 0UL };           //Size of a page to print additional lines between.
-		DWORD m_dwCacheSize { };              //Cache size for virtual and message modes, set in SetData.
+		DWORD m_dwCacheSize { };              //Data cache size for VirtualData mode.
 		DWORD m_dwDateFormat { 0xFFFFFFFFUL };//Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 		DWORD m_dwCharsExtraSpace { };        //Extra space between chars.
 		SIZE m_sizeFontMain { 1, 1 };         //Main font letter's size (width, height).
