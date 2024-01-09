@@ -626,7 +626,7 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		BOOL DeleteItem(int iItem)override;
 		void Destroy()override;
 		[[nodiscard]] auto GetCellData(int iItem, int iSubItem)const->ULONGLONG override;
-		[[nodiscard]] auto GetColors()const->LISTEXCOLORS override;
+		[[nodiscard]] auto GetColors()const->const LISTEXCOLORS & override;
 		[[nodiscard]] auto GetColumnSortMode(int iColumn)const->EListExSortMode override;
 		[[nodiscard]] int GetSortColumn()const override;
 		[[nodiscard]] bool GetSortAscending()const override;
@@ -810,19 +810,26 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 		return false;
 	}
 
-	auto dwStyle = static_cast<LONG_PTR>(lcs.dwStyle);
+	const auto dwStyle = lcs.dwStyle | LVS_OWNERDRAWFIXED | LVS_REPORT;
 	if (lcs.fDialogCtrl) {
-		SubclassDlgItem(lcs.uID, lcs.pParent);
-		dwStyle = GetWindowLongPtrW(m_hWnd, GWL_STYLE);
-		SetWindowLongPtrW(m_hWnd, GWL_STYLE, dwStyle | LVS_OWNERDRAWFIXED | LVS_REPORT);
+		if (!SubclassDlgItem(lcs.uID, lcs.pParent))
+			return false;
+
+		const auto dwStyleCurr = GetWindowLongPtrW(m_hWnd, GWL_STYLE);
+		SetWindowLongPtrW(m_hWnd, GWL_STYLE, dwStyleCurr | dwStyle);
+		m_fVirtual = dwStyleCurr & LVS_OWNERDATA;
 	}
-	else if (!CMFCListCtrl::Create(lcs.dwStyle | WS_CHILD | WS_VISIBLE | LVS_OWNERDRAWFIXED | LVS_REPORT,
-		lcs.rect, lcs.pParent, lcs.uID)) {
-		return false;
+	else {
+		if (!CMFCListCtrl::CreateEx(lcs.dwExStyle, dwStyle, lcs.rect, lcs.pParent, lcs.uID))
+			return false;
+
+		m_fVirtual = dwStyle & LVS_OWNERDATA;
 	}
 
-	m_fVirtual = dwStyle & LVS_OWNERDATA;
-	m_stColors = lcs.stColor;
+	if (lcs.pColors != nullptr) {
+		m_stColors = *lcs.pColors;
+	}
+
 	m_fSortable = lcs.fSortable;
 	m_fLinksUnderline = lcs.fLinkUnderline;
 	m_fLinkTooltip = lcs.fLinkTooltip;
@@ -834,6 +841,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr)) {
 		return false;
 	}
+
 	m_stTInfoCell.cbSize = sizeof(TTTOOLINFOW);
 	m_stTInfoCell.uFlags = TTF_TRACK;
 	m_stTInfoCell.uId = 0x01;
@@ -848,11 +856,11 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 		m_stWndTtCell.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColors.clrTooltipBk), 0);
 	}
 
-	if (!m_stWndTtLink.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
-		TTS_NOPREFIX | TTS_ALWAYSTIP,
+	if (!m_stWndTtLink.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr)) {
 		return false;
 	}
+
 	m_stTInfoLink.cbSize = sizeof(TTTOOLINFOW);
 	m_stTInfoLink.uFlags = TTF_TRACK;
 	m_stTInfoLink.uId = 0x02;
@@ -887,7 +895,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 		tm.tmHeight + tm.tmExternalLeading + 4 : lcs.dwHdrHeight; //Header is a bit higher than list rows.
 	ReleaseDC(pDC);
 
-	LOGFONT lfList; //Font for a List.
+	LOGFONTW lfList; //Font for a List.
 	if (lcs.pListLogFont == nullptr) {
 		lfList = ncm.lfMessageFont;
 		lfList.lfHeight = -MulDiv(10, m_iLOGPIXELSY, 72); //Font height for list.
@@ -896,7 +904,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 		lfList = *lcs.pListLogFont;
 	}
 
-	LOGFONT lfHdr; //Font for a Header.
+	LOGFONTW lfHdr; //Font for a Header.
 	if (lcs.pHdrLogFont == nullptr) {
 		lfHdr = ncm.lfMessageFont;
 		lfHdr.lfHeight = -MulDiv(9, m_iLOGPIXELSY, 72); //Font height for a header.
@@ -917,7 +925,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 
 	m_fCreated = true;
 
-	GetHeaderCtrl().SetColor(lcs.stColor);
+	GetHeaderCtrl().SetColor(m_stColors);
 	GetHeaderCtrl().SetSortable(lcs.fSortable);
 	SetHdrHeight(dwHdrHeight);
 	SetHdrFont(&lfHdr);
@@ -975,7 +983,6 @@ BOOL CListEx::DeleteItem(int iItem)
 	}
 
 	const auto ID = MapIndexToID(iItem);
-
 	m_umapCellTt.erase(ID);
 	m_umapCellData.erase(ID);
 	m_umapCellColor.erase(ID);
@@ -990,11 +997,11 @@ void CListEx::Destroy()
 	delete this;
 }
 
-ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)const
+auto CListEx::GetCellData(int iItem, int iSubItem)const->ULONGLONG
 {
 	assert(IsCreated());
 	if (!IsCreated()) {
-		return 0;
+		return { };
 	}
 
 	const auto ID = MapIndexToID(iItem);
@@ -1012,7 +1019,7 @@ ULONGLONG CListEx::GetCellData(int iItem, int iSubItem)const
 	return 0;
 }
 
-auto CListEx::GetColors()const->LISTEXCOLORS {
+auto CListEx::GetColors()const->const LISTEXCOLORS& {
 	return m_stColors;
 }
 
@@ -1020,8 +1027,7 @@ auto CListEx::GetColumnSortMode(int iColumn)const->EListExSortMode
 {
 	assert(IsCreated());
 
-	const auto iter = m_umapColumnSortMode.find(iColumn);
-	if (iter != m_umapColumnSortMode.end()) {
+	if (const auto iter = m_umapColumnSortMode.find(iColumn); iter != m_umapColumnSortMode.end()) {
 		return iter->second;
 	}
 
@@ -1156,10 +1162,9 @@ void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clr
 
 	const auto ID = MapIndexToID(static_cast<UINT>(iItem));
 
-	//If there is no color for such item/subitem we just set it.
-	if (const auto it = m_umapCellColor.find(ID); it == m_umapCellColor.end()) {	//Initializing inner map.
-		std::unordered_map<int, LISTEXCOLOR> umapInner { { iSubItem, { clrBk, clrText } } };
-		m_umapCellColor.insert({ ID, std::move(umapInner) });
+	//If there is no color for such item/subitem, we just set it.
+	if (const auto it = m_umapCellColor.find(ID); it == m_umapCellColor.end()) {
+		m_umapCellColor.try_emplace(ID, std::unordered_map<int, LISTEXCOLOR> { { iSubItem, { clrBk, clrText } } });
 	}
 	else {
 		const auto itInner = it->second.find(iSubItem);
@@ -1167,7 +1172,7 @@ void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clr
 		if (itInner == it->second.end()) {
 			it->second.insert({ iSubItem, { clrBk, clrText } });
 		}
-		else { //If there is already exist this cell's color -> changing.
+		else { //If there is already this cell's color, we change it.
 			itInner->second.clrBk = clrBk;
 			itInner->second.clrText = clrText;
 		}
@@ -1184,15 +1189,15 @@ void CListEx::SetCellData(int iItem, int iSubItem, ULONGLONG ullData)
 
 	const auto ID = MapIndexToID(iItem);
 
-	//If there is no data for such item/subitem we just set it.
+	//If there is no data for such item/subitem, we just set it.
 	if (const auto it = m_umapCellData.find(ID); it == m_umapCellData.end()) {
-		m_umapCellData.insert({ ID, { { iSubItem, ullData } } });
+		m_umapCellData.try_emplace(ID, std::unordered_map<int, ULONGLONG>{ { iSubItem, ullData } });
 	}
 	else {
 		if (const auto itInner = it->second.find(iSubItem); itInner == it->second.end()) {
 			it->second.insert({ iSubItem, ullData });
 		}
-		else { //If there is already exist this cell's data -> changing.
+		else { //If there is already this cell's data, we change it.
 			itInner->second = ullData;
 		}
 	}
@@ -1208,9 +1213,9 @@ void CListEx::SetCellIcon(int iItem, int iSubItem, int iIndex)
 
 	const auto ID = MapIndexToID(iItem);
 
-	//If there is no icon index for such item we just set it.
+	//If there is no icon index for such item, we just set it.
 	if (const auto it = m_umapCellIcon.find(ID); it == m_umapCellIcon.end()) {
-		m_umapCellIcon.insert({ ID, { { iSubItem, iIndex } } });
+		m_umapCellIcon.try_emplace(ID, std::unordered_map<int, int>{ { iSubItem, iIndex } });
 	}
 	else {
 		if (const auto itInner = it->second.find(iSubItem); itInner == it->second.end()) {
@@ -1232,25 +1237,21 @@ void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wsvToolt
 
 	const auto ID = MapIndexToID(iItem);
 
-	//If there is no tooltip for such item/subitem we just set it.
+	//If there is no tooltip for such item/subitem, we just set it.
 	if (const auto it = m_umapCellTt.find(ID); it == m_umapCellTt.end()) {
-		if (!wsvTooltip.empty() || !wsvCaption.empty()) {	//Initializing inner map.
-			std::unordered_map<int, TOOLTIPS> umapInner {
-				{ iSubItem, { std::wstring { wsvTooltip }, std::wstring { wsvCaption } } }
-			};
-			m_umapCellTt.insert({ ID, std::move(umapInner) });
+		if (!wsvTooltip.empty() || !wsvCaption.empty()) {
+			m_umapCellTt.try_emplace(ID, std::unordered_map<int, TOOLTIPS> {
+				{ iSubItem, { std::wstring { wsvTooltip }, std::wstring { wsvCaption } } } });
 		}
 	}
 	else {
-		//If there is Item's tooltip but no Subitem's tooltip
-		//inserting new Subitem into inner map.
+		//If there is Item's tooltip but no Subitem's tooltip, inserting new Subitem into inner map.
 		if (const auto itInner = it->second.find(iSubItem);	itInner == it->second.end()) {
 			if (!wsvTooltip.empty() || !wsvCaption.empty()) {
 				it->second.insert({ iSubItem, { std::wstring { wsvTooltip }, std::wstring { wsvCaption } } });
 			}
 		}
-		else {	//If there is already exist this Item-Subitem's tooltip:
-			//change or erase it, depending on pwszTooltip emptiness.
+		else { //If there is already this Item-Subitem's tooltip, change or erase it, depending on pwszTooltip emptiness.
 			if (!wsvTooltip.empty()) {
 				itInner->second = { std::wstring { wsvTooltip }, std::wstring { wsvCaption } };
 			}
@@ -1402,7 +1403,6 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 	const auto* const pListCtrl = reinterpret_cast<IListEx*>(lParamSort);
 	const auto iSortColumn = pListCtrl->GetSortColumn();
 	const auto enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
-
 	const auto wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn);
 	const auto wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn);
 
@@ -1581,10 +1581,12 @@ auto CListEx::GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEX
 		if (itColumn != m_umapColumnColor.end() && itRow != m_umapRowColor.end()) {
 			return itColumn->second.time > itRow->second.time ? itColumn->second.clr : itRow->second.clr;
 		}
-		else if (itColumn != m_umapColumnColor.end()) {
+
+		if (itColumn != m_umapColumnColor.end()) {
 			return itColumn->second.clr;
 		}
-		else if (itRow != m_umapRowColor.end()) {
+
+		if (itRow != m_umapRowColor.end()) {
 			return itRow->second.clr;
 		}
 	}
@@ -1673,7 +1675,6 @@ void CListEx::OnDestroy()
 	m_fontListUnderline.DeleteObject();
 	m_penGrid.DeleteObject();
 	m_editInPlace.DestroyWindow();
-
 	m_umapCellTt.clear();
 	m_umapCellData.clear();
 	m_umapCellColor.clear();
@@ -1681,7 +1682,6 @@ void CListEx::OnDestroy()
 	m_umapRowColor.clear();
 	m_umapColumnSortMode.clear();
 	m_umapColumnColor.clear();
-
 	m_fCreated = false;
 }
 
@@ -1734,7 +1734,6 @@ void CListEx::OnHdnBegintrack(NMHDR* pNMHDR, LRESULT* pResult)
 void CListEx::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
 	GetHeaderCtrl().RedrawWindow();
-
 	CMFCListCtrl::OnHScroll(nSBCode, nPos, pScrollBar);
 }
 
@@ -1875,6 +1874,7 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 			}
 		}
 	}
+
 	SetCursor(fLink ? m_cursorHand : m_cursorDefault);
 
 	//Link's tooltip area is under the cursor.
@@ -1963,6 +1963,8 @@ void CListEx::OnNotifyEditInPlace(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		break;
 	case VK_ESCAPE:
 		OnEditInPlaceKillFocus();
+		break;
+	default:
 		break;
 	}
 }
@@ -2229,6 +2231,8 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 		}
 	}
 	break;
+	default:
+		break;
 	}
 
 	return vecData;
@@ -2289,7 +2293,6 @@ void CListEx::TtLinkHide()
 	m_fTtLinkShown = false;
 	m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoLink));
 	KillTimer(m_uIDTimerTTLinkCheck);
-
 	m_stCurrLink.iItem = -1;
 	m_stCurrLink.iSubItem = -1;
 	m_rcLinkCurr.SetRectEmpty();
@@ -2300,7 +2303,6 @@ void CListEx::TtCellHide()
 	m_fTtCellShown = false;
 	m_stCurrCell.iItem = -1;
 	m_stCurrCell.iSubItem = -1;
-
 	m_stWndTtCell.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoCell));
 	KillTimer(m_uIDTimerTTCellCheck);
 }
@@ -2310,7 +2312,6 @@ void CListEx::TtRowShow(bool fShow, UINT uRow)
 	if (fShow) {
 		CPoint ptScreen;
 		GetCursorPos(&ptScreen);
-
 		wchar_t warrOffset[32] { L"Row: " };
 		swprintf_s(&warrOffset[5], 24, L"%u", uRow);
 		m_stToolInfoRow.lpszText = warrOffset;

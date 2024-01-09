@@ -128,10 +128,8 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_VSCROLL()
 END_MESSAGE_MAP()
 
-//CWinApp object is vital for manual MFC and for in-DLL work,
-//to run properly (Resources handling and assertions).
-#if defined HEXCTRL_MANUAL_MFC_INIT || defined HEXCTRL_SHARED_DLL
-CWinApp theApp;
+#if defined(HEXCTRL_MANUAL_MFC_INIT) || defined(HEXCTRL_SHARED_DLL)
+CWinApp theApp; //CWinApp object is vital for manual MFC, and for in-DLL work.
 
 extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg) {
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
@@ -141,15 +139,15 @@ extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg) {
 
 CHexCtrl::CHexCtrl()
 {
+#if defined(HEXCTRL_MANUAL_MFC_INIT)
 	//MFC initialization, if HexCtrl is used in non MFC project with the "Shared MFC" linking.
-#if defined HEXCTRL_MANUAL_MFC_INIT
-	if (!AfxGetModuleState()->m_lpszCurrentAppName)
+	if (!AfxGetModuleState()->m_lpszCurrentAppName) {
 		AfxWinInit(::GetModuleHandleW(nullptr), nullptr, ::GetCommandLineW(), 0);
+	}
 #endif
 
 	const auto hInst = AfxGetInstanceHandle();
-	WNDCLASSEXW wc { };
-	if (!::GetClassInfoExW(hInst, m_pwszClassName, &wc)) {
+	if (WNDCLASSEXW wc; ::GetClassInfoExW(hInst, m_pwszClassName, &wc) == FALSE) {
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
 		wc.lpfnWndProc = ::DefWindowProcW;
@@ -182,7 +180,6 @@ void CHexCtrl::ClearData()
 	m_ullCursorPrev = 0;
 	m_ullCaretPos = 0;
 	m_ullCursorNow = 0;
-
 	m_vecUndo.clear();
 	m_vecRedo.clear();
 	m_pScrollV->SetScrollPos(0);
@@ -202,8 +199,8 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	if (hcs.fCustom) {
 		//If it's a Custom Control in dialog, there is no need to create a window, just subclassing.
 		if (!SubclassDlgItem(hcs.uID, CWnd::FromHandle(hcs.hWndParent))) {
-			MessageBoxW(std::format(L"HexCtrl (ID: {}) SubclassDlgItem failed.\r\nCheck HEXCREATE or CreateDialogCtrl parameters.", hcs.uID).data(),
-				L"Error", MB_ICONERROR);
+			MessageBoxW(std::format(L"HexCtrl (ID: {}) SubclassDlgItem failed.\r\nCheck HEXCREATE or CreateDialogCtrl parameters.",
+				hcs.uID).data(), L"Error", MB_ICONERROR);
 			return false;
 		}
 	}
@@ -220,7 +217,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
 	m_stToolInfoBkm.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoBkm.uFlags = TTF_TRACK;
-	m_stToolInfoBkm.uId = m_uiIDTTBkm;
+	m_stToolInfoBkm.uId = m_uIDTTBkm;
 	m_wndTtBkm.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 	m_wndTtBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
@@ -228,7 +225,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
 	m_stToolInfoTempl.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoTempl.uFlags = TTF_TRACK;
-	m_stToolInfoTempl.uId = m_uiIDTTTempl;
+	m_stToolInfoTempl.uId = m_uIDTTTempl;
 	m_wndTtTempl.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
 	m_wndTtTempl.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
@@ -236,7 +233,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
 	m_stToolInfoOffset.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoOffset.uFlags = TTF_TRACK;
-	m_stToolInfoOffset.uId = 0x02UL; //Tooltip ID for offset.
+	m_stToolInfoOffset.uId = 0x03UL;
 	m_wndTtOffset.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
 	m_wndTtOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
@@ -371,7 +368,7 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
 	if (IsCreated())
 		return false;
 
-	return Create({ .hWndParent { hWndParent }, .uID { uCtrlID }, .dwStyle { WS_VISIBLE | WS_CHILD }, .fCustom { true } });
+	return Create({ .hWndParent { hWndParent }, .uID { uCtrlID }, .fCustom { true } });
 }
 
 void CHexCtrl::Destroy()
@@ -3965,7 +3962,7 @@ void CHexCtrl::Print()
 		DrawInfoBar(pDC);
 		const auto clBkOld = m_stColors.clrBkSel;
 		const auto clTextOld = m_stColors.clrFontSel;
-		m_stColors.clrBkSel = m_stColors.clrBk;
+		m_stColors.clrBkSel = m_stColors.clrBk; //To print as normal text on normal bk, not white text on black bk.
 		m_stColors.clrFontSel = m_stColors.clrFontHex;
 		DrawOffsets(pDC, ullStartLine, iLines);
 		DrawSelection(pDC, ullStartLine, iLines, wstrHex, wstrText);
@@ -4548,7 +4545,7 @@ void CHexCtrl::ToolTipBkmShow(bool fShow, POINT pt, bool fTimerCancel)
 		m_wndTtBkm.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x, pt.y)));
 		m_wndTtBkm.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-		SetTimer(m_uiIDTTBkm, 300, nullptr);
+		SetTimer(m_uIDTTBkm, 300, nullptr);
 	}
 	else if (fTimerCancel) { //Tooltip was canceled by the timer, not mouse move.
 		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
@@ -4556,7 +4553,7 @@ void CHexCtrl::ToolTipBkmShow(bool fShow, POINT pt, bool fTimerCancel)
 	else {
 		m_pBkmTtCurr = nullptr;
 		m_wndTtBkm.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-		KillTimer(m_uiIDTTBkm);
+		KillTimer(m_uIDTTBkm);
 	}
 }
 
@@ -4567,7 +4564,7 @@ void CHexCtrl::ToolTipTemplShow(bool fShow, POINT pt, bool fTimerCancel)
 		m_wndTtTempl.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x, pt.y)));
 		m_wndTtTempl.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
 		m_wndTtTempl.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
-		SetTimer(m_uiIDTTTempl, 300, nullptr);
+		SetTimer(m_uIDTTTempl, 300, nullptr);
 	}
 	else if (fTimerCancel) { //Tooltip was canceled by the timer, not mouse move.
 		m_wndTtTempl.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
@@ -4575,7 +4572,7 @@ void CHexCtrl::ToolTipTemplShow(bool fShow, POINT pt, bool fTimerCancel)
 	else {
 		m_pTFieldTtCurr = nullptr;
 		m_wndTtTempl.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
-		KillTimer(m_uiIDTTTempl);
+		KillTimer(m_uIDTTTempl);
 	}
 }
 
@@ -4588,6 +4585,7 @@ void CHexCtrl::ToolTipOffsetShow(bool fShow)
 		m_stToolInfoOffset.lpszText = wstrOffset.data();
 		m_wndTtOffset.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
 		m_wndTtOffset.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
+		m_stToolInfoOffset.lpszText = nullptr;
 	}
 
 	m_wndTtOffset.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
@@ -5217,7 +5215,7 @@ void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 	GetCursorPos(&ptCursor);
 
 	switch (nIDEvent) {
-	case m_uiIDTTBkm:
+	case m_uIDTTBkm:
 		if (!rcClient.PtInRect(ptCursor)) { //Checking if cursor has left client rect.
 			ToolTipBkmShow(false);
 		}
@@ -5226,7 +5224,7 @@ void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 			ToolTipBkmShow(false, { }, true);
 		}
 		break;
-	case m_uiIDTTTempl:
+	case m_uIDTTTempl:
 		if (!rcClient.PtInRect(ptCursor)) { //Checking if cursor has left client rect.
 			ToolTipTemplShow(false);
 		}

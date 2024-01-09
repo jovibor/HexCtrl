@@ -115,21 +115,22 @@ namespace HEXCTRL::LISTEX {
 	* LISTEXCREATE - Main initialization helper struct for CListEx::Create method.    *
 	**********************************************************************************/
 	struct LISTEXCREATE {
-		LISTEXCOLORS stColor { };             //All control's colors.
-		CRect        rect { };                //Initial rect.
-		CWnd*        pParent { };             //Parent window.
-		LOGFONTW*    pListLogFont { };        //List font.
-		LOGFONTW*    pHdrLogFont { };         //Header font.
-		UINT         uID { };                 //List control ID.
-		DWORD        dwStyle { };             //Control's styles. Zero for default.
-		DWORD        dwListGridWidth { 1 };   //Width of the list grid.
-		DWORD        dwHdrHeight { };         //Header height.
-		bool         fDialogCtrl { false };   //If it's a list within dialog.
-		bool         fSortable { false };     //Is list sortable, by clicking on the header column?
-		bool         fLinkUnderline { true }; //Links are displayed underlined or not.
-		bool         fLinkTooltip { true };   //Show links' toolips or not.
-		bool         fTooltipBaloon { true }; //Baloon type tooltip for cells.
-		bool         fHighLatency { false };  //Do not redraw window until scrolling completes.
+		CWnd*               pParent { };             //Parent window.
+		const LISTEXCOLORS* pColors { };             //ListEx colors.
+		const LOGFONTW*     pListLogFont { };        //ListEx font.
+		const LOGFONTW*     pHdrLogFont { };         //Header font.
+		CRect               rect { };                //Initial rect.
+		UINT                uID { };                 //ListEx control ID.
+		DWORD               dwStyle { };             //ListEx window styles.
+		DWORD               dwExStyle { };           //Extended window styles.
+		DWORD               dwListGridWidth { 1 };   //Width of the list grid.
+		DWORD               dwHdrHeight { };         //Header height.
+		bool                fDialogCtrl { false };   //If it's a list within dialog.
+		bool                fSortable { false };     //Is list sortable, by clicking on the header column?
+		bool                fLinkUnderline { true }; //Links are displayed underlined or not.
+		bool                fLinkTooltip { true };   //Show links' toolips or not.
+		bool                fTooltipBaloon { true }; //Baloon type tooltip for cells.
+		bool                fHighLatency { false };  //Do not redraw until scroll thumb is released.
 	};
 
 	/********************************************
@@ -152,9 +153,9 @@ namespace HEXCTRL::LISTEX {
 		virtual BOOL DeleteColumn(int nCol) = 0;
 		virtual BOOL DeleteItem(int nItem) = 0;
 		virtual void Destroy() = 0;
-		[[nodiscard]] virtual ULONGLONG GetCellData(int iItem, int iSubitem)const = 0;
-		[[nodiscard]] virtual LISTEXCOLORS GetColors()const = 0;
-		[[nodiscard]] virtual EListExSortMode GetColumnSortMode(int iColumn)const = 0;
+		[[nodiscard]] virtual auto GetCellData(int iItem, int iSubitem)const->ULONGLONG = 0;
+		[[nodiscard]] virtual auto GetColors()const->const LISTEXCOLORS & = 0;
+		[[nodiscard]] virtual auto GetColumnSortMode(int iColumn)const->EListExSortMode = 0;
 		[[nodiscard]] virtual int GetSortColumn()const = 0;
 		[[nodiscard]] virtual bool GetSortAscending()const = 0;
 		virtual void HideColumn(int iIndex, bool fHide) = 0;
