@@ -306,7 +306,7 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 auto CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData) -> HWND
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_TEMPLMGR, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_TEMPLMGR, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
 	}
 
 	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_MINIMIZED) > 0 != IsMinimized()) {
@@ -346,7 +346,7 @@ void CHexDlgTemplMgr::ShowTooltips(bool fShow)
 BOOL CHexDlgTemplMgr::ShowWindow(int nCmdShow)
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_TEMPLMGR, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_TEMPLMGR, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
 	}
 
 	return CDialogEx::ShowWindow(nCmdShow);

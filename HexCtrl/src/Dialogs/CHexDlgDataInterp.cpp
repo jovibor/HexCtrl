@@ -127,7 +127,7 @@ void CHexDlgDataInterp::Initialize(IHexCtrl* pHexCtrl)
 auto CHexDlgDataInterp::SetDlgData(std::uint64_t ullData)->HWND
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
 	}
 
 	if ((ullData & HEXCTRL_FLAG_DATAINTERP_HEXNUM) > 0 != IsShowAsHex()) {
@@ -148,7 +148,7 @@ auto CHexDlgDataInterp::SetDlgData(std::uint64_t ullData)->HWND
 BOOL CHexDlgDataInterp::ShowWindow(int nCmdShow)
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
 	}
 
 	const auto ret = CDialogEx::ShowWindow(nCmdShow);

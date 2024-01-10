@@ -94,7 +94,7 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 auto CHexDlgGoTo::SetDlgData(std::uint64_t /*ullData*/)->HWND
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_GOTO, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_GOTO, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
 	}
 
 	return m_hWnd;
@@ -103,7 +103,7 @@ auto CHexDlgGoTo::SetDlgData(std::uint64_t /*ullData*/)->HWND
 BOOL CHexDlgGoTo::ShowWindow(int nCmdShow)
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_GOTO, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_GOTO, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
 	}
 
 	return CDialogEx::ShowWindow(nCmdShow);

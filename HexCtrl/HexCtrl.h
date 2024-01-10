@@ -329,7 +329,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetSelection()const->VecSpan = 0;         //Get current selection.
 		[[nodiscard]] virtual auto GetTemplates()const->IHexTemplates* = 0;  //Get Templates interface.
 		[[nodiscard]] virtual auto GetUnprintableChar()const->wchar_t = 0;   //Get unprintable replacement character.
-		[[nodiscard]] virtual auto GetWindowHandle(EHexWnd eWnd)const->HWND = 0; //Retrieves control's window/dialog handle.
+		[[nodiscard]] virtual auto GetWndHandle(EHexWnd eWnd, bool fCreate = true)const->HWND = 0; //Get HWND of internal window/dialogs.
 		virtual void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0) = 0;   //Go (scroll) to a given offset.
 		[[nodiscard]] virtual bool HasSelection()const = 0;    //Does currently have any selection or not.
 		[[nodiscard]] virtual auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTEST> = 0; //HitTest given point.

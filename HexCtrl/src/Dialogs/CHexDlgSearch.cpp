@@ -125,7 +125,7 @@ void CHexDlgSearch::SearchNextPrev(bool fForward)
 auto CHexDlgSearch::SetDlgData(std::uint64_t /*ullData*/)->HWND
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
 	}
 
 	return m_hWnd;
@@ -134,7 +134,7 @@ auto CHexDlgSearch::SetDlgData(std::uint64_t /*ullData*/)->HWND
 BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
 	}
 
 	return CDialogEx::ShowWindow(nCmdShow);
@@ -383,7 +383,7 @@ void CHexDlgSearch::OnButtonReplaceAll()
 
 void CHexDlgSearch::OnCancel()
 {
-	::SetFocus(GetHexCtrl()->GetWindowHandle(EHexWnd::WND_MAIN));
+	::SetFocus(GetHexCtrl()->GetWndHandle(EHexWnd::WND_MAIN));
 
 	CDialogEx::OnCancel();
 }
@@ -1217,7 +1217,7 @@ void CHexDlgSearch::Search()
 				}
 			}
 		}
-		};
+	};
 	const auto lmbFindBackward = [&]() {
 		ullUntil = m_ullOffsetBoundBegin;
 		if (m_fSecondMatch && m_ullOffsetCurr - m_ullStep < m_ullOffsetCurr) {
@@ -1243,7 +1243,7 @@ void CHexDlgSearch::Search()
 				}
 			}
 		}
-		};
+	};
 
 	pHexCtrl->SetRedraw(false);
 
@@ -1268,7 +1268,7 @@ void CHexDlgSearch::Search()
 				}
 
 				pDlgClbk->ExitDlg();
-				};
+			};
 
 			CHexDlgCallback dlgClbk(L"Replacing...", ullStart, ullUntil, this);
 			std::thread thrd(lmbReplaceAll, &dlgClbk);
@@ -1310,7 +1310,7 @@ void CHexDlgSearch::Search()
 
 				pDlgClbk->ExitDlg();
 				m_pListMain->SetItemCountEx(static_cast<int>(m_dwCount));
-				};
+			};
 
 			CHexDlgCallback dlgClbk(L"Searching...", ullStart, ullUntil, this);
 			std::thread thrd(lmbSearchAll, &dlgClbk);

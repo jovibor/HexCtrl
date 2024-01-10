@@ -120,7 +120,7 @@ void CHexSampleDlg::OnBnClearData()
 	m_pHexDlg->ClearData();
 	if (m_pHexPopup->IsCreated()) {
 		m_pHexPopup->ClearData();
-		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), L"");
+		::SetWindowTextW(m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN), L"");
 	}
 
 	m_hds.spnData = { };
@@ -138,7 +138,7 @@ void CHexSampleDlg::OnBnSetRndData()
 
 		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet()) {
 			m_pHexPopup->SetMutable(IsRW());
-			::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), IsRW() ? WstrTextRW : WstrTextRO);
+			::SetWindowTextW(m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN), IsRW() ? WstrTextRW : WstrTextRO);
 		}
 
 		return;
@@ -151,7 +151,7 @@ void CHexSampleDlg::OnBnSetRndData()
 
 	if (m_pHexPopup->IsCreated()) {
 		m_pHexPopup->SetData(m_hds);
-		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), IsRW() ? WstrTextRW : WstrTextRO);
+		::SetWindowTextW(m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN), IsRW() ? WstrTextRW : WstrTextRO);
 	}
 }
 
@@ -167,10 +167,10 @@ void CHexSampleDlg::OnBnPopup()
 	if (!m_pHexPopup->IsCreated()) {
 		CreateHexPopup();
 		LoadTemplates(&*m_pHexPopup);
-		::ShowWindow(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), SW_SHOWNORMAL);
+		::ShowWindow(m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN), SW_SHOWNORMAL);
 	}
 	else {
-		const auto hWnd = m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN);
+		const auto hWnd = m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN);
 		::ShowWindow(hWnd, ::IsWindowVisible(hWnd) ? SW_HIDE : SW_SHOWNORMAL);
 	}
 }
@@ -186,7 +186,7 @@ void CHexSampleDlg::OnChkRW()
 		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet()) {
 			m_pHexPopup->SetMutable(IsRW());
 			if (!IsFileOpen()) {
-				::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), IsRW() ? WstrTextRW : WstrTextRO);
+				::SetWindowTextW(m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN), IsRW() ? WstrTextRW : WstrTextRO);
 			}
 		}
 	}
@@ -282,7 +282,7 @@ void CHexSampleDlg::CreateHexPopup()
 		m_pHexPopup->SetData(m_hds);
 	}
 
-	const auto hWndHex = m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN);
+	const auto hWndHex = m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN);
 	const auto iWidthActual = m_pHexPopup->GetActualWidth() + GetSystemMetrics(SM_CXVSCROLL);
 	CRect rcHex(0, 0, iWidthActual, iWidthActual); //Square window.
 	AdjustWindowRectEx(rcHex, dwStyle, FALSE, dwExStyle);
@@ -346,7 +346,7 @@ void CHexSampleDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 	m_pHexDlg->SetData(m_hds);
 	if (m_pHexPopup->IsCreated()) {
 		m_pHexPopup->SetData(m_hds);
-		::SetWindowTextW(m_pHexPopup->GetWindowHandle(EHexWnd::WND_MAIN), wstrPath.data());
+		::SetWindowTextW(m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN), wstrPath.data());
 	}
 
 	SetWindowTextW(wstrPath.data());

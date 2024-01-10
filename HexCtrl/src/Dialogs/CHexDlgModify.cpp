@@ -465,7 +465,7 @@ namespace HEXCTRL::INTERNAL {
 
 		m_pHexCtrl->ModifyData(hms);
 		m_pHexCtrl->Redraw();
-		::SetFocus(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN));
+		::SetFocus(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN));
 	}
 }
 
@@ -499,7 +499,7 @@ void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl)
 auto CHexDlgModify::SetDlgData(std::uint64_t /*ullData*/)->HWND
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_MODIFY, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_MODIFY, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
 	}
 
 	return m_hWnd;
@@ -508,7 +508,7 @@ auto CHexDlgModify::SetDlgData(std::uint64_t /*ullData*/)->HWND
 BOOL CHexDlgModify::ShowWindow(int nCmdShow, int iTab)
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_MODIFY, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_MODIFY, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
 	}
 
 	SetCurrentTab(iTab);

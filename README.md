@@ -42,7 +42,7 @@
   * [GetSelection](#getselection)
   * [GetTemplates](#gettemplates)
   * [GetUnprintableChar](#getunprintablechar)
-  * [GetWindowHandle](#getwindowhandle)
+  * [GetWndHandle](#getwndhandle)
   * [GoToOffset](#gotooffset)
   * [HasSelection](#hasselection)
   * [HitTest](#hittest)
@@ -515,11 +515,11 @@ Returns pointer to the internal [`IHexTemplates`](#ihextemplates) interface that
 ```
 Returns replacement char for unprintable characters.
 
-### [](#)GetWindowHandle
+### [](#)GetWndHandle
 ```cpp
-[[nodiscard]] auto GetWindowHandle(EHexWnd enWnd)const->HWND;
+[[nodiscard]] auto GetWndHandle(EHexWnd enWnd, bool fCreate = true)const->HWND;
 ```
-Returns a window handle for one of the **HexCtrl**'s windows. Takes [`EHexWnd`](#ehexwnd) enum as an argument.
+Returns `HWND` for **HexCtrl**'s main window or one of its [`internal dialogs`](#ehexwnd). If `fCreate` flag is `true`, the internal dialog window will be created first before returning, if it was not already.
 
 ### [](#)GoToOffset
 ```cpp
@@ -1090,7 +1090,7 @@ enum class EHexOperMode : std::uint8_t {
 ```
 
 ### [](#)EHexWnd
-Enum of all **HexCtrl**'s internal windows. This enum is used as an arg in [`GetWindowHandle`](#getwindowhandle) method to retrieve window's handle. 
+Enum of all **HexCtrl**'s internal windows, used in the [`GetWndHandle`](#getwndhandle) method. 
 ```cpp
 enum class EHexWnd : std::uint8_t {
     WND_MAIN, DLG_BKMMGR, DLG_DATAINTERP, DLG_MODIFY,

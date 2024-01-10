@@ -270,7 +270,7 @@ void CHexDlgBkmMgr::RemoveByID(ULONGLONG ullID)
 auto CHexDlgBkmMgr::SetDlgData(std::uint64_t ullData)->HWND
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
 	}
 
 	if ((ullData & HEXCTRL_FLAG_BKMMGR_HEXNUM) > 0 != IsShowAsHex()) {
@@ -295,7 +295,7 @@ void CHexDlgBkmMgr::SetVirtual(IHexBookmarks* pVirtBkm)
 BOOL CHexDlgBkmMgr::ShowWindow(int nCmdShow)
 {
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_pHexCtrl->GetWindowHandle(EHexWnd::WND_MAIN)));
+		Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
 	}
 
 	return CDialogEx::ShowWindow(nCmdShow);
