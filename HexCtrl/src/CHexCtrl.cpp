@@ -1785,7 +1785,7 @@ void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 	m_wchDateSepar = wchSepar;
 }
 
-auto CHexCtrl::SetDlgData(EHexWnd eWnd, std::uint64_t ullData)->HWND
+auto CHexCtrl::SetDlgData(EHexWnd eWnd, std::uint64_t ullData, bool fCreate)->HWND
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -1795,19 +1795,19 @@ auto CHexCtrl::SetDlgData(EHexWnd eWnd, std::uint64_t ullData)->HWND
 	case EHexWnd::WND_MAIN:
 		return m_hWnd;
 	case EHexWnd::DLG_BKMMGR:
-		return m_pDlgBkmMgr->SetDlgData(ullData);
+		return m_pDlgBkmMgr->SetDlgData(ullData, fCreate);
 	case EHexWnd::DLG_DATAINTERP:
-		return m_pDlgDataInterp->SetDlgData(ullData);
+		return m_pDlgDataInterp->SetDlgData(ullData, fCreate);
 	case EHexWnd::DLG_MODIFY:
-		return m_pDlgModify->SetDlgData(ullData);
+		return m_pDlgModify->SetDlgData(ullData, fCreate);
 	case EHexWnd::DLG_SEARCH:
-		return m_pDlgSearch->SetDlgData(ullData);
+		return m_pDlgSearch->SetDlgData(ullData, fCreate);
 	case EHexWnd::DLG_CODEPAGE:
-		return m_pDlgCodepage->SetDlgData(ullData);
+		return m_pDlgCodepage->SetDlgData(ullData, fCreate);
 	case EHexWnd::DLG_GOTO:
-		return m_pDlgGoTo->SetDlgData(ullData);
+		return m_pDlgGoTo->SetDlgData(ullData, fCreate);
 	case EHexWnd::DLG_TEMPLMGR:
-		return m_pDlgTemplMgr->SetDlgData(ullData);
+		return m_pDlgTemplMgr->SetDlgData(ullData, fCreate);
 	default:
 		return { };
 	}

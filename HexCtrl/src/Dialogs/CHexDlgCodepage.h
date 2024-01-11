@@ -15,9 +15,10 @@ namespace HEXCTRL::INTERNAL {
 		void AddCP(std::wstring_view wsv);
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void Initialize(IHexCtrl* pHexCtrl);
-		auto SetDlgData(std::uint64_t ullData) -> HWND;
+		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
 		BOOL ShowWindow(int nCmdShow);
 	private:
+		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnDestroy();
@@ -40,5 +41,6 @@ namespace HEXCTRL::INTERNAL {
 		IHexCtrl* m_pHexCtrl { };
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
 		std::vector<CODEPAGE> m_vecCodePage { };
+		std::uint64_t m_u64DlgData { }; //Data from SetDlgData.
 	};
 }

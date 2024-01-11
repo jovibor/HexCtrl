@@ -16,7 +16,7 @@ namespace HEXCTRL::INTERNAL {
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
 		void SearchNextPrev(bool fForward);
-		auto SetDlgData(std::uint64_t ullData) -> HWND;
+		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
 		BOOL ShowWindow(int nCmdShow);
 	private:
 		enum class EMode : std::uint8_t; //Forward declarations.
@@ -25,6 +25,7 @@ namespace HEXCTRL::INTERNAL {
 		struct FINDRESULT;
 		struct SEARCHDATA;
 		void AddToList(ULONGLONG ullOffset);
+		void ApplyDlgData();
 		void ClearList();
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
@@ -87,7 +88,6 @@ namespace HEXCTRL::INTERNAL {
 		IHexCtrl* m_pHexCtrl { };
 		EMode m_eSearchMode { };
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
-		std::vector<ULONGLONG> m_vecSearchRes { }; //Search results.
 		CMenu m_menuList;                    //Menu for the list control.
 		CComboBox m_comboSearch;             //Combo box "Search".
 		CComboBox m_comboReplace;            //Combo box "Replace".
@@ -106,11 +106,13 @@ namespace HEXCTRL::INTERNAL {
 		ULONGLONG m_ullOffsetCurr { };       //Current offset that search should start from.
 		ULONGLONG m_ullOffsetSentinel { };   //The maximum offset that search can't cross.
 		ULONGLONG m_ullStep { 1 };           //Search step (default is 1 byte).
+		std::uint64_t m_u64DlgData { };      //Data from SetDlgData.
 		DWORD m_dwCount { };                 //How many, or what index number.
 		DWORD m_dwReplaced { };              //Replaced amount;
 		DWORD m_dwFoundLimit { 10000 };      //Maximum found search occurences.
 		int m_iDirection { };                //Search direction: 1 = Forward, -1 = Backward.
 		int m_iWrap { };                     //Wrap direction: -1 = Beginning, 1 = End.
+		std::vector<ULONGLONG> m_vecSearchRes;   //Search results.
 		std::vector<std::byte> m_vecSearchData;  //Data to search for.
 		std::vector<std::byte> m_vecReplaceData; //Data to replace with.
 		std::wstring m_wstrTextSearch;       //Text from "Search" box.

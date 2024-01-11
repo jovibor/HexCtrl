@@ -31,7 +31,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG;
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void Initialize(IHexCtrl* pHexCtrl);
-		auto SetDlgData(std::uint64_t ullData) -> HWND;
+		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
 		BOOL ShowWindow(int nCmdShow);
 		void UpdateData();
 	private:
@@ -41,6 +41,7 @@ namespace HEXCTRL::INTERNAL {
 		enum class EName : std::uint8_t;
 		enum class ESize : std::uint8_t;
 		struct GRIDDATA;
+		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] auto GetGridData(EName eName)const->const GRIDDATA*;
 		[[nodiscard]] bool IsBigEndian()const;
@@ -107,12 +108,12 @@ namespace HEXCTRL::INTERNAL {
 		std::vector<GRIDDATA> m_vecGrid;
 		IHexCtrl* m_pHexCtrl { };
 		CHexPropGridCtrl m_gridCtrl;
-		CButton m_btnHex;            //Check-box "Hex numbers".
-		CButton m_btnBE;             //Check-box "Big endian".
+		CButton m_btnHex;               //Check-box "Hex numbers".
+		CButton m_btnBE;                //Check-box "Big endian".
 		ULONGLONG m_ullOffset { };
-		ULONGLONG m_ullDataSize { }; //Size of the currently interpreted data.
-		DWORD m_dwDateFormat { };    //Date format.
-		wchar_t m_wchDateSepar { };  //Date separator.
-		bool m_fNoEsc { false };     //Can Dialog be closed by pressing Escape or not.
+		ULONGLONG m_ullDataSize { };    //Size of the currently interpreted data.
+		std::uint64_t m_u64DlgData { }; //Data from SetDlgData.
+		DWORD m_dwDateFormat { };       //Date format.
+		wchar_t m_wchDateSepar { };     //Date separator.
 	};
 }

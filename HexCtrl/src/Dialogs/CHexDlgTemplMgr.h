@@ -80,13 +80,14 @@ namespace HEXCTRL::INTERNAL {
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsTooltips()const;
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
-		auto SetDlgData(std::uint64_t ullData) -> HWND;
+		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
 		void ShowTooltips(bool fShow)override;
 		BOOL ShowWindow(int nCmdShow);
 		void UnloadAll()override;
 		void UpdateData();
 	private:
 		struct FIELDSDEFPROPS; //Forward declaration.
+		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		void EnableDynamicLayoutHelper(bool fEnable);
 		auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PHEXTEMPLATEAPPLIED;
@@ -204,6 +205,7 @@ namespace HEXCTRL::INTERNAL {
 		PHEXTEMPLATEAPPLIED m_pAppliedCurr { }; //Currently selected template in the applied Tree.
 		PVecFields m_pVecFieldsCurr { };        //Currently selected Fields vector.
 		HTREEITEM m_hTreeCurrParent { };        //Currently selected Tree node's parent.
+		std::uint64_t m_u64DlgData { };         //Data from SetDlgData.
 		DWORD m_dwDateFormat { };               //Date format.
 		int m_iDynLayoutMinY { };               //For DynamicLayout::SetMinSize.
 		wchar_t m_wchDateSepar { };             //Date separator.
@@ -211,6 +213,5 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fLMDownResize { };               //Left mouse pressed in splitter area to resize.
 		bool m_fListGuardEvent { false };       //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
 		bool m_fTooltips { true };              //Show tooltips or not.
-		bool m_fNoEsc { false };                //Can Dialog be closed by pressing Escape or not.
 	};
 }

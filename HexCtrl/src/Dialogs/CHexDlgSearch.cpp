@@ -122,10 +122,17 @@ void CHexDlgSearch::SearchNextPrev(bool fForward)
 	Search();
 }
 
-auto CHexDlgSearch::SetDlgData(std::uint64_t /*ullData*/)->HWND
+auto CHexDlgSearch::SetDlgData(std::uint64_t ullData, bool fCreate)->HWND
 {
+	m_u64DlgData = ullData;
+
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		if (fCreate) {
+			Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		}
+	}
+	else {
+		ApplyDlgData();
 	}
 
 	return m_hWnd;
@@ -163,6 +170,10 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 		m_pListMain->SetItemState(iHighlight, LVIS_SELECTED, LVIS_SELECTED);
 		m_pListMain->EnsureVisible(iHighlight, TRUE);
 	}
+}
+
+void CHexDlgSearch::ApplyDlgData()
+{
 }
 
 void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
@@ -489,6 +500,12 @@ void CHexDlgSearch::OnDestroy()
 	CDialogEx::OnDestroy();
 
 	m_menuList.DestroyMenu();
+	m_vecSearchRes.clear();
+	m_vecSearchData.clear();
+	m_vecReplaceData.clear();
+	m_wstrTextSearch.clear();
+	m_wstrTextReplace.clear();
+	m_u64DlgData = { };
 }
 
 BOOL CHexDlgSearch::OnInitDialog()
@@ -575,6 +592,8 @@ BOOL CHexDlgSearch::OnInitDialog()
 	::SendMessageW(hwndTipEndOffset, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&stToolInfo));
 	::SendMessageW(hwndTipEndOffset, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
 	::SendMessageW(hwndTipEndOffset, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
+
+	ApplyDlgData();
 
 	return TRUE;
 }
@@ -1217,7 +1236,7 @@ void CHexDlgSearch::Search()
 				}
 			}
 		}
-	};
+		};
 	const auto lmbFindBackward = [&]() {
 		ullUntil = m_ullOffsetBoundBegin;
 		if (m_fSecondMatch && m_ullOffsetCurr - m_ullStep < m_ullOffsetCurr) {
@@ -1243,7 +1262,7 @@ void CHexDlgSearch::Search()
 				}
 			}
 		}
-	};
+		};
 
 	pHexCtrl->SetRedraw(false);
 
@@ -1268,7 +1287,7 @@ void CHexDlgSearch::Search()
 				}
 
 				pDlgClbk->ExitDlg();
-			};
+				};
 
 			CHexDlgCallback dlgClbk(L"Replacing...", ullStart, ullUntil, this);
 			std::thread thrd(lmbReplaceAll, &dlgClbk);
@@ -1310,7 +1329,7 @@ void CHexDlgSearch::Search()
 
 				pDlgClbk->ExitDlg();
 				m_pListMain->SetItemCountEx(static_cast<int>(m_dwCount));
-			};
+				};
 
 			CHexDlgCallback dlgClbk(L"Searching...", ullStart, ullUntil, this);
 			std::thread thrd(lmbSearchAll, &dlgClbk);

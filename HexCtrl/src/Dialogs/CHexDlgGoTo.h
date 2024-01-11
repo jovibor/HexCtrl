@@ -15,13 +15,15 @@ namespace HEXCTRL::INTERNAL {
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsRepeatAvail()const;
 		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
-		auto SetDlgData(std::uint64_t ullData) -> HWND;
+		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
 		BOOL ShowWindow(int nCmdShow);
 	private:
+		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
 		void HexCtrlGoOffset(ULONGLONG ullOffset);
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		afx_msg void OnDestroy();
 		BOOL OnInitDialog()override;
 		void OnOK()override;
 		afx_msg void OnRadioRangeAddrType(UINT uID);
@@ -35,6 +37,7 @@ namespace HEXCTRL::INTERNAL {
 		ULONGLONG m_ullOffsetsTo { };
 		ULONGLONG m_ullPagesFrom { };
 		ULONGLONG m_ullPagesTo { };
+		std::uint64_t m_u64DlgData { }; //Data from SetDlgData.
 		int m_iRepeat { 0 };
 	};
 }

@@ -53,7 +53,7 @@ auto CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)->ULONGLONG
 
 	UpdateListCount(true);
 
-	if (fRedraw && m_pHexCtrl && m_pHexCtrl->IsCreated()) {
+	if (fRedraw && m_pHexCtrl != nullptr && m_pHexCtrl->IsCreated()) {
 		m_pHexCtrl->Redraw();
 	}
 
@@ -267,18 +267,18 @@ void CHexDlgBkmMgr::RemoveByID(ULONGLONG ullID)
 	}
 }
 
-auto CHexDlgBkmMgr::SetDlgData(std::uint64_t ullData)->HWND
+auto CHexDlgBkmMgr::SetDlgData(std::uint64_t ullData, bool fCreate)->HWND
 {
+	m_u64DlgData = ullData;
+
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		if (fCreate) {
+			Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		}
 	}
-
-	if ((ullData & HEXCTRL_FLAG_BKMMGR_HEXNUM) > 0 != IsShowAsHex()) {
-		m_btnHex.SetCheck(!IsShowAsHex());
-		OnCheckHex();
+	else {
+		ApplyDlgData();
 	}
-
-	m_fNoEsc = ullData & HEXCTRL_FLAG_BKMMGR_NOESC;
 
 	return m_hWnd;
 }
@@ -334,7 +334,7 @@ void CHexDlgBkmMgr::SortData(int iColumn, bool fAscending)
 			}
 
 			return fAscending ? iCompare < 0 : iCompare > 0;
-		});
+	});
 }
 
 void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm)
@@ -359,6 +359,17 @@ void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm)
 
 //Private methods.
 
+void CHexDlgBkmMgr::ApplyDlgData()
+{
+	if (!IsWindow(m_hWnd))
+		return;
+
+	if ((m_u64DlgData & HEXCTRL_FLAG_BKMMGR_HEXNUM) > 0 != IsShowAsHex()) {
+		m_btnHex.SetCheck(!IsShowAsHex());
+		OnCheckHex();
+	}
+}
+
 void CHexDlgBkmMgr::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
@@ -367,7 +378,7 @@ void CHexDlgBkmMgr::DoDataExchange(CDataExchange* pDX)
 
 bool CHexDlgBkmMgr::IsNoEsc()const
 {
-	return m_fNoEsc;
+	return m_u64DlgData & HEXCTRL_FLAG_BKMMGR_NOESC;
 }
 
 bool CHexDlgBkmMgr::IsShowAsHex()const
@@ -437,6 +448,7 @@ void CHexDlgBkmMgr::OnDestroy()
 
 	RemoveAll();
 	m_menuList.DestroyMenu();
+	m_u64DlgData = { };
 }
 
 void CHexDlgBkmMgr::OnOK()
@@ -471,6 +483,8 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	if (const auto pDL = GetDynamicLayout(); pDL != nullptr) {
 		pDL->SetMinSize({ 0, 0 });
 	}
+
+	ApplyDlgData();
 
 	return TRUE;
 }

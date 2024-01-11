@@ -124,23 +124,18 @@ void CHexDlgDataInterp::Initialize(IHexCtrl* pHexCtrl)
 	m_pHexCtrl = pHexCtrl;
 }
 
-auto CHexDlgDataInterp::SetDlgData(std::uint64_t ullData)->HWND
+auto CHexDlgDataInterp::SetDlgData(std::uint64_t ullData, bool fCreate)->HWND
 {
+	m_u64DlgData = ullData;
+
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		if (fCreate) {
+			Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		}
 	}
-
-	if ((ullData & HEXCTRL_FLAG_DATAINTERP_HEXNUM) > 0 != IsShowAsHex()) {
-		m_btnHex.SetCheck(!IsShowAsHex());
-		OnCheckHex();
+	else {
+		ApplyDlgData();
 	}
-
-	if ((ullData & HEXCTRL_FLAG_DATAINTERP_BE) > 0 != IsBigEndian()) {
-		m_btnBE.SetCheck(!IsBigEndian());
-		OnCheckBigEndian();
-	}
-
-	m_fNoEsc = ullData & HEXCTRL_FLAG_DATAINTERP_NOESC;
 
 	return m_hWnd;
 }
@@ -293,6 +288,22 @@ void CHexDlgDataInterp::UpdateData()
 
 //Private methods.
 
+void CHexDlgDataInterp::ApplyDlgData()
+{
+	if (!IsWindow(m_hWnd))
+		return;
+
+	if ((m_u64DlgData & HEXCTRL_FLAG_DATAINTERP_HEXNUM) > 0 != IsShowAsHex()) {
+		m_btnHex.SetCheck(!IsShowAsHex());
+		OnCheckHex();
+	}
+
+	if ((m_u64DlgData & HEXCTRL_FLAG_DATAINTERP_BE) > 0 != IsBigEndian()) {
+		m_btnBE.SetCheck(!IsBigEndian());
+		OnCheckBigEndian();
+	}
+}
+
 void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
@@ -314,7 +325,7 @@ bool CHexDlgDataInterp::IsBigEndian()const
 
 bool CHexDlgDataInterp::IsNoEsc()const
 {
-	return m_fNoEsc;
+	return m_u64DlgData & HEXCTRL_FLAG_DATAINTERP_NOESC;
 }
 
 bool CHexDlgDataInterp::IsShowAsHex()const
@@ -374,6 +385,7 @@ void CHexDlgDataInterp::OnDestroy()
 	CDialogEx::OnDestroy();
 
 	m_vecGrid.clear();
+	m_u64DlgData = { };
 }
 
 BOOL CHexDlgDataInterp::OnInitDialog()
@@ -458,6 +470,8 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	if (const auto pDL = GetDynamicLayout(); pDL != nullptr) {
 		pDL->SetMinSize({ 0, 0 });
 	}
+
+	ApplyDlgData();
 
 	return TRUE;
 }

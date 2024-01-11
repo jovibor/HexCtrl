@@ -18,6 +18,7 @@ using namespace HEXCTRL::INTERNAL;
 BEGIN_MESSAGE_MAP(CHexDlgGoTo, CDialogEx)
 	ON_COMMAND_RANGE(IDC_HEXCTRL_GOTO_RAD_ABS, IDC_HEXCTRL_GOTO_RAD_BACKEND, &CHexDlgGoTo::OnRadioRangeAddrType)
 	ON_WM_ACTIVATE()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 auto CHexDlgGoTo::GetDlgData()const->std::uint64_t
@@ -91,10 +92,17 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 	HexCtrlGoOffset(m_ullCurrOffset);
 }
 
-auto CHexDlgGoTo::SetDlgData(std::uint64_t /*ullData*/)->HWND
+auto CHexDlgGoTo::SetDlgData(std::uint64_t ullData, bool fCreate)->HWND
 {
+	m_u64DlgData = ullData;
+
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_GOTO, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		if (fCreate) {
+			Create(IDD_HEXCTRL_GOTO, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		}
+	}
+	else {
+		ApplyDlgData();
 	}
 
 	return m_hWnd;
@@ -111,6 +119,10 @@ BOOL CHexDlgGoTo::ShowWindow(int nCmdShow)
 
 
 //Private methods.
+
+void CHexDlgGoTo::ApplyDlgData()
+{
+}
 
 void CHexDlgGoTo::DoDataExchange(CDataExchange* pDX)
 {
@@ -152,6 +164,13 @@ void CHexDlgGoTo::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
 }
 
+void CHexDlgGoTo::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	m_u64DlgData = { };
+}
+
 BOOL CHexDlgGoTo::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -163,6 +182,8 @@ BOOL CHexDlgGoTo::OnInitDialog()
 	if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RAD_ABS)); pRadio) {
 		pRadio->SetCheck(BST_CHECKED);
 	}
+
+	ApplyDlgData();
 
 	return TRUE;
 }
@@ -289,5 +310,5 @@ void CHexDlgGoTo::SetRangesText()const
 {
 	GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_OFFRANGE)->SetWindowTextW(std::format(L"{}-{:X}", m_ullOffsetsFrom, m_ullOffsetsTo).data());
 	GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_PAGERANGE)->SetWindowTextW(GetHexCtrl()->GetPagesCount() > 0 ?
-	std::format(L"{}-{:X}", m_ullPagesFrom, m_ullPagesTo).data() : L"N/A");
+		std::format(L"{}-{:X}", m_ullPagesFrom, m_ullPagesTo).data() : L"N/A");
 }

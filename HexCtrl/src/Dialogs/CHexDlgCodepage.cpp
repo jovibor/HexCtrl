@@ -52,10 +52,17 @@ void CHexDlgCodepage::Initialize(IHexCtrl* pHexCtrl)
 	m_pHexCtrl = pHexCtrl;
 }
 
-auto CHexDlgCodepage::SetDlgData(std::uint64_t /*ullData*/)->HWND
+auto CHexDlgCodepage::SetDlgData(std::uint64_t ullData, bool fCreate)->HWND
 {
+	m_u64DlgData = ullData;
+
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_CODEPAGE, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		if (fCreate) {
+			Create(IDD_HEXCTRL_CODEPAGE, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		}
+	}
+	else {
+		ApplyDlgData();
 	}
 
 	return m_hWnd;
@@ -72,6 +79,10 @@ BOOL CHexDlgCodepage::ShowWindow(int nCmdShow)
 
 
 //Private methods.
+
+void CHexDlgCodepage::ApplyDlgData()
+{
+}
 
 void CHexDlgCodepage::DoDataExchange(CDataExchange* pDX)
 {
@@ -102,6 +113,7 @@ void CHexDlgCodepage::OnDestroy()
 	CDialogEx::OnDestroy();
 
 	m_vecCodePage.clear();
+	m_u64DlgData = { };
 }
 
 BOOL CHexDlgCodepage::OnInitDialog()
@@ -124,6 +136,8 @@ BOOL CHexDlgCodepage::OnInitDialog()
 	if (const auto pLayout = GetDynamicLayout(); pLayout != nullptr) {
 		pLayout->SetMinSize({ 0, 0 });
 	}
+
+	ApplyDlgData();
 
 	return TRUE;
 }
@@ -212,7 +226,7 @@ void CHexDlgCodepage::SortList()
 			}
 
 			return fAscending ? iCompare < 0 : iCompare > 0;
-		});
+	});
 
 	m_pListMain->RedrawWindow();
 }

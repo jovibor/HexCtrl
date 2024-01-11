@@ -519,7 +519,7 @@ Returns replacement char for unprintable characters.
 ```cpp
 [[nodiscard]] auto GetWndHandle(EHexWnd enWnd, bool fCreate = true)const->HWND;
 ```
-Returns `HWND` for **HexCtrl**'s main window or one of its [`internal dialogs`](#ehexwnd). If `fCreate` flag is `true`, the internal dialog window will be created first before returning, if it was not already.
+Returns `HWND` for **HexCtrl**'s main window or one of its [`internal dialogs`](#ehexwnd). If `fCreate` flag is `true`, the dialog window will be created first before returning, if it was not already.
 
 ### [](#)GoToOffset
 ```cpp
@@ -657,10 +657,10 @@ Sets [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/w
 
 ### [](#)SetDlgData
 ```cpp
-auto SetDlgData(EHexWnd eWnd, std::uint64_t ullData)->HWND;
+auto SetDlgData(EHexWnd eWnd, std::uint64_t ullData, bool fCreate)->HWND;
 ```
-Changes state of the **HexCtrl**'s internal dialogs by setting control-flags, returns window handle of that dialog. Flags can be combined together with the `|`.  
-Available flags are:
+Sets the state of the **HexCtrl**'s internal dialogs by setting control-flags. Flags can be combined together with the `|` operation. If `fCreate` flag is `true`, the dialog window will be created first before returning, if it was not already. Returns `HWND` of that dialog.  
+Available flags:
 ```cpp
 //Template Manager.
 HEXCTRL_FLAG_TEMPLMGR_MINIMIZED  //Show dialog in minimized mode. 

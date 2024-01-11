@@ -350,7 +350,7 @@ namespace HEXCTRL {
 		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).
 		virtual void SetDateInfo(DWORD dwFormat, wchar_t wchSepar) = 0; //Set date format and date separator.
-		virtual auto SetDlgData(EHexWnd eWnd, std::uint64_t ullData) -> HWND = 0; //Data for the internal dialogs.
+		virtual auto SetDlgData(EHexWnd eWnd, std::uint64_t ullData, bool fCreate = true) -> HWND = 0; //Data for the internal dialogs.
 		virtual void SetFont(const LOGFONTW& lf) = 0;          //Set the control's new font. This font has to be monospaced.
 		virtual void SetGroupSize(DWORD dwSize) = 0;           //Set data grouping size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.

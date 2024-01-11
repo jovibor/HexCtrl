@@ -303,37 +303,18 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	return iTemplateID;
 }
 
-auto CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData) -> HWND
+auto CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND
 {
+	m_u64DlgData = ullData;
+
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_TEMPLMGR, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		if (fCreate) {
+			Create(IDD_HEXCTRL_TEMPLMGR, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		}
 	}
-
-	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_MINIMIZED) > 0 != IsMinimized()) {
-		m_btnMinMax.SetCheck(!IsMinimized());
-		OnCheckMinMax();
+	else {
+		ApplyDlgData();
 	}
-
-	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_HEXNUM) > 0 != IsShowAsHex()) {
-		m_btnHex.SetCheck(!IsShowAsHex());
-		OnCheckHex();
-	}
-
-	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_SHOWTT) > 0 != IsTooltips()) {
-		m_btnShowTT.SetCheck(!IsTooltips());
-		OnCheckShowTt();
-	}
-
-	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_HGLSEL) > 0 != IsHglSel()) {
-		m_btnHglSel.SetCheck(!IsHglSel());
-	}
-
-	if ((ullData & HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN) > 0 != IsSwapEndian()) {
-		m_btnSwapEndian.SetCheck(!IsSwapEndian());
-		OnCheckSwapEndian();
-	}
-
-	m_fNoEsc = ullData & HEXCTRL_FLAG_TEMPLMGR_NOESC;
 
 	return m_hWnd;
 }
@@ -377,6 +358,36 @@ void CHexDlgTemplMgr::UpdateData()
 
 
 //Private methods.
+
+void CHexDlgTemplMgr::ApplyDlgData()
+{
+	if (!IsWindow(m_hWnd))
+		return;
+
+	if ((m_u64DlgData & HEXCTRL_FLAG_TEMPLMGR_MINIMIZED) > 0 != IsMinimized()) {
+		m_btnMinMax.SetCheck(!IsMinimized());
+		OnCheckMinMax();
+	}
+
+	if ((m_u64DlgData & HEXCTRL_FLAG_TEMPLMGR_HEXNUM) > 0 != IsShowAsHex()) {
+		m_btnHex.SetCheck(!IsShowAsHex());
+		OnCheckHex();
+	}
+
+	if ((m_u64DlgData & HEXCTRL_FLAG_TEMPLMGR_SHOWTT) > 0 != IsTooltips()) {
+		m_btnShowTT.SetCheck(!IsTooltips());
+		OnCheckShowTt();
+	}
+
+	if ((m_u64DlgData & HEXCTRL_FLAG_TEMPLMGR_HGLSEL) > 0 != IsHglSel()) {
+		m_btnHglSel.SetCheck(!IsHglSel());
+	}
+
+	if ((m_u64DlgData & HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN) > 0 != IsSwapEndian()) {
+		m_btnSwapEndian.SetCheck(!IsSwapEndian());
+		OnCheckSwapEndian();
+	}
+}
 
 void CHexDlgTemplMgr::DoDataExchange(CDataExchange* pDX)
 {
@@ -442,7 +453,7 @@ bool CHexDlgTemplMgr::IsMinimized()const
 
 bool CHexDlgTemplMgr::IsNoEsc()const
 {
-	return m_fNoEsc;
+	return m_u64DlgData & HEXCTRL_FLAG_TEMPLMGR_NOESC;
 }
 
 bool CHexDlgTemplMgr::IsShowAsHex()const
@@ -663,6 +674,7 @@ void CHexDlgTemplMgr::OnDestroy()
 	m_hTreeCurrParent = nullptr;
 	DeleteObject(m_hBITMAPMin);
 	DeleteObject(m_hBITMAPMax);
+	m_u64DlgData = { };
 }
 
 BOOL CHexDlgTemplMgr::OnInitDialog()
@@ -742,8 +754,9 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	}
 	m_hBITMAPMax = CreateBitmapIndirect(&stBMP);
 	SetBitmapBits(m_hBITMAPMax, dwBytesBmp, pPixelsOrig.get());
-
 	m_btnMinMax.SetBitmap(m_hBITMAPMin); //Set the min arrow bitmap to the min-max checkbox.
+
+	ApplyDlgData();
 
 	return TRUE;
 }

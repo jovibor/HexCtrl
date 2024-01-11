@@ -29,13 +29,14 @@ namespace HEXCTRL::INTERNAL {
 		void RemoveAll()override;
 		void RemoveByOffset(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID)override;
-		auto SetDlgData(std::uint64_t ullData) -> HWND;
+		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
 		void SetVirtual(IHexBookmarks* pVirtBkm);
 		BOOL ShowWindow(int nCmdShow);
 		void SortData(int iColumn, bool fAscending);
 		void Update(ULONGLONG ullID, const HEXBKM& bkm);
 	private:
 		enum class EMenuID : std::uint16_t;
+		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
@@ -62,9 +63,9 @@ namespace HEXCTRL::INTERNAL {
 		IHexCtrl* m_pHexCtrl { };
 		IHexBookmarks* m_pVirtual { };
 		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
-		LONGLONG m_llIndexCurr { }; //Current bookmark's position index, to move next/prev.
+		LONGLONG m_llIndexCurr { };     //Current bookmark's position index, to move next/prev.
+		std::uint64_t m_u64DlgData { }; //Data from SetDlgData.
 		CMenu m_menuList;
-		CButton m_btnHex;           //Check-box "Hex numbers".
-		bool m_fNoEsc { false };    //Can Dialog be closed by pressing Escape or not.
+		CButton m_btnHex;               //Check-box "Hex numbers".
 	};
 }

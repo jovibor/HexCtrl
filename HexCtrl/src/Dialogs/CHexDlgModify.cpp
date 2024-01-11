@@ -474,6 +474,7 @@ using namespace HEXCTRL::INTERNAL;
 BEGIN_MESSAGE_MAP(CHexDlgModify, CDialogEx)
 	ON_NOTIFY(TCN_SELCHANGE, IDC_HEXCTRL_MODIFY_TAB, &CHexDlgModify::OnTabSelChanged)
 	ON_WM_ACTIVATE()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 CHexDlgModify::CHexDlgModify() : m_pDlgOpers { std::make_unique<CHexDlgOpers>() },
@@ -496,10 +497,17 @@ void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl)
 	m_pHexCtrl = pHexCtrl;
 }
 
-auto CHexDlgModify::SetDlgData(std::uint64_t /*ullData*/)->HWND
+auto CHexDlgModify::SetDlgData(std::uint64_t ullData, bool fCreate)->HWND
 {
+	m_u64DlgData = ullData;
+
 	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_MODIFY, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		if (fCreate) {
+			Create(IDD_HEXCTRL_MODIFY, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+		}
+	}
+	else {
+		ApplyDlgData();
 	}
 
 	return m_hWnd;
@@ -519,6 +527,10 @@ BOOL CHexDlgModify::ShowWindow(int nCmdShow, int iTab)
 
 //CHexDlgModify private methods.
 
+void CHexDlgModify::ApplyDlgData()
+{
+}
+
 void CHexDlgModify::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
@@ -531,6 +543,12 @@ void CHexDlgModify::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 
 	m_pDlgOpers->OnActivate(nState, pWndOther, bMinimized);
 	m_pDlgFillData->OnActivate(nState, pWndOther, bMinimized);
+}
+
+void CHexDlgModify::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+	m_u64DlgData = { };
 }
 
 BOOL CHexDlgModify::OnInitDialog()
@@ -552,6 +570,8 @@ BOOL CHexDlgModify::OnInitDialog()
 	m_pDlgFillData->Create(this, m_pHexCtrl);
 	m_pDlgFillData->SetWindowPos(nullptr, rcTab.left, rcTab.bottom + 1, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_HIDEWINDOW);
 	m_pDlgFillData->OnActivate(WA_ACTIVE, nullptr, 0); //To properly activate "All-Selection" radios on the first launch.
+
+	ApplyDlgData();
 
 	return TRUE;
 }
