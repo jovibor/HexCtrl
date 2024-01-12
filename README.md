@@ -39,6 +39,7 @@
   * [GetPagesCount](#getpagescount)
   * [GetPagePos](#getpagepos)
   * [GetPageSize](#getpagesize)
+  * [GetScrollRatio](#getscrollratio)
   * [GetSelection](#getselection)
   * [GetTemplates](#gettemplates)
   * [GetUnprintableChar](#getunprintablechar)
@@ -49,6 +50,7 @@
   * [IsCmdAvail](#iscmdavail)
   * [IsCreated](#iscreated)
   * [IsDataSet](#isdataset)
+  * [IsInfoBar](#isinfobar)
   * [IsMutable](#ismutable)
   * [IsOffsetAsHex](#isoffsetashex)
   * [IsOffsetVisible](#isoffsetvisible)
@@ -364,7 +366,7 @@ Main initialization method. Takes the [`HEXCREATE`](#hexcreate) struct as argume
 ```cpp
 bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg);
 ```
-Creates **HexCtrl** from a **Custom Control** dialog's template. Takes control's **id**, and dialog's window **handle** as arguments. See **[Creating](#in-dialog)** section for more info.
+Creates **HexCtrl** from a **Custom Control** dialog's template. Takes control **id**, and dialog's window **handle** as arguments. See **[Creating](#in-dialog)** section for more info.
 
 ### [](#)Destroy
 ```cpp
@@ -380,7 +382,7 @@ You usually don't need to call this method unless you use the **HexCtrl** throug
 ```cpp
 void ExecuteCmd(EHexCmd enCmd)const;
 ```
-Executes one of the predefined commands of [`EHexCmd`](#ehexcmd) enum. All these commands are basically replicating control's inner menu.
+Executes one of the predefined commands of the [`EHexCmd`](#ehexcmd) enum. All these commands are basically replicating **HexCtrl**'s inner menu.
 
 ### [](#)GetActualWidth
 ```cpp
@@ -443,7 +445,7 @@ Returns currently set data size.
 ```cpp
 [[nodiscard]] auto GetDateInfo()const->std::tuple<DWORD, wchar_t>;
 ```
-Returns [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate), and date separator.
+Returns tuple of the current [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate), and date separator.
 
 ### [](#)GetDlgData
 ```cpp
@@ -455,47 +457,51 @@ Returns data related to **HexCtrl**'s internal dialogs.
 ```cpp
 [[nodiscard]] auto GetCodepage()const->int;
 ```
-Get code page that is currently in use.
+Returns code page that is currently in use.
 
 ### [](#)GetFont
 ```cpp
 [[nodiscard]] auto GetFont()->LOGFONTW;
 ```
-Retrieves current font's `LOGFONTW`.
+Returns current font's `LOGFONTW`.
 
 ### [](#)GetGroupSize
 ```cpp
 [[nodiscard]] auto GetGroupSize()const->DWORD;
 ```
-Retrieves current data grouping size.
+Returns current data grouping size.
 
 ### [](#)GetMenuHandle
 ```cpp
 [[nodiscard]] auto GetMenuHandle()const->HMENU;
 ```
-Retrieves the `HMENU` handle of the control's context menu. You can use this handle to customize menu for your needs.
-
-Control's internal menu uses `ID`s starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.
-
-When user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXMENUINFO`](#hexmenuinfo) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`, and `wMenuID` field containing `ID` of the menu clicked.
+Returns the `HMENU` handle of the **HexCtrl** context menu. You can use this handle to customize menu for your needs.  
+**HexCtrl**'s internal menu uses `ID`s starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.  
+When a user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXMENUINFO`](#hexmenuinfo) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`, and `wMenuID` field containing `ID` of the menu clicked.
 
 ### [](#)GetPagesCount
 ```cpp
 [[nodiscard]] auto GetPagesCount()const->ULONGLONG;
 ```
-Get current count of pages set by [`SetPageSize`](#setpagesize).
+Returns current count of pages set by the [`SetPageSize`](#setpagesize) method.
 
 ### [](#)GetPagePos
 ```cpp
 [[nodiscard]] auto GetPagePos()const->ULONGLONG;
 ```
-Get current page a cursor stays at.
+Returns a page number that the cursor stays at.
 
 ### [](#)GetPageSize
 ```cpp
 [[nodiscard]] auto GetPageSize()const->DWORD;
 ```
-Get current page size set by [`SetPageSize`](#setpagesize).
+Returns current page size set by the [`SetPageSize`](#setpagesize) method.
+
+### [](#)GetScrollRatio
+```cpp
+[[nodiscard]] auto GetScrollRatio()const->std::tuple<float, bool>;
+```
+Returns tuple of the current scroll ratio and `fLines` flag set by the [`SetScrollRatio`](#setscrollratio) method.
 
 ### [](#)GetSelection
 ```cpp
@@ -559,6 +565,12 @@ Shows whether **HexCtrl** is created or not.
 [[nodiscard]] bool IsDataSet()const;
 ```
 Shows whether a data was set to **HexCtrl** or not
+
+### [](#)IsInfoBar
+```cpp
+[[nodiscard]] bool IsInfoBar()const;
+```
+Shows whether the bottom Info bar is visible at the moment or not.
 
 ### [](#)IsMutable
 ```cpp

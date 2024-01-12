@@ -12,6 +12,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #if !defined(__cpp_lib_format) || !defined(__cpp_lib_span) || !defined(__cpp_lib_bit_cast)
@@ -324,8 +325,9 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetGroupSize()const->DWORD = 0;           //Retrieves current data grouping size.
 		[[nodiscard]] virtual auto GetMenuHandle()const->HMENU = 0;          //Context menu handle.
 		[[nodiscard]] virtual auto GetPagesCount()const->ULONGLONG = 0;      //Get count of pages.
-		[[nodiscard]] virtual auto GetPagePos()const->ULONGLONG = 0;         //Get current page a cursor stays at.
+		[[nodiscard]] virtual auto GetPagePos()const->ULONGLONG = 0;         //Get a page number that the cursor stays at.
 		[[nodiscard]] virtual auto GetPageSize()const->DWORD = 0;            //Current page size.
+		[[nodiscard]] virtual auto GetScrollRatio()const->std::tuple<float, bool> = 0; //Get current scroll ratio.
 		[[nodiscard]] virtual auto GetSelection()const->VecSpan = 0;         //Get current selection.
 		[[nodiscard]] virtual auto GetTemplates()const->IHexTemplates* = 0;  //Get Templates interface.
 		[[nodiscard]] virtual auto GetUnprintableChar()const->wchar_t = 0;   //Get unprintable replacement character.
@@ -336,8 +338,9 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual bool IsCmdAvail(EHexCmd eCmd)const = 0; //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] virtual bool IsCreated()const = 0;       //Shows whether control is created or not.
 		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to the control or not.
+		[[nodiscard]] virtual bool IsInfoBar()const = 0;       //Is InfoBar visible?
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
-		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently represented (shown) as Hex or as Decimal.
+		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently shown as Hex or as Decimal.
 		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION = 0; //Ensures that the given offset is visible.
 		[[nodiscard]] virtual bool IsVirtual()const = 0;       //Is working in VirtualData or default mode.		
 		virtual void ModifyData(const HEXMODIFY& hms) = 0;     //Main routine to modify data in IsMutable()==true mode.
@@ -357,7 +360,7 @@ namespace HEXCTRL {
 		virtual void SetOffsetMode(bool fHex) = 0;             //Set offset being shown as Hex or as Decimal.
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wsvName = L"Page") = 0; //Set page size and name to draw the lines in-between.
 		virtual void SetRedraw(bool fRedraw) = 0;              //Handle WM_PAINT message or not.
-		virtual void SetScrollRatio(float flRatio, bool fLines) = 0; //Set mouse-wheel scroll ratio in screens or in lines, if fLines==true.
+		virtual void SetScrollRatio(float flRatio, bool fLines) = 0; //Set mouse-wheel scroll ratio in screens or in lines.
 		virtual void SetSelection(const VecSpan& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
 		virtual void SetUnprintableChar(wchar_t wch) = 0;      //Set unprintable replacement character.
 		virtual void SetVirtualBkm(IHexBookmarks* pVirtBkm) = 0; //Set pointer for Bookmarks Virtual Mode.

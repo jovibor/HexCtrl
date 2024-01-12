@@ -59,6 +59,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetPagesCount()const->ULONGLONG override;
 		[[nodiscard]] auto GetPagePos()const->ULONGLONG override;
 		[[nodiscard]] auto GetPageSize()const->DWORD override;
+		[[nodiscard]] auto GetScrollRatio()const->std::tuple<float, bool> override;
 		[[nodiscard]] auto GetSelection()const->VecSpan override;
 		[[nodiscard]] auto GetTemplates()const->IHexTemplates* override;
 		[[nodiscard]] auto GetUnprintableChar()const->wchar_t override;
@@ -69,6 +70,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsCmdAvail(EHexCmd eCmd)const override;
 		[[nodiscard]] bool IsCreated()const override;
 		[[nodiscard]] bool IsDataSet()const override;
+		[[nodiscard]] bool IsInfoBar()const override;
 		[[nodiscard]] bool IsMutable()const override;
 		[[nodiscard]] bool IsOffsetAsHex()const override;
 		[[nodiscard]] auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION override;
@@ -150,7 +152,6 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTEST>; //Is any hex chunk withing given point?
 		[[nodiscard]] bool IsCurTextArea()const;               //Whether last focus was set at Text or Hex chunks area.
 		[[nodiscard]] bool IsDrawable()const;                  //Should WM_PAINT be handled atm or not.
-		[[nodiscard]] bool IsInfoBar()const;                   //Should bottom Info rect be painted or not.
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
 		template<typename T>                                   //Main "Modify" method with different workers.
 		void ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const T& lmbWorker, HEXCTRL::SpanCByte spnDataToOperWith);

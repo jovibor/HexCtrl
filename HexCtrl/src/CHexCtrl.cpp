@@ -782,6 +782,15 @@ auto CHexCtrl::GetPageSize()const->DWORD
 	return m_dwPageSize;
 }
 
+auto CHexCtrl::GetScrollRatio()const->std::tuple<float, bool>
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
+	return { m_flScrollRatio, m_fScrollLines };
+}
+
 auto CHexCtrl::GetSelection()const->VecSpan
 {
 	assert(IsCreated());
@@ -1019,6 +1028,15 @@ bool CHexCtrl::IsDataSet()const
 		return false;
 
 	return m_fDataSet;
+}
+
+bool CHexCtrl::IsInfoBar()const
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
+	return m_fInfoBar;
 }
 
 bool CHexCtrl::IsMutable()const
@@ -3662,11 +3680,6 @@ bool CHexCtrl::IsCurTextArea()const
 bool CHexCtrl::IsDrawable()const
 {
 	return m_fRedraw;
-}
-
-bool CHexCtrl::IsInfoBar()const
-{
-	return m_fInfoBar;
 }
 
 bool CHexCtrl::IsPageVisible()const
