@@ -22,7 +22,10 @@ namespace HEXCTRL::INTERNAL {
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
 		void HexCtrlGoOffset(ULONGLONG ullOffset);
+		[[nodiscard ]] bool IsNoEsc()const;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		void OnCancel()override;
+		afx_msg void OnClose();
 		afx_msg void OnDestroy();
 		BOOL OnInitDialog()override;
 		void OnOK()override;

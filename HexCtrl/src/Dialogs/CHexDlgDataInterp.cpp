@@ -71,7 +71,6 @@ BEGIN_MESSAGE_MAP(CHexPropGridCtrl, CMFCPropertyGridCtrl)
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
-
 BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_HEX, &CHexDlgDataInterp::OnCheckHex)
 	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_BE, &CHexDlgDataInterp::OnCheckBigEndian)
@@ -109,7 +108,7 @@ auto CHexDlgDataInterp::GetDlgData()const->std::uint64_t
 	}
 
 	if (IsNoEsc()) {
-		ullData |= HEXCTRL_FLAG_DATAINTERP_NOESC;
+		ullData |= HEXCTRL_FLAG_NOESC;
 	}
 
 	return ullData;
@@ -325,7 +324,7 @@ bool CHexDlgDataInterp::IsBigEndian()const
 
 bool CHexDlgDataInterp::IsNoEsc()const
 {
-	return m_u64DlgData & HEXCTRL_FLAG_DATAINTERP_NOESC;
+	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
 }
 
 bool CHexDlgDataInterp::IsShowAsHex()const
@@ -376,7 +375,6 @@ void CHexDlgDataInterp::OnCheckBigEndian()
 
 void CHexDlgDataInterp::OnClose()
 {
-	//Not calling base class CDialogEx::OnClose, to prevent calling OnCancel().
 	EndDialog(IDCANCEL);
 }
 

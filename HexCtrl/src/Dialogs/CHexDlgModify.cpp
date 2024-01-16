@@ -474,6 +474,7 @@ using namespace HEXCTRL::INTERNAL;
 BEGIN_MESSAGE_MAP(CHexDlgModify, CDialogEx)
 	ON_NOTIFY(TCN_SELCHANGE, IDC_HEXCTRL_MODIFY_TAB, &CHexDlgModify::OnTabSelChanged)
 	ON_WM_ACTIVATE()
+	ON_WM_CLOSE()
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -488,7 +489,13 @@ auto CHexDlgModify::GetDlgData()const->std::uint64_t
 		return { };
 	}
 
-	return { };
+	std::uint64_t ullData { };
+
+	if (IsNoEsc()) {
+		ullData |= HEXCTRL_FLAG_NOESC;
+	}
+
+	return ullData;
 }
 
 void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl)
@@ -537,12 +544,30 @@ void CHexDlgModify::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_HEXCTRL_MODIFY_TAB, m_tabMain);
 }
 
+bool CHexDlgModify::IsNoEsc()const
+{
+	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
+}
+
 void CHexDlgModify::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
 
 	m_pDlgOpers->OnActivate(nState, pWndOther, bMinimized);
 	m_pDlgFillData->OnActivate(nState, pWndOther, bMinimized);
+}
+
+void CHexDlgModify::OnCancel()
+{
+	if (IsNoEsc()) //Not closing Dialog on Escape key.
+		return;
+
+	CDialogEx::OnCancel();
+}
+
+void CHexDlgModify::OnClose()
+{
+	EndDialog(IDCANCEL);
 }
 
 void CHexDlgModify::OnDestroy()

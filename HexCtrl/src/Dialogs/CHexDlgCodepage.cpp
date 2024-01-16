@@ -17,11 +17,12 @@ import HEXCTRL.HexUtility;
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgCodepage, CDialogEx)
-	ON_WM_ACTIVATE()
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListItemChanged)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListGetColor)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_LINKCLICK, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListLinkClick)
+	ON_WM_ACTIVATE()
+	ON_WM_CLOSE()
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -40,7 +41,13 @@ auto CHexDlgCodepage::GetDlgData()const->std::uint64_t
 		return { };
 	}
 
-	return { };
+	std::uint64_t ullData { };
+
+	if (IsNoEsc()) {
+		ullData |= HEXCTRL_FLAG_NOESC;
+	}
+
+	return ullData;
 }
 
 void CHexDlgCodepage::Initialize(IHexCtrl* pHexCtrl)
@@ -89,6 +96,11 @@ void CHexDlgCodepage::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 }
 
+bool CHexDlgCodepage::IsNoEsc()const
+{
+	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
+}
+
 void CHexDlgCodepage::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
 	if (!m_pHexCtrl->IsCreated())
@@ -108,12 +120,25 @@ void CHexDlgCodepage::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
 }
 
+void CHexDlgCodepage::OnCancel()
+{
+	if (IsNoEsc()) //Not closing Dialog on Escape key.
+		return;
+
+	CDialogEx::OnCancel();
+}
+
 void CHexDlgCodepage::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
 	m_vecCodePage.clear();
 	m_u64DlgData = { };
+}
+
+void CHexDlgCodepage::OnClose()
+{
+	EndDialog(IDCANCEL);
 }
 
 BOOL CHexDlgCodepage::OnInitDialog()

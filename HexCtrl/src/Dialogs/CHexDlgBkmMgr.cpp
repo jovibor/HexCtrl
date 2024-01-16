@@ -110,7 +110,7 @@ auto CHexDlgBkmMgr::GetDlgData()const->std::uint64_t
 	}
 
 	if (IsNoEsc()) {
-		ullData |= HEXCTRL_FLAG_BKMMGR_NOESC;
+		ullData |= HEXCTRL_FLAG_NOESC;
 	}
 
 	return ullData;
@@ -378,7 +378,7 @@ void CHexDlgBkmMgr::DoDataExchange(CDataExchange* pDX)
 
 bool CHexDlgBkmMgr::IsNoEsc()const
 {
-	return m_u64DlgData & HEXCTRL_FLAG_BKMMGR_NOESC;
+	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
 }
 
 bool CHexDlgBkmMgr::IsShowAsHex()const
@@ -396,7 +396,6 @@ void CHexDlgBkmMgr::OnCancel()
 
 void CHexDlgBkmMgr::OnClose()
 {
-	//Not calling base class CDialogEx::OnClose, to prevent calling OnCancel().
 	EndDialog(IDCANCEL);
 }
 

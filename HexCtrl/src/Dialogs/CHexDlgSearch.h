@@ -39,6 +39,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsInverted()const;
 		[[nodiscard]] bool IsMatchCase()const;
+		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsSelection()const;
 		[[nodiscard]] bool IsWildcard()const;
 		BOOL OnInitDialog()override;
@@ -50,6 +51,7 @@ namespace HEXCTRL::INTERNAL {
 		afx_msg void OnButtonReplaceAll();
 		afx_msg void OnCancel()override;
 		afx_msg void OnCheckSel();
+		afx_msg void OnClose();
 		afx_msg void OnComboModeSelChange();
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);

@@ -71,9 +71,6 @@ namespace HEXCTRL::INTERNAL {
 }
 
 BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
-	ON_WM_ACTIVATE()
-	ON_WM_CLOSE()
-	ON_WM_CTLCOLOR()
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_SEARCH_F, &CHexDlgSearch::OnButtonSearchF)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_SEARCH_B, &CHexDlgSearch::OnButtonSearchB)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_FINDALL, &CHexDlgSearch::OnButtonFindAll)
@@ -86,6 +83,9 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListItemChanged)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListRClick)
+	ON_WM_ACTIVATE()
+	ON_WM_CLOSE()
+	ON_WM_CTLCOLOR()
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -95,7 +95,13 @@ auto CHexDlgSearch::GetDlgData()const->std::uint64_t
 		return { };
 	}
 
-	return { };
+	std::uint64_t ullData { };
+
+	if (IsNoEsc()) {
+		ullData |= HEXCTRL_FLAG_NOESC;
+	}
+
+	return ullData;
 }
 
 void CHexDlgSearch::Initialize(IHexCtrl* pHexCtrl)
@@ -325,6 +331,11 @@ bool CHexDlgSearch::IsMatchCase()const
 	return m_btnMC.GetCheck() == BST_CHECKED;
 }
 
+bool CHexDlgSearch::IsNoEsc()const
+{
+	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
+}
+
 bool CHexDlgSearch::IsSelection()const
 {
 	return m_btnSel.GetCheck() == BST_CHECKED;
@@ -341,12 +352,8 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 		return;
 
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
-		SetLayeredWindowAttributes(0, 255, LWA_ALPHA);
 		m_comboSearch.SetFocus();
 		UpdateSearchReplaceControls();
-	}
-	else {
-		SetLayeredWindowAttributes(0, 150, LWA_ALPHA);
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
@@ -394,7 +401,8 @@ void CHexDlgSearch::OnButtonReplaceAll()
 
 void CHexDlgSearch::OnCancel()
 {
-	::SetFocus(GetHexCtrl()->GetWndHandle(EHexWnd::WND_MAIN));
+	if (IsNoEsc()) //Not closing Dialog on Escape key.
+		return;
 
 	CDialogEx::OnCancel();
 }
@@ -403,6 +411,11 @@ void CHexDlgSearch::OnCheckSel()
 {
 	m_editStart.EnableWindow(!IsSelection());
 	m_editEnd.EnableWindow(!IsSelection());
+}
+
+void CHexDlgSearch::OnClose()
+{
+	EndDialog(IDCANCEL);
 }
 
 void CHexDlgSearch::OnComboModeSelChange()

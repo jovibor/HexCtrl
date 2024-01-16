@@ -245,7 +245,7 @@ namespace HEXCTRL {
 	struct HEXVISION {
 		std::int8_t i8Vert { }; //Vertical offset.
 		std::int8_t i8Horz { }; //Horizontal offset.
-		operator bool()const { return i8Vert == 0 && i8Horz == 0; }; //For test simplicity: if(IsOffsetVisible()).
+		explicit operator bool()const { return i8Vert == 0 && i8Horz == 0; }; //For test simplicity.
 	};
 
 	/********************************************************************************************
@@ -451,22 +451,22 @@ namespace HEXCTRL {
 	* Flags for the internal dialogs, used with SetDlgData.  *
 	*********************************************************/
 
+	//Flags common for all dialogs.
+	constexpr auto HEXCTRL_FLAG_NOESC { 0x8000000000000000ULL };
+
 	//Template Manager.
 	constexpr auto HEXCTRL_FLAG_TEMPLMGR_MINIMIZED { 0x1ULL };
 	constexpr auto HEXCTRL_FLAG_TEMPLMGR_HEXNUM { 0x2ULL };
 	constexpr auto HEXCTRL_FLAG_TEMPLMGR_SHOWTT { 0x4ULL };
 	constexpr auto HEXCTRL_FLAG_TEMPLMGR_HGLSEL { 0x8ULL };
 	constexpr auto HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN { 0x10ULL };
-	constexpr auto HEXCTRL_FLAG_TEMPLMGR_NOESC { 0x20ULL };
 
 	//Data Interpreter.
 	constexpr auto HEXCTRL_FLAG_DATAINTERP_HEXNUM { 0x1ULL };
 	constexpr auto HEXCTRL_FLAG_DATAINTERP_BE { 0x2ULL };
-	constexpr auto HEXCTRL_FLAG_DATAINTERP_NOESC { 0x4ULL };
 
 	//Bookmark Manager.
 	constexpr auto HEXCTRL_FLAG_BKMMGR_HEXNUM { 0x1ULL };
-	constexpr auto HEXCTRL_FLAG_BKMMGR_NOESC { 0x2ULL };
 
 	//Setting a manifest for the ComCtl32.dll version 6.
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")

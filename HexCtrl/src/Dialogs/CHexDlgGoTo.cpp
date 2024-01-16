@@ -18,6 +18,7 @@ using namespace HEXCTRL::INTERNAL;
 BEGIN_MESSAGE_MAP(CHexDlgGoTo, CDialogEx)
 	ON_COMMAND_RANGE(IDC_HEXCTRL_GOTO_RAD_ABS, IDC_HEXCTRL_GOTO_RAD_BACKEND, &CHexDlgGoTo::OnRadioRangeAddrType)
 	ON_WM_ACTIVATE()
+	ON_WM_CLOSE()
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
@@ -27,7 +28,13 @@ auto CHexDlgGoTo::GetDlgData()const->std::uint64_t
 		return { };
 	}
 
-	return { };
+	std::uint64_t ullData { };
+
+	if (IsNoEsc()) {
+		ullData |= HEXCTRL_FLAG_NOESC;
+	}
+
+	return ullData;
 }
 
 void CHexDlgGoTo::Initialize(IHexCtrl* pHexCtrl)
@@ -145,6 +152,11 @@ void CHexDlgGoTo::HexCtrlGoOffset(ULONGLONG ullOffset)
 	m_ullCurrOffset = ullOffset;
 }
 
+bool CHexDlgGoTo::IsNoEsc()const
+{
+	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
+}
+
 void CHexDlgGoTo::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
 	const auto* const pHexCtrl = GetHexCtrl();
@@ -162,6 +174,19 @@ void CHexDlgGoTo::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
+}
+
+void CHexDlgGoTo::OnCancel()
+{
+	if (IsNoEsc()) //Not closing Dialog on Escape key.
+		return;
+
+	CDialogEx::OnCancel();
+}
+
+void CHexDlgGoTo::OnClose()
+{
+	EndDialog(IDCANCEL);
 }
 
 void CHexDlgGoTo::OnDestroy()

@@ -20,7 +20,10 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
+		[[nodiscard ]] bool IsNoEsc()const;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		void OnCancel()override;
+		afx_msg void OnClose();
 		afx_msg void OnDestroy();
 		BOOL OnInitDialog()override;
 		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);

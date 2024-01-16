@@ -202,7 +202,7 @@ auto CHexDlgTemplMgr::GetDlgData()const->std::uint64_t
 	}
 
 	if (IsNoEsc()) {
-		ullData |= HEXCTRL_FLAG_TEMPLMGR_NOESC;
+		ullData |= HEXCTRL_FLAG_NOESC;
 	}
 
 	return ullData;
@@ -453,7 +453,7 @@ bool CHexDlgTemplMgr::IsMinimized()const
 
 bool CHexDlgTemplMgr::IsNoEsc()const
 {
-	return m_u64DlgData & HEXCTRL_FLAG_TEMPLMGR_NOESC;
+	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
 }
 
 bool CHexDlgTemplMgr::IsShowAsHex()const
@@ -614,7 +614,6 @@ void CHexDlgTemplMgr::OnCheckMinMax()
 
 void CHexDlgTemplMgr::OnClose()
 {
-	//Not calling base class CDialogEx::OnClose, to prevent calling OnCancel().
 	EndDialog(IDCANCEL);
 }
 

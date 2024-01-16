@@ -674,22 +674,22 @@ auto SetDlgData(EHexWnd eWnd, std::uint64_t ullData, bool fCreate)->HWND;
 Sets the state of the **HexCtrl**'s internal dialogs by setting control-flags. Flags can be combined together with the `|` operation. If `fCreate` flag is `true`, the dialog window will be created first before returning, if it was not already. Returns `HWND` of that dialog.  
 Available flags:
 ```cpp
+//Flags common for all dialogs.
+HEXCTRL_FLAG_NOESC //Prevent a dialog from closing on Esc key.
+	
 //Template Manager.
 HEXCTRL_FLAG_TEMPLMGR_MINIMIZED  //Show dialog in minimized mode. 
 HEXCTRL_FLAG_TEMPLMGR_HEXNUM     //Set "Hex numbers" checkbox.
 HEXCTRL_FLAG_TEMPLMGR_SHOWTT     //Set "Show tooltips" checkbox.
 HEXCTRL_FLAG_TEMPLMGR_HGLSEL     //Set "Highlight selection" checkbox.
 HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN //Set "Swap endianness" checkbox.
-HEXCTRL_FLAG_TEMPLMGR_NOESC      //Prevent dialog from closing on Esc key.
 
 //Data Interpreter.
 HEXCTRL_FLAG_DATAINTERP_HEXNUM //Set "Hex numbers" checkbox.
 HEXCTRL_FLAG_DATAINTERP_BE     //Set "Big-endian" checkbox.
-HEXCTRL_FLAG_DATAINTERP_NOESC  //Prevent dialog from closing on Esc key.
 
 //Bookmark Manager.
 HEXCTRL_FLAG_BKMMGR_HEXNUM //Set "Hex numbers" checkbox.
-HEXCTRL_FLAG_BKMMGR_NOESC  //Prevent dialog from closing on Esc key.
 ```
 
 ### [](#)SetFont
