@@ -1187,11 +1187,11 @@ void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)
 		rcTree.right = point.x - iWidthBetweenTreeAndList;
 		if (rcTree.Width() >= iMinTreeWidth) {
 			m_treeApplied.SetWindowPos(nullptr, rcTree.left, rcTree.top,
-				rcTree.Width(), rcTree.Height(), SWP_NOACTIVATE);
+				rcTree.Width(), rcTree.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
 
 			rcList.left = point.x;
 			m_pListApplied->SetWindowPos(nullptr, rcList.left, rcList.top,
-				rcList.Width(), rcList.Height(), SWP_NOACTIVATE);
+				rcList.Width(), rcList.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
 		}
 	}
 	else {
@@ -2188,11 +2188,10 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 						(auto& lmbSelf, const VecFields& vecCustomFields, const PtrField& pField, int& iOffset)->void {
 							for (const auto& pCustomField : vecCustomFields) {
 								const auto& pNewField = pField->vecNested.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
+								const auto& refCFClr = pCustomField->stClr;
 								pNewField->pFieldParent = pField.get();
-								pNewField->stClr.clrBk = pCustomField->stClr.clrBk == -1 ?
-									pField->stClr.clrBk : pCustomField->stClr.clrBk;
-								pNewField->stClr.clrText = pCustomField->stClr.clrText == -1 ?
-									pField->stClr.clrText : pCustomField->stClr.clrText;
+								pNewField->stClr.clrBk = refCFClr.clrBk == -1 ? pField->stClr.clrBk : refCFClr.clrBk;
+								pNewField->stClr.clrText = refCFClr.clrText == -1 ? pField->stClr.clrText : refCFClr.clrText;
 								pNewField->fBigEndian = pCustomField->fBigEndian;
 								pNewField->eType = pCustomField->eType;
 								pNewField->uTypeID = pCustomField->uTypeID;

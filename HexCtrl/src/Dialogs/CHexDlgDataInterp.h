@@ -28,9 +28,10 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		CHexDlgDataInterp();
 		~CHexDlgDataInterp();
-		[[nodiscard]] auto GetDataSize()const->ULONGLONG;
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
+		[[nodiscard]] auto GetHglDataSize()const->DWORD;
 		void Initialize(IHexCtrl* pHexCtrl);
+		[[nodiscard]] bool HasHighlight()const;
 		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
 		BOOL ShowWindow(int nCmdShow);
 		void UpdateData();
@@ -111,9 +112,9 @@ namespace HEXCTRL::INTERNAL {
 		CButton m_btnHex;               //Check-box "Hex numbers".
 		CButton m_btnBE;                //Check-box "Big endian".
 		ULONGLONG m_ullOffset { };
-		ULONGLONG m_ullDataSize { };    //Size of the currently interpreted data.
-		std::uint64_t m_u64DlgData { }; //Data from SetDlgData.
+		DWORD m_dwHglDataSize { };      //Size of the data to highlight in the HexCtrl.
 		DWORD m_dwDateFormat { };       //Date format.
+		std::uint64_t m_u64DlgData { }; //Data from SetDlgData.
 		wchar_t m_wchDateSepar { };     //Date separator.
 	};
 }

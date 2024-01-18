@@ -3373,12 +3373,12 @@ void CHexCtrl::DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wsv
 
 void CHexCtrl::DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
-	const auto ullDISize = m_pDlgDataInterp->GetDataSize();
-	if (ullDISize == 0)
+	if (!m_pDlgDataInterp->HasHighlight())
 		return;
 
+	const auto dwHglSize = m_pDlgDataInterp->GetHglDataSize();
 	const auto ullCaretPos = GetCaretPos();
-	if ((ullCaretPos + ullDISize) > GetDataSize())
+	if ((ullCaretPos + dwHglSize) > GetDataSize())
 		return;
 
 	std::vector<POLYTEXTW> vecPolyDataInterp;
@@ -3397,7 +3397,7 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std:
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto iterChunks { 0U }; iterChunks < GetCapacity() && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
 			const auto ullOffsetCurr = ullStartOffset + sIndexToPrint;
-			if (ullOffsetCurr >= ullCaretPos && ullOffsetCurr < (ullCaretPos + ullDISize)) {
+			if (ullOffsetCurr >= ullCaretPos && ullOffsetCurr < (ullCaretPos + dwHglSize)) {
 				if (iDataInterpHexPosToPrintX == -1) { //For just one time exec.
 					int iCy;
 					HexChunkPoint(sIndexToPrint, iDataInterpHexPosToPrintX, iCy);

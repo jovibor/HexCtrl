@@ -86,11 +86,6 @@ CHexDlgDataInterp::CHexDlgDataInterp() = default;
 
 CHexDlgDataInterp::~CHexDlgDataInterp() = default;
 
-auto CHexDlgDataInterp::GetDataSize()const->ULONGLONG
-{
-	return m_ullDataSize;
-}
-
 auto CHexDlgDataInterp::GetDlgData()const->std::uint64_t
 {
 	if (!IsWindow(m_hWnd)) {
@@ -114,6 +109,11 @@ auto CHexDlgDataInterp::GetDlgData()const->std::uint64_t
 	return ullData;
 }
 
+auto CHexDlgDataInterp::GetHglDataSize()const->DWORD
+{
+	return m_dwHglDataSize;
+}
+
 void CHexDlgDataInterp::Initialize(IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
@@ -121,6 +121,11 @@ void CHexDlgDataInterp::Initialize(IHexCtrl* pHexCtrl)
 		return;
 
 	m_pHexCtrl = pHexCtrl;
+}
+
+bool CHexDlgDataInterp::HasHighlight()const
+{
+	return m_dwHglDataSize > 0;
 }
 
 auto CHexDlgDataInterp::SetDlgData(std::uint64_t ullData, bool fCreate)->HWND
@@ -343,12 +348,13 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 		m_wchDateSepar = wchSepar;
 		const auto wstrTitle = L"Date/Time format is: " + GetDateFormatString(m_dwDateFormat, m_wchDateSepar);
 		SetWindowTextW(wstrTitle.data()); //Update dialog title to reflect current date format.
+
 		if (m_pHexCtrl->IsDataSet()) {
 			UpdateData();
 		}
 	}
 	else {
-		m_ullDataSize = 0; //Remove Data Interpreter data highlighting when its window is inactive.
+		m_dwHglDataSize = 0; //Remove data highlighting when dialog window is inactive.
 		RedrawHexCtrl();
 	}
 
@@ -588,7 +594,7 @@ auto CHexDlgDataInterp::OnPropertySelected(WPARAM wParam, LPARAM lParam)->LRESUL
 	if (itGrid == m_vecGrid.end())
 		return TRUE;
 
-	m_ullDataSize = static_cast<ULONGLONG>(itGrid->eSize);
+	m_dwHglDataSize = static_cast<std::uint8_t>(itGrid->eSize);
 	RedrawHexCtrl();
 
 	return TRUE;
