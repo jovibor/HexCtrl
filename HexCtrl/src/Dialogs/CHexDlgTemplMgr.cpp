@@ -572,41 +572,44 @@ void CHexDlgTemplMgr::OnCheckShowTt()
 
 void CHexDlgTemplMgr::OnCheckMinMax()
 {
-	const auto fMinimize = IsMinimized();
-	static constexpr int iIDsToHide[] { IDC_HEXCTRL_TEMPLMGR_STATIC_AVAIL, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES,
+	static constexpr int arrIDsToHide[] { IDC_HEXCTRL_TEMPLMGR_STATIC_AVAIL, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES,
 		IDC_HEXCTRL_TEMPLMGR_BTN_LOAD, IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD, IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR,
 		IDC_HEXCTRL_TEMPLMGR_STATIC_APPLY, IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET, IDC_HEXCTRL_TEMPLMGR_BTN_APPLY,
 		IDC_HEXCTRL_TEMPLMGR_CHK_TTSHOW, IDC_HEXCTRL_TEMPLMGR_CHK_HGLSEL, IDC_HEXCTRL_TEMPLMGR_CHK_HEX,
 		IDC_HEXCTRL_TEMPLMGR_CHK_SWAP, IDC_HEXCTRL_TEMPLMGR_GRB_TOP };
-	for (const auto id : iIDsToHide) {
+	static constexpr int arrIDsToMove[] { IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETTXT, IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETNUM,
+		IDC_HEXCTRL_TEMPLMGR_STATIC_SIZETXT, IDC_HEXCTRL_TEMPLMGR_STATIC_SIZENUM };
+	static constexpr int arrIDsToResize[] { IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED };
+	const auto fMinimize = IsMinimized();
+
+	for (const auto id : arrIDsToHide) { //Hiding.
 		GetDlgItem(id)->ShowWindow(fMinimize ? SW_HIDE : SW_SHOW);
 	}
 
-	static constexpr int iIDsToMove[] { IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETTXT, IDC_HEXCTRL_TEMPLMGR_STATIC_OFFSETNUM,
-		IDC_HEXCTRL_TEMPLMGR_STATIC_SIZETXT, IDC_HEXCTRL_TEMPLMGR_STATIC_SIZENUM };
-
-	CRect rcGRB; //Top Group Box rect.
-	GetDlgItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP)->GetClientRect(rcGRB);
-	const auto iHeightGRB = rcGRB.Height();
-	for (const auto id : iIDsToMove) {
+	CRect rcGRBTop; //Top Group Box rect.
+	GetDlgItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP)->GetClientRect(rcGRBTop);
+	const auto iHeightGRB = rcGRBTop.Height();
+	auto hdwp = BeginDeferWindowPos(static_cast<int>(std::size(arrIDsToMove) + std::size(arrIDsToResize)));
+	for (const auto id : arrIDsToMove) { //Moving.
 		const auto pWnd = GetDlgItem(id);
 		CRect rcWnd;
 		pWnd->GetWindowRect(rcWnd);
 		ScreenToClient(rcWnd);
 		const auto iNewPosY = fMinimize ? rcWnd.top - iHeightGRB : rcWnd.top + iHeightGRB;
-		pWnd->SetWindowPos(nullptr, rcWnd.left, iNewPosY, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+		hdwp = DeferWindowPos(hdwp, pWnd->m_hWnd, nullptr, rcWnd.left, iNewPosY, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
 	}
 
-	static constexpr int iIDsToResize[] { IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED };
-	EnableDynamicLayoutHelper(false); //Otherwise DynamicLayout won't know that all dynamic windows have changed.
-	for (const auto id : iIDsToResize) {
+	for (const auto id : arrIDsToResize) { //Resizing.
 		const auto pWnd = GetDlgItem(id);
 		CRect rcWnd;
 		pWnd->GetWindowRect(rcWnd);
 		rcWnd.top += fMinimize ? -iHeightGRB : iHeightGRB;
 		ScreenToClient(rcWnd);
-		pWnd->SetWindowPos(nullptr, rcWnd.left, rcWnd.top, rcWnd.Width(), rcWnd.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
+		hdwp = DeferWindowPos(hdwp, pWnd->m_hWnd, nullptr, rcWnd.left, rcWnd.top, rcWnd.Width(),
+			rcWnd.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
 	}
+	EnableDynamicLayoutHelper(false); //Otherwise DynamicLayout won't know that all dynamic windows have changed.
+	EndDeferWindowPos(hdwp);
 	EnableDynamicLayoutHelper(true);
 
 	m_btnMinMax.SetBitmap(fMinimize ? m_hBITMAPMax : m_hBITMAPMin); //Set arrow bitmap to the min-max checkbox.
@@ -1174,7 +1177,7 @@ void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)
 {
 	static constexpr auto iResAreaHalfWidth = 15;       //Area where cursor turns into resizable (IDC_SIZEWE).
 	static constexpr auto iWidthBetweenTreeAndList = 1; //Width between tree and list after resizing.
-	static constexpr auto iMinTreeWidth = 100;          //Tree control minimum width.
+	static constexpr auto iMinTreeWidth = 100;          //Tree control minimum allowed width.
 
 	CRect rcList;
 	m_pListApplied->GetWindowRect(rcList);
@@ -1185,19 +1188,19 @@ void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)
 		m_treeApplied.GetWindowRect(rcTree);
 		ScreenToClient(rcTree);
 		rcTree.right = point.x - iWidthBetweenTreeAndList;
+		rcList.left = point.x;
 		if (rcTree.Width() >= iMinTreeWidth) {
-			m_treeApplied.SetWindowPos(nullptr, rcTree.left, rcTree.top,
+			auto hdwp = BeginDeferWindowPos(2); //Simultaneously resizing list and tree.
+			hdwp = DeferWindowPos(hdwp, m_treeApplied, nullptr, rcTree.left, rcTree.top,
 				rcTree.Width(), rcTree.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
-
-			rcList.left = point.x;
-			m_pListApplied->SetWindowPos(nullptr, rcList.left, rcList.top,
+			hdwp = DeferWindowPos(hdwp, m_pListApplied->m_hWnd, nullptr, rcList.left, rcList.top,
 				rcList.Width(), rcList.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
+			EndDeferWindowPos(hdwp);
 		}
 	}
 	else {
-		const CRect rcSplitter(rcList.left - iResAreaHalfWidth, rcList.top,
-			rcList.left + iResAreaHalfWidth, rcList.bottom);
-		if (rcSplitter.PtInRect(point)) {
+		if (const CRect rcSplitter(rcList.left - iResAreaHalfWidth, rcList.top, rcList.left + iResAreaHalfWidth, rcList.bottom);
+			rcSplitter.PtInRect(point)) {
 			m_fCurInSplitter = true;
 			SetCursor(m_hCurResize);
 			SetCapture();
