@@ -16,8 +16,6 @@
 #include <optional>
 #include <random>
 
-import HEXCTRL.HexUtility;
-
 using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL {
@@ -1114,22 +1112,22 @@ void CHexDlgTemplMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			switch (pField->iSize) {
 			case 1:
 				if (const auto opt = stn::StrToUChar(pwszText); opt) {
-					SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+					SetTData(*opt, ullOffset, false);
 				}
 				break;
 			case 2:
 				if (const auto opt = stn::StrToUShort(pwszText); opt) {
-					SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+					SetTData(*opt, ullOffset, false);
 				}
 				break;
 			case 4:
 				if (const auto opt = stn::StrToUInt(pwszText); opt) {
-					SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+					SetTData(*opt, ullOffset, false);
 				}
 				break;
 			case 8:
 				if (const auto opt = stn::StrToULL(pwszText); opt) {
-					SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+					SetTData(*opt, ullOffset, false);
 				}
 				break;
 			default:
@@ -1479,7 +1477,7 @@ bool CHexDlgTemplMgr::SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset) const
 {
 	if (IsShowAsHex()) {
 		if (const auto opt = stn::StrToUChar(pwszText); opt) {
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+			SetTData(*opt, ullOffset, false);
 			return true;
 		}
 	}
@@ -1495,7 +1493,7 @@ bool CHexDlgTemplMgr::SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset) const
 		else
 			return false;
 
-		SetIHexTData(*m_pHexCtrl, ullOffset, fToSet);
+		SetTData(fToSet, ullOffset, false);
 		return true;
 	}
 	return false;
@@ -1508,13 +1506,13 @@ bool CHexDlgTemplMgr::SetDataChar(LPCWSTR pwszText, ULONGLONG ullOffset)const
 	//are bigger then `signed` type's max value, they can't be converted to it.
 	if (IsShowAsHex()) {
 		if (const auto opt = stn::StrToUChar(pwszText); opt) {
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+			SetTData(*opt, ullOffset, false);
 			return true;
 		}
 	}
 	else {
 		if (const auto opt = stn::StrToChar(pwszText); opt) {
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+			SetTData(*opt, ullOffset, false);
 			return true;
 		}
 	}
@@ -1524,7 +1522,7 @@ bool CHexDlgTemplMgr::SetDataChar(LPCWSTR pwszText, ULONGLONG ullOffset)const
 bool CHexDlgTemplMgr::SetDataUChar(LPCWSTR pwszText, ULONGLONG ullOffset)const
 {
 	if (const auto opt = stn::StrToUChar(pwszText); opt) {
-		SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		SetTData(*opt, ullOffset, false);
 		return true;
 	}
 	return false;
@@ -1533,20 +1531,14 @@ bool CHexDlgTemplMgr::SetDataUChar(LPCWSTR pwszText, ULONGLONG ullOffset)const
 bool CHexDlgTemplMgr::SetDataShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToUShort(pwszText); opt) {
-			if (fShouldSwap) {
-				*opt = ByteSwap(*opt);
-			}
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		if (const auto opt = stn::StrToUShort(pwszText); opt) {
+			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
 	else {
-		if (auto opt = stn::StrToShort(pwszText); opt) {
-			if (fShouldSwap) {
-				*opt = ByteSwap(*opt);
-			}
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		if (const auto opt = stn::StrToShort(pwszText); opt) {
+			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
@@ -1555,11 +1547,8 @@ bool CHexDlgTemplMgr::SetDataShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool f
 
 bool CHexDlgTemplMgr::SetDataUShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	if (auto opt = stn::StrToUShort(pwszText); opt) {
-		if (fShouldSwap) {
-			*opt = ByteSwap(*opt);
-		}
-		SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+	if (const auto opt = stn::StrToUShort(pwszText); opt) {
+		SetTData(*opt, ullOffset, fShouldSwap);
 		return true;
 	}
 	return false;
@@ -1568,20 +1557,14 @@ bool CHexDlgTemplMgr::SetDataUShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 bool CHexDlgTemplMgr::SetDataInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToUInt(pwszText); opt) {
-			if (fShouldSwap) {
-				*opt = ByteSwap(*opt);
-			}
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		if (const auto opt = stn::StrToUInt(pwszText); opt) {
+			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
 	else {
-		if (auto opt = stn::StrToNum<int>(pwszText); opt) {
-			if (fShouldSwap) {
-				*opt = ByteSwap(*opt);
-			}
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		if (const auto opt = stn::StrToNum<int>(pwszText); opt) {
+			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
@@ -1590,11 +1573,8 @@ bool CHexDlgTemplMgr::SetDataInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fSh
 
 bool CHexDlgTemplMgr::SetDataUInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	if (auto opt = stn::StrToUInt(pwszText); opt) {
-		if (fShouldSwap) {
-			*opt = ByteSwap(*opt);
-		}
-		SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+	if (const auto opt = stn::StrToUInt(pwszText); opt) {
+		SetTData(*opt, ullOffset, fShouldSwap);
 		return true;
 	}
 	return false;
@@ -1603,20 +1583,14 @@ bool CHexDlgTemplMgr::SetDataUInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fS
 bool CHexDlgTemplMgr::SetDataLL(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToULL(pwszText); opt) {
-			if (fShouldSwap) {
-				*opt = ByteSwap(*opt);
-			}
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		if (const auto opt = stn::StrToULL(pwszText); opt) {
+			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
 	else {
-		if (auto opt = stn::StrToLL(pwszText); opt) {
-			if (fShouldSwap) {
-				*opt = ByteSwap(*opt);
-			}
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		if (const auto opt = stn::StrToLL(pwszText); opt) {
+			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
@@ -1625,11 +1599,8 @@ bool CHexDlgTemplMgr::SetDataLL(LPCWSTR pwszText, ULONGLONG ullOffset, bool fSho
 
 bool CHexDlgTemplMgr::SetDataULL(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	if (auto opt = stn::StrToULL(pwszText); opt) {
-		if (fShouldSwap) {
-			*opt = ByteSwap(*opt);
-		}
-		SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+	if (const auto opt = stn::StrToULL(pwszText); opt) {
+		SetTData(*opt, ullOffset, fShouldSwap);
 		return true;
 	}
 	return false;
@@ -1637,23 +1608,17 @@ bool CHexDlgTemplMgr::SetDataULL(LPCWSTR pwszText, ULONGLONG ullOffset, bool fSh
 
 bool CHexDlgTemplMgr::SetDataFloat(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	//Convert hex text to float is impossible, therefore we convert it to
-	//unsigned type of the same size - uint.
+	//Convert hex text to float is impossible.
+	//Therefore we convert it to the unsigned type of the same size.
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToUInt(pwszText); opt) {
-			if (fShouldSwap) {
-				*opt = ByteSwap(*opt);
-			}
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		if (const auto opt = stn::StrToUInt(pwszText); opt) {
+			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
 	else {
-		if (auto opt = stn::StrToFloat(pwszText); opt) {
-			if (fShouldSwap) {
-				*opt = ByteSwap(*opt);
-			}
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		if (const auto opt = stn::StrToFloat(pwszText); opt) {
+			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
@@ -1662,23 +1627,17 @@ bool CHexDlgTemplMgr::SetDataFloat(LPCWSTR pwszText, ULONGLONG ullOffset, bool f
 
 bool CHexDlgTemplMgr::SetDataDouble(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
-	//Convert hex text to double is impossible, therefore we convert it to
-	//unsigned type of the same size - ULL.
+	//Convert hex text to double is impossible.
+	//Therefore we convert it to the unsigned type of the same size.
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToULL(pwszText); opt) {
-			if (fShouldSwap) {
-				*opt = ByteSwap(*opt);
-			}
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		if (const auto opt = stn::StrToULL(pwszText); opt) {
+			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
 	else {
-		if (auto opt = stn::StrToDouble(pwszText); opt) {
-			if (fShouldSwap) {
-				*opt = ByteSwap(*opt);
-			}
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		if (const auto opt = stn::StrToDouble(pwszText); opt) {
+			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
@@ -1688,11 +1647,8 @@ bool CHexDlgTemplMgr::SetDataDouble(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 bool CHexDlgTemplMgr::SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToUInt(pwszText); opt) {
-			if (fShouldSwap) {
-				*opt = ByteSwap(*opt);
-			}
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		if (const auto opt = stn::StrToUInt(pwszText); opt) {
+			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
@@ -1718,12 +1674,9 @@ bool CHexDlgTemplMgr::SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 		if (lTicks.QuadPart >= LONG_MAX)
 			return false;
 
-		auto lTime32 = static_cast<__time32_t>(lTicks.QuadPart);
-		if (fShouldSwap) {
-			lTime32 = ByteSwap(lTime32);
-		}
+		const auto lTime32 = static_cast<__time32_t>(lTicks.QuadPart);
+		SetTData(lTime32, ullOffset, fShouldSwap);
 
-		SetIHexTData(*m_pHexCtrl, ullOffset, lTime32);
 		return true;
 	}
 
@@ -1733,11 +1686,8 @@ bool CHexDlgTemplMgr::SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 bool CHexDlgTemplMgr::SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToULL(pwszText); opt) {
-			if (fShouldSwap) {
-				*opt = ByteSwap(*opt);
-			}
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		if (const auto opt = stn::StrToULL(pwszText); opt) {
+			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
@@ -1761,12 +1711,9 @@ bool CHexDlgTemplMgr::SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 		lTicks.QuadPart /= g_uFTTicksPerSec;
 		lTicks.QuadPart -= g_ullUnixEpochDiff;
 
-		auto llTime64 = static_cast<__time64_t>(lTicks.QuadPart);
-		if (fShouldSwap) {
-			llTime64 = ByteSwap(llTime64);
-		}
+		const auto llTime64 = static_cast<__time64_t>(lTicks.QuadPart);
+		SetTData(llTime64, ullOffset, fShouldSwap);
 
-		SetIHexTData(*m_pHexCtrl, ullOffset, llTime64);
 		return true;
 	}
 
@@ -1776,11 +1723,8 @@ bool CHexDlgTemplMgr::SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 bool CHexDlgTemplMgr::SetDataFILETIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (IsShowAsHex()) {
-		if (auto opt = stn::StrToULL(pwszText); opt) {
-			if (fShouldSwap) {
-				*opt = ByteSwap(*opt);
-			}
-			SetIHexTData(*m_pHexCtrl, ullOffset, *opt);
+		if (const auto opt = stn::StrToULL(pwszText); opt) {
+			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
@@ -1789,11 +1733,8 @@ bool CHexDlgTemplMgr::SetDataFILETIME(LPCWSTR pwszText, ULONGLONG ullOffset, boo
 		if (!optFileTime)
 			return false;
 
-		ULARGE_INTEGER uliTime { .LowPart { optFileTime->dwLowDateTime }, .HighPart { optFileTime->dwHighDateTime } };
-		if (fShouldSwap) {
-			uliTime.QuadPart = ByteSwap(uliTime.QuadPart);
-		}
-		SetIHexTData(*m_pHexCtrl, ullOffset, uliTime.QuadPart);
+		const ULARGE_INTEGER uliTime { .LowPart { optFileTime->dwLowDateTime }, .HighPart { optFileTime->dwHighDateTime } };
+		SetTData(uliTime.QuadPart, ullOffset, fShouldSwap);
 	}
 
 	return false;
@@ -1871,6 +1812,16 @@ void CHexDlgTemplMgr::SetHexSelByField(PCHEXTEMPLFIELD pField)
 	if (!m_pHexCtrl->IsOffsetVisible(ullOffset)) {
 		m_pHexCtrl->GoToOffset(ullOffset, -1);
 	}
+}
+
+template<TSize1248 T>
+void CHexDlgTemplMgr::SetTData(T tData, ULONGLONG ullOffset, bool fShouldSwap)const
+{
+	if (fShouldSwap) {
+		tData = ByteSwap(tData);
+	}
+
+	SetIHexTData(*m_pHexCtrl, ullOffset, tData);
 }
 
 void CHexDlgTemplMgr::ShowListDataBool(LPWSTR pwsz, unsigned char uchData) const

@@ -11,6 +11,8 @@
 #include <afxdialogex.h>
 #include <unordered_map>
 
+import HEXCTRL.HexUtility;
+
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgTemplMgr final : public CDialogEx, public IHexTemplates {
 	public:
@@ -114,6 +116,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool SetDataGUID(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
 		void SetDlgButtonsState(); //Enable/disable button states depending on templates existence.
 		void SetHexSelByField(PCHEXTEMPLFIELD pField);
+		template <TSize1248 T> void SetTData(T tData, ULONGLONG ullOffset, bool fShouldSwap)const;
 		void ShowListDataBool(LPWSTR pwsz, unsigned char uchData)const;
 		void ShowListDataChar(LPWSTR pwsz, char chData)const;
 		void ShowListDataUChar(LPWSTR pwsz, unsigned char uchData)const;

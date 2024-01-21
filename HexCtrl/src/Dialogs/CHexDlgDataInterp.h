@@ -9,6 +9,8 @@
 #include <afxcontrolbars.h>
 #include <afxdialogex.h>
 
+import HEXCTRL.HexUtility;
+
 namespace HEXCTRL::INTERNAL {
 	constexpr auto WM_PROPGRID_PROPERTY_SELECTED = WM_USER + 0x1U; //Message to the parent, when new property is selected.
 	class CHexPropGridCtrl final : public CMFCPropertyGridCtrl {
@@ -59,8 +61,6 @@ namespace HEXCTRL::INTERNAL {
 		auto OnPropertyDataChanged(WPARAM wParam, LPARAM lParam) -> LRESULT;
 		auto OnPropertySelected(WPARAM wParam, LPARAM lParam) -> LRESULT;
 		void RedrawHexCtrl()const;
-		template <typename T>
-		void SetTData(T tData)const;
 		[[nodiscard]] bool SetDataBinary(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataChar(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataUChar(std::wstring_view wsv)const;
@@ -82,6 +82,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool SetDataSYSTEMTIME(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataGUID(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wsv)const;
+		template <TSize1248 T> void SetTData(T tData)const;
 		void SetRedraw(bool fRedraw);
 		void ShowValueBinary(BYTE byte)const;
 		void ShowValueChar(BYTE byte)const;

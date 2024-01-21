@@ -13,8 +13,6 @@
 #include <cassert>
 #include <format>
 
-import HEXCTRL.HexUtility;
-
 using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL {
@@ -606,16 +604,6 @@ void CHexDlgDataInterp::RedrawHexCtrl()const
 	}
 }
 
-template<typename T>
-void CHexDlgDataInterp::SetTData(T tData)const
-{
-	if (IsBigEndian()) {
-		tData = ByteSwap(tData);
-	}
-
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, tData);
-}
-
 bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
 {
 	if (wsv.size() != 8 || wsv.find_first_not_of(L"01") != std::wstring_view::npos)
@@ -987,6 +975,16 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, dqword);
 
 	return true;
+}
+
+template<TSize1248 T>
+void CHexDlgDataInterp::SetTData(T tData)const
+{
+	if (IsBigEndian()) {
+		tData = ByteSwap(tData);
+	}
+
+	SetIHexTData(*m_pHexCtrl, m_ullOffset, tData);
 }
 
 void CHexDlgDataInterp::SetRedraw(bool fRedraw)
