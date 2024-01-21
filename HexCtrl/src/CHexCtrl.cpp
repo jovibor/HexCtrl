@@ -146,7 +146,11 @@ CHexCtrl::CHexCtrl()
 	}
 #endif
 
-	const auto hInst = AfxGetInstanceHandle();
+	//GetModuleHandleW(nullptr) always returns a handle to the file used to create the calling process (.exe).
+	//AfxGetInstanceHandle() returns a handle to the DLL, if called from within a DLL linked with the _USRDLL version of MFC.
+	//When using HexCtrl as a Custom Control, in a dialog, it's vital to register (wc.hInstance) Window Class with 
+	//the .exe handle, not DLL. Otherwise a Custom Control won't find the HexCtrl Window Class, and a dialog won't even start.
+	const auto hInst = GetModuleHandleW(nullptr);
 	if (WNDCLASSEXW wc; ::GetClassInfoExW(hInst, m_pwszClassName, &wc) == FALSE) {
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
@@ -159,7 +163,7 @@ CHexCtrl::CHexCtrl()
 		wc.lpszMenuName = nullptr;
 		wc.lpszClassName = m_pwszClassName;
 		if (!RegisterClassExW(&wc)) {
-			MessageBoxW(L"HexControl RegisterClassExW error.", L"Error", MB_ICONERROR);
+			MessageBoxW(L"HexCtrl RegisterClassExW error.", L"Error", MB_ICONERROR);
 			return;
 		}
 	}
@@ -205,7 +209,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		}
 	}
 	else {
-		if (!CWnd::CreateEx(hcs.dwExStyle, m_pwszClassName, L"HexControl", hcs.dwStyle, hcs.rect,
+		if (!CWnd::CreateEx(hcs.dwExStyle, m_pwszClassName, L"HexCtrl", hcs.dwStyle, hcs.rect,
 			CWnd::FromHandle(hcs.hWndParent), hcs.uID)) {
 			MessageBoxW(std::format(L"HexCtrl (ID: {}) CreateWindowExW failed.\r\nCheck HEXCREATE struct parameters.", hcs.uID).data(),
 				L"Error", MB_ICONERROR);
@@ -254,7 +258,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	//Menu related.
 	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCEW(IDR_HEXCTRL_MENU))) {
-		MessageBoxW(L"HexControl LoadMenuW failed.", L"Error", MB_ICONERROR);
+		MessageBoxW(L"HexCtrl LoadMenuW failed.", L"Error", MB_ICONERROR);
 		return false;
 	}
 

@@ -33,9 +33,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Sample Project\stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h">
       <Filter>HexCtrl</Filter>
     </ClInclude>
@@ -72,11 +69,11 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgModify.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
+    <ClInclude Include="..\Sample Dialog\stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Sample Project\stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp">
       <Filter>HexCtrl\src</Filter>
     </ClCompile>
@@ -115,6 +112,9 @@
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\CHexSelection.ixx">
       <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Sample Dialog\stdafx.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

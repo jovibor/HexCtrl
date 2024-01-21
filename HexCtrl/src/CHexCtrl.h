@@ -209,7 +209,7 @@ namespace HEXCTRL::INTERNAL {
 		DECLARE_MESSAGE_MAP();
 	private:
 		static constexpr auto m_pwszHexChars { L"0123456789ABCDEF" }; //Hex digits wchars for fast lookup.
-		static constexpr auto m_pwszClassName { L"HexCtrl" }; //HexControl Class name.
+		static constexpr auto m_pwszClassName { L"HexCtrl" }; //HexCtrl Window Class name.
 		static constexpr auto m_uIDTTBkm { 0x01UL };     //Tooltip ID for Bookmarks.
 		static constexpr auto m_uIDTTTempl { 0x02UL };   //Tooltip ID for Templates.
 		static constexpr auto m_iIndentBottomLine { 1 }; //Bottom line indent from window's bottom.

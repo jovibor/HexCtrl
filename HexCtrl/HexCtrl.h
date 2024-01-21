@@ -74,7 +74,7 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* EHexWnd: HexControl's internal windows.                                                   *
+	* EHexWnd: HexCtrl's internal windows.                                                      *
 	********************************************************************************************/
 	enum class EHexWnd : std::uint8_t {
 		WND_MAIN, DLG_BKMMGR, DLG_DATAINTERP, DLG_MODIFY,
@@ -441,15 +441,15 @@ namespace HEXCTRL {
 		virtual void ShowInfoBar(bool fShow) = 0;              //Show/hide bottom Info bar.
 	};
 
-#if defined HEXCTRL_MANUAL_MFC_INIT || defined HEXCTRL_SHARED_DLL
-	//Because MFC PreTranslateMessage doesn't work in a DLLs
-	//this exported function should be called from the app's main message loop.
-	//Something like that:
-	//BOOL CMyApp::PreTranslateMessage(MSG* pMsg) {
-	//	if (HexCtrlPreTranslateMessage(pMsg))
-	//		return TRUE;
-	//	return CWinApp::PreTranslateMessage(pMsg);
-	//}
+#if defined(HEXCTRL_MANUAL_MFC_INIT) || defined(HEXCTRL_SHARED_DLL)
+	//Because MFC's PreTranslateMessage routine doesn't work in DLLs 
+	//this exported function should be called from an App's main message loop.
+	//Something like this:
+	// BOOL CMyApp::PreTranslateMessage(MSG* pMsg) {
+	//	 if (HexCtrlPreTranslateMessage(pMsg))
+	//	 	return TRUE;
+	//	 return CWinApp::PreTranslateMessage(pMsg);
+	// }
 	extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg);
 #endif
 

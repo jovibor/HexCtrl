@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "HexSampleDlg.h"
+#include "SampleDialogDlg.h"
 #include "Resource.h"
 #include <filesystem>
 #include <random>
@@ -8,36 +8,35 @@
 #define new DEBUG_NEW
 #endif
 
-BEGIN_MESSAGE_MAP(CHexSampleDlg, CDialogEx)
+constexpr const auto WstrTextRO { L"Random data: RO" };
+constexpr const auto WstrTextRW { L"Random data: RW" };
+
+BEGIN_MESSAGE_MAP(CSampleDialogDlg, CDialogEx)
 	ON_WM_CLOSE()
-	ON_BN_CLICKED(IDC_SETDATARND, &CHexSampleDlg::OnBnSetRndData)
-	ON_BN_CLICKED(IDC_CLEARDATA, &CHexSampleDlg::OnBnClearData)
-	ON_BN_CLICKED(IDC_FILEOPEN, &CHexSampleDlg::OnBnFileOpen)
-	ON_BN_CLICKED(IDC_HEXPOPUP, &CHexSampleDlg::OnBnPopup)
-	ON_BN_CLICKED(IDC_CHK_RW, &CHexSampleDlg::OnChkRW)
+	ON_BN_CLICKED(IDC_SETDATARND, &CSampleDialogDlg::OnBnSetRndData)
+	ON_BN_CLICKED(IDC_CLEARDATA, &CSampleDialogDlg::OnBnClearData)
+	ON_BN_CLICKED(IDC_FILEOPEN, &CSampleDialogDlg::OnBnFileOpen)
+	ON_BN_CLICKED(IDC_HEXPOPUP, &CSampleDialogDlg::OnBnPopup)
+	ON_BN_CLICKED(IDC_CHK_RW, &CSampleDialogDlg::OnChkRW)
 	ON_WM_DROPFILES()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
-constexpr const auto WstrTextRO { L"Random data: RO" };
-constexpr const auto WstrTextRW { L"Random data: RW" };
-
-CHexSampleDlg::CHexSampleDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_HEXSAMPLE_DIALOG, pParent)
-{
+CSampleDialogDlg::CSampleDialogDlg(CWnd* pParent /*=nullptr*/)
+	: CDialogEx(IDD_HEXCTRL_SAMPLE, pParent) {
 	m_hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
 }
 
-void CHexSampleDlg::DoDataExchange(CDataExchange* pDX)
+void CSampleDialogDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_CHK_RW, m_chkRW);
 	DDX_Control(pDX, IDC_CHK_LNK, m_chkLnk);
 }
 
-BOOL CHexSampleDlg::OnInitDialog()
+BOOL CSampleDialogDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
@@ -86,7 +85,7 @@ BOOL CHexSampleDlg::OnInitDialog()
 	return TRUE;
 }
 
-void CHexSampleDlg::OnPaint()
+void CSampleDialogDlg::OnPaint()
 {
 	if (IsIconic()) {
 		CPaintDC dc(this);
@@ -109,12 +108,12 @@ void CHexSampleDlg::OnPaint()
 	}
 }
 
-HCURSOR CHexSampleDlg::OnQueryDragIcon()
+HCURSOR CSampleDialogDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-void CHexSampleDlg::OnBnClearData()
+void CSampleDialogDlg::OnBnClearData()
 {
 	FileClose();
 	m_pHexDlg->ClearData();
@@ -127,7 +126,7 @@ void CHexSampleDlg::OnBnClearData()
 	SetWindowTextW(L"HexCtrl Sample Dialog");
 }
 
-void CHexSampleDlg::OnBnSetRndData()
+void CSampleDialogDlg::OnBnSetRndData()
 {
 	if (IsFileOpen()) {
 		FileClose();
@@ -155,14 +154,14 @@ void CHexSampleDlg::OnBnSetRndData()
 	}
 }
 
-void CHexSampleDlg::OnBnFileOpen()
+void CSampleDialogDlg::OnBnFileOpen()
 {
 	if (auto vecFiles = OpenFileDlg(); !vecFiles.empty()) {
 		FileOpen(vecFiles.front(), IsLnk());
 	}
 }
 
-void CHexSampleDlg::OnBnPopup()
+void CSampleDialogDlg::OnBnPopup()
 {
 	if (!m_pHexPopup->IsCreated()) {
 		CreateHexPopup();
@@ -175,7 +174,7 @@ void CHexSampleDlg::OnBnPopup()
 	}
 }
 
-void CHexSampleDlg::OnChkRW()
+void CSampleDialogDlg::OnChkRW()
 {
 	if (m_pHexDlg->IsDataSet()) {
 		m_pHexDlg->SetMutable(IsRW());
@@ -192,13 +191,13 @@ void CHexSampleDlg::OnChkRW()
 	}
 }
 
-void CHexSampleDlg::OnClose()
+void CSampleDialogDlg::OnClose()
 {
 	FileClose();
 	CDialogEx::OnClose();
 }
 
-void CHexSampleDlg::OnDropFiles(HDROP hDropInfo)
+void CSampleDialogDlg::OnDropFiles(HDROP hDropInfo)
 {
 	PVOID pOldValue;
 	Wow64DisableWow64FsRedirection(&pOldValue);
@@ -216,7 +215,7 @@ void CHexSampleDlg::OnDropFiles(HDROP hDropInfo)
 	Wow64RevertWow64FsRedirection(pOldValue);
 }
 
-BOOL CHexSampleDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+BOOL CSampleDialogDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	const auto pNMHDR = reinterpret_cast<PHEXMENUINFO>(lParam);
 	if (pNMHDR->hdr.idFrom == IDC_MY_HEX && pNMHDR->hdr.code == HEXCTRL_MSG_CONTEXTMENU) {
@@ -226,7 +225,7 @@ BOOL CHexSampleDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
-bool CHexSampleDlg::OnHexGetColor(HEXCOLORINFO& hci)
+bool CSampleDialogDlg::OnHexGetColor(HEXCOLORINFO& hci)
 {
 	//Sample code for custom colors:
 	if (hci.ullOffset < 18) {
@@ -258,17 +257,17 @@ bool CHexSampleDlg::OnHexGetColor(HEXCOLORINFO& hci)
 	return false;
 }
 
-void CHexSampleDlg::OnSize(UINT nType, int cx, int cy)
+void CSampleDialogDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
 }
 
-void CHexSampleDlg::SetStartupFile(LPCWSTR pwszFile)
+void CSampleDialogDlg::SetStartupFile(LPCWSTR pwszFile)
 {
 	m_wstrStartupFile = pwszFile;
 }
 
-void CHexSampleDlg::CreateHexPopup()
+void CSampleDialogDlg::CreateHexPopup()
 {
 	if (m_pHexPopup->IsCreated())
 		return;
@@ -300,12 +299,12 @@ void CHexSampleDlg::CreateHexPopup()
 	}
 }
 
-bool CHexSampleDlg::IsFileOpen()const
+bool CSampleDialogDlg::IsFileOpen()const
 {
 	return m_fFileOpen;
 }
 
-void CHexSampleDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
+void CSampleDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 {
 	FileClose();
 
@@ -352,7 +351,7 @@ void CHexSampleDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 	SetWindowTextW(wstrPath.data());
 }
 
-void CHexSampleDlg::FileClose()
+void CSampleDialogDlg::FileClose()
 {
 	if (!IsFileOpen())
 		return;
@@ -372,7 +371,7 @@ void CHexSampleDlg::FileClose()
 	m_fFileOpen = false;
 }
 
-void CHexSampleDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
+void CSampleDialogDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
 {
 	wchar_t buff[MAX_PATH];
 	GetModuleFileNameW(nullptr, buff, MAX_PATH);
@@ -394,17 +393,17 @@ void CHexSampleDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
 	}
 }
 
-bool CHexSampleDlg::IsRW()const
+bool CSampleDialogDlg::IsRW()const
 {
 	return m_chkRW.GetCheck() == BST_CHECKED;
 }
 
-bool CHexSampleDlg::IsLnk() const
+bool CSampleDialogDlg::IsLnk() const
 {
 	return m_chkLnk.GetCheck() == BST_CHECKED;
 }
 
-std::wstring CHexSampleDlg::LnkToPath(LPCWSTR pwszLnk)
+std::wstring CSampleDialogDlg::LnkToPath(LPCWSTR pwszLnk)
 {
 	CComPtr<IShellLinkW> psl;
 	psl.CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER);
@@ -418,7 +417,7 @@ std::wstring CHexSampleDlg::LnkToPath(LPCWSTR pwszLnk)
 	return wstrPath;
 }
 
-auto CHexSampleDlg::OpenFileDlg()->std::vector<std::wstring>
+auto CSampleDialogDlg::OpenFileDlg()->std::vector<std::wstring>
 {
 	CFileDialog fd(TRUE, nullptr, nullptr,
 		OFN_OVERWRITEPROMPT | OFN_EXPLORER | OFN_DONTADDTORECENT | OFN_ENABLESIZING

@@ -1,8 +1,8 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by HexSample.rc
+// Used by SampleDialog.rc
 //
-#define IDD_HEXSAMPLE_DIALOG            102
+#define IDD_HEXCTRL_SAMPLE              102
 #define IDR_MAINFRAME                   128
 #define IDC_MY_HEX                      1001
 #define IDC_SETDATARND                  1002

@@ -4,9 +4,9 @@
 
 using namespace HEXCTRL;
 
-class CHexSampleDlg : public CDialogEx, public IHexVirtColors {
+class CSampleDialogDlg : public CDialogEx, public IHexVirtColors {
 public:
-	explicit CHexSampleDlg(CWnd* pParent = nullptr);
+	explicit CSampleDialogDlg(CWnd* pParent = nullptr);
 	void SetStartupFile(LPCWSTR pwszFile);
 	static std::wstring LnkToPath(LPCWSTR pwszLnk);
 private:

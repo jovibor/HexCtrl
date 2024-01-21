@@ -33,16 +33,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="HexSample.h">
+    <ClInclude Include="SampleDialog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HexSampleDlg.h">
+    <ClInclude Include="SampleDialogDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
@@ -86,10 +83,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="HexSample.cpp">
+    <ClCompile Include="SampleDialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HexSampleDlg.cpp">
+    <ClCompile Include="SampleDialogDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
@@ -136,7 +133,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="HexSample.rc">
+    <ResourceCompile Include="SampleDialog.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
     <ResourceCompile Include="..\..\HexCtrl\res\HexCtrl.rc">
@@ -144,7 +141,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\HexSample.rc2">
+    <None Include="res\SampleDialog.rc2">
       <Filter>Resource Files</Filter>
     </None>
     <None Include="..\..\HexCtrl\res\IDJ_HEXCTRL_KEYBIND.json">
@@ -152,7 +149,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\HexSample.ico">
+    <Image Include="res\SampleDialog.ico">
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_BKMS.bmp">
