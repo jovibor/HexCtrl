@@ -2915,7 +2915,7 @@ void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 	std::vector<std::unique_ptr<std::wstring>> vecWstrFieldsText;
 	const auto ullStartOffset = ullStartLine * GetCapacity();
 	std::size_t sIndexToPrint { };
-	const HEXTEMPLATEFIELD* pFieldCurr { };
+	PCHEXTEMPLFIELD pFieldCurr { };
 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines) {
 		std::wstring wstrHexFieldToPrint;
@@ -5082,7 +5082,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 					CPoint ptScreen = point;
 					ClientToScreen(&ptScreen);
 					ptScreen.Offset(3, 3);
-					m_stToolInfoTempl.lpszText = pField->wstrName.data();
+					m_stToolInfoTempl.lpszText = const_cast<LPWSTR>(pField->wstrName.data());
 					ToolTipTemplShow(true, ptScreen);
 				}
 			}

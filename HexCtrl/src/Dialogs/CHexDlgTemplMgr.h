@@ -12,61 +12,11 @@
 #include <unordered_map>
 
 namespace HEXCTRL::INTERNAL {
-	//Forward declarations.
-	struct HEXTEMPLATE;
-	struct HEXTEMPLATEFIELD;
-	using PHEXTEMPLATE = HEXTEMPLATE*;
-	using PtrField = std::unique_ptr<HEXTEMPLATEFIELD>;
-	using VecFields = std::vector<PtrField>; //Vector for the Fields.
-	using PVecFields = VecFields*;
-	using PHEXTEMPLATEFIELD = HEXTEMPLATEFIELD*;
-	using PCHEXTEMPLATEFIELD = const HEXTEMPLATEFIELD*;
-	using IterJSONMember = rapidjson::Value::ConstMemberIterator;
-	using UmapCustomTypes = std::unordered_map<std::uint8_t, VecFields>;
-
-	enum class EHexFieldType : std::uint8_t {
-		custom_size, type_custom,
-		type_bool, type_char, type_uchar, type_short, type_ushort, type_int,
-		type_uint, type_ll, type_ull, type_float, type_double, type_time32,
-		type_time64, type_filetime, type_systemtime, type_guid
-	};
-
-	struct HEXCUSTOMTYPE {
-		std::wstring wstrTypeName;
-		std::uint8_t uTypeID { };
-	};
-	using VecCT = std::vector<HEXCUSTOMTYPE>;
-
-	struct HEXTEMPLATEFIELD {
-		std::wstring      wstrName { };     //Field name.
-		std::wstring      wstrDescr { };    //Field description.
-		int               iOffset { };      //Field offset relative to the Template's beginning.
-		int               iSize { };        //Field size.
-		HEXCOLOR          stClr { };        //Field Bk and Text color.
-		VecFields         vecNested { };    //Vector for nested fields.
-		PHEXTEMPLATEFIELD pFieldParent { }; //Parent field, in case of nested.
-		EHexFieldType     eType { };        //Field type.
-		std::uint8_t      uTypeID { };      //Type ID for custom types.
-		bool              fBigEndian { };   //Field endianness.
-	};
-
-	struct HEXTEMPLATE {
-		std::wstring wstrName;      //Template name.
-		VecFields    vecFields;     //Template fields.
-		VecCT        vecCustomType; //Custom types of this template.
-		int          iSizeTotal;    //Total size of all Template's fields, assigned internally by framework.
-		int          iTemplateID;   //Template ID, assigned by framework.
-	};
-
-	struct HEXTEMPLATEAPPLIED {
-		ULONGLONG    ullOffset;  //Offset, where to apply a template.
-		PHEXTEMPLATE pTemplate;  //Template pointer.
-		int          iAppliedID; //Applied/runtime ID, assigned by framework. Any template can be applied more than once.
-	};
-	using PHEXTEMPLATEAPPLIED = HEXTEMPLATEAPPLIED*;
-
 	class CHexDlgTemplMgr final : public CDialogEx, public IHexTemplates {
 	public:
+		CHexDlgTemplMgr();
+		~CHexDlgTemplMgr();
+		auto AddTemplate(PCHEXTEMPLATE pTemplate) -> int override;
 		void ApplyCurr(ULONGLONG ullOffset); //Apply currently selected template to offset.
 		int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)override; //Apply template to a given offset.
 		void DisapplyAll()override;
@@ -76,21 +26,36 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool HasApplied()const;
 		[[nodiscard]] bool HasCurrent()const;
 		[[nodiscard]] bool HasTemplates()const;
-		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD; //Template hittest by offset.
+		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD; //Template hittest by offset.
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsTooltips()const;
-		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
+		int LoadFromFile(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
 		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
 		void ShowTooltips(bool fShow)override;
 		BOOL ShowWindow(int nCmdShow);
 		void UnloadAll()override;
 		void UpdateData();
-	private:
+
+		//Static functions.
 		struct FIELDSDEFPROPS; //Forward declaration.
+		using IterJSONMember = rapidjson::Value::ConstMemberIterator;
+		using UmapCustomTypes = std::unordered_map<std::uint8_t, VecFields>;
+		[[nodiscard]] static bool JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& refVecFields,
+				const FIELDSDEFPROPS& refDefault, UmapCustomTypes& umapCustomT, int* pOffset = nullptr);
+		[[nodiscard]] static auto JSONEndianness(const rapidjson::Value& value) -> std::optional<bool>;
+		[[nodiscard]] static auto JSONColors(const rapidjson::Value& value, const char* pszColorName) -> std::optional<COLORREF>;
+		[[nodiscard]] static auto CloneTemplate(PCHEXTEMPLATE pTemplate) -> std::unique_ptr<HEXTEMPLATE>;
+		static LRESULT CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+			UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
+	private:
+		struct TEMPLAPPLIED;
+		using PCTEMPLAPPLIED = const TEMPLAPPLIED*;
 		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		void EnableDynamicLayoutHelper(bool fEnable);
-		auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PHEXTEMPLATEAPPLIED;
+		[[nodiscard]] auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PCTEMPLAPPLIED;
+		[[nodiscard]] auto GetIDForNewTemplate()const->int;
+		[[nodiscard]] auto GetTemplate(int iTemplateID)const->PCHEXTEMPLATE;
 		[[nodiscard]] bool IsHglSel()const;
 		[[nodiscard]] bool IsMinimized()const;
 		[[nodiscard]] bool IsNoEsc()const;
@@ -148,7 +113,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool SetDataSYSTEMTIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
 		[[nodiscard]] bool SetDataGUID(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
 		void SetDlgButtonsState(); //Enable/disable button states depending on templates existence.
-		void SetHexSelByField(PCHEXTEMPLATEFIELD pField);
+		void SetHexSelByField(PCHEXTEMPLFIELD pField);
 		void ShowListDataBool(LPWSTR pwsz, unsigned char uchData)const;
 		void ShowListDataChar(LPWSTR pwsz, char chData)const;
 		void ShowListDataUChar(LPWSTR pwsz, unsigned char uchData)const;
@@ -168,13 +133,6 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
 		void UnloadTemplate(int iTemplateID)override; //Unload/remove loaded template from memory.
 		void UpdateStaticText();
-		[[nodiscard]] static bool JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& vecFields,
-				const FIELDSDEFPROPS& stDefault, UmapCustomTypes& umapCustomT, int* pOffset = nullptr);
-		[[nodiscard]] static auto JSONEndianness(const rapidjson::Value& value) -> std::optional<bool>;
-		[[nodiscard]] static auto JSONColors(const rapidjson::Value& value, const char* pszColorName) -> std::optional<COLORREF>;
-		[[nodiscard]] static auto LoadFromFile(const wchar_t* pFilePath) -> std::unique_ptr<HEXTEMPLATE>;
-		static LRESULT CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-			UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 		DECLARE_MESSAGE_MAP();
 	private:
 		static constexpr auto m_iIDListApplFieldType { 0 }; //ID of the Type field in the m_pListApplied.
@@ -183,8 +141,8 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr auto m_iIDListApplFieldClrs { 7 };
 		enum class EMenuID : std::uint16_t;
 		IHexCtrl* m_pHexCtrl { };
-		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;               //Loaded Templates.
-		std::vector<std::unique_ptr<HEXTEMPLATEAPPLIED>> m_vecTemplatesApplied; //Currently Applied Templates.
+		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;      //Loaded Templates.
+		std::vector<std::unique_ptr<TEMPLAPPLIED>> m_vecTemplatesAppl; //Currently Applied Templates.
 		CComboBox m_comboTemplates;  //Currently available templates list.
 		CEdit m_editOffset;          //"Offset" edit box.
 		CButton m_btnMinMax;         //Check-box min-max.
@@ -202,16 +160,16 @@ namespace HEXCTRL::INTERNAL {
 		CMenu m_menuHdr;             //Menu for the list header.
 		HCURSOR m_hCurResize;
 		HCURSOR m_hCurArrow;
-		PHEXTEMPLATEAPPLIED m_pAppliedCurr { }; //Currently selected template in the applied Tree.
-		PVecFields m_pVecFieldsCurr { };        //Currently selected Fields vector.
-		HTREEITEM m_hTreeCurrParent { };        //Currently selected Tree node's parent.
-		std::uint64_t m_u64DlgData { };         //Data from SetDlgData.
-		DWORD m_dwDateFormat { };               //Date format.
-		int m_iDynLayoutMinY { };               //For DynamicLayout::SetMinSize.
-		wchar_t m_wchDateSepar { };             //Date separator.
-		bool m_fCurInSplitter { };              //Indicates that mouse cursor is in the splitter area.
-		bool m_fLMDownResize { };               //Left mouse pressed in splitter area to resize.
-		bool m_fListGuardEvent { false };       //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
-		bool m_fTooltips { true };              //Show tooltips or not.
+		PCTEMPLAPPLIED m_pAppliedCurr { }; //Currently selected template in the applied Tree.
+		PCVecFields m_pVecFieldsCurr { };     //Currently selected Fields vector.
+		HTREEITEM m_hTreeCurrParent { };      //Currently selected Tree node's parent.
+		std::uint64_t m_u64DlgData { };       //Data from SetDlgData.
+		DWORD m_dwDateFormat { };             //Date format.
+		int m_iDynLayoutMinY { };             //For DynamicLayout::SetMinSize.
+		wchar_t m_wchDateSepar { };           //Date separator.
+		bool m_fCurInSplitter { };            //Indicates that mouse cursor is in the splitter area.
+		bool m_fLMDownResize { };             //Left mouse pressed in splitter area to resize.
+		bool m_fListGuardEvent { false };     //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
+		bool m_fTooltips { true };            //Show tooltips or not.
 	};
 }

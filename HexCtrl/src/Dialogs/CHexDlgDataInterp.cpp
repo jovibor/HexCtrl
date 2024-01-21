@@ -83,7 +83,6 @@ BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
 END_MESSAGE_MAP()
 
 CHexDlgDataInterp::CHexDlgDataInterp() = default;
-
 CHexDlgDataInterp::~CHexDlgDataInterp() = default;
 
 auto CHexDlgDataInterp::GetDlgData()const->std::uint64_t

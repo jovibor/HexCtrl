@@ -16,8 +16,33 @@
 #include <vector>
 
 #if !defined(__cpp_lib_format) || !defined(__cpp_lib_span) || !defined(__cpp_lib_bit_cast)
-#error "C++20 compiler is required for HexCtrl."
+#error "C++20 compliant compiler is required to build HexCtrl."
 #endif
+
+#ifdef HEXCTRL_SHARED_DLL
+#ifdef HEXCTRL_EXPORT
+#define HEXCTRLAPI __declspec(dllexport)
+#else //^^^ HEXCTRL_EXPORT / vvv !HEXCTRL_EXPORT
+#define HEXCTRLAPI __declspec(dllimport)
+#ifdef _WIN64
+#ifdef _DEBUG
+#define HEXCTRL_LIBNAME(x) x"64d.lib"
+#else //^^^ _DEBUG / vvv !_DEBUG
+#define HEXCTRL_LIBNAME(x) x"64.lib"
+#endif //_DEBUG
+#else //^^^ _WIN64 / vvv !_WIN64
+#ifdef _DEBUG
+#define HEXCTRL_LIBNAME(x) x"d.lib"
+#else //^^^ _DEBUG / vvv !_DEBUG
+#define HEXCTRL_LIBNAME(x) x".lib"
+#endif //_DEBUG
+#endif //_WIN64
+#pragma comment(lib, HEXCTRL_LIBNAME("HexCtrl"))
+#endif //HEXCTRL_EXPORT
+#else //^^^ HEXCTRL_SHARED_DLL / vvv !HEXCTRL_SHARED_DLL
+#define	HEXCTRLAPI
+#endif //HEXCTRL_SHARED_DLL
+
 
 namespace HEXCTRL {
 	constexpr auto HEXCTRL_VERSION_MAJOR = 3;
@@ -28,7 +53,7 @@ namespace HEXCTRL {
 	using SpanCByte = std::span<const std::byte>;
 
 	/********************************************************************************************
-	* EHexCmd - Enum of the commands that can be executed within HexCtrl, used in ExecuteCmd.   *
+	* EHexCmd: Enum of the commands that can be executed within HexCtrl via the ExecuteCmd.     *
 	********************************************************************************************/
 	enum class EHexCmd : std::uint8_t {
 		CMD_SEARCH_DLG = 0x01, CMD_SEARCH_NEXT, CMD_SEARCH_PREV,
@@ -49,7 +74,7 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* EHexWnd - HexControl's windows.                                                           *
+	* EHexWnd: HexControl's internal windows.                                                   *
 	********************************************************************************************/
 	enum class EHexWnd : std::uint8_t {
 		WND_MAIN, DLG_BKMMGR, DLG_DATAINTERP, DLG_MODIFY,
@@ -57,7 +82,7 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* HEXSPAN - Data offset and size, used in some data/size related routines.                  *
+	* HEXSPAN: Data offset and size, used in some data/size related routines.                   *
 	********************************************************************************************/
 	struct HEXSPAN {
 		ULONGLONG ullOffset { };
@@ -66,7 +91,7 @@ namespace HEXCTRL {
 	using VecSpan = std::vector<HEXSPAN>;
 
 	/********************************************************************************************
-	* HEXCOLOR - Background and Text color struct.                                              *
+	* HEXCOLOR: Background and Text color struct.                                               *
 	********************************************************************************************/
 	struct HEXCOLOR {
 		COLORREF clrBk { };   //Bk color.
@@ -76,7 +101,7 @@ namespace HEXCTRL {
 	using PHEXCOLOR = HEXCOLOR*;
 
 	/********************************************************************************************
-	* HEXDATAINFO - struct for a data information used in IHexVirtData.                         *
+	* HEXDATAINFO: Data information used in the IHexVirtData interface.                         *
 	********************************************************************************************/
 	struct HEXDATAINFO {
 		NMHDR    hdr { };       //Standard Windows header.
@@ -85,9 +110,8 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* IHexVirtData - Pure abstract data handler class, that can be implemented by client,       *
-	* to set its own data handler routines.	Pointer to this class can be set in SetData method. *
-	* All virtual functions must be defined in client's derived class.                          *
+	* IHexVirtData: Pure abstract data handler class, that can be implemented by a client,      *
+	* to set its own data handler routines.	Pointer to this class is set in the SetData method. *
 	********************************************************************************************/
 	class IHexVirtData {
 	public:
@@ -96,7 +120,7 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* HEXBKM - Bookmarks main struct.                                                           *
+	* HEXBKM: Bookmarks main struct.                                                            *
 	********************************************************************************************/
 	struct HEXBKM {
 		VecSpan      vecSpan { };  //Vector of offsets and sizes.
@@ -108,7 +132,7 @@ namespace HEXCTRL {
 	using PHEXBKM = HEXBKM*;
 
 	/********************************************************************************************
-	* IHexBookmarks - Abstract base interface, represents HexCtrl bookmarks.                    *
+	* IHexBookmarks: Pure abstract bookmarks' interface, for the HexCtrl bookmarks machinery.   *
 	********************************************************************************************/
 	class IHexBookmarks {
 	public:
@@ -122,7 +146,7 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* HEXBKMINFO - Bookmarks info.                                                              *
+	* HEXBKMINFO: Bookmarks info.                                                               *
 	********************************************************************************************/
 	struct HEXBKMINFO {
 		NMHDR   hdr { };  //Standard Windows header.
@@ -131,7 +155,7 @@ namespace HEXCTRL {
 	using PHEXBKMINFO = HEXBKMINFO*;
 
 	/********************************************************************************************
-	* HEXMENUINFO - Menu info.                                                                  *
+	* HEXMENUINFO: Menu info.                                                                   *
 	********************************************************************************************/
 	struct HEXMENUINFO {
 		NMHDR hdr { };        //Standard Windows header.
@@ -142,7 +166,7 @@ namespace HEXCTRL {
 	using PHEXMENUINFO = HEXMENUINFO*;
 
 	/********************************************************************************************
-	* HEXCOLORINFO - struct for hex chunks' color information.                                  *
+	* HEXCOLORINFO: Struct for HexCtrl custom colors, used in the IHexVirtColors interface.     *
 	********************************************************************************************/
 	struct HEXCOLORINFO {
 		NMHDR     hdr { };       //Standard Windows header.
@@ -151,7 +175,7 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* IHexVirtColors - Pure abstract class for chunk colors.                                    *
+	* IHexVirtColors: Pure abstract class for HexCtrl custom colors.                            *
 	********************************************************************************************/
 	class IHexVirtColors {
 	public:
@@ -159,22 +183,72 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* IHexTemplates - Abstract base interface for HexCtrl data templates.                       *
+	* Templates related data structures, enums, and aliases                                     *
+	********************************************************************************************/
+	struct HEXTEMPLFIELD;
+	using PtrField = std::unique_ptr<HEXTEMPLFIELD>;
+	using VecFields = std::vector<PtrField>; //Vector for the Fields.
+	using PCVecFields = const VecFields*;
+	using PCHEXTEMPLFIELD = const HEXTEMPLFIELD*;
+
+	//Predefined types of a field.
+	enum class EHexFieldType : std::uint8_t {
+		custom_size, type_custom,
+		type_bool, type_char, type_uchar, type_short, type_ushort, type_int,
+		type_uint, type_ll, type_ull, type_float, type_double, type_time32,
+		type_time64, type_filetime, type_systemtime, type_guid
+	};
+
+	//Custom type of a field.
+	struct HEXCUSTOMTYPE {
+		std::wstring wstrTypeName; //Custom type name.
+		std::uint8_t uTypeID { };  //Custom type ID.
+	};
+	using VecCT = std::vector<HEXCUSTOMTYPE>;
+
+	//Template's field main struct.
+	struct HEXTEMPLFIELD {
+		std::wstring    wstrName { };     //Field name.
+		std::wstring    wstrDescr { };    //Field description.
+		int             iOffset { };      //Field offset relative to the Template's beginning.
+		int             iSize { };        //Field size.
+		HEXCOLOR        stClr { };        //Field Bk and Text color.
+		VecFields       vecNested { };    //Vector for nested fields.
+		PCHEXTEMPLFIELD pFieldParent { }; //Parent field, in case of nested.
+		EHexFieldType   eType { };        //Field type.
+		std::uint8_t    uTypeID { };      //Field type ID if, it's a custom type.
+		bool            fBigEndian { };   //Field endianness.
+	};
+
+	//Template main struct.
+	struct HEXTEMPLATE {
+		std::wstring wstrName;      //Template name.
+		VecFields    vecFields;     //Template fields.
+		VecCT        vecCustomType; //Custom types of this template.
+		int          iSizeTotal;    //Total size of all Template's fields, assigned internally by framework.
+		int          iTemplateID;   //Template ID, assigned by framework.
+	};
+	using PCHEXTEMPLATE = const HEXTEMPLATE*;
+
+	/********************************************************************************************
+	* IHexTemplates: Pure abstract base interface for HexCtrl templates.                        *
 	********************************************************************************************/
 	class IHexTemplates {
 	public:
+		virtual auto AddTemplate(PCHEXTEMPLATE pTemplate) -> int = 0;
 		virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Applies template to an offset, returns AppliedID.
 		virtual void DisapplyAll() = 0;
 		virtual void DisapplyByID(int iAppliedID) = 0;
 		virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
-		virtual auto LoadTemplate(const wchar_t* pFilePath) -> int = 0; //Returns template ID on success, zero otherwise.
+		virtual auto LoadFromFile(const wchar_t* pFilePath) -> int = 0; //Returns TemplateID on success, null otherwise.
 		virtual void ShowTooltips(bool fShow) = 0;
 		virtual void UnloadAll() = 0;                     //Unload all templates.
 		virtual void UnloadTemplate(int iTemplateID) = 0; //Unload/remove loaded template from memory.
+		[[nodiscard]] static HEXCTRLAPI auto __cdecl LoadTemplateFromFile(const wchar_t* pFilePath)->std::unique_ptr<HEXTEMPLATE>;
 	};
 
 	/********************************************************************************************
-	* HEXCOLORS - All HexCtrl colors.                                                           *
+	* HEXCOLORS: HexCtrl internal colors.                                                       *
 	********************************************************************************************/
 	struct HEXCOLORS {
 		COLORREF clrFontHex { GetSysColor(COLOR_WINDOWTEXT) };       //Hex-chunks font color.
@@ -196,7 +270,7 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* HEXCREATE - for IHexCtrl::Create method.                                                  *
+	* HEXCREATE: Main struct for the HexCtrl creation.                                          *
 	********************************************************************************************/
 	struct HEXCREATE {
 		HWND             hWndParent { };         //Parent window handle.
@@ -216,7 +290,7 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* HEXDATA - for IHexCtrl::SetData method.                                                   *
+	* HEXDATA: Main struct for the HexCtrl SetData method.                                      *
 	********************************************************************************************/
 	struct HEXDATA {
 		SpanByte        spnData { };                //Data span to display.
@@ -228,7 +302,7 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* HEXHITTEST - used in HitTest method.                                                      *
+	* HEXHITTEST: Struct for the HitTest method.                                                *
 	********************************************************************************************/
 	struct HEXHITTEST {
 		ULONGLONG ullOffset { };     //Offset.
@@ -249,14 +323,14 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* EHexModifyMode - Enum of the data modification mode, used in HEXMODIFY.                   *
+	* EHexModifyMode: Enum of the data modification mode, used in HEXMODIFY.                    *
 	********************************************************************************************/
 	enum class EHexModifyMode : std::uint8_t {
 		MODIFY_ONCE, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RAND_MT19937, MODIFY_RAND_FAST
 	};
 
 	/********************************************************************************************
-	* EHexOperMode - Data Operation mode, used in EHexModifyMode::MODIFY_OPERATION mode.        *
+	* EHexOperMode: Data Operation mode, used in EHexModifyMode::MODIFY_OPERATION mode.         *
 	********************************************************************************************/
 	enum class EHexOperMode : std::uint8_t {
 		OPER_ASSIGN, OPER_ADD, OPER_SUB, OPER_MUL, OPER_DIV, OPER_CEIL, OPER_FLOOR, OPER_OR,
@@ -265,23 +339,23 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* EHexDataSize - Data size to operate on, used in EHexModifyMode::MODIFY_OPERATION mode.    *
+	* EHexDataSize: Data size to operate on, used in EHexModifyMode::MODIFY_OPERATION mode.     *
 	********************************************************************************************/
 	enum class EHexDataSize : std::uint8_t {
 		SIZE_BYTE = 0x1U, SIZE_WORD = 0x2U, SIZE_DWORD = 0x4U, SIZE_QWORD = 0x8U
 	};
 
 	/********************************************************************************************
-	* HEXMODIFY - used to represent data modification parameters.                               *
+	* HEXMODIFY: Main struct to represent data modification parameters.                         *
 	* When enModifyMode is set to EHexModifyMode::MODIFY_ONCE, bytes from spnData.data() just   *
 	* replace corresponding data bytes as is.                                                   *
 	* If enModifyMode is equal to EHexModifyMode::MODIFY_REPEAT                                 *
 	* then block by block replacement takes place few times.                                    *
-	*   For example : if SUM(vecSpan.ullSize) == 9, spnData.size() == 3 and enModifyMode is set *
+	* For example: if SUM(vecSpan.ullSize) == 9, spnData.size() == 3 and enModifyMode is set    *
 	* to EHexModifyMode::MODIFY_REPEAT, bytes in memory at vecSpan.ullOffset position are       *
-	* `010203040506070809`, and bytes pointed to by spnData.data() are `030405`, then after     *
-	* modification bytes at vecSpan.ullOffset will be `030405030405030405.                      *
-	* If enModifyMode is equal to MODIFY_OPERATION then enOperMode comes into play, showing     *
+	* `010203040506070809`, and bytes pointed to by spnData.data() are `030405`, then, after    *
+	* a modification, bytes at vecSpan.ullOffset will be `030405030405030405.                   *
+	* If enModifyMode is equal to MODIFY_OPERATION, then enOperMode comes into play, showing    *
 	* what kind of operation must be performed on data, with the enDataSize showing the size.   *
 	********************************************************************************************/
 	struct HEXMODIFY {
@@ -295,7 +369,7 @@ namespace HEXCTRL {
 
 
 	/********************************************************************************************
-	* IHexCtrl - pure abstract base class.                                                      *
+	* IHexCtrl: Pure abstract HexCtrl base class.                                               *
 	********************************************************************************************/
 	class IHexCtrl {
 	public:
@@ -367,41 +441,6 @@ namespace HEXCTRL {
 		virtual void ShowInfoBar(bool fShow) = 0;              //Show/hide bottom Info bar.
 	};
 
-	/********************************************************************************************
-	* Factory function CreateHexCtrl returns IHexCtrlUnPtr - unique_ptr with custom deleter.    *
-	* In client code you should use IHexCtrlPtr type which is an alias to either IHexCtrlUnPtr  *
-	* - a unique_ptr, or IHexCtrlShPtr - a shared_ptr. Uncomment what serves best for you,      *
-	* and comment out the other.                                                                *
-	* If you, for some reason, need raw pointer, you can directly call CreateRawHexCtrl         *
-	* function, which returns IHexCtrl interface pointer, but in this case you will need to     *
-	* call IHexCtrl::Destroy method	afterwards - to manually delete HexCtrl object.             *
-	********************************************************************************************/
-#ifdef HEXCTRL_SHARED_DLL
-#ifdef HEXCTRL_EXPORT
-#define HEXCTRLAPI __declspec(dllexport)
-#else
-#define HEXCTRLAPI __declspec(dllimport)
-
-#ifdef _WIN64
-#ifdef _DEBUG
-#define LIBNAME_PROPER(x) x"64d.lib"
-#else
-#define LIBNAME_PROPER(x) x"64.lib"
-#endif
-#else
-#ifdef _DEBUG
-#define LIBNAME_PROPER(x) x"d.lib"
-#else
-#define LIBNAME_PROPER(x) x".lib"
-#endif
-#endif
-
-#pragma comment(lib, LIBNAME_PROPER("HexCtrl"))
-#endif
-#else
-#define	HEXCTRLAPI
-#endif
-
 #if defined HEXCTRL_MANUAL_MFC_INIT || defined HEXCTRL_SHARED_DLL
 	//Because MFC PreTranslateMessage doesn't work in a DLLs
 	//this exported function should be called from the app's main message loop.
@@ -414,17 +453,20 @@ namespace HEXCTRL {
 	extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg);
 #endif
 
+	/********************************************************************************************
+	* Factory function CreateHexCtrl returns IHexCtrlUnPtr, a unique_ptr with a custom deleter. *
+	* If you, for some reason, need a raw pointer you can directly call the CreateRawHexCtrl    *
+	* function, which returns IHexCtrl* interface pointer. But in this case you will need to    *
+	* call IHexCtrl::Destroy method	afterwards, to manually delete created raw HexCtrl object.  *
+	********************************************************************************************/
+
 	extern "C" [[nodiscard]] HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl();
-
 	using IHexCtrlPtr = std::unique_ptr < IHexCtrl, decltype([](IHexCtrl* p) { p->Destroy(); }) > ;
-
-	[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl() {
-		return IHexCtrlPtr { CreateRawHexCtrl() };
-	};
+	[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl() { return IHexCtrlPtr { CreateRawHexCtrl() }; };
 
 	/********************************************************************************************
 	* WM_NOTIFY message codes (NMHDR.code values).                                              *
-	* These codes are used to notify m_hwndMsg window about control's states.                   *
+	* These codes are used to notify a parent window about HexCtrl's states.                    *
 	********************************************************************************************/
 
 	constexpr auto HEXCTRL_MSG_BKMCLICK { 0x0100U };      //Bookmark is clicked.
@@ -447,9 +489,9 @@ namespace HEXCTRL {
 	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0111U };  //Selection has been made.
 
 
-	/*********************************************************
-	* Flags for the internal dialogs, used with SetDlgData.  *
-	*********************************************************/
+	/********************************************************************
+	* Flags for the internal dialogs, used with the SetDlgData method.  *
+	********************************************************************/
 
 	//Flags common for all dialogs.
 	constexpr auto HEXCTRL_FLAG_NOESC { 0x8000000000000000ULL };

@@ -24,7 +24,6 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgTemplMgr;
 	class CHexScroll;
 	class CHexSelection;
-	struct HEXTEMPLATEFIELD;
 
 	/********************************************************************************************
 	* CHexCtrl class is an implementation of the IHexCtrl interface.                            *
@@ -239,7 +238,7 @@ namespace HEXCTRL::INTERNAL {
 		CWnd m_wndTtTempl { };                //Tooltip window for Templates' fields.
 		TTTOOLINFOW m_stToolInfoTempl { };    //Tooltip info for Templates.
 		std::time_t m_tmTtTempl { };          //Time beginning to calc the diff for hiding template tooltip after.
-		HEXTEMPLATEFIELD* m_pTFieldTtCurr { };//Currently shown Template field's tooltip;
+		PCHEXTEMPLFIELD m_pTFieldTtCurr { };  //Currently shown Template field's tooltip;
 		CWnd m_wndTtOffset { };               //Tooltip window for Offset in m_fHighLatency mode.
 		TTTOOLINFOW m_stToolInfoOffset { };   //Tooltip info for Offset.
 		CFont m_fontMain;                     //Main Hex chunks font.

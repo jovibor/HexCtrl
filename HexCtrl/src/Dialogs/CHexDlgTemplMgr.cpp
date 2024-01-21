@@ -21,6 +21,12 @@ import HEXCTRL.HexUtility;
 using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL {
+	struct CHexDlgTemplMgr::TEMPLAPPLIED {
+		ULONGLONG     ullOffset;  //Offset, where to apply a template.
+		PCHEXTEMPLATE pTemplate;  //Template pointer.
+		int           iAppliedID; //Applied/runtime ID, assigned by framework. Any template can be applied more than once.
+	};
+
 	enum class CHexDlgTemplMgr::EMenuID : std::uint16_t {
 		IDM_TREEAPPLIED_DISAPPLY = 0x8000, IDM_TREEAPPLIED_DISAPPLYALL = 0x8001,
 		IDM_LISTAPPLIED_HDR_TYPE = 0x8100, IDM_LISTAPPLIED_HDR_NAME, IDM_LISTAPPLIED_HDR_OFFSET,
@@ -28,10 +34,10 @@ namespace HEXCTRL::INTERNAL {
 	};
 
 	struct CHexDlgTemplMgr::FIELDSDEFPROPS { //Helper struct for convenient argument passing through recursive fields' parsing.
-		HEXCOLOR          stClr { };
-		PHEXTEMPLATE      pTemplate { }; //Same for all fields.
-		PHEXTEMPLATEFIELD pFieldParent { };
-		bool              fBigEndian { false };
+		HEXCOLOR        stClr { };
+		PCHEXTEMPLATE   pTemplate { }; //Same for all fields.
+		PCHEXTEMPLFIELD pFieldParent { };
+		bool            fBigEndian { false };
 	};
 }
 
@@ -66,6 +72,24 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_WM_NCHITTEST()
 END_MESSAGE_MAP()
 
+CHexDlgTemplMgr::CHexDlgTemplMgr() = default;
+CHexDlgTemplMgr::~CHexDlgTemplMgr() = default;
+
+auto CHexDlgTemplMgr::AddTemplate(PCHEXTEMPLATE pTemplate)->int
+{
+	assert(pTemplate != nullptr);
+	if (pTemplate == nullptr) {
+		return 0;
+	}
+
+	auto pClonedTemplate = CloneTemplate(pTemplate);
+	const auto iNewTemplateID = GetIDForNewTemplate();
+	pClonedTemplate->iTemplateID = iNewTemplateID;
+	m_vecTemplates.emplace_back(std::move(pClonedTemplate));
+	OnTemplateLoadUnload(iNewTemplateID, true);
+
+	return iNewTemplateID;
+}
 
 void CHexDlgTemplMgr::ApplyCurr(ULONGLONG ullOffset)
 {
@@ -82,38 +106,35 @@ void CHexDlgTemplMgr::ApplyCurr(ULONGLONG ullOffset)
 
 int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 {
-	const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
-		[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
-	if (iterTempl == m_vecTemplates.end())
+	const auto pTemplate = GetTemplate(iTemplateID);
+	if (pTemplate == nullptr)
 		return 0;
 
-	const auto pTemplate = iterTempl->get();
-
 	auto iAppliedID = 1; //AppliedID starts at 1.
-	if (const auto iter = std::max_element(m_vecTemplatesApplied.begin(), m_vecTemplatesApplied.end(),
-		[](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref1, const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref2) {
-			return ref1->iAppliedID < ref2->iAppliedID; }); iter != m_vecTemplatesApplied.end()) {
+	if (const auto iter = std::max_element(m_vecTemplatesAppl.begin(), m_vecTemplatesAppl.end(),
+		[](const std::unique_ptr<TEMPLAPPLIED>& p1, const std::unique_ptr<TEMPLAPPLIED>& p2) {
+			return p1->iAppliedID < p2->iAppliedID; }); iter != m_vecTemplatesAppl.end()) {
 		iAppliedID = iter->get()->iAppliedID + 1; //Increasing next AppliedID by 1.
 	}
 
-	const auto pApplied = m_vecTemplatesApplied.emplace_back(
-		std::make_unique<HEXTEMPLATEAPPLIED>(ullOffset, pTemplate, iAppliedID)).get();
+	const auto pApplied = m_vecTemplatesAppl.emplace_back(
+		std::make_unique<TEMPLAPPLIED>(ullOffset, pTemplate, iAppliedID)).get();
 
 	//Tree root node.
 	TVINSERTSTRUCTW tvi { .hParent = TVI_ROOT, .itemex { .mask = TVIF_CHILDREN | TVIF_TEXT | TVIF_PARAM,
 		.pszText = LPSTR_TEXTCALLBACK, .cChildren = static_cast<int>(pTemplate->vecFields.size()),
-		.lParam = reinterpret_cast<LPARAM>(pApplied) } }; //Tree root node has PHEXTEMPLATEAPPLIED ptr.
+		.lParam = reinterpret_cast<LPARAM>(pApplied) } }; //Tree root node has PCTEMPLAPPLIED ptr.
 	const auto hTreeRootNode = m_treeApplied.InsertItem(&tvi);
 
-	const auto lmbFill = [&](HTREEITEM hTreeRoot, VecFields& refVecFields)->void {
-		const auto _lmbFill = [&](const auto& lmbSelf, HTREEITEM hTreeRoot, VecFields& refVecFields)->void {
-			for (auto& field : refVecFields) {
+	const auto lmbFill = [&](HTREEITEM hTreeRoot, const VecFields& refVecFields)->void {
+		const auto _lmbFill = [&](const auto& lmbSelf, HTREEITEM hTreeRoot, const VecFields& refVecFields)->void {
+			for (const auto& pField : refVecFields) {
 				tvi.hParent = hTreeRoot;
-				tvi.itemex.cChildren = static_cast<int>(field->vecNested.size());
-				tvi.itemex.lParam = reinterpret_cast<LPARAM>(field.get()); //Tree child nodes have PHEXTEMPLATEAPPLIED ptr.
+				tvi.itemex.cChildren = static_cast<int>(pField->vecNested.size());
+				tvi.itemex.lParam = reinterpret_cast<LPARAM>(pField.get()); //Tree child nodes have PCTEMPLAPPLIED ptr.
 				const auto hCurrentRoot = m_treeApplied.InsertItem(&tvi);
 				if (tvi.itemex.cChildren > 0) {
-					lmbSelf(lmbSelf, hCurrentRoot, field->vecNested);
+					lmbSelf(lmbSelf, hCurrentRoot, pField->vecNested);
 				}
 			}
 			};
@@ -139,7 +160,7 @@ void CHexDlgTemplMgr::DisapplyAll()
 	m_pAppliedCurr = nullptr;
 	m_pVecFieldsCurr = nullptr;
 	m_hTreeCurrParent = nullptr;
-	m_vecTemplatesApplied.clear();
+	m_vecTemplatesAppl.clear();
 
 	if (m_pHexCtrl->IsDataSet()) {
 		m_pHexCtrl->Redraw();
@@ -148,11 +169,11 @@ void CHexDlgTemplMgr::DisapplyAll()
 
 void CHexDlgTemplMgr::DisapplyByID(int iAppliedID)
 {
-	if (const auto iter = std::find_if(m_vecTemplatesApplied.begin(), m_vecTemplatesApplied.end(),
-		[iAppliedID](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref) { return ref->iAppliedID == iAppliedID; });
-		iter != m_vecTemplatesApplied.end()) {
+	if (const auto iter = std::find_if(m_vecTemplatesAppl.begin(), m_vecTemplatesAppl.end(),
+		[iAppliedID](const std::unique_ptr<TEMPLAPPLIED>& pData) { return pData->iAppliedID == iAppliedID; });
+		iter != m_vecTemplatesAppl.end()) {
 		RemoveNodeWithAppliedID(iAppliedID);
-		m_vecTemplatesApplied.erase(iter);
+		m_vecTemplatesAppl.erase(iter);
 		if (m_pHexCtrl->IsDataSet()) {
 			m_pHexCtrl->Redraw();
 		}
@@ -161,12 +182,12 @@ void CHexDlgTemplMgr::DisapplyByID(int iAppliedID)
 
 void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 {
-	if (const auto rIter = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
-		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
-			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
-			rIter != m_vecTemplatesApplied.rend()) {
-		RemoveNodeWithAppliedID(rIter->get()->iAppliedID);
-		m_vecTemplatesApplied.erase(std::next(rIter).base());
+	if (const auto rit = std::find_if(m_vecTemplatesAppl.rbegin(), m_vecTemplatesAppl.rend(),
+		[ullOffset](const std::unique_ptr<TEMPLAPPLIED>& pData) {
+			return ullOffset >= pData->ullOffset && ullOffset < pData->ullOffset + pData->pTemplate->iSizeTotal; });
+			rit != m_vecTemplatesAppl.rend()) {
+		RemoveNodeWithAppliedID(rit->get()->iAppliedID);
+		m_vecTemplatesAppl.erase(std::next(rit).base());
 		if (m_pHexCtrl->IsDataSet()) {
 			m_pHexCtrl->Redraw();
 		}
@@ -210,7 +231,7 @@ auto CHexDlgTemplMgr::GetDlgData()const->std::uint64_t
 
 bool CHexDlgTemplMgr::HasApplied()const
 {
-	return !m_vecTemplatesApplied.empty();
+	return !m_vecTemplatesAppl.empty();
 }
 
 bool CHexDlgTemplMgr::HasCurrent()const
@@ -223,39 +244,39 @@ bool CHexDlgTemplMgr::HasTemplates()const
 	return !m_vecTemplates.empty();
 }
 
-auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PHEXTEMPLATEFIELD
+auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD
 {
-	const auto iterApplied = std::find_if(m_vecTemplatesApplied.rbegin(), m_vecTemplatesApplied.rend(),
-		[ullOffset](const std::unique_ptr<HEXTEMPLATEAPPLIED>& refTempl) {
-			return ullOffset >= refTempl->ullOffset && ullOffset < refTempl->ullOffset + refTempl->pTemplate->iSizeTotal; });
-	if (iterApplied == m_vecTemplatesApplied.rend()) {
+	const auto rit = std::find_if(m_vecTemplatesAppl.rbegin(), m_vecTemplatesAppl.rend(),
+		[ullOffset](const std::unique_ptr<TEMPLAPPLIED>& pData) {
+			return ullOffset >= pData->ullOffset && ullOffset < pData->ullOffset + pData->pTemplate->iSizeTotal; });
+	if (rit == m_vecTemplatesAppl.rend()) {
 		return nullptr;
 	}
 
-	const auto pApplied = iterApplied->get();
+	const auto pApplied = rit->get();
 	const auto ullOffsetApplied = pApplied->ullOffset;
 	const auto& vecFields = pApplied->pTemplate->vecFields;
 
 	const auto lmbFind = [ullOffset, ullOffsetApplied]
-	(const VecFields& vecFields)->PHEXTEMPLATEFIELD {
+	(const VecFields& refVecFields)->PCHEXTEMPLFIELD {
 		const auto _lmbFind = [ullOffset, ullOffsetApplied]
-		(const auto& lmbSelf, const VecFields& vecFields)->PHEXTEMPLATEFIELD {
-			for (const auto& refField : vecFields) {
-				if (refField->vecNested.empty()) {
-					const auto ullOffsetCurr = ullOffsetApplied + refField->iOffset;
-					if (ullOffset < (ullOffsetCurr + refField->iSize)) {
-						return refField.get();
+		(const auto& lmbSelf, const VecFields& refVecFields)->PCHEXTEMPLFIELD {
+			for (const auto& pField : refVecFields) {
+				if (pField->vecNested.empty()) {
+					const auto ullOffsetCurr = ullOffsetApplied + pField->iOffset;
+					if (ullOffset < (ullOffsetCurr + pField->iSize)) {
+						return pField.get();
 					}
 				}
 				else {
-					if (const auto pField = lmbSelf(lmbSelf, refField->vecNested); pField != nullptr) {
-						return pField; //Return only if we Hit a pointer in the inner lambda, continue the loop otherwise.
+					if (const auto pFieldInner = lmbSelf(lmbSelf, pField->vecNested); pFieldInner != nullptr) {
+						return pFieldInner; //Return only if we Hit a pointer in the inner lambda, continue the loop otherwise.
 					}
 				}
 			}
 			return nullptr;
 			};
-		return _lmbFind(_lmbFind, vecFields);
+		return _lmbFind(_lmbFind, refVecFields);
 		};
 
 	return lmbFind(vecFields);
@@ -275,32 +296,19 @@ bool CHexDlgTemplMgr::IsTooltips()const
 	return m_fTooltips;
 }
 
-int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
+int CHexDlgTemplMgr::LoadFromFile(const wchar_t* pFilePath)
 {
-	auto pTemplateUnPtr = LoadFromFile(pFilePath);
-	if (pTemplateUnPtr == nullptr) {
+	auto pTemplate = LoadTemplateFromFile(pFilePath);
+	if (pTemplate == nullptr) {
 		return 0;
 	}
 
-	const auto pTemplate = pTemplateUnPtr.get();
-	auto& refVecFields = pTemplate->vecFields;
+	const auto iNewTemplateID = GetIDForNewTemplate();
+	pTemplate->iTemplateID = iNewTemplateID;
+	m_vecTemplates.emplace_back(std::move(pTemplate));
+	OnTemplateLoadUnload(iNewTemplateID, true);
 
-	auto iTemplateID = 1; //TemplateID starts at 1.
-	if (const auto iter = std::max_element(m_vecTemplates.begin(), m_vecTemplates.end(),
-		[](const std::unique_ptr<HEXTEMPLATE>& ref1, const std::unique_ptr<HEXTEMPLATE>& ref2) {
-			return ref1->iTemplateID < ref2->iTemplateID; }); iter != m_vecTemplates.end()) {
-		iTemplateID = iter->get()->iTemplateID + 1; //Increasing next Template's ID by 1.
-	}
-
-	pTemplate->iTemplateID = iTemplateID;
-	pTemplate->iSizeTotal = std::accumulate(refVecFields.begin(), refVecFields.end(), 0,
-		[](auto iTotal, const std::unique_ptr<HEXTEMPLATEFIELD>& refField) { return iTotal + refField->iSize; });
-
-	m_vecTemplates.emplace_back(std::move(pTemplateUnPtr));
-
-	OnTemplateLoadUnload(iTemplateID, true);
-
-	return iTemplateID;
+	return iNewTemplateID;
 }
 
 auto CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND
@@ -337,8 +345,8 @@ void CHexDlgTemplMgr::UnloadAll()
 {
 	DisapplyAll();
 
-	for (const auto& refTempl : m_vecTemplates) {
-		OnTemplateLoadUnload(refTempl->iTemplateID, false);
+	for (const auto& pTemplate : m_vecTemplates) {
+		OnTemplateLoadUnload(pTemplate->iTemplateID, false);
 	}
 	m_vecTemplates.clear();
 
@@ -430,7 +438,7 @@ void CHexDlgTemplMgr::EnableDynamicLayoutHelper(bool fEnable)
 	}
 }
 
-auto CHexDlgTemplMgr::GetAppliedFromItem(HTREEITEM hTreeItem)->PHEXTEMPLATEAPPLIED
+auto CHexDlgTemplMgr::GetAppliedFromItem(HTREEITEM hTreeItem)->PCTEMPLAPPLIED
 {
 	auto hRoot = hTreeItem;
 	while (hRoot != nullptr) { //Root node.
@@ -438,7 +446,27 @@ auto CHexDlgTemplMgr::GetAppliedFromItem(HTREEITEM hTreeItem)->PHEXTEMPLATEAPPLI
 		hRoot = m_treeApplied.GetNextItem(hTreeItem, TVGN_PARENT);
 	}
 
-	return reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_treeApplied.GetItemData(hTreeItem));
+	return reinterpret_cast<PCTEMPLAPPLIED>(m_treeApplied.GetItemData(hTreeItem));
+}
+
+auto CHexDlgTemplMgr::GetIDForNewTemplate()const->int
+{
+	auto iTemplateID = 1; //TemplateID starts at 1.
+	if (const auto iter = std::max_element(m_vecTemplates.begin(), m_vecTemplates.end(),
+		[](const std::unique_ptr<HEXTEMPLATE>& ref1, const std::unique_ptr<HEXTEMPLATE>& ref2) {
+			return ref1->iTemplateID < ref2->iTemplateID; }); iter != m_vecTemplates.end()) {
+		iTemplateID = iter->get()->iTemplateID + 1; //Increasing next Template's ID by 1.
+	}
+
+	return iTemplateID;
+}
+
+auto CHexDlgTemplMgr::GetTemplate(int iTemplateID)const->PCHEXTEMPLATE
+{
+	const auto it = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
+		[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& pData) { return pData->iTemplateID == iTemplateID; });
+
+	return it != m_vecTemplates.end() ? it->get() : nullptr;
 }
 
 bool CHexDlgTemplMgr::IsHglSel()const
@@ -500,7 +528,7 @@ void CHexDlgTemplMgr::OnBnLoadTemplate()
 		pResults->GetItemAt(iterFiles, &pItem);
 		CComHeapPtr<wchar_t> pwstrPath;
 		pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwstrPath);
-		if (LoadTemplate(pwstrPath) == 0) {
+		if (LoadFromFile(pwstrPath) == 0) {
 			std::wstring wstrErr = L"Error loading a template:\n";
 			wstrErr += pwstrPath;
 			std::wstring_view wsvFileName = pwstrPath.m_pData;
@@ -731,8 +759,8 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	::SetWindowSubclass(m_treeApplied, TreeSubclassProc, 0, 0);
 	SetDlgButtonsState();
 
-	for (const auto& pTempl : m_vecTemplates) {
-		OnTemplateLoadUnload(pTempl->iTemplateID, true);
+	for (const auto& pTemplate : m_vecTemplates) {
+		OnTemplateLoadUnload(pTemplate->iTemplateID, true);
 	}
 
 	CRect rcWnd;
@@ -856,11 +884,11 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	switch (pItem->iSubItem) {
 	case m_iIDListApplFieldType: //Type.
 		if (pField->eType == type_custom) {
-			auto& refVecCT = m_pAppliedCurr->pTemplate->vecCustomType;
+			const auto& refVecCT = m_pAppliedCurr->pTemplate->vecCustomType;
 			if (const auto iter = std::find_if(refVecCT.begin(), refVecCT.end(),
 				[uTypeID = pField->uTypeID](const HEXCUSTOMTYPE& ref) {
 					return ref.uTypeID == uTypeID; }); iter != refVecCT.end()) {
-				pItem->pszText = iter->wstrTypeName.data();
+				pItem->pszText = const_cast<LPWSTR>(iter->wstrTypeName.data());
 			}
 			else {
 				pItem->pszText = const_cast<LPWSTR>(umapETypeToWstr.at(pField->eType));
@@ -1234,12 +1262,11 @@ void CHexDlgTemplMgr::OnTemplateLoadUnload(int iTemplateID, bool fLoad)
 		return;
 
 	if (fLoad) {
-		const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
-			[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
-		if (iterTempl == m_vecTemplates.end())
+		const auto pTemplate = GetTemplate(iTemplateID);
+		if (pTemplate == nullptr)
 			return;
 
-		const auto iIndex = m_comboTemplates.AddString(iterTempl->get()->wstrName.data());
+		const auto iIndex = m_comboTemplates.AddString(pTemplate->wstrName.data());
 		m_comboTemplates.SetItemData(iIndex, static_cast<DWORD_PTR>(iTemplateID));
 		m_comboTemplates.SetCurSel(iIndex);
 		SetDlgButtonsState();
@@ -1267,11 +1294,11 @@ void CHexDlgTemplMgr::OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		return;
 
 	if (m_treeApplied.GetParentItem(pItem->hItem) == nullptr) { //Root node.
-		const auto pTemplApplied = reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_treeApplied.GetItemData(pItem->hItem));
+		const auto pTemplApplied = reinterpret_cast<PCTEMPLAPPLIED>(m_treeApplied.GetItemData(pItem->hItem));
 		StringCchCopyW(pItem->pszText, pItem->cchTextMax, pTemplApplied->pTemplate->wstrName.data());
 	}
 	else {
-		const auto pTemplField = reinterpret_cast<PHEXTEMPLATEFIELD>(m_treeApplied.GetItemData(pItem->hItem));
+		const auto pTemplField = reinterpret_cast<PCHEXTEMPLFIELD>(m_treeApplied.GetItemData(pItem->hItem));
 		StringCchCopyW(pItem->pszText, pItem->cchTextMax, pTemplField->wstrName.data());
 	}
 }
@@ -1285,15 +1312,15 @@ void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	if (pTree->action == TVC_UNKNOWN) {
 		if (m_treeApplied.GetParentItem(pItem->hItem) != nullptr) {
 			const auto dwItemData = m_treeApplied.GetItemData(pItem->hItem);
-			SetHexSelByField(reinterpret_cast<PCHEXTEMPLATEFIELD>(dwItemData));
+			SetHexSelByField(reinterpret_cast<PCHEXTEMPLFIELD>(dwItemData));
 		}
 		return;
 	}
 
 	m_fListGuardEvent = true; //To not trigger OnListItemChanged on the way.
 	bool fRootNodeClick { false };
-	PHEXTEMPLATEFIELD pFieldCurr { };
-	PVecFields pVecCurrFields { };
+	PCHEXTEMPLFIELD pFieldCurr { };
+	PCVecFields pVecCurrFields { };
 
 	const auto pAppliedPrev = m_pAppliedCurr;
 	m_pAppliedCurr = GetAppliedFromItem(pItem->hItem);
@@ -1305,7 +1332,7 @@ void CHexDlgTemplMgr::OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		m_hTreeCurrParent = pItem->hItem;
 	}
 	else { //Child items.
-		pFieldCurr = reinterpret_cast<PHEXTEMPLATEFIELD>(m_treeApplied.GetItemData(pItem->hItem));
+		pFieldCurr = reinterpret_cast<PCHEXTEMPLFIELD>(m_treeApplied.GetItemData(pItem->hItem));
 		if (pFieldCurr->pFieldParent == nullptr) {
 			if (pFieldCurr->vecNested.empty()) { //On first level child items, set pVecCurrFields to Template's main vecFields.
 				pVecCurrFields = &m_pAppliedCurr->pTemplate->vecFields;
@@ -1375,28 +1402,27 @@ void CHexDlgTemplMgr::OnTreeRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 
 void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 {
-	const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
-		[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
-	if (iterTempl == m_vecTemplates.end())
+	const auto pTemplate = GetTemplate(iTemplateID);
+	if (pTemplate == nullptr)
 		return;
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<unsigned int> distrib(50, 230);
 
-	const auto lmbRndColors = [&distrib, &gen](const VecFields& vecRef) {
-		const auto _lmbCount = [&distrib, &gen](const auto& lmbSelf, const VecFields& vecRef)->void {
-			for (auto& refField : vecRef) {
-				if (refField->vecNested.empty()) {
-					refField->stClr.clrBk = RGB(distrib(gen), distrib(gen), distrib(gen));
+	const auto lmbRndColors = [&distrib, &gen](const VecFields& refVecFields) {
+		const auto _lmbCount = [&distrib, &gen](const auto& lmbSelf, const VecFields& refVecFields)->void {
+			for (const auto& pField : refVecFields) {
+				if (pField->vecNested.empty()) {
+					pField->stClr.clrBk = RGB(distrib(gen), distrib(gen), distrib(gen));
 				}
-				else { lmbSelf(lmbSelf, refField->vecNested); }
+				else { lmbSelf(lmbSelf, pField->vecNested); }
 			}
 			};
-		return _lmbCount(_lmbCount, vecRef);
+		return _lmbCount(_lmbCount, refVecFields);
 		};
 
-	lmbRndColors(iterTempl->get()->vecFields);
+	lmbRndColors(pTemplate->vecFields);
 	m_pListApplied->RedrawWindow();
 	m_pHexCtrl->Redraw();
 }
@@ -1406,7 +1432,7 @@ void CHexDlgTemplMgr::RemoveNodesWithTemplateID(int iTemplateID)
 	std::vector<HTREEITEM> vecToRemove;
 	if (auto hItem = m_treeApplied.GetRootItem(); hItem != nullptr) {
 		while (hItem != nullptr) {
-			const auto pApplied = reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_treeApplied.GetItemData(hItem));
+			const auto pApplied = reinterpret_cast<PCTEMPLAPPLIED>(m_treeApplied.GetItemData(hItem));
 			if (pApplied->pTemplate->iTemplateID == iTemplateID) {
 				vecToRemove.emplace_back(hItem);
 			}
@@ -1432,7 +1458,7 @@ void CHexDlgTemplMgr::RemoveNodeWithAppliedID(int iAppliedID)
 {
 	auto hItem = m_treeApplied.GetRootItem();
 	while (hItem != nullptr) {
-		const auto pApplied = reinterpret_cast<PHEXTEMPLATEAPPLIED>(m_treeApplied.GetItemData(hItem));
+		const auto pApplied = reinterpret_cast<PCTEMPLAPPLIED>(m_treeApplied.GetItemData(hItem));
 		if (pApplied->iAppliedID == iAppliedID) {
 			if (m_pAppliedCurr == pApplied) {
 				m_pListApplied->SetItemCountEx(0);
@@ -1833,7 +1859,7 @@ void CHexDlgTemplMgr::SetDlgButtonsState()
 	m_editOffset.EnableWindow(fHasTempl);
 }
 
-void CHexDlgTemplMgr::SetHexSelByField(PCHEXTEMPLATEFIELD pField)
+void CHexDlgTemplMgr::SetHexSelByField(PCHEXTEMPLFIELD pField)
 {
 	if (!IsHglSel() || !m_pHexCtrl->IsDataSet() || pField == nullptr || m_pAppliedCurr == nullptr)
 		return;
@@ -2038,19 +2064,20 @@ void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 {
 	OnTemplateLoadUnload(iTemplateID, false); //All the GUI stuff first, only then delete template.
 
-	const auto iterTempl = std::find_if(m_vecTemplates.begin(), m_vecTemplates.end(),
-		[iTemplateID](const std::unique_ptr<HEXTEMPLATE>& ref) { return ref->iTemplateID == iTemplateID; });
-	if (iterTempl == m_vecTemplates.end())
+	const auto pTemplate = GetTemplate(iTemplateID);
+	if (pTemplate == nullptr)
 		return;
 
-	//Remove all applied templates from m_vecTemplatesApplied, if any, with the given iTemplateID.
-	if (std::erase_if(m_vecTemplatesApplied, [pTemplate = iterTempl->get()](const std::unique_ptr<HEXTEMPLATEAPPLIED>& ref) {
-		return ref->pTemplate == pTemplate; }) > 0) {
+	//Remove all applied templates from m_vecTemplatesAppl, if any, with the given iTemplateID.
+	if (std::erase_if(m_vecTemplatesAppl, [pTemplate](const std::unique_ptr<TEMPLAPPLIED>& pData) {
+		return pData->pTemplate == pTemplate; }) > 0) {
 		if (m_pHexCtrl->IsDataSet()) {
 			m_pHexCtrl->Redraw();
 		}
 	}
-	m_vecTemplates.erase(iterTempl); //Remove template itself.
+
+	std::erase_if(m_vecTemplates, [iTemplateID](const std::unique_ptr<HEXTEMPLATE>& pData) {
+		return pData->iTemplateID == iTemplateID; }); //Remove template itself.
 
 	//This needed because SetDlgButtonsState checks m_vecTemplates.empty(), which was erased just line above.
 	//OnTemplateLoadUnload at the beginning doesn't know yet that it's empty (when all templates are unloaded).
@@ -2071,8 +2098,45 @@ void CHexDlgTemplMgr::UpdateStaticText()
 	m_wndStaticSize.SetWindowTextW(wstrSize.data());
 }
 
-bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& vecFields,
-	const FIELDSDEFPROPS& stDefault, UmapCustomTypes& umapCustomT, int* pOffset)
+auto CHexDlgTemplMgr::CloneTemplate(PCHEXTEMPLATE pTemplate)->std::unique_ptr<HEXTEMPLATE>
+{
+	assert(pTemplate != nullptr);
+	if (pTemplate == nullptr)
+		return { };
+
+	auto pNew = std::make_unique<HEXTEMPLATE>();
+	pNew->wstrName = pTemplate->wstrName;
+	pNew->vecCustomType = pTemplate->vecCustomType;
+	pNew->iSizeTotal = pTemplate->iSizeTotal;
+	pNew->iTemplateID = pTemplate->iTemplateID;
+
+	//Deep copy of all nested VecFields.
+	const auto lmbCopyVecFields = [](VecFields& refVecFieldsNew, const VecFields& refVecFieldsOld)->void {
+		const auto _lmbCopyVecFields = [](const auto& lmbSelf, VecFields& refVecFieldsNew, const VecFields& refVecFieldsOld,
+			PCHEXTEMPLFIELD pFieldParent)->void {
+				for (const auto& pOldField : refVecFieldsOld) {
+					const auto& pNewField = refVecFieldsNew.emplace_back(std::make_unique<HEXTEMPLFIELD>());
+					pNewField->wstrName = pOldField->wstrName;
+					pNewField->wstrDescr = pOldField->wstrDescr;
+					pNewField->iOffset = pOldField->iOffset;
+					pNewField->iSize = pOldField->iSize;
+					pNewField->stClr = pOldField->stClr;
+					pNewField->pFieldParent = pFieldParent;
+					pNewField->eType = pOldField->eType;
+					pNewField->uTypeID = pOldField->uTypeID;
+					pNewField->fBigEndian = pOldField->fBigEndian;
+					lmbSelf(lmbSelf, pNewField->vecNested, pOldField->vecNested, pNewField.get());
+				}
+			};
+		_lmbCopyVecFields(_lmbCopyVecFields, refVecFieldsNew, refVecFieldsOld, nullptr);
+		};
+	lmbCopyVecFields(pNew->vecFields, pTemplate->vecFields);
+
+	return pNew;
+}
+
+bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& refVecFields,
+	const FIELDSDEFPROPS& refDefault, UmapCustomTypes& umapCustomT, int* pOffset)
 {
 	using enum EHexFieldType;
 	static const std::unordered_map<std::string_view, EHexFieldType> umapStrToEType { //From JSON string to EHexFieldType conversion.
@@ -2095,16 +2159,16 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 		{ type_systemtime, static_cast<int>(sizeof(SYSTEMTIME)) }, { type_guid, static_cast<int>(sizeof(GUID)) }
 	};
 
-	const auto lmbTotalSize = [](const VecFields& vecFields)->int { //Counts total size of all Fields in VecFields, recursively.
-		const auto _lmbTotalSize = [](const auto& lmbSelf, const VecFields& vecFields)->int {
-			return std::accumulate(vecFields.begin(), vecFields.end(), 0,
-				[&lmbSelf](auto ullTotal, const std::unique_ptr<HEXTEMPLATEFIELD>& refField) {
-					if (!refField->vecNested.empty()) {
-						return ullTotal + lmbSelf(lmbSelf, refField->vecNested);
+	const auto lmbTotalSize = [](const VecFields& refVecFields)->int { //Counts total size of all Fields in VecFields, recursively.
+		const auto _lmbTotalSize = [](const auto& lmbSelf, const VecFields& refVecFields)->int {
+			return std::accumulate(refVecFields.begin(), refVecFields.end(), 0,
+				[&lmbSelf](auto ullTotal, const std::unique_ptr<HEXTEMPLFIELD>& pField) {
+					if (!pField->vecNested.empty()) {
+						return ullTotal + lmbSelf(lmbSelf, pField->vecNested);
 					}
-					return ullTotal + refField->iSize; });
+					return ullTotal + pField->iSize; });
 			};
-		return _lmbTotalSize(_lmbTotalSize, vecFields);
+		return _lmbTotalSize(_lmbTotalSize, refVecFields);
 		};
 
 	int iOffset { 0 }; //Default starting offset.
@@ -2126,12 +2190,12 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 			return false; //Each array entry (Object) must have a "name" string.
 		}
 
-		const auto& pNewField = vecFields.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
+		const auto& pNewField = refVecFields.emplace_back(std::make_unique<HEXTEMPLFIELD>());
 		pNewField->wstrName = wstrNameField;
-		pNewField->pFieldParent = stDefault.pFieldParent;
-		pNewField->stClr.clrBk = JSONColors(*pField, "clrBk").value_or(stDefault.stClr.clrBk);
-		pNewField->stClr.clrText = JSONColors(*pField, "clrText").value_or(stDefault.stClr.clrText);
-		pNewField->fBigEndian = JSONEndianness(*pField).value_or(stDefault.fBigEndian);
+		pNewField->pFieldParent = refDefault.pFieldParent;
+		pNewField->stClr.clrBk = JSONColors(*pField, "clrBk").value_or(refDefault.stClr.clrBk);
+		pNewField->stClr.clrText = JSONColors(*pField, "clrText").value_or(refDefault.stClr.clrText);
+		pNewField->fBigEndian = JSONEndianness(*pField).value_or(refDefault.fBigEndian);
 		pNewField->iOffset = *pOffset;
 		pNewField->eType = type_custom;
 
@@ -2142,7 +2206,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 			}
 
 			//Setting defaults for the next nested fields.
-			const FIELDSDEFPROPS stDefsNested { .stClr { pNewField->stClr }, .pTemplate { stDefault.pTemplate },
+			const FIELDSDEFPROPS stDefsNested { .stClr { pNewField->stClr }, .pTemplate { refDefault.pTemplate },
 				.pFieldParent { pNewField.get() }, .fBigEndian { pNewField->fBigEndian } };
 
 			//Recursion lambda for nested fields starts here.
@@ -2176,21 +2240,21 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 					iSize = umapTypeToSize.at(iterMapType->second);
 				}
 				else { //If it's not any standard type, we try to find custom type with given name.
-					const auto& vecCT = stDefault.pTemplate->vecCustomType;
-					const auto iterVecCT = std::find_if(vecCT.begin(), vecCT.end(),
+					const auto& refVecCTypes = refDefault.pTemplate->vecCustomType;
+					const auto iterVecCT = std::find_if(refVecCTypes.begin(), refVecCTypes.end(),
 						[=](const HEXCUSTOMTYPE& ref) { return ref.wstrTypeName == StrToWstr(iterType->value.GetString()); });
-					if (iterVecCT == vecCT.end()) {
+					if (iterVecCT == refVecCTypes.end()) {
 						return false; //Undefined/unknown "type".
 					}
 
 					pNewField->uTypeID = iterVecCT->uTypeID; //Custom type ID.
 					pNewField->eType = type_custom;
-					const auto lmbCopyCustomType = [&stDefault]
-					(const VecFields& vecCustomFields, const PtrField& pField, int& iOffset)->void {
-						const auto _lmbCustomTypeCopy = [&stDefault]
-						(auto& lmbSelf, const VecFields& vecCustomFields, const PtrField& pField, int& iOffset)->void {
-							for (const auto& pCustomField : vecCustomFields) {
-								const auto& pNewField = pField->vecNested.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
+					const auto lmbCopyCustomType = [&refDefault]
+					(const VecFields& refVecCustomFields, const PtrField& pField, int& iOffset)->void {
+						const auto _lmbCustomTypeCopy = [&refDefault]
+						(const auto& lmbSelf, const VecFields& refVecCustomFields, const PtrField& pField, int& iOffset)->void {
+							for (const auto& pCustomField : refVecCustomFields) {
+								const auto& pNewField = pField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
 								const auto& refCFClr = pCustomField->stClr;
 								pNewField->pFieldParent = pField.get();
 								pNewField->stClr.clrBk = refCFClr.clrBk == -1 ? pField->stClr.clrBk : refCFClr.clrBk;
@@ -2210,7 +2274,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 								}
 							}
 							};
-						_lmbCustomTypeCopy(_lmbCustomTypeCopy, vecCustomFields, pField, iOffset);
+						_lmbCustomTypeCopy(_lmbCustomTypeCopy, refVecCustomFields, pField, iOffset);
 						};
 
 					auto iOffsetCustomType = *pOffset;
@@ -2219,7 +2283,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 					}
 					else { //Creating array of Custom Types.
 						for (int iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
-							const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
+							const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
 							pFieldArray->pFieldParent = pNewField.get();
 							pFieldArray->stClr = pNewField->stClr;
 							pFieldArray->fBigEndian = pNewField->fBigEndian;
@@ -2258,7 +2322,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 
 			if (iArraySize > 1 && pNewField->eType != type_custom) { //Creating array of standard/default types.
 				for (auto iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
-					const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLATEFIELD>());
+					const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
 					pFieldArray->pFieldParent = pNewField.get();
 					pFieldArray->stClr = pNewField->stClr;
 					pFieldArray->fBigEndian = pNewField->fBigEndian;
@@ -2317,34 +2381,52 @@ auto CHexDlgTemplMgr::JSONColors(const rapidjson::Value& value, const char* pszC
 	return RGB(R, G, B);
 }
 
-auto CHexDlgTemplMgr::LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HEXTEMPLATE>
+LRESULT CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR /*uIdSubclass*/,
+	DWORD_PTR /*dwRefData*/)
 {
-	std::ifstream ifs(pFilePath);
-	if (!ifs.is_open())
+	switch (uMsg) {
+	case WM_KILLFOCUS:
+		return 0; //Do nothing when Tree loses focus, to save current selection.
+	case WM_LBUTTONDOWN:
+		::SetFocus(hWnd);
+		break;
+	case WM_NCDESTROY:
+		RemoveWindowSubclass(hWnd, TreeSubclassProc, 0);
+		break;
+	default:
+		break;
+	}
+
+	return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}
+
+HEXCTRLAPI auto __cdecl HEXCTRL::IHexTemplates::LoadTemplateFromFile(const wchar_t* pFilePath)->std::unique_ptr<HEXCTRL::HEXTEMPLATE>
+{
+	assert(pFilePath != nullptr);
+	if (pFilePath == nullptr) {
 		return { };
+	}
+
+	std::ifstream ifs(pFilePath);
+	if (!ifs.is_open()) {
+		return { };
+	}
 
 	rapidjson::IStreamWrapper isw { ifs };
 	rapidjson::Document docJSON;
 	docJSON.ParseStream(isw);
-	if (docJSON.IsNull()) {
+	if (docJSON.IsNull())
 		return { };
-	}
 
-	auto pTemplateUnPtr = std::make_unique<HEXTEMPLATE>();
-	const auto pTemplate = pTemplateUnPtr.get();
-	auto& refVecFields = pTemplate->vecFields;
+	auto pTemplateUtr = std::make_unique<HEXTEMPLATE>();
+	const auto pTemplate = pTemplateUtr.get();
+	const auto itTName = docJSON.FindMember("TemplateName");
+	if (itTName == docJSON.MemberEnd() || !itTName->value.IsString())
+		return { }; //Template must have a string type name.
 
-	if (const auto it = docJSON.FindMember("TemplateName"); it != docJSON.MemberEnd()) {
-		if (!it->value.IsString()) {
-			return { }; //"TemplateName" must be a string.
-		}
-		pTemplate->wstrName = StrToWstr(it->value.GetString());
-	}
-	else {
-		return { }; //Template must have a name.
-	}
+	pTemplate->wstrName = StrToWstr(itTName->value.GetString());
 
-	UmapCustomTypes umapCT;
+	CHexDlgTemplMgr::UmapCustomTypes umapCT;
 	std::uint8_t uCustomTypeID = 1; //ID starts at 1.
 	if (const auto objCustomTypes = docJSON.FindMember("CustomTypes");
 		objCustomTypes != docJSON.MemberEnd() && objCustomTypes->value.IsArray()) {
@@ -2362,9 +2444,9 @@ auto CHexDlgTemplMgr::LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HE
 				return { }; //Each array entry (Object) must have a "TypeName" property.
 			}
 
-			const auto clrBk = JSONColors(*pCustomType, "clrBk").value_or(-1);
-			const auto clrText = JSONColors(*pCustomType, "clrText").value_or(-1);
-			const auto fBigEndian = JSONEndianness(*pCustomType).value_or(false);
+			const auto clrBk = CHexDlgTemplMgr::JSONColors(*pCustomType, "clrBk").value_or(-1);
+			const auto clrText = CHexDlgTemplMgr::JSONColors(*pCustomType, "clrText").value_or(-1);
+			const auto fBigEndian = CHexDlgTemplMgr::JSONEndianness(*pCustomType).value_or(false);
 
 			const auto iterFieldsArray = pCustomType->FindMember("Fields");
 			if (iterFieldsArray == pCustomType->MemberEnd() || !iterFieldsArray->value.IsArray()) {
@@ -2372,47 +2454,33 @@ auto CHexDlgTemplMgr::LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HE
 			}
 
 			umapCT.try_emplace(uCustomTypeID, VecFields { });
-			const FIELDSDEFPROPS stDefTypes { .stClr { clrBk, clrText }, .pTemplate { pTemplate }, .fBigEndian { fBigEndian } };
-			if (!JSONParseFields(iterFieldsArray, umapCT[uCustomTypeID], stDefTypes, umapCT)) {
+			const CHexDlgTemplMgr::FIELDSDEFPROPS stDefTypes { .stClr { clrBk, clrText }, .pTemplate { pTemplate },
+				.fBigEndian { fBigEndian } };
+			if (!CHexDlgTemplMgr::JSONParseFields(iterFieldsArray, umapCT[uCustomTypeID], stDefTypes, umapCT)) {
 				return { }; //Something went wrong during template parsing.
 			}
 			pTemplate->vecCustomType.emplace_back(std::move(wstrTypeName), uCustomTypeID);
 		}
 	}
 
-	if (const auto objData = docJSON.FindMember("Data"); objData != docJSON.MemberEnd() && objData->value.IsObject()) {
-		const auto clrBk = JSONColors(objData->value, "clrBk").value_or(-1);
-		const auto clrText = JSONColors(objData->value, "clrText").value_or(-1);
-		const auto fBigEndian = JSONEndianness(objData->value).value_or(false);
-		const FIELDSDEFPROPS stDefFields { .stClr { clrBk, clrText }, .pTemplate { pTemplate }, .fBigEndian { fBigEndian } };
+	const auto objData = docJSON.FindMember("Data");
+	if (objData == docJSON.MemberEnd() || !objData->value.IsObject())
+		return { }; //No "Data" object member in the template.
 
-		const auto iterFieldsArray = objData->value.FindMember("Fields");
-		if (!JSONParseFields(iterFieldsArray, refVecFields, stDefFields, umapCT)) {
-			return { }; //Something went wrong during template parsing.
-		}
-	}
-	else {
-		return { }; //No "Data" member in template.
-	}
+	const auto clrBk = CHexDlgTemplMgr::JSONColors(objData->value, "clrBk").value_or(-1);
+	const auto clrText = CHexDlgTemplMgr::JSONColors(objData->value, "clrText").value_or(-1);
+	const auto fBigEndian = CHexDlgTemplMgr::JSONEndianness(objData->value).value_or(false);
+	const CHexDlgTemplMgr::FIELDSDEFPROPS stDefFields { .stClr { clrBk, clrText }, .pTemplate { pTemplate },
+		.fBigEndian { fBigEndian } };
 
-	return pTemplateUnPtr;
-}
-
-LRESULT CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-	UINT_PTR /*uIdSubclass*/, DWORD_PTR /*dwRefData*/)
-{
-	switch (uMsg) {
-	case WM_KILLFOCUS:
-		return 0; //Do nothing when Tree loses focus, to save current selection.
-	case WM_LBUTTONDOWN:
-		::SetFocus(hWnd);
-		break;
-	case WM_NCDESTROY:
-		RemoveWindowSubclass(hWnd, TreeSubclassProc, 0);
-		break;
-	default:
-		break;
+	const auto iterFieldsArray = objData->value.FindMember("Fields");
+	auto& refVecFields = pTemplate->vecFields;
+	if (!CHexDlgTemplMgr::JSONParseFields(iterFieldsArray, refVecFields, stDefFields, umapCT)) {
+		return { }; //Something went wrong during template parsing.
 	}
 
-	return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
+	pTemplate->iSizeTotal = std::accumulate(refVecFields.begin(), refVecFields.end(), 0,
+		[](auto iTotal, const std::unique_ptr<HEXTEMPLFIELD>& pData) { return iTotal + pData->iSize; });
+
+	return pTemplateUtr;
 }
