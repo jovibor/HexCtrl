@@ -29,7 +29,6 @@ BOOL CSampleDialogDLLApp::InitInstance()
 #endif
 
 	delete dlg;
-
 	// Since the dialog has been closed, return FALSE so that we exit the
 	//  application, rather than start the application's message pump.
 	return FALSE;

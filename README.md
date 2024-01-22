@@ -5,17 +5,18 @@
 * [How To Build](#how-to-build)
   * [From The Sources](#from-the-sources)
   * [Dynamic Link Library](#dynamic-link-library)
+    * [HexCtrlPreTranslateMessage](#hexctrlpretranslatemessage)
 * [Creating](#creating)
   * [Classic Approach](#classic-approach)
   * [In Dialog](#in-dialog)
   * [CreateHexCtrl](#createhexctrl)
   * [CreateRawHexCtrl](#createrawhexctrl)
-* [Set The Data](#set-the-data)
+* [Setting Data](#setting-data)
 * [Virtual Data Mode](#virtual-data-mode)
 * [Virtual Bookmarks](#virtual-bookmarks)
 * [Custom Colors](#custom-colors)
 * [Templates](#templates)
-* [Methods](#methods) <details><summary>_Expand_</summary>
+* [IHexCtrl Methods](#ihexctrl-methods) <details><summary>_Expand_</summary>
   * [ClearData](#cleardata)
   * [Create](#create)
   * [CreateDialogCtrl](#createdialogctrl)
@@ -168,12 +169,9 @@ If you want to build **HexCtrl** from the sources in non-**MFC** app:
 1. Add the `#define HEXCTRL_MANUAL_MFC_INIT` before the `#include "HexCtrl.h"`.
 
 ### [](#)Dynamic Link Library
-To use **HexCtrl** as a *.dll*:
-1. Build *HexCtrl.dll* and *HexCtrl.lib* using the *DLL Project/DLL Project.vcxproj* project.
-1. Copy *HexCtrl.lib* file into your project, so that the linker can see it.
-1. Put *HexCtrl.dll* file next to your project's *.exe* file.
-1. Copy *HexCtrl.h* into your project.
-1. Add the following lines where you suppose to use the control:
+To use **HexCtrl** as a DLL:
+1. Build **HexCtrl.dll** and **HexCtrl.lib** using the **HexCtrl DLL/HexCtrl DLL.vcxproj**  project
+1. Define the `HEXCTRL_SHARED_DLL` before including `HexCtrl.h`:
     ```cpp
     #define HEXCTRL_SHARED_DLL
     #include "HexCtrl.h"
@@ -182,18 +180,32 @@ To use **HexCtrl** as a *.dll*:
 1. [Create](#creating) control instance.
 
 > [!NOTE]
-**HexCtrl**'s *.dll* is built with the **MFC Static Linking**.  
-So, even if you are to use it in your own **MFC** project (even with different **MFC** version) there should be no any **MFC** interferences.  
-Building **HexCtrl** with the **MFC Shared DLL** turned out to be a little tricky. Even with the help of the `AFX_MANAGE_STATE(AfxGetStaticModuleState())` macro there are always  **MFC** debug assertions, which origins are quite hard to comprehend.
+**HexCtrl**'s DLL is built with the **MFC Static Linking**. So, even if you are to use it in your own **MFC** project, even with a different **MFC** version, there should be no interferences.  
+Building **HexCtrl** with the **MFC Shared DLL** turned out to be a little tricky. Even with the `AFX_MANAGE_STATE(AfxGetStaticModuleState())` macro help there are always  **MFC** debug assertions, which origins are quite hard to comprehend.
+
+#### [](#)HexCtrlPreTranslateMessage
+By default a `PreTranslateMessage` routine doesn't work within DLLs. It means that all dialog's keyboard navigation will not work. To remedy this **HexCtrl**'s DLL provides the `HexCtrlPreTranslateMessage` exported function which you can plug into your app's main message loop:
+```cpp
+BOOL CMyApp::PreTranslateMessage(MSG* pMsg)
+{
+    if (HEXCTRL::HexCtrlPreTranslateMessage(pMsg))
+        return TRUE;
+
+    return CWinApp::PreTranslateMessage(pMsg);
+}
+```
 
 ## [](#)Creating
 
 ### [](#)Classic Approach
-The [`Create`](#create) method is the first method you call to create **HexCtrl** instance. It takes [`HEXCREATE`](#hexcreate) struct as an argument which provides all necessary information for the control creation.  
-The `HEXCREATE::dwStyle` and `HEXCREATE::dwExStyle` are [Window](https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles) and [Extended Window](https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles) styles respectively, set these styles according to your needs. For all available options see the [`HEXCREATE`](#hexcreate) struct description.
+First you need to create a **HexCtrl** object:
+```cpp
+HEXCTRL::IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };
+```
+Then call the [`IHexCtrl::Create`](#create) method, which takes the [`HEXCREATE`](#hexcreate) struct with the all necessary information for the **HexCtrl** creation. The `HEXCREATE::dwStyle` and `dwExStyle` are [Window](https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles) and [Extended Window](https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles) styles respectively, set these styles according to your needs. For all available options see the [`HEXCREATE`](#hexcreate) struct description.
 
 ### [](#)In Dialog
-To use **HexCtrl** in a Dialog you can create it with the [Classic Approach](#classic-approach) - call [`Create`](#create) method and provide all the necessary information.  
+To use **HexCtrl** in a Dialog you can create it with the [Classic Approach](#classic-approach): call [`Create`](#create) method and provide all the necessary information.  
 But there is another option:
 1. Put the **Custom Control** from the **Toolbox** in **Visual Studio** dialog designer onto your dialog template.  
 ![](docs/img/HexCtrl_VSToolbox.jpg) ![](docs/img/HexCtrl_VSCustomCtrl.jpg)
@@ -215,15 +227,15 @@ But there is another option:
 ```cpp
 [[nodiscard]] inline IHexCtrlPtr CreateHexCtrl();
 ```
-Factory function for creating a **HexCtrl** instance in form of `IHexCtrlPtr`.
+This is the main factory function for creating a **HexCtrl** object, with the automatic lifetime management.
 
 ### [](#)CreateRawHexCtrl
 ```cpp
 extern "C" [[nodiscard]] HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl();
 ```
-Function that creates a raw `IHexCtrl` instance. You barely need to use this function in your code, although if you do you need to manually call the [`Destroy`](#destroy) method afterwards.
+This is a factory function that creates a raw `IHexCtrl` object, without automatic lifetime management. It's not recommended to use this method directly, but if you do you need to manually call the [`Destroy`](#destroy) method afterwards.
 
-## [](#)Set the Data
+## [](#)Seting Data
 To set a data for the **HexCtrl** the [`SetData`](#setdata) method is used. The code below shows how to construct `HexCtrl` object and display first `0x1FF` bytes of the current app's memory:
 ```cpp
 IHexCtrlPtr myHex { CreateHexCtrl() };
@@ -347,8 +359,8 @@ The **endianness**, **clrBk** and **clrText** properties that locate at the same
 
 For the available templates check the `Templates` directory.
 
-## [](#)Methods
-The **HexCtrl** has plenty of methods that you can use to customize its appearance, and to manage its behavior.
+## [](#)IHexCtrl Methods
+The **HexCtrl** has plenty of methods that you can use to manage its behavior.
 
 ### [](#)ClearData
 ```cpp
@@ -1019,16 +1031,24 @@ Removes bookmark with the given ID.
 ```cpp
 class IHexTemplates {
 public:
-    virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Applies template to an offset, returns AppliedID.
+    virtual auto AddTemplate(const HEXTEMPLATE& stTempl) -> int = 0; //Adds existing template.
+    virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Applies template to offset, returns AppliedID.
     virtual void DisapplyAll() = 0;
     virtual void DisapplyByID(int iAppliedID) = 0;
     virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
-    virtual auto LoadTemplate(const wchar_t* pFilePath) -> int = 0; //Returns template ID on success, zero otherwise.
+    virtual auto LoadTemplate(const wchar_t* pFilePath) -> int = 0; //Returns TemplateID on success, null otherwise.
     virtual void ShowTooltips(bool fShow) = 0;
     virtual void UnloadAll() = 0;                     //Unload all templates.
     virtual void UnloadTemplate(int iTemplateID) = 0; //Unload/remove loaded template from memory.
+    [[nodiscard]] static HEXCTRLAPI auto __cdecl LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HEXTEMPLATE>;
 };
 ```
+
+#### [](#)LoadFromFile
+```cpp
+[[nodiscard]] static auto LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HEXTEMPLATE>;
+```
+This `static` method can be used to upfront load a template from a file. The loaded template can then be added to multiple **HexCtrl** instances, through the `IHexTemplates::AddTemplate` method. This approach allows to avoid loading the same template from the disk multiple times if multiple **HexCtrl**s would load it through the `IHexTemplates::LoadTemplate`, each  individually.
 
 ### [](#)IHexVirtColors
 ```cpp

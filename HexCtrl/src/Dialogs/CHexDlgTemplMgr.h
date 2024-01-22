@@ -18,7 +18,7 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		CHexDlgTemplMgr();
 		~CHexDlgTemplMgr();
-		auto AddTemplate(PCHEXTEMPLATE pTemplate) -> int override;
+		auto AddTemplate(const HEXTEMPLATE& stTempl) -> int override;
 		void ApplyCurr(ULONGLONG ullOffset); //Apply currently selected template to offset.
 		int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)override; //Apply template to a given offset.
 		void DisapplyAll()override;
@@ -31,7 +31,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD; //Template hittest by offset.
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsTooltips()const;
-		int LoadFromFile(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
+		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
 		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
 		void ShowTooltips(bool fShow)override;
 		BOOL ShowWindow(int nCmdShow);

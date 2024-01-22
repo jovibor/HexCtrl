@@ -832,7 +832,7 @@ void CHexDlgSearch::Prepare()
 	if (m_fReplaceWarn && m_fReplace && (m_vecReplaceData.size() > m_vecSearchData.size())) {
 		static constexpr auto wstrReplaceWarning { L"The replacing string is longer than searching string.\r\n"
 			"Do you want to overwrite the bytes following search occurrence?\r\nChoosing \"No\" will cancel search." };
-		if (IDNO == MessageBoxW(wstrReplaceWarning, L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST))
+		if (MessageBoxW(wstrReplaceWarning, L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST) == IDNO)
 			return;
 
 		m_fReplaceWarn = false;
@@ -973,6 +973,7 @@ bool CHexDlgSearch::PrepareINT8()
 		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
+
 	m_vecSearchData = RangeToVecBytes(*optData);
 
 	if (m_fReplace) {
@@ -998,6 +999,7 @@ bool CHexDlgSearch::PrepareINT16()
 		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
+
 	unsigned short wData = *optData;
 	unsigned short wDataRep { 0 };
 
@@ -1032,6 +1034,7 @@ bool CHexDlgSearch::PrepareINT32()
 		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
+
 	unsigned int dwData = *optData;
 	unsigned int dwDataRep { 0 };
 
@@ -1066,6 +1069,7 @@ bool CHexDlgSearch::PrepareINT64()
 		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
+
 	unsigned long long ullData = *optData;
 	unsigned long long ullDataRep { 0 };
 
@@ -1099,6 +1103,7 @@ bool CHexDlgSearch::PrepareFloat()
 		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
+
 	float flData = *optData;
 	float flDataRep { 0.0F };
 
@@ -1133,6 +1138,7 @@ bool CHexDlgSearch::PrepareDouble()
 		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
+
 	double dblData = *optData;
 	double dblDataRep { 0.0F };
 
@@ -1169,6 +1175,7 @@ bool CHexDlgSearch::PrepareFILETIME()
 		MessageBoxW(wstrErr.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
+
 	FILETIME ftSearch = *optFTSearch;
 	FILETIME ftReplace { };
 

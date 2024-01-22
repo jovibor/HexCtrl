@@ -73,14 +73,9 @@ END_MESSAGE_MAP()
 CHexDlgTemplMgr::CHexDlgTemplMgr() = default;
 CHexDlgTemplMgr::~CHexDlgTemplMgr() = default;
 
-auto CHexDlgTemplMgr::AddTemplate(PCHEXTEMPLATE pTemplate)->int
+auto CHexDlgTemplMgr::AddTemplate(const HEXTEMPLATE& stTempl)->int
 {
-	assert(pTemplate != nullptr);
-	if (pTemplate == nullptr) {
-		return 0;
-	}
-
-	auto pClonedTemplate = CloneTemplate(pTemplate);
+	auto pClonedTemplate = CloneTemplate(&stTempl);
 	const auto iNewTemplateID = GetIDForNewTemplate();
 	pClonedTemplate->iTemplateID = iNewTemplateID;
 	m_vecTemplates.emplace_back(std::move(pClonedTemplate));
@@ -294,9 +289,9 @@ bool CHexDlgTemplMgr::IsTooltips()const
 	return m_fTooltips;
 }
 
-int CHexDlgTemplMgr::LoadFromFile(const wchar_t* pFilePath)
+int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 {
-	auto pTemplate = LoadTemplateFromFile(pFilePath);
+	auto pTemplate = LoadFromFile(pFilePath);
 	if (pTemplate == nullptr) {
 		return 0;
 	}
@@ -526,7 +521,7 @@ void CHexDlgTemplMgr::OnBnLoadTemplate()
 		pResults->GetItemAt(iterFiles, &pItem);
 		CComHeapPtr<wchar_t> pwstrPath;
 		pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwstrPath);
-		if (LoadFromFile(pwstrPath) == 0) {
+		if (LoadTemplate(pwstrPath) == 0) {
 			std::wstring wstrErr = L"Error loading a template:\n";
 			wstrErr += pwstrPath;
 			std::wstring_view wsvFileName = pwstrPath.m_pData;
@@ -2351,7 +2346,7 @@ LRESULT CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
 	return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
 
-HEXCTRLAPI auto __cdecl HEXCTRL::IHexTemplates::LoadTemplateFromFile(const wchar_t* pFilePath)->std::unique_ptr<HEXCTRL::HEXTEMPLATE>
+HEXCTRLAPI auto __cdecl HEXCTRL::IHexTemplates::LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HEXCTRL::HEXTEMPLATE>
 {
 	assert(pFilePath != nullptr);
 	if (pFilePath == nullptr) {

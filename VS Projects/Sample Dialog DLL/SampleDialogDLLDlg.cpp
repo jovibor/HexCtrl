@@ -61,8 +61,6 @@ void CSampleDialogDLLDlg::OnPaint()
 		GetClientRect(&rect);
 		int x = (rect.Width() - cxIcon + 1) / 2;
 		int y = (rect.Height() - cyIcon + 1) / 2;
-
-		// Draw the icon
 		dc.DrawIcon(x, y, m_hIcon);
 	}
 	else {
@@ -95,8 +93,8 @@ void CSampleDialogDLLDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
 				if (wsvFile.substr(npos + 1) == L"json") { //Check json extension of templates.
 					//Using exported LoadTemplateFromFile function here.
 					//To test its work within the DLL.
-					const auto pTemplate = HEXCTRL::IHexTemplates::LoadTemplateFromFile(wsvFile.data());
-					pTempl->AddTemplate(&*pTemplate);
+					const auto p = HEXCTRL::IHexTemplates::LoadFromFile(wsvFile.data());
+					pTempl->AddTemplate(*p);
 				}
 			}
 		}
@@ -115,7 +113,7 @@ void CSampleDialogDLLDlg::OnBnSetRndData()
 	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
 	m_hds.fMutable = IsRW();
 	m_pHexDlg->SetData(m_hds);
-//	SetWindowTextW(IsRW() ? WstrTextRW : WstrTextRO);
+	SetWindowTextW(IsRW() ? WstrTextRW : WstrTextRO);
 }
 
 void CSampleDialogDLLDlg::OnBnClearData()

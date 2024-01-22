@@ -14,6 +14,7 @@ module;
 #include <cwctype>
 #include <format>
 #include <optional>
+#include <source_location>
 #include <string>
 export module HEXCTRL.HexUtility;
 
@@ -270,4 +271,14 @@ export namespace HEXCTRL::INTERNAL {
 
 		return std::vformat(wsvFmt, std::make_wformat_args(wchSepar));
 	}
+
+#if defined(DEBUG) || defined(_DEBUG)
+	void DBG_REPORT(const wchar_t* pMsg, const std::source_location& loc = std::source_location::current()) {
+		if (_CrtDbgReportW(_CRT_ASSERT, StrToWstr(loc.file_name()).data(), loc.line(), nullptr, L"%ls", pMsg) == 1) {
+			__debugbreak();
+		}
+	}
+#else
+	void DBG_REPORT([[maybe_unused]] const wchar_t* /*pMsg*/) {}
+#endif
 }

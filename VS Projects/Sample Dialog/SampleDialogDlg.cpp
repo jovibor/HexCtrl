@@ -384,9 +384,9 @@ void CSampleDialogDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
 			const std::wstring_view wsvFile = entry.path().c_str();
 			if (const auto npos = wsvFile.find_last_of(L'.'); npos != std::wstring_view::npos) {
 				if (wsvFile.substr(npos + 1) == L"json") { //Check json extension of templates.
-					const auto p = HEXCTRL::IHexTemplates::LoadTemplateFromFile(wsvFile.data());
-					pTempl->AddTemplate(&*p);
-					//pTempl->LoadFromFile(wsvFile.data());
+					const auto p = HEXCTRL::IHexTemplates::LoadFromFile(wsvFile.data());
+					pTempl->AddTemplate(*p);
+					//pTempl->LoadTemplate(wsvFile.data());
 				}
 			}
 		}

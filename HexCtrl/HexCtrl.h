@@ -235,16 +235,16 @@ namespace HEXCTRL {
 	********************************************************************************************/
 	class IHexTemplates {
 	public:
-		virtual auto AddTemplate(PCHEXTEMPLATE pTemplate) -> int = 0;
-		virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Applies template to an offset, returns AppliedID.
+		virtual auto AddTemplate(const HEXTEMPLATE& stTempl) -> int = 0; //Adds existing template.
+		virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Applies template to offset, returns AppliedID.
 		virtual void DisapplyAll() = 0;
 		virtual void DisapplyByID(int iAppliedID) = 0;
 		virtual void DisapplyByOffset(ULONGLONG ullOffset) = 0;
-		virtual auto LoadFromFile(const wchar_t* pFilePath) -> int = 0; //Returns TemplateID on success, null otherwise.
+		virtual auto LoadTemplate(const wchar_t* pFilePath) -> int = 0; //Returns TemplateID on success, null otherwise.
 		virtual void ShowTooltips(bool fShow) = 0;
 		virtual void UnloadAll() = 0;                     //Unload all templates.
 		virtual void UnloadTemplate(int iTemplateID) = 0; //Unload/remove loaded template from memory.
-		[[nodiscard]] static HEXCTRLAPI auto __cdecl LoadTemplateFromFile(const wchar_t* pFilePath)->std::unique_ptr<HEXTEMPLATE>;
+		[[nodiscard]] static HEXCTRLAPI auto __cdecl LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HEXTEMPLATE>;
 	};
 
 	/********************************************************************************************
@@ -443,7 +443,7 @@ namespace HEXCTRL {
 
 #if defined(HEXCTRL_MANUAL_MFC_INIT) || defined(HEXCTRL_SHARED_DLL)
 	//Because MFC's PreTranslateMessage routine doesn't work in DLLs 
-	//this exported function should be called from an App's main message loop.
+	//this exported function should be called from an app's main message loop.
 	//Something like this:
 	// BOOL CMyApp::PreTranslateMessage(MSG* pMsg) {
 	//	 if (HexCtrlPreTranslateMessage(pMsg))

@@ -648,7 +648,7 @@ void CHexDlgBkmMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		}
 
 		if (*optSize == 0) {
-			MessageBoxW(L"Size can't be zero!", L"Size error", MB_ICONERROR);
+			MessageBoxW(L"Size can't be zero.", L"Size error", MB_ICONERROR);
 			return;
 		}
 

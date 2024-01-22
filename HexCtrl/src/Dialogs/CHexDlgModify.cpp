@@ -190,17 +190,17 @@ namespace HEXCTRL::INTERNAL {
 
 			std::wstring wstrErr;
 			if (buffOperand[0] == L'\0') { //Operand field emptiness check.
-				wstrErr = L"Missing Operand!";
+				wstrErr = L"Missing Operand.";
 			}
 			else if (const auto optOperand = stn::StrToLL(buffOperand); !optOperand) {
-				wstrErr = L"Wrong number format!";
+				wstrErr = L"Wrong number format.";
 			}
 			else if (llOperand = *optOperand; hms.enOperMode == OPER_DIV && llOperand == 0) { //Division by zero check.
-				wstrErr = L"Wrong number format! Can not divide by zero!";
+				wstrErr = L"Wrong number format. Can not divide by zero.";
 			}
 
 			if (!wstrErr.empty()) {
-				MessageBoxW(wstrErr.data(), L"Operand Error!", MB_ICONERROR);
+				MessageBoxW(wstrErr.data(), L"Operand error", MB_ICONERROR);
 				return;
 			}
 
@@ -233,7 +233,7 @@ namespace HEXCTRL::INTERNAL {
 		const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL);
 		if (iRadioAllOrSel == IDC_HEXCTRL_OPERS_RAD_ALL) {
 			if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?",
-				L"Modify All data?", MB_YESNO | MB_ICONWARNING) == IDNO)
+				L"Modify all data?", MB_YESNO | MB_ICONWARNING) == IDNO)
 				return;
 
 			hms.vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
@@ -394,7 +394,7 @@ namespace HEXCTRL::INTERNAL {
 
 		wchar_t pwszComboText[MAX_PATH * 2];
 		if (m_stComboData.IsWindowEnabled() && m_stComboData.GetWindowTextW(pwszComboText, MAX_PATH) == 0) { //No text.
-			MessageBoxW(L"Missing Fill data!", L"Data error!", MB_ICONERROR);
+			MessageBoxW(L"Missing fill data.", L"Data error", MB_ICONERROR);
 			return;
 		}
 
@@ -421,7 +421,7 @@ namespace HEXCTRL::INTERNAL {
 		{
 			auto optData = NumStrToHex(wstrFillWith);
 			if (!optData) {
-				MessageBoxW(L"Wrong Hex format!", L"Format Error", MB_ICONERROR);
+				MessageBoxW(L"Wrong Hex format.", L"Format error", MB_ICONERROR);
 				return;
 			}
 			strFillWith = std::move(*optData);
@@ -459,7 +459,7 @@ namespace HEXCTRL::INTERNAL {
 
 		if (hms.spnData.size() > hms.vecSpan.back().ullSize) {
 			MessageBoxW(L"Fill data size is bigger than the region selected for modification, please select a larger region.",
-				L"Data region size error.", MB_ICONERROR);
+				L"Data region size error", MB_ICONERROR);
 			return;
 		}
 

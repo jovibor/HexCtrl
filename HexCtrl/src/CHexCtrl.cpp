@@ -163,7 +163,7 @@ CHexCtrl::CHexCtrl()
 		wc.lpszMenuName = nullptr;
 		wc.lpszClassName = m_pwszClassName;
 		if (!RegisterClassExW(&wc)) {
-			MessageBoxW(L"HexCtrl RegisterClassExW error.", L"Error", MB_ICONERROR);
+			DBG_REPORT(L"RegisterClassExW failed.");
 			return;
 		}
 	}
@@ -203,16 +203,14 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	if (hcs.fCustom) {
 		//If it's a Custom Control in dialog, there is no need to create a window, just subclassing.
 		if (!SubclassDlgItem(hcs.uID, CWnd::FromHandle(hcs.hWndParent))) {
-			MessageBoxW(std::format(L"HexCtrl (ID: {}) SubclassDlgItem failed.\r\nCheck HEXCREATE or CreateDialogCtrl parameters.",
-				hcs.uID).data(), L"Error", MB_ICONERROR);
+			DBG_REPORT(L"SubclassDlgItem failed, check HEXCREATE parameters.");
 			return false;
 		}
 	}
 	else {
 		if (!CWnd::CreateEx(hcs.dwExStyle, m_pwszClassName, L"HexCtrl", hcs.dwStyle, hcs.rect,
 			CWnd::FromHandle(hcs.hWndParent), hcs.uID)) {
-			MessageBoxW(std::format(L"HexCtrl (ID: {}) CreateWindowExW failed.\r\nCheck HEXCREATE struct parameters.", hcs.uID).data(),
-				L"Error", MB_ICONERROR);
+			DBG_REPORT(L"CreateWindowExW failed, check HEXCREATE parameters.");
 			return false;
 		}
 	}
@@ -258,7 +256,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	//Menu related.
 	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCEW(IDR_HEXCTRL_MENU))) {
-		MessageBoxW(L"HexCtrl LoadMenuW failed.", L"Error", MB_ICONERROR);
+		DBG_REPORT(L"LoadMenuW failed.");
 		return false;
 	}
 
@@ -610,7 +608,7 @@ int CHexCtrl::GetActualWidth()const
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return -1;
+		return { };
 
 	return m_iFourthVertLine + 1; //+1px is the Pen width the line was drawn with.
 }
@@ -618,6 +616,9 @@ int CHexCtrl::GetActualWidth()const
 auto CHexCtrl::GetBookmarks()const->IHexBookmarks*
 {
 	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
 	return &*m_pDlgBkmMgr;
 }
 
@@ -634,6 +635,9 @@ auto CHexCtrl::GetCacheSize()const->DWORD
 auto CHexCtrl::GetCapacity()const->DWORD
 {
 	assert(IsCreated());
+	if (!IsCreated())
+		return 0xFFFFFFFFUL; //To disable compiler false warning C4724.
+
 	return m_dwCapacity;
 }
 
@@ -650,12 +654,18 @@ auto CHexCtrl::GetCaretPos()const->ULONGLONG
 auto CHexCtrl::GetCharsExtraSpace()const->DWORD
 {
 	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
 	return m_dwCharsExtraSpace;
 }
 
 int CHexCtrl::GetCodepage()const
 {
 	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
 	return m_iCodePage;
 }
 
@@ -703,6 +713,9 @@ auto CHexCtrl::GetDataSize()const->ULONGLONG
 auto CHexCtrl::GetDateInfo()const->std::tuple<DWORD, wchar_t>
 {
 	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
 	return { m_dwDateFormat, m_wchDateSepar };
 }
 
@@ -746,6 +759,9 @@ auto CHexCtrl::GetFont()->LOGFONTW
 auto CHexCtrl::GetGroupSize()const->DWORD
 {
 	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
 	return m_dwGroupSize;
 }
 
@@ -753,7 +769,7 @@ auto CHexCtrl::GetMenuHandle()const->HMENU
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return nullptr;
+		return { };
 
 	return m_menuMain.GetSubMenu(0)->GetSafeHmenu();
 }
@@ -783,6 +799,9 @@ auto CHexCtrl::GetPagePos()const->ULONGLONG
 auto CHexCtrl::GetPageSize()const->DWORD
 {
 	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
 	return m_dwPageSize;
 }
 
@@ -808,12 +827,18 @@ auto CHexCtrl::GetSelection()const->VecSpan
 auto CHexCtrl::GetTemplates()const->IHexTemplates*
 {
 	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
 	return &*m_pDlgTemplMgr;
 }
 
 auto CHexCtrl::GetUnprintableChar()const->wchar_t
 {
 	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
 	return m_wchUnprintable;
 }
 
@@ -2241,7 +2266,7 @@ void CHexCtrl::ChooseFontDlg()
 void CHexCtrl::ClipboardCopy(EClipboard eType)const
 {
 	if (m_pSelection->GetSelSize() > 1024 * 1024 * 8) { //8MB
-		::MessageBoxW(nullptr, L"Selection size is too big to copy.\r\nTry to select less.", L"Error", MB_ICONERROR);
+		::MessageBoxW(nullptr, L"Selection size is too big to copy.\r\nTry selecting less.", L"Error", MB_ICONERROR);
 		return;
 	}
 
@@ -2282,13 +2307,13 @@ void CHexCtrl::ClipboardCopy(EClipboard eType)const
 	const std::size_t sMemSize = wstrData.size() * sCharSize + sCharSize;
 	const auto hMem = GlobalAlloc(GMEM_MOVEABLE, sMemSize);
 	if (!hMem) {
-		::MessageBoxW(nullptr, L"GlobalAlloc error.", L"Error", MB_ICONERROR);
+		DBG_REPORT(L"GlobalAlloc error.");
 		return;
 	}
 
 	const auto lpMemLock = GlobalLock(hMem);
 	if (!lpMemLock) {
-		::MessageBoxW(nullptr, L"GlobalLock error.", L"Error", MB_ICONERROR);
+		DBG_REPORT(L"GlobalLock error.");
 		return;
 	}
 
@@ -3877,7 +3902,7 @@ void CHexCtrl::Print()
 	dlg.m_pdex.lpPageRanges = &ppr;
 
 	if (dlg.DoModal() != S_OK) {
-		MessageBoxW(L"Internal printer initialization error!", L"Error", MB_ICONERROR);
+		MessageBoxW(L"Internal printer initialization error.", L"Error", MB_ICONERROR);
 		return;
 	}
 
@@ -3889,7 +3914,7 @@ void CHexCtrl::Print()
 
 	const auto hdcPrinter = dlg.GetPrinterDC();
 	if (hdcPrinter == nullptr) {
-		MessageBoxW(L"No printer found!");
+		MessageBoxW(L"No printer found.");
 		return;
 	}
 
