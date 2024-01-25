@@ -213,8 +213,8 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr auto m_uIDTTBkm { 0x01UL };     //Tooltip ID for Bookmarks.
 		static constexpr auto m_uIDTTTempl { 0x02UL };   //Tooltip ID for Templates.
 		static constexpr auto m_iIndentBottomLine { 1 }; //Bottom line indent from window's bottom.
-		static constexpr auto m_iFirstHorzLine { 0 };    //First horizontal line indent.
-		static constexpr auto m_iFirstVertLine { 0 };    //First vertical line indent.
+		static constexpr auto m_iFirstHorzLinePx { 0 };  //First horizontal line indent.
+		static constexpr auto m_iFirstVertLinePx { 0 };  //First vertical line indent.
 		static constexpr auto m_dwVKMouseWheelUp { 0x0100UL };   //Artificial Virtual Key for a Mouse-Wheel Up event.
 		static constexpr auto m_dwVKMouseWheelDown { 0x0101UL }; //Artificial Virtual Key for a Mouse-Wheel Down event.
 		const std::unique_ptr<CHexDlgBkmMgr> m_pDlgBkmMgr { std::make_unique<CHexDlgBkmMgr>() };             //"Bookmark manager" dialog.
@@ -261,28 +261,28 @@ namespace HEXCTRL::INTERNAL {
 		DWORD m_dwCharsExtraSpace { };        //Extra space between chars.
 		SIZE m_sizeFontMain { 1, 1 };         //Main font letter's size (width, height).
 		SIZE m_sizeFontInfo { 1, 1 };         //Info window font letter's size (width, height).
-		int m_iSizeFirstHalf { };             //Size in px of the first half of the capacity.
-		int m_iSizeHexByte { };               //Size in px of two hex letters representing one byte.
-		int m_iIndentTextX { };               //Indent in px of the text (ASCII) beginning.
-		int m_iIndentFirstHexChunkX { };      //First hex chunk indent in px.
-		int m_iIndentCapTextY { };            //Caption text (0 1 2... D E F...) vertical offset.
-		int m_iDistanceGroupedHexChunk { };   //Distance between begining of the two hex grouped chunks, in px.
-		int m_iDistanceBetweenChars { };      //Distance between beginning of the two text chars in px.
-		int m_iSpaceBetweenBlocks { };        //Additional space between hex chunks after half of capacity, in px.
-		int m_iWidthClientArea { };           //Width of the Control's window client area.
-		int m_iStartWorkAreaY { };            //Start Y of the area where all drawing occurs.
-		int m_iEndWorkArea { };               //End of the area where all drawing occurs.
-		int m_iHeightClientArea { };          //Height of the Control's window client area.
-		int m_iHeightTopRect { };             //Height of the header where offsets (0 1 2... D E F...) reside.
-		int m_iHeightWorkArea { };            //Height in px of the working area where all drawing occurs.
-		int m_iHeightInfoBar { };             //Height of the bottom Info rect.
-		int m_iHeightBottomOffArea { };       //Height of the not visible rect from window's bottom to m_iThirdHorizLine.
-		int m_iSecondHorzLine { };            //Second horizontal line indent.
-		int m_iThirdHorzLine { };             //Third horizontal line indent.
-		int m_iFourthHorzLine { };            //Fourth horizontal line indent.
-		int m_iSecondVertLine { };            //Second vert line indent.
-		int m_iThirdVertLine { };             //Third vert line indent.
-		int m_iFourthVertLine { };            //Fourth vert line indent.
+		int m_iSizeFirstHalfPx { };           //Size in px of the first half of the capacity.
+		int m_iSizeHexBytePx { };             //Size in px of two hex letters representing one byte.
+		int m_iIndentTextXPx { };             //Indent in px of the text beginning.
+		int m_iIndentFirstHexChunkXPx { };    //First hex chunk indent in px.
+		int m_iIndentCapTextYPx { };          //Caption text (0 1 2... D E F...) vertical offset.
+		int m_iDistanceGroupedHexChunkPx { }; //Distance between begining of the two hex grouped chunks, in px.
+		int m_iDistanceBetweenCharsPx { };    //Distance between beginning of the two text chars in px.
+		int m_iSpaceBetweenBlocksPx { };      //Additional space between hex chunks after half of capacity, in px.
+		int m_iWidthClientAreaPx { };         //Width of the HexCtrl window client area.
+		int m_iStartWorkAreaYPx { };          //Start Y of the area where all drawing occurs.
+		int m_iEndWorkAreaPx { };             //End of the area where all drawing occurs.
+		int m_iHeightClientAreaPx { };        //Height of the HexCtrl window client area.
+		int m_iHeightTopRectPx { };           //Height of the header where offsets (0 1 2... D E F...) reside.
+		int m_iHeightWorkAreaPx { };          //Height in px of the working area where all drawing occurs.
+		int m_iHeightInfoBarPx { };           //Height of the bottom Info rect.
+		int m_iHeightBottomOffAreaPx { };     //Height of the not visible rect from window's bottom to m_iThirdHorizLine.
+		int m_iSecondHorzLinePx { };          //Second horizontal line indent.
+		int m_iThirdHorzLinePx { };           //Third horizontal line indent.
+		int m_iFourthHorzLinePx { };          //Fourth horizontal line indent.
+		int m_iSecondVertLinePx { };          //Second vert line indent.
+		int m_iThirdVertLinePx { };           //Third vert line indent.
+		int m_iFourthVertLinePx { };          //Fourth vert line indent.
 		int m_iCodePage { -1 };               //Current code-page for Text area. -1 for default.
 		int m_iLOGPIXELSY { };                //GetDeviceCaps(LOGPIXELSY) constant.
 		std::wstring m_wstrCapacity { };      //Top Capacity string.

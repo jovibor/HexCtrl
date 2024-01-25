@@ -610,7 +610,7 @@ int CHexCtrl::GetActualWidth()const
 	if (!IsCreated())
 		return { };
 
-	return m_iFourthVertLine + 1; //+1px is the Pen width the line was drawn with.
+	return m_iFourthVertLinePx + 1; //+1px is the Pen width the line was drawn with.
 }
 
 auto CHexCtrl::GetBookmarks()const->IHexBookmarks*
@@ -906,8 +906,8 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iRelPos)
 		ullNewScrollV = ullNewStartV;
 		break;
 	case 0: //Offset at the middle.
-		if (ullNewStartV > m_iHeightWorkArea / 2) { //To prevent negative numbers.
-			ullNewScrollV = ullNewStartV - m_iHeightWorkArea / 2;
+		if (ullNewStartV > m_iHeightWorkAreaPx / 2) { //To prevent negative numbers.
+			ullNewScrollV = ullNewStartV - m_iHeightWorkAreaPx / 2;
 			ullNewScrollV -= ullNewScrollV % m_sizeFontMain.cy;
 		}
 		break;
@@ -920,8 +920,8 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iRelPos)
 	m_pScrollV->SetScrollPos(ullNewScrollV);
 
 	if (m_pScrollH->IsVisible() && !IsCurTextArea()) {
-		ULONGLONG ullNewScrollH = (ullOffset % GetCapacity()) * m_iSizeHexByte;
-		ullNewScrollH += (ullNewScrollH / m_iDistanceGroupedHexChunk) * GetCharWidthExtras();
+		ULONGLONG ullNewScrollH = (ullOffset % GetCapacity()) * m_iSizeHexBytePx;
+		ullNewScrollH += (ullNewScrollH / m_iDistanceGroupedHexChunkPx) * GetCharWidthExtras();
 		m_pScrollH->SetScrollPos(ullNewScrollH);
 	}
 }
@@ -1106,7 +1106,7 @@ auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION
 	GetClientRect(&rcClient);
 	int iCx, iCy;
 	HexChunkPoint(ullOffset, iCx, iCy);
-	const auto iMaxClientX = rcClient.Width() - m_iSizeHexByte;
+	const auto iMaxClientX = rcClient.Width() - m_iSizeHexBytePx;
 
 	return { static_cast<std::int8_t>(ullOffset < ullFirst ? -1 : (ullOffset >= ullLast ? 1 : 0)),
 		static_cast<std::int8_t>(iCx < 0 ? -1 : (iCx >= iMaxClientX ? 1 : 0)) };
@@ -2693,53 +2693,53 @@ auto CHexCtrl::CopyTextCP()const->std::wstring
 void CHexCtrl::DrawWindow(CDC* pDC)const
 {
 	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
-	CRect rcWnd(m_iFirstVertLine, m_iFirstHorzLine,
-		m_iFirstVertLine + m_iWidthClientArea, m_iFirstHorzLine + m_iHeightClientArea);
+	CRect rcWnd(m_iFirstVertLinePx, m_iFirstHorzLinePx,
+		m_iFirstVertLinePx + m_iWidthClientAreaPx, m_iFirstHorzLinePx + m_iHeightClientAreaPx);
 
 	pDC->FillSolidRect(rcWnd, m_stColors.clrBk);
 	pDC->SelectObject(m_penLines);
 
 	//First horizontal line.
-	pDC->MoveTo(m_iFirstVertLine - iScrollH, m_iFirstHorzLine);
-	pDC->LineTo(m_iFourthVertLine, m_iFirstHorzLine);
+	pDC->MoveTo(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx);
+	pDC->LineTo(m_iFourthVertLinePx, m_iFirstHorzLinePx);
 
 	//Second horizontal line.
-	pDC->MoveTo(m_iFirstVertLine - iScrollH, m_iSecondHorzLine);
-	pDC->LineTo(m_iFourthVertLine, m_iSecondHorzLine);
+	pDC->MoveTo(m_iFirstVertLinePx - iScrollH, m_iSecondHorzLinePx);
+	pDC->LineTo(m_iFourthVertLinePx, m_iSecondHorzLinePx);
 
 	//Third horizontal line.
-	pDC->MoveTo(m_iFirstVertLine - iScrollH, m_iThirdHorzLine);
-	pDC->LineTo(m_iFourthVertLine, m_iThirdHorzLine);
+	pDC->MoveTo(m_iFirstVertLinePx - iScrollH, m_iThirdHorzLinePx);
+	pDC->LineTo(m_iFourthVertLinePx, m_iThirdHorzLinePx);
 
 	//Fourth horizontal line.
-	pDC->MoveTo(m_iFirstVertLine - iScrollH, m_iFourthHorzLine);
-	pDC->LineTo(m_iFourthVertLine, m_iFourthHorzLine);
+	pDC->MoveTo(m_iFirstVertLinePx - iScrollH, m_iFourthHorzLinePx);
+	pDC->LineTo(m_iFourthVertLinePx, m_iFourthHorzLinePx);
 
 	//First Vertical line.
-	pDC->MoveTo(m_iFirstVertLine - iScrollH, m_iFirstHorzLine);
-	pDC->LineTo(m_iFirstVertLine - iScrollH, m_iFourthHorzLine);
+	pDC->MoveTo(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx);
+	pDC->LineTo(m_iFirstVertLinePx - iScrollH, m_iFourthHorzLinePx);
 
 	//Second Vertical line.
-	pDC->MoveTo(m_iSecondVertLine - iScrollH, m_iFirstHorzLine);
-	pDC->LineTo(m_iSecondVertLine - iScrollH, m_iThirdHorzLine);
+	pDC->MoveTo(m_iSecondVertLinePx - iScrollH, m_iFirstHorzLinePx);
+	pDC->LineTo(m_iSecondVertLinePx - iScrollH, m_iThirdHorzLinePx);
 
 	//Third Vertical line.
-	pDC->MoveTo(m_iThirdVertLine - iScrollH, m_iFirstHorzLine);
-	pDC->LineTo(m_iThirdVertLine - iScrollH, m_iThirdHorzLine);
+	pDC->MoveTo(m_iThirdVertLinePx - iScrollH, m_iFirstHorzLinePx);
+	pDC->LineTo(m_iThirdVertLinePx - iScrollH, m_iThirdHorzLinePx);
 
 	//Fourth Vertical line.
-	pDC->MoveTo(m_iFourthVertLine - iScrollH, m_iFirstHorzLine);
-	pDC->LineTo(m_iFourthVertLine - iScrollH, m_iFourthHorzLine);
+	pDC->MoveTo(m_iFourthVertLinePx - iScrollH, m_iFirstHorzLinePx);
+	pDC->LineTo(m_iFourthVertLinePx - iScrollH, m_iFourthHorzLinePx);
 
 	//«Offset» text.
-	CRect rcOffset(m_iFirstVertLine - iScrollH, m_iFirstHorzLine, m_iSecondVertLine - iScrollH, m_iSecondHorzLine);
+	CRect rcOffset(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iSecondVertLinePx - iScrollH, m_iSecondHorzLinePx);
 	pDC->SelectObject(m_fontMain);
 	pDC->SetTextColor(m_stColors.clrFontCaption);
 	pDC->SetBkColor(m_stColors.clrBk);
 	pDC->DrawTextW(L"Offset", 6, rcOffset, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	//Capacity numbers.
-	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunkX - iScrollH, m_iFirstHorzLine + m_iIndentCapTextY, 0, nullptr,
+	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunkXPx - iScrollH, m_iFirstHorzLinePx + m_iIndentCapTextYPx, 0, nullptr,
 		m_wstrCapacity.data(), static_cast<UINT>(m_wstrCapacity.size()), GetCharsWidthArray());
 
 	//Text area caption.
@@ -2753,13 +2753,13 @@ void CHexCtrl::DrawInfoBar(CDC* pDC)const
 		return;
 
 	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
-	CRect rcInfoBar(m_iFirstVertLine + 1 - iScrollH, m_iThirdHorzLine + 1, m_iFourthVertLine, m_iFourthHorzLine); //Info bar rc until m_iFourthHorizLine.
+	CRect rcInfoBar(m_iFirstVertLinePx + 1 - iScrollH, m_iThirdHorzLinePx + 1, m_iFourthVertLinePx, m_iFourthHorzLinePx); //Info bar rc until m_iFourthHorizLine.
 	pDC->FillSolidRect(rcInfoBar, m_stColors.clrBkInfoBar);
 	pDC->DrawEdge(rcInfoBar, BDR_RAISEDINNER, BF_TOP);
 
 	CRect rcText = rcInfoBar;
-	rcText.left = m_iFirstVertLine + 5; //Draw the text beginning with little indent.
-	rcText.right = m_iFirstVertLine + m_iWidthClientArea; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
+	rcText.left = m_iFirstVertLinePx + 5; //Draw the text beginning with little indent.
+	rcText.right = m_iFirstVertLinePx + m_iWidthClientAreaPx; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
 	pDC->SelectObject(m_fontInfoBar);
 	pDC->SetBkColor(m_stColors.clrBkInfoBar);
 
@@ -2810,7 +2810,7 @@ void CHexCtrl::DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const
 		pDC->SelectObject(m_fontMain);
 		pDC->SetTextColor(stClrOffset.clrText);
 		pDC->SetBkColor(stClrOffset.clrBk);
-		ExtTextOutW(pDC->m_hDC, m_iFirstVertLine + GetCharWidthNative() - iScrollH, m_iStartWorkAreaY + (m_sizeFontMain.cy * iterLines),
+		ExtTextOutW(pDC->m_hDC, m_iFirstVertLinePx + GetCharWidthNative() - iScrollH, m_iStartWorkAreaYPx + (m_sizeFontMain.cy * iterLines),
 			0, nullptr, OffsetToWstr((ullStartLine + iterLines) * dwCapacity).data(), m_dwOffsetDigits, nullptr);
 	}
 }
@@ -2830,16 +2830,18 @@ void CHexCtrl::DrawHexText(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::ws
 	vecWstrText.reserve(static_cast<std::size_t>(iLines));
 	const auto ullStartOffset = ullStartLine * GetCapacity();
 	std::size_t sIndexToPrint { 0 };
-	HEXCOLORINFO hci { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) } };
+	HEXCOLORINFO hci { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) },
+		.stClr { .clrBk { m_stColors.clrBk }, .clrText { m_stColors.clrFontHex } } };
 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines) {
 		std::wstring wstrHexToPrint;
 		std::wstring wstrTextToPrint;
-		int iHexPosToPrintX { -1 };
+		int iHexPosToPrintX { };
 		int iTextPosToPrintX { };
-		HEXCOLOR stHexClr;  //Current Hex area color.
-		HEXCOLOR stTextClr; //Current Text area color.
-		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
+		bool fNeedChunkPoint { true }; //For just one time exec.
+		const auto iPosToPrintY = m_iStartWorkAreaYPx + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
+		HEXCOLOR stHexClr { }; //Current Hex area color.
+		HEXCOLOR stTextClr { .clrText { m_stColors.clrFontText } }; //Current Text area color.
 		const auto lmbPoly = [&]() {
 			if (wstrHexToPrint.empty())
 				return;
@@ -2872,12 +2874,7 @@ void CHexCtrl::DrawHexText(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::ws
 
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto iterChunks { 0U }; iterChunks < GetCapacity() && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
-			if (m_pHexVirtColors == nullptr) {
-				hci.stClr.clrBk = m_stColors.clrBk;
-				hci.stClr.clrText = m_stColors.clrFontHex;
-				stTextClr.clrText = m_stColors.clrFontText;
-			}
-			else {
+			if (m_pHexVirtColors != nullptr) {
 				hci.ullOffset = ullStartOffset + sIndexToPrint;
 				if (m_pHexVirtColors->OnHexGetColor(hci)) {
 					stTextClr = hci.stClr; //Text area color will be equal to the Hex area color.
@@ -2889,18 +2886,18 @@ void CHexCtrl::DrawHexText(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::ws
 				}
 			}
 
-			//If it's different color.
-			if (stHexClr != hci.stClr) {
+			if (stHexClr != hci.stClr) { //If it's a different color.
 				lmbHexSpaces(iterChunks);
 				lmbPoly();
-				iHexPosToPrintX = -1;
+				fNeedChunkPoint = true;
 				stHexClr = hci.stClr;
 			}
 
-			if (iHexPosToPrintX == -1) { //For just one time exec.
+			if (fNeedChunkPoint) {
 				int iCy;
 				HexChunkPoint(sIndexToPrint, iHexPosToPrintX, iCy);
 				TextChunkPoint(sIndexToPrint, iTextPosToPrintX, iCy);
+				fNeedChunkPoint = false;
 			}
 
 			lmbHexSpaces(iterChunks);
@@ -2949,11 +2946,12 @@ void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines) {
 		std::wstring wstrHexFieldToPrint;
 		std::wstring wstrTextFieldToPrint;
-		int iFieldHexPosToPrintX { -1 };
+		int iFieldHexPosToPrintX { };
 		int iFieldTextPosToPrintX { };
+		bool fNeedChunkPoint { true };
 		bool fField { false };  //Flag to show current Field in current Hex presence.
 		bool fPrintVertLine { true };
-		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
+		const auto iPosToPrintY = m_iStartWorkAreaYPx + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
 		const auto lmbPoly = [&]() {
 			if (wstrHexFieldToPrint.empty())
 				return;
@@ -2998,15 +2996,16 @@ void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 				if (pFieldCurr != nullptr && pFieldCurr != pField) {
 					lmbHexSpaces(iterChunks);
 					lmbPoly();
-					iFieldHexPosToPrintX = -1;
+					fNeedChunkPoint = true;
 				}
 
 				pFieldCurr = pField;
 
-				if (iFieldHexPosToPrintX == -1) { //For just one time exec.
+				if (fNeedChunkPoint) {
 					int iCy;
 					HexChunkPoint(sIndexToPrint, iFieldHexPosToPrintX, iCy);
 					TextChunkPoint(sIndexToPrint, iFieldTextPosToPrintX, iCy);
+					fNeedChunkPoint = false;
 				}
 
 				lmbHexSpaces(iterChunks);
@@ -3022,7 +3021,7 @@ void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 				//to Poly Fields that end at the line's end.
 
 				lmbPoly();
-				iFieldHexPosToPrintX = -1;
+				fNeedChunkPoint = true;
 				fField = false;
 				pFieldCurr = nullptr;
 			}
@@ -3090,11 +3089,12 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines) {
 		std::wstring wstrHexBkmToPrint;
 		std::wstring wstrTextBkmToPrint;
-		int iBkmHexPosToPrintX { -1 };
+		int iBkmHexPosToPrintX { };
 		int iBkmTextPosToPrintX { };
+		bool fNeedChunkPoint { true };
 		bool fBookmark { false };  //Flag to show current Bookmark in current Hex presence.
 		PHEXBKM pBkmCurr { };
-		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
+		const auto iPosToPrintY = m_iStartWorkAreaYPx + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
 		const auto lmbPoly = [&]() {
 			if (wstrHexBkmToPrint.empty())
 				return;
@@ -3133,15 +3133,16 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 				if (pBkmCurr != nullptr && pBkmCurr != pBkm) {
 					lmbHexSpaces(iterChunks);
 					lmbPoly();
-					iBkmHexPosToPrintX = -1;
+					fNeedChunkPoint = true;
 				}
 
 				pBkmCurr = pBkm;
 
-				if (iBkmHexPosToPrintX == -1) { //For just one time exec.
+				if (fNeedChunkPoint) {
 					int iCy;
 					HexChunkPoint(sIndexToPrint, iBkmHexPosToPrintX, iCy);
 					TextChunkPoint(sIndexToPrint, iBkmTextPosToPrintX, iCy);
+					fNeedChunkPoint = false;
 				}
 
 				lmbHexSpaces(iterChunks);
@@ -3157,7 +3158,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 				//to Poly bookmarks that end at the line's end.
 
 				lmbPoly();
-				iBkmHexPosToPrintX = -1;
+				fNeedChunkPoint = true;
 				fBookmark = false;
 				pBkmCurr = nullptr;
 			}
@@ -3196,10 +3197,11 @@ void CHexCtrl::DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines) {
 		std::wstring wstrHexSelToPrint; //Selected Hex and Text strings to print.
 		std::wstring wstrTextSelToPrint;
-		int iSelHexPosToPrintX { -1 };
+		int iSelHexPosToPrintX { };
 		int iSelTextPosToPrintX { };
+		bool fNeedChunkPoint { true };
 		bool fSelection { false };
-		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
+		const auto iPosToPrintY = m_iStartWorkAreaYPx + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
 		const auto lmbPoly = [&]() {
 			if (wstrHexSelToPrint.empty())
 				return;
@@ -3219,10 +3221,11 @@ void CHexCtrl::DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 		for (auto iterChunks { 0U }; iterChunks < GetCapacity() && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
 			//Selection.
 			if (m_pSelection->HitTest(ullStartOffset + sIndexToPrint)) {
-				if (iSelHexPosToPrintX == -1) { //For just one time exec.
+				if (fNeedChunkPoint) {
 					int iCy;
 					HexChunkPoint(sIndexToPrint, iSelHexPosToPrintX, iCy);
 					TextChunkPoint(sIndexToPrint, iSelTextPosToPrintX, iCy);
+					fNeedChunkPoint = false;
 				}
 
 				if (!wstrHexSelToPrint.empty()) { //Only adding spaces if there are chars beforehead.
@@ -3245,7 +3248,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 				//All the same as for bookmarks.
 
 				lmbPoly();
-				iSelHexPosToPrintX = -1;
+				fNeedChunkPoint = true;
 				fSelection = false;
 			}
 		}
@@ -3279,10 +3282,11 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines) {
 		std::wstring wstrHexSelToPrint; //Selected Hex and Text strings to print.
 		std::wstring wstrTextSelToPrint;
-		int iSelHexPosToPrintX { -1 };
+		int iSelHexPosToPrintX { };
 		int iSelTextPosToPrintX { };
+		bool fNeedChunkPoint { true };
 		bool fSelection { false };
-		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
+		const auto iPosToPrintY = m_iStartWorkAreaYPx + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
 		const auto lmbPoly = [&]() {
 			if (wstrHexSelToPrint.empty())
 				return;
@@ -3302,10 +3306,11 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 		for (auto iterChunks { 0U }; iterChunks < GetCapacity() && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
 			//Selection highlights.
 			if (m_pSelection->HitTestHighlight(ullStartOffset + sIndexToPrint)) {
-				if (iSelHexPosToPrintX == -1) { //For just one time exec.
+				if (fNeedChunkPoint) {
 					int iCy;
 					HexChunkPoint(sIndexToPrint, iSelHexPosToPrintX, iCy);
 					TextChunkPoint(sIndexToPrint, iSelTextPosToPrintX, iCy);
+					fNeedChunkPoint = false;
 				}
 
 				if (!wstrHexSelToPrint.empty()) { //Only adding spaces if there are chars beforehead.
@@ -3328,7 +3333,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 				//All the same as for bookmarks.
 
 				lmbPoly();
-				iSelHexPosToPrintX = -1;
+				fNeedChunkPoint = true;
 				fSelection = false;
 			}
 		}
@@ -3412,25 +3417,26 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std:
 
 	std::vector<POLYTEXTW> vecPolyDataInterp;
 	std::vector<std::unique_ptr<std::wstring>> vecWstrDataInterp;
-
 	const auto ullStartOffset = ullStartLine * GetCapacity();
 	std::size_t sIndexToPrint { };
 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines) {
 		std::wstring wstrHexDataInterpToPrint; //Data Interpreter Hex and Text strings to print.
 		std::wstring wstrTextDataInterpToPrint;
-		int iDataInterpHexPosToPrintX { -1 }; //Data Interpreter X coords.
+		int iDataInterpHexPosToPrintX { }; //Data Interpreter X coords.
 		int iDataInterpTextPosToPrintX { };
-		const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
+		bool fNeedChunkPoint { true };
+		const auto iPosToPrintY = m_iStartWorkAreaYPx + m_sizeFontMain.cy * iterLines; //Hex and Text are the same.
 
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto iterChunks { 0U }; iterChunks < GetCapacity() && sIndexToPrint < wsvText.size(); ++iterChunks, ++sIndexToPrint) {
 			const auto ullOffsetCurr = ullStartOffset + sIndexToPrint;
 			if (ullOffsetCurr >= ullCaretPos && ullOffsetCurr < (ullCaretPos + dwHglSize)) {
-				if (iDataInterpHexPosToPrintX == -1) { //For just one time exec.
+				if (fNeedChunkPoint) {
 					int iCy;
 					HexChunkPoint(sIndexToPrint, iDataInterpHexPosToPrintX, iCy);
 					TextChunkPoint(sIndexToPrint, iDataInterpTextPosToPrintX, iCy);
+					fNeedChunkPoint = false;
 				}
 
 				if (!wstrHexDataInterpToPrint.empty()) { //Only adding spaces if there are chars beforehead.
@@ -3489,8 +3495,8 @@ void CHexCtrl::DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines)
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines) {
 		//Page's lines vector to print.
 		if ((((ullStartLine + iterLines) * GetCapacity()) % m_dwPageSize == 0) && iterLines > 0) {
-			const auto iPosToPrintY = m_iStartWorkAreaY + m_sizeFontMain.cy * iterLines;
-			vecPageLines.emplace_back(POINT { m_iFirstVertLine, iPosToPrintY }, POINT { m_iFourthVertLine, iPosToPrintY });
+			const auto iPosToPrintY = m_iStartWorkAreaYPx + m_sizeFontMain.cy * iterLines;
+			vecPageLines.emplace_back(POINT { m_iFirstVertLinePx, iPosToPrintY }, POINT { m_iFourthVertLinePx, iPosToPrintY });
 		}
 	}
 
@@ -3553,7 +3559,7 @@ auto CHexCtrl::GetBottomLine()const->ULONGLONG
 		return { };
 
 	auto ullEndLine = GetTopLine();
-	if (const auto iLines = m_iHeightWorkArea / m_sizeFontMain.cy; iLines > 0) { //How many visible lines.
+	if (const auto iLines = m_iHeightWorkAreaPx / m_sizeFontMain.cy; iLines > 0) { //How many visible lines.
 		ullEndLine += iLines - 1;
 	}
 
@@ -3612,12 +3618,12 @@ long CHexCtrl::GetFontSize()
 auto CHexCtrl::GetRectTextCaption()const->CRect
 {
 	const auto iScrollH { static_cast<int>(m_pScrollH->GetScrollPos()) };
-	return { m_iThirdVertLine - iScrollH, m_iFirstHorzLine, m_iFourthVertLine - iScrollH, m_iSecondHorzLine };
+	return { m_iThirdVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iFourthVertLinePx - iScrollH, m_iSecondHorzLinePx };
 }
 
 auto CHexCtrl::GetScrollPageSize()const->ULONGLONG
 {
-	const auto ullPageSize = static_cast<ULONGLONG>(m_flScrollRatio * (m_fScrollLines ? m_sizeFontMain.cy : m_iHeightWorkArea));
+	const auto ullPageSize = static_cast<ULONGLONG>(m_flScrollRatio * (m_fScrollLines ? m_sizeFontMain.cy : m_iHeightWorkAreaPx));
 	return ullPageSize < m_sizeFontMain.cy ? m_sizeFontMain.cy : ullPageSize;
 }
 
@@ -3631,16 +3637,12 @@ void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 	//This func computes x and y pos of the given Hex chunk.
 	const auto dwCapacity = GetCapacity();
 	const DWORD dwMod = ullOffset % dwCapacity;
-	int iBetweenBlocks { 0 };
-	if (dwMod >= m_dwCapacityBlockSize) {
-		iBetweenBlocks = m_iSpaceBetweenBlocks;
-	}
+	const auto iBetweenBlocks { dwMod >= m_dwCapacityBlockSize ? m_iSpaceBetweenBlocksPx : 0 };
+	iCx = static_cast<int>(((m_iIndentFirstHexChunkXPx + iBetweenBlocks + dwMod * m_iSizeHexBytePx)
+		+ (dwMod / GetGroupSize()) * GetCharWidthExtras()) - m_pScrollH->GetScrollPos());
 
-	iCx = static_cast<int>(((m_iIndentFirstHexChunkX + iBetweenBlocks + dwMod * m_iSizeHexByte) +
-		(dwMod / GetGroupSize()) * GetCharWidthExtras()) - m_pScrollH->GetScrollPos());
-
-	auto ullScrollV = m_pScrollV->GetScrollPos();
-	iCy = static_cast<int>((m_iStartWorkAreaY + (ullOffset / dwCapacity) * m_sizeFontMain.cy) -
+	const auto ullScrollV = m_pScrollV->GetScrollPos();
+	iCy = static_cast<int>((m_iStartWorkAreaYPx + (ullOffset / dwCapacity) * m_sizeFontMain.cy) -
 		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
 
@@ -3655,23 +3657,23 @@ auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTEST>
 
 	bool fHit { false };
 	//Checking if iX is within Hex chunks area.
-	if ((iX >= m_iIndentFirstHexChunkX) && (iX < m_iThirdVertLine) && (iY >= m_iStartWorkAreaY) && (iY <= m_iEndWorkArea)) {
+	if ((iX >= m_iIndentFirstHexChunkXPx) && (iX < m_iThirdVertLinePx) && (iY >= m_iStartWorkAreaYPx) && (iY <= m_iEndWorkAreaPx)) {
 		int iTotalSpaceBetweenChunks { 0 };
 		for (auto iterCapacity = 0U; iterCapacity < dwCapacity; ++iterCapacity) {
 			if (iterCapacity > 0 && (iterCapacity % dwGroupSize) == 0) {
 				iTotalSpaceBetweenChunks += GetCharWidthExtras();
 				if (dwGroupSize == 1 && iterCapacity == m_dwCapacityBlockSize) {
-					iTotalSpaceBetweenChunks += m_iSpaceBetweenBlocks;
+					iTotalSpaceBetweenChunks += m_iSpaceBetweenBlocksPx;
 				}
 			}
 
-			const auto iCurrChunkBegin = m_iIndentFirstHexChunkX + (m_iSizeHexByte * iterCapacity) + iTotalSpaceBetweenChunks;
-			const auto iCurrChunkEnd = iCurrChunkBegin + m_iSizeHexByte +
+			const auto iCurrChunkBegin = m_iIndentFirstHexChunkXPx + (m_iSizeHexBytePx * iterCapacity) + iTotalSpaceBetweenChunks;
+			const auto iCurrChunkEnd = iCurrChunkBegin + m_iSizeHexBytePx +
 				(((iterCapacity + 1) % dwGroupSize) == 0 ? GetCharWidthExtras() : 0)
-				+ ((dwGroupSize == 1 && (iterCapacity + 1) == m_dwCapacityBlockSize) ? m_iSpaceBetweenBlocks : 0);
+				+ ((dwGroupSize == 1 && (iterCapacity + 1) == m_dwCapacityBlockSize) ? m_iSpaceBetweenBlocksPx : 0);
 
 			if (static_cast<unsigned int>(iX) < iCurrChunkEnd) { //If iX lays in-between [iCurrChunkBegin...iCurrChunkEnd).
-				stHit.ullOffset = static_cast<ULONGLONG>(iterCapacity) + ((iY - m_iStartWorkAreaY) / m_sizeFontMain.cy) *
+				stHit.ullOffset = static_cast<ULONGLONG>(iterCapacity) + ((iY - m_iStartWorkAreaYPx) / m_sizeFontMain.cy) *
 					dwCapacity + (ullCurLine * dwCapacity);
 
 				if ((iX - iCurrChunkBegin) < static_cast<DWORD>(GetCharWidthExtras())) { //Check byte's High or Low half was hit.
@@ -3684,11 +3686,11 @@ auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTEST>
 		}
 	}
 	//Or within Text area.
-	else if ((iX >= m_iIndentTextX) && (iX < (m_iIndentTextX + m_iDistanceBetweenChars * static_cast<int>(dwCapacity)))
-		&& (iY >= m_iStartWorkAreaY) && iY <= m_iEndWorkArea) {
+	else if ((iX >= m_iIndentTextXPx) && (iX < (m_iIndentTextXPx + m_iDistanceBetweenCharsPx * static_cast<int>(dwCapacity)))
+		&& (iY >= m_iStartWorkAreaYPx) && iY <= m_iEndWorkAreaPx) {
 		//Calculate ullOffset Text symbol.
-		stHit.ullOffset = ((iX - static_cast<ULONGLONG>(m_iIndentTextX)) / m_iDistanceBetweenChars) +
-			((iY - m_iStartWorkAreaY) / m_sizeFontMain.cy) * dwCapacity + (ullCurLine * dwCapacity);
+		stHit.ullOffset = ((iX - static_cast<ULONGLONG>(m_iIndentTextXPx)) / m_iDistanceBetweenCharsPx) +
+			((iY - m_iStartWorkAreaYPx) / m_sizeFontMain.cy) * dwCapacity + (ullCurLine * dwCapacity);
 		stHit.fIsText = true;
 		fHit = true;
 	}
@@ -3956,7 +3958,7 @@ void CHexCtrl::Print()
 	const auto dwCapacity = GetCapacity();
 	const auto ullTotalLines = GetDataSize() / dwCapacity;
 	RecalcAll(pDC, &rcPrint);
-	const auto iLinesInPage = m_iHeightWorkArea / m_sizeFontMain.cy;
+	const auto iLinesInPage = m_iHeightWorkAreaPx / m_sizeFontMain.cy;
 	const auto ullTotalPages = ullTotalLines / iLinesInPage + 1;
 	int iPagesToPrint { };
 
@@ -4070,13 +4072,13 @@ void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
 	m_sizeFontInfo.cy = tm.tmHeight + tm.tmExternalLeading;
 
 	if (IsInfoBar()) {
-		m_iHeightInfoBar = m_sizeFontInfo.cy;
-		m_iHeightInfoBar += m_iHeightInfoBar / 3;
+		m_iHeightInfoBarPx = m_sizeFontInfo.cy;
+		m_iHeightInfoBarPx += m_iHeightInfoBarPx / 3;
 	}
 	else { //If Info window is disabled, we set its height to zero.
-		m_iHeightInfoBar = 0;
+		m_iHeightInfoBarPx = 0;
 	}
-	m_iHeightBottomOffArea = m_iHeightInfoBar + m_iIndentBottomLine;
+	m_iHeightBottomOffAreaPx = m_iHeightInfoBarPx + m_iIndentBottomLine;
 
 	const auto ullDataSize = GetDataSize();
 	const auto fAsHex = IsOffsetAsHex();
@@ -4103,22 +4105,22 @@ void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
 
 	//Approximately "dwCapacity * 3 + 1" size array of char's width, to be enough for the Hex area chars.
 	m_vecCharsWidth.assign(dwCapacity * 3 + 1, iCharWidthExt);
-	m_iSecondVertLine = m_iFirstVertLine + m_dwOffsetDigits * iCharWidth + iCharWidth * 2;
-	m_iSizeHexByte = iCharWidthExt * 2;
-	m_iSpaceBetweenBlocks = (dwGroupSize == 1 && dwCapacity > 1) ? iCharWidthExt * 2 : 0;
-	m_iDistanceGroupedHexChunk = m_iSizeHexByte * dwGroupSize + iCharWidthExt;
-	m_iThirdVertLine = m_iSecondVertLine + m_iDistanceGroupedHexChunk * (dwCapacity / dwGroupSize)
-		+ iCharWidth + m_iSpaceBetweenBlocks;
-	m_iIndentTextX = m_iThirdVertLine + iCharWidth;
-	m_iDistanceBetweenChars = iCharWidthExt;
-	m_iFourthVertLine = m_iIndentTextX + (m_iDistanceBetweenChars * dwCapacity) + iCharWidth;
-	m_iIndentFirstHexChunkX = m_iSecondVertLine + iCharWidth;
-	m_iSizeFirstHalf = m_iIndentFirstHexChunkX + m_dwCapacityBlockSize * (iCharWidthExt * 2) +
+	m_iSecondVertLinePx = m_iFirstVertLinePx + m_dwOffsetDigits * iCharWidth + iCharWidth * 2;
+	m_iSizeHexBytePx = iCharWidthExt * 2;
+	m_iSpaceBetweenBlocksPx = (dwGroupSize == 1 && dwCapacity > 1) ? iCharWidthExt * 2 : 0;
+	m_iDistanceGroupedHexChunkPx = m_iSizeHexBytePx * dwGroupSize + iCharWidthExt;
+	m_iThirdVertLinePx = m_iSecondVertLinePx + m_iDistanceGroupedHexChunkPx * (dwCapacity / dwGroupSize)
+		+ iCharWidth + m_iSpaceBetweenBlocksPx;
+	m_iIndentTextXPx = m_iThirdVertLinePx + iCharWidth;
+	m_iDistanceBetweenCharsPx = iCharWidthExt;
+	m_iFourthVertLinePx = m_iIndentTextXPx + (m_iDistanceBetweenCharsPx * dwCapacity) + iCharWidth;
+	m_iIndentFirstHexChunkXPx = m_iSecondVertLinePx + iCharWidth;
+	m_iSizeFirstHalfPx = m_iIndentFirstHexChunkXPx + m_dwCapacityBlockSize * (iCharWidthExt * 2) +
 		(m_dwCapacityBlockSize / dwGroupSize - 1) * iCharWidthExt;
-	m_iHeightTopRect = std::lround(m_sizeFontMain.cy * 1.5);
-	m_iStartWorkAreaY = m_iFirstHorzLine + m_iHeightTopRect;
-	m_iSecondHorzLine = m_iStartWorkAreaY - 1;
-	m_iIndentCapTextY = m_iHeightTopRect / 2 - (m_sizeFontMain.cy / 2);
+	m_iHeightTopRectPx = std::lround(m_sizeFontMain.cy * 1.5);
+	m_iStartWorkAreaYPx = m_iFirstHorzLinePx + m_iHeightTopRectPx;
+	m_iSecondHorzLinePx = m_iStartWorkAreaYPx - 1;
+	m_iIndentCapTextYPx = m_iHeightTopRectPx / 2 - (m_sizeFontMain.cy / 2);
 
 	CRect rc;
 	if (pRect == nullptr) {
@@ -4132,9 +4134,9 @@ void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
 	//Scrolls, ReleaseDC and Redraw only for current DC, not for PrintingDC.
 	if (pDC == nullptr) {
 		m_pScrollV->SetScrollSizes(m_sizeFontMain.cy, GetScrollPageSize(),
-			static_cast<ULONGLONG>(m_iStartWorkAreaY) + m_iHeightBottomOffArea + m_sizeFontMain.cy *
+			static_cast<ULONGLONG>(m_iStartWorkAreaYPx) + m_iHeightBottomOffAreaPx + m_sizeFontMain.cy *
 			(ullDataSize / dwCapacity + (ullDataSize % dwCapacity == 0 ? 1 : 2)));
-		m_pScrollH->SetScrollSizes(iCharWidthExt, rc.Width(), static_cast<ULONGLONG>(m_iFourthVertLine) + 1);
+		m_pScrollH->SetScrollSizes(iCharWidthExt, rc.Width(), static_cast<ULONGLONG>(m_iFourthVertLinePx) + 1);
 		m_pScrollV->SetScrollPos(ullCurLineV * m_sizeFontMain.cy);
 
 		ReleaseDC(pDCCurr);
@@ -4144,13 +4146,13 @@ void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
 
 void CHexCtrl::RecalcClientArea(int iHeight, int iWidth)
 {
-	m_iHeightClientArea = iHeight;
-	m_iWidthClientArea = iWidth;
-	m_iEndWorkArea = m_iHeightClientArea - m_iHeightBottomOffArea -
-		((m_iHeightClientArea - m_iStartWorkAreaY - m_iHeightBottomOffArea) % m_sizeFontMain.cy);
-	m_iHeightWorkArea = m_iEndWorkArea - m_iStartWorkAreaY;
-	m_iThirdHorzLine = m_iFirstHorzLine + m_iHeightClientArea - m_iHeightBottomOffArea;
-	m_iFourthHorzLine = m_iThirdHorzLine + m_iHeightInfoBar;
+	m_iHeightClientAreaPx = iHeight;
+	m_iWidthClientAreaPx = iWidth;
+	m_iEndWorkAreaPx = m_iHeightClientAreaPx - m_iHeightBottomOffAreaPx -
+		((m_iHeightClientAreaPx - m_iStartWorkAreaYPx - m_iHeightBottomOffAreaPx) % m_sizeFontMain.cy);
+	m_iHeightWorkAreaPx = m_iEndWorkAreaPx - m_iStartWorkAreaYPx;
+	m_iThirdHorzLinePx = m_iFirstHorzLinePx + m_iHeightClientAreaPx - m_iHeightBottomOffAreaPx;
+	m_iFourthHorzLinePx = m_iThirdHorzLinePx + m_iHeightInfoBarPx;
 }
 
 void CHexCtrl::Redo()
@@ -4222,8 +4224,8 @@ void CHexCtrl::ScrollOffsetH(ULONGLONG ullOffset)
 
 	const auto ullCurrScrollH = m_pScrollH->GetScrollPos();
 	auto ullNewScrollH { ullCurrScrollH };
-	const auto iMaxClientX = rcClient.Width() - m_iSizeHexByte;
-	const auto iAdditionalSpace { m_iSizeHexByte / 2 };
+	const auto iMaxClientX = rcClient.Width() - m_iSizeHexBytePx;
+	const auto iAdditionalSpace { m_iSizeHexBytePx / 2 };
 	if (iCx >= iMaxClientX) {
 		ullNewScrollH += iCx - iMaxClientX + iAdditionalSpace;
 	}
@@ -4573,10 +4575,10 @@ void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 void CHexCtrl::TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 {	//This func computes x and y pos of given Text chunk.
 	const DWORD dwMod = ullOffset % GetCapacity();
-	iCx = static_cast<int>((m_iIndentTextX + dwMod * GetCharWidthExtras()) - m_pScrollH->GetScrollPos());
+	iCx = static_cast<int>((m_iIndentTextXPx + dwMod * GetCharWidthExtras()) - m_pScrollH->GetScrollPos());
 
 	const auto ullScrollV = m_pScrollV->GetScrollPos();
-	iCy = static_cast<int>((m_iStartWorkAreaY + (ullOffset / GetCapacity()) * m_sizeFontMain.cy) -
+	iCy = static_cast<int>((m_iStartWorkAreaYPx + (ullOffset / GetCapacity()) * m_sizeFontMain.cy) -
 		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
 
@@ -4903,7 +4905,7 @@ void CHexCtrl::OnKeyUp(UINT /*nChar*/, UINT /*nRepCnt*/, UINT /*nFlags*/)
 
 void CHexCtrl::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
-	if ((point.x + static_cast<long>(m_pScrollH->GetScrollPos())) < m_iSecondVertLine) { //DblClick on "Offset" area.
+	if ((point.x + static_cast<long>(m_pScrollH->GetScrollPos())) < m_iSecondVertLinePx) { //DblClick on "Offset" area.
 		SetOffsetMode(!IsOffsetAsHex());
 	}
 	else if (GetRectTextCaption().PtInRect(point) != FALSE) { //DblClick on codepage caption area.
@@ -5005,21 +5007,21 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 		if (m_pScrollH->IsVisible()) {
 			if (point.x < rcClient.left) {
 				m_pScrollH->ScrollLineLeft();
-				point.x = m_iIndentFirstHexChunkX;
+				point.x = m_iIndentFirstHexChunkXPx;
 			}
 			else if (point.x >= rcClient.right) {
 				m_pScrollH->ScrollLineRight();
-				point.x = m_iFourthVertLine - 1;
+				point.x = m_iFourthVertLinePx - 1;
 			}
 		}
 		if (m_pScrollV->IsVisible()) {
-			if (point.y < m_iStartWorkAreaY) {
+			if (point.y < m_iStartWorkAreaYPx) {
 				m_pScrollV->ScrollLineUp();
-				point.y = m_iStartWorkAreaY;
+				point.y = m_iStartWorkAreaYPx;
 			}
-			else if (point.y >= m_iEndWorkArea) {
+			else if (point.y >= m_iEndWorkAreaPx) {
 				m_pScrollV->ScrollLineDown();
-				point.y = m_iEndWorkArea - 1;
+				point.y = m_iEndWorkAreaPx - 1;
 			}
 		}
 
@@ -5186,7 +5188,7 @@ void CHexCtrl::OnPaint()
 	}
 
 	//To prevent drawing in too small window (can cause hangs).
-	if (rcClient.IsRectEmpty() || rcClient.Height() <= m_iHeightTopRect + m_iHeightBottomOffArea)
+	if (rcClient.IsRectEmpty() || rcClient.Height() <= m_iHeightTopRectPx + m_iHeightBottomOffAreaPx)
 		return;
 
 	const auto ullStartLine = GetTopLine();
