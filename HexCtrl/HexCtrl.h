@@ -186,9 +186,8 @@ namespace HEXCTRL {
 	* Templates related data structures, enums, and aliases                                     *
 	********************************************************************************************/
 	struct HEXTEMPLFIELD;
-	using PtrField = std::unique_ptr<HEXTEMPLFIELD>;
-	using VecFields = std::vector<PtrField>; //Vector for the Fields.
-	using PCVecFields = const VecFields*;
+	using HexPtrField = std::unique_ptr<HEXTEMPLFIELD>;
+	using HexVecFields = std::vector<HexPtrField>; //Vector for the Fields.
 	using PCHEXTEMPLFIELD = const HEXTEMPLFIELD*;
 
 	//Predefined types of a field.
@@ -213,7 +212,7 @@ namespace HEXCTRL {
 		int             iOffset { };      //Field offset relative to the Template's beginning.
 		int             iSize { };        //Field size.
 		HEXCOLOR        stClr { };        //Field Bk and Text color.
-		VecFields       vecNested { };    //Vector for nested fields.
+		HexVecFields    vecNested { };    //Vector for nested fields.
 		PCHEXTEMPLFIELD pFieldParent { }; //Parent field, in case of nested.
 		EHexFieldType   eType { };        //Field type.
 		std::uint8_t    uTypeID { };      //Field type ID if, it's a custom type.
@@ -223,7 +222,7 @@ namespace HEXCTRL {
 	//Template main struct.
 	struct HEXTEMPLATE {
 		std::wstring wstrName;      //Template name.
-		VecFields    vecFields;     //Template fields.
+		HexVecFields vecFields;     //Template fields.
 		VecCT        vecCustomType; //Custom types of this template.
 		int          iSizeTotal;    //Total size of all Template's fields, assigned internally by framework.
 		int          iTemplateID;   //Template ID, assigned by framework.

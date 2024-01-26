@@ -16,6 +16,14 @@ import HEXCTRL.HexUtility;
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgTemplMgr final : public CDialogEx, public IHexTemplates {
 	public:
+		struct FIELDSDEFPROPS; //Forward declarations.
+		struct TEMPLAPPLIED;
+		enum class EMenuID : std::uint16_t;
+		using IterJSONMember = rapidjson::Value::ConstMemberIterator;
+		using UmapCustomTypes = std::unordered_map<std::uint8_t, HexVecFields>;
+		using PCTEMPLAPPLIED = const TEMPLAPPLIED*;
+		using PCVecFields = const HexVecFields*;
+
 		CHexDlgTemplMgr();
 		~CHexDlgTemplMgr();
 		auto AddTemplate(const HEXTEMPLATE& stTempl) -> int override;
@@ -39,19 +47,14 @@ namespace HEXCTRL::INTERNAL {
 		void UpdateData();
 
 		//Static functions.
-		struct FIELDSDEFPROPS; //Forward declaration.
-		using IterJSONMember = rapidjson::Value::ConstMemberIterator;
-		using UmapCustomTypes = std::unordered_map<std::uint8_t, VecFields>;
-		[[nodiscard]] static bool JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& refVecFields,
-				const FIELDSDEFPROPS& refDefault, UmapCustomTypes& umapCustomT, int* pOffset = nullptr);
+		[[nodiscard]] static bool JSONParseFields(const IterJSONMember iterFieldsArray, HexVecFields& refVecFields,
+						const FIELDSDEFPROPS& refDefault, UmapCustomTypes& umapCustomT, int* pOffset = nullptr);
 		[[nodiscard]] static auto JSONEndianness(const rapidjson::Value& value) -> std::optional<bool>;
 		[[nodiscard]] static auto JSONColors(const rapidjson::Value& value, const char* pszColorName) -> std::optional<COLORREF>;
 		[[nodiscard]] static auto CloneTemplate(PCHEXTEMPLATE pTemplate) -> std::unique_ptr<HEXTEMPLATE>;
 		static LRESULT CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 	private:
-		struct TEMPLAPPLIED;
-		using PCTEMPLAPPLIED = const TEMPLAPPLIED*;
 		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		void EnableDynamicLayoutHelper(bool fEnable);
@@ -142,7 +145,6 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr auto m_iIDListApplFieldData { 4 };
 		static constexpr auto m_iIDListApplFieldDescr { 6 };
 		static constexpr auto m_iIDListApplFieldClrs { 7 };
-		enum class EMenuID : std::uint16_t;
 		IHexCtrl* m_pHexCtrl { };
 		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;      //Loaded Templates.
 		std::vector<std::unique_ptr<TEMPLAPPLIED>> m_vecTemplatesAppl; //Currently Applied Templates.
@@ -164,15 +166,15 @@ namespace HEXCTRL::INTERNAL {
 		HCURSOR m_hCurResize;
 		HCURSOR m_hCurArrow;
 		PCTEMPLAPPLIED m_pAppliedCurr { }; //Currently selected template in the applied Tree.
-		PCVecFields m_pVecFieldsCurr { };     //Currently selected Fields vector.
-		HTREEITEM m_hTreeCurrParent { };      //Currently selected Tree node's parent.
-		std::uint64_t m_u64DlgData { };       //Data from SetDlgData.
-		DWORD m_dwDateFormat { };             //Date format.
-		int m_iDynLayoutMinY { };             //For DynamicLayout::SetMinSize.
-		wchar_t m_wchDateSepar { };           //Date separator.
-		bool m_fCurInSplitter { };            //Indicates that mouse cursor is in the splitter area.
-		bool m_fLMDownResize { };             //Left mouse pressed in splitter area to resize.
-		bool m_fListGuardEvent { false };     //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
-		bool m_fTooltips { true };            //Show tooltips or not.
+		PCVecFields m_pVecFieldsCurr { };  //Currently selected Fields vector.
+		HTREEITEM m_hTreeCurrParent { };   //Currently selected Tree node's parent.
+		std::uint64_t m_u64DlgData { };    //Data from SetDlgData.
+		DWORD m_dwDateFormat { };          //Date format.
+		int m_iDynLayoutMinY { };          //For DynamicLayout::SetMinSize.
+		wchar_t m_wchDateSepar { };        //Date separator.
+		bool m_fCurInSplitter { };         //Indicates that mouse cursor is in the splitter area.
+		bool m_fLMDownResize { };          //Left mouse pressed in splitter area to resize.
+		bool m_fListGuardEvent { false };  //To not proceed with OnListItemChanged, same as pTree->action == TVC_UNKNOWN.
+		bool m_fTooltips { true };         //Show tooltips or not.
 	};
 }

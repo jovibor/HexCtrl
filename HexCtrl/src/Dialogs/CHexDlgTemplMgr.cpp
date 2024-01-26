@@ -119,8 +119,8 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 		.lParam = reinterpret_cast<LPARAM>(pApplied) } }; //Tree root node has PCTEMPLAPPLIED ptr.
 	const auto hTreeRootNode = m_treeApplied.InsertItem(&tvi);
 
-	const auto lmbFill = [&](HTREEITEM hTreeRoot, const VecFields& refVecFields)->void {
-		const auto _lmbFill = [&](const auto& lmbSelf, HTREEITEM hTreeRoot, const VecFields& refVecFields)->void {
+	const auto lmbFill = [&](HTREEITEM hTreeRoot, const HexVecFields& refVecFields)->void {
+		const auto _lmbFill = [&](const auto& lmbSelf, HTREEITEM hTreeRoot, const HexVecFields& refVecFields)->void {
 			for (const auto& pField : refVecFields) {
 				tvi.hParent = hTreeRoot;
 				tvi.itemex.cChildren = static_cast<int>(pField->vecNested.size());
@@ -251,9 +251,9 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD
 	const auto& vecFields = pApplied->pTemplate->vecFields;
 
 	const auto lmbFind = [ullOffset, ullOffsetApplied]
-	(const VecFields& refVecFields)->PCHEXTEMPLFIELD {
+	(const HexVecFields& refVecFields)->PCHEXTEMPLFIELD {
 		const auto _lmbFind = [ullOffset, ullOffsetApplied]
-		(const auto& lmbSelf, const VecFields& refVecFields)->PCHEXTEMPLFIELD {
+		(const auto& lmbSelf, const HexVecFields& refVecFields)->PCHEXTEMPLFIELD {
 			for (const auto& pField : refVecFields) {
 				if (pField->vecNested.empty()) {
 					const auto ullOffsetCurr = ullOffsetApplied + pField->iOffset;
@@ -1403,8 +1403,8 @@ void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<unsigned int> distrib(50, 230);
 
-	const auto lmbRndColors = [&distrib, &gen](const VecFields& refVecFields) {
-		const auto _lmbCount = [&distrib, &gen](const auto& lmbSelf, const VecFields& refVecFields)->void {
+	const auto lmbRndColors = [&distrib, &gen](const HexVecFields& refVecFields) {
+		const auto _lmbCount = [&distrib, &gen](const auto& lmbSelf, const HexVecFields& refVecFields)->void {
 			for (const auto& pField : refVecFields) {
 				if (pField->vecNested.empty()) {
 					pField->stClr.clrBk = RGB(distrib(gen), distrib(gen), distrib(gen));
@@ -2056,9 +2056,9 @@ auto CHexDlgTemplMgr::CloneTemplate(PCHEXTEMPLATE pTemplate)->std::unique_ptr<HE
 	pNew->iSizeTotal = pTemplate->iSizeTotal;
 	pNew->iTemplateID = pTemplate->iTemplateID;
 
-	//Deep copy of all nested VecFields.
-	const auto lmbCopyVecFields = [](VecFields& refVecFieldsNew, const VecFields& refVecFieldsOld)->void {
-		const auto _lmbCopyVecFields = [](const auto& lmbSelf, VecFields& refVecFieldsNew, const VecFields& refVecFieldsOld,
+	//Deep copy of all nested HexVecFields.
+	const auto lmbCopyVecFields = [](HexVecFields& refVecFieldsNew, const HexVecFields& refVecFieldsOld)->void {
+		const auto _lmbCopyVecFields = [](const auto& lmbSelf, HexVecFields& refVecFieldsNew, const HexVecFields& refVecFieldsOld,
 			PCHEXTEMPLFIELD pFieldParent)->void {
 				for (const auto& pOldField : refVecFieldsOld) {
 					const auto& pNewField = refVecFieldsNew.emplace_back(std::make_unique<HEXTEMPLFIELD>());
@@ -2081,7 +2081,7 @@ auto CHexDlgTemplMgr::CloneTemplate(PCHEXTEMPLATE pTemplate)->std::unique_ptr<HE
 	return pNew;
 }
 
-bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecFields& refVecFields,
+bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, HexVecFields& refVecFields,
 	const FIELDSDEFPROPS& refDefault, UmapCustomTypes& umapCustomT, int* pOffset)
 {
 	using enum EHexFieldType;
@@ -2105,8 +2105,8 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 		{ type_systemtime, static_cast<int>(sizeof(SYSTEMTIME)) }, { type_guid, static_cast<int>(sizeof(GUID)) }
 	};
 
-	const auto lmbTotalSize = [](const VecFields& refVecFields)->int { //Counts total size of all Fields in VecFields, recursively.
-		const auto _lmbTotalSize = [](const auto& lmbSelf, const VecFields& refVecFields)->int {
+	const auto lmbTotalSize = [](const HexVecFields& refVecFields)->int { //Counts total size of all Fields in HexVecFields, recursively.
+		const auto _lmbTotalSize = [](const auto& lmbSelf, const HexVecFields& refVecFields)->int {
 			return std::accumulate(refVecFields.begin(), refVecFields.end(), 0,
 				[&lmbSelf](auto ullTotal, const std::unique_ptr<HEXTEMPLFIELD>& pField) {
 					if (!pField->vecNested.empty()) {
@@ -2196,9 +2196,9 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, VecF
 					pNewField->uTypeID = iterVecCT->uTypeID; //Custom type ID.
 					pNewField->eType = type_custom;
 					const auto lmbCopyCustomType = [&refDefault]
-					(const VecFields& refVecCustomFields, const PtrField& pField, int& iOffset)->void {
+					(const HexVecFields& refVecCustomFields, const HexPtrField& pField, int& iOffset)->void {
 						const auto _lmbCustomTypeCopy = [&refDefault]
-						(const auto& lmbSelf, const VecFields& refVecCustomFields, const PtrField& pField, int& iOffset)->void {
+						(const auto& lmbSelf, const HexVecFields& refVecCustomFields, const HexPtrField& pField, int& iOffset)->void {
 							for (const auto& pCustomField : refVecCustomFields) {
 								const auto& pNewField = pField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
 								const auto& refCFClr = pCustomField->stClr;
@@ -2399,7 +2399,7 @@ HEXCTRLAPI auto __cdecl HEXCTRL::IHexTemplates::LoadFromFile(const wchar_t* pFil
 				return { }; //Each "Fields" must be an array.
 			}
 
-			umapCT.try_emplace(uCustomTypeID, VecFields { });
+			umapCT.try_emplace(uCustomTypeID, HexVecFields { });
 			const CHexDlgTemplMgr::FIELDSDEFPROPS stDefTypes { .stClr { clrBk, clrText }, .pTemplate { pTemplate },
 				.fBigEndian { fBigEndian } };
 			if (!CHexDlgTemplMgr::JSONParseFields(iterFieldsArray, umapCT[uCustomTypeID], stDefTypes, umapCT)) {
