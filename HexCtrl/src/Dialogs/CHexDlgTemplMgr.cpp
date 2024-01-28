@@ -674,7 +674,7 @@ BOOL CHexDlgTemplMgr::OnCommand(WPARAM wParam, LPARAM lParam)
 	return CDialogEx::OnCommand(wParam, lParam);
 }
 
-HBRUSH CHexDlgTemplMgr::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+auto CHexDlgTemplMgr::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)->HBRUSH
 {
 	const auto hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
 
@@ -866,9 +866,9 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	//EHexFieldType converter to actual wstring for the list.
 	static const std::unordered_map<EHexFieldType, const wchar_t* const> umapETypeToWstr {
 		{ custom_size, L"custom size" }, { type_custom, L"custom type" },
-		{ type_bool, L"bool" }, { type_char, L"char" }, { type_uchar, L"unsigned char" },
-		{ type_short, L"short" }, { type_ushort, L"unsigned short" }, { type_int, L"int" },
-		{ type_uint, L"unsigned int" }, { type_ll, L"long long" }, { type_ull, L"unsigned long long" },
+		{ type_bool, L"bool" }, { type_int8, L"int8" }, { type_uint8, L"uint8" },
+		{ type_int16, L"int16" }, { type_uint16, L"uint16" }, { type_int32, L"int32" },
+		{ type_uint32, L"uint32" }, { type_int64, L"int64" }, { type_uint64, L"uint64" },
 		{ type_float, L"float" }, { type_double, L"double" }, { type_time32, L"time32_t" },
 		{ type_time64, L"time64_t" }, { type_filetime, L"FILETIME" }, { type_systemtime, L"SYSTEMTIME" },
 		{ type_guid, L"GUID" }
@@ -947,31 +947,31 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			}
 			break;
 		case type_bool:
-			ShowListDataBool(pItem->pszText, GetIHexTData<unsigned char>(*m_pHexCtrl, ullOffset));
+			ShowListDataBool(pItem->pszText, GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset));
 			break;
-		case type_char:
-			ShowListDataChar(pItem->pszText, GetIHexTData<char>(*m_pHexCtrl, ullOffset));
+		case type_int8:
+			ShowListDataInt8(pItem->pszText, GetIHexTData<std::int8_t>(*m_pHexCtrl, ullOffset));
 			break;
-		case type_uchar:
-			ShowListDataUChar(pItem->pszText, GetIHexTData<unsigned char>(*m_pHexCtrl, ullOffset));
+		case type_uint8:
+			ShowListDataUInt8(pItem->pszText, GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset));
 			break;
-		case type_short:
-			ShowListDataShort(pItem->pszText, GetIHexTData<short>(*m_pHexCtrl, ullOffset), fShouldSwap);
+		case type_int16:
+			ShowListDataInt16(pItem->pszText, GetIHexTData<std::int16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
-		case type_ushort:
-			ShowListDataUShort(pItem->pszText, GetIHexTData<unsigned short>(*m_pHexCtrl, ullOffset), fShouldSwap);
+		case type_uint16:
+			ShowListDataUInt16(pItem->pszText, GetIHexTData<std::uint16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
-		case type_int:
-			ShowListDataInt(pItem->pszText, GetIHexTData<int>(*m_pHexCtrl, ullOffset), fShouldSwap);
+		case type_int32:
+			ShowListDataInt32(pItem->pszText, GetIHexTData<std::int32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
-		case type_uint:
-			ShowListDataUInt(pItem->pszText, GetIHexTData<unsigned int>(*m_pHexCtrl, ullOffset), fShouldSwap);
+		case type_uint32:
+			ShowListDataUInt32(pItem->pszText, GetIHexTData<std::uint32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
-		case type_ll:
-			ShowListDataLL(pItem->pszText, GetIHexTData<long long>(*m_pHexCtrl, ullOffset), fShouldSwap);
+		case type_int64:
+			ShowListDataInt64(pItem->pszText, GetIHexTData<std::int64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
-		case type_ull:
-			ShowListDataULL(pItem->pszText, GetIHexTData<unsigned long long>(*m_pHexCtrl, ullOffset), fShouldSwap);
+		case type_uint64:
+			ShowListDataUInt64(pItem->pszText, GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_float:
 			ShowListDataFloat(pItem->pszText, GetIHexTData<float>(*m_pHexCtrl, ullOffset), fShouldSwap);
@@ -1133,35 +1133,35 @@ void CHexDlgTemplMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		case type_bool:
 			fSetRet = SetDataBool(pwszText, ullOffset);
 			break;
-		case type_char:
-			fSetRet = SetDataChar(pwszText, ullOffset);
+		case type_int8:
+			fSetRet = SetDataNUMBER<std::int8_t>(pwszText, ullOffset, fShouldSwap);
 			break;
-		case type_uchar:
-			fSetRet = SetDataUChar(pwszText, ullOffset);
+		case type_uint8:
+			fSetRet = SetDataNUMBER<std::uint8_t>(pwszText, ullOffset, fShouldSwap);
 			break;
-		case type_short:
-			fSetRet = SetDataShort(pwszText, ullOffset, fShouldSwap);
+		case type_int16:
+			fSetRet = SetDataNUMBER<std::int16_t>(pwszText, ullOffset, fShouldSwap);
 			break;
-		case type_ushort:
-			fSetRet = SetDataUShort(pwszText, ullOffset, fShouldSwap);
+		case type_uint16:
+			fSetRet = SetDataNUMBER<std::uint16_t>(pwszText, ullOffset, fShouldSwap);
 			break;
-		case type_int:
-			fSetRet = SetDataInt(pwszText, ullOffset, fShouldSwap);
+		case type_int32:
+			fSetRet = SetDataNUMBER<std::int32_t>(pwszText, ullOffset, fShouldSwap);
 			break;
-		case type_uint:
-			fSetRet = SetDataUInt(pwszText, ullOffset, fShouldSwap);
+		case type_uint32:
+			fSetRet = SetDataNUMBER<std::uint32_t>(pwszText, ullOffset, fShouldSwap);
 			break;
-		case type_ll:
-			fSetRet = SetDataLL(pwszText, ullOffset, fShouldSwap);
+		case type_int64:
+			fSetRet = SetDataNUMBER<std::int64_t>(pwszText, ullOffset, fShouldSwap);
 			break;
-		case type_ull:
-			fSetRet = SetDataULL(pwszText, ullOffset, fShouldSwap);
+		case type_uint64:
+			fSetRet = SetDataNUMBER<std::uint64_t>(pwszText, ullOffset, fShouldSwap);
 			break;
 		case type_float:
-			fSetRet = SetDataFloat(pwszText, ullOffset, fShouldSwap);
+			fSetRet = SetDataNUMBER<float>(pwszText, ullOffset, fShouldSwap);
 			break;
 		case type_double:
-			fSetRet = SetDataDouble(pwszText, ullOffset, fShouldSwap);
+			fSetRet = SetDataNUMBER<double>(pwszText, ullOffset, fShouldSwap);
 			break;
 		case type_time32:
 			fSetRet = SetDataTime32(pwszText, ullOffset, fShouldSwap);
@@ -1494,144 +1494,21 @@ bool CHexDlgTemplMgr::SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset) const
 	return false;
 }
 
-bool CHexDlgTemplMgr::SetDataChar(LPCWSTR pwszText, ULONGLONG ullOffset)const
-{
-	//When IsShowAsHex() is true, we deliberately convert text to an 'unsigned' corresponding type.
-	//Otherwise, setting a values like 0xFF in hex mode would be impossible, because such values
-	//are bigger then `signed` type's max value, they can't be converted to it.
-	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt8(pwszText); opt) {
-			SetTData(*opt, ullOffset, false);
-			return true;
-		}
-	}
-	else {
-		if (const auto opt = stn::StrToInt8(pwszText); opt) {
-			SetTData(*opt, ullOffset, false);
-			return true;
-		}
-	}
-	return false;
-}
-
-bool CHexDlgTemplMgr::SetDataUChar(LPCWSTR pwszText, ULONGLONG ullOffset)const
-{
-	if (const auto opt = stn::StrToUInt8(pwszText); opt) {
-		SetTData(*opt, ullOffset, false);
-		return true;
-	}
-	return false;
-}
-
-bool CHexDlgTemplMgr::SetDataShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
+template<typename T> requires TSize1248<T>
+bool CHexDlgTemplMgr::SetDataNUMBER(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt16(pwszText); opt) {
+		//Unsigned type in case of float or double.
+		using UTF = std::conditional_t<std::is_same_v<T, float>, std::uint32_t, std::uint64_t>;
+		//Unsigned type in case of Integral or float/double.
+		using UT = typename std::conditional_t<std::is_integral_v<T>, std::make_unsigned<T>, std::type_identity<UTF>>::type;
+		if (const auto opt = stn::StrToNum<UT>(pwszText); opt) {
 			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
 	}
 	else {
-		if (const auto opt = stn::StrToInt16(pwszText); opt) {
-			SetTData(*opt, ullOffset, fShouldSwap);
-			return true;
-		}
-	}
-	return false;
-}
-
-bool CHexDlgTemplMgr::SetDataUShort(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
-{
-	if (const auto opt = stn::StrToUInt16(pwszText); opt) {
-		SetTData(*opt, ullOffset, fShouldSwap);
-		return true;
-	}
-	return false;
-}
-
-bool CHexDlgTemplMgr::SetDataInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
-{
-	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt32(pwszText); opt) {
-			SetTData(*opt, ullOffset, fShouldSwap);
-			return true;
-		}
-	}
-	else {
-		if (const auto opt = stn::StrToInt32(pwszText); opt) {
-			SetTData(*opt, ullOffset, fShouldSwap);
-			return true;
-		}
-	}
-	return false;
-}
-
-bool CHexDlgTemplMgr::SetDataUInt(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
-{
-	if (const auto opt = stn::StrToUInt32(pwszText); opt) {
-		SetTData(*opt, ullOffset, fShouldSwap);
-		return true;
-	}
-	return false;
-}
-
-bool CHexDlgTemplMgr::SetDataLL(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
-{
-	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt64(pwszText); opt) {
-			SetTData(*opt, ullOffset, fShouldSwap);
-			return true;
-		}
-	}
-	else {
-		if (const auto opt = stn::StrToInt64(pwszText); opt) {
-			SetTData(*opt, ullOffset, fShouldSwap);
-			return true;
-		}
-	}
-	return false;
-}
-
-bool CHexDlgTemplMgr::SetDataULL(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
-{
-	if (const auto opt = stn::StrToUInt64(pwszText); opt) {
-		SetTData(*opt, ullOffset, fShouldSwap);
-		return true;
-	}
-	return false;
-}
-
-bool CHexDlgTemplMgr::SetDataFloat(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
-{
-	//Convert hex text to float is impossible.
-	//Therefore we convert it to the unsigned type of the same size.
-	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt32(pwszText); opt) {
-			SetTData(*opt, ullOffset, fShouldSwap);
-			return true;
-		}
-	}
-	else {
-		if (const auto opt = stn::StrToFloat(pwszText); opt) {
-			SetTData(*opt, ullOffset, fShouldSwap);
-			return true;
-		}
-	}
-	return false;
-}
-
-bool CHexDlgTemplMgr::SetDataDouble(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
-{
-	//Convert hex text to double is impossible.
-	//Therefore we convert it to the unsigned type of the same size.
-	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt64(pwszText); opt) {
-			SetTData(*opt, ullOffset, fShouldSwap);
-			return true;
-		}
-	}
-	else {
-		if (const auto opt = stn::StrToDouble(pwszText); opt) {
+		if (const auto opt = stn::StrToNum<T>(pwszText); opt) {
 			SetTData(*opt, ullOffset, fShouldSwap);
 			return true;
 		}
@@ -1825,18 +1702,18 @@ void CHexDlgTemplMgr::ShowListDataBool(LPWSTR pwsz, unsigned char uchData) const
 		std::make_wformat_args(uchData, static_cast<bool>(uchData))) = L'\0';
 }
 
-void CHexDlgTemplMgr::ShowListDataChar(LPWSTR pwsz, char chData)const
+void CHexDlgTemplMgr::ShowListDataInt8(LPWSTR pwsz, char chData)const
 {
 	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:02X}" : L"{1}",
 		std::make_wformat_args(static_cast<unsigned char>(chData), static_cast<int>(chData))) = L'\0';
 }
 
-void CHexDlgTemplMgr::ShowListDataUChar(LPWSTR pwsz, unsigned char uchData)const
+void CHexDlgTemplMgr::ShowListDataUInt8(LPWSTR pwsz, unsigned char uchData)const
 {
 	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{:02X}" : L"{}", std::make_wformat_args(uchData)) = L'\0';
 }
 
-void CHexDlgTemplMgr::ShowListDataShort(LPWSTR pwsz, short shortData, bool fShouldSwap)const
+void CHexDlgTemplMgr::ShowListDataInt16(LPWSTR pwsz, short shortData, bool fShouldSwap)const
 {
 	if (fShouldSwap) {
 		shortData = ByteSwap(shortData);
@@ -1845,7 +1722,7 @@ void CHexDlgTemplMgr::ShowListDataShort(LPWSTR pwsz, short shortData, bool fShou
 		std::make_wformat_args(static_cast<unsigned short>(shortData), shortData)) = L'\0';
 }
 
-void CHexDlgTemplMgr::ShowListDataUShort(LPWSTR pwsz, unsigned short wData, bool fShouldSwap)const
+void CHexDlgTemplMgr::ShowListDataUInt16(LPWSTR pwsz, unsigned short wData, bool fShouldSwap)const
 {
 	if (fShouldSwap) {
 		wData = ByteSwap(wData);
@@ -1853,7 +1730,7 @@ void CHexDlgTemplMgr::ShowListDataUShort(LPWSTR pwsz, unsigned short wData, bool
 	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{:04X}" : L"{}", std::make_wformat_args(wData)) = L'\0';
 }
 
-void CHexDlgTemplMgr::ShowListDataInt(LPWSTR pwsz, int intData, bool fShouldSwap)const
+void CHexDlgTemplMgr::ShowListDataInt32(LPWSTR pwsz, int intData, bool fShouldSwap)const
 {
 	if (fShouldSwap) {
 		intData = ByteSwap(intData);
@@ -1862,7 +1739,7 @@ void CHexDlgTemplMgr::ShowListDataInt(LPWSTR pwsz, int intData, bool fShouldSwap
 		std::make_wformat_args(static_cast<unsigned int>(intData), intData)) = L'\0';
 }
 
-void CHexDlgTemplMgr::ShowListDataUInt(LPWSTR pwsz, unsigned int dwData, bool fShouldSwap)const
+void CHexDlgTemplMgr::ShowListDataUInt32(LPWSTR pwsz, unsigned int dwData, bool fShouldSwap)const
 {
 	if (fShouldSwap) {
 		dwData = ByteSwap(dwData);
@@ -1870,7 +1747,7 @@ void CHexDlgTemplMgr::ShowListDataUInt(LPWSTR pwsz, unsigned int dwData, bool fS
 	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{:08X}" : L"{}", std::make_wformat_args(dwData)) = L'\0';
 }
 
-void CHexDlgTemplMgr::ShowListDataLL(LPWSTR pwsz, long long llData, bool fShouldSwap)const
+void CHexDlgTemplMgr::ShowListDataInt64(LPWSTR pwsz, long long llData, bool fShouldSwap)const
 {
 	if (fShouldSwap) {
 		llData = ByteSwap(llData);
@@ -1879,7 +1756,7 @@ void CHexDlgTemplMgr::ShowListDataLL(LPWSTR pwsz, long long llData, bool fShould
 		std::make_wformat_args(static_cast<unsigned long long>(llData), llData)) = L'\0';
 }
 
-void CHexDlgTemplMgr::ShowListDataULL(LPWSTR pwsz, unsigned long long ullData, bool fShouldSwap)const
+void CHexDlgTemplMgr::ShowListDataUInt64(LPWSTR pwsz, unsigned long long ullData, bool fShouldSwap)const
 {
 	if (fShouldSwap) {
 		ullData = ByteSwap(ullData);
@@ -2087,19 +1964,23 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, HexV
 	using enum EHexFieldType;
 	static const std::unordered_map<std::string_view, EHexFieldType> umapStrToEType { //From JSON string to EHexFieldType conversion.
 		{ "bool", type_bool },
-		{ "char", type_char }, { "unsigned char", type_uchar }, { "byte", type_uchar },
-		{ "short", type_short }, { "unsigned short", type_ushort }, { "WORD", type_ushort },
-		{ "long", type_int }, { "unsigned long", type_uint }, { "int", type_int },
-		{ "unsigned int", type_uint }, { "DWORD", type_uint }, { "long long", type_ll },
-		{ "unsigned long long", type_ull }, { "QWORD", type_ull }, { "float", type_float },
-		{ "double", type_double }, { "time32_t", type_time32 }, { "time64_t", type_time64 },
+		{ "int8", type_int8 }, { "char", type_int8 },
+		{ "uint8", type_uint8 }, { "unsigned char", type_uint8 }, { "byte", type_uint8 },
+		{ "int16", type_int16 }, { "short", type_int16 },
+		{ "uint16", type_uint16 }, { "unsigned short", type_uint16 }, { "WORD", type_uint16 },
+		{ "int32", type_int32 }, { "long", type_int32 }, { "int", type_int32 },
+		{ "uint32", type_uint32 }, { "unsigned long", type_uint32 }, { "unsigned int", type_uint32 }, { "DWORD", type_uint32 },
+		{ "int64", type_int64 }, { "long long", type_int64 },
+		{ "uint64", type_uint64 }, { "unsigned long long", type_uint64 }, { "QWORD", type_uint64 },
+		{ "float", type_float }, { "double", type_double },
+		{ "time32_t", type_time32 }, { "time64_t", type_time64 },
 		{ "FILETIME", type_filetime }, { "SYSTEMTIME", type_systemtime }, { "GUID", type_guid } };
 	static const std::unordered_map<EHexFieldType, int> umapTypeToSize { //Types sizes.
-		{ type_bool, static_cast<int>(sizeof(bool)) }, { type_char, static_cast<int>(sizeof(char)) },
-		{ type_uchar, static_cast<int>(sizeof(char)) }, { type_short, static_cast<int>(sizeof(short)) },
-		{ type_ushort, static_cast<int>(sizeof(short)) }, { type_int, static_cast<int>(sizeof(int)) },
-		{ type_uint, static_cast<int>(sizeof(int)) }, { type_ll, static_cast<int>(sizeof(long long)) },
-		{ type_ull, static_cast<int>(sizeof(long long)) }, { type_float, static_cast<int>(sizeof(float)) },
+		{ type_bool, static_cast<int>(sizeof(bool)) }, { type_int8, static_cast<int>(sizeof(char)) },
+		{ type_uint8, static_cast<int>(sizeof(char)) }, { type_int16, static_cast<int>(sizeof(short)) },
+		{ type_uint16, static_cast<int>(sizeof(short)) }, { type_int32, static_cast<int>(sizeof(int)) },
+		{ type_uint32, static_cast<int>(sizeof(int)) }, { type_int64, static_cast<int>(sizeof(long long)) },
+		{ type_uint64, static_cast<int>(sizeof(long long)) }, { type_float, static_cast<int>(sizeof(float)) },
 		{ type_double, static_cast<int>(sizeof(double)) }, { type_time32, static_cast<int>(sizeof(__time32_t)) },
 		{ type_time64, static_cast<int>(sizeof(__time64_t)) }, { type_filetime, static_cast<int>(sizeof(FILETIME)) },
 		{ type_systemtime, static_cast<int>(sizeof(SYSTEMTIME)) }, { type_guid, static_cast<int>(sizeof(GUID)) }
