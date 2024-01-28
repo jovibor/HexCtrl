@@ -18,8 +18,6 @@
 #include <thread>
 #include <type_traits>
 
-import HEXCTRL.HexUtility;
-
 using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL {

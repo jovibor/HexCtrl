@@ -9,6 +9,8 @@
 #include "../../dep/ListEx/ListEx.h"
 #include <afxdialogex.h>
 
+import HEXCTRL.HexUtility;
+
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgSearch final : public CDialogEx {
 	public:

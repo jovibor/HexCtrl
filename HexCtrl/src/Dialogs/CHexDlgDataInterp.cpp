@@ -45,8 +45,8 @@ namespace HEXCTRL::INTERNAL {
 	};
 
 	enum class CHexDlgDataInterp::EName : std::uint8_t {
-		NAME_BINARY, NAME_CHAR, NAME_UCHAR, NAME_SHORT, NAME_USHORT,
-		NAME_INT, NAME_UINT, NAME_LONGLONG, NAME_ULONGLONG,
+		NAME_BINARY, NAME_INT8, NAME_UINT8, NAME_INT16, NAME_UINT16,
+		NAME_INT32, NAME_UINT32, NAME_INT64, NAME_UINT64,
 		NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
 		NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
 		NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID
@@ -171,8 +171,8 @@ void CHexDlgDataInterp::UpdateData()
 
 	const auto byte = GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset);
 	ShowValueBinary(byte);
-	ShowValueChar(byte);
-	ShowValueUChar(byte);
+	ShowValueInt8(byte);
+	ShowValueUInt8(byte);
 
 	if (ullOffset + static_cast<unsigned>(ESize::SIZE_WORD) > ullDataSize) {
 		for (const auto& iter : m_vecGrid) {
@@ -196,8 +196,8 @@ void CHexDlgDataInterp::UpdateData()
 		word = ByteSwap(word);
 	}
 
-	ShowValueShort(word);
-	ShowValueUShort(word);
+	ShowValueInt16(word);
+	ShowValueUInt16(word);
 
 	if (ullOffset + static_cast<unsigned>(ESize::SIZE_DWORD) > ullDataSize) {
 		for (const auto& iter : m_vecGrid) {
@@ -221,8 +221,8 @@ void CHexDlgDataInterp::UpdateData()
 		dword = ByteSwap(dword);
 	}
 
-	ShowValueInt(dword);
-	ShowValueUInt(dword);
+	ShowValueInt32(dword);
+	ShowValueUInt32(dword);
 	ShowValueFloat(dword);
 	ShowValueTime32(dword);
 	ShowValueMSDOSTIME(dword);
@@ -250,8 +250,8 @@ void CHexDlgDataInterp::UpdateData()
 		qword = ByteSwap(qword);
 	}
 
-	ShowValueLL(qword);
-	ShowValueULL(qword);
+	ShowValueInt64(qword);
+	ShowValueUInt64(qword);
 	ShowValueDouble(qword);
 	ShowValueTime64(qword);
 	ShowValueFILETIME(qword);
@@ -397,15 +397,15 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	m_btnBE.SetCheck(BST_UNCHECKED);
 
 	using enum EGroup; using enum EName; using enum ESize;
-	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"binary:", L"0"), GR_INTEGRAL, NAME_BINARY, SIZE_BYTE);
-	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"char:", L"0"), GR_INTEGRAL, NAME_CHAR, SIZE_BYTE);
-	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"unsigned char:", L"0"), GR_INTEGRAL, NAME_UCHAR, SIZE_BYTE);
-	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"short:", L"0"), GR_INTEGRAL, NAME_SHORT, SIZE_WORD);
-	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"unsigned short:", L"0"), GR_INTEGRAL, NAME_USHORT, SIZE_WORD);
-	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"int:", L"0"), GR_INTEGRAL, NAME_INT, SIZE_DWORD);
-	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"unsigned int:", L"0"), GR_INTEGRAL, NAME_UINT, SIZE_DWORD);
-	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"long long:", L"0"), GR_INTEGRAL, NAME_LONGLONG, SIZE_QWORD);
-	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"unsigned long long:", L"0"), GR_INTEGRAL, NAME_ULONGLONG, SIZE_QWORD);
+	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Binary:", L"0"), GR_INTEGRAL, NAME_BINARY, SIZE_BYTE);
+	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Int8:", L"0"), GR_INTEGRAL, NAME_INT8, SIZE_BYTE);
+	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Unsigned Int8:", L"0"), GR_INTEGRAL, NAME_UINT8, SIZE_BYTE);
+	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Int16:", L"0"), GR_INTEGRAL, NAME_INT16, SIZE_WORD);
+	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Unsigned Int16:", L"0"), GR_INTEGRAL, NAME_UINT16, SIZE_WORD);
+	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Int32:", L"0"), GR_INTEGRAL, NAME_INT32, SIZE_DWORD);
+	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Unsigned Int32:", L"0"), GR_INTEGRAL, NAME_UINT32, SIZE_DWORD);
+	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Int64:", L"0"), GR_INTEGRAL, NAME_INT64, SIZE_QWORD);
+	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Unsigned Int64:", L"0"), GR_INTEGRAL, NAME_UINT64, SIZE_QWORD);
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"time32_t:", L"0"), GR_TIME, NAME_TIME32T, SIZE_DWORD);
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"time64_t:", L"0"), GR_TIME, NAME_TIME64T, SIZE_QWORD);
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"FILETIME:", L"0"), GR_TIME, NAME_FILETIME, SIZE_QWORD);
@@ -414,8 +414,8 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"MS-DOS time:", L"0"), GR_TIME, NAME_MSDOSTIME, SIZE_QWORD);
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"MS-UDTTM time:", L"0"), GR_TIME, NAME_MSDTTMTIME, SIZE_DWORD);
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Windows SYSTEMTIME:", L"0"), GR_TIME, NAME_SYSTEMTIME, SIZE_DQWORD);
-	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"float:", L"0"), GR_FLOAT, NAME_FLOAT, SIZE_DWORD);
-	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"double:", L"0"), GR_FLOAT, NAME_DOUBLE, SIZE_QWORD);
+	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Float:", L"0"), GR_FLOAT, NAME_FLOAT, SIZE_DWORD);
+	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Double:", L"0"), GR_FLOAT, NAME_DOUBLE, SIZE_QWORD);
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"GUID:", L"0"), GR_MISC, NAME_GUID, SIZE_DQWORD);
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"GUID v1 UTC time:", L"0"), GR_GUIDTIME, NAME_GUIDTIME, SIZE_DQWORD);
 
@@ -506,35 +506,35 @@ auto CHexDlgDataInterp::OnPropertyDataChanged(WPARAM wParam, LPARAM lParam)->LRE
 	case NAME_BINARY:
 		fSuccess = SetDataBinary(wsv);
 		break;
-	case NAME_CHAR:
-		fSuccess = SetDataChar(wsv);
+	case NAME_INT8:
+		fSuccess = SetDataNUMBER<std::int8_t>(wsv);
 		break;
-	case NAME_UCHAR:
-		fSuccess = SetDataUChar(wsv);
+	case NAME_UINT8:
+		fSuccess = SetDataNUMBER<std::uint8_t>(wsv);
 		break;
-	case NAME_SHORT:
-		fSuccess = SetDataShort(wsv);
+	case NAME_INT16:
+		fSuccess = SetDataNUMBER<std::int16_t>(wsv);
 		break;
-	case NAME_USHORT:
-		fSuccess = SetDataUShort(wsv);
+	case NAME_UINT16:
+		fSuccess = SetDataNUMBER<std::uint16_t>(wsv);
 		break;
-	case NAME_INT:
-		fSuccess = SetDataInt(wsv);
+	case NAME_INT32:
+		fSuccess = SetDataNUMBER<std::int32_t>(wsv);
 		break;
-	case NAME_UINT:
-		fSuccess = SetDataUInt(wsv);
+	case NAME_UINT32:
+		fSuccess = SetDataNUMBER<std::uint32_t>(wsv);
 		break;
-	case NAME_LONGLONG:
-		fSuccess = SetDataLL(wsv);
+	case NAME_INT64:
+		fSuccess = SetDataNUMBER<std::int64_t>(wsv);
 		break;
-	case NAME_ULONGLONG:
-		fSuccess = SetDataULL(wsv);
+	case NAME_UINT64:
+		fSuccess = SetDataNUMBER<std::uint64_t>(wsv);
 		break;
 	case NAME_FLOAT:
-		fSuccess = SetDataFloat(wsv);
+		fSuccess = SetDataNUMBER<float>(wsv);
 		break;
 	case NAME_DOUBLE:
-		fSuccess = SetDataDouble(wsv);
+		fSuccess = SetDataNUMBER<double>(wsv);
 		break;
 	case NAME_TIME32T:
 		fSuccess = SetDataTime32(wsv);
@@ -565,6 +565,8 @@ auto CHexDlgDataInterp::OnPropertyDataChanged(WPARAM wParam, LPARAM lParam)->LRE
 		break;
 	case NAME_GUID:
 		fSuccess = SetDataGUID(wsv);
+		break;
+	default:
 		break;
 	};
 
@@ -617,142 +619,21 @@ bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
 	return true;
 }
 
-bool CHexDlgDataInterp::SetDataChar(std::wstring_view wsv)const
+template<typename T> requires TSize1248<T>
+bool CHexDlgDataInterp::SetDataNUMBER(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt8(wsv); opt) {
+		//Unsigned type in case of float or double.
+		using UTF = std::conditional_t<std::is_same_v<T, float>, std::uint32_t, std::uint64_t>;
+		//Unsigned type in case of Integral or float/double.
+		using UT = typename std::conditional_t<std::is_integral_v<T>, std::make_unsigned<T>, std::type_identity<UTF>>::type;
+		if (const auto opt = stn::StrToNum<UT>(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto opt = stn::StrToInt8(wsv); opt) {
-			SetTData(*opt);
-			return true;
-		}
-	}
-	return false;
-}
-
-bool CHexDlgDataInterp::SetDataUChar(std::wstring_view wsv)const
-{
-	const auto opt = stn::StrToUInt8(wsv);
-	if (!opt)
-		return false;
-
-	SetTData(*opt);
-	return true;
-}
-
-bool CHexDlgDataInterp::SetDataShort(std::wstring_view wsv)const
-{
-	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt16(wsv); opt) {
-			SetTData(*opt);
-			return true;
-		}
-	}
-	else {
-		if (const auto opt = stn::StrToInt16(wsv); opt) {
-			SetTData(*opt);
-			return true;
-		}
-	}
-	return false;
-}
-
-bool CHexDlgDataInterp::SetDataUShort(std::wstring_view wsv)const
-{
-	const auto opt = stn::StrToUInt16(wsv);
-	if (!opt)
-		return false;
-
-	SetTData(*opt);
-	return true;
-}
-
-bool CHexDlgDataInterp::SetDataInt(std::wstring_view wsv)const
-{
-	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt32(wsv); opt) {
-			SetTData(*opt);
-			return true;
-		}
-	}
-	else {
-		if (const auto opt = stn::StrToInt32(wsv); opt) {
-			SetTData(*opt);
-			return true;
-		}
-	}
-	return false;
-}
-
-bool CHexDlgDataInterp::SetDataUInt(std::wstring_view wsv)const
-{
-	const auto opt = stn::StrToUInt32(wsv);
-	if (!opt)
-		return false;
-
-	SetTData(*opt);
-	return true;
-}
-
-bool CHexDlgDataInterp::SetDataLL(std::wstring_view wsv)const
-{
-	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt64(wsv); opt) {
-			SetTData(*opt);
-			return true;
-		}
-	}
-	else {
-		if (const auto opt = stn::StrToInt64(wsv); opt) {
-			SetTData(*opt);
-			return true;
-		}
-	}
-	return false;
-}
-
-bool CHexDlgDataInterp::SetDataULL(std::wstring_view wsv)const
-{
-	const auto opt = stn::StrToUInt64(wsv);
-	if (!opt)
-		return false;
-
-	SetTData(*opt);
-	return true;
-}
-
-bool CHexDlgDataInterp::SetDataFloat(std::wstring_view wsv)const
-{
-	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt32(wsv); opt) {
-			SetTData(*opt);
-			return true;
-		}
-	}
-	else {
-		if (const auto opt = stn::StrToFloat(wsv); opt) {
-			SetTData(*opt);
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool CHexDlgDataInterp::SetDataDouble(std::wstring_view wsv)const
-{
-	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt64(wsv); opt) {
-			SetTData(*opt);
-			return true;
-		}
-	}
-	else {
-		if (const auto opt = stn::StrToDouble(wsv); opt) {
+		if (const auto opt = stn::StrToNum<T>(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
@@ -1000,51 +881,51 @@ void CHexDlgDataInterp::ShowValueBinary(BYTE byte)const
 	GetGridData(EName::NAME_BINARY)->pProp->SetValue(std::format(L"{:08b}", byte).data());
 }
 
-void CHexDlgDataInterp::ShowValueChar(BYTE byte)const
+void CHexDlgDataInterp::ShowValueInt8(BYTE byte)const
 {
-	GetGridData(EName::NAME_CHAR)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:02X}" : L"{1}",
+	GetGridData(EName::NAME_INT8)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:02X}" : L"{1}",
 		std::make_wformat_args(byte, static_cast<int>(static_cast<char>(byte)))).data());
 }
 
-void CHexDlgDataInterp::ShowValueUChar(BYTE byte)const
+void CHexDlgDataInterp::ShowValueUInt8(BYTE byte)const
 {
-	GetGridData(EName::NAME_UCHAR)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{:02X}" : L"{}",
+	GetGridData(EName::NAME_UINT8)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{:02X}" : L"{}",
 		std::make_wformat_args(byte)).data());
 }
 
-void CHexDlgDataInterp::ShowValueShort(WORD word)const
+void CHexDlgDataInterp::ShowValueInt16(WORD word)const
 {
-	GetGridData(EName::NAME_SHORT)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:04X}" : L"{1}",
+	GetGridData(EName::NAME_INT16)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:04X}" : L"{1}",
 		std::make_wformat_args(word, static_cast<short>(word))).data());
 }
 
-void CHexDlgDataInterp::ShowValueUShort(WORD word)const
+void CHexDlgDataInterp::ShowValueUInt16(WORD word)const
 {
-	GetGridData(EName::NAME_USHORT)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{:04X}" : L"{}",
+	GetGridData(EName::NAME_UINT16)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{:04X}" : L"{}",
 		std::make_wformat_args(word)).data());
 }
 
-void CHexDlgDataInterp::ShowValueInt(DWORD dword)const
+void CHexDlgDataInterp::ShowValueInt32(DWORD dword)const
 {
-	GetGridData(EName::NAME_INT)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:08X}" : L"{1}",
+	GetGridData(EName::NAME_INT32)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:08X}" : L"{1}",
 		std::make_wformat_args(dword, static_cast<int>(dword))).data());
 }
 
-void CHexDlgDataInterp::ShowValueUInt(DWORD dword)const
+void CHexDlgDataInterp::ShowValueUInt32(DWORD dword)const
 {
-	GetGridData(EName::NAME_UINT)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{:08X}" : L"{}",
+	GetGridData(EName::NAME_UINT32)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{:08X}" : L"{}",
 		std::make_wformat_args(dword)).data());
 }
 
-void CHexDlgDataInterp::ShowValueLL(QWORD qword)const
+void CHexDlgDataInterp::ShowValueInt64(QWORD qword)const
 {
-	GetGridData(EName::NAME_LONGLONG)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:016X}" : L"{1}",
+	GetGridData(EName::NAME_INT64)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:016X}" : L"{1}",
 		std::make_wformat_args(qword, static_cast<long long>(qword))).data());
 }
 
-void CHexDlgDataInterp::ShowValueULL(QWORD qword)const
+void CHexDlgDataInterp::ShowValueUInt64(QWORD qword)const
 {
-	GetGridData(EName::NAME_ULONGLONG)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{:016X}" : L"{}",
+	GetGridData(EName::NAME_UINT64)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{:016X}" : L"{}",
 		std::make_wformat_args(qword)).data());
 }
 
@@ -1056,7 +937,7 @@ void CHexDlgDataInterp::ShowValueFloat(DWORD dword)const
 
 void CHexDlgDataInterp::ShowValueDouble(QWORD qword)const
 {
-	GetGridData(EName::NAME_DOUBLE)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:08X}" : L"{1:.18e}",
+	GetGridData(EName::NAME_DOUBLE)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:016X}" : L"{1:.18e}",
 		std::make_wformat_args(qword, std::bit_cast<double>(qword))).data());
 }
 
