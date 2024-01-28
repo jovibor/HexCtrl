@@ -4694,7 +4694,7 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 	unsigned char chByte = nChar & 0xFF;
 	wchar_t warrCurrLocaleID[KL_NAMELENGTH];
 	GetKeyboardLayoutNameW(warrCurrLocaleID); //Current langID as wstring.
-	if (const auto optLocID = stn::StrToUInt(warrCurrLocaleID, 16); optLocID) { //Convert langID from wstr to number.
+	if (const auto optLocID = stn::StrToUInt32(warrCurrLocaleID, 16); optLocID) { //Convert langID from wstr to number.
 		UINT uCurrCodePage { };
 		constexpr int iSize = sizeof(uCurrCodePage) / sizeof(wchar_t);
 		if (GetLocaleInfoW(*optLocID, LOCALE_IDEFAULTANSICODEPAGE | LOCALE_RETURN_NUMBER,

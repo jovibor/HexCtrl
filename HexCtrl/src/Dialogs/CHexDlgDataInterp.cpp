@@ -609,7 +609,7 @@ bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
 	if (wsv.size() != 8 || wsv.find_first_not_of(L"01") != std::wstring_view::npos)
 		return false;
 
-	const auto opt = stn::StrToUChar(wsv, 2);
+	const auto opt = stn::StrToUInt8(wsv, 2);
 	if (!opt)
 		return false;
 
@@ -620,13 +620,13 @@ bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataChar(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUChar(wsv); opt) {
+		if (const auto opt = stn::StrToUInt8(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto opt = stn::StrToChar(wsv); opt) {
+		if (const auto opt = stn::StrToInt8(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
@@ -636,7 +636,7 @@ bool CHexDlgDataInterp::SetDataChar(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataUChar(std::wstring_view wsv)const
 {
-	const auto opt = stn::StrToUChar(wsv);
+	const auto opt = stn::StrToUInt8(wsv);
 	if (!opt)
 		return false;
 
@@ -647,13 +647,13 @@ bool CHexDlgDataInterp::SetDataUChar(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataShort(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUShort(wsv); opt) {
+		if (const auto opt = stn::StrToUInt16(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto opt = stn::StrToShort(wsv); opt) {
+		if (const auto opt = stn::StrToInt16(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
@@ -663,7 +663,7 @@ bool CHexDlgDataInterp::SetDataShort(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataUShort(std::wstring_view wsv)const
 {
-	const auto opt = stn::StrToUShort(wsv);
+	const auto opt = stn::StrToUInt16(wsv);
 	if (!opt)
 		return false;
 
@@ -674,13 +674,13 @@ bool CHexDlgDataInterp::SetDataUShort(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataInt(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt(wsv); opt) {
+		if (const auto opt = stn::StrToUInt32(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto opt = stn::StrToNum<int>(wsv); opt) {
+		if (const auto opt = stn::StrToInt32(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
@@ -690,7 +690,7 @@ bool CHexDlgDataInterp::SetDataInt(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataUInt(std::wstring_view wsv)const
 {
-	const auto opt = stn::StrToUInt(wsv);
+	const auto opt = stn::StrToUInt32(wsv);
 	if (!opt)
 		return false;
 
@@ -701,13 +701,13 @@ bool CHexDlgDataInterp::SetDataUInt(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataLL(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToULL(wsv); opt) {
+		if (const auto opt = stn::StrToUInt64(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
 	}
 	else {
-		if (const auto opt = stn::StrToLL(wsv); opt) {
+		if (const auto opt = stn::StrToInt64(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
@@ -717,7 +717,7 @@ bool CHexDlgDataInterp::SetDataLL(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataULL(std::wstring_view wsv)const
 {
-	const auto opt = stn::StrToULL(wsv);
+	const auto opt = stn::StrToUInt64(wsv);
 	if (!opt)
 		return false;
 
@@ -728,7 +728,7 @@ bool CHexDlgDataInterp::SetDataULL(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataFloat(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToUInt(wsv); opt) {
+		if (const auto opt = stn::StrToUInt32(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}
@@ -746,7 +746,7 @@ bool CHexDlgDataInterp::SetDataFloat(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataDouble(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
-		if (const auto opt = stn::StrToULL(wsv); opt) {
+		if (const auto opt = stn::StrToUInt64(wsv); opt) {
 			SetTData(*opt);
 			return true;
 		}

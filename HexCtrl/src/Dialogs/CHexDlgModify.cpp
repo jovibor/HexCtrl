@@ -192,7 +192,7 @@ namespace HEXCTRL::INTERNAL {
 			if (buffOperand[0] == L'\0') { //Operand field emptiness check.
 				wstrErr = L"Missing Operand.";
 			}
-			else if (const auto optOperand = stn::StrToLL(buffOperand); !optOperand) {
+			else if (const auto optOperand = stn::StrToInt64(buffOperand); !optOperand) {
 				wstrErr = L"Wrong number format.";
 			}
 			else if (llOperand = *optOperand; hms.enOperMode == OPER_DIV && llOperand == 0) { //Division by zero check.

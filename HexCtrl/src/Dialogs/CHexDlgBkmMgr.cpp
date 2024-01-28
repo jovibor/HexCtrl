@@ -624,7 +624,7 @@ void CHexDlgBkmMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	switch (pLDI->iSubItem) {
 	case 1: //Offset.
 	{
-		const auto optOffset = stn::StrToULL(pLDI->pwszData);
+		const auto optOffset = stn::StrToUInt64(pLDI->pwszData);
 		if (!optOffset) {
 			MessageBoxW(L"Invalid offset format.", L"Format error", MB_ICONERROR);
 			return;
@@ -641,7 +641,7 @@ void CHexDlgBkmMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	break;
 	case 2: //Size.
 	{
-		const auto optSize = stn::StrToULL(pLDI->pwszData);
+		const auto optSize = stn::StrToUInt64(pLDI->pwszData);
 		if (!optSize) {
 			MessageBoxW(L"Invalid size format.", L"Format error", MB_ICONERROR);
 			return;

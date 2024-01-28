@@ -3,7 +3,7 @@
 ## Table of Contents
 * [Introduction](#introduction)
 * [How To Build](#how-to-build)
-  * [From The Sources](#from-the-sources)
+  * [Integrate Sources](#integrate-sources)
   * [Dynamic Link Library](#dynamic-link-library)
     * [HexCtrlPreTranslateMessage](#hexctrlpretranslatemessage)
 * [Creating](#creating)
@@ -155,21 +155,24 @@
 Clone the repo with all submodules:  
 `git clone https://github.com/jovibor/HexCtrl.git --recurse-submodules`  
 
-### [](#)From The Sources
-To build **HexCtrl** from the sources, as a part of your project:
-1. Copy *HexCtrl* folder into your project's directory.
-1. Add all files from the *HexCtrl* folder into your project  
-(can skip adding *rapidjson-amalgam.h* and *StrToNum.h*).
-1. Add `#include "HexCtrl/HexCtrl.h"`.
-1. Declare `IHexCtrlPtr` object: `IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };`
-1. [Create](#creating) control instance.
+### [](#)Integrate Sources
+To build **HexCtrl** from the sources:
+1. Add all files from the `HexCtrl` folder into your project  
+(can skip adding *rapidjson-amalgam.h* and *StrToNum.h*)
+1. Add `#include "HexCtrl.h"`
+1. Declare **HexCtrl** object:
+    ```cpp
+    auto myHex { HEXCTRL::CreateHexCtrl() };
+    ```
+1. [Create](#creating) control instance
 
+> [!NOTE]
 If you want to build **HexCtrl** from the sources in non-**MFC** app:
 1. Add support for the **Use MFC in a Shared DLL** in your project settings.
 1. Add the `#define HEXCTRL_MANUAL_MFC_INIT` before the `#include "HexCtrl.h"`.
 
 ### [](#)Dynamic Link Library
-To use **HexCtrl** as a DLL:
+To build and use **HexCtrl** as a DLL:
 1. Build **HexCtrl.dll** and **HexCtrl.lib** using the **HexCtrl DLL/HexCtrl DLL.vcxproj**  project
 1. Define the `HEXCTRL_SHARED_DLL` before including `HexCtrl.h`:
     ```cpp
@@ -177,7 +180,7 @@ To use **HexCtrl** as a DLL:
     #include "HexCtrl.h"
     ```
 1. Declare `IHexCtrlPtr` object: `IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };`
-1. [Create](#creating) control instance.
+1. [Create](#creating) control instance
 
 > [!NOTE]
 **HexCtrl**'s DLL is built with the **MFC Static Linking**. So, even if you are to use it in your own **MFC** project, even with a different **MFC** version, there should be no interferences.  

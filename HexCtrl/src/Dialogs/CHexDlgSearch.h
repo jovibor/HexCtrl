@@ -19,22 +19,24 @@ namespace HEXCTRL::INTERNAL {
 		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
 		BOOL ShowWindow(int nCmdShow);
 	private:
-		enum class EMode : std::uint8_t; //Forward declarations.
+		enum class ESearchMode : std::uint8_t; //Forward declarations.
+		enum class ESearchType : std::uint8_t;
 		enum class ECmpType : std::uint16_t;
 		enum class EMenuID : std::uint16_t;
 		struct FINDRESULT;
 		struct SEARCHDATA;
 		void AddToList(ULONGLONG ullOffset);
 		void ApplyDlgData();
+		void ClearComboType();
 		void ClearList();
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
 		void DoDataExchange(CDataExchange* pDX)override;
-		//Main routine for finding stuff.
-		[[nodiscard]] FINDRESULT Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnSearch,
-			bool fForward = true, CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true);
+		[[nodiscard]] auto Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnSearch,
+			bool fForward = true, CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true) -> FINDRESULT;
 		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
-		[[nodiscard]] auto GetSearchMode()const->EMode; //Returns current search mode.
+		[[nodiscard]] auto GetSearchMode()const->ESearchMode; //Getcurrent search mode.
+		[[nodiscard]] auto GetSearchType()const->ESearchType; //Get current search type.
 		void HexCtrlHighlight(const VecSpan& vecSel);   //Highlight found occurence in HexCtrl.
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsInverted()const;
@@ -42,7 +44,6 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsSelection()const;
 		[[nodiscard]] bool IsWildcard()const;
-		BOOL OnInitDialog()override;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnButtonSearchF();
 		afx_msg void OnButtonSearchB();
@@ -53,47 +54,52 @@ namespace HEXCTRL::INTERNAL {
 		afx_msg void OnCheckSel();
 		afx_msg void OnClose();
 		afx_msg void OnComboModeSelChange();
+		afx_msg void OnComboTypeSelChange();
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+		auto OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor) -> HBRUSH;
 		afx_msg void OnDestroy();
+		BOOL OnInitDialog()override;
 		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
 		afx_msg void OnOK()override;
+		void OnSelectModeHEXBYTES();
+		void OnSelectModeNUMBERS();
+		void OnSelectModeSTRUCT();
+		void OnSearchModeTEXT();
 		void Prepare();
 		[[nodiscard]] bool PrepareHexBytes();
 		[[nodiscard]] bool PrepareTextASCII();
 		[[nodiscard]] bool PrepareTextUTF16();
 		[[nodiscard]] bool PrepareTextUTF8();
-		[[nodiscard]] bool PrepareINT8();
-		[[nodiscard]] bool PrepareINT16();
-		[[nodiscard]] bool PrepareINT32();
-		[[nodiscard]] bool PrepareINT64();
-		[[nodiscard]] bool PrepareFloat();
-		[[nodiscard]] bool PrepareDouble();
+		template<typename T> requires TSize1248<T>
+		[[nodiscard]] bool PrepareNumber();
 		[[nodiscard]] bool PrepareFILETIME();
 		void Replace(ULONGLONG ullIndex, SpanCByte spnReplace)const;
 		void ResetSearch();
 		void Search();
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
 		void UpdateSearchReplaceControls();
-		template<std::uint16_t tuCmpType>
+		DECLARE_MESSAGE_MAP();
+
+		//Static functions.
+		template<std::uint16_t u16CmpType>
 		[[nodiscard]] static bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize);
 		template<typename T>
 		[[nodiscard]] static auto RangeToVecBytes(const T& tData) -> std::vector<std::byte>;
-		template<std::uint16_t tuCmpType, bool tfDlgClbck>
+		template<std::uint16_t u16CmpType, bool tfDlgClbck>
 		static void SearchFunc(SEARCHDATA* pSearch);
-		DECLARE_MESSAGE_MAP();
 	private:
 		static constexpr std::byte m_uWildcard { '?' }; //Wildcard symbol.
-		static constexpr auto m_pwszWrongInput { L"Wrong input data!" };
+		static constexpr auto m_pwszWrongInput { L"Wrong input data." };
 		IHexCtrl* m_pHexCtrl { };
-		EMode m_eSearchMode { };
+		ESearchMode m_eSearchMode { };
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
 		CMenu m_menuList;                    //Menu for the list control.
 		CComboBox m_comboSearch;             //Combo box "Search".
 		CComboBox m_comboReplace;            //Combo box "Replace".
 		CComboBox m_comboMode;               //Combo box "Search mode".
+		CComboBox m_comboType;               //Combo box "Search type".
 		CButton m_btnSel;                    //Check box "In selection".
 		CButton m_btnWC;                     //Check box "Wildcard".
 		CButton m_btnInv;                    //Check box "Inverted".

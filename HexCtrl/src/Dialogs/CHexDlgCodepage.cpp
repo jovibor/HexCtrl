@@ -28,7 +28,7 @@ END_MESSAGE_MAP()
 
 void CHexDlgCodepage::AddCP(std::wstring_view wsv)
 {
-	if (const auto optCPID = stn::StrToUInt(wsv); optCPID) {
+	if (const auto optCPID = stn::StrToUInt32(wsv); optCPID) {
 		if (CPINFOEXW stCP; GetCPInfoExW(*optCPID, 0, &stCP) != FALSE) {
 			m_vecCodePage.emplace_back(static_cast<int>(*optCPID), stCP.CodePageName, stCP.MaxCharSize);
 		}

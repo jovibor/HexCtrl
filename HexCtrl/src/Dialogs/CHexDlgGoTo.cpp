@@ -226,7 +226,7 @@ void CHexDlgGoTo::OnOK()
 		return;
 	}
 
-	const auto optData = stn::StrToULL(cstr.GetString());
+	const auto optData = stn::StrToUInt64(cstr.GetString());
 	if (!optData) {
 		MessageBoxW(L"Invalid number format", L"Error", MB_ICONERROR);
 		return;
