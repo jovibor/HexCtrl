@@ -1490,7 +1490,7 @@ auto CHexDlgSearch::RangeToVecBytes(const T& tData)->std::vector<std::byte>
 template<std::uint16_t u16CmpType, bool tfDlgClbck>
 void CHexDlgSearch::SearchFunc(SEARCHDATA* pSearch)
 {
-	static constexpr auto LOOP_UNROLL_SIZE = 4; //How many comparisons we do at one loop step.
+	static constexpr auto LOOP_UNROLL_SIZE = 8U; //How many comparisons we do at one loop cycle.
 	const auto pDataSearch = pSearch->spnSearch.data();
 	const auto nSizeSearch = pSearch->spnSearch.size();
 	const auto pHexCtrl = pSearch->pHexCtrl;
@@ -1505,7 +1505,6 @@ void CHexDlgSearch::SearchFunc(SEARCHDATA* pSearch)
 
 			//Unrolling the loop, making LOOP_UNROLL_SIZE comparisons at a time.
 			for (auto iterData = 0ULL; iterData <= pSearch->ullLoopChunkSize; iterData += llStep * LOOP_UNROLL_SIZE) {
-
 				//First memory comparison is always unconditional.
 				if (MemCmp<u16CmpType>(spnData.data() + iterData, pDataSearch, nSizeSearch) == !fInverted) {
 					pSearch->ullStart = ullOffsetSearch + iterData;
@@ -1513,8 +1512,8 @@ void CHexDlgSearch::SearchFunc(SEARCHDATA* pSearch)
 					goto END;
 				}
 
-				//This branch allows to avoid "iterData + llStep * nStep <= pSearch->ullLoopChunkSize" check every step.
-				if ((iterData + llStep * LOOP_UNROLL_SIZE) <= pSearch->ullLoopChunkSize) {
+				//This branch allows to avoid the "iterData + llStep * nStep <= pSearch->ullLoopChunkSize" check every cycle.
+				if ((iterData + llStep * (LOOP_UNROLL_SIZE - 1)) <= pSearch->ullLoopChunkSize) {
 					if (MemCmp<u16CmpType>(spnData.data() + iterData + llStep * 1, pDataSearch, nSizeSearch) == !fInverted) {
 						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 1;
 						pSearch->fResult = true;
@@ -1530,7 +1529,29 @@ void CHexDlgSearch::SearchFunc(SEARCHDATA* pSearch)
 						pSearch->fResult = true;
 						goto END;
 					}
+					if (MemCmp<u16CmpType>(spnData.data() + iterData + llStep * 4, pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 4;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if (MemCmp<u16CmpType>(spnData.data() + iterData + llStep * 5, pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 5;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if (MemCmp<u16CmpType>(spnData.data() + iterData + llStep * 6, pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 6;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if (MemCmp<u16CmpType>(spnData.data() + iterData + llStep * 7, pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 7;
+						pSearch->fResult = true;
+						goto END;
+					}
 				}
+				//In this branch we check every comparison for the ullLoopChunkSize exceeding.
+				//The one less comparison is needed here, otherwise we would've hit the branch above.
 				else {
 					if ((iterData + llStep * 1 <= pSearch->ullLoopChunkSize)
 						&& (MemCmp<u16CmpType>(spnData.data() + iterData + llStep * 1, pDataSearch, nSizeSearch) == !fInverted)) {
@@ -1547,6 +1568,24 @@ void CHexDlgSearch::SearchFunc(SEARCHDATA* pSearch)
 					if ((iterData + llStep * 3 <= pSearch->ullLoopChunkSize)
 						&& (MemCmp<u16CmpType>(spnData.data() + iterData + llStep * 3, pDataSearch, nSizeSearch) == !fInverted)) {
 						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 3;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if ((iterData + llStep * 4 <= pSearch->ullLoopChunkSize)
+						&& (MemCmp<u16CmpType>(spnData.data() + iterData + llStep * 4, pDataSearch, nSizeSearch) == !fInverted)) {
+						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 4;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if ((iterData + llStep * 5 <= pSearch->ullLoopChunkSize)
+						&& (MemCmp<u16CmpType>(spnData.data() + iterData + llStep * 5, pDataSearch, nSizeSearch) == !fInverted)) {
+						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 5;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if ((iterData + llStep * 6 <= pSearch->ullLoopChunkSize)
+						&& (MemCmp<u16CmpType>(spnData.data() + iterData + llStep * 6, pDataSearch, nSizeSearch) == !fInverted)) {
+						pSearch->ullStart = ullOffsetSearch + iterData + llStep * 6;
 						pSearch->fResult = true;
 						goto END;
 					}
@@ -1596,7 +1635,6 @@ void CHexDlgSearch::SearchFunc(SEARCHDATA* pSearch)
 
 			for (auto iterData = static_cast<LONGLONG>(pSearch->ullLoopChunkSize); iterData >= 0;
 				iterData -= llStep * LOOP_UNROLL_SIZE) { //iterData might be negative.
-
 				//First memory comparison is always unconditional.
 				if (MemCmp<u16CmpType>(spnData.data() + iterData, pDataSearch, nSizeSearch) == !fInverted) {
 					pSearch->ullStart = ullOffsetSearch + iterData;
@@ -1604,7 +1642,7 @@ void CHexDlgSearch::SearchFunc(SEARCHDATA* pSearch)
 					goto END;
 				}
 
-				if ((iterData - llStep * LOOP_UNROLL_SIZE) >= 0) {
+				if ((iterData - llStep * (LOOP_UNROLL_SIZE - 1)) >= 0) {
 					if (MemCmp<u16CmpType>(spnData.data() + (iterData - llStep * 1), pDataSearch, nSizeSearch) == !fInverted) {
 						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 1;
 						pSearch->fResult = true;
@@ -1617,6 +1655,26 @@ void CHexDlgSearch::SearchFunc(SEARCHDATA* pSearch)
 					}
 					if (MemCmp<u16CmpType>(spnData.data() + (iterData - llStep * 3), pDataSearch, nSizeSearch) == !fInverted) {
 						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 3;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if (MemCmp<u16CmpType>(spnData.data() + (iterData - llStep * 4), pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 4;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if (MemCmp<u16CmpType>(spnData.data() + (iterData - llStep * 5), pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 5;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if (MemCmp<u16CmpType>(spnData.data() + (iterData - llStep * 6), pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 6;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if (MemCmp<u16CmpType>(spnData.data() + (iterData - llStep * 7), pDataSearch, nSizeSearch) == !fInverted) {
+						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 7;
 						pSearch->fResult = true;
 						goto END;
 					}
@@ -1637,6 +1695,24 @@ void CHexDlgSearch::SearchFunc(SEARCHDATA* pSearch)
 					if ((iterData - llStep * 3 >= 0)
 						&& (MemCmp<u16CmpType>(spnData.data() + (iterData - llStep * 3), pDataSearch, nSizeSearch) == !fInverted)) {
 						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 3;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if ((iterData - llStep * 4 >= 0)
+						&& (MemCmp<u16CmpType>(spnData.data() + (iterData - llStep * 4), pDataSearch, nSizeSearch) == !fInverted)) {
+						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 4;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if ((iterData - llStep * 5 >= 0)
+						&& (MemCmp<u16CmpType>(spnData.data() + (iterData - llStep * 5), pDataSearch, nSizeSearch) == !fInverted)) {
+						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 5;
+						pSearch->fResult = true;
+						goto END;
+					}
+					if ((iterData - llStep * 6 >= 0)
+						&& (MemCmp<u16CmpType>(spnData.data() + (iterData - llStep * 6), pDataSearch, nSizeSearch) == !fInverted)) {
+						pSearch->ullStart = ullOffsetSearch + iterData - llStep * 6;
 						pSearch->fResult = true;
 						goto END;
 					}

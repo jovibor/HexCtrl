@@ -128,8 +128,10 @@ namespace HEXCTRL::INTERNAL {
 		std::wstring m_wstrTextSearch;       //Text from "Search" box.
 		std::wstring m_wstrTextReplace;      //Text from "Replace with..." box.
 		HEXSPAN m_stSelSpan { };             //Previous selection.
+		//This templated pointer ensures that no check is made for the 'SEARCHDATA::pDlgClbk == nullptr'
+		//at the hot path, inside the SearchFunc function.
 		void(*m_pfnSearchDlgClbck)(SEARCHDATA* pSearch); //Func pointer to the main SearchFunc<> with the callback dialog.
-		void(*m_pfnSearchNODlg)(SEARCHDATA* pSearch); //Func pointer to the main SearchFunc<> without callback dialog.
+		void(*m_pfnSearchNODlg)(SEARCHDATA* pSearch);    //Func pointer to the main SearchFunc<> without callback dialog.
 		bool m_fSecondMatch { false };       //First or subsequent match. 
 		bool m_fFound { false };             //Found or not.
 		bool m_fDoCount { true };            //Do we count matches or just print "Found".
