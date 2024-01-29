@@ -950,34 +950,34 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			ShowListDataBool(pItem->pszText, GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset));
 			break;
 		case type_int8:
-			ShowListDataInt8(pItem->pszText, GetIHexTData<std::int8_t>(*m_pHexCtrl, ullOffset));
+			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::int8_t>(*m_pHexCtrl, ullOffset), false);
 			break;
 		case type_uint8:
-			ShowListDataUInt8(pItem->pszText, GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset));
+			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset), false);
 			break;
 		case type_int16:
-			ShowListDataInt16(pItem->pszText, GetIHexTData<std::int16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::int16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_uint16:
-			ShowListDataUInt16(pItem->pszText, GetIHexTData<std::uint16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::uint16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_int32:
-			ShowListDataInt32(pItem->pszText, GetIHexTData<std::int32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::int32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_uint32:
-			ShowListDataUInt32(pItem->pszText, GetIHexTData<std::uint32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::uint32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_int64:
-			ShowListDataInt64(pItem->pszText, GetIHexTData<std::int64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::int64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_uint64:
-			ShowListDataUInt64(pItem->pszText, GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_float:
-			ShowListDataFloat(pItem->pszText, GetIHexTData<float>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, GetIHexTData<float>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_double:
-			ShowListDataDouble(pItem->pszText, GetIHexTData<double>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, GetIHexTData<double>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_time32:
 			ShowListDataTime32(pItem->pszText, GetIHexTData<__time32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
@@ -1134,10 +1134,10 @@ void CHexDlgTemplMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			fSetRet = SetDataBool(pwszText, ullOffset);
 			break;
 		case type_int8:
-			fSetRet = SetDataNUMBER<std::int8_t>(pwszText, ullOffset, fShouldSwap);
+			fSetRet = SetDataNUMBER<std::int8_t>(pwszText, ullOffset, false);
 			break;
 		case type_uint8:
-			fSetRet = SetDataNUMBER<std::uint8_t>(pwszText, ullOffset, fShouldSwap);
+			fSetRet = SetDataNUMBER<std::uint8_t>(pwszText, ullOffset, false);
 			break;
 		case type_int16:
 			fSetRet = SetDataNUMBER<std::int16_t>(pwszText, ullOffset, fShouldSwap);
@@ -1702,84 +1702,57 @@ void CHexDlgTemplMgr::ShowListDataBool(LPWSTR pwsz, unsigned char uchData) const
 		std::make_wformat_args(uchData, static_cast<bool>(uchData))) = L'\0';
 }
 
-void CHexDlgTemplMgr::ShowListDataInt8(LPWSTR pwsz, char chData)const
-{
-	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:02X}" : L"{1}",
-		std::make_wformat_args(static_cast<unsigned char>(chData), static_cast<int>(chData))) = L'\0';
-}
-
-void CHexDlgTemplMgr::ShowListDataUInt8(LPWSTR pwsz, unsigned char uchData)const
-{
-	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{:02X}" : L"{}", std::make_wformat_args(uchData)) = L'\0';
-}
-
-void CHexDlgTemplMgr::ShowListDataInt16(LPWSTR pwsz, short shortData, bool fShouldSwap)const
+template<typename T> requires TSize1248<T>
+void CHexDlgTemplMgr::ShowListDataNUMBER(LPWSTR pwsz, T tData, bool fShouldSwap)const
 {
 	if (fShouldSwap) {
-		shortData = ByteSwap(shortData);
+		tData = ByteSwap(tData);
 	}
-	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:04X}" : L"{1}",
-		std::make_wformat_args(static_cast<unsigned short>(shortData), shortData)) = L'\0';
-}
 
-void CHexDlgTemplMgr::ShowListDataUInt16(LPWSTR pwsz, unsigned short wData, bool fShouldSwap)const
-{
-	if (fShouldSwap) {
-		wData = ByteSwap(wData);
-	}
-	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{:04X}" : L"{}", std::make_wformat_args(wData)) = L'\0';
-}
+	if (IsShowAsHex()) {
+		//Unsigned type in case of float or double.
+		using UTF = std::conditional_t<std::is_same_v<T, float>, std::uint32_t, std::uint64_t>;
+		//Unsigned type in case of Integral or float/double.
+		using UT = typename std::conditional_t<std::is_integral_v<T>, std::make_unsigned<T>, std::type_identity<UTF>>::type;
+		UT utData;
+		if constexpr (std::is_same_v<T, float>) {
+			utData = std::bit_cast<std::uint32_t>(tData);
+		}
+		else if constexpr (std::is_same_v<T, double>) {
+			utData = std::bit_cast<std::uint64_t>(tData);
+		}
+		else {
+			utData = tData;
+		}
 
-void CHexDlgTemplMgr::ShowListDataInt32(LPWSTR pwsz, int intData, bool fShouldSwap)const
-{
-	if (fShouldSwap) {
-		intData = ByteSwap(intData);
-	}
-	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:08X}" : L"{1}",
-		std::make_wformat_args(static_cast<unsigned int>(intData), intData)) = L'\0';
-}
+		std::wstring_view wsvFmt;
+		switch (sizeof(T)) {
+		case 1:
+			wsvFmt = L"0x{:02X}";
+			break;
+		case 2:
+			wsvFmt = L"0x{:04X}";
+			break;
+		case 4:
+			wsvFmt = L"0x{:08X}";
+			break;
+		case 8:
+			wsvFmt = L"0x{:016X}";
+			break;
+		}
 
-void CHexDlgTemplMgr::ShowListDataUInt32(LPWSTR pwsz, unsigned int dwData, bool fShouldSwap)const
-{
-	if (fShouldSwap) {
-		dwData = ByteSwap(dwData);
+		*std::vformat_to(pwsz, wsvFmt, std::make_wformat_args(utData)) = L'\0';
 	}
-	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{:08X}" : L"{}", std::make_wformat_args(dwData)) = L'\0';
-}
-
-void CHexDlgTemplMgr::ShowListDataInt64(LPWSTR pwsz, long long llData, bool fShouldSwap)const
-{
-	if (fShouldSwap) {
-		llData = ByteSwap(llData);
+	else {
+		std::wstring_view wsvFmt = L"{}";
+		if constexpr (std::is_same_v<T, float>) {
+			wsvFmt = L"{:.9e}";
+		}
+		else if constexpr (std::is_same_v<T, double>) {
+			wsvFmt = L"{:.18e}";
+		}
+		*std::vformat_to(pwsz, wsvFmt, std::make_wformat_args(tData)) = L'\0';
 	}
-	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:016X}" : L"{1}",
-		std::make_wformat_args(static_cast<unsigned long long>(llData), llData)) = L'\0';
-}
-
-void CHexDlgTemplMgr::ShowListDataUInt64(LPWSTR pwsz, unsigned long long ullData, bool fShouldSwap)const
-{
-	if (fShouldSwap) {
-		ullData = ByteSwap(ullData);
-	}
-	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{:016X}" : L"{}", std::make_wformat_args(ullData)) = L'\0';
-}
-
-void CHexDlgTemplMgr::ShowListDataFloat(LPWSTR pwsz, float flData, bool fShouldSwap)const
-{
-	if (fShouldSwap) {
-		flData = ByteSwap(flData);
-	}
-	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:08X}" : L"{1:.9e}",
-		std::make_wformat_args(std::bit_cast<unsigned long>(flData), flData)) = L'\0';
-}
-
-void CHexDlgTemplMgr::ShowListDataDouble(LPWSTR pwsz, double dblData, bool fShouldSwap)const
-{
-	if (fShouldSwap) {
-		dblData = ByteSwap(dblData);
-	}
-	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:016X}" : L"{1:.18e}",
-		std::make_wformat_args(std::bit_cast<unsigned long long>(dblData), dblData)) = L'\0';
 }
 
 void CHexDlgTemplMgr::ShowListDataTime32(LPWSTR pwsz, __time32_t lTime32, bool fShouldSwap)const

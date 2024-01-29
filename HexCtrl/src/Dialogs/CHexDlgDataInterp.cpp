@@ -159,7 +159,7 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	SetRedraw(false);
+	SetGridRedraw(false);
 
 	const auto ullOffset = m_ullOffset = m_pHexCtrl->GetCaretPos();
 	const auto ullDataSize = m_pHexCtrl->GetDataSize();
@@ -283,7 +283,7 @@ void CHexDlgDataInterp::UpdateData()
 	ShowValueSYSTEMTIME(dblQWORD);
 	ShowValueGUID(std::bit_cast<GUID>(dblQWORD));
 	ShowValueGUIDTIME(std::bit_cast<GUID>(dblQWORD));
-	SetRedraw(true);
+	SetGridRedraw(true);
 }
 
 
@@ -858,6 +858,14 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 	return true;
 }
 
+void CHexDlgDataInterp::SetGridRedraw(bool fRedraw)
+{
+	m_gridCtrl.SetRedraw(fRedraw);
+	if (fRedraw) {
+		m_gridCtrl.RedrawWindow();
+	}
+}
+
 template<TSize1248 T>
 void CHexDlgDataInterp::SetTData(T tData)const
 {
@@ -866,14 +874,6 @@ void CHexDlgDataInterp::SetTData(T tData)const
 	}
 
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, tData);
-}
-
-void CHexDlgDataInterp::SetRedraw(bool fRedraw)
-{
-	m_gridCtrl.SetRedraw(fRedraw);
-	if (fRedraw) {
-		m_gridCtrl.RedrawWindow();
-	}
 }
 
 void CHexDlgDataInterp::ShowValueBinary(BYTE byte)const

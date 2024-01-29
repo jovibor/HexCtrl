@@ -74,8 +74,8 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool SetDataSYSTEMTIME(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataGUID(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wsv)const;
+		void SetGridRedraw(bool fRedraw);
 		template <TSize1248 T> void SetTData(T tData)const;
-		void SetRedraw(bool fRedraw);
 		void ShowValueBinary(BYTE byte)const;
 		void ShowValueInt8(BYTE byte)const;
 		void ShowValueUInt8(BYTE byte)const;

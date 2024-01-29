@@ -113,16 +113,8 @@ namespace HEXCTRL::INTERNAL {
 		void SetHexSelByField(PCHEXTEMPLFIELD pField);
 		template <TSize1248 T> void SetTData(T tData, ULONGLONG ullOffset, bool fShouldSwap)const;
 		void ShowListDataBool(LPWSTR pwsz, unsigned char uchData)const;
-		void ShowListDataInt8(LPWSTR pwsz, char chData)const;
-		void ShowListDataUInt8(LPWSTR pwsz, unsigned char uchData)const;
-		void ShowListDataInt16(LPWSTR pwsz, short shortData, bool fShouldSwap)const;
-		void ShowListDataUInt16(LPWSTR pwsz, unsigned short wData, bool fShouldSwap)const;
-		void ShowListDataInt32(LPWSTR pwsz, int intData, bool fShouldSwap)const;
-		void ShowListDataUInt32(LPWSTR pwsz, unsigned int dwData, bool fShouldSwap)const;
-		void ShowListDataInt64(LPWSTR pwsz, long long llData, bool fShouldSwap)const;
-		void ShowListDataUInt64(LPWSTR pwsz, unsigned long long ullData, bool fShouldSwap)const;
-		void ShowListDataFloat(LPWSTR pwsz, float flData, bool fShouldSwap)const;
-		void ShowListDataDouble(LPWSTR pwsz, double dblData, bool fShouldSwap)const;
+		template<typename T> requires TSize1248<T>
+		void ShowListDataNUMBER(LPWSTR pwsz, T tData, bool fShouldSwap)const;
 		void ShowListDataTime32(LPWSTR pwsz, __time32_t lTime32, bool fShouldSwap)const;
 		void ShowListDataTime64(LPWSTR pwsz, __time64_t llTime64, bool fShouldSwap)const;
 		void ShowListDataFILETIME(LPWSTR pwsz, FILETIME stFTime, bool fShouldSwap)const;

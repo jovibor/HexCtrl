@@ -1425,8 +1425,8 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::
 
 			if constexpr ((u16CmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
 				auto ch = static_cast<char>(*pBuf1);
-				if (ch >= 0x41 && ch <= 0x5A) { //IsUpper.
-					ch += 32;
+				if (ch >= 'A' && ch <= 'Z') { //If it's a capital letter.
+					ch += 32; //Lowering this letter ('a' - 'A' = 32).
 				}
 
 				if (ch != static_cast<char>(*pBuf2))
@@ -1450,8 +1450,8 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::
 
 			if constexpr ((u16CmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
 				auto wch = *pBuf1wch;
-				if (wch >= 0x41 && wch <= 0x5A) { //IsUpper.
-					wch += 32;
+				if (wch >= 'A' && wch <= 'Z') { //If it's a capital letter.
+					wch += 32; //Lowering this letter ('a' - 'A' = 32).
 				}
 
 				if (wch != *pBuf2wch)
