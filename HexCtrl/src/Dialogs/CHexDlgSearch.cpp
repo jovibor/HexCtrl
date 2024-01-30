@@ -33,14 +33,9 @@ namespace HEXCTRL::INTERNAL {
 	};
 
 	enum class CHexDlgSearch::ECmpType : std::uint16_t { //Flags for the instantiations of templated MemCmp<>.
-		TYPE_CHAR_LOOP = 0x0001,
-		TYPE_WCHAR_LOOP = 0x0002,
-		TYPE_CASE_INSENSITIVE = 0x0004,
-		TYPE_WILDCARD = 0x0008,
-		TYPE_1BYTE = 0x0010,
-		TYPE_2BYTE = 0x0020,
-		TYPE_4BYTE = 0x0040,
-		TYPE_8BYTE = 0x0080
+		CHAR_LOOP = 0x0001, WCHAR_LOOP = 0x0002,
+		CASE_INSENSITIVE = 0x0004, WILDCARD = 0x0008,
+		NUM_1BYTE = 0x0010, NUM_2BYTE = 0x0020, NUM_4BYTE = 0x0040, NUM_8BYTE = 0x0080
 	};
 
 	enum class CHexDlgSearch::EMenuID : std::uint16_t {
@@ -296,16 +291,16 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnS
 		if (ullSizeTotal > uSizeQuick) { //Showing the "Cancel" dialog only for big data sizes.
 			CHexDlgCallback dlgClbk(L"Searching...", fForward ? ullStart : ullEnd, fForward ? ullEnd : ullStart);
 			stSearch.pDlgClbk = &dlgClbk;
-			std::thread thrd(m_pfnSearchDlgClbck, &stSearch);
+			std::thread thrd(GetSearchFunc<true>(), &stSearch);
 			dlgClbk.DoModal();
 			thrd.join();
 		}
 		else {
-			m_pfnSearchNODlg(&stSearch);
+			GetSearchFunc<false>()(&stSearch);
 		}
 	}
 	else {
-		m_pfnSearchDlgClbck(&stSearch);
+		GetSearchFunc<true>()(&stSearch);
 	}
 
 	ullStart = stSearch.ullStart;
@@ -318,6 +313,78 @@ auto CHexDlgSearch::GetHexCtrl()const->IHexCtrl*
 	return m_pHexCtrl;
 }
 
+template<bool fDlgClbck>
+auto CHexDlgSearch::GetSearchFunc()const->void(*)(SEARCHDATA* pSearch)
+{
+	//The `fDlgClbck` arg ensures that no runtime check will be performed for the 
+	//'SEARCHDATA::pDlgClbk == nullptr', at the hot path inside the SearchFunc function.
+	using enum ESearchType; using enum ECmpType;
+	switch (GetSearchType()) {
+	case HEXBYTES:
+		return IsWildcard() ?
+			SearchFunc<static_cast<std::uint16_t>(CHAR_LOOP) | static_cast<std::uint16_t>(WILDCARD), fDlgClbck> :
+			SearchFunc<static_cast<std::uint16_t>(CHAR_LOOP), fDlgClbck>;
+	case TEXT_ASCII:
+		if (IsMatchCase() && !IsWildcard()) {
+			return SearchFunc<static_cast<std::uint16_t>(CHAR_LOOP), fDlgClbck>;
+		}
+
+		if (IsMatchCase() && IsWildcard()) {
+			return SearchFunc<static_cast<std::uint16_t>(CHAR_LOOP) | static_cast<std::uint16_t>(WILDCARD), fDlgClbck>;
+		}
+
+		if (!IsMatchCase() && IsWildcard()) {
+			return SearchFunc< static_cast<std::uint16_t>(CHAR_LOOP) |
+				static_cast<std::uint16_t>(CASE_INSENSITIVE) | static_cast<std::uint16_t>(WILDCARD), fDlgClbck>;
+		}
+
+		if (!IsMatchCase() && !IsWildcard()) {
+			return SearchFunc< static_cast<std::uint16_t>(CHAR_LOOP) | static_cast<std::uint16_t>(CASE_INSENSITIVE), fDlgClbck>;
+		}
+		break;
+	case TEXT_UTF8:
+		return SearchFunc<static_cast<std::uint16_t>(CHAR_LOOP), fDlgClbck>;
+	case TEXT_UTF16:
+		if (IsMatchCase() && !IsWildcard()) {
+			return SearchFunc<static_cast<std::uint16_t>(WCHAR_LOOP), fDlgClbck>;
+		}
+
+		if (IsMatchCase() && IsWildcard()) {
+			return SearchFunc<static_cast<std::uint16_t>(WCHAR_LOOP) | static_cast<std::uint16_t>(WILDCARD), fDlgClbck>;
+		}
+
+		if (!IsMatchCase() && IsWildcard()) {
+			return SearchFunc<static_cast<std::uint16_t>(WCHAR_LOOP)
+				| static_cast<std::uint16_t>(CASE_INSENSITIVE) | static_cast<std::uint16_t>(WILDCARD), fDlgClbck>;
+		}
+
+		if (!IsMatchCase() && !IsWildcard()) {
+			return SearchFunc<static_cast<std::uint16_t>(WCHAR_LOOP)
+				| static_cast<std::uint16_t>(CASE_INSENSITIVE), fDlgClbck>;
+		}
+		break;
+	case NUM_INT8:
+	case NUM_UINT8:
+		return SearchFunc<static_cast<std::uint16_t>(NUM_1BYTE), fDlgClbck>;
+	case NUM_INT16:
+	case NUM_UINT16:
+		return SearchFunc<static_cast<std::uint16_t>(NUM_2BYTE), fDlgClbck>;
+	case NUM_INT32:
+	case NUM_UINT32:
+	case NUM_FLOAT:
+		return SearchFunc<static_cast<std::uint16_t>(NUM_4BYTE), fDlgClbck>;
+	case NUM_INT64:
+	case NUM_UINT64:
+	case NUM_DOUBLE:
+	case STRUCT_FILETIME:
+		return SearchFunc<static_cast<std::uint16_t>(NUM_8BYTE), fDlgClbck>;
+	default:
+		break;
+	}
+
+	return { };
+}
+
 auto CHexDlgSearch::GetSearchMode()const->CHexDlgSearch::ESearchMode
 {
 	return static_cast<ESearchMode>(m_comboMode.GetItemData(m_comboMode.GetCurSel()));
@@ -325,6 +392,10 @@ auto CHexDlgSearch::GetSearchMode()const->CHexDlgSearch::ESearchMode
 
 auto CHexDlgSearch::GetSearchType()const->ESearchType
 {
+	if (GetSearchMode() == ESearchMode::MODE_HEXBYTES) {
+		return ESearchType::HEXBYTES;
+	}
+
 	return static_cast<ESearchType>(m_comboType.GetItemData(m_comboType.GetCurSel()));
 }
 
@@ -973,18 +1044,6 @@ bool CHexDlgSearch::PrepareHexBytes()
 		m_vecReplaceData = RangeToVecBytes(*optDataRepl);
 	}
 
-	using enum ECmpType;
-	if (!IsWildcard()) {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP), false>;
-	}
-	else {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
-			static_cast<std::uint16_t>(TYPE_WILDCARD), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
-			static_cast<std::uint16_t>(TYPE_WILDCARD), false>;
-	}
-
 	return true;
 }
 
@@ -999,30 +1058,6 @@ bool CHexDlgSearch::PrepareTextASCII()
 	m_vecSearchData = RangeToVecBytes(strSearch);
 	m_vecReplaceData = RangeToVecBytes(WstrToStr(m_wstrTextReplace, CP_ACP));
 
-	using enum ECmpType;
-	if (IsMatchCase() && !IsWildcard()) {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP), false>;
-	}
-	else if (IsMatchCase() && IsWildcard()) {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_WILDCARD), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_WILDCARD), false>;
-	}
-	else if (!IsMatchCase() && IsWildcard()) {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc< static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
-			static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc< static_cast<std::uint16_t>(TYPE_CHAR_LOOP) |
-			static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD), false>;
-	}
-	else if (!IsMatchCase() && !IsWildcard()) {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc< static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc< static_cast<std::uint16_t>(TYPE_CHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE), false>;
-	}
-
 	return true;
 }
 
@@ -1036,30 +1071,6 @@ bool CHexDlgSearch::PrepareTextUTF16()
 	m_vecSearchData = RangeToVecBytes(m_wstrSearch);
 	m_vecReplaceData = RangeToVecBytes(m_wstrTextReplace);
 
-	using enum ECmpType;
-	if (IsMatchCase() && !IsWildcard()) {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP), false>;
-	}
-	else if (IsMatchCase() && IsWildcard()) {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_WILDCARD), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_WILDCARD), false>;
-	}
-	else if (!IsMatchCase() && IsWildcard()) {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE) | static_cast<std::uint16_t>(TYPE_WILDCARD), false>;
-	}
-	else if (!IsMatchCase() && !IsWildcard()) {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)
-			| static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE), false>;
-	}
-
 	return true;
 }
 
@@ -1067,10 +1078,6 @@ bool CHexDlgSearch::PrepareTextUTF8()
 {
 	m_vecSearchData = RangeToVecBytes(WstrToStr(m_wstrTextSearch, CP_UTF8)); //Convert to UTF-8 string.
 	m_vecReplaceData = RangeToVecBytes(WstrToStr(m_wstrTextReplace, CP_UTF8));
-
-	using enum ECmpType;
-	m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP), true>;
-	m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_CHAR_LOOP), false>;
 
 	return true;
 }
@@ -1103,23 +1110,6 @@ bool CHexDlgSearch::PrepareNumber()
 
 	m_vecSearchData = RangeToVecBytes(tData);
 	m_vecReplaceData = RangeToVecBytes(tDataRep);
-
-	if constexpr (sizeof(T) == sizeof(std::uint8_t)) {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(ECmpType::TYPE_1BYTE), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(ECmpType::TYPE_1BYTE), false>;
-	}
-	else if constexpr (sizeof(T) == sizeof(std::uint16_t)) {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(ECmpType::TYPE_2BYTE), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(ECmpType::TYPE_2BYTE), false>;
-	}
-	else if constexpr (sizeof(T) == sizeof(std::uint32_t)) {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(ECmpType::TYPE_4BYTE), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(ECmpType::TYPE_4BYTE), false>;
-	}
-	else if constexpr (sizeof(T) == sizeof(std::uint64_t)) {
-		m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(ECmpType::TYPE_8BYTE), true>;
-		m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(ECmpType::TYPE_8BYTE), false>;
-	}
 
 	return true;
 }
@@ -1155,10 +1145,6 @@ bool CHexDlgSearch::PrepareFILETIME()
 
 	m_vecSearchData = RangeToVecBytes(ftSearch);
 	m_vecReplaceData = RangeToVecBytes(ftReplace);
-
-	using enum ECmpType;
-	m_pfnSearchDlgClbck = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_8BYTE), true>;
-	m_pfnSearchNODlg = &CHexDlgSearch::SearchFunc<static_cast<std::uint16_t>(TYPE_8BYTE), false>;
 
 	return true;
 }
@@ -1405,26 +1391,26 @@ template<std::uint16_t u16CmpType>
 bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize)
 {
 	using enum ECmpType;
-	if constexpr ((u16CmpType & static_cast<std::uint16_t>(TYPE_1BYTE)) > 0) {
+	if constexpr ((u16CmpType & static_cast<std::uint16_t>(NUM_1BYTE)) > 0) {
 		return *reinterpret_cast<const std::uint8_t*>(pBuf1) == *reinterpret_cast<const std::uint8_t*>(pBuf2);
 	}
-	else if constexpr ((u16CmpType & static_cast<std::uint16_t>(TYPE_2BYTE)) > 0) {
+	else if constexpr ((u16CmpType & static_cast<std::uint16_t>(NUM_2BYTE)) > 0) {
 		return *reinterpret_cast<const std::uint16_t*>(pBuf1) == *reinterpret_cast<const std::uint16_t*>(pBuf2);
 	}
-	else if constexpr ((u16CmpType & static_cast<std::uint16_t>(TYPE_4BYTE)) > 0) {
+	else if constexpr ((u16CmpType & static_cast<std::uint16_t>(NUM_4BYTE)) > 0) {
 		return *reinterpret_cast<const std::uint32_t*>(pBuf1) == *reinterpret_cast<const std::uint32_t*>(pBuf2);
 	}
-	else if constexpr ((u16CmpType & static_cast<std::uint16_t>(TYPE_8BYTE)) > 0) {
+	else if constexpr ((u16CmpType & static_cast<std::uint16_t>(NUM_8BYTE)) > 0) {
 		return *reinterpret_cast<const std::uint64_t*>(pBuf1) == *reinterpret_cast<const std::uint64_t*>(pBuf2);
 	}
-	else if constexpr ((u16CmpType & static_cast<std::uint16_t>(TYPE_CHAR_LOOP)) > 0) {
+	else if constexpr ((u16CmpType & static_cast<std::uint16_t>(CHAR_LOOP)) > 0) {
 		for (std::size_t i { 0 }; i < nSize; ++i, ++pBuf1, ++pBuf2) {
-			if constexpr ((u16CmpType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0) {
+			if constexpr ((u16CmpType & static_cast<std::uint16_t>(WILDCARD)) > 0) {
 				if (*pBuf2 == m_uWildcard) //Checking for wildcard match.
 					continue;
 			}
 
-			if constexpr ((u16CmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
+			if constexpr ((u16CmpType & static_cast<std::uint16_t>(CASE_INSENSITIVE)) > 0) {
 				auto ch = static_cast<char>(*pBuf1);
 				if (ch >= 'A' && ch <= 'Z') { //If it's a capital letter.
 					ch += 32; //Lowering this letter ('a' - 'A' = 32).
@@ -1440,16 +1426,16 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::
 		}
 		return true;
 	}
-	else if constexpr ((u16CmpType & static_cast<std::uint16_t>(TYPE_WCHAR_LOOP)) > 0) {
+	else if constexpr ((u16CmpType & static_cast<std::uint16_t>(WCHAR_LOOP)) > 0) {
 		auto pBuf1wch = reinterpret_cast<const wchar_t*>(pBuf1);
 		auto pBuf2wch = reinterpret_cast<const wchar_t*>(pBuf2);
 		for (std::size_t i { 0 }; i < (nSize / sizeof(wchar_t)); ++i, ++pBuf1wch, ++pBuf2wch) {
-			if constexpr ((u16CmpType & static_cast<std::uint16_t>(TYPE_WILDCARD)) > 0) {
+			if constexpr ((u16CmpType & static_cast<std::uint16_t>(WILDCARD)) > 0) {
 				if (*pBuf2wch == static_cast<wchar_t>(m_uWildcard)) //Checking for wildcard match.
 					continue;
 			}
 
-			if constexpr ((u16CmpType & static_cast<std::uint16_t>(TYPE_CASE_INSENSITIVE)) > 0) {
+			if constexpr ((u16CmpType & static_cast<std::uint16_t>(CASE_INSENSITIVE)) > 0) {
 				auto wch = *pBuf1wch;
 				if (wch >= 'A' && wch <= 'Z') { //If it's a capital letter.
 					wch += 32; //Lowering this letter ('a' - 'A' = 32).
@@ -1605,12 +1591,12 @@ void CHexDlgSearch::SearchFuncFwd(SEARCHDATA* pSearch)
 			}
 		}
 
-		if (fBigStep) {
+		if (fBigStep) [[unlikely]] {
 			if ((ullOffsetSearch + llStep) > ullEnd)
 				break; //Upper bound reached.
 
 			ullOffsetSearch += llStep;
-		}
+			}
 		else {
 			ullOffsetSearch += ullLoopChunkSize;
 		}
