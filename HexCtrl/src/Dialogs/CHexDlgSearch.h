@@ -91,6 +91,10 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] static auto RangeToVecBytes(const T& tData) -> std::vector<std::byte>;
 		template<std::uint16_t u16CmpType, bool tfDlgClbck>
 		static void SearchFunc(SEARCHDATA* pSearch);
+		template<std::uint16_t u16CmpType, bool tfDlgClbck>
+		static void SearchFuncFwd(SEARCHDATA* pSearch);
+		template<std::uint16_t u16CmpType, bool tfDlgClbck>
+		static void SearchFuncBack(SEARCHDATA* pSearch);
 	private:
 		static constexpr std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		static constexpr auto m_pwszWrongInput { L"Wrong input data." };
