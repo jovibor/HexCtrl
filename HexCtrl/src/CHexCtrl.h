@@ -152,8 +152,8 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsCurTextArea()const;               //Whether last focus was set at Text or Hex chunks area.
 		[[nodiscard]] bool IsDrawable()const;                  //Should WM_PAINT be handled atm or not.
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
-		template<typename T>                                   //Main "Modify" method with different workers.
-		void ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const T& lmbWorker, HEXCTRL::SpanCByte spnDataToOperWith);
+		//Main "Modify" method with different workers.
+		void ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& lmbWorker, HEXCTRL::SpanCByte spnDataToOperWith);
 		[[nodiscard]] auto OffsetToWstr(ULONGLONG ullOffset)const->std::wstring; //Format offset as std::wstring.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		void OnModifyData();                                   //When data has been modified.

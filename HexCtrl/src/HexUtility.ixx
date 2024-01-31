@@ -29,6 +29,10 @@ export namespace HEXCTRL::INTERNAL {
 	constexpr auto g_ulFileTime1970_HIGH = 0x019db1deUL; //Used for Unix and Java times.
 	constexpr auto g_ullUnixEpochDiff = 11644473600ULL;  //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970.
 
+	enum class EDataSize : std::uint8_t { //Generic enum representing different data sizes.
+		SIZE_BYTE = 1U, SIZE_WORD = 2U, SIZE_DWORD = 4U, SIZE_QWORD = 8U, SIZE_DQWORD = 16U
+	};
+
 	//Get data from IHexCtrl's given offset converted to a necessary type.
 	template<typename T>
 	[[nodiscard]] T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
@@ -47,7 +51,7 @@ export namespace HEXCTRL::INTERNAL {
 		if (ullOffset + sizeof(T) > refHexCtrl.GetDataSize())
 			return;
 
-		refHexCtrl.ModifyData({ .enModifyMode = EHexModifyMode::MODIFY_ONCE,
+		refHexCtrl.ModifyData({ .eModifyMode = EHexModifyMode::MODIFY_ONCE,
 			.spnData = { reinterpret_cast<std::byte*>(&tData), sizeof(T) },
 			.vecSpan = { { ullOffset, sizeof(T) } } });
 	}
@@ -55,8 +59,7 @@ export namespace HEXCTRL::INTERNAL {
 	template<typename T> concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);
 
 	//Byte swap for types of 2, 4, or 8 byte size.
-	template<TSize1248 T>
-	[[nodiscard]] constexpr T ByteSwap(T tData)noexcept
+	template<TSize1248 T> [[nodiscard]] constexpr T ByteSwap(T tData)noexcept
 	{
 		//Since a swapping-data type can be any type of 2, 4, or 8 bytes size,
 		//we first bit_cast swapping-data to an integral type of the same size,
@@ -94,8 +97,7 @@ export namespace HEXCTRL::INTERNAL {
 		}
 	}
 
-	template<TSize1248 T>
-	[[nodiscard]] constexpr T BitReverse(T tData) {
+	template<TSize1248 T> [[nodiscard]] constexpr T BitReverse(T tData) {
 		T tReversed { };
 		constexpr auto iBitsCount = sizeof(T) * 8;
 		for (auto i = 0; i < iBitsCount; ++i, tData >>= 1) {

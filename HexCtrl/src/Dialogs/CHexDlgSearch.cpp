@@ -260,8 +260,8 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnS
 	const auto ullStep = m_ullStep; //Search step.
 
 	SEARCHDATA stSearch { .ullStart { ullStart }, .ullEnd { ullEnd }, .ullOffsetSentinel { m_ullOffsetSentinel },
-		.llStep { static_cast<LONGLONG>(m_ullStep) }, .pHexCtrl { GetHexCtrl() }, .pDlgClbk { pDlgClbk }, .spnSearch { spnSearch },
-		.fForward { fForward }, .fInverted { IsInverted() }, .fDlgExit { fDlgExit } };
+		.llStep { static_cast<LONGLONG>(m_ullStep) }, .pHexCtrl { GetHexCtrl() }, .pDlgClbk { pDlgClbk },
+		.spnSearch { spnSearch }, .fForward { fForward }, .fInverted { IsInverted() }, .fDlgExit { fDlgExit } };
 
 	if (!pHexCtrl->IsVirtual()) {
 		stSearch.ullMemToAcquire = ullSizeTotal;
@@ -912,6 +912,7 @@ void CHexDlgSearch::Prepare()
 			m_comboReplace.SetFocus();
 			return;
 		}
+
 		ComboReplaceFill(wstrReplace);
 	}
 	m_comboSearch.SetFocus();
@@ -1041,6 +1042,7 @@ bool CHexDlgSearch::PrepareHexBytes()
 			m_comboReplace.SetFocus();
 			return false;
 		}
+
 		m_vecReplaceData = RangeToVecBytes(*optDataRepl);
 	}
 
@@ -1151,7 +1153,7 @@ bool CHexDlgSearch::PrepareFILETIME()
 
 void CHexDlgSearch::Replace(ULONGLONG ullIndex, const SpanCByte spnReplace)const
 {
-	GetHexCtrl()->ModifyData({ .enModifyMode { EHexModifyMode::MODIFY_ONCE }, .spnData { spnReplace },
+	GetHexCtrl()->ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE }, .spnData { spnReplace },
 		.vecSpan { { ullIndex, spnReplace.size() } } });
 }
 

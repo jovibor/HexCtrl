@@ -1133,7 +1133,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 
 	SetRedraw(false);
 	using enum EHexModifyMode;
-	switch (hms.enModifyMode) {
+	switch (hms.eModifyMode) {
 	case MODIFY_ONCE:
 	{
 		const auto stHexSpan = hms.vecSpan.back();
@@ -1188,7 +1188,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			};
 
 		const auto& refHexSpan = hms.vecSpan.back();
-		if (hms.enModifyMode == MODIFY_RAND_MT19937 && hms.vecSpan.size() == 1 && refHexSpan.ullSize >= sizeof(std::uint64_t)) {
+		if (hms.eModifyMode == MODIFY_RAND_MT19937 && hms.vecSpan.size() == 1 && refHexSpan.ullSize >= sizeof(std::uint64_t)) {
 			ModifyWorker(hms, lmbRandUInt64, { static_cast<std::byte*>(nullptr), sizeof(std::uint64_t) });
 
 			if (const auto dwRem = refHexSpan.ullSize % sizeof(std::uint64_t); dwRem > 0) { //Remainder.
@@ -1200,7 +1200,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				SetDataVirtual(spnData, { ullOffset, dwRem });
 			}
 		}
-		else if (hms.enModifyMode == MODIFY_RAND_FAST && hms.vecSpan.size() == 1 && refHexSpan.ullSize >= GetCacheSize()) {
+		else if (hms.eModifyMode == MODIFY_RAND_FAST && hms.vecSpan.size() == 1 && refHexSpan.ullSize >= GetCacheSize()) {
 			//Fill the uptrRandData buffer with true random data of ulSizeRandBuff size.
 			//Then clone this buffer to the destination data.
 			//Buffer is allocated with alignment for maximum performance.
@@ -1288,7 +1288,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	break;
 	case MODIFY_OPERATION:
 	{
-		constexpr auto lmbOperData = [](std::byte* pData, const HEXMODIFY& hms, SpanCByte/**/) {
+		constexpr auto lmbOperData = [](std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte/**/) {
 			assert(pData != nullptr);
 
 			constexpr auto lmbOper = []<typename T>(T * pData, const HEXMODIFY & hms) {
@@ -1296,7 +1296,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				const T tDataOper = *reinterpret_cast<const T*>(hms.spnData.data());
 
 				using enum EHexOperMode;
-				switch (hms.enOperMode) {
+				switch (hms.eOperMode) {
 				case OPER_ASSIGN:
 					tData = tDataOper;
 					break;
@@ -1365,23 +1365,24 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				*pData = tData;
 			};
 
-			using enum EHexDataSize;
-			switch (hms.enDataSize) {
-			case SIZE_BYTE:
+			switch (hms.spnData.size()) {
+			case 1:
 				lmbOper(reinterpret_cast<PBYTE>(pData), hms);
 				break;
-			case SIZE_WORD:
+			case 2:
 				lmbOper(reinterpret_cast<PWORD>(pData), hms);
 				break;
-			case SIZE_DWORD:
+			case 4:
 				lmbOper(reinterpret_cast<PDWORD>(pData), hms);
 				break;
-			case SIZE_QWORD:
+			case 8:
 				lmbOper(reinterpret_cast<PQWORD>(pData), hms);
+				break;
+			default:
 				break;
 			}
 			};
-		ModifyWorker(hms, lmbOperData, { static_cast<std::byte*>(nullptr), static_cast<std::size_t>(hms.enDataSize) });
+		ModifyWorker(hms, lmbOperData, hms.spnData);
 	}
 	break;
 	default:
@@ -3535,7 +3536,7 @@ void CHexCtrl::FillWithZeros()
 		return;
 
 	std::byte byteZero { 0 };
-	ModifyData({ .enModifyMode { EHexModifyMode::MODIFY_REPEAT }, .spnData { &byteZero, sizeof(byteZero) },
+	ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_REPEAT }, .spnData { &byteZero, sizeof(byteZero) },
 		.vecSpan { GetSelection() } });
 	Redraw();
 }
@@ -3718,8 +3719,7 @@ bool CHexCtrl::IsPageVisible()const
 	return GetPageSize() > 0 && (GetPageSize() % GetCapacity() == 0) && GetPageSize() >= GetCapacity();
 }
 
-template<typename T>
-void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const T& lmbWorker, const HEXCTRL::SpanCByte spnDataToOperWith)
+void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& lmbWorker, const HEXCTRL::SpanCByte spnDataToOperWith)
 {
 	assert(!spnDataToOperWith.empty());
 	if (spnDataToOperWith.empty())
@@ -3730,9 +3730,8 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const T& lmbWorker, c
 		[](ULONGLONG ullSumm, const HEXSPAN& ref) { return ullSumm + ref.ullSize; });
 	assert(ullTotalSize <= GetDataSize());
 
-	CHexDlgCallback dlgClbk(L"Modifying...", vecSpanRef.back().ullOffset,
-		vecSpanRef.back().ullOffset + ullTotalSize, this);
-	const auto lmbThread = [&]() {
+	CHexDlgCallback dlgClbk(L"Modifying...", vecSpanRef.back().ullOffset, vecSpanRef.back().ullOffset + ullTotalSize, this);
+	const auto lmbModify = [&]() {
 		for (const auto& iterSpan : vecSpanRef) { //Span-vector's size times.
 			const auto ullOffsetToModify { iterSpan.ullOffset };
 			const auto ullSizeToModify { iterSpan.ullSize };
@@ -3801,17 +3800,17 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const T& lmbWorker, c
 				//It's a special case for when the ullSizeToOperWith is larger than
 				//the current cache size (only in VirtualData mode).
 
-				const auto iSmallMod = ullSizeToOperWith % ullSizeCache;
-				const auto ullSmallChunks = ullSizeToOperWith / ullSizeCache + (iSmallMod > 0 ? 1 : 0);
+				const auto ullSmallMod = ullSizeToOperWith % ullSizeCache;
+				const auto ullSmallChunks = ullSizeToOperWith / ullSizeCache + (ullSmallMod > 0 ? 1 : 0);
 				auto ullSmallChunkCur = 0ULL; //Current small chunk index.
 				auto ullOffsetCurr = 0ULL;
 				auto ullOffsetSubSpan = 0ULL; //Current offset for spnDataToOperWith.subspan().
 				auto ullSizeCacheCurr = 0ULL; //Current cache size.
 				for (auto iterChunk { 0ULL }; iterChunk < ullChunks; ++iterChunk) {
-					if (ullSmallChunkCur == (ullSmallChunks - 1) && iSmallMod > 0) {
-						ullOffsetCurr += iSmallMod;
-						ullSizeCacheCurr = iSmallMod;
-						ullOffsetSubSpan += iSmallMod;
+					if (ullSmallChunkCur == (ullSmallChunks - 1) && ullSmallMod > 0) {
+						ullOffsetCurr += ullSmallMod;
+						ullSizeCacheCurr = ullSmallMod;
+						ullOffsetSubSpan += ullSmallMod;
 					}
 					else {
 						ullOffsetCurr = ullOffsetToModify + (iterChunk * ullSizeCache);
@@ -3842,14 +3841,14 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const T& lmbWorker, c
 		dlgClbk.ExitDlg();
 		};
 
-	constexpr auto iSizeToRunThread { 1024 * 1024 }; //1MB.
-	if (ullTotalSize > iSizeToRunThread) { //Spawning new thread only if data size is big enough.
-		std::thread thrdWorker(lmbThread);
+	static constexpr auto uSizeToRunThread { 1024U * 1024U * 50U }; //50MB.
+	if (ullTotalSize > uSizeToRunThread) { //Spawning new thread only if data size is big enough.
+		std::thread thrd(lmbModify);
 		dlgClbk.DoModal();
-		thrdWorker.join();
+		thrd.join();
 	}
 	else {
-		lmbThread();
+		lmbModify();
 	}
 }
 
@@ -4938,8 +4937,6 @@ void CHexCtrl::OnLButtonDblClk(UINT nFlags, CPoint point)
 
 void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 {
-	SetFocus();
-
 	const auto optHit = HitTest(point);
 	if (!optHit)
 		return;

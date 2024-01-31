@@ -102,7 +102,6 @@
   </details>
 * [Enums](#enums) <details><summary>_Expand_</summary>
   * [EHexCmd](#ehexcmd)
-  * [EHexDataSize](#ehexdatasize)
   * [EHexModifyMode](#ehexmodifymode)
   * [EHexOperMode](#ehexopermode)
   * [EHexWnd](#ehexwnd)
@@ -902,23 +901,22 @@ struct HEXHITTEST {
 
 ### [](#)HEXMODIFY
 This struct is used to represent data modification parameters.  
-When `enModifyMode` is set to `EHexModifyMode::MODIFY_ONCE`, bytes from `pData` just replace corresponding data bytes as is.  
-If `enModifyMode` is equal to `EHexModifyMode::MODIFY_REPEAT` then block by block replacement takes place few times.  
+When `eModifyMode` is set to `MODIFY_ONCE`, bytes from `pData` just replace corresponding data bytes as is.  
+If `eModifyMode` is equal to `MODIFY_REPEAT` then block by block replacement takes place few times.  
 For example, if:
 * `SUM(vecSpan.ullSize) == 9`
 * `spnData.size() == 3`
-* `enModifyMode` is set to `EHexModifyMode::MODIFY_REPEAT`
+* `eModifyMode` is set to `MODIFY_REPEAT`
 * bytes in memory at `vecSpan.ullOffset` are `010203040506070809`
 * bytes pointed to by `spnData.data()` are `030405`
 
 then, after modification, bytes at `vecSpan.ullOffset` will become `030405030405030405`.  
 
-If `enModifyMode` is equal to the `EHexModifyMode::MODIFY_OPERATION` then the `enOperMode` shows what kind of operation must be performed on the data.
+If `eModifyMode` is equal to the `MODIFY_OPERATION` then the `eOperMode` shows what kind of operation must be performed on the data.
 ```cpp
 struct HEXMODIFY {
-    EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_ONCE }; //Modify mode.
-    EHexOperMode   enOperMode { };       //Operation mode, used only in MODIFY_OPERATION mode.
-    EHexDataSize   enDataSize { };       //Operation data size.
+    EHexModifyMode eModifyMode { };      //Modify mode.
+    EHexOperMode   eOperMode { };        //Operation mode, used only in eModifyMode::MODIFY_OPERATION mode.
     SpanCByte      spnData { };          //Span of the data to modify from.
     VecSpan        vecSpan { };          //Vector of data offsets and sizes.
     bool           fBigEndian { false }; //Treat the data as a big endian, used only in MODIFY_OPERATION mode.
@@ -1095,14 +1093,6 @@ enum class EHexCmd : std::uint8_t {
     CMD_CARET_LEFT, CMD_CARET_RIGHT, CMD_CARET_UP, CMD_CARET_DOWN,
     CMD_SCROLL_PAGEUP, CMD_SCROLL_PAGEDOWN,
     CMD_TEMPL_APPLYCURR, CMD_TEMPL_DISAPPLY, CMD_TEMPL_DISAPPALL, CMD_TEMPL_DLG_MGR
-};
-```
-
-### [](#)EHexDataSize
-Data size to operate on, used in `EHexModifyMode::MODIFY_OPERATION` mode.
-```cpp
-enum class EHexDataSize : std::uint8_t {
-    SIZE_BYTE = 0x1U, SIZE_WORD = 0x2U, SIZE_DWORD = 0x4U, SIZE_QWORD = 0x8U
 };
 ```
 

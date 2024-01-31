@@ -21,8 +21,11 @@ namespace HEXCTRL::INTERNAL {
 		void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
+		template<typename T> requires TSize1248<T>
+		[[nodiscard]] auto GetOperand(T& tOper, bool& fBigEndian)const->SpanCByte;
 		[[nodiscard]] auto GetOperMode()const->EHexOperMode;
-		[[nodiscard]] auto GetDataSize()const->EHexDataSize;
+		[[nodiscard]] auto GetDataSize()const->EDataSize;
+		void OnCancel()override;
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		BOOL OnInitDialog()override;
 		void OnOK()override;
@@ -81,14 +84,53 @@ namespace HEXCTRL::INTERNAL {
 		DDX_Control(pDX, IDC_HEXCTRL_OPERS_COMBO_SIZE, m_stComboSize);
 	}
 
+	template<typename T> requires TSize1248<T>
+	auto CHexDlgOpers::GetOperand(T& tOper, bool& fBigEndian)const->SpanCByte
+	{
+		const auto pWndOper = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND);
+		CStringW wstrOper;
+		pWndOper->GetWindowTextW(wstrOper);
+		const auto opt = stn::StrToNum<T>(wstrOper.GetString());
+		if (!opt) {
+			::MessageBoxW(nullptr, L"Wrong operand data.", L"Operand error", MB_ICONERROR);
+			return { };
+		}
+
+		tOper = *opt;
+		const auto eOperMode = GetOperMode();
+		using enum EHexOperMode;
+		if (eOperMode == OPER_DIV && tOper == 0) { //Division by zero check.
+			::MessageBoxW(nullptr, L"Can't divide by zero.", L"Operand error", MB_ICONERROR);
+			return { };
+		}
+
+		/******************************************************************************
+		* Some operations don't need to swap the whole data in big-endian mode.
+		* Instead, the operand can be swapped here just once.
+		* Binary OR/XOR/AND are good examples, binary NOT doesn't need swap at all.
+		* The fSwapHere flag shows exactly this, that the operand can be swapped here.
+		******************************************************************************/
+		if (fBigEndian && (eOperMode == OPER_OR || eOperMode == OPER_XOR || eOperMode == OPER_AND || eOperMode == OPER_ASSIGN)) {
+			fBigEndian = false;
+			tOper = ByteSwap(tOper);
+		}
+
+		return { reinterpret_cast<std::byte*>(&tOper), sizeof(tOper) };
+	}
+
 	auto CHexDlgOpers::GetOperMode()const->EHexOperMode
 	{
 		return static_cast<EHexOperMode>(m_stComboOper.GetItemData(m_stComboOper.GetCurSel()));
 	}
 
-	auto CHexDlgOpers::GetDataSize()const->EHexDataSize
+	auto CHexDlgOpers::GetDataSize()const->EDataSize
 	{
-		return static_cast<EHexDataSize>(m_stComboSize.GetItemData(m_stComboSize.GetCurSel()));
+		return static_cast<EDataSize>(m_stComboSize.GetItemData(m_stComboSize.GetCurSel()));
+	}
+
+	void CHexDlgOpers::OnCancel()
+	{
+		static_cast<CHexDlgModify*>(GetParent())->OnCancel();
 	}
 
 	BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
@@ -150,15 +192,15 @@ namespace HEXCTRL::INTERNAL {
 		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_BITREV).data());
 		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_BITREV));
 
-		using enum EHexDataSize;
-		iIndex = m_stComboSize.AddString(L"BYTE");
+		using enum EDataSize;
+		iIndex = m_stComboSize.AddString(L"1 Byte");
 		m_stComboSize.SetItemData(iIndex, static_cast<DWORD_PTR>(SIZE_BYTE));
 		m_stComboSize.SetCurSel(iIndex);
-		iIndex = m_stComboSize.AddString(L"WORD");
+		iIndex = m_stComboSize.AddString(L"2 Bytes");
 		m_stComboSize.SetItemData(iIndex, static_cast<DWORD_PTR>(SIZE_WORD));
-		iIndex = m_stComboSize.AddString(L"DWORD");
+		iIndex = m_stComboSize.AddString(L"4 Bytes");
 		m_stComboSize.SetItemData(iIndex, static_cast<DWORD_PTR>(SIZE_DWORD));
-		iIndex = m_stComboSize.AddString(L"QWORD");
+		iIndex = m_stComboSize.AddString(L"8 Bytes");
 		m_stComboSize.SetItemData(iIndex, static_cast<DWORD_PTR>(SIZE_QWORD));
 
 		CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL, IDC_HEXCTRL_OPERS_RAD_ALL);
@@ -172,88 +214,93 @@ namespace HEXCTRL::INTERNAL {
 		if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
 			return;
 
-		using enum EHexOperMode;
-		using enum EHexDataSize;
+		using enum EHexOperMode; using enum EDataSize; using enum EHexModifyMode;
 		const auto eOperMode = GetOperMode();
 		const auto eDataSize = GetDataSize();
-		const auto fCheckBE = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE))->GetCheck() == BST_CHECKED;
-		auto fBigEndian = fCheckBE && eDataSize != SIZE_BYTE && eOperMode != OPER_NOT && eOperMode != OPER_SWAP
+		const auto fBE = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE))->GetCheck() == BST_CHECKED;
+		const auto fUnsign = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_OPERS_CHK_UNSIGN))->GetCheck() == BST_CHECKED;
+		auto fBigEndian = fBE && eDataSize != SIZE_BYTE && eOperMode != OPER_NOT && eOperMode != OPER_SWAP
 			&& eOperMode != OPER_BITREV;
 
-		HEXMODIFY hms { .enModifyMode = EHexModifyMode::MODIFY_OPERATION, .enOperMode = eOperMode,
-			.enDataSize = eDataSize };
-
-		LONGLONG llOperand { };
-		if (const auto pWndOperand = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND); pWndOperand->IsWindowEnabled()) {
-			wchar_t buffOperand[32];
-			pWndOperand->GetWindowTextW(buffOperand, static_cast<int>(std::size(buffOperand)));
-
-			std::wstring wstrErr;
-			if (buffOperand[0] == L'\0') { //Operand field emptiness check.
-				wstrErr = L"Missing Operand.";
+		std::int8_t i8Oper;
+		std::uint8_t ui8Oper;
+		std::int16_t i16Oper;
+		std::uint16_t ui16Oper;
+		std::int32_t i32Oper;
+		std::uint32_t ui32Oper;
+		std::int64_t i64Oper;
+		std::uint64_t ui64Oper;
+		SpanCByte spnOper;
+		if (const auto pWndOper = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND); pWndOper->IsWindowEnabled()) {
+			if (fUnsign) {
+				switch (eDataSize) {
+				case SIZE_BYTE:
+					spnOper = GetOperand(ui8Oper, fBigEndian);
+					break;
+				case SIZE_WORD:
+					spnOper = GetOperand(ui16Oper, fBigEndian);
+					break;
+				case SIZE_DWORD:
+					spnOper = GetOperand(ui32Oper, fBigEndian);
+					break;
+				case SIZE_QWORD:
+					spnOper = GetOperand(ui64Oper, fBigEndian);
+					break;
+				default:
+					break;
+				};
 			}
-			else if (const auto optOperand = stn::StrToInt64(buffOperand); !optOperand) {
-				wstrErr = L"Wrong number format.";
-			}
-			else if (llOperand = *optOperand; hms.enOperMode == OPER_DIV && llOperand == 0) { //Division by zero check.
-				wstrErr = L"Wrong number format. Can not divide by zero.";
+			else {
+				switch (eDataSize) {
+				case SIZE_BYTE:
+					spnOper = GetOperand(i8Oper, fBigEndian);
+					break;
+				case SIZE_WORD:
+					spnOper = GetOperand(i16Oper, fBigEndian);
+					break;
+				case SIZE_DWORD:
+					spnOper = GetOperand(i32Oper, fBigEndian);
+					break;
+				case SIZE_QWORD:
+					spnOper = GetOperand(i64Oper, fBigEndian);
+					break;
+				default:
+					break;
+				};
 			}
 
-			if (!wstrErr.empty()) {
-				MessageBoxW(wstrErr.data(), L"Operand error", MB_ICONERROR);
+			if (spnOper.empty())
 				return;
-			}
-
-			if (fBigEndian) {
-				/***************************************************************************
-				* Some operations don't need to swap the whole data in big-endian mode.
-				* Instead, the operand can be swapped here just once.
-				* Binary OR/XOR/AND are good examples, binary NOT doesn't need swap at all.
-				* The fSwapHere flag shows exactly this, that the operand can be swapped here.
-				***************************************************************************/
-				if (eOperMode == OPER_OR || eOperMode == OPER_XOR || eOperMode == OPER_AND || eOperMode == OPER_ASSIGN) {
-					fBigEndian = false;
-					switch (hms.enDataSize) {
-					case SIZE_WORD:
-						llOperand = static_cast<LONGLONG>(ByteSwap(static_cast<WORD>(llOperand)));
-						break;
-					case SIZE_DWORD:
-						llOperand = static_cast<LONGLONG>(ByteSwap(static_cast<DWORD>(llOperand)));
-						break;
-					case SIZE_QWORD:
-						llOperand = static_cast<LONGLONG>(ByteSwap(static_cast<QWORD>(llOperand)));
-						break;
-					default:
-						break;
-					}
-				}
-			}
 		}
 
+		VecSpan vecSpan;
 		const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL);
 		if (iRadioAllOrSel == IDC_HEXCTRL_OPERS_RAD_ALL) {
 			if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?",
 				L"Modify all data?", MB_YESNO | MB_ICONWARNING) == IDNO)
 				return;
 
-			hms.vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
+			vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
 		}
 		else {
 			if (!m_pHexCtrl->HasSelection())
 				return;
 
-			hms.vecSpan = m_pHexCtrl->GetSelection();
+			vecSpan = m_pHexCtrl->GetSelection();
 		}
 
-		hms.fBigEndian = fBigEndian;
-		hms.spnData = { reinterpret_cast<std::byte*>(&llOperand), sizeof(llOperand) };
+		//Special case for the Assign operation, that can be replaced with the MODIFY_REPEAT mode
+		//which is significantly faster.
+		const HEXMODIFY hms { .eModifyMode { eOperMode == OPER_ASSIGN ? MODIFY_REPEAT : MODIFY_OPERATION },
+			.eOperMode { eOperMode }, .spnData { spnOper }, .vecSpan { std::move(vecSpan) }, .fBigEndian { fBigEndian } };
+
 		m_pHexCtrl->ModifyData(hms);
 		m_pHexCtrl->Redraw();
 	}
 
 	void CHexDlgOpers::SetControlsState()const
 	{
-		using enum EHexOperMode; using enum EHexDataSize;
+		using enum EHexOperMode; using enum EDataSize;
 		const auto eDataSize = GetDataSize();
 		auto fOperandEnable = TRUE;
 		auto fBtnEnable = TRUE;
@@ -273,6 +320,7 @@ namespace HEXCTRL::INTERNAL {
 
 		GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND)->EnableWindow(fOperandEnable);
 		GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE)->EnableWindow(eDataSize == SIZE_BYTE ? FALSE : fOperandEnable);
+		GetDlgItem(IDC_HEXCTRL_OPERS_CHK_UNSIGN)->EnableWindow(fOperandEnable);
 		GetDlgItem(IDOK)->EnableWindow(fBtnEnable);
 	}
 
@@ -291,6 +339,7 @@ namespace HEXCTRL::INTERNAL {
 		enum class EFillType : std::uint8_t; //Forward declaration.
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] auto GetFillType()const->EFillType;
+		void OnCancel()override;
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
 		BOOL OnInitDialog()override;
 		void OnOK()override;
@@ -348,6 +397,11 @@ namespace HEXCTRL::INTERNAL {
 		return static_cast<EFillType>(m_stComboType.GetItemData(m_stComboType.GetCurSel()));
 	}
 
+	void CHexDlgFillData::OnCancel()
+	{
+		static_cast<CHexDlgModify*>(GetParent())->OnCancel();
+	}
+
 	BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM lParam)
 	{
 		using enum EFillType;
@@ -369,12 +423,12 @@ namespace HEXCTRL::INTERNAL {
 	{
 		CDialogEx::OnInitDialog();
 
-		auto iIndex = m_stComboType.AddString(L"Hex Values");
+		auto iIndex = m_stComboType.AddString(L"Hex Bytes");
 		m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_HEX));
 		m_stComboType.SetCurSel(iIndex);
-		iIndex = m_stComboType.AddString(L"ASCII Text");
+		iIndex = m_stComboType.AddString(L"Text ASCII");
 		m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_ASCII));
-		iIndex = m_stComboType.AddString(L"UTF-16 Text");
+		iIndex = m_stComboType.AddString(L"Text UTF-16");
 		m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_WCHAR));
 		iIndex = m_stComboType.AddString(L"Random Data (MT19937)");
 		m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_MT19937));
@@ -382,7 +436,7 @@ namespace HEXCTRL::INTERNAL {
 		m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_FAST));
 
 		CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL, IDC_HEXCTRL_FILLDATA_RAD_ALL);
-		m_stComboData.LimitText(512); //Max characters of combo-box.
+		m_stComboData.LimitText(256); //Max characters of the combo-box.
 
 		return TRUE;
 	}
@@ -398,22 +452,25 @@ namespace HEXCTRL::INTERNAL {
 			return;
 		}
 
-		HEXMODIFY hms;
+		VecSpan vecSpan;
 		const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL);
 		if (iRadioAllOrSel == IDC_HEXCTRL_FILLDATA_RAD_ALL) {
 			if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify all data?",
 				MB_YESNO | MB_ICONWARNING) == IDNO)
 				return;
 
-			hms.vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
+			vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
 		}
 		else {
 			if (!m_pHexCtrl->HasSelection())
 				return;
 
-			hms.vecSpan = m_pHexCtrl->GetSelection();
+			vecSpan = m_pHexCtrl->GetSelection();
 		}
 
+		using enum EHexModifyMode;
+		SpanCByte spnData;
+		EHexModifyMode eModifyMode { MODIFY_REPEAT };
 		std::wstring wstrFillWith = pwszComboText;
 		std::string strFillWith; //Data holder for FILL_HEX and FILL_ASCII modes.
 		switch (GetFillType()) {
@@ -424,25 +481,26 @@ namespace HEXCTRL::INTERNAL {
 				MessageBoxW(L"Wrong Hex format.", L"Format error", MB_ICONERROR);
 				return;
 			}
+
 			strFillWith = std::move(*optData);
-			hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
-			hms.spnData = { reinterpret_cast<const std::byte*>(strFillWith.data()), strFillWith.size() };
+			eModifyMode = MODIFY_REPEAT;
+			spnData = { reinterpret_cast<const std::byte*>(strFillWith.data()), strFillWith.size() };
 		}
 		break;
 		case EFillType::FILL_ASCII:
 			strFillWith = WstrToStr(wstrFillWith);
-			hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
-			hms.spnData = { reinterpret_cast<const std::byte*>(strFillWith.data()), strFillWith.size() };
+			eModifyMode = MODIFY_REPEAT;
+			spnData = { reinterpret_cast<const std::byte*>(strFillWith.data()), strFillWith.size() };
 			break;
 		case EFillType::FILL_WCHAR:
-			hms.enModifyMode = EHexModifyMode::MODIFY_REPEAT;
-			hms.spnData = { reinterpret_cast<const std::byte*>(wstrFillWith.data()), wstrFillWith.size() * sizeof(WCHAR) };
+			eModifyMode = MODIFY_REPEAT;
+			spnData = { reinterpret_cast<const std::byte*>(wstrFillWith.data()), wstrFillWith.size() * sizeof(WCHAR) };
 			break;
 		case EFillType::FILL_RAND_MT19937:
-			hms.enModifyMode = EHexModifyMode::MODIFY_RAND_MT19937;
+			eModifyMode = MODIFY_RAND_MT19937;
 			break;
 		case EFillType::FILL_RAND_FAST:
-			hms.enModifyMode = EHexModifyMode::MODIFY_RAND_FAST;
+			eModifyMode = MODIFY_RAND_FAST;
 			break;
 		default:
 			break;
@@ -457,15 +515,15 @@ namespace HEXCTRL::INTERNAL {
 			m_stComboData.InsertString(0, wstrFillWith.data());
 		}
 
-		if (hms.spnData.size() > hms.vecSpan.back().ullSize) {
+		if (spnData.size() > vecSpan.back().ullSize) {
 			MessageBoxW(L"Fill data size is bigger than the region selected for modification, please select a larger region.",
 				L"Data region size error", MB_ICONERROR);
 			return;
 		}
 
+		const HEXMODIFY hms { .eModifyMode { eModifyMode }, .spnData { spnData }, .vecSpan { std::move(vecSpan) } };
 		m_pHexCtrl->ModifyData(hms);
 		m_pHexCtrl->Redraw();
-		::SetFocus(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN));
 	}
 }
 

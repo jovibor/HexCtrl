@@ -52,16 +52,11 @@ namespace HEXCTRL::INTERNAL {
 		NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID
 	};
 
-	enum class CHexDlgDataInterp::ESize : std::uint8_t {
-		SIZE_BYTE = 0x1, SIZE_WORD = 0x2, SIZE_DWORD = 0x4,
-		SIZE_QWORD = 0x8, SIZE_DQWORD = 0x10
-	};
-
 	struct CHexDlgDataInterp::GRIDDATA {
 		CMFCPropertyGridProperty* pProp { };
 		EGroup eGroup { };
 		EName eName { };
-		ESize eSize { };
+		EDataSize eSize { };
 	};
 }
 
@@ -174,9 +169,9 @@ void CHexDlgDataInterp::UpdateData()
 	ShowValueInt8(byte);
 	ShowValueUInt8(byte);
 
-	if (ullOffset + static_cast<unsigned>(ESize::SIZE_WORD) > ullDataSize) {
+	if (ullOffset + static_cast<unsigned>(EDataSize::SIZE_WORD) > ullDataSize) {
 		for (const auto& iter : m_vecGrid) {
-			if (iter.eSize >= ESize::SIZE_WORD) {
+			if (iter.eSize >= EDataSize::SIZE_WORD) {
 				iter.pProp->SetValue(L"0");
 				iter.pProp->Enable(FALSE);
 			}
@@ -184,9 +179,9 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	//ESize::SIZE_WORD
+	//EDataSize::SIZE_WORD
 	for (const auto& iter : m_vecGrid) {
-		if (iter.eSize == ESize::SIZE_WORD) {
+		if (iter.eSize == EDataSize::SIZE_WORD) {
 			iter.pProp->Enable(TRUE);
 		}
 	}
@@ -199,9 +194,9 @@ void CHexDlgDataInterp::UpdateData()
 	ShowValueInt16(word);
 	ShowValueUInt16(word);
 
-	if (ullOffset + static_cast<unsigned>(ESize::SIZE_DWORD) > ullDataSize) {
+	if (ullOffset + static_cast<unsigned>(EDataSize::SIZE_DWORD) > ullDataSize) {
 		for (const auto& iter : m_vecGrid) {
-			if (iter.eSize >= ESize::SIZE_DWORD) {
+			if (iter.eSize >= EDataSize::SIZE_DWORD) {
 				iter.pProp->SetValue(L"0");
 				iter.pProp->Enable(FALSE);
 			}
@@ -209,9 +204,9 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	//ESize::SIZE_DWORD
+	//EDataSize::SIZE_DWORD
 	for (const auto& iter : m_vecGrid) {
-		if (iter.eSize == ESize::SIZE_DWORD) {
+		if (iter.eSize == EDataSize::SIZE_DWORD) {
 			iter.pProp->Enable(TRUE);
 		}
 	}
@@ -228,9 +223,9 @@ void CHexDlgDataInterp::UpdateData()
 	ShowValueMSDOSTIME(dword);
 	ShowValueMSDTTMTIME(dword);
 
-	if (ullOffset + static_cast<unsigned>(ESize::SIZE_QWORD) > ullDataSize) {
+	if (ullOffset + static_cast<unsigned>(EDataSize::SIZE_QWORD) > ullDataSize) {
 		for (const auto& iter : m_vecGrid) {
-			if (iter.eSize >= ESize::SIZE_QWORD) {
+			if (iter.eSize >= EDataSize::SIZE_QWORD) {
 				iter.pProp->SetValue(L"0");
 				iter.pProp->Enable(FALSE);
 			}
@@ -238,9 +233,9 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	//ESize::SIZE_QWORD
+	//EDataSize::SIZE_QWORD
 	for (const auto& iter : m_vecGrid) {
-		if (iter.eSize == ESize::SIZE_QWORD) {
+		if (iter.eSize == EDataSize::SIZE_QWORD) {
 			iter.pProp->Enable(TRUE);
 		}
 	}
@@ -258,9 +253,9 @@ void CHexDlgDataInterp::UpdateData()
 	ShowValueOLEDATETIME(qword);
 	ShowValueJAVATIME(qword);
 
-	if (ullOffset + static_cast<unsigned>(ESize::SIZE_DQWORD) > ullDataSize) {
+	if (ullOffset + static_cast<unsigned>(EDataSize::SIZE_DQWORD) > ullDataSize) {
 		for (const auto& iter : m_vecGrid) {
-			if (iter.eSize >= ESize::SIZE_DQWORD) {
+			if (iter.eSize >= EDataSize::SIZE_DQWORD) {
 				iter.pProp->SetValue(L"0");
 				iter.pProp->Enable(FALSE);
 			}
@@ -268,9 +263,9 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	//ESize::SIZE_DQWORD
+	//EDataSize::SIZE_DQWORD
 	for (const auto& iter : m_vecGrid) {
-		if (iter.eSize == ESize::SIZE_DQWORD) {
+		if (iter.eSize == EDataSize::SIZE_DQWORD) {
 			iter.pProp->Enable(TRUE);
 		}
 	}
@@ -396,7 +391,7 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	m_btnHex.SetCheck(BST_CHECKED);
 	m_btnBE.SetCheck(BST_UNCHECKED);
 
-	using enum EGroup; using enum EName; using enum ESize;
+	using enum EGroup; using enum EName; using enum EDataSize;
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Binary:", L"0"), GR_INTEGRAL, NAME_BINARY, SIZE_BYTE);
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Int8:", L"0"), GR_INTEGRAL, NAME_INT8, SIZE_BYTE);
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Unsigned Int8:", L"0"), GR_INTEGRAL, NAME_UINT8, SIZE_BYTE);

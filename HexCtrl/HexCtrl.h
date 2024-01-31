@@ -338,32 +338,24 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* EHexDataSize: Data size to operate on, used in EHexModifyMode::MODIFY_OPERATION mode.     *
-	********************************************************************************************/
-	enum class EHexDataSize : std::uint8_t {
-		SIZE_BYTE = 0x1U, SIZE_WORD = 0x2U, SIZE_DWORD = 0x4U, SIZE_QWORD = 0x8U
-	};
-
-	/********************************************************************************************
 	* HEXMODIFY: Main struct to represent data modification parameters.                         *
-	* When enModifyMode is set to EHexModifyMode::MODIFY_ONCE, bytes from spnData.data() just   *
-	* replace corresponding data bytes as is.                                                   *
-	* If enModifyMode is equal to EHexModifyMode::MODIFY_REPEAT                                 *
-	* then block by block replacement takes place few times.                                    *
-	* For example: if SUM(vecSpan.ullSize) == 9, spnData.size() == 3 and enModifyMode is set    *
-	* to EHexModifyMode::MODIFY_REPEAT, bytes in memory at vecSpan.ullOffset position are       *
-	* `010203040506070809`, and bytes pointed to by spnData.data() are `030405`, then, after    *
-	* a modification, bytes at vecSpan.ullOffset will be `030405030405030405.                   *
-	* If enModifyMode is equal to MODIFY_OPERATION, then enOperMode comes into play, showing    *
-	* what kind of operation must be performed on data, with the enDataSize showing the size.   *
+	* When eModifyMode is set to MODIFY_ONCE, bytes from spnData.data() just replace            *
+	* corresponding data bytes as is.                                                           *
+	* If eModifyMode is equal to MODIFY_REPEAT then block by block replacement takes place      *
+	* few times.                                                                                *
+	* For example: if SUM(vecSpan.ullSize) == 9, spnData.size() == 3 and eModifyMode is set     *
+	* to MODIFY_REPEAT, bytes in memory at vecSpan.ullOffset position are `010203040506070809`  *
+	* and bytes pointed to by spnData.data() are `030405`, then after the modification, bytes   *
+	* at vecSpan.ullOffset will be `030405030405030405.                                         *
+	* If eModifyMode is equal to MODIFY_OPERATION, then eOperMode comes into play, showing      *
+	* what kind of operation must be performed on the data.                                     *
 	********************************************************************************************/
 	struct HEXMODIFY {
-		EHexModifyMode enModifyMode { EHexModifyMode::MODIFY_ONCE }; //Modify mode.
-		EHexOperMode   enOperMode { };       //Operation mode, used only in MODIFY_OPERATION mode.
-		EHexDataSize   enDataSize { };       //Operation data size.
+		EHexModifyMode eModifyMode { };      //Modify mode.
+		EHexOperMode   eOperMode { };        //Operation mode, used if eModifyMode == MODIFY_OPERATION.
 		SpanCByte      spnData { };          //Span of the data to modify from.
 		VecSpan        vecSpan { };          //Vector of data offsets and sizes.
-		bool           fBigEndian { false }; //Treat the data as a big endian, used only in MODIFY_OPERATION mode.
+		bool           fBigEndian { false }; //Treat data as the big endian, used if eModifyMode == MODIFY_OPERATION.
 	};
 
 
