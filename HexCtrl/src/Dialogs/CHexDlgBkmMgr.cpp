@@ -17,11 +17,9 @@ import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 
-namespace HEXCTRL::INTERNAL {
-	enum class CHexDlgBkmMgr::EMenuID : std::uint16_t {
-		IDM_BKMMGR_REMOVE = 0x8001, IDM_BKMMGR_REMOVEALL = 0x8002
-	};
-}
+enum class CHexDlgBkmMgr::EMenuID : std::uint16_t {
+	IDM_BKMMGR_REMOVE = 0x8001, IDM_BKMMGR_REMOVEALL = 0x8002
+};
 
 BEGIN_MESSAGE_MAP(CHexDlgBkmMgr, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_BKMMGR_CHK_HEX, &CHexDlgBkmMgr::OnCheckHex)

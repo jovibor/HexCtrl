@@ -18,26 +18,24 @@
 
 using namespace HEXCTRL::INTERNAL;
 
-namespace HEXCTRL::INTERNAL {
-	struct CHexDlgTemplMgr::TEMPLAPPLIED {
-		ULONGLONG     ullOffset;  //Offset, where to apply a template.
-		PCHEXTEMPLATE pTemplate;  //Template pointer.
-		int           iAppliedID; //Applied/runtime ID, assigned by framework. Any template can be applied more than once.
-	};
+struct CHexDlgTemplMgr::TEMPLAPPLIED {
+	ULONGLONG     ullOffset;  //Offset, where to apply a template.
+	PCHEXTEMPLATE pTemplate;  //Template pointer.
+	int           iAppliedID; //Applied/runtime ID, assigned by framework. Any template can be applied more than once.
+};
 
-	enum class CHexDlgTemplMgr::EMenuID : std::uint16_t {
-		IDM_TREEAPPLIED_DISAPPLY = 0x8000, IDM_TREEAPPLIED_DISAPPLYALL = 0x8001,
-		IDM_LISTAPPLIED_HDR_TYPE = 0x8100, IDM_LISTAPPLIED_HDR_NAME, IDM_LISTAPPLIED_HDR_OFFSET,
-		IDM_LISTAPPLIED_HDR_SIZE, IDM_LISTAPPLIED_HDR_DATA, IDM_LISTAPPLIED_HDR_ENDIANNESS, IDM_LISTAPPLIED_HDR_COLORS
-	};
+enum class CHexDlgTemplMgr::EMenuID : std::uint16_t {
+	IDM_TREEAPPLIED_DISAPPLY = 0x8000, IDM_TREEAPPLIED_DISAPPLYALL = 0x8001,
+	IDM_LISTAPPLIED_HDR_TYPE = 0x8100, IDM_LISTAPPLIED_HDR_NAME, IDM_LISTAPPLIED_HDR_OFFSET,
+	IDM_LISTAPPLIED_HDR_SIZE, IDM_LISTAPPLIED_HDR_DATA, IDM_LISTAPPLIED_HDR_ENDIANNESS, IDM_LISTAPPLIED_HDR_COLORS
+};
 
-	struct CHexDlgTemplMgr::FIELDSDEFPROPS { //Helper struct for convenient argument passing through recursive fields' parsing.
-		HEXCOLOR        stClr { };
-		PCHEXTEMPLATE   pTemplate { }; //Same for all fields.
-		PCHEXTEMPLFIELD pFieldParent { };
-		bool            fBigEndian { false };
-	};
-}
+struct CHexDlgTemplMgr::FIELDSDEFPROPS { //Helper struct for convenient argument passing through recursive fields' parsing.
+	HEXCOLOR        stClr { };
+	PCHEXTEMPLATE   pTemplate { }; //Same for all fields.
+	PCHEXTEMPLFIELD pFieldParent { };
+	bool            fBigEndian { false };
+};
 
 BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_BTN_LOAD, &CHexDlgTemplMgr::OnBnLoadTemplate)

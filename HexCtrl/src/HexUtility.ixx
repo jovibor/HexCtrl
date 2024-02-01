@@ -29,10 +29,6 @@ export namespace HEXCTRL::INTERNAL {
 	constexpr auto g_ulFileTime1970_HIGH = 0x019db1deUL; //Used for Unix and Java times.
 	constexpr auto g_ullUnixEpochDiff = 11644473600ULL;  //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970.
 
-	enum class EDataSize : std::uint8_t { //Generic enum representing different data sizes.
-		SIZE_BYTE = 1U, SIZE_WORD = 2U, SIZE_DWORD = 4U, SIZE_QWORD = 8U, SIZE_DQWORD = 16U
-	};
-
 	//Get data from IHexCtrl's given offset converted to a necessary type.
 	template<typename T>
 	[[nodiscard]] T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)

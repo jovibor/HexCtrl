@@ -51,54 +51,54 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		HBITMAP m_bmpLogo { }; //Logo bitmap.
 	};
-
-	BEGIN_MESSAGE_MAP(CHexDlgAbout, CDialogEx)
-		ON_WM_DESTROY()
-	END_MESSAGE_MAP()
-
-	BOOL CHexDlgAbout::OnInitDialog()
-	{
-		CDialogEx::OnInitDialog();
-
-		const auto wstrVersion = std::format(L"Hex Control for MFC/Win32: v{}.{}.{}\r\nCopyright © 2018-2024 Jovibor",
-			HEXCTRL_VERSION_MAJOR, HEXCTRL_VERSION_MINOR, HEXCTRL_VERSION_PATCH);
-		GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(wstrVersion.data());
-
-		auto pDC = GetDC();
-		const auto iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
-		ReleaseDC(pDC);
-
-		const auto fScale = iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
-		const auto iSizeIcon = static_cast<int>(32 * fScale);
-		m_bmpLogo = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
-			MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-		static_cast<CStatic*>(GetDlgItem(IDC_HEXCTRL_ABOUT_LOGO))->SetBitmap(m_bmpLogo);
-
-		return TRUE;
-	}
-
-	enum class CHexCtrl::EClipboard : std::uint8_t {
-		COPY_HEX, COPY_HEXLE, COPY_HEXFMT, COPY_BASE64, COPY_CARR,
-		COPY_GREPHEX, COPY_PRNTSCRN, COPY_OFFSET, COPY_TEXT_CP,
-		PASTE_HEX, PASTE_TEXT_UTF16, PASTE_TEXT_CP
-	};
-
-	//Struct for UNDO command routine.
-	struct CHexCtrl::UNDO {
-		ULONGLONG              ullOffset { }; //Start byte to apply Undo to.
-		std::vector<std::byte> vecData { };   //Data for Undo.
-	};
-
-	//Key bindings.
-	struct CHexCtrl::KEYBIND {
-		EHexCmd eCmd { };
-		WORD    wMenuID { };
-		UINT    uKey { };
-		bool    fCtrl { };
-		bool    fShift { };
-		bool    fAlt { };
-	};
 }
+
+BEGIN_MESSAGE_MAP(CHexDlgAbout, CDialogEx)
+	ON_WM_DESTROY()
+END_MESSAGE_MAP()
+
+BOOL CHexDlgAbout::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	const auto wstrVersion = std::format(L"Hex Control for MFC/Win32: v{}.{}.{}\r\nCopyright © 2018-2024 Jovibor",
+		HEXCTRL_VERSION_MAJOR, HEXCTRL_VERSION_MINOR, HEXCTRL_VERSION_PATCH);
+	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(wstrVersion.data());
+
+	auto pDC = GetDC();
+	const auto iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
+	ReleaseDC(pDC);
+
+	const auto fScale = iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
+	const auto iSizeIcon = static_cast<int>(32 * fScale);
+	m_bmpLogo = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
+		MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	static_cast<CStatic*>(GetDlgItem(IDC_HEXCTRL_ABOUT_LOGO))->SetBitmap(m_bmpLogo);
+
+	return TRUE;
+}
+
+enum class CHexCtrl::EClipboard : std::uint8_t {
+	COPY_HEX, COPY_HEXLE, COPY_HEXFMT, COPY_BASE64, COPY_CARR,
+	COPY_GREPHEX, COPY_PRNTSCRN, COPY_OFFSET, COPY_TEXT_CP,
+	PASTE_HEX, PASTE_TEXT_UTF16, PASTE_TEXT_CP
+};
+
+//Struct for UNDO command routine.
+struct CHexCtrl::UNDO {
+	ULONGLONG              ullOffset { }; //Start byte to apply Undo to.
+	std::vector<std::byte> vecData { };   //Data for Undo.
+};
+
+//Key bindings.
+struct CHexCtrl::KEYBIND {
+	EHexCmd eCmd { };
+	WORD    wMenuID { };
+	UINT    uKey { };
+	bool    fCtrl { };
+	bool    fShift { };
+	bool    fAlt { };
+};
 
 BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_CHAR()
@@ -1296,7 +1296,42 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				const T tDataOper = *reinterpret_cast<const T*>(hms.spnData.data());
 
 				using enum EHexOperMode;
-				switch (hms.eOperMode) {
+
+				if constexpr (std::is_integral_v<T>) { //Operations only for integral types.
+					switch (hms.eOperMode) {
+					case OPER_OR:
+						tData |= tDataOper;
+						break;
+					case OPER_XOR:
+						tData ^= tDataOper;
+						break;
+					case OPER_AND:
+						tData &= tDataOper;
+						break;
+					case OPER_NOT:
+						tData = ~tData;
+						break;
+					case OPER_SHL:
+						tData <<= tDataOper;
+						break;
+					case OPER_SHR:
+						tData >>= tDataOper;
+						break;
+					case OPER_ROTL:
+						tData = std::rotl(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tDataOper));
+						break;
+					case OPER_ROTR:
+						tData = std::rotr(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tDataOper));
+						break;
+					case OPER_BITREV:
+						tData = BitReverse(tData);
+						break;
+					default:
+						break;
+					}
+				}
+
+				switch (hms.eOperMode) { //Operations for integral and floating types.
 				case OPER_ASSIGN:
 					tData = tDataOper;
 					break;
@@ -1324,35 +1359,8 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 						tData = tDataOper;
 					}
 					break;
-				case OPER_OR:
-					tData |= tDataOper;
-					break;
-				case OPER_XOR:
-					tData ^= tDataOper;
-					break;
-				case OPER_AND:
-					tData &= tDataOper;
-					break;
-				case OPER_NOT:
-					tData = ~tData;
-					break;
-				case OPER_SHL:
-					tData <<= tDataOper;
-					break;
-				case OPER_SHR:
-					tData >>= tDataOper;
-					break;
-				case OPER_ROTL:
-					tData = std::rotl(tData, static_cast<int>(tDataOper));
-					break;
-				case OPER_ROTR:
-					tData = std::rotr(tData, static_cast<int>(tDataOper));
-					break;
 				case OPER_SWAP:
 					tData = ByteSwap(tData);
-					break;
-				case OPER_BITREV:
-					tData = BitReverse(tData);
 					break;
 				default:
 					break;
@@ -1365,23 +1373,43 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				*pData = tData;
 			};
 
-			switch (hms.spnData.size()) {
-			case 1:
-				lmbOper(reinterpret_cast<PBYTE>(pData), hms);
+			using enum EHexDataType;
+			switch (hms.eDataType) {
+			case DATA_INT8:
+				lmbOper(reinterpret_cast<std::int8_t*>(pData), hms);
 				break;
-			case 2:
-				lmbOper(reinterpret_cast<PWORD>(pData), hms);
+			case DATA_UINT8:
+				lmbOper(reinterpret_cast<std::uint8_t*>(pData), hms);
 				break;
-			case 4:
-				lmbOper(reinterpret_cast<PDWORD>(pData), hms);
+			case DATA_INT16:
+				lmbOper(reinterpret_cast<std::int16_t*>(pData), hms);
 				break;
-			case 8:
-				lmbOper(reinterpret_cast<PQWORD>(pData), hms);
+			case DATA_UINT16:
+				lmbOper(reinterpret_cast<std::uint16_t*>(pData), hms);
+				break;
+			case DATA_INT32:
+				lmbOper(reinterpret_cast<std::int32_t*>(pData), hms);
+				break;
+			case DATA_UINT32:
+				lmbOper(reinterpret_cast<std::uint32_t*>(pData), hms);
+				break;
+			case DATA_INT64:
+				lmbOper(reinterpret_cast<std::int64_t*>(pData), hms);
+				break;
+			case DATA_UINT64:
+				lmbOper(reinterpret_cast<std::uint64_t*>(pData), hms);
+				break;
+			case DATA_FLOAT:
+				lmbOper(reinterpret_cast<float*>(pData), hms);
+				break;
+			case DATA_DOUBLE:
+				lmbOper(reinterpret_cast<double*>(pData), hms);
 				break;
 			default:
 				break;
 			}
 			};
+
 		ModifyWorker(hms, lmbOperData, hms.spnData);
 	}
 	break;

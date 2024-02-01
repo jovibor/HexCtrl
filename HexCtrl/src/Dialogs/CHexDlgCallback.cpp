@@ -18,8 +18,7 @@ END_MESSAGE_MAP()
 
 CHexDlgCallback::CHexDlgCallback(std::wstring_view wsvOperName, ULONGLONG ullProgBarMin,
 	ULONGLONG ullProgBarMax, CWnd* pParent) : CDialogEx(IDD_HEXCTRL_CALLBACK, pParent),
-	m_wstrOperName(wsvOperName), m_ullProgBarMin(ullProgBarMin), m_ullProgBarCurr(ullProgBarMin), m_ullProgBarMax(ullProgBarMax)
-{
+	m_wstrOperName(wsvOperName), m_ullProgBarMin(ullProgBarMin), m_ullProgBarCurr(ullProgBarMin), m_ullProgBarMax(ullProgBarMax) {
 	assert(ullProgBarMin <= ullProgBarMax);
 }
 

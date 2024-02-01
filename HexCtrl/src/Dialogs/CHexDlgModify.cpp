@@ -13,29 +13,34 @@
 
 import HEXCTRL.HexUtility;
 
+using namespace HEXCTRL::INTERNAL;
+
 namespace HEXCTRL::INTERNAL {
 	//CHexDlgOpers.
 	class CHexDlgOpers final : public CDialogEx {
 	public:
 		void Create(CWnd* pParent, IHexCtrl* pHexCtrl);
 		void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		void SetDlgData(std::uint64_t ullData);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		template<typename T> requires TSize1248<T>
 		[[nodiscard]] auto GetOperand(T& tOper, bool& fBigEndian)const->SpanCByte;
 		[[nodiscard]] auto GetOperMode()const->EHexOperMode;
-		[[nodiscard]] auto GetDataSize()const->EDataSize;
+		[[nodiscard]] auto GetDataType()const->EHexDataType;
 		void OnCancel()override;
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
+		afx_msg void OnComboDataTypeSelChange();
+		afx_msg void OnComboOperSelChange();
+		afx_msg void OnEditOperChange();
 		BOOL OnInitDialog()override;
 		void OnOK()override;
-		void SetControlsState()const;
-		void SetOKButtonName()const;
+		void SetControlsState();
 		DECLARE_MESSAGE_MAP();
 	private:
 		IHexCtrl* m_pHexCtrl { };
-		CComboBox m_stComboOper; //Operation combo-box.
-		CComboBox m_stComboSize; //Data size combo-box.
+		CComboBox m_comboOper; //Operation combo-box.
+		CComboBox m_comboType; //Data size combo-box.
+		std::uint64_t m_u64DlgData { };
 		using enum EHexOperMode;
 		inline static const std::unordered_map<EHexOperMode, std::wstring_view> m_mapNames {
 			{ OPER_ASSIGN, L"Assign" }, { OPER_ADD, L"Add" }, { OPER_SUB, L"Subtract" },
@@ -45,296 +50,351 @@ namespace HEXCTRL::INTERNAL {
 			{ OPER_ROTR, L"ROTR" }, { OPER_SWAP, L"Swap Bytes" }, { OPER_BITREV, L"Reverse Bits" }
 		};
 	};
+}
 
-	BEGIN_MESSAGE_MAP(CHexDlgOpers, CDialogEx)
-		ON_WM_ACTIVATE()
-	END_MESSAGE_MAP()
+BEGIN_MESSAGE_MAP(CHexDlgOpers, CDialogEx)
+	ON_CBN_SELCHANGE(IDC_HEXCTRL_OPERS_COMBO_OPER, &CHexDlgOpers::OnComboOperSelChange)
+	ON_CBN_SELCHANGE(IDC_HEXCTRL_OPERS_COMBO_DTYPE, &CHexDlgOpers::OnComboDataTypeSelChange)
+	ON_EN_CHANGE(IDC_HEXCTRL_OPERS_EDIT_OPERAND, &CHexDlgOpers::OnEditOperChange)
+	ON_WM_ACTIVATE()
+END_MESSAGE_MAP()
 
-	void CHexDlgOpers::Create(CWnd* pParent, IHexCtrl* pHexCtrl)
-	{
-		assert(pHexCtrl);
-		assert(pParent);
-		if (pHexCtrl == nullptr)
-			return;
+void CHexDlgOpers::Create(CWnd* pParent, IHexCtrl* pHexCtrl)
+{
+	assert(pHexCtrl);
+	assert(pParent);
+	if (pHexCtrl == nullptr)
+		return;
 
-		m_pHexCtrl = pHexCtrl;
-		CDialogEx::Create(IDD_HEXCTRL_OPERS, pParent);
+	m_pHexCtrl = pHexCtrl;
+	CDialogEx::Create(IDD_HEXCTRL_OPERS, pParent);
+}
+
+void CHexDlgOpers::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimized*/)
+{
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
+		return;
+
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+		const auto fSelection { m_pHexCtrl->HasSelection() };
+		CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL,
+			fSelection ? IDC_HEXCTRL_OPERS_RAD_SEL : IDC_HEXCTRL_OPERS_RAD_ALL);
+		GetDlgItem(IDC_HEXCTRL_OPERS_RAD_SEL)->EnableWindow(fSelection);
+	}
+}
+
+void CHexDlgOpers::SetDlgData(std::uint64_t ullData)
+{
+	m_u64DlgData = ullData;
+}
+
+
+//CHexDlgOpers private methods.
+
+void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
+{
+	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_HEXCTRL_OPERS_COMBO_OPER, m_comboOper);
+	DDX_Control(pDX, IDC_HEXCTRL_OPERS_COMBO_DTYPE, m_comboType);
+}
+
+template<typename T> requires TSize1248<T>
+auto CHexDlgOpers::GetOperand(T& tOper, bool& fBigEndian)const->SpanCByte
+{
+	const auto pWndOper = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND);
+	CStringW wstrOper;
+	pWndOper->GetWindowTextW(wstrOper);
+	const auto opt = stn::StrToNum<T>(wstrOper.GetString());
+	if (!opt) {
+		::MessageBoxW(nullptr, L"Wrong operand data.", L"Operand error", MB_ICONERROR);
+		return { };
 	}
 
-	void CHexDlgOpers::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimized*/)
-	{
-		if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
-			return;
+	tOper = *opt;
+	const auto eOperMode = GetOperMode();
+	using enum EHexOperMode;
+	if (eOperMode == OPER_DIV && tOper == 0) { //Division by zero check.
+		::MessageBoxW(nullptr, L"Can't divide by zero.", L"Operand error", MB_ICONERROR);
+		return { };
+	}
 
-		if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
-			const auto fSelection { m_pHexCtrl->HasSelection() };
-			CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL,
-				fSelection ? IDC_HEXCTRL_OPERS_RAD_SEL : IDC_HEXCTRL_OPERS_RAD_ALL);
-			GetDlgItem(IDC_HEXCTRL_OPERS_RAD_SEL)->EnableWindow(fSelection);
+	/******************************************************************************
+	* Some operations don't need to swap the whole data in big-endian mode.
+	* Instead, the operand can be swapped here just once.
+	* Binary OR/XOR/AND are good examples, binary NOT doesn't need swap at all.
+	* The fSwapHere flag shows exactly this, that the operand can be swapped here.
+	******************************************************************************/
+	if (fBigEndian && (eOperMode == OPER_OR || eOperMode == OPER_XOR
+		|| eOperMode == OPER_AND || eOperMode == OPER_ASSIGN)) {
+		fBigEndian = false;
+		tOper = ByteSwap(tOper);
+	}
+
+	return { reinterpret_cast<std::byte*>(&tOper), sizeof(tOper) };
+}
+
+auto CHexDlgOpers::GetOperMode()const->EHexOperMode
+{
+	return static_cast<EHexOperMode>(m_comboOper.GetItemData(m_comboOper.GetCurSel()));
+}
+
+auto CHexDlgOpers::GetDataType()const->EHexDataType
+{
+	return static_cast<EHexDataType>(m_comboType.GetItemData(m_comboType.GetCurSel()));
+}
+
+void CHexDlgOpers::OnCancel()
+{
+	if (m_u64DlgData & HEXCTRL_FLAG_NOESC)
+		return;
+
+	static_cast<CDialogEx*>(GetParentOwner())->EndDialog(IDCANCEL);
+}
+
+void CHexDlgOpers::OnComboDataTypeSelChange()
+{
+	SetControlsState();
+}
+
+void CHexDlgOpers::OnComboOperSelChange()
+{
+	constexpr auto iIntegralTotal = 8; //Total amount of integral types.
+	auto iCurrCount = m_comboType.GetCount();
+	const auto fHasFloats = iCurrCount > iIntegralTotal;
+	auto fShouldHaveFloats { false };
+
+	using enum EHexDataType;
+	switch (GetOperMode()) { //Operations that can be performed on floats.
+	case OPER_ASSIGN: case OPER_ADD: case OPER_SUB: case OPER_MUL:
+	case OPER_DIV: case OPER_CEIL: case OPER_FLOOR: case OPER_SWAP:
+		fShouldHaveFloats = true;
+	default:
+		break;
+	}
+
+	if (fShouldHaveFloats == fHasFloats)
+		return;
+
+	m_comboType.SetRedraw(FALSE);
+	if (fShouldHaveFloats) {
+		auto iIndex = m_comboType.AddString(L"Float");
+		m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_FLOAT));
+		iIndex = m_comboType.AddString(L"Double");
+		m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_DOUBLE));
+	}
+	else {
+		const auto iCurrSel = m_comboType.GetCurSel();
+
+		for (auto iIndex = iCurrCount - 1; iIndex >= iIntegralTotal; --iIndex) {
+			m_comboType.DeleteString(iIndex);
+		}
+
+		//When deleting float types, if selection was on one of float types change it to integral.
+		if (iCurrSel > (iIntegralTotal - 1)) {
+			m_comboType.SetCurSel(iIntegralTotal - 1);
 		}
 	}
+	m_comboType.SetRedraw(TRUE);
+	m_comboType.RedrawWindow();
 
+	SetControlsState();
+}
 
-	//CHexDlgOpers private methods.
+void CHexDlgOpers::OnEditOperChange()
+{
+	SetControlsState();
+}
 
-	void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
-	{
-		CDialogEx::DoDataExchange(pDX);
-		DDX_Control(pDX, IDC_HEXCTRL_OPERS_COMBO_OPER, m_stComboOper);
-		DDX_Control(pDX, IDC_HEXCTRL_OPERS_COMBO_SIZE, m_stComboSize);
-	}
+BOOL CHexDlgOpers::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
 
-	template<typename T> requires TSize1248<T>
-	auto CHexDlgOpers::GetOperand(T& tOper, bool& fBigEndian)const->SpanCByte
-	{
-		const auto pWndOper = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND);
-		CStringW wstrOper;
-		pWndOper->GetWindowTextW(wstrOper);
-		const auto opt = stn::StrToNum<T>(wstrOper.GetString());
-		if (!opt) {
-			::MessageBoxW(nullptr, L"Wrong operand data.", L"Operand error", MB_ICONERROR);
-			return { };
-		}
+	using enum EHexOperMode;
+	auto iIndex = m_comboOper.AddString(m_mapNames.at(OPER_ASSIGN).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ASSIGN));
+	m_comboOper.SetCurSel(iIndex);
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_ADD).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ADD));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_SUB).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SUB));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_MUL).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MUL));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_DIV).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_DIV));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_CEIL).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_CEIL));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_FLOOR).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_FLOOR));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_OR).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_OR));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_XOR).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_XOR));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_AND).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_AND));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_NOT).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_NOT));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_SHL).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHL));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_SHR).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHR));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_ROTL).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTL));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_ROTR).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTR));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_SWAP).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SWAP));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_BITREV).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_BITREV));
 
-		tOper = *opt;
-		const auto eOperMode = GetOperMode();
-		using enum EHexOperMode;
-		if (eOperMode == OPER_DIV && tOper == 0) { //Division by zero check.
-			::MessageBoxW(nullptr, L"Can't divide by zero.", L"Operand error", MB_ICONERROR);
-			return { };
-		}
+	using enum EHexDataType;
+	iIndex = m_comboType.AddString(L"Int8");
+	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT8));
+	m_comboType.SetCurSel(iIndex);
+	iIndex = m_comboType.AddString(L"Unsigned Int8");
+	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT8));
+	iIndex = m_comboType.AddString(L"Int16");
+	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT16));
+	iIndex = m_comboType.AddString(L"Unsigned Int16");
+	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT16));
+	iIndex = m_comboType.AddString(L"Int32");
+	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT32));
+	iIndex = m_comboType.AddString(L"Unsigned Int32");
+	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT32));
+	iIndex = m_comboType.AddString(L"Int64");
+	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT64));
+	iIndex = m_comboType.AddString(L"Unsigned Int64");
+	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT64));
 
-		/******************************************************************************
-		* Some operations don't need to swap the whole data in big-endian mode.
-		* Instead, the operand can be swapped here just once.
-		* Binary OR/XOR/AND are good examples, binary NOT doesn't need swap at all.
-		* The fSwapHere flag shows exactly this, that the operand can be swapped here.
-		******************************************************************************/
-		if (fBigEndian && (eOperMode == OPER_OR || eOperMode == OPER_XOR || eOperMode == OPER_AND || eOperMode == OPER_ASSIGN)) {
-			fBigEndian = false;
-			tOper = ByteSwap(tOper);
-		}
+	CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL, IDC_HEXCTRL_OPERS_RAD_ALL);
+	OnComboOperSelChange();
 
-		return { reinterpret_cast<std::byte*>(&tOper), sizeof(tOper) };
-	}
+	return TRUE;
+}
 
-	auto CHexDlgOpers::GetOperMode()const->EHexOperMode
-	{
-		return static_cast<EHexOperMode>(m_stComboOper.GetItemData(m_stComboOper.GetCurSel()));
-	}
+void CHexDlgOpers::OnOK()
+{
+	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
+		return;
 
-	auto CHexDlgOpers::GetDataSize()const->EDataSize
-	{
-		return static_cast<EDataSize>(m_stComboSize.GetItemData(m_stComboSize.GetCurSel()));
-	}
+	using enum EHexOperMode; using enum EHexDataType; using enum EHexModifyMode;
+	const auto eOperMode = GetOperMode();
+	const auto eDataType = GetDataType();
+	const auto fDataOneByte = eDataType == DATA_INT8 || eDataType == DATA_UINT8;
+	const auto fBE = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE))->GetCheck() == BST_CHECKED;
+	auto fBigEndian = fBE && !fDataOneByte && eOperMode != OPER_NOT && eOperMode != OPER_SWAP
+		&& eOperMode != OPER_BITREV;
 
-	void CHexDlgOpers::OnCancel()
-	{
-		static_cast<CHexDlgModify*>(GetParent())->OnCancel();
-	}
-
-	BOOL CHexDlgOpers::OnCommand(WPARAM wParam, LPARAM lParam)
-	{
-		switch (LOWORD(wParam)) //Control ID.
-		{
-		case IDC_HEXCTRL_OPERS_COMBO_OPER:
-		case IDC_HEXCTRL_OPERS_COMBO_SIZE:
-			SetControlsState();
-			if (HIWORD(wParam) == CBN_SELCHANGE) { //Combo-box selection changed.
-				SetOKButtonName();
-			}
-			return TRUE;
+	//Operand data holders for different operand types.
+	std::int8_t i8Oper;	std::uint8_t ui8Oper;
+	std::int16_t i16Oper; std::uint16_t ui16Oper;
+	std::int32_t i32Oper; std::uint32_t ui32Oper;
+	std::int64_t i64Oper; std::uint64_t ui64Oper;
+	float flOper; double dblOper;
+	SpanCByte spnOper;
+	if (const auto pWndOper = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND); pWndOper->IsWindowEnabled()) {
+		switch (eDataType) {
+		case DATA_INT8:
+			spnOper = GetOperand(i8Oper, fBigEndian);
+			break;
+		case DATA_UINT8:
+			spnOper = GetOperand(ui8Oper, fBigEndian);
+			break;
+		case DATA_INT16:
+			spnOper = GetOperand(i16Oper, fBigEndian);
+			break;
+		case DATA_UINT16:
+			spnOper = GetOperand(ui16Oper, fBigEndian);
+			break;
+		case DATA_INT32:
+			spnOper = GetOperand(i32Oper, fBigEndian);
+			break;
+		case DATA_UINT32:
+			spnOper = GetOperand(ui32Oper, fBigEndian);
+			break;
+		case DATA_INT64:
+			spnOper = GetOperand(i64Oper, fBigEndian);
+			break;
+		case DATA_UINT64:
+			spnOper = GetOperand(ui64Oper, fBigEndian);
+			break;
+		case DATA_FLOAT:
+			spnOper = GetOperand(flOper, fBigEndian);
+			break;
+		case DATA_DOUBLE:
+			spnOper = GetOperand(dblOper, fBigEndian);
+			break;
 		default:
 			break;
 		}
 
-		return CDialogEx::OnCommand(wParam, lParam);
+		if (spnOper.empty())
+			return;
 	}
 
-	BOOL CHexDlgOpers::OnInitDialog()
-	{
-		CDialogEx::OnInitDialog();
-
-		using enum EHexOperMode;
-		auto iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_ASSIGN).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ASSIGN));
-		m_stComboOper.SetCurSel(iIndex);
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_ADD).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ADD));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_SUB).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SUB));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_MUL).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MUL));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_DIV).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_DIV));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_CEIL).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_CEIL));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_FLOOR).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_FLOOR));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_OR).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_OR));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_XOR).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_XOR));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_AND).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_AND));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_NOT).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_NOT));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_SHL).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHL));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_SHR).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHR));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_ROTL).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTL));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_ROTR).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTR));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_SWAP).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SWAP));
-		iIndex = m_stComboOper.AddString(m_mapNames.at(OPER_BITREV).data());
-		m_stComboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_BITREV));
-
-		using enum EDataSize;
-		iIndex = m_stComboSize.AddString(L"1 Byte");
-		m_stComboSize.SetItemData(iIndex, static_cast<DWORD_PTR>(SIZE_BYTE));
-		m_stComboSize.SetCurSel(iIndex);
-		iIndex = m_stComboSize.AddString(L"2 Bytes");
-		m_stComboSize.SetItemData(iIndex, static_cast<DWORD_PTR>(SIZE_WORD));
-		iIndex = m_stComboSize.AddString(L"4 Bytes");
-		m_stComboSize.SetItemData(iIndex, static_cast<DWORD_PTR>(SIZE_DWORD));
-		iIndex = m_stComboSize.AddString(L"8 Bytes");
-		m_stComboSize.SetItemData(iIndex, static_cast<DWORD_PTR>(SIZE_QWORD));
-
-		CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL, IDC_HEXCTRL_OPERS_RAD_ALL);
-		SetOKButtonName();
-
-		return TRUE;
-	}
-
-	void CHexDlgOpers::OnOK()
-	{
-		if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
+	VecSpan vecSpan;
+	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL);
+	if (iRadioAllOrSel == IDC_HEXCTRL_OPERS_RAD_ALL) {
+		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?",
+			L"Modify all data?", MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
 
-		using enum EHexOperMode; using enum EDataSize; using enum EHexModifyMode;
-		const auto eOperMode = GetOperMode();
-		const auto eDataSize = GetDataSize();
-		const auto fBE = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE))->GetCheck() == BST_CHECKED;
-		const auto fUnsign = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_OPERS_CHK_UNSIGN))->GetCheck() == BST_CHECKED;
-		auto fBigEndian = fBE && eDataSize != SIZE_BYTE && eOperMode != OPER_NOT && eOperMode != OPER_SWAP
-			&& eOperMode != OPER_BITREV;
+		vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
+	}
+	else {
+		if (!m_pHexCtrl->HasSelection())
+			return;
 
-		std::int8_t i8Oper;
-		std::uint8_t ui8Oper;
-		std::int16_t i16Oper;
-		std::uint16_t ui16Oper;
-		std::int32_t i32Oper;
-		std::uint32_t ui32Oper;
-		std::int64_t i64Oper;
-		std::uint64_t ui64Oper;
-		SpanCByte spnOper;
-		if (const auto pWndOper = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND); pWndOper->IsWindowEnabled()) {
-			if (fUnsign) {
-				switch (eDataSize) {
-				case SIZE_BYTE:
-					spnOper = GetOperand(ui8Oper, fBigEndian);
-					break;
-				case SIZE_WORD:
-					spnOper = GetOperand(ui16Oper, fBigEndian);
-					break;
-				case SIZE_DWORD:
-					spnOper = GetOperand(ui32Oper, fBigEndian);
-					break;
-				case SIZE_QWORD:
-					spnOper = GetOperand(ui64Oper, fBigEndian);
-					break;
-				default:
-					break;
-				};
-			}
-			else {
-				switch (eDataSize) {
-				case SIZE_BYTE:
-					spnOper = GetOperand(i8Oper, fBigEndian);
-					break;
-				case SIZE_WORD:
-					spnOper = GetOperand(i16Oper, fBigEndian);
-					break;
-				case SIZE_DWORD:
-					spnOper = GetOperand(i32Oper, fBigEndian);
-					break;
-				case SIZE_QWORD:
-					spnOper = GetOperand(i64Oper, fBigEndian);
-					break;
-				default:
-					break;
-				};
-			}
-
-			if (spnOper.empty())
-				return;
-		}
-
-		VecSpan vecSpan;
-		const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL);
-		if (iRadioAllOrSel == IDC_HEXCTRL_OPERS_RAD_ALL) {
-			if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?",
-				L"Modify all data?", MB_YESNO | MB_ICONWARNING) == IDNO)
-				return;
-
-			vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
-		}
-		else {
-			if (!m_pHexCtrl->HasSelection())
-				return;
-
-			vecSpan = m_pHexCtrl->GetSelection();
-		}
-
-		//Special case for the Assign operation, that can be replaced with the MODIFY_REPEAT mode
-		//which is significantly faster.
-		const HEXMODIFY hms { .eModifyMode { eOperMode == OPER_ASSIGN ? MODIFY_REPEAT : MODIFY_OPERATION },
-			.eOperMode { eOperMode }, .spnData { spnOper }, .vecSpan { std::move(vecSpan) }, .fBigEndian { fBigEndian } };
-
-		m_pHexCtrl->ModifyData(hms);
-		m_pHexCtrl->Redraw();
+		vecSpan = m_pHexCtrl->GetSelection();
 	}
 
-	void CHexDlgOpers::SetControlsState()const
-	{
-		using enum EHexOperMode; using enum EDataSize;
-		const auto eDataSize = GetDataSize();
-		auto fOperandEnable = TRUE;
-		auto fBtnEnable = TRUE;
+	//Special case for the Assign operation, that can be replaced with the MODIFY_REPEAT mode
+	//which is significantly faster.
+	const HEXMODIFY hms { .eModifyMode { eOperMode == OPER_ASSIGN ? MODIFY_REPEAT : MODIFY_OPERATION },
+		.eOperMode { eOperMode }, .eDataType { eDataType }, .spnData { spnOper },
+		.vecSpan { std::move(vecSpan) }, .fBigEndian { fBigEndian } };
 
-		switch (GetOperMode()) {
-		case OPER_NOT:
-		case OPER_BITREV:
-			fOperandEnable = FALSE;
-			break;
-		case OPER_SWAP:
-			fOperandEnable = FALSE;
-			fBtnEnable = eDataSize != SIZE_BYTE;
-			break;
-		default:
-			break;
-		};
+	m_pHexCtrl->ModifyData(hms);
+	m_pHexCtrl->Redraw();
+}
 
-		GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND)->EnableWindow(fOperandEnable);
-		GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE)->EnableWindow(eDataSize == SIZE_BYTE ? FALSE : fOperandEnable);
-		GetDlgItem(IDC_HEXCTRL_OPERS_CHK_UNSIGN)->EnableWindow(fOperandEnable);
-		GetDlgItem(IDOK)->EnableWindow(fBtnEnable);
-	}
+void CHexDlgOpers::SetControlsState()
+{
+	using enum EHexOperMode;
+	using enum EHexDataType;
+	const auto eDataType = GetDataType();
+	const auto fDataOneByte = eDataType == DATA_INT8 || eDataType == DATA_UINT8;
+	const auto pComboOper = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND);
+	auto fOperandEnable = TRUE;
+	auto fBtnEnter = pComboOper->GetWindowTextLengthW() > 0;
 
-	void CHexDlgOpers::SetOKButtonName()const
-	{
-		GetDlgItem(IDOK)->SetWindowTextW(m_mapNames.at(GetOperMode()).data());
-	}
+	switch (GetOperMode()) {
+	case OPER_NOT:
+	case OPER_BITREV:
+		fOperandEnable = FALSE;
+		break;
+	case OPER_SWAP:
+		fOperandEnable = FALSE;
+		fBtnEnter = !fDataOneByte;
+		break;
+	default:
+		break;
+	};
+
+	pComboOper->EnableWindow(fOperandEnable);
+	GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE)->EnableWindow(fDataOneByte ? FALSE : fOperandEnable);
+	const auto pBtnEnter = GetDlgItem(IDOK);
+	pBtnEnter->EnableWindow(fBtnEnter);
+	pBtnEnter->SetWindowTextW(m_mapNames.at(GetOperMode()).data());
+}
 
 
+namespace HEXCTRL::INTERNAL {
 	//CHexDlgFillData.
 	class CHexDlgFillData final : public CDialogEx {
 	public:
 		void Create(CWnd* pParent, IHexCtrl* pHexCtrl);
 		void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		void SetDlgData(std::uint64_t ullData);
 	private:
 		enum class EFillType : std::uint8_t; //Forward declaration.
 		void DoDataExchange(CDataExchange* pDX)override;
@@ -346,188 +406,198 @@ namespace HEXCTRL::INTERNAL {
 		DECLARE_MESSAGE_MAP();
 	private:
 		IHexCtrl* m_pHexCtrl { };
-		CComboBox m_stComboType; //Fill type combo-box.
-		CComboBox m_stComboData; //Data combo-box.
+		CComboBox m_comboType; //Fill type combo-box.
+		CComboBox m_comboData; //Data combo-box.
+		std::uint64_t m_u64DlgData { };
 	};
+}
 
-	enum class CHexDlgFillData::EFillType : std::uint8_t {
-		FILL_HEX, FILL_ASCII, FILL_WCHAR, FILL_RAND_MT19937, FILL_RAND_FAST
-	};
+enum class CHexDlgFillData::EFillType : std::uint8_t {
+	FILL_HEX, FILL_ASCII, FILL_WCHAR, FILL_RAND_MT19937, FILL_RAND_FAST
+};
 
-	BEGIN_MESSAGE_MAP(CHexDlgFillData, CDialogEx)
-		ON_WM_ACTIVATE()
-	END_MESSAGE_MAP()
+BEGIN_MESSAGE_MAP(CHexDlgFillData, CDialogEx)
+	ON_WM_ACTIVATE()
+END_MESSAGE_MAP()
 
-	void CHexDlgFillData::Create(CWnd* pParent, IHexCtrl* pHexCtrl)
-	{
-		assert(pHexCtrl);
-		assert(pParent);
-		if (pHexCtrl == nullptr)
-			return;
+void CHexDlgFillData::Create(CWnd* pParent, IHexCtrl* pHexCtrl)
+{
+	assert(pHexCtrl);
+	assert(pParent);
+	if (pHexCtrl == nullptr)
+		return;
 
-		m_pHexCtrl = pHexCtrl;
-		CDialogEx::Create(IDD_HEXCTRL_FILLDATA, pParent);
-	}
+	m_pHexCtrl = pHexCtrl;
+	CDialogEx::Create(IDD_HEXCTRL_FILLDATA, pParent);
+}
 
-	void CHexDlgFillData::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimized*/)
-	{
-		if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
-			return;
+void CHexDlgFillData::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimized*/)
+{
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
+		return;
 
-		if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
-			const auto fSelection { m_pHexCtrl->HasSelection() };
-			CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL,
-				fSelection ? IDC_HEXCTRL_FILLDATA_RAD_SEL : IDC_HEXCTRL_FILLDATA_RAD_ALL);
-			GetDlgItem(IDC_HEXCTRL_FILLDATA_RAD_SEL)->EnableWindow(fSelection);
-		}
-	}
-
-
-	//CHexDlgFillData private methods.
-
-	void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
-	{
-		CDialogEx::DoDataExchange(pDX);
-		DDX_Control(pDX, IDC_HEXCTRL_FILLDATA_COMBO_TYPE, m_stComboType);
-		DDX_Control(pDX, IDC_HEXCTRL_FILLDATA_COMBO_DATA, m_stComboData);
-	}
-
-	auto CHexDlgFillData::GetFillType()const->CHexDlgFillData::EFillType
-	{
-		return static_cast<EFillType>(m_stComboType.GetItemData(m_stComboType.GetCurSel()));
-	}
-
-	void CHexDlgFillData::OnCancel()
-	{
-		static_cast<CHexDlgModify*>(GetParent())->OnCancel();
-	}
-
-	BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM lParam)
-	{
-		using enum EFillType;
-		switch (LOWORD(wParam)) {
-		case IDC_HEXCTRL_FILLDATA_COMBO_TYPE:
-		{
-			const auto enFillType = GetFillType();
-			m_stComboData.EnableWindow(enFillType != FILL_RAND_MT19937 && enFillType != FILL_RAND_FAST);
-		}
-		return TRUE;
-		default:
-			break;
-		}
-
-		return CDialogEx::OnCommand(wParam, lParam);
-	}
-
-	BOOL CHexDlgFillData::OnInitDialog()
-	{
-		CDialogEx::OnInitDialog();
-
-		auto iIndex = m_stComboType.AddString(L"Hex Bytes");
-		m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_HEX));
-		m_stComboType.SetCurSel(iIndex);
-		iIndex = m_stComboType.AddString(L"Text ASCII");
-		m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_ASCII));
-		iIndex = m_stComboType.AddString(L"Text UTF-16");
-		m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_WCHAR));
-		iIndex = m_stComboType.AddString(L"Random Data (MT19937)");
-		m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_MT19937));
-		iIndex = m_stComboType.AddString(L"Pseudo Random Data (fast, but less secure)");
-		m_stComboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_FAST));
-
-		CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL, IDC_HEXCTRL_FILLDATA_RAD_ALL);
-		m_stComboData.LimitText(256); //Max characters of the combo-box.
-
-		return TRUE;
-	}
-
-	void CHexDlgFillData::OnOK()
-	{
-		if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
-			return;
-
-		wchar_t pwszComboText[MAX_PATH * 2];
-		if (m_stComboData.IsWindowEnabled() && m_stComboData.GetWindowTextW(pwszComboText, MAX_PATH) == 0) { //No text.
-			MessageBoxW(L"Missing fill data.", L"Data error", MB_ICONERROR);
-			return;
-		}
-
-		VecSpan vecSpan;
-		const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL);
-		if (iRadioAllOrSel == IDC_HEXCTRL_FILLDATA_RAD_ALL) {
-			if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify all data?",
-				MB_YESNO | MB_ICONWARNING) == IDNO)
-				return;
-
-			vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
-		}
-		else {
-			if (!m_pHexCtrl->HasSelection())
-				return;
-
-			vecSpan = m_pHexCtrl->GetSelection();
-		}
-
-		using enum EHexModifyMode;
-		SpanCByte spnData;
-		EHexModifyMode eModifyMode { MODIFY_REPEAT };
-		std::wstring wstrFillWith = pwszComboText;
-		std::string strFillWith; //Data holder for FILL_HEX and FILL_ASCII modes.
-		switch (GetFillType()) {
-		case EFillType::FILL_HEX:
-		{
-			auto optData = NumStrToHex(wstrFillWith);
-			if (!optData) {
-				MessageBoxW(L"Wrong Hex format.", L"Format error", MB_ICONERROR);
-				return;
-			}
-
-			strFillWith = std::move(*optData);
-			eModifyMode = MODIFY_REPEAT;
-			spnData = { reinterpret_cast<const std::byte*>(strFillWith.data()), strFillWith.size() };
-		}
-		break;
-		case EFillType::FILL_ASCII:
-			strFillWith = WstrToStr(wstrFillWith);
-			eModifyMode = MODIFY_REPEAT;
-			spnData = { reinterpret_cast<const std::byte*>(strFillWith.data()), strFillWith.size() };
-			break;
-		case EFillType::FILL_WCHAR:
-			eModifyMode = MODIFY_REPEAT;
-			spnData = { reinterpret_cast<const std::byte*>(wstrFillWith.data()), wstrFillWith.size() * sizeof(WCHAR) };
-			break;
-		case EFillType::FILL_RAND_MT19937:
-			eModifyMode = MODIFY_RAND_MT19937;
-			break;
-		case EFillType::FILL_RAND_FAST:
-			eModifyMode = MODIFY_RAND_FAST;
-			break;
-		default:
-			break;
-		}
-
-		//Insert wstring into ComboBox only if it's not already presented.
-		if (m_stComboData.FindStringExact(0, wstrFillWith.data()) == CB_ERR) {
-			//Keep max 50 strings in list.
-			if (m_stComboData.GetCount() == 50) {
-				m_stComboData.DeleteString(49);
-			}
-			m_stComboData.InsertString(0, wstrFillWith.data());
-		}
-
-		if (spnData.size() > vecSpan.back().ullSize) {
-			MessageBoxW(L"Fill data size is bigger than the region selected for modification, please select a larger region.",
-				L"Data region size error", MB_ICONERROR);
-			return;
-		}
-
-		const HEXMODIFY hms { .eModifyMode { eModifyMode }, .spnData { spnData }, .vecSpan { std::move(vecSpan) } };
-		m_pHexCtrl->ModifyData(hms);
-		m_pHexCtrl->Redraw();
+	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
+		const auto fSelection { m_pHexCtrl->HasSelection() };
+		CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL,
+			fSelection ? IDC_HEXCTRL_FILLDATA_RAD_SEL : IDC_HEXCTRL_FILLDATA_RAD_ALL);
+		GetDlgItem(IDC_HEXCTRL_FILLDATA_RAD_SEL)->EnableWindow(fSelection);
 	}
 }
 
-using namespace HEXCTRL::INTERNAL;
+void CHexDlgFillData::SetDlgData(std::uint64_t ullData)
+{
+	m_u64DlgData = ullData;
+}
+
+
+//CHexDlgFillData private methods.
+
+void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
+{
+	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_HEXCTRL_FILLDATA_COMBO_TYPE, m_comboType);
+	DDX_Control(pDX, IDC_HEXCTRL_FILLDATA_COMBO_DATA, m_comboData);
+}
+
+auto CHexDlgFillData::GetFillType()const->CHexDlgFillData::EFillType
+{
+	return static_cast<EFillType>(m_comboType.GetItemData(m_comboType.GetCurSel()));
+}
+
+void CHexDlgFillData::OnCancel()
+{
+	if (m_u64DlgData & HEXCTRL_FLAG_NOESC)
+		return;
+
+	static_cast<CDialogEx*>(GetParentOwner())->EndDialog(IDCANCEL);
+}
+
+BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM lParam)
+{
+	using enum EFillType;
+	switch (LOWORD(wParam)) {
+	case IDC_HEXCTRL_FILLDATA_COMBO_TYPE:
+	{
+		const auto enFillType = GetFillType();
+		m_comboData.EnableWindow(enFillType != FILL_RAND_MT19937 && enFillType != FILL_RAND_FAST);
+	}
+	return TRUE;
+	default:
+		break;
+	}
+
+	return CDialogEx::OnCommand(wParam, lParam);
+}
+
+BOOL CHexDlgFillData::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	auto iIndex = m_comboType.AddString(L"Hex Bytes");
+	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_HEX));
+	m_comboType.SetCurSel(iIndex);
+	iIndex = m_comboType.AddString(L"Text ASCII");
+	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_ASCII));
+	iIndex = m_comboType.AddString(L"Text UTF-16");
+	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_WCHAR));
+	iIndex = m_comboType.AddString(L"Random Data (MT19937)");
+	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_MT19937));
+	iIndex = m_comboType.AddString(L"Pseudo Random Data (fast, but less secure)");
+	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_FAST));
+
+	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL, IDC_HEXCTRL_FILLDATA_RAD_ALL);
+	m_comboData.LimitText(256); //Max characters of the combo-box.
+
+	return TRUE;
+}
+
+void CHexDlgFillData::OnOK()
+{
+	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
+		return;
+
+	wchar_t pwszComboText[MAX_PATH * 2];
+	if (m_comboData.IsWindowEnabled() && m_comboData.GetWindowTextW(pwszComboText, MAX_PATH) == 0) { //No text.
+		MessageBoxW(L"Missing fill data.", L"Data error", MB_ICONERROR);
+		return;
+	}
+
+	VecSpan vecSpan;
+	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL);
+	if (iRadioAllOrSel == IDC_HEXCTRL_FILLDATA_RAD_ALL) {
+		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify all data?",
+			MB_YESNO | MB_ICONWARNING) == IDNO)
+			return;
+
+		vecSpan.emplace_back(0, m_pHexCtrl->GetDataSize());
+	}
+	else {
+		if (!m_pHexCtrl->HasSelection())
+			return;
+
+		vecSpan = m_pHexCtrl->GetSelection();
+	}
+
+	using enum EHexModifyMode;
+	SpanCByte spnData;
+	EHexModifyMode eModifyMode { MODIFY_REPEAT };
+	std::wstring wstrFillWith = pwszComboText;
+	std::string strFillWith; //Data holder for FILL_HEX and FILL_ASCII modes.
+	switch (GetFillType()) {
+	case EFillType::FILL_HEX:
+	{
+		auto optData = NumStrToHex(wstrFillWith);
+		if (!optData) {
+			MessageBoxW(L"Wrong Hex format.", L"Format error", MB_ICONERROR);
+			return;
+		}
+
+		strFillWith = std::move(*optData);
+		eModifyMode = MODIFY_REPEAT;
+		spnData = { reinterpret_cast<const std::byte*>(strFillWith.data()), strFillWith.size() };
+	}
+	break;
+	case EFillType::FILL_ASCII:
+		strFillWith = WstrToStr(wstrFillWith);
+		eModifyMode = MODIFY_REPEAT;
+		spnData = { reinterpret_cast<const std::byte*>(strFillWith.data()), strFillWith.size() };
+		break;
+	case EFillType::FILL_WCHAR:
+		eModifyMode = MODIFY_REPEAT;
+		spnData = { reinterpret_cast<const std::byte*>(wstrFillWith.data()), wstrFillWith.size() * sizeof(WCHAR) };
+		break;
+	case EFillType::FILL_RAND_MT19937:
+		eModifyMode = MODIFY_RAND_MT19937;
+		break;
+	case EFillType::FILL_RAND_FAST:
+		eModifyMode = MODIFY_RAND_FAST;
+		break;
+	default:
+		break;
+	}
+
+	//Insert wstring into ComboBox only if it's not already presented.
+	if (m_comboData.FindStringExact(0, wstrFillWith.data()) == CB_ERR) {
+		//Keep max 50 strings in list.
+		if (m_comboData.GetCount() == 50) {
+			m_comboData.DeleteString(49);
+		}
+		m_comboData.InsertString(0, wstrFillWith.data());
+	}
+
+	if (spnData.size() > vecSpan.back().ullSize) {
+		MessageBoxW(L"Fill data size is bigger than the region selected for modification, please select a larger region.",
+			L"Data region size error", MB_ICONERROR);
+		return;
+	}
+
+	const HEXMODIFY hms { .eModifyMode { eModifyMode }, .spnData { spnData }, .vecSpan { std::move(vecSpan) } };
+	m_pHexCtrl->ModifyData(hms);
+	m_pHexCtrl->Redraw();
+}
+
+
+//CHexDlgModify methods.
 
 BEGIN_MESSAGE_MAP(CHexDlgModify, CDialogEx)
 	ON_NOTIFY(TCN_SELCHANGE, IDC_HEXCTRL_MODIFY_TAB, &CHexDlgModify::OnTabSelChanged)
@@ -574,6 +644,9 @@ auto CHexDlgModify::SetDlgData(std::uint64_t ullData, bool fCreate)->HWND
 	else {
 		ApplyDlgData();
 	}
+
+	m_pDlgOpers->SetDlgData(ullData);
+	m_pDlgFillData->SetDlgData(ullData);
 
 	return m_hWnd;
 }

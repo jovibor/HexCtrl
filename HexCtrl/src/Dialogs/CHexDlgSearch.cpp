@@ -20,53 +20,51 @@
 
 using namespace HEXCTRL::INTERNAL;
 
-namespace HEXCTRL::INTERNAL {
-	enum class CHexDlgSearch::ESearchMode : std::uint8_t {
-		MODE_HEXBYTES, MODE_TEXT, MODE_NUMBERS, MODE_STRUCT
-	};
+enum class CHexDlgSearch::ESearchMode : std::uint8_t {
+	MODE_HEXBYTES, MODE_TEXT, MODE_NUMBERS, MODE_STRUCT
+};
 
-	enum class CHexDlgSearch::ESearchType : std::uint8_t {
-		HEXBYTES, TEXT_ASCII, TEXT_UTF8, TEXT_UTF16,
-		NUM_INT8, NUM_UINT8, NUM_INT16, NUM_UINT16,
-		NUM_INT32, NUM_UINT32, NUM_INT64, NUM_UINT64,
-		NUM_FLOAT, NUM_DOUBLE, STRUCT_FILETIME
-	};
+enum class CHexDlgSearch::ESearchType : std::uint8_t {
+	HEXBYTES, TEXT_ASCII, TEXT_UTF8, TEXT_UTF16,
+	NUM_INT8, NUM_UINT8, NUM_INT16, NUM_UINT16,
+	NUM_INT32, NUM_UINT32, NUM_INT64, NUM_UINT64,
+	NUM_FLOAT, NUM_DOUBLE, STRUCT_FILETIME
+};
 
-	enum class CHexDlgSearch::ECmpType : std::uint16_t { //Flags for the instantiations of templated MemCmp<>.
-		CHAR_LOOP = 0x0001, WCHAR_LOOP = 0x0002,
-		CASE_INSENSITIVE = 0x0004, WILDCARD = 0x0008,
-		NUM_1BYTE = 0x0010, NUM_2BYTE = 0x0020, NUM_4BYTE = 0x0040, NUM_8BYTE = 0x0080
-	};
+enum class CHexDlgSearch::ECmpType : std::uint16_t { //Flags for the instantiations of templated MemCmp<>.
+	CHAR_LOOP = 0x0001, WCHAR_LOOP = 0x0002,
+	CASE_INSENSITIVE = 0x0004, WILDCARD = 0x0008,
+	NUM_1BYTE = 0x0010, NUM_2BYTE = 0x0020, NUM_4BYTE = 0x0040, NUM_8BYTE = 0x0080
+};
 
-	enum class CHexDlgSearch::EMenuID : std::uint16_t {
-		IDM_SEARCH_ADDBKM = 0x8000, IDM_SEARCH_SELECTALL = 0x8001, IDM_SEARCH_CLEARALL = 0x8002
-	};
+enum class CHexDlgSearch::EMenuID : std::uint16_t {
+	IDM_SEARCH_ADDBKM = 0x8000, IDM_SEARCH_SELECTALL = 0x8001, IDM_SEARCH_CLEARALL = 0x8002
+};
 
-	struct CHexDlgSearch::FINDRESULT {
-		bool fFound { };
-		bool fCanceled { }; //Search was canceled by pressing "Cancel".
-		operator bool()const { return fFound; };
-	};
+struct CHexDlgSearch::FINDRESULT {
+	bool fFound { };
+	bool fCanceled { }; //Search was canceled by pressing "Cancel".
+	operator bool()const { return fFound; };
+};
 
-	struct CHexDlgSearch::SEARCHDATA {
-		ULONGLONG ullStart { };
-		ULONGLONG ullEnd { };
-		ULONGLONG ullLoopChunkSize { };  //Actual data size for a `for()` loop.
-		ULONGLONG ullMemToAcquire { };   //Size of a memory to acquire, to search in.
-		ULONGLONG ullMemChunks { };      //How many such memory chunks, to search in.
-		ULONGLONG ullOffsetSentinel { }; //The maximum offset that search can't cross.
-		LONGLONG llStep { };             //Search step, must be signed here.
-		IHexCtrl* pHexCtrl { };
-		CHexDlgCallback* pDlgClbk { };
-		SpanCByte spnSearch { };
-		bool fForward { };
-		bool fBigStep { };
-		bool fInverted { };
-		bool fCanceled { };
-		bool fDlgExit { };
-		bool fResult { };
-	};
-}
+struct CHexDlgSearch::SEARCHDATA {
+	ULONGLONG ullStart { };
+	ULONGLONG ullEnd { };
+	ULONGLONG ullLoopChunkSize { };  //Actual data size for a `for()` loop.
+	ULONGLONG ullMemToAcquire { };   //Size of a memory to acquire, to search in.
+	ULONGLONG ullMemChunks { };      //How many such memory chunks, to search in.
+	ULONGLONG ullOffsetSentinel { }; //The maximum offset that search can't cross.
+	LONGLONG llStep { };             //Search step, must be signed here.
+	IHexCtrl* pHexCtrl { };
+	CHexDlgCallback* pDlgClbk { };
+	SpanCByte spnSearch { };
+	bool fForward { };
+	bool fBigStep { };
+	bool fInverted { };
+	bool fCanceled { };
+	bool fDlgExit { };
+	bool fResult { };
+};
 
 BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_SEARCH_F, &CHexDlgSearch::OnButtonSearchF)

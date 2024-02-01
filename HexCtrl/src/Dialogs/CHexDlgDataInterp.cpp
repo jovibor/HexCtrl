@@ -15,50 +15,52 @@
 
 using namespace HEXCTRL::INTERNAL;
 
-namespace HEXCTRL::INTERNAL {
-	//MS-DOS Date+Time structure (as used in FAT file system directory entry).
-	//https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
-	union CHexDlgDataInterp::UMSDOSDateTime {
-		struct {
-			WORD wTime;	//Time component.
-			WORD wDate;	//Date component.
-		} TimeDate;
-		DWORD dwTimeDate;
-	};
+//MS-DOS Date+Time structure (as used in FAT file system directory entry).
+//https://msdn.microsoft.com/en-us/library/ms724274(v=vs.85).aspx
+union CHexDlgDataInterp::UMSDOSDateTime {
+	struct {
+		WORD wTime;	//Time component.
+		WORD wDate;	//Date component.
+	} TimeDate;
+	DWORD dwTimeDate;
+};
 
-	//Microsoft UDTTM time (as used by Microsoft Compound Document format).
-	//https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/164c0c2e-6031-439e-88ad-69d00b69f414
-	union CHexDlgDataInterp::UDTTM {
-		struct {
-			unsigned long minute : 6; //6+5+5+4+9+3=32.
-			unsigned long hour : 5;
-			unsigned long dayofmonth : 5;
-			unsigned long month : 4;
-			unsigned long year : 9;
-			unsigned long weekday : 3;
-		} components;
-		unsigned long dwValue;
-	};
+//Microsoft UDTTM time (as used by Microsoft Compound Document format).
+//https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-doc/164c0c2e-6031-439e-88ad-69d00b69f414
+union CHexDlgDataInterp::UDTTM {
+	struct {
+		unsigned long minute : 6; //6+5+5+4+9+3=32.
+		unsigned long hour : 5;
+		unsigned long dayofmonth : 5;
+		unsigned long month : 4;
+		unsigned long year : 9;
+		unsigned long weekday : 3;
+	} components;
+	unsigned long dwValue;
+};
 
-	enum class CHexDlgDataInterp::EGroup : std::uint8_t {
-		GR_INTEGRAL, GR_FLOAT, GR_TIME, GR_MISC, GR_GUIDTIME
-	};
+enum class CHexDlgDataInterp::EGroup : std::uint8_t {
+	GR_INTEGRAL, GR_FLOAT, GR_TIME, GR_MISC, GR_GUIDTIME
+};
 
-	enum class CHexDlgDataInterp::EName : std::uint8_t {
-		NAME_BINARY, NAME_INT8, NAME_UINT8, NAME_INT16, NAME_UINT16,
-		NAME_INT32, NAME_UINT32, NAME_INT64, NAME_UINT64,
-		NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
-		NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
-		NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID
-	};
+enum class CHexDlgDataInterp::EName : std::uint8_t {
+	NAME_BINARY, NAME_INT8, NAME_UINT8, NAME_INT16, NAME_UINT16,
+	NAME_INT32, NAME_UINT32, NAME_INT64, NAME_UINT64,
+	NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
+	NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
+	NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID
+};
 
-	struct CHexDlgDataInterp::GRIDDATA {
-		CMFCPropertyGridProperty* pProp { };
-		EGroup eGroup { };
-		EName eName { };
-		EDataSize eSize { };
-	};
-}
+enum class CHexDlgDataInterp::EDataSize : std::uint8_t {
+	SIZE_BYTE = 1U, SIZE_WORD = 2U, SIZE_DWORD = 4U, SIZE_QWORD = 8U, SIZE_DQWORD = 16U
+};
+
+struct CHexDlgDataInterp::GRIDDATA {
+	CMFCPropertyGridProperty* pProp { };
+	EGroup eGroup { };
+	EName eName { };
+	EDataSize eSize { };
+};
 
 BEGIN_MESSAGE_MAP(CHexPropGridCtrl, CMFCPropertyGridCtrl)
 	ON_WM_SIZE()

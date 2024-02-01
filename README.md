@@ -102,6 +102,7 @@
   </details>
 * [Enums](#enums) <details><summary>_Expand_</summary>
   * [EHexCmd](#ehexcmd)
+  * [EHexDataType](#ehexdatatype)
   * [EHexModifyMode](#ehexmodifymode)
   * [EHexOperMode](#ehexopermode)
   * [EHexWnd](#ehexwnd)
@@ -916,10 +917,11 @@ If `eModifyMode` is equal to the `MODIFY_OPERATION` then the `eOperMode` shows w
 ```cpp
 struct HEXMODIFY {
     EHexModifyMode eModifyMode { };      //Modify mode.
-    EHexOperMode   eOperMode { };        //Operation mode, used only in eModifyMode::MODIFY_OPERATION mode.
-    SpanCByte      spnData { };          //Span of the data to modify from.
-    VecSpan        vecSpan { };          //Vector of data offsets and sizes.
-    bool           fBigEndian { false }; //Treat the data as a big endian, used only in MODIFY_OPERATION mode.
+    EHexOperMode   eOperMode { };        //Operation mode, used if eModifyMode == MODIFY_OPERATION.
+    EHexDataType   eDataType { };        //Data type of the underlying data, used if eModifyMode == MODIFY_OPERATION.
+    SpanCByte      spnData { };          //Span of the data to modify with.
+    VecSpan        vecSpan { };          //Vector of data offsets and sizes to modify.
+    bool           fBigEndian { false }; //Treat data as the big endian, used if eModifyMode == MODIFY_OPERATION.
 };
 ```
 
@@ -1093,6 +1095,15 @@ enum class EHexCmd : std::uint8_t {
     CMD_CARET_LEFT, CMD_CARET_RIGHT, CMD_CARET_UP, CMD_CARET_DOWN,
     CMD_SCROLL_PAGEUP, CMD_SCROLL_PAGEDOWN,
     CMD_TEMPL_APPLYCURR, CMD_TEMPL_DISAPPLY, CMD_TEMPL_DISAPPALL, CMD_TEMPL_DLG_MGR
+};
+```
+
+### [](#)EHexDataType
+Enum of the data type used in the [`HEXMODIFY`](#hexmodify) struct with the `EHexModifyMode::MODIFY_OPERATION` mode.
+```cpp
+enum class EHexDataType : std::uint8_t {
+    DATA_INT8, DATA_UINT8, DATA_INT16, DATA_UINT16, DATA_INT32,
+    DATA_UINT32, DATA_INT64, DATA_UINT64, DATA_FLOAT, DATA_DOUBLE
 };
 ```
 

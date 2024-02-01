@@ -322,19 +322,27 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
-	* EHexModifyMode: Enum of the data modification mode, used in HEXMODIFY.                    *
+	* EHexModifyMode: Enum of the data modification mode, used in the HEXMODIFY.                *
 	********************************************************************************************/
 	enum class EHexModifyMode : std::uint8_t {
 		MODIFY_ONCE, MODIFY_REPEAT, MODIFY_OPERATION, MODIFY_RAND_MT19937, MODIFY_RAND_FAST
 	};
 
 	/********************************************************************************************
-	* EHexOperMode: Data Operation mode, used in EHexModifyMode::MODIFY_OPERATION mode.         *
+	* EHexOperMode: Data Operation mode, used in the EHexModifyMode::MODIFY_OPERATION mode.     *
 	********************************************************************************************/
 	enum class EHexOperMode : std::uint8_t {
 		OPER_ASSIGN, OPER_ADD, OPER_SUB, OPER_MUL, OPER_DIV, OPER_CEIL, OPER_FLOOR, OPER_OR,
 		OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_ROTL, OPER_ROTR, OPER_SWAP,
 		OPER_BITREV
+	};
+
+	/********************************************************************************************
+	* EHexDataType: Data type, used in the EHexModifyMode::MODIFY_OPERATION mode.               *
+	********************************************************************************************/
+	enum class EHexDataType : std::uint8_t {
+		DATA_INT8, DATA_UINT8, DATA_INT16, DATA_UINT16, DATA_INT32,
+		DATA_UINT32, DATA_INT64, DATA_UINT64, DATA_FLOAT, DATA_DOUBLE
 	};
 
 	/********************************************************************************************
@@ -353,8 +361,9 @@ namespace HEXCTRL {
 	struct HEXMODIFY {
 		EHexModifyMode eModifyMode { };      //Modify mode.
 		EHexOperMode   eOperMode { };        //Operation mode, used if eModifyMode == MODIFY_OPERATION.
-		SpanCByte      spnData { };          //Span of the data to modify from.
-		VecSpan        vecSpan { };          //Vector of data offsets and sizes.
+		EHexDataType   eDataType { };        //Data type of the underlying data, used if eModifyMode == MODIFY_OPERATION.
+		SpanCByte      spnData { };          //Span of the data to modify with.
+		VecSpan        vecSpan { };          //Vector of data offsets and sizes to modify.
 		bool           fBigEndian { false }; //Treat data as the big endian, used if eModifyMode == MODIFY_OPERATION.
 	};
 

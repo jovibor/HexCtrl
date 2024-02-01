@@ -42,6 +42,7 @@ namespace HEXCTRL::INTERNAL {
 		union UDTTM;
 		enum class EGroup : std::uint8_t;
 		enum class EName : std::uint8_t;
+		enum class EDataSize : std::uint8_t;
 		struct GRIDDATA;
 		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;

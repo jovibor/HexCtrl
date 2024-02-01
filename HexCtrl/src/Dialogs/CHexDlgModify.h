@@ -18,7 +18,6 @@ namespace HEXCTRL::INTERNAL {
 		~CHexDlgModify();
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void Initialize(IHexCtrl* pHexCtrl);
-		void OnCancel()override; //To allow child dialogs to call it.
 		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
 		BOOL ShowWindow(int nCmdShow, int iTab);
 	private:
@@ -26,6 +25,7 @@ namespace HEXCTRL::INTERNAL {
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard ]] bool IsNoEsc()const;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		void OnCancel()override;
 		afx_msg void OnClose();
 		afx_msg void OnDestroy();
 		BOOL OnInitDialog()override;
