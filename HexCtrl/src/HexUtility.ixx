@@ -9,6 +9,7 @@ module;
 #include "../dep/StrToNum/StrToNum/StrToNum.h"
 #include "../HexCtrl.h"
 #include <afxwin.h>
+#include <emmintrin.h>
 #include <bit>
 #include <cassert>
 #include <cwctype>
@@ -53,35 +54,36 @@ export namespace HEXCTRL::INTERNAL {
 	}
 
 	template<typename T> concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);
+	template<typename T> concept TSIMD = (std::is_same_v<T, __m128> || std::is_same_v<T, __m128i> || std::is_same_v<T, __m128d>);
 
-	//Byte swap for types of 2, 4, or 8 byte size.
+	//Bytes swap for types of 2, 4, or 8 byte size.
 	template<TSize1248 T> [[nodiscard]] constexpr T ByteSwap(T tData)noexcept
 	{
 		//Since a swapping-data type can be any type of 2, 4, or 8 bytes size,
 		//we first bit_cast swapping-data to an integral type of the same size,
 		//then byte-swapping and then bit_cast to the original type back.
-		if constexpr (sizeof(T) == sizeof(unsigned char)) { //1 byte.
+		if constexpr (sizeof(T) == sizeof(std::uint8_t)) { //1 byte.
 			return tData;
 		}
-		else if constexpr (sizeof(T) == sizeof(unsigned short)) { //2 bytes.
-			auto wData = std::bit_cast<unsigned short>(tData);
+		else if constexpr (sizeof(T) == sizeof(std::uint16_t)) { //2 bytes.
+			auto wData = std::bit_cast<std::uint16_t>(tData);
 			if (std::is_constant_evaluated()) {
-				wData = static_cast<unsigned short>((wData << 8) | (wData >> 8));
+				wData = static_cast<std::uint16_t>((wData << 8) | (wData >> 8));
 				return std::bit_cast<T>(wData);
 			}
 			return std::bit_cast<T>(_byteswap_ushort(wData));
 		}
-		else if constexpr (sizeof(T) == sizeof(unsigned long)) { //4 bytes.
-			auto ulData = std::bit_cast<unsigned long>(tData);
+		else if constexpr (sizeof(T) == sizeof(std::uint32_t)) { //4 bytes.
+			auto ulData = std::bit_cast<std::uint32_t>(tData);
 			if (std::is_constant_evaluated()) {
-				ulData = (ulData << 24) | ((ulData << 8) & 0x00FF'0000UL)
-					| ((ulData >> 8) & 0x0000'FF00UL) | (ulData >> 24);
+				ulData = (ulData << 24) | ((ulData << 8) & 0x00FF'0000U)
+					| ((ulData >> 8) & 0x0000'FF00U) | (ulData >> 24);
 				return std::bit_cast<T>(ulData);
 			}
 			return std::bit_cast<T>(_byteswap_ulong(ulData));
 		}
-		else if constexpr (sizeof(T) == sizeof(unsigned long long)) { //8 bytes.
-			auto ullData = std::bit_cast<unsigned long long>(tData);
+		else if constexpr (sizeof(T) == sizeof(std::uint64_t)) { //8 bytes.
+			auto ullData = std::bit_cast<std::uint64_t>(tData);
 			if (std::is_constant_evaluated()) {
 				ullData = (ullData << 56) | ((ullData << 40) & 0x00FF'0000'0000'0000ULL)
 					| ((ullData << 24) & 0x0000'FF00'0000'0000ULL) | ((ullData << 8) & 0x0000'00FF'0000'0000ULL)
@@ -90,6 +92,47 @@ export namespace HEXCTRL::INTERNAL {
 				return std::bit_cast<T>(ullData);
 			}
 			return std::bit_cast<T>(_byteswap_uint64(ullData));
+		}
+	}
+
+	//Bytes swap inside SIMD types: __m128, __m128i, __m128d.
+	template<TSize1248 TIntegral, TSIMD T>
+	[[nodiscard]] auto ByteSwapSIMD(const T m128T) -> T
+	{
+		if constexpr (std::is_same_v<T, __m128i>) { //Integrals.
+			if constexpr (sizeof(TIntegral) == sizeof(std::uint8_t)) { //1 bytes.
+				return m128T;
+			}
+			else if constexpr (sizeof(TIntegral) == sizeof(std::uint16_t)) { //2 bytes.
+				const auto m128iMask = _mm_setr_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14);
+				return _mm_shuffle_epi8(m128T, m128iMask);
+			}
+			else if constexpr (sizeof(TIntegral) == sizeof(std::uint32_t)) { //4 bytes.
+				const auto m128iMask = _mm_setr_epi8(3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
+				return _mm_shuffle_epi8(m128T, m128iMask);
+			}
+			else if constexpr (sizeof(TIntegral) == sizeof(std::uint64_t)) { //8 bytes.
+				const auto m128iMask = _mm_setr_epi8(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8);
+				return _mm_shuffle_epi8(m128T, m128iMask);
+			}
+		}
+		else if constexpr (std::is_same_v<T, __m128>) { //Floats.
+			alignas(16) float flData[4];
+			_mm_store_ps(flData, m128T); //Loading m128T into local float array.
+			const auto m128iData = _mm_load_si128(reinterpret_cast<__m128i*>(flData)); //Loading array as __m128i (convert).
+			const auto m128iMask = _mm_setr_epi8(3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
+			const auto m128iSwapped = _mm_shuffle_epi8(m128iData, m128iMask); //Swapping bytes.
+			_mm_store_si128(reinterpret_cast<__m128i*>(flData), m128iSwapped); //Loading m128iSwapped back into local array.
+			return _mm_load_ps(flData); //Returning local array as __m128.
+		}
+		else if constexpr (std::is_same_v<T, __m128d>) { //Doubles.
+			alignas(16) double dbllData[2];
+			_mm_store_pd(dbllData, m128T); //Loading m128T into local double array.
+			const auto m128iData = _mm_load_si128(reinterpret_cast<__m128i*>(dbllData)); //Loading array as __m128i (convert).
+			const auto m128iMask = _mm_setr_epi8(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8);
+			const auto m128iSwapped = _mm_shuffle_epi8(m128iData, m128iMask); //Swapping bytes.
+			_mm_store_si128(reinterpret_cast<__m128i*>(dbllData), m128iSwapped); //Loading m128iSwapped back into local array.
+			return _mm_load_pd(dbllData); //Returning local array as __m128d.
 		}
 	}
 
@@ -279,4 +322,4 @@ export namespace HEXCTRL::INTERNAL {
 #else
 	void DBG_REPORT([[maybe_unused]] const wchar_t* /*pMsg*/) {}
 #endif
-}
+	}

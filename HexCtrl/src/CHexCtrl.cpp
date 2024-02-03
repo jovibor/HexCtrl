@@ -17,6 +17,7 @@
 #include "Dialogs/CHexDlgModify.h"
 #include "Dialogs/CHexDlgSearch.h"
 #include "Dialogs/CHexDlgTemplMgr.h"
+#include <emmintrin.h>
 #include <algorithm>
 #include <bit>
 #include <cassert>
@@ -1146,12 +1147,12 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 
 		if (IsVirtual() && ullSizeToModify > GetCacheSize()) {
 			const auto ullSizeCache = GetCacheSize();
-			const auto iMod = ullSizeToModify % ullSizeCache;
-			auto ullChunks = ullSizeToModify / ullSizeCache + (iMod > 0 ? 1 : 0);
+			const auto ullRem = ullSizeToModify % ullSizeCache;
+			auto ullChunks = ullSizeToModify / ullSizeCache + (ullRem > 0 ? 1 : 0);
 			auto ullOffsetCurr = ullOffsetToModify;
 			auto ullOffsetSpanCurr = 0ULL;
 			while (ullChunks-- > 0) {
-				const auto ullSizeToModifyCurr = (ullChunks == 1 && iMod > 0) ? iMod : ullSizeCache;
+				const auto ullSizeToModifyCurr = (ullChunks == 1 && ullRem > 0) ? ullRem : ullSizeCache;
 				const auto spnData = GetData({ ullOffsetCurr, ullSizeToModifyCurr });
 				assert(!spnData.empty());
 				std::copy_n(hms.spnData.data() + ullOffsetSpanCurr, ullSizeToModifyCurr, spnData.data());
@@ -1207,7 +1208,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			constexpr auto ulSizeRandBuff { 1024U * 1024U }; //1MB.
 			const std::unique_ptr < std::byte[], decltype([](std::byte* pData) { _aligned_free(pData); }) >
 				uptrRandData(static_cast<std::byte*>(_aligned_malloc(ulSizeRandBuff, 32)));
-
 			for (auto iter = 0UL; iter < ulSizeRandBuff; iter += sizeof(std::uint64_t)) {
 				*reinterpret_cast<std::uint64_t*>(&uptrRandData[iter]) = distUInt64(gen);
 			};
@@ -1215,19 +1215,19 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			ModifyWorker(hms, lmbRandFast, { uptrRandData.get(), ulSizeRandBuff });
 
 			//Filling the remainder data.
-			if (const auto dwRem = refHexSpan.ullSize % ulSizeRandBuff; dwRem > 0) { //Remainder.
-				if (dwRem <= GetCacheSize()) {
-					const auto ullOffsetCurr = refHexSpan.ullOffset + refHexSpan.ullSize - dwRem;
-					const auto spnData = GetData({ ullOffsetCurr, dwRem });
+			if (const auto ullRem = refHexSpan.ullSize % ulSizeRandBuff; ullRem > 0) { //Remainder.
+				if (ullRem <= GetCacheSize()) {
+					const auto ullOffsetCurr = refHexSpan.ullOffset + refHexSpan.ullSize - ullRem;
+					const auto spnData = GetData({ ullOffsetCurr, ullRem });
 					assert(!spnData.empty());
-					std::copy_n(uptrRandData.get(), dwRem, spnData.data());
-					SetDataVirtual(spnData, { ullOffsetCurr, dwRem });
+					std::copy_n(uptrRandData.get(), ullRem, spnData.data());
+					SetDataVirtual(spnData, { ullOffsetCurr, ullRem });
 				}
 				else {
 					const auto ullSizeCache = GetCacheSize();
-					const auto dwModCache = dwRem % ullSizeCache;
-					auto ullChunks = dwRem / ullSizeCache + (dwModCache > 0 ? 1 : 0);
-					auto ullOffsetCurr = refHexSpan.ullOffset + refHexSpan.ullSize - dwRem;
+					const auto dwModCache = ullRem % ullSizeCache;
+					auto ullChunks = ullRem / ullSizeCache + (dwModCache > 0 ? 1 : 0);
+					auto ullOffsetCurr = refHexSpan.ullOffset + refHexSpan.ullSize - ullRem;
 					auto ullOffsetRandCurr = 0ULL;
 					while (ullChunks-- > 0) {
 						const auto ullSizeToModify = (ullChunks == 1 && dwModCache > 0) ? dwModCache : ullSizeCache;
@@ -1254,31 +1254,29 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			};
 
 		//In cases where only one affected data region (hms.vecSpan.size()==1) is used,
-		//and the size of the repeated data is equal to the extent of 2,
-		//we extend that repeated data to iBuffSizeForFastFill size to speed up 
-		//the whole process of repeating.
-		//At the end we simply fill up the remainder (ullSizeToModify % ulSizeBuffFastFill ).
+		//and the size of the repeated data is equal to the extent of 2, we extend that 
+		//repeated data to the ulSizeBuffFastFill size, to speed up the whole process of repeating.
+		//At the end we simply fill up the remainder (ullSizeToModify % ulSizeBuffFastFill).
+		constexpr auto ulSizeBuffFastFill { 256U };
 		const auto ullOffsetToModify = hms.vecSpan.back().ullOffset;
 		const auto ullSizeToModify = hms.vecSpan.back().ullSize;
 		const auto ullSizeToFillWith = hms.spnData.size();
-		constexpr auto ulSizeBuffFastFill { 256U };
 
 		if (hms.vecSpan.size() == 1 && ullSizeToModify > ulSizeBuffFastFill
 			&& ullSizeToFillWith < ulSizeBuffFastFill && (ulSizeBuffFastFill % ullSizeToFillWith) == 0) {
 			alignas(32) std::byte buffFillData[ulSizeBuffFastFill]; //Buffer for fast data fill.
-			for (auto iter = 0ULL; iter < ulSizeBuffFastFill; iter += ullSizeToFillWith) {
+			for (auto iter = 0ULL; iter < ulSizeBuffFastFill; iter += ullSizeToFillWith) { //Fill the buffer.
 				std::copy_n(hms.spnData.data(), ullSizeToFillWith, buffFillData + iter);
 			}
+			ModifyWorker(hms, lmbRepeat, { buffFillData, ulSizeBuffFastFill }); //Worker with the big fast buffer.
 
-			ModifyWorker(hms, lmbRepeat, { buffFillData, ulSizeBuffFastFill });
-
-			if (const auto dwRem = ullSizeToModify % ulSizeBuffFastFill; dwRem >= ullSizeToFillWith) { //Remainder.
-				const auto ullOffset = ullOffsetToModify + ullSizeToModify - dwRem;
-				const auto spnData = GetData({ ullOffset, dwRem });
-				for (std::size_t iterRem = 0; iterRem < (dwRem / ullSizeToFillWith); ++iterRem) { //Works only if dwRem >= ullSizeToFillWith.
+			if (const auto ullRem = ullSizeToModify % ulSizeBuffFastFill; ullRem >= ullSizeToFillWith) { //Remainder.
+				const auto ullOffset = ullOffsetToModify + ullSizeToModify - ullRem;
+				const auto spnData = GetData({ ullOffset, ullRem });
+				for (std::size_t iterRem = 0; iterRem < (ullRem / ullSizeToFillWith); ++iterRem) { //Works only if ullRem >= ullSizeToFillWith.
 					std::copy_n(hms.spnData.data(), ullSizeToFillWith, spnData.data() + (iterRem * ullSizeToFillWith));
 				}
-				SetDataVirtual(spnData, { ullOffset, dwRem - (dwRem % ullSizeToFillWith) });
+				SetDataVirtual(spnData, { ullOffset, ullRem - (ullRem % ullSizeToFillWith) });
 			}
 		}
 		else {
@@ -1288,40 +1286,49 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	break;
 	case MODIFY_OPERATION:
 	{
-		constexpr auto lmbOperData = [](std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte/**/) {
+		//Special case for the OPER_ASSIGN operation.
+		//It can easily be replaced with the MODIFY_REPEAT mode, which is significantly faster.
+		if (hms.eOperMode == EHexOperMode::OPER_ASSIGN) {
+			HEXMODIFY hmsRepeat = hms;
+			hmsRepeat.eModifyMode = MODIFY_REPEAT;
+			return ModifyData(hmsRepeat);
+		}
+
+		constexpr auto lmbOperDefault = [](std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte) {
 			assert(pData != nullptr);
 
-			constexpr auto lmbOper = []<typename T>(T * pData, const HEXMODIFY & hms) {
+			constexpr auto lmbOperT = []<typename T>(T * pData, const HEXMODIFY & hms) {
 				T tData = hms.fBigEndian ? ByteSwap(*pData) : *pData;
-				const T tDataOper = *reinterpret_cast<const T*>(hms.spnData.data());
+				assert(!hms.spnData.empty());
+				const T tOper = *reinterpret_cast<const T*>(hms.spnData.data());
 
 				using enum EHexOperMode;
 
 				if constexpr (std::is_integral_v<T>) { //Operations only for integral types.
 					switch (hms.eOperMode) {
 					case OPER_OR:
-						tData |= tDataOper;
+						tData |= tOper;
 						break;
 					case OPER_XOR:
-						tData ^= tDataOper;
+						tData ^= tOper;
 						break;
 					case OPER_AND:
-						tData &= tDataOper;
+						tData &= tOper;
 						break;
 					case OPER_NOT:
 						tData = ~tData;
 						break;
 					case OPER_SHL:
-						tData <<= tDataOper;
+						tData <<= tOper;
 						break;
 					case OPER_SHR:
-						tData >>= tDataOper;
+						tData >>= tOper;
 						break;
 					case OPER_ROTL:
-						tData = std::rotl(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tDataOper));
+						tData = std::rotl(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tOper));
 						break;
 					case OPER_ROTR:
-						tData = std::rotr(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tDataOper));
+						tData = std::rotr(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tOper));
 						break;
 					case OPER_BITREV:
 						tData = BitReverse(tData);
@@ -1332,32 +1339,26 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				}
 
 				switch (hms.eOperMode) { //Operations for integral and floating types.
-				case OPER_ASSIGN:
-					tData = tDataOper;
+				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
 					break;
 				case OPER_ADD:
-					tData += tDataOper;
+					tData += tOper;
 					break;
 				case OPER_SUB:
-					tData -= tDataOper;
+					tData -= tOper;
 					break;
 				case OPER_MUL:
-					tData *= tDataOper;
+					tData *= tOper;
 					break;
 				case OPER_DIV:
-					if (tDataOper > 0) { //Division by zero check.
-						tData /= tDataOper;
-					}
+					assert(tOper > 0);
+					tData /= tOper;
 					break;
 				case OPER_CEIL:
-					if (tData > tDataOper) {
-						tData = tDataOper;
-					}
+					tData = (std::min)(tData, tOper);
 					break;
 				case OPER_FLOOR:
-					if (tData < tDataOper) {
-						tData = tDataOper;
-					}
+					tData = (std::max)(tData, tOper);
 					break;
 				case OPER_SWAP:
 					tData = ByteSwap(tData);
@@ -1376,41 +1377,923 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			using enum EHexDataType;
 			switch (hms.eDataType) {
 			case DATA_INT8:
-				lmbOper(reinterpret_cast<std::int8_t*>(pData), hms);
+				lmbOperT(reinterpret_cast<std::int8_t*>(pData), hms);
 				break;
 			case DATA_UINT8:
-				lmbOper(reinterpret_cast<std::uint8_t*>(pData), hms);
+				lmbOperT(reinterpret_cast<std::uint8_t*>(pData), hms);
 				break;
 			case DATA_INT16:
-				lmbOper(reinterpret_cast<std::int16_t*>(pData), hms);
+				lmbOperT(reinterpret_cast<std::int16_t*>(pData), hms);
 				break;
 			case DATA_UINT16:
-				lmbOper(reinterpret_cast<std::uint16_t*>(pData), hms);
+				lmbOperT(reinterpret_cast<std::uint16_t*>(pData), hms);
 				break;
 			case DATA_INT32:
-				lmbOper(reinterpret_cast<std::int32_t*>(pData), hms);
+				lmbOperT(reinterpret_cast<std::int32_t*>(pData), hms);
 				break;
 			case DATA_UINT32:
-				lmbOper(reinterpret_cast<std::uint32_t*>(pData), hms);
+				lmbOperT(reinterpret_cast<std::uint32_t*>(pData), hms);
 				break;
 			case DATA_INT64:
-				lmbOper(reinterpret_cast<std::int64_t*>(pData), hms);
+				lmbOperT(reinterpret_cast<std::int64_t*>(pData), hms);
 				break;
 			case DATA_UINT64:
-				lmbOper(reinterpret_cast<std::uint64_t*>(pData), hms);
+				lmbOperT(reinterpret_cast<std::uint64_t*>(pData), hms);
 				break;
 			case DATA_FLOAT:
-				lmbOper(reinterpret_cast<float*>(pData), hms);
+				lmbOperT(reinterpret_cast<float*>(pData), hms);
 				break;
 			case DATA_DOUBLE:
-				lmbOper(reinterpret_cast<double*>(pData), hms);
+				lmbOperT(reinterpret_cast<double*>(pData), hms);
 				break;
 			default:
 				break;
 			}
 			};
 
-		ModifyWorker(hms, lmbOperData, hms.spnData);
+		constexpr auto lmbOperSIMD = [](std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte) {
+			assert(pData != nullptr);
+
+			constexpr auto lmbOperSIMDInt8 = [](std::int8_t* pi8Data, const HEXMODIFY & hms) {
+				const auto m128iData = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi8Data));
+				alignas(16) std::int8_t i8Data[16];
+				_mm_store_si128(reinterpret_cast<__m128i*>(i8Data), m128iData);
+				assert(!hms.spnData.empty());
+				const auto i8Oper = *reinterpret_cast<const std::int8_t*>(hms.spnData.data());
+				const auto m128iOper = _mm_set1_epi8(i8Oper);
+				__m128i m128iResult { };
+
+				using enum EHexOperMode;
+				switch (hms.eOperMode) {
+				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
+					break;
+				case OPER_ADD:
+					m128iResult = _mm_add_epi8(m128iData, m128iOper);
+					break;
+				case OPER_SUB:
+					m128iResult = _mm_sub_epi8(m128iData, m128iOper);
+					break;
+				case OPER_MUL:
+				{
+					const auto m128iEven = _mm_mullo_epi16(m128iData, m128iOper);
+					const auto m128iOdd = _mm_mullo_epi16(_mm_srli_epi16(m128iData, 8), _mm_srli_epi16(m128iOper, 8));
+					m128iResult = _mm_or_si128(_mm_slli_epi16(m128iOdd, 8), _mm_srli_epi16(_mm_slli_epi16(m128iEven, 8), 8));
+				}
+				break;
+				case OPER_DIV:
+					assert(i8Oper > 0);
+					m128iResult = _mm_setr_epi8(i8Data[0] / i8Oper, i8Data[1] / i8Oper, i8Data[2] / i8Oper, i8Data[3] / i8Oper,
+						i8Data[4] / i8Oper, i8Data[5] / i8Oper, i8Data[6] / i8Oper, i8Data[7] / i8Oper,
+						i8Data[8] / i8Oper, i8Data[9] / i8Oper, i8Data[10] / i8Oper, i8Data[11] / i8Oper,
+						i8Data[12] / i8Oper, i8Data[13] / i8Oper, i8Data[14] / i8Oper, i8Data[15] / i8Oper);
+					break;
+				case OPER_CEIL:
+					m128iResult = _mm_min_epi8(m128iData, m128iOper); //SSE4.1
+					break;
+				case OPER_FLOOR:
+					m128iResult = _mm_max_epi8(m128iData, m128iOper); //SSE4.1
+					break;
+				case OPER_SWAP: //No need for the int8_t.
+					break;
+				case OPER_OR:
+					m128iResult = _mm_or_si128(m128iData, m128iOper);
+					break;
+				case OPER_XOR:
+					m128iResult = _mm_xor_si128(m128iData, m128iOper);
+					break;
+				case OPER_AND:
+					m128iResult = _mm_and_si128(m128iData, m128iOper);
+					break;
+				case OPER_NOT:
+					//_mm_cmpeq_epi64(a,a) will result in all 1s, then XOR to reverse bits.
+					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
+					break;
+				case OPER_SHL:
+					m128iResult = _mm_setr_epi8(i8Data[0] << i8Oper, i8Data[1] << i8Oper, i8Data[2] << i8Oper, i8Data[3] << i8Oper,
+						i8Data[4] << i8Oper, i8Data[5] << i8Oper, i8Data[6] << i8Oper, i8Data[7] << i8Oper,
+						i8Data[8] << i8Oper, i8Data[9] << i8Oper, i8Data[10] << i8Oper, i8Data[11] << i8Oper,
+						i8Data[12] << i8Oper, i8Data[13] << i8Oper, i8Data[14] << i8Oper, i8Data[15] << i8Oper);
+					break;
+				case OPER_SHR:
+					m128iResult = _mm_setr_epi8(i8Data[0] >> i8Oper, i8Data[1] >> i8Oper, i8Data[2] >> i8Oper, i8Data[3] >> i8Oper,
+						i8Data[4] >> i8Oper, i8Data[5] >> i8Oper, i8Data[6] >> i8Oper, i8Data[7] >> i8Oper,
+						i8Data[8] >> i8Oper, i8Data[9] >> i8Oper, i8Data[10] >> i8Oper, i8Data[11] >> i8Oper,
+						i8Data[12] >> i8Oper, i8Data[13] >> i8Oper, i8Data[14] >> i8Oper, i8Data[15] >> i8Oper);
+					break;
+				case OPER_ROTL:
+					m128iResult = _mm_setr_epi8(std::rotl(static_cast<std::uint8_t>(i8Data[0]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[1]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[2]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[3]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[4]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[5]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[6]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[7]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[8]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[9]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[10]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[11]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[12]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[13]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[14]), i8Oper),
+						std::rotl(static_cast<std::uint8_t>(i8Data[15]), i8Oper));
+					break;
+				case OPER_ROTR:
+					m128iResult = _mm_setr_epi8(std::rotr(static_cast<std::uint8_t>(i8Data[0]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[1]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[2]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[3]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[4]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[5]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[6]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[7]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[8]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[9]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[10]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[11]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[12]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[13]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[14]), i8Oper),
+						std::rotr(static_cast<std::uint8_t>(i8Data[15]), i8Oper));
+					break;
+				case OPER_BITREV:
+					m128iResult = _mm_setr_epi8(BitReverse(i8Data[0]), BitReverse(i8Data[1]), BitReverse(i8Data[2]),
+						BitReverse(i8Data[3]), BitReverse(i8Data[4]), BitReverse(i8Data[5]), BitReverse(i8Data[6]),
+						BitReverse(i8Data[7]), BitReverse(i8Data[8]), BitReverse(i8Data[9]), BitReverse(i8Data[10]),
+						BitReverse(i8Data[11]), BitReverse(i8Data[12]), BitReverse(i8Data[13]), BitReverse(i8Data[14]),
+						BitReverse(i8Data[15]));
+					break;
+				default:
+					DBG_REPORT(L"Unsupported int8_t operation.");
+					break;
+				}
+
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(pi8Data), m128iResult);
+				};
+
+			constexpr auto lmbOperSIMDUInt8 = [](std::uint8_t* pui8Data, const HEXMODIFY & hms) {
+				const auto m128iData = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui8Data));
+				alignas(16) std::uint8_t ui8Data[16];
+				_mm_store_si128(reinterpret_cast<__m128i*>(ui8Data), m128iData);
+				assert(!hms.spnData.empty());
+				const auto ui8Oper = *reinterpret_cast<const std::uint8_t*>(hms.spnData.data());
+				const auto m128iOper = _mm_set1_epi8(ui8Oper);
+				__m128i m128iResult { };
+
+				using enum EHexOperMode;
+				switch (hms.eOperMode) {
+				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
+					break;
+				case OPER_ADD:
+					m128iResult = _mm_add_epi8(m128iData, m128iOper);
+					break;
+				case OPER_SUB:
+					m128iResult = _mm_sub_epi8(m128iData, m128iOper);
+					break;
+				case OPER_MUL:
+					m128iResult = _mm_setr_epi8(ui8Data[0] * ui8Oper, ui8Data[1] * ui8Oper, ui8Data[2] * ui8Oper,
+						ui8Data[3] * ui8Oper, ui8Data[4] * ui8Oper, ui8Data[5] * ui8Oper, ui8Data[6] * ui8Oper,
+						ui8Data[7] * ui8Oper, ui8Data[8] * ui8Oper, ui8Data[9] * ui8Oper, ui8Data[10] * ui8Oper,
+						ui8Data[11] * ui8Oper, ui8Data[12] * ui8Oper, ui8Data[13] * ui8Oper, ui8Data[14] * ui8Oper,
+						ui8Data[15] * ui8Oper);
+					break;
+				case OPER_DIV:
+					assert(ui8Oper > 0);
+					m128iResult = _mm_setr_epi8(ui8Data[0] / ui8Oper, ui8Data[1] / ui8Oper, ui8Data[2] / ui8Oper,
+						ui8Data[3] / ui8Oper, ui8Data[4] / ui8Oper, ui8Data[5] / ui8Oper, ui8Data[6] / ui8Oper,
+						ui8Data[7] / ui8Oper, ui8Data[8] / ui8Oper, ui8Data[9] / ui8Oper, ui8Data[10] / ui8Oper,
+						ui8Data[11] / ui8Oper, ui8Data[12] / ui8Oper, ui8Data[13] / ui8Oper, ui8Data[14] / ui8Oper,
+						ui8Data[15] / ui8Oper);
+					break;
+				case OPER_CEIL:
+					m128iResult = _mm_min_epu8(m128iData, m128iOper); //SSE4.1
+					break;
+				case OPER_FLOOR:
+					m128iResult = _mm_max_epu8(m128iData, m128iOper); //SSE4.1
+					break;
+				case OPER_SWAP:	//No need for the uint8_t.
+					break;
+				case OPER_OR:
+					m128iResult = _mm_or_si128(m128iData, m128iOper);
+					break;
+				case OPER_XOR:
+					m128iResult = _mm_xor_si128(m128iData, m128iOper);
+					break;
+				case OPER_AND:
+					m128iResult = _mm_and_si128(m128iData, m128iOper);
+					break;
+				case OPER_NOT:
+					//_mm_cmpeq_epi64(a,a) will result in all 1s, then XOR to reverse bits.
+					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
+					break;
+				case OPER_SHL:
+					m128iResult = _mm_setr_epi8(ui8Data[0] << ui8Oper, ui8Data[1] << ui8Oper, ui8Data[2] << ui8Oper, ui8Data[3] << ui8Oper,
+						ui8Data[4] << ui8Oper, ui8Data[5] << ui8Oper, ui8Data[6] << ui8Oper, ui8Data[7] << ui8Oper,
+						ui8Data[8] << ui8Oper, ui8Data[9] << ui8Oper, ui8Data[10] << ui8Oper, ui8Data[11] << ui8Oper,
+						ui8Data[12] << ui8Oper, ui8Data[13] << ui8Oper, ui8Data[14] << ui8Oper, ui8Data[15] << ui8Oper);
+					break;
+				case OPER_SHR:
+					m128iResult = _mm_setr_epi8(ui8Data[0] >> ui8Oper, ui8Data[1] >> ui8Oper, ui8Data[2] >> ui8Oper, ui8Data[3] >> ui8Oper,
+						ui8Data[4] >> ui8Oper, ui8Data[5] >> ui8Oper, ui8Data[6] >> ui8Oper, ui8Data[7] >> ui8Oper,
+						ui8Data[8] >> ui8Oper, ui8Data[9] >> ui8Oper, ui8Data[10] >> ui8Oper, ui8Data[11] >> ui8Oper,
+						ui8Data[12] >> ui8Oper, ui8Data[13] >> ui8Oper, ui8Data[14] >> ui8Oper, ui8Data[15] >> ui8Oper);
+					break;
+				case OPER_ROTL:
+					m128iResult = _mm_setr_epi8(std::rotl(ui8Data[0], ui8Oper), std::rotl(ui8Data[1], ui8Oper),
+						std::rotl(ui8Data[2], ui8Oper), std::rotl(ui8Data[3], ui8Oper), std::rotl(ui8Data[4], ui8Oper),
+						std::rotl(ui8Data[5], ui8Oper), std::rotl(ui8Data[6], ui8Oper), std::rotl(ui8Data[7], ui8Oper),
+						std::rotl(ui8Data[8], ui8Oper), std::rotl(ui8Data[9], ui8Oper), std::rotl(ui8Data[10], ui8Oper),
+						std::rotl(ui8Data[11], ui8Oper), std::rotl(ui8Data[12], ui8Oper), std::rotl(ui8Data[13], ui8Oper),
+						std::rotl(ui8Data[14], ui8Oper), std::rotl(ui8Data[15], ui8Oper));
+					break;
+				case OPER_ROTR:
+					m128iResult = _mm_setr_epi8(std::rotr(ui8Data[0], ui8Oper), std::rotr(ui8Data[1], ui8Oper),
+						std::rotr(ui8Data[2], ui8Oper), std::rotr(ui8Data[3], ui8Oper), std::rotr(ui8Data[4], ui8Oper),
+						std::rotr(ui8Data[5], ui8Oper), std::rotr(ui8Data[6], ui8Oper), std::rotr(ui8Data[7], ui8Oper),
+						std::rotr(ui8Data[8], ui8Oper), std::rotr(ui8Data[9], ui8Oper), std::rotr(ui8Data[10], ui8Oper),
+						std::rotr(ui8Data[11], ui8Oper), std::rotr(ui8Data[12], ui8Oper), std::rotr(ui8Data[13], ui8Oper),
+						std::rotr(ui8Data[14], ui8Oper), std::rotr(ui8Data[15], ui8Oper));
+					break;
+				case OPER_BITREV:
+					m128iResult = _mm_setr_epi8(BitReverse(ui8Data[0]), BitReverse(ui8Data[1]), BitReverse(ui8Data[2]),
+						BitReverse(ui8Data[3]), BitReverse(ui8Data[4]), BitReverse(ui8Data[5]), BitReverse(ui8Data[6]),
+						BitReverse(ui8Data[7]), BitReverse(ui8Data[8]), BitReverse(ui8Data[9]), BitReverse(ui8Data[10]),
+						BitReverse(ui8Data[11]), BitReverse(ui8Data[12]), BitReverse(ui8Data[13]), BitReverse(ui8Data[14]),
+						BitReverse(ui8Data[15]));
+					break;
+				default:
+					DBG_REPORT(L"Unsupported uint8_t operation.");
+					break;
+				}
+
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(pui8Data), m128iResult);
+				};
+
+			constexpr auto lmbOperSIMDInt16 = [](std::int16_t* pi16Data, const HEXMODIFY & hms) {
+				const auto m128iData = hms.fBigEndian ?
+					ByteSwapSIMD<std::int16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi16Data)))
+					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi16Data));
+				alignas(16) std::int16_t i16Data[8];
+				_mm_store_si128(reinterpret_cast<__m128i*>(i16Data), m128iData);
+				assert(!hms.spnData.empty());
+				const auto i16Oper = *reinterpret_cast<const std::int16_t*>(hms.spnData.data());
+				const auto m128iOper = _mm_set1_epi16(i16Oper);
+				__m128i m128iResult { };
+
+				using enum EHexOperMode;
+				switch (hms.eOperMode) {
+				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
+					break;
+				case OPER_ADD:
+					m128iResult = _mm_add_epi16(m128iData, m128iOper);
+					break;
+				case OPER_SUB:
+					m128iResult = _mm_sub_epi16(m128iData, m128iOper);
+					break;
+				case OPER_MUL:
+					m128iResult = _mm_mullo_epi16(m128iData, m128iOper);
+					break;
+				case OPER_DIV:
+					assert(i16Oper > 0);
+					m128iResult = _mm_setr_epi16(i16Data[0] / i16Oper, i16Data[1] / i16Oper, i16Data[2] / i16Oper,
+						i16Data[3] / i16Oper, i16Data[4] / i16Oper, i16Data[5] / i16Oper, i16Data[6] / i16Oper, i16Data[7] / i16Oper);
+					break;
+				case OPER_CEIL:
+					m128iResult = _mm_min_epi16(m128iData, m128iOper);
+					break;
+				case OPER_FLOOR:
+					m128iResult = _mm_max_epi16(m128iData, m128iOper);
+					break;
+				case OPER_SWAP:
+					m128iResult = ByteSwapSIMD<std::int16_t>(m128iData);
+					break;
+				case OPER_OR:
+					m128iResult = _mm_or_si128(m128iData, m128iOper);
+					break;
+				case OPER_XOR:
+					m128iResult = _mm_xor_si128(m128iData, m128iOper);
+					break;
+				case OPER_AND:
+					m128iResult = _mm_and_si128(m128iData, m128iOper);
+					break;
+				case OPER_NOT:
+					//_mm_cmpeq_epi64(a,a) will result in all 1s, then XOR to reverse bits.
+					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
+					break;
+				case OPER_SHL:
+					m128iResult = _mm_setr_epi16(i16Data[0] << i16Oper, i16Data[1] << i16Oper, i16Data[2] << i16Oper,
+						i16Data[3] << i16Oper, i16Data[4] << i16Oper, i16Data[5] << i16Oper, i16Data[6] << i16Oper,
+						i16Data[7] << i16Oper);
+					break;
+				case OPER_SHR:
+					m128iResult = _mm_setr_epi16(i16Data[0] >> i16Oper, i16Data[1] >> i16Oper, i16Data[2] >> i16Oper,
+						i16Data[3] >> i16Oper, i16Data[4] >> i16Oper, i16Data[5] >> i16Oper, i16Data[6] >> i16Oper,
+						i16Data[7] >> i16Oper);
+					break;
+				case OPER_ROTL:
+					m128iResult = _mm_setr_epi16(std::rotl(static_cast<std::uint16_t>(i16Data[0]), i16Oper),
+						std::rotl(static_cast<std::uint16_t>(i16Data[1]), i16Oper),
+						std::rotl(static_cast<std::uint16_t>(i16Data[2]), i16Oper),
+						std::rotl(static_cast<std::uint16_t>(i16Data[3]), i16Oper),
+						std::rotl(static_cast<std::uint16_t>(i16Data[4]), i16Oper),
+						std::rotl(static_cast<std::uint16_t>(i16Data[5]), i16Oper),
+						std::rotl(static_cast<std::uint16_t>(i16Data[6]), i16Oper),
+						std::rotl(static_cast<std::uint16_t>(i16Data[7]), i16Oper));
+					break;
+				case OPER_ROTR:
+					m128iResult = _mm_setr_epi16(std::rotr(static_cast<std::uint16_t>(i16Data[0]), i16Oper),
+						std::rotr(static_cast<std::uint16_t>(i16Data[1]), i16Oper),
+						std::rotr(static_cast<std::uint16_t>(i16Data[2]), i16Oper),
+						std::rotr(static_cast<std::uint16_t>(i16Data[3]), i16Oper),
+						std::rotr(static_cast<std::uint16_t>(i16Data[4]), i16Oper),
+						std::rotr(static_cast<std::uint16_t>(i16Data[5]), i16Oper),
+						std::rotr(static_cast<std::uint16_t>(i16Data[6]), i16Oper),
+						std::rotr(static_cast<std::uint16_t>(i16Data[7]), i16Oper));
+					break;
+				case OPER_BITREV:
+					m128iResult = _mm_setr_epi16(BitReverse(i16Data[0]), BitReverse(i16Data[1]), BitReverse(i16Data[2]),
+						BitReverse(i16Data[3]), BitReverse(i16Data[4]), BitReverse(i16Data[5]), BitReverse(i16Data[6]),
+						BitReverse(i16Data[7]));
+					break;
+				default:
+					DBG_REPORT(L"Unsupported int16_t operation.");
+					break;
+				}
+
+				if (hms.fBigEndian) { //Swap bytes back.
+					m128iResult = ByteSwapSIMD<std::int16_t>(m128iResult);
+				}
+
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(pi16Data), m128iResult);
+				};
+
+			constexpr auto lmbOperSIMDUInt16 = [](std::uint16_t* pui16Data, const HEXMODIFY & hms) {
+				const auto m128iData = hms.fBigEndian ?
+					ByteSwapSIMD<std::uint16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui16Data)))
+					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui16Data));
+				alignas(16) std::uint16_t ui16Data[8];
+				_mm_store_si128(reinterpret_cast<__m128i*>(ui16Data), m128iData);
+				assert(!hms.spnData.empty());
+				const auto ui16Oper = *reinterpret_cast<const std::uint16_t*>(hms.spnData.data());
+				const auto m128iOper = _mm_set1_epi16(ui16Oper);
+				__m128i m128iResult { };
+
+				using enum EHexOperMode;
+				switch (hms.eOperMode) {
+				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
+					break;
+				case OPER_ADD:
+					m128iResult = _mm_add_epi16(m128iData, m128iOper);
+					break;
+				case OPER_SUB:
+					m128iResult = _mm_sub_epi16(m128iData, m128iOper);
+					break;
+				case OPER_MUL:
+					m128iResult = _mm_setr_epi16(ui16Data[0] * ui16Oper, ui16Data[1] * ui16Oper, ui16Data[2] * ui16Oper,
+						ui16Data[3] * ui16Oper, ui16Data[4] * ui16Oper, ui16Data[5] * ui16Oper, ui16Data[6] * ui16Oper,
+						ui16Data[7] * ui16Oper);
+					break;
+				case OPER_DIV:
+					assert(ui16Oper > 0);
+					m128iResult = _mm_setr_epi16(ui16Data[0] / ui16Oper, ui16Data[1] / ui16Oper, ui16Data[2] / ui16Oper,
+						ui16Data[3] / ui16Oper, ui16Data[4] / ui16Oper, ui16Data[5] / ui16Oper, ui16Data[6] / ui16Oper,
+						ui16Data[7] / ui16Oper);
+					break;
+				case OPER_CEIL:
+					m128iResult = _mm_min_epu16(m128iData, m128iOper);
+					break;
+				case OPER_FLOOR:
+					m128iResult = _mm_max_epu16(m128iData, m128iOper);
+					break;
+				case OPER_SWAP:
+					m128iResult = ByteSwapSIMD<std::uint16_t>(m128iData);
+					break;
+				case OPER_OR:
+					m128iResult = _mm_or_si128(m128iData, m128iOper);
+					break;
+				case OPER_XOR:
+					m128iResult = _mm_xor_si128(m128iData, m128iOper);
+					break;
+				case OPER_AND:
+					m128iResult = _mm_and_si128(m128iData, m128iOper);
+					break;
+				case OPER_NOT:
+					//_mm_cmpeq_epi64(a,a) will result in all 1s, then XOR to reverse bits.
+					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
+					break;
+				case OPER_SHL:
+					m128iResult = _mm_setr_epi16(ui16Data[0] << ui16Oper, ui16Data[1] << ui16Oper, ui16Data[2] << ui16Oper,
+						ui16Data[3] << ui16Oper, ui16Data[4] << ui16Oper, ui16Data[5] << ui16Oper, ui16Data[6] << ui16Oper,
+						ui16Data[7] << ui16Oper);
+					break;
+				case OPER_SHR:
+					m128iResult = _mm_setr_epi16(ui16Data[0] >> ui16Oper, ui16Data[1] >> ui16Oper, ui16Data[2] >> ui16Oper,
+						ui16Data[3] >> ui16Oper, ui16Data[4] >> ui16Oper, ui16Data[5] >> ui16Oper, ui16Data[6] >> ui16Oper,
+						ui16Data[7] >> ui16Oper);
+					break;
+				case OPER_ROTL:
+					m128iResult = _mm_setr_epi16(std::rotl(ui16Data[0], ui16Oper), std::rotl(ui16Data[1], ui16Oper),
+						std::rotl(ui16Data[2], ui16Oper), std::rotl(ui16Data[3], ui16Oper), std::rotl(ui16Data[4], ui16Oper),
+						std::rotl(ui16Data[5], ui16Oper), std::rotl(ui16Data[6], ui16Oper), std::rotl(ui16Data[7], ui16Oper));
+					break;
+				case OPER_ROTR:
+					m128iResult = _mm_setr_epi16(std::rotr(ui16Data[0], ui16Oper), std::rotr(ui16Data[1], ui16Oper),
+						std::rotr(ui16Data[2], ui16Oper), std::rotr(ui16Data[3], ui16Oper), std::rotr(ui16Data[4], ui16Oper),
+						std::rotr(ui16Data[5], ui16Oper), std::rotr(ui16Data[6], ui16Oper), std::rotr(ui16Data[7], ui16Oper));
+					break;
+				case OPER_BITREV:
+					m128iResult = _mm_setr_epi16(BitReverse(ui16Data[0]), BitReverse(ui16Data[1]), BitReverse(ui16Data[2]),
+						BitReverse(ui16Data[3]), BitReverse(ui16Data[4]), BitReverse(ui16Data[5]), BitReverse(ui16Data[6]),
+						BitReverse(ui16Data[7]));
+					break;
+				default:
+					DBG_REPORT(L"Unsupported uint16_t operation.");
+					break;
+				}
+
+				if (hms.fBigEndian) { //Swap bytes back.
+					m128iResult = ByteSwapSIMD<std::uint16_t>(m128iResult);
+				}
+
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(pui16Data), m128iResult);
+				};
+
+			constexpr auto lmbOperSIMDInt32 = [](std::int32_t* pi32Data, const HEXMODIFY & hms) {
+				const auto m128iData = hms.fBigEndian ?
+					ByteSwapSIMD<std::int32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi32Data)))
+					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi32Data));
+				alignas(16) std::int32_t i32Data[4];
+				_mm_store_si128(reinterpret_cast<__m128i*>(i32Data), m128iData);
+				assert(!hms.spnData.empty());
+				const auto i32Oper = *reinterpret_cast<const std::int32_t*>(hms.spnData.data());
+				const auto m128iOper = _mm_set1_epi32(i32Oper);
+				__m128i m128iResult { };
+
+				using enum EHexOperMode;
+				switch (hms.eOperMode) {
+				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
+					break;
+				case OPER_ADD:
+					m128iResult = _mm_add_epi32(m128iData, m128iOper);
+					break;
+				case OPER_SUB:
+					m128iResult = _mm_sub_epi32(m128iData, m128iOper);
+					break;
+				case OPER_MUL:
+					m128iResult = _mm_mullo_epi32(m128iData, m128iOper);
+					break;
+				case OPER_DIV:
+					assert(i32Oper > 0);
+					m128iResult = _mm_setr_epi32(i32Data[0] / i32Oper, i32Data[1] / i32Oper, i32Data[2] / i32Oper,
+						i32Data[3] / i32Oper);
+					break;
+				case OPER_CEIL:
+					m128iResult = _mm_min_epi32(m128iData, m128iOper);
+					break;
+				case OPER_FLOOR:
+					m128iResult = _mm_max_epi32(m128iData, m128iOper);
+					break;
+				case OPER_SWAP:
+					m128iResult = ByteSwapSIMD<std::int32_t>(m128iData);
+					break;
+				case OPER_OR:
+					m128iResult = _mm_or_si128(m128iData, m128iOper);
+					break;
+				case OPER_XOR:
+					m128iResult = _mm_xor_si128(m128iData, m128iOper);
+					break;
+				case OPER_AND:
+					m128iResult = _mm_and_si128(m128iData, m128iOper);
+					break;
+				case OPER_NOT:
+					//_mm_cmpeq_epi64(a,a) will result in all 1s, then XOR to reverse bits.
+					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
+					break;
+				case OPER_SHL:
+					m128iResult = _mm_setr_epi32(i32Data[0] << i32Oper, i32Data[1] << i32Oper, i32Data[2] << i32Oper,
+						i32Data[3] << i32Oper);
+					break;
+				case OPER_SHR:
+					m128iResult = _mm_setr_epi32(i32Data[0] >> i32Oper, i32Data[1] >> i32Oper, i32Data[2] >> i32Oper,
+						i32Data[3] >> i32Oper);
+					break;
+				case OPER_ROTL:
+					m128iResult = _mm_setr_epi32(std::rotl(static_cast<std::uint32_t>(i32Data[0]), i32Oper),
+						std::rotl(static_cast<std::uint32_t>(i32Data[1]), i32Oper),
+						std::rotl(static_cast<std::uint32_t>(i32Data[2]), i32Oper),
+						std::rotl(static_cast<std::uint32_t>(i32Data[3]), i32Oper));
+					break;
+				case OPER_ROTR:
+					m128iResult = _mm_setr_epi32(std::rotr(static_cast<std::uint32_t>(i32Data[0]), i32Oper),
+						std::rotr(static_cast<std::uint32_t>(i32Data[1]), i32Oper),
+						std::rotr(static_cast<std::uint32_t>(i32Data[2]), i32Oper),
+						std::rotr(static_cast<std::uint32_t>(i32Data[3]), i32Oper));
+					break;
+				case OPER_BITREV:
+					m128iResult = _mm_setr_epi32(BitReverse(i32Data[0]), BitReverse(i32Data[1]), BitReverse(i32Data[2]),
+						BitReverse(i32Data[3]));
+					break;
+				default:
+					DBG_REPORT(L"Unsupported int32_t operation.");
+					break;
+				}
+
+				if (hms.fBigEndian) { //Swap bytes back.
+					m128iResult = ByteSwapSIMD<std::int32_t>(m128iResult);
+				}
+
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(pi32Data), m128iResult);
+				};
+
+			constexpr auto lmbOperSIMDUInt32 = [](std::uint32_t* pui32Data, const HEXMODIFY & hms) {
+				const auto m128iData = hms.fBigEndian ?
+					ByteSwapSIMD<std::uint32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui32Data)))
+					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui32Data));
+				alignas(16) std::uint32_t ui32Data[4];
+				_mm_store_si128(reinterpret_cast<__m128i*>(ui32Data), m128iData);
+				assert(!hms.spnData.empty());
+				const auto ui32Oper = *reinterpret_cast<const std::uint32_t*>(hms.spnData.data());
+				const auto m128iOper = _mm_set1_epi32(ui32Oper);
+				__m128i m128iResult { };
+
+				using enum EHexOperMode;
+				switch (hms.eOperMode) {
+				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
+					break;
+				case OPER_ADD:
+					m128iResult = _mm_add_epi32(m128iData, m128iOper);
+					break;
+				case OPER_SUB:
+					m128iResult = _mm_sub_epi32(m128iData, m128iOper);
+					break;
+				case OPER_MUL:
+					m128iResult = _mm_setr_epi32(ui32Data[0] * ui32Oper, ui32Data[1] * ui32Oper, ui32Data[2] * ui32Oper,
+						ui32Data[3] * ui32Oper);
+					break;
+				case OPER_DIV:
+					assert(ui32Oper > 0);
+					m128iResult = _mm_setr_epi32(ui32Data[0] / ui32Oper, ui32Data[1] / ui32Oper, ui32Data[2] / ui32Oper,
+						ui32Data[3] / ui32Oper);
+					break;
+				case OPER_CEIL:
+					m128iResult = _mm_min_epu32(m128iData, m128iOper); //SSE4.1
+					break;
+				case OPER_FLOOR:
+					m128iResult = _mm_max_epu32(m128iData, m128iOper); //SSE4.1
+					break;
+				case OPER_SWAP:
+					m128iResult = ByteSwapSIMD<std::uint32_t>(m128iData);
+					break;
+				case OPER_OR:
+					m128iResult = _mm_or_si128(m128iData, m128iOper);
+					break;
+				case OPER_XOR:
+					m128iResult = _mm_xor_si128(m128iData, m128iOper);
+					break;
+				case OPER_AND:
+					m128iResult = _mm_and_si128(m128iData, m128iOper);
+					break;
+				case OPER_NOT:
+					//_mm_cmpeq_epi64(a,a) will result in all 1s, then XOR to reverse bits.
+					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
+					break;
+				case OPER_SHL:
+					m128iResult = _mm_setr_epi32(ui32Data[0] << ui32Oper, ui32Data[1] << ui32Oper, ui32Data[2] << ui32Oper,
+						ui32Data[3] << ui32Oper);
+					break;
+				case OPER_SHR:
+					m128iResult = _mm_setr_epi32(ui32Data[0] >> ui32Oper, ui32Data[1] >> ui32Oper, ui32Data[2] >> ui32Oper,
+						ui32Data[3] >> ui32Oper);
+					break;
+				case OPER_ROTL:
+					m128iResult = _mm_setr_epi32(std::rotl(ui32Data[0], ui32Oper), std::rotl(ui32Data[1], ui32Oper),
+						std::rotl(ui32Data[2], ui32Oper), std::rotl(ui32Data[3], ui32Oper));
+					break;
+				case OPER_ROTR:
+					m128iResult = _mm_setr_epi32(std::rotr(ui32Data[0], ui32Oper), std::rotr(ui32Data[1], ui32Oper),
+						std::rotr(ui32Data[2], ui32Oper), std::rotr(ui32Data[3], ui32Oper));
+					break;
+				case OPER_BITREV:
+					m128iResult = _mm_setr_epi32(BitReverse(ui32Data[0]), BitReverse(ui32Data[1]), BitReverse(ui32Data[2]),
+						BitReverse(ui32Data[3]));
+					break;
+				default:
+					DBG_REPORT(L"Unsupported uint32_t operation.");
+					break;
+				}
+
+				if (hms.fBigEndian) { //Swap bytes back.
+					m128iResult = ByteSwapSIMD<std::uint32_t>(m128iResult);
+				}
+
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(pui32Data), m128iResult);
+				};
+
+			constexpr auto lmbOperSIMDInt64 = [](std::int64_t* pi64Data, const HEXMODIFY & hms) {
+				const auto m128iData = hms.fBigEndian ?
+					ByteSwapSIMD<std::int64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi64Data)))
+					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi64Data));
+				alignas(16) std::int64_t i64Data[2];
+				_mm_store_si128(reinterpret_cast<__m128i*>(i64Data), m128iData);
+				assert(!hms.spnData.empty());
+				const auto i64Oper = *reinterpret_cast<const std::int64_t*>(hms.spnData.data());
+				const auto m128iOper = _mm_set1_epi64x(i64Oper);
+				__m128i m128iResult { };
+
+				using enum EHexOperMode;
+				switch (hms.eOperMode) {
+				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
+					break;
+				case OPER_ADD:
+					m128iResult = _mm_add_epi64(m128iData, m128iOper);
+					break;
+				case OPER_SUB:
+					m128iResult = _mm_sub_epi64(m128iData, m128iOper);
+					break;
+				case OPER_MUL:
+					m128iResult = _mm_set_epi64x(i64Data[1] * i64Oper, i64Data[0] * i64Oper);
+					break;
+				case OPER_DIV:
+					assert(i64Oper > 0);
+					m128iResult = _mm_set_epi64x(i64Data[1] / i64Oper, i64Data[0] / i64Oper);
+					break;
+				case OPER_CEIL:
+					m128iResult = _mm_set_epi64x((std::min)(i64Data[1], i64Oper), (std::min)(i64Data[0], i64Oper));
+					break;
+				case OPER_FLOOR:
+					m128iResult = _mm_set_epi64x((std::max)(i64Data[1], i64Oper), (std::max)(i64Data[0], i64Oper));
+					break;
+				case OPER_SWAP:
+					m128iResult = ByteSwapSIMD<std::int64_t>(m128iData);
+					break;
+				case OPER_OR:
+					m128iResult = _mm_or_si128(m128iData, m128iOper);
+					break;
+				case OPER_XOR:
+					m128iResult = _mm_xor_si128(m128iData, m128iOper);
+					break;
+				case OPER_AND:
+					m128iResult = _mm_and_si128(m128iData, m128iOper);
+					break;
+				case OPER_NOT:
+					//_mm_cmpeq_epi64(a,a) will result in all 1s, then XOR to reverse bits.
+					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
+					break;
+				case OPER_SHL:
+					m128iResult = _mm_set_epi64x(i64Data[1] << i64Oper, i64Data[0] << i64Oper);
+					break;
+				case OPER_SHR:
+					m128iResult = _mm_set_epi64x(i64Data[1] >> i64Oper, i64Data[0] >> i64Oper);
+					break;
+				case OPER_ROTL:
+					m128iResult = _mm_set_epi64x(std::rotl(static_cast<std::uint64_t>(i64Data[1]), static_cast<const int>(i64Oper)),
+						std::rotl(static_cast<std::uint64_t>(i64Data[0]), static_cast<const int>(i64Oper)));
+					break;
+				case OPER_ROTR:
+					m128iResult = _mm_set_epi64x(std::rotr(static_cast<std::uint64_t>(i64Data[1]), static_cast<const int>(i64Oper)),
+						std::rotr(static_cast<std::uint64_t>(i64Data[0]), static_cast<const int>(i64Oper)));
+					break;
+				case OPER_BITREV:
+					m128iResult = _mm_set_epi64x(BitReverse(i64Data[1]), BitReverse(i64Data[0]));
+					break;
+				default:
+					DBG_REPORT(L"Unsupported int64_t operation.");
+					break;
+				}
+
+				if (hms.fBigEndian) { //Swap bytes back.
+					m128iResult = ByteSwapSIMD<std::int64_t>(m128iResult);
+				}
+
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(pi64Data), m128iResult);
+				};
+
+			constexpr auto lmbOperSIMDUInt64 = [](std::uint64_t* pui64Data, const HEXMODIFY & hms) {
+				const auto m128iData = hms.fBigEndian ?
+					ByteSwapSIMD<std::uint64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui64Data)))
+					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui64Data));
+				alignas(16) std::uint64_t ui64Data[2];
+				_mm_store_si128(reinterpret_cast<__m128i*>(ui64Data), m128iData);
+				assert(!hms.spnData.empty());
+				const auto ui64Oper = *reinterpret_cast<const std::uint64_t*>(hms.spnData.data());
+				const auto m128iOper = _mm_set1_epi64x(ui64Oper);
+				__m128i m128iResult { };
+
+				using enum EHexOperMode;
+				switch (hms.eOperMode) {
+				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
+					break;
+				case OPER_ADD:
+					m128iResult = _mm_add_epi64(m128iData, m128iOper);
+					break;
+				case OPER_SUB:
+					m128iResult = _mm_sub_epi64(m128iData, m128iOper);
+					break;
+				case OPER_MUL:
+					m128iResult = _mm_set_epi64x(ui64Data[1] * ui64Oper, ui64Data[0] * ui64Oper);
+					break;
+				case OPER_DIV:
+					assert(ui64Oper > 0);
+					m128iResult = _mm_set_epi64x(ui64Data[1] / ui64Oper, ui64Data[0] / ui64Oper);
+					break;
+				case OPER_CEIL:
+					m128iResult = _mm_set_epi64x((std::min)(ui64Data[1], ui64Oper), (std::min)(ui64Data[0], ui64Oper));
+					break;
+				case OPER_FLOOR:
+					m128iResult = _mm_set_epi64x((std::max)(ui64Data[1], ui64Oper), (std::max)(ui64Data[0], ui64Oper));
+					break;
+				case OPER_SWAP:
+					m128iResult = ByteSwapSIMD<std::uint64_t>(m128iData);
+					break;
+				case OPER_OR:
+					m128iResult = _mm_or_si128(m128iData, m128iOper);
+					break;
+				case OPER_XOR:
+					m128iResult = _mm_xor_si128(m128iData, m128iOper);
+					break;
+				case OPER_AND:
+					m128iResult = _mm_and_si128(m128iData, m128iOper);
+					break;
+				case OPER_NOT:
+					//_mm_cmpeq_epi64(a,a) will result in all 1s, then XOR to reverse bits.
+					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
+					break;
+				case OPER_SHL:
+					m128iResult = _mm_set_epi64x(ui64Data[1] << ui64Oper, ui64Data[0] << ui64Oper);
+					break;
+				case OPER_SHR:
+					m128iResult = _mm_set_epi64x(ui64Data[1] >> ui64Oper, ui64Data[0] >> ui64Oper);
+					break;
+				case OPER_ROTL:
+					m128iResult = _mm_set_epi64x(std::rotl(ui64Data[1], static_cast<const int>(ui64Oper)),
+						std::rotl(ui64Data[0], static_cast<const int>(ui64Oper)));
+					break;
+				case OPER_ROTR:
+					m128iResult = _mm_set_epi64x(std::rotr(ui64Data[1], static_cast<const int>(ui64Oper)),
+						std::rotr(ui64Data[0], static_cast<const int>(ui64Oper)));
+					break;
+				case OPER_BITREV:
+					m128iResult = _mm_set_epi64x(BitReverse(ui64Data[1]), BitReverse(ui64Data[0]));
+					break;
+				default:
+					DBG_REPORT(L"Unsupported uint64_t operation.");
+					break;
+				}
+
+				if (hms.fBigEndian) { //Swap bytes back.
+					m128iResult = ByteSwapSIMD<std::uint64_t>(m128iResult);
+				}
+
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(pui64Data), m128iResult);
+				};
+
+			constexpr auto lmbOperSIMDFloat = [](float* pflData, const HEXMODIFY & hms) {
+				const auto m128Data = hms.fBigEndian ? ByteSwapSIMD<float>(_mm_loadu_ps(pflData)) : _mm_loadu_ps(pflData);
+				const auto m128Oper = _mm_set1_ps(*reinterpret_cast<const float*>(hms.spnData.data()));
+				__m128 m128Result { };
+
+				using enum EHexOperMode;
+				switch (hms.eOperMode) {
+				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
+					break;
+				case OPER_ADD:
+					m128Result = _mm_add_ps(m128Data, m128Oper);
+					break;
+				case OPER_SUB:
+					m128Result = _mm_sub_ps(m128Data, m128Oper);
+					break;
+				case OPER_MUL:
+					m128Result = _mm_mul_ps(m128Data, m128Oper);
+					break;
+				case OPER_DIV:
+					assert(*reinterpret_cast<const float*>(hms.spnData.data()) > 0.F);
+					m128Result = _mm_div_ps(m128Data, m128Oper);
+					break;
+				case OPER_CEIL:
+					m128Result = _mm_min_ps(m128Data, m128Oper);
+					break;
+				case OPER_FLOOR:
+					m128Result = _mm_max_ps(m128Data, m128Oper);
+					break;
+				case OPER_SWAP:
+					m128Result = ByteSwapSIMD<float>(m128Data);
+					break;
+				default:
+					DBG_REPORT(L"Unsupported float operation.");
+					return;
+				}
+
+				if (hms.fBigEndian) { //Swap bytes back.
+					m128Result = ByteSwapSIMD<float>(m128Result);
+				}
+
+				_mm_storeu_ps(pflData, m128Result);
+				};
+
+			constexpr auto lmbOperSIMDDouble = [](double* pdblData, const HEXMODIFY & hms) {
+				const auto m128dData = hms.fBigEndian ? ByteSwapSIMD<double>(_mm_loadu_pd(pdblData)) : _mm_loadu_pd(pdblData);
+				const auto m128dOper = _mm_set1_pd(*reinterpret_cast<const double*>(hms.spnData.data()));
+				__m128d m128dResult { };
+
+				using enum EHexOperMode;
+				switch (hms.eOperMode) {
+				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
+					break;
+				case OPER_ADD:
+					m128dResult = _mm_add_pd(m128dData, m128dOper);
+					break;
+				case OPER_SUB:
+					m128dResult = _mm_sub_pd(m128dData, m128dOper);
+					break;
+				case OPER_MUL:
+					m128dResult = _mm_mul_pd(m128dData, m128dOper);
+					break;
+				case OPER_DIV:
+					assert(*reinterpret_cast<const double*>(hms.spnData.data()) > 0.);
+					m128dResult = _mm_div_pd(m128dData, m128dOper);
+					break;
+				case OPER_CEIL:
+					m128dResult = _mm_min_pd(m128dData, m128dOper);
+					break;
+				case OPER_FLOOR:
+					m128dResult = _mm_max_pd(m128dData, m128dOper);
+					break;
+				case OPER_SWAP:
+					m128dResult = ByteSwapSIMD<double>(m128dData);
+					break;
+				default:
+					DBG_REPORT(L"Unsupported double operation.");
+					return;
+				}
+
+				if (hms.fBigEndian) { //Swap bytes back.
+					m128dResult = ByteSwapSIMD<double>(m128dResult);
+				}
+
+				_mm_storeu_pd(pdblData, m128dResult);
+				};
+
+			using enum EHexDataType;
+			switch (hms.eDataType) {
+			case DATA_INT8:
+				lmbOperSIMDInt8(reinterpret_cast<std::int8_t*>(pData), hms);
+				break;
+			case DATA_UINT8:
+				lmbOperSIMDUInt8(reinterpret_cast<std::uint8_t*>(pData), hms);
+				break;
+			case DATA_INT16:
+				lmbOperSIMDInt16(reinterpret_cast<std::int16_t*>(pData), hms);
+				break;
+			case DATA_UINT16:
+				lmbOperSIMDUInt16(reinterpret_cast<std::uint16_t*>(pData), hms);
+				break;
+			case DATA_INT32:
+				lmbOperSIMDInt32(reinterpret_cast<std::int32_t*>(pData), hms);
+				break;
+			case DATA_UINT32:
+				lmbOperSIMDUInt32(reinterpret_cast<std::uint32_t*>(pData), hms);
+				break;
+			case DATA_INT64:
+				lmbOperSIMDInt64(reinterpret_cast<std::int64_t*>(pData), hms);
+				break;
+			case DATA_UINT64:
+				lmbOperSIMDUInt64(reinterpret_cast<std::uint64_t*>(pData), hms);
+				break;
+			case DATA_FLOAT:
+				lmbOperSIMDFloat(reinterpret_cast<float*>(pData), hms);
+				break;
+			case DATA_DOUBLE:
+				lmbOperSIMDDouble(reinterpret_cast<double*>(pData), hms);
+				break;
+			default:
+				break;
+			}
+			};
+
+		//In cases where only one affected data region (hms.vecSpan.size()==1) is used,
+		//and ullSizeToModify > ulSizeSIMD we use SIMD instructions.
+		//At the end we simply fill up the remainder (ullSizeToModify % ulSizeSIMD).
+		constexpr auto ulSizeSIMD { sizeof(__m128i) }; //Size in bytes of the __m128i data structure.
+		const auto ullOffsetToModify = hms.vecSpan.back().ullOffset;
+		const auto ullSizeToModify = hms.vecSpan.back().ullSize;
+		const auto ullSizeToFillWith = hms.spnData.size();
+		const auto ullSIMDCycles = ullSizeToModify / ulSizeSIMD; //How many times to make SIMD opers.
+
+		if (hms.vecSpan.size() == 1 && ullSIMDCycles > 0) {
+			ModifyWorker(hms, lmbOperSIMD, { static_cast<std::byte*>(nullptr), ulSizeSIMD }); //Worker with SIMD.
+
+			if (const auto ullRem = ullSizeToModify % ulSizeSIMD; ullRem >= ullSizeToFillWith) { //Remainder of the SIMD.
+				const auto ullOffset = ullOffsetToModify + ullSizeToModify - ullRem;
+				const auto spnData = GetData({ ullOffset, ullRem });
+				for (std::size_t iterRem = 0; iterRem < (ullRem / ullSizeToFillWith); ++iterRem) { //Works only if ullRem >= ullSizeToFillWith.
+					lmbOperDefault(spnData.data() + (iterRem * ullSizeToFillWith), hms, { });
+				}
+				SetDataVirtual(spnData, { ullOffset, ullRem - (ullRem % ullSizeToFillWith) });
+			}
+		}
+		else {
+			ModifyWorker(hms, lmbOperDefault, hms.spnData);
+		}
 	}
 	break;
 	default:
@@ -3747,10 +4630,10 @@ bool CHexCtrl::IsPageVisible()const
 	return GetPageSize() > 0 && (GetPageSize() % GetCapacity() == 0) && GetPageSize() >= GetCapacity();
 }
 
-void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& lmbWorker, const HEXCTRL::SpanCByte spnDataToOperWith)
+void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, const HEXCTRL::SpanCByte spnOper)
 {
-	assert(!spnDataToOperWith.empty());
-	if (spnDataToOperWith.empty())
+	assert(!spnOper.empty());
+	if (spnOper.empty())
 		return;
 
 	const auto& vecSpanRef = hms.vecSpan;
@@ -3763,25 +4646,21 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& lmbWorker
 		for (const auto& iterSpan : vecSpanRef) { //Span-vector's size times.
 			const auto ullOffsetToModify { iterSpan.ullOffset };
 			const auto ullSizeToModify { iterSpan.ullSize };
-			const auto ullSizeToOperWith { spnDataToOperWith.size() };
+			const auto ullSizeDataOper { spnOper.size() };
 
 			//If the size of the data to_modify_from is bigger than
 			//the data to modify, we do nothing.
-			if (ullSizeToOperWith > ullSizeToModify)
+			if (ullSizeDataOper > ullSizeToModify)
 				break;
 
 			ULONGLONG ullSizeCache { };
 			ULONGLONG ullChunks { };
-			bool fCacheIsLargeEnough { true }; //Cache is larger than ullSizeToOperWith.
+			bool fCacheIsLargeEnough { true }; //Cache is larger than ullSizeDataOper.
 
-			if (!IsVirtual()) {
-				ullSizeCache = ullSizeToModify;
-				ullChunks = 1;
-			}
-			else {
+			if (IsVirtual()) {
 				ullSizeCache = GetCacheSize(); //Size of Virtual memory for acquiring, to work with.
-				if (ullSizeCache >= ullSizeToOperWith) {
-					ullSizeCache -= ullSizeCache % ullSizeToOperWith; //Aligning chunk size to ullSizeToOperWith.
+				if (ullSizeCache >= ullSizeDataOper) {
+					ullSizeCache -= ullSizeCache % ullSizeDataOper; //Aligning chunk size to ullSizeDataOper.
 
 					if (ullSizeToModify < ullSizeCache) {
 						ullSizeCache = ullSizeToModify;
@@ -3790,10 +4669,14 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& lmbWorker
 				}
 				else {
 					fCacheIsLargeEnough = false;
-					const auto iSmallMod = ullSizeToOperWith % ullSizeCache;
-					const auto ullSmallChunks = ullSizeToOperWith / ullSizeCache + (iSmallMod > 0 ? 1 : 0);
-					ullChunks = (ullSizeToModify / ullSizeToOperWith) * ullSmallChunks;
+					const auto iSmallMod = ullSizeDataOper % ullSizeCache;
+					const auto ullSmallChunks = ullSizeDataOper / ullSizeCache + (iSmallMod > 0 ? 1 : 0);
+					ullChunks = (ullSizeToModify / ullSizeDataOper) * ullSmallChunks;
 				}
+			}
+			else {
+				ullSizeCache = ullSizeToModify;
+				ullChunks = 1;
 			}
 
 			if (fCacheIsLargeEnough) {
@@ -3801,20 +4684,20 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& lmbWorker
 					const auto ullOffsetCurr = ullOffsetToModify + (iterChunk * ullSizeCache);
 					if (ullOffsetCurr + ullSizeCache > GetDataSize()) { //Overflow check.
 						ullSizeCache = GetDataSize() - ullOffsetCurr;
-						if (ullSizeCache < ullSizeToOperWith) //ullSizeChunk is too small for ullSizeToOperWith.
+						if (ullSizeCache < ullSizeDataOper) //ullSizeChunk is too small for ullSizeDataOper.
 							break;
 					}
 
 					if ((ullOffsetCurr + ullSizeCache) > (ullOffsetToModify + ullSizeToModify)) {
 						ullSizeCache = (ullOffsetToModify + ullSizeToModify) - ullOffsetCurr;
-						if (ullSizeCache < ullSizeToOperWith) //ullSizeChunk is too small for ullSizeToOperWith.
+						if (ullSizeCache < ullSizeDataOper) //ullSizeChunk is too small for ullSizeDataOper.
 							break;
 					}
 
 					const auto spnData = GetData({ ullOffsetCurr, ullSizeCache });
 					assert(!spnData.empty());
-					for (auto ullIndex { 0ULL }; ullIndex <= (ullSizeCache - ullSizeToOperWith); ullIndex += ullSizeToOperWith) {
-						lmbWorker(spnData.data() + ullIndex, hms, spnDataToOperWith);
+					for (auto ullIndex { 0ULL }; ullIndex <= (ullSizeCache - ullSizeDataOper); ullIndex += ullSizeDataOper) {
+						FuncWorker(spnData.data() + ullIndex, hms, spnOper);
 						if (dlgClbk.IsCanceled()) {
 							SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCache });
 							goto exit;
@@ -3825,14 +4708,14 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& lmbWorker
 				}
 			}
 			else {
-				//It's a special case for when the ullSizeToOperWith is larger than
+				//It's a special case for when the ullSizeDataOper is larger than
 				//the current cache size (only in VirtualData mode).
 
-				const auto ullSmallMod = ullSizeToOperWith % ullSizeCache;
-				const auto ullSmallChunks = ullSizeToOperWith / ullSizeCache + (ullSmallMod > 0 ? 1 : 0);
+				const auto ullSmallMod = ullSizeDataOper % ullSizeCache;
+				const auto ullSmallChunks = ullSizeDataOper / ullSizeCache + (ullSmallMod > 0 ? 1 : 0);
 				auto ullSmallChunkCur = 0ULL; //Current small chunk index.
 				auto ullOffsetCurr = 0ULL;
-				auto ullOffsetSubSpan = 0ULL; //Current offset for spnDataToOperWith.subspan().
+				auto ullOffsetSubSpan = 0ULL; //Current offset for spnOper.subspan().
 				auto ullSizeCacheCurr = 0ULL; //Current cache size.
 				for (auto iterChunk { 0ULL }; iterChunk < ullChunks; ++iterChunk) {
 					if (ullSmallChunkCur == (ullSmallChunks - 1) && ullSmallMod > 0) {
@@ -3848,13 +4731,14 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& lmbWorker
 
 					const auto spnData = GetData({ ullOffsetCurr, ullSizeCacheCurr });
 					assert(!spnData.empty());
-
-					lmbWorker(spnData.data(), hms, spnDataToOperWith.subspan(static_cast<std::size_t>(ullOffsetSubSpan),
+					FuncWorker(spnData.data(), hms, spnOper.subspan(static_cast<std::size_t>(ullOffsetSubSpan),
 						static_cast<std::size_t>(ullSizeCacheCurr)));
+
 					if (dlgClbk.IsCanceled()) {
 						SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCacheCurr });
 						goto exit;
 					}
+
 					dlgClbk.SetProgress(ullOffsetCurr + ullSizeCacheCurr);
 					SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCacheCurr });
 

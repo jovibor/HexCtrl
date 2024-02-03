@@ -153,7 +153,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsDrawable()const;                  //Should WM_PAINT be handled atm or not.
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
 		//Main "Modify" method with different workers.
-		void ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& lmbWorker, HEXCTRL::SpanCByte spnDataToOperWith);
+		void ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, HEXCTRL::SpanCByte spnOper);
 		[[nodiscard]] auto OffsetToWstr(ULONGLONG ullOffset)const->std::wstring; //Format offset as std::wstring.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		void OnModifyData();                                   //When data has been modified.

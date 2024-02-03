@@ -102,6 +102,9 @@ template<typename T> requires TSize1248<T>
 auto CHexDlgOpers::GetOperand(T& tOper, bool& fBigEndian)const->SpanCByte
 {
 	const auto pWndOper = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND);
+	if (!pWndOper->IsWindowEnabled())
+		return { reinterpret_cast<std::byte*>(&tOper), sizeof(tOper) };
+
 	CStringW wstrOper;
 	pWndOper->GetWindowTextW(wstrOper);
 	const auto opt = stn::StrToNum<T>(wstrOper.GetString());
@@ -172,6 +175,8 @@ void CHexDlgOpers::OnComboOperSelChange()
 		break;
 	}
 
+	SetControlsState();
+
 	if (fShouldHaveFloats == fHasFloats)
 		return;
 
@@ -196,8 +201,6 @@ void CHexDlgOpers::OnComboOperSelChange()
 	}
 	m_comboType.SetRedraw(TRUE);
 	m_comboType.RedrawWindow();
-
-	SetControlsState();
 }
 
 void CHexDlgOpers::OnEditOperChange()
@@ -285,51 +288,49 @@ void CHexDlgOpers::OnOK()
 		&& eOperMode != OPER_BITREV;
 
 	//Operand data holders for different operand types.
-	std::int8_t i8Oper;	std::uint8_t ui8Oper;
-	std::int16_t i16Oper; std::uint16_t ui16Oper;
-	std::int32_t i32Oper; std::uint32_t ui32Oper;
-	std::int64_t i64Oper; std::uint64_t ui64Oper;
-	float flOper; double dblOper;
+	std::int8_t i8Oper { };	std::uint8_t ui8Oper { };
+	std::int16_t i16Oper { }; std::uint16_t ui16Oper { };
+	std::int32_t i32Oper { }; std::uint32_t ui32Oper { };
+	std::int64_t i64Oper { }; std::uint64_t ui64Oper { };
+	float flOper { }; double dblOper { };
 	SpanCByte spnOper;
-	if (const auto pWndOper = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND); pWndOper->IsWindowEnabled()) {
-		switch (eDataType) {
-		case DATA_INT8:
-			spnOper = GetOperand(i8Oper, fBigEndian);
-			break;
-		case DATA_UINT8:
-			spnOper = GetOperand(ui8Oper, fBigEndian);
-			break;
-		case DATA_INT16:
-			spnOper = GetOperand(i16Oper, fBigEndian);
-			break;
-		case DATA_UINT16:
-			spnOper = GetOperand(ui16Oper, fBigEndian);
-			break;
-		case DATA_INT32:
-			spnOper = GetOperand(i32Oper, fBigEndian);
-			break;
-		case DATA_UINT32:
-			spnOper = GetOperand(ui32Oper, fBigEndian);
-			break;
-		case DATA_INT64:
-			spnOper = GetOperand(i64Oper, fBigEndian);
-			break;
-		case DATA_UINT64:
-			spnOper = GetOperand(ui64Oper, fBigEndian);
-			break;
-		case DATA_FLOAT:
-			spnOper = GetOperand(flOper, fBigEndian);
-			break;
-		case DATA_DOUBLE:
-			spnOper = GetOperand(dblOper, fBigEndian);
-			break;
-		default:
-			break;
-		}
-
-		if (spnOper.empty())
-			return;
+	switch (eDataType) {
+	case DATA_INT8:
+		spnOper = GetOperand(i8Oper, fBigEndian);
+		break;
+	case DATA_UINT8:
+		spnOper = GetOperand(ui8Oper, fBigEndian);
+		break;
+	case DATA_INT16:
+		spnOper = GetOperand(i16Oper, fBigEndian);
+		break;
+	case DATA_UINT16:
+		spnOper = GetOperand(ui16Oper, fBigEndian);
+		break;
+	case DATA_INT32:
+		spnOper = GetOperand(i32Oper, fBigEndian);
+		break;
+	case DATA_UINT32:
+		spnOper = GetOperand(ui32Oper, fBigEndian);
+		break;
+	case DATA_INT64:
+		spnOper = GetOperand(i64Oper, fBigEndian);
+		break;
+	case DATA_UINT64:
+		spnOper = GetOperand(ui64Oper, fBigEndian);
+		break;
+	case DATA_FLOAT:
+		spnOper = GetOperand(flOper, fBigEndian);
+		break;
+	case DATA_DOUBLE:
+		spnOper = GetOperand(dblOper, fBigEndian);
+		break;
+	default:
+		break;
 	}
+
+	if (spnOper.empty())
+		return;
 
 	VecSpan vecSpan;
 	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL);
@@ -347,8 +348,8 @@ void CHexDlgOpers::OnOK()
 		vecSpan = m_pHexCtrl->GetSelection();
 	}
 
-	//Special case for the Assign operation, that can be replaced with the MODIFY_REPEAT mode
-	//which is significantly faster.
+	//Special case for the OPER_ASSIGN operation.
+	//It can easily be replaced with the MODIFY_REPEAT mode, which is significantly faster.
 	const HEXMODIFY hms { .eModifyMode { eOperMode == OPER_ASSIGN ? MODIFY_REPEAT : MODIFY_OPERATION },
 		.eOperMode { eOperMode }, .eDataType { eDataType }, .spnData { spnOper },
 		.vecSpan { std::move(vecSpan) }, .fBigEndian { fBigEndian } };
