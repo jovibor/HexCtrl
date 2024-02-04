@@ -275,8 +275,8 @@ void CSampleDialogDlg::CreateHexPopup()
 	constexpr auto dwStyle = WS_POPUP | WS_OVERLAPPEDWINDOW;
 	constexpr auto dwExStyle = WS_EX_APPWINDOW; //To force entry to the taskbar.
 
-	const HEXCREATE hcs { .hWndParent { m_hWnd }, .dwStyle { dwStyle }, .dwExStyle { dwExStyle } };
-	m_pHexPopup->Create(hcs);
+	m_pHexPopup->Create({ .hWndParent { m_hWnd }, .dwStyle { dwStyle }, .dwExStyle { dwExStyle } });
+	m_hds.fMutable = IsRW();
 	if (!m_hds.spnData.empty()) {
 		m_pHexPopup->SetData(m_hds);
 	}

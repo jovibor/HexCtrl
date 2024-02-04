@@ -4794,7 +4794,9 @@ void CHexCtrl::OnModifyData()
 template<typename T> requires std::is_class_v<T>
 void CHexCtrl::ParentNotify(const T& t)const
 {
-	::SendMessageW(GetParent()->m_hWnd, WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));
+	if (const auto p = GetParent(); p != nullptr) {
+		::SendMessageW(p->m_hWnd, WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));
+	}
 }
 
 void CHexCtrl::ParentNotify(UINT uCode)const
@@ -5776,7 +5778,8 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 		GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd) {
 		ExecuteCmd(*optCmd);
 	}
-	else if (IsDataSet() && IsMutable() && !IsCurTextArea()) { //If caret is in Hex area, just one part (High/Low) of the byte must be changed.
+	else if (IsDataSet() && IsMutable() && !IsCurTextArea()) {
+		//If caret is in the Hex area then just one part (High/Low) of the byte must be changed.
 		//Normalizing all input in the Hex area to only [0x0-0xF] range, allowing only [0-9], [A-F], [NUM0-NUM9].
 		unsigned char chByte = nChar & 0xFF;
 		if (chByte >= '0' && chByte <= '9') {
@@ -5798,7 +5801,8 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 		else {
 			chByte = (chByte & 0x0FU) | (chByteCurr & 0xF0U);
 		}
-		ModifyData({ .spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { GetCaretPos(), 1 } } });
+		ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE },
+			.spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { GetCaretPos(), 1 } } });
 		CaretMoveRight();
 	}
 }
@@ -5849,6 +5853,7 @@ void CHexCtrl::OnLButtonDblClk(UINT nFlags, CPoint point)
 
 void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 {
+	SetFocus(); //SetFocus is vital to give the proper keyboard input to the window.
 	const auto optHit = HitTest(point);
 	if (!optHit)
 		return;
