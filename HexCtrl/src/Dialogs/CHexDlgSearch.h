@@ -89,8 +89,6 @@ namespace HEXCTRL::INTERNAL {
 		//Static functions.
 		template<std::uint16_t u16CmpType>
 		[[nodiscard]] static bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize);
-		template<typename T>
-		[[nodiscard]] static auto RangeToVecBytes(const T& tData) -> std::vector<std::byte>;
 		template<std::uint16_t u16CmpType, bool tfDlgClbck>
 		static void SearchFunc(SEARCHDATA* pSearch);
 		template<std::uint16_t u16CmpType, bool tfDlgClbck>

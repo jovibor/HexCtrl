@@ -313,13 +313,38 @@ export namespace HEXCTRL::INTERNAL {
 		return std::vformat(wsvFmt, std::make_wformat_args(wchSepar));
 	}
 
+	template<typename T>
+	[[nodiscard]] auto RangeToVecBytes(const T& refData) -> std::vector<std::byte>
+	{
+		const std::byte* pBegin;
+		const std::byte* pEnd;
+		if constexpr (std::is_same_v<T, std::string>) {
+			pBegin = reinterpret_cast<const std::byte*>(refData.data());
+			pEnd = pBegin + refData.size();
+		}
+		else if constexpr (std::is_same_v<T, std::wstring>) {
+			pBegin = reinterpret_cast<const std::byte*>(refData.data());
+			pEnd = pBegin + refData.size() * sizeof(wchar_t);
+		}
+		else if constexpr (std::is_same_v<T, CStringW>) {
+			pBegin = reinterpret_cast<const std::byte*>(refData.GetString());
+			pEnd = pBegin + refData.GetLength() * sizeof(wchar_t);
+		}
+		else {
+			pBegin = reinterpret_cast<const std::byte*>(&refData);
+			pEnd = pBegin + sizeof(refData);
+		}
+
+		return { pBegin, pEnd };
+	}
+
 #if defined(DEBUG) || defined(_DEBUG)
 	void DBG_REPORT(const wchar_t* pMsg, const std::source_location& loc = std::source_location::current()) {
 		if (_CrtDbgReportW(_CRT_ASSERT, StrToWstr(loc.file_name()).data(), loc.line(), nullptr, L"%ls", pMsg) == 1) {
 			__debugbreak();
-		}
 	}
+}
 #else
-	void DBG_REPORT([[maybe_unused]] const wchar_t* /*pMsg*/) {}
+	void DBG_REPORT([[maybe_unused]] const wchar_t*) {}
 #endif
-	}
+}

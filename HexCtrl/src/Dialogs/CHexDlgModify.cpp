@@ -25,7 +25,7 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		template<typename T> requires TSize1248<T>
-		[[nodiscard]] auto GetOperand(T& tOper, bool& fBigEndian)const->SpanCByte;
+		[[nodiscard]] bool FillVecOper(bool fCheckBE);
 		[[nodiscard]] auto GetOperMode()const->EHexOperMode;
 		[[nodiscard]] auto GetDataType()const->EHexDataType;
 		void OnCancel()override;
@@ -40,6 +40,7 @@ namespace HEXCTRL::INTERNAL {
 		IHexCtrl* m_pHexCtrl { };
 		CComboBox m_comboOper; //Operation combo-box.
 		CComboBox m_comboType; //Data size combo-box.
+		std::vector<std::byte> m_vecOperData; //Operand data vector.
 		std::uint64_t m_u64DlgData { };
 		using enum EHexOperMode;
 		inline static const std::unordered_map<EHexOperMode, std::wstring_view> m_mapNames {
@@ -99,21 +100,25 @@ void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
 }
 
 template<typename T> requires TSize1248<T>
-auto CHexDlgOpers::GetOperand(T& tOper, bool& fBigEndian)const->SpanCByte
+bool CHexDlgOpers::FillVecOper(bool fCheckBE)
 {
+	//To make sure the vector will be the size of the data type.
+	//Even if operation doesn't need an operand (e.g. OPER_NOT), the spnData
+	//in the HEXMODIFY must have appropriate size, equal to the data type size.
+	m_vecOperData = RangeToVecBytes(T { });
 	const auto pWndOper = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND);
 	if (!pWndOper->IsWindowEnabled())
-		return { reinterpret_cast<std::byte*>(&tOper), sizeof(tOper) };
+		return true; //Some operations don't need operands.
 
-	CStringW wstrOper;
-	pWndOper->GetWindowTextW(wstrOper);
-	const auto opt = stn::StrToNum<T>(wstrOper.GetString());
+	CStringW cwstrOper;
+	pWndOper->GetWindowTextW(cwstrOper);
+	const auto opt = stn::StrToNum<T>(cwstrOper.GetString());
 	if (!opt) {
-		::MessageBoxW(nullptr, L"Wrong operand data.", L"Operand error", MB_ICONERROR);
-		return { };
+		::MessageBoxW(nullptr, L"Wrong operand.", L"Operand error", MB_ICONERROR);
+		return false;
 	}
 
-	tOper = *opt;
+	auto tOper = *opt;
 	const auto eOperMode = GetOperMode();
 	using enum EHexOperMode;
 	if (eOperMode == OPER_DIV && tOper == 0) { //Division by zero check.
@@ -121,19 +126,17 @@ auto CHexDlgOpers::GetOperand(T& tOper, bool& fBigEndian)const->SpanCByte
 		return { };
 	}
 
-	/******************************************************************************
-	* Some operations don't need to swap the whole data in big-endian mode.
-	* Instead, the operand can be swapped here just once.
-	* Binary OR/XOR/AND are good examples, binary NOT doesn't need swap at all.
-	* The fSwapHere flag shows exactly this, that the operand can be swapped here.
-	******************************************************************************/
-	if (fBigEndian && (eOperMode == OPER_OR || eOperMode == OPER_XOR
+	//Some operations don't need to swap the whole data in big-endian mode.
+	//Instead, the operand itself can be swapped. Binary OR/XOR/AND are good examples.
+	//Binary NOT and OPER_BITREV don't need to swap at all.
+	if (fCheckBE && (eOperMode == OPER_OR || eOperMode == OPER_XOR
 		|| eOperMode == OPER_AND || eOperMode == OPER_ASSIGN)) {
-		fBigEndian = false;
 		tOper = ByteSwap(tOper);
 	}
 
-	return { reinterpret_cast<std::byte*>(&tOper), sizeof(tOper) };
+	m_vecOperData = RangeToVecBytes(tOper);
+
+	return true;
 }
 
 auto CHexDlgOpers::GetOperMode()const->EHexOperMode
@@ -283,53 +286,48 @@ void CHexDlgOpers::OnOK()
 	const auto eOperMode = GetOperMode();
 	const auto eDataType = GetDataType();
 	const auto fDataOneByte = eDataType == DATA_INT8 || eDataType == DATA_UINT8;
-	const auto fBE = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE))->GetCheck() == BST_CHECKED;
-	auto fBigEndian = fBE && !fDataOneByte && eOperMode != OPER_NOT && eOperMode != OPER_SWAP
-		&& eOperMode != OPER_BITREV;
+	const auto fCheckBE = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE))->GetCheck() == BST_CHECKED;
+	//Should data be treated as Big-endian or there is no need in that.
+	const auto fSwapData = fCheckBE && !fDataOneByte && eOperMode != OPER_NOT && eOperMode != OPER_SWAP
+		&& eOperMode != OPER_BITREV && eOperMode != OPER_OR && eOperMode != OPER_XOR && eOperMode != OPER_AND
+		&& eOperMode != OPER_ASSIGN;
 
-	//Operand data holders for different operand types.
-	std::int8_t i8Oper { };	std::uint8_t ui8Oper { };
-	std::int16_t i16Oper { }; std::uint16_t ui16Oper { };
-	std::int32_t i32Oper { }; std::uint32_t ui32Oper { };
-	std::int64_t i64Oper { }; std::uint64_t ui64Oper { };
-	float flOper { }; double dblOper { };
-	SpanCByte spnOper;
+	bool fFillOk { false };
 	switch (eDataType) {
 	case DATA_INT8:
-		spnOper = GetOperand(i8Oper, fBigEndian);
+		fFillOk = FillVecOper<std::int8_t>(fCheckBE);
 		break;
 	case DATA_UINT8:
-		spnOper = GetOperand(ui8Oper, fBigEndian);
+		fFillOk = FillVecOper<std::uint8_t>(fCheckBE);
 		break;
 	case DATA_INT16:
-		spnOper = GetOperand(i16Oper, fBigEndian);
+		fFillOk = FillVecOper<std::int16_t>(fCheckBE);
 		break;
 	case DATA_UINT16:
-		spnOper = GetOperand(ui16Oper, fBigEndian);
+		fFillOk = FillVecOper<std::uint16_t>(fCheckBE);
 		break;
 	case DATA_INT32:
-		spnOper = GetOperand(i32Oper, fBigEndian);
+		fFillOk = FillVecOper<std::int32_t>(fCheckBE);
 		break;
 	case DATA_UINT32:
-		spnOper = GetOperand(ui32Oper, fBigEndian);
+		fFillOk = FillVecOper<std::uint32_t>(fCheckBE);
 		break;
 	case DATA_INT64:
-		spnOper = GetOperand(i64Oper, fBigEndian);
+		fFillOk = FillVecOper<std::int64_t>(fCheckBE);
 		break;
 	case DATA_UINT64:
-		spnOper = GetOperand(ui64Oper, fBigEndian);
+		fFillOk = FillVecOper<std::uint64_t>(fCheckBE);
 		break;
 	case DATA_FLOAT:
-		spnOper = GetOperand(flOper, fBigEndian);
+		fFillOk = FillVecOper<float>(fCheckBE);
 		break;
 	case DATA_DOUBLE:
-		spnOper = GetOperand(dblOper, fBigEndian);
+		fFillOk = FillVecOper<double>(fCheckBE);
 		break;
 	default:
-		break;
+		return;
 	}
-
-	if (spnOper.empty())
+	if (!fFillOk)
 		return;
 
 	VecSpan vecSpan;
@@ -348,12 +346,8 @@ void CHexDlgOpers::OnOK()
 		vecSpan = m_pHexCtrl->GetSelection();
 	}
 
-	//Special case for the OPER_ASSIGN operation.
-	//It can easily be replaced with the MODIFY_REPEAT mode, which is significantly faster.
-	const HEXMODIFY hms { .eModifyMode { eOperMode == OPER_ASSIGN ? MODIFY_REPEAT : MODIFY_OPERATION },
-		.eOperMode { eOperMode }, .eDataType { eDataType }, .spnData { spnOper },
-		.vecSpan { std::move(vecSpan) }, .fBigEndian { fBigEndian } };
-
+	const HEXMODIFY hms { .eModifyMode { MODIFY_OPERATION }, .eOperMode { eOperMode }, .eDataType { eDataType },
+		.spnData { m_vecOperData }, .vecSpan { std::move(vecSpan) }, .fBigEndian { fSwapData } };
 	m_pHexCtrl->ModifyData(hms);
 	m_pHexCtrl->Redraw();
 }
@@ -365,24 +359,25 @@ void CHexDlgOpers::SetControlsState()
 	const auto eDataType = GetDataType();
 	const auto fDataOneByte = eDataType == DATA_INT8 || eDataType == DATA_UINT8;
 	const auto pComboOper = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND);
-	auto fOperandEnable = TRUE;
+	auto fEditOper = true;
 	auto fBtnEnter = pComboOper->GetWindowTextLengthW() > 0;
 
 	switch (GetOperMode()) {
 	case OPER_NOT:
 	case OPER_BITREV:
-		fOperandEnable = FALSE;
+		fEditOper = false;
+		fBtnEnter = true;
 		break;
 	case OPER_SWAP:
-		fOperandEnable = FALSE;
+		fEditOper = false;
 		fBtnEnter = !fDataOneByte;
 		break;
 	default:
 		break;
 	};
 
-	pComboOper->EnableWindow(fOperandEnable);
-	GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE)->EnableWindow(fDataOneByte ? FALSE : fOperandEnable);
+	pComboOper->EnableWindow(fEditOper);
+	GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE)->EnableWindow(fDataOneByte ? FALSE : fEditOper);
 	const auto pBtnEnter = GetDlgItem(IDOK);
 	pBtnEnter->EnableWindow(fBtnEnter);
 	pBtnEnter->SetWindowTextW(m_mapNames.at(GetOperMode()).data());
@@ -401,14 +396,17 @@ namespace HEXCTRL::INTERNAL {
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] auto GetFillType()const->EFillType;
 		void OnCancel()override;
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
+		afx_msg void OnComboDataEditChange();
+		afx_msg void OnComboTypeSelChange();
 		BOOL OnInitDialog()override;
 		void OnOK()override;
+		void SetControlsState();
 		DECLARE_MESSAGE_MAP();
 	private:
 		IHexCtrl* m_pHexCtrl { };
 		CComboBox m_comboType; //Fill type combo-box.
 		CComboBox m_comboData; //Data combo-box.
+		std::vector<std::byte> m_vecFillData; //Fill data vector.
 		std::uint64_t m_u64DlgData { };
 	};
 }
@@ -418,6 +416,8 @@ enum class CHexDlgFillData::EFillType : std::uint8_t {
 };
 
 BEGIN_MESSAGE_MAP(CHexDlgFillData, CDialogEx)
+	ON_CBN_SELCHANGE(IDC_HEXCTRL_FILLDATA_COMBO_TYPE, &CHexDlgFillData::OnComboTypeSelChange)
+	ON_CBN_EDITCHANGE(IDC_HEXCTRL_FILLDATA_COMBO_DATA, &CHexDlgFillData::OnComboDataEditChange)
 	ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
@@ -473,21 +473,14 @@ void CHexDlgFillData::OnCancel()
 	static_cast<CDialogEx*>(GetParentOwner())->EndDialog(IDCANCEL);
 }
 
-BOOL CHexDlgFillData::OnCommand(WPARAM wParam, LPARAM lParam)
+void CHexDlgFillData::OnComboDataEditChange()
 {
-	using enum EFillType;
-	switch (LOWORD(wParam)) {
-	case IDC_HEXCTRL_FILLDATA_COMBO_TYPE:
-	{
-		const auto enFillType = GetFillType();
-		m_comboData.EnableWindow(enFillType != FILL_RAND_MT19937 && enFillType != FILL_RAND_FAST);
-	}
-	return TRUE;
-	default:
-		break;
-	}
+	SetControlsState();
+}
 
-	return CDialogEx::OnCommand(wParam, lParam);
+void CHexDlgFillData::OnComboTypeSelChange()
+{
+	SetControlsState();
 }
 
 BOOL CHexDlgFillData::OnInitDialog()
@@ -508,6 +501,7 @@ BOOL CHexDlgFillData::OnInitDialog()
 
 	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL, IDC_HEXCTRL_FILLDATA_RAD_ALL);
 	m_comboData.LimitText(256); //Max characters of the combo-box.
+	SetControlsState();
 
 	return TRUE;
 }
@@ -517,10 +511,13 @@ void CHexDlgFillData::OnOK()
 	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
 		return;
 
-	wchar_t pwszComboText[MAX_PATH * 2];
-	if (m_comboData.IsWindowEnabled() && m_comboData.GetWindowTextW(pwszComboText, MAX_PATH) == 0) { //No text.
-		MessageBoxW(L"Missing fill data.", L"Data error", MB_ICONERROR);
-		return;
+	using enum EFillType;
+	const auto eType = GetFillType();
+	if (eType == FILL_HEX || eType == FILL_ASCII || eType == FILL_WCHAR) {
+		if (m_comboData.GetWindowTextLengthW() == 0) {
+			MessageBoxW(L"Missing fill data.", L"Data error", MB_ICONERROR);
+			return;
+		}
 	}
 
 	VecSpan vecSpan;
@@ -540,61 +537,67 @@ void CHexDlgFillData::OnOK()
 	}
 
 	using enum EHexModifyMode;
-	SpanCByte spnData;
 	EHexModifyMode eModifyMode { MODIFY_REPEAT };
-	std::wstring wstrFillWith = pwszComboText;
-	std::string strFillWith; //Data holder for FILL_HEX and FILL_ASCII modes.
-	switch (GetFillType()) {
-	case EFillType::FILL_HEX:
+	CStringW cwstrText;
+	m_comboData.GetWindowTextW(cwstrText);
+	switch (eType) {
+	case FILL_HEX:
 	{
-		auto optData = NumStrToHex(wstrFillWith);
+		auto optData = NumStrToHex(cwstrText.GetString());
 		if (!optData) {
 			MessageBoxW(L"Wrong Hex format.", L"Format error", MB_ICONERROR);
 			return;
 		}
 
-		strFillWith = std::move(*optData);
+		m_vecFillData = RangeToVecBytes(*optData);
 		eModifyMode = MODIFY_REPEAT;
-		spnData = { reinterpret_cast<const std::byte*>(strFillWith.data()), strFillWith.size() };
 	}
 	break;
-	case EFillType::FILL_ASCII:
-		strFillWith = WstrToStr(wstrFillWith);
+	case FILL_ASCII:
+		m_vecFillData = RangeToVecBytes(WstrToStr(cwstrText.GetString()));
 		eModifyMode = MODIFY_REPEAT;
-		spnData = { reinterpret_cast<const std::byte*>(strFillWith.data()), strFillWith.size() };
 		break;
-	case EFillType::FILL_WCHAR:
+	case FILL_WCHAR:
 		eModifyMode = MODIFY_REPEAT;
-		spnData = { reinterpret_cast<const std::byte*>(wstrFillWith.data()), wstrFillWith.size() * sizeof(WCHAR) };
+		m_vecFillData = RangeToVecBytes(cwstrText);
 		break;
-	case EFillType::FILL_RAND_MT19937:
+	case FILL_RAND_MT19937:
 		eModifyMode = MODIFY_RAND_MT19937;
 		break;
-	case EFillType::FILL_RAND_FAST:
+	case FILL_RAND_FAST:
 		eModifyMode = MODIFY_RAND_FAST;
 		break;
 	default:
-		break;
+		return;
 	}
 
-	//Insert wstring into ComboBox only if it's not already presented.
-	if (m_comboData.FindStringExact(0, wstrFillWith.data()) == CB_ERR) {
-		//Keep max 50 strings in list.
-		if (m_comboData.GetCount() == 50) {
+	//Insert wstring into ComboBox, only if it's not already there.
+	if (m_comboData.FindStringExact(0, cwstrText) == CB_ERR) {
+		if (m_comboData.GetCount() == 50) { //Keep max 50 strings in list.
 			m_comboData.DeleteString(49);
 		}
-		m_comboData.InsertString(0, wstrFillWith.data());
+		m_comboData.InsertString(0, cwstrText);
 	}
 
-	if (spnData.size() > vecSpan.back().ullSize) {
+	if (m_vecFillData.size() > vecSpan.back().ullSize) {
 		MessageBoxW(L"Fill data size is bigger than the region selected for modification, please select a larger region.",
 			L"Data region size error", MB_ICONERROR);
 		return;
 	}
 
-	const HEXMODIFY hms { .eModifyMode { eModifyMode }, .spnData { spnData }, .vecSpan { std::move(vecSpan) } };
+	const HEXMODIFY hms { .eModifyMode { eModifyMode }, .spnData { m_vecFillData }, .vecSpan { std::move(vecSpan) } };
 	m_pHexCtrl->ModifyData(hms);
 	m_pHexCtrl->Redraw();
+}
+
+void CHexDlgFillData::SetControlsState()
+{
+	using enum EFillType;
+	const auto eFillType = GetFillType();
+	const auto fRND = eFillType == FILL_RAND_MT19937 || eFillType == FILL_RAND_FAST;
+	const auto fIsData = m_comboData.GetWindowTextLengthW() > 0;
+	m_comboData.EnableWindow(!fRND);
+	GetDlgItem(IDOK)->EnableWindow(fRND ? TRUE : fIsData);
 }
 
 

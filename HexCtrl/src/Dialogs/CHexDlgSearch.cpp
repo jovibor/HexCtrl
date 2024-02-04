@@ -1453,27 +1453,6 @@ bool CHexDlgSearch::MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::
 	}
 }
 
-template<typename T>
-auto CHexDlgSearch::RangeToVecBytes(const T& tData)->std::vector<std::byte>
-{
-	const std::byte* pBegin;
-	const std::byte* pEnd;
-	if constexpr (std::is_same_v<T, std::string>) {
-		pBegin = reinterpret_cast<const std::byte*>(tData.data());
-		pEnd = pBegin + tData.size();
-	}
-	else if constexpr (std::is_same_v<T, std::wstring>) {
-		pBegin = reinterpret_cast<const std::byte*>(tData.data());
-		pEnd = pBegin + tData.size() * sizeof(wchar_t);
-	}
-	else {
-		pBegin = reinterpret_cast<const std::byte*>(&tData);
-		pEnd = pBegin + sizeof(tData);
-	}
-
-	return { pBegin, pEnd };
-}
-
 template<std::uint16_t u16CmpType, bool tfDlgClbck>
 void CHexDlgSearch::SearchFunc(SEARCHDATA* pSearch)
 {
@@ -1724,12 +1703,12 @@ void CHexDlgSearch::SearchFuncBack(SEARCHDATA* pSearch)
 			}
 		}
 
-		if (fBigStep) {
+		if (fBigStep) [[unlikely]] {
 			if ((ullOffsetSearch - llStep) < ullEnd || (ullOffsetSearch - llStep) > ((std::numeric_limits<ULONGLONG>::max)() - llStep))
 				break; //Lower bound reached.
 
 			ullOffsetSearch -= ullLoopChunkSize;
-		}
+			}
 		else {
 			if ((ullOffsetSearch - ullLoopChunkSize) < ullEnd || ((ullOffsetSearch - ullLoopChunkSize) >
 				((std::numeric_limits<ULONGLONG>::max)() - ullLoopChunkSize))) {
