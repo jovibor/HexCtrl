@@ -1289,11 +1289,37 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	break;
 	case MODIFY_OPERATION:
 	{
+		using enum EHexDataType;
+		using enum EHexOperMode;
 		//Special case for the OPER_ASSIGN operation.
 		//It can easily be replaced with the MODIFY_REPEAT mode, which is significantly faster.
-		if (hms.eOperMode == EHexOperMode::OPER_ASSIGN) {
+		//Additionally, ensuring that the spnData.size() (operand size) is equal eDataType size.
+		if (hms.eOperMode == OPER_ASSIGN) {
 			HEXMODIFY hmsRepeat = hms;
 			hmsRepeat.eModifyMode = MODIFY_REPEAT;
+			switch (hms.eDataType) {
+			case DATA_INT8:
+			case DATA_UINT8:
+				hmsRepeat.spnData = { hms.spnData.data(), sizeof(std::int8_t) };
+				break;
+			case DATA_INT16:
+			case DATA_UINT16:
+				hmsRepeat.spnData = { hms.spnData.data(), sizeof(std::int16_t) };
+				break;
+			case DATA_INT32:
+			case DATA_UINT32:
+			case DATA_FLOAT:
+				hmsRepeat.spnData = { hms.spnData.data(), sizeof(std::int32_t) };
+				break;
+			case DATA_INT64:
+			case DATA_UINT64:
+			case DATA_DOUBLE:
+				hmsRepeat.spnData = { hms.spnData.data(), sizeof(std::int64_t) };
+				break;
+			default:
+				break;
+			};
+
 			return ModifyData(hmsRepeat);
 		}
 
@@ -1304,8 +1330,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				T tData = hms.fBigEndian ? ByteSwap(*pData) : *pData;
 				assert(!hms.spnData.empty());
 				const T tOper = *reinterpret_cast<const T*>(hms.spnData.data());
-
-				using enum EHexOperMode;
 
 				if constexpr (std::is_integral_v<T>) { //Operations only for integral types.
 					switch (hms.eOperMode) {
@@ -1377,7 +1401,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				*pData = tData;
 			};
 
-			using enum EHexDataType;
 			switch (hms.eDataType) {
 			case DATA_INT8:
 				lmbOperT(reinterpret_cast<std::int8_t*>(pData), hms);
@@ -1426,7 +1449,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				const auto m128iOper = _mm_set1_epi8(i8Oper);
 				__m128i m128iResult { };
 
-				using enum EHexOperMode;
 				switch (hms.eOperMode) {
 				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
 					break;
@@ -1543,7 +1565,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				const auto m128iOper = _mm_set1_epi8(ui8Oper);
 				__m128i m128iResult { };
 
-				using enum EHexOperMode;
 				switch (hms.eOperMode) {
 				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
 					break;
@@ -1643,7 +1664,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				const auto m128iOper = _mm_set1_epi16(i16Oper);
 				__m128i m128iResult { };
 
-				using enum EHexOperMode;
 				switch (hms.eOperMode) {
 				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
 					break;
@@ -1741,7 +1761,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				const auto m128iOper = _mm_set1_epi16(ui16Oper);
 				__m128i m128iResult { };
 
-				using enum EHexOperMode;
 				switch (hms.eOperMode) {
 				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
 					break;
@@ -1832,7 +1851,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				const auto m128iOper = _mm_set1_epi32(i32Oper);
 				__m128i m128iResult { };
 
-				using enum EHexOperMode;
 				switch (hms.eOperMode) {
 				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
 					break;
@@ -1919,7 +1937,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				const auto m128iOper = _mm_set1_epi32(ui32Oper);
 				__m128i m128iResult { };
 
-				using enum EHexOperMode;
 				switch (hms.eOperMode) {
 				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
 					break;
@@ -2003,7 +2020,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				const auto m128iOper = _mm_set1_epi64x(i64Oper);
 				__m128i m128iResult { };
 
-				using enum EHexOperMode;
 				switch (hms.eOperMode) {
 				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
 					break;
@@ -2082,7 +2098,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				const auto m128iOper = _mm_set1_epi64x(ui64Oper);
 				__m128i m128iResult { };
 
-				using enum EHexOperMode;
 				switch (hms.eOperMode) {
 				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
 					break;
@@ -2155,7 +2170,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				const auto m128Oper = _mm_set1_ps(*reinterpret_cast<const float*>(hms.spnData.data()));
 				__m128 m128Result { };
 
-				using enum EHexOperMode;
 				switch (hms.eOperMode) {
 				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
 					break;
@@ -2198,7 +2212,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				const auto m128dOper = _mm_set1_pd(*reinterpret_cast<const double*>(hms.spnData.data()));
 				__m128d m128dResult { };
 
-				using enum EHexOperMode;
 				switch (hms.eOperMode) {
 				case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
 					break;
@@ -2236,7 +2249,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				_mm_storeu_pd(pdblData, m128dResult);
 				};
 
-			using enum EHexDataType;
 			switch (hms.eDataType) {
 			case DATA_INT8:
 				lmbOperSIMDInt8(reinterpret_cast<std::int8_t*>(pData), hms);
