@@ -37,7 +37,7 @@ private:
 	IHexCtrlPtr m_pHexDlg { CreateHexCtrl() };
 	IHexCtrlPtr m_pHexPopup { CreateHexCtrl() };
 	HEXDATA m_hds;
-	std::byte m_RandomData[16 * 1024];
+	std::byte m_RandomData[1024 * 16];
 	HICON m_hIcon;
 	bool m_fFileOpen { false };
 	HANDLE m_hFile { };

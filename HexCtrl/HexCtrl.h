@@ -458,11 +458,17 @@ namespace HEXCTRL {
 	* If you, for some reason, need a raw pointer you can directly call the CreateRawHexCtrl    *
 	* function, which returns IHexCtrl* interface pointer. But in this case you will need to    *
 	* call IHexCtrl::Destroy method	afterwards, to manually delete created raw HexCtrl object.  *
+	* The hInstClass arg is to set the app's HINSTANCE where the HexCtrl's Window class will be *
+	* registered. It's nullptr by default, meaning that the app's default AfxGetInstanceHandle  *
+	* will be used. But if the HexCtrl is built as a DLL, and used as a Custom control in a     *
+	* dialog, then hInstClass of that dialog might be needed to properly RegisterClassExW.      *
 	********************************************************************************************/
 
-	extern "C" [[nodiscard]] HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl();
+	extern "C" [[nodiscard]] HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl(HINSTANCE hInstClass);
 	using IHexCtrlPtr = std::unique_ptr < IHexCtrl, decltype([](IHexCtrl* p) { p->Destroy(); }) > ;
-	[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl() { return IHexCtrlPtr { CreateRawHexCtrl() }; };
+	[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstance = nullptr) {
+		return IHexCtrlPtr { CreateRawHexCtrl(hInstance) };
+	};
 
 	/********************************************************************************************
 	* WM_NOTIFY message codes (NMHDR.code values).                                              *

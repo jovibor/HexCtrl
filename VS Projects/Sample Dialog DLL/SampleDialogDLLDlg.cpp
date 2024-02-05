@@ -31,7 +31,6 @@ void CSampleDialogDLLDlg::DoDataExchange(CDataExchange* pDX)
 BOOL CSampleDialogDLLDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
-
 	CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
 	SetIcon(m_hIcon, TRUE);			// Set big icon
@@ -44,7 +43,7 @@ BOOL CSampleDialogDLLDlg::OnInitDialog()
 		pDL->SetMinSize({ 0, 0 });
 	}
 
-	return TRUE;  // return TRUE  unless you set the focus to a control
+	return TRUE;
 }
 
 void CSampleDialogDLLDlg::OnPaint()
@@ -110,7 +109,7 @@ void CSampleDialogDLLDlg::OnBnSetRndData()
 		return;
 	}
 
-	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
+	m_hds.spnData = { m_RandomData, sizeof(m_RandomData) };
 	m_hds.fMutable = IsRW();
 	m_pHexDlg->SetData(m_hds);
 	SetWindowTextW(IsRW() ? WstrTextRW : WstrTextRO);

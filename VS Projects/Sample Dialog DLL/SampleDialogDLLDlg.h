@@ -21,7 +21,7 @@ private:
 	DECLARE_MESSAGE_MAP()
 private:
 	HICON m_hIcon;
-	IHexCtrlPtr m_pHexDlg { CreateHexCtrl() };
+	IHexCtrlPtr m_pHexDlg { CreateHexCtrl(AfxGetInstanceHandle()) };
 	HEXDATA m_hds;
 	std::byte m_RandomData[16 * 1024];
 };

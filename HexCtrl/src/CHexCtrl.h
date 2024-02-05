@@ -30,7 +30,7 @@ namespace HEXCTRL::INTERNAL {
 	********************************************************************************************/
 	class CHexCtrl final : public CWnd, public IHexCtrl {
 	public:
-		explicit CHexCtrl();
+		explicit CHexCtrl(HINSTANCE hInstance);
 		CHexCtrl(const CHexCtrl&) = delete;
 		CHexCtrl(CHexCtrl&&) = delete;
 		CHexCtrl& operator=(const CHexCtrl&) = delete;

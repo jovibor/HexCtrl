@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HexCtrl DLL", "HexCtrl DLL\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Sample Dialog DLL", "Sample Dialog DLL\Sample Dialog DLL.vcxproj", "{C76E6C72-C970-47D1-91B1-F2B9EACBBE93}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTest", "UnitTest\UnitTest.vcxproj", "{337EEC2C-B9B1-49D6-A526-59F01742AF51}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -33,6 +35,10 @@ Global
 		{C76E6C72-C970-47D1-91B1-F2B9EACBBE93}.Debug|x86.ActiveCfg = Debug|Win32
 		{C76E6C72-C970-47D1-91B1-F2B9EACBBE93}.Release|x64.ActiveCfg = Release|x64
 		{C76E6C72-C970-47D1-91B1-F2B9EACBBE93}.Release|x86.ActiveCfg = Release|Win32
+		{337EEC2C-B9B1-49D6-A526-59F01742AF51}.Debug|x64.ActiveCfg = Debug|x64
+		{337EEC2C-B9B1-49D6-A526-59F01742AF51}.Debug|x86.ActiveCfg = Debug|Win32
+		{337EEC2C-B9B1-49D6-A526-59F01742AF51}.Release|x64.ActiveCfg = Release|x64
+		{337EEC2C-B9B1-49D6-A526-59F01742AF51}.Release|x86.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -169,7 +169,7 @@ To build **HexCtrl** from the sources:
 > [!NOTE]
 If you want to build **HexCtrl** from the sources in non-**MFC** app:
 1. Add support for the **Use MFC in a Shared DLL** in your project settings.
-1. Add the `#define HEXCTRL_MANUAL_MFC_INIT` before the `#include "HexCtrl.h"`.
+1. Add the `/D "HEXCTRL_MANUAL_MFC_INIT"` compiler option.
 
 ### [](#)Dynamic Link Library
 To build and use **HexCtrl** as a DLL:

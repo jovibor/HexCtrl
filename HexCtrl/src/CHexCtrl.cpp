@@ -34,8 +34,8 @@ import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 
-extern "C" HEXCTRLAPI HEXCTRL::IHexCtrl * __cdecl HEXCTRL::CreateRawHexCtrl() {
-	return new HEXCTRL::INTERNAL::CHexCtrl();
+extern "C" HEXCTRLAPI HEXCTRL::IHexCtrl * __cdecl HEXCTRL::CreateRawHexCtrl(HINSTANCE hInstance) {
+	return new HEXCTRL::INTERNAL::CHexCtrl(hInstance);
 };
 
 namespace HEXCTRL::INTERNAL {
@@ -138,7 +138,7 @@ extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg) {
 }
 #endif
 
-CHexCtrl::CHexCtrl()
+CHexCtrl::CHexCtrl(HINSTANCE hInstClass)
 {
 #if defined(HEXCTRL_MANUAL_MFC_INIT)
 	//MFC initialization, if HexCtrl is used in non MFC project with the "Shared MFC" linking.
@@ -147,11 +147,14 @@ CHexCtrl::CHexCtrl()
 	}
 #endif
 
-	//GetModuleHandleW(nullptr) always returns a handle to the file used to create the calling process (.exe).
-	//AfxGetInstanceHandle() returns a handle to the DLL, if called from within a DLL linked with the _USRDLL version of MFC.
-	//When using HexCtrl as a Custom Control, in a dialog, it's vital to register (wc.hInstance) Window Class with 
-	//the .exe handle, not DLL. Otherwise a Custom Control won't find the HexCtrl Window Class, and a dialog won't even start.
-	const auto hInst = GetModuleHandleW(nullptr);
+	//GetModuleHandleW(nullptr) always returns a handle to the file used to create the calling process (the .exe).
+	//AfxGetInstanceHandle returns a handle to a .exe, or DLL if called from a DLL linked with the _USRDLL version of MFC.
+	//When using HexCtrl as a Custom control in a dialog, it's vital to register Window Class (wc.hInstance) with
+	//the .exe's handle not the DLL's, for proper subclassing in the dialog.
+	//Otherwise, a Custom control won't find the "HexCtrl" Window Class, and dialog won't even start.
+	//The hInstClass arg here is to provide a handle to the dialog's app, to properly register HexCtrl Window class with it.
+
+	const auto hInst = hInstClass != nullptr ? hInstClass : AfxGetInstanceHandle();
 	if (WNDCLASSEXW wc; ::GetClassInfoExW(hInst, m_pwszClassName, &wc) == FALSE) {
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
@@ -4794,8 +4797,8 @@ void CHexCtrl::OnModifyData()
 template<typename T> requires std::is_class_v<T>
 void CHexCtrl::ParentNotify(const T& t)const
 {
-	if (const auto p = GetParent(); p != nullptr) {
-		::SendMessageW(p->m_hWnd, WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));
+	if (const auto hwnd = ::GetParent(m_hWnd); hwnd != nullptr) {
+		::SendMessageW(m_hWnd, WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));
 	}
 }
 

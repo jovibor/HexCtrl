@@ -143,7 +143,7 @@ void CSampleDialogDlg::OnBnSetRndData()
 		return;
 	}
 
-	m_hds.spnData = { reinterpret_cast<std::byte*>(m_RandomData), sizeof(m_RandomData) };
+	m_hds.spnData = { m_RandomData, sizeof(m_RandomData) };
 	m_hds.fMutable = IsRW();
 	m_pHexDlg->SetData(m_hds);
 	SetWindowTextW(IsRW() ? WstrTextRW : WstrTextRO);
