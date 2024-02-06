@@ -466,8 +466,8 @@ namespace HEXCTRL {
 
 	extern "C" [[nodiscard]] HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl(HINSTANCE hInstClass);
 	using IHexCtrlPtr = std::unique_ptr < IHexCtrl, decltype([](IHexCtrl* p) { p->Destroy(); }) > ;
-	[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstance = nullptr) {
-		return IHexCtrlPtr { CreateRawHexCtrl(hInstance) };
+	[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstClass = nullptr) {
+		return IHexCtrlPtr { CreateRawHexCtrl(hInstClass) };
 	};
 
 	/********************************************************************************************

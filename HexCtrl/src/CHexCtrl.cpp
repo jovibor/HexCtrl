@@ -34,9 +34,24 @@ import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 
-extern "C" HEXCTRLAPI HEXCTRL::IHexCtrl * __cdecl HEXCTRL::CreateRawHexCtrl(HINSTANCE hInstance) {
-	return new HEXCTRL::INTERNAL::CHexCtrl(hInstance);
-};
+extern "C" HEXCTRLAPI HEXCTRL::IHexCtrl * __cdecl HEXCTRL::CreateRawHexCtrl(HINSTANCE hInstClass) {
+#if defined(HEXCTRL_MANUAL_MFC_INIT)
+	//MFC initialization, if HexCtrl is used in non MFC project with the "Shared MFC" linking.
+	if (!AfxGetModuleState()->m_lpszCurrentAppName) {
+		AfxWinInit(::GetModuleHandleW(nullptr), nullptr, ::GetCommandLineW(), 0);
+	}
+#endif
+	return new HEXCTRL::INTERNAL::CHexCtrl(hInstClass);
+}
+
+#if defined(HEXCTRL_MANUAL_MFC_INIT) || defined(HEXCTRL_SHARED_DLL)
+CWinApp theApp; //CWinApp object is vital for manual MFC, and for in-DLL work.
+
+extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg) {
+	AFX_MANAGE_STATE(AfxGetStaticModuleState());
+	return theApp.PreTranslateMessage(pMsg);
+}
+#endif
 
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgAbout final : public CDialogEx {
@@ -85,14 +100,12 @@ enum class CHexCtrl::EClipboard : std::uint8_t {
 	PASTE_HEX, PASTE_TEXT_UTF16, PASTE_TEXT_CP
 };
 
-//Struct for UNDO command routine.
 struct CHexCtrl::UNDO {
 	ULONGLONG              ullOffset { }; //Start byte to apply Undo to.
 	std::vector<std::byte> vecData { };   //Data for Undo.
 };
 
-//Key bindings.
-struct CHexCtrl::KEYBIND {
+struct CHexCtrl::KEYBIND { //Key bindings.
 	EHexCmd eCmd { };
 	WORD    wMenuID { };
 	UINT    uKey { };
@@ -129,24 +142,8 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_VSCROLL()
 END_MESSAGE_MAP()
 
-#if defined(HEXCTRL_MANUAL_MFC_INIT) || defined(HEXCTRL_SHARED_DLL)
-CWinApp theApp; //CWinApp object is vital for manual MFC, and for in-DLL work.
-
-extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg) {
-	AFX_MANAGE_STATE(AfxGetStaticModuleState());
-	return theApp.PreTranslateMessage(pMsg);
-}
-#endif
-
 CHexCtrl::CHexCtrl(HINSTANCE hInstClass)
 {
-#if defined(HEXCTRL_MANUAL_MFC_INIT)
-	//MFC initialization, if HexCtrl is used in non MFC project with the "Shared MFC" linking.
-	if (!AfxGetModuleState()->m_lpszCurrentAppName) {
-		AfxWinInit(::GetModuleHandleW(nullptr), nullptr, ::GetCommandLineW(), 0);
-	}
-#endif
-
 	//GetModuleHandleW(nullptr) always returns a handle to the file used to create the calling process (the .exe).
 	//AfxGetInstanceHandle returns a handle to a .exe, or DLL if called from a DLL linked with the _USRDLL version of MFC.
 	//When using HexCtrl as a Custom control in a dialog, it's vital to register Window Class (wc.hInstance) with

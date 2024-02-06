@@ -228,9 +228,9 @@ But there is another option:
 
 ### [](#)CreateHexCtrl
 ```cpp
-[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl();
+[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstClass = nullptr);
 ```
-This is the main factory function for creating a **HexCtrl** object, with the automatic lifetime management.
+This is the main factory function for creating **HexCtrl** object. The `hInstClass` argument might be additionally provided to set the `HINSTANCE` where **HexCtrl**'s window class will be registered. Its main application is for cases when **HexCtrl** is build as a DLL and used as a custom-control in a dialog.
 
 ### [](#)CreateRawHexCtrl
 ```cpp
