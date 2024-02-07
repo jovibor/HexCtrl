@@ -332,7 +332,7 @@ namespace HEXCTRL {
 	* EHexOperMode: Data Operation mode, used in the EHexModifyMode::MODIFY_OPERATION mode.     *
 	********************************************************************************************/
 	enum class EHexOperMode : std::uint8_t {
-		OPER_ASSIGN, OPER_ADD, OPER_SUB, OPER_MUL, OPER_DIV, OPER_CEIL, OPER_FLOOR, OPER_OR,
+		OPER_ASSIGN, OPER_ADD, OPER_SUB, OPER_MUL, OPER_DIV, OPER_MIN, OPER_MAX, OPER_OR,
 		OPER_XOR, OPER_AND, OPER_NOT, OPER_SHL, OPER_SHR, OPER_ROTL, OPER_ROTR, OPER_SWAP,
 		OPER_BITREV
 	};
@@ -378,6 +378,7 @@ namespace HEXCTRL {
 		IHexCtrl(IHexCtrl&&) = delete;
 		IHexCtrl& operator=(const IHexCtrl&) = delete;
 		IHexCtrl& operator=(IHexCtrl&&) = delete;
+		virtual ~IHexCtrl() = default;
 		virtual void ClearData() = 0; //Clears all data from HexCtrl's view (not touching data itself).
 		virtual bool Create(const HEXCREATE& hcs) = 0;                       //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent) = 0;    //Сreates custom dialog control.

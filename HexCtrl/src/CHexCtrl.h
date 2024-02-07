@@ -35,6 +35,7 @@ namespace HEXCTRL::INTERNAL {
 		CHexCtrl(CHexCtrl&&) = delete;
 		CHexCtrl& operator=(const CHexCtrl&) = delete;
 		CHexCtrl& operator=(CHexCtrl&&) = delete;
+		~CHexCtrl() = default;
 		void ClearData()override;
 		bool Create(const HEXCREATE& hcs)override;
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)override;

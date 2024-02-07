@@ -45,8 +45,8 @@ namespace HEXCTRL::INTERNAL {
 		using enum EHexOperMode;
 		inline static const std::unordered_map<EHexOperMode, std::wstring_view> m_mapNames {
 			{ OPER_ASSIGN, L"Assign" }, { OPER_ADD, L"Add" }, { OPER_SUB, L"Subtract" },
-			{ OPER_MUL, L"Multiply" }, { OPER_DIV, L"Divide" }, { OPER_CEIL, L"Ceiling" },
-			{ OPER_FLOOR, L"Floor" }, { OPER_OR, L"OR" }, { OPER_XOR, L"XOR" }, { OPER_AND, L"AND" },
+			{ OPER_MUL, L"Multiply" }, { OPER_DIV, L"Divide" }, { OPER_MIN, L"Minimum" },
+			{ OPER_MAX, L"Maximum" }, { OPER_OR, L"OR" }, { OPER_XOR, L"XOR" }, { OPER_AND, L"AND" },
 			{ OPER_NOT, L"NOT" }, { OPER_SHL, L"SHL" }, { OPER_SHR, L"SHR" }, { OPER_ROTL, L"ROTL" },
 			{ OPER_ROTR, L"ROTR" }, { OPER_SWAP, L"Swap Bytes" }, { OPER_BITREV, L"Reverse Bits" }
 		};
@@ -172,7 +172,7 @@ void CHexDlgOpers::OnComboOperSelChange()
 	using enum EHexDataType;
 	switch (GetOperMode()) { //Operations that can be performed on floats.
 	case OPER_ASSIGN: case OPER_ADD: case OPER_SUB: case OPER_MUL:
-	case OPER_DIV: case OPER_CEIL: case OPER_FLOOR: case OPER_SWAP:
+	case OPER_DIV: case OPER_MAX: case OPER_MIN: case OPER_SWAP:
 		fShouldHaveFloats = true;
 	default:
 		break;
@@ -227,10 +227,10 @@ BOOL CHexDlgOpers::OnInitDialog()
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MUL));
 	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_DIV).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_DIV));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_CEIL).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_CEIL));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_FLOOR).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_FLOOR));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_MAX).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MAX));
+	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_MIN).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MIN));
 	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_OR).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_OR));
 	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_XOR).data());

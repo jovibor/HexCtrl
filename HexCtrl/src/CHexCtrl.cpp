@@ -1378,11 +1378,11 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					assert(tOper > 0);
 					tData /= tOper;
 					break;
-				case OPER_CEIL:
-					tData = (std::min)(tData, tOper);
-					break;
-				case OPER_FLOOR:
+				case OPER_MIN:
 					tData = (std::max)(tData, tOper);
+					break;
+				case OPER_MAX:
+					tData = (std::min)(tData, tOper);
 					break;
 				case OPER_SWAP:
 					tData = ByteSwap(tData);
@@ -1469,11 +1469,11 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 						i8Data[8] / i8Oper, i8Data[9] / i8Oper, i8Data[10] / i8Oper, i8Data[11] / i8Oper,
 						i8Data[12] / i8Oper, i8Data[13] / i8Oper, i8Data[14] / i8Oper, i8Data[15] / i8Oper);
 					break;
-				case OPER_CEIL:
-					m128iResult = _mm_min_epi8(m128iData, m128iOper); //SSE4.1
-					break;
-				case OPER_FLOOR:
+				case OPER_MIN:
 					m128iResult = _mm_max_epi8(m128iData, m128iOper); //SSE4.1
+					break;
+				case OPER_MAX:
+					m128iResult = _mm_min_epi8(m128iData, m128iOper); //SSE4.1
 					break;
 				case OPER_SWAP: //No need for the int8_t.
 					break;
@@ -1586,11 +1586,11 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 						ui8Data[11] / ui8Oper, ui8Data[12] / ui8Oper, ui8Data[13] / ui8Oper, ui8Data[14] / ui8Oper,
 						ui8Data[15] / ui8Oper);
 					break;
-				case OPER_CEIL:
-					m128iResult = _mm_min_epu8(m128iData, m128iOper); //SSE4.1
-					break;
-				case OPER_FLOOR:
+				case OPER_MIN:
 					m128iResult = _mm_max_epu8(m128iData, m128iOper); //SSE4.1
+					break;
+				case OPER_MAX:
+					m128iResult = _mm_min_epu8(m128iData, m128iOper); //SSE4.1
 					break;
 				case OPER_SWAP:	//No need for the uint8_t.
 					break;
@@ -1678,11 +1678,11 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_setr_epi16(i16Data[0] / i16Oper, i16Data[1] / i16Oper, i16Data[2] / i16Oper,
 						i16Data[3] / i16Oper, i16Data[4] / i16Oper, i16Data[5] / i16Oper, i16Data[6] / i16Oper, i16Data[7] / i16Oper);
 					break;
-				case OPER_CEIL:
-					m128iResult = _mm_min_epi16(m128iData, m128iOper);
-					break;
-				case OPER_FLOOR:
+				case OPER_MIN:
 					m128iResult = _mm_max_epi16(m128iData, m128iOper);
+					break;
+				case OPER_MAX:
+					m128iResult = _mm_min_epi16(m128iData, m128iOper);
 					break;
 				case OPER_SWAP:
 					m128iResult = ByteSwapSIMD<std::int16_t>(m128iData);
@@ -1778,11 +1778,11 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 						ui16Data[3] / ui16Oper, ui16Data[4] / ui16Oper, ui16Data[5] / ui16Oper, ui16Data[6] / ui16Oper,
 						ui16Data[7] / ui16Oper);
 					break;
-				case OPER_CEIL:
-					m128iResult = _mm_min_epu16(m128iData, m128iOper);
-					break;
-				case OPER_FLOOR:
+				case OPER_MIN:
 					m128iResult = _mm_max_epu16(m128iData, m128iOper);
+					break;
+				case OPER_MAX:
+					m128iResult = _mm_min_epu16(m128iData, m128iOper);
 					break;
 				case OPER_SWAP:
 					m128iResult = ByteSwapSIMD<std::uint16_t>(m128iData);
@@ -1865,11 +1865,11 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_setr_epi32(i32Data[0] / i32Oper, i32Data[1] / i32Oper, i32Data[2] / i32Oper,
 						i32Data[3] / i32Oper);
 					break;
-				case OPER_CEIL:
-					m128iResult = _mm_min_epi32(m128iData, m128iOper);
-					break;
-				case OPER_FLOOR:
+				case OPER_MIN:
 					m128iResult = _mm_max_epi32(m128iData, m128iOper);
+					break;
+				case OPER_MAX:
+					m128iResult = _mm_min_epi32(m128iData, m128iOper);
 					break;
 				case OPER_SWAP:
 					m128iResult = ByteSwapSIMD<std::int32_t>(m128iData);
@@ -1952,11 +1952,11 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_setr_epi32(ui32Data[0] / ui32Oper, ui32Data[1] / ui32Oper, ui32Data[2] / ui32Oper,
 						ui32Data[3] / ui32Oper);
 					break;
-				case OPER_CEIL:
-					m128iResult = _mm_min_epu32(m128iData, m128iOper); //SSE4.1
-					break;
-				case OPER_FLOOR:
+				case OPER_MIN:
 					m128iResult = _mm_max_epu32(m128iData, m128iOper); //SSE4.1
+					break;
+				case OPER_MAX:
+					m128iResult = _mm_min_epu32(m128iData, m128iOper); //SSE4.1
 					break;
 				case OPER_SWAP:
 					m128iResult = ByteSwapSIMD<std::uint32_t>(m128iData);
@@ -2033,11 +2033,11 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					assert(i64Oper > 0);
 					m128iResult = _mm_set_epi64x(i64Data[1] / i64Oper, i64Data[0] / i64Oper);
 					break;
-				case OPER_CEIL:
-					m128iResult = _mm_set_epi64x((std::min)(i64Data[1], i64Oper), (std::min)(i64Data[0], i64Oper));
-					break;
-				case OPER_FLOOR:
+				case OPER_MIN:
 					m128iResult = _mm_set_epi64x((std::max)(i64Data[1], i64Oper), (std::max)(i64Data[0], i64Oper));
+					break;
+				case OPER_MAX:
+					m128iResult = _mm_set_epi64x((std::min)(i64Data[1], i64Oper), (std::min)(i64Data[0], i64Oper));
 					break;
 				case OPER_SWAP:
 					m128iResult = ByteSwapSIMD<std::int64_t>(m128iData);
@@ -2111,11 +2111,11 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					assert(ui64Oper > 0);
 					m128iResult = _mm_set_epi64x(ui64Data[1] / ui64Oper, ui64Data[0] / ui64Oper);
 					break;
-				case OPER_CEIL:
-					m128iResult = _mm_set_epi64x((std::min)(ui64Data[1], ui64Oper), (std::min)(ui64Data[0], ui64Oper));
-					break;
-				case OPER_FLOOR:
+				case OPER_MIN:
 					m128iResult = _mm_set_epi64x((std::max)(ui64Data[1], ui64Oper), (std::max)(ui64Data[0], ui64Oper));
+					break;
+				case OPER_MAX:
+					m128iResult = _mm_set_epi64x((std::min)(ui64Data[1], ui64Oper), (std::min)(ui64Data[0], ui64Oper));
 					break;
 				case OPER_SWAP:
 					m128iResult = ByteSwapSIMD<std::uint64_t>(m128iData);
@@ -2183,11 +2183,11 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					assert(*reinterpret_cast<const float*>(hms.spnData.data()) > 0.F);
 					m128Result = _mm_div_ps(m128Data, m128Oper);
 					break;
-				case OPER_CEIL:
-					m128Result = _mm_min_ps(m128Data, m128Oper);
-					break;
-				case OPER_FLOOR:
+				case OPER_MIN:
 					m128Result = _mm_max_ps(m128Data, m128Oper);
+					break;
+				case OPER_MAX:
+					m128Result = _mm_min_ps(m128Data, m128Oper);
 					break;
 				case OPER_SWAP:
 					m128Result = ByteSwapSIMD<float>(m128Data);
@@ -2225,11 +2225,11 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					assert(*reinterpret_cast<const double*>(hms.spnData.data()) > 0.);
 					m128dResult = _mm_div_pd(m128dData, m128dOper);
 					break;
-				case OPER_CEIL:
-					m128dResult = _mm_min_pd(m128dData, m128dOper);
-					break;
-				case OPER_FLOOR:
+				case OPER_MIN:
 					m128dResult = _mm_max_pd(m128dData, m128dOper);
+					break;
+				case OPER_MAX:
+					m128dResult = _mm_min_pd(m128dData, m128dOper);
 					break;
 				case OPER_SWAP:
 					m128dResult = ByteSwapSIMD<double>(m128dData);
