@@ -48,9 +48,9 @@ export namespace HEXCTRL::INTERNAL {
 		if (ullOffset + sizeof(T) > refHexCtrl.GetDataSize())
 			return;
 
-		refHexCtrl.ModifyData({ .eModifyMode = EHexModifyMode::MODIFY_ONCE,
-			.spnData = { reinterpret_cast<std::byte*>(&tData), sizeof(T) },
-			.vecSpan = { { ullOffset, sizeof(T) } } });
+		refHexCtrl.ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE },
+			.spnData { reinterpret_cast<std::byte*>(&tData), sizeof(T) },
+			.vecSpan { { ullOffset, sizeof(T) } } });
 	}
 
 	template<typename T> concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);

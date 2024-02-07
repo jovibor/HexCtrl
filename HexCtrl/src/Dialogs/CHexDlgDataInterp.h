@@ -47,6 +47,7 @@ namespace HEXCTRL::INTERNAL {
 		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] auto GetGridData(EName eName)const->const GRIDDATA*;
+		[[nodiscard]] auto GetGridData(EName eName) -> GRIDDATA*; //Non-const overload.
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
@@ -76,7 +77,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wsv)const;
 		void SetGridRedraw(bool fRedraw);
 		template <TSize1248 T> void SetTData(T tData)const;
-		void ShowValueBinary(BYTE byte)const;
+		template <TSize1248 T> void ShowValueBinary(T tData)const;
 		void ShowValueInt8(BYTE byte)const;
 		void ShowValueUInt8(BYTE byte)const;
 		void ShowValueInt16(WORD word)const;

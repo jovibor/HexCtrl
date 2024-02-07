@@ -40,7 +40,7 @@ union CHexDlgDataInterp::UDTTM {
 };
 
 enum class CHexDlgDataInterp::EGroup : std::uint8_t {
-	GR_INTEGRAL, GR_FLOAT, GR_TIME, GR_MISC, GR_GUIDTIME
+	GR_BINARY, GR_INTEGRAL, GR_FLOAT, GR_TIME, GR_MISC, GR_GUIDTIME
 };
 
 enum class CHexDlgDataInterp::EName : std::uint8_t {
@@ -156,118 +156,136 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	SetGridRedraw(false);
-
+	using enum EDataSize;
 	const auto ullOffset = m_ullOffset = m_pHexCtrl->GetCaretPos();
 	const auto ullDataSize = m_pHexCtrl->GetDataSize();
 	const auto fMutable = m_pHexCtrl->IsMutable();
+	const auto pGridBin = GetGridData(EName::NAME_BINARY);
+	const auto eSizeBin = pGridBin->eSize;
 
+	SetGridRedraw(false);
 	for (const auto& iter : m_vecGrid) {
 		iter.pProp->AllowEdit(fMutable ? TRUE : FALSE);
 	}
 
-	const auto byte = GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset);
-	ShowValueBinary(byte);
-	ShowValueInt8(byte);
-	ShowValueUInt8(byte);
+	const auto ui8Data = GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset);
 
-	if (ullOffset + static_cast<unsigned>(EDataSize::SIZE_WORD) > ullDataSize) {
-		for (const auto& iter : m_vecGrid) {
-			if (iter.eSize >= EDataSize::SIZE_WORD) {
-				iter.pProp->SetValue(L"0");
-				iter.pProp->Enable(FALSE);
-			}
-		}
-		return;
+	if (eSizeBin == SIZE_BYTE) {
+		ShowValueBinary(ui8Data);
 	}
+
+	ShowValueInt8(ui8Data);
+	ShowValueUInt8(ui8Data);
 
 	//EDataSize::SIZE_WORD
-	for (const auto& iter : m_vecGrid) {
-		if (iter.eSize == EDataSize::SIZE_WORD) {
-			iter.pProp->Enable(TRUE);
-		}
-	}
-
-	auto word = GetIHexTData<WORD>(*m_pHexCtrl, ullOffset);
-	if (IsBigEndian()) {
-		word = ByteSwap(word);
-	}
-
-	ShowValueInt16(word);
-	ShowValueUInt16(word);
-
-	if (ullOffset + static_cast<unsigned>(EDataSize::SIZE_DWORD) > ullDataSize) {
+	if (ullOffset + static_cast<std::uint8_t>(SIZE_WORD) > ullDataSize) {
 		for (const auto& iter : m_vecGrid) {
-			if (iter.eSize >= EDataSize::SIZE_DWORD) {
+			if (iter.eSize >= SIZE_WORD) {
 				iter.pProp->SetValue(L"0");
 				iter.pProp->Enable(FALSE);
 			}
 		}
-		return;
+		return SetGridRedraw(true);
 	}
+
+	for (const auto& iter : m_vecGrid) {
+		if (iter.eSize == SIZE_WORD) {
+			iter.pProp->Enable(TRUE);
+		}
+	}
+
+	auto ui16Data = GetIHexTData<std::uint16_t>(*m_pHexCtrl, ullOffset);
+	if (IsBigEndian()) {
+		ui16Data = ByteSwap(ui16Data);
+	}
+
+	if (eSizeBin == SIZE_WORD) {
+		ShowValueBinary(ui16Data);
+	}
+
+	ShowValueInt16(ui16Data);
+	ShowValueUInt16(ui16Data);
 
 	//EDataSize::SIZE_DWORD
-	for (const auto& iter : m_vecGrid) {
-		if (iter.eSize == EDataSize::SIZE_DWORD) {
-			iter.pProp->Enable(TRUE);
-		}
-	}
-
-	auto dword = GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset);
-	if (IsBigEndian()) {
-		dword = ByteSwap(dword);
-	}
-
-	ShowValueInt32(dword);
-	ShowValueUInt32(dword);
-	ShowValueFloat(dword);
-	ShowValueTime32(dword);
-	ShowValueMSDOSTIME(dword);
-	ShowValueMSDTTMTIME(dword);
-
-	if (ullOffset + static_cast<unsigned>(EDataSize::SIZE_QWORD) > ullDataSize) {
+	if (ullOffset + static_cast<std::uint8_t>(SIZE_DWORD) > ullDataSize) {
 		for (const auto& iter : m_vecGrid) {
-			if (iter.eSize >= EDataSize::SIZE_QWORD) {
+			if (iter.eSize >= SIZE_DWORD) {
 				iter.pProp->SetValue(L"0");
 				iter.pProp->Enable(FALSE);
 			}
 		}
-		return;
+		return SetGridRedraw(true);
 	}
+
+	for (const auto& iter : m_vecGrid) {
+		if (iter.eSize == SIZE_DWORD) {
+			iter.pProp->Enable(TRUE);
+		}
+	}
+
+	auto ui32Data = GetIHexTData<std::uint32_t>(*m_pHexCtrl, ullOffset);
+	if (IsBigEndian()) {
+		ui32Data = ByteSwap(ui32Data);
+	}
+
+	if (eSizeBin == SIZE_DWORD) {
+		ShowValueBinary(ui32Data);
+	}
+
+	ShowValueInt32(ui32Data);
+	ShowValueUInt32(ui32Data);
+	ShowValueFloat(ui32Data);
+	ShowValueTime32(ui32Data);
+	ShowValueMSDOSTIME(ui32Data);
+	ShowValueMSDTTMTIME(ui32Data);
 
 	//EDataSize::SIZE_QWORD
-	for (const auto& iter : m_vecGrid) {
-		if (iter.eSize == EDataSize::SIZE_QWORD) {
-			iter.pProp->Enable(TRUE);
-		}
-	}
-
-	auto qword = GetIHexTData<QWORD>(*m_pHexCtrl, ullOffset);
-	if (IsBigEndian()) {
-		qword = ByteSwap(qword);
-	}
-
-	ShowValueInt64(qword);
-	ShowValueUInt64(qword);
-	ShowValueDouble(qword);
-	ShowValueTime64(qword);
-	ShowValueFILETIME(qword);
-	ShowValueOLEDATETIME(qword);
-	ShowValueJAVATIME(qword);
-
-	if (ullOffset + static_cast<unsigned>(EDataSize::SIZE_DQWORD) > ullDataSize) {
+	if (ullOffset + static_cast<std::uint8_t>(SIZE_QWORD) > ullDataSize) {
 		for (const auto& iter : m_vecGrid) {
-			if (iter.eSize >= EDataSize::SIZE_DQWORD) {
+			if (iter.eSize >= SIZE_QWORD) {
 				iter.pProp->SetValue(L"0");
 				iter.pProp->Enable(FALSE);
 			}
 		}
-		return;
+		return SetGridRedraw(true);
 	}
 
-	//EDataSize::SIZE_DQWORD
 	for (const auto& iter : m_vecGrid) {
-		if (iter.eSize == EDataSize::SIZE_DQWORD) {
+		if (iter.eSize == SIZE_QWORD) {
+			iter.pProp->Enable(TRUE);
+		}
+	}
+
+	auto ui64Data = GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset);
+	if (IsBigEndian()) {
+		ui64Data = ByteSwap(ui64Data);
+	}
+
+	if (eSizeBin == SIZE_QWORD) {
+		ShowValueBinary(ui64Data);
+	}
+
+	ShowValueInt64(ui64Data);
+	ShowValueUInt64(ui64Data);
+	ShowValueDouble(ui64Data);
+	ShowValueTime64(ui64Data);
+	ShowValueFILETIME(ui64Data);
+	ShowValueOLEDATETIME(ui64Data);
+	ShowValueJAVATIME(ui64Data);
+
+	//EDataSize::SIZE_DQWORD
+	if (ullOffset + static_cast<std::uint8_t>(SIZE_DQWORD) > ullDataSize) {
+		for (const auto& iter : m_vecGrid) {
+			if (iter.eSize >= SIZE_DQWORD) {
+				iter.pProp->SetValue(L"0");
+				iter.pProp->Enable(FALSE);
+			}
+		}
+		return SetGridRedraw(true);
+	}
+
+	for (const auto& iter : m_vecGrid) {
+		if (iter.eSize == SIZE_DQWORD) {
 			iter.pProp->Enable(TRUE);
 		}
 	}
@@ -311,6 +329,12 @@ void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
 }
 
 auto CHexDlgDataInterp::GetGridData(EName eName)const->const GRIDDATA*
+{
+	return &*std::find_if(m_vecGrid.begin(), m_vecGrid.end(), [=](const GRIDDATA& refData) {
+		return refData.eName == eName; });
+}
+
+auto CHexDlgDataInterp::GetGridData(EName eName)->GRIDDATA*
 {
 	return &*std::find_if(m_vecGrid.begin(), m_vecGrid.end(), [=](const GRIDDATA& refData) {
 		return refData.eName == eName; });
@@ -394,7 +418,7 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	m_btnBE.SetCheck(BST_UNCHECKED);
 
 	using enum EGroup; using enum EName; using enum EDataSize;
-	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Binary:", L"0"), GR_INTEGRAL, NAME_BINARY, SIZE_BYTE);
+	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Binary:", L"0"), GR_BINARY, NAME_BINARY, SIZE_BYTE);
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Int8:", L"0"), GR_INTEGRAL, NAME_INT8, SIZE_BYTE);
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Unsigned Int8:", L"0"), GR_INTEGRAL, NAME_UINT8, SIZE_BYTE);
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Int16:", L"0"), GR_INTEGRAL, NAME_INT16, SIZE_WORD);
@@ -420,14 +444,23 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	HDITEMW hdItemPropGrid { .mask = HDI_WIDTH, .cxy = 150 };
 	m_gridCtrl.GetHeaderCtrl().SetItem(0, &hdItemPropGrid); //Property grid column size.
 
-	//Digits group.
-	const auto pDigits = new CMFCPropertyGridProperty(L"Integral types:");
+	//Binary group.
+	const auto pBinarys = new CMFCPropertyGridProperty(L"Binary:");
 	for (const auto& iter : m_vecGrid) {
-		if (iter.eGroup == GR_INTEGRAL) {
-			pDigits->AddSubItem(iter.pProp);
+		if (iter.eGroup == GR_BINARY) {
+			pBinarys->AddSubItem(iter.pProp);
 		}
 	}
-	m_gridCtrl.AddProperty(pDigits);
+	m_gridCtrl.AddProperty(pBinarys);
+
+	//Integrals group.
+	const auto pIntegrals = new CMFCPropertyGridProperty(L"Integral types:");
+	for (const auto& iter : m_vecGrid) {
+		if (iter.eGroup == GR_INTEGRAL) {
+			pIntegrals->AddSubItem(iter.pProp);
+		}
+	}
+	m_gridCtrl.AddProperty(pIntegrals);
 
 	//Floats group.
 	const auto pFloats = new CMFCPropertyGridProperty(L"Floating-point types:");
@@ -584,13 +617,45 @@ auto CHexDlgDataInterp::OnPropertySelected(WPARAM wParam, LPARAM lParam)->LRESUL
 	if (wParam != IDC_HEXCTRL_DATAINTERP_GRID)
 		return FALSE;
 
-	const auto pPropSel = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
+	const auto pProp = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
 	const auto itGrid = std::find_if(m_vecGrid.begin(), m_vecGrid.end(),
-		[pPropSel](const GRIDDATA& refData) { return refData.pProp == pPropSel; });
+		[pProp](const GRIDDATA& refData) { return refData.pProp == pProp; });
 	if (itGrid == m_vecGrid.end())
 		return TRUE;
 
-	m_dwHglDataSize = static_cast<std::uint8_t>(itGrid->eSize);
+	const auto ui8DataSize = static_cast<std::uint8_t>(itGrid->eSize);
+	using enum EName; using enum EDataSize;
+	if (itGrid->eName != NAME_BINARY) {
+		const auto pGridBin = GetGridData(NAME_BINARY);
+		pGridBin->eSize = itGrid->eSize;
+		const auto ullDataSize = m_pHexCtrl->GetDataSize();
+
+		if (m_ullOffset + ui8DataSize > ullDataSize || ui8DataSize == 16) {
+			pGridBin->pProp->SetValue(L"0");
+			pGridBin->pProp->Enable(FALSE);
+		}
+		else {
+			pGridBin->pProp->Enable(TRUE);
+			switch (ui8DataSize) {
+			case 1:
+				ShowValueBinary(GetIHexTData<std::uint8_t>(*m_pHexCtrl, m_ullOffset));
+				break;
+			case 2:
+				ShowValueBinary(GetIHexTData<std::uint16_t>(*m_pHexCtrl, m_ullOffset));
+				break;
+			case 4:
+				ShowValueBinary(GetIHexTData<std::uint32_t>(*m_pHexCtrl, m_ullOffset));
+				break;
+			case 8:
+				ShowValueBinary(GetIHexTData<std::uint64_t>(*m_pHexCtrl, m_ullOffset));
+				break;
+			default:
+				break;
+			};
+		}
+	}
+
+	m_dwHglDataSize = ui8DataSize;
 	RedrawHexCtrl();
 
 	return TRUE;
@@ -605,15 +670,44 @@ void CHexDlgDataInterp::RedrawHexCtrl()const
 
 bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
 {
-	if (wsv.size() != 8 || wsv.find_first_not_of(L"01") != std::wstring_view::npos)
+	const auto pGrid = GetGridData(EName::NAME_BINARY);
+	const auto eSize = pGrid->eSize;
+	auto wstr = std::wstring { wsv };
+	std::erase(wstr, L' ');
+	const auto ui8SizeBits = static_cast<std::uint8_t>(eSize) * 8;
+
+	if (wstr.size() != ui8SizeBits || wstr.find_first_not_of(L"01") != std::wstring::npos)
 		return false;
 
-	const auto opt = stn::StrToUInt8(wsv, 2);
-	if (!opt)
+	using enum EDataSize;
+	switch (eSize) {
+	case SIZE_BYTE:
+		if (const auto opt = stn::StrToUInt8(wstr, 2); opt) {
+			SetTData(*opt);
+			return true;
+		}
 		return false;
-
-	SetTData(*opt);
-	return true;
+	case SIZE_WORD:
+		if (const auto opt = stn::StrToUInt16(wstr, 2); opt) {
+			SetTData(*opt);
+			return true;
+		}
+		return false;
+	case SIZE_DWORD:
+		if (const auto opt = stn::StrToUInt32(wstr, 2); opt) {
+			SetTData(*opt);
+			return true;
+		}
+		return false;
+	case SIZE_QWORD:
+		if (const auto opt = stn::StrToUInt64(wstr, 2); opt) {
+			SetTData(*opt);
+			return true;
+		}
+		return false;
+	default:
+		return false;
+	};
 }
 
 template<typename T> requires TSize1248<T>
@@ -873,9 +967,35 @@ void CHexDlgDataInterp::SetTData(T tData)const
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, tData);
 }
 
-void CHexDlgDataInterp::ShowValueBinary(BYTE byte)const
+template<TSize1248 T>
+void CHexDlgDataInterp::ShowValueBinary(T tData)const
 {
-	GetGridData(EName::NAME_BINARY)->pProp->SetValue(std::format(L"{:08b}", byte).data());
+	const auto pGrid = GetGridData(EName::NAME_BINARY);
+	constexpr auto pSepar { L"  " };
+	if constexpr (sizeof(T) == sizeof(std::uint8_t)) {
+		pGrid->pProp->SetValue(std::format(L"{:08b}", tData).data());
+	}
+	if constexpr (sizeof(T) == sizeof(std::uint16_t)) {
+		auto wstr = std::format(L"{:016b}", tData);
+		wstr.insert(8, pSepar);
+		pGrid->pProp->SetValue(wstr.data());
+	}
+	if constexpr (sizeof(T) == sizeof(std::uint32_t)) {
+		auto wstr = std::format(L"{:032b}", tData);
+		int iIndex = 0;
+		for (auto i = 1; i < sizeof(std::uint32_t); ++i) {
+			wstr.insert(i * 8 + iIndex++ * 2, pSepar);
+		}
+		pGrid->pProp->SetValue(wstr.data());
+	}
+	if constexpr (sizeof(T) == sizeof(std::uint64_t)) {
+		auto wstr = std::format(L"{:064b}", tData);
+		int iIndex = 0;
+		for (auto i = 1; i < sizeof(std::uint64_t); ++i) {
+			wstr.insert(i * 8 + iIndex++ * 2, pSepar);
+		}
+		pGrid->pProp->SetValue(wstr.data());
+	}
 }
 
 void CHexDlgDataInterp::ShowValueInt8(BYTE byte)const
