@@ -23,7 +23,6 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		enum class ESearchMode : std::uint8_t; //Forward declarations.
 		enum class ESearchType : std::uint8_t;
-		enum class ECmpType : std::uint16_t;
 		enum class EMenuID : std::uint16_t;
 		struct FINDRESULT;
 		struct SEARCHDATA;
@@ -87,13 +86,31 @@ namespace HEXCTRL::INTERNAL {
 		DECLARE_MESSAGE_MAP();
 
 		//Static functions.
-		template<std::uint16_t u16CmpType>
-		[[nodiscard]] static bool MemCmp(const std::byte* pBuf1, const std::byte* pBuf2, std::size_t nSize);
-		template<std::uint16_t u16CmpType, bool tfDlgClbck>
+		enum class EMemCmp : std::uint8_t {
+			DATA_BYTE1, DATA_BYTE2, DATA_BYTE4, DATA_BYTE8, CHAR_STR, WCHAR_STR
+		};
+		struct SEARCHTYPE { //Compile time struct for template parameters in the SearchFunc and MemCmp.
+			constexpr SEARCHTYPE() = default;
+			constexpr SEARCHTYPE(EMemCmp eMemCmp, bool fMatchCase = false, bool fWildcard = false,
+				bool fSIMD = false, bool fInverted = false) :
+				eMemCmp { eMemCmp }, fMatchCase { fMatchCase }, fWildcard { fWildcard },
+				fSIMD { fSIMD }, fInverted { fInverted } {}
+			constexpr ~SEARCHTYPE() = default;
+			EMemCmp eMemCmp { };
+			bool fMatchCase { false };
+			bool fWildcard { false };
+			bool fSIMD { false };
+			bool fInverted { false };
+		};
+		template<SEARCHTYPE stType>
+		[[nodiscard]] static bool MemCmp(const std::byte* pWhere, const std::byte* pWhat, std::size_t nSize);
+		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte1(const __m128i* pWhere, std::byte bWhat);
+		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte1Inv(const __m128i* pWhere, std::byte bWhat);
+		template<SEARCHTYPE stType, bool tfDlgClbck>
 		static void SearchFunc(SEARCHDATA* pSearch);
-		template<std::uint16_t u16CmpType, bool tfDlgClbck>
+		template<SEARCHTYPE stType, bool tfDlgClbck>
 		static void SearchFuncFwd(SEARCHDATA* pSearch);
-		template<std::uint16_t u16CmpType, bool tfDlgClbck>
+		template<SEARCHTYPE stType, bool tfDlgClbck>
 		static void SearchFuncBack(SEARCHDATA* pSearch);
 	private:
 		static constexpr std::byte m_uWildcard { '?' }; //Wildcard symbol.

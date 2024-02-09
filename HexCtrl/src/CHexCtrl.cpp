@@ -4653,7 +4653,7 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorke
 		[](ULONGLONG ullSumm, const HEXSPAN& ref) { return ullSumm + ref.ullSize; });
 	assert(ullTotalSize <= GetDataSize());
 
-	CHexDlgCallback dlgClbk(L"Modifying...", vecSpanRef.back().ullOffset, vecSpanRef.back().ullOffset + ullTotalSize, this);
+	CHexDlgCallback dlgClbk(L"Modifying...", L"", vecSpanRef.back().ullOffset, vecSpanRef.back().ullOffset + ullTotalSize, this);
 	const auto lmbModify = [&]() {
 		for (const auto& iterSpan : vecSpanRef) { //Span-vector's size times.
 			const auto ullOffsetToModify { iterSpan.ullOffset };
