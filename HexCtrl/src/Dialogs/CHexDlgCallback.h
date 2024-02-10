@@ -20,11 +20,13 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		void OnCancel()override;
+		afx_msg void OnClose();
+		afx_msg auto OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor) -> HBRUSH;
 		BOOL OnInitDialog()override;
 		afx_msg void OnTimer(UINT_PTR nIDEvent);
 		DECLARE_MESSAGE_MAP();
 	private:
-		static constexpr UINT_PTR m_uTIDExitCheck { 0x1 };
+		static constexpr UINT_PTR m_uTimerCancelCheck { 0x1 };
 		static constexpr auto m_iElapse { 100 }; //Milliseconds for the timer.
 		CProgressCtrl m_stProgBar;
 		std::wstring m_wstrOperName { };

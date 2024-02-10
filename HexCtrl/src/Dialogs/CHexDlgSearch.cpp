@@ -947,12 +947,15 @@ void CHexDlgSearch::OnSearchModeTEXT()
 void CHexDlgSearch::Prepare()
 {
 	const auto* const pHexCtrl = GetHexCtrl();
+
+	//"End offset"
 	auto ullSearchDataSize { 0ULL }; //Actual data size for the search.
 	if (m_editEnd.GetWindowTextLengthW() > 0) {
 		CStringW wstrEndOffset;
 		m_editEnd.GetWindowTextW(wstrEndOffset);
 		const auto optEnd = stn::StrToUInt64(wstrEndOffset.GetString());
 		if (!optEnd) {
+			m_editEnd.SetFocus();
 			MessageBoxW(L"End offset is wrong.", L"Incorrect offset", MB_ICONERROR);
 			return;
 		}
@@ -977,7 +980,7 @@ void CHexDlgSearch::Prepare()
 	}
 	ComboSearchFill(wstrTextSearch);
 
-	//Start at.
+	//"Start offset".
 	if (!IsSelection()) { //Do not use "Start offset" field when in the selection.
 		CStringW wstrStartOffset;
 		m_editStart.GetWindowTextW(wstrStartOffset);
@@ -986,6 +989,7 @@ void CHexDlgSearch::Prepare()
 		}
 		else if (const auto optStart = stn::StrToUInt64(wstrStartOffset.GetString()); optStart) {
 			if (*optStart >= ullSearchDataSize) {
+				m_editStart.SetFocus();
 				MessageBoxW(L"Start offset is bigger than the data size.", L"Incorrect offset", MB_ICONERROR);
 				return;
 			}
@@ -996,31 +1000,51 @@ void CHexDlgSearch::Prepare()
 			return;
 	}
 
-	//Step.
-	CStringW wstrStep;
-	m_editStep.GetWindowTextW(wstrStep);
-	if (const auto optStep = stn::StrToUInt64(wstrStep.GetString()); optStep) {
-		m_ullStep = *optStep;
+	//"Step".
+	if (m_editStep.GetWindowTextLengthW() > 0) {
+		CStringW wstrStep;
+		m_editStep.GetWindowTextW(wstrStep);
+		if (const auto optStep = stn::StrToUInt64(wstrStep.GetString()); optStep) {
+			m_ullStep = *optStep;
+		}
+		else {
+			m_editStep.SetFocus();
+			MessageBoxW(L"Incorrect step size.", L"Incorrect step", MB_ICONERROR);
+			return;
+		}
 	}
-	else
+	else {
+		m_editStep.SetFocus();
+		MessageBoxW(L"Step size must be at least one.", L"Incorrect step", MB_ICONERROR);
 		return;
+	}
 
-	//Limit.
-	CStringW wstrLimit;
-	m_editLimit.GetWindowTextW(wstrLimit);
-	if (const auto optLimit = stn::StrToUInt32(wstrLimit.GetString()); optLimit) {
-		m_dwFoundLimit = *optLimit;
+	//"Limit".
+	if (m_editLimit.GetWindowTextLengthW() > 0) {
+		CStringW wstrLimit;
+		m_editLimit.GetWindowTextW(wstrLimit);
+		if (const auto optLimit = stn::StrToUInt32(wstrLimit.GetString()); optLimit) {
+			m_dwFoundLimit = *optLimit;
+		}
+		else {
+			m_editLimit.SetFocus();
+			MessageBoxW(L"Incorrect limit size.", L"Incorrect limit", MB_ICONERROR);
+			return;
+		}
 	}
-	else
+	else {
+		m_editLimit.SetFocus();
+		MessageBoxW(L"Limit size must be at least one.", L"Incorrect limit", MB_ICONERROR);
 		return;
+	}
 
 	if (m_fReplace) {
 		CStringW wstrReplace;
 		m_comboReplace.GetWindowTextW(wstrReplace);
 		m_wstrTextReplace = wstrReplace;
 		if (m_wstrTextReplace.empty()) {
-			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			m_comboReplace.SetFocus();
+			MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			return;
 		}
 
@@ -1347,23 +1371,15 @@ void CHexDlgSearch::Search()
 		if (m_fAll) { //Replace All
 			auto ullStart = m_ullOffsetCurr;
 			const auto lmbReplaceAll = [&](CHexDlgCallback* pDlgClbk) {
-				if (pDlgClbk == nullptr)
-					return;
+				while (Finder(ullStart, ullUntil, m_vecSearchData, true, pDlgClbk, false)) {
+					Replace(ullStart, m_vecReplaceData);
+					ullStart += m_vecReplaceData.size() <= m_ullStep ? m_ullStep : m_vecReplaceData.size();
+					m_fFound = true;
+					pDlgClbk->SetCount(++m_dwReplaced);
 
-				while (true) {
-					if (Finder(ullStart, ullUntil, m_vecSearchData, true, pDlgClbk, false)) {
-						Replace(ullStart, m_vecReplaceData);
-						ullStart += m_vecReplaceData.size() <= m_ullStep ? m_ullStep : m_vecReplaceData.size();
-						m_fFound = true;
-						pDlgClbk->SetCount(++m_dwReplaced);
-
-						if (ullStart > ullUntil || m_dwReplaced >= m_dwFoundLimit || pDlgClbk->IsCanceled())
-							break;
-					}
-					else
+					if (ullStart > ullUntil || m_dwReplaced >= m_dwFoundLimit || pDlgClbk->IsCanceled())
 						break;
 				}
-
 				pDlgClbk->ExitDlg();
 				};
 
@@ -1388,23 +1404,15 @@ void CHexDlgSearch::Search()
 			m_dwCount = 0;
 			auto ullStart = m_ullOffsetCurr;
 			const auto lmbSearchAll = [&](CHexDlgCallback* pDlgClbk) {
-				if (pDlgClbk == nullptr)
-					return;
+				while (Finder(ullStart, ullUntil, m_vecSearchData, true, pDlgClbk, false)) {
+					m_vecSearchRes.emplace_back(ullStart); //Filling the vector of Found occurences.
+					ullStart += m_ullStep;
+					m_fFound = true;
+					pDlgClbk->SetCount(++m_dwCount);
 
-				while (true) {
-					if (Finder(ullStart, ullUntil, m_vecSearchData, true, pDlgClbk, false)) {
-						m_vecSearchRes.emplace_back(ullStart); //Filling the vector of Found occurences.
-						ullStart += m_ullStep;
-						m_fFound = true;
-						pDlgClbk->SetCount(++m_dwCount);
-
-						if (ullStart > ullUntil || m_dwCount >= m_dwFoundLimit || pDlgClbk->IsCanceled()) //Find no more than m_dwFoundLimit.
-							break;
-					}
-					else
+					if (ullStart > ullUntil || m_dwCount >= m_dwFoundLimit || pDlgClbk->IsCanceled()) //Find no more than m_dwFoundLimit.
 						break;
 				}
-
 				pDlgClbk->ExitDlg();
 				m_pListMain->SetItemCountEx(static_cast<int>(m_dwCount));
 				};

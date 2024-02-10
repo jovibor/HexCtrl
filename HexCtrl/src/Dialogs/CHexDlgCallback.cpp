@@ -13,13 +13,16 @@
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgCallback, CDialogEx)
+	ON_WM_CLOSE()
+	ON_WM_CTLCOLOR()
 	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 CHexDlgCallback::CHexDlgCallback(std::wstring_view wsvOperName, std::wstring_view wsvCountName,
 	ULONGLONG ullProgBarMin, ULONGLONG ullProgBarMax, CWnd* pParent) : CDialogEx(IDD_HEXCTRL_CALLBACK, pParent),
 	m_wstrOperName(wsvOperName), m_wstrCountName(wsvCountName), m_ullProgBarMin(ullProgBarMin),
-	m_ullProgBarPrev(ullProgBarMin), m_ullProgBarCurr(ullProgBarMin), m_ullProgBarMax(ullProgBarMax) {
+	m_ullProgBarPrev(ullProgBarMin), m_ullProgBarCurr(ullProgBarMin), m_ullProgBarMax(ullProgBarMax)
+{
 	assert(ullProgBarMin <= ullProgBarMax);
 }
 
@@ -57,6 +60,24 @@ void CHexDlgCallback::OnCancel()
 	m_fCancel = true;
 }
 
+void CHexDlgCallback::OnClose()
+{
+	//For some reason, setting the `m_fCancel = true;` here hangs the whole app sometimes.
+	//It happens when using Find All, and there are a lot of matching data.
+	//In fact, the std::thread.join() hangs in the main thread.
+	//So just left an empty handler here.
+}
+
+auto CHexDlgCallback::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)->HBRUSH
+{
+	const auto hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
+	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_CALLBACK_STATIC_COUNT) {
+		pDC->SetTextColor(RGB(0, 200, 0));
+	}
+
+	return hbr;
+}
+
 BOOL CHexDlgCallback::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -64,7 +85,7 @@ BOOL CHexDlgCallback::OnInitDialog()
 	SetWindowTextW(m_wstrOperName.data());
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPER)->SetWindowTextW(m_wstrOperName.data());
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_COUNT)->SetWindowTextW(L"");
-	SetTimer(m_uTIDExitCheck, m_iElapse, nullptr);
+	SetTimer(m_uTimerCancelCheck, m_iElapse, nullptr);
 
 	constexpr auto iRange { 1000 };
 	m_stProgBar.SetRange32(0, iRange);
@@ -78,8 +99,13 @@ BOOL CHexDlgCallback::OnInitDialog()
 
 void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 {
-	if (nIDEvent == m_uTIDExitCheck && m_fCancel) {
-		KillTimer(m_uTIDExitCheck);
+	CDialogEx::OnTimer(nIDEvent);
+
+	if (nIDEvent != m_uTimerCancelCheck)
+		return;
+
+	if (m_fCancel) {
+		KillTimer(m_uTimerCancelCheck);
 		return EndDialog(IDCANCEL);
 	}
 
@@ -110,6 +136,4 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 		GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_COUNT)->
 			SetWindowTextW(std::format(L"{}{}", m_wstrCountName, m_ullCount).data());
 	}
-
-	CDialogEx::OnTimer(nIDEvent);
 }
