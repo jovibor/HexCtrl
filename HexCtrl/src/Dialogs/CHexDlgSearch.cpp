@@ -52,7 +52,6 @@ struct CHexDlgSearch::SEARCHDATA {
 	IHexCtrl* pHexCtrl { };
 	CHexDlgCallback* pDlgClbk { };
 	SpanCByte spnSearch { };
-	bool fForward { };
 	bool fBigStep { };
 	bool fInverted { };
 	bool fCanceled { };
@@ -250,49 +249,52 @@ auto CHexDlgSearch::Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnS
 	const auto ullSizeTotal = m_ullOffsetSentinel - (fForward ? ullStart : ullEnd); //Depends on search direction.
 	const auto pHexCtrl = GetHexCtrl();
 	const auto ullStep = m_ullStep; //Search step.
-
-	SEARCHDATA stSearch { .ullStart { ullStart }, .ullEnd { ullEnd }, .ullOffsetSentinel { m_ullOffsetSentinel },
-		.llStep { static_cast<LONGLONG>(m_ullStep) }, .pHexCtrl { GetHexCtrl() }, .pDlgClbk { pDlgClbk },
-		.spnSearch { spnSearch }, .fForward { fForward }, .fInverted { IsInverted() }, .fDlgExit { fDlgExit } };
+	ULONGLONG ullLoopChunkSize;
+	ULONGLONG ullMemToAcquire;
+	ULONGLONG ullMemChunks;
+	bool fBigStep { false };
 
 	if (!pHexCtrl->IsVirtual()) {
-		stSearch.ullMemToAcquire = ullSizeTotal;
-		stSearch.ullLoopChunkSize = ullSizeTotal - nSizeSearch;
-		stSearch.ullMemChunks = 1;
+		ullMemToAcquire = ullSizeTotal;
+		ullLoopChunkSize = ullSizeTotal - nSizeSearch;
+		ullMemChunks = 1;
 	}
 	else {
-		stSearch.ullMemToAcquire = pHexCtrl->GetCacheSize();
-		if (stSearch.ullMemToAcquire > ullSizeTotal) {
-			stSearch.ullMemToAcquire = ullSizeTotal;
+		ullMemToAcquire = pHexCtrl->GetCacheSize();
+		if (ullMemToAcquire > ullSizeTotal) {
+			ullMemToAcquire = ullSizeTotal;
 		}
 
-		stSearch.ullLoopChunkSize = stSearch.ullMemToAcquire - nSizeSearch;
-
-		if (ullStep > stSearch.ullLoopChunkSize) { //For very big steps.
-			stSearch.ullMemChunks = ullSizeTotal > ullStep ? ullSizeTotal / ullStep
-				+ ((ullSizeTotal % ullStep) ? 1 : 0) : 1;
-			stSearch.fBigStep = true;
+		ullLoopChunkSize = ullMemToAcquire - nSizeSearch;
+		if (ullStep > ullLoopChunkSize) { //For very big steps.
+			ullMemChunks = ullSizeTotal > ullStep ? ullSizeTotal / ullStep + ((ullSizeTotal % ullStep) ? 1 : 0) : 1;
+			fBigStep = true;
 		}
 		else {
-			stSearch.ullMemChunks = ullSizeTotal > stSearch.ullLoopChunkSize ? ullSizeTotal / stSearch.ullLoopChunkSize
-				+ ((ullSizeTotal % stSearch.ullLoopChunkSize) ? 1 : 0) : 1;
+			ullMemChunks = ullSizeTotal > ullLoopChunkSize ? ullSizeTotal / ullLoopChunkSize
+				+ ((ullSizeTotal % ullLoopChunkSize) ? 1 : 0) : 1;
 		}
 	}
+
+	SEARCHDATA stSearch { .ullStart { ullStart }, .ullEnd { ullEnd }, .ullLoopChunkSize { ullLoopChunkSize },
+		.ullMemToAcquire { ullMemToAcquire }, .ullMemChunks { ullMemChunks }, .ullOffsetSentinel { m_ullOffsetSentinel },
+		.llStep { static_cast<LONGLONG>(ullStep) }, .pHexCtrl { GetHexCtrl() }, .pDlgClbk { pDlgClbk },
+		.spnSearch { spnSearch }, .fBigStep { fBigStep }, .fInverted { IsInverted() }, .fDlgExit { fDlgExit } };
 
 	if (pDlgClbk == nullptr) {
 		if (ullSizeTotal > uSizeQuick) { //Showing the "Cancel" dialog only for big data sizes.
 			CHexDlgCallback dlgClbk(L"Searching...", L"", fForward ? ullStart : ullEnd, fForward ? ullEnd : ullStart);
 			stSearch.pDlgClbk = &dlgClbk;
-			std::thread thrd(GetSearchFunc<true>(), &stSearch);
+			std::thread thrd(GetSearchFunc(fForward, true), &stSearch);
 			dlgClbk.DoModal();
 			thrd.join();
 		}
 		else {
-			GetSearchFunc<false>()(&stSearch);
+			GetSearchFunc(fForward, false)(&stSearch);
 		}
 	}
 	else {
-		GetSearchFunc<true>()(&stSearch);
+		GetSearchFunc(fForward, true)(&stSearch);
 	}
 
 	ullStart = stSearch.ullStart;
@@ -306,7 +308,7 @@ auto CHexDlgSearch::GetHexCtrl()const->IHexCtrl*
 }
 
 template<bool fDlgClbck>
-auto CHexDlgSearch::GetSearchFunc()const->void(*)(SEARCHDATA* pSearch)
+auto CHexDlgSearch::GetSearchFuncFwd()const->void(*)(SEARCHDATA*)
 {
 	//The `fDlgClbck` arg ensures that no runtime check will be performed for the 
 	//'SEARCHDATA::pDlgClbk == nullptr', at the hot path inside the SearchFunc function.
@@ -315,85 +317,182 @@ auto CHexDlgSearch::GetSearchFunc()const->void(*)(SEARCHDATA* pSearch)
 	case HEXBYTES:
 		if (m_vecSearchData.size() == 1 && m_ullStep == 1 && !IsWildcard()) { //Special case for 1byte data size.
 			return IsInverted() ?
-				SearchFunc<SEARCHTYPE(DATA_BYTE1, false, false, true, true), fDlgClbck> :
-				SearchFunc<SEARCHTYPE(DATA_BYTE1, false, false, true, false), fDlgClbck>;
+				SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, true)> :
+				SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, false)>;
 		}
 		else {
 			return IsWildcard() ?
-				SearchFunc<SEARCHTYPE(CHAR_STR, true, true), fDlgClbck> :
-				SearchFunc<SEARCHTYPE(CHAR_STR, true, false), fDlgClbck>;
+				SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, true)> :
+				SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
 		}
 	case TEXT_ASCII:
 		if (m_vecSearchData.size() == 1 && m_ullStep == 1 && !IsWildcard()) { //Special case for 1byte data size.
 			return IsInverted() ?
-				SearchFunc<SEARCHTYPE(DATA_BYTE1, false, false, true, true), fDlgClbck> :
-				SearchFunc<SEARCHTYPE(DATA_BYTE1, false, false, true, false), fDlgClbck>;
+				SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, true)> :
+				SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, false)>;
 		}
 		else {
 			if (IsMatchCase() && !IsWildcard()) {
-				return SearchFunc<SEARCHTYPE(CHAR_STR, true, false), fDlgClbck>;
+				return SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
 			}
 
 			if (IsMatchCase() && IsWildcard()) {
-				return SearchFunc<SEARCHTYPE(CHAR_STR, true, true), fDlgClbck>;
+				return SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, true)>;
 			}
 
 			if (!IsMatchCase() && IsWildcard()) {
-				return SearchFunc<SEARCHTYPE(CHAR_STR, false, true), fDlgClbck>;
+				return SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, false, true)>;
 			}
 
 			if (!IsMatchCase() && !IsWildcard()) {
-				return SearchFunc<SEARCHTYPE(CHAR_STR, false, false), fDlgClbck>;
+				return SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, false, false)>;
 			}
 		}
 		break;
 	case TEXT_UTF8:
-		return SearchFunc<SEARCHTYPE(CHAR_STR, true, false), fDlgClbck>; //Search UTF-8 as plain chars.
+		return SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>; //Search UTF-8 as plain chars.
 	case TEXT_UTF16:
 		if (IsMatchCase() && !IsWildcard()) {
-			return SearchFunc<SEARCHTYPE(WCHAR_STR, true, false), fDlgClbck>;
+			return SearchFuncFwd<SEARCHTYPE(WCHAR_STR, fDlgClbck, true, false)>;
 		}
 
 		if (IsMatchCase() && IsWildcard()) {
-			return SearchFunc<SEARCHTYPE(WCHAR_STR, true, true), fDlgClbck>;
+			return SearchFuncFwd<SEARCHTYPE(WCHAR_STR, fDlgClbck, true, true)>;
 		}
 
 		if (!IsMatchCase() && IsWildcard()) {
-			return SearchFunc<SEARCHTYPE(WCHAR_STR, false, true), fDlgClbck>;
+			return SearchFuncFwd<SEARCHTYPE(WCHAR_STR, fDlgClbck, false, true)>;
 		}
 
 		if (!IsMatchCase() && !IsWildcard()) {
-			return SearchFunc<SEARCHTYPE(WCHAR_STR, false, false), fDlgClbck>;
+			return SearchFuncFwd<SEARCHTYPE(WCHAR_STR, fDlgClbck, false, false)>;
 		}
 		break;
 	case NUM_INT8:
 	case NUM_UINT8:
 		if (m_ullStep == 1) {
 			return IsInverted() ?
-				SearchFunc<SEARCHTYPE(DATA_BYTE1, false, false, true, true), fDlgClbck> :
-				SearchFunc<SEARCHTYPE(DATA_BYTE1, false, false, true, false), fDlgClbck>;
+				SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, true)> :
+				SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, false)>;
 		}
 		else {
-			return SearchFunc<SEARCHTYPE(DATA_BYTE1), fDlgClbck>;
+			return SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck)>;
 		}
 		break;
 	case NUM_INT16:
 	case NUM_UINT16:
-		return SearchFunc<SEARCHTYPE(DATA_BYTE2), fDlgClbck>;
+		return SearchFuncFwd<SEARCHTYPE(DATA_BYTE2, fDlgClbck)>;
 	case NUM_INT32:
 	case NUM_UINT32:
 	case NUM_FLOAT:
-		return SearchFunc<SEARCHTYPE(DATA_BYTE4), fDlgClbck>;
+		return SearchFuncFwd<SEARCHTYPE(DATA_BYTE4, fDlgClbck)>;
 	case NUM_INT64:
 	case NUM_UINT64:
 	case NUM_DOUBLE:
 	case STRUCT_FILETIME:
-		return SearchFunc<SEARCHTYPE(DATA_BYTE8), fDlgClbck>;
+		return SearchFuncFwd<SEARCHTYPE(DATA_BYTE8, fDlgClbck)>;
 	default:
 		break;
 	}
 
 	return { };
+}
+
+template<bool fDlgClbck>
+auto CHexDlgSearch::GetSearchFuncBack()const->void(*)(SEARCHDATA*)
+{
+	//The `fDlgClbck` arg ensures that no runtime check will be performed for the 
+	//'SEARCHDATA::pDlgClbk == nullptr', at the hot path inside the SearchFunc function.
+	using enum ESearchType; using enum EMemCmp;
+	switch (GetSearchType()) {
+	case HEXBYTES:
+		if (m_vecSearchData.size() == 1 && m_ullStep == 1 && !IsWildcard()) { //Special case for 1byte data size.
+			return IsInverted() ?
+				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, true)> :
+				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, false)>;
+		}
+		else {
+			return IsWildcard() ?
+				SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, true)> :
+				SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
+		}
+	case TEXT_ASCII:
+		if (m_vecSearchData.size() == 1 && m_ullStep == 1 && !IsWildcard()) { //Special case for 1byte data size.
+			return IsInverted() ?
+				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, true)> :
+				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, false)>;
+		}
+		else {
+			if (IsMatchCase() && !IsWildcard()) {
+				return SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
+			}
+
+			if (IsMatchCase() && IsWildcard()) {
+				return SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, true)>;
+			}
+
+			if (!IsMatchCase() && IsWildcard()) {
+				return SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, false, true)>;
+			}
+
+			if (!IsMatchCase() && !IsWildcard()) {
+				return SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, false, false)>;
+			}
+		}
+		break;
+	case TEXT_UTF8:
+		return SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>; //Search UTF-8 as plain chars.
+	case TEXT_UTF16:
+		if (IsMatchCase() && !IsWildcard()) {
+			return SearchFuncBack<SEARCHTYPE(WCHAR_STR, fDlgClbck, true, false)>;
+		}
+
+		if (IsMatchCase() && IsWildcard()) {
+			return SearchFuncBack<SEARCHTYPE(WCHAR_STR, fDlgClbck, true, true)>;
+		}
+
+		if (!IsMatchCase() && IsWildcard()) {
+			return SearchFuncBack<SEARCHTYPE(WCHAR_STR, fDlgClbck, false, true)>;
+		}
+
+		if (!IsMatchCase() && !IsWildcard()) {
+			return SearchFuncBack<SEARCHTYPE(WCHAR_STR, fDlgClbck, false, false)>;
+		}
+		break;
+	case NUM_INT8:
+	case NUM_UINT8:
+		if (m_ullStep == 1) {
+			return IsInverted() ?
+				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, true)> :
+				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, false)>;
+		}
+		else {
+			return SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck)>;
+		}
+		break;
+	case NUM_INT16:
+	case NUM_UINT16:
+		return SearchFuncBack<SEARCHTYPE(DATA_BYTE2, fDlgClbck)>;
+	case NUM_INT32:
+	case NUM_UINT32:
+	case NUM_FLOAT:
+		return SearchFuncBack<SEARCHTYPE(DATA_BYTE4, fDlgClbck)>;
+	case NUM_INT64:
+	case NUM_UINT64:
+	case NUM_DOUBLE:
+	case STRUCT_FILETIME:
+		return SearchFuncBack<SEARCHTYPE(DATA_BYTE8, fDlgClbck)>;
+	default:
+		break;
+	}
+
+	return { };
+}
+
+auto CHexDlgSearch::GetSearchFunc(bool fFwd, bool fDlgClbck)const->void(*)(SEARCHDATA*)
+{
+	return fFwd ? (fDlgClbck ? GetSearchFuncFwd<true>() : GetSearchFuncFwd<false>()) :
+		(fDlgClbck ? GetSearchFuncBack<true>() : GetSearchFuncBack<false>());
 }
 
 auto CHexDlgSearch::GetSearchMode()const->CHexDlgSearch::ESearchMode
@@ -1486,13 +1585,7 @@ bool CHexDlgSearch::MemCmp(const std::byte* pWhere, const std::byte* pWhat, std:
 	}
 }
 
-template<CHexDlgSearch::SEARCHTYPE stType, bool tfDlgClbck>
-void CHexDlgSearch::SearchFunc(SEARCHDATA* pSearch)
-{
-	pSearch->fForward ? SearchFuncFwd<stType, tfDlgClbck>(pSearch) : SearchFuncBack<stType, tfDlgClbck>(pSearch);
-}
-
-template<CHexDlgSearch::SEARCHTYPE stType, bool tfDlgClbck>
+template<CHexDlgSearch::SEARCHTYPE stType>
 void CHexDlgSearch::SearchFuncFwd(SEARCHDATA* pSearch)
 {
 	//Members locality is important for the best performance of the tight search loop below.
@@ -1513,7 +1606,7 @@ void CHexDlgSearch::SearchFuncFwd(SEARCHDATA* pSearch)
 
 	using enum EMemCmp;
 	const auto lmbEnd = [pSearch = pSearch]() {
-		if constexpr (tfDlgClbck) {
+		if constexpr (stType.fDlgClbck) {
 			if (pSearch->fDlgExit) {
 				pSearch->pDlgClbk->ExitDlg();
 			}
@@ -1562,7 +1655,7 @@ void CHexDlgSearch::SearchFuncFwd(SEARCHDATA* pSearch)
 					}
 				}
 
-				if constexpr (tfDlgClbck) {
+				if constexpr (stType.fDlgClbck) {
 					if (pDlgClbk->IsCanceled()) {
 						pSearch->fCanceled = true;
 						return;
@@ -1632,7 +1725,7 @@ void CHexDlgSearch::SearchFuncFwd(SEARCHDATA* pSearch)
 					}
 				}
 
-				if constexpr (tfDlgClbck) {
+				if constexpr (stType.fDlgClbck) {
 					if (pDlgClbk->IsCanceled()) {
 						pSearch->fCanceled = true;
 						return;
@@ -1661,8 +1754,8 @@ void CHexDlgSearch::SearchFuncFwd(SEARCHDATA* pSearch)
 	lmbEnd();
 }
 
-template<CHexDlgSearch::SEARCHTYPE stType, bool tfDlgClbck>
-void CHexDlgSearch::SearchFuncBack(SEARCHDATA * pSearch)
+template<CHexDlgSearch::SEARCHTYPE stType>
+void CHexDlgSearch::SearchFuncBack(SEARCHDATA* pSearch)
 {
 	//Members locality is important for the best performance of the tight search loop below.
 	static constexpr auto LOOP_UNROLL_SIZE = 8U; //How many comparisons we do at one loop cycle.
@@ -1681,7 +1774,7 @@ void CHexDlgSearch::SearchFuncBack(SEARCHDATA * pSearch)
 	auto ullMemToAcquire = pSearch->ullMemToAcquire;
 
 	const auto lmbEnd = [pSearch = pSearch]() {
-		if constexpr (tfDlgClbck) {
+		if constexpr (stType.fDlgClbck) {
 			if (pSearch->fDlgExit) {
 				pSearch->pDlgClbk->ExitDlg();
 			}
@@ -1765,7 +1858,7 @@ void CHexDlgSearch::SearchFuncBack(SEARCHDATA * pSearch)
 				}
 			}
 
-			if constexpr (tfDlgClbck) {
+			if constexpr (stType.fDlgClbck) {
 				if (pDlgClbk->IsCanceled()) {
 					pSearch->fCanceled = true;
 					return;

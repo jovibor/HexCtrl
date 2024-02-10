@@ -36,8 +36,11 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto Finder(ULONGLONG& ullStart, ULONGLONG ullEnd, SpanCByte spnSearch,
 			bool fForward = true, CHexDlgCallback* pDlgClbk = nullptr, bool fDlgExit = true) -> FINDRESULT;
 		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
+		auto GetSearchFunc(bool fFwd, bool fDlgClbck)const->void(*)(SEARCHDATA*);
 		template<bool fDlgClbck>
-		[[nodiscard]] auto GetSearchFunc()const->void(*)(SEARCHDATA* pSearch);
+		[[nodiscard]] auto GetSearchFuncFwd()const->void(*)(SEARCHDATA*);
+		template<bool fDlgClbck>
+		[[nodiscard]] auto GetSearchFuncBack()const->void(*)(SEARCHDATA*);
 		[[nodiscard]] auto GetSearchMode()const->ESearchMode; //Getcurrent search mode.
 		[[nodiscard]] auto GetSearchType()const->ESearchType; //Get current search type.
 		void HexCtrlHighlight(const VecSpan& vecSel); //Highlight found occurence in the HexCtrl.
@@ -91,12 +94,13 @@ namespace HEXCTRL::INTERNAL {
 		};
 		struct SEARCHTYPE { //Compile time struct for template parameters in the SearchFunc and MemCmp.
 			constexpr SEARCHTYPE() = default;
-			constexpr SEARCHTYPE(EMemCmp eMemCmp, bool fMatchCase = false, bool fWildcard = false,
-				bool fSIMD = false, bool fInverted = false) :
-				eMemCmp { eMemCmp }, fMatchCase { fMatchCase }, fWildcard { fWildcard },
+			constexpr SEARCHTYPE(EMemCmp eMemCmp, bool fDlgClbck = false, bool fMatchCase = false,
+				bool fWildcard = false, bool fSIMD = false, bool fInverted = false) :
+				eMemCmp { eMemCmp }, fDlgClbck { fDlgClbck }, fMatchCase { fMatchCase }, fWildcard { fWildcard },
 				fSIMD { fSIMD }, fInverted { fInverted } {}
 			constexpr ~SEARCHTYPE() = default;
 			EMemCmp eMemCmp { };
+			bool fDlgClbck { false };
 			bool fMatchCase { false };
 			bool fWildcard { false };
 			bool fSIMD { false };
@@ -106,11 +110,9 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] static bool MemCmp(const std::byte* pWhere, const std::byte* pWhat, std::size_t nSize);
 		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte1(const __m128i* pWhere, std::byte bWhat);
 		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte1Inv(const __m128i* pWhere, std::byte bWhat);
-		template<SEARCHTYPE stType, bool tfDlgClbck>
-		static void SearchFunc(SEARCHDATA* pSearch);
-		template<SEARCHTYPE stType, bool tfDlgClbck>
+		template<SEARCHTYPE stType>
 		static void SearchFuncFwd(SEARCHDATA* pSearch);
-		template<SEARCHTYPE stType, bool tfDlgClbck>
+		template<SEARCHTYPE stType>
 		static void SearchFuncBack(SEARCHDATA* pSearch);
 	private:
 		static constexpr std::byte m_uWildcard { '?' }; //Wildcard symbol.
