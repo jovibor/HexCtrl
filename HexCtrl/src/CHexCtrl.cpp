@@ -4762,7 +4762,7 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorke
 			}
 		}
 	exit:
-		dlgClbk.ExitDlg();
+		dlgClbk.OnCancel();
 		};
 
 	static constexpr auto uSizeToRunThread { 1024U * 1024U * 50U }; //50MB.

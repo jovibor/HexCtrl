@@ -6,6 +6,7 @@
 ****************************************************************************************/
 #pragma once
 #include <afxdialogex.h>
+#include <locale>
 #include <string>
 
 namespace HEXCTRL::INTERNAL {
@@ -13,13 +14,12 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		explicit CHexDlgCallback(std::wstring_view wsvOperName, std::wstring_view wsvCountName,
 			ULONGLONG ullProgBarMin, ULONGLONG ullProgBarMax, CWnd* pParent = nullptr);
-		void ExitDlg();
 		[[nodiscard]] bool IsCanceled()const;
+		void OnCancel()override;
 		void SetCount(ULONGLONG ullCount);
 		void SetProgress(ULONGLONG ullProgCurr);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
-		void OnCancel()override;
 		afx_msg void OnClose();
 		afx_msg auto OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor) -> HBRUSH;
 		BOOL OnInitDialog()override;
@@ -29,6 +29,7 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr UINT_PTR m_uTimerCancelCheck { 0x1 };
 		static constexpr auto m_iElapse { 100 }; //Milliseconds for the timer.
 		CProgressCtrl m_stProgBar;
+		std::locale m_locale;
 		std::wstring m_wstrOperName { };
 		std::wstring m_wstrCountName { }; //Count name (e.g. Found, Replaced, etc...).
 		ULONGLONG m_ullProgBarMin { };

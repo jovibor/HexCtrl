@@ -26,14 +26,14 @@ CHexDlgCallback::CHexDlgCallback(std::wstring_view wsvOperName, std::wstring_vie
 	assert(ullProgBarMin <= ullProgBarMax);
 }
 
-void CHexDlgCallback::ExitDlg()
-{
-	OnCancel();
-}
-
 bool CHexDlgCallback::IsCanceled()const
 {
 	return m_fCancel;
+}
+
+void CHexDlgCallback::OnCancel()
+{
+	m_fCancel = true;
 }
 
 void CHexDlgCallback::SetCount(ULONGLONG ullCount)
@@ -55,17 +55,9 @@ void CHexDlgCallback::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_HEXCTRL_CALLBACK_PROGBAR, m_stProgBar);
 }
 
-void CHexDlgCallback::OnCancel()
-{
-	m_fCancel = true;
-}
-
 void CHexDlgCallback::OnClose()
 {
-	//For some reason, setting the `m_fCancel = true;` here hangs the whole app sometimes.
-	//It happens when using Find All, and there are a lot of matching data.
-	//In fact, the std::thread.join() hangs in the main thread.
-	//So just left an empty handler here.
+	OnCancel();
 }
 
 auto CHexDlgCallback::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)->HBRUSH
@@ -93,6 +85,8 @@ BOOL CHexDlgCallback::OnInitDialog()
 
 	const auto ullDiff = m_ullProgBarMax - m_ullProgBarMin;
 	m_ullThousandth = ullDiff >= iRange ? ullDiff / iRange : 1;
+
+	m_locale = std::locale("en_US.UTF-8");
 
 	return TRUE;
 }
@@ -134,6 +128,6 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 
 	if (m_ullCount > 0) {
 		GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_COUNT)->
-			SetWindowTextW(std::format(L"{}{}", m_wstrCountName, m_ullCount).data());
+			SetWindowTextW(std::format(m_locale, L"{}{:L}", m_wstrCountName, m_ullCount).data());
 	}
 }
