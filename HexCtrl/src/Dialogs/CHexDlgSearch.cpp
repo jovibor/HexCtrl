@@ -882,30 +882,15 @@ void CHexDlgSearch::OnSearchModeTEXT()
 void CHexDlgSearch::Prepare()
 {
 	static constexpr auto uSearchSizeLimit { 256U };
-	const auto* const pHexCtrl = GetHexCtrl();
-
-	//"End offset"
-	auto ullSearchDataSize { 0ULL }; //Actual data size for the search.
-	if (m_editEnd.GetWindowTextLengthW() > 0) {
-		CStringW wstrEndOffset;
-		m_editEnd.GetWindowTextW(wstrEndOffset);
-		const auto optEnd = stn::StrToUInt64(wstrEndOffset.GetString());
-		if (!optEnd) {
-			m_editEnd.SetFocus();
-			MessageBoxW(L"End offset is wrong.", L"Incorrect offset", MB_ICONERROR);
-			return;
-		}
-
-		ullSearchDataSize = (std::min)(pHexCtrl->GetDataSize(), *optEnd + 1); //Not more than GetDataSize().
-	}
-	else {
-		ullSearchDataSize = pHexCtrl->GetDataSize();
-	}
+	const auto pHexCtrl = GetHexCtrl();
+	const auto ullDataSize = pHexCtrl->GetDataSize();
 
 	//"Search" text.
 	const auto iSearchSize = m_comboSearch.GetWindowTextLengthW();
-	if (iSearchSize == 0 || iSearchSize > uSearchSizeLimit)
+	if (iSearchSize == 0 || iSearchSize > uSearchSizeLimit) {
+		m_comboSearch.SetFocus();
 		return;
+	}
 
 	CStringW wstrTextSearch;
 	m_comboSearch.GetWindowTextW(wstrTextSearch);
@@ -917,25 +902,59 @@ void CHexDlgSearch::Prepare()
 	}
 	ComboSearchFill(wstrTextSearch);
 
-	//"Start offset".
-	if (!IsSelection()) { //Do not use "Start offset" field when in the selection.
-		CStringW wstrStartOffset;
-		m_editStart.GetWindowTextW(wstrStartOffset);
-		if (wstrStartOffset.IsEmpty()) {
-			m_ullOffsetCurr = 0;
+	auto ullSearchDataSize { 0ULL }; //Actual search data size.
+	//"Start/end" offsets.
+	if (!IsSelection()) { //Do not use "Start/End offset" when in the selection.
+		ULONGLONG ullStart;
+		ULONGLONG ullEnd;
+		if (m_editStart.GetWindowTextLengthW() == 0) {
+			ullStart = 0;
 		}
-		else if (const auto optStart = stn::StrToUInt64(wstrStartOffset.GetString()); optStart) {
-			if (*optStart >= ullSearchDataSize) {
+		else {
+			CStringW wstrStartOffset;
+			m_editStart.GetWindowTextW(wstrStartOffset);
+			const auto optStart = stn::StrToUInt64(wstrStartOffset.GetString());
+			if (!optStart) {
+				m_editStart.SetFocus();
+				MessageBoxW(L"Start offset is incorrect.", L"Incorrect offset", MB_ICONERROR);
+				return;
+			}
+
+			ullStart = *optStart;
+			if (ullStart >= ullDataSize) {
 				m_editStart.SetFocus();
 				MessageBoxW(L"Start offset is bigger than the data size.", L"Incorrect offset", MB_ICONERROR);
 				return;
 			}
-
-			m_ullOffsetCurr = *optStart;
 		}
-		else
-			return;
+
+		//"End offset"
+		if (m_editEnd.GetWindowTextLengthW() == 0) {
+			ullEnd = ullDataSize - 1;
+		}
+		else {
+			CStringW wstrEndOffset;
+			m_editEnd.GetWindowTextW(wstrEndOffset);
+			const auto optEnd = stn::StrToUInt64(wstrEndOffset.GetString());
+			if (!optEnd) {
+				m_editEnd.SetFocus();
+				MessageBoxW(L"End offset is incorrect.", L"Incorrect offset", MB_ICONERROR);
+				return;
+			}
+
+			ullEnd = *optEnd;
+			if (ullEnd < ullStart) {
+				m_editEnd.SetFocus();
+				MessageBoxW(L"End offset can't be less than Start.", L"Incorrect offset", MB_ICONERROR);
+				return;
+			}
+		}
+
+		m_ullOffsetCurr = ullStart;
+		ullSearchDataSize = ullEnd + 1;
 	}
+	else { ullSearchDataSize = ullDataSize; }
+
 
 	//"Step".
 	if (m_editStep.GetWindowTextLengthW() > 0) {
@@ -1446,8 +1465,9 @@ void CHexDlgSearch::Search()
 			const auto lmbFindBackSmall = [&](FINDERDATA& refFinder) {
 				refFinder.pSearchFunc = GetSearchFunc(false, false);
 				refFinder.fCancelDlgOnEnd = false;
-				if (m_fSecondMatch && m_ullOffsetCurr - m_ullStep < m_ullOffsetCurr) {
-					m_ullOffsetCurr -= m_ullStep;
+				const auto ullNext = m_ullOffsetCurr - m_ullStep;
+				if (m_fSecondMatch && ullNext < m_ullOffsetCurr && ullNext >= m_ullOffsetBoundBegin) {
+					m_ullOffsetCurr = ullNext;
 					refFinder.ullStart = m_ullOffsetCurr;
 					if (stFind = Finder(refFinder); stFind) {
 						m_fFound = true;
@@ -1477,8 +1497,9 @@ void CHexDlgSearch::Search()
 				const auto lmbWrapper = [&](FINDERDATA& refFinder) {
 					stFind = Finder(refFinder); };
 
-				if (m_fSecondMatch && m_ullOffsetCurr - m_ullStep < m_ullOffsetCurr) {
-					m_ullOffsetCurr -= m_ullStep;
+				const auto ullNext = m_ullOffsetCurr - m_ullStep;
+				if (m_fSecondMatch && ullNext < m_ullOffsetCurr && ullNext >= m_ullOffsetBoundBegin) {
+					m_ullOffsetCurr = ullNext;
 					refFinder.ullStart = m_ullOffsetCurr;
 					CHexDlgCallback dlgClbk(L"Searching...", L"", ullEnd, refFinder.ullStart, this);
 					stFinder.pDlgClbk = &dlgClbk;
