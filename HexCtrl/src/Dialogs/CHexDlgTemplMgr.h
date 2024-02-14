@@ -112,7 +112,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetDlgButtonsState(); //Enable/disable button states depending on templates existence.
 		void SetHexSelByField(PCHEXTEMPLFIELD pField);
 		template <TSize1248 T> void SetTData(T tData, ULONGLONG ullOffset, bool fShouldSwap)const;
-		void ShowListDataBool(LPWSTR pwsz, unsigned char uchData)const;
+		void ShowListDataBool(LPWSTR pwsz, std::uint8_t u8Data)const;
 		template<typename T> requires TSize1248<T>
 		void ShowListDataNUMBER(LPWSTR pwsz, T tData, bool fShouldSwap)const;
 		void ShowListDataTime32(LPWSTR pwsz, __time32_t lTime32, bool fShouldSwap)const;

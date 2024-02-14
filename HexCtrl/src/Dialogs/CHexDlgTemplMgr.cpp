@@ -914,32 +914,38 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		case custom_size: //If field of a custom size we cycling through the size field.
 			switch (pField->iSize) {
 			case 1:
-				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset))) = L'\0';
-				break;
-			case 2: {
+			{
+				const auto bData = GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset);
+				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(bData)) = L'\0';
+			}
+			break;
+			case 2:
+			{
 				auto wData = GetIHexTData<WORD>(*m_pHexCtrl, ullOffset);
 				if (fShouldSwap) {
 					wData = ByteSwap(wData);
 				}
 				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(wData)) = L'\0';
 			}
-				  break;
-			case 4: {
+			break;
+			case 4:
+			{
 				auto dwData = GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset);
 				if (fShouldSwap) {
 					dwData = ByteSwap(dwData);
 				}
 				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(dwData)) = L'\0';
 			}
-				  break;
-			case 8: {
+			break;
+			case 8:
+			{
 				auto ullData = GetIHexTData<QWORD>(*m_pHexCtrl, ullOffset);
 				if (fShouldSwap) {
 					ullData = ByteSwap(ullData);
 				}
 				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(ullData)) = L'\0';
 			}
-				  break;
+			break;
 			default:
 				break;
 			}
@@ -1694,10 +1700,11 @@ void CHexDlgTemplMgr::SetTData(T tData, ULONGLONG ullOffset, bool fShouldSwap)co
 	SetIHexTData(*m_pHexCtrl, ullOffset, tData);
 }
 
-void CHexDlgTemplMgr::ShowListDataBool(LPWSTR pwsz, unsigned char uchData) const
+void CHexDlgTemplMgr::ShowListDataBool(LPWSTR pwsz, std::uint8_t u8Data) const
 {
+	const auto fBool = static_cast<bool>(u8Data);
 	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:02X}" : L"{1}",
-		std::make_wformat_args(uchData, static_cast<bool>(uchData))) = L'\0';
+		std::make_wformat_args(u8Data, fBool)) = L'\0';
 }
 
 template<typename T> requires TSize1248<T>
@@ -1808,9 +1815,10 @@ void CHexDlgTemplMgr::ShowListDataFILETIME(LPWSTR pwsz, FILETIME stFTime, bool f
 	if (fShouldSwap) {
 		stFTime = ByteSwap(stFTime);
 	}
-	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:016X}" : L"{}",
-		std::make_wformat_args(std::bit_cast<unsigned long long>(stFTime),
-			FileTimeToString(stFTime, m_dwDateFormat, m_wchDateSepar))) = L'\0';
+
+	const auto ui64 = std::bit_cast<std::uint64_t>(stFTime);
+	const auto wstrTime = FileTimeToString(stFTime, m_dwDateFormat, m_wchDateSepar);
+	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:016X}" : L"{}", std::make_wformat_args(ui64, wstrTime)) = L'\0';
 }
 
 void CHexDlgTemplMgr::ShowListDataSYSTEMTIME(LPWSTR pwsz, SYSTEMTIME stSTime, bool fShouldSwap)const

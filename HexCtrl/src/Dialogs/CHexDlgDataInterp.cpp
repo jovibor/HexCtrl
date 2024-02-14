@@ -1000,8 +1000,9 @@ void CHexDlgDataInterp::ShowValueBinary(T tData)const
 
 void CHexDlgDataInterp::ShowValueInt8(BYTE byte)const
 {
+	const auto i8 = static_cast<std::int8_t>(byte);
 	GetGridData(EName::NAME_INT8)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:02X}" : L"{1}",
-		std::make_wformat_args(byte, static_cast<int>(static_cast<char>(byte)))).data());
+		std::make_wformat_args(byte, i8)).data());
 }
 
 void CHexDlgDataInterp::ShowValueUInt8(BYTE byte)const
@@ -1012,8 +1013,9 @@ void CHexDlgDataInterp::ShowValueUInt8(BYTE byte)const
 
 void CHexDlgDataInterp::ShowValueInt16(WORD word)const
 {
+	const auto i16 = static_cast<std::int16_t>(word);
 	GetGridData(EName::NAME_INT16)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:04X}" : L"{1}",
-		std::make_wformat_args(word, static_cast<short>(word))).data());
+		std::make_wformat_args(word, i16)).data());
 }
 
 void CHexDlgDataInterp::ShowValueUInt16(WORD word)const
@@ -1024,8 +1026,9 @@ void CHexDlgDataInterp::ShowValueUInt16(WORD word)const
 
 void CHexDlgDataInterp::ShowValueInt32(DWORD dword)const
 {
+	const auto i32 = static_cast<std::int32_t>(dword);
 	GetGridData(EName::NAME_INT32)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:08X}" : L"{1}",
-		std::make_wformat_args(dword, static_cast<int>(dword))).data());
+		std::make_wformat_args(dword, i32)).data());
 }
 
 void CHexDlgDataInterp::ShowValueUInt32(DWORD dword)const
@@ -1036,8 +1039,9 @@ void CHexDlgDataInterp::ShowValueUInt32(DWORD dword)const
 
 void CHexDlgDataInterp::ShowValueInt64(QWORD qword)const
 {
+	const auto i64 = static_cast<std::int64_t>(qword);
 	GetGridData(EName::NAME_INT64)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:016X}" : L"{1}",
-		std::make_wformat_args(qword, static_cast<long long>(qword))).data());
+		std::make_wformat_args(qword, i64)).data());
 }
 
 void CHexDlgDataInterp::ShowValueUInt64(QWORD qword)const
@@ -1048,14 +1052,16 @@ void CHexDlgDataInterp::ShowValueUInt64(QWORD qword)const
 
 void CHexDlgDataInterp::ShowValueFloat(DWORD dword)const
 {
+	const auto fl = std::bit_cast<float>(dword);
 	GetGridData(EName::NAME_FLOAT)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:08X}" : L"{1:.9e}",
-		std::make_wformat_args(dword, std::bit_cast<float>(dword))).data());
+		std::make_wformat_args(dword, fl)).data());
 }
 
 void CHexDlgDataInterp::ShowValueDouble(QWORD qword)const
 {
+	const auto dbl = std::bit_cast<double>(qword);
 	GetGridData(EName::NAME_DOUBLE)->pProp->SetValue(std::vformat(IsShowAsHex() ? L"0x{0:016X}" : L"{1:.18e}",
-		std::make_wformat_args(qword, std::bit_cast<double>(qword))).data());
+		std::make_wformat_args(qword, dbl)).data());
 }
 
 void CHexDlgDataInterp::ShowValueTime32(DWORD dword)const

@@ -2323,23 +2323,29 @@ void CHexCtrl::Redraw()
 		return;
 
 	if (IsDataSet()) {
+		const auto ullCaretPos = GetCaretPos();
 		//^ - encloses Data name, ` (tilda) - encloses a data itself.
-		m_wstrInfoBar = std::vformat(IsOffsetAsHex() ? L"^Caret: ^`0x{:X} `" : L"^Caret: ^`{} `", std::make_wformat_args(GetCaretPos()));
+		m_wstrInfoBar = std::vformat(IsOffsetAsHex() ? L"^Caret: ^`0x{:X} `" : L"^Caret: ^`{} `",
+			std::make_wformat_args(ullCaretPos));
 
 		if (IsPageVisible()) { //Page/Sector.
+			const auto ullPagePos = GetPagePos();
+			const auto ullPagesCount = GetPagesCount();
 			m_wstrInfoBar += std::vformat(IsOffsetAsHex() ? L"^{}: ^`0x{:X}/0x{:X} `" : L"^{}: ^`{}/{} `",
-				std::make_wformat_args(m_wstrPageName, GetPagePos(), GetPagesCount()));
+				std::make_wformat_args(m_wstrPageName, ullPagePos, ullPagesCount));
 		}
 
 		if (HasSelection()) {
 			const auto ullSelSize = m_pSelection->GetSelSize();
+			const auto ullSelStart = m_pSelection->GetSelStart();
 			if (ullSelSize == 1) { //In case of just one byte selected.
 				m_wstrInfoBar += std::vformat(IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}] `" : L"^ Selected: ^`{} [{}] `",
-					std::make_wformat_args(ullSelSize, m_pSelection->GetSelStart()));
+					std::make_wformat_args(ullSelSize, ullSelStart));
 			}
 			else {
+				const auto ullSelEnd = m_pSelection->GetSelEnd();
 				m_wstrInfoBar += std::vformat(IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}-0x{:X}] `" : L"^ Selected: ^`{} [{}-{}] `",
-					std::make_wformat_args(ullSelSize, m_pSelection->GetSelStart(), m_pSelection->GetSelEnd()));
+					std::make_wformat_args(ullSelSize, ullSelStart, ullSelEnd));
 			}
 		}
 
