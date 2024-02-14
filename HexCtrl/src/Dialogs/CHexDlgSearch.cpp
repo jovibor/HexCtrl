@@ -1347,41 +1347,47 @@ void CHexDlgSearch::Search()
 			ClearList();
 			m_dwCount = 0;
 			m_dwReplaced = 0;
+
 			const auto lmbReplaceAllSmall = [&vecSearchRes = m_vecSearchRes, &vecReplaceData = m_vecReplaceData,
 				dwFoundLimit = m_dwFoundLimit](FINDERDATA& refFinder) {
 				refFinder.fCancelDlgOnEnd = false;
+				const auto sSizeRepl = vecReplaceData.size();
 				while (const auto res = Finder(refFinder)) {
+					if (res.ullOffset + sSizeRepl > refFinder.ullOffsetSentinel)
+						break;
+
 					Replace(refFinder.pHexCtrl, res.ullOffset, vecReplaceData);
-					refFinder.ullStart = res.ullOffset + (vecReplaceData.size() <= refFinder.ullStep ?
-						refFinder.ullStep : vecReplaceData.size());
+					vecSearchRes.emplace_back(res.ullOffset); //Filling the vector of Replaced occurences.
+					refFinder.ullStart = res.ullOffset + (sSizeRepl <= refFinder.ullStep ?
+						refFinder.ullStep : sSizeRepl);
 					if (refFinder.ullStart > refFinder.ullEnd || vecSearchRes.size() >= dwFoundLimit) {
 						break;
-					}
-					else {
-						vecSearchRes.emplace_back(res.ullOffset); //Filling the vector of Replaced occurences.
 					}
 				}
 				};
 			const auto lmbReplaceAllThread = [&vecSearchRes = m_vecSearchRes, &vecReplaceData = m_vecReplaceData,
 				dwFoundLimit = m_dwFoundLimit](FINDERDATA& refFinder) {
 				refFinder.fCancelDlgOnEnd = false;
+				const auto sSizeRepl = vecReplaceData.size();
 				while (const auto res = Finder(refFinder)) {
+					if (res.ullOffset + sSizeRepl > refFinder.ullOffsetSentinel)
+						break;
+
 					Replace(refFinder.pHexCtrl, res.ullOffset, vecReplaceData);
-					refFinder.ullStart = res.ullOffset + (vecReplaceData.size() <= refFinder.ullStep ?
-						refFinder.ullStep : vecReplaceData.size());
+					vecSearchRes.emplace_back(res.ullOffset); //Filling the vector of Replaced occurences.
+					refFinder.ullStart = res.ullOffset + (sSizeRepl <= refFinder.ullStep ?
+						refFinder.ullStep : sSizeRepl);
 					refFinder.pDlgClbk->SetCount(vecSearchRes.size());
 					if (refFinder.ullStart > refFinder.ullEnd || vecSearchRes.size() >= dwFoundLimit
 						|| refFinder.pDlgClbk->IsCanceled()) {
 						break;
-					}
-					else {
-						vecSearchRes.emplace_back(res.ullOffset); //Filling the vector of Replaced occurences.
 					}
 				}
 				refFinder.pDlgClbk->OnCancel();
 				};
 
 			if (ullSizeTotal <= uSizeQuick) {
+				stFinder.pSearchFunc = GetSearchFunc(true, false);
 				lmbReplaceAllSmall(stFinder);
 			}
 			else {
@@ -1409,8 +1415,11 @@ void CHexDlgSearch::Search()
 			}
 
 			if (m_fFound) {
-				Replace(pHexCtrl, m_ullOffsetCurr, m_vecReplaceData);
-				++m_dwReplaced;
+				const auto sSizeRepl = m_vecReplaceData.size();
+				if (stFind.ullOffset + sSizeRepl <= stFinder.ullOffsetSentinel) {
+					Replace(pHexCtrl, m_ullOffsetCurr, m_vecReplaceData);
+					++m_dwReplaced;
+				}
 			}
 		}
 	}
@@ -1566,7 +1575,7 @@ void CHexDlgSearch::Search()
 	if (m_fFound) {
 		if (m_fAll) {
 			if (m_fReplace) {
-				wstrInfo = std::format(L"{} occurrence(s) replaced.", m_dwReplaced);
+				wstrInfo = std::format(m_locale, L"{:L} occurrence(s) replaced.", m_dwReplaced);
 				m_dwReplaced = 0;
 				pHexCtrl->Redraw(); //Redraw in case of Replace all.
 			}
