@@ -1,6 +1,7 @@
 #pragma once
 #include "../../HexCtrl/HexCtrl.h"
 #include <afxcontrolbars.h>
+#include <memory>
 
 using namespace HEXCTRL;
 
@@ -37,7 +38,7 @@ private:
 	IHexCtrlPtr m_pHexDlg { CreateHexCtrl() };
 	IHexCtrlPtr m_pHexPopup { CreateHexCtrl() };
 	HEXDATA m_hds;
-	std::byte m_RandomData[1024 * 16];
+	std::unique_ptr<std::byte[]> m_pData;
 	HICON m_hIcon;
 	bool m_fFileOpen { false };
 	HANDLE m_hFile { };
@@ -46,4 +47,5 @@ private:
 	std::wstring m_wstrStartupFile;
 	CButton m_chkRW;
 	CButton m_chkLnk;
+	CEdit m_editDataSize;
 };

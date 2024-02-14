@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "SampleDialogDlg.h"
+#include "../../HexCtrl/dep/StrToNum/StrToNum/StrToNum.h"
 #include "Resource.h"
 #include <filesystem>
 #include <random>
@@ -34,6 +35,7 @@ void CSampleDialogDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_CHK_RW, m_chkRW);
 	DDX_Control(pDX, IDC_CHK_LNK, m_chkLnk);
+	DDX_Control(pDX, IDC_EDIT_DATASIZE, m_editDataSize);
 }
 
 BOOL CSampleDialogDlg::OnInitDialog()
@@ -44,13 +46,7 @@ BOOL CSampleDialogDlg::OnInitDialog()
 
 	SetIcon(m_hIcon, TRUE);	 //Set big icon
 	SetIcon(m_hIcon, FALSE); //Set small icon
-
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> distInt(0, (std::numeric_limits<std::uint8_t>::max)());
-	for (auto& byte : m_RandomData) {
-		byte = static_cast<std::byte>(distInt(gen));
-	}
+	m_editDataSize.SetWindowTextW(L"0x4000");
 
 	//For Drag'n Drop to work even in elevated mode.
 	//https://helgeklein.com/blog/2010/03/how-to-enable-drag-and-drop-for-an-elevated-mfc-application-on-vistawindows-7/
@@ -131,19 +127,31 @@ void CSampleDialogDlg::OnBnSetRndData()
 	if (IsFileOpen()) {
 		FileClose();
 	}
-	else if (m_pHexDlg->IsDataSet()) {
-		m_pHexDlg->SetMutable(IsRW());
-		SetWindowTextW(IsRW() ? WstrTextRW : WstrTextRO);
 
-		if (m_pHexPopup->IsCreated() && m_pHexPopup->IsDataSet()) {
-			m_pHexPopup->SetMutable(IsRW());
-			::SetWindowTextW(m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN), IsRW() ? WstrTextRW : WstrTextRO);
-		}
-
+	CStringW wstr;
+	m_editDataSize.GetWindowTextW(wstr);
+	if (wstr.IsEmpty()) {
+		m_editDataSize.SetFocus();
+		MessageBoxW(L"Set the data size", 0, MB_ICONERROR);
 		return;
 	}
 
-	m_hds.spnData = { m_RandomData, sizeof(m_RandomData) };
+	const auto optSize = stn::StrToUInt32(wstr.GetString());
+	if (!optSize) {
+		m_editDataSize.SetFocus();
+		MessageBoxW(L"Data size is incorrect.", 0, MB_ICONERROR);
+		return;
+	}
+
+	m_pData.reset(new std::byte[*optSize]);
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<std::uint64_t> distInt(0, (std::numeric_limits<std::uint64_t>::max)());
+	for (auto i = 0U; i < *optSize / sizeof(std::uint64_t); ++i) {
+		reinterpret_cast<std::uint64_t*>(m_pData.get())[i] = distInt(gen);
+	}
+
+	m_hds.spnData = { m_pData.get(), *optSize };
 	m_hds.fMutable = IsRW();
 	m_pHexDlg->SetData(m_hds);
 	SetWindowTextW(IsRW() ? WstrTextRW : WstrTextRO);
@@ -348,6 +356,7 @@ void CSampleDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 		::SetWindowTextW(m_pHexPopup->GetWndHandle(EHexWnd::WND_MAIN), wstrPath.data());
 	}
 
+	m_pData.reset();
 	SetWindowTextW(wstrPath.data());
 }
 

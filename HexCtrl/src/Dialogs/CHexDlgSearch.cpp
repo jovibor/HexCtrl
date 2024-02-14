@@ -36,10 +36,24 @@ enum class CHexDlgSearch::EMenuID : std::uint16_t {
 };
 
 struct CHexDlgSearch::FINDRESULT {
-	ULONGLONG ullOffset;
+	ULONGLONG ullOffset { };
 	bool      fFound { };
 	bool      fCanceled { }; //Search was canceled by pressing "Cancel".
 	operator bool()const { return fFound; };
+};
+
+struct CHexDlgSearch::FINDERDATA {
+	PtrSearchFunc pSearchFunc { };
+	CHexDlgCallback* pDlgClbk { };
+	IHexCtrl* pHexCtrl { };
+	SpanCByte spnFind { };
+	ULONGLONG ullStart { };
+	ULONGLONG ullEnd { };
+	ULONGLONG ullStep { };
+	ULONGLONG ullOffsetSentinel { };
+	bool fForward { };
+	bool fInverted { };
+	bool fCancelDlgOnEnd { };
 };
 
 struct CHexDlgSearch::SEARCHFUNCDATA {
@@ -198,6 +212,58 @@ void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_END, m_editEnd);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_STEP, m_editStep);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_LIMIT, m_editLimit);
+}
+
+void CHexDlgSearch::FindAll(FINDERDATA & refFinder)
+{
+	constexpr auto uSizeQuick { 1024 * 1024 * 50U }; //50MB without creating a new thread.
+	const auto ullEnd = IsForward() ? m_ullOffsetBoundEnd : m_ullOffsetBoundBegin;
+	const auto ullSizeTotal = m_ullOffsetBoundEnd - m_ullOffsetBoundBegin;
+
+	ClearList(); //Clearing all results.
+	m_dwCount = 0;
+	const auto lmbFindAllSmall = [&vecSearchRes = m_vecSearchRes, dwFoundLimit = m_dwFoundLimit]
+	(FINDERDATA& refFinder) {
+		refFinder.fCancelDlgOnEnd = false;
+		while (const auto res = Finder(refFinder)) {
+			vecSearchRes.emplace_back(res.ullOffset); //Filling the vector of Found occurences.
+			refFinder.ullStart = res.ullOffset + refFinder.ullStep;
+			if (refFinder.ullStart > refFinder.ullEnd || vecSearchRes.size() >= dwFoundLimit)
+				break;
+		}
+		};
+	const auto lmbFindAllThread = [&vecSearchRes = m_vecSearchRes, dwFoundLimit = m_dwFoundLimit]
+	(FINDERDATA& refFinder) {
+		refFinder.fCancelDlgOnEnd = false;
+		while (const auto res = Finder(refFinder)) {
+			vecSearchRes.emplace_back(res.ullOffset); //Filling the vector of Found occurences.
+			refFinder.ullStart = res.ullOffset + refFinder.ullStep;
+			refFinder.pDlgClbk->SetCount(vecSearchRes.size());
+			if (refFinder.ullStart > refFinder.ullEnd || vecSearchRes.size() >= dwFoundLimit
+				|| refFinder.pDlgClbk->IsCanceled())
+				break;
+		}
+		refFinder.pDlgClbk->OnCancel();
+		};
+
+	if (ullSizeTotal <= uSizeQuick) {
+		refFinder.pSearchFunc = GetSearchFunc(true, false);
+		lmbFindAllSmall(refFinder);
+	}
+	else {
+		refFinder.pSearchFunc = GetSearchFunc(true, true);
+		CHexDlgCallback dlgClbk(L"Searching...", L"Found: ", m_ullOffsetCurr, ullEnd, this);
+		refFinder.pDlgClbk = &dlgClbk;
+		std::thread thrd(lmbFindAllThread, std::ref(refFinder));
+		dlgClbk.DoModal();
+		thrd.join();
+	}
+
+	if (!m_vecSearchRes.empty()) {
+		m_fFound = true;
+		m_dwCount = static_cast<DWORD>(m_vecSearchRes.size());
+	}
+	m_pListMain->SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
 }
 
 void CHexDlgSearch::ClearList()
@@ -883,6 +949,9 @@ void CHexDlgSearch::Prepare()
 {
 	static constexpr auto uSearchSizeLimit { 256U };
 	const auto pHexCtrl = GetHexCtrl();
+	if (!pHexCtrl->IsDataSet())
+		return;
+
 	const auto ullDataSize = pHexCtrl->GetDataSize();
 
 	//"Search" text.
@@ -1241,6 +1310,74 @@ bool CHexDlgSearch::PrepareFILETIME()
 	return true;
 }
 
+void CHexDlgSearch::ReplaceAll(FINDERDATA& refFinder)
+{
+	constexpr auto uSizeQuick { 1024 * 1024 * 50U }; //50MB without creating a new thread.
+	const auto ullEnd = IsForward() ? m_ullOffsetBoundEnd : m_ullOffsetBoundBegin;
+	const auto ullSizeTotal = m_ullOffsetBoundEnd - m_ullOffsetBoundBegin;
+
+	ClearList();
+	m_dwCount = 0;
+	m_dwReplaced = 0;
+
+	const auto lmbReplaceAllSmall = [&vecSearchRes = m_vecSearchRes, &vecReplaceData = m_vecReplaceData,
+		dwFoundLimit = m_dwFoundLimit](FINDERDATA& refFinder) {
+		refFinder.fCancelDlgOnEnd = false;
+		const auto sSizeRepl = vecReplaceData.size();
+		while (const auto res = Finder(refFinder)) {
+			if (res.ullOffset + sSizeRepl > refFinder.ullOffsetSentinel)
+				break;
+
+			Replace(refFinder.pHexCtrl, res.ullOffset, vecReplaceData);
+			vecSearchRes.emplace_back(res.ullOffset); //Filling the vector of Replaced occurences.
+			refFinder.ullStart = res.ullOffset + (sSizeRepl <= refFinder.ullStep ?
+				refFinder.ullStep : sSizeRepl);
+			if (refFinder.ullStart > refFinder.ullEnd || vecSearchRes.size() >= dwFoundLimit) {
+				break;
+			}
+		}
+		};
+	const auto lmbReplaceAllThread = [&vecSearchRes = m_vecSearchRes, &vecReplaceData = m_vecReplaceData,
+		dwFoundLimit = m_dwFoundLimit](FINDERDATA& refFinder) {
+		refFinder.fCancelDlgOnEnd = false;
+		const auto sSizeRepl = vecReplaceData.size();
+		while (const auto res = Finder(refFinder)) {
+			if (res.ullOffset + sSizeRepl > refFinder.ullOffsetSentinel)
+				break;
+
+			Replace(refFinder.pHexCtrl, res.ullOffset, vecReplaceData);
+			vecSearchRes.emplace_back(res.ullOffset); //Filling the vector of Replaced occurences.
+			refFinder.ullStart = res.ullOffset + (sSizeRepl <= refFinder.ullStep ?
+				refFinder.ullStep : sSizeRepl);
+			refFinder.pDlgClbk->SetCount(vecSearchRes.size());
+			if (refFinder.ullStart > refFinder.ullEnd || vecSearchRes.size() >= dwFoundLimit
+				|| refFinder.pDlgClbk->IsCanceled()) {
+				break;
+			}
+		}
+		refFinder.pDlgClbk->OnCancel();
+		};
+
+	if (ullSizeTotal <= uSizeQuick) {
+		refFinder.pSearchFunc = GetSearchFunc(true, false);
+		lmbReplaceAllSmall(refFinder);
+	}
+	else {
+		refFinder.pSearchFunc = GetSearchFunc(true, true);
+		CHexDlgCallback dlgClbk(L"Replacing...", L"Replaced: ", m_ullOffsetCurr, ullEnd, this);
+		refFinder.pDlgClbk = &dlgClbk;
+		std::thread thrd(lmbReplaceAllThread, std::ref(refFinder));
+		dlgClbk.DoModal();
+		thrd.join();
+	}
+
+	if (!m_vecSearchRes.empty()) {
+		m_fFound = true;
+		m_dwCount = m_dwReplaced = static_cast<DWORD>(m_vecSearchRes.size());
+	}
+	m_pListMain->SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
+}
+
 void CHexDlgSearch::ResetSearch()
 {
 	m_ullOffsetCurr = { };
@@ -1257,7 +1394,7 @@ void CHexDlgSearch::ResetSearch()
 
 void CHexDlgSearch::Search()
 {
-	static constexpr auto uSizeQuick { 1024 * 1024 * 50U }; //50MB without creating a new thread.
+	constexpr auto uSizeQuick { 1024 * 1024 * 50U }; //50MB without creating a new thread.
 	const auto pHexCtrl = GetHexCtrl();
 	if (m_wstrTextSearch.empty() || !pHexCtrl->IsDataSet() || m_ullOffsetCurr >= pHexCtrl->GetDataSize())
 		return;
@@ -1344,67 +1481,7 @@ void CHexDlgSearch::Search()
 
 	if (m_fReplace) {
 		if (m_fAll) { //Replace All
-			ClearList();
-			m_dwCount = 0;
-			m_dwReplaced = 0;
-
-			const auto lmbReplaceAllSmall = [&vecSearchRes = m_vecSearchRes, &vecReplaceData = m_vecReplaceData,
-				dwFoundLimit = m_dwFoundLimit](FINDERDATA& refFinder) {
-				refFinder.fCancelDlgOnEnd = false;
-				const auto sSizeRepl = vecReplaceData.size();
-				while (const auto res = Finder(refFinder)) {
-					if (res.ullOffset + sSizeRepl > refFinder.ullOffsetSentinel)
-						break;
-
-					Replace(refFinder.pHexCtrl, res.ullOffset, vecReplaceData);
-					vecSearchRes.emplace_back(res.ullOffset); //Filling the vector of Replaced occurences.
-					refFinder.ullStart = res.ullOffset + (sSizeRepl <= refFinder.ullStep ?
-						refFinder.ullStep : sSizeRepl);
-					if (refFinder.ullStart > refFinder.ullEnd || vecSearchRes.size() >= dwFoundLimit) {
-						break;
-					}
-				}
-				};
-			const auto lmbReplaceAllThread = [&vecSearchRes = m_vecSearchRes, &vecReplaceData = m_vecReplaceData,
-				dwFoundLimit = m_dwFoundLimit](FINDERDATA& refFinder) {
-				refFinder.fCancelDlgOnEnd = false;
-				const auto sSizeRepl = vecReplaceData.size();
-				while (const auto res = Finder(refFinder)) {
-					if (res.ullOffset + sSizeRepl > refFinder.ullOffsetSentinel)
-						break;
-
-					Replace(refFinder.pHexCtrl, res.ullOffset, vecReplaceData);
-					vecSearchRes.emplace_back(res.ullOffset); //Filling the vector of Replaced occurences.
-					refFinder.ullStart = res.ullOffset + (sSizeRepl <= refFinder.ullStep ?
-						refFinder.ullStep : sSizeRepl);
-					refFinder.pDlgClbk->SetCount(vecSearchRes.size());
-					if (refFinder.ullStart > refFinder.ullEnd || vecSearchRes.size() >= dwFoundLimit
-						|| refFinder.pDlgClbk->IsCanceled()) {
-						break;
-					}
-				}
-				refFinder.pDlgClbk->OnCancel();
-				};
-
-			if (ullSizeTotal <= uSizeQuick) {
-				stFinder.pSearchFunc = GetSearchFunc(true, false);
-				lmbReplaceAllSmall(stFinder);
-			}
-			else {
-				stFinder.pSearchFunc = GetSearchFunc(true, true);
-				CHexDlgCallback dlgClbk(L"Replacing...", L"Replaced: ", m_ullOffsetCurr, ullEnd, this);
-				stFinder.pDlgClbk = &dlgClbk;
-				std::thread thrd(lmbReplaceAllThread, std::ref(stFinder));
-				dlgClbk.DoModal();
-				thrd.join();
-			}
-
-			if (!m_vecSearchRes.empty()) {
-				m_fFound = true;
-				m_dwCount = m_dwReplaced = static_cast<DWORD>(m_vecSearchRes.size());
-			}
-			m_pListMain->SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
-
+			ReplaceAll(stFinder);
 		}
 		else if (IsForward()) { //Forward only.
 			if (ullSizeTotal <= uSizeQuick) { //Fast, non-thread search.
@@ -1425,50 +1502,7 @@ void CHexDlgSearch::Search()
 	}
 	else { //Search.
 		if (m_fAll) {
-			ClearList(); //Clearing all results.
-			m_dwCount = 0;
-			const auto lmbFindAllSmall = [&vecSearchRes = m_vecSearchRes, dwFoundLimit = m_dwFoundLimit]
-			(FINDERDATA& refFinder) {
-				refFinder.fCancelDlgOnEnd = false;
-				while (const auto res = Finder(refFinder)) {
-					vecSearchRes.emplace_back(res.ullOffset); //Filling the vector of Found occurences.
-					refFinder.ullStart = res.ullOffset + refFinder.ullStep;
-					if (refFinder.ullStart > refFinder.ullEnd || vecSearchRes.size() >= dwFoundLimit)
-						break;
-				}
-				};
-			const auto lmbFindAllThread = [&vecSearchRes = m_vecSearchRes, dwFoundLimit = m_dwFoundLimit]
-			(FINDERDATA& refFinder) {
-				refFinder.fCancelDlgOnEnd = false;
-				while (const auto res = Finder(refFinder)) {
-					vecSearchRes.emplace_back(res.ullOffset); //Filling the vector of Found occurences.
-					refFinder.ullStart = res.ullOffset + refFinder.ullStep;
-					refFinder.pDlgClbk->SetCount(vecSearchRes.size());
-					if (refFinder.ullStart > refFinder.ullEnd || vecSearchRes.size() >= dwFoundLimit
-						|| refFinder.pDlgClbk->IsCanceled())
-						break;
-				}
-				refFinder.pDlgClbk->OnCancel();
-				};
-
-			if (ullSizeTotal <= uSizeQuick) {
-				stFinder.pSearchFunc = GetSearchFunc(true, false);
-				lmbFindAllSmall(stFinder);
-			}
-			else {
-				stFinder.pSearchFunc = GetSearchFunc(true, true);
-				CHexDlgCallback dlgClbk(L"Searching...", L"Found: ", m_ullOffsetCurr, ullEnd, this);
-				stFinder.pDlgClbk = &dlgClbk;
-				std::thread thrd(lmbFindAllThread, std::ref(stFinder));
-				dlgClbk.DoModal();
-				thrd.join();
-			}
-
-			if (!m_vecSearchRes.empty()) {
-				m_fFound = true;
-				m_dwCount = static_cast<DWORD>(m_vecSearchRes.size());
-			}
-			m_pListMain->SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
+			FindAll(stFinder);
 		}
 		else {
 			const auto lmbFindBackSmall = [&](FINDERDATA& refFinder) {
@@ -1571,13 +1605,18 @@ void CHexDlgSearch::Search()
 
 	pHexCtrl->SetRedraw(true);
 
+	SearchAfter(stFind.fCanceled);
+}
+
+void CHexDlgSearch::SearchAfter(bool fCanceled)
+{
 	std::wstring wstrInfo;
 	if (m_fFound) {
 		if (m_fAll) {
 			if (m_fReplace) {
 				wstrInfo = std::format(m_locale, L"{:L} occurrence(s) replaced.", m_dwReplaced);
 				m_dwReplaced = 0;
-				pHexCtrl->Redraw(); //Redraw in case of Replace all.
+				GetHexCtrl()->Redraw(); //Redraw in case of Replace all.
 			}
 			else {
 				wstrInfo = std::format(m_locale, L"Found {:L} occurrences.", m_dwCount);
@@ -1603,7 +1642,7 @@ void CHexDlgSearch::Search()
 		}
 	}
 	else {
-		if (stFind.fCanceled) {
+		if (fCanceled) {
 			wstrInfo = L"Didn't find any occurrence, search was canceled.";
 		}
 		else {
@@ -1617,8 +1656,8 @@ void CHexDlgSearch::Search()
 			ResetSearch();
 		}
 	}
-
 	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_RESULT)->SetWindowTextW(wstrInfo.data());
+
 	if (!m_fSearchNext) {
 		SetForegroundWindow();
 		SetFocus();
@@ -1660,6 +1699,7 @@ void CHexDlgSearch::Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, const SpanCB
 
 auto CHexDlgSearch::Finder(const FINDERDATA& stFinder)->FINDRESULT
 {
+	assert(stFinder.pSearchFunc != nullptr);
 	const auto nSizeSearch = stFinder.spnFind.size();
 	if (stFinder.ullStart + nSizeSearch > stFinder.ullOffsetSentinel) {
 		if (stFinder.pDlgClbk != nullptr && stFinder.fCancelDlgOnEnd) {

@@ -25,6 +25,7 @@ namespace HEXCTRL::INTERNAL {
 		enum class ESearchMode : std::uint8_t; //Forward declarations.
 		enum class ESearchType : std::uint8_t;
 		enum class EMenuID : std::uint16_t;
+		struct FINDERDATA;
 		struct SEARCHFUNCDATA;
 		using PtrSearchFunc = void(*)(SEARCHFUNCDATA*);
 		using VecSearchResult = std::vector<ULONGLONG>;
@@ -35,6 +36,7 @@ namespace HEXCTRL::INTERNAL {
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
 		void DoDataExchange(CDataExchange* pDX)override;
+		void FindAll(FINDERDATA& refFinder);
 		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
 		auto GetSearchFunc(bool fFwd, bool fDlgClbck)const->PtrSearchFunc;
 		template<bool fDlgClbck>
@@ -82,27 +84,16 @@ namespace HEXCTRL::INTERNAL {
 		template<typename T> requires TSize1248<T>
 		[[nodiscard]] bool PrepareNumber();
 		[[nodiscard]] bool PrepareFILETIME();
+		void ReplaceAll(FINDERDATA& refFinder);
 		void ResetSearch();
 		void Search();
+		void SearchAfter(bool fCanceled);
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
 		void UpdateSearchReplaceControls();
 		DECLARE_MESSAGE_MAP();
 
 		//Static functions.
 		static void Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, SpanCByte spnReplace);
-		struct FINDERDATA {
-			PtrSearchFunc pSearchFunc { };
-			CHexDlgCallback* pDlgClbk { };
-			IHexCtrl* pHexCtrl { };
-			SpanCByte spnFind { };
-			ULONGLONG ullStart { };
-			ULONGLONG ullEnd { };
-			ULONGLONG ullStep { };
-			ULONGLONG ullOffsetSentinel { };
-			bool fForward { };
-			bool fInverted { };
-			bool fCancelDlgOnEnd { };
-		};
 		struct FINDRESULT;
 		static auto Finder(const FINDERDATA& stFinder) -> FINDRESULT;
 		enum class EMemCmp : std::uint8_t {
