@@ -393,9 +393,11 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_SEARCH_NEXT:
 		m_pDlgSearch->SearchNextPrev(true);
+		SetFocus();
 		break;
 	case CMD_SEARCH_PREV:
 		m_pDlgSearch->SearchNextPrev(false);
+		SetFocus();
 		break;
 	case CMD_NAV_GOTO_DLG:
 		ParentNotify(HEXCTRL_MSG_DLGGOTO);

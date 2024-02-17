@@ -25,19 +25,38 @@ namespace HEXCTRL::INTERNAL {
 		enum class ESearchMode : std::uint8_t; //Forward declarations.
 		enum class ESearchType : std::uint8_t;
 		enum class EMenuID : std::uint16_t;
-		struct FINDERDATA;
 		struct SEARCHFUNCDATA;
-		using PtrSearchFunc = void(*)(SEARCHFUNCDATA*);
+		struct FINDRESULT;
+		using PtrSearchFunc = auto(*)(const SEARCHFUNCDATA&)->FINDRESULT;
 		using VecSearchResult = std::vector<ULONGLONG>;
+
 		void AddToList(ULONGLONG ullOffset);
 		void ApplyDlgData();
+		void CalcMemChunks(SEARCHFUNCDATA& refData)const;
 		void ClearComboType();
 		void ClearList();
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
+		[[nodiscard]] auto CreateSearchData(CHexDlgCallback* pDlgClbk = nullptr)const->SEARCHFUNCDATA;
 		void DoDataExchange(CDataExchange* pDX)override;
-		void FindAll(FINDERDATA& refFinder);
+		void FindAll();
+		void FindFwdSmall();
+		void FindFwdThread();
+		void FindBackSmall();
+		void FindBackThread();
 		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
+		[[nodiscard]] auto GetLastSearchOffset()const->ULONGLONG;
+		[[nodiscard]] auto GetRngStart()const->ULONGLONG;
+		[[nodiscard]] auto GetRngEnd()const->ULONGLONG;
+		[[nodiscard]] auto GetRngSize()const->ULONGLONG;     //Size of the range to search within.
+		[[nodiscard]] auto GetReplaceDataSize()const->DWORD; //Replace vec data size.
+		[[nodiscard]] auto GetReplaceSpan()const->SpanCByte;
+		[[nodiscard]] auto GetSearchRngSize()const->ULONGLONG;
+		[[nodiscard]] auto GetSearchDataSize()const->DWORD;  //Search vec data size.
+		[[nodiscard]] auto GetSentinel()const->ULONGLONG;
+		[[nodiscard]] auto GetStartFrom()const->ULONGLONG;   //Start search from.
+		[[nodiscard]] auto GetStep()const->ULONGLONG;
+		[[nodiscard]] auto GetSearchSpan()const->SpanCByte;
 		auto GetSearchFunc(bool fFwd, bool fDlgClbck)const->PtrSearchFunc;
 		template<bool fDlgClbck>
 		[[nodiscard]] auto GetSearchFuncFwd()const->PtrSearchFunc;
@@ -48,10 +67,13 @@ namespace HEXCTRL::INTERNAL {
 		void HexCtrlHighlight(const VecSpan& vecSel); //Highlight found occurence in the HexCtrl.
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsForward()const;
+		[[nodiscard]] bool IsFreshSearch()const;
 		[[nodiscard]] bool IsInverted()const;
 		[[nodiscard]] bool IsMatchCase()const;
 		[[nodiscard]] bool IsNoEsc()const;
+		[[nodiscard]] bool IsReplace()const;
 		[[nodiscard]] bool IsSelection()const;
+		[[nodiscard]] bool IsSmallSearch()const;
 		[[nodiscard]] bool IsWildcard()const;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		afx_msg void OnButtonSearchF();
@@ -84,18 +106,15 @@ namespace HEXCTRL::INTERNAL {
 		template<typename T> requires TSize1248<T>
 		[[nodiscard]] bool PrepareNumber();
 		[[nodiscard]] bool PrepareFILETIME();
-		void ReplaceAll(FINDERDATA& refFinder);
+		void ReplaceAll();
 		void ResetSearch();
 		void Search();
-		void SearchAfter(bool fCanceled);
 		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
 		void UpdateSearchReplaceControls();
 		DECLARE_MESSAGE_MAP();
 
 		//Static functions.
 		static void Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, SpanCByte spnReplace);
-		struct FINDRESULT;
-		static auto Finder(const FINDERDATA& stFinder) -> FINDRESULT;
 		enum class EMemCmp : std::uint8_t {
 			DATA_BYTE1, DATA_BYTE2, DATA_BYTE4, DATA_BYTE8, CHAR_STR, WCHAR_STR
 		};
@@ -118,9 +137,9 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte1(const __m128i* pWhere, std::byte bWhat);
 		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte1Inv(const __m128i* pWhere, std::byte bWhat);
 		template<SEARCHTYPE stType>
-		static void SearchFuncFwd(SEARCHFUNCDATA* pSearch);
+		static auto SearchFuncFwd(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 		template<SEARCHTYPE stType>
-		static void SearchFuncBack(SEARCHFUNCDATA* pSearch);
+		static auto SearchFuncBack(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 	private:
 		static constexpr std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		static constexpr auto m_pwszWrongInput { L"Wrong input data." };
@@ -138,14 +157,14 @@ namespace HEXCTRL::INTERNAL {
 		CButton m_btnInv;                    //Check box "Inverted".
 		CButton m_btnBE;                     //Check box "Big-endian".
 		CButton m_btnMC;                     //Check box "Match case".
-		CEdit m_editStart;                   //Edit box "Start offset".
-		CEdit m_editEnd;                     //Edit box "End offset".
+		CEdit m_editStartFrom;               //Edit box "Start from".
 		CEdit m_editStep;                    //Edit box "Step".
+		CEdit m_editRngStart;                //Edit box "Range start".
+		CEdit m_editRngEnd;                  //Edit box "Range end".
 		CEdit m_editLimit;                   //Edit box "Limit search hits".
-		ULONGLONG m_ullOffsetBoundBegin { }; //Search-start offset boundary.
-		ULONGLONG m_ullOffsetBoundEnd { };   //Search-end offset boundary.
-		ULONGLONG m_ullOffsetCurr { };       //Current offset that search should start from.
-		ULONGLONG m_ullOffsetSentinel { };   //The maximum offset that search can't cross.
+		ULONGLONG m_ullStartFrom { };        //"Start form" search offset.
+		ULONGLONG m_ullRngStart { };
+		ULONGLONG m_ullRngEnd { };
 		ULONGLONG m_ullStep { 1 };           //Search step (default is 1 byte).
 		std::uint64_t m_u64DlgData { };      //Data from SetDlgData.
 		DWORD m_dwCount { };                 //How many, or what index number.
@@ -155,9 +174,8 @@ namespace HEXCTRL::INTERNAL {
 		VecSearchResult m_vecSearchRes;      //Search results.
 		std::vector<std::byte> m_vecSearchData;  //Data to search for.
 		std::vector<std::byte> m_vecReplaceData; //Data to replace with.
-		std::wstring m_wstrTextSearch;       //Text from "Search" box.
-		std::wstring m_wstrTextReplace;      //Text from "Replace with..." box.
-		HEXSPAN m_stSelSpan { };             //Previous selection.
+		std::wstring m_wstrSearch;           //Text from "Search" box.
+		std::wstring m_wstrReplace;          //Text from "Replace with..." box.
 		bool m_fForward { };                 //Search direction, Forward/Backward.
 		bool m_fSecondMatch { false };       //First or subsequent match. 
 		bool m_fFound { false };             //Found or not.
@@ -165,5 +183,6 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fReplace { false };           //Find or Find and Replace with...?
 		bool m_fAll { false };               //Find/Replace one by one, or all?
 		bool m_fSearchNext { false };        //Search through Next/Prev menu.
+		bool m_fFreshSearch { true };
 	};
 }
