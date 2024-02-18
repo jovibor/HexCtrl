@@ -491,7 +491,6 @@ auto CHexDlgSearch::GetSearchDataSize()const->DWORD
 
 auto CHexDlgSearch::GetSearchRngSize()const->ULONGLONG
 {
-	assert(GetLastSearchOffset() >= GetStartFrom());
 	return IsForward() ? GetSentinel() - GetStartFrom() :
 		(GetStartFrom() - GetRngStart()) + GetSearchDataSize();
 }
@@ -1314,12 +1313,6 @@ void CHexDlgSearch::Prepare()
 			}
 
 			ullStartFrom = *optStartFrom;
-
-			if (ullStartFrom < ullRngStart || ullStartFrom > ullRngEnd) { //Check to fit within the search range.
-				m_editStartFrom.SetFocus();
-				MessageBoxW(L"Start offset is not within the search range.", L"Incorrect offset", MB_ICONERROR);
-				return;
-			}
 		}
 	}
 	else {
@@ -1342,13 +1335,21 @@ void CHexDlgSearch::Prepare()
 		}
 	}
 
-	if (ullRngStart > ullRngEnd) {
+	//"Range start/end" out of bounds check.
+	if (ullRngStart > ullRngEnd || ullRngStart >= ullHexDataSize || ullRngEnd >= ullHexDataSize) {
 		m_editRngEnd.SetFocus();
-		MessageBoxW(L"Search range start can't be bigger than the end.", L"Incorrect offset", MB_ICONERROR);
+		MessageBoxW(L"Search range is out of data bounds.", L"Incorrect offset", MB_ICONERROR);
 		return;
 	}
 
-	//Search start plus search data size is beyond the search range end.
+	//"Start from" check to fit within the search range.
+	if (ullStartFrom < ullRngStart || ullStartFrom > ullRngEnd) {
+		m_editStartFrom.SetFocus();
+		MessageBoxW(L"Start offset is not within the search range.", L"Incorrect offset", MB_ICONERROR);
+		return;
+	}
+
+	//"Start from" plus search data size is beyond the search range end.
 	if ((ullStartFrom + GetSearchDataSize()) > (ullRngEnd + 1)) {
 		ResetSearch();
 		return;
@@ -1646,8 +1647,8 @@ void CHexDlgSearch::Search()
 			FindForward();
 			if (m_fFound) {
 				const auto sSizeRepl = m_vecReplaceData.size();
-				if (m_ullStartFrom + sSizeRepl <= GetSentinel()) {
-					Replace(pHexCtrl, m_ullStartFrom, GetReplaceSpan());
+				if (GetStartFrom() + sSizeRepl <= GetSentinel()) {
+					Replace(pHexCtrl, GetStartFrom(), GetReplaceSpan());
 					++m_dwReplaced;
 				}
 			}
