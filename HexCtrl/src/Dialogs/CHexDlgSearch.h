@@ -40,10 +40,8 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto CreateSearchData(CHexDlgCallback* pDlgClbk = nullptr)const->SEARCHFUNCDATA;
 		void DoDataExchange(CDataExchange* pDX)override;
 		void FindAll();
-		void FindFwdSmall();
-		void FindFwdThread();
-		void FindBackSmall();
-		void FindBackThread();
+		void FindForward();
+		void FindBackward();
 		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
 		[[nodiscard]] auto GetLastSearchOffset()const->ULONGLONG;
 		[[nodiscard]] auto GetRngStart()const->ULONGLONG;
@@ -109,8 +107,8 @@ namespace HEXCTRL::INTERNAL {
 		void ReplaceAll();
 		void ResetSearch();
 		void Search();
-		void SetEditStartAt(ULONGLONG ullOffset); //Start search offset edit set.
-		void UpdateSearchReplaceControls();
+		void SetControlsState();
+		void SetEditStartFrom(ULONGLONG ullOffset); //Start search offset edit set.
 		DECLARE_MESSAGE_MAP();
 
 		//Static functions.
@@ -169,7 +167,7 @@ namespace HEXCTRL::INTERNAL {
 		std::uint64_t m_u64DlgData { };      //Data from SetDlgData.
 		DWORD m_dwCount { };                 //How many, or what index number.
 		DWORD m_dwReplaced { };              //Replaced amount;
-		DWORD m_dwFoundLimit { 10000 };      //Maximum found search occurences.
+		DWORD m_dwLimit { 10000 };           //Maximum found search occurences.
 		int m_iWrap { };                     //Wrap direction: -1 = Beginning, 1 = End.
 		VecSearchResult m_vecSearchRes;      //Search results.
 		std::vector<std::byte> m_vecSearchData;  //Data to search for.

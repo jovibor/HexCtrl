@@ -66,8 +66,8 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_CHECK_SEL, &CHexDlgSearch::OnCheckSel)
 	ON_CBN_SELCHANGE(IDC_HEXCTRL_SEARCH_COMBO_MODE, &CHexDlgSearch::OnComboModeSelChange)
 	ON_CBN_SELCHANGE(IDC_HEXCTRL_SEARCH_COMBO_TYPE, &CHexDlgSearch::OnComboTypeSelChange)
-	ON_CBN_EDITUPDATE(IDC_HEXCTRL_SEARCH_COMBO_SEARCH, &CHexDlgSearch::UpdateSearchReplaceControls)
-	ON_CBN_EDITUPDATE(IDC_HEXCTRL_SEARCH_COMBO_REPLACE, &CHexDlgSearch::UpdateSearchReplaceControls)
+	ON_CBN_EDITUPDATE(IDC_HEXCTRL_SEARCH_COMBO_SEARCH, &CHexDlgSearch::SetControlsState)
+	ON_CBN_EDITUPDATE(IDC_HEXCTRL_SEARCH_COMBO_REPLACE, &CHexDlgSearch::SetControlsState)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListItemChanged)
 	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListRClick)
@@ -148,7 +148,7 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 	int iHighlight { -1 };
 	if (const auto iter = std::find(m_vecSearchRes.begin(), m_vecSearchRes.end(), ullOffset);
 		iter == m_vecSearchRes.end()) { //Max-found search occurences.
-		if (m_vecSearchRes.size() < static_cast<std::size_t>(m_dwFoundLimit)) {
+		if (m_vecSearchRes.size() < static_cast<std::size_t>(m_dwLimit)) {
 			m_vecSearchRes.emplace_back(ullOffset);
 			iHighlight = static_cast<int>(m_vecSearchRes.size());
 			m_pListMain->SetItemCountEx(iHighlight--);
@@ -289,10 +289,10 @@ void CHexDlgSearch::FindAll()
 {
 	ClearList(); //Clearing all results.
 	m_dwCount = 0;
+	const auto pSearchFunc = GetSearchFunc(true, !IsSmallSearch());
+	auto stFuncData = CreateSearchData();
 
 	if (IsSmallSearch()) {
-		const auto pSearchFunc = GetSearchFunc(true, false);
-		auto stFuncData = CreateSearchData();
 		auto lmbWrapper = [&]()mutable->FINDRESULT {
 			CalcMemChunks(stFuncData);
 			return pSearchFunc(stFuncData);
@@ -302,17 +302,16 @@ void CHexDlgSearch::FindAll()
 			m_vecSearchRes.emplace_back(findRes.ullOffset); //Filling the vector of Found occurences.
 
 			const auto ullNext = findRes.ullOffset + GetStep();
-			if (ullNext > GetLastSearchOffset() || m_vecSearchRes.size() >= m_dwFoundLimit)
+			if (ullNext > GetLastSearchOffset() || m_vecSearchRes.size() >= m_dwLimit)
 				break;
 
 			m_ullStartFrom = stFuncData.ullStartFrom = ullNext;
 		}
 	}
 	else {
-		const auto pSearchFunc = GetSearchFunc(true, true);
 		CHexDlgCallback dlgClbk(L"Searching...", L"Found: ", GetStartFrom(), GetLastSearchOffset(), this);
+		stFuncData.pDlgClbk = &dlgClbk;
 		const auto lmbFindAllThread = [&]() {
-			auto stFuncData = CreateSearchData(&dlgClbk);
 			auto lmbWrapper = [&]()mutable->FINDRESULT {
 				CalcMemChunks(stFuncData);
 				return pSearchFunc(stFuncData);
@@ -324,7 +323,7 @@ void CHexDlgSearch::FindAll()
 				dlgClbk.SetCount(m_vecSearchRes.size());
 
 				const auto ullNext = findRes.ullOffset + GetStep();
-				if (ullNext > GetLastSearchOffset() || m_vecSearchRes.size() >= m_dwFoundLimit
+				if (ullNext > GetLastSearchOffset() || m_vecSearchRes.size() >= m_dwLimit
 					|| dlgClbk.IsCanceled())
 					break;
 
@@ -345,99 +344,86 @@ void CHexDlgSearch::FindAll()
 	m_pListMain->SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
 }
 
-void CHexDlgSearch::FindFwdSmall()
+void CHexDlgSearch::FindForward()
 {
-	const auto pSearchFunc = GetSearchFunc(true, false);
-	auto stFuncData = CreateSearchData();
 	FINDRESULT findRes;
+	auto lmbFind = [&]() {
+		const auto pSearchFunc = GetSearchFunc(true, !IsSmallSearch());
+		auto stFuncData = CreateSearchData();
 
-	if (findRes = pSearchFunc(stFuncData); findRes.fFound) {
-		m_fFound = true;
-		m_fSecondMatch = true;
-		++m_dwCount;
-		m_ullStartFrom = findRes.ullOffset;
-	}
-
-	if (!m_fFound) {
-		m_iWrap = 1;
-		if (m_fSecondMatch && !findRes.fCanceled) {
-			m_ullStartFrom = GetRngStart(); //Starting from the beginning.
-			auto stFuncDataSecond = CreateSearchData();
-			if (findRes = pSearchFunc(stFuncDataSecond); findRes.fFound) {
-				m_fFound = true;
-				m_fDoCount = true;
-				m_dwCount = 1;
-				m_ullStartFrom = findRes.ullOffset;
-			}
+		if (IsSmallSearch()) {
+			findRes = pSearchFunc(stFuncData);
 		}
-	}
-}
-
-void CHexDlgSearch::FindFwdThread()
-{
-	const auto pSearchFunc = GetSearchFunc(true, true);
-	FINDRESULT findRes;
-	const auto lmbWrapper = [&](CHexDlgCallback& refDlgClbk, SEARCHFUNCDATA& refFuncData) {
-		findRes = pSearchFunc(refFuncData);
-		refDlgClbk.OnCancel();
+		else {
+			CHexDlgCallback dlgClbk(L"Searching...", L"", GetStartFrom(), GetLastSearchOffset(), this);
+			stFuncData.pDlgClbk = &dlgClbk;
+			const auto lmbWrapper = [&]() {
+				findRes = pSearchFunc(stFuncData);
+				dlgClbk.OnCancel();
+				};
+			std::thread thrd(lmbWrapper);
+			dlgClbk.DoModal();
+			thrd.join();
+		}
 		};
 
-	CHexDlgCallback dlgClbk(L"Searching...", L"", GetStartFrom(), GetLastSearchOffset(), this);
-	auto stFuncData = CreateSearchData(&dlgClbk);
-	std::thread thrd(lmbWrapper, std::ref(dlgClbk), std::ref(stFuncData));
-	dlgClbk.DoModal();
-	thrd.join();
-
-	if (findRes.fFound) {
-		m_fFound = true;
+	if (lmbFind(); findRes) {
 		m_fSecondMatch = true;
 		++m_dwCount;
 		m_ullStartFrom = findRes.ullOffset;
 	}
 
-	if (!m_fFound) {
+	if (!findRes) {
 		m_iWrap = 1;
 		if (m_fSecondMatch && !findRes.fCanceled) {
 			m_ullStartFrom = GetRngStart(); //Starting from the beginning.
-			CHexDlgCallback dlgClbkSecond(L"Searching...", L"", GetStartFrom(), GetLastSearchOffset(), this);
-			auto stFuncDataSecond = CreateSearchData(&dlgClbkSecond);
-			std::thread thrdSecond(lmbWrapper, std::ref(dlgClbkSecond), std::ref(stFuncDataSecond));
-			dlgClbkSecond.DoModal();
-			thrdSecond.join();
-
-			if (findRes.fFound) {
-				m_fFound = true;
+			if (lmbFind(); findRes) {
 				m_fDoCount = true;
 				m_dwCount = 1;
 				m_ullStartFrom = findRes.ullOffset;
 			}
 		}
 	}
+	m_fFound = findRes.fFound;
 }
 
-void CHexDlgSearch::FindBackSmall()
+void CHexDlgSearch::FindBackward()
 {
-	const auto pSearchFunc = GetSearchFunc(false, false);
-	auto stFuncData = CreateSearchData();
-	const auto ullNext = stFuncData.ullStartFrom - GetStep();
 	FINDRESULT findRes;
+	auto lmbFind = [&]() {
+		const auto pSearchFunc = GetSearchFunc(false, !IsSmallSearch());
+		auto stFuncData = CreateSearchData();
 
-	if (m_fSecondMatch && ullNext < stFuncData.ullStartFrom && ullNext >= GetRngStart()) {
-		stFuncData.ullStartFrom = ullNext;
-		if (findRes = pSearchFunc(stFuncData); findRes.fFound) {
-			m_fFound = true;
+		if (IsSmallSearch()) {
+			findRes = pSearchFunc(stFuncData);
+		}
+		else {
+			CHexDlgCallback dlgClbk(L"Searching...", L"", GetRngStart(), GetStartFrom(), this);
+			stFuncData.pDlgClbk = &dlgClbk;
+			const auto lmbWrapper = [&]() {
+				findRes = pSearchFunc(stFuncData);
+				dlgClbk.OnCancel();
+				};
+			std::thread thrd(lmbWrapper);
+			dlgClbk.DoModal();
+			thrd.join();
+		}
+		};
+
+	const auto ullNext = m_ullStartFrom - GetStep();
+	if (m_fSecondMatch && ullNext < m_ullStartFrom && ullNext >= GetRngStart()) {
+		m_ullStartFrom = ullNext;
+		if (lmbFind(); findRes) {
 			--m_dwCount;
 			m_ullStartFrom = findRes.ullOffset;
 		}
 	}
 
-	if (!m_fFound) {
+	if (!findRes) {
 		m_iWrap = -1;
 		if (!findRes.fCanceled) {
 			m_ullStartFrom = GetLastSearchOffset(); //Starting from the end.
-			auto stFuncDataSecond = CreateSearchData();
-			if (findRes = pSearchFunc(stFuncDataSecond); findRes.fFound) {
-				m_fFound = true;
+			if (lmbFind(); findRes) {
 				m_fSecondMatch = true;
 				m_fDoCount = false;
 				m_dwCount = 1;
@@ -445,52 +431,7 @@ void CHexDlgSearch::FindBackSmall()
 			}
 		}
 	}
-}
-
-void CHexDlgSearch::FindBackThread()
-{
-	const auto pSearchFunc = GetSearchFunc(false, true);
-	FINDRESULT findRes;
-	const auto lmbWrapper = [&](CHexDlgCallback& refDlgClbk, SEARCHFUNCDATA& refFuncData) {
-		findRes = pSearchFunc(refFuncData);
-		refDlgClbk.OnCancel();
-		};
-
-	if (const auto ullNext = m_ullStartFrom - GetStep();
-		m_fSecondMatch && ullNext < m_ullStartFrom && ullNext >= GetRngStart()) {
-		m_ullStartFrom = ullNext;
-		CHexDlgCallback dlgClbkSecond(L"Searching...", L"", GetRngStart(), m_ullStartFrom, this);
-		auto stFuncDataSecond = CreateSearchData(&dlgClbkSecond);
-		std::thread thrdSecond(lmbWrapper, std::ref(dlgClbkSecond), std::ref(stFuncDataSecond));
-		dlgClbkSecond.DoModal();
-		thrdSecond.join();
-
-		if (findRes.fFound) {
-			m_fFound = true;
-			--m_dwCount;
-			m_ullStartFrom = findRes.ullOffset;
-		}
-	}
-
-	if (!m_fFound) {
-		m_iWrap = -1;
-		if (!findRes.fCanceled) {
-			m_ullStartFrom = GetLastSearchOffset();
-			CHexDlgCallback dlgClbk(L"Searching...", L"", GetRngStart(), m_ullStartFrom, this);
-			auto stFuncData = CreateSearchData(&dlgClbk);
-			std::thread thrd(lmbWrapper, std::ref(dlgClbk), std::ref(stFuncData));
-			dlgClbk.DoModal();
-			thrd.join();
-
-			if (findRes.fFound) {
-				m_fFound = true;
-				m_fSecondMatch = true;
-				m_fDoCount = false;
-				m_dwCount = 1;
-				m_ullStartFrom = findRes.ullOffset;
-			}
-		}
-	}
+	m_fFound = findRes.fFound;
 }
 
 auto CHexDlgSearch::GetHexCtrl()const->IHexCtrl*
@@ -568,7 +509,7 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 	using enum ESearchType; using enum EMemCmp;
 	switch (GetSearchType()) {
 	case HEXBYTES:
-		if (m_vecSearchData.size() == 1 && m_ullStep == 1 && !IsWildcard()) { //Special case for 1byte data size.
+		if (m_vecSearchData.size() == 1 && GetStep() == 1 && !IsWildcard()) { //Special case for 1byte data size.
 			return IsInverted() ?
 				SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, true)> :
 				SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, false)>;
@@ -579,7 +520,7 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 				SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
 		}
 	case TEXT_ASCII:
-		if (m_vecSearchData.size() == 1 && m_ullStep == 1 && !IsWildcard()) { //Special case for 1byte data size.
+		if (m_vecSearchData.size() == 1 && GetStep() == 1 && !IsWildcard()) { //Special case for 1byte data size.
 			return IsInverted() ?
 				SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, true)> :
 				SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, false)>;
@@ -623,7 +564,7 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 		break;
 	case NUM_INT8:
 	case NUM_UINT8:
-		if (m_ullStep == 1) {
+		if (GetStep() == 1) {
 			return IsInverted() ?
 				SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, true)> :
 				SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, false)>;
@@ -659,7 +600,7 @@ auto CHexDlgSearch::GetSearchFuncBack()const->PtrSearchFunc
 	using enum ESearchType; using enum EMemCmp;
 	switch (GetSearchType()) {
 	case HEXBYTES:
-		if (m_vecSearchData.size() == 1 && m_ullStep == 1 && !IsWildcard()) { //Special case for 1byte data size.
+		if (m_vecSearchData.size() == 1 && GetStep() == 1 && !IsWildcard()) { //Special case for 1byte data size.
 			return IsInverted() ?
 				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, true)> :
 				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, false)>;
@@ -670,7 +611,7 @@ auto CHexDlgSearch::GetSearchFuncBack()const->PtrSearchFunc
 				SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
 		}
 	case TEXT_ASCII:
-		if (m_vecSearchData.size() == 1 && m_ullStep == 1 && !IsWildcard()) { //Special case for 1byte data size.
+		if (m_vecSearchData.size() == 1 && GetStep() == 1 && !IsWildcard()) { //Special case for 1byte data size.
 			return IsInverted() ?
 				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, true)> :
 				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, false)>;
@@ -714,7 +655,7 @@ auto CHexDlgSearch::GetSearchFuncBack()const->PtrSearchFunc
 		break;
 	case NUM_INT8:
 	case NUM_UINT8:
-		if (m_ullStep == 1) {
+		if (GetStep() == 1) {
 			return IsInverted() ?
 				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, true)> :
 				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true, false)>;
@@ -815,7 +756,7 @@ bool CHexDlgSearch::IsSelection()const
 bool CHexDlgSearch::IsSmallSearch()const
 {
 	constexpr auto uSizeQuick { 1024U * 1024U * 50U }; //50MB without creating a new thread.
-	return GetRngSize() <= uSizeQuick;
+	return GetSearchRngSize() <= uSizeQuick;
 }
 
 bool CHexDlgSearch::IsWildcard()const
@@ -830,7 +771,7 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
 		m_comboSearch.SetFocus();
-		UpdateSearchReplaceControls();
+		SetControlsState();
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
@@ -1039,8 +980,8 @@ BOOL CHexDlgSearch::OnInitDialog()
 	m_menuList.AppendMenuW(MF_SEPARATOR);
 	m_menuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_CLEARALL), L"Clear All");
 
-	m_editStep.SetWindowTextW(std::format(L"{}", m_ullStep).data()); //"Step" edit box text.
-	m_editLimit.SetWindowTextW(std::format(L"{}", m_dwFoundLimit).data()); //"Limit search hits" edit box text.
+	m_editStep.SetWindowTextW(std::format(L"{}", GetStep()).data()); //"Step" edit box text.
+	m_editLimit.SetWindowTextW(std::format(L"{}", m_dwLimit).data()); //"Limit search hits" edit box text.
 	m_editRngStart.SetCueBanner(L"range start");
 	m_editRngEnd.SetCueBanner(L"range end");
 
@@ -1113,7 +1054,7 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED)) {
-		SetEditStartAt(m_vecSearchRes[static_cast<std::size_t>(pNMI->iItem)]);
+		SetEditStartFrom(m_vecSearchRes[static_cast<std::size_t>(pNMI->iItem)]);
 
 		VecSpan vecSpan;
 		int nItem = -1;
@@ -1414,11 +1355,12 @@ void CHexDlgSearch::Prepare()
 	}
 
 	//"Step".
+	ULONGLONG ullStep;
 	if (m_editStep.GetWindowTextLengthW() > 0) {
 		CStringW wstrStep;
 		m_editStep.GetWindowTextW(wstrStep);
 		if (const auto optStep = stn::StrToUInt64(wstrStep.GetString()); optStep) {
-			m_ullStep = *optStep;
+			ullStep = *optStep;
 		}
 		else {
 			m_editStep.SetFocus();
@@ -1433,11 +1375,12 @@ void CHexDlgSearch::Prepare()
 	}
 
 	//"Limit".
+	DWORD dwLimit;
 	if (m_editLimit.GetWindowTextLengthW() > 0) {
 		CStringW wstrLimit;
 		m_editLimit.GetWindowTextW(wstrLimit);
 		if (const auto optLimit = stn::StrToUInt32(wstrLimit.GetString()); optLimit) {
-			m_dwFoundLimit = *optLimit;
+			dwLimit = *optLimit;
 		}
 		else {
 			m_editLimit.SetFocus();
@@ -1461,6 +1404,8 @@ void CHexDlgSearch::Prepare()
 	m_ullRngStart = ullRngStart;
 	m_ullRngEnd = ullRngEnd;
 	m_ullStartFrom = ullStartFrom;
+	m_ullStep = ullStep;
+	m_dwLimit = dwLimit;
 
 	Search();
 	SetActiveWindow();
@@ -1621,7 +1566,7 @@ void CHexDlgSearch::ReplaceAll()
 
 			const auto ullNext = findRes.ullOffset + (sSizeRepl <= stFuncData.ullStep ?
 				stFuncData.ullStep : sSizeRepl);
-			if (ullNext > GetLastSearchOffset() || m_vecSearchRes.size() >= m_dwFoundLimit) {
+			if (ullNext > GetLastSearchOffset() || m_vecSearchRes.size() >= m_dwLimit) {
 				break;
 			}
 
@@ -1650,7 +1595,7 @@ void CHexDlgSearch::ReplaceAll()
 
 				const auto ullNext = findRes.ullOffset + (sSizeRepl <= stFuncData.ullStep ?
 					stFuncData.ullStep : sSizeRepl);
-				if (ullNext > GetLastSearchOffset() || m_vecSearchRes.size() >= m_dwFoundLimit
+				if (ullNext > GetLastSearchOffset() || m_vecSearchRes.size() >= m_dwLimit
 					|| dlgClbk.IsCanceled()) {
 					break;
 				}
@@ -1698,8 +1643,7 @@ void CHexDlgSearch::Search()
 			ReplaceAll();
 		}
 		else if (IsForward()) { //Forward only.
-			IsSmallSearch() ? FindFwdSmall() : FindFwdThread();
-
+			FindForward();
 			if (m_fFound) {
 				const auto sSizeRepl = m_vecReplaceData.size();
 				if (m_ullStartFrom + sSizeRepl <= GetSentinel()) {
@@ -1714,24 +1658,12 @@ void CHexDlgSearch::Search()
 			FindAll();
 		}
 		else {
-			if (IsSmallSearch()) { //Fast, non-thread search.
-				if (IsForward()) {
-					//If anything was previously found we increase ullOffsetSearch by m_ullStep.
-					m_ullStartFrom += m_fSecondMatch ? m_ullStep : 0;
-					FindFwdSmall();
-				}
-				else {
-					FindBackSmall();
-				}
+			if (IsForward()) {
+				m_ullStartFrom += m_fSecondMatch ? GetStep() : 0;
+				FindForward();
 			}
 			else {
-				if (IsForward()) {
-					m_ullStartFrom += m_fSecondMatch ? m_ullStep : 0;
-					FindFwdThread();
-				}
-				else {
-					FindBackThread();
-				}
+				FindBackward();
 			}
 		}
 	}
@@ -1763,10 +1695,10 @@ void CHexDlgSearch::Search()
 			AddToList(ullStartFrom);
 
 			if (m_fReplace) { //Increase next search step to replaced or m_ullStep amount.
-				ullStartFrom += m_vecReplaceData.size() <= m_ullStep ? m_ullStep : m_vecReplaceData.size();
+				ullStartFrom += m_vecReplaceData.size() <= GetStep() ? GetStep() : m_vecReplaceData.size();
 			}
 
-			SetEditStartAt(ullStartFrom);
+			SetEditStartFrom(ullStartFrom);
 		}
 	}
 	else {
@@ -1788,14 +1720,9 @@ void CHexDlgSearch::Search()
 	else { m_fSearchNext = false; }
 }
 
-void CHexDlgSearch::SetEditStartAt(ULONGLONG ullOffset)
+void CHexDlgSearch::SetControlsState()
 {
-	m_editStartFrom.SetWindowTextW(std::format(L"0x{:X}", ullOffset).data());
-}
-
-void CHexDlgSearch::UpdateSearchReplaceControls()
-{
-	const auto* const pHexCtrl = GetHexCtrl();
+	const auto pHexCtrl = GetHexCtrl();
 	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
 		return;
 
@@ -1811,10 +1738,15 @@ void CHexDlgSearch::UpdateSearchReplaceControls()
 	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL)->EnableWindow(fReplaceEnabled);
 }
 
+void CHexDlgSearch::SetEditStartFrom(ULONGLONG ullOffset)
+{
+	m_editStartFrom.SetWindowTextW(std::format(L"0x{:X}", ullOffset).data());
+}
+
 
 //Static functions.
 
-void CHexDlgSearch::Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, const SpanCByte spnReplace)
+void CHexDlgSearch::Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, SpanCByte spnReplace)
 {
 	pHexCtrl->ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE }, .spnData { spnReplace },
 		.vecSpan { { ullIndex, spnReplace.size() } } });
