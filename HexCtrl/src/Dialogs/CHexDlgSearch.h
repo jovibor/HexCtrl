@@ -55,7 +55,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetStartFrom()const->ULONGLONG;   //Start search from.
 		[[nodiscard]] auto GetStep()const->ULONGLONG;
 		[[nodiscard]] auto GetSearchSpan()const->SpanCByte;
-		auto GetSearchFunc(bool fFwd, bool fDlgClbck)const->PtrSearchFunc;
+		[[nodiscard]] auto GetSearchFunc(bool fFwd, bool fDlgClbck)const->PtrSearchFunc;
 		template<bool fDlgClbck>
 		[[nodiscard]] auto GetSearchFuncFwd()const->PtrSearchFunc;
 		template<bool fDlgClbck>
@@ -119,15 +119,14 @@ namespace HEXCTRL::INTERNAL {
 		struct SEARCHTYPE { //Compile time struct for template parameters in the SearchFunc and MemCmp.
 			constexpr SEARCHTYPE() = default;
 			constexpr SEARCHTYPE(EMemCmp eMemCmp, bool fDlgClbck = false, bool fMatchCase = false,
-				bool fWildcard = false, bool fSIMD = false, bool fInverted = false) :
+				bool fWildcard = false, bool fInverted = false) :
 				eMemCmp { eMemCmp }, fDlgClbck { fDlgClbck }, fMatchCase { fMatchCase }, fWildcard { fWildcard },
-				fSIMD { fSIMD }, fInverted { fInverted } {}
+				fInverted { fInverted } {}
 			constexpr ~SEARCHTYPE() = default;
 			EMemCmp eMemCmp { };
 			bool fDlgClbck { false };
 			bool fMatchCase { false };
 			bool fWildcard { false };
-			bool fSIMD { false };
 			bool fInverted { false };
 		};
 		template<SEARCHTYPE stType>
@@ -135,9 +134,11 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte1(const __m128i* pWhere, std::byte bWhat);
 		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte1Inv(const __m128i* pWhere, std::byte bWhat);
 		template<SEARCHTYPE stType>
-		static auto SearchFuncFwd(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
+		[[nodiscard]] static auto SearchFuncFwd(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 		template<SEARCHTYPE stType>
-		static auto SearchFuncBack(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
+		[[nodiscard]] static auto SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
+		template<SEARCHTYPE stType>
+		[[nodiscard]] static auto SearchFuncBack(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 	private:
 		static constexpr std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		static constexpr auto m_pwszWrongInput { L"Wrong input data." };
