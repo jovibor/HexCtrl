@@ -49,19 +49,19 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetRngSize()const->ULONGLONG;     //Size of the range to search within.
 		[[nodiscard]] auto GetReplaceDataSize()const->DWORD; //Replace vec data size.
 		[[nodiscard]] auto GetReplaceSpan()const->SpanCByte;
-		[[nodiscard]] auto GetSearchRngSize()const->ULONGLONG;
 		[[nodiscard]] auto GetSearchDataSize()const->DWORD;  //Search vec data size.
-		[[nodiscard]] auto GetSentinel()const->ULONGLONG;
-		[[nodiscard]] auto GetStartFrom()const->ULONGLONG;   //Start search from.
-		[[nodiscard]] auto GetStep()const->ULONGLONG;
-		[[nodiscard]] auto GetSearchSpan()const->SpanCByte;
+		[[nodiscard]] auto GetSearchRngSize()const->ULONGLONG;
 		[[nodiscard]] auto GetSearchFunc(bool fFwd, bool fDlgClbck)const->PtrSearchFunc;
 		template<bool fDlgClbck>
 		[[nodiscard]] auto GetSearchFuncFwd()const->PtrSearchFunc;
 		template<bool fDlgClbck>
 		[[nodiscard]] auto GetSearchFuncBack()const->PtrSearchFunc;
 		[[nodiscard]] auto GetSearchMode()const->ESearchMode; //Getcurrent search mode.
+		[[nodiscard]] auto GetSearchSpan()const->SpanCByte;
 		[[nodiscard]] auto GetSearchType()const->ESearchType; //Get current search type.
+		[[nodiscard]] auto GetSentinel()const->ULONGLONG;
+		[[nodiscard]] auto GetStartFrom()const->ULONGLONG;   //Start search from.
+		[[nodiscard]] auto GetStep()const->ULONGLONG;
 		void HexCtrlHighlight(const VecSpan& vecSel); //Highlight found occurence in the HexCtrl.
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsForward()const;
@@ -133,10 +133,14 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] static bool MemCmp(const std::byte* pWhere, const std::byte* pWhat, std::size_t nSize);
 		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte1(const __m128i* pWhere, std::byte bWhat);
 		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte1Inv(const __m128i* pWhere, std::byte bWhat);
+		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte2(const __m128i* pWhere, std::uint16_t ui16What);
+		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte2Inv(const __m128i* pWhere, std::uint16_t ui16What);
 		template<SEARCHTYPE stType>
 		[[nodiscard]] static auto SearchFuncFwd(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 		template<SEARCHTYPE stType>
 		[[nodiscard]] static auto SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
+		template<SEARCHTYPE stType>
+		[[nodiscard]] static auto SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 		template<SEARCHTYPE stType>
 		[[nodiscard]] static auto SearchFuncBack(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 	private:

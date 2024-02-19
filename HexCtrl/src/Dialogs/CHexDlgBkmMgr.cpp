@@ -461,7 +461,7 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	m_pList->CreateDialogCtrl(IDC_HEXCTRL_BKMMGR_LIST, this);
 	m_pList->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 	m_pList->SetSortable(true);
-	m_pList->InsertColumn(0, L"\u2116", LVCFMT_LEFT, 40);
+	m_pList->InsertColumn(0, L"№", LVCFMT_LEFT, 40);
 	m_pList->InsertColumn(1, L"Offset", LVCFMT_LEFT, 80, -1, 0, true);
 	m_pList->InsertColumn(2, L"Size", LVCFMT_LEFT, 50, -1, 0, true);
 	m_pList->InsertColumn(3, L"Description", LVCFMT_LEFT, 250, -1, 0, true);

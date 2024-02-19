@@ -469,35 +469,9 @@ auto CHexDlgSearch::GetRngSize()const->ULONGLONG
 	return m_ullRngEnd - m_ullRngStart + 1;
 }
 
-auto CHexDlgSearch::GetStartFrom()const->ULONGLONG
-{
-	return m_ullStartFrom;
-}
-
-auto CHexDlgSearch::GetStep()const->ULONGLONG
-{
-	return m_ullStep;
-}
-
-auto CHexDlgSearch::GetSearchSpan()const->SpanCByte
-{
-	return m_vecSearchData;
-}
-
 auto CHexDlgSearch::GetSearchDataSize()const->DWORD
 {
 	return static_cast<DWORD>(m_vecSearchData.size());
-}
-
-auto CHexDlgSearch::GetSearchRngSize()const->ULONGLONG
-{
-	return IsForward() ? GetSentinel() - GetStartFrom() :
-		(GetStartFrom() - GetRngStart()) + GetSearchDataSize();
-}
-
-auto CHexDlgSearch::GetSentinel()const->ULONGLONG
-{
-	return m_ullRngEnd + 1; //This offset is non-dereferenceable.
 }
 
 auto CHexDlgSearch::GetSearchFunc(bool fFwd, bool fDlgClbck)const->PtrSearchFunc
@@ -511,41 +485,43 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 {
 	//The `fDlgClbck` arg ensures that no runtime check will be performed for the 
 	//'SEARCHFUNCDATA::pDlgClbk == nullptr', at the hot path inside the SearchFunc function.
+
 	using enum ESearchType; using enum EMemCmp;
+	if (GetStep() == 1 && !IsWildcard()) {
+		switch (GetSearchDataSize()) {
+		case 1: //Special case for 1 byte data size SIMD.
+			return IsInverted() ?
+				SearchFuncFwdByte1<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true)> :
+				SearchFuncFwdByte1<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, false)>;
+		case 2: //Special case for 2 bytes data size SIMD.
+			return IsInverted() ?
+				SearchFuncFwdByte2<SEARCHTYPE(DATA_BYTE2, fDlgClbck, false, false, true)> :
+				SearchFuncFwdByte2<SEARCHTYPE(DATA_BYTE2, fDlgClbck, false, false, false)>;
+		default:
+			break;
+		};
+	}
+
 	switch (GetSearchType()) {
 	case HEXBYTES:
-		if (m_vecSearchData.size() == 1 && GetStep() == 1 && !IsWildcard()) { //Special case for 1byte data size.
-			return IsInverted() ?
-				SearchFuncFwdByte1<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true)> :
-				SearchFuncFwdByte1<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, false)>;
-		}
-		else {
-			return IsWildcard() ?
-				SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, true)> :
-				SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
-		}
+		return IsWildcard() ?
+			SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, true)> :
+			SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
 	case TEXT_ASCII:
-		if (m_vecSearchData.size() == 1 && GetStep() == 1 && !IsWildcard()) { //Special case for 1byte data size.
-			return IsInverted() ?
-				SearchFuncFwdByte1<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true)> :
-				SearchFuncFwdByte1<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, false)>;
+		if (IsMatchCase() && !IsWildcard()) {
+			return SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
 		}
-		else {
-			if (IsMatchCase() && !IsWildcard()) {
-				return SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
-			}
 
-			if (IsMatchCase() && IsWildcard()) {
-				return SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, true)>;
-			}
+		if (IsMatchCase() && IsWildcard()) {
+			return SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, true, true)>;
+		}
 
-			if (!IsMatchCase() && IsWildcard()) {
-				return SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, false, true)>;
-			}
+		if (!IsMatchCase() && IsWildcard()) {
+			return SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, false, true)>;
+		}
 
-			if (!IsMatchCase() && !IsWildcard()) {
-				return SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, false, false)>;
-			}
+		if (!IsMatchCase() && !IsWildcard()) {
+			return SearchFuncFwd<SEARCHTYPE(CHAR_STR, fDlgClbck, false, false)>;
 		}
 		break;
 	case TEXT_UTF8:
@@ -569,15 +545,7 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 		break;
 	case NUM_INT8:
 	case NUM_UINT8:
-		if (GetStep() == 1) { //Special case for 1byte data size.
-			return IsInverted() ?
-				SearchFuncFwdByte1<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true)> :
-				SearchFuncFwdByte1<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, false)>;
-		}
-		else {
-			return SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck)>;
-		}
-		break;
+		return SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, fDlgClbck)>;
 	case NUM_INT16:
 	case NUM_UINT16:
 		return SearchFuncFwd<SEARCHTYPE(DATA_BYTE2, fDlgClbck)>;
@@ -605,38 +573,24 @@ auto CHexDlgSearch::GetSearchFuncBack()const->PtrSearchFunc
 	using enum ESearchType; using enum EMemCmp;
 	switch (GetSearchType()) {
 	case HEXBYTES:
-		if (m_vecSearchData.size() == 1 && GetStep() == 1 && !IsWildcard()) { //Special case for 1byte data size.
-			return IsInverted() ?
-				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true)> :
-				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, false)>;
-		}
-		else {
-			return IsWildcard() ?
-				SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, true)> :
-				SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
-		}
+		return IsWildcard() ?
+			SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, true)> :
+			SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
 	case TEXT_ASCII:
-		if (m_vecSearchData.size() == 1 && GetStep() == 1 && !IsWildcard()) { //Special case for 1byte data size.
-			return IsInverted() ?
-				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true)> :
-				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, false)>;
+		if (IsMatchCase() && !IsWildcard()) {
+			return SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
 		}
-		else {
-			if (IsMatchCase() && !IsWildcard()) {
-				return SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, false)>;
-			}
 
-			if (IsMatchCase() && IsWildcard()) {
-				return SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, true)>;
-			}
+		if (IsMatchCase() && IsWildcard()) {
+			return SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, true, true)>;
+		}
 
-			if (!IsMatchCase() && IsWildcard()) {
-				return SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, false, true)>;
-			}
+		if (!IsMatchCase() && IsWildcard()) {
+			return SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, false, true)>;
+		}
 
-			if (!IsMatchCase() && !IsWildcard()) {
-				return SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, false, false)>;
-			}
+		if (!IsMatchCase() && !IsWildcard()) {
+			return SearchFuncBack<SEARCHTYPE(CHAR_STR, fDlgClbck, false, false)>;
 		}
 		break;
 	case TEXT_UTF8:
@@ -660,15 +614,7 @@ auto CHexDlgSearch::GetSearchFuncBack()const->PtrSearchFunc
 		break;
 	case NUM_INT8:
 	case NUM_UINT8:
-		if (GetStep() == 1) { //Special case for 1byte data size.
-			return IsInverted() ?
-				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true)> :
-				SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, false)>;
-		}
-		else {
-			return SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck)>;
-		}
-		break;
+		return SearchFuncBack<SEARCHTYPE(DATA_BYTE1, fDlgClbck)>;
 	case NUM_INT16:
 	case NUM_UINT16:
 		return SearchFuncBack<SEARCHTYPE(DATA_BYTE2, fDlgClbck)>;
@@ -693,6 +639,17 @@ auto CHexDlgSearch::GetSearchMode()const->CHexDlgSearch::ESearchMode
 	return static_cast<ESearchMode>(m_comboMode.GetItemData(m_comboMode.GetCurSel()));
 }
 
+auto CHexDlgSearch::GetSearchRngSize()const->ULONGLONG
+{
+	return IsForward() ? GetSentinel() - GetStartFrom() :
+		(GetStartFrom() - GetRngStart()) + GetSearchDataSize();
+}
+
+auto CHexDlgSearch::GetSearchSpan()const->SpanCByte
+{
+	return m_vecSearchData;
+}
+
 auto CHexDlgSearch::GetSearchType()const->ESearchType
 {
 	if (GetSearchMode() == ESearchMode::MODE_HEXBYTES) {
@@ -700,6 +657,21 @@ auto CHexDlgSearch::GetSearchType()const->ESearchType
 	}
 
 	return static_cast<ESearchType>(m_comboType.GetItemData(m_comboType.GetCurSel()));
+}
+
+auto CHexDlgSearch::GetSentinel()const->ULONGLONG
+{
+	return m_ullRngEnd + 1; //This offset is non-dereferenceable.
+}
+
+auto CHexDlgSearch::GetStartFrom()const->ULONGLONG
+{
+	return m_ullStartFrom;
+}
+
+auto CHexDlgSearch::GetStep()const->ULONGLONG
+{
+	return m_ullStep;
 }
 
 void CHexDlgSearch::HexCtrlHighlight(const VecSpan& vecSel)
@@ -970,7 +942,7 @@ BOOL CHexDlgSearch::OnInitDialog()
 
 	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_SEARCH_LIST_MAIN, this);
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
-	m_pListMain->InsertColumn(0, L"\u2116", LVCFMT_LEFT, 40);
+	m_pListMain->InsertColumn(0, L"№", LVCFMT_LEFT, 50);
 	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 455);
 
 	m_menuList.CreatePopupMenu();
@@ -1685,7 +1657,7 @@ void CHexDlgSearch::Search()
 		}
 		else {
 			if (m_fDoCount) {
-				wstrInfo = std::format(m_locale, L"Found occurrence \u2116 {:L} from the beginning.", m_dwCount);
+				wstrInfo = std::format(m_locale, L"Found occurrence № {:L} from the beginning.", m_dwCount);
 			}
 			else {
 				wstrInfo = L"Search found occurrence.";
@@ -1768,7 +1740,38 @@ int CHexDlgSearch::MemCmpSIMDEQByte1Inv(const __m128i* pWhere, std::byte bWhat)
 	const auto m128iWhat = _mm_set1_epi8(static_cast<char>(bWhat));
 	const auto m128iResult = _mm_cmpeq_epi8(m128iWhere, m128iWhat);
 	const auto iMask = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult));
-	return std::countr_zero(~iMask); //>15 here means not found, all in mask are ones.
+	return std::countr_zero(~iMask);
+}
+
+int CHexDlgSearch::MemCmpSIMDEQByte2(const __m128i* pWhere, std::uint16_t ui16What)
+{
+	const auto m128iWhere = _mm_loadu_si128(pWhere);
+	const auto m128iWhere2 = _mm_srli_si128(m128iWhere, 1); //Shifting-right the whole vector by 1 byte.
+	const auto m128iWhat = _mm_set1_epi16(ui16What);
+	const auto m128iResult = _mm_cmpeq_epi16(m128iWhere, m128iWhat);
+	const auto m128iResult2 = _mm_cmpeq_epi16(m128iWhere2, m128iWhat); //Comparing both loads simultaneously.
+	const auto uiMask = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult));
+	//Shifting-left the mask by 1 to compensate previous 1 byte right-shift by _mm_srli_si128.
+	const auto uiMask2 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult2)) << 1;
+	const auto iRes = std::countr_zero(uiMask);
+	//Setting the last bit to zero, to avoid false positives when searching for `0000` and last byte is `00`.
+	const auto iRes2 = std::countr_zero(uiMask2 & 0b01111111);
+	return (std::min)(iRes, iRes2); //>15 here means not found, all in mask are zeros.
+}
+
+int CHexDlgSearch::MemCmpSIMDEQByte2Inv(const __m128i* pWhere, std::uint16_t ui16What)
+{
+	const auto m128iWhere = _mm_loadu_si128(pWhere);
+	const auto m128iWhere2 = _mm_srli_si128(m128iWhere, 1);
+	const auto m128iWhat = _mm_set1_epi16(ui16What);
+	const auto m128iResult = _mm_cmpeq_epi16(m128iWhere, m128iWhat);
+	const auto m128iResult2 = _mm_cmpeq_epi16(m128iWhere2, m128iWhat);
+	const auto uiMask = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult));
+	const auto uiMask2 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult2)) << 1;
+	const auto iRes = std::countr_zero(~uiMask);
+	//Setting the first bit to zero, because it's always 0 after the left-shifting above.
+	const auto iRes2 = std::countr_zero((~uiMask2) & 0b11111110);
+	return (std::min)(iRes, iRes2);
 }
 
 template<CHexDlgSearch::SEARCHTYPE stType>
@@ -1981,6 +1984,82 @@ auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRES
 				else if constexpr (stType.fInverted) { //SIMD forward inverted.
 					if (const auto iRes = MemCmpSIMDEQByte1Inv(
 						reinterpret_cast<const __m128i*>(spnData.data() + ullOffsetData), *pDataSearch);
+						iRes < sizeof(__m128i)) {
+						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
+					}
+				}
+			}
+			else {
+				for (auto i = 0; i <= ullLoopChunkSize - ullOffsetData; ++i) {
+					if (MemCmp<stType>(spnData.data() + ullOffsetData + i, pDataSearch, 1) == !fInverted) {
+						return { ullOffsetSearch + ullOffsetData + i, true, false };
+					}
+				}
+			}
+
+			if constexpr (stType.fDlgClbck) {
+				if (pDlgClbk->IsCanceled()) {
+					return { { }, false, true };
+				}
+				pDlgClbk->SetProgress(ullOffsetSearch + ullOffsetData);
+			}
+		}
+
+		if (fBigStep) [[unlikely]] {
+			if ((ullOffsetSearch + ullStep) > ullEnd)
+				break; //Upper bound reached.
+
+			ullOffsetSearch += ullStep;
+			}
+		else {
+			ullOffsetSearch += ullLoopChunkSize;
+		}
+
+		if (ullOffsetSearch + ullMemToAcquire > ullOffsetSentinel) {
+			ullMemToAcquire = ullOffsetSentinel - ullOffsetSearch;
+			ullLoopChunkSize = ullMemToAcquire - nSizeSearch;
+		}
+	}
+
+	return { };
+}
+
+template<CHexDlgSearch::SEARCHTYPE stType>
+auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRESULT
+{
+	//Members locality is important for the best performance of the tight search loop below.
+	const auto ullMemChunks = refSearch.ullMemChunks;
+	const auto ullOffsetSentinel = refSearch.ullRngEnd + 1;
+	const auto ullStep = refSearch.ullStep;
+	const auto pHexCtrl = refSearch.pHexCtrl;
+	const auto pDlgClbk = refSearch.pDlgClbk;
+	const auto pDataSearch = refSearch.spnFind.data();
+	const auto nSizeSearch = refSearch.spnFind.size();
+	const auto ullEnd = ullOffsetSentinel - nSizeSearch;
+	const auto fBigStep = refSearch.fBigStep;
+	const auto fInverted = refSearch.fInverted;
+	auto ullOffsetSearch = refSearch.ullStartFrom;
+	auto ullLoopChunkSize = refSearch.ullLoopChunkSize;
+	auto ullMemToAcquire = refSearch.ullMemToAcquire;
+
+	for (auto itChunk = 0ULL; itChunk < ullMemChunks; ++itChunk) {
+		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
+		assert(!spnData.empty());
+
+		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullLoopChunkSize; ullOffsetData += sizeof(__m128i)) {
+			if ((ullOffsetData + sizeof(__m128i)) <= ullLoopChunkSize) {
+				if constexpr (!stType.fInverted) { //SIMD forward not inverted.
+					if (const auto iRes = MemCmpSIMDEQByte2(
+						reinterpret_cast<const __m128i*>(spnData.data() + ullOffsetData),
+						*reinterpret_cast<const std::uint16_t*>(pDataSearch));
+						iRes < sizeof(__m128i)) {
+						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
+					}
+				}
+				else if constexpr (stType.fInverted) { //SIMD forward inverted.
+					if (const auto iRes = MemCmpSIMDEQByte2Inv(
+						reinterpret_cast<const __m128i*>(spnData.data() + ullOffsetData),
+						*reinterpret_cast<const std::uint16_t*>(pDataSearch));
 						iRes < sizeof(__m128i)) {
 						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
 					}
