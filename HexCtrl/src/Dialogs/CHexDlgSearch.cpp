@@ -732,7 +732,7 @@ bool CHexDlgSearch::IsSmallSearch()const
 
 bool CHexDlgSearch::IsWildcard()const
 {
-	return m_btnWC.GetCheck() == BST_CHECKED;
+	return m_btnWC.IsWindowEnabled() && m_btnWC.GetCheck() == BST_CHECKED;
 }
 
 void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
@@ -1023,27 +1023,28 @@ void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
-	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED)) {
-		SetEditStartFrom(m_vecSearchRes[static_cast<std::size_t>(pNMI->iItem)]);
+	const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	if (pNMI->iItem < 0 || pNMI->iSubItem < 0 || !(pNMI->uNewState & LVIS_SELECTED))
+		return;
 
-		VecSpan vecSpan;
-		int nItem = -1;
-		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i) {
-			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
+	VecSpan vecSpan;
+	int nItem = -1;
+	for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i) {
+		nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
 
-			//Do not yet add selected (clicked) item (in multiselect), will add it after the loop,
-			//so that it's always last in vec, to highlight it in HexCtrlHighlight.
-			if (pNMI->iItem != nItem) {
-				vecSpan.emplace_back(m_vecSearchRes.at(static_cast<std::size_t>(nItem)),
-					m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size());
-			}
+		//Do not yet add selected (clicked) item (in multiselect), will add it after the loop,
+		//so that it's always last in the vecSpan to highlight it in HexCtrlHighlight.
+		if (pNMI->iItem != nItem) {
+			vecSpan.emplace_back(m_vecSearchRes.at(static_cast<std::size_t>(nItem)),
+				m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size());
 		}
-		vecSpan.emplace_back(m_vecSearchRes.at(static_cast<std::size_t>(pNMI->iItem)),
-			m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size());
-
-		HexCtrlHighlight(vecSpan);
 	}
+
+	const auto ullOffset = m_vecSearchRes[static_cast<std::size_t>(pNMI->iItem)];
+	vecSpan.emplace_back(ullOffset, m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size());
+	HexCtrlHighlight(vecSpan);
+	SetEditStartFrom(ullOffset);
+	m_ullStartFrom = ullOffset;
 }
 
 void CHexDlgSearch::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
@@ -1325,6 +1326,11 @@ void CHexDlgSearch::Prepare()
 	if ((ullStartFrom + GetSearchDataSize()) > (ullRngEnd + 1)) {
 		ResetSearch();
 		return;
+	}
+
+	//If "Start from" edit box was changed we reset all the search.
+	if (m_fSecondMatch && ullStartFrom != m_ullStartFrom) {
+		ResetSearch();
 	}
 
 	//"Step".
