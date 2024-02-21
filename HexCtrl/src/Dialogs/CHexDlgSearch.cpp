@@ -9,6 +9,7 @@
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgCallback.h"
 #include "CHexDlgSearch.h"
+#include <immintrin.h>
 #include <algorithm>
 #include <cassert>
 #include <cwctype>
@@ -46,10 +47,10 @@ struct CHexDlgSearch::SEARCHFUNCDATA {
 	ULONGLONG ullStartFrom { };
 	ULONGLONG ullRngStart { };
 	ULONGLONG ullRngEnd { };
-	ULONGLONG ullStep { };          //Search step, must be signed here.
-	ULONGLONG ullLoopChunkSize { }; //Actual data size for a `for()` loop.
-	ULONGLONG ullMemToAcquire { };  //Size of a memory to acquire, to search in.
-	ULONGLONG ullMemChunks { };     //How many such memory chunks, to search in.
+	ULONGLONG ullStep { };
+	ULONGLONG ullMemChunks { };      //How many memory chunks to search in.
+	ULONGLONG ullMemToAcquire { };   //Size of a chunk.
+	ULONGLONG ullChunkMaxOffset { }; //Maximum offset to search in chunk.
 	CHexDlgCallback* pDlgClbk { };
 	IHexCtrl* pHexCtrl { };
 	SpanCByte spnFind { };
@@ -173,24 +174,24 @@ void CHexDlgSearch::CalcMemChunks(SEARCHFUNCDATA& refData)const
 {
 	const auto nSizeSearch = refData.spnFind.size();
 	if (refData.ullStartFrom + nSizeSearch > GetSentinel()) {
-		refData.ullLoopChunkSize = { };
-		refData.ullMemToAcquire = { };
 		refData.ullMemChunks = { };
+		refData.ullMemToAcquire = { };
+		refData.ullChunkMaxOffset = { };
 		return;
 	}
 
 	const auto ullSizeTotal = GetSearchRngSize(); //Depends on search direction.
 	const auto pHexCtrl = refData.pHexCtrl;
 	const auto ullStep = refData.ullStep;
-	ULONGLONG ullLoopChunkSize;
-	ULONGLONG ullMemToAcquire;
 	ULONGLONG ullMemChunks;
+	ULONGLONG ullMemToAcquire;
+	ULONGLONG ullChunkMaxOffset;
 	bool fBigStep { false };
 
 	if (!pHexCtrl->IsVirtual()) {
-		ullMemToAcquire = ullSizeTotal;
-		ullLoopChunkSize = ullSizeTotal - nSizeSearch;
 		ullMemChunks = 1;
+		ullMemToAcquire = ullSizeTotal;
+		ullChunkMaxOffset = ullSizeTotal - nSizeSearch;
 	}
 	else {
 		ullMemToAcquire = pHexCtrl->GetCacheSize();
@@ -198,20 +199,20 @@ void CHexDlgSearch::CalcMemChunks(SEARCHFUNCDATA& refData)const
 			ullMemToAcquire = ullSizeTotal;
 		}
 
-		ullLoopChunkSize = ullMemToAcquire - nSizeSearch;
-		if (ullStep > ullLoopChunkSize) { //For very big steps.
+		ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
+		if (ullStep > ullChunkMaxOffset) { //For very big steps.
 			ullMemChunks = ullSizeTotal > ullStep ? ullSizeTotal / ullStep + ((ullSizeTotal % ullStep) ? 1 : 0) : 1;
 			fBigStep = true;
 		}
 		else {
-			ullMemChunks = ullSizeTotal > ullLoopChunkSize ? ullSizeTotal / ullLoopChunkSize
-				+ ((ullSizeTotal % ullLoopChunkSize) ? 1 : 0) : 1;
+			ullMemChunks = ullSizeTotal > ullChunkMaxOffset ? ullSizeTotal / ullChunkMaxOffset
+				+ ((ullSizeTotal % ullChunkMaxOffset) ? 1 : 0) : 1;
 		}
 	}
 
-	refData.ullLoopChunkSize = ullLoopChunkSize;
-	refData.ullMemToAcquire = ullMemToAcquire;
 	refData.ullMemChunks = ullMemChunks;
+	refData.ullMemToAcquire = ullMemToAcquire;
+	refData.ullChunkMaxOffset = ullChunkMaxOffset;
 	refData.fBigStep = fBigStep;
 }
 
@@ -1681,7 +1682,7 @@ void CHexDlgSearch::Search()
 		}
 	}
 	else {
-		if (m_iWrap == 1) {
+		if (m_iWrap >= 0) { //==0 or ==1
 			wstrInfo = L"Didn't find any occurrence, the end is reached.";
 		}
 		else if (m_iWrap == -1) {
@@ -1731,7 +1732,7 @@ void CHexDlgSearch::Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, SpanCByte sp
 		.vecSpan { { ullIndex, spnReplace.size() } } });
 }
 
-int CHexDlgSearch::MemCmpSIMDEQByte1(const __m128i* pWhere, std::byte bWhat)
+int CHexDlgSearch::MemCmpVecEQByte1(const __m128i* pWhere, std::byte bWhat)
 {
 	const auto m128iWhere = _mm_loadu_si128(pWhere);
 	const auto m128iWhat = _mm_set1_epi8(static_cast<char>(bWhat));
@@ -1740,7 +1741,7 @@ int CHexDlgSearch::MemCmpSIMDEQByte1(const __m128i* pWhere, std::byte bWhat)
 	return std::countr_zero(uiMask); //>15 here means not found, all in mask are zeros.
 }
 
-int CHexDlgSearch::MemCmpSIMDEQByte1Inv(const __m128i* pWhere, std::byte bWhat)
+int CHexDlgSearch::MemCmpVecNEQByte1(const __m128i* pWhere, std::byte bWhat)
 {
 	const auto m128iWhere = _mm_loadu_si128(pWhere);
 	const auto m128iWhat = _mm_set1_epi8(static_cast<char>(bWhat));
@@ -1749,7 +1750,7 @@ int CHexDlgSearch::MemCmpSIMDEQByte1Inv(const __m128i* pWhere, std::byte bWhat)
 	return std::countr_zero(~iMask);
 }
 
-int CHexDlgSearch::MemCmpSIMDEQByte2(const __m128i* pWhere, std::uint16_t ui16What)
+int CHexDlgSearch::MemCmpVecEQByte2(const __m128i* pWhere, std::uint16_t ui16What)
 {
 	const auto m128iWhere = _mm_loadu_si128(pWhere);
 	const auto m128iWhere2 = _mm_srli_si128(m128iWhere, 1); //Shifting-right the whole vector by 1 byte.
@@ -1765,7 +1766,7 @@ int CHexDlgSearch::MemCmpSIMDEQByte2(const __m128i* pWhere, std::uint16_t ui16Wh
 	return (std::min)(iRes, iRes2); //>15 here means not found, all in mask are zeros.
 }
 
-int CHexDlgSearch::MemCmpSIMDEQByte2Inv(const __m128i* pWhere, std::uint16_t ui16What)
+int CHexDlgSearch::MemCmpVecNEQByte2(const __m128i* pWhere, std::uint16_t ui16What)
 {
 	const auto m128iWhere = _mm_loadu_si128(pWhere);
 	const auto m128iWhere2 = _mm_srli_si128(m128iWhere, 1);
@@ -1851,7 +1852,6 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 {
 	//Members locality is important for the best performance of the tight search loop below.
 	static constexpr auto LOOP_UNROLL_SIZE = 8U; //How many comparisons we do at one loop cycle.
-	const auto ullMemChunks = refSearch.ullMemChunks;
 	const auto ullOffsetSentinel = refSearch.ullRngEnd + 1;
 	const auto ullStep = refSearch.ullStep;
 	const auto pHexCtrl = refSearch.pHexCtrl;
@@ -1861,23 +1861,24 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 	const auto ullEnd = ullOffsetSentinel - nSizeSearch;
 	const auto fBigStep = refSearch.fBigStep;
 	const auto fInverted = refSearch.fInverted;
-	auto ullOffsetSearch = refSearch.ullStartFrom;
-	auto ullLoopChunkSize = refSearch.ullLoopChunkSize;
+	const auto ullMemChunks = refSearch.ullMemChunks;
 	auto ullMemToAcquire = refSearch.ullMemToAcquire;
+	auto ullChunkMaxOffset = refSearch.ullChunkMaxOffset;
+	auto ullOffsetSearch = refSearch.ullStartFrom;
 
 	for (auto itChunk = 0ULL; itChunk < ullMemChunks; ++itChunk) {
 		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 		assert(!spnData.empty());
 
 		//Unrolling the loop, making LOOP_UNROLL_SIZE comparisons at one cycle.
-		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullLoopChunkSize; ullOffsetData += ullStep * LOOP_UNROLL_SIZE) {
+		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += ullStep * LOOP_UNROLL_SIZE) {
 			//First memory comparison is always unconditional.
 			if (MemCmp<stType>(spnData.data() + ullOffsetData, pDataSearch, nSizeSearch) == !fInverted) {
 				return { ullOffsetSearch + ullOffsetData, true, false };
 			}
 
-			//This branch allows to avoid the "ullOffsetData + ullStep * 'nstep' <= ullLoopChunkSize" check every cycle.
-			if ((ullOffsetData + ullStep * (LOOP_UNROLL_SIZE - 1)) <= ullLoopChunkSize) {
+			//This branch allows to avoid the "ullOffsetData + ullStep * 'nstep' <= ullChunkMaxOffset" check every cycle.
+			if ((ullOffsetData + ullStep * (LOOP_UNROLL_SIZE - 1)) <= ullChunkMaxOffset) {
 				if (MemCmp<stType>(spnData.data() + ullOffsetData + ullStep * 1, pDataSearch, nSizeSearch) == !fInverted) {
 					return { ullOffsetSearch + ullOffsetData + ullStep * 1, true, false };
 				}
@@ -1900,30 +1901,30 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 					return { ullOffsetSearch + ullOffsetData + ullStep * 7, true, false };
 				}
 			}
-			//In this branch we check every comparison for the ullLoopChunkSize exceeding.
+			//In this branch we check every comparison for the ullChunkMaxOffset exceeding.
 			//The one less comparison is needed here, otherwise we would've hit the branch above.
 			else {
-				if ((ullOffsetData + ullStep * 1 <= ullLoopChunkSize)
+				if ((ullOffsetData + ullStep * 1 <= ullChunkMaxOffset)
 					&& (MemCmp<stType>(spnData.data() + ullOffsetData + ullStep * 1, pDataSearch, nSizeSearch) == !fInverted)) {
 					return { ullOffsetSearch + ullOffsetData + ullStep * 1, true, false };
 				}
-				if ((ullOffsetData + ullStep * 2 <= ullLoopChunkSize)
+				if ((ullOffsetData + ullStep * 2 <= ullChunkMaxOffset)
 					&& (MemCmp<stType>(spnData.data() + ullOffsetData + ullStep * 2, pDataSearch, nSizeSearch) == !fInverted)) {
 					return { ullOffsetSearch + ullOffsetData + ullStep * 2, true, false };
 				}
-				if ((ullOffsetData + ullStep * 3 <= ullLoopChunkSize)
+				if ((ullOffsetData + ullStep * 3 <= ullChunkMaxOffset)
 					&& (MemCmp<stType>(spnData.data() + ullOffsetData + ullStep * 3, pDataSearch, nSizeSearch) == !fInverted)) {
 					return { ullOffsetSearch + ullOffsetData + ullStep * 3, true, false };
 				}
-				if ((ullOffsetData + ullStep * 4 <= ullLoopChunkSize)
+				if ((ullOffsetData + ullStep * 4 <= ullChunkMaxOffset)
 					&& (MemCmp<stType>(spnData.data() + ullOffsetData + ullStep * 4, pDataSearch, nSizeSearch) == !fInverted)) {
 					return { ullOffsetSearch + ullOffsetData + ullStep * 4, true, false };
 				}
-				if ((ullOffsetData + ullStep * 5 <= ullLoopChunkSize)
+				if ((ullOffsetData + ullStep * 5 <= ullChunkMaxOffset)
 					&& (MemCmp<stType>(spnData.data() + ullOffsetData + ullStep * 5, pDataSearch, nSizeSearch) == !fInverted)) {
 					return { ullOffsetSearch + ullOffsetData + ullStep * 5, true, false };
 				}
-				if ((ullOffsetData + ullStep * 6 <= ullLoopChunkSize)
+				if ((ullOffsetData + ullStep * 6 <= ullChunkMaxOffset)
 					&& (MemCmp<stType>(spnData.data() + ullOffsetData + ullStep * 6, pDataSearch, nSizeSearch) == !fInverted)) {
 					return { ullOffsetSearch + ullOffsetData + ullStep * 6, true, false };
 				}
@@ -1944,12 +1945,12 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 			ullOffsetSearch += ullStep;
 			}
 		else {
-			ullOffsetSearch += ullLoopChunkSize;
+			ullOffsetSearch += ullChunkMaxOffset;
 		}
 
 		if (ullOffsetSearch + ullMemToAcquire > ullOffsetSentinel) {
 			ullMemToAcquire = ullOffsetSentinel - ullOffsetSearch;
-			ullLoopChunkSize = ullMemToAcquire - nSizeSearch;
+			ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
 		}
 	}
 
@@ -1960,7 +1961,6 @@ template<CHexDlgSearch::SEARCHTYPE stType>
 auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 {
 	//Members locality is important for the best performance of the tight search loop below.
-	const auto ullMemChunks = refSearch.ullMemChunks;
 	const auto ullOffsetSentinel = refSearch.ullRngEnd + 1;
 	const auto ullStep = refSearch.ullStep;
 	const auto pHexCtrl = refSearch.pHexCtrl;
@@ -1970,25 +1970,26 @@ auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRES
 	const auto ullEnd = ullOffsetSentinel - nSizeSearch;
 	const auto fBigStep = refSearch.fBigStep;
 	const auto fInverted = refSearch.fInverted;
-	auto ullOffsetSearch = refSearch.ullStartFrom;
-	auto ullLoopChunkSize = refSearch.ullLoopChunkSize;
+	const auto ullMemChunks = refSearch.ullMemChunks;
 	auto ullMemToAcquire = refSearch.ullMemToAcquire;
+	auto ullChunkMaxOffset = refSearch.ullChunkMaxOffset;
+	auto ullOffsetSearch = refSearch.ullStartFrom;
 
 	for (auto itChunk = 0ULL; itChunk < ullMemChunks; ++itChunk) {
 		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 		assert(!spnData.empty());
 
-		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullLoopChunkSize; ullOffsetData += sizeof(__m128i)) {
-			if ((ullOffsetData + sizeof(__m128i)) <= ullLoopChunkSize) {
+		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += sizeof(__m128i)) {
+			if ((ullOffsetData + sizeof(__m128i)) <= ullChunkMaxOffset) {
 				if constexpr (!stType.fInverted) { //SIMD forward not inverted.
-					if (const auto iRes = MemCmpSIMDEQByte1(
+					if (const auto iRes = MemCmpVecEQByte1(
 						reinterpret_cast<const __m128i*>(spnData.data() + ullOffsetData), *pDataSearch);
 						iRes < sizeof(__m128i)) {
 						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
 					}
 				}
 				else if constexpr (stType.fInverted) { //SIMD forward inverted.
-					if (const auto iRes = MemCmpSIMDEQByte1Inv(
+					if (const auto iRes = MemCmpVecNEQByte1(
 						reinterpret_cast<const __m128i*>(spnData.data() + ullOffsetData), *pDataSearch);
 						iRes < sizeof(__m128i)) {
 						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
@@ -1996,8 +1997,8 @@ auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRES
 				}
 			}
 			else {
-				for (auto i = 0; i <= ullLoopChunkSize - ullOffsetData; ++i) {
-					if (MemCmp<stType>(spnData.data() + ullOffsetData + i, pDataSearch, 1) == !fInverted) {
+				for (auto i = 0; i <= ullChunkMaxOffset - ullOffsetData; ++i) {
+					if (MemCmp<stType>(spnData.data() + ullOffsetData + i, pDataSearch, 0) == !fInverted) {
 						return { ullOffsetSearch + ullOffsetData + i, true, false };
 					}
 				}
@@ -2018,12 +2019,12 @@ auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRES
 			ullOffsetSearch += ullStep;
 			}
 		else {
-			ullOffsetSearch += ullLoopChunkSize;
+			ullOffsetSearch += ullChunkMaxOffset;
 		}
 
 		if (ullOffsetSearch + ullMemToAcquire > ullOffsetSentinel) {
 			ullMemToAcquire = ullOffsetSentinel - ullOffsetSearch;
-			ullLoopChunkSize = ullMemToAcquire - nSizeSearch;
+			ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
 		}
 	}
 
@@ -2034,7 +2035,6 @@ template<CHexDlgSearch::SEARCHTYPE stType>
 auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 {
 	//Members locality is important for the best performance of the tight search loop below.
-	const auto ullMemChunks = refSearch.ullMemChunks;
 	const auto ullOffsetSentinel = refSearch.ullRngEnd + 1;
 	const auto ullStep = refSearch.ullStep;
 	const auto pHexCtrl = refSearch.pHexCtrl;
@@ -2044,18 +2044,20 @@ auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRES
 	const auto ullEnd = ullOffsetSentinel - nSizeSearch;
 	const auto fBigStep = refSearch.fBigStep;
 	const auto fInverted = refSearch.fInverted;
-	auto ullOffsetSearch = refSearch.ullStartFrom;
-	auto ullLoopChunkSize = refSearch.ullLoopChunkSize;
+	const auto ullMemChunks = refSearch.ullMemChunks;
 	auto ullMemToAcquire = refSearch.ullMemToAcquire;
+	auto ullChunkMaxOffset = refSearch.ullChunkMaxOffset;
+	auto ullOffsetSearch = refSearch.ullStartFrom;
 
 	for (auto itChunk = 0ULL; itChunk < ullMemChunks; ++itChunk) {
 		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 		assert(!spnData.empty());
 
-		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullLoopChunkSize; ullOffsetData += sizeof(__m128i)) {
-			if ((ullOffsetData + sizeof(__m128i)) <= ullLoopChunkSize) {
+		//Next cycle offset is "sizeof(__m128i) - 1", to get the data that crosses the vector.
+		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += (sizeof(__m128i) - 1)) {
+			if ((ullOffsetData + sizeof(__m128i)) <= ullChunkMaxOffset) {
 				if constexpr (!stType.fInverted) { //SIMD forward not inverted.
-					if (const auto iRes = MemCmpSIMDEQByte2(
+					if (const auto iRes = MemCmpVecEQByte2(
 						reinterpret_cast<const __m128i*>(spnData.data() + ullOffsetData),
 						*reinterpret_cast<const std::uint16_t*>(pDataSearch));
 						iRes < sizeof(__m128i)) {
@@ -2063,7 +2065,7 @@ auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRES
 					}
 				}
 				else if constexpr (stType.fInverted) { //SIMD forward inverted.
-					if (const auto iRes = MemCmpSIMDEQByte2Inv(
+					if (const auto iRes = MemCmpVecNEQByte2(
 						reinterpret_cast<const __m128i*>(spnData.data() + ullOffsetData),
 						*reinterpret_cast<const std::uint16_t*>(pDataSearch));
 						iRes < sizeof(__m128i)) {
@@ -2072,8 +2074,8 @@ auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRES
 				}
 			}
 			else {
-				for (auto i = 0; i <= ullLoopChunkSize - ullOffsetData; ++i) {
-					if (MemCmp<stType>(spnData.data() + ullOffsetData + i, pDataSearch, 1) == !fInverted) {
+				for (auto i = 0; i <= ullChunkMaxOffset - ullOffsetData; ++i) {
+					if (MemCmp<stType>(spnData.data() + ullOffsetData + i, pDataSearch, 0) == !fInverted) {
 						return { ullOffsetSearch + ullOffsetData + i, true, false };
 					}
 				}
@@ -2094,12 +2096,12 @@ auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRES
 			ullOffsetSearch += ullStep;
 			}
 		else {
-			ullOffsetSearch += ullLoopChunkSize;
+			ullOffsetSearch += ullChunkMaxOffset;
 		}
 
 		if (ullOffsetSearch + ullMemToAcquire > ullOffsetSentinel) {
 			ullMemToAcquire = ullOffsetSentinel - ullOffsetSearch;
-			ullLoopChunkSize = ullMemToAcquire - nSizeSearch;
+			ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
 		}
 	}
 
@@ -2113,7 +2115,6 @@ auto CHexDlgSearch::SearchFuncBack(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 	static constexpr auto LOOP_UNROLL_SIZE = 8U; //How many comparisons we do at one loop cycle.
 	const auto ullStartFrom = refSearch.ullStartFrom;
 	const auto ullEnd = refSearch.ullRngStart;
-	const auto ullMemChunks = refSearch.ullMemChunks;
 	//Step is signed here to make the "llOffsetData - llStep" arithmetic also signed.
 	const auto llStep = static_cast<std::int64_t>(refSearch.ullStep);
 	const auto pHexCtrl = refSearch.pHexCtrl;
@@ -2122,20 +2123,21 @@ auto CHexDlgSearch::SearchFuncBack(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 	const auto nSizeSearch = refSearch.spnFind.size();
 	const auto fBigStep = refSearch.fBigStep;
 	const auto fInverted = refSearch.fInverted;
-	auto ullOffsetSearch = refSearch.ullStartFrom - refSearch.ullLoopChunkSize;
-	auto ullLoopChunkSize = refSearch.ullLoopChunkSize;
+	const auto ullMemChunks = refSearch.ullMemChunks;
 	auto ullMemToAcquire = refSearch.ullMemToAcquire;
+	auto ullChunkMaxOffset = refSearch.ullChunkMaxOffset;
+	auto ullOffsetSearch = refSearch.ullStartFrom - refSearch.ullChunkMaxOffset;
 
-	if (ullOffsetSearch < ullEnd || ullOffsetSearch >((std::numeric_limits<ULONGLONG>::max)() - ullLoopChunkSize)) {
+	if (ullOffsetSearch < ullEnd || ullOffsetSearch >((std::numeric_limits<ULONGLONG>::max)() - ullChunkMaxOffset)) {
 		ullMemToAcquire = (ullStartFrom - ullEnd) + nSizeSearch;
-		ullLoopChunkSize = ullMemToAcquire - nSizeSearch;
+		ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
 		ullOffsetSearch = ullEnd;
 	}
 
 	for (auto itChunk = ullMemChunks; itChunk > 0; --itChunk) {
 		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 		assert(!spnData.empty());
-		for (auto llOffsetData = static_cast<LONGLONG>(ullLoopChunkSize); llOffsetData >= 0;
+		for (auto llOffsetData = static_cast<LONGLONG>(ullChunkMaxOffset); llOffsetData >= 0;
 			llOffsetData -= llStep * LOOP_UNROLL_SIZE) { //llOffsetData might be negative.
 			//First memory comparison is always unconditional.
 			if (MemCmp<stType>(spnData.data() + llOffsetData, pDataSearch, nSizeSearch) == !fInverted) {
@@ -2204,17 +2206,17 @@ auto CHexDlgSearch::SearchFuncBack(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 			if ((ullOffsetSearch - llStep) < ullEnd || (ullOffsetSearch - llStep) > ((std::numeric_limits<ULONGLONG>::max)() - llStep))
 				break; //Lower bound reached.
 
-			ullOffsetSearch -= ullLoopChunkSize;
+			ullOffsetSearch -= ullChunkMaxOffset;
 			}
 		else {
-			if ((ullOffsetSearch - ullLoopChunkSize) < ullEnd || ((ullOffsetSearch - ullLoopChunkSize) >
-				((std::numeric_limits<ULONGLONG>::max)() - ullLoopChunkSize))) {
+			if ((ullOffsetSearch - ullChunkMaxOffset) < ullEnd || ((ullOffsetSearch - ullChunkMaxOffset) >
+				((std::numeric_limits<ULONGLONG>::max)() - ullChunkMaxOffset))) {
 				ullMemToAcquire = (ullOffsetSearch - ullEnd) + nSizeSearch;
-				ullLoopChunkSize = ullMemToAcquire - nSizeSearch;
+				ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
 				ullOffsetSearch = ullEnd;
 			}
 			else {
-				ullOffsetSearch -= ullLoopChunkSize;
+				ullOffsetSearch -= ullChunkMaxOffset;
 			}
 		}
 	}

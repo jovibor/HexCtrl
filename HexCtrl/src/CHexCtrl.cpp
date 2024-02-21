@@ -17,7 +17,7 @@
 #include "Dialogs/CHexDlgModify.h"
 #include "Dialogs/CHexDlgSearch.h"
 #include "Dialogs/CHexDlgTemplMgr.h"
-#include <emmintrin.h>
+#include <immintrin.h>
 #include <algorithm>
 #include <bit>
 #include <cassert>

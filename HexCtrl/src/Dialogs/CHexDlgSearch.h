@@ -130,11 +130,11 @@ namespace HEXCTRL::INTERNAL {
 			bool fInverted { false };
 		};
 		template<SEARCHTYPE stType>
-		[[nodiscard]] static bool MemCmp(const std::byte* pWhere, const std::byte* pWhat, std::size_t nSize);
-		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte1(const __m128i* pWhere, std::byte bWhat);
-		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte1Inv(const __m128i* pWhere, std::byte bWhat);
-		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte2(const __m128i* pWhere, std::uint16_t ui16What);
-		[[nodiscard]] static int __forceinline MemCmpSIMDEQByte2Inv(const __m128i* pWhere, std::uint16_t ui16What);
+		[[nodiscard]] static auto __forceinline MemCmp(const std::byte* pWhere, const std::byte* pWhat, std::size_t nSize)->bool;
+		[[nodiscard]] static auto __forceinline MemCmpVecEQByte1(const __m128i* pWhere, std::byte bWhat)->int;
+		[[nodiscard]] static auto __forceinline MemCmpVecNEQByte1(const __m128i* pWhere, std::byte bWhat)->int;
+		[[nodiscard]] static auto __forceinline MemCmpVecEQByte2(const __m128i* pWhere, std::uint16_t ui16What)->int;
+		[[nodiscard]] static auto __forceinline MemCmpVecNEQByte2(const __m128i* pWhere, std::uint16_t ui16What)->int;
 		template<SEARCHTYPE stType>
 		[[nodiscard]] static auto SearchFuncFwd(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 		template<SEARCHTYPE stType>
