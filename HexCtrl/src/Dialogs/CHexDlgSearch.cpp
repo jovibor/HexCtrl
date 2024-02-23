@@ -498,6 +498,10 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 			return IsInverted() ?
 				SearchFuncFwdByte2<SEARCHTYPE(DATA_BYTE2, fDlgClbck, false, false, true)> :
 				SearchFuncFwdByte2<SEARCHTYPE(DATA_BYTE2, fDlgClbck, false, false, false)>;
+		case 4: //Special case for 4 bytes data size SIMD.
+			return IsInverted() ?
+				SearchFuncFwdByte4<SEARCHTYPE(DATA_BYTE4, fDlgClbck, false, false, true)> :
+				SearchFuncFwdByte4<SEARCHTYPE(DATA_BYTE4, fDlgClbck, false, false, false)>;
 		default:
 			break;
 		};
@@ -1761,8 +1765,8 @@ int CHexDlgSearch::MemCmpVecEQByte2(const __m128i* pWhere, std::uint16_t ui16Wha
 	//Shifting-left the mask by 1 to compensate previous 1 byte right-shift by _mm_srli_si128.
 	const auto uiMask2 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult2)) << 1;
 	const auto iRes = std::countr_zero(uiMask);
-	//Setting the last bit to zero, to avoid false positives when searching for `0000` and last byte is `00`.
-	const auto iRes2 = std::countr_zero(uiMask2 & 0b01111111);
+	//Setting the last bit (of 16) to zero, to avoid false positives when searching for `0000` and last byte is `00`.
+	const auto iRes2 = std::countr_zero(uiMask2 & 0b01111111'11111111);
 	return (std::min)(iRes, iRes2); //>15 here means not found, all in mask are zeros.
 }
 
@@ -1776,9 +1780,53 @@ int CHexDlgSearch::MemCmpVecNEQByte2(const __m128i* pWhere, std::uint16_t ui16Wh
 	const auto uiMask = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult));
 	const auto uiMask2 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult2)) << 1;
 	const auto iRes = std::countr_zero(~uiMask);
-	//Setting the first bit to zero, because it's always 0 after the left-shifting above.
-	const auto iRes2 = std::countr_zero((~uiMask2) & 0b11111110);
+	//Setting the first bit (of 16) to zero, because it's always 0 after the left-shifting above.
+	const auto iRes2 = std::countr_zero((~uiMask2) & 0b11111111'11111110);
 	return (std::min)(iRes, iRes2);
+}
+
+int CHexDlgSearch::MemCmpVecEQByte4(const __m128i* pWhere, std::uint32_t ui32What)
+{
+	const auto m128iWhere = _mm_loadu_si128(pWhere);
+	const auto m128iWhere2 = _mm_srli_si128(m128iWhere, 1);
+	const auto m128iWhere3 = _mm_srli_si128(m128iWhere, 2);
+	const auto m128iWhere4 = _mm_srli_si128(m128iWhere, 3);
+	const auto m128iWhat = _mm_set1_epi32(ui32What);
+	const auto m128iResult = _mm_cmpeq_epi32(m128iWhere, m128iWhat);
+	const auto m128iResult2 = _mm_cmpeq_epi32(m128iWhere2, m128iWhat);
+	const auto m128iResult3 = _mm_cmpeq_epi32(m128iWhere3, m128iWhat);
+	const auto m128iResult4 = _mm_cmpeq_epi32(m128iWhere4, m128iWhat);
+	const auto uiMask = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult));
+	const auto uiMask2 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult2)) << 1;
+	const auto uiMask3 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult3)) << 2;
+	const auto uiMask4 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult4)) << 3;
+	const auto iRes = std::countr_zero(uiMask);
+	const auto iRes2 = std::countr_zero(uiMask2 & 0b01111111'11111111);
+	const auto iRes3 = std::countr_zero(uiMask3 & 0b00111111'11111111);
+	const auto iRes4 = std::countr_zero(uiMask4 & 0b00011111'11111111);
+	return (std::min)(iRes, (std::min)(iRes2, (std::min)(iRes3, iRes4)));
+}
+
+int CHexDlgSearch::MemCmpVecNEQByte4(const __m128i* pWhere, std::uint32_t ui32What)
+{
+	const auto m128iWhere = _mm_loadu_si128(pWhere);
+	const auto m128iWhere2 = _mm_srli_si128(m128iWhere, 1);
+	const auto m128iWhere3 = _mm_srli_si128(m128iWhere, 2);
+	const auto m128iWhere4 = _mm_srli_si128(m128iWhere, 3);
+	const auto m128iWhat = _mm_set1_epi32(ui32What);
+	const auto m128iResult = _mm_cmpeq_epi32(m128iWhere, m128iWhat);
+	const auto m128iResult2 = _mm_cmpeq_epi32(m128iWhere2, m128iWhat);
+	const auto m128iResult3 = _mm_cmpeq_epi32(m128iWhere3, m128iWhat);
+	const auto m128iResult4 = _mm_cmpeq_epi32(m128iWhere4, m128iWhat);
+	const auto uiMask = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult));
+	const auto uiMask2 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult2)) << 1;
+	const auto uiMask3 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult3)) << 2;
+	const auto uiMask4 = static_cast<std::uint32_t>(_mm_movemask_epi8(m128iResult4)) << 3;
+	const auto iRes = std::countr_zero(~uiMask);
+	const auto iRes2 = std::countr_zero((~uiMask2) & 0b11111111'11111110);
+	const auto iRes3 = std::countr_zero((~uiMask3) & 0b11111111'11111100);
+	const auto iRes4 = std::countr_zero((~uiMask4) & 0b11111111'11111000);
+	return (std::min)(iRes, (std::min)(iRes2, (std::min)(iRes3, iRes4)));
 }
 
 template<CHexDlgSearch::SEARCHTYPE stType>
@@ -2068,6 +2116,83 @@ auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRES
 					if (const auto iRes = MemCmpVecNEQByte2(
 						reinterpret_cast<const __m128i*>(spnData.data() + ullOffsetData),
 						*reinterpret_cast<const std::uint16_t*>(pDataSearch));
+						iRes < sizeof(__m128i)) {
+						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
+					}
+				}
+			}
+			else {
+				for (auto i = 0; i <= ullChunkMaxOffset - ullOffsetData; ++i) {
+					if (MemCmp<stType>(spnData.data() + ullOffsetData + i, pDataSearch, 0) == !fInverted) {
+						return { ullOffsetSearch + ullOffsetData + i, true, false };
+					}
+				}
+			}
+
+			if constexpr (stType.fDlgClbck) {
+				if (pDlgClbk->IsCanceled()) {
+					return { { }, false, true };
+				}
+				pDlgClbk->SetProgress(ullOffsetSearch + ullOffsetData);
+			}
+		}
+
+		if (fBigStep) [[unlikely]] {
+			if ((ullOffsetSearch + ullStep) > ullEnd)
+				break; //Upper bound reached.
+
+			ullOffsetSearch += ullStep;
+			}
+		else {
+			ullOffsetSearch += ullChunkMaxOffset;
+		}
+
+		if (ullOffsetSearch + ullMemToAcquire > ullOffsetSentinel) {
+			ullMemToAcquire = ullOffsetSentinel - ullOffsetSearch;
+			ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
+		}
+	}
+
+	return { };
+}
+
+template<CHexDlgSearch::SEARCHTYPE stType>
+auto CHexDlgSearch::SearchFuncFwdByte4(const SEARCHFUNCDATA& refSearch)->FINDRESULT
+{
+	//Members locality is important for the best performance of the tight search loop below.
+	const auto ullOffsetSentinel = refSearch.ullRngEnd + 1;
+	const auto ullStep = refSearch.ullStep;
+	const auto pHexCtrl = refSearch.pHexCtrl;
+	const auto pDlgClbk = refSearch.pDlgClbk;
+	const auto pDataSearch = refSearch.spnFind.data();
+	const auto nSizeSearch = refSearch.spnFind.size();
+	const auto ullEnd = ullOffsetSentinel - nSizeSearch;
+	const auto fBigStep = refSearch.fBigStep;
+	const auto fInverted = refSearch.fInverted;
+	const auto ullMemChunks = refSearch.ullMemChunks;
+	auto ullMemToAcquire = refSearch.ullMemToAcquire;
+	auto ullChunkMaxOffset = refSearch.ullChunkMaxOffset;
+	auto ullOffsetSearch = refSearch.ullStartFrom;
+
+	for (auto itChunk = 0ULL; itChunk < ullMemChunks; ++itChunk) {
+		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
+		assert(!spnData.empty());
+
+		//Next cycle offset is "sizeof(__m128i) - 3", to get the data that crosses the vector.
+		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += (sizeof(__m128i) - 3)) {
+			if ((ullOffsetData + sizeof(__m128i)) <= ullChunkMaxOffset) {
+				if constexpr (!stType.fInverted) { //SIMD forward not inverted.
+					if (const auto iRes = MemCmpVecEQByte4(
+						reinterpret_cast<const __m128i*>(spnData.data() + ullOffsetData),
+						*reinterpret_cast<const std::uint32_t*>(pDataSearch));
+						iRes < sizeof(__m128i)) {
+						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
+					}
+				}
+				else if constexpr (stType.fInverted) { //SIMD forward inverted.
+					if (const auto iRes = MemCmpVecNEQByte4(
+						reinterpret_cast<const __m128i*>(spnData.data() + ullOffsetData),
+						*reinterpret_cast<const std::uint32_t*>(pDataSearch));
 						iRes < sizeof(__m128i)) {
 						return { ullOffsetSearch + ullOffsetData + iRes, true, false };
 					}

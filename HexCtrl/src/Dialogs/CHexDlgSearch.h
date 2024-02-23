@@ -131,16 +131,21 @@ namespace HEXCTRL::INTERNAL {
 		};
 		template<SEARCHTYPE stType>
 		[[nodiscard]] static auto __forceinline MemCmp(const std::byte* pWhere, const std::byte* pWhat, std::size_t nSize)->bool;
+		//Vector functions return index in vector of found element. Index greater than 15 means not found.
 		[[nodiscard]] static auto __forceinline MemCmpVecEQByte1(const __m128i* pWhere, std::byte bWhat)->int;
 		[[nodiscard]] static auto __forceinline MemCmpVecNEQByte1(const __m128i* pWhere, std::byte bWhat)->int;
 		[[nodiscard]] static auto __forceinline MemCmpVecEQByte2(const __m128i* pWhere, std::uint16_t ui16What)->int;
 		[[nodiscard]] static auto __forceinline MemCmpVecNEQByte2(const __m128i* pWhere, std::uint16_t ui16What)->int;
+		[[nodiscard]] static auto __forceinline MemCmpVecEQByte4(const __m128i* pWhere, std::uint32_t ui32What)->int;
+		[[nodiscard]] static auto __forceinline MemCmpVecNEQByte4(const __m128i* pWhere, std::uint32_t ui32What)->int;
 		template<SEARCHTYPE stType>
 		[[nodiscard]] static auto SearchFuncFwd(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 		template<SEARCHTYPE stType>
 		[[nodiscard]] static auto SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 		template<SEARCHTYPE stType>
 		[[nodiscard]] static auto SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
+		template<SEARCHTYPE stType>
+		[[nodiscard]] static auto SearchFuncFwdByte4(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 		template<SEARCHTYPE stType>
 		[[nodiscard]] static auto SearchFuncBack(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 	private:

@@ -1439,7 +1439,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		constexpr auto lmbOperSIMD = [](std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte) {
 			assert(pData != nullptr);
 
-			constexpr auto lmbOperSIMDInt8 = [](std::int8_t* pi8Data, const HEXMODIFY & hms) {
+			constexpr auto lmbOperSIMDInt8 = [](std::int8_t* pi8Data, const HEXMODIFY& hms) {
 				const auto m128iData = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi8Data));
 				alignas(16) std::int8_t i8Data[16];
 				_mm_store_si128(reinterpret_cast<__m128i*>(i8Data), m128iData);
@@ -1555,7 +1555,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pi8Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDUInt8 = [](std::uint8_t* pui8Data, const HEXMODIFY & hms) {
+			constexpr auto lmbOperSIMDUInt8 = [](std::uint8_t* pui8Data, const HEXMODIFY& hms) {
 				const auto m128iData = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui8Data));
 				alignas(16) std::uint8_t ui8Data[16];
 				_mm_store_si128(reinterpret_cast<__m128i*>(ui8Data), m128iData);
@@ -1652,7 +1652,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pui8Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDInt16 = [](std::int16_t* pi16Data, const HEXMODIFY & hms) {
+			constexpr auto lmbOperSIMDInt16 = [](std::int16_t* pi16Data, const HEXMODIFY& hms) {
 				const auto m128iData = hms.fBigEndian ?
 					ByteSwapSIMD<std::int16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi16Data)))
 					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi16Data));
@@ -1749,7 +1749,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pi16Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDUInt16 = [](std::uint16_t* pui16Data, const HEXMODIFY & hms) {
+			constexpr auto lmbOperSIMDUInt16 = [](std::uint16_t* pui16Data, const HEXMODIFY& hms) {
 				const auto m128iData = hms.fBigEndian ?
 					ByteSwapSIMD<std::uint16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui16Data)))
 					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui16Data));
@@ -1839,7 +1839,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pui16Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDInt32 = [](std::int32_t* pi32Data, const HEXMODIFY & hms) {
+			constexpr auto lmbOperSIMDInt32 = [](std::int32_t* pi32Data, const HEXMODIFY& hms) {
 				const auto m128iData = hms.fBigEndian ?
 					ByteSwapSIMD<std::int32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi32Data)))
 					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi32Data));
@@ -1925,7 +1925,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pi32Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDUInt32 = [](std::uint32_t* pui32Data, const HEXMODIFY & hms) {
+			constexpr auto lmbOperSIMDUInt32 = [](std::uint32_t* pui32Data, const HEXMODIFY& hms) {
 				const auto m128iData = hms.fBigEndian ?
 					ByteSwapSIMD<std::uint32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui32Data)))
 					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui32Data));
@@ -2008,7 +2008,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pui32Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDInt64 = [](std::int64_t* pi64Data, const HEXMODIFY & hms) {
+			constexpr auto lmbOperSIMDInt64 = [](std::int64_t* pi64Data, const HEXMODIFY& hms) {
 				const auto m128iData = hms.fBigEndian ?
 					ByteSwapSIMD<std::int64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi64Data)))
 					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi64Data));
@@ -2086,7 +2086,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pi64Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDUInt64 = [](std::uint64_t* pui64Data, const HEXMODIFY & hms) {
+			constexpr auto lmbOperSIMDUInt64 = [](std::uint64_t* pui64Data, const HEXMODIFY& hms) {
 				const auto m128iData = hms.fBigEndian ?
 					ByteSwapSIMD<std::uint64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui64Data)))
 					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui64Data));
@@ -2164,7 +2164,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pui64Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDFloat = [](float* pflData, const HEXMODIFY & hms) {
+			constexpr auto lmbOperSIMDFloat = [](float* pflData, const HEXMODIFY& hms) {
 				const auto m128Data = hms.fBigEndian ? ByteSwapSIMD<float>(_mm_loadu_ps(pflData)) : _mm_loadu_ps(pflData);
 				const auto m128Oper = _mm_set1_ps(*reinterpret_cast<const float*>(hms.spnData.data()));
 				__m128 m128Result { };
@@ -2206,7 +2206,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				_mm_storeu_ps(pflData, m128Result);
 				};
 
-			constexpr auto lmbOperSIMDDouble = [](double* pdblData, const HEXMODIFY & hms) {
+			constexpr auto lmbOperSIMDDouble = [](double* pdblData, const HEXMODIFY& hms) {
 				const auto m128dData = hms.fBigEndian ? ByteSwapSIMD<double>(_mm_loadu_pd(pdblData)) : _mm_loadu_pd(pdblData);
 				const auto m128dOper = _mm_set1_pd(*reinterpret_cast<const double*>(hms.spnData.data()));
 				__m128d m128dResult { };
