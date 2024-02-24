@@ -97,7 +97,7 @@ export namespace HEXCTRL::INTERNAL {
 
 	//Bytes swap inside SIMD types: __m128, __m128i, __m128d.
 	template<TSize1248 TIntegral, TSIMD T>
-	[[nodiscard]] auto ByteSwapSIMD(const T m128T) -> T
+	[[nodiscard]] auto ByteSwapVec(const T m128T) -> T
 	{
 		if constexpr (std::is_same_v<T, __m128i>) { //Integrals.
 			if constexpr (sizeof(TIntegral) == sizeof(std::uint8_t)) { //1 bytes.

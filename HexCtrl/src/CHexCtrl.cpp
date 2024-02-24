@@ -1322,7 +1322,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			return ModifyData(hmsRepeat);
 		}
 
-		constexpr auto lmbOperDefault = [](std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte) {
+		constexpr auto lmbOper = [](std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte) {
 			assert(pData != nullptr);
 
 			constexpr auto lmbOperT = []<typename T>(T * pData, const HEXMODIFY & hms) {
@@ -1436,10 +1436,10 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			}
 			};
 
-		constexpr auto lmbOperSIMD = [](std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte) {
+		constexpr auto lmbOperVec = [](std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte) {
 			assert(pData != nullptr);
 
-			constexpr auto lmbOperSIMDInt8 = [](std::int8_t* pi8Data, const HEXMODIFY& hms) {
+			constexpr auto lmbOperVecInt8 = [](std::int8_t* pi8Data, const HEXMODIFY& hms) {
 				const auto m128iData = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi8Data));
 				alignas(16) std::int8_t i8Data[16];
 				_mm_store_si128(reinterpret_cast<__m128i*>(i8Data), m128iData);
@@ -1555,7 +1555,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pi8Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDUInt8 = [](std::uint8_t* pui8Data, const HEXMODIFY& hms) {
+			constexpr auto lmbOperVecUInt8 = [](std::uint8_t* pui8Data, const HEXMODIFY& hms) {
 				const auto m128iData = _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui8Data));
 				alignas(16) std::uint8_t ui8Data[16];
 				_mm_store_si128(reinterpret_cast<__m128i*>(ui8Data), m128iData);
@@ -1652,9 +1652,9 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pui8Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDInt16 = [](std::int16_t* pi16Data, const HEXMODIFY& hms) {
+			constexpr auto lmbOperVecInt16 = [](std::int16_t* pi16Data, const HEXMODIFY& hms) {
 				const auto m128iData = hms.fBigEndian ?
-					ByteSwapSIMD<std::int16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi16Data)))
+					ByteSwapVec<std::int16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi16Data)))
 					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi16Data));
 				alignas(16) std::int16_t i16Data[8];
 				_mm_store_si128(reinterpret_cast<__m128i*>(i16Data), m128iData);
@@ -1687,7 +1687,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_min_epi16(m128iData, m128iOper);
 					break;
 				case OPER_SWAP:
-					m128iResult = ByteSwapSIMD<std::int16_t>(m128iData);
+					m128iResult = ByteSwapVec<std::int16_t>(m128iData);
 					break;
 				case OPER_OR:
 					m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -1703,14 +1703,10 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
 					break;
 				case OPER_SHL:
-					m128iResult = _mm_setr_epi16(i16Data[0] << i16Oper, i16Data[1] << i16Oper, i16Data[2] << i16Oper,
-						i16Data[3] << i16Oper, i16Data[4] << i16Oper, i16Data[5] << i16Oper, i16Data[6] << i16Oper,
-						i16Data[7] << i16Oper);
+					m128iResult = _mm_slli_epi16(m128iData, i16Oper);
 					break;
 				case OPER_SHR:
-					m128iResult = _mm_setr_epi16(i16Data[0] >> i16Oper, i16Data[1] >> i16Oper, i16Data[2] >> i16Oper,
-						i16Data[3] >> i16Oper, i16Data[4] >> i16Oper, i16Data[5] >> i16Oper, i16Data[6] >> i16Oper,
-						i16Data[7] >> i16Oper);
+					m128iResult = _mm_srai_epi16(m128iData, i16Oper); //Arithmetic shift.
 					break;
 				case OPER_ROTL:
 					m128iResult = _mm_setr_epi16(std::rotl(static_cast<std::uint16_t>(i16Data[0]), i16Oper),
@@ -1743,15 +1739,15 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				}
 
 				if (hms.fBigEndian) { //Swap bytes back.
-					m128iResult = ByteSwapSIMD<std::int16_t>(m128iResult);
+					m128iResult = ByteSwapVec<std::int16_t>(m128iResult);
 				}
 
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pi16Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDUInt16 = [](std::uint16_t* pui16Data, const HEXMODIFY& hms) {
+			constexpr auto lmbOperVecUInt16 = [](std::uint16_t* pui16Data, const HEXMODIFY& hms) {
 				const auto m128iData = hms.fBigEndian ?
-					ByteSwapSIMD<std::uint16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui16Data)))
+					ByteSwapVec<std::uint16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui16Data)))
 					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui16Data));
 				alignas(16) std::uint16_t ui16Data[8];
 				_mm_store_si128(reinterpret_cast<__m128i*>(ui16Data), m128iData);
@@ -1787,7 +1783,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_min_epu16(m128iData, m128iOper);
 					break;
 				case OPER_SWAP:
-					m128iResult = ByteSwapSIMD<std::uint16_t>(m128iData);
+					m128iResult = ByteSwapVec<std::uint16_t>(m128iData);
 					break;
 				case OPER_OR:
 					m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -1803,14 +1799,10 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
 					break;
 				case OPER_SHL:
-					m128iResult = _mm_setr_epi16(ui16Data[0] << ui16Oper, ui16Data[1] << ui16Oper, ui16Data[2] << ui16Oper,
-						ui16Data[3] << ui16Oper, ui16Data[4] << ui16Oper, ui16Data[5] << ui16Oper, ui16Data[6] << ui16Oper,
-						ui16Data[7] << ui16Oper);
+					m128iResult = _mm_slli_epi16(m128iData, ui16Oper);
 					break;
 				case OPER_SHR:
-					m128iResult = _mm_setr_epi16(ui16Data[0] >> ui16Oper, ui16Data[1] >> ui16Oper, ui16Data[2] >> ui16Oper,
-						ui16Data[3] >> ui16Oper, ui16Data[4] >> ui16Oper, ui16Data[5] >> ui16Oper, ui16Data[6] >> ui16Oper,
-						ui16Data[7] >> ui16Oper);
+					m128iResult = _mm_srli_epi16(m128iData, ui16Oper); //Logical shift.
 					break;
 				case OPER_ROTL:
 					m128iResult = _mm_setr_epi16(std::rotl(ui16Data[0], ui16Oper), std::rotl(ui16Data[1], ui16Oper),
@@ -1833,15 +1825,15 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				}
 
 				if (hms.fBigEndian) { //Swap bytes back.
-					m128iResult = ByteSwapSIMD<std::uint16_t>(m128iResult);
+					m128iResult = ByteSwapVec<std::uint16_t>(m128iResult);
 				}
 
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pui16Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDInt32 = [](std::int32_t* pi32Data, const HEXMODIFY& hms) {
+			constexpr auto lmbOperVecInt32 = [](std::int32_t* pi32Data, const HEXMODIFY& hms) {
 				const auto m128iData = hms.fBigEndian ?
-					ByteSwapSIMD<std::int32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi32Data)))
+					ByteSwapVec<std::int32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi32Data)))
 					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi32Data));
 				alignas(16) std::int32_t i32Data[4];
 				_mm_store_si128(reinterpret_cast<__m128i*>(i32Data), m128iData);
@@ -1874,7 +1866,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_min_epi32(m128iData, m128iOper);
 					break;
 				case OPER_SWAP:
-					m128iResult = ByteSwapSIMD<std::int32_t>(m128iData);
+					m128iResult = ByteSwapVec<std::int32_t>(m128iData);
 					break;
 				case OPER_OR:
 					m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -1890,12 +1882,10 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
 					break;
 				case OPER_SHL:
-					m128iResult = _mm_setr_epi32(i32Data[0] << i32Oper, i32Data[1] << i32Oper, i32Data[2] << i32Oper,
-						i32Data[3] << i32Oper);
+					m128iResult = _mm_slli_epi32(m128iData, i32Oper);
 					break;
 				case OPER_SHR:
-					m128iResult = _mm_setr_epi32(i32Data[0] >> i32Oper, i32Data[1] >> i32Oper, i32Data[2] >> i32Oper,
-						i32Data[3] >> i32Oper);
+					m128iResult = _mm_srai_epi32(m128iData, i32Oper); //Arithmetic shift.
 					break;
 				case OPER_ROTL:
 					m128iResult = _mm_setr_epi32(std::rotl(static_cast<std::uint32_t>(i32Data[0]), i32Oper),
@@ -1919,15 +1909,15 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				}
 
 				if (hms.fBigEndian) { //Swap bytes back.
-					m128iResult = ByteSwapSIMD<std::int32_t>(m128iResult);
+					m128iResult = ByteSwapVec<std::int32_t>(m128iResult);
 				}
 
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pi32Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDUInt32 = [](std::uint32_t* pui32Data, const HEXMODIFY& hms) {
+			constexpr auto lmbOperVecUInt32 = [](std::uint32_t* pui32Data, const HEXMODIFY& hms) {
 				const auto m128iData = hms.fBigEndian ?
-					ByteSwapSIMD<std::uint32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui32Data)))
+					ByteSwapVec<std::uint32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui32Data)))
 					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui32Data));
 				alignas(16) std::uint32_t ui32Data[4];
 				_mm_store_si128(reinterpret_cast<__m128i*>(ui32Data), m128iData);
@@ -1961,7 +1951,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_min_epu32(m128iData, m128iOper); //SSE4.1
 					break;
 				case OPER_SWAP:
-					m128iResult = ByteSwapSIMD<std::uint32_t>(m128iData);
+					m128iResult = ByteSwapVec<std::uint32_t>(m128iData);
 					break;
 				case OPER_OR:
 					m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -1977,12 +1967,10 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
 					break;
 				case OPER_SHL:
-					m128iResult = _mm_setr_epi32(ui32Data[0] << ui32Oper, ui32Data[1] << ui32Oper, ui32Data[2] << ui32Oper,
-						ui32Data[3] << ui32Oper);
+					m128iResult = _mm_slli_epi32(m128iData, ui32Oper);
 					break;
 				case OPER_SHR:
-					m128iResult = _mm_setr_epi32(ui32Data[0] >> ui32Oper, ui32Data[1] >> ui32Oper, ui32Data[2] >> ui32Oper,
-						ui32Data[3] >> ui32Oper);
+					m128iResult = _mm_srli_epi32(m128iData, ui32Oper); //Logical shift.
 					break;
 				case OPER_ROTL:
 					m128iResult = _mm_setr_epi32(std::rotl(ui32Data[0], ui32Oper), std::rotl(ui32Data[1], ui32Oper),
@@ -2002,15 +1990,15 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				}
 
 				if (hms.fBigEndian) { //Swap bytes back.
-					m128iResult = ByteSwapSIMD<std::uint32_t>(m128iResult);
+					m128iResult = ByteSwapVec<std::uint32_t>(m128iResult);
 				}
 
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pui32Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDInt64 = [](std::int64_t* pi64Data, const HEXMODIFY& hms) {
+			constexpr auto lmbOperVecInt64 = [](std::int64_t* pi64Data, const HEXMODIFY& hms) {
 				const auto m128iData = hms.fBigEndian ?
-					ByteSwapSIMD<std::int64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi64Data)))
+					ByteSwapVec<std::int64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi64Data)))
 					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi64Data));
 				alignas(16) std::int64_t i64Data[2];
 				_mm_store_si128(reinterpret_cast<__m128i*>(i64Data), m128iData);
@@ -2042,7 +2030,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_set_epi64x((std::min)(i64Data[1], i64Oper), (std::min)(i64Data[0], i64Oper));
 					break;
 				case OPER_SWAP:
-					m128iResult = ByteSwapSIMD<std::int64_t>(m128iData);
+					m128iResult = ByteSwapVec<std::int64_t>(m128iData);
 					break;
 				case OPER_OR:
 					m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -2058,10 +2046,10 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
 					break;
 				case OPER_SHL:
-					m128iResult = _mm_set_epi64x(i64Data[1] << i64Oper, i64Data[0] << i64Oper);
+					m128iResult = _mm_slli_epi64(m128iData, static_cast<int>(i64Oper));
 					break;
 				case OPER_SHR:
-					m128iResult = _mm_set_epi64x(i64Data[1] >> i64Oper, i64Data[0] >> i64Oper);
+					m128iResult = _mm_srai_epi64(m128iData, static_cast<unsigned int>(i64Oper)); //Arithmetic shift.
 					break;
 				case OPER_ROTL:
 					m128iResult = _mm_set_epi64x(std::rotl(static_cast<std::uint64_t>(i64Data[1]), static_cast<const int>(i64Oper)),
@@ -2080,15 +2068,15 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				}
 
 				if (hms.fBigEndian) { //Swap bytes back.
-					m128iResult = ByteSwapSIMD<std::int64_t>(m128iResult);
+					m128iResult = ByteSwapVec<std::int64_t>(m128iResult);
 				}
 
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pi64Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDUInt64 = [](std::uint64_t* pui64Data, const HEXMODIFY& hms) {
+			constexpr auto lmbOperVecUInt64 = [](std::uint64_t* pui64Data, const HEXMODIFY& hms) {
 				const auto m128iData = hms.fBigEndian ?
-					ByteSwapSIMD<std::uint64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui64Data)))
+					ByteSwapVec<std::uint64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui64Data)))
 					: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui64Data));
 				alignas(16) std::uint64_t ui64Data[2];
 				_mm_store_si128(reinterpret_cast<__m128i*>(ui64Data), m128iData);
@@ -2120,7 +2108,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_set_epi64x((std::min)(ui64Data[1], ui64Oper), (std::min)(ui64Data[0], ui64Oper));
 					break;
 				case OPER_SWAP:
-					m128iResult = ByteSwapSIMD<std::uint64_t>(m128iData);
+					m128iResult = ByteSwapVec<std::uint64_t>(m128iData);
 					break;
 				case OPER_OR:
 					m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -2136,10 +2124,10 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_xor_si128(m128iData, _mm_cmpeq_epi64(m128iData, m128iData)); //SSE4.1
 					break;
 				case OPER_SHL:
-					m128iResult = _mm_set_epi64x(ui64Data[1] << ui64Oper, ui64Data[0] << ui64Oper);
+					m128iResult = _mm_slli_epi64(m128iData, static_cast<int>(ui64Oper));
 					break;
 				case OPER_SHR:
-					m128iResult = _mm_set_epi64x(ui64Data[1] >> ui64Oper, ui64Data[0] >> ui64Oper);
+					m128iResult = _mm_srli_epi64(m128iData, static_cast<int>(ui64Oper)); //Logical shift.
 					break;
 				case OPER_ROTL:
 					m128iResult = _mm_set_epi64x(std::rotl(ui64Data[1], static_cast<const int>(ui64Oper)),
@@ -2158,14 +2146,14 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				}
 
 				if (hms.fBigEndian) { //Swap bytes back.
-					m128iResult = ByteSwapSIMD<std::uint64_t>(m128iResult);
+					m128iResult = ByteSwapVec<std::uint64_t>(m128iResult);
 				}
 
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(pui64Data), m128iResult);
 				};
 
-			constexpr auto lmbOperSIMDFloat = [](float* pflData, const HEXMODIFY& hms) {
-				const auto m128Data = hms.fBigEndian ? ByteSwapSIMD<float>(_mm_loadu_ps(pflData)) : _mm_loadu_ps(pflData);
+			constexpr auto lmbOperVecFloat = [](float* pflData, const HEXMODIFY& hms) {
+				const auto m128Data = hms.fBigEndian ? ByteSwapVec<float>(_mm_loadu_ps(pflData)) : _mm_loadu_ps(pflData);
 				const auto m128Oper = _mm_set1_ps(*reinterpret_cast<const float*>(hms.spnData.data()));
 				__m128 m128Result { };
 
@@ -2192,7 +2180,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128Result = _mm_min_ps(m128Data, m128Oper);
 					break;
 				case OPER_SWAP:
-					m128Result = ByteSwapSIMD<float>(m128Data);
+					m128Result = ByteSwapVec<float>(m128Data);
 					break;
 				default:
 					DBG_REPORT(L"Unsupported float operation.");
@@ -2200,14 +2188,14 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				}
 
 				if (hms.fBigEndian) { //Swap bytes back.
-					m128Result = ByteSwapSIMD<float>(m128Result);
+					m128Result = ByteSwapVec<float>(m128Result);
 				}
 
 				_mm_storeu_ps(pflData, m128Result);
 				};
 
-			constexpr auto lmbOperSIMDDouble = [](double* pdblData, const HEXMODIFY& hms) {
-				const auto m128dData = hms.fBigEndian ? ByteSwapSIMD<double>(_mm_loadu_pd(pdblData)) : _mm_loadu_pd(pdblData);
+			constexpr auto lmbOperVecDouble = [](double* pdblData, const HEXMODIFY& hms) {
+				const auto m128dData = hms.fBigEndian ? ByteSwapVec<double>(_mm_loadu_pd(pdblData)) : _mm_loadu_pd(pdblData);
 				const auto m128dOper = _mm_set1_pd(*reinterpret_cast<const double*>(hms.spnData.data()));
 				__m128d m128dResult { };
 
@@ -2234,7 +2222,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128dResult = _mm_min_pd(m128dData, m128dOper);
 					break;
 				case OPER_SWAP:
-					m128dResult = ByteSwapSIMD<double>(m128dData);
+					m128dResult = ByteSwapVec<double>(m128dData);
 					break;
 				default:
 					DBG_REPORT(L"Unsupported double operation.");
@@ -2242,7 +2230,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				}
 
 				if (hms.fBigEndian) { //Swap bytes back.
-					m128dResult = ByteSwapSIMD<double>(m128dResult);
+					m128dResult = ByteSwapVec<double>(m128dResult);
 				}
 
 				_mm_storeu_pd(pdblData, m128dResult);
@@ -2250,34 +2238,34 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 
 			switch (hms.eDataType) {
 			case DATA_INT8:
-				lmbOperSIMDInt8(reinterpret_cast<std::int8_t*>(pData), hms);
+				lmbOperVecInt8(reinterpret_cast<std::int8_t*>(pData), hms);
 				break;
 			case DATA_UINT8:
-				lmbOperSIMDUInt8(reinterpret_cast<std::uint8_t*>(pData), hms);
+				lmbOperVecUInt8(reinterpret_cast<std::uint8_t*>(pData), hms);
 				break;
 			case DATA_INT16:
-				lmbOperSIMDInt16(reinterpret_cast<std::int16_t*>(pData), hms);
+				lmbOperVecInt16(reinterpret_cast<std::int16_t*>(pData), hms);
 				break;
 			case DATA_UINT16:
-				lmbOperSIMDUInt16(reinterpret_cast<std::uint16_t*>(pData), hms);
+				lmbOperVecUInt16(reinterpret_cast<std::uint16_t*>(pData), hms);
 				break;
 			case DATA_INT32:
-				lmbOperSIMDInt32(reinterpret_cast<std::int32_t*>(pData), hms);
+				lmbOperVecInt32(reinterpret_cast<std::int32_t*>(pData), hms);
 				break;
 			case DATA_UINT32:
-				lmbOperSIMDUInt32(reinterpret_cast<std::uint32_t*>(pData), hms);
+				lmbOperVecUInt32(reinterpret_cast<std::uint32_t*>(pData), hms);
 				break;
 			case DATA_INT64:
-				lmbOperSIMDInt64(reinterpret_cast<std::int64_t*>(pData), hms);
+				lmbOperVecInt64(reinterpret_cast<std::int64_t*>(pData), hms);
 				break;
 			case DATA_UINT64:
-				lmbOperSIMDUInt64(reinterpret_cast<std::uint64_t*>(pData), hms);
+				lmbOperVecUInt64(reinterpret_cast<std::uint64_t*>(pData), hms);
 				break;
 			case DATA_FLOAT:
-				lmbOperSIMDFloat(reinterpret_cast<float*>(pData), hms);
+				lmbOperVecFloat(reinterpret_cast<float*>(pData), hms);
 				break;
 			case DATA_DOUBLE:
-				lmbOperSIMDDouble(reinterpret_cast<double*>(pData), hms);
+				lmbOperVecDouble(reinterpret_cast<double*>(pData), hms);
 				break;
 			default:
 				break;
@@ -2285,28 +2273,28 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			};
 
 		//In cases where only one affected data region (hms.vecSpan.size()==1) is used,
-		//and ullSizeToModify > ulSizeSIMD we use SIMD instructions.
-		//At the end we simply fill up the remainder (ullSizeToModify % ulSizeSIMD).
-		constexpr auto ulSizeSIMD { sizeof(__m128i) }; //Size in bytes of the __m128i data structure.
+		//and ullSizeToModify > ulSizeVec we use SIMD instructions.
+		//At the end we simply fill up the remainder (ullSizeToModify % ulSizeVec).
+		constexpr auto ulSizeVec { sizeof(__m128i) }; //Size in bytes of the __m128i data structure.
 		const auto ullOffsetToModify = hms.vecSpan.back().ullOffset;
 		const auto ullSizeToModify = hms.vecSpan.back().ullSize;
 		const auto ullSizeToFillWith = hms.spnData.size();
-		const auto ullSIMDCycles = ullSizeToModify / ulSizeSIMD; //How many times to make SIMD opers.
+		const auto ullSIMDCycles = ullSizeToModify / ulSizeVec; //How many times to make Vector opers.
 
 		if (hms.vecSpan.size() == 1 && ullSIMDCycles > 0) {
-			ModifyWorker(hms, lmbOperSIMD, { static_cast<std::byte*>(nullptr), ulSizeSIMD }); //Worker with SIMD.
+			ModifyWorker(hms, lmbOperVec, { static_cast<std::byte*>(nullptr), ulSizeVec }); //Worker with Vector.
 
-			if (const auto ullRem = ullSizeToModify % ulSizeSIMD; ullRem >= ullSizeToFillWith) { //Remainder of the SIMD.
+			if (const auto ullRem = ullSizeToModify % ulSizeVec; ullRem >= ullSizeToFillWith) { //Remainder of the Vector data.
 				const auto ullOffset = ullOffsetToModify + ullSizeToModify - ullRem;
 				const auto spnData = GetData({ ullOffset, ullRem });
 				for (std::size_t iterRem = 0; iterRem < (ullRem / ullSizeToFillWith); ++iterRem) { //Works only if ullRem >= ullSizeToFillWith.
-					lmbOperDefault(spnData.data() + (iterRem * ullSizeToFillWith), hms, { });
+					lmbOper(spnData.data() + (iterRem * ullSizeToFillWith), hms, { });
 				}
 				SetDataVirtual(spnData, { ullOffset, ullRem - (ullRem % ullSizeToFillWith) });
 			}
 		}
 		else {
-			ModifyWorker(hms, lmbOperDefault, hms.spnData);
+			ModifyWorker(hms, lmbOper, hms.spnData);
 		}
 	}
 	break;
