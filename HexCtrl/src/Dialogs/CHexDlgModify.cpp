@@ -35,6 +35,7 @@ namespace HEXCTRL::INTERNAL {
 		BOOL OnInitDialog()override;
 		void OnOK()override;
 		void SetControlsState();
+		void UpdateDescr();
 		DECLARE_MESSAGE_MAP();
 	private:
 		IHexCtrl* m_pHexCtrl { };
@@ -43,7 +44,7 @@ namespace HEXCTRL::INTERNAL {
 		std::vector<std::byte> m_vecOperData; //Operand data vector.
 		std::uint64_t m_u64DlgData { };
 		using enum EHexOperMode;
-		inline static const std::unordered_map<EHexOperMode, std::wstring_view> m_mapNames {
+		inline static const std::unordered_map<EHexOperMode, std::wstring_view> m_umapNames {
 			{ OPER_ASSIGN, L"Assign" }, { OPER_ADD, L"Add" }, { OPER_SUB, L"Subtract" },
 			{ OPER_MUL, L"Multiply" }, { OPER_DIV, L"Divide" }, { OPER_MIN, L"Minimum" },
 			{ OPER_MAX, L"Maximum" }, { OPER_OR, L"OR" }, { OPER_XOR, L"XOR" }, { OPER_AND, L"AND" },
@@ -216,40 +217,40 @@ BOOL CHexDlgOpers::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	using enum EHexOperMode;
-	auto iIndex = m_comboOper.AddString(m_mapNames.at(OPER_ASSIGN).data());
+	auto iIndex = m_comboOper.AddString(m_umapNames.at(OPER_ASSIGN).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ASSIGN));
 	m_comboOper.SetCurSel(iIndex);
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_ADD).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_ADD).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ADD));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_SUB).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_SUB).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SUB));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_MUL).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_MUL).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MUL));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_DIV).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_DIV).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_DIV));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_MAX).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MAX));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_MIN).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_MIN).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MIN));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_OR).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_MAX).data());
+	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MAX));
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_OR).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_OR));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_XOR).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_XOR).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_XOR));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_AND).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_AND).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_AND));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_NOT).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_NOT).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_NOT));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_SHL).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_SHL).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHL));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_SHR).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_SHR).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHR));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_ROTL).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_ROTL).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTL));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_ROTR).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_ROTR).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTR));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_SWAP).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_SWAP).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SWAP));
-	iIndex = m_comboOper.AddString(m_mapNames.at(OPER_BITREV).data());
+	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_BITREV).data());
 	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_BITREV));
 
 	using enum EHexDataType;
@@ -380,7 +381,94 @@ void CHexDlgOpers::SetControlsState()
 	GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE)->EnableWindow(fDataOneByte ? FALSE : fEditOper);
 	const auto pBtnEnter = GetDlgItem(IDOK);
 	pBtnEnter->EnableWindow(fBtnEnter);
-	pBtnEnter->SetWindowTextW(m_mapNames.at(GetOperMode()).data());
+	pBtnEnter->SetWindowTextW(m_umapNames.at(GetOperMode()).data());
+	UpdateDescr();
+}
+
+void CHexDlgOpers::UpdateDescr()
+{
+	using enum EHexOperMode;
+	using enum EHexDataType;
+	std::wstring_view wsvDescr;
+	switch (GetOperMode()) {
+	case OPER_ASSIGN:
+		wsvDescr = L"Data = Operand";
+		break;
+	case OPER_ADD:
+		wsvDescr = L"Data += Operand";
+		break;
+	case OPER_SUB:
+		wsvDescr = L"Data -= Operand";
+		break;
+	case OPER_MUL:
+		wsvDescr = L"Data *= Operand";
+		break;
+	case OPER_DIV:
+		wsvDescr = L"Data /= Operand";
+		break;
+	case OPER_MIN:
+		wsvDescr = L"Data = max(Data, Operand)";
+		break;
+	case OPER_MAX:
+		wsvDescr = L"Data = min(Data, Operand)";
+		break;
+	case OPER_OR:
+		wsvDescr = L"Data |= Operand";
+		break;
+	case OPER_XOR:
+		wsvDescr = L"Data ^= Operand";
+		break;
+	case OPER_AND:
+		wsvDescr = L"Data &&= Operand";
+		break;
+	case OPER_NOT:
+		wsvDescr = L"Data = ~Data";
+		break;
+	case OPER_SHL:
+		wsvDescr = L"Data <<= Operand\r\n(logical left shift)";
+		break;
+	case OPER_SHR:
+		switch (GetDataType()) {
+		case DATA_INT8:
+		case DATA_INT16:
+		case DATA_INT32:
+		case DATA_INT64:
+			wsvDescr = L"Data >>= Operand\r\n(arithmetical right shift)";
+			break;
+		case DATA_UINT8:
+		case DATA_UINT16:
+		case DATA_UINT32:
+		case DATA_UINT64:
+			wsvDescr = L"Data >>= Operand\r\n(logical right shift)";
+			break;
+		default:
+			break;
+		};
+		break;
+	case OPER_ROTL:
+		wsvDescr = L"Data = std::rotl(Data, Operand)";
+		break;
+	case OPER_ROTR:
+		wsvDescr = L"Data = std::rotr(Data, Operand)";
+		break;
+	case OPER_SWAP:
+		switch (GetDataType()) {
+		case DATA_INT8:
+		case DATA_UINT8:
+			break;
+		default:
+			wsvDescr = L"Data = SwapBytes(Data)\r\n(change endianness)";
+			break;
+		};
+		break;
+	case OPER_BITREV:
+		wsvDescr = L"11000001 -> 10000011";
+		break;
+	default:
+		break;
+	};
+
+	GetDlgItem(IDC_HEXCTRL_OPERS_STATIC_DESCR)->SetWindowTextW(wsvDescr.data());
 }
 
 
@@ -537,7 +625,7 @@ void CHexDlgFillData::OnOK()
 	}
 
 	using enum EHexModifyMode;
-	EHexModifyMode eModifyMode { MODIFY_REPEAT };
+	EHexModifyMode eModifyMode;
 	CStringW cwstrText;
 	m_comboData.GetWindowTextW(cwstrText);
 	switch (eType) {

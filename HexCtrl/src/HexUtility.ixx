@@ -9,7 +9,7 @@ module;
 #include "../dep/StrToNum/StrToNum/StrToNum.h"
 #include "../HexCtrl.h"
 #include <afxwin.h>
-#include <emmintrin.h>
+#include <immintrin.h>
 #include <bit>
 #include <cassert>
 #include <cwctype>
