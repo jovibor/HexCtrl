@@ -179,32 +179,31 @@ void CHexDlgOpers::OnComboOperSelChange()
 		break;
 	}
 
+	if (fShouldHaveFloats != fHasFloats) {
+		m_comboType.SetRedraw(FALSE);
+		if (fShouldHaveFloats) {
+			auto iIndex = m_comboType.AddString(L"Float");
+			m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_FLOAT));
+			iIndex = m_comboType.AddString(L"Double");
+			m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_DOUBLE));
+		}
+		else {
+			const auto iCurrSel = m_comboType.GetCurSel();
+
+			for (auto iIndex = iCurrCount - 1; iIndex >= iIntegralTotal; --iIndex) {
+				m_comboType.DeleteString(iIndex);
+			}
+
+			//When deleting float types, if selection was on one of float types change it to integral.
+			if (iCurrSel > (iIntegralTotal - 1)) {
+				m_comboType.SetCurSel(iIntegralTotal - 1);
+			}
+		}
+		m_comboType.SetRedraw(TRUE);
+		m_comboType.RedrawWindow();
+	}
+
 	SetControlsState();
-
-	if (fShouldHaveFloats == fHasFloats)
-		return;
-
-	m_comboType.SetRedraw(FALSE);
-	if (fShouldHaveFloats) {
-		auto iIndex = m_comboType.AddString(L"Float");
-		m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_FLOAT));
-		iIndex = m_comboType.AddString(L"Double");
-		m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_DOUBLE));
-	}
-	else {
-		const auto iCurrSel = m_comboType.GetCurSel();
-
-		for (auto iIndex = iCurrCount - 1; iIndex >= iIntegralTotal; --iIndex) {
-			m_comboType.DeleteString(iIndex);
-		}
-
-		//When deleting float types, if selection was on one of float types change it to integral.
-		if (iCurrSel > (iIntegralTotal - 1)) {
-			m_comboType.SetCurSel(iIntegralTotal - 1);
-		}
-	}
-	m_comboType.SetRedraw(TRUE);
-	m_comboType.RedrawWindow();
 }
 
 void CHexDlgOpers::OnEditOperChange()
