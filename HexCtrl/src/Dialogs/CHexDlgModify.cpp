@@ -31,6 +31,7 @@ namespace HEXCTRL::INTERNAL {
 		void OnCancel()override;
 		afx_msg void OnComboDataTypeSelChange();
 		afx_msg void OnComboOperSelChange();
+		afx_msg auto OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor) -> HBRUSH;
 		afx_msg void OnEditOperChange();
 		BOOL OnInitDialog()override;
 		void OnOK()override;
@@ -59,6 +60,7 @@ BEGIN_MESSAGE_MAP(CHexDlgOpers, CDialogEx)
 	ON_CBN_SELCHANGE(IDC_HEXCTRL_OPERS_COMBO_DTYPE, &CHexDlgOpers::OnComboDataTypeSelChange)
 	ON_EN_CHANGE(IDC_HEXCTRL_OPERS_EDIT_OPERAND, &CHexDlgOpers::OnEditOperChange)
 	ON_WM_ACTIVATE()
+	ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
 
 void CHexDlgOpers::Create(CWnd* pParent, IHexCtrl* pHexCtrl)
@@ -204,6 +206,17 @@ void CHexDlgOpers::OnComboOperSelChange()
 	}
 
 	SetControlsState();
+}
+
+auto CHexDlgOpers::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)->HBRUSH
+{
+	const auto hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
+
+	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_OPERS_STATIC_DESCR) {
+		pDC->SetTextColor(RGB(0, 0, 200));
+	}
+
+	return hbr;
 }
 
 void CHexDlgOpers::OnEditOperChange()
@@ -424,7 +437,7 @@ void CHexDlgOpers::UpdateDescr()
 		wsvDescr = L"Data = ~Data";
 		break;
 	case OPER_SHL:
-		wsvDescr = L"Data <<= Operand\r\n(logical left shift)";
+		wsvDescr = L"Data <<= Operand\r\n(Logical Left Shift)";
 		break;
 	case OPER_SHR:
 		switch (GetDataType()) {
@@ -432,13 +445,13 @@ void CHexDlgOpers::UpdateDescr()
 		case DATA_INT16:
 		case DATA_INT32:
 		case DATA_INT64:
-			wsvDescr = L"Data >>= Operand\r\n(arithmetical right shift)";
+			wsvDescr = L"Data >>= Operand\r\n(Arithmetical Right Shift)";
 			break;
 		case DATA_UINT8:
 		case DATA_UINT16:
 		case DATA_UINT32:
 		case DATA_UINT64:
-			wsvDescr = L"Data >>= Operand\r\n(logical right shift)";
+			wsvDescr = L"Data >>= Operand\r\n(Logical Right Shift)";
 			break;
 		default:
 			break;
@@ -456,7 +469,7 @@ void CHexDlgOpers::UpdateDescr()
 		case DATA_UINT8:
 			break;
 		default:
-			wsvDescr = L"Data = SwapBytes(Data)\r\n(change endianness)";
+			wsvDescr = L"Data = SwapBytes(Data)\r\n(Change Endianness)";
 			break;
 		};
 		break;
