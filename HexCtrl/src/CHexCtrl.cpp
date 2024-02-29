@@ -5661,8 +5661,10 @@ void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 void CHexCtrl::OnDestroy()
 {
 	//All these cleanups below are important in case when HexCtrl window is destroyed 
-	//but IHexCtrl object itself is still alive. When a window is destroyed, the IHexCtrl object 
-	//is alive unless the IHexCtrl::Destroy() method is called.
+	//but IHexCtrl object itself is still alive.
+	//When the main window is destroyed, the IHexCtrl object is still alive unless the 
+	//IHexCtrl::Destroy() method is called.
+	//All the child dialogs' DestroyWindow will be called automatically.
 
 	ClearData();
 	m_vecHBITMAP.clear();
@@ -5861,7 +5863,7 @@ void CHexCtrl::OnLButtonDblClk(UINT nFlags, CPoint point)
 
 void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 {
-	SetFocus(); //SetFocus is vital to give the proper keyboard input to the window.
+	SetFocus(); //SetFocus is vital to give proper keyboard input to the main HexCtrl window.
 	const auto optHit = HitTest(point);
 	if (!optHit)
 		return;

@@ -924,6 +924,7 @@ void CHexDlgSearch::OnDestroy()
 	m_wstrSearch.clear();
 	m_wstrReplace.clear();
 	m_u64DlgData = { };
+	m_pHexCtrl = nullptr;
 }
 
 BOOL CHexDlgSearch::OnInitDialog()
@@ -1141,6 +1142,9 @@ void CHexDlgSearch::OnSearchModeTEXT()
 
 void CHexDlgSearch::Prepare()
 {
+	if (!IsWindow(m_hWnd))
+		return;
+
 	constexpr auto uSearchSizeLimit { 256U };
 	const auto pHexCtrl = GetHexCtrl();
 	if (!pHexCtrl->IsDataSet())

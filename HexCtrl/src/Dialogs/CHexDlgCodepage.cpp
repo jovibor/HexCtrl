@@ -134,6 +134,7 @@ void CHexDlgCodepage::OnDestroy()
 
 	m_vecCodePage.clear();
 	m_u64DlgData = { };
+	m_pHexCtrl = nullptr;
 }
 
 void CHexDlgCodepage::OnClose()

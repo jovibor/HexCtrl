@@ -47,6 +47,7 @@ BOOL CSampleDialogDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);	 //Set big icon
 	SetIcon(m_hIcon, FALSE); //Set small icon
 	m_editDataSize.SetWindowTextW(L"0x4000");
+	m_chkRW.SetCheck(BST_CHECKED);
 
 	//For Drag'n Drop to work even in elevated mode.
 	//https://helgeklein.com/blog/2010/03/how-to-enable-drag-and-drop-for-an-elevated-mfc-application-on-vistawindows-7/

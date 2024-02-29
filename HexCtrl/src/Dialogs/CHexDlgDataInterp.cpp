@@ -408,6 +408,7 @@ void CHexDlgDataInterp::OnDestroy()
 
 	m_vecGrid.clear();
 	m_u64DlgData = { };
+	m_pHexCtrl = nullptr;
 }
 
 BOOL CHexDlgDataInterp::OnInitDialog()
@@ -674,9 +675,9 @@ bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
 	const auto eSize = pGrid->eSize;
 	auto wstr = std::wstring { wsv };
 	std::erase(wstr, L' ');
-	const auto ui8SizeBits = static_cast<std::uint8_t>(eSize) * 8;
+	const auto uiSizeBits = static_cast<std::uint32_t>(static_cast<std::uint8_t>(eSize) * 8);
 
-	if (wstr.size() != ui8SizeBits || wstr.find_first_not_of(L"01") != std::wstring::npos)
+	if (wstr.size() != uiSizeBits || wstr.find_first_not_of(L"01") != std::wstring::npos)
 		return false;
 
 	using enum EDataSize;

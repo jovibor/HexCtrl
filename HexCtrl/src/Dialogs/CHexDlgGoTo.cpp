@@ -192,8 +192,8 @@ void CHexDlgGoTo::OnClose()
 void CHexDlgGoTo::OnDestroy()
 {
 	CDialogEx::OnDestroy();
-
 	m_u64DlgData = { };
+	m_pHexCtrl = nullptr;
 }
 
 BOOL CHexDlgGoTo::OnInitDialog()

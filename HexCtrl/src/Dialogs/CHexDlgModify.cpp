@@ -32,6 +32,7 @@ namespace HEXCTRL::INTERNAL {
 		afx_msg void OnComboDataTypeSelChange();
 		afx_msg void OnComboOperSelChange();
 		afx_msg auto OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor) -> HBRUSH;
+		afx_msg void OnDestroy();
 		afx_msg void OnEditOperChange();
 		BOOL OnInitDialog()override;
 		void OnOK()override;
@@ -61,6 +62,7 @@ BEGIN_MESSAGE_MAP(CHexDlgOpers, CDialogEx)
 	ON_EN_CHANGE(IDC_HEXCTRL_OPERS_EDIT_OPERAND, &CHexDlgOpers::OnEditOperChange)
 	ON_WM_ACTIVATE()
 	ON_WM_CTLCOLOR()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 void CHexDlgOpers::Create(CWnd* pParent, IHexCtrl* pHexCtrl)
@@ -217,6 +219,14 @@ auto CHexDlgOpers::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)->HBRUSH
 	}
 
 	return hbr;
+}
+
+void CHexDlgOpers::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+	m_u64DlgData = { };
+	m_pHexCtrl = nullptr;
+	m_vecOperData.clear();
 }
 
 void CHexDlgOpers::OnEditOperChange()
@@ -498,6 +508,7 @@ namespace HEXCTRL::INTERNAL {
 		void OnCancel()override;
 		afx_msg void OnComboDataEditChange();
 		afx_msg void OnComboTypeSelChange();
+		afx_msg void OnDestroy();
 		BOOL OnInitDialog()override;
 		void OnOK()override;
 		void SetControlsState();
@@ -519,6 +530,7 @@ BEGIN_MESSAGE_MAP(CHexDlgFillData, CDialogEx)
 	ON_CBN_SELCHANGE(IDC_HEXCTRL_FILLDATA_COMBO_TYPE, &CHexDlgFillData::OnComboTypeSelChange)
 	ON_CBN_EDITCHANGE(IDC_HEXCTRL_FILLDATA_COMBO_DATA, &CHexDlgFillData::OnComboDataEditChange)
 	ON_WM_ACTIVATE()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 void CHexDlgFillData::Create(CWnd* pParent, IHexCtrl* pHexCtrl)
@@ -581,6 +593,14 @@ void CHexDlgFillData::OnComboDataEditChange()
 void CHexDlgFillData::OnComboTypeSelChange()
 {
 	SetControlsState();
+}
+
+void CHexDlgFillData::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+	m_u64DlgData = { };
+	m_pHexCtrl = nullptr;
+	m_vecFillData.clear();
 }
 
 BOOL CHexDlgFillData::OnInitDialog()
@@ -809,6 +829,7 @@ void CHexDlgModify::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 	m_u64DlgData = { };
+	m_pHexCtrl = nullptr;
 }
 
 BOOL CHexDlgModify::OnInitDialog()
