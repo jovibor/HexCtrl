@@ -15,8 +15,12 @@ import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 
+enum class CHexDlgGoTo::EGoMode : std::uint8_t {
+	MODE_OFFSET, MODE_OFFSETFWD, MODE_OFFSETBACK, MODE_OFFSETEND,
+	MODE_PAGE, MODE_PAGEFWD, MODE_PAGEBACK, MODE_PAGEEND
+};
+
 BEGIN_MESSAGE_MAP(CHexDlgGoTo, CDialogEx)
-	ON_COMMAND_RANGE(IDC_HEXCTRL_GOTO_RAD_ABS, IDC_HEXCTRL_GOTO_RAD_BACKEND, &CHexDlgGoTo::OnRadioRangeAddrType)
 	ON_WM_ACTIVATE()
 	ON_WM_CLOSE()
 	ON_WM_DESTROY()
@@ -49,7 +53,7 @@ void CHexDlgGoTo::Initialize(IHexCtrl* pHexCtrl)
 
 bool CHexDlgGoTo::IsRepeatAvail()const
 {
-	return m_iRepeat != 0;
+	return m_fRepeat;
 }
 
 void CHexDlgGoTo::Repeat(bool fFwd)
@@ -58,45 +62,7 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 		return;
 	}
 
-	const auto* const pHexCtrl = GetHexCtrl();
-	if (fFwd) { //Repeat the last command (forward or backward) as is.
-		switch (m_iRepeat) {
-		case -1:
-			if (m_ullCurrOffset < m_ullData) { //To avoid underflow.
-				return;
-			}
-			m_ullCurrOffset -= m_ullData;
-			break;
-		case 1:
-			if (m_ullCurrOffset + m_ullData >= pHexCtrl->GetDataSize()) { //To avoid overflow.
-				return;
-			}
-			m_ullCurrOffset += m_ullData;
-			break;
-		default:
-			break;
-		}
-	}
-	else { //Repeat opposite of the last command (forward<->backward).
-		switch (m_iRepeat) {
-		case -1:
-			if (m_ullCurrOffset + m_ullData >= pHexCtrl->GetDataSize()) { //To avoid overflow.
-				return;
-			}
-			m_ullCurrOffset += m_ullData;
-			break;
-		case 1:
-			if (m_ullCurrOffset < m_ullData) { //To avoid underflow.
-				return;
-			}
-			m_ullCurrOffset -= m_ullData;
-			break;
-		default:
-			break;
-		}
-	}
-
-	HexCtrlGoOffset(m_ullCurrOffset);
+	GoTo(fFwd);
 }
 
 auto CHexDlgGoTo::SetDlgData(std::uint64_t ullData, bool fCreate)->HWND
@@ -134,6 +100,7 @@ void CHexDlgGoTo::ApplyDlgData()
 void CHexDlgGoTo::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_HEXCTRL_GOTO_COMBO_MODE, m_comboMode);
 }
 
 auto CHexDlgGoTo::GetHexCtrl()const->IHexCtrl*
@@ -141,15 +108,83 @@ auto CHexDlgGoTo::GetHexCtrl()const->IHexCtrl*
 	return m_pHexCtrl;
 }
 
-void CHexDlgGoTo::HexCtrlGoOffset(ULONGLONG ullOffset)
+auto CHexDlgGoTo::GetGoMode()const->EGoMode
 {
+	return static_cast<EGoMode>(m_comboMode.GetItemData(m_comboMode.GetCurSel()));
+}
+
+void CHexDlgGoTo::GoTo(bool fForward)
+{
+	m_fRepeat = false;
 	const auto pHexCtrl = GetHexCtrl();
-	pHexCtrl->SetCaretPos(ullOffset);
-	if (!pHexCtrl->IsOffsetVisible(ullOffset)) {
-		pHexCtrl->GoToOffset(ullOffset);
+
+	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet()) {
+		return;
 	}
 
-	m_ullCurrOffset = ullOffset;
+	const auto pEdit = GetDlgItem(IDC_HEXCTRL_GOTO_EDIT_GOTO);
+	if (pEdit->GetWindowTextLengthW() == 0) {
+		pEdit->SetFocus();
+		return;
+	}
+
+	CStringW cstr;
+	pEdit->GetWindowTextW(cstr);
+	const auto optGoTo = stn::StrToUInt64(cstr.GetString());
+	if (!optGoTo) {
+		pEdit->SetFocus();
+		MessageBoxW(L"Invalid number", L"Error", MB_ICONERROR);
+		return;
+	}
+
+	const auto ullGoTo = *optGoTo;
+	const auto iFwdBack = fForward ? 1 : -1;
+	const auto ullOffsetCurr = pHexCtrl->GetCaretPos();
+	const auto ullDataSize = pHexCtrl->GetDataSize();
+	const auto llPageSize = static_cast<LONGLONG>(pHexCtrl->GetPageSize()); //Cast to signed.
+	const auto ullPageRem = ullDataSize % llPageSize; //Page remaining size.
+	auto ullOffsetResult { 0ULL };
+
+	using enum EGoMode;
+	switch (GetGoMode()) {
+	case MODE_OFFSET:
+		ullOffsetResult = ullGoTo;
+		break;
+	case MODE_OFFSETFWD:
+		ullOffsetResult = ullOffsetCurr + ullGoTo * iFwdBack;
+		break;
+	case MODE_OFFSETBACK:
+		ullOffsetResult = ullOffsetCurr - ullGoTo * iFwdBack;
+		break;
+	case MODE_OFFSETEND:
+		ullOffsetResult = ullDataSize - ullGoTo - 1;
+		break;
+	case MODE_PAGE:
+		ullOffsetResult = ullGoTo * llPageSize;
+		break;
+	case MODE_PAGEFWD:
+		ullOffsetResult = ullOffsetCurr + ullGoTo * llPageSize * iFwdBack;
+		break;
+	case MODE_PAGEBACK:
+		ullOffsetResult = ullOffsetCurr - ullGoTo * llPageSize * iFwdBack;
+		break;
+	case MODE_PAGEEND:
+		ullOffsetResult = ullDataSize - (ullPageRem > 0 ? ullPageRem : llPageSize) - ullGoTo * llPageSize;
+		break;
+	default:
+		break;
+	};
+
+	m_fRepeat = true;
+
+	if (ullOffsetResult >= ullDataSize) { //Overflow.
+		return;
+	}
+
+	pHexCtrl->SetCaretPos(ullOffsetResult);
+	if (!pHexCtrl->IsOffsetVisible(ullOffsetResult)) {
+		pHexCtrl->GoToOffset(ullOffsetResult);
+	}
 }
 
 bool CHexDlgGoTo::IsNoEsc()const
@@ -164,13 +199,7 @@ void CHexDlgGoTo::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 		return;
 
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
-		if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RAD_PAGE)); pRadio) {
-			pRadio->EnableWindow(pHexCtrl->GetPagesCount() > 0);
-		}
-
-		GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_PAGETOTAL)->SetWindowTextW(std::format(L"0x{:X}", pHexCtrl->GetPagesCount()).data());
-		GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_OFFTOTAL)->SetWindowTextW(std::format(L"0x{:X}", pHexCtrl->GetDataSize()).data());
-		OnRadioRangeAddrType(GetCheckedRadioButton(IDC_HEXCTRL_GOTO_RAD_ABS, IDC_HEXCTRL_GOTO_RAD_BACKEND));
+		UpdateComboMode();
 	}
 
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
@@ -194,20 +223,24 @@ void CHexDlgGoTo::OnDestroy()
 	CDialogEx::OnDestroy();
 	m_u64DlgData = { };
 	m_pHexCtrl = nullptr;
+	m_fRepeat = false;
 }
 
 BOOL CHexDlgGoTo::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RAD_OFFSET)); pRadio) {
-		pRadio->SetCheck(BST_CHECKED);
-	}
-
-	if (const auto pRadio = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_GOTO_RAD_ABS)); pRadio) {
-		pRadio->SetCheck(BST_CHECKED);
-	}
-
+	using enum EGoMode;
+	auto iIndex = m_comboMode.AddString(L"Offset");
+	m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSET));
+	m_comboMode.SetCurSel(iIndex);
+	iIndex = m_comboMode.AddString(L"Offset forward from the current");
+	m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETFWD));
+	iIndex = m_comboMode.AddString(L"Offset back from the current");
+	m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETBACK));
+	iIndex = m_comboMode.AddString(L"Offset from the end");
+	m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETEND));
+	UpdateComboMode();
 	ApplyDlgData();
 
 	return TRUE;
@@ -215,125 +248,41 @@ BOOL CHexDlgGoTo::OnInitDialog()
 
 void CHexDlgGoTo::OnOK()
 {
-	const auto* const pHexCtrl = GetHexCtrl();
-	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet()) {
-		return;
-	}
-
-	CStringW cstr;
-	GetDlgItemTextW(IDC_HEXCTRL_GOTO_EDIT_GOTO, cstr);
-	if (cstr.GetLength() == 0) {
-		return;
-	}
-
-	const auto optData = stn::StrToUInt64(cstr.GetString());
-	if (!optData) {
-		MessageBoxW(L"Invalid number format", L"Error", MB_ICONERROR);
-		return;
-	}
-
-	m_ullData = *optData;
-	auto ullRangeFrom { 0ULL };
-	auto ullRangeTo { 0ULL };
-	auto ullMul { 0ULL };
-
-	switch (GetCheckedRadioButton(IDC_HEXCTRL_GOTO_RAD_OFFSET, IDC_HEXCTRL_GOTO_RAD_PAGE)) {
-	case IDC_HEXCTRL_GOTO_RAD_OFFSET:
-		ullRangeFrom = m_ullOffsetsFrom;
-		ullRangeTo = m_ullOffsetsTo;
-		ullMul = 1;
-		break;
-	case IDC_HEXCTRL_GOTO_RAD_PAGE:
-		ullRangeFrom = m_ullPagesFrom;
-		ullRangeTo = m_ullPagesTo;
-		ullMul = pHexCtrl->GetPageSize();
-		break;
-	default:
-		break;
-	}
-
-	if (m_ullData < ullRangeFrom || m_ullData > ullRangeTo || m_ullData == 0) {
-		MessageBoxW(L"Incorrect input range", L"Error", MB_ICONERROR);
-		return;
-	}
-
-	ULONGLONG ullResult { };
-	switch (GetCheckedRadioButton(IDC_HEXCTRL_GOTO_RAD_ABS, IDC_HEXCTRL_GOTO_RAD_BACKEND)) {
-	case IDC_HEXCTRL_GOTO_RAD_ABS:
-		ullResult = m_ullData * ullMul;
-		m_iRepeat = 0;
-		break;
-	case IDC_HEXCTRL_GOTO_RAD_FWDCURR:
-		ullResult = pHexCtrl->GetCaretPos() + (m_ullData * ullMul);
-		m_iRepeat = 1;
-		break;
-	case IDC_HEXCTRL_GOTO_RAD_BACKCURR:
-		ullResult = pHexCtrl->GetCaretPos() - (m_ullData * ullMul);
-		m_iRepeat = -1;
-		break;
-	case IDC_HEXCTRL_GOTO_RAD_BACKEND:
-		ullResult = pHexCtrl->GetDataSize() - (m_ullData * ullMul) - 1;
-		m_iRepeat = 0;
-		break;
-	default:
-		break;
-	}
-
-	HexCtrlGoOffset(ullResult);
-
-	//To renew static text.
-	OnRadioRangeAddrType(GetCheckedRadioButton(IDC_HEXCTRL_GOTO_RAD_ABS, IDC_HEXCTRL_GOTO_RAD_BACKEND));
+	GoTo(true);
 }
 
-void CHexDlgGoTo::OnRadioRangeAddrType(UINT uID)
+void CHexDlgGoTo::UpdateComboMode()
 {
-	const auto* const pHexCtrl = GetHexCtrl();
-	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet()) {
-		return;
-	}
+	constexpr auto iOffsetsTotal = 4; //Total amount of Offset's modes.
+	auto iCurrCount = m_comboMode.GetCount();
+	const auto fHasPages = iCurrCount > iOffsetsTotal;
+	auto fShouldHavePages = GetHexCtrl()->GetPageSize() > 0;
+	using enum EGoMode;
 
-	switch (uID) {
-	case IDC_HEXCTRL_GOTO_RAD_ABS:
-		m_ullOffsetsFrom = 0ULL;
-		m_ullOffsetsTo = pHexCtrl->GetDataSize() - 1;
-		m_ullPagesFrom = 0;
-		m_ullPagesTo = pHexCtrl->GetPagesCount() > 0 ? pHexCtrl->GetPagesCount() - 1 : 0ULL;
-		break;
-	case IDC_HEXCTRL_GOTO_RAD_FWDCURR:
-		m_ullOffsetsFrom = (pHexCtrl->GetDataSize() - pHexCtrl->GetCaretPos() - 1) == 0 ? 0ULL : 1ULL;
-		m_ullOffsetsTo = pHexCtrl->GetDataSize() - pHexCtrl->GetCaretPos() - 1;
-
-		if (pHexCtrl->GetPagesCount() > 0) {
-			m_ullPagesFrom = (pHexCtrl->GetPagesCount() - pHexCtrl->GetPagePos() - 1) == 0 ? 0ULL : 1ULL;
-			m_ullPagesTo = pHexCtrl->GetPagesCount() - pHexCtrl->GetPagePos() - 1;
+	if (fShouldHavePages != fHasPages) {
+		m_comboMode.SetRedraw(FALSE);
+		if (fShouldHavePages) {
+			auto iIndex = m_comboMode.AddString(L"Page");
+			m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGE));
+			iIndex = m_comboMode.AddString(L"Page forward from the current");
+			m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEFWD));
+			iIndex = m_comboMode.AddString(L"Page back from the current");
+			m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEBACK));
+			iIndex = m_comboMode.AddString(L"Page from the end");
+			m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEEND));
 		}
 		else {
-			m_ullPagesFrom = 0ULL;
-			m_ullPagesTo = 0ULL;
+			const auto iCurrSel = m_comboMode.GetCurSel();
+			for (auto iIndex = iCurrCount - 1; iIndex >= iOffsetsTotal; --iIndex) {
+				m_comboMode.DeleteString(iIndex);
+			}
+
+			if (iCurrSel > (iOffsetsTotal - 1)) {
+				m_comboMode.SetCurSel(iOffsetsTotal - 1);
+				m_fRepeat = false;
+			}
 		}
-		break;
-	case IDC_HEXCTRL_GOTO_RAD_BACKCURR:
-		m_ullOffsetsFrom = pHexCtrl->GetCaretPos() > 0 ? 1ULL : 0ULL;
-		m_ullOffsetsTo = pHexCtrl->GetCaretPos();
-		m_ullPagesFrom = pHexCtrl->GetPagesCount() > 0 ? (pHexCtrl->GetPagePos() > 0 ? 1ULL : 0ULL) : 0ULL;
-		m_ullPagesTo = pHexCtrl->GetPagesCount() > 0 ? pHexCtrl->GetPagePos() : 0ULL;
-		break;
-	case IDC_HEXCTRL_GOTO_RAD_BACKEND:
-		m_ullOffsetsFrom = pHexCtrl->GetDataSize() > 1 ? 1ULL : 0ULL;
-		m_ullOffsetsTo = pHexCtrl->GetDataSize() - 1;
-		m_ullPagesFrom = pHexCtrl->GetPagesCount() > 1 ? 1ULL : 0ULL;
-		m_ullPagesTo = pHexCtrl->GetPagesCount() - 1;
-		break;
-	default:
-		break;
+		m_comboMode.SetRedraw(TRUE);
+		m_comboMode.RedrawWindow();
 	}
-
-	SetRangesText();
-}
-
-void CHexDlgGoTo::SetRangesText()const
-{
-	GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_OFFRANGE)->SetWindowTextW(std::format(L"{}-{:X}", m_ullOffsetsFrom, m_ullOffsetsTo).data());
-	GetDlgItem(IDC_HEXCTRL_GOTO_STATIC_PAGERANGE)->SetWindowTextW(GetHexCtrl()->GetPagesCount() > 0 ?
-		std::format(L"{}-{:X}", m_ullPagesFrom, m_ullPagesTo).data() : L"N/A");
 }
