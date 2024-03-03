@@ -302,20 +302,10 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	return iNewTemplateID;
 }
 
-auto CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND
+void CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData)
 {
 	m_u64DlgData = ullData;
-
-	if (!IsWindow(m_hWnd)) {
-		if (fCreate) {
-			Create(IDD_HEXCTRL_TEMPLMGR, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
-		}
-	}
-	else {
-		ApplyDlgData();
-	}
-
-	return m_hWnd;
+	ApplyDlgData();
 }
 
 void CHexDlgTemplMgr::ShowTooltips(bool fShow)

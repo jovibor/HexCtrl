@@ -29,7 +29,7 @@ namespace HEXCTRL::INTERNAL {
 		void RemoveAll()override;
 		void RemoveByOffset(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID)override;
-		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
+		void SetDlgData(std::uint64_t ullData);
 		void SetVirtual(IHexBookmarks* pVirtBkm);
 		BOOL ShowWindow(int nCmdShow);
 		void SortData(int iColumn, bool fAscending);

@@ -34,17 +34,17 @@ import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 
-extern "C" HEXCTRLAPI HEXCTRL::IHexCtrl * __cdecl HEXCTRL::CreateRawHexCtrl(HINSTANCE hInstClass) {
+HEXCTRLAPI HEXCTRL::IHexCtrlPtr HEXCTRL::CreateHexCtrl(HINSTANCE hInstClass) {
 #if defined(HEXCTRL_MANUAL_MFC_INIT)
 	//MFC initialization, if HexCtrl is used in non MFC project with the "Shared MFC" linking.
 	if (!AfxGetModuleState()->m_lpszCurrentAppName) {
 		AfxWinInit(::GetModuleHandleW(nullptr), nullptr, ::GetCommandLineW(), 0);
 	}
 #endif
-	return new HEXCTRL::INTERNAL::CHexCtrl(hInstClass);
+	return IHexCtrlPtr { new HEXCTRL::INTERNAL::CHexCtrl(hInstClass) };
 }
 
-#if defined(HEXCTRL_MANUAL_MFC_INIT) || defined(HEXCTRL_SHARED_DLL)
+#if defined(HEXCTRL_SHARED_DLL) || defined(HEXCTRL_MANUAL_MFC_INIT)
 CWinApp theApp; //CWinApp object is vital for manual MFC, and for in-DLL work.
 
 extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg) {
@@ -2752,31 +2752,29 @@ void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 	m_wchDateSepar = wchSepar;
 }
 
-auto CHexCtrl::SetDlgData(EHexWnd eWnd, std::uint64_t ullData, bool fCreate)->HWND
+void CHexCtrl::SetDlgData(EHexWnd eWnd, std::uint64_t ullData)
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return { };
+		return;
 
 	switch (eWnd) {
-	case EHexWnd::WND_MAIN:
-		return m_hWnd;
 	case EHexWnd::DLG_BKMMGR:
-		return m_pDlgBkmMgr->SetDlgData(ullData, fCreate);
+		m_pDlgBkmMgr->SetDlgData(ullData);
 	case EHexWnd::DLG_DATAINTERP:
-		return m_pDlgDataInterp->SetDlgData(ullData, fCreate);
+		m_pDlgDataInterp->SetDlgData(ullData);
 	case EHexWnd::DLG_MODIFY:
-		return m_pDlgModify->SetDlgData(ullData, fCreate);
+		m_pDlgModify->SetDlgData(ullData);
 	case EHexWnd::DLG_SEARCH:
-		return m_pDlgSearch->SetDlgData(ullData, fCreate);
+		m_pDlgSearch->SetDlgData(ullData);
 	case EHexWnd::DLG_CODEPAGE:
-		return m_pDlgCodepage->SetDlgData(ullData, fCreate);
+		m_pDlgCodepage->SetDlgData(ullData);
 	case EHexWnd::DLG_GOTO:
-		return m_pDlgGoTo->SetDlgData(ullData, fCreate);
+		m_pDlgGoTo->SetDlgData(ullData);
 	case EHexWnd::DLG_TEMPLMGR:
-		return m_pDlgTemplMgr->SetDlgData(ullData, fCreate);
+		m_pDlgTemplMgr->SetDlgData(ullData);
 	default:
-		return { };
+		break;
 	}
 }
 

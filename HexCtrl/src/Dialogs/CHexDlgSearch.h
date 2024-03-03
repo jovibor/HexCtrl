@@ -19,7 +19,7 @@ namespace HEXCTRL::INTERNAL {
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
 		void SearchNextPrev(bool fForward);
-		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
+		void SetDlgData(std::uint64_t ullData);
 		BOOL ShowWindow(int nCmdShow);
 	private:
 		enum class ESearchMode : std::uint8_t; //Forward declarations.

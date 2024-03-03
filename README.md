@@ -10,7 +10,6 @@
   * [Classic Approach](#classic-approach)
   * [In Dialog](#in-dialog)
   * [CreateHexCtrl](#createhexctrl)
-  * [CreateRawHexCtrl](#createrawhexctrl)
 * [Setting Data](#setting-data)
 * [Virtual Data Mode](#virtual-data-mode)
 * [Virtual Bookmarks](#virtual-bookmarks)
@@ -228,17 +227,11 @@ But there is another option:
 
 ### [](#)CreateHexCtrl
 ```cpp
-[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstClass = nullptr);
+[[nodiscard]] IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstClass = nullptr);
 ```
-This is the main factory function for creating **HexCtrl** object. The `hInstClass` argument might be additionally provided to set the `HINSTANCE` where **HexCtrl**'s window class will be registered. Its main application is for cases when **HexCtrl** is build as a DLL and used as a custom-control in a dialog.
+This is the main factory function for creating **HexCtrl** object. The `hInstClass` argument might be additionally provided to set the `HINSTANCE` where **HexCtrl**'s window class will be registered, its main application is for cases when **HexCtrl** is build as a DLL and used as a custom-control in a dialog.
 
-### [](#)CreateRawHexCtrl
-```cpp
-extern "C" [[nodiscard]] HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl();
-```
-This is a factory function that creates a raw `IHexCtrl` object, without automatic lifetime management. It's not recommended to use this method directly, but if you do you need to manually call the [`Destroy`](#destroy) method afterwards.
-
-## [](#)Seting Data
+## [](#)Setting Data
 To set a data for the **HexCtrl** the [`SetData`](#setdata) method is used. The code below shows how to construct `HexCtrl` object and display first `0x1FF` bytes of the current app's memory:
 ```cpp
 IHexCtrlPtr myHex { CreateHexCtrl() };
@@ -388,10 +381,10 @@ Creates **HexCtrl** from a **Custom Control** dialog's template. Takes control *
 void Destroy();
 ```
 Destroys the control.  
-You only invoke this method if you use a raw `IHexCtrl` pointer obtained by the call to `CreateRawHexCtrl` function. Otherwise don't use it.
+You only invoke this method if you use a raw `IHexCtrl` pointer, otherwise don't use it.
 
 > [!IMPORTANT]
-You usually don't need to call this method unless you use the **HexCtrl** through a raw pointer obtained by the [`CreateRawHexCtrl`](#createrawhexctrl) factory function. If you use **HexCtrl** in the standard way, through the `IHexCtrlPtr` pointer obtained by the `CreateHexCtrl` function, this method will be called automatically.
+You usually don't need to call this method unless you use the **HexCtrl** through a raw pointer. If you use **HexCtrl** in the standard way, through the `IHexCtrlPtr` pointer obtained by the [`CreateHexCtrl`](#createhexctrl) function, this method will be called automatically.
 
 ### [](#)ExecuteCmd
 ```cpp
@@ -684,9 +677,9 @@ Sets [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/w
 
 ### [](#)SetDlgData
 ```cpp
-auto SetDlgData(EHexWnd eWnd, std::uint64_t ullData, bool fCreate)->HWND;
+void SetDlgData(EHexWnd eWnd, std::uint64_t ullData);
 ```
-Sets the state of the **HexCtrl**'s internal dialogs by setting control-flags. Flags can be combined together with the `|` operation. If `fCreate` flag is `true`, the dialog window will be created first before returning, if it was not already. Returns `HWND` of that dialog.  
+Sets the state of the **HexCtrl**'s internal dialogs by setting control-flags. Flags can be combined together with the `|` operation.  
 Available flags:
 ```cpp
 //Flags common for all dialogs.

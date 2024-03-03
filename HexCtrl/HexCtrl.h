@@ -43,7 +43,6 @@
 #define	HEXCTRLAPI
 #endif //HEXCTRL_SHARED_DLL
 
-
 namespace HEXCTRL {
 	constexpr auto HEXCTRL_VERSION_MAJOR = 3;
 	constexpr auto HEXCTRL_VERSION_MINOR = 6;
@@ -428,7 +427,7 @@ namespace HEXCTRL {
 		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).
 		virtual void SetDateInfo(DWORD dwFormat, wchar_t wchSepar) = 0; //Set date format and date separator.
-		virtual auto SetDlgData(EHexWnd eWnd, std::uint64_t ullData, bool fCreate = true) -> HWND = 0; //Data for the internal dialogs.
+		virtual void SetDlgData(EHexWnd eWnd, std::uint64_t ullData) = 0; //Data for the internal dialogs.
 		virtual void SetFont(const LOGFONTW& lf) = 0;          //Set the control's new font. This font has to be monospaced.
 		virtual void SetGroupSize(DWORD dwSize) = 0;           //Set data grouping size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
@@ -442,39 +441,21 @@ namespace HEXCTRL {
 		virtual void ShowInfoBar(bool fShow) = 0;              //Show/hide bottom Info bar.
 	};
 
-#if defined(HEXCTRL_MANUAL_MFC_INIT) || defined(HEXCTRL_SHARED_DLL)
-	//Because MFC's PreTranslateMessage routine doesn't work in DLLs 
-	//this exported function should be called from an app's main message loop.
-	//Something like this:
-	// BOOL CMyApp::PreTranslateMessage(MSG* pMsg) {
-	//	 if (HexCtrlPreTranslateMessage(pMsg))
-	//	 	return TRUE;
-	//	 return CWinApp::PreTranslateMessage(pMsg);
-	// }
+	struct IHexCtrlDeleter {
+		void operator()(IHexCtrl* p)const { p->Destroy(); }
+	};
+
+	using IHexCtrlPtr = std::unique_ptr<IHexCtrl, IHexCtrlDeleter>;
+	[[nodiscard]] HEXCTRLAPI IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstClass = nullptr);
+
+#if defined(HEXCTRL_SHARED_DLL) || defined(HEXCTRL_MANUAL_MFC_INIT)
 	extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg);
 #endif
 
-	/********************************************************************************************
-	* Factory function CreateHexCtrl returns IHexCtrlUnPtr, a unique_ptr with a custom deleter. *
-	* If you, for some reason, need a raw pointer you can directly call the CreateRawHexCtrl    *
-	* function, which returns IHexCtrl* interface pointer. But in this case you will need to    *
-	* call IHexCtrl::Destroy method	afterwards, to manually delete created raw HexCtrl object.  *
-	* The hInstClass arg is to set the app's HINSTANCE where the HexCtrl's Window class will be *
-	* registered. It's nullptr by default, meaning that the app's default AfxGetInstanceHandle  *
-	* will be used. But if the HexCtrl is built as a DLL, and used as a Custom control in a     *
-	* dialog, then hInstClass of that dialog might be needed to properly RegisterClassExW.      *
-	********************************************************************************************/
-
-	extern "C" [[nodiscard]] HEXCTRLAPI IHexCtrl * __cdecl CreateRawHexCtrl(HINSTANCE hInstClass);
-	using IHexCtrlPtr = std::unique_ptr < IHexCtrl, decltype([](IHexCtrl* p) { p->Destroy(); }) > ;
-	[[nodiscard]] inline IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstClass = nullptr) {
-		return IHexCtrlPtr { CreateRawHexCtrl(hInstClass) };
-	};
-
-	/********************************************************************************************
-	* WM_NOTIFY message codes (NMHDR.code values).                                              *
-	* These codes are used to notify a parent window about HexCtrl's states.                    *
-	********************************************************************************************/
+	/**************************************************************************
+	* WM_NOTIFY message codes (NMHDR.code values).                            *
+	* These codes are used to notify parent window about HexCtrl's states.    *
+	**************************************************************************/
 
 	constexpr auto HEXCTRL_MSG_BKMCLICK { 0x0100U };      //Bookmark is clicked.
 	constexpr auto HEXCTRL_MSG_CONTEXTMENU { 0x0101U };   //OnContextMenu has triggered.

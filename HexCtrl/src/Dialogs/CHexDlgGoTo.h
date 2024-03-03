@@ -15,7 +15,7 @@ namespace HEXCTRL::INTERNAL {
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsRepeatAvail()const;
 		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
-		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
+		void SetDlgData(std::uint64_t ullData);
 		BOOL ShowWindow(int nCmdShow);
 	private:
 		enum class EGoMode : std::uint8_t;

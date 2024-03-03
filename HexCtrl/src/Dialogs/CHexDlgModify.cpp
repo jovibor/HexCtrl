@@ -756,23 +756,12 @@ void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl)
 	m_pHexCtrl = pHexCtrl;
 }
 
-auto CHexDlgModify::SetDlgData(std::uint64_t ullData, bool fCreate)->HWND
+void CHexDlgModify::SetDlgData(std::uint64_t ullData)
 {
 	m_u64DlgData = ullData;
-
-	if (!IsWindow(m_hWnd)) {
-		if (fCreate) {
-			Create(IDD_HEXCTRL_MODIFY, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
-		}
-	}
-	else {
-		ApplyDlgData();
-	}
-
+	ApplyDlgData();
 	m_pDlgOpers->SetDlgData(ullData);
 	m_pDlgFillData->SetDlgData(ullData);
-
-	return m_hWnd;
 }
 
 BOOL CHexDlgModify::ShowWindow(int nCmdShow, int iTab)

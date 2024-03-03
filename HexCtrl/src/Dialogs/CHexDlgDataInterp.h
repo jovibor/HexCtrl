@@ -34,7 +34,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetHglDataSize()const->DWORD;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool HasHighlight()const;
-		auto SetDlgData(std::uint64_t ullData, bool fCreate) -> HWND;
+		void SetDlgData(std::uint64_t ullData);
 		BOOL ShowWindow(int nCmdShow);
 		void UpdateData();
 	private:
