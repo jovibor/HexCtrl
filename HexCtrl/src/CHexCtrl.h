@@ -53,6 +53,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;
 		[[nodiscard]] auto GetDateInfo()const->std::tuple<DWORD, wchar_t> override;
 		[[nodiscard]] auto GetDlgData(EHexWnd eWnd)const->std::uint64_t override;
+		[[nodiscard]] auto GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND override;
 		[[nodiscard]] auto GetFont() -> LOGFONTW override;
 		[[nodiscard]] auto GetGroupSize()const->DWORD override;
 		[[nodiscard]] auto GetMenuHandle()const->HMENU override;

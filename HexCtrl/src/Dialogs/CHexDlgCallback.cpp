@@ -63,7 +63,7 @@ void CHexDlgCallback::OnClose()
 auto CHexDlgCallback::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)->HBRUSH
 {
 	const auto hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
-	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_CALLBACK_STATIC_COUNT) {
+	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_CALLBACK_STAT_COUNT) {
 		pDC->SetTextColor(RGB(0, 200, 0));
 	}
 
@@ -75,8 +75,8 @@ BOOL CHexDlgCallback::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	SetWindowTextW(m_wstrOperName.data());
-	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPER)->SetWindowTextW(m_wstrOperName.data());
-	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_COUNT)->SetWindowTextW(L"");
+	GetDlgItem(IDC_HEXCTRL_CALLBACK_STAT_OPER)->SetWindowTextW(m_wstrOperName.data());
+	GetDlgItem(IDC_HEXCTRL_CALLBACK_STAT_COUNT)->SetWindowTextW(L"");
 	SetTimer(m_uTimerCancelCheck, m_iElapse, nullptr);
 
 	constexpr auto iRange { 1000 };
@@ -124,10 +124,10 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 	else { //More than 1 GB/s.
 		wstrDisplay = std::format(L"{}{:.2f} GB/s", m_wstrOperName, ullSpeedBS / static_cast<float>(uBInGB));
 	}
-	GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_OPER)->SetWindowTextW(wstrDisplay.data());
+	GetDlgItem(IDC_HEXCTRL_CALLBACK_STAT_OPER)->SetWindowTextW(wstrDisplay.data());
 
 	if (m_ullCount > 0) {
-		GetDlgItem(IDC_HEXCTRL_CALLBACK_STATIC_COUNT)->
+		GetDlgItem(IDC_HEXCTRL_CALLBACK_STAT_COUNT)->
 			SetWindowTextW(std::format(m_locale, L"{}{:L}", m_wstrCountName, m_ullCount).data());
 	}
 }

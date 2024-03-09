@@ -81,6 +81,17 @@ namespace HEXCTRL {
 	};
 
 	/********************************************************************************************
+	* EHexDlgItem: HexCtrl's internal dialogs' items.                                           *
+	********************************************************************************************/
+	enum class EHexDlgItem : std::uint8_t {
+		IDC_BKMMGR_CHK_HEX, IDC_DATAINTERP_CHK_HEX, IDC_DATAINTERP_CHK_BE,
+		IDC_TEMPLMGR_CHK_TT, IDC_TEMPLMGR_CHK_HGL, IDC_TEMPLMGR_CHK_HEX, IDC_TEMPLMGR_CHK_SWAP,
+		IDC_SEARCH_COMBO_FIND, IDC_SEARCH_COMBO_REPLACE, IDC_SEARCH_EDIT_START, IDC_SEARCH_EDIT_STEP,
+		IDC_SEARCH_EDIT_RNGBEG, IDC_SEARCH_EDIT_RNGEND, IDC_SEARCH_EDIT_LIMIT,
+		IDC_FILLDATA_COMBO_DATA
+	};
+
+	/********************************************************************************************
 	* HEXSPAN: Data offset and size, used in some data/size related routines.                   *
 	********************************************************************************************/
 	struct HEXSPAN {
@@ -395,6 +406,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual auto GetDateInfo()const->std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
 		[[nodiscard]] virtual auto GetDlgData(EHexWnd eWnd)const->std::uint64_t = 0; //Data from the internal dialogs.
+		[[nodiscard]] virtual auto GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND = 0; //Dialogs' items.
 		[[nodiscard]] virtual auto GetFont() -> LOGFONTW = 0;                //Get current font.
 		[[nodiscard]] virtual auto GetGroupSize()const->DWORD = 0;           //Retrieves current data grouping size.
 		[[nodiscard]] virtual auto GetMenuHandle()const->HMENU = 0;          //Context menu handle.

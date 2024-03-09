@@ -79,7 +79,7 @@ BOOL CHexDlgAbout::OnInitDialog()
 
 	const auto wstrVersion = std::format(L"Hex Control for MFC/Win32: v{}.{}.{}\r\nCopyright © 2018-2024 Jovibor",
 		HEXCTRL_VERSION_MAJOR, HEXCTRL_VERSION_MINOR, HEXCTRL_VERSION_PATCH);
-	GetDlgItem(IDC_HEXCTRL_ABOUT_STATIC_VERSION)->SetWindowTextW(wstrVersion.data());
+	GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_VERSION)->SetWindowTextW(wstrVersion.data());
 
 	auto pDC = GetDC();
 	const auto iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
@@ -746,6 +746,23 @@ auto CHexCtrl::GetDlgData(EHexWnd eWnd)const->std::uint64_t
 	default:
 		return { };
 	}
+}
+
+auto CHexCtrl::GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return { };
+
+	using enum EHexWnd;
+	switch (eWnd) {
+	case DLG_MODIFY:
+		return m_pDlgModify->GetDlgItemHandle(eItem);
+	case DLG_SEARCH:
+		return m_pDlgSearch->GetDlgItemHandle(eItem);
+	default:
+		return { };
+	};
 }
 
 auto CHexCtrl::GetFont()->LOGFONTW
@@ -2956,20 +2973,18 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 	const auto ullOffsetStart = ullStartLine * GetCapacity(); //Offset of the visible data to print.
 	const auto ullDataSize = GetDataSize();
 	auto sSizeDataToPrint = static_cast<std::size_t>(iLines) * GetCapacity(); //Size of the visible data to print.
-
 	if (ullOffsetStart + sSizeDataToPrint > ullDataSize) {
 		sSizeDataToPrint = static_cast<std::size_t>(ullDataSize - ullOffsetStart);
 	}
 
-	const auto spnData = GetData({ ullOffsetStart, sSizeDataToPrint }); //Span data to print.
+	const auto spnData = GetData({ ullOffsetStart, sSizeDataToPrint });
 	assert(!spnData.empty());
 	assert(spnData.size() >= sSizeDataToPrint);
-
 	const auto pDataBegin = reinterpret_cast<unsigned char*>(spnData.data()); //Pointer to data to print.
 	const auto pDataEnd = pDataBegin + sSizeDataToPrint;
 
 	//Hex Bytes to print.
-	std::wstring wstrHex { };
+	std::wstring wstrHex;
 	wstrHex.reserve(sSizeDataToPrint * 2);
 	for (auto iterData = pDataBegin; iterData < pDataEnd; ++iterData) { //Converting bytes to Hexes.
 		wstrHex.push_back(m_pwszHexChars[(*iterData >> 4) & 0x0F]);
@@ -2993,6 +3008,7 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 		MultiByteToWideChar(iCodepage, 0, reinterpret_cast<LPCCH>(pDataBegin),
 			static_cast<int>(sSizeDataToPrint), wstrText.data(), static_cast<int>(sSizeDataToPrint));
 	}
+
 	ReplaceUnprintable(wstrText, iCodepage == -1, true);
 
 	return { std::move(wstrHex), std::move(wstrText) };
@@ -3188,7 +3204,7 @@ void CHexCtrl::ClipboardCopy(EClipboard eType)const
 		return;
 	}
 
-	std::wstring wstrData { };
+	std::wstring wstrData;
 	switch (eType) {
 	case EClipboard::COPY_HEX:
 		wstrData = CopyHex();

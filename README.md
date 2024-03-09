@@ -15,7 +15,7 @@
 * [Virtual Bookmarks](#virtual-bookmarks)
 * [Custom Colors](#custom-colors)
 * [Templates](#templates)
-* [IHexCtrl Methods](#ihexctrl-methods) <details><summary>_Expand_</summary>
+* [Methods](#methods) <details><summary>_Expand_</summary>
   * [ClearData](#cleardata)
   * [Create](#create)
   * [CreateDialogCtrl](#createdialogctrl)
@@ -136,7 +136,7 @@
 * Two working modes: **Memory** and [**Virtual Data Mode**](#virtual-data-mode)
 * Fully-featured **Bookmarks Manager**
 * Fully-featured **Search and Replace**
-* Changeable encoding for the text area
+* Changeable codepage for the text area
 * Many options to **Copy/Paste** to/from clipboard
 * **Undo/Redo**
 * Modify data with **Filling** and many predefined **Operations** options
@@ -355,7 +355,7 @@ The **endianness**, **clrBk** and **clrText** properties that locate at the same
 
 For the available templates check the `Templates` directory.
 
-## [](#)IHexCtrl Methods
+## [](#)Methods
 The **HexCtrl** has plenty of methods that you can use to manage its behavior.
 
 ### [](#)ClearData
@@ -388,7 +388,7 @@ You usually don't need to call this method unless you use the **HexCtrl** throug
 
 ### [](#)ExecuteCmd
 ```cpp
-void ExecuteCmd(EHexCmd enCmd)const;
+void ExecuteCmd(EHexCmd eCmd)const;
 ```
 Executes one of the predefined commands of the [`EHexCmd`](#ehexcmd) enum. All these commands are basically replicating **HexCtrl**'s inner menu.
 
@@ -531,7 +531,7 @@ Returns replacement char for unprintable characters.
 
 ### [](#)GetWndHandle
 ```cpp
-[[nodiscard]] auto GetWndHandle(EHexWnd enWnd, bool fCreate = true)const->HWND;
+[[nodiscard]] auto GetWndHandle(EHexWnd eWnd, bool fCreate = true)const->HWND;
 ```
 Returns `HWND` for **HexCtrl**'s main window or one of its [`internal dialogs`](#ehexwnd). If `fCreate` flag is `true`, the dialog window will be created first before returning, if it was not already.
 
@@ -558,7 +558,7 @@ Hit testing of given point in a screen `fScreen = true`, or client `fScreen = fa
 
 ### [](#)IsCmdAvail
 ```cpp
-[[nodiscard]] bool IsCmdAvail(EHexCmd enCmd)const;
+[[nodiscard]] bool IsCmdAvail(EHexCmd eCmd)const;
 ```
 Returns `true` if the given command can be executed at the moment, `false` otherwise.
 

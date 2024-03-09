@@ -19,6 +19,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetCount() -> ULONGLONG override;
 		[[nodiscard]] auto GetCurrent()const->ULONGLONG;
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		void GoBookmark(ULONGLONG ullIndex);
 		void GoNext();
 		void GoPrev();

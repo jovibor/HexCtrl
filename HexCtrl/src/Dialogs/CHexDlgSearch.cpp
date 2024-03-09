@@ -59,19 +59,19 @@ struct CHexDlgSearch::SEARCHFUNCDATA {
 };
 
 BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
-	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_SEARCH_F, &CHexDlgSearch::OnButtonSearchF)
-	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_SEARCH_B, &CHexDlgSearch::OnButtonSearchB)
+	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_SEARCHF, &CHexDlgSearch::OnButtonSearchF)
+	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_SEARCHB, &CHexDlgSearch::OnButtonSearchB)
 	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_FINDALL, &CHexDlgSearch::OnButtonFindAll)
-	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLACE, &CHexDlgSearch::OnButtonReplace)
-	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL, &CHexDlgSearch::OnButtonReplaceAll)
-	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_CHECK_SEL, &CHexDlgSearch::OnCheckSel)
+	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPL, &CHexDlgSearch::OnButtonReplace)
+	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_BTN_REPLALL, &CHexDlgSearch::OnButtonReplaceAll)
+	ON_BN_CLICKED(IDC_HEXCTRL_SEARCH_CHK_SEL, &CHexDlgSearch::OnCheckSel)
 	ON_CBN_SELCHANGE(IDC_HEXCTRL_SEARCH_COMBO_MODE, &CHexDlgSearch::OnComboModeSelChange)
 	ON_CBN_SELCHANGE(IDC_HEXCTRL_SEARCH_COMBO_TYPE, &CHexDlgSearch::OnComboTypeSelChange)
-	ON_CBN_EDITUPDATE(IDC_HEXCTRL_SEARCH_COMBO_SEARCH, &CHexDlgSearch::SetControlsState)
-	ON_CBN_EDITUPDATE(IDC_HEXCTRL_SEARCH_COMBO_REPLACE, &CHexDlgSearch::SetControlsState)
-	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListGetDispInfo)
-	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListItemChanged)
-	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_SEARCH_LIST_MAIN, &CHexDlgSearch::OnListRClick)
+	ON_CBN_EDITUPDATE(IDC_HEXCTRL_SEARCH_COMBO_FIND, &CHexDlgSearch::SetControlsState)
+	ON_CBN_EDITUPDATE(IDC_HEXCTRL_SEARCH_COMBO_REPL, &CHexDlgSearch::SetControlsState)
+	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_SEARCH_LIST, &CHexDlgSearch::OnListGetDispInfo)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_SEARCH_LIST, &CHexDlgSearch::OnListItemChanged)
+	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_SEARCH_LIST, &CHexDlgSearch::OnListRClick)
 	ON_WM_ACTIVATE()
 	ON_WM_CLOSE()
 	ON_WM_CTLCOLOR()
@@ -91,6 +91,33 @@ auto CHexDlgSearch::GetDlgData()const->std::uint64_t
 	}
 
 	return ullData;
+}
+
+auto CHexDlgSearch::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
+{
+	if (!IsWindow(m_hWnd)) {
+		return { };
+	}
+
+	using enum EHexDlgItem;
+	switch (eItem) {
+	case IDC_SEARCH_COMBO_FIND:
+		return m_comboFind;
+	case IDC_SEARCH_COMBO_REPLACE:
+		return m_comboReplace;
+	case IDC_SEARCH_EDIT_START:
+		return m_editStartFrom;
+	case IDC_SEARCH_EDIT_STEP:
+		return m_editStep;
+	case IDC_SEARCH_EDIT_RNGBEG:
+		return m_editRngBegin;
+	case IDC_SEARCH_EDIT_RNGEND:
+		return m_editRngEnd;
+	case IDC_SEARCH_EDIT_LIMIT:
+		return m_editLimit;
+	default:
+		return { };
+	}
 }
 
 void CHexDlgSearch::Initialize(IHexCtrl* pHexCtrl)
@@ -224,12 +251,12 @@ void CHexDlgSearch::ClearList()
 void CHexDlgSearch::ComboSearchFill(LPCWSTR pwsz)
 {
 	//Insert text into ComboBox only if it's not already there.
-	if (m_comboSearch.FindStringExact(0, pwsz) == CB_ERR) {
+	if (m_comboFind.FindStringExact(0, pwsz) == CB_ERR) {
 		//Keep max 50 strings in list.
-		if (m_comboSearch.GetCount() == 50) {
-			m_comboSearch.DeleteString(49);
+		if (m_comboFind.GetCount() == 50) {
+			m_comboFind.DeleteString(49);
 		}
-		m_comboSearch.InsertString(0, pwsz);
+		m_comboFind.InsertString(0, pwsz);
 	}
 }
 
@@ -260,18 +287,18 @@ auto CHexDlgSearch::CreateSearchData(CHexDlgCallback* pDlgClbk)const->SEARCHFUNC
 void CHexDlgSearch::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_SEL, m_btnSel);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_WILDCARD, m_btnWC);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_INV, m_btnInv);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_BE, m_btnBE);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHECK_MATCHCASE, m_btnMC);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_SEARCH, m_comboSearch);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_REPLACE, m_comboReplace);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHK_SEL, m_btnSel);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHK_WC, m_btnWC);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHK_INV, m_btnInv);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHK_BE, m_btnBE);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_CHK_MC, m_btnMC);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_FIND, m_comboFind);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_REPL, m_comboReplace);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_MODE, m_comboMode);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_COMBO_TYPE, m_comboType);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_START, m_editStartFrom);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_STEP, m_editStep);
-	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_RNGSTART, m_editRngStart);
+	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_RNGBEG, m_editRngBegin);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_RNGEND, m_editRngEnd);
 	DDX_Control(pDX, IDC_HEXCTRL_SEARCH_EDIT_LIMIT, m_editLimit);
 }
@@ -287,7 +314,7 @@ void CHexDlgSearch::FindAll()
 		auto lmbWrapper = [&]()mutable->FINDRESULT {
 			CalcMemChunks(stFuncData);
 			return pSearchFunc(stFuncData);
-			};
+		};
 
 		while (const auto findRes = lmbWrapper()) {
 			m_vecSearchRes.emplace_back(findRes.ullOffset); //Filling the vector of Found occurences.
@@ -306,7 +333,7 @@ void CHexDlgSearch::FindAll()
 			auto lmbWrapper = [&]()mutable->FINDRESULT {
 				CalcMemChunks(stFuncData);
 				return pSearchFunc(stFuncData);
-				};
+			};
 
 			while (const auto findRes = lmbWrapper()) {
 				m_vecSearchRes.emplace_back(findRes.ullOffset); //Filling the vector of Found occurences.
@@ -321,7 +348,7 @@ void CHexDlgSearch::FindAll()
 				m_ullStartFrom = stFuncData.ullStartFrom = ullNext;
 			}
 			dlgClbk.OnCancel();
-			};
+		};
 		std::thread thrd(lmbFindAllThread);
 		dlgClbk.DoModal();
 		thrd.join();
@@ -351,12 +378,12 @@ void CHexDlgSearch::FindForward()
 			const auto lmbWrapper = [&]() {
 				findRes = pSearchFunc(stFuncData);
 				dlgClbk.OnCancel();
-				};
+			};
 			std::thread thrd(lmbWrapper);
 			dlgClbk.DoModal();
 			thrd.join();
 		}
-		};
+	};
 
 	if (lmbFind(); findRes) {
 		m_fSecondMatch = true;
@@ -394,12 +421,12 @@ void CHexDlgSearch::FindBackward()
 			const auto lmbWrapper = [&]() {
 				findRes = pSearchFunc(stFuncData);
 				dlgClbk.OnCancel();
-				};
+			};
 			std::thread thrd(lmbWrapper);
 			dlgClbk.DoModal();
 			thrd.join();
 		}
-		};
+	};
 
 	const auto ullNext = m_ullStartFrom - GetStep();
 	if (m_fSecondMatch && ullNext < m_ullStartFrom && ullNext >= GetRngStart()) {
@@ -447,7 +474,7 @@ auto CHexDlgSearch::GetReplaceDataSize()const->DWORD
 
 auto CHexDlgSearch::GetRngStart()const->ULONGLONG
 {
-	return m_ullRngStart;
+	return m_ullRngBegin;
 }
 
 auto CHexDlgSearch::GetRngEnd()const->ULONGLONG
@@ -457,7 +484,7 @@ auto CHexDlgSearch::GetRngEnd()const->ULONGLONG
 
 auto CHexDlgSearch::GetRngSize()const->ULONGLONG
 {
-	return m_ullRngEnd - m_ullRngStart + 1;
+	return m_ullRngEnd - m_ullRngBegin + 1;
 }
 
 auto CHexDlgSearch::GetSearchDataSize()const->DWORD
@@ -736,7 +763,7 @@ void CHexDlgSearch::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 		return;
 
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
-		m_comboSearch.SetFocus();
+		m_comboFind.SetFocus();
 		SetControlsState();
 	}
 
@@ -794,7 +821,7 @@ void CHexDlgSearch::OnCancel()
 void CHexDlgSearch::OnCheckSel()
 {
 	m_editStartFrom.EnableWindow(!IsSelection());
-	m_editRngStart.EnableWindow(!IsSelection());
+	m_editRngBegin.EnableWindow(!IsSelection());
 	m_editRngEnd.EnableWindow(!IsSelection());
 }
 
@@ -842,7 +869,7 @@ void CHexDlgSearch::OnComboTypeSelChange()
 		m_btnBE.EnableWindow(TRUE);
 		const auto [dwFormat, wchSepar] = GetHexCtrl()->GetDateInfo();
 		const auto wstr = GetDateFormatString(dwFormat, wchSepar);
-		m_comboSearch.SetCueBanner(wstr.data());
+		m_comboFind.SetCueBanner(wstr.data());
 		m_comboReplace.SetCueBanner(wstr.data());
 	}
 	break;
@@ -856,7 +883,7 @@ void CHexDlgSearch::OnComboTypeSelChange()
 		m_btnWC.EnableWindow(FALSE);
 		break;
 	default:
-		m_comboSearch.SetCueBanner(L"");
+		m_comboFind.SetCueBanner(L"");
 		m_comboReplace.SetCueBanner(L"");
 		break;
 	}
@@ -896,7 +923,7 @@ auto CHexDlgSearch::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)->HBRUSH
 {
 	const auto hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
 
-	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_SEARCH_STATIC_RESULT) {
+	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_SEARCH_STAT_RESULT) {
 		pDC->SetTextColor(m_fFound ? RGB(0, 200, 0) : RGB(200, 0, 0));
 	}
 
@@ -923,7 +950,7 @@ BOOL CHexDlgSearch::OnInitDialog()
 
 	static constexpr auto iTextLimit { 512 };
 
-	m_comboSearch.LimitText(iTextLimit);
+	m_comboFind.LimitText(iTextLimit);
 	m_comboReplace.LimitText(iTextLimit);
 
 	auto iIndex = m_comboMode.AddString(L"Hex Bytes");
@@ -936,7 +963,7 @@ BOOL CHexDlgSearch::OnInitDialog()
 	iIndex = m_comboMode.AddString(L"Structs");
 	m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchMode::MODE_STRUCT));
 
-	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_SEARCH_LIST_MAIN, this);
+	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_SEARCH_LIST, this);
 	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 	m_pListMain->InsertColumn(0, L"№", LVCFMT_LEFT, 50);
 	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 455);
@@ -949,7 +976,7 @@ BOOL CHexDlgSearch::OnInitDialog()
 
 	m_editStep.SetWindowTextW(std::format(L"{}", GetStep()).data()); //"Step" edit box text.
 	m_editLimit.SetWindowTextW(std::format(L"{}", m_dwLimit).data()); //"Limit search hits" edit box text.
-	m_editRngStart.SetCueBanner(L"range start");
+	m_editRngBegin.SetCueBanner(L"range begin");
 	m_editRngEnd.SetCueBanner(L"range end");
 
 	const auto hwndTipWC = CreateWindowExW(0, TOOLTIPS_CLASS, nullptr, WS_POPUP | TTS_ALWAYSTIP,
@@ -1143,14 +1170,14 @@ void CHexDlgSearch::Prepare()
 	const auto ullHexDataSize = pHexCtrl->GetDataSize();
 
 	//"Search" text.
-	const auto iSearchSize = m_comboSearch.GetWindowTextLengthW();
+	const auto iSearchSize = m_comboFind.GetWindowTextLengthW();
 	if (iSearchSize == 0 || iSearchSize > uSearchSizeLimit) {
-		m_comboSearch.SetFocus();
+		m_comboFind.SetFocus();
 		return;
 	}
 
 	CStringW wstrSearch;
-	m_comboSearch.GetWindowTextW(wstrSearch);
+	m_comboFind.GetWindowTextW(wstrSearch);
 	if (wstrSearch.Compare(m_wstrSearch.data()) != 0) {
 		ResetSearch();
 		m_wstrSearch = wstrSearch;
@@ -1237,15 +1264,15 @@ void CHexDlgSearch::Prepare()
 	//"Search range start/end" offsets.
 	if (!IsSelection()) { //Do not use "Search range start/end offsets" when in selection.
 		//"Search range start offset".
-		if (m_editRngStart.GetWindowTextLengthW() == 0) {
+		if (m_editRngBegin.GetWindowTextLengthW() == 0) {
 			ullRngStart = 0;
 		}
 		else {
 			CStringW wstrRngStart;
-			m_editRngStart.GetWindowTextW(wstrRngStart);
+			m_editRngBegin.GetWindowTextW(wstrRngStart);
 			const auto optRngStart = stn::StrToUInt64(wstrRngStart.GetString());
 			if (!optRngStart) {
-				m_editRngStart.SetFocus();
+				m_editRngBegin.SetFocus();
 				MessageBoxW(L"Search range start offset is incorrect.", L"Incorrect offset", MB_ICONERROR);
 				return;
 			}
@@ -1379,7 +1406,7 @@ void CHexDlgSearch::Prepare()
 			return;
 	}
 
-	m_ullRngStart = ullRngStart;
+	m_ullRngBegin = ullRngStart;
 	m_ullRngEnd = ullRngEnd;
 	m_ullStartFrom = ullStartFrom;
 	m_ullStep = ullStep;
@@ -1456,7 +1483,7 @@ bool CHexDlgSearch::PrepareNumber()
 {
 	const auto optData = stn::StrToNum<T>(m_wstrSearch);
 	if (!optData) {
-		m_comboSearch.SetFocus();
+		m_comboFind.SetFocus();
 		MessageBoxW(m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
@@ -1532,7 +1559,7 @@ void CHexDlgSearch::ReplaceAll()
 		auto lmbWrapper = [&]()mutable->FINDRESULT {
 			CalcMemChunks(stFuncData);
 			return pSearchFunc(stFuncData);
-			};
+		};
 
 		const auto sSizeRepl = m_vecReplaceData.size();
 		while (const auto findRes = lmbWrapper()) {
@@ -1559,7 +1586,7 @@ void CHexDlgSearch::ReplaceAll()
 			auto lmbWrapper = [&]()mutable->FINDRESULT {
 				CalcMemChunks(stFuncData);
 				return pSearchFunc(stFuncData);
-				};
+			};
 
 			const auto sSizeRepl = m_vecReplaceData.size();
 			while (const auto findRes = lmbWrapper()) {
@@ -1581,7 +1608,7 @@ void CHexDlgSearch::ReplaceAll()
 				m_ullStartFrom = stFuncData.ullStartFrom = ullNext;
 			}
 			dlgClbk.OnCancel();
-			};
+		};
 
 		std::thread thrd(lmbReplaceAllThread);
 		dlgClbk.DoModal();
@@ -1607,7 +1634,7 @@ void CHexDlgSearch::ResetSearch()
 	m_fDoCount = { true };
 	ClearList();
 	GetHexCtrl()->SetSelection({ }, false, true); //Clear selection highlight.
-	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_RESULT)->SetWindowTextW(L"");
+	GetDlgItem(IDC_HEXCTRL_SEARCH_STAT_RESULT)->SetWindowTextW(L"");
 }
 
 void CHexDlgSearch::Search()
@@ -1689,7 +1716,7 @@ void CHexDlgSearch::Search()
 
 		ResetSearch();
 	}
-	GetDlgItem(IDC_HEXCTRL_SEARCH_STATIC_RESULT)->SetWindowTextW(wstrInfo.data());
+	GetDlgItem(IDC_HEXCTRL_SEARCH_STAT_RESULT)->SetWindowTextW(wstrInfo.data());
 
 	if (!m_fSearchNext) {
 		SetForegroundWindow();
@@ -1705,15 +1732,15 @@ void CHexDlgSearch::SetControlsState()
 		return;
 
 	const auto fMutable = pHexCtrl->IsMutable();
-	const auto fSearchEnabled = m_comboSearch.GetWindowTextLengthW() > 0;
+	const auto fSearchEnabled = m_comboFind.GetWindowTextLengthW() > 0;
 	const auto fReplaceEnabled = fMutable && fSearchEnabled && m_comboReplace.GetWindowTextLengthW() > 0;
 
 	m_comboReplace.EnableWindow(fMutable);
-	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCH_F)->EnableWindow(fSearchEnabled);
-	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCH_B)->EnableWindow(fSearchEnabled);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCHF)->EnableWindow(fSearchEnabled);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCHB)->EnableWindow(fSearchEnabled);
 	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_FINDALL)->EnableWindow(fSearchEnabled);
-	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE)->EnableWindow(fReplaceEnabled);
-	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLACE_ALL)->EnableWindow(fReplaceEnabled);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPL)->EnableWindow(fReplaceEnabled);
+	GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLALL)->EnableWindow(fReplaceEnabled);
 }
 
 void CHexDlgSearch::SetEditStartFrom(ULONGLONG ullOffset)
@@ -1985,7 +2012,7 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 				break; //Upper bound reached.
 
 			ullOffsetSearch += ullStep;
-			}
+		}
 		else {
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
@@ -2059,7 +2086,7 @@ auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRES
 				break; //Upper bound reached.
 
 			ullOffsetSearch += ullStep;
-			}
+		}
 		else {
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
@@ -2136,7 +2163,7 @@ auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRES
 				break; //Upper bound reached.
 
 			ullOffsetSearch += ullStep;
-			}
+		}
 		else {
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
@@ -2213,7 +2240,7 @@ auto CHexDlgSearch::SearchFuncFwdByte4(const SEARCHFUNCDATA& refSearch)->FINDRES
 				break; //Upper bound reached.
 
 			ullOffsetSearch += ullStep;
-			}
+		}
 		else {
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
@@ -2326,7 +2353,7 @@ auto CHexDlgSearch::SearchFuncBack(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 				break; //Lower bound reached.
 
 			ullOffsetSearch -= ullChunkMaxOffset;
-			}
+		}
 		else {
 			if ((ullOffsetSearch - ullChunkMaxOffset) < ullEnd || ((ullOffsetSearch - ullChunkMaxOffset) >
 				((std::numeric_limits<ULONGLONG>::max)() - ullChunkMaxOffset))) {

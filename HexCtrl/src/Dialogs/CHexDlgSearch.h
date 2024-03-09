@@ -16,6 +16,7 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgSearch final : public CDialogEx {
 	public:
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
 		void SearchNextPrev(bool fForward);
@@ -156,7 +157,7 @@ namespace HEXCTRL::INTERNAL {
 		std::locale m_locale;
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
 		CMenu m_menuList;                    //Menu for the list control.
-		CComboBox m_comboSearch;             //Combo box "Search".
+		CComboBox m_comboFind;             //Combo box "Search".
 		CComboBox m_comboReplace;            //Combo box "Replace".
 		CComboBox m_comboMode;               //Combo box "Search mode".
 		CComboBox m_comboType;               //Combo box "Search type".
@@ -167,11 +168,11 @@ namespace HEXCTRL::INTERNAL {
 		CButton m_btnMC;                     //Check box "Match case".
 		CEdit m_editStartFrom;               //Edit box "Start from".
 		CEdit m_editStep;                    //Edit box "Step".
-		CEdit m_editRngStart;                //Edit box "Range start".
+		CEdit m_editRngBegin;                //Edit box "Range begin".
 		CEdit m_editRngEnd;                  //Edit box "Range end".
 		CEdit m_editLimit;                   //Edit box "Limit search hits".
 		ULONGLONG m_ullStartFrom { };        //"Start form" search offset.
-		ULONGLONG m_ullRngStart { };
+		ULONGLONG m_ullRngBegin { };
 		ULONGLONG m_ullRngEnd { };
 		ULONGLONG m_ullStep { 1 };           //Search step (default is 1 byte).
 		std::uint64_t m_u64DlgData { };      //Data from SetDlgData.

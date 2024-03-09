@@ -214,7 +214,7 @@ auto CHexDlgOpers::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)->HBRUSH
 {
 	const auto hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
 
-	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_OPERS_STATIC_DESCR) {
+	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_OPERS_STAT_DESCR) {
 		pDC->SetTextColor(RGB(0, 0, 200));
 	}
 
@@ -490,7 +490,7 @@ void CHexDlgOpers::UpdateDescr()
 		break;
 	};
 
-	GetDlgItem(IDC_HEXCTRL_OPERS_STATIC_DESCR)->SetWindowTextW(wsvDescr.data());
+	GetDlgItem(IDC_HEXCTRL_OPERS_STAT_DESCR)->SetWindowTextW(wsvDescr.data());
 }
 
 
@@ -499,6 +499,7 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgFillData final : public CDialogEx {
 	public:
 		void Create(CWnd* pParent, IHexCtrl* pHexCtrl);
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 		void SetDlgData(std::uint64_t ullData);
 	private:
@@ -542,6 +543,17 @@ void CHexDlgFillData::Create(CWnd* pParent, IHexCtrl* pHexCtrl)
 
 	m_pHexCtrl = pHexCtrl;
 	CDialogEx::Create(IDD_HEXCTRL_FILLDATA, pParent);
+}
+
+auto CHexDlgFillData::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
+{
+	using enum EHexDlgItem;
+	switch (eItem) {
+	case IDC_FILLDATA_COMBO_DATA:
+		return m_comboData;
+	default:
+		return { };
+	}
 }
 
 void CHexDlgFillData::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimized*/)
@@ -731,7 +743,9 @@ BEGIN_MESSAGE_MAP(CHexDlgModify, CDialogEx)
 END_MESSAGE_MAP()
 
 CHexDlgModify::CHexDlgModify() : m_pDlgOpers { std::make_unique<CHexDlgOpers>() },
-m_pDlgFillData { std::make_unique<CHexDlgFillData>() } {}
+m_pDlgFillData { std::make_unique<CHexDlgFillData>() }
+{
+}
 
 CHexDlgModify::~CHexDlgModify() = default;
 
@@ -748,6 +762,21 @@ auto CHexDlgModify::GetDlgData()const->std::uint64_t
 	}
 
 	return ullData;
+}
+
+auto CHexDlgModify::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
+{
+	if (!IsWindow(m_hWnd)) {
+		return { };
+	}
+
+	using enum EHexDlgItem;
+	switch (eItem) {
+	case IDC_FILLDATA_COMBO_DATA:
+		return m_pDlgFillData->GetDlgItemHandle(eItem);
+	default:
+		return { };
+	}
 }
 
 void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl)

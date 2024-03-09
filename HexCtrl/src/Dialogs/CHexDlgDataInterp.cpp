@@ -103,6 +103,23 @@ auto CHexDlgDataInterp::GetDlgData()const->std::uint64_t
 	return ullData;
 }
 
+auto CHexDlgDataInterp::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
+{
+	if (!IsWindow(m_hWnd)) {
+		return { };
+	}
+
+	using enum EHexDlgItem;
+	switch (eItem) {
+	case IDC_DATAINTERP_CHK_HEX:
+		return m_btnHex;
+	case IDC_DATAINTERP_CHK_BE:
+		return m_btnBE;
+	default:
+		return { };
+	}
+}
+
 auto CHexDlgDataInterp::GetHglDataSize()const->DWORD
 {
 	return m_dwHglDataSize;

@@ -31,6 +31,7 @@ namespace HEXCTRL::INTERNAL {
 		CHexDlgDataInterp();
 		~CHexDlgDataInterp();
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		[[nodiscard]] auto GetHglDataSize()const->DWORD;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool HasHighlight()const;

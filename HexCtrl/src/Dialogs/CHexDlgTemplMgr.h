@@ -33,6 +33,7 @@ namespace HEXCTRL::INTERNAL {
 		void DisapplyByID(int iAppliedID)override; //Disapply template with the given AppliedID.
 		void DisapplyByOffset(ULONGLONG ullOffset)override;
 		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		[[nodiscard]] bool HasApplied()const;
 		[[nodiscard]] bool HasCurrent()const;
 		[[nodiscard]] bool HasTemplates()const;
