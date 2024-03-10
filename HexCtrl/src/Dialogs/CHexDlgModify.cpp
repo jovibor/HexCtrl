@@ -549,7 +549,7 @@ auto CHexDlgFillData::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
 	using enum EHexDlgItem;
 	switch (eItem) {
-	case IDC_FILLDATA_COMBO_DATA:
+	case FILLDATA_COMBO_DATA:
 		return m_comboData;
 	default:
 		return { };
@@ -749,21 +749,6 @@ m_pDlgFillData { std::make_unique<CHexDlgFillData>() }
 
 CHexDlgModify::~CHexDlgModify() = default;
 
-auto CHexDlgModify::GetDlgData()const->std::uint64_t
-{
-	if (!IsWindow(m_hWnd)) {
-		return { };
-	}
-
-	std::uint64_t ullData { };
-
-	if (IsNoEsc()) {
-		ullData |= HEXCTRL_FLAG_NOESC;
-	}
-
-	return ullData;
-}
-
 auto CHexDlgModify::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
 	if (!IsWindow(m_hWnd)) {
@@ -772,7 +757,7 @@ auto CHexDlgModify::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 
 	using enum EHexDlgItem;
 	switch (eItem) {
-	case IDC_FILLDATA_COMBO_DATA:
+	case FILLDATA_COMBO_DATA:
 		return m_pDlgFillData->GetDlgItemHandle(eItem);
 	default:
 		return { };
@@ -788,7 +773,6 @@ void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl)
 void CHexDlgModify::SetDlgData(std::uint64_t ullData)
 {
 	m_u64DlgData = ullData;
-	ApplyDlgData();
 	m_pDlgOpers->SetDlgData(ullData);
 	m_pDlgFillData->SetDlgData(ullData);
 }
@@ -806,10 +790,6 @@ BOOL CHexDlgModify::ShowWindow(int nCmdShow, int iTab)
 
 
 //CHexDlgModify private methods.
-
-void CHexDlgModify::ApplyDlgData()
-{
-}
 
 void CHexDlgModify::DoDataExchange(CDataExchange* pDX)
 {
@@ -869,8 +849,6 @@ BOOL CHexDlgModify::OnInitDialog()
 	m_pDlgFillData->Create(this, m_pHexCtrl);
 	m_pDlgFillData->SetWindowPos(nullptr, rcTab.left, rcTab.bottom + 1, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_HIDEWINDOW);
 	m_pDlgFillData->OnActivate(WA_ACTIVE, nullptr, 0); //To properly activate "All-Selection" radios on the first launch.
-
-	ApplyDlgData();
 
 	return TRUE;
 }

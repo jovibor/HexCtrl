@@ -45,7 +45,7 @@ BEGIN_MESSAGE_MAP(CHexDlgTemplMgr, CDialogEx)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_TT, &CHexDlgTemplMgr::OnCheckShowTt)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_HEX, &CHexDlgTemplMgr::OnCheckHex)
 	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_SWAP, &CHexDlgTemplMgr::OnCheckSwapEndian)
-	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX, &CHexDlgTemplMgr::OnCheckMinMax)
+	ON_BN_CLICKED(IDC_HEXCTRL_TEMPLMGR_CHK_MIN, &CHexDlgTemplMgr::OnCheckMin)
 	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListGetDispInfo)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListItemChanged)
 	ON_NOTIFY(LISTEX::LISTEX_MSG_EDITBEGIN, IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, &CHexDlgTemplMgr::OnListEditBegin)
@@ -185,41 +185,6 @@ void CHexDlgTemplMgr::DisapplyByOffset(ULONGLONG ullOffset)
 	}
 }
 
-auto CHexDlgTemplMgr::GetDlgData()const->std::uint64_t
-{
-	if (!IsWindow(m_hWnd)) {
-		return { };
-	}
-
-	std::uint64_t ullData { };
-
-	if (IsMinimized()) {
-		ullData |= HEXCTRL_FLAG_TEMPLMGR_MINIMIZED;
-	}
-
-	if (IsShowAsHex()) {
-		ullData |= HEXCTRL_FLAG_TEMPLMGR_HEXNUM;
-	}
-
-	if (IsTooltips()) {
-		ullData |= HEXCTRL_FLAG_TEMPLMGR_SHOWTT;
-	}
-
-	if (IsHglSel()) {
-		ullData |= HEXCTRL_FLAG_TEMPLMGR_HGLSEL;
-	}
-
-	if (IsSwapEndian()) {
-		ullData |= HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN;
-	}
-
-	if (IsNoEsc()) {
-		ullData |= HEXCTRL_FLAG_NOESC;
-	}
-
-	return ullData;
-}
-
 auto CHexDlgTemplMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
 	if (!IsWindow(m_hWnd)) {
@@ -228,13 +193,15 @@ auto CHexDlgTemplMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 
 	using enum EHexDlgItem;
 	switch (eItem) {
-	case IDC_TEMPLMGR_CHK_TT:
+	case TEMPLMGR_CHK_MIN:
+		return m_btnMin;
+	case TEMPLMGR_CHK_TT:
 		return m_btnShowTT;
-	case IDC_TEMPLMGR_CHK_HGL:
+	case TEMPLMGR_CHK_HGL:
 		return m_btnHglSel;
-	case IDC_TEMPLMGR_CHK_HEX:
+	case TEMPLMGR_CHK_HEX:
 		return m_btnHex;
-	case IDC_TEMPLMGR_CHK_SWAP:
+	case TEMPLMGR_CHK_SWAP:
 		return m_btnSwapEndian;
 	default:
 		return { };
@@ -326,7 +293,6 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 void CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData)
 {
 	m_u64DlgData = ullData;
-	ApplyDlgData();
 }
 
 void CHexDlgTemplMgr::ShowTooltips(bool fShow)
@@ -369,43 +335,13 @@ void CHexDlgTemplMgr::UpdateData()
 
 //Private methods.
 
-void CHexDlgTemplMgr::ApplyDlgData()
-{
-	if (!IsWindow(m_hWnd))
-		return;
-
-	if ((m_u64DlgData & HEXCTRL_FLAG_TEMPLMGR_MINIMIZED) > 0 != IsMinimized()) {
-		m_btnMinMax.SetCheck(!IsMinimized());
-		OnCheckMinMax();
-	}
-
-	if ((m_u64DlgData & HEXCTRL_FLAG_TEMPLMGR_HEXNUM) > 0 != IsShowAsHex()) {
-		m_btnHex.SetCheck(!IsShowAsHex());
-		OnCheckHex();
-	}
-
-	if ((m_u64DlgData & HEXCTRL_FLAG_TEMPLMGR_SHOWTT) > 0 != IsTooltips()) {
-		m_btnShowTT.SetCheck(!IsTooltips());
-		OnCheckShowTt();
-	}
-
-	if ((m_u64DlgData & HEXCTRL_FLAG_TEMPLMGR_HGLSEL) > 0 != IsHglSel()) {
-		m_btnHglSel.SetCheck(!IsHglSel());
-	}
-
-	if ((m_u64DlgData & HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN) > 0 != IsSwapEndian()) {
-		m_btnSwapEndian.SetCheck(!IsSwapEndian());
-		OnCheckSwapEndian();
-	}
-}
-
 void CHexDlgTemplMgr::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES, m_comboTemplates);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET, m_editOffset);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_TREE_APPLIED, m_treeApplied);
-	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX, m_btnMinMax);
+	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_MIN, m_btnMin);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_TT, m_btnShowTT);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HGL, m_btnHglSel);
 	DDX_Control(pDX, IDC_HEXCTRL_TEMPLMGR_CHK_HEX, m_btnHex);
@@ -426,7 +362,7 @@ void CHexDlgTemplMgr::EnableDynamicLayoutHelper(bool fEnable)
 		pLayout->Create(this);
 
 		//This is needed for cases when dialog size is so small that tree/list aren't visible.
-		//In such cases when OnCheckMinMax is hit the tree/list are handled/sized wrong.
+		//In such cases when OnCheckMin is hit the tree/list are handled/sized wrong.
 		pLayout->SetMinSize({ 0, m_iDynLayoutMinY });
 
 		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_LIST_APPLIED, CMFCDynamicLayout::MoveNone(),
@@ -435,7 +371,7 @@ void CHexDlgTemplMgr::EnableDynamicLayoutHelper(bool fEnable)
 			CMFCDynamicLayout::SizeVertical(100));
 		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP, CMFCDynamicLayout::MoveNone(),
 			CMFCDynamicLayout::SizeHorizontal(100));
-		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_CHK_MINMAX, CMFCDynamicLayout::MoveHorizontal(100),
+		pLayout->AddItem(IDC_HEXCTRL_TEMPLMGR_CHK_MIN, CMFCDynamicLayout::MoveHorizontal(100),
 			CMFCDynamicLayout::SizeNone());
 	}
 }
@@ -478,7 +414,7 @@ bool CHexDlgTemplMgr::IsHglSel()const
 
 bool CHexDlgTemplMgr::IsMinimized()const
 {
-	return m_btnMinMax.GetCheck() == BST_CHECKED;
+	return m_btnMin.GetCheck() == BST_CHECKED;
 }
 
 bool CHexDlgTemplMgr::IsNoEsc()const
@@ -600,7 +536,7 @@ void CHexDlgTemplMgr::OnCheckShowTt()
 	ShowTooltips(m_btnShowTT.GetCheck() == BST_CHECKED);
 }
 
-void CHexDlgTemplMgr::OnCheckMinMax()
+void CHexDlgTemplMgr::OnCheckMin()
 {
 	static constexpr int arrIDsToHide[] { IDC_HEXCTRL_TEMPLMGR_STAT_AVAIL, IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES,
 		IDC_HEXCTRL_TEMPLMGR_BTN_LOAD, IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD, IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR,
@@ -642,7 +578,7 @@ void CHexDlgTemplMgr::OnCheckMinMax()
 	EndDeferWindowPos(hdwp);
 	EnableDynamicLayoutHelper(true);
 
-	m_btnMinMax.SetBitmap(fMinimize ? m_hBITMAPMax : m_hBITMAPMin); //Set arrow bitmap to the min-max checkbox.
+	m_btnMin.SetBitmap(fMinimize ? m_hBITMAPMax : m_hBITMAPMin); //Set arrow bitmap to the min-max checkbox.
 }
 
 void CHexDlgTemplMgr::OnClose()
@@ -766,7 +702,7 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	}
 
 	CRect rcWnd;
-	m_btnMinMax.GetWindowRect(rcWnd);
+	m_btnMin.GetWindowRect(rcWnd);
 	m_hBITMAPMin = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
 		MAKEINTRESOURCEW(IDB_HEXCTRL_SCROLL_ARROW), IMAGE_BITMAP, rcWnd.Width(), rcWnd.Width(), 0));
 
@@ -786,9 +722,7 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	}
 	m_hBITMAPMax = CreateBitmapIndirect(&stBMP);
 	SetBitmapBits(m_hBITMAPMax, dwBytesBmp, pPixelsOrig.get());
-	m_btnMinMax.SetBitmap(m_hBITMAPMin); //Set the min arrow bitmap to the min-max checkbox.
-
-	ApplyDlgData();
+	m_btnMin.SetBitmap(m_hBITMAPMin); //Set the min arrow bitmap to the min-max checkbox.
 
 	return TRUE;
 }

@@ -13,12 +13,10 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgCodepage final : public CDialogEx {
 	public:
 		void AddCP(std::wstring_view wsv);
-		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void Initialize(IHexCtrl* pHexCtrl);
 		void SetDlgData(std::uint64_t ullData);
 		BOOL ShowWindow(int nCmdShow);
 	private:
-		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard ]] bool IsNoEsc()const;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);

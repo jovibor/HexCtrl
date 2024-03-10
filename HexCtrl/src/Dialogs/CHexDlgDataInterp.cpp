@@ -80,29 +80,6 @@ END_MESSAGE_MAP()
 CHexDlgDataInterp::CHexDlgDataInterp() = default;
 CHexDlgDataInterp::~CHexDlgDataInterp() = default;
 
-auto CHexDlgDataInterp::GetDlgData()const->std::uint64_t
-{
-	if (!IsWindow(m_hWnd)) {
-		return { };
-	}
-
-	std::uint64_t ullData { };
-
-	if (IsShowAsHex()) {
-		ullData |= HEXCTRL_FLAG_DATAINTERP_HEXNUM;
-	}
-
-	if (IsBigEndian()) {
-		ullData |= HEXCTRL_FLAG_DATAINTERP_BE;
-	}
-
-	if (IsNoEsc()) {
-		ullData |= HEXCTRL_FLAG_NOESC;
-	}
-
-	return ullData;
-}
-
 auto CHexDlgDataInterp::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
 	if (!IsWindow(m_hWnd)) {
@@ -111,9 +88,9 @@ auto CHexDlgDataInterp::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 
 	using enum EHexDlgItem;
 	switch (eItem) {
-	case IDC_DATAINTERP_CHK_HEX:
+	case DATAINTERP_CHK_HEX:
 		return m_btnHex;
-	case IDC_DATAINTERP_CHK_BE:
+	case DATAINTERP_CHK_BE:
 		return m_btnBE;
 	default:
 		return { };
@@ -142,7 +119,6 @@ bool CHexDlgDataInterp::HasHighlight()const
 void CHexDlgDataInterp::SetDlgData(std::uint64_t ullData)
 {
 	m_u64DlgData = ullData;
-	ApplyDlgData();
 }
 
 BOOL CHexDlgDataInterp::ShowWindow(int nCmdShow)
@@ -310,22 +286,6 @@ void CHexDlgDataInterp::UpdateData()
 
 
 //Private methods.
-
-void CHexDlgDataInterp::ApplyDlgData()
-{
-	if (!IsWindow(m_hWnd))
-		return;
-
-	if ((m_u64DlgData & HEXCTRL_FLAG_DATAINTERP_HEXNUM) > 0 != IsShowAsHex()) {
-		m_btnHex.SetCheck(!IsShowAsHex());
-		OnCheckHex();
-	}
-
-	if ((m_u64DlgData & HEXCTRL_FLAG_DATAINTERP_BE) > 0 != IsBigEndian()) {
-		m_btnBE.SetCheck(!IsBigEndian());
-		OnCheckBigEndian();
-	}
-}
 
 void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
 {
@@ -509,8 +469,6 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	if (const auto pDL = GetDynamicLayout(); pDL != nullptr) {
 		pDL->SetMinSize({ 0, 0 });
 	}
-
-	ApplyDlgData();
 
 	return TRUE;
 }

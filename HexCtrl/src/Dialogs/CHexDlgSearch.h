@@ -15,7 +15,6 @@ import HEXCTRL.HexUtility;
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgSearch final : public CDialogEx {
 	public:
-		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
@@ -32,7 +31,6 @@ namespace HEXCTRL::INTERNAL {
 		using VecSearchResult = std::vector<ULONGLONG>;
 
 		void AddToList(ULONGLONG ullOffset);
-		void ApplyDlgData();
 		void CalcMemChunks(SEARCHFUNCDATA& refData)const;
 		void ClearComboType();
 		void ClearList();

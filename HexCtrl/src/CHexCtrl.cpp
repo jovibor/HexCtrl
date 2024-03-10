@@ -722,32 +722,6 @@ auto CHexCtrl::GetDateInfo()const->std::tuple<DWORD, wchar_t>
 	return { m_dwDateFormat, m_wchDateSepar };
 }
 
-auto CHexCtrl::GetDlgData(EHexWnd eWnd)const->std::uint64_t
-{
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
-
-	switch (eWnd) {
-	case EHexWnd::DLG_BKMMGR:
-		return m_pDlgBkmMgr->GetDlgData();
-	case EHexWnd::DLG_DATAINTERP:
-		return m_pDlgDataInterp->GetDlgData();
-	case EHexWnd::DLG_MODIFY:
-		return m_pDlgModify->GetDlgData();
-	case EHexWnd::DLG_SEARCH:
-		return m_pDlgSearch->GetDlgData();
-	case EHexWnd::DLG_CODEPAGE:
-		return m_pDlgCodepage->GetDlgData();
-	case EHexWnd::DLG_GOTO:
-		return m_pDlgGoTo->GetDlgData();
-	case EHexWnd::DLG_TEMPLMGR:
-		return m_pDlgTemplMgr->GetDlgData();
-	default:
-		return { };
-	}
-}
-
 auto CHexCtrl::GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND
 {
 	assert(IsCreated());
@@ -2775,27 +2749,28 @@ void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 	m_wchDateSepar = wchSepar;
 }
 
-void CHexCtrl::SetDlgData(EHexWnd eWnd, std::uint64_t ullData)
+void CHexCtrl::SetDlgData(EHexWnd eWnd, std::uint64_t u64Data)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
+	using enum EHexWnd;
 	switch (eWnd) {
-	case EHexWnd::DLG_BKMMGR:
-		m_pDlgBkmMgr->SetDlgData(ullData);
-	case EHexWnd::DLG_DATAINTERP:
-		m_pDlgDataInterp->SetDlgData(ullData);
-	case EHexWnd::DLG_MODIFY:
-		m_pDlgModify->SetDlgData(ullData);
-	case EHexWnd::DLG_SEARCH:
-		m_pDlgSearch->SetDlgData(ullData);
-	case EHexWnd::DLG_CODEPAGE:
-		m_pDlgCodepage->SetDlgData(ullData);
-	case EHexWnd::DLG_GOTO:
-		m_pDlgGoTo->SetDlgData(ullData);
-	case EHexWnd::DLG_TEMPLMGR:
-		m_pDlgTemplMgr->SetDlgData(ullData);
+	case DLG_BKMMGR:
+		m_pDlgBkmMgr->SetDlgData(u64Data);
+	case DLG_DATAINTERP:
+		m_pDlgDataInterp->SetDlgData(u64Data);
+	case DLG_MODIFY:
+		m_pDlgModify->SetDlgData(u64Data);
+	case DLG_SEARCH:
+		m_pDlgSearch->SetDlgData(u64Data);
+	case DLG_CODEPAGE:
+		m_pDlgCodepage->SetDlgData(u64Data);
+	case DLG_GOTO:
+		m_pDlgGoTo->SetDlgData(u64Data);
+	case DLG_TEMPLMGR:
+		m_pDlgTemplMgr->SetDlgData(u64Data);
 	default:
 		break;
 	}

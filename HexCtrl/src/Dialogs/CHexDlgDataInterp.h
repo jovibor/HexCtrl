@@ -30,7 +30,6 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		CHexDlgDataInterp();
 		~CHexDlgDataInterp();
-		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		[[nodiscard]] auto GetHglDataSize()const->DWORD;
 		void Initialize(IHexCtrl* pHexCtrl);
@@ -45,7 +44,6 @@ namespace HEXCTRL::INTERNAL {
 		enum class EName : std::uint8_t;
 		enum class EDataSize : std::uint8_t;
 		struct GRIDDATA;
-		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] auto GetGridData(EName eName)const->const GRIDDATA*;
 		[[nodiscard]] auto GetGridData(EName eName) -> GRIDDATA*; //Non-const overload.

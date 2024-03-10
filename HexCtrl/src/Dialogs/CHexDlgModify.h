@@ -16,13 +16,11 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		CHexDlgModify();
 		~CHexDlgModify();
-		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl);
 		void SetDlgData(std::uint64_t ullData);
 		BOOL ShowWindow(int nCmdShow, int iTab);
 	private:
-		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard ]] bool IsNoEsc()const;
 		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);

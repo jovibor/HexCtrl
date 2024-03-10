@@ -11,7 +11,6 @@
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgGoTo final : public CDialogEx {
 	public:
-		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsRepeatAvail()const;
 		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
@@ -19,7 +18,6 @@ namespace HEXCTRL::INTERNAL {
 		BOOL ShowWindow(int nCmdShow);
 	private:
 		enum class EGoMode : std::uint8_t;
-		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
 		[[nodiscard]] auto GetGoMode()const->EGoMode;

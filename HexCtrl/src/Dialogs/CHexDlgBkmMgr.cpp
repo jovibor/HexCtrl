@@ -43,7 +43,7 @@ auto CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)->ULONGLONG
 		ullID = 1; //Bookmarks' ID starts from 1.
 		if (const auto iter = std::max_element(m_vecBookmarks.begin(), m_vecBookmarks.end(),
 			[](const HEXBKM& ref1, const HEXBKM& ref2) {
-			return ref1.ullID < ref2.ullID; }); iter != m_vecBookmarks.end()) {
+				return ref1.ullID < ref2.ullID; }); iter != m_vecBookmarks.end()) {
 			ullID = iter->ullID + 1; //Increasing next bookmark's ID by 1.
 		}
 		m_vecBookmarks.emplace_back(hbs.vecSpan, hbs.wstrDesc, ullID, hbs.ullData, hbs.stClr);
@@ -95,25 +95,6 @@ auto CHexDlgBkmMgr::GetCurrent()const->ULONGLONG
 	return static_cast<ULONGLONG>(m_llIndexCurr);
 }
 
-auto CHexDlgBkmMgr::GetDlgData()const->std::uint64_t
-{
-	if (!IsWindow(m_hWnd)) {
-		return { };
-	}
-
-	std::uint64_t ullData { };
-
-	if (IsShowAsHex()) {
-		ullData |= HEXCTRL_FLAG_BKMMGR_HEXNUM;
-	}
-
-	if (IsNoEsc()) {
-		ullData |= HEXCTRL_FLAG_NOESC;
-	}
-
-	return ullData;
-}
-
 auto CHexDlgBkmMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
 	if (!IsWindow(m_hWnd)) {
@@ -122,7 +103,7 @@ auto CHexDlgBkmMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 
 	using enum EHexDlgItem;
 	switch (eItem) {
-	case IDC_BKMMGR_CHK_HEX:
+	case BKMMGR_CHK_HEX:
 		return m_btnHex;
 	default:
 		return { };
@@ -195,8 +176,8 @@ auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM
 		if (const auto rIter = std::find_if(m_vecBookmarks.rbegin(), m_vecBookmarks.rend(),
 			[ullOffset](const HEXBKM& ref) { return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPAN& refV) {
-			return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
-			rIter != m_vecBookmarks.rend()) {
+					return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
+					rIter != m_vecBookmarks.rend()) {
 			pBkm = &*rIter;
 		}
 	}
@@ -249,7 +230,7 @@ void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset)
 		if (const auto iter = std::find_if(m_vecBookmarks.rbegin(), m_vecBookmarks.rend(),
 			[ullOffset](const HEXBKM& ref) { return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPAN& refV) {
-			return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
+					return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
 			iter != m_vecBookmarks.rend()) {
 			RemoveBookmark(iter->ullID);
 		}
@@ -283,7 +264,6 @@ void CHexDlgBkmMgr::RemoveByID(ULONGLONG ullID)
 void CHexDlgBkmMgr::SetDlgData(std::uint64_t ullData)
 {
 	m_u64DlgData = ullData;
-	ApplyDlgData();
 }
 
 void CHexDlgBkmMgr::SetVirtual(IHexBookmarks* pVirtBkm)
@@ -309,34 +289,34 @@ void CHexDlgBkmMgr::SortData(int iColumn, bool fAscending)
 	//iColumn is column number in CHexDlgBkmMgr::m_pList.
 	std::sort(m_vecBookmarks.begin(), m_vecBookmarks.end(),
 		[iColumn, fAscending](const HEXBKM& st1, const HEXBKM& st2) {
-		int iCompare { };
-		switch (iColumn) {
-		case 0:
-			break;
-		case 1: //Offset.
-			if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
-				const auto ullOffset1 = st1.vecSpan.front().ullOffset;
-				const auto ullOffset2 = st2.vecSpan.front().ullOffset;
-				iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
+			int iCompare { };
+			switch (iColumn) {
+			case 0:
+				break;
+			case 1: //Offset.
+				if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
+					const auto ullOffset1 = st1.vecSpan.front().ullOffset;
+					const auto ullOffset2 = st2.vecSpan.front().ullOffset;
+					iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
+				}
+				break;
+			case 2: //Size.
+				if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
+					auto ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
+						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+					auto ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
+						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+					iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
+				}
+				break;
+			case 3: //Description.
+				iCompare = st1.wstrDesc.compare(st2.wstrDesc);
+				break;
+			default:
+				break;
 			}
-			break;
-		case 2: //Size.
-			if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
-				auto ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
-					[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
-				auto ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
-					[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
-				iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
-			}
-			break;
-		case 3: //Description.
-			iCompare = st1.wstrDesc.compare(st2.wstrDesc);
-			break;
-		default:
-			break;
-		}
 
-		return fAscending ? iCompare < 0 : iCompare > 0;
+			return fAscending ? iCompare < 0 : iCompare > 0;
 	});
 }
 
@@ -361,17 +341,6 @@ void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm)
 
 
 //Private methods.
-
-void CHexDlgBkmMgr::ApplyDlgData()
-{
-	if (!IsWindow(m_hWnd))
-		return;
-
-	if ((m_u64DlgData & HEXCTRL_FLAG_BKMMGR_HEXNUM) > 0 != IsShowAsHex()) {
-		m_btnHex.SetCheck(!IsShowAsHex());
-		OnCheckHex();
-	}
-}
 
 void CHexDlgBkmMgr::DoDataExchange(CDataExchange* pDX)
 {
@@ -485,8 +454,6 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	if (const auto pDL = GetDynamicLayout(); pDL != nullptr) {
 		pDL->SetMinSize({ 0, 0 });
 	}
-
-	ApplyDlgData();
 
 	return TRUE;
 }

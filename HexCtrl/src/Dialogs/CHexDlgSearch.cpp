@@ -78,21 +78,6 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
-auto CHexDlgSearch::GetDlgData()const->std::uint64_t
-{
-	if (!IsWindow(m_hWnd)) {
-		return { };
-	}
-
-	std::uint64_t ullData { };
-
-	if (IsNoEsc()) {
-		ullData |= HEXCTRL_FLAG_NOESC;
-	}
-
-	return ullData;
-}
-
 auto CHexDlgSearch::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
 	if (!IsWindow(m_hWnd)) {
@@ -101,19 +86,19 @@ auto CHexDlgSearch::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 
 	using enum EHexDlgItem;
 	switch (eItem) {
-	case IDC_SEARCH_COMBO_FIND:
+	case SEARCH_COMBO_FIND:
 		return m_comboFind;
-	case IDC_SEARCH_COMBO_REPLACE:
+	case SEARCH_COMBO_REPLACE:
 		return m_comboReplace;
-	case IDC_SEARCH_EDIT_START:
+	case SEARCH_EDIT_START:
 		return m_editStartFrom;
-	case IDC_SEARCH_EDIT_STEP:
+	case SEARCH_EDIT_STEP:
 		return m_editStep;
-	case IDC_SEARCH_EDIT_RNGBEG:
+	case SEARCH_EDIT_RNGBEG:
 		return m_editRngBegin;
-	case IDC_SEARCH_EDIT_RNGEND:
+	case SEARCH_EDIT_RNGEND:
 		return m_editRngEnd;
-	case IDC_SEARCH_EDIT_LIMIT:
+	case SEARCH_EDIT_LIMIT:
 		return m_editLimit;
 	default:
 		return { };
@@ -146,7 +131,6 @@ void CHexDlgSearch::SearchNextPrev(bool fForward)
 void CHexDlgSearch::SetDlgData(std::uint64_t ullData)
 {
 	m_u64DlgData = ullData;
-	ApplyDlgData();
 }
 
 BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
@@ -181,10 +165,6 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 		m_pListMain->SetItemState(iHighlight, LVIS_SELECTED, LVIS_SELECTED);
 		m_pListMain->EnsureVisible(iHighlight, TRUE);
 	}
-}
-
-void CHexDlgSearch::ApplyDlgData()
-{
 }
 
 void CHexDlgSearch::CalcMemChunks(SEARCHFUNCDATA& refData)const
@@ -314,7 +294,7 @@ void CHexDlgSearch::FindAll()
 		auto lmbWrapper = [&]()mutable->FINDRESULT {
 			CalcMemChunks(stFuncData);
 			return pSearchFunc(stFuncData);
-		};
+			};
 
 		while (const auto findRes = lmbWrapper()) {
 			m_vecSearchRes.emplace_back(findRes.ullOffset); //Filling the vector of Found occurences.
@@ -333,7 +313,7 @@ void CHexDlgSearch::FindAll()
 			auto lmbWrapper = [&]()mutable->FINDRESULT {
 				CalcMemChunks(stFuncData);
 				return pSearchFunc(stFuncData);
-			};
+				};
 
 			while (const auto findRes = lmbWrapper()) {
 				m_vecSearchRes.emplace_back(findRes.ullOffset); //Filling the vector of Found occurences.
@@ -348,7 +328,7 @@ void CHexDlgSearch::FindAll()
 				m_ullStartFrom = stFuncData.ullStartFrom = ullNext;
 			}
 			dlgClbk.OnCancel();
-		};
+			};
 		std::thread thrd(lmbFindAllThread);
 		dlgClbk.DoModal();
 		thrd.join();
@@ -378,12 +358,12 @@ void CHexDlgSearch::FindForward()
 			const auto lmbWrapper = [&]() {
 				findRes = pSearchFunc(stFuncData);
 				dlgClbk.OnCancel();
-			};
+				};
 			std::thread thrd(lmbWrapper);
 			dlgClbk.DoModal();
 			thrd.join();
 		}
-	};
+		};
 
 	if (lmbFind(); findRes) {
 		m_fSecondMatch = true;
@@ -421,12 +401,12 @@ void CHexDlgSearch::FindBackward()
 			const auto lmbWrapper = [&]() {
 				findRes = pSearchFunc(stFuncData);
 				dlgClbk.OnCancel();
-			};
+				};
 			std::thread thrd(lmbWrapper);
 			dlgClbk.DoModal();
 			thrd.join();
 		}
-	};
+		};
 
 	const auto ullNext = m_ullStartFrom - GetStep();
 	if (m_fSecondMatch && ullNext < m_ullStartFrom && ullNext >= GetRngStart()) {
@@ -1019,8 +999,6 @@ BOOL CHexDlgSearch::OnInitDialog()
 
 	m_locale = std::locale("en_US.UTF-8");
 
-	ApplyDlgData();
-
 	return TRUE;
 }
 
@@ -1559,7 +1537,7 @@ void CHexDlgSearch::ReplaceAll()
 		auto lmbWrapper = [&]()mutable->FINDRESULT {
 			CalcMemChunks(stFuncData);
 			return pSearchFunc(stFuncData);
-		};
+			};
 
 		const auto sSizeRepl = m_vecReplaceData.size();
 		while (const auto findRes = lmbWrapper()) {
@@ -1586,7 +1564,7 @@ void CHexDlgSearch::ReplaceAll()
 			auto lmbWrapper = [&]()mutable->FINDRESULT {
 				CalcMemChunks(stFuncData);
 				return pSearchFunc(stFuncData);
-			};
+				};
 
 			const auto sSizeRepl = m_vecReplaceData.size();
 			while (const auto findRes = lmbWrapper()) {
@@ -1608,7 +1586,7 @@ void CHexDlgSearch::ReplaceAll()
 				m_ullStartFrom = stFuncData.ullStartFrom = ullNext;
 			}
 			dlgClbk.OnCancel();
-		};
+			};
 
 		std::thread thrd(lmbReplaceAllThread);
 		dlgClbk.DoModal();
@@ -2012,7 +1990,7 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 				break; //Upper bound reached.
 
 			ullOffsetSearch += ullStep;
-		}
+			}
 		else {
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
@@ -2086,7 +2064,7 @@ auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRES
 				break; //Upper bound reached.
 
 			ullOffsetSearch += ullStep;
-		}
+			}
 		else {
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
@@ -2163,7 +2141,7 @@ auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRES
 				break; //Upper bound reached.
 
 			ullOffsetSearch += ullStep;
-		}
+			}
 		else {
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
@@ -2240,7 +2218,7 @@ auto CHexDlgSearch::SearchFuncFwdByte4(const SEARCHFUNCDATA& refSearch)->FINDRES
 				break; //Upper bound reached.
 
 			ullOffsetSearch += ullStep;
-		}
+			}
 		else {
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
@@ -2353,7 +2331,7 @@ auto CHexDlgSearch::SearchFuncBack(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 				break; //Lower bound reached.
 
 			ullOffsetSearch -= ullChunkMaxOffset;
-		}
+			}
 		else {
 			if ((ullOffsetSearch - ullChunkMaxOffset) < ullEnd || ((ullOffsetSearch - ullChunkMaxOffset) >
 				((std::numeric_limits<ULONGLONG>::max)() - ullChunkMaxOffset))) {

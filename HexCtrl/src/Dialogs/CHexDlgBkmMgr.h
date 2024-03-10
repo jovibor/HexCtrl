@@ -18,7 +18,6 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM override; //Bookmark by index (in inner list).
 		[[nodiscard]] auto GetCount() -> ULONGLONG override;
 		[[nodiscard]] auto GetCurrent()const->ULONGLONG;
-		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		void GoBookmark(ULONGLONG ullIndex);
 		void GoNext();
@@ -37,7 +36,6 @@ namespace HEXCTRL::INTERNAL {
 		void Update(ULONGLONG ullID, const HEXBKM& bkm);
 	private:
 		enum class EMenuID : std::uint16_t;
-		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;

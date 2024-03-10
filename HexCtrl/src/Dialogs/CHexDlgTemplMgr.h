@@ -32,7 +32,6 @@ namespace HEXCTRL::INTERNAL {
 		void DisapplyAll()override;
 		void DisapplyByID(int iAppliedID)override; //Disapply template with the given AppliedID.
 		void DisapplyByOffset(ULONGLONG ullOffset)override;
-		[[nodiscard]] auto GetDlgData()const->std::uint64_t;
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		[[nodiscard]] bool HasApplied()const;
 		[[nodiscard]] bool HasCurrent()const;
@@ -56,7 +55,6 @@ namespace HEXCTRL::INTERNAL {
 		static LRESULT CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 	private:
-		void ApplyDlgData();
 		void DoDataExchange(CDataExchange* pDX)override;
 		void EnableDynamicLayoutHelper(bool fEnable);
 		[[nodiscard]] auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PCTEMPLAPPLIED;
@@ -78,7 +76,7 @@ namespace HEXCTRL::INTERNAL {
 		afx_msg void OnCheckHex();
 		afx_msg void OnCheckSwapEndian();
 		afx_msg void OnCheckShowTt();
-		afx_msg void OnCheckMinMax();
+		afx_msg void OnCheckMin();
 		afx_msg void OnClose();
 		afx_msg void OnDestroy();
 		BOOL OnInitDialog()override;
@@ -135,7 +133,7 @@ namespace HEXCTRL::INTERNAL {
 		std::vector<std::unique_ptr<TEMPLAPPLIED>> m_vecTemplatesAppl; //Currently Applied Templates.
 		CComboBox m_comboTemplates;  //Currently available templates list.
 		CEdit m_editOffset;          //"Offset" edit box.
-		CButton m_btnMinMax;         //Check-box min-max.
+		CButton m_btnMin;            //Check-box min-max.
 		CButton m_btnShowTT;         //Check-box "Show tooltips".
 		CButton m_btnHglSel;         //Check-box "Highlight selected".
 		CButton m_btnHex;            //Check-box "Hex numbers".

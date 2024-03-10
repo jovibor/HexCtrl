@@ -52,7 +52,6 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetData(HEXSPAN hss)const->SpanByte override;
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;
 		[[nodiscard]] auto GetDateInfo()const->std::tuple<DWORD, wchar_t> override;
-		[[nodiscard]] auto GetDlgData(EHexWnd eWnd)const->std::uint64_t override;
 		[[nodiscard]] auto GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND override;
 		[[nodiscard]] auto GetFont() -> LOGFONTW override;
 		[[nodiscard]] auto GetGroupSize()const->DWORD override;
@@ -86,7 +85,7 @@ namespace HEXCTRL::INTERNAL {
 		bool SetConfig(std::wstring_view wsvPath)override;
 		void SetData(const HEXDATA& hds)override;
 		void SetDateInfo(DWORD dwFormat, wchar_t wchSepar)override;
-		void SetDlgData(EHexWnd eWnd, std::uint64_t ullData)override;
+		void SetDlgData(EHexWnd eWnd, std::uint64_t u64Data)override;
 		void SetFont(const LOGFONTW& lf)override;
 		void SetGroupSize(DWORD dwSize)override;
 		void SetMutable(bool fEnable)override;

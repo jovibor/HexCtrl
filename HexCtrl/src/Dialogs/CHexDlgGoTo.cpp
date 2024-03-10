@@ -26,21 +26,6 @@ BEGIN_MESSAGE_MAP(CHexDlgGoTo, CDialogEx)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
-auto CHexDlgGoTo::GetDlgData()const->std::uint64_t
-{
-	if (!IsWindow(m_hWnd)) {
-		return { };
-	}
-
-	std::uint64_t ullData { };
-
-	if (IsNoEsc()) {
-		ullData |= HEXCTRL_FLAG_NOESC;
-	}
-
-	return ullData;
-}
-
 void CHexDlgGoTo::Initialize(IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl != nullptr);
@@ -68,7 +53,6 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 void CHexDlgGoTo::SetDlgData(std::uint64_t ullData)
 {
 	m_u64DlgData = ullData;
-	ApplyDlgData();
 }
 
 BOOL CHexDlgGoTo::ShowWindow(int nCmdShow)
@@ -82,10 +66,6 @@ BOOL CHexDlgGoTo::ShowWindow(int nCmdShow)
 
 
 //Private methods.
-
-void CHexDlgGoTo::ApplyDlgData()
-{
-}
 
 void CHexDlgGoTo::DoDataExchange(CDataExchange* pDX)
 {
@@ -231,7 +211,6 @@ BOOL CHexDlgGoTo::OnInitDialog()
 	iIndex = m_comboMode.AddString(L"Offset from the end");
 	m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETEND));
 	UpdateComboMode();
-	ApplyDlgData();
 
 	return TRUE;
 }

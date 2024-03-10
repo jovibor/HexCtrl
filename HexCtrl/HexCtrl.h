@@ -84,11 +84,10 @@ namespace HEXCTRL {
 	* EHexDlgItem: HexCtrl's internal dialogs' items.                                           *
 	********************************************************************************************/
 	enum class EHexDlgItem : std::uint8_t {
-		IDC_BKMMGR_CHK_HEX, IDC_DATAINTERP_CHK_HEX, IDC_DATAINTERP_CHK_BE,
-		IDC_TEMPLMGR_CHK_TT, IDC_TEMPLMGR_CHK_HGL, IDC_TEMPLMGR_CHK_HEX, IDC_TEMPLMGR_CHK_SWAP,
-		IDC_SEARCH_COMBO_FIND, IDC_SEARCH_COMBO_REPLACE, IDC_SEARCH_EDIT_START, IDC_SEARCH_EDIT_STEP,
-		IDC_SEARCH_EDIT_RNGBEG, IDC_SEARCH_EDIT_RNGEND, IDC_SEARCH_EDIT_LIMIT,
-		IDC_FILLDATA_COMBO_DATA
+		BKMMGR_CHK_HEX, DATAINTERP_CHK_HEX, DATAINTERP_CHK_BE, TEMPLMGR_CHK_MIN,
+		TEMPLMGR_CHK_TT, TEMPLMGR_CHK_HGL, TEMPLMGR_CHK_HEX, TEMPLMGR_CHK_SWAP,
+		SEARCH_COMBO_FIND, SEARCH_COMBO_REPLACE, SEARCH_EDIT_START, SEARCH_EDIT_STEP,
+		SEARCH_EDIT_RNGBEG, SEARCH_EDIT_RNGEND, SEARCH_EDIT_LIMIT, FILLDATA_COMBO_DATA
 	};
 
 	/********************************************************************************************
@@ -405,7 +404,6 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->SpanByte = 0;  //Get pointer to data offset, no matter what mode the control works in.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual auto GetDateInfo()const->std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
-		[[nodiscard]] virtual auto GetDlgData(EHexWnd eWnd)const->std::uint64_t = 0; //Data from the internal dialogs.
 		[[nodiscard]] virtual auto GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND = 0; //Dialogs' items.
 		[[nodiscard]] virtual auto GetFont() -> LOGFONTW = 0;                //Get current font.
 		[[nodiscard]] virtual auto GetGroupSize()const->DWORD = 0;           //Retrieves current data grouping size.
@@ -439,7 +437,7 @@ namespace HEXCTRL {
 		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).
 		virtual void SetDateInfo(DWORD dwFormat, wchar_t wchSepar) = 0; //Set date format and date separator.
-		virtual void SetDlgData(EHexWnd eWnd, std::uint64_t ullData) = 0; //Data for the internal dialogs.
+		virtual void SetDlgData(EHexWnd eWnd, std::uint64_t u64Data) = 0; //Data for the internal dialogs.
 		virtual void SetFont(const LOGFONTW& lf) = 0;          //Set the control's new font. This font has to be monospaced.
 		virtual void SetGroupSize(DWORD dwSize) = 0;           //Set data grouping size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
@@ -493,22 +491,7 @@ namespace HEXCTRL {
 	* Flags for the internal dialogs, used with the SetDlgData method.  *
 	********************************************************************/
 
-	//Flags common for all dialogs.
-	constexpr auto HEXCTRL_FLAG_NOESC { 0x8000000000000000ULL };
-
-	//Template Manager.
-	constexpr auto HEXCTRL_FLAG_TEMPLMGR_MINIMIZED { 0x1ULL };
-	constexpr auto HEXCTRL_FLAG_TEMPLMGR_HEXNUM { 0x2ULL };
-	constexpr auto HEXCTRL_FLAG_TEMPLMGR_SHOWTT { 0x4ULL };
-	constexpr auto HEXCTRL_FLAG_TEMPLMGR_HGLSEL { 0x8ULL };
-	constexpr auto HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN { 0x10ULL };
-
-	//Data Interpreter.
-	constexpr auto HEXCTRL_FLAG_DATAINTERP_HEXNUM { 0x1ULL };
-	constexpr auto HEXCTRL_FLAG_DATAINTERP_BE { 0x2ULL };
-
-	//Bookmark Manager.
-	constexpr auto HEXCTRL_FLAG_BKMMGR_HEXNUM { 0x1ULL };
+	constexpr auto HEXCTRL_FLAG_NOESC { 0x01ULL };
 
 	//Setting a manifest for the ComCtl32.dll version 6.
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")

@@ -35,21 +35,6 @@ void CHexDlgCodepage::AddCP(std::wstring_view wsv)
 	}
 }
 
-auto CHexDlgCodepage::GetDlgData()const->std::uint64_t
-{
-	if (!IsWindow(m_hWnd)) {
-		return { };
-	}
-
-	std::uint64_t ullData { };
-
-	if (IsNoEsc()) {
-		ullData |= HEXCTRL_FLAG_NOESC;
-	}
-
-	return ullData;
-}
-
 void CHexDlgCodepage::Initialize(IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
@@ -62,7 +47,6 @@ void CHexDlgCodepage::Initialize(IHexCtrl* pHexCtrl)
 void CHexDlgCodepage::SetDlgData(std::uint64_t ullData)
 {
 	m_u64DlgData = ullData;
-	ApplyDlgData();
 }
 
 BOOL CHexDlgCodepage::ShowWindow(int nCmdShow)
@@ -76,10 +60,6 @@ BOOL CHexDlgCodepage::ShowWindow(int nCmdShow)
 
 
 //Private methods.
-
-void CHexDlgCodepage::ApplyDlgData()
-{
-}
 
 void CHexDlgCodepage::DoDataExchange(CDataExchange* pDX)
 {
@@ -152,8 +132,6 @@ BOOL CHexDlgCodepage::OnInitDialog()
 	if (const auto pLayout = GetDynamicLayout(); pLayout != nullptr) {
 		pLayout->SetMinSize({ 0, 0 });
 	}
-
-	ApplyDlgData();
 
 	return TRUE;
 }

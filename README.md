@@ -32,7 +32,7 @@
   * [GetData](#getdata)
   * [GetDataSize](#getdatasize)
   * [GetDateInfo](#getdateinfo)
-  * [GetDlgData](#getdlgdata)
+  * [GetDlgItemHandle](#getdlgitemhandle)
   * [GetFont](#getfont)
   * [GetGroupSize](#getgroupsize)
   * [GetMenuHandle](#getmenuhandle)
@@ -455,11 +455,11 @@ Returns currently set data size.
 ```
 Returns tuple of the current [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate), and date separator.
 
-### [](#)GetDlgData
+### [](#)GetDlgItemHandle
 ```cpp
-[[nodiscard]] auto GetDlgData(EHexWnd eWnd)const->std::uint64_t;
+[[nodiscard]] auto GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND;
 ```
-Returns data related to **HexCtrl**'s internal dialogs.
+Returns `HWND` of a dialog's internal child control.
 
 ### [](#)GetCodepage
 ```cpp
@@ -682,22 +682,7 @@ void SetDlgData(EHexWnd eWnd, std::uint64_t ullData);
 Sets the state of the **HexCtrl**'s internal dialogs by setting control-flags. Flags can be combined together with the `|` operation.  
 Available flags:
 ```cpp
-//Flags common for all dialogs.
-HEXCTRL_FLAG_NOESC //Prevent a dialog from closing on Esc key.
-	
-//Template Manager.
-HEXCTRL_FLAG_TEMPLMGR_MINIMIZED  //Show dialog in minimized mode. 
-HEXCTRL_FLAG_TEMPLMGR_HEXNUM     //Set "Hex numbers" checkbox.
-HEXCTRL_FLAG_TEMPLMGR_SHOWTT     //Set "Show tooltips" checkbox.
-HEXCTRL_FLAG_TEMPLMGR_HGLSEL     //Set "Highlight selection" checkbox.
-HEXCTRL_FLAG_TEMPLMGR_SWAPENDIAN //Set "Swap endianness" checkbox.
-
-//Data Interpreter.
-HEXCTRL_FLAG_DATAINTERP_HEXNUM //Set "Hex numbers" checkbox.
-HEXCTRL_FLAG_DATAINTERP_BE     //Set "Big-endian" checkbox.
-
-//Bookmark Manager.
-HEXCTRL_FLAG_BKMMGR_HEXNUM //Set "Hex numbers" checkbox.
+HEXCTRL_FLAG_NOESC //Prevent dialog from closing on Esc key.
 ```
 
 ### [](#)SetFont
