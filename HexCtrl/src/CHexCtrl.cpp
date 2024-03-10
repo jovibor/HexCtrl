@@ -756,10 +756,16 @@ auto CHexCtrl::GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND
 
 	using enum EHexWnd;
 	switch (eWnd) {
+	case DLG_BKMMGR:
+		return m_pDlgBkmMgr->GetDlgItemHandle(eItem);
+	case DLG_DATAINTERP:
+		return m_pDlgDataInterp->GetDlgItemHandle(eItem);
 	case DLG_MODIFY:
 		return m_pDlgModify->GetDlgItemHandle(eItem);
 	case DLG_SEARCH:
 		return m_pDlgSearch->GetDlgItemHandle(eItem);
+	case DLG_TEMPLMGR:
+		return m_pDlgTemplMgr->GetDlgItemHandle(eItem);
 	default:
 		return { };
 	};
