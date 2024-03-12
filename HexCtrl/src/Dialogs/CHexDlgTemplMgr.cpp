@@ -290,9 +290,9 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	return iNewTemplateID;
 }
 
-void CHexDlgTemplMgr::SetDlgData(std::uint64_t ullData)
+void CHexDlgTemplMgr::SetDlgProperties(std::uint64_t u64Flags)
 {
-	m_u64DlgData = ullData;
+	m_u64Flags = u64Flags;
 }
 
 void CHexDlgTemplMgr::ShowTooltips(bool fShow)
@@ -419,7 +419,7 @@ bool CHexDlgTemplMgr::IsMinimized()const
 
 bool CHexDlgTemplMgr::IsNoEsc()const
 {
-	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
+	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
 bool CHexDlgTemplMgr::IsShowAsHex()const
@@ -642,7 +642,7 @@ void CHexDlgTemplMgr::OnDestroy()
 	m_hTreeCurrParent = nullptr;
 	DeleteObject(m_hBITMAPMin);
 	DeleteObject(m_hBITMAPMax);
-	m_u64DlgData = { };
+	m_u64Flags = { };
 }
 
 BOOL CHexDlgTemplMgr::OnInitDialog()

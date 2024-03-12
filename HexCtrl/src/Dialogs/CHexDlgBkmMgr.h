@@ -29,7 +29,7 @@ namespace HEXCTRL::INTERNAL {
 		void RemoveAll()override;
 		void RemoveByOffset(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID)override;
-		void SetDlgData(std::uint64_t ullData);
+		void SetDlgProperties(std::uint64_t u64Flags);
 		void SetVirtual(IHexBookmarks* pVirtBkm);
 		BOOL ShowWindow(int nCmdShow);
 		void SortData(int iColumn, bool fAscending);
@@ -63,7 +63,7 @@ namespace HEXCTRL::INTERNAL {
 		IHexBookmarks* m_pVirtual { };
 		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
 		LONGLONG m_llIndexCurr { };     //Current bookmark's position index, to move next/prev.
-		std::uint64_t m_u64DlgData { }; //Data from SetDlgData.
+		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 		CMenu m_menuList;
 		CButton m_btnHex;               //Check-box "Hex numbers".
 	};

@@ -40,7 +40,7 @@ namespace HEXCTRL::INTERNAL {
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsTooltips()const;
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
-		void SetDlgData(std::uint64_t ullData);
+		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowTooltips(bool fShow)override;
 		BOOL ShowWindow(int nCmdShow);
 		void UnloadAll()override;
@@ -151,7 +151,7 @@ namespace HEXCTRL::INTERNAL {
 		PCTEMPLAPPLIED m_pAppliedCurr { }; //Currently selected template in the applied Tree.
 		PCVecFields m_pVecFieldsCurr { };  //Currently selected Fields vector.
 		HTREEITEM m_hTreeCurrParent { };   //Currently selected Tree node's parent.
-		std::uint64_t m_u64DlgData { };    //Data from SetDlgData.
+		std::uint64_t m_u64Flags { };    //Data from SetDlgProperties.
 		DWORD m_dwDateFormat { };          //Date format.
 		int m_iDynLayoutMinY { };          //For DynamicLayout::SetMinSize.
 		wchar_t m_wchDateSepar { };        //Date separator.

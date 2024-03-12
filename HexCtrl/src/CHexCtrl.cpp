@@ -2749,7 +2749,7 @@ void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 	m_wchDateSepar = wchSepar;
 }
 
-void CHexCtrl::SetDlgData(EHexWnd eWnd, std::uint64_t u64Data)
+void CHexCtrl::SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags)
 {
 	assert(IsCreated());
 	if (!IsCreated())
@@ -2758,19 +2758,19 @@ void CHexCtrl::SetDlgData(EHexWnd eWnd, std::uint64_t u64Data)
 	using enum EHexWnd;
 	switch (eWnd) {
 	case DLG_BKMMGR:
-		m_pDlgBkmMgr->SetDlgData(u64Data);
+		m_pDlgBkmMgr->SetDlgProperties(u64Flags);
 	case DLG_DATAINTERP:
-		m_pDlgDataInterp->SetDlgData(u64Data);
+		m_pDlgDataInterp->SetDlgProperties(u64Flags);
 	case DLG_MODIFY:
-		m_pDlgModify->SetDlgData(u64Data);
+		m_pDlgModify->SetDlgProperties(u64Flags);
 	case DLG_SEARCH:
-		m_pDlgSearch->SetDlgData(u64Data);
+		m_pDlgSearch->SetDlgProperties(u64Flags);
 	case DLG_CODEPAGE:
-		m_pDlgCodepage->SetDlgData(u64Data);
+		m_pDlgCodepage->SetDlgProperties(u64Flags);
 	case DLG_GOTO:
-		m_pDlgGoTo->SetDlgData(u64Data);
+		m_pDlgGoTo->SetDlgProperties(u64Flags);
 	case DLG_TEMPLMGR:
-		m_pDlgTemplMgr->SetDlgData(u64Data);
+		m_pDlgTemplMgr->SetDlgProperties(u64Flags);
 	default:
 		break;
 	}
@@ -5604,10 +5604,12 @@ void CHexCtrl::Undo()
 
 void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 {
-	if (!IsDataSet() || !IsMutable() || !IsCurTextArea() || (GetKeyState(VK_CONTROL) < 0))
+	if (!IsDataSet() || !IsMutable() || !IsCurTextArea() || (GetKeyState(VK_CONTROL) < 0)
+		|| !std::iswprint(static_cast<wint_t>(nChar)))
 		return;
 
 	unsigned char chByte = nChar & 0xFF;
+
 	wchar_t warrCurrLocaleID[KL_NAMELENGTH];
 	GetKeyboardLayoutNameW(warrCurrLocaleID); //Current langID as wstring.
 	if (const auto optLocID = stn::StrToUInt32(warrCurrLocaleID, 16); optLocID) { //Convert langID from wstr to number.

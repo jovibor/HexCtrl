@@ -14,7 +14,7 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		void AddCP(std::wstring_view wsv);
 		void Initialize(IHexCtrl* pHexCtrl);
-		void SetDlgData(std::uint64_t ullData);
+		void SetDlgProperties(std::uint64_t u64Flags);
 		BOOL ShowWindow(int nCmdShow);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
@@ -42,6 +42,6 @@ namespace HEXCTRL::INTERNAL {
 		IHexCtrl* m_pHexCtrl { };
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
 		std::vector<CODEPAGE> m_vecCodePage { };
-		std::uint64_t m_u64DlgData { }; //Data from SetDlgData.
+		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 	};
 }

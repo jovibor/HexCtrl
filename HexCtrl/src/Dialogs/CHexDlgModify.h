@@ -18,7 +18,7 @@ namespace HEXCTRL::INTERNAL {
 		~CHexDlgModify();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl);
-		void SetDlgData(std::uint64_t ullData);
+		void SetDlgProperties(std::uint64_t u64Flags);
 		BOOL ShowWindow(int nCmdShow, int iTab);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
@@ -34,7 +34,7 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		IHexCtrl* m_pHexCtrl { };
 		CTabCtrl m_tabMain;
-		std::uint64_t m_u64DlgData { }; //Data from SetDlgData.
+		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 		std::unique_ptr<CHexDlgOpers> m_pDlgOpers;       //"Operations" tab dialog.
 		std::unique_ptr<CHexDlgFillData> m_pDlgFillData; //"Fill with" tab dialog.
 	};

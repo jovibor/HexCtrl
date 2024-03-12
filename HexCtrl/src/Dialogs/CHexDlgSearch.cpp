@@ -128,9 +128,9 @@ void CHexDlgSearch::SearchNextPrev(bool fForward)
 	Prepare();
 }
 
-void CHexDlgSearch::SetDlgData(std::uint64_t ullData)
+void CHexDlgSearch::SetDlgProperties(std::uint64_t u64Flags)
 {
-	m_u64DlgData = ullData;
+	m_u64Flags = u64Flags;
 }
 
 BOOL CHexDlgSearch::ShowWindow(int nCmdShow)
@@ -713,7 +713,7 @@ bool CHexDlgSearch::IsMatchCase()const
 
 bool CHexDlgSearch::IsNoEsc()const
 {
-	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
+	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
 bool CHexDlgSearch::IsReplace()const
@@ -920,7 +920,7 @@ void CHexDlgSearch::OnDestroy()
 	m_vecReplaceData.clear();
 	m_wstrSearch.clear();
 	m_wstrReplace.clear();
-	m_u64DlgData = { };
+	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
 }
 

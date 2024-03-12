@@ -261,9 +261,9 @@ void CHexDlgBkmMgr::RemoveByID(ULONGLONG ullID)
 	}
 }
 
-void CHexDlgBkmMgr::SetDlgData(std::uint64_t ullData)
+void CHexDlgBkmMgr::SetDlgProperties(std::uint64_t u64Flags)
 {
-	m_u64DlgData = ullData;
+	m_u64Flags = u64Flags;
 }
 
 void CHexDlgBkmMgr::SetVirtual(IHexBookmarks* pVirtBkm)
@@ -350,7 +350,7 @@ void CHexDlgBkmMgr::DoDataExchange(CDataExchange* pDX)
 
 bool CHexDlgBkmMgr::IsNoEsc()const
 {
-	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
+	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
 bool CHexDlgBkmMgr::IsShowAsHex()const
@@ -419,7 +419,7 @@ void CHexDlgBkmMgr::OnDestroy()
 
 	RemoveAll();
 	m_menuList.DestroyMenu();
-	m_u64DlgData = { };
+	m_u64Flags = { };
 }
 
 void CHexDlgBkmMgr::OnOK()

@@ -85,7 +85,7 @@ namespace HEXCTRL::INTERNAL {
 		bool SetConfig(std::wstring_view wsvPath)override;
 		void SetData(const HEXDATA& hds)override;
 		void SetDateInfo(DWORD dwFormat, wchar_t wchSepar)override;
-		void SetDlgData(EHexWnd eWnd, std::uint64_t u64Data)override;
+		void SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Data)override;
 		void SetFont(const LOGFONTW& lf)override;
 		void SetGroupSize(DWORD dwSize)override;
 		void SetMutable(bool fEnable)override;

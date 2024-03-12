@@ -34,7 +34,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetHglDataSize()const->DWORD;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool HasHighlight()const;
-		void SetDlgData(std::uint64_t ullData);
+		void SetDlgProperties(std::uint64_t u64Flags);
 		BOOL ShowWindow(int nCmdShow);
 		void UpdateData();
 	private:
@@ -107,7 +107,7 @@ namespace HEXCTRL::INTERNAL {
 		ULONGLONG m_ullOffset { };
 		DWORD m_dwHglDataSize { };      //Size of the data to highlight in the HexCtrl.
 		DWORD m_dwDateFormat { };       //Date format.
-		std::uint64_t m_u64DlgData { }; //Data from SetDlgData.
+		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 		wchar_t m_wchDateSepar { };     //Date separator.
 	};
 }

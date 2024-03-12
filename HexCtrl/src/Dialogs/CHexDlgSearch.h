@@ -19,7 +19,7 @@ namespace HEXCTRL::INTERNAL {
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
 		void SearchNextPrev(bool fForward);
-		void SetDlgData(std::uint64_t ullData);
+		void SetDlgProperties(std::uint64_t u64Flags);
 		BOOL ShowWindow(int nCmdShow);
 	private:
 		enum class ESearchMode : std::uint8_t; //Forward declarations.
@@ -173,7 +173,7 @@ namespace HEXCTRL::INTERNAL {
 		ULONGLONG m_ullRngBegin { };
 		ULONGLONG m_ullRngEnd { };
 		ULONGLONG m_ullStep { 1 };           //Search step (default is 1 byte).
-		std::uint64_t m_u64DlgData { };      //Data from SetDlgData.
+		std::uint64_t m_u64Flags { };      //Data from SetDlgProperties.
 		DWORD m_dwCount { };                 //How many, or what index number.
 		DWORD m_dwReplaced { };              //Replaced amount;
 		DWORD m_dwLimit { 10000 };           //Maximum found search occurences.

@@ -437,7 +437,7 @@ namespace HEXCTRL {
 		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).
 		virtual void SetDateInfo(DWORD dwFormat, wchar_t wchSepar) = 0; //Set date format and date separator.
-		virtual void SetDlgData(EHexWnd eWnd, std::uint64_t u64Data) = 0; //Data for the internal dialogs.
+		virtual void SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags) = 0; //Properties for the internal dialogs.
 		virtual void SetFont(const LOGFONTW& lf) = 0;          //Set the control's new font. This font has to be monospaced.
 		virtual void SetGroupSize(DWORD dwSize) = 0;           //Set data grouping size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
@@ -487,11 +487,11 @@ namespace HEXCTRL {
 	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0111U };  //Selection has been made.
 
 
-	/********************************************************************
-	* Flags for the internal dialogs, used with the SetDlgData method.  *
-	********************************************************************/
+	/**************************************************************************
+	* Flags for the internal dialogs, used with the SetDlgProperties method.  *
+	**************************************************************************/
 
-	constexpr auto HEXCTRL_FLAG_NOESC { 0x01ULL };
+	constexpr auto HEXCTRL_FLAG_DLG_NOESC { 0x01ULL };
 
 	//Setting a manifest for the ComCtl32.dll version 6.
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")

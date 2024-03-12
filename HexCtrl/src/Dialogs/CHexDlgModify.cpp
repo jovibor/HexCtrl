@@ -21,7 +21,7 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		void Create(CWnd* pParent, IHexCtrl* pHexCtrl);
 		void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		void SetDlgData(std::uint64_t ullData);
+		void SetDlgProperties(std::uint64_t u64Flags);
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		template<typename T> requires TSize1248<T>
@@ -44,7 +44,7 @@ namespace HEXCTRL::INTERNAL {
 		CComboBox m_comboOper; //Operation combo-box.
 		CComboBox m_comboType; //Data size combo-box.
 		std::vector<std::byte> m_vecOperData; //Operand data vector.
-		std::uint64_t m_u64DlgData { };
+		std::uint64_t m_u64Flags { };
 		using enum EHexOperMode;
 		inline static const std::unordered_map<EHexOperMode, std::wstring_view> m_umapNames {
 			{ OPER_ASSIGN, L"Assign" }, { OPER_ADD, L"Add" }, { OPER_SUB, L"Subtract" },
@@ -89,9 +89,9 @@ void CHexDlgOpers::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimize
 	}
 }
 
-void CHexDlgOpers::SetDlgData(std::uint64_t ullData)
+void CHexDlgOpers::SetDlgProperties(std::uint64_t u64Flags)
 {
-	m_u64DlgData = ullData;
+	m_u64Flags = u64Flags;
 }
 
 
@@ -156,7 +156,7 @@ auto CHexDlgOpers::GetDataType()const->EHexDataType
 
 void CHexDlgOpers::OnCancel()
 {
-	if (m_u64DlgData & HEXCTRL_FLAG_NOESC)
+	if (m_u64Flags & HEXCTRL_FLAG_DLG_NOESC)
 		return;
 
 	static_cast<CDialogEx*>(GetParentOwner())->EndDialog(IDCANCEL);
@@ -224,7 +224,7 @@ auto CHexDlgOpers::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)->HBRUSH
 void CHexDlgOpers::OnDestroy()
 {
 	CDialogEx::OnDestroy();
-	m_u64DlgData = { };
+	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
 	m_vecOperData.clear();
 }
@@ -501,7 +501,7 @@ namespace HEXCTRL::INTERNAL {
 		void Create(CWnd* pParent, IHexCtrl* pHexCtrl);
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		void SetDlgData(std::uint64_t ullData);
+		void SetDlgProperties(std::uint64_t u64Flags);
 	private:
 		enum class EFillType : std::uint8_t; //Forward declaration.
 		void DoDataExchange(CDataExchange* pDX)override;
@@ -519,7 +519,7 @@ namespace HEXCTRL::INTERNAL {
 		CComboBox m_comboType; //Fill type combo-box.
 		CComboBox m_comboData; //Data combo-box.
 		std::vector<std::byte> m_vecFillData; //Fill data vector.
-		std::uint64_t m_u64DlgData { };
+		std::uint64_t m_u64Flags { };
 	};
 }
 
@@ -569,9 +569,9 @@ void CHexDlgFillData::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinim
 	}
 }
 
-void CHexDlgFillData::SetDlgData(std::uint64_t ullData)
+void CHexDlgFillData::SetDlgProperties(std::uint64_t u64Flags)
 {
-	m_u64DlgData = ullData;
+	m_u64Flags = u64Flags;
 }
 
 
@@ -591,7 +591,7 @@ auto CHexDlgFillData::GetFillType()const->CHexDlgFillData::EFillType
 
 void CHexDlgFillData::OnCancel()
 {
-	if (m_u64DlgData & HEXCTRL_FLAG_NOESC)
+	if (m_u64Flags & HEXCTRL_FLAG_DLG_NOESC)
 		return;
 
 	static_cast<CDialogEx*>(GetParentOwner())->EndDialog(IDCANCEL);
@@ -610,7 +610,7 @@ void CHexDlgFillData::OnComboTypeSelChange()
 void CHexDlgFillData::OnDestroy()
 {
 	CDialogEx::OnDestroy();
-	m_u64DlgData = { };
+	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
 	m_vecFillData.clear();
 }
@@ -770,11 +770,11 @@ void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl)
 	m_pHexCtrl = pHexCtrl;
 }
 
-void CHexDlgModify::SetDlgData(std::uint64_t ullData)
+void CHexDlgModify::SetDlgProperties(std::uint64_t u64Flags)
 {
-	m_u64DlgData = ullData;
-	m_pDlgOpers->SetDlgData(ullData);
-	m_pDlgFillData->SetDlgData(ullData);
+	m_u64Flags = u64Flags;
+	m_pDlgOpers->SetDlgProperties(u64Flags);
+	m_pDlgFillData->SetDlgProperties(u64Flags);
 }
 
 BOOL CHexDlgModify::ShowWindow(int nCmdShow, int iTab)
@@ -799,7 +799,7 @@ void CHexDlgModify::DoDataExchange(CDataExchange* pDX)
 
 bool CHexDlgModify::IsNoEsc()const
 {
-	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
+	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
 void CHexDlgModify::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
@@ -826,7 +826,7 @@ void CHexDlgModify::OnClose()
 void CHexDlgModify::OnDestroy()
 {
 	CDialogEx::OnDestroy();
-	m_u64DlgData = { };
+	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
 }
 

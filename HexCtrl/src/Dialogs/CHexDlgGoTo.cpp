@@ -50,9 +50,9 @@ void CHexDlgGoTo::Repeat(bool fFwd)
 	GoTo(fFwd);
 }
 
-void CHexDlgGoTo::SetDlgData(std::uint64_t ullData)
+void CHexDlgGoTo::SetDlgProperties(std::uint64_t u64Flags)
 {
-	m_u64DlgData = ullData;
+	m_u64Flags = u64Flags;
 }
 
 BOOL CHexDlgGoTo::ShowWindow(int nCmdShow)
@@ -159,7 +159,7 @@ void CHexDlgGoTo::GoTo(bool fForward)
 
 bool CHexDlgGoTo::IsNoEsc()const
 {
-	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
+	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
 void CHexDlgGoTo::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
@@ -191,7 +191,7 @@ void CHexDlgGoTo::OnClose()
 void CHexDlgGoTo::OnDestroy()
 {
 	CDialogEx::OnDestroy();
-	m_u64DlgData = { };
+	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
 	m_fRepeat = false;
 }

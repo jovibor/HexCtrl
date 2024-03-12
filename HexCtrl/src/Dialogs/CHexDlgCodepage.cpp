@@ -44,9 +44,9 @@ void CHexDlgCodepage::Initialize(IHexCtrl* pHexCtrl)
 	m_pHexCtrl = pHexCtrl;
 }
 
-void CHexDlgCodepage::SetDlgData(std::uint64_t ullData)
+void CHexDlgCodepage::SetDlgProperties(std::uint64_t u64Flags)
 {
-	m_u64DlgData = ullData;
+	m_u64Flags = u64Flags;
 }
 
 BOOL CHexDlgCodepage::ShowWindow(int nCmdShow)
@@ -68,7 +68,7 @@ void CHexDlgCodepage::DoDataExchange(CDataExchange* pDX)
 
 bool CHexDlgCodepage::IsNoEsc()const
 {
-	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
+	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
 void CHexDlgCodepage::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
@@ -103,7 +103,7 @@ void CHexDlgCodepage::OnDestroy()
 	CDialogEx::OnDestroy();
 
 	m_vecCodePage.clear();
-	m_u64DlgData = { };
+	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
 }
 

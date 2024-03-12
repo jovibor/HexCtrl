@@ -65,7 +65,7 @@
   * [SetConfig](#setconfig)
   * [SetData](#setdata)
   * [SetDateInfo](#setdateinfo)
-  * [SetDlgData](#setdlgdata)
+  * [SetDlgProperties](#setdlgproperties)
   * [SetFont](#setfont)
   * [SetGroupSize](#setgroupsize)
   * [SetMutable](#setmutable)
@@ -675,14 +675,14 @@ void SetDateInfo(DWORD dwFormat, wchar_t wchSepar);
 ```
 Sets [date format-ordering specifier](https://docs.microsoft.com/en-us/windows/win32/intl/locale-idate), along with date separator.
 
-### [](#)SetDlgData
+### [](#)SetDlgProperties
 ```cpp
-void SetDlgData(EHexWnd eWnd, std::uint64_t ullData);
+void SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags);
 ```
-Sets the state of the **HexCtrl**'s internal dialogs by setting control-flags. Flags can be combined together with the `|` operation.  
+Sets various properties to the **HexCtrl**'s internal dialogs, in form of flags. Flags can be combined together with the OR (`|`) operation.  
 Available flags:
 ```cpp
-HEXCTRL_FLAG_NOESC //Prevent dialog from closing on Esc key.
+HEXCTRL_FLAG_DLG_NOESC //Prevent dialog from closing on Esc key.
 ```
 
 ### [](#)SetFont

@@ -14,7 +14,7 @@ namespace HEXCTRL::INTERNAL {
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsRepeatAvail()const;
 		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
-		void SetDlgData(std::uint64_t ullData);
+		void SetDlgProperties(std::uint64_t u64Flags);
 		BOOL ShowWindow(int nCmdShow);
 	private:
 		enum class EGoMode : std::uint8_t;
@@ -33,7 +33,7 @@ namespace HEXCTRL::INTERNAL {
 		DECLARE_MESSAGE_MAP();
 	private:
 		IHexCtrl* m_pHexCtrl { };
-		std::uint64_t m_u64DlgData { }; //Data from SetDlgData.
+		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 		CComboBox m_comboMode;
 		bool m_fRepeat { false }; //Is repeat available.
 	};

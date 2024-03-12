@@ -59,7 +59,7 @@ BOOL CSampleDialogDlg::OnInitDialog()
 	m_pHexDlg->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
 	m_pHexDlg->SetScrollRatio(2, true); //Two lines scroll with mouse-wheel.
 	m_pHexDlg->SetPageSize(64);
-//	m_pHexDlg->SetDlgData(EHexWnd::DLG_CODEPAGE, HEXCTRL_FLAG_NOESC);
+//	m_pHexDlg->SetDlgProperties(EHexWnd::DLG_CODEPAGE, HEXCTRL_FLAG_DLG_NOESC);
 //	m_pHexDlg->SetCharsExtraSpace(2);
 
 	LoadTemplates(&*m_pHexDlg);

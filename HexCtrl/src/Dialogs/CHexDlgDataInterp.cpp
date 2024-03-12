@@ -116,9 +116,9 @@ bool CHexDlgDataInterp::HasHighlight()const
 	return m_dwHglDataSize > 0;
 }
 
-void CHexDlgDataInterp::SetDlgData(std::uint64_t ullData)
+void CHexDlgDataInterp::SetDlgProperties(std::uint64_t u64Flags)
 {
-	m_u64DlgData = ullData;
+	m_u64Flags = u64Flags;
 }
 
 BOOL CHexDlgDataInterp::ShowWindow(int nCmdShow)
@@ -314,7 +314,7 @@ bool CHexDlgDataInterp::IsBigEndian()const
 
 bool CHexDlgDataInterp::IsNoEsc()const
 {
-	return m_u64DlgData & HEXCTRL_FLAG_NOESC;
+	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
 bool CHexDlgDataInterp::IsShowAsHex()const
@@ -374,7 +374,7 @@ void CHexDlgDataInterp::OnDestroy()
 	CDialogEx::OnDestroy();
 
 	m_vecGrid.clear();
-	m_u64DlgData = { };
+	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
 }
 
