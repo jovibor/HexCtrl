@@ -1,7 +1,7 @@
 module;
 /****************************************************************************************
-* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
-* This is a Hex Control for MFC/Win32 applications.                                     *
+* Copyright © 2018-present Jovibor https://github.com/jovibor/                          *
+* Hex Control for Windows applications.                                                 *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
@@ -9,11 +9,11 @@ module;
 #include "../dep/StrToNum/StrToNum/StrToNum.h"
 #include "../HexCtrl.h"
 #include <afxwin.h>
-#include <immintrin.h>
 #include <bit>
 #include <cassert>
 #include <cwctype>
 #include <format>
+#include <immintrin.h>
 #include <optional>
 #include <source_location>
 #include <string>

@@ -1,5 +1,5 @@
 /*************************************************************************************
-* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                          *
+* Copyright © 2018-present Jovibor https://github.com/jovibor/                       *
 * This is very extended and featured version of CMFCListCtrl class.                  *
 * Official git repository: https://github.com/jovibor/ListEx/                        *
 * This code is available under the "MIT License".                                    *

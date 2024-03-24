@@ -1,6 +1,6 @@
 /****************************************************************************************
-* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
-* This is a Hex Control for MFC/Win32 applications.                                     *
+* Copyright © 2018-present Jovibor https://github.com/jovibor/                          *
+* Hex Control for Windows applications.                                                 *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
@@ -17,13 +17,13 @@
 #include "Dialogs/CHexDlgModify.h"
 #include "Dialogs/CHexDlgSearch.h"
 #include "Dialogs/CHexDlgTemplMgr.h"
-#include <immintrin.h>
 #include <algorithm>
 #include <bit>
 #include <cassert>
 #include <cwctype>
 #include <format>
 #include <fstream>
+#include <immintrin.h>
 #include <numeric>
 #include <random>
 #include <thread>
@@ -77,7 +77,7 @@ BOOL CHexDlgAbout::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	const auto wstrVersion = std::format(L"Hex Control for MFC/Win32: v{}.{}.{}\r\nCopyright © 2018-2024 Jovibor",
+	const auto wstrVersion = std::format(L"Hex Control for Windows apps, v{}.{}.{}\r\nCopyright © 2018-present Jovibor",
 		HEXCTRL_VERSION_MAJOR, HEXCTRL_VERSION_MINOR, HEXCTRL_VERSION_PATCH);
 	GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_VERSION)->SetWindowTextW(wstrVersion.data());
 
@@ -2046,7 +2046,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 					m128iResult = _mm_slli_epi64(m128iData, static_cast<int>(i64Oper));
 					break;
 				case OPER_SHR:
-					m128iResult = _mm_srai_epi64(m128iData, static_cast<unsigned int>(i64Oper)); //Arithmetic shift.
+					m128iResult = _mm_setr_epi64x(i64Data[0] >> i64Oper, i64Data[1] >> i64Oper);
 					break;
 				case OPER_ROTL:
 					m128iResult = _mm_set_epi64x(std::rotl(static_cast<std::uint64_t>(i64Data[1]), static_cast<const int>(i64Oper)),

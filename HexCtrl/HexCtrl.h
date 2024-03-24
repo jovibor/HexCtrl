@@ -1,6 +1,6 @@
 /****************************************************************************************
-* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
-* This is a Hex Control for MFC/Win32 applications.                                     *
+* Copyright © 2018-present Jovibor https://github.com/jovibor/                          *
+* Hex Control for Windows applications.                                                 *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
@@ -46,7 +46,7 @@
 namespace HEXCTRL {
 	constexpr auto HEXCTRL_VERSION_MAJOR = 3;
 	constexpr auto HEXCTRL_VERSION_MINOR = 6;
-	constexpr auto HEXCTRL_VERSION_PATCH = 0;
+	constexpr auto HEXCTRL_VERSION_PATCH = 1;
 
 	using SpanByte = std::span<std::byte>;
 	using SpanCByte = std::span<const std::byte>;

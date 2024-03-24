@@ -191,10 +191,26 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="UnitTest.cpp" />
+    <ClCompile Include="CModifyADD.cpp" />
+    <ClCompile Include="CModifyAND.cpp" />
+    <ClCompile Include="CModifyBITREV.cpp" />
+    <ClCompile Include="CModifyDIV.cpp" />
+    <ClCompile Include="CModifyMAX.cpp" />
+    <ClCompile Include="CModifyMIN.cpp" />
+    <ClCompile Include="CModifyMUL.cpp" />
+    <ClCompile Include="CModifyNOT.cpp" />
+    <ClCompile Include="CModifyOR.cpp" />
+    <ClCompile Include="CModifyROTL.cpp" />
+    <ClCompile Include="CModifyROTR.cpp" />
+    <ClCompile Include="CModifySHL.cpp" />
+    <ClCompile Include="CModifySHR.cpp" />
+    <ClCompile Include="CModifySUB.cpp" />
+    <ClCompile Include="CModifySWAP.cpp" />
+    <ClCompile Include="CModifyXOR.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Sample Dialog\stdafx.h" />
+    <ClInclude Include="CHexCtrlInit.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

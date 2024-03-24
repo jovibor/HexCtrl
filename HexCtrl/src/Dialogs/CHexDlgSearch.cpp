@@ -1,6 +1,6 @@
 /****************************************************************************************
-* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
-* This is a Hex Control for MFC/Win32 applications.                                     *
+* Copyright © 2018-present Jovibor https://github.com/jovibor/                          *
+* Hex Control for Windows applications.                                                 *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
@@ -9,11 +9,11 @@
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgCallback.h"
 #include "CHexDlgSearch.h"
-#include <immintrin.h>
 #include <algorithm>
 #include <cassert>
 #include <cwctype>
 #include <format>
+#include <immintrin.h>
 #include <limits>
 #include <string>
 #include <thread>

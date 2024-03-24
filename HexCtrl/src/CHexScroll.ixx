@@ -1,7 +1,7 @@
 module;
 /****************************************************************************************
-* Copyright © 2018-2024 Jovibor https://github.com/jovibor/                             *
-* This is a Hex Control for MFC/Win32 applications.                                     *
+* Copyright © 2018-present Jovibor https://github.com/jovibor/                          *
+* Hex Control for Windows applications.                                                 *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
