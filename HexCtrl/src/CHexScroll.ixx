@@ -90,8 +90,8 @@ namespace HEXCTRL::INTERNAL {
 		CHexScroll* m_pSibling { };         //Sibling scrollbar, added with AddSibling.
 		CBitmap m_bmpArrowFirst;           //Up or Left arrow bitmap.
 		CBitmap m_bmpArrowLast;            //Down or Right arrow bitmap.
-		EState m_enState { };              //Current state.
-		CPoint m_ptCursorCur { };          //Cursor's current position.
+		EState m_eState { };               //Current state.
+		CPoint m_ptCursorCur;              //Cursor's current position.
 		UINT m_uiScrollBarSizeWH { };      //Scrollbar size (width if vertical, height if horz).
 		int m_iArrowRCSizePx { };          //Arrow bitmap side size (it's a square) in pixels.
 		ULONGLONG m_ullScrollPosCur { 0 }; //Current scroll position.
@@ -236,7 +236,7 @@ auto CHexScroll::IsThumbReleased()const->bool
 		return false;
 	}
 
-	return m_enState != EState::THUMB_CLICK;
+	return m_eState != EState::THUMB_CLICK;
 }
 
 auto CHexScroll::IsVisible()const->bool
@@ -251,11 +251,11 @@ auto CHexScroll::IsVisible()const->bool
 void CHexScroll::OnLButtonUp(UINT /*nFlags*/, CPoint /*point*/)
 {
 	assert(m_fCreated);
-	if (!m_fCreated || m_enState == EState::STATE_DEFAULT) {
+	if (!m_fCreated || m_eState == EState::STATE_DEFAULT) {
 		return;
 	}
 
-	m_enState = EState::STATE_DEFAULT;
+	m_eState = EState::STATE_DEFAULT;
 	SendParentScrollMsg(); //For parent to check IsThumbReleased.
 	KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
 	KillTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT));
@@ -399,30 +399,30 @@ void CHexScroll::OnSetCursor(CWnd* /*pWnd*/, UINT nHitTest, UINT message)
 
 		if (GetThumbRect(true).PtInRect(pt)) {
 			m_ptCursorCur = pt;
-			m_enState = EState::THUMB_CLICK;
+			m_eState = EState::THUMB_CLICK;
 			pParent->SetCapture();
 		}
 		else if (GetFirstArrowRect(true).PtInRect(pt)) {
 			ScrollLineUp();
-			m_enState = EState::FIRSTARROW_CLICK;
+			m_eState = EState::FIRSTARROW_CLICK;
 			pParent->SetCapture();
 			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
 		else if (GetLastArrowRect(true).PtInRect(pt)) {
 			ScrollLineDown();
-			m_enState = EState::LASTARROW_CLICK;
+			m_eState = EState::LASTARROW_CLICK;
 			pParent->SetCapture();
 			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
 		else if (GetFirstChannelRect(true).PtInRect(pt)) {
 			ScrollPageUp();
-			m_enState = EState::FIRSTCHANNEL_CLICK;
+			m_eState = EState::FIRSTCHANNEL_CLICK;
 			pParent->SetCapture();
 			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
 		else if (GetLastChannelRect(true).PtInRect(pt)) {
 			ScrollPageDown();
-			m_enState = EState::LASTCHANNEL_CLICK;
+			m_eState = EState::LASTCHANNEL_CLICK;
 			pParent->SetCapture();
 			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
@@ -995,7 +995,7 @@ bool CHexScroll::IsVert()const
 
 bool CHexScroll::IsThumbDragging()const
 {
-	return m_enState == EState::THUMB_CLICK;
+	return m_eState == EState::THUMB_CLICK;
 }
 
 bool CHexScroll::IsSiblingVisible()const
@@ -1030,7 +1030,7 @@ void CHexScroll::OnTimer(UINT_PTR nIDEvent)
 		SetTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT), uTimerRepeat, nullptr);
 		break;
 	case (static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT)):
-		switch (m_enState) {
+		switch (m_eState) {
 		case EState::FIRSTARROW_CLICK:
 			ScrollLineUp();
 			break;

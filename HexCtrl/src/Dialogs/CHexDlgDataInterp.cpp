@@ -168,7 +168,9 @@ void CHexDlgDataInterp::UpdateData()
 				iter.pProp->Enable(FALSE);
 			}
 		}
-		return SetGridRedraw(true);
+
+		SetGridRedraw(true);
+		return;
 	}
 
 	for (const auto& iter : m_vecGrid) {
@@ -197,7 +199,9 @@ void CHexDlgDataInterp::UpdateData()
 				iter.pProp->Enable(FALSE);
 			}
 		}
-		return SetGridRedraw(true);
+
+		SetGridRedraw(true);
+		return;
 	}
 
 	for (const auto& iter : m_vecGrid) {
@@ -230,7 +234,9 @@ void CHexDlgDataInterp::UpdateData()
 				iter.pProp->Enable(FALSE);
 			}
 		}
-		return SetGridRedraw(true);
+
+		SetGridRedraw(true);
+		return;
 	}
 
 	for (const auto& iter : m_vecGrid) {
@@ -264,7 +270,9 @@ void CHexDlgDataInterp::UpdateData()
 				iter.pProp->Enable(FALSE);
 			}
 		}
-		return SetGridRedraw(true);
+
+		SetGridRedraw(true);
+		return;
 	}
 
 	for (const auto& iter : m_vecGrid) {

@@ -30,10 +30,10 @@ namespace HEXCTRL::INTERNAL {
 		void SetSelection(const VecSpan& vecSel, bool fHighlight);     //Set a selection or selection highlight.
 		void SetSelStartEnd(ULONGLONG ullOffset, bool fStart);         //fStart true: Start, false: End.
 	private:
-		VecSpan m_vecSelection { };                                    //Selection data vector.
-		VecSpan m_vecSelHighlight { };                                 //Selection highlight data vector.
-		ULONGLONG m_ullMarkSelStart { 0xFFFFFFFFFFFFFFFFULL };         //For SetSelStartEnd().
-		ULONGLONG m_ullMarkSelEnd { 0xFFFFFFFFFFFFFFFFULL };           //For SetSelStartEnd().
+		VecSpan m_vecSelection;                                //Selection data vector.
+		VecSpan m_vecSelHighlight;                             //Selection highlight data vector.
+		ULONGLONG m_ullMarkSelStart { 0xFFFFFFFFFFFFFFFFULL }; //For SetSelStartEnd().
+		ULONGLONG m_ullMarkSelEnd { 0xFFFFFFFFFFFFFFFFULL };   //For SetSelStartEnd().
 	};
 
 	void CHexSelection::ClearAll()
