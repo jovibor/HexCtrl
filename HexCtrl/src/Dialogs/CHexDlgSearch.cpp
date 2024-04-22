@@ -1916,6 +1916,7 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 	for (auto itChunk = 0ULL; itChunk < ullMemChunks; ++itChunk) {
 		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 		assert(!spnData.empty());
+		assert(spnData.size() >= ullMemToAcquire);
 
 		//Unrolling the loop, making LOOP_UNROLL_SIZE comparisons at one cycle.
 		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += ullStep * LOOP_UNROLL_SIZE) {
@@ -2025,6 +2026,7 @@ auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRES
 	for (auto itChunk = 0ULL; itChunk < ullMemChunks; ++itChunk) {
 		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 		assert(!spnData.empty());
+		assert(spnData.size() >= ullMemToAcquire);
 
 		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += sizeof(__m128i)) {
 			if ((ullOffsetData + sizeof(__m128i)) <= ullChunkMaxOffset) {
@@ -2099,6 +2101,7 @@ auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRES
 	for (auto itChunk = 0ULL; itChunk < ullMemChunks; ++itChunk) {
 		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 		assert(!spnData.empty());
+		assert(spnData.size() >= ullMemToAcquire);
 
 		//Next cycle offset is "sizeof(__m128i) - 1", to get the data that crosses the vector.
 		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += (sizeof(__m128i) - 1)) {
@@ -2176,6 +2179,7 @@ auto CHexDlgSearch::SearchFuncFwdByte4(const SEARCHFUNCDATA& refSearch)->FINDRES
 	for (auto itChunk = 0ULL; itChunk < ullMemChunks; ++itChunk) {
 		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 		assert(!spnData.empty());
+		assert(spnData.size() >= ullMemToAcquire);
 
 		//Next cycle offset is "sizeof(__m128i) - 3", to get the data that crosses the vector.
 		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += (sizeof(__m128i) - 3)) {
@@ -2261,6 +2265,8 @@ auto CHexDlgSearch::SearchFuncBack(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 	for (auto itChunk = ullMemChunks; itChunk > 0; --itChunk) {
 		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
 		assert(!spnData.empty());
+		assert(spnData.size() >= ullMemToAcquire);
+
 		for (auto llOffsetData = static_cast<LONGLONG>(ullChunkMaxOffset); llOffsetData >= 0;
 			llOffsetData -= llStep * LOOP_UNROLL_SIZE) { //llOffsetData might be negative.
 			//First memory comparison is always unconditional.
