@@ -685,6 +685,8 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->SpanByte
 	if (!IsCreated() || !IsDataSet())
 		return { };
 
+	assert(hss.ullSize > 0);
+
 	SpanByte spnData;
 	if (!IsVirtual()) {
 		if (hss.ullOffset + hss.ullSize <= GetDataSize()) {
@@ -692,10 +694,7 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->SpanByte
 		}
 	}
 	else {
-		if (hss.ullSize == 0 || hss.ullSize > GetCacheSize()) {
-			hss.ullSize = GetCacheSize();
-		}
-
+		assert(hss.ullSize <= GetCacheSize());
 		HEXDATAINFO hdi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) }, .stHexSpan { hss } };
 		m_pHexVirtData->OnHexGetData(hdi);
 		spnData = hdi.spnData;
@@ -2759,18 +2758,25 @@ void CHexCtrl::SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags)
 	switch (eWnd) {
 	case DLG_BKMMGR:
 		m_pDlgBkmMgr->SetDlgProperties(u64Flags);
+		break;
 	case DLG_DATAINTERP:
 		m_pDlgDataInterp->SetDlgProperties(u64Flags);
+		break;
 	case DLG_MODIFY:
 		m_pDlgModify->SetDlgProperties(u64Flags);
+		break;
 	case DLG_SEARCH:
 		m_pDlgSearch->SetDlgProperties(u64Flags);
+		break;
 	case DLG_CODEPAGE:
 		m_pDlgCodepage->SetDlgProperties(u64Flags);
+		break;
 	case DLG_GOTO:
 		m_pDlgGoTo->SetDlgProperties(u64Flags);
+		break;
 	case DLG_TEMPLMGR:
 		m_pDlgTemplMgr->SetDlgProperties(u64Flags);
+		break;
 	default:
 		break;
 	}
