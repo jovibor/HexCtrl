@@ -14,6 +14,7 @@ module;
 #include <cwctype>
 #include <format>
 #include <immintrin.h>
+#include <locale>
 #include <optional>
 #include <source_location>
 #include <string>
@@ -336,6 +337,11 @@ export namespace HEXCTRL::INTERNAL {
 		}
 
 		return { pBegin, pEnd };
+	}
+
+	[[nodiscard]] auto GetLocale() -> std::locale {
+		static std::locale loc { std::locale("en_US.UTF-8") };
+		return loc;
 	}
 
 #if defined(DEBUG) || defined(_DEBUG)

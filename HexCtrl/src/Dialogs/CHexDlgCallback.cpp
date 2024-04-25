@@ -10,6 +10,8 @@
 #include <cassert>
 #include <format>
 
+import HEXCTRL.HexUtility;
+
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgCallback, CDialogEx)
@@ -86,8 +88,6 @@ BOOL CHexDlgCallback::OnInitDialog()
 	const auto ullDiff = m_ullProgBarMax - m_ullProgBarMin;
 	m_ullThousandth = ullDiff >= iRange ? ullDiff / iRange : 1;
 
-	m_locale = std::locale("en_US.UTF-8");
-
 	return TRUE;
 }
 
@@ -128,6 +128,6 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 
 	if (m_ullCount > 0) {
 		GetDlgItem(IDC_HEXCTRL_CALLBACK_STAT_COUNT)->
-			SetWindowTextW(std::format(m_locale, L"{}{:L}", m_wstrCountName, m_ullCount).data());
+			SetWindowTextW(std::format(GetLocale(), L"{}{:L}", m_wstrCountName, m_ullCount).data());
 	}
 }

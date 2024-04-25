@@ -997,8 +997,6 @@ BOOL CHexDlgSearch::OnInitDialog()
 	::SendMessageW(hwndTipEndOffset, TTM_SETDELAYTIME, TTDT_AUTOPOP, static_cast<LPARAM>(LOWORD(0x7FFF)));
 	::SendMessageW(hwndTipEndOffset, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(1000));
 
-	m_locale = std::locale("en_US.UTF-8");
-
 	return TRUE;
 }
 
@@ -1656,18 +1654,18 @@ void CHexDlgSearch::Search()
 	if (m_fFound) {
 		if (m_fAll) {
 			if (m_fReplace) {
-				wstrInfo = std::format(m_locale, L"{:L} occurrence(s) replaced.", m_dwReplaced);
+				wstrInfo = std::format(GetLocale(), L"{:L} occurrence(s) replaced.", m_dwReplaced);
 				m_dwReplaced = 0;
 				GetHexCtrl()->Redraw(); //Redraw in case of Replace all.
 			}
 			else {
-				wstrInfo = std::format(m_locale, L"Found {:L} occurrences.", m_dwCount);
+				wstrInfo = std::format(GetLocale(), L"Found {:L} occurrences.", m_dwCount);
 				m_dwCount = 0;
 			}
 		}
 		else {
 			if (m_fDoCount) {
-				wstrInfo = std::format(m_locale, L"Found occurrence № {:L} from the beginning.", m_dwCount);
+				wstrInfo = std::format(GetLocale(), L"Found occurrence № {:L} from the beginning.", m_dwCount);
 			}
 			else {
 				wstrInfo = L"Search found occurrence.";

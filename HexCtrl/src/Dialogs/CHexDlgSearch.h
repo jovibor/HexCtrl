@@ -8,7 +8,6 @@
 #include "../../HexCtrl.h"
 #include "../../dep/ListEx/ListEx.h"
 #include <afxdialogex.h>
-#include <locale>
 
 import HEXCTRL.HexUtility;
 
@@ -152,7 +151,6 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr auto m_pwszWrongInput { L"Wrong input data." };
 		IHexCtrl* m_pHexCtrl { };
 		ESearchMode m_eSearchMode { };
-		std::locale m_locale;
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
 		CMenu m_menuList;                    //Menu for the list control.
 		CComboBox m_comboFind;             //Combo box "Search".
