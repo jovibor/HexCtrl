@@ -686,9 +686,6 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	m_btnHglSel.SetCheck(IsHglSel());
 	m_btnHex.SetCheck(IsShowAsHex());
 
-	m_hCurResize = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
-	m_hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
-
 	CRect rcTree;
 	m_treeApplied.GetWindowRect(rcTree);
 	ScreenToClient(rcTree);
@@ -1148,6 +1145,8 @@ void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)
 	static constexpr auto iResAreaHalfWidth = 15;       //Area where cursor turns into resizable (IDC_SIZEWE).
 	static constexpr auto iWidthBetweenTreeAndList = 1; //Width between tree and list after resizing.
 	static constexpr auto iMinTreeWidth = 100;          //Tree control minimum allowed width.
+	static const auto hCurResize = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
+	static const auto hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
 
 	CRect rcList;
 	m_pListApplied->GetWindowRect(rcList);
@@ -1172,12 +1171,12 @@ void CHexDlgTemplMgr::OnMouseMove(UINT nFlags, CPoint point)
 		if (const CRect rcSplitter(rcList.left - iResAreaHalfWidth, rcList.top, rcList.left + iResAreaHalfWidth, rcList.bottom);
 			rcSplitter.PtInRect(point)) {
 			m_fCurInSplitter = true;
-			SetCursor(m_hCurResize);
+			SetCursor(hCurResize);
 			SetCapture();
 		}
 		else {
 			m_fCurInSplitter = false;
-			SetCursor(m_hCurArrow);
+			SetCursor(hCurArrow);
 			ReleaseCapture();
 		}
 	}

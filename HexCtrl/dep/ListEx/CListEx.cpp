@@ -1,9 +1,9 @@
-/****************************************************************************************
-* Copyright © 2018-present Jovibor https://github.com/jovibor/                          *
-* This is very extended and featured version of CMFCListCtrl class.                     *
-* Official git repository: https://github.com/jovibor/ListEx/                           *
-* This code is available under the "MIT License".                                       *
-****************************************************************************************/
+/********************************************************************
+* Copyright © 2018-present Jovibor https://github.com/jovibor/      *
+* This is very extended and featured version of CMFCListCtrl class. *
+* Official git repository: https://github.com/jovibor/ListEx/       *
+* This code is available under the "MIT License".                   *
+********************************************************************/
 #include "stdafx.h"
 #include "ListEx.h"
 #include <algorithm>
@@ -97,11 +97,6 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 }
 
 using namespace HEXCTRL::LISTEX::INTERNAL;
-
-
-/****************************************************
-* CListExHdr implementation.                        *
-****************************************************/
 
 BEGIN_MESSAGE_MAP(CListExHdr, CMFCHeaderCtrl)
 	ON_MESSAGE(HDM_LAYOUT, &CListExHdr::OnLayout)
@@ -712,14 +707,14 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		CWnd m_stWndTtRow { };          //Tooltip window for row in m_fHighLatency mode.
 		TTTOOLINFOW m_stToolInfoRow { };//Tooltips struct.
 		std::wstring m_wstrTtText { };  //Link's tool-tip current text.
-		HCURSOR m_cursorHand { };       //Hand cursor handle.
-		HCURSOR m_cursorDefault { };    //Standard (default) cursor handle.
 		LVHITTESTINFO m_stCurrCell { }; //Cell's hit struct for tool-tip.
 		LVHITTESTINFO m_stCurrLink { }; //Cell's link hit struct for tool-tip.
 		LVHITTESTINFO m_htiInPlaceEdit; //Cell's hit struct for in-place editing.
 		CEdit m_editInPlace;            //Edit box for in-place cells editing.
-		DWORD m_dwGridWidth { 1 };		//Grid width.
+		DWORD m_dwGridWidth { };        //Grid width.
+		UINT m_uHLItem { };             //High latency Vscroll item.
 		int m_iSortColumn { -1 };       //Currently clicked header column.
+		int m_iLOGPIXELSY { };          //GetDeviceCaps(LOGPIXELSY) constant.
 		PFNLVCOMPARE m_pfnCompare { };  //Pointer to a user provided compare func.
 		EListExSortMode m_enDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
 		CRect m_rcLinkCurr { };         //Current link's rect;
@@ -730,8 +725,6 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		std::unordered_map<UINT, std::unordered_map<int, int>> m_umapCellIcon { }; //Cell's icon.
 		std::unordered_map<int, SCOLROWCLR> m_umapColumnColor { };                 //Column colors.
 		std::unordered_map<int, EListExSortMode> m_umapColumnSortMode { };         //Column sorting mode.
-		UINT m_uHLItem { };            //High latency Vscroll item.
-		int m_iLOGPIXELSY { };         //GetDeviceCaps(LOGPIXELSY) constant.
 		bool m_fCreated { false };     //Is created.
 		bool m_fHighLatency { };       //High latency flag.
 		bool m_fSortable { false };    //Is list sortable.
@@ -918,8 +911,6 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 	m_fontListUnderline.CreateFontIndirectW(&lfList);
 
 	m_penGrid.CreatePen(PS_SOLID, m_dwGridWidth, m_stColors.clrListGrid);
-	m_cursorDefault = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
-	m_cursorHand = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 	SetClassLongPtrW(m_hWnd, GCLP_HCURSOR, 0); //To prevent cursor from blinking.
 	RecalcMeasure();
 
@@ -1520,17 +1511,19 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 			}
 
 			//Drawing subitem's rect lines.
-			pDC->SelectObject(m_penGrid);
-			pDC->MoveTo(rcBounds.TopLeft());
-			pDC->LineTo(rcBounds.right, rcBounds.top);   //Top line.
-			pDC->MoveTo(rcBounds.TopLeft());
-			pDC->LineTo(rcBounds.left, rcBounds.bottom); //Left line.
-			pDC->MoveTo(rcBounds.left, rcBounds.bottom);
-			pDC->LineTo(rcBounds.BottomRight());         //Bottom line.
-			if (iSubitem == iColumns - 1) { //Drawing a right line only for the last column.
-				rcBounds.right -= 1; //To overcome a glitch with a last line disappearing if resizing a header.
-				pDC->MoveTo(rcBounds.right, rcBounds.top);
-				pDC->LineTo(rcBounds.BottomRight());     //Right line.
+			if (m_dwGridWidth > 0) {
+				pDC->SelectObject(m_penGrid);
+				pDC->MoveTo(rcBounds.TopLeft());
+				pDC->LineTo(rcBounds.right, rcBounds.top);   //Top line.
+				pDC->MoveTo(rcBounds.TopLeft());
+				pDC->LineTo(rcBounds.left, rcBounds.bottom); //Left line.
+				pDC->MoveTo(rcBounds.left, rcBounds.bottom);
+				pDC->LineTo(rcBounds.BottomRight());         //Bottom line.
+				if (iSubitem == iColumns - 1) { //Drawing a right line only for the last column.
+					rcBounds.right -= 1; //To overcome a glitch with a last line disappearing if resizing a header.
+					pDC->MoveTo(rcBounds.right, rcBounds.top);
+					pDC->LineTo(rcBounds.BottomRight());     //Right line.
+				}
 			}
 
 			//Draw focus rect (marquee).
@@ -1855,6 +1848,9 @@ BOOL CListEx::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 
 void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 {
+	static const auto hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
+	static const auto hCurHand = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
+
 	LVHITTESTINFO hi { pt };
 	SubItemHitTest(&hi);
 	bool fLink { false }; //Cursor at link's rect area.
@@ -1875,7 +1871,7 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 		}
 	}
 
-	SetCursor(fLink ? m_cursorHand : m_cursorDefault);
+	SetCursor(fLink ? hCurHand : hCurArrow);
 
 	//Link's tooltip area is under the cursor.
 	if (fLink) {

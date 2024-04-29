@@ -72,7 +72,7 @@ namespace HEXCTRL::INTERNAL {
 		afx_msg void OnBnApply();
 		void OnCancel()override;
 		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+		afx_msg auto OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor) -> HBRUSH;
 		afx_msg void OnCheckHex();
 		afx_msg void OnCheckSwapEndian();
 		afx_msg void OnCheckShowTt();
@@ -146,8 +146,6 @@ namespace HEXCTRL::INTERNAL {
 		CTreeCtrl m_treeApplied;
 		CMenu m_menuTree;            //Menu for the tree control.
 		CMenu m_menuHdr;             //Menu for the list header.
-		HCURSOR m_hCurResize;
-		HCURSOR m_hCurArrow;
 		PCTEMPLAPPLIED m_pAppliedCurr { }; //Currently selected template in the applied Tree.
 		PCVecFields m_pVecFieldsCurr { };  //Currently selected Fields vector.
 		HTREEITEM m_hTreeCurrParent { };   //Currently selected Tree node's parent.

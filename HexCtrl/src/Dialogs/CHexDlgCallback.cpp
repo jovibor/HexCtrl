@@ -65,6 +65,7 @@ void CHexDlgCallback::OnClose()
 auto CHexDlgCallback::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)->HBRUSH
 {
 	const auto hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
+
 	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_CALLBACK_STAT_COUNT) {
 		pDC->SetTextColor(RGB(0, 200, 0));
 	}

@@ -2710,8 +2710,7 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 
 	m_spnData = hds.spnData;
 	m_pHexVirtColors = hds.pHexVirtColors;
-	constexpr auto dwCacheMinSize { 1024U * 64U }; //Minimum data cache size for VirtualData mode.
-	m_dwCacheSize = (hds.dwCacheSize < dwCacheMinSize) ? dwCacheMinSize : hds.dwCacheSize;
+	m_dwCacheSize = std::clamp(hds.dwCacheSize, 1024 * 64UL, hds.dwCacheSize); //Minimum cache size for VirtualData mode.
 	m_pHexVirtData = hds.pHexVirtData;
 	m_fMutable = hds.fMutable;
 	m_fHighLatency = hds.fHighLatency;
