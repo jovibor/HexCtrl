@@ -233,16 +233,16 @@ namespace HEXCTRL::INTERNAL {
 		HEXCOLORS m_stColors;                 //All HexCtrl colors.
 		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
-		CWnd m_wndTtBkm { };                  //Tooltip window for bookmarks description.
 		TTTOOLINFOW m_stToolInfoBkm { };      //Tooltip info for Bookmarks.
-		std::time_t m_tmTtBkm { };            //Time beginning to calc the diff for hiding bkm tooltip after.
-		PHEXBKM m_pBkmTtCurr { };             //Currently shown bookmark's tooltip;
-		CWnd m_wndTtTempl { };                //Tooltip window for Templates' fields.
 		TTTOOLINFOW m_stToolInfoTempl { };    //Tooltip info for Templates.
-		std::time_t m_tmTtTempl { };          //Time beginning to calc the diff for hiding template tooltip after.
-		PCHEXTEMPLFIELD m_pTFieldTtCurr { };  //Currently shown Template field's tooltip;
-		CWnd m_wndTtOffset { };               //Tooltip window for Offset in m_fHighLatency mode.
 		TTTOOLINFOW m_stToolInfoOffset { };   //Tooltip info for Offset.
+		std::time_t m_tmTTBkm { };            //Time beginning to calc the diff for hiding bkm tooltip after.
+		std::time_t m_tmTTTempl { };          //Time beginning to calc the diff for hiding template tooltip after.
+		CWnd m_wndTTBkm { };                  //Tooltip window for bookmarks description.
+		CWnd m_wndTTTempl { };                //Tooltip window for Templates' fields.
+		CWnd m_wndTTOffset { };               //Tooltip window for Offset in m_fHighLatency mode.
+		PHEXBKM m_pBkmTTCurr { };             //Currently shown bookmark's tooltip;
+		PCHEXTEMPLFIELD m_pTFieldTTCurr { };  //Currently shown Template field's tooltip;
 		CFont m_fontMain;                     //Main Hex chunks font.
 		CFont m_fontInfoBar;                  //Font for bottom Info bar.
 		CMenu m_menuMain;                     //Main popup menu.

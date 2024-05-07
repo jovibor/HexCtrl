@@ -683,35 +683,38 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		auto ParseItemData(int iItem, int iSubitem) -> std::vector<ITEMDATA>;
 		void RecalcMeasure()const;
 		void SetFontSize(long lSize);
-		void TtLinkHide();
-		void TtCellHide();
+		void TTLinkHide();
+		void TTCellHide();
 		void TtRowShow(bool fShow, UINT uRow); //Tooltips for HighLatency mode.
 		static auto CALLBACK EditSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIdSubclass, DWORD_PTR dwRefData)->LRESULT;
 		DECLARE_DYNAMIC(CListEx);
 		DECLARE_MESSAGE_MAP();
 	private:
-		static constexpr ULONG_PTR m_uIDTimerTTCellCheck { 0x01 };    //Cell tool-tip check-timer ID.
-		static constexpr ULONG_PTR m_uIDTimerTTLinkCheck { 0x02 };    //Link tool-tip check-timer ID.
-		static constexpr ULONG_PTR m_uIDTimerTTLinkActivate { 0x03 }; //Link tool-tip activate-timer ID.
-		static constexpr auto m_uIDEditInPlace { 0x01U };             //In place edit-box ID.
+		static constexpr ULONG_PTR m_uIDTCellTTActivate { 0x01 }; //Cell tool-tip activate-timer ID.
+		static constexpr ULONG_PTR m_uIDTCellTTCheck { 0x02 };    //Cell tool-tip check-timer ID.
+		static constexpr ULONG_PTR m_uIDTLinkTTActivate { 0x03 }; //Link tool-tip activate-timer ID.
+		static constexpr ULONG_PTR m_uIDTLinkTTCheck { 0x04 };    //Link tool-tip check-timer ID.
+		static constexpr auto m_uIDEditInPlace { 0x01U };         //In place edit-box ID.
 		CListExHdr m_stListHeader;
 		LISTEXCOLORS m_stColors { };
 		CFont m_fontList;               //Default list font.
 		CFont m_fontListUnderline;      //Underlined list font, for links.
 		CPen m_penGrid;                 //Pen for list lines between cells.
-		CWnd m_stWndTtCell;             //Cells' tool-tip window.
-		TTTOOLINFOW m_stTInfoCell { };  //Cells' tool-tip info struct.
-		CWnd m_stWndTtLink;             //Link tool-tip window.
-		TTTOOLINFOW m_stTInfoLink { };  //Link's tool-tip info struct.
-		CWnd m_stWndTtRow { };          //Tooltip window for row in m_fHighLatency mode.
-		TTTOOLINFOW m_stToolInfoRow { };//Tooltips struct.
-		std::wstring m_wstrTtText { };  //Link's tool-tip current text.
+		CWnd m_stWndCellTT;             //Cells' tool-tip window.
+		CWnd m_stWndLinkTT;             //Link tool-tip window.
+		CWnd m_stWndRowTT { };          //Tooltip window for row in m_fHighLatency mode.
+		TTTOOLINFOW m_stCellTTInfo { }; //Cells' tool-tip info struct.
+		TTTOOLINFOW m_stLinkTTInfo { }; //Link's tool-tip info struct.
+		TTTOOLINFOW m_stRowTTInfo { };  //Tooltips struct.
+		std::wstring m_wstrTextTT { };    //Tool-tip current text.
+		std::wstring m_wstrCaptionTT { }; //Tool-tip current caption.
 		LVHITTESTINFO m_stCurrCell { }; //Cell's hit struct for tool-tip.
 		LVHITTESTINFO m_stCurrLink { }; //Cell's link hit struct for tool-tip.
 		LVHITTESTINFO m_htiInPlaceEdit; //Cell's hit struct for in-place editing.
 		CEdit m_editInPlace;            //Edit box for in-place cells editing.
 		DWORD m_dwGridWidth { };        //Grid width.
+		DWORD m_dwTTShowDelay { };      //Tooltip's show delay.
 		UINT m_uHLItem { };             //High latency Vscroll item.
 		int m_iSortColumn { -1 };       //Currently clicked header column.
 		int m_iLOGPIXELSY { };          //GetDeviceCaps(LOGPIXELSY) constant.
@@ -732,7 +735,7 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		bool m_fLinksUnderline { };    //Links are displayed underlined or not.
 		bool m_fLinkTooltip { };       //Show links toolips.
 		bool m_fVirtual { false };     //Whether list is virtual (LVS_OWNERDATA) or not.
-		bool m_fTtCellShown { false }; //Is cell's tool-tip shown atm.
+		bool m_fCellTTActive { false }; //Is cell's tool-tip shown atm.
 		bool m_fTtLinkShown { false }; //Is link's tool-tip shown atm.
 		bool m_fLDownAtLink { false }; //Left mouse down on link.
 		bool m_fHLFlag { };            //High latency Vscroll flag.
@@ -827,48 +830,52 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 	m_fLinksUnderline = lcs.fLinkUnderline;
 	m_fLinkTooltip = lcs.fLinkTooltip;
 	m_fHighLatency = lcs.fHighLatency;
+	m_dwTTShowDelay = lcs.dwTTShowDelay;
 
-	const auto dwBaloon = lcs.fTooltipBaloon ? TTS_BALLOON : 0;
-	if (!m_stWndTtCell.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
-		dwBaloon | TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
+	//Cell Tooltip.
+	if (!m_stWndCellTT.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, lcs.dwTTStyleCell,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr)) {
 		return false;
 	}
 
-	m_stTInfoCell.cbSize = sizeof(TTTOOLINFOW);
-	m_stTInfoCell.uFlags = TTF_TRACK;
-	m_stTInfoCell.uId = 0x01;
-	m_stWndTtCell.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stTInfoCell));
-	m_stWndTtCell.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
+	m_stCellTTInfo.cbSize = sizeof(TTTOOLINFOW);
+	//The TTF_TRACK flag should not be used with the TTS_BALLOON tooltips, because in this case
+	//the balloon will always be positioned _below_ provided coordinates.
+	m_stCellTTInfo.uFlags = lcs.dwTTStyleCell & TTS_BALLOON ? 0 : TTF_TRACK;
+	m_stCellTTInfo.uId = 0x01;
+	m_stWndCellTT.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stCellTTInfo));
+	m_stWndCellTT.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 	if (m_stColors.clrTooltipText != 0xFFFFFFFFUL || m_stColors.clrTooltipBk != 0xFFFFFFFFUL) {
 		//To prevent Windows from changing theme of cells tooltip window.
 		//Without this call Windows draws Tooltips with current Theme colors, and
 		//TTM_SETTIPTEXTCOLOR/TTM_SETTIPBKCOLOR have no effect.
-		SetWindowTheme(m_stWndTtCell, nullptr, L"");
-		m_stWndTtCell.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColors.clrTooltipText), 0);
-		m_stWndTtCell.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColors.clrTooltipBk), 0);
+		SetWindowTheme(m_stWndCellTT, nullptr, L"");
+		m_stWndCellTT.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColors.clrTooltipText), 0);
+		m_stWndCellTT.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColors.clrTooltipBk), 0);
 	}
 
-	if (!m_stWndTtLink.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
+	//Link Tooltip.
+	if (!m_stWndLinkTT.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, lcs.dwTTStyleLink,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr)) {
 		return false;
 	}
 
-	m_stTInfoLink.cbSize = sizeof(TTTOOLINFOW);
-	m_stTInfoLink.uFlags = TTF_TRACK;
-	m_stTInfoLink.uId = 0x02;
-	m_stWndTtLink.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stTInfoLink));
-	m_stWndTtLink.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
+	m_stLinkTTInfo.cbSize = sizeof(TTTOOLINFOW);
+	m_stLinkTTInfo.uFlags = lcs.dwTTStyleLink & TTS_BALLOON ? 0 : TTF_TRACK;
+	m_stLinkTTInfo.uId = 0x02;
+	m_stWndLinkTT.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stLinkTTInfo));
+	m_stWndLinkTT.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 
 	if (m_fHighLatency) { //Tooltip for HighLatency mode.
-		if (!m_stWndTtRow.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
+		if (!m_stWndRowTT.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr,
+			TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
 			CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr)) {
 			return false;
 		}
-		m_stToolInfoRow.cbSize = TTTOOLINFOW_V1_SIZE;
-		m_stToolInfoRow.uFlags = TTF_TRACK;
-		m_stToolInfoRow.uId = 0x03;
-		m_stWndTtRow.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stToolInfoRow));
+		m_stRowTTInfo.cbSize = sizeof(TTTOOLINFOW);
+		m_stRowTTInfo.uFlags = TTF_TRACK;
+		m_stRowTTInfo.uId = 0x03;
+		m_stWndRowTT.SendMessageW(TTM_ADDTOOL, 0, reinterpret_cast<LPARAM>(&m_stRowTTInfo));
 	}
 
 	m_dwGridWidth = lcs.dwListGridWidth;
@@ -1473,14 +1480,8 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 					clrBk = optClr->clrBk == -1 ? clrBkCurrRow : optClr->clrBk;
 				}
 				else {
-					if (GetTooltip(iItem, iSubitem)) {
-						clrText = m_stColors.clrListTextCellTt;
-						clrBk = m_stColors.clrListBkCellTt;
-					}
-					else {
-						clrText = m_stColors.clrListText;
-						clrBk = clrBkCurrRow;
-					}
+					clrText = m_stColors.clrListText;
+					clrBk = clrBkCurrRow;
 				}
 			}
 
@@ -1555,8 +1556,10 @@ auto CListEx::GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEX
 		LISTEXCOLORINFO lci { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_GETCOLOR } };
 		lci.iItem = iItem;
 		lci.iSubItem = iSubItem;
-
-		if (GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&lci))) {
+		lci.stClr.clrBk = 0xffffffff;
+		lci.stClr.clrText = 0xffffffff;
+		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&lci));
+		if (lci.stClr.clrBk != -1 || lci.stClr.clrText != -1) {
 			return lci.stClr;
 		}
 	}
@@ -1598,7 +1601,8 @@ auto CListEx::GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDA
 		LISTEXTTINFO ltti { { m_hWnd, static_cast<UINT>(iCtrlID), LISTEX_MSG_GETTOOLTIP } };
 		ltti.iItem = iItem;
 		ltti.iSubItem = iSubItem;
-		if (GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&ltti)) == TRUE) {
+		if (GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&ltti));
+			ltti.stData.pwszText != nullptr) { //If tooltip text was set by the Parent.
 			return ltti.stData;
 		}
 	}
@@ -1625,9 +1629,8 @@ int CListEx::GetIcon(int iItem, int iSubItem)const
 		LISTEXICONINFO lii { { m_hWnd, uCtrlID, LISTEX_MSG_GETICON } };
 		lii.iItem = iItem;
 		lii.iSubItem = iSubItem;
-		if (GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlID), reinterpret_cast<LPARAM>(&lii)) == TRUE) {
-			return lii.iIconIndex;
-		}
+		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlID), reinterpret_cast<LPARAM>(&lii));
+		return lii.iIconIndex; //By default it's -1, meaning no icon.
 	}
 	else {
 		const auto ID = MapIndexToID(iItem);
@@ -1661,9 +1664,9 @@ void CListEx::OnDestroy()
 {
 	CMFCListCtrl::OnDestroy();
 
-	m_stWndTtCell.DestroyWindow();
-	m_stWndTtLink.DestroyWindow();
-	m_stWndTtRow.DestroyWindow();
+	m_stWndCellTT.DestroyWindow();
+	m_stWndLinkTT.DestroyWindow();
+	m_stWndRowTT.DestroyWindow();
 	m_fontList.DeleteObject();
 	m_fontListUnderline.DeleteObject();
 	m_penGrid.DeleteObject();
@@ -1860,13 +1863,13 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 			return item.fLink && item.rect.PtInRect(pt); }); iterFind != vecText.end()) {
 			fLink = true;
 			if (m_fLinkTooltip && !m_fLDownAtLink && m_rcLinkCurr != iterFind->rect) {
-				TtLinkHide();
+				TTLinkHide();
 				m_rcLinkCurr = iterFind->rect;
 				m_stCurrLink.iItem = hi.iItem;
 				m_stCurrLink.iSubItem = hi.iSubItem;
-				m_wstrTtText = iterFind->fTitle ? iterFind->wstrTitle : iterFind->wstrLink;
-				m_stTInfoLink.lpszText = m_wstrTtText.data();
-				SetTimer(m_uIDTimerTTLinkActivate, 400, nullptr); //Activate (show) tooltip after delay.
+				m_wstrTextTT = iterFind->fTitle ? std::move(iterFind->wstrTitle) : std::move(iterFind->wstrLink);
+				m_stLinkTTInfo.lpszText = m_wstrTextTT.data();
+				SetTimer(m_uIDTLinkTTActivate, m_dwTTShowDelay, nullptr); //Activate link's tooltip after delay.
 			}
 		}
 	}
@@ -1875,8 +1878,8 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 
 	//Link's tooltip area is under the cursor.
 	if (fLink) {
-		if (m_fTtCellShown) { //If there is a cell's tooltip atm, hide it.
-			TtCellHide();
+		if (m_fCellTTActive) { //If there is a cell's tooltip atm, hide it.
+			TTCellHide();
 		}
 
 		return; //Do not process further, cursor is on the link's rect.
@@ -1886,31 +1889,24 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 
 	//If there was a link's tool-tip shown, hide it.
 	if (m_fTtLinkShown) {
-		TtLinkHide();
+		TTLinkHide();
 	}
 
 	if (const auto optTT = GetTooltip(hi.iItem, hi.iSubItem); optTT) {
 		//Check if cursor is still in the same cell's rect. If so - just leave.
 		if (m_stCurrCell.iItem != hi.iItem || m_stCurrCell.iSubItem != hi.iSubItem) {
-			m_fTtCellShown = true;
+			m_fCellTTActive = true;
 			m_stCurrCell.iItem = hi.iItem;
 			m_stCurrCell.iSubItem = hi.iSubItem;
-			m_stTInfoCell.lpszText = const_cast<LPWSTR>(optTT->pwszText);
-
-			ClientToScreen(&pt);
-			m_stWndTtCell.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(pt.x, pt.y));
-			m_stWndTtCell.SendMessageW(TTM_SETTITLE, static_cast<WPARAM>(TTI_NONE),
-				reinterpret_cast<LPARAM>(optTT->pwszCaption));
-			m_stWndTtCell.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stTInfoCell));
-			m_stWndTtCell.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stTInfoCell));
-
-			//Timer to check whether mouse has left subitem's rect.
-			SetTimer(m_uIDTimerTTCellCheck, 200, nullptr);
+			m_wstrTextTT = const_cast<LPWSTR>(optTT->pwszText); //Tooltip text.
+			m_wstrCaptionTT = const_cast<LPWSTR>(optTT->pwszCaption ? optTT->pwszCaption : L""); //Tooltip caption.
+			m_stCellTTInfo.lpszText = m_wstrTextTT.data();
+			SetTimer(m_uIDTCellTTActivate, m_dwTTShowDelay, nullptr); //Activate cell's tooltip after delay.
 		}
 	}
 	else {
-		if (m_fTtCellShown) {
-			TtCellHide();
+		if (m_fCellTTActive) {
+			TTCellHide();
 		}
 		else {
 			m_stCurrCell.iItem = -1;
@@ -1996,38 +1992,43 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 	hitInfo.pt = ptClient;
 	ListView_SubItemHitTest(m_hWnd, &hitInfo);
 
-	//Checking if mouse left list's subitem rect,
-	//if so — hiding tooltip and killing timer.
 	switch (nIDEvent) {
-	case m_uIDTimerTTCellCheck:
-		//If cursor is still hovers subitem then do nothing.
-		if (m_stCurrCell.iItem != hitInfo.iItem || m_stCurrCell.iSubItem != hitInfo.iSubItem) {
-			TtCellHide();
+	case m_uIDTCellTTActivate:
+		if (m_stCurrCell.iItem == hitInfo.iItem && m_stCurrCell.iSubItem == hitInfo.iSubItem) {
+			m_stWndLinkTT.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stCellTTInfo));
+			m_stWndCellTT.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(ptScreen.x + 3, ptScreen.y - 20));
+			m_stWndCellTT.SendMessageW(TTM_SETTITLEW, static_cast<WPARAM>(TTI_NONE), reinterpret_cast<LPARAM>(m_wstrCaptionTT.data()));
+			m_stWndCellTT.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_stCellTTInfo));
+			m_stWndCellTT.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stCellTTInfo));
+			SetTimer(m_uIDTCellTTCheck, 200, nullptr); //Timer to check whether mouse has left subitem's rect.
 		}
+		KillTimer(m_uIDTCellTTActivate);
 		break;
-	case m_uIDTimerTTLinkCheck:
-		//If cursor has left link subitem's rect.
-		if (m_stCurrLink.iItem != hitInfo.iItem || m_stCurrLink.iSubItem != hitInfo.iSubItem) {
-			TtLinkHide();
-		}
-		break;
-	case m_uIDTimerTTLinkActivate:
+	case m_uIDTLinkTTActivate:
 		if (m_rcLinkCurr.PtInRect(ptClient)) {
 			m_fTtLinkShown = true;
-
-			m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoLink));
-			m_stWndTtLink.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(ptScreen.x + 3, ptScreen.y - 20));
-			m_stWndTtLink.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stTInfoLink));
-			m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stTInfoLink));
-
-			//Timer to check whether mouse left link subitems's rect.
-			SetTimer(m_uIDTimerTTLinkCheck, 200, nullptr);
+			m_stWndLinkTT.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stLinkTTInfo));
+			m_stWndLinkTT.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(ptScreen.x + 3, ptScreen.y - 20));
+			m_stWndLinkTT.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_stLinkTTInfo));
+			m_stWndLinkTT.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stLinkTTInfo));
+			SetTimer(m_uIDTLinkTTCheck, 200, nullptr); //Timer to check whether mouse has left link's rect.
 		}
 		else {
 			m_rcLinkCurr.SetRectEmpty();
 		}
-
-		KillTimer(m_uIDTimerTTLinkActivate);
+		KillTimer(m_uIDTLinkTTActivate);
+		break;
+	case m_uIDTCellTTCheck:
+		//If cursor has left cell's rect.
+		if (m_stCurrCell.iItem != hitInfo.iItem || m_stCurrCell.iSubItem != hitInfo.iSubItem) {
+			TTCellHide();
+		}
+		break;
+	case m_uIDTLinkTTCheck:
+		//If cursor has left link subitem's rect.
+		if (m_stCurrLink.iItem != hitInfo.iItem || m_stCurrLink.iSubItem != hitInfo.iSubItem) {
+			TTLinkHide();
+		}
 		break;
 	default:
 		break;
@@ -2284,23 +2285,23 @@ void CListEx::SetFontSize(long lSize)
 	}
 }
 
-void CListEx::TtLinkHide()
+void CListEx::TTLinkHide()
 {
 	m_fTtLinkShown = false;
-	m_stWndTtLink.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoLink));
-	KillTimer(m_uIDTimerTTLinkCheck);
+	m_stWndLinkTT.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stLinkTTInfo));
+	KillTimer(m_uIDTLinkTTCheck);
 	m_stCurrLink.iItem = -1;
 	m_stCurrLink.iSubItem = -1;
 	m_rcLinkCurr.SetRectEmpty();
 }
 
-void CListEx::TtCellHide()
+void CListEx::TTCellHide()
 {
-	m_fTtCellShown = false;
+	m_fCellTTActive = false;
 	m_stCurrCell.iItem = -1;
 	m_stCurrCell.iSubItem = -1;
-	m_stWndTtCell.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stTInfoCell));
-	KillTimer(m_uIDTimerTTCellCheck);
+	m_stWndCellTT.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stCellTTInfo));
+	KillTimer(m_uIDTCellTTCheck);
 }
 
 void CListEx::TtRowShow(bool fShow, UINT uRow)
@@ -2310,11 +2311,11 @@ void CListEx::TtRowShow(bool fShow, UINT uRow)
 		GetCursorPos(&ptScreen);
 		wchar_t warrOffset[32] { L"Row: " };
 		swprintf_s(&warrOffset[5], 24, L"%u", uRow);
-		m_stToolInfoRow.lpszText = warrOffset;
-		m_stWndTtRow.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
-		m_stWndTtRow.SendMessageW(TTM_UPDATETIPTEXT, 0, reinterpret_cast<LPARAM>(&m_stToolInfoRow));
+		m_stRowTTInfo.lpszText = warrOffset;
+		m_stWndRowTT.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
+		m_stWndRowTT.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_stRowTTInfo));
 	}
-	m_stWndTtRow.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_stToolInfoRow));
+	m_stWndRowTT.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_stRowTTInfo));
 }
 
 auto CListEx::EditSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,

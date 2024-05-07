@@ -107,7 +107,7 @@ void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
 template<typename T> requires TSize1248<T>
 bool CHexDlgOpers::FillVecOper(bool fCheckBE)
 {
-	//To make sure the vector will be the size of the data type.
+	//To make sure the vector will have the size of the data type.
 	//Even if operation doesn't need an operand (e.g. OPER_NOT), the spnData
 	//in the HEXMODIFY must have appropriate size, equal to the data type size.
 	m_vecOperData = RangeToVecBytes(T { });
@@ -119,7 +119,7 @@ bool CHexDlgOpers::FillVecOper(bool fCheckBE)
 	pWndOper->GetWindowTextW(cwstrOper);
 	const auto opt = stn::StrToNum<T>(cwstrOper.GetString());
 	if (!opt) {
-		::MessageBoxW(nullptr, L"Wrong operand.", L"Operand error", MB_ICONERROR);
+		MessageBoxW(L"Wrong operand.", L"Operand error", MB_ICONERROR);
 		return false;
 	}
 
@@ -127,7 +127,7 @@ bool CHexDlgOpers::FillVecOper(bool fCheckBE)
 	const auto eOperMode = GetOperMode();
 	using enum EHexOperMode;
 	if (eOperMode == OPER_DIV && tOper == 0) { //Division by zero check.
-		::MessageBoxW(nullptr, L"Can't divide by zero.", L"Operand error", MB_ICONERROR);
+		MessageBoxW(L"Can't divide by zero.", L"Operand error", MB_ICONERROR);
 		return { };
 	}
 
