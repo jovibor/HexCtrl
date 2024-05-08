@@ -8,6 +8,7 @@
 #include "../HexCtrl.h"
 #include <afxwin.h>      //MFC core and standard components.
 #include <algorithm>
+#include <chrono>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -177,9 +178,9 @@ namespace HEXCTRL::INTERNAL {
 		void SetFontSize(long lSize); //Set current font size.
 		void SnapshotUndo(const VecSpan& vecSpan); //Takes currently modifiable data snapshot.
 		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;     //Point of the text chunk.
-		void ToolTipBkmShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip for bookmark show/hide.
-		void ToolTipTemplShow(bool fShow, POINT pt = { }, bool fTimerCancel = false); //Tooltip for templates show/hide.
-		void ToolTipOffsetShow(bool fShow); //Tooltip Offset show/hide.
+		void TTBkmShow(bool fShow, bool fTimer = false);   //Tooltip for bookmark show/hide.
+		void TTTemplShow(bool fShow, bool fTimer = false); //Tooltip for templates show/hide.
+		void TTOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();
 
 		//MFC message handlers.
@@ -236,8 +237,7 @@ namespace HEXCTRL::INTERNAL {
 		TTTOOLINFOW m_stToolInfoBkm { };      //Tooltip info for Bookmarks.
 		TTTOOLINFOW m_stToolInfoTempl { };    //Tooltip info for Templates.
 		TTTOOLINFOW m_stToolInfoOffset { };   //Tooltip info for Offset.
-		std::time_t m_tmTTBkm { };            //Time beginning to calc the diff for hiding bkm tooltip after.
-		std::time_t m_tmTTTempl { };          //Time beginning to calc the diff for hiding template tooltip after.
+		std::chrono::steady_clock::time_point m_tmTT { }; //Start time of the tooltip.
 		CWnd m_wndTTBkm { };                  //Tooltip window for bookmarks description.
 		CWnd m_wndTTTempl { };                //Tooltip window for Templates' fields.
 		CWnd m_wndTTOffset { };               //Tooltip window for Offset in m_fHighLatency mode.
@@ -311,6 +311,7 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fHighLatency { false };        //Reflects HEXDATA::fHighLatency.
 		bool m_fKeyDownAtm { false };         //Whether a key is pressed at the moment.
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
-		bool m_fScrollLines { false };        //Page scroll in "Screen * m_flScrollRatio" or in lines. 
+		bool m_fScrollLines { false };        //Page scroll in "Screen * m_flScrollRatio" or in lines.
+		bool m_fTTHiding { false };           //Flag is set when any Tooltip window is hiding.
 	};
 }

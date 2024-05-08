@@ -216,7 +216,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		}
 	}
 
-	m_wndTTBkm.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
+	m_wndTTBkm.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
 	m_stToolInfoBkm.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoBkm.uFlags = TTF_TRACK;
@@ -224,7 +224,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_wndTTBkm.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 	m_wndTTBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
-	m_wndTTTempl.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
+	m_wndTTTempl.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
 	m_stToolInfoTempl.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoTempl.uFlags = TTF_TRACK;
@@ -232,7 +232,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_wndTTTempl.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
 	m_wndTTTempl.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
-	m_wndTTOffset.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, nullptr, TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
+	m_wndTTOffset.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
 	m_stToolInfoOffset.cbSize = sizeof(TTTOOLINFOW);
 	m_stToolInfoOffset.uFlags = TTF_TRACK;
@@ -5503,45 +5503,54 @@ void CHexCtrl::TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
 
-void CHexCtrl::ToolTipBkmShow(bool fShow, POINT pt, bool fTimerCancel)
+void CHexCtrl::TTBkmShow(bool fShow, bool fTimer)
 {
 	if (fShow) {
-		m_tmTTBkm = std::time(nullptr);
-		m_wndTTBkm.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x, pt.y)));
+		m_tmTT = std::chrono::high_resolution_clock::now();
+		POINT pt;
+		GetCursorPos(&pt);
+		m_wndTTBkm.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x + 3, pt.y - 20)));
 		m_wndTTBkm.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 		m_wndTTBkm.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 		SetTimer(m_uIDTTBkm, 300, nullptr);
 	}
-	else if (fTimerCancel) { //Tooltip was canceled by the timer, not mouse move.
-		m_wndTTBkm.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-	}
 	else {
-		m_pBkmTTCurr = nullptr;
+		//When hiding tooltip by timer we not nullify the pointer.
+		//Otherwise tooltip will be shown again after mouse movement,
+		//even if cursor didn't leave current bkm area.
+		if (!fTimer) {
+			m_pBkmTTCurr = nullptr;
+		}
+
+		m_fTTHiding = true;
 		m_wndTTBkm.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
 		KillTimer(m_uIDTTBkm);
 	}
 }
 
-void CHexCtrl::ToolTipTemplShow(bool fShow, POINT pt, bool fTimerCancel)
+void CHexCtrl::TTTemplShow(bool fShow, bool fTimer)
 {
 	if (fShow) {
-		m_tmTTTempl = std::time(nullptr);
-		m_wndTTTempl.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x, pt.y)));
+		m_tmTT = std::chrono::high_resolution_clock::now();
+		POINT pt;
+		GetCursorPos(&pt);
+		m_wndTTTempl.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x + 3, pt.y - 20)));
 		m_wndTTTempl.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
 		m_wndTTTempl.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
 		SetTimer(m_uIDTTTempl, 300, nullptr);
 	}
-	else if (fTimerCancel) { //Tooltip was canceled by the timer, not mouse move.
-		m_wndTTTempl.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
-	}
 	else {
-		m_pTFieldTTCurr = nullptr;
+		if (!fTimer) {
+			m_pTFieldTTCurr = nullptr;
+		}
+
+		m_fTTHiding = true;
 		m_wndTTTempl.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
 		KillTimer(m_uIDTTTempl);
 	}
 }
 
-void CHexCtrl::ToolTipOffsetShow(bool fShow)
+void CHexCtrl::TTOffsetShow(bool fShow)
 {
 	if (fShow) {
 		CPoint ptScreen;
@@ -5921,6 +5930,13 @@ void CHexCtrl::OnLButtonUp(UINT nFlags, CPoint point)
 
 void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 {
+	//When tootlip is hiding (on timer event) it sends WM_MOUSEMOVE message to the underlying window.
+	//This flag/check is to prevent handling of this message, otherwise timers will rerun.
+	if (m_fTTHiding) {
+		m_fTTHiding = false;
+		return;
+	};
+
 	const auto optHit = HitTest(point);
 
 	if (m_fLMousePressed) {
@@ -6026,11 +6042,11 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 					ClientToScreen(&ptScreen);
 					ptScreen.Offset(3, 3);
 					m_stToolInfoBkm.lpszText = pBkm->wstrDesc.data();
-					ToolTipBkmShow(true, ptScreen);
+					TTBkmShow(true);
 				}
 			}
 			else if (m_pBkmTTCurr != nullptr) {
-				ToolTipBkmShow(false);
+				TTBkmShow(false);
 			}
 			else if (const auto pField = m_pDlgTemplMgr->HitTest(optHit->ullOffset);
 				m_pDlgTemplMgr->IsTooltips() && pField != nullptr) {
@@ -6040,20 +6056,20 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 					ClientToScreen(&ptScreen);
 					ptScreen.Offset(3, 3);
 					m_stToolInfoTempl.lpszText = const_cast<LPWSTR>(pField->wstrName.data());
-					ToolTipTemplShow(true, ptScreen);
+					TTTemplShow(true);
 				}
 			}
 			else if (m_pTFieldTTCurr != nullptr) {
-				ToolTipTemplShow(false);
+				TTTemplShow(false);
 			}
 		}
 		else {
 			if (m_pBkmTTCurr != nullptr) { //If there is already bkm tooltip shown, but cursor is outside of data chunks.
-				ToolTipBkmShow(false);
+				TTBkmShow(false);
 			}
 
 			if (m_pTFieldTTCurr != nullptr) { //If there is already Template's field tooltip shown.
-				ToolTipTemplShow(false);
+				TTTemplShow(false);
 			}
 		}
 
@@ -6176,34 +6192,35 @@ void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 
 void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 {
-	static constexpr auto dbSecToShow { 5.0 }; //How many seconds to show the Tooltip.
+	static constexpr auto dbSecToShow { 5000.0 }; //How many ms to show the Tooltip.
 
 	CRect rcClient;
 	GetClientRect(rcClient);
 	ClientToScreen(rcClient);
 	CPoint ptCursor;
 	GetCursorPos(&ptCursor);
+	const auto msElapsed = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - m_tmTT).count();
 
 	switch (nIDEvent) {
 	case m_uIDTTBkm:
-		if (!rcClient.PtInRect(ptCursor)) { //Checking if cursor has left client rect.
-			ToolTipBkmShow(false);
+		//Checking if cursor has left client rect, or more than dbSecToShow seconds have passed since toolip is shown.
+		if (!rcClient.PtInRect(ptCursor)) {
+			TTBkmShow(false);
 		}
-		//Or more than dbSecToShow seconds have passed since bkm toolip is shown.
-		else if (std::difftime(std::time(nullptr), m_tmTTBkm) >= dbSecToShow) {
-			ToolTipBkmShow(false, { }, true);
+		if (msElapsed >= dbSecToShow) {
+			TTBkmShow(false, true);
 		}
 		break;
 	case m_uIDTTTempl:
-		if (!rcClient.PtInRect(ptCursor)) { //Checking if cursor has left client rect.
-			ToolTipTemplShow(false);
+		if (!rcClient.PtInRect(ptCursor)) {
+			TTTemplShow(false);
 		}
-		//Or more than dbSecToShow seconds have passed since template toolip is shown.
-		else if (std::difftime(std::time(nullptr), m_tmTTTempl) >= dbSecToShow) {
-			ToolTipTemplShow(false, { }, true);
+		if (msElapsed >= dbSecToShow) {
+			TTTemplShow(false, true);
 		}
 		break;
 	default:
+		CWnd::OnTimer(nIDEvent);
 		break;
 	}
 }
@@ -6213,7 +6230,7 @@ void CHexCtrl::OnVScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollB
 	bool fRedraw { true };
 	if (m_fHighLatency) {
 		fRedraw = m_pScrollV->IsThumbReleased();
-		ToolTipOffsetShow(!fRedraw);
+		TTOffsetShow(!fRedraw);
 	}
 
 	if (fRedraw) {
