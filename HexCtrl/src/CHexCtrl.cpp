@@ -5515,6 +5515,8 @@ void CHexCtrl::TTBkmShow(bool fShow, bool fTimer)
 		SetTimer(m_uIDTTBkm, 300, nullptr);
 	}
 	else {
+		KillTimer(m_uIDTTBkm);
+
 		//When hiding tooltip by timer we not nullify the pointer.
 		//Otherwise tooltip will be shown again after mouse movement,
 		//even if cursor didn't leave current bkm area.
@@ -5524,7 +5526,6 @@ void CHexCtrl::TTBkmShow(bool fShow, bool fTimer)
 
 		m_fTTHiding = true;
 		m_wndTTBkm.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-		KillTimer(m_uIDTTBkm);
 	}
 }
 
@@ -5540,13 +5541,13 @@ void CHexCtrl::TTTemplShow(bool fShow, bool fTimer)
 		SetTimer(m_uIDTTTempl, 300, nullptr);
 	}
 	else {
+		KillTimer(m_uIDTTTempl);
 		if (!fTimer) {
 			m_pTFieldTTCurr = nullptr;
 		}
 
 		m_fTTHiding = true;
 		m_wndTTTempl.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
-		KillTimer(m_uIDTTTempl);
 	}
 }
 
@@ -6207,7 +6208,7 @@ void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 		if (!rcClient.PtInRect(ptCursor)) {
 			TTBkmShow(false);
 		}
-		if (msElapsed >= dbSecToShow) {
+		else if (msElapsed >= dbSecToShow) {
 			TTBkmShow(false, true);
 		}
 		break;
@@ -6215,7 +6216,7 @@ void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 		if (!rcClient.PtInRect(ptCursor)) {
 			TTTemplShow(false);
 		}
-		if (msElapsed >= dbSecToShow) {
+		else if (msElapsed >= dbSecToShow) {
 			TTTemplShow(false, true);
 		}
 		break;

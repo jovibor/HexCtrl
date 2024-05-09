@@ -333,12 +333,12 @@ void CListExHdr::SetSortArrow(int iColumn, bool fAscending)
 
 UINT CListExHdr::ColumnIndexToID(int iIndex)const
 {
-	//Each column has unique internal identifier in HDITEMW::lParam
-	if (HDITEMW hdi { HDI_LPARAM }; GetItem(iIndex, &hdi) != FALSE) {
-		return static_cast<UINT>(hdi.lParam);
-	}
+	//Each column has unique internal identifier in HDITEMW::lParam.
+	HDITEMW hdi { HDI_LPARAM };
+	const auto ret = GetItem(iIndex, &hdi);
+	assert(ret == TRUE); //There is no such column index if FALSE.
 
-	return 0;
+	return ret ? static_cast<UINT>(hdi.lParam) : 0;
 }
 
 int CListExHdr::ColumnIDToIndex(UINT uID)const
@@ -638,16 +638,16 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		void SetCellTooltip(int iItem, int iSubItem, std::wstring_view wsvTooltip, std::wstring_view wsvCaption)override;
 		void SetColors(const LISTEXCOLORS& lcs)override;
 		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
-		void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enSortMode = { })override;
+		void SetColumnEditable(int iColumn, bool fEditable)override;
+		void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode = { })override;
 		void SetFont(const LOGFONTW* pLogFont)override;
 		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1)override;
-		void SetColumnEditable(int iColumn, bool fEditable)override;
 		void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)override; //Icon for a given column.
 		void SetHdrFont(const LOGFONTW* pLogFont)override;
 		void SetHdrHeight(DWORD dwHeight)override;
 		void SetHdrImageList(CImageList* pList)override;
 		void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)override;
-		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode enSortMode)override;
+		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode eSortMode)override;
 		static int CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 	private:
 		struct SCOLROWCLR;
@@ -683,8 +683,8 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		auto ParseItemData(int iItem, int iSubitem) -> std::vector<ITEMDATA>;
 		void RecalcMeasure()const;
 		void SetFontSize(long lSize);
-		void TTLinkHide();
-		void TTCellHide();
+		void TTCellShow(bool fShow, bool fTimer = false);
+		void TTLinkShow(bool fShow, bool fTimer = false);
 		void TTHLShow(bool fShow, UINT uRow); //Tooltips for high latency mode.
 		static auto CALLBACK EditSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIdSubclass, DWORD_PTR dwRefData)->LRESULT;
@@ -832,7 +832,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 	m_fLinksUnderline = lcs.fLinkUnderline;
 	m_fLinkTooltip = lcs.fLinkTooltip;
 	m_fHighLatency = lcs.fHighLatency;
-	m_dwTTShowDelay = (std::max)(lcs.dwTTShowDelay, 100UL); //Set minimum delay to 100ms.
+	m_dwTTShowDelay = lcs.dwTTShowDelay;
 	m_dwTTShowTime = lcs.dwTTShowTime;
 	m_ptTTOffset = lcs.ptTTOffset;
 
@@ -1285,9 +1285,19 @@ void CListEx::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 	m_umapColumnColor[iColumn] = SCOLROWCLR { { clrBk, clrText }, std::chrono::high_resolution_clock::now() };
 }
 
-void CListEx::SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enSortMode)
+void CListEx::SetColumnEditable(int iColumn, bool fEditable)
 {
-	m_umapColumnSortMode[iColumn] = enSortMode;
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return;
+	}
+
+	GetHeaderCtrl().SetColumnEditable(iColumn, fEditable);
+}
+
+void CListEx::SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode)
+{
+	m_umapColumnSortMode[iColumn] = eSortMode;
 	GetHeaderCtrl().SetColumnSortable(iColumn, fSortable);
 }
 
@@ -1352,16 +1362,6 @@ void CListEx::SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 	GetHeaderCtrl().RedrawWindow();
 }
 
-void CListEx::SetColumnEditable(int iColumn, bool fEditable)
-{
-	assert(IsCreated());
-	if (!IsCreated()) {
-		return;
-	}
-
-	GetHeaderCtrl().SetColumnEditable(iColumn, fEditable);
-}
-
 void CListEx::SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)
 {
 	assert(IsCreated());
@@ -1386,7 +1386,7 @@ void CListEx::SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)
 	m_umapRowColor[dwRow] = SCOLROWCLR { { clrBk, clrText }, std::chrono::high_resolution_clock::now() };
 }
 
-void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode enSortMode)
+void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode eSortMode)
 {
 	assert(IsCreated());
 	if (!IsCreated()) {
@@ -1395,7 +1395,7 @@ void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMo
 
 	m_fSortable = fSortable;
 	m_pfnCompare = pfnCompare;
-	m_eDefSortMode = enSortMode;
+	m_eDefSortMode = eSortMode;
 
 	GetHeaderCtrl().SetSortable(fSortable);
 }
@@ -1404,12 +1404,12 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 {
 	const auto* const pListCtrl = reinterpret_cast<IListEx*>(lParamSort);
 	const auto iSortColumn = pListCtrl->GetSortColumn();
-	const auto enSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
+	const auto eSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
 	const auto wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn);
 	const auto wstrItem2 = pListCtrl->GetItemText(static_cast<int>(lParam2), iSortColumn);
 
 	int iCompare { };
-	switch (enSortMode) {
+	switch (eSortMode) {
 	case EListExSortMode::SORT_LEX:
 		iCompare = wstrItem1.Compare(wstrItem2);
 		break;
@@ -1740,7 +1740,8 @@ void CListEx::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 void CListEx::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 	m_htiEdit.pt = point;
-	if (SubItemHitTest(&m_htiEdit) == -1 || !GetHeaderCtrl().IsColumnEditable(m_htiEdit.iSubItem)) {
+	SubItemHitTest(&m_htiEdit);
+	if (m_htiEdit.iItem < 0 || m_htiEdit.iSubItem < 0 || !GetHeaderCtrl().IsColumnEditable(m_htiEdit.iSubItem)) {
 		return CMFCListCtrl::OnLButtonDblClk(nFlags, point);
 	}
 
@@ -1779,8 +1780,10 @@ void CListEx::OnLButtonDblClk(UINT nFlags, CPoint point)
 void CListEx::OnLButtonDown(UINT nFlags, CPoint pt)
 {
 	bool fLinkDown { false };
-	if (LVHITTESTINFO hi { pt }; SubItemHitTest(&hi) != -1) {
-		const auto vecText = ParseItemData(hi.iItem, hi.iSubItem);
+	LVHITTESTINFO hti { pt };
+	SubItemHitTest(&hti);
+	if (hti.iItem >= 0 && hti.iSubItem >= 0) {
+		const auto vecText = ParseItemData(hti.iItem, hti.iSubItem);
 		if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](const ITEMDATA& item) {
 			return item.fLink && item.rect.PtInRect(pt); }); iterFind != vecText.end()) {
 			m_fLDownAtLink = true;
@@ -1798,23 +1801,22 @@ void CListEx::OnLButtonUp(UINT nFlags, CPoint pt)
 {
 	bool fLinkUp { false };
 	if (m_fLDownAtLink) {
-		LVHITTESTINFO hi { };
-		hi.pt = pt;
-		ListView_SubItemHitTest(m_hWnd, &hi);
-		if (hi.iSubItem == -1 || hi.iItem == -1) {
+		LVHITTESTINFO hti { pt };
+		SubItemHitTest(&hti);
+		if (hti.iItem < 0 || hti.iSubItem < 0) {
 			m_fLDownAtLink = false;
 			return;
 		}
 
-		const auto vecText = ParseItemData(hi.iItem, hi.iSubItem);
+		const auto vecText = ParseItemData(hti.iItem, hti.iSubItem);
 		if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](const ITEMDATA& item) {
 			return item.fLink && item.rect == m_rcLinkCurr; }); iterFind != vecText.end()) {
 			m_rcLinkCurr.SetRectEmpty();
 			fLinkUp = true;
 			const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
 			LISTEXLINKINFO lli { { m_hWnd, uCtrlId, LISTEX_MSG_LINKCLICK } };
-			lli.iItem = hi.iItem;
-			lli.iSubItem = hi.iSubItem;
+			lli.iItem = hti.iItem;
+			lli.iSubItem = hti.iSubItem;
 			lli.ptClick = pt;
 			lli.pwszText = iterFind->wstrLink.data();
 			GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&lli));
@@ -1865,59 +1867,64 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 		return;
 	}
 
-	LVHITTESTINFO hi { pt };
-	SubItemHitTest(&hi);
-	bool fLink { false }; //Cursor at link's rect area.
-	if (hi.iItem >= 0) {
-		const auto vecText = ParseItemData(hi.iItem, hi.iSubItem);
+	LVHITTESTINFO hti { pt };
+	SubItemHitTest(&hti);
+	bool fLinkRect { false }; //Cursor at link's rect area?
+	if (hti.iItem >= 0 && hti.iSubItem >= 0) {
+		const auto vecText = ParseItemData(hti.iItem, hti.iSubItem);
 		if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](const ITEMDATA& item) {
 			return item.fLink && item.rect.PtInRect(pt); }); iterFind != vecText.end()) {
-			fLink = true;
+			fLinkRect = true;
 			if (m_fLinkTooltip && !m_fLDownAtLink && m_rcLinkCurr != iterFind->rect) {
-				TTLinkHide();
+				TTLinkShow(false);
 				m_fLinkTTActive = true;
 				m_rcLinkCurr = iterFind->rect;
-				m_htiCurrLink.iItem = hi.iItem;
-				m_htiCurrLink.iSubItem = hi.iSubItem;
+				m_htiCurrLink.iItem = hti.iItem;
+				m_htiCurrLink.iSubItem = hti.iSubItem;
 				m_wstrTextTT = iterFind->fTitle ? std::move(iterFind->wstrTitle) : std::move(iterFind->wstrLink);
 				m_ttiLink.lpszText = m_wstrTextTT.data();
-				SetTimer(m_uIDTLinkTTActivate, m_dwTTShowDelay, nullptr); //Activate link's tooltip after delay.
+				if (m_dwTTShowDelay > 0) {
+					SetTimer(m_uIDTLinkTTActivate, m_dwTTShowDelay, nullptr); //Activate link's tooltip after delay.
+				}
+				else { TTLinkShow(true); } //Activate immediately.
 			}
 		}
 	}
 
-	SetCursor(fLink ? hCurHand : hCurArrow);
+	SetCursor(fLinkRect ? hCurHand : hCurArrow);
 
-	//Link's tooltip area is under the cursor.
-	if (fLink) {
+	if (fLinkRect) { //Link's rect is under the cursor.
 		if (m_fCellTTActive) { //If there is a cell's tooltip atm, hide it.
-			TTCellHide();
+			TTCellShow(false);
 		}
 		return; //Do not process further, cursor is on the link's rect.
 	}
 
+	m_rcLinkCurr.SetRectEmpty(); //If cursor is not over any link.
 	m_fLDownAtLink = false;
 
-	//If there was a link's tool-tip shown, hide it.
-	if (m_fLinkTTActive) {
-		TTLinkHide();
+	if (m_fLinkTTActive) { //If there was a link's tool-tip shown, hide it.
+		TTLinkShow(false);
 	}
 
-	if (const auto optTT = GetTooltip(hi.iItem, hi.iSubItem); optTT) {
+	if (const auto optTT = GetTooltip(hti.iItem, hti.iSubItem); optTT) {
 		//Check if cursor is still in the same cell's rect. If so - just leave.
-		if (m_htiCurrCell.iItem != hi.iItem || m_htiCurrCell.iSubItem != hi.iSubItem) {
+		if (m_htiCurrCell.iItem != hti.iItem || m_htiCurrCell.iSubItem != hti.iSubItem) {
 			m_fCellTTActive = true;
-			m_htiCurrCell.iItem = hi.iItem;
-			m_htiCurrCell.iSubItem = hi.iSubItem;
+			m_htiCurrCell.iItem = hti.iItem;
+			m_htiCurrCell.iSubItem = hti.iSubItem;
 			m_wstrTextTT = optTT->pwszText; //Tooltip text.
 			m_wstrCaptionTT = optTT->pwszCaption ? optTT->pwszCaption : L""; //Tooltip caption.
 			m_ttiCell.lpszText = m_wstrTextTT.data();
-			SetTimer(m_uIDTCellTTActivate, m_dwTTShowDelay, nullptr); //Activate cell's tooltip after delay.
+			if (m_dwTTShowDelay > 0) {
+				SetTimer(m_uIDTCellTTActivate, m_dwTTShowDelay, nullptr); //Activate cell's tooltip after delay.
+			}
+			else { TTCellShow(true); }; //Activate immediately.
 		}
 	}
 	else {
 		if (m_fCellTTActive) {
-			TTCellHide();
+			TTCellShow(false);
 		}
 		else {
 			m_htiCurrCell.iItem = -1;
@@ -1999,44 +2006,31 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 	GetCursorPos(&ptScreen);
 	CPoint ptClient = ptScreen;
 	ScreenToClient(&ptClient);
-	LVHITTESTINFO hitInfo { };
-	hitInfo.pt = ptClient;
-	ListView_SubItemHitTest(m_hWnd, &hitInfo);
-	ptScreen.Offset(m_ptTTOffset);
+	LVHITTESTINFO hitInfo { ptClient };
+	SubItemHitTest(&hitInfo);
 
 	switch (nIDEvent) {
 	case m_uIDTCellTTActivate:
-		if (m_htiCurrCell.iItem == hitInfo.iItem && m_htiCurrCell.iSubItem == hitInfo.iSubItem) {
-			m_wndLinkTT.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_ttiCell));
-			m_wndCellTT.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(ptScreen.x, ptScreen.y));
-			m_wndCellTT.SendMessageW(TTM_SETTITLEW, static_cast<WPARAM>(TTI_NONE), reinterpret_cast<LPARAM>(m_wstrCaptionTT.data()));
-			m_wndCellTT.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiCell));
-			m_wndCellTT.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_ttiCell));
-			m_tmTT = std::chrono::high_resolution_clock::now();
-			SetTimer(m_uIDTCellTTCheck, 200, nullptr); //Timer to check whether mouse has left subitem's rect.
-		}
 		KillTimer(m_uIDTCellTTActivate);
+		if (m_htiCurrCell.iItem == hitInfo.iItem && m_htiCurrCell.iSubItem == hitInfo.iSubItem) {
+			TTCellShow(true);
+		}
 		break;
 	case m_uIDTLinkTTActivate:
-		if (m_rcLinkCurr.PtInRect(ptClient)) {
-			m_wndLinkTT.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_ttiLink));
-			m_wndLinkTT.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(ptScreen.x, ptScreen.y));
-			m_wndLinkTT.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiLink));
-			m_wndLinkTT.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_ttiLink));
-			m_tmTT = std::chrono::high_resolution_clock::now();
-			SetTimer(m_uIDTLinkTTCheck, 200, nullptr); //Timer to check whether mouse has left link's rect.
-		}
-		else {
-			m_rcLinkCurr.SetRectEmpty();
-		}
 		KillTimer(m_uIDTLinkTTActivate);
+		if (m_rcLinkCurr.PtInRect(ptClient)) {
+			TTLinkShow(true);
+		}
 		break;
 	case m_uIDTCellTTCheck:
 	{
 		//If cursor has left cell's rect, or time run out.
 		const auto msElapsed = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - m_tmTT).count();
-		if (m_htiCurrCell.iItem != hitInfo.iItem || m_htiCurrCell.iSubItem != hitInfo.iSubItem || msElapsed >= m_dwTTShowTime) {
-			TTCellHide();
+		if (m_htiCurrCell.iItem != hitInfo.iItem || m_htiCurrCell.iSubItem != hitInfo.iSubItem) {
+			TTCellShow(false);
+		}
+		else if (msElapsed >= m_dwTTShowTime) {
+			TTCellShow(false, true);
 		}
 	}
 	break;
@@ -2044,8 +2038,11 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 	{
 		//If cursor has left link subitem's rect, or time run out.
 		const auto msElapsed = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - m_tmTT).count();
-		if (m_htiCurrLink.iItem != hitInfo.iItem || m_htiCurrLink.iSubItem != hitInfo.iSubItem || msElapsed >= m_dwTTShowTime) {
-			TTLinkHide();
+		if (m_htiCurrLink.iItem != hitInfo.iItem || m_htiCurrLink.iSubItem != hitInfo.iSubItem) {
+			TTLinkShow(false);
+		}
+		else if (msElapsed >= m_dwTTShowTime) {
+			TTLinkShow(false, true);
 		}
 	}
 	break;
@@ -2305,25 +2302,60 @@ void CListEx::SetFontSize(long lSize)
 	}
 }
 
-void CListEx::TTCellHide()
+void CListEx::TTCellShow(bool fShow, bool fTimer)
 {
-	m_fCellTTActive = false;
-	m_htiCurrCell.iItem = -1;
-	m_htiCurrCell.iSubItem = -1;
-	m_fTTHiding = true;
-	m_wndCellTT.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_ttiCell));
-	KillTimer(m_uIDTCellTTCheck);
+	if (fShow) {
+		CPoint ptScreen;
+		GetCursorPos(&ptScreen);
+		ptScreen.Offset(m_ptTTOffset);
+		m_wndCellTT.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(ptScreen.x, ptScreen.y));
+		m_wndCellTT.SendMessageW(TTM_SETTITLEW, static_cast<WPARAM>(TTI_NONE), reinterpret_cast<LPARAM>(m_wstrCaptionTT.data()));
+		m_wndCellTT.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiCell));
+		m_wndCellTT.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_ttiCell));
+		m_tmTT = std::chrono::high_resolution_clock::now();
+		SetTimer(m_uIDTCellTTCheck, 300, nullptr); //Timer to check whether mouse has left subitem's rect.
+	}
+	else {
+		KillTimer(m_uIDTCellTTCheck);
+
+		//When hiding tooltip by timer we not nullify the m_htiCurrCell.
+		//Otherwise tooltip will be shown again after mouse movement,
+		//even if cursor didn't leave current cell area.
+		if (!fTimer) {
+			m_htiCurrCell.iItem = -1;
+			m_htiCurrCell.iSubItem = -1;
+		}
+
+		m_fCellTTActive = false;
+		m_fTTHiding = true;
+		m_wndCellTT.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_ttiCell));
+	}
 }
 
-void CListEx::TTLinkHide()
+void CListEx::TTLinkShow(bool fShow, bool fTimer)
 {
-	m_fLinkTTActive = false;
-	m_htiCurrLink.iItem = -1;
-	m_htiCurrLink.iSubItem = -1;
-	m_fTTHiding = true;
-	m_wndLinkTT.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_ttiLink));
-	KillTimer(m_uIDTLinkTTCheck);
-	m_rcLinkCurr.SetRectEmpty();
+	if (fShow) {
+		CPoint ptScreen;
+		GetCursorPos(&ptScreen);
+		ptScreen.Offset(m_ptTTOffset);
+		m_wndLinkTT.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(ptScreen.x, ptScreen.y));
+		m_wndLinkTT.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiLink));
+		m_wndLinkTT.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_ttiLink));
+		m_tmTT = std::chrono::high_resolution_clock::now();
+		SetTimer(m_uIDTLinkTTCheck, 300, nullptr); //Timer to check whether mouse has left link's rect.
+	}
+	else {
+		KillTimer(m_uIDTLinkTTCheck);
+		if (!fTimer) {
+			m_htiCurrLink.iItem = -1;
+			m_htiCurrLink.iSubItem = -1;
+			m_rcLinkCurr.SetRectEmpty();
+		}
+
+		m_fLinkTTActive = false;
+		m_fTTHiding = true;
+		m_wndLinkTT.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_ttiLink));
+	}
 }
 
 void CListEx::TTHLShow(bool fShow, UINT uRow)

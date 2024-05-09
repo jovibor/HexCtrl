@@ -174,7 +174,7 @@ namespace HEXCTRL::LISTEX {
 		virtual void SetColors(const LISTEXCOLORS& lcs) = 0;
 		virtual void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetColumnEditable(int iColumn, bool fEditable) = 0;
-		virtual void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode enSortMode = { }) = 0;
+		virtual void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode = { }) = 0;
 		virtual void SetFont(const LOGFONTW* pLogFont) = 0;
 		virtual void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon) = 0; //Icon for a given column.
@@ -183,7 +183,7 @@ namespace HEXCTRL::LISTEX {
 		virtual void SetHdrImageList(CImageList* pList) = 0;
 		virtual void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare = nullptr,
-			EListExSortMode enSortMode = EListExSortMode::SORT_LEX) = 0;
+			EListExSortMode eSortMode = EListExSortMode::SORT_LEX) = 0;
 	};
 
 	/***************************************************************************************
