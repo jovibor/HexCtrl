@@ -102,12 +102,12 @@ namespace HEXCTRL::INTERNAL {
 		std::vector<GRIDDATA> m_vecGrid;
 		IHexCtrl* m_pHexCtrl { };
 		CHexPropGridCtrl m_gridCtrl;
-		CButton m_btnHex;               //Check-box "Hex numbers".
-		CButton m_btnBE;                //Check-box "Big endian".
+		CButton m_btnHex;             //Check-box "Hex numbers".
+		CButton m_btnBE;              //Check-box "Big endian".
 		ULONGLONG m_ullOffset { };
-		DWORD m_dwHglDataSize { };      //Size of the data to highlight in the HexCtrl.
-		DWORD m_dwDateFormat { };       //Date format.
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
-		wchar_t m_wchDateSepar { };     //Date separator.
+		DWORD m_dwHglDataSize { };    //Size of the data to highlight in the HexCtrl.
+		DWORD m_dwDateFormat { };     //Date format.
+		wchar_t m_wchDateSepar { };   //Date separator.
 	};
 }

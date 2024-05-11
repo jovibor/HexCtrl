@@ -35,13 +35,13 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		struct CODEPAGE {
 			int iCPID { };
-			std::wstring wstrName { };
+			std::wstring wstrName;
 			UINT uMaxChars { };
 		};
 		inline static CHexDlgCodepage* m_pThis { };
 		IHexCtrl* m_pHexCtrl { };
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
-		std::vector<CODEPAGE> m_vecCodePage { };
+		std::vector<CODEPAGE> m_vecCodePage;
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 	};
 }

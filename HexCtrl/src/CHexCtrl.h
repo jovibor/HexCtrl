@@ -178,8 +178,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetFontSize(long lSize); //Set current font size.
 		void SnapshotUndo(const VecSpan& vecSpan); //Takes currently modifiable data snapshot.
 		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;     //Point of the text chunk.
-		void TTBkmShow(bool fShow, bool fTimer = false);   //Tooltip for bookmark show/hide.
-		void TTTemplShow(bool fShow, bool fTimer = false); //Tooltip for templates show/hide.
+		void TTMainShow(bool fShow, bool fTimer = false); //Main tooltip show/hide.
 		void TTOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();
 
@@ -213,8 +212,7 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		static constexpr auto m_pwszHexChars { L"0123456789ABCDEF" }; //Hex digits wchars for fast lookup.
 		static constexpr auto m_pwszClassName { L"HexCtrl" }; //HexCtrl Window Class name.
-		static constexpr auto m_uIDTTBkm { 0x01UL };     //Tooltip ID for Bookmarks.
-		static constexpr auto m_uIDTTTempl { 0x02UL };   //Tooltip ID for Templates.
+		static constexpr auto m_uIDTTTMain { 0x01UL };   //Timer ID for default tooltip.
 		static constexpr auto m_iIndentBottomLine { 1 }; //Bottom line indent from window's bottom.
 		static constexpr auto m_iFirstHorzLinePx { 0 };  //First horizontal line indent.
 		static constexpr auto m_iFirstVertLinePx { 0 };  //First vertical line indent.
@@ -230,17 +228,15 @@ namespace HEXCTRL::INTERNAL {
 		const std::unique_ptr<CHexSelection> m_pSelection { std::make_unique<CHexSelection>() };             //Selection class.
 		const std::unique_ptr<CHexScroll> m_pScrollV { std::make_unique<CHexScroll>() };                     //Vertical scroll bar.
 		const std::unique_ptr<CHexScroll> m_pScrollH { std::make_unique<CHexScroll>() };                     //Horizontal scroll bar.
-		SpanByte m_spnData { };               //Main data span.
+		SpanByte m_spnData;                   //Main data span.
 		HEXCOLORS m_stColors;                 //All HexCtrl colors.
 		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
-		TTTOOLINFOW m_stToolInfoBkm { };      //Tooltip info for Bookmarks.
-		TTTOOLINFOW m_stToolInfoTempl { };    //Tooltip info for Templates.
-		TTTOOLINFOW m_stToolInfoOffset { };   //Tooltip info for Offset.
-		std::chrono::steady_clock::time_point m_tmTT { }; //Start time of the tooltip.
-		CWnd m_wndTTBkm { };                  //Tooltip window for bookmarks description.
-		CWnd m_wndTTTempl { };                //Tooltip window for Templates' fields.
-		CWnd m_wndTTOffset { };               //Tooltip window for Offset in m_fHighLatency mode.
+		CWnd m_wndTTMain;                     //Main tooltip window.
+		CWnd m_wndTTOffset;                   //Tooltip window for Offset in m_fHighLatency mode.
+		TTTOOLINFOW m_ttiMain { };            //Main tooltip info.
+		TTTOOLINFOW m_ttiOffset { };          //Tooltip info for Offset.
+		std::chrono::steady_clock::time_point m_tmTT; //Start time of the tooltip.
 		PHEXBKM m_pBkmTTCurr { };             //Currently shown bookmark's tooltip;
 		PCHEXTEMPLFIELD m_pTFieldTTCurr { };  //Currently shown Template field's tooltip;
 		CFont m_fontMain;                     //Main Hex chunks font.
@@ -287,16 +283,16 @@ namespace HEXCTRL::INTERNAL {
 		int m_iFourthVertLinePx { };          //Fourth vert line indent.
 		int m_iCodePage { -1 };               //Current code-page for Text area. -1 for default.
 		int m_iLOGPIXELSY { };                //GetDeviceCaps(LOGPIXELSY) constant.
-		std::wstring m_wstrCapacity { };      //Top Capacity string.
-		std::wstring m_wstrInfoBar { };       //Info bar text.
-		std::wstring m_wstrPageName { };      //Name of the sector/page.
-		std::wstring m_wstrTextTitle { };     //Text area title.
+		std::wstring m_wstrCapacity;          //Top Capacity string.
+		std::wstring m_wstrInfoBar;           //Info bar text.
+		std::wstring m_wstrPageName;          //Name of the sector/page.
+		std::wstring m_wstrTextTitle;         //Text area title.
 		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecUndo; //Undo data.
 		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecRedo; //Redo data.
 		std::vector < std::unique_ptr < std::remove_pointer<HBITMAP>::type,
-			decltype([](const HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP { }; //Icons for the Menu.
-		std::vector<KEYBIND> m_vecKeyBind { };//Vector of key bindings.
-		std::vector<int> m_vecCharsWidth { }; //Vector of chars widths.
+			decltype([](const HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP; //Icons for the Menu.
+		std::vector<KEYBIND> m_vecKeyBind;    //Vector of key bindings.
+		std::vector<int> m_vecCharsWidth;     //Vector of chars widths.
 		wchar_t m_wchUnprintable { L'.' };    //Replacement char for unprintable characters.
 		wchar_t m_wchDateSepar { L'/' };      //Date separator.
 		bool m_fCreated { false };            //Is control created or not yet.
@@ -312,6 +308,5 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fKeyDownAtm { false };         //Whether a key is pressed at the moment.
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
 		bool m_fScrollLines { false };        //Page scroll in "Screen * m_flScrollRatio" or in lines.
-		bool m_fTTHiding { false };           //Flag is set when any Tooltip window is hiding.
 	};
 }

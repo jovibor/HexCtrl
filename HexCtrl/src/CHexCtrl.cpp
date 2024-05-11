@@ -216,28 +216,18 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		}
 	}
 
-	m_wndTTBkm.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
+	m_wndTTMain.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
-	m_stToolInfoBkm.cbSize = sizeof(TTTOOLINFOW);
-	m_stToolInfoBkm.uFlags = TTF_TRACK;
-	m_stToolInfoBkm.uId = m_uIDTTBkm;
-	m_wndTTBkm.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-	m_wndTTBkm.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
-
-	m_wndTTTempl.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
-	m_stToolInfoTempl.cbSize = sizeof(TTTOOLINFOW);
-	m_stToolInfoTempl.uFlags = TTF_TRACK;
-	m_stToolInfoTempl.uId = m_uIDTTTempl;
-	m_wndTTTempl.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
-	m_wndTTTempl.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
+	m_ttiMain.cbSize = sizeof(TTTOOLINFOW);
+	m_ttiMain.uFlags = TTF_TRACK;
+	m_wndTTMain.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiMain));
+	m_wndTTMain.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
 	m_wndTTOffset.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
-	m_stToolInfoOffset.cbSize = sizeof(TTTOOLINFOW);
-	m_stToolInfoOffset.uFlags = TTF_TRACK;
-	m_stToolInfoOffset.uId = 0x03UL;
-	m_wndTTOffset.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
+	m_ttiOffset.cbSize = sizeof(TTTOOLINFOW);
+	m_ttiOffset.uFlags = TTF_TRACK;
+	m_wndTTOffset.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiOffset));
 	m_wndTTOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
 	if (hcs.pColors != nullptr) {
@@ -1315,7 +1305,8 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 				break;
 			};
 
-			return ModifyData(hmsRepeat);
+			ModifyData(hmsRepeat);
+			return;
 		}
 
 		constexpr auto lmbOper = [](std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte) {
@@ -3509,7 +3500,7 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 	const auto ullSelSize = m_pSelection->GetSelSize();
 	const auto dwCapacity = GetCapacity();
 
-	std::wstring wstrRet { };
+	std::wstring wstrRet;
 	wstrRet.reserve(static_cast<std::size_t>(ullSelSize) * 4);
 	wstrRet = L"Offset";
 	wstrRet.insert(0, (static_cast<std::size_t>(m_dwOffsetDigits) - wstrRet.size()) / 2, ' ');
@@ -5503,51 +5494,29 @@ void CHexCtrl::TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
 
-void CHexCtrl::TTBkmShow(bool fShow, bool fTimer)
+void CHexCtrl::TTMainShow(bool fShow, bool fTimer)
 {
 	if (fShow) {
 		m_tmTT = std::chrono::high_resolution_clock::now();
 		POINT pt;
 		GetCursorPos(&pt);
-		m_wndTTBkm.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x + 3, pt.y - 20)));
-		m_wndTTBkm.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-		m_wndTTBkm.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-		SetTimer(m_uIDTTBkm, 300, nullptr);
+		m_wndTTMain.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x + 3, pt.y - 20)));
+		m_wndTTMain.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiMain));
+		m_wndTTMain.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_ttiMain));
+		SetTimer(m_uIDTTTMain, 300, nullptr);
 	}
 	else {
-		KillTimer(m_uIDTTBkm);
+		KillTimer(m_uIDTTTMain);
 
 		//When hiding tooltip by timer we not nullify the pointer.
 		//Otherwise tooltip will be shown again after mouse movement,
 		//even if cursor didn't leave current bkm area.
 		if (!fTimer) {
 			m_pBkmTTCurr = nullptr;
-		}
-
-		m_fTTHiding = true;
-		m_wndTTBkm.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoBkm));
-	}
-}
-
-void CHexCtrl::TTTemplShow(bool fShow, bool fTimer)
-{
-	if (fShow) {
-		m_tmTT = std::chrono::high_resolution_clock::now();
-		POINT pt;
-		GetCursorPos(&pt);
-		m_wndTTTempl.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x + 3, pt.y - 20)));
-		m_wndTTTempl.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
-		m_wndTTTempl.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
-		SetTimer(m_uIDTTTempl, 300, nullptr);
-	}
-	else {
-		KillTimer(m_uIDTTTempl);
-		if (!fTimer) {
 			m_pTFieldTTCurr = nullptr;
 		}
 
-		m_fTTHiding = true;
-		m_wndTTTempl.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_stToolInfoTempl));
+		m_wndTTMain.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_ttiMain));
 	}
 }
 
@@ -5557,13 +5526,13 @@ void CHexCtrl::TTOffsetShow(bool fShow)
 		CPoint ptScreen;
 		GetCursorPos(&ptScreen);
 		auto wstrOffset = (IsOffsetAsHex() ? L"Offset: 0x" : L"Offset: ") + OffsetToWstr(GetTopLine() * GetCapacity());
-		m_stToolInfoOffset.lpszText = wstrOffset.data();
+		m_ttiOffset.lpszText = wstrOffset.data();
 		m_wndTTOffset.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
-		m_wndTTOffset.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
-		m_stToolInfoOffset.lpszText = nullptr;
+		m_wndTTOffset.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiOffset));
+		m_ttiOffset.lpszText = nullptr;
 	}
 
-	m_wndTTOffset.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_stToolInfoOffset));
+	m_wndTTOffset.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_ttiOffset));
 }
 
 void CHexCtrl::Undo()
@@ -5931,13 +5900,6 @@ void CHexCtrl::OnLButtonUp(UINT nFlags, CPoint point)
 
 void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 {
-	//When tootlip is hiding (on timer event) it sends WM_MOUSEMOVE message to the underlying window.
-	//This flag/check is to prevent handling of this message, otherwise timers will rerun.
-	if (m_fTTHiding) {
-		m_fTTHiding = false;
-		return;
-	};
-
 	const auto optHit = HitTest(point);
 
 	if (m_fLMousePressed) {
@@ -6042,12 +6004,12 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 					CPoint ptScreen = point;
 					ClientToScreen(&ptScreen);
 					ptScreen.Offset(3, 3);
-					m_stToolInfoBkm.lpszText = pBkm->wstrDesc.data();
-					TTBkmShow(true);
+					m_ttiMain.lpszText = pBkm->wstrDesc.data();
+					TTMainShow(true);
 				}
 			}
 			else if (m_pBkmTTCurr != nullptr) {
-				TTBkmShow(false);
+				TTMainShow(false);
 			}
 			else if (const auto pField = m_pDlgTemplMgr->HitTest(optHit->ullOffset);
 				m_pDlgTemplMgr->IsTooltips() && pField != nullptr) {
@@ -6056,21 +6018,18 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 					CPoint ptScreen = point;
 					ClientToScreen(&ptScreen);
 					ptScreen.Offset(3, 3);
-					m_stToolInfoTempl.lpszText = const_cast<LPWSTR>(pField->wstrName.data());
-					TTTemplShow(true);
+					m_ttiMain.lpszText = const_cast<LPWSTR>(pField->wstrName.data());
+					TTMainShow(true);
 				}
 			}
-			else if (m_pTFieldTTCurr != nullptr) {
-				TTTemplShow(false);
+			else if (m_pTFieldTTCurr != nullptr || m_pBkmTTCurr != nullptr) {
+				TTMainShow(false);
 			}
 		}
 		else {
-			if (m_pBkmTTCurr != nullptr) { //If there is already bkm tooltip shown, but cursor is outside of data chunks.
-				TTBkmShow(false);
-			}
-
-			if (m_pTFieldTTCurr != nullptr) { //If there is already Template's field tooltip shown.
-				TTTemplShow(false);
+			//If there is already tooltip shown, but cursor is outside of data chunks.
+			if (m_pBkmTTCurr != nullptr || m_pTFieldTTCurr != nullptr) {
+				TTMainShow(false);
 			}
 		}
 
@@ -6200,24 +6159,16 @@ void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 	ClientToScreen(rcClient);
 	CPoint ptCursor;
 	GetCursorPos(&ptCursor);
-	const auto msElapsed = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - m_tmTT).count();
 
 	switch (nIDEvent) {
-	case m_uIDTTBkm:
-		//Checking if cursor has left client rect, or more than dbSecToShow seconds have passed since toolip is shown.
-		if (!rcClient.PtInRect(ptCursor)) {
-			TTBkmShow(false);
+	case m_uIDTTTMain:
+		if (!rcClient.PtInRect(ptCursor)) { //Check if cursor has left client rect,
+			TTMainShow(false);
 		}
-		else if (msElapsed >= dbSecToShow) {
-			TTBkmShow(false, true);
-		}
-		break;
-	case m_uIDTTTempl:
-		if (!rcClient.PtInRect(ptCursor)) {
-			TTTemplShow(false);
-		}
-		else if (msElapsed >= dbSecToShow) {
-			TTTemplShow(false, true);
+		else if (const auto msElapsed = std::chrono::duration<double, std::milli>
+			(std::chrono::high_resolution_clock::now() - m_tmTT).count();
+			msElapsed >= dbSecToShow) { //or more than dbSecToShow ms have passed since toolip was shown.
+			TTMainShow(false, true);
 		}
 		break;
 	default:

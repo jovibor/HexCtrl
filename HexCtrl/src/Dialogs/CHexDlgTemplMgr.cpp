@@ -1832,8 +1832,8 @@ void CHexDlgTemplMgr::UnloadTemplate(int iTemplateID)
 
 void CHexDlgTemplMgr::UpdateStaticText()
 {
-	std::wstring wstrOffset { };
-	std::wstring wstrSize { };
+	std::wstring wstrOffset;
+	std::wstring wstrSize;
 
 	if (m_pAppliedCurr != nullptr) { //If m_pAppliedCurr == nullptr set empty text.
 		wstrOffset = std::vformat(IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(m_pAppliedCurr->ullOffset));

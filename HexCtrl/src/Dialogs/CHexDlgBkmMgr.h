@@ -62,9 +62,9 @@ namespace HEXCTRL::INTERNAL {
 		IHexCtrl* m_pHexCtrl { };
 		IHexBookmarks* m_pVirtual { };
 		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
-		LONGLONG m_llIndexCurr { };     //Current bookmark's position index, to move next/prev.
-		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 		CMenu m_menuList;
-		CButton m_btnHex;               //Check-box "Hex numbers".
+		CButton m_btnHex;             //Check-box "Hex numbers".
+		LONGLONG m_llIndexCurr { };   //Current bookmark's position index, to move next/prev.
+		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 	};
 }

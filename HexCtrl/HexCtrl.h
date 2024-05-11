@@ -132,11 +132,11 @@ namespace HEXCTRL {
 	* HEXBKM: Bookmarks main struct.                                                            *
 	********************************************************************************************/
 	struct HEXBKM {
-		VecSpan      vecSpan { };  //Vector of offsets and sizes.
-		std::wstring wstrDesc { }; //Bookmark description.
-		ULONGLONG    ullID { };    //Bookmark ID, assigned internally by framework.
-		ULONGLONG    ullData { };  //User defined custom data.
-		HEXCOLOR     stClr { };    //Bookmark bk/text color.
+		VecSpan      vecSpan;     //Vector of offsets and sizes.
+		std::wstring wstrDesc;    //Bookmark description.
+		ULONGLONG    ullID { };   //Bookmark ID, assigned internally by framework.
+		ULONGLONG    ullData { }; //User defined custom data.
+		HEXCOLOR     stClr { };   //Bookmark bk/text color.
 	};
 	using PHEXBKM = HEXBKM*;
 
@@ -216,12 +216,12 @@ namespace HEXCTRL {
 
 	//Template's field main struct.
 	struct HEXTEMPLFIELD {
-		std::wstring    wstrName { };     //Field name.
-		std::wstring    wstrDescr { };    //Field description.
+		std::wstring    wstrName;         //Field name.
+		std::wstring    wstrDescr;        //Field description.
 		int             iOffset { };      //Field offset relative to the Template's beginning.
 		int             iSize { };        //Field size.
 		HEXCOLOR        stClr { };        //Field Bk and Text color.
-		HexVecFields    vecNested { };    //Vector for nested fields.
+		HexVecFields    vecNested;        //Vector for nested fields.
 		PCHEXTEMPLFIELD pFieldParent { }; //Parent field, in case of nested.
 		EHexFieldType   eType { };        //Field type.
 		std::uint8_t    uTypeID { };      //Field type ID if, it's a custom type.

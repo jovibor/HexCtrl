@@ -152,42 +152,42 @@ namespace HEXCTRL::INTERNAL {
 		IHexCtrl* m_pHexCtrl { };
 		ESearchMode m_eSearchMode { };
 		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
-		CMenu m_menuList;                    //Menu for the list control.
-		CComboBox m_comboFind;             //Combo box "Search".
-		CComboBox m_comboReplace;            //Combo box "Replace".
-		CComboBox m_comboMode;               //Combo box "Search mode".
-		CComboBox m_comboType;               //Combo box "Search type".
-		CButton m_btnSel;                    //Check box "In selection".
-		CButton m_btnWC;                     //Check box "Wildcard".
-		CButton m_btnInv;                    //Check box "Inverted".
-		CButton m_btnBE;                     //Check box "Big-endian".
-		CButton m_btnMC;                     //Check box "Match case".
-		CEdit m_editStartFrom;               //Edit box "Start from".
-		CEdit m_editStep;                    //Edit box "Step".
-		CEdit m_editRngBegin;                //Edit box "Range begin".
-		CEdit m_editRngEnd;                  //Edit box "Range end".
-		CEdit m_editLimit;                   //Edit box "Limit search hits".
-		ULONGLONG m_ullStartFrom { };        //"Start form" search offset.
+		CMenu m_menuList;               //Menu for the list control.
+		CComboBox m_comboFind;          //Combo box "Search".
+		CComboBox m_comboReplace;       //Combo box "Replace".
+		CComboBox m_comboMode;          //Combo box "Search mode".
+		CComboBox m_comboType;          //Combo box "Search type".
+		CButton m_btnSel;               //Check box "In selection".
+		CButton m_btnWC;                //Check box "Wildcard".
+		CButton m_btnInv;               //Check box "Inverted".
+		CButton m_btnBE;                //Check box "Big-endian".
+		CButton m_btnMC;                //Check box "Match case".
+		CEdit m_editStartFrom;          //Edit box "Start from".
+		CEdit m_editStep;               //Edit box "Step".
+		CEdit m_editRngBegin;           //Edit box "Range begin".
+		CEdit m_editRngEnd;             //Edit box "Range end".
+		CEdit m_editLimit;              //Edit box "Limit search hits".
+		ULONGLONG m_ullStartFrom { };   //"Start form" search offset.
 		ULONGLONG m_ullRngBegin { };
 		ULONGLONG m_ullRngEnd { };
-		ULONGLONG m_ullStep { 1 };           //Search step (default is 1 byte).
-		std::uint64_t m_u64Flags { };      //Data from SetDlgProperties.
-		DWORD m_dwCount { };                 //How many, or what index number.
-		DWORD m_dwReplaced { };              //Replaced amount;
-		DWORD m_dwLimit { 10000 };           //Maximum found search occurences.
-		int m_iWrap { };                     //Wrap direction: -1 = Beginning, 1 = End.
-		VecSearchResult m_vecSearchRes;      //Search results.
+		ULONGLONG m_ullStep { 1 };      //Search step (default is 1 byte).
+		std::uint64_t m_u64Flags { };   //Data from SetDlgProperties.
+		DWORD m_dwCount { };            //How many, or what index number.
+		DWORD m_dwReplaced { };         //Replaced amount;
+		DWORD m_dwLimit { 10000 };      //Maximum found search occurences.
+		int m_iWrap { };                //Wrap direction: -1 = Beginning, 1 = End.
+		VecSearchResult m_vecSearchRes; //Search results.
 		std::vector<std::byte> m_vecSearchData;  //Data to search for.
 		std::vector<std::byte> m_vecReplaceData; //Data to replace with.
-		std::wstring m_wstrSearch;           //Text from "Search" box.
-		std::wstring m_wstrReplace;          //Text from "Replace with..." box.
-		bool m_fForward { };                 //Search direction, Forward/Backward.
-		bool m_fSecondMatch { false };       //First or subsequent match. 
-		bool m_fFound { false };             //Found or not.
-		bool m_fDoCount { true };            //Do we count matches or just print "Found".
-		bool m_fReplace { false };           //Find or Find and Replace with...?
-		bool m_fAll { false };               //Find/Replace one by one, or all?
-		bool m_fSearchNext { false };        //Search through Next/Prev menu.
+		std::wstring m_wstrSearch;      //Text from "Search" box.
+		std::wstring m_wstrReplace;     //Text from "Replace with..." box.
+		bool m_fForward { };            //Search direction, Forward/Backward.
+		bool m_fSecondMatch { false };  //First or subsequent match. 
+		bool m_fFound { false };        //Found or not.
+		bool m_fDoCount { true };       //Do we count matches or just print "Found".
+		bool m_fReplace { false };      //Find or Find and Replace with...?
+		bool m_fAll { false };          //Find/Replace one by one, or all?
+		bool m_fSearchNext { false };   //Search through Next/Prev menu.
 		bool m_fFreshSearch { true };
 	};
 }

@@ -33,8 +33,8 @@ namespace HEXCTRL::INTERNAL {
 		DECLARE_MESSAGE_MAP();
 	private:
 		IHexCtrl* m_pHexCtrl { };
-		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 		CComboBox m_comboMode;
-		bool m_fRepeat { false }; //Is repeat available.
+		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
+		bool m_fRepeat { false };     //Is repeat available.
 	};
 }

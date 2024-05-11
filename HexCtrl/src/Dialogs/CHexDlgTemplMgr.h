@@ -131,25 +131,25 @@ namespace HEXCTRL::INTERNAL {
 		IHexCtrl* m_pHexCtrl { };
 		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;      //Loaded Templates.
 		std::vector<std::unique_ptr<TEMPLAPPLIED>> m_vecTemplatesAppl; //Currently Applied Templates.
-		CComboBox m_comboTemplates;  //Currently available templates list.
-		CEdit m_editOffset;          //"Offset" edit box.
-		CButton m_btnMin;            //Check-box min-max.
-		CButton m_btnShowTT;         //Check-box "Show tooltips".
-		CButton m_btnHglSel;         //Check-box "Highlight selected".
-		CButton m_btnHex;            //Check-box "Hex numbers".
-		CButton m_btnSwapEndian;     //Check-box "Swap endian".
-		CWnd m_wndStaticOffset;      //Static text "Template offset:".
-		CWnd m_wndStaticSize;        //Static text Template size:".
-		HBITMAP m_hBITMAPMin { };    //Bitmap for the min checkbox.
-		HBITMAP m_hBITMAPMax { };    //Bitmap for the max checkbox.
+		CComboBox m_comboTemplates; //Currently available templates list.
+		CEdit m_editOffset;         //"Offset" edit box.
+		CButton m_btnMin;           //Check-box min-max.
+		CButton m_btnShowTT;        //Check-box "Show tooltips".
+		CButton m_btnHglSel;        //Check-box "Highlight selected".
+		CButton m_btnHex;           //Check-box "Hex numbers".
+		CButton m_btnSwapEndian;    //Check-box "Swap endian".
+		CWnd m_wndStaticOffset;     //Static text "Template offset:".
+		CWnd m_wndStaticSize;       //Static text Template size:".
+		HBITMAP m_hBITMAPMin { };   //Bitmap for the min checkbox.
+		HBITMAP m_hBITMAPMax { };   //Bitmap for the max checkbox.
 		LISTEX::IListExPtr m_pListApplied { LISTEX::CreateListEx() };
 		CTreeCtrl m_treeApplied;
-		CMenu m_menuTree;            //Menu for the tree control.
-		CMenu m_menuHdr;             //Menu for the list header.
+		CMenu m_menuTree;           //Menu for the tree control.
+		CMenu m_menuHdr;            //Menu for the list header.
 		PCTEMPLAPPLIED m_pAppliedCurr { }; //Currently selected template in the applied Tree.
 		PCVecFields m_pVecFieldsCurr { };  //Currently selected Fields vector.
 		HTREEITEM m_hTreeCurrParent { };   //Currently selected Tree node's parent.
-		std::uint64_t m_u64Flags { };    //Data from SetDlgProperties.
+		std::uint64_t m_u64Flags { };      //Data from SetDlgProperties.
 		DWORD m_dwDateFormat { };          //Date format.
 		int m_iDynLayoutMinY { };          //For DynamicLayout::SetMinSize.
 		wchar_t m_wchDateSepar { };        //Date separator.
