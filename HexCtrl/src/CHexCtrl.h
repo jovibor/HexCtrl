@@ -55,7 +55,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;
 		[[nodiscard]] auto GetDateInfo()const->std::tuple<DWORD, wchar_t> override;
 		[[nodiscard]] auto GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND override;
-		[[nodiscard]] auto GetFont() -> LOGFONTW override;
+		[[nodiscard]] auto GetFont()const->LOGFONTW override;
 		[[nodiscard]] auto GetGroupSize()const->DWORD override;
 		[[nodiscard]] auto GetMenuHandle()const->HMENU override;
 		[[nodiscard]] auto GetPagesCount()const->ULONGLONG override;
@@ -146,7 +146,8 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetCharWidthNative()const->int;     //Width of the one char, in px.
 		[[nodiscard]] auto GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
 		[[nodiscard]] auto GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>; //Get command from menuID.
-		[[nodiscard]] long GetFontSize();
+		[[nodiscard]] long GetFontSize()const;
+		[[nodiscard]] auto GetDigitsOffset()const->DWORD;
 		[[nodiscard]] auto GetRectTextCaption()const->CRect;   //Returns rect of the text caption area.
 		[[nodiscard]] auto GetScrollPageSize()const->ULONGLONG; //Get the "Page" size of the scroll.
 		[[nodiscard]] auto GetTopLine()const->ULONGLONG;       //Returns current top line number in view.
@@ -252,7 +253,8 @@ namespace HEXCTRL::INTERNAL {
 		DWORD m_dwGroupSize { };              //Current data grouping size.
 		DWORD m_dwCapacity { };               //How many bytes are displayed in one row.
 		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of the block before a space delimiter.
-		DWORD m_dwOffsetDigits { };           //Amount of digits in "Offset", depends on data size set in SetData.
+		DWORD m_dwDigitsOffsetDec { 10 };     //Amount of digits for "Offset" in Decimal mode, 10 is max for 32bit number.
+		DWORD m_dwDigitsOffsetHex { 8 };      //Amount of digits for "Offset" in Hex mode, 8 is max for 32bit number.
 		DWORD m_dwPageSize { 0UL };           //Size of a page to print additional lines between.
 		DWORD m_dwCacheSize { };              //Data cache size for VirtualData mode.
 		DWORD m_dwDateFormat { 0xFFFFFFFFUL };//Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate

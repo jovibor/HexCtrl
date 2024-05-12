@@ -185,6 +185,8 @@ void CHexCtrl::ClearData()
 	m_ullCursorPrev = 0;
 	m_ullCaretPos = 0;
 	m_ullCursorNow = 0;
+	m_dwDigitsOffsetDec = 10;
+	m_dwDigitsOffsetHex = 8;
 	m_vecUndo.clear();
 	m_vecRedo.clear();
 	m_pScrollV->SetScrollPos(0);
@@ -734,14 +736,15 @@ auto CHexCtrl::GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND
 	};
 }
 
-auto CHexCtrl::GetFont()->LOGFONTW
+auto CHexCtrl::GetFont()const->LOGFONTW
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return { };
 
-	LOGFONTW lf;
-	m_fontMain.GetLogFont(&lf);
+	alignas(4) LOGFONTW lf;
+	::GetObjectW(m_fontMain.m_hObject, sizeof(LOGFONTW), &lf);
+
 	return lf;
 }
 
@@ -2701,10 +2704,33 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 
 	m_spnData = hds.spnData;
 	m_pHexVirtColors = hds.pHexVirtColors;
-	m_dwCacheSize = std::clamp(hds.dwCacheSize, 1024 * 64UL, hds.dwCacheSize); //Minimum cache size for VirtualData mode.
+	m_dwCacheSize = (std::max)(hds.dwCacheSize, 1024UL * 64UL); //Minimum cache size for VirtualData mode.
 	m_pHexVirtData = hds.pHexVirtData;
 	m_fMutable = hds.fMutable;
 	m_fHighLatency = hds.fHighLatency;
+
+	const auto ullDataSize = hds.spnData.size();
+	if (ullDataSize <= 0xffffffffUL) {
+		m_dwDigitsOffsetDec = 10;
+		m_dwDigitsOffsetHex = 8;
+	}
+	else if (ullDataSize <= 0xffffffffffUL) {
+		m_dwDigitsOffsetDec = 13;
+		m_dwDigitsOffsetHex = 10;
+	}
+	else if (ullDataSize <= 0xffffffffffffUL) {
+		m_dwDigitsOffsetDec = 15;
+		m_dwDigitsOffsetHex = 12;
+	}
+	else if (ullDataSize <= 0xffffffffffffffUL) {
+		m_dwDigitsOffsetDec = 17;
+		m_dwDigitsOffsetHex = 14;
+	}
+	else {
+		m_dwDigitsOffsetDec = 19;
+		m_dwDigitsOffsetHex = 16;
+	}
+
 	m_fDataSet = true;
 
 	RecalcAll();
@@ -3503,8 +3529,8 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 	std::wstring wstrRet;
 	wstrRet.reserve(static_cast<std::size_t>(ullSelSize) * 4);
 	wstrRet = L"Offset";
-	wstrRet.insert(0, (static_cast<std::size_t>(m_dwOffsetDigits) - wstrRet.size()) / 2, ' ');
-	wstrRet.insert(wstrRet.size(), static_cast<std::size_t>(m_dwOffsetDigits) - wstrRet.size(), ' ');
+	wstrRet.insert(0, (static_cast<std::size_t>(GetDigitsOffset()) - wstrRet.size()) / 2, ' ');
+	wstrRet.insert(wstrRet.size(), static_cast<std::size_t>(GetDigitsOffset()) - wstrRet.size(), ' ');
 	wstrRet += L"   "; //Spaces to Capacity.
 	wstrRet += m_wstrCapacity;
 	wstrRet += L"   "; //Spaces to Text.
@@ -3722,7 +3748,7 @@ void CHexCtrl::DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const
 		pDC->SetTextColor(stClrOffset.clrText);
 		pDC->SetBkColor(stClrOffset.clrBk);
 		ExtTextOutW(pDC->m_hDC, m_iFirstVertLinePx + GetCharWidthNative() - iScrollH, m_iStartWorkAreaYPx + (m_sizeFontMain.cy * iterLines),
-			0, nullptr, OffsetToWstr((ullStartLine + iterLines) * dwCapacity).data(), m_dwOffsetDigits, nullptr);
+			0, nullptr, OffsetToWstr((ullStartLine + iterLines) * dwCapacity).data(), GetDigitsOffset(), nullptr);
 	}
 }
 
@@ -4521,9 +4547,14 @@ auto CHexCtrl::GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>
 	return std::nullopt;
 }
 
-long CHexCtrl::GetFontSize()
+long CHexCtrl::GetFontSize()const
 {
 	return GetFont().lfHeight;
+}
+
+auto CHexCtrl::GetDigitsOffset()const->DWORD
+{
+	return IsOffsetAsHex() ? m_dwDigitsOffsetHex : m_dwDigitsOffsetDec;
 }
 
 auto CHexCtrl::GetRectTextCaption()const->CRect
@@ -4765,7 +4796,8 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorke
 
 auto CHexCtrl::OffsetToWstr(ULONGLONG ullOffset)const->std::wstring
 {
-	return std::vformat(IsOffsetAsHex() ? L"{:0>{}X}" : L"{:0>{}}", std::make_wformat_args(ullOffset, m_dwOffsetDigits));
+	const auto dwDigitsOffset = GetDigitsOffset();
+	return std::vformat(IsOffsetAsHex() ? L"{:0>{}X}" : L"{:0>{}}", std::make_wformat_args(ullOffset, dwDigitsOffset));
 }
 
 void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
@@ -4992,24 +5024,6 @@ void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
 	}
 	m_iHeightBottomOffAreaPx = m_iHeightInfoBarPx + m_iIndentBottomLine;
 
-	const auto ullDataSize = GetDataSize();
-	const auto fAsHex = IsOffsetAsHex();
-	if (ullDataSize <= 0xffffffffUL) {
-		m_dwOffsetDigits = fAsHex ? 8 : 10;
-	}
-	else if (ullDataSize <= 0xffffffffffUL) {
-		m_dwOffsetDigits = fAsHex ? 10 : 13;
-	}
-	else if (ullDataSize <= 0xffffffffffffUL) {
-		m_dwOffsetDigits = fAsHex ? 12 : 15;
-	}
-	else if (ullDataSize <= 0xffffffffffffffUL) {
-		m_dwOffsetDigits = fAsHex ? 14 : 17;
-	}
-	else {
-		m_dwOffsetDigits = fAsHex ? 16 : 19;
-	}
-
 	const auto dwGroupSize = GetGroupSize();
 	const auto dwCapacity = GetCapacity();
 	const auto iCharWidth = GetCharWidthNative();
@@ -5017,7 +5031,7 @@ void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
 
 	//Approximately "dwCapacity * 3 + 1" size array of char's width, to be enough for the Hex area chars.
 	m_vecCharsWidth.assign(dwCapacity * 3 + 1, iCharWidthExt);
-	m_iSecondVertLinePx = m_iFirstVertLinePx + m_dwOffsetDigits * iCharWidth + iCharWidth * 2;
+	m_iSecondVertLinePx = m_iFirstVertLinePx + GetDigitsOffset() * iCharWidth + iCharWidth * 2;
 	m_iSizeHexBytePx = iCharWidthExt * 2;
 	m_iSpaceBetweenBlocksPx = (dwGroupSize == 1 && dwCapacity > 1) ? iCharWidthExt * 2 : 0;
 	m_iDistanceGroupedHexChunkPx = m_iSizeHexBytePx * dwGroupSize + iCharWidthExt;
@@ -5045,6 +5059,7 @@ void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
 
 	//Scrolls, ReleaseDC and Redraw only for current DC, not for PrintingDC.
 	if (pDC == nullptr) {
+		const auto ullDataSize = GetDataSize();
 		m_pScrollV->SetScrollSizes(m_sizeFontMain.cy, GetScrollPageSize(),
 			static_cast<ULONGLONG>(m_iStartWorkAreaYPx) + m_iHeightBottomOffAreaPx + m_sizeFontMain.cy *
 			(ullDataSize / dwCapacity + (ullDataSize % dwCapacity == 0 ? 1 : 2)));
@@ -6022,7 +6037,7 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 					TTMainShow(true);
 				}
 			}
-			else if (m_pTFieldTTCurr != nullptr || m_pBkmTTCurr != nullptr) {
+			else if (m_pTFieldTTCurr != nullptr) {
 				TTMainShow(false);
 			}
 		}

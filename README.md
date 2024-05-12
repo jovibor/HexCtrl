@@ -469,7 +469,7 @@ Returns code page that is currently in use.
 
 ### [](#)GetFont
 ```cpp
-[[nodiscard]] auto GetFont()->LOGFONTW;
+[[nodiscard]] auto GetFont()const->LOGFONTW;
 ```
 Returns current font's `LOGFONTW`.
 

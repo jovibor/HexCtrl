@@ -113,9 +113,9 @@ namespace HEXCTRL {
 	* HEXDATAINFO: Data information used in the IHexVirtData interface.                         *
 	********************************************************************************************/
 	struct HEXDATAINFO {
-		NMHDR    hdr { };       //Standard Windows header.
-		HEXSPAN  stHexSpan { }; //Offset and size of the data bytes.
-		SpanByte spnData { };   //Data span.
+		NMHDR    hdr { };   //Standard Windows header.
+		HEXSPAN  stHexSpan; //Offset and size of the data bytes.
+		SpanByte spnData;   //Data span.
 	};
 
 	/********************************************************************************************
@@ -136,7 +136,7 @@ namespace HEXCTRL {
 		std::wstring wstrDesc;    //Bookmark description.
 		ULONGLONG    ullID { };   //Bookmark ID, assigned internally by framework.
 		ULONGLONG    ullData { }; //User defined custom data.
-		HEXCOLOR     stClr { };   //Bookmark bk/text color.
+		HEXCOLOR     stClr;       //Bookmark bk/text color.
 	};
 	using PHEXBKM = HEXBKM*;
 
@@ -180,7 +180,7 @@ namespace HEXCTRL {
 	struct HEXCOLORINFO {
 		NMHDR     hdr { };       //Standard Windows header.
 		ULONGLONG ullOffset { }; //Offset for the color.
-		HEXCOLOR  stClr { };     //Colors of the given offset.
+		HEXCOLOR  stClr;         //Colors of the given offset.
 	};
 
 	/********************************************************************************************
@@ -216,16 +216,16 @@ namespace HEXCTRL {
 
 	//Template's field main struct.
 	struct HEXTEMPLFIELD {
-		std::wstring    wstrName;         //Field name.
-		std::wstring    wstrDescr;        //Field description.
-		int             iOffset { };      //Field offset relative to the Template's beginning.
-		int             iSize { };        //Field size.
-		HEXCOLOR        stClr { };        //Field Bk and Text color.
-		HexVecFields    vecNested;        //Vector for nested fields.
-		PCHEXTEMPLFIELD pFieldParent { }; //Parent field, in case of nested.
-		EHexFieldType   eType { };        //Field type.
-		std::uint8_t    uTypeID { };      //Field type ID if, it's a custom type.
-		bool            fBigEndian { };   //Field endianness.
+		std::wstring    wstrName;             //Field name.
+		std::wstring    wstrDescr;            //Field description.
+		int             iOffset { };          //Field offset relative to the Template's beginning.
+		int             iSize { };            //Field size.
+		HEXCOLOR        stClr;                //Field Bk and Text color.
+		HexVecFields    vecNested;            //Vector for nested fields.
+		PCHEXTEMPLFIELD pFieldParent { };     //Parent field, in case of nested.
+		EHexFieldType   eType { };            //Field type.
+		std::uint8_t    uTypeID { };          //Field type ID if, it's a custom type.
+		bool            fBigEndian { false }; //Field endianness.
 	};
 
 	//Template main struct.
@@ -276,32 +276,33 @@ namespace HEXCTRL {
 		COLORREF clrBkCaret { RGB(0, 0, 255) };                      //Caret background color.
 		COLORREF clrBkCaretSel { RGB(0, 0, 200) };                   //Caret background color in selection.
 	};
+	using PCHEXCOLORS = const HEXCOLORS*;
 
 	/********************************************************************************************
 	* HEXCREATE: Main struct for the HexCtrl creation.                                          *
 	********************************************************************************************/
 	struct HEXCREATE {
-		HWND             hWndParent { };         //Parent window handle.
-		const HEXCOLORS* pColors { };            //HexCtrl colors, nullptr for default.
-		const LOGFONTW*  pLogFont { };           //Monospaced font for HexCtrl, nullptr for default.
-		RECT             rect { };               //Initial window rect.
-		UINT             uID { };                //Control ID if it's a child window.
-		DWORD            dwStyle { };            //Window styles.
-		DWORD            dwExStyle { };          //Extended window styles.
-		DWORD            dwCapacity { 16UL };    //Initial capacity size.
-		DWORD            dwGroupSize { 1UL };    //Initial data grouping size.
-		float            flScrollRatio { 1.0F }; //Either a screen-ratio or lines amount to scroll with Page-scroll (mouse-wheel).
-		bool             fScrollLines { false }; //Treat flScrollRatio as screen-ratio (false) or as amount of lines (true).
-		bool             fInfoBar { true };      //Show bottom Info bar or not.
-		bool             fOffsetHex { true };    //Show offset digits as Hex or Decimal.
-		bool             fCustom { false };      //If it's a custom control in a dialog.
+		HWND            hWndParent { };         //Parent window handle.
+		PCHEXCOLORS     pColors { };            //HexCtrl colors, nullptr for default.
+		const LOGFONTW* pLogFont { };           //Monospaced font for HexCtrl, nullptr for default.
+		RECT            rect { };               //Initial window rect.
+		UINT            uID { };                //Control ID if it's a child window.
+		DWORD           dwStyle { };            //Window styles.
+		DWORD           dwExStyle { };          //Extended window styles.
+		DWORD           dwCapacity { 16UL };    //Initial capacity size.
+		DWORD           dwGroupSize { 1UL };    //Initial data grouping size.
+		float           flScrollRatio { 1.0F }; //Either a screen-ratio or lines amount to scroll with Page-scroll (mouse-wheel).
+		bool            fScrollLines { false }; //Treat flScrollRatio as screen-ratio (false) or as amount of lines (true).
+		bool            fInfoBar { true };      //Show bottom Info bar or not.
+		bool            fOffsetHex { true };    //Show offset digits as Hex or Decimal.
+		bool            fCustom { false };      //If it's a custom control in a dialog.
 	};
 
 	/********************************************************************************************
 	* HEXDATA: Main struct for the HexCtrl SetData method.                                      *
 	********************************************************************************************/
 	struct HEXDATA {
-		SpanByte        spnData { };                //Data span to display.
+		SpanByte        spnData;                    //Data span to display.
 		IHexVirtData*   pHexVirtData { };           //Pointer for VirtualData mode.
 		IHexVirtColors* pHexVirtColors { };         //Pointer for Custom Colors class.
 		DWORD           dwCacheSize { 0x800000UL }; //Data cache size for VirtualData mode.
@@ -371,8 +372,8 @@ namespace HEXCTRL {
 		EHexModifyMode eModifyMode { };      //Modify mode.
 		EHexOperMode   eOperMode { };        //Operation mode, used if eModifyMode == MODIFY_OPERATION.
 		EHexDataType   eDataType { };        //Data type of the underlying data, used if eModifyMode == MODIFY_OPERATION.
-		SpanCByte      spnData { };          //Span of the data to modify with.
-		VecSpan        vecSpan { };          //Vector of data offsets and sizes to modify.
+		SpanCByte      spnData;              //Span of the data to modify with.
+		VecSpan        vecSpan;              //Vector of data offsets and sizes to modify.
 		bool           fBigEndian { false }; //Treat data as the big endian, used if eModifyMode == MODIFY_OPERATION.
 	};
 
@@ -405,7 +406,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual auto GetDateInfo()const->std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
 		[[nodiscard]] virtual auto GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND = 0; //Dialogs' items.
-		[[nodiscard]] virtual auto GetFont() -> LOGFONTW = 0;                //Get current font.
+		[[nodiscard]] virtual auto GetFont()const->LOGFONTW = 0;             //Get current font.
 		[[nodiscard]] virtual auto GetGroupSize()const->DWORD = 0;           //Retrieves current data grouping size.
 		[[nodiscard]] virtual auto GetMenuHandle()const->HMENU = 0;          //Context menu handle.
 		[[nodiscard]] virtual auto GetPagesCount()const->ULONGLONG = 0;      //Get count of pages.
