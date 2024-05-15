@@ -37,6 +37,7 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		enum class EMenuID : std::uint16_t;
 		void DoDataExchange(CDataExchange* pDX)override;
+		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
 		void OnCancel()override;

@@ -36,6 +36,7 @@
   * [GetFont](#getfont)
   * [GetGroupSize](#getgroupsize)
   * [GetMenuHandle](#getmenuhandle)
+  * [GetOffset](#getoffset)
   * [GetPagesCount](#getpagescount)
   * [GetPagePos](#getpagepos)
   * [GetPageSize](#getpagesize)
@@ -487,6 +488,12 @@ Returns the `HMENU` handle of the **HexCtrl** context menu. You can use this han
 **HexCtrl**'s internal menu uses `ID`s starting from `0x8001`. So if you wish to add your own new menu, assign menu `ID` starting from `0x9000` to not interfere.  
 When a user clicks custom menu, control sends `WM_NOTIFY` message to its parent window with `LPARAM` pointing to [`HEXMENUINFO`](#hexmenuinfo) with its `hdr.code` member set to `HEXCTRL_MSG_MENUCLICK`, and `wMenuID` field containing `ID` of the menu clicked.
 
+### [](#)GetOffset
+```cpp
+[[nodiscard]] auto GetOffset(ULONGLONG ullOffset, bool fGetVirt)const->ULONGLONG;
+```
+Converts offset from virtual to flat, and vice versa.
+
 ### [](#)GetPagesCount
 ```cpp
 [[nodiscard]] auto GetPagesCount()const->ULONGLONG;
@@ -849,9 +856,10 @@ struct HEXCREATE {
 The main struct to set a data to display in the **HexCtrl**.
 ```cpp
 struct HEXDATA {
-    SpanByte        spnData { };                //Data span to display.
+    SpanByte        spnData;                    //Data span to display.
     IHexVirtData*   pHexVirtData { };           //Pointer for VirtualData mode.
     IHexVirtColors* pHexVirtColors { };         //Pointer for Custom Colors class.
+    ULONGLONG       ullMaxVirtOffset { };       //Maximum virtual offset.
     DWORD           dwCacheSize { 0x800000UL }; //Data cache size for VirtualData mode.
     bool            fMutable { false };         //Is data mutable or read-only.
     bool            fHighLatency { false };     //Do not redraw until scroll thumb is released.
@@ -1012,7 +1020,7 @@ Removes bookmark with the given ID.
 ```cpp
 class IHexTemplates {
 public:
-    virtual auto AddTemplate(const HEXTEMPLATE& stTempl) -> int = 0; //Adds existing template.
+    virtual auto AddTemplate(const HEXTEMPLATE& hts) -> int = 0; //Adds existing template.
     virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Applies template to offset, returns AppliedID.
     virtual void DisapplyAll() = 0;
     virtual void DisapplyByID(int iAppliedID) = 0;
@@ -1047,7 +1055,8 @@ The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinf
 ```cpp
 class IHexVirtData {
 public:
-    virtual void OnHexGetData(HEXDATAINFO&) = 0;       //Data to get.
+    virtual void OnHexGetData(HEXDATAINFO&) = 0; //Data to get.
+    virtual void OnHexGetOffset(HEXDATAINFO& hdi, bool fGetVirt) = 0; //Offset<->VirtOffset conversion.
     virtual void OnHexSetData(const HEXDATAINFO&) = 0; //Data to set, if mutable.
 };
 ```

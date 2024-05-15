@@ -14,6 +14,7 @@ import HEXCTRL.HexUtility;
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgSearch final : public CDialogEx {
 	public:
+		void ClearData();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?

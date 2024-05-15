@@ -78,6 +78,14 @@ BEGIN_MESSAGE_MAP(CHexDlgSearch, CDialogEx)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
+void CHexDlgSearch::ClearData()
+{
+	if (!IsWindow(m_hWnd))
+		return;
+
+	ClearList();
+}
+
 auto CHexDlgSearch::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
 	if (!IsWindow(m_hWnd)) {
@@ -1012,7 +1020,7 @@ void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			*std::format_to(pItem->pszText, L"{}", nItemID + 1) = L'\0';
 			break;
 		case 1: //Offset.
-			*std::format_to(pItem->pszText, L"0x{:X}", m_vecSearchRes[nItemID]) = L'\0';
+			*std::format_to(pItem->pszText, L"0x{:X}", GetHexCtrl()->GetOffset(m_vecSearchRes[nItemID], true)) = L'\0';
 			break;
 		default:
 			break;
@@ -1042,7 +1050,7 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	const auto ullOffset = m_vecSearchRes[static_cast<std::size_t>(pNMI->iItem)];
 	vecSpan.emplace_back(ullOffset, m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size());
 	HexCtrlHighlight(vecSpan);
-	SetEditStartFrom(ullOffset);
+	SetEditStartFrom(GetHexCtrl()->GetOffset(ullOffset, true)); //Show virtual offset.
 	m_ullStartFrom = ullOffset;
 }
 
@@ -1253,7 +1261,7 @@ void CHexDlgSearch::Prepare()
 				return;
 			}
 
-			ullRngStart = *optRngStart;
+			ullRngStart = pHexCtrl->GetOffset(*optRngStart, false); //Always use flat offset.
 		}
 
 		//"Search range end offset".
@@ -1270,7 +1278,7 @@ void CHexDlgSearch::Prepare()
 				return;
 			}
 
-			ullRngEnd = *optRngEnd;
+			ullRngEnd = pHexCtrl->GetOffset(*optRngEnd, false); //Always use flat offset.
 		}
 
 		//"Start from".
@@ -1287,7 +1295,7 @@ void CHexDlgSearch::Prepare()
 				return;
 			}
 
-			ullStartFrom = *optStartFrom;
+			ullStartFrom = pHexCtrl->GetOffset(*optStartFrom, false); //Always use flat offset.
 		}
 	}
 	else {
@@ -1679,7 +1687,7 @@ void CHexDlgSearch::Search()
 				ullStartFrom += m_vecReplaceData.size() <= GetStep() ? GetStep() : m_vecReplaceData.size();
 			}
 
-			SetEditStartFrom(ullStartFrom);
+			SetEditStartFrom(GetHexCtrl()->GetOffset(ullStartFrom, true));
 		}
 	}
 	else {

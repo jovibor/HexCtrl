@@ -118,7 +118,7 @@ void CHexDlgGoTo::GoTo(bool fForward)
 	using enum EGoMode;
 	switch (GetGoMode()) {
 	case MODE_OFFSET:
-		ullOffsetResult = ullGoTo;
+		ullOffsetResult = pHexCtrl->GetOffset(ullGoTo, false); //Always use flat offset.
 		break;
 	case MODE_OFFSETFWD:
 		ullOffsetResult = ullOffsetCurr + ullGoTo * iFwdBack;

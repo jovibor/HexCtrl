@@ -194,6 +194,7 @@ void CHexCtrl::ClearData()
 	m_pScrollV->SetScrollSizes(0, 0, 0);
 	m_pDlgBkmMgr->RemoveAll();
 	m_pSelection->ClearAll();
+	m_pDlgSearch->ClearData();
 	Redraw();
 }
 
@@ -764,6 +765,22 @@ auto CHexCtrl::GetMenuHandle()const->HMENU
 		return { };
 
 	return m_menuMain.GetSubMenu(0)->GetSafeHmenu();
+}
+
+auto CHexCtrl::GetOffset(ULONGLONG ullOffset, bool fGetVirt)const->ULONGLONG
+{
+	assert(IsCreated());
+	assert(IsDataSet());
+	if (!IsCreated() || !IsDataSet())
+		return { };
+
+	if (IsVirtual()) {
+		HEXDATAINFO hdi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) }, .stHexSpan { .ullOffset { ullOffset } } };
+		m_pHexVirtData->OnHexGetOffset(hdi, fGetVirt);
+		return hdi.stHexSpan.ullOffset;
+	}
+
+	return ullOffset;
 }
 
 auto CHexCtrl::GetPagesCount()const->ULONGLONG
@@ -2303,7 +2320,7 @@ void CHexCtrl::Redraw()
 		return;
 
 	if (IsDataSet()) {
-		const auto ullCaretPos = GetCaretPos();
+		const auto ullCaretPos = GetVirtualOffset(GetCaretPos());
 		//^ - encloses Data name, ` (tilda) - encloses a data itself.
 		m_wstrInfoBar = std::vformat(GetLocale(), IsOffsetAsHex() ? L"^Caret: ^`0x{:X} `" : L"^Caret: ^`{:L} `",
 			std::make_wformat_args(ullCaretPos));
@@ -2316,8 +2333,8 @@ void CHexCtrl::Redraw()
 		}
 
 		if (HasSelection()) {
+			const auto ullSelStart = GetVirtualOffset(m_pSelection->GetSelStart());
 			const auto ullSelSize = m_pSelection->GetSelSize();
-			const auto ullSelStart = m_pSelection->GetSelStart();
 			if (ullSelSize == 1) { //In case of just one byte selected.
 				m_wstrInfoBar += std::vformat(GetLocale(), IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}] `" :
 					L"^ Selected: ^`{} [{:L}] `", std::make_wformat_args(ullSelSize, ullSelStart));
@@ -2709,7 +2726,7 @@ void CHexCtrl::SetData(const HEXDATA& hds)
 	m_fMutable = hds.fMutable;
 	m_fHighLatency = hds.fHighLatency;
 
-	const auto ullDataSize = hds.spnData.size();
+	const auto ullDataSize = hds.pHexVirtData ? (std::max)(hds.ullMaxVirtOffset, hds.spnData.size()) : hds.spnData.size();
 	if (ullDataSize <= 0xffffffffUL) {
 		m_dwDigitsOffsetDec = 10;
 		m_dwDigitsOffsetHex = 8;
@@ -4547,14 +4564,14 @@ auto CHexCtrl::GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>
 	return std::nullopt;
 }
 
-long CHexCtrl::GetFontSize()const
-{
-	return GetFont().lfHeight;
-}
-
 auto CHexCtrl::GetDigitsOffset()const->DWORD
 {
 	return IsOffsetAsHex() ? m_dwDigitsOffsetHex : m_dwDigitsOffsetDec;
+}
+
+long CHexCtrl::GetFontSize()const
+{
+	return GetFont().lfHeight;
 }
 
 auto CHexCtrl::GetRectTextCaption()const->CRect
@@ -4572,6 +4589,11 @@ auto CHexCtrl::GetScrollPageSize()const->ULONGLONG
 auto CHexCtrl::GetTopLine()const->ULONGLONG
 {
 	return m_pScrollV->GetScrollPos() / m_sizeFontMain.cy;
+}
+
+auto CHexCtrl::GetVirtualOffset(ULONGLONG ullOffset)const->ULONGLONG
+{
+	return GetOffset(ullOffset, true);
 }
 
 void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
@@ -4667,7 +4689,7 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorke
 		return;
 
 	const auto& vecSpanRef = hms.vecSpan;
-	const auto ullTotalSize = std::accumulate(vecSpanRef.begin(), vecSpanRef.end(), 0ULL,
+	const auto ullTotalSize = std::reduce(vecSpanRef.begin(), vecSpanRef.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPAN& ref) { return ullSumm + ref.ullSize; });
 	assert(ullTotalSize <= GetDataSize());
 
@@ -4797,6 +4819,7 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorke
 auto CHexCtrl::OffsetToWstr(ULONGLONG ullOffset)const->std::wstring
 {
 	const auto dwDigitsOffset = GetDigitsOffset();
+	ullOffset = GetVirtualOffset(ullOffset);
 	return std::vformat(IsOffsetAsHex() ? L"{:0>{}X}" : L"{:0>{}}", std::make_wformat_args(ullOffset, dwDigitsOffset));
 }
 
@@ -5448,7 +5471,7 @@ void CHexCtrl::SetFontSize(long lSize)
 void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 {
 	constexpr auto dwUndoMax { 512U }; //Undo's max limit.
-	const auto ullTotalSize = std::accumulate(vecSpan.begin(), vecSpan.end(), 0ULL,
+	const auto ullTotalSize = std::reduce(vecSpan.begin(), vecSpan.end(), 0ULL,
 		[](ULONGLONG ullSumm, const HEXSPAN& ref) { return ullSumm + ref.ullSize; });
 
 	//Check for very big undo size.

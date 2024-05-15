@@ -58,6 +58,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetFont()const->LOGFONTW override;
 		[[nodiscard]] auto GetGroupSize()const->DWORD override;
 		[[nodiscard]] auto GetMenuHandle()const->HMENU override;
+		[[nodiscard]] auto GetOffset(ULONGLONG ullOffset, bool fGetVirt)const->ULONGLONG override;
 		[[nodiscard]] auto GetPagesCount()const->ULONGLONG override;
 		[[nodiscard]] auto GetPagePos()const->ULONGLONG override;
 		[[nodiscard]] auto GetPageSize()const->DWORD override;
@@ -146,11 +147,12 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetCharWidthNative()const->int;     //Width of the one char, in px.
 		[[nodiscard]] auto GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
 		[[nodiscard]] auto GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>; //Get command from menuID.
-		[[nodiscard]] long GetFontSize()const;
 		[[nodiscard]] auto GetDigitsOffset()const->DWORD;
+		[[nodiscard]] long GetFontSize()const;
 		[[nodiscard]] auto GetRectTextCaption()const->CRect;   //Returns rect of the text caption area.
 		[[nodiscard]] auto GetScrollPageSize()const->ULONGLONG; //Get the "Page" size of the scroll.
 		[[nodiscard]] auto GetTopLine()const->ULONGLONG;       //Returns current top line number in view.
+		[[nodiscard]] auto GetVirtualOffset(ULONGLONG ullOffset)const->ULONGLONG;
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Hex chunk.
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTEST>; //Is any hex chunk withing given point?
 		[[nodiscard]] bool IsCurTextArea()const;               //Whether last focus was set at Text or Hex chunks area.

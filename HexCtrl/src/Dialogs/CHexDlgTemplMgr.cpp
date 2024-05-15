@@ -387,6 +387,11 @@ auto CHexDlgTemplMgr::GetAppliedFromItem(HTREEITEM hTreeItem)->PCTEMPLAPPLIED
 	return reinterpret_cast<PCTEMPLAPPLIED>(m_treeApplied.GetItemData(hTreeItem));
 }
 
+auto CHexDlgTemplMgr::GetHexCtrl()const->IHexCtrl*
+{
+	return m_pHexCtrl;
+}
+
 auto CHexDlgTemplMgr::GetIDForNewTemplate()const->int
 {
 	auto iTemplateID = 1; //TemplateID starts at 1.
@@ -494,21 +499,28 @@ void CHexDlgTemplMgr::OnBnRandomizeColors()
 
 void CHexDlgTemplMgr::OnBnApply()
 {
-	CStringW wstrText;
-	m_editOffset.GetWindowTextW(wstrText);
-	if (wstrText.IsEmpty())
+	if (!GetHexCtrl()->IsDataSet())
 		return;
 
-	const auto opt = stn::StrToUInt64(wstrText.GetString());
-	if (!opt)
+	CStringW wstrOffset;
+	m_editOffset.GetWindowTextW(wstrOffset);
+	if (wstrOffset.IsEmpty()) {
+		m_editOffset.SetFocus();
 		return;
+	}
+
+	const auto optOffset = stn::StrToUInt64(wstrOffset.GetString());
+	if (!optOffset) {
+		m_editOffset.SetFocus();
+		return;
+	}
 
 	const auto iIndex = m_comboTemplates.GetCurSel();
 	if (iIndex == CB_ERR)
 		return;
 
 	const auto iTemplateID = static_cast<int>(m_comboTemplates.GetItemData(iIndex));
-	ApplyTemplate(*opt, iTemplateID);
+	ApplyTemplate(GetHexCtrl()->GetOffset(*optOffset, false), iTemplateID);
 }
 
 void CHexDlgTemplMgr::OnCancel()
@@ -1835,8 +1847,9 @@ void CHexDlgTemplMgr::UpdateStaticText()
 	std::wstring wstrOffset;
 	std::wstring wstrSize;
 
-	if (m_pAppliedCurr != nullptr) { //If m_pAppliedCurr == nullptr set empty text.
-		wstrOffset = std::vformat(IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(m_pAppliedCurr->ullOffset));
+	if (m_pAppliedCurr != nullptr && GetHexCtrl()->IsDataSet()) { //If m_pAppliedCurr == nullptr set empty text.
+		const auto ullOffset = GetHexCtrl()->GetOffset(m_pAppliedCurr->ullOffset, true); //Show virtual offset.
+		wstrOffset = std::vformat(IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(ullOffset));
 		wstrSize = std::vformat(IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(m_pAppliedCurr->pTemplate->iSizeTotal));
 	}
 
@@ -1911,7 +1924,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, HexV
 
 	const auto lmbTotalSize = [](const HexVecFields& refVecFields)->int { //Counts total size of all Fields in HexVecFields, recursively.
 		const auto _lmbTotalSize = [](const auto& lmbSelf, const HexVecFields& refVecFields)->int {
-			return std::accumulate(refVecFields.begin(), refVecFields.end(), 0,
+			return std::reduce(refVecFields.begin(), refVecFields.end(), 0,
 				[&lmbSelf](auto ullTotal, const std::unique_ptr<HEXTEMPLFIELD>& pField) {
 					if (!pField->vecNested.empty()) {
 						return ullTotal + lmbSelf(lmbSelf, pField->vecNested);
@@ -2229,7 +2242,7 @@ HEXCTRLAPI auto __cdecl HEXCTRL::IHexTemplates::LoadFromFile(const wchar_t* pFil
 		return { }; //Something went wrong during template parsing.
 	}
 
-	pTemplate->iSizeTotal = std::accumulate(refVecFields.begin(), refVecFields.end(), 0,
+	pTemplate->iSizeTotal = std::reduce(refVecFields.begin(), refVecFields.end(), 0,
 		[](auto iTotal, const std::unique_ptr<HEXTEMPLFIELD>& pData) { return iTotal + pData->iSize; });
 
 	return pTemplateUtr;

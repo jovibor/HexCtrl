@@ -58,6 +58,7 @@ namespace HEXCTRL::INTERNAL {
 		void DoDataExchange(CDataExchange* pDX)override;
 		void EnableDynamicLayoutHelper(bool fEnable);
 		[[nodiscard]] auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PCTEMPLAPPLIED;
+		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
 		[[nodiscard]] auto GetIDForNewTemplate()const->int;
 		[[nodiscard]] auto GetTemplate(int iTemplateID)const->PCHEXTEMPLATE;
 		[[nodiscard]] bool IsHglSel()const;

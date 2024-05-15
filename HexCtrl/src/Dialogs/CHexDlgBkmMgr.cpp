@@ -302,9 +302,9 @@ void CHexDlgBkmMgr::SortData(int iColumn, bool fAscending)
 				break;
 			case 2: //Size.
 				if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
-					auto ullSize1 = std::accumulate(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
+					auto ullSize1 = std::reduce(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
 						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
-					auto ullSize2 = std::accumulate(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
+					auto ullSize2 = std::reduce(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
 						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
 					iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
 				}
@@ -346,6 +346,11 @@ void CHexDlgBkmMgr::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_HEXCTRL_BKMMGR_CHK_HEX, m_btnHex);
+}
+
+auto CHexDlgBkmMgr::GetHexCtrl()const->IHexCtrl*
+{
+	return m_pHexCtrl;
 }
 
 bool CHexDlgBkmMgr::IsNoEsc()const
@@ -479,13 +484,13 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		break;
 	case 1: //Offset.
 		if (!pBkm->vecSpan.empty()) {
-			ullOffset = pBkm->vecSpan.front().ullOffset;
+			ullOffset = GetHexCtrl()->GetOffset(pBkm->vecSpan.front().ullOffset, true); //Display virtual offset.
 		}
 		*std::vformat_to(pItem->pszText, IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(ullOffset)) = L'\0';
 		break;
 	case 2: //Size.
 		if (!pBkm->vecSpan.empty()) {
-			ullSize = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
+			ullSize = std::reduce(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
 				[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
 		}
 		*std::vformat_to(pItem->pszText, IsShowAsHex() ? L"0x{:X}" : L"{}", std::make_wformat_args(ullSize)) = L'\0';
@@ -600,12 +605,13 @@ void CHexDlgBkmMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			return;
 		}
 
+		const auto ullOffset = GetHexCtrl()->GetOffset(*optOffset, false); //Always use flat offset.
 		const auto ullOffsetCurr = pBkm->vecSpan.front().ullOffset;
-		if (ullOffsetCurr != *optOffset) {
-			const auto ullSizeCurr = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
+		if (ullOffsetCurr != ullOffset) {
+			const auto ullSizeCurr = std::reduce(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
 				[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
 			pBkm->vecSpan.clear();
-			pBkm->vecSpan.emplace_back(*optOffset, ullSizeCurr);
+			pBkm->vecSpan.emplace_back(ullOffset, ullSizeCurr);
 		}
 	}
 	break;
@@ -622,7 +628,7 @@ void CHexDlgBkmMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 			return;
 		}
 
-		const auto ullSizeCurr = std::accumulate(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
+		const auto ullSizeCurr = std::reduce(pBkm->vecSpan.begin(), pBkm->vecSpan.end(), 0ULL,
 			[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
 		if (ullSizeCurr != *optSize) {
 			const auto ullOffsetCurr = pBkm->vecSpan.front().ullOffset;

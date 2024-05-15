@@ -114,7 +114,7 @@ namespace HEXCTRL {
 	********************************************************************************************/
 	struct HEXDATAINFO {
 		NMHDR    hdr { };   //Standard Windows header.
-		HEXSPAN  stHexSpan; //Offset and size of the data bytes.
+		HEXSPAN  stHexSpan; //Offset and size of the data.
 		SpanByte spnData;   //Data span.
 	};
 
@@ -124,7 +124,8 @@ namespace HEXCTRL {
 	********************************************************************************************/
 	class IHexVirtData {
 	public:
-		virtual void OnHexGetData(HEXDATAINFO&) = 0;       //Data to get.
+		virtual void OnHexGetData(HEXDATAINFO&) = 0; //Data to get.
+		virtual void OnHexGetOffset(HEXDATAINFO& hdi, bool fGetVirt) = 0; //Offset<->VirtOffset conversion.
 		virtual void OnHexSetData(const HEXDATAINFO&) = 0; //Data to set, if mutable.
 	};
 
@@ -243,7 +244,7 @@ namespace HEXCTRL {
 	********************************************************************************************/
 	class IHexTemplates {
 	public:
-		virtual auto AddTemplate(const HEXTEMPLATE& stTempl) -> int = 0; //Adds existing template.
+		virtual auto AddTemplate(const HEXTEMPLATE& hts) -> int = 0; //Adds existing template.
 		virtual auto ApplyTemplate(ULONGLONG ullOffset, int iTemplateID) -> int = 0; //Applies template to offset, returns AppliedID.
 		virtual void DisapplyAll() = 0;
 		virtual void DisapplyByID(int iAppliedID) = 0;
@@ -305,6 +306,7 @@ namespace HEXCTRL {
 		SpanByte        spnData;                    //Data span to display.
 		IHexVirtData*   pHexVirtData { };           //Pointer for VirtualData mode.
 		IHexVirtColors* pHexVirtColors { };         //Pointer for Custom Colors class.
+		ULONGLONG       ullMaxVirtOffset { };       //Maximum virtual offset.
 		DWORD           dwCacheSize { 0x800000UL }; //Data cache size for VirtualData mode.
 		bool            fMutable { false };         //Is data mutable or read-only.
 		bool            fHighLatency { false };     //Do not redraw until scroll thumb is released.
@@ -409,6 +411,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetFont()const->LOGFONTW = 0;             //Get current font.
 		[[nodiscard]] virtual auto GetGroupSize()const->DWORD = 0;           //Retrieves current data grouping size.
 		[[nodiscard]] virtual auto GetMenuHandle()const->HMENU = 0;          //Context menu handle.
+		[[nodiscard]] virtual auto GetOffset(ULONGLONG ullOffset, bool fGetVirt)const->ULONGLONG = 0; //Offset<->VirtOffset conversion.
 		[[nodiscard]] virtual auto GetPagesCount()const->ULONGLONG = 0;      //Get count of pages.
 		[[nodiscard]] virtual auto GetPagePos()const->ULONGLONG = 0;         //Get a page number that the cursor stays at.
 		[[nodiscard]] virtual auto GetPageSize()const->DWORD = 0;            //Current page size.
