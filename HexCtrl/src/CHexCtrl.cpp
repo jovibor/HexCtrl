@@ -4848,8 +4848,8 @@ void CHexCtrl::OnModifyData()
 template<typename T> requires std::is_class_v<T>
 void CHexCtrl::ParentNotify(const T& t)const
 {
-	if (const auto hwnd = ::GetParent(m_hWnd); hwnd != nullptr) {
-		::SendMessageW(m_hWnd, WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));
+	if (const auto hWndParent = ::GetParent(m_hWnd); hWndParent != nullptr) {
+		::SendMessageW(hWndParent, WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));
 	}
 }
 
