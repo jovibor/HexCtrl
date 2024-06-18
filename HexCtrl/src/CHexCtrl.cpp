@@ -5,7 +5,7 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "../dep/StrToNum/StrToNum/StrToNum.h"
+#include "../dep/StrToNum/StrToNum.h"
 #include "../dep/rapidjson/rapidjson-amalgam.h"
 #include "../res/HexCtrlRes.h"
 #include "CHexCtrl.h"
@@ -102,7 +102,7 @@ enum class CHexCtrl::EClipboard : std::uint8_t {
 
 struct CHexCtrl::UNDO {
 	ULONGLONG              ullOffset { }; //Start byte to apply Undo to.
-	std::vector<std::byte> vecData { };   //Data for Undo.
+	std::vector<std::byte> vecData;       //Data for Undo.
 };
 
 struct CHexCtrl::KEYBIND { //Key bindings.
@@ -900,7 +900,7 @@ auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND
 	}
 }
 
-void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iRelPos)
+void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iPosAt)
 {
 	assert(IsCreated());
 	assert(IsDataSet());
@@ -910,17 +910,17 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iRelPos)
 	const auto ullNewStartV = ullOffset / GetCapacity() * m_sizeFontMain.cy;
 	auto ullNewScrollV { 0ULL };
 
-	switch (iRelPos) {
-	case -1: //Offset will be at the top line.
+	switch (iPosAt) {
+	case -1: //Position offset at the top line.
 		ullNewScrollV = ullNewStartV;
 		break;
-	case 0: //Offset at the middle.
+	case 0: //Position offset in the vcenter.
 		if (ullNewStartV > m_iHeightWorkAreaPx / 2) { //To prevent negative numbers.
 			ullNewScrollV = ullNewStartV - m_iHeightWorkAreaPx / 2;
 			ullNewScrollV -= ullNewScrollV % m_sizeFontMain.cy;
 		}
 		break;
-	case 1: //Offset at the bottom.
+	case 1: //Position offset at the bottom line.
 		ullNewScrollV = ullNewStartV - (GetBottomLine() - GetTopLine()) * m_sizeFontMain.cy;
 		break;
 	default:

@@ -33,7 +33,7 @@ namespace HEXCTRL::LISTEX {
 		NMHDR       hdr { };
 		int         iItem { };
 		int         iSubItem { };
-		LISTEXCOLOR stClr { };
+		LISTEXCOLOR stClr;
 	};
 	using PLISTEXCOLORINFO = LISTEXCOLORINFO*;
 
@@ -71,7 +71,7 @@ namespace HEXCTRL::LISTEX {
 		NMHDR        hdr { };
 		int          iItem { };
 		int          iSubItem { };
-		LISTEXTTDATA stData { };
+		LISTEXTTDATA stData;
 	};
 	using PLISTEXTTINFO = LISTEXTTINFO*;
 
@@ -117,7 +117,7 @@ namespace HEXCTRL::LISTEX {
 		PCLISTEXCOLORS   pColors { };             //ListEx colors.
 		const LOGFONTW*  pListLogFont { };        //ListEx font.
 		const LOGFONTW*  pHdrLogFont { };         //Header font.
-		CRect            rect { };                //Initial rect.
+		CRect            rect;                    //Initial rect.
 		UINT             uID { };                 //ListEx control ID.
 		DWORD            dwStyle { };             //ListEx window styles.
 		DWORD            dwExStyle { };           //Extended window styles.

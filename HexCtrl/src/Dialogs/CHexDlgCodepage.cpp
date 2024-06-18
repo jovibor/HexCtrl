@@ -5,7 +5,7 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "../../dep/StrToNum/StrToNum/StrToNum.h"
+#include "../../dep/StrToNum/StrToNum.h"
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgCodepage.h"
 #include <algorithm>
@@ -140,22 +140,22 @@ void CHexDlgCodepage::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
+	if ((pItem->mask & LVIF_TEXT) == 0)
+		return;
 
-	if (pItem->mask & LVIF_TEXT) {
-		const auto nItemID = static_cast<std::size_t>(pItem->iItem);
-		switch (pItem->iSubItem) {
-		case 0: //Code page ID.
-			*std::format_to(pItem->pszText, L"{}", m_vecCodePage[nItemID].iCPID) = L'\0';
-			break;
-		case 1: //Name.
-			pItem->pszText = m_vecCodePage[nItemID].wstrName.data();
-			break;
-		case 2: //Max chars.
-			*std::format_to(pItem->pszText, L"{}", m_vecCodePage[nItemID].uMaxChars) = L'\0';
-			break;
-		default:
-			break;
-		}
+	const auto iItem = static_cast<std::size_t>(pItem->iItem);
+	switch (pItem->iSubItem) {
+	case 0: //Code page ID.
+		*std::format_to(pItem->pszText, L"{}", m_vecCodePage[iItem].iCPID) = L'\0';
+		break;
+	case 1: //Name.
+		pItem->pszText = m_vecCodePage[iItem].wstrName.data();
+		break;
+	case 2: //Max chars.
+		*std::format_to(pItem->pszText, L"{}", m_vecCodePage[iItem].uMaxChars) = L'\0';
+		break;
+	default:
+		break;
 	}
 }
 

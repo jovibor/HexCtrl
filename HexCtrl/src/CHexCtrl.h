@@ -67,7 +67,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetTemplates()const->IHexTemplates* override;
 		[[nodiscard]] auto GetUnprintableChar()const->wchar_t override;
 		[[nodiscard]] auto GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND override;
-		void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0)override;
+		void GoToOffset(ULONGLONG ullOffset, int iPosAt = 0)override;
 		[[nodiscard]] bool HasSelection()const override;
 		[[nodiscard]] auto HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST> override;
 		[[nodiscard]] bool IsCmdAvail(EHexCmd eCmd)const override;

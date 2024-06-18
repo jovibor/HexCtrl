@@ -5,7 +5,7 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "../../dep/StrToNum/StrToNum/StrToNum.h"
+#include "../../dep/StrToNum/StrToNum.h"
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgBkmMgr.h"
 #include <algorithm>
@@ -467,12 +467,11 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
-
 	if ((pItem->mask & LVIF_TEXT) == 0)
 		return;
 
-	const auto iItemID = pItem->iItem;
-	const auto pBkm = GetByIndex(static_cast<ULONGLONG>(iItemID));
+	const auto iItem = pItem->iItem;
+	const auto pBkm = GetByIndex(static_cast<ULONGLONG>(iItem));
 	if (pBkm == nullptr)
 		return;
 
@@ -480,7 +479,7 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	ULONGLONG ullSize { 0 };
 	switch (pItem->iSubItem) {
 	case 0: //Index number.
-		*std::format_to(pItem->pszText, L"{}", iItemID + 1) = L'\0';
+		*std::format_to(pItem->pszText, L"{}", iItem + 1) = L'\0';
 		break;
 	case 1: //Offset.
 		if (!pBkm->vecSpan.empty()) {

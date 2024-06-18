@@ -395,7 +395,7 @@ namespace HEXCTRL {
 		virtual bool Create(const HEXCREATE& hcs) = 0;                       //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent) = 0;    //Сreates custom dialog control.
 		virtual void Destroy() = 0;                                          //Deleter.
-		virtual void ExecuteCmd(EHexCmd eCmd) = 0;                           //Execute a command within the control.
+		virtual void ExecuteCmd(EHexCmd eCmd) = 0;                           //Execute a command within HexCtrl.
 		[[nodiscard]] virtual auto GetActualWidth()const->int = 0;           //Working area actual width.
 		[[nodiscard]] virtual auto GetBookmarks()const->IHexBookmarks* = 0;  //Get Bookmarks interface.
 		[[nodiscard]] virtual auto GetCacheSize()const->DWORD = 0;           //Returns VirtualData mode cache size.
@@ -404,7 +404,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetCharsExtraSpace()const->DWORD = 0;     //Get extra space between chars, in pixels.
 		[[nodiscard]] virtual auto GetCodepage()const->int = 0;              //Get current codepage ID.
 		[[nodiscard]] virtual auto GetColors()const->const HEXCOLORS & = 0;  //All current colors.
-		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->SpanByte = 0;  //Get pointer to data offset, no matter what mode the control works in.
+		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->SpanByte = 0;  //Get pointer to data offset, no matter what mode HexCtrl works in.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual auto GetDateInfo()const->std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
 		[[nodiscard]] virtual auto GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND = 0; //Dialogs' items.
@@ -420,29 +420,29 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetTemplates()const->IHexTemplates* = 0;  //Get Templates interface.
 		[[nodiscard]] virtual auto GetUnprintableChar()const->wchar_t = 0;   //Get unprintable replacement character.
 		[[nodiscard]] virtual auto GetWndHandle(EHexWnd eWnd, bool fCreate = true)const->HWND = 0; //Get HWND of internal window/dialogs.
-		virtual void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0) = 0;   //Go (scroll) to a given offset.
+		virtual void GoToOffset(ULONGLONG ullOffset, int iPosAt = 0) = 0;    //Go to the given offset.
 		[[nodiscard]] virtual bool HasSelection()const = 0;    //Does currently have any selection or not.
 		[[nodiscard]] virtual auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTEST> = 0; //HitTest given point.
 		[[nodiscard]] virtual bool IsCmdAvail(EHexCmd eCmd)const = 0; //Is given Cmd currently available (can be executed)?
-		[[nodiscard]] virtual bool IsCreated()const = 0;       //Shows whether control is created or not.
-		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to the control or not.
+		[[nodiscard]] virtual bool IsCreated()const = 0;       //Shows whether HexCtrl is created or not.
+		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to HexCtrl or not.
 		[[nodiscard]] virtual bool IsInfoBar()const = 0;       //Is InfoBar visible?
-		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is edit mode enabled or not.
-		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Is "Offset" currently shown as Hex or as Decimal.
+		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is data mutable or not.
+		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Are offsets shown as Hex or as Decimal.
 		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION = 0; //Ensures that the given offset is visible.
 		[[nodiscard]] virtual bool IsVirtual()const = 0;       //Is working in VirtualData or default mode.		
 		virtual void ModifyData(const HEXMODIFY& hms) = 0;     //Main routine to modify data in IsMutable()==true mode.
-		virtual void Redraw() = 0;                             //Redraw the control's window.
-		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set the control's current capacity.
+		virtual void Redraw() = 0;                             //Redraw HexCtrl's window.
+		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set current capacity.
 		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true) = 0; //Set the caret position.
 		virtual void SetCharsExtraSpace(DWORD dwSpace) = 0;    //Extra space to add between chars, in pixels.
 		virtual void SetCodepage(int iCodepage) = 0;           //Codepage for text area.
-		virtual void SetColors(const HEXCOLORS& hcs) = 0;      //Set all the control's colors.
+		virtual void SetColors(const HEXCOLORS& hcs) = 0;      //Set HexCtrl's colors.
 		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.
 		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).
 		virtual void SetDateInfo(DWORD dwFormat, wchar_t wchSepar) = 0; //Set date format and date separator.
 		virtual void SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags) = 0; //Properties for the internal dialogs.
-		virtual void SetFont(const LOGFONTW& lf) = 0;          //Set the control's new font. This font has to be monospaced.
+		virtual void SetFont(const LOGFONTW& lf) = 0;          //Set HexCtrl's font, this font has to be monospaced.
 		virtual void SetGroupSize(DWORD dwSize) = 0;           //Set data grouping size.
 		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
 		virtual void SetOffsetMode(bool fHex) = 0;             //Set offset being shown as Hex or as Decimal.

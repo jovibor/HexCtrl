@@ -5,7 +5,7 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "../../dep/StrToNum/StrToNum/StrToNum.h"
+#include "../../dep/StrToNum/StrToNum.h"
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgCallback.h"
 #include "CHexDlgSearch.h"
@@ -53,7 +53,7 @@ struct CHexDlgSearch::SEARCHFUNCDATA {
 	ULONGLONG ullChunkMaxOffset { }; //Maximum offset to search in chunk.
 	CHexDlgCallback* pDlgClbk { };
 	IHexCtrl* pHexCtrl { };
-	SpanCByte spnFind { };
+	SpanCByte spnFind;
 	bool fBigStep { };
 	bool fInverted { };
 };
@@ -1012,19 +1012,19 @@ void CHexDlgSearch::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto* const pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto* const pItem = &pDispInfo->item;
+	if ((pItem->mask & LVIF_TEXT) == 0)
+		return;
 
-	if (pItem->mask & LVIF_TEXT) {
-		const auto nItemID = static_cast<std::size_t>(pItem->iItem);
-		switch (pItem->iSubItem) {
-		case 0: //Index value.
-			*std::format_to(pItem->pszText, L"{}", nItemID + 1) = L'\0';
-			break;
-		case 1: //Offset.
-			*std::format_to(pItem->pszText, L"0x{:X}", GetHexCtrl()->GetOffset(m_vecSearchRes[nItemID], true)) = L'\0';
-			break;
-		default:
-			break;
-		}
+	const auto iItem = static_cast<std::size_t>(pItem->iItem);
+	switch (pItem->iSubItem) {
+	case 0: //Index value.
+		*std::format_to(pItem->pszText, L"{}", iItem + 1) = L'\0';
+		break;
+	case 1: //Offset.
+		*std::format_to(pItem->pszText, L"0x{:X}", GetHexCtrl()->GetOffset(m_vecSearchRes[iItem], true)) = L'\0';
+		break;
+	default:
+		break;
 	}
 }
 

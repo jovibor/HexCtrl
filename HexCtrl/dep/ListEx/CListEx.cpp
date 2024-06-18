@@ -17,8 +17,6 @@
 namespace HEXCTRL::LISTEX::INTERNAL {
 	class CListExHdr final : public CMFCHeaderCtrl {
 	public:
-		explicit CListExHdr();
-		~CListExHdr()final = default;
 		void DeleteColumn(int iIndex);
 		[[nodiscard]] UINT GetHiddenCount()const;
 		[[nodiscard]] int GetColumnDataAlign(int iIndex)const;
@@ -57,9 +55,6 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		DECLARE_MESSAGE_MAP();
 	private:
 		CFont m_fontHdr;
-		CPen m_penGrid;
-		CPen m_penLight;
-		CPen m_penShadow;
 		COLORREF m_clrBkNWA { }; //Bk of non working area.
 		COLORREF m_clrText { };
 		COLORREF m_clrBk { };
@@ -85,7 +80,7 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 
 	//Header column icons.
 	struct CListExHdr::SHDRICON {
-		LISTEXHDRICON stIcon { };           //Icon data struct.
+		LISTEXHDRICON stIcon;               //Icon data struct.
 		bool          fLMPressed { false }; //Left mouse button pressed atm.
 	};
 
@@ -107,13 +102,6 @@ BEGIN_MESSAGE_MAP(CListExHdr, CMFCHeaderCtrl)
 	ON_WM_RBUTTONUP()
 	ON_WM_RBUTTONDOWN()
 END_MESSAGE_MAP()
-
-CListExHdr::CListExHdr()
-{
-	m_penGrid.CreatePen(PS_SOLID, 2, RGB(220, 220, 220));
-	m_penLight.CreatePen(PS_SOLID, 1, GetSysColor(COLOR_3DHILIGHT));
-	m_penShadow.CreatePen(PS_SOLID, 1, GetSysColor(COLOR_3DSHADOW));
-}
 
 void CListExHdr::DeleteColumn(int iIndex)
 {
@@ -354,18 +342,6 @@ int CListExHdr::ColumnIDToIndex(UINT uID)const
 	return -1;
 }
 
-void CListExHdr::OnDestroy()
-{
-	CMFCHeaderCtrl::OnDestroy();
-
-	m_umapColors.clear();
-	m_umapIcons.clear();
-	m_umapHidden.clear();
-	m_umapSortable.clear();
-	m_umapEditable.clear();
-	m_umapDataAlign.clear();
-}
-
 auto CListExHdr::GetHdrColor(UINT ID)const->const CListExHdr::SHDRCOLOR*
 {
 	if (const auto it = m_umapColors.find(ID); it != m_umapColors.end()) {
@@ -406,7 +382,19 @@ bool CListExHdr::IsEditable(UINT ID)const
 	return iter != m_umapEditable.end() && iter->second;
 }
 
-void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rcOrig, BOOL bIsPressed, BOOL bIsHighlighted)
+void CListExHdr::OnDestroy()
+{
+	CMFCHeaderCtrl::OnDestroy();
+
+	m_umapColors.clear();
+	m_umapIcons.clear();
+	m_umapHidden.clear();
+	m_umapSortable.clear();
+	m_umapEditable.clear();
+	m_umapDataAlign.clear();
+}
+
+void CListExHdr::OnDrawItem(CDC* pDC, int iItem, const CRect rcOrig, BOOL bIsPressed, BOOL bIsHighlighted)
 {
 	//Non working area after last column. Or if column is resized to zero width.
 	if (iItem < 0 || rcOrig.IsRectEmpty()) {
@@ -418,8 +406,8 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rcOrig, BOOL bIsPressed, 
 	auto& rDC = memDC.GetDC();
 	const auto ID = ColumnIndexToID(iItem);
 	const auto pClr = GetHdrColor(ID);
-	const COLORREF clrText { pClr != nullptr ? pClr->clrText : m_clrText };
-	const COLORREF clrBk { bIsHighlighted ? (bIsPressed ? m_clrHglActive : m_clrHglInactive)
+	const auto clrText { pClr != nullptr ? pClr->clrText : m_clrText };
+	const auto clrBk { bIsHighlighted ? (bIsPressed ? m_clrHglActive : m_clrHglInactive)
 		: (pClr != nullptr ? pClr->clrBk : m_clrBk) };
 
 	rDC.FillSolidRect(rcOrig, clrBk);
@@ -474,30 +462,24 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rcOrig, BOOL bIsPressed, 
 
 	//Draw sortable triangle (arrow).
 	if (m_fSortable && IsSortable(ID) && ID == m_uSortColumn) {
-		rDC.SelectObject(m_penLight);
-		const auto iOffset = rcOrig.Height() / 4;
-
-		if (m_fSortAscending) {
-			//Draw the UP arrow.
-			rDC.MoveTo(rcOrig.right - 2 * iOffset, iOffset);
-			rDC.LineTo(rcOrig.right - iOffset, rcOrig.bottom - iOffset - 1);
-			rDC.LineTo(rcOrig.right - 3 * iOffset - 2, rcOrig.bottom - iOffset - 1);
-			rDC.SelectObject(m_penShadow);
-			rDC.MoveTo(rcOrig.right - 3 * iOffset - 1, rcOrig.bottom - iOffset - 1);
-			rDC.LineTo(rcOrig.right - 2 * iOffset, iOffset - 1);
+		static const CPen penArrow(PS_SOLID, 1, RGB(90, 90, 90));
+		static const CBrush brFill(GetSysColor(COLOR_3DFACE));
+		rDC.SelectObject(penArrow);
+		rDC.SelectObject(brFill);
+		if (m_fSortAscending) { //Draw the UP arrow.
+			const POINT arrPt[] { { rcOrig.right - 10, 3 },
+				{ rcOrig.right - 15, 8 }, { rcOrig.right - 5, 8 } };
+			rDC.Polygon(arrPt, 3);
 		}
-		else {
-			//Draw the DOWN arrow.
-			rDC.MoveTo(rcOrig.right - iOffset - 1, iOffset);
-			rDC.LineTo(rcOrig.right - 2 * iOffset - 1, rcOrig.bottom - iOffset);
-			rDC.SelectObject(m_penShadow);
-			rDC.MoveTo(rcOrig.right - 2 * iOffset - 2, rcOrig.bottom - iOffset);
-			rDC.LineTo(rcOrig.right - 3 * iOffset - 1, iOffset);
-			rDC.LineTo(rcOrig.right - iOffset - 1, iOffset);
+		else { //Draw the DOWN arrow.
+			const POINT arrPt[] { { rcOrig.right - 10, 8 },
+				{ rcOrig.right - 15, 3 }, { rcOrig.right - 5, 3 } };
+			rDC.Polygon(arrPt, 3);
 		}
 	}
 
-	rDC.SelectObject(m_penGrid);
+	static const CPen penGrid(PS_SOLID, 2, GetSysColor(COLOR_3DFACE));
+	rDC.SelectObject(penGrid);
 	rDC.MoveTo(rcOrig.TopLeft());
 	rDC.LineTo(rcOrig.left, rcOrig.bottom);
 	if (iItem == GetItemCount() - 1) { //Last item.
@@ -506,7 +488,7 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, CRect rcOrig, BOOL bIsPressed, 
 	}
 }
 
-LRESULT CListExHdr::OnLayout(WPARAM /*wParam*/, LPARAM lParam)
+auto CListExHdr::OnLayout(WPARAM /*wParam*/, LPARAM lParam)->LRESULT
 {
 	CMFCHeaderCtrl::DefWindowProcW(HDM_LAYOUT, 0, lParam);
 

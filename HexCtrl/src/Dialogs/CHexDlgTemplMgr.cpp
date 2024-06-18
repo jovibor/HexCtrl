@@ -5,7 +5,7 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "../../dep/StrToNum/StrToNum/StrToNum.h"
+#include "../../dep/StrToNum/StrToNum.h"
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgTemplMgr.h"
 #include "strsafe.h"
@@ -19,9 +19,9 @@
 using namespace HEXCTRL::INTERNAL;
 
 struct CHexDlgTemplMgr::TEMPLAPPLIED {
-	ULONGLONG     ullOffset;  //Offset, where to apply a template.
-	PCHEXTEMPLATE pTemplate;  //Template pointer.
-	int           iAppliedID; //Applied/runtime ID, assigned by framework. Any template can be applied more than once.
+	ULONGLONG     ullOffset { };  //Offset, where to apply a template.
+	PCHEXTEMPLATE pTemplate { };  //Template pointer.
+	int           iAppliedID { }; //Applied/runtime ID, assigned by framework. Any template can be applied more than once.
 };
 
 enum class CHexDlgTemplMgr::EMenuID : std::uint16_t {
@@ -31,7 +31,7 @@ enum class CHexDlgTemplMgr::EMenuID : std::uint16_t {
 };
 
 struct CHexDlgTemplMgr::FIELDSDEFPROPS { //Helper struct for convenient argument passing through recursive fields' parsing.
-	HEXCOLOR        stClr { };
+	HEXCOLOR        stClr;
 	PCHEXTEMPLATE   pTemplate { }; //Same for all fields.
 	PCHEXTEMPLFIELD pFieldParent { };
 	bool            fBigEndian { false };
@@ -806,7 +806,6 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
-
 	if ((pItem->mask & LVIF_TEXT) == 0)
 		return;
 

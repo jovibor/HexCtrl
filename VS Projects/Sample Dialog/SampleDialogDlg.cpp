@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "SampleDialogDlg.h"
-#include "../../HexCtrl/dep/StrToNum/StrToNum/StrToNum.h"
+#include "../../HexCtrl/dep/StrToNum/StrToNum.h"
 #include "Resource.h"
 #include <filesystem>
 #include <random>

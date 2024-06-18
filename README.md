@@ -153,7 +153,7 @@
 
 ## [](#)How To Build
 Clone the repo with all submodules:  
-`git clone https://github.com/jovibor/HexCtrl.git --recurse-submodules`  
+`git clone https://github.com/jovibor/HexCtrl.git`  
 
 ### [](#)Integrate Sources
 To build **HexCtrl** from the sources:
@@ -544,12 +544,12 @@ Returns `HWND` for **HexCtrl**'s main window or one of its [`internal dialogs`](
 
 ### [](#)GoToOffset
 ```cpp
-void GoToOffset(ULONGLONG ullOffset, int iRelPos = 0);
+void GoToOffset(ULONGLONG ullOffset, int iPosAt = 0);
 ```
-Go to a given offset. The second argument `iRelPos` may take-in three different values:  
-* `-1` - offset will appear at the top line.
-* &nbsp; `0` - offset will appear at the middle.
-* &nbsp; `1` - offset will appear at the bottom line.
+Go to the given offset. The second argument `iPosAt` can take three values:  
+* `-1` - offset will appear at the top line
+* &nbsp; `0` - offset will appear in the center
+* &nbsp; `1` - offset will appear at the bottom line
 
 ### [](#)HasSelection
 ```cpp
