@@ -91,7 +91,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags)override;
 		void SetFont(const LOGFONTW& lf)override;
 		void SetGroupSize(DWORD dwSize)override;
-		void SetMutable(bool fEnable)override;
+		void SetMutable(bool fMutable)override;
 		void SetOffsetMode(bool fHex)override;
 		void SetPageSize(DWORD dwSize, std::wstring_view wsvName)override;
 		void SetRedraw(bool fRedraw)override;

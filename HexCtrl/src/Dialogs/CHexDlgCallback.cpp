@@ -21,11 +21,11 @@ BEGIN_MESSAGE_MAP(CHexDlgCallback, CDialogEx)
 END_MESSAGE_MAP()
 
 CHexDlgCallback::CHexDlgCallback(std::wstring_view wsvOperName, std::wstring_view wsvCountName,
-	ULONGLONG ullProgBarMin, ULONGLONG ullProgBarMax, CWnd* pParent) : CDialogEx(IDD_HEXCTRL_CALLBACK, pParent),
-	m_wstrOperName(wsvOperName), m_wstrCountName(wsvCountName), m_ullProgBarMin(ullProgBarMin),
-	m_ullProgBarPrev(ullProgBarMin), m_ullProgBarCurr(ullProgBarMin), m_ullProgBarMax(ullProgBarMax)
+	ULONGLONG ullMin, ULONGLONG ullMax, CWnd* pParent) : CDialogEx(IDD_HEXCTRL_CALLBACK, pParent),
+	m_wstrOperName(wsvOperName), m_wstrCountName(wsvCountName), m_ullMin(ullMin),
+	m_ullPrev(ullMin), m_ullCurr(ullMin), m_ullMax(ullMax)
 {
-	assert(ullProgBarMin <= ullProgBarMax);
+	assert(ullMin <= ullMax);
 }
 
 bool CHexDlgCallback::IsCanceled()const
@@ -43,9 +43,9 @@ void CHexDlgCallback::SetCount(ULONGLONG ullCount)
 	m_ullCount = ullCount;
 }
 
-void CHexDlgCallback::SetProgress(ULONGLONG ullProgCurr)
+void CHexDlgCallback::SetCurrent(ULONGLONG ullCurr)
 {
-	m_ullProgBarCurr = ullProgCurr;
+	m_ullCurr = ullCurr;
 }
 
 
@@ -80,14 +80,15 @@ BOOL CHexDlgCallback::OnInitDialog()
 	SetWindowTextW(m_wstrOperName.data());
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STAT_OPER)->SetWindowTextW(m_wstrOperName.data());
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STAT_COUNT)->SetWindowTextW(L"");
-	SetTimer(m_uTimerCancelCheck, m_iElapse, nullptr);
+	SetTimer(m_uIDTCancelCheck, m_uElapse, nullptr);
 
-	constexpr auto iRange { 1000 };
-	m_stProgBar.SetRange32(0, iRange);
+	constexpr auto iRange1000 { 1000 };
+	m_stProgBar.SetRange32(0, iRange1000);
 	m_stProgBar.SetPos(0);
 
-	const auto ullDiff = m_ullProgBarMax - m_ullProgBarMin;
-	m_ullThousandth = ullDiff >= iRange ? ullDiff / iRange : 1;
+	//How many thousands in the whole diapason.
+	const auto ullDiapason = m_ullMax - m_ullMin;
+	m_ullThousands = ullDiapason >= iRange1000 ? ullDiapason / iRange1000 : 1;
 
 	return TRUE;
 }
@@ -96,24 +97,25 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 {
 	CDialogEx::OnTimer(nIDEvent);
 
-	if (nIDEvent != m_uTimerCancelCheck)
+	if (nIDEvent != m_uIDTCancelCheck)
 		return;
 
 	if (m_fCancel) {
-		KillTimer(m_uTimerCancelCheck);
-		return EndDialog(IDCANCEL);
+		KillTimer(m_uIDTCancelCheck);
+		EndDialog(IDCANCEL);
+		return;
 	}
 
-	const auto ullCurDiff = m_ullProgBarCurr - m_ullProgBarMin;
-	const auto iPos = static_cast<int>(ullCurDiff / m_ullThousandth); //How many thousandth parts have already been passed.
+	const auto ullCurr = m_ullCurr - m_ullMin;
+	const auto iPos = static_cast<int>(ullCurr / m_ullThousands); //How many thousandth parts have already been passed.
 	m_stProgBar.SetPos(iPos);
 
-	constexpr auto uBInKB { 1024U };
-	constexpr auto uBInMB { uBInKB * 1024U }; //Bytes in MB.
-	constexpr auto uBInGB { uBInMB * 1024U }; //Bytes in GB.
-	constexpr auto iTicksInSec = 1000 / m_iElapse;
-	const auto ullSpeedBS = (m_ullProgBarCurr - m_ullProgBarPrev) * iTicksInSec; //Speed in B/s.
-	m_ullProgBarPrev = m_ullProgBarCurr;
+	static constexpr auto uBInKB { 1024U };          //Bytes in KB.
+	static constexpr auto uBInMB { uBInKB * 1024U }; //Bytes in MB.
+	static constexpr auto uBInGB { uBInMB * 1024U }; //Bytes in GB.
+	static constexpr auto uTicksInSec = 1000U / m_uElapse;
+	const auto ullSpeedBS = (m_ullCurr - m_ullPrev) * uTicksInSec; //Speed in Bytes/s.
+	m_ullPrev = m_ullCurr;
 
 	std::wstring wstrDisplay;
 	if (ullSpeedBS < uBInMB) { //Less than 1 MB/s.
@@ -122,7 +124,7 @@ void CHexDlgCallback::OnTimer(UINT_PTR nIDEvent)
 	else if (ullSpeedBS < uBInGB) { //Less than 1 GB/s.
 		wstrDisplay = std::format(L"{}{} MB/s", m_wstrOperName, ullSpeedBS / uBInMB);
 	}
-	else { //More than 1 GB/s.
+	else { //More than or equal to 1 GB/s.
 		wstrDisplay = std::format(L"{}{:.2f} GB/s", m_wstrOperName, ullSpeedBS / static_cast<float>(uBInGB));
 	}
 	GetDlgItem(IDC_HEXCTRL_CALLBACK_STAT_OPER)->SetWindowTextW(wstrDisplay.data());

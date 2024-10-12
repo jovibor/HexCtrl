@@ -18,7 +18,7 @@ import HEXCTRL.HexUtility;
 using namespace HEXCTRL::INTERNAL;
 
 enum class CHexDlgBkmMgr::EMenuID : std::uint16_t {
-	IDM_BKMMGR_REMOVE = 0x8001, IDM_BKMMGR_REMOVEALL = 0x8002
+	IDM_BKMMGR_REMOVE = 0x8001, IDM_BKMMGR_REMOVEALL
 };
 
 BEGIN_MESSAGE_MAP(CHexDlgBkmMgr, CDialogEx)

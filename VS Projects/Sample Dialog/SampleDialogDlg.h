@@ -33,6 +33,7 @@ private:
 	bool IsRW()const;
 	bool IsLnk()const;
 	[[nodiscard]] static auto OpenFileDlg() -> std::vector<std::wstring>;
+	[[nodiscard]] static auto GetLastErrorWstr() -> std::wstring;
 	DECLARE_MESSAGE_MAP();
 private:
 	IHexCtrlPtr m_pHexDlg { CreateHexCtrl() };

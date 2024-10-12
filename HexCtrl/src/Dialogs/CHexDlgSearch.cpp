@@ -26,14 +26,12 @@ enum class CHexDlgSearch::ESearchMode : std::uint8_t {
 };
 
 enum class CHexDlgSearch::ESearchType : std::uint8_t {
-	HEXBYTES, TEXT_ASCII, TEXT_UTF8, TEXT_UTF16,
-	NUM_INT8, NUM_UINT8, NUM_INT16, NUM_UINT16,
-	NUM_INT32, NUM_UINT32, NUM_INT64, NUM_UINT64,
-	NUM_FLOAT, NUM_DOUBLE, STRUCT_FILETIME
+	HEXBYTES, TEXT_ASCII, TEXT_UTF8, TEXT_UTF16, NUM_INT8, NUM_UINT8, NUM_INT16, NUM_UINT16,
+	NUM_INT32, NUM_UINT32, NUM_INT64, NUM_UINT64, NUM_FLOAT, NUM_DOUBLE, STRUCT_FILETIME
 };
 
 enum class CHexDlgSearch::EMenuID : std::uint16_t {
-	IDM_SEARCH_ADDBKM = 0x8000, IDM_SEARCH_SELECTALL = 0x8001, IDM_SEARCH_CLEARALL = 0x8002
+	IDM_SEARCH_ADDBKM = 0x8000, IDM_SEARCH_SELECTALL, IDM_SEARCH_CLEARALL
 };
 
 struct CHexDlgSearch::FINDRESULT {
@@ -199,18 +197,14 @@ void CHexDlgSearch::CalcMemChunks(SEARCHFUNCDATA& refData)const
 		ullChunkMaxOffset = ullSizeTotal - nSizeSearch;
 	}
 	else {
-		ullMemToAcquire = pHexCtrl->GetCacheSize();
-		if (ullMemToAcquire > ullSizeTotal) {
-			ullMemToAcquire = ullSizeTotal;
-		}
-
+		ullMemToAcquire = (std::min)(static_cast<ULONGLONG>(pHexCtrl->GetCacheSize()), ullSizeTotal);
 		ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
 		if (ullStep > ullChunkMaxOffset) { //For very big steps.
-			ullMemChunks = ullSizeTotal > ullStep ? ullSizeTotal / ullStep + ((ullSizeTotal % ullStep) ? 1 : 0) : 1;
+			ullMemChunks = ullSizeTotal > ullStep ? (ullSizeTotal / ullStep) + ((ullSizeTotal % ullStep) ? 1 : 0) : 1;
 			fBigStep = true;
 		}
 		else {
-			ullMemChunks = ullSizeTotal > ullChunkMaxOffset ? ullSizeTotal / ullChunkMaxOffset
+			ullMemChunks = ullSizeTotal > ullChunkMaxOffset ? (ullSizeTotal / ullChunkMaxOffset)
 				+ ((ullSizeTotal % ullChunkMaxOffset) ? 1 : 0) : 1;
 		}
 	}
@@ -325,7 +319,7 @@ void CHexDlgSearch::FindAll()
 
 			while (const auto findRes = lmbWrapper()) {
 				m_vecSearchRes.emplace_back(findRes.ullOffset); //Filling the vector of Found occurences.
-				dlgClbk.SetProgress(findRes.ullOffset);
+				dlgClbk.SetCurrent(findRes.ullOffset);
 				dlgClbk.SetCount(m_vecSearchRes.size());
 
 				const auto ullNext = findRes.ullOffset + GetStep();
@@ -1579,7 +1573,7 @@ void CHexDlgSearch::ReplaceAll()
 
 				Replace(stFuncData.pHexCtrl, findRes.ullOffset, m_vecReplaceData);
 				m_vecSearchRes.emplace_back(findRes.ullOffset); //Filling the vector of Replaced occurences.
-				dlgClbk.SetProgress(findRes.ullOffset);
+				dlgClbk.SetCurrent(findRes.ullOffset);
 				dlgClbk.SetCount(m_vecSearchRes.size());
 
 				const auto ullNext = findRes.ullOffset + (sSizeRepl <= stFuncData.ullStep ?
@@ -1988,7 +1982,7 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 				if (pDlgClbk->IsCanceled()) {
 					return { { }, false, true };
 				}
-				pDlgClbk->SetProgress(ullOffsetSearch + ullOffsetData);
+				pDlgClbk->SetCurrent(ullOffsetSearch + ullOffsetData);
 			}
 		}
 
@@ -1997,7 +1991,7 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 				break; //Upper bound reached.
 
 			ullOffsetSearch += ullStep;
-			}
+		}
 		else {
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
@@ -2063,7 +2057,7 @@ auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRES
 				if (pDlgClbk->IsCanceled()) {
 					return { { }, false, true };
 				}
-				pDlgClbk->SetProgress(ullOffsetSearch + ullOffsetData);
+				pDlgClbk->SetCurrent(ullOffsetSearch + ullOffsetData);
 			}
 		}
 
@@ -2072,7 +2066,7 @@ auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRES
 				break; //Upper bound reached.
 
 			ullOffsetSearch += ullStep;
-			}
+		}
 		else {
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
@@ -2141,7 +2135,7 @@ auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRES
 				if (pDlgClbk->IsCanceled()) {
 					return { { }, false, true };
 				}
-				pDlgClbk->SetProgress(ullOffsetSearch + ullOffsetData);
+				pDlgClbk->SetCurrent(ullOffsetSearch + ullOffsetData);
 			}
 		}
 
@@ -2150,7 +2144,7 @@ auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRES
 				break; //Upper bound reached.
 
 			ullOffsetSearch += ullStep;
-			}
+		}
 		else {
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
@@ -2219,7 +2213,7 @@ auto CHexDlgSearch::SearchFuncFwdByte4(const SEARCHFUNCDATA& refSearch)->FINDRES
 				if (pDlgClbk->IsCanceled()) {
 					return { { }, false, true };
 				}
-				pDlgClbk->SetProgress(ullOffsetSearch + ullOffsetData);
+				pDlgClbk->SetCurrent(ullOffsetSearch + ullOffsetData);
 			}
 		}
 
@@ -2228,7 +2222,7 @@ auto CHexDlgSearch::SearchFuncFwdByte4(const SEARCHFUNCDATA& refSearch)->FINDRES
 				break; //Upper bound reached.
 
 			ullOffsetSearch += ullStep;
-			}
+		}
 		else {
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
@@ -2334,7 +2328,7 @@ auto CHexDlgSearch::SearchFuncBack(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 				if (pDlgClbk->IsCanceled()) {
 					return { { }, false, true };
 				}
-				pDlgClbk->SetProgress(ullStartFrom - (ullOffsetSearch + llOffsetData));
+				pDlgClbk->SetCurrent(ullStartFrom - (ullOffsetSearch + llOffsetData));
 			}
 		}
 
@@ -2343,7 +2337,7 @@ auto CHexDlgSearch::SearchFuncBack(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 				break; //Lower bound reached.
 
 			ullOffsetSearch -= ullChunkMaxOffset;
-			}
+		}
 		else {
 			if ((ullOffsetSearch - ullChunkMaxOffset) < ullEnd || ((ullOffsetSearch - ullChunkMaxOffset) >
 				((std::numeric_limits<ULONGLONG>::max)() - ullChunkMaxOffset))) {

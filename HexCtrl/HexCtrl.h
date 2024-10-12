@@ -444,7 +444,7 @@ namespace HEXCTRL {
 		virtual void SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags) = 0; //Properties for the internal dialogs.
 		virtual void SetFont(const LOGFONTW& lf) = 0;          //Set HexCtrl's font, this font has to be monospaced.
 		virtual void SetGroupSize(DWORD dwSize) = 0;           //Set data grouping size.
-		virtual void SetMutable(bool fEnable) = 0;             //Enable or disable mutable/editable mode.
+		virtual void SetMutable(bool fMutable) = 0;            //Enable or disable mutable/editable mode.
 		virtual void SetOffsetMode(bool fHex) = 0;             //Set offset being shown as Hex or as Decimal.
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wsvName = L"Page") = 0; //Set page size and name to draw the lines in-between.
 		virtual void SetRedraw(bool fRedraw) = 0;              //Handle WM_PAINT message or not.

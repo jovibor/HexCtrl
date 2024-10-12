@@ -25,9 +25,9 @@ struct CHexDlgTemplMgr::TEMPLAPPLIED {
 };
 
 enum class CHexDlgTemplMgr::EMenuID : std::uint16_t {
-	IDM_TREEAPPLIED_DISAPPLY = 0x8000, IDM_TREEAPPLIED_DISAPPLYALL = 0x8001,
-	IDM_LISTAPPLIED_HDR_TYPE = 0x8100, IDM_LISTAPPLIED_HDR_NAME, IDM_LISTAPPLIED_HDR_OFFSET,
-	IDM_LISTAPPLIED_HDR_SIZE, IDM_LISTAPPLIED_HDR_DATA, IDM_LISTAPPLIED_HDR_ENDIANNESS, IDM_LISTAPPLIED_HDR_COLORS
+	IDM_TREEAPPLIED_DISAPPLY = 0x8000, IDM_TREEAPPLIED_DISAPPLYALL,
+	IDM_LISTAPPLIED_HDR_TYPE, IDM_LISTAPPLIED_HDR_NAME, IDM_LISTAPPLIED_HDR_OFFSET, IDM_LISTAPPLIED_HDR_SIZE,
+	IDM_LISTAPPLIED_HDR_DATA, IDM_LISTAPPLIED_HDR_ENDIANNESS, IDM_LISTAPPLIED_HDR_COLORS
 };
 
 struct CHexDlgTemplMgr::FIELDSDEFPROPS { //Helper struct for convenient argument passing through recursive fields' parsing.
@@ -726,7 +726,7 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 	GetBitmapBits(m_hBITMAPMin, dwBytesBmp, pPixelsOrig.get());
 	for (auto itWidth = 0UL; itWidth < dwWidth; ++itWidth) { //Flip matrix' columns (flip vert).
 		for (auto itHeight = 0UL, itHeightBack = dwHeight - 1; itHeight < itHeightBack; ++itHeight, --itHeightBack) {
-			std::swap(pPixelsOrig[itHeight * dwHeight + itWidth], pPixelsOrig[itHeightBack * dwWidth + itWidth]);
+			std::swap(pPixelsOrig[(itHeight * dwHeight) + itWidth], pPixelsOrig[(itHeightBack * dwWidth) + itWidth]);
 		}
 	}
 	m_hBITMAPMax = CreateBitmapIndirect(&stBMP);

@@ -445,16 +445,10 @@ auto CHexScroll::SetScrollPos(ULONGLONG ullNewPos)->ULONGLONG
 		return m_ullScrollPosPrev;
 	}
 
-	m_ullScrollPosCur = ullNewPos;
-
 	const auto rc = GetParentRect();
 	const auto iScreenSize { IsVert() ? rc.Height() : rc.Width() };
 	const auto ullMax { iScreenSize > m_ullScrollSizeMax ? 0 : m_ullScrollSizeMax - iScreenSize };
-
-	if (m_ullScrollPosCur > ullMax) {
-		m_ullScrollPosCur = ullMax;
-	}
-
+	m_ullScrollPosCur = (std::min)(ullNewPos, ullMax);
 	SendParentScrollMsg();
 	DrawScrollBar();
 
@@ -610,21 +604,21 @@ bool CHexScroll::CreateArrows(HBITMAP hArrow, bool fVert)
 	const auto lmbTranspose = [](COLORREF* pInOut, DWORD dwWidth, DWORD dwHeight) {
 		for (auto itHeight = 0UL; itHeight < dwHeight; ++itHeight) { //Transpose matrix.
 			for (auto j = itHeight; j < dwWidth; ++j) {
-				std::swap(pInOut[itHeight * dwHeight + j], pInOut[j * dwHeight + itHeight]);
+				std::swap(pInOut[(itHeight * dwHeight) + j], pInOut[(j * dwHeight) + itHeight]);
 			}
 		}
 		};
 	const auto lmbFlipVert = [](COLORREF* pInOut, DWORD dwWidth, DWORD dwHeight) {
 		for (auto itWidth = 0UL; itWidth < dwWidth; ++itWidth) { //Flip matrix' columns.
 			for (auto itHeight = 0UL, itHeightBack = dwHeight - 1; itHeight < itHeightBack; ++itHeight, --itHeightBack) {
-				std::swap(pInOut[itHeight * dwHeight + itWidth], pInOut[itHeightBack * dwWidth + itWidth]);
+				std::swap(pInOut[(itHeight * dwHeight) + itWidth], pInOut[(itHeightBack * dwWidth) + itWidth]);
 			}
 		}
 		};
 	const auto lmbFlipHorz = [](COLORREF* pInOut, DWORD dwWidth, DWORD dwHeight) {
 		for (auto itHeight = 0UL; itHeight < dwHeight; ++itHeight) { //Flip matrix' rows.
 			for (auto itWidth = 0UL, itWidthBack = dwWidth - 1; itWidth < itWidthBack; ++itWidth, --itWidthBack) {
-				std::swap(pInOut[itHeight * dwWidth + itWidth], pInOut[itHeight * dwWidth + itWidthBack]);
+				std::swap(pInOut[(itHeight * dwWidth) + itWidth], pInOut[(itHeight * dwWidth) + itWidthBack]);
 			}
 		}
 		};
@@ -788,7 +782,7 @@ UINT CHexScroll::GetScrollWorkAreaSizeWH()const
 {
 	const auto uiScrollSize = GetScrollSizeWH();
 
-	return uiScrollSize <= m_uiScrollBarSizeWH * 2 ? 0 : uiScrollSize - m_uiScrollBarSizeWH * 2; //Minus two arrow's size.
+	return uiScrollSize <= m_uiScrollBarSizeWH * 2 ? 0 : uiScrollSize - (m_uiScrollBarSizeWH * 2); //Minus two arrow's size.
 }
 
 CRect CHexScroll::GetThumbRect(bool fClientCoord)const
@@ -805,9 +799,7 @@ CRect CHexScroll::GetThumbRect(bool fClientCoord)const
 		rc.top = rcScrollWA.top + GetThumbPos();
 		rc.right = rc.left + m_uiScrollBarSizeWH;
 		rc.bottom = rc.top + uiThumbSize;
-		if (rc.bottom > rcScrollWA.bottom) {
-			rc.bottom = rcScrollWA.bottom;
-		}
+		rc.bottom = (std::min)(rc.top + static_cast<LONG>(uiThumbSize), rcScrollWA.bottom);
 	}
 	else {
 		rc.left = rcScrollWA.left + GetThumbPos();

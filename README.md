@@ -706,9 +706,9 @@ Sets current data grouping size in bytes.
 
 ### [](#)SetMutable
 ```cpp
-void SetMutable(bool fEnable);
+void SetMutable(bool fMutable);
 ```
-Enables or disables mutable mode. In mutable mode all the data can be modified.
+Enables or disables mutable mode. In the mutable mode all the data can be modified.
 
 ### [](#)SetOffsetMode
 ```cpp

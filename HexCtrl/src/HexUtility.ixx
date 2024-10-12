@@ -340,7 +340,7 @@ export namespace HEXCTRL::INTERNAL {
 	}
 
 	[[nodiscard]] auto GetLocale() -> std::locale {
-		static std::locale loc { std::locale("en_US.UTF-8") };
+		static const auto loc { std::locale("en_US.UTF-8") };
 		return loc;
 	}
 

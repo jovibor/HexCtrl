@@ -325,20 +325,23 @@ void CSampleDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 	m_hFile = CreateFileW(wstrPath.data(), GENERIC_READ | GENERIC_WRITE,
 		FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (m_hFile == INVALID_HANDLE_VALUE) {
-		MessageBoxW(L"CreateFileW failed.\r\nFile might be already opened by another process.", L"Error", MB_ICONERROR);
+		const std::wstring wstr = L"CreateFileW failed.\r\n" + GetLastErrorWstr();
+		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
 		return;
 	}
 
 	m_hMapObject = CreateFileMappingW(m_hFile, nullptr, PAGE_READWRITE, 0, 0, nullptr);
 	if (!m_hMapObject) {
 		CloseHandle(m_hFile);
-		MessageBoxW(L"CreateFileMappingW failed.", L"Error", MB_ICONERROR);
+		const std::wstring wstr = L"CreateFileMappingW failed.\r\n" + GetLastErrorWstr();
+		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
 		return;
 	}
 
 	m_lpBase = MapViewOfFile(m_hMapObject, FILE_MAP_WRITE, 0, 0, 0);
 	if (!m_lpBase) {
-		MessageBoxW(L"MapViewOfFileW failed.\r\n File might be too big to fit in memory.", L"Error", MB_ICONERROR);
+		const std::wstring wstr = L"MapViewOfFileW failed.\r\n" + GetLastErrorWstr();
+		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
 		CloseHandle(m_hMapObject);
 		CloseHandle(m_hFile);
 		return;
@@ -452,4 +455,11 @@ auto CSampleDialogDlg::OpenFileDlg()->std::vector<std::wstring>
 	}
 
 	return vecFiles;
+}
+
+auto CSampleDialogDlg::GetLastErrorWstr()->std::wstring {
+	wchar_t wbuff[MAX_PATH];
+	FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
+			::GetLastError(), 0, wbuff, MAX_PATH, nullptr);
+	return wbuff;
 }
