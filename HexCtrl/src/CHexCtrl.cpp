@@ -2323,13 +2323,13 @@ void CHexCtrl::Redraw()
 	if (IsDataSet()) {
 		const auto ullCaretPos = GetVirtualOffset(GetCaretPos());
 		//^ (caret) - encloses a data name, ` (tilda) - encloses the data itself.
-		m_wstrInfoBar = std::vformat(GetLocale(), IsOffsetAsHex() ? L"^Caret: ^`0x{:X} `" : L"^Caret: ^`{:L} `",
+		m_wstrInfoBar = std::vformat(GetLocale(), IsOffsetAsHex() ? L"^Caret: ^`0x{:X}`" : L"^Caret: ^`{:L}`",
 			std::make_wformat_args(ullCaretPos));
 
 		if (IsPageVisible()) { //Page/Sector.
 			const auto ullPagePos = GetPagePos();
 			const auto ullPagesCount = GetPagesCount();
-			m_wstrInfoBar += std::vformat(GetLocale(), IsOffsetAsHex() ? L"^{}: ^`0x{:X}/0x{:X} `" : L"^{}: ^`{:L}/{:L} `",
+			m_wstrInfoBar += std::vformat(GetLocale(), IsOffsetAsHex() ? L"^{}: ^`0x{:X}/0x{:X}`" : L"^{}: ^`{:L}/{:L}`",
 				std::make_wformat_args(m_wstrPageName, ullPagePos, ullPagesCount));
 		}
 
@@ -2337,13 +2337,13 @@ void CHexCtrl::Redraw()
 			const auto ullSelStart = GetVirtualOffset(m_pSelection->GetSelStart());
 			const auto ullSelSize = m_pSelection->GetSelSize();
 			if (ullSelSize == 1) { //In case of just one byte selected.
-				m_wstrInfoBar += std::vformat(GetLocale(), IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}] `" :
-					L"^ Selected: ^`{} [{:L}] `", std::make_wformat_args(ullSelSize, ullSelStart));
+				m_wstrInfoBar += std::vformat(GetLocale(), IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}]`" :
+					L"^ Selected: ^`{} [{:L}]`", std::make_wformat_args(ullSelSize, ullSelStart));
 			}
 			else {
 				const auto ullSelEnd = m_pSelection->GetSelEnd();
-				m_wstrInfoBar += std::vformat(GetLocale(), IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}-0x{:X}] `" :
-					L"^ Selected: ^`{:L} [{:L}-{:L}] `", std::make_wformat_args(ullSelSize, ullSelStart, ullSelEnd));
+				m_wstrInfoBar += std::vformat(GetLocale(), IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}-0x{:X}]`" :
+					L"^ Selected: ^`{:L} [{:L}-{:L}]`", std::make_wformat_args(ullSelSize, ullSelStart, ullSelEnd));
 			}
 		}
 
@@ -3707,38 +3707,66 @@ void CHexCtrl::DrawInfoBar(CDC* pDC)const
 	if (!IsInfoBar())
 		return;
 
-	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
-	CRect rcInfoBar(m_iFirstVertLinePx + 1 - iScrollH, m_iThirdHorzLinePx + 1, m_iFourthVertLinePx, m_iFourthHorzLinePx); //Info bar rc until m_iFourthHorizLine.
-	pDC->FillSolidRect(rcInfoBar, m_stColors.clrBkInfoBar);
-	pDC->DrawEdge(rcInfoBar, BDR_RAISEDINNER, BF_TOP);
+	struct POLYINFODATA { //InfoBar text, colors, and vertical lines.
+		POLYTEXTW stPoly { };
+		COLORREF  clrText { };
+		int       iVertLineX { };
+	};
+	std::vector<POLYINFODATA> vecInfoData;
+	vecInfoData.reserve(4);
 
+	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
+	CRect rcInfoBar(m_iFirstVertLinePx + 1 - iScrollH, m_iThirdHorzLinePx + 1,
+		m_iFourthVertLinePx, m_iFourthHorzLinePx); //Info bar rc until m_iFourthHorizLine.
 	CRect rcText = rcInfoBar;
 	rcText.left = m_iFirstVertLinePx + 5; //Draw the text beginning with little indent.
 	rcText.right = m_iFirstVertLinePx + m_iWidthClientAreaPx; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
+
+	std::size_t sCurrPosBegin { };
+	while (true) {
+		const auto sParamPosBegin = m_wstrInfoBar.find_first_of('^', sCurrPosBegin);
+		if (sParamPosBegin == std::wstring::npos)
+			break;
+
+		const auto sParamPosEnd = m_wstrInfoBar.find_first_of('^', sParamPosBegin + 1);
+		if (sParamPosEnd == std::wstring::npos)
+			break;
+
+		const auto iParamSize = static_cast<UINT>(sParamPosEnd - sParamPosBegin - 1);
+		vecInfoData.emplace_back(POLYTEXTW { .n { iParamSize }, .lpstr { m_wstrInfoBar.data() + sParamPosBegin + 1 },
+			.rcl { rcText } }, m_stColors.clrFontInfoParam);
+		rcText.left += iParamSize * m_sizeFontInfo.cx; //Increase rect left offset by string size.
+		sCurrPosBegin = sParamPosEnd + 1;
+
+		if (const auto sDataPosBegin = m_wstrInfoBar.find_first_of('`', sCurrPosBegin);
+			sDataPosBegin != std::wstring::npos) {
+			if (const auto sDataPosEnd = m_wstrInfoBar.find_first_of('`', sDataPosBegin + 1);
+				sDataPosEnd != std::wstring::npos) {
+				const auto iDataSize = static_cast<UINT>(sDataPosEnd - sDataPosBegin - 1);
+				vecInfoData.emplace_back(POLYTEXTW { .n { iDataSize }, .lpstr { m_wstrInfoBar.data() + sDataPosBegin + 1 },
+					.rcl { rcText } }, m_stColors.clrFontInfoData);
+				rcText.left += iDataSize * m_sizeFontInfo.cx;
+				sCurrPosBegin = sDataPosEnd + 1;
+			}
+		}
+
+		rcText.left += m_sizeFontInfo.cx; //Additional space to the next rect's left side.
+		vecInfoData.back().iVertLineX = rcText.left - (m_sizeFontInfo.cx / 2); //Vertical line after current rect.
+	}
+
+	pDC->FillSolidRect(rcInfoBar, m_stColors.clrBkInfoBar); //Info bar rect.
+	pDC->DrawEdge(rcInfoBar, BDR_RAISEDINNER, BF_TOP);
 	pDC->SelectObject(m_fontInfoBar);
 	pDC->SetBkColor(m_stColors.clrBkInfoBar);
 
-	std::size_t sCurrPosBegin { };
-	std::size_t sCurrPosEnd { };
-	while (sCurrPosBegin != std::wstring::npos) {
-		if (sCurrPosBegin = m_wstrInfoBar.find_first_of('^', sCurrPosBegin); sCurrPosBegin != std::wstring::npos) {
-			if (sCurrPosEnd = m_wstrInfoBar.find_first_of('^', sCurrPosBegin + 1); sCurrPosEnd != std::wstring::npos) {
-				const auto iSize = static_cast<int>(sCurrPosEnd - sCurrPosBegin - 1);
-				pDC->SetTextColor(m_stColors.clrFontInfoParam);
-				pDC->DrawTextW(m_wstrInfoBar.data() + sCurrPosBegin + 1, iSize, rcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-				rcText.left += iSize * m_sizeFontInfo.cx;
-			}
-			sCurrPosBegin = sCurrPosEnd + 1;
-		}
+	for (auto& ref : vecInfoData) {
+		pDC->SetTextColor(ref.clrText);
+		auto& refPoly = ref.stPoly;
+		pDC->DrawTextW(refPoly.lpstr, refPoly.n, &refPoly.rcl, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
-		if (sCurrPosBegin = m_wstrInfoBar.find_first_of('`', sCurrPosBegin); sCurrPosBegin != std::wstring::npos) {
-			if (sCurrPosEnd = m_wstrInfoBar.find_first_of('`', sCurrPosBegin + 1); sCurrPosEnd != std::wstring::npos) {
-				const auto size = sCurrPosEnd - sCurrPosBegin - 1;
-				pDC->SetTextColor(m_stColors.clrFontInfoData);
-				pDC->DrawTextW(m_wstrInfoBar.data() + sCurrPosBegin + 1, static_cast<int>(size), rcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-				rcText.left += static_cast<long>(size * m_sizeFontInfo.cx);
-			}
-			sCurrPosBegin = sCurrPosEnd + 1;
+		if (ref.iVertLineX > 0) {
+			pDC->MoveTo(ref.iVertLineX, refPoly.rcl.top);
+			pDC->LineTo(ref.iVertLineX, refPoly.rcl.bottom);
 		}
 	}
 }
@@ -3774,7 +3802,7 @@ void CHexCtrl::DrawHexText(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::ws
 {
 	struct POLYTEXTCLR {
 		POLYTEXTW stPoly { };
-		HEXCOLOR stClr;
+		HEXCOLOR  stClr;
 	};
 
 	std::vector<POLYTEXTCLR> vecPolyHex;
@@ -3803,15 +3831,15 @@ void CHexCtrl::DrawHexText(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::ws
 
 			//Hex colors Poly.
 			vecWstrHex.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexToPrint)));
-			vecPolyHex.emplace_back(POLYTEXTW { iHexPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstrHex.back()->size()), vecWstrHex.back()->data(), 0, { }, GetCharsWidthArray() },
-				stHexClr);
+			vecPolyHex.emplace_back(POLYTEXTW { .x { iHexPosToPrintX }, .y { iPosToPrintY },
+				.n { static_cast<UINT>(vecWstrHex.back()->size()) }, .lpstr { vecWstrHex.back()->data() },
+				.pdx { GetCharsWidthArray() } }, stHexClr);
 
 			//Text colors Poly.
 			vecWstrText.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextToPrint)));
-			vecPolyText.emplace_back(POLYTEXTW { iTextPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstrText.back()->size()), vecWstrText.back()->data(), 0, { }, GetCharsWidthArray() },
-				stTextClr);
+			vecPolyText.emplace_back(POLYTEXTW { .x { iTextPosToPrintX }, .y { iPosToPrintY },
+				.n { static_cast<UINT>(vecWstrText.back()->size()) }, .lpstr { vecWstrText.back()->data() },
+				.pdx { GetCharsWidthArray() } }, stTextClr);
 			};
 		const auto lmbHexSpaces = [&](const unsigned iterChunks) {
 			if (wstrHexToPrint.empty()) //Only adding spaces if there are chars beforehead.
@@ -3885,7 +3913,7 @@ void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 
 	struct POLYFIELDSCLR { //Struct for fields.
 		POLYTEXTW stPoly { };
-		HEXCOLOR stClr;
+		HEXCOLOR  stClr;
 		//Flag to avoid print vert line at the beginnig of the line if this line is just a continuation
 		//of the previous line above.
 		bool      fPrintVertLine { true };
@@ -3913,15 +3941,15 @@ void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 
 			//Hex Fields Poly.
 			vecWstrFieldsHex.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexFieldToPrint)));
-			vecFieldsHex.emplace_back(POLYTEXTW { iFieldHexPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstrFieldsHex.back()->size()), vecWstrFieldsHex.back()->data(), 0, { }, GetCharsWidthArray() },
-				pFieldCurr->stClr, fPrintVertLine);
+			vecFieldsHex.emplace_back(POLYTEXTW { .x { iFieldHexPosToPrintX }, .y { iPosToPrintY },
+				.n { static_cast<UINT>(vecWstrFieldsHex.back()->size()) }, .lpstr { vecWstrFieldsHex.back()->data() },
+				.pdx { GetCharsWidthArray() } }, pFieldCurr->stClr, fPrintVertLine);
 
 			//Text Fields Poly.
 			vecWstrFieldsText.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextFieldToPrint)));
-			vecFieldsText.emplace_back(POLYTEXTW { iFieldTextPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstrFieldsText.back()->size()), vecWstrFieldsText.back()->data(), 0, { }, GetCharsWidthArray() },
-				pFieldCurr->stClr, fPrintVertLine);
+			vecFieldsText.emplace_back(POLYTEXTW { .x { iFieldTextPosToPrintX }, .y { iPosToPrintY },
+				.n { static_cast<UINT>(vecWstrFieldsText.back()->size()) }, .lpstr { vecWstrFieldsText.back()->data() },
+				.pdx { GetCharsWidthArray() } }, pFieldCurr->stClr, fPrintVertLine);
 
 			fPrintVertLine = true;
 			};
@@ -4031,7 +4059,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 
 	struct POLYTEXTCLR { //Struct for Bookmarks.
 		POLYTEXTW stPoly { };
-		HEXCOLOR stClr;
+		HEXCOLOR  stClr;
 	};
 
 	std::vector<POLYTEXTCLR> vecBkmHex;
@@ -4056,15 +4084,15 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 
 			//Hex bookmarks Poly.
 			vecWstrBkmHex.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexBkmToPrint)));
-			vecBkmHex.emplace_back(POLYTEXTW { iBkmHexPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstrBkmHex.back()->size()), vecWstrBkmHex.back()->data(), 0, { }, GetCharsWidthArray() },
-				pBkmCurr->stClr);
+			vecBkmHex.emplace_back(POLYTEXTW { .x { iBkmHexPosToPrintX }, .y { iPosToPrintY },
+				.n { static_cast<UINT>(vecWstrBkmHex.back()->size()) }, .lpstr { vecWstrBkmHex.back()->data() },
+				.pdx { GetCharsWidthArray() } }, pBkmCurr->stClr);
 
 			//Text bookmarks Poly.
 			vecWstrBkmText.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextBkmToPrint)));
-			vecBkmText.emplace_back(POLYTEXTW { iBkmTextPosToPrintX, iPosToPrintY,
-				static_cast<UINT>(vecWstrBkmText.back()->size()), vecWstrBkmText.back()->data(), 0, { }, GetCharsWidthArray() },
-				pBkmCurr->stClr);
+			vecBkmText.emplace_back(POLYTEXTW { .x { iBkmTextPosToPrintX }, .y { iPosToPrintY },
+				.n { static_cast<UINT>(vecWstrBkmText.back()->size()) }, .lpstr { vecWstrBkmText.back()->data() },
+				.pdx { GetCharsWidthArray() } }, pBkmCurr->stClr);
 			};
 		const auto lmbHexSpaces = [&](const unsigned iterChunks) {
 			if (wstrHexBkmToPrint.empty()) //Only adding spaces if there are chars beforehead.
@@ -4342,13 +4370,13 @@ void CHexCtrl::DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wsv
 
 	//Hex Caret Poly.
 	arrPolyCaret[0] = { .x { iCaretHexPosToPrintX }, .y { iCaretHexPosToPrintY },
-		.n { static_cast<UINT>(wstrHexCaretToPrint.size()) }, .lpstr { wstrHexCaretToPrint.data() }, .uiFlags { },
-		.rcl { }, .pdx { GetCharsWidthArray() } };
+		.n { static_cast<UINT>(wstrHexCaretToPrint.size()) }, .lpstr { wstrHexCaretToPrint.data() },
+		.pdx { GetCharsWidthArray() } };
 
 	//Text Caret Poly.
 	arrPolyCaret[1] = { .x { iCaretTextPosToPrintX }, .y { iCaretTextPosToPrintY },
-		.n { static_cast<UINT>(wstrTextCaretToPrint.size()) }, .lpstr { wstrTextCaretToPrint.data() }, .uiFlags { },
-		.rcl { }, .pdx { GetCharsWidthArray() } };
+		.n { static_cast<UINT>(wstrTextCaretToPrint.size()) }, .lpstr { wstrTextCaretToPrint.data() },
+		.pdx { GetCharsWidthArray() } };
 
 	//Caret color.
 	const auto clrBkCaret = m_pSelection->HitTest(ullCaretPos) ? m_stColors.clrBkCaretSel : m_stColors.clrBkCaret;
@@ -4453,7 +4481,8 @@ void CHexCtrl::DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines)
 		//Page's lines vector to print.
 		if ((((ullStartLine + iterLines) * GetCapacity()) % m_dwPageSize == 0) && iterLines > 0) {
 			const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * iterLines);
-			vecPageLines.emplace_back(POINT { m_iFirstVertLinePx, iPosToPrintY }, POINT { m_iFourthVertLinePx, iPosToPrintY });
+			vecPageLines.emplace_back(POINT { .x { m_iFirstVertLinePx }, .y { iPosToPrintY } },
+				POINT { .x { m_iFourthVertLinePx }, .y { iPosToPrintY } });
 		}
 	}
 
