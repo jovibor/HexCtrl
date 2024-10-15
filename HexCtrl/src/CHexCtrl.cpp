@@ -1106,7 +1106,7 @@ auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION
 	assert(IsCreated());
 	assert(IsDataSet());
 	if (!IsCreated() || !IsDataSet())
-		return { -1, -1 }; //To ensure false return.
+		return { .i8Vert { -1 }, .i8Horz { -1 } }; //To ensure false return.
 
 	const auto dwCapacity = GetCapacity();
 	const auto ullFirst = GetTopLine() * dwCapacity;
@@ -1118,8 +1118,8 @@ auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION
 	HexChunkPoint(ullOffset, iCx, iCy);
 	const auto iMaxClientX = rcClient.Width() - m_iSizeHexBytePx;
 
-	return { static_cast<std::int8_t>(ullOffset < ullFirst ? -1 : (ullOffset >= ullLast ? 1 : 0)),
-		static_cast<std::int8_t>(iCx < 0 ? -1 : (iCx >= iMaxClientX ? 1 : 0)) };
+	return { .i8Vert { static_cast<std::int8_t>(ullOffset < ullFirst ? -1 : (ullOffset >= ullLast ? 1 : 0)) },
+		.i8Horz { static_cast<std::int8_t>(iCx < 0 ? -1 : (iCx >= iMaxClientX ? 1 : 0)) } };
 }
 
 bool CHexCtrl::IsVirtual()const
@@ -2338,12 +2338,12 @@ void CHexCtrl::Redraw()
 			const auto ullSelSize = m_pSelection->GetSelSize();
 			if (ullSelSize == 1) { //In case of just one byte selected.
 				m_wstrInfoBar += std::vformat(GetLocale(), IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}]`" :
-					L"^ Selected: ^`{} [{:L}]`", std::make_wformat_args(ullSelSize, ullSelStart));
+					L"^Selected: ^`{} [{:L}]`", std::make_wformat_args(ullSelSize, ullSelStart));
 			}
 			else {
 				const auto ullSelEnd = m_pSelection->GetSelEnd();
 				m_wstrInfoBar += std::vformat(GetLocale(), IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}-0x{:X}]`" :
-					L"^ Selected: ^`{:L} [{:L}-{:L}]`", std::make_wformat_args(ullSelSize, ullSelStart, ullSelEnd));
+					L"^Selected: ^`{:L} [{:L}-{:L}]`", std::make_wformat_args(ullSelSize, ullSelStart, ullSelEnd));
 			}
 		}
 

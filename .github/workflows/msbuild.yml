@@ -1,4 +1,4 @@
-name: HexCtrl UnitTest
+name: HexCtrl Tests
 
 on:
   push:
@@ -7,10 +7,10 @@ on:
     branches: [ "master", "main" ]
 
 env:
-  HEXCTRLDLL_PROJ_PATH: '"./VS Projects/HexCtrl DLL/HexCtrl DLL.vcxproj"'
-  UNITTEST_PROJ_PATH: '"./VS Projects/UnitTest/UnitTest.vcxproj"'
-  TEMP_DIR: '"C:\HexCtrlTEMP\"'
-  UNITTESTDLL_PATH: '"C:\HexCtrlTEMP\UnitTest.dll"'
+  PATH_PROJ_HEXCTRLDLL: '"./VS Projects/HexCtrl DLL/HexCtrl DLL.vcxproj"'
+  PATH_PROJ_HEXCTRLTEST: '"./VS Projects/UnitTest/UnitTest.vcxproj"'
+  PATH_TESTDLL: '"C:\HexCtrlTEMP\UnitTest.dll"'
+  PATH_TEMPDIR: '"C:\HexCtrlTEMP\"'
   BUILD_CONFIG: Debug
   BUILD_PLATFORM: x64
 
@@ -28,19 +28,19 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
    
-    - name: Build HexCtrlDLL
+    - name: Build Project HexCtrlDll
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
        git submodule update --init --recursive 
-       msbuild /m ${{env.HEXCTRLDLL_PROJ_PATH}} /p:Configuration=${{env.BUILD_CONFIG}} /p:Platform=${{env.BUILD_PLATFORM}} /p:OutDir=${{env.TEMP_DIR}}
+       msbuild /m ${{env.PATH_PROJ_HEXCTRLDLL}} /p:Configuration=${{env.BUILD_CONFIG}} /p:Platform=${{env.BUILD_PLATFORM}} /p:OutDir=${{env.PATH_TEMPDIR}}
    
-    - name: Build UnitTest
+    - name: Build Project HexCtrlTest
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: msbuild /m ${{env.UNITTEST_PROJ_PATH}} /p:Configuration=${{env.BUILD_CONFIG}} /p:Platform=${{env.BUILD_PLATFORM}} /p:OutDir=${{env.TEMP_DIR}} /p:LinkerAdditionalDir=${{env.TEMP_DIR}}
+      run: msbuild /m ${{env.PATH_PROJ_HEXCTRLTEST}} /p:Configuration=${{env.BUILD_CONFIG}} /p:Platform=${{env.BUILD_PLATFORM}} /p:OutDir=${{env.PATH_TEMPDIR}} /p:LinkerAdditionalDir=${{env.PATH_TEMPDIR}}
 
     - name: Setup VSTest Path
       uses: darenm/Setup-VSTest@v1.2
 
     - name: Run UnitTest
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: vstest.console.exe ${{env.UNITTESTDLL_PATH}}
+      run: vstest.console.exe ${{env.PATH_TESTDLL}}
