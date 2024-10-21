@@ -13,7 +13,7 @@
 #include <cassert>
 #include <cwctype>
 #include <format>
-#include <immintrin.h>
+#include <intrin.h>
 #include <limits>
 #include <string>
 #include <thread>
@@ -46,9 +46,9 @@ struct CHexDlgSearch::SEARCHFUNCDATA {
 	ULONGLONG ullRngStart { };
 	ULONGLONG ullRngEnd { };
 	ULONGLONG ullStep { };
-	ULONGLONG ullMemChunks { };      //How many memory chunks to search in.
-	ULONGLONG ullMemToAcquire { };   //Size of a chunk.
-	ULONGLONG ullChunkMaxOffset { }; //Maximum offset to search in chunk.
+	ULONGLONG ullChunks { };         //How many memory chunks to search in.
+	ULONGLONG ullChunkSize { };      //Size of one chunk.
+	ULONGLONG ullChunkMaxOffset { }; //Maximum offset to start search from, in the chunk.
 	CHexDlgCallback* pDlgClbk { };
 	IHexCtrl* pHexCtrl { };
 	SpanCByte spnFind;
@@ -177,8 +177,8 @@ void CHexDlgSearch::CalcMemChunks(SEARCHFUNCDATA& refData)const
 {
 	const auto nSizeSearch = refData.spnFind.size();
 	if (refData.ullStartFrom + nSizeSearch > GetSentinel()) {
-		refData.ullMemChunks = { };
-		refData.ullMemToAcquire = { };
+		refData.ullChunks = { };
+		refData.ullChunkSize = { };
 		refData.ullChunkMaxOffset = { };
 		return;
 	}
@@ -186,31 +186,31 @@ void CHexDlgSearch::CalcMemChunks(SEARCHFUNCDATA& refData)const
 	const auto ullSizeTotal = GetSearchRngSize(); //Depends on search direction.
 	const auto pHexCtrl = refData.pHexCtrl;
 	const auto ullStep = refData.ullStep;
-	ULONGLONG ullMemChunks;
-	ULONGLONG ullMemToAcquire;
+	ULONGLONG ullChunks;
+	ULONGLONG ullChunkSize;
 	ULONGLONG ullChunkMaxOffset;
 	bool fBigStep { false };
 
 	if (!pHexCtrl->IsVirtual()) {
-		ullMemChunks = 1;
-		ullMemToAcquire = ullSizeTotal;
+		ullChunks = 1;
+		ullChunkSize = ullSizeTotal;
 		ullChunkMaxOffset = ullSizeTotal - nSizeSearch;
 	}
 	else {
-		ullMemToAcquire = (std::min)(static_cast<ULONGLONG>(pHexCtrl->GetCacheSize()), ullSizeTotal);
-		ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
+		ullChunkSize = (std::min)(static_cast<ULONGLONG>(pHexCtrl->GetCacheSize()), ullSizeTotal);
+		ullChunkMaxOffset = ullChunkSize - nSizeSearch;
 		if (ullStep > ullChunkMaxOffset) { //For very big steps.
-			ullMemChunks = ullSizeTotal > ullStep ? (ullSizeTotal / ullStep) + ((ullSizeTotal % ullStep) ? 1 : 0) : 1;
+			ullChunks = ullSizeTotal > ullStep ? (ullSizeTotal / ullStep) + ((ullSizeTotal % ullStep) ? 1 : 0) : 1;
 			fBigStep = true;
 		}
 		else {
-			ullMemChunks = ullSizeTotal > ullChunkMaxOffset ? (ullSizeTotal / ullChunkMaxOffset)
+			ullChunks = ullSizeTotal > ullChunkMaxOffset ? (ullSizeTotal / ullChunkMaxOffset)
 				+ ((ullSizeTotal % ullChunkMaxOffset) ? 1 : 0) : 1;
 		}
 	}
 
-	refData.ullMemChunks = ullMemChunks;
-	refData.ullMemToAcquire = ullMemToAcquire;
+	refData.ullChunks = ullChunks;
+	refData.ullChunkSize = ullChunkSize;
 	refData.ullChunkMaxOffset = ullChunkMaxOffset;
 	refData.fBigStep = fBigStep;
 }
@@ -491,16 +491,16 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 		switch (GetSearchDataSize()) {
 		case 1: //Special case for 1 byte data size SIMD.
 			return IsInverted() ?
-				SearchFuncFwdByte1<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true)> :
-				SearchFuncFwdByte1<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, false)>;
+				SearchFuncVecFwdByte1<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, true)> :
+				SearchFuncVecFwdByte1<SEARCHTYPE(DATA_BYTE1, fDlgClbck, false, false, false)>;
 		case 2: //Special case for 2 bytes data size SIMD.
 			return IsInverted() ?
-				SearchFuncFwdByte2<SEARCHTYPE(DATA_BYTE2, fDlgClbck, false, false, true)> :
-				SearchFuncFwdByte2<SEARCHTYPE(DATA_BYTE2, fDlgClbck, false, false, false)>;
+				SearchFuncVecFwdByte2<SEARCHTYPE(DATA_BYTE2, fDlgClbck, false, false, true)> :
+				SearchFuncVecFwdByte2<SEARCHTYPE(DATA_BYTE2, fDlgClbck, false, false, false)>;
 		case 4: //Special case for 4 bytes data size SIMD.
 			return IsInverted() ?
-				SearchFuncFwdByte4<SEARCHTYPE(DATA_BYTE4, fDlgClbck, false, false, true)> :
-				SearchFuncFwdByte4<SEARCHTYPE(DATA_BYTE4, fDlgClbck, false, false, false)>;
+				SearchFuncVecFwdByte4<SEARCHTYPE(DATA_BYTE4, fDlgClbck, false, false, true)> :
+				SearchFuncVecFwdByte4<SEARCHTYPE(DATA_BYTE4, fDlgClbck, false, false, false)>;
 		default:
 			break;
 		};
@@ -1908,15 +1908,15 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 	const auto ullEnd = ullOffsetSentinel - nSizeSearch;
 	const auto fBigStep = refSearch.fBigStep;
 	const auto fInverted = refSearch.fInverted;
-	const auto ullMemChunks = refSearch.ullMemChunks;
-	auto ullMemToAcquire = refSearch.ullMemToAcquire;
+	const auto ullChunks = refSearch.ullChunks;
+	auto ullChunkSize = refSearch.ullChunkSize;
 	auto ullChunkMaxOffset = refSearch.ullChunkMaxOffset;
 	auto ullOffsetSearch = refSearch.ullStartFrom;
 
-	for (auto itChunk = 0ULL; itChunk < ullMemChunks; ++itChunk) {
-		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
+	for (auto itChunk = 0ULL; itChunk < ullChunks; ++itChunk) {
+		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullChunkSize });
 		assert(!spnData.empty());
-		assert(spnData.size() >= ullMemToAcquire);
+		assert(spnData.size() >= ullChunkSize);
 
 		//Unrolling the loop, making LOOP_UNROLL_SIZE comparisons at one cycle.
 		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += ullStep * LOOP_UNROLL_SIZE) {
@@ -1996,9 +1996,9 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
 
-		if (ullOffsetSearch + ullMemToAcquire > ullOffsetSentinel) {
-			ullMemToAcquire = ullOffsetSentinel - ullOffsetSearch;
-			ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
+		if (ullOffsetSearch + ullChunkSize > ullOffsetSentinel) {
+			ullChunkSize = ullOffsetSentinel - ullOffsetSearch;
+			ullChunkMaxOffset = ullChunkSize - nSizeSearch;
 		}
 	}
 
@@ -2006,7 +2006,7 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 }
 
 template<CHexDlgSearch::SEARCHTYPE stType>
-auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRESULT
+auto CHexDlgSearch::SearchFuncVecFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 {
 	//Members locality is important for the best performance of the tight search loop below.
 	const auto ullOffsetSentinel = refSearch.ullRngEnd + 1;
@@ -2018,15 +2018,15 @@ auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRES
 	const auto ullEnd = ullOffsetSentinel - nSizeSearch;
 	const auto fBigStep = refSearch.fBigStep;
 	const auto fInverted = refSearch.fInverted;
-	const auto ullMemChunks = refSearch.ullMemChunks;
-	auto ullMemToAcquire = refSearch.ullMemToAcquire;
+	const auto ullChunks = refSearch.ullChunks;
+	auto ullChunkSize = refSearch.ullChunkSize;
 	auto ullChunkMaxOffset = refSearch.ullChunkMaxOffset;
 	auto ullOffsetSearch = refSearch.ullStartFrom;
 
-	for (auto itChunk = 0ULL; itChunk < ullMemChunks; ++itChunk) {
-		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
+	for (auto itChunk = 0ULL; itChunk < ullChunks; ++itChunk) {
+		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullChunkSize });
 		assert(!spnData.empty());
-		assert(spnData.size() >= ullMemToAcquire);
+		assert(spnData.size() >= ullChunkSize);
 
 		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += sizeof(__m128i)) {
 			if ((ullOffsetData + sizeof(__m128i)) <= ullChunkMaxOffset) {
@@ -2071,9 +2071,9 @@ auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRES
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
 
-		if (ullOffsetSearch + ullMemToAcquire > ullOffsetSentinel) {
-			ullMemToAcquire = ullOffsetSentinel - ullOffsetSearch;
-			ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
+		if (ullOffsetSearch + ullChunkSize > ullOffsetSentinel) {
+			ullChunkSize = ullOffsetSentinel - ullOffsetSearch;
+			ullChunkMaxOffset = ullChunkSize - nSizeSearch;
 		}
 	}
 
@@ -2081,7 +2081,7 @@ auto CHexDlgSearch::SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRES
 }
 
 template<CHexDlgSearch::SEARCHTYPE stType>
-auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRESULT
+auto CHexDlgSearch::SearchFuncVecFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 {
 	//Members locality is important for the best performance of the tight search loop below.
 	const auto ullOffsetSentinel = refSearch.ullRngEnd + 1;
@@ -2093,15 +2093,15 @@ auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRES
 	const auto ullEnd = ullOffsetSentinel - nSizeSearch;
 	const auto fBigStep = refSearch.fBigStep;
 	const auto fInverted = refSearch.fInverted;
-	const auto ullMemChunks = refSearch.ullMemChunks;
-	auto ullMemToAcquire = refSearch.ullMemToAcquire;
+	const auto ullChunks = refSearch.ullChunks;
+	auto ullChunkSize = refSearch.ullChunkSize;
 	auto ullChunkMaxOffset = refSearch.ullChunkMaxOffset;
 	auto ullOffsetSearch = refSearch.ullStartFrom;
 
-	for (auto itChunk = 0ULL; itChunk < ullMemChunks; ++itChunk) {
-		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
+	for (auto itChunk = 0ULL; itChunk < ullChunks; ++itChunk) {
+		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullChunkSize });
 		assert(!spnData.empty());
-		assert(spnData.size() >= ullMemToAcquire);
+		assert(spnData.size() >= ullChunkSize);
 
 		//Next cycle offset is "sizeof(__m128i) - 1", to get the data that crosses the vector.
 		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += (sizeof(__m128i) - 1)) {
@@ -2149,9 +2149,9 @@ auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRES
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
 
-		if (ullOffsetSearch + ullMemToAcquire > ullOffsetSentinel) {
-			ullMemToAcquire = ullOffsetSentinel - ullOffsetSearch;
-			ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
+		if (ullOffsetSearch + ullChunkSize > ullOffsetSentinel) {
+			ullChunkSize = ullOffsetSentinel - ullOffsetSearch;
+			ullChunkMaxOffset = ullChunkSize - nSizeSearch;
 		}
 	}
 
@@ -2159,7 +2159,7 @@ auto CHexDlgSearch::SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRES
 }
 
 template<CHexDlgSearch::SEARCHTYPE stType>
-auto CHexDlgSearch::SearchFuncFwdByte4(const SEARCHFUNCDATA& refSearch)->FINDRESULT
+auto CHexDlgSearch::SearchFuncVecFwdByte4(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 {
 	//Members locality is important for the best performance of the tight search loop below.
 	const auto ullOffsetSentinel = refSearch.ullRngEnd + 1;
@@ -2171,15 +2171,15 @@ auto CHexDlgSearch::SearchFuncFwdByte4(const SEARCHFUNCDATA& refSearch)->FINDRES
 	const auto ullEnd = ullOffsetSentinel - nSizeSearch;
 	const auto fBigStep = refSearch.fBigStep;
 	const auto fInverted = refSearch.fInverted;
-	const auto ullMemChunks = refSearch.ullMemChunks;
-	auto ullMemToAcquire = refSearch.ullMemToAcquire;
+	const auto ullChunks = refSearch.ullChunks;
+	auto ullChunkSize = refSearch.ullChunkSize;
 	auto ullChunkMaxOffset = refSearch.ullChunkMaxOffset;
 	auto ullOffsetSearch = refSearch.ullStartFrom;
 
-	for (auto itChunk = 0ULL; itChunk < ullMemChunks; ++itChunk) {
-		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
+	for (auto itChunk = 0ULL; itChunk < ullChunks; ++itChunk) {
+		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullChunkSize });
 		assert(!spnData.empty());
-		assert(spnData.size() >= ullMemToAcquire);
+		assert(spnData.size() >= ullChunkSize);
 
 		//Next cycle offset is "sizeof(__m128i) - 3", to get the data that crosses the vector.
 		for (auto ullOffsetData = 0ULL; ullOffsetData <= ullChunkMaxOffset; ullOffsetData += (sizeof(__m128i) - 3)) {
@@ -2227,9 +2227,9 @@ auto CHexDlgSearch::SearchFuncFwdByte4(const SEARCHFUNCDATA& refSearch)->FINDRES
 			ullOffsetSearch += ullChunkMaxOffset;
 		}
 
-		if (ullOffsetSearch + ullMemToAcquire > ullOffsetSentinel) {
-			ullMemToAcquire = ullOffsetSentinel - ullOffsetSearch;
-			ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
+		if (ullOffsetSearch + ullChunkSize > ullOffsetSentinel) {
+			ullChunkSize = ullOffsetSentinel - ullOffsetSearch;
+			ullChunkMaxOffset = ullChunkSize - nSizeSearch;
 		}
 	}
 
@@ -2251,21 +2251,21 @@ auto CHexDlgSearch::SearchFuncBack(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 	const auto nSizeSearch = refSearch.spnFind.size();
 	const auto fBigStep = refSearch.fBigStep;
 	const auto fInverted = refSearch.fInverted;
-	const auto ullMemChunks = refSearch.ullMemChunks;
-	auto ullMemToAcquire = refSearch.ullMemToAcquire;
+	const auto ullChunks = refSearch.ullChunks;
+	auto ullChunkSize = refSearch.ullChunkSize;
 	auto ullChunkMaxOffset = refSearch.ullChunkMaxOffset;
 	auto ullOffsetSearch = refSearch.ullStartFrom - refSearch.ullChunkMaxOffset;
 
 	if (ullOffsetSearch < ullEnd || ullOffsetSearch >((std::numeric_limits<ULONGLONG>::max)() - ullChunkMaxOffset)) {
-		ullMemToAcquire = (ullStartFrom - ullEnd) + nSizeSearch;
-		ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
+		ullChunkSize = (ullStartFrom - ullEnd) + nSizeSearch;
+		ullChunkMaxOffset = ullChunkSize - nSizeSearch;
 		ullOffsetSearch = ullEnd;
 	}
 
-	for (auto itChunk = ullMemChunks; itChunk > 0; --itChunk) {
-		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullMemToAcquire });
+	for (auto itChunk = ullChunks; itChunk > 0; --itChunk) {
+		const auto spnData = pHexCtrl->GetData({ ullOffsetSearch, ullChunkSize });
 		assert(!spnData.empty());
-		assert(spnData.size() >= ullMemToAcquire);
+		assert(spnData.size() >= ullChunkSize);
 
 		for (auto llOffsetData = static_cast<LONGLONG>(ullChunkMaxOffset); llOffsetData >= 0;
 			llOffsetData -= llStep * LOOP_UNROLL_SIZE) { //llOffsetData might be negative.
@@ -2341,8 +2341,8 @@ auto CHexDlgSearch::SearchFuncBack(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 		else {
 			if ((ullOffsetSearch - ullChunkMaxOffset) < ullEnd || ((ullOffsetSearch - ullChunkMaxOffset) >
 				((std::numeric_limits<ULONGLONG>::max)() - ullChunkMaxOffset))) {
-				ullMemToAcquire = (ullOffsetSearch - ullEnd) + nSizeSearch;
-				ullChunkMaxOffset = ullMemToAcquire - nSizeSearch;
+				ullChunkSize = (ullOffsetSearch - ullEnd) + nSizeSearch;
+				ullChunkMaxOffset = ullChunkSize - nSizeSearch;
 				ullOffsetSearch = ullEnd;
 			}
 			else {

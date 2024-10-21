@@ -13,7 +13,7 @@ module;
 #include <cassert>
 #include <cwctype>
 #include <format>
-#include <immintrin.h>
+#include <intrin.h>
 #include <locale>
 #include <optional>
 #include <source_location>
@@ -55,7 +55,6 @@ export namespace HEXCTRL::INTERNAL {
 	}
 
 	template<typename T> concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);
-	template<typename T> concept TSIMD = (std::is_same_v<T, __m128> || std::is_same_v<T, __m128i> || std::is_same_v<T, __m128d>);
 
 	//Bytes swap for types of 2, 4, or 8 byte size.
 	template<TSize1248 T> [[nodiscard]] constexpr T ByteSwap(T tData)noexcept
@@ -95,6 +94,8 @@ export namespace HEXCTRL::INTERNAL {
 			return std::bit_cast<T>(_byteswap_uint64(ullData));
 		}
 	}
+
+	template<typename T> concept TSIMD = (std::is_same_v<T, __m128> || std::is_same_v<T, __m128i> || std::is_same_v<T, __m128d>);
 
 	//Bytes swap inside SIMD types: __m128, __m128i, __m128d.
 	template<TSize1248 TIntegral, TSIMD T>
@@ -349,6 +350,6 @@ export namespace HEXCTRL::INTERNAL {
 		_wassert(pMsg, StrToWstr(loc.file_name()).data(), loc.line());
 	}
 #else
-	void DBG_REPORT([[maybe_unused]] const wchar_t*) {}
+	void DBG_REPORT([[maybe_unused]] const wchar_t*) { }
 #endif
 }

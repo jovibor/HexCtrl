@@ -140,11 +140,11 @@ namespace HEXCTRL::INTERNAL {
 		template<SEARCHTYPE stType>
 		[[nodiscard]] static auto SearchFuncFwd(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 		template<SEARCHTYPE stType>
-		[[nodiscard]] static auto SearchFuncFwdByte1(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
+		[[nodiscard]] static auto SearchFuncVecFwdByte1(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 		template<SEARCHTYPE stType>
-		[[nodiscard]] static auto SearchFuncFwdByte2(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
+		[[nodiscard]] static auto SearchFuncVecFwdByte2(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 		template<SEARCHTYPE stType>
-		[[nodiscard]] static auto SearchFuncFwdByte4(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
+		[[nodiscard]] static auto SearchFuncVecFwdByte4(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 		template<SEARCHTYPE stType>
 		[[nodiscard]] static auto SearchFuncBack(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 	private:

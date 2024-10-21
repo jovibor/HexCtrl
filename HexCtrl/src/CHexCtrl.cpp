@@ -23,7 +23,7 @@
 #include <cwctype>
 #include <format>
 #include <fstream>
-#include <immintrin.h>
+#include <intrin.h>
 #include <numeric>
 #include <random>
 #include <thread>
@@ -744,7 +744,7 @@ auto CHexCtrl::GetFont()const->LOGFONTW
 	if (!IsCreated())
 		return { };
 
-	alignas(4) LOGFONTW lf;
+	LOGFONTW lf;
 	::GetObjectW(m_fontMain.m_hObject, sizeof(LOGFONTW), &lf);
 
 	return lf;
@@ -2280,19 +2280,19 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			}
 			};
 
-		//In cases where only one affected data region (hms.vecSpan.size()==1) is used,
-		//and ullSizeToModify > ulSizeVec we use SIMD instructions.
-		//At the end we simply fill up the remainder (ullSizeToModify % ulSizeVec).
-		constexpr auto ulSizeVec { sizeof(__m128i) }; //Size in bytes of the __m128i data structure.
+		//In cases where the only one affected data region (hms.vecSpan.size()==1) is used,
+		//and ullSizeToModify > ullSizeOfVec, we use SIMD.
+		//At the end we simply fill up the remainder (ullSizeToModify % ullSizeOfVec).
+		constexpr auto ullSizeOfVec { sizeof(__m128i) };
 		const auto ullOffsetToModify = hms.vecSpan.back().ullOffset;
 		const auto ullSizeToModify = hms.vecSpan.back().ullSize;
 		const auto ullSizeToFillWith = hms.spnData.size();
-		const auto ullSIMDCycles = ullSizeToModify / ulSizeVec; //How many times to make Vector opers.
+		const auto ullSIMDCycles = ullSizeToModify / ullSizeOfVec; //How many times to make Vector opers.
 
 		if (hms.vecSpan.size() == 1 && ullSIMDCycles > 0) {
-			ModifyWorker(hms, lmbOperVec, { static_cast<std::byte*>(nullptr), ulSizeVec }); //Worker with Vector.
+			ModifyWorker(hms, lmbOperVec, { static_cast<std::byte*>(nullptr), ullSizeOfVec }); //Worker with Vector.
 
-			if (const auto ullRem = ullSizeToModify % ulSizeVec; ullRem >= ullSizeToFillWith) { //Remainder of the Vector data.
+			if (const auto ullRem = ullSizeToModify % ullSizeOfVec; ullRem >= ullSizeToFillWith) { //Remainder of the Vector data.
 				const auto ullOffset = ullOffsetToModify + ullSizeToModify - ullRem;
 				const auto spnData = GetData({ .ullOffset { ullOffset }, .ullSize { ullRem } });
 				for (std::size_t iterRem = 0; iterRem < (ullRem / ullSizeToFillWith); ++iterRem) { //Works only if ullRem >= ullSizeToFillWith.
