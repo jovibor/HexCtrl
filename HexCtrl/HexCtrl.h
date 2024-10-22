@@ -29,19 +29,19 @@
 #define HEXCTRL_LIBNAME(x) x"64d.lib"
 #else //^^^ _DEBUG / vvv !_DEBUG
 #define HEXCTRL_LIBNAME(x) x"64.lib"
-#endif //_DEBUG
+#endif //^^^ !_DEBUG
 #else //^^^ _WIN64 / vvv !_WIN64
 #ifdef _DEBUG
 #define HEXCTRL_LIBNAME(x) x"d.lib"
 #else //^^^ _DEBUG / vvv !_DEBUG
 #define HEXCTRL_LIBNAME(x) x".lib"
-#endif //_DEBUG
-#endif //_WIN64
+#endif //^^^ !_DEBUG
+#endif //^^^ !_WIN64
 #pragma comment(lib, HEXCTRL_LIBNAME("HexCtrl"))
-#endif //HEXCTRL_EXPORT
+#endif //^^^ !HEXCTRL_EXPORT
 #else //^^^ HEXCTRL_SHARED_DLL / vvv !HEXCTRL_SHARED_DLL
 #define	HEXCTRLAPI
-#endif //HEXCTRL_SHARED_DLL
+#endif //^^^ !HEXCTRL_SHARED_DLL
 
 namespace HEXCTRL {
 	constexpr auto HEXCTRL_VERSION_MAJOR = 3;

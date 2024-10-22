@@ -12,7 +12,7 @@ env:
   PATH_TESTDLL: '"C:\HexCtrlTEMP\UnitTest.dll"'
   PATH_TEMPDIR: '"C:\HexCtrlTEMP\"'
   BUILD_CONFIG: Debug
-  BUILD_PLATFORM: x64
+  BUILD_PLATFORM_x64: x64
 
 permissions:
   contents: read
@@ -20,7 +20,7 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
-    name: Build and Test
+    name: Build and Test x64
 
     steps:
     - uses: actions/checkout@v4
@@ -28,19 +28,19 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
    
-    - name: Build Project HexCtrlDll
+    - name: Build Project HexCtrlDll_x64
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
        git submodule update --init --recursive 
-       msbuild /m ${{env.PATH_PROJ_HEXCTRLDLL}} /p:Configuration=${{env.BUILD_CONFIG}} /p:Platform=${{env.BUILD_PLATFORM}} /p:OutDir=${{env.PATH_TEMPDIR}}
+       msbuild /m ${{env.PATH_PROJ_HEXCTRLDLL}} /p:Configuration=${{env.BUILD_CONFIG}} /p:Platform=${{env.BUILD_PLATFORM_x64}} /p:OutDir=${{env.PATH_TEMPDIR}}
    
-    - name: Build Project HexCtrlTest
+    - name: Build Project HexCtrlTest_x64
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: msbuild /m ${{env.PATH_PROJ_HEXCTRLTEST}} /p:Configuration=${{env.BUILD_CONFIG}} /p:Platform=${{env.BUILD_PLATFORM}} /p:OutDir=${{env.PATH_TEMPDIR}} /p:LinkerAdditionalDir=${{env.PATH_TEMPDIR}}
+      run: msbuild /m ${{env.PATH_PROJ_HEXCTRLTEST}} /p:Configuration=${{env.BUILD_CONFIG}} /p:Platform=${{env.BUILD_PLATFORM_x64}} /p:OutDir=${{env.PATH_TEMPDIR}} /p:LinkerAdditionalDir=${{env.PATH_TEMPDIR}}
 
     - name: Setup VSTest Path
       uses: darenm/Setup-VSTest@v1.2
 
-    - name: Run UnitTest
+    - name: Run UnitTest_x64
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: vstest.console.exe ${{env.PATH_TESTDLL}}

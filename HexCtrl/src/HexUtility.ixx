@@ -95,6 +95,7 @@ export namespace HEXCTRL::INTERNAL {
 		}
 	}
 
+#if defined(_M_IX86) || defined(_M_X64)
 	template<typename T> concept TSIMD = (std::is_same_v<T, __m128> || std::is_same_v<T, __m128i> || std::is_same_v<T, __m128d>);
 
 	//Bytes swap inside SIMD types: __m128, __m128i, __m128d.
@@ -137,6 +138,7 @@ export namespace HEXCTRL::INTERNAL {
 			return _mm_load_pd(dbllData); //Returning local array as __m128d.
 		}
 	}
+#endif // ^^^ !defined(_M_IX86) && !defined(_M_X64)
 
 	template<TSize1248 T> [[nodiscard]] constexpr T BitReverse(T tData) {
 		T tReversed { };
