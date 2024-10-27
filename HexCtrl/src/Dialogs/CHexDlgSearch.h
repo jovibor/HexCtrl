@@ -24,6 +24,7 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		enum class ESearchMode : std::uint8_t; //Forward declarations.
 		enum class ESearchType : std::uint8_t;
+		enum class EVecSize : std::uint8_t;
 		enum class EMenuID : std::uint16_t;
 		struct SEARCHFUNCDATA;
 		struct FINDRESULT;
@@ -51,9 +52,9 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetSearchDataSize()const->DWORD;  //Search vec data size.
 		[[nodiscard]] auto GetSearchRngSize()const->ULONGLONG;
 		[[nodiscard]] auto GetSearchFunc(bool fFwd, bool fDlgClbck)const->PtrSearchFunc;
-		template<bool fDlgClbck>
+		template<bool fDlgClbck, EVecSize eVecSize>
 		[[nodiscard]] auto GetSearchFuncFwd()const->PtrSearchFunc;
-		template<bool fDlgClbck>
+		template<bool fDlgClbck, EVecSize eVecSize>
 		[[nodiscard]] auto GetSearchFuncBack()const->PtrSearchFunc;
 		[[nodiscard]] auto GetSearchMode()const->ESearchMode; //Getcurrent search mode.
 		[[nodiscard]] auto GetSearchSpan()const->SpanCByte;
@@ -109,20 +110,24 @@ namespace HEXCTRL::INTERNAL {
 		void SetControlsState();
 		void SetEditStartFrom(ULONGLONG ullOffset); //Start search offset edit set.
 		DECLARE_MESSAGE_MAP();
-
+	private:
 		//Static functions.
 		static void Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, SpanCByte spnReplace);
 		enum class EMemCmp : std::uint8_t {
 			DATA_BYTE1, DATA_BYTE2, DATA_BYTE4, DATA_BYTE8, CHAR_STR, WCHAR_STR
 		};
+		enum class EVecSize : std::uint8_t {
+			VEC128 = 16, VEC256 = 32 //SSE4.2 = sizeof(__m128), AVX2 = sizeof(__m256).
+		};
 		struct SEARCHTYPE { //Compile time struct for template parameters in the SearchFunc and MemCmp.
 			constexpr SEARCHTYPE() = default;
-			constexpr SEARCHTYPE(EMemCmp eMemCmp, bool fDlgClbck = false, bool fMatchCase = false,
+			constexpr SEARCHTYPE(EMemCmp eMemCmp, EVecSize eVecSize, bool fDlgClbck = false, bool fMatchCase = false,
 				bool fWildcard = false, bool fInverted = false) :
-				eMemCmp { eMemCmp }, fDlgClbck { fDlgClbck }, fMatchCase { fMatchCase }, fWildcard { fWildcard },
-				fInverted { fInverted } {}
+				eMemCmp { eMemCmp }, eVecSize { eVecSize }, fDlgClbck { fDlgClbck }, fMatchCase { fMatchCase },
+				fWildcard { fWildcard }, fInverted { fInverted } {}
 			constexpr ~SEARCHTYPE() = default;
 			EMemCmp eMemCmp { };
+			EVecSize eVecSize { };
 			bool fDlgClbck { false };
 			bool fMatchCase { false };
 			bool fWildcard { false };
@@ -130,17 +135,20 @@ namespace HEXCTRL::INTERNAL {
 		};
 		template<SEARCHTYPE stType>
 		[[nodiscard]] static auto __forceinline MemCmp(const std::byte* pWhere, const std::byte* pWhat, std::size_t nSize)->bool;
-
-	#if defined(_M_IX86) || defined(_M_X64)
-		//Vector functions return index in vector of found element. Index greater than 15 means not found.
-		[[nodiscard]] static auto __forceinline MemCmpVecEQByte1(const __m128i* pWhere, std::byte bWhat)->int;
-		[[nodiscard]] static auto __forceinline MemCmpVecNEQByte1(const __m128i* pWhere, std::byte bWhat)->int;
-		[[nodiscard]] static auto __forceinline MemCmpVecEQByte2(const __m128i* pWhere, std::uint16_t ui16What)->int;
-		[[nodiscard]] static auto __forceinline MemCmpVecNEQByte2(const __m128i* pWhere, std::uint16_t ui16What)->int;
-		[[nodiscard]] static auto __forceinline MemCmpVecEQByte4(const __m128i* pWhere, std::uint32_t ui32What)->int;
-		[[nodiscard]] static auto __forceinline MemCmpVecNEQByte4(const __m128i* pWhere, std::uint32_t ui32What)->int;
-	#endif //^^^ defined(_M_IX86) || defined(_M_X64)
-
+		//Vector functions return index within the vector of found element.
+		//Index greater than sizeof(vec)-1 means not found.
+		template<EVecSize eVecSize>
+		[[nodiscard]] static auto __forceinline MemCmpVecEQByte1(const std::byte* pWhere, std::byte bWhat)->int;
+		template<EVecSize eVecSize>
+		[[nodiscard]] static auto __forceinline MemCmpVecNEQByte1(const std::byte* pWhere, std::byte bWhat)->int;
+		template<EVecSize eVecSize>
+		[[nodiscard]] static auto __forceinline MemCmpVecEQByte2(const std::byte* pWhere, std::uint16_t ui16What)->int;
+		template<EVecSize eVecSize>
+		[[nodiscard]] static auto __forceinline MemCmpVecNEQByte2(const std::byte* pWhere, std::uint16_t ui16What)->int;
+		template<EVecSize eVecSize>
+		[[nodiscard]] static auto __forceinline MemCmpVecEQByte4(const std::byte* pWhere, std::uint32_t ui32What)->int;
+		template<EVecSize eVecSize>
+		[[nodiscard]] static auto __forceinline MemCmpVecNEQByte4(const std::byte* pWhere, std::uint32_t ui32What)->int;
 		template<SEARCHTYPE stType>
 		[[nodiscard]] static auto SearchFuncFwd(const SEARCHFUNCDATA& refSearch) -> FINDRESULT;
 		template<SEARCHTYPE stType>

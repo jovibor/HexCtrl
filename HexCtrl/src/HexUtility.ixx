@@ -96,13 +96,14 @@ export namespace HEXCTRL::INTERNAL {
 	}
 
 #if defined(_M_IX86) || defined(_M_X64)
-	template<typename T> concept TSIMD = (std::is_same_v<T, __m128> || std::is_same_v<T, __m128i> || std::is_same_v<T, __m128d>);
+	template<typename T> concept TVec128 = (std::is_same_v<T, __m128> || std::is_same_v<T, __m128i> || std::is_same_v<T, __m128d>);
+	template<typename T> concept TVec256 = (std::is_same_v<T, __m256> || std::is_same_v<T, __m256i> || std::is_same_v<T, __m256d>);
 
-	//Bytes swap inside SIMD types: __m128, __m128i, __m128d.
-	template<TSize1248 TIntegral, TSIMD T>
-	[[nodiscard]] auto ByteSwapVec(const T m128T) -> T
+	//Bytes swap inside vector types: __m128, __m128i, __m128d.
+	template<TSize1248 TIntegral, TVec128 TVec>
+	[[nodiscard]] auto ByteSwapVec(const TVec m128T) -> TVec
 	{
-		if constexpr (std::is_same_v<T, __m128i>) { //Integrals.
+		if constexpr (std::is_same_v<TVec, __m128i>) { //Integrals.
 			if constexpr (sizeof(TIntegral) == sizeof(std::uint8_t)) { //1 bytes.
 				return m128T;
 			}
@@ -119,7 +120,7 @@ export namespace HEXCTRL::INTERNAL {
 				return _mm_shuffle_epi8(m128T, m128iMask);
 			}
 		}
-		else if constexpr (std::is_same_v<T, __m128>) { //Floats.
+		else if constexpr (std::is_same_v<TVec, __m128>) { //Floats.
 			alignas(16) float flData[4];
 			_mm_store_ps(flData, m128T); //Loading m128T into local float array.
 			const auto m128iData = _mm_load_si128(reinterpret_cast<__m128i*>(flData)); //Loading array as __m128i (convert).
@@ -128,7 +129,7 @@ export namespace HEXCTRL::INTERNAL {
 			_mm_store_si128(reinterpret_cast<__m128i*>(flData), m128iSwapped); //Loading m128iSwapped back into local array.
 			return _mm_load_ps(flData); //Returning local array as __m128.
 		}
-		else if constexpr (std::is_same_v<T, __m128d>) { //Doubles.
+		else if constexpr (std::is_same_v<TVec, __m128d>) { //Doubles.
 			alignas(16) double dbllData[2];
 			_mm_store_pd(dbllData, m128T); //Loading m128T into local double array.
 			const auto m128iData = _mm_load_si128(reinterpret_cast<__m128i*>(dbllData)); //Loading array as __m128i (convert).
@@ -137,6 +138,19 @@ export namespace HEXCTRL::INTERNAL {
 			_mm_store_si128(reinterpret_cast<__m128i*>(dbllData), m128iSwapped); //Loading m128iSwapped back into local array.
 			return _mm_load_pd(dbllData); //Returning local array as __m128d.
 		}
+	}
+
+	[[nodiscard]] bool HasAVX2() {
+		const static bool fHasAVX2 = []() {
+			int arrInfo[4] { };
+			__cpuid(arrInfo, 0);
+			if (arrInfo[0] >= 7) {
+				__cpuid(arrInfo, 7);
+				return (arrInfo[1] & (1 << 5)) != 0;
+			}
+			return false;
+			}();
+		return fHasAVX2;
 	}
 #endif // ^^^ !defined(_M_IX86) && !defined(_M_X64)
 
