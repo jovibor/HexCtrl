@@ -27,7 +27,7 @@ Checks: '*,
 -readability-misleading-indentation,
 -readability-function-cognitive-complexity,
 -readability-identifier-length,
-
+-readability-named-parameter,
 google-readability-casting'
 
 HeaderFilterRegex: ''

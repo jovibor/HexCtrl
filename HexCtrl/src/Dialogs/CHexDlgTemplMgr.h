@@ -47,7 +47,7 @@ namespace HEXCTRL::INTERNAL {
 		void UpdateData();
 
 		//Static functions.
-		[[nodiscard]] static bool JSONParseFields(const IterJSONMember iterFieldsArray, HexVecFields& refVecFields,
+		[[nodiscard]] static bool JSONParseFields(IterJSONMember iterFieldsArray, HexVecFields& refVecFields,
 						const FIELDSDEFPROPS& refDefault, UmapCustomTypes& umapCustomT, int* pOffset = nullptr);
 		[[nodiscard]] static auto JSONEndianness(const rapidjson::Value& value) -> std::optional<bool>;
 		[[nodiscard]] static auto JSONColors(const rapidjson::Value& value, const char* pszColorName) -> std::optional<COLORREF>;

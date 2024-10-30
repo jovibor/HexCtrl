@@ -185,7 +185,8 @@ namespace HEXCTRL::INTERNAL {
 		void TTOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();
 		static void ModifyOper(std::byte* pData, const HEXMODIFY& hms, SpanCByte); //Modify operation classical.
-		static void ModifyOperVec(std::byte* pData, const HEXMODIFY& hms, SpanCByte); //Modify operation x86/x64 vector.
+		static void ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, SpanCByte); //Modify operation x86/x64 vector 128.
+		static void ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, SpanCByte); //Modify operation x86/x64 vector 256.
 
 		//MFC message handlers.
 		afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);

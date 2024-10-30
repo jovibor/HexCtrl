@@ -99,8 +99,7 @@ export namespace HEXCTRL::INTERNAL {
 	template<typename T> concept TVec128 = (std::is_same_v<T, __m128> || std::is_same_v<T, __m128i> || std::is_same_v<T, __m128d>);
 	template<typename T> concept TVec256 = (std::is_same_v<T, __m256> || std::is_same_v<T, __m256i> || std::is_same_v<T, __m256d>);
 
-	//Bytes swap inside vector types: __m128, __m128i, __m128d.
-	template<TSize1248 TIntegral, TVec128 TVec>
+	template<TSize1248 TIntegral, TVec128 TVec>	//Bytes swap inside vector types: __m128, __m128i, __m128d.
 	[[nodiscard]] auto ByteSwapVec(const TVec m128T) -> TVec
 	{
 		if constexpr (std::is_same_v<TVec, __m128i>) { //Integrals.
@@ -137,6 +136,51 @@ export namespace HEXCTRL::INTERNAL {
 			const auto m128iSwapped = _mm_shuffle_epi8(m128iData, m128iMask); //Swapping bytes.
 			_mm_store_si128(reinterpret_cast<__m128i*>(dbllData), m128iSwapped); //Loading m128iSwapped back into local array.
 			return _mm_load_pd(dbllData); //Returning local array as __m128d.
+		}
+	}
+
+	template<TSize1248 TIntegral, TVec256 TVec>	//Bytes swap inside vector types: __m256, __m256i, __m256d.
+	[[nodiscard]] auto ByteSwapVec(const TVec m256T) -> TVec
+	{
+		if constexpr (std::is_same_v<TVec, __m256i>) { //Integrals.
+			if constexpr (sizeof(TIntegral) == sizeof(std::uint8_t)) { //1 bytes.
+				return m256T;
+			}
+			else if constexpr (sizeof(TIntegral) == sizeof(std::uint16_t)) { //2 bytes.
+				const auto m256iMask = _mm256_setr_epi8(1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14, 17, 16,
+					19, 18, 21, 20, 23, 22, 25, 24, 27, 26, 29, 28, 31, 30);
+				return _mm256_shuffle_epi8(m256T, m256iMask);
+			}
+			else if constexpr (sizeof(TIntegral) == sizeof(std::uint32_t)) { //4 bytes.
+				const auto m256iMask = _mm256_setr_epi8(3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12,
+					19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28);
+				return _mm256_shuffle_epi8(m256T, m256iMask);
+			}
+			else if constexpr (sizeof(TIntegral) == sizeof(std::uint64_t)) { //8 bytes.
+				const auto m256iMask = _mm256_setr_epi8(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8,
+					23, 22, 21, 20, 19, 18, 17, 16, 31, 30, 29, 28, 27, 26, 25, 24);
+				return _mm256_shuffle_epi8(m256T, m256iMask);
+			}
+		}
+		else if constexpr (std::is_same_v<TVec, __m256>) { //Floats.
+			alignas(32) float flData[8];
+			_mm256_store_ps(flData, m256T); //Loading m256T into local float array.
+			const auto m256iData = _mm256_load_si256(reinterpret_cast<__m256i*>(flData)); //Loading array as __m256i (convert).
+			const auto m256iMask = _mm256_setr_epi8(3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12,
+					19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28);
+			const auto m256iSwapped = _mm256_shuffle_epi8(m256iData, m256iMask); //Swapping bytes.
+			_mm256_store_si256(reinterpret_cast<__m256i*>(flData), m256iSwapped); //Loading m256iSwapped back into local array.
+			return _mm256_load_ps(flData); //Returning local array as __m256.
+		}
+		else if constexpr (std::is_same_v<TVec, __m256d>) { //Doubles.
+			alignas(32) double dbllData[4];
+			_mm256_store_pd(dbllData, m256T); //Loading m256T into local double array.
+			const auto m256iData = _mm256_load_si256(reinterpret_cast<__m256i*>(dbllData)); //Loading array as __m256i (convert).
+			const auto m256iMask = _mm256_setr_epi8(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8,
+					23, 22, 21, 20, 19, 18, 17, 16, 31, 30, 29, 28, 27, 26, 25, 24);
+			const auto m256iSwapped = _mm256_shuffle_epi8(m256iData, m256iMask); //Swapping bytes.
+			_mm256_store_si256(reinterpret_cast<__m256i*>(dbllData), m256iSwapped); //Loading m256iSwapped back into local array.
+			return _mm256_load_pd(dbllData); //Returning local array as __m256d.
 		}
 	}
 
