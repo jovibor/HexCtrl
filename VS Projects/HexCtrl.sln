@@ -9,7 +9,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HexCtrl DLL", "HexCtrl DLL\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Sample Dialog DLL", "Sample Dialog DLL\Sample Dialog DLL.vcxproj", "{C76E6C72-C970-47D1-91B1-F2B9EACBBE93}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTest", "UnitTest\UnitTest.vcxproj", "{337EEC2C-B9B1-49D6-A526-59F01742AF51}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HexCtrl Test", "HexCtrl Test\HexCtrl Test.vcxproj", "{337EEC2C-B9B1-49D6-A526-59F01742AF51}"
 	ProjectSection(ProjectDependencies) = postProject
 		{557B0ABE-E81A-4BD1-AD98-DC68F44D9A0D} = {557B0ABE-E81A-4BD1-AD98-DC68F44D9A0D}
 	EndProjectSection
