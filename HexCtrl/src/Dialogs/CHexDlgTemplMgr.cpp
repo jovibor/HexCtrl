@@ -1358,8 +1358,7 @@ void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 	if (pTemplate == nullptr)
 		return;
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
+	std::mt19937 gen(std::random_device { }());
 	std::uniform_int_distribution<unsigned int> distrib(50, 230);
 
 	const auto lmbRndColors = [&distrib, &gen](const HexVecFields& refVecFields) {

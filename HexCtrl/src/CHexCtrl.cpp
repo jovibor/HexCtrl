@@ -1181,8 +1181,7 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	case MODIFY_RAND_MT19937:
 	case MODIFY_RAND_FAST:
 	{
-		std::random_device rd;
-		std::mt19937 gen(rd());
+		std::mt19937 gen(std::random_device { }());
 		std::uniform_int_distribution<std::uint64_t> distUInt64(0, (std::numeric_limits<std::uint64_t>::max)());
 		const auto lmbRandUInt64 = [&](std::byte* pData, const HEXMODIFY& /**/, SpanCByte /**/) {
 			assert(pData != nullptr);
@@ -5821,7 +5820,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				BitReverse(i8Data[7]), BitReverse(i8Data[8]), BitReverse(i8Data[9]), BitReverse(i8Data[10]),
 				BitReverse(i8Data[11]), BitReverse(i8Data[12]), BitReverse(i8Data[13]), BitReverse(i8Data[14]),
 				BitReverse(i8Data[15]), BitReverse(i8Data[16]), BitReverse(i8Data[17]), BitReverse(i8Data[18]),
-				BitReverse(i8Data[19]), BitReverse(i8Data[20]), BitReverse(i8Data[21]), BitReverse(i8Data[225]),
+				BitReverse(i8Data[19]), BitReverse(i8Data[20]), BitReverse(i8Data[21]), BitReverse(i8Data[22]),
 				BitReverse(i8Data[23]), BitReverse(i8Data[24]), BitReverse(i8Data[25]), BitReverse(i8Data[26]),
 				BitReverse(i8Data[27]), BitReverse(i8Data[28]), BitReverse(i8Data[29]), BitReverse(i8Data[30]),
 				BitReverse(i8Data[31]));
@@ -6827,6 +6826,9 @@ void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMe
 
 void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 {
+	//LORE: If some key combinations do not work for seemingly no reason, it might be due to
+	//global hotkeys hooks from some running app.
+
 	//KF_REPEAT indicates that the key was pressed continuously.
 	if (nFlags & KF_REPEAT) {
 		m_fKeyDownAtm = true;
@@ -6835,8 +6837,10 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 	if (const auto optCmd = GetCommandFromKey(nChar, GetAsyncKeyState(VK_CONTROL) < 0,
 		GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd) {
 		ExecuteCmd(*optCmd);
+		return;
 	}
-	else if (IsDataSet() && IsMutable() && !IsCurTextArea()) {
+
+	if (IsDataSet() && IsMutable() && !IsCurTextArea()) {
 		//If caret is in the Hex area then just one part (High/Low) of the byte must be changed.
 		//Normalizing all input in the Hex area to only [0x0-0xF] range, allowing only [0-9], [A-F], [NUM0-NUM9].
 		unsigned char chByte = nChar & 0xFF;

@@ -145,8 +145,7 @@ void CSampleDialogDlg::OnBnSetRndData()
 	}
 
 	m_pData.reset(new std::byte[*optSize]);
-	std::random_device rd;
-	std::mt19937 gen(rd());
+	std::mt19937 gen(std::random_device { }());
 	std::uniform_int_distribution<std::uint64_t> distInt(0, (std::numeric_limits<std::uint64_t>::max)());
 	for (auto i = 0U; i < *optSize / sizeof(std::uint64_t); ++i) {
 		reinterpret_cast<std::uint64_t*>(m_pData.get())[i] = distInt(gen);

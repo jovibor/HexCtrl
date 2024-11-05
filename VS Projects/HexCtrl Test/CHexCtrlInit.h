@@ -2,7 +2,10 @@
 #include "../../HexCtrl/HexCtrl.h"
 #include "CppUnitTest.h"
 #include <bit>
+#include <cassert>
+#include <cmath>
 #include <limits>
+#include <random>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace HEXCTRL;
@@ -11,20 +14,52 @@ using enum EHexOperMode;
 using enum EHexDataType;
 
 namespace TestHexCtrl {
-	inline auto GetHexCtrl() -> IHexCtrl* {
+	[[nodiscard]] consteval auto GetTestDataSize() {
+		return 477UL; //Size deliberately not equal to power of two.
+	}
+
+	[[nodiscard]] inline auto GetHexCtrl() -> IHexCtrl* {
 		static IHexCtrl* pHexCtrl = []() {
 			static auto pHex { CreateHexCtrl() };
-			static std::byte byteData[256] { };
-			pHex->Create({ .dwStyle = WS_POPUP | WS_OVERLAPPEDWINDOW, .dwExStyle = WS_EX_APPWINDOW });
+			static std::byte byteData[GetTestDataSize()] { };
+			pHex->Create({ .dwStyle { WS_POPUP | WS_OVERLAPPEDWINDOW }, .dwExStyle { WS_EX_APPWINDOW } });
 			pHex->SetData({ .spnData { byteData, sizeof(byteData) }, .fMutable { true } });
 			return pHex.get();
 			}(); //Immediate lambda for one time HexCtrl creation.
 		return pHexCtrl;
 	}
 
+	static std::byte byteReferenceData[GetTestDataSize()]; //Reference data array.
+	[[nodiscard]] consteval auto GetReferenceData() {
+		return &byteReferenceData;
+	}
+
+	[[nodiscard]] inline auto& GetMT19937() {
+		static std::mt19937 gen(std::random_device { }());
+		return gen;
+	}
+
 	template<typename T>
-	[[nodiscard]] T GetTData(std::byte* pData) {
-		return *reinterpret_cast<T*>(pData);
+	void CreateDataForType() {
+		constexpr auto iElemetsCount = GetTestDataSize() / sizeof(T);
+		if constexpr (std::is_integral_v<T>) {
+			constexpr bool fIsInt8 = std::is_same_v<T, std::int8_t> || std::is_same_v<T, std::uint8_t>;
+			using IntType = std::conditional_t<fIsInt8, int, T>; //uniform_int_distribution doesn't allow (u)int8 types.
+			std::uniform_int_distribution<IntType> distr((std::numeric_limits<T>::min)(), (std::numeric_limits<T>::max)());
+			for (auto i { 0 }; i < iElemetsCount; ++i) {
+				reinterpret_cast<T*>(GetReferenceData())[i] = static_cast<T>(distr(GetMT19937()));
+			}
+		}
+		else if constexpr (std::is_floating_point_v<T>) {
+			std::uniform_real_distribution<T> distr((std::numeric_limits<T>::min)(), (std::numeric_limits<T>::max)());
+			for (auto i { 0 }; i < iElemetsCount; ++i) {
+				reinterpret_cast<T*>(GetReferenceData())[i] = distr(GetMT19937());
+			}
+		}
+
+		const HEXMODIFY hms { .eModifyMode { MODIFY_ONCE },
+			.spnData { reinterpret_cast<const std::byte*>(GetReferenceData()), GetTestDataSize() }, .vecSpan { { 0, GetTestDataSize() } } };
+		GetHexCtrl()->ModifyData(hms); //Now set the HexCtrl data equal to the Reference data.
 	}
 
 	template<typename T>
@@ -69,14 +104,8 @@ namespace TestHexCtrl {
 		GetHexCtrl()->ModifyData(hms);
 	}
 
-	template<typename T>
-	void AssignTData(T tData, HEXSPAN hsp) {
-		ModifyOperTData(OPER_ASSIGN, tData, hsp);
-	}
-
 	template<typename T> concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);
 
-	//Bytes swap for types of 2, 4, or 8 byte size.
 	template<TSize1248 T> [[nodiscard]] constexpr T ByteSwap(T tData)noexcept
 	{
 		//Since a swapping-data type can be any type of 2, 4, or 8 bytes size,
@@ -122,5 +151,99 @@ namespace TestHexCtrl {
 			tReversed = (tReversed << 1) | (tData & 1);
 		}
 		return tReversed;
+	}
+
+	template<typename T>
+	void OperDataForType(EHexOperMode eOperMode, T tOper = { }) {
+		ModifyOperTData(eOperMode, tOper, { .ullOffset { 0 }, .ullSize { GetTestDataSize() } }); //Operate on whole HexCtrl's data.
+
+		constexpr auto iElemetsCount = GetTestDataSize() / sizeof(T);
+		for (auto i { 0 }; i < iElemetsCount; ++i) { //Operate on Reference data.
+			auto tData = reinterpret_cast<T*>(GetReferenceData())[i];
+			if constexpr (std::is_integral_v<T>) { //Operations only for integral types.
+				switch (eOperMode) {
+				case OPER_OR:
+					tData |= tOper;
+					break;
+				case OPER_XOR:
+					tData ^= tOper;
+					break;
+				case OPER_AND:
+					tData &= tOper;
+					break;
+				case OPER_NOT:
+					tData = ~tData;
+					break;
+				case OPER_SHL:
+					tData <<= tOper;
+					break;
+				case OPER_SHR:
+					tData >>= tOper;
+					break;
+				case OPER_ROTL:
+					tData = std::rotl(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tOper));
+					break;
+				case OPER_ROTR:
+					tData = std::rotr(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tOper));
+					break;
+				case OPER_BITREV:
+					tData = BitReverse(tData);
+					break;
+				default:
+					break;
+				}
+			}
+
+			switch (eOperMode) { //Operations for integral and floating types.
+			case OPER_ASSIGN: //Implemented as MODIFY_REPEAT.
+				break;
+			case OPER_ADD:
+				tData += tOper;
+				break;
+			case OPER_SUB:
+				tData -= tOper;
+				break;
+			case OPER_MUL:
+				tData *= tOper;
+				break;
+			case OPER_DIV:
+				assert(tOper > 0);
+				tData /= tOper;
+				break;
+			case OPER_MIN:
+				tData = (std::max)(tData, tOper);
+				break;
+			case OPER_MAX:
+				tData = (std::min)(tData, tOper);
+				break;
+			case OPER_SWAP:
+				tData = ByteSwap(tData);
+				break;
+			default:
+				break;
+			}
+
+			reinterpret_cast<T*>(GetReferenceData())[i] = tData;
+		}
+	}
+
+	template<typename T>
+	void VerifyDataForType() {
+		constexpr auto iElemetsCount = GetTestDataSize() / sizeof(T);
+		const auto spnHexData = GetHexCtrl()->GetData({ .ullOffset { 0 }, .ullSize { GetTestDataSize() } });
+		if constexpr (std::is_integral_v<T>) {
+			for (auto i { 0 }; i < iElemetsCount; ++i) {
+				Assert::AreEqual(reinterpret_cast<T*>(GetReferenceData())[i], reinterpret_cast<T*>(spnHexData.data())[i]);
+			}
+		}
+		else if constexpr (std::is_floating_point_v<T>) {
+			for (auto i { 0 }; i < iElemetsCount; ++i) {
+				const auto tRefData = reinterpret_cast<T*>(GetReferenceData())[i];
+				const auto tHexData = reinterpret_cast<T*>(spnHexData.data())[i];
+				if (std::isfinite(tRefData) && std::isfinite(tHexData)) {
+					Assert::AreEqual(tRefData, tHexData, std::numeric_limits<T>::epsilon());
+				}
+			}
+		}
 	}
 }
