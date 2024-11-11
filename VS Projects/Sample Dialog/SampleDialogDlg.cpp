@@ -1,9 +1,11 @@
 #include "stdafx.h"
 #include "SampleDialogDlg.h"
-#include "../../HexCtrl/dep/StrToNum/StrToNum.h"
 #include "Resource.h"
 #include <filesystem>
 #include <random>
+import StrToNum;
+
+namespace stn = HEXCTRL::stn;
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

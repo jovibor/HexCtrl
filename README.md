@@ -158,7 +158,7 @@ Clone the repo with all submodules:
 ### [](#)Integrate Sources
 To build **HexCtrl** from the sources:
 1. Add all files from the `HexCtrl` folder into your project  
-(can skip adding *rapidjson-amalgam.h* and *StrToNum.h*)
+(can skip adding *rapidjson-amalgam.h*)
 1. Add `#include "HexCtrl.h"`
 1. Declare **HexCtrl** object:
     ```cpp

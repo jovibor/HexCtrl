@@ -31,6 +31,9 @@
     <Filter Include="HexCtrl\dep\ListEx">
       <UniqueIdentifier>{3e97ec96-7cff-4b05-8e71-94e34fb97804}</UniqueIdentifier>
     </Filter>
+    <Filter Include="HexCtrl\dep\StrToNum">
+      <UniqueIdentifier>{7bb2060b-29e6-4a17-8d2e-0665525860fb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h">
@@ -115,6 +118,9 @@
     </ClCompile>
     <ClCompile Include="..\Sample Dialog\stdafx.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\dep\StrToNum\StrToNum.ixx">
+      <Filter>HexCtrl\dep\StrToNum</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

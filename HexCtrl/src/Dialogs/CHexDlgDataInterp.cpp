@@ -5,7 +5,6 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #include "stdafx.h"
-#include "../../dep/StrToNum/StrToNum.h"
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgDataInterp.h"
 #include <algorithm>

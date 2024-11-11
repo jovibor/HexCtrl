@@ -6,7 +6,6 @@ module;
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #include <SDKDDKVer.h>
-#include "../dep/StrToNum/StrToNum.h"
 #include "../HexCtrl.h"
 #include <afxwin.h>
 #include <bit>
@@ -19,6 +18,8 @@ module;
 #include <source_location>
 #include <string>
 export module HEXCTRL.HexUtility;
+
+export import StrToNum;
 
 export namespace HEXCTRL::INTERNAL {
 	//Time calculation constants and structs.
