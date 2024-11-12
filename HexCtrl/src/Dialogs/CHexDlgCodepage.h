@@ -6,8 +6,9 @@
 ****************************************************************************************/
 #pragma once
 #include "../../HexCtrl.h"
-#include "../../dep/ListEx/ListEx.h"
 #include <afxdialogex.h>
+
+import HEXCTRL.HexUtility;
 
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgCodepage final : public CDialogEx {

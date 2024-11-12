@@ -20,23 +20,24 @@ module;
 export module HEXCTRL.HexUtility;
 
 export import StrToNum;
+export import ListEx;
 
 export namespace HEXCTRL::INTERNAL {
 	//Time calculation constants and structs.
-	constexpr auto g_uFTTicksPerMS = 10000U;             //Number of 100ns intervals in a milli-second.
-	constexpr auto g_uFTTicksPerSec = 10000000UL;        //Number of 100ns intervals in a second.
-	constexpr auto g_uHoursPerDay = 24U;                 //24 hours per day.
-	constexpr auto g_uSecondsPerHour = 3600U;            //3600 seconds per hour.
-	constexpr auto g_uFileTime1582OffsetDays = 6653U;    //FILETIME is based upon 1 Jan 1601 whilst GUID time is from 15 Oct 1582. Add 6653 days to convert to GUID time.
-	constexpr auto g_ulFileTime1970_LOW = 0xd53e8000UL;  //1st Jan 1970 as FILETIME.
-	constexpr auto g_ulFileTime1970_HIGH = 0x019db1deUL; //Used for Unix and Java times.
-	constexpr auto g_ullUnixEpochDiff = 11644473600ULL;  //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970.
+	constexpr auto g_uFTTicksPerMS = 10000U;            //Number of 100ns intervals in a milli-second.
+	constexpr auto g_uFTTicksPerSec = 10000000U;        //Number of 100ns intervals in a second.
+	constexpr auto g_uHoursPerDay = 24U;                //24 hours per day.
+	constexpr auto g_uSecondsPerHour = 3600U;           //3600 seconds per hour.
+	constexpr auto g_uFileTime1582OffsetDays = 6653U;   //FILETIME is based upon 1 Jan 1601 whilst GUID time is from 15 Oct 1582. Add 6653 days to convert to GUID time.
+	constexpr auto g_ulFileTime1970_LOW = 0xd53e8000U;  //1st Jan 1970 as FILETIME.
+	constexpr auto g_ulFileTime1970_HIGH = 0x019db1deU; //Used for Unix and Java times.
+	constexpr auto g_ullUnixEpochDiff = 11644473600ULL; //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970.
 
 	//Get data from IHexCtrl's given offset converted to a necessary type.
 	template<typename T>
 	[[nodiscard]] T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
 	{
-		const auto spnData = refHexCtrl.GetData({ ullOffset, sizeof(T) });
+		const auto spnData = refHexCtrl.GetData({ .ullOffset { ullOffset }, .ullSize { sizeof(T) } });
 		assert(!spnData.empty());
 		return *reinterpret_cast<T*>(spnData.data());
 	}

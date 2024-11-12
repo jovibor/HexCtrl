@@ -11,8 +11,6 @@
 #include <cassert>
 #include <format>
 
-import HEXCTRL.HexUtility;
-
 using namespace HEXCTRL::INTERNAL;
 
 BEGIN_MESSAGE_MAP(CHexDlgCodepage, CDialogEx)

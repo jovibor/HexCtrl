@@ -5,10 +5,11 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #pragma once
-#include "../../dep/ListEx/ListEx.h"
 #include "../../HexCtrl.h"
 #include <afxdialogex.h>
 #include <vector>
+
+import HEXCTRL.HexUtility;
 
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgBkmMgr final : public CDialogEx, public IHexBookmarks {

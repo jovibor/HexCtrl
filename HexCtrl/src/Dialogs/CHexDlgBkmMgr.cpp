@@ -7,12 +7,11 @@
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgBkmMgr.h"
+#include <afxcontrolbars.h>
 #include <algorithm>
 #include <cassert>
 #include <format>
 #include <numeric>
-
-import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 

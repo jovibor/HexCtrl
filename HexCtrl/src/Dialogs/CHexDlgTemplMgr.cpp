@@ -8,6 +8,7 @@
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgTemplMgr.h"
 #include "strsafe.h"
+#include <afxdlgs.h>
 #include <algorithm>
 #include <format>
 #include <fstream>

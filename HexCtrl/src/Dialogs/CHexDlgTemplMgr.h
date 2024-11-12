@@ -6,7 +6,6 @@
 ****************************************************************************************/
 #pragma once
 #include "../../dep/rapidjson/rapidjson-amalgam.h"
-#include "../../dep/ListEx/ListEx.h"
 #include "../../HexCtrl.h"
 #include <afxdialogex.h>
 #include <unordered_map>

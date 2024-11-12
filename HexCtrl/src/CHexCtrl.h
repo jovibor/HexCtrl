@@ -296,8 +296,8 @@ namespace HEXCTRL::INTERNAL {
 		std::wstring m_wstrTextTitle;         //Text area title.
 		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecUndo; //Undo data.
 		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecRedo; //Redo data.
-		std::vector < std::unique_ptr < std::remove_pointer<HBITMAP>::type,
-			decltype([](const HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP; //Icons for the Menu.
+		std::vector < std::unique_ptr < std::remove_pointer_t<HBITMAP>,
+			decltype([](HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP; //Icons for the Menu.
 		std::vector<KEYBIND> m_vecKeyBind;    //Vector of key bindings.
 		std::vector<int> m_vecCharsWidth;     //Vector of chars widths.
 		wchar_t m_wchUnprintable { L'.' };    //Replacement char for unprintable characters.

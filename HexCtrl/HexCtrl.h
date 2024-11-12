@@ -455,10 +455,7 @@ namespace HEXCTRL {
 		virtual void ShowInfoBar(bool fShow) = 0;              //Show/hide bottom Info bar.
 	};
 
-	struct IHexCtrlDeleter {
-		void operator()(IHexCtrl* p)const { p->Destroy(); }
-	};
-
+	struct IHexCtrlDeleter { void operator()(IHexCtrl* p)const { p->Destroy(); } };
 	using IHexCtrlPtr = std::unique_ptr<IHexCtrl, IHexCtrlDeleter>;
 	[[nodiscard]] HEXCTRLAPI IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstClass = nullptr);
 

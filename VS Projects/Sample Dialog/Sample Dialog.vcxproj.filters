@@ -75,9 +75,6 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\dep\ListEx\ListEx.h">
-      <Filter>HexCtrl\dep\ListEx</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
@@ -113,9 +110,6 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\dep\ListEx\CListEx.cpp">
-      <Filter>HexCtrl\dep\ListEx</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
@@ -136,6 +130,9 @@
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\dep\StrToNum\StrToNum.ixx">
       <Filter>HexCtrl\dep\StrToNum</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\dep\ListEx\ListEx.ixx">
+      <Filter>HexCtrl\dep\ListEx</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
