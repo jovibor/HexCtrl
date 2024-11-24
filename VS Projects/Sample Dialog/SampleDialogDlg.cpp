@@ -323,24 +323,21 @@ void CSampleDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 		wstrPath = LnkToPath(wstrPath.data());
 	}
 
-	m_hFile = CreateFileW(wstrPath.data(), GENERIC_READ | GENERIC_WRITE,
-		FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-	if (m_hFile == INVALID_HANDLE_VALUE) {
+	if (m_hFile = CreateFileW(wstrPath.data(), GENERIC_READ | GENERIC_WRITE,
+		FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr); m_hFile == INVALID_HANDLE_VALUE) {
 		const std::wstring wstr = L"CreateFileW failed.\r\n" + GetLastErrorWstr();
 		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
 		return;
 	}
 
-	m_hMapObject = CreateFileMappingW(m_hFile, nullptr, PAGE_READWRITE, 0, 0, nullptr);
-	if (!m_hMapObject) {
+	if (m_hMapObject = CreateFileMappingW(m_hFile, nullptr, PAGE_READWRITE, 0, 0, nullptr); !m_hMapObject) {
 		CloseHandle(m_hFile);
 		const std::wstring wstr = L"CreateFileMappingW failed.\r\n" + GetLastErrorWstr();
 		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
 		return;
 	}
 
-	m_lpBase = MapViewOfFile(m_hMapObject, FILE_MAP_WRITE, 0, 0, 0);
-	if (!m_lpBase) {
+	if (m_lpBase = MapViewOfFile(m_hMapObject, FILE_MAP_WRITE, 0, 0, 0); !m_lpBase) {
 		const std::wstring wstr = L"MapViewOfFileW failed.\r\n" + GetLastErrorWstr();
 		MessageBoxW(wstr.data(), L"Error", MB_ICONERROR);
 		CloseHandle(m_hMapObject);
@@ -349,10 +346,8 @@ void CSampleDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 	}
 
 	m_fFileOpen = true;
-
 	LARGE_INTEGER stFileSize;
 	::GetFileSizeEx(m_hFile, &stFileSize);
-
 	m_hds.spnData = { static_cast<std::byte*>(m_lpBase), static_cast<std::size_t>(stFileSize.QuadPart) };
 	m_hds.fMutable = IsRW();
 	m_pHexDlg->SetData(m_hds);

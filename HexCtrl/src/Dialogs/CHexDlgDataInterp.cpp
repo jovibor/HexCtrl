@@ -909,8 +909,8 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 
 	//Encode version 1 GUID with time.
 	dqword.Data1 = qwGUIDTime.LowPart;
-	dqword.Data2 = qwGUIDTime.HighPart & 0xffff;
-	dqword.Data3 = ((qwGUIDTime.HighPart >> 16) & 0x0fff) | 0x1000; //Including Type 1 flag (0x1000).
+	dqword.Data2 = qwGUIDTime.HighPart & 0xFFFFL;
+	dqword.Data3 = ((qwGUIDTime.HighPart >> 16) & 0x0FFFL) | 0x1000; //Including Type 1 flag (0x1000).
 
 	if (IsBigEndian()) { //After processing swap back.
 		dqword.Data1 = ByteSwap(dqword.Data1);

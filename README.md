@@ -672,9 +672,10 @@ For default values see the [`IDR_HEXCTRL_JSON_KEYBIND.json`](https://github.com/
 
 ### [](#)SetData
 ```cpp
-void SetData(const HEXDATA& hds);
+void SetData(const HEXDATA& hds, bool fAdjust = false)
 ```
-Main method to set a data to display in read-only or mutable modes. Takes [`HEXDATA`](#hexdata) as an  argument.
+Main method to set data for **HexCtrl**. It takes [`HEXDATA`](#hexdata) struct as an  argument.  
+The `fAdjust` flag when set to `true` allows adjusting already set data. For example to switch between [virtual](#virtual-data-mode) and normal data modes.
 
 ### [](#)SetDateInfo
 ```cpp
@@ -865,6 +866,9 @@ struct HEXDATA {
     bool            fHighLatency { false };     //Do not redraw until scroll thumb is released.
 };
 ```
+
+#### [](#)ullMaxVirtOffset
+Used to set maximum Virtual data offset. This is needed for the offset digits amount calculation.
 
 ### [](#)HEXDATAINFO
 Struct for a data information used in [`IHexVirtData`](#virtual-data-mode).
@@ -1060,6 +1064,10 @@ public:
     virtual void OnHexSetData(const HEXDATAINFO&) = 0; //Data to set, if mutable.
 };
 ```
+
+#### [](#)OnHexGetOffset
+Internally **HexCtrl** operates with flat data offsets. If you set data of 1MB size, **HexCtrl** will have working offsets in the `[0-1'048'575]` diapason. However, from the user perspective the real data offsets may differ. For instance, in processes memory model very high virtual memory addresses can be used, like `0x7FF96BA622C0`. The process data can be mapped by operating system to literally any virtual address.  
+The `OnHexGetOffset` method serves exactly for the **Flat<->Virtual** offset converting purpose.
 
 ## [](#)Enums
 

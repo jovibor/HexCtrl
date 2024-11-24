@@ -1762,38 +1762,54 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 	return fJSONParsed;
 }
 
-void CHexCtrl::SetData(const HEXDATA& hds)
+void CHexCtrl::SetData(const HEXDATA& hds, bool fAdjust)
 {
 	assert(IsCreated());
 	if (!IsCreated())
 		return;
 
-	ClearData();
-	if (hds.spnData.empty()) //If the data size is zero we do nothing further.
+	if (hds.spnData.empty()) {
+		DBG_REPORT(L"Data size can't be zero.");
 		return;
+	}
+
+	if (fAdjust) {
+		if (!IsDataSet()) {
+			DBG_REPORT(L"Nothing to adjust, data must be set first.");
+			return;
+		}
+
+		if (hds.spnData.size() != m_spnData.size()) {
+			DBG_REPORT(L"Data size must be equal to the prior data size.");
+			return;
+		}
+	}
+	else { //Clear any previously set data before setting the new data.
+		ClearData();
+	}
 
 	m_spnData = hds.spnData;
+	m_pHexVirtData = hds.pHexVirtData;
 	m_pHexVirtColors = hds.pHexVirtColors;
 	m_dwCacheSize = (std::max)(hds.dwCacheSize, 1024UL * 64UL); //Minimum cache size for VirtualData mode.
-	m_pHexVirtData = hds.pHexVirtData;
 	m_fMutable = hds.fMutable;
 	m_fHighLatency = hds.fHighLatency;
 
 	const auto ullDataSize = hds.pHexVirtData ? (std::max)(hds.ullMaxVirtOffset,
 		static_cast<ULONGLONG>(hds.spnData.size())) : hds.spnData.size();
-	if (ullDataSize <= 0xffffffffUL) {
+	if (ullDataSize <= 0xFFFFFFFFUL) {
 		m_dwDigitsOffsetDec = 10;
 		m_dwDigitsOffsetHex = 8;
 	}
-	else if (ullDataSize <= 0xffffffffffUL) {
+	else if (ullDataSize <= 0xFFFFFFFFFFUL) {
 		m_dwDigitsOffsetDec = 13;
 		m_dwDigitsOffsetHex = 10;
 	}
-	else if (ullDataSize <= 0xffffffffffffUL) {
+	else if (ullDataSize <= 0xFFFFFFFFFFFFUL) {
 		m_dwDigitsOffsetDec = 15;
 		m_dwDigitsOffsetHex = 12;
 	}
-	else if (ullDataSize <= 0xffffffffffffffUL) {
+	else if (ullDataSize <= 0xFFFFFFFFFFFFFFUL) {
 		m_dwDigitsOffsetDec = 17;
 		m_dwDigitsOffsetHex = 14;
 	}
@@ -3949,7 +3965,7 @@ void CHexCtrl::Print()
 	dlg.m_pdex.lStructSize = sizeof(PRINTDLGEX);
 	dlg.m_pdex.nStartPage = START_PAGE_GENERAL;
 	dlg.m_pdex.nMinPage = 1;
-	dlg.m_pdex.nMaxPage = 0xffff;
+	dlg.m_pdex.nMaxPage = 0xFFFFUL;
 	dlg.m_pdex.nPageRanges = 1;
 	dlg.m_pdex.nMaxPageRanges = 1;
 	PRINTPAGERANGE ppr { .nFromPage = 1, .nToPage = 1 };

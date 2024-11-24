@@ -45,8 +45,8 @@
 
 namespace HEXCTRL {
 	constexpr auto HEXCTRL_VERSION_MAJOR = 3;
-	constexpr auto HEXCTRL_VERSION_MINOR = 6;
-	constexpr auto HEXCTRL_VERSION_PATCH = 1;
+	constexpr auto HEXCTRL_VERSION_MINOR = 7;
+	constexpr auto HEXCTRL_VERSION_PATCH = 0;
 
 	using SpanByte = std::span<std::byte>;
 	using SpanCByte = std::span<const std::byte>;
@@ -439,7 +439,7 @@ namespace HEXCTRL {
 		virtual void SetCodepage(int iCodepage) = 0;           //Codepage for text area.
 		virtual void SetColors(const HEXCOLORS& hcs) = 0;      //Set HexCtrl's colors.
 		virtual bool SetConfig(std::wstring_view wsvPath) = 0; //Set configuration file, or "" for defaults.
-		virtual void SetData(const HEXDATA& hds) = 0;          //Main method for setting data to display (and edit).
+		virtual void SetData(const HEXDATA& hds, bool fAdjust = false) = 0; //Main method to set data for HexCtrl.
 		virtual void SetDateInfo(DWORD dwFormat, wchar_t wchSepar) = 0; //Set date format and date separator.
 		virtual void SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags) = 0; //Properties for the internal dialogs.
 		virtual void SetFont(const LOGFONTW& lf) = 0;          //Set HexCtrl's font, this font has to be monospaced.
