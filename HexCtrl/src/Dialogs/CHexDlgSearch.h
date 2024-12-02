@@ -163,7 +163,7 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr auto m_pwszWrongInput { L"Wrong input data." };
 		IHexCtrl* m_pHexCtrl { };
 		ESearchMode m_eSearchMode { };
-		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
+		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
 		CMenu m_menuList;               //Menu for the list control.
 		CComboBox m_comboFind;          //Combo box "Search".
 		CComboBox m_comboReplace;       //Combo box "Replace".

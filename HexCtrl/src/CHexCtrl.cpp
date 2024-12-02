@@ -319,14 +319,14 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	//Font related.
 	//Default main logfont.
-	const LOGFONTW lfMain { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) }, .lfPitchAndFamily { FIXED_PITCH },
-		.lfFaceName { L"Consolas" } };
-	m_fontMain.CreateFontIndirectW(hcs.pLogFont != nullptr ? hcs.pLogFont : &lfMain);
+	const LOGFONTW lfMain { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) }, .lfWeight { FW_NORMAL },
+		.lfQuality { CLEARTYPE_QUALITY }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
+	m_fntMain.CreateFontIndirectW(hcs.pLogFont != nullptr ? hcs.pLogFont : &lfMain);
 
 	//Info area font, independent from the main font, its size is a bit smaller than the default main font.
-	const LOGFONTW lfInfo { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) + 1 }, .lfPitchAndFamily { FIXED_PITCH },
-		.lfFaceName { L"Consolas" } };
-	m_fontInfoBar.CreateFontIndirectW(&lfInfo);
+	const LOGFONTW lfInfo { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) + 1 }, .lfWeight { FW_NORMAL },
+		.lfQuality { CLEARTYPE_QUALITY }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
+	m_fntInfoBar.CreateFontIndirectW(&lfInfo);
 	//End of font related.
 
 	m_penLines.CreatePen(PS_SOLID, 1, RGB(200, 200, 200));
@@ -744,7 +744,7 @@ auto CHexCtrl::GetFont()const->LOGFONTW
 		return { };
 
 	LOGFONTW lf;
-	::GetObjectW(m_fontMain.m_hObject, sizeof(LOGFONTW), &lf);
+	::GetObjectW(m_fntMain.m_hObject, sizeof(LOGFONTW), &lf);
 
 	return lf;
 }
@@ -1474,7 +1474,6 @@ void CHexCtrl::SetCodepage(int iCodepage)
 	if (!IsCreated())
 		return;
 
-	CPINFOEXW stCPInfo;
 	std::wstring_view wsvFmt;
 	switch (iCodepage) {
 	case -1:
@@ -1484,7 +1483,7 @@ void CHexCtrl::SetCodepage(int iCodepage)
 		wsvFmt = L"UTF-16";
 		break;
 	default:
-		if (GetCPInfoExW(static_cast<UINT>(iCodepage), 0, &stCPInfo) != FALSE) {
+		if (CPINFOEXW stCP; GetCPInfoExW(static_cast<UINT>(iCodepage), 0, &stCP) != FALSE) {
 			wsvFmt = L"Codepage {}";
 		}
 		break;
@@ -1891,8 +1890,8 @@ void CHexCtrl::SetFont(const LOGFONTW& lf)
 	if (!IsCreated())
 		return;
 
-	m_fontMain.DeleteObject();
-	m_fontMain.CreateFontIndirectW(&lf);
+	m_fntMain.DeleteObject();
+	m_fntMain.CreateFontIndirectW(&lf);
 
 	RecalcAll();
 	ParentNotify(HEXCTRL_MSG_SETFONT);
@@ -2757,7 +2756,7 @@ void CHexCtrl::DrawWindow(CDC* pDC)const
 
 	//«Offset» text.
 	CRect rcOffset(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iSecondVertLinePx - iScrollH, m_iSecondHorzLinePx);
-	pDC->SelectObject(m_fontMain);
+	pDC->SelectObject(m_fntMain);
 	pDC->SetTextColor(m_stColors.clrFontCaption);
 	pDC->SetBkColor(m_stColors.clrBk);
 	pDC->DrawTextW(L"Offset", 6, rcOffset, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
@@ -2825,7 +2824,7 @@ void CHexCtrl::DrawInfoBar(CDC* pDC)const
 
 	pDC->FillSolidRect(rcInfoBar, m_stColors.clrBkInfoBar); //Info bar rect.
 	pDC->DrawEdge(rcInfoBar, BDR_RAISEDINNER, BF_TOP);
-	pDC->SelectObject(m_fontInfoBar);
+	pDC->SelectObject(m_fntInfoBar);
 	pDC->SetBkColor(m_stColors.clrBkInfoBar);
 
 	for (auto& ref : vecInfoData) {
@@ -2859,7 +2858,7 @@ void CHexCtrl::DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const
 		}
 
 		//Left column offset printing (00000000...0000FFFF).
-		pDC->SelectObject(m_fontMain);
+		pDC->SelectObject(m_fntMain);
 		pDC->SetTextColor(stClrOffset.clrText);
 		pDC->SetBkColor(stClrOffset.clrBk);
 		ExtTextOutW(pDC->m_hDC, m_iFirstVertLinePx + GetCharWidthNative() - iScrollH, m_iStartWorkAreaYPx + (m_sizeFontMain.cy * iterLines),
@@ -2961,7 +2960,7 @@ void CHexCtrl::DrawHexText(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::ws
 		lmbPoly();
 	}
 
-	pDC->SelectObject(m_fontMain);
+	pDC->SelectObject(m_fntMain);
 	std::size_t index { 0 }; //Index for vecPolyText, its size is always equal to vecPolyHex.
 	for (const auto& iter : vecPolyHex) { //Loop is needed because of different colors.
 		pDC->SetTextColor(iter.stClr.clrText);
@@ -3085,7 +3084,7 @@ void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 
 	//Fieds printing.
 	if (!vecFieldsHex.empty()) {
-		pDC->SelectObject(m_fontMain);
+		pDC->SelectObject(m_fntMain);
 		std::size_t index { 0 }; //Index for vecFieldsText, its size is always equal to vecFieldsHex.
 		const auto penOld = SelectObject(pDC->m_hDC, m_penDataTempl);
 		for (const auto& iter : vecFieldsHex) { //Loop is needed because different Fields can have different colors.
@@ -3222,7 +3221,7 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 
 	//Bookmarks printing.
 	if (!vecBkmHex.empty()) {
-		pDC->SelectObject(m_fontMain);
+		pDC->SelectObject(m_fntMain);
 		std::size_t index { 0 }; //Index for vecBkmText, its size is always equal to vecBkmHex.
 		for (const auto& iter : vecBkmHex) { //Loop is needed because bkms have different colors.
 			pDC->SetTextColor(iter.stClr.clrText);
@@ -3310,7 +3309,7 @@ void CHexCtrl::DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 
 	//Selection printing.
 	if (!vecPolySelHex.empty()) {
-		pDC->SelectObject(m_fontMain);
+		pDC->SelectObject(m_fntMain);
 		pDC->SetTextColor(m_stColors.clrFontSel);
 		pDC->SetBkColor(m_stColors.clrBkSel);
 		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size())); //Hex selection printing.
@@ -3396,7 +3395,7 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 	//Selection highlight printing.
 	if (!vecPolySelHexHgl.empty()) {
 		//Colors are the inverted selection colors.
-		pDC->SelectObject(m_fontMain);
+		pDC->SelectObject(m_fntMain);
 		pDC->SetTextColor(m_stColors.clrBkSel);
 		pDC->SetBkColor(m_stColors.clrFontSel);
 		PolyTextOutW(pDC->m_hDC, vecPolySelHexHgl.data(), static_cast<UINT>(vecPolySelHexHgl.size())); //Hex selection highlight printing.
@@ -3451,7 +3450,7 @@ void CHexCtrl::DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wsv
 	const auto clrBkCaret = m_pSelection->HitTest(ullCaretPos) ? m_stColors.clrBkCaretSel : m_stColors.clrBkCaret;
 
 	//Caret printing.
-	pDC->SelectObject(m_fontMain);
+	pDC->SelectObject(m_fntMain);
 	pDC->SetTextColor(m_stColors.clrFontCaret);
 	pDC->SetBkColor(clrBkCaret);
 	for (const auto iter : arrPolyCaret) {
@@ -3525,7 +3524,7 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std:
 
 	//Data Interpreter printing.
 	if (!vecPolyDataInterp.empty()) {
-		pDC->SelectObject(m_fontMain);
+		pDC->SelectObject(m_fntMain);
 		pDC->SetTextColor(m_stColors.clrFontDataInterp);
 		pDC->SetBkColor(m_stColors.clrBkDataInterp);
 		for (const auto& iter : vecPolyDataInterp) {
@@ -3597,14 +3596,7 @@ void CHexCtrl::FillWithZeros()
 
 void CHexCtrl::FontSizeIncDec(bool fInc)
 {
-	auto lFontSize = MulDiv(-GetFontSize(), 72, m_iLOGPIXELSY);
-	if (fInc) {
-		++lFontSize;
-	}
-	else {
-		--lFontSize;
-	}
-
+	const auto lFontSize = MulDiv(-GetFontSize(), 72, m_iLOGPIXELSY) + (fInc ? 1 : -1); //Convert font Height to point size.
 	SetFontSize(lFontSize);
 }
 
@@ -4009,17 +4001,17 @@ void CHexCtrl::Print()
 
 	/***Changing Main and Info Bar fonts***/
 	LOGFONTW lfMainOrig;
-	m_fontMain.GetLogFont(&lfMainOrig);
+	m_fntMain.GetLogFont(&lfMainOrig);
 	LOGFONTW lfMain { lfMainOrig };
 	lfMain.lfHeight *= iRatio;
-	m_fontMain.DeleteObject();
-	m_fontMain.CreateFontIndirectW(&lfMain);
+	m_fntMain.DeleteObject();
+	m_fntMain.CreateFontIndirectW(&lfMain);
 	LOGFONTW lfInfoBarOrig;
-	m_fontInfoBar.GetLogFont(&lfInfoBarOrig);
+	m_fntInfoBar.GetLogFont(&lfInfoBarOrig);
 	LOGFONTW lfInfoBar { lfInfoBarOrig };
 	lfInfoBar.lfHeight *= iRatio;
-	m_fontInfoBar.DeleteObject();
-	m_fontInfoBar.CreateFontIndirectW(&lfInfoBar);
+	m_fntInfoBar.DeleteObject();
+	m_fntInfoBar.CreateFontIndirectW(&lfInfoBar);
 	/***Changing Main and Info Bar fonts END***/
 
 	auto ullStartLine = GetTopLine();
@@ -4117,10 +4109,10 @@ void CHexCtrl::Print()
 	pDC->DeleteDC();
 
 	/***Changing Main and Info Bar fonts back to originals.***/
-	m_fontMain.DeleteObject();
-	m_fontMain.CreateFontIndirectW(&lfMainOrig);
-	m_fontInfoBar.DeleteObject();
-	m_fontInfoBar.CreateFontIndirectW(&lfInfoBarOrig);
+	m_fntMain.DeleteObject();
+	m_fntMain.CreateFontIndirectW(&lfMainOrig);
+	m_fntInfoBar.DeleteObject();
+	m_fntInfoBar.CreateFontIndirectW(&lfInfoBarOrig);
 
 	RecalcAll();
 }
@@ -4130,11 +4122,11 @@ void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
 	const auto pDCCurr = pDC == nullptr ? GetDC() : pDC;
 	const auto ullCurLineV = GetTopLine();
 	TEXTMETRICW tm;
-	pDCCurr->SelectObject(m_fontMain);
+	pDCCurr->SelectObject(m_fntMain);
 	pDCCurr->GetTextMetricsW(&tm);
 	m_sizeFontMain.cx = tm.tmAveCharWidth;
 	m_sizeFontMain.cy = tm.tmHeight + tm.tmExternalLeading;
-	pDCCurr->SelectObject(m_fontInfoBar);
+	pDCCurr->SelectObject(m_fntInfoBar);
 	pDCCurr->GetTextMetricsW(&tm);
 	m_sizeFontInfo.cx = tm.tmAveCharWidth;
 	m_sizeFontInfo.cy = tm.tmHeight + tm.tmExternalLeading;
@@ -4565,7 +4557,7 @@ void CHexCtrl::SetFontSize(long lSize)
 		return;
 
 	auto lf = GetFont();
-	lf.lfHeight = -MulDiv(lSize, m_iLOGPIXELSY, 72);
+	lf.lfHeight = -MulDiv(lSize, m_iLOGPIXELSY, 72); //Convert point size to font Height.
 	SetFont(lf);
 }
 
@@ -6736,8 +6728,8 @@ void CHexCtrl::OnDestroy()
 	m_vecCharsWidth.clear();
 	m_pDlgTemplMgr->UnloadAll(); //Explicitly unloading all loaded Templates.
 	m_menuMain.DestroyMenu();
-	m_fontMain.DeleteObject();
-	m_fontInfoBar.DeleteObject();
+	m_fntMain.DeleteObject();
+	m_fntInfoBar.DeleteObject();
 	m_penLines.DeleteObject();
 	m_penDataTempl.DeleteObject();
 	m_pScrollV->DestroyWindow();

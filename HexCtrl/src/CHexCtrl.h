@@ -245,8 +245,8 @@ namespace HEXCTRL::INTERNAL {
 		std::chrono::steady_clock::time_point m_tmTT; //Start time of the tooltip.
 		PHEXBKM m_pBkmTTCurr { };             //Currently shown bookmark's tooltip;
 		PCHEXTEMPLFIELD m_pTFieldTTCurr { };  //Currently shown Template field's tooltip;
-		CFont m_fontMain;                     //Main Hex chunks font.
-		CFont m_fontInfoBar;                  //Font for bottom Info bar.
+		CFont m_fntMain;                     //Main Hex chunks font.
+		CFont m_fntInfoBar;                  //Font for bottom Info bar.
 		CMenu m_menuMain;                     //Main popup menu.
 		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		CPen m_penLines;                      //Pen for lines.

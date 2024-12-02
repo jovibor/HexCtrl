@@ -41,7 +41,7 @@ namespace HEXCTRL::INTERNAL {
 		};
 		inline static CHexDlgCodepage* m_pThis { };
 		IHexCtrl* m_pHexCtrl { };
-		LISTEX::IListExPtr m_pListMain { LISTEX::CreateListEx() };
+		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
 		std::vector<CODEPAGE> m_vecCodePage;
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 	};

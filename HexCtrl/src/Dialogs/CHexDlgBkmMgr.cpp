@@ -435,7 +435,8 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_pList->CreateDialogCtrl(IDC_HEXCTRL_BKMMGR_LIST, this);
+	m_pList->Create({ .pParent { this }, .uID { IDC_HEXCTRL_BKMMGR_LIST }, .dwSizeFontList { 10 },
+		.dwSizeFontHdr { 10 }, .fDialogCtrl { true } });
 	m_pList->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 	m_pList->SetSortable(true);
 	m_pList->InsertColumn(0, L"№", LVCFMT_LEFT, 40);

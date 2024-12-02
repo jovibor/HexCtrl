@@ -124,7 +124,7 @@ namespace HEXCTRL::INTERNAL {
 		void UpdateStaticText();
 		DECLARE_MESSAGE_MAP();
 	private:
-		static constexpr auto m_iIDListApplFieldType { 0 }; //ID of the Type field in the m_pListApplied.
+		static constexpr auto m_iIDListApplFieldType { 0 }; //ID of the Type field in the m_pList.
 		static constexpr auto m_iIDListApplFieldData { 4 };
 		static constexpr auto m_iIDListApplFieldDescr { 6 };
 		static constexpr auto m_iIDListApplFieldClrs { 7 };
@@ -142,7 +142,7 @@ namespace HEXCTRL::INTERNAL {
 		CWnd m_wndStaticSize;       //Static text Template size:".
 		HBITMAP m_hBITMAPMin { };   //Bitmap for the min checkbox.
 		HBITMAP m_hBITMAPMax { };   //Bitmap for the max checkbox.
-		LISTEX::IListExPtr m_pListApplied { LISTEX::CreateListEx() };
+		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
 		CTreeCtrl m_treeApplied;
 		CMenu m_menuTree;           //Menu for the tree control.
 		CMenu m_menuHdr;            //Menu for the list header.

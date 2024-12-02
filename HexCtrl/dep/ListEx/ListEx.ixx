@@ -121,26 +121,28 @@ export namespace HEXCTRL::LISTEX {
 	* LISTEXCREATE - Main initialization helper struct for CListEx::Create method.    *
 	**********************************************************************************/
 	struct LISTEXCREATE {
-		CWnd*            pParent { };             //Parent window.
-		PCLISTEXCOLORS   pColors { };             //ListEx colors.
-		const LOGFONTW*  pListLogFont { };        //ListEx font.
-		const LOGFONTW*  pHdrLogFont { };         //Header font.
-		CRect            rect;                    //Initial rect.
-		UINT             uID { };                 //ListEx control ID.
-		DWORD            dwStyle { };             //ListEx window styles.
-		DWORD            dwExStyle { };           //Extended window styles.
-		DWORD            dwTTStyleCell { };       //Cell's tooltip Window styles.
-		DWORD            dwTTStyleLink { };       //Link's tooltip Window styles.
-		DWORD            dwTTShowDelay { };       //Tooltip delay before showing, in milliseconds.
-		DWORD            dwTTShowTime { 5000 };   //Tooltip show up time, in milliseconds.
-		DWORD            dwListGridWidth { 1 };   //Width of the list grid.
-		DWORD            dwHdrHeight { };         //Header height.
-		POINT            ptTTOffset { };          //Tooltip offset from cursor. Doesn't work for TTS_BALLOON.
-		bool             fDialogCtrl { false };   //If it's a list within dialog.
-		bool             fSortable { false };     //Is list sortable, by clicking on the header column?
-		bool             fLinkUnderline { true }; //Links are displayed underlined or not.
-		bool             fLinkTooltip { true };   //Show links' toolips or not.
-		bool             fHighLatency { false };  //Do not redraw until scroll thumb is released.
+		CWnd*           pParent { };             //Parent window.
+		PCLISTEXCOLORS  pColors { };             //ListEx colors.
+		const LOGFONTW* pLFList { };             //ListEx LOGFONT.
+		const LOGFONTW* pLFHdr { };              //Header LOGFONT.
+		CRect           rect;                    //Initial rect.
+		UINT            uID { };                 //ListEx control ID.
+		DWORD           dwStyle { };             //ListEx window styles.
+		DWORD           dwExStyle { };           //Extended window styles.
+		DWORD           dwSizeFontList { 9 };    //List font default size in logical points.
+		DWORD           dwSizeFontHdr { 9 };     //Header ont default size in logical points.
+		DWORD           dwTTStyleCell { };       //Cell's tooltip Window styles.
+		DWORD           dwTTStyleLink { };       //Link's tooltip Window styles.
+		DWORD           dwTTShowDelay { };       //Tooltip delay before showing, in milliseconds.
+		DWORD           dwTTShowTime { 5000 };   //Tooltip show up time, in milliseconds.
+		DWORD           dwWidthGrid { 1 };       //Width of the list grid.
+		DWORD           dwHdrHeight { };         //Header height.
+		POINT           ptTTOffset { };          //Tooltip offset from cursor. Doesn't work for TTS_BALLOON.
+		bool            fDialogCtrl { false };   //If it's a list within dialog.
+		bool            fSortable { false };     //Is list sortable, by clicking on the header column?
+		bool            fLinkUnderline { true }; //Links are displayed underlined or not.
+		bool            fLinkTooltip { true };   //Show links' toolips or not.
+		bool            fHighLatency { false };  //Do not redraw until scroll thumb is released.
 	};
 
 	/********************************************
@@ -166,6 +168,7 @@ export namespace HEXCTRL::LISTEX {
 		[[nodiscard]] virtual auto GetCellData(int iItem, int iSubitem)const->ULONGLONG = 0;
 		[[nodiscard]] virtual auto GetColors()const->const LISTEXCOLORS & = 0;
 		[[nodiscard]] virtual auto GetColumnSortMode(int iColumn)const->EListExSortMode = 0;
+		[[nodiscard]] virtual auto GetFont() -> CFont* = 0;
 		[[nodiscard]] virtual int GetSortColumn()const = 0;
 		[[nodiscard]] virtual bool GetSortAscending()const = 0;
 		virtual void HideColumn(int iIndex, bool fHide) = 0;
@@ -183,10 +186,11 @@ export namespace HEXCTRL::LISTEX {
 		virtual void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetColumnEditable(int iColumn, bool fEditable) = 0;
 		virtual void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode = { }) = 0;
-		virtual void SetFont(const LOGFONTW* pLogFont) = 0;
+		virtual void SetFont(const LOGFONTW& lf) = 0;
+		virtual void SetFont(CFont* pFont) = 0;
 		virtual void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon) = 0; //Icon for a given column.
-		virtual void SetHdrFont(const LOGFONTW* pLogFont) = 0;
+		virtual void SetHdrFont(const LOGFONTW& lf) = 0;
 		virtual void SetHdrHeight(DWORD dwHeight) = 0;
 		virtual void SetHdrImageList(CImageList* pList) = 0;
 		virtual void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText = -1) = 0;
@@ -230,7 +234,7 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		[[nodiscard]] bool IsColumnSortable(int iIndex)const;
 		[[nodiscard]] bool IsColumnEditable(int iIndex)const;
 		void SetHeight(DWORD dwHeight);
-		void SetFont(const LOGFONTW* pLogFontNew);
+		void SetFont(const LOGFONTW& lf);
 		void SetColor(const LISTEXCOLORS& lcs);
 		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText);
 		void SetColumnDataAlign(int iColumn, int iAlign);
@@ -258,7 +262,7 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
 		DECLARE_MESSAGE_MAP();
 	private:
-		CFont m_fontHdr;
+		CFont m_fntHdr;
 		COLORREF m_clrBkNWA { }; //Bk of non working area.
 		COLORREF m_clrText { };
 		COLORREF m_clrBk { };
@@ -388,19 +392,15 @@ bool CListExHdr::IsColumnEditable(int iIndex)const
 	return IsEditable(ColumnIndexToID(iIndex));
 }
 
-void CListExHdr::SetFont(const LOGFONTW* pLogFont)
+void CListExHdr::SetFont(const LOGFONTW& lf)
 {
-	if (!pLogFont) {
-		return;
-	}
-
-	m_fontHdr.DeleteObject();
-	m_fontHdr.CreateFontIndirectW(pLogFont);
+	m_fntHdr.DeleteObject();
+	m_fntHdr.CreateFontIndirectW(&lf);
 
 	//If new font's height is higher than current height (m_dwHeaderHeight), we adjust current height as well.
 	TEXTMETRICW tm;
 	auto pDC = GetDC();
-	pDC->SelectObject(m_fontHdr);
+	pDC->SelectObject(m_fntHdr);
 	pDC->GetTextMetricsW(&tm);
 	ReleaseDC(pDC);
 	const DWORD dwHeightFont = tm.tmHeight + tm.tmExternalLeading + 4;
@@ -610,7 +610,7 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, const CRect rcOrig, BOOL bIsPre
 
 	rDC.FillSolidRect(rcOrig, clrBk);
 	rDC.SetTextColor(clrText);
-	rDC.SelectObject(m_fontHdr);
+	rDC.SelectObject(m_fntHdr);
 
 	//Set item's text buffer first char to zero, then getting item's text and Draw it.
 	wchar_t warrHdrText[MAX_PATH];
@@ -619,14 +619,14 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, const CRect rcOrig, BOOL bIsPre
 	GetItem(iItem, &hdItem);
 
 	//Draw icon for column, if any.
-	long lIndentTextLeft { 4 }; //Left text indent.
+	auto iTextIndentLeft { 5 }; //Left text indent.
 	if (const auto pIcon = GetHdrIcon(ID); pIcon != nullptr) { //If column has an icon.
 		const auto pImgList = GetImageList(LVSIL_NORMAL);
 		int iCX { };
 		int iCY { };
 		ImageList_GetIconSize(pImgList->m_hImageList, &iCX, &iCY); //Icon dimensions.
 		pImgList->DrawEx(&rDC, pIcon->stIcon.iIndex, rcOrig.TopLeft() + pIcon->stIcon.pt, { }, CLR_NONE, CLR_NONE, ILD_NORMAL);
-		lIndentTextLeft += pIcon->stIcon.pt.x + iCX;
+		iTextIndentLeft += pIcon->stIcon.pt.x + iCX;
 	}
 
 	UINT uFormat { DT_LEFT };
@@ -641,8 +641,8 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, const CRect rcOrig, BOOL bIsPre
 		break;
 	}
 
-	constexpr long lIndentTextRight { 4 };
-	CRect rcText { rcOrig.left + lIndentTextLeft, rcOrig.top, rcOrig.right - lIndentTextRight, rcOrig.bottom };
+	constexpr auto iTextIndentRight { 4 };
+	CRect rcText { rcOrig.left + iTextIndentLeft, rcOrig.top, rcOrig.right - iTextIndentRight, rcOrig.bottom };
 	if (StrStrW(warrHdrText, L"\n") != nullptr) {
 		//If it's multiline text, first — calculate rect for the text,
 		//with DT_CALCRECT flag (not drawing anything),
@@ -803,6 +803,7 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		[[nodiscard]] auto GetCellData(int iItem, int iSubItem)const->ULONGLONG override;
 		[[nodiscard]] auto GetColors()const->const LISTEXCOLORS & override;
 		[[nodiscard]] auto GetColumnSortMode(int iColumn)const->EListExSortMode override;
+		[[nodiscard]] auto GetFont() -> CFont* override;
 		[[nodiscard]] int GetSortColumn()const override;
 		[[nodiscard]] bool GetSortAscending()const override;
 		void HideColumn(int iIndex, bool fHide)override;
@@ -820,10 +821,11 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
 		void SetColumnEditable(int iColumn, bool fEditable)override;
 		void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode = { })override;
-		void SetFont(const LOGFONTW* pLogFont)override;
+		void SetFont(const LOGFONTW& lf)override;
+		void SetFont(CFont* pFont)override;
 		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1)override;
 		void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)override; //Icon for a given column.
-		void SetHdrFont(const LOGFONTW* pLogFont)override;
+		void SetHdrFont(const LOGFONTW& lf)override;
 		void SetHdrHeight(DWORD dwHeight)override;
 		void SetHdrImageList(CImageList* pList)override;
 		void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)override;
@@ -878,8 +880,8 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		static constexpr auto m_uIDEditInPlace { 0x01U };         //In place edit-box ID.
 		CListExHdr m_stListHeader;
 		LISTEXCOLORS m_stColors { };
-		CFont m_fontList;               //Default list font.
-		CFont m_fontListUnderline;      //Underlined list font, for links.
+		CFont m_fntList;                //Default list font.
+		CFont m_fntListUnderline;       //Underlined list font, for links.
 		CPen m_penGrid;                 //Pen for list lines between cells.
 		CWnd m_wndCellTT;               //Cells tool-tip window.
 		CWnd m_wndLinkTT;               //Links tool-tip window.
@@ -932,10 +934,11 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 
 	//Text and links in the cell.
 	struct CListEx::ITEMDATA {
-		ITEMDATA(int iIconIndex, CRect rect) : rect(rect), iIconIndex(iIconIndex) {}; //Ctor for just image index.
+		ITEMDATA(int iIconIndex, CRect rect) : rect(rect), iIconIndex(iIconIndex) { }; //Ctor for just image index.
 		ITEMDATA(std::wstring_view wsvText, std::wstring_view wsvLink, std::wstring_view wsvTitle,
 			CRect rect, bool fLink = false, bool fTitle = false) :
-			wstrText(wsvText), wstrLink(wsvLink), wstrTitle(wsvTitle), rect(rect), fLink(fLink), fTitle(fTitle) {}
+			wstrText(wsvText), wstrLink(wsvLink), wstrTitle(wsvTitle), rect(rect), fLink(fLink), fTitle(fTitle) {
+		}
 		std::wstring wstrText;  //Visible text.
 		std::wstring wstrLink;  //Text within link <link="textFromHere"> tag.
 		std::wstring wstrTitle; //Text within title <...title="textFromHere"> tag.
@@ -1011,6 +1014,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 	m_fLinksUnderline = lcs.fLinkUnderline;
 	m_fLinkTooltip = lcs.fLinkTooltip;
 	m_fHighLatency = lcs.fHighLatency;
+	m_dwGridWidth = lcs.dwWidthGrid;
 	m_dwTTShowDelay = lcs.dwTTShowDelay;
 	m_dwTTShowTime = lcs.dwTTShowTime;
 	m_ptTTOffset = lcs.ptTTOffset;
@@ -1058,44 +1062,25 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 		m_wndRowTT.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiHL));
 	}
 
-	m_dwGridWidth = lcs.dwListGridWidth;
-
-	NONCLIENTMETRICSW ncm { };
-	ncm.cbSize = sizeof(NONCLIENTMETRICSW);
-	SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, ncm.cbSize, &ncm, 0);
-
 	auto pDC = GetDC();
 	m_iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
+	NONCLIENTMETRICSW ncm { .cbSize { sizeof(NONCLIENTMETRICSW) } };
+	SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, ncm.cbSize, &ncm, 0); //Get System Default UI Font.
+	ncm.lfMessageFont.lfHeight = -MulDiv(lcs.dwSizeFontList, m_iLOGPIXELSY, 72);
+	LOGFONTW lfList { lcs.pLFList != nullptr ? *lcs.pLFList : ncm.lfMessageFont };
+	m_fntList.CreateFontIndirectW(&lfList);
+	lfList.lfUnderline = TRUE;
+	m_fntListUnderline.CreateFontIndirectW(&lfList);
+	ncm.lfMessageFont.lfHeight = -MulDiv(lcs.dwSizeFontHdr, m_iLOGPIXELSY, 72);
+	LOGFONTW lfHdr { lcs.pLFHdr != nullptr ? *lcs.pLFHdr : ncm.lfMessageFont };
 	CFont fontDefault;
-	fontDefault.CreateFontIndirectW(&ncm.lfMessageFont);
+	fontDefault.CreateFontIndirectW(&lfHdr);
 	TEXTMETRICW tm;
 	pDC->SelectObject(fontDefault);
 	GetTextMetricsW(pDC->m_hDC, &tm);
 	const DWORD dwHdrHeight = lcs.dwHdrHeight == 0 ?
-		tm.tmHeight + tm.tmExternalLeading + 4 : lcs.dwHdrHeight; //Header is a bit higher than list rows.
+		tm.tmHeight + tm.tmExternalLeading + MulDiv(5, m_iLOGPIXELSY, 72) : lcs.dwHdrHeight; //Header is a bit higher than list rows.
 	ReleaseDC(pDC);
-
-	LOGFONTW lfList; //Font for a List.
-	if (lcs.pListLogFont == nullptr) {
-		lfList = ncm.lfMessageFont;
-		lfList.lfHeight = -MulDiv(10, m_iLOGPIXELSY, 72); //Font height for list.
-	}
-	else {
-		lfList = *lcs.pListLogFont;
-	}
-
-	LOGFONTW lfHdr; //Font for a Header.
-	if (lcs.pHdrLogFont == nullptr) {
-		lfHdr = ncm.lfMessageFont;
-		lfHdr.lfHeight = -MulDiv(9, m_iLOGPIXELSY, 72); //Font height for a header.
-	}
-	else {
-		lfHdr = *lcs.pHdrLogFont;
-	}
-
-	m_fontList.CreateFontIndirectW(&lfList);
-	lfList.lfUnderline = 1;
-	m_fontListUnderline.CreateFontIndirectW(&lfList);
 
 	m_penGrid.CreatePen(PS_SOLID, m_dwGridWidth, m_stColors.clrListGrid);
 	SetClassLongPtrW(m_hWnd, GCLP_HCURSOR, 0); //To prevent cursor from blinking.
@@ -1106,7 +1091,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 	GetHeaderCtrl().SetColor(m_stColors);
 	GetHeaderCtrl().SetSortable(lcs.fSortable);
 	SetHdrHeight(dwHdrHeight);
-	SetHdrFont(&lfHdr);
+	SetHdrFont(lfHdr);
 	Update(0);
 
 	return true;
@@ -1212,10 +1197,15 @@ auto CListEx::GetColumnSortMode(int iColumn)const->EListExSortMode
 	return m_eDefSortMode;
 }
 
+auto CListEx::GetFont()->CFont*
+{
+	return &m_fntList;
+}
+
 long CListEx::GetFontSize()
 {
 	LOGFONTW lf;
-	m_fontList.GetLogFont(&lf);
+	m_fntList.GetLogFont(&lf);
 
 	return lf.lfHeight;
 }
@@ -1480,19 +1470,35 @@ void CListEx::SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSo
 	GetHeaderCtrl().SetColumnSortable(iColumn, fSortable);
 }
 
-void CListEx::SetFont(const LOGFONTW* pLogFont)
+void CListEx::SetFont(const LOGFONTW& lf)
 {
 	assert(IsCreated());
-	assert(pLogFont);
-	if (!IsCreated() || !pLogFont) {
+	if (!IsCreated()) {
 		return;
 	}
 
-	m_fontList.DeleteObject();
-	m_fontList.CreateFontIndirectW(pLogFont);
+	m_fntList.DeleteObject();
+	m_fntList.CreateFontIndirectW(&lf);
+	LOGFONTW lfu { lf };
+	lfu.lfUnderline = TRUE;
+	m_fntListUnderline.DeleteObject();
+	m_fntListUnderline.CreateFontIndirectW(&lfu);
 
 	RecalcMeasure();
 	Update(0);
+}
+
+void CListEx::SetFont(CFont* pFont)
+{
+	assert(IsCreated());
+	assert(pFont != nullptr);
+	if (!IsCreated() || pFont == nullptr) {
+		return;
+	}
+
+	LOGFONTW lf { };
+	pFont->GetLogFont(&lf);
+	SetFont(lf);
 }
 
 void CListEx::SetHdrHeight(DWORD dwHeight)
@@ -1517,14 +1523,14 @@ void CListEx::SetHdrImageList(CImageList* pList)
 	GetHeaderCtrl().SetImageList(pList);
 }
 
-void CListEx::SetHdrFont(const LOGFONTW* pLogFont)
+void CListEx::SetHdrFont(const LOGFONTW& lf)
 {
 	assert(IsCreated());
 	if (!IsCreated()) {
 		return;
 	}
 
-	GetHeaderCtrl().SetFont(pLogFont);
+	GetHeaderCtrl().SetFont(lf);
 	Update(0);
 	GetHeaderCtrl().RedrawWindow();
 }
@@ -1629,6 +1635,8 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 {
 	const auto iItem = pDIS->itemID;
+	constexpr auto iTextIndentTop = 1; //To compensate what is added in the MeasureItem.
+	constexpr auto iTextIndentLeft = 2;
 
 	switch (pDIS->itemAction) {
 	case ODA_SELECT:
@@ -1682,19 +1690,20 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 				if (itItemData.fLink) {
 					pDC->SetTextColor(clrTextLink);
 					if (m_fLinksUnderline) {
-						pDC->SelectObject(m_fontListUnderline);
+						pDC->SelectObject(m_fntListUnderline);
 					}
 				}
 				else {
 					pDC->SetTextColor(clrText);
-					pDC->SelectObject(m_fontList);
+					pDC->SelectObject(m_fntList);
 				}
 
-				ExtTextOutW(pDC->m_hDC, itItemData.rect.left, itItemData.rect.top, ETO_CLIPPED,
-					rcBounds, itItemData.wstrText.data(), static_cast<UINT>(itItemData.wstrText.size()), nullptr);
+				ExtTextOutW(pDC->m_hDC, itItemData.rect.left + iTextIndentLeft, itItemData.rect.top + iTextIndentTop,
+					ETO_CLIPPED, rcBounds, itItemData.wstrText.data(), static_cast<UINT>(itItemData.wstrText.size()), nullptr);
 			}
 
 			//Drawing subitem's rect lines.
+			//If SetExtendedStyle(LVS_EX_GRIDLINES) is set, lines are drawn automatically but through whole client rect.
 			if (m_dwGridWidth > 0) {
 				pDC->SelectObject(m_penGrid);
 				pDC->MoveTo(rcBounds.TopLeft());
@@ -1830,11 +1839,11 @@ void CListEx::MeasureItem(LPMEASUREITEMSTRUCT lpMIS)
 {
 	//Set row height according to current font's height.
 	auto pDC = GetDC();
-	pDC->SelectObject(m_fontList);
+	pDC->SelectObject(m_fntList);
 	TEXTMETRICW tm;
 	GetTextMetricsW(pDC->m_hDC, &tm);
 	ReleaseDC(pDC);
-	lpMIS->itemHeight = tm.tmHeight + tm.tmExternalLeading + 1;
+	lpMIS->itemHeight = tm.tmHeight + tm.tmExternalLeading + 2;
 }
 
 void CListEx::OnDestroy()
@@ -1844,8 +1853,8 @@ void CListEx::OnDestroy()
 	m_wndCellTT.DestroyWindow();
 	m_wndLinkTT.DestroyWindow();
 	m_wndRowTT.DestroyWindow();
-	m_fontList.DeleteObject();
-	m_fontListUnderline.DeleteObject();
+	m_fntList.DeleteObject();
+	m_fntListUnderline.DeleteObject();
 	m_penGrid.DeleteObject();
 	m_editInPlace.DestroyWindow();
 	m_umapCellTt.clear();
@@ -1941,7 +1950,7 @@ void CListEx::OnLButtonDblClk(UINT nFlags, CPoint point)
 	m_editInPlace.DestroyWindow();
 	m_editInPlace.Create(dwStyle | WS_BORDER | WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, rcCell, this, m_uIDEditInPlace);
 	::SetWindowSubclass(m_editInPlace, EditSubclassProc, 0, m_uIDEditInPlace);
-	m_editInPlace.SetFont(&m_fontList, FALSE);
+	m_editInPlace.SetFont(&m_fntList, FALSE);
 	m_editInPlace.SetWindowTextW(str);
 	m_editInPlace.SetFocus();
 
@@ -2295,7 +2304,7 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 			nPosTagLink != std::wstring_view::npos && nPosLinkOpenQuote != std::wstring_view::npos
 			&& nPosLinkCloseQuote != std::wstring_view::npos && nPosTagFirstClose != std::wstring_view::npos
 			&& nPosTagLast != std::wstring_view::npos) {
-			pDC->SelectObject(m_fontList);
+			pDC->SelectObject(m_fntList);
 			SIZE size;
 
 			//Any text before found tag.
@@ -2350,7 +2359,7 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 		}
 		else {
 			const auto wsvTextAfter = wsvText.substr(nPosCurr, wsvText.size() - nPosCurr);
-			pDC->SelectObject(m_fontList);
+			pDC->SelectObject(m_fntList);
 			SIZE size;
 			GetTextExtentPoint32W(pDC->m_hDC, wsvTextAfter.data(), static_cast<int>(wsvTextAfter.size()), &size);
 
@@ -2440,13 +2449,13 @@ void CListEx::SetFontSize(long lSize)
 	}
 
 	LOGFONTW lf;
-	m_fontList.GetLogFont(&lf);
-	m_fontList.DeleteObject();
+	m_fntList.GetLogFont(&lf);
+	m_fntList.DeleteObject();
 	lf.lfHeight = -MulDiv(lSize, m_iLOGPIXELSY, 72);
-	m_fontList.CreateFontIndirectW(&lf);
+	m_fntList.CreateFontIndirectW(&lf);
 	lf.lfUnderline = 1;
-	m_fontListUnderline.DeleteObject();
-	m_fontListUnderline.CreateFontIndirectW(&lf);
+	m_fntListUnderline.DeleteObject();
+	m_fntListUnderline.CreateFontIndirectW(&lf);
 
 	RecalcMeasure();
 	Update(0);
@@ -2460,7 +2469,7 @@ void CListEx::SetFontSize(long lSize)
 			rcCell.right = rcLabel.right;
 		}
 		m_editInPlace.SetWindowPos(nullptr, rcCell.left, rcCell.top, rcCell.Width(), rcCell.Height(), SWP_NOZORDER);
-		m_editInPlace.SetFont(&m_fontList, FALSE);
+		m_editInPlace.SetFont(&m_fntList, FALSE);
 	}
 }
 

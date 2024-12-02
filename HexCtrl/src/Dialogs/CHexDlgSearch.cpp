@@ -158,7 +158,7 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 		if (m_vecSearchRes.size() < static_cast<std::size_t>(m_dwLimit)) {
 			m_vecSearchRes.emplace_back(ullOffset);
 			iHighlight = static_cast<int>(m_vecSearchRes.size());
-			m_pListMain->SetItemCountEx(iHighlight--);
+			m_pList->SetItemCountEx(iHighlight--);
 		}
 	}
 	else {
@@ -166,9 +166,9 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 	}
 
 	if (iHighlight != -1) {
-		m_pListMain->SetItemState(-1, 0, LVIS_SELECTED);
-		m_pListMain->SetItemState(iHighlight, LVIS_SELECTED, LVIS_SELECTED);
-		m_pListMain->EnsureVisible(iHighlight, TRUE);
+		m_pList->SetItemState(-1, 0, LVIS_SELECTED);
+		m_pList->SetItemState(iHighlight, LVIS_SELECTED, LVIS_SELECTED);
+		m_pList->EnsureVisible(iHighlight, TRUE);
 	}
 }
 
@@ -225,7 +225,7 @@ void CHexDlgSearch::ClearComboType()
 
 void CHexDlgSearch::ClearList()
 {
-	m_pListMain->SetItemCountEx(0);
+	m_pList->SetItemCountEx(0);
 	m_vecSearchRes.clear();
 }
 
@@ -340,7 +340,7 @@ void CHexDlgSearch::FindAll()
 		m_dwCount = static_cast<DWORD>(m_vecSearchRes.size());
 	}
 
-	m_pListMain->SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
+	m_pList->SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
 }
 
 void CHexDlgSearch::FindForward()
@@ -886,8 +886,8 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 	case EMenuID::IDM_SEARCH_ADDBKM:
 	{
 		int nItem { -1 };
-		for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i) {
-			nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
+		for (auto i = 0UL; i < m_pList->GetSelectedCount(); ++i) {
+			nItem = m_pList->GetNextItem(nItem, LVNI_SELECTED);
 			const HEXBKM hbs { .vecSpan { HEXSPAN { m_vecSearchRes.at(static_cast<std::size_t>(nItem)),
 				m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size() } }, .wstrDesc { m_wstrSearch },
 				.stClr { GetHexCtrl()->GetColors().clrBkBkm, GetHexCtrl()->GetColors().clrFontBkm } };
@@ -897,7 +897,7 @@ BOOL CHexDlgSearch::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 	return TRUE;
 	case EMenuID::IDM_SEARCH_SELECTALL:
-		m_pListMain->SetItemState(-1, LVIS_SELECTED, LVIS_SELECTED);
+		m_pList->SetItemState(-1, LVIS_SELECTED, LVIS_SELECTED);
 		return TRUE;
 	case EMenuID::IDM_SEARCH_CLEARALL:
 		ClearList();
@@ -954,10 +954,11 @@ BOOL CHexDlgSearch::OnInitDialog()
 	iIndex = m_comboMode.AddString(L"Structs");
 	m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchMode::MODE_STRUCT));
 
-	m_pListMain->CreateDialogCtrl(IDC_HEXCTRL_SEARCH_LIST, this);
-	m_pListMain->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
-	m_pListMain->InsertColumn(0, L"№", LVCFMT_LEFT, 50);
-	m_pListMain->InsertColumn(1, L"Offset", LVCFMT_LEFT, 455);
+	m_pList->Create({ .pParent { this }, .uID { IDC_HEXCTRL_SEARCH_LIST }, .dwSizeFontList { 10 },
+		.dwSizeFontHdr { 10 }, .fDialogCtrl { true } });
+	m_pList->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
+	m_pList->InsertColumn(0, L"№", LVCFMT_LEFT, 50);
+	m_pList->InsertColumn(1, L"Offset", LVCFMT_LEFT, 455);
 
 	m_menuList.CreatePopupMenu();
 	m_menuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_ADDBKM), L"Add bookmark(s)");
@@ -1039,8 +1040,8 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 	VecSpan vecSpan;
 	int nItem = -1;
-	for (auto i = 0UL; i < m_pListMain->GetSelectedCount(); ++i) {
-		nItem = m_pListMain->GetNextItem(nItem, LVNI_SELECTED);
+	for (auto i = 0UL; i < m_pList->GetSelectedCount(); ++i) {
+		nItem = m_pList->GetNextItem(nItem, LVNI_SELECTED);
 
 		//Do not yet add selected (clicked) item (in multiselect), will add it after the loop,
 		//so that it's always last in the vecSpan to highlight it in HexCtrlHighlight.
@@ -1059,7 +1060,7 @@ void CHexDlgSearch::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 
 void CHexDlgSearch::OnListRClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
 {
-	const auto fEnabled { m_pListMain->GetItemCount() > 0 };
+	const auto fEnabled { m_pList->GetItemCount() > 0 };
 	m_menuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_SEARCH_ADDBKM), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_menuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_SEARCH_SELECTALL), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
 	m_menuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_SEARCH_CLEARALL), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
@@ -1606,7 +1607,7 @@ void CHexDlgSearch::ReplaceAll()
 		m_fFound = true;
 		m_dwCount = m_dwReplaced = static_cast<DWORD>(m_vecSearchRes.size());
 	}
-	m_pListMain->SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
+	m_pList->SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
 }
 
 void CHexDlgSearch::ResetSearch()
