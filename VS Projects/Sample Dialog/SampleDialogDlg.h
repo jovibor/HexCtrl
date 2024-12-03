@@ -26,6 +26,7 @@ private:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnBnPopup();
 	afx_msg void OnChkRW();
+	afx_msg void OnWidthChanged(NMHDR* pNMHDR, LRESULT* pResult);
 	[[nodiscard]] bool IsFileOpen()const;
 	void FileOpen(std::wstring_view wsvPath, bool fResolveLnk = true);
 	void FileClose();
