@@ -18,6 +18,7 @@ private:
 	afx_msg void OnBnSetRndData();
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
+	afx_msg void OnWidthChanged(NMHDR* pNMHDR, LRESULT* pResult);
 	DECLARE_MESSAGE_MAP()
 private:
 	HICON m_hIcon;

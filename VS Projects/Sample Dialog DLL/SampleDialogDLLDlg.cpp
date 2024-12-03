@@ -16,6 +16,7 @@ BEGIN_MESSAGE_MAP(CSampleDialogDLLDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_SETDATARND, &CSampleDialogDLLDlg::OnBnSetRndData)
 	ON_BN_CLICKED(IDC_CLEARDATA, &CSampleDialogDLLDlg::OnBnClearData)
+	ON_NOTIFY(HEXCTRL_MSG_WIDTHCHANGED, IDC_MY_HEX, &CSampleDialogDLLDlg::OnWidthChanged)
 END_MESSAGE_MAP()
 
 CSampleDialogDLLDlg::CSampleDialogDLLDlg(CWnd* pParent /*=nullptr*/)
@@ -65,6 +66,38 @@ void CSampleDialogDLLDlg::OnPaint()
 	else {
 		CDialogEx::OnPaint();
 	}
+}
+
+void CSampleDialogDLLDlg::OnWidthChanged(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	// We know the exact pixel width of the control using HexCtrl API
+	int controlWidth = m_pHexDlg->GetActualWidth();
+	// Retrieve the system metrics for a vertical scrollbar width when displayed. We need to make room for that
+	int verticalScrollbarWidth = ::GetSystemMetrics(SM_CXVSCROLL);
+
+	// Add the vertical scrollbar width to the control width
+	controlWidth += verticalScrollbarWidth;
+
+	//Well, maybe a few pixels short. Add a reasonable margin (hardcoded? Maybe a better way?)
+	controlWidth += 10;
+
+	// Get the current styles of the dialog
+	DWORD dwStyle = GetStyle();
+	DWORD dwExStyle = GetExStyle();
+
+	// Calculate the required window size to ensure the client area fits the control width
+	CRect adjustedRect(0, 0, controlWidth, 0); // Only care about width
+	AdjustWindowRectEx(&adjustedRect, dwStyle, FALSE, dwExStyle);
+
+	// Get the current dialog's position and height
+	CRect windowRect;
+	GetWindowRect(&windowRect);
+
+	// Set the new width while keeping the current height and position
+	int newWidth = adjustedRect.Width(); // Adjusted width with non-client area accounted for
+	SetWindowPos(nullptr, windowRect.left, windowRect.top, newWidth, windowRect.Height(), SWP_NOZORDER | SWP_NOMOVE);
+
+	*pResult = 0;
 }
 
 HCURSOR CSampleDialogDLLDlg::OnQueryDragIcon()

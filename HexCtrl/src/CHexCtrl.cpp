@@ -1439,6 +1439,7 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	FillCapacityString();
 	RecalcAll();
 	ParentNotify(HEXCTRL_MSG_SETCAPACITY);
+	ParentNotify(HEXCTRL_MSG_WIDTHCHANGED);
 }
 
 void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
@@ -1895,6 +1896,7 @@ void CHexCtrl::SetFont(const LOGFONTW& lf)
 
 	RecalcAll();
 	ParentNotify(HEXCTRL_MSG_SETFONT);
+	ParentNotify(HEXCTRL_MSG_WIDTHCHANGED);
 }
 
 void CHexCtrl::SetGroupSize(DWORD dwSize)
