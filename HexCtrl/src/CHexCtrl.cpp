@@ -237,7 +237,6 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	}
 
 	m_dwCapacity = std::clamp(hcs.dwCapacity, 1UL, 100UL);
-	m_dwGroupSize = std::clamp(hcs.dwGroupSize, 1UL, 64UL);
 	m_flScrollRatio = hcs.flScrollRatio;
 	m_fScrollLines = hcs.fScrollLines;
 	m_fInfoBar = hcs.fInfoBar;
@@ -340,7 +339,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	m_fCreated = true; //Main creation flag.
 
-	SetGroupSize(GetGroupSize());
+	SetGroupSize(std::clamp(hcs.dwGroupSize, 1UL, 64UL));
 	SetCodepage(-1);
 	SetConfig(L"");
 	SetDateInfo(0xFFFFFFFFUL, L'/');
@@ -632,7 +631,7 @@ auto CHexCtrl::GetCapacity()const->DWORD
 {
 	assert(IsCreated());
 	if (!IsCreated())
-		return 0xFFFFFFFFUL; //To disable compiler false warning C4724.
+		return { };
 
 	return m_dwCapacity;
 }
@@ -907,7 +906,8 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iPosAt)
 	if (!IsCreated() || !IsDataSet() || ullOffset >= GetDataSize())
 		return;
 
-	const auto ullNewStartV = ullOffset / GetCapacity() * m_sizeFontMain.cy;
+	const auto dwCapacity = GetCapacity() > 0 ? GetCapacity() : 0xFFFFFFFFUL; //To suppress warning C4724.
+	const auto ullNewStartV = ullOffset / dwCapacity * m_sizeFontMain.cy;
 	auto ullNewScrollV { 0ULL };
 
 	switch (iPosAt) {
@@ -929,7 +929,7 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iPosAt)
 	m_pScrollV->SetScrollPos(ullNewScrollV);
 
 	if (m_pScrollH->IsVisible() && !IsCurTextArea()) {
-		ULONGLONG ullNewScrollH = (ullOffset % GetCapacity()) * m_iSizeHexBytePx;
+		auto ullNewScrollH = (ullOffset % dwCapacity) * m_iSizeHexBytePx;
 		ullNewScrollH += (ullNewScrollH / m_iDistanceGroupedHexChunkPx) * GetCharWidthExtras();
 		m_pScrollH->SetScrollPos(ullNewScrollH);
 	}
@@ -1414,7 +1414,11 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 	if (!IsCreated())
 		return;
 
-	dwCapacity = std::clamp(dwCapacity, 1UL, 100UL);
+	//SetCapacity can be called with the current capacity size. This needs for the 
+	//SetGroupSize to recalc current capacity when group size has changed.
+	if (dwCapacity < 1UL || dwCapacity > 100UL) //Restrict capacity size in the [1-100] range.
+		return;
+
 	const auto dwGroupSize = GetGroupSize();
 	const auto dwCurrCapacity = GetCapacity();
 	const auto dwMod = dwCapacity % dwGroupSize; //Setting the capacity according to the current data grouping size.
@@ -1438,7 +1442,12 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 
 	FillCapacityString();
 	RecalcAll();
-	ParentNotify(HEXCTRL_MSG_SETCAPACITY);
+
+	//Notify only if capacity has actually changed.
+	//SetCapacity is called from the SetGroupSize, and may or may not change the current capacity size.
+	if (dwCurrCapacity != dwCapacity) {
+		ParentNotify(HEXCTRL_MSG_SETCAPACITY);
+	}
 }
 
 void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
@@ -1829,11 +1838,11 @@ void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 		return;
 
 	//dwFormat: -1 = User default, 0 = MMddYYYY, 1 = ddMMYYYY, 2 = YYYYMMdd
-	assert(dwFormat <= 2 || dwFormat == 0xFFFFFFFF);
-	if (dwFormat > 2 && dwFormat != 0xFFFFFFFF)
+	assert(dwFormat <= 2 || dwFormat == 0xFFFFFFFFUL);
+	if (dwFormat > 2 && dwFormat != 0xFFFFFFFFUL)
 		return;
 
-	if (dwFormat == 0xFFFFFFFF) {
+	if (dwFormat == 0xFFFFFFFFUL) {
 		//Determine current user locale-specific date format.
 		if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
 			reinterpret_cast<LPWSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat)) == 0) {
@@ -1903,25 +1912,28 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 	if (!IsCreated())
 		return;
 
-	m_dwGroupSize = std::clamp(dwSize, 1UL, 64UL);
+	if (dwSize < 1UL || dwSize > 64UL || dwSize == GetGroupSize()) //Restrict group size in the [1-64] range.
+		return;
 
-	//Getting the "Show data as..." menu pointer independent of position.
+	m_dwGroupSize = dwSize;
+
+	//Getting the "Group Data" menu pointer independent of position.
 	const auto* const pMenuMain = m_menuMain.GetSubMenu(0);
-	CMenu* pMenuShowDataAs { };
-	for (int i = 0; i < pMenuMain->GetMenuItemCount(); ++i) {
+	CMenu* pMenuGroupData { };
+	for (auto i = 0; i < pMenuMain->GetMenuItemCount(); ++i) {
 		//Searching through all submenus whose first menuID is IDM_HEXCTRL_GROUPDATA_BYTE.
 		if (const auto pSubMenu = pMenuMain->GetSubMenu(i); pSubMenu != nullptr) {
 			if (pSubMenu->GetMenuItemID(0) == IDM_HEXCTRL_GROUPDATA_BYTE) {
-				pMenuShowDataAs = pSubMenu;
+				pMenuGroupData = pSubMenu;
 				break;
 			}
 		}
 	}
 
-	if (pMenuShowDataAs != nullptr) {
+	if (pMenuGroupData != nullptr) {
 		//Unchecking all menus and checking only the currently selected.
-		for (int i = 0; i < pMenuShowDataAs->GetMenuItemCount(); ++i) {
-			pMenuShowDataAs->CheckMenuItem(i, MF_UNCHECKED | MF_BYPOSITION);
+		for (auto i = 0; i < pMenuGroupData->GetMenuItemCount(); ++i) {
+			pMenuGroupData->CheckMenuItem(i, MF_UNCHECKED | MF_BYPOSITION);
 		}
 
 		UINT uIDToCheck { 0 };
@@ -1942,8 +1954,8 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 			break;
 		}
 
-		if (uIDToCheck > 0) {
-			pMenuShowDataAs->CheckMenuItem(uIDToCheck, MF_CHECKED | MF_BYCOMMAND);
+		if (uIDToCheck != 0) {
+			pMenuGroupData->CheckMenuItem(uIDToCheck, MF_CHECKED | MF_BYCOMMAND);
 		}
 	}
 
@@ -2225,7 +2237,8 @@ void CHexCtrl::CaretToDataEnd()
 
 void CHexCtrl::CaretToLineBeg()
 {
-	const auto ullPos = GetCaretPos() - (GetCaretPos() % GetCapacity());
+	const auto dwCapacity = GetCapacity() > 0 ? GetCapacity() : 0xFFFFFFFFUL; //To suppress warning C4724.
+	const auto ullPos = GetCaretPos() - (GetCaretPos() % dwCapacity);
 	SetCaretPos(ullPos);
 	if (!IsOffsetVisible(ullPos)) {
 		GoToOffset(ullPos);
@@ -4552,8 +4565,7 @@ void CHexCtrl::SetFontSize(long lSize)
 	if (!IsCreated())
 		return;
 
-	//Prevent font size from being too small or too big.
-	if (lSize < 4 || lSize > 64)
+	if (lSize < 4 || lSize > 64) //Prevent font size from being too small or too big.
 		return;
 
 	auto lf = GetFont();
@@ -4617,11 +4629,12 @@ void CHexCtrl::SnapshotUndo(const VecSpan& vecSpan)
 
 void CHexCtrl::TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 {	//This func computes x and y pos of given Text chunk.
-	const DWORD dwMod = ullOffset % GetCapacity();
+	const auto dwCapacity = GetCapacity() > 0 ? GetCapacity() : 0xFFFFFFFFUL; //To suppress warning C4724.
+	const DWORD dwMod = ullOffset % dwCapacity;
 	iCx = static_cast<int>((m_iIndentTextXPx + dwMod * GetCharWidthExtras()) - m_pScrollH->GetScrollPos());
 
 	const auto ullScrollV = m_pScrollV->GetScrollPos();
-	iCy = static_cast<int>((m_iStartWorkAreaYPx + (ullOffset / GetCapacity()) * m_sizeFontMain.cy) -
+	iCy = static_cast<int>((m_iStartWorkAreaYPx + (ullOffset / dwCapacity) * m_sizeFontMain.cy) -
 		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
 

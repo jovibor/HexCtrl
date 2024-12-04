@@ -212,7 +212,7 @@ void CSampleDialogDlg::OnDropFiles(HDROP hDropInfo)
 	PVOID pOldValue;
 	Wow64DisableWow64FsRedirection(&pOldValue);
 
-	const auto nFilesDropped = DragQueryFileW(hDropInfo, 0xFFFFFFFF, nullptr, 0);
+	const auto nFilesDropped = DragQueryFileW(hDropInfo, 0xFFFFFFFFUL, nullptr, 0);
 	if (nFilesDropped > 0) { //If more than one file, we only use the first.
 		const auto nBuffer = DragQueryFileW(hDropInfo, 0, nullptr, 0);
 		std::wstring wstrFile(nBuffer, '\0');
