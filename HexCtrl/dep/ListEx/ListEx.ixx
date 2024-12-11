@@ -340,7 +340,7 @@ void CListExHdr::HideColumn(int iIndex, bool fHide)
 	const auto ID = ColumnIndexToID(iIndex);
 	std::vector<int> vecInt(iColumnsCount, 0);
 	ListView_GetColumnOrderArray(GetParent()->m_hWnd, iColumnsCount, vecInt.data());
-	HDITEMW hdi { HDI_WIDTH };
+	HDITEMW hdi { .mask { HDI_WIDTH } };
 	GetItem(iIndex, &hdi);
 
 	if (fHide) { //Hide column.
@@ -520,7 +520,7 @@ void CListExHdr::SetSortArrow(int iColumn, bool fAscending)
 UINT CListExHdr::ColumnIndexToID(int iIndex)const
 {
 	//Each column has unique internal identifier in HDITEMW::lParam.
-	HDITEMW hdi { HDI_LPARAM };
+	HDITEMW hdi { .mask { HDI_LPARAM } };
 	const auto ret = GetItem(iIndex, &hdi);
 	assert(ret == TRUE); //There is no such column index if FALSE.
 
@@ -530,7 +530,7 @@ UINT CListExHdr::ColumnIndexToID(int iIndex)const
 int CListExHdr::ColumnIDToIndex(UINT uID)const
 {
 	for (int iterColumns = 0; iterColumns < GetItemCount(); ++iterColumns) {
-		HDITEMW hdi { HDI_LPARAM };
+		HDITEMW hdi { .mask { HDI_LPARAM } };
 		GetItem(iterColumns, &hdi);
 		if (static_cast<UINT>(hdi.lParam) == uID) {
 			return iterColumns;
@@ -615,7 +615,7 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, const CRect rcOrig, BOOL bIsPre
 	//Set item's text buffer first char to zero, then getting item's text and Draw it.
 	wchar_t warrHdrText[MAX_PATH];
 	warrHdrText[0] = L'\0';
-	HDITEMW hdItem { HDI_FORMAT | HDI_TEXT, 0, warrHdrText, nullptr, MAX_PATH };
+	HDITEMW hdItem { .mask { HDI_FORMAT | HDI_TEXT }, .pszText { warrHdrText }, .cchTextMax { MAX_PATH } };
 	GetItem(iItem, &hdItem);
 
 	//Draw icon for column, if any.
@@ -1072,11 +1072,11 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 	lfList.lfUnderline = TRUE;
 	m_fntListUnderline.CreateFontIndirectW(&lfList);
 	ncm.lfMessageFont.lfHeight = -MulDiv(lcs.dwSizeFontHdr, m_iLOGPIXELSY, 72);
-	LOGFONTW lfHdr { lcs.pLFHdr != nullptr ? *lcs.pLFHdr : ncm.lfMessageFont };
-	CFont fontDefault;
-	fontDefault.CreateFontIndirectW(&lfHdr);
+	const LOGFONTW lfHdr { lcs.pLFHdr != nullptr ? *lcs.pLFHdr : ncm.lfMessageFont };
+	CFont fntDefault;
+	fntDefault.CreateFontIndirectW(&lfHdr);
 	TEXTMETRICW tm;
-	pDC->SelectObject(fontDefault);
+	pDC->SelectObject(fntDefault);
 	GetTextMetricsW(pDC->m_hDC, &tm);
 	const DWORD dwHdrHeight = lcs.dwHdrHeight == 0 ?
 		tm.tmHeight + tm.tmExternalLeading + MulDiv(5, m_iLOGPIXELSY, 72) : lcs.dwHdrHeight; //Header is a bit higher than list rows.
@@ -1263,16 +1263,14 @@ int CListEx::InsertColumn(int nCol, const LVCOLUMNW* pColumn, int iDataAlign, bo
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<unsigned int> distrib(1, (std::numeric_limits<unsigned int>::max)());
-	HDITEMW hdi { };
-	hdi.mask = HDI_LPARAM;
-	hdi.lParam = static_cast<LPARAM>(distrib(gen));
+	HDITEMW hdi { .mask { HDI_LPARAM }, .lParam { static_cast<LPARAM>(distrib(gen)) } };
 	refHdr.SetItem(iNewIndex, &hdi);
 	refHdr.SetColumnDataAlign(iNewIndex, iDataAlign);
 
 	//First (zero index) column is always left-aligned by default, no matter what the pColumn->fmt is set to.
 	//To change the alignment a user must explicitly call the SetColumn after the InsertColumn.
 	//This call here is just to remove that absurd limitation.
-	const LVCOLUMNW stCol { LVCF_FMT, pColumn->fmt };
+	const LVCOLUMNW stCol { .mask { LVCF_FMT }, .fmt { pColumn->fmt } };
 	SetColumn(iNewIndex, &stCol);
 
 	//All new columns are not editable by default.
@@ -1290,13 +1288,8 @@ int CListEx::InsertColumn(int nCol, LPCWSTR pwszName, int nFormat, int nWidth, i
 		return -1;
 	}
 
-	LVCOLUMNW lvcol { };
-	lvcol.mask = LVCF_FMT | LVCF_WIDTH | LVCF_SUBITEM | LVCF_TEXT;
-	lvcol.fmt = nFormat;
-	lvcol.cx = nWidth;
-	lvcol.iSubItem = nSubItem;
-	lvcol.pszText = const_cast<LPWSTR>(pwszName);
-
+	const LVCOLUMNW lvcol { .mask { LVCF_FMT | LVCF_WIDTH | LVCF_SUBITEM | LVCF_TEXT }, .fmt { nFormat },
+		.cx { nWidth }, .pszText { const_cast<LPWSTR>(pwszName) }, .iSubItem { nSubItem } };
 	return InsertColumn(nCol, &lvcol, iDataAlign, fEditable);
 }
 
@@ -1960,7 +1953,7 @@ void CListEx::OnLButtonDblClk(UINT nFlags, CPoint point)
 void CListEx::OnLButtonDown(UINT nFlags, CPoint pt)
 {
 	bool fLinkDown { false };
-	LVHITTESTINFO hti { pt };
+	LVHITTESTINFO hti { .pt { pt } };
 	SubItemHitTest(&hti);
 	if (hti.iItem >= 0 && hti.iSubItem >= 0) {
 		const auto vecText = ParseItemData(hti.iItem, hti.iSubItem);
@@ -1981,7 +1974,7 @@ void CListEx::OnLButtonUp(UINT nFlags, CPoint pt)
 {
 	bool fLinkUp { false };
 	if (m_fLDownAtLink) {
-		LVHITTESTINFO hti { pt };
+		LVHITTESTINFO hti { .pt { pt } };
 		SubItemHitTest(&hti);
 		if (hti.iItem < 0 || hti.iSubItem < 0) {
 			m_fLDownAtLink = false;
@@ -2037,7 +2030,7 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 	static const auto hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 	static const auto hCurHand = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 
-	LVHITTESTINFO hti { pt };
+	LVHITTESTINFO hti { .pt { pt } };
 	SubItemHitTest(&hti);
 	bool fLinkRect { false }; //Cursor at link's rect area?
 	if (hti.iItem >= 0 && hti.iSubItem >= 0) {
@@ -2177,7 +2170,7 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 	GetCursorPos(&ptScreen);
 	CPoint ptClient = ptScreen;
 	ScreenToClient(&ptClient);
-	LVHITTESTINFO hitInfo { ptClient };
+	LVHITTESTINFO hitInfo { .pt { ptClient } };
 	SubItemHitTest(&hitInfo);
 
 	switch (nIDEvent) {

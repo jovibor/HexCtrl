@@ -47,12 +47,12 @@ namespace HEXCTRL::INTERNAL {
 
 		//Static functions.
 		[[nodiscard]] static bool JSONParseFields(IterJSONMember iterFieldsArray, HexVecFields& refVecFields,
-						const FIELDSDEFPROPS& refDefault, UmapCustomTypes& umapCustomT, int* pOffset = nullptr);
+			const FIELDSDEFPROPS& refDefault, UmapCustomTypes& umapCustomT, int* pOffset = nullptr);
 		[[nodiscard]] static auto JSONEndianness(const rapidjson::Value& value) -> std::optional<bool>;
 		[[nodiscard]] static auto JSONColors(const rapidjson::Value& value, const char* pszColorName) -> std::optional<COLORREF>;
 		[[nodiscard]] static auto CloneTemplate(PCHEXTEMPLATE pTemplate) -> std::unique_ptr<HEXTEMPLATE>;
-		static LRESULT CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-			UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
+		static auto CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+			UINT_PTR uIdSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
 		void DoDataExchange(CDataExchange* pDX)override;
 		void EnableDynamicLayoutHelper(bool fEnable);
@@ -143,7 +143,7 @@ namespace HEXCTRL::INTERNAL {
 		HBITMAP m_hBITMAPMin { };   //Bitmap for the min checkbox.
 		HBITMAP m_hBITMAPMax { };   //Bitmap for the max checkbox.
 		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
-		CTreeCtrl m_treeApplied;
+		CTreeCtrl m_tree;
 		CMenu m_menuTree;           //Menu for the tree control.
 		CMenu m_menuHdr;            //Menu for the list header.
 		PCTEMPLAPPLIED m_pAppliedCurr { }; //Currently selected template in the applied Tree.

@@ -1,7 +1,7 @@
 module;
 /******************************************************************
 * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception         *
-* Copyright © 2022-present, Jovibor: https://github.com/jovibor/  *
+* Copyright © 2022-present Jovibor https://github.com/jovibor/    *
 * StrToNum library, https://github.com/jovibor/StrToNum           *
 ******************************************************************/
 #include <algorithm>
@@ -251,7 +251,7 @@ namespace HEXCTRL::stn::impl {
 	struct Floating_type_traits<long double> : Floating_type_traits<double> { };
 
 	struct Big_integer_flt {
-		constexpr Big_integer_flt() noexcept : Myused(0) {}
+		constexpr Big_integer_flt() noexcept : Myused(0) { }
 
 		constexpr Big_integer_flt(const Big_integer_flt& Other) noexcept : Myused(Other.Myused) {
 			if (std::is_constant_evaluated()) {
@@ -1757,8 +1757,6 @@ export namespace HEXCTRL::stn {
 	template<typename IntegralT> requires std::is_integral_v<IntegralT>
 	[[nodiscard]] constexpr auto StrToNum(std::string_view sv, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(IntegralT, char) {
-		assert(!sv.empty());
-
 		IntegralT TData;
 		const auto result = impl::Integer_from_chars(sv.data(), sv.data() + sv.size(), TData, iBase);
 		return result ? STN_RETURN_TYPE(IntegralT, char) { TData } : STN_RETURN_NULL(result);
@@ -1767,8 +1765,6 @@ export namespace HEXCTRL::stn {
 	template<typename IntegralT> requires std::is_integral_v<IntegralT>
 	[[nodiscard]] constexpr auto StrToNum(std::wstring_view wsv, int iBase = 0)noexcept
 		->STN_RETURN_TYPE(IntegralT, wchar_t) {
-		assert(!wsv.empty());
-
 		IntegralT TData;
 		const auto result = impl::Integer_from_chars(wsv.data(), wsv.data() + wsv.size(), TData, iBase);
 		return result ? STN_RETURN_TYPE(IntegralT, wchar_t) { TData } : STN_RETURN_NULL(result);
@@ -1777,8 +1773,6 @@ export namespace HEXCTRL::stn {
 	template<typename FloatingT> requires std::is_floating_point_v<FloatingT>
 	[[nodiscard]] constexpr auto StrToNum(std::string_view sv, chars_format fmt = chars_format::general)noexcept
 		->STN_RETURN_TYPE(FloatingT, char) {
-		assert(!sv.empty());
-
 		FloatingT TData;
 		const auto result = impl::Floating_from_chars(sv.data(), sv.data() + sv.size(), TData, fmt);
 		return result ? STN_RETURN_TYPE(FloatingT, char) { TData } : STN_RETURN_NULL(result);
@@ -1787,8 +1781,6 @@ export namespace HEXCTRL::stn {
 	template<typename FloatingT> requires std::is_floating_point_v<FloatingT>
 	[[nodiscard]] constexpr auto StrToNum(std::wstring_view wsv, chars_format fmt = chars_format::general)noexcept
 		->STN_RETURN_TYPE(FloatingT, wchar_t) {
-		assert(!wsv.empty());
-
 		FloatingT TData;
 		const auto result = impl::Floating_from_chars(wsv.data(), wsv.data() + wsv.size(), TData, fmt);
 		return result ? STN_RETURN_TYPE(FloatingT, wchar_t) { TData } : STN_RETURN_NULL(result);

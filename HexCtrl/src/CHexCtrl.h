@@ -138,13 +138,13 @@ namespace HEXCTRL::INTERNAL {
 		void DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wsvHex, std::wstring_view wsvText)const;
 		void DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
 		void DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines);
-		void FillCapacityString();  //Fill m_wstrCapacity according to current m_dwCapacity.
-		void FillWithZeros();       //Fill selection with zeros.
+		void FillCapacityString(); //Fill m_wstrCapacity according to current m_dwCapacity.
+		void FillWithZeros();      //Fill selection with zeros.
 		void FontSizeIncDec(bool fInc = true); //Increase os decrease font size by minimum amount.
-		[[nodiscard]] auto GetBottomLine()const->ULONGLONG;    //Returns current bottom line number in view.
+		[[nodiscard]] auto GetBottomLine()const->ULONGLONG; //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCharsWidthArray()const->int*;
-		[[nodiscard]] auto GetCharWidthExtras()const->int;     //Width of the one char with extra space, in px.
-		[[nodiscard]] auto GetCharWidthNative()const->int;     //Width of the one char, in px.
+		[[nodiscard]] auto GetCharWidthExtras()const->int;  //Width of the one char with extra space, in px.
+		[[nodiscard]] auto GetCharWidthNative()const->int;  //Width of the one char, in px.
 		[[nodiscard]] auto GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
 		[[nodiscard]] auto GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>; //Get command from menuID.
 		[[nodiscard]] auto GetDigitsOffset()const->DWORD;
@@ -180,7 +180,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const; //Sets data (notifies back) in VirtualData mode.
 		void SetFontSize(long lSize); //Set current font size.
 		void SnapshotUndo(const VecSpan& vecSpan); //Takes currently modifiable data snapshot.
-		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const;     //Point of the text chunk.
+		void TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of the text chunk.
 		void TTMainShow(bool fShow, bool fTimer = false); //Main tooltip show/hide.
 		void TTOffsetShow(bool fShow); //Tooltip Offset show/hide.
 		void Undo();
@@ -217,13 +217,13 @@ namespace HEXCTRL::INTERNAL {
 		DECLARE_MESSAGE_MAP();
 	private:
 		static constexpr auto m_pwszHexChars { L"0123456789ABCDEF" }; //Hex digits wchars for fast lookup.
-		static constexpr auto m_pwszClassName { L"HexCtrl" }; //HexCtrl Window Class name.
-		static constexpr auto m_uIDTTTMain { 0x01UL };   //Timer ID for default tooltip.
-		static constexpr auto m_iIndentBottomLine { 1 }; //Bottom line indent from window's bottom.
-		static constexpr auto m_iFirstHorzLinePx { 0 };  //First horizontal line indent.
-		static constexpr auto m_iFirstVertLinePx { 0 };  //First vertical line indent.
-		static constexpr auto m_dwVKMouseWheelUp { 0x0100UL };   //Artificial Virtual Key for a Mouse-Wheel Up event.
-		static constexpr auto m_dwVKMouseWheelDown { 0x0101UL }; //Artificial Virtual Key for a Mouse-Wheel Down event.
+		static constexpr auto m_pwszClassName { L"HexCtrl" };         //HexCtrl Window Class name.
+		static constexpr auto m_uIDTTTMain { 0x01UL };                //Timer ID for default tooltip.
+		static constexpr auto m_iIndentBottomLine { 1 };              //Bottom line indent from window's bottom.
+		static constexpr auto m_iFirstHorzLinePx { 0 };               //First horizontal line indent.
+		static constexpr auto m_iFirstVertLinePx { 0 };               //First vertical line indent.
+		static constexpr auto m_dwVKMouseWheelUp { 0x0100UL };        //Artificial Virtual Key for a Mouse-Wheel Up event.
+		static constexpr auto m_dwVKMouseWheelDown { 0x0101UL };      //Artificial Virtual Key for a Mouse-Wheel Down event.
 		const std::unique_ptr<CHexDlgBkmMgr> m_pDlgBkmMgr { std::make_unique<CHexDlgBkmMgr>() };             //"Bookmark manager" dialog.
 		const std::unique_ptr<CHexDlgCodepage> m_pDlgCodepage { std::make_unique<CHexDlgCodepage>() };       //"Codepage" dialog.
 		const std::unique_ptr<CHexDlgDataInterp> m_pDlgDataInterp { std::make_unique<CHexDlgDataInterp>() }; //"Data interpreter" dialog.
@@ -245,8 +245,8 @@ namespace HEXCTRL::INTERNAL {
 		std::chrono::steady_clock::time_point m_tmTT; //Start time of the tooltip.
 		PHEXBKM m_pBkmTTCurr { };             //Currently shown bookmark's tooltip;
 		PCHEXTEMPLFIELD m_pTFieldTTCurr { };  //Currently shown Template field's tooltip;
-		CFont m_fntMain;                     //Main Hex chunks font.
-		CFont m_fntInfoBar;                  //Font for bottom Info bar.
+		CFont m_fntMain;                      //Main Hex chunks font.
+		CFont m_fntInfoBar;                   //Font for bottom Info bar.
 		CMenu m_menuMain;                     //Main popup menu.
 		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		CPen m_penLines;                      //Pen for lines.
@@ -257,12 +257,12 @@ namespace HEXCTRL::INTERNAL {
 		ULONGLONG m_ullCursorPrev { };        //The cursor's previously clicked pos, used in selection resolutions.
 		DWORD m_dwGroupSize { };              //Current data grouping size.
 		DWORD m_dwCapacity { };               //How many bytes are displayed in one row.
-		DWORD m_dwCapacityBlockSize { m_dwCapacity / 2 }; //Size of the block before a space delimiter.
-		DWORD m_dwDigitsOffsetDec { 10 };     //Amount of digits for "Offset" in Decimal mode, 10 is max for 32bit number.
-		DWORD m_dwDigitsOffsetHex { 8 };      //Amount of digits for "Offset" in Hex mode, 8 is max for 32bit number.
-		DWORD m_dwPageSize { 0UL };           //Size of a page to print additional lines between.
+		DWORD m_dwCapacityBlockSize { };      //Size of the block before a space delimiter.
+		DWORD m_dwDigitsOffsetDec { };        //Amount of digits for "Offset" in Decimal mode, 10 is max for 32bit number.
+		DWORD m_dwDigitsOffsetHex { };        //Amount of digits for "Offset" in Hex mode, 8 is max for 32bit number.
+		DWORD m_dwPageSize { };               //Size of a page to print additional lines between.
 		DWORD m_dwCacheSize { };              //Data cache size for VirtualData mode.
-		DWORD m_dwDateFormat { 0xFFFFFFFFUL };//Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
+		DWORD m_dwDateFormat { };             //Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 		DWORD m_dwCharsExtraSpace { };        //Extra space between chars.
 		SIZE m_sizeFontMain { 1, 1 };         //Main font letter's size (width, height).
 		SIZE m_sizeFontInfo { 1, 1 };         //Info window font letter's size (width, height).
@@ -288,7 +288,7 @@ namespace HEXCTRL::INTERNAL {
 		int m_iSecondVertLinePx { };          //Second vert line indent.
 		int m_iThirdVertLinePx { };           //Third vert line indent.
 		int m_iFourthVertLinePx { };          //Fourth vert line indent.
-		int m_iCodePage { -1 };               //Current code-page for Text area. -1 for default.
+		int m_iCodePage { };                  //Current code-page for Text area. -1 for default.
 		int m_iLOGPIXELSY { };                //GetDeviceCaps(LOGPIXELSY) constant.
 		std::wstring m_wstrCapacity;          //Top Capacity string.
 		std::wstring m_wstrInfoBar;           //Info bar text.
@@ -300,17 +300,17 @@ namespace HEXCTRL::INTERNAL {
 			decltype([](HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP; //Icons for the Menu.
 		std::vector<KEYBIND> m_vecKeyBind;    //Vector of key bindings.
 		std::vector<int> m_vecCharsWidth;     //Vector of chars widths.
-		wchar_t m_wchUnprintable { L'.' };    //Replacement char for unprintable characters.
-		wchar_t m_wchDateSepar { L'/' };      //Date separator.
+		wchar_t m_wchUnprintable { };         //Replacement char for unprintable characters.
+		wchar_t m_wchDateSepar { };           //Date separator.
 		bool m_fCreated { false };            //Is control created or not yet.
 		bool m_fDataSet { false };            //Is data set or not.
-		bool m_fMutable { };                  //Does control work in Edit or ReadOnly mode.
-		bool m_fInfoBar { };                  //Show bottom Info window or not.
+		bool m_fMutable { false };            //Does control work in Edit or ReadOnly mode.
+		bool m_fInfoBar { true };             //Show bottom Info window or not.
 		bool m_fCaretHigh { true };           //Caret's High or Low bits position (first or last digit in hex chunk).
 		bool m_fCursorTextArea { false };     //Whether last focus was set at ASCII or Hex chunks area.
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.
 		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
-		bool m_fOffsetHex { };                //Print offset numbers as Hex or as Decimals.
+		bool m_fOffsetHex { false };          //Print offset numbers as Hex or as Decimals.
 		bool m_fHighLatency { false };        //Reflects HEXDATA::fHighLatency.
 		bool m_fKeyDownAtm { false };         //Whether a key is pressed at the moment.
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.

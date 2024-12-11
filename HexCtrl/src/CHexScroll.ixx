@@ -16,8 +16,10 @@ namespace HEXCTRL::INTERNAL {
 	export class CHexScroll final : public CWnd {
 	public:
 		void AddSibling(CHexScroll* pSibling);
-		bool Create(CWnd* pParent, bool fVert, UINT uIDArrow, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
-		bool Create(CWnd* pParent, bool fVert, HBITMAP hArrow, ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
+		bool Create(CWnd* pParent, bool fVert, UINT uIDArrow, ULONGLONG ullScrolline,
+			ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
+		bool Create(CWnd* pParent, bool fVert, HBITMAP hArrow, ULONGLONG ullScrolline,
+			ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax);
 		[[nodiscard]] auto GetParent()const->CWnd*;
 		[[nodiscard]] auto GetScrollPos()const->ULONGLONG;
 		[[nodiscard]] auto GetScrollPosDelta()const->LONGLONG;
@@ -135,8 +137,8 @@ void CHexScroll::AddSibling(CHexScroll* pSibling)
 	m_pSibling = pSibling;
 }
 
-bool CHexScroll::Create(CWnd* pParent, bool fVert, UINT uIDArrow,
-	ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
+bool CHexScroll::Create(CWnd* pParent, bool fVert, UINT uIDArrow, ULONGLONG ullScrolline,
+	ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
 {
 	assert(!m_fCreated); //Already created.
 	assert(pParent != nullptr);
@@ -152,8 +154,8 @@ bool CHexScroll::Create(CWnd* pParent, bool fVert, UINT uIDArrow,
 	return Create(pParent, fVert, bmpArrow, ullScrolline, ullScrollPage, ullScrollSizeMax);
 }
 
-bool CHexScroll::Create(CWnd* pParent, bool fVert, HBITMAP hArrow,
-	ULONGLONG ullScrolline, ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
+bool CHexScroll::Create(CWnd* pParent, bool fVert, HBITMAP hArrow, ULONGLONG ullScrolline,
+	ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
 {
 	assert(!m_fCreated); //Already created.
 	assert(pParent != nullptr);
@@ -446,8 +448,8 @@ auto CHexScroll::SetScrollPos(ULONGLONG ullNewPos)->ULONGLONG
 	}
 
 	const auto rc = GetParentRect();
-	const auto iScreenSize { IsVert() ? rc.Height() : rc.Width() };
-	const auto ullMax { iScreenSize > m_ullScrollSizeMax ? 0 : m_ullScrollSizeMax - iScreenSize };
+	const auto ullScreenSize { static_cast<ULONGLONG>(IsVert() ? rc.Height() : rc.Width()) };
+	const auto ullMax { ullScreenSize > m_ullScrollSizeMax ? 0 : m_ullScrollSizeMax - ullScreenSize };
 	m_ullScrollPosCur = (std::min)(ullNewPos, ullMax);
 	SendParentScrollMsg();
 	DrawScrollBar();

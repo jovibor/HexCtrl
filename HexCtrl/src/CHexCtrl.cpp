@@ -151,7 +151,7 @@ CHexCtrl::CHexCtrl(HINSTANCE hInstClass)
 	//The hInstClass arg here is to provide a handle to the dialog's app, to properly register HexCtrl Window class with it.
 
 	const auto hInst = hInstClass != nullptr ? hInstClass : AfxGetInstanceHandle();
-	if (WNDCLASSEXW wc; ::GetClassInfoExW(hInst, m_pwszClassName, &wc) == FALSE) {
+	if (WNDCLASSEXW wc; GetClassInfoExW(hInst, m_pwszClassName, &wc) == FALSE) {
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
 		wc.lpfnWndProc = ::DefWindowProcW;
@@ -162,7 +162,7 @@ CHexCtrl::CHexCtrl(HINSTANCE hInstClass)
 		wc.hbrBackground = nullptr;
 		wc.lpszMenuName = nullptr;
 		wc.lpszClassName = m_pwszClassName;
-		if (!RegisterClassExW(&wc)) {
+		if (RegisterClassExW(&wc) == 0) {
 			DBG_REPORT(L"RegisterClassExW failed.");
 			return;
 		}
@@ -184,8 +184,6 @@ void CHexCtrl::ClearData()
 	m_ullCursorPrev = 0;
 	m_ullCaretPos = 0;
 	m_ullCursorNow = 0;
-	m_dwDigitsOffsetDec = 10;
-	m_dwDigitsOffsetHex = 8;
 	m_vecUndo.clear();
 	m_vecRedo.clear();
 	m_pScrollV->SetScrollPos(0);
@@ -205,14 +203,14 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	if (hcs.fCustom) {
 		//If it's a Custom Control in dialog, there is no need to create a window, just subclassing.
-		if (!SubclassDlgItem(hcs.uID, CWnd::FromHandle(hcs.hWndParent))) {
+		if (SubclassDlgItem(hcs.uID, CWnd::FromHandle(hcs.hWndParent)) == FALSE) {
 			DBG_REPORT(L"SubclassDlgItem failed, check HEXCREATE parameters.");
 			return false;
 		}
 	}
 	else {
-		if (!CWnd::CreateEx(hcs.dwExStyle, m_pwszClassName, L"HexCtrl", hcs.dwStyle, hcs.rect,
-			CWnd::FromHandle(hcs.hWndParent), hcs.uID)) {
+		if (CWnd::CreateEx(hcs.dwExStyle, m_pwszClassName, L"HexCtrl", hcs.dwStyle, hcs.rect,
+			CWnd::FromHandle(hcs.hWndParent), hcs.uID) == FALSE) {
 			DBG_REPORT(L"CreateWindowExW failed, check HEXCREATE parameters.");
 			return false;
 		}
@@ -241,13 +239,15 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_fScrollLines = hcs.fScrollLines;
 	m_fInfoBar = hcs.fInfoBar;
 	m_fOffsetHex = hcs.fOffsetHex;
+	m_dwDigitsOffsetDec = 10UL;
+	m_dwDigitsOffsetHex = 8UL;
 
 	const auto pDC = GetDC();
 	m_iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
 	ReleaseDC(pDC);
 
 	//Menu related.
-	if (!m_menuMain.LoadMenuW(MAKEINTRESOURCEW(IDR_HEXCTRL_MENU))) {
+	if (m_menuMain.LoadMenuW(MAKEINTRESOURCEW(IDR_HEXCTRL_MENU)) == FALSE) {
 		DBG_REPORT(L"LoadMenuW failed.");
 		return false;
 	}
@@ -343,8 +343,9 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	SetCodepage(-1);
 	SetConfig(L"");
 	SetDateInfo(0xFFFFFFFFUL, L'/');
+	SetUnprintableChar(L'.');
 
-	//All dialogs are initialized after the main window, to set the parent window correctly.
+	//All dialogs are initialized after the main window, to set the parent handle correctly.
 	m_pDlgBkmMgr->Initialize(this);
 	m_pDlgDataInterp->Initialize(this);
 	m_pDlgCodepage->Initialize(this);
@@ -1837,7 +1838,7 @@ void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 	if (!IsCreated())
 		return;
 
-	//dwFormat: -1 = User default, 0 = MMddYYYY, 1 = ddMMYYYY, 2 = YYYYMMdd
+	//dwFormat: 0xFFFFFFFFUL = User default, 0 = MMddYYYY, 1 = ddMMYYYY, 2 = YYYYMMdd
 	assert(dwFormat <= 2 || dwFormat == 0xFFFFFFFFUL);
 	if (dwFormat > 2 && dwFormat != 0xFFFFFFFFUL)
 		return;
@@ -1853,10 +1854,7 @@ void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 		m_dwDateFormat = dwFormat;
 	}
 
-	if (wchSepar == L'\0') {
-		wchSepar = L'/';
-	}
-	m_wchDateSepar = wchSepar;
+	m_wchDateSepar = wchSepar == L'\0' ? L'/' : wchSepar;
 }
 
 void CHexCtrl::SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags)
@@ -2379,7 +2377,7 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 	const auto sSizeClpbrd = wcslen(pDataClpbrd) * sizeof(wchar_t);
 	const auto ullDataSize = GetDataSize();
 	const auto ullCaretPos = GetCaretPos();
-	HEXMODIFY hmd { };
+	HEXMODIFY hmd;
 	ULONGLONG ullSizeModify;
 	std::string strDataModify; //Actual data to paste, must outlive hmd.
 	const auto lmbPasteUTF16 = [&]() {
@@ -2874,8 +2872,9 @@ void CHexCtrl::DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const
 		pDC->SelectObject(m_fntMain);
 		pDC->SetTextColor(stClrOffset.clrText);
 		pDC->SetBkColor(stClrOffset.clrBk);
-		ExtTextOutW(pDC->m_hDC, m_iFirstVertLinePx + GetCharWidthNative() - iScrollH, m_iStartWorkAreaYPx + (m_sizeFontMain.cy * iterLines),
-			0, nullptr, OffsetToWstr((ullStartLine + iterLines) * dwCapacity).data(), GetDigitsOffset(), nullptr);
+		ExtTextOutW(pDC->m_hDC, m_iFirstVertLinePx + GetCharWidthNative() - iScrollH,
+			m_iStartWorkAreaYPx + (m_sizeFontMain.cy * iterLines), 0, nullptr,
+			OffsetToWstr((ullStartLine + iterLines) * dwCapacity).data(), GetDigitsOffset(), nullptr);
 	}
 }
 
