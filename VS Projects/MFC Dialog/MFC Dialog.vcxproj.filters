@@ -36,10 +36,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="SampleDialog.h">
+    <ClInclude Include="CMFCDialogApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SampleDialogDlg.h">
+    <ClInclude Include="CMFCDialogDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="stdafx.h">
@@ -83,10 +83,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SampleDialog.cpp">
+    <ClCompile Include="CMFCDialogApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SampleDialogDlg.cpp">
+    <ClCompile Include="CMFCDialogDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp">
@@ -136,7 +136,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="SampleDialog.rc">
+    <ResourceCompile Include="MFCDialog.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
     <ResourceCompile Include="..\..\HexCtrl\res\HexCtrl.rc">
@@ -144,7 +144,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\SampleDialog.rc2">
+    <None Include="res\MFCDialog.rc2">
       <Filter>Resource Files</Filter>
     </None>
     <None Include="..\..\HexCtrl\res\IDJ_HEXCTRL_KEYBIND.json">
@@ -152,7 +152,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\SampleDialog.ico">
+    <Image Include="res\MFCDialog.ico">
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_BKMS.bmp">

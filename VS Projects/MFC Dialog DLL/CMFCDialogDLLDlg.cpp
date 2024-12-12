@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "SampleDialogDLLDlg.h"
+#include "CMFCDialogDLLDlg.h"
 #include "Resource.h"
 #include <filesystem>
 #include <random>
@@ -11,24 +11,24 @@
 constexpr const auto WstrTextRO { L"Random data: RO" };
 constexpr const auto WstrTextRW { L"Random data: RW" };
 
-BEGIN_MESSAGE_MAP(CSampleDialogDLLDlg, CDialogEx)
+BEGIN_MESSAGE_MAP(CMFCDialogDLLDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_BN_CLICKED(IDC_SETDATARND, &CSampleDialogDLLDlg::OnBnSetRndData)
-	ON_BN_CLICKED(IDC_CLEARDATA, &CSampleDialogDLLDlg::OnBnClearData)
+	ON_BN_CLICKED(IDC_SETDATARND, &CMFCDialogDLLDlg::OnBnSetRndData)
+	ON_BN_CLICKED(IDC_CLEARDATA, &CMFCDialogDLLDlg::OnBnClearData)
 END_MESSAGE_MAP()
 
-CSampleDialogDLLDlg::CSampleDialogDLLDlg(CWnd* pParent /*=nullptr*/)
+CMFCDialogDLLDlg::CMFCDialogDLLDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_HEXCTRL_SAMPLEDLL, pParent) {
 	m_hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
 }
 
-void CSampleDialogDLLDlg::DoDataExchange(CDataExchange* pDX)
+void CMFCDialogDLLDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 }
 
-BOOL CSampleDialogDLLDlg::OnInitDialog()
+BOOL CMFCDialogDLLDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 	CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
@@ -46,7 +46,7 @@ BOOL CSampleDialogDLLDlg::OnInitDialog()
 	return TRUE;
 }
 
-void CSampleDialogDLLDlg::OnPaint()
+void CMFCDialogDLLDlg::OnPaint()
 {
 	if (IsIconic()) {
 		CPaintDC dc(this); // device context for painting
@@ -67,17 +67,17 @@ void CSampleDialogDLLDlg::OnPaint()
 	}
 }
 
-HCURSOR CSampleDialogDLLDlg::OnQueryDragIcon()
+HCURSOR CMFCDialogDLLDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-bool CSampleDialogDLLDlg::IsRW()const
+bool CMFCDialogDLLDlg::IsRW()const
 {
 	return true;
 }
 
-void CSampleDialogDLLDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
+void CMFCDialogDLLDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
 {
 	wchar_t buff[MAX_PATH];
 	GetModuleFileNameW(nullptr, buff, MAX_PATH);
@@ -100,7 +100,7 @@ void CSampleDialogDLLDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
 	}
 }
 
-void CSampleDialogDLLDlg::OnBnSetRndData()
+void CMFCDialogDLLDlg::OnBnSetRndData()
 {
 	if (m_pHexDlg->IsDataSet()) {
 		m_pHexDlg->SetMutable(true);
@@ -115,7 +115,7 @@ void CSampleDialogDLLDlg::OnBnSetRndData()
 	SetWindowTextW(IsRW() ? WstrTextRW : WstrTextRO);
 }
 
-void CSampleDialogDLLDlg::OnBnClearData()
+void CMFCDialogDLLDlg::OnBnClearData()
 {
 	m_pHexDlg->ClearData();
 	m_hds.spnData = { };

@@ -1942,7 +1942,7 @@ void CListEx::OnLButtonDblClk(UINT nFlags, CPoint point)
 	const auto str = GetItemText(m_htiEdit.iItem, m_htiEdit.iSubItem);
 	m_editInPlace.DestroyWindow();
 	m_editInPlace.Create(dwStyle | WS_BORDER | WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, rcCell, this, m_uIDEditInPlace);
-	::SetWindowSubclass(m_editInPlace, EditSubclassProc, 0, m_uIDEditInPlace);
+	::SetWindowSubclass(m_editInPlace, EditSubclassProc, reinterpret_cast<UINT_PTR>(this), m_uIDEditInPlace);
 	m_editInPlace.SetFont(&m_fntList, FALSE);
 	m_editInPlace.SetWindowTextW(str);
 	m_editInPlace.SetFocus();
@@ -2535,22 +2535,19 @@ void CListEx::TTHLShow(bool fShow, UINT uRow)
 }
 
 auto CListEx::EditSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-	UINT_PTR /*uIdSubclass*/, DWORD_PTR dwRefData)->LRESULT
+	UINT_PTR uIdSubclass, DWORD_PTR dwRefData)->LRESULT
 {
 	switch (uMsg) {
 	case WM_GETDLGCODE:
 		return DLGC_WANTALLKEYS;
 	case WM_KEYDOWN:
 		if (wParam == VK_ESCAPE || wParam == VK_RETURN) {
-			NMHDR hdr;
-			hdr.hwndFrom = hWnd;
-			hdr.idFrom = dwRefData;
-			hdr.code = static_cast<UINT>(wParam);
+			const NMHDR hdr { .hwndFrom { hWnd }, .idFrom { dwRefData }, .code { static_cast<UINT>(wParam) } };
 			::SendMessageW(::GetParent(hWnd), WM_NOTIFY, 0, reinterpret_cast<LPARAM>(&hdr));
 		}
 		break;
 	case WM_NCDESTROY:
-		RemoveWindowSubclass(hWnd, EditSubclassProc, 0);
+		RemoveWindowSubclass(hWnd, EditSubclassProc, uIdSubclass);
 		break;
 	default:
 		break;

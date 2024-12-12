@@ -1,7 +1,7 @@
 #pragma once
 #include <afxcontrolbars.h>
 
-class CSampleDialogDLLApp : public CWinApp {
+class CMFCDialogDLLApp : public CWinApp {
 public:
 	BOOL InitInstance()override;
 	BOOL PreTranslateMessage(MSG* pMsg)override;

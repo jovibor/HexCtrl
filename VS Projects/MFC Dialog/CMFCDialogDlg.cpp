@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "SampleDialogDlg.h"
+#include "CMFCDialogDlg.h"
 #include "Resource.h"
 #include <filesystem>
 #include <random>
@@ -14,25 +14,25 @@ namespace stn = HEXCTRL::stn;
 constexpr const auto WstrTextRO { L"Random data: RO" };
 constexpr const auto WstrTextRW { L"Random data: RW" };
 
-BEGIN_MESSAGE_MAP(CSampleDialogDlg, CDialogEx)
+BEGIN_MESSAGE_MAP(CMFCDialogDlg, CDialogEx)
 	ON_WM_CLOSE()
-	ON_BN_CLICKED(IDC_SETDATARND, &CSampleDialogDlg::OnBnSetRndData)
-	ON_BN_CLICKED(IDC_CLEARDATA, &CSampleDialogDlg::OnBnClearData)
-	ON_BN_CLICKED(IDC_FILEOPEN, &CSampleDialogDlg::OnBnFileOpen)
-	ON_BN_CLICKED(IDC_HEXPOPUP, &CSampleDialogDlg::OnBnPopup)
-	ON_BN_CLICKED(IDC_CHK_RW, &CSampleDialogDlg::OnChkRW)
+	ON_BN_CLICKED(IDC_SETDATARND, &CMFCDialogDlg::OnBnSetRndData)
+	ON_BN_CLICKED(IDC_CLEARDATA, &CMFCDialogDlg::OnBnClearData)
+	ON_BN_CLICKED(IDC_FILEOPEN, &CMFCDialogDlg::OnBnFileOpen)
+	ON_BN_CLICKED(IDC_HEXPOPUP, &CMFCDialogDlg::OnBnPopup)
+	ON_BN_CLICKED(IDC_CHK_RW, &CMFCDialogDlg::OnChkRW)
 	ON_WM_DROPFILES()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
-CSampleDialogDlg::CSampleDialogDlg(CWnd* pParent /*=nullptr*/)
+CMFCDialogDlg::CMFCDialogDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_HEXCTRL_SAMPLE, pParent) {
 	m_hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
 }
 
-void CSampleDialogDlg::DoDataExchange(CDataExchange* pDX)
+void CMFCDialogDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_CHK_RW, m_chkRW);
@@ -40,7 +40,7 @@ void CSampleDialogDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_DATASIZE, m_editDataSize);
 }
 
-BOOL CSampleDialogDlg::OnInitDialog()
+BOOL CMFCDialogDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
@@ -84,7 +84,7 @@ BOOL CSampleDialogDlg::OnInitDialog()
 	return TRUE;
 }
 
-void CSampleDialogDlg::OnPaint()
+void CMFCDialogDlg::OnPaint()
 {
 	if (IsIconic()) {
 		CPaintDC dc(this);
@@ -107,12 +107,12 @@ void CSampleDialogDlg::OnPaint()
 	}
 }
 
-HCURSOR CSampleDialogDlg::OnQueryDragIcon()
+HCURSOR CMFCDialogDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-void CSampleDialogDlg::OnBnClearData()
+void CMFCDialogDlg::OnBnClearData()
 {
 	FileClose();
 	m_pHexDlg->ClearData();
@@ -125,7 +125,7 @@ void CSampleDialogDlg::OnBnClearData()
 	SetWindowTextW(L"HexCtrl Sample Dialog");
 }
 
-void CSampleDialogDlg::OnBnSetRndData()
+void CMFCDialogDlg::OnBnSetRndData()
 {
 	if (IsFileOpen()) {
 		FileClose();
@@ -164,14 +164,14 @@ void CSampleDialogDlg::OnBnSetRndData()
 	}
 }
 
-void CSampleDialogDlg::OnBnFileOpen()
+void CMFCDialogDlg::OnBnFileOpen()
 {
 	if (auto vecFiles = OpenFileDlg(); !vecFiles.empty()) {
 		FileOpen(vecFiles.front(), IsLnk());
 	}
 }
 
-void CSampleDialogDlg::OnBnPopup()
+void CMFCDialogDlg::OnBnPopup()
 {
 	if (!m_pHexPopup->IsCreated()) {
 		CreateHexPopup();
@@ -184,7 +184,7 @@ void CSampleDialogDlg::OnBnPopup()
 	}
 }
 
-void CSampleDialogDlg::OnChkRW()
+void CMFCDialogDlg::OnChkRW()
 {
 	if (m_pHexDlg->IsDataSet()) {
 		m_pHexDlg->SetMutable(IsRW());
@@ -201,13 +201,13 @@ void CSampleDialogDlg::OnChkRW()
 	}
 }
 
-void CSampleDialogDlg::OnClose()
+void CMFCDialogDlg::OnClose()
 {
 	FileClose();
 	CDialogEx::OnClose();
 }
 
-void CSampleDialogDlg::OnDropFiles(HDROP hDropInfo)
+void CMFCDialogDlg::OnDropFiles(HDROP hDropInfo)
 {
 	PVOID pOldValue;
 	Wow64DisableWow64FsRedirection(&pOldValue);
@@ -225,7 +225,7 @@ void CSampleDialogDlg::OnDropFiles(HDROP hDropInfo)
 	Wow64RevertWow64FsRedirection(pOldValue);
 }
 
-BOOL CSampleDialogDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+BOOL CMFCDialogDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	const auto pNMHDR = reinterpret_cast<PHEXMENUINFO>(lParam);
 	if (pNMHDR->hdr.idFrom == IDC_MY_HEX && pNMHDR->hdr.code == HEXCTRL_MSG_CONTEXTMENU) {
@@ -235,7 +235,7 @@ BOOL CSampleDialogDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 	return CDialogEx::OnNotify(wParam, lParam, pResult);
 }
 
-bool CSampleDialogDlg::OnHexGetColor(HEXCOLORINFO& hci)
+bool CMFCDialogDlg::OnHexGetColor(HEXCOLORINFO& hci)
 {
 	//Sample code for custom colors:
 	if (hci.ullOffset < 18) {
@@ -267,17 +267,17 @@ bool CSampleDialogDlg::OnHexGetColor(HEXCOLORINFO& hci)
 	return false;
 }
 
-void CSampleDialogDlg::OnSize(UINT nType, int cx, int cy)
+void CMFCDialogDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
 }
 
-void CSampleDialogDlg::SetStartupFile(LPCWSTR pwszFile)
+void CMFCDialogDlg::SetStartupFile(LPCWSTR pwszFile)
 {
 	m_wstrStartupFile = pwszFile;
 }
 
-void CSampleDialogDlg::CreateHexPopup()
+void CMFCDialogDlg::CreateHexPopup()
 {
 	if (m_pHexPopup->IsCreated())
 		return;
@@ -309,12 +309,12 @@ void CSampleDialogDlg::CreateHexPopup()
 	}
 }
 
-bool CSampleDialogDlg::IsFileOpen()const
+bool CMFCDialogDlg::IsFileOpen()const
 {
 	return m_fFileOpen;
 }
 
-void CSampleDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
+void CMFCDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 {
 	FileClose();
 
@@ -360,7 +360,7 @@ void CSampleDialogDlg::FileOpen(std::wstring_view wsvPath, bool fResolveLnk)
 	SetWindowTextW(wstrPath.data());
 }
 
-void CSampleDialogDlg::FileClose()
+void CMFCDialogDlg::FileClose()
 {
 	if (!IsFileOpen())
 		return;
@@ -380,7 +380,7 @@ void CSampleDialogDlg::FileClose()
 	m_fFileOpen = false;
 }
 
-void CSampleDialogDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
+void CMFCDialogDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
 {
 	wchar_t buff[MAX_PATH];
 	GetModuleFileNameW(nullptr, buff, MAX_PATH);
@@ -402,17 +402,17 @@ void CSampleDialogDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
 	}
 }
 
-bool CSampleDialogDlg::IsRW()const
+bool CMFCDialogDlg::IsRW()const
 {
 	return m_chkRW.GetCheck() == BST_CHECKED;
 }
 
-bool CSampleDialogDlg::IsLnk() const
+bool CMFCDialogDlg::IsLnk() const
 {
 	return m_chkLnk.GetCheck() == BST_CHECKED;
 }
 
-std::wstring CSampleDialogDlg::LnkToPath(LPCWSTR pwszLnk)
+std::wstring CMFCDialogDlg::LnkToPath(LPCWSTR pwszLnk)
 {
 	CComPtr<IShellLinkW> psl;
 	psl.CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER);
@@ -426,7 +426,7 @@ std::wstring CSampleDialogDlg::LnkToPath(LPCWSTR pwszLnk)
 	return wstrPath;
 }
 
-auto CSampleDialogDlg::OpenFileDlg()->std::vector<std::wstring>
+auto CMFCDialogDlg::OpenFileDlg()->std::vector<std::wstring>
 {
 	CFileDialog fd(TRUE, nullptr, nullptr,
 		OFN_OVERWRITEPROMPT | OFN_EXPLORER | OFN_DONTADDTORECENT | OFN_ENABLESIZING
@@ -453,7 +453,7 @@ auto CSampleDialogDlg::OpenFileDlg()->std::vector<std::wstring>
 	return vecFiles;
 }
 
-auto CSampleDialogDlg::GetLastErrorWstr()->std::wstring {
+auto CMFCDialogDlg::GetLastErrorWstr()->std::wstring {
 	wchar_t wbuff[MAX_PATH];
 	FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
 			::GetLastError(), 0, wbuff, MAX_PATH, nullptr);

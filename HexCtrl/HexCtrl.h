@@ -460,7 +460,7 @@ namespace HEXCTRL {
 	[[nodiscard]] HEXCTRLAPI IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstClass = nullptr);
 
 #if defined(HEXCTRL_SHARED_DLL) || defined(HEXCTRL_MANUAL_MFC_INIT)
-	extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg);
+	extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG* pMsg);
 #endif
 
 	/**************************************************************************

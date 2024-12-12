@@ -18,9 +18,6 @@
     <ClCompile Include="CModifyADD.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Sample Dialog\stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CModifySUB.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -66,11 +63,11 @@
     <ClCompile Include="CModifyBITREV.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\MFC Dialog\stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Sample Dialog\stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="CHexCtrlInit.h">
       <Filter>Header Files</Filter>
     </ClInclude>

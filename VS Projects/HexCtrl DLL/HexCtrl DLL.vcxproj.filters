@@ -69,9 +69,6 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgModify.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\Sample Dialog\stdafx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp">
@@ -110,14 +107,14 @@
     <ClCompile Include="..\..\HexCtrl\src\CHexSelection.ixx">
       <Filter>HexCtrl\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\Sample Dialog\stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\HexCtrl\dep\StrToNum\StrToNum.ixx">
       <Filter>HexCtrl\dep\StrToNum</Filter>
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\dep\ListEx\ListEx.ixx">
       <Filter>HexCtrl\dep\ListEx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\MFC Dialog\stdafx.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

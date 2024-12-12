@@ -5,9 +5,9 @@
 
 using namespace HEXCTRL;
 
-class CSampleDialogDLLDlg : public CDialogEx {
+class CMFCDialogDLLDlg : public CDialogEx {
 public:
-	CSampleDialogDLLDlg(CWnd* pParent = nullptr);
+	CMFCDialogDLLDlg(CWnd* pParent = nullptr);
 private:
 	void DoDataExchange(CDataExchange* pDX)override;
 	BOOL OnInitDialog()override;

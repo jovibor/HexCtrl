@@ -46,7 +46,7 @@ HEXCTRLAPI HEXCTRL::IHexCtrlPtr HEXCTRL::CreateHexCtrl(HINSTANCE hInstClass) {
 #if defined(HEXCTRL_SHARED_DLL) || defined(HEXCTRL_MANUAL_MFC_INIT)
 CWinApp theApp; //CWinApp object is vital for manual MFC, and for in-DLL work.
 
-extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG * pMsg) {
+extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG* pMsg) {
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
 	return theApp.PreTranslateMessage(pMsg);
 }

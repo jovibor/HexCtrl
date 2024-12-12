@@ -15,10 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="SampleDialogDLL.h">
+    <ClInclude Include="CMFCDialogDLLApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SampleDialogDLLDlg.h">
+    <ClInclude Include="CMFCDialogDLLDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
@@ -29,10 +29,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SampleDialogDLL.cpp">
+    <ClCompile Include="CMFCDialogDLLApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SampleDialogDLLDlg.cpp">
+    <ClCompile Include="CMFCDialogDLLDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
@@ -40,17 +40,17 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="SampleDialogDLL.rc">
+    <ResourceCompile Include="MFCDialogDLL.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\SampleDialogDLL.rc2">
+    <None Include="res\MFCDialogDLL.rc2">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\SampleDialogDLL.ico">
+    <Image Include="res\MFCDialogDLL.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

@@ -1,26 +1,26 @@
 #include "stdafx.h"
-#include "SampleDialog.h"
-#include "SampleDialogDlg.h"
+#include "CMFCDialogApp.h"
+#include "CMFCDialogDlg.h"
 #include "Resource.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
-BEGIN_MESSAGE_MAP(CSampleDialogApp, CWinApp)
+BEGIN_MESSAGE_MAP(CMFCDialogApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
-CSampleDialogApp theApp;
+CMFCDialogApp theApp;
 
-BOOL CSampleDialogApp::InitInstance()
+BOOL CMFCDialogApp::InitInstance()
 {
 	CWinApp::InitInstance();
 
 	// Activate "Windows Native" visual manager for enabling themes in MFC controls
 	CMFCVisualManager::SetDefaultManager(RUNTIME_CLASS(CMFCVisualManagerWindows));
 
-	auto dlg = new CSampleDialogDlg;
+	auto dlg = new CMFCDialogDlg;
 	CCommandLineInfo cmdInfo;
 	ParseCommandLine(cmdInfo);
 	if (!cmdInfo.m_strFileName.IsEmpty()) {

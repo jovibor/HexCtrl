@@ -31,7 +31,7 @@
     <ProjectGuid>{780C336D-23D1-4A79-A0DA-E6296E63C8A0}</ProjectGuid>
     <Keyword>MFCProj</Keyword>
     <RootNamespace>HexSample</RootNamespace>
-    <ProjectName>Sample Dialog</ProjectName>
+    <ProjectName>MFC Dialog</ProjectName>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -422,8 +422,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClInclude Include="SampleDialog.h" />
-    <ClInclude Include="SampleDialogDlg.h" />
+    <ClInclude Include="CMFCDialogApp.h" />
+    <ClInclude Include="CMFCDialogDlg.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
@@ -437,16 +437,16 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgModify.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp" />
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.cpp" />
-    <ClCompile Include="SampleDialog.cpp" />
-    <ClCompile Include="SampleDialogDlg.cpp" />
+    <ClCompile Include="CMFCDialogApp.cpp" />
+    <ClCompile Include="CMFCDialogDlg.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\HexCtrl\res\HexCtrl.rc" />
-    <ResourceCompile Include="SampleDialog.rc" />
+    <ResourceCompile Include="MFCDialog.rc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\HexCtrl\res\IDJ_HEXCTRL_KEYBIND.json" />
-    <None Include="res\SampleDialog.rc2" />
+    <None Include="res\MFCDialog.rc2" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_BKMS.bmp" />
@@ -460,7 +460,7 @@
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp" />
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SCROLL_ARROW.bmp" />
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SEARCH.bmp" />
-    <Image Include="res\SampleDialog.ico" />
+    <Image Include="res\MFCDialog.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

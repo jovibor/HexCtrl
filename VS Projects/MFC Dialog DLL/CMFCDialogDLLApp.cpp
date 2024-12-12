@@ -1,22 +1,22 @@
 #include "stdafx.h"
-#include "SampleDialogDLL.h"
-#include "SampleDialogDLLDlg.h"
+#include "CMFCDialogDLLApp.h"
+#include "CMFCDialogDLLDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
-BEGIN_MESSAGE_MAP(CSampleDialogDLLApp, CWinApp)
+BEGIN_MESSAGE_MAP(CMFCDialogDLLApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
-CSampleDialogDLLApp theApp;
+CMFCDialogDLLApp theApp;
 
-BOOL CSampleDialogDLLApp::InitInstance()
+BOOL CMFCDialogDLLApp::InitInstance()
 {
 	CWinApp::InitInstance();
 
-	auto dlg = new CSampleDialogDLLDlg;
+	auto dlg = new CMFCDialogDLLDlg;
 	m_pMainWnd = dlg;
 	INT_PTR nResponse = dlg->DoModal();
 	if (nResponse == -1) {
@@ -34,7 +34,7 @@ BOOL CSampleDialogDLLApp::InitInstance()
 	return FALSE;
 }
 
-BOOL CSampleDialogDLLApp::PreTranslateMessage(MSG* pMsg)
+BOOL CMFCDialogDLLApp::PreTranslateMessage(MSG* pMsg)
 {
 	if (HEXCTRL::HexCtrlPreTranslateMessage(pMsg))
 		return TRUE;
