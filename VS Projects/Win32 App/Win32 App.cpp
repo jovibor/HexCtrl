@@ -126,8 +126,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	break;
 	case WM_SIZE:
 		if (m_pHex->IsCreated()) {
-			::SetWindowPos(m_pHex->GetWndHandle(HEXCTRL::EHexWnd::WND_MAIN), nullptr, 0, 0,
-				LOWORD(lParam), HIWORD(lParam), SWP_NOACTIVATE | SWP_NOZORDER);
+			m_pHex->SetWindowPos(nullptr, 0, 0, LOWORD(lParam), HIWORD(lParam));
 		}
 		break;
 	case WM_DESTROY:

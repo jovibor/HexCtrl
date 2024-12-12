@@ -2051,6 +2051,15 @@ void CHexCtrl::SetVirtualBkm(IHexBookmarks* pVirtBkm)
 	m_pDlgBkmMgr->SetVirtual(pVirtBkm);
 }
 
+void CHexCtrl::SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)
+{
+	assert(IsCreated());
+	if (!IsCreated())
+		return;
+
+	::SetWindowPos(m_hWnd, hWndAfter, iX, iY, iWidth, iHeight, uFlags);
+}
+
 void CHexCtrl::ShowInfoBar(bool fShow)
 {
 	assert(IsCreated());

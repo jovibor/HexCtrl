@@ -99,6 +99,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetSelection(const VecSpan& vecSel, bool fRedraw = true, bool fHighlight = false)override;
 		void SetUnprintableChar(wchar_t wch)override;
 		void SetVirtualBkm(IHexBookmarks* pVirtBkm)override;
+		void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)override;
 		void ShowInfoBar(bool fShow)override;
 	private:
 		struct UNDO;

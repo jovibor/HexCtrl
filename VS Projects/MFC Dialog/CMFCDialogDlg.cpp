@@ -299,10 +299,12 @@ void CMFCDialogDlg::CreateHexPopup()
 	const auto iHeight = rcHex.Height() - rcHex.Height() / 3;
 	const auto iPosX = GetSystemMetrics(SM_CXSCREEN) / 2 - iWidth / 2;
 	const auto iPosY = GetSystemMetrics(SM_CYSCREEN) / 2 - iHeight / 2;
-	::SetWindowPos(hWndHex, m_hWnd, iPosX, iPosY, iWidth, iHeight, SWP_NOACTIVATE);
+	m_pHexPopup->SetWindowPos(m_hWnd, iPosX, iPosY, iWidth, iHeight, SWP_NOACTIVATE);
 
-	const auto hIconSmall = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(), MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 0, 0, 0));
-	const auto hIconBig = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(), MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 96, 96, 0));
+	const auto hIconSmall = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(),
+		MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 0, 0, 0));
+	const auto hIconBig = static_cast<HICON>(LoadImageW(AfxGetInstanceHandle(),
+		MAKEINTRESOURCEW(IDR_MAINFRAME), IMAGE_ICON, 96, 96, 0));
 	if (hIconSmall != nullptr) {
 		::SendMessageW(hWndHex, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIconSmall));
 		::SendMessageW(hWndHex, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIconBig));

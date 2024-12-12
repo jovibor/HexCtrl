@@ -452,6 +452,7 @@ namespace HEXCTRL {
 		virtual void SetSelection(const VecSpan& vecSel, bool fRedraw = true, bool fHighlight = false) = 0; //Set current selection.
 		virtual void SetUnprintableChar(wchar_t wch) = 0;      //Set unprintable replacement character.
 		virtual void SetVirtualBkm(IHexBookmarks* pVirtBkm) = 0; //Set pointer for Bookmarks Virtual Mode.
+		virtual void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags = SWP_NOACTIVATE | SWP_NOZORDER) = 0;
 		virtual void ShowInfoBar(bool fShow) = 0;              //Show/hide bottom Info bar.
 	};
 

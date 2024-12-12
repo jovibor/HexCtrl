@@ -77,6 +77,7 @@
   * [SetSelection](#setselection)
   * [SetUnprintableChar](#setunprintablechar)
   * [SetVirtualBkm](#setvirtualbkm)
+  * [SetWindowPos](#setwindowpos)
   * [ShowInfoBar](#showinfobar)
    </details>
 * [Structures](#structures) <details><summary>_Expand_</summary>
@@ -754,6 +755,12 @@ Sets replacement char for unprintable characters.
 void SetVirtualBkm(IHexBookmarks* pVirtBkm);
 ```
 Sets a pointer for the [Virtual Bookmarks](#virtual-bookmarks) mode, or disables this mode if `nullptr` is set.
+
+### [](#)SetWindowPos
+```cpp
+void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags);
+```
+Sets **HexCtrl** window position. This method replicates behavior of the [`SetWindowPos`](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowpos) Windows function.
 
 ### [](#)ShowInfoBar
 ```cpp
