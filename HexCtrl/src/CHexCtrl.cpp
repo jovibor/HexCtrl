@@ -43,7 +43,7 @@ HEXCTRLAPI HEXCTRL::IHexCtrlPtr HEXCTRL::CreateHexCtrl(HINSTANCE hInstClass) {
 	return IHexCtrlPtr { new HEXCTRL::INTERNAL::CHexCtrl(hInstClass) };
 }
 
-#if defined(HEXCTRL_SHARED_DLL) || defined(HEXCTRL_MANUAL_MFC_INIT)
+#if defined(HEXCTRL_DYNAMIC_LIB) || defined(HEXCTRL_MANUAL_MFC_INIT)
 CWinApp theApp; //CWinApp object is vital for manual MFC, and for in-DLL work.
 
 extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG* pMsg) {

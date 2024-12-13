@@ -170,15 +170,16 @@ To build **HexCtrl** from the sources:
 
 > [!NOTE]
 > If you want to build **HexCtrl** from the sources in non-**MFC** app:
-> 1. Add support for the **Use MFC in a Shared DLL** in your project settings.
-> 1. Add the `/DHEXCTRL_MANUAL_MFC_INIT` compiler option.
+> 1. Set the **Use MFC in a Shared DLL** option in the project settings
+> 1. Add `/DHEXCTRL_MANUAL_MFC_INIT` compiler option
 
 ### [](#)Dynamic Link Library
 To build and use **HexCtrl** as a DLL:
-1. Build **HexCtrl.dll** and **HexCtrl.lib** using the **HexCtrl DLL/HexCtrl DLL.vcxproj**  project
-1. Define the `HEXCTRL_SHARED_DLL` before including `HexCtrl.h`:
+1. Build **HexCtrl{x86/x64/ARM64}.dll** and **HexCtrl{x86/x64/ARM64}.lib** with the **HexCtrl DLL.vcxproj**  project
+1. Include `HexCtrl.h` into your project
+1. Add `/DHEXCTRL_DYNAMIC_LIB` compiler option, or alternatively `#define` it before including `HexCtrl.h`:
     ```cpp
-    #define HEXCTRL_SHARED_DLL
+    #define HEXCTRL_DYNAMIC_LIB
     #include "HexCtrl.h"
     ```
 1. Declare `IHexCtrlPtr` object: `IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };`

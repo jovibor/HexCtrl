@@ -1,4 +1,3 @@
-#define HEXCTRL_SHARED_DLL
 #include "../../HexCtrl/HexCtrl.h"
 #include "CppUnitTest.h"
 #include <bit>

@@ -19,10 +19,10 @@
 #error "C++20 compliant compiler is required to build HexCtrl."
 #endif
 
-#ifdef HEXCTRL_SHARED_DLL
-#ifdef HEXCTRL_EXPORT
+#ifdef HEXCTRL_DYNAMIC_LIB
+#ifdef HEXCTRL_DYNAMIC_LIB_EXPORT
 #define HEXCTRLAPI __declspec(dllexport)
-#else //^^^ HEXCTRL_EXPORT / vvv !HEXCTRL_EXPORT
+#else //^^^ HEXCTRL_DYNAMIC_LIB_EXPORT / vvv !HEXCTRL_DYNAMIC_LIB_EXPORT
 #define HEXCTRLAPI __declspec(dllimport)
 
 #ifdef _M_IX86
@@ -50,10 +50,10 @@
 #endif //^^^ _M_ARM64
 
 #pragma comment(lib, HEXCTRL_LIBNAME("HexCtrl"))
-#endif //^^^ !HEXCTRL_EXPORT
-#else //^^^ HEXCTRL_SHARED_DLL / vvv !HEXCTRL_SHARED_DLL
+#endif //^^^ !HEXCTRL_DYNAMIC_LIB_EXPORT
+#else //^^^ HEXCTRL_DYNAMIC_LIB / vvv !HEXCTRL_DYNAMIC_LIB
 #define	HEXCTRLAPI
-#endif //^^^ !HEXCTRL_SHARED_DLL
+#endif //^^^ !HEXCTRL_DYNAMIC_LIB
 
 namespace HEXCTRL {
 	constexpr auto HEXCTRL_VERSION_MAJOR = 3;
@@ -472,7 +472,7 @@ namespace HEXCTRL {
 	using IHexCtrlPtr = std::unique_ptr<IHexCtrl, IHexCtrlDeleter>;
 	[[nodiscard]] HEXCTRLAPI IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstClass = nullptr);
 
-#if defined(HEXCTRL_SHARED_DLL) || defined(HEXCTRL_MANUAL_MFC_INIT)
+#if defined(HEXCTRL_DYNAMIC_LIB) || defined(HEXCTRL_MANUAL_MFC_INIT)
 	extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG* pMsg);
 #endif
 

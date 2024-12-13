@@ -1,5 +1,4 @@
 #pragma once
-#define HEXCTRL_SHARED_DLL
 #include "../../HexCtrl/HexCtrl.h"
 #include <afxcontrolbars.h>
 

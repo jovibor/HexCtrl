@@ -89,7 +89,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	m_pHex->Create({ .hWndParent { hWnd }, .uID { IDC_HEXCTRL_MAIN }, .dwStyle { WS_VISIBLE | WS_CHILD } });
 
 	//Set HexCtrl data.
-	m_pHex->SetData({ .spnData { buffData, 1024 }, .fMutable { true } });
+	m_pHex->SetData({ .spnData { buffData, sizeof(buffData) }, .fMutable { true } });
 
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
