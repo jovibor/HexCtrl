@@ -9,14 +9,14 @@ public:
 	CMFCDialogDLLDlg(CWnd* pParent = nullptr);
 private:
 	void DoDataExchange(CDataExchange* pDX)override;
-	BOOL OnInitDialog()override;
-private:
 	[[nodiscard]] bool IsRW()const;
 	void LoadTemplates(const IHexCtrl* pHexCtrl);
+	BOOL OnInitDialog()override;
 	afx_msg void OnBnClearData();
 	afx_msg void OnBnSetRndData();
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
+	BOOL PreTranslateMessage(MSG* pMsg)override;
 	DECLARE_MESSAGE_MAP()
 private:
 	HICON m_hIcon;

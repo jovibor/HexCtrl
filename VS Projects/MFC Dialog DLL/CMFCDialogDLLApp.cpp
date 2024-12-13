@@ -33,11 +33,3 @@ BOOL CMFCDialogDLLApp::InitInstance()
 	//  application, rather than start the application's message pump.
 	return FALSE;
 }
-
-BOOL CMFCDialogDLLApp::PreTranslateMessage(MSG* pMsg)
-{
-	if (HEXCTRL::HexCtrlPreTranslateMessage(pMsg))
-		return TRUE;
-
-	return CWinApp::PreTranslateMessage(pMsg);
-}

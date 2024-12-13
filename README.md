@@ -5,7 +5,6 @@
 * [How To Build](#how-to-build)
   * [Integrate Sources](#integrate-sources)
   * [Dynamic Link Library](#dynamic-link-library)
-    * [HexCtrlPreTranslateMessage](#hexctrlpretranslatemessage)
 * [Creating](#creating)
   * [Classic Approach](#classic-approach)
   * [In Dialog](#in-dialog)
@@ -57,6 +56,7 @@
   * [IsOffsetVisible](#isoffsetvisible)
   * [IsVirtual](#isvirtual)
   * [ModifyData](#modifydata)
+  * [PreTranslateMsg](#pretranslatemsg)
   * [Redraw](#redraw)
   * [SetCapacity](#setcapacity)
   * [SetCaretPos](#setcaretpos)
@@ -188,18 +188,6 @@ To build and use **HexCtrl** as a DLL:
 > [!NOTE]
 **HexCtrl**'s DLL is built with the **MFC Static Linking**. So, even if you are to use it in your own **MFC** project, even with a different **MFC** version, there should be no interferences.  
 Building **HexCtrl** with the **MFC Shared DLL** turned out to be a little tricky. Even with the `AFX_MANAGE_STATE(AfxGetStaticModuleState())` macro help there are always  **MFC** debug assertions, which origins are quite hard to comprehend.
-
-#### [](#)HexCtrlPreTranslateMessage
-By default a `PreTranslateMessage` routine doesn't work within DLLs. It means that all dialog's keyboard navigation will not work. To remedy this **HexCtrl**'s DLL provides the `HexCtrlPreTranslateMessage` exported function which you can plug into your app's main message loop:
-```cpp
-BOOL CMyApp::PreTranslateMessage(MSG* pMsg)
-{
-    if (HEXCTRL::HexCtrlPreTranslateMessage(pMsg))
-        return TRUE;
-
-    return CWinApp::PreTranslateMessage(pMsg);
-}
-```
 
 ## [](#)Creating
 
@@ -619,6 +607,23 @@ Returns `true` if **HexCtrl** currently works in [Virtual Data Mode](#virtual-da
 void ModifyData(const HEXMODIFY& hms);
 ```
 Modify data currently set in **HexCtrl**, see the [`HEXMODIFY`](#hexmodify) struct for details.
+
+### [](#)PreTranslateMsg
+```cpp
+[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
+```
+This method is mostly intended to use in non MFC apps, or if **HexCtrl** is used as a dll. The **HexCtrl** has many internal dialog windows. In order for dialog keyboard navigation to work correctly, this method must be hooked into your app's main message loop before `TranslateMessage` and `DispatchMessage`, or into MFC's `PreTranslateMessage` virtual function.
+```cpp
+while (GetMessageW(&msg, nullptr, 0, 0)) {
+    if (!TranslateAcceleratorW(msg.hwnd, hAccelTable, &msg)) {
+        if (!m_pHexCtrl->PreTranslateMsg(&msg)) { //Process further only if it returns false.
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+    }
+}
+```
+If this method returns `true` it means that no further message processing should be made, **HexCtrl** has done all processing by itself.
 
 ### [](#)Redraw
 ```cpp

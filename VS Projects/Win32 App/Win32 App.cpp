@@ -19,7 +19,6 @@ ATOM             MyRegisterClass(HINSTANCE hInstance);
 BOOL             InitInstance(HINSTANCE, int);
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
-bool             IsHexCtrlDialogMsg(MSG& refMsg);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
@@ -37,13 +36,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	}
 
 	const auto hAccelTable = LoadAcceleratorsW(hInstance, MAKEINTRESOURCE(IDC_WIN32APP));
-
 	MSG msg;
 
 	// Main message loop:
 	while (GetMessageW(&msg, nullptr, 0, 0)) {
 		if (!TranslateAcceleratorW(msg.hwnd, hAccelTable, &msg)) {
-			if (!IsHexCtrlDialogMsg(msg)) { //This call is to make all HexCtrl dialogs' navigation work.
+			if (!m_pHex->PreTranslateMsg(&msg)) { //This call is to make all HexCtrl dialogs' navigation work.
 				TranslateMessage(&msg);
 				DispatchMessageW(&msg);
 			}
@@ -153,33 +151,4 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	}
 	return (INT_PTR)FALSE;
-}
-
-bool IsHexCtrlDialogMsg(MSG& refMsg)
-{
-	//We check here all HexCtrl internal dialogs for being created and if it is,
-	//proceed with the IsDialogMessageW on it, to make dialog navigation work.
-	if (const auto hWnd = m_pHex->GetWndHandle(HEXCTRL::EHexWnd::DLG_BKMMGR, false); hWnd != nullptr) {
-		if (IsDialogMessageW(hWnd, &refMsg) != FALSE) { return true; }
-	}
-	if (const auto hWnd = m_pHex->GetWndHandle(HEXCTRL::EHexWnd::DLG_DATAINTERP, false); hWnd != nullptr) {
-		if (IsDialogMessageW(hWnd, &refMsg) != FALSE) { return true; }
-	}
-	if (const auto hWnd = m_pHex->GetWndHandle(HEXCTRL::EHexWnd::DLG_MODIFY, false); hWnd != nullptr) {
-		if (IsDialogMessageW(hWnd, &refMsg) != FALSE) { return true; }
-	}
-	if (const auto hWnd = m_pHex->GetWndHandle(HEXCTRL::EHexWnd::DLG_SEARCH, false); hWnd != nullptr) {
-		if (IsDialogMessageW(hWnd, &refMsg) != FALSE) { return true; }
-	}
-	if (const auto hWnd = m_pHex->GetWndHandle(HEXCTRL::EHexWnd::DLG_CODEPAGE, false); hWnd != nullptr) {
-		if (IsDialogMessageW(hWnd, &refMsg) != FALSE) { return true; }
-	}
-	if (const auto hWnd = m_pHex->GetWndHandle(HEXCTRL::EHexWnd::DLG_GOTO, false); hWnd != nullptr) {
-		if (IsDialogMessageW(hWnd, &refMsg) != FALSE) { return true; }
-	}
-	if (const auto hWnd = m_pHex->GetWndHandle(HEXCTRL::EHexWnd::DLG_TEMPLMGR, false); hWnd != nullptr) {
-		if (IsDialogMessageW(hWnd, &refMsg) != FALSE) { return true; }
-	}
-
-	return false;
 }

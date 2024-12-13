@@ -444,6 +444,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION = 0; //Ensures that the given offset is visible.
 		[[nodiscard]] virtual bool IsVirtual()const = 0;       //Is working in VirtualData or default mode.		
 		virtual void ModifyData(const HEXMODIFY& hms) = 0;     //Main routine to modify data in IsMutable()==true mode.
+		[[nodiscard]] virtual bool PreTranslateMsg(MSG* pMsg) = 0;
 		virtual void Redraw() = 0;                             //Redraw HexCtrl's window.
 		virtual void SetCapacity(DWORD dwCapacity) = 0;        //Set current capacity.
 		virtual void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true) = 0; //Set the caret position.
@@ -471,10 +472,6 @@ namespace HEXCTRL {
 	struct IHexCtrlDeleter { void operator()(IHexCtrl* p)const { p->Destroy(); } };
 	using IHexCtrlPtr = std::unique_ptr<IHexCtrl, IHexCtrlDeleter>;
 	[[nodiscard]] HEXCTRLAPI IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstClass = nullptr);
-
-#if defined(HEXCTRL_DYNAMIC_LIB) || defined(HEXCTRL_MANUAL_MFC_INIT)
-	extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG* pMsg);
-#endif
 
 	/**************************************************************************
 	* WM_NOTIFY message codes (NMHDR.code values).                            *

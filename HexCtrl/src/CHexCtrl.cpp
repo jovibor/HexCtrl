@@ -45,11 +45,6 @@ HEXCTRLAPI HEXCTRL::IHexCtrlPtr HEXCTRL::CreateHexCtrl(HINSTANCE hInstClass) {
 
 #if defined(HEXCTRL_DYNAMIC_LIB) || defined(HEXCTRL_MANUAL_MFC_INIT)
 CWinApp theApp; //CWinApp object is vital for manual MFC, and for in-DLL work.
-
-extern "C" HEXCTRLAPI BOOL __cdecl HexCtrlPreTranslateMessage(MSG* pMsg) {
-	AFX_MANAGE_STATE(AfxGetStaticModuleState());
-	return theApp.PreTranslateMessage(pMsg);
-}
 #endif
 
 namespace HEXCTRL::INTERNAL {
@@ -1365,6 +1360,18 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 	SetRedraw(true);
 
 	OnModifyData();
+}
+
+bool CHexCtrl::PreTranslateMsg(MSG* pMsg)
+{
+	//The common if(!IsCreated()) check is ommited here for max throughput.
+	assert(IsCreated());
+
+	if (IsDlgMessage(pMsg)) {
+		return true;
+	}
+
+	return false;
 }
 
 void CHexCtrl::Redraw()
@@ -3789,6 +3796,34 @@ bool CHexCtrl::IsCurTextArea()const
 bool CHexCtrl::IsDrawable()const
 {
 	return m_fRedraw;
+}
+
+bool CHexCtrl::IsDlgMessage(MSG* pMsg)const
+{
+	//Check all internal dialogs with the IsDialogMessageW, to make dialog's navigation work.
+	if (m_pDlgBkmMgr->m_hWnd != nullptr) {
+		if (::IsDialogMessageW(m_pDlgBkmMgr->m_hWnd, pMsg) != FALSE) { return true; }
+	}
+	if (m_pDlgDataInterp->m_hWnd != nullptr) {
+		if (::IsDialogMessageW(m_pDlgDataInterp->m_hWnd, pMsg) != FALSE) { return true; }
+	}
+	if (m_pDlgModify->m_hWnd != nullptr) {
+		if (::IsDialogMessageW(m_pDlgModify->m_hWnd, pMsg) != FALSE) { return true; }
+	}
+	if (m_pDlgSearch->m_hWnd != nullptr) {
+		if (::IsDialogMessageW(m_pDlgSearch->m_hWnd, pMsg) != FALSE) { return true; }
+	}
+	if (m_pDlgCodepage->m_hWnd != nullptr) {
+		if (::IsDialogMessageW(m_pDlgCodepage->m_hWnd, pMsg) != FALSE) { return true; }
+	}
+	if (m_pDlgGoTo->m_hWnd != nullptr) {
+		if (::IsDialogMessageW(m_pDlgGoTo->m_hWnd, pMsg) != FALSE) { return true; }
+	}
+	if (m_pDlgTemplMgr->m_hWnd != nullptr) {
+		if (::IsDialogMessageW(m_pDlgTemplMgr->m_hWnd, pMsg) != FALSE) { return true; }
+	}
+
+	return false;
 }
 
 bool CHexCtrl::IsPageVisible()const
