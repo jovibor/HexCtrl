@@ -827,8 +827,9 @@ bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wsv)const
 		return false;
 
 	//Microsoft UDTTM time (as used by Microsoft Compound Document format).
-	const UDTTM dttm { .components { .minute { optSysTime->wMinute }, .hour { optSysTime->wHour }, .dayofmonth { optSysTime->wDay },
-		.month { optSysTime->wMonth }, .year { optSysTime->wYear - 1900U }, .weekday { optSysTime->wDayOfWeek } } };
+	const UDTTM dttm { .components { .minute { optSysTime->wMinute }, .hour { optSysTime->wHour },
+		.dayofmonth { optSysTime->wDay }, .month { optSysTime->wMonth }, .year { optSysTime->wYear - 1900UL },
+		.weekday { optSysTime->wDayOfWeek } } };
 
 	//Note: Big-endian is not currently supported. This has never existed in the "wild".
 	SetIHexTData(*m_pHexCtrl, m_ullOffset, dttm.dwValue);
@@ -888,7 +889,7 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 		dqword.Data3 = ByteSwap(dqword.Data3);
 	}
 
-	const unsigned short unGuidVersion = (dqword.Data3 & 0xf000) >> 12;
+	const unsigned short unGuidVersion = (dqword.Data3 & 0xF000UL) >> 12;
 	if (unGuidVersion != 1)
 		return false;
 
@@ -909,8 +910,8 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 
 	//Encode version 1 GUID with time.
 	dqword.Data1 = qwGUIDTime.LowPart;
-	dqword.Data2 = qwGUIDTime.HighPart & 0xFFFFL;
-	dqword.Data3 = ((qwGUIDTime.HighPart >> 16) & 0x0FFFL) | 0x1000; //Including Type 1 flag (0x1000).
+	dqword.Data2 = qwGUIDTime.HighPart & 0xFFFFUL;
+	dqword.Data3 = ((qwGUIDTime.HighPart >> 16) & 0x0FFFUL) | 0x1000UL; //Including Type 1 flag (0x1000).
 
 	if (IsBigEndian()) { //After processing swap back.
 		dqword.Data1 = ByteSwap(dqword.Data1);
@@ -1186,9 +1187,9 @@ void CHexDlgDataInterp::ShowValueGUIDTIME(GUID stGUID)const
 	//Guid v1 Datetime UTC. The time structure within the NAME_GUID.
 	//First, verify GUID is actually version 1 style.
 	std::wstring wstrTime = L"N/A";
-	const unsigned short unGuidVersion = (stGUID.Data3 & 0xf000) >> 12;
+	const unsigned short unGuidVersion = (stGUID.Data3 & 0xF000UL) >> 12;
 	if (unGuidVersion == 1) {
-		LARGE_INTEGER qwGUIDTime { .LowPart { stGUID.Data1 }, .HighPart { stGUID.Data3 & 0x0fff } };
+		LARGE_INTEGER qwGUIDTime { .LowPart { stGUID.Data1 }, .HighPart { stGUID.Data3 & 0x0FFFUL } };
 		qwGUIDTime.HighPart = (qwGUIDTime.HighPart << 16) | stGUID.Data2;
 
 		//RFC4122: The timestamp is a 60-bit value. For UUID version 1, this is represented by Coordinated Universal Time (UTC)

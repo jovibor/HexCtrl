@@ -108,18 +108,18 @@
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)bin\obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <TargetName>HexCtrlSampled</TargetName>
+    <TargetName>HexCtrlDialog$(PlatformShortName)D</TargetName>
     <CodeAnalysisRuleSet>CppCoreCheckRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)bin\obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <TargetName>HexCtrlSample64d</TargetName>
+    <TargetName>HexCtrlDialog$(PlatformShortName)D</TargetName>
     <CodeAnalysisRuleSet>CppCoreCheckRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <TargetName>HexCtrlSampleARM64d</TargetName>
+    <TargetName>HexCtrlDialog$(PlatformShortName)D</TargetName>
     <CodeAnalysisRuleSet>CppCoreCheckRules.ruleset</CodeAnalysisRuleSet>
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)bin\obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
@@ -129,18 +129,18 @@
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)bin\obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <TargetName>HexCtrlSample</TargetName>
+    <TargetName>HexCtrlDialog$(PlatformShortName)</TargetName>
     <CodeAnalysisRuleSet>CppCoreCheckRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)bin\obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <OutDir>$(SolutionDir)bin\</OutDir>
-    <TargetName>HexCtrlSample64</TargetName>
+    <TargetName>HexCtrlDialog$(PlatformShortName)</TargetName>
     <CodeAnalysisRuleSet>CppCoreCheckRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <TargetName>HexCtrlSampleARM64</TargetName>
+    <TargetName>HexCtrlDialog$(PlatformShortName)</TargetName>
     <CodeAnalysisRuleSet>CppCoreCheckRules.ruleset</CodeAnalysisRuleSet>
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)bin\obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>

@@ -108,11 +108,11 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <TargetName>HexCtrlSampleDLL64d</TargetName>
+    <TargetName>HexCtrlDialogDLL$(PlatformShortName)D</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <IntDir>$(SolutionDir)bin\obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <TargetName>HexCtrlSampleDLL64d</TargetName>
+    <TargetName>HexCtrlDialogDLL$(PlatformShortName)D</TargetName>
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
   </PropertyGroup>
@@ -120,23 +120,23 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <TargetName>HexCtrlSampleDLLd</TargetName>
+    <TargetName>HexCtrlDialogDLL$(PlatformShortName)D</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <TargetName>HexCtrlSampleDLL</TargetName>
+    <TargetName>HexCtrlDialogDLL$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IntDir>$(SolutionDir)bin\obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <TargetName>HexCtrlSampleDLL64</TargetName>
+    <TargetName>HexCtrlDialogDLL$(PlatformShortName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <IntDir>$(SolutionDir)bin\obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <TargetName>HexCtrlSampleDLL64</TargetName>
+    <TargetName>HexCtrlDialogDLL$(PlatformShortName)</TargetName>
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\</OutDir>
   </PropertyGroup>

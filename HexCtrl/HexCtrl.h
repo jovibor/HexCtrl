@@ -24,19 +24,31 @@
 #define HEXCTRLAPI __declspec(dllexport)
 #else //^^^ HEXCTRL_EXPORT / vvv !HEXCTRL_EXPORT
 #define HEXCTRLAPI __declspec(dllimport)
-#ifdef _WIN64
+
+#ifdef _M_IX86
 #ifdef _DEBUG
-#define HEXCTRL_LIBNAME(x) x"64d.lib"
+#define HEXCTRL_LIBNAME(x) x"x86D.lib"
 #else //^^^ _DEBUG / vvv !_DEBUG
-#define HEXCTRL_LIBNAME(x) x"64.lib"
+#define HEXCTRL_LIBNAME(x) x"x86.lib"
 #endif //^^^ !_DEBUG
-#else //^^^ _WIN64 / vvv !_WIN64
+#endif //^^^ _M_IX86
+
+#ifdef _M_X64
 #ifdef _DEBUG
-#define HEXCTRL_LIBNAME(x) x"d.lib"
+#define HEXCTRL_LIBNAME(x) x"x64D.lib"
 #else //^^^ _DEBUG / vvv !_DEBUG
-#define HEXCTRL_LIBNAME(x) x".lib"
+#define HEXCTRL_LIBNAME(x) x"x64.lib"
 #endif //^^^ !_DEBUG
-#endif //^^^ !_WIN64
+#endif //^^^ _M_X64
+
+#ifdef _M_ARM64
+#ifdef _DEBUG
+#define HEXCTRL_LIBNAME(x) x"ARM64D.lib"
+#else //^^^ _DEBUG / vvv !_DEBUG
+#define HEXCTRL_LIBNAME(x) x"ARM64.lib"
+#endif //^^^ _DEBUG
+#endif //^^^ _M_ARM64
+
 #pragma comment(lib, HEXCTRL_LIBNAME("HexCtrl"))
 #endif //^^^ !HEXCTRL_EXPORT
 #else //^^^ HEXCTRL_SHARED_DLL / vvv !HEXCTRL_SHARED_DLL
