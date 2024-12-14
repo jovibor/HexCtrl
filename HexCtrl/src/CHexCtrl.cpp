@@ -1645,137 +1645,135 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 	//This is vital for ExecuteCmd to work properly.
 	m_vecKeyBind.clear();
 	m_vecKeyBind.reserve(umapCmdMenu.size());
-	for (const auto& itMap : umapCmdMenu) {
-		m_vecKeyBind.emplace_back(KEYBIND { .eCmd { itMap.second.first }, .wMenuID { static_cast<WORD>(itMap.second.second) } });
+	for (const auto& refMap : umapCmdMenu) {
+		m_vecKeyBind.emplace_back(KEYBIND { .eCmd { refMap.second.first }, .wMenuID { static_cast<WORD>(refMap.second.second) } });
 	}
 
 	rapidjson::Document docJSON;
-	bool fJSONParsed { false };
 	if (wsvPath.empty()) { //Default IDR_HEXCTRL_JSON_KEYBIND.json, from resources.
 		const auto hInst = AfxGetInstanceHandle();
 		if (const auto hRes = FindResourceW(hInst, MAKEINTRESOURCEW(IDJ_HEXCTRL_KEYBIND), L"JSON"); hRes != nullptr) {
 			if (const auto hData = LoadResource(hInst, hRes); hData != nullptr) {
 				const auto nSize = static_cast<std::size_t>(SizeofResource(hInst, hRes));
 				const auto* const pData = static_cast<char*>(LockResource(hData));
-				if (docJSON.Parse(pData, nSize); !docJSON.IsNull()) { //Parse all default keybindings.
-					fJSONParsed = true;
+				if (docJSON.Parse(pData, nSize); docJSON.IsNull()) { //Parse all default keybindings.
+					DBG_REPORT(L"docJSON.IsNull()");
+					return false;
 				}
 			}
 		}
 	}
 	else if (std::ifstream ifs(std::wstring { wsvPath }); ifs.is_open()) {
 		rapidjson::IStreamWrapper isw { ifs };
-		if (docJSON.ParseStream(isw); !docJSON.IsNull()) {
-			fJSONParsed = true;
+		if (docJSON.ParseStream(isw); docJSON.IsNull()) {
+			DBG_REPORT(L"docJSON.IsNull()");
+			return false;
 		}
 	}
-	assert(fJSONParsed);
 
-	if (fJSONParsed) {
-		const auto lmbParseStr = [&](std::string_view sv)->std::optional<KEYBIND> {
-			if (sv.empty())
-				return { };
+	const auto lmbParseStr = [&](std::string_view sv)->std::optional<KEYBIND> {
+		if (sv.empty())
+			return { };
 
-			KEYBIND stRet { };
-			const auto nSize = sv.size();
-			std::size_t nPosStart { 0 }; //Next position to start search for '+' sign.
-			const auto nSubWords = std::count(sv.begin(), sv.end(), '+') + 1; //How many sub-words (divided by '+')?
-			for (auto iterSubWords = 0; iterSubWords < nSubWords; ++iterSubWords) {
-				const auto nPosNext = sv.find('+', nPosStart);
-				const auto nSizeSubWord = nPosNext == std::string_view::npos ? nSize - nPosStart : nPosNext - nPosStart;
-				const auto strSubWord = sv.substr(nPosStart, nSizeSubWord);
-				nPosStart = nPosNext + 1;
+		KEYBIND stRet { };
+		const auto nSize = sv.size();
+		std::size_t nPosStart { 0 }; //Next position to start search for '+' sign.
+		const auto nSubWords = std::count(sv.begin(), sv.end(), '+') + 1; //How many sub-words (divided by '+')?
+		for (auto itSubWords = 0; itSubWords < nSubWords; ++itSubWords) {
+			const auto nPosNext = sv.find('+', nPosStart);
+			const auto nSizeSubWord = nPosNext == std::string_view::npos ? nSize - nPosStart : nPosNext - nPosStart;
+			const auto strSubWord = sv.substr(nPosStart, nSizeSubWord);
+			nPosStart = nPosNext + 1;
 
-				if (strSubWord.size() == 1) {
-					stRet.uKey = static_cast<UCHAR>(std::toupper(strSubWord[0])); //Binding keys are in uppercase.
-				}
-				else if (const auto iter = umapKeys.find(strSubWord); iter != umapKeys.end()) {
-					switch (const auto uChar = iter->second.first; uChar) {
-					case VK_CONTROL:
-						stRet.fCtrl = true;
-						break;
-					case VK_SHIFT:
-						stRet.fShift = true;
-						break;
-					case VK_MENU:
-						stRet.fAlt = true;
-						break;
-					default:
-						stRet.uKey = uChar;
-					}
+			if (strSubWord.size() == 1) {
+				stRet.uKey = static_cast<UCHAR>(std::toupper(strSubWord[0])); //Binding keys are in uppercase.
+			}
+			else if (const auto itKey = umapKeys.find(strSubWord); itKey != umapKeys.end()) {
+				switch (const auto uChar = itKey->second.first; uChar) {
+				case VK_CONTROL:
+					stRet.fCtrl = true;
+					break;
+				case VK_SHIFT:
+					stRet.fShift = true;
+					break;
+				case VK_MENU:
+					stRet.fAlt = true;
+					break;
+				default:
+					stRet.uKey = uChar;
 				}
 			}
+		}
 
-			return stRet;
-			};
+		return stRet;
+		};
 
-		for (auto iterMembers = docJSON.MemberBegin(); iterMembers != docJSON.MemberEnd(); ++iterMembers) { //JSON data iterating.
-			if (const auto iterCmd = umapCmdMenu.find(iterMembers->name.GetString()); iterCmd != umapCmdMenu.end()) {
-				for (auto iterArrCurr = iterMembers->value.Begin(); iterArrCurr != iterMembers->value.End(); ++iterArrCurr) { //Array iterating.
-					if (auto optKey = lmbParseStr(iterArrCurr->GetString()); optKey) {
-						optKey->eCmd = iterCmd->second.first;
-						optKey->wMenuID = static_cast<WORD>(iterCmd->second.second);
-						if (auto it = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(), [&optKey](const KEYBIND& ref) {
-							return ref.eCmd == optKey->eCmd; }); it != m_vecKeyBind.end()) {
-							if (it->uKey == 0) {
-								*it = *optKey; //Adding keybindings from JSON to m_vecKeyBind.
-							}
-							else {
-								//If such command with some key from JSON already exist, we adding another one
-								//same command but with a different key, like Ctrl+F/Ctrl+H for Search.
-								m_vecKeyBind.emplace_back(*optKey);
-							}
+	for (auto itMembers = docJSON.MemberBegin(); itMembers != docJSON.MemberEnd(); ++itMembers) { //JSON data iterating.
+		if (const auto itCmd = umapCmdMenu.find(itMembers->name.GetString()); itCmd != umapCmdMenu.end()) {
+			for (auto itArrCurr = itMembers->value.Begin(); itArrCurr != itMembers->value.End(); ++itArrCurr) { //Array iterating.
+				if (auto optKB = lmbParseStr(itArrCurr->GetString()); optKB) {
+					optKB->eCmd = itCmd->second.first;
+					optKB->wMenuID = static_cast<WORD>(itCmd->second.second);
+					if (const auto itKB = std::find_if(m_vecKeyBind.begin(), m_vecKeyBind.end(),
+						[&optKB](const KEYBIND& ref) { return ref.eCmd == optKB->eCmd; }); itKB != m_vecKeyBind.end()) {
+						if (itKB->uKey == 0) {
+							*itKB = *optKB; //Adding keybindings from JSON to m_vecKeyBind.
+						}
+						else {
+							//If such command with some key from JSON already exist, we adding another one
+							//same command but with a different key, like Ctrl+F/Ctrl+H for Search.
+							m_vecKeyBind.emplace_back(*optKB);
 						}
 					}
 				}
 			}
 		}
+	}
 
-		std::size_t i { 0 };
-		for (const auto& iterMain : m_vecKeyBind) {
-			//Check for previous same menu ID. To assign only one, first, keybinding for menu name.
-			//With `"ctrl+f", "ctrl+h"` in JSON, only the "Ctrl+F" will be assigned as the menu name.
-			const auto iterEnd = m_vecKeyBind.begin() + i++;
-			if (const auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd, [&](const KEYBIND& ref) {
-				return ref.wMenuID == iterMain.wMenuID; });
-				iterTmp == iterEnd && iterMain.wMenuID != 0 && iterMain.uKey != 0) {
-				CStringW wstrMenuName;
-				m_menuMain.GetMenuStringW(iterMain.wMenuID, wstrMenuName, MF_BYCOMMAND);
-				std::wstring wstr = wstrMenuName.GetString();
-				if (const auto nPos = wstr.find('\t'); nPos != std::wstring::npos) {
-					wstr.erase(nPos);
-				}
-
-				wstr += L'\t';
-				if (iterMain.fCtrl) {
-					wstr += L"Ctrl+";
-				}
-				if (iterMain.fShift) {
-					wstr += L"Shift+";
-				}
-				if (iterMain.fAlt) {
-					wstr += L"Alt+";
-				}
-
-				//Search for any special key names: 'Tab', 'Enter', etc... If not found then it's just a char.
-				if (const auto iterUmap = std::find_if(umapKeys.begin(), umapKeys.end(), [&](const auto& ref) {
-					return ref.second.first == iterMain.uKey; }); iterUmap != umapKeys.end()) {
-					wstr += iterUmap->second.second;
-				}
-				else {
-					wstr += static_cast<unsigned char>(iterMain.uKey);
-				}
-
-				//Modify menu with a new name (with shortcut appended) and old bitmap.
-				MENUITEMINFOW mii { .cbSize = sizeof(MENUITEMINFOW), .fMask = MIIM_BITMAP | MIIM_STRING };
-				m_menuMain.GetMenuItemInfoW(iterMain.wMenuID, &mii);
-				mii.dwTypeData = wstr.data();
-				m_menuMain.SetMenuItemInfoW(iterMain.wMenuID, &mii);
+	std::size_t i { 0 };
+	for (const auto& refKB : m_vecKeyBind) {
+		//Check for previous same menu ID. To assign only one, first, keybinding for menu name.
+		//With `"ctrl+f", "ctrl+h"` in JSON, only the "Ctrl+F" will be assigned as the menu name.
+		const auto iterEnd = m_vecKeyBind.begin() + i++;
+		if (const auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd, [&](const KEYBIND& ref) {
+			return ref.wMenuID == refKB.wMenuID; });
+			iterTmp == iterEnd && refKB.wMenuID != 0 && refKB.uKey != 0) {
+			CStringW wstrMenuName;
+			m_menuMain.GetMenuStringW(refKB.wMenuID, wstrMenuName, MF_BYCOMMAND);
+			std::wstring wstr = wstrMenuName.GetString();
+			if (const auto nPos = wstr.find('\t'); nPos != std::wstring::npos) {
+				wstr.erase(nPos);
 			}
+
+			wstr += L'\t';
+			if (refKB.fCtrl) {
+				wstr += L"Ctrl+";
+			}
+			if (refKB.fShift) {
+				wstr += L"Shift+";
+			}
+			if (refKB.fAlt) {
+				wstr += L"Alt+";
+			}
+
+			//Search for any special key names: 'Tab', 'Enter', etc... If not found then it's just a char.
+			if (const auto itUmap = std::find_if(umapKeys.begin(), umapKeys.end(), [&](const auto& ref) {
+				return ref.second.first == refKB.uKey; }); itUmap != umapKeys.end()) {
+				wstr += itUmap->second.second;
+			}
+			else {
+				wstr += static_cast<unsigned char>(refKB.uKey);
+			}
+
+			//Modify menu with a new name (with shortcut appended) and old bitmap.
+			MENUITEMINFOW mii { .cbSize = sizeof(MENUITEMINFOW), .fMask = MIIM_BITMAP | MIIM_STRING };
+			m_menuMain.GetMenuItemInfoW(refKB.wMenuID, &mii);
+			mii.dwTypeData = wstr.data();
+			m_menuMain.SetMenuItemInfoW(refKB.wMenuID, &mii);
 		}
 	}
 
-	return fJSONParsed;
+	return true;
 }
 
 void CHexCtrl::SetData(const HEXDATA& hds, bool fAdjust)
@@ -1854,7 +1852,7 @@ void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 		//Determine current user locale-specific date format.
 		if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
 			reinterpret_cast<LPWSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat)) == 0) {
-			assert(true); //Something went wrong.			
+			DBG_REPORT(L"GetLocaleInfoEx == 0");
 		}
 	}
 	else {
