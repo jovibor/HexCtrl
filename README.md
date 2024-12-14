@@ -158,15 +158,14 @@ Clone the repo with all submodules:
 
 ### [](#)Integrate Sources
 To build **HexCtrl** from the sources:
-1. Add all files from the `HexCtrl` folder into your project  
-(can skip adding *rapidjson-amalgam.h*)
-1. Make sure to disable **Precompiled Header** usage for all `*.ixx` files in your project
+1. Add all files from the `HexCtrl` folder into your project
+1. Make sure to disable **Precompiled Header** usage for all `*.ixx` files in the project
 1. Add `#include "HexCtrl.h"`
-1. Declare **HexCtrl** object:
-    ```cpp
-    auto myHex { HEXCTRL::CreateHexCtrl() };
-    ```
+1. Declare **HexCtrl** object: `auto myHex { HEXCTRL::CreateHexCtrl() };`
 1. [Create](#creating) control instance
+
+> [!NOTE]
+> You can skip adding *rapidjson-amalgam.h* into your project, to avoid polluting project's global namespace.
 
 > [!NOTE]
 > If you want to build **HexCtrl** from the sources in non-**MFC** app:
