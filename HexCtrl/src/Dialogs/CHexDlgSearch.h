@@ -17,6 +17,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
+		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		void SearchNextPrev(bool fForward);
 		void SetDlgProperties(std::uint64_t u64Flags);
 		BOOL ShowWindow(int nCmdShow);
@@ -123,7 +124,8 @@ namespace HEXCTRL::INTERNAL {
 			constexpr SEARCHTYPE(EMemCmp eMemCmp, EVecSize eVecSize, bool fDlgClbck = false, bool fMatchCase = false,
 				bool fWildcard = false, bool fInverted = false) :
 				eMemCmp { eMemCmp }, eVecSize { eVecSize }, fDlgClbck { fDlgClbck }, fMatchCase { fMatchCase },
-				fWildcard { fWildcard }, fInverted { fInverted } {}
+				fWildcard { fWildcard }, fInverted { fInverted } {
+			}
 			constexpr ~SEARCHTYPE() = default;
 			EMemCmp eMemCmp { };
 			EVecSize eVecSize { };

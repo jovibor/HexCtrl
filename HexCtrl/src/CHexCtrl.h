@@ -159,7 +159,6 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTEST>; //Is any hex chunk withing given point?
 		[[nodiscard]] bool IsCurTextArea()const;               //Whether last focus was set at Text or Hex chunks area.
 		[[nodiscard]] bool IsDrawable()const;                  //Should WM_PAINT be handled atm or not.
-		[[nodiscard]] bool IsDlgMessage(MSG* pMsg)const;       //IsDialogMessageW for all internal dialogs.
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
 		//Main "Modify" method with different workers.
 		void ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, HEXCTRL::SpanCByte spnOper);

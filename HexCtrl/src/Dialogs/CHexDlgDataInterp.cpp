@@ -115,6 +115,22 @@ bool CHexDlgDataInterp::HasHighlight()const
 	return m_dwHglDataSize > 0;
 }
 
+bool CHexDlgDataInterp::PreTranslateMsg(MSG* pMsg)
+{
+	if (m_hWnd == nullptr)
+		return false;
+
+	//Check first if a message is for any of m_gridCtrl's child window (CMFCPropertyGridProperty),
+	//to make sure we process only m_gridCtrl related messages.
+	if (const auto hWndParent = ::GetParent(pMsg->hwnd); hWndParent == m_gridCtrl.m_hWnd) {
+		if (m_gridCtrl.PreTranslateMessage(pMsg) != FALSE) { return true; }
+	}
+
+	if (::IsDialogMessageW(m_hWnd, pMsg) != FALSE) { return true; }
+
+	return false;
+}
+
 void CHexDlgDataInterp::SetDlgProperties(std::uint64_t u64Flags)
 {
 	m_u64Flags = u64Flags;

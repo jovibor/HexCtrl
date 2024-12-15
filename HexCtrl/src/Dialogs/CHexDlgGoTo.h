@@ -13,6 +13,7 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsRepeatAvail()const;
+		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
 		void SetDlgProperties(std::uint64_t u64Flags);
 		BOOL ShowWindow(int nCmdShow);

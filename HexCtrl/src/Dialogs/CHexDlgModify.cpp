@@ -769,6 +769,16 @@ void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl)
 	m_pHexCtrl = pHexCtrl;
 }
 
+bool CHexDlgModify::PreTranslateMsg(MSG* pMsg)
+{
+	if (m_hWnd == nullptr)
+		return false;
+
+	if (::IsDialogMessageW(m_hWnd, pMsg) != FALSE) { return true; }
+
+	return false;
+}
+
 void CHexDlgModify::SetDlgProperties(std::uint64_t u64Flags)
 {
 	m_u64Flags = u64Flags;

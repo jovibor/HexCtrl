@@ -40,6 +40,16 @@ bool CHexDlgGoTo::IsRepeatAvail()const
 	return m_fRepeat;
 }
 
+bool CHexDlgGoTo::PreTranslateMsg(MSG* pMsg)
+{
+	if (m_hWnd == nullptr)
+		return false;
+
+	if (::IsDialogMessageW(m_hWnd, pMsg) != FALSE) { return true; }
+
+	return false;
+}
+
 void CHexDlgGoTo::Repeat(bool fFwd)
 {
 	if (!IsRepeatAvail()) {

@@ -124,6 +124,16 @@ bool CHexDlgSearch::IsSearchAvail()const
 	return IsWindow(m_hWnd) && GetHexCtrl()->IsDataSet();
 }
 
+bool CHexDlgSearch::PreTranslateMsg(MSG* pMsg)
+{
+	if (m_hWnd == nullptr)
+		return false;
+
+	if (::IsDialogMessageW(m_hWnd, pMsg) != FALSE) { return true; }
+
+	return false;
+}
+
 void CHexDlgSearch::SearchNextPrev(bool fForward)
 {
 	m_fForward = fForward;
@@ -2344,17 +2354,20 @@ auto CHexDlgSearch::SearchFuncVecFwdByte4(const SEARCHFUNCDATA& refSearch)->FIND
 }
 #else //^^^ defined(_M_IX86) || defined(_M_X64) / vvv !defined(_M_IX86) && !defined(_M_X64)
 template<CHexDlgSearch::SEARCHTYPE stType>
-auto CHexDlgSearch::SearchFuncVecFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRESULT {
+auto CHexDlgSearch::SearchFuncVecFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRESULT
+{
 	return CHexDlgSearch::SearchFuncFwd<stType>(refSearch);
 }
 
 template<CHexDlgSearch::SEARCHTYPE stType>
-auto CHexDlgSearch::SearchFuncVecFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRESULT {
+auto CHexDlgSearch::SearchFuncVecFwdByte2(const SEARCHFUNCDATA& refSearch)->FINDRESULT
+{
 	return CHexDlgSearch::SearchFuncFwd<stType>(refSearch);
 }
 
 template<CHexDlgSearch::SEARCHTYPE stType>
-auto CHexDlgSearch::SearchFuncVecFwdByte4(const SEARCHFUNCDATA& refSearch)->FINDRESULT {
+auto CHexDlgSearch::SearchFuncVecFwdByte4(const SEARCHFUNCDATA& refSearch)->FINDRESULT
+{
 	return CHexDlgSearch::SearchFuncFwd<stType>(refSearch);
 }
 #endif //^^^ !defined(_M_IX86) && !defined(_M_X64)

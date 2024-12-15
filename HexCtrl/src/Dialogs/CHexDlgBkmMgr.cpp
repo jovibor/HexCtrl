@@ -197,6 +197,16 @@ bool CHexDlgBkmMgr::IsVirtual()const
 	return m_pVirtual != nullptr;
 }
 
+bool CHexDlgBkmMgr::PreTranslateMsg(MSG* pMsg)
+{
+	if (m_hWnd == nullptr)
+		return false;
+
+	if (::IsDialogMessageW(m_hWnd, pMsg) != FALSE) { return true; }
+
+	return false;
+}
+
 void CHexDlgBkmMgr::RemoveAll()
 {
 	if (m_pVirtual) {

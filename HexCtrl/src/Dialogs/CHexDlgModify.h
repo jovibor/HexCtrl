@@ -18,6 +18,7 @@ namespace HEXCTRL::INTERNAL {
 		~CHexDlgModify();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl);
+		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		void SetDlgProperties(std::uint64_t u64Flags);
 		BOOL ShowWindow(int nCmdShow, int iTab);
 	private:

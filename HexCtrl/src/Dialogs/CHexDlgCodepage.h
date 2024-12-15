@@ -15,6 +15,7 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		void AddCP(std::wstring_view wsv);
 		void Initialize(IHexCtrl* pHexCtrl);
+		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		void SetDlgProperties(std::uint64_t u64Flags);
 		BOOL ShowWindow(int nCmdShow);
 	private:

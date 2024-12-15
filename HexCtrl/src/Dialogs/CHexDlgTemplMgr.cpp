@@ -290,6 +290,16 @@ int CHexDlgTemplMgr::LoadTemplate(const wchar_t* pFilePath)
 	return iNewTemplateID;
 }
 
+bool CHexDlgTemplMgr::PreTranslateMsg(MSG* pMsg)
+{
+	if (m_hWnd == nullptr)
+		return false;
+
+	if (::IsDialogMessageW(m_hWnd, pMsg) != FALSE) { return true; }
+
+	return false;
+}
+
 void CHexDlgTemplMgr::SetDlgProperties(std::uint64_t u64Flags)
 {
 	m_u64Flags = u64Flags;
@@ -2145,7 +2155,8 @@ auto CHexDlgTemplMgr::JSONColors(const rapidjson::Value& value, const char* pszC
 }
 
 auto CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass,
-	DWORD_PTR /*dwRefData*/)->LRESULT {
+	DWORD_PTR /*dwRefData*/)->LRESULT
+{
 	switch (uMsg) {
 	case WM_KILLFOCUS:
 		return 0; //Do nothing when Tree loses focus, to save current selection.

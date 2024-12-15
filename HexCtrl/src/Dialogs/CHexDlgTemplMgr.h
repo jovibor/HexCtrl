@@ -39,6 +39,7 @@ namespace HEXCTRL::INTERNAL {
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsTooltips()const;
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
+		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowTooltips(bool fShow)override;
 		BOOL ShowWindow(int nCmdShow);

@@ -27,6 +27,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset) -> PHEXBKM override;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsVirtual()const;
+		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		void RemoveAll()override;
 		void RemoveByOffset(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID)override;

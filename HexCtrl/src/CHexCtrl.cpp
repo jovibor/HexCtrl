@@ -1367,9 +1367,13 @@ bool CHexCtrl::PreTranslateMsg(MSG* pMsg)
 	//The common if(!IsCreated()) check is ommited here for max throughput.
 	assert(IsCreated());
 
-	if (IsDlgMessage(pMsg)) {
-		return true;
-	}
+	if (m_pDlgBkmMgr->PreTranslateMsg(pMsg)) { return true; }
+	if (m_pDlgDataInterp->PreTranslateMsg(pMsg)) { return true; }
+	if (m_pDlgModify->PreTranslateMsg(pMsg)) { return true; }
+	if (m_pDlgSearch->PreTranslateMsg(pMsg)) { return true; }
+	if (m_pDlgCodepage->PreTranslateMsg(pMsg)) { return true; }
+	if (m_pDlgGoTo->PreTranslateMsg(pMsg)) { return true; }
+	if (m_pDlgTemplMgr->PreTranslateMsg(pMsg)) { return true; }
 
 	return false;
 }
@@ -3794,34 +3798,6 @@ bool CHexCtrl::IsCurTextArea()const
 bool CHexCtrl::IsDrawable()const
 {
 	return m_fRedraw;
-}
-
-bool CHexCtrl::IsDlgMessage(MSG* pMsg)const
-{
-	//Check all internal dialogs with the IsDialogMessageW, to make dialog's navigation work.
-	if (m_pDlgBkmMgr->m_hWnd != nullptr) {
-		if (::IsDialogMessageW(m_pDlgBkmMgr->m_hWnd, pMsg) != FALSE) { return true; }
-	}
-	if (m_pDlgDataInterp->m_hWnd != nullptr) {
-		if (::IsDialogMessageW(m_pDlgDataInterp->m_hWnd, pMsg) != FALSE) { return true; }
-	}
-	if (m_pDlgModify->m_hWnd != nullptr) {
-		if (::IsDialogMessageW(m_pDlgModify->m_hWnd, pMsg) != FALSE) { return true; }
-	}
-	if (m_pDlgSearch->m_hWnd != nullptr) {
-		if (::IsDialogMessageW(m_pDlgSearch->m_hWnd, pMsg) != FALSE) { return true; }
-	}
-	if (m_pDlgCodepage->m_hWnd != nullptr) {
-		if (::IsDialogMessageW(m_pDlgCodepage->m_hWnd, pMsg) != FALSE) { return true; }
-	}
-	if (m_pDlgGoTo->m_hWnd != nullptr) {
-		if (::IsDialogMessageW(m_pDlgGoTo->m_hWnd, pMsg) != FALSE) { return true; }
-	}
-	if (m_pDlgTemplMgr->m_hWnd != nullptr) {
-		if (::IsDialogMessageW(m_pDlgTemplMgr->m_hWnd, pMsg) != FALSE) { return true; }
-	}
-
-	return false;
 }
 
 bool CHexCtrl::IsPageVisible()const
