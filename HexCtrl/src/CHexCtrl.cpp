@@ -138,12 +138,12 @@ END_MESSAGE_MAP()
 
 CHexCtrl::CHexCtrl(HINSTANCE hInstClass)
 {
-	//GetModuleHandleW(nullptr) always returns a handle to the file used to create the calling process (the .exe).
-	//AfxGetInstanceHandle returns a handle to a .exe, or DLL if called from a DLL linked with the _USRDLL version of MFC.
+	//GetModuleHandleW(nullptr) always returns handle to the .exe used to create the calling process.
+	//AfxGetInstanceHandle() returns either .exe or DLL handle, if called from DLL linked with the _USRDLL version of MFC.
 	//When using HexCtrl as a Custom control in a dialog, it's vital to register Window Class (wc.hInstance) with
-	//the .exe's handle not the DLL's, for proper subclassing in the dialog.
-	//Otherwise, a Custom control won't find the "HexCtrl" Window Class, and dialog won't even start.
-	//The hInstClass arg here is to provide a handle to the dialog's app, to properly register HexCtrl Window class with it.
+	//the .exe's handle (not the DLL's), for proper subclassing.
+	//Otherwise, a custom control won't find the "HexCtrl" Window Class, and dialog won't even start.
+	//The hInstClass arg here is exactly for that, to provide handle to the dialog's .exe.
 
 	const auto hInst = hInstClass != nullptr ? hInstClass : AfxGetInstanceHandle();
 	if (WNDCLASSEXW wc; GetClassInfoExW(hInst, m_pwszClassName, &wc) == FALSE) {
@@ -198,14 +198,14 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	if (hcs.fCustom) {
 		//If it's a Custom Control in dialog, there is no need to create a window, just subclassing.
-		if (SubclassDlgItem(hcs.uID, CWnd::FromHandle(hcs.hWndParent)) == FALSE) {
+		if (SubclassDlgItem(hcs.uID, FromHandle(hcs.hWndParent)) == FALSE) {
 			DBG_REPORT(L"SubclassDlgItem failed, check HEXCREATE parameters.");
 			return false;
 		}
 	}
 	else {
-		if (CWnd::CreateEx(hcs.dwExStyle, m_pwszClassName, L"HexCtrl", hcs.dwStyle, hcs.rect,
-			CWnd::FromHandle(hcs.hWndParent), hcs.uID) == FALSE) {
+		if (CreateEx(hcs.dwExStyle, m_pwszClassName, L"HexCtrl", hcs.dwStyle, hcs.rect,
+			FromHandle(hcs.hWndParent), hcs.uID) == FALSE) {
 			DBG_REPORT(L"CreateWindowExW failed, check HEXCREATE parameters.");
 			return false;
 		}

@@ -992,7 +992,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 
 	const auto dwStyle = lcs.dwStyle | LVS_OWNERDRAWFIXED | LVS_REPORT;
 	if (lcs.fDialogCtrl) {
-		if (!SubclassDlgItem(lcs.uID, lcs.pParent))
+		if (SubclassDlgItem(lcs.uID, lcs.pParent) == FALSE)
 			return false;
 
 		const auto dwStyleCurr = GetWindowLongPtrW(m_hWnd, GWL_STYLE);
@@ -1000,7 +1000,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 		m_fVirtual = dwStyleCurr & LVS_OWNERDATA;
 	}
 	else {
-		if (!CMFCListCtrl::CreateEx(lcs.dwExStyle, dwStyle, lcs.rect, lcs.pParent, lcs.uID))
+		if (CreateEx(lcs.dwExStyle, dwStyle, lcs.rect, lcs.pParent, lcs.uID) == FALSE)
 			return false;
 
 		m_fVirtual = dwStyle & LVS_OWNERDATA;

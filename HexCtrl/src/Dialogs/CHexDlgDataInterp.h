@@ -12,11 +12,11 @@
 import HEXCTRL.HexUtility;
 
 namespace HEXCTRL::INTERNAL {
-	constexpr auto WM_PROPGRID_PROPERTY_SELECTED = WM_USER + 0x1U; //Message to the parent, when new property is selected.
+	constexpr auto WM_PROPGRIDCTRL_ONCHANGESELECTION = WM_USER + 0x1U; //Message to the parent, when new property is selected.
 	class CHexPropGridCtrl final : public CMFCPropertyGridCtrl {
 	private:
 		void OnChangeSelection(CMFCPropertyGridProperty* pNewProp, CMFCPropertyGridProperty* /*pOldProp*/)override {
-			GetParent()->SendMessageW(WM_PROPGRID_PROPERTY_SELECTED, GetDlgCtrlID(), reinterpret_cast<LPARAM>(pNewProp));
+			GetParent()->SendMessageW(WM_PROPGRIDCTRL_ONCHANGESELECTION, GetDlgCtrlID(), reinterpret_cast<LPARAM>(pNewProp));
 		}
 		void OnSize(UINT /*f*/, int /*cx*/, int /*cy*/) {
 			EndEditItem();

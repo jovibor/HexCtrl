@@ -10,7 +10,6 @@
 // Generated from the TEXTINCLUDE 2 resource.
 //
 #include "winres.h"
-
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -33,14 +32,14 @@ END
 
 2 TEXTINCLUDE 
 BEGIN
-    "#include ""winres.h""\r\n"
-    "\0"
+    "#include ""winres.h""\0"
 END
 
 3 TEXTINCLUDE 
 BEGIN
-    "\r\n"
-    "\0"
+    "#if defined(HEXCTRL_DYNAMIC_LIB) //CMFCColorDialog won't work when in dll without this.\r\n"
+    "#include ""afxribbon.rc"" // MFC ribbon and control bar resources \r\n"
+    "#endif\0"
 END
 
 #endif    // APSTUDIO_INVOKED
@@ -571,8 +570,9 @@ IDJ_HEXCTRL_KEYBIND     JSON                    "IDJ_HEXCTRL_KEYBIND.json"
 //
 // Generated from the TEXTINCLUDE 3 resource.
 //
-
-
+#if defined(HEXCTRL_DYNAMIC_LIB) //CMFCColorDialog won't work when in dll without this.
+#include "afxribbon.rc" // MFC ribbon and control bar resources 
+#endif
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

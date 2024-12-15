@@ -535,7 +535,7 @@ void CHexDlgBkmMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		return;
 	}
 
-	CMFCColorDialog dlg(*pClr);
+	CMFCColorDialog dlg(*pClr, 0, this);
 	if (dlg.DoModal() != IDOK) {
 		return;
 	}
