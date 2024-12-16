@@ -33,14 +33,14 @@ import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 
-HEXCTRLAPI HEXCTRL::IHexCtrlPtr HEXCTRL::CreateHexCtrl(HINSTANCE hInstClass) {
+HEXCTRLAPI HEXCTRL::IHexCtrlPtr HEXCTRL::CreateHexCtrl() {
 #if defined(HEXCTRL_MANUAL_MFC_INIT)
 	//MFC initialization, if HexCtrl is used in non MFC project with the "Shared MFC" linking.
 	if (!AfxGetModuleState()->m_lpszCurrentAppName) {
 		AfxWinInit(::GetModuleHandleW(nullptr), nullptr, ::GetCommandLineW(), 0);
 	}
 #endif
-	return IHexCtrlPtr { new HEXCTRL::INTERNAL::CHexCtrl(hInstClass) };
+	return IHexCtrlPtr { new HEXCTRL::INTERNAL::CHexCtrl() };
 }
 
 #if defined(HEXCTRL_DYNAMIC_LIB) || defined(HEXCTRL_MANUAL_MFC_INIT)
@@ -136,22 +136,20 @@ BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
 	ON_WM_VSCROLL()
 END_MESSAGE_MAP()
 
-CHexCtrl::CHexCtrl(HINSTANCE hInstClass)
+CHexCtrl::CHexCtrl()
 {
-	//GetModuleHandleW(nullptr) always returns handle to the .exe used to create the calling process.
-	//AfxGetInstanceHandle() returns either .exe or DLL handle, if called from DLL linked with the _USRDLL version of MFC.
-	//When using HexCtrl as a Custom control in a dialog, it's vital to register Window Class (wc.hInstance) with
-	//the .exe's handle (not the DLL's), for proper subclassing.
-	//Otherwise, a custom control won't find the "HexCtrl" Window Class, and dialog won't even start.
-	//The hInstClass arg here is exactly for that, to provide handle to the dialog's .exe.
-
-	const auto hInst = hInstClass != nullptr ? hInstClass : AfxGetInstanceHandle();
-	if (WNDCLASSEXW wc; GetClassInfoExW(hInst, m_pwszClassName, &wc) == FALSE) {
+	//CS_GLOBALCLASS flag creates window class which is global to a whole app.
+	//This window class can be accessed from the app itself and from any dll this app uses.
+	//If HexCtrl is used as a regular dll, its window class will be registered with
+	//the hInstance of the dll and hence will be unavailable from the main app.
+	//It's mostly vital for the Custom controls within dialogs, which must have access to custom
+	//classes names during dialog creation.
+	if (WNDCLASSEXW wc; GetClassInfoExW(nullptr, m_pwszClassName, &wc) == FALSE) {
 		wc.cbSize = sizeof(WNDCLASSEXW);
-		wc.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
+		wc.style = CS_GLOBALCLASS | CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
 		wc.lpfnWndProc = ::DefWindowProcW;
 		wc.cbClsExtra = wc.cbWndExtra = 0;
-		wc.hInstance = hInst;
+		wc.hInstance = AfxGetInstanceHandle();
 		wc.hIcon = wc.hIconSm = nullptr;
 		wc.hCursor = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 		wc.hbrBackground = nullptr;
@@ -162,6 +160,11 @@ CHexCtrl::CHexCtrl(HINSTANCE hInstClass)
 			return;
 		}
 	}
+}
+
+CHexCtrl::~CHexCtrl()
+{
+	UnregisterClassW(m_pwszClassName, nullptr);
 }
 
 void CHexCtrl::ClearData()

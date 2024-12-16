@@ -35,13 +35,6 @@ BEGIN
     "#include ""winres.h""\0"
 END
 
-3 TEXTINCLUDE 
-BEGIN
-    "#if defined(HEXCTRL_DYNAMIC_LIB) //CMFCColorDialog won't work when in dll without this.\r\n"
-    "#include ""afxribbon.rc"" // MFC ribbon and control bar resources \r\n"
-    "#endif\0"
-END
-
 #endif    // APSTUDIO_INVOKED
 
 
@@ -563,16 +556,4 @@ IDJ_HEXCTRL_KEYBIND     JSON                    "IDJ_HEXCTRL_KEYBIND.json"
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
-
-
-#ifndef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// Generated from the TEXTINCLUDE 3 resource.
-//
-#if defined(HEXCTRL_DYNAMIC_LIB) //CMFCColorDialog won't work when in dll without this.
-#include "afxribbon.rc" // MFC ribbon and control bar resources 
-#endif
-/////////////////////////////////////////////////////////////////////////////
-#endif    // not APSTUDIO_INVOKED
 

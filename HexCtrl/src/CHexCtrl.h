@@ -31,13 +31,12 @@ namespace HEXCTRL::INTERNAL {
 	********************************************************************************************/
 	class CHexCtrl final : public CWnd, public IHexCtrl {
 	public:
-		explicit CHexCtrl() = default;
-		explicit CHexCtrl(HINSTANCE hInstClass);
+		explicit CHexCtrl();
 		CHexCtrl(const CHexCtrl&) = delete;
 		CHexCtrl(CHexCtrl&&) = delete;
 		CHexCtrl& operator=(const CHexCtrl&) = delete;
 		CHexCtrl& operator=(CHexCtrl&&) = delete;
-		~CHexCtrl() = default;
+		~CHexCtrl();
 		void ClearData()override;
 		bool Create(const HEXCREATE& hcs)override;
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)override;
@@ -219,7 +218,7 @@ namespace HEXCTRL::INTERNAL {
 		DECLARE_MESSAGE_MAP();
 	private:
 		static constexpr auto m_pwszHexChars { L"0123456789ABCDEF" }; //Hex digits wchars for fast lookup.
-		static constexpr auto m_pwszClassName { L"HexCtrl" };         //HexCtrl Window Class name.
+		static constexpr auto m_pwszClassName { L"HexCtrl_51F07D56" };//HexCtrl unique Window Class name.
 		static constexpr auto m_uIDTTTMain { 0x01UL };                //Timer ID for default tooltip.
 		static constexpr auto m_iIndentBottomLine { 1 };              //Bottom line indent from window's bottom.
 		static constexpr auto m_iFirstHorzLinePx { 0 };               //First horizontal line indent.

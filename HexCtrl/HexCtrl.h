@@ -471,7 +471,7 @@ namespace HEXCTRL {
 
 	struct IHexCtrlDeleter { void operator()(IHexCtrl* p)const { p->Destroy(); } };
 	using IHexCtrlPtr = std::unique_ptr<IHexCtrl, IHexCtrlDeleter>;
-	[[nodiscard]] HEXCTRLAPI IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstClass = nullptr);
+	[[nodiscard]] HEXCTRLAPI IHexCtrlPtr CreateHexCtrl();
 
 	/**************************************************************************
 	* WM_NOTIFY message codes (NMHDR.code values).                            *

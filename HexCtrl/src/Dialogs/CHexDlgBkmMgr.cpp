@@ -7,7 +7,6 @@
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgBkmMgr.h"
-#include <afxcontrolbars.h>
 #include <algorithm>
 #include <cassert>
 #include <format>
@@ -545,12 +544,14 @@ void CHexDlgBkmMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 		return;
 	}
 
-	CMFCColorDialog dlg(*pClr, 0, this);
-	if (dlg.DoModal() != IDOK) {
+	COLORREF arrClr[16] { };
+	CHOOSECOLORW stChclr { .lStructSize { sizeof(CHOOSECOLORW) }, .rgbResult { *pClr },
+		.lpCustColors { arrClr }, .Flags { CC_ANYCOLOR | CC_FULLOPEN | CC_RGBINIT } };
+	if (ChooseColorW(&stChclr) == FALSE) {
 		return;
 	}
 
-	*pClr = dlg.GetColor();
+	*pClr = stChclr.rgbResult;
 	m_pHexCtrl->Redraw();
 }
 

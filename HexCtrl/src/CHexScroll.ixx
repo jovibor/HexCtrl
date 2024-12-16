@@ -86,40 +86,36 @@ namespace HEXCTRL::INTERNAL {
 		DECLARE_MESSAGE_MAP();
 	private:
 		static constexpr auto m_iThumbPosMax { 0x7FFFFFFF };
-		enum class EState : std::uint8_t; //Forward declaration.
+		enum class EState : std::uint8_t;
 		enum class ETimer : std::uint16_t;
-		CWnd* m_pParent { };               //Parent window.
-		CHexScroll* m_pSibling { };         //Sibling scrollbar, added with AddSibling.
-		CBitmap m_bmpArrowFirst;           //Up or Left arrow bitmap.
-		CBitmap m_bmpArrowLast;            //Down or Right arrow bitmap.
-		EState m_eState { };               //Current state.
-		CPoint m_ptCursorCur;              //Cursor's current position.
-		UINT m_uiScrollBarSizeWH { };      //Scrollbar size (width if vertical, height if horz).
-		int m_iArrowRCSizePx { };          //Arrow bitmap side size (it's a square) in pixels.
-		ULONGLONG m_ullScrollPosCur { 0 }; //Current scroll position.
-		ULONGLONG m_ullScrollPosPrev { };  //Previous scroll position.
-		ULONGLONG m_ullScrollLine { };     //Size of one line scroll, when clicking arrow.
-		ULONGLONG m_ullScrollPage { };     //Size of page scroll, when clicking channel.
-		ULONGLONG m_ullScrollSizeMax { };  //Maximum scroll size (limit).
-		bool m_fCreated { false };         //Main creation flag.
-		bool m_fVisible { false };         //Is visible at the moment or not.
-		bool m_fScrollVert { };            //Scrollbar type, horizontal or vertical.
+		CWnd* m_pParent { };              //Parent window.
+		CHexScroll* m_pSibling { };       //Sibling scrollbar, added with AddSibling.
+		CBitmap m_bmpArrowFirst;          //Up or Left arrow bitmap.
+		CBitmap m_bmpArrowLast;           //Down or Right arrow bitmap.
+		EState m_eState { };              //Current state.
+		CPoint m_ptCursorCur;             //Cursor's current position.
+		UINT m_uiScrollBarSizeWH { };     //Scrollbar size (width if vertical, height if horz).
+		int m_iArrowRCSizePx { };         //Arrow bitmap side size (it's a square) in pixels.
+		ULONGLONG m_ullScrollPosCur { };  //Current scroll position.
+		ULONGLONG m_ullScrollPosPrev { }; //Previous scroll position.
+		ULONGLONG m_ullScrollLine { };    //Size of one line scroll, when clicking arrow.
+		ULONGLONG m_ullScrollPage { };    //Size of page scroll, when clicking channel.
+		ULONGLONG m_ullScrollSizeMax { }; //Maximum scroll size (limit).
+		bool m_fCreated { false };        //Main creation flag.
+		bool m_fVisible { false };        //Is visible at the moment or not.
+		bool m_fScrollVert { };           //Scrollbar type, horizontal or vertical.
 	};
 }
 
 using namespace HEXCTRL::INTERNAL;
 
 enum class CHexScroll::EState : std::uint8_t {
-	STATE_DEFAULT,
-	FIRSTARROW_HOVER, FIRSTARROW_CLICK,
-	FIRSTCHANNEL_CLICK,
-	THUMB_HOVER, THUMB_CLICK,
-	LASTCHANNEL_CLICK,
-	LASTARROW_CLICK, LASTARROW_HOVER
+	STATE_DEFAULT, FIRSTARROW_HOVER, FIRSTARROW_CLICK, FIRSTCHANNEL_CLICK, THUMB_HOVER,
+	THUMB_CLICK, LASTCHANNEL_CLICK, LASTARROW_CLICK, LASTARROW_HOVER
 };
 
 enum class CHexScroll::ETimer : std::uint16_t {
-	IDT_FIRSTCLICK = 0x7ff0, IDT_CLICKREPEAT = 0x7ff1
+	IDT_FIRSTCLICK = 0x7FF0, IDT_CLICKREPEAT = 0x7FF1
 };
 
 BEGIN_MESSAGE_MAP(CHexScroll, CWnd)
@@ -163,7 +159,7 @@ bool CHexScroll::Create(CWnd* pParent, bool fVert, HBITMAP hArrow, ULONGLONG ull
 		return false;
 	}
 
-	if (!CWnd::CreateEx(0, AfxRegisterWndClass(0), nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr)) {
+	if (CreateEx(0, AfxRegisterWndClass(0U), nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr) == FALSE) {
 		return false;
 	}
 
@@ -398,35 +394,36 @@ void CHexScroll::OnSetCursor(CWnd* /*pWnd*/, UINT nHitTest, UINT message)
 		pParent->ScreenToClient(&pt);
 		pParent->SetFocus();
 		static constexpr auto uTimerFirstClick { 200U }; //Milliseconds for WM_TIMER for first channel click.
+		using enum EState; using enum ETimer;
 
 		if (GetThumbRect(true).PtInRect(pt)) {
 			m_ptCursorCur = pt;
-			m_eState = EState::THUMB_CLICK;
+			m_eState = THUMB_CLICK;
 			pParent->SetCapture();
 		}
 		else if (GetFirstArrowRect(true).PtInRect(pt)) {
 			ScrollLineUp();
-			m_eState = EState::FIRSTARROW_CLICK;
+			m_eState = FIRSTARROW_CLICK;
 			pParent->SetCapture();
-			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
+			SetTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
 		else if (GetLastArrowRect(true).PtInRect(pt)) {
 			ScrollLineDown();
-			m_eState = EState::LASTARROW_CLICK;
+			m_eState = LASTARROW_CLICK;
 			pParent->SetCapture();
-			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
+			SetTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
 		else if (GetFirstChannelRect(true).PtInRect(pt)) {
 			ScrollPageUp();
-			m_eState = EState::FIRSTCHANNEL_CLICK;
+			m_eState = FIRSTCHANNEL_CLICK;
 			pParent->SetCapture();
-			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
+			SetTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
 		else if (GetLastChannelRect(true).PtInRect(pt)) {
 			ScrollPageDown();
-			m_eState = EState::LASTCHANNEL_CLICK;
+			m_eState = LASTCHANNEL_CLICK;
 			pParent->SetCapture();
-			SetTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
+			SetTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK), uTimerFirstClick, nullptr);
 		}
 	}
 	break;
@@ -1017,21 +1014,22 @@ void CHexScroll::SendParentScrollMsg()const
 void CHexScroll::OnTimer(UINT_PTR nIDEvent)
 {
 	static constexpr auto uTimerRepeat { 50U }; //Milliseconds for repeat when click and hold on channel.
+	using enum EState; using enum ETimer;
 
 	switch (nIDEvent) {
-	case (static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK)):
-		KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
-		SetTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT), uTimerRepeat, nullptr);
+	case (static_cast<UINT_PTR>(IDT_FIRSTCLICK)):
+		KillTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK));
+		SetTimer(static_cast<UINT_PTR>(IDT_CLICKREPEAT), uTimerRepeat, nullptr);
 		break;
-	case (static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT)):
+	case (static_cast<UINT_PTR>(IDT_CLICKREPEAT)):
 		switch (m_eState) {
-		case EState::FIRSTARROW_CLICK:
+		case FIRSTARROW_CLICK:
 			ScrollLineUp();
 			break;
-		case EState::LASTARROW_CLICK:
+		case LASTARROW_CLICK:
 			ScrollLineDown();
 			break;
-		case EState::FIRSTCHANNEL_CLICK:
+		case FIRSTCHANNEL_CLICK:
 		{
 			CPoint pt;
 			GetCursorPos(&pt);
@@ -1049,7 +1047,7 @@ void CHexScroll::OnTimer(UINT_PTR nIDEvent)
 			}
 		}
 		break;
-		case EState::LASTCHANNEL_CLICK:
+		case LASTCHANNEL_CLICK:
 		{
 			CPoint pt;
 			GetCursorPos(&pt);

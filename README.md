@@ -202,7 +202,7 @@ To use **HexCtrl** in a Dialog you can create it with the [Classic Approach](#cl
 But there is another option:
 1. Put the **Custom Control** from the **Toolbox** in **Visual Studio** dialog designer onto your dialog template.  
 ![](docs/img/HexCtrl_VSToolbox.jpg) ![](docs/img/HexCtrl_VSCustomCtrl.jpg)
-2. In the **Properties** of this control in the **Class** field, within the **Misc** section, put: *HexCtrl*.
+2. In the **Properties** of this control in the **Class** field, within the **Misc** section, put: **HexCtrl_51F07D56**.
 ![](docs/img/HexCtrl_VSProperties.jpg)
 3. Declare `IHexCtrlPtr` member variable within your dialog class:
     ```cpp
@@ -217,10 +217,10 @@ But there is another option:
     ```
 
 ### [](#)CreateHexCtrl
-```cpp
-[[nodiscard]] IHexCtrlPtr CreateHexCtrl(HINSTANCE hInstClass = nullptr);
+```cpp 
+[[nodiscard]] IHexCtrlPtr CreateHexCtrl();
 ```
-This is the main factory function for creating **HexCtrl** object. The `hInstClass` argument might be additionally provided to set the `HINSTANCE` where **HexCtrl**'s window class will be registered, its main application is for cases when **HexCtrl** is build as a DLL and used as a custom-control in a dialog.
+This is the main factory function for creating **HexCtrl** object. The `IHexCtrlPtr` class is a `IHexCtrl` interface pointer wrapped into a standard `std::unique_ptr` with custom deleter, so you don't need to worry about its destruction.
 
 ## [](#)Setting Data
 To set a data for the **HexCtrl** the [`SetData`](#setdata) method is used. The code below shows how to construct `HexCtrl` object and display first `0x1FF` bytes of the current app's memory:

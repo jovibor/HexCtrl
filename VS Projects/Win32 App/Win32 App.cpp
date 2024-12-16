@@ -81,7 +81,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	}
 
 	//Create HexCtrl instance.
-	m_pHex = HEXCTRL::CreateHexCtrl(hInstance);
+	m_pHex = HEXCTRL::CreateHexCtrl();
 
 	//Create HexCtrl window.
 	m_pHex->Create({ .hWndParent { hWnd }, .uID { IDC_HEXCTRL_MAIN }, .dwStyle { WS_VISIBLE | WS_CHILD } });

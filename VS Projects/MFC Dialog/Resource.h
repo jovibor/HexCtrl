@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by SampleDialog.rc
+// Used by MFCDialog.rc
 //
 #define IDD_HEXCTRL_SAMPLE              102
 #define IDR_MAINFRAME                   128
