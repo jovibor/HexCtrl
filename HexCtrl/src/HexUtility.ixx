@@ -418,6 +418,15 @@ export namespace HEXCTRL::INTERNAL {
 		return ::DefWindowProcW(stMsg.hwnd, stMsg.message, stMsg.wParam, stMsg.lParam);
 	}
 
+	//Device context (HDC) related functions.
+	namespace dc {
+		void FillSolidRect(HDC hDC, LPCRECT pRC, COLORREF clr) {
+			//These two consequent calls is in fact what CDC::FillSolidRect does.
+			::SetBkColor(hDC, clr);
+			::ExtTextOutW(hDC, 0, 0, ETO_OPAQUE, pRC, NULL, 0, NULL);
+		}
+	};
+
 #if defined(DEBUG) || defined(_DEBUG)
 	void DBG_REPORT(const wchar_t* pMsg, const std::source_location& loc = std::source_location::current()) {
 		_wassert(pMsg, StrToWstr(loc.file_name()).data(), loc.line());

@@ -62,9 +62,9 @@ namespace HEXCTRL::INTERNAL {
 		void SetScrollPageSize(ULONGLONG ullSize);
 	private:
 		[[nodiscard]] bool CreateArrows(HBITMAP hArrow, bool fVert);
-		void DrawScrollBar()const;      //Draws the whole Scrollbar.
-		void DrawArrows(CDC* pDC)const; //Draws arrows.
-		void DrawThumb(CDC* pDC)const;  //Draws the Scroll thumb.
+		void DrawScrollBar()const;     //Draw the whole Scrollbar.
+		void DrawArrows(HDC hDC)const; //Draw arrows.
+		void DrawThumb(HDC hDC)const;  //Draw the Scroll thumb.
 		[[nodiscard]] auto GetScrollRect(bool fWithNCArea = false)const->CRect;          //Scroll's whole rect.
 		[[nodiscard]] auto GetScrollWorkAreaRect(bool fClientCoord = false)const->CRect; //Rect without arrows.
 		[[nodiscard]] auto GetScrollSizeWH()const->UINT;                                 //Scroll size in pixels, width or height.
@@ -617,9 +617,7 @@ void CHexScroll::SetScrollPageSize(ULONGLONG ullSize)
 }
 
 
-/********************************************************************
-* Private methods.
-********************************************************************/
+//Private methods.
 
 bool CHexScroll::CreateArrows(HBITMAP hArrow, bool fVert)
 {
@@ -660,13 +658,13 @@ bool CHexScroll::CreateArrows(HBITMAP hArrow, bool fVert)
 
 	if (fVert) {
 		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pPixelsOrig.get()); //Up arrow.
-		lmbFlipVert(pPixelsOrig.get(), dwWidth, dwHeight);              //Down arrow.
+		lmbFlipVert(pPixelsOrig.get(), dwWidth, dwHeight);            //Down arrow.
 	}
 	else {
 		lmbTranspose(pPixelsOrig.get(), dwWidth, dwHeight);
 		lmbFlipVert(pPixelsOrig.get(), dwWidth, dwHeight);
 		m_bmpArrowFirst.SetBitmapBits(dwBytesBmp, pPixelsOrig.get()); //Left arrow.
-		lmbFlipHorz(pPixelsOrig.get(), dwWidth, dwHeight);              //Right arrow.
+		lmbFlipHorz(pPixelsOrig.get(), dwWidth, dwHeight);            //Right arrow.
 	}
 
 	m_bmpArrowLast.SetBitmapBits(dwBytesBmp, pPixelsOrig.get());
@@ -681,27 +679,30 @@ void CHexScroll::DrawScrollBar()const
 	}
 
 	static const auto clrBkNC { GetSysColor(COLOR_3DFACE) }; //Bk color of the non client area. 
-	const auto pParent = GetParent();
-	CWindowDC dcParent(pParent);
-	CDC dcMem;
-	dcMem.CreateCompatibleDC(&dcParent);
-	CBitmap bitmap;
-	const auto rcWnd = GetParentRect(false);
-	bitmap.CreateCompatibleBitmap(&dcParent, rcWnd.Width(), rcWnd.Height());
-	dcMem.SelectObject(&bitmap);
-	const auto pDC = &dcMem;
-	const auto rcSNC = GetScrollRect(true);	//Scroll bar with any additional non client area, to fill it below.
-	pDC->FillSolidRect(rcSNC, clrBkNC);	//Scroll bar with NC Bk.
-	const auto rcS = GetScrollRect();
-	pDC->FillSolidRect(rcS, RGB(241, 241, 241)); //Scroll bar Bk.
-	DrawArrows(pDC);
-	DrawThumb(pDC);
+	static constexpr auto clrBkScroll = RGB(241, 241, 241);  //Scroll Bk color.
 
-	//Copy drawn Scrollbar from dcMem to the parent window.
-	dcParent.BitBlt(rcSNC.left, rcSNC.top, rcSNC.Width(), rcSNC.Height(), &dcMem, rcSNC.left, rcSNC.top, SRCCOPY);
+	const auto pParent = GetParent();
+	const auto hDCParent = ::GetWindowDC(pParent->m_hWnd);
+	const auto hDCMem = ::CreateCompatibleDC(hDCParent);
+	const auto rcWnd = GetParentRect(false);
+	const auto hBMP = ::CreateCompatibleBitmap(hDCParent, rcWnd.Width(), rcWnd.Height());
+	::SelectObject(hDCMem, hBMP);
+	const auto rcSNC = GetScrollRect(true);	//Scroll bar with any additional non client area, to fill it below.
+	dc::FillSolidRect(hDCMem, rcSNC, clrBkNC);
+	const auto rcS = GetScrollRect();
+	dc::FillSolidRect(hDCMem, rcS, clrBkScroll);
+	DrawArrows(hDCMem);
+	DrawThumb(hDCMem);
+
+	//Copy drawn Scrollbar from hDCMem to the parent window (hDCParent).
+	::BitBlt(hDCParent, rcSNC.left, rcSNC.top, rcSNC.Width(), rcSNC.Height(), hDCMem, rcSNC.left, rcSNC.top, SRCCOPY);
+
+	::DeleteObject(hBMP);
+	::DeleteDC(hDCMem);
+	::ReleaseDC(pParent->m_hWnd, hDCParent);
 }
 
-void CHexScroll::DrawArrows(CDC* pDC)const
+void CHexScroll::DrawArrows(HDC hDC)const
 {
 	const auto rcScroll = GetScrollRect();
 	const auto iFirstBtnOffsetDrawX = rcScroll.left;
@@ -722,28 +723,28 @@ void CHexScroll::DrawArrows(CDC* pDC)const
 		iLastBtnOffsetDrawY = rcScroll.top;
 	}
 
-	pDC->SetStretchBltMode(HALFTONE); //To stretch bmp at max quality, without artifacts.
+	::SetStretchBltMode(hDC, HALFTONE); //To stretch bmp at max quality, without artifacts.
 
 	//https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setstretchbltmode
 	//After setting the HALFTONE stretching mode, an application must call the Win32 function
 	//SetBrushOrgEx to set the brush origin. If it fails to do so, brush misalignment occurs.
-	SetBrushOrgEx(pDC->m_hDC, 0, 0, nullptr);
+	::SetBrushOrgEx(hDC, 0, 0, nullptr);
 
-	CDC dcSource;
-	dcSource.CreateCompatibleDC(pDC);
-	dcSource.SelectObject(m_bmpArrowFirst);	//First arrow button.
-	pDC->StretchBlt(iFirstBtnOffsetDrawX, iFirstBtnOffsetDrawY, iFirstBtnWH, iFirstBtnWH,
-		&dcSource, 0, 0, m_iArrowRCSizePx, m_iArrowRCSizePx, SRCCOPY);
-	dcSource.SelectObject(m_bmpArrowLast); //Last arrow button.
-	pDC->StretchBlt(iLastBtnOffsetDrawX, iLastBtnOffsetDrawY, iLastBtnWH, iLastBtnWH,
-		&dcSource, 0, 0, m_iArrowRCSizePx, m_iArrowRCSizePx, SRCCOPY);
+	const auto hDCSource = CreateCompatibleDC(hDC);
+	::SelectObject(hDCSource, m_bmpArrowFirst);	//First arrow button.
+	::StretchBlt(hDC, iFirstBtnOffsetDrawX, iFirstBtnOffsetDrawY, iFirstBtnWH, iFirstBtnWH,
+		hDCSource, 0, 0, m_iArrowRCSizePx, m_iArrowRCSizePx, SRCCOPY);
+	::SelectObject(hDCSource, m_bmpArrowLast); //Last arrow button.
+	::StretchBlt(hDC, iLastBtnOffsetDrawX, iLastBtnOffsetDrawY, iLastBtnWH, iLastBtnWH,
+		hDCSource, 0, 0, m_iArrowRCSizePx, m_iArrowRCSizePx, SRCCOPY);
+	::DeleteDC(hDCSource);
 }
 
-void CHexScroll::DrawThumb(CDC* pDC)const
+void CHexScroll::DrawThumb(HDC hDC)const
 {
 	auto rcThumb = GetThumbRect();
 	if (!rcThumb.IsRectNull()) {
-		pDC->FillSolidRect(rcThumb, RGB(200, 200, 200)); //Scrollbar thumb color.
+		dc::FillSolidRect(hDC, rcThumb, RGB(200, 200, 200)); //Scrollbar thumb color.
 	}
 }
 
