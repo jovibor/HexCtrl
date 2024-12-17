@@ -144,16 +144,11 @@ CHexCtrl::CHexCtrl()
 	//the hInstance of the dll and hence will be unavailable from the main app.
 	//It's mostly vital for the Custom controls within dialogs, which must have access to custom
 	//classes names during dialog creation.
-	if (WNDCLASSEXW wc; GetClassInfoExW(nullptr, m_pwszClassName, &wc) == FALSE) {
+	if (WNDCLASSEXW wc { }; GetClassInfoExW(nullptr, m_pwszClassName, &wc) == FALSE) {
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_GLOBALCLASS | CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
 		wc.lpfnWndProc = ::DefWindowProcW;
-		wc.cbClsExtra = wc.cbWndExtra = 0;
-		wc.hInstance = AfxGetInstanceHandle();
-		wc.hIcon = wc.hIconSm = nullptr;
 		wc.hCursor = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
-		wc.hbrBackground = nullptr;
-		wc.lpszMenuName = nullptr;
 		wc.lpszClassName = m_pwszClassName;
 		if (RegisterClassExW(&wc) == 0) {
 			DBG_REPORT(L"RegisterClassExW failed.");
@@ -1859,7 +1854,7 @@ void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 		//Determine current user locale-specific date format.
 		if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
 			reinterpret_cast<LPWSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat)) == 0) {
-			DBG_REPORT(L"GetLocaleInfoEx == 0");
+			DBG_REPORT(L"GetLocaleInfoEx failed.");
 		}
 	}
 	else {

@@ -407,6 +407,17 @@ export namespace HEXCTRL::INTERNAL {
 		return loc;
 	}
 
+	template<typename T>
+	struct MSG_MAP {
+		using MsgHandler = LRESULT(T::*)(const MSG&); //Function that takes ref to the standard Windows MSG struct.
+		UINT       uMsg { };
+		MsgHandler pMsgHandler { };
+	};
+
+	[[nodiscard]] auto DefMsgProc(const MSG& stMsg) -> LRESULT {
+		return ::DefWindowProcW(stMsg.hwnd, stMsg.message, stMsg.wParam, stMsg.lParam);
+	}
+
 #if defined(DEBUG) || defined(_DEBUG)
 	void DBG_REPORT(const wchar_t* pMsg, const std::source_location& loc = std::source_location::current()) {
 		_wassert(pMsg, StrToWstr(loc.file_name()).data(), loc.line());
