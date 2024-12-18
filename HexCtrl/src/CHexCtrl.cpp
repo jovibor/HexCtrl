@@ -325,8 +325,8 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_penDataTempl.CreatePen(PS_SOLID, 1, RGB(50, 50, 50));
 
 	//ScrollBars should be created here, after the main window has already been created (to attach to), to avoid assertions.
-	m_pScrollV->Create(this, true, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0); //Actual sizes are set in RecalcAll().
-	m_pScrollH->Create(this, false, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0);
+	m_pScrollV->Create(m_hWnd, true, hInst, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0); //Actual sizes are set in RecalcAll().
+	m_pScrollH->Create(m_hWnd, false, hInst, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0);
 	m_pScrollV->AddSibling(m_pScrollH.get());
 	m_pScrollH->AddSibling(m_pScrollV.get());
 
@@ -6998,13 +6998,13 @@ void CHexCtrl::OnLButtonUp(UINT nFlags, CPoint point)
 	m_fLMousePressed = false;
 	ReleaseCapture();
 
-	m_pScrollV->OnLButtonUp(nFlags, point);
-	m_pScrollH->OnLButtonUp(nFlags, point);
+	m_pScrollV->OnLButtonUp();
+	m_pScrollH->OnLButtonUp();
 
 	CWnd::OnLButtonUp(nFlags, point);
 }
 
-void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
+void CHexCtrl::OnMouseMove(UINT /*nFlags*/, CPoint point)
 {
 	const auto optHit = HitTest(point);
 
@@ -7139,8 +7139,8 @@ void CHexCtrl::OnMouseMove(UINT nFlags, CPoint point)
 			}
 		}
 
-		m_pScrollV->OnMouseMove(nFlags, point);
-		m_pScrollH->OnMouseMove(nFlags, point);
+		m_pScrollV->OnMouseMove(point);
+		m_pScrollH->OnMouseMove(point);
 	}
 }
 
@@ -7156,8 +7156,8 @@ BOOL CHexCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 
 BOOL CHexCtrl::OnNcActivate(BOOL bActive)
 {
-	m_pScrollV->OnNcActivate(bActive);
-	m_pScrollH->OnNcActivate(bActive);
+	m_pScrollV->OnNcActivate();
+	m_pScrollH->OnNcActivate();
 
 	return CWnd::OnNcActivate(bActive);
 }
@@ -7167,8 +7167,8 @@ void CHexCtrl::OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp)
 	CWnd::OnNcCalcSize(bCalcValidRects, lpncsp);
 
 	//Sequence is important — H->V.
-	m_pScrollH->OnNcCalcSize(bCalcValidRects, lpncsp);
-	m_pScrollV->OnNcCalcSize(bCalcValidRects, lpncsp);
+	m_pScrollH->OnNcCalcSize(lpncsp);
+	m_pScrollV->OnNcCalcSize(lpncsp);
 }
 
 void CHexCtrl::OnNcPaint()
@@ -7234,8 +7234,8 @@ void CHexCtrl::OnPaint()
 
 BOOL CHexCtrl::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 {
-	m_pScrollV->OnSetCursor(pWnd, nHitTest, message);
-	m_pScrollH->OnSetCursor(pWnd, nHitTest, message);
+	m_pScrollV->OnSetCursor(nHitTest, message);
+	m_pScrollH->OnSetCursor(nHitTest, message);
 
 	return CWnd::OnSetCursor(pWnd, nHitTest, message);
 }

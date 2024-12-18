@@ -407,24 +407,61 @@ export namespace HEXCTRL::INTERNAL {
 		return loc;
 	}
 
-	template<typename T>
-	struct MSG_MAP {
-		using MsgHandler = LRESULT(T::*)(const MSG&); //Function that takes ref to the standard Windows MSG struct.
-		UINT       uMsg { };
-		MsgHandler pMsgHandler { };
-	};
+	namespace wnd { //Windows GUI related stuff.
+		template<typename T>
+		struct MSG_MAP {
+			using MsgHandler = LRESULT(T::*)(const MSG&); //Function that takes ref to the standard Windows MSG struct.
+			UINT       uMsg { };
+			MsgHandler pMsgHandler { };
+		};
 
-	[[nodiscard]] auto DefMsgProc(const MSG& stMsg) -> LRESULT {
-		return ::DefWindowProcW(stMsg.hwnd, stMsg.message, stMsg.wParam, stMsg.lParam);
-	}
+		[[nodiscard]] auto DefMsgProc(const MSG& stMsg) -> LRESULT {
+			return ::DefWindowProcW(stMsg.hwnd, stMsg.message, stMsg.wParam, stMsg.lParam);
+		}
 
-	//Device context (HDC) related functions.
-	namespace dc {
 		void FillSolidRect(HDC hDC, LPCRECT pRC, COLORREF clr) {
-			//These two consequent calls is in fact what CDC::FillSolidRect does.
+			//Replicates CDC::FillSolidRect.
 			::SetBkColor(hDC, clr);
 			::ExtTextOutW(hDC, 0, 0, ETO_OPAQUE, pRC, NULL, 0, NULL);
 		}
+
+		void ClientToScreen(HWND hWnd, LPRECT pRC) {
+			//Replicates CWnd::ClientToScreen.
+			::ClientToScreen(hWnd, reinterpret_cast<LPPOINT>(pRC));
+			::ClientToScreen(hWnd, (reinterpret_cast<LPPOINT>(pRC)) + 1);
+		}
+
+		void ScreenToClient(HWND hWnd, LPRECT pRC) {
+			//Replicates CWnd::ScreenToClient.
+			::ScreenToClient(hWnd, reinterpret_cast<LPPOINT>(pRC));
+			::ScreenToClient(hWnd, (reinterpret_cast<LPPOINT>(pRC)) + 1);
+		}
+
+		int MapWindowPoints(HWND hWndFrom, HWND hWndTo, LPRECT pRC) {
+			return ::MapWindowPoints(hWndFrom, hWndTo, reinterpret_cast<LPPOINT>(pRC), 2);
+		}
+
+		class CHexRect : public RECT {
+		public:
+			CHexRect() { left = 0; top = 0; right = 0; bottom = 0; }
+			CHexRect(const RECT& rc) { ::CopyRect(this, &rc); }
+			CHexRect(LPCRECT pRC) { ::CopyRect(this, pRC); }
+			int Width()const { return right - left; }
+			int Height()const { return bottom - top; }
+			bool PtInRect(POINT pt)const { return ::PtInRect(this, pt); }
+			bool IsRectEmpty()const { return ::IsRectEmpty(this); }
+			bool IsRectNull()const { return (left == 0 && right == 0 && top == 0 && bottom == 0); }
+			void DeflateRect(int x, int y) { ::InflateRect(this, -x, -y); }
+			void DeflateRect(SIZE size) { ::InflateRect(this, -size.cx, -size.cy); }
+			void DeflateRect(LPCRECT pRC) { left += pRC->left; top += pRC->top; right -= pRC->right; bottom -= pRC->bottom; }
+			void DeflateRect(int l, int t, int r, int b) { left += l; top += t; right -= r; bottom -= b; }
+			void OffsetRect(int x, int y) { ::OffsetRect(this, x, y); }
+			void OffsetRect(POINT pt) { ::OffsetRect(this, pt.x, pt.y); }
+			void SetRect(int x1, int y1, int x2, int y2) { ::SetRect(this, x1, y1, x2, y2); }
+			operator LPRECT() { return this; }
+			operator LPCRECT()const { return this; }
+			void operator=(const RECT& rc) { ::CopyRect(this, &rc); }
+		};
 	};
 
 #if defined(DEBUG) || defined(_DEBUG)
