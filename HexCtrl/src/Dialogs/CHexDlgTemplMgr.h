@@ -141,8 +141,8 @@ namespace HEXCTRL::INTERNAL {
 		CButton m_btnSwapEndian;    //Check-box "Swap endian".
 		CWnd m_wndStaticOffset;     //Static text "Template offset:".
 		CWnd m_wndStaticSize;       //Static text Template size:".
-		HBITMAP m_hBITMAPMin { };   //Bitmap for the min checkbox.
-		HBITMAP m_hBITMAPMax { };   //Bitmap for the max checkbox.
+		HBITMAP m_hBmpMin { };      //Bitmap for the min checkbox.
+		HBITMAP m_hBmpMax { };      //Bitmap for the max checkbox.
 		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
 		CTreeCtrl m_tree;
 		CMenu m_menuTree;           //Menu for the tree control.

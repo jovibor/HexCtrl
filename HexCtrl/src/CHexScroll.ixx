@@ -11,7 +11,6 @@ module;
 #include <cmath>
 #include <limits>
 #include <memory>
-#include <unordered_map>
 export module HEXCTRL.CHexScroll;
 
 import HEXCTRL.HexUtility;
@@ -89,7 +88,6 @@ namespace HEXCTRL::INTERNAL {
 		auto OnTimer(const MSG& stMsg) -> LRESULT;
 		void RedrawNC()const;
 		void SendParentScrollMsg()const;            //Sends the WM_(V/H)SCROLL to the parent window.
-		static auto WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) -> LRESULT;
 	private:
 		static constexpr auto m_iThumbPosMax { 0x7FFFFFFF };
 		enum class EState : std::uint8_t;
@@ -97,8 +95,8 @@ namespace HEXCTRL::INTERNAL {
 		CHexScroll* m_pSibling { };       //Sibling scrollbar, added with AddSibling.
 		HWND m_hWnd { };                  //Main window.
 		HWND m_hWndParent { };            //Parent window.
-		HBITMAP m_bmpArrowFirst { };      //Up or Left arrow bitmap.
-		HBITMAP m_bmpArrowLast { };       //Down or Right arrow bitmap.
+		HBITMAP m_hBmpArrowFirst { };     //Up or Left arrow bitmap.
+		HBITMAP m_hBmpArrowLast { };      //Down or Right arrow bitmap.
 		ULONGLONG m_ullScrollPosCur { };  //Current scroll position.
 		ULONGLONG m_ullScrollPosPrev { }; //Previous scroll position.
 		ULONGLONG m_ullScrollLine { };    //Size of one line scroll, when clicking arrow.
@@ -170,7 +168,7 @@ bool CHexScroll::Create(HWND hWndParent, bool fVert, HBITMAP hArrow, ULONGLONG u
 	if (WNDCLASSEXW wc { }; GetClassInfoExW(nullptr, m_pwszScrollClassName, &wc) == FALSE) {
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_GLOBALCLASS;
-		wc.lpfnWndProc = CHexScroll::WndProc;
+		wc.lpfnWndProc = wnd::WndProc<CHexScroll>;
 		wc.lpszClassName = m_pwszScrollClassName;
 		if (RegisterClassExW(&wc) == 0) {
 			DBG_REPORT(L"RegisterClassExW failed.");
@@ -457,18 +455,11 @@ void CHexScroll::OnSetCursor(UINT uHitTest, UINT uMsg)
 
 auto CHexScroll::ProcessMsg(const MSG& stMsg)->LRESULT
 {
-	static const wnd::MSG_MAP<CHexScroll> arrMsg[] {
-		{ .uMsg { WM_DESTROY }, .pMsgHandler { &CHexScroll::OnDestroy } },
-		{ .uMsg { WM_TIMER }, .pMsgHandler { &CHexScroll::OnTimer } }
-	};
-
-	for (const auto& ref : arrMsg) {
-		if (ref.uMsg == stMsg.message) {
-			return (this->*ref.pMsgHandler)(stMsg);
-		}
+	switch (stMsg.message) {
+	case WM_DESTROY: return CHexScroll::OnDestroy(stMsg);
+	case WM_TIMER: return CHexScroll::OnTimer(stMsg);
+	default: return wnd::DefMsgProc(stMsg);
 	}
-
-	return wnd::DefMsgProc(stMsg);
 }
 
 auto CHexScroll::SetScrollPos(ULONGLONG ullNewPos)->ULONGLONG
@@ -661,21 +652,21 @@ bool CHexScroll::CreateArrows(HBITMAP hArrow, bool fVert)
 		}
 		};
 
-	m_bmpArrowFirst = ::CreateBitmapIndirect(&stBMP);
-	m_bmpArrowLast = ::CreateBitmapIndirect(&stBMP);
+	m_hBmpArrowFirst = ::CreateBitmapIndirect(&stBMP);
+	m_hBmpArrowLast = ::CreateBitmapIndirect(&stBMP);
 
 	if (fVert) {
-		::SetBitmapBits(m_bmpArrowFirst, dwBytesBmp, pPixelsOrig.get()); //Up arrow.
+		::SetBitmapBits(m_hBmpArrowFirst, dwBytesBmp, pPixelsOrig.get()); //Up arrow.
 		lmbFlipVert(pPixelsOrig.get(), dwWidth, dwHeight);               //Down arrow.
 	}
 	else {
 		lmbTranspose(pPixelsOrig.get(), dwWidth, dwHeight);
 		lmbFlipVert(pPixelsOrig.get(), dwWidth, dwHeight);
-		::SetBitmapBits(m_bmpArrowFirst, dwBytesBmp, pPixelsOrig.get()); //Left arrow.
+		::SetBitmapBits(m_hBmpArrowFirst, dwBytesBmp, pPixelsOrig.get()); //Left arrow.
 		lmbFlipHorz(pPixelsOrig.get(), dwWidth, dwHeight);               //Right arrow.
 	}
 
-	SetBitmapBits(m_bmpArrowLast, dwBytesBmp, pPixelsOrig.get());
+	SetBitmapBits(m_hBmpArrowLast, dwBytesBmp, pPixelsOrig.get());
 
 	return true;
 }
@@ -739,10 +730,10 @@ void CHexScroll::DrawArrows(HDC hDC)const
 	::SetBrushOrgEx(hDC, 0, 0, nullptr);
 
 	const auto hDCSource = CreateCompatibleDC(hDC);
-	::SelectObject(hDCSource, m_bmpArrowFirst);	//First arrow button.
+	::SelectObject(hDCSource, m_hBmpArrowFirst);	//First arrow button.
 	::StretchBlt(hDC, iFirstBtnOffsetDrawX, iFirstBtnOffsetDrawY, iFirstBtnWH, iFirstBtnWH,
 		hDCSource, 0, 0, m_iArrowRCSizePx, m_iArrowRCSizePx, SRCCOPY);
-	::SelectObject(hDCSource, m_bmpArrowLast); //Last arrow button.
+	::SelectObject(hDCSource, m_hBmpArrowLast); //Last arrow button.
 	::StretchBlt(hDC, iLastBtnOffsetDrawX, iLastBtnOffsetDrawY, iLastBtnWH, iLastBtnWH,
 		hDCSource, 0, 0, m_iArrowRCSizePx, m_iArrowRCSizePx, SRCCOPY);
 	::DeleteDC(hDCSource);
@@ -1002,10 +993,10 @@ bool CHexScroll::IsSiblingVisible()const
 
 auto CHexScroll::OnDestroy(const MSG& stMsg)->LRESULT
 {
-	::DeleteObject(m_bmpArrowFirst);
-	::DeleteObject(m_bmpArrowLast);
-	m_bmpArrowFirst = nullptr;
-	m_bmpArrowLast = nullptr;
+	::DeleteObject(m_hBmpArrowFirst);
+	::DeleteObject(m_hBmpArrowLast);
+	m_hBmpArrowFirst = nullptr;
+	m_hBmpArrowLast = nullptr;
 	m_hWndParent = nullptr;
 	m_fCreated = false;
 
@@ -1126,27 +1117,4 @@ void CHexScroll::SetThumbPos(int iPos)
 	}
 
 	SetScrollPos(ullNewScrollPos);
-}
-
-auto CHexScroll::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->LRESULT
-{
-	static std::unordered_map<HWND, CHexScroll*> uMap;
-
-	//CREATESTRUCTW::lpCreateParams always possesses a `this` pointer, passed to the CreateWindowExW function as lpParam.
-	//We save it to the static uMap to have access to this->ProcessMsg() method.
-	if (uMsg == WM_CREATE) {
-		const auto lpCS = reinterpret_cast<LPCREATESTRUCTW>(lParam);
-		uMap[hWnd] = reinterpret_cast<CHexScroll*>(lpCS->lpCreateParams);
-		return 0;
-	}
-
-	if (const auto it = uMap.find(hWnd); it != uMap.end()) {
-		const auto ret = it->second->ProcessMsg({ .hwnd { hWnd }, .message { uMsg }, .wParam { wParam }, .lParam { lParam } });
-		if (uMsg == WM_NCDESTROY) { //Remove hWnd from the map on window destruction.
-			uMap.erase(it);
-		}
-		return ret;
-	}
-
-	return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }

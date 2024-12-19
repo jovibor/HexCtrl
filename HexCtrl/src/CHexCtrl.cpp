@@ -48,45 +48,173 @@ CWinApp theApp; //CWinApp object is vital for manual MFC, and for in-DLL work.
 #endif
 
 namespace HEXCTRL::INTERNAL {
-	class CHexDlgAbout final : public CDialogEx {
+	class CHexDlgAbout final {
 	public:
-		explicit CHexDlgAbout(CWnd* pParent) : CDialogEx(IDD_HEXCTRL_ABOUT, pParent) { }
+		CHexDlgAbout(HWND hWndParent = nullptr) { m_hWndParent = hWndParent; }
+		auto DoModal() -> INT_PTR;
+		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
 	private:
-		afx_msg void OnDestroy() {
-			DeleteObject(m_bmpLogo);
-			CDialogEx::OnDestroy();
-		};
-		BOOL OnInitDialog()override;
-		DECLARE_MESSAGE_MAP()
+		auto OnCommand(const MSG& stMsg) -> INT_PTR;
+		auto OnCtlClrStatic(const MSG& stMsg) -> INT_PTR;
+		auto OnDestroy() -> INT_PTR;
+		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
+		auto OnLButtonDown(const MSG& stMsg) -> INT_PTR;
+		auto OnLButtonUp(const MSG& stMsg) -> INT_PTR;
+		auto OnMouseMove(const MSG& stMsg) -> INT_PTR;
 	private:
-		HBITMAP m_bmpLogo { }; //Logo bitmap.
+		HWND m_hWnd { };
+		HWND m_hWndParent { };
+		HWND m_hWndLink { };
+		HBITMAP m_hBmpLogo { }; //Logo bitmap.
+		HFONT m_hFontDef { };
+		HFONT m_hFontUnderline { };
+		bool m_fLinkUnderline { };
+		bool m_fLBDownLink { }; //Left button was pressed on the link static control.
 	};
 }
 
-BEGIN_MESSAGE_MAP(CHexDlgAbout, CDialogEx)
-	ON_WM_DESTROY()
-END_MESSAGE_MAP()
+auto CHexDlgAbout::DoModal()->INT_PTR {
+	return DialogBoxParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_ABOUT),
+		m_hWndParent, wnd::DlgWndProc<CHexDlgAbout>, reinterpret_cast<LPARAM>(this));
+}
 
-BOOL CHexDlgAbout::OnInitDialog()
+auto CHexDlgAbout::ProcessMsg(const MSG& stMsg)->INT_PTR {
+	switch (stMsg.message) {
+	case WM_COMMAND: return CHexDlgAbout::OnCommand(stMsg);
+	case WM_CTLCOLORSTATIC: return CHexDlgAbout::OnCtlClrStatic(stMsg);
+	case WM_DESTROY: return CHexDlgAbout::OnDestroy();
+	case WM_INITDIALOG: return CHexDlgAbout::OnInitDialog(stMsg);
+	case WM_LBUTTONDOWN: return CHexDlgAbout::OnLButtonDown(stMsg);
+	case WM_LBUTTONUP: return CHexDlgAbout::OnLButtonUp(stMsg);
+	case WM_MOUSEMOVE: return CHexDlgAbout::OnMouseMove(stMsg);
+	default:
+		return 0;
+	}
+}
+
+auto CHexDlgAbout::OnCommand(const MSG& stMsg)->INT_PTR {
+	switch (LOWORD(stMsg.wParam)) {
+	case IDOK:
+	case IDCANCEL:
+		::EndDialog(m_hWnd, IDOK);
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+auto CHexDlgAbout::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
 {
-	CDialogEx::OnInitDialog();
+	const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam);
+	if (hWndFrom == m_hWndLink) {
+		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
+		::SetTextColor(hDC, RGB(0, 50, 250));
+		::SetBkColor(hDC, GetSysColor(COLOR_BTNFACE));
+		::SelectObject(hDC, m_fLinkUnderline ? m_hFontUnderline : m_hFontDef);
+		return reinterpret_cast<INT_PTR>(::GetStockObject(HOLLOW_BRUSH));
+	}
+
+	return FALSE; //Default handler.
+}
+
+auto CHexDlgAbout::OnDestroy()->INT_PTR {
+	::DeleteObject(m_hBmpLogo);
+	::DeleteObject(m_hFontDef);
+	::DeleteObject(m_hFontUnderline);
+	return TRUE;
+};
+
+auto CHexDlgAbout::OnInitDialog(const MSG& stMsg)->INT_PTR
+{
+	m_hWnd = stMsg.hwnd;
+	m_hWndLink = GetDlgItem(m_hWnd, IDC_HEXCTRL_ABOUT_STAT_LINKGH);
+	SetClassLongPtrW(m_hWnd, GCLP_HCURSOR, 0); //To prevent cursor blinking.
+
+	if (const auto hFont = reinterpret_cast<HFONT>(::SendMessageW(m_hWndLink, WM_GETFONT, 0, 0)); hFont) {
+		m_hFontDef = hFont;
+		LOGFONTW lf { };
+		::GetObjectW(hFont, sizeof(lf), &lf);
+		lf.lfUnderline = TRUE;
+		m_hFontUnderline = ::CreateFontIndirectW(&lf);
+	}
+	else {
+		LOGFONTW lf { };
+		::GetObjectW(static_cast<HFONT>(::GetStockObject(DEFAULT_GUI_FONT)), sizeof(lf), &lf);
+		m_hFontDef = ::CreateFontIndirectW(&lf);
+		lf.lfUnderline = TRUE;
+		m_hFontUnderline = ::CreateFontIndirectW(&lf);
+	}
 
 	const auto wstrVersion = std::format(L"Hex Control for Windows apps, v{}.{}.{}\r\nCopyright © 2018-present Jovibor",
 		HEXCTRL_VERSION_MAJOR, HEXCTRL_VERSION_MINOR, HEXCTRL_VERSION_PATCH);
-	GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_VERSION)->SetWindowTextW(wstrVersion.data());
+	::SetWindowTextW(GetDlgItem(m_hWnd, IDC_HEXCTRL_ABOUT_STAT_VERSION), wstrVersion.data());
 
-	auto pDC = GetDC();
-	const auto iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
-	ReleaseDC(pDC);
+	auto hDC = ::GetDC(m_hWnd);
+	const auto iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
+	::ReleaseDC(m_hWnd, hDC);
 
 	const auto fScale = iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
 	const auto iSizeIcon = static_cast<int>(32 * fScale);
-	m_bmpLogo = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
-		MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO), IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	static_cast<CStatic*>(GetDlgItem(IDC_HEXCTRL_ABOUT_LOGO))->SetBitmap(m_bmpLogo);
+	m_hBmpLogo = static_cast<HBITMAP>(::LoadImageW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO),
+		IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
+	const auto hWndStatic = ::GetDlgItem(m_hWnd, IDC_HEXCTRL_ABOUT_LOGO);
+	::SendMessageW(hWndStatic, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(m_hBmpLogo));
 
 	return TRUE;
 }
+
+auto CHexDlgAbout::OnLButtonDown(const MSG& stMsg)->INT_PTR
+{
+	const POINT pt { .x { GET_X_LPARAM(stMsg.lParam) }, .y { GET_Y_LPARAM(stMsg.lParam) } };
+	const auto hWnd = ::ChildWindowFromPoint(m_hWnd, pt);
+	if (hWnd != m_hWndLink) {
+		m_fLBDownLink = false;
+		return FALSE;
+	}
+
+	m_fLBDownLink = true;
+
+	return TRUE;
+}
+
+auto CHexDlgAbout::OnLButtonUp(const MSG& stMsg) -> INT_PTR
+{
+	const POINT pt { .x { GET_X_LPARAM(stMsg.lParam) }, .y { GET_Y_LPARAM(stMsg.lParam) } };
+	const auto hWnd = ::ChildWindowFromPoint(m_hWnd, pt);
+	if (hWnd != m_hWndLink) {
+		m_fLBDownLink = false;
+		return FALSE;
+	}
+
+	if (m_fLBDownLink) {
+		wchar_t buff[64];
+		::GetWindowTextW(m_hWndLink, buff, std::size(buff));
+		::ShellExecuteW(nullptr, L"open", buff, nullptr, nullptr, 0);
+	}
+
+	return TRUE;
+}
+
+auto CHexDlgAbout::OnMouseMove(const MSG& stMsg)->INT_PTR
+{
+	const POINT pt { .x { GET_X_LPARAM(stMsg.lParam) }, .y { GET_Y_LPARAM(stMsg.lParam) } };
+	const auto hWnd = ::ChildWindowFromPoint(m_hWnd, pt);
+	if (hWnd == nullptr)
+		return FALSE;
+
+	const auto curHand = reinterpret_cast<HCURSOR>(::LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0, LR_SHARED));
+	const auto curArrow = reinterpret_cast<HCURSOR>(::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
+
+	if (m_fLinkUnderline != (m_hWndLink == hWnd)) {
+		m_fLinkUnderline = m_hWndLink == hWnd;
+		::InvalidateRect(m_hWndLink, nullptr, FALSE);
+		::SetCursor(m_fLinkUnderline ? curHand : curArrow);
+	}
+
+	return TRUE;
+}
+
+//CHexCtrl.
 
 enum class CHexCtrl::EClipboard : std::uint8_t {
 	COPY_HEX, COPY_HEXLE, COPY_HEXFMT, COPY_BASE64, COPY_CARR,
@@ -245,7 +373,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		return false;
 	}
 
-	const auto hInst = AfxGetInstanceHandle();
+	const auto hInst = wnd::GetHinstance();
 	const auto fScale = m_iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
 	const auto iSizeIcon = static_cast<int>(16 * fScale);
 	const auto pMenuTop = m_menuMain.GetSubMenu(0); //Context sub-menu handle.
@@ -555,7 +683,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_ABOUT_DLG:
 	{
-		CHexDlgAbout dlgAbout(this);
+		CHexDlgAbout dlgAbout(m_hWnd);
 		dlgAbout.DoModal();
 	}
 	break;
@@ -1653,7 +1781,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 
 	rapidjson::Document docJSON;
 	if (wsvPath.empty()) { //Default IDR_HEXCTRL_JSON_KEYBIND.json, from resources.
-		const auto hInst = AfxGetInstanceHandle();
+		const auto hInst = wnd::GetHinstance();
 		if (const auto hRes = FindResourceW(hInst, MAKEINTRESOURCEW(IDJ_HEXCTRL_KEYBIND), L"JSON"); hRes != nullptr) {
 			if (const auto hData = LoadResource(hInst, hRes); hData != nullptr) {
 				const auto nSize = static_cast<std::size_t>(SizeofResource(hInst, hRes));
@@ -3981,28 +4109,23 @@ void CHexCtrl::ParentNotify(UINT uCode)const
 
 void CHexCtrl::Print()
 {
-	CPrintDialogEx dlg(PD_RETURNDC | (HasSelection() ? PD_SELECTION : PD_NOSELECTION | PD_PAGENUMS), this);
-	dlg.m_pdex.lStructSize = sizeof(PRINTDLGEX);
-	dlg.m_pdex.nStartPage = START_PAGE_GENERAL;
-	dlg.m_pdex.nMinPage = 1;
-	dlg.m_pdex.nMaxPage = 0xFFFFUL;
-	dlg.m_pdex.nPageRanges = 1;
-	dlg.m_pdex.nMaxPageRanges = 1;
-	PRINTPAGERANGE ppr { .nFromPage = 1, .nToPage = 1 };
-	dlg.m_pdex.lpPageRanges = &ppr;
+	PRINTPAGERANGE ppr { .nFromPage { 1 }, .nToPage { 1 } };
+	PRINTDLGEX m_pdex { .lStructSize { sizeof(PRINTDLGEX) }, .hwndOwner { m_hWnd },
+		.Flags { static_cast<DWORD>(PD_RETURNDC | (HasSelection() ? PD_SELECTION : PD_NOSELECTION | PD_PAGENUMS)) },
+		.nPageRanges { 1 }, .nMaxPageRanges { 1 }, .lpPageRanges { &ppr }, .nMinPage { 1 }, .nMaxPage { 0xFFFFUL },
+		.nStartPage { START_PAGE_GENERAL } };
 
-	if (dlg.DoModal() != S_OK) {
+	if (PrintDlgExW(&m_pdex) != S_OK) {
 		MessageBoxW(L"Internal printer initialization error.", L"Error", MB_ICONERROR);
 		return;
 	}
 
-	//User pressed "Cancel", or "Apply" and then "Cancel".
-	if (dlg.m_pdex.dwResultAction == PD_RESULT_CANCEL || dlg.m_pdex.dwResultAction == PD_RESULT_APPLY) {
-		DeleteDC(dlg.m_pdex.hDC);
+	//User pressed "Cancel", or "Apply" then "Cancel".
+	if (m_pdex.dwResultAction == PD_RESULT_CANCEL || m_pdex.dwResultAction == PD_RESULT_APPLY) {
+		DeleteDC(m_pdex.hDC);
 		return;
 	}
-
-	const auto hdcPrinter = dlg.GetPrinterDC();
+	const auto hdcPrinter = m_pdex.hDC;
 	if (hdcPrinter == nullptr) {
 		MessageBoxW(L"No printer found.");
 		return;
@@ -4050,11 +4173,16 @@ void CHexCtrl::Print()
 	const auto ullTotalPages = (ullTotalLines / iLinesInPage) + 1;
 	int iPagesToPrint { };
 
-	if (dlg.PrintAll()) {
+	const auto fPrintSelect = m_pdex.Flags & PD_SELECTION;
+	const auto fPrintRange = m_pdex.Flags & PD_PAGENUMS;
+	const auto fPrintCurrPage = m_pdex.Flags & PD_CURRENTPAGE;
+	const auto fPrintAll = !fPrintSelect && !fPrintRange && !fPrintCurrPage;
+
+	if (fPrintAll) {
 		iPagesToPrint = static_cast<int>(ullTotalPages);
 		ullStartLine = 0;
 	}
-	else if (dlg.PrintRange()) {
+	else if (fPrintRange) {
 		const auto iFromPage = ppr.nFromPage - 1;
 		const auto iToPage = ppr.nToPage;
 		if (iFromPage <= ullTotalPages) { //Checks for out-of-range pages user input.
@@ -4068,7 +4196,7 @@ void CHexCtrl::Print()
 
 	pDC->SetMapMode(MM_TEXT);
 	pDC->SetViewportOrg(iMarginX, iMarginY); //Move a viewport to have some indent from the edge.
-	if (dlg.PrintSelection()) {
+	if (fPrintSelect) {
 		pDC->StartPage();
 		const auto ullSelStart = m_pSelection->GetSelStart();
 		const auto ullSelSize = m_pSelection->GetSelSize();

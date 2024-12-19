@@ -600,7 +600,7 @@ void CHexDlgTemplMgr::OnCheckMin()
 	EndDeferWindowPos(hdwp);
 	EnableDynamicLayoutHelper(true);
 
-	m_btnMin.SetBitmap(fMinimize ? m_hBITMAPMax : m_hBITMAPMin); //Set arrow bitmap to the min-max checkbox.
+	m_btnMin.SetBitmap(fMinimize ? m_hBmpMax : m_hBmpMin); //Set arrow bitmap to the min-max checkbox.
 }
 
 void CHexDlgTemplMgr::OnClose()
@@ -662,8 +662,8 @@ void CHexDlgTemplMgr::OnDestroy()
 	m_pAppliedCurr = nullptr;
 	m_pVecFieldsCurr = nullptr;
 	m_hTreeCurrParent = nullptr;
-	DeleteObject(m_hBITMAPMin);
-	DeleteObject(m_hBITMAPMax);
+	DeleteObject(m_hBmpMin);
+	DeleteObject(m_hBmpMax);
 	m_u64Flags = { };
 }
 
@@ -723,26 +723,26 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 
 	CRect rcWnd;
 	m_btnMin.GetWindowRect(rcWnd);
-	m_hBITMAPMin = static_cast<HBITMAP>(LoadImageW(AfxGetInstanceHandle(),
+	m_hBmpMin = static_cast<HBITMAP>(LoadImageW(wnd::GetHinstance(),
 		MAKEINTRESOURCEW(IDB_HEXCTRL_SCROLL_ARROW), IMAGE_BITMAP, rcWnd.Width(), rcWnd.Width(), 0));
 
-	//Flipping m_hBITMAPMin bits vertically and creating m_hBITMAPMax bitmap.
+	//Flipping m_hBmpMin bits vertically and creating m_hBmpMax bitmap.
 	BITMAP stBMP { };
-	GetObjectW(m_hBITMAPMin, sizeof(BITMAP), &stBMP); //stBMP.bmBits is nullptr here.
+	GetObjectW(m_hBmpMin, sizeof(BITMAP), &stBMP); //stBMP.bmBits is nullptr here.
 	const auto dwWidth = static_cast<DWORD>(stBMP.bmWidth);
 	const auto dwHeight = static_cast<DWORD>(stBMP.bmHeight);
 	const auto dwPixels = dwWidth * dwHeight;
 	const auto dwBytesBmp = stBMP.bmWidthBytes * stBMP.bmHeight;
 	const auto pPixelsOrig = std::make_unique<COLORREF[]>(dwPixels);
-	GetBitmapBits(m_hBITMAPMin, dwBytesBmp, pPixelsOrig.get());
+	GetBitmapBits(m_hBmpMin, dwBytesBmp, pPixelsOrig.get());
 	for (auto itWidth = 0UL; itWidth < dwWidth; ++itWidth) { //Flip matrix' columns (flip vert).
 		for (auto itHeight = 0UL, itHeightBack = dwHeight - 1; itHeight < itHeightBack; ++itHeight, --itHeightBack) {
 			std::swap(pPixelsOrig[(itHeight * dwHeight) + itWidth], pPixelsOrig[(itHeightBack * dwWidth) + itWidth]);
 		}
 	}
-	m_hBITMAPMax = CreateBitmapIndirect(&stBMP);
-	SetBitmapBits(m_hBITMAPMax, dwBytesBmp, pPixelsOrig.get());
-	m_btnMin.SetBitmap(m_hBITMAPMin); //Set the min arrow bitmap to the min-max checkbox.
+	m_hBmpMax = CreateBitmapIndirect(&stBMP);
+	SetBitmapBits(m_hBmpMax, dwBytesBmp, pPixelsOrig.get());
+	m_btnMin.SetBitmap(m_hBmpMin); //Set the min arrow bitmap to the min-max checkbox.
 
 	return TRUE;
 }

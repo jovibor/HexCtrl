@@ -17,6 +17,7 @@ module;
 #include <optional>
 #include <source_location>
 #include <string>
+#include <unordered_map>
 export module HEXCTRL.HexUtility;
 
 export import StrToNum;
@@ -408,15 +409,61 @@ export namespace HEXCTRL::INTERNAL {
 	}
 
 	namespace wnd { //Windows GUI related stuff.
-		template<typename T>
-		struct MSG_MAP {
-			using MsgHandler = LRESULT(T::*)(const MSG&); //Function that takes ref to the standard Windows MSG struct.
-			UINT       uMsg { };
-			MsgHandler pMsgHandler { };
-		};
+		[[nodiscard]] auto GetHinstance() -> HINSTANCE {
+			return AfxGetInstanceHandle();
+		}
 
-		[[nodiscard]] auto DefMsgProc(const MSG& stMsg) -> LRESULT {
+		auto DefMsgProc(const MSG& stMsg) -> LRESULT {
 			return ::DefWindowProcW(stMsg.hwnd, stMsg.message, stMsg.wParam, stMsg.lParam);
+		}
+
+		template<typename T>
+		auto CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) -> LRESULT
+		{
+			static std::unordered_map<HWND, T*> uMap;
+
+			//CREATESTRUCTW::lpCreateParams always possesses a `this` pointer, passed to the CreateWindowExW function as lpParam.
+			//We save it to the static uMap to have access to this->ProcessMsg() method.
+			if (uMsg == WM_CREATE) {
+				const auto lpCS = reinterpret_cast<LPCREATESTRUCTW>(lParam);
+				uMap[hWnd] = reinterpret_cast<T*>(lpCS->lpCreateParams);
+				return 0;
+			}
+
+			if (const auto it = uMap.find(hWnd); it != uMap.end()) {
+				const auto ret = it->second->ProcessMsg({ .hwnd { hWnd }, .message { uMsg }, .wParam { wParam }, .lParam { lParam } });
+				if (uMsg == WM_NCDESTROY) { //Remove hWnd from the map on window destruction.
+					uMap.erase(it);
+				}
+				return ret;
+			}
+
+			return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
+		}
+
+		template<typename T>
+		auto CALLBACK DlgWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) -> INT_PTR {
+			//DlgWndProc should return zero for all non-processed messages.
+			//In that case messages will be processed by Windows default dialog proc.
+			//Non-processed messages should not be passed to DefWindowProcW or DefDlgProcW.
+			//Processed messages should return any non-zero value, depending on message type.
+
+			static T* m_pThis { };
+
+			//DialogBoxParamW and CreateDialogParamW dwInitParam arg is sent with WM_INITDIALOG as lParam.
+			if (uMsg == WM_INITDIALOG) {
+				m_pThis = reinterpret_cast<T*>(lParam);
+			}
+
+			if (m_pThis != nullptr) {
+				const auto ret = m_pThis->ProcessMsg({ .hwnd { hWnd }, .message { uMsg }, .wParam { wParam }, .lParam { lParam } });
+				if (uMsg == WM_NCDESTROY) {
+					m_pThis = nullptr;
+				}
+				return ret;
+			}
+
+			return 0;
 		}
 
 		void FillSolidRect(HDC hDC, LPCRECT pRC, COLORREF clr) {
