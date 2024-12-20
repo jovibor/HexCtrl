@@ -9,6 +9,7 @@
 #include <afxdialogex.h>
 
 import HEXCTRL.HexUtility;
+import HEXCTRL.CHexDlgProgress;
 
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgSearch final : public CDialogEx {
@@ -37,7 +38,7 @@ namespace HEXCTRL::INTERNAL {
 		void ClearList();
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
-		[[nodiscard]] auto CreateSearchData(CHexDlgCallback* pDlgClbk = nullptr)const->SEARCHFUNCDATA;
+		[[nodiscard]] auto CreateSearchData(CHexDlgProgress* pDlgProg = nullptr)const->SEARCHFUNCDATA;
 		void DoDataExchange(CDataExchange* pDX)override;
 		void FindAll();
 		void FindForward();
@@ -51,10 +52,10 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetReplaceSpan()const->SpanCByte;
 		[[nodiscard]] auto GetSearchDataSize()const->DWORD;  //Search vec data size.
 		[[nodiscard]] auto GetSearchRngSize()const->ULONGLONG;
-		[[nodiscard]] auto GetSearchFunc(bool fFwd, bool fDlgClbck)const->PtrSearchFunc;
-		template<bool fDlgClbck, EVecSize eVecSize>
+		[[nodiscard]] auto GetSearchFunc(bool fFwd, bool fDlgProg)const->PtrSearchFunc;
+		template<bool fDlgProg, EVecSize eVecSize>
 		[[nodiscard]] auto GetSearchFuncFwd()const->PtrSearchFunc;
-		template<bool fDlgClbck, EVecSize eVecSize>
+		template<bool fDlgProg, EVecSize eVecSize>
 		[[nodiscard]] auto GetSearchFuncBack()const->PtrSearchFunc;
 		[[nodiscard]] auto GetSearchMode()const->ESearchMode; //Getcurrent search mode.
 		[[nodiscard]] auto GetSearchSpan()const->SpanCByte;
@@ -121,15 +122,15 @@ namespace HEXCTRL::INTERNAL {
 		};
 		struct SEARCHTYPE { //Compile time struct for template parameters in the SearchFunc and MemCmp.
 			constexpr SEARCHTYPE() = default;
-			constexpr SEARCHTYPE(EMemCmp eMemCmp, EVecSize eVecSize, bool fDlgClbck = false, bool fMatchCase = false,
+			constexpr SEARCHTYPE(EMemCmp eMemCmp, EVecSize eVecSize, bool fDlgProg = false, bool fMatchCase = false,
 				bool fWildcard = false, bool fInverted = false) :
-				eMemCmp { eMemCmp }, eVecSize { eVecSize }, fDlgClbck { fDlgClbck }, fMatchCase { fMatchCase },
+				eMemCmp { eMemCmp }, eVecSize { eVecSize }, fDlgProg { fDlgProg }, fMatchCase { fMatchCase },
 				fWildcard { fWildcard }, fInverted { fInverted } {
 			}
 			constexpr ~SEARCHTYPE() = default;
 			EMemCmp eMemCmp { };
 			EVecSize eVecSize { };
-			bool fDlgClbck { false };
+			bool fDlgProg { false };
 			bool fMatchCase { false };
 			bool fWildcard { false };
 			bool fInverted { false };

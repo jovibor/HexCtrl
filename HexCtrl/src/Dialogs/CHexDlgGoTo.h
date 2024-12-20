@@ -38,7 +38,7 @@ namespace HEXCTRL::INTERNAL {
 		void UpdateComboMode();
 	private:
 		wnd::CWnd m_Wnd;
-		wnd::CWndCombo m_wndCmbMode;
+		wnd::CWndCombo m_WndCmbMode;
 		IHexCtrl* m_pHexCtrl { };
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 		bool m_fRepeat { false };     //Is repeat available.

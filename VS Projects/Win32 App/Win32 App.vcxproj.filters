@@ -60,9 +60,6 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.h">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
@@ -107,9 +104,6 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgCallback.cpp">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
@@ -133,6 +127,9 @@
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\dep\StrToNum\StrToNum.ixx">
       <Filter>HexCtrl\dep\StrToNum</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgProgress.ixx">
+      <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

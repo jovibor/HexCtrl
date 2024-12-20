@@ -9,7 +9,6 @@
 #include "../res/HexCtrlRes.h"
 #include "CHexCtrl.h"
 #include "Dialogs/CHexDlgBkmMgr.h"
-#include "Dialogs/CHexDlgCallback.h"
 #include "Dialogs/CHexDlgCodepage.h"
 #include "Dialogs/CHexDlgDataInterp.h"
 #include "Dialogs/CHexDlgGoTo.h"
@@ -30,6 +29,7 @@
 import HEXCTRL.CHexScroll;
 import HEXCTRL.CHexSelection;
 import HEXCTRL.HexUtility;
+import HEXCTRL.CHexDlgProgress;
 
 using namespace HEXCTRL::INTERNAL;
 
@@ -62,7 +62,7 @@ namespace HEXCTRL::INTERNAL {
 		auto OnMouseMove(const MSG& stMsg) -> INT_PTR;
 	private:
 		wnd::CWnd m_Wnd;        //Main window.
-		wnd::CWnd m_wndLink;    //Static link control
+		wnd::CWnd m_WndLink;    //Static link control
 		HBITMAP m_hBmpLogo { }; //Logo bitmap.
 		HFONT m_hFontDef { };
 		HFONT m_hFontUnderline { };
@@ -106,7 +106,7 @@ auto CHexDlgAbout::OnCommand(const MSG& stMsg)->INT_PTR {
 auto CHexDlgAbout::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
 {
 	const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam);
-	if (hWndFrom == m_wndLink) {
+	if (hWndFrom == m_WndLink) {
 		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
 		::SetTextColor(hDC, RGB(0, 50, 250));
 		::SetBkColor(hDC, GetSysColor(COLOR_BTNFACE));
@@ -129,11 +129,11 @@ auto CHexDlgAbout::OnInitDialog(const MSG& stMsg)->INT_PTR
 {
 	m_Wnd.Attach(stMsg.hwnd);
 	m_Wnd.SetWndClassLong(GCLP_HCURSOR, 0); //To prevent cursor blinking.
-	m_wndLink.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_LINKGH));
+	m_WndLink.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_LINKGH));
 
-	if (const auto hFont = m_wndLink.GetHFont(); hFont != nullptr) {
+	if (const auto hFont = m_WndLink.GetHFont(); hFont != nullptr) {
 		m_hFontDef = hFont;
-		auto lf = m_wndLink.GetLogFont().value();
+		auto lf = m_WndLink.GetLogFont().value();
 		lf.lfUnderline = TRUE;
 		m_hFontUnderline = ::CreateFontIndirectW(&lf);
 	}
@@ -167,7 +167,7 @@ auto CHexDlgAbout::OnLButtonDown(const MSG& stMsg)->INT_PTR
 {
 	const POINT pt { .x { GET_X_LPARAM(stMsg.lParam) }, .y { GET_Y_LPARAM(stMsg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
-	if (hWnd != m_wndLink) {
+	if (hWnd != m_WndLink) {
 		m_fLBDownLink = false;
 		return FALSE;
 	}
@@ -181,13 +181,13 @@ auto CHexDlgAbout::OnLButtonUp(const MSG& stMsg) -> INT_PTR
 {
 	const POINT pt { .x { GET_X_LPARAM(stMsg.lParam) }, .y { GET_Y_LPARAM(stMsg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
-	if (hWnd != m_wndLink) {
+	if (hWnd != m_WndLink) {
 		m_fLBDownLink = false;
 		return FALSE;
 	}
 
 	if (m_fLBDownLink) {
-		::ShellExecuteW(nullptr, L"open", m_wndLink.GetWndText().data(), nullptr, nullptr, 0);
+		::ShellExecuteW(nullptr, L"open", m_WndLink.GetWndText().data(), nullptr, nullptr, 0);
 	}
 
 	return TRUE;
@@ -203,9 +203,9 @@ auto CHexDlgAbout::OnMouseMove(const MSG& stMsg)->INT_PTR
 	const auto curHand = reinterpret_cast<HCURSOR>(::LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0, LR_SHARED));
 	const auto curArrow = reinterpret_cast<HCURSOR>(::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
 
-	if (m_fLinkUnderline != (m_wndLink == hWnd)) {
-		m_fLinkUnderline = m_wndLink == hWnd;
-		m_wndLink.Invalidate(false);
+	if (m_fLinkUnderline != (m_WndLink == hWnd)) {
+		m_fLinkUnderline = m_WndLink == hWnd;
+		m_WndLink.Invalidate(false);
 		::SetCursor(m_fLinkUnderline ? curHand : curArrow);
 	}
 
@@ -3940,7 +3940,7 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorke
 		[](ULONGLONG ullSumm, const HEXSPAN& ref) { return ullSumm + ref.ullSize; });
 	assert(ullTotalSize <= GetDataSize());
 
-	CHexDlgCallback dlgClbk(L"Modifying...", L"", vecSpanRef.back().ullOffset, vecSpanRef.back().ullOffset + ullTotalSize, this);
+	CHexDlgProgress dlgProg(L"Modifying...", L"", vecSpanRef.back().ullOffset, vecSpanRef.back().ullOffset + ullTotalSize);
 	const auto lmbModify = [&]() {
 		for (const auto& iterSpan : vecSpanRef) { //Span-vector's size times.
 			const auto ullOffsetToModify { iterSpan.ullOffset };
@@ -3997,11 +3997,11 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorke
 					assert(!spnData.empty());
 					for (auto ullIndex { 0ULL }; ullIndex <= (ullSizeCache - ullSizeDataOper); ullIndex += ullSizeDataOper) {
 						FuncWorker(spnData.data() + ullIndex, hms, spnOper);
-						if (dlgClbk.IsCanceled()) {
+						if (dlgProg.IsCanceled()) {
 							SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCache });
 							goto exit;
 						}
-						dlgClbk.SetCurrent(ullOffsetCurr + ullIndex);
+						dlgProg.SetCurrent(ullOffsetCurr + ullIndex);
 					}
 					SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCache });
 				}
@@ -4033,12 +4033,12 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorke
 					FuncWorker(spnData.data(), hms, spnOper.subspan(static_cast<std::size_t>(ullOffsetSubSpan),
 						static_cast<std::size_t>(ullSizeCacheCurr)));
 
-					if (dlgClbk.IsCanceled()) {
+					if (dlgProg.IsCanceled()) {
 						SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCacheCurr });
 						goto exit;
 					}
 
-					dlgClbk.SetCurrent(ullOffsetCurr + ullSizeCacheCurr);
+					dlgProg.SetCurrent(ullOffsetCurr + ullSizeCacheCurr);
 					SetDataVirtual(spnData, { ullOffsetCurr, ullSizeCacheCurr });
 
 					if (++ullSmallChunkCur == ullSmallChunks) {
@@ -4049,13 +4049,13 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorke
 			}
 		}
 	exit:
-		dlgClbk.OnCancel();
+		dlgProg.OnCancel();
 		};
 
 	static constexpr auto uSizeToRunThread { 1024U * 1024U * 50U }; //50MB.
 	if (ullTotalSize > uSizeToRunThread) { //Spawning new thread only if data size is big enough.
 		std::thread thrd(lmbModify);
-		dlgClbk.DoModal();
+		dlgProg.DoModal(m_hWnd);
 		thrd.join();
 	}
 	else {

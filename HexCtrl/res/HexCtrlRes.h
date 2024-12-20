@@ -13,7 +13,7 @@
 #define IDB_HEXCTRL_DATAINTERP          9009
 #define IDB_HEXCTRL_GROUP               9010
 #define IDB_HEXCTRL_FONTCHOOSE          9011
-#define IDD_HEXCTRL_CALLBACK            9012
+#define IDD_HEXCTRL_PROGRESS            9012
 #define IDD_HEXCTRL_SEARCH              9013
 #define IDD_HEXCTRL_GOTO                9014
 #define IDD_HEXCTRL_BKMMGR              9015

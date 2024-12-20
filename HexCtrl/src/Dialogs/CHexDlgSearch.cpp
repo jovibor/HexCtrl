@@ -6,7 +6,6 @@
 ****************************************************************************************/
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
-#include "CHexDlgCallback.h"
 #include "CHexDlgSearch.h"
 #include <algorithm>
 #include <cassert>
@@ -48,7 +47,7 @@ struct CHexDlgSearch::SEARCHFUNCDATA {
 	ULONGLONG ullChunks { };         //How many memory chunks to search in.
 	ULONGLONG ullChunkSize { };      //Size of one chunk.
 	ULONGLONG ullChunkMaxOffset { }; //Maximum offset to start search from, in the chunk.
-	CHexDlgCallback* pDlgClbk { };
+	CHexDlgProgress* pDlgProg { };
 	IHexCtrl* pHexCtrl { };
 	SpanCByte spnFind;
 	bool fBigStep { };
@@ -263,10 +262,10 @@ void CHexDlgSearch::ComboReplaceFill(LPCWSTR pwsz)
 	}
 }
 
-auto CHexDlgSearch::CreateSearchData(CHexDlgCallback* pDlgClbk)const->SEARCHFUNCDATA
+auto CHexDlgSearch::CreateSearchData(CHexDlgProgress* pDlgProg)const->SEARCHFUNCDATA
 {
 	SEARCHFUNCDATA stData { .ullStartFrom { GetStartFrom() }, .ullRngStart { GetRngStart() },
-		.ullRngEnd { GetRngEnd() }, .ullStep { GetStep() }, .pDlgClbk { pDlgClbk }, .pHexCtrl { GetHexCtrl() },
+		.ullRngEnd { GetRngEnd() }, .ullStep { GetStep() }, .pDlgProg { pDlgProg }, .pHexCtrl { GetHexCtrl() },
 		.spnFind { GetSearchSpan() }, .fInverted { IsInverted() }
 	};
 
@@ -318,8 +317,8 @@ void CHexDlgSearch::FindAll()
 		}
 	}
 	else {
-		CHexDlgCallback dlgClbk(L"Searching...", L"Found: ", GetStartFrom(), GetLastSearchOffset(), this);
-		stFuncData.pDlgClbk = &dlgClbk;
+		CHexDlgProgress dlgProg(L"Searching...", L"Found: ", GetStartFrom(), GetLastSearchOffset());
+		stFuncData.pDlgProg = &dlgProg;
 		const auto lmbFindAllThread = [&]() {
 			auto lmbWrapper = [&]()mutable->FINDRESULT {
 				CalcMemChunks(stFuncData);
@@ -328,20 +327,20 @@ void CHexDlgSearch::FindAll()
 
 			while (const auto findRes = lmbWrapper()) {
 				m_vecSearchRes.emplace_back(findRes.ullOffset); //Filling the vector of Found occurences.
-				dlgClbk.SetCurrent(findRes.ullOffset);
-				dlgClbk.SetCount(m_vecSearchRes.size());
+				dlgProg.SetCurrent(findRes.ullOffset);
+				dlgProg.SetCount(m_vecSearchRes.size());
 
 				const auto ullNext = findRes.ullOffset + GetStep();
 				if (ullNext > GetLastSearchOffset() || m_vecSearchRes.size() >= m_dwLimit
-					|| dlgClbk.IsCanceled())
+					|| dlgProg.IsCanceled())
 					break;
 
 				m_ullStartFrom = stFuncData.ullStartFrom = ullNext;
 			}
-			dlgClbk.OnCancel();
+			dlgProg.OnCancel();
 			};
 		std::thread thrd(lmbFindAllThread);
-		dlgClbk.DoModal();
+		dlgProg.DoModal(m_hWnd);
 		thrd.join();
 	}
 
@@ -364,14 +363,14 @@ void CHexDlgSearch::FindForward()
 			findRes = pSearchFunc(stFuncData);
 		}
 		else {
-			CHexDlgCallback dlgClbk(L"Searching...", L"", GetStartFrom(), GetLastSearchOffset(), this);
-			stFuncData.pDlgClbk = &dlgClbk;
+			CHexDlgProgress dlgProg(L"Searching...", L"", GetStartFrom(), GetLastSearchOffset());
+			stFuncData.pDlgProg = &dlgProg;
 			const auto lmbWrapper = [&]() {
 				findRes = pSearchFunc(stFuncData);
-				dlgClbk.OnCancel();
+				dlgProg.OnCancel();
 				};
 			std::thread thrd(lmbWrapper);
-			dlgClbk.DoModal();
+			dlgProg.DoModal(m_hWnd);
 			thrd.join();
 		}
 		};
@@ -407,14 +406,14 @@ void CHexDlgSearch::FindBackward()
 			findRes = pSearchFunc(stFuncData);
 		}
 		else {
-			CHexDlgCallback dlgClbk(L"Searching...", L"", GetRngStart(), GetStartFrom(), this);
-			stFuncData.pDlgClbk = &dlgClbk;
+			CHexDlgProgress dlgProg(L"Searching...", L"", GetRngStart(), GetStartFrom());
+			stFuncData.pDlgProg = &dlgProg;
 			const auto lmbWrapper = [&]() {
 				findRes = pSearchFunc(stFuncData);
-				dlgClbk.OnCancel();
+				dlgProg.OnCancel();
 				};
 			std::thread thrd(lmbWrapper);
-			dlgClbk.DoModal();
+			dlgProg.DoModal(m_hWnd);
 			thrd.join();
 		}
 		};
@@ -483,25 +482,25 @@ auto CHexDlgSearch::GetSearchDataSize()const->DWORD
 	return static_cast<DWORD>(m_vecSearchData.size());
 }
 
-auto CHexDlgSearch::GetSearchFunc(bool fFwd, bool fDlgClbck)const->PtrSearchFunc
+auto CHexDlgSearch::GetSearchFunc(bool fFwd, bool fDlgProg)const->PtrSearchFunc
 {
 	using enum EVecSize;
 #if defined(_M_IX86) || defined(_M_X64)
 	if (HasAVX2()) {
-		return fFwd ? (fDlgClbck ? GetSearchFuncFwd<true, VEC256>() : GetSearchFuncFwd<false, VEC256>()) :
-			(fDlgClbck ? GetSearchFuncBack<true, VEC256>() : GetSearchFuncBack<false, VEC256>());
+		return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VEC256>() : GetSearchFuncFwd<false, VEC256>()) :
+			(fDlgProg ? GetSearchFuncBack<true, VEC256>() : GetSearchFuncBack<false, VEC256>());
 	}
 #endif
 	//For ARM64 and VEC128 path is the same.
-	return fFwd ? (fDlgClbck ? GetSearchFuncFwd<true, VEC128>() : GetSearchFuncFwd<false, VEC128>()) :
-		(fDlgClbck ? GetSearchFuncBack<true, VEC128>() : GetSearchFuncBack<false, VEC128>());
+	return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VEC128>() : GetSearchFuncFwd<false, VEC128>()) :
+		(fDlgProg ? GetSearchFuncBack<true, VEC128>() : GetSearchFuncBack<false, VEC128>());
 }
 
-template<bool fDlgClbck, CHexDlgSearch::EVecSize eVecSize>
+template<bool fDlgProg, CHexDlgSearch::EVecSize eVecSize>
 auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 {
-	//The `fDlgClbck` arg ensures that no runtime check will be performed for the 
-	//'SEARCHFUNCDATA::pDlgClbk == nullptr', at the hot path inside the SearchFunc function.
+	//The `fDlgProg` arg ensures that no runtime check will be performed for the 
+	//'SEARCHFUNCDATA::pDlgProg == nullptr', at the hot path inside the SearchFunc function.
 
 	using enum ESearchType; using enum EMemCmp;
 
@@ -509,16 +508,16 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 		switch (GetSearchDataSize()) {
 		case 1: //Special case for 1 byte data size SIMD.
 			return IsInverted() ?
-				SearchFuncVecFwdByte1<SEARCHTYPE(DATA_BYTE1, eVecSize, fDlgClbck, false, false, true)> :
-				SearchFuncVecFwdByte1<SEARCHTYPE(DATA_BYTE1, eVecSize, fDlgClbck, false, false, false)>;
+				SearchFuncVecFwdByte1<SEARCHTYPE(DATA_BYTE1, eVecSize, fDlgProg, false, false, true)> :
+				SearchFuncVecFwdByte1<SEARCHTYPE(DATA_BYTE1, eVecSize, fDlgProg, false, false, false)>;
 		case 2: //Special case for 2 bytes data size SIMD.
 			return IsInverted() ?
-				SearchFuncVecFwdByte2<SEARCHTYPE(DATA_BYTE2, eVecSize, fDlgClbck, false, false, true)> :
-				SearchFuncVecFwdByte2<SEARCHTYPE(DATA_BYTE2, eVecSize, fDlgClbck, false, false, false)>;
+				SearchFuncVecFwdByte2<SEARCHTYPE(DATA_BYTE2, eVecSize, fDlgProg, false, false, true)> :
+				SearchFuncVecFwdByte2<SEARCHTYPE(DATA_BYTE2, eVecSize, fDlgProg, false, false, false)>;
 		case 4: //Special case for 4 bytes data size SIMD.
 			return IsInverted() ?
-				SearchFuncVecFwdByte4<SEARCHTYPE(DATA_BYTE4, eVecSize, fDlgClbck, false, false, true)> :
-				SearchFuncVecFwdByte4<SEARCHTYPE(DATA_BYTE4, eVecSize, fDlgClbck, false, false, false)>;
+				SearchFuncVecFwdByte4<SEARCHTYPE(DATA_BYTE4, eVecSize, fDlgProg, false, false, true)> :
+				SearchFuncVecFwdByte4<SEARCHTYPE(DATA_BYTE4, eVecSize, fDlgProg, false, false, false)>;
 		default:
 			break;
 		};
@@ -527,59 +526,59 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 	switch (GetSearchType()) {
 	case HEXBYTES:
 		return IsWildcard() ?
-			SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, true, true)> :
-			SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, true, false)>;
+			SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, true, true)> :
+			SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, true, false)>;
 	case TEXT_ASCII:
 		if (IsMatchCase() && !IsWildcard()) {
-			return SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, true, false)>;
+			return SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, true, false)>;
 		}
 
 		if (IsMatchCase() && IsWildcard()) {
-			return SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, true, true)>;
+			return SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, true, true)>;
 		}
 
 		if (!IsMatchCase() && IsWildcard()) {
-			return SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, false, true)>;
+			return SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, false, true)>;
 		}
 
 		if (!IsMatchCase() && !IsWildcard()) {
-			return SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, false, false)>;
+			return SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, false, false)>;
 		}
 		break;
 	case TEXT_UTF8:
-		return SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, true, false)>; //Search UTF-8 as plain chars.
+		return SearchFuncFwd<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, true, false)>; //Search UTF-8 as plain chars.
 	case TEXT_UTF16:
 		if (IsMatchCase() && !IsWildcard()) {
-			return SearchFuncFwd<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgClbck, true, false)>;
+			return SearchFuncFwd<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgProg, true, false)>;
 		}
 
 		if (IsMatchCase() && IsWildcard()) {
-			return SearchFuncFwd<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgClbck, true, true)>;
+			return SearchFuncFwd<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgProg, true, true)>;
 		}
 
 		if (!IsMatchCase() && IsWildcard()) {
-			return SearchFuncFwd<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgClbck, false, true)>;
+			return SearchFuncFwd<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgProg, false, true)>;
 		}
 
 		if (!IsMatchCase() && !IsWildcard()) {
-			return SearchFuncFwd<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgClbck, false, false)>;
+			return SearchFuncFwd<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgProg, false, false)>;
 		}
 		break;
 	case NUM_INT8:
 	case NUM_UINT8:
-		return SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, eVecSize, fDlgClbck)>;
+		return SearchFuncFwd<SEARCHTYPE(DATA_BYTE1, eVecSize, fDlgProg)>;
 	case NUM_INT16:
 	case NUM_UINT16:
-		return SearchFuncFwd<SEARCHTYPE(DATA_BYTE2, eVecSize, fDlgClbck)>;
+		return SearchFuncFwd<SEARCHTYPE(DATA_BYTE2, eVecSize, fDlgProg)>;
 	case NUM_INT32:
 	case NUM_UINT32:
 	case NUM_FLOAT:
-		return SearchFuncFwd<SEARCHTYPE(DATA_BYTE4, eVecSize, fDlgClbck)>;
+		return SearchFuncFwd<SEARCHTYPE(DATA_BYTE4, eVecSize, fDlgProg)>;
 	case NUM_INT64:
 	case NUM_UINT64:
 	case NUM_DOUBLE:
 	case STRUCT_FILETIME:
-		return SearchFuncFwd<SEARCHTYPE(DATA_BYTE8, eVecSize, fDlgClbck)>;
+		return SearchFuncFwd<SEARCHTYPE(DATA_BYTE8, eVecSize, fDlgProg)>;
 	default:
 		break;
 	}
@@ -587,69 +586,69 @@ auto CHexDlgSearch::GetSearchFuncFwd()const->PtrSearchFunc
 	return { };
 }
 
-template<bool fDlgClbck, CHexDlgSearch::EVecSize eVecSize>
+template<bool fDlgProg, CHexDlgSearch::EVecSize eVecSize>
 auto CHexDlgSearch::GetSearchFuncBack()const->PtrSearchFunc
 {
-	//The `fDlgClbck` arg ensures that no runtime check will be performed for the 
-	//'SEARCHFUNCDATA::pDlgClbk == nullptr', at the hot path inside the SearchFunc function.
+	//The `fDlgProg` arg ensures that no runtime check will be performed for the 
+	//'SEARCHFUNCDATA::pDlgProg == nullptr', at the hot path inside the SearchFunc function.
 	using enum ESearchType; using enum EMemCmp; using enum EVecSize;
 
 	switch (GetSearchType()) {
 	case HEXBYTES:
 		return IsWildcard() ?
-			SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, true, true)> :
-			SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, true, false)>;
+			SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, true, true)> :
+			SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, true, false)>;
 	case TEXT_ASCII:
 		if (IsMatchCase() && !IsWildcard()) {
-			return SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, true, false)>;
+			return SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, true, false)>;
 		}
 
 		if (IsMatchCase() && IsWildcard()) {
-			return SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, true, true)>;
+			return SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, true, true)>;
 		}
 
 		if (!IsMatchCase() && IsWildcard()) {
-			return SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, false, true)>;
+			return SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, false, true)>;
 		}
 
 		if (!IsMatchCase() && !IsWildcard()) {
-			return SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, false, false)>;
+			return SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, false, false)>;
 		}
 		break;
 	case TEXT_UTF8:
-		return SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgClbck, true, false)>; //Search UTF-8 as plain chars.
+		return SearchFuncBack<SEARCHTYPE(CHAR_STR, eVecSize, fDlgProg, true, false)>; //Search UTF-8 as plain chars.
 	case TEXT_UTF16:
 		if (IsMatchCase() && !IsWildcard()) {
-			return SearchFuncBack<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgClbck, true, false)>;
+			return SearchFuncBack<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgProg, true, false)>;
 		}
 
 		if (IsMatchCase() && IsWildcard()) {
-			return SearchFuncBack<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgClbck, true, true)>;
+			return SearchFuncBack<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgProg, true, true)>;
 		}
 
 		if (!IsMatchCase() && IsWildcard()) {
-			return SearchFuncBack<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgClbck, false, true)>;
+			return SearchFuncBack<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgProg, false, true)>;
 		}
 
 		if (!IsMatchCase() && !IsWildcard()) {
-			return SearchFuncBack<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgClbck, false, false)>;
+			return SearchFuncBack<SEARCHTYPE(WCHAR_STR, eVecSize, fDlgProg, false, false)>;
 		}
 		break;
 	case NUM_INT8:
 	case NUM_UINT8:
-		return SearchFuncBack<SEARCHTYPE(DATA_BYTE1, eVecSize, fDlgClbck)>;
+		return SearchFuncBack<SEARCHTYPE(DATA_BYTE1, eVecSize, fDlgProg)>;
 	case NUM_INT16:
 	case NUM_UINT16:
-		return SearchFuncBack<SEARCHTYPE(DATA_BYTE2, eVecSize, fDlgClbck)>;
+		return SearchFuncBack<SEARCHTYPE(DATA_BYTE2, eVecSize, fDlgProg)>;
 	case NUM_INT32:
 	case NUM_UINT32:
 	case NUM_FLOAT:
-		return SearchFuncBack<SEARCHTYPE(DATA_BYTE4, eVecSize, fDlgClbck)>;
+		return SearchFuncBack<SEARCHTYPE(DATA_BYTE4, eVecSize, fDlgProg)>;
 	case NUM_INT64:
 	case NUM_UINT64:
 	case NUM_DOUBLE:
 	case STRUCT_FILETIME:
-		return SearchFuncBack<SEARCHTYPE(DATA_BYTE8, eVecSize, fDlgClbck)>;
+		return SearchFuncBack<SEARCHTYPE(DATA_BYTE8, eVecSize, fDlgProg)>;
 	default:
 		break;
 	}
@@ -1578,9 +1577,9 @@ void CHexDlgSearch::ReplaceAll()
 	}
 	else {
 		const auto pSearchFunc = GetSearchFunc(true, true);
-		CHexDlgCallback dlgClbk(L"Replacing...", L"Replaced: ", GetStartFrom(), GetLastSearchOffset(), this);
+		CHexDlgProgress dlgProg(L"Replacing...", L"Replaced: ", GetStartFrom(), GetLastSearchOffset());
 		const auto lmbReplaceAllThread = [&]() {
-			auto stFuncData = CreateSearchData(&dlgClbk);
+			auto stFuncData = CreateSearchData(&dlgProg);
 			auto lmbWrapper = [&]()mutable->FINDRESULT {
 				CalcMemChunks(stFuncData);
 				return pSearchFunc(stFuncData);
@@ -1593,23 +1592,23 @@ void CHexDlgSearch::ReplaceAll()
 
 				Replace(stFuncData.pHexCtrl, findRes.ullOffset, m_vecReplaceData);
 				m_vecSearchRes.emplace_back(findRes.ullOffset); //Filling the vector of Replaced occurences.
-				dlgClbk.SetCurrent(findRes.ullOffset);
-				dlgClbk.SetCount(m_vecSearchRes.size());
+				dlgProg.SetCurrent(findRes.ullOffset);
+				dlgProg.SetCount(m_vecSearchRes.size());
 
 				const auto ullNext = findRes.ullOffset + (sSizeRepl <= stFuncData.ullStep ?
 					stFuncData.ullStep : sSizeRepl);
 				if (ullNext > GetLastSearchOffset() || m_vecSearchRes.size() >= m_dwLimit
-					|| dlgClbk.IsCanceled()) {
+					|| dlgProg.IsCanceled()) {
 					break;
 				}
 
 				m_ullStartFrom = stFuncData.ullStartFrom = ullNext;
 			}
-			dlgClbk.OnCancel();
+			dlgProg.OnCancel();
 			};
 
 		std::thread thrd(lmbReplaceAllThread);
-		dlgClbk.DoModal();
+		dlgProg.DoModal(m_hWnd);
 		thrd.join();
 	}
 
@@ -1829,7 +1828,7 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 	const auto ullOffsetSentinel = refSearch.ullRngEnd + 1;
 	const auto ullStep = refSearch.ullStep;
 	const auto pHexCtrl = refSearch.pHexCtrl;
-	const auto pDlgClbk = refSearch.pDlgClbk;
+	const auto pDlgProg = refSearch.pDlgProg;
 	const auto pDataSearch = refSearch.spnFind.data();
 	const auto nSizeSearch = refSearch.spnFind.size();
 	const auto ullEnd = ullOffsetSentinel - nSizeSearch;
@@ -1905,11 +1904,11 @@ auto CHexDlgSearch::SearchFuncFwd(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 				}
 			}
 
-			if constexpr (stType.fDlgClbck) {
-				if (pDlgClbk->IsCanceled()) {
+			if constexpr (stType.fDlgProg) {
+				if (pDlgProg->IsCanceled()) {
 					return { { }, false, true };
 				}
-				pDlgClbk->SetCurrent(ullOffsetSearch + ullOffsetData);
+				pDlgProg->SetCurrent(ullOffsetSearch + ullOffsetData);
 			}
 		}
 
@@ -2133,7 +2132,7 @@ auto CHexDlgSearch::SearchFuncVecFwdByte1(const SEARCHFUNCDATA& refSearch)->FIND
 	const auto ullOffsetSentinel = refSearch.ullRngEnd + 1;
 	const auto ullStep = refSearch.ullStep;
 	const auto pHexCtrl = refSearch.pHexCtrl;
-	const auto pDlgClbk = refSearch.pDlgClbk;
+	const auto pDlgProg = refSearch.pDlgProg;
 	const auto pDataSearch = refSearch.spnFind.data();
 	const auto nSizeSearch = refSearch.spnFind.size();
 	const auto ullEnd = ullOffsetSentinel - nSizeSearch;
@@ -2172,11 +2171,11 @@ auto CHexDlgSearch::SearchFuncVecFwdByte1(const SEARCHFUNCDATA& refSearch)->FIND
 				}
 			}
 
-			if constexpr (stType.fDlgClbck) {
-				if (pDlgClbk->IsCanceled()) {
+			if constexpr (stType.fDlgProg) {
+				if (pDlgProg->IsCanceled()) {
 					return { { }, false, true };
 				}
-				pDlgClbk->SetCurrent(ullOffsetSearch + ullOffsetData);
+				pDlgProg->SetCurrent(ullOffsetSearch + ullOffsetData);
 			}
 		}
 
@@ -2207,7 +2206,7 @@ auto CHexDlgSearch::SearchFuncVecFwdByte2(const SEARCHFUNCDATA& refSearch)->FIND
 	const auto ullOffsetSentinel = refSearch.ullRngEnd + 1;
 	const auto ullStep = refSearch.ullStep;
 	const auto pHexCtrl = refSearch.pHexCtrl;
-	const auto pDlgClbk = refSearch.pDlgClbk;
+	const auto pDlgProg = refSearch.pDlgProg;
 	const auto pDataSearch = refSearch.spnFind.data();
 	const auto nSizeSearch = refSearch.spnFind.size();
 	const auto ullEnd = ullOffsetSentinel - nSizeSearch;
@@ -2249,11 +2248,11 @@ auto CHexDlgSearch::SearchFuncVecFwdByte2(const SEARCHFUNCDATA& refSearch)->FIND
 				}
 			}
 
-			if constexpr (stType.fDlgClbck) {
-				if (pDlgClbk->IsCanceled()) {
+			if constexpr (stType.fDlgProg) {
+				if (pDlgProg->IsCanceled()) {
 					return { { }, false, true };
 				}
-				pDlgClbk->SetCurrent(ullOffsetSearch + ullOffsetData);
+				pDlgProg->SetCurrent(ullOffsetSearch + ullOffsetData);
 			}
 		}
 
@@ -2284,7 +2283,7 @@ auto CHexDlgSearch::SearchFuncVecFwdByte4(const SEARCHFUNCDATA& refSearch)->FIND
 	const auto ullOffsetSentinel = refSearch.ullRngEnd + 1;
 	const auto ullStep = refSearch.ullStep;
 	const auto pHexCtrl = refSearch.pHexCtrl;
-	const auto pDlgClbk = refSearch.pDlgClbk;
+	const auto pDlgProg = refSearch.pDlgProg;
 	const auto pDataSearch = refSearch.spnFind.data();
 	const auto nSizeSearch = refSearch.spnFind.size();
 	const auto ullEnd = ullOffsetSentinel - nSizeSearch;
@@ -2326,11 +2325,11 @@ auto CHexDlgSearch::SearchFuncVecFwdByte4(const SEARCHFUNCDATA& refSearch)->FIND
 				}
 			}
 
-			if constexpr (stType.fDlgClbck) {
-				if (pDlgClbk->IsCanceled()) {
+			if constexpr (stType.fDlgProg) {
+				if (pDlgProg->IsCanceled()) {
 					return { { }, false, true };
 				}
-				pDlgClbk->SetCurrent(ullOffsetSearch + ullOffsetData);
+				pDlgProg->SetCurrent(ullOffsetSearch + ullOffsetData);
 			}
 		}
 
@@ -2382,7 +2381,7 @@ auto CHexDlgSearch::SearchFuncBack(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 	//Step is signed here to make the "llOffsetData - llStep" arithmetic also signed.
 	const auto llStep = static_cast<std::int64_t>(refSearch.ullStep);
 	const auto pHexCtrl = refSearch.pHexCtrl;
-	const auto pDlgClbk = refSearch.pDlgClbk;
+	const auto pDlgProg = refSearch.pDlgProg;
 	const auto pDataSearch = refSearch.spnFind.data();
 	const auto nSizeSearch = refSearch.spnFind.size();
 	const auto fBigStep = refSearch.fBigStep;
@@ -2460,11 +2459,11 @@ auto CHexDlgSearch::SearchFuncBack(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 				}
 			}
 
-			if constexpr (stType.fDlgClbck) {
-				if (pDlgClbk->IsCanceled()) {
+			if constexpr (stType.fDlgProg) {
+				if (pDlgProg->IsCanceled()) {
 					return { { }, false, true };
 				}
-				pDlgClbk->SetCurrent(ullStartFrom - (ullOffsetSearch + llOffsetData));
+				pDlgProg->SetCurrent(ullStartFrom - (ullOffsetSearch + llOffsetData));
 			}
 		}
 

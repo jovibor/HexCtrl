@@ -575,6 +575,7 @@ export namespace HEXCTRL::INTERNAL {
 				assert(IsWindow()); ::SetWindowPos(m_hWnd, hWndAfter, iX, iY, iWidth, iHeight, uFlags);
 			}
 			void SetWndText(LPCWSTR pwsz)const { assert(IsWindow()); ::SetWindowTextW(m_hWnd, pwsz); }
+			void SetWndText(const std::wstring& wstr)const { SetWndText(wstr.data()); }
 			void SetRedraw(bool fRedraw)const { assert(IsWindow()); ::SendMessageW(m_hWnd, WM_SETREDRAW, fRedraw, 0); }
 			bool ShowWindow(int iCmdShow)const { assert(IsWindow()); return ::ShowWindow(m_hWnd, iCmdShow); }
 		protected:
@@ -602,6 +603,17 @@ export namespace HEXCTRL::INTERNAL {
 			void SetCurSel(int iIndex)const { assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETCURSEL, iIndex, 0); }
 			void SetItemData(int iIndex, DWORD_PTR dwData)const {
 				assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETITEMDATA, iIndex, static_cast<LPARAM>(dwData));
+			}
+		};
+
+		class CWndProgBar : public CWnd {
+		public:
+			int SetPos(int iPos)const {
+				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, PBM_SETPOS, iPos, 0UL));
+			}
+			void SetRange(int iLower, int iUpper)const {
+				assert(IsWindow());
+				::SendMessageW(m_hWnd, PBM_SETRANGE32, static_cast<WPARAM>(iLower), static_cast<LPARAM>(iUpper));
 			}
 		};
 	};

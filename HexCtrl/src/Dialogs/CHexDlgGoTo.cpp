@@ -105,7 +105,7 @@ auto CHexDlgGoTo::GetHexCtrl()const->IHexCtrl*
 
 auto CHexDlgGoTo::GetGoMode()const->EGoMode
 {
-	return static_cast<EGoMode>(m_wndCmbMode.GetItemData(m_wndCmbMode.GetCurSel()));
+	return static_cast<EGoMode>(m_WndCmbMode.GetItemData(m_WndCmbMode.GetCurSel()));
 }
 
 void CHexDlgGoTo::GoTo(bool fForward)
@@ -236,7 +236,7 @@ auto CHexDlgGoTo::OnDestroy()->INT_PTR
 	m_pHexCtrl = nullptr;
 	m_fRepeat = false;
 	m_Wnd.Detach();
-	m_wndCmbMode.Detach();
+	m_WndCmbMode.Detach();
 
 	return TRUE;
 }
@@ -245,16 +245,16 @@ auto CHexDlgGoTo::OnInitDialog(const MSG& stMsg)->INT_PTR
 {
 	using enum EGoMode;
 	m_Wnd.Attach(stMsg.hwnd);
-	m_wndCmbMode.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_GOTO_COMBO_MODE));
-	auto iIndex = m_wndCmbMode.AddString(L"Offset");
-	m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSET));
-	m_wndCmbMode.SetCurSel(iIndex);
-	iIndex = m_wndCmbMode.AddString(L"Offset forward from the current");
-	m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETFWD));
-	iIndex = m_wndCmbMode.AddString(L"Offset back from the current");
-	m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETBACK));
-	iIndex = m_wndCmbMode.AddString(L"Offset from the end");
-	m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETEND));
+	m_WndCmbMode.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_GOTO_COMBO_MODE));
+	auto iIndex = m_WndCmbMode.AddString(L"Offset");
+	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSET));
+	m_WndCmbMode.SetCurSel(iIndex);
+	iIndex = m_WndCmbMode.AddString(L"Offset forward from the current");
+	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETFWD));
+	iIndex = m_WndCmbMode.AddString(L"Offset back from the current");
+	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETBACK));
+	iIndex = m_WndCmbMode.AddString(L"Offset from the end");
+	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETEND));
 	UpdateComboMode();
 
 	return TRUE;
@@ -268,35 +268,35 @@ void CHexDlgGoTo::OnOK()
 void CHexDlgGoTo::UpdateComboMode()
 {
 	constexpr auto iOffsetsTotal = 4; //Total amount of Offset's modes.
-	auto iCurrCount = m_wndCmbMode.GetCount();
+	auto iCurrCount = m_WndCmbMode.GetCount();
 	const auto fHasPages = iCurrCount > iOffsetsTotal;
 	auto fShouldHavePages = GetHexCtrl()->GetPageSize() > 0;
 	using enum EGoMode;
 
 	if (fShouldHavePages != fHasPages) {
-		m_wndCmbMode.SetRedraw(FALSE);
+		m_WndCmbMode.SetRedraw(FALSE);
 		if (fShouldHavePages) {
-			auto iIndex = m_wndCmbMode.AddString(L"Page");
-			m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGE));
-			iIndex = m_wndCmbMode.AddString(L"Page forward from the current");
-			m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEFWD));
-			iIndex = m_wndCmbMode.AddString(L"Page back from the current");
-			m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEBACK));
-			iIndex = m_wndCmbMode.AddString(L"Page from the end");
-			m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEEND));
+			auto iIndex = m_WndCmbMode.AddString(L"Page");
+			m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGE));
+			iIndex = m_WndCmbMode.AddString(L"Page forward from the current");
+			m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEFWD));
+			iIndex = m_WndCmbMode.AddString(L"Page back from the current");
+			m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEBACK));
+			iIndex = m_WndCmbMode.AddString(L"Page from the end");
+			m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEEND));
 		}
 		else {
-			const auto iCurrSel = m_wndCmbMode.GetCurSel();
+			const auto iCurrSel = m_WndCmbMode.GetCurSel();
 			for (auto iIndex = iCurrCount - 1; iIndex >= iOffsetsTotal; --iIndex) {
-				m_wndCmbMode.DeleteString(iIndex);
+				m_WndCmbMode.DeleteString(iIndex);
 			}
 
 			if (iCurrSel > (iOffsetsTotal - 1)) {
-				m_wndCmbMode.SetCurSel(iOffsetsTotal - 1);
+				m_WndCmbMode.SetCurSel(iOffsetsTotal - 1);
 				m_fRepeat = false;
 			}
 		}
-		m_wndCmbMode.SetRedraw(TRUE);
-		m_wndCmbMode.RedrawWindow();
+		m_WndCmbMode.SetRedraw(TRUE);
+		m_WndCmbMode.RedrawWindow();
 	}
 }
