@@ -6,35 +6,40 @@
 ****************************************************************************************/
 #pragma once
 #include "../../HexCtrl.h"
-#include <afxdialogex.h>
+
+import HEXCTRL.HexUtility;
 
 namespace HEXCTRL::INTERNAL {
-	class CHexDlgGoTo final : public CDialogEx {
+	class CHexDlgGoTo final {
 	public:
+		void CreateDlg();
+		void DestroyWindow();
 		void Initialize(IHexCtrl* pHexCtrl);
+		[[nodiscard]] auto GetHWND()const->HWND;
 		[[nodiscard]] bool IsRepeatAvail()const;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
+		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
 		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
 		void SetDlgProperties(std::uint64_t u64Flags);
-		BOOL ShowWindow(int nCmdShow);
+		void ShowWindow(int nCmdShow);
 	private:
 		enum class EGoMode : std::uint8_t;
-		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
 		[[nodiscard]] auto GetGoMode()const->EGoMode;
 		void GoTo(bool fForward);
 		[[nodiscard ]] bool IsNoEsc()const;
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		void OnCancel()override;
-		afx_msg void OnClose();
-		afx_msg void OnDestroy();
-		BOOL OnInitDialog()override;
-		void OnOK()override;
+		auto OnActivate(const MSG& stMsg) -> INT_PTR;
+		void OnCancel();
+		auto OnClose() -> INT_PTR;
+		auto OnCommand(const MSG& stMsg) -> INT_PTR;
+		auto OnDestroy() -> INT_PTR;
+		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
+		void OnOK();
 		void UpdateComboMode();
-		DECLARE_MESSAGE_MAP();
 	private:
+		wnd::CWnd m_Wnd;
+		wnd::CWndCombo m_wndCmbMode;
 		IHexCtrl* m_pHexCtrl { };
-		CComboBox m_comboMode;
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 		bool m_fRepeat { false };     //Is repeat available.
 	};

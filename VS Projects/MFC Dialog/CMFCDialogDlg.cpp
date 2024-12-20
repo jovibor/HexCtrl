@@ -28,7 +28,8 @@ BEGIN_MESSAGE_MAP(CMFCDialogDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 CMFCDialogDlg::CMFCDialogDlg(CWnd* pParent /*=nullptr*/)
-	: CDialogEx(IDD_HEXCTRL_SAMPLE, pParent) {
+	: CDialogEx(IDD_HEXCTRL_SAMPLE, pParent)
+{
 	m_hIcon = AfxGetApp()->LoadIconW(IDR_MAINFRAME);
 }
 
@@ -61,8 +62,8 @@ BOOL CMFCDialogDlg::OnInitDialog()
 	m_pHexDlg->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
 	m_pHexDlg->SetScrollRatio(2, true); //Two lines scroll with mouse-wheel.
 	m_pHexDlg->SetPageSize(64);
-//	m_pHexDlg->SetDlgProperties(EHexWnd::DLG_CODEPAGE, HEXCTRL_FLAG_DLG_NOESC);
-//	m_pHexDlg->SetCharsExtraSpace(2);
+	//	m_pHexDlg->SetDlgProperties(EHexWnd::DLG_CODEPAGE, HEXCTRL_FLAG_DLG_NOESC);
+	//	m_pHexDlg->SetCharsExtraSpace(2);
 
 	LoadTemplates(&*m_pHexDlg);
 	//OnBnSetRndData();
@@ -414,6 +415,16 @@ bool CMFCDialogDlg::IsLnk() const
 	return m_chkLnk.GetCheck() == BST_CHECKED;
 }
 
+BOOL CMFCDialogDlg::PreTranslateMessage(MSG* pMsg)
+{
+	if ((m_pHexDlg->IsCreated() && m_pHexDlg->PreTranslateMsg(pMsg))
+		|| (m_pHexPopup->IsCreated() && m_pHexPopup->PreTranslateMsg(pMsg))) {
+		return TRUE;
+	}
+
+	return CDialogEx::PreTranslateMessage(pMsg);
+}
+
 std::wstring CMFCDialogDlg::LnkToPath(LPCWSTR pwszLnk)
 {
 	CComPtr<IShellLinkW> psl;
@@ -455,9 +466,10 @@ auto CMFCDialogDlg::OpenFileDlg()->std::vector<std::wstring>
 	return vecFiles;
 }
 
-auto CMFCDialogDlg::GetLastErrorWstr()->std::wstring {
+auto CMFCDialogDlg::GetLastErrorWstr()->std::wstring
+{
 	wchar_t wbuff[MAX_PATH];
 	FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
-			::GetLastError(), 0, wbuff, MAX_PATH, nullptr);
+		::GetLastError(), 0, wbuff, MAX_PATH, nullptr);
 	return wbuff;
 }

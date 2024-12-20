@@ -50,8 +50,7 @@ CWinApp theApp; //CWinApp object is vital for manual MFC, and for in-DLL work.
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgAbout final {
 	public:
-		CHexDlgAbout(HWND hWndParent = nullptr) { m_hWndParent = hWndParent; }
-		auto DoModal() -> INT_PTR;
+		auto DoModal(HWND hWndParent = nullptr) -> INT_PTR;
 		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
 	private:
 		auto OnCommand(const MSG& stMsg) -> INT_PTR;
@@ -62,9 +61,8 @@ namespace HEXCTRL::INTERNAL {
 		auto OnLButtonUp(const MSG& stMsg) -> INT_PTR;
 		auto OnMouseMove(const MSG& stMsg) -> INT_PTR;
 	private:
-		HWND m_hWnd { };
-		HWND m_hWndParent { };
-		HWND m_hWndLink { };
+		wnd::CWnd m_Wnd;        //Main window.
+		wnd::CWnd m_wndLink;    //Static link control
 		HBITMAP m_hBmpLogo { }; //Logo bitmap.
 		HFONT m_hFontDef { };
 		HFONT m_hFontUnderline { };
@@ -73,40 +71,42 @@ namespace HEXCTRL::INTERNAL {
 	};
 }
 
-auto CHexDlgAbout::DoModal()->INT_PTR {
+auto CHexDlgAbout::DoModal(HWND hWndParent)->INT_PTR {
 	return DialogBoxParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_ABOUT),
-		m_hWndParent, wnd::DlgWndProc<CHexDlgAbout>, reinterpret_cast<LPARAM>(this));
+		hWndParent, wnd::DlgWndProc<CHexDlgAbout>, reinterpret_cast<LPARAM>(this));
 }
 
 auto CHexDlgAbout::ProcessMsg(const MSG& stMsg)->INT_PTR {
 	switch (stMsg.message) {
-	case WM_COMMAND: return CHexDlgAbout::OnCommand(stMsg);
-	case WM_CTLCOLORSTATIC: return CHexDlgAbout::OnCtlClrStatic(stMsg);
-	case WM_DESTROY: return CHexDlgAbout::OnDestroy();
-	case WM_INITDIALOG: return CHexDlgAbout::OnInitDialog(stMsg);
-	case WM_LBUTTONDOWN: return CHexDlgAbout::OnLButtonDown(stMsg);
-	case WM_LBUTTONUP: return CHexDlgAbout::OnLButtonUp(stMsg);
-	case WM_MOUSEMOVE: return CHexDlgAbout::OnMouseMove(stMsg);
+	case WM_COMMAND: return OnCommand(stMsg);
+	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(stMsg);
+	case WM_DESTROY: return OnDestroy();
+	case WM_INITDIALOG: return OnInitDialog(stMsg);
+	case WM_LBUTTONDOWN: return OnLButtonDown(stMsg);
+	case WM_LBUTTONUP: return OnLButtonUp(stMsg);
+	case WM_MOUSEMOVE: return OnMouseMove(stMsg);
 	default:
 		return 0;
 	}
 }
 
 auto CHexDlgAbout::OnCommand(const MSG& stMsg)->INT_PTR {
-	switch (LOWORD(stMsg.wParam)) {
+	const auto uCtrlID = LOWORD(stMsg.wParam);
+	switch (uCtrlID) {
 	case IDOK:
 	case IDCANCEL:
-		::EndDialog(m_hWnd, IDOK);
-		return TRUE;
+		m_Wnd.EndDialog(IDOK);
+		break;
 	default:
 		return FALSE;
 	}
+	return TRUE;
 }
 
 auto CHexDlgAbout::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
 {
 	const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam);
-	if (hWndFrom == m_hWndLink) {
+	if (hWndFrom == m_wndLink) {
 		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
 		::SetTextColor(hDC, RGB(0, 50, 250));
 		::SetBkColor(hDC, GetSysColor(COLOR_BTNFACE));
@@ -121,19 +121,19 @@ auto CHexDlgAbout::OnDestroy()->INT_PTR {
 	::DeleteObject(m_hBmpLogo);
 	::DeleteObject(m_hFontDef);
 	::DeleteObject(m_hFontUnderline);
+
 	return TRUE;
 };
 
 auto CHexDlgAbout::OnInitDialog(const MSG& stMsg)->INT_PTR
 {
-	m_hWnd = stMsg.hwnd;
-	m_hWndLink = GetDlgItem(m_hWnd, IDC_HEXCTRL_ABOUT_STAT_LINKGH);
-	SetClassLongPtrW(m_hWnd, GCLP_HCURSOR, 0); //To prevent cursor blinking.
+	m_Wnd.Attach(stMsg.hwnd);
+	m_Wnd.SetWndClassLong(GCLP_HCURSOR, 0); //To prevent cursor blinking.
+	m_wndLink.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_LINKGH));
 
-	if (const auto hFont = reinterpret_cast<HFONT>(::SendMessageW(m_hWndLink, WM_GETFONT, 0, 0)); hFont) {
+	if (const auto hFont = m_wndLink.GetHFont(); hFont != nullptr) {
 		m_hFontDef = hFont;
-		LOGFONTW lf { };
-		::GetObjectW(hFont, sizeof(lf), &lf);
+		auto lf = m_wndLink.GetLogFont().value();
 		lf.lfUnderline = TRUE;
 		m_hFontUnderline = ::CreateFontIndirectW(&lf);
 	}
@@ -147,18 +147,18 @@ auto CHexDlgAbout::OnInitDialog(const MSG& stMsg)->INT_PTR
 
 	const auto wstrVersion = std::format(L"Hex Control for Windows apps, v{}.{}.{}\r\nCopyright © 2018-present Jovibor",
 		HEXCTRL_VERSION_MAJOR, HEXCTRL_VERSION_MINOR, HEXCTRL_VERSION_PATCH);
-	::SetWindowTextW(GetDlgItem(m_hWnd, IDC_HEXCTRL_ABOUT_STAT_VERSION), wstrVersion.data());
+	::SetWindowTextW(m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_VERSION), wstrVersion.data());
 
-	auto hDC = ::GetDC(m_hWnd);
+	auto hDC = m_Wnd.GetDC();
 	const auto iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
-	::ReleaseDC(m_hWnd, hDC);
+	m_Wnd.ReleaseDC(hDC);
 
 	const auto fScale = iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
 	const auto iSizeIcon = static_cast<int>(32 * fScale);
 	m_hBmpLogo = static_cast<HBITMAP>(::LoadImageW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO),
 		IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	const auto hWndStatic = ::GetDlgItem(m_hWnd, IDC_HEXCTRL_ABOUT_LOGO);
-	::SendMessageW(hWndStatic, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(m_hBmpLogo));
+	const auto hWndLogo = m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_LOGO);
+	::SendMessageW(hWndLogo, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(m_hBmpLogo));
 
 	return TRUE;
 }
@@ -166,8 +166,8 @@ auto CHexDlgAbout::OnInitDialog(const MSG& stMsg)->INT_PTR
 auto CHexDlgAbout::OnLButtonDown(const MSG& stMsg)->INT_PTR
 {
 	const POINT pt { .x { GET_X_LPARAM(stMsg.lParam) }, .y { GET_Y_LPARAM(stMsg.lParam) } };
-	const auto hWnd = ::ChildWindowFromPoint(m_hWnd, pt);
-	if (hWnd != m_hWndLink) {
+	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
+	if (hWnd != m_wndLink) {
 		m_fLBDownLink = false;
 		return FALSE;
 	}
@@ -180,16 +180,14 @@ auto CHexDlgAbout::OnLButtonDown(const MSG& stMsg)->INT_PTR
 auto CHexDlgAbout::OnLButtonUp(const MSG& stMsg) -> INT_PTR
 {
 	const POINT pt { .x { GET_X_LPARAM(stMsg.lParam) }, .y { GET_Y_LPARAM(stMsg.lParam) } };
-	const auto hWnd = ::ChildWindowFromPoint(m_hWnd, pt);
-	if (hWnd != m_hWndLink) {
+	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
+	if (hWnd != m_wndLink) {
 		m_fLBDownLink = false;
 		return FALSE;
 	}
 
 	if (m_fLBDownLink) {
-		wchar_t buff[64];
-		::GetWindowTextW(m_hWndLink, buff, std::size(buff));
-		::ShellExecuteW(nullptr, L"open", buff, nullptr, nullptr, 0);
+		::ShellExecuteW(nullptr, L"open", m_wndLink.GetWndText().data(), nullptr, nullptr, 0);
 	}
 
 	return TRUE;
@@ -198,16 +196,16 @@ auto CHexDlgAbout::OnLButtonUp(const MSG& stMsg) -> INT_PTR
 auto CHexDlgAbout::OnMouseMove(const MSG& stMsg)->INT_PTR
 {
 	const POINT pt { .x { GET_X_LPARAM(stMsg.lParam) }, .y { GET_Y_LPARAM(stMsg.lParam) } };
-	const auto hWnd = ::ChildWindowFromPoint(m_hWnd, pt);
+	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
 	if (hWnd == nullptr)
 		return FALSE;
 
 	const auto curHand = reinterpret_cast<HCURSOR>(::LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0, LR_SHARED));
 	const auto curArrow = reinterpret_cast<HCURSOR>(::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
 
-	if (m_fLinkUnderline != (m_hWndLink == hWnd)) {
-		m_fLinkUnderline = m_hWndLink == hWnd;
-		::InvalidateRect(m_hWndLink, nullptr, FALSE);
+	if (m_fLinkUnderline != (m_wndLink == hWnd)) {
+		m_fLinkUnderline = m_wndLink == hWnd;
+		m_wndLink.Invalidate(false);
 		::SetCursor(m_fLinkUnderline ? curHand : curArrow);
 	}
 
@@ -683,8 +681,8 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_ABOUT_DLG:
 	{
-		CHexDlgAbout dlgAbout(m_hWnd);
-		dlgAbout.DoModal();
+		CHexDlgAbout dlgAbout;
+		dlgAbout.DoModal(m_hWnd);
 	}
 	break;
 	case CMD_CARET_LEFT:
@@ -1007,10 +1005,10 @@ auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND
 		}
 		return m_pDlgCodepage->m_hWnd;
 	case EHexWnd::DLG_GOTO:
-		if (!IsWindow(m_pDlgGoTo->m_hWnd) && fCreate) {
-			m_pDlgGoTo->Create(IDD_HEXCTRL_GOTO, CWnd::FromHandle(m_hWnd));
+		if (!IsWindow(m_pDlgGoTo->GetHWND()) && fCreate) {
+			m_pDlgGoTo->CreateDlg();
 		}
-		return m_pDlgGoTo->m_hWnd;
+		return m_pDlgGoTo->GetHWND();
 	case EHexWnd::DLG_TEMPLMGR:
 		if (!IsWindow(m_pDlgTemplMgr->m_hWnd) && fCreate) {
 			m_pDlgTemplMgr->Create(IDD_HEXCTRL_TEMPLMGR, CWnd::FromHandle(m_hWnd));
@@ -6890,6 +6888,13 @@ void CHexCtrl::OnDestroy()
 	m_penDataTempl.DeleteObject();
 	m_pScrollV->DestroyWindow();
 	m_pScrollH->DestroyWindow();
+	m_pDlgBkmMgr->DestroyWindow();
+	m_pDlgCodepage->DestroyWindow();
+	m_pDlgDataInterp->DestroyWindow();
+	m_pDlgModify->DestroyWindow();
+	m_pDlgGoTo->DestroyWindow();
+	m_pDlgSearch->DestroyWindow();
+	m_pDlgTemplMgr->DestroyWindow();
 	m_fCreated = false;
 
 	ParentNotify(HEXCTRL_MSG_DESTROY);

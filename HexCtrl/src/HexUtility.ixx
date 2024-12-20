@@ -469,35 +469,19 @@ export namespace HEXCTRL::INTERNAL {
 		void FillSolidRect(HDC hDC, LPCRECT pRC, COLORREF clr) {
 			//Replicates CDC::FillSolidRect.
 			::SetBkColor(hDC, clr);
-			::ExtTextOutW(hDC, 0, 0, ETO_OPAQUE, pRC, NULL, 0, NULL);
+			::ExtTextOutW(hDC, 0, 0, ETO_OPAQUE, pRC, nullptr, 0, nullptr);
 		}
 
-		void ClientToScreen(HWND hWnd, LPRECT pRC) {
-			//Replicates CWnd::ClientToScreen.
-			::ClientToScreen(hWnd, reinterpret_cast<LPPOINT>(pRC));
-			::ClientToScreen(hWnd, (reinterpret_cast<LPPOINT>(pRC)) + 1);
-		}
-
-		void ScreenToClient(HWND hWnd, LPRECT pRC) {
-			//Replicates CWnd::ScreenToClient.
-			::ScreenToClient(hWnd, reinterpret_cast<LPPOINT>(pRC));
-			::ScreenToClient(hWnd, (reinterpret_cast<LPPOINT>(pRC)) + 1);
-		}
-
-		int MapWindowPoints(HWND hWndFrom, HWND hWndTo, LPRECT pRC) {
-			return ::MapWindowPoints(hWndFrom, hWndTo, reinterpret_cast<LPPOINT>(pRC), 2);
-		}
-
-		class CHexRect : public RECT {
+		class CRect : public RECT {
 		public:
-			CHexRect() { left = 0; top = 0; right = 0; bottom = 0; }
-			CHexRect(const RECT& rc) { ::CopyRect(this, &rc); }
-			CHexRect(LPCRECT pRC) { ::CopyRect(this, pRC); }
-			int Width()const { return right - left; }
-			int Height()const { return bottom - top; }
-			bool PtInRect(POINT pt)const { return ::PtInRect(this, pt); }
-			bool IsRectEmpty()const { return ::IsRectEmpty(this); }
-			bool IsRectNull()const { return (left == 0 && right == 0 && top == 0 && bottom == 0); }
+			CRect() { left = 0; top = 0; right = 0; bottom = 0; }
+			CRect(const RECT& rc) { ::CopyRect(this, &rc); }
+			CRect(LPCRECT pRC) { ::CopyRect(this, pRC); }
+			[[nodiscard]] int Width()const { return right - left; }
+			[[nodiscard]] int Height()const { return bottom - top; }
+			[[nodiscard]] bool PtInRect(POINT pt)const { return ::PtInRect(this, pt); }
+			[[nodiscard]] bool IsRectEmpty()const { return ::IsRectEmpty(this); }
+			[[nodiscard]] bool IsRectNull()const { return (left == 0 && right == 0 && top == 0 && bottom == 0); }
 			void DeflateRect(int x, int y) { ::InflateRect(this, -x, -y); }
 			void DeflateRect(SIZE size) { ::InflateRect(this, -size.cx, -size.cy); }
 			void DeflateRect(LPCRECT pRC) { left += pRC->left; top += pRC->top; right -= pRC->right; bottom -= pRC->bottom; }
@@ -507,7 +491,118 @@ export namespace HEXCTRL::INTERNAL {
 			void SetRect(int x1, int y1, int x2, int y2) { ::SetRect(this, x1, y1, x2, y2); }
 			operator LPRECT() { return this; }
 			operator LPCRECT()const { return this; }
-			void operator=(const RECT& rc) { ::CopyRect(this, &rc); }
+			CRect& operator=(const RECT& rc) { ::CopyRect(this, &rc); return *this; }
+		};
+
+		class CWnd {
+		public:
+			CWnd() = default;
+			CWnd(HWND hWnd) { Attach(hWnd); }
+			~CWnd() { Detach(); }
+			CWnd operator=(const CWnd&) = delete;
+			CWnd operator=(HWND) = delete;
+			operator HWND()const { return m_hWnd; }
+			[[nodiscard]] bool operator==(const CWnd& rhs)const { return m_hWnd == rhs.m_hWnd; }
+			[[nodiscard]] bool operator==(const HWND hWnd)const { return m_hWnd == hWnd; }
+			void Attach(HWND hWnd) { assert(::IsWindow(hWnd)); m_hWnd = hWnd; }
+			[[nodiscard]] auto ChildWindowFromPoint(POINT pt)const->HWND {
+				assert(IsWindow()); return ::ChildWindowFromPoint(m_hWnd, pt);
+			}
+			void ClientToScreen(LPRECT pRC)const {
+				assert(IsWindow()); ::ClientToScreen(m_hWnd, reinterpret_cast<LPPOINT>(pRC));
+				::ClientToScreen(m_hWnd, (reinterpret_cast<LPPOINT>(pRC)) + 1);
+			}
+			bool DestroyWindow()const { assert(IsWindow()); return ::DestroyWindow(m_hWnd); }
+			void Detach() { m_hWnd = nullptr; }
+			[[nodiscard]] auto GetClientRect()const->RECT {
+				assert(IsWindow()); RECT rc; ::GetClientRect(m_hWnd, &rc); return rc;
+			}
+			void EndDialog(INT_PTR iResult)const { assert(IsWindow()); ::EndDialog(m_hWnd, iResult); }
+			[[nodiscard]] auto GetDC()const->HDC { assert(IsWindow()); return ::GetDC(m_hWnd); }
+			[[nodiscard]] auto GetDlgItem(int iIDCtrl)const->HWND { assert(IsWindow()); return ::GetDlgItem(m_hWnd, iIDCtrl); }
+			[[nodiscard]] auto GetHFont()const->HFONT {
+				assert(IsWindow()); return reinterpret_cast<HFONT>(::SendMessageW(m_hWnd, WM_GETFONT, 0, 0));
+			}
+			[[nodiscard]] auto GetHWND()const->HWND { return m_hWnd; }
+			[[nodiscard]] auto GetLogFont()const->std::optional<LOGFONTW> {
+				if (const auto hFont = GetHFont(); hFont != nullptr) {
+					LOGFONTW lf { }; ::GetObjectW(hFont, sizeof(lf), &lf); return lf;
+				}
+				return std::nullopt;
+			}
+			[[nodiscard]] auto GetParent()const->HWND { assert(IsWindow()); return ::GetParent(m_hWnd); }
+			[[nodiscard]] auto GetWindowDC()const->HDC { assert(IsWindow()); return ::GetWindowDC(m_hWnd); }
+			[[nodiscard]] auto GetWndRect()const->RECT {
+				assert(IsWindow()); RECT rc; ::GetWindowRect(m_hWnd, &rc); return rc;
+			}
+			[[nodiscard]] auto GetWndText()const->std::wstring {
+				assert(IsWindow());	wchar_t buff[MAX_PATH]; ::GetWindowTextW(m_hWnd, buff, std::size(buff)); return buff;
+			}
+			[[nodiscard]] auto GetWndTextSize()const->DWORD { assert(IsWindow()); return ::GetWindowTextLengthW(m_hWnd); }
+			void Invalidate(bool fErase)const { assert(IsWindow()); ::InvalidateRect(m_hWnd, nullptr, fErase); }
+			[[nodiscard]] bool IsDlgMessage(MSG* pMsg)const { return ::IsDialogMessageW(m_hWnd, pMsg); }
+			[[nodiscard]] bool IsNull()const { return m_hWnd == nullptr; }
+			[[nodiscard]] bool IsWindow()const { return::IsWindow(m_hWnd); }
+			[[nodiscard]] bool IsWndTextEmpty()const { return GetWndTextSize() == 0; }
+			void KillTimer(UINT_PTR uID)const {
+				assert(IsWindow()); ::KillTimer(m_hWnd, uID);
+			}
+			int MapWindowPoints(HWND hWndTo, LPRECT pRC)const {
+				assert(IsWindow()); return ::MapWindowPoints(m_hWnd, hWndTo, reinterpret_cast<LPPOINT>(pRC), 2);
+			}
+			bool RedrawWindow(LPCRECT pRC = nullptr, HRGN hrgn = nullptr,
+				UINT uFlags = RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE)const {
+				assert(IsWindow()); return static_cast<bool>(::RedrawWindow(m_hWnd, pRC, hrgn, uFlags));
+			}
+			int ReleaseDC(HDC hDC)const { assert(IsWindow()); return ::ReleaseDC(m_hWnd, hDC); }
+			auto SetTimer(UINT_PTR uID, UINT uElapse, TIMERPROC pFN = nullptr)const->UINT_PTR {
+				assert(IsWindow()); return ::SetTimer(m_hWnd, uID, uElapse, pFN);
+			}
+			void ScreenToClient(LPPOINT pPT)const { assert(IsWindow()); ::ScreenToClient(m_hWnd, pPT); }
+			void ScreenToClient(POINT& pt)const { ScreenToClient(&pt); }
+			void ScreenToClient(LPRECT pRC)const {
+				ScreenToClient(reinterpret_cast<LPPOINT>(pRC)); ScreenToClient(reinterpret_cast<LPPOINT>(pRC) + 1);
+			}
+			auto SendMsg(UINT uMsg, WPARAM wParam = 0, LPARAM lParam = 0)const {
+				assert(IsWindow()); ::SendMessageW(m_hWnd, uMsg, wParam, lParam);
+			}
+			auto SetCapture()const->HWND { assert(IsWindow()); return ::SetCapture(m_hWnd); }
+			auto SetWndClassLong(int iIndex, LONG_PTR dwNewLong)const->ULONG_PTR {
+				assert(IsWindow()); return ::SetClassLongPtrW(m_hWnd, iIndex, dwNewLong);
+			}
+			void SetFocus()const { assert(IsWindow()); ::SetFocus(m_hWnd); }
+			void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)const {
+				assert(IsWindow()); ::SetWindowPos(m_hWnd, hWndAfter, iX, iY, iWidth, iHeight, uFlags);
+			}
+			void SetWndText(LPCWSTR pwsz)const { assert(IsWindow()); ::SetWindowTextW(m_hWnd, pwsz); }
+			void SetRedraw(bool fRedraw)const { assert(IsWindow()); ::SendMessageW(m_hWnd, WM_SETREDRAW, fRedraw, 0); }
+			bool ShowWindow(int iCmdShow)const { assert(IsWindow()); return ::ShowWindow(m_hWnd, iCmdShow); }
+		protected:
+			HWND m_hWnd { }; //Windows window handle.
+		};
+
+		class CWndCombo : public CWnd {
+		public:
+			int AddString(LPCWSTR pwsz)const {
+				assert(IsWindow());
+				return static_cast<int>(::SendMessageW(m_hWnd, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(pwsz)));
+			}
+			int DeleteString(int iIndex)const {
+				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, CB_DELETESTRING, iIndex, 0));
+			}
+			[[nodiscard]] int GetCount()const {
+				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, CB_GETCOUNT, 0, 0));
+			}
+			[[nodiscard]] int GetCurSel()const {
+				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, CB_GETCURSEL, 0, 0));
+			}
+			[[nodiscard]] auto GetItemData(int iIndex)const->DWORD_PTR {
+				assert(IsWindow()); return ::SendMessageW(m_hWnd, CB_GETITEMDATA, iIndex, 0);
+			}
+			void SetCurSel(int iIndex)const { assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETCURSEL, iIndex, 0); }
+			void SetItemData(int iIndex, DWORD_PTR dwData)const {
+				assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETITEMDATA, iIndex, static_cast<LPARAM>(dwData));
+			}
 		};
 	};
 

@@ -10,8 +10,6 @@
 #include <cassert>
 #include <format>
 
-import HEXCTRL.HexUtility;
-
 using namespace HEXCTRL::INTERNAL;
 
 enum class CHexDlgGoTo::EGoMode : std::uint8_t {
@@ -19,11 +17,22 @@ enum class CHexDlgGoTo::EGoMode : std::uint8_t {
 	MODE_PAGE, MODE_PAGEFWD, MODE_PAGEBACK, MODE_PAGEEND
 };
 
-BEGIN_MESSAGE_MAP(CHexDlgGoTo, CDialogEx)
-	ON_WM_ACTIVATE()
-	ON_WM_CLOSE()
-	ON_WM_DESTROY()
-END_MESSAGE_MAP()
+void CHexDlgGoTo::CreateDlg()
+{
+	//m_Wnd is set in the OnInitDialog().
+	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_GOTO),
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgWndProc<CHexDlgGoTo>, reinterpret_cast<LPARAM>(this));
+		hWnd == nullptr) {
+		DBG_REPORT(L"CreateDialogParamW failed.");
+	}
+}
+
+void CHexDlgGoTo::DestroyWindow()
+{
+	if (m_Wnd.IsWindow()) {
+		m_Wnd.DestroyWindow();
+	}
+}
 
 void CHexDlgGoTo::Initialize(IHexCtrl* pHexCtrl)
 {
@@ -35,6 +44,11 @@ void CHexDlgGoTo::Initialize(IHexCtrl* pHexCtrl)
 	m_pHexCtrl = pHexCtrl;
 }
 
+auto CHexDlgGoTo::GetHWND()const->HWND
+{
+	return m_Wnd;
+}
+
 bool CHexDlgGoTo::IsRepeatAvail()const
 {
 	return m_fRepeat;
@@ -42,12 +56,20 @@ bool CHexDlgGoTo::IsRepeatAvail()const
 
 bool CHexDlgGoTo::PreTranslateMsg(MSG* pMsg)
 {
-	if (m_hWnd == nullptr)
-		return false;
+	return m_Wnd.IsDlgMessage(pMsg);
+}
 
-	if (::IsDialogMessageW(m_hWnd, pMsg) != FALSE) { return true; }
-
-	return false;
+auto CHexDlgGoTo::ProcessMsg(const MSG& stMsg)->INT_PTR
+{
+	switch (stMsg.message) {
+	case WM_ACTIVATE: return OnActivate(stMsg);
+	case WM_CLOSE: return OnClose();
+	case WM_COMMAND: return OnCommand(stMsg);
+	case WM_DESTROY: return OnDestroy();
+	case WM_INITDIALOG: return OnInitDialog(stMsg);
+	default:
+		return 0;
+	}
 }
 
 void CHexDlgGoTo::Repeat(bool fFwd)
@@ -64,23 +86,17 @@ void CHexDlgGoTo::SetDlgProperties(std::uint64_t u64Flags)
 	m_u64Flags = u64Flags;
 }
 
-BOOL CHexDlgGoTo::ShowWindow(int nCmdShow)
+void CHexDlgGoTo::ShowWindow(int nCmdShow)
 {
-	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_GOTO, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+	if (!m_Wnd.IsWindow()) {
+		CreateDlg();
 	}
 
-	return CDialogEx::ShowWindow(nCmdShow);
+	m_Wnd.ShowWindow(nCmdShow);
 }
 
 
 //Private methods.
-
-void CHexDlgGoTo::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_GOTO_COMBO_MODE, m_comboMode);
-}
 
 auto CHexDlgGoTo::GetHexCtrl()const->IHexCtrl*
 {
@@ -89,7 +105,7 @@ auto CHexDlgGoTo::GetHexCtrl()const->IHexCtrl*
 
 auto CHexDlgGoTo::GetGoMode()const->EGoMode
 {
-	return static_cast<EGoMode>(m_comboMode.GetItemData(m_comboMode.GetCurSel()));
+	return static_cast<EGoMode>(m_wndCmbMode.GetItemData(m_wndCmbMode.GetCurSel()));
 }
 
 void CHexDlgGoTo::GoTo(bool fForward)
@@ -101,18 +117,16 @@ void CHexDlgGoTo::GoTo(bool fForward)
 		return;
 	}
 
-	const auto pEdit = GetDlgItem(IDC_HEXCTRL_GOTO_EDIT_GOTO);
-	if (pEdit->GetWindowTextLengthW() == 0) {
-		pEdit->SetFocus();
+	wnd::CWnd wndEdit(m_Wnd.GetDlgItem(IDC_HEXCTRL_GOTO_EDIT_GOTO));
+	if (wndEdit.IsWndTextEmpty()) {
+		wndEdit.SetFocus();
 		return;
 	}
 
-	CStringW cstr;
-	pEdit->GetWindowTextW(cstr);
-	const auto optGoTo = stn::StrToUInt64(cstr.GetString());
+	const auto optGoTo = stn::StrToUInt64(wndEdit.GetWndText());
 	if (!optGoTo) {
-		pEdit->SetFocus();
-		MessageBoxW(L"Invalid number", L"Error", MB_ICONERROR);
+		wndEdit.SetFocus();
+		MessageBoxW(m_Wnd, L"Invalid number", L"Error", MB_ICONERROR);
 		return;
 	}
 
@@ -121,7 +135,7 @@ void CHexDlgGoTo::GoTo(bool fForward)
 	const auto ullOffsetCurr = pHexCtrl->GetCaretPos();
 	const auto ullDataSize = pHexCtrl->GetDataSize();
 	const auto llPageSize = static_cast<LONGLONG>(pHexCtrl->GetPageSize()); //Cast to signed.
-	const auto ullPageRem = ullDataSize % llPageSize; //Page remaining size.
+	const auto ullPageRem = llPageSize > 0 ? (ullDataSize % llPageSize) : 0; //Page remaining size. Zero division check.
 	auto ullOffsetResult { 0ULL };
 
 	using enum EGoMode;
@@ -171,17 +185,18 @@ bool CHexDlgGoTo::IsNoEsc()const
 	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
-void CHexDlgGoTo::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+auto CHexDlgGoTo::OnActivate(const MSG& stMsg)->INT_PTR
 {
+	const auto nState = LOWORD(stMsg.wParam);
 	const auto* const pHexCtrl = GetHexCtrl();
 	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
-		return;
+		return TRUE;
 
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
-		UpdateComboMode();
+		//UpdateComboMode();
 	}
 
-	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
+	return FALSE; //Default handler.
 }
 
 void CHexDlgGoTo::OnCancel()
@@ -189,36 +204,57 @@ void CHexDlgGoTo::OnCancel()
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
-	CDialogEx::OnCancel();
+	ShowWindow(SW_HIDE);
 }
 
-void CHexDlgGoTo::OnClose()
+auto CHexDlgGoTo::OnClose()->INT_PTR
 {
-	EndDialog(IDCANCEL);
+	ShowWindow(SW_HIDE);
+
+	return TRUE;
 }
 
-void CHexDlgGoTo::OnDestroy()
+auto CHexDlgGoTo::OnCommand(const MSG& stMsg)->INT_PTR
 {
-	CDialogEx::OnDestroy();
+	const auto uCtrlID = LOWORD(stMsg.wParam);
+	switch (uCtrlID) {
+	case IDOK:
+		OnOK();
+		break;
+	case IDCANCEL:
+		OnCancel();
+		break;
+	default:
+		return FALSE;
+	}
+	return TRUE;
+}
+
+auto CHexDlgGoTo::OnDestroy()->INT_PTR
+{
 	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
 	m_fRepeat = false;
+	m_Wnd.Detach();
+	m_wndCmbMode.Detach();
+
+	return TRUE;
 }
 
-BOOL CHexDlgGoTo::OnInitDialog()
+auto CHexDlgGoTo::OnInitDialog(const MSG& stMsg)->INT_PTR
 {
-	CDialogEx::OnInitDialog();
-
 	using enum EGoMode;
-	auto iIndex = m_comboMode.AddString(L"Offset");
-	m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSET));
-	m_comboMode.SetCurSel(iIndex);
-	iIndex = m_comboMode.AddString(L"Offset forward from the current");
-	m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETFWD));
-	iIndex = m_comboMode.AddString(L"Offset back from the current");
-	m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETBACK));
-	iIndex = m_comboMode.AddString(L"Offset from the end");
-	m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETEND));
+	m_Wnd.Attach(stMsg.hwnd);
+	m_wndCmbMode.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_GOTO_COMBO_MODE));
+	auto iIndex = m_wndCmbMode.AddString(L"Offset");
+	m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSET));
+	m_wndCmbMode.SetCurSel(iIndex);
+	iIndex = m_wndCmbMode.AddString(L"Offset forward from the current");
+	m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETFWD));
+	iIndex = m_wndCmbMode.AddString(L"Offset back from the current");
+	m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETBACK));
+	iIndex = m_wndCmbMode.AddString(L"Offset from the end");
+	m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSETEND));
 	UpdateComboMode();
 
 	return TRUE;
@@ -232,35 +268,35 @@ void CHexDlgGoTo::OnOK()
 void CHexDlgGoTo::UpdateComboMode()
 {
 	constexpr auto iOffsetsTotal = 4; //Total amount of Offset's modes.
-	auto iCurrCount = m_comboMode.GetCount();
+	auto iCurrCount = m_wndCmbMode.GetCount();
 	const auto fHasPages = iCurrCount > iOffsetsTotal;
 	auto fShouldHavePages = GetHexCtrl()->GetPageSize() > 0;
 	using enum EGoMode;
 
 	if (fShouldHavePages != fHasPages) {
-		m_comboMode.SetRedraw(FALSE);
+		m_wndCmbMode.SetRedraw(FALSE);
 		if (fShouldHavePages) {
-			auto iIndex = m_comboMode.AddString(L"Page");
-			m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGE));
-			iIndex = m_comboMode.AddString(L"Page forward from the current");
-			m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEFWD));
-			iIndex = m_comboMode.AddString(L"Page back from the current");
-			m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEBACK));
-			iIndex = m_comboMode.AddString(L"Page from the end");
-			m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEEND));
+			auto iIndex = m_wndCmbMode.AddString(L"Page");
+			m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGE));
+			iIndex = m_wndCmbMode.AddString(L"Page forward from the current");
+			m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEFWD));
+			iIndex = m_wndCmbMode.AddString(L"Page back from the current");
+			m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEBACK));
+			iIndex = m_wndCmbMode.AddString(L"Page from the end");
+			m_wndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_PAGEEND));
 		}
 		else {
-			const auto iCurrSel = m_comboMode.GetCurSel();
+			const auto iCurrSel = m_wndCmbMode.GetCurSel();
 			for (auto iIndex = iCurrCount - 1; iIndex >= iOffsetsTotal; --iIndex) {
-				m_comboMode.DeleteString(iIndex);
+				m_wndCmbMode.DeleteString(iIndex);
 			}
 
 			if (iCurrSel > (iOffsetsTotal - 1)) {
-				m_comboMode.SetCurSel(iOffsetsTotal - 1);
+				m_wndCmbMode.SetCurSel(iOffsetsTotal - 1);
 				m_fRepeat = false;
 			}
 		}
-		m_comboMode.SetRedraw(TRUE);
-		m_comboMode.RedrawWindow();
+		m_wndCmbMode.SetRedraw(TRUE);
+		m_wndCmbMode.RedrawWindow();
 	}
 }

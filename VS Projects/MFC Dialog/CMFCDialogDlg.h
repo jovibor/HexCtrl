@@ -32,6 +32,7 @@ private:
 	void LoadTemplates(const IHexCtrl* pHexCtrl);
 	bool IsRW()const;
 	bool IsLnk()const;
+	BOOL PreTranslateMessage(MSG* pMsg)override;
 	[[nodiscard]] static auto OpenFileDlg() -> std::vector<std::wstring>;
 	[[nodiscard]] static auto GetLastErrorWstr() -> std::wstring;
 	DECLARE_MESSAGE_MAP();
