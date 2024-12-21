@@ -444,7 +444,7 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_pList->Create({ .pParent { this }, .uID { IDC_HEXCTRL_BKMMGR_LIST }, .dwSizeFontList { 10 },
+	m_pList->Create({ .hWndParent { m_hWnd }, .uID { IDC_HEXCTRL_BKMMGR_LIST }, .dwSizeFontList { 10 },
 		.dwSizeFontHdr { 10 }, .fDialogCtrl { true } });
 	m_pList->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 	m_pList->SetSortable(true);
@@ -573,7 +573,7 @@ void CHexDlgBkmMgr::OnListRClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	m_menuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
 }
 
-void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)
+void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
 
@@ -581,14 +581,12 @@ void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)
 	case 4: //Bk color.
 		if (const auto* const pBkm = GetByIndex(static_cast<std::size_t>(pLCI->iItem)); pBkm != nullptr) {
 			pLCI->stClr.clrBk = pBkm->stClr.clrBk;
-			*pResult = TRUE;
 			return;
 		}
 		break;
 	case 5: //Text color.
 		if (const auto* const pBkm = GetByIndex(static_cast<std::size_t>(pLCI->iItem)); pBkm != nullptr) {
 			pLCI->stClr.clrBk = pBkm->stClr.clrText;
-			*pResult = TRUE;
 			return;
 		}
 		break;
@@ -660,7 +658,7 @@ BOOL CHexDlgBkmMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_BKMMGR_LIST) {
 		switch (pNMI->hdr.code) {
-			//ON_NOTIFY(LVN_COLUMNCLICK, ...) macro doesn't work for CMFCListCtrl in neither virtual nor default mode.
+			//ON_NOTIFY(LVN_COLUMNCLICK, ...) macro doesn't work for CListCtrl in neither virtual nor default mode.
 			//But it works for vanilla CListCtrl. Obviously it's MFC quirks.
 		case LVN_COLUMNCLICK:
 			if (!IsVirtual()) {

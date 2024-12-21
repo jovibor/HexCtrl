@@ -963,7 +963,7 @@ BOOL CHexDlgSearch::OnInitDialog()
 	iIndex = m_comboMode.AddString(L"Structs");
 	m_comboMode.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchMode::MODE_STRUCT));
 
-	m_pList->Create({ .pParent { this }, .uID { IDC_HEXCTRL_SEARCH_LIST }, .dwSizeFontList { 10 },
+	m_pList->Create({ .hWndParent { m_hWnd }, .uID { IDC_HEXCTRL_SEARCH_LIST }, .dwSizeFontList { 10 },
 		.dwSizeFontHdr { 10 }, .fDialogCtrl { true } });
 	m_pList->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 	m_pList->InsertColumn(0, L"№", LVCFMT_LEFT, 50);

@@ -86,13 +86,13 @@ void CHexDlgGoTo::SetDlgProperties(std::uint64_t u64Flags)
 	m_u64Flags = u64Flags;
 }
 
-void CHexDlgGoTo::ShowWindow(int nCmdShow)
+void CHexDlgGoTo::ShowWindow(int iCmdShow)
 {
 	if (!m_Wnd.IsWindow()) {
 		CreateDlg();
 	}
 
-	m_Wnd.ShowWindow(nCmdShow);
+	m_Wnd.ShowWindow(iCmdShow);
 }
 
 
@@ -187,13 +187,13 @@ bool CHexDlgGoTo::IsNoEsc()const
 
 auto CHexDlgGoTo::OnActivate(const MSG& stMsg)->INT_PTR
 {
-	const auto nState = LOWORD(stMsg.wParam);
-	const auto* const pHexCtrl = GetHexCtrl();
+	const auto pHexCtrl = GetHexCtrl();
 	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
-		return TRUE;
+		return FALSE;
 
+	const auto nState = LOWORD(stMsg.wParam);
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
-		//UpdateComboMode();
+		UpdateComboMode();
 	}
 
 	return FALSE; //Default handler.
@@ -210,7 +210,6 @@ void CHexDlgGoTo::OnCancel()
 auto CHexDlgGoTo::OnClose()->INT_PTR
 {
 	ShowWindow(SW_HIDE);
-
 	return TRUE;
 }
 

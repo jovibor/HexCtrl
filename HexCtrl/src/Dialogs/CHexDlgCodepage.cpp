@@ -13,16 +13,6 @@
 
 using namespace HEXCTRL::INTERNAL;
 
-BEGIN_MESSAGE_MAP(CHexDlgCodepage, CDialogEx)
-	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListGetDispInfo)
-	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListItemChanged)
-	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListGetColor)
-	ON_NOTIFY(LISTEX::LISTEX_MSG_LINKCLICK, IDC_HEXCTRL_CODEPAGE_LIST, &CHexDlgCodepage::OnListLinkClick)
-	ON_WM_ACTIVATE()
-	ON_WM_CLOSE()
-	ON_WM_DESTROY()
-END_MESSAGE_MAP()
-
 void CHexDlgCodepage::AddCP(std::wstring_view wsv)
 {
 	if (const auto optCPID = stn::StrToUInt32(wsv); optCPID) {
@@ -30,6 +20,28 @@ void CHexDlgCodepage::AddCP(std::wstring_view wsv)
 			m_vecCodePage.emplace_back(static_cast<int>(*optCPID), stCP.CodePageName, stCP.MaxCharSize);
 		}
 	}
+}
+
+void CHexDlgCodepage::CreateDlg()
+{
+	//m_Wnd is set in the OnInitDialog().
+	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_CODEPAGE),
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgWndProc<CHexDlgCodepage>, reinterpret_cast<LPARAM>(this));
+		hWnd == nullptr) {
+		DBG_REPORT(L"CreateDialogParamW failed.");
+	}
+}
+
+void CHexDlgCodepage::DestroyWindow()
+{
+	if (m_Wnd.IsWindow()) {
+		m_Wnd.DestroyWindow();
+	}
+}
+
+auto CHexDlgCodepage::GetHWND()const->HWND
+{
+	return m_Wnd;
 }
 
 void CHexDlgCodepage::Initialize(IHexCtrl* pHexCtrl)
@@ -43,12 +55,24 @@ void CHexDlgCodepage::Initialize(IHexCtrl* pHexCtrl)
 
 bool CHexDlgCodepage::PreTranslateMsg(MSG* pMsg)
 {
-	if (m_hWnd == nullptr)
-		return false;
+	return m_Wnd.IsDlgMessage(pMsg);
+}
 
-	if (::IsDialogMessageW(m_hWnd, pMsg) != FALSE) { return true; }
-
-	return false;
+auto CHexDlgCodepage::ProcessMsg(const MSG& stMsg)->INT_PTR
+{
+	switch (stMsg.message) {
+	case WM_ACTIVATE: return OnActivate(stMsg);
+	case WM_CLOSE: return OnClose();
+	case WM_COMMAND: return OnCommand(stMsg);
+	case WM_DESTROY: return OnDestroy();
+	case WM_DRAWITEM: return OnDrawItem(stMsg);
+	case WM_INITDIALOG: return OnInitDialog(stMsg);
+	case WM_MEASUREITEM: return OnMeasureItem(stMsg);
+	case WM_NOTIFY: return OnNotify(stMsg);
+	case WM_SIZE: return OnSize(stMsg);
+	default:
+		return 0;
+	}
 }
 
 void CHexDlgCodepage::SetDlgProperties(std::uint64_t u64Flags)
@@ -56,33 +80,29 @@ void CHexDlgCodepage::SetDlgProperties(std::uint64_t u64Flags)
 	m_u64Flags = u64Flags;
 }
 
-BOOL CHexDlgCodepage::ShowWindow(int nCmdShow)
+void CHexDlgCodepage::ShowWindow(int iCmdShow)
 {
-	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_CODEPAGE, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+	if (!m_Wnd.IsWindow()) {
+		CreateDlg();
 	}
 
-	return CDialogEx::ShowWindow(nCmdShow);
+	m_Wnd.ShowWindow(iCmdShow);
 }
 
 
 //Private methods.
-
-void CHexDlgCodepage::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-}
 
 bool CHexDlgCodepage::IsNoEsc()const
 {
 	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
-void CHexDlgCodepage::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+auto CHexDlgCodepage::OnActivate(const MSG& stMsg)->INT_PTR
 {
 	if (!m_pHexCtrl->IsCreated())
-		return;
+		return FALSE;
 
+	const auto nState = LOWORD(stMsg.wParam);
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
 		m_pList->SetItemState(-1, 0, LVIS_SELECTED);
 		if (const auto iter = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
@@ -94,7 +114,7 @@ void CHexDlgCodepage::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 		}
 	}
 
-	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
+	return FALSE; //Default handler.
 }
 
 void CHexDlgCodepage::OnCancel()
@@ -102,29 +122,87 @@ void CHexDlgCodepage::OnCancel()
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
-	CDialogEx::OnCancel();
+	ShowWindow(SW_HIDE);
 }
 
-void CHexDlgCodepage::OnDestroy()
+auto CHexDlgCodepage::OnDestroy()->INT_PTR
 {
-	CDialogEx::OnDestroy();
-
 	m_vecCodePage.clear();
 	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
+	m_Wnd.Detach();
+
+	return TRUE;
 }
 
-void CHexDlgCodepage::OnClose()
+auto CHexDlgCodepage::OnDrawItem(const MSG& stMsg)->INT_PTR
 {
-	EndDialog(IDCANCEL);
+	if (auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(stMsg.lParam);
+		pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_CODEPAGE_LIST)) {
+		m_pList->DrawItem(pDIS);
+	}
+
+	return TRUE;
 }
 
-BOOL CHexDlgCodepage::OnInitDialog()
+auto CHexDlgCodepage::OnMeasureItem(const MSG& stMsg)->INT_PTR
 {
-	CDialogEx::OnInitDialog();
+	if (auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(stMsg.lParam);
+		pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_CODEPAGE_LIST)) {
+		m_pList->MeasureItem(pMIS);
+	}
 
-	m_pList->Create({ .pParent { this }, .uID { IDC_HEXCTRL_CODEPAGE_LIST }, .dwSizeFontList { 10 },
-		.dwSizeFontHdr { 10 }, .fDialogCtrl { true } });
+	return TRUE;
+}
+
+auto CHexDlgCodepage::OnNotify(const MSG& stMsg)->INT_PTR
+{
+	auto pNMHDR = reinterpret_cast<NMHDR*>(stMsg.lParam);
+	if (pNMHDR->idFrom == IDC_HEXCTRL_CODEPAGE_LIST) {
+		switch (pNMHDR->code) {
+		case LVN_COLUMNCLICK:
+			SortList(); break;
+		case LVN_GETDISPINFOW:
+			OnListGetDispInfo(pNMHDR); break;
+		case LVN_ITEMCHANGED:
+			OnListItemChanged(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_GETCOLOR:
+			OnListGetColor(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_LINKCLICK:
+			OnListLinkClick(pNMHDR); break;
+		default:
+			break;
+		}
+	}
+
+	return TRUE;
+}
+
+auto CHexDlgCodepage::OnClose()->INT_PTR
+{
+	ShowWindow(SW_HIDE);
+	return TRUE;
+}
+
+auto CHexDlgCodepage::OnCommand(const MSG& stMsg)->INT_PTR
+{
+	const auto uCtrlID = LOWORD(stMsg.wParam);
+	switch (uCtrlID) {
+	case IDOK:
+	case IDCANCEL:
+		OnCancel();
+		break;
+	default:
+		return FALSE;
+	}
+	return TRUE;
+}
+
+auto CHexDlgCodepage::OnInitDialog(const MSG& stMsg)->INT_PTR
+{
+	m_Wnd.Attach(stMsg.hwnd);
+	m_pList->Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_CODEPAGE_LIST }, .dwSizeFontList { 10 },
+		.dwSizeFontHdr { 9 }, .fDialogCtrl { true } });
 	m_pList->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 	m_pList->SetSortable(true);
 	m_pList->InsertColumn(0, L"Code page", LVCFMT_LEFT, 80);
@@ -137,14 +215,14 @@ BOOL CHexDlgCodepage::OnInitDialog()
 	EnumSystemCodePagesW(EnumCodePagesProc, CP_INSTALLED);
 	m_pList->SetItemCountEx(static_cast<int>(m_vecCodePage.size()), LVSICF_NOSCROLL);
 
-	if (const auto pLayout = GetDynamicLayout(); pLayout != nullptr) {
-		pLayout->SetMinSize({ 0, 0 });
-	}
+	m_DynLayout.SetHost(m_Wnd);
+	m_DynLayout.AddItem(IDC_HEXCTRL_CODEPAGE_LIST, wnd::CDynLayout::MoveNone(), wnd::CDynLayout::SizeHorzAndVert(100, 100));
+	m_DynLayout.EnableTrack(true);
 
 	return TRUE;
 }
 
-void CHexDlgCodepage::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgCodepage::OnListGetDispInfo(NMHDR* pNMHDR)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
@@ -167,7 +245,7 @@ void CHexDlgCodepage::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgCodepage::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgCodepage::OnListItemChanged(NMHDR* pNMHDR)
 {
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED)) {
@@ -175,35 +253,27 @@ void CHexDlgCodepage::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgCodepage::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)
+void CHexDlgCodepage::OnListGetColor(NMHDR* pNMHDR)
 {
 	if (const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
 		m_vecCodePage[static_cast<std::size_t>(pLCI->iItem)].uMaxChars > 1) {
 		pLCI->stClr = { RGB(200, 80, 80), RGB(255, 255, 255) };
-		*pResult = TRUE;
 		return;
 	}
 }
 
-void CHexDlgCodepage::OnListLinkClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgCodepage::OnListLinkClick(NMHDR* pNMHDR)
 {
 	const auto* const pLLI = reinterpret_cast<LISTEX::PLISTEXLINKINFO>(pNMHDR);
 	ShellExecuteW(nullptr, L"open", pLLI->pwszText, nullptr, nullptr, SW_SHOWNORMAL);
 }
 
-BOOL CHexDlgCodepage::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+auto CHexDlgCodepage::OnSize(const MSG& stMsg)->INT_PTR
 {
-	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_CODEPAGE_LIST) {
-		switch (pNMI->hdr.code) {
-		case LVN_COLUMNCLICK:
-			SortList();
-			return TRUE;
-		default:
-			break;
-		}
-	}
-
-	return CDialogEx::OnNotify(wParam, lParam, pResult);
+	const auto iWidth = LOWORD(stMsg.lParam);
+	const auto iHeight = HIWORD(stMsg.lParam);
+	m_DynLayout.OnSize(iWidth, iHeight);
+	return TRUE;
 }
 
 void CHexDlgCodepage::SortList()
@@ -236,6 +306,5 @@ void CHexDlgCodepage::SortList()
 BOOL CHexDlgCodepage::EnumCodePagesProc(LPWSTR pwszCP)
 {
 	m_pThis->AddCP(pwszCP);
-
 	return TRUE;
 }

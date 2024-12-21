@@ -21,7 +21,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
 		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
 		void SetDlgProperties(std::uint64_t u64Flags);
-		void ShowWindow(int nCmdShow);
+		void ShowWindow(int iCmdShow);
 	private:
 		enum class EGoMode : std::uint8_t;
 		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;

@@ -6,34 +6,39 @@
 ****************************************************************************************/
 #pragma once
 #include "../../HexCtrl.h"
-#include <afxdialogex.h>
 
 import HEXCTRL.HexUtility;
 
 namespace HEXCTRL::INTERNAL {
-	class CHexDlgCodepage final : public CDialogEx {
+	class CHexDlgCodepage final {
 	public:
 		void AddCP(std::wstring_view wsv);
+		void CreateDlg();
+		void DestroyWindow();
+		[[nodiscard]] auto GetHWND()const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
+		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
 		void SetDlgProperties(std::uint64_t u64Flags);
-		BOOL ShowWindow(int nCmdShow);
+		void ShowWindow(int iCmdShow);
 	private:
-		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard ]] bool IsNoEsc()const;
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		void OnCancel()override;
-		afx_msg void OnClose();
-		afx_msg void OnDestroy();
-		BOOL OnInitDialog()override;
-		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListGetColor(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListLinkClick(NMHDR *pNMHDR, LRESULT *pResult);
-		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
+		auto OnActivate(const MSG& stMsg) -> INT_PTR;
+		void OnCancel();
+		auto OnClose() -> INT_PTR;
+		auto OnCommand(const MSG& stMsg) -> INT_PTR;
+		auto OnDestroy() -> INT_PTR;
+		auto OnDrawItem(const MSG& stMsg) -> INT_PTR;
+		auto OnMeasureItem(const MSG& stMsg) -> INT_PTR;
+		auto OnNotify(const MSG& stMsg) -> INT_PTR;
+		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
+		void OnListGetDispInfo(NMHDR *pNMHDR);
+		void OnListItemChanged(NMHDR *pNMHDR);
+		void OnListGetColor(NMHDR *pNMHDR);
+		void OnListLinkClick(NMHDR *pNMHDR);
+		auto OnSize(const MSG& stMsg) -> INT_PTR;
 		void SortList();
 		static BOOL CALLBACK EnumCodePagesProc(LPWSTR pwszCP);
-		DECLARE_MESSAGE_MAP();
 	private:
 		struct CODEPAGE {
 			int iCPID { };
@@ -41,6 +46,8 @@ namespace HEXCTRL::INTERNAL {
 			UINT uMaxChars { };
 		};
 		inline static CHexDlgCodepage* m_pThis { };
+		wnd::CWnd m_Wnd;              //Main window.
+		wnd::CDynLayout m_DynLayout;
 		IHexCtrl* m_pHexCtrl { };
 		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
 		std::vector<CODEPAGE> m_vecCodePage;

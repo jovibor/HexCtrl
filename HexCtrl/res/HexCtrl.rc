@@ -170,7 +170,7 @@ EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Codepage"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_HEXCTRL_CODEPAGE_LIST,"SysListView32",LVS_ALIGNLEFT | LVS_OWNERDATA | WS_TABSTOP,0,32,309,288
+    CONTROL         "",IDC_HEXCTRL_CODEPAGE_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | LVS_OWNERDATA | WS_TABSTOP,0,32,309,288
     LTEXT           "Below are listed all codepages that are installed in the system.\r\nOnly single-byte codepages supported to work correctly.\nMultibyte codepages unsupported, such codepages are red highlighted.",IDC_STATIC,5,4,298,26
 END
 

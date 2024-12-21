@@ -671,7 +671,7 @@ BOOL CHexDlgTemplMgr::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	m_pList->Create({ .pParent { this }, .uID { IDC_HEXCTRL_TEMPLMGR_LIST }, .dwSizeFontList { 10 },
+	m_pList->Create({ .hWndParent { m_hWnd }, .uID { IDC_HEXCTRL_TEMPLMGR_LIST }, .dwSizeFontList { 10 },
 		.dwSizeFontHdr { 10 }, .fDialogCtrl { true } });
 	m_pList->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 	m_pList->InsertColumn(m_iIDListApplFieldType, L"Type", LVCFMT_LEFT, 85);
@@ -982,7 +982,7 @@ void CHexDlgTemplMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)
+void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 {
 	static constexpr auto clrTextBluish { RGB(16, 42, 255) };  //Bluish text.
 	static constexpr auto clrTextGreenish { RGB(0, 110, 0) };  //Green text.
@@ -1008,7 +1008,6 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)
 				pLCI->stClr.clrText = clrTextBluish;
 			}
 		}
-		*pResult = TRUE;
 
 		return;
 	}
@@ -1018,14 +1017,12 @@ void CHexDlgTemplMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult)
 		if (eType != type_custom && eType != custom_size) {
 			pLCI->stClr.clrText = clrTextBluish;
 			pLCI->stClr.clrBk = static_cast<COLORREF>(-1); //Default bk color.
-			*pResult = TRUE;
 			return;
 		}
 		break;
 	case m_iIDListApplFieldClrs:
 		pLCI->stClr.clrBk = pField->stClr.clrBk;
 		pLCI->stClr.clrText = pField->stClr.clrText;
-		*pResult = TRUE;
 		return;
 	default:
 		break;

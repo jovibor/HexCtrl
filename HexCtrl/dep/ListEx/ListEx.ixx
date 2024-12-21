@@ -121,11 +121,11 @@ export namespace HEXCTRL::LISTEX {
 	* LISTEXCREATE - Main initialization helper struct for CListEx::Create method.    *
 	**********************************************************************************/
 	struct LISTEXCREATE {
-		CWnd*           pParent { };             //Parent window.
+		HWND            hWndParent { };          //Parent window.
 		PCLISTEXCOLORS  pColors { };             //ListEx colors.
 		const LOGFONTW* pLFList { };             //ListEx LOGFONT.
 		const LOGFONTW* pLFHdr { };              //Header LOGFONT.
-		CRect           rect;                    //Initial rect.
+		RECT            rect;                    //Initial rect.
 		UINT            uID { };                 //ListEx control ID.
 		DWORD           dwStyle { };             //ListEx window styles.
 		DWORD           dwExStyle { };           //Extended window styles.
@@ -160,7 +160,7 @@ export namespace HEXCTRL::LISTEX {
 	class IListEx : public CMFCListCtrl {
 	public:
 		virtual bool Create(const LISTEXCREATE& lcs) = 0;
-		virtual void CreateDialogCtrl(UINT uCtrlID, CWnd* pParent) = 0;
+		virtual void CreateDialogCtrl(UINT uCtrlID, HWND hWndParent) = 0;
 		virtual BOOL DeleteAllItems() = 0;
 		virtual BOOL DeleteColumn(int nCol) = 0;
 		virtual BOOL DeleteItem(int nItem) = 0;
@@ -168,7 +168,7 @@ export namespace HEXCTRL::LISTEX {
 		[[nodiscard]] virtual auto GetCellData(int iItem, int iSubitem)const->ULONGLONG = 0;
 		[[nodiscard]] virtual auto GetColors()const->const LISTEXCOLORS & = 0;
 		[[nodiscard]] virtual auto GetColumnSortMode(int iColumn)const->EListExSortMode = 0;
-		[[nodiscard]] virtual auto GetFont() -> CFont* = 0;
+		[[nodiscard]] virtual auto GetFont()const->LOGFONTW = 0;
 		[[nodiscard]] virtual int GetSortColumn()const = 0;
 		[[nodiscard]] virtual bool GetSortAscending()const = 0;
 		virtual void HideColumn(int iIndex, bool fHide) = 0;
@@ -177,6 +177,7 @@ export namespace HEXCTRL::LISTEX {
 			int nSubItem = -1, int iDataAlign = LVCFMT_LEFT, bool fEditable = false) = 0;
 		[[nodiscard]] virtual bool IsCreated()const = 0;
 		[[nodiscard]] virtual bool IsColumnSortable(int iColumn) = 0;
+		virtual void MeasureItem(LPMEASUREITEMSTRUCT lpMIS) = 0;
 		virtual void ResetSort() = 0; //Reset all the sort by any column to its default state.
 		virtual void SetCellColor(int iItem, int iSubitem, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetCellData(int iItem, int iSubitem, ULONGLONG ullData) = 0;
@@ -187,12 +188,11 @@ export namespace HEXCTRL::LISTEX {
 		virtual void SetColumnEditable(int iColumn, bool fEditable) = 0;
 		virtual void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode = { }) = 0;
 		virtual void SetFont(const LOGFONTW& lf) = 0;
-		virtual void SetFont(CFont* pFont) = 0;
 		virtual void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon) = 0; //Icon for a given column.
 		virtual void SetHdrFont(const LOGFONTW& lf) = 0;
 		virtual void SetHdrHeight(DWORD dwHeight) = 0;
-		virtual void SetHdrImageList(CImageList* pList) = 0;
+		virtual void SetHdrImageList(HIMAGELIST pList) = 0;
 		virtual void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText = -1) = 0;
 		virtual void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare = nullptr,
 			EListExSortMode eSortMode = EListExSortMode::SORT_LEX) = 0;
@@ -795,7 +795,7 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 	class CListEx final : public IListEx {
 	public:
 		bool Create(const LISTEXCREATE& lcs)override;
-		void CreateDialogCtrl(UINT uCtrlID, CWnd* pParent)override;
+		void CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)override;
 		BOOL DeleteAllItems()override;
 		BOOL DeleteColumn(int iIndex)override;
 		BOOL DeleteItem(int iItem)override;
@@ -803,7 +803,7 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		[[nodiscard]] auto GetCellData(int iItem, int iSubItem)const->ULONGLONG override;
 		[[nodiscard]] auto GetColors()const->const LISTEXCOLORS & override;
 		[[nodiscard]] auto GetColumnSortMode(int iColumn)const->EListExSortMode override;
-		[[nodiscard]] auto GetFont() -> CFont* override;
+		[[nodiscard]] auto GetFont()const->LOGFONTW override;
 		[[nodiscard]] int GetSortColumn()const override;
 		[[nodiscard]] bool GetSortAscending()const override;
 		void HideColumn(int iIndex, bool fHide)override;
@@ -822,12 +822,11 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		void SetColumnEditable(int iColumn, bool fEditable)override;
 		void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode = { })override;
 		void SetFont(const LOGFONTW& lf)override;
-		void SetFont(CFont* pFont)override;
 		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1)override;
 		void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)override; //Icon for a given column.
 		void SetHdrFont(const LOGFONTW& lf)override;
 		void SetHdrHeight(DWORD dwHeight)override;
-		void SetHdrImageList(CImageList* pList)override;
+		void SetHdrImageList(HIMAGELIST pList)override;
 		void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)override;
 		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode eSortMode)override;
 		static int CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
@@ -841,9 +840,9 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		void FontSizeIncDec(bool fInc);
 		void InitHeader()override;
 		[[nodiscard]] auto GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEXCOLOR>;
-		[[nodiscard]] auto GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDATA>;
 		[[nodiscard]] int GetIcon(int iItem, int iSubItem)const; //Does cell have an icon associated.
-		afx_msg void MeasureItem(LPMEASUREITEMSTRUCT lpMIS);
+		[[nodiscard]] auto GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDATA>;
+		afx_msg void MeasureItem(LPMEASUREITEMSTRUCT pMIS);
 		afx_msg void OnDestroy();
 		void OnEditInPlaceEnterPressed();
 		afx_msg void OnEditInPlaceKillFocus();
@@ -992,7 +991,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 
 	const auto dwStyle = lcs.dwStyle | LVS_OWNERDRAWFIXED | LVS_REPORT;
 	if (lcs.fDialogCtrl) {
-		if (SubclassDlgItem(lcs.uID, lcs.pParent) == FALSE)
+		if (SubclassDlgItem(lcs.uID, CWnd::FromHandle(lcs.hWndParent)) == FALSE)
 			return false;
 
 		const auto dwStyleCurr = GetWindowLongPtrW(m_hWnd, GWL_STYLE);
@@ -1000,7 +999,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 		m_fVirtual = dwStyleCurr & LVS_OWNERDATA;
 	}
 	else {
-		if (CreateEx(lcs.dwExStyle, dwStyle, lcs.rect, lcs.pParent, lcs.uID) == FALSE)
+		if (CreateEx(lcs.dwExStyle, dwStyle, lcs.rect, CWnd::FromHandle(lcs.hWndParent), lcs.uID) == FALSE)
 			return false;
 
 		m_fVirtual = dwStyle & LVS_OWNERDATA;
@@ -1097,10 +1096,10 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 	return true;
 }
 
-void CListEx::CreateDialogCtrl(UINT uCtrlID, CWnd* pParent)
+void CListEx::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
 {
 	LISTEXCREATE lcs;
-	lcs.pParent = pParent;
+	lcs.hWndParent = hWndParent;
 	lcs.uID = uCtrlID;
 	lcs.fDialogCtrl = true;
 
@@ -1197,9 +1196,12 @@ auto CListEx::GetColumnSortMode(int iColumn)const->EListExSortMode
 	return m_eDefSortMode;
 }
 
-auto CListEx::GetFont()->CFont*
+auto CListEx::GetFont()const->LOGFONTW
 {
-	return &m_fntList;
+	LOGFONTW lf { };
+	::GetObjectW(m_fntList, sizeof(lf), &lf);
+
+	return lf;
 }
 
 long CListEx::GetFontSize()
@@ -1481,19 +1483,6 @@ void CListEx::SetFont(const LOGFONTW& lf)
 	Update(0);
 }
 
-void CListEx::SetFont(CFont* pFont)
-{
-	assert(IsCreated());
-	assert(pFont != nullptr);
-	if (!IsCreated() || pFont == nullptr) {
-		return;
-	}
-
-	LOGFONTW lf { };
-	pFont->GetLogFont(&lf);
-	SetFont(lf);
-}
-
 void CListEx::SetHdrHeight(DWORD dwHeight)
 {
 	assert(IsCreated());
@@ -1506,14 +1495,14 @@ void CListEx::SetHdrHeight(DWORD dwHeight)
 	GetHeaderCtrl().RedrawWindow();
 }
 
-void CListEx::SetHdrImageList(CImageList* pList)
+void CListEx::SetHdrImageList(HIMAGELIST pList)
 {
 	assert(IsCreated());
 	if (!IsCreated()) {
 		return;
 	}
 
-	GetHeaderCtrl().SetImageList(pList);
+	GetHeaderCtrl().SetImageList(CImageList::FromHandle(pList));
 }
 
 void CListEx::SetHdrFont(const LOGFONTW& lf)
@@ -1627,6 +1616,9 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 
 void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 {
+	if (pDIS->hwndItem != m_hWnd)
+		return;
+
 	const auto iItem = pDIS->itemID;
 	constexpr auto iTextIndentTop = 1; //To compensate what is added in the MeasureItem.
 	constexpr auto iTextIndentLeft = 2;
@@ -1772,6 +1764,30 @@ auto CListEx::GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEX
 	return std::nullopt;
 }
 
+int CListEx::GetIcon(int iItem, int iSubItem)const
+{
+	if (GetImageList(LVSIL_NORMAL) == nullptr) {
+		return -1; //-1 is the default, when no image for cell is set.
+	}
+
+	if (m_fVirtual) { //In Virtual mode asking parent for the icon index in image list.
+		const auto uCtrlID = static_cast<UINT>(GetDlgCtrlID());
+		const LISTEXICONINFO lii { .hdr { .hwndFrom { m_hWnd }, .idFrom { uCtrlID }, .code { LISTEX_MSG_GETICON } },
+			.iItem { iItem }, .iSubItem { iSubItem } };
+		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlID), reinterpret_cast<LPARAM>(&lii));
+		return lii.iIconIndex; //By default it's -1, meaning no icon.
+	}
+
+	const auto ID = MapIndexToID(iItem);
+	if (const auto it = m_umapCellIcon.find(ID); it != m_umapCellIcon.end()) {
+		if (const auto itInner = it->second.find(iSubItem); itInner != it->second.end()) {
+			return itInner->second;
+		}
+	}
+
+	return -1;
+}
+
 auto CListEx::GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDATA>
 {
 	if (iItem < 0 || iSubItem < 0) {
@@ -1799,44 +1815,23 @@ auto CListEx::GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDA
 	return std::nullopt;
 }
 
-int CListEx::GetIcon(int iItem, int iSubItem)const
-{
-	if (GetImageList(LVSIL_NORMAL) == nullptr) {
-		return -1; //-1 is the default, when no image for cell is set.
-	}
-
-	if (m_fVirtual) { //In Virtual mode asking parent for the icon index in image list.
-		const auto uCtrlID = static_cast<UINT>(GetDlgCtrlID());
-		const LISTEXICONINFO lii { .hdr { .hwndFrom { m_hWnd }, .idFrom { uCtrlID }, .code { LISTEX_MSG_GETICON } },
-			.iItem { iItem }, .iSubItem { iSubItem } };
-		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlID), reinterpret_cast<LPARAM>(&lii));
-		return lii.iIconIndex; //By default it's -1, meaning no icon.
-	}
-
-	const auto ID = MapIndexToID(iItem);
-	if (const auto it = m_umapCellIcon.find(ID); it != m_umapCellIcon.end()) {
-		if (const auto itInner = it->second.find(iSubItem); itInner != it->second.end()) {
-			return itInner->second;
-		}
-	}
-
-	return -1;
-}
-
 void CListEx::InitHeader()
 {
 	GetHeaderCtrl().SubclassDlgItem(0, this);
 }
 
-void CListEx::MeasureItem(LPMEASUREITEMSTRUCT lpMIS)
+void CListEx::MeasureItem(LPMEASUREITEMSTRUCT pMIS)
 {
+	if (pMIS->CtlID != static_cast<UINT>(GetDlgCtrlID()))
+		return;
+
 	//Set row height according to current font's height.
 	auto pDC = GetDC();
 	pDC->SelectObject(m_fntList);
 	TEXTMETRICW tm;
 	GetTextMetricsW(pDC->m_hDC, &tm);
 	ReleaseDC(pDC);
-	lpMIS->itemHeight = tm.tmHeight + tm.tmExternalLeading + 2;
+	pMIS->itemHeight = tm.tmHeight + tm.tmExternalLeading + 2;
 }
 
 void CListEx::OnDestroy()

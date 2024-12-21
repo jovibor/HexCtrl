@@ -8,6 +8,7 @@ module;
 #include <SDKDDKVer.h>
 #include "../HexCtrl.h"
 #include <afxwin.h>
+#include <algorithm>
 #include <bit>
 #include <cassert>
 #include <cwctype>
@@ -472,6 +473,97 @@ export namespace HEXCTRL::INTERNAL {
 			::ExtTextOutW(hDC, 0, 0, ETO_OPAQUE, pRC, nullptr, 0, nullptr);
 		}
 
+		class CDynLayout {
+		public:
+			//Ratio settings, for how much to move or resize an item when parent is resized.
+			struct ItemRatio {
+				float m_flXRatio { };
+				float m_flYRatio { };
+			};
+
+			void AddItem(int iIDItem, ItemRatio move, ItemRatio size);
+			void EnableTrack(bool fTrack);
+			void OnSize(int iWidth, int iHeight)const; //Should be hooked into the host window WM_SIZE handler.
+			void SetHost(HWND hWnd) { assert(hWnd != nullptr); m_hWndHost = hWnd; }
+
+			//Static helper methods to use in the AddItem.
+			[[nodiscard]] static ItemRatio MoveNone() { return { }; }
+			[[nodiscard]] static ItemRatio MoveHorz(int iXRatio) {
+				iXRatio = std::clamp(iXRatio, 0, 100); return { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { } };
+			}
+			[[nodiscard]] static ItemRatio MoveVert(int iYRatio) {
+				iYRatio = std::clamp(iYRatio, 0, 100); return { .m_flXRatio { }, .m_flYRatio { iYRatio / 100.F } };
+			}
+			[[nodiscard]] static ItemRatio MoveHorzAndVert(int iXRatio, int iYRatio) {
+				iXRatio = std::clamp(iXRatio, 0, 100); iYRatio = std::clamp(iYRatio, 0, 100);
+				return { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { iYRatio / 100.F } };
+			}
+			[[nodiscard]] static ItemRatio SizeNone() { return { }; }
+			[[nodiscard]] static ItemRatio SizeHorz(int iXRatio) {
+				iXRatio = std::clamp(iXRatio, 0, 100); return { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { } };
+			}
+			[[nodiscard]] static ItemRatio SizeVert(int iYRatio) {
+				iYRatio = std::clamp(iYRatio, 0, 100); return { .m_flXRatio { }, .m_flYRatio { iYRatio / 100.F } };
+			}
+			[[nodiscard]] static ItemRatio SizeHorzAndVert(int iXRatio, int iYRatio) {
+				iXRatio = std::clamp(iXRatio, 0, 100); iYRatio = std::clamp(iYRatio, 0, 100);
+				return { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { iYRatio / 100.F } };
+			}
+		private:
+			struct ItemData {
+				HWND hWnd { };   //Item window.
+				RECT rcOrig { }; //Item original client area rect after EnableTrack(true).
+				ItemRatio move;  //How much to move the item.
+				ItemRatio size;  //How much to resize the item.
+			};
+			HWND m_hWndHost { };   //Host window.
+			RECT m_rcHostOrig { }; //Host original client area rect after EnableTrack(true).
+			std::vector<ItemData> m_vecItems; //All items to resize/move.
+			bool m_fTrack { true };
+		};
+
+		void CDynLayout::AddItem(int iIDItem, ItemRatio move, ItemRatio size) {
+			const auto hWnd = ::GetDlgItem(m_hWndHost, iIDItem);
+			assert(hWnd != nullptr);
+			if (hWnd != nullptr) {
+				m_vecItems.emplace_back(ItemData { .hWnd { hWnd }, .move { move }, .size { size } });
+			}
+		}
+
+		void CDynLayout::EnableTrack(bool fTrack) {
+			m_fTrack = fTrack;
+			if (fTrack) {
+				::GetClientRect(m_hWndHost, &m_rcHostOrig);
+				for (auto& [hWnd, rc, move, size] : m_vecItems) {
+					::GetWindowRect(hWnd, &rc);
+					::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rc));
+					::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rc) + 1);
+				}
+			}
+		}
+
+		void CDynLayout::OnSize(int iWidth, int iHeight)const {
+			if (!m_fTrack)
+				return;
+
+			const auto iHostWidth = m_rcHostOrig.right - m_rcHostOrig.left;
+			const auto iHostHeight = m_rcHostOrig.bottom - m_rcHostOrig.top;
+			const auto iDeltaX = iWidth - iHostWidth;
+			const auto iDeltaY = iHeight - iHostHeight;
+
+			const auto hDWP = ::BeginDeferWindowPos(static_cast<int>(m_vecItems.size()));
+			for (const auto& [hWnd, rc, move, size] : m_vecItems) {
+				const auto iNewLeft = static_cast<int>(rc.left + (iDeltaX * move.m_flXRatio));
+				const auto iNewTop = static_cast<int>(rc.top + (iDeltaY * move.m_flYRatio));
+				const auto iOrigWidth = rc.right - rc.left;
+				const auto iOrigHeight = rc.bottom - rc.top;
+				const auto iNewWidth = static_cast<int>(iOrigWidth + (iDeltaX * size.m_flXRatio));
+				const auto iNewHeight = static_cast<int>(iOrigHeight + (iDeltaY * size.m_flYRatio));
+				::DeferWindowPos(hDWP, hWnd, nullptr, iNewLeft, iNewTop, iNewWidth, iNewHeight, SWP_NOZORDER | SWP_NOACTIVATE);
+			}
+			::EndDeferWindowPos(hDWP);
+		}
+
 		class CRect : public RECT {
 		public:
 			CRect() { left = 0; top = 0; right = 0; bottom = 0; }
@@ -503,7 +595,7 @@ export namespace HEXCTRL::INTERNAL {
 			CWnd operator=(HWND) = delete;
 			operator HWND()const { return m_hWnd; }
 			[[nodiscard]] bool operator==(const CWnd& rhs)const { return m_hWnd == rhs.m_hWnd; }
-			[[nodiscard]] bool operator==(const HWND hWnd)const { return m_hWnd == hWnd; }
+			[[nodiscard]] bool operator==(HWND hWnd)const { return m_hWnd == hWnd; }
 			void Attach(HWND hWnd) { assert(::IsWindow(hWnd)); m_hWnd = hWnd; }
 			[[nodiscard]] auto ChildWindowFromPoint(POINT pt)const->HWND {
 				assert(IsWindow()); return ::ChildWindowFromPoint(m_hWnd, pt);
@@ -512,7 +604,9 @@ export namespace HEXCTRL::INTERNAL {
 				assert(IsWindow()); ::ClientToScreen(m_hWnd, reinterpret_cast<LPPOINT>(pRC));
 				::ClientToScreen(m_hWnd, (reinterpret_cast<LPPOINT>(pRC)) + 1);
 			}
-			bool DestroyWindow()const { assert(IsWindow()); return ::DestroyWindow(m_hWnd); }
+			bool DestroyWindow() {
+				assert(IsWindow()); const auto ret = ::DestroyWindow(m_hWnd); m_hWnd = nullptr; return ret;
+			}
 			void Detach() { m_hWnd = nullptr; }
 			[[nodiscard]] auto GetClientRect()const->RECT {
 				assert(IsWindow()); RECT rc; ::GetClientRect(m_hWnd, &rc); return rc;
