@@ -285,7 +285,7 @@ namespace HEXCTRL {
 		COLORREF clrBkSel { GetSysColor(COLOR_HIGHLIGHT) };          //Background color of the selected Hex/Text.
 		COLORREF clrBkBkm { RGB(240, 240, 0) };                      //Bookmarks background color.
 		COLORREF clrBkDataInterp { RGB(147, 58, 22) };               //Data Interpreter Bk color.
-		COLORREF clrBkInfoBar { GetSysColor(COLOR_BTNFACE) };        //Background color of the bottom Info bar.
+		COLORREF clrBkInfoBar { GetSysColor(COLOR_3DFACE) };         //Background color of the bottom Info bar.
 		COLORREF clrBkCaret { RGB(0, 0, 255) };                      //Caret background color.
 		COLORREF clrBkCaretSel { RGB(0, 0, 200) };                   //Caret background color in selection.
 	};

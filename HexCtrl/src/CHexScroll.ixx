@@ -667,7 +667,7 @@ void CHexScroll::DrawScrollBar()const
 		return;
 	}
 
-	static const auto clrBkNC { GetSysColor(COLOR_3DFACE) }; //Bk color of the non client area. 
+	static const auto clrBkNC { ::GetSysColor(COLOR_3DFACE) }; //Bk color of the non client area. 
 	static constexpr auto clrBkScroll = RGB(241, 241, 241);  //Scroll Bk color.
 
 	const auto wndParent = GetParent();
@@ -819,7 +819,7 @@ auto CHexScroll::GetScrollWorkAreaSizeWH()const->UINT
 
 auto CHexScroll::GetThumbRect(bool fClientCoord)const->wnd::CRect
 {
-	wnd::CRect rc { };
+	wnd::CRect rc;
 	const auto uiThumbSize = GetThumbSizeWH();
 	if (!uiThumbSize) {
 		return rc;
@@ -953,7 +953,7 @@ auto CHexScroll::GetLastChannelRect(bool fClientCoord)const->wnd::CRect
 auto CHexScroll::GetParentRect(bool fClient)const->wnd::CRect
 {
 	const auto wndParent = GetParent();
-	return fClient ? wndParent.GetClientRect() : wndParent.GetWndRect();
+	return fClient ? wndParent.GetClientRect() : wndParent.GetWindowRect();
 }
 
 int CHexScroll::GetTopDelta()const

@@ -7,13 +7,12 @@
 #pragma once
 #include "../../dep/rapidjson/rapidjson-amalgam.h"
 #include "../../HexCtrl.h"
-#include <afxdialogex.h>
 #include <unordered_map>
 
 import HEXCTRL.HexUtility;
 
 namespace HEXCTRL::INTERNAL {
-	class CHexDlgTemplMgr final : public CDialogEx, public IHexTemplates {
+	class CHexDlgTemplMgr final : public IHexTemplates {
 	public:
 		struct FIELDSDEFPROPS; //Forward declarations.
 		struct TEMPLAPPLIED;
@@ -28,10 +27,12 @@ namespace HEXCTRL::INTERNAL {
 		auto AddTemplate(const HEXTEMPLATE& stTempl) -> int override;
 		void ApplyCurr(ULONGLONG ullOffset); //Apply currently selected template to offset.
 		int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)override; //Apply template to a given offset.
+		void CreateDlg();
 		void DisapplyAll()override;
 		void DisapplyByID(int iAppliedID)override; //Disapply template with the given AppliedID.
 		void DisapplyByOffset(ULONGLONG ullOffset)override;
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
+		[[nodiscard]] auto GetHWND()const->HWND;
 		[[nodiscard]] bool HasApplied()const;
 		[[nodiscard]] bool HasCurrent()const;
 		[[nodiscard]] bool HasTemplates()const;
@@ -40,9 +41,10 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsTooltips()const;
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
+		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowTooltips(bool fShow)override;
-		BOOL ShowWindow(int nCmdShow);
+		void ShowWindow(int iCmdShow);
 		void UnloadAll()override;
 		void UpdateData();
 
@@ -55,8 +57,6 @@ namespace HEXCTRL::INTERNAL {
 		static auto CALLBACK TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIdSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
-		void DoDataExchange(CDataExchange* pDX)override;
-		void EnableDynamicLayoutHelper(bool fEnable);
 		[[nodiscard]] auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PCTEMPLAPPLIED;
 		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
 		[[nodiscard]] auto GetIDForNewTemplate()const->int;
@@ -66,39 +66,44 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
 		[[nodiscard]] bool IsSwapEndian()const;
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		afx_msg void OnBnLoadTemplate();
-		afx_msg void OnBnUnloadTemplate();
-		afx_msg void OnBnRandomizeColors();
-		afx_msg void OnBnApply();
-		void OnCancel()override;
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		afx_msg auto OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor) -> HBRUSH;
-		afx_msg void OnCheckHex();
-		afx_msg void OnCheckSwapEndian();
-		afx_msg void OnCheckShowTt();
-		afx_msg void OnCheckMin();
-		afx_msg void OnClose();
-		afx_msg void OnDestroy();
-		BOOL OnInitDialog()override;
-		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
-		afx_msg void OnListDblClick(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListEditBegin(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListEnterPressed(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListGetColor(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListHdrRClick(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnListSetData(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-		void OnOK()override;
+		auto OnActivate(const MSG& stMsg) -> INT_PTR;
+		void OnBnLoadTemplate();
+		void OnBnUnloadTemplate();
+		void OnBnRandomizeColors();
+		void OnBnApply();
+		void OnCancel();
+		auto OnCommand(const MSG& stMsg) -> INT_PTR;
+		auto OnCtlClrStatic(const MSG& stMsg) -> INT_PTR;
+		void OnCheckHex();
+		void OnCheckSwapEndian();
+		void OnCheckShowTt();
+		void OnCheckMin();
+		auto OnClose() -> INT_PTR;
+		auto OnDestroy() -> INT_PTR;
+		auto OnDrawItem(const MSG& stMsg) -> INT_PTR;
+		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
+		auto OnLButtonDown(const MSG& stMsg) -> INT_PTR;
+		auto OnLButtonUp(const MSG& stMsg) -> INT_PTR;
+		auto OnMeasureItem(const MSG& stMsg) -> INT_PTR;
+		auto OnMouseMove(const MSG& stMsg) -> INT_PTR;
+		auto OnNotify(const MSG& stMsg) -> INT_PTR;
+		void OnNotifyListDblClick(NMHDR* pNMHDR);
+		void OnNotifyListEditBegin(NMHDR* pNMHDR);
+		void OnNotifyListEnterPressed(NMHDR* pNMHDR);
+		void OnNotifyListGetDispInfo(NMHDR* pNMHDR);
+		void OnNotifyListGetColor(NMHDR* pNMHDR);
+		void OnNotifyListHdrRClick(NMHDR* pNMHDR);
+		void OnNotifyListItemChanged(NMHDR* pNMHDR);
+		void OnNotifyListRClick(NMHDR* pNMHDR);
+		void OnNotifyListSetData(NMHDR* pNMHDR);
+		void OnNotifyTreeGetDispInfo(NMHDR* pNMHDR);
+		void OnNotifyTreeItemChanged(NMHDR* pNMHDR);
+		void OnNotifyTreeRClick(NMHDR* pNMHDR);
+		void OnOK();
+		auto OnSize(const MSG& stMsg) -> INT_PTR;
 		void OnTemplateLoadUnload(int iTemplateID, bool fLoad);
-		afx_msg void OnTreeGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnTreeItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnTreeRClick(NMHDR* pNMHDR, LRESULT* pResult);
 		void RandomizeTemplateColors(int iTemplateID);
+		void RedrawHexCtrl();
 		void RemoveNodesWithTemplateID(int iTemplateID);
 		void RemoveNodeWithAppliedID(int iAppliedID);
 		[[nodiscard]] bool SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset)const;
@@ -123,34 +128,35 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
 		void UnloadTemplate(int iTemplateID)override; //Unload/remove loaded template from memory.
 		void UpdateStaticText();
-		DECLARE_MESSAGE_MAP();
 	private:
-		static constexpr auto m_iIDListApplFieldType { 0 }; //ID of the Type field in the m_pList.
-		static constexpr auto m_iIDListApplFieldData { 4 };
-		static constexpr auto m_iIDListApplFieldDescr { 6 };
-		static constexpr auto m_iIDListApplFieldClrs { 7 };
+		static constexpr auto m_iIDListColType { 0 };  //ID of the Type column in the m_pList.
+		static constexpr auto m_iIDListColData { 4 };  //Data.
+		static constexpr auto m_iIDListColDescr { 6 }; //Description.
+		static constexpr auto m_iIDListColClrs { 7 };  //Colors.
+		wnd::CWnd m_Wnd;             //Main window.
+		wnd::CWnd m_WndStatOffset;   //Static text "Template offset:".
+		wnd::CWnd m_WndStatSize;     //Static text Template size:".
+		wnd::CWnd m_WndEditOffset;   //"Offset" edit box.
+		wnd::CWndBtn m_WndBtnShowTT; //Check-box "Show tooltips".
+		wnd::CWndBtn m_WndBtnMin;    //Check-box min-max.
+		wnd::CWndBtn m_WndBtnHglSel; //Check-box "Highlight selected".
+		wnd::CWndBtn m_WndBtnHex;    //Check-box "Hex numbers".
+		wnd::CWndBtn m_WndBtnEndian; //Check-box "Swap endian".
+		wnd::CWndCombo m_WndCmbTemplates; //Currently available templates list.
+		wnd::CWndTree m_WndTree;
+		wnd::CMenu m_MenuTree;       //Menu for the tree control.
+		wnd::CMenu m_MenuHdr;        //Menu for the list header.
+		wnd::CDynLayout m_DynLayout;
 		IHexCtrl* m_pHexCtrl { };
+		std::uint64_t m_u64Flags { };      //Data from SetDlgProperties.
 		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;      //Loaded Templates.
 		std::vector<std::unique_ptr<TEMPLAPPLIED>> m_vecTemplatesAppl; //Currently Applied Templates.
-		CComboBox m_comboTemplates; //Currently available templates list.
-		CEdit m_editOffset;         //"Offset" edit box.
-		CButton m_btnMin;           //Check-box min-max.
-		CButton m_btnShowTT;        //Check-box "Show tooltips".
-		CButton m_btnHglSel;        //Check-box "Highlight selected".
-		CButton m_btnHex;           //Check-box "Hex numbers".
-		CButton m_btnSwapEndian;    //Check-box "Swap endian".
-		CWnd m_wndStaticOffset;     //Static text "Template offset:".
-		CWnd m_wndStaticSize;       //Static text Template size:".
-		HBITMAP m_hBmpMin { };      //Bitmap for the min checkbox.
-		HBITMAP m_hBmpMax { };      //Bitmap for the max checkbox.
 		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
-		CTreeCtrl m_tree;
-		CMenu m_menuTree;           //Menu for the tree control.
-		CMenu m_menuHdr;            //Menu for the list header.
 		PCTEMPLAPPLIED m_pAppliedCurr { }; //Currently selected template in the applied Tree.
 		PCVecFields m_pVecFieldsCurr { };  //Currently selected Fields vector.
 		HTREEITEM m_hTreeCurrParent { };   //Currently selected Tree node's parent.
-		std::uint64_t m_u64Flags { };      //Data from SetDlgProperties.
+		HBITMAP m_hBmpMin { };             //Bitmap for the min checkbox.
+		HBITMAP m_hBmpMax { };             //Bitmap for the max checkbox.
 		DWORD m_dwDateFormat { };          //Date format.
 		int m_iDynLayoutMinY { };          //For DynamicLayout::SetMinSize.
 		wchar_t m_wchDateSepar { };        //Date separator.

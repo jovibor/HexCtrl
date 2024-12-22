@@ -419,12 +419,15 @@ export namespace HEXCTRL::INTERNAL {
 		}
 
 		template<typename T>
-		auto CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) -> LRESULT
+		auto CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->LRESULT
 		{
+			//Different IHexCtrl objects will share the same WndProc<ExactTypeHere> function.
+			//Hence, the map is needed to differentiate these objects. 
+			//The DlgWndProc<T> works absolutely the same way.
 			static std::unordered_map<HWND, T*> uMap;
 
-			//CREATESTRUCTW::lpCreateParams always possesses a `this` pointer, passed to the CreateWindowExW function as lpParam.
-			//We save it to the static uMap to have access to this->ProcessMsg() method.
+			//CREATESTRUCTW::lpCreateParams always possesses `this` pointer, passed to the CreateWindowExW
+			//function as lpParam. We save it to the static uMap to have access to this->ProcessMsg() method.
 			if (uMsg == WM_CREATE) {
 				const auto lpCS = reinterpret_cast<LPCREATESTRUCTW>(lParam);
 				uMap[hWnd] = reinterpret_cast<T*>(lpCS->lpCreateParams);
@@ -432,7 +435,8 @@ export namespace HEXCTRL::INTERNAL {
 			}
 
 			if (const auto it = uMap.find(hWnd); it != uMap.end()) {
-				const auto ret = it->second->ProcessMsg({ .hwnd { hWnd }, .message { uMsg }, .wParam { wParam }, .lParam { lParam } });
+				const auto ret = it->second->ProcessMsg({ .hwnd { hWnd }, .message { uMsg },
+					.wParam { wParam }, .lParam { lParam } });
 				if (uMsg == WM_NCDESTROY) { //Remove hWnd from the map on window destruction.
 					uMap.erase(it);
 				}
@@ -443,23 +447,24 @@ export namespace HEXCTRL::INTERNAL {
 		}
 
 		template<typename T>
-		auto CALLBACK DlgWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) -> INT_PTR {
+		auto CALLBACK DlgWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->INT_PTR {
 			//DlgWndProc should return zero for all non-processed messages.
 			//In that case messages will be processed by Windows default dialog proc.
-			//Non-processed messages should not be passed to DefWindowProcW or DefDlgProcW.
+			//Non-processed messages should not be passed neither to DefWindowProcW nor to DefDlgProcW.
 			//Processed messages should return any non-zero value, depending on message type.
 
-			static T* m_pThis { };
+			static std::unordered_map<HWND, T*> uMap;
 
 			//DialogBoxParamW and CreateDialogParamW dwInitParam arg is sent with WM_INITDIALOG as lParam.
 			if (uMsg == WM_INITDIALOG) {
-				m_pThis = reinterpret_cast<T*>(lParam);
+				uMap[hWnd] = reinterpret_cast<T*>(lParam);
 			}
 
-			if (m_pThis != nullptr) {
-				const auto ret = m_pThis->ProcessMsg({ .hwnd { hWnd }, .message { uMsg }, .wParam { wParam }, .lParam { lParam } });
-				if (uMsg == WM_NCDESTROY) {
-					m_pThis = nullptr;
+			if (const auto it = uMap.find(hWnd); it != uMap.end()) {
+				const auto ret = it->second->ProcessMsg({ .hwnd { hWnd }, .message { uMsg },
+					.wParam { wParam }, .lParam { lParam } });
+				if (uMsg == WM_NCDESTROY) { //Remove hWnd from the map on dialog destruction.
+					uMap.erase(it);
 				}
 				return ret;
 			}
@@ -476,53 +481,53 @@ export namespace HEXCTRL::INTERNAL {
 		class CDynLayout {
 		public:
 			//Ratio settings, for how much to move or resize an item when parent is resized.
-			struct ItemRatio {
-				float m_flXRatio { };
-				float m_flYRatio { };
-			};
+			struct ItemRatio { float m_flXRatio { }; float m_flYRatio { }; };
+			struct MoveRatio : public ItemRatio { }; //To differentiate move from size in the AddItem.
+			struct SizeRatio : public ItemRatio { };
 
-			void AddItem(int iIDItem, ItemRatio move, ItemRatio size);
-			void EnableTrack(bool fTrack);
+			void AddItem(int iIDItem, MoveRatio move, SizeRatio size);
+			void Enable(bool fTrack);
 			void OnSize(int iWidth, int iHeight)const; //Should be hooked into the host window WM_SIZE handler.
+			void RemoveAll() { m_vecItems.clear(); }
 			void SetHost(HWND hWnd) { assert(hWnd != nullptr); m_hWndHost = hWnd; }
 
-			//Static helper methods to use in the AddItem.
-			[[nodiscard]] static ItemRatio MoveNone() { return { }; }
-			[[nodiscard]] static ItemRatio MoveHorz(int iXRatio) {
-				iXRatio = std::clamp(iXRatio, 0, 100); return { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { } };
+						//Static helper methods to use in the AddItem.
+			[[nodiscard]] static MoveRatio MoveNone() { return { }; }
+			[[nodiscard]] static MoveRatio MoveHorz(int iXRatio) {
+				iXRatio = std::clamp(iXRatio, 0, 100); return { { .m_flXRatio { iXRatio / 100.F } } };
 			}
-			[[nodiscard]] static ItemRatio MoveVert(int iYRatio) {
-				iYRatio = std::clamp(iYRatio, 0, 100); return { .m_flXRatio { }, .m_flYRatio { iYRatio / 100.F } };
+			[[nodiscard]] static MoveRatio MoveVert(int iYRatio) {
+				iYRatio = std::clamp(iYRatio, 0, 100); return { { .m_flYRatio { iYRatio / 100.F } } };
 			}
-			[[nodiscard]] static ItemRatio MoveHorzAndVert(int iXRatio, int iYRatio) {
+			[[nodiscard]] static MoveRatio MoveHorzAndVert(int iXRatio, int iYRatio) {
 				iXRatio = std::clamp(iXRatio, 0, 100); iYRatio = std::clamp(iYRatio, 0, 100);
-				return { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { iYRatio / 100.F } };
+				return { { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { iYRatio / 100.F } } };
 			}
-			[[nodiscard]] static ItemRatio SizeNone() { return { }; }
-			[[nodiscard]] static ItemRatio SizeHorz(int iXRatio) {
-				iXRatio = std::clamp(iXRatio, 0, 100); return { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { } };
+			[[nodiscard]] static SizeRatio SizeNone() { return { }; }
+			[[nodiscard]] static SizeRatio SizeHorz(int iXRatio) {
+				iXRatio = std::clamp(iXRatio, 0, 100); return { { .m_flXRatio { iXRatio / 100.F } } };
 			}
-			[[nodiscard]] static ItemRatio SizeVert(int iYRatio) {
-				iYRatio = std::clamp(iYRatio, 0, 100); return { .m_flXRatio { }, .m_flYRatio { iYRatio / 100.F } };
+			[[nodiscard]] static SizeRatio SizeVert(int iYRatio) {
+				iYRatio = std::clamp(iYRatio, 0, 100); return { { .m_flYRatio { iYRatio / 100.F } } };
 			}
-			[[nodiscard]] static ItemRatio SizeHorzAndVert(int iXRatio, int iYRatio) {
+			[[nodiscard]] static SizeRatio SizeHorzAndVert(int iXRatio, int iYRatio) {
 				iXRatio = std::clamp(iXRatio, 0, 100); iYRatio = std::clamp(iYRatio, 0, 100);
-				return { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { iYRatio / 100.F } };
+				return { { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { iYRatio / 100.F } } };
 			}
 		private:
 			struct ItemData {
 				HWND hWnd { };   //Item window.
 				RECT rcOrig { }; //Item original client area rect after EnableTrack(true).
-				ItemRatio move;  //How much to move the item.
-				ItemRatio size;  //How much to resize the item.
+				MoveRatio move;  //How much to move the item.
+				SizeRatio size;  //How much to resize the item.
 			};
 			HWND m_hWndHost { };   //Host window.
 			RECT m_rcHostOrig { }; //Host original client area rect after EnableTrack(true).
 			std::vector<ItemData> m_vecItems; //All items to resize/move.
-			bool m_fTrack { true };
+			bool m_fTrack { };
 		};
 
-		void CDynLayout::AddItem(int iIDItem, ItemRatio move, ItemRatio size) {
+		void CDynLayout::AddItem(int iIDItem, MoveRatio move, SizeRatio size) {
 			const auto hWnd = ::GetDlgItem(m_hWndHost, iIDItem);
 			assert(hWnd != nullptr);
 			if (hWnd != nullptr) {
@@ -530,9 +535,9 @@ export namespace HEXCTRL::INTERNAL {
 			}
 		}
 
-		void CDynLayout::EnableTrack(bool fTrack) {
+		void CDynLayout::Enable(bool fTrack) {
 			m_fTrack = fTrack;
-			if (fTrack) {
+			if (m_fTrack) {
 				::GetClientRect(m_hWndHost, &m_rcHostOrig);
 				for (auto& [hWnd, rc, move, size] : m_vecItems) {
 					::GetWindowRect(hWnd, &rc);
@@ -590,7 +595,7 @@ export namespace HEXCTRL::INTERNAL {
 		public:
 			CWnd() = default;
 			CWnd(HWND hWnd) { Attach(hWnd); }
-			~CWnd() { Detach(); }
+			virtual ~CWnd() = default;
 			CWnd operator=(const CWnd&) = delete;
 			CWnd operator=(HWND) = delete;
 			operator HWND()const { return m_hWnd; }
@@ -604,13 +609,12 @@ export namespace HEXCTRL::INTERNAL {
 				assert(IsWindow()); ::ClientToScreen(m_hWnd, reinterpret_cast<LPPOINT>(pRC));
 				::ClientToScreen(m_hWnd, (reinterpret_cast<LPPOINT>(pRC)) + 1);
 			}
-			bool DestroyWindow() {
-				assert(IsWindow()); const auto ret = ::DestroyWindow(m_hWnd); m_hWnd = nullptr; return ret;
-			}
+			void DestroyWindow() { assert(IsWindow()); ::DestroyWindow(m_hWnd); m_hWnd = nullptr; }
 			void Detach() { m_hWnd = nullptr; }
-			[[nodiscard]] auto GetClientRect()const->RECT {
+			[[nodiscard]] auto GetClientRect()const->CRect {
 				assert(IsWindow()); RECT rc; ::GetClientRect(m_hWnd, &rc); return rc;
 			}
+			bool EnableWindow(bool fEnable)const { assert(IsWindow()); return ::EnableWindow(m_hWnd, fEnable); }
 			void EndDialog(INT_PTR iResult)const { assert(IsWindow()); ::EndDialog(m_hWnd, iResult); }
 			[[nodiscard]] auto GetDC()const->HDC { assert(IsWindow()); return ::GetDC(m_hWnd); }
 			[[nodiscard]] auto GetDlgItem(int iIDCtrl)const->HWND { assert(IsWindow()); return ::GetDlgItem(m_hWnd, iIDCtrl); }
@@ -626,7 +630,7 @@ export namespace HEXCTRL::INTERNAL {
 			}
 			[[nodiscard]] auto GetParent()const->HWND { assert(IsWindow()); return ::GetParent(m_hWnd); }
 			[[nodiscard]] auto GetWindowDC()const->HDC { assert(IsWindow()); return ::GetWindowDC(m_hWnd); }
-			[[nodiscard]] auto GetWndRect()const->RECT {
+			[[nodiscard]] auto GetWindowRect()const->CRect {
 				assert(IsWindow()); RECT rc; ::GetWindowRect(m_hWnd, &rc); return rc;
 			}
 			[[nodiscard]] auto GetWndText()const->std::wstring {
@@ -636,7 +640,8 @@ export namespace HEXCTRL::INTERNAL {
 			void Invalidate(bool fErase)const { assert(IsWindow()); ::InvalidateRect(m_hWnd, nullptr, fErase); }
 			[[nodiscard]] bool IsDlgMessage(MSG* pMsg)const { return ::IsDialogMessageW(m_hWnd, pMsg); }
 			[[nodiscard]] bool IsNull()const { return m_hWnd == nullptr; }
-			[[nodiscard]] bool IsWindow()const { return::IsWindow(m_hWnd); }
+			[[nodiscard]] bool IsWindow()const { return ::IsWindow(m_hWnd); }
+			[[nodiscard]] bool IsWindowVisible()const { assert(IsWindow()); return ::IsWindowVisible(m_hWnd); }
 			[[nodiscard]] bool IsWndTextEmpty()const { return GetWndTextSize() == 0; }
 			void KillTimer(UINT_PTR uID)const {
 				assert(IsWindow()); ::KillTimer(m_hWnd, uID);
@@ -672,8 +677,19 @@ export namespace HEXCTRL::INTERNAL {
 			void SetWndText(const std::wstring& wstr)const { SetWndText(wstr.data()); }
 			void SetRedraw(bool fRedraw)const { assert(IsWindow()); ::SendMessageW(m_hWnd, WM_SETREDRAW, fRedraw, 0); }
 			bool ShowWindow(int iCmdShow)const { assert(IsWindow()); return ::ShowWindow(m_hWnd, iCmdShow); }
+			[[nodiscard]] static auto FromHandle(HWND hWnd) -> CWnd { return hWnd; }
+			[[nodiscard]] static auto GetFocus() -> CWnd { return ::GetFocus(); }
 		protected:
 			HWND m_hWnd { }; //Windows window handle.
+		};
+
+		class CWndBtn : public CWnd {
+		public:
+			[[nodiscard]] bool IsChecked()const { assert(IsWindow()); return ::SendMessageW(m_hWnd, BM_GETCHECK, 0, 0); }
+			void SetBitmap(HBITMAP hBmp)const {
+				assert(IsWindow()); ::SendMessageW(m_hWnd, BM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(hBmp));
+			}
+			void SetCheck(bool fCheck)const { assert(IsWindow()); ::SendMessageW(m_hWnd, BM_SETCHECK, fCheck, 0); }
 		};
 
 		class CWndCombo : public CWnd {
@@ -700,6 +716,47 @@ export namespace HEXCTRL::INTERNAL {
 			}
 		};
 
+		class CWndTree : public CWnd {
+		public:
+			void DeleteAllItems()const { DeleteItem(TVI_ROOT); };
+			void DeleteItem(HTREEITEM hItem)const {
+				assert(IsWindow()); ::SendMessageW(m_hWnd, TVM_DELETEITEM, 0, reinterpret_cast<LPARAM>(hItem));
+			}
+			void Expand(HTREEITEM hItem, UINT uCode)const {
+				assert(IsWindow()); ::SendMessageW(m_hWnd, TVM_EXPAND, uCode, reinterpret_cast<LPARAM>(hItem));
+			}
+			void GetItem(TVITEMW* pItem)const {
+				assert(IsWindow()); ::SendMessageW(m_hWnd, TVM_GETITEM, 0, reinterpret_cast<LPARAM>(pItem));
+			}
+			[[nodiscard]] auto GetItemData(HTREEITEM hItem)const->DWORD_PTR {
+				TVITEMW item { .mask { TVIF_PARAM }, .hItem { hItem } }; GetItem(&item); return item.lParam;
+			}
+			[[nodiscard]] auto GetNextItem(HTREEITEM hItem, UINT uCode)const->HTREEITEM {
+				assert(IsWindow()); return reinterpret_cast<HTREEITEM>
+					(::SendMessageW(m_hWnd, TVM_GETNEXTITEM, uCode, reinterpret_cast<LPARAM>(hItem)));
+			}
+			[[nodiscard]] auto GetNextSiblingItem(HTREEITEM hItem)const->HTREEITEM { return GetNextItem(hItem, TVGN_NEXT); }
+			[[nodiscard]] auto GetParentItem(HTREEITEM hItem)const->HTREEITEM { return GetNextItem(hItem, TVGN_PARENT); }
+			[[nodiscard]] auto GetRootItem()const->HTREEITEM { return GetNextItem(nullptr, TVGN_ROOT); }
+			[[nodiscard]] auto GetSelectedItem()const->HTREEITEM { return GetNextItem(nullptr, TVGN_CARET); }
+			[[nodiscard]] auto HitTest(TVHITTESTINFO* pHTI)const->HTREEITEM {
+				assert(IsWindow());
+				return reinterpret_cast<HTREEITEM>(::SendMessageW(m_hWnd, TVM_HITTEST, 0, reinterpret_cast<LPARAM>(pHTI)));
+			}
+			[[nodiscard]] auto HitTest(CPoint pt, UINT* pFlags = nullptr)const->HTREEITEM {
+				TVHITTESTINFO hti { .pt { pt } }; auto ret = HitTest(&hti);	if (pFlags != nullptr) { *pFlags = hti.flags; }
+				return ret;
+			}
+
+			auto InsertItem(LPTVINSERTSTRUCTW pTIS)const->HTREEITEM {
+				assert(IsWindow()); return reinterpret_cast<HTREEITEM>
+					(::SendMessageW(m_hWnd, TVM_INSERTITEM, 0, reinterpret_cast<LPARAM>(pTIS)));
+			}
+			void SelectItem(HTREEITEM hItem)const {
+				assert(IsWindow()); ::SendMessageW(m_hWnd, TVM_SELECTITEM, TVGN_CARET, reinterpret_cast<LPARAM>(hItem));
+			}
+		};
+
 		class CWndProgBar : public CWnd {
 		public:
 			int SetPos(int iPos)const {
@@ -709,6 +766,45 @@ export namespace HEXCTRL::INTERNAL {
 				assert(IsWindow());
 				::SendMessageW(m_hWnd, PBM_SETRANGE32, static_cast<WPARAM>(iLower), static_cast<LPARAM>(iUpper));
 			}
+		};
+
+		class CMenu {
+		public:
+			CMenu() = default;
+			CMenu(HMENU hMenu) { Attach(hMenu); }
+			virtual ~CMenu() = default;
+			CMenu operator=(const CWnd&) = delete;
+			CMenu operator=(HMENU) = delete;
+			operator HMENU()const { return m_hMenu; }
+			void AppendItem(UINT uFlags, UINT_PTR uIDItem, LPCWSTR pNameItem)const {
+				assert(IsMenu()); ::AppendMenuW(m_hMenu, uFlags, uIDItem, pNameItem);
+			}
+			void AppendSepar()const { AppendItem(MF_SEPARATOR, 0, nullptr); }
+			void AppendString(UINT_PTR uIDItem, LPCWSTR pNameItem)const { AppendItem(MF_STRING, uIDItem, pNameItem); }
+			void Attach(HMENU hMenu) { assert(::IsMenu(hMenu)); m_hMenu = hMenu; }
+			void CheckItem(UINT uIDItem, bool fCheck, bool fByID = true)const {
+				assert(IsMenu()); ::CheckMenuItem(m_hMenu, uIDItem, fCheck ? MF_CHECKED : MF_UNCHECKED |
+				(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
+			}
+			void CreatePopupMenu() { Attach(::CreatePopupMenu()); }
+			void DestroyMenu() { assert(IsMenu()); ::DestroyMenu(m_hMenu); m_hMenu = nullptr; }
+			void Detach() { m_hMenu = nullptr; }
+			void EnableItem(UINT uIDItem, bool fEnable, bool fByID = true)const {
+				assert(IsMenu()); ::EnableMenuItem(m_hMenu, uIDItem, fEnable ? MF_ENABLED : MF_GRAYED |
+					(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
+			}
+			[[nodiscard]] auto GetMenuState(UINT uID, UINT nFlags)const->UINT {
+				assert(IsMenu()); return ::GetMenuState(m_hMenu, uID, nFlags);
+			}
+			[[nodiscard]] bool IsChecked(UINT uIDItem, bool fByID = true)const {
+				return GetMenuState(uIDItem, fByID ? MF_BYCOMMAND : MF_BYPOSITION) & MF_CHECKED;
+			}
+			[[nodiscard]] bool IsMenu()const { return ::IsMenu(m_hMenu); }
+			void TrackPopup(int iX, int iY, HWND hWndOwner, UINT uFlags = TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON)const {
+				assert(IsMenu()); ::TrackPopupMenuEx(m_hMenu, uFlags, iX, iY, hWndOwner, nullptr);
+			}
+		private:
+			HMENU m_hMenu { }; //Windows menu handle.
 		};
 	};
 

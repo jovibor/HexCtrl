@@ -109,9 +109,9 @@ auto CHexDlgAbout::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
 	if (hWndFrom == m_WndLink) {
 		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
 		::SetTextColor(hDC, RGB(0, 50, 250));
-		::SetBkColor(hDC, GetSysColor(COLOR_BTNFACE));
+		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
 		::SelectObject(hDC, m_fLinkUnderline ? m_hFontUnderline : m_hFontDef);
-		return reinterpret_cast<INT_PTR>(::GetStockObject(HOLLOW_BRUSH));
+		return reinterpret_cast<INT_PTR>(::GetSysColorBrush(COLOR_3DFACE));
 	}
 
 	return FALSE; //Default handler.
@@ -1010,10 +1010,10 @@ auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND
 		}
 		return m_pDlgGoTo->GetHWND();
 	case EHexWnd::DLG_TEMPLMGR:
-		if (!IsWindow(m_pDlgTemplMgr->m_hWnd) && fCreate) {
-			m_pDlgTemplMgr->Create(IDD_HEXCTRL_TEMPLMGR, CWnd::FromHandle(m_hWnd));
+		if (!IsWindow(m_pDlgTemplMgr->GetHWND()) && fCreate) {
+			m_pDlgTemplMgr->CreateDlg();
 		}
-		return m_pDlgTemplMgr->m_hWnd;
+		return m_pDlgTemplMgr->GetHWND();
 	default:
 		return { };
 	}
@@ -6868,11 +6868,9 @@ void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 
 void CHexCtrl::OnDestroy()
 {
-	//All these cleanups below are important in case when HexCtrl window is destroyed 
-	//but IHexCtrl object itself is still alive.
-	//When the main window is destroyed, the IHexCtrl object is still alive unless the 
-	//IHexCtrl::Destroy() method is called.
-	//All the child dialogs' DestroyWindow will be called automatically.
+	//All these cleanups below are important when HexCtrl window is destroyed but IHexCtrl object
+	//itself is still alive. The IHexCtrl object is alive until the IHexCtrl::Destroy() method is called.
+	//Child windows of IHexCtrl (dialogs, tooltips, etc...) will be destroyed automatically by Windows.
 
 	ClearData();
 	m_vecHBITMAP.clear();
@@ -6886,15 +6884,8 @@ void CHexCtrl::OnDestroy()
 	m_fntInfoBar.DeleteObject();
 	m_penLines.DeleteObject();
 	m_penDataTempl.DeleteObject();
-	m_pScrollV->DestroyWindow();
-	m_pScrollH->DestroyWindow();
-	m_pDlgBkmMgr->DestroyWindow();
-	m_pDlgCodepage->DestroyWindow();
-	m_pDlgDataInterp->DestroyWindow();
-	m_pDlgModify->DestroyWindow();
-	m_pDlgGoTo->DestroyWindow();
-	m_pDlgSearch->DestroyWindow();
-	m_pDlgTemplMgr->DestroyWindow();
+	m_pScrollV->DestroyWindow(); //Not child of the IHexCtrl.
+	m_pScrollH->DestroyWindow(); //Not child of the IHexCtrl.
 	m_fCreated = false;
 
 	ParentNotify(HEXCTRL_MSG_DESTROY);

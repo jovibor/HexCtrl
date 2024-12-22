@@ -125,8 +125,8 @@ auto CHexDlgProgress::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
 	if (hWndFrom == m_WndCount) {
 		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
 		::SetTextColor(hDC, RGB(0, 200, 0));
-		::SetBkColor(hDC, GetSysColor(COLOR_BTNFACE));
-		return reinterpret_cast<INT_PTR>(::GetStockObject(HOLLOW_BRUSH));
+		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
+		return reinterpret_cast<INT_PTR>(::GetSysColorBrush(COLOR_3DFACE));
 	}
 
 	return FALSE; //Default handler.

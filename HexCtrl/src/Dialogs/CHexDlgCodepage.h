@@ -29,13 +29,13 @@ namespace HEXCTRL::INTERNAL {
 		auto OnCommand(const MSG& stMsg) -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
 		auto OnDrawItem(const MSG& stMsg) -> INT_PTR;
+		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
 		auto OnMeasureItem(const MSG& stMsg) -> INT_PTR;
 		auto OnNotify(const MSG& stMsg) -> INT_PTR;
-		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
-		void OnListGetDispInfo(NMHDR *pNMHDR);
-		void OnListItemChanged(NMHDR *pNMHDR);
-		void OnListGetColor(NMHDR *pNMHDR);
-		void OnListLinkClick(NMHDR *pNMHDR);
+		void OnNotifyListGetDispInfo(NMHDR* pNMHDR);
+		void OnNotifyListItemChanged(NMHDR* pNMHDR);
+		void OnNotifyListGetColor(NMHDR* pNMHDR);
+		void OnNotifyListLinkClick(NMHDR* pNMHDR);
 		auto OnSize(const MSG& stMsg) -> INT_PTR;
 		void SortList();
 		static BOOL CALLBACK EnumCodePagesProc(LPWSTR pwszCP);

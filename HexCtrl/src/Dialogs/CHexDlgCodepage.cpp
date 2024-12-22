@@ -125,59 +125,6 @@ void CHexDlgCodepage::OnCancel()
 	ShowWindow(SW_HIDE);
 }
 
-auto CHexDlgCodepage::OnDestroy()->INT_PTR
-{
-	m_vecCodePage.clear();
-	m_u64Flags = { };
-	m_pHexCtrl = nullptr;
-	m_Wnd.Detach();
-
-	return TRUE;
-}
-
-auto CHexDlgCodepage::OnDrawItem(const MSG& stMsg)->INT_PTR
-{
-	if (auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(stMsg.lParam);
-		pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_CODEPAGE_LIST)) {
-		m_pList->DrawItem(pDIS);
-	}
-
-	return TRUE;
-}
-
-auto CHexDlgCodepage::OnMeasureItem(const MSG& stMsg)->INT_PTR
-{
-	if (auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(stMsg.lParam);
-		pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_CODEPAGE_LIST)) {
-		m_pList->MeasureItem(pMIS);
-	}
-
-	return TRUE;
-}
-
-auto CHexDlgCodepage::OnNotify(const MSG& stMsg)->INT_PTR
-{
-	auto pNMHDR = reinterpret_cast<NMHDR*>(stMsg.lParam);
-	if (pNMHDR->idFrom == IDC_HEXCTRL_CODEPAGE_LIST) {
-		switch (pNMHDR->code) {
-		case LVN_COLUMNCLICK:
-			SortList(); break;
-		case LVN_GETDISPINFOW:
-			OnListGetDispInfo(pNMHDR); break;
-		case LVN_ITEMCHANGED:
-			OnListItemChanged(pNMHDR); break;
-		case LISTEX::LISTEX_MSG_GETCOLOR:
-			OnListGetColor(pNMHDR); break;
-		case LISTEX::LISTEX_MSG_LINKCLICK:
-			OnListLinkClick(pNMHDR); break;
-		default:
-			break;
-		}
-	}
-
-	return TRUE;
-}
-
 auto CHexDlgCodepage::OnClose()->INT_PTR
 {
 	ShowWindow(SW_HIDE);
@@ -190,11 +137,31 @@ auto CHexDlgCodepage::OnCommand(const MSG& stMsg)->INT_PTR
 	switch (uCtrlID) {
 	case IDOK:
 	case IDCANCEL:
-		OnCancel();
-		break;
+		OnCancel(); break;
 	default:
 		return FALSE;
 	}
+	return TRUE;
+}
+
+auto CHexDlgCodepage::OnDestroy()->INT_PTR
+{
+	m_vecCodePage.clear();
+	m_u64Flags = { };
+	m_pHexCtrl = nullptr;
+	m_DynLayout.RemoveAll();
+	m_Wnd.Detach();
+
+	return TRUE;
+}
+
+auto CHexDlgCodepage::OnDrawItem(const MSG& stMsg)->INT_PTR
+{
+	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(stMsg.lParam);
+	if (pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_CODEPAGE_LIST)) {
+		m_pList->DrawItem(pDIS);
+	}
+
 	return TRUE;
 }
 
@@ -217,12 +184,39 @@ auto CHexDlgCodepage::OnInitDialog(const MSG& stMsg)->INT_PTR
 
 	m_DynLayout.SetHost(m_Wnd);
 	m_DynLayout.AddItem(IDC_HEXCTRL_CODEPAGE_LIST, wnd::CDynLayout::MoveNone(), wnd::CDynLayout::SizeHorzAndVert(100, 100));
-	m_DynLayout.EnableTrack(true);
+	m_DynLayout.Enable(true);
 
 	return TRUE;
 }
 
-void CHexDlgCodepage::OnListGetDispInfo(NMHDR* pNMHDR)
+auto CHexDlgCodepage::OnMeasureItem(const MSG& stMsg)->INT_PTR
+{
+	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(stMsg.lParam);
+	if (pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_CODEPAGE_LIST)) {
+		m_pList->MeasureItem(pMIS);
+	}
+
+	return TRUE;
+}
+
+auto CHexDlgCodepage::OnNotify(const MSG& stMsg)->INT_PTR
+{
+	const auto pNMHDR = reinterpret_cast<NMHDR*>(stMsg.lParam);
+	if (pNMHDR->idFrom == IDC_HEXCTRL_CODEPAGE_LIST) {
+		switch (pNMHDR->code) {
+		case LVN_COLUMNCLICK: SortList(); break;
+		case LVN_GETDISPINFOW: OnNotifyListGetDispInfo(pNMHDR); break;
+		case LVN_ITEMCHANGED: OnNotifyListItemChanged(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_GETCOLOR: OnNotifyListGetColor(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_LINKCLICK: OnNotifyListLinkClick(pNMHDR); break;
+		default: break;
+		}
+	}
+
+	return TRUE;
+}
+
+void CHexDlgCodepage::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
@@ -245,7 +239,7 @@ void CHexDlgCodepage::OnListGetDispInfo(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgCodepage::OnListItemChanged(NMHDR* pNMHDR)
+void CHexDlgCodepage::OnNotifyListItemChanged(NMHDR* pNMHDR)
 {
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED)) {
@@ -253,7 +247,7 @@ void CHexDlgCodepage::OnListItemChanged(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgCodepage::OnListGetColor(NMHDR* pNMHDR)
+void CHexDlgCodepage::OnNotifyListGetColor(NMHDR* pNMHDR)
 {
 	if (const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
 		m_vecCodePage[static_cast<std::size_t>(pLCI->iItem)].uMaxChars > 1) {
@@ -262,7 +256,7 @@ void CHexDlgCodepage::OnListGetColor(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgCodepage::OnListLinkClick(NMHDR* pNMHDR)
+void CHexDlgCodepage::OnNotifyListLinkClick(NMHDR* pNMHDR)
 {
 	const auto* const pLLI = reinterpret_cast<LISTEX::PLISTEXLINKINFO>(pNMHDR);
 	ShellExecuteW(nullptr, L"open", pLLI->pwszText, nullptr, nullptr, SW_SHOWNORMAL);
