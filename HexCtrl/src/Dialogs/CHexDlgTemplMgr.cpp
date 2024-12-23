@@ -318,7 +318,7 @@ void CHexDlgTemplMgr::UnloadAll()
 
 void CHexDlgTemplMgr::UpdateData()
 {
-	if (!m_Wnd.IsWindowVisible()) {
+	if (!m_Wnd.IsWindow() || !m_Wnd.IsWindowVisible()) {
 		return;
 	}
 

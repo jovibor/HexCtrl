@@ -10,38 +10,44 @@
 #include <cassert>
 #include <unordered_map>
 
-import HEXCTRL.HexUtility;
-
 using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL {
-	//CHexDlgOpers.
-	class CHexDlgOpers final : public CDialogEx {
+	class CHexDlgOpers final {
 	public:
-		void Create(CWnd* pParent, IHexCtrl* pHexCtrl);
-		void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		void CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl);
+		[[nodiscard]] auto GetHWND()const->HWND;
+		auto OnActivate(const MSG& stMsg) -> INT_PTR;
+		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
+		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
 		void SetDlgProperties(std::uint64_t u64Flags);
+		void ShowWindow(int iCmdShow);
 	private:
-		void DoDataExchange(CDataExchange* pDX)override;
 		template<typename T> requires TSize1248<T>
 		[[nodiscard]] bool FillVecOper(bool fCheckBE);
 		[[nodiscard]] auto GetOperMode()const->EHexOperMode;
 		[[nodiscard]] auto GetDataType()const->EHexDataType;
-		void OnCancel()override;
-		afx_msg void OnComboDataTypeSelChange();
-		afx_msg void OnComboOperSelChange();
-		afx_msg auto OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor) -> HBRUSH;
-		afx_msg void OnDestroy();
-		afx_msg void OnEditOperChange();
-		BOOL OnInitDialog()override;
-		void OnOK()override;
+		[[nodiscard]] bool IsNoEsc()const;
+		void OnCancel();
+		auto OnCommand(const MSG& stMsg) -> INT_PTR;
+		void OnComboDataTypeSelChange();
+		void OnComboOperSelChange();
+		auto OnCtlClrStatic(const MSG& stMsg) -> INT_PTR;
+		auto OnDestroy() -> INT_PTR;
+		void OnEditOperChange();
+		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
+		void OnOK();
 		void SetControlsState();
 		void UpdateDescr();
-		DECLARE_MESSAGE_MAP();
 	private:
+		wnd::CWnd m_Wnd;             //Main window.
+		wnd::CWnd m_WndEditOperand;  //Edit-box operand.
+		wnd::CWnd m_WndStatDescr;    //Static control description.
+		wnd::CWndBtn m_WndBtnBE;     //Check-box bigendian.
+		wnd::CWndBtn m_WndBtnOk;     //Ok.
+		wnd::CWndCombo m_WndCmbOper; //Operation combo-box.
+		wnd::CWndCombo m_WndCmbType; //Data size combo-box.
 		IHexCtrl* m_pHexCtrl { };
-		CComboBox m_comboOper; //Operation combo-box.
-		CComboBox m_comboType; //Data size combo-box.
 		std::vector<std::byte> m_vecOperData; //Operand data vector.
 		std::uint64_t m_u64Flags { };
 		using enum EHexOperMode;
@@ -55,36 +61,57 @@ namespace HEXCTRL::INTERNAL {
 	};
 }
 
-BEGIN_MESSAGE_MAP(CHexDlgOpers, CDialogEx)
-	ON_CBN_SELCHANGE(IDC_HEXCTRL_OPERS_COMBO_OPER, &CHexDlgOpers::OnComboOperSelChange)
-	ON_CBN_SELCHANGE(IDC_HEXCTRL_OPERS_COMBO_DTYPE, &CHexDlgOpers::OnComboDataTypeSelChange)
-	ON_EN_CHANGE(IDC_HEXCTRL_OPERS_EDIT_OPERAND, &CHexDlgOpers::OnEditOperChange)
-	ON_WM_ACTIVATE()
-	ON_WM_CTLCOLOR()
-	ON_WM_DESTROY()
-END_MESSAGE_MAP()
-
-void CHexDlgOpers::Create(CWnd* pParent, IHexCtrl* pHexCtrl)
+void CHexDlgOpers::CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl)
 {
-	assert(pHexCtrl);
-	assert(pParent);
-	if (pHexCtrl == nullptr)
+	assert(hWndParent != nullptr); assert(pHexCtrl != nullptr);
+	if (hWndParent == nullptr || pHexCtrl == nullptr)
 		return;
+
+	//m_Wnd is set in the OnInitDialog().
+	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_OPERS),
+		hWndParent, wnd::DlgWndProc<CHexDlgOpers>, reinterpret_cast<LPARAM>(this)); hWnd == nullptr) {
+		DBG_REPORT(L"CreateDialogParamW failed.");
+	}
 
 	m_pHexCtrl = pHexCtrl;
-	CDialogEx::Create(IDD_HEXCTRL_OPERS, pParent);
 }
 
-void CHexDlgOpers::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimized*/)
+auto CHexDlgOpers::GetHWND()const->HWND
+{
+	return m_Wnd;
+}
+
+auto CHexDlgOpers::OnActivate(const MSG& stMsg)->INT_PTR
 {
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
-		return;
+		return FALSE;
 
+	const auto nState = LOWORD(stMsg.wParam);
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
-		const auto fSelection { m_pHexCtrl->HasSelection() };
-		CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL,
-			fSelection ? IDC_HEXCTRL_OPERS_RAD_SEL : IDC_HEXCTRL_OPERS_RAD_ALL);
-		GetDlgItem(IDC_HEXCTRL_OPERS_RAD_SEL)->EnableWindow(fSelection);
+		const auto fSel { m_pHexCtrl->HasSelection() };
+		m_Wnd.CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL,
+			fSel ? IDC_HEXCTRL_OPERS_RAD_SEL : IDC_HEXCTRL_OPERS_RAD_ALL);
+		wnd::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_OPERS_RAD_SEL)).EnableWindow(fSel);
+	}
+
+	return FALSE; //Default handler.
+}
+
+bool CHexDlgOpers::PreTranslateMsg(MSG* pMsg)
+{
+	return m_Wnd.IsDlgMessage(pMsg);
+}
+
+auto CHexDlgOpers::ProcessMsg(const MSG& stMsg)->INT_PTR
+{
+	switch (stMsg.message) {
+	case WM_ACTIVATE: return OnActivate(stMsg);
+	case WM_COMMAND: return OnCommand(stMsg);
+	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(stMsg);
+	case WM_DESTROY: return OnDestroy();
+	case WM_INITDIALOG: return OnInitDialog(stMsg);
+	default:
+		return 0;
 	}
 }
 
@@ -93,15 +120,13 @@ void CHexDlgOpers::SetDlgProperties(std::uint64_t u64Flags)
 	m_u64Flags = u64Flags;
 }
 
+void CHexDlgOpers::ShowWindow(int iCmdShow)
+{
+	m_Wnd.ShowWindow(iCmdShow);
+}
+
 
 //CHexDlgOpers private methods.
-
-void CHexDlgOpers::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_OPERS_COMBO_OPER, m_comboOper);
-	DDX_Control(pDX, IDC_HEXCTRL_OPERS_COMBO_DTYPE, m_comboType);
-}
 
 template<typename T> requires TSize1248<T>
 bool CHexDlgOpers::FillVecOper(bool fCheckBE)
@@ -110,15 +135,12 @@ bool CHexDlgOpers::FillVecOper(bool fCheckBE)
 	//Even if operation doesn't need an operand (e.g. OPER_NOT), the spnData
 	//in the HEXMODIFY must have appropriate size, equal to the data type size.
 	m_vecOperData = RangeToVecBytes(T { });
-	const auto pWndOper = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND);
-	if (!pWndOper->IsWindowEnabled())
+	if (!m_WndEditOperand.IsWindowEnabled())
 		return true; //Some operations don't need operands.
 
-	CStringW cwstrOper;
-	pWndOper->GetWindowTextW(cwstrOper);
-	const auto opt = stn::StrToNum<T>(cwstrOper.GetString());
+	const auto opt = stn::StrToNum<T>(m_WndEditOperand.GetWndText());
 	if (!opt) {
-		MessageBoxW(L"Wrong operand.", L"Operand error", MB_ICONERROR);
+		MessageBoxW(m_Wnd, L"Wrong operand.", L"Operand error", MB_ICONERROR);
 		return false;
 	}
 
@@ -126,7 +148,7 @@ bool CHexDlgOpers::FillVecOper(bool fCheckBE)
 	const auto eOperMode = GetOperMode();
 	using enum EHexOperMode;
 	if (eOperMode == OPER_DIV && tOper == 0) { //Division by zero check.
-		MessageBoxW(L"Can't divide by zero.", L"Operand error", MB_ICONERROR);
+		MessageBoxW(m_Wnd, L"Can't divide by zero.", L"Operand error", MB_ICONERROR);
 		return { };
 	}
 
@@ -145,12 +167,17 @@ bool CHexDlgOpers::FillVecOper(bool fCheckBE)
 
 auto CHexDlgOpers::GetOperMode()const->EHexOperMode
 {
-	return static_cast<EHexOperMode>(m_comboOper.GetItemData(m_comboOper.GetCurSel()));
+	return static_cast<EHexOperMode>(m_WndCmbOper.GetItemData(m_WndCmbOper.GetCurSel()));
 }
 
 auto CHexDlgOpers::GetDataType()const->EHexDataType
 {
-	return static_cast<EHexDataType>(m_comboType.GetItemData(m_comboType.GetCurSel()));
+	return static_cast<EHexDataType>(m_WndCmbType.GetItemData(m_WndCmbType.GetCurSel()));
+}
+
+bool CHexDlgOpers::IsNoEsc()const
+{
+	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
 void CHexDlgOpers::OnCancel()
@@ -158,7 +185,27 @@ void CHexDlgOpers::OnCancel()
 	if (m_u64Flags & HEXCTRL_FLAG_DLG_NOESC)
 		return;
 
-	static_cast<CDialogEx*>(GetParentOwner())->EndDialog(IDCANCEL);
+	::ShowWindow(m_Wnd.GetParent(), SW_HIDE);
+}
+
+auto CHexDlgOpers::OnCommand(const MSG& stMsg)->INT_PTR
+{
+	const auto uCtrlID = LOWORD(stMsg.wParam); //Control ID or menu ID.
+	const auto uCode = HIWORD(stMsg.wParam);   //Control code, zero for menu.
+
+	switch (uCtrlID) {
+	case IDOK: OnOK(); break;
+	case IDCANCEL: OnCancel(); break;
+	case IDC_HEXCTRL_OPERS_COMBO_OPER:
+		if (uCode == CBN_SELCHANGE) { OnComboOperSelChange(); } break;
+	case IDC_HEXCTRL_OPERS_COMBO_DTYPE:
+		if (uCode == CBN_SELCHANGE) { OnComboDataTypeSelChange(); } break;
+	case IDC_HEXCTRL_OPERS_EDIT_OPERAND:
+		if (uCode == EN_CHANGE) { OnEditOperChange(); } break;
+	default: return FALSE;
+	}
+
+	return TRUE;
 }
 
 void CHexDlgOpers::OnComboDataTypeSelChange()
@@ -169,7 +216,7 @@ void CHexDlgOpers::OnComboDataTypeSelChange()
 void CHexDlgOpers::OnComboOperSelChange()
 {
 	constexpr auto iIntegralTotal = 8; //Total amount of integral types.
-	auto iCurrCount = m_comboType.GetCount();
+	auto iCurrCount = m_WndCmbType.GetCount();
 	const auto fHasFloats = iCurrCount > iIntegralTotal;
 	auto fShouldHaveFloats { false };
 
@@ -183,49 +230,52 @@ void CHexDlgOpers::OnComboOperSelChange()
 	}
 
 	if (fShouldHaveFloats != fHasFloats) {
-		m_comboType.SetRedraw(FALSE);
+		m_WndCmbType.SetRedraw(FALSE);
 		if (fShouldHaveFloats) {
-			auto iIndex = m_comboType.AddString(L"Float");
-			m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_FLOAT));
-			iIndex = m_comboType.AddString(L"Double");
-			m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_DOUBLE));
+			auto iIndex = m_WndCmbType.AddString(L"Float");
+			m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_FLOAT));
+			iIndex = m_WndCmbType.AddString(L"Double");
+			m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_DOUBLE));
 		}
 		else {
-			const auto iCurrSel = m_comboType.GetCurSel();
+			const auto iCurrSel = m_WndCmbType.GetCurSel();
 
 			for (auto iIndex = iCurrCount - 1; iIndex >= iIntegralTotal; --iIndex) {
-				m_comboType.DeleteString(iIndex);
+				m_WndCmbType.DeleteString(iIndex);
 			}
 
 			//When deleting float types, if selection was on one of float types change it to integral.
 			if (iCurrSel > (iIntegralTotal - 1)) {
-				m_comboType.SetCurSel(iIntegralTotal - 1);
+				m_WndCmbType.SetCurSel(iIntegralTotal - 1);
 			}
 		}
-		m_comboType.SetRedraw(TRUE);
-		m_comboType.RedrawWindow();
+		m_WndCmbType.SetRedraw(TRUE);
+		m_WndCmbType.RedrawWindow();
 	}
 
 	SetControlsState();
 }
 
-auto CHexDlgOpers::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)->HBRUSH
+auto CHexDlgOpers::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
 {
-	const auto hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
-
-	if (pWnd->GetDlgCtrlID() == IDC_HEXCTRL_OPERS_STAT_DESCR) {
-		pDC->SetTextColor(RGB(0, 0, 200));
+	const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam);
+	if (hWndFrom == m_WndStatDescr) {
+		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
+		::SetTextColor(hDC, RGB(0, 50, 250));
+		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
+		return reinterpret_cast<INT_PTR>(::GetSysColorBrush(COLOR_3DFACE));
 	}
 
-	return hbr;
+	return FALSE; //Default handler.
 }
 
-void CHexDlgOpers::OnDestroy()
+auto CHexDlgOpers::OnDestroy()->INT_PTR
 {
-	CDialogEx::OnDestroy();
 	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
 	m_vecOperData.clear();
+
+	return TRUE;
 }
 
 void CHexDlgOpers::OnEditOperChange()
@@ -233,67 +283,73 @@ void CHexDlgOpers::OnEditOperChange()
 	SetControlsState();
 }
 
-BOOL CHexDlgOpers::OnInitDialog()
+auto CHexDlgOpers::OnInitDialog(const MSG& stMsg)->INT_PTR
 {
-	CDialogEx::OnInitDialog();
+	m_Wnd.Attach(stMsg.hwnd);
+	m_WndBtnBE.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE));
+	m_WndBtnOk.Attach(m_Wnd.GetDlgItem(IDOK));
+	m_WndCmbOper.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_OPERS_COMBO_OPER));
+	m_WndCmbType.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_OPERS_COMBO_DTYPE));
+	m_WndEditOperand.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND));
+	m_WndStatDescr.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_OPERS_STAT_DESCR));
 
 	using enum EHexOperMode;
-	auto iIndex = m_comboOper.AddString(m_umapNames.at(OPER_ASSIGN).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ASSIGN));
-	m_comboOper.SetCurSel(iIndex);
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_ADD).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ADD));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_SUB).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SUB));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_MUL).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MUL));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_DIV).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_DIV));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_MIN).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MIN));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_MAX).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MAX));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_OR).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_OR));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_XOR).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_XOR));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_AND).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_AND));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_NOT).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_NOT));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_SHL).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHL));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_SHR).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHR));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_ROTL).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTL));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_ROTR).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTR));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_SWAP).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SWAP));
-	iIndex = m_comboOper.AddString(m_umapNames.at(OPER_BITREV).data());
-	m_comboOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_BITREV));
+	auto iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_ASSIGN).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ASSIGN));
+	m_WndCmbOper.SetCurSel(iIndex);
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_ADD).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ADD));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_SUB).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SUB));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_MUL).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MUL));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_DIV).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_DIV));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_MIN).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MIN));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_MAX).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MAX));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_OR).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_OR));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_XOR).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_XOR));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_AND).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_AND));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_NOT).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_NOT));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_SHL).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHL));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_SHR).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHR));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_ROTL).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTL));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_ROTR).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTR));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_SWAP).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SWAP));
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_BITREV).data());
+	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_BITREV));
 
 	using enum EHexDataType;
-	iIndex = m_comboType.AddString(L"Int8");
-	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT8));
-	m_comboType.SetCurSel(iIndex);
-	iIndex = m_comboType.AddString(L"Unsigned Int8");
-	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT8));
-	iIndex = m_comboType.AddString(L"Int16");
-	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT16));
-	iIndex = m_comboType.AddString(L"Unsigned Int16");
-	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT16));
-	iIndex = m_comboType.AddString(L"Int32");
-	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT32));
-	iIndex = m_comboType.AddString(L"Unsigned Int32");
-	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT32));
-	iIndex = m_comboType.AddString(L"Int64");
-	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT64));
-	iIndex = m_comboType.AddString(L"Unsigned Int64");
-	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT64));
+	iIndex = m_WndCmbType.AddString(L"Int8");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT8));
+	m_WndCmbType.SetCurSel(iIndex);
+	iIndex = m_WndCmbType.AddString(L"Unsigned Int8");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT8));
+	iIndex = m_WndCmbType.AddString(L"Int16");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT16));
+	iIndex = m_WndCmbType.AddString(L"Unsigned Int16");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT16));
+	iIndex = m_WndCmbType.AddString(L"Int32");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT32));
+	iIndex = m_WndCmbType.AddString(L"Unsigned Int32");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT32));
+	iIndex = m_WndCmbType.AddString(L"Int64");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_INT64));
+	iIndex = m_WndCmbType.AddString(L"Unsigned Int64");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(DATA_UINT64));
 
-	CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL, IDC_HEXCTRL_OPERS_RAD_ALL);
+	m_Wnd.CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL, IDC_HEXCTRL_OPERS_RAD_ALL);
 	OnComboOperSelChange();
 
 	return TRUE;
@@ -301,14 +357,14 @@ BOOL CHexDlgOpers::OnInitDialog()
 
 void CHexDlgOpers::OnOK()
 {
-	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
+	if (!m_WndBtnOk.IsWindowEnabled() || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
 		return;
 
 	using enum EHexOperMode; using enum EHexDataType; using enum EHexModifyMode;
 	const auto eOperMode = GetOperMode();
 	const auto eDataType = GetDataType();
 	const auto fDataOneByte = eDataType == DATA_INT8 || eDataType == DATA_UINT8;
-	const auto fCheckBE = static_cast<CButton*>(GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE))->GetCheck() == BST_CHECKED;
+	const auto fCheckBE = m_WndBtnBE.IsChecked();
 	//Should data be treated as Big-endian or there is no need in that.
 	const auto fSwapData = fCheckBE && !fDataOneByte && eOperMode != OPER_NOT && eOperMode != OPER_SWAP
 		&& eOperMode != OPER_BITREV && eOperMode != OPER_OR && eOperMode != OPER_XOR && eOperMode != OPER_AND
@@ -353,9 +409,9 @@ void CHexDlgOpers::OnOK()
 		return;
 
 	VecSpan vecSpan;
-	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL);
+	const auto iRadioAllOrSel = m_Wnd.GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL);
 	if (iRadioAllOrSel == IDC_HEXCTRL_OPERS_RAD_ALL) {
-		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?",
+		if (MessageBoxW(m_Wnd, L"You are about to modify the entire data region.\r\nAre you sure?",
 			L"Modify all data?", MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
 
@@ -380,29 +436,27 @@ void CHexDlgOpers::SetControlsState()
 	using enum EHexDataType;
 	const auto eDataType = GetDataType();
 	const auto fDataOneByte = eDataType == DATA_INT8 || eDataType == DATA_UINT8;
-	const auto pComboOper = GetDlgItem(IDC_HEXCTRL_OPERS_EDIT_OPERAND);
-	auto fEditOper = true;
-	auto fBtnEnter = pComboOper->GetWindowTextLengthW() > 0;
+	auto fEditOperand = true;
+	auto fBtnEnter = !m_WndEditOperand.IsWndTextEmpty();
 
 	switch (GetOperMode()) {
 	case OPER_NOT:
 	case OPER_BITREV:
-		fEditOper = false;
+		fEditOperand = false;
 		fBtnEnter = true;
 		break;
 	case OPER_SWAP:
-		fEditOper = false;
+		fEditOperand = false;
 		fBtnEnter = !fDataOneByte;
 		break;
 	default:
 		break;
 	};
 
-	pComboOper->EnableWindow(fEditOper);
-	GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE)->EnableWindow(fDataOneByte ? FALSE : fEditOper);
-	const auto pBtnEnter = GetDlgItem(IDOK);
-	pBtnEnter->EnableWindow(fBtnEnter);
-	pBtnEnter->SetWindowTextW(m_umapNames.at(GetOperMode()).data());
+	m_WndEditOperand.EnableWindow(fEditOperand);
+	m_WndBtnBE.EnableWindow(fDataOneByte ? false : fEditOperand);
+	m_WndBtnOk.EnableWindow(fBtnEnter);
+	m_WndBtnOk.SetWndText(m_umapNames.at(GetOperMode()).data());
 	UpdateDescr();
 }
 
@@ -489,34 +543,39 @@ void CHexDlgOpers::UpdateDescr()
 		break;
 	};
 
-	GetDlgItem(IDC_HEXCTRL_OPERS_STAT_DESCR)->SetWindowTextW(wsvDescr.data());
+	m_WndStatDescr.SetWndText(wsvDescr.data());
 }
 
 
 namespace HEXCTRL::INTERNAL {
-	//CHexDlgFillData.
-	class CHexDlgFillData final : public CDialogEx {
+	class CHexDlgFillData final {
 	public:
-		void Create(CWnd* pParent, IHexCtrl* pHexCtrl);
+		void CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl);
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
-		void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+		[[nodiscard]] auto GetHWND()const->HWND;
+		auto OnActivate(const MSG& stMsg) -> INT_PTR;
+		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
+		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
 		void SetDlgProperties(std::uint64_t u64Flags);
+		void ShowWindow(int iCmdShow);
 	private:
 		enum class EFillType : std::uint8_t; //Forward declaration.
-		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] auto GetFillType()const->EFillType;
-		void OnCancel()override;
-		afx_msg void OnComboDataEditChange();
-		afx_msg void OnComboTypeSelChange();
-		afx_msg void OnDestroy();
-		BOOL OnInitDialog()override;
-		void OnOK()override;
+		[[nodiscard]] bool IsNoEsc()const;
+		void OnCancel();
+		void OnComboDataEditChange();
+		void OnComboTypeSelChange();
+		auto OnCommand(const MSG& stMsg) -> INT_PTR;
+		auto OnDestroy() -> INT_PTR;
+		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
+		void OnOK();
 		void SetControlsState();
-		DECLARE_MESSAGE_MAP();
 	private:
+		wnd::CWnd m_Wnd;             //Main window.
+		wnd::CWndBtn m_WndBtnOk;     //Ok.
+		wnd::CWndCombo m_WndCmbType; //Fill type combo-box.
+		wnd::CWndCombo m_WndCmbData; //Data combo-box.
 		IHexCtrl* m_pHexCtrl { };
-		CComboBox m_comboType; //Fill type combo-box.
-		CComboBox m_comboData; //Data combo-box.
 		std::vector<std::byte> m_vecFillData; //Fill data vector.
 		std::uint64_t m_u64Flags { };
 	};
@@ -526,22 +585,19 @@ enum class CHexDlgFillData::EFillType : std::uint8_t {
 	FILL_HEX, FILL_ASCII, FILL_WCHAR, FILL_RAND_MT19937, FILL_RAND_FAST
 };
 
-BEGIN_MESSAGE_MAP(CHexDlgFillData, CDialogEx)
-	ON_CBN_SELCHANGE(IDC_HEXCTRL_FILLDATA_COMBO_TYPE, &CHexDlgFillData::OnComboTypeSelChange)
-	ON_CBN_EDITCHANGE(IDC_HEXCTRL_FILLDATA_COMBO_DATA, &CHexDlgFillData::OnComboDataEditChange)
-	ON_WM_ACTIVATE()
-	ON_WM_DESTROY()
-END_MESSAGE_MAP()
-
-void CHexDlgFillData::Create(CWnd* pParent, IHexCtrl* pHexCtrl)
+void CHexDlgFillData::CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl)
 {
-	assert(pHexCtrl);
-	assert(pParent);
-	if (pHexCtrl == nullptr)
+	assert(hWndParent != nullptr); assert(pHexCtrl != nullptr);
+	if (hWndParent == nullptr || pHexCtrl == nullptr)
 		return;
 
+	//m_Wnd is set in the OnInitDialog().
+	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_FILLDATA),
+		hWndParent, wnd::DlgWndProc<CHexDlgFillData>, reinterpret_cast<LPARAM>(this)); hWnd == nullptr) {
+		DBG_REPORT(L"CreateDialogParamW failed.");
+	}
+
 	m_pHexCtrl = pHexCtrl;
-	CDialogEx::Create(IDD_HEXCTRL_FILLDATA, pParent);
 }
 
 auto CHexDlgFillData::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
@@ -549,22 +605,47 @@ auto CHexDlgFillData::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	using enum EHexDlgItem;
 	switch (eItem) {
 	case FILLDATA_COMBO_DATA:
-		return m_comboData;
+		return m_WndCmbData;
 	default:
 		return { };
 	}
 }
 
-void CHexDlgFillData::OnActivate(UINT nState, CWnd* /*pWndOther*/, BOOL /*bMinimized*/)
+auto CHexDlgFillData::GetHWND()const->HWND
+{
+	return m_Wnd;
+}
+
+auto CHexDlgFillData::OnActivate(const MSG& stMsg)->INT_PTR
 {
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
-		return;
+		return FALSE;
 
+	const auto nState = LOWORD(stMsg.wParam);
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
 		const auto fSelection { m_pHexCtrl->HasSelection() };
-		CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL,
+		m_Wnd.CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL,
 			fSelection ? IDC_HEXCTRL_FILLDATA_RAD_SEL : IDC_HEXCTRL_FILLDATA_RAD_ALL);
-		GetDlgItem(IDC_HEXCTRL_FILLDATA_RAD_SEL)->EnableWindow(fSelection);
+		wnd::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_FILLDATA_RAD_SEL)).EnableWindow(fSelection);
+	}
+
+	return FALSE; //Default handler.
+}
+
+bool CHexDlgFillData::PreTranslateMsg(MSG* pMsg)
+{
+	return m_Wnd.IsDlgMessage(pMsg);
+}
+
+auto CHexDlgFillData::ProcessMsg(const MSG& stMsg)->INT_PTR
+{
+	switch (stMsg.message) {
+	case WM_ACTIVATE: return OnActivate(stMsg);
+	case WM_COMMAND: return OnCommand(stMsg);
+	case WM_DESTROY: return OnDestroy();
+	case WM_INITDIALOG: return OnInitDialog(stMsg);
+	default:
+		return 0;
 	}
 }
 
@@ -573,27 +654,30 @@ void CHexDlgFillData::SetDlgProperties(std::uint64_t u64Flags)
 	m_u64Flags = u64Flags;
 }
 
+void CHexDlgFillData::ShowWindow(int iCmdShow)
+{
+	m_Wnd.ShowWindow(iCmdShow);
+}
+
 
 //CHexDlgFillData private methods.
 
-void CHexDlgFillData::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_FILLDATA_COMBO_TYPE, m_comboType);
-	DDX_Control(pDX, IDC_HEXCTRL_FILLDATA_COMBO_DATA, m_comboData);
-}
-
 auto CHexDlgFillData::GetFillType()const->CHexDlgFillData::EFillType
 {
-	return static_cast<EFillType>(m_comboType.GetItemData(m_comboType.GetCurSel()));
+	return static_cast<EFillType>(m_WndCmbType.GetItemData(m_WndCmbType.GetCurSel()));
+}
+
+bool CHexDlgFillData::IsNoEsc()const
+{
+	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
 void CHexDlgFillData::OnCancel()
 {
-	if (m_u64Flags & HEXCTRL_FLAG_DLG_NOESC)
+	if (IsNoEsc())
 		return;
 
-	static_cast<CDialogEx*>(GetParentOwner())->EndDialog(IDCANCEL);
+	::ShowWindow(m_Wnd.GetParent(), SW_HIDE);
 }
 
 void CHexDlgFillData::OnComboDataEditChange()
@@ -606,32 +690,54 @@ void CHexDlgFillData::OnComboTypeSelChange()
 	SetControlsState();
 }
 
-void CHexDlgFillData::OnDestroy()
+auto CHexDlgFillData::OnCommand(const MSG& stMsg)->INT_PTR
 {
-	CDialogEx::OnDestroy();
+	const auto uCtrlID = LOWORD(stMsg.wParam); //Control ID or menu ID.
+	const auto uCode = HIWORD(stMsg.wParam);   //Control code, zero for menu.
+
+	switch (uCtrlID) {
+	case IDOK: OnOK(); break;
+	case IDCANCEL: OnCancel(); break;
+	case IDC_HEXCTRL_FILLDATA_COMBO_TYPE:
+		if (uCode == CBN_SELCHANGE) { OnComboTypeSelChange(); } break;
+	case IDC_HEXCTRL_FILLDATA_COMBO_DATA:
+		if (uCode == CBN_EDITCHANGE) { OnComboDataEditChange(); } break;
+	default: return FALSE;
+	}
+
+	return TRUE;
+}
+
+auto CHexDlgFillData::OnDestroy()->INT_PTR
+{
 	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
 	m_vecFillData.clear();
+
+	return TRUE;
 }
 
-BOOL CHexDlgFillData::OnInitDialog()
+auto CHexDlgFillData::OnInitDialog(const MSG& stMsg)->INT_PTR
 {
-	CDialogEx::OnInitDialog();
+	m_Wnd.Attach(stMsg.hwnd);
+	m_WndBtnOk.Attach(m_Wnd.GetDlgItem(IDOK));
+	m_WndCmbType.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_TYPE));
+	m_WndCmbData.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_DATA));
 
-	auto iIndex = m_comboType.AddString(L"Hex Bytes");
-	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_HEX));
-	m_comboType.SetCurSel(iIndex);
-	iIndex = m_comboType.AddString(L"Text ASCII");
-	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_ASCII));
-	iIndex = m_comboType.AddString(L"Text UTF-16");
-	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_WCHAR));
-	iIndex = m_comboType.AddString(L"Random Data (MT19937)");
-	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_MT19937));
-	iIndex = m_comboType.AddString(L"Pseudo Random Data (fast, but less secure)");
-	m_comboType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_FAST));
+	auto iIndex = m_WndCmbType.AddString(L"Hex Bytes");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_HEX));
+	m_WndCmbType.SetCurSel(iIndex);
+	iIndex = m_WndCmbType.AddString(L"Text ASCII");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_ASCII));
+	iIndex = m_WndCmbType.AddString(L"Text UTF-16");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_WCHAR));
+	iIndex = m_WndCmbType.AddString(L"Random Data (MT19937)");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_MT19937));
+	iIndex = m_WndCmbType.AddString(L"Pseudo Random Data (fast, but less secure)");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(EFillType::FILL_RAND_FAST));
 
-	CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL, IDC_HEXCTRL_FILLDATA_RAD_ALL);
-	m_comboData.LimitText(256); //Max characters of the combo-box.
+	m_Wnd.CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL, IDC_HEXCTRL_FILLDATA_RAD_ALL);
+	m_WndCmbData.LimitText(256); //Max characters of the combo-box.
 	SetControlsState();
 
 	return TRUE;
@@ -639,22 +745,22 @@ BOOL CHexDlgFillData::OnInitDialog()
 
 void CHexDlgFillData::OnOK()
 {
-	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
+	if (!m_WndBtnOk.IsWindowEnabled() || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
 		return;
 
 	using enum EFillType;
 	const auto eType = GetFillType();
 	if (eType == FILL_HEX || eType == FILL_ASCII || eType == FILL_WCHAR) {
-		if (m_comboData.GetWindowTextLengthW() == 0) {
-			MessageBoxW(L"Missing fill data.", L"Data error", MB_ICONERROR);
+		if (m_WndCmbData.IsWndTextEmpty()) {
+			MessageBoxW(m_Wnd, L"Missing fill data.", L"Data error", MB_ICONERROR);
 			return;
 		}
 	}
 
 	VecSpan vecSpan;
-	const auto iRadioAllOrSel = GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL);
+	const auto iRadioAllOrSel = m_Wnd.GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL);
 	if (iRadioAllOrSel == IDC_HEXCTRL_FILLDATA_RAD_ALL) {
-		if (MessageBoxW(L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify all data?",
+		if (MessageBoxW(m_Wnd, L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify all data?",
 			MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
 
@@ -669,14 +775,13 @@ void CHexDlgFillData::OnOK()
 
 	using enum EHexModifyMode;
 	EHexModifyMode eModifyMode;
-	CStringW cwstrText;
-	m_comboData.GetWindowTextW(cwstrText);
+	const auto wstrText = m_WndCmbData.GetWndText();
 	switch (eType) {
 	case FILL_HEX:
 	{
-		auto optData = NumStrToHex(cwstrText.GetString());
+		auto optData = NumStrToHex(wstrText);
 		if (!optData) {
-			MessageBoxW(L"Wrong Hex format.", L"Format error", MB_ICONERROR);
+			MessageBoxW(m_Wnd, L"Wrong Hex format.", L"Format error", MB_ICONERROR);
 			return;
 		}
 
@@ -685,12 +790,12 @@ void CHexDlgFillData::OnOK()
 	}
 	break;
 	case FILL_ASCII:
-		m_vecFillData = RangeToVecBytes(WstrToStr(cwstrText.GetString()));
+		m_vecFillData = RangeToVecBytes(WstrToStr(wstrText));
 		eModifyMode = MODIFY_REPEAT;
 		break;
 	case FILL_WCHAR:
 		eModifyMode = MODIFY_REPEAT;
-		m_vecFillData = RangeToVecBytes(cwstrText);
+		m_vecFillData = RangeToVecBytes(wstrText);
 		break;
 	case FILL_RAND_MT19937:
 		eModifyMode = MODIFY_RAND_MT19937;
@@ -703,15 +808,15 @@ void CHexDlgFillData::OnOK()
 	}
 
 	//Insert wstring into ComboBox, only if it's not already there.
-	if (m_comboData.FindStringExact(0, cwstrText) == CB_ERR) {
-		if (m_comboData.GetCount() == 50) { //Keep max 50 strings in list.
-			m_comboData.DeleteString(49);
+	if (!m_WndCmbData.HasString(wstrText)) {
+		if (m_WndCmbData.GetCount() == 50) { //Keep max 50 strings in list.
+			m_WndCmbData.DeleteString(49); //Delete last string.
 		}
-		m_comboData.InsertString(0, cwstrText);
+		m_WndCmbData.InsertString(0, wstrText);
 	}
 
 	if (m_vecFillData.size() > vecSpan.back().ullSize) {
-		MessageBoxW(L"Fill data size is bigger than the region selected for modification, please select a larger region.",
+		MessageBoxW(m_Wnd, L"Fill data size is bigger than the region selected for modification, please select a larger region.",
 			L"Data region size error", MB_ICONERROR);
 		return;
 	}
@@ -726,31 +831,33 @@ void CHexDlgFillData::SetControlsState()
 	using enum EFillType;
 	const auto eFillType = GetFillType();
 	const auto fRND = eFillType == FILL_RAND_MT19937 || eFillType == FILL_RAND_FAST;
-	const auto fIsData = m_comboData.GetWindowTextLengthW() > 0;
-	m_comboData.EnableWindow(!fRND);
-	GetDlgItem(IDOK)->EnableWindow(fRND ? TRUE : fIsData);
+	const auto fIsData = !m_WndCmbData.IsWndTextEmpty();
+	m_WndCmbData.EnableWindow(!fRND);
+	m_WndBtnOk.EnableWindow(fRND ? true : fIsData);
 }
 
 
 //CHexDlgModify methods.
 
-BEGIN_MESSAGE_MAP(CHexDlgModify, CDialogEx)
-	ON_NOTIFY(TCN_SELCHANGE, IDC_HEXCTRL_MODIFY_TAB, &CHexDlgModify::OnTabSelChanged)
-	ON_WM_ACTIVATE()
-	ON_WM_CLOSE()
-	ON_WM_DESTROY()
-END_MESSAGE_MAP()
-
 CHexDlgModify::CHexDlgModify() : m_pDlgOpers { std::make_unique<CHexDlgOpers>() },
-m_pDlgFillData { std::make_unique<CHexDlgFillData>() }
-{
+m_pDlgFillData { std::make_unique<CHexDlgFillData>() } {
 }
 
 CHexDlgModify::~CHexDlgModify() = default;
 
+void CHexDlgModify::CreateDlg()
+{
+	//m_Wnd is set in the OnInitDialog().
+	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_MODIFY),
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgWndProc<CHexDlgModify>, reinterpret_cast<LPARAM>(this));
+		hWnd == nullptr) {
+		DBG_REPORT(L"CreateDialogParamW failed.");
+	}
+}
+
 auto CHexDlgModify::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
-	if (!IsWindow(m_hWnd)) {
+	if (!m_Wnd.IsWindow()) {
 		return { };
 	}
 
@@ -763,6 +870,11 @@ auto CHexDlgModify::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	}
 }
 
+auto CHexDlgModify::GetHWND()const->HWND
+{
+	return m_Wnd;
+}
+
 void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl);
@@ -771,12 +883,19 @@ void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl)
 
 bool CHexDlgModify::PreTranslateMsg(MSG* pMsg)
 {
-	if (m_hWnd == nullptr)
-		return false;
+	return m_pDlgOpers->PreTranslateMsg(pMsg) || m_pDlgFillData->PreTranslateMsg(pMsg);
+}
 
-	if (::IsDialogMessageW(m_hWnd, pMsg) != FALSE) { return true; }
-
-	return false;
+auto CHexDlgModify::ProcessMsg(const MSG& stMsg)->INT_PTR
+{
+	switch (stMsg.message) {
+	case WM_ACTIVATE: return OnActivate(stMsg);
+	case WM_DESTROY: return OnDestroy();
+	case WM_INITDIALOG: return OnInitDialog(stMsg);
+	case WM_NOTIFY: return OnNotify(stMsg);
+	default:
+		return 0;
+	}
 }
 
 void CHexDlgModify::SetDlgProperties(std::uint64_t u64Flags)
@@ -786,100 +905,101 @@ void CHexDlgModify::SetDlgProperties(std::uint64_t u64Flags)
 	m_pDlgFillData->SetDlgProperties(u64Flags);
 }
 
-BOOL CHexDlgModify::ShowWindow(int nCmdShow, int iTab)
+void CHexDlgModify::ShowWindow(int iCmdShow, int iTab)
 {
-	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_MODIFY, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+	if (!m_Wnd.IsWindow()) {
+		CreateDlg();
 	}
 
 	SetCurrentTab(iTab);
 
-	return CDialogEx::ShowWindow(nCmdShow);
+	m_Wnd.ShowWindow(iCmdShow);
 }
 
 
 //CHexDlgModify private methods.
 
-void CHexDlgModify::DoDataExchange(CDataExchange* pDX)
+auto CHexDlgModify::OnActivate(const MSG& stMsg)->INT_PTR
 {
-	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_MODIFY_TAB, m_tabMain);
+	m_pDlgOpers->OnActivate(stMsg);
+	m_pDlgFillData->OnActivate(stMsg);
+
+	return FALSE; //Default handler.
 }
 
-bool CHexDlgModify::IsNoEsc()const
+auto CHexDlgModify::OnClose()->INT_PTR
 {
-	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
+	ShowWindow(SW_HIDE);
+	return TRUE;
 }
 
-void CHexDlgModify::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+auto CHexDlgModify::OnDestroy()->INT_PTR
 {
-	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
-
-	m_pDlgOpers->OnActivate(nState, pWndOther, bMinimized);
-	m_pDlgFillData->OnActivate(nState, pWndOther, bMinimized);
-}
-
-void CHexDlgModify::OnCancel()
-{
-	if (IsNoEsc()) //Not closing Dialog on Escape key.
-		return;
-
-	CDialogEx::OnCancel();
-}
-
-void CHexDlgModify::OnClose()
-{
-	EndDialog(IDCANCEL);
-}
-
-void CHexDlgModify::OnDestroy()
-{
-	CDialogEx::OnDestroy();
 	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
-}
-
-BOOL CHexDlgModify::OnInitDialog()
-{
-	CDialogEx::OnInitDialog();
-
-	assert(m_pHexCtrl != nullptr);
-	if (m_pHexCtrl == nullptr)
-		return FALSE;
-
-	m_tabMain.InsertItem(0, L"Operations");
-	m_tabMain.InsertItem(1, L"Fill with Data");
-	CRect rcTab;
-	m_tabMain.GetItemRect(0, rcTab);
-
-	m_pDlgOpers->Create(this, m_pHexCtrl);
-	m_pDlgOpers->SetWindowPos(nullptr, rcTab.left, rcTab.bottom + 1, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
-	m_pDlgOpers->OnActivate(WA_ACTIVE, nullptr, 0); //To properly activate "All-Selection" radios on the first launch.
-	m_pDlgFillData->Create(this, m_pHexCtrl);
-	m_pDlgFillData->SetWindowPos(nullptr, rcTab.left, rcTab.bottom + 1, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_HIDEWINDOW);
-	m_pDlgFillData->OnActivate(WA_ACTIVE, nullptr, 0); //To properly activate "All-Selection" radios on the first launch.
 
 	return TRUE;
 }
 
-void CHexDlgModify::OnTabSelChanged(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
+auto CHexDlgModify::OnInitDialog(const MSG& stMsg)->INT_PTR
 {
-	SetCurrentTab(m_tabMain.GetCurSel());
+	m_Wnd.Attach(stMsg.hwnd);
+	m_WndTab.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_MODIFY_TAB));
+
+	m_WndTab.InsertItem(0, L"Operations");
+	m_WndTab.InsertItem(1, L"Fill with Data");
+	const auto rcTab = m_WndTab.GetItemRect(0);
+
+	m_pDlgOpers->CreateDlg(m_Wnd, m_pHexCtrl);
+	::SetWindowPos(m_pDlgOpers->GetHWND(), nullptr, rcTab.left, rcTab.bottom + 1, 0, 0,
+		SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
+	m_pDlgOpers->OnActivate({ .wParam { WA_ACTIVE } }); //To properly activate "All-Selection" radios on the first launch.
+	m_pDlgFillData->CreateDlg(m_Wnd, m_pHexCtrl);
+	::SetWindowPos(m_pDlgFillData->GetHWND(), nullptr, rcTab.left, rcTab.bottom + 1, 0, 0,
+		SWP_NOSIZE | SWP_NOZORDER | SWP_HIDEWINDOW);
+	m_pDlgFillData->OnActivate({ .wParam { WA_ACTIVE } }); //To properly activate "All-Selection" radios on the first launch.
+
+	return TRUE;
+}
+
+auto CHexDlgModify::OnNotify(const MSG& stMsg)->INT_PTR
+{
+	const auto pNMHDR = reinterpret_cast<NMHDR*>(stMsg.lParam);
+	switch (pNMHDR->idFrom) {
+	case IDC_HEXCTRL_MODIFY_TAB: if (pNMHDR->code == TCN_SELCHANGE) { OnNotifyTabSelChanged(pNMHDR); } break;
+	default: break;
+	}
+
+	return TRUE;
+}
+
+void CHexDlgModify::OnNotifyTabSelChanged(NMHDR* /*pNMHDR*/)
+{
+	SetCurrentTab(m_WndTab.GetCurSel());
 }
 
 void CHexDlgModify::SetCurrentTab(int iTab)
 {
-	m_tabMain.SetCurSel(iTab);
+	if (iTab < 0) {
+		return;
+	}
+
+	m_WndTab.SetCurSel(iTab);
+	HWND hWndFocus { };
 	switch (iTab) {
 	case 0:
 		m_pDlgFillData->ShowWindow(SW_HIDE);
 		m_pDlgOpers->ShowWindow(SW_SHOW);
+		hWndFocus = m_pDlgOpers->GetHWND();
 		break;
 	case 1:
 		m_pDlgOpers->ShowWindow(SW_HIDE);
 		m_pDlgFillData->ShowWindow(SW_SHOW);
+		hWndFocus = m_pDlgFillData->GetHWND();
 		break;
 	default:
 		break;
 	}
+
+	::SetFocus(hWndFocus);
 }

@@ -602,6 +602,9 @@ export namespace HEXCTRL::INTERNAL {
 			[[nodiscard]] bool operator==(const CWnd& rhs)const { return m_hWnd == rhs.m_hWnd; }
 			[[nodiscard]] bool operator==(HWND hWnd)const { return m_hWnd == hWnd; }
 			void Attach(HWND hWnd) { assert(::IsWindow(hWnd)); m_hWnd = hWnd; }
+			void CheckRadioButton(int iIDFirst, int iIDLast, int iIDCheck)const {
+				assert(IsWindow()); ::CheckRadioButton(m_hWnd, iIDFirst, iIDLast, iIDCheck);
+			}
 			[[nodiscard]] auto ChildWindowFromPoint(POINT pt)const->HWND {
 				assert(IsWindow()); return ::ChildWindowFromPoint(m_hWnd, pt);
 			}
@@ -616,6 +619,11 @@ export namespace HEXCTRL::INTERNAL {
 			}
 			bool EnableWindow(bool fEnable)const { assert(IsWindow()); return ::EnableWindow(m_hWnd, fEnable); }
 			void EndDialog(INT_PTR iResult)const { assert(IsWindow()); ::EndDialog(m_hWnd, iResult); }
+			[[nodiscard]] int GetCheckedRadioButton(int iIDFirst, int iIDLast)const {
+				assert(IsWindow()); for (int iID = iIDFirst; iID <= iIDLast; ++iID) {
+					if (::IsDlgButtonChecked(m_hWnd, iID) != 0) { return iID; }
+				} return 0;
+			}
 			[[nodiscard]] auto GetDC()const->HDC { assert(IsWindow()); return ::GetDC(m_hWnd); }
 			[[nodiscard]] auto GetDlgItem(int iIDCtrl)const->HWND { assert(IsWindow()); return ::GetDlgItem(m_hWnd, iIDCtrl); }
 			[[nodiscard]] auto GetHFont()const->HFONT {
@@ -641,6 +649,7 @@ export namespace HEXCTRL::INTERNAL {
 			[[nodiscard]] bool IsDlgMessage(MSG* pMsg)const { return ::IsDialogMessageW(m_hWnd, pMsg); }
 			[[nodiscard]] bool IsNull()const { return m_hWnd == nullptr; }
 			[[nodiscard]] bool IsWindow()const { return ::IsWindow(m_hWnd); }
+			[[nodiscard]] bool IsWindowEnabled()const { assert(IsWindow()); return ::IsWindowEnabled(m_hWnd); }
 			[[nodiscard]] bool IsWindowVisible()const { assert(IsWindow()); return ::IsWindowVisible(m_hWnd); }
 			[[nodiscard]] bool IsWndTextEmpty()const { return GetWndTextSize() == 0; }
 			void KillTimer(UINT_PTR uID)const {
@@ -673,7 +682,7 @@ export namespace HEXCTRL::INTERNAL {
 			void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)const {
 				assert(IsWindow()); ::SetWindowPos(m_hWnd, hWndAfter, iX, iY, iWidth, iHeight, uFlags);
 			}
-			void SetWndText(LPCWSTR pwsz)const { assert(IsWindow()); ::SetWindowTextW(m_hWnd, pwsz); }
+			void SetWndText(LPCWSTR pwszStr)const { assert(IsWindow()); ::SetWindowTextW(m_hWnd, pwszStr); }
 			void SetWndText(const std::wstring& wstr)const { SetWndText(wstr.data()); }
 			void SetRedraw(bool fRedraw)const { assert(IsWindow()); ::SendMessageW(m_hWnd, WM_SETREDRAW, fRedraw, 0); }
 			bool ShowWindow(int iCmdShow)const { assert(IsWindow()); return ::ShowWindow(m_hWnd, iCmdShow); }
@@ -694,12 +703,16 @@ export namespace HEXCTRL::INTERNAL {
 
 		class CWndCombo : public CWnd {
 		public:
-			int AddString(LPCWSTR pwsz)const {
+			int AddString(LPCWSTR pwszStr)const {
 				assert(IsWindow());
-				return static_cast<int>(::SendMessageW(m_hWnd, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(pwsz)));
+				return static_cast<int>(::SendMessageW(m_hWnd, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(pwszStr)));
 			}
 			int DeleteString(int iIndex)const {
 				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, CB_DELETESTRING, iIndex, 0));
+			}
+			[[nodiscard]] int FindStringExact(int iIndex, LPCWSTR pwszStr)const {
+				assert(IsWindow());
+				return static_cast<int>(::SendMessageW(m_hWnd, CB_FINDSTRINGEXACT, iIndex, reinterpret_cast<LPARAM>(pwszStr)));
 			}
 			[[nodiscard]] int GetCount()const {
 				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, CB_GETCOUNT, 0, 0));
@@ -710,6 +723,14 @@ export namespace HEXCTRL::INTERNAL {
 			[[nodiscard]] auto GetItemData(int iIndex)const->DWORD_PTR {
 				assert(IsWindow()); return ::SendMessageW(m_hWnd, CB_GETITEMDATA, iIndex, 0);
 			}
+			[[nodiscard]] bool HasString(LPCWSTR pwszStr)const { return FindStringExact(0, pwszStr) != CB_ERR; };
+			[[nodiscard]] bool HasString(const std::wstring& wstr)const { return HasString(wstr.data()); };
+			int InsertString(int iIndex, const std::wstring& wstr)const { return InsertString(iIndex, wstr.data()); }
+			int InsertString(int iIndex, LPCWSTR pwszStr)const {
+				assert(IsWindow());
+				return static_cast<int>(::SendMessageW(m_hWnd, CB_INSERTSTRING, iIndex, reinterpret_cast<LPARAM>(pwszStr)));
+			}
+			void LimitText(int iMaxChars)const { assert(IsWindow()); ::SendMessageW(m_hWnd, CB_LIMITTEXT, iMaxChars, 0); }
 			void SetCurSel(int iIndex)const { assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETCURSEL, iIndex, 0); }
 			void SetItemData(int iIndex, DWORD_PTR dwData)const {
 				assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETITEMDATA, iIndex, static_cast<LPARAM>(dwData));
@@ -765,6 +786,29 @@ export namespace HEXCTRL::INTERNAL {
 			void SetRange(int iLower, int iUpper)const {
 				assert(IsWindow());
 				::SendMessageW(m_hWnd, PBM_SETRANGE32, static_cast<WPARAM>(iLower), static_cast<LPARAM>(iUpper));
+			}
+		};
+
+		class CWndTab : public CWnd {
+		public:
+			[[nodiscard]] int GetCurSel()const {
+				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, TCM_GETCURSEL, 0, 0L));
+			}
+			[[nodiscard]] auto GetItemRect(int nItem)const->CRect {
+				assert(IsWindow());
+				RECT rc { }; ::SendMessageW(m_hWnd, TCM_GETITEMRECT, nItem, reinterpret_cast<LPARAM>(&rc));
+				return rc;
+			}
+			auto InsertItem(int iItem, TCITEMW* pItem)const->LONG {
+				assert(IsWindow());
+				return static_cast<LONG>(::SendMessageW(m_hWnd, TCM_INSERTITEMW, iItem, reinterpret_cast<LPARAM>(pItem)));
+			}
+			auto InsertItem(int iItem, LPCWSTR pwszStr)const->LONG {
+				TCITEMW tci { .mask { TCIF_TEXT }, .pszText { const_cast<LPWSTR>(pwszStr) } };
+				return InsertItem(iItem, &tci);
+			}
+			int SetCurSel(int iItem)const {
+				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, TCM_SETCURSEL, iItem, 0L));
 			}
 		};
 

@@ -6,35 +6,37 @@
 ****************************************************************************************/
 #pragma once
 #include "../../HexCtrl.h"
-#include <afxdialogex.h>
 #include <memory>
+
+import HEXCTRL.HexUtility;
 
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgOpers;    //Forward declarations.
 	class CHexDlgFillData;
-	class CHexDlgModify final : public CDialogEx {
+	class CHexDlgModify final {
 	public:
 		CHexDlgModify();
 		~CHexDlgModify();
+		void CreateDlg();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
+		[[nodiscard]] auto GetHWND()const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
+		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
 		void SetDlgProperties(std::uint64_t u64Flags);
-		BOOL ShowWindow(int nCmdShow, int iTab);
+		void ShowWindow(int iCmdShow, int iTab = -1);
 	private:
-		void DoDataExchange(CDataExchange* pDX)override;
-		[[nodiscard ]] bool IsNoEsc()const;
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		void OnCancel()override;
-		afx_msg void OnClose();
-		afx_msg void OnDestroy();
-		BOOL OnInitDialog()override;
-		afx_msg void OnTabSelChanged(NMHDR* pNMHDR, LRESULT* pResult);
+		auto OnActivate(const MSG& stMsg) -> INT_PTR;
+		auto OnClose() -> INT_PTR;
+		auto OnDestroy() -> INT_PTR;
+		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
+		auto OnNotify(const MSG& stMsg) -> INT_PTR;
+		void OnNotifyTabSelChanged(NMHDR* pNMHDR);
 		void SetCurrentTab(int iTab);
-		DECLARE_MESSAGE_MAP();
 	private:
+		wnd::CWnd m_Wnd;              //Main window.
+		wnd::CWndTab m_WndTab;        //Tab control.
 		IHexCtrl* m_pHexCtrl { };
-		CTabCtrl m_tabMain;
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 		std::unique_ptr<CHexDlgOpers> m_pDlgOpers;       //"Operations" tab dialog.
 		std::unique_ptr<CHexDlgFillData> m_pDlgFillData; //"Fill with" tab dialog.

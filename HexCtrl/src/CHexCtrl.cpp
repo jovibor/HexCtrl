@@ -990,10 +990,10 @@ auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND
 		}
 		return m_pDlgDataInterp->m_hWnd;
 	case EHexWnd::DLG_MODIFY:
-		if (!IsWindow(m_pDlgModify->m_hWnd) && fCreate) {
-			m_pDlgModify->Create(IDD_HEXCTRL_MODIFY, CWnd::FromHandle(m_hWnd));
+		if (!IsWindow(m_pDlgModify->GetHWND()) && fCreate) {
+			m_pDlgModify->CreateDlg();
 		}
-		return m_pDlgModify->m_hWnd;
+		return m_pDlgModify->GetHWND();
 	case EHexWnd::DLG_SEARCH:
 		if (!IsWindow(m_pDlgSearch->m_hWnd) && fCreate) {
 			m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_hWnd));

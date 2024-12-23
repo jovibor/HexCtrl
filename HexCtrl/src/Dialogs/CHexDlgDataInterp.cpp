@@ -150,7 +150,7 @@ BOOL CHexDlgDataInterp::ShowWindow(int nCmdShow)
 
 void CHexDlgDataInterp::UpdateData()
 {
-	if (!::IsWindowVisible(m_hWnd)) {
+	if (!::IsWindow(m_hWnd) || !::IsWindowVisible(m_hWnd)) {
 		return;
 	}
 
