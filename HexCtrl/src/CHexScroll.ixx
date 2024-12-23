@@ -993,8 +993,6 @@ auto CHexScroll::OnDestroy(const MSG& stMsg)->LRESULT
 	::DeleteObject(m_hBmpArrowLast);
 	m_hBmpArrowFirst = nullptr;
 	m_hBmpArrowLast = nullptr;
-	m_Wnd.Detach();
-	m_WndParent.Detach();
 	m_fCreated = false;
 
 	return wnd::DefMsgProc(stMsg);

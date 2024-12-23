@@ -105,8 +105,7 @@ auto CHexDlgAbout::OnCommand(const MSG& stMsg)->INT_PTR {
 
 auto CHexDlgAbout::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
 {
-	const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam);
-	if (hWndFrom == m_WndLink) {
+	if (const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam); hWndFrom == m_WndLink) {
 		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
 		::SetTextColor(hDC, RGB(0, 50, 250));
 		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
@@ -980,10 +979,10 @@ auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND
 	case EHexWnd::WND_MAIN:
 		return m_hWnd;
 	case EHexWnd::DLG_BKMMGR:
-		if (!IsWindow(m_pDlgBkmMgr->m_hWnd) && fCreate) {
-			m_pDlgBkmMgr->Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_hWnd));
+		if (!IsWindow(m_pDlgBkmMgr->GetHWND()) && fCreate) {
+			m_pDlgBkmMgr->CreateDlg();
 		}
-		return m_pDlgBkmMgr->m_hWnd;
+		return m_pDlgBkmMgr->GetHWND();
 	case EHexWnd::DLG_DATAINTERP:
 		if (!IsWindow(m_pDlgDataInterp->m_hWnd) && fCreate) {
 			m_pDlgDataInterp->Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_hWnd));

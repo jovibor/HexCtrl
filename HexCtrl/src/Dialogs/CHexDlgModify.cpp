@@ -258,8 +258,7 @@ void CHexDlgOpers::OnComboOperSelChange()
 
 auto CHexDlgOpers::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
 {
-	const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam);
-	if (hWndFrom == m_WndStatDescr) {
+	if (const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam); hWndFrom == m_WndStatDescr) {
 		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
 		::SetTextColor(hDC, RGB(0, 50, 250));
 		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));

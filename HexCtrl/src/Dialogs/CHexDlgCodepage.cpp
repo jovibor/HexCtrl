@@ -32,13 +32,6 @@ void CHexDlgCodepage::CreateDlg()
 	}
 }
 
-void CHexDlgCodepage::DestroyWindow()
-{
-	if (m_Wnd.IsWindow()) {
-		m_Wnd.DestroyWindow();
-	}
-}
-
 auto CHexDlgCodepage::GetHWND()const->HWND
 {
 	return m_Wnd;
@@ -150,7 +143,6 @@ auto CHexDlgCodepage::OnDestroy()->INT_PTR
 	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
 	m_DynLayout.RemoveAll();
-	m_Wnd.Detach();
 
 	return TRUE;
 }

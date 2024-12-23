@@ -27,13 +27,6 @@ void CHexDlgGoTo::CreateDlg()
 	}
 }
 
-void CHexDlgGoTo::DestroyWindow()
-{
-	if (m_Wnd.IsWindow()) {
-		m_Wnd.DestroyWindow();
-	}
-}
-
 void CHexDlgGoTo::Initialize(IHexCtrl* pHexCtrl)
 {
 	assert(pHexCtrl != nullptr);
@@ -234,8 +227,6 @@ auto CHexDlgGoTo::OnDestroy()->INT_PTR
 	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
 	m_fRepeat = false;
-	m_Wnd.Detach();
-	m_WndCmbMode.Detach();
 
 	return TRUE;
 }

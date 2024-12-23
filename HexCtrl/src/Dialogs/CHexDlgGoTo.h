@@ -13,7 +13,6 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgGoTo final {
 	public:
 		void CreateDlg();
-		void DestroyWindow();
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] auto GetHWND()const->HWND;
 		[[nodiscard]] bool IsRepeatAvail()const;

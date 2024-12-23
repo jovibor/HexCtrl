@@ -599,13 +599,14 @@ auto CHexDlgTemplMgr::OnCommand(const MSG& stMsg)->INT_PTR
 		default: return FALSE;
 		}
 	}
+
 	return TRUE;
 }
 
 auto CHexDlgTemplMgr::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
 {
-	const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam);
-	if (hWndFrom == m_WndStatOffset || hWndFrom == m_WndStatSize) {
+	if (const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam);
+		hWndFrom == m_WndStatOffset || hWndFrom == m_WndStatSize) {
 		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
 		::SetTextColor(hDC, RGB(0, 50, 250));
 		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
@@ -625,7 +626,6 @@ auto CHexDlgTemplMgr::OnDestroy()->INT_PTR
 	m_pHexCtrl = nullptr;
 	m_u64Flags = { };
 	m_DynLayout.RemoveAll();
-	m_Wnd.Detach();
 	DeleteObject(m_hBmpMin);
 	DeleteObject(m_hBmpMax);
 

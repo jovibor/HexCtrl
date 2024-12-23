@@ -18,18 +18,6 @@ enum class CHexDlgBkmMgr::EMenuID : std::uint16_t {
 	IDM_BKMMGR_REMOVE = 0x8001, IDM_BKMMGR_REMOVEALL
 };
 
-BEGIN_MESSAGE_MAP(CHexDlgBkmMgr, CDialogEx)
-	ON_BN_CLICKED(IDC_HEXCTRL_BKMMGR_CHK_HEX, &CHexDlgBkmMgr::OnCheckHex)
-	ON_NOTIFY(LVN_GETDISPINFOW, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListGetDispInfo)
-	ON_NOTIFY(LVN_ITEMCHANGED, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListItemChanged)
-	ON_NOTIFY(NM_DBLCLK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListDblClick)
-	ON_NOTIFY(NM_RCLICK, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListRClick)
-	ON_NOTIFY(LISTEX::LISTEX_MSG_GETCOLOR, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListGetColor)
-	ON_NOTIFY(LISTEX::LISTEX_MSG_SETDATA, IDC_HEXCTRL_BKMMGR_LIST, &CHexDlgBkmMgr::OnListSetData)
-	ON_WM_CLOSE()
-	ON_WM_DESTROY()
-END_MESSAGE_MAP()
-
 auto CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)->ULONGLONG
 {
 	ULONGLONG ullID { static_cast<ULONGLONG>(-1) };
@@ -53,6 +41,21 @@ auto CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)->ULONGLONG
 	}
 
 	return ullID;
+}
+
+void CHexDlgBkmMgr::CreateDlg()
+{
+	//m_Wnd is set in the OnInitDialog().
+	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_BKMMGR),
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgWndProc<CHexDlgBkmMgr>, reinterpret_cast<LPARAM>(this));
+		hWnd == nullptr) {
+		DBG_REPORT(L"CreateDialogParamW failed.");
+	}
+}
+
+auto CHexDlgBkmMgr::GetHWND()const->HWND
+{
+	return m_Wnd;
 }
 
 auto CHexDlgBkmMgr::GetByID(ULONGLONG ullID)->PHEXBKM
@@ -94,14 +97,14 @@ auto CHexDlgBkmMgr::GetCurrent()const->ULONGLONG
 
 auto CHexDlgBkmMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
-	if (!IsWindow(m_hWnd)) {
+	if (!m_Wnd.IsWindow()) {
 		return { };
 	}
 
 	using enum EHexDlgItem;
 	switch (eItem) {
 	case BKMMGR_CHK_HEX:
-		return m_btnHex;
+		return m_WndBtnHex;
 	default:
 		return { };
 	}
@@ -198,12 +201,23 @@ bool CHexDlgBkmMgr::IsVirtual()const
 
 bool CHexDlgBkmMgr::PreTranslateMsg(MSG* pMsg)
 {
-	if (m_hWnd == nullptr)
-		return false;
+	return m_Wnd.IsDlgMessage(pMsg);
+}
 
-	if (::IsDialogMessageW(m_hWnd, pMsg) != FALSE) { return true; }
-
-	return false;
+auto CHexDlgBkmMgr::ProcessMsg(const MSG& stMsg)->INT_PTR
+{
+	switch (stMsg.message) {
+	case WM_CLOSE: return OnClose();
+	case WM_COMMAND: return OnCommand(stMsg);
+	case WM_DESTROY: return OnDestroy();
+	case WM_DRAWITEM: return OnDrawItem(stMsg);
+	case WM_INITDIALOG: return OnInitDialog(stMsg);
+	case WM_MEASUREITEM: return OnMeasureItem(stMsg);
+	case WM_NOTIFY: return OnNotify(stMsg);
+	case WM_SIZE: return OnSize(stMsg);
+	default:
+		return 0;
+	}
 }
 
 void CHexDlgBkmMgr::RemoveAll()
@@ -282,13 +296,13 @@ void CHexDlgBkmMgr::SetVirtual(IHexBookmarks* pVirtBkm)
 	m_pVirtual = pVirtBkm;
 }
 
-BOOL CHexDlgBkmMgr::ShowWindow(int nCmdShow)
+void CHexDlgBkmMgr::ShowWindow(int iCmdShow)
 {
-	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_BKMMGR, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+	if (!m_Wnd.IsWindow()) {
+		CreateDlg();
 	}
 
-	return CDialogEx::ShowWindow(nCmdShow);
+	m_Wnd.ShowWindow(iCmdShow);
 }
 
 void CHexDlgBkmMgr::SortData(int iColumn, bool fAscending)
@@ -349,12 +363,6 @@ void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm)
 
 //Private methods.
 
-void CHexDlgBkmMgr::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_BKMMGR_CHK_HEX, m_btnHex);
-}
-
 auto CHexDlgBkmMgr::GetHexCtrl()const->IHexCtrl*
 {
 	return m_pHexCtrl;
@@ -367,7 +375,7 @@ bool CHexDlgBkmMgr::IsNoEsc()const
 
 bool CHexDlgBkmMgr::IsShowAsHex()const
 {
-	return m_btnHex.GetCheck() == BST_CHECKED;
+	return m_WndBtnHex.IsChecked();
 }
 
 void CHexDlgBkmMgr::OnCancel()
@@ -375,49 +383,65 @@ void CHexDlgBkmMgr::OnCancel()
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
-	CDialogEx::OnCancel();
+	ShowWindow(SW_HIDE);
 }
 
-void CHexDlgBkmMgr::OnClose()
+auto CHexDlgBkmMgr::OnClose()->INT_PTR
 {
-	EndDialog(IDCANCEL);
+	ShowWindow(SW_HIDE);
+	return TRUE;
 }
 
-BOOL CHexDlgBkmMgr::OnCommand(WPARAM wParam, LPARAM lParam)
+auto CHexDlgBkmMgr::OnCommand(const MSG& stMsg) -> INT_PTR
 {
-	switch (static_cast<EMenuID>(LOWORD(wParam))) {
-	case EMenuID::IDM_BKMMGR_REMOVE:
-	{
-		const auto uSelCount = m_pList->GetSelectedCount();
-		std::vector<int> vecIndex;
-		vecIndex.reserve(uSelCount);
-		int nItem { -1 };
-		for (auto i = 0UL; i < uSelCount; ++i) {
-			nItem = m_pList->GetNextItem(nItem, LVNI_SELECTED);
-			vecIndex.insert(vecIndex.begin(), nItem); //Last indexes go first.
+	const auto uCtrlID = LOWORD(stMsg.wParam); //Control ID or menu ID.
+	const auto uCode = HIWORD(stMsg.wParam);   //Control code, zero for menu.
+	const auto hWndCtrl = reinterpret_cast<HWND>(stMsg.lParam); //Control HWND, zero for menu.
+
+	//IDOK and IDCANCEL don't have HWND in lParam, if send as result of
+	//IsDialogMessage and no button with such ID presents in the dialog.
+	if (hWndCtrl != nullptr || uCtrlID == IDOK || uCtrlID == IDCANCEL) { //Notifications from controls.
+		if (uCode != BN_CLICKED) { return FALSE; }
+		switch (uCtrlID) {
+		case IDOK: OnOK(); break;
+		case IDCANCEL: OnCancel(); break;
+		case IDC_HEXCTRL_BKMMGR_CHK_HEX: OnCheckHex(); break;
+		default: return FALSE;
 		}
+	}
+	else {
+		switch (static_cast<EMenuID>(uCtrlID)) {
+		case EMenuID::IDM_BKMMGR_REMOVE:
+		{
+			const auto uSelCount = m_pList->GetSelectedCount();
+			std::vector<int> vecIndex;
+			vecIndex.reserve(uSelCount);
+			int nItem { -1 };
+			for (auto i = 0UL; i < uSelCount; ++i) {
+				nItem = m_pList->GetNextItem(nItem, LVNI_SELECTED);
+				vecIndex.insert(vecIndex.begin(), nItem); //Last indexes go first.
+			}
 
-		for (const auto iIndexBkm : vecIndex) {
-			if (const auto pBkm = GetByIndex(iIndexBkm); pBkm != nullptr) {
-				RemoveBookmark(pBkm->ullID);
+			for (const auto iIndexBkm : vecIndex) {
+				if (const auto pBkm = GetByIndex(iIndexBkm); pBkm != nullptr) {
+					RemoveBookmark(pBkm->ullID);
+				}
+			}
+
+			UpdateListCount();
+
+			if (m_pHexCtrl && m_pHexCtrl->IsCreated()) {
+				m_pHexCtrl->Redraw();
 			}
 		}
-
-		UpdateListCount();
-
-		if (m_pHexCtrl && m_pHexCtrl->IsCreated()) {
-			m_pHexCtrl->Redraw();
+		break;
+		case EMenuID::IDM_BKMMGR_REMOVEALL: RemoveAll(); break;
+		default:
+			return FALSE;
 		}
 	}
-	return TRUE;
-	case EMenuID::IDM_BKMMGR_REMOVEALL:
-		RemoveAll();
-		return TRUE;
-	default:
-		break;
-	}
 
-	return CDialogEx::OnCommand(wParam, lParam);
+	return TRUE;
 }
 
 void CHexDlgBkmMgr::OnCheckHex()
@@ -425,13 +449,24 @@ void CHexDlgBkmMgr::OnCheckHex()
 	m_pList->RedrawWindow();
 }
 
-void CHexDlgBkmMgr::OnDestroy()
+auto CHexDlgBkmMgr::OnDestroy()->INT_PTR
 {
-	CDialogEx::OnDestroy();
-
 	RemoveAll();
 	m_menuList.DestroyMenu();
 	m_u64Flags = { };
+	m_DynLayout.RemoveAll();
+
+	return TRUE;
+}
+
+auto CHexDlgBkmMgr::OnDrawItem(const MSG& stMsg)->INT_PTR
+{
+	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(stMsg.lParam);
+	if (pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_BKMMGR_LIST)) {
+		m_pList->DrawItem(pDIS);
+	}
+
+	return TRUE;
 }
 
 void CHexDlgBkmMgr::OnOK()
@@ -440,11 +475,12 @@ void CHexDlgBkmMgr::OnOK()
 	//SetDefID() doesn't always work for no particular reason.
 }
 
-BOOL CHexDlgBkmMgr::OnInitDialog()
+auto CHexDlgBkmMgr::OnInitDialog(const MSG& stMsg)->INT_PTR
 {
-	CDialogEx::OnInitDialog();
+	m_Wnd.Attach(stMsg.hwnd);
+	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_BKMMGR_CHK_HEX));
 
-	m_pList->Create({ .hWndParent { m_hWnd }, .uID { IDC_HEXCTRL_BKMMGR_LIST }, .dwSizeFontList { 10 },
+	m_pList->Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_BKMMGR_LIST }, .dwSizeFontList { 10 },
 		.dwSizeFontHdr { 10 }, .fDialogCtrl { true } });
 	m_pList->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 	m_pList->SetSortable(true);
@@ -452,26 +488,59 @@ BOOL CHexDlgBkmMgr::OnInitDialog()
 	m_pList->InsertColumn(1, L"Offset", LVCFMT_LEFT, 80, -1, 0, true);
 	m_pList->InsertColumn(2, L"Size", LVCFMT_LEFT, 50, -1, 0, true);
 	m_pList->InsertColumn(3, L"Description", LVCFMT_LEFT, 250, -1, 0, true);
-	m_pList->InsertColumn(4, L"Bk", LVCFMT_LEFT, 30);
-	m_pList->InsertColumn(5, L"Text", LVCFMT_LEFT, 30);
+	m_pList->InsertColumn(4, L"Bk", LVCFMT_LEFT, 40);
+	m_pList->InsertColumn(5, L"Text", LVCFMT_LEFT, 40);
 
 	m_menuList.CreatePopupMenu();
-	m_menuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVE), L"Remove");
-	m_menuList.AppendMenuW(MF_SEPARATOR);
-	m_menuList.AppendMenuW(MF_STRING, static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVEALL), L"Remove All");
+	m_menuList.AppendString(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVE), L"Remove");
+	m_menuList.AppendSepar();
+	m_menuList.AppendString(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVEALL), L"Remove All");
 
-	m_btnHex.SetCheck(BST_CHECKED);
+	m_WndBtnHex.SetCheck(BST_CHECKED);
 
 	UpdateListCount();
 
-	if (const auto pDL = GetDynamicLayout(); pDL != nullptr) {
-		pDL->SetMinSize({ 0, 0 });
+	m_DynLayout.SetHost(m_Wnd);
+	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_LIST, wnd::CDynLayout::MoveNone(), wnd::CDynLayout::SizeHorzAndVert(100, 100));
+	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_CHK_HEX, wnd::CDynLayout::MoveVert(100), wnd::CDynLayout::SizeNone());
+	m_DynLayout.Enable(true);
+
+	return TRUE;
+}
+
+auto CHexDlgBkmMgr::OnMeasureItem(const MSG& stMsg)->INT_PTR
+{
+	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(stMsg.lParam);
+	if (pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_BKMMGR_LIST)) {
+		m_pList->MeasureItem(pMIS);
 	}
 
 	return TRUE;
 }
 
-void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+auto CHexDlgBkmMgr::OnNotify(const MSG& stMsg)->INT_PTR
+{
+	const auto pNMHDR = reinterpret_cast<NMHDR*>(stMsg.lParam);
+
+	switch (pNMHDR->idFrom) {
+	case IDC_HEXCTRL_BKMMGR_LIST:
+		switch (pNMHDR->code) {
+		case LVN_GETDISPINFOW: OnNotifyListGetDispInfo(pNMHDR); break;
+		case LVN_ITEMCHANGED: OnNotifyListItemChanged(pNMHDR); break;
+		case NM_DBLCLK: OnNotifyListDblClick(pNMHDR); break;
+		case NM_RCLICK: OnNotifyListRClick(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_GETCOLOR: OnNotifyListGetColor(pNMHDR); break;
+		case LISTEX::LISTEX_MSG_SETDATA: OnNotifyListSetData(pNMHDR); break;
+		case LVN_COLUMNCLICK: if (!IsVirtual()) { SortBookmarks(); }return TRUE;
+		default: break;
+		}
+	default: break;
+	}
+
+	return TRUE;
+}
+
+void CHexDlgBkmMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
 	const auto pItem = &pDispInfo->item;
@@ -510,7 +579,7 @@ void CHexDlgBkmMgr::OnListGetDispInfo(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgBkmMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgBkmMgr::OnNotifyListItemChanged(NMHDR* pNMHDR)
 {
 	//Go selected bookmark only with keyboard arrows and LMouse clicks.
 	//Does not trigger (LVN_ITEMCHANGED event) when updating bookmark: !(pLCI->uNewState & LVIS_SELECTED)
@@ -520,7 +589,7 @@ void CHexDlgBkmMgr::OnListItemChanged(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgBkmMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgBkmMgr::OnNotifyListDblClick(NMHDR* pNMHDR)
 {
 	const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	if (pNMI->iSubItem != 4 && pNMI->iSubItem != 5) {
@@ -555,25 +624,24 @@ void CHexDlgBkmMgr::OnListDblClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	m_pHexCtrl->Redraw();
 }
 
-void CHexDlgBkmMgr::OnListRClick(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgBkmMgr::OnNotifyListRClick(NMHDR* pNMHDR)
 {
 	bool fEnabled { false };
-	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	if (const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem >= 0 && pNMI->iSubItem >= 0) {
 		fEnabled = true;
 	}
 
 	//Edit menu enabled only when one item selected.
-	m_menuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVE), (fEnabled ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
-	m_menuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVEALL),
-		(m_pList->GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED) | MF_BYCOMMAND);
+	m_menuList.EnableItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVE), fEnabled);
+	m_menuList.EnableItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVEALL), m_pList->GetItemCount() > 0);
 
 	POINT pt;
 	GetCursorPos(&pt);
-	m_menuList.TrackPopupMenuEx(TPM_LEFTALIGN, pt.x, pt.y, this, nullptr);
+	m_menuList.TrackPopup(pt.x, pt.y, m_Wnd);
 }
 
-void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgBkmMgr::OnNotifyListGetColor(NMHDR* pNMHDR)
 {
 	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
 
@@ -595,7 +663,7 @@ void CHexDlgBkmMgr::OnListGetColor(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CHexDlgBkmMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CHexDlgBkmMgr::OnNotifyListSetData(NMHDR* pNMHDR)
 {
 	const auto pLDI = reinterpret_cast<LISTEX::PLISTEXDATAINFO>(pNMHDR);
 	const auto pBkm = GetByIndex(static_cast<std::size_t>(pLDI->iItem));
@@ -608,7 +676,7 @@ void CHexDlgBkmMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	{
 		const auto optOffset = stn::StrToUInt64(pLDI->pwszData);
 		if (!optOffset) {
-			MessageBoxW(L"Invalid offset format.", L"Format error", MB_ICONERROR);
+			MessageBoxW(m_Wnd, L"Invalid offset format.", L"Format error", MB_ICONERROR);
 			return;
 		}
 
@@ -626,12 +694,12 @@ void CHexDlgBkmMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	{
 		const auto optSize = stn::StrToUInt64(pLDI->pwszData);
 		if (!optSize) {
-			MessageBoxW(L"Invalid size format.", L"Format error", MB_ICONERROR);
+			MessageBoxW(m_Wnd, L"Invalid size format.", L"Format error", MB_ICONERROR);
 			return;
 		}
 
 		if (*optSize == 0) {
-			MessageBoxW(L"Size can't be zero.", L"Size error", MB_ICONERROR);
+			MessageBoxW(m_Wnd, L"Size can't be zero.", L"Size error", MB_ICONERROR);
 			return;
 		}
 
@@ -654,23 +722,12 @@ void CHexDlgBkmMgr::OnListSetData(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	m_pHexCtrl->Redraw();
 }
 
-BOOL CHexDlgBkmMgr::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+auto CHexDlgBkmMgr::OnSize(const MSG& stMsg)->INT_PTR
 {
-	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(lParam); pNMI->hdr.idFrom == IDC_HEXCTRL_BKMMGR_LIST) {
-		switch (pNMI->hdr.code) {
-			//ON_NOTIFY(LVN_COLUMNCLICK, ...) macro doesn't work for CListCtrl in neither virtual nor default mode.
-			//But it works for vanilla CListCtrl. Obviously it's MFC quirks.
-		case LVN_COLUMNCLICK:
-			if (!IsVirtual()) {
-				SortBookmarks();
-			}
-			return TRUE;
-		default:
-			break;
-		}
-	}
-
-	return CDialogEx::OnNotify(wParam, lParam, pResult);
+	const auto iWidth = LOWORD(stMsg.lParam);
+	const auto iHeight = HIWORD(stMsg.lParam);
+	m_DynLayout.OnSize(iWidth, iHeight);
+	return TRUE;
 }
 
 void CHexDlgBkmMgr::RemoveBookmark(std::uint64_t ullID)
