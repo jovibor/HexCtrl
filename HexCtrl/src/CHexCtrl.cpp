@@ -994,10 +994,10 @@ auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND
 		}
 		return m_pDlgModify->GetHWND();
 	case EHexWnd::DLG_SEARCH:
-		if (!IsWindow(m_pDlgSearch->m_hWnd) && fCreate) {
-			m_pDlgSearch->Create(IDD_HEXCTRL_SEARCH, CWnd::FromHandle(m_hWnd));
+		if (!IsWindow(m_pDlgSearch->GetHWND()) && fCreate) {
+			m_pDlgSearch->CreateDlg();
 		}
-		return m_pDlgSearch->m_hWnd;
+		return m_pDlgSearch->GetHWND();
 	case EHexWnd::DLG_CODEPAGE:
 		if (!IsWindow(m_pDlgCodepage->GetHWND()) && fCreate) {
 			m_pDlgCodepage->CreateDlg();

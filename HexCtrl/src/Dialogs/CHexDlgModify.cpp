@@ -40,18 +40,18 @@ namespace HEXCTRL::INTERNAL {
 		void SetControlsState();
 		void UpdateDescr();
 	private:
-		wnd::CWnd m_Wnd;             //Main window.
-		wnd::CWnd m_WndEditOperand;  //Edit-box operand.
-		wnd::CWnd m_WndStatDescr;    //Static control description.
-		wnd::CWndBtn m_WndBtnBE;     //Check-box bigendian.
-		wnd::CWndBtn m_WndBtnOk;     //Ok.
-		wnd::CWndCombo m_WndCmbOper; //Operation combo-box.
-		wnd::CWndCombo m_WndCmbType; //Data size combo-box.
+		wnd::CWnd m_Wnd;                //Main window.
+		wnd::CWnd m_WndStatDescr;       //Static control description.
+		wnd::CWndEdit m_WndEditOperand; //Edit-box operand.
+		wnd::CWndBtn m_WndBtnBE;        //Check-box bigendian.
+		wnd::CWndBtn m_WndBtnOk;        //Ok.
+		wnd::CWndCombo m_WndCmbOper;    //Operation combo-box.
+		wnd::CWndCombo m_WndCmbType;    //Data size combo-box.
 		IHexCtrl* m_pHexCtrl { };
 		std::vector<std::byte> m_vecOperData; //Operand data vector.
 		std::uint64_t m_u64Flags { };
 		using enum EHexOperMode;
-		inline static const std::unordered_map<EHexOperMode, std::wstring_view> m_umapNames {
+		inline static const std::unordered_map<EHexOperMode, const wchar_t*> m_umapNames {
 			{ OPER_ASSIGN, L"Assign" }, { OPER_ADD, L"Add" }, { OPER_SUB, L"Subtract" },
 			{ OPER_MUL, L"Multiply" }, { OPER_DIV, L"Divide" }, { OPER_MIN, L"Minimum" },
 			{ OPER_MAX, L"Maximum" }, { OPER_OR, L"OR" }, { OPER_XOR, L"XOR" }, { OPER_AND, L"AND" },
@@ -293,40 +293,40 @@ auto CHexDlgOpers::OnInitDialog(const MSG& stMsg)->INT_PTR
 	m_WndStatDescr.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_OPERS_STAT_DESCR));
 
 	using enum EHexOperMode;
-	auto iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_ASSIGN).data());
+	auto iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_ASSIGN));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ASSIGN));
 	m_WndCmbOper.SetCurSel(iIndex);
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_ADD).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_ADD));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ADD));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_SUB).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_SUB));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SUB));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_MUL).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_MUL));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MUL));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_DIV).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_DIV));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_DIV));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_MIN).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_MIN));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MIN));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_MAX).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_MAX));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_MAX));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_OR).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_OR));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_OR));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_XOR).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_XOR));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_XOR));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_AND).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_AND));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_AND));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_NOT).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_NOT));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_NOT));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_SHL).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_SHL));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHL));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_SHR).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_SHR));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SHR));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_ROTL).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_ROTL));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTL));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_ROTR).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_ROTR));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_ROTR));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_SWAP).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_SWAP));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_SWAP));
-	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_BITREV).data());
+	iIndex = m_WndCmbOper.AddString(m_umapNames.at(OPER_BITREV));
 	m_WndCmbOper.SetItemData(iIndex, static_cast<DWORD_PTR>(OPER_BITREV));
 
 	using enum EHexDataType;
@@ -455,7 +455,7 @@ void CHexDlgOpers::SetControlsState()
 	m_WndEditOperand.EnableWindow(fEditOperand);
 	m_WndBtnBE.EnableWindow(fDataOneByte ? false : fEditOperand);
 	m_WndBtnOk.EnableWindow(fBtnEnter);
-	m_WndBtnOk.SetWndText(m_umapNames.at(GetOperMode()).data());
+	m_WndBtnOk.SetWndText(m_umapNames.at(GetOperMode()));
 	UpdateDescr();
 }
 

@@ -521,7 +521,6 @@ auto CHexDlgBkmMgr::OnMeasureItem(const MSG& stMsg)->INT_PTR
 auto CHexDlgBkmMgr::OnNotify(const MSG& stMsg)->INT_PTR
 {
 	const auto pNMHDR = reinterpret_cast<NMHDR*>(stMsg.lParam);
-
 	switch (pNMHDR->idFrom) {
 	case IDC_HEXCTRL_BKMMGR_LIST:
 		switch (pNMHDR->code) {

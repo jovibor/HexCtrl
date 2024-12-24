@@ -133,19 +133,19 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr auto m_iIDListColData { 4 };  //Data.
 		static constexpr auto m_iIDListColDescr { 6 }; //Description.
 		static constexpr auto m_iIDListColClrs { 7 };  //Colors.
-		wnd::CWnd m_Wnd;             //Main window.
-		wnd::CWnd m_WndStatOffset;   //Static text "Template offset:".
-		wnd::CWnd m_WndStatSize;     //Static text Template size:".
-		wnd::CWnd m_WndEditOffset;   //"Offset" edit box.
-		wnd::CWndBtn m_WndBtnShowTT; //Check-box "Show tooltips".
-		wnd::CWndBtn m_WndBtnMin;    //Check-box min-max.
-		wnd::CWndBtn m_WndBtnHglSel; //Check-box "Highlight selected".
-		wnd::CWndBtn m_WndBtnHex;    //Check-box "Hex numbers".
-		wnd::CWndBtn m_WndBtnEndian; //Check-box "Swap endian".
-		wnd::CWndCombo m_WndCmbTemplates; //Currently available templates list.
-		wnd::CWndTree m_WndTree;
-		wnd::CMenu m_MenuTree;       //Menu for the tree control.
-		wnd::CMenu m_MenuHdr;        //Menu for the list header.
+		wnd::CWnd m_Wnd;               //Main window.
+		wnd::CWnd m_WndStatOffset;     //Static text "Template offset:".
+		wnd::CWnd m_WndStatSize;       //Static text Template size:".
+		wnd::CWndEdit m_WndEditOffset; //"Offset" edit box.
+		wnd::CWndBtn m_WndBtnShowTT;   //Check-box "Show tooltips".
+		wnd::CWndBtn m_WndBtnMin;      //Check-box min-max.
+		wnd::CWndBtn m_WndBtnHglSel;   //Check-box "Highlight selected".
+		wnd::CWndBtn m_WndBtnHex;      //Check-box "Hex numbers".
+		wnd::CWndBtn m_WndBtnEndian;   //Check-box "Swap endian".
+		wnd::CWndCombo m_WndCmbTempl;  //Currently available templates list.
+		wnd::CWndTree m_WndTree;       //Tree control.
+		wnd::CMenu m_MenuTree;         //Menu for the tree control.
+		wnd::CMenu m_MenuHdr;          //Menu for the list header.
 		wnd::CDynLayout m_DynLayout;
 		IHexCtrl* m_pHexCtrl { };
 		std::uint64_t m_u64Flags { };      //Data from SetDlgProperties.

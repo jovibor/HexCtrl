@@ -55,11 +55,11 @@ void CHexDlgTemplMgr::ApplyCurr(ULONGLONG ullOffset)
 	if (!m_Wnd.IsWindow())
 		return;
 
-	const auto iIndex = m_WndCmbTemplates.GetCurSel();
+	const auto iIndex = m_WndCmbTempl.GetCurSel();
 	if (iIndex == CB_ERR)
 		return;
 
-	const auto iTemplateID = static_cast<int>(m_WndCmbTemplates.GetItemData(iIndex));
+	const auto iTemplateID = static_cast<int>(m_WndCmbTempl.GetItemData(iIndex));
 	ApplyTemplate(ullOffset, iTemplateID);
 }
 
@@ -436,16 +436,16 @@ void CHexDlgTemplMgr::OnBnLoadTemplate()
 
 void CHexDlgTemplMgr::OnBnUnloadTemplate()
 {
-	if (const auto iIndex = m_WndCmbTemplates.GetCurSel(); iIndex != CB_ERR) {
-		const auto iTemplateID = static_cast<int>(m_WndCmbTemplates.GetItemData(iIndex));
+	if (const auto iIndex = m_WndCmbTempl.GetCurSel(); iIndex != CB_ERR) {
+		const auto iTemplateID = static_cast<int>(m_WndCmbTempl.GetItemData(iIndex));
 		UnloadTemplate(iTemplateID);
 	}
 }
 
 void CHexDlgTemplMgr::OnBnRandomizeColors()
 {
-	if (const auto iIndex = m_WndCmbTemplates.GetCurSel(); iIndex != CB_ERR) {
-		const auto iTemplateID = static_cast<int>(m_WndCmbTemplates.GetItemData(iIndex));
+	if (const auto iIndex = m_WndCmbTempl.GetCurSel(); iIndex != CB_ERR) {
+		const auto iTemplateID = static_cast<int>(m_WndCmbTempl.GetItemData(iIndex));
 		RandomizeTemplateColors(iTemplateID);
 	}
 }
@@ -467,11 +467,11 @@ void CHexDlgTemplMgr::OnBnApply()
 		return;
 	}
 
-	const auto iIndex = m_WndCmbTemplates.GetCurSel();
+	const auto iIndex = m_WndCmbTempl.GetCurSel();
 	if (iIndex == CB_ERR)
 		return;
 
-	const auto iTemplateID = static_cast<int>(m_WndCmbTemplates.GetItemData(iIndex));
+	const auto iTemplateID = static_cast<int>(m_WndCmbTempl.GetItemData(iIndex));
 	ApplyTemplate(GetHexCtrl()->GetOffset(*optOffset, false), iTemplateID);
 }
 
@@ -653,7 +653,7 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& stMsg)->INT_PTR
 	m_WndBtnHglSel.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_HGL));
 	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_HEX));
 	m_WndBtnEndian.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_CHK_SWAP));
-	m_WndCmbTemplates.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES));
+	m_WndCmbTempl.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES));
 	m_WndTree.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_TREE));
 
 	m_pList->Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_TEMPLMGR_LIST }, .dwSizeFontList { 10 },
@@ -1377,18 +1377,18 @@ void CHexDlgTemplMgr::OnTemplateLoadUnload(int iTemplateID, bool fLoad)
 		if (pTemplate == nullptr)
 			return;
 
-		const auto iIndex = m_WndCmbTemplates.AddString(pTemplate->wstrName.data());
-		m_WndCmbTemplates.SetItemData(iIndex, static_cast<DWORD_PTR>(iTemplateID));
-		m_WndCmbTemplates.SetCurSel(iIndex);
+		const auto iIndex = m_WndCmbTempl.AddString(pTemplate->wstrName);
+		m_WndCmbTempl.SetItemData(iIndex, static_cast<DWORD_PTR>(iTemplateID));
+		m_WndCmbTempl.SetCurSel(iIndex);
 		SetDlgButtonsState();
 	}
 	else {
 		RemoveNodesWithTemplateID(iTemplateID);
 
-		for (auto iIndex = 0; iIndex < m_WndCmbTemplates.GetCount(); ++iIndex) { //Remove Template name from ComboBox.
-			if (const auto iItemData = static_cast<int>(m_WndCmbTemplates.GetItemData(iIndex)); iItemData == iTemplateID) {
-				m_WndCmbTemplates.DeleteString(iIndex);
-				m_WndCmbTemplates.SetCurSel(0);
+		for (auto iIndex = 0; iIndex < m_WndCmbTempl.GetCount(); ++iIndex) { //Remove Template name from ComboBox.
+			if (const auto iItemData = static_cast<int>(m_WndCmbTempl.GetItemData(iIndex)); iItemData == iTemplateID) {
+				m_WndCmbTempl.DeleteString(iIndex);
+				m_WndCmbTempl.SetCurSel(0);
 				break;
 			}
 		}

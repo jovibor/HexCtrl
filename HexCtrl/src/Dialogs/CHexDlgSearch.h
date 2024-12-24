@@ -6,22 +6,24 @@
 ****************************************************************************************/
 #pragma once
 #include "../../HexCtrl.h"
-#include <afxdialogex.h>
 
 import HEXCTRL.HexUtility;
 import HEXCTRL.CHexDlgProgress;
 
 namespace HEXCTRL::INTERNAL {
-	class CHexDlgSearch final : public CDialogEx {
+	class CHexDlgSearch final {
 	public:
 		void ClearData();
+		void CreateDlg();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
+		[[nodiscard]] auto GetHWND()const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
+		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
 		void SearchNextPrev(bool fForward);
 		void SetDlgProperties(std::uint64_t u64Flags);
-		BOOL ShowWindow(int nCmdShow);
+		void ShowWindow(int iCmdShow);
 	private:
 		enum class ESearchMode : std::uint8_t; //Forward declarations.
 		enum class ESearchType : std::uint8_t;
@@ -39,7 +41,6 @@ namespace HEXCTRL::INTERNAL {
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
 		[[nodiscard]] auto CreateSearchData(CHexDlgProgress* pDlgProg = nullptr)const->SEARCHFUNCDATA;
-		void DoDataExchange(CDataExchange* pDX)override;
 		void FindAll();
 		void FindForward();
 		void FindBackward();
@@ -74,25 +75,28 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsSelection()const;
 		[[nodiscard]] bool IsSmallSearch()const;
 		[[nodiscard]] bool IsWildcard()const;
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		afx_msg void OnButtonSearchF();
-		afx_msg void OnButtonSearchB();
-		afx_msg void OnButtonFindAll();
-		afx_msg void OnButtonReplace();
-		afx_msg void OnButtonReplaceAll();
-		afx_msg void OnCancel()override;
-		afx_msg void OnCheckSel();
-		afx_msg void OnClose();
-		afx_msg void OnComboModeSelChange();
-		afx_msg void OnComboTypeSelChange();
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		auto OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor) -> HBRUSH;
-		afx_msg void OnDestroy();
-		BOOL OnInitDialog()override;
-		afx_msg void OnListGetDispInfo(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListItemChanged(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnListRClick(NMHDR *pNMHDR, LRESULT *pResult);
-		afx_msg void OnOK()override;
+		auto OnActivate(const MSG& stMsg) -> INT_PTR;
+		void OnButtonSearchF();
+		void OnButtonSearchB();
+		void OnButtonFindAll();
+		void OnButtonReplace();
+		void OnButtonReplaceAll();
+		void OnCancel();
+		void OnCheckSel();
+		auto OnClose() -> INT_PTR;
+		void OnComboModeSelChange();
+		void OnComboTypeSelChange();
+		auto OnCommand(const MSG& stMsg) -> INT_PTR;
+		auto OnCtlClrStatic(const MSG& stMsg) -> INT_PTR;
+		auto OnDestroy() -> INT_PTR;
+		auto OnDrawItem(const MSG& stMsg) -> INT_PTR;
+		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
+		auto OnMeasureItem(const MSG& stMsg) -> INT_PTR;
+		auto OnNotify(const MSG& stMsg) -> INT_PTR;
+		void OnNotifyListGetDispInfo(NMHDR *pNMHDR);
+		void OnNotifyListItemChanged(NMHDR *pNMHDR);
+		void OnNotifyListRClick(NMHDR *pNMHDR);
+		void OnOK();
 		void OnSelectModeHEXBYTES();
 		void OnSelectModeNUMBERS();
 		void OnSelectModeSTRUCT();
@@ -110,16 +114,11 @@ namespace HEXCTRL::INTERNAL {
 		void Search();
 		void SetControlsState();
 		void SetEditStartFrom(ULONGLONG ullOffset); //Start search offset edit set.
-		DECLARE_MESSAGE_MAP();
 	private:
 		//Static functions.
 		static void Replace(IHexCtrl* pHexCtrl, ULONGLONG ullIndex, SpanCByte spnReplace);
-		enum class EMemCmp : std::uint8_t {
-			DATA_BYTE1, DATA_BYTE2, DATA_BYTE4, DATA_BYTE8, CHAR_STR, WCHAR_STR
-		};
-		enum class EVecSize : std::uint8_t {
-			VEC128 = 16, VEC256 = 32 //SSE4.2 = sizeof(__m128), AVX2 = sizeof(__m256).
-		};
+		enum class EMemCmp : std::uint8_t { DATA_BYTE1, DATA_BYTE2, DATA_BYTE4, DATA_BYTE8, CHAR_STR, WCHAR_STR };
+		enum class EVecSize : std::uint8_t { VEC128 = 16, VEC256 = 32 /*SSE4.2 = sizeof(__m128), AVX2 = sizeof(__m256).*/ };
 		struct SEARCHTYPE { //Compile time struct for template parameters in the SearchFunc and MemCmp.
 			constexpr SEARCHTYPE() = default;
 			constexpr SEARCHTYPE(EMemCmp eMemCmp, EVecSize eVecSize, bool fDlgProg = false, bool fMatchCase = false,
@@ -164,29 +163,31 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		static constexpr std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		static constexpr auto m_pwszWrongInput { L"Wrong input data." };
+		wnd::CWnd m_Wnd;                 //Main window.
+		wnd::CWnd m_WndStatResult;       //Static text "Result:".
+		wnd::CWndCombo m_WndCmbFind;     //Combo box "Search".
+		wnd::CWndCombo m_WndCmbReplace;  //Combo box "Replace".
+		wnd::CWndCombo m_WndCmbMode;     //Combo box "Search mode".
+		wnd::CWndCombo m_WndCmbType;     //Combo box "Search type".
+		wnd::CWndBtn m_WndBtnSel;        //Check box "In selection".
+		wnd::CWndBtn m_WndBtnWC;         //Check box "Wildcard".
+		wnd::CWndBtn m_WndBtnInv;        //Check box "Inverted".
+		wnd::CWndBtn m_WndBtnBE;         //Check box "Big-endian".
+		wnd::CWndBtn m_WndBtnMC;         //Check box "Match case".
+		wnd::CWndEdit m_WndEditStart;    //Edit box "Start from".
+		wnd::CWndEdit m_WndEditStep;     //Edit box "Step".
+		wnd::CWndEdit m_WndEditRngBegin; //Edit box "Range begin".
+		wnd::CWndEdit m_WndEditRngEnd;   //Edit box "Range end".
+		wnd::CWndEdit m_WndEditLimit;    //Edit box "Limit search hits".
+		wnd::CMenu m_MenuList;           //Menu for the list control.
 		IHexCtrl* m_pHexCtrl { };
 		ESearchMode m_eSearchMode { };
+		std::uint64_t m_u64Flags { };   //Data from SetDlgProperties.
 		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
-		CMenu m_menuList;               //Menu for the list control.
-		CComboBox m_comboFind;          //Combo box "Search".
-		CComboBox m_comboReplace;       //Combo box "Replace".
-		CComboBox m_comboMode;          //Combo box "Search mode".
-		CComboBox m_comboType;          //Combo box "Search type".
-		CButton m_btnSel;               //Check box "In selection".
-		CButton m_btnWC;                //Check box "Wildcard".
-		CButton m_btnInv;               //Check box "Inverted".
-		CButton m_btnBE;                //Check box "Big-endian".
-		CButton m_btnMC;                //Check box "Match case".
-		CEdit m_editStartFrom;          //Edit box "Start from".
-		CEdit m_editStep;               //Edit box "Step".
-		CEdit m_editRngBegin;           //Edit box "Range begin".
-		CEdit m_editRngEnd;             //Edit box "Range end".
-		CEdit m_editLimit;              //Edit box "Limit search hits".
 		ULONGLONG m_ullStartFrom { };   //"Start form" search offset.
 		ULONGLONG m_ullRngBegin { };
 		ULONGLONG m_ullRngEnd { };
 		ULONGLONG m_ullStep { 1 };      //Search step (default is 1 byte).
-		std::uint64_t m_u64Flags { };   //Data from SetDlgProperties.
 		DWORD m_dwCount { };            //How many, or what index number.
 		DWORD m_dwReplaced { };         //Replaced amount;
 		DWORD m_dwLimit { 10000 };      //Maximum found search occurences.

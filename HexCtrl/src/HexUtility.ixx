@@ -674,13 +674,15 @@ export namespace HEXCTRL::INTERNAL {
 			auto SendMsg(UINT uMsg, WPARAM wParam = 0, LPARAM lParam = 0)const {
 				assert(IsWindow()); ::SendMessageW(m_hWnd, uMsg, wParam, lParam);
 			}
+			void SetActiveWindow()const { assert(IsWindow()); ::SetActiveWindow(m_hWnd); }
 			auto SetCapture()const->HWND { assert(IsWindow()); return ::SetCapture(m_hWnd); }
-			auto SetWndClassLong(int iIndex, LONG_PTR dwNewLong)const->ULONG_PTR {
-				assert(IsWindow()); return ::SetClassLongPtrW(m_hWnd, iIndex, dwNewLong);
-			}
 			void SetFocus()const { assert(IsWindow()); ::SetFocus(m_hWnd); }
+			void SetForegroundWindow()const { assert(IsWindow()); ::SetForegroundWindow(m_hWnd); }
 			void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)const {
 				assert(IsWindow()); ::SetWindowPos(m_hWnd, hWndAfter, iX, iY, iWidth, iHeight, uFlags);
+			}
+			auto SetWndClassLong(int iIndex, LONG_PTR dwNewLong)const->ULONG_PTR {
+				assert(IsWindow()); return ::SetClassLongPtrW(m_hWnd, iIndex, dwNewLong);
 			}
 			void SetWndText(LPCWSTR pwszStr)const { assert(IsWindow()); ::SetWindowTextW(m_hWnd, pwszStr); }
 			void SetWndText(const std::wstring& wstr)const { SetWndText(wstr.data()); }
@@ -701,8 +703,17 @@ export namespace HEXCTRL::INTERNAL {
 			void SetCheck(bool fCheck)const { assert(IsWindow()); ::SendMessageW(m_hWnd, BM_SETCHECK, fCheck, 0); }
 		};
 
+		class CWndEdit : public CWnd {
+		public:
+			void SetCueBanner(LPCWSTR pwszText, bool fDrawIfFocus = false)const {
+				assert(IsWindow());
+				::SendMessageW((m_hWnd), EM_SETCUEBANNER, static_cast<WPARAM>(fDrawIfFocus), reinterpret_cast<LPARAM>(pwszText));
+			}
+		};
+
 		class CWndCombo : public CWnd {
 		public:
+			int AddString(const std::wstring& wstr)const { return AddString(wstr.data()); }
 			int AddString(LPCWSTR pwszStr)const {
 				assert(IsWindow());
 				return static_cast<int>(::SendMessageW(m_hWnd, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(pwszStr)));
@@ -731,6 +742,10 @@ export namespace HEXCTRL::INTERNAL {
 				return static_cast<int>(::SendMessageW(m_hWnd, CB_INSERTSTRING, iIndex, reinterpret_cast<LPARAM>(pwszStr)));
 			}
 			void LimitText(int iMaxChars)const { assert(IsWindow()); ::SendMessageW(m_hWnd, CB_LIMITTEXT, iMaxChars, 0); }
+			void SetCueBanner(const std::wstring& wstr)const { SetCueBanner(wstr.data()); }
+			void SetCueBanner(LPCWSTR pwszText)const {
+				assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETCUEBANNER, 0, reinterpret_cast<LPARAM>(pwszText));
+			}
 			void SetCurSel(int iIndex)const { assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETCURSEL, iIndex, 0); }
 			void SetItemData(int iIndex, DWORD_PTR dwData)const {
 				assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETITEMDATA, iIndex, static_cast<LPARAM>(dwData));
