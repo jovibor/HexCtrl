@@ -200,7 +200,7 @@ export namespace HEXCTRL::INTERNAL {
 			}();
 		return fHasAVX2;
 	}
-#endif // ^^^ !defined(_M_IX86) && !defined(_M_X64)
+#endif // ^^^ _M_IX86 || _M_X64
 
 	template<TSize1248 T> [[nodiscard]] constexpr T BitReverse(T tData) {
 		T tReversed { };
@@ -409,464 +409,6 @@ export namespace HEXCTRL::INTERNAL {
 		return loc;
 	}
 
-	namespace wnd { //Windows GUI related stuff.
-		[[nodiscard]] auto GetHinstance() -> HINSTANCE {
-			return AfxGetInstanceHandle();
-		}
-
-		auto DefMsgProc(const MSG& stMsg) -> LRESULT {
-			return ::DefWindowProcW(stMsg.hwnd, stMsg.message, stMsg.wParam, stMsg.lParam);
-		}
-
-		template<typename T>
-		auto CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->LRESULT
-		{
-			//Different IHexCtrl objects will share the same WndProc<ExactTypeHere> function.
-			//Hence, the map is needed to differentiate these objects. 
-			//The DlgWndProc<T> works absolutely the same way.
-			static std::unordered_map<HWND, T*> uMap;
-
-			//CREATESTRUCTW::lpCreateParams always possesses `this` pointer, passed to the CreateWindowExW
-			//function as lpParam. We save it to the static uMap to have access to this->ProcessMsg() method.
-			if (uMsg == WM_CREATE) {
-				const auto lpCS = reinterpret_cast<LPCREATESTRUCTW>(lParam);
-				uMap[hWnd] = reinterpret_cast<T*>(lpCS->lpCreateParams);
-				return 0;
-			}
-
-			if (const auto it = uMap.find(hWnd); it != uMap.end()) {
-				const auto ret = it->second->ProcessMsg({ .hwnd { hWnd }, .message { uMsg },
-					.wParam { wParam }, .lParam { lParam } });
-				if (uMsg == WM_NCDESTROY) { //Remove hWnd from the map on window destruction.
-					uMap.erase(it);
-				}
-				return ret;
-			}
-
-			return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
-		}
-
-		template<typename T>
-		auto CALLBACK DlgWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->INT_PTR {
-			//DlgWndProc should return zero for all non-processed messages.
-			//In that case messages will be processed by Windows default dialog proc.
-			//Non-processed messages should not be passed neither to DefWindowProcW nor to DefDlgProcW.
-			//Processed messages should return any non-zero value, depending on message type.
-
-			static std::unordered_map<HWND, T*> uMap;
-
-			//DialogBoxParamW and CreateDialogParamW dwInitParam arg is sent with WM_INITDIALOG as lParam.
-			if (uMsg == WM_INITDIALOG) {
-				uMap[hWnd] = reinterpret_cast<T*>(lParam);
-			}
-
-			if (const auto it = uMap.find(hWnd); it != uMap.end()) {
-				const auto ret = it->second->ProcessMsg({ .hwnd { hWnd }, .message { uMsg },
-					.wParam { wParam }, .lParam { lParam } });
-				if (uMsg == WM_NCDESTROY) { //Remove hWnd from the map on dialog destruction.
-					uMap.erase(it);
-				}
-				return ret;
-			}
-
-			return 0;
-		}
-
-		void FillSolidRect(HDC hDC, LPCRECT pRC, COLORREF clr) {
-			//Replicates CDC::FillSolidRect.
-			::SetBkColor(hDC, clr);
-			::ExtTextOutW(hDC, 0, 0, ETO_OPAQUE, pRC, nullptr, 0, nullptr);
-		}
-
-		class CDynLayout {
-		public:
-			//Ratio settings, for how much to move or resize an item when parent is resized.
-			struct ItemRatio { float m_flXRatio { }; float m_flYRatio { }; };
-			struct MoveRatio : public ItemRatio { }; //To differentiate move from size in the AddItem.
-			struct SizeRatio : public ItemRatio { };
-
-			void AddItem(int iIDItem, MoveRatio move, SizeRatio size);
-			void Enable(bool fTrack);
-			void OnSize(int iWidth, int iHeight)const; //Should be hooked into the host window WM_SIZE handler.
-			void RemoveAll() { m_vecItems.clear(); }
-			void SetHost(HWND hWnd) { assert(hWnd != nullptr); m_hWndHost = hWnd; }
-
-						//Static helper methods to use in the AddItem.
-			[[nodiscard]] static MoveRatio MoveNone() { return { }; }
-			[[nodiscard]] static MoveRatio MoveHorz(int iXRatio) {
-				iXRatio = std::clamp(iXRatio, 0, 100); return { { .m_flXRatio { iXRatio / 100.F } } };
-			}
-			[[nodiscard]] static MoveRatio MoveVert(int iYRatio) {
-				iYRatio = std::clamp(iYRatio, 0, 100); return { { .m_flYRatio { iYRatio / 100.F } } };
-			}
-			[[nodiscard]] static MoveRatio MoveHorzAndVert(int iXRatio, int iYRatio) {
-				iXRatio = std::clamp(iXRatio, 0, 100); iYRatio = std::clamp(iYRatio, 0, 100);
-				return { { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { iYRatio / 100.F } } };
-			}
-			[[nodiscard]] static SizeRatio SizeNone() { return { }; }
-			[[nodiscard]] static SizeRatio SizeHorz(int iXRatio) {
-				iXRatio = std::clamp(iXRatio, 0, 100); return { { .m_flXRatio { iXRatio / 100.F } } };
-			}
-			[[nodiscard]] static SizeRatio SizeVert(int iYRatio) {
-				iYRatio = std::clamp(iYRatio, 0, 100); return { { .m_flYRatio { iYRatio / 100.F } } };
-			}
-			[[nodiscard]] static SizeRatio SizeHorzAndVert(int iXRatio, int iYRatio) {
-				iXRatio = std::clamp(iXRatio, 0, 100); iYRatio = std::clamp(iYRatio, 0, 100);
-				return { { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { iYRatio / 100.F } } };
-			}
-		private:
-			struct ItemData {
-				HWND hWnd { };   //Item window.
-				RECT rcOrig { }; //Item original client area rect after EnableTrack(true).
-				MoveRatio move;  //How much to move the item.
-				SizeRatio size;  //How much to resize the item.
-			};
-			HWND m_hWndHost { };   //Host window.
-			RECT m_rcHostOrig { }; //Host original client area rect after EnableTrack(true).
-			std::vector<ItemData> m_vecItems; //All items to resize/move.
-			bool m_fTrack { };
-		};
-
-		void CDynLayout::AddItem(int iIDItem, MoveRatio move, SizeRatio size) {
-			const auto hWnd = ::GetDlgItem(m_hWndHost, iIDItem);
-			assert(hWnd != nullptr);
-			if (hWnd != nullptr) {
-				m_vecItems.emplace_back(ItemData { .hWnd { hWnd }, .move { move }, .size { size } });
-			}
-		}
-
-		void CDynLayout::Enable(bool fTrack) {
-			m_fTrack = fTrack;
-			if (m_fTrack) {
-				::GetClientRect(m_hWndHost, &m_rcHostOrig);
-				for (auto& [hWnd, rc, move, size] : m_vecItems) {
-					::GetWindowRect(hWnd, &rc);
-					::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rc));
-					::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rc) + 1);
-				}
-			}
-		}
-
-		void CDynLayout::OnSize(int iWidth, int iHeight)const {
-			if (!m_fTrack)
-				return;
-
-			const auto iHostWidth = m_rcHostOrig.right - m_rcHostOrig.left;
-			const auto iHostHeight = m_rcHostOrig.bottom - m_rcHostOrig.top;
-			const auto iDeltaX = iWidth - iHostWidth;
-			const auto iDeltaY = iHeight - iHostHeight;
-
-			const auto hDWP = ::BeginDeferWindowPos(static_cast<int>(m_vecItems.size()));
-			for (const auto& [hWnd, rc, move, size] : m_vecItems) {
-				const auto iNewLeft = static_cast<int>(rc.left + (iDeltaX * move.m_flXRatio));
-				const auto iNewTop = static_cast<int>(rc.top + (iDeltaY * move.m_flYRatio));
-				const auto iOrigWidth = rc.right - rc.left;
-				const auto iOrigHeight = rc.bottom - rc.top;
-				const auto iNewWidth = static_cast<int>(iOrigWidth + (iDeltaX * size.m_flXRatio));
-				const auto iNewHeight = static_cast<int>(iOrigHeight + (iDeltaY * size.m_flYRatio));
-				::DeferWindowPos(hDWP, hWnd, nullptr, iNewLeft, iNewTop, iNewWidth, iNewHeight, SWP_NOZORDER | SWP_NOACTIVATE);
-			}
-			::EndDeferWindowPos(hDWP);
-		}
-
-		class CRect : public RECT {
-		public:
-			CRect() { left = 0; top = 0; right = 0; bottom = 0; }
-			CRect(const RECT& rc) { ::CopyRect(this, &rc); }
-			CRect(LPCRECT pRC) { ::CopyRect(this, pRC); }
-			[[nodiscard]] int Width()const { return right - left; }
-			[[nodiscard]] int Height()const { return bottom - top; }
-			[[nodiscard]] bool PtInRect(POINT pt)const { return ::PtInRect(this, pt); }
-			[[nodiscard]] bool IsRectEmpty()const { return ::IsRectEmpty(this); }
-			[[nodiscard]] bool IsRectNull()const { return (left == 0 && right == 0 && top == 0 && bottom == 0); }
-			void DeflateRect(int x, int y) { ::InflateRect(this, -x, -y); }
-			void DeflateRect(SIZE size) { ::InflateRect(this, -size.cx, -size.cy); }
-			void DeflateRect(LPCRECT pRC) { left += pRC->left; top += pRC->top; right -= pRC->right; bottom -= pRC->bottom; }
-			void DeflateRect(int l, int t, int r, int b) { left += l; top += t; right -= r; bottom -= b; }
-			void OffsetRect(int x, int y) { ::OffsetRect(this, x, y); }
-			void OffsetRect(POINT pt) { ::OffsetRect(this, pt.x, pt.y); }
-			void SetRect(int x1, int y1, int x2, int y2) { ::SetRect(this, x1, y1, x2, y2); }
-			operator LPRECT() { return this; }
-			operator LPCRECT()const { return this; }
-			CRect& operator=(const RECT& rc) { ::CopyRect(this, &rc); return *this; }
-		};
-
-		class CWnd {
-		public:
-			CWnd() = default;
-			CWnd(HWND hWnd) { Attach(hWnd); }
-			virtual ~CWnd() = default;
-			CWnd operator=(const CWnd&) = delete;
-			CWnd operator=(HWND) = delete;
-			operator HWND()const { return m_hWnd; }
-			[[nodiscard]] bool operator==(const CWnd& rhs)const { return m_hWnd == rhs.m_hWnd; }
-			[[nodiscard]] bool operator==(HWND hWnd)const { return m_hWnd == hWnd; }
-			void Attach(HWND hWnd) { assert(::IsWindow(hWnd)); m_hWnd = hWnd; }
-			void CheckRadioButton(int iIDFirst, int iIDLast, int iIDCheck)const {
-				assert(IsWindow()); ::CheckRadioButton(m_hWnd, iIDFirst, iIDLast, iIDCheck);
-			}
-			[[nodiscard]] auto ChildWindowFromPoint(POINT pt)const->HWND {
-				assert(IsWindow()); return ::ChildWindowFromPoint(m_hWnd, pt);
-			}
-			void ClientToScreen(LPRECT pRC)const {
-				assert(IsWindow()); ::ClientToScreen(m_hWnd, reinterpret_cast<LPPOINT>(pRC));
-				::ClientToScreen(m_hWnd, (reinterpret_cast<LPPOINT>(pRC)) + 1);
-			}
-			void DestroyWindow() { assert(IsWindow()); ::DestroyWindow(m_hWnd); m_hWnd = nullptr; }
-			void Detach() { m_hWnd = nullptr; }
-			[[nodiscard]] auto GetClientRect()const->CRect {
-				assert(IsWindow()); RECT rc; ::GetClientRect(m_hWnd, &rc); return rc;
-			}
-			bool EnableWindow(bool fEnable)const { assert(IsWindow()); return ::EnableWindow(m_hWnd, fEnable); }
-			void EndDialog(INT_PTR iResult)const { assert(IsWindow()); ::EndDialog(m_hWnd, iResult); }
-			[[nodiscard]] int GetCheckedRadioButton(int iIDFirst, int iIDLast)const {
-				assert(IsWindow()); for (int iID = iIDFirst; iID <= iIDLast; ++iID) {
-					if (::IsDlgButtonChecked(m_hWnd, iID) != 0) { return iID; }
-				} return 0;
-			}
-			[[nodiscard]] auto GetDC()const->HDC { assert(IsWindow()); return ::GetDC(m_hWnd); }
-			[[nodiscard]] auto GetDlgItem(int iIDCtrl)const->HWND { assert(IsWindow()); return ::GetDlgItem(m_hWnd, iIDCtrl); }
-			[[nodiscard]] auto GetHFont()const->HFONT {
-				assert(IsWindow()); return reinterpret_cast<HFONT>(::SendMessageW(m_hWnd, WM_GETFONT, 0, 0));
-			}
-			[[nodiscard]] auto GetHWND()const->HWND { return m_hWnd; }
-			[[nodiscard]] auto GetLogFont()const->std::optional<LOGFONTW> {
-				if (const auto hFont = GetHFont(); hFont != nullptr) {
-					LOGFONTW lf { }; ::GetObjectW(hFont, sizeof(lf), &lf); return lf;
-				}
-				return std::nullopt;
-			}
-			[[nodiscard]] auto GetParent()const->HWND { assert(IsWindow()); return ::GetParent(m_hWnd); }
-			[[nodiscard]] auto GetWindowDC()const->HDC { assert(IsWindow()); return ::GetWindowDC(m_hWnd); }
-			[[nodiscard]] auto GetWindowRect()const->CRect {
-				assert(IsWindow()); RECT rc; ::GetWindowRect(m_hWnd, &rc); return rc;
-			}
-			[[nodiscard]] auto GetWndText()const->std::wstring {
-				assert(IsWindow());	wchar_t buff[MAX_PATH]; ::GetWindowTextW(m_hWnd, buff, std::size(buff)); return buff;
-			}
-			[[nodiscard]] auto GetWndTextSize()const->DWORD { assert(IsWindow()); return ::GetWindowTextLengthW(m_hWnd); }
-			void Invalidate(bool fErase)const { assert(IsWindow()); ::InvalidateRect(m_hWnd, nullptr, fErase); }
-			[[nodiscard]] bool IsDlgMessage(MSG* pMsg)const { return ::IsDialogMessageW(m_hWnd, pMsg); }
-			[[nodiscard]] bool IsNull()const { return m_hWnd == nullptr; }
-			[[nodiscard]] bool IsWindow()const { return ::IsWindow(m_hWnd); }
-			[[nodiscard]] bool IsWindowEnabled()const { assert(IsWindow()); return ::IsWindowEnabled(m_hWnd); }
-			[[nodiscard]] bool IsWindowVisible()const { assert(IsWindow()); return ::IsWindowVisible(m_hWnd); }
-			[[nodiscard]] bool IsWndTextEmpty()const { return GetWndTextSize() == 0; }
-			void KillTimer(UINT_PTR uID)const {
-				assert(IsWindow()); ::KillTimer(m_hWnd, uID);
-			}
-			int MapWindowPoints(HWND hWndTo, LPRECT pRC)const {
-				assert(IsWindow()); return ::MapWindowPoints(m_hWnd, hWndTo, reinterpret_cast<LPPOINT>(pRC), 2);
-			}
-			bool RedrawWindow(LPCRECT pRC = nullptr, HRGN hrgn = nullptr,
-				UINT uFlags = RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE)const {
-				assert(IsWindow()); return static_cast<bool>(::RedrawWindow(m_hWnd, pRC, hrgn, uFlags));
-			}
-			int ReleaseDC(HDC hDC)const { assert(IsWindow()); return ::ReleaseDC(m_hWnd, hDC); }
-			auto SetTimer(UINT_PTR uID, UINT uElapse, TIMERPROC pFN = nullptr)const->UINT_PTR {
-				assert(IsWindow()); return ::SetTimer(m_hWnd, uID, uElapse, pFN);
-			}
-			void ScreenToClient(LPPOINT pPT)const { assert(IsWindow()); ::ScreenToClient(m_hWnd, pPT); }
-			void ScreenToClient(POINT& pt)const { ScreenToClient(&pt); }
-			void ScreenToClient(LPRECT pRC)const {
-				ScreenToClient(reinterpret_cast<LPPOINT>(pRC)); ScreenToClient(reinterpret_cast<LPPOINT>(pRC) + 1);
-			}
-			auto SendMsg(UINT uMsg, WPARAM wParam = 0, LPARAM lParam = 0)const {
-				assert(IsWindow()); ::SendMessageW(m_hWnd, uMsg, wParam, lParam);
-			}
-			void SetActiveWindow()const { assert(IsWindow()); ::SetActiveWindow(m_hWnd); }
-			auto SetCapture()const->HWND { assert(IsWindow()); return ::SetCapture(m_hWnd); }
-			void SetFocus()const { assert(IsWindow()); ::SetFocus(m_hWnd); }
-			void SetForegroundWindow()const { assert(IsWindow()); ::SetForegroundWindow(m_hWnd); }
-			void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)const {
-				assert(IsWindow()); ::SetWindowPos(m_hWnd, hWndAfter, iX, iY, iWidth, iHeight, uFlags);
-			}
-			auto SetWndClassLong(int iIndex, LONG_PTR dwNewLong)const->ULONG_PTR {
-				assert(IsWindow()); return ::SetClassLongPtrW(m_hWnd, iIndex, dwNewLong);
-			}
-			void SetWndText(LPCWSTR pwszStr)const { assert(IsWindow()); ::SetWindowTextW(m_hWnd, pwszStr); }
-			void SetWndText(const std::wstring& wstr)const { SetWndText(wstr.data()); }
-			void SetRedraw(bool fRedraw)const { assert(IsWindow()); ::SendMessageW(m_hWnd, WM_SETREDRAW, fRedraw, 0); }
-			bool ShowWindow(int iCmdShow)const { assert(IsWindow()); return ::ShowWindow(m_hWnd, iCmdShow); }
-			[[nodiscard]] static auto FromHandle(HWND hWnd) -> CWnd { return hWnd; }
-			[[nodiscard]] static auto GetFocus() -> CWnd { return ::GetFocus(); }
-		protected:
-			HWND m_hWnd { }; //Windows window handle.
-		};
-
-		class CWndBtn : public CWnd {
-		public:
-			[[nodiscard]] bool IsChecked()const { assert(IsWindow()); return ::SendMessageW(m_hWnd, BM_GETCHECK, 0, 0); }
-			void SetBitmap(HBITMAP hBmp)const {
-				assert(IsWindow()); ::SendMessageW(m_hWnd, BM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(hBmp));
-			}
-			void SetCheck(bool fCheck)const { assert(IsWindow()); ::SendMessageW(m_hWnd, BM_SETCHECK, fCheck, 0); }
-		};
-
-		class CWndEdit : public CWnd {
-		public:
-			void SetCueBanner(LPCWSTR pwszText, bool fDrawIfFocus = false)const {
-				assert(IsWindow());
-				::SendMessageW((m_hWnd), EM_SETCUEBANNER, static_cast<WPARAM>(fDrawIfFocus), reinterpret_cast<LPARAM>(pwszText));
-			}
-		};
-
-		class CWndCombo : public CWnd {
-		public:
-			int AddString(const std::wstring& wstr)const { return AddString(wstr.data()); }
-			int AddString(LPCWSTR pwszStr)const {
-				assert(IsWindow());
-				return static_cast<int>(::SendMessageW(m_hWnd, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(pwszStr)));
-			}
-			int DeleteString(int iIndex)const {
-				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, CB_DELETESTRING, iIndex, 0));
-			}
-			[[nodiscard]] int FindStringExact(int iIndex, LPCWSTR pwszStr)const {
-				assert(IsWindow());
-				return static_cast<int>(::SendMessageW(m_hWnd, CB_FINDSTRINGEXACT, iIndex, reinterpret_cast<LPARAM>(pwszStr)));
-			}
-			[[nodiscard]] int GetCount()const {
-				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, CB_GETCOUNT, 0, 0));
-			}
-			[[nodiscard]] int GetCurSel()const {
-				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, CB_GETCURSEL, 0, 0));
-			}
-			[[nodiscard]] auto GetItemData(int iIndex)const->DWORD_PTR {
-				assert(IsWindow()); return ::SendMessageW(m_hWnd, CB_GETITEMDATA, iIndex, 0);
-			}
-			[[nodiscard]] bool HasString(LPCWSTR pwszStr)const { return FindStringExact(0, pwszStr) != CB_ERR; };
-			[[nodiscard]] bool HasString(const std::wstring& wstr)const { return HasString(wstr.data()); };
-			int InsertString(int iIndex, const std::wstring& wstr)const { return InsertString(iIndex, wstr.data()); }
-			int InsertString(int iIndex, LPCWSTR pwszStr)const {
-				assert(IsWindow());
-				return static_cast<int>(::SendMessageW(m_hWnd, CB_INSERTSTRING, iIndex, reinterpret_cast<LPARAM>(pwszStr)));
-			}
-			void LimitText(int iMaxChars)const { assert(IsWindow()); ::SendMessageW(m_hWnd, CB_LIMITTEXT, iMaxChars, 0); }
-			void SetCueBanner(const std::wstring& wstr)const { SetCueBanner(wstr.data()); }
-			void SetCueBanner(LPCWSTR pwszText)const {
-				assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETCUEBANNER, 0, reinterpret_cast<LPARAM>(pwszText));
-			}
-			void SetCurSel(int iIndex)const { assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETCURSEL, iIndex, 0); }
-			void SetItemData(int iIndex, DWORD_PTR dwData)const {
-				assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETITEMDATA, iIndex, static_cast<LPARAM>(dwData));
-			}
-		};
-
-		class CWndTree : public CWnd {
-		public:
-			void DeleteAllItems()const { DeleteItem(TVI_ROOT); };
-			void DeleteItem(HTREEITEM hItem)const {
-				assert(IsWindow()); ::SendMessageW(m_hWnd, TVM_DELETEITEM, 0, reinterpret_cast<LPARAM>(hItem));
-			}
-			void Expand(HTREEITEM hItem, UINT uCode)const {
-				assert(IsWindow()); ::SendMessageW(m_hWnd, TVM_EXPAND, uCode, reinterpret_cast<LPARAM>(hItem));
-			}
-			void GetItem(TVITEMW* pItem)const {
-				assert(IsWindow()); ::SendMessageW(m_hWnd, TVM_GETITEM, 0, reinterpret_cast<LPARAM>(pItem));
-			}
-			[[nodiscard]] auto GetItemData(HTREEITEM hItem)const->DWORD_PTR {
-				TVITEMW item { .mask { TVIF_PARAM }, .hItem { hItem } }; GetItem(&item); return item.lParam;
-			}
-			[[nodiscard]] auto GetNextItem(HTREEITEM hItem, UINT uCode)const->HTREEITEM {
-				assert(IsWindow()); return reinterpret_cast<HTREEITEM>
-					(::SendMessageW(m_hWnd, TVM_GETNEXTITEM, uCode, reinterpret_cast<LPARAM>(hItem)));
-			}
-			[[nodiscard]] auto GetNextSiblingItem(HTREEITEM hItem)const->HTREEITEM { return GetNextItem(hItem, TVGN_NEXT); }
-			[[nodiscard]] auto GetParentItem(HTREEITEM hItem)const->HTREEITEM { return GetNextItem(hItem, TVGN_PARENT); }
-			[[nodiscard]] auto GetRootItem()const->HTREEITEM { return GetNextItem(nullptr, TVGN_ROOT); }
-			[[nodiscard]] auto GetSelectedItem()const->HTREEITEM { return GetNextItem(nullptr, TVGN_CARET); }
-			[[nodiscard]] auto HitTest(TVHITTESTINFO* pHTI)const->HTREEITEM {
-				assert(IsWindow());
-				return reinterpret_cast<HTREEITEM>(::SendMessageW(m_hWnd, TVM_HITTEST, 0, reinterpret_cast<LPARAM>(pHTI)));
-			}
-			[[nodiscard]] auto HitTest(CPoint pt, UINT* pFlags = nullptr)const->HTREEITEM {
-				TVHITTESTINFO hti { .pt { pt } }; auto ret = HitTest(&hti);	if (pFlags != nullptr) { *pFlags = hti.flags; }
-				return ret;
-			}
-
-			auto InsertItem(LPTVINSERTSTRUCTW pTIS)const->HTREEITEM {
-				assert(IsWindow()); return reinterpret_cast<HTREEITEM>
-					(::SendMessageW(m_hWnd, TVM_INSERTITEM, 0, reinterpret_cast<LPARAM>(pTIS)));
-			}
-			void SelectItem(HTREEITEM hItem)const {
-				assert(IsWindow()); ::SendMessageW(m_hWnd, TVM_SELECTITEM, TVGN_CARET, reinterpret_cast<LPARAM>(hItem));
-			}
-		};
-
-		class CWndProgBar : public CWnd {
-		public:
-			int SetPos(int iPos)const {
-				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, PBM_SETPOS, iPos, 0UL));
-			}
-			void SetRange(int iLower, int iUpper)const {
-				assert(IsWindow());
-				::SendMessageW(m_hWnd, PBM_SETRANGE32, static_cast<WPARAM>(iLower), static_cast<LPARAM>(iUpper));
-			}
-		};
-
-		class CWndTab : public CWnd {
-		public:
-			[[nodiscard]] int GetCurSel()const {
-				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, TCM_GETCURSEL, 0, 0L));
-			}
-			[[nodiscard]] auto GetItemRect(int nItem)const->CRect {
-				assert(IsWindow());
-				RECT rc { }; ::SendMessageW(m_hWnd, TCM_GETITEMRECT, nItem, reinterpret_cast<LPARAM>(&rc));
-				return rc;
-			}
-			auto InsertItem(int iItem, TCITEMW* pItem)const->LONG {
-				assert(IsWindow());
-				return static_cast<LONG>(::SendMessageW(m_hWnd, TCM_INSERTITEMW, iItem, reinterpret_cast<LPARAM>(pItem)));
-			}
-			auto InsertItem(int iItem, LPCWSTR pwszStr)const->LONG {
-				TCITEMW tci { .mask { TCIF_TEXT }, .pszText { const_cast<LPWSTR>(pwszStr) } };
-				return InsertItem(iItem, &tci);
-			}
-			int SetCurSel(int iItem)const {
-				assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, TCM_SETCURSEL, iItem, 0L));
-			}
-		};
-
-		class CMenu {
-		public:
-			CMenu() = default;
-			CMenu(HMENU hMenu) { Attach(hMenu); }
-			virtual ~CMenu() = default;
-			CMenu operator=(const CWnd&) = delete;
-			CMenu operator=(HMENU) = delete;
-			operator HMENU()const { return m_hMenu; }
-			void AppendItem(UINT uFlags, UINT_PTR uIDItem, LPCWSTR pNameItem)const {
-				assert(IsMenu()); ::AppendMenuW(m_hMenu, uFlags, uIDItem, pNameItem);
-			}
-			void AppendSepar()const { AppendItem(MF_SEPARATOR, 0, nullptr); }
-			void AppendString(UINT_PTR uIDItem, LPCWSTR pNameItem)const { AppendItem(MF_STRING, uIDItem, pNameItem); }
-			void Attach(HMENU hMenu) { assert(::IsMenu(hMenu)); m_hMenu = hMenu; }
-			void CheckItem(UINT uIDItem, bool fCheck, bool fByID = true)const {
-				assert(IsMenu()); ::CheckMenuItem(m_hMenu, uIDItem, fCheck ? MF_CHECKED : MF_UNCHECKED |
-				(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
-			}
-			void CreatePopupMenu() { Attach(::CreatePopupMenu()); }
-			void DestroyMenu() { assert(IsMenu()); ::DestroyMenu(m_hMenu); m_hMenu = nullptr; }
-			void Detach() { m_hMenu = nullptr; }
-			void EnableItem(UINT uIDItem, bool fEnable, bool fByID = true)const {
-				assert(IsMenu()); ::EnableMenuItem(m_hMenu, uIDItem, fEnable ? MF_ENABLED : MF_GRAYED |
-					(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
-			}
-			[[nodiscard]] auto GetMenuState(UINT uID, UINT nFlags)const->UINT {
-				assert(IsMenu()); return ::GetMenuState(m_hMenu, uID, nFlags);
-			}
-			[[nodiscard]] bool IsChecked(UINT uIDItem, bool fByID = true)const {
-				return GetMenuState(uIDItem, fByID ? MF_BYCOMMAND : MF_BYPOSITION) & MF_CHECKED;
-			}
-			[[nodiscard]] bool IsMenu()const { return ::IsMenu(m_hMenu); }
-			void TrackPopup(int iX, int iY, HWND hWndOwner, UINT uFlags = TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON)const {
-				assert(IsMenu()); ::TrackPopupMenuEx(m_hMenu, uFlags, iX, iY, hWndOwner, nullptr);
-			}
-		private:
-			HMENU m_hMenu { }; //Windows menu handle.
-		};
-	};
-
 #if defined(DEBUG) || defined(_DEBUG)
 	void DBG_REPORT(const wchar_t* pMsg, const std::source_location& loc = std::source_location::current()) {
 		_wassert(pMsg, StrToWstr(loc.file_name()).data(), loc.line());
@@ -875,3 +417,561 @@ export namespace HEXCTRL::INTERNAL {
 	void DBG_REPORT([[maybe_unused]] const wchar_t*) { }
 #endif
 }
+
+export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
+	[[nodiscard]] auto GetHinstance() -> HINSTANCE {
+		return AfxGetInstanceHandle();
+	}
+
+	auto DefMsgProc(const MSG& msg) -> LRESULT {
+		return ::DefWindowProcW(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+	}
+
+	template<typename T>
+	auto CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->LRESULT
+	{
+		//Different IHexCtrl objects will share the same WndProc<ExactTypeHere> function.
+		//Hence, the map is needed to differentiate these objects. 
+		//The DlgWndProc<T> works absolutely the same way.
+		static std::unordered_map<HWND, T*> uMap;
+
+		//CREATESTRUCTW::lpCreateParams always possesses `this` pointer, passed to the CreateWindowExW
+		//function as lpParam. We save it to the static uMap to have access to this->ProcessMsg() method.
+		if (uMsg == WM_CREATE) {
+			const auto lpCS = reinterpret_cast<LPCREATESTRUCTW>(lParam);
+			uMap[hWnd] = reinterpret_cast<T*>(lpCS->lpCreateParams);
+			return 0;
+		}
+
+		if (const auto it = uMap.find(hWnd); it != uMap.end()) {
+			const auto ret = it->second->ProcessMsg({ .hwnd { hWnd }, .message { uMsg },
+				.wParam { wParam }, .lParam { lParam } });
+			if (uMsg == WM_NCDESTROY) { //Remove hWnd from the map on window destruction.
+				uMap.erase(it);
+			}
+			return ret;
+		}
+
+		return ::DefWindowProcW(hWnd, uMsg, wParam, lParam);
+	}
+
+	template<typename T>
+	auto CALLBACK DlgWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->INT_PTR {
+		//DlgWndProc should return zero for all non-processed messages.
+		//In that case messages will be processed by Windows default dialog proc.
+		//Non-processed messages should not be passed neither to DefWindowProcW nor to DefDlgProcW.
+		//Processed messages should return any non-zero value, depending on message type.
+
+		static std::unordered_map<HWND, T*> uMap;
+
+		//DialogBoxParamW and CreateDialogParamW dwInitParam arg is sent with WM_INITDIALOG as lParam.
+		if (uMsg == WM_INITDIALOG) {
+			uMap[hWnd] = reinterpret_cast<T*>(lParam);
+		}
+
+		if (const auto it = uMap.find(hWnd); it != uMap.end()) {
+			const auto ret = it->second->ProcessMsg({ .hwnd { hWnd }, .message { uMsg },
+				.wParam { wParam }, .lParam { lParam } });
+			if (uMsg == WM_NCDESTROY) { //Remove hWnd from the map on dialog destruction.
+				uMap.erase(it);
+			}
+			return ret;
+		}
+
+		return 0;
+	}
+
+	void FillSolidRect(HDC hDC, LPCRECT pRC, COLORREF clr) {
+		//Replicates CDC::FillSolidRect.
+		::SetBkColor(hDC, clr);
+		::ExtTextOutW(hDC, 0, 0, ETO_OPAQUE, pRC, nullptr, 0, nullptr);
+	}
+
+	class CDynLayout {
+	public:
+		//Ratio settings, for how much to move or resize an item when parent is resized.
+		struct ItemRatio { float m_flXRatio { }; float m_flYRatio { }; };
+		struct MoveRatio : public ItemRatio { }; //To differentiate move from size in the AddItem.
+		struct SizeRatio : public ItemRatio { };
+
+		void AddItem(int iIDItem, MoveRatio move, SizeRatio size);
+		void Enable(bool fTrack);
+		void OnSize(int iWidth, int iHeight)const; //Should be hooked into the host window WM_SIZE handler.
+		void RemoveAll() { m_vecItems.clear(); }
+		void SetHost(HWND hWnd) { assert(hWnd != nullptr); m_hWndHost = hWnd; }
+
+		//Static helper methods to use in the AddItem.
+		[[nodiscard]] static MoveRatio MoveNone() { return { }; }
+		[[nodiscard]] static MoveRatio MoveHorz(int iXRatio) {
+			iXRatio = std::clamp(iXRatio, 0, 100); return { { .m_flXRatio { iXRatio / 100.F } } };
+		}
+		[[nodiscard]] static MoveRatio MoveVert(int iYRatio) {
+			iYRatio = std::clamp(iYRatio, 0, 100); return { { .m_flYRatio { iYRatio / 100.F } } };
+		}
+		[[nodiscard]] static MoveRatio MoveHorzAndVert(int iXRatio, int iYRatio) {
+			iXRatio = std::clamp(iXRatio, 0, 100); iYRatio = std::clamp(iYRatio, 0, 100);
+			return { { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { iYRatio / 100.F } } };
+		}
+		[[nodiscard]] static SizeRatio SizeNone() { return { }; }
+		[[nodiscard]] static SizeRatio SizeHorz(int iXRatio) {
+			iXRatio = std::clamp(iXRatio, 0, 100); return { { .m_flXRatio { iXRatio / 100.F } } };
+		}
+		[[nodiscard]] static SizeRatio SizeVert(int iYRatio) {
+			iYRatio = std::clamp(iYRatio, 0, 100); return { { .m_flYRatio { iYRatio / 100.F } } };
+		}
+		[[nodiscard]] static SizeRatio SizeHorzAndVert(int iXRatio, int iYRatio) {
+			iXRatio = std::clamp(iXRatio, 0, 100); iYRatio = std::clamp(iYRatio, 0, 100);
+			return { { .m_flXRatio { iXRatio / 100.F }, .m_flYRatio { iYRatio / 100.F } } };
+		}
+	private:
+		struct ItemData {
+			HWND hWnd { };   //Item window.
+			RECT rcOrig { }; //Item original client area rect after EnableTrack(true).
+			MoveRatio move;  //How much to move the item.
+			SizeRatio size;  //How much to resize the item.
+		};
+		HWND m_hWndHost { };   //Host window.
+		RECT m_rcHostOrig { }; //Host original client area rect after EnableTrack(true).
+		std::vector<ItemData> m_vecItems; //All items to resize/move.
+		bool m_fTrack { };
+	};
+
+	void CDynLayout::AddItem(int iIDItem, MoveRatio move, SizeRatio size) {
+		const auto hWnd = ::GetDlgItem(m_hWndHost, iIDItem);
+		assert(hWnd != nullptr);
+		if (hWnd != nullptr) {
+			m_vecItems.emplace_back(ItemData { .hWnd { hWnd }, .move { move }, .size { size } });
+		}
+	}
+
+	void CDynLayout::Enable(bool fTrack) {
+		m_fTrack = fTrack;
+		if (m_fTrack) {
+			::GetClientRect(m_hWndHost, &m_rcHostOrig);
+			for (auto& [hWnd, rc, move, size] : m_vecItems) {
+				::GetWindowRect(hWnd, &rc);
+				::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rc));
+				::ScreenToClient(m_hWndHost, reinterpret_cast<LPPOINT>(&rc) + 1);
+			}
+		}
+	}
+
+	void CDynLayout::OnSize(int iWidth, int iHeight)const {
+		if (!m_fTrack)
+			return;
+
+		const auto iHostWidth = m_rcHostOrig.right - m_rcHostOrig.left;
+		const auto iHostHeight = m_rcHostOrig.bottom - m_rcHostOrig.top;
+		const auto iDeltaX = iWidth - iHostWidth;
+		const auto iDeltaY = iHeight - iHostHeight;
+
+		const auto hDWP = ::BeginDeferWindowPos(static_cast<int>(m_vecItems.size()));
+		for (const auto& [hWnd, rc, move, size] : m_vecItems) {
+			const auto iNewLeft = static_cast<int>(rc.left + (iDeltaX * move.m_flXRatio));
+			const auto iNewTop = static_cast<int>(rc.top + (iDeltaY * move.m_flYRatio));
+			const auto iOrigWidth = rc.right - rc.left;
+			const auto iOrigHeight = rc.bottom - rc.top;
+			const auto iNewWidth = static_cast<int>(iOrigWidth + (iDeltaX * size.m_flXRatio));
+			const auto iNewHeight = static_cast<int>(iOrigHeight + (iDeltaY * size.m_flYRatio));
+			::DeferWindowPos(hDWP, hWnd, nullptr, iNewLeft, iNewTop, iNewWidth, iNewHeight, SWP_NOZORDER | SWP_NOACTIVATE);
+		}
+		::EndDeferWindowPos(hDWP);
+	}
+
+	class CPoint : public POINT {
+	public:
+		CPoint() : POINT { } { }
+		CPoint(POINT pt) : POINT { pt } { }
+		CPoint(int x, int y) : POINT { .x { x }, .y { y } } { }
+		operator LPPOINT() { return this; }
+		operator const POINT*()const { return this; }
+		bool operator==(POINT pt)const { return x == pt.x && y == pt.y; }
+		bool operator!=(POINT pt)const { return !(*this == pt); }
+		CPoint& operator=(POINT pt) { *this = pt; return *this; }
+		CPoint operator+(POINT pt)const { return { x + pt.x, y + pt.y }; }
+		CPoint operator-(POINT pt)const { return { x - pt.x, y - pt.y }; }
+		void Offset(int iX, int iY) { x += iX; y += iY; }
+		void Offset(POINT pt) { Offset(pt.x, pt.y); }
+	};
+
+	class CRect : public RECT {
+	public:
+		CRect() : RECT { } { }
+		CRect(int iLeft, int iTop, int iRight, int iBottom) : RECT { .left { iLeft }, .top { iTop },
+			.right { iRight }, .bottom { iBottom } } {
+		}
+		CRect(RECT rc) { ::CopyRect(this, &rc); }
+		CRect(LPCRECT pRC) { ::CopyRect(this, pRC); }
+		CRect(POINT pt, SIZE size) { left = pt.x; right = left + size.cx; top = pt.y; bottom = top + size.cy; }
+		CRect(POINT topLeft, POINT botRight) {
+			left = topLeft.x; top = topLeft.y; right = botRight.x; bottom = botRight.y;
+		}
+		operator LPRECT() { return this; }
+		operator LPCRECT()const { return this; }
+		bool operator==(RECT rc)const { return ::EqualRect(this, &rc); }
+		bool operator!=(RECT rc)const { return !(*this == rc); }
+		CRect& operator=(RECT rc) { ::CopyRect(this, &rc); return *this; }
+		[[nodiscard]] auto BottomRight()const->CPoint { return { { .x { right }, .y { bottom } } }; };
+		void DeflateRect(int x, int y) { ::InflateRect(this, -x, -y); }
+		void DeflateRect(SIZE size) { ::InflateRect(this, -size.cx, -size.cy); }
+		void DeflateRect(LPCRECT pRC) { left += pRC->left; top += pRC->top; right -= pRC->right; bottom -= pRC->bottom; }
+		void DeflateRect(int l, int t, int r, int b) { left += l; top += t; right -= r; bottom -= b; }
+		[[nodiscard]] int Height()const { return bottom - top; }
+		[[nodiscard]] bool IsRectEmpty()const { return ::IsRectEmpty(this); }
+		[[nodiscard]] bool IsRectNull()const { return (left == 0 && right == 0 && top == 0 && bottom == 0); }
+		void OffsetRect(int x, int y) { ::OffsetRect(this, x, y); }
+		void OffsetRect(POINT pt) { ::OffsetRect(this, pt.x, pt.y); }
+		[[nodiscard]] bool PtInRect(POINT pt)const { return ::PtInRect(this, pt); }
+		void SetRect(int x1, int y1, int x2, int y2) { ::SetRect(this, x1, y1, x2, y2); }
+		void SetRectEmpty() { ::SetRectEmpty(this); }
+		[[nodiscard]] auto TopLeft()const->CPoint { return { { .x { left }, .y { top } } }; };
+		[[nodiscard]] int Width()const { return right - left; }
+	};
+
+	class CDC {
+	public:
+		CDC() = default;
+		CDC(HDC hDC) : m_hDC(hDC) { }
+		operator HDC()const { return m_hDC; }
+		void DrawFocusRect(LPCRECT pRc)const { ::DrawFocusRect(m_hDC, pRc); }
+		int DrawTextW(std::wstring_view wsv, LPRECT pRect, UINT uFormat)const {
+			return ::DrawTextW(m_hDC, wsv.data(), static_cast<int>(wsv.size()), pRect, uFormat);
+		}
+		void FillSolidRect(LPCRECT pRC, COLORREF clr)const {
+			::SetBkColor(m_hDC, clr); ::ExtTextOutW(m_hDC, 0, 0, ETO_OPAQUE, pRC, nullptr, 0, nullptr);
+		}
+		[[nodiscard]] auto GetClipBox()const->CRect { RECT rc; ::GetClipBox(m_hDC, &rc); return rc; }
+		bool LineTo(POINT pt)const { return LineTo(pt.x, pt.y); }
+		bool LineTo(int x, int y)const { return ::LineTo(m_hDC, x, y); }
+		bool MoveTo(POINT pt)const { return MoveTo(pt.x, pt.y); }
+		bool MoveTo(int x, int y)const { return ::MoveToEx(m_hDC, x, y, nullptr); }
+		bool Polygon(const POINT* pPT, int iCount)const { return ::Polygon(m_hDC, pPT, iCount); }
+		auto SetTextColor(COLORREF clr)const->COLORREF { return ::SetTextColor(m_hDC, clr); }
+		auto SelectObject(HGDIOBJ hObj)const->HGDIOBJ { return ::SelectObject(m_hDC, hObj); }
+	protected:
+		HDC m_hDC;
+	};
+
+	class CPaintDC : public CDC {
+	public:
+		CPaintDC(HWND hWnd) : m_hWnd(hWnd) { assert(::IsWindow(hWnd)); m_hDC = ::BeginPaint(m_hWnd, &m_PS); }
+		~CPaintDC() { ::EndPaint(m_hWnd, &m_PS); }
+		HDC GetHDC()const { return m_PS.hdc; }
+		operator HDC()const { return m_PS.hdc; }
+	private:
+		PAINTSTRUCT m_PS;
+		HWND m_hWnd;
+	};
+
+	class CMemDC : public CDC {
+	public:
+		CMemDC(HDC hDC, HWND hWnd) : m_hDCOrig(hDC) { assert(::IsWindow(hWnd)); ::GetClientRect(hWnd, &m_rc); Init(); }
+		CMemDC(HDC hDC, RECT rc) : m_hDCOrig(hDC), m_rc(rc) { Init(); }
+		~CMemDC();
+		HDC GetHDC()const { return m_hDCMem; }
+		operator HDC()const { return m_hDCMem; }
+	private:
+		void Init();
+	private:
+		HDC m_hDCOrig;
+		HDC m_hDCMem;
+		HBITMAP m_hBmp;
+		RECT m_rc;
+	};
+
+	void CMemDC::Init()
+	{
+		m_hDCMem = m_hDC = ::CreateCompatibleDC(m_hDCOrig); //Set CDC::m_hDC as well.
+		const auto iWidth = m_rc.right - m_rc.left;
+		const auto iHeight = m_rc.bottom - m_rc.top;
+		m_hBmp = ::CreateCompatibleBitmap(m_hDCOrig, iWidth, iHeight);
+		::SelectObject(m_hDCMem, m_hBmp);
+		if (m_hDCMem == nullptr || m_hBmp == nullptr) {
+			assert(true);
+		}
+	}
+
+	CMemDC::~CMemDC()
+	{
+		const auto iWidth = m_rc.right - m_rc.left;
+		const auto iHeight = m_rc.bottom - m_rc.top;
+		::BitBlt(m_hDCOrig, m_rc.left, m_rc.top, iWidth, iHeight, m_hDCMem, m_rc.left, m_rc.top, SRCCOPY);
+		::DeleteObject(m_hBmp);
+		::DeleteDC(m_hDCMem);
+	}
+
+	class CWnd {
+	public:
+		CWnd() = default;
+		CWnd(HWND hWnd) { Attach(hWnd); }
+		virtual ~CWnd() = default;
+		CWnd operator=(const CWnd&) = delete;
+		CWnd operator=(HWND) = delete;
+		operator HWND()const { return m_hWnd; }
+		[[nodiscard]] bool operator==(const CWnd& rhs)const { return m_hWnd == rhs.m_hWnd; }
+		[[nodiscard]] bool operator==(HWND hWnd)const { return m_hWnd == hWnd; }
+		void Attach(HWND hWnd) { assert(::IsWindow(hWnd)); m_hWnd = hWnd; }
+		void CheckRadioButton(int iIDFirst, int iIDLast, int iIDCheck)const {
+			assert(IsWindow()); ::CheckRadioButton(m_hWnd, iIDFirst, iIDLast, iIDCheck);
+		}
+		[[nodiscard]] auto ChildWindowFromPoint(POINT pt)const->HWND {
+			assert(IsWindow()); return ::ChildWindowFromPoint(m_hWnd, pt);
+		}
+		void ClientToScreen(LPRECT pRC)const {
+			assert(IsWindow()); ::ClientToScreen(m_hWnd, reinterpret_cast<LPPOINT>(pRC));
+			::ClientToScreen(m_hWnd, (reinterpret_cast<LPPOINT>(pRC)) + 1);
+		}
+		void DestroyWindow() { assert(IsWindow()); ::DestroyWindow(m_hWnd); m_hWnd = nullptr; }
+		void Detach() { m_hWnd = nullptr; }
+		[[nodiscard]] auto GetClientRect()const->CRect {
+			assert(IsWindow()); RECT rc; ::GetClientRect(m_hWnd, &rc); return rc;
+		}
+		bool EnableWindow(bool fEnable)const { assert(IsWindow()); return ::EnableWindow(m_hWnd, fEnable); }
+		void EndDialog(INT_PTR iResult)const { assert(IsWindow()); ::EndDialog(m_hWnd, iResult); }
+		[[nodiscard]] int GetCheckedRadioButton(int iIDFirst, int iIDLast)const {
+			assert(IsWindow()); for (int iID = iIDFirst; iID <= iIDLast; ++iID) {
+				if (::IsDlgButtonChecked(m_hWnd, iID) != 0) { return iID; }
+			} return 0;
+		}
+		[[nodiscard]] auto GetDC()const->HDC { assert(IsWindow()); return ::GetDC(m_hWnd); }
+		[[nodiscard]] auto GetDlgItem(int iIDCtrl)const->HWND { assert(IsWindow()); return ::GetDlgItem(m_hWnd, iIDCtrl); }
+		[[nodiscard]] auto GetHFont()const->HFONT {
+			assert(IsWindow()); return reinterpret_cast<HFONT>(::SendMessageW(m_hWnd, WM_GETFONT, 0, 0));
+		}
+		[[nodiscard]] auto GetHWND()const->HWND { return m_hWnd; }
+		[[nodiscard]] auto GetLogFont()const->std::optional<LOGFONTW> {
+			if (const auto hFont = GetHFont(); hFont != nullptr) {
+				LOGFONTW lf { }; ::GetObjectW(hFont, sizeof(lf), &lf); return lf;
+			}
+			return std::nullopt;
+		}
+		[[nodiscard]] auto GetParent()const->HWND { assert(IsWindow()); return ::GetParent(m_hWnd); }
+		[[nodiscard]] auto GetWindowDC()const->HDC { assert(IsWindow()); return ::GetWindowDC(m_hWnd); }
+		[[nodiscard]] auto GetWindowRect()const->CRect {
+			assert(IsWindow()); RECT rc; ::GetWindowRect(m_hWnd, &rc); return rc;
+		}
+		[[nodiscard]] auto GetWndText()const->std::wstring {
+			assert(IsWindow());	wchar_t buff[MAX_PATH]; ::GetWindowTextW(m_hWnd, buff, std::size(buff)); return buff;
+		}
+		[[nodiscard]] auto GetWndTextSize()const->DWORD { assert(IsWindow()); return ::GetWindowTextLengthW(m_hWnd); }
+		void Invalidate(bool fErase)const { assert(IsWindow()); ::InvalidateRect(m_hWnd, nullptr, fErase); }
+		[[nodiscard]] bool IsDlgMessage(MSG* pMsg)const { return ::IsDialogMessageW(m_hWnd, pMsg); }
+		[[nodiscard]] bool IsNull()const { return m_hWnd == nullptr; }
+		[[nodiscard]] bool IsWindow()const { return ::IsWindow(m_hWnd); }
+		[[nodiscard]] bool IsWindowEnabled()const { assert(IsWindow()); return ::IsWindowEnabled(m_hWnd); }
+		[[nodiscard]] bool IsWindowVisible()const { assert(IsWindow()); return ::IsWindowVisible(m_hWnd); }
+		[[nodiscard]] bool IsWndTextEmpty()const { return GetWndTextSize() == 0; }
+		void KillTimer(UINT_PTR uID)const {
+			assert(IsWindow()); ::KillTimer(m_hWnd, uID);
+		}
+		int MapWindowPoints(HWND hWndTo, LPRECT pRC)const {
+			assert(IsWindow()); return ::MapWindowPoints(m_hWnd, hWndTo, reinterpret_cast<LPPOINT>(pRC), 2);
+		}
+		bool RedrawWindow(LPCRECT pRC = nullptr, HRGN hrgn = nullptr,
+			UINT uFlags = RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE)const {
+			assert(IsWindow()); return static_cast<bool>(::RedrawWindow(m_hWnd, pRC, hrgn, uFlags));
+		}
+		int ReleaseDC(HDC hDC)const { assert(IsWindow()); return ::ReleaseDC(m_hWnd, hDC); }
+		auto SetTimer(UINT_PTR uID, UINT uElapse, TIMERPROC pFN = nullptr)const->UINT_PTR {
+			assert(IsWindow()); return ::SetTimer(m_hWnd, uID, uElapse, pFN);
+		}
+		void ScreenToClient(LPPOINT pPT)const { assert(IsWindow()); ::ScreenToClient(m_hWnd, pPT); }
+		void ScreenToClient(POINT& pt)const { ScreenToClient(&pt); }
+		void ScreenToClient(LPRECT pRC)const {
+			ScreenToClient(reinterpret_cast<LPPOINT>(pRC)); ScreenToClient(reinterpret_cast<LPPOINT>(pRC) + 1);
+		}
+		auto SendMsg(UINT uMsg, WPARAM wParam = 0, LPARAM lParam = 0)const {
+			assert(IsWindow()); ::SendMessageW(m_hWnd, uMsg, wParam, lParam);
+		}
+		void SetActiveWindow()const { assert(IsWindow()); ::SetActiveWindow(m_hWnd); }
+		auto SetCapture()const->HWND { assert(IsWindow()); return ::SetCapture(m_hWnd); }
+		void SetFocus()const { assert(IsWindow()); ::SetFocus(m_hWnd); }
+		void SetForegroundWindow()const { assert(IsWindow()); ::SetForegroundWindow(m_hWnd); }
+		void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)const {
+			assert(IsWindow()); ::SetWindowPos(m_hWnd, hWndAfter, iX, iY, iWidth, iHeight, uFlags);
+		}
+		auto SetWndClassLong(int iIndex, LONG_PTR dwNewLong)const->ULONG_PTR {
+			assert(IsWindow()); return ::SetClassLongPtrW(m_hWnd, iIndex, dwNewLong);
+		}
+		void SetWndText(LPCWSTR pwszStr)const { assert(IsWindow()); ::SetWindowTextW(m_hWnd, pwszStr); }
+		void SetWndText(const std::wstring& wstr)const { SetWndText(wstr.data()); }
+		void SetRedraw(bool fRedraw)const { assert(IsWindow()); ::SendMessageW(m_hWnd, WM_SETREDRAW, fRedraw, 0); }
+		bool ShowWindow(int iCmdShow)const { assert(IsWindow()); return ::ShowWindow(m_hWnd, iCmdShow); }
+		[[nodiscard]] static auto FromHandle(HWND hWnd) -> CWnd { return hWnd; }
+		[[nodiscard]] static auto GetFocus() -> CWnd { return ::GetFocus(); }
+	protected:
+		HWND m_hWnd { }; //Windows window handle.
+	};
+
+	class CWndBtn : public CWnd {
+	public:
+		[[nodiscard]] bool IsChecked()const { assert(IsWindow()); return ::SendMessageW(m_hWnd, BM_GETCHECK, 0, 0); }
+		void SetBitmap(HBITMAP hBmp)const {
+			assert(IsWindow()); ::SendMessageW(m_hWnd, BM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(hBmp));
+		}
+		void SetCheck(bool fCheck)const { assert(IsWindow()); ::SendMessageW(m_hWnd, BM_SETCHECK, fCheck, 0); }
+	};
+
+	class CWndEdit : public CWnd {
+	public:
+		void SetCueBanner(LPCWSTR pwszText, bool fDrawIfFocus = false)const {
+			assert(IsWindow());
+			::SendMessageW((m_hWnd), EM_SETCUEBANNER, static_cast<WPARAM>(fDrawIfFocus), reinterpret_cast<LPARAM>(pwszText));
+		}
+	};
+
+	class CWndCombo : public CWnd {
+	public:
+		int AddString(const std::wstring& wstr)const { return AddString(wstr.data()); }
+		int AddString(LPCWSTR pwszStr)const {
+			assert(IsWindow());
+			return static_cast<int>(::SendMessageW(m_hWnd, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(pwszStr)));
+		}
+		int DeleteString(int iIndex)const {
+			assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, CB_DELETESTRING, iIndex, 0));
+		}
+		[[nodiscard]] int FindStringExact(int iIndex, LPCWSTR pwszStr)const {
+			assert(IsWindow());
+			return static_cast<int>(::SendMessageW(m_hWnd, CB_FINDSTRINGEXACT, iIndex, reinterpret_cast<LPARAM>(pwszStr)));
+		}
+		[[nodiscard]] int GetCount()const {
+			assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, CB_GETCOUNT, 0, 0));
+		}
+		[[nodiscard]] int GetCurSel()const {
+			assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, CB_GETCURSEL, 0, 0));
+		}
+		[[nodiscard]] auto GetItemData(int iIndex)const->DWORD_PTR {
+			assert(IsWindow()); return ::SendMessageW(m_hWnd, CB_GETITEMDATA, iIndex, 0);
+		}
+		[[nodiscard]] bool HasString(LPCWSTR pwszStr)const { return FindStringExact(0, pwszStr) != CB_ERR; };
+		[[nodiscard]] bool HasString(const std::wstring& wstr)const { return HasString(wstr.data()); };
+		int InsertString(int iIndex, const std::wstring& wstr)const { return InsertString(iIndex, wstr.data()); }
+		int InsertString(int iIndex, LPCWSTR pwszStr)const {
+			assert(IsWindow());
+			return static_cast<int>(::SendMessageW(m_hWnd, CB_INSERTSTRING, iIndex, reinterpret_cast<LPARAM>(pwszStr)));
+		}
+		void LimitText(int iMaxChars)const { assert(IsWindow()); ::SendMessageW(m_hWnd, CB_LIMITTEXT, iMaxChars, 0); }
+		void SetCueBanner(const std::wstring& wstr)const { SetCueBanner(wstr.data()); }
+		void SetCueBanner(LPCWSTR pwszText)const {
+			assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETCUEBANNER, 0, reinterpret_cast<LPARAM>(pwszText));
+		}
+		void SetCurSel(int iIndex)const { assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETCURSEL, iIndex, 0); }
+		void SetItemData(int iIndex, DWORD_PTR dwData)const {
+			assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETITEMDATA, iIndex, static_cast<LPARAM>(dwData));
+		}
+	};
+
+	class CWndTree : public CWnd {
+	public:
+		void DeleteAllItems()const { DeleteItem(TVI_ROOT); };
+		void DeleteItem(HTREEITEM hItem)const {
+			assert(IsWindow()); ::SendMessageW(m_hWnd, TVM_DELETEITEM, 0, reinterpret_cast<LPARAM>(hItem));
+		}
+		void Expand(HTREEITEM hItem, UINT uCode)const {
+			assert(IsWindow()); ::SendMessageW(m_hWnd, TVM_EXPAND, uCode, reinterpret_cast<LPARAM>(hItem));
+		}
+		void GetItem(TVITEMW* pItem)const {
+			assert(IsWindow()); ::SendMessageW(m_hWnd, TVM_GETITEM, 0, reinterpret_cast<LPARAM>(pItem));
+		}
+		[[nodiscard]] auto GetItemData(HTREEITEM hItem)const->DWORD_PTR {
+			TVITEMW item { .mask { TVIF_PARAM }, .hItem { hItem } }; GetItem(&item); return item.lParam;
+		}
+		[[nodiscard]] auto GetNextItem(HTREEITEM hItem, UINT uCode)const->HTREEITEM {
+			assert(IsWindow()); return reinterpret_cast<HTREEITEM>
+				(::SendMessageW(m_hWnd, TVM_GETNEXTITEM, uCode, reinterpret_cast<LPARAM>(hItem)));
+		}
+		[[nodiscard]] auto GetNextSiblingItem(HTREEITEM hItem)const->HTREEITEM { return GetNextItem(hItem, TVGN_NEXT); }
+		[[nodiscard]] auto GetParentItem(HTREEITEM hItem)const->HTREEITEM { return GetNextItem(hItem, TVGN_PARENT); }
+		[[nodiscard]] auto GetRootItem()const->HTREEITEM { return GetNextItem(nullptr, TVGN_ROOT); }
+		[[nodiscard]] auto GetSelectedItem()const->HTREEITEM { return GetNextItem(nullptr, TVGN_CARET); }
+		[[nodiscard]] auto HitTest(TVHITTESTINFO* pHTI)const->HTREEITEM {
+			assert(IsWindow());
+			return reinterpret_cast<HTREEITEM>(::SendMessageW(m_hWnd, TVM_HITTEST, 0, reinterpret_cast<LPARAM>(pHTI)));
+		}
+		[[nodiscard]] auto HitTest(POINT pt, UINT* pFlags = nullptr)const->HTREEITEM {
+			TVHITTESTINFO hti { .pt { pt } }; const auto ret = HitTest(&hti);
+			if (pFlags != nullptr) { *pFlags = hti.flags; }
+			return ret;
+		}
+		auto InsertItem(LPTVINSERTSTRUCTW pTIS)const->HTREEITEM {
+			assert(IsWindow()); return reinterpret_cast<HTREEITEM>
+				(::SendMessageW(m_hWnd, TVM_INSERTITEM, 0, reinterpret_cast<LPARAM>(pTIS)));
+		}
+		void SelectItem(HTREEITEM hItem)const {
+			assert(IsWindow()); ::SendMessageW(m_hWnd, TVM_SELECTITEM, TVGN_CARET, reinterpret_cast<LPARAM>(hItem));
+		}
+	};
+
+	class CWndProgBar : public CWnd {
+	public:
+		int SetPos(int iPos)const {
+			assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, PBM_SETPOS, iPos, 0UL));
+		}
+		void SetRange(int iLower, int iUpper)const {
+			assert(IsWindow());
+			::SendMessageW(m_hWnd, PBM_SETRANGE32, static_cast<WPARAM>(iLower), static_cast<LPARAM>(iUpper));
+		}
+	};
+
+	class CWndTab : public CWnd {
+	public:
+		[[nodiscard]] int GetCurSel()const {
+			assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, TCM_GETCURSEL, 0, 0L));
+		}
+		[[nodiscard]] auto GetItemRect(int nItem)const->CRect {
+			assert(IsWindow());
+			RECT rc { }; ::SendMessageW(m_hWnd, TCM_GETITEMRECT, nItem, reinterpret_cast<LPARAM>(&rc));
+			return rc;
+		}
+		auto InsertItem(int iItem, TCITEMW* pItem)const->LONG {
+			assert(IsWindow());
+			return static_cast<LONG>(::SendMessageW(m_hWnd, TCM_INSERTITEMW, iItem, reinterpret_cast<LPARAM>(pItem)));
+		}
+		auto InsertItem(int iItem, LPCWSTR pwszStr)const->LONG {
+			TCITEMW tci { .mask { TCIF_TEXT }, .pszText { const_cast<LPWSTR>(pwszStr) } };
+			return InsertItem(iItem, &tci);
+		}
+		int SetCurSel(int iItem)const {
+			assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, TCM_SETCURSEL, iItem, 0L));
+		}
+	};
+
+	class CMenu {
+	public:
+		CMenu() = default;
+		CMenu(HMENU hMenu) { Attach(hMenu); }
+		virtual ~CMenu() = default;
+		CMenu operator=(const CWnd&) = delete;
+		CMenu operator=(HMENU) = delete;
+		operator HMENU()const { return m_hMenu; }
+		void AppendItem(UINT uFlags, UINT_PTR uIDItem, LPCWSTR pNameItem)const {
+			assert(IsMenu()); ::AppendMenuW(m_hMenu, uFlags, uIDItem, pNameItem);
+		}
+		void AppendSepar()const { AppendItem(MF_SEPARATOR, 0, nullptr); }
+		void AppendString(UINT_PTR uIDItem, LPCWSTR pNameItem)const { AppendItem(MF_STRING, uIDItem, pNameItem); }
+		void Attach(HMENU hMenu) { assert(::IsMenu(hMenu)); m_hMenu = hMenu; }
+		void CheckItem(UINT uIDItem, bool fCheck, bool fByID = true)const {
+			assert(IsMenu()); ::CheckMenuItem(m_hMenu, uIDItem, fCheck ? MF_CHECKED : MF_UNCHECKED |
+			(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
+		}
+		void CreatePopupMenu() { Attach(::CreatePopupMenu()); }
+		void DestroyMenu() { assert(IsMenu()); ::DestroyMenu(m_hMenu); m_hMenu = nullptr; }
+		void Detach() { m_hMenu = nullptr; }
+		void EnableItem(UINT uIDItem, bool fEnable, bool fByID = true)const {
+			assert(IsMenu()); ::EnableMenuItem(m_hMenu, uIDItem, fEnable ? MF_ENABLED : MF_GRAYED |
+				(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
+		}
+		[[nodiscard]] auto GetMenuState(UINT uID, UINT nFlags)const->UINT {
+			assert(IsMenu()); return ::GetMenuState(m_hMenu, uID, nFlags);
+		}
+		[[nodiscard]] bool IsChecked(UINT uIDItem, bool fByID = true)const {
+			return GetMenuState(uIDItem, fByID ? MF_BYCOMMAND : MF_BYPOSITION) & MF_CHECKED;
+		}
+		[[nodiscard]] bool IsMenu()const { return ::IsMenu(m_hMenu); }
+		void TrackPopup(int iX, int iY, HWND hWndOwner, UINT uFlags = TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON)const {
+			assert(IsMenu()); ::TrackPopupMenuEx(m_hMenu, uFlags, iX, iY, hWndOwner, nullptr);
+		}
+	private:
+		HMENU m_hMenu { }; //Windows menu handle.
+	};
+};

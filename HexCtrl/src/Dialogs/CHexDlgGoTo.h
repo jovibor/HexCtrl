@@ -17,7 +17,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetHWND()const->HWND;
 		[[nodiscard]] bool IsRepeatAvail()const;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
-		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 		void Repeat(bool fFwd = true); //fFwd: true - forward, false - backward.
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowWindow(int iCmdShow);
@@ -27,12 +27,12 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetGoMode()const->EGoMode;
 		void GoTo(bool fForward);
 		[[nodiscard ]] bool IsNoEsc()const;
-		auto OnActivate(const MSG& stMsg) -> INT_PTR;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnCancel();
 		auto OnClose() -> INT_PTR;
-		auto OnCommand(const MSG& stMsg) -> INT_PTR;
+		auto OnCommand(const MSG& msg) -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
-		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
+		auto OnInitDialog(const MSG& msg) -> INT_PTR;
 		void OnOK();
 		void UpdateComboMode();
 	private:

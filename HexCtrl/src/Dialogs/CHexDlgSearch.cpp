@@ -123,18 +123,18 @@ bool CHexDlgSearch::PreTranslateMsg(MSG* pMsg)
 	return m_Wnd.IsDlgMessage(pMsg);
 }
 
-auto CHexDlgSearch::ProcessMsg(const MSG& stMsg)->INT_PTR
+auto CHexDlgSearch::ProcessMsg(const MSG& msg)->INT_PTR
 {
-	switch (stMsg.message) {
-	case WM_ACTIVATE: return OnActivate(stMsg);
+	switch (msg.message) {
+	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_CLOSE: return OnClose();
-	case WM_COMMAND: return OnCommand(stMsg);
-	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(stMsg);
+	case WM_COMMAND: return OnCommand(msg);
+	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(msg);
 	case WM_DESTROY: return OnDestroy();
-	case WM_DRAWITEM: return OnDrawItem(stMsg);
-	case WM_INITDIALOG: return OnInitDialog(stMsg);
-	case WM_MEASUREITEM: return OnMeasureItem(stMsg);
-	case WM_NOTIFY: return OnNotify(stMsg);
+	case WM_DRAWITEM: return OnDrawItem(msg);
+	case WM_INITDIALOG: return OnInitDialog(msg);
+	case WM_MEASUREITEM: return OnMeasureItem(msg);
+	case WM_NOTIFY: return OnNotify(msg);
 	default:
 		return 0;
 	}
@@ -174,7 +174,7 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 		if (m_vecSearchRes.size() < static_cast<std::size_t>(m_dwLimit)) {
 			m_vecSearchRes.emplace_back(ullOffset);
 			iHighlight = static_cast<int>(m_vecSearchRes.size());
-			m_pList->SetItemCountEx(iHighlight--);
+			m_ListEx.SetItemCountEx(iHighlight--);
 		}
 	}
 	else {
@@ -182,9 +182,9 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 	}
 
 	if (iHighlight != -1) {
-		m_pList->SetItemState(-1, 0, LVIS_SELECTED);
-		m_pList->SetItemState(iHighlight, LVIS_SELECTED, LVIS_SELECTED);
-		m_pList->EnsureVisible(iHighlight, TRUE);
+		m_ListEx.SetItemState(-1, 0, LVIS_SELECTED);
+		m_ListEx.SetItemState(iHighlight, LVIS_SELECTED, LVIS_SELECTED);
+		m_ListEx.EnsureVisible(iHighlight, TRUE);
 	}
 }
 
@@ -241,7 +241,7 @@ void CHexDlgSearch::ClearComboType()
 
 void CHexDlgSearch::ClearList()
 {
-	m_pList->SetItemCountEx(0);
+	m_ListEx.SetItemCountEx(0);
 	m_vecSearchRes.clear();
 }
 
@@ -337,7 +337,7 @@ void CHexDlgSearch::FindAll()
 		m_dwCount = static_cast<DWORD>(m_vecSearchRes.size());
 	}
 
-	m_pList->SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
+	m_ListEx.SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
 }
 
 void CHexDlgSearch::FindForward()
@@ -745,12 +745,12 @@ bool CHexDlgSearch::IsWildcard()const
 	return m_WndBtnWC.IsWindowEnabled() && m_WndBtnWC.IsChecked();
 }
 
-auto CHexDlgSearch::OnActivate(const MSG& stMsg)->INT_PTR
+auto CHexDlgSearch::OnActivate(const MSG& msg)->INT_PTR
 {
 	if (!m_pHexCtrl->IsCreated())
 		return FALSE;
 
-	const auto nState = LOWORD(stMsg.wParam);
+	const auto nState = LOWORD(msg.wParam);
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
 		m_WndCmbFind.SetFocus();
 		SetControlsState();
@@ -880,11 +880,11 @@ void CHexDlgSearch::OnComboTypeSelChange()
 	}
 }
 
-auto CHexDlgSearch::OnCommand(const MSG& stMsg)->INT_PTR
+auto CHexDlgSearch::OnCommand(const MSG& msg)->INT_PTR
 {
-	const auto uCtrlID = LOWORD(stMsg.wParam); //Control ID or menu ID.
-	const auto uCode = HIWORD(stMsg.wParam);   //Control code, zero for menu.
-	const auto hWndCtrl = reinterpret_cast<HWND>(stMsg.lParam); //Control HWND, zero for menu.
+	const auto uCtrlID = LOWORD(msg.wParam); //Control ID or menu ID.
+	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
+	const auto hWndCtrl = reinterpret_cast<HWND>(msg.lParam); //Control HWND, zero for menu.
 
 	//IDOK and IDCANCEL don't have HWND in lParam, if send as result of
 	//IsDialogMessage and no button with such ID presents in the dialog.
@@ -910,8 +910,8 @@ auto CHexDlgSearch::OnCommand(const MSG& stMsg)->INT_PTR
 		case EMenuID::IDM_SEARCH_ADDBKM:
 		{
 			int nItem { -1 };
-			for (auto i = 0UL; i < m_pList->GetSelectedCount(); ++i) {
-				nItem = m_pList->GetNextItem(nItem, LVNI_SELECTED);
+			for (auto i = 0UL; i < m_ListEx.GetSelectedCount(); ++i) {
+				nItem = m_ListEx.GetNextItem(nItem, LVNI_SELECTED);
 				const HEXBKM hbs { .vecSpan { HEXSPAN { m_vecSearchRes.at(static_cast<std::size_t>(nItem)),
 					m_fReplace ? m_vecReplaceData.size() : m_vecSearchData.size() } }, .wstrDesc { m_wstrSearch },
 					.stClr { GetHexCtrl()->GetColors().clrBkBkm, GetHexCtrl()->GetColors().clrFontBkm } };
@@ -920,7 +920,7 @@ auto CHexDlgSearch::OnCommand(const MSG& stMsg)->INT_PTR
 			GetHexCtrl()->Redraw();
 		}
 		break;
-		case EMenuID::IDM_SEARCH_SELECTALL: m_pList->SetItemState(-1, LVIS_SELECTED, LVIS_SELECTED); break;
+		case EMenuID::IDM_SEARCH_SELECTALL: m_ListEx.SetItemState(-1, LVIS_SELECTED, LVIS_SELECTED); break;
 		case EMenuID::IDM_SEARCH_CLEARALL:
 			ClearList();
 			m_fSecondMatch = false; //To be able to search from the zero offset.
@@ -932,10 +932,10 @@ auto CHexDlgSearch::OnCommand(const MSG& stMsg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgSearch::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
+auto CHexDlgSearch::OnCtlClrStatic(const MSG& msg)->INT_PTR
 {
-	if (const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam); hWndFrom == m_WndStatResult) {
-		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
+	if (const auto hWndFrom = reinterpret_cast<HWND>(msg.lParam); hWndFrom == m_WndStatResult) {
+		const auto hDC = reinterpret_cast<HDC>(msg.wParam);
 		::SetTextColor(hDC, m_fFound ? RGB(0, 200, 0) : RGB(200, 0, 0));
 		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
 		return reinterpret_cast<INT_PTR>(::GetSysColorBrush(COLOR_3DFACE));
@@ -958,19 +958,19 @@ auto CHexDlgSearch::OnDestroy()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgSearch::OnDrawItem(const MSG& stMsg)->INT_PTR
+auto CHexDlgSearch::OnDrawItem(const MSG& msg)->INT_PTR
 {
-	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(stMsg.lParam);
+	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
 	if (pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_SEARCH_LIST)) {
-		m_pList->DrawItem(pDIS);
+		m_ListEx.DrawItem(pDIS);
 	}
 
 	return TRUE;
 }
 
-auto CHexDlgSearch::OnInitDialog(const MSG& stMsg)->INT_PTR
+auto CHexDlgSearch::OnInitDialog(const MSG& msg)->INT_PTR
 {
-	m_Wnd.Attach(stMsg.hwnd);
+	m_Wnd.Attach(msg.hwnd);
 	m_WndStatResult.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_STAT_RESULT));
 	m_WndCmbFind.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_FIND));
 	m_WndCmbReplace.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_COMBO_REPL));
@@ -1001,11 +1001,11 @@ auto CHexDlgSearch::OnInitDialog(const MSG& stMsg)->INT_PTR
 	iIndex = m_WndCmbMode.AddString(L"Structs");
 	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchMode::MODE_STRUCT));
 
-	m_pList->Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_SEARCH_LIST }, .dwSizeFontList { 10 },
+	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_SEARCH_LIST }, .dwSizeFontList { 10 },
 		.dwSizeFontHdr { 10 }, .fDialogCtrl { true } });
-	m_pList->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
-	m_pList->InsertColumn(0, L"№", LVCFMT_LEFT, 50);
-	m_pList->InsertColumn(1, L"Offset", LVCFMT_LEFT, 455);
+	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
+	m_ListEx.InsertColumn(0, L"№", LVCFMT_LEFT, 50);
+	m_ListEx.InsertColumn(1, L"Offset", LVCFMT_LEFT, 455);
 
 	m_MenuList.CreatePopupMenu();
 	m_MenuList.AppendString(static_cast<UINT_PTR>(EMenuID::IDM_SEARCH_ADDBKM), L"Add bookmark(s)");
@@ -1059,19 +1059,19 @@ auto CHexDlgSearch::OnInitDialog(const MSG& stMsg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgSearch::OnMeasureItem(const MSG& stMsg)->INT_PTR
+auto CHexDlgSearch::OnMeasureItem(const MSG& msg)->INT_PTR
 {
-	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(stMsg.lParam);
+	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(msg.lParam);
 	if (pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_SEARCH_LIST)) {
-		m_pList->MeasureItem(pMIS);
+		m_ListEx.MeasureItem(pMIS);
 	}
 
 	return TRUE;
 }
 
-auto CHexDlgSearch::OnNotify(const MSG& stMsg)->INT_PTR
+auto CHexDlgSearch::OnNotify(const MSG& msg)->INT_PTR
 {
-	const auto pNMHDR = reinterpret_cast<NMHDR*>(stMsg.lParam);
+	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
 	switch (pNMHDR->idFrom) {
 	case IDC_HEXCTRL_SEARCH_LIST:
 		switch (pNMHDR->code) {
@@ -1114,8 +1114,8 @@ void CHexDlgSearch::OnNotifyListItemChanged(NMHDR* pNMHDR)
 
 	VecSpan vecSpan;
 	int nItem = -1;
-	for (auto i = 0UL; i < m_pList->GetSelectedCount(); ++i) {
-		nItem = m_pList->GetNextItem(nItem, LVNI_SELECTED);
+	for (auto i = 0UL; i < m_ListEx.GetSelectedCount(); ++i) {
+		nItem = m_ListEx.GetNextItem(nItem, LVNI_SELECTED);
 
 		//Do not yet add selected (clicked) item (in multiselect), will add it after the loop,
 		//so that it's always last in the vecSpan to highlight it in HexCtrlHighlight.
@@ -1134,7 +1134,7 @@ void CHexDlgSearch::OnNotifyListItemChanged(NMHDR* pNMHDR)
 
 void CHexDlgSearch::OnNotifyListRClick(NMHDR* /*pNMHDR*/)
 {
-	const auto fEnabled { m_pList->GetItemCount() > 0 };
+	const auto fEnabled { m_ListEx.GetItemCount() > 0 };
 	m_MenuList.EnableItem(static_cast<UINT>(EMenuID::IDM_SEARCH_ADDBKM), fEnabled);
 	m_MenuList.EnableItem(static_cast<UINT>(EMenuID::IDM_SEARCH_SELECTALL), fEnabled);
 	m_MenuList.EnableItem(static_cast<UINT>(EMenuID::IDM_SEARCH_CLEARALL), fEnabled);
@@ -1668,7 +1668,7 @@ void CHexDlgSearch::ReplaceAll()
 		m_fFound = true;
 		m_dwCount = m_dwReplaced = static_cast<DWORD>(m_vecSearchRes.size());
 	}
-	m_pList->SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
+	m_ListEx.SetItemCountEx(static_cast<int>(m_vecSearchRes.size()));
 }
 
 void CHexDlgSearch::ResetSearch()
@@ -2403,7 +2403,7 @@ auto CHexDlgSearch::SearchFuncVecFwdByte4(const SEARCHFUNCDATA& refSearch)->FIND
 
 	return { };
 }
-#else //^^^ defined(_M_IX86) || defined(_M_X64) / vvv !defined(_M_IX86) && !defined(_M_X64)
+#elif defined(_M_ARM64)  //^^^ _M_IX86 || _M_X64 / vvv _M_ARM64
 template<CHexDlgSearch::SEARCHTYPE stType>
 auto CHexDlgSearch::SearchFuncVecFwdByte1(const SEARCHFUNCDATA& refSearch)->FINDRESULT
 {
@@ -2421,7 +2421,7 @@ auto CHexDlgSearch::SearchFuncVecFwdByte4(const SEARCHFUNCDATA& refSearch)->FIND
 {
 	return CHexDlgSearch::SearchFuncFwd<stType>(refSearch);
 }
-#endif //^^^ !defined(_M_IX86) && !defined(_M_X64)
+#endif //^^^ _M_ARM64
 
 template<CHexDlgSearch::SEARCHTYPE stType>
 auto CHexDlgSearch::SearchFuncBack(const SEARCHFUNCDATA& refSearch)->FINDRESULT

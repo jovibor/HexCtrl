@@ -29,7 +29,7 @@ namespace HEXCTRL::INTERNAL {
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsVirtual()const;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
-		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 		void RemoveAll()override;
 		void RemoveByOffset(ULONGLONG ullOffset);
 		void RemoveByID(ULONGLONG ullID)override;
@@ -45,21 +45,21 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsShowAsHex()const;
 		void OnCancel();
 		auto OnClose() -> INT_PTR;
-		auto OnCommand(const MSG& stMsg) -> INT_PTR;
+		auto OnCommand(const MSG& msg) -> INT_PTR;
 		void OnCheckHex();
 		auto OnDestroy() -> INT_PTR;
-		auto OnDrawItem(const MSG& stMsg) -> INT_PTR;
+		auto OnDrawItem(const MSG& msg) -> INT_PTR;
 		void OnOK();
-		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
-		auto OnMeasureItem(const MSG& stMsg) -> INT_PTR;
-		auto OnNotify(const MSG& stMsg) -> INT_PTR;
+		auto OnInitDialog(const MSG& msg) -> INT_PTR;
+		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
+		auto OnNotify(const MSG& msg) -> INT_PTR;
 		void OnNotifyListGetDispInfo(NMHDR* pNMHDR);
 		void OnNotifyListItemChanged(NMHDR* pNMHDR);
 		void OnNotifyListDblClick(NMHDR* pNMHDR);
 		void OnNotifyListRClick(NMHDR* pNMHDR);
 		void OnNotifyListGetColor(NMHDR* pNMHDR);
 		void OnNotifyListSetData(NMHDR* pNMHDR);
-		auto OnSize(const MSG& stMsg) -> INT_PTR;
+		auto OnSize(const MSG& msg) -> INT_PTR;
 		void RemoveBookmark(std::uint64_t ullID);
 		void SortBookmarks();
 		void UpdateListCount(bool fPreserveSelected = false);
@@ -71,7 +71,7 @@ namespace HEXCTRL::INTERNAL {
 		std::vector<HEXBKM> m_vecBookmarks; //Bookmarks data.
 		IHexCtrl* m_pHexCtrl { };
 		IHexBookmarks* m_pVirtual { };
-		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
+		LISTEX::CListEx m_ListEx;
 		LONGLONG m_llIndexCurr { };   //Current bookmark's position index, to move next/prev.
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 	};

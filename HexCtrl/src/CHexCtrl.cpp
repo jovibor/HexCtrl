@@ -51,15 +51,15 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgAbout final {
 	public:
 		auto DoModal(HWND hWndParent = nullptr) -> INT_PTR;
-		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 	private:
-		auto OnCommand(const MSG& stMsg) -> INT_PTR;
-		auto OnCtlClrStatic(const MSG& stMsg) -> INT_PTR;
+		auto OnCommand(const MSG& msg) -> INT_PTR;
+		auto OnCtlClrStatic(const MSG& msg) -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
-		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
-		auto OnLButtonDown(const MSG& stMsg) -> INT_PTR;
-		auto OnLButtonUp(const MSG& stMsg) -> INT_PTR;
-		auto OnMouseMove(const MSG& stMsg) -> INT_PTR;
+		auto OnInitDialog(const MSG& msg) -> INT_PTR;
+		auto OnLButtonDown(const MSG& msg) -> INT_PTR;
+		auto OnLButtonUp(const MSG& msg) -> INT_PTR;
+		auto OnMouseMove(const MSG& msg) -> INT_PTR;
 	private:
 		wnd::CWnd m_Wnd;        //Main window.
 		wnd::CWnd m_WndLink;    //Static link control
@@ -76,22 +76,22 @@ auto CHexDlgAbout::DoModal(HWND hWndParent)->INT_PTR {
 		hWndParent, wnd::DlgWndProc<CHexDlgAbout>, reinterpret_cast<LPARAM>(this));
 }
 
-auto CHexDlgAbout::ProcessMsg(const MSG& stMsg)->INT_PTR {
-	switch (stMsg.message) {
-	case WM_COMMAND: return OnCommand(stMsg);
-	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(stMsg);
+auto CHexDlgAbout::ProcessMsg(const MSG& msg)->INT_PTR {
+	switch (msg.message) {
+	case WM_COMMAND: return OnCommand(msg);
+	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(msg);
 	case WM_DESTROY: return OnDestroy();
-	case WM_INITDIALOG: return OnInitDialog(stMsg);
-	case WM_LBUTTONDOWN: return OnLButtonDown(stMsg);
-	case WM_LBUTTONUP: return OnLButtonUp(stMsg);
-	case WM_MOUSEMOVE: return OnMouseMove(stMsg);
+	case WM_INITDIALOG: return OnInitDialog(msg);
+	case WM_LBUTTONDOWN: return OnLButtonDown(msg);
+	case WM_LBUTTONUP: return OnLButtonUp(msg);
+	case WM_MOUSEMOVE: return OnMouseMove(msg);
 	default:
 		return 0;
 	}
 }
 
-auto CHexDlgAbout::OnCommand(const MSG& stMsg)->INT_PTR {
-	const auto uCtrlID = LOWORD(stMsg.wParam);
+auto CHexDlgAbout::OnCommand(const MSG& msg)->INT_PTR {
+	const auto uCtrlID = LOWORD(msg.wParam);
 	switch (uCtrlID) {
 	case IDOK:
 	case IDCANCEL:
@@ -103,10 +103,10 @@ auto CHexDlgAbout::OnCommand(const MSG& stMsg)->INT_PTR {
 	return TRUE;
 }
 
-auto CHexDlgAbout::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
+auto CHexDlgAbout::OnCtlClrStatic(const MSG& msg)->INT_PTR
 {
-	if (const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam); hWndFrom == m_WndLink) {
-		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
+	if (const auto hWndFrom = reinterpret_cast<HWND>(msg.lParam); hWndFrom == m_WndLink) {
+		const auto hDC = reinterpret_cast<HDC>(msg.wParam);
 		::SetTextColor(hDC, RGB(0, 50, 250));
 		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
 		::SelectObject(hDC, m_fLinkUnderline ? m_hFontUnderline : m_hFontDef);
@@ -124,9 +124,9 @@ auto CHexDlgAbout::OnDestroy()->INT_PTR {
 	return TRUE;
 };
 
-auto CHexDlgAbout::OnInitDialog(const MSG& stMsg)->INT_PTR
+auto CHexDlgAbout::OnInitDialog(const MSG& msg)->INT_PTR
 {
-	m_Wnd.Attach(stMsg.hwnd);
+	m_Wnd.Attach(msg.hwnd);
 	m_Wnd.SetWndClassLong(GCLP_HCURSOR, 0); //To prevent cursor blinking.
 	m_WndLink.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_LINKGH));
 
@@ -162,9 +162,9 @@ auto CHexDlgAbout::OnInitDialog(const MSG& stMsg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgAbout::OnLButtonDown(const MSG& stMsg)->INT_PTR
+auto CHexDlgAbout::OnLButtonDown(const MSG& msg)->INT_PTR
 {
-	const POINT pt { .x { GET_X_LPARAM(stMsg.lParam) }, .y { GET_Y_LPARAM(stMsg.lParam) } };
+	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
 	if (hWnd != m_WndLink) {
 		m_fLBDownLink = false;
@@ -176,9 +176,9 @@ auto CHexDlgAbout::OnLButtonDown(const MSG& stMsg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgAbout::OnLButtonUp(const MSG& stMsg) -> INT_PTR
+auto CHexDlgAbout::OnLButtonUp(const MSG& msg) -> INT_PTR
 {
-	const POINT pt { .x { GET_X_LPARAM(stMsg.lParam) }, .y { GET_Y_LPARAM(stMsg.lParam) } };
+	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
 	if (hWnd != m_WndLink) {
 		m_fLBDownLink = false;
@@ -192,9 +192,9 @@ auto CHexDlgAbout::OnLButtonUp(const MSG& stMsg) -> INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgAbout::OnMouseMove(const MSG& stMsg)->INT_PTR
+auto CHexDlgAbout::OnMouseMove(const MSG& msg)->INT_PTR
 {
-	const POINT pt { .x { GET_X_LPARAM(stMsg.lParam) }, .y { GET_Y_LPARAM(stMsg.lParam) } };
+	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
 	if (hWnd == nullptr)
 		return FALSE;
@@ -1472,9 +1472,9 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		else {
 			ModifyWorker(hms, ModifyOper, hms.spnData);
 		}
-	#else //^^^ defined(_M_IX86) || defined(_M_X64) / vvv !defined(_M_IX86) && !defined(_M_X64)
+	#elif defined(_M_ARM64) //^^^ _M_IX86 || _M_X64 / vvv _M_ARM64
 		ModifyWorker(hms, ModifyOper, hms.spnData);
-	#endif // ^^^ !defined(_M_IX86) && !defined(_M_X64)
+	#endif // ^^^ _M_ARM64
 	}
 	break;
 	default:
@@ -6808,7 +6808,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 		break;
 	}
 }
-#endif //^^^ defined(_M_IX86) || defined(_M_X64)
+#endif //^^^ _M_IX86 || _M_X64
 
 //CHexCtrl MFC message handlers.
 

@@ -5,7 +5,9 @@ module;
 * This code is available under the "MIT License".                   *
 ********************************************************************/
 #include <SDKDDKVer.h>
-#include <afxcontrolbars.h>
+#include <shlwapi.h>
+#include <uxtheme.h>
+#include <commctrl.h>
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -14,7 +16,7 @@ module;
 #include <optional>
 #include <random>
 #include <string>
-#include <unordered_map>
+#include <vector>
 export module ListEx;
 
 export namespace HEXCTRL::LISTEX {
@@ -96,7 +98,7 @@ export namespace HEXCTRL::LISTEX {
 	using PLISTEXLINKINFO = LISTEXLINKINFO*;
 
 	/**********************************************************************************
-	* LISTEXCOLORS - All ListEx colors.                                               *
+	* LISTEXCOLORS - All CListEx colors.                                              *
 	**********************************************************************************/
 	struct LISTEXCOLORS {
 		COLORREF clrListText { GetSysColor(COLOR_WINDOWTEXT) };       //List text color.
@@ -122,27 +124,28 @@ export namespace HEXCTRL::LISTEX {
 	**********************************************************************************/
 	struct LISTEXCREATE {
 		HWND            hWndParent { };          //Parent window.
-		PCLISTEXCOLORS  pColors { };             //ListEx colors.
-		const LOGFONTW* pLFList { };             //ListEx LOGFONT.
+		PCLISTEXCOLORS  pColors { };             //CListEx colors.
+		const LOGFONTW* pLFList { };             //CListEx LOGFONT.
 		const LOGFONTW* pLFHdr { };              //Header LOGFONT.
-		RECT            rect;                    //Initial rect.
-		UINT            uID { };                 //ListEx control ID.
-		DWORD           dwStyle { };             //ListEx window styles.
+		RECT            rect { };                //Initial rect.
+		UINT            uID { };                 //CListEx Control ID.
+		DWORD           dwStyle { };             //Window styles.
 		DWORD           dwExStyle { };           //Extended window styles.
 		DWORD           dwSizeFontList { 9 };    //List font default size in logical points.
-		DWORD           dwSizeFontHdr { 9 };     //Header ont default size in logical points.
+		DWORD           dwSizeFontHdr { 9 };     //Header font default size in logical points.
 		DWORD           dwTTStyleCell { };       //Cell's tooltip Window styles.
 		DWORD           dwTTStyleLink { };       //Link's tooltip Window styles.
-		DWORD           dwTTShowDelay { };       //Tooltip delay before showing, in milliseconds.
-		DWORD           dwTTShowTime { 5000 };   //Tooltip show up time, in milliseconds.
+		DWORD           dwTTDelayTime { };       //Tooltip delay before showing up, in ms.
+		DWORD           dwTTShowTime { 5000 };   //Tooltip show up time, in ms.
 		DWORD           dwWidthGrid { 1 };       //Width of the list grid.
 		DWORD           dwHdrHeight { };         //Header height.
-		POINT           ptTTOffset { };          //Tooltip offset from cursor. Doesn't work for TTS_BALLOON.
-		bool            fDialogCtrl { false };   //If it's a list within dialog.
+		POINT           ptTTOffset { .x { 3 }, .y { -20 } }; //Tooltip offset from a cursor pos. Doesn't work for TTS_BALLOON.
+		bool            fDialogCtrl { false };   //If it's a list within dialog?
 		bool            fSortable { false };     //Is list sortable, by clicking on the header column?
+		bool            fLinks { false };        //Enable links support.
 		bool            fLinkUnderline { true }; //Links are displayed underlined or not.
 		bool            fLinkTooltip { true };   //Show links' toolips or not.
-		bool            fHighLatency { false };  //Do not redraw until scroll thumb is released.
+		bool            fHighLatency { false };  //Do not redraw window until scroll thumb is released.
 	};
 
 	/********************************************
@@ -150,64 +153,11 @@ export namespace HEXCTRL::LISTEX {
 	********************************************/
 	struct LISTEXHDRICON {
 		POINT pt { };              //Coords of the icon's top-left corner in the header item's rect.
-		int   iIndex { };          //Icon index in the header's image list.
+		int   iIndex { -1 };       //Icon index in the header's image list.
 		bool  fClickable { true }; //Is icon sending LISTEX_MSG_HDRICONCLICK message when clicked.
 	};
 
-	/********************************************
-	* IListEx pure virtual base class.          *
-	********************************************/
-	class IListEx : public CMFCListCtrl {
-	public:
-		virtual bool Create(const LISTEXCREATE& lcs) = 0;
-		virtual void CreateDialogCtrl(UINT uCtrlID, HWND hWndParent) = 0;
-		virtual BOOL DeleteAllItems() = 0;
-		virtual BOOL DeleteColumn(int nCol) = 0;
-		virtual BOOL DeleteItem(int nItem) = 0;
-		virtual void Destroy() = 0;
-		[[nodiscard]] virtual auto GetCellData(int iItem, int iSubitem)const->ULONGLONG = 0;
-		[[nodiscard]] virtual auto GetColors()const->const LISTEXCOLORS & = 0;
-		[[nodiscard]] virtual auto GetColumnSortMode(int iColumn)const->EListExSortMode = 0;
-		[[nodiscard]] virtual auto GetFont()const->LOGFONTW = 0;
-		[[nodiscard]] virtual int GetSortColumn()const = 0;
-		[[nodiscard]] virtual bool GetSortAscending()const = 0;
-		virtual void HideColumn(int iIndex, bool fHide) = 0;
-		virtual int InsertColumn(int nCol, const LVCOLUMNW* pColumn, int iDataAlign = LVCFMT_LEFT, bool fEditable = false) = 0;
-		virtual int InsertColumn(int nCol, LPCWSTR pwszName, int nFormat = LVCFMT_LEFT, int nWidth = -1,
-			int nSubItem = -1, int iDataAlign = LVCFMT_LEFT, bool fEditable = false) = 0;
-		[[nodiscard]] virtual bool IsCreated()const = 0;
-		[[nodiscard]] virtual bool IsColumnSortable(int iColumn) = 0;
-		virtual void MeasureItem(LPMEASUREITEMSTRUCT lpMIS) = 0;
-		virtual void ResetSort() = 0; //Reset all the sort by any column to its default state.
-		virtual void SetCellColor(int iItem, int iSubitem, COLORREF clrBk, COLORREF clrText = -1) = 0;
-		virtual void SetCellData(int iItem, int iSubitem, ULONGLONG ullData) = 0;
-		virtual void SetCellIcon(int iItem, int iSubitem, int iIndex) = 0;
-		virtual void SetCellTooltip(int iItem, int iSubitem, std::wstring_view wsvTooltip, std::wstring_view wsvCaption = L"") = 0;
-		virtual void SetColors(const LISTEXCOLORS& lcs) = 0;
-		virtual void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
-		virtual void SetColumnEditable(int iColumn, bool fEditable) = 0;
-		virtual void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode = { }) = 0;
-		virtual void SetFont(const LOGFONTW& lf) = 0;
-		virtual void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1) = 0;
-		virtual void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon) = 0; //Icon for a given column.
-		virtual void SetHdrFont(const LOGFONTW& lf) = 0;
-		virtual void SetHdrHeight(DWORD dwHeight) = 0;
-		virtual void SetHdrImageList(HIMAGELIST pList) = 0;
-		virtual void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText = -1) = 0;
-		virtual void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare = nullptr,
-			EListExSortMode eSortMode = EListExSortMode::SORT_LEX) = 0;
-	};
-
-	/***************************************************************************************
-	* Factory function CreateListEx. Returns IListExPtr, unique_ptr with custom deleter.   *
-	***************************************************************************************/
-	struct IIListExDeleter { void operator()(IListEx* p)const { p->Destroy(); } };
-	using IListExPtr = std::unique_ptr<IListEx, IIListExDeleter>;
-	[[nodiscard]] IListExPtr CreateListEx();
-
-	/****************************************************************************
-	* WM_NOTIFY codes (NMHDR.code values)										*
-	****************************************************************************/
+	//WM_NOTIFY codes (NMHDR.code values).
 
 	constexpr auto LISTEX_MSG_EDITBEGIN { 0x1000U };    //Edit in-place field is about to display.
 	constexpr auto LISTEX_MSG_GETCOLOR { 0x1001U };     //Get cell color.
@@ -223,16 +173,154 @@ export namespace HEXCTRL::LISTEX {
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 }
 
+namespace HEXCTRL::LISTEX::INTERNAL::wnd {
+	auto DefSubclassProc(const MSG& msg) -> LRESULT {
+		return ::DefSubclassProc(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+	}
+
+	class CPoint : public POINT {
+	public:
+		CPoint() : POINT { } { }
+		CPoint(POINT pt) : POINT { pt } { }
+		CPoint(int x, int y) : POINT { .x { x }, .y { y } } { }
+		operator LPPOINT() { return this; }
+		operator const POINT*()const { return this; }
+		bool operator==(POINT pt)const { return x == pt.x && y == pt.y; }
+		bool operator!=(POINT pt)const { return !(*this == pt); }
+		CPoint& operator=(POINT pt) { *this = pt; return *this; }
+		CPoint operator+(POINT pt)const { return { x + pt.x, y + pt.y }; }
+		CPoint operator-(POINT pt)const { return { x - pt.x, y - pt.y }; }
+		void Offset(int iX, int iY) { x += iX; y += iY; }
+		void Offset(POINT pt) { Offset(pt.x, pt.y); }
+	};
+
+	class CRect : public RECT {
+	public:
+		CRect() : RECT { } { }
+		CRect(int iLeft, int iTop, int iRight, int iBottom) : RECT { .left { iLeft }, .top { iTop },
+			.right { iRight }, .bottom { iBottom } } {
+		}
+		CRect(const RECT rc) { ::CopyRect(this, &rc); }
+		CRect(LPCRECT pRC) { ::CopyRect(this, pRC); }
+		CRect(POINT pt, SIZE size) { left = pt.x; right = left + size.cx; top = pt.y; bottom = top + size.cy; }
+		CRect(POINT topLeft, POINT botRight) {
+			left = topLeft.x; top = topLeft.y; right = botRight.x; bottom = botRight.y;
+		}
+		operator LPRECT() { return this; }
+		operator LPCRECT()const { return this; }
+		bool operator==(RECT rc)const { return ::EqualRect(this, &rc); }
+		bool operator!=(RECT rc)const { return !(*this == rc); }
+		CRect& operator=(RECT rc) { ::CopyRect(this, &rc); return *this; }
+		[[nodiscard]] auto BottomRight()const->CPoint { return { { .x { right }, .y { bottom } } }; };
+		void DeflateRect(int x, int y) { ::InflateRect(this, -x, -y); }
+		void DeflateRect(SIZE size) { ::InflateRect(this, -size.cx, -size.cy); }
+		void DeflateRect(LPCRECT pRC) { left += pRC->left; top += pRC->top; right -= pRC->right; bottom -= pRC->bottom; }
+		void DeflateRect(int l, int t, int r, int b) { left += l; top += t; right -= r; bottom -= b; }
+		[[nodiscard]] int Height()const { return bottom - top; }
+		[[nodiscard]] bool IsRectEmpty()const { return ::IsRectEmpty(this); }
+		[[nodiscard]] bool IsRectNull()const { return (left == 0 && right == 0 && top == 0 && bottom == 0); }
+		void OffsetRect(int x, int y) { ::OffsetRect(this, x, y); }
+		void OffsetRect(POINT pt) { ::OffsetRect(this, pt.x, pt.y); }
+		[[nodiscard]] bool PtInRect(POINT pt)const { return ::PtInRect(this, pt); }
+		void SetRect(int x1, int y1, int x2, int y2) { ::SetRect(this, x1, y1, x2, y2); }
+		void SetRectEmpty() { ::SetRectEmpty(this); }
+		[[nodiscard]] auto TopLeft()const->CPoint { return { { .x { left }, .y { top } } }; };
+		[[nodiscard]] int Width()const { return right - left; }
+	};
+
+	class CDC {
+	public:
+		CDC() = default;
+		CDC(HDC hDC) : m_hDC(hDC) { }
+		operator HDC()const { return m_hDC; }
+		void DrawFocusRect(LPCRECT pRc)const { ::DrawFocusRect(m_hDC, pRc); }
+		int DrawTextW(std::wstring_view wsv, LPRECT pRect, UINT uFormat)const {
+			return ::DrawTextW(m_hDC, wsv.data(), static_cast<int>(wsv.size()), pRect, uFormat);
+		}
+		void FillSolidRect(LPCRECT pRC, COLORREF clr)const {
+			::SetBkColor(m_hDC, clr); ::ExtTextOutW(m_hDC, 0, 0, ETO_OPAQUE, pRC, nullptr, 0, nullptr);
+		}
+		[[nodiscard]] auto GetClipBox()const->CRect { RECT rc; ::GetClipBox(m_hDC, &rc); return rc; }
+		bool LineTo(POINT pt)const { return LineTo(pt.x, pt.y); }
+		bool LineTo(int x, int y)const { return ::LineTo(m_hDC, x, y); }
+		bool MoveTo(POINT pt)const { return MoveTo(pt.x, pt.y); }
+		bool MoveTo(int x, int y)const { return ::MoveToEx(m_hDC, x, y, nullptr); }
+		bool Polygon(const POINT* pPT, int iCount)const { return ::Polygon(m_hDC, pPT, iCount); }
+		auto SetTextColor(COLORREF clr)const->COLORREF { return ::SetTextColor(m_hDC, clr); }
+		auto SelectObject(HGDIOBJ hObj)const->HGDIOBJ { return ::SelectObject(m_hDC, hObj); }
+	protected:
+		HDC m_hDC;
+	};
+
+	class CPaintDC : public CDC {
+	public:
+		CPaintDC(HWND hWnd) : m_hWnd(hWnd) { assert(::IsWindow(hWnd)); m_hDC = ::BeginPaint(m_hWnd, &m_PS); }
+		~CPaintDC() { ::EndPaint(m_hWnd, &m_PS); }
+		HDC GetHDC()const { return m_PS.hdc; }
+		operator HDC()const { return m_PS.hdc; }
+	private:
+		PAINTSTRUCT m_PS;
+		HWND m_hWnd;
+	};
+
+	class CMemDC : public CDC {
+	public:
+		CMemDC(HDC hDC, HWND hWnd) : m_hDCOrig(hDC) { assert(::IsWindow(hWnd)); ::GetClientRect(hWnd, &m_rc); Init(); }
+		CMemDC(HDC hDC, RECT rc) : m_hDCOrig(hDC), m_rc(rc) { Init(); }
+		~CMemDC();
+		HDC GetHDC()const { return m_hDCMem; }
+		operator HDC()const { return m_hDCMem; }
+	private:
+		void Init();
+	private:
+		HDC m_hDCOrig;
+		HDC m_hDCMem;
+		HBITMAP m_hBmp;
+		RECT m_rc;
+	};
+
+	void CMemDC::Init()
+	{
+		m_hDCMem = m_hDC = ::CreateCompatibleDC(m_hDCOrig);
+		const auto iWidth = m_rc.right - m_rc.left;
+		const auto iHeight = m_rc.bottom - m_rc.top;
+		m_hBmp = ::CreateCompatibleBitmap(m_hDCOrig, iWidth, iHeight);
+		::SelectObject(m_hDCMem, m_hBmp);
+		if (m_hDCMem == nullptr || m_hBmp == nullptr) {
+			assert(true);
+		}
+	}
+
+	CMemDC::~CMemDC()
+	{
+		const auto iWidth = m_rc.right - m_rc.left;
+		const auto iHeight = m_rc.bottom - m_rc.top;
+		::BitBlt(m_hDCOrig, m_rc.left, m_rc.top, iWidth, iHeight, m_hDCMem, m_rc.left, m_rc.top, SRCCOPY);
+		::DeleteObject(m_hBmp);
+		::DeleteDC(m_hDCMem);
+	}
+
+#define	GET_X_LPARAM(lParam) (static_cast<int>(static_cast<short>(LOWORD(lParam))))
+#define	GET_Y_LPARAM(lParam) (static_cast<int>(static_cast<short>(HIWORD(lParam))))
+}
+
 namespace HEXCTRL::LISTEX::INTERNAL {
-	class CListExHdr final : public CMFCHeaderCtrl {
+	class CListExHdr final {
 	public:
 		void DeleteColumn(int iIndex);
-		[[nodiscard]] UINT GetHiddenCount()const;
+		[[nodiscard]] auto GetClientRect()const->RECT;
 		[[nodiscard]] int GetColumnDataAlign(int iIndex)const;
+		[[nodiscard]] auto GetHiddenCount()const->UINT;
+		[[nodiscard]] auto GetImageList(int iList = HDSIL_NORMAL)const->HIMAGELIST;
+		bool GetItem(int iPos, HDITEMW* pHDI)const;
+		[[nodiscard]] int GetItemCount()const;
+		[[nodiscard]] auto GetItemRect(int iIndex)const->RECT;
 		void HideColumn(int iIndex, bool fHide);
 		[[nodiscard]] bool IsColumnHidden(int iIndex)const; //Column index.
 		[[nodiscard]] bool IsColumnSortable(int iIndex)const;
 		[[nodiscard]] bool IsColumnEditable(int iIndex)const;
+		auto ProcessMsg(const MSG& msg) -> LRESULT;
+		void RedrawWindow()const;
 		void SetHeight(DWORD dwHeight);
 		void SetFont(const LOGFONTW& lf);
 		void SetColor(const LISTEXCOLORS& lcs);
@@ -241,53 +329,69 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		void SetColumnIcon(int iColumn, const LISTEXHDRICON& stIcon);
 		void SetColumnSortable(int iColumn, bool fSortable);
 		void SetColumnEditable(int iColumn, bool fEditable);
+		void SetImageList(HIMAGELIST pList, int iList = HDSIL_NORMAL);
+		void SetItem(int nPos, const HDITEMW& item);
 		void SetSortable(bool fSortable);
 		void SetSortArrow(int iColumn, bool fAscending);
+		void SubclassHeader(HWND hWndHeader);
 	private:
-		struct HDRICON;
 		struct HIDDEN;
+		struct HDRICON { //Header column icon.
+			LISTEXHDRICON stIcon;               //Icon data struct.
+			bool          fLMPressed { false }; //Left mouse button pressed atm.
+		};
+		struct COLUMNDATA {
+			UINT uID { };    //Column ID
+			HDRICON icon;    //Column icon.
+			LISTEXCOLOR clr; //Column colors, text/bk.
+			int  iDataAlign { LVCFMT_LEFT };
+			bool fEditable { false };
+			bool fSortable { true }; //By default columns are sortable, unless explicitly set to false.
+		};
+		void AddColumnData(const COLUMNDATA& data);
 		[[nodiscard]] UINT ColumnIndexToID(int iIndex)const; //Returns unique column ID. Must be > 0.
 		[[nodiscard]] int ColumnIDToIndex(UINT uID)const;
+		[[nodiscard]] auto GetParent() -> HWND;
 		[[nodiscard]] auto GetHdrColor(UINT ID)const->PLISTEXCOLOR;
+		[[nodiscard]] auto GetColumnData(UINT uID) -> COLUMNDATA*;
+		[[nodiscard]] auto GetColumnData(UINT uID)const->const COLUMNDATA*;
 		[[nodiscard]] auto GetHdrIcon(UINT ID) -> HDRICON*;
+		[[nodiscard]] auto GetListParent() -> HWND;
+		[[nodiscard]] int HitTest(HDHITTESTINFO hhti);
 		[[nodiscard]] bool IsEditable(UINT ID)const;
 		[[nodiscard]] auto IsHidden(UINT ID)const->const HIDDEN*; //Internal ColumnID.
 		[[nodiscard]] bool IsSortable(UINT ID)const;
-		afx_msg void OnDestroy();
-		afx_msg void OnDrawItem(CDC* pDC, int iItem, CRect rcOrig, BOOL bIsPressed, BOOL bIsHighlighted)override;
-		afx_msg LRESULT OnLayout(WPARAM wParam, LPARAM lParam);
-		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
-		afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
-		afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
-		DECLARE_MESSAGE_MAP();
+		[[nodiscard]] bool IsWindow()const;
+		auto OnDestroy() -> LRESULT;
+		void OnDrawItem(HDC hDC, int iItem, RECT rc, bool fPressed, bool fHighl);
+		auto OnLayout(const MSG& msg) -> LRESULT;
+		auto OnLButtonDown(const MSG& msg) -> LRESULT;
+		auto OnLButtonUp(const MSG& msg) -> LRESULT;
+		auto OnPaint() -> LRESULT;
+		auto OnRButtonUp(const MSG& msg) -> LRESULT;
+		auto OnRButtonDown(const MSG& msg) -> LRESULT;
+		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
-		CFont m_fntHdr;
+		HWND m_hWnd { };         //Header window.
+		HFONT m_hFntHdr { };
 		COLORREF m_clrBkNWA { }; //Bk of non working area.
 		COLORREF m_clrText { };
 		COLORREF m_clrBk { };
 		COLORREF m_clrHglInactive { };
 		COLORREF m_clrHglActive { };
 		DWORD m_dwHeaderHeight { 19 }; //Standard (default) height.
-		std::unordered_map<UINT, LISTEXCOLOR> m_umapColors; //Colors for columns.
-		std::unordered_map<UINT, HDRICON> m_umapIcons;   //Icons for columns.
-		std::unordered_map<UINT, HIDDEN> m_umapHidden;   //Hidden columns.
-		std::unordered_map<UINT, bool> m_umapSortable;   //Is column sortable.
-		std::unordered_map<UINT, bool> m_umapEditable;   //Columns that can be in-place edited.
-		std::unordered_map<UINT, int> m_umapDataAlign;   //Column's data align mode.
 		UINT m_uSortColumn { 0 };   //ColumnID to draw sorting triangle at. 0 is to avoid triangle before first clicking.
+		std::vector<HIDDEN> m_vecHidden; //Hidden columns.
+		std::vector<COLUMNDATA> m_vecColumnData;
 		bool m_fSortable { false }; //List-is-sortable global flog. Need to draw sortable triangle or not?
 		bool m_fSortAscending { };  //Sorting type.
-	};
-
-	//Header column icons.
-	struct CListExHdr::HDRICON {
-		LISTEXHDRICON stIcon;               //Icon data struct.
-		bool          fLMPressed { false }; //Left mouse button pressed atm.
+		bool m_fLMousePressed { };
 	};
 
 	//Hidden columns.
 	struct CListExHdr::HIDDEN {
+		UINT uID { };
 		int iPrevPos { };
 		int iPrevWidth { };
 	};
@@ -295,38 +399,58 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 
 using namespace HEXCTRL::LISTEX::INTERNAL;
 
-BEGIN_MESSAGE_MAP(CListExHdr, CMFCHeaderCtrl)
-	ON_MESSAGE(HDM_LAYOUT, &CListExHdr::OnLayout)
-	ON_WM_HSCROLL()
-	ON_WM_DESTROY()
-	ON_WM_LBUTTONDOWN()
-	ON_WM_LBUTTONUP()
-	ON_WM_RBUTTONUP()
-	ON_WM_RBUTTONDOWN()
-END_MESSAGE_MAP()
-
 void CListExHdr::DeleteColumn(int iIndex)
 {
 	if (const auto ID = ColumnIndexToID(iIndex); ID > 0) {
-		m_umapColors.erase(ID);
-		m_umapIcons.erase(ID);
-		m_umapHidden.erase(ID);
-		m_umapSortable.erase(ID);
-		m_umapEditable.erase(ID);
+		std::erase_if(m_vecHidden, [=](const HIDDEN& ref) { return ref.uID == ID; });
+		std::erase_if(m_vecColumnData, [=](const COLUMNDATA& ref) { return ref.uID == ID; });
 	}
+}
+
+auto CListExHdr::GetClientRect()const->RECT
+{
+	assert(IsWindow());
+	RECT rc;
+	::GetClientRect(m_hWnd, &rc);
+	return rc;
 }
 
 UINT CListExHdr::GetHiddenCount()const
 {
-	return static_cast<UINT>(m_umapHidden.size());
+	return static_cast<UINT>(m_vecHidden.size());
+}
+
+auto CListExHdr::GetImageList(int iList)const->HIMAGELIST
+{
+	assert(IsWindow());
+	return reinterpret_cast<HIMAGELIST>(::SendMessageW(m_hWnd, HDM_GETIMAGELIST, iList, 0L));
+}
+
+bool CListExHdr::GetItem(int iPos, HDITEMW* pHDI)const
+{
+	assert(IsWindow());
+	return ::SendMessageW(m_hWnd, HDM_GETITEM, iPos, reinterpret_cast<LPARAM>(pHDI));
+}
+
+int CListExHdr::GetItemCount()const
+{
+	assert(IsWindow());
+	return static_cast<int>(::SendMessageW(m_hWnd, HDM_GETITEMCOUNT, 0, 0L));
+}
+
+auto CListExHdr::GetItemRect(int iIndex)const->RECT
+{
+	RECT rc;
+	::SendMessageW(m_hWnd, HDM_GETITEMRECT, iIndex, reinterpret_cast<LPARAM>(&rc));
+	return rc;
 }
 
 int CListExHdr::GetColumnDataAlign(int iIndex)const
 {
-	if (const auto iter = m_umapDataAlign.find(ColumnIndexToID(iIndex));
-		iter != m_umapDataAlign.end()) {
-		return iter->second;
+	if (const auto pData = GetColumnData(ColumnIndexToID(iIndex)); pData != nullptr) {
+		return pData->iDataAlign;
 	}
+
 	return -1;
 }
 
@@ -339,20 +463,27 @@ void CListExHdr::HideColumn(int iIndex, bool fHide)
 
 	const auto ID = ColumnIndexToID(iIndex);
 	std::vector<int> vecInt(iColumnsCount, 0);
-	ListView_GetColumnOrderArray(GetParent()->m_hWnd, iColumnsCount, vecInt.data());
+	ListView_GetColumnOrderArray(GetParent(), iColumnsCount, vecInt.data());
 	HDITEMW hdi { .mask { HDI_WIDTH } };
 	GetItem(iIndex, &hdi);
 
 	if (fHide) { //Hide column.
-		m_umapHidden[ID].iPrevWidth = hdi.cxy;
+		HIDDEN* pHidden;
+		if (const auto it = std::find_if(m_vecHidden.begin(), m_vecHidden.end(),
+			[=](const HIDDEN& ref) { return ref.uID == ID; }); it == m_vecHidden.end()) {
+			pHidden = &m_vecHidden.emplace_back(HIDDEN { .uID { ID } });
+		}
+		else { pHidden = &*it; }
+
+		pHidden->iPrevWidth = hdi.cxy;
 		if (const auto iter = std::find(vecInt.begin(), vecInt.end(), iIndex); iter != vecInt.end()) {
-			m_umapHidden[ID].iPrevPos = static_cast<int>(iter - vecInt.begin());
+			pHidden->iPrevPos = static_cast<int>(iter - vecInt.begin());
 			std::rotate(iter, iter + 1, vecInt.end()); //Moving hiding column to the end of the column array.
 		}
 
-		ListView_SetColumnOrderArray(GetParent()->m_hWnd, iColumnsCount, vecInt.data());
+		ListView_SetColumnOrderArray(GetParent(), iColumnsCount, vecInt.data());
 		hdi.cxy = 0;
-		SetItem(iIndex, &hdi);
+		SetItem(iIndex, hdi);
 	}
 	else { //Show column.
 		const auto pHidden = IsHidden(ID);
@@ -368,10 +499,10 @@ void CListExHdr::HideColumn(int iIndex, bool fHide)
 			}
 		}
 
-		ListView_SetColumnOrderArray(GetParent()->m_hWnd, iColumnsCount, vecInt.data());
+		ListView_SetColumnOrderArray(GetParent(), iColumnsCount, vecInt.data());
 		hdi.cxy = pHidden->iPrevWidth;
-		SetItem(iIndex, &hdi);
-		m_umapHidden.erase(ID);
+		SetItem(iIndex, hdi);
+		std::erase_if(m_vecHidden, [=](const HIDDEN& ref) { return ref.uID == ID; });
 	}
 
 	RedrawWindow();
@@ -392,17 +523,37 @@ bool CListExHdr::IsColumnEditable(int iIndex)const
 	return IsEditable(ColumnIndexToID(iIndex));
 }
 
+auto CListExHdr::ProcessMsg(const MSG& msg)->LRESULT
+{
+	switch (msg.message) {
+	case HDM_LAYOUT: return OnLayout(msg);
+	case WM_DESTROY: return OnDestroy();
+	case WM_LBUTTONDOWN: return OnLButtonDown(msg);
+	case WM_LBUTTONUP: return OnLButtonUp(msg);
+	case WM_PAINT: return OnPaint();
+	case WM_RBUTTONDOWN: return OnRButtonDown(msg);
+	case WM_RBUTTONUP: return OnRButtonUp(msg);
+	default: return DefSubclassProc(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+	}
+}
+
+void CListExHdr::RedrawWindow()const
+{
+	assert(IsWindow());
+	::RedrawWindow(m_hWnd, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE);
+}
+
 void CListExHdr::SetFont(const LOGFONTW& lf)
 {
-	m_fntHdr.DeleteObject();
-	m_fntHdr.CreateFontIndirectW(&lf);
+	::DeleteObject(m_hFntHdr);
+	m_hFntHdr = ::CreateFontIndirectW(&lf);
 
 	//If new font's height is higher than current height (m_dwHeaderHeight), we adjust current height as well.
 	TEXTMETRICW tm;
-	auto pDC = GetDC();
-	pDC->SelectObject(m_fntHdr);
-	pDC->GetTextMetricsW(&tm);
-	ReleaseDC(pDC);
+	const auto hDC = ::GetDC(m_hWnd);
+	::SelectObject(hDC, m_hFntHdr);
+	::GetTextMetricsW(hDC, &tm);
+	::ReleaseDC(m_hWnd, hDC);
 	const DWORD dwHeightFont = tm.tmHeight + tm.tmExternalLeading + 4;
 	if (dwHeightFont > m_dwHeaderHeight) {
 		SetHeight(dwHeightFont);
@@ -437,19 +588,30 @@ void CListExHdr::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 		clrText = m_clrText;
 	}
 
-	m_umapColors[ID] = { .clrBk { clrBk }, .clrText { clrText } };
+	if (const auto pData = GetColumnData(ID); pData != nullptr) {
+		pData->clr = { .clrBk { clrBk }, .clrText { clrText } };
+	}
+	else {
+		AddColumnData({ .uID { ID }, .clr { .clrBk { clrBk }, .clrText { clrText } } });
+	}
+
 	RedrawWindow();
 }
 
 void CListExHdr::SetColumnDataAlign(int iColumn, int iAlign)
 {
 	const auto ID = ColumnIndexToID(iColumn);
-	assert(ID > 0);
 	if (ID == 0) {
+		assert(true);
 		return;
 	}
 
-	m_umapDataAlign[ID] = iAlign;
+	if (const auto pData = GetColumnData(ID); pData != nullptr) {
+		pData->iDataAlign = iAlign;
+	}
+	else {
+		AddColumnData({ .uID { ID }, .clr { .clrBk { m_clrBk }, .clrText { m_clrText } }, .iDataAlign { iAlign } });
+	}
 }
 
 void CListExHdr::SetColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)
@@ -460,37 +622,51 @@ void CListExHdr::SetColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)
 		return;
 	}
 
-	if (stIcon.iIndex == -1) { //If column already has icon.
-		m_umapIcons.erase(ID);
+	if (const auto pData = GetColumnData(ID); pData != nullptr) {
+		pData->icon.stIcon = stIcon;
 	}
 	else {
-		HDRICON stHdrIcon;
-		stHdrIcon.stIcon = stIcon;
-		m_umapIcons[ID] = stHdrIcon;
+		AddColumnData({ .uID { ID }, .icon { .stIcon { stIcon } }, .clr { .clrBk { m_clrBk }, .clrText { m_clrText } } });
 	}
+
 	RedrawWindow();
 }
 
 void CListExHdr::SetColumnSortable(int iColumn, bool fSortable)
 {
 	const auto ID = ColumnIndexToID(iColumn);
-	assert(ID > 0);
 	if (ID == 0) {
+		assert(true);
 		return;
 	}
 
-	m_umapSortable[ID] = fSortable;
+	if (const auto pData = GetColumnData(ID); pData != nullptr) {
+		pData->fSortable = fSortable;
+	}
+	else {
+		AddColumnData({ .uID { ID }, .clr { .clrBk { m_clrBk }, .clrText { m_clrText } }, .fSortable { fSortable } });
+	}
 }
 
 void CListExHdr::SetColumnEditable(int iColumn, bool fEditable)
 {
 	const auto ID = ColumnIndexToID(iColumn);
-	assert(ID > 0);
 	if (ID == 0) {
+		assert(true);
 		return;
 	}
 
-	m_umapEditable[ID] = fEditable;
+	if (const auto pData = GetColumnData(ID); pData != nullptr) {
+		pData->fEditable = fEditable;
+	}
+	else {
+		AddColumnData({ .uID { ID }, .clr { .clrBk { m_clrBk }, .clrText { m_clrText } }, .fEditable { fEditable } });
+	}
+}
+
+void CListExHdr::SetImageList(HIMAGELIST pList, int iList)
+{
+	::SendMessageW(m_hWnd, HDM_SETIMAGELIST, iList, reinterpret_cast<LPARAM>(pList));
 }
 
 void CListExHdr::SetSortable(bool fSortable)
@@ -509,20 +685,32 @@ void CListExHdr::SetSortArrow(int iColumn, bool fAscending)
 			return;
 		}
 	}
+
 	m_uSortColumn = ID;
 	m_fSortAscending = fAscending;
 	RedrawWindow();
 }
 
+void CListExHdr::SubclassHeader(HWND hWndHeader)
+{
+	assert(hWndHeader != nullptr);
+	::SetWindowSubclass(hWndHeader, SubclassProc, reinterpret_cast<UINT_PTR>(this), 0);
+	m_hWnd = hWndHeader;
+}
+
 
 //CListExHdr private methods:
+
+void CListExHdr::AddColumnData(const COLUMNDATA& data)
+{
+	m_vecColumnData.emplace_back(data);
+}
 
 UINT CListExHdr::ColumnIndexToID(int iIndex)const
 {
 	//Each column has unique internal identifier in HDITEMW::lParam.
 	HDITEMW hdi { .mask { HDI_LPARAM } };
 	const auto ret = GetItem(iIndex, &hdi);
-	assert(ret == TRUE); //There is no such column index if FALSE.
 
 	return ret ? static_cast<UINT>(hdi.lParam) : 0;
 }
@@ -540,13 +728,32 @@ int CListExHdr::ColumnIDToIndex(UINT uID)const
 	return -1;
 }
 
+auto CListExHdr::GetParent()->HWND
+{
+	assert(IsWindow());
+	return ::GetParent(m_hWnd);
+}
+
 auto CListExHdr::GetHdrColor(UINT ID)const->PLISTEXCOLOR
 {
-	if (const auto it = m_umapColors.find(ID); it != m_umapColors.end()) {
-		return &it->second;
-	}
+	const auto pData = GetColumnData(ID);
+	return pData != nullptr ? &pData->clr : nullptr;
+}
 
-	return nullptr;
+auto CListExHdr::GetColumnData(UINT uID)->COLUMNDATA*
+{
+	const auto iter = std::find_if(m_vecColumnData.begin(), m_vecColumnData.end(), [=](const COLUMNDATA& ref) {
+		return ref.uID == uID; });
+
+	return iter == m_vecColumnData.end() ? nullptr : &*iter;
+}
+
+auto CListExHdr::GetColumnData(UINT uID)const->const COLUMNDATA*
+{
+	const auto iter = std::find_if(m_vecColumnData.begin(), m_vecColumnData.end(), [=](const COLUMNDATA& ref) {
+		return ref.uID == uID; });
+
+	return iter == m_vecColumnData.end() ? nullptr : &*iter;
 }
 
 auto CListExHdr::GetHdrIcon(UINT ID)->CListExHdr::HDRICON*
@@ -555,62 +762,79 @@ auto CListExHdr::GetHdrIcon(UINT ID)->CListExHdr::HDRICON*
 		return nullptr;
 	}
 
-	if (const auto it = m_umapIcons.find(ID); it != m_umapIcons.end()) {
-		return &it->second;
-	}
+	const auto pData = GetColumnData(ID);
+	return pData != nullptr && pData->icon.stIcon.iIndex != -1 ? &pData->icon : nullptr;
+}
 
-	return nullptr;
+void CListExHdr::SetItem(int nPos, const HDITEMW& item)
+{
+	assert(IsWindow());
+	::SendMessageW(m_hWnd, HDM_SETITEM, nPos, reinterpret_cast<LPARAM>(&item));
+}
+
+auto CListExHdr::GetListParent()->HWND
+{
+	const auto hWnd = GetParent();
+	assert(hWnd != nullptr);
+	return ::GetParent(hWnd);
+}
+
+int CListExHdr::HitTest(const HDHITTESTINFO hhti)
+{
+	assert(IsWindow());
+	return static_cast<int>(::SendMessageW(m_hWnd, HDM_HITTEST, 0, reinterpret_cast<LPARAM>(&hhti)));
 }
 
 auto CListExHdr::IsHidden(UINT ID)const->const HIDDEN*
 {
-	const auto iter = m_umapHidden.find(ID);
-	return iter != m_umapHidden.end() ? &iter->second : nullptr;
+	const auto it = std::find_if(m_vecHidden.begin(), m_vecHidden.end(), [=](const HIDDEN& ref) { return ref.uID == ID; });
+	return it != m_vecHidden.end() ? &*it : nullptr;
 }
 
 bool CListExHdr::IsSortable(UINT ID)const
 {
-	const auto iter = m_umapSortable.find(ID); //It's sortable unless found explicitly as false.
-	return iter == m_umapSortable.end() || iter->second;
+	const auto pData = GetColumnData(ID);
+	return pData == nullptr || pData->fSortable; //It's sortable unless found explicitly as false.
+}
+
+bool CListExHdr::IsWindow()const
+{
+	return ::IsWindow(m_hWnd);
 }
 
 bool CListExHdr::IsEditable(UINT ID)const
 {
-	const auto iter = m_umapEditable.find(ID); //It's editable only if found explicitly as true.
-	return iter != m_umapEditable.end() && iter->second;
+	const auto pData = GetColumnData(ID);
+	return pData != nullptr && pData->fEditable; //It's editable only if found explicitly as true.
 }
 
-void CListExHdr::OnDestroy()
+auto CListExHdr::OnDestroy()->LRESULT
 {
-	CMFCHeaderCtrl::OnDestroy();
+	m_vecHidden.clear();
+	m_vecColumnData.clear();
 
-	m_umapColors.clear();
-	m_umapIcons.clear();
-	m_umapHidden.clear();
-	m_umapSortable.clear();
-	m_umapEditable.clear();
-	m_umapDataAlign.clear();
+	return 0;
 }
 
-void CListExHdr::OnDrawItem(CDC* pDC, int iItem, const CRect rcOrig, BOOL bIsPressed, BOOL bIsHighlighted)
+void CListExHdr::OnDrawItem(HDC hDC, int iItem, RECT rc, bool fPressed, bool fHighl)
 {
+	const wnd::CRect rcOrig(rc);
+	const wnd::CDC dc(hDC);
 	//Non working area after last column. Or if column is resized to zero width.
 	if (iItem < 0 || rcOrig.IsRectEmpty()) {
-		pDC->FillSolidRect(rcOrig, m_clrBkNWA);
+		dc.FillSolidRect(rcOrig, m_clrBkNWA);
 		return;
 	}
 
-	CMemDC memDC(*pDC, rcOrig);
-	auto& rDC = memDC.GetDC();
 	const auto ID = ColumnIndexToID(iItem);
 	const auto pClr = GetHdrColor(ID);
 	const auto clrText { pClr != nullptr ? pClr->clrText : m_clrText };
-	const auto clrBk { bIsHighlighted ? (bIsPressed ? m_clrHglActive : m_clrHglInactive)
+	const auto clrBk { fHighl ? (fPressed ? m_clrHglActive : m_clrHglInactive)
 		: (pClr != nullptr ? pClr->clrBk : m_clrBk) };
 
-	rDC.FillSolidRect(rcOrig, clrBk);
-	rDC.SetTextColor(clrText);
-	rDC.SelectObject(m_fntHdr);
+	dc.FillSolidRect(rcOrig, clrBk);
+	dc.SetTextColor(clrText);
+	dc.SelectObject(m_hFntHdr);
 
 	//Set item's text buffer first char to zero, then getting item's text and Draw it.
 	wchar_t warrHdrText[MAX_PATH];
@@ -624,8 +848,9 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, const CRect rcOrig, BOOL bIsPre
 		const auto pImgList = GetImageList(LVSIL_NORMAL);
 		int iCX { };
 		int iCY { };
-		ImageList_GetIconSize(pImgList->m_hImageList, &iCX, &iCY); //Icon dimensions.
-		pImgList->DrawEx(&rDC, pIcon->stIcon.iIndex, rcOrig.TopLeft() + pIcon->stIcon.pt, { }, CLR_NONE, CLR_NONE, ILD_NORMAL);
+		::ImageList_GetIconSize(pImgList, &iCX, &iCY); //Icon dimensions.
+		const auto pt = rcOrig.TopLeft() + pIcon->stIcon.pt;
+		::ImageList_DrawEx(pImgList, pIcon->stIcon.iIndex, dc, pt.x, pt.y, 0, 0, CLR_NONE, CLR_NONE, ILD_NORMAL);
 		iTextIndentLeft += pIcon->stIcon.pt.x + iCX;
 	}
 
@@ -642,13 +867,13 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, const CRect rcOrig, BOOL bIsPre
 	}
 
 	constexpr auto iTextIndentRight { 4 };
-	CRect rcText { rcOrig.left + iTextIndentLeft, rcOrig.top, rcOrig.right - iTextIndentRight, rcOrig.bottom };
-	if (StrStrW(warrHdrText, L"\n") != nullptr) {
+	wnd::CRect rcText { rcOrig.left + iTextIndentLeft, rcOrig.top, rcOrig.right - iTextIndentRight, rcOrig.bottom };
+	if (std::wstring_view(warrHdrText).find(L'\n') != std::wstring_view::npos) {
 		//If it's multiline text, first — calculate rect for the text,
 		//with DT_CALCRECT flag (not drawing anything),
 		//and then calculate rect for final vertical text alignment.
-		CRect rcCalcText;
-		rDC.DrawTextW(warrHdrText, rcCalcText, uFormat | DT_CALCRECT);
+		wnd::CRect rcCalcText;
+		dc.DrawTextW(warrHdrText, rcCalcText, uFormat | DT_CALCRECT);
 		rcText.top = rcText.Height() / 2 - rcCalcText.Height() / 2;
 	}
 	else {
@@ -656,331 +881,350 @@ void CListExHdr::OnDrawItem(CDC* pDC, int iItem, const CRect rcOrig, BOOL bIsPre
 	}
 
 	//Draw Header Text.
-	rDC.DrawTextW(warrHdrText, rcText, uFormat);
+	dc.DrawTextW(warrHdrText, rcText, uFormat);
 
 	//Draw sortable triangle (arrow).
 	if (m_fSortable && IsSortable(ID) && ID == m_uSortColumn) {
-		static const CPen penArrow(PS_SOLID, 1, RGB(90, 90, 90));
-		static const CBrush brFill(GetSysColor(COLOR_3DFACE));
-		rDC.SelectObject(penArrow);
-		rDC.SelectObject(brFill);
+		static const auto penArrow = ::CreatePen(PS_SOLID, 1, RGB(90, 90, 90));
+		dc.SelectObject(penArrow);
+		dc.SelectObject(::GetSysColorBrush(COLOR_3DFACE));
 		if (m_fSortAscending) { //Draw the UP arrow.
 			const POINT arrPt[] { { rcOrig.right - 10, 3 },
 				{ rcOrig.right - 15, 8 }, { rcOrig.right - 5, 8 } };
-			rDC.Polygon(arrPt, 3);
+			dc.Polygon(arrPt, 3);
 		}
 		else { //Draw the DOWN arrow.
 			const POINT arrPt[] { { rcOrig.right - 10, 8 },
 				{ rcOrig.right - 15, 3 }, { rcOrig.right - 5, 3 } };
-			rDC.Polygon(arrPt, 3);
+			dc.Polygon(arrPt, 3);
 		}
 	}
 
-	static const CPen penGrid(PS_SOLID, 2, GetSysColor(COLOR_3DFACE));
-	rDC.SelectObject(penGrid);
-	rDC.MoveTo(rcOrig.TopLeft());
-	rDC.LineTo(rcOrig.left, rcOrig.bottom);
+	static const auto penGrid = ::CreatePen(PS_SOLID, 2, GetSysColor(COLOR_3DFACE));
+	dc.SelectObject(penGrid);
+	dc.MoveTo(rcOrig.TopLeft());
+	dc.LineTo(rcOrig.left, rcOrig.bottom);
 	if (iItem == GetItemCount() - 1) { //Last item.
-		rDC.MoveTo(rcOrig.right, rcOrig.top);
-		rDC.LineTo(rcOrig.BottomRight());
+		dc.MoveTo(rcOrig.right, rcOrig.top);
+		dc.LineTo(rcOrig.BottomRight());
 	}
 }
 
-auto CListExHdr::OnLayout(WPARAM /*wParam*/, LPARAM lParam)->LRESULT
+auto CListExHdr::OnLayout(const MSG& msg)->LRESULT
 {
-	CMFCHeaderCtrl::DefWindowProcW(HDM_LAYOUT, 0, lParam);
-
-	const auto pHDL = reinterpret_cast<LPHDLAYOUT>(lParam);
+	wnd::DefSubclassProc(msg);
+	const auto pHDL = reinterpret_cast<LPHDLAYOUT>(msg.lParam);
 	pHDL->pwpos->cy = m_dwHeaderHeight;	//New header height.
 	pHDL->prc->top = m_dwHeaderHeight;  //Decreasing list's height begining by the new header's height.
 
-	return 0;
+	return TRUE;
 }
 
-void CListExHdr::OnLButtonDown(UINT nFlags, CPoint point)
+auto CListExHdr::OnLButtonDown(const MSG& msg)->LRESULT
 {
-	HDHITTESTINFO ht { };
-	ht.pt = point;
-	if (HitTest(&ht); ht.iItem >= 0) {
-		const auto ID = ColumnIndexToID(ht.iItem);
+	wnd::DefSubclassProc(msg);
+	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	if (const auto iItem = HitTest({ .pt { pt } }); iItem >= 0) {
+		m_fLMousePressed = true;
+		SetCapture(m_hWnd);
+		const auto ID = ColumnIndexToID(iItem);
 		if (const auto pIcon = GetHdrIcon(ID); pIcon != nullptr
 			&& pIcon->stIcon.fClickable && IsHidden(ID) == nullptr) {
 			int iCX { };
 			int iCY { };
-			ImageList_GetIconSize(GetImageList()->m_hImageList, &iCX, &iCY);
-			CRect rcColumn;
-			GetItemRect(ht.iItem, rcColumn);
+			ImageList_GetIconSize(GetImageList(), &iCX, &iCY);
+			const wnd::CRect rcColumn = GetItemRect(iItem);
 
-			if (const CRect rcIcon(rcColumn.TopLeft() + pIcon->stIcon.pt, SIZE { iCX, iCY }); rcIcon.PtInRect(point)) {
+			const auto ptIcon = rcColumn.TopLeft() + pIcon->stIcon.pt;
+			if (const wnd::CRect rcIcon(ptIcon, SIZE { iCX, iCY }); rcIcon.PtInRect(pt)) {
 				pIcon->fLMPressed = true;
-				return; //Do not invoke default handler.
+				return 0; //Do not invoke default handler.
 			}
 		}
 	}
-
-	CMFCHeaderCtrl::OnLButtonDown(nFlags, point);
+	return wnd::DefSubclassProc(msg);
 }
 
-void CListExHdr::OnLButtonUp(UINT nFlags, CPoint point)
+auto CListExHdr::OnLButtonUp(const MSG& msg)->LRESULT
 {
-	HDHITTESTINFO ht { };
-	ht.pt = point;
-	if (HitTest(&ht); ht.iItem >= 0) {
-		for (auto& iter : m_umapIcons) {
-			if (!iter.second.fLMPressed) {
+	wnd::DefSubclassProc(msg);
+	m_fLMousePressed = false;
+	ReleaseCapture();
+	RedrawWindow();
+
+	const POINT point { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	if (const auto iItem = HitTest({ .pt { point } }); iItem >= 0) {
+		for (auto& ref : m_vecColumnData) {
+			if (!ref.icon.fLMPressed || ref.icon.stIcon.iIndex == -1) {
 				continue;
 			}
 
 			int iCX { };
 			int iCY { };
-			ImageList_GetIconSize(GetImageList()->m_hImageList, &iCX, &iCY);
-			CRect rcColumn;
-			GetItemRect(ht.iItem, rcColumn);
-			const CRect rcIcon(rcColumn.TopLeft() + iter.second.stIcon.pt, SIZE { iCX, iCY });
+			ImageList_GetIconSize(GetImageList(), &iCX, &iCY);
+			const wnd::CRect rcColumn = GetItemRect(iItem);
+			const auto pt = rcColumn.TopLeft() + ref.icon.stIcon.pt;
+			const wnd::CRect rcIcon(pt, SIZE { iCX, iCY });
 
 			if (rcIcon.PtInRect(point)) {
-				for (auto& iterData : m_umapIcons) {
-					iterData.second.fLMPressed = false; //Remove fLMPressed flag from all columns.
+				for (auto& iterData : m_vecColumnData) {
+					iterData.icon.fLMPressed = false; //Remove fLMPressed flag from all columns.
 				}
 
-				if (auto pParent = GetParent(); pParent != nullptr) { //List control pointer.
-					const auto uCtrlId = static_cast<UINT>(pParent->GetDlgCtrlID());
-					NMHEADERW hdr { { pParent->m_hWnd, uCtrlId, LISTEX_MSG_HDRICONCLICK } };
-					hdr.iItem = ColumnIDToIndex(iter.first);
-					pParent->GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&hdr));
-				}
+				const auto hParent = GetParent();
+				const auto uCtrlId = static_cast<UINT>(::GetDlgCtrlID(hParent));
+				const NMHEADERW hdr { .hdr { hParent, uCtrlId, LISTEX_MSG_HDRICONCLICK }, .iItem { ColumnIDToIndex(ref.uID) } };
+				::SendMessageW(GetListParent(), WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&hdr));
 			}
 			break;
 		}
 	}
 
-	CMFCHeaderCtrl::OnLButtonUp(nFlags, point);
+	return 0;
 }
 
-void CListExHdr::OnRButtonDown(UINT /*nFlags*/, CPoint point)
+auto CListExHdr::OnPaint()->LRESULT
 {
-	const auto pParent = GetParent();
-	if (pParent == nullptr) { //List control pointer.
-		return;
+	const wnd::CPaintDC dc(m_hWnd);
+	const wnd::CMemDC memDC(dc, m_hWnd);
+	wnd::CRect rcClient;
+	::GetClientRect(m_hWnd, rcClient);
+	wnd::CRect rectItem;
+	const auto iItems = GetItemCount();
+	LONG lMax = 0;
+
+	for (int iItem = 0; iItem < iItems; ++iItem) {
+		POINT ptCur;
+		::GetCursorPos(&ptCur);
+		::ScreenToClient(m_hWnd, &ptCur);
+		const auto iHit = HitTest({ .pt { ptCur } });
+		const auto fHighl = iHit == iItem;
+		const auto fPressed = m_fLMousePressed && fHighl;
+		rectItem = GetItemRect(iItem);
+		OnDrawItem(memDC, iItem, rectItem, fPressed, fHighl);
+		lMax = (std::max)(lMax, rectItem.right);
 	}
 
-	const auto uCtrlId = static_cast<UINT>(pParent->GetDlgCtrlID());
-	HDHITTESTINFO ht { };
-	ht.pt = point;
-	HitTest(&ht);
-	NMHEADERW hdr { { pParent->m_hWnd, uCtrlId, LISTEX_MSG_HDRRBTNDOWN } };
-	hdr.iItem = ht.iItem;
-	pParent->GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&hdr));
+	// Draw "tail border":
+	if (iItems == 0) {
+		rectItem = rcClient;
+		rectItem.right++;
+	}
+	else {
+		rectItem.left = lMax;
+		rectItem.right = rcClient.right + 1;
+	}
+
+	OnDrawItem(memDC, -1, rectItem, FALSE, FALSE);
+
+	return 0;
 }
 
-void CListExHdr::OnRButtonUp(UINT /*nFlags*/, CPoint point)
+auto CListExHdr::OnRButtonDown(const MSG& msg)->LRESULT
 {
-	const auto pParent = GetParent();
-	if (pParent == nullptr) { //List control pointer.
-		return;
+	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	const auto hParent = GetParent();
+	const auto uCtrlId = static_cast<UINT>(::GetDlgCtrlID(hParent));
+	const auto iItem = HitTest({ .pt { pt } });
+	NMHEADERW hdr { .hdr { hParent, uCtrlId, LISTEX_MSG_HDRRBTNDOWN }, .iItem { iItem } };
+	SendMessageW(GetListParent(), WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&hdr));
+
+	return wnd::DefSubclassProc(msg);
+}
+
+auto CListExHdr::OnRButtonUp(const MSG& msg)->LRESULT
+{
+	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	const auto hParent = GetParent();
+	const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID(hParent));
+	const auto iItem = HitTest({ .pt { pt } });
+	NMHEADERW hdr { { hParent, uCtrlId, LISTEX_MSG_HDRRBTNUP } };
+	hdr.iItem = iItem;
+	SendMessageW(GetListParent(), WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&hdr));
+
+	return wnd::DefSubclassProc(msg);
+}
+
+auto CListExHdr::SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+	UINT_PTR uIDSubclass, DWORD_PTR /*dwRefData*/) -> LRESULT {
+	if (uMsg == WM_NCDESTROY) {
+		::RemoveWindowSubclass(hWnd, SubclassProc, uIDSubclass);
 	}
 
-	const auto uCtrlId = static_cast<UINT>(pParent->GetDlgCtrlID());
-	HDHITTESTINFO ht { };
-	ht.pt = point;
-	HitTest(&ht);
-	NMHEADERW hdr { { pParent->m_hWnd, uCtrlId, LISTEX_MSG_HDRRBTNUP } };
-	hdr.iItem = ht.iItem;
-	pParent->GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&hdr));
+	const auto pHdr = reinterpret_cast<CListExHdr*>(uIDSubclass);
+	return pHdr->ProcessMsg({ .hwnd { hWnd }, .message { uMsg }, .wParam { wParam }, .lParam { lParam } });
 }
 
 
 //CListEx.
-namespace HEXCTRL::LISTEX::INTERNAL {
-	class CListEx final : public IListEx {
+namespace HEXCTRL::LISTEX {
+	export class CListEx final {
 	public:
-		bool Create(const LISTEXCREATE& lcs)override;
-		void CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)override;
-		BOOL DeleteAllItems()override;
-		BOOL DeleteColumn(int iIndex)override;
-		BOOL DeleteItem(int iItem)override;
-		void Destroy()override;
-		[[nodiscard]] auto GetCellData(int iItem, int iSubItem)const->ULONGLONG override;
-		[[nodiscard]] auto GetColors()const->const LISTEXCOLORS & override;
-		[[nodiscard]] auto GetColumnSortMode(int iColumn)const->EListExSortMode override;
-		[[nodiscard]] auto GetFont()const->LOGFONTW override;
-		[[nodiscard]] int GetSortColumn()const override;
-		[[nodiscard]] bool GetSortAscending()const override;
-		void HideColumn(int iIndex, bool fHide)override;
-		int InsertColumn(int nCol, const LVCOLUMNW* pColumn, int iDataAlign = LVCFMT_LEFT, bool fEditable = false)override;
-		int InsertColumn(int nCol, LPCWSTR pwszName, int nFormat = LVCFMT_LEFT, int nWidth = -1,
-			int nSubItem = -1, int iDataAlign = LVCFMT_LEFT, bool fEditable = false)override;
-		[[nodiscard]] bool IsCreated()const override;
-		[[nodiscard]] bool IsColumnSortable(int iColumn)override;
-		void ResetSort()override; //Reset all the sort by any column to its default state.
-		void SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clrText)override;
-		void SetCellData(int iItem, int iSubItem, ULONGLONG ullData)override;
-		void SetCellIcon(int iItem, int iSubItem, int iIndex)override; //Icon index in list's image list.
-		void SetCellTooltip(int iItem, int iSubItem, std::wstring_view wsvTooltip, std::wstring_view wsvCaption)override;
-		void SetColors(const LISTEXCOLORS& lcs)override;
-		void SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)override;
-		void SetColumnEditable(int iColumn, bool fEditable)override;
-		void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode = { })override;
-		void SetFont(const LOGFONTW& lf)override;
-		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1)override;
-		void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)override; //Icon for a given column.
-		void SetHdrFont(const LOGFONTW& lf)override;
-		void SetHdrHeight(DWORD dwHeight)override;
-		void SetHdrImageList(HIMAGELIST pList)override;
-		void SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)override;
-		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode eSortMode)override;
-		static int CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
+		bool Create(const LISTEXCREATE& lcs);
+		void CreateDialogCtrl(UINT uCtrlID, HWND hWndParent);
+		bool DeleteAllItems();
+		bool DeleteColumn(int iIndex);
+		bool DeleteItem(int iItem);
+		void DrawItem(LPDRAWITEMSTRUCT pDIS);
+		bool EnsureVisible(int iItem, bool fPartialOK)const;
+		[[nodiscard]] auto GetColors()const->const LISTEXCOLORS &;
+		[[nodiscard]] auto GetColumnSortMode(int iColumn)const->EListExSortMode;
+		[[nodiscard]] auto GetFont()const->LOGFONTW;
+		[[nodiscard]] auto GetHWND()const->HWND;
+		[[nodiscard]] auto GetImageList(int iList = HDSIL_NORMAL)const->HIMAGELIST;
+		void GetItem(LVITEMW* pItem)const;
+		[[nodiscard]] int GetItemCount()const;
+		[[nodiscard]] auto GetItemRect(int iItem, int iArea)const->RECT;
+		[[nodiscard]] auto GetItemText(int iItem, int iSubItem)const->std::wstring;
+		[[nodiscard]] int GetNextItem(int iItem, int iFlags)const;
+		[[nodiscard]] auto GetSelectedCount()const->UINT;
+		[[nodiscard]] int GetSelectionMark()const;
+		[[nodiscard]] int GetSortColumn()const;
+		[[nodiscard]] bool GetSortAscending()const;
+		[[nodiscard]] auto GetSubItemRect(int iItem, int iSubItem, int iArea)const->RECT;
+		[[nodiscard]] int GetTopIndex()const;
+		void HideColumn(int iIndex, bool fHide);
+		bool HitTest(LVHITTESTINFO* pHTI)const;
+		int InsertColumn(int iCol, const LVCOLUMNW* pColumn)const;
+		int InsertColumn(int iCol, const LVCOLUMNW* pColumn, int iDataAlign, bool fEditable = false);
+		int InsertColumn(int iCol, LPCWSTR pwszName, int iFormat = LVCFMT_LEFT, int iWidth = -1,
+			int iSubItem = -1, int iDataAlign = LVCFMT_LEFT, bool fEditable = false);
+		[[nodiscard]] bool IsCreated()const;
+		[[nodiscard]] bool IsColumnSortable(int iColumn);
+		[[nodiscard]] auto MapIndexToID(UINT uIndex)const->UINT;
+		[[nodiscard]] auto MapIDToIndex(UINT uID)const->UINT;
+		void MeasureItem(LPMEASUREITEMSTRUCT pMIS);
+		auto ProcessMsg(const MSG& msg) -> LRESULT;
+		void RedrawWindow()const;
+		void ResetSort(); //Reset all the sort by any column to its default state.
+		void Scroll(SIZE size)const;
+		void SetColors(const LISTEXCOLORS& lcs);
+		void SetColumn(int iCol, const LVCOLUMNW* pColumn)const;
+		void SetColumnEditable(int iColumn, bool fEditable);
+		void SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode = EListExSortMode::SORT_LEX);
+		auto SetExtendedStyle(DWORD dwExStyle)const->DWORD;
+		void SetFont(const LOGFONTW& lf);
+		void SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText = -1);
+		void SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon); //Icon for a given column.
+		void SetHdrFont(const LOGFONTW& lf);
+		void SetHdrHeight(DWORD dwHeight);
+		void SetHdrImageList(HIMAGELIST pList);
+		auto SetImageList(HIMAGELIST hList, int iListType) -> HIMAGELIST;
+		void SetItemCountEx(int iCount, DWORD dwFlags = LVSICF_NOINVALIDATEALL)const;
+		bool SetItemState(int iItem, LVITEMW* pItem)const;
+		bool SetItemState(int iItem, UINT uState, UINT uStateMask)const;
+		void SetItemText(int iItem, int iSubItem, LPCWSTR pwszText);
+		void SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare = nullptr,
+			EListExSortMode eSortMode = EListExSortMode::SORT_LEX);
+		void SortItemsEx(PFNLVCOMPARE pfnCompare, DWORD_PTR dwData)const;
+		void Update(int iItem)const;
+		static auto CALLBACK DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)->int;
 	private:
-		struct COLROWCLR;
 		struct ITEMDATA;
-		struct TOOLTIPS;
-		void DrawItem(LPDRAWITEMSTRUCT pDIS)override;
-		[[nodiscard]] long GetFontSize();
-		[[nodiscard]] auto GetHeaderCtrl() -> CListExHdr & override { return m_stListHeader; }
+		[[nodiscard]] long GetFontSize()const;
+		[[nodiscard]] auto GetHeader() -> CListExHdr& { return m_Hdr; }
 		void FontSizeIncDec(bool fInc);
-		void InitHeader()override;
+		[[nodiscard]] bool IsWindow()const;
 		[[nodiscard]] auto GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEXCOLOR>;
 		[[nodiscard]] int GetIcon(int iItem, int iSubItem)const; //Does cell have an icon associated.
 		[[nodiscard]] auto GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDATA>;
-		afx_msg void MeasureItem(LPMEASUREITEMSTRUCT pMIS);
-		afx_msg void OnDestroy();
+		auto OnCommand(const MSG& msg) -> LRESULT;
+		auto OnDestroy() -> LRESULT;
 		void OnEditInPlaceEnterPressed();
-		afx_msg void OnEditInPlaceKillFocus();
-		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
-		afx_msg void OnHdnBegindrag(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnHdnBegintrack(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-		afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
-		afx_msg void OnLButtonDown(UINT nFlags, CPoint pt);
-		afx_msg void OnLButtonUp(UINT nFlags, CPoint pt);
-		afx_msg void OnLvnColumnClick(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnMouseMove(UINT nFlags, CPoint pt);
-		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
-		BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
-		afx_msg void OnNotifyEditInPlace(NMHDR* pNMHDR, LRESULT* pResult);
-		afx_msg void OnPaint();
-		afx_msg void OnTimer(UINT_PTR nIDEvent);
-		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+		void OnEditInPlaceKillFocus();
+		auto OnEraseBkgnd() -> LRESULT;
+		auto OnHdnBegindrag(NMHDR* pNMHDR) -> LRESULT;
+		auto OnHdnBegintrack(NMHDR* pNMHDR) -> LRESULT;
+		auto OnHScroll(const MSG& msg) -> LRESULT;
+		auto OnLButtonDblClk(const MSG& msg) -> LRESULT;
+		auto OnLButtonDown(const MSG& msg) -> LRESULT;
+		auto OnLButtonUp(const MSG& msg) -> LRESULT;
+		auto OnMouseMove(const MSG& msg) -> LRESULT;
+		auto OnMouseWheel(const MSG& msg) -> LRESULT;
+		auto OnNotify(const MSG& msg) -> LRESULT;
+		void OnNotifyEditInPlace(NMHDR* pNMHDR);
+		auto OnPaint() -> LRESULT;
+		auto OnTimer(const MSG& msg) -> LRESULT;
+		auto OnVScroll(const MSG& msg) -> LRESULT;
 		auto ParseItemData(int iItem, int iSubitem) -> std::vector<ITEMDATA>;
 		void RecalcMeasure()const;
 		void SetFontSize(long lSize);
 		void TTCellShow(bool fShow, bool fTimer = false);
 		void TTLinkShow(bool fShow, bool fTimer = false);
 		void TTHLShow(bool fShow, UINT uRow); //Tooltips for high latency mode.
+		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 		static auto CALLBACK EditSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-			UINT_PTR uIdSubclass, DWORD_PTR dwRefData)->LRESULT;
-		DECLARE_DYNAMIC(CListEx);
-		DECLARE_MESSAGE_MAP();
+			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
 		static constexpr ULONG_PTR m_uIDTCellTTActivate { 0x01 }; //Cell tool-tip activate-timer ID.
 		static constexpr ULONG_PTR m_uIDTCellTTCheck { 0x02 };    //Cell tool-tip check-timer ID.
 		static constexpr ULONG_PTR m_uIDTLinkTTActivate { 0x03 }; //Link tool-tip activate-timer ID.
 		static constexpr ULONG_PTR m_uIDTLinkTTCheck { 0x04 };    //Link tool-tip check-timer ID.
 		static constexpr auto m_uIDEditInPlace { 0x01U };         //In place edit-box ID.
-		CListExHdr m_stListHeader;
+		struct COLUMNDATA {
+			int iIndex { };
+			EListExSortMode eSortMode { };
+		};
+		CListExHdr m_Hdr;               //List header control.
+		HWND m_hWnd { };                //Main window.
+		HFONT m_hFntList { };           //Default list font.
+		HFONT m_hFntListUnderline { };  //Underlined list font, for links.
+		HPEN m_hPenGrid { };            //Pen for list lines between cells.
+		HWND m_hWndCellTT { };          //Cells tool-tip window.
+		HWND m_hWndLinkTT { };          //Links tool-tip window.
+		HWND m_hWndRowTT { };           //Tooltip window for row in m_fHighLatency mode.
+		HWND m_hWndEditInPlace { };     //Edit box for in-place cells editing.
+		wnd::CRect m_rcLinkCurr;        //Current link's rect;
 		LISTEXCOLORS m_stColors { };
-		CFont m_fntList;                //Default list font.
-		CFont m_fntListUnderline;       //Underlined list font, for links.
-		CPen m_penGrid;                 //Pen for list lines between cells.
-		CWnd m_wndCellTT;               //Cells tool-tip window.
-		CWnd m_wndLinkTT;               //Links tool-tip window.
-		CWnd m_wndRowTT;                //Tooltip window for row in m_fHighLatency mode.
-		TTTOOLINFOW m_ttiCell { };      //Cells tool-tip info struct.
-		TTTOOLINFOW m_ttiLink { };      //Links tool-tip info struct.
-		TTTOOLINFOW m_ttiHL { };        //High latency tooltip info struct.
+		std::vector<COLUMNDATA> m_vecColumnData; //Column data.
+		std::wstring m_wstrTTText;      //Tool-tip current text.
+		std::wstring m_wstrTTCaption;   //Tool-tip current caption.
 		std::chrono::steady_clock::time_point m_tmTT; //Start time of the tooltip.
-		std::wstring m_wstrTextTT;      //Tool-tip current text.
-		std::wstring m_wstrCaptionTT;   //Tool-tip current caption.
 		LVHITTESTINFO m_htiCurrCell { }; //Cells hit struct for tool-tip.
 		LVHITTESTINFO m_htiCurrLink { }; //Links hit struct for tool-tip.
 		LVHITTESTINFO m_htiEdit { };    //Hit struct for in-place editing.
-		CEdit m_editInPlace;            //Edit box for in-place cells editing.
+		PFNLVCOMPARE m_pfnCompare { };  //Pointer to a user provided compare func.
 		DWORD m_dwGridWidth { };        //Grid width.
-		DWORD m_dwTTShowDelay { };      //Tooltip delay before showing, in milliseconds.
+		DWORD m_dwTTDelayTime { };      //Tooltip delay before showing, in milliseconds.
 		DWORD m_dwTTShowTime { };       //Tooltip show up time, in milliseconds.
 		POINT m_ptTTOffset { };         //Tooltip offset from the cursor point.
 		UINT m_uHLItem { };             //High latency Vscroll item.
 		int m_iSortColumn { -1 };       //Currently clicked header column.
 		int m_iLOGPIXELSY { };          //GetDeviceCaps(LOGPIXELSY) constant.
-		PFNLVCOMPARE m_pfnCompare { };  //Pointer to a user provided compare func.
 		EListExSortMode m_eDefSortMode { EListExSortMode::SORT_LEX }; //Default sorting mode.
-		CRect m_rcLinkCurr;             //Current link's rect;
-		std::unordered_map<UINT, std::unordered_map<int, TOOLTIPS>> m_umapCellTt;       //Cell's tooltips.
-		std::unordered_map<UINT, std::unordered_map<int, ULONGLONG>> m_umapCellData;    //Cell's custom data.
-		std::unordered_map<UINT, std::unordered_map<int, LISTEXCOLOR>> m_umapCellColor; //Cell's colors.
-		std::unordered_map<UINT, COLROWCLR> m_umapRowColor;                   //Row colors.
-		std::unordered_map<UINT, std::unordered_map<int, int>> m_umapCellIcon; //Cell's icon.
-		std::unordered_map<int, COLROWCLR> m_umapColumnColor;                 //Column colors.
-		std::unordered_map<int, EListExSortMode> m_umapColumnSortMode;         //Column sorting mode.
-		bool m_fCreated { false };     //Is created.
-		bool m_fHighLatency { };       //High latency flag.
-		bool m_fSortable { false };    //Is list sortable.
-		bool m_fSortAscending { };     //Sorting type (ascending, descending).
-		bool m_fLinksUnderline { };    //Links are displayed underlined or not.
-		bool m_fLinkTooltip { };       //Show links toolips.
-		bool m_fVirtual { false };     //Whether list is virtual (LVS_OWNERDATA) or not.
+		bool m_fCreated { false };      //Is created.
+		bool m_fHighLatency { false };  //High latency flag.
+		bool m_fSortable { false };     //Is list sortable.
+		bool m_fSortAsc { false };      //Sorting type (ascending, descending).
+		bool m_fLinks { false };        //Enable links support.
+		bool m_fLinkUnderl { false };   //Links are displayed underlined or not.
+		bool m_fLinkTooltip { false };  //Show links toolips.
+		bool m_fVirtual { false };      //Whether list is virtual (LVS_OWNERDATA) or not.
 		bool m_fCellTTActive { false }; //Is cell's tool-tip shown atm.
 		bool m_fLinkTTActive { false }; //Is link's tool-tip shown atm.
-		bool m_fLDownAtLink { false }; //Left mouse down on link.
-		bool m_fHLFlag { };            //High latency Vscroll flag.
-	};
-
-	//Colors for the row/column.
-	struct CListEx::COLROWCLR {
-		LISTEXCOLOR clr; //Colors
-		std::chrono::high_resolution_clock::time_point time; //Time when added.
+		bool m_fLDownAtLink { false };  //Left mouse down on link.
+		bool m_fHLFlag { false };       //High latency Vscroll flag.
 	};
 
 	//Text and links in the cell.
 	struct CListEx::ITEMDATA {
-		ITEMDATA(int iIconIndex, CRect rect) : rect(rect), iIconIndex(iIconIndex) { }; //Ctor for just image index.
+		ITEMDATA(int iIconIndex, wnd::CRect rc) : rc(rc), iIconIndex(iIconIndex) { }; //Ctor for just image index.
 		ITEMDATA(std::wstring_view wsvText, std::wstring_view wsvLink, std::wstring_view wsvTitle,
-			CRect rect, bool fLink = false, bool fTitle = false) :
-			wstrText(wsvText), wstrLink(wsvLink), wstrTitle(wsvTitle), rect(rect), fLink(fLink), fTitle(fTitle) {
+			wnd::CRect rc, bool fLink = false, bool fTitle = false) :
+			wstrText(wsvText), wstrLink(wsvLink), wstrTitle(wsvTitle), rc(rc), fLink(fLink), fTitle(fTitle) {
 		}
 		std::wstring wstrText;  //Visible text.
 		std::wstring wstrLink;  //Text within link <link="textFromHere"> tag.
 		std::wstring wstrTitle; //Text within title <...title="textFromHere"> tag.
-		CRect rect;             //Rect text belongs to.
+		wnd::CRect rc;          //Rect text belongs to.
 		int iIconIndex { -1 };  //Icon index in the image list, if any.
-		bool fLink { false };   //Is it just a text (wsvLink is empty) or text with link?
-		bool fTitle { false };  //Is it link with custom title (wsvTitle is not empty)?
-	};
-
-	//List tooltips.
-	struct CListEx::TOOLTIPS {
-		std::wstring wstrText;
-		std::wstring wstrCaption;
+		bool fLink { false };   //Is it just a text (wstrLink is empty) or text with link?
+		bool fTitle { false };  //Is it a link with custom title (wstrTitle is not empty)?
 	};
 }
 
-HEXCTRL::LISTEX::IListExPtr HEXCTRL::LISTEX::CreateListEx() {
-	return HEXCTRL::LISTEX::IListExPtr { new HEXCTRL::LISTEX::INTERNAL::CListEx() };
-}
-
-IMPLEMENT_DYNAMIC(CListEx, CMFCListCtrl)
-
-BEGIN_MESSAGE_MAP(CListEx, CMFCListCtrl)
-	ON_EN_KILLFOCUS(m_uIDEditInPlace, &CListEx::OnEditInPlaceKillFocus)
-	ON_NOTIFY(HDN_BEGINDRAG, 0, &CListEx::OnHdnBegindrag)
-	ON_NOTIFY(HDN_BEGINTRACKA, 0, &CListEx::OnHdnBegintrack)
-	ON_NOTIFY(HDN_BEGINTRACKW, 0, &CListEx::OnHdnBegintrack)
-	ON_NOTIFY(VK_RETURN, m_uIDEditInPlace, &CListEx::OnNotifyEditInPlace)
-	ON_NOTIFY(VK_ESCAPE, m_uIDEditInPlace, &CListEx::OnNotifyEditInPlace)
-	ON_NOTIFY_REFLECT(LVN_COLUMNCLICK, &CListEx::OnLvnColumnClick)
-	ON_WM_DESTROY()
-	ON_WM_ERASEBKGND()
-	ON_WM_HSCROLL()
-	ON_WM_LBUTTONDBLCLK()
-	ON_WM_LBUTTONDOWN()
-	ON_WM_LBUTTONUP()
-	ON_WM_MEASUREITEM_REFLECT()
-	ON_WM_MOUSEMOVE()
-	ON_WM_MOUSEWHEEL()
-	ON_WM_PAINT()
-	ON_WM_TIMER()
-	ON_WM_VSCROLL()
-END_MESSAGE_MAP()
+using namespace HEXCTRL::LISTEX;
 
 bool CListEx::Create(const LISTEXCREATE& lcs)
 {
@@ -989,106 +1233,125 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 		return false;
 	}
 
-	const auto dwStyle = lcs.dwStyle | LVS_OWNERDRAWFIXED | LVS_REPORT;
+	HWND hWnd { }; //Main window.
+	auto dwStyle = lcs.dwStyle | WS_CHILD | LVS_OWNERDRAWFIXED | LVS_REPORT;
 	if (lcs.fDialogCtrl) {
-		if (SubclassDlgItem(lcs.uID, CWnd::FromHandle(lcs.hWndParent)) == FALSE)
+		hWnd = ::GetDlgItem(lcs.hWndParent, lcs.uID);
+		if (hWnd == nullptr) {
+			assert(false);
 			return false;
+		}
 
-		const auto dwStyleCurr = GetWindowLongPtrW(m_hWnd, GWL_STYLE);
-		SetWindowLongPtrW(m_hWnd, GWL_STYLE, dwStyleCurr | dwStyle);
-		m_fVirtual = dwStyleCurr & LVS_OWNERDATA;
+		dwStyle |= GetWindowLongPtrW(hWnd, GWL_STYLE);
+		SetWindowLongPtrW(hWnd, GWL_STYLE, dwStyle);
 	}
 	else {
-		if (CreateEx(lcs.dwExStyle, dwStyle, lcs.rect, CWnd::FromHandle(lcs.hWndParent), lcs.uID) == FALSE)
+		const wnd::CRect rc = lcs.rect;
+		if (hWnd = ::CreateWindowExW(lcs.dwExStyle, WC_LISTVIEWW, nullptr, dwStyle, rc.left, rc.top, rc.Width(),
+			rc.Height(), lcs.hWndParent, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(lcs.uID)), nullptr, this);
+			hWnd == nullptr) {
+			assert(false);
 			return false;
-
-		m_fVirtual = dwStyle & LVS_OWNERDATA;
+		}
 	}
+
+	if (::SetWindowSubclass(hWnd, SubclassProc, reinterpret_cast<UINT_PTR>(this), 0) == FALSE) {
+		assert(false);
+		return false;
+	}
+
+	GetHeader().SubclassHeader(::GetDlgItem(hWnd, 0));
+
+	m_fVirtual = dwStyle & LVS_OWNERDATA;
+	m_hWnd = hWnd;
 
 	if (lcs.pColors != nullptr) {
 		m_stColors = *lcs.pColors;
 	}
 
 	m_fSortable = lcs.fSortable;
-	m_fLinksUnderline = lcs.fLinkUnderline;
+	m_fLinks = lcs.fLinks;
+	m_fLinkUnderl = lcs.fLinkUnderline;
 	m_fLinkTooltip = lcs.fLinkTooltip;
 	m_fHighLatency = lcs.fHighLatency;
 	m_dwGridWidth = lcs.dwWidthGrid;
-	m_dwTTShowDelay = lcs.dwTTShowDelay;
+	m_dwTTDelayTime = lcs.dwTTDelayTime;
 	m_dwTTShowTime = lcs.dwTTShowTime;
 	m_ptTTOffset = lcs.ptTTOffset;
 
 	//Cell Tooltip.
-	if (!m_wndCellTT.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, lcs.dwTTStyleCell,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr)) {
+	if (m_hWndCellTT = ::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, lcs.dwTTStyleCell, CW_USEDEFAULT,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, nullptr, nullptr); m_hWndCellTT == nullptr) {
+		assert(false);
 		return false;
 	}
 
-	m_ttiCell.cbSize = sizeof(TTTOOLINFOW);
 	//The TTF_TRACK flag should not be used with the TTS_BALLOON tooltips, because in this case
 	//the balloon will always be positioned _below_ provided coordinates.
-	m_ttiCell.uFlags = lcs.dwTTStyleCell & TTS_BALLOON ? 0 : TTF_TRACK;
-	m_wndCellTT.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiCell));
-	m_wndCellTT.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
+	TTTOOLINFOW ttiCell { .cbSize { sizeof(TTTOOLINFOW) },
+		.uFlags { static_cast<UINT>(lcs.dwTTStyleCell & TTS_BALLOON ? 0 : TTF_TRACK) } };
+	::SendMessageW(m_hWndCellTT, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ttiCell));
+	::SendMessageW(m_hWndCellTT, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 	if (m_stColors.clrTooltipText != 0xFFFFFFFFUL || m_stColors.clrTooltipBk != 0xFFFFFFFFUL) {
 		//To prevent Windows from changing theme of cells tooltip window.
 		//Without this call Windows draws Tooltips with current Theme colors, and
 		//TTM_SETTIPTEXTCOLOR/TTM_SETTIPBKCOLOR have no effect.
-		SetWindowTheme(m_wndCellTT, nullptr, L"");
-		m_wndCellTT.SendMessageW(TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColors.clrTooltipText), 0);
-		m_wndCellTT.SendMessageW(TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColors.clrTooltipBk), 0);
+		::SetWindowTheme(m_hWndCellTT, nullptr, L"");
+		::SendMessageW(m_hWndCellTT, TTM_SETTIPTEXTCOLOR, static_cast<WPARAM>(m_stColors.clrTooltipText), 0);
+		::SendMessageW(m_hWndCellTT, TTM_SETTIPBKCOLOR, static_cast<WPARAM>(m_stColors.clrTooltipBk), 0);
 	}
 
 	//Link Tooltip.
-	if (!m_wndLinkTT.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, lcs.dwTTStyleLink,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr)) {
+	if (m_hWndLinkTT = ::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, lcs.dwTTStyleLink, CW_USEDEFAULT,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, nullptr, nullptr); m_hWndLinkTT == nullptr) {
+		assert(false);
 		return false;
 	}
 
-	m_ttiLink.cbSize = sizeof(TTTOOLINFOW);
-	m_ttiLink.uFlags = lcs.dwTTStyleLink & TTS_BALLOON ? 0 : TTF_TRACK;
-	m_wndLinkTT.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiLink));
-	m_wndLinkTT.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
+	TTTOOLINFOW ttiLink { .cbSize { sizeof(TTTOOLINFOW) },
+		.uFlags { static_cast<UINT>(lcs.dwTTStyleLink & TTS_BALLOON ? 0 : TTF_TRACK) } };
+	::SendMessageW(m_hWndLinkTT, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ttiLink));
+	::SendMessageW(m_hWndLinkTT, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
 
 	if (m_fHighLatency) { //Tooltip for HighLatency mode.
-		if (!m_wndRowTT.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr,
-			TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
-			CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr)) {
+		if (m_hWndRowTT = ::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr,
+			TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP, CW_USEDEFAULT, CW_USEDEFAULT,
+			CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr, nullptr, nullptr); m_hWndRowTT == nullptr) {
+			assert(false);
 			return false;
 		}
-		m_ttiHL.cbSize = sizeof(TTTOOLINFOW);
-		m_ttiHL.uFlags = TTF_TRACK;
-		m_wndRowTT.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiHL));
+
+		TTTOOLINFOW ttiHL { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { static_cast<UINT>(TTF_TRACK) } };
+		::SendMessageW(m_hWndRowTT, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ttiHL));
 	}
 
-	auto pDC = GetDC();
-	m_iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
+	const auto hDC = ::GetDC(m_hWnd);
+	m_iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
 	NONCLIENTMETRICSW ncm { .cbSize { sizeof(NONCLIENTMETRICSW) } };
-	SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, ncm.cbSize, &ncm, 0); //Get System Default UI Font.
+	::SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, ncm.cbSize, &ncm, 0); //Get System Default UI Font.
 	ncm.lfMessageFont.lfHeight = -MulDiv(lcs.dwSizeFontList, m_iLOGPIXELSY, 72);
 	LOGFONTW lfList { lcs.pLFList != nullptr ? *lcs.pLFList : ncm.lfMessageFont };
-	m_fntList.CreateFontIndirectW(&lfList);
+	m_hFntList = ::CreateFontIndirectW(&lfList);
 	lfList.lfUnderline = TRUE;
-	m_fntListUnderline.CreateFontIndirectW(&lfList);
+	m_hFntListUnderline = ::CreateFontIndirectW(&lfList);
 	ncm.lfMessageFont.lfHeight = -MulDiv(lcs.dwSizeFontHdr, m_iLOGPIXELSY, 72);
 	const LOGFONTW lfHdr { lcs.pLFHdr != nullptr ? *lcs.pLFHdr : ncm.lfMessageFont };
-	CFont fntDefault;
-	fntDefault.CreateFontIndirectW(&lfHdr);
+	const auto fntDefault = ::CreateFontIndirectW(&lfHdr);
 	TEXTMETRICW tm;
-	pDC->SelectObject(fntDefault);
-	GetTextMetricsW(pDC->m_hDC, &tm);
+	::SelectObject(hDC, fntDefault);
+	::GetTextMetricsW(hDC, &tm);
 	const DWORD dwHdrHeight = lcs.dwHdrHeight == 0 ?
 		tm.tmHeight + tm.tmExternalLeading + MulDiv(5, m_iLOGPIXELSY, 72) : lcs.dwHdrHeight; //Header is a bit higher than list rows.
-	ReleaseDC(pDC);
+	::ReleaseDC(m_hWnd, hDC);
 
-	m_penGrid.CreatePen(PS_SOLID, m_dwGridWidth, m_stColors.clrListGrid);
-	SetClassLongPtrW(m_hWnd, GCLP_HCURSOR, 0); //To prevent cursor from blinking.
+	m_hPenGrid = ::CreatePen(PS_SOLID, m_dwGridWidth, m_stColors.clrListGrid);
+	::SetClassLongPtrW(m_hWnd, GCLP_HCURSOR, 0); //To prevent cursor from blinking.
 	RecalcMeasure();
 
 	m_fCreated = true;
 
-	GetHeaderCtrl().SetColor(m_stColors);
-	GetHeaderCtrl().SetSortable(lcs.fSortable);
+	GetHeader().SetColor(m_stColors);
+	GetHeader().SetSortable(lcs.fSortable);
 	SetHdrHeight(dwHdrHeight);
 	SetHdrFont(lfHdr);
 	Update(0);
@@ -1106,79 +1369,49 @@ void CListEx::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
 	Create(lcs);
 }
 
-BOOL CListEx::DeleteAllItems()
+bool CListEx::DeleteAllItems()
 {
 	assert(IsCreated());
 	if (!IsCreated()) {
 		return FALSE;
 	}
 
-	m_umapCellTt.clear();
-	m_umapCellData.clear();
-	m_umapCellColor.clear();
-	m_umapRowColor.clear();
-	m_umapCellIcon.clear();
-	m_editInPlace.DestroyWindow();
+	::DestroyWindow(m_hWndEditInPlace);
 
-	return CMFCListCtrl::DeleteAllItems();
+	return ::SendMessageW(m_hWnd, LVM_DELETEALLITEMS, 0, 0L) != 0;
 }
 
-BOOL CListEx::DeleteColumn(int iIndex)
+bool CListEx::DeleteColumn(int iIndex)
 {
 	assert(IsCreated());
 	if (!IsCreated()) {
 		return FALSE;
 	}
 
-	m_umapColumnColor.erase(iIndex);
-	m_umapColumnSortMode.erase(iIndex);
-	GetHeaderCtrl().DeleteColumn(iIndex);
+	std::erase_if(m_vecColumnData, [=](const COLUMNDATA& ref) { return ref.iIndex == iIndex; });
+	GetHeader().DeleteColumn(iIndex);
 
-	return CMFCListCtrl::DeleteColumn(iIndex);
+	return ::SendMessageW(m_hWnd, LVM_DELETECOLUMN, iIndex, 0) != 0;
 }
 
-BOOL CListEx::DeleteItem(int iItem)
+bool CListEx::DeleteItem(int iItem)
 {
 	assert(IsCreated());
 	if (!IsCreated()) {
 		return FALSE;
 	}
 
-	const auto ID = MapIndexToID(iItem);
-	m_umapCellTt.erase(ID);
-	m_umapCellData.erase(ID);
-	m_umapCellColor.erase(ID);
-	m_umapRowColor.erase(ID);
-	m_umapCellIcon.erase(ID);
-
-	return CMFCListCtrl::DeleteItem(iItem);
+	return ::SendMessageW(m_hWnd, LVM_DELETEITEM, iItem, 0L) != 0;
 }
 
-void CListEx::Destroy()
-{
-	delete this;
-}
-
-auto CListEx::GetCellData(int iItem, int iSubItem)const->ULONGLONG
+bool CListEx::EnsureVisible(int iItem, bool fPartialOK)const
 {
 	assert(IsCreated());
 	if (!IsCreated()) {
 		return { };
 	}
 
-	const auto ID = MapIndexToID(iItem);
-	const auto it = m_umapCellData.find(ID);
-
-	if (it != m_umapCellData.end()) {
-		const auto itInner = it->second.find(iSubItem);
-
-		//If subitem id found.
-		if (itInner != it->second.end()) {
-			return itInner->second;
-		}
-	}
-
-	return 0;
+	return static_cast<bool>(::SendMessageW(m_hWnd, LVM_ENSUREVISIBLE, iItem, MAKELPARAM(fPartialOK, 0)));
 }
 
 auto CListEx::GetColors()const->const LISTEXCOLORS& {
@@ -1189,8 +1422,9 @@ auto CListEx::GetColumnSortMode(int iColumn)const->EListExSortMode
 {
 	assert(IsCreated());
 
-	if (const auto iter = m_umapColumnSortMode.find(iColumn); iter != m_umapColumnSortMode.end()) {
-		return iter->second;
+	if (const auto it = std::find_if(m_vecColumnData.begin(), m_vecColumnData.end(),
+		[=](const COLUMNDATA& ref) { return ref.iIndex == iColumn; }); it != m_vecColumnData.end()) {
+		return it->eSortMode;
 	}
 
 	return m_eDefSortMode;
@@ -1198,16 +1432,124 @@ auto CListEx::GetColumnSortMode(int iColumn)const->EListExSortMode
 
 auto CListEx::GetFont()const->LOGFONTW
 {
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
 	LOGFONTW lf { };
-	::GetObjectW(m_fntList, sizeof(lf), &lf);
+	::GetObjectW(m_hFntList, sizeof(lf), &lf);
 
 	return lf;
 }
 
-long CListEx::GetFontSize()
+auto CListEx::GetHWND()const->HWND
 {
-	LOGFONTW lf;
-	m_fntList.GetLogFont(&lf);
+	if (!IsCreated()) {
+		return { };
+	}
+
+	return m_hWnd;
+}
+
+auto CListEx::GetImageList(int iList)const->HIMAGELIST
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	return reinterpret_cast<HIMAGELIST>(::SendMessageW(m_hWnd, LVM_GETIMAGELIST, iList, 0L));
+}
+
+void CListEx::GetItem(LVITEMW* pItem)const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return;
+	}
+
+	::SendMessageW(m_hWnd, LVM_GETITEMW, 0, reinterpret_cast<LPARAM>(pItem));
+}
+
+int CListEx::GetItemCount()const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return -1;
+	}
+
+	return static_cast<int>(::SendMessageW(m_hWnd, LVM_GETITEMCOUNT, 0, 0L));
+}
+
+auto CListEx::GetItemRect(int iItem, int iArea)const->RECT
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	assert(iArea == LVIR_BOUNDS || iArea == LVIR_ICON || iArea == LVIR_LABEL || iArea == LVIR_SELECTBOUNDS);
+
+	RECT rc { .left { iArea } };
+	const bool ret = ::SendMessageW(m_hWnd, LVM_GETITEMRECT, iItem, reinterpret_cast<LPARAM>(&rc));
+
+	return ret ? rc : RECT { };
+}
+
+auto CListEx::GetItemText(int iItem, int iSubItem)const->std::wstring
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	wchar_t buff[256];
+	LVITEMW item { .mask { LVIF_TEXT }, .iItem { iItem }, .iSubItem { iSubItem },
+		.pszText { buff }, .cchTextMax { 256 } };
+	GetItem(&item);
+	return item.pszText;
+}
+
+int CListEx::GetNextItem(int iItem, int iFlags)const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	return static_cast<int>(::SendMessageW(m_hWnd, LVM_GETNEXTITEM, iItem, MAKELPARAM(iFlags, 0)));
+}
+
+auto CListEx::GetSelectedCount()const->UINT
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	return static_cast<UINT>(::SendMessageW(m_hWnd, LVM_GETSELECTEDCOUNT, 0, 0L));
+}
+
+int CListEx::GetSelectionMark()const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	return static_cast<int>(::SendMessageW(m_hWnd, LVM_GETSELECTIONMARK, 0, 0));
+}
+
+long CListEx::GetFontSize()const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	LOGFONTW lf { };
+	::GetObjectW(m_hFntList, sizeof(lf), &lf);
 
 	return lf.lfHeight;
 }
@@ -1229,7 +1571,32 @@ bool CListEx::GetSortAscending()const
 		return false;
 	}
 
-	return m_fSortAscending;
+	return m_fSortAsc;
+}
+
+auto CListEx::GetSubItemRect(int iItem, int iSubItem, int iArea)const->RECT
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	assert(iArea == LVIR_BOUNDS || iArea == LVIR_ICON || iArea == LVIR_LABEL || iArea == LVIR_SELECTBOUNDS);
+
+	RECT rc { .left { iArea }, .top { iSubItem } };
+	const bool ret = ::SendMessageW(m_hWnd, LVM_GETSUBITEMRECT, iItem, reinterpret_cast<LPARAM>(&rc));
+
+	return ret ? rc : RECT { };
+}
+
+int CListEx::GetTopIndex()const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	return static_cast<int>(::SendMessageW(m_hWnd, LVM_GETTOPINDEX, 0, 0));
 }
 
 void CListEx::HideColumn(int iIndex, bool fHide)
@@ -1239,34 +1606,48 @@ void CListEx::HideColumn(int iIndex, bool fHide)
 		return;
 	}
 
-	GetHeaderCtrl().HideColumn(iIndex, fHide);
+	GetHeader().HideColumn(iIndex, fHide);
 	RedrawWindow();
 }
 
-int CListEx::InsertColumn(int nCol, const LVCOLUMNW* pColumn, int iDataAlign, bool fEditable)
+bool CListEx::HitTest(LVHITTESTINFO* pHTI)const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return false;
+	}
+
+	return ::SendMessageW(m_hWnd, LVM_SUBITEMHITTEST, 0, reinterpret_cast<LPARAM>(pHTI)) != -1;
+}
+
+int CListEx::InsertColumn(int iCol, const LVCOLUMNW* pColumn)const
+{
+	return static_cast<int>(::SendMessageW(m_hWnd, LVM_INSERTCOLUMN, iCol, reinterpret_cast<LPARAM>(pColumn)));
+}
+
+int CListEx::InsertColumn(int iCol, const LVCOLUMNW* pColumn, int iDataAlign, bool fEditable)
 {
 	assert(IsCreated());
 	if (!IsCreated()) {
 		return -1;
 	}
 
-	auto& refHdr = GetHeaderCtrl();
+	auto& refHdr = GetHeader();
 	const auto nHiddenCount = refHdr.GetHiddenCount();
 
 	//Checking that the new column ID (nCol) not greater than the count of 
 	//the header items minus count of the already hidden columns.
-	if (nHiddenCount > 0 && nCol >= static_cast<int>(refHdr.GetItemCount() - nHiddenCount)) {
-		nCol = refHdr.GetItemCount() - nHiddenCount;
+	if (nHiddenCount > 0 && iCol >= static_cast<int>(refHdr.GetItemCount() - nHiddenCount)) {
+		iCol = refHdr.GetItemCount() - nHiddenCount;
 	}
 
-	const auto iNewIndex = CMFCListCtrl::InsertColumn(nCol, pColumn);
+	const auto iNewIndex = InsertColumn(iCol, pColumn);
 
 	//Assigning each column a unique internal random identifier.
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<unsigned int> distrib(1, (std::numeric_limits<unsigned int>::max)());
-	HDITEMW hdi { .mask { HDI_LPARAM }, .lParam { static_cast<LPARAM>(distrib(gen)) } };
-	refHdr.SetItem(iNewIndex, &hdi);
+	refHdr.SetItem(iNewIndex, { .mask { HDI_LPARAM }, .lParam { static_cast<LPARAM>(distrib(gen)) } });
 	refHdr.SetColumnDataAlign(iNewIndex, iDataAlign);
 
 	//First (zero index) column is always left-aligned by default, no matter what the pColumn->fmt is set to.
@@ -1283,16 +1664,16 @@ int CListEx::InsertColumn(int nCol, const LVCOLUMNW* pColumn, int iDataAlign, bo
 	return iNewIndex;
 }
 
-int CListEx::InsertColumn(int nCol, LPCWSTR pwszName, int nFormat, int nWidth, int nSubItem, int iDataAlign, bool fEditable)
+int CListEx::InsertColumn(int iCol, LPCWSTR pwszName, int iFormat, int iWidth, int iSubItem, int iDataAlign, bool fEditable)
 {
 	assert(IsCreated());
 	if (!IsCreated()) {
 		return -1;
 	}
 
-	const LVCOLUMNW lvcol { .mask { LVCF_FMT | LVCF_WIDTH | LVCF_SUBITEM | LVCF_TEXT }, .fmt { nFormat },
-		.cx { nWidth }, .pszText { const_cast<LPWSTR>(pwszName) }, .iSubItem { nSubItem } };
-	return InsertColumn(nCol, &lvcol, iDataAlign, fEditable);
+	const LVCOLUMNW lvcol { .mask { LVCF_FMT | LVCF_WIDTH | LVCF_SUBITEM | LVCF_TEXT }, .fmt { iFormat },
+		.cx { iWidth }, .pszText { const_cast<LPWSTR>(pwszName) }, .iSubItem { iSubItem } };
+	return InsertColumn(iCol, &lvcol, iDataAlign, fEditable);
 }
 
 bool CListEx::IsCreated()const
@@ -1302,129 +1683,50 @@ bool CListEx::IsCreated()const
 
 bool CListEx::IsColumnSortable(int iColumn)
 {
-	return GetHeaderCtrl().IsColumnSortable(iColumn);
+	return GetHeader().IsColumnSortable(iColumn);
+}
+
+auto CListEx::MapIndexToID(UINT uIndex)const->UINT
+{
+	assert(IsWindow());
+	return static_cast<UINT>(::SendMessageW(m_hWnd, LVM_MAPINDEXTOID, static_cast<WPARAM>(uIndex), 0));
+}
+
+auto CListEx::MapIDToIndex(UINT uID)const->UINT
+{
+	assert(IsWindow());
+	return static_cast<UINT>(::SendMessageW(m_hWnd, LVM_MAPIDTOINDEX, static_cast<WPARAM>(uID), 0));
+}
+
+auto CListEx::ProcessMsg(const MSG& msg)->LRESULT
+{
+	switch (msg.message) {
+	case WM_COMMAND: return OnCommand(msg);
+	case WM_DESTROY: return OnDestroy();
+	case WM_ERASEBKGND: return OnEraseBkgnd();
+	case WM_HSCROLL: return OnHScroll(msg);
+	case WM_LBUTTONDBLCLK: return OnLButtonDblClk(msg);
+	case WM_LBUTTONDOWN: return OnLButtonDown(msg);
+	case WM_LBUTTONUP: return OnLButtonUp(msg);
+	case WM_MOUSEMOVE: return OnMouseMove(msg);
+	case WM_MOUSEWHEEL: return OnMouseWheel(msg);
+	case WM_NOTIFY: return OnNotify(msg);
+	case WM_PAINT: return OnPaint();
+	case WM_TIMER: return OnTimer(msg);
+	case WM_VSCROLL: return OnVScroll(msg);
+	default: return wnd::DefSubclassProc(msg);
+	}
 }
 
 void CListEx::ResetSort()
 {
 	m_iSortColumn = -1;
-	GetHeaderCtrl().SetSortArrow(-1, false);
+	GetHeader().SetSortArrow(-1, false);
 }
 
-void CListEx::SetCellColor(int iItem, int iSubItem, COLORREF clrBk, COLORREF clrText)
+void CListEx::Scroll(SIZE size)const
 {
-	assert(IsCreated());
-	assert(!m_fVirtual);
-	if (!IsCreated() || m_fVirtual) {
-		return;
-	}
-
-	if (clrText == -1) { //-1 for default color.
-		clrText = m_stColors.clrListText;
-	}
-
-	const auto ID = MapIndexToID(static_cast<UINT>(iItem));
-
-	//If there is no color for such item/subitem, we just set it.
-	if (const auto it = m_umapCellColor.find(ID); it == m_umapCellColor.end()) {
-		m_umapCellColor.try_emplace(ID, std::unordered_map<int, LISTEXCOLOR> {
-			{ iSubItem, { .clrBk { clrBk }, .clrText { clrText } } } });
-	}
-	else {
-		const auto itInner = it->second.find(iSubItem);
-
-		if (itInner == it->second.end()) {
-			it->second.insert({ iSubItem, { .clrBk { clrBk }, .clrText { clrText } } });
-		}
-		else { //If there is already this cell's color, we change it.
-			itInner->second.clrBk = clrBk;
-			itInner->second.clrText = clrText;
-		}
-	}
-}
-
-void CListEx::SetCellData(int iItem, int iSubItem, ULONGLONG ullData)
-{
-	assert(IsCreated());
-	assert(!m_fVirtual);
-	if (!IsCreated() || m_fVirtual) {
-		return;
-	}
-
-	const auto ID = MapIndexToID(iItem);
-
-	//If there is no data for such item/subitem, we just set it.
-	if (const auto it = m_umapCellData.find(ID); it == m_umapCellData.end()) {
-		m_umapCellData.try_emplace(ID, std::unordered_map<int, ULONGLONG>{ { iSubItem, ullData } });
-	}
-	else {
-		if (const auto itInner = it->second.find(iSubItem); itInner == it->second.end()) {
-			it->second.insert({ iSubItem, ullData });
-		}
-		else { //If there is already this cell's data, we change it.
-			itInner->second = ullData;
-		}
-	}
-}
-
-void CListEx::SetCellIcon(int iItem, int iSubItem, int iIndex)
-{
-	assert(IsCreated());
-	assert(!m_fVirtual);
-	if (!IsCreated() || m_fVirtual) {
-		return;
-	}
-
-	const auto ID = MapIndexToID(iItem);
-
-	//If there is no icon index for such item, we just set it.
-	if (const auto it = m_umapCellIcon.find(ID); it == m_umapCellIcon.end()) {
-		m_umapCellIcon.try_emplace(ID, std::unordered_map<int, int>{ { iSubItem, iIndex } });
-	}
-	else {
-		if (const auto itInner = it->second.find(iSubItem); itInner == it->second.end()) {
-			it->second.insert({ iSubItem, iIndex });
-		}
-		else {
-			itInner->second = iIndex;
-		}
-	}
-}
-
-void CListEx::SetCellTooltip(int iItem, int iSubItem, std::wstring_view wsvTooltip, std::wstring_view wsvCaption)
-{
-	assert(IsCreated());
-	assert(!m_fVirtual);
-	if (!IsCreated() || m_fVirtual) {
-		return;
-	}
-
-	const auto ID = MapIndexToID(iItem);
-
-	//If there is no tooltip for such item/subitem, we just set it.
-	if (const auto it = m_umapCellTt.find(ID); it == m_umapCellTt.end()) {
-		if (!wsvTooltip.empty() || !wsvCaption.empty()) {
-			m_umapCellTt.try_emplace(ID, std::unordered_map<int, TOOLTIPS> {
-				{ iSubItem, { .wstrText { std::wstring { wsvTooltip } }, .wstrCaption { std::wstring { wsvCaption } } } } });
-		}
-	}
-	else {
-		//If there is Item's tooltip but no Subitem's tooltip, inserting new Subitem into inner map.
-		if (const auto itInner = it->second.find(iSubItem);	itInner == it->second.end()) {
-			if (!wsvTooltip.empty() || !wsvCaption.empty()) {
-				it->second.insert({ iSubItem,
-					{ .wstrText { std::wstring { wsvTooltip } }, .wstrCaption { std::wstring { wsvCaption } } } });
-			}
-		}
-		else { //If there is already this Item-Subitem's tooltip, change or erase it, depending on pwszTooltip emptiness.
-			if (!wsvTooltip.empty()) {
-				itInner->second = { .wstrText { std::wstring { wsvTooltip } }, .wstrCaption { std::wstring { wsvCaption } } };
-			}
-			else {
-				it->second.erase(itInner);
-			}
-		}
-	}
+	::SendMessageW(m_hWnd, LVM_SCROLL, size.cx, size.cy);
 }
 
 void CListEx::SetColors(const LISTEXCOLORS& lcs)
@@ -1435,18 +1737,18 @@ void CListEx::SetColors(const LISTEXCOLORS& lcs)
 	}
 
 	m_stColors = lcs;
-	GetHeaderCtrl().SetColor(lcs);
+	GetHeader().SetColor(lcs);
 	RedrawWindow();
 }
 
-void CListEx::SetColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
+void CListEx::SetColumn(int iCol, const LVCOLUMNW* pColumn)const
 {
-	if (clrText == -1) { //-1 for default color.
-		clrText = m_stColors.clrListText;
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return;
 	}
 
-	m_umapColumnColor[iColumn] = { .clr { .clrBk { clrBk }, .clrText { clrText } },
-		.time { std::chrono::high_resolution_clock::now() } };
+	::SendMessageW(m_hWnd, LVM_SETCOLUMN, iCol, reinterpret_cast<LPARAM>(pColumn));
 }
 
 void CListEx::SetColumnEditable(int iColumn, bool fEditable)
@@ -1456,13 +1758,28 @@ void CListEx::SetColumnEditable(int iColumn, bool fEditable)
 		return;
 	}
 
-	GetHeaderCtrl().SetColumnEditable(iColumn, fEditable);
+	GetHeader().SetColumnEditable(iColumn, fEditable);
 }
 
 void CListEx::SetColumnSortMode(int iColumn, bool fSortable, EListExSortMode eSortMode)
 {
-	m_umapColumnSortMode[iColumn] = eSortMode;
-	GetHeaderCtrl().SetColumnSortable(iColumn, fSortable);
+	if (const auto it = std::find_if(m_vecColumnData.begin(), m_vecColumnData.end(),
+		[=](const COLUMNDATA& ref) { return ref.iIndex == iColumn; }); it != m_vecColumnData.end()) {
+		it->eSortMode = eSortMode;
+	}
+	else { m_vecColumnData.emplace_back(COLUMNDATA { .iIndex { iColumn }, .eSortMode { eSortMode } }); }
+
+	GetHeader().SetColumnSortable(iColumn, fSortable);
+}
+
+auto CListEx::SetExtendedStyle(DWORD dwExStyle)const->DWORD
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	return static_cast<DWORD>(::SendMessageW(m_hWnd, LVM_SETEXTENDEDLISTVIEWSTYLE, 0, dwExStyle));
 }
 
 void CListEx::SetFont(const LOGFONTW& lf)
@@ -1472,15 +1789,25 @@ void CListEx::SetFont(const LOGFONTW& lf)
 		return;
 	}
 
-	m_fntList.DeleteObject();
-	m_fntList.CreateFontIndirectW(&lf);
+	::DeleteObject(m_hFntList);
+	m_hFntList = ::CreateFontIndirectW(&lf);
 	LOGFONTW lfu { lf };
 	lfu.lfUnderline = TRUE;
-	m_fntListUnderline.DeleteObject();
-	m_fntListUnderline.CreateFontIndirectW(&lfu);
+	::DeleteObject(m_hFntListUnderline);
+	m_hFntListUnderline = ::CreateFontIndirectW(&lfu);
 
 	RecalcMeasure();
 	Update(0);
+
+	if (::IsWindow(m_hWndEditInPlace)) { //If m_hWndEditInPlace is active, ammend its rect.
+		wnd::CRect rcCell = GetSubItemRect(m_htiEdit.iItem, m_htiEdit.iSubItem, LVIR_BOUNDS);
+		if (m_htiEdit.iSubItem == 0) { //Clicked on item (first column).
+			auto rcLabel = GetItemRect(m_htiEdit.iItem, LVIR_LABEL);
+			rcCell.right = rcLabel.right;
+		}
+		::SetWindowPos(m_hWndEditInPlace, nullptr, rcCell.left, rcCell.top, rcCell.Width(), rcCell.Height(), SWP_NOZORDER);
+		::SendMessageW(m_hWndEditInPlace, WM_SETFONT, reinterpret_cast<WPARAM>(m_hFntList), FALSE);
+	}
 }
 
 void CListEx::SetHdrHeight(DWORD dwHeight)
@@ -1490,9 +1817,9 @@ void CListEx::SetHdrHeight(DWORD dwHeight)
 		return;
 	}
 
-	GetHeaderCtrl().SetHeight(dwHeight);
+	GetHeader().SetHeight(dwHeight);
 	Update(0);
-	GetHeaderCtrl().RedrawWindow();
+	GetHeader().RedrawWindow();
 }
 
 void CListEx::SetHdrImageList(HIMAGELIST pList)
@@ -1502,7 +1829,60 @@ void CListEx::SetHdrImageList(HIMAGELIST pList)
 		return;
 	}
 
-	GetHeaderCtrl().SetImageList(CImageList::FromHandle(pList));
+	GetHeader().SetImageList(pList);
+}
+
+auto CListEx::SetImageList(HIMAGELIST hList, int iListType)->HIMAGELIST
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	return reinterpret_cast<HIMAGELIST>(::SendMessageW(m_hWnd, LVM_SETIMAGELIST, iListType, reinterpret_cast<LPARAM>(hList)));
+}
+
+void CListEx::SetItemCountEx(int iCount, DWORD dwFlags)const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return;
+	}
+
+	assert(dwFlags == 0 || m_fVirtual);
+	::SendMessageW(m_hWnd, LVM_SETITEMCOUNT, iCount, dwFlags);
+}
+
+bool CListEx::SetItemState(int iItem, LVITEMW* pItem)const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return false;
+	}
+
+	return static_cast<bool>(::SendMessageW(m_hWnd, LVM_SETITEMSTATE, iItem, reinterpret_cast<LPARAM>(pItem)));
+}
+
+bool CListEx::SetItemState(int iItem, UINT uState, UINT uStateMask)const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return false;
+	}
+
+	LVITEMW lvi { .state { uState }, .stateMask { uStateMask } };
+	return SetItemState(iItem, &lvi);
+}
+
+void CListEx::SetItemText(int iItem, int iSubItem, LPCWSTR pwszText)
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return;
+	}
+
+	LVITEMW lvi { .iSubItem { iSubItem }, .pszText { const_cast<LPWSTR>(pwszText) } };
+	::SendMessageW(m_hWnd, LVM_SETITEMTEXTW, iItem, reinterpret_cast<LPARAM>(&lvi));
 }
 
 void CListEx::SetHdrFont(const LOGFONTW& lf)
@@ -1512,9 +1892,9 @@ void CListEx::SetHdrFont(const LOGFONTW& lf)
 		return;
 	}
 
-	GetHeaderCtrl().SetFont(lf);
+	GetHeader().SetFont(lf);
 	Update(0);
-	GetHeaderCtrl().RedrawWindow();
+	GetHeader().RedrawWindow();
 }
 
 void CListEx::SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
@@ -1524,9 +1904,9 @@ void CListEx::SetHdrColumnColor(int iColumn, COLORREF clrBk, COLORREF clrText)
 		return;
 	}
 
-	GetHeaderCtrl().SetColumnColor(iColumn, clrBk, clrText);
+	GetHeader().SetColumnColor(iColumn, clrBk, clrText);
 	Update(0);
-	GetHeaderCtrl().RedrawWindow();
+	GetHeader().RedrawWindow();
 }
 
 void CListEx::SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)
@@ -1536,21 +1916,7 @@ void CListEx::SetHdrColumnIcon(int iColumn, const LISTEXHDRICON& stIcon)
 		return;
 	}
 
-	GetHeaderCtrl().SetColumnIcon(iColumn, stIcon);
-}
-
-void CListEx::SetRowColor(DWORD dwRow, COLORREF clrBk, COLORREF clrText)
-{
-	assert(IsCreated());
-	if (!IsCreated()) {
-		return;
-	}
-
-	if (clrText == -1) { //-1 for default color.
-		clrText = m_stColors.clrListText;
-	}
-
-	m_umapRowColor[dwRow] = { .clr { .clrBk { clrBk }, .clrText { clrText } }, .time { std::chrono::high_resolution_clock::now() } };
+	GetHeader().SetColumnIcon(iColumn, stIcon);
 }
 
 void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMode eSortMode)
@@ -1564,12 +1930,33 @@ void CListEx::SetSortable(bool fSortable, PFNLVCOMPARE pfnCompare, EListExSortMo
 	m_pfnCompare = pfnCompare;
 	m_eDefSortMode = eSortMode;
 
-	GetHeaderCtrl().SetSortable(fSortable);
+	GetHeader().SetSortable(fSortable);
+}
+
+void CListEx::SortItemsEx(PFNLVCOMPARE pfnCompare, DWORD_PTR dwData)const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return;
+	}
+
+	assert(!m_fVirtual);
+	::SendMessageW(m_hWnd, LVM_SORTITEMSEX, dwData, reinterpret_cast<LPARAM>(pfnCompare));
+}
+
+void CListEx::Update(int iItem)const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return;
+	}
+
+	::SendMessageW(m_hWnd, LVM_UPDATE, iItem, 0L);
 }
 
 int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 {
-	const auto* const pListCtrl = reinterpret_cast<IListEx*>(lParamSort);
+	const auto* const pListCtrl = reinterpret_cast<CListEx*>(lParamSort);
 	const auto iSortColumn = pListCtrl->GetSortColumn();
 	const auto eSortMode = pListCtrl->GetColumnSortMode(iSortColumn);
 	const auto wstrItem1 = pListCtrl->GetItemText(static_cast<int>(lParam1), iSortColumn);
@@ -1578,13 +1965,13 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 	int iCompare { };
 	switch (eSortMode) {
 	case EListExSortMode::SORT_LEX:
-		iCompare = wstrItem1.Compare(wstrItem2);
+		iCompare = wstrItem1.compare(wstrItem2);
 		break;
 	case EListExSortMode::SORT_NUMERIC:
 	{
 		LONGLONG llData1 { }, llData2 { };
-		StrToInt64ExW(wstrItem1, STIF_SUPPORT_HEX, &llData1);
-		StrToInt64ExW(wstrItem2, STIF_SUPPORT_HEX, &llData2);
+		StrToInt64ExW(wstrItem1.data(), STIF_SUPPORT_HEX, &llData1);
+		StrToInt64ExW(wstrItem2.data(), STIF_SUPPORT_HEX, &llData2);
 		iCompare = llData1 != llData2 ? (llData1 - llData2 < 0 ? -1 : 1) : 0;
 	}
 	break;
@@ -1627,9 +2014,9 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 	case ODA_SELECT:
 	case ODA_DRAWENTIRE:
 	{
-		const auto pDC = CDC::FromHandle(pDIS->hDC);
+		const wnd::CDC cdc(pDIS->hDC);
 		const auto clrBkCurrRow = (iItem % 2) ? m_stColors.clrListBkEven : m_stColors.clrListBkOdd;
-		const auto& refHdr = GetHeaderCtrl();
+		const auto& refHdr = GetHeader();
 		const auto iColumns = refHdr.GetItemCount();
 		for (auto iSubitem = 0; iSubitem < iColumns; ++iSubitem) {
 			if (refHdr.IsColumnHidden(iSubitem)) {
@@ -1661,52 +2048,51 @@ void CListEx::DrawItem(LPDRAWITEMSTRUCT pDIS)
 				}
 			}
 
-			CRect rcBounds;
-			GetSubItemRect(iItem, iSubitem, LVIR_BOUNDS, rcBounds);
-			pDC->FillSolidRect(rcBounds, clrBk);
+			wnd::CRect rcBounds = GetSubItemRect(iItem, iSubitem, LVIR_BOUNDS);
+			cdc.FillSolidRect(rcBounds, clrBk);
 
 			for (const auto& itItemData : ParseItemData(iItem, iSubitem)) {
 				if (itItemData.iIconIndex > -1) {
-					GetImageList(LVSIL_NORMAL)->DrawEx(pDC, itItemData.iIconIndex,
-						{ itItemData.rect.left, itItemData.rect.top }, { }, CLR_NONE, CLR_NONE, ILD_NORMAL);
+					::ImageList_DrawEx(GetImageList(LVSIL_NORMAL), itItemData.iIconIndex, cdc,
+						itItemData.rc.left, itItemData.rc.top, 0, 0, CLR_NONE, CLR_NONE, ILD_NORMAL);
 					continue;
 				}
 
 				if (itItemData.fLink) {
-					pDC->SetTextColor(clrTextLink);
-					if (m_fLinksUnderline) {
-						pDC->SelectObject(m_fntListUnderline);
+					cdc.SetTextColor(clrTextLink);
+					if (m_fLinkUnderl) {
+						cdc.SelectObject(m_hFntListUnderline);
 					}
 				}
 				else {
-					pDC->SetTextColor(clrText);
-					pDC->SelectObject(m_fntList);
+					cdc.SetTextColor(clrText);
+					cdc.SelectObject(m_hFntList);
 				}
 
-				ExtTextOutW(pDC->m_hDC, itItemData.rect.left + iTextIndentLeft, itItemData.rect.top + iTextIndentTop,
+				::ExtTextOutW(cdc, itItemData.rc.left + iTextIndentLeft, itItemData.rc.top + iTextIndentTop,
 					ETO_CLIPPED, rcBounds, itItemData.wstrText.data(), static_cast<UINT>(itItemData.wstrText.size()), nullptr);
 			}
 
 			//Drawing subitem's rect lines.
 			//If SetExtendedStyle(LVS_EX_GRIDLINES) is set, lines are drawn automatically but through whole client rect.
 			if (m_dwGridWidth > 0) {
-				pDC->SelectObject(m_penGrid);
-				pDC->MoveTo(rcBounds.TopLeft());
-				pDC->LineTo(rcBounds.right, rcBounds.top);   //Top line.
-				pDC->MoveTo(rcBounds.TopLeft());
-				pDC->LineTo(rcBounds.left, rcBounds.bottom); //Left line.
-				pDC->MoveTo(rcBounds.left, rcBounds.bottom);
-				pDC->LineTo(rcBounds.BottomRight());         //Bottom line.
+				cdc.SelectObject(m_hPenGrid);
+				cdc.MoveTo(rcBounds.TopLeft());
+				cdc.LineTo(rcBounds.right, rcBounds.top);   //Top line.
+				cdc.MoveTo(rcBounds.TopLeft());
+				cdc.LineTo(rcBounds.left, rcBounds.bottom); //Left line.
+				cdc.MoveTo(rcBounds.left, rcBounds.bottom);
+				cdc.LineTo(rcBounds.BottomRight());         //Bottom line.
 				if (iSubitem == iColumns - 1) { //Drawing a right line only for the last column.
 					rcBounds.right -= 1; //To overcome a glitch with a last line disappearing if resizing a header.
-					pDC->MoveTo(rcBounds.right, rcBounds.top);
-					pDC->LineTo(rcBounds.BottomRight());     //Right line.
+					cdc.MoveTo(rcBounds.right, rcBounds.top);
+					cdc.LineTo(rcBounds.BottomRight());     //Right line.
 				}
 			}
 
 			//Draw focus rect (marquee).
 			if ((pDIS->itemState & ODS_FOCUS) && !(pDIS->itemState & ODS_SELECTED)) {
-				pDC->DrawFocusRect(rcBounds);
+				cdc.DrawFocusRect(rcBounds);
 			}
 		}
 	}
@@ -1728,37 +2114,14 @@ auto CListEx::GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEX
 		return std::nullopt;
 	}
 
-	if (m_fVirtual) { //In Virtual mode asking parent for color.
-		const auto iCtrlID = GetDlgCtrlID();
-		const LISTEXCOLORINFO lci { .hdr { .hwndFrom { m_hWnd }, .idFrom { static_cast<UINT>(iCtrlID) }, .code { LISTEX_MSG_GETCOLOR } },
-			.iItem { iItem }, .iSubItem { iSubItem }, .stClr { .clrBk { 0xFFFFFFFFUL }, .clrText { 0xFFFFFFFFUL } } };
-		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&lci));
-		if (lci.stClr.clrBk != -1 || lci.stClr.clrText != -1) {
-			return lci.stClr;
-		}
-	}
-	else {
-		const auto ID = MapIndexToID(static_cast<UINT>(iItem));
-		if (const auto itItem = m_umapCellColor.find(ID); itItem != m_umapCellColor.end()) {
-			if (const auto itSubItem = itItem->second.find(iSubItem); itSubItem != itItem->second.end()) { //If subitem id found.
-				return itSubItem->second;
-			}
-		}
-
-		const auto itColumn = m_umapColumnColor.find(iSubItem);
-		const auto itRow = m_umapRowColor.find(ID);
-
-		if (itColumn != m_umapColumnColor.end() && itRow != m_umapRowColor.end()) {
-			return itColumn->second.time > itRow->second.time ? itColumn->second.clr : itRow->second.clr;
-		}
-
-		if (itColumn != m_umapColumnColor.end()) {
-			return itColumn->second.clr;
-		}
-
-		if (itRow != m_umapRowColor.end()) {
-			return itRow->second.clr;
-		}
+	//Asking parent for color.
+	const auto iCtrlID = ::GetDlgCtrlID(m_hWnd);
+	const LISTEXCOLORINFO lci { .hdr { .hwndFrom { m_hWnd }, .idFrom { static_cast<UINT>(iCtrlID) },
+		.code { LISTEX_MSG_GETCOLOR } }, .iItem { iItem }, .iSubItem { iSubItem },
+		.stClr { .clrBk { 0xFFFFFFFFUL }, .clrText { 0xFFFFFFFFUL } } };
+	::SendMessageW(GetParent(m_hWnd), WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&lci));
+	if (lci.stClr.clrBk != -1 || lci.stClr.clrText != -1) {
+		return lci.stClr;
 	}
 
 	return std::nullopt;
@@ -1770,22 +2133,12 @@ int CListEx::GetIcon(int iItem, int iSubItem)const
 		return -1; //-1 is the default, when no image for cell is set.
 	}
 
-	if (m_fVirtual) { //In Virtual mode asking parent for the icon index in image list.
-		const auto uCtrlID = static_cast<UINT>(GetDlgCtrlID());
-		const LISTEXICONINFO lii { .hdr { .hwndFrom { m_hWnd }, .idFrom { uCtrlID }, .code { LISTEX_MSG_GETICON } },
-			.iItem { iItem }, .iSubItem { iSubItem } };
-		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlID), reinterpret_cast<LPARAM>(&lii));
-		return lii.iIconIndex; //By default it's -1, meaning no icon.
-	}
-
-	const auto ID = MapIndexToID(iItem);
-	if (const auto it = m_umapCellIcon.find(ID); it != m_umapCellIcon.end()) {
-		if (const auto itInner = it->second.find(iSubItem); itInner != it->second.end()) {
-			return itInner->second;
-		}
-	}
-
-	return -1;
+	//Asking parent for the icon index in image list.
+	const auto uCtrlID = static_cast<UINT>(::GetDlgCtrlID(m_hWnd));
+	const LISTEXICONINFO lii { .hdr { .hwndFrom { m_hWnd }, .idFrom { uCtrlID }, .code { LISTEX_MSG_GETICON } },
+		.iItem { iItem }, .iSubItem { iSubItem } };
+	::SendMessageW(GetParent(m_hWnd), WM_NOTIFY, static_cast<WPARAM>(uCtrlID), reinterpret_cast<LPARAM>(&lii));
+	return lii.iIconIndex; //By default it's -1, meaning no icon.
 }
 
 auto CListEx::GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDATA>
@@ -1794,79 +2147,76 @@ auto CListEx::GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDA
 		return std::nullopt;
 	}
 
-	if (m_fVirtual) { //In Virtual mode asking parent for tooltip.
-		const auto iCtrlID = GetDlgCtrlID();
-		const LISTEXTTINFO ltti { .hdr { .hwndFrom { m_hWnd }, .idFrom { static_cast<UINT>(iCtrlID) },
-			.code { LISTEX_MSG_GETTOOLTIP } }, .iItem { iItem }, .iSubItem { iSubItem } };
-		if (GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&ltti));
-			ltti.stData.pwszText != nullptr) { //If tooltip text was set by the Parent.
-			return ltti.stData;
-		}
-	}
-	else {
-		const auto ID = MapIndexToID(iItem);
-		if (const auto itItem = m_umapCellTt.find(ID); itItem != m_umapCellTt.end()) {
-			if (const auto itSubItem = itItem->second.find(iSubItem); itSubItem != itItem->second.end()) {
-				return { { .pwszText { itSubItem->second.wstrText.data() }, .pwszCaption { itSubItem->second.wstrCaption.data() } } };
-			}
-		}
+	//Asking parent for tooltip.
+	const auto iCtrlID = ::GetDlgCtrlID(m_hWnd);
+	const LISTEXTTINFO ltti { .hdr { .hwndFrom { m_hWnd }, .idFrom { static_cast<UINT>(iCtrlID) },
+		.code { LISTEX_MSG_GETTOOLTIP } }, .iItem { iItem }, .iSubItem { iSubItem } };
+	if (::SendMessageW(::GetParent(m_hWnd), WM_NOTIFY, static_cast<WPARAM>(iCtrlID), reinterpret_cast<LPARAM>(&ltti));
+		ltti.stData.pwszText != nullptr) { //If tooltip text was set by the Parent.
+		return ltti.stData;
 	}
 
 	return std::nullopt;
 }
 
-void CListEx::InitHeader()
+bool CListEx::IsWindow()const
 {
-	GetHeaderCtrl().SubclassDlgItem(0, this);
+	return ::IsWindow(m_hWnd);
 }
 
 void CListEx::MeasureItem(LPMEASUREITEMSTRUCT pMIS)
 {
-	if (pMIS->CtlID != static_cast<UINT>(GetDlgCtrlID()))
+	if (pMIS->CtlID != static_cast<UINT>(GetDlgCtrlID(m_hWnd)))
 		return;
 
 	//Set row height according to current font's height.
-	auto pDC = GetDC();
-	pDC->SelectObject(m_fntList);
+	const auto hDC = ::GetDC(m_hWnd);
+	::SelectObject(hDC, m_hFntList);
 	TEXTMETRICW tm;
-	GetTextMetricsW(pDC->m_hDC, &tm);
-	ReleaseDC(pDC);
+	::GetTextMetricsW(hDC, &tm);
+	::ReleaseDC(m_hWnd, hDC);
 	pMIS->itemHeight = tm.tmHeight + tm.tmExternalLeading + 2;
 }
 
-void CListEx::OnDestroy()
+auto CListEx::OnCommand(const MSG& msg)->LRESULT
 {
-	CMFCListCtrl::OnDestroy();
+	const auto uCtrlID = LOWORD(msg.wParam); //Control ID.
+	const auto uCode = HIWORD(msg.wParam);
+	if (uCtrlID == m_uIDEditInPlace && uCode == EN_KILLFOCUS) {
+		OnEditInPlaceKillFocus();
+		return 0;
+	}
 
-	m_wndCellTT.DestroyWindow();
-	m_wndLinkTT.DestroyWindow();
-	m_wndRowTT.DestroyWindow();
-	m_fntList.DeleteObject();
-	m_fntListUnderline.DeleteObject();
-	m_penGrid.DeleteObject();
-	m_editInPlace.DestroyWindow();
-	m_umapCellTt.clear();
-	m_umapCellData.clear();
-	m_umapCellColor.clear();
-	m_umapCellIcon.clear();
-	m_umapRowColor.clear();
-	m_umapColumnSortMode.clear();
-	m_umapColumnColor.clear();
+	return 1;
+}
+
+auto CListEx::OnDestroy()->LRESULT
+{
+	::DestroyWindow(m_hWndCellTT);
+	::DestroyWindow(m_hWndLinkTT);
+	::DestroyWindow(m_hWndRowTT);
+	::DestroyWindow(m_hWndEditInPlace);
+	::DeleteObject(m_hFntList);
+	::DeleteObject(m_hFntListUnderline);
+	::DeleteObject(m_hPenGrid);
+	m_vecColumnData.clear();
 	m_fCreated = false;
+
+	return 0;
 }
 
 void CListEx::OnEditInPlaceEnterPressed()
 {
-	CStringW wstr;
-	m_editInPlace.GetWindowTextW(wstr);
+	wchar_t buffText[256];
+	::GetWindowTextW(m_hWndEditInPlace, buffText, 256);
 	if (m_fVirtual) {
-		const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
+		const auto uCtrlId = static_cast<UINT>(::GetDlgCtrlID(m_hWnd));
 		const LISTEXDATAINFO ldi { .hdr { .hwndFrom { m_hWnd }, .idFrom { uCtrlId }, .code { LISTEX_MSG_SETDATA } },
-			.iItem { m_htiEdit.iItem }, .iSubItem { m_htiEdit.iSubItem }, .pwszData { wstr.GetString() } };
-		GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&ldi));
+			.iItem { m_htiEdit.iItem }, .iSubItem { m_htiEdit.iSubItem }, .pwszData { buffText } };
+		::SendMessageW(::GetParent(m_hWnd), WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&ldi));
 	}
 	else {
-		SetItemText(m_htiEdit.iItem, m_htiEdit.iSubItem, wstr);
+		SetItemText(m_htiEdit.iItem, m_htiEdit.iSubItem, buffText);
 	}
 
 	OnEditInPlaceKillFocus();
@@ -1874,176 +2224,178 @@ void CListEx::OnEditInPlaceEnterPressed()
 
 void CListEx::OnEditInPlaceKillFocus()
 {
-	m_editInPlace.DestroyWindow();
+	::DestroyWindow(m_hWndEditInPlace);
 	RedrawWindow();
 }
 
-BOOL CListEx::OnEraseBkgnd(CDC* /*pDC*/)
+auto CListEx::OnEraseBkgnd()->LRESULT
 {
 	return TRUE;
 }
 
-void CListEx::OnHdnBegindrag(NMHDR* pNMHDR, LRESULT* pResult)
+auto CListEx::OnHdnBegindrag(NMHDR* pNMHDR)->LRESULT
 {
 	const auto phdr = reinterpret_cast<LPNMHEADERW>(pNMHDR);
-	if (GetHeaderCtrl().IsColumnHidden(phdr->iItem)) {
-		*pResult = TRUE;
+	if (GetHeader().IsColumnHidden(phdr->iItem)) {
+		return TRUE;
 	}
+
+	return FALSE;
 }
 
-void CListEx::OnHdnBegintrack(NMHDR* pNMHDR, LRESULT* pResult)
+auto CListEx::OnHdnBegintrack(NMHDR* pNMHDR)->LRESULT
 {
 	const auto phdr = reinterpret_cast<LPNMHEADERW>(pNMHDR);
-	if (GetHeaderCtrl().IsColumnHidden(phdr->iItem)) {
-		*pResult = TRUE;
-	}
-}
-
-void CListEx::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
-{
-	GetHeaderCtrl().RedrawWindow();
-	CMFCListCtrl::OnHScroll(nSBCode, nPos, pScrollBar);
-}
-
-void CListEx::OnLButtonDblClk(UINT nFlags, CPoint point)
-{
-	m_htiEdit.pt = point;
-	SubItemHitTest(&m_htiEdit);
-	if (m_htiEdit.iItem < 0 || m_htiEdit.iSubItem < 0 || !GetHeaderCtrl().IsColumnEditable(m_htiEdit.iSubItem)) {
-		CMFCListCtrl::OnLButtonDblClk(nFlags, point);
-		return;
+	if (GetHeader().IsColumnHidden(phdr->iItem)) {
+		return TRUE;
 	}
 
-	const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
+	return FALSE;
+}
+
+auto CListEx::OnHScroll(const MSG& msg)->LRESULT
+{
+	GetHeader().RedrawWindow();
+	wnd::DefSubclassProc(msg);
+
+	return 0;
+}
+
+auto CListEx::OnLButtonDblClk(const MSG& msg)->LRESULT
+{
+	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	m_htiEdit.pt = pt;
+	HitTest(&m_htiEdit);
+	if (m_htiEdit.iItem < 0 || m_htiEdit.iSubItem < 0 || !GetHeader().IsColumnEditable(m_htiEdit.iSubItem)) {
+		return wnd::DefSubclassProc(msg);
+	}
+
+	const auto uCtrlId = static_cast<UINT>(::GetDlgCtrlID(m_hWnd));
 	const LISTEXDATAINFO ldi { .hdr { .hwndFrom { m_hWnd }, .idFrom { uCtrlId }, .code { LISTEX_MSG_EDITBEGIN } },
 		.iItem { m_htiEdit.iItem }, .iSubItem { m_htiEdit.iSubItem } };
-	GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&ldi));
+	::SendMessageW(::GetParent(m_hWnd), WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&ldi));
 	if (!ldi.fAllowEdit) { //User explicitly declined to display edit-box.
-		CMFCListCtrl::OnLButtonDblClk(nFlags, point);
-		return;
+		return wnd::DefSubclassProc(msg);
 	}
 
 	//Get Column data alignment.
-	const auto iAlignment = GetHeaderCtrl().GetColumnDataAlign(m_htiEdit.iSubItem);
+	const auto iAlignment = GetHeader().GetColumnDataAlign(m_htiEdit.iSubItem);
 	const DWORD dwStyle = iAlignment == LVCFMT_LEFT ? ES_LEFT : (iAlignment == LVCFMT_RIGHT ? ES_RIGHT : ES_CENTER);
-	CRect rcCell;
-	GetSubItemRect(m_htiEdit.iItem, m_htiEdit.iSubItem, LVIR_BOUNDS, rcCell);
+	auto rcCell = GetSubItemRect(m_htiEdit.iItem, m_htiEdit.iSubItem, LVIR_BOUNDS);
 	if (m_htiEdit.iSubItem == 0) { //Clicked on item (first column).
-		CRect rcLabel;
-		GetItemRect(m_htiEdit.iItem, rcLabel, LVIR_LABEL);
-		rcCell.right = rcLabel.right;
+		rcCell.right = GetItemRect(m_htiEdit.iItem, LVIR_LABEL).right;
 	}
 
-	const auto str = GetItemText(m_htiEdit.iItem, m_htiEdit.iSubItem);
-	m_editInPlace.DestroyWindow();
-	m_editInPlace.Create(dwStyle | WS_BORDER | WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, rcCell, this, m_uIDEditInPlace);
-	::SetWindowSubclass(m_editInPlace, EditSubclassProc, reinterpret_cast<UINT_PTR>(this), m_uIDEditInPlace);
-	m_editInPlace.SetFont(&m_fntList, FALSE);
-	m_editInPlace.SetWindowTextW(str);
-	m_editInPlace.SetFocus();
+	const auto wstrText = GetItemText(m_htiEdit.iItem, m_htiEdit.iSubItem);
+	::DestroyWindow(m_hWndEditInPlace);
+	const auto iWidth = rcCell.right - rcCell.left;
+	const auto iHeight = rcCell.bottom - rcCell.top;
+	m_hWndEditInPlace = ::CreateWindowExW(0, WC_EDITW, nullptr, dwStyle | WS_BORDER | WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
+		rcCell.left, rcCell.top, iWidth, iHeight, m_hWnd, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(m_uIDEditInPlace)),
+		nullptr, nullptr);
+	::SetWindowSubclass(m_hWndEditInPlace, EditSubclassProc, reinterpret_cast<UINT_PTR>(this), 0);
+	::SendMessageW(m_hWndEditInPlace, WM_SETFONT, reinterpret_cast<WPARAM>(m_hFntList), FALSE);
+	::SetWindowTextW(m_hWndEditInPlace, wstrText.data());
+	::SetFocus(m_hWndEditInPlace);
 
-	CMFCListCtrl::OnLButtonDblClk(nFlags, point);
+	return wnd::DefSubclassProc(msg);
 }
 
-void CListEx::OnLButtonDown(UINT nFlags, CPoint pt)
+auto CListEx::OnLButtonDown(const MSG& msg)->LRESULT
 {
+	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
 	bool fLinkDown { false };
 	LVHITTESTINFO hti { .pt { pt } };
-	SubItemHitTest(&hti);
+	HitTest(&hti);
 	if (hti.iItem >= 0 && hti.iSubItem >= 0) {
 		const auto vecText = ParseItemData(hti.iItem, hti.iSubItem);
 		if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](const ITEMDATA& item) {
-			return item.fLink && item.rect.PtInRect(pt); }); iterFind != vecText.end()) {
+			return item.fLink && item.rc.PtInRect(pt); }); iterFind != vecText.end()) {
 			m_fLDownAtLink = true;
-			m_rcLinkCurr = iterFind->rect;
+			m_rcLinkCurr = iterFind->rc;
 			fLinkDown = true;
 		}
 	}
 
 	if (!fLinkDown) {
-		CMFCListCtrl::OnLButtonDown(nFlags, pt);
+		return wnd::DefSubclassProc(msg);
 	}
+
+	return 0;
 }
 
-void CListEx::OnLButtonUp(UINT nFlags, CPoint pt)
+auto CListEx::OnLButtonUp(const MSG& msg)->LRESULT
 {
 	bool fLinkUp { false };
 	if (m_fLDownAtLink) {
+		const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
 		LVHITTESTINFO hti { .pt { pt } };
-		SubItemHitTest(&hti);
+		HitTest(&hti);
 		if (hti.iItem < 0 || hti.iSubItem < 0) {
 			m_fLDownAtLink = false;
-			return;
+			return 0;
 		}
 
 		const auto vecText = ParseItemData(hti.iItem, hti.iSubItem);
 		if (const auto iterFind = std::find_if(vecText.begin(), vecText.end(), [&](const ITEMDATA& item) {
-			return item.fLink && item.rect == m_rcLinkCurr; }); iterFind != vecText.end()) {
+			return item.fLink && item.rc == m_rcLinkCurr; }); iterFind != vecText.end()) {
 			m_rcLinkCurr.SetRectEmpty();
 			fLinkUp = true;
-			const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
+			const auto uCtrlId = static_cast<UINT>(::GetDlgCtrlID(m_hWnd));
 			const LISTEXLINKINFO lli { .hdr { .hwndFrom { m_hWnd }, .idFrom { uCtrlId }, .code { LISTEX_MSG_LINKCLICK } },
 				.iItem { hti.iItem }, .iSubItem { hti.iSubItem }, .ptClick { pt }, .pwszText { iterFind->wstrLink.data() } };
-			GetParent()->SendMessageW(WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&lli));
+			::SendMessageW(::GetParent(m_hWnd), WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&lli));
 		}
 	}
 
 	m_fLDownAtLink = false;
 	if (!fLinkUp) {
-		CMFCListCtrl::OnLButtonUp(nFlags, pt);
+		return wnd::DefSubclassProc(msg);
 	}
+
+	return 0;
 }
 
-void CListEx::OnLvnColumnClick(NMHDR* /*pNMHDR*/, LRESULT* /*pResult*/)
+auto CListEx::OnMouseWheel(const MSG& msg)->LRESULT
 {
-	/*******************************************************************************
-	* Just an empty handler.
-	* Without it all works fine, but assert triggers in a Debug mode when clicking
-	* on the header if list is in the Virtual Mode (LVS_OWNERDATA).
-	* ASSERT((GetStyle() & LVS_OWNERDATA)==0)
-	*
-	* Handler must be present for the LVN_COLUMNCLICK notification message in the
-	* list's parent window, and default OnNotify handler should not be called.
-	* Then there will be no assertion.
-	*******************************************************************************/
-}
-
-BOOL CListEx::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
-{
+	const auto zDelta = GET_WHEEL_DELTA_WPARAM(msg.wParam);
+	const auto nFlags = GET_KEYSTATE_WPARAM(msg.wParam);
 	if (nFlags == MK_CONTROL) {
 		FontSizeIncDec(zDelta > 0);
-		return TRUE;
+		return 0;
 	}
 
-	GetHeaderCtrl().RedrawWindow();
+	GetHeader().RedrawWindow();
 
-	return CMFCListCtrl::OnMouseWheel(nFlags, zDelta, pt);
+	return wnd::DefSubclassProc(msg);
 }
 
-void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
+auto CListEx::OnMouseMove(const MSG& msg)->LRESULT
 {
-	static const auto hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
-	static const auto hCurHand = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
+	static const auto hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0,
+		LR_DEFAULTSIZE | LR_SHARED));
+	static const auto hCurHand = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0,
+		LR_DEFAULTSIZE | LR_SHARED));
+	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
 
 	LVHITTESTINFO hti { .pt { pt } };
-	SubItemHitTest(&hti);
+	HitTest(&hti);
 	bool fLinkRect { false }; //Cursor at link's rect area?
 	if (hti.iItem >= 0 && hti.iSubItem >= 0) {
 		auto vecText = ParseItemData(hti.iItem, hti.iSubItem);     //Non const to allow std::move(itLink->wstrLink).
 		auto itLink = std::find_if(vecText.begin(), vecText.end(), //Non const to allow std::move(itLink->wstrLink).
-			[&](const ITEMDATA& item) {	return item.fLink && item.rect.PtInRect(pt); });
+			[&](const ITEMDATA& item) {	return item.fLink && item.rc.PtInRect(pt); });
 		if (itLink != vecText.end()) {
 			fLinkRect = true;
-			if (m_fLinkTooltip && !m_fLDownAtLink && m_rcLinkCurr != itLink->rect) {
+			if (m_fLinkTooltip && !m_fLDownAtLink && m_rcLinkCurr != itLink->rc) {
 				TTLinkShow(false);
 				m_fLinkTTActive = true;
-				m_rcLinkCurr = itLink->rect;
+				m_rcLinkCurr = itLink->rc;
 				m_htiCurrLink.iItem = hti.iItem;
 				m_htiCurrLink.iSubItem = hti.iSubItem;
-				m_wstrTextTT = itLink->fTitle ? std::move(itLink->wstrTitle) : std::move(itLink->wstrLink);
-				m_ttiLink.lpszText = m_wstrTextTT.data();
-				if (m_dwTTShowDelay > 0) {
-					SetTimer(m_uIDTLinkTTActivate, m_dwTTShowDelay, nullptr); //Activate link's tooltip after delay.
+				m_wstrTTText = itLink->fTitle ? std::move(itLink->wstrTitle) : std::move(itLink->wstrLink);
+				if (m_dwTTDelayTime > 0) {
+					::SetTimer(m_hWnd, m_uIDTLinkTTActivate, m_dwTTDelayTime, nullptr); //Activate link's tooltip after delay.
 				}
 				else { TTLinkShow(true); } //Activate immediately.
 			}
@@ -2056,7 +2408,7 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 		if (m_fCellTTActive) { //If there is a cell's tooltip atm, hide it.
 			TTCellShow(false);
 		}
-		return; //Do not process further, cursor is on the link's rect.
+		return 0; //Do not process further, cursor is on the link's rect.
 	}
 
 	m_rcLinkCurr.SetRectEmpty(); //If cursor is not over any link.
@@ -2072,11 +2424,10 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 			m_fCellTTActive = true;
 			m_htiCurrCell.iItem = hti.iItem;
 			m_htiCurrCell.iSubItem = hti.iSubItem;
-			m_wstrTextTT = optTT->pwszText; //Tooltip text.
-			m_wstrCaptionTT = optTT->pwszCaption ? optTT->pwszCaption : L""; //Tooltip caption.
-			m_ttiCell.lpszText = m_wstrTextTT.data();
-			if (m_dwTTShowDelay > 0) {
-				SetTimer(m_uIDTCellTTActivate, m_dwTTShowDelay, nullptr); //Activate cell's tooltip after delay.
+			m_wstrTTText = optTT->pwszText; //Tooltip text.
+			m_wstrTTCaption = optTT->pwszCaption ? optTT->pwszCaption : L""; //Tooltip caption.
+			if (m_dwTTDelayTime > 0) {
+				::SetTimer(m_hWnd, m_uIDTCellTTActivate, m_dwTTDelayTime, nullptr); //Activate cell's tooltip after delay.
 			}
 			else { TTCellShow(true); }; //Activate immediately.
 		}
@@ -2090,41 +2441,67 @@ void CListEx::OnMouseMove(UINT /*nFlags*/, CPoint pt)
 			m_htiCurrCell.iSubItem = -1;
 		}
 	}
+
+	return 0;
 }
 
-BOOL CListEx::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+auto CListEx::OnNotify(const MSG& msg)->LRESULT
 {
 	if (!m_fCreated) {
-		return FALSE;
+		return wnd::DefSubclassProc(msg);
 	}
 
 	//HDN_ITEMCLICK messages should be handled here first, to set m_fSortAscending 
-	//and m_iSortColumn. And only then this message goes further, to parent window,
-	//in form of HDN_ITEMCLICK and LVN_COLUMNCLICK.
-	//If we execute this code in LVN_COLUMNCLICK handler, it will be handled
-	//only AFTER the parent window handles LVN_COLUMNCLICK.
-	//So briefly, ON_NOTIFY_REFLECT(LVN_COLUMNCLICK, &CListEx::OnLvnColumnClick) fires up
-	//only AFTER LVN_COLUMNCLICK sent to the parent.
-	if (const auto* const pNMLV = reinterpret_cast<LPNMHEADERW>(lParam); m_fSortable
-		&& (pNMLV->hdr.code == HDN_ITEMCLICKW || pNMLV->hdr.code == HDN_ITEMCLICKA)) {
-		if (IsColumnSortable(pNMLV->iItem)) {
-			m_fSortAscending = pNMLV->iItem == m_iSortColumn ? !m_fSortAscending : true;
-			GetHeaderCtrl().SetSortArrow(pNMLV->iItem, m_fSortAscending);
-			m_iSortColumn = pNMLV->iItem;
-		}
-		else {
-			m_iSortColumn = -1;
-		}
+	//and m_iSortColumn. And only then this message goes to parent window in form
+	//of HDN_ITEMCLICK and LVN_COLUMNCLICK.
+	//If we execute this code in LVN_COLUMNCLICK handler, it will be handled only
+	//AFTER the parent window handles LVN_COLUMNCLICK.
+	//Briefly: CListEx::OnLvnColumnClick fires up only AFTER LVN_COLUMNCLICK sent to the parent.
 
-		if (!m_fVirtual) {
-			return SortItemsEx(m_pfnCompare ? m_pfnCompare : DefCompareFunc, reinterpret_cast<DWORD_PTR>(this));
+	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
+	const auto pNMLV = reinterpret_cast<LPNMHEADERW>(msg.lParam);
+	switch (pNMHDR->idFrom) {
+	case 0: //Header control.
+		switch (pNMHDR->code) {
+		case HDN_BEGINDRAG: return OnHdnBegindrag(pNMHDR);
+		case HDN_BEGINTRACKA:
+		case HDN_BEGINTRACKW:
+			return OnHdnBegintrack(pNMHDR);
+		case HDN_ITEMCLICKA:
+		case HDN_ITEMCLICKW:
+			if (m_fSortable) {
+				if (IsColumnSortable(pNMLV->iItem)) {
+					m_fSortAsc = pNMLV->iItem == m_iSortColumn ? !m_fSortAsc : true;
+					GetHeader().SetSortArrow(pNMLV->iItem, m_fSortAsc);
+					m_iSortColumn = pNMLV->iItem;
+				}
+				else {
+					m_iSortColumn = -1;
+				}
+
+				if (!m_fVirtual) {
+					SortItemsEx(m_pfnCompare ? m_pfnCompare : DefCompareFunc, reinterpret_cast<DWORD_PTR>(this));
+					return wnd::DefSubclassProc(msg);
+				}
+			}break;
+		default: break;
 		}
+		break;
+	case m_uIDEditInPlace: //Edit in-place control.
+		switch (pNMHDR->code) {
+		case VK_RETURN:
+		case VK_ESCAPE:
+			OnNotifyEditInPlace(pNMHDR);
+			break;
+		default: break;
+		}
+	default: break;
 	}
 
-	return CMFCListCtrl::OnNotify(wParam, lParam, pResult);
+	return wnd::DefSubclassProc(msg);
 }
 
-void CListEx::OnNotifyEditInPlace(NMHDR* pNMHDR, LRESULT* /*pResult*/)
+void CListEx::OnNotifyEditInPlace(NMHDR* pNMHDR)
 {
 	switch (pNMHDR->code) {
 	case VK_RETURN:
@@ -2138,45 +2515,44 @@ void CListEx::OnNotifyEditInPlace(NMHDR* pNMHDR, LRESULT* /*pResult*/)
 	}
 }
 
-void CListEx::OnPaint()
+auto CListEx::OnPaint()->LRESULT
 {
-	CPaintDC dc(this);
-
-	CRect rcClient;
-	GetClientRect(&rcClient);
-	CRect rcHdr;
-	GetHeaderCtrl().GetClientRect(rcHdr);
+	const wnd::CPaintDC dc(m_hWnd);
+	wnd::CRect rcClient;
+	::GetClientRect(m_hWnd, rcClient);
+	const wnd::CRect rcHdr = GetHeader().GetClientRect();
 	rcClient.top += rcHdr.Height();
+	rcClient.bottom += rcHdr.Height();
 	if (rcClient.IsRectEmpty()) {
-		return;
+		return 0;
 	}
 
-	CMemDC memDC(dc, rcClient); //To avoid flickering drawing to CMemDC, excluding list header area (rcHdr).
-	auto& rDC = memDC.GetDC();
-	rDC.GetClipBox(&rcClient);
-	rDC.FillSolidRect(rcClient, m_stColors.clrNWABk);
+	const wnd::CMemDC dcMem(dc, rcClient); //To avoid flickering drawing to CMemDC, excluding list header area.
+	::GetClipBox(dcMem, rcClient);
+	dcMem.FillSolidRect(rcClient, m_stColors.clrNWABk);
 
-	DefWindowProcW(WM_PAINT, reinterpret_cast<WPARAM>(rDC.m_hDC), 0);
+	return DefSubclassProc(m_hWnd, WM_PAINT, reinterpret_cast<WPARAM>(dcMem.GetHDC()), 0);
 }
 
-void CListEx::OnTimer(UINT_PTR nIDEvent)
+auto CListEx::OnTimer(const MSG& msg)->LRESULT
 {
-	CPoint ptScreen;
-	GetCursorPos(&ptScreen);
-	CPoint ptClient = ptScreen;
-	ScreenToClient(&ptClient);
+	const auto nIDEvent = static_cast<UINT_PTR>(msg.wParam);
+	POINT ptScreen;
+	::GetCursorPos(&ptScreen);
+	POINT ptClient = ptScreen;
+	::ScreenToClient(m_hWnd, &ptClient);
 	LVHITTESTINFO hitInfo { .pt { ptClient } };
-	SubItemHitTest(&hitInfo);
+	HitTest(&hitInfo);
 
 	switch (nIDEvent) {
 	case m_uIDTCellTTActivate:
-		KillTimer(m_uIDTCellTTActivate);
+		::KillTimer(m_hWnd, m_uIDTCellTTActivate);
 		if (m_htiCurrCell.iItem == hitInfo.iItem && m_htiCurrCell.iSubItem == hitInfo.iSubItem) {
 			TTCellShow(true);
 		}
 		break;
 	case m_uIDTLinkTTActivate:
-		KillTimer(m_uIDTLinkTTActivate);
+		::KillTimer(m_hWnd, m_uIDTLinkTTActivate);
 		if (m_rcLinkCurr.PtInRect(ptClient)) {
 			TTLinkShow(true);
 		}
@@ -2206,50 +2582,53 @@ void CListEx::OnTimer(UINT_PTR nIDEvent)
 	}
 	break;
 	default:
-		CMFCListCtrl::OnTimer(nIDEvent);
+		wnd::DefSubclassProc(msg);
 		break;
 	}
+
+	return 0;
 }
 
-void CListEx::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+auto CListEx::OnVScroll(const MSG& msg)->LRESULT
 {
+	const auto nSBCode = LOWORD(msg.wParam);
 	if (m_fVirtual && m_fHighLatency) {
 		if (nSBCode != SB_THUMBTRACK) {
 			//If there was SB_THUMBTRACK message previously, calculate the scroll amount (up/down)
 			//by multiplying item's row height by difference between current (top) and nPos row.
 			//Scroll may be negative therefore.
 			if (m_fHLFlag) {
-				CRect rc;
-				GetItemRect(m_uHLItem, rc, LVIR_LABEL);
-				const CSize size(0, (m_uHLItem - GetTopIndex()) * rc.Height());
+				const wnd::CRect rc = GetItemRect(m_uHLItem, LVIR_LABEL);
+				const SIZE size(0, (m_uHLItem - GetTopIndex()) * rc.Height());
 				Scroll(size);
 				m_fHLFlag = false;
 			}
 			TTHLShow(false, 0);
-			CMFCListCtrl::OnVScroll(nSBCode, nPos, pScrollBar);
+			wnd::DefSubclassProc(msg);
 		}
 		else {
 			m_fHLFlag = true;
 			SCROLLINFO si { };
 			si.cbSize = sizeof(SCROLLINFO);
 			si.fMask = SIF_ALL;
-			GetScrollInfo(SB_VERT, &si);
+			::GetScrollInfo(m_hWnd, SB_VERT, &si);
 			m_uHLItem = si.nTrackPos; //si.nTrackPos is in fact a row number.
 			TTHLShow(true, m_uHLItem);
 		}
 	}
 	else {
-		CMFCListCtrl::OnVScroll(nSBCode, nPos, pScrollBar);
+		wnd::DefSubclassProc(msg);
 	}
+
+	return 0;
 }
 
 auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMDATA>
 {
 	constexpr auto iIndentRc { 4 };
-	const auto cstrText = GetItemText(iItem, iSubitem);
-	const std::wstring_view wsvText = cstrText.GetString();
-	CRect rcTextOrig;  //Original rect of the subitem's text.
-	GetSubItemRect(iItem, iSubitem, LVIR_LABEL, rcTextOrig);
+	const auto wstrText = GetItemText(iItem, iSubitem);
+	const std::wstring_view wsvText = wstrText;
+	wnd::CRect rcTextOrig = GetSubItemRect(iItem, iSubitem, LVIR_LABEL); //Original rect of the subitem's text.
 	if (iSubitem > 0) { //Not needed for item itself (not subitem).
 		rcTextOrig.left += iIndentRc;
 	}
@@ -2259,19 +2638,19 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 
 	if (const auto iIndex = GetIcon(iItem, iSubitem); iIndex > -1) { //If cell has icon.
 		IMAGEINFO stII;
-		GetImageList(LVSIL_NORMAL)->GetImageInfo(iIndex, &stII);
+		ImageList_GetImageInfo(GetImageList(LVSIL_NORMAL), iIndex, &stII);
 		iImageWidth = stII.rcImage.right - stII.rcImage.left;
 		const auto iImgHeight = stII.rcImage.bottom - stII.rcImage.top;
 		const auto iImgTop = iImgHeight < rcTextOrig.Height() ?
 			rcTextOrig.top + (rcTextOrig.Height() / 2 - iImgHeight / 2) : rcTextOrig.top;
-		const CRect rcImage(rcTextOrig.left, iImgTop, rcTextOrig.left + iImageWidth, iImgTop + iImgHeight);
+		const RECT rcImage(rcTextOrig.left, iImgTop, rcTextOrig.left + iImageWidth, iImgTop + iImgHeight);
 		vecData.emplace_back(iIndex, rcImage);
 		rcTextOrig.left += iImageWidth + iIndentRc; //Offset rect for image width.
 	}
 
 	std::size_t nPosCurr { 0 }; //Current position in the parsed string.
-	CRect rcTextCurr { }; //Current rect.
-	const auto pDC = GetDC();
+	wnd::CRect rcTextCurr; //Current rect.
+	const auto hDC = GetDC(m_hWnd);
 
 	while (nPosCurr != std::wstring_view::npos) {
 		static constexpr std::wstring_view wsvTagLink { L"<link=" };
@@ -2289,16 +2668,16 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 			nPosTagFirstClose { wsvText.find(wsvTagFirstClose, nPosLinkCloseQuote + wsvQuote.size()) },
 			//Start position of the enclosing tag "</link>".
 			nPosTagLast { wsvText.find(wsvTagLast, nPosTagFirstClose + wsvTagFirstClose.size()) };
-			nPosTagLink != std::wstring_view::npos && nPosLinkOpenQuote != std::wstring_view::npos
+			m_fLinks && nPosTagLink != std::wstring_view::npos && nPosLinkOpenQuote != std::wstring_view::npos
 			&& nPosLinkCloseQuote != std::wstring_view::npos && nPosTagFirstClose != std::wstring_view::npos
 			&& nPosTagLast != std::wstring_view::npos) {
-			pDC->SelectObject(m_fntList);
+			::SelectObject(hDC, m_hFntList);
 			SIZE size;
 
 			//Any text before found tag.
 			if (nPosTagLink > nPosCurr) {
 				const auto wsvTextBefore = wsvText.substr(nPosCurr, nPosTagLink - nPosCurr);
-				GetTextExtentPoint32W(pDC->m_hDC, wsvTextBefore.data(), static_cast<int>(wsvTextBefore.size()), &size);
+				::GetTextExtentPoint32W(hDC, wsvTextBefore.data(), static_cast<int>(wsvTextBefore.size()), &size);
 				if (rcTextCurr.IsRectNull()) {
 					rcTextCurr.SetRect(rcTextOrig.left, rcTextOrig.top, rcTextOrig.left + size.cx, rcTextOrig.bottom);
 				}
@@ -2312,7 +2691,7 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 			//The clickable/linked text, that between <link=...>textFromHere</link> tags.
 			const auto wsvTextBetweenTags = wsvText.substr(nPosTagFirstClose + wsvTagFirstClose.size(),
 				nPosTagLast - (nPosTagFirstClose + wsvTagFirstClose.size()));
-			GetTextExtentPoint32W(pDC->m_hDC, wsvTextBetweenTags.data(), static_cast<int>(wsvTextBetweenTags.size()), &size);
+			::GetTextExtentPoint32W(hDC, wsvTextBetweenTags.data(), static_cast<int>(wsvTextBetweenTags.size()), &size);
 
 			if (rcTextCurr.IsRectNull()) {
 				rcTextCurr.SetRect(rcTextOrig.left, rcTextOrig.top, rcTextOrig.left + size.cx, rcTextOrig.bottom);
@@ -2347,9 +2726,9 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 		}
 		else {
 			const auto wsvTextAfter = wsvText.substr(nPosCurr, wsvText.size() - nPosCurr);
-			pDC->SelectObject(m_fntList);
+			::SelectObject(hDC, m_hFntList);
 			SIZE size;
-			GetTextExtentPoint32W(pDC->m_hDC, wsvTextAfter.data(), static_cast<int>(wsvTextAfter.size()), &size);
+			::GetTextExtentPoint32W(hDC, wsvTextAfter.data(), static_cast<int>(wsvTextAfter.size()), &size);
 
 			if (rcTextCurr.IsRectNull()) {
 				rcTextCurr.SetRect(rcTextOrig.left, rcTextOrig.top, rcTextOrig.left + size.cx, rcTextOrig.bottom);
@@ -2363,24 +2742,24 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 			nPosCurr = std::wstring_view::npos;
 		}
 	}
-	ReleaseDC(pDC);
+	ReleaseDC(m_hWnd, hDC);
 
 	//Depending on column's data alignment we adjust rects coords to render properly.
-	switch (GetHeaderCtrl().GetColumnDataAlign(iSubitem)) {
+	switch (GetHeader().GetColumnDataAlign(iSubitem)) {
 	case LVCFMT_LEFT: //Do nothing, by default it's already left aligned.
 		break;
 	case LVCFMT_CENTER:
 	{
 		int iWidthTotal { };
 		for (const auto& iter : vecData) {
-			iWidthTotal += iter.rect.Width();
+			iWidthTotal += iter.rc.Width();
 		}
 
 		if (iWidthTotal < rcTextOrig.Width()) {
 			const auto iRcOffset = (rcTextOrig.Width() - iWidthTotal) / 2;
 			for (auto& iter : vecData) {
 				if (iter.iIconIndex == -1) { //Offset only rects with text, not icons rects.
-					iter.rect.OffsetRect(iRcOffset, 0);
+					iter.rc.OffsetRect(iRcOffset, 0);
 				}
 			}
 		}
@@ -2390,7 +2769,7 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 	{
 		int iWidthTotal { };
 		for (const auto& iter : vecData) {
-			iWidthTotal += iter.rect.Width();
+			iWidthTotal += iter.rc.Width();
 		}
 
 		const auto iWidthRect = rcTextOrig.Width() + iImageWidth - iIndentRc;
@@ -2398,7 +2777,7 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 			const auto iRcOffset = iWidthRect - iWidthTotal;
 			for (auto& iter : vecData) {
 				if (iter.iIconIndex == -1) { //Offset only rects with text, not icons rects.
-					iter.rect.OffsetRect(iRcOffset, 0);
+					iter.rc.OffsetRect(iRcOffset, 0);
 				}
 			}
 		}
@@ -2411,17 +2790,20 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 	return vecData;
 }
 
+void CListEx::RedrawWindow()const
+{
+	assert(IsWindow());
+	::RedrawWindow(m_hWnd, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE);
+}
+
 void CListEx::RecalcMeasure()const
 {
-	//To get WM_MEASUREITEM msg after changing the font.
-	CRect rc;
-	GetWindowRect(rc);
-	WINDOWPOS wp;
-	wp.hwnd = m_hWnd;
-	wp.cx = rc.Width();
-	wp.cy = rc.Height();
-	wp.flags = SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER;
-	SendMessageW(WM_WINDOWPOSCHANGED, 0, reinterpret_cast<LPARAM>(&wp));
+	//To get WM_MEASUREITEM after changing the font.
+	wnd::CRect rc;
+	GetWindowRect(m_hWnd, rc);
+	const WINDOWPOS wp { .hwnd { m_hWnd }, .cx { rc.Width() }, .cy { rc.Height() },
+		.flags { SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER } };
+	::SendMessageW(m_hWnd, WM_WINDOWPOSCHANGED, 0, reinterpret_cast<LPARAM>(&wp));
 }
 
 void CListEx::SetFontSize(long lSize)
@@ -2436,46 +2818,28 @@ void CListEx::SetFontSize(long lSize)
 		return;
 	}
 
-	LOGFONTW lf;
-	m_fntList.GetLogFont(&lf);
-	m_fntList.DeleteObject();
+	LOGFONTW lf { };
+	::GetObjectW(m_hFntList, sizeof(lf), &lf);
 	lf.lfHeight = -MulDiv(lSize, m_iLOGPIXELSY, 72);
-	m_fntList.CreateFontIndirectW(&lf);
-	lf.lfUnderline = 1;
-	m_fntListUnderline.DeleteObject();
-	m_fntListUnderline.CreateFontIndirectW(&lf);
-
-	RecalcMeasure();
-	Update(0);
-
-	if (IsWindow(m_editInPlace)) { //If m_editInPlace is active, ammend its rect.
-		CRect rcCell;
-		GetSubItemRect(m_htiEdit.iItem, m_htiEdit.iSubItem, LVIR_BOUNDS, rcCell);
-		if (m_htiEdit.iSubItem == 0) { //Clicked on item (first column).
-			CRect rcLabel;
-			GetItemRect(m_htiEdit.iItem, rcLabel, LVIR_LABEL);
-			rcCell.right = rcLabel.right;
-		}
-		m_editInPlace.SetWindowPos(nullptr, rcCell.left, rcCell.top, rcCell.Width(), rcCell.Height(), SWP_NOZORDER);
-		m_editInPlace.SetFont(&m_fntList, FALSE);
-	}
+	SetFont(lf);
 }
 
 void CListEx::TTCellShow(bool fShow, bool fTimer)
 {
+	TTTOOLINFOW ttiCell { .cbSize { sizeof(TTTOOLINFOW) }, .lpszText { m_wstrTTText.data() } };
 	if (fShow) {
-		CPoint ptScreen;
-		GetCursorPos(&ptScreen);
-		ptScreen.Offset(m_ptTTOffset);
-		m_wndCellTT.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(ptScreen.x, ptScreen.y));
-		m_wndCellTT.SendMessageW(TTM_SETTITLEW, static_cast<WPARAM>(TTI_NONE), reinterpret_cast<LPARAM>(m_wstrCaptionTT.data()));
-		m_wndCellTT.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiCell));
-		m_wndCellTT.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_ttiCell));
+		wnd::CPoint ptCurr;
+		GetCursorPos(&ptCurr);
+		ptCurr.Offset(m_ptTTOffset);
+		::SendMessageW(m_hWndCellTT, TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCurr.x, ptCurr.y)));
+		::SendMessageW(m_hWndCellTT, TTM_SETTITLEW, TTI_NONE, reinterpret_cast<LPARAM>(m_wstrTTCaption.data()));
+		::SendMessageW(m_hWndCellTT, TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ttiCell));
+		::SendMessageW(m_hWndCellTT, TTM_TRACKACTIVATE, TRUE, reinterpret_cast<LPARAM>(&ttiCell));
 		m_tmTT = std::chrono::high_resolution_clock::now();
-		SetTimer(m_uIDTCellTTCheck, 300, nullptr); //Timer to check whether mouse has left subitem's rect.
+		::SetTimer(m_hWnd, m_uIDTCellTTCheck, 300, nullptr); //Timer to check whether mouse has left subitem's rect.
 	}
 	else {
-		KillTimer(m_uIDTCellTTCheck);
+		::KillTimer(m_hWnd, m_uIDTCellTTCheck);
 
 		//When hiding tooltip by timer we not nullify the m_htiCurrCell.
 		//Otherwise tooltip will be shown again after mouse movement,
@@ -2486,24 +2850,25 @@ void CListEx::TTCellShow(bool fShow, bool fTimer)
 		}
 
 		m_fCellTTActive = false;
-		m_wndCellTT.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_ttiCell));
+		::SendMessageW(m_hWndCellTT, TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&ttiCell));
 	}
 }
 
 void CListEx::TTLinkShow(bool fShow, bool fTimer)
 {
+	TTTOOLINFOW ttiLink { .cbSize { sizeof(TTTOOLINFOW) }, .lpszText { m_wstrTTText.data() } };
 	if (fShow) {
-		CPoint ptScreen;
-		GetCursorPos(&ptScreen);
-		ptScreen.Offset(m_ptTTOffset);
-		m_wndLinkTT.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>MAKELONG(ptScreen.x, ptScreen.y));
-		m_wndLinkTT.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiLink));
-		m_wndLinkTT.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_ttiLink));
+		wnd::CPoint ptCurr;
+		GetCursorPos(&ptCurr);
+		ptCurr.Offset(m_ptTTOffset);
+		::SendMessageW(m_hWndLinkTT, TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCurr.x, ptCurr.y)));
+		::SendMessageW(m_hWndLinkTT, TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ttiLink));
+		::SendMessageW(m_hWndLinkTT, TTM_TRACKACTIVATE, TRUE, reinterpret_cast<LPARAM>(&ttiLink));
 		m_tmTT = std::chrono::high_resolution_clock::now();
-		SetTimer(m_uIDTLinkTTCheck, 300, nullptr); //Timer to check whether mouse has left link's rect.
+		::SetTimer(m_hWnd, m_uIDTLinkTTCheck, 300, nullptr); //Timer to check whether mouse has left link's rect.
 	}
 	else {
-		KillTimer(m_uIDTLinkTTCheck);
+		::KillTimer(m_hWnd, m_uIDTLinkTTCheck);
 		if (!fTimer) {
 			m_htiCurrLink.iItem = -1;
 			m_htiCurrLink.iSubItem = -1;
@@ -2511,33 +2876,45 @@ void CListEx::TTLinkShow(bool fShow, bool fTimer)
 		}
 
 		m_fLinkTTActive = false;
-		m_wndLinkTT.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_ttiLink));
+		::SendMessageW(m_hWndLinkTT, TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&ttiLink));
 	}
 }
 
 void CListEx::TTHLShow(bool fShow, UINT uRow)
 {
 	if (fShow) {
-		CPoint ptScreen;
-		GetCursorPos(&ptScreen);
-		wchar_t warrOffset[32] { L"Row: " };
-		swprintf_s(&warrOffset[5], 24, L"%u", uRow);
-		m_ttiHL.lpszText = warrOffset;
-		m_wndRowTT.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
-		m_wndRowTT.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiHL));
+		POINT ptCurr;
+		GetCursorPos(&ptCurr);
+		wchar_t warrOffset[32];
+		*std::format_to(warrOffset, L"Row: {}", uRow) = L'\0';
+		TTTOOLINFOW ttiHL { .cbSize { sizeof(TTTOOLINFOW) }, .lpszText { warrOffset } };
+		::SendMessageW(m_hWndRowTT, TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCurr.x - 5, ptCurr.y - 20)));
+		::SendMessageW(m_hWndRowTT, TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&ttiHL));
 	}
-	m_wndRowTT.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_ttiHL));
+
+	TTTOOLINFOW ttiHL { .cbSize { sizeof(TTTOOLINFOW) }, };
+	::SendMessageW(m_hWndRowTT, TTM_TRACKACTIVATE, fShow, reinterpret_cast<LPARAM>(&ttiHL));
+}
+
+auto CListEx::SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+	UINT_PTR uIDSubclass, DWORD_PTR /*dwRefData*/) -> LRESULT {
+	if (uMsg == WM_NCDESTROY) {
+		::RemoveWindowSubclass(hWnd, SubclassProc, uIDSubclass);
+	}
+
+	const auto pListEx = reinterpret_cast<CListEx*>(uIDSubclass);
+	return pListEx->ProcessMsg({ .hwnd { hWnd }, .message { uMsg }, .wParam { wParam }, .lParam { lParam } });
 }
 
 auto CListEx::EditSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-	UINT_PTR uIdSubclass, DWORD_PTR dwRefData)->LRESULT
+	UINT_PTR uIdSubclass, DWORD_PTR /*dwRefData*/)->LRESULT
 {
 	switch (uMsg) {
 	case WM_GETDLGCODE:
 		return DLGC_WANTALLKEYS;
 	case WM_KEYDOWN:
 		if (wParam == VK_ESCAPE || wParam == VK_RETURN) {
-			const NMHDR hdr { .hwndFrom { hWnd }, .idFrom { dwRefData }, .code { static_cast<UINT>(wParam) } };
+			const NMHDR hdr { .hwndFrom { hWnd }, .idFrom { m_uIDEditInPlace }, .code { static_cast<UINT>(wParam) } };
 			::SendMessageW(::GetParent(hWnd), WM_NOTIFY, 0, reinterpret_cast<LPARAM>(&hdr));
 		}
 		break;

@@ -17,9 +17,9 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		void CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl);
 		[[nodiscard]] auto GetHWND()const->HWND;
-		auto OnActivate(const MSG& stMsg) -> INT_PTR;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
-		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowWindow(int iCmdShow);
 	private:
@@ -29,13 +29,13 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetDataType()const->EHexDataType;
 		[[nodiscard]] bool IsNoEsc()const;
 		void OnCancel();
-		auto OnCommand(const MSG& stMsg) -> INT_PTR;
+		auto OnCommand(const MSG& msg) -> INT_PTR;
 		void OnComboDataTypeSelChange();
 		void OnComboOperSelChange();
-		auto OnCtlClrStatic(const MSG& stMsg) -> INT_PTR;
+		auto OnCtlClrStatic(const MSG& msg) -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
 		void OnEditOperChange();
-		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
+		auto OnInitDialog(const MSG& msg) -> INT_PTR;
 		void OnOK();
 		void SetControlsState();
 		void UpdateDescr();
@@ -81,12 +81,12 @@ auto CHexDlgOpers::GetHWND()const->HWND
 	return m_Wnd;
 }
 
-auto CHexDlgOpers::OnActivate(const MSG& stMsg)->INT_PTR
+auto CHexDlgOpers::OnActivate(const MSG& msg)->INT_PTR
 {
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
 		return FALSE;
 
-	const auto nState = LOWORD(stMsg.wParam);
+	const auto nState = LOWORD(msg.wParam);
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
 		const auto fSel { m_pHexCtrl->HasSelection() };
 		m_Wnd.CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL,
@@ -102,14 +102,14 @@ bool CHexDlgOpers::PreTranslateMsg(MSG* pMsg)
 	return m_Wnd.IsDlgMessage(pMsg);
 }
 
-auto CHexDlgOpers::ProcessMsg(const MSG& stMsg)->INT_PTR
+auto CHexDlgOpers::ProcessMsg(const MSG& msg)->INT_PTR
 {
-	switch (stMsg.message) {
-	case WM_ACTIVATE: return OnActivate(stMsg);
-	case WM_COMMAND: return OnCommand(stMsg);
-	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(stMsg);
+	switch (msg.message) {
+	case WM_ACTIVATE: return OnActivate(msg);
+	case WM_COMMAND: return OnCommand(msg);
+	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(msg);
 	case WM_DESTROY: return OnDestroy();
-	case WM_INITDIALOG: return OnInitDialog(stMsg);
+	case WM_INITDIALOG: return OnInitDialog(msg);
 	default:
 		return 0;
 	}
@@ -188,10 +188,10 @@ void CHexDlgOpers::OnCancel()
 	::ShowWindow(m_Wnd.GetParent(), SW_HIDE);
 }
 
-auto CHexDlgOpers::OnCommand(const MSG& stMsg)->INT_PTR
+auto CHexDlgOpers::OnCommand(const MSG& msg)->INT_PTR
 {
-	const auto uCtrlID = LOWORD(stMsg.wParam); //Control ID or menu ID.
-	const auto uCode = HIWORD(stMsg.wParam);   //Control code, zero for menu.
+	const auto uCtrlID = LOWORD(msg.wParam); //Control ID or menu ID.
+	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
 
 	switch (uCtrlID) {
 	case IDOK: OnOK(); break;
@@ -256,10 +256,10 @@ void CHexDlgOpers::OnComboOperSelChange()
 	SetControlsState();
 }
 
-auto CHexDlgOpers::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
+auto CHexDlgOpers::OnCtlClrStatic(const MSG& msg)->INT_PTR
 {
-	if (const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam); hWndFrom == m_WndStatDescr) {
-		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
+	if (const auto hWndFrom = reinterpret_cast<HWND>(msg.lParam); hWndFrom == m_WndStatDescr) {
+		const auto hDC = reinterpret_cast<HDC>(msg.wParam);
 		::SetTextColor(hDC, RGB(0, 50, 250));
 		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
 		return reinterpret_cast<INT_PTR>(::GetSysColorBrush(COLOR_3DFACE));
@@ -282,9 +282,9 @@ void CHexDlgOpers::OnEditOperChange()
 	SetControlsState();
 }
 
-auto CHexDlgOpers::OnInitDialog(const MSG& stMsg)->INT_PTR
+auto CHexDlgOpers::OnInitDialog(const MSG& msg)->INT_PTR
 {
-	m_Wnd.Attach(stMsg.hwnd);
+	m_Wnd.Attach(msg.hwnd);
 	m_WndBtnBE.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_OPERS_CHK_BE));
 	m_WndBtnOk.Attach(m_Wnd.GetDlgItem(IDOK));
 	m_WndCmbOper.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_OPERS_COMBO_OPER));
@@ -552,9 +552,9 @@ namespace HEXCTRL::INTERNAL {
 		void CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl);
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		[[nodiscard]] auto GetHWND()const->HWND;
-		auto OnActivate(const MSG& stMsg) -> INT_PTR;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
-		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowWindow(int iCmdShow);
 	private:
@@ -564,9 +564,9 @@ namespace HEXCTRL::INTERNAL {
 		void OnCancel();
 		void OnComboDataEditChange();
 		void OnComboTypeSelChange();
-		auto OnCommand(const MSG& stMsg) -> INT_PTR;
+		auto OnCommand(const MSG& msg) -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
-		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
+		auto OnInitDialog(const MSG& msg) -> INT_PTR;
 		void OnOK();
 		void SetControlsState();
 	private:
@@ -615,12 +615,12 @@ auto CHexDlgFillData::GetHWND()const->HWND
 	return m_Wnd;
 }
 
-auto CHexDlgFillData::OnActivate(const MSG& stMsg)->INT_PTR
+auto CHexDlgFillData::OnActivate(const MSG& msg)->INT_PTR
 {
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet())
 		return FALSE;
 
-	const auto nState = LOWORD(stMsg.wParam);
+	const auto nState = LOWORD(msg.wParam);
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
 		const auto fSelection { m_pHexCtrl->HasSelection() };
 		m_Wnd.CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL,
@@ -636,13 +636,13 @@ bool CHexDlgFillData::PreTranslateMsg(MSG* pMsg)
 	return m_Wnd.IsDlgMessage(pMsg);
 }
 
-auto CHexDlgFillData::ProcessMsg(const MSG& stMsg)->INT_PTR
+auto CHexDlgFillData::ProcessMsg(const MSG& msg)->INT_PTR
 {
-	switch (stMsg.message) {
-	case WM_ACTIVATE: return OnActivate(stMsg);
-	case WM_COMMAND: return OnCommand(stMsg);
+	switch (msg.message) {
+	case WM_ACTIVATE: return OnActivate(msg);
+	case WM_COMMAND: return OnCommand(msg);
 	case WM_DESTROY: return OnDestroy();
-	case WM_INITDIALOG: return OnInitDialog(stMsg);
+	case WM_INITDIALOG: return OnInitDialog(msg);
 	default:
 		return 0;
 	}
@@ -689,10 +689,10 @@ void CHexDlgFillData::OnComboTypeSelChange()
 	SetControlsState();
 }
 
-auto CHexDlgFillData::OnCommand(const MSG& stMsg)->INT_PTR
+auto CHexDlgFillData::OnCommand(const MSG& msg)->INT_PTR
 {
-	const auto uCtrlID = LOWORD(stMsg.wParam); //Control ID or menu ID.
-	const auto uCode = HIWORD(stMsg.wParam);   //Control code, zero for menu.
+	const auto uCtrlID = LOWORD(msg.wParam); //Control ID or menu ID.
+	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
 
 	switch (uCtrlID) {
 	case IDOK: OnOK(); break;
@@ -716,9 +716,9 @@ auto CHexDlgFillData::OnDestroy()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgFillData::OnInitDialog(const MSG& stMsg)->INT_PTR
+auto CHexDlgFillData::OnInitDialog(const MSG& msg)->INT_PTR
 {
-	m_Wnd.Attach(stMsg.hwnd);
+	m_Wnd.Attach(msg.hwnd);
 	m_WndBtnOk.Attach(m_Wnd.GetDlgItem(IDOK));
 	m_WndCmbType.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_TYPE));
 	m_WndCmbData.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_FILLDATA_COMBO_DATA));
@@ -885,13 +885,13 @@ bool CHexDlgModify::PreTranslateMsg(MSG* pMsg)
 	return m_pDlgOpers->PreTranslateMsg(pMsg) || m_pDlgFillData->PreTranslateMsg(pMsg);
 }
 
-auto CHexDlgModify::ProcessMsg(const MSG& stMsg)->INT_PTR
+auto CHexDlgModify::ProcessMsg(const MSG& msg)->INT_PTR
 {
-	switch (stMsg.message) {
-	case WM_ACTIVATE: return OnActivate(stMsg);
+	switch (msg.message) {
+	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_DESTROY: return OnDestroy();
-	case WM_INITDIALOG: return OnInitDialog(stMsg);
-	case WM_NOTIFY: return OnNotify(stMsg);
+	case WM_INITDIALOG: return OnInitDialog(msg);
+	case WM_NOTIFY: return OnNotify(msg);
 	default:
 		return 0;
 	}
@@ -918,10 +918,10 @@ void CHexDlgModify::ShowWindow(int iCmdShow, int iTab)
 
 //CHexDlgModify private methods.
 
-auto CHexDlgModify::OnActivate(const MSG& stMsg)->INT_PTR
+auto CHexDlgModify::OnActivate(const MSG& msg)->INT_PTR
 {
-	m_pDlgOpers->OnActivate(stMsg);
-	m_pDlgFillData->OnActivate(stMsg);
+	m_pDlgOpers->OnActivate(msg);
+	m_pDlgFillData->OnActivate(msg);
 
 	return FALSE; //Default handler.
 }
@@ -940,9 +940,9 @@ auto CHexDlgModify::OnDestroy()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgModify::OnInitDialog(const MSG& stMsg)->INT_PTR
+auto CHexDlgModify::OnInitDialog(const MSG& msg)->INT_PTR
 {
-	m_Wnd.Attach(stMsg.hwnd);
+	m_Wnd.Attach(msg.hwnd);
 	m_WndTab.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_MODIFY_TAB));
 
 	m_WndTab.InsertItem(0, L"Operations");
@@ -961,9 +961,9 @@ auto CHexDlgModify::OnInitDialog(const MSG& stMsg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgModify::OnNotify(const MSG& stMsg)->INT_PTR
+auto CHexDlgModify::OnNotify(const MSG& msg)->INT_PTR
 {
-	const auto pNMHDR = reinterpret_cast<NMHDR*>(stMsg.lParam);
+	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
 	switch (pNMHDR->idFrom) {
 	case IDC_HEXCTRL_MODIFY_TAB: if (pNMHDR->code == TCN_SELCHANGE) { OnNotifyTabSelChanged(pNMHDR); } break;
 	default: break;

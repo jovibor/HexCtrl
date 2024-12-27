@@ -204,17 +204,17 @@ bool CHexDlgBkmMgr::PreTranslateMsg(MSG* pMsg)
 	return m_Wnd.IsDlgMessage(pMsg);
 }
 
-auto CHexDlgBkmMgr::ProcessMsg(const MSG& stMsg)->INT_PTR
+auto CHexDlgBkmMgr::ProcessMsg(const MSG& msg)->INT_PTR
 {
-	switch (stMsg.message) {
+	switch (msg.message) {
 	case WM_CLOSE: return OnClose();
-	case WM_COMMAND: return OnCommand(stMsg);
+	case WM_COMMAND: return OnCommand(msg);
 	case WM_DESTROY: return OnDestroy();
-	case WM_DRAWITEM: return OnDrawItem(stMsg);
-	case WM_INITDIALOG: return OnInitDialog(stMsg);
-	case WM_MEASUREITEM: return OnMeasureItem(stMsg);
-	case WM_NOTIFY: return OnNotify(stMsg);
-	case WM_SIZE: return OnSize(stMsg);
+	case WM_DRAWITEM: return OnDrawItem(msg);
+	case WM_INITDIALOG: return OnInitDialog(msg);
+	case WM_MEASUREITEM: return OnMeasureItem(msg);
+	case WM_NOTIFY: return OnNotify(msg);
+	case WM_SIZE: return OnSize(msg);
 	default:
 		return 0;
 	}
@@ -307,7 +307,7 @@ void CHexDlgBkmMgr::ShowWindow(int iCmdShow)
 
 void CHexDlgBkmMgr::SortData(int iColumn, bool fAscending)
 {
-	//iColumn is column number in CHexDlgBkmMgr::m_pList.
+	//iColumn is column number in CHexDlgBkmMgr::m_ListEx.
 	std::sort(m_vecBookmarks.begin(), m_vecBookmarks.end(),
 		[iColumn, fAscending](const HEXBKM& st1, const HEXBKM& st2) {
 			int iCompare { };
@@ -351,8 +351,8 @@ void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm)
 		*iter = bkm;
 	}
 
-	if (IsWindow(m_pList->m_hWnd)) {
-		m_pList->RedrawWindow();
+	if (::IsWindow(m_ListEx.GetHWND())) {
+		m_ListEx.RedrawWindow();
 	}
 
 	if (m_pHexCtrl && m_pHexCtrl->IsCreated()) {
@@ -392,11 +392,11 @@ auto CHexDlgBkmMgr::OnClose()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::OnCommand(const MSG& stMsg) -> INT_PTR
+auto CHexDlgBkmMgr::OnCommand(const MSG& msg) -> INT_PTR
 {
-	const auto uCtrlID = LOWORD(stMsg.wParam); //Control ID or menu ID.
-	const auto uCode = HIWORD(stMsg.wParam);   //Control code, zero for menu.
-	const auto hWndCtrl = reinterpret_cast<HWND>(stMsg.lParam); //Control HWND, zero for menu.
+	const auto uCtrlID = LOWORD(msg.wParam); //Control ID or menu ID.
+	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
+	const auto hWndCtrl = reinterpret_cast<HWND>(msg.lParam); //Control HWND, zero for menu.
 
 	//IDOK and IDCANCEL don't have HWND in lParam, if send as result of
 	//IsDialogMessage and no button with such ID presents in the dialog.
@@ -413,12 +413,12 @@ auto CHexDlgBkmMgr::OnCommand(const MSG& stMsg) -> INT_PTR
 		switch (static_cast<EMenuID>(uCtrlID)) {
 		case EMenuID::IDM_BKMMGR_REMOVE:
 		{
-			const auto uSelCount = m_pList->GetSelectedCount();
+			const auto uSelCount = m_ListEx.GetSelectedCount();
 			std::vector<int> vecIndex;
 			vecIndex.reserve(uSelCount);
 			int nItem { -1 };
 			for (auto i = 0UL; i < uSelCount; ++i) {
-				nItem = m_pList->GetNextItem(nItem, LVNI_SELECTED);
+				nItem = m_ListEx.GetNextItem(nItem, LVNI_SELECTED);
 				vecIndex.insert(vecIndex.begin(), nItem); //Last indexes go first.
 			}
 
@@ -446,7 +446,7 @@ auto CHexDlgBkmMgr::OnCommand(const MSG& stMsg) -> INT_PTR
 
 void CHexDlgBkmMgr::OnCheckHex()
 {
-	m_pList->RedrawWindow();
+	m_ListEx.RedrawWindow();
 }
 
 auto CHexDlgBkmMgr::OnDestroy()->INT_PTR
@@ -459,11 +459,11 @@ auto CHexDlgBkmMgr::OnDestroy()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::OnDrawItem(const MSG& stMsg)->INT_PTR
+auto CHexDlgBkmMgr::OnDrawItem(const MSG& msg)->INT_PTR
 {
-	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(stMsg.lParam);
+	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
 	if (pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_BKMMGR_LIST)) {
-		m_pList->DrawItem(pDIS);
+		m_ListEx.DrawItem(pDIS);
 	}
 
 	return TRUE;
@@ -475,21 +475,21 @@ void CHexDlgBkmMgr::OnOK()
 	//SetDefID() doesn't always work for no particular reason.
 }
 
-auto CHexDlgBkmMgr::OnInitDialog(const MSG& stMsg)->INT_PTR
+auto CHexDlgBkmMgr::OnInitDialog(const MSG& msg)->INT_PTR
 {
-	m_Wnd.Attach(stMsg.hwnd);
+	m_Wnd.Attach(msg.hwnd);
 	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_BKMMGR_CHK_HEX));
 
-	m_pList->Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_BKMMGR_LIST }, .dwSizeFontList { 10 },
+	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_BKMMGR_LIST }, .dwSizeFontList { 10 },
 		.dwSizeFontHdr { 10 }, .fDialogCtrl { true } });
-	m_pList->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
-	m_pList->SetSortable(true);
-	m_pList->InsertColumn(0, L"№", LVCFMT_LEFT, 40);
-	m_pList->InsertColumn(1, L"Offset", LVCFMT_LEFT, 80, -1, 0, true);
-	m_pList->InsertColumn(2, L"Size", LVCFMT_LEFT, 50, -1, 0, true);
-	m_pList->InsertColumn(3, L"Description", LVCFMT_LEFT, 250, -1, 0, true);
-	m_pList->InsertColumn(4, L"Bk", LVCFMT_LEFT, 40);
-	m_pList->InsertColumn(5, L"Text", LVCFMT_LEFT, 40);
+	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
+	m_ListEx.SetSortable(true);
+	m_ListEx.InsertColumn(0, L"№", LVCFMT_LEFT, 40);
+	m_ListEx.InsertColumn(1, L"Offset", LVCFMT_LEFT, 80, -1, 0, true);
+	m_ListEx.InsertColumn(2, L"Size", LVCFMT_LEFT, 50, -1, 0, true);
+	m_ListEx.InsertColumn(3, L"Description", LVCFMT_LEFT, 250, -1, 0, true);
+	m_ListEx.InsertColumn(4, L"Bk", LVCFMT_LEFT, 40);
+	m_ListEx.InsertColumn(5, L"Text", LVCFMT_LEFT, 40);
 
 	m_menuList.CreatePopupMenu();
 	m_menuList.AppendString(static_cast<UINT_PTR>(EMenuID::IDM_BKMMGR_REMOVE), L"Remove");
@@ -508,19 +508,19 @@ auto CHexDlgBkmMgr::OnInitDialog(const MSG& stMsg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::OnMeasureItem(const MSG& stMsg)->INT_PTR
+auto CHexDlgBkmMgr::OnMeasureItem(const MSG& msg)->INT_PTR
 {
-	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(stMsg.lParam);
+	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(msg.lParam);
 	if (pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_BKMMGR_LIST)) {
-		m_pList->MeasureItem(pMIS);
+		m_ListEx.MeasureItem(pMIS);
 	}
 
 	return TRUE;
 }
 
-auto CHexDlgBkmMgr::OnNotify(const MSG& stMsg)->INT_PTR
+auto CHexDlgBkmMgr::OnNotify(const MSG& msg)->INT_PTR
 {
-	const auto pNMHDR = reinterpret_cast<NMHDR*>(stMsg.lParam);
+	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
 	switch (pNMHDR->idFrom) {
 	case IDC_HEXCTRL_BKMMGR_LIST:
 		switch (pNMHDR->code) {
@@ -633,7 +633,7 @@ void CHexDlgBkmMgr::OnNotifyListRClick(NMHDR* pNMHDR)
 
 	//Edit menu enabled only when one item selected.
 	m_menuList.EnableItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVE), fEnabled);
-	m_menuList.EnableItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVEALL), m_pList->GetItemCount() > 0);
+	m_menuList.EnableItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVEALL), m_ListEx.GetItemCount() > 0);
 
 	POINT pt;
 	GetCursorPos(&pt);
@@ -721,10 +721,10 @@ void CHexDlgBkmMgr::OnNotifyListSetData(NMHDR* pNMHDR)
 	m_pHexCtrl->Redraw();
 }
 
-auto CHexDlgBkmMgr::OnSize(const MSG& stMsg)->INT_PTR
+auto CHexDlgBkmMgr::OnSize(const MSG& msg)->INT_PTR
 {
-	const auto iWidth = LOWORD(stMsg.lParam);
-	const auto iHeight = HIWORD(stMsg.lParam);
+	const auto iWidth = LOWORD(msg.lParam);
+	const auto iHeight = HIWORD(msg.lParam);
 	m_DynLayout.OnSize(iWidth, iHeight);
 	return TRUE;
 }
@@ -740,27 +740,27 @@ void CHexDlgBkmMgr::RemoveBookmark(std::uint64_t ullID)
 void CHexDlgBkmMgr::SortBookmarks()
 {
 	//Sort bookmarks according to clicked column.
-	SortData(m_pList->GetSortColumn(), m_pList->GetSortAscending());
+	SortData(m_ListEx.GetSortColumn(), m_ListEx.GetSortAscending());
 
-	if (IsWindow(m_pList->m_hWnd)) {
-		m_pList->RedrawWindow();
+	if (::IsWindow(m_ListEx.GetHWND())) {
+		m_ListEx.RedrawWindow();
 	}
 }
 
 void CHexDlgBkmMgr::UpdateListCount(bool fPreserveSelected)
 {
-	if (!IsWindow(m_pList->m_hWnd)) {
+	if (!::IsWindow(m_ListEx.GetHWND())) {
 		return;
 	}
 
-	m_pList->SetItemState(-1, 0, LVIS_SELECTED);
-	m_pList->SetItemCountEx(static_cast<int>(GetCount()), LVSICF_NOSCROLL);
+	m_ListEx.SetItemState(-1, 0, LVIS_SELECTED);
+	m_ListEx.SetItemCountEx(static_cast<int>(GetCount()), LVSICF_NOSCROLL);
 
 	if (fPreserveSelected) {
 		if (GetCount() > 0) {
 			const auto iCurrent = static_cast<int>(GetCurrent());
-			m_pList->SetItemState(iCurrent, LVIS_SELECTED, LVIS_SELECTED);
-			m_pList->EnsureVisible(iCurrent, FALSE);
+			m_ListEx.SetItemState(iCurrent, LVIS_SELECTED, LVIS_SELECTED);
+			m_ListEx.EnsureVisible(iCurrent, FALSE);
 		}
 	}
 }

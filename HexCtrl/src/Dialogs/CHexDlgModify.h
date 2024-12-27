@@ -22,15 +22,15 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetHWND()const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
-		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowWindow(int iCmdShow, int iTab = -1);
 	private:
-		auto OnActivate(const MSG& stMsg) -> INT_PTR;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		auto OnClose() -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
-		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
-		auto OnNotify(const MSG& stMsg) -> INT_PTR;
+		auto OnInitDialog(const MSG& msg) -> INT_PTR;
+		auto OnNotify(const MSG& msg) -> INT_PTR;
 		void OnNotifyTabSelChanged(NMHDR* pNMHDR);
 		void SetCurrentTab(int iTab);
 	private:

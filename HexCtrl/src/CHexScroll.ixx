@@ -45,7 +45,7 @@ namespace HEXCTRL::INTERNAL {
 		* END OF THE CALLBACK METHODS.                                                      *
 		************************************************************************************/
 
-		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> LRESULT;
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> LRESULT;
 		auto SetScrollPos(ULONGLONG ullNewPos) -> ULONGLONG;
 		void SetScrollSizes(ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG ullSizeMax);
 		void ScrollEnd();
@@ -84,8 +84,8 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsVert()const;           //Is vertical or horizontal scrollbar.
 		[[nodiscard]] bool IsThumbDragging()const;  //Is the thumb currently dragged by mouse.
 		[[nodiscard]] bool IsSiblingVisible()const; //Is sibling scrollbar currently visible or not.
-		auto OnDestroy(const MSG& stMsg) -> LRESULT;
-		auto OnTimer(const MSG& stMsg) -> LRESULT;
+		auto OnDestroy(const MSG& msg) -> LRESULT;
+		auto OnTimer(const MSG& msg) -> LRESULT;
 		void RedrawNC()const;
 		void SendParentScrollMsg()const;            //Sends the WM_(V/H)SCROLL to the parent window.
 	private:
@@ -443,12 +443,12 @@ void CHexScroll::OnSetCursor(UINT uHitTest, UINT uMsg)
 	}
 }
 
-auto CHexScroll::ProcessMsg(const MSG& stMsg)->LRESULT
+auto CHexScroll::ProcessMsg(const MSG& msg)->LRESULT
 {
-	switch (stMsg.message) {
-	case WM_DESTROY: return CHexScroll::OnDestroy(stMsg);
-	case WM_TIMER: return CHexScroll::OnTimer(stMsg);
-	default: return wnd::DefMsgProc(stMsg);
+	switch (msg.message) {
+	case WM_DESTROY: return CHexScroll::OnDestroy(msg);
+	case WM_TIMER: return CHexScroll::OnTimer(msg);
+	default: return wnd::DefMsgProc(msg);
 	}
 }
 
@@ -987,7 +987,7 @@ bool CHexScroll::IsSiblingVisible()const
 	return m_pSibling ? m_pSibling->IsVisible() : false;
 }
 
-auto CHexScroll::OnDestroy(const MSG& stMsg)->LRESULT
+auto CHexScroll::OnDestroy(const MSG& msg)->LRESULT
 {
 	::DeleteObject(m_hBmpArrowFirst);
 	::DeleteObject(m_hBmpArrowLast);
@@ -995,13 +995,13 @@ auto CHexScroll::OnDestroy(const MSG& stMsg)->LRESULT
 	m_hBmpArrowLast = nullptr;
 	m_fCreated = false;
 
-	return wnd::DefMsgProc(stMsg);
+	return wnd::DefMsgProc(msg);
 }
 
-auto CHexScroll::OnTimer(const MSG& stMsg)->LRESULT
+auto CHexScroll::OnTimer(const MSG& msg)->LRESULT
 {
 	static constexpr auto uTimerRepeat { 50U }; //Milliseconds for repeat when click and hold on channel.
-	const auto nIDEvent = static_cast<UINT_PTR>(stMsg.wParam);
+	const auto nIDEvent = static_cast<UINT_PTR>(msg.wParam);
 	using enum EState; using enum ETimer;
 
 	switch (nIDEvent) {

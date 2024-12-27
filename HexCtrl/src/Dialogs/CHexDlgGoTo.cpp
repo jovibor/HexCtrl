@@ -52,14 +52,14 @@ bool CHexDlgGoTo::PreTranslateMsg(MSG* pMsg)
 	return m_Wnd.IsDlgMessage(pMsg);
 }
 
-auto CHexDlgGoTo::ProcessMsg(const MSG& stMsg)->INT_PTR
+auto CHexDlgGoTo::ProcessMsg(const MSG& msg)->INT_PTR
 {
-	switch (stMsg.message) {
-	case WM_ACTIVATE: return OnActivate(stMsg);
+	switch (msg.message) {
+	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_CLOSE: return OnClose();
-	case WM_COMMAND: return OnCommand(stMsg);
+	case WM_COMMAND: return OnCommand(msg);
 	case WM_DESTROY: return OnDestroy();
-	case WM_INITDIALOG: return OnInitDialog(stMsg);
+	case WM_INITDIALOG: return OnInitDialog(msg);
 	default:
 		return 0;
 	}
@@ -178,13 +178,13 @@ bool CHexDlgGoTo::IsNoEsc()const
 	return m_u64Flags & HEXCTRL_FLAG_DLG_NOESC;
 }
 
-auto CHexDlgGoTo::OnActivate(const MSG& stMsg)->INT_PTR
+auto CHexDlgGoTo::OnActivate(const MSG& msg)->INT_PTR
 {
 	const auto pHexCtrl = GetHexCtrl();
 	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
 		return FALSE;
 
-	const auto nState = LOWORD(stMsg.wParam);
+	const auto nState = LOWORD(msg.wParam);
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
 		UpdateComboMode();
 	}
@@ -206,9 +206,9 @@ auto CHexDlgGoTo::OnClose()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgGoTo::OnCommand(const MSG& stMsg)->INT_PTR
+auto CHexDlgGoTo::OnCommand(const MSG& msg)->INT_PTR
 {
-	const auto uCtrlID = LOWORD(stMsg.wParam);
+	const auto uCtrlID = LOWORD(msg.wParam);
 	switch (uCtrlID) {
 	case IDOK:
 		OnOK();
@@ -231,10 +231,10 @@ auto CHexDlgGoTo::OnDestroy()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgGoTo::OnInitDialog(const MSG& stMsg)->INT_PTR
+auto CHexDlgGoTo::OnInitDialog(const MSG& msg)->INT_PTR
 {
 	using enum EGoMode;
-	m_Wnd.Attach(stMsg.hwnd);
+	m_Wnd.Attach(msg.hwnd);
 	m_WndCmbMode.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_GOTO_COMBO_MODE));
 	auto iIndex = m_WndCmbMode.AddString(L"Offset");
 	m_WndCmbMode.SetItemData(iIndex, static_cast<DWORD_PTR>(MODE_OFFSET));

@@ -1,5 +1,5 @@
 Checks: '*,
--cppcoreguidelines-*,-google-*,-fuchsia-*,-hicpp-*,-cert-*,-clang-*,-llvmlibc-*,-altera-*,-boost-*,
+-cppcoreguidelines-*,-google-*,-fuchsia-*,-hicpp-*,-cert-*,-clang-*,-llvmlibc-*,-altera-*,-boost-*,-abseil-*,
 -bugprone-easily-swappable-parameters,
 -bugprone-implicit-widening-of-multiplication-result,
 -bugprone-narrowing-conversions,

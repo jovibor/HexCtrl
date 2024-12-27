@@ -41,7 +41,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsTooltips()const;
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
-		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowTooltips(bool fShow)override;
 		void ShowWindow(int iCmdShow);
@@ -66,27 +66,27 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
 		[[nodiscard]] bool IsSwapEndian()const;
-		auto OnActivate(const MSG& stMsg) -> INT_PTR;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnBnLoadTemplate();
 		void OnBnUnloadTemplate();
 		void OnBnRandomizeColors();
 		void OnBnApply();
 		void OnCancel();
-		auto OnCommand(const MSG& stMsg) -> INT_PTR;
-		auto OnCtlClrStatic(const MSG& stMsg) -> INT_PTR;
+		auto OnCommand(const MSG& msg) -> INT_PTR;
+		auto OnCtlClrStatic(const MSG& msg) -> INT_PTR;
 		void OnCheckHex();
 		void OnCheckSwapEndian();
 		void OnCheckShowTt();
 		void OnCheckMin();
 		auto OnClose() -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
-		auto OnDrawItem(const MSG& stMsg) -> INT_PTR;
-		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
-		auto OnLButtonDown(const MSG& stMsg) -> INT_PTR;
-		auto OnLButtonUp(const MSG& stMsg) -> INT_PTR;
-		auto OnMeasureItem(const MSG& stMsg) -> INT_PTR;
-		auto OnMouseMove(const MSG& stMsg) -> INT_PTR;
-		auto OnNotify(const MSG& stMsg) -> INT_PTR;
+		auto OnDrawItem(const MSG& msg) -> INT_PTR;
+		auto OnInitDialog(const MSG& msg) -> INT_PTR;
+		auto OnLButtonDown(const MSG& msg) -> INT_PTR;
+		auto OnLButtonUp(const MSG& msg) -> INT_PTR;
+		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
+		auto OnMouseMove(const MSG& msg) -> INT_PTR;
+		auto OnNotify(const MSG& msg) -> INT_PTR;
 		void OnNotifyListDblClick(NMHDR* pNMHDR);
 		void OnNotifyListEditBegin(NMHDR* pNMHDR);
 		void OnNotifyListEnterPressed(NMHDR* pNMHDR);
@@ -100,7 +100,7 @@ namespace HEXCTRL::INTERNAL {
 		void OnNotifyTreeItemChanged(NMHDR* pNMHDR);
 		void OnNotifyTreeRClick(NMHDR* pNMHDR);
 		void OnOK();
-		auto OnSize(const MSG& stMsg) -> INT_PTR;
+		auto OnSize(const MSG& msg) -> INT_PTR;
 		void OnTemplateLoadUnload(int iTemplateID, bool fLoad);
 		void RandomizeTemplateColors(int iTemplateID);
 		void RedrawHexCtrl();
@@ -129,7 +129,7 @@ namespace HEXCTRL::INTERNAL {
 		void UnloadTemplate(int iTemplateID)override; //Unload/remove loaded template from memory.
 		void UpdateStaticText();
 	private:
-		static constexpr auto m_iIDListColType { 0 };  //ID of the Type column in the m_pList.
+		static constexpr auto m_iIDListColType { 0 };  //ID of the Type column in the m_ListEx.
 		static constexpr auto m_iIDListColData { 4 };  //Data.
 		static constexpr auto m_iIDListColDescr { 6 }; //Description.
 		static constexpr auto m_iIDListColClrs { 7 };  //Colors.
@@ -151,7 +151,7 @@ namespace HEXCTRL::INTERNAL {
 		std::uint64_t m_u64Flags { };      //Data from SetDlgProperties.
 		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;      //Loaded Templates.
 		std::vector<std::unique_ptr<TEMPLAPPLIED>> m_vecTemplatesAppl; //Currently Applied Templates.
-		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
+		LISTEX::CListEx m_ListEx;
 		PCTEMPLAPPLIED m_pAppliedCurr { }; //Currently selected template in the applied Tree.
 		PCVecFields m_pVecFieldsCurr { };  //Currently selected Fields vector.
 		HTREEITEM m_hTreeCurrParent { };   //Currently selected Tree node's parent.

@@ -31,17 +31,13 @@
 #else //^^^ _DEBUG / vvv !_DEBUG
 #define HEXCTRL_LIBNAME(x) x"x86.lib"
 #endif //^^^ !_DEBUG
-#endif //^^^ _M_IX86
-
-#ifdef _M_X64
+#elif defined(_M_X64) //^^^ _M_IX86 / vvv _M_X64
 #ifdef _DEBUG
 #define HEXCTRL_LIBNAME(x) x"x64D.lib"
 #else //^^^ _DEBUG / vvv !_DEBUG
 #define HEXCTRL_LIBNAME(x) x"x64.lib"
 #endif //^^^ !_DEBUG
-#endif //^^^ _M_X64
-
-#ifdef _M_ARM64
+#elif defined(_M_ARM64) //^^^ _M_X64 / vvv _M_ARM64
 #ifdef _DEBUG
 #define HEXCTRL_LIBNAME(x) x"ARM64D.lib"
 #else //^^^ _DEBUG / vvv !_DEBUG

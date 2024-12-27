@@ -26,7 +26,7 @@ struct CHexDlgTemplMgr::TEMPLAPPLIED {
 enum class CHexDlgTemplMgr::EMenuID : std::uint16_t {
 	IDM_TREE_DISAPPLY = 0x8000, IDM_TREE_DISAPPLYALL,
 	IDM_LIST_HDR_TYPE, IDM_LIST_HDR_NAME, IDM_LIST_HDR_OFFSET, IDM_LIST_HDR_SIZE,
-	IDM_LIST_HDR_DATA, IDM_LIST_HDR_ENDIANNESS, IDM_LIST_HDR_COLORS
+	IDM_LIST_HDR_DATA, IDM_LIST_HDR_ENDIANNESS, IDM_LIST_HDR_DESCRIPTION, IDM_LIST_HDR_COLORS
 };
 
 struct CHexDlgTemplMgr::FIELDSDEFPROPS { //Helper struct for convenient argument passing through recursive fields' parsing.
@@ -120,7 +120,7 @@ void CHexDlgTemplMgr::DisapplyAll()
 {
 	if (m_Wnd.IsWindow()) { //Dialog must be created and alive to work with its members.
 		m_WndTree.DeleteAllItems();
-		m_pList->SetItemCountEx(0);
+		m_ListEx.SetItemCountEx(0);
 		UpdateStaticText();
 	}
 
@@ -264,22 +264,22 @@ bool CHexDlgTemplMgr::PreTranslateMsg(MSG* pMsg)
 	return m_Wnd.IsDlgMessage(pMsg);
 }
 
-auto CHexDlgTemplMgr::ProcessMsg(const MSG& stMsg)->INT_PTR
+auto CHexDlgTemplMgr::ProcessMsg(const MSG& msg)->INT_PTR
 {
-	switch (stMsg.message) {
-	case WM_ACTIVATE: return OnActivate(stMsg);
+	switch (msg.message) {
+	case WM_ACTIVATE: return OnActivate(msg);
 	case WM_CLOSE: return OnClose();
-	case WM_COMMAND: return OnCommand(stMsg);
-	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(stMsg);
+	case WM_COMMAND: return OnCommand(msg);
+	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(msg);
 	case WM_DESTROY: return OnDestroy();
-	case WM_DRAWITEM: return OnDrawItem(stMsg);
-	case WM_INITDIALOG: return OnInitDialog(stMsg);
-	case WM_LBUTTONDOWN: return OnLButtonDown(stMsg);
-	case WM_LBUTTONUP: return OnLButtonUp(stMsg);
-	case WM_MEASUREITEM: return OnMeasureItem(stMsg);
-	case WM_MOUSEMOVE: return OnMouseMove(stMsg);
-	case WM_NOTIFY: return OnNotify(stMsg);
-	case WM_SIZE: return OnSize(stMsg);
+	case WM_DRAWITEM: return OnDrawItem(msg);
+	case WM_INITDIALOG: return OnInitDialog(msg);
+	case WM_LBUTTONDOWN: return OnLButtonDown(msg);
+	case WM_LBUTTONUP: return OnLButtonUp(msg);
+	case WM_MEASUREITEM: return OnMeasureItem(msg);
+	case WM_MOUSEMOVE: return OnMouseMove(msg);
+	case WM_NOTIFY: return OnNotify(msg);
+	case WM_SIZE: return OnSize(msg);
 	default:
 		return 0;
 	}
@@ -322,7 +322,7 @@ void CHexDlgTemplMgr::UpdateData()
 		return;
 	}
 
-	m_pList->RedrawWindow();
+	m_ListEx.RedrawWindow();
 }
 
 
@@ -389,12 +389,12 @@ bool CHexDlgTemplMgr::IsSwapEndian()const
 	return m_WndBtnEndian.IsChecked();
 }
 
-auto CHexDlgTemplMgr::OnActivate(const MSG& stMsg)->INT_PTR
+auto CHexDlgTemplMgr::OnActivate(const MSG& msg)->INT_PTR
 {
 	if (!m_pHexCtrl->IsCreated())
 		return FALSE;
 
-	const auto nState = LOWORD(stMsg.wParam);
+	const auto nState = LOWORD(msg.wParam);
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
 		const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
 		m_dwDateFormat = dwFormat;
@@ -486,12 +486,12 @@ void CHexDlgTemplMgr::OnCancel()
 void CHexDlgTemplMgr::OnCheckHex()
 {
 	UpdateStaticText();
-	m_pList->RedrawWindow();
+	m_ListEx.RedrawWindow();
 }
 
 void CHexDlgTemplMgr::OnCheckSwapEndian()
 {
-	m_pList->RedrawWindow();
+	m_ListEx.RedrawWindow();
 }
 
 void CHexDlgTemplMgr::OnCheckShowTt()
@@ -550,11 +550,11 @@ auto CHexDlgTemplMgr::OnClose()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgTemplMgr::OnCommand(const MSG& stMsg)->INT_PTR
+auto CHexDlgTemplMgr::OnCommand(const MSG& msg)->INT_PTR
 {
-	const auto uCtrlID = LOWORD(stMsg.wParam); //Control ID or menu ID.
-	const auto uCode = HIWORD(stMsg.wParam);   //Control code, zero for menu.
-	const auto hWndCtrl = reinterpret_cast<HWND>(stMsg.lParam); //Control HWND, zero for menu.
+	const auto uCtrlID = LOWORD(msg.wParam); //Control ID or menu ID.
+	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
+	const auto hWndCtrl = reinterpret_cast<HWND>(msg.lParam); //Control HWND, zero for menu.
 
 	//IDOK and IDCANCEL don't have HWND in lParam, if send as result of
 	//IsDialogMessage and no button with such ID presents in the dialog.
@@ -589,10 +589,11 @@ auto CHexDlgTemplMgr::OnCommand(const MSG& stMsg)->INT_PTR
 		case IDM_LIST_HDR_SIZE:
 		case IDM_LIST_HDR_DATA:
 		case IDM_LIST_HDR_ENDIANNESS:
+		case IDM_LIST_HDR_DESCRIPTION:
 		case IDM_LIST_HDR_COLORS:
 		{
 			const auto fChecked = m_MenuHdr.IsChecked(uCtrlID);
-			m_pList->HideColumn(uCtrlID - static_cast<int>(IDM_LIST_HDR_TYPE), fChecked);
+			m_ListEx.HideColumn(uCtrlID - static_cast<int>(IDM_LIST_HDR_TYPE), fChecked);
 			m_MenuHdr.CheckItem(uCtrlID, !fChecked);
 		}
 		break;
@@ -603,11 +604,11 @@ auto CHexDlgTemplMgr::OnCommand(const MSG& stMsg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgTemplMgr::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
+auto CHexDlgTemplMgr::OnCtlClrStatic(const MSG& msg)->INT_PTR
 {
-	if (const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam);
+	if (const auto hWndFrom = reinterpret_cast<HWND>(msg.lParam);
 		hWndFrom == m_WndStatOffset || hWndFrom == m_WndStatSize) {
-		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
+		const auto hDC = reinterpret_cast<HDC>(msg.wParam);
 		::SetTextColor(hDC, RGB(0, 50, 250));
 		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
 		return reinterpret_cast<INT_PTR>(::GetSysColorBrush(COLOR_3DFACE));
@@ -632,19 +633,19 @@ auto CHexDlgTemplMgr::OnDestroy()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgTemplMgr::OnDrawItem(const MSG& stMsg)->INT_PTR
+auto CHexDlgTemplMgr::OnDrawItem(const MSG& msg)->INT_PTR
 {
-	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(stMsg.lParam);
+	const auto pDIS = reinterpret_cast<LPDRAWITEMSTRUCT>(msg.lParam);
 	if (pDIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_TEMPLMGR_LIST)) {
-		m_pList->DrawItem(pDIS);
+		m_ListEx.DrawItem(pDIS);
 	}
 
 	return TRUE;
 }
 
-auto CHexDlgTemplMgr::OnInitDialog(const MSG& stMsg)->INT_PTR
+auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 {
-	m_Wnd.Attach(stMsg.hwnd);
+	m_Wnd.Attach(msg.hwnd);
 	m_WndStatOffset.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_STAT_OFFSETNUM));
 	m_WndStatSize.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_STAT_SIZENUM));
 	m_WndEditOffset.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_EDIT_OFFSET));
@@ -656,17 +657,17 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& stMsg)->INT_PTR
 	m_WndCmbTempl.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_COMBO_TEMPLATES));
 	m_WndTree.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_TREE));
 
-	m_pList->Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_TEMPLMGR_LIST }, .dwSizeFontList { 10 },
+	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_TEMPLMGR_LIST }, .dwSizeFontList { 10 },
 		.dwSizeFontHdr { 10 }, .fDialogCtrl { true } });
-	m_pList->SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
-	m_pList->InsertColumn(m_iIDListColType, L"Type", LVCFMT_LEFT, 85);
-	m_pList->InsertColumn(1, L"Name", LVCFMT_LEFT, 200);
-	m_pList->InsertColumn(2, L"Offset", LVCFMT_LEFT, 50);
-	m_pList->InsertColumn(3, L"Size", LVCFMT_LEFT, 50);
-	m_pList->InsertColumn(m_iIDListColData, L"Data", LVCFMT_LEFT, 120, -1, LVCFMT_LEFT, true);
-	m_pList->InsertColumn(5, L"Endianness", LVCFMT_CENTER, 75, -1, LVCFMT_CENTER);
-	m_pList->InsertColumn(m_iIDListColDescr, L"Description", LVCFMT_LEFT, 100, -1, LVCFMT_LEFT, true);
-	m_pList->InsertColumn(m_iIDListColClrs, L"Colors", LVCFMT_LEFT, 57);
+	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
+	m_ListEx.InsertColumn(m_iIDListColType, L"Type", LVCFMT_LEFT, 85);
+	m_ListEx.InsertColumn(1, L"Name", LVCFMT_LEFT, 200);
+	m_ListEx.InsertColumn(2, L"Offset", LVCFMT_LEFT, 50);
+	m_ListEx.InsertColumn(3, L"Size", LVCFMT_LEFT, 50);
+	m_ListEx.InsertColumn(m_iIDListColData, L"Data", LVCFMT_LEFT, 120, -1, LVCFMT_LEFT, true);
+	m_ListEx.InsertColumn(5, L"Endianness", LVCFMT_CENTER, 75, -1, LVCFMT_CENTER);
+	m_ListEx.InsertColumn(m_iIDListColDescr, L"Description", LVCFMT_LEFT, 100, -1, LVCFMT_LEFT, true);
+	m_ListEx.InsertColumn(m_iIDListColClrs, L"Colors", LVCFMT_LEFT, 57);
 
 	using enum EMenuID;
 	m_MenuHdr.CreatePopupMenu();
@@ -682,6 +683,8 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& stMsg)->INT_PTR
 	m_MenuHdr.CheckItem(static_cast<int>(IDM_LIST_HDR_DATA), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_ENDIANNESS), L"Endianness");
 	m_MenuHdr.CheckItem(static_cast<int>(IDM_LIST_HDR_ENDIANNESS), true);
+	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_DESCRIPTION), L"Description");
+	m_MenuHdr.CheckItem(static_cast<int>(IDM_LIST_HDR_DESCRIPTION), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_COLORS), L"Colors");
 	m_MenuHdr.CheckItem(static_cast<int>(IDM_LIST_HDR_COLORS), true);
 
@@ -757,27 +760,27 @@ auto CHexDlgTemplMgr::OnLButtonUp(const MSG& /*stMsg*/)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgTemplMgr::OnMeasureItem(const MSG& stMsg)->INT_PTR
+auto CHexDlgTemplMgr::OnMeasureItem(const MSG& msg)->INT_PTR
 {
-	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(stMsg.lParam);
+	const auto pMIS = reinterpret_cast<LPMEASUREITEMSTRUCT>(msg.lParam);
 	if (pMIS->CtlID == static_cast<UINT>(IDC_HEXCTRL_TEMPLMGR_LIST)) {
-		m_pList->MeasureItem(pMIS);
+		m_ListEx.MeasureItem(pMIS);
 	}
 
 	return TRUE;
 }
 
-auto CHexDlgTemplMgr::OnMouseMove(const MSG& stMsg)->INT_PTR
+auto CHexDlgTemplMgr::OnMouseMove(const MSG& msg)->INT_PTR
 {
 	static constexpr auto iResAreaHalfWidth = 15;       //Area where cursor turns into resizable (IDC_SIZEWE).
 	static constexpr auto iWidthBetweenTreeAndList = 1; //Width between tree and list after resizing.
 	static constexpr auto iMinTreeWidth = 100;          //Tree control minimum allowed width.
-	static const auto hCurResize = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
-	static const auto hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
-	const POINT pt { .x { GET_X_LPARAM(stMsg.lParam) }, .y { GET_Y_LPARAM(stMsg.lParam) } };
+	static const auto hCurResize = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
+	static const auto hCurArrow = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
+	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
 
-	CRect rcList;
-	m_pList->GetWindowRect(rcList);
+	const auto hWndList = wnd::CWnd::FromHandle(m_ListEx.GetHWND());
+	auto rcList = hWndList.GetWindowRect();
 	m_Wnd.ScreenToClient(rcList);
 
 	if (m_fLMDownResize) {
@@ -786,34 +789,34 @@ auto CHexDlgTemplMgr::OnMouseMove(const MSG& stMsg)->INT_PTR
 		rcTree.right = pt.x - iWidthBetweenTreeAndList;
 		rcList.left = pt.x;
 		if (rcTree.Width() >= iMinTreeWidth) {
-			auto hdwp = BeginDeferWindowPos(2); //Simultaneously resizing list and tree.
-			hdwp = DeferWindowPos(hdwp, m_WndTree, nullptr, rcTree.left, rcTree.top,
+			auto hdwp = ::BeginDeferWindowPos(2); //Simultaneously resizing list and tree.
+			hdwp = ::DeferWindowPos(hdwp, m_WndTree, nullptr, rcTree.left, rcTree.top,
 				rcTree.Width(), rcTree.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
-			hdwp = DeferWindowPos(hdwp, m_pList->m_hWnd, nullptr, rcList.left, rcList.top,
+			hdwp = ::DeferWindowPos(hdwp, hWndList, nullptr, rcList.left, rcList.top,
 				rcList.Width(), rcList.Height(), SWP_NOACTIVATE | SWP_NOZORDER);
-			EndDeferWindowPos(hdwp);
+			::EndDeferWindowPos(hdwp);
 		}
 	}
 	else {
 		if (const CRect rcSplitter(rcList.left - iResAreaHalfWidth, rcList.top, rcList.left + iResAreaHalfWidth, rcList.bottom);
 			rcSplitter.PtInRect(pt)) {
 			m_fCurInSplitter = true;
-			SetCursor(hCurResize);
+			::SetCursor(hCurResize);
 			m_Wnd.SetCapture();
 		}
 		else {
 			m_fCurInSplitter = false;
-			SetCursor(hCurArrow);
-			ReleaseCapture();
+			::SetCursor(hCurArrow);
+			::ReleaseCapture();
 		}
 	}
 
 	return TRUE;
 }
 
-auto CHexDlgTemplMgr::OnNotify(const MSG& stMsg)->INT_PTR
+auto CHexDlgTemplMgr::OnNotify(const MSG& msg)->INT_PTR
 {
-	const auto pNMHDR = reinterpret_cast<NMHDR*>(stMsg.lParam);
+	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
 	switch (pNMHDR->idFrom) {
 	case IDC_HEXCTRL_TEMPLMGR_LIST:
 		switch (pNMHDR->code) {
@@ -859,9 +862,9 @@ void CHexDlgTemplMgr::OnNotifyListDblClick(NMHDR* pNMHDR)
 	m_hTreeCurrParent = hItem;
 	m_WndTree.Expand(hItem, TVE_EXPAND);
 
-	m_pList->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
-	m_pList->SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()));
-	m_pList->RedrawWindow();
+	m_ListEx.SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
+	m_ListEx.SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()));
+	m_ListEx.RedrawWindow();
 	m_fListGuardEvent = false;
 }
 
@@ -878,12 +881,12 @@ void CHexDlgTemplMgr::OnNotifyListEditBegin(NMHDR* pNMHDR)
 
 void CHexDlgTemplMgr::OnNotifyListEnterPressed(NMHDR* /*pNMHDR*/)
 {
-	const auto uSelected = m_pList->GetSelectedCount();
+	const auto uSelected = m_ListEx.GetSelectedCount();
 	if (uSelected != 1)
 		return;
 
 	//Simulate DblClick in List with Enter key.
-	NMITEMACTIVATE nmii { .iItem = m_pList->GetSelectionMark() };
+	NMITEMACTIVATE nmii { .iItem = m_ListEx.GetSelectionMark() };
 	OnNotifyListDblClick(&nmii.hdr);
 }
 
@@ -1271,7 +1274,7 @@ void CHexDlgTemplMgr::OnNotifyTreeItemChanged(NMHDR* pNMHDR)
 
 	const auto pAppliedPrev = m_pAppliedCurr;
 	m_pAppliedCurr = GetAppliedFromItem(pItem->hItem);
-	m_pList->SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
+	m_ListEx.SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED); //Deselect all items.
 
 	if (m_WndTree.GetParentItem(pItem->hItem) == nullptr) { //Root item.
 		fRootNodeClick = true;
@@ -1308,7 +1311,7 @@ void CHexDlgTemplMgr::OnNotifyTreeItemChanged(NMHDR* pNMHDR)
 	//But only if Fields vector changes, or other applied template has been clicked.
 	if ((pVecCurrFields != m_pVecFieldsCurr) || (pAppliedPrev != m_pAppliedCurr)) {
 		m_pVecFieldsCurr = pVecCurrFields;
-		m_pList->SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()), LVSICF_NOSCROLL);
+		m_ListEx.SetItemCountEx(static_cast<int>(m_pVecFieldsCurr->size()), LVSICF_NOSCROLL);
 	}
 
 	UpdateStaticText();
@@ -1320,8 +1323,8 @@ void CHexDlgTemplMgr::OnNotifyTreeItemChanged(NMHDR* pNMHDR)
 			++iIndexHighlight;
 			hChild = m_WndTree.GetNextSiblingItem(hChild);
 		}
-		m_pList->SetItemState(iIndexHighlight, LVIS_SELECTED, LVIS_SELECTED);
-		m_pList->EnsureVisible(iIndexHighlight, FALSE);
+		m_ListEx.SetItemState(iIndexHighlight, LVIS_SELECTED, LVIS_SELECTED);
+		m_ListEx.EnsureVisible(iIndexHighlight, FALSE);
 	}
 
 	SetHexSelByField(pFieldCurr);
@@ -1349,20 +1352,20 @@ void CHexDlgTemplMgr::OnNotifyTreeRClick(NMHDR* /*pNMHDR*/)
 void CHexDlgTemplMgr::OnOK()
 {
 	const auto wndFocus = wnd::CWnd::GetFocus();
-	//When Enter is pressed anywhere in the dialog, and focus is on the m_pList,
+	//When Enter is pressed anywhere in the dialog, and focus is on the m_ListEx,
 	//we simulate pressing Enter in the list by sending WM_KEYDOWN/VK_RETURN to it.
-	if (wndFocus == m_pList->m_hWnd) {
-		m_pList->SendMessageW(WM_KEYDOWN, VK_RETURN);
+	if (const auto hWndList = m_ListEx.GetHWND(); wndFocus == hWndList) {
+		::SendMessageW(hWndList, WM_KEYDOWN, VK_RETURN, 0);
 	}
 	else if (wndFocus == m_WndEditOffset) { //Focus is on the "Offset" edit-box.
 		OnBnApply();
 	}
 }
 
-auto CHexDlgTemplMgr::OnSize(const MSG& stMsg)->INT_PTR
+auto CHexDlgTemplMgr::OnSize(const MSG& msg)->INT_PTR
 {
-	const auto iWidth = LOWORD(stMsg.lParam);
-	const auto iHeight = HIWORD(stMsg.lParam);
+	const auto iWidth = LOWORD(msg.lParam);
+	const auto iHeight = HIWORD(msg.lParam);
 	m_DynLayout.OnSize(iWidth, iHeight);
 	return TRUE;
 }
@@ -1419,7 +1422,7 @@ void CHexDlgTemplMgr::RandomizeTemplateColors(int iTemplateID)
 		};
 
 	lmbRndColors(pTemplate->vecFields);
-	m_pList->RedrawWindow();
+	m_ListEx.RedrawWindow();
 	RedrawHexCtrl();
 }
 
@@ -1441,8 +1444,8 @@ void CHexDlgTemplMgr::RemoveNodesWithTemplateID(int iTemplateID)
 			}
 
 			if (m_pAppliedCurr == pApplied) {
-				m_pList->SetItemCountEx(0);
-				m_pList->RedrawWindow();
+				m_ListEx.SetItemCountEx(0);
+				m_ListEx.RedrawWindow();
 				m_pAppliedCurr = nullptr;
 				m_pVecFieldsCurr = nullptr;
 				m_hTreeCurrParent = nullptr;
@@ -1464,8 +1467,8 @@ void CHexDlgTemplMgr::RemoveNodeWithAppliedID(int iAppliedID)
 		const auto pApplied = reinterpret_cast<PCTEMPLAPPLIED>(m_WndTree.GetItemData(hItem));
 		if (pApplied->iAppliedID == iAppliedID) {
 			if (m_pAppliedCurr == pApplied) {
-				m_pList->SetItemCountEx(0);
-				m_pList->RedrawWindow();
+				m_ListEx.SetItemCountEx(0);
+				m_ListEx.RedrawWindow();
 				m_pAppliedCurr = nullptr;
 				m_pVecFieldsCurr = nullptr;
 				m_hTreeCurrParent = nullptr;

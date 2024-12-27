@@ -6,6 +6,7 @@
 ****************************************************************************************/
 #pragma once
 #include "../../HexCtrl.h"
+#include <chrono>
 
 import HEXCTRL.HexUtility;
 import HEXCTRL.CHexDlgProgress;
@@ -20,7 +21,7 @@ namespace HEXCTRL::INTERNAL {
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
-		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 		void SearchNextPrev(bool fForward);
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowWindow(int iCmdShow);
@@ -75,7 +76,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsSelection()const;
 		[[nodiscard]] bool IsSmallSearch()const;
 		[[nodiscard]] bool IsWildcard()const;
-		auto OnActivate(const MSG& stMsg) -> INT_PTR;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnButtonSearchF();
 		void OnButtonSearchB();
 		void OnButtonFindAll();
@@ -86,13 +87,13 @@ namespace HEXCTRL::INTERNAL {
 		auto OnClose() -> INT_PTR;
 		void OnComboModeSelChange();
 		void OnComboTypeSelChange();
-		auto OnCommand(const MSG& stMsg) -> INT_PTR;
-		auto OnCtlClrStatic(const MSG& stMsg) -> INT_PTR;
+		auto OnCommand(const MSG& msg) -> INT_PTR;
+		auto OnCtlClrStatic(const MSG& msg) -> INT_PTR;
 		auto OnDestroy() -> INT_PTR;
-		auto OnDrawItem(const MSG& stMsg) -> INT_PTR;
-		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
-		auto OnMeasureItem(const MSG& stMsg) -> INT_PTR;
-		auto OnNotify(const MSG& stMsg) -> INT_PTR;
+		auto OnDrawItem(const MSG& msg) -> INT_PTR;
+		auto OnInitDialog(const MSG& msg) -> INT_PTR;
+		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
+		auto OnNotify(const MSG& msg) -> INT_PTR;
 		void OnNotifyListGetDispInfo(NMHDR *pNMHDR);
 		void OnNotifyListItemChanged(NMHDR *pNMHDR);
 		void OnNotifyListRClick(NMHDR *pNMHDR);
@@ -183,7 +184,7 @@ namespace HEXCTRL::INTERNAL {
 		IHexCtrl* m_pHexCtrl { };
 		ESearchMode m_eSearchMode { };
 		std::uint64_t m_u64Flags { };   //Data from SetDlgProperties.
-		LISTEX::IListExPtr m_pList { LISTEX::CreateListEx() };
+		LISTEX::CListEx m_ListEx;
 		ULONGLONG m_ullStartFrom { };   //"Start form" search offset.
 		ULONGLONG m_ullRngBegin { };
 		ULONGLONG m_ullRngEnd { };

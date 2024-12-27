@@ -24,14 +24,14 @@ namespace HEXCTRL::INTERNAL {
 		auto DoModal(HWND hWndParent) -> INT_PTR;
 		[[nodiscard]] bool IsCanceled()const;
 		void OnCancel();
-		[[nodiscard]] auto ProcessMsg(const MSG& stMsg) -> INT_PTR;
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 		void SetCount(ULONGLONG ullCount);
 		void SetCurrent(ULONGLONG ullCurr); //Set current data in the whole data diapason.
 	private:
-		auto OnCommand(const MSG& stMsg) -> INT_PTR;
-		auto OnCtlClrStatic(const MSG& stMsg) -> INT_PTR;
-		auto OnInitDialog(const MSG& stMsg) -> INT_PTR;
-		auto OnTimer(const MSG& stMsg) -> INT_PTR;
+		auto OnCommand(const MSG& msg) -> INT_PTR;
+		auto OnCtlClrStatic(const MSG& msg) -> INT_PTR;
+		auto OnInitDialog(const MSG& msg) -> INT_PTR;
+		auto OnTimer(const MSG& msg) -> INT_PTR;
 		auto OnClose() -> INT_PTR;
 	private:
 		static constexpr UINT_PTR m_uIDTCancelCheck { 0x1 };
@@ -73,14 +73,14 @@ void CHexDlgProgress::OnCancel()
 	m_fCancel = true;
 }
 
-auto CHexDlgProgress::ProcessMsg(const MSG& stMsg)->INT_PTR
+auto CHexDlgProgress::ProcessMsg(const MSG& msg)->INT_PTR
 {
-	switch (stMsg.message) {
+	switch (msg.message) {
 	case WM_CLOSE: return OnClose();
-	case WM_COMMAND: return OnCommand(stMsg);
-	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(stMsg);
-	case WM_INITDIALOG: return OnInitDialog(stMsg);
-	case WM_TIMER: return OnTimer(stMsg);
+	case WM_COMMAND: return OnCommand(msg);
+	case WM_CTLCOLORSTATIC: return OnCtlClrStatic(msg);
+	case WM_INITDIALOG: return OnInitDialog(msg);
+	case WM_TIMER: return OnTimer(msg);
 	default:
 		return 0;
 	}
@@ -105,9 +105,9 @@ auto CHexDlgProgress::OnClose()->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgProgress::OnCommand(const MSG& stMsg)->INT_PTR
+auto CHexDlgProgress::OnCommand(const MSG& msg)->INT_PTR
 {
-	const auto uCtrlID = LOWORD(stMsg.wParam);
+	const auto uCtrlID = LOWORD(msg.wParam);
 	switch (uCtrlID) {
 	case IDOK:
 	case IDCANCEL:
@@ -119,10 +119,10 @@ auto CHexDlgProgress::OnCommand(const MSG& stMsg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgProgress::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
+auto CHexDlgProgress::OnCtlClrStatic(const MSG& msg)->INT_PTR
 {
-	if (const auto hWndFrom = reinterpret_cast<HWND>(stMsg.lParam); hWndFrom == m_WndCount) {
-		const auto hDC = reinterpret_cast<HDC>(stMsg.wParam);
+	if (const auto hWndFrom = reinterpret_cast<HWND>(msg.lParam); hWndFrom == m_WndCount) {
+		const auto hDC = reinterpret_cast<HDC>(msg.wParam);
 		::SetTextColor(hDC, RGB(0, 200, 0));
 		::SetBkColor(hDC, ::GetSysColor(COLOR_3DFACE));
 		return reinterpret_cast<INT_PTR>(::GetSysColorBrush(COLOR_3DFACE));
@@ -131,9 +131,9 @@ auto CHexDlgProgress::OnCtlClrStatic(const MSG& stMsg)->INT_PTR
 	return FALSE; //Default handler.
 }
 
-auto CHexDlgProgress::OnInitDialog(const MSG& stMsg)->INT_PTR
+auto CHexDlgProgress::OnInitDialog(const MSG& msg)->INT_PTR
 {
-	m_Wnd.Attach(stMsg.hwnd);
+	m_Wnd.Attach(msg.hwnd);
 	m_stProgBar.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_CALLBACK_PROGBAR));
 
 	m_Wnd.SetWndText(m_wstrOperName.data());
@@ -154,9 +154,9 @@ auto CHexDlgProgress::OnInitDialog(const MSG& stMsg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgProgress::OnTimer(const MSG& stMsg)->INT_PTR
+auto CHexDlgProgress::OnTimer(const MSG& msg)->INT_PTR
 {
-	const auto nIDEvent = static_cast<UINT_PTR>(stMsg.wParam);
+	const auto nIDEvent = static_cast<UINT_PTR>(msg.wParam);
 	if (nIDEvent != m_uIDTCancelCheck)
 		return FALSE;
 
