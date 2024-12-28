@@ -1089,6 +1089,10 @@ namespace HEXCTRL::LISTEX {
 		int InsertColumn(int iCol, const LVCOLUMNW* pColumn, int iDataAlign, bool fEditable = false);
 		int InsertColumn(int iCol, LPCWSTR pwszName, int iFormat = LVCFMT_LEFT, int iWidth = -1,
 			int iSubItem = -1, int iDataAlign = LVCFMT_LEFT, bool fEditable = false);
+		int InsertItem(const LVITEMW* pItem)const;
+		int InsertItem(int iItem, LPCWSTR pwszName)const;
+		int InsertItem(int iItem, LPCWSTR pwszName, int iImage)const;
+		int InsertItem(UINT uMask, int iItem, LPCWSTR pwszName, UINT uState, UINT uStateMask, int iImage, LPARAM lParam)const;
 		[[nodiscard]] bool IsCreated()const;
 		[[nodiscard]] bool IsColumnSortable(int iColumn);
 		[[nodiscard]] auto MapIndexToID(UINT uIndex)const->UINT;
@@ -1110,6 +1114,7 @@ namespace HEXCTRL::LISTEX {
 		void SetHdrHeight(DWORD dwHeight);
 		void SetHdrImageList(HIMAGELIST pList);
 		auto SetImageList(HIMAGELIST hList, int iListType) -> HIMAGELIST;
+		bool SetItem(const LVITEMW* pItem)const;
 		void SetItemCountEx(int iCount, DWORD dwFlags = LVSICF_NOINVALIDATEALL)const;
 		bool SetItemState(int iItem, LVITEMW* pItem)const;
 		bool SetItemState(int iItem, UINT uState, UINT uStateMask)const;
@@ -1622,7 +1627,7 @@ bool CListEx::HitTest(LVHITTESTINFO* pHTI)const
 
 int CListEx::InsertColumn(int iCol, const LVCOLUMNW* pColumn)const
 {
-	return static_cast<int>(::SendMessageW(m_hWnd, LVM_INSERTCOLUMN, iCol, reinterpret_cast<LPARAM>(pColumn)));
+	return static_cast<int>(::SendMessageW(m_hWnd, LVM_INSERTCOLUMNW, iCol, reinterpret_cast<LPARAM>(pColumn)));
 }
 
 int CListEx::InsertColumn(int iCol, const LVCOLUMNW* pColumn, int iDataAlign, bool fEditable)
@@ -1674,6 +1679,33 @@ int CListEx::InsertColumn(int iCol, LPCWSTR pwszName, int iFormat, int iWidth, i
 	const LVCOLUMNW lvcol { .mask { LVCF_FMT | LVCF_WIDTH | LVCF_SUBITEM | LVCF_TEXT }, .fmt { iFormat },
 		.cx { iWidth }, .pszText { const_cast<LPWSTR>(pwszName) }, .iSubItem { iSubItem } };
 	return InsertColumn(iCol, &lvcol, iDataAlign, fEditable);
+}
+
+int CListEx::InsertItem(const LVITEMW* pItem)const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return -1;
+	}
+
+	return static_cast<int>(::SendMessageW(m_hWnd, LVM_INSERTITEMW, 0, reinterpret_cast<LPARAM>(pItem)));
+}
+
+int CListEx::InsertItem(int iItem, LPCWSTR pwszName)const
+{
+	return InsertItem(LVIF_TEXT, iItem, pwszName, 0, 0, 0, 0);
+}
+
+int CListEx::InsertItem(int iItem, LPCWSTR pwszName, int iImage)const
+{
+	return InsertItem(LVIF_TEXT | LVIF_IMAGE, iItem, pwszName, 0, 0, iImage, 0);
+}
+
+int CListEx::InsertItem(UINT uMask, int iItem, LPCWSTR pwszName, UINT uState, UINT uStateMask, int iImage, LPARAM lParam)const
+{
+	const LVITEMW item { .mask { uMask }, .iItem { iItem }, .state { uState }, .stateMask { uStateMask },
+		.pszText { const_cast<LPWSTR>(pwszName) }, .iImage { iImage }, .lParam { lParam } };
+	return InsertItem(&item);
 }
 
 bool CListEx::IsCreated()const
@@ -1840,6 +1872,16 @@ auto CListEx::SetImageList(HIMAGELIST hList, int iListType)->HIMAGELIST
 	}
 
 	return reinterpret_cast<HIMAGELIST>(::SendMessageW(m_hWnd, LVM_SETIMAGELIST, iListType, reinterpret_cast<LPARAM>(hList)));
+}
+
+bool CListEx::SetItem(const LVITEMW* pItem)const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	return ::SendMessageW(m_hWnd, LVM_SETITEMW, 0, reinterpret_cast<LPARAM>(pItem)) != 0;
 }
 
 void CListEx::SetItemCountEx(int iCount, DWORD dwFlags)const

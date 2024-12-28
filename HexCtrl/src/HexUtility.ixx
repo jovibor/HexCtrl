@@ -603,9 +603,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		CRect(RECT rc) { ::CopyRect(this, &rc); }
 		CRect(LPCRECT pRC) { ::CopyRect(this, pRC); }
 		CRect(POINT pt, SIZE size) { left = pt.x; right = left + size.cx; top = pt.y; bottom = top + size.cy; }
-		CRect(POINT topLeft, POINT botRight) {
-			left = topLeft.x; top = topLeft.y; right = botRight.x; bottom = botRight.y;
-		}
+		CRect(POINT topLeft, POINT botRight) { left = topLeft.x; top = topLeft.y; right = botRight.x; bottom = botRight.y; }
 		operator LPRECT() { return this; }
 		operator LPCRECT()const { return this; }
 		bool operator==(RECT rc)const { return ::EqualRect(this, &rc); }
@@ -704,9 +702,9 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 	public:
 		CWnd() = default;
 		CWnd(HWND hWnd) { Attach(hWnd); }
-		virtual ~CWnd() = default;
-		CWnd operator=(const CWnd&) = delete;
-		CWnd operator=(HWND) = delete;
+		~CWnd() = default;
+		CWnd& operator=(CWnd) = delete;
+		CWnd& operator=(HWND) = delete;
 		operator HWND()const { return m_hWnd; }
 		[[nodiscard]] bool operator==(const CWnd& rhs)const { return m_hWnd == rhs.m_hWnd; }
 		[[nodiscard]] bool operator==(HWND hWnd)const { return m_hWnd == hWnd; }

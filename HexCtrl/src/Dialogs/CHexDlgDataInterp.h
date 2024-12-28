@@ -7,16 +7,25 @@
 #pragma once
 #include "../../HexCtrl.h"
 #include <afxcontrolbars.h>
-#include <afxdialogex.h>
 
 import HEXCTRL.HexUtility;
 
 namespace HEXCTRL::INTERNAL {
-	constexpr auto WM_PROPGRIDCTRL_ONCHANGESELECTION = WM_USER + 0x1U; //Message to the parent, when new property is selected.
+	constexpr auto PROPGRID_MSG_CHANGESELECTION = 0x01U; //Notify codes for the parent.
+	constexpr auto PROPGRID_MSG_PROPDATACHANGED = 0x02U;
 	class CHexPropGridCtrl final : public CMFCPropertyGridCtrl {
 	private:
 		void OnChangeSelection(CMFCPropertyGridProperty* pNewProp, CMFCPropertyGridProperty* /*pOldProp*/)override {
-			GetParent()->SendMessageW(WM_PROPGRIDCTRL_ONCHANGESELECTION, GetDlgCtrlID(), reinterpret_cast<LPARAM>(pNewProp));
+			const auto uID = static_cast<UINT_PTR>(GetDlgCtrlID());
+			const NMHDR hdr { .hwndFrom { reinterpret_cast<HWND>(pNewProp) }, .idFrom { uID },
+				.code { PROPGRID_MSG_CHANGESELECTION } };
+			GetParent()->SendMessageW(WM_NOTIFY, uID, reinterpret_cast<LPARAM>(&hdr));
+		}
+		void OnPropertyChanged(CMFCPropertyGridProperty* pProp)const override {
+			const auto uID = static_cast<UINT_PTR>(GetDlgCtrlID());
+			const NMHDR hdr { .hwndFrom { reinterpret_cast<HWND>(pProp) }, .idFrom { uID },
+				.code { PROPGRID_MSG_PROPDATACHANGED } };
+			GetParent()->SendMessageW(WM_NOTIFY, uID, reinterpret_cast<LPARAM>(&hdr));
 		}
 		void OnSize(UINT /*f*/, int /*cx*/, int /*cy*/) {
 			EndEditItem();
@@ -26,17 +35,20 @@ namespace HEXCTRL::INTERNAL {
 	};
 
 	//CHexDlgDataInterp.
-	class CHexDlgDataInterp final : public CDialogEx {
+	class CHexDlgDataInterp final {
 	public:
 		CHexDlgDataInterp();
 		~CHexDlgDataInterp();
+		void CreateDlg();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		[[nodiscard]] auto GetHglDataSize()const->DWORD;
+		[[nodiscard]] auto GetHWND()const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl);
 		[[nodiscard]] bool HasHighlight()const;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 		void SetDlgProperties(std::uint64_t u64Flags);
-		BOOL ShowWindow(int nCmdShow);
+		void ShowWindow(int iCmdShow);
 		void UpdateData();
 	private:
 		union UMSDOSDateTime; //Forward declarations.
@@ -45,22 +57,24 @@ namespace HEXCTRL::INTERNAL {
 		enum class EName : std::uint8_t;
 		enum class EDataSize : std::uint8_t;
 		struct GRIDDATA;
-		void DoDataExchange(CDataExchange* pDX)override;
 		[[nodiscard]] auto GetGridData(EName eName)const->const GRIDDATA*;
 		[[nodiscard]] auto GetGridData(EName eName) -> GRIDDATA*; //Non-const overload.
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsNoEsc()const;
 		[[nodiscard]] bool IsShowAsHex()const;
-		afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
-		void OnCancel()override;
-		afx_msg void OnCheckHex();
-		afx_msg void OnCheckBigEndian();
-		afx_msg void OnClose();
-		afx_msg void OnDestroy();
-		BOOL OnInitDialog()override;
-		void OnOK()override;
-		auto OnPropertyDataChanged(WPARAM wParam, LPARAM lParam) -> LRESULT;
-		auto OnPropertySelected(WPARAM wParam, LPARAM lParam) -> LRESULT;
+		auto OnActivate(const MSG& msg) -> INT_PTR;
+		void OnCancel();
+		void OnCheckHex();
+		void OnCheckBigEndian();
+		auto OnClose() -> INT_PTR;
+		auto OnCommand(const MSG& msg) -> INT_PTR;
+		auto OnDestroy() -> INT_PTR;
+		auto OnInitDialog(const MSG& msg) -> INT_PTR;
+		auto OnNotify(const MSG& msg) -> INT_PTR;
+		void OnOK();
+		auto OnNotifyPropDataChanged(NMHDR* pNMHDR) -> INT_PTR;
+		auto OnNotifyPropSelected(NMHDR* pNMHDR) -> INT_PTR;
+		auto OnSize(const MSG& msg) -> INT_PTR;
 		void RedrawHexCtrl()const;
 		[[nodiscard]] bool SetDataBinary(std::wstring_view wsv)const;
 		template<typename T> requires TSize1248<T>
@@ -98,13 +112,14 @@ namespace HEXCTRL::INTERNAL {
 		void ShowValueSYSTEMTIME(SYSTEMTIME stSysTime)const;
 		void ShowValueGUID(GUID stGUID)const;
 		void ShowValueGUIDTIME(GUID stGUID)const;
-		DECLARE_MESSAGE_MAP();
 	private:
+		wnd::CWnd m_Wnd;              //Main window.
+		wnd::CWndBtn m_WndBtnHex;     //Check-box "Hex numbers".
+		wnd::CWndBtn m_WndBtnBE;      //Check-box "Big endian".
+		wnd::CDynLayout m_DynLayout;
 		std::vector<GRIDDATA> m_vecGrid;
 		IHexCtrl* m_pHexCtrl { };
 		CHexPropGridCtrl m_gridCtrl;
-		CButton m_btnHex;             //Check-box "Hex numbers".
-		CButton m_btnBE;              //Check-box "Big endian".
 		ULONGLONG m_ullOffset { };
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 		DWORD m_dwHglDataSize { };    //Size of the data to highlight in the HexCtrl.

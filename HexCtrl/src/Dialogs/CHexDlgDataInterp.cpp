@@ -65,32 +65,31 @@ BEGIN_MESSAGE_MAP(CHexPropGridCtrl, CMFCPropertyGridCtrl)
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
-BEGIN_MESSAGE_MAP(CHexDlgDataInterp, CDialogEx)
-	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_HEX, &CHexDlgDataInterp::OnCheckHex)
-	ON_BN_CLICKED(IDC_HEXCTRL_DATAINTERP_CHK_BE, &CHexDlgDataInterp::OnCheckBigEndian)
-	ON_MESSAGE(WM_PROPGRIDCTRL_ONCHANGESELECTION, &CHexDlgDataInterp::OnPropertySelected)
-	ON_REGISTERED_MESSAGE(AFX_WM_PROPERTY_CHANGED, &CHexDlgDataInterp::OnPropertyDataChanged)
-	ON_WM_ACTIVATE()
-	ON_WM_CLOSE()
-	ON_WM_DESTROY()
-	ON_WM_SHOWWINDOW()
-END_MESSAGE_MAP()
-
 CHexDlgDataInterp::CHexDlgDataInterp() = default;
 CHexDlgDataInterp::~CHexDlgDataInterp() = default;
 
+void CHexDlgDataInterp::CreateDlg()
+{
+	//m_Wnd is set in the OnInitDialog().
+	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_DATAINTERP),
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgWndProc<CHexDlgDataInterp>, reinterpret_cast<LPARAM>(this));
+		hWnd == nullptr) {
+		DBG_REPORT(L"CreateDialogParamW failed.");
+	}
+}
+
 auto CHexDlgDataInterp::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
-	if (!IsWindow(m_hWnd)) {
+	if (!m_Wnd.IsWindow()) {
 		return { };
 	}
 
 	using enum EHexDlgItem;
 	switch (eItem) {
 	case DATAINTERP_CHK_HEX:
-		return m_btnHex;
+		return m_WndBtnHex;
 	case DATAINTERP_CHK_BE:
-		return m_btnBE;
+		return m_WndBtnBE;
 	default:
 		return { };
 	}
@@ -99,6 +98,11 @@ auto CHexDlgDataInterp::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 auto CHexDlgDataInterp::GetHglDataSize()const->DWORD
 {
 	return m_dwHglDataSize;
+}
+
+auto CHexDlgDataInterp::GetHWND()const->HWND
+{
+	return m_Wnd;
 }
 
 void CHexDlgDataInterp::Initialize(IHexCtrl* pHexCtrl)
@@ -117,7 +121,7 @@ bool CHexDlgDataInterp::HasHighlight()const
 
 bool CHexDlgDataInterp::PreTranslateMsg(MSG* pMsg)
 {
-	if (m_hWnd == nullptr)
+	if (m_Wnd.IsNull())
 		return false;
 
 	//Check first if a message is for any of m_gridCtrl's child window (CMFCPropertyGridProperty),
@@ -126,9 +130,22 @@ bool CHexDlgDataInterp::PreTranslateMsg(MSG* pMsg)
 		if (m_gridCtrl.PreTranslateMessage(pMsg) != FALSE) { return true; }
 	}
 
-	if (::IsDialogMessageW(m_hWnd, pMsg) != FALSE) { return true; }
+	return m_Wnd.IsDlgMessage(pMsg);
+}
 
-	return false;
+auto CHexDlgDataInterp::ProcessMsg(const MSG& msg)->INT_PTR
+{
+	switch (msg.message) {
+	case WM_ACTIVATE: return OnActivate(msg);
+	case WM_COMMAND: return OnCommand(msg);
+	case WM_CLOSE: return OnClose();
+	case WM_DESTROY: return OnDestroy();
+	case WM_INITDIALOG: return OnInitDialog(msg);
+	case WM_NOTIFY: return OnNotify(msg);
+	case WM_SIZE: return OnSize(msg);
+	default:
+		return 0;
+	}
 }
 
 void CHexDlgDataInterp::SetDlgProperties(std::uint64_t u64Flags)
@@ -136,21 +153,19 @@ void CHexDlgDataInterp::SetDlgProperties(std::uint64_t u64Flags)
 	m_u64Flags = u64Flags;
 }
 
-BOOL CHexDlgDataInterp::ShowWindow(int nCmdShow)
+void CHexDlgDataInterp::ShowWindow(int iCmdShow)
 {
-	if (!IsWindow(m_hWnd)) {
-		Create(IDD_HEXCTRL_DATAINTERP, CWnd::FromHandle(m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN)));
+	if (!m_Wnd.IsWindow()) {
+		CreateDlg();
 	}
 
-	const auto ret = CDialogEx::ShowWindow(nCmdShow);
+	m_Wnd.ShowWindow(iCmdShow);
 	UpdateData();
-
-	return ret;
 }
 
 void CHexDlgDataInterp::UpdateData()
 {
-	if (!::IsWindow(m_hWnd) || !::IsWindowVisible(m_hWnd)) {
+	if (!m_Wnd.IsWindow() || !m_Wnd.IsWindowVisible()) {
 		return;
 	}
 
@@ -310,17 +325,9 @@ void CHexDlgDataInterp::UpdateData()
 
 //Private methods.
 
-void CHexDlgDataInterp::DoDataExchange(CDataExchange* pDX)
-{
-	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_GRID, m_gridCtrl);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_CHK_HEX, m_btnHex);
-	DDX_Control(pDX, IDC_HEXCTRL_DATAINTERP_CHK_BE, m_btnBE);
-}
-
 auto CHexDlgDataInterp::GetGridData(EName eName)const->const GRIDDATA*
 {
-	return &*std::find_if(m_vecGrid.begin(), m_vecGrid.end(), [=](const GRIDDATA& refData) {
+	return &*std::find_if(m_vecGrid.cbegin(), m_vecGrid.cend(), [=](const GRIDDATA& refData) {
 		return refData.eName == eName; });
 }
 
@@ -332,7 +339,7 @@ auto CHexDlgDataInterp::GetGridData(EName eName)->GRIDDATA*
 
 bool CHexDlgDataInterp::IsBigEndian()const
 {
-	return m_btnBE.GetCheck() == BST_CHECKED;
+	return m_WndBtnBE.IsChecked();
 }
 
 bool CHexDlgDataInterp::IsNoEsc()const
@@ -342,20 +349,21 @@ bool CHexDlgDataInterp::IsNoEsc()const
 
 bool CHexDlgDataInterp::IsShowAsHex()const
 {
-	return m_btnHex.GetCheck() == BST_CHECKED;
+	return m_WndBtnHex.IsChecked();
 }
 
-void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+auto CHexDlgDataInterp::OnActivate(const MSG& msg)->INT_PTR
 {
 	if (!m_pHexCtrl->IsCreated())
-		return;
+		return FALSE;
 
+	const auto nState = LOWORD(msg.wParam);
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
 		const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
 		m_dwDateFormat = dwFormat;
 		m_wchDateSepar = wchSepar;
 		const auto wstrTitle = L"Date/Time format is: " + GetDateFormatString(m_dwDateFormat, m_wchDateSepar);
-		SetWindowTextW(wstrTitle.data()); //Update dialog title to reflect current date format.
+		m_Wnd.SetWndText(wstrTitle); //Update dialog title to reflect current date format.
 
 		if (m_pHexCtrl->IsDataSet()) {
 			UpdateData();
@@ -366,7 +374,7 @@ void CHexDlgDataInterp::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized
 		RedrawHexCtrl();
 	}
 
-	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
+	return FALSE; //Default handler.
 }
 
 void CHexDlgDataInterp::OnCancel()
@@ -374,7 +382,7 @@ void CHexDlgDataInterp::OnCancel()
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
-	CDialogEx::OnCancel();
+	ShowWindow(SW_HIDE);
 }
 
 void CHexDlgDataInterp::OnCheckHex()
@@ -387,26 +395,48 @@ void CHexDlgDataInterp::OnCheckBigEndian()
 	UpdateData();
 }
 
-void CHexDlgDataInterp::OnClose()
+auto CHexDlgDataInterp::OnClose()->INT_PTR
 {
-	EndDialog(IDCANCEL);
+	ShowWindow(SW_HIDE);
+	return TRUE;
 }
 
-void CHexDlgDataInterp::OnDestroy()
+auto CHexDlgDataInterp::OnCommand(const MSG& msg)->INT_PTR
 {
-	CDialogEx::OnDestroy();
+	const auto uCtrlID = LOWORD(msg.wParam);
+	const auto uCode = HIWORD(msg.wParam);   //Control code, zero for menu.
 
+	if (uCode != BN_CLICKED) { return FALSE; }
+	switch (uCtrlID) {
+	case IDOK: OnOK(); break;
+	case IDCANCEL: OnCancel(); break;
+	case IDC_HEXCTRL_DATAINTERP_CHK_HEX: OnCheckHex(); break;
+	case IDC_HEXCTRL_DATAINTERP_CHK_BE: OnCheckBigEndian(); break;
+	default:
+		return FALSE;
+	}
+	return TRUE;
+}
+
+auto CHexDlgDataInterp::OnDestroy()->INT_PTR
+{
 	m_vecGrid.clear();
 	m_u64Flags = { };
 	m_pHexCtrl = nullptr;
+	m_DynLayout.RemoveAll();
+
+	return TRUE;
 }
 
-BOOL CHexDlgDataInterp::OnInitDialog()
+auto CHexDlgDataInterp::OnInitDialog(const MSG& msg)->INT_PTR
 {
-	CDialogEx::OnInitDialog();
-
-	m_btnHex.SetCheck(BST_CHECKED);
-	m_btnBE.SetCheck(BST_UNCHECKED);
+	m_Wnd.Attach(msg.hwnd);
+	m_WndBtnHex.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX));
+	m_WndBtnBE.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_DATAINTERP_CHK_BE));
+	m_WndBtnHex.SetCheck(true);
+	m_WndBtnBE.SetCheck(false);
+	m_gridCtrl.SubclassDlgItem(IDC_HEXCTRL_DATAINTERP_GRID, CWnd::FromHandle(m_Wnd));
+	m_gridCtrl.SetVSDotNetLook();
 
 	using enum EGroup; using enum EName; using enum EDataSize;
 	m_vecGrid.emplace_back(new CMFCPropertyGridProperty(L"Binary:", L"0"), GR_BINARY, NAME_BINARY, SIZE_BYTE);
@@ -489,25 +519,34 @@ BOOL CHexDlgDataInterp::OnInitDialog()
 	}
 	m_gridCtrl.AddProperty(pMisc);
 
-	if (const auto pDL = GetDynamicLayout(); pDL != nullptr) {
-		pDL->SetMinSize({ 0, 0 });
+	m_DynLayout.SetHost(m_Wnd);
+	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_GRID, wnd::CDynLayout::MoveNone(), wnd::CDynLayout::SizeHorzAndVert(100, 100));
+	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX, wnd::CDynLayout::MoveVert(100), wnd::CDynLayout::SizeNone());
+	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_CHK_BE, wnd::CDynLayout::MoveVert(100), wnd::CDynLayout::SizeNone());
+	m_DynLayout.Enable(true);
+
+	return TRUE;
+}
+
+auto CHexDlgDataInterp::OnNotify(const MSG& msg)->INT_PTR
+{
+	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
+	switch (pNMHDR->idFrom) {
+	case IDC_HEXCTRL_DATAINTERP_GRID:
+		switch (pNMHDR->code) {
+		case PROPGRID_MSG_CHANGESELECTION: return OnNotifyPropSelected(pNMHDR);
+		case PROPGRID_MSG_PROPDATACHANGED: return OnNotifyPropDataChanged(pNMHDR);
+		default: break;
+		}
+	default: break;
 	}
 
 	return TRUE;
 }
 
-void CHexDlgDataInterp::OnOK()
+auto CHexDlgDataInterp::OnNotifyPropDataChanged(NMHDR* pNMHDR)->INT_PTR
 {
-	//Just an empty handler to prevent Dialog closing on Enter key.
-	//SetDefID() doesn't always work for no particular reason.
-}
-
-auto CHexDlgDataInterp::OnPropertyDataChanged(WPARAM wParam, LPARAM lParam)->LRESULT
-{
-	if (wParam != IDC_HEXCTRL_DATAINTERP_GRID)
-		return FALSE;
-
-	const auto pPropNew = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
+	const auto pPropNew = reinterpret_cast<CMFCPropertyGridProperty*>(pNMHDR->hwndFrom);
 	if (!m_pHexCtrl->IsCreated() || !m_pHexCtrl->IsDataSet() || !m_pHexCtrl->IsMutable() || pPropNew == nullptr)
 		return TRUE;
 
@@ -590,7 +629,7 @@ auto CHexDlgDataInterp::OnPropertyDataChanged(WPARAM wParam, LPARAM lParam)->LRE
 	};
 
 	if (!fSuccess) {
-		MessageBoxW(L"Wrong number format or out of range.", L"Data error...", MB_ICONERROR);
+		::MessageBoxW(m_Wnd, L"Wrong number format or out of range.", L"Data error...", MB_ICONERROR);
 	}
 	else {
 		RedrawHexCtrl();
@@ -601,12 +640,9 @@ auto CHexDlgDataInterp::OnPropertyDataChanged(WPARAM wParam, LPARAM lParam)->LRE
 	return TRUE;
 }
 
-auto CHexDlgDataInterp::OnPropertySelected(WPARAM wParam, LPARAM lParam)->LRESULT
+auto CHexDlgDataInterp::OnNotifyPropSelected(NMHDR* pNMHDR)->INT_PTR
 {
-	if (wParam != IDC_HEXCTRL_DATAINTERP_GRID)
-		return FALSE;
-
-	const auto pProp = reinterpret_cast<CMFCPropertyGridProperty*>(lParam);
+	const auto pProp = reinterpret_cast<CMFCPropertyGridProperty*>(pNMHDR->hwndFrom);
 	const auto itGrid = std::find_if(m_vecGrid.begin(), m_vecGrid.end(),
 		[pProp](const GRIDDATA& refData) { return refData.pProp == pProp; });
 	if (itGrid == m_vecGrid.end())
@@ -647,6 +683,20 @@ auto CHexDlgDataInterp::OnPropertySelected(WPARAM wParam, LPARAM lParam)->LRESUL
 	m_dwHglDataSize = ui8DataSize;
 	RedrawHexCtrl();
 
+	return TRUE;
+}
+
+void CHexDlgDataInterp::OnOK()
+{
+	//Just an empty handler to prevent Dialog closing on Enter key.
+	//SetDefID() doesn't always work for no particular reason.
+}
+
+auto CHexDlgDataInterp::OnSize(const MSG& msg)->INT_PTR
+{
+	const auto iWidth = LOWORD(msg.lParam);
+	const auto iHeight = HIWORD(msg.lParam);
+	m_DynLayout.OnSize(iWidth, iHeight);
 	return TRUE;
 }
 
