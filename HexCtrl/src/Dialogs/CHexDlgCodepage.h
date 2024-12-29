@@ -15,7 +15,7 @@ namespace HEXCTRL::INTERNAL {
 		void AddCP(std::wstring_view wsv);
 		void CreateDlg();
 		[[nodiscard]] auto GetHWND()const->HWND;
-		void Initialize(IHexCtrl* pHexCtrl);
+		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 		void SetDlgProperties(std::uint64_t u64Flags);
@@ -45,6 +45,7 @@ namespace HEXCTRL::INTERNAL {
 			UINT uMaxChars { };
 		};
 		inline static CHexDlgCodepage* m_pThis { };
+		HINSTANCE m_hInstRes { };
 		wnd::CWnd m_Wnd;              //Main window.
 		wnd::CDynLayout m_DynLayout;
 		IHexCtrl* m_pHexCtrl { };

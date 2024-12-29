@@ -37,7 +37,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool HasCurrent()const;
 		[[nodiscard]] bool HasTemplates()const;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD; //Template hittest by offset.
-		void Initialize(IHexCtrl* pHexCtrl);
+		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool IsTooltips()const;
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
@@ -133,6 +133,7 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr auto m_iIDListColData { 4 };  //Data.
 		static constexpr auto m_iIDListColDescr { 6 }; //Description.
 		static constexpr auto m_iIDListColClrs { 7 };  //Colors.
+		HINSTANCE m_hInstRes { };
 		wnd::CWnd m_Wnd;               //Main window.
 		wnd::CWnd m_WndStatOffset;     //Static text "Template offset:".
 		wnd::CWnd m_WndStatSize;       //Static text Template size:".

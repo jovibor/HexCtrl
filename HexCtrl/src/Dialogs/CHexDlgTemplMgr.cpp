@@ -109,8 +109,8 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 void CHexDlgTemplMgr::CreateDlg()
 {
 	//m_Wnd is set in the OnInitDialog().
-	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_TEMPLMGR),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgWndProc<CHexDlgTemplMgr>, reinterpret_cast<LPARAM>(this));
+	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_TEMPLMGR),
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgTemplMgr>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		DBG_REPORT(L"CreateDialogParamW failed.");
 	}
@@ -230,13 +230,15 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD
 	return lmbFind(vecFields);
 }
 
-void CHexDlgTemplMgr::Initialize(IHexCtrl* pHexCtrl)
+void CHexDlgTemplMgr::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
-	assert(pHexCtrl);
-	if (pHexCtrl == nullptr)
+	if (pHexCtrl == nullptr || hInstRes == nullptr) {
+		DBG_REPORT(L"Initialize == nullptr");
 		return;
+	}
 
 	m_pHexCtrl = pHexCtrl;
+	m_hInstRes = hInstRes;
 }
 
 bool CHexDlgTemplMgr::IsTooltips()const
@@ -594,7 +596,7 @@ auto CHexDlgTemplMgr::OnCommand(const MSG& msg)->INT_PTR
 		{
 			const auto fChecked = m_MenuHdr.IsChecked(uCtrlID);
 			m_ListEx.HideColumn(uCtrlID - static_cast<int>(IDM_LIST_HDR_TYPE), fChecked);
-			m_MenuHdr.CheckItem(uCtrlID, !fChecked);
+			m_MenuHdr.CheckMenuItem(uCtrlID, !fChecked);
 		}
 		break;
 		default: return FALSE;
@@ -627,8 +629,8 @@ auto CHexDlgTemplMgr::OnDestroy()->INT_PTR
 	m_pHexCtrl = nullptr;
 	m_u64Flags = { };
 	m_DynLayout.RemoveAll();
-	DeleteObject(m_hBmpMin);
-	DeleteObject(m_hBmpMax);
+	::DeleteObject(m_hBmpMin);
+	::DeleteObject(m_hBmpMax);
 
 	return TRUE;
 }
@@ -672,21 +674,21 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	using enum EMenuID;
 	m_MenuHdr.CreatePopupMenu();
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_TYPE), L"Type");
-	m_MenuHdr.CheckItem(static_cast<int>(IDM_LIST_HDR_TYPE), true);
+	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_TYPE), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_NAME), L"Name");
-	m_MenuHdr.CheckItem(static_cast<int>(IDM_LIST_HDR_NAME), true);
+	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_NAME), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_OFFSET), L"Offset");
-	m_MenuHdr.CheckItem(static_cast<int>(IDM_LIST_HDR_OFFSET), true);
+	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_OFFSET), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_SIZE), L"Size");
-	m_MenuHdr.CheckItem(static_cast<int>(IDM_LIST_HDR_SIZE), true);
+	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_SIZE), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_DATA), L"Data");
-	m_MenuHdr.CheckItem(static_cast<int>(IDM_LIST_HDR_DATA), true);
+	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_DATA), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_ENDIANNESS), L"Endianness");
-	m_MenuHdr.CheckItem(static_cast<int>(IDM_LIST_HDR_ENDIANNESS), true);
+	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_ENDIANNESS), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_DESCRIPTION), L"Description");
-	m_MenuHdr.CheckItem(static_cast<int>(IDM_LIST_HDR_DESCRIPTION), true);
+	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_DESCRIPTION), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_COLORS), L"Colors");
-	m_MenuHdr.CheckItem(static_cast<int>(IDM_LIST_HDR_COLORS), true);
+	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_COLORS), true);
 
 	m_MenuTree.CreatePopupMenu();
 	m_MenuTree.AppendString(static_cast<UINT_PTR>(IDM_TREE_DISAPPLY), L"Disapply template");
@@ -716,25 +718,25 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	}
 
 	const auto rcWnd = m_WndBtnMin.GetWindowRect();
-	m_hBmpMin = static_cast<HBITMAP>(LoadImageW(wnd::GetHinstance(),
-		MAKEINTRESOURCEW(IDB_HEXCTRL_SCROLL_ARROW), IMAGE_BITMAP, rcWnd.Width(), rcWnd.Width(), 0));
+	m_hBmpMin = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_SCROLL_ARROW),
+		IMAGE_BITMAP, rcWnd.Width(), rcWnd.Width(), 0));
 
 	//Flipping m_hBmpMin bits vertically and creating m_hBmpMax bitmap.
 	BITMAP stBMP { };
-	GetObjectW(m_hBmpMin, sizeof(BITMAP), &stBMP); //stBMP.bmBits is nullptr here.
+	::GetObjectW(m_hBmpMin, sizeof(BITMAP), &stBMP); //stBMP.bmBits is nullptr here.
 	const auto dwWidth = static_cast<DWORD>(stBMP.bmWidth);
 	const auto dwHeight = static_cast<DWORD>(stBMP.bmHeight);
 	const auto dwPixels = dwWidth * dwHeight;
 	const auto dwBytesBmp = stBMP.bmWidthBytes * stBMP.bmHeight;
 	const auto pPixelsOrig = std::make_unique<COLORREF[]>(dwPixels);
-	GetBitmapBits(m_hBmpMin, dwBytesBmp, pPixelsOrig.get());
+	::GetBitmapBits(m_hBmpMin, dwBytesBmp, pPixelsOrig.get());
 	for (auto itWidth = 0UL; itWidth < dwWidth; ++itWidth) { //Flip matrix' columns (flip vert).
 		for (auto itHeight = 0UL, itHeightBack = dwHeight - 1; itHeight < itHeightBack; ++itHeight, --itHeightBack) {
 			std::swap(pPixelsOrig[(itHeight * dwHeight) + itWidth], pPixelsOrig[(itHeightBack * dwWidth) + itWidth]);
 		}
 	}
-	m_hBmpMax = CreateBitmapIndirect(&stBMP);
-	SetBitmapBits(m_hBmpMax, dwBytesBmp, pPixelsOrig.get());
+	m_hBmpMax = ::CreateBitmapIndirect(&stBMP);
+	::SetBitmapBits(m_hBmpMax, dwBytesBmp, pPixelsOrig.get());
 	m_WndBtnMin.SetBitmap(m_hBmpMin); //Set the min arrow bitmap to the min-max checkbox.
 
 	return TRUE;
@@ -754,7 +756,7 @@ auto CHexDlgTemplMgr::OnLButtonDown(const MSG& /*stMsg*/)->INT_PTR
 auto CHexDlgTemplMgr::OnLButtonUp(const MSG& /*stMsg*/)->INT_PTR
 {
 	m_fLMDownResize = false;
-	ReleaseCapture();
+	::ReleaseCapture();
 	m_DynLayout.Enable(true);
 
 	return TRUE;
@@ -1110,7 +1112,7 @@ void CHexDlgTemplMgr::OnNotifyListHdrRClick(NMHDR* /*pNMHDR*/)
 {
 	CPoint pt;
 	GetCursorPos(&pt);
-	m_MenuHdr.TrackPopup(pt.x, pt.y, m_Wnd);
+	m_MenuHdr.TrackPopupMenu(pt.x, pt.y, m_Wnd);
 }
 
 void CHexDlgTemplMgr::OnNotifyListItemChanged(NMHDR* pNMHDR)
@@ -1344,9 +1346,9 @@ void CHexDlgTemplMgr::OnNotifyTreeRClick(NMHDR* /*pNMHDR*/)
 	if (hTreeItem != nullptr) {
 		m_WndTree.SelectItem(hTreeItem);
 	}
-	m_MenuTree.EnableItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLY), fHasApplied && fHitTest);
-	m_MenuTree.EnableItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLYALL), fHasApplied);
-	m_MenuTree.TrackPopup(pt.x, pt.y, m_Wnd);
+	m_MenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLY), fHasApplied && fHitTest);
+	m_MenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLYALL), fHasApplied);
+	m_MenuTree.TrackPopupMenu(pt.x, pt.y, m_Wnd);
 }
 
 void CHexDlgTemplMgr::OnOK()

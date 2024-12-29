@@ -65,7 +65,29 @@ BOOL CMFCDialogDLLDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
-	m_pHexDlg->CreateDialogCtrl(IDC_MY_HEX, m_hWnd);
+#ifdef _M_IX86
+#ifdef _DEBUG
+#define HEXCTRL_DLL(x) x"x86D.dll"
+#else //^^^ _DEBUG / vvv !_DEBUG
+#define HEXCTRL_DLL(x) x"x86.dll"
+#endif //^^^ !_DEBUG
+#elif defined(_M_X64) //^^^ _M_IX86 / vvv _M_X64
+#ifdef _DEBUG
+#define HEXCTRL_DLL(x) x"x64D.dll"
+#else //^^^ _DEBUG / vvv !_DEBUG
+#define HEXCTRL_DLL(x) x"x64.dll"
+#endif //^^^ !_DEBUG
+#elif defined(_M_ARM64) //^^^ _M_X64 / vvv _M_ARM64
+#ifdef _DEBUG
+#define HEXCTRL_DLL(x) x"ARM64D.dll"
+#else //^^^ _DEBUG / vvv !_DEBUG
+#define HEXCTRL_DLL(x) x"ARM64.dll"
+#endif //^^^ _DEBUG
+#endif //^^^ _M_ARM64
+
+	const auto hInsRes = ::GetModuleHandleW(HEXCTRL_DLL(L"HexCtrl"));
+	HEXCTRL::HEXCREATE hcs { .hInstRes { hInsRes }, .hWndParent { m_hWnd }, .uID { IDC_MY_HEX }, .fCustom { true } };
+	m_pHexDlg->Create(hcs);
 	LoadTemplates(&*m_pHexDlg);
 
 	if (const auto pDL = GetDynamicLayout(); pDL != nullptr) {

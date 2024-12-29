@@ -65,8 +65,8 @@ void CHexDlgSearch::ClearData()
 void CHexDlgSearch::CreateDlg()
 {
 	//m_Wnd is set in the OnInitDialog().
-	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_SEARCH),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgWndProc<CHexDlgSearch>, reinterpret_cast<LPARAM>(this));
+	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_SEARCH),
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgSearch>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		DBG_REPORT(L"CreateDialogParamW failed.");
 	}
@@ -104,13 +104,15 @@ auto CHexDlgSearch::GetHWND()const->HWND
 	return m_Wnd;
 }
 
-void CHexDlgSearch::Initialize(IHexCtrl* pHexCtrl)
+void CHexDlgSearch::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
-	assert(pHexCtrl);
-	if (pHexCtrl == nullptr)
+	if (pHexCtrl == nullptr || hInstRes == nullptr) {
+		DBG_REPORT(L"Initialize == nullptr");
 		return;
+	}
 
 	m_pHexCtrl = pHexCtrl;
+	m_hInstRes = hInstRes;
 }
 
 bool CHexDlgSearch::IsSearchAvail()const
@@ -328,7 +330,7 @@ void CHexDlgSearch::FindAll()
 			dlgProg.OnCancel();
 			};
 		std::thread thrd(lmbFindAllThread);
-		dlgProg.DoModal(m_Wnd);
+		dlgProg.DoModal(m_Wnd, m_hInstRes);
 		thrd.join();
 	}
 
@@ -358,7 +360,7 @@ void CHexDlgSearch::FindForward()
 				dlgProg.OnCancel();
 				};
 			std::thread thrd(lmbWrapper);
-			dlgProg.DoModal(m_Wnd);
+			dlgProg.DoModal(m_Wnd, m_hInstRes);
 			thrd.join();
 		}
 		};
@@ -401,7 +403,7 @@ void CHexDlgSearch::FindBackward()
 				dlgProg.OnCancel();
 				};
 			std::thread thrd(lmbWrapper);
-			dlgProg.DoModal(m_Wnd);
+			dlgProg.DoModal(m_Wnd, m_hInstRes);
 			thrd.join();
 		}
 		};
@@ -1135,13 +1137,13 @@ void CHexDlgSearch::OnNotifyListItemChanged(NMHDR* pNMHDR)
 void CHexDlgSearch::OnNotifyListRClick(NMHDR* /*pNMHDR*/)
 {
 	const auto fEnabled { m_ListEx.GetItemCount() > 0 };
-	m_MenuList.EnableItem(static_cast<UINT>(EMenuID::IDM_SEARCH_ADDBKM), fEnabled);
-	m_MenuList.EnableItem(static_cast<UINT>(EMenuID::IDM_SEARCH_SELECTALL), fEnabled);
-	m_MenuList.EnableItem(static_cast<UINT>(EMenuID::IDM_SEARCH_CLEARALL), fEnabled);
+	m_MenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_SEARCH_ADDBKM), fEnabled);
+	m_MenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_SEARCH_SELECTALL), fEnabled);
+	m_MenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_SEARCH_CLEARALL), fEnabled);
 
 	POINT pt;
 	GetCursorPos(&pt);
-	m_MenuList.TrackPopup(pt.x, pt.y, m_Wnd);
+	m_MenuList.TrackPopupMenu(pt.x, pt.y, m_Wnd);
 }
 
 void CHexDlgSearch::OnOK()
@@ -1660,7 +1662,7 @@ void CHexDlgSearch::ReplaceAll()
 			};
 
 		std::thread thrd(lmbReplaceAllThread);
-		dlgProg.DoModal(m_Wnd);
+		dlgProg.DoModal(m_Wnd, m_hInstRes);
 		thrd.join();
 	}
 

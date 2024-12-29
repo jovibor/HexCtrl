@@ -18,7 +18,7 @@ namespace HEXCTRL::INTERNAL {
 		void CreateDlg();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		[[nodiscard]] auto GetHWND()const->HWND;
-		void Initialize(IHexCtrl* pHexCtrl);
+		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
@@ -164,6 +164,7 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		static constexpr std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		static constexpr auto m_pwszWrongInput { L"Wrong input data." };
+		HINSTANCE m_hInstRes { };
 		wnd::CWnd m_Wnd;                 //Main window.
 		wnd::CWnd m_WndStatResult;       //Static text "Result:".
 		wnd::CWndCombo m_WndCmbFind;     //Combo box "Search".

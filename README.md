@@ -202,13 +202,12 @@ To use **HexCtrl** in a Dialog you can create it with the [Classic Approach](#cl
 But there is another option:
 1. Put the **Custom Control** from the **Toolbox** in **Visual Studio** dialog designer onto your dialog template.  
 ![](docs/img/HexCtrl_VSToolbox.jpg) ![](docs/img/HexCtrl_VSCustomCtrl.jpg)
-2. In the **Properties** of this control in the **Class** field, within the **Misc** section, put: **HexCtrl_51F07D56**.
-![](docs/img/HexCtrl_VSProperties.jpg)
-3. Declare `IHexCtrlPtr` member variable within your dialog class:
+1. In the **Properties** of this control in the **Class** field within the **Misc** section write: **HexCtrl_MainWnd**.
+1. Declare `IHexCtrlPtr` member variable within your dialog class:
     ```cpp
     IHexCtrlPtr m_myHex { CreateHexCtrl() };
     ```
-4. Call the [`CreateDialogCtrl`](#createdialogctrl ) method from dialog's `OnInitDialog` method.
+1. Call the [`CreateDialogCtrl`](#createdialogctrl ) method from dialog's `OnInitDialog` method.
     ```cpp
     BOOL CMyDialog::OnInitDialog() {
         CDialogEx::OnInitDialog();

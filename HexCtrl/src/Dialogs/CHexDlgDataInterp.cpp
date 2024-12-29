@@ -71,8 +71,8 @@ CHexDlgDataInterp::~CHexDlgDataInterp() = default;
 void CHexDlgDataInterp::CreateDlg()
 {
 	//m_Wnd is set in the OnInitDialog().
-	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_DATAINTERP),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgWndProc<CHexDlgDataInterp>, reinterpret_cast<LPARAM>(this));
+	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_DATAINTERP),
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgDataInterp>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		DBG_REPORT(L"CreateDialogParamW failed.");
 	}
@@ -105,13 +105,15 @@ auto CHexDlgDataInterp::GetHWND()const->HWND
 	return m_Wnd;
 }
 
-void CHexDlgDataInterp::Initialize(IHexCtrl* pHexCtrl)
+void CHexDlgDataInterp::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
-	assert(pHexCtrl);
-	if (pHexCtrl == nullptr)
+	if (pHexCtrl == nullptr || hInstRes == nullptr) {
+		DBG_REPORT(L"Initialize == nullptr");
 		return;
+	}
 
 	m_pHexCtrl = pHexCtrl;
+	m_hInstRes = hInstRes;
 }
 
 bool CHexDlgDataInterp::HasHighlight()const

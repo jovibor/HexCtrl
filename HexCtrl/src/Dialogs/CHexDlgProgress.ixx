@@ -21,7 +21,7 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		explicit CHexDlgProgress(std::wstring_view wsvOperName, std::wstring_view wsvCountName,
 			ULONGLONG ullMin, ULONGLONG ullMax);
-		auto DoModal(HWND hWndParent) -> INT_PTR;
+		auto DoModal(HWND hWndParent, HINSTANCE hInstRes) -> INT_PTR;
 		[[nodiscard]] bool IsCanceled()const;
 		void OnCancel();
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
@@ -58,9 +58,9 @@ CHexDlgProgress::CHexDlgProgress(std::wstring_view wsvOperName, std::wstring_vie
 	assert(ullMin <= ullMax);
 }
 
-auto CHexDlgProgress::DoModal(HWND hWndParent)->INT_PTR {
-	return DialogBoxParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_PROGRESS),
-		hWndParent, wnd::DlgWndProc<CHexDlgProgress>, reinterpret_cast<LPARAM>(this));
+auto CHexDlgProgress::DoModal(HWND hWndParent, HINSTANCE hInstRes)->INT_PTR {
+	return DialogBoxParamW(hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_PROGRESS),
+		hWndParent, wnd::DlgProc<CHexDlgProgress>, reinterpret_cast<LPARAM>(this));
 }
 
 bool CHexDlgProgress::IsCanceled()const

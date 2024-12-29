@@ -46,8 +46,8 @@ auto CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)->ULONGLONG
 void CHexDlgBkmMgr::CreateDlg()
 {
 	//m_Wnd is set in the OnInitDialog().
-	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_BKMMGR),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgWndProc<CHexDlgBkmMgr>, reinterpret_cast<LPARAM>(this));
+	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_BKMMGR),
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgBkmMgr>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		DBG_REPORT(L"CreateDialogParamW failed.");
 	}
@@ -185,13 +185,15 @@ auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM
 	return pBkm;
 }
 
-void CHexDlgBkmMgr::Initialize(IHexCtrl* pHexCtrl)
+void CHexDlgBkmMgr::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
-	assert(pHexCtrl);
-	if (pHexCtrl == nullptr)
+	if (pHexCtrl == nullptr || hInstRes == nullptr) {
+		DBG_REPORT(L"Initialize == nullptr");
 		return;
+	}
 
 	m_pHexCtrl = pHexCtrl;
+	m_hInstRes = hInstRes;
 }
 
 bool CHexDlgBkmMgr::IsVirtual()const
@@ -632,12 +634,12 @@ void CHexDlgBkmMgr::OnNotifyListRClick(NMHDR* pNMHDR)
 	}
 
 	//Edit menu enabled only when one item selected.
-	m_menuList.EnableItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVE), fEnabled);
-	m_menuList.EnableItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVEALL), m_ListEx.GetItemCount() > 0);
+	m_menuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVE), fEnabled);
+	m_menuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVEALL), m_ListEx.GetItemCount() > 0);
 
 	POINT pt;
 	GetCursorPos(&pt);
-	m_menuList.TrackPopup(pt.x, pt.y, m_Wnd);
+	m_menuList.TrackPopupMenu(pt.x, pt.y, m_Wnd);
 }
 
 void CHexDlgBkmMgr::OnNotifyListGetColor(NMHDR* pNMHDR)

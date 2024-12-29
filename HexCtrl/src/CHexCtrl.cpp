@@ -28,7 +28,6 @@
 
 import HEXCTRL.CHexScroll;
 import HEXCTRL.CHexSelection;
-import HEXCTRL.HexUtility;
 import HEXCTRL.CHexDlgProgress;
 
 using namespace HEXCTRL::INTERNAL;
@@ -50,6 +49,7 @@ CWinApp theApp; //CWinApp object is vital for manual MFC, and for in-DLL work.
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgAbout final {
 	public:
+		CHexDlgAbout(HINSTANCE hInstRes) { assert(hInstRes != nullptr); m_hInstRes = hInstRes; }
 		auto DoModal(HWND hWndParent = nullptr) -> INT_PTR;
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
 	private:
@@ -61,6 +61,7 @@ namespace HEXCTRL::INTERNAL {
 		auto OnLButtonUp(const MSG& msg) -> INT_PTR;
 		auto OnMouseMove(const MSG& msg) -> INT_PTR;
 	private:
+		HINSTANCE m_hInstRes { };
 		wnd::CWnd m_Wnd;        //Main window.
 		wnd::CWnd m_WndLink;    //Static link control
 		HBITMAP m_hBmpLogo { }; //Logo bitmap.
@@ -72,8 +73,8 @@ namespace HEXCTRL::INTERNAL {
 }
 
 auto CHexDlgAbout::DoModal(HWND hWndParent)->INT_PTR {
-	return DialogBoxParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_ABOUT),
-		hWndParent, wnd::DlgWndProc<CHexDlgAbout>, reinterpret_cast<LPARAM>(this));
+	return DialogBoxParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_ABOUT),
+		hWndParent, wnd::DlgProc<CHexDlgAbout>, reinterpret_cast<LPARAM>(this));
 }
 
 auto CHexDlgAbout::ProcessMsg(const MSG& msg)->INT_PTR {
@@ -154,7 +155,7 @@ auto CHexDlgAbout::OnInitDialog(const MSG& msg)->INT_PTR
 
 	const auto fScale = iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
 	const auto iSizeIcon = static_cast<int>(32 * fScale);
-	m_hBmpLogo = static_cast<HBITMAP>(::LoadImageW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO),
+	m_hBmpLogo = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO),
 		IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	const auto hWndLogo = m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_LOGO);
 	::SendMessageW(hWndLogo, STM_SETIMAGE, IMAGE_BITMAP, reinterpret_cast<LPARAM>(m_hBmpLogo));
@@ -233,34 +234,6 @@ struct CHexCtrl::KEYBIND { //Key bindings.
 	bool    fAlt { };
 };
 
-BEGIN_MESSAGE_MAP(CHexCtrl, CWnd)
-	ON_WM_CHAR()
-	ON_WM_CLOSE()
-	ON_WM_CONTEXTMENU()
-	ON_WM_DESTROY()
-	ON_WM_ERASEBKGND()
-	ON_WM_GETDLGCODE()
-	ON_WM_HELPINFO()
-	ON_WM_HSCROLL()
-	ON_WM_INITMENUPOPUP()
-	ON_WM_KEYDOWN()
-	ON_WM_KEYUP()
-	ON_WM_LBUTTONDBLCLK()
-	ON_WM_LBUTTONDOWN()
-	ON_WM_LBUTTONUP()
-	ON_WM_MOUSEMOVE()
-	ON_WM_MOUSEWHEEL()
-	ON_WM_NCACTIVATE()
-	ON_WM_NCCALCSIZE()
-	ON_WM_NCPAINT()
-	ON_WM_PAINT()
-	ON_WM_SETCURSOR()
-	ON_WM_SIZE()
-	ON_WM_SYSKEYDOWN()
-	ON_WM_TIMER()
-	ON_WM_VSCROLL()
-END_MESSAGE_MAP()
-
 CHexCtrl::CHexCtrl()
 {
 	//CS_GLOBALCLASS flag creates window class which is global to a whole app.
@@ -269,13 +242,13 @@ CHexCtrl::CHexCtrl()
 	//the hInstance of the dll and hence will be unavailable from the main app.
 	//It's mostly vital for the Custom controls within dialogs, which must have access to custom
 	//classes names during dialog creation.
-	if (WNDCLASSEXW wc { }; GetClassInfoExW(nullptr, m_pwszClassName, &wc) == FALSE) {
+	if (WNDCLASSEXW wc { }; ::GetClassInfoExW(nullptr, m_pwszClassName, &wc) == FALSE) {
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_GLOBALCLASS | CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
-		wc.lpfnWndProc = ::DefWindowProcW;
-		wc.hCursor = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
+		wc.lpfnWndProc = wnd::WndProc<CHexCtrl>;
+		wc.hCursor = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 		wc.lpszClassName = m_pwszClassName;
-		if (RegisterClassExW(&wc) == 0) {
+		if (::RegisterClassExW(&wc) == 0) {
 			DBG_REPORT(L"RegisterClassExW failed.");
 			return;
 		}
@@ -284,7 +257,7 @@ CHexCtrl::CHexCtrl()
 
 CHexCtrl::~CHexCtrl()
 {
-	UnregisterClassW(m_pwszClassName, nullptr);
+	::UnregisterClassW(m_pwszClassName, nullptr);
 }
 
 void CHexCtrl::ClearData()
@@ -319,39 +292,51 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	if (IsCreated())
 		return false;
 
+	HWND hWnd;
 	if (hcs.fCustom) {
-		//If it's a Custom Control in dialog, there is no need to create a window, just subclassing.
-		if (SubclassDlgItem(hcs.uID, FromHandle(hcs.hWndParent)) == FALSE) {
+		hWnd = ::GetDlgItem(hcs.hWndParent, hcs.uID);
+		if (hWnd == nullptr) {
+			DBG_REPORT(L"GetDlgItem failed.");
+			return false;
+		}
+
+		if (::SetWindowSubclass(hWnd, SubclassProc, reinterpret_cast<UINT_PTR>(this), 0) == FALSE) {
 			DBG_REPORT(L"SubclassDlgItem failed, check HEXCREATE parameters.");
 			return false;
 		}
 	}
 	else {
-		if (CreateEx(hcs.dwExStyle, m_pwszClassName, L"HexCtrl", hcs.dwStyle, hcs.rect,
-			FromHandle(hcs.hWndParent), hcs.uID) == FALSE) {
+		const wnd::CRect rc = hcs.rect;
+		if (hWnd = ::CreateWindowExW(hcs.dwExStyle, m_pwszClassName, L"HexCtrl", hcs.dwStyle, rc.left, rc.top, rc.Width(),
+			rc.Height(), hcs.hWndParent, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(hcs.uID)), nullptr, this);
+			hWnd == nullptr) {
 			DBG_REPORT(L"CreateWindowExW failed, check HEXCREATE parameters.");
 			return false;
 		}
 	}
 
-	m_wndTTMain.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
+	m_Wnd.Attach(hWnd);
+
+	m_wndTTMain.Attach(::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_NOPREFIX | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr));
 	m_ttiMain.cbSize = sizeof(TTTOOLINFOW);
 	m_ttiMain.uFlags = TTF_TRACK;
-	m_wndTTMain.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiMain));
-	m_wndTTMain.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
+	m_wndTTMain.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiMain));
+	m_wndTTMain.SendMsg(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
-	m_wndTTOffset.CreateEx(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
-		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_hWnd, nullptr);
+	m_wndTTOffset.Attach(::CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr,
+		TTS_NOANIMATE | TTS_NOFADE | TTS_NOPREFIX | TTS_ALWAYSTIP,
+		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr));
 	m_ttiOffset.cbSize = sizeof(TTTOOLINFOW);
 	m_ttiOffset.uFlags = TTF_TRACK;
-	m_wndTTOffset.SendMessageW(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiOffset));
-	m_wndTTOffset.SendMessageW(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
+	m_wndTTOffset.SendMsg(TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&m_ttiOffset));
+	m_wndTTOffset.SendMsg(TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //To allow the use of a newline \n.
 
 	if (hcs.pColors != nullptr) {
 		m_stColors = *hcs.pColors;
 	}
 
+	m_hInstRes = hcs.hInstRes != nullptr ? hcs.hInstRes : ::GetModuleHandleW(nullptr);
 	m_dwCapacity = std::clamp(hcs.dwCapacity, 1UL, 100UL);
 	m_flScrollRatio = hcs.flScrollRatio;
 	m_fScrollLines = hcs.fScrollLines;
@@ -360,77 +345,76 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_dwDigitsOffsetDec = 10UL;
 	m_dwDigitsOffsetHex = 8UL;
 
-	const auto pDC = GetDC();
-	m_iLOGPIXELSY = GetDeviceCaps(pDC->m_hDC, LOGPIXELSY);
-	ReleaseDC(pDC);
+	const auto hDC = m_Wnd.GetDC();
+	m_iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
+	m_Wnd.ReleaseDC(hDC);
 
 	//Menu related.
-	if (m_menuMain.LoadMenuW(MAKEINTRESOURCEW(IDR_HEXCTRL_MENU)) == FALSE) {
+	if (!m_MenuMain.LoadMenuW(m_hInstRes, MAKEINTRESOURCEW(IDR_HEXCTRL_MENU))) {
 		DBG_REPORT(L"LoadMenuW failed.");
 		return false;
 	}
 
-	const auto hInst = wnd::GetHinstance();
 	const auto fScale = m_iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
 	const auto iSizeIcon = static_cast<int>(16 * fScale);
-	const auto pMenuTop = m_menuMain.GetSubMenu(0); //Context sub-menu handle.
+	const auto menuTop = m_MenuMain.GetSubMenu(0); //Context sub-menu handle.
 
 	MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_BITMAP } };
 	//"Search" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP,
+	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	pMenuTop->SetMenuItemInfoW(0, &mii, TRUE); //"Search" parent menu icon.
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_SEARCH_DLGSEARCH, &mii);
+	menuTop.SetMenuItemInfoW(0, &mii); //"Search" parent menu icon.
+	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_SEARCH_DLGSEARCH, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Group Data" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_GROUP), IMAGE_BITMAP,
+	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_GROUP), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	pMenuTop->SetMenuItemInfoW(2, &mii, TRUE); //"Group Data" parent menu icon.
+	menuTop.SetMenuItemInfoW(2, &mii); //"Group Data" parent menu icon.
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Bookmarks->Add" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_BKMS), IMAGE_BITMAP,
+	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_BKMS), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	pMenuTop->SetMenuItemInfoW(4, &mii, TRUE); //"Bookmarks" parent menu icon.
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_BKM_ADD, &mii);
+	menuTop.SetMenuItemInfoW(4, &mii); //"Bookmarks" parent menu icon.
+	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_BKM_ADD, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Clipboard->Copy as Hex" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP,
+	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	pMenuTop->SetMenuItemInfoW(5, &mii, TRUE); //"Clipboard" parent menu icon.
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_COPYHEX, &mii);
+	menuTop.SetMenuItemInfoW(5, &mii); //"Clipboard" parent menu icon.
+	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_COPYHEX, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Clipboard->Paste as Hex" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_PASTEHEX), IMAGE_BITMAP,
+	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_PASTEHEX), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_PASTEHEX, &mii);
+	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_PASTEHEX, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Modify" parent menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY), IMAGE_BITMAP,
+	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	pMenuTop->SetMenuItemInfoW(6, &mii, TRUE);
+	menuTop.SetMenuItemInfoW(6, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Modify->Fill with Zeros" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP,
+	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
+	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Data View->Data Interpreter" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_DATAINTERP), IMAGE_BITMAP,
+	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_DATAINTERP), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_DLGDATAINTERP, &mii);
+	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_DLGDATAINTERP, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Appearance->Choose Font" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(LoadImageW(hInst, MAKEINTRESOURCEW(IDB_HEXCTRL_FONTCHOOSE), IMAGE_BITMAP,
+	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_FONTCHOOSE), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_menuMain.SetMenuItemInfoW(IDM_HEXCTRL_APPEAR_DLGFONT, &mii);
+	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_APPEAR_DLGFONT, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 	//End of menu related.
 
@@ -438,20 +422,20 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	//Default main logfont.
 	const LOGFONTW lfMain { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) }, .lfWeight { FW_NORMAL },
 		.lfQuality { CLEARTYPE_QUALITY }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
-	m_fntMain.CreateFontIndirectW(hcs.pLogFont != nullptr ? hcs.pLogFont : &lfMain);
+	m_hFntMain = ::CreateFontIndirectW(hcs.pLogFont != nullptr ? hcs.pLogFont : &lfMain);
 
 	//Info area font, independent from the main font, its size is a bit smaller than the default main font.
 	const LOGFONTW lfInfo { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) + 1 }, .lfWeight { FW_NORMAL },
 		.lfQuality { CLEARTYPE_QUALITY }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
-	m_fntInfoBar.CreateFontIndirectW(&lfInfo);
+	m_hFntInfoBar = ::CreateFontIndirectW(&lfInfo);
 	//End of font related.
 
-	m_penLines.CreatePen(PS_SOLID, 1, RGB(200, 200, 200));
-	m_penDataTempl.CreatePen(PS_SOLID, 1, RGB(50, 50, 50));
+	m_hPenLines = ::CreatePen(PS_SOLID, 1, RGB(200, 200, 200));
+	m_hPenDataTempl = ::CreatePen(PS_SOLID, 1, RGB(50, 50, 50));
 
 	//ScrollBars should be created here, after the main window has already been created (to attach to), to avoid assertions.
-	m_pScrollV->Create(m_hWnd, true, hInst, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0); //Actual sizes are set in RecalcAll().
-	m_pScrollH->Create(m_hWnd, false, hInst, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0);
+	m_pScrollV->Create(m_Wnd, true, m_hInstRes, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0); //Actual sizes are set in RecalcAll().
+	m_pScrollH->Create(m_Wnd, false, m_hInstRes, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0);
 	m_pScrollV->AddSibling(m_pScrollH.get());
 	m_pScrollH->AddSibling(m_pScrollV.get());
 
@@ -464,13 +448,13 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	SetUnprintableChar(L'.');
 
 	//All dialogs are initialized after the main window, to set the parent handle correctly.
-	m_pDlgBkmMgr->Initialize(this);
-	m_pDlgDataInterp->Initialize(this);
-	m_pDlgCodepage->Initialize(this);
-	m_pDlgGoTo->Initialize(this);
-	m_pDlgSearch->Initialize(this);
-	m_pDlgTemplMgr->Initialize(this);
-	m_pDlgModify->Initialize(this);
+	m_pDlgBkmMgr->Initialize(this, m_hInstRes);
+	m_pDlgDataInterp->Initialize(this, m_hInstRes);
+	m_pDlgCodepage->Initialize(this, m_hInstRes);
+	m_pDlgGoTo->Initialize(this, m_hInstRes);
+	m_pDlgSearch->Initialize(this, m_hInstRes);
+	m_pDlgTemplMgr->Initialize(this, m_hInstRes);
+	m_pDlgModify->Initialize(this, m_hInstRes);
 
 	return true;
 }
@@ -486,7 +470,13 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
 
 void CHexCtrl::Destroy()
 {
+	DestroyWindow();
 	delete this;
+}
+
+void CHexCtrl::DestroyWindow()
+{
+	m_Wnd.DestroyWindow();
 }
 
 void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
@@ -503,11 +493,11 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_SEARCH_NEXT:
 		m_pDlgSearch->SearchNextPrev(true);
-		SetFocus();
+		m_Wnd.SetFocus();
 		break;
 	case CMD_SEARCH_PREV:
 		m_pDlgSearch->SearchNextPrev(false);
-		SetFocus();
+		m_Wnd.SetFocus();
 		break;
 	case CMD_NAV_GOTO_DLG:
 		ParentNotify(HEXCTRL_MSG_DLGGOTO);
@@ -680,8 +670,8 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_ABOUT_DLG:
 	{
-		CHexDlgAbout dlgAbout;
-		dlgAbout.DoModal(m_hWnd);
+		CHexDlgAbout dlgAbout(m_hInstRes);
+		dlgAbout.DoModal(m_Wnd);
 	}
 	break;
 	case CMD_CARET_LEFT:
@@ -806,7 +796,7 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->SpanByte
 	}
 	else {
 		assert(hss.ullSize <= GetCacheSize());
-		HEXDATAINFO hdi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) }, .stHexSpan { hss } };
+		HEXDATAINFO hdi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()) }, .stHexSpan { hss } };
 		m_pHexVirtData->OnHexGetData(hdi);
 		spnData = hdi.spnData;
 	}
@@ -862,7 +852,7 @@ auto CHexCtrl::GetFont()const->LOGFONTW
 		return { };
 
 	LOGFONTW lf;
-	::GetObjectW(m_fntMain.m_hObject, sizeof(LOGFONTW), &lf);
+	::GetObjectW(m_hFntMain, sizeof(LOGFONTW), &lf);
 
 	return lf;
 }
@@ -882,7 +872,7 @@ auto CHexCtrl::GetMenuHandle()const->HMENU
 	if (!IsCreated())
 		return { };
 
-	return m_menuMain.GetSubMenu(0)->GetSafeHmenu();
+	return m_MenuMain.GetSubMenu(0);
 }
 
 auto CHexCtrl::GetOffset(ULONGLONG ullOffset, bool fGetVirt)const->ULONGLONG
@@ -893,7 +883,7 @@ auto CHexCtrl::GetOffset(ULONGLONG ullOffset, bool fGetVirt)const->ULONGLONG
 		return { };
 
 	if (IsVirtual()) {
-		HEXDATAINFO hdi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) }, .stHexSpan { .ullOffset { ullOffset } } };
+		HEXDATAINFO hdi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()) }, .stHexSpan { .ullOffset { ullOffset } } };
 		m_pHexVirtData->OnHexGetOffset(hdi, fGetVirt);
 		return hdi.stHexSpan.ullOffset;
 	}
@@ -977,7 +967,7 @@ auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND
 
 	switch (eWnd) {
 	case EHexWnd::WND_MAIN:
-		return m_hWnd;
+		return m_Wnd;
 	case EHexWnd::DLG_BKMMGR:
 		if (!IsWindow(m_pDlgBkmMgr->GetHWND()) && fCreate) {
 			m_pDlgBkmMgr->CreateDlg();
@@ -1071,7 +1061,7 @@ auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST>
 		return std::nullopt;
 
 	if (fScreen) {
-		ScreenToClient(&pt);
+		m_Wnd.ScreenToClient(&pt);
 	}
 
 	return HitTest(pt);
@@ -1230,8 +1220,7 @@ auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION
 	const auto ullFirst = GetTopLine() * dwCapacity;
 	const auto ullLast = (GetBottomLine() * dwCapacity) + dwCapacity;
 
-	CRect rcClient;
-	GetClientRect(&rcClient);
+	const auto rcClient = m_Wnd.GetClientRect();
 	int iCx, iCy;
 	HexChunkPoint(ullOffset, iCx, iCy);
 	const auto iMaxClientX = rcClient.Width() - m_iSizeHexBytePx;
@@ -1501,6 +1490,38 @@ bool CHexCtrl::PreTranslateMsg(MSG* pMsg)
 	return false;
 }
 
+auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT
+{
+	switch (msg.message) {
+	case WM_CHAR: return OnChar(msg);
+	case WM_COMMAND: return OnCommand(msg);
+	case WM_CONTEXTMENU: return OnContextMenu(msg);
+	case WM_DESTROY: return OnDestroy();
+	case WM_ERASEBKGND: return OnEraseBkgnd(msg);
+	case WM_GETDLGCODE: return OnGetDlgCode(msg);
+	case WM_HELP: return OnHelp(msg);
+	case WM_HSCROLL: return OnHScroll(msg);
+	case WM_INITMENUPOPUP: return OnInitMenuPopup(msg);
+	case WM_KEYDOWN: return OnKeyDown(msg);
+	case WM_KEYUP: return OnKeyUp(msg);
+	case WM_LBUTTONDBLCLK: return OnLButtonDblClk(msg);
+	case WM_LBUTTONDOWN: return OnLButtonDown(msg);
+	case WM_LBUTTONUP: return OnLButtonUp(msg);
+	case WM_MOUSEMOVE: return OnMouseMove(msg);
+	case WM_MOUSEWHEEL: return OnMouseWheel(msg);
+	case WM_NCACTIVATE: return OnNCActivate(msg);
+	case WM_NCCALCSIZE: return OnNCCalcSize(msg);
+	case WM_NCPAINT: return OnNCPaint(msg);
+	case WM_PAINT: return OnPaint();
+	case WM_SETCURSOR: return OnSetCursor(msg);
+	case WM_SIZE: return OnSize(msg);
+	case WM_SYSKEYDOWN: return OnSysKeyDown(msg);
+	case WM_TIMER: return OnTimer(msg);
+	case WM_VSCROLL: return OnVScroll(msg);
+	default: return wnd::DefWndProc(msg);
+	}
+}
+
 void CHexCtrl::Redraw()
 {
 	assert(IsCreated());
@@ -1540,7 +1561,7 @@ void CHexCtrl::Redraw()
 		m_wstrInfoBar.clear();
 	}
 
-	RedrawWindow();
+	m_Wnd.RedrawWindow();
 }
 
 void CHexCtrl::SetCapacity(DWORD dwCapacity)
@@ -1649,7 +1670,7 @@ void CHexCtrl::SetColors(const HEXCOLORS& hcs)
 		return;
 
 	m_stColors = hcs;
-	RedrawWindow();
+	m_Wnd.RedrawWindow();
 }
 
 bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
@@ -1778,11 +1799,10 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 
 	rapidjson::Document docJSON;
 	if (wsvPath.empty()) { //Default IDR_HEXCTRL_JSON_KEYBIND.json, from resources.
-		const auto hInst = wnd::GetHinstance();
-		if (const auto hRes = FindResourceW(hInst, MAKEINTRESOURCEW(IDJ_HEXCTRL_KEYBIND), L"JSON"); hRes != nullptr) {
-			if (const auto hData = LoadResource(hInst, hRes); hData != nullptr) {
-				const auto nSize = static_cast<std::size_t>(SizeofResource(hInst, hRes));
-				const auto* const pData = static_cast<char*>(LockResource(hData));
+		if (const auto hRes = ::FindResourceW(m_hInstRes, MAKEINTRESOURCEW(IDJ_HEXCTRL_KEYBIND), L"JSON"); hRes != nullptr) {
+			if (const auto hData = ::LoadResource(m_hInstRes, hRes); hData != nullptr) {
+				const auto nSize = static_cast<std::size_t>(::SizeofResource(m_hInstRes, hRes));
+				const auto* const pData = static_cast<char*>(::LockResource(hData));
 				if (docJSON.Parse(pData, nSize); docJSON.IsNull()) { //Parse all default keybindings.
 					DBG_REPORT(L"docJSON.IsNull()");
 					return false;
@@ -1865,9 +1885,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		if (const auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd, [&](const KEYBIND& ref) {
 			return ref.wMenuID == refKB.wMenuID; });
 			iterTmp == iterEnd && refKB.wMenuID != 0 && refKB.uKey != 0) {
-			CStringW wstrMenuName;
-			m_menuMain.GetMenuStringW(refKB.wMenuID, wstrMenuName, MF_BYCOMMAND);
-			std::wstring wstr = wstrMenuName.GetString();
+			std::wstring wstr = m_MenuMain.GetMenuStr(refKB.wMenuID);
 			if (const auto nPos = wstr.find('\t'); nPos != std::wstring::npos) {
 				wstr.erase(nPos);
 			}
@@ -1894,9 +1912,9 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 
 			//Modify menu with a new name (with shortcut appended) and old bitmap.
 			MENUITEMINFOW mii { .cbSize = sizeof(MENUITEMINFOW), .fMask = MIIM_BITMAP | MIIM_STRING };
-			m_menuMain.GetMenuItemInfoW(refKB.wMenuID, &mii);
+			m_MenuMain.GetMenuItemInfoW(refKB.wMenuID, &mii);
 			mii.dwTypeData = wstr.data();
-			m_menuMain.SetMenuItemInfoW(refKB.wMenuID, &mii);
+			m_MenuMain.SetMenuItemInfoW(refKB.wMenuID, &mii);
 		}
 	}
 
@@ -2029,8 +2047,8 @@ void CHexCtrl::SetFont(const LOGFONTW& lf)
 	if (!IsCreated())
 		return;
 
-	m_fntMain.DeleteObject();
-	m_fntMain.CreateFontIndirectW(&lf);
+	::DeleteObject(m_hFntMain);
+	m_hFntMain = ::CreateFontIndirectW(&lf);
 
 	RecalcAll();
 	ParentNotify(HEXCTRL_MSG_SETFONT);
@@ -2048,13 +2066,13 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 	m_dwGroupSize = dwSize;
 
 	//Getting the "Group Data" menu pointer independent of position.
-	const auto* const pMenuMain = m_menuMain.GetSubMenu(0);
-	CMenu* pMenuGroupData { };
-	for (auto i = 0; i < pMenuMain->GetMenuItemCount(); ++i) {
+	const auto menuMain = m_MenuMain.GetSubMenu(0);
+	wnd::CMenu* pMenuGroupData { };
+	for (auto i = 0; i < menuMain.GetMenuItemCount(); ++i) {
 		//Searching through all submenus whose first menuID is IDM_HEXCTRL_GROUPDATA_BYTE.
-		if (const auto pSubMenu = pMenuMain->GetSubMenu(i); pSubMenu != nullptr) {
-			if (pSubMenu->GetMenuItemID(0) == IDM_HEXCTRL_GROUPDATA_BYTE) {
-				pMenuGroupData = pSubMenu;
+		if (auto menuSub = menuMain.GetSubMenu(i); menuSub.IsMenu()) {
+			if (menuSub.GetMenuItemID(0) == IDM_HEXCTRL_GROUPDATA_BYTE) {
+				pMenuGroupData = &menuSub;
 				break;
 			}
 		}
@@ -2063,7 +2081,7 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 	if (pMenuGroupData != nullptr) {
 		//Unchecking all menus and checking only the currently selected.
 		for (auto i = 0; i < pMenuGroupData->GetMenuItemCount(); ++i) {
-			pMenuGroupData->CheckMenuItem(i, MF_UNCHECKED | MF_BYPOSITION);
+			pMenuGroupData->CheckMenuItem(i, false, false);
 		}
 
 		UINT uIDToCheck { 0 };
@@ -2085,7 +2103,7 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 		}
 
 		if (uIDToCheck != 0) {
-			pMenuGroupData->CheckMenuItem(uIDToCheck, MF_CHECKED | MF_BYCOMMAND);
+			pMenuGroupData->CheckMenuItem(uIDToCheck, true);
 		}
 	}
 
@@ -2189,7 +2207,7 @@ void CHexCtrl::SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHei
 	if (!IsCreated())
 		return;
 
-	::SetWindowPos(m_hWnd, hWndAfter, iX, iY, iWidth, iHeight, uFlags);
+	m_Wnd.SetWindowPos(hWndAfter, iX, iY, iWidth, iHeight, uFlags);
 }
 
 void CHexCtrl::ShowInfoBar(bool fShow)
@@ -2427,7 +2445,7 @@ void CHexCtrl::ChooseFontDlg()
 {
 	auto lf = GetFont();
 	auto stClr = GetColors();
-	CHOOSEFONTW chf { .lStructSize { sizeof(CHOOSEFONTW) }, .hwndOwner { m_hWnd }, .lpLogFont { &lf },
+	CHOOSEFONTW chf { .lStructSize { sizeof(CHOOSEFONTW) }, .hwndOwner { m_Wnd }, .lpLogFont { &lf },
 		.Flags { CF_EFFECTS | CF_FIXEDPITCHONLY | CF_FORCEFONTEXIST | CF_INITTOLOGFONTSTRUCT | CF_NOSIMULATIONS },
 		.rgbColors { stClr.clrFontHex } };
 
@@ -2441,7 +2459,7 @@ void CHexCtrl::ChooseFontDlg()
 void CHexCtrl::ClipboardCopy(EClipboard eType)const
 {
 	if (m_pSelection->GetSelSize() > 1024 * 1024 * 8) { //8MB
-		::MessageBoxW(m_hWnd, L"Selection size is too big to copy.\r\nTry selecting less.", L"Error", MB_ICONERROR);
+		::MessageBoxW(m_Wnd, L"Selection size is too big to copy.\r\nTry selecting less.", L"Error", MB_ICONERROR);
 		return;
 	}
 
@@ -2480,7 +2498,7 @@ void CHexCtrl::ClipboardCopy(EClipboard eType)const
 
 	constexpr auto sCharSize { sizeof(wchar_t) };
 	const std::size_t sMemSize = (wstrData.size() * sCharSize) + sCharSize;
-	const auto hMem = GlobalAlloc(GMEM_MOVEABLE, sMemSize);
+	const auto hMem = ::GlobalAlloc(GMEM_MOVEABLE, sMemSize);
 	if (!hMem) {
 		DBG_REPORT(L"GlobalAlloc error.");
 		return;
@@ -2493,25 +2511,25 @@ void CHexCtrl::ClipboardCopy(EClipboard eType)const
 	}
 
 	std::memcpy(lpMemLock, wstrData.data(), sMemSize);
-	GlobalUnlock(hMem);
-	::OpenClipboard(m_hWnd);
-	EmptyClipboard();
-	SetClipboardData(CF_UNICODETEXT, hMem);
-	CloseClipboard();
+	::GlobalUnlock(hMem);
+	::OpenClipboard(m_Wnd);
+	::EmptyClipboard();
+	::SetClipboardData(CF_UNICODETEXT, hMem);
+	::CloseClipboard();
 }
 
 void CHexCtrl::ClipboardPaste(EClipboard eType)
 {
-	if (!IsMutable() || !::OpenClipboard(m_hWnd))
+	if (!IsMutable() || !::OpenClipboard(m_Wnd))
 		return;
 
-	const auto hClpbrd = GetClipboardData(CF_UNICODETEXT);
+	const auto hClpbrd = ::GetClipboardData(CF_UNICODETEXT);
 	if (!hClpbrd)
 		return;
 
 	const auto pDataClpbrd = static_cast<wchar_t*>(GlobalLock(hClpbrd));
 	if (pDataClpbrd == nullptr) {
-		CloseClipboard();
+		::CloseClipboard();
 		return;
 	}
 
@@ -2556,8 +2574,8 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 	{
 		auto optData = NumStrToHex(pDataClpbrd);
 		if (!optData) {
-			GlobalUnlock(hClpbrd);
-			CloseClipboard();
+			::GlobalUnlock(hClpbrd);
+			::CloseClipboard();
 			return;
 		}
 		strDataModify = std::move(*optData);
@@ -2575,9 +2593,9 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 	hmd.vecSpan.emplace_back(ullCaretPos, ullSizeModify);
 	ModifyData(hmd);
 
-	GlobalUnlock(hClpbrd);
-	CloseClipboard();
-	RedrawWindow();
+	::GlobalUnlock(hClpbrd);
+	::CloseClipboard();
+	m_Wnd.RedrawWindow();
 }
 
 auto CHexCtrl::CopyBase64()const->std::wstring
@@ -2865,64 +2883,65 @@ auto CHexCtrl::CopyTextCP()const->std::wstring
 	return wstrText;
 }
 
-void CHexCtrl::DrawWindow(CDC* pDC)const
+void CHexCtrl::DrawWindow(HDC hDC)const
 {
 	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
-	CRect rcWnd(m_iFirstVertLinePx, m_iFirstHorzLinePx,
+	wnd::CRect rcWnd(m_iFirstVertLinePx, m_iFirstHorzLinePx,
 		m_iFirstVertLinePx + m_iWidthClientAreaPx, m_iFirstHorzLinePx + m_iHeightClientAreaPx);
 
-	pDC->FillSolidRect(rcWnd, m_stColors.clrBk);
-	pDC->SelectObject(m_penLines);
+	wnd::CDC dc(hDC);
+	dc.FillSolidRect(rcWnd, m_stColors.clrBk);
+	dc.SelectObject(m_hPenLines);
 
 	//First horizontal line.
-	pDC->MoveTo(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx);
-	pDC->LineTo(m_iFourthVertLinePx, m_iFirstHorzLinePx);
+	dc.MoveTo(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx);
+	dc.LineTo(m_iFourthVertLinePx, m_iFirstHorzLinePx);
 
 	//Second horizontal line.
-	pDC->MoveTo(m_iFirstVertLinePx - iScrollH, m_iSecondHorzLinePx);
-	pDC->LineTo(m_iFourthVertLinePx, m_iSecondHorzLinePx);
+	dc.MoveTo(m_iFirstVertLinePx - iScrollH, m_iSecondHorzLinePx);
+	dc.LineTo(m_iFourthVertLinePx, m_iSecondHorzLinePx);
 
 	//Third horizontal line.
-	pDC->MoveTo(m_iFirstVertLinePx - iScrollH, m_iThirdHorzLinePx);
-	pDC->LineTo(m_iFourthVertLinePx, m_iThirdHorzLinePx);
+	dc.MoveTo(m_iFirstVertLinePx - iScrollH, m_iThirdHorzLinePx);
+	dc.LineTo(m_iFourthVertLinePx, m_iThirdHorzLinePx);
 
 	//Fourth horizontal line.
-	pDC->MoveTo(m_iFirstVertLinePx - iScrollH, m_iFourthHorzLinePx);
-	pDC->LineTo(m_iFourthVertLinePx, m_iFourthHorzLinePx);
+	dc.MoveTo(m_iFirstVertLinePx - iScrollH, m_iFourthHorzLinePx);
+	dc.LineTo(m_iFourthVertLinePx, m_iFourthHorzLinePx);
 
 	//First Vertical line.
-	pDC->MoveTo(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx);
-	pDC->LineTo(m_iFirstVertLinePx - iScrollH, m_iFourthHorzLinePx);
+	dc.MoveTo(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx);
+	dc.LineTo(m_iFirstVertLinePx - iScrollH, m_iFourthHorzLinePx);
 
 	//Second Vertical line.
-	pDC->MoveTo(m_iSecondVertLinePx - iScrollH, m_iFirstHorzLinePx);
-	pDC->LineTo(m_iSecondVertLinePx - iScrollH, m_iThirdHorzLinePx);
+	dc.MoveTo(m_iSecondVertLinePx - iScrollH, m_iFirstHorzLinePx);
+	dc.LineTo(m_iSecondVertLinePx - iScrollH, m_iThirdHorzLinePx);
 
 	//Third Vertical line.
-	pDC->MoveTo(m_iThirdVertLinePx - iScrollH, m_iFirstHorzLinePx);
-	pDC->LineTo(m_iThirdVertLinePx - iScrollH, m_iThirdHorzLinePx);
+	dc.MoveTo(m_iThirdVertLinePx - iScrollH, m_iFirstHorzLinePx);
+	dc.LineTo(m_iThirdVertLinePx - iScrollH, m_iThirdHorzLinePx);
 
 	//Fourth Vertical line.
-	pDC->MoveTo(m_iFourthVertLinePx - iScrollH, m_iFirstHorzLinePx);
-	pDC->LineTo(m_iFourthVertLinePx - iScrollH, m_iFourthHorzLinePx);
+	dc.MoveTo(m_iFourthVertLinePx - iScrollH, m_iFirstHorzLinePx);
+	dc.LineTo(m_iFourthVertLinePx - iScrollH, m_iFourthHorzLinePx);
 
 	//«Offset» text.
-	CRect rcOffset(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iSecondVertLinePx - iScrollH, m_iSecondHorzLinePx);
-	pDC->SelectObject(m_fntMain);
-	pDC->SetTextColor(m_stColors.clrFontCaption);
-	pDC->SetBkColor(m_stColors.clrBk);
-	pDC->DrawTextW(L"Offset", 6, rcOffset, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	wnd::CRect rcOffset(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iSecondVertLinePx - iScrollH, m_iSecondHorzLinePx);
+	dc.SelectObject(m_hFntMain);
+	dc.SetTextColor(m_stColors.clrFontCaption);
+	dc.SetBkColor(m_stColors.clrBk);
+	dc.DrawTextW(L"Offset", rcOffset, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	//Capacity numbers.
-	ExtTextOutW(pDC->m_hDC, m_iIndentFirstHexChunkXPx - iScrollH, m_iFirstHorzLinePx + m_iIndentCapTextYPx, 0, nullptr,
+	::ExtTextOutW(dc, m_iIndentFirstHexChunkXPx - iScrollH, m_iFirstHorzLinePx + m_iIndentCapTextYPx, 0, nullptr,
 		m_wstrCapacity.data(), static_cast<UINT>(m_wstrCapacity.size()), GetCharsWidthArray());
 
 	//Text area caption.
 	auto rcText = GetRectTextCaption();
-	pDC->DrawTextW(m_wstrTextTitle.data(), static_cast<int>(m_wstrTextTitle.size()), rcText, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	dc.DrawTextW(m_wstrTextTitle, rcText, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
-void CHexCtrl::DrawInfoBar(CDC* pDC)const
+void CHexCtrl::DrawInfoBar(HDC hDC)const
 {
 	if (!IsInfoBar())
 		return;
@@ -2974,24 +2993,25 @@ void CHexCtrl::DrawInfoBar(CDC* pDC)const
 		vecInfoData.back().iVertLineX = rcText.left - (m_sizeFontInfo.cx / 2); //Vertical line after current rect.
 	}
 
-	pDC->FillSolidRect(rcInfoBar, m_stColors.clrBkInfoBar); //Info bar rect.
-	pDC->DrawEdge(rcInfoBar, BDR_RAISEDINNER, BF_TOP);
-	pDC->SelectObject(m_fntInfoBar);
-	pDC->SetBkColor(m_stColors.clrBkInfoBar);
+	wnd::CDC dc(hDC);
+	dc.FillSolidRect(rcInfoBar, m_stColors.clrBkInfoBar); //Info bar rect.
+	dc.DrawEdge(rcInfoBar, BDR_RAISEDINNER, BF_TOP);
+	dc.SelectObject(m_hFntInfoBar);
+	dc.SetBkColor(m_stColors.clrBkInfoBar);
 
 	for (auto& ref : vecInfoData) {
-		pDC->SetTextColor(ref.clrText);
+		dc.SetTextColor(ref.clrText);
 		auto& refPoly = ref.stPoly;
-		pDC->DrawTextW(refPoly.lpstr, refPoly.n, &refPoly.rcl, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+		dc.DrawTextW(refPoly.lpstr, refPoly.n, &refPoly.rcl, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
 		if (ref.iVertLineX > 0) {
-			pDC->MoveTo(ref.iVertLineX, refPoly.rcl.top);
-			pDC->LineTo(ref.iVertLineX, refPoly.rcl.bottom);
+			dc.MoveTo(ref.iVertLineX, refPoly.rcl.top);
+			dc.LineTo(ref.iVertLineX, refPoly.rcl.bottom);
 		}
 	}
 }
 
-void CHexCtrl::DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const
+void CHexCtrl::DrawOffsets(HDC hDC, ULONGLONG ullStartLine, int iLines)const
 {
 	const auto dwCapacity = GetCapacity();
 	const auto ullStartOffset = ullStartLine * dwCapacity;
@@ -3010,16 +3030,17 @@ void CHexCtrl::DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const
 		}
 
 		//Left column offset printing (00000000...0000FFFF).
-		pDC->SelectObject(m_fntMain);
-		pDC->SetTextColor(stClrOffset.clrText);
-		pDC->SetBkColor(stClrOffset.clrBk);
-		ExtTextOutW(pDC->m_hDC, m_iFirstVertLinePx + GetCharWidthNative() - iScrollH,
+		wnd::CDC dc(hDC);
+		dc.SelectObject(m_hFntMain);
+		dc.SetTextColor(stClrOffset.clrText);
+		dc.SetBkColor(stClrOffset.clrBk);
+		ExtTextOutW(dc, m_iFirstVertLinePx + GetCharWidthNative() - iScrollH,
 			m_iStartWorkAreaYPx + (m_sizeFontMain.cy * iterLines), 0, nullptr,
 			OffsetToWstr((ullStartLine + iterLines) * dwCapacity).data(), GetDigitsOffset(), nullptr);
 	}
 }
 
-void CHexCtrl::DrawHexText(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
+void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
 	struct POLYTEXTCLR {
 		POLYTEXTW stPoly { };
@@ -3034,7 +3055,7 @@ void CHexCtrl::DrawHexText(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::ws
 	vecWstrText.reserve(static_cast<std::size_t>(iLines));
 	const auto ullStartOffset = ullStartLine * GetCapacity();
 	std::size_t sIndexToPrint { 0 };
-	HEXCOLORINFO hci { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) },
+	HEXCOLORINFO hci { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()) },
 		.stClr { .clrBk { m_stColors.clrBk }, .clrText { m_stColors.clrFontHex } } };
 
 	for (auto iterLines = 0; iterLines < iLines; ++iterLines) {
@@ -3113,21 +3134,22 @@ void CHexCtrl::DrawHexText(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::ws
 		lmbPoly();
 	}
 
-	pDC->SelectObject(m_fntMain);
+	wnd::CDC dc(hDC);
+	dc.SelectObject(m_hFntMain);
 	std::size_t index { 0 }; //Index for vecPolyText, its size is always equal to vecPolyHex.
 	for (const auto& iter : vecPolyHex) { //Loop is needed because of different colors.
-		pDC->SetTextColor(iter.stClr.clrText);
-		pDC->SetBkColor(iter.stClr.clrBk);
+		dc.SetTextColor(iter.stClr.clrText);
+		dc.SetBkColor(iter.stClr.clrBk);
 		const auto& refH = iter.stPoly;
-		ExtTextOutW(pDC->m_hDC, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex printing.
+		ExtTextOutW(dc, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex printing.
 		const auto& refVecText = vecPolyText[index++];
-		pDC->SetTextColor(refVecText.stClr.clrText); //Text color for the Text area.
+		dc.SetTextColor(refVecText.stClr.clrText); //Text color for the Text area.
 		const auto& refT = refVecText.stPoly;
-		ExtTextOutW(pDC->m_hDC, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text printing.
+		ExtTextOutW(dc, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text printing.
 	}
 }
 
-void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
+void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
 	if (!m_pDlgTemplMgr->HasApplied())
 		return;
@@ -3237,43 +3259,44 @@ void CHexCtrl::DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 
 	//Fieds printing.
 	if (!vecFieldsHex.empty()) {
-		pDC->SelectObject(m_fntMain);
+		wnd::CDC dc(hDC);
+		dc.SelectObject(m_hFntMain);
 		std::size_t index { 0 }; //Index for vecFieldsText, its size is always equal to vecFieldsHex.
-		const auto penOld = SelectObject(pDC->m_hDC, m_penDataTempl);
+		const auto penOld = dc.SelectObject(m_hPenDataTempl);
 		for (const auto& iter : vecFieldsHex) { //Loop is needed because different Fields can have different colors.
-			pDC->SetTextColor(iter.stClr.clrText);
-			pDC->SetBkColor(iter.stClr.clrBk);
+			dc.SetTextColor(iter.stClr.clrText);
+			dc.SetBkColor(iter.stClr.clrBk);
 
 			const auto& refH = iter.stPoly;
-			ExtTextOutW(pDC->m_hDC, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex Field printing.
+			::ExtTextOutW(dc, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex Field printing.
 			const auto& refT = vecFieldsText[index++].stPoly;
-			ExtTextOutW(pDC->m_hDC, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text Field printing.
+			::ExtTextOutW(dc, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text Field printing.
 
 			if (iter.fPrintVertLine) {
 				const auto iFieldLineHexX = refH.x - 2; //Little indent before vert line.
-				MoveToEx(pDC->m_hDC, iFieldLineHexX, refH.y, nullptr);
-				LineTo(pDC->m_hDC, iFieldLineHexX, refH.y + m_sizeFontMain.cy);
+				dc.MoveTo(iFieldLineHexX, refH.y);
+				dc.LineTo(iFieldLineHexX, refH.y + m_sizeFontMain.cy);
 
 				const auto iFieldLineTextX = refT.x;
-				MoveToEx(pDC->m_hDC, iFieldLineTextX, refT.y, nullptr);
-				LineTo(pDC->m_hDC, iFieldLineTextX, refT.y + m_sizeFontMain.cy);
+				dc.MoveTo(iFieldLineTextX, refT.y);
+				dc.LineTo(iFieldLineTextX, refT.y + m_sizeFontMain.cy);
 			}
 
 			if (index == vecFieldsHex.size()) { //Last vertical Field line.
 				const auto iFieldLastLineHexX = refH.x + refH.n * GetCharWidthExtras() + 1; //Little indent after vert line.
-				MoveToEx(pDC->m_hDC, iFieldLastLineHexX, refH.y, nullptr);
-				LineTo(pDC->m_hDC, iFieldLastLineHexX, refH.y + m_sizeFontMain.cy);
+				dc.MoveTo(iFieldLastLineHexX, refH.y);
+				dc.LineTo(iFieldLastLineHexX, refH.y + m_sizeFontMain.cy);
 
 				const auto iFieldLastLineTextX = refT.x + refT.n * GetCharWidthExtras();
-				MoveToEx(pDC->m_hDC, iFieldLastLineTextX, refT.y, nullptr);
-				LineTo(pDC->m_hDC, iFieldLastLineTextX, refT.y + m_sizeFontMain.cy);
+				dc.MoveTo(iFieldLastLineTextX, refT.y);
+				dc.LineTo(iFieldLastLineTextX, refT.y + m_sizeFontMain.cy);
 			}
 		}
-		SelectObject(pDC->m_hDC, penOld);
+		dc.SelectObject(penOld);
 	}
 }
 
-void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
+void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
 	if (!m_pDlgBkmMgr->HasBookmarks())
 		return;
@@ -3374,20 +3397,21 @@ void CHexCtrl::DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 
 	//Bookmarks printing.
 	if (!vecBkmHex.empty()) {
-		pDC->SelectObject(m_fntMain);
+		wnd::CDC dc(hDC);
+		dc.SelectObject(m_hFntMain);
 		std::size_t index { 0 }; //Index for vecBkmText, its size is always equal to vecBkmHex.
 		for (const auto& iter : vecBkmHex) { //Loop is needed because bkms have different colors.
-			pDC->SetTextColor(iter.stClr.clrText);
-			pDC->SetBkColor(iter.stClr.clrBk);
+			dc.SetTextColor(iter.stClr.clrText);
+			dc.SetBkColor(iter.stClr.clrBk);
 			const auto& refH = iter.stPoly;
-			ExtTextOutW(pDC->m_hDC, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex bookmarks printing.
+			::ExtTextOutW(dc, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex bookmarks printing.
 			const auto& refT = vecBkmText[index++].stPoly;
-			ExtTextOutW(pDC->m_hDC, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text bookmarks printing.
+			::ExtTextOutW(dc, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text bookmarks printing.
 		}
 	}
 }
 
-void CHexCtrl::DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
+void CHexCtrl::DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
 	if (!HasSelection())
 		return;
@@ -3462,17 +3486,18 @@ void CHexCtrl::DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::
 
 	//Selection printing.
 	if (!vecPolySelHex.empty()) {
-		pDC->SelectObject(m_fntMain);
-		pDC->SetTextColor(m_stColors.clrFontSel);
-		pDC->SetBkColor(m_stColors.clrBkSel);
-		PolyTextOutW(pDC->m_hDC, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size())); //Hex selection printing.
+		wnd::CDC dc(hDC);
+		dc.SelectObject(m_hFntMain);
+		dc.SetTextColor(m_stColors.clrFontSel);
+		dc.SetBkColor(m_stColors.clrBkSel);
+		::PolyTextOutW(dc, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size())); //Hex selection printing.
 		for (const auto& iter : vecPolySelText) {
-			ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Text selection printing.
+			::ExtTextOutW(dc, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Text selection printing.
 		}
 	}
 }
 
-void CHexCtrl::DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
+void CHexCtrl::DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
 	if (!m_pSelection->HasSelHighlight())
 		return;
@@ -3548,17 +3573,18 @@ void CHexCtrl::DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, st
 	//Selection highlight printing.
 	if (!vecPolySelHexHgl.empty()) {
 		//Colors are the inverted selection colors.
-		pDC->SelectObject(m_fntMain);
-		pDC->SetTextColor(m_stColors.clrBkSel);
-		pDC->SetBkColor(m_stColors.clrFontSel);
-		PolyTextOutW(pDC->m_hDC, vecPolySelHexHgl.data(), static_cast<UINT>(vecPolySelHexHgl.size())); //Hex selection highlight printing.
+		wnd::CDC dc(hDC);
+		dc.SelectObject(m_hFntMain);
+		dc.SetTextColor(m_stColors.clrBkSel);
+		dc.SetBkColor(m_stColors.clrFontSel);
+		::PolyTextOutW(dc, vecPolySelHexHgl.data(), static_cast<UINT>(vecPolySelHexHgl.size())); //Hex selection highlight printing.
 		for (const auto& iter : vecPolySelTextHgl) {
-			ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Text selection highlight printing.
+			::ExtTextOutW(dc, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Text selection highlight printing.
 		}
 	}
 }
 
-void CHexCtrl::DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wsvHex, std::wstring_view wsvText)const
+void CHexCtrl::DrawCaret(HDC hDC, ULONGLONG ullStartLine, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
 	const auto ullCaretPos = GetCaretPos();
 
@@ -3603,15 +3629,16 @@ void CHexCtrl::DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wsv
 	const auto clrBkCaret = m_pSelection->HitTest(ullCaretPos) ? m_stColors.clrBkCaretSel : m_stColors.clrBkCaret;
 
 	//Caret printing.
-	pDC->SelectObject(m_fntMain);
-	pDC->SetTextColor(m_stColors.clrFontCaret);
-	pDC->SetBkColor(clrBkCaret);
+	wnd::CDC dc(hDC);
+	dc.SelectObject(m_hFntMain);
+	dc.SetTextColor(m_stColors.clrFontCaret);
+	dc.SetBkColor(clrBkCaret);
 	for (const auto iter : arrPolyCaret) {
-		ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Hex/Text caret printing.
+		ExtTextOutW(dc, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Hex/Text caret printing.
 	}
 }
 
-void CHexCtrl::DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
+void CHexCtrl::DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
 	if (!m_pDlgDataInterp->HasHighlight())
 		return;
@@ -3677,16 +3704,17 @@ void CHexCtrl::DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std:
 
 	//Data Interpreter printing.
 	if (!vecPolyDataInterp.empty()) {
-		pDC->SelectObject(m_fntMain);
-		pDC->SetTextColor(m_stColors.clrFontDataInterp);
-		pDC->SetBkColor(m_stColors.clrBkDataInterp);
+		wnd::CDC dc(hDC);
+		dc.SelectObject(m_hFntMain);
+		dc.SetTextColor(m_stColors.clrFontDataInterp);
+		dc.SetBkColor(m_stColors.clrBkDataInterp);
 		for (const auto& iter : vecPolyDataInterp) {
-			ExtTextOutW(pDC->m_hDC, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Hex/Text Data Interpreter printing.
+			::ExtTextOutW(dc, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Hex/Text Data Interpreter printing.
 		}
 	}
 }
 
-void CHexCtrl::DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines)
+void CHexCtrl::DrawPageLines(HDC hDC, ULONGLONG ullStartLine, int iLines)
 {
 	if (!IsPageVisible())
 		return;
@@ -3710,8 +3738,9 @@ void CHexCtrl::DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines)
 	//Page lines printing.
 	if (!vecPageLines.empty()) {
 		for (const auto& iter : vecPageLines) {
-			pDC->MoveTo(iter.ptStart.x, iter.ptStart.y);
-			pDC->LineTo(iter.ptEnd.x, iter.ptEnd.y);
+			wnd::CDC dc(hDC);
+			dc.MoveTo(iter.ptStart.x, iter.ptStart.y);
+			dc.LineTo(iter.ptEnd.x, iter.ptEnd.y);
 		}
 	}
 }
@@ -3820,7 +3849,7 @@ long CHexCtrl::GetFontSize()const
 	return GetFont().lfHeight;
 }
 
-auto CHexCtrl::GetRectTextCaption()const->CRect
+auto CHexCtrl::GetRectTextCaption()const->wnd::CRect
 {
 	const auto iScrollH { static_cast<int>(m_pScrollH->GetScrollPos()) };
 	return { m_iThirdVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iFourthVertLinePx - iScrollH, m_iSecondHorzLinePx };
@@ -4054,7 +4083,7 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorke
 	static constexpr auto uSizeToRunThread { 1024U * 1024U * 50U }; //50MB.
 	if (ullTotalSize > uSizeToRunThread) { //Spawning new thread only if data size is big enough.
 		std::thread thrd(lmbModify);
-		dlgProg.DoModal(m_hWnd);
+		dlgProg.DoModal(m_Wnd, m_hInstRes);
 		thrd.join();
 	}
 	else {
@@ -4077,7 +4106,7 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 	}
 
 	if (auto pBkm = m_pDlgBkmMgr->HitTest(ullOffset); pBkm != nullptr) { //If clicked on bookmark.
-		const HEXBKMINFO hbi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK }, .pBkm { pBkm } };
+		const HEXBKMINFO hbi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK }, .pBkm { pBkm } };
 		ParentNotify(hbi);
 	}
 
@@ -4094,47 +4123,42 @@ void CHexCtrl::OnModifyData()
 template<typename T> requires std::is_class_v<T>
 void CHexCtrl::ParentNotify(const T& t)const
 {
-	if (const auto hWndParent = ::GetParent(m_hWnd); hWndParent != nullptr) {
-		::SendMessageW(hWndParent, WM_NOTIFY, GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));
+	if (const auto hWndParent = m_Wnd.GetParent(); hWndParent != nullptr) {
+		::SendMessageW(hWndParent, WM_NOTIFY, m_Wnd.GetDlgCtrlID(), reinterpret_cast<LPARAM>(&t));
 	}
 }
 
 void CHexCtrl::ParentNotify(UINT uCode)const
 {
-	ParentNotify(NMHDR { .hwndFrom { m_hWnd }, .idFrom { static_cast<UINT>(GetDlgCtrlID()) }, .code { uCode } });
+	ParentNotify(NMHDR { .hwndFrom { m_Wnd }, .idFrom { static_cast<UINT>(m_Wnd.GetDlgCtrlID()) }, .code { uCode } });
 }
 
 void CHexCtrl::Print()
 {
 	PRINTPAGERANGE ppr { .nFromPage { 1 }, .nToPage { 1 } };
-	PRINTDLGEX m_pdex { .lStructSize { sizeof(PRINTDLGEX) }, .hwndOwner { m_hWnd },
+	PRINTDLGEX m_pdex { .lStructSize { sizeof(PRINTDLGEX) }, .hwndOwner { m_Wnd },
 		.Flags { static_cast<DWORD>(PD_RETURNDC | (HasSelection() ? PD_SELECTION : PD_NOSELECTION | PD_PAGENUMS)) },
 		.nPageRanges { 1 }, .nMaxPageRanges { 1 }, .lpPageRanges { &ppr }, .nMinPage { 1 }, .nMaxPage { 0xFFFFUL },
 		.nStartPage { START_PAGE_GENERAL } };
 
-	if (PrintDlgExW(&m_pdex) != S_OK) {
-		MessageBoxW(L"Internal printer initialization error.", L"Error", MB_ICONERROR);
+	if (::PrintDlgExW(&m_pdex) != S_OK) {
+		::MessageBoxW(m_Wnd, L"Internal printer initialization error.", L"Error", MB_ICONERROR);
 		return;
 	}
 
 	//User pressed "Cancel", or "Apply" then "Cancel".
 	if (m_pdex.dwResultAction == PD_RESULT_CANCEL || m_pdex.dwResultAction == PD_RESULT_APPLY) {
-		DeleteDC(m_pdex.hDC);
+		::DeleteDC(m_pdex.hDC);
 		return;
 	}
 	const auto hdcPrinter = m_pdex.hDC;
 	if (hdcPrinter == nullptr) {
-		MessageBoxW(L"No printer found.");
+		::MessageBoxW(m_Wnd, L"No printer found.", L"Error", MB_ICONERROR);
 		return;
 	}
 
-	CDC dcPrint;
-	dcPrint.Attach(hdcPrinter);
-	const auto pDC = &dcPrint;
-	DOCINFOW di { };
-	di.cbSize = sizeof(DOCINFOW);
-	di.lpszDocName = L"HexCtrl";
-
+	wnd::CDC dcPrint(hdcPrinter);
+	DOCINFOW di { .cbSize { sizeof(DOCINFOW) }, .lpszDocName { L"HexCtrl" } };
 	if (dcPrint.StartDocW(&di) < 0) {
 		dcPrint.AbortDoc();
 		dcPrint.DeleteDC();
@@ -4143,29 +4167,29 @@ void CHexCtrl::Print()
 
 	constexpr auto iMarginX = 150;
 	constexpr auto iMarginY = 150;
-	const CRect rcPrint(CPoint(0, 0), CSize(GetDeviceCaps(dcPrint, HORZRES) - (iMarginX * 2), GetDeviceCaps(dcPrint, VERTRES) - (iMarginY * 2)));
-	const CSize sizePrintDpi = { GetDeviceCaps(dcPrint, LOGPIXELSX), GetDeviceCaps(dcPrint, LOGPIXELSY) };
+	const CRect rcPrint(CPoint(0, 0), CSize(::GetDeviceCaps(dcPrint, HORZRES) - (iMarginX * 2), ::GetDeviceCaps(dcPrint, VERTRES) - (iMarginY * 2)));
+	const CSize sizePrintDpi = { ::GetDeviceCaps(dcPrint, LOGPIXELSX), ::GetDeviceCaps(dcPrint, LOGPIXELSY) };
 	const auto iRatio = sizePrintDpi.cy / m_iLOGPIXELSY;
 
 	/***Changing Main and Info Bar fonts***/
 	LOGFONTW lfMainOrig;
-	m_fntMain.GetLogFont(&lfMainOrig);
+	::GetObjectW(m_hFntMain, sizeof(lfMainOrig), &lfMainOrig);
 	LOGFONTW lfMain { lfMainOrig };
 	lfMain.lfHeight *= iRatio;
-	m_fntMain.DeleteObject();
-	m_fntMain.CreateFontIndirectW(&lfMain);
+	::DeleteObject(m_hFntMain);
+	m_hFntMain = ::CreateFontIndirectW(&lfMain);
 	LOGFONTW lfInfoBarOrig;
-	m_fntInfoBar.GetLogFont(&lfInfoBarOrig);
+	::GetObjectW(m_hFntInfoBar, sizeof(lfInfoBarOrig), &lfInfoBarOrig);
 	LOGFONTW lfInfoBar { lfInfoBarOrig };
 	lfInfoBar.lfHeight *= iRatio;
-	m_fntInfoBar.DeleteObject();
-	m_fntInfoBar.CreateFontIndirectW(&lfInfoBar);
+	::DeleteObject(m_hFntInfoBar);
+	m_hFntInfoBar = ::CreateFontIndirectW(&lfInfoBar);
 	/***Changing Main and Info Bar fonts END***/
 
 	auto ullStartLine = GetTopLine();
 	const auto dwCapacity = GetCapacity();
 	const auto ullTotalLines = GetDataSize() / dwCapacity;
-	RecalcAll(pDC, &rcPrint);
+	RecalcAll(dcPrint, &rcPrint);
 	const auto iLinesInPage = m_iHeightWorkAreaPx / m_sizeFontMain.cy;
 	const auto ullTotalPages = (ullTotalLines / iLinesInPage) + 1;
 	int iPagesToPrint { };
@@ -4191,10 +4215,10 @@ void CHexCtrl::Print()
 		ullStartLine = iFromPage * iLinesInPage;
 	}
 
-	pDC->SetMapMode(MM_TEXT);
-	pDC->SetViewportOrg(iMarginX, iMarginY); //Move a viewport to have some indent from the edge.
+	dcPrint.SetMapMode(MM_TEXT);
+	dcPrint.SetViewportOrg(iMarginX, iMarginY); //Move a viewport to have some indent from the edge.
 	if (fPrintSelect) {
-		pDC->StartPage();
+		dcPrint.StartPage();
 		const auto ullSelStart = m_pSelection->GetSelStart();
 		const auto ullSelSize = m_pSelection->GetSelSize();
 		ullStartLine = ullSelStart / dwCapacity;
@@ -4215,21 +4239,21 @@ void CHexCtrl::Print()
 		const auto iLines = static_cast<int>(ullEndLine - ullStartLine);
 		const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
 
-		DrawWindow(pDC);
-		DrawInfoBar(pDC);
+		DrawWindow(dcPrint);
+		DrawInfoBar(dcPrint);
 		const auto clBkOld = m_stColors.clrBkSel;
 		const auto clTextOld = m_stColors.clrFontSel;
 		m_stColors.clrBkSel = m_stColors.clrBk; //To print as normal text on normal bk, not white text on black bk.
 		m_stColors.clrFontSel = m_stColors.clrFontHex;
-		DrawOffsets(pDC, ullStartLine, iLines);
-		DrawSelection(pDC, ullStartLine, iLines, wstrHex, wstrText);
+		DrawOffsets(dcPrint, ullStartLine, iLines);
+		DrawSelection(dcPrint, ullStartLine, iLines, wstrHex, wstrText);
 		m_stColors.clrBkSel = clBkOld;
 		m_stColors.clrFontSel = clTextOld;
-		pDC->EndPage();
+		dcPrint.EndPage();
 	}
 	else {
 		for (auto iterPage = 0; iterPage < iPagesToPrint; ++iterPage) {
-			pDC->StartPage();
+			dcPrint.StartPage();
 			auto ullEndLine = ullStartLine + iLinesInPage;
 
 			//If m_dwDataCount is really small we adjust ullEndLine to be not bigger than maximum allowed.
@@ -4240,47 +4264,47 @@ void CHexCtrl::Print()
 			const auto iLines = static_cast<int>(ullEndLine - ullStartLine);
 			const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
 
-			DrawWindow(pDC); //Draw the window with all layouts.
-			DrawInfoBar(pDC);
+			DrawWindow(dcPrint); //Draw the window with all layouts.
+			DrawInfoBar(dcPrint);
 
 			if (IsDataSet()) {
-				DrawOffsets(pDC, ullStartLine, iLines);
-				DrawHexText(pDC, ullStartLine, iLines, wstrHex, wstrText);
-				DrawTemplates(pDC, ullStartLine, iLines, wstrHex, wstrText);
-				DrawBookmarks(pDC, ullStartLine, iLines, wstrHex, wstrText);
-				DrawSelection(pDC, ullStartLine, iLines, wstrHex, wstrText);
-				DrawSelHighlight(pDC, ullStartLine, iLines, wstrHex, wstrText);
-				DrawCaret(pDC, ullStartLine, wstrHex, wstrText);
-				DrawDataInterp(pDC, ullStartLine, iLines, wstrHex, wstrText);
-				DrawPageLines(pDC, ullStartLine, iLines);
+				DrawOffsets(dcPrint, ullStartLine, iLines);
+				DrawHexText(dcPrint, ullStartLine, iLines, wstrHex, wstrText);
+				DrawTemplates(dcPrint, ullStartLine, iLines, wstrHex, wstrText);
+				DrawBookmarks(dcPrint, ullStartLine, iLines, wstrHex, wstrText);
+				DrawSelection(dcPrint, ullStartLine, iLines, wstrHex, wstrText);
+				DrawSelHighlight(dcPrint, ullStartLine, iLines, wstrHex, wstrText);
+				DrawCaret(dcPrint, ullStartLine, wstrHex, wstrText);
+				DrawDataInterp(dcPrint, ullStartLine, iLines, wstrHex, wstrText);
+				DrawPageLines(dcPrint, ullStartLine, iLines);
 			}
 			ullStartLine += iLinesInPage;
-			pDC->EndPage();
+			dcPrint.EndPage();
 		}
 	}
-	pDC->EndDoc();
-	pDC->DeleteDC();
+	dcPrint.EndDoc();
+	dcPrint.DeleteDC();
 
 	/***Changing Main and Info Bar fonts back to originals.***/
-	m_fntMain.DeleteObject();
-	m_fntMain.CreateFontIndirectW(&lfMainOrig);
-	m_fntInfoBar.DeleteObject();
-	m_fntInfoBar.CreateFontIndirectW(&lfInfoBarOrig);
+	::DeleteObject(m_hFntMain);
+	m_hFntMain = ::CreateFontIndirectW(&lfMainOrig);
+	::DeleteObject(m_hFntInfoBar);
+	m_hFntInfoBar = ::CreateFontIndirectW(&lfInfoBarOrig);
 
 	RecalcAll();
 }
 
-void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
+void CHexCtrl::RecalcAll(HDC hDC, LPCRECT pRC)
 {
-	const auto pDCCurr = pDC == nullptr ? GetDC() : pDC;
+	const wnd::CDC dcCurr = hDC == nullptr ? m_Wnd.GetDC() : hDC;
 	const auto ullCurLineV = GetTopLine();
 	TEXTMETRICW tm;
-	pDCCurr->SelectObject(m_fntMain);
-	pDCCurr->GetTextMetricsW(&tm);
+	dcCurr.SelectObject(m_hFntMain);
+	dcCurr.GetTextMetricsW(&tm);
 	m_sizeFontMain.cx = tm.tmAveCharWidth;
 	m_sizeFontMain.cy = tm.tmHeight + tm.tmExternalLeading;
-	pDCCurr->SelectObject(m_fntInfoBar);
-	pDCCurr->GetTextMetricsW(&tm);
+	dcCurr.SelectObject(m_hFntInfoBar);
+	dcCurr.GetTextMetricsW(&tm);
 	m_sizeFontInfo.cx = tm.tmAveCharWidth;
 	m_sizeFontInfo.cy = tm.tmHeight + tm.tmExternalLeading;
 
@@ -4317,17 +4341,17 @@ void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
 	m_iSecondHorzLinePx = m_iStartWorkAreaYPx - 1;
 	m_iIndentCapTextYPx = m_iHeightTopRectPx / 2 - (m_sizeFontMain.cy / 2);
 
-	CRect rc;
-	if (pRect == nullptr) {
-		GetClientRect(rc);
+	wnd::CRect rc;
+	if (pRC == nullptr) {
+		rc = m_Wnd.GetClientRect();
 	}
 	else {
-		rc = *pRect;
+		rc = *pRC;
 	}
-	RecalcClientArea(rc.Height(), rc.Width());
+	RecalcClientArea(rc.Width(), rc.Height());
 
 	//Scrolls, ReleaseDC and Redraw only for current DC, not for PrintingDC.
-	if (pDC == nullptr) {
+	if (hDC == nullptr) {
 		const auto ullDataSize = GetDataSize();
 		m_pScrollV->SetScrollSizes(m_sizeFontMain.cy, GetScrollPageSize(),
 			static_cast<ULONGLONG>(m_iStartWorkAreaYPx) + m_iHeightBottomOffAreaPx
@@ -4335,12 +4359,12 @@ void CHexCtrl::RecalcAll(CDC* pDC, const CRect* pRect)
 		m_pScrollH->SetScrollSizes(iCharWidthExt, rc.Width(), static_cast<ULONGLONG>(m_iFourthVertLinePx) + 1);
 		m_pScrollV->SetScrollPos(ullCurLineV * m_sizeFontMain.cy);
 
-		ReleaseDC(pDCCurr);
+		m_Wnd.ReleaseDC(dcCurr);
 		Redraw();
 	}
 }
 
-void CHexCtrl::RecalcClientArea(int iHeight, int iWidth)
+void CHexCtrl::RecalcClientArea(int iWidth, int iHeight)
 {
 	m_iHeightClientAreaPx = iHeight;
 	m_iWidthClientAreaPx = iWidth;
@@ -4390,7 +4414,7 @@ void CHexCtrl::Redo()
 
 	m_vecRedo.pop_back();
 	OnModifyData();
-	RedrawWindow();
+	m_Wnd.RedrawWindow();
 }
 
 void CHexCtrl::ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)const
@@ -4415,8 +4439,7 @@ void CHexCtrl::ScrollOffsetH(ULONGLONG ullOffset)
 
 	int iCx, iCy;
 	HexChunkPoint(ullOffset, iCx, iCy);
-	CRect rcClient;
-	GetClientRect(&rcClient);
+	const auto rcClient = m_Wnd.GetClientRect();
 
 	const auto ullCurrScrollH = m_pScrollH->GetScrollPos();
 	auto ullNewScrollH { ullCurrScrollH };
@@ -4696,7 +4719,8 @@ void CHexCtrl::SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const
 	if (!IsVirtual())
 		return;
 
-	m_pHexVirtData->OnHexSetData({ .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()) }, .stHexSpan { hss }, .spnData { spnData } });
+	m_pHexVirtData->OnHexSetData({ .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()) },
+		.stHexSpan { hss }, .spnData { spnData } });
 }
 
 void CHexCtrl::SetFontSize(long lSize)
@@ -4784,13 +4808,13 @@ void CHexCtrl::TTMainShow(bool fShow, bool fTimer)
 		m_tmTT = std::chrono::high_resolution_clock::now();
 		POINT pt;
 		GetCursorPos(&pt);
-		m_wndTTMain.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x + 3, pt.y - 20)));
-		m_wndTTMain.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiMain));
-		m_wndTTMain.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_ttiMain));
-		SetTimer(m_uIDTTTMain, 300, nullptr);
+		m_wndTTMain.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x + 3, pt.y - 20)));
+		m_wndTTMain.SendMsg(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiMain));
+		m_wndTTMain.SendMsg(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_ttiMain));
+		m_Wnd.SetTimer(m_uIDTTTMain, 300, nullptr);
 	}
 	else {
-		KillTimer(m_uIDTTTMain);
+		m_Wnd.KillTimer(m_uIDTTTMain);
 
 		//When hiding tooltip by timer we not nullify the pointer.
 		//Otherwise tooltip will be shown again after mouse movement,
@@ -4800,7 +4824,7 @@ void CHexCtrl::TTMainShow(bool fShow, bool fTimer)
 			m_pTFieldTTCurr = nullptr;
 		}
 
-		m_wndTTMain.SendMessageW(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_ttiMain));
+		m_wndTTMain.SendMsg(TTM_TRACKACTIVATE, FALSE, reinterpret_cast<LPARAM>(&m_ttiMain));
 	}
 }
 
@@ -4811,12 +4835,12 @@ void CHexCtrl::TTOffsetShow(bool fShow)
 		GetCursorPos(&ptScreen);
 		auto wstrOffset = (IsOffsetAsHex() ? L"Offset: 0x" : L"Offset: ") + OffsetToWstr(GetTopLine() * GetCapacity());
 		m_ttiOffset.lpszText = wstrOffset.data();
-		m_wndTTOffset.SendMessageW(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
-		m_wndTTOffset.SendMessageW(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiOffset));
+		m_wndTTOffset.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
+		m_wndTTOffset.SendMsg(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiOffset));
 		m_ttiOffset.lpszText = nullptr;
 	}
 
-	m_wndTTOffset.SendMessageW(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_ttiOffset));
+	m_wndTTOffset.SendMsg(TTM_TRACKACTIVATE, static_cast<WPARAM>(fShow), reinterpret_cast<LPARAM>(&m_ttiOffset));
 }
 
 void CHexCtrl::Undo()
@@ -4864,7 +4888,7 @@ void CHexCtrl::Undo()
 
 	m_vecUndo.pop_back();
 	OnModifyData();
-	RedrawWindow();
+	m_Wnd.RedrawWindow();
 }
 
 void CHexCtrl::ModifyOper(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused]] SpanCByte)
@@ -6812,20 +6836,21 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 //CHexCtrl MFC message handlers.
 
-void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
+auto CHexCtrl::OnChar(const MSG& msg)->LRESULT
 {
+	const auto nChar = static_cast<UINT>(msg.wParam);
 	if (!IsDataSet() || !IsMutable() || !IsCurTextArea() || (GetKeyState(VK_CONTROL) < 0)
 		|| !std::iswprint(static_cast<wint_t>(nChar)))
-		return;
+		return 0;
 
 	unsigned char chByte = nChar & 0xFF;
 
 	wchar_t warrCurrLocaleID[KL_NAMELENGTH];
-	GetKeyboardLayoutNameW(warrCurrLocaleID); //Current langID as wstring.
+	::GetKeyboardLayoutNameW(warrCurrLocaleID); //Current langID as wstring.
 	if (const auto optLocID = stn::StrToUInt32(warrCurrLocaleID, 16); optLocID) { //Convert langID from wstr to number.
 		UINT uCurrCodePage { };
 		constexpr int iSize = sizeof(uCurrCodePage) / sizeof(wchar_t);
-		if (GetLocaleInfoW(*optLocID, LOCALE_IDEFAULTANSICODEPAGE | LOCALE_RETURN_NUMBER,
+		if (::GetLocaleInfoW(*optLocID, LOCALE_IDEFAULTANSICODEPAGE | LOCALE_RETURN_NUMBER,
 			reinterpret_cast<LPWSTR>(&uCurrCodePage), iSize) == iSize) { //ANSI code page for the current langID (if any).
 			const wchar_t wch { static_cast<wchar_t>(nChar) };
 			//Convert input symbol (wchar) to char according to current Windows' code page.
@@ -6837,35 +6862,41 @@ void CHexCtrl::OnChar(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
 
 	ModifyData({ .spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { GetCaretPos(), 1 } } });
 	CaretMoveRight();
+
+	return 0;
 }
 
-BOOL CHexCtrl::OnCommand(WPARAM wParam, LPARAM /*lParam*/)
+auto CHexCtrl::OnCommand(const MSG& msg)->LRESULT
 {
-	const auto wMenuID = LOWORD(wParam);
+	const auto wMenuID = LOWORD(msg.wParam);
 	if (const auto opt = GetCommandFromMenu(wMenuID); opt) {
 		ExecuteCmd(*opt);
-		return TRUE;
+		return 0;
 	}
 
 	//For a user defined custom menu we notify the parent window.
-	ParentNotify(HEXMENUINFO { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK },
+	ParentNotify(HEXMENUINFO { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()), HEXCTRL_MSG_MENUCLICK },
 		.pt { m_stMenuClickedPt }, .wMenuID { wMenuID } });
 
-	return TRUE; //An application returns nonzero if it processes this message; (c) Microsoft.
+	return 0;
 }
 
-void CHexCtrl::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
+auto CHexCtrl::OnContextMenu(const MSG& msg)->LRESULT
 {
+	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+
 	//Notify parent that we are about to display a context menu.
-	const HEXMENUINFO hmi { .hdr { m_hWnd, static_cast<UINT>(GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU },
-		.pt { m_stMenuClickedPt = point }, .fShow { true } };
+	const HEXMENUINFO hmi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU },
+		.pt { m_stMenuClickedPt = pt }, .fShow { true } };
 	ParentNotify(hmi);
 	if (hmi.fShow) { //Parent window can disable context menu showing up.
-		m_menuMain.GetSubMenu(0)->TrackPopupMenu(TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON, point.x, point.y, this);
+		m_MenuMain.GetSubMenu(0).TrackPopupMenu(pt.x, pt.y, m_Wnd);
 	}
+
+	return 0;
 }
 
-void CHexCtrl::OnDestroy()
+auto CHexCtrl::OnDestroy()->LRESULT
 {
 	//All these cleanups below are important when HexCtrl window is destroyed but IHexCtrl object
 	//itself is still alive. The IHexCtrl object is alive until the IHexCtrl::Destroy() method is called.
@@ -6878,112 +6909,119 @@ void CHexCtrl::OnDestroy()
 	m_vecRedo.clear();
 	m_vecCharsWidth.clear();
 	m_pDlgTemplMgr->UnloadAll(); //Explicitly unloading all loaded Templates.
-	m_menuMain.DestroyMenu();
-	m_fntMain.DeleteObject();
-	m_fntInfoBar.DeleteObject();
-	m_penLines.DeleteObject();
-	m_penDataTempl.DeleteObject();
-	m_pScrollV->DestroyWindow(); //Not child of the IHexCtrl.
-	m_pScrollH->DestroyWindow(); //Not child of the IHexCtrl.
+	m_MenuMain.DestroyMenu();
+	::DeleteObject(m_hFntMain);
+	::DeleteObject(m_hFntInfoBar);
+	::DeleteObject(m_hPenLines);
+	::DeleteObject(m_hPenDataTempl);
+	m_pScrollV->DestroyWindow(); //Not a child of the IHexCtrl.
+	m_pScrollH->DestroyWindow(); //Not a child of the IHexCtrl.
 	m_fCreated = false;
-
 	ParentNotify(HEXCTRL_MSG_DESTROY);
 
-	CWnd::OnDestroy();
+	return 0;
 }
 
-BOOL CHexCtrl::OnEraseBkgnd(CDC* /*pDC*/)
+auto CHexCtrl::OnEraseBkgnd(const MSG& /*msg*/)->LRESULT
 {
 	return TRUE;
 }
 
-UINT CHexCtrl::OnGetDlgCode()
+auto CHexCtrl::OnGetDlgCode(const MSG& /*msg*/)->LRESULT
 {
 	return DLGC_WANTALLKEYS;
 }
 
-BOOL CHexCtrl::OnHelpInfo(HELPINFO* /*pHelpInfo*/)
+auto CHexCtrl::OnHelp(const MSG& /*msg*/)->LRESULT
 {
 	return FALSE;
 }
 
-void CHexCtrl::OnHScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollBar*/)
+auto CHexCtrl::OnHScroll(const MSG& /*msg*/)->LRESULT
 {
-	RedrawWindow();
+	m_Wnd.RedrawWindow();
+
+	return 0;
 }
 
-void CHexCtrl::OnInitMenuPopup(CMenu* /*pPopupMenu*/, UINT nIndex, BOOL /*bSysMenu*/)
+auto CHexCtrl::OnInitMenuPopup(const MSG& msg)->LRESULT
 {
+	const auto nIndex = static_cast<UINT>(LOWORD(msg.lParam));
 	using enum EHexCmd;
 	//The nIndex specifies the zero-based relative position of the menu item that opens the drop-down menu or submenu.
 	switch (nIndex) {
 	case 0:	//Search.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_DLGSEARCH, IsCmdAvail(CMD_SEARCH_DLG) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_NEXT, IsCmdAvail(CMD_SEARCH_NEXT) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_PREV, IsCmdAvail(CMD_SEARCH_PREV) ? MF_ENABLED : MF_GRAYED);
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_DLGSEARCH, IsCmdAvail(CMD_SEARCH_DLG));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_NEXT, IsCmdAvail(CMD_SEARCH_NEXT));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_PREV, IsCmdAvail(CMD_SEARCH_PREV));
 		break;
 	case 3:	//Navigation.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DLGGOTO, IsCmdAvail(CMD_NAV_GOTO_DLG) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_REPFWD, IsCmdAvail(CMD_NAV_REPFWD) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_REPBKW, IsCmdAvail(CMD_NAV_REPBKW) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DATABEG, IsCmdAvail(CMD_NAV_DATABEG) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DATAEND, IsCmdAvail(CMD_NAV_DATAEND) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_PAGEBEG, IsCmdAvail(CMD_NAV_PAGEBEG) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_PAGEEND, IsCmdAvail(CMD_NAV_PAGEEND) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_LINEBEG, IsCmdAvail(CMD_NAV_LINEBEG) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_NAV_LINEEND, IsCmdAvail(CMD_NAV_LINEEND) ? MF_ENABLED : MF_GRAYED);
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DLGGOTO, IsCmdAvail(CMD_NAV_GOTO_DLG));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_REPFWD, IsCmdAvail(CMD_NAV_REPFWD));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_REPBKW, IsCmdAvail(CMD_NAV_REPBKW));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DATABEG, IsCmdAvail(CMD_NAV_DATABEG));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DATAEND, IsCmdAvail(CMD_NAV_DATAEND));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_PAGEBEG, IsCmdAvail(CMD_NAV_PAGEBEG));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_PAGEEND, IsCmdAvail(CMD_NAV_PAGEEND));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_LINEBEG, IsCmdAvail(CMD_NAV_LINEBEG));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_LINEEND, IsCmdAvail(CMD_NAV_LINEEND));
 		break;
 	case 4:	//Bookmarks.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_ADD, IsCmdAvail(CMD_BKM_ADD) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_REMOVE, IsCmdAvail(CMD_BKM_REMOVE) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_NEXT, IsCmdAvail(CMD_BKM_NEXT) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_PREV, IsCmdAvail(CMD_BKM_PREV) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_REMOVEALL, IsCmdAvail(CMD_BKM_REMOVEALL) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_BKM_DLGMGR, IsCmdAvail(CMD_BKM_DLG_MGR) ? MF_ENABLED : MF_GRAYED);
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_BKM_ADD, IsCmdAvail(CMD_BKM_ADD));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_BKM_REMOVE, IsCmdAvail(CMD_BKM_REMOVE));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_BKM_NEXT, IsCmdAvail(CMD_BKM_NEXT));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_BKM_PREV, IsCmdAvail(CMD_BKM_PREV));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_BKM_REMOVEALL, IsCmdAvail(CMD_BKM_REMOVEALL));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_BKM_DLGMGR, IsCmdAvail(CMD_BKM_DLG_MGR));
 		break;
 	case 5:	//Clipboard.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEX, IsCmdAvail(CMD_CLPBRD_COPY_HEX) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXLE, IsCmdAvail(CMD_CLPBRD_COPY_HEXLE) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXFMT, IsCmdAvail(CMD_CLPBRD_COPY_HEXFMT) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYTEXTCP, IsCmdAvail(CMD_CLPBRD_COPY_TEXTCP) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYBASE64, IsCmdAvail(CMD_CLPBRD_COPY_BASE64) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYCARR, IsCmdAvail(CMD_CLPBRD_COPY_CARR) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYGREPHEX, IsCmdAvail(CMD_CLPBRD_COPY_GREPHEX) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN, IsCmdAvail(CMD_CLPBRD_COPY_PRNTSCRN) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYOFFSET, IsCmdAvail(CMD_CLPBRD_COPY_OFFSET) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTEHEX, IsCmdAvail(CMD_CLPBRD_PASTE_HEX) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTETEXTUTF16, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTUTF16) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTETEXTCP, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTCP) ? MF_ENABLED : MF_GRAYED);
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEX, IsCmdAvail(CMD_CLPBRD_COPY_HEX));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXLE, IsCmdAvail(CMD_CLPBRD_COPY_HEXLE));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXFMT, IsCmdAvail(CMD_CLPBRD_COPY_HEXFMT));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYTEXTCP, IsCmdAvail(CMD_CLPBRD_COPY_TEXTCP));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYBASE64, IsCmdAvail(CMD_CLPBRD_COPY_BASE64));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYCARR, IsCmdAvail(CMD_CLPBRD_COPY_CARR));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYGREPHEX, IsCmdAvail(CMD_CLPBRD_COPY_GREPHEX));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN, IsCmdAvail(CMD_CLPBRD_COPY_PRNTSCRN));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYOFFSET, IsCmdAvail(CMD_CLPBRD_COPY_OFFSET));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTEHEX, IsCmdAvail(CMD_CLPBRD_PASTE_HEX));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTETEXTUTF16, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTUTF16));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTETEXTCP, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTCP));
 		break;
 	case 6: //Modify.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(CMD_MODIFY_FILLZEROS) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLGFILLDATA, IsCmdAvail(CMD_MODIFY_FILLDATA_DLG) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLGOPERS, IsCmdAvail(CMD_MODIFY_OPERS_DLG) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(CMD_MODIFY_UNDO) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(CMD_MODIFY_REDO) ? MF_ENABLED : MF_GRAYED);
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(CMD_MODIFY_FILLZEROS));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLGFILLDATA, IsCmdAvail(CMD_MODIFY_FILLDATA_DLG));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLGOPERS, IsCmdAvail(CMD_MODIFY_OPERS_DLG));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(CMD_MODIFY_UNDO));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(CMD_MODIFY_REDO));
 		break;
 	case 7: //Selection.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKSTART, IsCmdAvail(CMD_SEL_MARKSTART) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKEND, IsCmdAvail(CMD_SEL_MARKEND) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(CMD_SEL_ALL) ? MF_ENABLED : MF_GRAYED);
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKSTART, IsCmdAvail(CMD_SEL_MARKSTART));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKEND, IsCmdAvail(CMD_SEL_MARKEND));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(CMD_SEL_ALL));
 		break;
 	case 8: //Templates.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_APPLYCURR, IsCmdAvail(CMD_TEMPL_APPLYCURR) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DISAPPLY, IsCmdAvail(CMD_TEMPL_DISAPPLY) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DISAPPALL, IsCmdAvail(CMD_TEMPL_DISAPPALL) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DLGMGR, IsCmdAvail(CMD_TEMPL_DLG_MGR) ? MF_ENABLED : MF_GRAYED);
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_APPLYCURR, IsCmdAvail(CMD_TEMPL_APPLYCURR));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DISAPPLY, IsCmdAvail(CMD_TEMPL_DISAPPLY));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DISAPPALL, IsCmdAvail(CMD_TEMPL_DISAPPALL));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DLGMGR, IsCmdAvail(CMD_TEMPL_DLG_MGR));
 		break;
 	case 9: //Data Presentation.
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLGDATAINTERP, IsCmdAvail(CMD_DATAINTERP_DLG) ? MF_ENABLED : MF_GRAYED);
-		m_menuMain.EnableMenuItem(IDM_HEXCTRL_DLGCODEPAGE, IsCmdAvail(CMD_CODEPAGE_DLG) ? MF_ENABLED : MF_GRAYED);
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_DLGDATAINTERP, IsCmdAvail(CMD_DATAINTERP_DLG));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_DLGCODEPAGE, IsCmdAvail(CMD_CODEPAGE_DLG));
 		break;
 	default:
 		break;
 	}
+
+	return 0;
 }
 
-void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
+auto CHexCtrl::OnKeyDown(const MSG& msg)->LRESULT
 {
+	const auto nChar = static_cast<UINT>(msg.wParam);
+	const auto nFlags = static_cast<UINT>(msg.lParam);
+
 	//LORE: If some key combinations do not work for seemingly no reason, it might be due to
 	//global hotkeys hooks from some running app.
 
@@ -6995,7 +7033,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 	if (const auto optCmd = GetCommandFromKey(nChar, GetAsyncKeyState(VK_CONTROL) < 0,
 		GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd) {
 		ExecuteCmd(*optCmd);
-		return;
+		return 0;
 	}
 
 	if (IsDataSet() && IsMutable() && !IsCurTextArea()) {
@@ -7012,7 +7050,7 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 			chByte -= VK_NUMPAD0;
 		}
 		else
-			return;
+			return 0;
 
 		auto chByteCurr = GetIHexTData<unsigned char>(*this, GetCaretPos());
 		if (m_fCaretHigh) {
@@ -7025,28 +7063,35 @@ void CHexCtrl::OnKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT nFlags)
 			.spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { GetCaretPos(), 1 } } });
 		CaretMoveRight();
 	}
+
+	return 0;
 }
 
-void CHexCtrl::OnKeyUp(UINT /*nChar*/, UINT /*nRepCnt*/, UINT /*nFlags*/)
+auto CHexCtrl::OnKeyUp(const MSG& /*msg*/)->LRESULT
 {
 	if (!IsDataSet())
-		return;
+		return 0;
 
 	if (m_fKeyDownAtm) { //If a key was previously pressed continuously and is now released.
 		m_pDlgDataInterp->UpdateData();
 		m_fKeyDownAtm = false;
 	}
+
+	return 0;
 }
 
-void CHexCtrl::OnLButtonDblClk(UINT nFlags, CPoint point)
+auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
 {
-	if ((point.x + static_cast<long>(m_pScrollH->GetScrollPos())) < m_iSecondVertLinePx) { //DblClick on "Offset" area.
+	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	const auto nFlags = static_cast<UINT>(msg.wParam);
+
+	if ((pt.x + static_cast<long>(m_pScrollH->GetScrollPos())) < m_iSecondVertLinePx) { //DblClick on "Offset" area.
 		SetOffsetMode(!IsOffsetAsHex());
 	}
-	else if (GetRectTextCaption().PtInRect(point) != FALSE) { //DblClick on codepage caption area.
+	else if (GetRectTextCaption().PtInRect(pt) != FALSE) { //DblClick on codepage caption area.
 		ExecuteCmd(EHexCmd::CMD_CODEPAGE_DLG);
 	}
-	else if (const auto optHit = HitTest(point); optHit) { //DblClick on hex/text area.
+	else if (const auto optHit = HitTest(pt); optHit) { //DblClick on hex/text area.
 		m_fLMousePressed = true;
 		m_ullCaretPos = optHit->ullOffset;
 		m_fCursorTextArea = optHit->fIsText;
@@ -7061,22 +7106,27 @@ void CHexCtrl::OnLButtonDblClk(UINT nFlags, CPoint point)
 			hs.ullSize = dwCapacity;
 		}
 		else {
-			m_fSelectionBlock = GetAsyncKeyState(VK_MENU) < 0;
+			m_fSelectionBlock = ::GetAsyncKeyState(VK_MENU) < 0;
 			m_ullCursorPrev = m_ullCursorNow = m_ullCaretPos;
 			hs.ullOffset = m_ullCaretPos;
 			hs.ullSize = 1ULL;
 		}
 		SetSelection({ hs });
-		SetCapture();
+		m_Wnd.SetCapture();
 	}
+
+	return 0;
 }
 
-void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
+auto CHexCtrl::OnLButtonDown(const MSG& msg)->LRESULT
 {
-	SetFocus(); //SetFocus is vital to give proper keyboard input to the main HexCtrl window.
-	const auto optHit = HitTest(point);
+	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	const auto nFlags = static_cast<UINT>(msg.wParam);
+
+	m_Wnd.SetFocus(); //SetFocus is vital to give proper keyboard input to the main HexCtrl window.
+	const auto optHit = HitTest(pt);
 	if (!optHit)
-		return;
+		return 0;
 
 	m_fLMousePressed = true;
 	m_ullCursorNow = m_ullCaretPos = optHit->ullOffset;
@@ -7085,8 +7135,8 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 		m_fCaretHigh = optHit->fIsHigh;
 	}
 
-	m_fSelectionBlock = GetAsyncKeyState(VK_MENU) < 0;
-	SetCapture();
+	m_fSelectionBlock = ::GetAsyncKeyState(VK_MENU) < 0;
+	m_Wnd.SetCapture();
 
 	VecSpan vecSel;
 	if (nFlags & MK_SHIFT) {
@@ -7114,48 +7164,49 @@ void CHexCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 	}
 
 	OnCaretPosChange(GetCaretPos());
+
+	return 0;
 }
 
-void CHexCtrl::OnLButtonUp(UINT nFlags, CPoint point)
+auto CHexCtrl::OnLButtonUp(const MSG& /*msg*/)->LRESULT
 {
 	m_fLMousePressed = false;
-	ReleaseCapture();
-
+	::ReleaseCapture();
 	m_pScrollV->OnLButtonUp();
 	m_pScrollH->OnLButtonUp();
 
-	CWnd::OnLButtonUp(nFlags, point);
+	return 0;
 }
 
-void CHexCtrl::OnMouseMove(UINT /*nFlags*/, CPoint point)
+auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 {
-	const auto optHit = HitTest(point);
+	POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	const auto optHit = HitTest(pt);
 
 	if (m_fLMousePressed) {
 		//If LMouse is pressed but cursor is outside of client area.
 		//SetCapture() behaviour.
 
-		CRect rcClient;
-		GetClientRect(&rcClient);
+		const auto rcClient = m_Wnd.GetClientRect();
 		//Checking for scrollbars existence first.
 		if (m_pScrollH->IsVisible()) {
-			if (point.x < rcClient.left) {
+			if (pt.x < rcClient.left) {
 				m_pScrollH->ScrollLineLeft();
-				point.x = m_iIndentFirstHexChunkXPx;
+				pt.x = m_iIndentFirstHexChunkXPx;
 			}
-			else if (point.x >= rcClient.right) {
+			else if (pt.x >= rcClient.right) {
 				m_pScrollH->ScrollLineRight();
-				point.x = m_iFourthVertLinePx - 1;
+				pt.x = m_iFourthVertLinePx - 1;
 			}
 		}
 		if (m_pScrollV->IsVisible()) {
-			if (point.y < m_iStartWorkAreaYPx) {
+			if (pt.y < m_iStartWorkAreaYPx) {
 				m_pScrollV->ScrollLineUp();
-				point.y = m_iStartWorkAreaYPx;
+				pt.y = m_iStartWorkAreaYPx;
 			}
-			else if (point.y >= m_iEndWorkAreaPx) {
+			else if (pt.y >= m_iEndWorkAreaPx) {
 				m_pScrollV->ScrollLineDown();
-				point.y = m_iEndWorkAreaPx - 1;
+				pt.y = m_iEndWorkAreaPx - 1;
 			}
 		}
 
@@ -7164,7 +7215,7 @@ void CHexCtrl::OnMouseMove(UINT /*nFlags*/, CPoint point)
 		//Making selection of the byte only if the cursor has crossed byte's halves.
 		//Doesn't apply when moving in Text area.
 		if (!optHit || (optHit->ullOffset == m_ullCursorNow && m_fCaretHigh == optHit->fIsHigh && !optHit->fIsText))
-			return;
+			return 0;
 
 		m_ullCursorNow = optHit->ullOffset;
 		const auto ullOffsetHit = optHit->ullOffset;
@@ -7230,8 +7281,8 @@ void CHexCtrl::OnMouseMove(UINT /*nFlags*/, CPoint point)
 			if (const auto pBkm = m_pDlgBkmMgr->HitTest(optHit->ullOffset); pBkm != nullptr) {
 				if (m_pBkmTTCurr != pBkm) {
 					m_pBkmTTCurr = pBkm;
-					CPoint ptScreen = point;
-					ClientToScreen(&ptScreen);
+					wnd::CPoint ptScreen = pt;
+					m_Wnd.ClientToScreen(ptScreen);
 					ptScreen.Offset(3, 3);
 					m_ttiMain.lpszText = pBkm->wstrDesc.data();
 					TTMainShow(true);
@@ -7244,8 +7295,8 @@ void CHexCtrl::OnMouseMove(UINT /*nFlags*/, CPoint point)
 				m_pDlgTemplMgr->IsTooltips() && pField != nullptr) {
 				if (m_pTFieldTTCurr != pField) {
 					m_pTFieldTTCurr = pField;
-					CPoint ptScreen = point;
-					ClientToScreen(&ptScreen);
+					wnd::CPoint ptScreen = pt;
+					m_Wnd.ClientToScreen(ptScreen);
 					ptScreen.Offset(3, 3);
 					m_ttiMain.lpszText = const_cast<LPWSTR>(pField->wstrName.data());
 					TTMainShow(true);
@@ -7262,72 +7313,80 @@ void CHexCtrl::OnMouseMove(UINT /*nFlags*/, CPoint point)
 			}
 		}
 
-		m_pScrollV->OnMouseMove(point);
-		m_pScrollH->OnMouseMove(point);
+		m_pScrollV->OnMouseMove(pt);
+		m_pScrollH->OnMouseMove(pt);
 	}
+
+	return 0;
 }
 
-BOOL CHexCtrl::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+auto CHexCtrl::OnMouseWheel(const MSG& msg)->LRESULT
 {
+	const auto zDelta = GET_WHEEL_DELTA_WPARAM(msg.wParam);
+	const auto nFlags = GET_KEYSTATE_WPARAM(msg.wParam);
+
 	if (const auto opt = GetCommandFromKey(zDelta > 0 ? m_dwVKMouseWheelUp : m_dwVKMouseWheelDown,
 		nFlags & MK_CONTROL, nFlags & MK_SHIFT, false); opt) {
 		ExecuteCmd(*opt);
 	}
 
-	return CWnd::OnMouseWheel(nFlags, zDelta, pt);
+	return 0;
 }
 
-BOOL CHexCtrl::OnNcActivate(BOOL bActive)
+auto CHexCtrl::OnNCActivate(const MSG& /*msg*/)->LRESULT
 {
-	m_pScrollV->OnNcActivate();
-	m_pScrollH->OnNcActivate();
+	m_pScrollV->OnNCActivate();
+	m_pScrollH->OnNCActivate();
 
-	return CWnd::OnNcActivate(bActive);
+	return TRUE;
 }
 
-void CHexCtrl::OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp)
+auto CHexCtrl::OnNCCalcSize(const MSG& msg)->LRESULT
 {
-	CWnd::OnNcCalcSize(bCalcValidRects, lpncsp);
+	wnd::DefWndProc(msg);
+	const auto pNCSP = reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg.lParam);
 
 	//Sequence is important — H->V.
-	m_pScrollH->OnNcCalcSize(lpncsp);
-	m_pScrollV->OnNcCalcSize(lpncsp);
+	m_pScrollH->OnNCCalcSize(pNCSP);
+	m_pScrollV->OnNCCalcSize(pNCSP);
+
+	return 0;
 }
 
-void CHexCtrl::OnNcPaint()
+auto CHexCtrl::OnNCPaint(const MSG& msg)->LRESULT
 {
-	Default();
+	wnd::DefWndProc(msg);
+	m_pScrollV->OnNCPaint();
+	m_pScrollH->OnNCPaint();
 
-	m_pScrollV->OnNcPaint();
-	m_pScrollH->OnNcPaint();
+	return 0;
 }
 
-void CHexCtrl::OnPaint()
+auto CHexCtrl::OnPaint()->LRESULT
 {
-	CPaintDC dc(this);
+	wnd::CPaintDC dcPaint(m_Wnd);
 
 	if (!IsDrawable()) //Control should not be rendered atm.
-		return;
+		return 0;
 
-	CRect rcClient;
-	GetClientRect(rcClient);
+	const auto rcClient = m_Wnd.GetClientRect();
 
 	if (!IsCreated()) {
-		dc.FillSolidRect(rcClient, RGB(250, 250, 250));
-		dc.TextOutW(1, 1, L"Call IHexCtrl::Create first.");
-		return;
+		dcPaint.FillSolidRect(rcClient, RGB(250, 250, 250));
+		dcPaint.TextOutW(1, 1, L"Call IHexCtrl::Create first.");
+		return 0;
 	}
 
 	//To prevent drawing in too small window (can cause hangs).
 	if (rcClient.IsRectEmpty() || rcClient.Height() <= m_iHeightTopRectPx + m_iHeightBottomOffAreaPx)
-		return;
+		return 0;
 
 	const auto ullStartLine = GetTopLine();
 	const auto ullEndLine = GetBottomLine();
 	auto iLines = static_cast<int>(ullEndLine - ullStartLine);
 	assert(iLines >= 0);
 	if (iLines < 0)
-		return;
+		return 0;
 
 	//Actual amount of lines, "ullEndLine - ullStartLine" always shows one line less.
 	if (IsDataSet()) {
@@ -7335,59 +7394,73 @@ void CHexCtrl::OnPaint()
 	}
 
 	//Drawing through CMemDC to avoid flickering.
-	CMemDC memDC(dc, rcClient);
-	auto pDC = &memDC.GetDC();
-	DrawWindow(pDC);
-	DrawInfoBar(pDC);
+	wnd::CMemDC dcMem(dcPaint, rcClient);
+	DrawWindow(dcMem);
+	DrawInfoBar(dcMem);
 
 	if (!IsDataSet())
-		return;
+		return 0;
 
-	DrawOffsets(pDC, ullStartLine, iLines);
+	DrawOffsets(dcMem, ullStartLine, iLines);
 	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
-	DrawHexText(pDC, ullStartLine, iLines, wstrHex, wstrText);
-	DrawTemplates(pDC, ullStartLine, iLines, wstrHex, wstrText);
-	DrawBookmarks(pDC, ullStartLine, iLines, wstrHex, wstrText);
-	DrawSelection(pDC, ullStartLine, iLines, wstrHex, wstrText);
-	DrawSelHighlight(pDC, ullStartLine, iLines, wstrHex, wstrText);
-	DrawCaret(pDC, ullStartLine, wstrHex, wstrText);
-	DrawDataInterp(pDC, ullStartLine, iLines, wstrHex, wstrText);
-	DrawPageLines(pDC, ullStartLine, iLines);
+	DrawHexText(dcMem, ullStartLine, iLines, wstrHex, wstrText);
+	DrawTemplates(dcMem, ullStartLine, iLines, wstrHex, wstrText);
+	DrawBookmarks(dcMem, ullStartLine, iLines, wstrHex, wstrText);
+	DrawSelection(dcMem, ullStartLine, iLines, wstrHex, wstrText);
+	DrawSelHighlight(dcMem, ullStartLine, iLines, wstrHex, wstrText);
+	DrawCaret(dcMem, ullStartLine, wstrHex, wstrText);
+	DrawDataInterp(dcMem, ullStartLine, iLines, wstrHex, wstrText);
+	DrawPageLines(dcMem, ullStartLine, iLines);
+
+	return 0;
 }
 
-BOOL CHexCtrl::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
+auto CHexCtrl::OnSetCursor(const MSG& msg)->LRESULT
 {
+	const auto nHitTest = static_cast<UINT>(LOWORD(msg.lParam));
+	const auto message = static_cast<UINT>(HIWORD(msg.lParam));
+
 	m_pScrollV->OnSetCursor(nHitTest, message);
 	m_pScrollH->OnSetCursor(nHitTest, message);
 
-	return CWnd::OnSetCursor(pWnd, nHitTest, message);
+	return wnd::DefWndProc(msg); //To set appropriate cursor.
 }
 
-void CHexCtrl::OnSize(UINT /*nType*/, int cx, int cy)
+auto CHexCtrl::OnSize(const MSG& msg)->LRESULT
 {
+	const auto iWidth = LOWORD(msg.lParam);
+	const auto iHeight = HIWORD(msg.lParam);
+
 	if (!IsCreated())
-		return;
+		return 0;
 
-	RecalcClientArea(cy, cx);
+	RecalcClientArea(iWidth, iHeight);
 	m_pScrollV->SetScrollPageSize(GetScrollPageSize());
+
+	return 0;
 }
 
-void CHexCtrl::OnSysKeyDown(UINT nChar, UINT /*nRepCnt*/, UINT /*nFlags*/)
+auto CHexCtrl::OnSysKeyDown(const MSG& msg)->LRESULT
 {
-	if (auto optCmd = GetCommandFromKey(nChar, GetAsyncKeyState(VK_CONTROL) < 0, GetAsyncKeyState(VK_SHIFT) < 0, true); optCmd) {
+	const auto nChar = static_cast<UINT>(msg.wParam);
+
+	if (const auto optCmd = GetCommandFromKey(nChar, ::GetAsyncKeyState(VK_CONTROL) < 0, ::
+		GetAsyncKeyState(VK_SHIFT) < 0, true); optCmd) {
 		ExecuteCmd(*optCmd);
 	}
+
+	return 0;
 }
 
-void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
+auto CHexCtrl::OnTimer(const MSG& msg)->LRESULT
 {
-	static constexpr auto dbSecToShow { 5000.0 }; //How many ms to show the Tooltip.
+	static constexpr auto dbSecToShow { 5000.0 }; //How many ms to show tooltips.
+	const auto nIDEvent = static_cast<UINT_PTR>(msg.wParam);
 
-	CRect rcClient;
-	GetClientRect(rcClient);
-	ClientToScreen(rcClient);
-	CPoint ptCursor;
-	GetCursorPos(&ptCursor);
+	auto rcClient = m_Wnd.GetClientRect();
+	m_Wnd.ClientToScreen(rcClient);
+	wnd::CPoint ptCursor;
+	GetCursorPos(ptCursor);
 
 	switch (nIDEvent) {
 	case m_uIDTTTMain:
@@ -7401,12 +7474,13 @@ void CHexCtrl::OnTimer(UINT_PTR nIDEvent)
 		}
 		break;
 	default:
-		CWnd::OnTimer(nIDEvent);
 		break;
 	}
+
+	return 0;
 }
 
-void CHexCtrl::OnVScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollBar*/)
+auto CHexCtrl::OnVScroll(const MSG& /*msg*/)->LRESULT
 {
 	bool fRedraw { true };
 	if (m_fHighLatency) {
@@ -7415,6 +7489,18 @@ void CHexCtrl::OnVScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar* /*pScrollB
 	}
 
 	if (fRedraw) {
-		RedrawWindow();
+		m_Wnd.RedrawWindow();
 	}
+
+	return 0;
+}
+
+auto CHexCtrl::SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+	UINT_PTR uIDSubclass, DWORD_PTR /*dwRefData*/) -> LRESULT {
+	if (uMsg == WM_NCDESTROY) {
+		::RemoveWindowSubclass(hWnd, SubclassProc, uIDSubclass);
+	}
+
+	const auto pHexCtrl = reinterpret_cast<CHexCtrl*>(uIDSubclass);
+	return pHexCtrl->ProcessMsg({ .hwnd { hWnd }, .message { uMsg }, .wParam { wParam }, .lParam { lParam } });
 }

@@ -6,13 +6,15 @@
 ****************************************************************************************/
 #pragma once
 #include "../HexCtrl.h"
-#include <afxwin.h>      //MFC core and standard components.
+#include <afxwin.h>
 #include <algorithm>
 #include <chrono>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+import HEXCTRL.HexUtility;
 
 namespace HEXCTRL::INTERNAL {
 	//Forward declarations.
@@ -29,7 +31,7 @@ namespace HEXCTRL::INTERNAL {
 	/********************************************************************************************
 	* CHexCtrl class is an implementation of the IHexCtrl interface.                            *
 	********************************************************************************************/
-	class CHexCtrl final : public CWnd, public IHexCtrl {
+	class CHexCtrl final : public IHexCtrl {
 	public:
 		explicit CHexCtrl();
 		CHexCtrl(const CHexCtrl&) = delete;
@@ -41,6 +43,7 @@ namespace HEXCTRL::INTERNAL {
 		bool Create(const HEXCREATE& hcs)override;
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)override;
 		void Destroy()override;
+		void DestroyWindow();
 		void ExecuteCmd(EHexCmd eCmd)override;
 		[[nodiscard]] auto GetActualWidth()const->int override;
 		[[nodiscard]] auto GetBookmarks()const->IHexBookmarks* override;
@@ -79,6 +82,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsVirtual()const override;
 		void ModifyData(const HEXMODIFY& hms)override;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg)override;
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> LRESULT;
 		void Redraw()override;
 		void SetCapacity(DWORD dwCapacity)override;
 		void SetCaretPos(ULONGLONG ullOffset, bool fHighLow = true, bool fRedraw = true)override;
@@ -128,17 +132,17 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto CopyOffset()const->std::wstring;
 		[[nodiscard]] auto CopyPrintScreen()const->std::wstring;
 		[[nodiscard]] auto CopyTextCP()const->std::wstring;
-		void DrawWindow(CDC* pDC)const;
-		void DrawInfoBar(CDC* pDC)const;
-		void DrawOffsets(CDC* pDC, ULONGLONG ullStartLine, int iLines)const;
-		void DrawHexText(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
-		void DrawTemplates(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
-		void DrawBookmarks(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
-		void DrawSelection(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
-		void DrawSelHighlight(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
-		void DrawCaret(CDC* pDC, ULONGLONG ullStartLine, std::wstring_view wsvHex, std::wstring_view wsvText)const;
-		void DrawDataInterp(CDC* pDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
-		void DrawPageLines(CDC* pDC, ULONGLONG ullStartLine, int iLines);
+		void DrawWindow(HDC hDC)const;
+		void DrawInfoBar(HDC hDC)const;
+		void DrawOffsets(HDC hDC, ULONGLONG ullStartLine, int iLines)const;
+		void DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawCaret(HDC hDC, ULONGLONG ullStartLine, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const;
+		void DrawPageLines(HDC hDC, ULONGLONG ullStartLine, int iLines);
 		void FillCapacityString(); //Fill m_wstrCapacity according to current m_dwCapacity.
 		void FillWithZeros();      //Fill selection with zeros.
 		void FontSizeIncDec(bool fInc = true); //Increase os decrease font size by minimum amount.
@@ -150,7 +154,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>; //Get command from menuID.
 		[[nodiscard]] auto GetDigitsOffset()const->DWORD;
 		[[nodiscard]] long GetFontSize()const;
-		[[nodiscard]] auto GetRectTextCaption()const->CRect;   //Returns rect of the text caption area.
+		[[nodiscard]] auto GetRectTextCaption()const->wnd::CRect;   //Returns rect of the text caption area.
 		[[nodiscard]] auto GetScrollPageSize()const->ULONGLONG; //Get the "Page" size of the scroll.
 		[[nodiscard]] auto GetTopLine()const->ULONGLONG;       //Returns current top line number in view.
 		[[nodiscard]] auto GetVirtualOffset(ULONGLONG ullOffset)const->ULONGLONG;
@@ -168,8 +172,8 @@ namespace HEXCTRL::INTERNAL {
 		void ParentNotify(const T& t)const;                    //Notify routine used to send messages to Parent window.
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 		void Print();                                          //Printing routine.
-		void RecalcAll(CDC* pDC = nullptr, const CRect* pRect = nullptr); //Recalculates all drawing sizes for given DC.
-		void RecalcClientArea(int iHeight, int iWidth);
+		void RecalcAll(HDC hDC = nullptr, LPCRECT pRC = nullptr); //Recalculates all drawing sizes for given DC.
+		void RecalcClientArea(int iWidth, int iHeight);
 		void Redo();
 		void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)const; //Substitute all unprintable wchar symbols with specified wchar.
 		void ScrollOffsetH(ULONGLONG ullOffset); //Scroll horizontally to given offset.
@@ -189,36 +193,37 @@ namespace HEXCTRL::INTERNAL {
 		static void ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, SpanCByte); //Modify operation x86/x64 vector 128.
 		static void ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, SpanCByte); //Modify operation x86/x64 vector 256.
 
-		//MFC message handlers.
-		afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
-		BOOL OnCommand(WPARAM wParam, LPARAM lParam)override;
-		afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
-		afx_msg void OnDestroy();
-		afx_msg BOOL OnEraseBkgnd(CDC* pDC);
-		afx_msg UINT OnGetDlgCode(); //To properly work in dialogs.
-		afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
-		afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-		afx_msg void OnInitMenuPopup(CMenu* pPopupMenu, UINT nIndex, BOOL bSysMenu);
-		afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
-		afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
-		afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
-		afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-		afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
-		afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-		afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
-		afx_msg BOOL OnNcActivate(BOOL bActive);
-		afx_msg void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp);
-		afx_msg void OnNcPaint();
-		afx_msg void OnPaint();
-		afx_msg BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
-		afx_msg void OnSize(UINT nType, int cx, int cy);
-		afx_msg void OnSysKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
-		afx_msg void OnTimer(UINT_PTR nIDEvent);
-		afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-		DECLARE_MESSAGE_MAP();
+		//Message handlers.
+		auto OnChar(const MSG& msg) -> LRESULT;
+		auto OnCommand(const MSG& msg) -> LRESULT;
+		auto OnContextMenu(const MSG& msg) -> LRESULT;
+		auto OnDestroy() -> LRESULT;
+		auto OnEraseBkgnd(const MSG& msg) -> LRESULT;
+		auto OnGetDlgCode(const MSG& msg) -> LRESULT;
+		auto OnHelp(const MSG& msg) -> LRESULT;
+		auto OnHScroll(const MSG& msg) -> LRESULT;
+		auto OnInitMenuPopup(const MSG& msg) -> LRESULT;
+		auto OnKeyDown(const MSG& msg) -> LRESULT;
+		auto OnKeyUp(const MSG& msg) -> LRESULT;
+		auto OnLButtonDblClk(const MSG& msg) -> LRESULT;
+		auto OnLButtonDown(const MSG& msg) -> LRESULT;
+		auto OnLButtonUp(const MSG& msg) -> LRESULT;
+		auto OnMouseMove(const MSG& msg) -> LRESULT;
+		auto OnMouseWheel(const MSG& msg) -> LRESULT;
+		auto OnNCActivate(const MSG& msg) -> LRESULT;
+		auto OnNCCalcSize(const MSG& msg) -> LRESULT;
+		auto OnNCPaint(const MSG& msg) -> LRESULT;
+		auto OnPaint() -> LRESULT;
+		auto OnSetCursor(const MSG& msg) -> LRESULT;
+		auto OnSize(const MSG& msg) -> LRESULT;
+		auto OnSysKeyDown(const MSG& msg) -> LRESULT;
+		auto OnTimer(const MSG& msg) -> LRESULT;
+		auto OnVScroll(const MSG& msg) -> LRESULT;
+		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
 		static constexpr auto m_pwszHexChars { L"0123456789ABCDEF" }; //Hex digits wchars for fast lookup.
-		static constexpr auto m_pwszClassName { L"HexCtrl_51F07D56" };//HexCtrl unique Window Class name.
+		static constexpr auto m_pwszClassName { L"HexCtrl_MainWnd" }; //HexCtrl unique Window Class name.
 		static constexpr auto m_uIDTTTMain { 0x01UL };                //Timer ID for default tooltip.
 		static constexpr auto m_iIndentBottomLine { 1 };              //Bottom line indent from window's bottom.
 		static constexpr auto m_iFirstHorzLinePx { 0 };               //First horizontal line indent.
@@ -235,27 +240,40 @@ namespace HEXCTRL::INTERNAL {
 		const std::unique_ptr<CHexSelection> m_pSelection { std::make_unique<CHexSelection>() };             //Selection class.
 		const std::unique_ptr<CHexScroll> m_pScrollV { std::make_unique<CHexScroll>() };                     //Vertical scroll bar.
 		const std::unique_ptr<CHexScroll> m_pScrollH { std::make_unique<CHexScroll>() };                     //Horizontal scroll bar.
-		SpanByte m_spnData;                   //Main data span.
+		HINSTANCE m_hInstRes { };             //Hinstance of the HexCtrl resources.
+		wnd::CWnd m_Wnd;                      //Main window.
+		wnd::CWnd m_wndTTMain;                //Main tooltip window.
+		wnd::CWnd m_wndTTOffset;              //Tooltip window for Offset in m_fHighLatency mode.
+		wnd::CMenu m_MenuMain;                //Main popup menu.
+		HFONT m_hFntMain { };                 //Main Hex chunks font.
+		HFONT m_hFntInfoBar { };              //Font for bottom Info bar.
+		HPEN m_hPenLines { };                 //Pen for lines.
+		HPEN m_hPenDataTempl { };             //Pen for templates' fields (vertical lines).
 		HEXCOLORS m_stColors;                 //All HexCtrl colors.
+		std::wstring m_wstrCapacity;          //Top Capacity string.
+		std::wstring m_wstrInfoBar;           //Info bar text.
+		std::wstring m_wstrPageName;          //Name of the sector/page.
+		std::wstring m_wstrTextTitle;         //Text area title.
+		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecUndo; //Undo data.
+		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecRedo; //Redo data.
+		std::vector < std::unique_ptr < std::remove_pointer_t<HBITMAP>,
+			decltype([](HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP; //Icons for the Menu.
+		std::vector<KEYBIND> m_vecKeyBind;    //Vector of key bindings.
+		std::vector<int> m_vecCharsWidth;     //Vector of chars widths.
 		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
-		CWnd m_wndTTMain;                     //Main tooltip window.
-		CWnd m_wndTTOffset;                   //Tooltip window for Offset in m_fHighLatency mode.
+		SpanByte m_spnData;                   //Main data span.
 		TTTOOLINFOW m_ttiMain { };            //Main tooltip info.
 		TTTOOLINFOW m_ttiOffset { };          //Tooltip info for Offset.
 		std::chrono::steady_clock::time_point m_tmTT; //Start time of the tooltip.
 		PHEXBKM m_pBkmTTCurr { };             //Currently shown bookmark's tooltip;
 		PCHEXTEMPLFIELD m_pTFieldTTCurr { };  //Currently shown Template field's tooltip;
-		CFont m_fntMain;                      //Main Hex chunks font.
-		CFont m_fntInfoBar;                   //Font for bottom Info bar.
-		CMenu m_menuMain;                     //Main popup menu.
-		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
-		CPen m_penLines;                      //Pen for lines.
-		CPen m_penDataTempl;                  //Pen for templates' fields (vertical lines).
-		float m_flScrollRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		ULONGLONG m_ullCaretPos { };          //Current caret position.
 		ULONGLONG m_ullCursorNow { };         //The cursor's current clicked pos.
 		ULONGLONG m_ullCursorPrev { };        //The cursor's previously clicked pos, used in selection resolutions.
+		SIZE m_sizeFontMain { 1, 1 };         //Main font letter's size (width, height).
+		SIZE m_sizeFontInfo { 1, 1 };         //Info window font letter's size (width, height).
+		POINT m_stMenuClickedPt { };          //RMouse coords when clicked.
 		DWORD m_dwGroupSize { };              //Current data grouping size.
 		DWORD m_dwCapacity { };               //How many bytes are displayed in one row.
 		DWORD m_dwCapacityBlockSize { };      //Size of the block before a space delimiter.
@@ -265,8 +283,6 @@ namespace HEXCTRL::INTERNAL {
 		DWORD m_dwCacheSize { };              //Data cache size for VirtualData mode.
 		DWORD m_dwDateFormat { };             //Current date format. See https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
 		DWORD m_dwCharsExtraSpace { };        //Extra space between chars.
-		SIZE m_sizeFontMain { 1, 1 };         //Main font letter's size (width, height).
-		SIZE m_sizeFontInfo { 1, 1 };         //Info window font letter's size (width, height).
 		int m_iSizeFirstHalfPx { };           //Size in px of the first half of the capacity.
 		int m_iSizeHexBytePx { };             //Size in px of two hex letters representing one byte.
 		int m_iIndentTextXPx { };             //Indent in px of the text beginning.
@@ -291,16 +307,7 @@ namespace HEXCTRL::INTERNAL {
 		int m_iFourthVertLinePx { };          //Fourth vert line indent.
 		int m_iCodePage { };                  //Current code-page for Text area. -1 for default.
 		int m_iLOGPIXELSY { };                //GetDeviceCaps(LOGPIXELSY) constant.
-		std::wstring m_wstrCapacity;          //Top Capacity string.
-		std::wstring m_wstrInfoBar;           //Info bar text.
-		std::wstring m_wstrPageName;          //Name of the sector/page.
-		std::wstring m_wstrTextTitle;         //Text area title.
-		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecUndo; //Undo data.
-		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecRedo; //Redo data.
-		std::vector < std::unique_ptr < std::remove_pointer_t<HBITMAP>,
-			decltype([](HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP; //Icons for the Menu.
-		std::vector<KEYBIND> m_vecKeyBind;    //Vector of key bindings.
-		std::vector<int> m_vecCharsWidth;     //Vector of chars widths.
+		float m_flScrollRatio { };            //Ratio for how much to scroll with mouse-wheel.
 		wchar_t m_wchUnprintable { };         //Replacement char for unprintable characters.
 		wchar_t m_wchDateSepar { };           //Date separator.
 		bool m_fCreated { false };            //Is control created or not yet.

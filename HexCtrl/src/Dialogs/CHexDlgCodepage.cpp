@@ -16,7 +16,7 @@ using namespace HEXCTRL::INTERNAL;
 void CHexDlgCodepage::AddCP(std::wstring_view wsv)
 {
 	if (const auto optCPID = stn::StrToUInt32(wsv); optCPID) {
-		if (CPINFOEXW stCP; GetCPInfoExW(*optCPID, 0, &stCP) != FALSE) {
+		if (CPINFOEXW stCP; ::GetCPInfoExW(*optCPID, 0, &stCP) != FALSE) {
 			m_vecCodePage.emplace_back(static_cast<int>(*optCPID), stCP.CodePageName, stCP.MaxCharSize);
 		}
 	}
@@ -25,8 +25,8 @@ void CHexDlgCodepage::AddCP(std::wstring_view wsv)
 void CHexDlgCodepage::CreateDlg()
 {
 	//m_Wnd is set in the OnInitDialog().
-	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_CODEPAGE),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgWndProc<CHexDlgCodepage>, reinterpret_cast<LPARAM>(this));
+	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_CODEPAGE),
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgCodepage>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		DBG_REPORT(L"CreateDialogParamW failed.");
 	}
@@ -37,13 +37,15 @@ auto CHexDlgCodepage::GetHWND()const->HWND
 	return m_Wnd;
 }
 
-void CHexDlgCodepage::Initialize(IHexCtrl* pHexCtrl)
+void CHexDlgCodepage::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
-	assert(pHexCtrl);
-	if (pHexCtrl == nullptr)
+	if (pHexCtrl == nullptr || hInstRes == nullptr) {
+		DBG_REPORT(L"Initialize == nullptr");
 		return;
+	}
 
 	m_pHexCtrl = pHexCtrl;
+	m_hInstRes = hInstRes;
 }
 
 bool CHexDlgCodepage::PreTranslateMsg(MSG* pMsg)
@@ -171,7 +173,7 @@ auto CHexDlgCodepage::OnInitDialog(const MSG& msg)->INT_PTR
 	m_vecCodePage.emplace_back(-1, L"<link=\"https://en.wikipedia.org/wiki/ASCII\">ASCII 7-bit</link> (default)", 1);
 	m_vecCodePage.emplace_back(0, L"Windows Internal UTF-16 (wchar_t)", 4);
 	m_pThis = this;
-	EnumSystemCodePagesW(EnumCodePagesProc, CP_INSTALLED);
+	::EnumSystemCodePagesW(EnumCodePagesProc, CP_INSTALLED);
 	m_ListEx.SetItemCountEx(static_cast<int>(m_vecCodePage.size()), LVSICF_NOSCROLL);
 
 	m_DynLayout.SetHost(m_Wnd);

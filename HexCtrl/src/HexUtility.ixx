@@ -7,10 +7,10 @@ module;
 ****************************************************************************************/
 #include <SDKDDKVer.h>
 #include "../HexCtrl.h"
-#include <afxwin.h>
 #include <algorithm>
 #include <bit>
 #include <cassert>
+#include <commctrl.h>
 #include <cwctype>
 #include <format>
 #include <intrin.h>
@@ -392,10 +392,6 @@ export namespace HEXCTRL::INTERNAL {
 			pBegin = reinterpret_cast<const std::byte*>(refData.data());
 			pEnd = pBegin + refData.size() * sizeof(wchar_t);
 		}
-		else if constexpr (std::is_same_v<T, CStringW>) {
-			pBegin = reinterpret_cast<const std::byte*>(refData.GetString());
-			pEnd = pBegin + refData.GetLength() * sizeof(wchar_t);
-		}
 		else {
 			pBegin = reinterpret_cast<const std::byte*>(&refData);
 			pEnd = pBegin + sizeof(refData);
@@ -419,11 +415,7 @@ export namespace HEXCTRL::INTERNAL {
 }
 
 export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
-	[[nodiscard]] auto GetHinstance() -> HINSTANCE {
-		return AfxGetInstanceHandle();
-	}
-
-	auto DefMsgProc(const MSG& msg) -> LRESULT {
+	auto DefWndProc(const MSG& msg) -> LRESULT {
 		return ::DefWindowProcW(msg.hwnd, msg.message, msg.wParam, msg.lParam);
 	}
 
@@ -432,15 +424,16 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 	{
 		//Different IHexCtrl objects will share the same WndProc<ExactTypeHere> function.
 		//Hence, the map is needed to differentiate these objects. 
-		//The DlgWndProc<T> works absolutely the same way.
+		//The DlgProc<T> works absolutely the same way.
 		static std::unordered_map<HWND, T*> uMap;
 
 		//CREATESTRUCTW::lpCreateParams always possesses `this` pointer, passed to the CreateWindowExW
 		//function as lpParam. We save it to the static uMap to have access to this->ProcessMsg() method.
 		if (uMsg == WM_CREATE) {
 			const auto lpCS = reinterpret_cast<LPCREATESTRUCTW>(lParam);
-			uMap[hWnd] = reinterpret_cast<T*>(lpCS->lpCreateParams);
-			return 0;
+			if (lpCS->lpCreateParams != nullptr) {
+				uMap[hWnd] = reinterpret_cast<T*>(lpCS->lpCreateParams);
+			}
 		}
 
 		if (const auto it = uMap.find(hWnd); it != uMap.end()) {
@@ -456,8 +449,8 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 	}
 
 	template<typename T>
-	auto CALLBACK DlgWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->INT_PTR {
-		//DlgWndProc should return zero for all non-processed messages.
+	auto CALLBACK DlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)->INT_PTR {
+		//DlgProc should return zero for all non-processed messages.
 		//In that case messages will be processed by Windows default dialog proc.
 		//Non-processed messages should not be passed neither to DefWindowProcW nor to DefDlgProcW.
 		//Processed messages should return any non-zero value, depending on message type.
@@ -466,7 +459,9 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 
 		//DialogBoxParamW and CreateDialogParamW dwInitParam arg is sent with WM_INITDIALOG as lParam.
 		if (uMsg == WM_INITDIALOG) {
-			uMap[hWnd] = reinterpret_cast<T*>(lParam);
+			if (lParam != 0) {
+				uMap[hWnd] = reinterpret_cast<T*>(lParam);
+			}
 		}
 
 		if (const auto it = uMap.find(hWnd); it != uMap.end()) {
@@ -479,12 +474,6 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		}
 
 		return 0;
-	}
-
-	void FillSolidRect(HDC hDC, LPCRECT pRC, COLORREF clr) {
-		//Replicates CDC::FillSolidRect.
-		::SetBkColor(hDC, clr);
-		::ExtTextOutW(hDC, 0, 0, ETO_OPAQUE, pRC, nullptr, 0, nullptr);
 	}
 
 	class CDynLayout {
@@ -631,10 +620,20 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		CDC() = default;
 		CDC(HDC hDC) : m_hDC(hDC) { }
 		operator HDC()const { return m_hDC; }
+		void AbortDoc()const { ::AbortDoc(m_hDC); }
+		void DeleteDC()const { ::DeleteDC(m_hDC); }
+		void GetTextMetricsW(LPTEXTMETRICW pTM)const { ::GetTextMetricsW(m_hDC, pTM); }
+		auto SetBkColor(COLORREF clr)const->COLORREF { return ::SetBkColor(m_hDC, clr); }
+		void DrawEdge(LPRECT pRC, UINT uEdge, UINT uFlags)const { ::DrawEdge(m_hDC, pRC, uEdge, uFlags); }
 		void DrawFocusRect(LPCRECT pRc)const { ::DrawFocusRect(m_hDC, pRc); }
 		int DrawTextW(std::wstring_view wsv, LPRECT pRect, UINT uFormat)const {
-			return ::DrawTextW(m_hDC, wsv.data(), static_cast<int>(wsv.size()), pRect, uFormat);
+			return DrawTextW(wsv.data(), static_cast<int>(wsv.size()), pRect, uFormat);
 		}
+		int DrawTextW(LPCWSTR pwszText, int iSize, LPRECT pRect, UINT uFormat)const {
+			return ::DrawTextW(m_hDC, pwszText, iSize, pRect, uFormat);
+		}
+		int EndDoc()const { return ::EndDoc(m_hDC); }
+		int EndPage()const { return ::EndPage(m_hDC); }
 		void FillSolidRect(LPCRECT pRC, COLORREF clr)const {
 			::SetBkColor(m_hDC, clr); ::ExtTextOutW(m_hDC, 0, 0, ETO_OPAQUE, pRC, nullptr, 0, nullptr);
 		}
@@ -644,8 +643,16 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		bool MoveTo(POINT pt)const { return MoveTo(pt.x, pt.y); }
 		bool MoveTo(int x, int y)const { return ::MoveToEx(m_hDC, x, y, nullptr); }
 		bool Polygon(const POINT* pPT, int iCount)const { return ::Polygon(m_hDC, pPT, iCount); }
+		int SetMapMode(int iMode)const { return ::SetMapMode(m_hDC, iMode); }
 		auto SetTextColor(COLORREF clr)const->COLORREF { return ::SetTextColor(m_hDC, clr); }
+		void SetViewportOrg(int iX, int iY)const { POINT pt; ::OffsetViewportOrgEx(m_hDC, iX, iY, &pt); }
 		auto SelectObject(HGDIOBJ hObj)const->HGDIOBJ { return ::SelectObject(m_hDC, hObj); }
+		int StartDocW(const DOCINFO* pDI)const { return ::StartDocW(m_hDC, pDI); }
+		int StartPage()const { return ::StartPage(m_hDC); }
+		void TextOutW(int iX, int iY, LPCWSTR pwszText, int iSize)const { ::TextOutW(m_hDC, iX, iY, pwszText, iSize); }
+		void TextOutW(int iX, int iY, std::wstring_view wsv)const {
+			TextOutW(iX, iY, wsv.data(), static_cast<int>(wsv.size()));
+		}
 	protected:
 		HDC m_hDC;
 	};
@@ -715,9 +722,9 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		[[nodiscard]] auto ChildWindowFromPoint(POINT pt)const->HWND {
 			assert(IsWindow()); return ::ChildWindowFromPoint(m_hWnd, pt);
 		}
+		void ClientToScreen(LPPOINT pPT)const { assert(IsWindow()); ::ClientToScreen(m_hWnd, pPT); }
 		void ClientToScreen(LPRECT pRC)const {
-			assert(IsWindow()); ::ClientToScreen(m_hWnd, reinterpret_cast<LPPOINT>(pRC));
-			::ClientToScreen(m_hWnd, (reinterpret_cast<LPPOINT>(pRC)) + 1);
+			ClientToScreen(reinterpret_cast<LPPOINT>(pRC)); ClientToScreen((reinterpret_cast<LPPOINT>(pRC)) + 1);
 		}
 		void DestroyWindow() { assert(IsWindow()); ::DestroyWindow(m_hWnd); m_hWnd = nullptr; }
 		void Detach() { m_hWnd = nullptr; }
@@ -732,6 +739,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 			} return 0;
 		}
 		[[nodiscard]] auto GetDC()const->HDC { assert(IsWindow()); return ::GetDC(m_hWnd); }
+		[[nodiscard]] int GetDlgCtrlID()const { assert(IsWindow()); return ::GetDlgCtrlID(m_hWnd); }
 		[[nodiscard]] auto GetDlgItem(int iIDCtrl)const->HWND { assert(IsWindow()); return ::GetDlgItem(m_hWnd, iIDCtrl); }
 		[[nodiscard]] auto GetHFont()const->HFONT {
 			assert(IsWindow()); return reinterpret_cast<HFONT>(::SendMessageW(m_hWnd, WM_GETFONT, 0, 0));
@@ -947,26 +955,46 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		}
 		void AppendSepar()const { AppendItem(MF_SEPARATOR, 0, nullptr); }
 		void AppendString(UINT_PTR uIDItem, LPCWSTR pNameItem)const { AppendItem(MF_STRING, uIDItem, pNameItem); }
-		void Attach(HMENU hMenu) { assert(::IsMenu(hMenu)); m_hMenu = hMenu; }
-		void CheckItem(UINT uIDItem, bool fCheck, bool fByID = true)const {
+		void Attach(HMENU hMenu) { m_hMenu = hMenu; }
+		void CheckMenuItem(UINT uIDItem, bool fCheck, bool fByID = true)const {
 			assert(IsMenu()); ::CheckMenuItem(m_hMenu, uIDItem, fCheck ? MF_CHECKED : MF_UNCHECKED |
 			(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
 		}
 		void CreatePopupMenu() { Attach(::CreatePopupMenu()); }
 		void DestroyMenu() { assert(IsMenu()); ::DestroyMenu(m_hMenu); m_hMenu = nullptr; }
 		void Detach() { m_hMenu = nullptr; }
-		void EnableItem(UINT uIDItem, bool fEnable, bool fByID = true)const {
+		void EnableMenuItem(UINT uIDItem, bool fEnable, bool fByID = true)const {
 			assert(IsMenu()); ::EnableMenuItem(m_hMenu, uIDItem, fEnable ? MF_ENABLED : MF_GRAYED |
 				(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
 		}
-		[[nodiscard]] auto GetMenuState(UINT uID, UINT nFlags)const->UINT {
-			assert(IsMenu()); return ::GetMenuState(m_hMenu, uID, nFlags);
+		[[nodiscard]] int GetMenuItemCount()const {
+			assert(IsMenu()); return ::GetMenuItemCount(m_hMenu);
 		}
+		[[nodiscard]] auto GetMenuItemID(int iPos)const->UINT {
+			assert(IsMenu()); return ::GetMenuItemID(m_hMenu, iPos);
+		}
+		bool GetMenuItemInfoW(UINT uID, LPMENUITEMINFOW pMII, bool fByID = true)const {
+			assert(IsMenu()); return ::GetMenuItemInfoW(m_hMenu, uID, !fByID, pMII) != FALSE;
+		}
+		[[nodiscard]] auto GetMenuState(UINT uID, bool fByID = true)const->UINT {
+			assert(IsMenu()); return ::GetMenuState(m_hMenu, uID, (fByID ? MF_BYCOMMAND : MF_BYPOSITION));
+		}
+		[[nodiscard]] auto GetMenuStr(UINT uID, bool fByID = true)const->std::wstring {
+			assert(IsMenu()); wchar_t buff[128];
+			MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_STRING }, .dwTypeData { buff }, .cch { 128 } };
+			const auto ret = GetMenuItemInfoW(uID, &mii, (fByID ? MF_BYCOMMAND : MF_BYPOSITION));
+			return ret ? buff : L"";
+		}
+		[[nodiscard]] auto GetSubMenu(int iPos)const -> CMenu { assert(IsMenu()); return ::GetSubMenu(m_hMenu, iPos); };
 		[[nodiscard]] bool IsChecked(UINT uIDItem, bool fByID = true)const {
 			return GetMenuState(uIDItem, fByID ? MF_BYCOMMAND : MF_BYPOSITION) & MF_CHECKED;
 		}
 		[[nodiscard]] bool IsMenu()const { return ::IsMenu(m_hMenu); }
-		void TrackPopup(int iX, int iY, HWND hWndOwner, UINT uFlags = TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON)const {
+		bool LoadMenuW(HINSTANCE hInst, LPCWSTR pwszName) { m_hMenu = ::LoadMenuW(hInst, pwszName); return IsMenu(); }
+		void SetMenuItemInfoW(UINT uItem, LPCMENUITEMINFO pMII, bool fByPos = true)const {
+			assert(IsMenu()); ::SetMenuItemInfoW(m_hMenu, uItem, fByPos, pMII);
+		}
+		void TrackPopupMenu(int iX, int iY, HWND hWndOwner, UINT uFlags = TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON)const {
 			assert(IsMenu()); ::TrackPopupMenuEx(m_hMenu, uFlags, iX, iY, hWndOwner, nullptr);
 		}
 	private:

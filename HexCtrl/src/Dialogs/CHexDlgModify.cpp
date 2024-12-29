@@ -15,7 +15,7 @@ using namespace HEXCTRL::INTERNAL;
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgOpers final {
 	public:
-		void CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl);
+		void CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] auto GetHWND()const->HWND;
 		auto OnActivate(const MSG& msg) -> INT_PTR;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
@@ -61,15 +61,15 @@ namespace HEXCTRL::INTERNAL {
 	};
 }
 
-void CHexDlgOpers::CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl)
+void CHexDlgOpers::CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
 	assert(hWndParent != nullptr); assert(pHexCtrl != nullptr);
 	if (hWndParent == nullptr || pHexCtrl == nullptr)
 		return;
 
 	//m_Wnd is set in the OnInitDialog().
-	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_OPERS),
-		hWndParent, wnd::DlgWndProc<CHexDlgOpers>, reinterpret_cast<LPARAM>(this)); hWnd == nullptr) {
+	if (const auto hWnd = ::CreateDialogParamW(hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_OPERS),
+		hWndParent, wnd::DlgProc<CHexDlgOpers>, reinterpret_cast<LPARAM>(this)); hWnd == nullptr) {
 		DBG_REPORT(L"CreateDialogParamW failed.");
 	}
 
@@ -549,7 +549,7 @@ void CHexDlgOpers::UpdateDescr()
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgFillData final {
 	public:
-		void CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl);
+		void CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		[[nodiscard]] auto GetHWND()const->HWND;
 		auto OnActivate(const MSG& msg) -> INT_PTR;
@@ -584,15 +584,15 @@ enum class CHexDlgFillData::EFillType : std::uint8_t {
 	FILL_HEX, FILL_ASCII, FILL_WCHAR, FILL_RAND_MT19937, FILL_RAND_FAST
 };
 
-void CHexDlgFillData::CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl)
+void CHexDlgFillData::CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
 	assert(hWndParent != nullptr); assert(pHexCtrl != nullptr);
 	if (hWndParent == nullptr || pHexCtrl == nullptr)
 		return;
 
 	//m_Wnd is set in the OnInitDialog().
-	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_FILLDATA),
-		hWndParent, wnd::DlgWndProc<CHexDlgFillData>, reinterpret_cast<LPARAM>(this)); hWnd == nullptr) {
+	if (const auto hWnd = ::CreateDialogParamW(hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_FILLDATA),
+		hWndParent, wnd::DlgProc<CHexDlgFillData>, reinterpret_cast<LPARAM>(this)); hWnd == nullptr) {
 		DBG_REPORT(L"CreateDialogParamW failed.");
 	}
 
@@ -847,8 +847,8 @@ CHexDlgModify::~CHexDlgModify() = default;
 void CHexDlgModify::CreateDlg()
 {
 	//m_Wnd is set in the OnInitDialog().
-	if (const auto hWnd = ::CreateDialogParamW(wnd::GetHinstance(), MAKEINTRESOURCEW(IDD_HEXCTRL_MODIFY),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgWndProc<CHexDlgModify>, reinterpret_cast<LPARAM>(this));
+	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_MODIFY),
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgModify>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		DBG_REPORT(L"CreateDialogParamW failed.");
 	}
@@ -874,10 +874,15 @@ auto CHexDlgModify::GetHWND()const->HWND
 	return m_Wnd;
 }
 
-void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl)
+void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
-	assert(pHexCtrl);
+	if (pHexCtrl == nullptr || hInstRes == nullptr) {
+		DBG_REPORT(L"Initialize == nullptr");
+		return;
+	}
+
 	m_pHexCtrl = pHexCtrl;
+	m_hInstRes = hInstRes;
 }
 
 bool CHexDlgModify::PreTranslateMsg(MSG* pMsg)
@@ -949,11 +954,11 @@ auto CHexDlgModify::OnInitDialog(const MSG& msg)->INT_PTR
 	m_WndTab.InsertItem(1, L"Fill with Data");
 	const auto rcTab = m_WndTab.GetItemRect(0);
 
-	m_pDlgOpers->CreateDlg(m_Wnd, m_pHexCtrl);
+	m_pDlgOpers->CreateDlg(m_Wnd, m_pHexCtrl, m_hInstRes);
 	::SetWindowPos(m_pDlgOpers->GetHWND(), nullptr, rcTab.left, rcTab.bottom + 1, 0, 0,
 		SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
 	m_pDlgOpers->OnActivate({ .wParam { WA_ACTIVE } }); //To properly activate "All-Selection" radios on the first launch.
-	m_pDlgFillData->CreateDlg(m_Wnd, m_pHexCtrl);
+	m_pDlgFillData->CreateDlg(m_Wnd, m_pHexCtrl, m_hInstRes);
 	::SetWindowPos(m_pDlgFillData->GetHWND(), nullptr, rcTab.left, rcTab.bottom + 1, 0, 0,
 		SWP_NOSIZE | SWP_NOZORDER | SWP_HIDEWINDOW);
 	m_pDlgFillData->OnActivate({ .wParam { WA_ACTIVE } }); //To properly activate "All-Selection" radios on the first launch.

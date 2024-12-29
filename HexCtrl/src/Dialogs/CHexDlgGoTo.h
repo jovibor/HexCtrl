@@ -13,7 +13,7 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgGoTo final {
 	public:
 		void CreateDlg();
-		void Initialize(IHexCtrl* pHexCtrl);
+		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] auto GetHWND()const->HWND;
 		[[nodiscard]] bool IsRepeatAvail()const;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
@@ -36,6 +36,7 @@ namespace HEXCTRL::INTERNAL {
 		void OnOK();
 		void UpdateComboMode();
 	private:
+		HINSTANCE m_hInstRes { };
 		wnd::CWnd m_Wnd;
 		wnd::CWndCombo m_WndCmbMode;
 		IHexCtrl* m_pHexCtrl { };

@@ -37,9 +37,9 @@ namespace HEXCTRL::INTERNAL {
 		************************************************************************************/
 		void OnLButtonUp();
 		void OnMouseMove(POINT pt);
-		void OnNcActivate()const;
-		void OnNcCalcSize(NCCALCSIZE_PARAMS* pCSP);
-		void OnNcPaint()const;
+		void OnNCActivate()const;
+		void OnNCCalcSize(NCCALCSIZE_PARAMS* pCSP);
+		void OnNCPaint()const;
 		void OnSetCursor(UINT uHitTest, UINT uMsg);
 		/************************************************************************************
 		* END OF THE CALLBACK METHODS.                                                      *
@@ -164,19 +164,19 @@ bool CHexScroll::Create(HWND hWndParent, bool fVert, HBITMAP hArrow, ULONGLONG u
 		return false;
 	}
 
-	constexpr auto m_pwszScrollClassName { L"HexCtrl_ScrollBarWnd" };
-	if (WNDCLASSEXW wc { }; GetClassInfoExW(nullptr, m_pwszScrollClassName, &wc) == FALSE) {
+	constexpr auto pwszScrollClassName { L"HexCtrl_ScrollBarWnd" };
+	if (WNDCLASSEXW wc { }; ::GetClassInfoExW(nullptr, pwszScrollClassName, &wc) == FALSE) {
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_GLOBALCLASS;
 		wc.lpfnWndProc = wnd::WndProc<CHexScroll>;
-		wc.lpszClassName = m_pwszScrollClassName;
+		wc.lpszClassName = pwszScrollClassName;
 		if (RegisterClassExW(&wc) == 0) {
 			DBG_REPORT(L"RegisterClassExW failed.");
 			return false;
 		}
 	}
 
-	if (m_Wnd.Attach(::CreateWindowExW(0, m_pwszScrollClassName, nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr, nullptr, this));
+	if (m_Wnd.Attach(::CreateWindowExW(0, pwszScrollClassName, nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr, nullptr, this));
 		m_Wnd.IsNull()) {
 		DBG_REPORT(L"CreateWindowExW failed.");
 		return false;
@@ -321,7 +321,7 @@ void CHexScroll::OnMouseMove(POINT pt)
 	}
 }
 
-void CHexScroll::OnNcActivate()const
+void CHexScroll::OnNCActivate()const
 {
 	if (!m_fCreated) {
 		return;
@@ -330,7 +330,7 @@ void CHexScroll::OnNcActivate()const
 	RedrawNC(); //To repaint NC area.
 }
 
-void CHexScroll::OnNcCalcSize(NCCALCSIZE_PARAMS* pCSP)
+void CHexScroll::OnNCCalcSize(NCCALCSIZE_PARAMS* pCSP)
 {
 	if (!m_fCreated) {
 		return;
@@ -374,7 +374,7 @@ void CHexScroll::OnNcCalcSize(NCCALCSIZE_PARAMS* pCSP)
 	}
 }
 
-void CHexScroll::OnNcPaint()const
+void CHexScroll::OnNCPaint()const
 {
 	if (!m_fCreated) {
 		return;
@@ -446,9 +446,9 @@ void CHexScroll::OnSetCursor(UINT uHitTest, UINT uMsg)
 auto CHexScroll::ProcessMsg(const MSG& msg)->LRESULT
 {
 	switch (msg.message) {
-	case WM_DESTROY: return CHexScroll::OnDestroy(msg);
-	case WM_TIMER: return CHexScroll::OnTimer(msg);
-	default: return wnd::DefMsgProc(msg);
+	case WM_DESTROY: return OnDestroy(msg);
+	case WM_TIMER: return OnTimer(msg);
+	default: return wnd::DefWndProc(msg);
 	}
 }
 
@@ -672,22 +672,22 @@ void CHexScroll::DrawScrollBar()const
 
 	const auto wndParent = GetParent();
 	const auto hDCParent = wndParent.GetWindowDC();
-	const auto hDCMem = ::CreateCompatibleDC(hDCParent);
+	const wnd::CDC dcMem = ::CreateCompatibleDC(hDCParent);
 	const auto rcWnd = GetParentRect(false);
 	const auto hBMP = ::CreateCompatibleBitmap(hDCParent, rcWnd.Width(), rcWnd.Height());
-	::SelectObject(hDCMem, hBMP);
+	dcMem.SelectObject(hBMP);
 	const auto rcSNC = GetScrollRect(true);	//Scroll bar with any additional non client area, to fill it below.
-	wnd::FillSolidRect(hDCMem, rcSNC, clrBkNC);
+	dcMem.FillSolidRect(rcSNC, clrBkNC);
 	const auto rcS = GetScrollRect();
-	wnd::FillSolidRect(hDCMem, rcS, clrBkScroll);
-	DrawArrows(hDCMem);
-	DrawThumb(hDCMem);
+	dcMem.FillSolidRect(rcS, clrBkScroll);
+	DrawArrows(dcMem);
+	DrawThumb(dcMem);
 
-	//Copy drawn Scrollbar from hDCMem to the parent window (hDCParent).
-	::BitBlt(hDCParent, rcSNC.left, rcSNC.top, rcSNC.Width(), rcSNC.Height(), hDCMem, rcSNC.left, rcSNC.top, SRCCOPY);
+	//Copy drawn Scrollbar from dcMem to the parent window (hDCParent).
+	::BitBlt(hDCParent, rcSNC.left, rcSNC.top, rcSNC.Width(), rcSNC.Height(), dcMem, rcSNC.left, rcSNC.top, SRCCOPY);
 
 	::DeleteObject(hBMP);
-	::DeleteDC(hDCMem);
+	::DeleteDC(dcMem);
 	wndParent.ReleaseDC(hDCParent);
 }
 
@@ -733,7 +733,7 @@ void CHexScroll::DrawThumb(HDC hDC)const
 {
 	auto rcThumb = GetThumbRect();
 	if (!rcThumb.IsRectNull()) {
-		wnd::FillSolidRect(hDC, rcThumb, RGB(200, 200, 200)); //Scrollbar thumb color.
+		wnd::CDC(hDC).FillSolidRect(rcThumb, RGB(200, 200, 200)); //Scrollbar thumb color.
 	}
 }
 
@@ -995,7 +995,7 @@ auto CHexScroll::OnDestroy(const MSG& msg)->LRESULT
 	m_hBmpArrowLast = nullptr;
 	m_fCreated = false;
 
-	return wnd::DefMsgProc(msg);
+	return wnd::DefWndProc(msg);
 }
 
 auto CHexScroll::OnTimer(const MSG& msg)->LRESULT

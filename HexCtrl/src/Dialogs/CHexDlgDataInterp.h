@@ -43,7 +43,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		[[nodiscard]] auto GetHglDataSize()const->DWORD;
 		[[nodiscard]] auto GetHWND()const->HWND;
-		void Initialize(IHexCtrl* pHexCtrl);
+		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool HasHighlight()const;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
@@ -113,6 +113,7 @@ namespace HEXCTRL::INTERNAL {
 		void ShowValueGUID(GUID stGUID)const;
 		void ShowValueGUIDTIME(GUID stGUID)const;
 	private:
+		HINSTANCE m_hInstRes { };
 		wnd::CWnd m_Wnd;              //Main window.
 		wnd::CWndBtn m_WndBtnHex;     //Check-box "Hex numbers".
 		wnd::CWndBtn m_WndBtnBE;      //Check-box "Big endian".

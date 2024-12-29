@@ -26,7 +26,7 @@ namespace HEXCTRL::INTERNAL {
 		void GoPrev();
 		[[nodiscard]] bool HasBookmarks()const;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset) -> PHEXBKM override;
-		void Initialize(IHexCtrl* pHexCtrl);
+		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool IsVirtual()const;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
@@ -64,6 +64,7 @@ namespace HEXCTRL::INTERNAL {
 		void SortBookmarks();
 		void UpdateListCount(bool fPreserveSelected = false);
 	private:
+		HINSTANCE m_hInstRes { };
 		wnd::CWnd m_Wnd;              //Main window.
 		wnd::CWndBtn m_WndBtnHex;     //Check-box "Hex numbers".
 		wnd::CMenu m_menuList;

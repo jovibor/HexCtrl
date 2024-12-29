@@ -291,6 +291,7 @@ namespace HEXCTRL {
 	* HEXCREATE: Main struct for the HexCtrl creation.                                          *
 	********************************************************************************************/
 	struct HEXCREATE {
+		HINSTANCE       hInstRes { };           //Hinstance of the HexCtrl resources, nullptr for current module.
 		HWND            hWndParent { };         //Parent window handle.
 		PCHEXCOLORS     pColors { };            //HexCtrl colors, nullptr for default.
 		const LOGFONTW* pLogFont { };           //Monospaced font for HexCtrl, nullptr for default.
