@@ -6,6 +6,7 @@
 ****************************************************************************************/
 #pragma once
 #include "../../HexCtrl.h"
+#include <commctrl.h>
 
 import HEXCTRL.HexUtility;
 

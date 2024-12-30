@@ -7,6 +7,7 @@
 #pragma once
 #include "../../dep/rapidjson/rapidjson-amalgam.h"
 #include "../../HexCtrl.h"
+#include <commctrl.h>
 #include <unordered_map>
 
 import HEXCTRL.HexUtility;

@@ -7,7 +7,7 @@
 #include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgTemplMgr.h"
-#include <afxdlgs.h>
+#include <ShObjIdl.h>
 #include <algorithm>
 #include <format>
 #include <fstream>
@@ -408,32 +408,42 @@ auto CHexDlgTemplMgr::OnActivate(const MSG& msg)->INT_PTR
 
 void CHexDlgTemplMgr::OnBnLoadTemplate()
 {
-	CFileDialog fd(TRUE, nullptr, nullptr,
-		OFN_OVERWRITEPROMPT | OFN_EXPLORER | OFN_ALLOWMULTISELECT | OFN_DONTADDTORECENT | OFN_ENABLESIZING
-		| OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST, L"Template files (*.json)|*.json|All files (*.*)|*.*||");
-
-	if (fd.DoModal() != IDOK)
+	IFileOpenDialog *pIFOD { };
+	if (::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pIFOD)) != S_OK) {
+		DBG_REPORT(L"CoCreateInstance failed.");
 		return;
+	}
 
-	const CComPtr<IFileOpenDialog> pIFOD = fd.GetIFileOpenDialog();
-	CComPtr<IShellItemArray> pResults;
+	DWORD dwFlags;
+	pIFOD->GetOptions(&dwFlags);
+	pIFOD->SetOptions(dwFlags | FOS_FORCEFILESYSTEM | FOS_OVERWRITEPROMPT | FOS_ALLOWMULTISELECT
+		| FOS_DONTADDTORECENT | FOS_FILEMUSTEXIST | FOS_PATHMUSTEXIST);
+	COMDLG_FILTERSPEC arrFilter[] { { .pszName { L"Template files (*.json)" }, .pszSpec { L"*.json" } },
+		{ .pszName { L"All files (*.*)" }, .pszSpec { L"*.*" } } };
+	pIFOD->SetFileTypes(2, arrFilter);
+	pIFOD->Show(m_Wnd);
+	IShellItemArray* pResults;
 	pIFOD->GetResults(&pResults);
-
 	DWORD dwCount { };
 	pResults->GetCount(&dwCount);
 	for (auto iterFiles { 0U }; iterFiles < dwCount; ++iterFiles) {
-		CComPtr<IShellItem> pItem;
+		IShellItem* pItem;
 		pResults->GetItemAt(iterFiles, &pItem);
-		CComHeapPtr<wchar_t> pwstrPath;
-		pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwstrPath);
-		if (LoadTemplate(pwstrPath) == 0) {
+		wchar_t* pwszPath;
+		pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwszPath);
+		if (LoadTemplate(pwszPath) == 0) {
 			std::wstring wstrErr = L"Error loading a template:\n";
-			wstrErr += pwstrPath;
-			std::wstring_view wsvFileName = pwstrPath.m_pData;
+			wstrErr += pwszPath;
+			std::wstring_view wsvFileName = pwszPath;
 			wsvFileName = wsvFileName.substr(wsvFileName.find_last_of('\\') + 1);
 			::MessageBoxW(m_Wnd, wstrErr.data(), wsvFileName.data(), MB_ICONERROR);
 		}
+		pItem->Release();
+		::CoTaskMemFree(pwszPath);
 	}
+
+	pResults->Release();
+	pIFOD->Release();
 }
 
 void CHexDlgTemplMgr::OnBnUnloadTemplate()
@@ -800,7 +810,8 @@ auto CHexDlgTemplMgr::OnMouseMove(const MSG& msg)->INT_PTR
 		}
 	}
 	else {
-		if (const CRect rcSplitter(rcList.left - iResAreaHalfWidth, rcList.top, rcList.left + iResAreaHalfWidth, rcList.bottom);
+		if (const wnd::CRect rcSplitter(rcList.left - iResAreaHalfWidth, rcList.top, rcList.left + iResAreaHalfWidth,
+			rcList.bottom);
 			rcSplitter.PtInRect(pt)) {
 			m_fCurInSplitter = true;
 			::SetCursor(hCurResize);
@@ -982,7 +993,7 @@ void CHexDlgTemplMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 			break;
 			case 8:
 			{
-				auto ullData = GetIHexTData<QWORD>(*m_pHexCtrl, ullOffset);
+				auto ullData = GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset);
 				if (fShouldSwap) {
 					ullData = ByteSwap(ullData);
 				}
@@ -1110,9 +1121,9 @@ void CHexDlgTemplMgr::OnNotifyListGetColor(NMHDR* pNMHDR)
 
 void CHexDlgTemplMgr::OnNotifyListHdrRClick(NMHDR* /*pNMHDR*/)
 {
-	CPoint pt;
-	GetCursorPos(&pt);
-	m_MenuHdr.TrackPopupMenu(pt.x, pt.y, m_Wnd);
+	POINT ptCur;
+	::GetCursorPos(&ptCur);
+	m_MenuHdr.TrackPopupMenu(ptCur.x, ptCur.y, m_Wnd);
 }
 
 void CHexDlgTemplMgr::OnNotifyListItemChanged(NMHDR* pNMHDR)

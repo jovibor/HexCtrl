@@ -1,4 +1,4 @@
-## **Hex Control, C++/MFC**
+## **Hex Control**
 ![](docs/img/HexCtrl_Main.jpg)
 ## Table of Contents
 * [Introduction](#introduction)
@@ -131,7 +131,7 @@
 * [Licensing](#licensing)
 
 ## [](#)Introduction
-**HexCtrl** is a fully-featured Hex-Editor Control written in **C++/MFC**. It's implemented as a pure abstract interface and can be used even if you don't use **MFC** directly.
+**HexCtrl** is a fully-featured Hex-editor Control written in pure **Win32 API**.
 
 ### The main features of the **HexCtrl**:
 * View and edit data up to **16EB** (exabyte)
@@ -153,7 +153,6 @@
 ![](docs/img/HexCtrl_Operations.jpg)
 
 ## [](#)How To Build
-Clone the repo with all submodules:  
 `git clone https://github.com/jovibor/HexCtrl.git`  
 
 ### [](#)Integrate Sources
@@ -167,11 +166,6 @@ To build **HexCtrl** from the sources:
 > [!NOTE]
 > You can skip adding *rapidjson-amalgam.h* into your project, to avoid polluting project's global namespace.
 
-> [!NOTE]
-> If you want to build **HexCtrl** from the sources in non-**MFC** app:
-> 1. Set the **Use MFC in a Shared DLL** option in the project settings
-> 1. Add `/DHEXCTRL_MANUAL_MFC_INIT` compiler option
-
 ### [](#)Dynamic Link Library
 To build and use **HexCtrl** as a DLL:
 1. Build **HexCtrl{x86/x64/ARM64}.dll** and **HexCtrl{x86/x64/ARM64}.lib** with the **HexCtrl DLL.vcxproj**  project
@@ -181,12 +175,8 @@ To build and use **HexCtrl** as a DLL:
     #define HEXCTRL_DYNAMIC_LIB
     #include "HexCtrl.h"
     ```
-1. Declare `IHexCtrlPtr` object: `IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };`
+1. Declare `IHexCtrlPtr` object: `auto myHex { HEXCTRL::CreateHexCtrl() };`
 1. [Create](#creating) control instance
-
-> [!NOTE]
-**HexCtrl**'s DLL is built with the **MFC Static Linking**. So, even if you are to use it in your own **MFC** project, even with a different **MFC** version, there should be no interferences.  
-Building **HexCtrl** with the **MFC Shared DLL** turned out to be a little tricky. Even with the `AFX_MANAGE_STATE(AfxGetStaticModuleState())` macro help there are always  **MFC** debug assertions, which origins are quite hard to comprehend.
 
 ## [](#)Creating
 
@@ -610,7 +600,7 @@ Modify data currently set in **HexCtrl**, see the [`HEXMODIFY`](#hexmodify) stru
 ```cpp
 [[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 ```
-This method is mostly intended to use in non MFC apps, or if **HexCtrl** is used as a dll. The **HexCtrl** has many internal dialog windows. In order for dialog keyboard navigation to work correctly, this method must be hooked into your app's main message loop before `TranslateMessage` and `DispatchMessage`, or into MFC's `PreTranslateMessage` virtual function.
+The **HexCtrl** has many internal dialog windows. In order for dialog keyboard navigation to work correctly, this method must be hooked into your app's main message loop before `TranslateMessage` and `DispatchMessage`, or into MFC's `PreTranslateMessage` virtual function.
 ```cpp
 while (GetMessageW(&msg, nullptr, 0, 0)) {
     if (!TranslateAcceleratorW(msg.hwnd, hAccelTable, &msg)) {

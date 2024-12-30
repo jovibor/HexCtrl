@@ -9,6 +9,7 @@
 #include "CHexDlgCodepage.h"
 #include <algorithm>
 #include <cassert>
+#include <commctrl.h>
 #include <format>
 
 using namespace HEXCTRL::INTERNAL;

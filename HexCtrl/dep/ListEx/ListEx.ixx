@@ -19,6 +19,10 @@ module;
 #include <vector>
 export module ListEx;
 
+#pragma comment(lib, "Comctl32.lib")
+#pragma comment(lib, "Shlwapi.lib") //StrToInt64ExW().
+#pragma comment(lib, "UxTheme.lib") //SetWindowTheme().
+
 export namespace HEXCTRL::LISTEX {
 	/****************************************************************
 	* EListExSortMode - Sorting mode.                               *
@@ -1129,10 +1133,10 @@ namespace HEXCTRL::LISTEX {
 		[[nodiscard]] long GetFontSize()const;
 		[[nodiscard]] auto GetHeader() -> CListExHdr& { return m_Hdr; }
 		void FontSizeIncDec(bool fInc);
-		[[nodiscard]] bool IsWindow()const;
 		[[nodiscard]] auto GetCustomColor(int iItem, int iSubItem)const->std::optional<LISTEXCOLOR>;
 		[[nodiscard]] int GetIcon(int iItem, int iSubItem)const; //Does cell have an icon associated.
 		[[nodiscard]] auto GetTooltip(int iItem, int iSubItem)const->std::optional<LISTEXTTDATA>;
+		[[nodiscard]] bool IsWindow()const;
 		auto OnCommand(const MSG& msg) -> LRESULT;
 		auto OnDestroy() -> LRESULT;
 		void OnEditInPlaceEnterPressed();
@@ -1448,6 +1452,19 @@ auto CListEx::GetFont()const->LOGFONTW
 	return lf;
 }
 
+long CListEx::GetFontSize()const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	LOGFONTW lf { };
+	::GetObjectW(m_hFntList, sizeof(lf), &lf);
+
+	return lf.lfHeight;
+}
+
 auto CListEx::GetHWND()const->HWND
 {
 	if (!IsCreated()) {
@@ -1544,19 +1561,6 @@ int CListEx::GetSelectionMark()const
 	}
 
 	return static_cast<int>(::SendMessageW(m_hWnd, LVM_GETSELECTIONMARK, 0, 0));
-}
-
-long CListEx::GetFontSize()const
-{
-	assert(IsCreated());
-	if (!IsCreated()) {
-		return { };
-	}
-
-	LOGFONTW lf { };
-	::GetObjectW(m_hFntList, sizeof(lf), &lf);
-
-	return lf.lfHeight;
 }
 
 int CListEx::GetSortColumn()const

@@ -1,6 +1,6 @@
 #pragma once
-#include "../../HexCtrl/HexCtrl.h"
 #include <afxcontrolbars.h>
+#include "../../HexCtrl/HexCtrl.h"
 
 using namespace HEXCTRL;
 

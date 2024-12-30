@@ -10,7 +10,7 @@ env:
   PATH_PROJ_HEXCTRLDLL: '"./VS Projects/HexCtrl DLL/HexCtrl DLL.vcxproj"'
   PATH_PROJ_HEXCTRLTEST: '"./VS Projects/HexCtrl Test/HexCtrl Test.vcxproj"'
   PATH_VSTESTCONSOLE_EXE: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe"'
-  PATH_TESTDLL: '"C:\HexCtrlTEMP\HexCtrl Test.dll"'
+  PATH_TESTDLL: '"C:\HexCtrlTEMP\HexCtrlTest.dll"'
   PATH_TEMPDIR: '"C:\HexCtrlTEMP\"'
   BUILD_CONFIG: Debug
   BUILD_PLATFORM_x64: x64

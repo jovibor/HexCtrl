@@ -8,6 +8,7 @@
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgModify.h"
 #include <cassert>
+#include <commctrl.h>
 #include <unordered_map>
 
 using namespace HEXCTRL::INTERNAL;

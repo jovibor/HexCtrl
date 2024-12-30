@@ -405,6 +405,15 @@ export namespace HEXCTRL::INTERNAL {
 		return loc;
 	}
 
+	//Replicates GET_X_LPARAM macro from the windowsx.h.
+	[[nodiscard]] constexpr int GET_X_LPARAM(LPARAM lParam) {
+		return (static_cast<int>(static_cast<short>(static_cast<WORD>((static_cast<DWORD_PTR>(lParam)) & 0xFFFF))));
+	}
+
+	[[nodiscard]] constexpr int GET_Y_LPARAM(LPARAM lParam) {
+		return GET_X_LPARAM(lParam >> 16);
+	}
+
 #if defined(DEBUG) || defined(_DEBUG)
 	void DBG_REPORT(const wchar_t* pMsg, const std::source_location& loc = std::source_location::current()) {
 		_wassert(pMsg, StrToWstr(loc.file_name()).data(), loc.line());
@@ -476,7 +485,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		return 0;
 	}
 
-	class CDynLayout {
+	class CDynLayout final {
 	public:
 		//Ratio settings, for how much to move or resize an item when parent is resized.
 		struct ItemRatio { float m_flXRatio { }; float m_flYRatio { }; };
@@ -567,7 +576,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		::EndDeferWindowPos(hDWP);
 	}
 
-	class CPoint : public POINT {
+	class CPoint final : public POINT {
 	public:
 		CPoint() : POINT { } { }
 		CPoint(POINT pt) : POINT { pt } { }
@@ -583,7 +592,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		void Offset(POINT pt) { Offset(pt.x, pt.y); }
 	};
 
-	class CRect : public RECT {
+	class CRect final : public RECT {
 	public:
 		CRect() : RECT { } { }
 		CRect(int iLeft, int iTop, int iRight, int iBottom) : RECT { .left { iLeft }, .top { iTop },
@@ -657,7 +666,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		HDC m_hDC;
 	};
 
-	class CPaintDC : public CDC {
+	class CPaintDC final : public CDC {
 	public:
 		CPaintDC(HWND hWnd) : m_hWnd(hWnd) { assert(::IsWindow(hWnd)); m_hDC = ::BeginPaint(m_hWnd, &m_PS); }
 		~CPaintDC() { ::EndPaint(m_hWnd, &m_PS); }
@@ -668,7 +677,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		HWND m_hWnd;
 	};
 
-	class CMemDC : public CDC {
+	class CMemDC final : public CDC {
 	public:
 		CMemDC(HDC hDC, HWND hWnd) : m_hDCOrig(hDC) { assert(::IsWindow(hWnd)); ::GetClientRect(hWnd, &m_rc); Init(); }
 		CMemDC(HDC hDC, RECT rc) : m_hDCOrig(hDC), m_rc(rc) { Init(); }
@@ -809,7 +818,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		HWND m_hWnd { }; //Windows window handle.
 	};
 
-	class CWndBtn : public CWnd {
+	class CWndBtn final : public CWnd {
 	public:
 		[[nodiscard]] bool IsChecked()const { assert(IsWindow()); return ::SendMessageW(m_hWnd, BM_GETCHECK, 0, 0); }
 		void SetBitmap(HBITMAP hBmp)const {
@@ -818,7 +827,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		void SetCheck(bool fCheck)const { assert(IsWindow()); ::SendMessageW(m_hWnd, BM_SETCHECK, fCheck, 0); }
 	};
 
-	class CWndEdit : public CWnd {
+	class CWndEdit final : public CWnd {
 	public:
 		void SetCueBanner(LPCWSTR pwszText, bool fDrawIfFocus = false)const {
 			assert(IsWindow());
@@ -826,7 +835,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		}
 	};
 
-	class CWndCombo : public CWnd {
+	class CWndCombo final : public CWnd {
 	public:
 		int AddString(const std::wstring& wstr)const { return AddString(wstr.data()); }
 		int AddString(LPCWSTR pwszStr)const {
@@ -867,7 +876,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		}
 	};
 
-	class CWndTree : public CWnd {
+	class CWndTree final : public CWnd {
 	public:
 		void DeleteAllItems()const { DeleteItem(TVI_ROOT); };
 		void DeleteItem(HTREEITEM hItem)const {
@@ -908,7 +917,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		}
 	};
 
-	class CWndProgBar : public CWnd {
+	class CWndProgBar final : public CWnd {
 	public:
 		int SetPos(int iPos)const {
 			assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, PBM_SETPOS, iPos, 0UL));
@@ -919,7 +928,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		}
 	};
 
-	class CWndTab : public CWnd {
+	class CWndTab final : public CWnd {
 	public:
 		[[nodiscard]] int GetCurSel()const {
 			assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, TCM_GETCURSEL, 0, 0L));
@@ -942,11 +951,11 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		}
 	};
 
-	class CMenu {
+	class CMenu final {
 	public:
 		CMenu() = default;
 		CMenu(HMENU hMenu) { Attach(hMenu); }
-		virtual ~CMenu() = default;
+		~CMenu() = default;
 		CMenu operator=(const CWnd&) = delete;
 		CMenu operator=(HMENU) = delete;
 		operator HMENU()const { return m_hMenu; }
@@ -985,6 +994,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 			const auto ret = GetMenuItemInfoW(uID, &mii, (fByID ? MF_BYCOMMAND : MF_BYPOSITION));
 			return ret ? buff : L"";
 		}
+		[[nodiscard]] auto GetHMENU()const->HMENU { return m_hMenu; }
 		[[nodiscard]] auto GetSubMenu(int iPos)const -> CMenu { assert(IsMenu()); return ::GetSubMenu(m_hMenu, iPos); };
 		[[nodiscard]] bool IsChecked(UINT uIDItem, bool fByID = true)const {
 			return GetMenuState(uIDItem, fByID ? MF_BYCOMMAND : MF_BYPOSITION) & MF_CHECKED;

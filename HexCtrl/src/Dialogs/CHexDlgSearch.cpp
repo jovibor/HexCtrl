@@ -9,6 +9,7 @@
 #include "CHexDlgSearch.h"
 #include <algorithm>
 #include <cassert>
+#include <commctrl.h>
 #include <cwctype>
 #include <format>
 #include <intrin.h>

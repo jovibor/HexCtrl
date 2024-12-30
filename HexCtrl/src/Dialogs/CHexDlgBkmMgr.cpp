@@ -9,6 +9,7 @@
 #include "CHexDlgBkmMgr.h"
 #include <algorithm>
 #include <cassert>
+#include <commctrl.h>
 #include <format>
 #include <numeric>
 

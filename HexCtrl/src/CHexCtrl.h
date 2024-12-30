@@ -6,8 +6,8 @@
 ****************************************************************************************/
 #pragma once
 #include "../HexCtrl.h"
-#include <afxwin.h>
 #include <algorithm>
+#include <commctrl.h>
 #include <chrono>
 #include <optional>
 #include <string>

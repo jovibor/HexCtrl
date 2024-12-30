@@ -5,7 +5,7 @@
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
 #pragma once
-#include <afxwin.h>
+#include <Windows.h>
 #include <compare>
 #include <cstdint>
 #include <memory>
@@ -501,6 +501,6 @@ namespace HEXCTRL {
 
 	constexpr auto HEXCTRL_FLAG_DLG_NOESC { 0x01ULL };
 
-	//Setting a manifest for the ComCtl32.dll version 6.
+	//Setting a manifest for the Comctl32.dll version 6.
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 }

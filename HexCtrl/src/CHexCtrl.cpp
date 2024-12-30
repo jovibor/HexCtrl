@@ -25,6 +25,7 @@
 #include <numeric>
 #include <random>
 #include <thread>
+#pragma comment(lib, "Comctl32.lib")
 
 import HEXCTRL.CHexScroll;
 import HEXCTRL.CHexSelection;
@@ -33,18 +34,8 @@ import HEXCTRL.CHexDlgProgress;
 using namespace HEXCTRL::INTERNAL;
 
 HEXCTRLAPI HEXCTRL::IHexCtrlPtr HEXCTRL::CreateHexCtrl() {
-#if defined(HEXCTRL_MANUAL_MFC_INIT)
-	//MFC initialization, if HexCtrl is used in non MFC project with the "Shared MFC" linking.
-	if (!AfxGetModuleState()->m_lpszCurrentAppName) {
-		AfxWinInit(::GetModuleHandleW(nullptr), nullptr, ::GetCommandLineW(), 0);
-	}
-#endif
 	return IHexCtrlPtr { new HEXCTRL::INTERNAL::CHexCtrl() };
 }
-
-#if defined(HEXCTRL_DYNAMIC_LIB) || defined(HEXCTRL_MANUAL_MFC_INIT)
-CWinApp theApp; //CWinApp object is vital for manual MFC, and for in-DLL work.
-#endif
 
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgAbout final {
@@ -470,7 +461,6 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
 
 void CHexCtrl::Destroy()
 {
-	DestroyWindow();
 	delete this;
 }
 
@@ -2067,21 +2057,22 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 
 	//Getting the "Group Data" menu pointer independent of position.
 	const auto menuMain = m_MenuMain.GetSubMenu(0);
-	wnd::CMenu* pMenuGroupData { };
+	HMENU hMenuGroupData { };
 	for (auto i = 0; i < menuMain.GetMenuItemCount(); ++i) {
 		//Searching through all submenus whose first menuID is IDM_HEXCTRL_GROUPDATA_BYTE.
 		if (auto menuSub = menuMain.GetSubMenu(i); menuSub.IsMenu()) {
 			if (menuSub.GetMenuItemID(0) == IDM_HEXCTRL_GROUPDATA_BYTE) {
-				pMenuGroupData = &menuSub;
+				hMenuGroupData = menuSub.GetHMENU();
 				break;
 			}
 		}
 	}
 
-	if (pMenuGroupData != nullptr) {
+	if (hMenuGroupData != nullptr) {
 		//Unchecking all menus and checking only the currently selected.
-		for (auto i = 0; i < pMenuGroupData->GetMenuItemCount(); ++i) {
-			pMenuGroupData->CheckMenuItem(i, false, false);
+		wnd::CMenu menuGroup(hMenuGroupData);
+		for (auto iIDGroupData = 0; iIDGroupData < menuGroup.GetMenuItemCount(); ++iIDGroupData) {
+			menuGroup.CheckMenuItem(iIDGroupData, false, false);
 		}
 
 		UINT uIDToCheck { 0 };
@@ -2103,7 +2094,7 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 		}
 
 		if (uIDToCheck != 0) {
-			pMenuGroupData->CheckMenuItem(uIDToCheck, true);
+			menuGroup.CheckMenuItem(uIDToCheck, true);
 		}
 	}
 
@@ -2955,9 +2946,9 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 	vecInfoData.reserve(4);
 
 	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
-	CRect rcInfoBar(m_iFirstVertLinePx + 1 - iScrollH, m_iThirdHorzLinePx + 1,
+	wnd::CRect rcInfoBar(m_iFirstVertLinePx + 1 - iScrollH, m_iThirdHorzLinePx + 1,
 		m_iFourthVertLinePx, m_iFourthHorzLinePx); //Info bar rc until m_iFourthHorizLine.
-	CRect rcText = rcInfoBar;
+	wnd::CRect rcText = rcInfoBar;
 	rcText.left = m_iFirstVertLinePx + 5; //Draw the text beginning with little indent.
 	rcText.right = m_iFirstVertLinePx + m_iWidthClientAreaPx; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
 
@@ -4167,8 +4158,9 @@ void CHexCtrl::Print()
 
 	constexpr auto iMarginX = 150;
 	constexpr auto iMarginY = 150;
-	const CRect rcPrint(CPoint(0, 0), CSize(::GetDeviceCaps(dcPrint, HORZRES) - (iMarginX * 2), ::GetDeviceCaps(dcPrint, VERTRES) - (iMarginY * 2)));
-	const CSize sizePrintDpi = { ::GetDeviceCaps(dcPrint, LOGPIXELSX), ::GetDeviceCaps(dcPrint, LOGPIXELSY) };
+	const wnd::CRect rcPrint(POINT(0, 0), SIZE(::GetDeviceCaps(dcPrint, HORZRES) - (iMarginX * 2),
+		::GetDeviceCaps(dcPrint, VERTRES) - (iMarginY * 2)));
+	const SIZE sizePrintDpi = { ::GetDeviceCaps(dcPrint, LOGPIXELSX), ::GetDeviceCaps(dcPrint, LOGPIXELSY) };
 	const auto iRatio = sizePrintDpi.cy / m_iLOGPIXELSY;
 
 	/***Changing Main and Info Bar fonts***/
@@ -4806,9 +4798,9 @@ void CHexCtrl::TTMainShow(bool fShow, bool fTimer)
 {
 	if (fShow) {
 		m_tmTT = std::chrono::high_resolution_clock::now();
-		POINT pt;
-		GetCursorPos(&pt);
-		m_wndTTMain.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(pt.x + 3, pt.y - 20)));
+		POINT ptCur;
+		::GetCursorPos(&ptCur);
+		m_wndTTMain.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x + 3, ptCur.y - 20)));
 		m_wndTTMain.SendMsg(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiMain));
 		m_wndTTMain.SendMsg(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_ttiMain));
 		m_Wnd.SetTimer(m_uIDTTTMain, 300, nullptr);
@@ -4831,11 +4823,11 @@ void CHexCtrl::TTMainShow(bool fShow, bool fTimer)
 void CHexCtrl::TTOffsetShow(bool fShow)
 {
 	if (fShow) {
-		CPoint ptScreen;
-		GetCursorPos(&ptScreen);
+		POINT ptCur;
+		::GetCursorPos(&ptCur);
 		auto wstrOffset = (IsOffsetAsHex() ? L"Offset: 0x" : L"Offset: ") + OffsetToWstr(GetTopLine() * GetCapacity());
 		m_ttiOffset.lpszText = wstrOffset.data();
-		m_wndTTOffset.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptScreen.x - 5, ptScreen.y - 20)));
+		m_wndTTOffset.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x - 5, ptCur.y - 20)));
 		m_wndTTOffset.SendMsg(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiOffset));
 		m_ttiOffset.lpszText = nullptr;
 	}
@@ -6834,7 +6826,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 }
 #endif //^^^ _M_IX86 || _M_X64
 
-//CHexCtrl MFC message handlers.
+//CHexCtrl message handlers.
 
 auto CHexCtrl::OnChar(const MSG& msg)->LRESULT
 {

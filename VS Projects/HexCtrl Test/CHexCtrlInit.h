@@ -12,6 +12,26 @@ using enum EHexModifyMode;
 using enum EHexOperMode;
 using enum EHexDataType;
 
+#ifdef _M_IX86
+#ifdef _DEBUG
+#define HEXCTRL_DLL(x) x"x86D.dll"
+#else //^^^ _DEBUG / vvv !_DEBUG
+#define HEXCTRL_DLL(x) x"x86.dll"
+#endif //^^^ !_DEBUG
+#elif defined(_M_X64) //^^^ _M_IX86 / vvv _M_X64
+#ifdef _DEBUG
+#define HEXCTRL_DLL(x) x"x64D.dll"
+#else //^^^ _DEBUG / vvv !_DEBUG
+#define HEXCTRL_DLL(x) x"x64.dll"
+#endif //^^^ !_DEBUG
+#elif defined(_M_ARM64) //^^^ _M_X64 / vvv _M_ARM64
+#ifdef _DEBUG
+#define HEXCTRL_DLL(x) x"ARM64D.dll"
+#else //^^^ _DEBUG / vvv !_DEBUG
+#define HEXCTRL_DLL(x) x"ARM64.dll"
+#endif //^^^ _DEBUG
+#endif //^^^ _M_ARM64
+
 namespace TestHexCtrl {
 	[[nodiscard]] consteval auto GetTestDataSize() {
 		return 477UL; //Size deliberately not equal to power of two.
@@ -21,7 +41,8 @@ namespace TestHexCtrl {
 		static IHexCtrl* pHexCtrl = []() {
 			static auto pHex { CreateHexCtrl() };
 			static std::byte byteData[GetTestDataSize()] { };
-			pHex->Create({ .dwStyle { WS_POPUP | WS_OVERLAPPEDWINDOW }, .dwExStyle { WS_EX_APPWINDOW } });
+			pHex->Create({ .hInstRes { ::GetModuleHandleW(HEXCTRL_DLL(L"HexCtrl")) },
+				.dwStyle { WS_POPUP | WS_OVERLAPPEDWINDOW }, .dwExStyle { WS_EX_APPWINDOW } });
 			pHex->SetData({ .spnData { byteData, sizeof(byteData) }, .fMutable { true } });
 			return pHex.get();
 			}(); //Immediate lambda for one time HexCtrl creation.
