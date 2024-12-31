@@ -14,25 +14,25 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
     <Filter Include="HexCtrl">
-      <UniqueIdentifier>{9d5130be-d92a-4843-9d98-2b136b9e6e21}</UniqueIdentifier>
+      <UniqueIdentifier>{523b96df-49ed-44ea-b5e7-3591af510d58}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src">
-      <UniqueIdentifier>{ef86a488-ef0b-46dc-8c40-48a2308f353c}</UniqueIdentifier>
+      <UniqueIdentifier>{685baee6-4512-413f-bcf2-c1ebbe93b3f9}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src\Dialogs">
-      <UniqueIdentifier>{747840c7-ac12-442c-872a-3fbcd387c574}</UniqueIdentifier>
+      <UniqueIdentifier>{32639cc3-1724-4d29-9099-40ca017a3c97}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\res">
-      <UniqueIdentifier>{2e70bdec-e743-4d61-a1b5-76bcd6093f7d}</UniqueIdentifier>
+      <UniqueIdentifier>{9d9bb1c9-bc37-423e-8625-c91b554980c8}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\dep">
-      <UniqueIdentifier>{8387267d-0e1b-4327-95d6-2da8ca002de0}</UniqueIdentifier>
+      <UniqueIdentifier>{73807b1d-6961-403b-9e3c-aaf55d3341f9}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\dep\ListEx">
-      <UniqueIdentifier>{3e25e168-f5f4-45cb-a908-2a2c401b0f73}</UniqueIdentifier>
+      <UniqueIdentifier>{e628395b-6562-456b-9ac3-4fd7117998ca}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\dep\StrToNum">
-      <UniqueIdentifier>{f23d982e-cdc8-4a75-b7fa-f63436c549ca}</UniqueIdentifier>
+      <UniqueIdentifier>{0d0f1986-a68c-4f62-b082-3d5d7e387a15}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -104,6 +104,9 @@
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgProgress.ixx">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.cpp">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
@@ -127,9 +130,6 @@
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\dep\StrToNum\StrToNum.ixx">
       <Filter>HexCtrl\dep\StrToNum</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgProgress.ixx">
-      <Filter>HexCtrl\src\Dialogs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

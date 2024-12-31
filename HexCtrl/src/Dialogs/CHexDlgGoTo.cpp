@@ -4,7 +4,6 @@
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
-#include "stdafx.h"
 #include "../../res/HexCtrlRes.h"
 #include "CHexDlgGoTo.h"
 #include <cassert>

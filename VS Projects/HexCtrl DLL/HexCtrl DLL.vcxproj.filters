@@ -14,26 +14,73 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
     <Filter Include="HexCtrl">
-      <UniqueIdentifier>{0fb4c4e2-3f02-4092-b0da-b55cb53f38f3}</UniqueIdentifier>
+      <UniqueIdentifier>{5b02ceaf-a27d-4ba6-b968-c271c6aae47c}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src">
-      <UniqueIdentifier>{1729525a-8a2b-4935-9107-0009e0217d20}</UniqueIdentifier>
+      <UniqueIdentifier>{8e753cd9-8670-442b-9119-3a11fbe61004}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\src\Dialogs">
-      <UniqueIdentifier>{0becc961-d3d6-4eb8-8971-ef70826d03f0}</UniqueIdentifier>
+      <UniqueIdentifier>{2a36dd66-5a46-4d52-adcf-87c42788337c}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\res">
-      <UniqueIdentifier>{16dccc5a-e19f-479d-8849-fdb931183580}</UniqueIdentifier>
+      <UniqueIdentifier>{384dc2c1-b979-4723-bd04-875116dc53a9}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\dep">
-      <UniqueIdentifier>{984a8795-1189-4850-81e8-b2f14ebf46b6}</UniqueIdentifier>
+      <UniqueIdentifier>{ec5b60fb-5189-4f69-938b-831c76648f25}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\dep\ListEx">
-      <UniqueIdentifier>{3e97ec96-7cff-4b05-8e71-94e34fb97804}</UniqueIdentifier>
+      <UniqueIdentifier>{40217b1d-97b2-45d3-887b-d78503536a76}</UniqueIdentifier>
     </Filter>
     <Filter Include="HexCtrl\dep\StrToNum">
-      <UniqueIdentifier>{7bb2060b-29e6-4a17-8d2e-0665525860fb}</UniqueIdentifier>
+      <UniqueIdentifier>{f0b1a721-480f-4f38-b854-b5d7e620582d}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\MFC Dialog\stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\CHexSelection.ixx">
+      <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\CHexScroll.ixx">
+      <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\HexUtility.ixx">
+      <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp">
+      <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgProgress.ixx">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgCodepage.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgGoTo.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgModify.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.cpp">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\dep\ListEx\ListEx.ixx">
+      <Filter>HexCtrl\dep\ListEx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\dep\StrToNum\StrToNum.ixx">
+      <Filter>HexCtrl\dep\StrToNum</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\HexCtrl\HexCtrl.h">
@@ -45,74 +92,27 @@
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgCodepage.h">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.h">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h">
-      <Filter>HexCtrl\res</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgGoTo.h">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.h">
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgCodepage.h">
+      <Filter>HexCtrl\src\Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgGoTo.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
     <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgModify.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.cpp">
-      <Filter>HexCtrl\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.cpp">
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgCodepage.cpp">
+    </ClInclude>
+    <ClInclude Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.h">
       <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.cpp">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgGoTo.cpp">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.cpp">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.cpp">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgModify.cpp">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\CHexScroll.ixx">
-      <Filter>HexCtrl\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\HexUtility.ixx">
-      <Filter>HexCtrl\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\CHexSelection.ixx">
-      <Filter>HexCtrl\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\dep\StrToNum\StrToNum.ixx">
-      <Filter>HexCtrl\dep\StrToNum</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\dep\ListEx\ListEx.ixx">
-      <Filter>HexCtrl\dep\ListEx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\MFC Dialog\stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgProgress.ixx">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
+    </ClInclude>
+    <ClInclude Include="..\..\HexCtrl\res\HexCtrlRes.h">
+      <Filter>HexCtrl\res</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\HexCtrl\res\HexCtrl.rc">
@@ -129,6 +129,15 @@
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_DATAINTERP.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_FONTCHOOSE.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
+    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_GROUP.bmp">
+      <Filter>HexCtrl\res</Filter>
+    </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_LOGO.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
@@ -142,15 +151,6 @@
       <Filter>HexCtrl\res</Filter>
     </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SEARCH.bmp">
-      <Filter>HexCtrl\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_GROUP.bmp">
-      <Filter>HexCtrl\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_FONTCHOOSE.bmp">
-      <Filter>HexCtrl\res</Filter>
-    </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_DATAINTERP.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
   </ItemGroup>
