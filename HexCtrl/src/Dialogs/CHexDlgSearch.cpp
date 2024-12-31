@@ -69,7 +69,7 @@ void CHexDlgSearch::CreateDlg()
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_SEARCH),
 		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgSearch>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
-		DBG_REPORT(L"CreateDialogParamW failed.");
+		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
 }
 
@@ -108,7 +108,7 @@ auto CHexDlgSearch::GetHWND()const->HWND
 void CHexDlgSearch::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
 	if (pHexCtrl == nullptr || hInstRes == nullptr) {
-		DBG_REPORT(L"Initialize == nullptr");
+		ut::DBG_REPORT(L"Initialize == nullptr");
 		return;
 	}
 
@@ -477,7 +477,7 @@ auto CHexDlgSearch::GetSearchFunc(bool fFwd, bool fDlgProg)const->PtrSearchFunc
 {
 	using enum EVecSize;
 #if defined(_M_IX86) || defined(_M_X64)
-	if (HasAVX2()) {
+	if (ut::HasAVX2()) {
 		return fFwd ? (fDlgProg ? GetSearchFuncFwd<true, VEC256>() : GetSearchFuncFwd<false, VEC256>()) :
 			(fDlgProg ? GetSearchFuncBack<true, VEC256>() : GetSearchFuncBack<false, VEC256>());
 	}
@@ -862,7 +862,7 @@ void CHexDlgSearch::OnComboTypeSelChange()
 	{
 		m_WndBtnBE.EnableWindow(true);
 		const auto [dwFormat, wchSepar] = GetHexCtrl()->GetDateInfo();
-		const auto wstr = GetDateFormatString(dwFormat, wchSepar);
+		const auto wstr = ut::GetDateFormatString(dwFormat, wchSepar);
 		m_WndCmbFind.SetCueBanner(wstr);
 		m_WndCmbReplace.SetCueBanner(wstr);
 	}
@@ -1471,24 +1471,24 @@ void CHexDlgSearch::Prepare()
 bool CHexDlgSearch::PrepareHexBytes()
 {
 	static constexpr auto pwszWrongInput { L"Unacceptable input character.\r\nAllowed characters are: 0123456789AaBbCcDdEeFf" };
-	auto optData = NumStrToHex(m_wstrSearch, IsWildcard() ? static_cast<char>(m_uWildcard) : 0);
+	auto optData = ut::NumStrToHex(m_wstrSearch, IsWildcard() ? static_cast<char>(m_uWildcard) : 0);
 	if (!optData) {
 		m_iWrap = 1;
 		MessageBoxW(m_Wnd, pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
 
-	m_vecSearchData = RangeToVecBytes(*optData);
+	m_vecSearchData = ut::RangeToVecBytes(*optData);
 
 	if (m_fReplace) {
-		auto optDataRepl = NumStrToHex(m_wstrReplace);
+		auto optDataRepl = ut::NumStrToHex(m_wstrReplace);
 		if (!optDataRepl) {
 			MessageBoxW(m_Wnd, pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			m_WndCmbReplace.SetFocus();
 			return false;
 		}
 
-		m_vecReplaceData = RangeToVecBytes(*optDataRepl);
+		m_vecReplaceData = ut::RangeToVecBytes(*optDataRepl);
 	}
 
 	return true;
@@ -1496,14 +1496,14 @@ bool CHexDlgSearch::PrepareHexBytes()
 
 bool CHexDlgSearch::PrepareTextASCII()
 {
-	auto strSearch = WstrToStr(m_wstrSearch, CP_ACP); //Convert to the system default Windows ANSI code page.
+	auto strSearch = ut::WstrToStr(m_wstrSearch, CP_ACP); //Convert to the system default Windows ANSI code page.
 	if (!IsMatchCase()) { //Make the string lowercase.
 		std::transform(strSearch.begin(), strSearch.end(), strSearch.begin(),
 			[](char ch) { return static_cast<char>(std::tolower(ch)); });
 	}
 
-	m_vecSearchData = RangeToVecBytes(strSearch);
-	m_vecReplaceData = RangeToVecBytes(WstrToStr(m_wstrReplace, CP_ACP));
+	m_vecSearchData = ut::RangeToVecBytes(strSearch);
+	m_vecReplaceData = ut::RangeToVecBytes(ut::WstrToStr(m_wstrReplace, CP_ACP));
 
 	return true;
 }
@@ -1516,21 +1516,21 @@ bool CHexDlgSearch::PrepareTextUTF16()
 			[](wchar_t wch) { return static_cast<wchar_t>(std::tolower(wch)); });
 	}
 
-	m_vecSearchData = RangeToVecBytes(wstrSearch);
-	m_vecReplaceData = RangeToVecBytes(m_wstrReplace);
+	m_vecSearchData = ut::RangeToVecBytes(wstrSearch);
+	m_vecReplaceData = ut::RangeToVecBytes(m_wstrReplace);
 
 	return true;
 }
 
 bool CHexDlgSearch::PrepareTextUTF8()
 {
-	m_vecSearchData = RangeToVecBytes(WstrToStr(m_wstrSearch, CP_UTF8)); //Convert to UTF-8 string.
-	m_vecReplaceData = RangeToVecBytes(WstrToStr(m_wstrReplace, CP_UTF8));
+	m_vecSearchData = ut::RangeToVecBytes(ut::WstrToStr(m_wstrSearch, CP_UTF8)); //Convert to UTF-8 string.
+	m_vecReplaceData = ut::RangeToVecBytes(ut::WstrToStr(m_wstrReplace, CP_UTF8));
 
 	return true;
 }
 
-template<typename T> requires TSize1248<T>
+template<typename T> requires ut::TSize1248<T>
 bool CHexDlgSearch::PrepareNumber()
 {
 	const auto optData = stn::StrToNum<T>(m_wstrSearch);
@@ -1554,12 +1554,12 @@ bool CHexDlgSearch::PrepareNumber()
 	}
 
 	if (IsBigEndian()) {
-		tData = ByteSwap(tData);
-		tDataRep = ByteSwap(tDataRep);
+		tData = ut::ByteSwap(tData);
+		tDataRep = ut::ByteSwap(tDataRep);
 	}
 
-	m_vecSearchData = RangeToVecBytes(tData);
-	m_vecReplaceData = RangeToVecBytes(tDataRep);
+	m_vecSearchData = ut::RangeToVecBytes(tData);
+	m_vecReplaceData = ut::RangeToVecBytes(tDataRep);
 
 	return true;
 }
@@ -1567,8 +1567,8 @@ bool CHexDlgSearch::PrepareNumber()
 bool CHexDlgSearch::PrepareFILETIME()
 {
 	const auto [dwFormat, wchSepar] = GetHexCtrl()->GetDateInfo();
-	const std::wstring wstrErr = L"Wrong FILETIME format.\r\nA correct format is: " + GetDateFormatString(dwFormat, wchSepar);
-	const auto optFTSearch = StringToFileTime(m_wstrSearch, dwFormat);
+	const std::wstring wstrErr = L"Wrong FILETIME format.\r\nA correct format is: " + ut::GetDateFormatString(dwFormat, wchSepar);
+	const auto optFTSearch = ut::StringToFileTime(m_wstrSearch, dwFormat);
 	if (!optFTSearch) {
 		MessageBoxW(m_Wnd, wstrErr.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
@@ -1578,7 +1578,7 @@ bool CHexDlgSearch::PrepareFILETIME()
 	FILETIME ftReplace { };
 
 	if (m_fReplace) {
-		const auto optFTReplace = StringToFileTime(m_wstrReplace, dwFormat);
+		const auto optFTReplace = ut::StringToFileTime(m_wstrReplace, dwFormat);
 		if (!optFTReplace) {
 			MessageBoxW(m_Wnd, wstrErr.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			return false;
@@ -1587,14 +1587,14 @@ bool CHexDlgSearch::PrepareFILETIME()
 	}
 
 	if (IsBigEndian()) {
-		ftSearch.dwLowDateTime = ByteSwap(ftSearch.dwLowDateTime);
-		ftSearch.dwHighDateTime = ByteSwap(ftSearch.dwHighDateTime);
-		ftReplace.dwLowDateTime = ByteSwap(ftReplace.dwLowDateTime);
-		ftReplace.dwHighDateTime = ByteSwap(ftReplace.dwHighDateTime);
+		ftSearch.dwLowDateTime = ut::ByteSwap(ftSearch.dwLowDateTime);
+		ftSearch.dwHighDateTime = ut::ByteSwap(ftSearch.dwHighDateTime);
+		ftReplace.dwLowDateTime = ut::ByteSwap(ftReplace.dwLowDateTime);
+		ftReplace.dwHighDateTime = ut::ByteSwap(ftReplace.dwHighDateTime);
 	}
 
-	m_vecSearchData = RangeToVecBytes(ftSearch);
-	m_vecReplaceData = RangeToVecBytes(ftReplace);
+	m_vecSearchData = ut::RangeToVecBytes(ftSearch);
+	m_vecReplaceData = ut::RangeToVecBytes(ftReplace);
 
 	return true;
 }
@@ -1730,18 +1730,18 @@ void CHexDlgSearch::Search()
 	if (m_fFound) {
 		if (m_fAll) {
 			if (m_fReplace) {
-				wstrInfo = std::format(GetLocale(), L"{:L} occurrence(s) replaced.", m_dwReplaced);
+				wstrInfo = std::format(ut::GetLocale(), L"{:L} occurrence(s) replaced.", m_dwReplaced);
 				m_dwReplaced = 0;
 				GetHexCtrl()->Redraw(); //Redraw in case of Replace all.
 			}
 			else {
-				wstrInfo = std::format(GetLocale(), L"Found {:L} occurrences.", m_dwCount);
+				wstrInfo = std::format(ut::GetLocale(), L"Found {:L} occurrences.", m_dwCount);
 				m_dwCount = 0;
 			}
 		}
 		else {
 			if (m_fDoCount) {
-				wstrInfo = std::format(GetLocale(), L"Found occurrence № {:L} from the beginning.", m_dwCount);
+				wstrInfo = std::format(ut::GetLocale(), L"Found occurrence № {:L} from the beginning.", m_dwCount);
 			}
 			else {
 				wstrInfo = L"Search found occurrence.";

@@ -156,7 +156,7 @@ auto CHexDlgAbout::OnInitDialog(const MSG& msg)->INT_PTR
 
 auto CHexDlgAbout::OnLButtonDown(const MSG& msg)->INT_PTR
 {
-	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	const POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
 	if (hWnd != m_WndLink) {
 		m_fLBDownLink = false;
@@ -170,7 +170,7 @@ auto CHexDlgAbout::OnLButtonDown(const MSG& msg)->INT_PTR
 
 auto CHexDlgAbout::OnLButtonUp(const MSG& msg) -> INT_PTR
 {
-	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	const POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
 	if (hWnd != m_WndLink) {
 		m_fLBDownLink = false;
@@ -186,7 +186,7 @@ auto CHexDlgAbout::OnLButtonUp(const MSG& msg) -> INT_PTR
 
 auto CHexDlgAbout::OnMouseMove(const MSG& msg)->INT_PTR
 {
-	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	const POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
 	if (hWnd == nullptr)
 		return FALSE;
@@ -240,7 +240,7 @@ CHexCtrl::CHexCtrl()
 		wc.hCursor = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 		wc.lpszClassName = m_pwszClassName;
 		if (::RegisterClassExW(&wc) == 0) {
-			DBG_REPORT(L"RegisterClassExW failed.");
+			ut::DBG_REPORT(L"RegisterClassExW failed.");
 			return;
 		}
 	}
@@ -287,12 +287,12 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	if (hcs.fCustom) {
 		hWnd = ::GetDlgItem(hcs.hWndParent, hcs.uID);
 		if (hWnd == nullptr) {
-			DBG_REPORT(L"GetDlgItem failed.");
+			ut::DBG_REPORT(L"GetDlgItem failed.");
 			return false;
 		}
 
 		if (::SetWindowSubclass(hWnd, SubclassProc, reinterpret_cast<UINT_PTR>(this), 0) == FALSE) {
-			DBG_REPORT(L"SubclassDlgItem failed, check HEXCREATE parameters.");
+			ut::DBG_REPORT(L"SubclassDlgItem failed, check HEXCREATE parameters.");
 			return false;
 		}
 	}
@@ -301,7 +301,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		if (hWnd = ::CreateWindowExW(hcs.dwExStyle, m_pwszClassName, L"HexCtrl", hcs.dwStyle, rc.left, rc.top, rc.Width(),
 			rc.Height(), hcs.hWndParent, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(hcs.uID)), nullptr, this);
 			hWnd == nullptr) {
-			DBG_REPORT(L"CreateWindowExW failed, check HEXCREATE parameters.");
+			ut::DBG_REPORT(L"CreateWindowExW failed, check HEXCREATE parameters.");
 			return false;
 		}
 	}
@@ -342,7 +342,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	//Menu related.
 	if (!m_MenuMain.LoadMenuW(m_hInstRes, MAKEINTRESOURCEW(IDR_HEXCTRL_MENU))) {
-		DBG_REPORT(L"LoadMenuW failed.");
+		ut::DBG_REPORT(L"LoadMenuW failed.");
 		return false;
 	}
 
@@ -1430,13 +1430,13 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 		//In cases where the only one affected data region (hms.vecSpan.size()==1) is used,
 		//and ullSizeToModify > ulSizeOfVec, we use SIMD.
 		//At the end we simply fill up the remainder (ullSizeToModify % ulSizeOfVec).
-		const auto ulSizeOfVec { HasAVX2() ? 32UL : 16UL };
+		const auto ulSizeOfVec { ut::HasAVX2() ? 32UL : 16UL };
 		const auto ullOffsetToModify = hms.vecSpan.back().ullOffset;
 		const auto ullSizeToModify = hms.vecSpan.back().ullSize;
 		const auto ullSizeToFillWith = hms.spnData.size();
 
 		if (hms.vecSpan.size() == 1 && ((ullSizeToModify / ulSizeOfVec) > 0)) {
-			ModifyWorker(hms, HasAVX2() ? ModifyOperVec256 : ModifyOperVec128,
+			ModifyWorker(hms, ut::HasAVX2() ? ModifyOperVec256 : ModifyOperVec128,
 				{ static_cast<std::byte*>(nullptr), ulSizeOfVec }); //Worker with vector.
 
 			if (const auto ullRem = ullSizeToModify % ulSizeOfVec; ullRem >= ullSizeToFillWith) { //Remainder of the vector data.
@@ -1521,13 +1521,13 @@ void CHexCtrl::Redraw()
 	if (IsDataSet()) {
 		const auto ullCaretPos = GetVirtualOffset(GetCaretPos());
 		//^ (caret) - encloses a data name, ` (tilda) - encloses the data itself.
-		m_wstrInfoBar = std::vformat(GetLocale(), IsOffsetAsHex() ? L"^Caret: ^`0x{:X}`" : L"^Caret: ^`{:L}`",
+		m_wstrInfoBar = std::vformat(ut::GetLocale(), IsOffsetAsHex() ? L"^Caret: ^`0x{:X}`" : L"^Caret: ^`{:L}`",
 			std::make_wformat_args(ullCaretPos));
 
 		if (IsPageVisible()) { //Page/Sector.
 			const auto ullPagePos = GetPagePos();
 			const auto ullPagesCount = GetPagesCount();
-			m_wstrInfoBar += std::vformat(GetLocale(), IsOffsetAsHex() ? L"^{}: ^`0x{:X}/0x{:X}`" : L"^{}: ^`{:L}/{:L}`",
+			m_wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHex() ? L"^{}: ^`0x{:X}/0x{:X}`" : L"^{}: ^`{:L}/{:L}`",
 				std::make_wformat_args(m_wstrPageName, ullPagePos, ullPagesCount));
 		}
 
@@ -1535,12 +1535,12 @@ void CHexCtrl::Redraw()
 			const auto ullSelStart = GetVirtualOffset(m_pSelection->GetSelStart());
 			const auto ullSelSize = m_pSelection->GetSelSize();
 			if (ullSelSize == 1) { //In case of just one byte selected.
-				m_wstrInfoBar += std::vformat(GetLocale(), IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}]`" :
+				m_wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}]`" :
 					L"^Selected: ^`{} [{:L}]`", std::make_wformat_args(ullSelSize, ullSelStart));
 			}
 			else {
 				const auto ullSelEnd = m_pSelection->GetSelEnd();
-				m_wstrInfoBar += std::vformat(GetLocale(), IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}-0x{:X}]`" :
+				m_wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}-0x{:X}]`" :
 					L"^Selected: ^`{:L} [{:L}-{:L}]`", std::make_wformat_args(ullSelSize, ullSelStart, ullSelEnd));
 			}
 		}
@@ -1794,7 +1794,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 				const auto nSize = static_cast<std::size_t>(::SizeofResource(m_hInstRes, hRes));
 				const auto* const pData = static_cast<char*>(::LockResource(hData));
 				if (docJSON.Parse(pData, nSize); docJSON.IsNull()) { //Parse all default keybindings.
-					DBG_REPORT(L"docJSON.IsNull()");
+					ut::DBG_REPORT(L"docJSON.IsNull()");
 					return false;
 				}
 			}
@@ -1803,7 +1803,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 	else if (std::ifstream ifs(std::wstring { wsvPath }); ifs.is_open()) {
 		rapidjson::IStreamWrapper isw { ifs };
 		if (docJSON.ParseStream(isw); docJSON.IsNull()) {
-			DBG_REPORT(L"docJSON.IsNull()");
+			ut::DBG_REPORT(L"docJSON.IsNull()");
 			return false;
 		}
 	}
@@ -1918,18 +1918,18 @@ void CHexCtrl::SetData(const HEXDATA& hds, bool fAdjust)
 		return;
 
 	if (hds.spnData.empty()) {
-		DBG_REPORT(L"Data size can't be zero.");
+		ut::DBG_REPORT(L"Data size can't be zero.");
 		return;
 	}
 
 	if (fAdjust) {
 		if (!IsDataSet()) {
-			DBG_REPORT(L"Nothing to adjust, data must be set first.");
+			ut::DBG_REPORT(L"Nothing to adjust, data must be set first.");
 			return;
 		}
 
 		if (hds.spnData.size() != m_spnData.size()) {
-			DBG_REPORT(L"Data size must be equal to the prior data size.");
+			ut::DBG_REPORT(L"Data size must be equal to the prior data size.");
 			return;
 		}
 	}
@@ -1987,7 +1987,7 @@ void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 		//Determine current user locale-specific date format.
 		if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
 			reinterpret_cast<LPWSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat)) == 0) {
-			DBG_REPORT(L"GetLocaleInfoEx failed.");
+			ut::DBG_REPORT(L"GetLocaleInfoEx failed.");
 		}
 	}
 	else {
@@ -2491,13 +2491,13 @@ void CHexCtrl::ClipboardCopy(EClipboard eType)const
 	const std::size_t sMemSize = (wstrData.size() * sCharSize) + sCharSize;
 	const auto hMem = ::GlobalAlloc(GMEM_MOVEABLE, sMemSize);
 	if (!hMem) {
-		DBG_REPORT(L"GlobalAlloc error.");
+		ut::DBG_REPORT(L"GlobalAlloc error.");
 		return;
 	}
 
 	const auto lpMemLock = GlobalLock(hMem);
 	if (!lpMemLock) {
-		DBG_REPORT(L"GlobalLock error.");
+		ut::DBG_REPORT(L"GlobalLock error.");
 		return;
 	}
 
@@ -2553,7 +2553,7 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 		if (iCodepage == -1) { //ASCII.
 			iCodepage = 1252;  //ANSI-Latin codepage for default ASCII.
 		}
-		strDataModify = WstrToStr(pDataClpbrd, iCodepage);
+		strDataModify = ut::WstrToStr(pDataClpbrd, iCodepage);
 		ullSizeModify = strDataModify.size();
 		if (ullCaretPos + ullSizeModify > ullDataSize) {
 			ullSizeModify = ullDataSize - ullCaretPos;
@@ -2563,7 +2563,7 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 	break;
 	case EClipboard::PASTE_HEX:
 	{
-		auto optData = NumStrToHex(pDataClpbrd);
+		auto optData = ut::NumStrToHex(pDataClpbrd);
 		if (!optData) {
 			::GlobalUnlock(hClpbrd);
 			::CloseClipboard();
@@ -2598,7 +2598,7 @@ auto CHexCtrl::CopyBase64()const->std::wstring
 	auto uValA = 0U;
 	auto iValB = -6;
 	for (auto i { 0U }; i < ullSelSize; ++i) {
-		uValA = (uValA << 8) + GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
+		uValA = (uValA << 8) + ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
 		iValB += 8;
 		while (iValB >= 0) {
 			wstrData += pwszBase64Map[(uValA >> iValB) & 0x3F];
@@ -2625,7 +2625,7 @@ auto CHexCtrl::CopyCArr()const->std::wstring
 
 	for (auto i { 0U }; i < ullSelSize; ++i) {
 		wstrData += L"0x";
-		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
+		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
 		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 		wstrData += m_pwszHexChars[(chByte & 0x0F)];
 		if (i < ullSelSize - 1) {
@@ -2655,7 +2655,7 @@ auto CHexCtrl::CopyGrepHex()const->std::wstring
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (auto i { 0U }; i < ullSelSize; ++i) {
 		wstrData += L"\\x";
-		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
+		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
 		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 		wstrData += m_pwszHexChars[(chByte & 0x0F)];
 	}
@@ -2670,7 +2670,7 @@ auto CHexCtrl::CopyHex()const->std::wstring
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (auto i { 0U }; i < ullSelSize; ++i) {
-		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
+		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
 		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 		wstrData += m_pwszHexChars[(chByte & 0x0F)];
 	}
@@ -2690,7 +2690,7 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 	if (m_fSelectionBlock) {
 		auto dwTail = m_pSelection->GetLineLength();
 		for (auto i { 0U }; i < ullSelSize; ++i) {
-			const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
+			const auto chByte = ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
 			wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 			wstrData += m_pwszHexChars[(chByte & 0x0F)];
 
@@ -2722,7 +2722,7 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 		}
 
 		for (auto i { 0U }; i < ullSelSize; ++i) {
-			const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
+			const auto chByte = ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
 			wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 			wstrData += m_pwszHexChars[(chByte & 0x0F)];
 
@@ -2751,7 +2751,7 @@ auto CHexCtrl::CopyHexLE()const->std::wstring
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (auto i = ullSelSize; i > 0; --i) {
-		const auto chByte = GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i - 1));
+		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i - 1));
 		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 		wstrData += m_pwszHexChars[(chByte & 0x0F)];
 	}
@@ -2852,7 +2852,7 @@ auto CHexCtrl::CopyTextCP()const->std::wstring
 	strData.reserve(static_cast<std::size_t>(ullSelSize));
 
 	for (auto i = 0; i < ullSelSize; ++i) {
-		strData.push_back(GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i)));
+		strData.push_back(ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i)));
 	}
 
 	std::wstring wstrText;
@@ -2867,7 +2867,7 @@ auto CHexCtrl::CopyTextCP()const->std::wstring
 		wstrText.assign(pDataUTF16Beg, pDataUTF16End);
 	}
 	else {
-		wstrText = StrToWstr(strData, iCodepage);
+		wstrText = ut::StrToWstr(strData, iCodepage);
 	}
 	ReplaceUnprintable(wstrText, iCodepage == -1, false);
 
@@ -4890,7 +4890,7 @@ void CHexCtrl::ModifyOper(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused
 	using enum EHexOperMode;
 
 	constexpr auto lmbOperT = []<typename T>(T * pData, const HEXMODIFY & hms) {
-		T tData = hms.fBigEndian ? ByteSwap(*pData) : *pData;
+		T tData = hms.fBigEndian ? ut::ByteSwap(*pData) : *pData;
 		assert(!hms.spnData.empty());
 		const T tOper = *reinterpret_cast<const T*>(hms.spnData.data());
 
@@ -4921,7 +4921,7 @@ void CHexCtrl::ModifyOper(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused
 				tData = std::rotr(static_cast<std::make_unsigned_t<T>>(tData), static_cast<const int>(tOper));
 				break;
 			case OPER_BITREV:
-				tData = BitReverse(tData);
+				tData = ut::BitReverse(tData);
 				break;
 			default:
 				break;
@@ -4951,14 +4951,14 @@ void CHexCtrl::ModifyOper(std::byte* pData, const HEXMODIFY& hms, [[maybe_unused
 			tData = (std::min)(tData, tOper);
 			break;
 		case OPER_SWAP:
-			tData = ByteSwap(tData);
+			tData = ut::ByteSwap(tData);
 			break;
 		default:
 			break;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			tData = ByteSwap(tData);
+			tData = ut::ByteSwap(tData);
 		}
 
 		*pData = tData;
@@ -5108,14 +5108,14 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(static_cast<std::uint8_t>(i8Data[15]), i8Oper));
 			break;
 		case OPER_BITREV:
-			m128iResult = _mm_setr_epi8(BitReverse(i8Data[0]), BitReverse(i8Data[1]), BitReverse(i8Data[2]),
-				BitReverse(i8Data[3]), BitReverse(i8Data[4]), BitReverse(i8Data[5]), BitReverse(i8Data[6]),
-				BitReverse(i8Data[7]), BitReverse(i8Data[8]), BitReverse(i8Data[9]), BitReverse(i8Data[10]),
-				BitReverse(i8Data[11]), BitReverse(i8Data[12]), BitReverse(i8Data[13]), BitReverse(i8Data[14]),
-				BitReverse(i8Data[15]));
+			m128iResult = _mm_setr_epi8(ut::BitReverse(i8Data[0]), ut::BitReverse(i8Data[1]), ut::BitReverse(i8Data[2]),
+				ut::BitReverse(i8Data[3]), ut::BitReverse(i8Data[4]), ut::BitReverse(i8Data[5]), ut::BitReverse(i8Data[6]),
+				ut::BitReverse(i8Data[7]), ut::BitReverse(i8Data[8]), ut::BitReverse(i8Data[9]), ut::BitReverse(i8Data[10]),
+				ut::BitReverse(i8Data[11]), ut::BitReverse(i8Data[12]), ut::BitReverse(i8Data[13]), ut::BitReverse(i8Data[14]),
+				ut::BitReverse(i8Data[15]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported int8_t operation.");
+			ut::DBG_REPORT(L"Unsupported int8_t operation.");
 			break;
 		}
 
@@ -5205,14 +5205,14 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(ui8Data[14], ui8Oper), std::rotr(ui8Data[15], ui8Oper));
 			break;
 		case OPER_BITREV:
-			m128iResult = _mm_setr_epi8(BitReverse(ui8Data[0]), BitReverse(ui8Data[1]), BitReverse(ui8Data[2]),
-				BitReverse(ui8Data[3]), BitReverse(ui8Data[4]), BitReverse(ui8Data[5]), BitReverse(ui8Data[6]),
-				BitReverse(ui8Data[7]), BitReverse(ui8Data[8]), BitReverse(ui8Data[9]), BitReverse(ui8Data[10]),
-				BitReverse(ui8Data[11]), BitReverse(ui8Data[12]), BitReverse(ui8Data[13]), BitReverse(ui8Data[14]),
-				BitReverse(ui8Data[15]));
+			m128iResult = _mm_setr_epi8(ut::BitReverse(ui8Data[0]), ut::BitReverse(ui8Data[1]), ut::BitReverse(ui8Data[2]),
+				ut::BitReverse(ui8Data[3]), ut::BitReverse(ui8Data[4]), ut::BitReverse(ui8Data[5]), ut::BitReverse(ui8Data[6]),
+				ut::BitReverse(ui8Data[7]), ut::BitReverse(ui8Data[8]), ut::BitReverse(ui8Data[9]), ut::BitReverse(ui8Data[10]),
+				ut::BitReverse(ui8Data[11]), ut::BitReverse(ui8Data[12]), ut::BitReverse(ui8Data[13]), ut::BitReverse(ui8Data[14]),
+				ut::BitReverse(ui8Data[15]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported uint8_t operation.");
+			ut::DBG_REPORT(L"Unsupported uint8_t operation.");
 			break;
 		}
 
@@ -5221,7 +5221,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec128Int16 = [](std::int16_t* pi16Data, const HEXMODIFY& hms) {
 		const auto m128iData = hms.fBigEndian ?
-			ByteSwapVec<std::int16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi16Data)))
+			ut::ByteSwapVec<std::int16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi16Data)))
 			: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi16Data));
 		alignas(16) std::int16_t i16Data[8];
 		_mm_store_si128(reinterpret_cast<__m128i*>(i16Data), m128iData);
@@ -5254,7 +5254,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128iResult = _mm_min_epi16(m128iData, m128iOper);
 			break;
 		case OPER_SWAP:
-			m128iResult = ByteSwapVec<std::int16_t>(m128iData);
+			m128iResult = ut::ByteSwapVec<std::int16_t>(m128iData);
 			break;
 		case OPER_OR:
 			m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -5296,17 +5296,17 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(static_cast<std::uint16_t>(i16Data[7]), i16Oper));
 			break;
 		case OPER_BITREV:
-			m128iResult = _mm_setr_epi16(BitReverse(i16Data[0]), BitReverse(i16Data[1]), BitReverse(i16Data[2]),
-				BitReverse(i16Data[3]), BitReverse(i16Data[4]), BitReverse(i16Data[5]), BitReverse(i16Data[6]),
-				BitReverse(i16Data[7]));
+			m128iResult = _mm_setr_epi16(ut::BitReverse(i16Data[0]), ut::BitReverse(i16Data[1]), ut::BitReverse(i16Data[2]),
+				ut::BitReverse(i16Data[3]), ut::BitReverse(i16Data[4]), ut::BitReverse(i16Data[5]), ut::BitReverse(i16Data[6]),
+				ut::BitReverse(i16Data[7]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported int16_t operation.");
+			ut::DBG_REPORT(L"Unsupported int16_t operation.");
 			break;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128iResult = ByteSwapVec<std::int16_t>(m128iResult);
+			m128iResult = ut::ByteSwapVec<std::int16_t>(m128iResult);
 		}
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(pi16Data), m128iResult);
@@ -5314,7 +5314,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec128UInt16 = [](std::uint16_t* pui16Data, const HEXMODIFY& hms) {
 		const auto m128iData = hms.fBigEndian ?
-			ByteSwapVec<std::uint16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui16Data)))
+			ut::ByteSwapVec<std::uint16_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui16Data)))
 			: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui16Data));
 		alignas(16) std::uint16_t ui16Data[8];
 		_mm_store_si128(reinterpret_cast<__m128i*>(ui16Data), m128iData);
@@ -5350,7 +5350,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128iResult = _mm_min_epu16(m128iData, m128iOper);
 			break;
 		case OPER_SWAP:
-			m128iResult = ByteSwapVec<std::uint16_t>(m128iData);
+			m128iResult = ut::ByteSwapVec<std::uint16_t>(m128iData);
 			break;
 		case OPER_OR:
 			m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -5382,17 +5382,17 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(ui16Data[5], ui16Oper), std::rotr(ui16Data[6], ui16Oper), std::rotr(ui16Data[7], ui16Oper));
 			break;
 		case OPER_BITREV:
-			m128iResult = _mm_setr_epi16(BitReverse(ui16Data[0]), BitReverse(ui16Data[1]), BitReverse(ui16Data[2]),
-				BitReverse(ui16Data[3]), BitReverse(ui16Data[4]), BitReverse(ui16Data[5]), BitReverse(ui16Data[6]),
-				BitReverse(ui16Data[7]));
+			m128iResult = _mm_setr_epi16(ut::BitReverse(ui16Data[0]), ut::BitReverse(ui16Data[1]), ut::BitReverse(ui16Data[2]),
+				ut::BitReverse(ui16Data[3]), ut::BitReverse(ui16Data[4]), ut::BitReverse(ui16Data[5]), ut::BitReverse(ui16Data[6]),
+				ut::BitReverse(ui16Data[7]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported uint16_t operation.");
+			ut::DBG_REPORT(L"Unsupported uint16_t operation.");
 			break;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128iResult = ByteSwapVec<std::uint16_t>(m128iResult);
+			m128iResult = ut::ByteSwapVec<std::uint16_t>(m128iResult);
 		}
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(pui16Data), m128iResult);
@@ -5400,7 +5400,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec128Int32 = [](std::int32_t* pi32Data, const HEXMODIFY& hms) {
 		const auto m128iData = hms.fBigEndian ?
-			ByteSwapVec<std::int32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi32Data)))
+			ut::ByteSwapVec<std::int32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi32Data)))
 			: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi32Data));
 		alignas(16) std::int32_t i32Data[4];
 		_mm_store_si128(reinterpret_cast<__m128i*>(i32Data), m128iData);
@@ -5433,7 +5433,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128iResult = _mm_min_epi32(m128iData, m128iOper);
 			break;
 		case OPER_SWAP:
-			m128iResult = ByteSwapVec<std::int32_t>(m128iData);
+			m128iResult = ut::ByteSwapVec<std::int32_t>(m128iData);
 			break;
 		case OPER_OR:
 			m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -5467,16 +5467,16 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(static_cast<std::uint32_t>(i32Data[3]), i32Oper));
 			break;
 		case OPER_BITREV:
-			m128iResult = _mm_setr_epi32(BitReverse(i32Data[0]), BitReverse(i32Data[1]), BitReverse(i32Data[2]),
-				BitReverse(i32Data[3]));
+			m128iResult = _mm_setr_epi32(ut::BitReverse(i32Data[0]), ut::BitReverse(i32Data[1]), ut::BitReverse(i32Data[2]),
+				ut::BitReverse(i32Data[3]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported int32_t operation.");
+			ut::DBG_REPORT(L"Unsupported int32_t operation.");
 			break;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128iResult = ByteSwapVec<std::int32_t>(m128iResult);
+			m128iResult = ut::ByteSwapVec<std::int32_t>(m128iResult);
 		}
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(pi32Data), m128iResult);
@@ -5484,7 +5484,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec128UInt32 = [](std::uint32_t* pui32Data, const HEXMODIFY& hms) {
 		const auto m128iData = hms.fBigEndian ?
-			ByteSwapVec<std::uint32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui32Data)))
+			ut::ByteSwapVec<std::uint32_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui32Data)))
 			: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui32Data));
 		alignas(16) std::uint32_t ui32Data[4];
 		_mm_store_si128(reinterpret_cast<__m128i*>(ui32Data), m128iData);
@@ -5518,7 +5518,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128iResult = _mm_min_epu32(m128iData, m128iOper); //SSE4.1
 			break;
 		case OPER_SWAP:
-			m128iResult = ByteSwapVec<std::uint32_t>(m128iData);
+			m128iResult = ut::ByteSwapVec<std::uint32_t>(m128iData);
 			break;
 		case OPER_OR:
 			m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -5548,16 +5548,16 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(ui32Data[2], ui32Oper), std::rotr(ui32Data[3], ui32Oper));
 			break;
 		case OPER_BITREV:
-			m128iResult = _mm_setr_epi32(BitReverse(ui32Data[0]), BitReverse(ui32Data[1]), BitReverse(ui32Data[2]),
-				BitReverse(ui32Data[3]));
+			m128iResult = _mm_setr_epi32(ut::BitReverse(ui32Data[0]), ut::BitReverse(ui32Data[1]), ut::BitReverse(ui32Data[2]),
+				ut::BitReverse(ui32Data[3]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported uint32_t operation.");
+			ut::DBG_REPORT(L"Unsupported uint32_t operation.");
 			break;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128iResult = ByteSwapVec<std::uint32_t>(m128iResult);
+			m128iResult = ut::ByteSwapVec<std::uint32_t>(m128iResult);
 		}
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(pui32Data), m128iResult);
@@ -5565,7 +5565,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec128Int64 = [](std::int64_t* pi64Data, const HEXMODIFY& hms) {
 		const auto m128iData = hms.fBigEndian ?
-			ByteSwapVec<std::int64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi64Data)))
+			ut::ByteSwapVec<std::int64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pi64Data)))
 			: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pi64Data));
 		alignas(16) std::int64_t i64Data[2];
 		_mm_store_si128(reinterpret_cast<__m128i*>(i64Data), m128iData);
@@ -5597,7 +5597,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128iResult = _mm_setr_epi64x((std::min)(i64Data[0], i64Oper), (std::min)(i64Data[1], i64Oper));
 			break;
 		case OPER_SWAP:
-			m128iResult = ByteSwapVec<std::int64_t>(m128iData);
+			m128iResult = ut::ByteSwapVec<std::int64_t>(m128iData);
 			break;
 		case OPER_OR:
 			m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -5627,15 +5627,15 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(static_cast<std::uint64_t>(i64Data[1]), static_cast<const int>(i64Oper)));
 			break;
 		case OPER_BITREV:
-			m128iResult = _mm_setr_epi64x(BitReverse(i64Data[0]), BitReverse(i64Data[1]));
+			m128iResult = _mm_setr_epi64x(ut::BitReverse(i64Data[0]), ut::BitReverse(i64Data[1]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported int64_t operation.");
+			ut::DBG_REPORT(L"Unsupported int64_t operation.");
 			break;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128iResult = ByteSwapVec<std::int64_t>(m128iResult);
+			m128iResult = ut::ByteSwapVec<std::int64_t>(m128iResult);
 		}
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(pi64Data), m128iResult);
@@ -5643,7 +5643,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec128UInt64 = [](std::uint64_t* pui64Data, const HEXMODIFY& hms) {
 		const auto m128iData = hms.fBigEndian ?
-			ByteSwapVec<std::uint64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui64Data)))
+			ut::ByteSwapVec<std::uint64_t>(_mm_loadu_si128(reinterpret_cast<const __m128i*>(pui64Data)))
 			: _mm_loadu_si128(reinterpret_cast<const __m128i*>(pui64Data));
 		alignas(16) std::uint64_t ui64Data[2];
 		_mm_store_si128(reinterpret_cast<__m128i*>(ui64Data), m128iData);
@@ -5675,7 +5675,7 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128iResult = _mm_setr_epi64x((std::min)(ui64Data[0], ui64Oper), (std::min)(ui64Data[1], ui64Oper));
 			break;
 		case OPER_SWAP:
-			m128iResult = ByteSwapVec<std::uint64_t>(m128iData);
+			m128iResult = ut::ByteSwapVec<std::uint64_t>(m128iData);
 			break;
 		case OPER_OR:
 			m128iResult = _mm_or_si128(m128iData, m128iOper);
@@ -5705,22 +5705,22 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(ui64Data[1], static_cast<const int>(ui64Oper)));
 			break;
 		case OPER_BITREV:
-			m128iResult = _mm_setr_epi64x(BitReverse(ui64Data[0]), BitReverse(ui64Data[1]));
+			m128iResult = _mm_setr_epi64x(ut::BitReverse(ui64Data[0]), ut::BitReverse(ui64Data[1]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported uint64_t operation.");
+			ut::DBG_REPORT(L"Unsupported uint64_t operation.");
 			break;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128iResult = ByteSwapVec<std::uint64_t>(m128iResult);
+			m128iResult = ut::ByteSwapVec<std::uint64_t>(m128iResult);
 		}
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(pui64Data), m128iResult);
 		};
 
 	constexpr auto lmbOperVec128Float = [](float* pflData, const HEXMODIFY& hms) {
-		const auto m128Data = hms.fBigEndian ? ByteSwapVec<float>(_mm_loadu_ps(pflData)) : _mm_loadu_ps(pflData);
+		const auto m128Data = hms.fBigEndian ? ut::ByteSwapVec<float>(_mm_loadu_ps(pflData)) : _mm_loadu_ps(pflData);
 		const auto m128Oper = _mm_set1_ps(*reinterpret_cast<const float*>(hms.spnData.data()));
 		__m128 m128Result { };
 
@@ -5747,22 +5747,22 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128Result = _mm_min_ps(m128Data, m128Oper);
 			break;
 		case OPER_SWAP:
-			m128Result = ByteSwapVec<float>(m128Data);
+			m128Result = ut::ByteSwapVec<float>(m128Data);
 			break;
 		default:
-			DBG_REPORT(L"Unsupported float operation.");
+			ut::DBG_REPORT(L"Unsupported float operation.");
 			return;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128Result = ByteSwapVec<float>(m128Result);
+			m128Result = ut::ByteSwapVec<float>(m128Result);
 		}
 
 		_mm_storeu_ps(pflData, m128Result);
 		};
 
 	constexpr auto lmbOperVec128Double = [](double* pdblData, const HEXMODIFY& hms) {
-		const auto m128dData = hms.fBigEndian ? ByteSwapVec<double>(_mm_loadu_pd(pdblData)) : _mm_loadu_pd(pdblData);
+		const auto m128dData = hms.fBigEndian ? ut::ByteSwapVec<double>(_mm_loadu_pd(pdblData)) : _mm_loadu_pd(pdblData);
 		const auto m128dOper = _mm_set1_pd(*reinterpret_cast<const double*>(hms.spnData.data()));
 		__m128d m128dResult { };
 
@@ -5789,15 +5789,15 @@ void CHexCtrl::ModifyOperVec128(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m128dResult = _mm_min_pd(m128dData, m128dOper);
 			break;
 		case OPER_SWAP:
-			m128dResult = ByteSwapVec<double>(m128dData);
+			m128dResult = ut::ByteSwapVec<double>(m128dData);
 			break;
 		default:
-			DBG_REPORT(L"Unsupported double operation.");
+			ut::DBG_REPORT(L"Unsupported double operation.");
 			return;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m128dResult = ByteSwapVec<double>(m128dResult);
+			m128dResult = ut::ByteSwapVec<double>(m128dResult);
 		}
 
 		_mm_storeu_pd(pdblData, m128dResult);
@@ -5991,18 +5991,18 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(static_cast<std::uint8_t>(i8Data[31]), i8Oper));
 			break;
 		case OPER_BITREV:
-			m256iResult = _mm256_setr_epi8(BitReverse(i8Data[0]), BitReverse(i8Data[1]), BitReverse(i8Data[2]),
-				BitReverse(i8Data[3]), BitReverse(i8Data[4]), BitReverse(i8Data[5]), BitReverse(i8Data[6]),
-				BitReverse(i8Data[7]), BitReverse(i8Data[8]), BitReverse(i8Data[9]), BitReverse(i8Data[10]),
-				BitReverse(i8Data[11]), BitReverse(i8Data[12]), BitReverse(i8Data[13]), BitReverse(i8Data[14]),
-				BitReverse(i8Data[15]), BitReverse(i8Data[16]), BitReverse(i8Data[17]), BitReverse(i8Data[18]),
-				BitReverse(i8Data[19]), BitReverse(i8Data[20]), BitReverse(i8Data[21]), BitReverse(i8Data[22]),
-				BitReverse(i8Data[23]), BitReverse(i8Data[24]), BitReverse(i8Data[25]), BitReverse(i8Data[26]),
-				BitReverse(i8Data[27]), BitReverse(i8Data[28]), BitReverse(i8Data[29]), BitReverse(i8Data[30]),
-				BitReverse(i8Data[31]));
+			m256iResult = _mm256_setr_epi8(ut::BitReverse(i8Data[0]), ut::BitReverse(i8Data[1]), ut::BitReverse(i8Data[2]),
+				ut::BitReverse(i8Data[3]), ut::BitReverse(i8Data[4]), ut::BitReverse(i8Data[5]), ut::BitReverse(i8Data[6]),
+				ut::BitReverse(i8Data[7]), ut::BitReverse(i8Data[8]), ut::BitReverse(i8Data[9]), ut::BitReverse(i8Data[10]),
+				ut::BitReverse(i8Data[11]), ut::BitReverse(i8Data[12]), ut::BitReverse(i8Data[13]), ut::BitReverse(i8Data[14]),
+				ut::BitReverse(i8Data[15]), ut::BitReverse(i8Data[16]), ut::BitReverse(i8Data[17]), ut::BitReverse(i8Data[18]),
+				ut::BitReverse(i8Data[19]), ut::BitReverse(i8Data[20]), ut::BitReverse(i8Data[21]), ut::BitReverse(i8Data[22]),
+				ut::BitReverse(i8Data[23]), ut::BitReverse(i8Data[24]), ut::BitReverse(i8Data[25]), ut::BitReverse(i8Data[26]),
+				ut::BitReverse(i8Data[27]), ut::BitReverse(i8Data[28]), ut::BitReverse(i8Data[29]), ut::BitReverse(i8Data[30]),
+				ut::BitReverse(i8Data[31]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported int8_t operation.");
+			ut::DBG_REPORT(L"Unsupported int8_t operation.");
 			break;
 		}
 
@@ -6120,18 +6120,18 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(ui8Data[29], ui8Oper), std::rotr(ui8Data[30], ui8Oper), std::rotr(ui8Data[31], ui8Oper));
 			break;
 		case OPER_BITREV:
-			m256iResult = _mm256_setr_epi8(BitReverse(ui8Data[0]), BitReverse(ui8Data[1]), BitReverse(ui8Data[2]),
-				BitReverse(ui8Data[3]), BitReverse(ui8Data[4]), BitReverse(ui8Data[5]), BitReverse(ui8Data[6]),
-				BitReverse(ui8Data[7]), BitReverse(ui8Data[8]), BitReverse(ui8Data[9]), BitReverse(ui8Data[10]),
-				BitReverse(ui8Data[11]), BitReverse(ui8Data[12]), BitReverse(ui8Data[13]), BitReverse(ui8Data[14]),
-				BitReverse(ui8Data[15]), BitReverse(ui8Data[16]), BitReverse(ui8Data[17]), BitReverse(ui8Data[18]),
-				BitReverse(ui8Data[19]), BitReverse(ui8Data[20]), BitReverse(ui8Data[21]), BitReverse(ui8Data[22]),
-				BitReverse(ui8Data[23]), BitReverse(ui8Data[24]), BitReverse(ui8Data[25]), BitReverse(ui8Data[26]),
-				BitReverse(ui8Data[27]), BitReverse(ui8Data[28]), BitReverse(ui8Data[29]), BitReverse(ui8Data[30]),
-				BitReverse(ui8Data[31]));
+			m256iResult = _mm256_setr_epi8(ut::BitReverse(ui8Data[0]), ut::BitReverse(ui8Data[1]), ut::BitReverse(ui8Data[2]),
+				ut::BitReverse(ui8Data[3]), ut::BitReverse(ui8Data[4]), ut::BitReverse(ui8Data[5]), ut::BitReverse(ui8Data[6]),
+				ut::BitReverse(ui8Data[7]), ut::BitReverse(ui8Data[8]), ut::BitReverse(ui8Data[9]), ut::BitReverse(ui8Data[10]),
+				ut::BitReverse(ui8Data[11]), ut::BitReverse(ui8Data[12]), ut::BitReverse(ui8Data[13]), ut::BitReverse(ui8Data[14]),
+				ut::BitReverse(ui8Data[15]), ut::BitReverse(ui8Data[16]), ut::BitReverse(ui8Data[17]), ut::BitReverse(ui8Data[18]),
+				ut::BitReverse(ui8Data[19]), ut::BitReverse(ui8Data[20]), ut::BitReverse(ui8Data[21]), ut::BitReverse(ui8Data[22]),
+				ut::BitReverse(ui8Data[23]), ut::BitReverse(ui8Data[24]), ut::BitReverse(ui8Data[25]), ut::BitReverse(ui8Data[26]),
+				ut::BitReverse(ui8Data[27]), ut::BitReverse(ui8Data[28]), ut::BitReverse(ui8Data[29]), ut::BitReverse(ui8Data[30]),
+				ut::BitReverse(ui8Data[31]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported uint8_t operation.");
+			ut::DBG_REPORT(L"Unsupported uint8_t operation.");
 			break;
 		}
 
@@ -6140,7 +6140,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec256Int16 = [](std::int16_t* pi16Data, const HEXMODIFY& hms) {
 		const auto m256iData = hms.fBigEndian ?
-			ByteSwapVec<std::int16_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi16Data)))
+			ut::ByteSwapVec<std::int16_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi16Data)))
 			: _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi16Data));
 		alignas(32) std::int16_t i16Data[16];
 		_mm256_store_si256(reinterpret_cast<__m256i*>(i16Data), m256iData);
@@ -6176,7 +6176,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m256iResult = _mm256_min_epi16(m256iData, m256iOper);
 			break;
 		case OPER_SWAP:
-			m256iResult = ByteSwapVec<std::int16_t>(m256iData);
+			m256iResult = ut::ByteSwapVec<std::int16_t>(m256iData);
 			break;
 		case OPER_OR:
 			m256iResult = _mm256_or_si256(m256iData, m256iOper);
@@ -6234,19 +6234,19 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(static_cast<std::uint16_t>(i16Data[15]), i16Oper));
 			break;
 		case OPER_BITREV:
-			m256iResult = _mm256_setr_epi16(BitReverse(i16Data[0]), BitReverse(i16Data[1]), BitReverse(i16Data[2]),
-				BitReverse(i16Data[3]), BitReverse(i16Data[4]), BitReverse(i16Data[5]), BitReverse(i16Data[6]),
-				BitReverse(i16Data[7]), BitReverse(i16Data[8]), BitReverse(i16Data[9]), BitReverse(i16Data[10]),
-				BitReverse(i16Data[11]), BitReverse(i16Data[12]), BitReverse(i16Data[13]), BitReverse(i16Data[14]),
-				BitReverse(i16Data[15]));
+			m256iResult = _mm256_setr_epi16(ut::BitReverse(i16Data[0]), ut::BitReverse(i16Data[1]), ut::BitReverse(i16Data[2]),
+				ut::BitReverse(i16Data[3]), ut::BitReverse(i16Data[4]), ut::BitReverse(i16Data[5]), ut::BitReverse(i16Data[6]),
+				ut::BitReverse(i16Data[7]), ut::BitReverse(i16Data[8]), ut::BitReverse(i16Data[9]), ut::BitReverse(i16Data[10]),
+				ut::BitReverse(i16Data[11]), ut::BitReverse(i16Data[12]), ut::BitReverse(i16Data[13]), ut::BitReverse(i16Data[14]),
+				ut::BitReverse(i16Data[15]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported int16_t operation.");
+			ut::DBG_REPORT(L"Unsupported int16_t operation.");
 			break;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256iResult = ByteSwapVec<std::int16_t>(m256iResult);
+			m256iResult = ut::ByteSwapVec<std::int16_t>(m256iResult);
 		}
 
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pi16Data), m256iResult);
@@ -6254,7 +6254,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec256UInt16 = [](std::uint16_t* pui16Data, const HEXMODIFY& hms) {
 		const auto m256iData = hms.fBigEndian ?
-			ByteSwapVec<std::uint16_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pui16Data)))
+			ut::ByteSwapVec<std::uint16_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pui16Data)))
 			: _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pui16Data));
 		alignas(32) std::uint16_t ui16Data[16];
 		_mm256_store_si256(reinterpret_cast<__m256i*>(ui16Data), m256iData);
@@ -6294,7 +6294,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m256iResult = _mm256_min_epu16(m256iData, m256iOper);
 			break;
 		case OPER_SWAP:
-			m256iResult = ByteSwapVec<std::uint16_t>(m256iData);
+			m256iResult = ut::ByteSwapVec<std::uint16_t>(m256iData);
 			break;
 		case OPER_OR:
 			m256iResult = _mm256_or_si256(m256iData, m256iOper);
@@ -6332,19 +6332,19 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(ui16Data[14], ui16Oper), std::rotr(ui16Data[15], ui16Oper));
 			break;
 		case OPER_BITREV:
-			m256iResult = _mm256_setr_epi16(BitReverse(ui16Data[0]), BitReverse(ui16Data[1]), BitReverse(ui16Data[2]),
-				BitReverse(ui16Data[3]), BitReverse(ui16Data[4]), BitReverse(ui16Data[5]), BitReverse(ui16Data[6]),
-				BitReverse(ui16Data[7]), BitReverse(ui16Data[8]), BitReverse(ui16Data[9]), BitReverse(ui16Data[10]),
-				BitReverse(ui16Data[11]), BitReverse(ui16Data[12]), BitReverse(ui16Data[13]), BitReverse(ui16Data[14]),
-				BitReverse(ui16Data[15]));
+			m256iResult = _mm256_setr_epi16(ut::BitReverse(ui16Data[0]), ut::BitReverse(ui16Data[1]), ut::BitReverse(ui16Data[2]),
+				ut::BitReverse(ui16Data[3]), ut::BitReverse(ui16Data[4]), ut::BitReverse(ui16Data[5]), ut::BitReverse(ui16Data[6]),
+				ut::BitReverse(ui16Data[7]), ut::BitReverse(ui16Data[8]), ut::BitReverse(ui16Data[9]), ut::BitReverse(ui16Data[10]),
+				ut::BitReverse(ui16Data[11]), ut::BitReverse(ui16Data[12]), ut::BitReverse(ui16Data[13]), ut::BitReverse(ui16Data[14]),
+				ut::BitReverse(ui16Data[15]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported uint16_t operation.");
+			ut::DBG_REPORT(L"Unsupported uint16_t operation.");
 			break;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256iResult = ByteSwapVec<std::uint16_t>(m256iResult);
+			m256iResult = ut::ByteSwapVec<std::uint16_t>(m256iResult);
 		}
 
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pui16Data), m256iResult);
@@ -6352,7 +6352,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec256Int32 = [](std::int32_t* pi32Data, const HEXMODIFY& hms) {
 		const auto m256iData = hms.fBigEndian ?
-			ByteSwapVec<std::int32_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi32Data)))
+			ut::ByteSwapVec<std::int32_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi32Data)))
 			: _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi32Data));
 		alignas(32) std::int32_t i32Data[8];
 		_mm256_store_si256(reinterpret_cast<__m256i*>(i32Data), m256iData);
@@ -6386,7 +6386,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m256iResult = _mm256_min_epi32(m256iData, m256iOper);
 			break;
 		case OPER_SWAP:
-			m256iResult = ByteSwapVec<std::int32_t>(m256iData);
+			m256iResult = ut::ByteSwapVec<std::int32_t>(m256iData);
 			break;
 		case OPER_OR:
 			m256iResult = _mm256_or_si256(m256iData, m256iOper);
@@ -6428,17 +6428,17 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(static_cast<std::uint32_t>(i32Data[7]), i32Oper));
 			break;
 		case OPER_BITREV:
-			m256iResult = _mm256_setr_epi32(BitReverse(i32Data[0]), BitReverse(i32Data[1]), BitReverse(i32Data[2]),
-				BitReverse(i32Data[3]), BitReverse(i32Data[4]), BitReverse(i32Data[5]), BitReverse(i32Data[6]),
-				BitReverse(i32Data[7]));
+			m256iResult = _mm256_setr_epi32(ut::BitReverse(i32Data[0]), ut::BitReverse(i32Data[1]), ut::BitReverse(i32Data[2]),
+				ut::BitReverse(i32Data[3]), ut::BitReverse(i32Data[4]), ut::BitReverse(i32Data[5]), ut::BitReverse(i32Data[6]),
+				ut::BitReverse(i32Data[7]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported int32_t operation.");
+			ut::DBG_REPORT(L"Unsupported int32_t operation.");
 			break;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256iResult = ByteSwapVec<std::int32_t>(m256iResult);
+			m256iResult = ut::ByteSwapVec<std::int32_t>(m256iResult);
 		}
 
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pi32Data), m256iResult);
@@ -6446,7 +6446,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec256UInt32 = [](std::uint32_t* pui32Data, const HEXMODIFY& hms) {
 		const auto m256iData = hms.fBigEndian ?
-			ByteSwapVec<std::uint32_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pui32Data)))
+			ut::ByteSwapVec<std::uint32_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pui32Data)))
 			: _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pui32Data));
 		alignas(32) std::uint32_t ui32Data[8];
 		_mm256_store_si256(reinterpret_cast<__m256i*>(ui32Data), m256iData);
@@ -6482,7 +6482,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m256iResult = _mm256_min_epu32(m256iData, m256iOper);
 			break;
 		case OPER_SWAP:
-			m256iResult = ByteSwapVec<std::uint32_t>(m256iData);
+			m256iResult = ut::ByteSwapVec<std::uint32_t>(m256iData);
 			break;
 		case OPER_OR:
 			m256iResult = _mm256_or_si256(m256iData, m256iOper);
@@ -6514,17 +6514,17 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(ui32Data[5], ui32Oper), std::rotr(ui32Data[6], ui32Oper), std::rotr(ui32Data[7], ui32Oper));
 			break;
 		case OPER_BITREV:
-			m256iResult = _mm256_setr_epi32(BitReverse(ui32Data[0]), BitReverse(ui32Data[1]), BitReverse(ui32Data[2]),
-				BitReverse(ui32Data[3]), BitReverse(ui32Data[4]), BitReverse(ui32Data[5]), BitReverse(ui32Data[6]),
-				BitReverse(ui32Data[7]));
+			m256iResult = _mm256_setr_epi32(ut::BitReverse(ui32Data[0]), ut::BitReverse(ui32Data[1]), ut::BitReverse(ui32Data[2]),
+				ut::BitReverse(ui32Data[3]), ut::BitReverse(ui32Data[4]), ut::BitReverse(ui32Data[5]), ut::BitReverse(ui32Data[6]),
+				ut::BitReverse(ui32Data[7]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported uint32_t operation.");
+			ut::DBG_REPORT(L"Unsupported uint32_t operation.");
 			break;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256iResult = ByteSwapVec<std::uint32_t>(m256iResult);
+			m256iResult = ut::ByteSwapVec<std::uint32_t>(m256iResult);
 		}
 
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pui32Data), m256iResult);
@@ -6532,7 +6532,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec256Int64 = [](std::int64_t* pi64Data, const HEXMODIFY& hms) {
 		const auto m256iData = hms.fBigEndian ?
-			ByteSwapVec<std::int64_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi64Data)))
+			ut::ByteSwapVec<std::int64_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi64Data)))
 			: _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pi64Data));
 		alignas(32) std::int64_t i64Data[4];
 		_mm256_store_si256(reinterpret_cast<__m256i*>(i64Data), m256iData);
@@ -6568,7 +6568,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				(std::min)(i64Data[2], i64Oper), (std::min)(i64Data[3], i64Oper));
 			break;
 		case OPER_SWAP:
-			m256iResult = ByteSwapVec<std::int64_t>(m256iData);
+			m256iResult = ut::ByteSwapVec<std::int64_t>(m256iData);
 			break;
 		case OPER_OR:
 			m256iResult = _mm256_or_si256(m256iData, m256iOper);
@@ -6603,16 +6603,16 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(static_cast<std::uint64_t>(i64Data[3]), static_cast<const int>(i64Oper)));
 			break;
 		case OPER_BITREV:
-			m256iResult = _mm256_setr_epi64x(BitReverse(i64Data[0]), BitReverse(i64Data[1]), BitReverse(i64Data[2]),
-				BitReverse(i64Data[3]));
+			m256iResult = _mm256_setr_epi64x(ut::BitReverse(i64Data[0]), ut::BitReverse(i64Data[1]), ut::BitReverse(i64Data[2]),
+				ut::BitReverse(i64Data[3]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported int64_t operation.");
+			ut::DBG_REPORT(L"Unsupported int64_t operation.");
 			break;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256iResult = ByteSwapVec<std::int64_t>(m256iResult);
+			m256iResult = ut::ByteSwapVec<std::int64_t>(m256iResult);
 		}
 
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pi64Data), m256iResult);
@@ -6620,7 +6620,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 
 	constexpr auto lmbOperVec256UInt64 = [](std::uint64_t* pui64Data, const HEXMODIFY& hms) {
 		const auto m256iData = hms.fBigEndian ?
-			ByteSwapVec<std::uint64_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pui64Data)))
+			ut::ByteSwapVec<std::uint64_t>(_mm256_loadu_si256(reinterpret_cast<const __m256i*>(pui64Data)))
 			: _mm256_loadu_si256(reinterpret_cast<const __m256i*>(pui64Data));
 		alignas(32) std::uint64_t ui64Data[4];
 		_mm256_store_si256(reinterpret_cast<__m256i*>(ui64Data), m256iData);
@@ -6656,7 +6656,7 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				 (std::min)(ui64Data[2], ui64Oper), (std::min)(ui64Data[3], ui64Oper));
 			break;
 		case OPER_SWAP:
-			m256iResult = ByteSwapVec<std::uint64_t>(m256iData);
+			m256iResult = ut::ByteSwapVec<std::uint64_t>(m256iData);
 			break;
 		case OPER_OR:
 			m256iResult = _mm256_or_si256(m256iData, m256iOper);
@@ -6690,23 +6690,23 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 				std::rotr(ui64Data[3], static_cast<const int>(ui64Oper)));
 			break;
 		case OPER_BITREV:
-			m256iResult = _mm256_setr_epi64x(BitReverse(ui64Data[0]), BitReverse(ui64Data[1]), BitReverse(ui64Data[2]),
-				BitReverse(ui64Data[3]));
+			m256iResult = _mm256_setr_epi64x(ut::BitReverse(ui64Data[0]), ut::BitReverse(ui64Data[1]), ut::BitReverse(ui64Data[2]),
+				ut::BitReverse(ui64Data[3]));
 			break;
 		default:
-			DBG_REPORT(L"Unsupported uint64_t operation.");
+			ut::DBG_REPORT(L"Unsupported uint64_t operation.");
 			break;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256iResult = ByteSwapVec<std::uint64_t>(m256iResult);
+			m256iResult = ut::ByteSwapVec<std::uint64_t>(m256iResult);
 		}
 
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(pui64Data), m256iResult);
 		};
 
 	constexpr auto lmbOperVec256Float = [](float* pflData, const HEXMODIFY& hms) {
-		const auto m256Data = hms.fBigEndian ? ByteSwapVec<float>(_mm256_loadu_ps(pflData)) : _mm256_loadu_ps(pflData);
+		const auto m256Data = hms.fBigEndian ? ut::ByteSwapVec<float>(_mm256_loadu_ps(pflData)) : _mm256_loadu_ps(pflData);
 		const auto m256Oper = _mm256_set1_ps(*reinterpret_cast<const float*>(hms.spnData.data()));
 		__m256 m256Result { };
 
@@ -6733,22 +6733,22 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m256Result = _mm256_min_ps(m256Data, m256Oper);
 			break;
 		case OPER_SWAP:
-			m256Result = ByteSwapVec<float>(m256Data);
+			m256Result = ut::ByteSwapVec<float>(m256Data);
 			break;
 		default:
-			DBG_REPORT(L"Unsupported float operation.");
+			ut::DBG_REPORT(L"Unsupported float operation.");
 			return;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256Result = ByteSwapVec<float>(m256Result);
+			m256Result = ut::ByteSwapVec<float>(m256Result);
 		}
 
 		_mm256_storeu_ps(pflData, m256Result);
 		};
 
 	constexpr auto lmbOperVec256Double = [](double* pdblData, const HEXMODIFY& hms) {
-		const auto m256dData = hms.fBigEndian ? ByteSwapVec<double>(_mm256_loadu_pd(pdblData)) : _mm256_loadu_pd(pdblData);
+		const auto m256dData = hms.fBigEndian ? ut::ByteSwapVec<double>(_mm256_loadu_pd(pdblData)) : _mm256_loadu_pd(pdblData);
 		const auto m256dOper = _mm256_set1_pd(*reinterpret_cast<const double*>(hms.spnData.data()));
 		__m256d m256dResult { };
 
@@ -6775,15 +6775,15 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 			m256dResult = _mm256_min_pd(m256dData, m256dOper);
 			break;
 		case OPER_SWAP:
-			m256dResult = ByteSwapVec<double>(m256dData);
+			m256dResult = ut::ByteSwapVec<double>(m256dData);
 			break;
 		default:
-			DBG_REPORT(L"Unsupported double operation.");
+			ut::DBG_REPORT(L"Unsupported double operation.");
 			return;
 		}
 
 		if (hms.fBigEndian) { //Swap bytes back.
-			m256dResult = ByteSwapVec<double>(m256dResult);
+			m256dResult = ut::ByteSwapVec<double>(m256dResult);
 		}
 
 		_mm256_storeu_pd(pdblData, m256dResult);
@@ -6846,7 +6846,7 @@ auto CHexCtrl::OnChar(const MSG& msg)->LRESULT
 			reinterpret_cast<LPWSTR>(&uCurrCodePage), iSize) == iSize) { //ANSI code page for the current langID (if any).
 			const wchar_t wch { static_cast<wchar_t>(nChar) };
 			//Convert input symbol (wchar) to char according to current Windows' code page.
-			if (auto str = WstrToStr(&wch, uCurrCodePage); !str.empty()) {
+			if (auto str = ut::WstrToStr(&wch, uCurrCodePage); !str.empty()) {
 				chByte = str[0];
 			}
 		}
@@ -6875,7 +6875,7 @@ auto CHexCtrl::OnCommand(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnContextMenu(const MSG& msg)->LRESULT
 {
-	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	const POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
 
 	//Notify parent that we are about to display a context menu.
 	const HEXMENUINFO hmi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU },
@@ -7044,7 +7044,7 @@ auto CHexCtrl::OnKeyDown(const MSG& msg)->LRESULT
 		else
 			return 0;
 
-		auto chByteCurr = GetIHexTData<unsigned char>(*this, GetCaretPos());
+		auto chByteCurr = ut::GetIHexTData<unsigned char>(*this, GetCaretPos());
 		if (m_fCaretHigh) {
 			chByte = (chByte << 4U) | (chByteCurr & 0x0FU);
 		}
@@ -7074,7 +7074,7 @@ auto CHexCtrl::OnKeyUp(const MSG& /*msg*/)->LRESULT
 
 auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
 {
-	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	const POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
 	const auto nFlags = static_cast<UINT>(msg.wParam);
 
 	if ((pt.x + static_cast<long>(m_pScrollH->GetScrollPos())) < m_iSecondVertLinePx) { //DblClick on "Offset" area.
@@ -7112,7 +7112,7 @@ auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnLButtonDown(const MSG& msg)->LRESULT
 {
-	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	const POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
 	const auto nFlags = static_cast<UINT>(msg.wParam);
 
 	m_Wnd.SetFocus(); //SetFocus is vital to give proper keyboard input to the main HexCtrl window.
@@ -7172,7 +7172,7 @@ auto CHexCtrl::OnLButtonUp(const MSG& /*msg*/)->LRESULT
 
 auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 {
-	POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
 	const auto optHit = HitTest(pt);
 
 	if (m_fLMousePressed) {

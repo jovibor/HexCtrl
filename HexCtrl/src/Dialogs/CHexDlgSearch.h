@@ -108,7 +108,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool PrepareTextASCII();
 		[[nodiscard]] bool PrepareTextUTF16();
 		[[nodiscard]] bool PrepareTextUTF8();
-		template<typename T> requires TSize1248<T>
+		template<typename T> requires ut::TSize1248<T>
 		[[nodiscard]] bool PrepareNumber();
 		[[nodiscard]] bool PrepareFILETIME();
 		void ReplaceAll();

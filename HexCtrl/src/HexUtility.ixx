@@ -24,7 +24,7 @@ export module HEXCTRL.HexUtility;
 export import StrToNum;
 export import ListEx;
 
-export namespace HEXCTRL::INTERNAL {
+export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	//Time calculation constants and structs.
 	constexpr auto g_uFTTicksPerMS = 10000U;            //Number of 100ns intervals in a milli-second.
 	constexpr auto g_uFTTicksPerSec = 10000000U;        //Number of 100ns intervals in a second.

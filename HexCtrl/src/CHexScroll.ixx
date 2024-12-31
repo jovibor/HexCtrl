@@ -145,7 +145,7 @@ bool CHexScroll::Create(HWND hWndParent, bool fVert, HINSTANCE hInstRes, UINT uI
 	const auto hBMP = static_cast<HBITMAP>(::LoadImageW(hInstRes, MAKEINTRESOURCEW(uIDArrow),
 		IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION));
 	if (hBMP == nullptr) {
-		DBG_REPORT(L"LoadImageW failed.");
+		ut::DBG_REPORT(L"LoadImageW failed.");
 		return false;
 	}
 
@@ -171,14 +171,14 @@ bool CHexScroll::Create(HWND hWndParent, bool fVert, HBITMAP hArrow, ULONGLONG u
 		wc.lpfnWndProc = wnd::WndProc<CHexScroll>;
 		wc.lpszClassName = pwszScrollClassName;
 		if (RegisterClassExW(&wc) == 0) {
-			DBG_REPORT(L"RegisterClassExW failed.");
+			ut::DBG_REPORT(L"RegisterClassExW failed.");
 			return false;
 		}
 	}
 
 	if (m_Wnd.Attach(::CreateWindowExW(0, pwszScrollClassName, nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr, nullptr, this));
 		m_Wnd.IsNull()) {
-		DBG_REPORT(L"CreateWindowExW failed.");
+		ut::DBG_REPORT(L"CreateWindowExW failed.");
 		return false;
 	}
 
@@ -187,7 +187,7 @@ bool CHexScroll::Create(HWND hWndParent, bool fVert, HBITMAP hArrow, ULONGLONG u
 	m_uiScrollBarSizeWH = GetSystemMetrics(fVert ? SM_CXVSCROLL : SM_CXHSCROLL);
 
 	if (!CreateArrows(hArrow, fVert)) {
-		DBG_REPORT(L"CreateArrows failed.");
+		ut::DBG_REPORT(L"CreateArrows failed.");
 		return false;
 	}
 

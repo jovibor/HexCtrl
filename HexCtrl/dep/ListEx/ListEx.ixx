@@ -537,7 +537,7 @@ auto CListExHdr::ProcessMsg(const MSG& msg)->LRESULT
 	case WM_PAINT: return OnPaint();
 	case WM_RBUTTONDOWN: return OnRButtonDown(msg);
 	case WM_RBUTTONUP: return OnRButtonUp(msg);
-	default: return DefSubclassProc(msg.hwnd, msg.message, msg.wParam, msg.lParam);
+	default: return wnd::DefSubclassProc(msg);
 	}
 }
 
@@ -927,16 +927,17 @@ auto CListExHdr::OnLayout(const MSG& msg)->LRESULT
 auto CListExHdr::OnLButtonDown(const MSG& msg)->LRESULT
 {
 	wnd::DefSubclassProc(msg);
+
 	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
 	if (const auto iItem = HitTest({ .pt { pt } }); iItem >= 0) {
 		m_fLMousePressed = true;
-		SetCapture(m_hWnd);
+		::SetCapture(m_hWnd);
 		const auto ID = ColumnIndexToID(iItem);
 		if (const auto pIcon = GetHdrIcon(ID); pIcon != nullptr
 			&& pIcon->stIcon.fClickable && IsHidden(ID) == nullptr) {
 			int iCX { };
 			int iCY { };
-			ImageList_GetIconSize(GetImageList(), &iCX, &iCY);
+			::ImageList_GetIconSize(GetImageList(), &iCX, &iCY);
 			const wnd::CRect rcColumn = GetItemRect(iItem);
 
 			const auto ptIcon = rcColumn.TopLeft() + pIcon->stIcon.pt;
@@ -946,14 +947,16 @@ auto CListExHdr::OnLButtonDown(const MSG& msg)->LRESULT
 			}
 		}
 	}
+
 	return wnd::DefSubclassProc(msg);
 }
 
 auto CListExHdr::OnLButtonUp(const MSG& msg)->LRESULT
 {
 	wnd::DefSubclassProc(msg);
+
 	m_fLMousePressed = false;
-	ReleaseCapture();
+	::ReleaseCapture();
 	RedrawWindow();
 
 	const POINT point { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
@@ -965,7 +968,7 @@ auto CListExHdr::OnLButtonUp(const MSG& msg)->LRESULT
 
 			int iCX { };
 			int iCY { };
-			ImageList_GetIconSize(GetImageList(), &iCX, &iCY);
+			::ImageList_GetIconSize(GetImageList(), &iCX, &iCY);
 			const wnd::CRect rcColumn = GetItemRect(iItem);
 			const auto pt = rcColumn.TopLeft() + ref.icon.stIcon.pt;
 			const wnd::CRect rcIcon(pt, SIZE { iCX, iCY });
@@ -1073,6 +1076,7 @@ namespace HEXCTRL::LISTEX {
 		bool EnsureVisible(int iItem, bool fPartialOK)const;
 		[[nodiscard]] auto GetColors()const->const LISTEXCOLORS &;
 		[[nodiscard]] auto GetColumnSortMode(int iColumn)const->EListExSortMode;
+		[[nodiscard]] auto GetExtendedStyle()const->DWORD;
 		[[nodiscard]] auto GetFont()const->LOGFONTW;
 		[[nodiscard]] auto GetHWND()const->HWND;
 		[[nodiscard]] auto GetImageList(int iList = HDSIL_NORMAL)const->HIMAGELIST;
@@ -1142,8 +1146,6 @@ namespace HEXCTRL::LISTEX {
 		void OnEditInPlaceEnterPressed();
 		void OnEditInPlaceKillFocus();
 		auto OnEraseBkgnd() -> LRESULT;
-		auto OnHdnBegindrag(NMHDR* pNMHDR) -> LRESULT;
-		auto OnHdnBegintrack(NMHDR* pNMHDR) -> LRESULT;
 		auto OnHScroll(const MSG& msg) -> LRESULT;
 		auto OnLButtonDblClk(const MSG& msg) -> LRESULT;
 		auto OnLButtonDown(const MSG& msg) -> LRESULT;
@@ -1243,7 +1245,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 	}
 
 	HWND hWnd { }; //Main window.
-	auto dwStyle = lcs.dwStyle | WS_CHILD | LVS_OWNERDRAWFIXED | LVS_REPORT;
+	auto dwStyle = lcs.dwStyle | WS_CHILD | LVS_OWNERDRAWFIXED;
 	if (lcs.fDialogCtrl) {
 		hWnd = ::GetDlgItem(lcs.hWndParent, lcs.uID);
 		if (hWnd == nullptr) {
@@ -1251,8 +1253,8 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 			return false;
 		}
 
-		dwStyle |= GetWindowLongPtrW(hWnd, GWL_STYLE);
-		SetWindowLongPtrW(hWnd, GWL_STYLE, dwStyle);
+		dwStyle |= ::GetWindowLongPtrW(hWnd, GWL_STYLE);
+		::SetWindowLongPtrW(hWnd, GWL_STYLE, dwStyle);
 	}
 	else {
 		const wnd::CRect rc = lcs.rect;
@@ -1437,6 +1439,16 @@ auto CListEx::GetColumnSortMode(int iColumn)const->EListExSortMode
 	}
 
 	return m_eDefSortMode;
+}
+
+auto CListEx::GetExtendedStyle()const->DWORD
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	return static_cast<DWORD>(::SendMessageW(m_hWnd, LVM_GETEXTENDEDLISTVIEWSTYLE, 0, 0));
 }
 
 auto CListEx::GetFont()const->LOGFONTW
@@ -2279,26 +2291,6 @@ auto CListEx::OnEraseBkgnd()->LRESULT
 	return TRUE;
 }
 
-auto CListEx::OnHdnBegindrag(NMHDR* pNMHDR)->LRESULT
-{
-	const auto phdr = reinterpret_cast<LPNMHEADERW>(pNMHDR);
-	if (GetHeader().IsColumnHidden(phdr->iItem)) {
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-auto CListEx::OnHdnBegintrack(NMHDR* pNMHDR)->LRESULT
-{
-	const auto phdr = reinterpret_cast<LPNMHEADERW>(pNMHDR);
-	if (GetHeader().IsColumnHidden(phdr->iItem)) {
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
 auto CListEx::OnHScroll(const MSG& msg)->LRESULT
 {
 	GetHeader().RedrawWindow();
@@ -2448,7 +2440,7 @@ auto CListEx::OnMouseMove(const MSG& msg)->LRESULT
 		}
 	}
 
-	SetCursor(fLinkRect ? hCurHand : hCurArrow);
+	::SetCursor(fLinkRect ? hCurHand : hCurArrow);
 
 	if (fLinkRect) { //Link's rect is under the cursor.
 		if (m_fCellTTActive) { //If there is a cell's tooltip atm, hide it.
@@ -2509,10 +2501,13 @@ auto CListEx::OnNotify(const MSG& msg)->LRESULT
 	switch (pNMHDR->idFrom) {
 	case 0: //Header control.
 		switch (pNMHDR->code) {
-		case HDN_BEGINDRAG: return OnHdnBegindrag(pNMHDR);
+		case HDN_BEGINDRAG:
 		case HDN_BEGINTRACKA:
 		case HDN_BEGINTRACKW:
-			return OnHdnBegintrack(pNMHDR);
+			if (GetHeader().IsColumnHidden(pNMLV->iItem)) {
+				return TRUE; //Return TRUE to disable further drag/track processing by the Header control.
+			}
+			break;
 		case HDN_ITEMCLICKA:
 		case HDN_ITEMCLICKW:
 			if (m_fSortable) {
@@ -2527,9 +2522,8 @@ auto CListEx::OnNotify(const MSG& msg)->LRESULT
 
 				if (!m_fVirtual) {
 					SortItemsEx(m_pfnCompare ? m_pfnCompare : DefCompareFunc, reinterpret_cast<DWORD_PTR>(this));
-					return wnd::DefSubclassProc(msg);
 				}
-			}break;
+			} break;
 		default: break;
 		}
 		break;
@@ -2684,7 +2678,7 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 
 	if (const auto iIndex = GetIcon(iItem, iSubitem); iIndex > -1) { //If cell has icon.
 		IMAGEINFO stII;
-		ImageList_GetImageInfo(GetImageList(LVSIL_NORMAL), iIndex, &stII);
+		::ImageList_GetImageInfo(GetImageList(LVSIL_NORMAL), iIndex, &stII);
 		iImageWidth = stII.rcImage.right - stII.rcImage.left;
 		const auto iImgHeight = stII.rcImage.bottom - stII.rcImage.top;
 		const auto iImgTop = iImgHeight < rcTextOrig.Height() ?

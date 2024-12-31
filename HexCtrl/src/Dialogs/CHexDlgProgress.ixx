@@ -190,7 +190,7 @@ auto CHexDlgProgress::OnTimer(const MSG& msg)->INT_PTR
 	m_WndOper.SetWndText(wstrDisplay);
 
 	if (m_ullCount > 0) {
-		m_WndCount.SetWndText(std::format(GetLocale(), L"{}{:L}", m_wstrCountName, m_ullCount));
+		m_WndCount.SetWndText(std::format(ut::GetLocale(), L"{}{:L}", m_wstrCountName, m_ullCount));
 	}
 
 	return TRUE;

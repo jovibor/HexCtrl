@@ -29,7 +29,7 @@ void CHexDlgCodepage::CreateDlg()
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_CODEPAGE),
 		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgCodepage>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
-		DBG_REPORT(L"CreateDialogParamW failed.");
+		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
 }
 
@@ -41,7 +41,7 @@ auto CHexDlgCodepage::GetHWND()const->HWND
 void CHexDlgCodepage::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
 	if (pHexCtrl == nullptr || hInstRes == nullptr) {
-		DBG_REPORT(L"Initialize == nullptr");
+		ut::DBG_REPORT(L"Initialize == nullptr");
 		return;
 	}
 

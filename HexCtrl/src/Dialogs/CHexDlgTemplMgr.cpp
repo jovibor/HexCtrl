@@ -112,7 +112,7 @@ void CHexDlgTemplMgr::CreateDlg()
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_TEMPLMGR),
 		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgTemplMgr>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
-		DBG_REPORT(L"CreateDialogParamW failed.");
+		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
 }
 
@@ -233,7 +233,7 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD
 void CHexDlgTemplMgr::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
 	if (pHexCtrl == nullptr || hInstRes == nullptr) {
-		DBG_REPORT(L"Initialize == nullptr");
+		ut::DBG_REPORT(L"Initialize == nullptr");
 		return;
 	}
 
@@ -410,7 +410,7 @@ void CHexDlgTemplMgr::OnBnLoadTemplate()
 {
 	IFileOpenDialog *pIFOD { };
 	if (::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pIFOD)) != S_OK) {
-		DBG_REPORT(L"CoCreateInstance failed.");
+		ut::DBG_REPORT(L"CoCreateInstance failed.");
 		return;
 	}
 
@@ -789,7 +789,7 @@ auto CHexDlgTemplMgr::OnMouseMove(const MSG& msg)->INT_PTR
 	static constexpr auto iMinTreeWidth = 100;          //Tree control minimum allowed width.
 	static const auto hCurResize = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
 	static const auto hCurArrow = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
-	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
+	const POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
 
 	const auto hWndList = wnd::CWnd::FromHandle(m_ListEx.GetHWND());
 	auto rcList = hWndList.GetWindowRect();
@@ -969,33 +969,33 @@ void CHexDlgTemplMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 			switch (pField->iSize) {
 			case 1:
 			{
-				const auto bData = GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset);
+				const auto bData = ut::GetIHexTData<BYTE>(*m_pHexCtrl, ullOffset);
 				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(bData)) = L'\0';
 			}
 			break;
 			case 2:
 			{
-				auto wData = GetIHexTData<WORD>(*m_pHexCtrl, ullOffset);
+				auto wData = ut::GetIHexTData<WORD>(*m_pHexCtrl, ullOffset);
 				if (fShouldSwap) {
-					wData = ByteSwap(wData);
+					wData = ut::ByteSwap(wData);
 				}
 				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(wData)) = L'\0';
 			}
 			break;
 			case 4:
 			{
-				auto dwData = GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset);
+				auto dwData = ut::GetIHexTData<DWORD>(*m_pHexCtrl, ullOffset);
 				if (fShouldSwap) {
-					dwData = ByteSwap(dwData);
+					dwData = ut::ByteSwap(dwData);
 				}
 				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(dwData)) = L'\0';
 			}
 			break;
 			case 8:
 			{
-				auto ullData = GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset);
+				auto ullData = ut::GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset);
 				if (fShouldSwap) {
-					ullData = ByteSwap(ullData);
+					ullData = ut::ByteSwap(ullData);
 				}
 				*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(ullData)) = L'\0';
 			}
@@ -1005,52 +1005,52 @@ void CHexDlgTemplMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 			}
 			break;
 		case type_bool:
-			ShowListDataBool(pItem->pszText, GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset));
+			ShowListDataBool(pItem->pszText, ut::GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset));
 			break;
 		case type_int8:
-			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::int8_t>(*m_pHexCtrl, ullOffset), false);
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::int8_t>(*m_pHexCtrl, ullOffset), false);
 			break;
 		case type_uint8:
-			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset), false);
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset), false);
 			break;
 		case type_int16:
-			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::int16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::int16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_uint16:
-			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::uint16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::uint16_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_int32:
-			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::int32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::int32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_uint32:
-			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::uint32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::uint32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_int64:
-			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::int64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::int64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_uint64:
-			ShowListDataNUMBER(pItem->pszText, GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_float:
-			ShowListDataNUMBER(pItem->pszText, GetIHexTData<float>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<float>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_double:
-			ShowListDataNUMBER(pItem->pszText, GetIHexTData<double>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataNUMBER(pItem->pszText, ut::GetIHexTData<double>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_time32:
-			ShowListDataTime32(pItem->pszText, GetIHexTData<__time32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataTime32(pItem->pszText, ut::GetIHexTData<__time32_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_time64:
-			ShowListDataTime64(pItem->pszText, GetIHexTData<__time64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataTime64(pItem->pszText, ut::GetIHexTData<__time64_t>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_filetime:
-			ShowListDataFILETIME(pItem->pszText, GetIHexTData<FILETIME>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataFILETIME(pItem->pszText, ut::GetIHexTData<FILETIME>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_systemtime:
-			ShowListDataSYSTEMTIME(pItem->pszText, GetIHexTData<SYSTEMTIME>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataSYSTEMTIME(pItem->pszText, ut::GetIHexTData<SYSTEMTIME>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		case type_guid:
-			ShowListDataGUID(pItem->pszText, GetIHexTData<GUID>(*m_pHexCtrl, ullOffset), fShouldSwap);
+			ShowListDataGUID(pItem->pszText, ut::GetIHexTData<GUID>(*m_pHexCtrl, ullOffset), fShouldSwap);
 			break;
 		default:
 			break;
@@ -1520,7 +1520,7 @@ bool CHexDlgTemplMgr::SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset) const
 	return false;
 }
 
-template<typename T> requires TSize1248<T>
+template<typename T> requires ut::TSize1248<T>
 bool CHexDlgTemplMgr::SetDataNUMBER(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (IsShowAsHex()) {
@@ -1552,7 +1552,7 @@ bool CHexDlgTemplMgr::SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 	}
 	else {
 		//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038.
-		const auto optSysTime = StringToSystemTime(pwszText, m_dwDateFormat);
+		const auto optSysTime = ut::StringToSystemTime(pwszText, m_dwDateFormat);
 		if (!optSysTime)
 			return false;
 
@@ -1562,13 +1562,13 @@ bool CHexDlgTemplMgr::SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 			return false;
 
 		FILETIME ftTime;
-		if (!SystemTimeToFileTime(&*optSysTime, &ftTime))
+		if (!::SystemTimeToFileTime(&*optSysTime, &ftTime))
 			return false;
 
 		//Convert ticks to seconds and adjust epoch.
 		LARGE_INTEGER lTicks { .LowPart { ftTime.dwLowDateTime }, .HighPart { static_cast<LONG>(ftTime.dwHighDateTime) } };
-		lTicks.QuadPart /= g_uFTTicksPerSec;
-		lTicks.QuadPart -= g_ullUnixEpochDiff;
+		lTicks.QuadPart /= ut::g_uFTTicksPerSec;
+		lTicks.QuadPart -= ut::g_ullUnixEpochDiff;
 		if (lTicks.QuadPart >= LONG_MAX)
 			return false;
 
@@ -1591,7 +1591,7 @@ bool CHexDlgTemplMgr::SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 	}
 	else {
 		//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038.
-		const auto optSysTime = StringToSystemTime(pwszText, m_dwDateFormat);
+		const auto optSysTime = ut::StringToSystemTime(pwszText, m_dwDateFormat);
 		if (!optSysTime)
 			return false;
 
@@ -1601,13 +1601,13 @@ bool CHexDlgTemplMgr::SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 			return false;
 
 		FILETIME ftTime;
-		if (!SystemTimeToFileTime(&*optSysTime, &ftTime))
+		if (!::SystemTimeToFileTime(&*optSysTime, &ftTime))
 			return false;
 
 		//Convert ticks to seconds and adjust epoch.
 		LARGE_INTEGER lTicks { .LowPart { ftTime.dwLowDateTime }, .HighPart { static_cast<LONG>(ftTime.dwHighDateTime) } };
-		lTicks.QuadPart /= g_uFTTicksPerSec;
-		lTicks.QuadPart -= g_ullUnixEpochDiff;
+		lTicks.QuadPart /= ut::g_uFTTicksPerSec;
+		lTicks.QuadPart -= ut::g_ullUnixEpochDiff;
 
 		const auto llTime64 = static_cast<__time64_t>(lTicks.QuadPart);
 		SetTData(llTime64, ullOffset, fShouldSwap);
@@ -1627,7 +1627,7 @@ bool CHexDlgTemplMgr::SetDataFILETIME(LPCWSTR pwszText, ULONGLONG ullOffset, boo
 		}
 	}
 	else {
-		const auto optFileTime = StringToFileTime(pwszText, m_dwDateFormat);
+		const auto optFileTime = ut::StringToFileTime(pwszText, m_dwDateFormat);
 		if (!optFileTime)
 			return false;
 
@@ -1641,23 +1641,23 @@ bool CHexDlgTemplMgr::SetDataFILETIME(LPCWSTR pwszText, ULONGLONG ullOffset, boo
 bool CHexDlgTemplMgr::SetDataSYSTEMTIME(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	//No Hex representation for this type because size is too big, > ULONGLONG.
-	const auto optSysTime = StringToSystemTime(pwszText, m_dwDateFormat);
+	const auto optSysTime = ut::StringToSystemTime(pwszText, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
 	auto stSTime = *optSysTime;
 	if (fShouldSwap) {
-		stSTime.wYear = ByteSwap(stSTime.wYear);
-		stSTime.wMonth = ByteSwap(stSTime.wMonth);
-		stSTime.wDayOfWeek = ByteSwap(stSTime.wDayOfWeek);
-		stSTime.wDay = ByteSwap(stSTime.wDay);
-		stSTime.wHour = ByteSwap(stSTime.wHour);
-		stSTime.wMinute = ByteSwap(stSTime.wMinute);
-		stSTime.wSecond = ByteSwap(stSTime.wSecond);
-		stSTime.wMilliseconds = ByteSwap(stSTime.wMilliseconds);
+		stSTime.wYear = ut::ByteSwap(stSTime.wYear);
+		stSTime.wMonth = ut::ByteSwap(stSTime.wMonth);
+		stSTime.wDayOfWeek = ut::ByteSwap(stSTime.wDayOfWeek);
+		stSTime.wDay = ut::ByteSwap(stSTime.wDay);
+		stSTime.wHour = ut::ByteSwap(stSTime.wHour);
+		stSTime.wMinute = ut::ByteSwap(stSTime.wMinute);
+		stSTime.wSecond = ut::ByteSwap(stSTime.wSecond);
+		stSTime.wMilliseconds = ut::ByteSwap(stSTime.wMilliseconds);
 	}
 
-	SetIHexTData(*m_pHexCtrl, ullOffset, stSTime);
+	ut::SetIHexTData(*m_pHexCtrl, ullOffset, stSTime);
 
 	return true;
 }
@@ -1670,12 +1670,12 @@ bool CHexDlgTemplMgr::SetDataGUID(LPCWSTR pwszText, ULONGLONG ullOffset, bool fS
 		return false;
 
 	if (fShouldSwap) {
-		stGUID.Data1 = ByteSwap(stGUID.Data1);
-		stGUID.Data2 = ByteSwap(stGUID.Data2);
-		stGUID.Data3 = ByteSwap(stGUID.Data3);
+		stGUID.Data1 = ut::ByteSwap(stGUID.Data1);
+		stGUID.Data2 = ut::ByteSwap(stGUID.Data2);
+		stGUID.Data3 = ut::ByteSwap(stGUID.Data3);
 	}
 
-	SetIHexTData(*m_pHexCtrl, ullOffset, stGUID);
+	ut::SetIHexTData(*m_pHexCtrl, ullOffset, stGUID);
 
 	return true;
 }
@@ -1709,14 +1709,14 @@ void CHexDlgTemplMgr::SetHexSelByField(PCHEXTEMPLFIELD pField)
 	}
 }
 
-template<TSize1248 T>
+template<ut::TSize1248 T>
 void CHexDlgTemplMgr::SetTData(T tData, ULONGLONG ullOffset, bool fShouldSwap)const
 {
 	if (fShouldSwap) {
-		tData = ByteSwap(tData);
+		tData = ut::ByteSwap(tData);
 	}
 
-	SetIHexTData(*m_pHexCtrl, ullOffset, tData);
+	ut::SetIHexTData(*m_pHexCtrl, ullOffset, tData);
 }
 
 void CHexDlgTemplMgr::ShowListDataBool(LPWSTR pwsz, std::uint8_t u8Data) const
@@ -1726,11 +1726,11 @@ void CHexDlgTemplMgr::ShowListDataBool(LPWSTR pwsz, std::uint8_t u8Data) const
 		std::make_wformat_args(u8Data, fBool)) = L'\0';
 }
 
-template<typename T> requires TSize1248<T>
+template<typename T> requires ut::TSize1248<T>
 void CHexDlgTemplMgr::ShowListDataNUMBER(LPWSTR pwsz, T tData, bool fShouldSwap)const
 {
 	if (fShouldSwap) {
-		tData = ByteSwap(tData);
+		tData = ut::ByteSwap(tData);
 	}
 
 	if (IsShowAsHex()) {
@@ -1782,7 +1782,7 @@ void CHexDlgTemplMgr::ShowListDataNUMBER(LPWSTR pwsz, T tData, bool fShouldSwap)
 void CHexDlgTemplMgr::ShowListDataTime32(LPWSTR pwsz, __time32_t lTime32, bool fShouldSwap)const
 {
 	if (fShouldSwap) {
-		lTime32 = ByteSwap(lTime32);
+		lTime32 = ut::ByteSwap(lTime32);
 	}
 
 	if (IsShowAsHex()) {
@@ -1796,18 +1796,18 @@ void CHexDlgTemplMgr::ShowListDataTime32(LPWSTR pwsz, __time32_t lTime32, bool f
 	}
 
 	//Add seconds from epoch time.
-	LARGE_INTEGER Time { .LowPart { g_ulFileTime1970_LOW }, .HighPart { g_ulFileTime1970_HIGH } };
-	Time.QuadPart += static_cast<LONGLONG>(lTime32) * g_uFTTicksPerSec;
+	LARGE_INTEGER Time { .LowPart { ut::g_ulFileTime1970_LOW }, .HighPart { ut::g_ulFileTime1970_HIGH } };
+	Time.QuadPart += static_cast<LONGLONG>(lTime32) * ut::g_uFTTicksPerSec;
 
 	//Convert to FILETIME.
 	const FILETIME ftTime { .dwLowDateTime { Time.LowPart }, .dwHighDateTime = static_cast<DWORD>(Time.HighPart) };
-	*std::format_to(pwsz, L"{}", FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar)) = L'\0';
+	*std::format_to(pwsz, L"{}", ut::FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar)) = L'\0';
 }
 
 void CHexDlgTemplMgr::ShowListDataTime64(LPWSTR pwsz, __time64_t llTime64, bool fShouldSwap)const
 {
 	if (fShouldSwap) {
-		llTime64 = ByteSwap(llTime64);
+		llTime64 = ut::ByteSwap(llTime64);
 	}
 
 	if (IsShowAsHex()) {
@@ -1821,22 +1821,22 @@ void CHexDlgTemplMgr::ShowListDataTime64(LPWSTR pwsz, __time64_t llTime64, bool 
 	}
 
 	//Add seconds from epoch time.
-	LARGE_INTEGER Time { .LowPart { g_ulFileTime1970_LOW }, .HighPart { g_ulFileTime1970_HIGH } };
-	Time.QuadPart += llTime64 * g_uFTTicksPerSec;
+	LARGE_INTEGER Time { .LowPart { ut::g_ulFileTime1970_LOW }, .HighPart { ut::g_ulFileTime1970_HIGH } };
+	Time.QuadPart += llTime64 * ut::g_uFTTicksPerSec;
 
 	//Convert to FILETIME.
 	const FILETIME ftTime { .dwLowDateTime { Time.LowPart }, .dwHighDateTime { static_cast<DWORD>(Time.HighPart) } };
-	*std::format_to(pwsz, L"{}", FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar)) = L'\0';
+	*std::format_to(pwsz, L"{}", ut::FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar)) = L'\0';
 }
 
 void CHexDlgTemplMgr::ShowListDataFILETIME(LPWSTR pwsz, FILETIME stFTime, bool fShouldSwap)const
 {
 	if (fShouldSwap) {
-		stFTime = ByteSwap(stFTime);
+		stFTime = ut::ByteSwap(stFTime);
 	}
 
 	const auto ui64 = std::bit_cast<std::uint64_t>(stFTime);
-	const auto wstrTime = FileTimeToString(stFTime, m_dwDateFormat, m_wchDateSepar);
+	const auto wstrTime = ut::FileTimeToString(stFTime, m_dwDateFormat, m_wchDateSepar);
 	*std::vformat_to(pwsz, IsShowAsHex() ? L"0x{0:016X}" : L"{}", std::make_wformat_args(ui64, wstrTime)) = L'\0';
 }
 
@@ -1844,26 +1844,26 @@ void CHexDlgTemplMgr::ShowListDataSYSTEMTIME(LPWSTR pwsz, SYSTEMTIME stSTime, bo
 {
 	//No Hex representation for this type because size is too big, > ULONGLONG.
 	if (fShouldSwap) {
-		stSTime.wYear = ByteSwap(stSTime.wYear);
-		stSTime.wMonth = ByteSwap(stSTime.wMonth);
-		stSTime.wDayOfWeek = ByteSwap(stSTime.wDayOfWeek);
-		stSTime.wDay = ByteSwap(stSTime.wDay);
-		stSTime.wHour = ByteSwap(stSTime.wHour);
-		stSTime.wMinute = ByteSwap(stSTime.wMinute);
-		stSTime.wSecond = ByteSwap(stSTime.wSecond);
-		stSTime.wMilliseconds = ByteSwap(stSTime.wMilliseconds);
+		stSTime.wYear = ut::ByteSwap(stSTime.wYear);
+		stSTime.wMonth = ut::ByteSwap(stSTime.wMonth);
+		stSTime.wDayOfWeek = ut::ByteSwap(stSTime.wDayOfWeek);
+		stSTime.wDay = ut::ByteSwap(stSTime.wDay);
+		stSTime.wHour = ut::ByteSwap(stSTime.wHour);
+		stSTime.wMinute = ut::ByteSwap(stSTime.wMinute);
+		stSTime.wSecond = ut::ByteSwap(stSTime.wSecond);
+		stSTime.wMilliseconds = ut::ByteSwap(stSTime.wMilliseconds);
 	}
 
-	*std::format_to(pwsz, L"{}", SystemTimeToString(stSTime, m_dwDateFormat, m_wchDateSepar)) = L'\0';
+	*std::format_to(pwsz, L"{}", ut::SystemTimeToString(stSTime, m_dwDateFormat, m_wchDateSepar)) = L'\0';
 }
 
 void CHexDlgTemplMgr::ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwap)const
 {
 	//No Hex representation for this type because size is too big, > ULONGLONG.
 	if (fShouldSwap) {
-		stGUID.Data1 = ByteSwap(stGUID.Data1);
-		stGUID.Data2 = ByteSwap(stGUID.Data2);
-		stGUID.Data3 = ByteSwap(stGUID.Data3);
+		stGUID.Data1 = ut::ByteSwap(stGUID.Data1);
+		stGUID.Data2 = ut::ByteSwap(stGUID.Data2);
+		stGUID.Data3 = ut::ByteSwap(stGUID.Data3);
 	}
 
 	*std::format_to(pwsz, L"{{{:0>8x}-{:0>4x}-{:0>4x}-{:0>2x}{:0>2x}-{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}}}",
@@ -2008,7 +2008,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, HexV
 		std::wstring wstrNameField;
 		if (const auto itName = pField->FindMember("name");
 			itName != pField->MemberEnd() && itName->value.IsString()) {
-			wstrNameField = StrToWstr(itName->value.GetString());
+			wstrNameField = ut::StrToWstr(itName->value.GetString());
 		}
 		else {
 			return false; //Each array entry (Object) must have a "name" string.
@@ -2043,7 +2043,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, HexV
 		else {
 			if (const auto iterDescr = pField->FindMember("description");
 				iterDescr != pField->MemberEnd() && iterDescr->value.IsString()) {
-				pNewField->wstrDescr = StrToWstr(iterDescr->value.GetString());
+				pNewField->wstrDescr = ut::StrToWstr(iterDescr->value.GetString());
 			}
 
 			int iArraySize { 0 };
@@ -2066,7 +2066,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, HexV
 				else { //If it's not any standard type, we try to find custom type with given name.
 					const auto& refVecCTypes = refDefault.pTemplate->vecCustomType;
 					const auto iterVecCT = std::find_if(refVecCTypes.begin(), refVecCTypes.end(),
-						[=](const HEXCUSTOMTYPE& ref) { return ref.wstrTypeName == StrToWstr(iterType->value.GetString()); });
+						[=](const HEXCUSTOMTYPE& ref) { return ref.wstrTypeName == ut::StrToWstr(iterType->value.GetString()); });
 					if (iterVecCT == refVecCTypes.end()) {
 						return false; //Undefined/unknown "type".
 					}
@@ -2248,7 +2248,7 @@ HEXCTRLAPI auto __cdecl HEXCTRL::IHexTemplates::LoadFromFile(const wchar_t* pFil
 	if (itTName == docJSON.MemberEnd() || !itTName->value.IsString())
 		return { }; //Template must have a string type name.
 
-	pTemplate->wstrName = StrToWstr(itTName->value.GetString());
+	pTemplate->wstrName = ut::StrToWstr(itTName->value.GetString());
 
 	CHexDlgTemplMgr::UmapCustomTypes umapCT;
 	std::uint8_t uCustomTypeID = 1; //ID starts at 1.
@@ -2262,7 +2262,7 @@ HEXCTRLAPI auto __cdecl HEXCTRL::IHexTemplates::LoadFromFile(const wchar_t* pFil
 			std::wstring wstrTypeName;
 			if (const auto itName = pCustomType->FindMember("TypeName");
 				itName != pCustomType->MemberEnd() && itName->value.IsString()) {
-				wstrTypeName = StrToWstr(itName->value.GetString());
+				wstrTypeName = ut::StrToWstr(itName->value.GetString());
 			}
 			else {
 				return { }; //Each array entry (Object) must have a "TypeName" property.

@@ -73,7 +73,7 @@ void CHexDlgDataInterp::CreateDlg()
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_DATAINTERP),
 		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgDataInterp>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
-		DBG_REPORT(L"CreateDialogParamW failed.");
+		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
 }
 
@@ -107,7 +107,7 @@ auto CHexDlgDataInterp::GetHWND()const->HWND
 void CHexDlgDataInterp::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
 	if (pHexCtrl == nullptr || hInstRes == nullptr) {
-		DBG_REPORT(L"Initialize == nullptr");
+		ut::DBG_REPORT(L"Initialize == nullptr");
 		return;
 	}
 
@@ -174,7 +174,7 @@ void CHexDlgDataInterp::UpdateData()
 		ref.fAllowEdit = fMutable;
 	}
 
-	const auto ui8Data = GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset);
+	const auto ui8Data = ut::GetIHexTData<std::uint8_t>(*m_pHexCtrl, ullOffset);
 
 	if (eSizeBin == SIZE_BYTE) {
 		ShowValueBinary(ui8Data);
@@ -196,9 +196,9 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	auto ui16Data = GetIHexTData<std::uint16_t>(*m_pHexCtrl, ullOffset);
+	auto ui16Data = ut::GetIHexTData<std::uint16_t>(*m_pHexCtrl, ullOffset);
 	if (IsBigEndian()) {
-		ui16Data = ByteSwap(ui16Data);
+		ui16Data = ut::ByteSwap(ui16Data);
 	}
 
 	if (eSizeBin == SIZE_WORD) {
@@ -221,9 +221,9 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	auto ui32Data = GetIHexTData<std::uint32_t>(*m_pHexCtrl, ullOffset);
+	auto ui32Data = ut::GetIHexTData<std::uint32_t>(*m_pHexCtrl, ullOffset);
 	if (IsBigEndian()) {
-		ui32Data = ByteSwap(ui32Data);
+		ui32Data = ut::ByteSwap(ui32Data);
 	}
 
 	if (eSizeBin == SIZE_DWORD) {
@@ -250,9 +250,9 @@ void CHexDlgDataInterp::UpdateData()
 		return;
 	}
 
-	auto ui64Data = GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset);
+	auto ui64Data = ut::GetIHexTData<std::uint64_t>(*m_pHexCtrl, ullOffset);
 	if (IsBigEndian()) {
-		ui64Data = ByteSwap(ui64Data);
+		ui64Data = ut::ByteSwap(ui64Data);
 	}
 
 	if (eSizeBin == SIZE_QWORD) {
@@ -282,7 +282,7 @@ void CHexDlgDataInterp::UpdateData()
 
 	//Getting DQWORD size of data in form of SYSTEMTIME.
 	//GUID could be used instead, it doesn't matter, they are same size.
-	const auto dblQWORD = GetIHexTData<SYSTEMTIME>(*m_pHexCtrl, ullOffset);
+	const auto dblQWORD = ut::GetIHexTData<SYSTEMTIME>(*m_pHexCtrl, ullOffset);
 
 	//Note: big-endian swapping is INDIVIDUAL for every struct.
 	ShowValueSYSTEMTIME(dblQWORD);
@@ -333,7 +333,7 @@ auto CHexDlgDataInterp::OnActivate(const MSG& msg)->INT_PTR
 		const auto [dwFormat, wchSepar] = m_pHexCtrl->GetDateInfo();
 		m_dwDateFormat = dwFormat;
 		m_wchDateSepar = wchSepar;
-		const auto wstrTitle = L"Date/Time format is: " + GetDateFormatString(m_dwDateFormat, m_wchDateSepar);
+		const auto wstrTitle = L"Date/Time format is: " + ut::GetDateFormatString(m_dwDateFormat, m_wchDateSepar);
 		m_Wnd.SetWndText(wstrTitle); //Update dialog title to reflect current date format.
 
 		if (m_pHexCtrl->IsDataSet()) {
@@ -560,16 +560,16 @@ void CHexDlgDataInterp::OnNotifyListItemChanged(NMHDR* pNMHDR)
 			pGridBin->fAllowEdit = true;
 			switch (ui8DataSize) {
 			case 1:
-				ShowValueBinary(GetIHexTData<std::uint8_t>(*m_pHexCtrl, m_ullOffset));
+				ShowValueBinary(ut::GetIHexTData<std::uint8_t>(*m_pHexCtrl, m_ullOffset));
 				break;
 			case 2:
-				ShowValueBinary(GetIHexTData<std::uint16_t>(*m_pHexCtrl, m_ullOffset));
+				ShowValueBinary(ut::GetIHexTData<std::uint16_t>(*m_pHexCtrl, m_ullOffset));
 				break;
 			case 4:
-				ShowValueBinary(GetIHexTData<std::uint32_t>(*m_pHexCtrl, m_ullOffset));
+				ShowValueBinary(ut::GetIHexTData<std::uint32_t>(*m_pHexCtrl, m_ullOffset));
 				break;
 			case 8:
-				ShowValueBinary(GetIHexTData<std::uint64_t>(*m_pHexCtrl, m_ullOffset));
+				ShowValueBinary(ut::GetIHexTData<std::uint64_t>(*m_pHexCtrl, m_ullOffset));
 				break;
 			default:
 				break;
@@ -735,7 +735,7 @@ bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
 	};
 }
 
-template<typename T> requires TSize1248<T>
+template<typename T> requires ut::TSize1248<T>
 bool CHexDlgDataInterp::SetDataNUMBER(std::wstring_view wsv)const
 {
 	if (IsShowAsHex()) {
@@ -760,7 +760,7 @@ bool CHexDlgDataInterp::SetDataNUMBER(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataTime32(std::wstring_view wsv)const
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038.
-	const auto optSysTime = StringToSystemTime(wsv, m_dwDateFormat);
+	const auto optSysTime = ut::StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -775,8 +775,8 @@ bool CHexDlgDataInterp::SetDataTime32(std::wstring_view wsv)const
 
 	//Convert ticks to seconds and adjust epoch.
 	LARGE_INTEGER lTicks { .LowPart { ftTime.dwLowDateTime }, .HighPart { static_cast<LONG>(ftTime.dwHighDateTime) } };
-	lTicks.QuadPart /= g_uFTTicksPerSec;
-	lTicks.QuadPart -= g_ullUnixEpochDiff;
+	lTicks.QuadPart /= ut::g_uFTTicksPerSec;
+	lTicks.QuadPart -= ut::g_ullUnixEpochDiff;
 	if (lTicks.QuadPart >= LONG_MAX)
 		return false;
 
@@ -789,7 +789,7 @@ bool CHexDlgDataInterp::SetDataTime32(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataTime64(std::wstring_view wsv)const
 {
 	//The number of seconds since midnight January 1st 1970 UTC (32-bit). This wraps on 19 January 2038.
-	const auto optSysTime = StringToSystemTime(wsv, m_dwDateFormat);
+	const auto optSysTime = ut::StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -804,8 +804,8 @@ bool CHexDlgDataInterp::SetDataTime64(std::wstring_view wsv)const
 
 	//Convert ticks to seconds and adjust epoch.
 	LARGE_INTEGER lTicks { .LowPart { ftTime.dwLowDateTime }, .HighPart { static_cast<LONG>(ftTime.dwHighDateTime) } };
-	lTicks.QuadPart /= g_uFTTicksPerSec;
-	lTicks.QuadPart -= g_ullUnixEpochDiff;
+	lTicks.QuadPart /= ut::g_uFTTicksPerSec;
+	lTicks.QuadPart -= ut::g_ullUnixEpochDiff;
 	SetTData(lTicks.QuadPart);
 
 	return true;
@@ -813,7 +813,7 @@ bool CHexDlgDataInterp::SetDataTime64(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataFILETIME(std::wstring_view wsv)const
 {
-	const auto optFileTime = StringToFileTime(wsv, m_dwDateFormat);
+	const auto optFileTime = ut::StringToFileTime(wsv, m_dwDateFormat);
 	if (!optFileTime)
 		return false;
 
@@ -825,7 +825,7 @@ bool CHexDlgDataInterp::SetDataFILETIME(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataOLEDATETIME(std::wstring_view wsv)const
 {
-	auto optSysTime = StringToSystemTime(wsv, m_dwDateFormat);
+	auto optSysTime = ut::StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -840,17 +840,17 @@ bool CHexDlgDataInterp::SetDataOLEDATETIME(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataJAVATIME(std::wstring_view wsv)const
 {
-	const auto optFileTime = StringToFileTime(wsv, m_dwDateFormat);
+	const auto optFileTime = ut::StringToFileTime(wsv, m_dwDateFormat);
 	if (!optFileTime)
 		return false;
 
 	//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC.
 	const LARGE_INTEGER lJavaTicks { .LowPart { optFileTime->dwLowDateTime },
 		.HighPart { static_cast<LONG>(optFileTime->dwHighDateTime) } };
-	const LARGE_INTEGER lEpochTicks { .LowPart { g_ulFileTime1970_LOW }, .HighPart { g_ulFileTime1970_HIGH } };
+	const LARGE_INTEGER lEpochTicks { .LowPart { ut::g_ulFileTime1970_LOW }, .HighPart { ut::g_ulFileTime1970_HIGH } };
 	const LONGLONG llDiffTicks { lEpochTicks.QuadPart > lJavaTicks.QuadPart ?
 		-(lEpochTicks.QuadPart - lJavaTicks.QuadPart) : lJavaTicks.QuadPart - lEpochTicks.QuadPart };
-	const auto llDiffMillis = llDiffTicks / g_uFTTicksPerMS;
+	const auto llDiffMillis = llDiffTicks / ut::g_uFTTicksPerMS;
 	SetTData(llDiffMillis);
 
 	return true;
@@ -858,7 +858,7 @@ bool CHexDlgDataInterp::SetDataJAVATIME(std::wstring_view wsv)const
 
 bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wsv)const
 {
-	const auto optFileTime = StringToFileTime(wsv, m_dwDateFormat);
+	const auto optFileTime = ut::StringToFileTime(wsv, m_dwDateFormat);
 	if (!optFileTime)
 		return false;
 
@@ -867,14 +867,14 @@ bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wsv)const
 		return false;
 
 	//Note: Big-endian is not currently supported. This has never existed in the "wild".
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, msdosDateTime.dwTimeDate);
+	ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, msdosDateTime.dwTimeDate);
 
 	return true;
 }
 
 bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wsv)const
 {
-	const auto optSysTime = StringToSystemTime(wsv, m_dwDateFormat);
+	const auto optSysTime = ut::StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
@@ -884,29 +884,29 @@ bool CHexDlgDataInterp::SetDataMSDTTMTIME(std::wstring_view wsv)const
 		.weekday { optSysTime->wDayOfWeek } } };
 
 	//Note: Big-endian is not currently supported. This has never existed in the "wild".
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, dttm.dwValue);
+	ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, dttm.dwValue);
 
 	return true;
 }
 
 bool CHexDlgDataInterp::SetDataSYSTEMTIME(std::wstring_view wsv)const
 {
-	const auto optSysTime = StringToSystemTime(wsv, m_dwDateFormat);
+	const auto optSysTime = ut::StringToSystemTime(wsv, m_dwDateFormat);
 	if (!optSysTime)
 		return false;
 
 	auto stSTime = *optSysTime;
 	if (IsBigEndian()) {
-		stSTime.wYear = ByteSwap(stSTime.wYear);
-		stSTime.wMonth = ByteSwap(stSTime.wMonth);
-		stSTime.wDayOfWeek = ByteSwap(stSTime.wDayOfWeek);
-		stSTime.wDay = ByteSwap(stSTime.wDay);
-		stSTime.wHour = ByteSwap(stSTime.wHour);
-		stSTime.wMinute = ByteSwap(stSTime.wMinute);
-		stSTime.wSecond = ByteSwap(stSTime.wSecond);
-		stSTime.wMilliseconds = ByteSwap(stSTime.wMilliseconds);
+		stSTime.wYear = ut::ByteSwap(stSTime.wYear);
+		stSTime.wMonth = ut::ByteSwap(stSTime.wMonth);
+		stSTime.wDayOfWeek = ut::ByteSwap(stSTime.wDayOfWeek);
+		stSTime.wDay = ut::ByteSwap(stSTime.wDay);
+		stSTime.wHour = ut::ByteSwap(stSTime.wHour);
+		stSTime.wMinute = ut::ByteSwap(stSTime.wMinute);
+		stSTime.wSecond = ut::ByteSwap(stSTime.wSecond);
+		stSTime.wMilliseconds = ut::ByteSwap(stSTime.wMilliseconds);
 	}
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, stSTime);
+	ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, stSTime);
 
 	return true;
 }
@@ -918,11 +918,11 @@ bool CHexDlgDataInterp::SetDataGUID(std::wstring_view wsv)const
 		return false;
 
 	if (IsBigEndian()) {
-		stGUID.Data1 = ByteSwap(stGUID.Data1);
-		stGUID.Data2 = ByteSwap(stGUID.Data2);
-		stGUID.Data3 = ByteSwap(stGUID.Data3);
+		stGUID.Data1 = ut::ByteSwap(stGUID.Data1);
+		stGUID.Data2 = ut::ByteSwap(stGUID.Data2);
+		stGUID.Data3 = ut::ByteSwap(stGUID.Data3);
 	}
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, stGUID);
+	ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, stGUID);
 
 	return true;
 }
@@ -933,12 +933,12 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 	//We can not just set a NAME_GUIDTIME for data range if it's not 
 	//a valid NAME_GUID range, so checking first.
 
-	auto dqword = GetIHexTData<GUID>(*m_pHexCtrl, m_ullOffset);
+	auto dqword = ut::GetIHexTData<GUID>(*m_pHexCtrl, m_ullOffset);
 
 	if (IsBigEndian()) { //Swap before any processing.
-		dqword.Data1 = ByteSwap(dqword.Data1);
-		dqword.Data2 = ByteSwap(dqword.Data2);
-		dqword.Data3 = ByteSwap(dqword.Data3);
+		dqword.Data1 = ut::ByteSwap(dqword.Data1);
+		dqword.Data2 = ut::ByteSwap(dqword.Data2);
+		dqword.Data3 = ut::ByteSwap(dqword.Data3);
 	}
 
 	const unsigned short unGuidVersion = (dqword.Data3 & 0xF000UL) >> 12;
@@ -950,15 +950,15 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 	//Both FILETIME and GUID time are based upon 100ns intervals.
 	//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Add 6653 days to convert to GUID time.
 	//NB: 6653 days from 15 Oct 1582 to 1 Jan 1601.
-	const auto optFTime = StringToFileTime(wsv, m_dwDateFormat);
+	const auto optFTime = ut::StringToFileTime(wsv, m_dwDateFormat);
 	if (!optFTime)
 		return false;
 
 	const auto ftTime = *optFTime;
 	LARGE_INTEGER qwGUIDTime { .LowPart { ftTime.dwLowDateTime }, .HighPart { static_cast<LONG>(ftTime.dwHighDateTime) } };
-	const ULARGE_INTEGER ullAddTicks { .QuadPart = static_cast<std::uint64_t>(g_uFTTicksPerSec) *
-		static_cast<std::uint64_t>(g_uSecondsPerHour) * static_cast<std::uint64_t>(g_uHoursPerDay)
-		* static_cast<std::uint64_t>(g_uFileTime1582OffsetDays) };
+	const ULARGE_INTEGER ullAddTicks { .QuadPart = static_cast<std::uint64_t>(ut::g_uFTTicksPerSec) *
+		static_cast<std::uint64_t>(ut::g_uSecondsPerHour) * static_cast<std::uint64_t>(ut::g_uHoursPerDay)
+		* static_cast<std::uint64_t>(ut::g_uFileTime1582OffsetDays) };
 	qwGUIDTime.QuadPart += ullAddTicks.QuadPart;
 
 	//Encode version 1 GUID with time.
@@ -967,26 +967,26 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 	dqword.Data3 = ((qwGUIDTime.HighPart >> 16) & 0x0FFFUL) | 0x1000UL; //Including Type 1 flag (0x1000).
 
 	if (IsBigEndian()) { //After processing swap back.
-		dqword.Data1 = ByteSwap(dqword.Data1);
-		dqword.Data2 = ByteSwap(dqword.Data2);
-		dqword.Data3 = ByteSwap(dqword.Data3);
+		dqword.Data1 = ut::ByteSwap(dqword.Data1);
+		dqword.Data2 = ut::ByteSwap(dqword.Data2);
+		dqword.Data3 = ut::ByteSwap(dqword.Data3);
 	}
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, dqword);
+	ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, dqword);
 
 	return true;
 }
 
-template<TSize1248 T>
+template<ut::TSize1248 T>
 void CHexDlgDataInterp::SetTData(T tData)const
 {
 	if (IsBigEndian()) {
-		tData = ByteSwap(tData);
+		tData = ut::ByteSwap(tData);
 	}
 
-	SetIHexTData(*m_pHexCtrl, m_ullOffset, tData);
+	ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, tData);
 }
 
-template<TSize1248 T>
+template<ut::TSize1248 T>
 void CHexDlgDataInterp::ShowValueBinary(T tData)
 {
 	const auto pGrid = GetListData(EName::NAME_BINARY);
@@ -1093,12 +1093,12 @@ void CHexDlgDataInterp::ShowValueTime32(DWORD dword)
 	//This is apparently because early compilers didn't support unsigned types. _mktime32() has the same limit.
 	if (lTime32 >= 0) {
 		//Add seconds from epoch time.
-		LARGE_INTEGER Time { .LowPart { g_ulFileTime1970_LOW }, .HighPart { g_ulFileTime1970_HIGH } };
-		Time.QuadPart += static_cast<LONGLONG>(lTime32) * g_uFTTicksPerSec;
+		LARGE_INTEGER Time { .LowPart { ut::g_ulFileTime1970_LOW }, .HighPart { ut::g_ulFileTime1970_HIGH } };
+		Time.QuadPart += static_cast<LONGLONG>(lTime32) * ut::g_uFTTicksPerSec;
 
 		//Convert to FILETIME.
 		const FILETIME ftTime { .dwLowDateTime { Time.LowPart }, .dwHighDateTime { static_cast<DWORD>(Time.HighPart) } };
-		wstrTime = FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar);
+		wstrTime = ut::FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
 	GetListData(EName::NAME_TIME32T)->wstrValue = std::move(wstrTime);
@@ -1113,12 +1113,12 @@ void CHexDlgDataInterp::ShowValueTime64(std::uint64_t qword)
 	//This is apparently because early compilers didn't support unsigned types. _mktime64() has the same limit.
 	if (llTime64 >= 0) {
 		//Add seconds from epoch time.
-		LARGE_INTEGER Time { { .LowPart { g_ulFileTime1970_LOW }, .HighPart { g_ulFileTime1970_HIGH } } };
-		Time.QuadPart += llTime64 * g_uFTTicksPerSec;
+		LARGE_INTEGER Time { { .LowPart { ut::g_ulFileTime1970_LOW }, .HighPart { ut::g_ulFileTime1970_HIGH } } };
+		Time.QuadPart += llTime64 * ut::g_uFTTicksPerSec;
 
 		//Convert to FILETIME.
 		const FILETIME ftTime { .dwLowDateTime { Time.LowPart }, .dwHighDateTime { static_cast<DWORD>(Time.HighPart) } };
-		wstrTime = FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar);
+		wstrTime = ut::FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
 	GetListData(EName::NAME_TIME64T)->wstrValue = std::move(wstrTime);
@@ -1126,7 +1126,7 @@ void CHexDlgDataInterp::ShowValueTime64(std::uint64_t qword)
 
 void CHexDlgDataInterp::ShowValueFILETIME(std::uint64_t qword)
 {
-	GetListData(EName::NAME_FILETIME)->wstrValue = FileTimeToString(std::bit_cast<FILETIME>(qword),
+	GetListData(EName::NAME_FILETIME)->wstrValue = ut::FileTimeToString(std::bit_cast<FILETIME>(qword),
 		m_dwDateFormat, m_wchDateSepar);
 }
 
@@ -1139,7 +1139,7 @@ void CHexDlgDataInterp::ShowValueOLEDATETIME(std::uint64_t qword)
 
 	std::wstring wstrTime = L"N/A";
 	if (SYSTEMTIME stSysTime; ::VariantTimeToSystemTime(std::bit_cast<DATE>(qword), &stSysTime) == TRUE) {
-		wstrTime = SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
+		wstrTime = ut::SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
 	GetListData(EName::NAME_OLEDATETIME)->wstrValue = std::move(wstrTime);
@@ -1151,12 +1151,12 @@ void CHexDlgDataInterp::ShowValueJAVATIME(std::uint64_t qword)
 	//Number of milliseconds after/before January 1, 1970, 00:00:00 UTC.
 
 	//Add/subtract milliseconds from epoch time.
-	LARGE_INTEGER Time { { .LowPart { g_ulFileTime1970_LOW }, .HighPart { g_ulFileTime1970_HIGH } } };
-	Time.QuadPart += qword * g_uFTTicksPerMS * (static_cast<LONGLONG>(qword) >= 0 ? 1 : -1);
+	LARGE_INTEGER Time { { .LowPart { ut::g_ulFileTime1970_LOW }, .HighPart { ut::g_ulFileTime1970_HIGH } } };
+	Time.QuadPart += qword * ut::g_uFTTicksPerMS * (static_cast<LONGLONG>(qword) >= 0 ? 1 : -1);
 
 	//Convert to FILETIME.
 	const FILETIME ftJavaTime { .dwLowDateTime { Time.LowPart }, .dwHighDateTime { static_cast<DWORD>(Time.HighPart) } };
-	GetListData(EName::NAME_JAVATIME)->wstrValue = FileTimeToString(ftJavaTime, m_dwDateFormat, m_wchDateSepar);
+	GetListData(EName::NAME_JAVATIME)->wstrValue = ut::FileTimeToString(ftJavaTime, m_dwDateFormat, m_wchDateSepar);
 }
 
 void CHexDlgDataInterp::ShowValueMSDOSTIME(DWORD dword)
@@ -1164,7 +1164,7 @@ void CHexDlgDataInterp::ShowValueMSDOSTIME(DWORD dword)
 	std::wstring wstrTime = L"N/A";
 	const UMSDOSDateTime msdosDateTime { .dwTimeDate { dword } };
 	if (FILETIME ftMSDOS; DosDateTimeToFileTime(msdosDateTime.TimeDate.wDate, msdosDateTime.TimeDate.wTime, &ftMSDOS)) {
-		wstrTime = FileTimeToString(ftMSDOS, m_dwDateFormat, m_wchDateSepar);
+		wstrTime = ut::FileTimeToString(ftMSDOS, m_dwDateFormat, m_wchDateSepar);
 	}
 
 	GetListData(EName::NAME_MSDOSTIME)->wstrValue = std::move(wstrTime);
@@ -1183,7 +1183,7 @@ void CHexDlgDataInterp::ShowValueMSDTTMTIME(DWORD dword)
 			.wDay { static_cast<WORD>(dttm.components.dayofmonth) }, .wHour { static_cast<WORD>(dttm.components.hour) },
 			.wMinute { static_cast<WORD>(dttm.components.minute) }, .wSecond { 0 }, .wMilliseconds { 0 } };
 
-		wstrTime = SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
+		wstrTime = ut::SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
 	GetListData(EName::NAME_MSDTTMTIME)->wstrValue = std::move(wstrTime);
@@ -1192,25 +1192,25 @@ void CHexDlgDataInterp::ShowValueMSDTTMTIME(DWORD dword)
 void CHexDlgDataInterp::ShowValueSYSTEMTIME(SYSTEMTIME stSysTime)
 {
 	if (IsBigEndian()) {
-		stSysTime.wYear = ByteSwap(stSysTime.wYear);
-		stSysTime.wMonth = ByteSwap(stSysTime.wMonth);
-		stSysTime.wDayOfWeek = ByteSwap(stSysTime.wDayOfWeek);
-		stSysTime.wDay = ByteSwap(stSysTime.wDay);
-		stSysTime.wHour = ByteSwap(stSysTime.wHour);
-		stSysTime.wMinute = ByteSwap(stSysTime.wMinute);
-		stSysTime.wSecond = ByteSwap(stSysTime.wSecond);
-		stSysTime.wMilliseconds = ByteSwap(stSysTime.wMilliseconds);
+		stSysTime.wYear = ut::ByteSwap(stSysTime.wYear);
+		stSysTime.wMonth = ut::ByteSwap(stSysTime.wMonth);
+		stSysTime.wDayOfWeek = ut::ByteSwap(stSysTime.wDayOfWeek);
+		stSysTime.wDay = ut::ByteSwap(stSysTime.wDay);
+		stSysTime.wHour = ut::ByteSwap(stSysTime.wHour);
+		stSysTime.wMinute = ut::ByteSwap(stSysTime.wMinute);
+		stSysTime.wSecond = ut::ByteSwap(stSysTime.wSecond);
+		stSysTime.wMilliseconds = ut::ByteSwap(stSysTime.wMilliseconds);
 	}
 
-	GetListData(EName::NAME_SYSTEMTIME)->wstrValue = SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
+	GetListData(EName::NAME_SYSTEMTIME)->wstrValue = ut::SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
 }
 
 void CHexDlgDataInterp::ShowValueGUID(GUID stGUID)
 {
 	if (IsBigEndian()) {
-		stGUID.Data1 = ByteSwap(stGUID.Data1);
-		stGUID.Data2 = ByteSwap(stGUID.Data2);
-		stGUID.Data3 = ByteSwap(stGUID.Data3);
+		stGUID.Data1 = ut::ByteSwap(stGUID.Data1);
+		stGUID.Data2 = ut::ByteSwap(stGUID.Data2);
+		stGUID.Data3 = ut::ByteSwap(stGUID.Data3);
 	}
 
 	GetListData(EName::NAME_GUID)->wstrValue =
@@ -1223,9 +1223,9 @@ void CHexDlgDataInterp::ShowValueGUID(GUID stGUID)
 void CHexDlgDataInterp::ShowValueGUIDTIME(GUID stGUID)
 {
 	if (IsBigEndian()) {
-		stGUID.Data1 = ByteSwap(stGUID.Data1);
-		stGUID.Data2 = ByteSwap(stGUID.Data2);
-		stGUID.Data3 = ByteSwap(stGUID.Data3);
+		stGUID.Data1 = ut::ByteSwap(stGUID.Data1);
+		stGUID.Data2 = ut::ByteSwap(stGUID.Data2);
+		stGUID.Data3 = ut::ByteSwap(stGUID.Data3);
 	}
 
 	//Guid v1 Datetime UTC. The time structure within the NAME_GUID.
@@ -1241,14 +1241,14 @@ void CHexDlgDataInterp::ShowValueGUIDTIME(GUID stGUID)
 		//Both FILETIME and GUID time are based upon 100ns intervals.
 		//FILETIME is based upon 1 Jan 1601 whilst GUID time is from 1582. Subtract 6653 days to convert from GUID time.
 		//NB: 6653 days from 15 Oct 1582 to 1 Jan 1601.
-		const ULARGE_INTEGER ullSubtractTicks { .QuadPart = static_cast<std::uint64_t>(g_uFTTicksPerSec)
-			* static_cast<std::uint64_t>(g_uSecondsPerHour) * static_cast<std::uint64_t>(g_uHoursPerDay)
-			* static_cast<std::uint64_t>(g_uFileTime1582OffsetDays) };
+		const ULARGE_INTEGER ullSubtractTicks { .QuadPart = static_cast<std::uint64_t>(ut::g_uFTTicksPerSec)
+			* static_cast<std::uint64_t>(ut::g_uSecondsPerHour) * static_cast<std::uint64_t>(ut::g_uHoursPerDay)
+			* static_cast<std::uint64_t>(ut::g_uFileTime1582OffsetDays) };
 		qwGUIDTime.QuadPart -= ullSubtractTicks.QuadPart;
 
 		//Convert to SYSTEMTIME.
 		const FILETIME ftGUIDTime { .dwLowDateTime { qwGUIDTime.LowPart }, .dwHighDateTime { static_cast<DWORD>(qwGUIDTime.HighPart) } };
-		wstrTime = FileTimeToString(ftGUIDTime, m_dwDateFormat, m_wchDateSepar);
+		wstrTime = ut::FileTimeToString(ftGUIDTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
 	GetListData(EName::NAME_GUIDTIME)->wstrValue = std::move(wstrTime);

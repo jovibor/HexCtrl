@@ -24,7 +24,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowWindow(int iCmdShow);
 	private:
-		template<typename T> requires TSize1248<T>
+		template<typename T> requires ut::TSize1248<T>
 		[[nodiscard]] bool FillVecOper(bool fCheckBE);
 		[[nodiscard]] auto GetOperMode()const->EHexOperMode;
 		[[nodiscard]] auto GetDataType()const->EHexDataType;
@@ -71,7 +71,7 @@ void CHexDlgOpers::CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE hIns
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_OPERS),
 		hWndParent, wnd::DlgProc<CHexDlgOpers>, reinterpret_cast<LPARAM>(this)); hWnd == nullptr) {
-		DBG_REPORT(L"CreateDialogParamW failed.");
+		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
 
 	m_pHexCtrl = pHexCtrl;
@@ -129,13 +129,13 @@ void CHexDlgOpers::ShowWindow(int iCmdShow)
 
 //CHexDlgOpers private methods.
 
-template<typename T> requires TSize1248<T>
+template<typename T> requires ut::TSize1248<T>
 bool CHexDlgOpers::FillVecOper(bool fCheckBE)
 {
 	//To make sure the vector will have the size of the data type.
 	//Even if operation doesn't need an operand (e.g. OPER_NOT), the spnData
 	//in the HEXMODIFY must have appropriate size, equal to the data type size.
-	m_vecOperData = RangeToVecBytes(T { });
+	m_vecOperData = ut::RangeToVecBytes(T { });
 	if (!m_WndEditOperand.IsWindowEnabled())
 		return true; //Some operations don't need operands.
 
@@ -158,10 +158,10 @@ bool CHexDlgOpers::FillVecOper(bool fCheckBE)
 	//Binary NOT and OPER_BITREV don't need to swap at all.
 	if (fCheckBE && (eOperMode == OPER_OR || eOperMode == OPER_XOR
 		|| eOperMode == OPER_AND || eOperMode == OPER_ASSIGN)) {
-		tOper = ByteSwap(tOper);
+		tOper = ut::ByteSwap(tOper);
 	}
 
-	m_vecOperData = RangeToVecBytes(tOper);
+	m_vecOperData = ut::RangeToVecBytes(tOper);
 
 	return true;
 }
@@ -594,7 +594,7 @@ void CHexDlgFillData::CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE h
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_FILLDATA),
 		hWndParent, wnd::DlgProc<CHexDlgFillData>, reinterpret_cast<LPARAM>(this)); hWnd == nullptr) {
-		DBG_REPORT(L"CreateDialogParamW failed.");
+		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
 
 	m_pHexCtrl = pHexCtrl;
@@ -779,23 +779,23 @@ void CHexDlgFillData::OnOK()
 	switch (eType) {
 	case FILL_HEX:
 	{
-		auto optData = NumStrToHex(wstrText);
+		auto optData = ut::NumStrToHex(wstrText);
 		if (!optData) {
 			MessageBoxW(m_Wnd, L"Wrong Hex format.", L"Format error", MB_ICONERROR);
 			return;
 		}
 
-		m_vecFillData = RangeToVecBytes(*optData);
+		m_vecFillData = ut::RangeToVecBytes(*optData);
 		eModifyMode = MODIFY_REPEAT;
 	}
 	break;
 	case FILL_ASCII:
-		m_vecFillData = RangeToVecBytes(WstrToStr(wstrText));
+		m_vecFillData = ut::RangeToVecBytes(ut::WstrToStr(wstrText));
 		eModifyMode = MODIFY_REPEAT;
 		break;
 	case FILL_WCHAR:
 		eModifyMode = MODIFY_REPEAT;
-		m_vecFillData = RangeToVecBytes(wstrText);
+		m_vecFillData = ut::RangeToVecBytes(wstrText);
 		break;
 	case FILL_RAND_MT19937:
 		eModifyMode = MODIFY_RAND_MT19937;
@@ -851,7 +851,7 @@ void CHexDlgModify::CreateDlg()
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_MODIFY),
 		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgModify>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
-		DBG_REPORT(L"CreateDialogParamW failed.");
+		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
 }
 
@@ -878,7 +878,7 @@ auto CHexDlgModify::GetHWND()const->HWND
 void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
 	if (pHexCtrl == nullptr || hInstRes == nullptr) {
-		DBG_REPORT(L"Initialize == nullptr");
+		ut::DBG_REPORT(L"Initialize == nullptr");
 		return;
 	}
 

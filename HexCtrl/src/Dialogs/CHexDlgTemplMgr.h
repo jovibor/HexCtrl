@@ -108,7 +108,7 @@ namespace HEXCTRL::INTERNAL {
 		void RemoveNodesWithTemplateID(int iTemplateID);
 		void RemoveNodeWithAppliedID(int iAppliedID);
 		[[nodiscard]] bool SetDataBool(LPCWSTR pwszText, ULONGLONG ullOffset)const;
-		template<typename T> requires TSize1248<T>
+		template<typename T> requires ut::TSize1248<T>
 		[[nodiscard]] bool SetDataNUMBER(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
 		[[nodiscard]] bool SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
 		[[nodiscard]] bool SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
@@ -117,9 +117,9 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool SetDataGUID(LPCWSTR pwszText, ULONGLONG ullOffset, bool fShouldSwap)const;
 		void SetDlgButtonsState(); //Enable/disable button states depending on templates existence.
 		void SetHexSelByField(PCHEXTEMPLFIELD pField);
-		template <TSize1248 T> void SetTData(T tData, ULONGLONG ullOffset, bool fShouldSwap)const;
+		template <ut::TSize1248 T> void SetTData(T tData, ULONGLONG ullOffset, bool fShouldSwap)const;
 		void ShowListDataBool(LPWSTR pwsz, std::uint8_t u8Data)const;
-		template<typename T> requires TSize1248<T>
+		template<typename T> requires ut::TSize1248<T>
 		void ShowListDataNUMBER(LPWSTR pwsz, T tData, bool fShouldSwap)const;
 		void ShowListDataTime32(LPWSTR pwsz, __time32_t lTime32, bool fShouldSwap)const;
 		void ShowListDataTime64(LPWSTR pwsz, __time64_t llTime64, bool fShouldSwap)const;

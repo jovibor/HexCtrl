@@ -58,7 +58,7 @@ namespace HEXCTRL::INTERNAL {
 		auto OnSize(const MSG& msg) -> INT_PTR;
 		void RedrawHexCtrl()const;
 		[[nodiscard]] bool SetDataBinary(std::wstring_view wsv)const;
-		template<typename T> requires TSize1248<T>
+		template<typename T> requires ut::TSize1248<T>
 		[[nodiscard]] bool SetDataNUMBER(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataTime32(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataTime64(std::wstring_view wsv)const;
@@ -70,8 +70,8 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool SetDataSYSTEMTIME(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataGUID(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wsv)const;
-		template <TSize1248 T> void SetTData(T tData)const;
-		template <TSize1248 T> void ShowValueBinary(T tData);
+		template <ut::TSize1248 T> void SetTData(T tData)const;
+		template <ut::TSize1248 T> void ShowValueBinary(T tData);
 		void ShowValueInt8(BYTE byte);
 		void ShowValueUInt8(BYTE byte);
 		void ShowValueInt16(WORD word);
