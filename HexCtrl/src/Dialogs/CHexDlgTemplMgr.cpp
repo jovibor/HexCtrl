@@ -902,6 +902,53 @@ void CHexDlgTemplMgr::OnNotifyListEnterPressed(NMHDR* /*pNMHDR*/)
 	OnNotifyListDblClick(&nmii.hdr);
 }
 
+void CHexDlgTemplMgr::OnNotifyListGetColor(NMHDR* pNMHDR)
+{
+	static constexpr auto clrTextBluish { RGB(16, 42, 255) };  //Bluish text.
+	static constexpr auto clrTextGreenish { RGB(0, 110, 0) };  //Green text.
+	static constexpr auto clrBkGreyish { RGB(235, 235, 235) }; //Grayish bk.
+
+	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
+	const auto& pField = (*m_pVecFieldsCurr)[pLCI->iItem];
+	const auto eType = pField->eType;
+	using enum EHexFieldType;
+
+	pLCI->stClr.clrText = static_cast<COLORREF>(-1); //Default text color.
+
+	//List items with nested structs colored separately with greyish bk.
+	if (!pField->vecNested.empty() && pLCI->iSubItem != m_iIDListColClrs) {
+		pLCI->stClr.clrBk = clrBkGreyish;
+		if (pLCI->iSubItem == m_iIDListColType) {
+			if (eType == type_custom) {
+				if (pField->uTypeID > 0) {
+					pLCI->stClr.clrText = clrTextGreenish;
+				}
+			}
+			else if (eType != custom_size) {
+				pLCI->stClr.clrText = clrTextBluish;
+			}
+		}
+
+		return;
+	}
+
+	switch (pLCI->iSubItem) {
+	case m_iIDListColType:
+		if (eType != type_custom && eType != custom_size) {
+			pLCI->stClr.clrText = clrTextBluish;
+			pLCI->stClr.clrBk = static_cast<COLORREF>(-1); //Default bk color.
+			return;
+		}
+		break;
+	case m_iIDListColClrs:
+		pLCI->stClr.clrBk = pField->stClr.clrBk;
+		pLCI->stClr.clrText = pField->stClr.clrText;
+		return;
+	default:
+		break;
+	}
+}
+
 void CHexDlgTemplMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
@@ -1066,53 +1113,6 @@ void CHexDlgTemplMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 	case m_iIDListColClrs: //Colors.
 		*std::format_to(pItem->pszText, L"#Text") = L'\0';
 		break;
-	default:
-		break;
-	}
-}
-
-void CHexDlgTemplMgr::OnNotifyListGetColor(NMHDR* pNMHDR)
-{
-	static constexpr auto clrTextBluish { RGB(16, 42, 255) };  //Bluish text.
-	static constexpr auto clrTextGreenish { RGB(0, 110, 0) };  //Green text.
-	static constexpr auto clrBkGreyish { RGB(235, 235, 235) }; //Grayish bk.
-
-	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
-	const auto& pField = (*m_pVecFieldsCurr)[pLCI->iItem];
-	const auto eType = pField->eType;
-	using enum EHexFieldType;
-
-	pLCI->stClr.clrText = static_cast<COLORREF>(-1); //Default text color.
-
-	//List items with nested structs colored separately with greyish bk.
-	if (!pField->vecNested.empty() && pLCI->iSubItem != m_iIDListColClrs) {
-		pLCI->stClr.clrBk = clrBkGreyish;
-		if (pLCI->iSubItem == m_iIDListColType) {
-			if (eType == type_custom) {
-				if (pField->uTypeID > 0) {
-					pLCI->stClr.clrText = clrTextGreenish;
-				}
-			}
-			else if (eType != custom_size) {
-				pLCI->stClr.clrText = clrTextBluish;
-			}
-		}
-
-		return;
-	}
-
-	switch (pLCI->iSubItem) {
-	case m_iIDListColType:
-		if (eType != type_custom && eType != custom_size) {
-			pLCI->stClr.clrText = clrTextBluish;
-			pLCI->stClr.clrBk = static_cast<COLORREF>(-1); //Default bk color.
-			return;
-		}
-		break;
-	case m_iIDListColClrs:
-		pLCI->stClr.clrBk = pField->stClr.clrBk;
-		pLCI->stClr.clrText = pField->stClr.clrText;
-		return;
 	default:
 		break;
 	}
@@ -1561,7 +1561,7 @@ bool CHexDlgTemplMgr::SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 			return false;
 
 		FILETIME ftTime;
-		if (!::SystemTimeToFileTime(&*optSysTime, &ftTime))
+		if (::SystemTimeToFileTime(&*optSysTime, &ftTime) == FALSE)
 			return false;
 
 		//Convert ticks to seconds and adjust epoch.
@@ -1600,7 +1600,7 @@ bool CHexDlgTemplMgr::SetDataTime64(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 			return false;
 
 		FILETIME ftTime;
-		if (!::SystemTimeToFileTime(&*optSysTime, &ftTime))
+		if (::SystemTimeToFileTime(&*optSysTime, &ftTime) == FALSE)
 			return false;
 
 		//Convert ticks to seconds and adjust epoch.

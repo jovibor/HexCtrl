@@ -353,27 +353,27 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	//"Search" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetMenuItemInfoW(0, &mii); //"Search" parent menu icon.
+	menuTop.SetMenuItemInfoW(0, &mii, false); //"Search" parent menu icon.
 	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_SEARCH_DLGSEARCH, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Group Data" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_GROUP), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetMenuItemInfoW(2, &mii); //"Group Data" parent menu icon.
+	menuTop.SetMenuItemInfoW(2, &mii, false); //"Group Data" parent menu icon.
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Bookmarks->Add" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_BKMS), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetMenuItemInfoW(4, &mii); //"Bookmarks" parent menu icon.
+	menuTop.SetMenuItemInfoW(4, &mii, false); //"Bookmarks" parent menu icon.
 	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_BKM_ADD, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Clipboard->Copy as Hex" menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetMenuItemInfoW(5, &mii); //"Clipboard" parent menu icon.
+	menuTop.SetMenuItemInfoW(5, &mii, false); //"Clipboard" parent menu icon.
 	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_COPYHEX, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
@@ -386,7 +386,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	//"Modify" parent menu icon.
 	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetMenuItemInfoW(6, &mii);
+	menuTop.SetMenuItemInfoW(6, &mii, false);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Modify->Fill with Zeros" menu icon.
@@ -1788,21 +1788,31 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 
 	rapidjson::Document docJSON;
 	if (wsvPath.empty()) { //Default IDR_HEXCTRL_JSON_KEYBIND.json, from resources.
-		if (const auto hRes = ::FindResourceW(m_hInstRes, MAKEINTRESOURCEW(IDJ_HEXCTRL_KEYBIND), L"JSON"); hRes != nullptr) {
-			if (const auto hData = ::LoadResource(m_hInstRes, hRes); hData != nullptr) {
-				const auto nSize = static_cast<std::size_t>(::SizeofResource(m_hInstRes, hRes));
-				const auto* const pData = static_cast<char*>(::LockResource(hData));
-				if (docJSON.Parse(pData, nSize); docJSON.IsNull()) { //Parse all default keybindings.
-					ut::DBG_REPORT(L"docJSON.IsNull()");
-					return false;
-				}
-			}
+		const auto hRes = ::FindResourceW(m_hInstRes, MAKEINTRESOURCEW(IDJ_HEXCTRL_KEYBIND), L"JSON");
+		if (hRes == nullptr) {
+			ut::DBG_REPORT(L"FindResourceW failed.");
+			return false;
 		}
+
+		const auto hResData = ::LoadResource(m_hInstRes, hRes);
+		if (hResData == nullptr) {
+			ut::DBG_REPORT(L"LoadResource failed.");
+			return false;
+		}
+
+		const auto nSize = static_cast<std::size_t>(::SizeofResource(m_hInstRes, hRes));
+		const auto pData = static_cast<char*>(::LockResource(hResData));
+		docJSON.Parse(pData, nSize);
+		if (docJSON.IsNull()) { //Parse all default keybindings.
+			ut::DBG_REPORT(L"docJSON.IsNull().");
+			return false;
+		}
+
 	}
 	else if (std::ifstream ifs(std::wstring { wsvPath }); ifs.is_open()) {
 		rapidjson::IStreamWrapper isw { ifs };
 		if (docJSON.ParseStream(isw); docJSON.IsNull()) {
-			ut::DBG_REPORT(L"docJSON.IsNull()");
+			ut::DBG_REPORT(L"docJSON.IsNull().");
 			return false;
 		}
 	}
@@ -1811,7 +1821,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		if (sv.empty())
 			return { };
 
-		KEYBIND stRet { };
+		KEYBIND stKB;
 		const auto nSize = sv.size();
 		std::size_t nPosStart { 0 }; //Next position to start search for '+' sign.
 		const auto nSubWords = std::count(sv.begin(), sv.end(), '+') + 1; //How many sub-words (divided by '+')?
@@ -1822,26 +1832,26 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 			nPosStart = nPosNext + 1;
 
 			if (strSubWord.size() == 1) {
-				stRet.uKey = static_cast<UCHAR>(std::toupper(strSubWord[0])); //Binding keys are in uppercase.
+				stKB.uKey = static_cast<UCHAR>(std::toupper(strSubWord[0])); //Binding keys are in uppercase.
 			}
 			else if (const auto itKey = umapKeys.find(strSubWord); itKey != umapKeys.end()) {
 				switch (const auto uChar = itKey->second.first; uChar) {
 				case VK_CONTROL:
-					stRet.fCtrl = true;
+					stKB.fCtrl = true;
 					break;
 				case VK_SHIFT:
-					stRet.fShift = true;
+					stKB.fShift = true;
 					break;
 				case VK_MENU:
-					stRet.fAlt = true;
+					stKB.fAlt = true;
 					break;
 				default:
-					stRet.uKey = uChar;
+					stKB.uKey = uChar;
 				}
 			}
 		}
 
-		return stRet;
+		return stKB;
 		};
 
 	for (auto itMembers = docJSON.MemberBegin(); itMembers != docJSON.MemberEnd(); ++itMembers) { //JSON data iterating.
@@ -1870,11 +1880,11 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 	for (const auto& refKB : m_vecKeyBind) {
 		//Check for previous same menu ID. To assign only one, first, keybinding for menu name.
 		//With `"ctrl+f", "ctrl+h"` in JSON, only the "Ctrl+F" will be assigned as the menu name.
-		const auto iterEnd = m_vecKeyBind.begin() + i++;
-		if (const auto iterTmp = std::find_if(m_vecKeyBind.begin(), iterEnd, [&](const KEYBIND& ref) {
+		const auto itEnd = m_vecKeyBind.begin() + i++;
+		if (const auto iterTmp = std::find_if(m_vecKeyBind.begin(), itEnd, [&](const KEYBIND& ref) {
 			return ref.wMenuID == refKB.wMenuID; });
-			iterTmp == iterEnd && refKB.wMenuID != 0 && refKB.uKey != 0) {
-			std::wstring wstr = m_MenuMain.GetMenuStr(refKB.wMenuID);
+			iterTmp == itEnd && refKB.wMenuID != 0 && refKB.uKey != 0) {
+			auto wstr = m_MenuMain.GetMenuWstr(refKB.wMenuID);
 			if (const auto nPos = wstr.find('\t'); nPos != std::wstring::npos) {
 				wstr.erase(nPos);
 			}
@@ -1900,7 +1910,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 			}
 
 			//Modify menu with a new name (with shortcut appended) and old bitmap.
-			MENUITEMINFOW mii { .cbSize = sizeof(MENUITEMINFOW), .fMask = MIIM_BITMAP | MIIM_STRING };
+			MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_BITMAP | MIIM_STRING } };
 			m_MenuMain.GetMenuItemInfoW(refKB.wMenuID, &mii);
 			mii.dwTypeData = wstr.data();
 			m_MenuMain.SetMenuItemInfoW(refKB.wMenuID, &mii);
@@ -7447,25 +7457,21 @@ auto CHexCtrl::OnTimer(const MSG& msg)->LRESULT
 {
 	static constexpr auto dbSecToShow { 5000.0 }; //How many ms to show tooltips.
 	const auto nIDEvent = static_cast<UINT_PTR>(msg.wParam);
+	if (nIDEvent != m_uIDTTTMain)
+		return 	wnd::DefWndProc(msg);
 
 	auto rcClient = m_Wnd.GetClientRect();
 	m_Wnd.ClientToScreen(rcClient);
-	wnd::CPoint ptCursor;
-	GetCursorPos(ptCursor);
+	wnd::CPoint ptCur;
+	::GetCursorPos(ptCur);
 
-	switch (nIDEvent) {
-	case m_uIDTTTMain:
-		if (!rcClient.PtInRect(ptCursor)) { //Check if cursor has left client rect,
-			TTMainShow(false);
-		}
-		else if (const auto msElapsed = std::chrono::duration<double, std::milli>
-			(std::chrono::high_resolution_clock::now() - m_tmTT).count();
-			msElapsed >= dbSecToShow) { //or more than dbSecToShow ms have passed since toolip was shown.
-			TTMainShow(false, true);
-		}
-		break;
-	default:
-		break;
+	if (!rcClient.PtInRect(ptCur)) { //Check if cursor has left client rect,
+		TTMainShow(false);
+	}
+	else if (const auto msElapsed = std::chrono::duration<double, std::milli>
+		(std::chrono::high_resolution_clock::now() - m_tmTT).count();
+		msElapsed >= dbSecToShow) { //or more than dbSecToShow ms have passed since toolip was shown.
+		TTMainShow(false, true);
 	}
 
 	return 0;

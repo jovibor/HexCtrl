@@ -210,6 +210,15 @@ auto CHexDlgCodepage::OnNotify(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
+void CHexDlgCodepage::OnNotifyListGetColor(NMHDR* pNMHDR)
+{
+	if (const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
+		m_vecCodePage[static_cast<std::size_t>(pLCI->iItem)].uMaxChars > 1) {
+		pLCI->stClr = { RGB(200, 80, 80), RGB(255, 255, 255) };
+		return;
+	}
+}
+
 void CHexDlgCodepage::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
@@ -238,15 +247,6 @@ void CHexDlgCodepage::OnNotifyListItemChanged(NMHDR* pNMHDR)
 	if (const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 		pNMI->iItem != -1 && pNMI->iSubItem != -1 && (pNMI->uNewState & LVIS_SELECTED)) {
 		m_pHexCtrl->SetCodepage(m_vecCodePage[static_cast<std::size_t>(pNMI->iItem)].iCPID);
-	}
-}
-
-void CHexDlgCodepage::OnNotifyListGetColor(NMHDR* pNMHDR)
-{
-	if (const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
-		m_vecCodePage[static_cast<std::size_t>(pLCI->iItem)].uMaxChars > 1) {
-		pLCI->stClr = { RGB(200, 80, 80), RGB(255, 255, 255) };
-		return;
 	}
 }
 

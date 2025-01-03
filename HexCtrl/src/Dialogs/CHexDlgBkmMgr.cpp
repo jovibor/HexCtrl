@@ -541,6 +541,63 @@ auto CHexDlgBkmMgr::OnNotify(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
+void CHexDlgBkmMgr::OnNotifyListDblClick(NMHDR* pNMHDR)
+{
+	const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	if (pNMI->iSubItem != 4 && pNMI->iSubItem != 5) {
+		return;
+	}
+
+	const auto pBkm = GetByIndex(static_cast<std::size_t>(pNMI->iItem));
+	if (pBkm == nullptr) {
+		return;
+	}
+
+	COLORREF* pClr { };
+	switch (pNMI->iSubItem) {
+	case 4: //Bk color.
+		pClr = &pBkm->stClr.clrBk;
+		break;
+	case 5: //Text color.
+		pClr = &pBkm->stClr.clrText;
+		break;
+	default:
+		return;
+	}
+
+	COLORREF arrClr[16] { };
+	CHOOSECOLORW stChclr { .lStructSize { sizeof(CHOOSECOLORW) }, .rgbResult { *pClr },
+		.lpCustColors { arrClr }, .Flags { CC_ANYCOLOR | CC_FULLOPEN | CC_RGBINIT } };
+	if (ChooseColorW(&stChclr) == FALSE) {
+		return;
+	}
+
+	*pClr = stChclr.rgbResult;
+	m_pHexCtrl->Redraw();
+}
+
+void CHexDlgBkmMgr::OnNotifyListGetColor(NMHDR* pNMHDR)
+{
+	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
+
+	switch (pLCI->iSubItem) {
+	case 4: //Bk color.
+		if (const auto* const pBkm = GetByIndex(static_cast<std::size_t>(pLCI->iItem)); pBkm != nullptr) {
+			pLCI->stClr.clrBk = pBkm->stClr.clrBk;
+			return;
+		}
+		break;
+	case 5: //Text color.
+		if (const auto* const pBkm = GetByIndex(static_cast<std::size_t>(pLCI->iItem)); pBkm != nullptr) {
+			pLCI->stClr.clrBk = pBkm->stClr.clrText;
+			return;
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 void CHexDlgBkmMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 {
 	const auto pDispInfo = reinterpret_cast<NMLVDISPINFOW*>(pNMHDR);
@@ -590,41 +647,6 @@ void CHexDlgBkmMgr::OnNotifyListItemChanged(NMHDR* pNMHDR)
 	}
 }
 
-void CHexDlgBkmMgr::OnNotifyListDblClick(NMHDR* pNMHDR)
-{
-	const auto* const pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-	if (pNMI->iSubItem != 4 && pNMI->iSubItem != 5) {
-		return;
-	}
-
-	const auto pBkm = GetByIndex(static_cast<std::size_t>(pNMI->iItem));
-	if (pBkm == nullptr) {
-		return;
-	}
-
-	COLORREF* pClr { };
-	switch (pNMI->iSubItem) {
-	case 4: //Bk color.
-		pClr = &pBkm->stClr.clrBk;
-		break;
-	case 5: //Text color.
-		pClr = &pBkm->stClr.clrText;
-		break;
-	default:
-		return;
-	}
-
-	COLORREF arrClr[16] { };
-	CHOOSECOLORW stChclr { .lStructSize { sizeof(CHOOSECOLORW) }, .rgbResult { *pClr },
-		.lpCustColors { arrClr }, .Flags { CC_ANYCOLOR | CC_FULLOPEN | CC_RGBINIT } };
-	if (ChooseColorW(&stChclr) == FALSE) {
-		return;
-	}
-
-	*pClr = stChclr.rgbResult;
-	m_pHexCtrl->Redraw();
-}
-
 void CHexDlgBkmMgr::OnNotifyListRClick(NMHDR* pNMHDR)
 {
 	bool fEnabled { false };
@@ -640,28 +662,6 @@ void CHexDlgBkmMgr::OnNotifyListRClick(NMHDR* pNMHDR)
 	POINT pt;
 	GetCursorPos(&pt);
 	m_menuList.TrackPopupMenu(pt.x, pt.y, m_Wnd);
-}
-
-void CHexDlgBkmMgr::OnNotifyListGetColor(NMHDR* pNMHDR)
-{
-	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
-
-	switch (pLCI->iSubItem) {
-	case 4: //Bk color.
-		if (const auto* const pBkm = GetByIndex(static_cast<std::size_t>(pLCI->iItem)); pBkm != nullptr) {
-			pLCI->stClr.clrBk = pBkm->stClr.clrBk;
-			return;
-		}
-		break;
-	case 5: //Text color.
-		if (const auto* const pBkm = GetByIndex(static_cast<std::size_t>(pLCI->iItem)); pBkm != nullptr) {
-			pLCI->stClr.clrBk = pBkm->stClr.clrText;
-			return;
-		}
-		break;
-	default:
-		break;
-	}
 }
 
 void CHexDlgBkmMgr::OnNotifyListSetData(NMHDR* pNMHDR)

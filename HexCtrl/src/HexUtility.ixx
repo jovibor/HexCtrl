@@ -315,7 +315,7 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	{
 		std::optional<FILETIME> optFT { std::nullopt };
 		if (auto optSysTime = StringToSystemTime(wsv, dwFormat); optSysTime) {
-			if (FILETIME ftTime; SystemTimeToFileTime(&*optSysTime, &ftTime) != FALSE) {
+			if (FILETIME ftTime; ::SystemTimeToFileTime(&*optSysTime, &ftTime) != FALSE) {
 				optFT = ftTime;
 			}
 		}
@@ -350,7 +350,7 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 
 	[[nodiscard]] auto FileTimeToString(FILETIME stFileTime, DWORD dwFormat, wchar_t wchSepar) -> std::wstring
 	{
-		if (SYSTEMTIME stSysTime; FileTimeToSystemTime(&stFileTime, &stSysTime) != FALSE) {
+		if (SYSTEMTIME stSysTime; ::FileTimeToSystemTime(&stFileTime, &stSysTime) != FALSE) {
 			return SystemTimeToString(stSysTime, dwFormat, wchSepar);
 		}
 
@@ -766,7 +766,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 			assert(IsWindow()); RECT rc; ::GetWindowRect(m_hWnd, &rc); return rc;
 		}
 		[[nodiscard]] auto GetWndText()const->std::wstring {
-			assert(IsWindow());	wchar_t buff[MAX_PATH]; ::GetWindowTextW(m_hWnd, buff, std::size(buff)); return buff;
+			assert(IsWindow()); wchar_t buff[256]; ::GetWindowTextW(m_hWnd, buff, std::size(buff)); return buff;
 		}
 		[[nodiscard]] auto GetWndTextSize()const->DWORD { assert(IsWindow()); return ::GetWindowTextLengthW(m_hWnd); }
 		void Invalidate(bool fErase)const { assert(IsWindow()); ::InvalidateRect(m_hWnd, nullptr, fErase); }
@@ -966,14 +966,14 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		void AppendString(UINT_PTR uIDItem, LPCWSTR pNameItem)const { AppendItem(MF_STRING, uIDItem, pNameItem); }
 		void Attach(HMENU hMenu) { m_hMenu = hMenu; }
 		void CheckMenuItem(UINT uIDItem, bool fCheck, bool fByID = true)const {
-			assert(IsMenu()); ::CheckMenuItem(m_hMenu, uIDItem, fCheck ? MF_CHECKED : MF_UNCHECKED |
-			(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
+			assert(IsMenu()); ::CheckMenuItem(m_hMenu, uIDItem, (fCheck ? MF_CHECKED : MF_UNCHECKED) |
+				(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
 		}
 		void CreatePopupMenu() { Attach(::CreatePopupMenu()); }
 		void DestroyMenu() { assert(IsMenu()); ::DestroyMenu(m_hMenu); m_hMenu = nullptr; }
 		void Detach() { m_hMenu = nullptr; }
 		void EnableMenuItem(UINT uIDItem, bool fEnable, bool fByID = true)const {
-			assert(IsMenu()); ::EnableMenuItem(m_hMenu, uIDItem, fEnable ? MF_ENABLED : MF_GRAYED |
+			assert(IsMenu()); ::EnableMenuItem(m_hMenu, uIDItem, (fEnable ? MF_ENABLED : MF_GRAYED) |
 				(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
 		}
 		[[nodiscard]] int GetMenuItemCount()const {
@@ -986,13 +986,13 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 			assert(IsMenu()); return ::GetMenuItemInfoW(m_hMenu, uID, !fByID, pMII) != FALSE;
 		}
 		[[nodiscard]] auto GetMenuState(UINT uID, bool fByID = true)const->UINT {
-			assert(IsMenu()); return ::GetMenuState(m_hMenu, uID, (fByID ? MF_BYCOMMAND : MF_BYPOSITION));
+			assert(IsMenu()); return ::GetMenuState(m_hMenu, uID, fByID ? MF_BYCOMMAND : MF_BYPOSITION);
 		}
-		[[nodiscard]] auto GetMenuStr(UINT uID, bool fByID = true)const->std::wstring {
+		[[nodiscard]] auto GetMenuWstr(UINT uID, bool fByID = true)const->std::wstring {
 			assert(IsMenu()); wchar_t buff[128];
-			MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_STRING }, .dwTypeData { buff }, .cch { 128 } };
-			const auto ret = GetMenuItemInfoW(uID, &mii, (fByID ? MF_BYCOMMAND : MF_BYPOSITION));
-			return ret ? buff : L"";
+			MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_STRING },
+				.dwTypeData { buff }, .cch { 128 } };
+			const auto ret = GetMenuItemInfoW(uID, &mii, fByID); return ret ? buff : std::wstring { };
 		}
 		[[nodiscard]] auto GetHMENU()const->HMENU { return m_hMenu; }
 		[[nodiscard]] auto GetSubMenu(int iPos)const -> CMenu { assert(IsMenu()); return ::GetSubMenu(m_hMenu, iPos); };
@@ -1001,8 +1001,8 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		}
 		[[nodiscard]] bool IsMenu()const { return ::IsMenu(m_hMenu); }
 		bool LoadMenuW(HINSTANCE hInst, LPCWSTR pwszName) { m_hMenu = ::LoadMenuW(hInst, pwszName); return IsMenu(); }
-		void SetMenuItemInfoW(UINT uItem, LPCMENUITEMINFO pMII, bool fByPos = true)const {
-			assert(IsMenu()); ::SetMenuItemInfoW(m_hMenu, uItem, fByPos, pMII);
+		void SetMenuItemInfoW(UINT uItem, LPCMENUITEMINFO pMII, bool fByID = true)const {
+			assert(IsMenu()); ::SetMenuItemInfoW(m_hMenu, uItem, !fByID, pMII);
 		}
 		void TrackPopupMenu(int iX, int iY, HWND hWndOwner, UINT uFlags = TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON)const {
 			assert(IsMenu()); ::TrackPopupMenuEx(m_hMenu, uFlags, iX, iY, hWndOwner, nullptr);

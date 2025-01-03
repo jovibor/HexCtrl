@@ -91,8 +91,8 @@ namespace HEXCTRL::INTERNAL {
 		void OnNotifyListDblClick(NMHDR* pNMHDR);
 		void OnNotifyListEditBegin(NMHDR* pNMHDR);
 		void OnNotifyListEnterPressed(NMHDR* pNMHDR);
-		void OnNotifyListGetDispInfo(NMHDR* pNMHDR);
 		void OnNotifyListGetColor(NMHDR* pNMHDR);
+		void OnNotifyListGetDispInfo(NMHDR* pNMHDR);
 		void OnNotifyListHdrRClick(NMHDR* pNMHDR);
 		void OnNotifyListItemChanged(NMHDR* pNMHDR);
 		void OnNotifyListRClick(NMHDR* pNMHDR);

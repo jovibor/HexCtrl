@@ -32,9 +32,9 @@ namespace HEXCTRL::INTERNAL {
 		auto OnInitDialog(const MSG& msg) -> INT_PTR;
 		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
 		auto OnNotify(const MSG& msg) -> INT_PTR;
+		void OnNotifyListGetColor(NMHDR* pNMHDR);
 		void OnNotifyListGetDispInfo(NMHDR* pNMHDR);
 		void OnNotifyListItemChanged(NMHDR* pNMHDR);
-		void OnNotifyListGetColor(NMHDR* pNMHDR);
 		void OnNotifyListLinkClick(NMHDR* pNMHDR);
 		auto OnSize(const MSG& msg) -> INT_PTR;
 		void SortList();

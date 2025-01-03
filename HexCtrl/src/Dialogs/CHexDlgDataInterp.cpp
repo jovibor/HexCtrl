@@ -441,8 +441,8 @@ auto CHexDlgDataInterp::OnInitDialog(const MSG& msg)->INT_PTR
 	m_vecData.emplace_back(L"GUID v1 UTC time:", L"", GR_GUIDTIME, NAME_GUIDTIME, SIZE_DQWORD);
 
 	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_DATAINTERP_LIST }, .fDialogCtrl { true } });
-	m_ListEx.InsertColumn(0, L"Data type", LVCFMT_LEFT, 150);
-	m_ListEx.InsertColumn(1, L"Value", LVCFMT_LEFT, 260, -1, LVCFMT_LEFT, true);
+	m_ListEx.InsertColumn(0, L"Data type", LVCFMT_LEFT, 143);
+	m_ListEx.InsertColumn(1, L"Value", LVCFMT_LEFT, 240, -1, LVCFMT_LEFT, true);
 	m_ListEx.SetItemCountEx(static_cast<int>(m_vecData.size()), LVSICF_NOSCROLL);
 
 	m_DynLayout.SetHost(m_Wnd);
@@ -501,17 +501,16 @@ void CHexDlgDataInterp::OnNotifyListGetColor(NMHDR* pNMHDR)
 	if (iItem < 0 || iSubItem < 0)
 		return;
 
-	if (iSubItem == 1) {
-		const auto& ref = m_vecData[iItem];
+	const auto& ref = m_vecData[iItem];
 
-		if (ref.eName == EName::NAME_BINARY) {
-			pLCI->stClr.clrBk = RGB(210, 240, 240);
-			return;
-		}
-		if (!ref.fAllowEdit) {
-			pLCI->stClr.clrBk = RGB(245, 245, 245);
-			return;
-		}
+	if (ref.eName == EName::NAME_BINARY) {
+		pLCI->stClr.clrBk = RGB(240, 255, 255);
+		return;
+	}
+
+	if (!ref.fAllowEdit) {
+		pLCI->stClr.clrBk = RGB(245, 245, 245);
+		return;
 	}
 }
 
@@ -769,7 +768,7 @@ bool CHexDlgDataInterp::SetDataTime32(std::wstring_view wsv)const
 		return false;
 
 	FILETIME ftTime;
-	if (!SystemTimeToFileTime(&*optSysTime, &ftTime))
+	if (::SystemTimeToFileTime(&*optSysTime, &ftTime) == FALSE)
 		return false;
 
 	//Convert ticks to seconds and adjust epoch.
@@ -798,7 +797,7 @@ bool CHexDlgDataInterp::SetDataTime64(std::wstring_view wsv)const
 		return false;
 
 	FILETIME ftTime;
-	if (!SystemTimeToFileTime(&*optSysTime, &ftTime))
+	if (::SystemTimeToFileTime(&*optSysTime, &ftTime) == FALSE)
 		return false;
 
 	//Convert ticks to seconds and adjust epoch.
@@ -862,7 +861,7 @@ bool CHexDlgDataInterp::SetDataMSDOSTIME(std::wstring_view wsv)const
 		return false;
 
 	UMSDOSDateTime msdosDateTime;
-	if (!FileTimeToDosDateTime(&*optFileTime, &msdosDateTime.TimeDate.wDate, &msdosDateTime.TimeDate.wTime))
+	if (::FileTimeToDosDateTime(&*optFileTime, &msdosDateTime.TimeDate.wDate, &msdosDateTime.TimeDate.wTime) == FALSE)
 		return false;
 
 	//Note: Big-endian is not currently supported. This has never existed in the "wild".
@@ -913,7 +912,7 @@ bool CHexDlgDataInterp::SetDataSYSTEMTIME(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataGUID(std::wstring_view wsv)const
 {
 	GUID stGUID;
-	if (IIDFromString(wsv.data(), &stGUID) != S_OK)
+	if (::IIDFromString(wsv.data(), &stGUID) != S_OK)
 		return false;
 
 	if (IsBigEndian()) {
@@ -1162,7 +1161,8 @@ void CHexDlgDataInterp::ShowValueMSDOSTIME(DWORD dword)
 {
 	std::wstring wstrTime = L"N/A";
 	const UMSDOSDateTime msdosDateTime { .dwTimeDate { dword } };
-	if (FILETIME ftMSDOS; DosDateTimeToFileTime(msdosDateTime.TimeDate.wDate, msdosDateTime.TimeDate.wTime, &ftMSDOS)) {
+	if (FILETIME ftMSDOS;
+		::DosDateTimeToFileTime(msdosDateTime.TimeDate.wDate, msdosDateTime.TimeDate.wTime, &ftMSDOS) != FALSE) {
 		wstrTime = ut::FileTimeToString(ftMSDOS, m_dwDateFormat, m_wchDateSepar);
 	}
 
