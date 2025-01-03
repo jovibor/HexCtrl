@@ -26,6 +26,13 @@ void CHexDlgGoTo::CreateDlg()
 	}
 }
 
+void CHexDlgGoTo::DestroyDlg()
+{
+	if (m_Wnd.IsWindow()) {
+		m_Wnd.DestroyWindow();
+	}
+}
+
 void CHexDlgGoTo::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
 	if (pHexCtrl == nullptr || hInstRes == nullptr) {
@@ -181,7 +188,7 @@ bool CHexDlgGoTo::IsNoEsc()const
 auto CHexDlgGoTo::OnActivate(const MSG& msg)->INT_PTR
 {
 	const auto pHexCtrl = GetHexCtrl();
-	if (!pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
+	if (pHexCtrl == nullptr || !pHexCtrl->IsCreated() || !pHexCtrl->IsDataSet())
 		return FALSE;
 
 	const auto nState = LOWORD(msg.wParam);

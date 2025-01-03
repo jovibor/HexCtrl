@@ -115,6 +115,13 @@ void CHexDlgTemplMgr::CreateDlg()
 	}
 }
 
+void CHexDlgTemplMgr::DestroyDlg()
+{
+	if (m_Wnd.IsWindow()) {
+		m_Wnd.DestroyWindow();
+	}
+}
+
 void CHexDlgTemplMgr::DisapplyAll()
 {
 	if (m_Wnd.IsWindow()) { //Dialog must be created and alive to work with its members.
@@ -392,7 +399,7 @@ bool CHexDlgTemplMgr::IsSwapEndian()const
 
 auto CHexDlgTemplMgr::OnActivate(const MSG& msg)->INT_PTR
 {
-	if (!m_pHexCtrl->IsCreated())
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated())
 		return FALSE;
 
 	const auto nState = LOWORD(msg.wParam);

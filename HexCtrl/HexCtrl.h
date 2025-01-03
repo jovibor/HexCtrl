@@ -403,7 +403,8 @@ namespace HEXCTRL {
 		virtual void ClearData() = 0; //Clears all data from HexCtrl's view (not touching data itself).
 		virtual bool Create(const HEXCREATE& hcs) = 0;                       //Main initialization method.
 		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent) = 0;    //Сreates custom dialog control.
-		virtual void Destroy() = 0;                                          //Deleter.
+		virtual void Delete() = 0;                                           //IHexCtrl object deleter.
+		virtual void DestroyWindow() = 0;                                    //Destroy HexCtrl window.
 		virtual void ExecuteCmd(EHexCmd eCmd) = 0;                           //Execute a command within HexCtrl.
 		[[nodiscard]] virtual auto GetActualWidth()const->int = 0;           //Working area actual width.
 		[[nodiscard]] virtual auto GetBookmarks()const->IHexBookmarks* = 0;  //Get Bookmarks interface.
@@ -466,7 +467,7 @@ namespace HEXCTRL {
 		virtual void ShowInfoBar(bool fShow) = 0;              //Show/hide bottom Info bar.
 	};
 
-	struct IHexCtrlDeleter { void operator()(IHexCtrl* p)const { p->Destroy(); } };
+	struct IHexCtrlDeleter { void operator()(IHexCtrl* p)const { p->Delete(); } };
 	using IHexCtrlPtr = std::unique_ptr<IHexCtrl, IHexCtrlDeleter>;
 	[[nodiscard]] HEXCTRLAPI IHexCtrlPtr CreateHexCtrl();
 

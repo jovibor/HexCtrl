@@ -15,6 +15,7 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		void AddCP(std::wstring_view wsv);
 		void CreateDlg();
+		void DestroyDlg();
 		[[nodiscard]] auto GetHWND()const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);

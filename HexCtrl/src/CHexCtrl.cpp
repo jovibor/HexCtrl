@@ -458,14 +458,20 @@ bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
 	return Create({ .hWndParent { hWndParent }, .uID { uCtrlID }, .fCustom { true } });
 }
 
-void CHexCtrl::Destroy()
+void CHexCtrl::Delete()
 {
+	//At this point the HexCtrl window should be destroyed anyway.
+	//This call is just to make sure it is.
+	DestroyWindow();
+
 	delete this;
 }
 
 void CHexCtrl::DestroyWindow()
 {
-	m_Wnd.DestroyWindow();
+	if (m_Wnd.IsWindow()) {
+		m_Wnd.DestroyWindow();
+	}
 }
 
 void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
@@ -1465,9 +1471,6 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 
 bool CHexCtrl::PreTranslateMsg(MSG* pMsg)
 {
-	//The common if(!IsCreated()) check is ommited here for max throughput.
-	assert(IsCreated());
-
 	if (m_pDlgBkmMgr->PreTranslateMsg(pMsg)) { return true; }
 	if (m_pDlgDataInterp->PreTranslateMsg(pMsg)) { return true; }
 	if (m_pDlgModify->PreTranslateMsg(pMsg)) { return true; }
@@ -6900,16 +6903,30 @@ auto CHexCtrl::OnContextMenu(const MSG& msg)->LRESULT
 auto CHexCtrl::OnDestroy()->LRESULT
 {
 	//All these cleanups below are important when HexCtrl window is destroyed but IHexCtrl object
-	//itself is still alive. The IHexCtrl object is alive until the IHexCtrl::Destroy() method is called.
-	//Child windows of IHexCtrl (dialogs, tooltips, etc...) will be destroyed automatically by Windows.
+	//itself is still alive. The IHexCtrl object is alive until the IHexCtrl::Delete() method is called.
+	//Child windows of the IHexCtrl (e.g. tooltips) will be destroyed automatically by Windows.
+
+	//Note: The MSDN for the DestroyWindow clearly states that:
+	//"If the specified window is a parent or owner window, DestroyWindow automatically destroys the associated 
+	//child or owned windows when it destroys the parent or owner window. The function first destroys child or
+	//owned windows, and then it destroys the parent or owner window."
+	//But it doesn't seem to always be the case for owned dialog windows in some environments.
+	//These DestroyDlg() calls to make sure the dialogs are always properly destroyed.
 
 	ClearData();
+	m_pDlgBkmMgr->DestroyDlg();
+	m_pDlgCodepage->DestroyDlg();
+	m_pDlgDataInterp->DestroyDlg();
+	m_pDlgModify->DestroyDlg();
+	m_pDlgGoTo->DestroyDlg();
+	m_pDlgSearch->DestroyDlg();
+	m_pDlgTemplMgr->DestroyDlg();
+	m_pDlgTemplMgr->UnloadAll(); //Templates could be loaded without creating the dialog itself.
 	m_vecHBITMAP.clear();
 	m_vecKeyBind.clear();
 	m_vecUndo.clear();
 	m_vecRedo.clear();
 	m_vecCharsWidth.clear();
-	m_pDlgTemplMgr->UnloadAll(); //Explicitly unloading all loaded Templates.
 	m_MenuMain.DestroyMenu();
 	::DeleteObject(m_hFntMain);
 	::DeleteObject(m_hFntInfoBar);
@@ -6917,8 +6934,8 @@ auto CHexCtrl::OnDestroy()->LRESULT
 	::DeleteObject(m_hPenDataTempl);
 	m_pScrollV->DestroyWindow(); //Not a child of the IHexCtrl.
 	m_pScrollH->DestroyWindow(); //Not a child of the IHexCtrl.
-	m_fCreated = false;
 	ParentNotify(HEXCTRL_MSG_DESTROY);
+	m_fCreated = false;
 
 	return 0;
 }

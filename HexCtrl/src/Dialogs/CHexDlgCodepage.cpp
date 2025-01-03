@@ -32,6 +32,13 @@ void CHexDlgCodepage::CreateDlg()
 	}
 }
 
+void CHexDlgCodepage::DestroyDlg()
+{
+	if (m_Wnd.IsWindow()) {
+		m_Wnd.DestroyWindow();
+	}
+}
+
 auto CHexDlgCodepage::GetHWND()const->HWND
 {
 	return m_Wnd;
@@ -94,7 +101,7 @@ bool CHexDlgCodepage::IsNoEsc()const
 
 auto CHexDlgCodepage::OnActivate(const MSG& msg)->INT_PTR
 {
-	if (!m_pHexCtrl->IsCreated())
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated())
 		return FALSE;
 
 	const auto nState = LOWORD(msg.wParam);

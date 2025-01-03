@@ -42,8 +42,8 @@ namespace HEXCTRL::INTERNAL {
 		void ClearData()override;
 		bool Create(const HEXCREATE& hcs)override;
 		bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)override;
-		void Destroy()override;
-		void DestroyWindow();
+		void Delete()override;
+		void DestroyWindow()override;
 		void ExecuteCmd(EHexCmd eCmd)override;
 		[[nodiscard]] auto GetActualWidth()const->int override;
 		[[nodiscard]] auto GetBookmarks()const->IHexBookmarks* override;

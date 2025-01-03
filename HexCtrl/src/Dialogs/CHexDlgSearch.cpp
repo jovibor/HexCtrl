@@ -72,6 +72,13 @@ void CHexDlgSearch::CreateDlg()
 	}
 }
 
+void CHexDlgSearch::DestroyDlg()
+{
+	if (m_Wnd.IsWindow()) {
+		m_Wnd.DestroyWindow();
+	}
+}
+
 auto CHexDlgSearch::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
 	if (!m_Wnd.IsWindow()) {
@@ -749,7 +756,7 @@ bool CHexDlgSearch::IsWildcard()const
 
 auto CHexDlgSearch::OnActivate(const MSG& msg)->INT_PTR
 {
-	if (!m_pHexCtrl->IsCreated())
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated())
 		return FALSE;
 
 	const auto nState = LOWORD(msg.wParam);

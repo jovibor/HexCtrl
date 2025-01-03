@@ -854,6 +854,13 @@ void CHexDlgModify::CreateDlg()
 	}
 }
 
+void CHexDlgModify::DestroyDlg()
+{
+	if (m_Wnd.IsWindow()) {
+		m_Wnd.DestroyWindow();
+	}
+}
+
 auto CHexDlgModify::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
 	if (!m_Wnd.IsWindow()) {

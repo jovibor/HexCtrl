@@ -16,6 +16,7 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		auto AddBkm(const HEXBKM& hbs, bool fRedraw) -> ULONGLONG override;    //Returns new bookmark Id.
 		void CreateDlg();
+		void DestroyDlg();
 		[[nodiscard]] auto GetHWND()const->HWND;
 		[[nodiscard]] auto GetByID(ULONGLONG ullID) -> PHEXBKM override;       //Bookmark by ID.
 		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM override; //Bookmark by index (in inner list).

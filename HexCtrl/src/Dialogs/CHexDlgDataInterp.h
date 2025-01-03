@@ -16,6 +16,7 @@ namespace HEXCTRL::INTERNAL {
 		CHexDlgDataInterp();
 		~CHexDlgDataInterp();
 		void CreateDlg();
+		void DestroyDlg();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		[[nodiscard]] auto GetHglDataSize()const->DWORD;
 		[[nodiscard]] auto GetHWND()const->HWND;

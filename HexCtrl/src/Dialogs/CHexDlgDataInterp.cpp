@@ -76,6 +76,13 @@ void CHexDlgDataInterp::CreateDlg()
 	}
 }
 
+void CHexDlgDataInterp::DestroyDlg()
+{
+	if (m_Wnd.IsWindow()) {
+		m_Wnd.DestroyWindow();
+	}
+}
+
 auto CHexDlgDataInterp::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
 	if (!m_Wnd.IsWindow()) {
@@ -324,7 +331,7 @@ bool CHexDlgDataInterp::IsShowAsHex()const
 
 auto CHexDlgDataInterp::OnActivate(const MSG& msg)->INT_PTR
 {
-	if (!m_pHexCtrl->IsCreated())
+	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsCreated())
 		return FALSE;
 
 	const auto nState = LOWORD(msg.wParam);
@@ -418,7 +425,7 @@ auto CHexDlgDataInterp::OnInitDialog(const MSG& msg)->INT_PTR
 
 	using enum EGroup; using enum EName; using enum EDataSize;
 	m_vecData.reserve(21);
-	m_vecData.emplace_back(L"Binary:", L"", GR_BINARY, NAME_BINARY, SIZE_BYTE);
+	m_vecData.emplace_back(L"Binary view:", L"", GR_BINARY, NAME_BINARY, SIZE_BYTE);
 	m_vecData.emplace_back(L"Int8:", L"", GR_INTEGRAL, NAME_INT8, SIZE_BYTE);
 	m_vecData.emplace_back(L"Unsigned Int8:", L"", GR_INTEGRAL, NAME_UINT8, SIZE_BYTE);
 	m_vecData.emplace_back(L"Int16:", L"", GR_INTEGRAL, NAME_INT16, SIZE_WORD);
@@ -427,6 +434,8 @@ auto CHexDlgDataInterp::OnInitDialog(const MSG& msg)->INT_PTR
 	m_vecData.emplace_back(L"Unsigned Int32:", L"", GR_INTEGRAL, NAME_UINT32, SIZE_DWORD);
 	m_vecData.emplace_back(L"Int64:", L"", GR_INTEGRAL, NAME_INT64, SIZE_QWORD);
 	m_vecData.emplace_back(L"Unsigned Int64:", L"", GR_INTEGRAL, NAME_UINT64, SIZE_QWORD);
+	m_vecData.emplace_back(L"Float:", L"", GR_FLOAT, NAME_FLOAT, SIZE_DWORD);
+	m_vecData.emplace_back(L"Double:", L"", GR_FLOAT, NAME_DOUBLE, SIZE_QWORD);
 	m_vecData.emplace_back(L"time32_t:", L"", GR_TIME, NAME_TIME32T, SIZE_DWORD);
 	m_vecData.emplace_back(L"time64_t:", L"", GR_TIME, NAME_TIME64T, SIZE_QWORD);
 	m_vecData.emplace_back(L"FILETIME:", L"", GR_TIME, NAME_FILETIME, SIZE_QWORD);
@@ -435,8 +444,6 @@ auto CHexDlgDataInterp::OnInitDialog(const MSG& msg)->INT_PTR
 	m_vecData.emplace_back(L"MS-DOS time:", L"", GR_TIME, NAME_MSDOSTIME, SIZE_QWORD);
 	m_vecData.emplace_back(L"MS-UDTTM time:", L"", GR_TIME, NAME_MSDTTMTIME, SIZE_DWORD);
 	m_vecData.emplace_back(L"Windows SYSTEMTIME:", L"", GR_TIME, NAME_SYSTEMTIME, SIZE_DQWORD);
-	m_vecData.emplace_back(L"Float:", L"", GR_FLOAT, NAME_FLOAT, SIZE_DWORD);
-	m_vecData.emplace_back(L"Double:", L"", GR_FLOAT, NAME_DOUBLE, SIZE_QWORD);
 	m_vecData.emplace_back(L"GUID:", L"", GR_MISC, NAME_GUID, SIZE_DQWORD);
 	m_vecData.emplace_back(L"GUID v1 UTC time:", L"", GR_GUIDTIME, NAME_GUIDTIME, SIZE_DQWORD);
 
@@ -988,7 +995,7 @@ template<ut::TSize1248 T>
 void CHexDlgDataInterp::ShowValueBinary(T tData)
 {
 	const auto pGrid = GetListData(EName::NAME_BINARY);
-	constexpr auto pSepar { L"  " };
+	constexpr auto pSepar { L" " };
 	if constexpr (sizeof(T) == sizeof(std::uint8_t)) {
 		pGrid->wstrValue = std::format(L"{:08b}", tData);
 	}

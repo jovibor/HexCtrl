@@ -18,7 +18,8 @@
   * [ClearData](#cleardata)
   * [Create](#create)
   * [CreateDialogCtrl](#createdialogctrl)
-  * [Destroy](#destroy)
+  * [Delete](#delete)
+  * [DestroyWindow](#destroywindow)
   * [ExecuteCmd](#executecmd)
   * [GetActualWidth](#getactualwidth)
   * [GetBookmarks](#getbookmarks)
@@ -356,15 +357,20 @@ bool CreateDialogCtrl(UINT uCtrlID, HWND hwndDlg);
 ```
 Creates **HexCtrl** from a **Custom Control** dialog's template. Takes control **id**, and dialog's window **handle** as arguments. See **[Creating](#in-dialog)** section for more info.
 
-### [](#)Destroy
+### [](#)Delete
 ```cpp
-void Destroy();
+void Delete();
 ```
-Destroys the control.  
-You only invoke this method if you use a raw `IHexCtrl` pointer, otherwise don't use it.
+Deletes the **HexCtrl** object. You only use this method if you want, for some reason, to manually delete the **HexCtrl** object, otherwise `IHexCtrlPtr` will invoke this method automatically.
 
 > [!IMPORTANT]
 You usually don't need to call this method unless you use the **HexCtrl** through a raw pointer. If you use **HexCtrl** in the standard way, through the `IHexCtrlPtr` pointer obtained by the [`CreateHexCtrl`](#createhexctrl) function, this method will be called automatically.
+
+### [](#)DestroyWindow
+```cpp
+void DestroyWindow();
+```
+Destroys the **HexCtrl** main window.
 
 ### [](#)ExecuteCmd
 ```cpp

@@ -18,6 +18,7 @@ namespace HEXCTRL::INTERNAL {
 		CHexDlgModify();
 		~CHexDlgModify();
 		void CreateDlg();
+		void DestroyDlg();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		[[nodiscard]] auto GetHWND()const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
