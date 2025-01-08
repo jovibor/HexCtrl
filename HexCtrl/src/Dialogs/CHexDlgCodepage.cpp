@@ -124,7 +124,7 @@ void CHexDlgCodepage::OnCancel()
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
-	ShowWindow(SW_HIDE);
+	OnClose();
 }
 
 auto CHexDlgCodepage::OnClose()->INT_PTR

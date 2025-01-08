@@ -901,6 +901,7 @@ auto CHexDlgModify::ProcessMsg(const MSG& msg)->INT_PTR
 {
 	switch (msg.message) {
 	case WM_ACTIVATE: return OnActivate(msg);
+	case WM_CLOSE: return OnClose();
 	case WM_DESTROY: return OnDestroy();
 	case WM_INITDIALOG: return OnInitDialog(msg);
 	case WM_NOTIFY: return OnNotify(msg);

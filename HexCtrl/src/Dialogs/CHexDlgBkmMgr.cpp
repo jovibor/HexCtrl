@@ -27,8 +27,8 @@ auto CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)->ULONGLONG
 	else {
 		ullID = 1; //Bookmarks' ID starts from 1.
 		if (const auto iter = std::max_element(m_vecBookmarks.begin(), m_vecBookmarks.end(),
-			[](const HEXBKM& ref1, const HEXBKM& ref2) {
-			return ref1.ullID < ref2.ullID; }); iter != m_vecBookmarks.end()) {
+			[](const HEXBKM& lhs, const HEXBKM& rhs) {
+				return lhs.ullID < rhs.ullID; }); iter != m_vecBookmarks.end()) {
 			ullID = iter->ullID + 1; //Increasing next bookmark's ID by 1.
 		}
 		m_vecBookmarks.emplace_back(hbs.vecSpan, hbs.wstrDesc, ullID, hbs.ullData, hbs.stClr);
@@ -183,8 +183,8 @@ auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM
 		if (const auto rIter = std::find_if(m_vecBookmarks.rbegin(), m_vecBookmarks.rend(),
 			[ullOffset](const HEXBKM& ref) { return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPAN& refV) {
-			return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
-			rIter != m_vecBookmarks.rend()) {
+					return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
+					rIter != m_vecBookmarks.rend()) {
 			pBkm = &*rIter;
 		}
 	}
@@ -260,7 +260,7 @@ void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset)
 		if (const auto iter = std::find_if(m_vecBookmarks.rbegin(), m_vecBookmarks.rend(),
 			[ullOffset](const HEXBKM& ref) { return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPAN& refV) {
-			return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
+					return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
 			iter != m_vecBookmarks.rend()) {
 			RemoveBookmark(iter->ullID);
 		}
@@ -319,34 +319,34 @@ void CHexDlgBkmMgr::SortData(int iColumn, bool fAscending)
 	//iColumn is column number in CHexDlgBkmMgr::m_ListEx.
 	std::sort(m_vecBookmarks.begin(), m_vecBookmarks.end(),
 		[iColumn, fAscending](const HEXBKM& st1, const HEXBKM& st2) {
-		int iCompare { };
-		switch (iColumn) {
-		case 0:
-			break;
-		case 1: //Offset.
-			if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
-				const auto ullOffset1 = st1.vecSpan.front().ullOffset;
-				const auto ullOffset2 = st2.vecSpan.front().ullOffset;
-				iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
+			int iCompare { };
+			switch (iColumn) {
+			case 0:
+				break;
+			case 1: //Offset.
+				if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
+					const auto ullOffset1 = st1.vecSpan.front().ullOffset;
+					const auto ullOffset2 = st2.vecSpan.front().ullOffset;
+					iCompare = ullOffset1 != ullOffset2 ? (ullOffset1 < ullOffset2 ? -1 : 1) : 0;
+				}
+				break;
+			case 2: //Size.
+				if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
+					auto ullSize1 = std::reduce(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
+						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+					auto ullSize2 = std::reduce(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
+						[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
+					iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
+				}
+				break;
+			case 3: //Description.
+				iCompare = st1.wstrDesc.compare(st2.wstrDesc);
+				break;
+			default:
+				break;
 			}
-			break;
-		case 2: //Size.
-			if (!st1.vecSpan.empty() && !st2.vecSpan.empty()) {
-				auto ullSize1 = std::reduce(st1.vecSpan.begin(), st1.vecSpan.end(), 0ULL,
-					[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
-				auto ullSize2 = std::reduce(st2.vecSpan.begin(), st2.vecSpan.end(), 0ULL,
-					[](auto ullTotal, const HEXSPAN& ref) { return ullTotal + ref.ullSize; });
-				iCompare = ullSize1 != ullSize2 ? (ullSize1 < ullSize2 ? -1 : 1) : 0;
-			}
-			break;
-		case 3: //Description.
-			iCompare = st1.wstrDesc.compare(st2.wstrDesc);
-			break;
-		default:
-			break;
-		}
 
-		return fAscending ? iCompare < 0 : iCompare > 0;
+			return fAscending ? iCompare < 0 : iCompare > 0;
 	});
 }
 
@@ -392,7 +392,7 @@ void CHexDlgBkmMgr::OnCancel()
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
-	ShowWindow(SW_HIDE);
+	OnClose();
 }
 
 auto CHexDlgBkmMgr::OnClose()->INT_PTR

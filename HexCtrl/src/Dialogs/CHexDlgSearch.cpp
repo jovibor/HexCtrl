@@ -813,7 +813,7 @@ void CHexDlgSearch::OnCancel()
 	if (IsNoEsc()) //Not closing Dialog on Escape key.
 		return;
 
-	ShowWindow(SW_HIDE);
+	OnClose();
 }
 
 void CHexDlgSearch::OnCheckSel()
