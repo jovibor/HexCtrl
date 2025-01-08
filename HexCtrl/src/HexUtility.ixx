@@ -406,13 +406,21 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	}
 
 	//Replicates GET_X_LPARAM macro from the windowsx.h.
-	[[nodiscard]] constexpr int GET_X_LPARAM(LPARAM lParam) {
+	[[nodiscard]] constexpr int GetXLPARAM(LPARAM lParam) {
 		return (static_cast<int>(static_cast<short>(static_cast<WORD>((static_cast<DWORD_PTR>(lParam)) & 0xFFFF))));
 	}
 
-	[[nodiscard]] constexpr int GET_Y_LPARAM(LPARAM lParam) {
-		return GET_X_LPARAM(lParam >> 16);
+	[[nodiscard]] constexpr int GetYLPARAM(LPARAM lParam) {
+		return GetXLPARAM(lParam >> 16);
 	}
+
+	//Returns hInstance of a current module, whether it is a .exe or .dll.
+	[[nodiscard]] auto GetCurrModuleHinst() -> HINSTANCE {
+		HINSTANCE hInst { };
+		::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+			reinterpret_cast<LPCWSTR>(&GetCurrModuleHinst), &hInst);
+		return hInst;
+	};
 
 #if defined(DEBUG) || defined(_DEBUG)
 	void DBG_REPORT(const wchar_t* pMsg, const std::source_location& loc = std::source_location::current()) {

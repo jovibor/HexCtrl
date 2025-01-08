@@ -155,7 +155,7 @@ auto CHexDlgAbout::OnInitDialog(const MSG& msg)->INT_PTR
 
 auto CHexDlgAbout::OnLButtonDown(const MSG& msg)->INT_PTR
 {
-	const POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
+	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
 	if (hWnd != m_WndLink) {
 		m_fLBDownLink = false;
@@ -169,7 +169,7 @@ auto CHexDlgAbout::OnLButtonDown(const MSG& msg)->INT_PTR
 
 auto CHexDlgAbout::OnLButtonUp(const MSG& msg) -> INT_PTR
 {
-	const POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
+	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
 	if (hWnd != m_WndLink) {
 		m_fLBDownLink = false;
@@ -185,7 +185,7 @@ auto CHexDlgAbout::OnLButtonUp(const MSG& msg) -> INT_PTR
 
 auto CHexDlgAbout::OnMouseMove(const MSG& msg)->INT_PTR
 {
-	const POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
+	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
 	if (hWnd == nullptr)
 		return FALSE;
@@ -326,7 +326,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		m_stColors = *hcs.pColors;
 	}
 
-	m_hInstRes = hcs.hInstRes != nullptr ? hcs.hInstRes : ::GetModuleHandleW(nullptr);
+	m_hInstRes = hcs.hInstRes != nullptr ? hcs.hInstRes : ut::GetCurrModuleHinst();
 	m_dwCapacity = std::clamp(hcs.dwCapacity, 1UL, 100UL);
 	m_flScrollRatio = hcs.flScrollRatio;
 	m_fScrollLines = hcs.fScrollLines;
@@ -6887,7 +6887,7 @@ auto CHexCtrl::OnCommand(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnContextMenu(const MSG& msg)->LRESULT
 {
-	const POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
+	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 
 	//Notify parent that we are about to display a context menu.
 	const HEXMENUINFO hmi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU },
@@ -6910,8 +6910,9 @@ auto CHexCtrl::OnDestroy()->LRESULT
 	//"If the specified window is a parent or owner window, DestroyWindow automatically destroys the associated 
 	//child or owned windows when it destroys the parent or owner window. The function first destroys child or
 	//owned windows, and then it destroys the parent or owner window."
-	//But it doesn't seem to always be the case for owned dialog windows in some environments.
-	//These DestroyDlg() calls to make sure the dialogs are always properly destroyed.
+	//But this doesn't seem to always be the case for owned dialog windows in some environments (mainly when 
+	//IHexCtrl is a child of MFC's CView class).
+	//These DestroyDlg calls to make sure the dialogs are always properly destroyed.
 
 	ClearData();
 	m_pDlgBkmMgr->DestroyDlg();
@@ -7100,7 +7101,7 @@ auto CHexCtrl::OnKeyUp(const MSG& /*msg*/)->LRESULT
 
 auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
 {
-	const POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
+	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 	const auto nFlags = static_cast<UINT>(msg.wParam);
 
 	if ((pt.x + static_cast<long>(m_pScrollH->GetScrollPos())) < m_iSecondVertLinePx) { //DblClick on "Offset" area.
@@ -7138,7 +7139,7 @@ auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnLButtonDown(const MSG& msg)->LRESULT
 {
-	const POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
+	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 	const auto nFlags = static_cast<UINT>(msg.wParam);
 
 	m_Wnd.SetFocus(); //SetFocus is vital to give proper keyboard input to the main HexCtrl window.
@@ -7198,7 +7199,7 @@ auto CHexCtrl::OnLButtonUp(const MSG& /*msg*/)->LRESULT
 
 auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 {
-	POINT pt { .x { ut::GET_X_LPARAM(msg.lParam) }, .y { ut::GET_Y_LPARAM(msg.lParam) } };
+	POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 	const auto optHit = HitTest(pt);
 
 	if (m_fLMousePressed) {

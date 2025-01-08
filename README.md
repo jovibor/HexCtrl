@@ -186,7 +186,7 @@ First you need to create a **HexCtrl** object:
 ```cpp
 HEXCTRL::IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };
 ```
-Then call the [`IHexCtrl::Create`](#create) method, which takes the [`HEXCREATE`](#hexcreate) struct with the all necessary information for the **HexCtrl** creation. The `HEXCREATE::dwStyle` and `dwExStyle` are [Window](https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles) and [Extended Window](https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles) styles respectively, set these styles according to your needs. For all available options see the [`HEXCREATE`](#hexcreate) struct description.
+Then call the [`IHexCtrl::Create`](#create) method, which takes the [`HEXCREATE`](#hexcreate) struct with the all necessary information for the **HexCtrl** creation. The `HEXCREATE::dwStyle` and `dwExStyle` are [window](https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles) and [extended window](https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles) styles respectively, set these styles according to your needs. For all available options see the [`HEXCREATE`](#hexcreate) struct description.
 
 ### [](#)In Dialog
 To use **HexCtrl** in a Dialog you can create it with the [Classic Approach](#classic-approach): call [`Create`](#create) method and provide all the necessary information.  
@@ -834,32 +834,46 @@ struct HEXCOLORS {
     COLORREF clrBkSel { GetSysColor(COLOR_HIGHLIGHT) };          //Background color of the selected Hex/Text.
     COLORREF clrBkBkm { RGB(240, 240, 0) };                      //Bookmarks background color.
     COLORREF clrBkDataInterp { RGB(147, 58, 22) };               //Data Interpreter Bk color.
-    COLORREF clrBkInfoBar { GetSysColor(COLOR_BTNFACE) };        //Background color of the bottom Info bar.
+    COLORREF clrBkInfoBar { GetSysColor(COLOR_3DFACE) };         //Background color of the bottom Info bar.
     COLORREF clrBkCaret { RGB(0, 0, 255) };                      //Caret background color.
     COLORREF clrBkCaretSel { RGB(0, 0, 200) };                   //Caret background color in selection.
 };
+using PCHEXCOLORS = const HEXCOLORS*;
 ```
 
 ### [](#)HEXCREATE
 The main initialization struct used for the **HexCtrl** creation.
 ```cpp
 struct HEXCREATE {
-    HWND             hWndParent { };         //Parent window handle.
-    const HEXCOLORS* pColors { };            //HexCtrl colors, nullptr for default.
-    const LOGFONTW*  pLogFont { };           //Monospaced font for HexCtrl, nullptr for default.
-    RECT             rect { };               //Initial window rect.
-    UINT             uID { };                //Control ID if it's a child window.
-    DWORD            dwStyle { };            //Window styles.
-    DWORD            dwExStyle { };          //Extended window styles.
-    DWORD            dwCapacity { 16UL };    //Initial capacity size.
-    DWORD            dwGroupSize { 1UL };    //Initial data grouping size.
-    float            flScrollRatio { 1.0F }; //Either a screen-ratio or lines amount to scroll with Page-scroll (mouse-wheel).
-    bool             fScrollLines { false }; //Treat flScrollRatio as screen-ratio (false) or as amount of lines (true).
-    bool             fInfoBar { true };      //Show bottom Info bar or not.
-    bool             fOffsetHex { true };    //Show offset digits as Hex or Decimal.
-    bool             fCustom { false };      //If it's a custom control in a dialog.
+    HINSTANCE       hInstRes { };           //Hinstance of the HexCtrl resources, nullptr for current module.
+    HWND            hWndParent { };         //Parent window handle.
+    PCHEXCOLORS     pColors { };            //HexCtrl colors, nullptr for default.
+    const LOGFONTW* pLogFont { };           //Monospaced font for HexCtrl, nullptr for default.
+    RECT            rect { };               //Initial window rect.
+    UINT            uID { };                //Control ID if it's a child window.
+    DWORD           dwStyle { };            //Window styles.
+    DWORD           dwExStyle { };          //Extended window styles.
+    DWORD           dwCapacity { 16UL };    //Initial capacity size.
+    DWORD           dwGroupSize { 1UL };    //Initial data grouping size.
+    float           flScrollRatio { 1.0F }; //Either a screen-ratio or lines amount to scroll with Page-scroll (mouse-wheel).
+    bool            fScrollLines { false }; //Treat flScrollRatio as screen-ratio (false) or as amount of lines (true).
+    bool            fInfoBar { true };      //Show bottom Info bar or not.
+    bool            fOffsetHex { true };    //Show offset digits as Hex or Decimal.
+    bool            fCustom { false };      //If it's a custom control in a dialog.
 };
 ```
+#### Members:
+**HINSTANCE hInstRes**  
+
+The `hInstRes` member allows you to provide an alternative `HINSTANCE` of a module where all **HexCtrl** resources (dialogs, menu, etc...) reside. By default **HexCtrl** uses its current module, whether it's a `.exe` or `.dll`.
+
+**DWORD dwStyle**  
+
+Standard [window style](https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles) for the main **HexCtrl** window.
+
+**DWORD dwExStyle**  
+
+Standard [extended window style](https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles) for the main **HexCtrl** window.
 
 ### [](#)HEXDATA
 The main struct to set a data to display in the **HexCtrl**.
@@ -874,9 +888,10 @@ struct HEXDATA {
     bool            fHighLatency { false };     //Do not redraw until scroll thumb is released.
 };
 ```
+#### Members:
+**ULONGLONG ullMaxVirtOffset**  
 
-#### [](#)ullMaxVirtOffset
-Used to set maximum Virtual data offset. This is needed for the offset digits amount calculation.
+Used to set maximum virtual data offset in virtual data mode. This is needed for the offset digits amount calculation.
 
 ### [](#)HEXDATAINFO
 Struct for a data information used in [`IHexVirtData`](#virtual-data-mode).
