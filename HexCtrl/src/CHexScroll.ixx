@@ -7,6 +7,7 @@ module;
 ****************************************************************************************/
 #include <SDKDDKVer.h>
 #include <windows.h>
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <limits>

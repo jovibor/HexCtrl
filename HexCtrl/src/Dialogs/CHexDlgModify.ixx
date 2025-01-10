@@ -1,14 +1,19 @@
+module;
 /****************************************************************************************
 * Copyright © 2018-present Jovibor https://github.com/jovibor/                          *
 * Hex Control for Windows applications.                                                 *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
+#include <SDKDDKVer.h>
 #include "../../res/HexCtrlRes.h"
-#include "CHexDlgModify.h"
+#include "../../HexCtrl.h"
 #include <cassert>
 #include <commctrl.h>
 #include <unordered_map>
+export module HEXCTRL.CHexDlgModify;
+
+import HEXCTRL.HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 
@@ -836,13 +841,39 @@ void CHexDlgFillData::SetControlsState()
 }
 
 
-//CHexDlgModify methods.
-
-CHexDlgModify::CHexDlgModify() : m_pDlgOpers { std::make_unique<CHexDlgOpers>() },
-m_pDlgFillData { std::make_unique<CHexDlgFillData>() } {
+namespace HEXCTRL::INTERNAL {
+	export class CHexDlgModify final {
+	public:
+		void CreateDlg();
+		void DestroyDlg();
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
+		[[nodiscard]] auto GetHWND()const->HWND;
+		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
+		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
+		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
+		void SetDlgProperties(std::uint64_t u64Flags);
+		void ShowWindow(int iCmdShow, int iTab = -1);
+	private:
+		auto OnActivate(const MSG& msg) -> INT_PTR;
+		auto OnClose() -> INT_PTR;
+		auto OnDestroy() -> INT_PTR;
+		auto OnInitDialog(const MSG& msg) -> INT_PTR;
+		auto OnNotify(const MSG& msg) -> INT_PTR;
+		void OnNotifyTabSelChanged(NMHDR* pNMHDR);
+		void SetCurrentTab(int iTab);
+	private:
+		HINSTANCE m_hInstRes { };
+		wnd::CWnd m_Wnd;              //Main window.
+		wnd::CWndTab m_WndTab;        //Tab control.
+		IHexCtrl* m_pHexCtrl { };
+		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
+		CHexDlgOpers m_dlgOpers;       //"Operations" tab dialog.
+		CHexDlgFillData m_dlgFillData; //"Fill with" tab dialog.
+	};
 }
 
-CHexDlgModify::~CHexDlgModify() = default;
+
+//CHexDlgModify methods.
 
 void CHexDlgModify::CreateDlg()
 {
@@ -870,7 +901,7 @@ auto CHexDlgModify::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	using enum EHexDlgItem;
 	switch (eItem) {
 	case FILLDATA_COMBO_DATA:
-		return m_pDlgFillData->GetDlgItemHandle(eItem);
+		return m_dlgFillData.GetDlgItemHandle(eItem);
 	default:
 		return { };
 	}
@@ -894,7 +925,7 @@ void CHexDlgModify::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 
 bool CHexDlgModify::PreTranslateMsg(MSG* pMsg)
 {
-	return m_pDlgOpers->PreTranslateMsg(pMsg) || m_pDlgFillData->PreTranslateMsg(pMsg);
+	return m_dlgOpers.PreTranslateMsg(pMsg) || m_dlgFillData.PreTranslateMsg(pMsg);
 }
 
 auto CHexDlgModify::ProcessMsg(const MSG& msg)->INT_PTR
@@ -913,8 +944,8 @@ auto CHexDlgModify::ProcessMsg(const MSG& msg)->INT_PTR
 void CHexDlgModify::SetDlgProperties(std::uint64_t u64Flags)
 {
 	m_u64Flags = u64Flags;
-	m_pDlgOpers->SetDlgProperties(u64Flags);
-	m_pDlgFillData->SetDlgProperties(u64Flags);
+	m_dlgOpers.SetDlgProperties(u64Flags);
+	m_dlgFillData.SetDlgProperties(u64Flags);
 }
 
 void CHexDlgModify::ShowWindow(int iCmdShow, int iTab)
@@ -933,8 +964,8 @@ void CHexDlgModify::ShowWindow(int iCmdShow, int iTab)
 
 auto CHexDlgModify::OnActivate(const MSG& msg)->INT_PTR
 {
-	m_pDlgOpers->OnActivate(msg);
-	m_pDlgFillData->OnActivate(msg);
+	m_dlgOpers.OnActivate(msg);
+	m_dlgFillData.OnActivate(msg);
 
 	return FALSE; //Default handler.
 }
@@ -962,14 +993,14 @@ auto CHexDlgModify::OnInitDialog(const MSG& msg)->INT_PTR
 	m_WndTab.InsertItem(1, L"Fill with Data");
 	const auto rcTab = m_WndTab.GetItemRect(0);
 
-	m_pDlgOpers->CreateDlg(m_Wnd, m_pHexCtrl, m_hInstRes);
-	::SetWindowPos(m_pDlgOpers->GetHWND(), nullptr, rcTab.left, rcTab.bottom + 1, 0, 0,
+	m_dlgOpers.CreateDlg(m_Wnd, m_pHexCtrl, m_hInstRes);
+	::SetWindowPos(m_dlgOpers.GetHWND(), nullptr, rcTab.left, rcTab.bottom + 1, 0, 0,
 		SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW);
-	m_pDlgOpers->OnActivate({ .wParam { WA_ACTIVE } }); //To properly activate "All-Selection" radios on the first launch.
-	m_pDlgFillData->CreateDlg(m_Wnd, m_pHexCtrl, m_hInstRes);
-	::SetWindowPos(m_pDlgFillData->GetHWND(), nullptr, rcTab.left, rcTab.bottom + 1, 0, 0,
+	m_dlgOpers.OnActivate({ .wParam { WA_ACTIVE } }); //To properly activate "All-Selection" radios on the first launch.
+	m_dlgFillData.CreateDlg(m_Wnd, m_pHexCtrl, m_hInstRes);
+	::SetWindowPos(m_dlgFillData.GetHWND(), nullptr, rcTab.left, rcTab.bottom + 1, 0, 0,
 		SWP_NOSIZE | SWP_NOZORDER | SWP_HIDEWINDOW);
-	m_pDlgFillData->OnActivate({ .wParam { WA_ACTIVE } }); //To properly activate "All-Selection" radios on the first launch.
+	m_dlgFillData.OnActivate({ .wParam { WA_ACTIVE } }); //To properly activate "All-Selection" radios on the first launch.
 
 	return TRUE;
 }
@@ -1000,14 +1031,14 @@ void CHexDlgModify::SetCurrentTab(int iTab)
 	HWND hWndFocus { };
 	switch (iTab) {
 	case 0:
-		m_pDlgFillData->ShowWindow(SW_HIDE);
-		m_pDlgOpers->ShowWindow(SW_SHOW);
-		hWndFocus = m_pDlgOpers->GetHWND();
+		m_dlgFillData.ShowWindow(SW_HIDE);
+		m_dlgOpers.ShowWindow(SW_SHOW);
+		hWndFocus = m_dlgOpers.GetHWND();
 		break;
 	case 1:
-		m_pDlgOpers->ShowWindow(SW_HIDE);
-		m_pDlgFillData->ShowWindow(SW_SHOW);
-		hWndFocus = m_pDlgFillData->GetHWND();
+		m_dlgOpers.ShowWindow(SW_HIDE);
+		m_dlgFillData.ShowWindow(SW_SHOW);
+		hWndFocus = m_dlgFillData.GetHWND();
 		break;
 	default:
 		break;

@@ -19,6 +19,7 @@ module;
 #include <source_location>
 #include <string>
 #include <unordered_map>
+#include <vector>
 export module HEXCTRL.HexUtility;
 
 export import StrToNum;
