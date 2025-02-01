@@ -8,7 +8,6 @@ module;
 #include <SDKDDKVer.h>
 #include "../../res/HexCtrlRes.h"
 #include "../../HexCtrl.h"
-#include <cassert>
 #include <commctrl.h>
 #include <unordered_map>
 export module HEXCTRL.CHexDlgModify;
@@ -68,9 +67,10 @@ namespace HEXCTRL::INTERNAL {
 
 void CHexDlgOpers::CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
-	assert(hWndParent != nullptr); assert(pHexCtrl != nullptr);
-	if (hWndParent == nullptr || pHexCtrl == nullptr)
+	if (hWndParent == nullptr || pHexCtrl == nullptr) {
+		ut::DBG_REPORT(L"hWndParent == nullptr || pHexCtrl == nullptr");
 		return;
+	}
 
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_OPERS),
@@ -591,9 +591,10 @@ enum class CHexDlgFillData::EFillType : std::uint8_t {
 
 void CHexDlgFillData::CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 {
-	assert(hWndParent != nullptr); assert(pHexCtrl != nullptr);
-	if (hWndParent == nullptr || pHexCtrl == nullptr)
+	if (hWndParent == nullptr || pHexCtrl == nullptr) {
+		ut::DBG_REPORT(L"hWndParent == nullptr || pHexCtrl == nullptr");
 		return;
+	}
 
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_FILLDATA),

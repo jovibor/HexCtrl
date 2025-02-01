@@ -36,6 +36,22 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	constexpr auto g_ulFileTime1970_HIGH = 0x019db1deU; //Used for Unix and Java times.
 	constexpr auto g_ullUnixEpochDiff = 11644473600ULL; //Number of ticks from FILETIME epoch of 1st Jan 1601 to Unix epoch of 1st Jan 1970.
 
+	[[nodiscard]] auto StrToWstr(std::string_view sv, UINT uCodePage = CP_UTF8) -> std::wstring
+	{
+		const auto iSize = MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), nullptr, 0);
+		std::wstring wstr(iSize, 0);
+		MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), wstr.data(), iSize);
+		return wstr;
+	}
+
+#if defined(DEBUG) || defined(_DEBUG)
+	void DBG_REPORT(const wchar_t* pMsg, const std::source_location& loc = std::source_location::current()) {
+		_wassert(pMsg, StrToWstr(loc.file_name()).data(), loc.line());
+	}
+#else
+	void DBG_REPORT([[maybe_unused]] const wchar_t*) { }
+#endif
+
 	//Get data from IHexCtrl's given offset converted to a necessary type.
 	template<typename T>
 	[[nodiscard]] T GetIHexTData(const IHexCtrl& refHexCtrl, ULONGLONG ullOffset)
@@ -49,10 +65,10 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	template<typename T>
 	void SetIHexTData(IHexCtrl& refHexCtrl, ULONGLONG ullOffset, T tData)
 	{
-		//Data overflow check.
-		assert(ullOffset + sizeof(T) <= refHexCtrl.GetDataSize());
-		if (ullOffset + sizeof(T) > refHexCtrl.GetDataSize())
+		if (ullOffset + sizeof(T) > refHexCtrl.GetDataSize()) { //Data overflow check.
+			DBG_REPORT(L"Data overflow occurs.");
 			return;
+		}
 
 		refHexCtrl.ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE },
 			.spnData { reinterpret_cast<std::byte*>(&tData), sizeof(T) },
@@ -256,14 +272,6 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		return str;
 	}
 
-	[[nodiscard]] auto StrToWstr(std::string_view sv, UINT uCodePage = CP_UTF8) -> std::wstring
-	{
-		const auto iSize = MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), nullptr, 0);
-		std::wstring wstr(iSize, 0);
-		MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), wstr.data(), iSize);
-		return wstr;
-	}
-
 	[[nodiscard]] auto StringToSystemTime(std::wstring_view wsv, DWORD dwFormat) -> std::optional<SYSTEMTIME>
 	{
 		//dwFormat is a locale specific date format https://docs.microsoft.com/en-gb/windows/win32/intl/locale-idate
@@ -293,7 +301,7 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%4hu/%2hu/%2hu", &stSysTime.wYear, &stSysTime.wMonth, &stSysTime.wDay);
 			break;
 		default:
-			assert(true);
+			DBG_REPORT(L"Wrong format.");
 			return std::nullopt;
 		}
 		if (iParsedArgs != 3)
@@ -373,7 +381,7 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 			wsvFmt = L"YYYY{0}MM{0}DD HH:MM:SS.mmm";
 			break;
 		default:
-			assert(true);
+			DBG_REPORT(L"Wrong format.");
 			break;
 		}
 
@@ -422,14 +430,6 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 			reinterpret_cast<LPCWSTR>(&GetCurrModuleHinst), &hInst);
 		return hInst;
 	};
-
-#if defined(DEBUG) || defined(_DEBUG)
-	void DBG_REPORT(const wchar_t* pMsg, const std::source_location& loc = std::source_location::current()) {
-		_wassert(pMsg, StrToWstr(loc.file_name()).data(), loc.line());
-	}
-#else
-	void DBG_REPORT([[maybe_unused]] const wchar_t*) { }
-#endif
 }
 
 export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
@@ -708,10 +708,8 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		const auto iWidth = m_rc.right - m_rc.left;
 		const auto iHeight = m_rc.bottom - m_rc.top;
 		m_hBmp = ::CreateCompatibleBitmap(m_hDCOrig, iWidth, iHeight);
+		assert(m_hDCMem != nullptr && m_hBmp != nullptr);
 		::SelectObject(m_hDCMem, m_hBmp);
-		if (m_hDCMem == nullptr || m_hBmp == nullptr) {
-			assert(true);
-		}
 	}
 
 	CMemDC::~CMemDC()

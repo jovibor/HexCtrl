@@ -9,7 +9,6 @@ module;
 #include "../../res/HexCtrlRes.h"
 #include "../../HexCtrl.h"
 #include <algorithm>
-#include <cassert>
 #include <commctrl.h>
 #include <format>
 #include <numeric>
@@ -373,9 +372,10 @@ void CHexDlgBkmMgr::SetDlgProperties(std::uint64_t u64Flags)
 
 void CHexDlgBkmMgr::SetVirtual(IHexBookmarks* pVirtBkm)
 {
-	assert(pVirtBkm != this);
-	if (pVirtBkm == this) //To avoid setting self as a Virtual Bookmarks handler.
+	if (pVirtBkm == this) { //To avoid setting self as a Virtual Bookmarks handler.
+		ut::DBG_REPORT(L"pVirtBkm == this");
 		return;
+	}
 
 	m_pVirtual = pVirtBkm;
 }

@@ -10,7 +10,6 @@ module;
 #include "../../HexCtrl.h"
 #include <algorithm>
 #include <bit>
-#include <cassert>
 #include <commctrl.h>
 #include <format>
 export module HEXCTRL.CHexDlgDataInterp;

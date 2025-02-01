@@ -587,14 +587,27 @@ void CHexDlgTemplMgr::OnBnLoadTemplate()
 	COMDLG_FILTERSPEC arrFilter[] { { .pszName { L"Template files (*.json)" }, .pszSpec { L"*.json" } },
 		{ .pszName { L"All files (*.*)" }, .pszSpec { L"*.*" } } };
 	pIFOD->SetFileTypes(2, arrFilter);
-	pIFOD->Show(m_Wnd);
-	IShellItemArray* pResults;
+
+	if (pIFOD->Show(m_Wnd) != S_OK) //Cancel was pressed.
+		return;
+
+	IShellItemArray* pResults { };
 	pIFOD->GetResults(&pResults);
+	if (pResults == nullptr) {
+		ut::DBG_REPORT(L"pResults == nullptr");
+		return;
+	}
+
 	DWORD dwCount { };
 	pResults->GetCount(&dwCount);
 	for (auto iterFiles { 0U }; iterFiles < dwCount; ++iterFiles) {
-		IShellItem* pItem;
+		IShellItem* pItem { };
 		pResults->GetItemAt(iterFiles, &pItem);
+		if (pItem == nullptr) {
+			ut::DBG_REPORT(L"pItem == nullptr");
+			return;
+		}
+
 		wchar_t* pwszPath;
 		pItem->GetDisplayName(SIGDN_FILESYSPATH, &pwszPath);
 		if (LoadTemplate(pwszPath) == 0) {
@@ -2086,9 +2099,10 @@ void CHexDlgTemplMgr::UpdateStaticText()
 
 auto CHexDlgTemplMgr::CloneTemplate(PCHEXTEMPLATE pTemplate)->std::unique_ptr<HEXTEMPLATE>
 {
-	assert(pTemplate != nullptr);
-	if (pTemplate == nullptr)
+	if (pTemplate == nullptr) {
+		ut::DBG_REPORT(L"pTemplate == nullptr");
 		return { };
+	}
 
 	auto pNew = std::make_unique<HEXTEMPLATE>();
 	pNew->wstrName = pTemplate->wstrName;
@@ -2168,7 +2182,8 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, HexV
 
 	for (auto pField = iterFieldsArray->value.Begin(); pField != iterFieldsArray->value.End(); ++pField) {
 		if (!pField->IsObject()) {
-			return false; //Each array entry must be an Object {}.
+			ut::DBG_REPORT(L"Each array entry must be an Object {}.");
+			return false;
 		}
 
 		std::wstring wstrNameField;
@@ -2177,29 +2192,31 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, HexV
 			wstrNameField = ut::StrToWstr(itName->value.GetString());
 		}
 		else {
-			return false; //Each array entry (Object) must have a "name" string.
+			ut::DBG_REPORT(L"Each array entry (Object) must have a \"name\" string.");
+			return false;
 		}
 
 		const auto& pNewField = refVecFields.emplace_back(std::make_unique<HEXTEMPLFIELD>());
 		pNewField->wstrName = wstrNameField;
-		pNewField->pFieldParent = refDefault.pFieldParent;
+		pNewField->iOffset = *pOffset;
 		pNewField->stClr.clrBk = JSONColors(*pField, "clrBk").value_or(refDefault.stClr.clrBk);
 		pNewField->stClr.clrText = JSONColors(*pField, "clrText").value_or(refDefault.stClr.clrText);
-		pNewField->fBigEndian = JSONEndianness(*pField).value_or(refDefault.fBigEndian);
-		pNewField->iOffset = *pOffset;
+		pNewField->pFieldParent = refDefault.pFieldParent;
 		pNewField->eType = type_custom;
+		pNewField->fBigEndian = JSONEndianness(*pField).value_or(refDefault.fBigEndian);
 
 		if (const auto iterNestedFields = pField->FindMember("Fields");
 			iterNestedFields != pField->MemberEnd()) {
 			if (!iterNestedFields->value.IsArray()) {
-				return false; //Each "Fields" must be an Array.
+				ut::DBG_REPORT(L"Each \"Fields\" must be an Array.");
+				return false;
 			}
 
 			//Setting defaults for the next nested fields.
 			const FIELDSDEFPROPS stDefsNested { .stClr { pNewField->stClr }, .pTemplate { refDefault.pTemplate },
 				.pFieldParent { pNewField.get() }, .fBigEndian { pNewField->fBigEndian } };
 
-			//Recursion lambda for nested fields starts here.
+			//Recursion for nested fields starts here.
 			if (!JSONParseFields(iterNestedFields, pNewField->vecNested, stDefsNested, umapCustomT, pOffset)) {
 				return false;
 			}
@@ -2221,7 +2238,8 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, HexV
 			int iSize { 0 }; //Current field's size, via "type" or "size" property.
 			if (const auto iterType = pField->FindMember("type"); iterType != pField->MemberEnd()) {
 				if (!iterType->value.IsString()) {
-					return false; //"type" is not a string.
+					ut::DBG_REPORT(L"\"type\" must be a string.");
+					return false;
 				}
 
 				if (const auto iterMapType = umapStrToEType.find(iterType->value.GetString());
@@ -2234,37 +2252,39 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, HexV
 					const auto iterVecCT = std::find_if(refVecCTypes.begin(), refVecCTypes.end(),
 						[=](const HEXCUSTOMTYPE& ref) { return ref.wstrTypeName == ut::StrToWstr(iterType->value.GetString()); });
 					if (iterVecCT == refVecCTypes.end()) {
-						return false; //Undefined/unknown "type".
+						ut::DBG_REPORT(L"Unknown \"type\".");
+						return false;
 					}
 
 					pNewField->uTypeID = iterVecCT->uTypeID; //Custom type ID.
 					pNewField->eType = type_custom;
-					const auto lmbCopyCustomType = [&refDefault]
-					(const HexVecFields& refVecCustomFields, const HexPtrField& pField, int& iOffset)->void {
-						const auto _lmbCustomTypeCopy = [&refDefault]
-						(const auto& lmbSelf, const HexVecFields& refVecCustomFields, const HexPtrField& pField, int& iOffset)->void {
-							for (const auto& pCustomField : refVecCustomFields) {
-								const auto& pNewField = pField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
-								const auto& refCFClr = pCustomField->stClr;
-								pNewField->pFieldParent = pField.get();
-								pNewField->stClr.clrBk = refCFClr.clrBk == -1 ? pField->stClr.clrBk : refCFClr.clrBk;
-								pNewField->stClr.clrText = refCFClr.clrText == -1 ? pField->stClr.clrText : refCFClr.clrText;
-								pNewField->fBigEndian = pCustomField->fBigEndian;
-								pNewField->eType = pCustomField->eType;
-								pNewField->uTypeID = pCustomField->uTypeID;
-								pNewField->iOffset = iOffset;
-								pNewField->iSize = pCustomField->iSize;
-								pNewField->wstrName = pCustomField->wstrName;
+					const auto lmbCopyCustomType = [](const HexVecFields& refVecCustomFields,
+						const HexPtrField& pField, int& iOffset)->void {
+							const auto _lmbCustomTypeCopy = [](const auto& lmbSelf,
+								const HexVecFields& refVecCustomFields, const HexPtrField& pField, int& iOffset)->void {
+									for (const auto& pCustomField : refVecCustomFields) {
+										const auto& pNewField = pField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
+										const auto& refCFClr = pCustomField->stClr;
+										pNewField->wstrName = pCustomField->wstrName;
+										pNewField->wstrDescr = pCustomField->wstrDescr;
+										pNewField->iOffset = iOffset;
+										pNewField->iSize = pCustomField->iSize;
+										pNewField->stClr.clrBk = refCFClr.clrBk == -1 ? pField->stClr.clrBk : refCFClr.clrBk;
+										pNewField->stClr.clrText = refCFClr.clrText == -1 ? pField->stClr.clrText : refCFClr.clrText;
+										pNewField->pFieldParent = pField.get();
+										pNewField->eType = pCustomField->eType;
+										pNewField->uTypeID = pCustomField->uTypeID;
+										pNewField->fBigEndian = pCustomField->fBigEndian;
 
-								if (pCustomField->vecNested.empty()) {
-									iOffset += pCustomField->iSize;
-								}
-								else {
-									lmbSelf(lmbSelf, pCustomField->vecNested, pNewField, iOffset);
-								}
-							}
-							};
-						_lmbCustomTypeCopy(_lmbCustomTypeCopy, refVecCustomFields, pField, iOffset);
+										if (pCustomField->vecNested.empty()) {
+											iOffset += pCustomField->iSize;
+										}
+										else {
+											lmbSelf(lmbSelf, pCustomField->vecNested, pNewField, iOffset);
+										}
+									}
+								};
+							_lmbCustomTypeCopy(_lmbCustomTypeCopy, refVecCustomFields, pField, iOffset);
 						};
 
 					auto iOffsetCustomType = *pOffset;
@@ -2274,15 +2294,17 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, HexV
 					else { //Creating array of Custom Types.
 						for (int iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
 							const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
-							pFieldArray->pFieldParent = pNewField.get();
+							pFieldArray->wstrName = std::format(L"{}[{}]", wstrNameField, iArrIndex);
+							pFieldArray->iOffset = iOffsetCustomType;
 							pFieldArray->stClr = pNewField->stClr;
-							pFieldArray->fBigEndian = pNewField->fBigEndian;
+							pFieldArray->pFieldParent = pNewField.get();
 							pFieldArray->eType = pNewField->eType;
 							pFieldArray->uTypeID = pNewField->uTypeID;
-							pFieldArray->iOffset = iOffsetCustomType;
+							pFieldArray->fBigEndian = pNewField->fBigEndian;
+
+							//Copy Custom Type fields into the pFieldArray->vecNested.
 							lmbCopyCustomType(umapCustomT[iterVecCT->uTypeID], pFieldArray, iOffsetCustomType);
 							pFieldArray->iSize = lmbTotalSize(pFieldArray->vecNested);
-							pFieldArray->wstrName = std::format(L"{}[{}]", wstrNameField, iArrIndex);
 						}
 						pNewField->wstrName = std::format(L"{}[{}]", wstrNameField, iArraySize);
 					}
@@ -2293,17 +2315,19 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, HexV
 			else { //No "type" property was found.
 				const auto iterSize = pField->FindMember("size");
 				if (iterSize == pField->MemberEnd()) {
-					return false; //No "size" property was found.
+					ut::DBG_REPORT(L"No \"size\" or \"type\" property was found.");
+					return false;
 				}
 
 				if (!iterSize->value.IsInt()) {
-					return false; //"size" must be an int.
+					ut::DBG_REPORT(L"\"size\" must be an int.");
+					return false;
 				}
 
 				const auto iFieldSize = iterSize->value.GetInt();
-				assert(iFieldSize > 0);
 				if (iFieldSize < 1) {
-					return false; //"size" must be > 0.
+					ut::DBG_REPORT(L"\"size\" must be > 0.");
+					return false;
 				}
 
 				iSize = iFieldSize;
@@ -2313,14 +2337,14 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember iterFieldsArray, HexV
 			if (iArraySize > 1 && pNewField->eType != type_custom) { //Creating array of standard/default types.
 				for (auto iArrIndex = 0; iArrIndex < iArraySize; ++iArrIndex) {
 					const auto& pFieldArray = pNewField->vecNested.emplace_back(std::make_unique<HEXTEMPLFIELD>());
-					pFieldArray->pFieldParent = pNewField.get();
-					pFieldArray->stClr = pNewField->stClr;
-					pFieldArray->fBigEndian = pNewField->fBigEndian;
-					pFieldArray->eType = pNewField->eType;
-					pFieldArray->uTypeID = pNewField->uTypeID;
+					pFieldArray->wstrName = std::format(L"{}[{}]", wstrNameField, iArrIndex);
 					pFieldArray->iOffset = *pOffset + iArrIndex * iSize;
 					pFieldArray->iSize = iSize;
-					pFieldArray->wstrName = std::format(L"{}[{}]", wstrNameField, iArrIndex);
+					pFieldArray->stClr = pNewField->stClr;
+					pFieldArray->pFieldParent = pNewField.get();
+					pFieldArray->eType = pNewField->eType;
+					pFieldArray->uTypeID = pNewField->uTypeID;
+					pFieldArray->fBigEndian = pNewField->fBigEndian;
 				}
 				pNewField->wstrName = std::format(L"{}[{}]", wstrNameField, iArraySize);
 				iSize *= iArraySize;
@@ -2342,12 +2366,14 @@ auto CHexDlgTemplMgr::JSONEndianness(const rapidjson::Value& value)->std::option
 	}
 
 	if (!itEndianness->value.IsString()) {
-		return std::nullopt; //"endianness" must be a string.
+		ut::DBG_REPORT(L"\"endianness\" must be a string.");
+		return std::nullopt;
 	}
 
 	const std::string_view svEndianness = itEndianness->value.GetString();
 	if (svEndianness != "big" && svEndianness != "little") {
-		return std::nullopt; //Wrong "endianness" type.
+		ut::DBG_REPORT(L"Unknown \"endianness\" type.");
+		return std::nullopt;
 	}
 
 	return svEndianness == "big";
@@ -2392,27 +2418,32 @@ auto CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 
 HEXCTRLAPI auto __cdecl HEXCTRL::IHexTemplates::LoadFromFile(const wchar_t* pFilePath)->std::unique_ptr<HEXCTRL::HEXTEMPLATE>
 {
-	assert(pFilePath != nullptr);
 	if (pFilePath == nullptr) {
+		ut::DBG_REPORT(L"pFilePath == nullptr");
 		return { };
 	}
 
 	std::ifstream ifs(pFilePath);
 	if (!ifs.is_open()) {
+		ut::DBG_REPORT(L"!ifs.is_open()");
 		return { };
 	}
 
 	rapidjson::IStreamWrapper isw { ifs };
 	rapidjson::Document docJSON;
 	docJSON.ParseStream(isw);
-	if (docJSON.IsNull())
+	if (docJSON.IsNull()) {
+		ut::DBG_REPORT(L"docJSON.IsNull()");
 		return { };
+	}
 
 	auto pTemplateUtr = std::make_unique<HEXTEMPLATE>();
 	const auto pTemplate = pTemplateUtr.get();
 	const auto itTName = docJSON.FindMember("TemplateName");
-	if (itTName == docJSON.MemberEnd() || !itTName->value.IsString())
-		return { }; //Template must have a string type name.
+	if (itTName == docJSON.MemberEnd() || !itTName->value.IsString()) {
+		ut::DBG_REPORT(L"Template must have a string type name.");
+		return { };
+	}
 
 	pTemplate->wstrName = ut::StrToWstr(itTName->value.GetString());
 
@@ -2422,7 +2453,8 @@ HEXCTRLAPI auto __cdecl HEXCTRL::IHexTemplates::LoadFromFile(const wchar_t* pFil
 		objCustomTypes != docJSON.MemberEnd() && objCustomTypes->value.IsArray()) {
 		for (auto pCustomType = objCustomTypes->value.Begin(); pCustomType != objCustomTypes->value.End(); ++pCustomType, ++uCustomTypeID) {
 			if (!pCustomType->IsObject()) {
-				return { }; //Each CustomTypes' array entry must be an Object.
+				ut::DBG_REPORT(L"Each CustomTypes' array entry must be an Object.");
+				return { };
 			}
 
 			std::wstring wstrTypeName;
@@ -2431,7 +2463,8 @@ HEXCTRLAPI auto __cdecl HEXCTRL::IHexTemplates::LoadFromFile(const wchar_t* pFil
 				wstrTypeName = ut::StrToWstr(itName->value.GetString());
 			}
 			else {
-				return { }; //Each array entry (Object) must have a "TypeName" property.
+				ut::DBG_REPORT(L"Each array entry (Object) must have a \"TypeName\" property.");
+				return { };
 			}
 
 			const auto clrBk = CHexDlgTemplMgr::JSONColors(*pCustomType, "clrBk").value_or(-1);
@@ -2440,7 +2473,8 @@ HEXCTRLAPI auto __cdecl HEXCTRL::IHexTemplates::LoadFromFile(const wchar_t* pFil
 
 			const auto iterFieldsArray = pCustomType->FindMember("Fields");
 			if (iterFieldsArray == pCustomType->MemberEnd() || !iterFieldsArray->value.IsArray()) {
-				return { }; //Each "Fields" must be an array.
+				ut::DBG_REPORT(L"Each \"Fields\" must be an array.");
+				return { };
 			}
 
 			umapCT.try_emplace(uCustomTypeID, HexVecFields { });
@@ -2454,8 +2488,10 @@ HEXCTRLAPI auto __cdecl HEXCTRL::IHexTemplates::LoadFromFile(const wchar_t* pFil
 	}
 
 	const auto objData = docJSON.FindMember("Data");
-	if (objData == docJSON.MemberEnd() || !objData->value.IsObject())
-		return { }; //No "Data" object member in the template.
+	if (objData == docJSON.MemberEnd() || !objData->value.IsObject()) {
+		ut::DBG_REPORT(L"No \"Data\" object member in the template.");
+		return { };
+	}
 
 	const auto clrBk = CHexDlgTemplMgr::JSONColors(objData->value, "clrBk").value_or(-1);
 	const auto clrText = CHexDlgTemplMgr::JSONColors(objData->value, "clrText").value_or(-1);
@@ -2466,7 +2502,8 @@ HEXCTRLAPI auto __cdecl HEXCTRL::IHexTemplates::LoadFromFile(const wchar_t* pFil
 	const auto iterFieldsArray = objData->value.FindMember("Fields");
 	auto& refVecFields = pTemplate->vecFields;
 	if (!CHexDlgTemplMgr::JSONParseFields(iterFieldsArray, refVecFields, stDefFields, umapCT)) {
-		return { }; //Something went wrong during template parsing.
+		ut::DBG_REPORT(L"Something went wrong during template parsing.");
+		return { };
 	}
 
 	pTemplate->iSizeTotal = std::reduce(refVecFields.begin(), refVecFields.end(), 0,

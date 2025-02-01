@@ -8,7 +8,6 @@ module;
 #include <SDKDDKVer.h>
 #include "../HexCtrl.h"
 #include <algorithm>
-#include <cassert>
 #include <vector>
 export module HEXCTRL.CHexSelection;
 

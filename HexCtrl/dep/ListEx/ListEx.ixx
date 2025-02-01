@@ -290,10 +290,8 @@ namespace HEXCTRL::LISTEX::INTERNAL::wnd {
 		const auto iWidth = m_rc.right - m_rc.left;
 		const auto iHeight = m_rc.bottom - m_rc.top;
 		m_hBmp = ::CreateCompatibleBitmap(m_hDCOrig, iWidth, iHeight);
+		assert(m_hDCMem != nullptr && m_hBmp != nullptr);
 		::SelectObject(m_hDCMem, m_hBmp);
-		if (m_hDCMem == nullptr || m_hBmp == nullptr) {
-			assert(true);
-		}
 	}
 
 	CMemDC::~CMemDC()
@@ -607,7 +605,7 @@ void CListExHdr::SetColumnDataAlign(int iColumn, int iAlign)
 {
 	const auto ID = ColumnIndexToID(iColumn);
 	if (ID == 0) {
-		assert(true);
+		assert(false);
 		return;
 	}
 
@@ -641,7 +639,7 @@ void CListExHdr::SetColumnSortable(int iColumn, bool fSortable)
 {
 	const auto ID = ColumnIndexToID(iColumn);
 	if (ID == 0) {
-		assert(true);
+		assert(false);
 		return;
 	}
 
@@ -657,7 +655,7 @@ void CListExHdr::SetColumnEditable(int iColumn, bool fEditable)
 {
 	const auto ID = ColumnIndexToID(iColumn);
 	if (ID == 0) {
-		assert(true);
+		assert(false);
 		return;
 	}
 

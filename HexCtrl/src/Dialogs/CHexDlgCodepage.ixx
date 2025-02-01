@@ -9,7 +9,6 @@ module;
 #include "../../res/HexCtrlRes.h"
 #include "../../HexCtrl.h"
 #include <algorithm>
-#include <cassert>
 #include <commctrl.h>
 #include <format>
 export module HEXCTRL.CHexDlgCodepage;
