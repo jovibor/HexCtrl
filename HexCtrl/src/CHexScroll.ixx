@@ -137,7 +137,7 @@ void CHexScroll::AddSibling(CHexScroll* pSibling)
 bool CHexScroll::Create(HWND hWndParent, bool fVert, HINSTANCE hInstRes, UINT uIDArrow, ULONGLONG ullScrolline,
 	ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
 {
-	assert(!m_fCreated); //Already created.
+	assert(!m_fCreated);
 	assert(hWndParent != nullptr);
 	if (m_fCreated || hWndParent == nullptr) {
 		return false;
@@ -159,7 +159,7 @@ bool CHexScroll::Create(HWND hWndParent, bool fVert, HINSTANCE hInstRes, UINT uI
 bool CHexScroll::Create(HWND hWndParent, bool fVert, HBITMAP hArrow, ULONGLONG ullScrolline,
 	ULONGLONG ullScrollPage, ULONGLONG ullScrollSizeMax)
 {
-	assert(!m_fCreated); //Already created.
+	assert(!m_fCreated);
 	assert(hWndParent != nullptr);
 	if (m_fCreated || hWndParent == nullptr) {
 		return false;

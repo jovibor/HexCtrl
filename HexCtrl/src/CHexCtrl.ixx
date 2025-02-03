@@ -560,9 +560,7 @@ CHexCtrl::~CHexCtrl()
 
 void CHexCtrl::ClearData()
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_spnData = { };
 	m_fDataSet = false;
@@ -586,9 +584,7 @@ void CHexCtrl::ClearData()
 
 bool CHexCtrl::Create(const HEXCREATE& hcs)
 {
-	assert(!IsCreated()); //Already created.
-	if (IsCreated())
-		return false;
+	if (IsCreated()) { ut::DBG_REPORT(L"Already created."); return false; }
 
 	HWND hWnd;
 	if (hcs.fCustom) {
@@ -759,9 +755,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 bool CHexCtrl::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
 {
-	assert(!IsCreated());
-	if (IsCreated())
-		return false;
+	if (IsCreated()) { ut::DBG_REPORT(L"Already created."); return false; }
 
 	return Create({ .hWndParent { hWndParent }, .uID { uCtrlID }, .fCustom { true } });
 }
@@ -784,9 +778,8 @@ void CHexCtrl::DestroyWindow()
 
 void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 {
-	assert(IsCreated());
-	if (!IsCreated() || !IsCmdAvail(eCmd))
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
+	if (!IsCmdAvail(eCmd)) return;
 
 	using enum EHexCmd;
 	switch (eCmd) {
@@ -1013,82 +1006,66 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 
 int CHexCtrl::GetActualWidth()const
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_iFourthVertLinePx + 1; //+1px is the Pen width the line was drawn with.
 }
 
 auto CHexCtrl::GetBookmarks()const->IHexBookmarks*
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return &*m_pDlgBkmMgr;
 }
 
 auto CHexCtrl::GetCacheSize()const->DWORD
 {
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 
 	return m_dwCacheSize;
 }
 
 auto CHexCtrl::GetCapacity()const->DWORD
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_dwCapacity;
 }
 
 auto CHexCtrl::GetCaretPos()const->ULONGLONG
 {
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 
 	return m_ullCaretPos;
 }
 
 auto CHexCtrl::GetCharsExtraSpace()const->DWORD
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_dwCharsExtraSpace;
 }
 
 int CHexCtrl::GetCodepage()const
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_iCodePage;
 }
 
 auto CHexCtrl::GetColors()const->const HEXCOLORS&
 {
-	assert(IsCreated());
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); }
+
 	return m_stColors;
 }
 
 auto CHexCtrl::GetData(HEXSPAN hss)const->SpanByte
 {
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return { };
-
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 	assert(hss.ullSize > 0);
 
 	SpanByte spnData;
@@ -1109,27 +1086,21 @@ auto CHexCtrl::GetData(HEXSPAN hss)const->SpanByte
 
 auto CHexCtrl::GetDataSize()const->ULONGLONG
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_spnData.size();
 }
 
 auto CHexCtrl::GetDateInfo()const->std::tuple<DWORD, wchar_t>
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return { m_dwDateFormat, m_wchDateSepar };
 }
 
 auto CHexCtrl::GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	using enum EHexWnd;
 	switch (eWnd) {
@@ -1150,9 +1121,7 @@ auto CHexCtrl::GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND
 
 auto CHexCtrl::GetFont()const->LOGFONTW
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	LOGFONTW lf;
 	::GetObjectW(m_hFntMain, sizeof(LOGFONTW), &lf);
@@ -1162,28 +1131,22 @@ auto CHexCtrl::GetFont()const->LOGFONTW
 
 auto CHexCtrl::GetGroupSize()const->DWORD
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_dwGroupSize;
 }
 
 auto CHexCtrl::GetMenuHandle()const->HMENU
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_MenuMain.GetSubMenu(0);
 }
 
 auto CHexCtrl::GetOffset(ULONGLONG ullOffset, bool fGetVirt)const->ULONGLONG
 {
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 
 	if (IsVirtual()) {
 		HEXDATAINFO hdi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()) }, .stHexSpan { .ullOffset { ullOffset } } };
@@ -1196,77 +1159,61 @@ auto CHexCtrl::GetOffset(ULONGLONG ullOffset, bool fGetVirt)const->ULONGLONG
 
 auto CHexCtrl::GetPagesCount()const->ULONGLONG
 {
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet() || GetPageSize() == 0)
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
+	if (GetPageSize() == 0) return { };
 
 	const auto ullSize = GetDataSize();
-
 	return (ullSize / m_dwPageSize) + ((ullSize % m_dwPageSize) ? 1 : 0);
 }
 
 auto CHexCtrl::GetPagePos()const->ULONGLONG
 {
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 
 	return GetCaretPos() / GetPageSize();
 }
 
 auto CHexCtrl::GetPageSize()const->DWORD
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_dwPageSize;
 }
 
 auto CHexCtrl::GetScrollRatio()const->std::tuple<float, bool>
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return { m_flScrollRatio, m_fScrollLines };
 }
 
 auto CHexCtrl::GetSelection()const->VecSpan
 {
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 
 	return m_pSelection->GetData();
 }
 
 auto CHexCtrl::GetTemplates()const->IHexTemplates*
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return &*m_pDlgTemplMgr;
 }
 
 auto CHexCtrl::GetUnprintableChar()const->wchar_t
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	return m_wchUnprintable;
 }
 
 auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
 	switch (eWnd) {
 	case EHexWnd::WND_MAIN:
@@ -1313,10 +1260,9 @@ auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND
 
 void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iPosAt)
 {
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet() || ullOffset >= GetDataSize())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return; }
+	if (ullOffset >= GetDataSize()) return;
 
 	const auto dwCapacity = GetCapacity() > 0 ? GetCapacity() : 0xFFFFFFFFUL; //To suppress warning C4724.
 	const auto ullNewStartV = ullOffset / dwCapacity * m_sizeFontMain.cy;
@@ -1349,19 +1295,15 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iPosAt)
 
 bool CHexCtrl::HasSelection()const
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return false;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	return m_pSelection->HasSelection();
 }
 
 auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST>
 {
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return std::nullopt;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return std::nullopt; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return std::nullopt; }
 
 	if (fScreen) {
 		m_Wnd.ScreenToClient(&pt);
@@ -1372,9 +1314,7 @@ auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST>
 
 bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return false;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	const auto fDataSet = IsDataSet();
 	const auto fMutable = fDataSet ? IsMutable() : false;
@@ -1473,37 +1413,29 @@ bool CHexCtrl::IsCreated()const
 
 bool CHexCtrl::IsDataSet()const
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return false;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	return m_fDataSet;
 }
 
 bool CHexCtrl::IsInfoBar()const
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return { };
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	return m_fInfoBar;
 }
 
 bool CHexCtrl::IsMutable()const
 {
-	assert(IsCreated());
-	assert(IsDataSet()); //Data is not set yet.
-	if (!IsCreated() || !IsDataSet())
-		return false;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return false; }
 
 	return m_fMutable;
 }
 
 bool CHexCtrl::IsOffsetAsHex()const
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return false;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	return m_fOffsetHex;
 }
@@ -1514,10 +1446,8 @@ auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION
 	//-1 - ullOffset is higher, or at the left, of the visible area
 	// 1 - lower, or at the right
 	// 0 - visible.
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return { .i8Vert { -1 }, .i8Horz { -1 } }; //To ensure false return.
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { .i8Vert { -1 }, .i8Horz { -1 } }; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return { .i8Vert { -1 }, .i8Horz { -1 } }; }
 
 	const auto dwCapacity = GetCapacity();
 	const auto ullFirst = GetTopLine() * dwCapacity;
@@ -1534,19 +1464,17 @@ auto CHexCtrl::IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION
 
 bool CHexCtrl::IsVirtual()const
 {
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return false;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return false; }
 
 	return m_pHexVirtData != nullptr;
 }
 
 void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 {
-	assert(!hms.vecSpan.empty());
-	if (!IsMutable() || hms.vecSpan.empty())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
+	if (!IsMutable()) return;
+	if (hms.vecSpan.empty()) { ut::DBG_REPORT(L"Data to modify is empty."); return; }
 
 	m_vecRedo.clear(); //No Redo unless we make Undo.
 	SnapshotUndo(hms.vecSpan);
@@ -1824,9 +1752,7 @@ auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT
 
 void CHexCtrl::Redraw()
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	if (IsDataSet()) {
 		const auto ullCaretPos = GetVirtualOffset(GetCaretPos());
@@ -1866,9 +1792,7 @@ void CHexCtrl::Redraw()
 
 void CHexCtrl::SetCapacity(DWORD dwCapacity)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	//SetCapacity can be called with the current capacity size. This needs for the 
 	//SetGroupSize to recalc current capacity when group size has changed.
@@ -1908,10 +1832,9 @@ void CHexCtrl::SetCapacity(DWORD dwCapacity)
 
 void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
 {
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet() || ullOffset >= GetDataSize())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return; }
+	if (ullOffset >= GetDataSize()) { ut::DBG_REPORT(L"Offset is out of data range."); return; };
 
 	m_ullCaretPos = ullOffset;
 	m_fCaretHigh = fHighLow;
@@ -1925,9 +1848,7 @@ void CHexCtrl::SetCaretPos(ULONGLONG ullOffset, bool fHighLow, bool fRedraw)
 
 void CHexCtrl::SetCharsExtraSpace(DWORD dwSpace)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_dwCharsExtraSpace = (std::min)(dwSpace, 10UL);
 	RecalcAll();
@@ -1935,9 +1856,7 @@ void CHexCtrl::SetCharsExtraSpace(DWORD dwSpace)
 
 void CHexCtrl::SetCodepage(int iCodepage)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	std::wstring_view wsvFmt;
 	switch (iCodepage) {
@@ -1965,9 +1884,7 @@ void CHexCtrl::SetCodepage(int iCodepage)
 
 void CHexCtrl::SetColors(const HEXCOLORS& hcs)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_stColors = hcs;
 	m_Wnd.RedrawWindow();
@@ -1975,9 +1892,7 @@ void CHexCtrl::SetColors(const HEXCOLORS& hcs)
 
 bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return false;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	using enum EHexCmd;
 	//Mapping between stringified EHexCmd::* and its value-menuID pairs.
@@ -2233,14 +2148,8 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 
 void CHexCtrl::SetData(const HEXDATA& hds, bool fAdjust)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
-
-	if (hds.spnData.empty()) {
-		ut::DBG_REPORT(L"Data size can't be zero.");
-		return;
-	}
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
+	if (hds.spnData.empty()) { ut::DBG_REPORT(L"Data size can't be zero."); return; }
 
 	if (fAdjust) {
 		if (!IsDataSet()) {
@@ -2294,18 +2203,14 @@ void CHexCtrl::SetData(const HEXDATA& hds, bool fAdjust)
 
 void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	//dwFormat: 0xFFFFFFFFUL = User default, 0 = MMddYYYY, 1 = ddMMYYYY, 2 = YYYYMMdd
-	assert(dwFormat <= 2 || dwFormat == 0xFFFFFFFFUL);
-	if (dwFormat > 2 && dwFormat != 0xFFFFFFFFUL)
-		return;
+	if (dwFormat > 2 && dwFormat != 0xFFFFFFFFUL) { ut::DBG_REPORT(L"Wrong format."); return; }
 
 	if (dwFormat == 0xFFFFFFFFUL) {
 		//Determine current user locale-specific date format.
-		if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
+		if (::GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_IDATE | LOCALE_RETURN_NUMBER,
 			reinterpret_cast<LPWSTR>(&m_dwDateFormat), sizeof(m_dwDateFormat)) == 0) {
 			ut::DBG_REPORT(L"GetLocaleInfoEx failed.");
 		}
@@ -2319,9 +2224,7 @@ void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
 
 void CHexCtrl::SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	using enum EHexWnd;
 	switch (eWnd) {
@@ -2353,9 +2256,7 @@ void CHexCtrl::SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags)
 
 void CHexCtrl::SetFont(const LOGFONTW& lf)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	::DeleteObject(m_hFntMain);
 	m_hFntMain = ::CreateFontIndirectW(&lf);
@@ -2366,9 +2267,7 @@ void CHexCtrl::SetFont(const LOGFONTW& lf)
 
 void CHexCtrl::SetGroupSize(DWORD dwSize)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	if (dwSize < 1UL || dwSize > 64UL || dwSize == GetGroupSize()) //Restrict group size in the [1-64] range.
 		return;
@@ -2424,10 +2323,8 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 
 void CHexCtrl::SetMutable(bool fMutable)
 {
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return; }
 
 	m_fMutable = fMutable;
 	Redraw();
@@ -2435,9 +2332,7 @@ void CHexCtrl::SetMutable(bool fMutable)
 
 void CHexCtrl::SetOffsetMode(bool fHex)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_fOffsetHex = fHex;
 	FillCapacityString();
@@ -2446,9 +2341,7 @@ void CHexCtrl::SetOffsetMode(bool fHex)
 
 void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wsvName)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_dwPageSize = dwSize;
 	m_wstrPageName = wsvName;
@@ -2459,18 +2352,14 @@ void CHexCtrl::SetPageSize(DWORD dwSize, std::wstring_view wsvName)
 
 void CHexCtrl::SetRedraw(bool fRedraw)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_fRedraw = fRedraw;
 }
 
 void CHexCtrl::SetScrollRatio(float flRatio, bool fLines)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_flScrollRatio = flRatio;
 	m_fScrollLines = fLines;
@@ -2479,10 +2368,8 @@ void CHexCtrl::SetScrollRatio(float flRatio, bool fLines)
 
 void CHexCtrl::SetSelection(const VecSpan& vecSel, bool fRedraw, bool fHighlight)
 {
-	assert(IsCreated());
-	assert(IsDataSet());
-	if (!IsCreated() || !IsDataSet())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
+	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return; }
 
 	m_pSelection->SetSelection(vecSel, fHighlight);
 
@@ -2495,9 +2382,7 @@ void CHexCtrl::SetSelection(const VecSpan& vecSel, bool fRedraw, bool fHighlight
 
 void CHexCtrl::SetUnprintableChar(wchar_t wch)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_wchUnprintable = wch;
 	Redraw();
@@ -2505,27 +2390,21 @@ void CHexCtrl::SetUnprintableChar(wchar_t wch)
 
 void CHexCtrl::SetVirtualBkm(IHexBookmarks* pVirtBkm)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_pDlgBkmMgr->SetVirtual(pVirtBkm);
 }
 
 void CHexCtrl::SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_Wnd.SetWindowPos(hWndAfter, iX, iY, iWidth, iHeight, uFlags);
 }
 
 void CHexCtrl::ShowInfoBar(bool fShow)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_fInfoBar = fShow;
 	RecalcAll();
@@ -4270,9 +4149,7 @@ bool CHexCtrl::IsPageVisible()const
 
 void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, const HEXCTRL::SpanCByte spnOper)
 {
-	assert(!spnOper.empty());
-	if (spnOper.empty())
-		return;
+	if (spnOper.empty()) { ut::DBG_REPORT(L"Operation span is empty."); return; }
 
 	const auto& vecSpanRef = hms.vecSpan;
 	const auto ullTotalSize = std::reduce(vecSpanRef.begin(), vecSpanRef.end(), 0ULL,
@@ -5037,10 +4914,6 @@ void CHexCtrl::SetDataVirtual(SpanByte spnData, const HEXSPAN& hss)const
 
 void CHexCtrl::SetFontSize(long lSize)
 {
-	assert(IsCreated());
-	if (!IsCreated())
-		return;
-
 	if (lSize < 4 || lSize > 64) //Prevent font size from being too small or too big.
 		return;
 
@@ -7711,9 +7584,10 @@ auto CHexCtrl::OnPaint()->LRESULT
 	const auto ullStartLine = GetTopLine();
 	const auto ullEndLine = GetBottomLine();
 	auto iLines = static_cast<int>(ullEndLine - ullStartLine);
-	assert(iLines >= 0);
-	if (iLines < 0)
+	if (iLines < 0) {
+		ut::DBG_REPORT(L"iLines < 0");
 		return 0;
+	}
 
 	//Actual amount of lines, "ullEndLine - ullStartLine" always shows one line less.
 	if (IsDataSet()) {

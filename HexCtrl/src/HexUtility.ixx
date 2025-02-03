@@ -48,8 +48,18 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	void DBG_REPORT(const wchar_t* pMsg, const std::source_location& loc = std::source_location::current()) {
 		_wassert(pMsg, StrToWstr(loc.file_name()).data(), loc.line());
 	}
+
+	void DBG_REPORT_NOT_CREATED(const std::source_location& loc = std::source_location::current()) {
+		DBG_REPORT(L"Not created yet!", loc);
+	}
+
+	void DBG_REPORT_NO_DATA_SET(const std::source_location& loc = std::source_location::current()) {
+		DBG_REPORT(L"No data set.", loc);
+	}
 #else
 	void DBG_REPORT([[maybe_unused]] const wchar_t*) { }
+	void DBG_REPORT_NOT_CREATED() { }
+	void DBG_REPORT_NO_DATA_SET() { }
 #endif
 
 	//Get data from IHexCtrl's given offset converted to a necessary type.
