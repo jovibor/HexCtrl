@@ -70,7 +70,7 @@ namespace HEXCTRL::INTERNAL {
 }
 
 auto CHexDlgAbout::DoModal(HWND hWndParent)->INT_PTR {
-	return DialogBoxParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_ABOUT),
+	return ::DialogBoxParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_ABOUT),
 		hWndParent, wnd::DlgProc<CHexDlgAbout>, reinterpret_cast<LPARAM>(this));
 }
 
@@ -714,12 +714,12 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	//Font related.
 	//Default main logfont.
-	const LOGFONTW lfMain { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) }, .lfWeight { FW_NORMAL },
+	const LOGFONTW lfMain { .lfHeight { -::MulDiv(11, m_iLOGPIXELSY, 72) }, .lfWeight { FW_NORMAL },
 		.lfQuality { CLEARTYPE_QUALITY }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
 	m_hFntMain = ::CreateFontIndirectW(hcs.pLogFont != nullptr ? hcs.pLogFont : &lfMain);
 
 	//Info area font, independent from the main font, its size is a bit smaller than the default main font.
-	const LOGFONTW lfInfo { .lfHeight { -MulDiv(11, m_iLOGPIXELSY, 72) + 1 }, .lfWeight { FW_NORMAL },
+	const LOGFONTW lfInfo { .lfHeight { -::MulDiv(11, m_iLOGPIXELSY, 72) + 1 }, .lfWeight { FW_NORMAL },
 		.lfQuality { CLEARTYPE_QUALITY }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
 	m_hFntInfoBar = ::CreateFontIndirectW(&lfInfo);
 	//End of font related.
@@ -1219,37 +1219,37 @@ auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND
 	case EHexWnd::WND_MAIN:
 		return m_Wnd;
 	case EHexWnd::DLG_BKMMGR:
-		if (!IsWindow(m_pDlgBkmMgr->GetHWND()) && fCreate) {
+		if (!::IsWindow(m_pDlgBkmMgr->GetHWND()) && fCreate) {
 			m_pDlgBkmMgr->CreateDlg();
 		}
 		return m_pDlgBkmMgr->GetHWND();
 	case EHexWnd::DLG_DATAINTERP:
-		if (!IsWindow(m_pDlgDataInterp->GetHWND()) && fCreate) {
+		if (!::IsWindow(m_pDlgDataInterp->GetHWND()) && fCreate) {
 			m_pDlgDataInterp->CreateDlg();
 		}
 		return m_pDlgDataInterp->GetHWND();
 	case EHexWnd::DLG_MODIFY:
-		if (!IsWindow(m_pDlgModify->GetHWND()) && fCreate) {
+		if (!::IsWindow(m_pDlgModify->GetHWND()) && fCreate) {
 			m_pDlgModify->CreateDlg();
 		}
 		return m_pDlgModify->GetHWND();
 	case EHexWnd::DLG_SEARCH:
-		if (!IsWindow(m_pDlgSearch->GetHWND()) && fCreate) {
+		if (!::IsWindow(m_pDlgSearch->GetHWND()) && fCreate) {
 			m_pDlgSearch->CreateDlg();
 		}
 		return m_pDlgSearch->GetHWND();
 	case EHexWnd::DLG_CODEPAGE:
-		if (!IsWindow(m_pDlgCodepage->GetHWND()) && fCreate) {
+		if (!::IsWindow(m_pDlgCodepage->GetHWND()) && fCreate) {
 			m_pDlgCodepage->CreateDlg();
 		}
 		return m_pDlgCodepage->GetHWND();
 	case EHexWnd::DLG_GOTO:
-		if (!IsWindow(m_pDlgGoTo->GetHWND()) && fCreate) {
+		if (!::IsWindow(m_pDlgGoTo->GetHWND()) && fCreate) {
 			m_pDlgGoTo->CreateDlg();
 		}
 		return m_pDlgGoTo->GetHWND();
 	case EHexWnd::DLG_TEMPLMGR:
-		if (!IsWindow(m_pDlgTemplMgr->GetHWND()) && fCreate) {
+		if (!::IsWindow(m_pDlgTemplMgr->GetHWND()) && fCreate) {
 			m_pDlgTemplMgr->CreateDlg();
 		}
 		return m_pDlgTemplMgr->GetHWND();
@@ -1344,7 +1344,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case CMD_CLPBRD_PASTE_HEX:
 	case CMD_CLPBRD_PASTE_TEXTUTF16:
 	case CMD_CLPBRD_PASTE_TEXTCP:
-		fAvail = fMutable && IsClipboardFormatAvailable(CF_UNICODETEXT);
+		fAvail = fMutable && ::IsClipboardFormatAvailable(CF_UNICODETEXT);
 		break;
 	case CMD_MODIFY_OPERS_DLG:
 	case CMD_MODIFY_FILLDATA_DLG:
@@ -1552,8 +1552,8 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 			//Then clone this buffer to the destination data.
 			//Buffer is allocated with alignment for maximum performance.
 			constexpr auto ulSizeRandBuff { 1024U * 1024U }; //1MB.
-			const std::unique_ptr < std::byte[], decltype([](std::byte* pData) { _aligned_free(pData); }) >
-				uptrRandData(static_cast<std::byte*>(_aligned_malloc(ulSizeRandBuff, 32)));
+			const std::unique_ptr < std::byte[], decltype([](std::byte* pData) { ::_aligned_free(pData); }) >
+				uptrRandData(static_cast<std::byte*>(::_aligned_malloc(ulSizeRandBuff, 32)));
 			for (auto iter = 0UL; iter < ulSizeRandBuff; iter += sizeof(std::uint64_t)) {
 				*reinterpret_cast<std::uint64_t*>(&uptrRandData[iter]) = distUInt64(gen);
 			};
@@ -1867,7 +1867,7 @@ void CHexCtrl::SetCodepage(int iCodepage)
 		wsvFmt = L"UTF-16";
 		break;
 	default:
-		if (CPINFOEXW stCP; GetCPInfoExW(static_cast<UINT>(iCodepage), 0, &stCP) != FALSE) {
+		if (CPINFOEXW stCP; ::GetCPInfoExW(static_cast<UINT>(iCodepage), 0, &stCP) != FALSE) {
 			wsvFmt = L"Codepage {}";
 		}
 		break;
@@ -2453,7 +2453,7 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 	}
 	else {
 		wstrText.resize(sSizeDataToPrint);
-		MultiByteToWideChar(iCodepage, 0, reinterpret_cast<LPCCH>(pDataBegin),
+		::MultiByteToWideChar(iCodepage, 0, reinterpret_cast<LPCCH>(pDataBegin),
 			static_cast<int>(sSizeDataToPrint), wstrText.data(), static_cast<int>(sSizeDataToPrint));
 	}
 
@@ -2639,7 +2639,7 @@ void CHexCtrl::ChooseFontDlg()
 		.Flags { CF_EFFECTS | CF_FIXEDPITCHONLY | CF_FORCEFONTEXIST | CF_INITTOLOGFONTSTRUCT | CF_NOSIMULATIONS },
 		.rgbColors { stClr.clrFontHex } };
 
-	if (ChooseFontW(&chf) != FALSE) {
+	if (::ChooseFontW(&chf) != FALSE) {
 		stClr.clrFontHex = chf.rgbColors;
 		SetColors(stClr);
 		SetFont(lf);
@@ -2694,7 +2694,7 @@ void CHexCtrl::ClipboardCopy(EClipboard eType)const
 		return;
 	}
 
-	const auto lpMemLock = GlobalLock(hMem);
+	const auto lpMemLock = ::GlobalLock(hMem);
 	if (!lpMemLock) {
 		ut::DBG_REPORT(L"GlobalLock error.");
 		return;
@@ -2717,7 +2717,7 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 	if (!hClpbrd)
 		return;
 
-	const auto pDataClpbrd = static_cast<wchar_t*>(GlobalLock(hClpbrd));
+	const auto pDataClpbrd = static_cast<wchar_t*>(::GlobalLock(hClpbrd));
 	if (pDataClpbrd == nullptr) {
 		::CloseClipboard();
 		return;
@@ -3224,7 +3224,7 @@ void CHexCtrl::DrawOffsets(HDC hDC, ULONGLONG ullStartLine, int iLines)const
 		dc.SelectObject(m_hFntMain);
 		dc.SetTextColor(stClrOffset.clrText);
 		dc.SetBkColor(stClrOffset.clrBk);
-		ExtTextOutW(dc, m_iFirstVertLinePx + GetCharWidthNative() - iScrollH,
+		::ExtTextOutW(dc, m_iFirstVertLinePx + GetCharWidthNative() - iScrollH,
 			m_iStartWorkAreaYPx + (m_sizeFontMain.cy * iterLines), 0, nullptr,
 			OffsetToWstr((ullStartLine + iterLines) * dwCapacity).data(), GetDigitsOffset(), nullptr);
 	}
@@ -3331,11 +3331,11 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 		dc.SetTextColor(iter.stClr.clrText);
 		dc.SetBkColor(iter.stClr.clrBk);
 		const auto& refH = iter.stPoly;
-		ExtTextOutW(dc, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex printing.
+		::ExtTextOutW(dc, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex printing.
 		const auto& refVecText = vecPolyText[index++];
 		dc.SetTextColor(refVecText.stClr.clrText); //Text color for the Text area.
 		const auto& refT = refVecText.stPoly;
-		ExtTextOutW(dc, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text printing.
+		::ExtTextOutW(dc, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text printing.
 	}
 }
 
@@ -3824,7 +3824,7 @@ void CHexCtrl::DrawCaret(HDC hDC, ULONGLONG ullStartLine, std::wstring_view wsvH
 	dc.SetTextColor(m_stColors.clrFontCaret);
 	dc.SetBkColor(clrBkCaret);
 	for (const auto iter : arrPolyCaret) {
-		ExtTextOutW(dc, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Hex/Text caret printing.
+		::ExtTextOutW(dc, iter.x, iter.y, iter.uiFlags, &iter.rcl, iter.lpstr, iter.n, iter.pdx); //Hex/Text caret printing.
 	}
 }
 
@@ -3968,7 +3968,7 @@ void CHexCtrl::FillWithZeros()
 
 void CHexCtrl::FontSizeIncDec(bool fInc)
 {
-	const auto lFontSize = MulDiv(-GetFontSize(), 72, m_iLOGPIXELSY) + (fInc ? 1 : -1); //Convert font Height to point size.
+	const auto lFontSize = ::MulDiv(-GetFontSize(), 72, m_iLOGPIXELSY) + (fInc ? 1 : -1); //Convert font Height to point size.
 	SetFontSize(lFontSize);
 }
 
@@ -4918,7 +4918,7 @@ void CHexCtrl::SetFontSize(long lSize)
 		return;
 
 	auto lf = GetFont();
-	lf.lfHeight = -MulDiv(lSize, m_iLOGPIXELSY, 72); //Convert point size to font Height.
+	lf.lfHeight = -::MulDiv(lSize, m_iLOGPIXELSY, 72); //Convert point size to font Height.
 	SetFont(lf);
 }
 
@@ -7230,8 +7230,8 @@ auto CHexCtrl::OnKeyDown(const MSG& msg)->LRESULT
 		m_fKeyDownAtm = true;
 	}
 
-	if (const auto optCmd = GetCommandFromKey(nChar, GetAsyncKeyState(VK_CONTROL) < 0,
-		GetAsyncKeyState(VK_SHIFT) < 0, GetAsyncKeyState(VK_MENU) < 0); optCmd) {
+	if (const auto optCmd = GetCommandFromKey(nChar, ::GetAsyncKeyState(VK_CONTROL) < 0,
+		::GetAsyncKeyState(VK_SHIFT) < 0, ::GetAsyncKeyState(VK_MENU) < 0); optCmd) {
 		ExecuteCmd(*optCmd);
 		return 0;
 	}
@@ -7645,8 +7645,8 @@ auto CHexCtrl::OnSysKeyDown(const MSG& msg)->LRESULT
 {
 	const auto nChar = static_cast<UINT>(msg.wParam);
 
-	if (const auto optCmd = GetCommandFromKey(nChar, ::GetAsyncKeyState(VK_CONTROL) < 0, ::
-		GetAsyncKeyState(VK_SHIFT) < 0, true); optCmd) {
+	if (const auto optCmd = GetCommandFromKey(nChar, ::GetAsyncKeyState(VK_CONTROL) < 0,
+		::GetAsyncKeyState(VK_SHIFT) < 0, true); optCmd) {
 		ExecuteCmd(*optCmd);
 	}
 

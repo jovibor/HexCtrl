@@ -59,7 +59,6 @@ namespace HEXCTRL::INTERNAL {
 		void OnNotifyListGetDispInfo(NMHDR* pNMHDR);
 		void OnNotifyListItemChanged(NMHDR* pNMHDR);
 		void OnNotifyListSetData(NMHDR* pNMHDR);
-		void OnOK();
 		auto OnSize(const MSG& msg) -> INT_PTR;
 		void RedrawHexCtrl()const;
 		[[nodiscard]] bool SetDataBinary(std::wstring_view wsv)const;
@@ -484,7 +483,6 @@ auto CHexDlgDataInterp::OnCommand(const MSG& msg)->INT_PTR
 
 	if (uCode != BN_CLICKED) { return FALSE; }
 	switch (uCtrlID) {
-	case IDOK: OnOK(); break;
 	case IDCANCEL: OnCancel(); break;
 	case IDC_HEXCTRL_DATAINTERP_CHK_HEX: OnCheckHex(); break;
 	case IDC_HEXCTRL_DATAINTERP_CHK_BE: OnCheckBigEndian(); break;
@@ -776,12 +774,6 @@ void CHexDlgDataInterp::OnNotifyListSetData(NMHDR* pNMHDR)
 	}
 
 	UpdateData();
-}
-
-void CHexDlgDataInterp::OnOK()
-{
-	//Just an empty handler to prevent Dialog closing on Enter key.
-	//SetDefID() doesn't always work for no particular reason.
 }
 
 auto CHexDlgDataInterp::OnSize(const MSG& msg)->INT_PTR

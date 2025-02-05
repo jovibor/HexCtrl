@@ -711,13 +711,13 @@ void CHexDlgTemplMgr::OnCheckMin()
 	//Top Group Box rect.
 	const wnd::CWnd wndGrbTop = m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP);
 	const auto iHeightGRB = wndGrbTop.GetClientRect().Height();
-	auto hdwp = BeginDeferWindowPos(static_cast<int>(std::size(arrIDsToMove) + std::size(arrIDsToResize)));
+	auto hdwp = ::BeginDeferWindowPos(static_cast<int>(std::size(arrIDsToMove) + std::size(arrIDsToResize)));
 	for (const auto id : arrIDsToMove) { //Moving.
 		const wnd::CWnd wnd = m_Wnd.GetDlgItem(id);
 		auto rcWnd = wnd.GetWindowRect();
 		m_Wnd.ScreenToClient(rcWnd);
 		const auto iNewPosY = fMinimize ? rcWnd.top - iHeightGRB : rcWnd.top + iHeightGRB;
-		hdwp = DeferWindowPos(hdwp, wnd, nullptr, rcWnd.left, iNewPosY, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+		hdwp = ::DeferWindowPos(hdwp, wnd, nullptr, rcWnd.left, iNewPosY, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
 	}
 
 	for (const auto id : arrIDsToResize) { //Resizing.
@@ -725,11 +725,11 @@ void CHexDlgTemplMgr::OnCheckMin()
 		auto rcWnd = wnd.GetWindowRect();
 		rcWnd.top += fMinimize ? -iHeightGRB : iHeightGRB;
 		m_Wnd.ScreenToClient(rcWnd);
-		hdwp = DeferWindowPos(hdwp, wnd, nullptr, rcWnd.left, rcWnd.top, rcWnd.Width(),
+		hdwp = ::DeferWindowPos(hdwp, wnd, nullptr, rcWnd.left, rcWnd.top, rcWnd.Width(),
 			rcWnd.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
 	}
 	m_DynLayout.Enable(false); //Otherwise DynamicLayout won't know that all dynamic windows have changed.
-	EndDeferWindowPos(hdwp);
+	::EndDeferWindowPos(hdwp);
 	m_DynLayout.Enable(true);
 
 	m_WndBtnMin.SetBitmap(fMinimize ? m_hBmpMax : m_hBmpMin); //Set arrow bitmap to the min-max checkbox.
@@ -1417,7 +1417,7 @@ void CHexDlgTemplMgr::OnNotifyListSetData(NMHDR* pNMHDR)
 		}
 
 		if (!fSetRet) {
-			MessageBoxW(m_Wnd, L"Incorrect input data.", L"Incorrect input", MB_ICONERROR);
+			::MessageBoxW(m_Wnd, L"Incorrect input data.", L"Incorrect input", MB_ICONERROR);
 			return;
 		}
 	}
@@ -1526,7 +1526,7 @@ void CHexDlgTemplMgr::OnNotifyTreeItemChanged(NMHDR* pNMHDR)
 void CHexDlgTemplMgr::OnNotifyTreeRClick(NMHDR* /*pNMHDR*/)
 {
 	POINT pt;
-	GetCursorPos(&pt);
+	::GetCursorPos(&pt);
 	POINT ptTree = pt;
 	m_WndTree.ScreenToClient(&ptTree);
 	const auto hTreeItem = m_WndTree.HitTest(ptTree);
@@ -1845,7 +1845,7 @@ bool CHexDlgTemplMgr::SetDataGUID(LPCWSTR pwszText, ULONGLONG ullOffset, bool fS
 {
 	//No Hex representation for this type because size is too big, > ULONGLONG.
 	GUID stGUID;
-	if (IIDFromString(pwszText, &stGUID) != S_OK)
+	if (::IIDFromString(pwszText, &stGUID) != S_OK)
 		return false;
 
 	if (fShouldSwap) {
@@ -2407,7 +2407,7 @@ auto CHexDlgTemplMgr::TreeSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 		::SetFocus(hWnd);
 		break;
 	case WM_NCDESTROY:
-		RemoveWindowSubclass(hWnd, TreeSubclassProc, uIdSubclass);
+		::RemoveWindowSubclass(hWnd, TreeSubclassProc, uIdSubclass);
 		break;
 	default:
 		break;

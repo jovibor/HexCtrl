@@ -168,7 +168,7 @@ void CHexDlgGoTo::GoTo(bool fForward)
 	const auto optGoTo = stn::StrToUInt64(wndEdit.GetWndText());
 	if (!optGoTo) {
 		wndEdit.SetFocus();
-		MessageBoxW(m_Wnd, L"Invalid number", L"Error", MB_ICONERROR);
+		::MessageBoxW(m_Wnd, L"Invalid number", L"Error", MB_ICONERROR);
 		return;
 	}
 

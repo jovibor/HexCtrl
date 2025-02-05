@@ -38,15 +38,15 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 
 	[[nodiscard]] auto StrToWstr(std::string_view sv, UINT uCodePage = CP_UTF8) -> std::wstring
 	{
-		const auto iSize = MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), nullptr, 0);
+		const auto iSize = ::MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), nullptr, 0);
 		std::wstring wstr(iSize, 0);
-		MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), wstr.data(), iSize);
+		::MultiByteToWideChar(uCodePage, 0, sv.data(), static_cast<int>(sv.size()), wstr.data(), iSize);
 		return wstr;
 	}
 
 #if defined(DEBUG) || defined(_DEBUG)
 	void DBG_REPORT(const wchar_t* pMsg, const std::source_location& loc = std::source_location::current()) {
-		_wassert(pMsg, StrToWstr(loc.file_name()).data(), loc.line());
+		::_wassert(pMsg, StrToWstr(loc.file_name()).data(), loc.line());
 	}
 
 	void DBG_REPORT_NOT_CREATED(const std::source_location& loc = std::source_location::current()) {
@@ -218,12 +218,12 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	[[nodiscard]] bool HasAVX2() {
 		const static bool fHasAVX2 = []() {
 			int arrInfo[4] { };
-			__cpuid(arrInfo, 0);
-			if (arrInfo[0] >= 7) {
-				__cpuid(arrInfo, 7);
-				return (arrInfo[1] & (1 << 5)) != 0;
-			}
-			return false;
+			::__cpuid(arrInfo, 0);
+			if (arrInfo[0] < 7)
+				return false;
+
+			::__cpuid(arrInfo, 7);
+			return (arrInfo[1] & 0b00100000) != 0;
 			}();
 		return fHasAVX2;
 	}
@@ -276,9 +276,9 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 
 	[[nodiscard]] auto WstrToStr(std::wstring_view wsv, UINT uCodePage = CP_UTF8) -> std::string
 	{
-		const auto iSize = WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), nullptr, 0, nullptr, nullptr);
+		const auto iSize = ::WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), nullptr, 0, nullptr, nullptr);
 		std::string str(iSize, 0);
-		WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), str.data(), iSize, nullptr, nullptr);
+		::WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), str.data(), iSize, nullptr, nullptr);
 		return str;
 	}
 
@@ -302,13 +302,16 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		//Parse date component.
 		switch (dwFormat) {
 		case 0:	//Month-Day-Year.
-			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &stSysTime.wMonth, &stSysTime.wDay, &stSysTime.wYear);
+			iParsedArgs = ::swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu",
+				&stSysTime.wMonth, &stSysTime.wDay, &stSysTime.wYear);
 			break;
 		case 1: //Day-Month-Year.
-			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu", &stSysTime.wDay, &stSysTime.wMonth, &stSysTime.wYear);
+			iParsedArgs = ::swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%4hu",
+				&stSysTime.wDay, &stSysTime.wMonth, &stSysTime.wYear);
 			break;
 		case 2:	//Year-Month-Day.
-			iParsedArgs = swscanf_s(wstrDateTimeCooked.data(), L"%4hu/%2hu/%2hu", &stSysTime.wYear, &stSysTime.wMonth, &stSysTime.wDay);
+			iParsedArgs = ::swscanf_s(wstrDateTimeCooked.data(), L"%4hu/%2hu/%2hu",
+				&stSysTime.wYear, &stSysTime.wMonth, &stSysTime.wDay);
 			break;
 		default:
 			DBG_REPORT(L"Wrong format.");
@@ -322,7 +325,7 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 			wstrDateTimeCooked = wstrDateTimeCooked.substr(nPos + 1);
 
 			//Parse time component HH:MM:SS.mmm.
-			if (swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%2hu/%3hu", &stSysTime.wHour, &stSysTime.wMinute,
+			if (::swscanf_s(wstrDateTimeCooked.data(), L"%2hu/%2hu/%2hu/%3hu", &stSysTime.wHour, &stSysTime.wMinute,
 				&stSysTime.wSecond, &stSysTime.wMilliseconds) != 4)
 				return std::nullopt;
 		}

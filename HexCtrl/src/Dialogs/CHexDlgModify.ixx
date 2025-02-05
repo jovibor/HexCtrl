@@ -145,7 +145,7 @@ bool CHexDlgOpers::FillVecOper(bool fCheckBE)
 
 	const auto opt = stn::StrToNum<T>(m_WndEditOperand.GetWndText());
 	if (!opt) {
-		MessageBoxW(m_Wnd, L"Wrong operand.", L"Operand error", MB_ICONERROR);
+		::MessageBoxW(m_Wnd, L"Wrong operand.", L"Operand error", MB_ICONERROR);
 		return false;
 	}
 
@@ -153,7 +153,7 @@ bool CHexDlgOpers::FillVecOper(bool fCheckBE)
 	const auto eOperMode = GetOperMode();
 	using enum EHexOperMode;
 	if (eOperMode == OPER_DIV && tOper == 0) { //Division by zero check.
-		MessageBoxW(m_Wnd, L"Can't divide by zero.", L"Operand error", MB_ICONERROR);
+		::MessageBoxW(m_Wnd, L"Can't divide by zero.", L"Operand error", MB_ICONERROR);
 		return { };
 	}
 
@@ -415,7 +415,7 @@ void CHexDlgOpers::OnOK()
 	VecSpan vecSpan;
 	const auto iRadioAllOrSel = m_Wnd.GetCheckedRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL);
 	if (iRadioAllOrSel == IDC_HEXCTRL_OPERS_RAD_ALL) {
-		if (MessageBoxW(m_Wnd, L"You are about to modify the entire data region.\r\nAre you sure?",
+		if (::MessageBoxW(m_Wnd, L"You are about to modify the entire data region.\r\nAre you sure?",
 			L"Modify all data?", MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
 
@@ -757,7 +757,7 @@ void CHexDlgFillData::OnOK()
 	const auto eType = GetFillType();
 	if (eType == FILL_HEX || eType == FILL_ASCII || eType == FILL_WCHAR) {
 		if (m_WndCmbData.IsWndTextEmpty()) {
-			MessageBoxW(m_Wnd, L"Missing fill data.", L"Data error", MB_ICONERROR);
+			::MessageBoxW(m_Wnd, L"Missing fill data.", L"Data error", MB_ICONERROR);
 			return;
 		}
 	}
@@ -765,7 +765,7 @@ void CHexDlgFillData::OnOK()
 	VecSpan vecSpan;
 	const auto iRadioAllOrSel = m_Wnd.GetCheckedRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL);
 	if (iRadioAllOrSel == IDC_HEXCTRL_FILLDATA_RAD_ALL) {
-		if (MessageBoxW(m_Wnd, L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify all data?",
+		if (::MessageBoxW(m_Wnd, L"You are about to modify the entire data region.\r\nAre you sure?", L"Modify all data?",
 			MB_YESNO | MB_ICONWARNING) == IDNO)
 			return;
 
@@ -786,7 +786,7 @@ void CHexDlgFillData::OnOK()
 	{
 		auto optData = ut::NumStrToHex(wstrText);
 		if (!optData) {
-			MessageBoxW(m_Wnd, L"Wrong Hex format.", L"Format error", MB_ICONERROR);
+			::MessageBoxW(m_Wnd, L"Wrong Hex format.", L"Format error", MB_ICONERROR);
 			return;
 		}
 
@@ -821,7 +821,7 @@ void CHexDlgFillData::OnOK()
 	}
 
 	if (m_vecFillData.size() > vecSpan.back().ullSize) {
-		MessageBoxW(m_Wnd, L"Fill data size is bigger than the region selected for modification, please select a larger region.",
+		::MessageBoxW(m_Wnd, L"Fill data size is bigger than the region selected for modification, please select a larger region.",
 			L"Data region size error", MB_ICONERROR);
 		return;
 	}

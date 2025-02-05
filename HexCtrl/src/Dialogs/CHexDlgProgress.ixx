@@ -59,7 +59,7 @@ CHexDlgProgress::CHexDlgProgress(std::wstring_view wsvOperName, std::wstring_vie
 }
 
 auto CHexDlgProgress::DoModal(HWND hWndParent, HINSTANCE hInstRes)->INT_PTR {
-	return DialogBoxParamW(hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_PROGRESS),
+	return ::DialogBoxParamW(hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_PROGRESS),
 		hWndParent, wnd::DlgProc<CHexDlgProgress>, reinterpret_cast<LPARAM>(this));
 }
 

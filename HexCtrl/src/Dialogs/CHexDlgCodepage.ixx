@@ -188,9 +188,7 @@ auto CHexDlgCodepage::OnCommand(const MSG& msg)->INT_PTR
 {
 	const auto uCtrlID = LOWORD(msg.wParam);
 	switch (uCtrlID) {
-	case IDOK:
-	case IDCANCEL:
-		OnCancel(); break;
+	case IDCANCEL: OnCancel(); break;
 	default:
 		return FALSE;
 	}
@@ -311,7 +309,7 @@ void CHexDlgCodepage::OnNotifyListItemChanged(NMHDR* pNMHDR)
 void CHexDlgCodepage::OnNotifyListLinkClick(NMHDR* pNMHDR)
 {
 	const auto* const pLLI = reinterpret_cast<LISTEX::PLISTEXLINKINFO>(pNMHDR);
-	ShellExecuteW(nullptr, L"open", pLLI->pwszText, nullptr, nullptr, SW_SHOWNORMAL);
+	::ShellExecuteW(nullptr, L"open", pLLI->pwszText, nullptr, nullptr, SW_SHOWNORMAL);
 }
 
 auto CHexDlgCodepage::OnSize(const MSG& msg)->INT_PTR

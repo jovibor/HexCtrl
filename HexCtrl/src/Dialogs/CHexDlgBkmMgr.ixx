@@ -57,7 +57,6 @@ namespace HEXCTRL::INTERNAL {
 		void OnCheckHex();
 		auto OnDestroy() -> INT_PTR;
 		auto OnDrawItem(const MSG& msg) -> INT_PTR;
-		void OnOK();
 		auto OnInitDialog(const MSG& msg) -> INT_PTR;
 		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
 		auto OnNotify(const MSG& msg) -> INT_PTR;
@@ -487,7 +486,6 @@ auto CHexDlgBkmMgr::OnCommand(const MSG& msg) -> INT_PTR
 	if (hWndCtrl != nullptr || uCtrlID == IDOK || uCtrlID == IDCANCEL) { //Notifications from controls.
 		if (uCode != BN_CLICKED) { return FALSE; }
 		switch (uCtrlID) {
-		case IDOK: OnOK(); break;
 		case IDCANCEL: OnCancel(); break;
 		case IDC_HEXCTRL_BKMMGR_CHK_HEX: OnCheckHex(); break;
 		default: return FALSE;
@@ -551,12 +549,6 @@ auto CHexDlgBkmMgr::OnDrawItem(const MSG& msg)->INT_PTR
 	}
 
 	return TRUE;
-}
-
-void CHexDlgBkmMgr::OnOK()
-{
-	//Just an empty handler to prevent Dialog closing on Enter key.
-	//SetDefID() doesn't always work for no particular reason.
 }
 
 auto CHexDlgBkmMgr::OnInitDialog(const MSG& msg)->INT_PTR
@@ -650,7 +642,7 @@ void CHexDlgBkmMgr::OnNotifyListDblClick(NMHDR* pNMHDR)
 	COLORREF arrClr[16] { };
 	CHOOSECOLORW stChclr { .lStructSize { sizeof(CHOOSECOLORW) }, .rgbResult { *pClr },
 		.lpCustColors { arrClr }, .Flags { CC_ANYCOLOR | CC_FULLOPEN | CC_RGBINIT } };
-	if (ChooseColorW(&stChclr) == FALSE) {
+	if (::ChooseColorW(&stChclr) == FALSE) {
 		return;
 	}
 
@@ -742,7 +734,7 @@ void CHexDlgBkmMgr::OnNotifyListRClick(NMHDR* pNMHDR)
 	m_menuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVEALL), m_ListEx.GetItemCount() > 0);
 
 	POINT pt;
-	GetCursorPos(&pt);
+	::GetCursorPos(&pt);
 	m_menuList.TrackPopupMenu(pt.x, pt.y, m_Wnd);
 }
 
@@ -759,7 +751,7 @@ void CHexDlgBkmMgr::OnNotifyListSetData(NMHDR* pNMHDR)
 	{
 		const auto optOffset = stn::StrToUInt64(pLDI->pwszData);
 		if (!optOffset) {
-			MessageBoxW(m_Wnd, L"Invalid offset format.", L"Format error", MB_ICONERROR);
+			::MessageBoxW(m_Wnd, L"Invalid offset format.", L"Format error", MB_ICONERROR);
 			return;
 		}
 
@@ -777,12 +769,12 @@ void CHexDlgBkmMgr::OnNotifyListSetData(NMHDR* pNMHDR)
 	{
 		const auto optSize = stn::StrToUInt64(pLDI->pwszData);
 		if (!optSize) {
-			MessageBoxW(m_Wnd, L"Invalid size format.", L"Format error", MB_ICONERROR);
+			::MessageBoxW(m_Wnd, L"Invalid size format.", L"Format error", MB_ICONERROR);
 			return;
 		}
 
 		if (*optSize == 0) {
-			MessageBoxW(m_Wnd, L"Size can't be zero.", L"Size error", MB_ICONERROR);
+			::MessageBoxW(m_Wnd, L"Size can't be zero.", L"Size error", MB_ICONERROR);
 			return;
 		}
 

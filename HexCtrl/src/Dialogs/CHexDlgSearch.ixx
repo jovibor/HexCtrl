@@ -1356,7 +1356,7 @@ void CHexDlgSearch::OnNotifyListRClick(NMHDR* /*pNMHDR*/)
 	m_MenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_SEARCH_CLEARALL), fEnabled);
 
 	POINT pt;
-	GetCursorPos(&pt);
+	::GetCursorPos(&pt);
 	m_MenuList.TrackPopupMenu(pt.x, pt.y, m_Wnd);
 }
 
@@ -1464,7 +1464,7 @@ void CHexDlgSearch::Prepare()
 	if (IsReplace()) {
 		if (m_WndCmbReplace.IsWndTextEmpty()) {
 			m_WndCmbReplace.SetFocus();
-			MessageBoxW(m_Wnd, m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			::MessageBoxW(m_Wnd, m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			return;
 		}
 
@@ -1546,7 +1546,7 @@ void CHexDlgSearch::Prepare()
 			const auto optRngStart = stn::StrToUInt64(m_WndEditRngBegin.GetWndText());
 			if (!optRngStart) {
 				m_WndEditRngBegin.SetFocus();
-				MessageBoxW(m_Wnd, L"Search range start offset is incorrect.", L"Incorrect offset", MB_ICONERROR);
+				::MessageBoxW(m_Wnd, L"Search range start offset is incorrect.", L"Incorrect offset", MB_ICONERROR);
 				return;
 			}
 
@@ -1561,7 +1561,7 @@ void CHexDlgSearch::Prepare()
 			const auto optRngEnd = stn::StrToUInt64(m_WndEditRngEnd.GetWndText());
 			if (!optRngEnd) {
 				m_WndEditRngEnd.SetFocus();
-				MessageBoxW(m_Wnd, L"Search range end offset is incorrect.", L"Incorrect offset", MB_ICONERROR);
+				::MessageBoxW(m_Wnd, L"Search range end offset is incorrect.", L"Incorrect offset", MB_ICONERROR);
 				return;
 			}
 
@@ -1576,7 +1576,7 @@ void CHexDlgSearch::Prepare()
 			const auto optStartFrom = stn::StrToUInt64(m_WndEditStart.GetWndText());
 			if (!optStartFrom) {
 				m_WndEditStart.SetFocus();
-				MessageBoxW(m_Wnd, L"Start offset is incorrect.", L"Incorrect offset", MB_ICONERROR);
+				::MessageBoxW(m_Wnd, L"Start offset is incorrect.", L"Incorrect offset", MB_ICONERROR);
 				return;
 			}
 
@@ -1606,14 +1606,14 @@ void CHexDlgSearch::Prepare()
 	//"Range start/end" out of bounds check.
 	if (ullRngStart > ullRngEnd || ullRngStart >= ullHexDataSize || ullRngEnd >= ullHexDataSize) {
 		m_WndEditRngEnd.SetFocus();
-		MessageBoxW(m_Wnd, L"Search range is out of data bounds.", L"Incorrect offset", MB_ICONERROR);
+		::MessageBoxW(m_Wnd, L"Search range is out of data bounds.", L"Incorrect offset", MB_ICONERROR);
 		return;
 	}
 
 	//"Start from" check to fit within the search range.
 	if (ullStartFrom < ullRngStart || ullStartFrom > ullRngEnd) {
 		m_WndEditStart.SetFocus();
-		MessageBoxW(m_Wnd, L"Start offset is not within the search range.", L"Incorrect offset", MB_ICONERROR);
+		::MessageBoxW(m_Wnd, L"Start offset is not within the search range.", L"Incorrect offset", MB_ICONERROR);
 		return;
 	}
 
@@ -1636,13 +1636,13 @@ void CHexDlgSearch::Prepare()
 		}
 		else {
 			m_WndEditStep.SetFocus();
-			MessageBoxW(m_Wnd, L"Incorrect step size.", L"Incorrect step", MB_ICONERROR);
+			::MessageBoxW(m_Wnd, L"Incorrect step size.", L"Incorrect step", MB_ICONERROR);
 			return;
 		}
 	}
 	else {
 		m_WndEditStep.SetFocus();
-		MessageBoxW(m_Wnd, L"Step size must be at least one.", L"Incorrect step", MB_ICONERROR);
+		::MessageBoxW(m_Wnd, L"Step size must be at least one.", L"Incorrect step", MB_ICONERROR);
 		return;
 	}
 
@@ -1654,20 +1654,20 @@ void CHexDlgSearch::Prepare()
 		}
 		else {
 			m_WndEditLimit.SetFocus();
-			MessageBoxW(m_Wnd, L"Incorrect limit size.", L"Incorrect limit", MB_ICONERROR);
+			::MessageBoxW(m_Wnd, L"Incorrect limit size.", L"Incorrect limit", MB_ICONERROR);
 			return;
 		}
 	}
 	else {
 		m_WndEditLimit.SetFocus();
-		MessageBoxW(m_Wnd, L"Limit size must be at least one.", L"Incorrect limit", MB_ICONERROR);
+		::MessageBoxW(m_Wnd, L"Limit size must be at least one.", L"Incorrect limit", MB_ICONERROR);
 		return;
 	}
 
 	if (IsReplace() && GetReplaceDataSize() > GetSearchDataSize()) {
 		static constexpr auto wstrReplaceWarning { L"The replacing data is longer than search data.\r\n"
 			"Do you want to overwrite bytes following search occurrence?\r\nChoosing No will cancel replace." };
-		if (MessageBoxW(m_Wnd, wstrReplaceWarning, L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST) == IDNO)
+		if (::MessageBoxW(m_Wnd, wstrReplaceWarning, L"Warning", MB_YESNO | MB_ICONQUESTION | MB_TOPMOST) == IDNO)
 			return;
 	}
 
@@ -1687,7 +1687,7 @@ bool CHexDlgSearch::PrepareHexBytes()
 	auto optData = ut::NumStrToHex(m_wstrSearch, IsWildcard() ? static_cast<char>(m_uWildcard) : 0);
 	if (!optData) {
 		m_iWrap = 1;
-		MessageBoxW(m_Wnd, pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		::MessageBoxW(m_Wnd, pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
 
@@ -1696,7 +1696,7 @@ bool CHexDlgSearch::PrepareHexBytes()
 	if (m_fReplace) {
 		auto optDataRepl = ut::NumStrToHex(m_wstrReplace);
 		if (!optDataRepl) {
-			MessageBoxW(m_Wnd, pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			::MessageBoxW(m_Wnd, pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			m_WndCmbReplace.SetFocus();
 			return false;
 		}
@@ -1749,7 +1749,7 @@ bool CHexDlgSearch::PrepareNumber()
 	const auto optData = stn::StrToNum<T>(m_wstrSearch);
 	if (!optData) {
 		m_WndCmbFind.SetFocus();
-		MessageBoxW(m_Wnd, m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		::MessageBoxW(m_Wnd, m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
 
@@ -1760,7 +1760,7 @@ bool CHexDlgSearch::PrepareNumber()
 		const auto optDataRepl = stn::StrToNum<T>(m_wstrReplace);
 		if (!optDataRepl) {
 			m_WndCmbReplace.SetFocus();
-			MessageBoxW(m_Wnd, m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			::MessageBoxW(m_Wnd, m_pwszWrongInput, L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			return false;
 		}
 		tDataRep = *optDataRepl;
@@ -1783,7 +1783,7 @@ bool CHexDlgSearch::PrepareFILETIME()
 	const std::wstring wstrErr = L"Wrong FILETIME format.\r\nA correct format is: " + ut::GetDateFormatString(dwFormat, wchSepar);
 	const auto optFTSearch = ut::StringToFileTime(m_wstrSearch, dwFormat);
 	if (!optFTSearch) {
-		MessageBoxW(m_Wnd, wstrErr.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+		::MessageBoxW(m_Wnd, wstrErr.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 		return false;
 	}
 
@@ -1793,7 +1793,7 @@ bool CHexDlgSearch::PrepareFILETIME()
 	if (m_fReplace) {
 		const auto optFTReplace = ut::StringToFileTime(m_wstrReplace, dwFormat);
 		if (!optFTReplace) {
-			MessageBoxW(m_Wnd, wstrErr.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+			::MessageBoxW(m_Wnd, wstrErr.data(), L"Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
 			return false;
 		}
 		ftReplace = *optFTReplace;

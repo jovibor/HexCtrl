@@ -171,7 +171,7 @@ bool CHexScroll::Create(HWND hWndParent, bool fVert, HBITMAP hArrow, ULONGLONG u
 		wc.style = CS_GLOBALCLASS;
 		wc.lpfnWndProc = wnd::WndProc<CHexScroll>;
 		wc.lpszClassName = pwszScrollClassName;
-		if (RegisterClassExW(&wc) == 0) {
+		if (::RegisterClassExW(&wc) == 0) {
 			ut::DBG_REPORT(L"RegisterClassExW failed.");
 			return false;
 		}
@@ -273,7 +273,7 @@ void CHexScroll::OnLButtonUp()
 	SendParentScrollMsg(); //For parent to check IsThumbReleased.
 	m_Wnd.KillTimer(static_cast<UINT_PTR>(ETimer::IDT_FIRSTCLICK));
 	m_Wnd.KillTimer(static_cast<UINT_PTR>(ETimer::IDT_CLICKREPEAT));
-	ReleaseCapture();
+	::ReleaseCapture();
 	DrawScrollBar();
 }
 
@@ -612,14 +612,14 @@ void CHexScroll::SetScrollPageSize(ULONGLONG ullSize)
 bool CHexScroll::CreateArrows(HBITMAP hArrow, bool fVert)
 {
 	BITMAP stBMP { };
-	GetObjectW(hArrow, sizeof(BITMAP), &stBMP); //stBMP.bmBits is nullptr here.
+	::GetObjectW(hArrow, sizeof(BITMAP), &stBMP); //stBMP.bmBits is nullptr here.
 	const auto dwWidth = static_cast<DWORD>(stBMP.bmWidth);
 	const auto dwHeight = static_cast<DWORD>(stBMP.bmHeight);
 	const auto dwPixels = dwWidth * dwHeight;
 	const auto dwBytesBmp = stBMP.bmWidthBytes * stBMP.bmHeight;
 	const auto pPixelsOrig = std::make_unique<COLORREF[]>(dwPixels);
 	m_iArrowRCSizePx = stBMP.bmWidth;
-	GetBitmapBits(hArrow, dwBytesBmp, pPixelsOrig.get());
+	::GetBitmapBits(hArrow, dwBytesBmp, pPixelsOrig.get());
 
 	const auto lmbTranspose = [](COLORREF* pInOut, DWORD dwWidth, DWORD dwHeight) {
 		for (auto itHeight = 0UL; itHeight < dwHeight; ++itHeight) { //Transpose matrix.
@@ -657,7 +657,7 @@ bool CHexScroll::CreateArrows(HBITMAP hArrow, bool fVert)
 		lmbFlipHorz(pPixelsOrig.get(), dwWidth, dwHeight);               //Right arrow.
 	}
 
-	SetBitmapBits(m_hBmpArrowLast, dwBytesBmp, pPixelsOrig.get());
+	::SetBitmapBits(m_hBmpArrowLast, dwBytesBmp, pPixelsOrig.get());
 
 	return true;
 }
@@ -720,7 +720,7 @@ void CHexScroll::DrawArrows(HDC hDC)const
 	//SetBrushOrgEx to set the brush origin. If it fails to do so, brush misalignment occurs.
 	::SetBrushOrgEx(hDC, 0, 0, nullptr);
 
-	const auto hDCSource = CreateCompatibleDC(hDC);
+	const auto hDCSource = ::CreateCompatibleDC(hDC);
 	::SelectObject(hDCSource, m_hBmpArrowFirst);	//First arrow button.
 	::StretchBlt(hDC, iFirstBtnOffsetDrawX, iFirstBtnOffsetDrawY, iFirstBtnWH, iFirstBtnWH,
 		hDCSource, 0, 0, m_iArrowRCSizePx, m_iArrowRCSizePx, SRCCOPY);
@@ -1021,7 +1021,7 @@ auto CHexScroll::OnTimer(const MSG& msg)->LRESULT
 		case FIRSTCHANNEL_CLICK:
 		{
 			POINT pt;
-			GetCursorPos(&pt);
+			::GetCursorPos(&pt);
 			auto rcThumb = GetThumbRect(true);
 			GetParent().ClientToScreen(rcThumb);
 			if (IsVert()) {
@@ -1039,7 +1039,7 @@ auto CHexScroll::OnTimer(const MSG& msg)->LRESULT
 		case LASTCHANNEL_CLICK:
 		{
 			POINT pt;
-			GetCursorPos(&pt);
+			::GetCursorPos(&pt);
 			auto rcThumb = GetThumbRect(true);
 			GetParent().ClientToScreen(rcThumb);
 			if (IsVert()) {
