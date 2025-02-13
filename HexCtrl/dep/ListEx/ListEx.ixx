@@ -1379,12 +1379,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 
 void CListEx::CreateDialogCtrl(UINT uCtrlID, HWND hWndParent)
 {
-	LISTEXCREATE lcs;
-	lcs.hWndParent = hWndParent;
-	lcs.uID = uCtrlID;
-	lcs.fDialogCtrl = true;
-
-	Create(lcs);
+	Create({ .hWndParent { hWndParent }, .uID { uCtrlID }, .fDialogCtrl { true } });
 }
 
 bool CListEx::DeleteAllItems()
@@ -2116,9 +2111,10 @@ int CALLBACK CListEx::DefCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lPar
 		break;
 	case EListExSortMode::SORT_NUMERIC:
 	{
-		LONGLONG llData1 { }, llData2 { };
-		StrToInt64ExW(wstrItem1.data(), STIF_SUPPORT_HEX, &llData1);
-		StrToInt64ExW(wstrItem2.data(), STIF_SUPPORT_HEX, &llData2);
+		LONGLONG llData1 { };
+		LONGLONG llData2 { };
+		::StrToInt64ExW(wstrItem1.data(), STIF_SUPPORT_HEX, &llData1);
+		::StrToInt64ExW(wstrItem2.data(), STIF_SUPPORT_HEX, &llData2);
 		iCompare = llData1 != llData2 ? (llData1 - llData2 < 0 ? -1 : 1) : 0;
 	}
 	break;
@@ -2478,9 +2474,9 @@ auto CListEx::OnMouseWheel(const MSG& msg)->LRESULT
 
 auto CListEx::OnMouseMove(const MSG& msg)->LRESULT
 {
-	static const auto hCurArrow = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0,
+	static const auto hCurArrow = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0,
 		LR_DEFAULTSIZE | LR_SHARED));
-	static const auto hCurHand = static_cast<HCURSOR>(LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0,
+	static const auto hCurHand = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_HAND, IMAGE_CURSOR, 0, 0,
 		LR_DEFAULTSIZE | LR_SHARED));
 	const POINT pt { .x { GET_X_LPARAM(msg.lParam) }, .y { GET_Y_LPARAM(msg.lParam) } };
 
@@ -2639,7 +2635,7 @@ auto CListEx::OnPaint()->LRESULT
 	::GetClipBox(dcMem, rcClient);
 	dcMem.FillSolidRect(rcClient, m_stColors.clrNWABk);
 
-	return DefSubclassProc(m_hWnd, WM_PAINT, reinterpret_cast<WPARAM>(dcMem.GetHDC()), 0);
+	return ::DefSubclassProc(m_hWnd, WM_PAINT, reinterpret_cast<WPARAM>(dcMem.GetHDC()), 0);
 }
 
 auto CListEx::OnTimer(const MSG& msg)->LRESULT
@@ -2652,7 +2648,7 @@ auto CListEx::OnTimer(const MSG& msg)->LRESULT
 
 	POINT ptCur;
 	::GetCursorPos(&ptCur);
-	POINT ptCurClient = ptCur;
+	POINT ptCurClient { ptCur };
 	::ScreenToClient(m_hWnd, &ptCurClient);
 	LVHITTESTINFO hitInfo { .pt { ptCurClient } };
 	HitTest(&hitInfo);
@@ -2721,9 +2717,7 @@ auto CListEx::OnVScroll(const MSG& msg)->LRESULT
 		}
 		else {
 			m_fHLFlag = true;
-			SCROLLINFO si { };
-			si.cbSize = sizeof(SCROLLINFO);
-			si.fMask = SIF_ALL;
+			SCROLLINFO si { .cbSize { sizeof(SCROLLINFO) }, .fMask { SIF_ALL } };
 			::GetScrollInfo(m_hWnd, SB_VERT, &si);
 			m_uHLItem = si.nTrackPos; //si.nTrackPos is in fact a row number.
 			TTHLShow(true, m_uHLItem);
@@ -2763,7 +2757,7 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 
 	std::size_t nPosCurr { 0 }; //Current position in the parsed string.
 	wnd::CRect rcTextCurr; //Current rect.
-	const auto hDC = GetDC(m_hWnd);
+	const auto hDC = ::GetDC(m_hWnd);
 
 	while (nPosCurr != std::wstring_view::npos) {
 		static constexpr std::wstring_view wsvTagLink { L"<link=" };
@@ -2855,7 +2849,7 @@ auto CListEx::ParseItemData(int iItem, int iSubitem)->std::vector<CListEx::ITEMD
 			nPosCurr = std::wstring_view::npos;
 		}
 	}
-	ReleaseDC(m_hWnd, hDC);
+	::ReleaseDC(m_hWnd, hDC);
 
 	//Depending on column's data alignment we adjust rects coords to render properly.
 	switch (GetHeader().GetColumnDataAlign(iSubitem)) {
@@ -2913,7 +2907,7 @@ void CListEx::RecalcMeasure()const
 {
 	//To get WM_MEASUREITEM after changing the font.
 	wnd::CRect rc;
-	GetWindowRect(m_hWnd, rc);
+	::GetWindowRect(m_hWnd, rc);
 	const WINDOWPOS wp { .hwnd { m_hWnd }, .cx { rc.Width() }, .cy { rc.Height() },
 		.flags { SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER } };
 	::SendMessageW(m_hWnd, WM_WINDOWPOSCHANGED, 0, reinterpret_cast<LPARAM>(&wp));

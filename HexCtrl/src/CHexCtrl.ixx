@@ -252,12 +252,12 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetUnprintableChar()const->wchar_t override;
 		[[nodiscard]] auto GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND override;
 		void GoToOffset(ULONGLONG ullOffset, int iPosAt = 0)override;
+		[[nodiscard]] bool HasInfoBar()const override;
 		[[nodiscard]] bool HasSelection()const override;
 		[[nodiscard]] auto HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST> override;
 		[[nodiscard]] bool IsCmdAvail(EHexCmd eCmd)const override;
 		[[nodiscard]] bool IsCreated()const override;
 		[[nodiscard]] bool IsDataSet()const override;
-		[[nodiscard]] bool IsInfoBar()const override;
 		[[nodiscard]] bool IsMutable()const override;
 		[[nodiscard]] bool IsOffsetAsHex()const override;
 		[[nodiscard]] auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION override;
@@ -1293,6 +1293,13 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iPosAt)
 	}
 }
 
+bool CHexCtrl::HasInfoBar()const
+{
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
+
+	return m_fInfoBar;
+}
+
 bool CHexCtrl::HasSelection()const
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
@@ -1416,13 +1423,6 @@ bool CHexCtrl::IsDataSet()const
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
 	return m_fDataSet;
-}
-
-bool CHexCtrl::IsInfoBar()const
-{
-	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
-
-	return m_fInfoBar;
 }
 
 bool CHexCtrl::IsMutable()const
@@ -3133,7 +3133,7 @@ void CHexCtrl::DrawWindow(HDC hDC)const
 
 void CHexCtrl::DrawInfoBar(HDC hDC)const
 {
-	if (!IsInfoBar())
+	if (!HasInfoBar())
 		return;
 
 	struct POLYINFODATA { //InfoBar text, colors, and vertical lines.
@@ -4497,7 +4497,7 @@ void CHexCtrl::RecalcAll(HDC hDC, LPCRECT pRC)
 	m_sizeFontInfo.cx = tm.tmAveCharWidth;
 	m_sizeFontInfo.cy = tm.tmHeight + tm.tmExternalLeading;
 
-	if (IsInfoBar()) {
+	if (HasInfoBar()) {
 		m_iHeightInfoBarPx = m_sizeFontInfo.cy;
 		m_iHeightInfoBarPx += m_iHeightInfoBarPx / 3;
 	}

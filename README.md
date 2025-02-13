@@ -46,12 +46,12 @@
   * [GetUnprintableChar](#getunprintablechar)
   * [GetWndHandle](#getwndhandle)
   * [GoToOffset](#gotooffset)
+  * [HasInfoBar](#hasinfobar)
   * [HasSelection](#hasselection)
   * [HitTest](#hittest)
   * [IsCmdAvail](#iscmdavail)
   * [IsCreated](#iscreated)
   * [IsDataSet](#isdataset)
-  * [IsInfoBar](#isinfobar)
   * [IsMutable](#ismutable)
   * [IsOffsetAsHex](#isoffsetashex)
   * [IsOffsetVisible](#isoffsetvisible)
@@ -536,6 +536,12 @@ Go to the given offset. The second argument `iPosAt` can take three values:
 * &nbsp; `0` - offset will appear in the center
 * &nbsp; `1` - offset will appear at the bottom line
 
+### [](#)HasInfoBar
+```cpp
+[[nodiscard]] bool HasInfoBar()const;
+```
+Shows whether bottom info bar currently visible or not.
+
 ### [](#)HasSelection
 ```cpp
 [[nodiscard]] bool HasSelection()const;
@@ -565,12 +571,6 @@ Shows whether **HexCtrl** is created or not.
 [[nodiscard]] bool IsDataSet()const;
 ```
 Shows whether a data was set to **HexCtrl** or not
-
-### [](#)IsInfoBar
-```cpp
-[[nodiscard]] bool IsInfoBar()const;
-```
-Shows whether the bottom Info bar is visible at the moment or not.
 
 ### [](#)IsMutable
 ```cpp

@@ -431,12 +431,12 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetUnprintableChar()const->wchar_t = 0;   //Get unprintable replacement character.
 		[[nodiscard]] virtual auto GetWndHandle(EHexWnd eWnd, bool fCreate = true)const->HWND = 0; //Get HWND of internal window/dialogs.
 		virtual void GoToOffset(ULONGLONG ullOffset, int iPosAt = 0) = 0;    //Go to the given offset.
+		[[nodiscard]] virtual bool HasInfoBar()const = 0;      //Is InfoBar currently visible?
 		[[nodiscard]] virtual bool HasSelection()const = 0;    //Does currently have any selection or not.
 		[[nodiscard]] virtual auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTEST> = 0; //HitTest given point.
 		[[nodiscard]] virtual bool IsCmdAvail(EHexCmd eCmd)const = 0; //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] virtual bool IsCreated()const = 0;       //Shows whether HexCtrl is created or not.
 		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to HexCtrl or not.
-		[[nodiscard]] virtual bool IsInfoBar()const = 0;       //Is InfoBar visible?
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is data mutable or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Are offsets shown as Hex or as Decimal.
 		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION = 0; //Ensures that the given offset is visible.
@@ -494,7 +494,6 @@ namespace HEXCTRL {
 	constexpr auto HEXCTRL_MSG_SETFONT { 0x010FU };       //Font has changed.
 	constexpr auto HEXCTRL_MSG_SETGROUPSIZE { 0x0110U };  //Data grouping size has changed.
 	constexpr auto HEXCTRL_MSG_SETSELECTION { 0x0111U };  //Selection has been made.
-
 
 	/**************************************************************************
 	* Flags for the internal dialogs, used with the SetDlgProperties method.  *
