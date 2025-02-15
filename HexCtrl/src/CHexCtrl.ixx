@@ -25,21 +25,21 @@ module;
 #include <thread>
 #include <unordered_map>
 #include <vector>
-export module HEXCTRL.CHexCtrl;
+export module HEXCTRL;
 
 #pragma comment(lib, "Comctl32.lib")
 
-import HEXCTRL.CHexScroll;
-import HEXCTRL.CHexSelection;
-import HEXCTRL.CHexDlgBkmMgr;
-import HEXCTRL.CHexDlgCodepage;
-import HEXCTRL.CHexDlgDataInterp;
-import HEXCTRL.CHexDlgGoTo;
-import HEXCTRL.CHexDlgModify;
-import HEXCTRL.CHexDlgProgress;
-import HEXCTRL.CHexDlgSearch;
-import HEXCTRL.CHexDlgTemplMgr;
-import HEXCTRL.HexUtility;
+import :CHexScroll;
+import :CHexSelection;
+import :CHexDlgBkmMgr;
+import :CHexDlgCodepage;
+import :CHexDlgDataInterp;
+import :CHexDlgGoTo;
+import :CHexDlgModify;
+import :CHexDlgProgress;
+import :CHexDlgSearch;
+import :CHexDlgTemplMgr;
+import :HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 

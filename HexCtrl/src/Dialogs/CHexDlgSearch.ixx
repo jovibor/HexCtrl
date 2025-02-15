@@ -19,10 +19,10 @@ module;
 #include <string>
 #include <thread>
 #include <type_traits>
-export module HEXCTRL.CHexDlgSearch;
+export module HEXCTRL:CHexDlgSearch;
 
-import HEXCTRL.HexUtility;
-import HEXCTRL.CHexDlgProgress;
+import :HexUtility;
+import :CHexDlgProgress;
 
 namespace HEXCTRL::INTERNAL {
 	export class CHexDlgSearch final {

@@ -12,9 +12,9 @@ module;
 #include <bit>
 #include <commctrl.h>
 #include <format>
-export module HEXCTRL.CHexDlgDataInterp;
+export module HEXCTRL:CHexDlgDataInterp;
 
-import HEXCTRL.HexUtility;
+import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {
 	export class CHexDlgDataInterp final {

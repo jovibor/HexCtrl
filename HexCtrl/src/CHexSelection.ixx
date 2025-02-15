@@ -9,7 +9,7 @@ module;
 #include "../HexCtrl.h"
 #include <algorithm>
 #include <vector>
-export module HEXCTRL.CHexSelection;
+export module HEXCTRL:CHexSelection;
 
 namespace HEXCTRL::INTERNAL {
 	export class CHexSelection final {

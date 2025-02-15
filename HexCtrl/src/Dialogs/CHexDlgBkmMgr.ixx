@@ -13,9 +13,9 @@ module;
 #include <format>
 #include <numeric>
 #include <vector>
-export module HEXCTRL.CHexDlgBkmMgr;
+export module HEXCTRL:CHexDlgBkmMgr;
 
-import HEXCTRL.HexUtility;
+import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {
 	export class CHexDlgBkmMgr final : public IHexBookmarks {

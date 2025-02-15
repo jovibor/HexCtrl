@@ -11,9 +11,9 @@ module;
 #include <algorithm>
 #include <commctrl.h>
 #include <format>
-export module HEXCTRL.CHexDlgCodepage;
+export module HEXCTRL:CHexDlgCodepage;
 
-import HEXCTRL.HexUtility;
+import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {
 	export class CHexDlgCodepage final {

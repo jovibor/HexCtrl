@@ -20,7 +20,7 @@ module;
 #include <string>
 #include <unordered_map>
 #include <vector>
-export module HEXCTRL.HexUtility;
+export module HEXCTRL:HexUtility;
 
 export import StrToNum;
 export import ListEx;

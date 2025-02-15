@@ -11,9 +11,9 @@ module;
 #include <cassert>
 #include <format>
 #include <string>
-export module HEXCTRL.CHexDlgProgress;
+export module HEXCTRL:CHexDlgProgress;
 
-import HEXCTRL.HexUtility;
+import :HexUtility;
 using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL {

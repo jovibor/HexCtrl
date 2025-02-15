@@ -10,9 +10,9 @@ module;
 #include "../../HexCtrl.h"
 #include <commctrl.h>
 #include <format>
-export module HEXCTRL.CHexDlgGoTo;
+export module HEXCTRL:CHexDlgGoTo;
 
-import HEXCTRL.HexUtility;
+import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {
 	export class CHexDlgGoTo final {

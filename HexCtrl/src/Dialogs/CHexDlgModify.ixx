@@ -10,9 +10,9 @@ module;
 #include "../../HexCtrl.h"
 #include <commctrl.h>
 #include <unordered_map>
-export module HEXCTRL.CHexDlgModify;
+export module HEXCTRL:CHexDlgModify;
 
-import HEXCTRL.HexUtility;
+import :HexUtility;
 
 using namespace HEXCTRL::INTERNAL;
 

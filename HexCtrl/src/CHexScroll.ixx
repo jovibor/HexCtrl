@@ -12,9 +12,9 @@ module;
 #include <cmath>
 #include <limits>
 #include <memory>
-export module HEXCTRL.CHexScroll;
+export module HEXCTRL:CHexScroll;
 
-import HEXCTRL.HexUtility;
+import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {
 	export class CHexScroll final {

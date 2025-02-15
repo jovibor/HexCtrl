@@ -18,9 +18,9 @@ module;
 #include <optional>
 #include <random>
 #include <unordered_map>
-export module HEXCTRL.CHexDlgTemplMgr;
+export module HEXCTRL:CHexDlgTemplMgr;
 
-import HEXCTRL.HexUtility;
+import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {
 	export class CHexDlgTemplMgr final : public IHexTemplates {
@@ -372,9 +372,9 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD
 	const auto& vecFields = pApplied->pTemplate->vecFields;
 
 	const auto lmbFind = [ullOffset, ullOffsetApplied]
-	(const HexVecFields& refVecFields)->PCHEXTEMPLFIELD {
+		(const HexVecFields& refVecFields)->PCHEXTEMPLFIELD {
 		const auto _lmbFind = [ullOffset, ullOffsetApplied]
-		(const auto& lmbSelf, const HexVecFields& refVecFields)->PCHEXTEMPLFIELD {
+			(const auto& lmbSelf, const HexVecFields& refVecFields)->PCHEXTEMPLFIELD {
 			for (const auto& pField : refVecFields) {
 				if (pField->vecNested.empty()) {
 					const auto ullOffsetCurr = ullOffsetApplied + pField->iOffset;
@@ -390,10 +390,10 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD
 			}
 			return nullptr;
 			};
-		return _lmbFind(_lmbFind, refVecFields);
+			return _lmbFind(_lmbFind, refVecFields);
 		};
 
-	return lmbFind(vecFields);
+		return lmbFind(vecFields);
 }
 
 void CHexDlgTemplMgr::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
