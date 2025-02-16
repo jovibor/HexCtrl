@@ -238,7 +238,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetData(HEXSPAN hss)const->SpanByte override;
 		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;
 		[[nodiscard]] auto GetDateInfo()const->std::tuple<DWORD, wchar_t> override;
-		[[nodiscard]] auto GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND override;
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND override;
 		[[nodiscard]] auto GetFont()const->LOGFONTW override;
 		[[nodiscard]] auto GetGroupSize()const->DWORD override;
 		[[nodiscard]] auto GetMenuHandle()const->HMENU override;
@@ -1098,21 +1098,24 @@ auto CHexCtrl::GetDateInfo()const->std::tuple<DWORD, wchar_t>
 	return { m_dwDateFormat, m_wchDateSepar };
 }
 
-auto CHexCtrl::GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND
+auto CHexCtrl::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
-	using enum EHexWnd;
-	switch (eWnd) {
-	case DLG_BKMMGR:
+	using enum EHexDlgItem;
+	switch (eItem) {
+	case BKMMGR_CHK_HEX:
 		return m_pDlgBkmMgr->GetDlgItemHandle(eItem);
-	case DLG_DATAINTERP:
+	case DATAINTERP_CHK_HEX: case DATAINTERP_CHK_BE:
 		return m_pDlgDataInterp->GetDlgItemHandle(eItem);
-	case DLG_MODIFY:
+	case FILLDATA_COMBO_DATA:
 		return m_pDlgModify->GetDlgItemHandle(eItem);
-	case DLG_SEARCH:
+	case SEARCH_COMBO_FIND:	case SEARCH_COMBO_REPLACE: case SEARCH_EDIT_START:
+	case SEARCH_EDIT_STEP: case SEARCH_EDIT_RNGBEG: case SEARCH_EDIT_RNGEND:
+	case SEARCH_EDIT_LIMIT:
 		return m_pDlgSearch->GetDlgItemHandle(eItem);
-	case DLG_TEMPLMGR:
+	case TEMPLMGR_CHK_MIN: case TEMPLMGR_CHK_TT: case TEMPLMGR_CHK_HGL:
+	case TEMPLMGR_CHK_HEX: case TEMPLMGR_CHK_SWAP:
 		return m_pDlgTemplMgr->GetDlgItemHandle(eItem);
 	default:
 		return { };

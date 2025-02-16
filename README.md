@@ -443,7 +443,7 @@ Returns tuple of the current [date format-ordering specifier](https://docs.micro
 
 ### [](#)GetDlgItemHandle
 ```cpp
-[[nodiscard]] auto GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND;
+[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 ```
 Returns `HWND` of a dialog's internal child control.
 

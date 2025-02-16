@@ -417,7 +417,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->SpanByte = 0;  //Get pointer to data offset, no matter what mode HexCtrl works in.
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual auto GetDateInfo()const->std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
-		[[nodiscard]] virtual auto GetDlgItemHandle(EHexWnd eWnd, EHexDlgItem eItem)const->HWND = 0; //Dialogs' items.
+		[[nodiscard]] virtual auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND = 0; //Dialogs' items.
 		[[nodiscard]] virtual auto GetFont()const->LOGFONTW = 0;             //Get current font.
 		[[nodiscard]] virtual auto GetGroupSize()const->DWORD = 0;           //Retrieves current data grouping size.
 		[[nodiscard]] virtual auto GetMenuHandle()const->HMENU = 0;          //Context menu handle.
