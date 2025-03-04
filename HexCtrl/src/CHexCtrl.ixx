@@ -162,7 +162,7 @@ auto CHexDlgAbout::OnInitDialog(const MSG& msg)->INT_PTR
 
 auto CHexDlgAbout::OnLButtonDown(const MSG& msg)->INT_PTR
 {
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
+	const POINT pt { .x { wnd::GetXLPARAM(msg.lParam) }, .y { wnd::GetYLPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
 	if (hWnd != m_WndLink) {
 		m_fLBDownLink = false;
@@ -176,7 +176,7 @@ auto CHexDlgAbout::OnLButtonDown(const MSG& msg)->INT_PTR
 
 auto CHexDlgAbout::OnLButtonUp(const MSG& msg) -> INT_PTR
 {
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
+	const POINT pt { .x { wnd::GetXLPARAM(msg.lParam) }, .y { wnd::GetYLPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
 	if (hWnd != m_WndLink) {
 		m_fLBDownLink = false;
@@ -192,7 +192,7 @@ auto CHexDlgAbout::OnLButtonUp(const MSG& msg) -> INT_PTR
 
 auto CHexDlgAbout::OnMouseMove(const MSG& msg)->INT_PTR
 {
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
+	const POINT pt { .x { wnd::GetXLPARAM(msg.lParam) }, .y { wnd::GetYLPARAM(msg.lParam) } };
 	const auto hWnd = m_Wnd.ChildWindowFromPoint(pt);
 	if (hWnd == nullptr)
 		return FALSE;
@@ -7071,7 +7071,7 @@ auto CHexCtrl::OnCommand(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnContextMenu(const MSG& msg)->LRESULT
 {
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
+	const POINT pt { .x { wnd::GetXLPARAM(msg.lParam) }, .y { wnd::GetYLPARAM(msg.lParam) } };
 
 	//Notify parent that we are about to display a context menu.
 	const HEXMENUINFO hmi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()), HEXCTRL_MSG_CONTEXTMENU },
@@ -7285,7 +7285,7 @@ auto CHexCtrl::OnKeyUp(const MSG& /*msg*/)->LRESULT
 
 auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
 {
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
+	const POINT pt { .x { wnd::GetXLPARAM(msg.lParam) }, .y { wnd::GetYLPARAM(msg.lParam) } };
 	const auto nFlags = static_cast<UINT>(msg.wParam);
 
 	if ((pt.x + static_cast<long>(m_pScrollH->GetScrollPos())) < m_iSecondVertLinePx) { //DblClick on "Offset" area.
@@ -7323,7 +7323,7 @@ auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnLButtonDown(const MSG& msg)->LRESULT
 {
-	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
+	const POINT pt { .x { wnd::GetXLPARAM(msg.lParam) }, .y { wnd::GetYLPARAM(msg.lParam) } };
 	const auto nFlags = static_cast<UINT>(msg.wParam);
 
 	m_Wnd.SetFocus(); //SetFocus is vital to give proper keyboard input to the main HexCtrl window.
@@ -7383,7 +7383,7 @@ auto CHexCtrl::OnLButtonUp(const MSG& /*msg*/)->LRESULT
 
 auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 {
-	POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
+	POINT pt { .x { wnd::GetXLPARAM(msg.lParam) }, .y { wnd::GetYLPARAM(msg.lParam) } };
 	const auto optHit = HitTest(pt);
 
 	if (m_fLMousePressed) {

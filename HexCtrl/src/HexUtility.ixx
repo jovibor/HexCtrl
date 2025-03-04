@@ -344,11 +344,10 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		return optFT;
 	}
 
-	[[nodiscard]] auto SystemTimeToString(SYSTEMTIME stSysTime, DWORD dwFormat, wchar_t wchSepar) -> std::wstring
+	[[nodiscard]] auto SystemTimeToString(SYSTEMTIME st, DWORD dwFormat, wchar_t wchSepar) -> std::wstring
 	{
-		if (dwFormat > 2 || stSysTime.wDay == 0 || stSysTime.wDay > 31 || stSysTime.wMonth == 0 || stSysTime.wMonth > 12
-			|| stSysTime.wYear > 9999 || stSysTime.wHour > 23 || stSysTime.wMinute > 59 || stSysTime.wSecond > 59
-			|| stSysTime.wMilliseconds > 999)
+		if (dwFormat > 2 || st.wDay == 0 || st.wDay > 31 || st.wMonth == 0 || st.wMonth > 12
+			|| st.wYear > 9999 || st.wHour > 23 || st.wMinute > 59 || st.wSecond > 59 || st.wMilliseconds > 999)
 			return L"N/A";
 
 		std::wstring_view wsvFmt;
@@ -366,13 +365,13 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 			break;
 		}
 
-		return std::vformat(wsvFmt, std::make_wformat_args(stSysTime.wDay, stSysTime.wMonth, stSysTime.wYear,
-			stSysTime.wHour, stSysTime.wMinute, stSysTime.wSecond, stSysTime.wMilliseconds, wchSepar));
+		return std::vformat(wsvFmt, std::make_wformat_args(st.wDay, st.wMonth, st.wYear,
+			st.wHour, st.wMinute, st.wSecond, st.wMilliseconds, wchSepar));
 	}
 
-	[[nodiscard]] auto FileTimeToString(FILETIME stFileTime, DWORD dwFormat, wchar_t wchSepar) -> std::wstring
+	[[nodiscard]] auto FileTimeToString(FILETIME ft, DWORD dwFormat, wchar_t wchSepar) -> std::wstring
 	{
-		if (SYSTEMTIME stSysTime; ::FileTimeToSystemTime(&stFileTime, &stSysTime) != FALSE) {
+		if (SYSTEMTIME stSysTime; ::FileTimeToSystemTime(&ft, &stSysTime) != FALSE) {
 			return SystemTimeToString(stSysTime, dwFormat, wchSepar);
 		}
 
@@ -425,15 +424,6 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	[[nodiscard]] auto GetLocale() -> std::locale {
 		static const auto loc { std::locale("en_US.UTF-8") };
 		return loc;
-	}
-
-	//Replicates GET_X_LPARAM macro from the windowsx.h.
-	[[nodiscard]] constexpr int GetXLPARAM(LPARAM lParam) {
-		return (static_cast<int>(static_cast<short>(static_cast<WORD>((static_cast<DWORD_PTR>(lParam)) & 0xFFFF))));
-	}
-
-	[[nodiscard]] constexpr int GetYLPARAM(LPARAM lParam) {
-		return GetXLPARAM(lParam >> 16);
 	}
 
 	//Returns hInstance of a current module, whether it is a .exe or .dll.
@@ -505,6 +495,15 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		}
 
 		return 0;
+	}
+
+	//Replicates GET_X_LPARAM macro from the windowsx.h.
+	[[nodiscard]] constexpr int GetXLPARAM(LPARAM lParam) {
+		return (static_cast<int>(static_cast<short>(static_cast<WORD>((static_cast<DWORD_PTR>(lParam)) & 0xFFFF))));
+	}
+
+	[[nodiscard]] constexpr int GetYLPARAM(LPARAM lParam) {
+		return GetXLPARAM(lParam >> 16);
 	}
 
 	class CDynLayout final {
@@ -603,6 +602,7 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		CPoint() : POINT { } { }
 		CPoint(POINT pt) : POINT { pt } { }
 		CPoint(int x, int y) : POINT { .x { x }, .y { y } } { }
+		~CPoint() = default;
 		operator LPPOINT() { return this; }
 		operator const POINT*()const { return this; }
 		bool operator==(POINT pt)const { return x == pt.x && y == pt.y; }
@@ -622,8 +622,13 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		}
 		CRect(RECT rc) { ::CopyRect(this, &rc); }
 		CRect(LPCRECT pRC) { ::CopyRect(this, pRC); }
-		CRect(POINT pt, SIZE size) { left = pt.x; right = left + size.cx; top = pt.y; bottom = top + size.cy; }
-		CRect(POINT topLeft, POINT botRight) { left = topLeft.x; top = topLeft.y; right = botRight.x; bottom = botRight.y; }
+		CRect(POINT pt, SIZE size) : RECT { .left { pt.x }, .top { pt.y }, .right { pt.x + size.cx },
+			.bottom { pt.y + size.cy } } {
+		}
+		CRect(POINT topLeft, POINT botRight) : RECT { .left { topLeft.x }, .top { topLeft.y },
+			.right { botRight.x }, .bottom { botRight.y } } {
+		}
+		~CRect() = default;
 		operator LPRECT() { return this; }
 		operator LPCRECT()const { return this; }
 		bool operator==(RECT rc)const { return ::EqualRect(this, &rc); }
@@ -650,9 +655,11 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 	public:
 		CDC() = default;
 		CDC(HDC hDC) : m_hDC(hDC) { }
+		~CDC() = default;
 		operator HDC()const { return m_hDC; }
 		void AbortDoc()const { ::AbortDoc(m_hDC); }
 		void DeleteDC()const { ::DeleteDC(m_hDC); }
+		HDC GetHDC()const { return m_hDC; }
 		void GetTextMetricsW(LPTEXTMETRICW pTM)const { ::GetTextMetricsW(m_hDC, pTM); }
 		auto SetBkColor(COLORREF clr)const->COLORREF { return ::SetBkColor(m_hDC, clr); }
 		void DrawEdge(LPRECT pRC, UINT uEdge, UINT uFlags)const { ::DrawEdge(m_hDC, pRC, uEdge, uFlags); }
@@ -692,8 +699,6 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 	public:
 		CPaintDC(HWND hWnd) : m_hWnd(hWnd) { assert(::IsWindow(hWnd)); m_hDC = ::BeginPaint(m_hWnd, &m_PS); }
 		~CPaintDC() { ::EndPaint(m_hWnd, &m_PS); }
-		HDC GetHDC()const { return m_PS.hdc; }
-		operator HDC()const { return m_PS.hdc; }
 	private:
 		PAINTSTRUCT m_PS;
 		HWND m_hWnd;
@@ -704,34 +709,32 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		CMemDC(HDC hDC, HWND hWnd) : m_hDCOrig(hDC) { assert(::IsWindow(hWnd)); ::GetClientRect(hWnd, &m_rc); Init(); }
 		CMemDC(HDC hDC, RECT rc) : m_hDCOrig(hDC), m_rc(rc) { Init(); }
 		~CMemDC();
-		HDC GetHDC()const { return m_hDCMem; }
-		operator HDC()const { return m_hDCMem; }
 	private:
 		void Init();
 	private:
 		HDC m_hDCOrig;
-		HDC m_hDCMem;
 		HBITMAP m_hBmp;
 		RECT m_rc;
 	};
-
-	void CMemDC::Init()
-	{
-		m_hDCMem = m_hDC = ::CreateCompatibleDC(m_hDCOrig); //Set CDC::m_hDC as well.
-		const auto iWidth = m_rc.right - m_rc.left;
-		const auto iHeight = m_rc.bottom - m_rc.top;
-		m_hBmp = ::CreateCompatibleBitmap(m_hDCOrig, iWidth, iHeight);
-		assert(m_hDCMem != nullptr && m_hBmp != nullptr);
-		::SelectObject(m_hDCMem, m_hBmp);
-	}
 
 	CMemDC::~CMemDC()
 	{
 		const auto iWidth = m_rc.right - m_rc.left;
 		const auto iHeight = m_rc.bottom - m_rc.top;
-		::BitBlt(m_hDCOrig, m_rc.left, m_rc.top, iWidth, iHeight, m_hDCMem, m_rc.left, m_rc.top, SRCCOPY);
+		::BitBlt(m_hDCOrig, m_rc.left, m_rc.top, iWidth, iHeight, m_hDC, m_rc.left, m_rc.top, SRCCOPY);
 		::DeleteObject(m_hBmp);
-		::DeleteDC(m_hDCMem);
+		::DeleteDC(m_hDC);
+	}
+
+	void CMemDC::Init()
+	{
+		m_hDC = ::CreateCompatibleDC(m_hDCOrig);
+		assert(m_hDC != nullptr);
+		const auto iWidth = m_rc.right - m_rc.left;
+		const auto iHeight = m_rc.bottom - m_rc.top;
+		m_hBmp = ::CreateCompatibleBitmap(m_hDCOrig, iWidth, iHeight);
+		assert(m_hBmp != nullptr);
+		::SelectObject(m_hDC, m_hBmp);
 	}
 
 	class CWnd {
