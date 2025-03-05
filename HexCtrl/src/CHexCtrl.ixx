@@ -2989,28 +2989,18 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 	wstrRet += m_wstrTextTitle;
 	wstrRet += L"\r\n";
 
-	//How many spaces are needed to be inserted at the beginning.
+	//How many spaces to insert at the beginning.
 	DWORD dwModStart = ullSelStart % dwCapacity;
-
-	auto dwLines = static_cast<DWORD>(ullSelSize) / dwCapacity;
-	if ((dwModStart + static_cast<DWORD>(ullSelSize)) > dwCapacity) {
-		++dwLines;
-	}
-	if ((ullSelSize % dwCapacity) + dwModStart > dwCapacity) {
-		++dwLines;
-	}
-	if (!dwLines) {
-		dwLines = 1;
-	}
-
+	const auto dwLines = static_cast<DWORD>(ullSelSize / dwCapacity + ((ullSelSize % dwCapacity) ? 1
+		: (dwModStart > 0) ? 1 : 0));
 	const auto ullStartLine = ullSelStart / dwCapacity;
 	const auto dwStartOffset = dwModStart; //Offset from the line start in the wstrHex.
 	const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, static_cast<int>(dwLines));
 	std::wstring wstrDataText;
 	std::size_t sIndexToPrint { 0 };
 
-	for (auto iterLines { 0U }; iterLines < dwLines; ++iterLines) {
-		wstrRet += OffsetToWstr(ullStartLine * dwCapacity + dwCapacity * iterLines);
+	for (auto itLines { 0U }; itLines < dwLines; ++itLines) {
+		wstrRet += OffsetToWstr(ullStartLine * dwCapacity + dwCapacity * itLines);
 		wstrRet.insert(wstrRet.size(), 3, ' ');
 
 		for (auto iterChunks { 0U }; iterChunks < dwCapacity; ++iterChunks) {
@@ -3038,7 +3028,7 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 		}
 		wstrRet += L"   "; //Text beginning.
 		wstrRet += wstrDataText;
-		if (iterLines < dwLines - 1) {
+		if (itLines < dwLines - 1) {
 			wstrRet += L"\r\n";
 		}
 		wstrDataText.clear();
