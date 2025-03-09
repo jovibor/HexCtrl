@@ -385,8 +385,8 @@ void CHexDlgSearch::ShowWindow(int iCmdShow)
 void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 {
 	int iHighlight { -1 };
-	if (const auto iter = std::find(m_vecSearchRes.begin(), m_vecSearchRes.end(), ullOffset);
-		iter == m_vecSearchRes.end()) { //Max-found search occurences.
+	if (const auto it = std::find(m_vecSearchRes.begin(), m_vecSearchRes.end(), ullOffset);
+		it == m_vecSearchRes.end()) { //Max-found search occurences.
 		if (m_vecSearchRes.size() < static_cast<std::size_t>(m_dwLimit)) {
 			m_vecSearchRes.emplace_back(ullOffset);
 			iHighlight = static_cast<int>(m_vecSearchRes.size());
@@ -394,7 +394,7 @@ void CHexDlgSearch::AddToList(ULONGLONG ullOffset)
 		}
 	}
 	else {
-		iHighlight = static_cast<int>(iter - m_vecSearchRes.begin());
+		iHighlight = static_cast<int>(it - m_vecSearchRes.begin());
 	}
 
 	if (iHighlight != -1) {

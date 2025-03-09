@@ -253,18 +253,18 @@ export namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 			return std::nullopt;
 
 		std::string strHexTmp;
-		for (auto iterBegin = wsv.begin(); iterBegin != wsv.end();) {
-			if (fWc && static_cast<char>(*iterBegin) == chWc) { //Skip wildcard.
-				++iterBegin;
+		for (auto it = wsv.begin(); it != wsv.end();) {
+			if (fWc && static_cast<char>(*it) == chWc) { //Skip wildcard.
+				++it;
 				strHexTmp += chWc;
 				continue;
 			}
 
 			//Extract two current wchars and pass it to StringToNum as wstring.
-			const std::size_t nOffsetCurr = iterBegin - wsv.begin();
+			const std::size_t nOffsetCurr = it - wsv.begin();
 			const auto nSize = nOffsetCurr + 2 <= wsv.size() ? 2 : 1;
 			if (const auto optNumber = stn::StrToUInt8(wsv.substr(nOffsetCurr, nSize), 16); optNumber) {
-				iterBegin += nSize;
+				it += nSize;
 				strHexTmp += *optNumber;
 			}
 			else
@@ -706,27 +706,15 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 
 	class CMemDC final : public CDC {
 	public:
-		CMemDC(HDC hDC, HWND hWnd) : m_hDCOrig(hDC) { assert(::IsWindow(hWnd)); ::GetClientRect(hWnd, &m_rc); Init(); }
-		CMemDC(HDC hDC, RECT rc) : m_hDCOrig(hDC), m_rc(rc) { Init(); }
+		CMemDC(HDC hDC, RECT rc);
 		~CMemDC();
-	private:
-		void Init();
 	private:
 		HDC m_hDCOrig;
 		HBITMAP m_hBmp;
 		RECT m_rc;
 	};
 
-	CMemDC::~CMemDC()
-	{
-		const auto iWidth = m_rc.right - m_rc.left;
-		const auto iHeight = m_rc.bottom - m_rc.top;
-		::BitBlt(m_hDCOrig, m_rc.left, m_rc.top, iWidth, iHeight, m_hDC, m_rc.left, m_rc.top, SRCCOPY);
-		::DeleteObject(m_hBmp);
-		::DeleteDC(m_hDC);
-	}
-
-	void CMemDC::Init()
+	CMemDC::CMemDC(HDC hDC, RECT rc) : m_hDCOrig(hDC), m_rc(rc)
 	{
 		m_hDC = ::CreateCompatibleDC(m_hDCOrig);
 		assert(m_hDC != nullptr);
@@ -735,6 +723,15 @@ export namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		m_hBmp = ::CreateCompatibleBitmap(m_hDCOrig, iWidth, iHeight);
 		assert(m_hBmp != nullptr);
 		::SelectObject(m_hDC, m_hBmp);
+	}
+
+	CMemDC::~CMemDC()
+	{
+		const auto iWidth = m_rc.right - m_rc.left;
+		const auto iHeight = m_rc.bottom - m_rc.top;
+		::BitBlt(m_hDCOrig, m_rc.left, m_rc.top, iWidth, iHeight, m_hDC, m_rc.left, m_rc.top, SRCCOPY);
+		::DeleteObject(m_hBmp);
+		::DeleteDC(m_hDC);
 	}
 
 	class CWnd {

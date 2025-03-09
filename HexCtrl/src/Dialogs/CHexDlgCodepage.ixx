@@ -158,10 +158,10 @@ auto CHexDlgCodepage::OnActivate(const MSG& msg)->INT_PTR
 	const auto nState = LOWORD(msg.wParam);
 	if (nState == WA_ACTIVE || nState == WA_CLICKACTIVE) {
 		m_ListEx.SetItemState(-1, 0, LVIS_SELECTED);
-		if (const auto iter = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
+		if (const auto it = std::find_if(m_vecCodePage.begin(), m_vecCodePage.end(),
 			[this](const CODEPAGE& ref) { return ref.iCPID == m_pHexCtrl->GetCodepage(); });
-			iter != m_vecCodePage.end()) {
-			const auto iItem = static_cast<int>(iter - m_vecCodePage.begin());
+			it != m_vecCodePage.end()) {
+			const auto iItem = static_cast<int>(it - m_vecCodePage.begin());
 			m_ListEx.SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
 			m_ListEx.EnsureVisible(iItem, FALSE);
 		}

@@ -297,27 +297,15 @@ namespace HEXCTRL::LISTEX::INTERNAL::wnd {
 
 	class CMemDC final : public CDC {
 	public:
-		CMemDC(HDC hDC, HWND hWnd) : m_hDCOrig(hDC) { assert(::IsWindow(hWnd)); ::GetClientRect(hWnd, &m_rc); Init(); }
-		CMemDC(HDC hDC, RECT rc) : m_hDCOrig(hDC), m_rc(rc) { Init(); }
+		CMemDC(HDC hDC, RECT rc);
 		~CMemDC();
-	private:
-		void Init();
 	private:
 		HDC m_hDCOrig;
 		HBITMAP m_hBmp;
 		RECT m_rc;
 	};
 
-	CMemDC::~CMemDC()
-	{
-		const auto iWidth = m_rc.right - m_rc.left;
-		const auto iHeight = m_rc.bottom - m_rc.top;
-		::BitBlt(m_hDCOrig, m_rc.left, m_rc.top, iWidth, iHeight, m_hDC, m_rc.left, m_rc.top, SRCCOPY);
-		::DeleteObject(m_hBmp);
-		::DeleteDC(m_hDC);
-	}
-
-	void CMemDC::Init()
+	CMemDC::CMemDC(HDC hDC, RECT rc) : m_hDCOrig(hDC), m_rc(rc)
 	{
 		m_hDC = ::CreateCompatibleDC(m_hDCOrig);
 		assert(m_hDC != nullptr);
@@ -326,6 +314,15 @@ namespace HEXCTRL::LISTEX::INTERNAL::wnd {
 		m_hBmp = ::CreateCompatibleBitmap(m_hDCOrig, iWidth, iHeight);
 		assert(m_hBmp != nullptr);
 		::SelectObject(m_hDC, m_hBmp);
+	}
+
+	CMemDC::~CMemDC()
+	{
+		const auto iWidth = m_rc.right - m_rc.left;
+		const auto iHeight = m_rc.bottom - m_rc.top;
+		::BitBlt(m_hDCOrig, m_rc.left, m_rc.top, iWidth, iHeight, m_hDC, m_rc.left, m_rc.top, SRCCOPY);
+		::DeleteObject(m_hBmp);
+		::DeleteDC(m_hDC);
 	}
 }
 
@@ -1014,10 +1011,10 @@ auto CListExHdr::OnLButtonUp(const MSG& msg)->LRESULT
 auto CListExHdr::OnPaint()->LRESULT
 {
 	const wnd::CPaintDC dcPaint(m_hWnd);
-	const wnd::CMemDC dcMem(dcPaint, m_hWnd);
 	wnd::CRect rcClient;
 	::GetClientRect(m_hWnd, rcClient);
-	wnd::CRect rectItem;
+	const wnd::CMemDC dcMem(dcPaint, rcClient);
+	wnd::CRect rcItem;
 	const auto iItems = GetItemCount();
 	LONG lMax = 0;
 
@@ -1028,22 +1025,22 @@ auto CListExHdr::OnPaint()->LRESULT
 		const auto iHit = HitTest({ .pt { ptCur } });
 		const auto fHighl = iHit == iItem;
 		const auto fPressed = m_fLMousePressed && fHighl;
-		rectItem = GetItemRect(iItem);
-		OnDrawItem(dcMem, iItem, rectItem, fPressed, fHighl);
-		lMax = (std::max)(lMax, rectItem.right);
+		rcItem = GetItemRect(iItem);
+		OnDrawItem(dcMem, iItem, rcItem, fPressed, fHighl);
+		lMax = (std::max)(lMax, rcItem.right);
 	}
 
 	// Draw "tail border":
 	if (iItems == 0) {
-		rectItem = rcClient;
-		rectItem.right++;
+		rcItem = rcClient;
+		++rcItem.right;
 	}
 	else {
-		rectItem.left = lMax;
-		rectItem.right = rcClient.right + 1;
+		rcItem.left = lMax;
+		rcItem.right = rcClient.right + 1;
 	}
 
-	OnDrawItem(dcMem, -1, rectItem, FALSE, FALSE);
+	OnDrawItem(dcMem, -1, rcItem, FALSE, FALSE);
 
 	return 0;
 }

@@ -99,10 +99,10 @@ auto CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)->ULONGLONG
 	}
 	else {
 		ullID = 1; //Bookmarks' ID starts from 1.
-		if (const auto iter = std::max_element(m_vecBookmarks.begin(), m_vecBookmarks.end(),
+		if (const auto it = std::max_element(m_vecBookmarks.begin(), m_vecBookmarks.end(),
 			[](const HEXBKM& lhs, const HEXBKM& rhs) {
-				return lhs.ullID < rhs.ullID; }); iter != m_vecBookmarks.end()) {
-			ullID = iter->ullID + 1; //Increasing next bookmark's ID by 1.
+				return lhs.ullID < rhs.ullID; }); it != m_vecBookmarks.end()) {
+			ullID = it->ullID + 1; //Increasing next bookmark's ID by 1.
 		}
 		m_vecBookmarks.emplace_back(hbs.vecSpan, hbs.wstrDesc, ullID, hbs.ullData, hbs.stClr);
 	}
@@ -144,9 +144,9 @@ auto CHexDlgBkmMgr::GetByID(ULONGLONG ullID)->PHEXBKM
 	if (m_pVirtual) {
 		pBkm = m_pVirtual->GetByID(ullID);
 	}
-	else if (const auto iter = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
-		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); iter != m_vecBookmarks.end()) {
-		pBkm = &*iter;
+	else if (const auto it = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
+		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); it != m_vecBookmarks.end()) {
+		pBkm = &*it;
 	}
 
 	return pBkm;
@@ -253,12 +253,12 @@ auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM
 		pBkm = m_pVirtual->HitTest(ullOffset);
 	}
 	else {
-		if (const auto rIter = std::find_if(m_vecBookmarks.rbegin(), m_vecBookmarks.rend(),
+		if (const auto rit = std::find_if(m_vecBookmarks.rbegin(), m_vecBookmarks.rend(),
 			[ullOffset](const HEXBKM& ref) { return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPAN& refV) {
 					return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
-					rIter != m_vecBookmarks.rend()) {
-			pBkm = &*rIter;
+					rit != m_vecBookmarks.rend()) {
+			pBkm = &*rit;
 		}
 	}
 
@@ -330,12 +330,12 @@ void CHexDlgBkmMgr::RemoveByOffset(ULONGLONG ullOffset)
 			return;
 
 		//Searching from the end, to remove last added bookmark if there are few at the given offset.
-		if (const auto iter = std::find_if(m_vecBookmarks.rbegin(), m_vecBookmarks.rend(),
+		if (const auto it = std::find_if(m_vecBookmarks.rbegin(), m_vecBookmarks.rend(),
 			[ullOffset](const HEXBKM& ref) { return std::any_of(ref.vecSpan.begin(), ref.vecSpan.end(),
 				[ullOffset](const HEXSPAN& refV) {
 					return ullOffset >= refV.ullOffset && ullOffset < (refV.ullOffset + refV.ullSize); }); });
-			iter != m_vecBookmarks.rend()) {
-			RemoveBookmark(iter->ullID);
+			it != m_vecBookmarks.rend()) {
+			RemoveBookmark(it->ullID);
 		}
 	}
 
@@ -429,9 +429,9 @@ void CHexDlgBkmMgr::Update(ULONGLONG ullID, const HEXBKM& bkm)
 	if (IsVirtual())
 		return;
 
-	if (const auto iter = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
-		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); iter != m_vecBookmarks.end()) {
-		*iter = bkm;
+	if (const auto it = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
+		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); it != m_vecBookmarks.end()) {
+		*it = bkm;
 	}
 
 	if (::IsWindow(m_ListEx.GetHWND())) {
@@ -807,9 +807,9 @@ auto CHexDlgBkmMgr::OnSize(const MSG& msg)->INT_PTR
 
 void CHexDlgBkmMgr::RemoveBookmark(std::uint64_t ullID)
 {
-	if (const auto iter = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
-		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); iter != m_vecBookmarks.end()) {
-		m_vecBookmarks.erase(iter);
+	if (const auto it = std::find_if(m_vecBookmarks.begin(), m_vecBookmarks.end(),
+		[ullID](const HEXBKM& ref) { return ullID == ref.ullID; }); it != m_vecBookmarks.end()) {
+		m_vecBookmarks.erase(it);
 	}
 }
 

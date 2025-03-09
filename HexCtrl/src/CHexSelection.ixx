@@ -63,10 +63,10 @@ namespace HEXCTRL::INTERNAL {
 		if (ullIndex >= GetSelSize())
 			return ullOffset;
 
-		for (ULONGLONG ullTotal { }; const auto & iterData : m_vecSelection) {
-			ullTotal += iterData.ullSize;
+		for (ULONGLONG ullTotal { }; const auto & ref : m_vecSelection) {
+			ullTotal += ref.ullSize;
 			if (ullIndex < ullTotal) {
-				ullOffset = iterData.ullOffset + (ullIndex - (ullTotal - iterData.ullSize));
+				ullOffset = ref.ullOffset + (ullIndex - (ullTotal - ref.ullSize));
 				break;
 			}
 		}

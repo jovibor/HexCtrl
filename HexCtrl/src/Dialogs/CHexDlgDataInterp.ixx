@@ -289,10 +289,10 @@ void CHexDlgDataInterp::UpdateData()
 
 	//EDataSize::SIZE_WORD
 	if (ullOffset + static_cast<std::uint8_t>(SIZE_WORD) > ullDataSize) {
-		for (auto& iter : m_vecData) {
-			if (iter.eSize >= SIZE_WORD) {
-				iter.wstrValue.clear();
-				iter.fAllowEdit = false;
+		for (auto& ref : m_vecData) {
+			if (ref.eSize >= SIZE_WORD) {
+				ref.wstrValue.clear();
+				ref.fAllowEdit = false;
 			}
 		}
 
@@ -314,10 +314,10 @@ void CHexDlgDataInterp::UpdateData()
 
 	//EDataSize::SIZE_DWORD
 	if (ullOffset + static_cast<std::uint8_t>(SIZE_DWORD) > ullDataSize) {
-		for (auto& iter : m_vecData) {
-			if (iter.eSize >= SIZE_DWORD) {
-				iter.wstrValue.clear();
-				iter.fAllowEdit = false;
+		for (auto& ref : m_vecData) {
+			if (ref.eSize >= SIZE_DWORD) {
+				ref.wstrValue.clear();
+				ref.fAllowEdit = false;
 			}
 		}
 
@@ -343,10 +343,10 @@ void CHexDlgDataInterp::UpdateData()
 
 	//EDataSize::SIZE_QWORD
 	if (ullOffset + static_cast<std::uint8_t>(SIZE_QWORD) > ullDataSize) {
-		for (auto& iter : m_vecData) {
-			if (iter.eSize >= SIZE_QWORD) {
-				iter.wstrValue.clear();
-				iter.fAllowEdit = false;
+		for (auto& ref : m_vecData) {
+			if (ref.eSize >= SIZE_QWORD) {
+				ref.wstrValue.clear();
+				ref.fAllowEdit = false;
 			}
 		}
 
@@ -373,10 +373,10 @@ void CHexDlgDataInterp::UpdateData()
 
 	//EDataSize::SIZE_DQWORD
 	if (ullOffset + static_cast<std::uint8_t>(SIZE_DQWORD) > ullDataSize) {
-		for (auto& iter : m_vecData) {
-			if (iter.eSize >= SIZE_DQWORD) {
-				iter.wstrValue.clear();
-				iter.fAllowEdit = false;
+		for (auto& ref : m_vecData) {
+			if (ref.eSize >= SIZE_DQWORD) {
+				ref.wstrValue.clear();
+				ref.fAllowEdit = false;
 			}
 		}
 

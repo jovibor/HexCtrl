@@ -132,23 +132,26 @@
 * [Licensing](#licensing)
 
 ## [](#)Introduction
-**HexCtrl** is a fully-featured Hex-editor Control written in pure **Win32 API**.
+**HexCtrl** is the fully-featured Hex Control written in pure **Win32 API**.
 
 ### The main features of the **HexCtrl**:
 * View and edit data up to **16EB** (exabyte)
 * Two working modes: **Memory** and [**Virtual Data Mode**](#virtual-data-mode)
 * Fully-featured **Bookmarks Manager**
 * Fully-featured **Search and Replace**
+* Fully-featured **Data Interpreter**
 * Changeable codepage for the text area
 * Many options to **Copy/Paste** to/from clipboard
-* **Undo/Redo**
 * Modify data with **Filling** and many predefined **Operations** options
+* **Undo/Redo**
 * Ability to visually divide data into [pages](#setpagesize)
 * Print whole document/pages range/selection
 * Set individual colors for the data chunks with [**Custom Colors**](#ihexvirtcolors)
 * Powerful system of [Templates](#templates)
 * [Assignable keyboard shortcuts](#setconfig) via external config file
 * Customizable look and appearance
+* Utilizes **AVX/AVX2** instruction set for best performance
+* Supports compiling for the **ARM64** architecture
 * Written with the **/std:c++20** standard conformance
 
 ![](docs/img/HexCtrl_Operations.jpg)
@@ -182,11 +185,11 @@ To build and use **HexCtrl** as a DLL:
 ## [](#)Creating
 
 ### [](#)Classic Approach
-First you need to create a **HexCtrl** object:
+First you need to create **HexCtrl** object:
 ```cpp
-HEXCTRL::IHexCtrlPtr myHex { HEXCTRL::CreateHexCtrl() };
+auto myHex { HEXCTRL::CreateHexCtrl() };
 ```
-Then call the [`IHexCtrl::Create`](#create) method, which takes the [`HEXCREATE`](#hexcreate) struct with the all necessary information for the **HexCtrl** creation. The `HEXCREATE::dwStyle` and `dwExStyle` are [window](https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles) and [extended window](https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles) styles respectively, set these styles according to your needs. For all available options see the [`HEXCREATE`](#hexcreate) struct description.
+Then call the [`Create`](#create) method, which takes the [`HEXCREATE`](#hexcreate) struct with the all necessary information for the **HexCtrl** creation. The `HEXCREATE::dwStyle` and `dwExStyle` are [window](https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles) and [extended window](https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles) styles respectively, set these styles according to your needs. For all available options see the [`HEXCREATE`](#hexcreate) struct description.
 
 ### [](#)In Dialog
 To use **HexCtrl** in a Dialog you can create it with the [Classic Approach](#classic-approach): call [`Create`](#create) method and provide all the necessary information.  
@@ -196,7 +199,7 @@ But there is another option:
 1. In the **Properties** of this control in the **Class** field within the **Misc** section write: **HexCtrl_MainWnd**.
 1. Declare `IHexCtrlPtr` member variable within your dialog class:
     ```cpp
-    IHexCtrlPtr m_myHex { CreateHexCtrl() };
+    HEXCTRL::IHexCtrlPtr m_myHex { CreateHexCtrl() };
     ```
 1. Call the [`CreateDialogCtrl`](#createdialogctrl ) method from dialog's `OnInitDialog` method.
     ```cpp
