@@ -80,8 +80,8 @@ namespace HEXCTRL::INTERNAL {
 		IHexCtrl* m_pHexCtrl { };
 		IHexBookmarks* m_pVirtual { };
 		LISTEX::CListEx m_ListEx;
-		LONGLONG m_llIndexCurr { };   //Current bookmark's position index, to move next/prev.
-		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
+		std::uint64_t m_u64IndexCurr { }; //Current bookmark's position index, to move next/prev.
+		std::uint64_t m_u64Flags { };     //Data from SetDlgProperties.
 	};
 }
 
@@ -93,7 +93,7 @@ enum class CHexDlgBkmMgr::EMenuID : std::uint16_t {
 
 auto CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)->ULONGLONG
 {
-	ULONGLONG ullID { static_cast<ULONGLONG>(-1) };
+	ULONGLONG ullID;
 	if (m_pVirtual) {
 		ullID = m_pVirtual->AddBkm(hbs, fRedraw);
 	}
@@ -172,7 +172,7 @@ auto CHexDlgBkmMgr::GetCount()->ULONGLONG
 
 auto CHexDlgBkmMgr::GetCurrent()const->ULONGLONG
 {
-	return static_cast<ULONGLONG>(m_llIndexCurr);
+	return m_u64IndexCurr;
 }
 
 auto CHexDlgBkmMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
@@ -196,7 +196,7 @@ void CHexDlgBkmMgr::GoBookmark(ULONGLONG ullIndex)
 		return;
 
 	if (const auto* const pBkm = GetByIndex(ullIndex); pBkm != nullptr) {
-		m_llIndexCurr = static_cast<LONGLONG>(ullIndex);
+		m_u64IndexCurr = ullIndex;
 		const auto ullOffset = pBkm->vecSpan.front().ullOffset;
 		m_pHexCtrl->SetCaretPos(ullOffset);
 		if (!m_pHexCtrl->IsOffsetVisible(ullOffset)) {
@@ -210,11 +210,11 @@ void CHexDlgBkmMgr::GoNext()
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
 		return;
 
-	if (++m_llIndexCurr >= static_cast<LONGLONG>(GetCount())) {
-		m_llIndexCurr = 0;
+	if (++m_u64IndexCurr >= GetCount()) {
+		m_u64IndexCurr = 0;
 	}
 
-	if (const auto* const pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr) {
+	if (const auto* const pBkm = GetByIndex(m_u64IndexCurr); pBkm != nullptr) {
 		const auto ullOffset = pBkm->vecSpan.front().ullOffset;
 		m_pHexCtrl->SetCaretPos(ullOffset);
 		if (!m_pHexCtrl->IsOffsetVisible(ullOffset)) {
@@ -228,11 +228,14 @@ void CHexDlgBkmMgr::GoPrev()
 	if (m_pHexCtrl == nullptr || !m_pHexCtrl->IsDataSet())
 		return;
 
-	if (--m_llIndexCurr; m_llIndexCurr < 0 || m_llIndexCurr >= static_cast<LONGLONG>(GetCount())) {
-		m_llIndexCurr = static_cast<LONGLONG>(GetCount()) - 1;
+	if (m_u64IndexCurr == 0 || (m_u64IndexCurr - 1) >= GetCount()) {
+		m_u64IndexCurr = GetCount() - 1;
+	}
+	else {
+		--m_u64IndexCurr;
 	}
 
-	if (const auto* const pBkm = GetByIndex(m_llIndexCurr); pBkm != nullptr) {
+	if (const auto* const pBkm = GetByIndex(m_u64IndexCurr); pBkm != nullptr) {
 		const auto ullOffset = pBkm->vecSpan.front().ullOffset;
 		m_pHexCtrl->SetCaretPos(ullOffset);
 		if (!m_pHexCtrl->IsOffsetVisible(ullOffset)) {
