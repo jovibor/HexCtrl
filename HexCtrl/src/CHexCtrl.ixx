@@ -915,12 +915,8 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	case CMD_MODIFY_REDO:
 		Redo();
 		break;
-	case CMD_SEL_MARKSTART:
-		m_pSelection->SetSelStartEnd(GetCaretPos(), true);
-		Redraw();
-		break;
-	case CMD_SEL_MARKEND:
-		m_pSelection->SetSelStartEnd(GetCaretPos(), false);
+	case CMD_SEL_MARKSTARTEND:
+		m_pSelection->SetMarkStartEnd(GetCaretPos());
 		Redraw();
 		break;
 	case CMD_SEL_ALL:
@@ -1381,8 +1377,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	case CMD_NAV_LINEBEG:
 	case CMD_NAV_LINEEND:
 	case CMD_BKM_DLG_MGR:
-	case CMD_SEL_MARKSTART:
-	case CMD_SEL_MARKEND:
+	case CMD_SEL_MARKSTARTEND:
 	case CMD_SEL_ALL:
 	case CMD_DATAINTERP_DLG:
 	case CMD_CLPBRD_COPY_OFFSET:
@@ -1941,8 +1936,7 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 		{ "CMD_MODIFY_FILLDATA_DLG", { CMD_MODIFY_FILLDATA_DLG, IDM_HEXCTRL_MODIFY_DLGFILLDATA } },
 		{ "CMD_MODIFY_UNDO", { CMD_MODIFY_UNDO, IDM_HEXCTRL_MODIFY_UNDO } },
 		{ "CMD_MODIFY_REDO", { CMD_MODIFY_REDO, IDM_HEXCTRL_MODIFY_REDO } },
-		{ "CMD_SEL_MARKSTART", { CMD_SEL_MARKSTART, IDM_HEXCTRL_SEL_MARKSTART } },
-		{ "CMD_SEL_MARKEND", { CMD_SEL_MARKEND, IDM_HEXCTRL_SEL_MARKEND } },
+		{ "CMD_SEL_MARKSTARTEND", { CMD_SEL_MARKSTARTEND, IDM_HEXCTRL_SEL_MARKSTARTEND } },
 		{ "CMD_SEL_ALL", { CMD_SEL_ALL, IDM_HEXCTRL_SEL_ALL } },
 		{ "CMD_SEL_ADDLEFT", { CMD_SEL_ADDLEFT, 0 } },
 		{ "CMD_SEL_ADDRIGHT", { CMD_SEL_ADDRIGHT, 0 } },
@@ -7189,8 +7183,7 @@ auto CHexCtrl::OnInitMenuPopup(const MSG& msg)->LRESULT
 		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(CMD_MODIFY_REDO));
 		break;
 	case 7: //Selection.
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKSTART, IsCmdAvail(CMD_SEL_MARKSTART));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKEND, IsCmdAvail(CMD_SEL_MARKEND));
+		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKSTARTEND, IsCmdAvail(CMD_SEL_MARKSTARTEND));
 		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(CMD_SEL_ALL));
 		break;
 	case 8: //Templates.

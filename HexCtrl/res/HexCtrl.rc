@@ -391,8 +391,7 @@ BEGIN
         END
         POPUP "Selection"
         BEGIN
-            MENUITEM "Mark Selection Start",        IDM_HEXCTRL_SEL_MARKSTART
-            MENUITEM "Mark Selection End",          IDM_HEXCTRL_SEL_MARKEND
+            MENUITEM "Mark Start/End",              IDM_HEXCTRL_SEL_MARKSTARTEND
             MENUITEM SEPARATOR
             MENUITEM "Select All",                  IDM_HEXCTRL_SEL_ALL
         END
