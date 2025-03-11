@@ -17,7 +17,7 @@ export module HEXCTRL:CHexScroll;
 import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {
-	export class CHexScroll final {
+	class CHexScroll final {
 	public:
 		void AddSibling(CHexScroll* pSibling);
 		bool Create(HWND hWndParent, bool fVert, HINSTANCE hInstRes, UINT uIDArrow, ULONGLONG ullScrolline,
@@ -93,18 +93,18 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr auto m_iThumbPosMax { 0x7FFFFFFF };
 		enum class EState : std::uint8_t;
 		enum class ETimer : std::uint16_t;
-		CHexScroll* m_pSibling { };       //Sibling scrollbar, added with AddSibling.
 		wnd::CWnd m_Wnd;                  //Main window.
 		wnd::CWnd m_WndParent;            //Parent window.
+		CHexScroll* m_pSibling { };       //Sibling scrollbar, added with AddSibling.
 		HBITMAP m_hBmpArrowFirst { };     //Up or Left arrow bitmap.
 		HBITMAP m_hBmpArrowLast { };      //Down or Right arrow bitmap.
+		POINT m_ptCursorCur { };          //Cursor's current position.
 		ULONGLONG m_ullScrollPosCur { };  //Current scroll position.
 		ULONGLONG m_ullScrollPosPrev { }; //Previous scroll position.
 		ULONGLONG m_ullScrollLine { };    //Size of one line scroll, when clicking arrow.
 		ULONGLONG m_ullScrollPage { };    //Size of page scroll, when clicking channel.
 		ULONGLONG m_ullScrollSizeMax { }; //Maximum scroll size (limit).
 		UINT m_uiScrollBarSizeWH { };     //Scrollbar size (width if vertical, height if horz).
-		POINT m_ptCursorCur { };          //Cursor's current position.
 		int m_iArrowRCSizePx { };         //Arrow bitmap side size (it's a square) in pixels.
 		EState m_eState { };              //Current state.
 		bool m_fCreated { false };        //Main creation flag.

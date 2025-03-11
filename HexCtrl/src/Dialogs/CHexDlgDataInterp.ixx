@@ -17,7 +17,7 @@ export module HEXCTRL:CHexDlgDataInterp;
 import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {
-	export class CHexDlgDataInterp final {
+	class CHexDlgDataInterp final {
 	public:
 		void CreateDlg();
 		void DestroyDlg();
@@ -102,9 +102,9 @@ namespace HEXCTRL::INTERNAL {
 		wnd::CWndBtn m_WndBtnHex;     //Check-box "Hex numbers".
 		wnd::CWndBtn m_WndBtnBE;      //Check-box "Big endian".
 		wnd::CDynLayout m_DynLayout;
+		LISTEX::CListEx m_ListEx;
 		std::vector<LISTDATA> m_vecData;
 		IHexCtrl* m_pHexCtrl { };
-		LISTEX::CListEx m_ListEx;
 		ULONGLONG m_ullOffset { };
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 		DWORD m_dwHglDataSize { };    //Size of the data to highlight in the HexCtrl.

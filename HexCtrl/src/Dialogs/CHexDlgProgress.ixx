@@ -17,7 +17,7 @@ import :HexUtility;
 using namespace HEXCTRL::INTERNAL;
 
 namespace HEXCTRL::INTERNAL {
-	export class CHexDlgProgress final {
+	class CHexDlgProgress final {
 	public:
 		explicit CHexDlgProgress(std::wstring_view wsvOperName, std::wstring_view wsvCountName,
 			ULONGLONG ullMin, ULONGLONG ullMax);

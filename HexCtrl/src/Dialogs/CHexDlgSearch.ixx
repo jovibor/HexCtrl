@@ -25,7 +25,7 @@ import :HexUtility;
 import :CHexDlgProgress;
 
 namespace HEXCTRL::INTERNAL {
-	export class CHexDlgSearch final {
+	class CHexDlgSearch final {
 	public:
 		void ClearData();
 		void CreateDlg();
@@ -196,10 +196,14 @@ namespace HEXCTRL::INTERNAL {
 		wnd::CWndEdit m_WndEditRngEnd;   //Edit box "Range end".
 		wnd::CWndEdit m_WndEditLimit;    //Edit box "Limit search hits".
 		wnd::CMenu m_MenuList;           //Menu for the list control.
-		IHexCtrl* m_pHexCtrl { };
-		ESearchMode m_eSearchMode { };
-		std::uint64_t m_u64Flags { };   //Data from SetDlgProperties.
 		LISTEX::CListEx m_ListEx;
+		VecSearchResult m_vecSearchRes; //Search results.
+		std::vector<std::byte> m_vecSearchData;  //Data to search for.
+		std::vector<std::byte> m_vecReplaceData; //Data to replace with.
+		std::wstring m_wstrSearch;      //Text from "Search" box.
+		std::wstring m_wstrReplace;     //Text from "Replace with..." box.
+		IHexCtrl* m_pHexCtrl { };
+		std::uint64_t m_u64Flags { };   //Data from SetDlgProperties.
 		ULONGLONG m_ullStartFrom { };   //"Start form" search offset.
 		ULONGLONG m_ullRngBegin { };
 		ULONGLONG m_ullRngEnd { };
@@ -208,11 +212,7 @@ namespace HEXCTRL::INTERNAL {
 		DWORD m_dwReplaced { };         //Replaced amount;
 		DWORD m_dwLimit { 10000 };      //Maximum found search occurences.
 		int m_iWrap { };                //Wrap direction: -1 = Beginning, 1 = End.
-		VecSearchResult m_vecSearchRes; //Search results.
-		std::vector<std::byte> m_vecSearchData;  //Data to search for.
-		std::vector<std::byte> m_vecReplaceData; //Data to replace with.
-		std::wstring m_wstrSearch;      //Text from "Search" box.
-		std::wstring m_wstrReplace;     //Text from "Replace with..." box.
+		ESearchMode m_eSearchMode { };
 		bool m_fForward { };            //Search direction, Forward/Backward.
 		bool m_fSecondMatch { false };  //First or subsequent match. 
 		bool m_fFound { false };        //Found or not.

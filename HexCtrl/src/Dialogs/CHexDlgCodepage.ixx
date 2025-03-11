@@ -16,7 +16,7 @@ export module HEXCTRL:CHexDlgCodepage;
 import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {
-	export class CHexDlgCodepage final {
+	class CHexDlgCodepage final {
 	public:
 		void AddCP(std::wstring_view wsv);
 		void CreateDlg();
@@ -55,9 +55,9 @@ namespace HEXCTRL::INTERNAL {
 		HINSTANCE m_hInstRes { };
 		wnd::CWnd m_Wnd;              //Main window.
 		wnd::CDynLayout m_DynLayout;
-		IHexCtrl* m_pHexCtrl { };
 		LISTEX::CListEx m_ListEx;
 		std::vector<CODEPAGE> m_vecCodePage;
+		IHexCtrl* m_pHexCtrl { };
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 	};
 }

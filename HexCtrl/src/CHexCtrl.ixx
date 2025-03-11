@@ -427,11 +427,6 @@ namespace HEXCTRL::INTERNAL {
 		wnd::CWnd m_wndTTMain;                //Main tooltip window.
 		wnd::CWnd m_wndTTOffset;              //Tooltip window for Offset in m_fHighLatency mode.
 		wnd::CMenu m_MenuMain;                //Main popup menu.
-		HFONT m_hFntMain { };                 //Main Hex chunks font.
-		HFONT m_hFntInfoBar { };              //Font for bottom Info bar.
-		HPEN m_hPenLines { };                 //Pen for lines.
-		HPEN m_hPenDataTempl { };             //Pen for templates' fields (vertical lines).
-		HEXCOLORS m_stColors;                 //All HexCtrl colors.
 		std::wstring m_wstrCapacity;          //Top Capacity string.
 		std::wstring m_wstrInfoBar;           //Info bar text.
 		std::wstring m_wstrPageName;          //Name of the sector/page.
@@ -442,6 +437,11 @@ namespace HEXCTRL::INTERNAL {
 			decltype([](HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP; //Icons for the Menu.
 		std::vector<KEYBIND> m_vecKeyBind;    //Vector of key bindings.
 		std::vector<int> m_vecCharsWidth;     //Vector of chars widths.
+		HFONT m_hFntMain { };                 //Main Hex chunks font.
+		HFONT m_hFntInfoBar { };              //Font for bottom Info bar.
+		HPEN m_hPenLines { };                 //Pen for lines.
+		HPEN m_hPenDataTempl { };             //Pen for templates' fields (vertical lines).
+		HEXCOLORS m_stColors;                 //All HexCtrl colors.
 		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
 		SpanByte m_spnData;                   //Main data span.

@@ -12,22 +12,22 @@ module;
 export module HEXCTRL:CHexSelection;
 
 namespace HEXCTRL::INTERNAL {
-	export class CHexSelection final {
+	class CHexSelection final {
 	public:
 		void ClearAll();
+		[[nodiscard]] auto GetData()const->VecSpan;
+		[[nodiscard]] auto GetLineLength()const->DWORD; //Length of the selected line. Used in block selection (with Alt).
+		[[nodiscard]] auto GetOffsetByIndex(ULONGLONG ullIndex)const->ULONGLONG; //Retrieves selection's offset by index [0...GetSelSize())
 		[[nodiscard]] auto GetSelEnd()const->ULONGLONG;
 		[[nodiscard]] auto GetSelSize()const->ULONGLONG;
 		[[nodiscard]] auto GetSelStart()const->ULONGLONG;
-		[[nodiscard]] auto GetLineLength()const->DWORD; //Length of the selected line. Used in block selection (with Alt).
-		[[nodiscard]] auto GetOffsetByIndex(ULONGLONG ullIndex)const->ULONGLONG; //Retrieves selection's offset by index [0...GetSelSize())
-		[[nodiscard]] auto GetData()const->VecSpan;
 		[[nodiscard]] bool HasSelection()const;
 		[[nodiscard]] bool HasSelHighlight()const;
 		[[nodiscard]] bool HitTest(ULONGLONG ullOffset)const;          //Is given offset within selection.
 		[[nodiscard]] bool HitTestHighlight(ULONGLONG ullOffset)const; //Is given offset within highlighted selection.
 		[[nodiscard]] bool HitTestRange(const HEXSPAN& hss)const;      //Is there any selection within given range.
-		void SetSelection(const VecSpan& vecSel, bool fHighlight);     //Set a selection or selection highlight.
 		void SetMarkStartEnd(ULONGLONG ullOffset);
+		void SetSelection(const VecSpan& vecSel, bool fHighlight);     //Set a selection or selection highlight.
 	private:
 		VecSpan m_vecSelection;                                //Selection data.
 		VecSpan m_vecSelHighlight;                             //Selection highlight data.
@@ -81,7 +81,8 @@ auto CHexSelection::GetSelEnd()const->ULONGLONG
 		return { };
 	}
 
-	return m_vecSelection.back().ullOffset + m_vecSelection.back().ullSize - 1;
+	const auto& span = m_vecSelection.back();
+	return span.ullOffset + span.ullSize - 1;
 }
 
 auto CHexSelection::GetSelSize()const->ULONGLONG
@@ -90,7 +91,7 @@ auto CHexSelection::GetSelSize()const->ULONGLONG
 		return { };
 	}
 
-	return m_vecSelection.size() * m_vecSelection.at(0).ullSize;
+	return m_vecSelection.size() * m_vecSelection[0].ullSize;
 }
 
 auto CHexSelection::GetSelStart()const->ULONGLONG
@@ -115,13 +116,15 @@ bool CHexSelection::HasSelHighlight() const
 bool CHexSelection::HitTest(ULONGLONG ullOffset)const
 {
 	return std::any_of(m_vecSelection.begin(), m_vecSelection.end(),
-		[ullOffset](const HEXSPAN& ref) { return ullOffset >= ref.ullOffset && ullOffset < (ref.ullOffset + ref.ullSize); });
+		[ullOffset](const HEXSPAN& ref) {
+			return ullOffset >= ref.ullOffset && ullOffset < (ref.ullOffset + ref.ullSize); });
 }
 
 bool CHexSelection::HitTestHighlight(ULONGLONG ullOffset) const
 {
 	return std::any_of(m_vecSelHighlight.begin(), m_vecSelHighlight.end(),
-		[ullOffset](const HEXSPAN& ref) { return ullOffset >= ref.ullOffset && ullOffset < (ref.ullOffset + ref.ullSize); });
+		[ullOffset](const HEXSPAN& ref) {
+			return ullOffset >= ref.ullOffset && ullOffset < (ref.ullOffset + ref.ullSize); });
 }
 
 bool CHexSelection::HitTestRange(const HEXSPAN& hss)const
@@ -130,19 +133,9 @@ bool CHexSelection::HitTestRange(const HEXSPAN& hss)const
 		[&](const HEXSPAN& ref) {
 			return (hss.ullOffset >= ref.ullOffset && hss.ullOffset < (ref.ullOffset + ref.ullSize))
 				|| (ref.ullOffset >= hss.ullOffset && ref.ullOffset < (hss.ullOffset + hss.ullSize))
-				|| (hss.ullOffset + hss.ullSize > ref.ullOffset && hss.ullOffset + hss.ullSize <= (ref.ullOffset + ref.ullSize));
+				|| (hss.ullOffset + hss.ullSize > ref.ullOffset && hss.ullOffset
+					+ hss.ullSize <= (ref.ullOffset + ref.ullSize));
 		});
-}
-
-void CHexSelection::SetSelection(const VecSpan& vecSel, bool fHighlight)
-{
-	if (fHighlight) {
-		m_vecSelHighlight = vecSel;
-	}
-	else {
-		m_vecSelHighlight.clear(); //On new selection clear all highlights.
-		m_vecSelection = vecSel;
-	}
 }
 
 void CHexSelection::SetMarkStartEnd(ULONGLONG ullOffset)
@@ -156,4 +149,15 @@ void CHexSelection::SetMarkStartEnd(ULONGLONG ullOffset)
 	const auto ullSize = (std::max)(m_ullMarkStartEnd, ullOffset) - ullStart + 1;
 	SetSelection({ { .ullOffset { ullStart }, .ullSize { ullSize } } }, false);
 	m_ullMarkStartEnd = 0xFFFFFFFFFFFFFFFFULL; //Reset back to default.
+}
+
+void CHexSelection::SetSelection(const VecSpan& vecSel, bool fHighlight)
+{
+	if (fHighlight) {
+		m_vecSelHighlight = vecSel;
+	}
+	else {
+		m_vecSelHighlight.clear(); //On new selection clear all highlights.
+		m_vecSelection = vecSel;
+	}
 }

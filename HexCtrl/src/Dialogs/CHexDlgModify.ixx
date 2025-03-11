@@ -51,8 +51,8 @@ namespace HEXCTRL::INTERNAL {
 		wnd::CWndBtn m_WndBtnOk;        //Ok.
 		wnd::CWndCombo m_WndCmbOper;    //Operation combo-box.
 		wnd::CWndCombo m_WndCmbType;    //Data size combo-box.
-		IHexCtrl* m_pHexCtrl { };
 		std::vector<std::byte> m_vecOperData; //Operand data vector.
+		IHexCtrl* m_pHexCtrl { };
 		std::uint64_t m_u64Flags { };
 		using enum EHexOperMode;
 		inline static const std::unordered_map<EHexOperMode, const wchar_t*> m_umapNames {
@@ -579,8 +579,8 @@ namespace HEXCTRL::INTERNAL {
 		wnd::CWndBtn m_WndBtnOk;     //Ok.
 		wnd::CWndCombo m_WndCmbType; //Fill type combo-box.
 		wnd::CWndCombo m_WndCmbData; //Data combo-box.
-		IHexCtrl* m_pHexCtrl { };
 		std::vector<std::byte> m_vecFillData; //Fill data vector.
+		IHexCtrl* m_pHexCtrl { };
 		std::uint64_t m_u64Flags { };
 	};
 }
@@ -843,7 +843,7 @@ void CHexDlgFillData::SetControlsState()
 
 
 namespace HEXCTRL::INTERNAL {
-	export class CHexDlgModify final {
+	class CHexDlgModify final {
 	public:
 		void CreateDlg();
 		void DestroyDlg();
@@ -866,10 +866,10 @@ namespace HEXCTRL::INTERNAL {
 		HINSTANCE m_hInstRes { };
 		wnd::CWnd m_Wnd;              //Main window.
 		wnd::CWndTab m_WndTab;        //Tab control.
-		IHexCtrl* m_pHexCtrl { };
-		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 		CHexDlgOpers m_dlgOpers;       //"Operations" tab dialog.
 		CHexDlgFillData m_dlgFillData; //"Fill with" tab dialog.
+		IHexCtrl* m_pHexCtrl { };
+		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 	};
 }
 

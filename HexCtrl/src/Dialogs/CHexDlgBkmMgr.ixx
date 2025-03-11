@@ -18,7 +18,7 @@ export module HEXCTRL:CHexDlgBkmMgr;
 import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {
-	export class CHexDlgBkmMgr final : public IHexBookmarks {
+	class CHexDlgBkmMgr final : public IHexBookmarks {
 	public:
 		auto AddBkm(const HEXBKM& hbs, bool fRedraw) -> ULONGLONG override;    //Returns new bookmark Id.
 		void CreateDlg();
@@ -77,9 +77,9 @@ namespace HEXCTRL::INTERNAL {
 		wnd::CMenu m_menuList;
 		wnd::CDynLayout m_DynLayout;
 		std::vector<HEXBKM> m_vecBookmarks; //Bookmarks data.
+		LISTEX::CListEx m_ListEx;
 		IHexCtrl* m_pHexCtrl { };
 		IHexBookmarks* m_pVirtual { };
-		LISTEX::CListEx m_ListEx;
 		std::uint64_t m_u64IndexCurr { }; //Current bookmark's position index, to move next/prev.
 		std::uint64_t m_u64Flags { };     //Data from SetDlgProperties.
 	};

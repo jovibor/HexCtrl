@@ -15,7 +15,7 @@ export module HEXCTRL:CHexDlgGoTo;
 import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {
-	export class CHexDlgGoTo final {
+	class CHexDlgGoTo final {
 	public:
 		void CreateDlg();
 		void DestroyDlg();

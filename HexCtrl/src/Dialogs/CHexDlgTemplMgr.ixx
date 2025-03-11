@@ -23,7 +23,7 @@ export module HEXCTRL:CHexDlgTemplMgr;
 import :HexUtility;
 
 namespace HEXCTRL::INTERNAL {
-	export class CHexDlgTemplMgr final : public IHexTemplates {
+	class CHexDlgTemplMgr final : public IHexTemplates {
 	public:
 		struct FIELDSDEFPROPS; //Forward declarations.
 		struct TEMPLAPPLIED;
@@ -157,16 +157,16 @@ namespace HEXCTRL::INTERNAL {
 		wnd::CMenu m_MenuTree;         //Menu for the tree control.
 		wnd::CMenu m_MenuHdr;          //Menu for the list header.
 		wnd::CDynLayout m_DynLayout;
-		IHexCtrl* m_pHexCtrl { };
-		std::uint64_t m_u64Flags { };      //Data from SetDlgProperties.
+		LISTEX::CListEx m_ListEx;
 		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;      //Loaded Templates.
 		std::vector<std::unique_ptr<TEMPLAPPLIED>> m_vecTemplatesAppl; //Currently Applied Templates.
-		LISTEX::CListEx m_ListEx;
+		IHexCtrl* m_pHexCtrl { };
 		PCTEMPLAPPLIED m_pAppliedCurr { }; //Currently selected template in the applied Tree.
 		PCVecFields m_pVecFieldsCurr { };  //Currently selected Fields vector.
 		HTREEITEM m_hTreeCurrParent { };   //Currently selected Tree node's parent.
 		HBITMAP m_hBmpMin { };             //Bitmap for the min checkbox.
 		HBITMAP m_hBmpMax { };             //Bitmap for the max checkbox.
+		std::uint64_t m_u64Flags { };      //Data from SetDlgProperties.
 		DWORD m_dwDateFormat { };          //Date format.
 		int m_iDynLayoutMinY { };          //For DynamicLayout::SetMinSize.
 		wchar_t m_wchDateSepar { };        //Date separator.
