@@ -1,10 +1,10 @@
-module;
 /****************************************************************************************
 * Copyright © 2018-present Jovibor https://github.com/jovibor/                          *
 * Hex Control for Windows applications.                                                 *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
+module;
 #include <SDKDDKVer.h>
 #include "../../res/HexCtrlRes.h"
 #include "../../HexCtrl.h"

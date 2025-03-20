@@ -1,10 +1,10 @@
-module;
 /****************************************************************************************
 * Copyright © 2018-present Jovibor https://github.com/jovibor/                          *
 * Hex Control for Windows applications.                                                 *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
+module;
 #include <SDKDDKVer.h>
 #include "../../dep/rapidjson/rapidjson-amalgam.h"
 #include "../../res/HexCtrlRes.h"
@@ -1536,6 +1536,7 @@ void CHexDlgTemplMgr::OnNotifyTreeRClick(NMHDR* /*pNMHDR*/)
 	if (hTreeItem != nullptr) {
 		m_WndTree.SelectItem(hTreeItem);
 	}
+
 	m_MenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLY), fHasApplied && fHitTest);
 	m_MenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLYALL), fHasApplied);
 	m_MenuTree.TrackPopupMenu(pt.x, pt.y, m_Wnd);

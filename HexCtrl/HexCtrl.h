@@ -501,6 +501,6 @@ namespace HEXCTRL {
 
 	constexpr auto HEXCTRL_FLAG_DLG_NOESC { 0x01ULL };
 
-	//Setting a manifest for the Comctl32.dll version 6.
+//Manifest for the Comctl32.dll v6. Must be here, in header, to pick up v6 for the .dll as well.
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 }

@@ -1,10 +1,10 @@
-module;
 /****************************************************************************************
 * Copyright © 2018-present Jovibor https://github.com/jovibor/                          *
 * Hex Control for Windows applications.                                                 *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
+module;
 #include <SDKDDKVer.h>
 #include "../../res/HexCtrlRes.h"
 #include "../../HexCtrl.h"
@@ -1116,8 +1116,9 @@ auto CHexDlgSearch::OnCommand(const MSG& msg)->INT_PTR
 		case IDC_HEXCTRL_SEARCH_CHK_SEL: OnCheckSel(); break;
 		case IDC_HEXCTRL_SEARCH_COMBO_MODE: if (uCode == CBN_SELCHANGE) { OnComboModeSelChange(); } break;
 		case IDC_HEXCTRL_SEARCH_COMBO_TYPE: if (uCode == CBN_SELCHANGE) { OnComboTypeSelChange(); } break;
-		case IDC_HEXCTRL_SEARCH_COMBO_FIND: if (uCode == CBN_EDITUPDATE) { SetControlsState(); } break;
-		case IDC_HEXCTRL_SEARCH_COMBO_REPL: if (uCode == CBN_EDITUPDATE) { SetControlsState(); } break;
+		case IDC_HEXCTRL_SEARCH_COMBO_FIND:
+		case IDC_HEXCTRL_SEARCH_COMBO_REPL:
+			if (uCode == CBN_EDITUPDATE) { SetControlsState(); } break;
 		default: return FALSE;
 		}
 	}

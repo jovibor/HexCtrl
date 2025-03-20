@@ -30,7 +30,6 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{557B0ABE-E81A-4BD1-AD98-DC68F44D9A0D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>HexCtrl</RootNamespace>
     <ProjectName>HexCtrl DLL</ProjectName>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>

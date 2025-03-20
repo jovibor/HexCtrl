@@ -30,7 +30,6 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <ProjectGuid>{337EEC2C-B9B1-49D6-A526-59F01742AF51}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>UnitTest</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectSubType>NativeUnitTestProject</ProjectSubType>
     <ProjectName>HexCtrl Test</ProjectName>

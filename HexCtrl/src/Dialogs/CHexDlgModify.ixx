@@ -1,10 +1,10 @@
-module;
 /****************************************************************************************
 * Copyright © 2018-present Jovibor https://github.com/jovibor/                          *
 * Hex Control for Windows applications.                                                 *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
+module;
 #include <SDKDDKVer.h>
 #include "../../res/HexCtrlRes.h"
 #include "../../HexCtrl.h"
@@ -864,12 +864,12 @@ namespace HEXCTRL::INTERNAL {
 		void SetCurrentTab(int iTab);
 	private:
 		HINSTANCE m_hInstRes { };
-		wnd::CWnd m_Wnd;              //Main window.
-		wnd::CWndTab m_WndTab;        //Tab control.
+		wnd::CWnd m_Wnd;               //Main window.
+		wnd::CWndTab m_WndTab;         //Tab control.
 		CHexDlgOpers m_dlgOpers;       //"Operations" tab dialog.
 		CHexDlgFillData m_dlgFillData; //"Fill with" tab dialog.
 		IHexCtrl* m_pHexCtrl { };
-		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
+		std::uint64_t m_u64Flags { };  //Data from SetDlgProperties.
 	};
 }
 

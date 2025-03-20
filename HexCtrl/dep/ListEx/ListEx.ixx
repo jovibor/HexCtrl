@@ -22,6 +22,9 @@ export module ListEx;
 #pragma comment(lib, "Comctl32.lib")
 #pragma comment(lib, "Shlwapi.lib") //StrToInt64ExW().
 #pragma comment(lib, "UxTheme.lib") //SetWindowTheme().
+//Setting manifest for the ComCtl32.dll version 6.
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' \
+version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 export namespace HEXCTRL::LISTEX {
 	/****************************************************************
@@ -173,9 +176,6 @@ export namespace HEXCTRL::LISTEX {
 	constexpr auto LISTEX_MSG_HDRRBTNUP { 0x1006U };    //Header's WM_RBUTTONUP message.
 	constexpr auto LISTEX_MSG_LINKCLICK { 0x1007U };    //Hyperlink has been clicked.
 	constexpr auto LISTEX_MSG_SETDATA { 0x1008U };      //Item text has been edited/changed.
-
-	//Setting a manifest for the ComCtl32.dll version 6.
-#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 }
 
 namespace HEXCTRL::LISTEX::INTERNAL::wnd {

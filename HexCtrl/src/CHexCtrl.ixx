@@ -1,10 +1,10 @@
-module;
 /****************************************************************************************
 * Copyright © 2018-present Jovibor https://github.com/jovibor/                          *
 * Hex Control for Windows applications.                                                 *
 * Official git repository: https://github.com/jovibor/HexCtrl/                          *
 * This software is available under "The HexCtrl License", see the LICENSE file.         *
 ****************************************************************************************/
+module;
 #include <SDKDDKVer.h>
 #include "../dep/rapidjson/rapidjson-amalgam.h"
 #include "../res/HexCtrlRes.h"
@@ -25,9 +25,8 @@ module;
 #include <thread>
 #include <unordered_map>
 #include <vector>
-export module HEXCTRL;
-
 #pragma comment(lib, "Comctl32.lib")
+export module HEXCTRL;
 
 import :CHexScroll;
 import :CHexSelection;
