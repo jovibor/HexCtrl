@@ -140,16 +140,18 @@
 * Fully-featured **Bookmarks Manager**
 * Fully-featured **Search and Replace**
 * Fully-featured **Data Interpreter**
+* Grouping data with arbitrary group size
 * Changeable codepage for the text area
 * Many options to **Copy/Paste** to/from clipboard
 * Modify data with **Filling** and many predefined **Operations** options
 * **Undo/Redo**
 * Ability to visually divide data into [pages](#setpagesize)
 * Print whole document/pages range/selection
-* Set individual colors for the data chunks with [**Custom Colors**](#ihexvirtcolors)
+* Customizable colors for data with [**Custom Colors**](#custom-colors)
 * Powerful system of [Templates](#templates)
 * [Assignable keyboard shortcuts](#setconfig) via external config file
-* Customizable look and appearance
+* Customizable look and appearance, font, colors
+* **HiDPI** compliant
 * Utilizes **AVX/AVX2** instruction set for best performance
 * Supports compiling for the **ARM64** architecture
 * Written with the **/std:c++20** standard conformance
@@ -250,7 +252,11 @@ Then provide a pointer to the created object of this derived class through the `
 But if you have big and complicated data logic and want to handle all these bookmarks yourself, you can do it with the help of the **Virtual Bookmarks** mode. In this mode all bookmark's burden is handled by yourself, by implementing the [`IHexBookmarks`](#ihexbookmarks) interface and providing pointer to this implementation to the **HexCtrl** by calling the [`SetVirtualBkm`](#setvirtualbkm) method.
 
 ## [](#)Custom Colors
-If you'd like to colorize data regions with different colors, use the [`IHexVirtColors`](#ihexvirtcolors) interface.
+If you'd like to colorize data regions with your own custom colors, use the [`IHexVirtColors`](#ihexvirtcolors) interface.
+
+To use it set the [`HEXDATA::pHexVirtColors`](#hexdata) member to a valid instance of your own class that implements this interface, prior to calling the [`SetData`](#setdata) method.
+
+The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinfo) struct as an argument. The `HEXCOLORINFO::ullOffset` member indicates the offset for which the color is requested. This method should return `true` if it sets custom colors for the given offset or `false` for default colors.
 
 ## [](#)Templates
 ![](docs/img/HexCtrl_Templates.jpg)  
@@ -778,11 +784,11 @@ Below are listed all **HexCtrl**'s structures.
 Main bookmarks structure, used with the [IHexBookmarks](#ihexbookmarks) interface.
 ```cpp
 struct HEXBKM {
-    VecSpan      vecSpan { };  //Vector of offsets and sizes.
-    std::wstring wstrDesc { }; //Bookmark description.
-    ULONGLONG    ullID { };    //Bookmark ID, assigned internally by framework.
-    ULONGLONG    ullData { };  //User defined custom data.
-    HEXCOLOR     stClr { };    //Bookmark bk/text color.
+    VecSpan      vecSpan;     //Vector of offsets and sizes.
+    std::wstring wstrDesc;    //Bookmark description.
+    ULONGLONG    ullID { };   //Bookmark ID, assigned internally by framework.
+    ULONGLONG    ullData { }; //User defined custom data.
+    HEXCOLOR     stClr;       //Bookmark bk/text color.
 };
 using PHEXBKM = HEXBKM*;
 ```
@@ -816,7 +822,7 @@ Struct for hex chunks' color information.
 struct HEXCOLORINFO {
     NMHDR     hdr { };       //Standard Windows header.
     ULONGLONG ullOffset { }; //Offset for the color.
-    HEXCOLOR  stClr { };     //Colors of the given offset.
+    HEXCOLOR  stClr;         //Colors of the given offset.
 };
 ```
 
@@ -900,9 +906,9 @@ Used to set maximum virtual data offset in virtual data mode. This is needed for
 Struct for a data information used in [`IHexVirtData`](#virtual-data-mode).
 ```cpp
 struct HEXDATAINFO {
-    NMHDR    hdr { };       //Standard Windows header.
-    HEXSPAN  stHexSpan { }; //Offset and size of the data bytes.
-    SpanByte spnData { };   //Data span.
+    NMHDR    hdr { };   //Standard Windows header.
+    HEXSPAN  stHexSpan; //Offset and size of the data.
+    SpanByte spnData;   //Data span.
 };
 ```
 
@@ -935,8 +941,8 @@ struct HEXMODIFY {
     EHexModifyMode eModifyMode { };      //Modify mode.
     EHexOperMode   eOperMode { };        //Operation mode, used if eModifyMode == MODIFY_OPERATION.
     EHexDataType   eDataType { };        //Data type of the underlying data, used if eModifyMode == MODIFY_OPERATION.
-    SpanCByte      spnData { };          //Span of the data to modify with.
-    VecSpan        vecSpan { };          //Vector of data offsets and sizes to modify.
+    SpanCByte      spnData;              //Span of the data to modify with.
+    VecSpan        vecSpan;              //Vector of data offsets and sizes to modify.
     bool           fBigEndian { false }; //Treat data as the big endian, used if eModifyMode == MODIFY_OPERATION.
 };
 ```
@@ -1076,10 +1082,6 @@ public:
     virtual bool OnHexGetColor(HEXCOLORINFO&) = 0; //Should return true if colors are set.
 };
 ```
-This interface is used to set custom bk/text colors for data regions.  
-To use this feature set the [`HEXDATA::pHexVirtColors`](#hexdata) member to a valid instance of your class implementing this interface, prior to calling the [`SetData`](#setdata) method.
-
-The `OnHexGetColor` method of this interface takes [`HEXCOLORINFO`](#hexcolorinfo) struct as an argument and should return `true` if it sets custom colors.
 
 ### [](#)IHexVirtData
 ```cpp
@@ -1092,8 +1094,7 @@ public:
 ```
 
 #### [](#)OnHexGetOffset
-Internally **HexCtrl** operates with flat data offsets. If you set data of 1MB size, **HexCtrl** will have working offsets in the `[0-1'048'575]` diapason. However, from the user perspective the real data offsets may differ. For instance, in processes memory model very high virtual memory addresses can be used, like `0x7FF96BA622C0`. The process data can be mapped by operating system to literally any virtual address.  
-The `OnHexGetOffset` method serves exactly for the **Flat<->Virtual** offset converting purpose.
+Internally **HexCtrl** operates with flat data offsets. If you set data of 1MB size, **HexCtrl** will have working offsets in the `[0-1'048'575]` range. However, from the user perspective the real data offsets may differ. For instance, in processes memory model very high virtual memory addresses can be used (e.g. `0x7FF96BA622C0`). The process data can be mapped by operating system to literally any virtual address. The `OnHexGetOffset` method serves exactly for the **Flat<->Virtual** offset converting purpose.
 
 ## [](#)Enums
 

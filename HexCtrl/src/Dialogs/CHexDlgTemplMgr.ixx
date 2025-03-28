@@ -138,10 +138,10 @@ namespace HEXCTRL::INTERNAL {
 		void UnloadTemplate(int iTemplateID)override; //Unload/remove loaded template from memory.
 		void UpdateStaticText();
 	private:
-		static constexpr auto m_iIDListColType { 0 };  //ID of the Type column in the m_ListEx.
-		static constexpr auto m_iIDListColData { 4 };  //Data.
-		static constexpr auto m_iIDListColDescr { 6 }; //Description.
-		static constexpr auto m_iIDListColClrs { 7 };  //Colors.
+		enum EListColumns : std::int8_t {
+			COL_TYPE = 0, COL_NAME = 1, COL_OFFSET = 2, COL_SIZE = 3,
+			COL_DATA = 4, COL_ENDIAN = 5, COL_DESCR = 6, COL_COLORS = 7
+		};
 		HINSTANCE m_hInstRes { };
 		wnd::CWnd m_Wnd;               //Main window.
 		wnd::CWnd m_WndStatOffset;     //Static text "Template offset:".
@@ -851,14 +851,14 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_TEMPLMGR_LIST }, .dwSizeFontList { 10 },
 		.dwSizeFontHdr { 10 }, .fDialogCtrl { true } });
 	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
-	m_ListEx.InsertColumn(m_iIDListColType, L"Type", LVCFMT_LEFT, 85);
-	m_ListEx.InsertColumn(1, L"Name", LVCFMT_LEFT, 200);
-	m_ListEx.InsertColumn(2, L"Offset", LVCFMT_LEFT, 50);
-	m_ListEx.InsertColumn(3, L"Size", LVCFMT_LEFT, 50);
-	m_ListEx.InsertColumn(m_iIDListColData, L"Data", LVCFMT_LEFT, 120, -1, LVCFMT_LEFT, true);
-	m_ListEx.InsertColumn(5, L"Endianness", LVCFMT_CENTER, 75, -1, LVCFMT_CENTER);
-	m_ListEx.InsertColumn(m_iIDListColDescr, L"Description", LVCFMT_LEFT, 100, -1, LVCFMT_LEFT, true);
-	m_ListEx.InsertColumn(m_iIDListColClrs, L"Colors", LVCFMT_LEFT, 57);
+	m_ListEx.InsertColumn(COL_TYPE, L"Type", LVCFMT_LEFT, 85);
+	m_ListEx.InsertColumn(COL_NAME, L"Name", LVCFMT_LEFT, 200);
+	m_ListEx.InsertColumn(COL_OFFSET, L"Offset", LVCFMT_LEFT, 50);
+	m_ListEx.InsertColumn(COL_SIZE, L"Size", LVCFMT_LEFT, 50);
+	m_ListEx.InsertColumn(COL_DATA, L"Data", LVCFMT_LEFT, 120, -1, LVCFMT_LEFT, true);
+	m_ListEx.InsertColumn(COL_ENDIAN, L"Endianness", LVCFMT_CENTER, 75, -1, LVCFMT_CENTER);
+	m_ListEx.InsertColumn(COL_DESCR, L"Description", LVCFMT_LEFT, 100, -1, LVCFMT_LEFT, true);
+	m_ListEx.InsertColumn(COL_COLORS, L"Colors", LVCFMT_LEFT, 57);
 
 	using enum EMenuID;
 	m_MenuHdr.CreatePopupMenu();
@@ -1096,9 +1096,9 @@ void CHexDlgTemplMgr::OnNotifyListGetColor(NMHDR* pNMHDR)
 	pLCI->stClr.clrText = static_cast<COLORREF>(-1); //Default text color.
 
 	//List items with nested structs colored separately with greyish bk.
-	if (!pField->vecNested.empty() && pLCI->iSubItem != m_iIDListColClrs) {
+	if (!pField->vecNested.empty() && pLCI->iSubItem != COL_COLORS) {
 		pLCI->stClr.clrBk = clrBkGreyish;
-		if (pLCI->iSubItem == m_iIDListColType) {
+		if (pLCI->iSubItem == COL_TYPE) {
 			if (eType == type_custom) {
 				if (pField->uTypeID > 0) {
 					pLCI->stClr.clrText = clrTextGreenish;
@@ -1113,14 +1113,14 @@ void CHexDlgTemplMgr::OnNotifyListGetColor(NMHDR* pNMHDR)
 	}
 
 	switch (pLCI->iSubItem) {
-	case m_iIDListColType:
+	case COL_TYPE:
 		if (eType != type_custom && eType != custom_size) {
 			pLCI->stClr.clrText = clrTextBluish;
 			pLCI->stClr.clrBk = static_cast<COLORREF>(-1); //Default bk color.
 			return;
 		}
 		break;
-	case m_iIDListColClrs:
+	case COL_COLORS:
 		pLCI->stClr.clrBk = pField->stClr.clrBk;
 		pLCI->stClr.clrText = pField->stClr.clrText;
 		return;
@@ -1153,7 +1153,7 @@ void CHexDlgTemplMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 	};
 
 	switch (pItem->iSubItem) {
-	case m_iIDListColType: //Type.
+	case COL_TYPE:
 		if (pField->eType == type_custom) {
 			const auto& vecCT = m_pAppliedCurr->pTemplate->vecCustomType;
 			if (const auto it = std::find_if(vecCT.begin(), vecCT.end(),
@@ -1169,16 +1169,16 @@ void CHexDlgTemplMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 			pItem->pszText = const_cast<LPWSTR>(umapETypeToWstr.at(pField->eType));
 		}
 		break;
-	case 1: //Name.
+	case COL_NAME:
 		pItem->pszText = pField->wstrName.data();
 		break;
-	case 2: //Offset.
+	case COL_OFFSET:
 		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(pField->iOffset)) = L'\0';
 		break;
-	case 3: //Size.
+	case COL_SIZE:
 		*std::vformat_to(pItem->pszText, wsvFmt, std::make_wformat_args(pField->iSize)) = L'\0';
 		break;
-	case m_iIDListColData: //Data.
+	case COL_DATA:
 	{
 		if (!m_pHexCtrl->IsDataSet()
 			|| m_pAppliedCurr->ullOffset + m_pAppliedCurr->pTemplate->iSizeTotal > m_pHexCtrl->GetDataSize()) //Size overflow check.
@@ -1283,14 +1283,14 @@ void CHexDlgTemplMgr::OnNotifyListGetDispInfo(NMHDR* pNMHDR)
 		}
 	}
 	break;
-	case 5: //Endianness.
+	case COL_ENDIAN:
 		*std::vformat_to(pItem->pszText, fShouldSwap ? L"big" : L"little",
 			std::make_wformat_args()) = L'\0';
 		break;
-	case 6: //Description.
+	case COL_DESCR:
 		*std::format_to(pItem->pszText, L"{}", pField->wstrDescr) = L'\0';
 		break;
-	case m_iIDListColClrs: //Colors.
+	case COL_COLORS:
 		*std::format_to(pItem->pszText, L"#Text") = L'\0';
 		break;
 	default:
@@ -1325,7 +1325,7 @@ void CHexDlgTemplMgr::OnNotifyListSetData(NMHDR* pNMHDR)
 	const auto pwszText = pLDI->pwszData;
 	const auto& pField = (*m_pVecFieldsCurr)[pLDI->iItem];
 
-	if (pLDI->iSubItem == m_iIDListColData) { //Data.
+	if (pLDI->iSubItem == COL_DATA) {
 		if (!m_pHexCtrl->IsDataSet()) {
 			return;
 		}
@@ -1421,7 +1421,7 @@ void CHexDlgTemplMgr::OnNotifyListSetData(NMHDR* pNMHDR)
 			return;
 		}
 	}
-	else if (pLDI->iSubItem == m_iIDListColDescr) { //Description.
+	else if (pLDI->iSubItem == COL_DESCR) {
 		pField->wstrDescr = pwszText;
 	}
 

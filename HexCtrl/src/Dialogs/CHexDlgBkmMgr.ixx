@@ -23,12 +23,12 @@ namespace HEXCTRL::INTERNAL {
 		auto AddBkm(const HEXBKM& hbs, bool fRedraw) -> ULONGLONG override;    //Returns new bookmark Id.
 		void CreateDlg();
 		void DestroyDlg();
-		[[nodiscard]] auto GetHWND()const->HWND;
 		[[nodiscard]] auto GetByID(ULONGLONG ullID) -> PHEXBKM override;       //Bookmark by ID.
 		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM override; //Bookmark by index (in inner list).
 		[[nodiscard]] auto GetCount() -> ULONGLONG override;
 		[[nodiscard]] auto GetCurrent()const->ULONGLONG;
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
+		[[nodiscard]] auto GetHWND()const->HWND;
 		void GoBookmark(ULONGLONG ullIndex);
 		void GoNext();
 		void GoPrev();
@@ -133,11 +133,6 @@ void CHexDlgBkmMgr::DestroyDlg()
 	}
 }
 
-auto CHexDlgBkmMgr::GetHWND()const->HWND
-{
-	return m_Wnd;
-}
-
 auto CHexDlgBkmMgr::GetByID(ULONGLONG ullID)->PHEXBKM
 {
 	PHEXBKM pBkm { };
@@ -188,6 +183,11 @@ auto CHexDlgBkmMgr::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	default:
 		return { };
 	}
+}
+
+auto CHexDlgBkmMgr::GetHWND()const->HWND
+{
+	return m_Wnd;
 }
 
 void CHexDlgBkmMgr::GoBookmark(ULONGLONG ullIndex)

@@ -406,7 +406,6 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr auto m_pwszHexChars { L"0123456789ABCDEF" }; //Hex digits wchars for fast lookup.
 		static constexpr auto m_pwszClassName { L"HexCtrl_MainWnd" }; //HexCtrl unique Window Class name.
 		static constexpr auto m_uIDTTTMain { 0x01UL };                //Timer ID for default tooltip.
-		static constexpr auto m_iIndentBottomLine { 1 };              //Bottom line indent from window's bottom.
 		static constexpr auto m_iFirstHorzLinePx { 0 };               //First horizontal line indent.
 		static constexpr auto m_iFirstVertLinePx { 0 };               //First vertical line indent.
 		static constexpr auto m_dwVKMouseWheelUp { 0x0100UL };        //Artificial Virtual Key for a Mouse-Wheel Up event.
@@ -4490,7 +4489,9 @@ void CHexCtrl::RecalcAll(HDC hDC, LPCRECT pRC)
 	else { //If Info window is disabled, we set its height to zero.
 		m_iHeightInfoBarPx = 0;
 	}
-	m_iHeightBottomOffAreaPx = m_iHeightInfoBarPx + m_iIndentBottomLine;
+
+	constexpr auto iIndentBottomLine { 1 }; //Bottom line indent from window's bottom.
+	m_iHeightBottomOffAreaPx = m_iHeightInfoBarPx + iIndentBottomLine;
 
 	const auto dwGroupSize = GetGroupSize();
 	const auto dwCapacity = GetCapacity();
