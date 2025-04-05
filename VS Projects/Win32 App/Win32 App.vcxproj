@@ -279,7 +279,6 @@
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_BKMS.bmp" />
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_COPYHEX.bmp" />
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp" />
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_DATAINTERP.bmp" />
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_FONTCHOOSE.bmp" />
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_GROUP.bmp" />
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_LOGO.bmp" />

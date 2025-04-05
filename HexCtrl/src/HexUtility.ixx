@@ -232,7 +232,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	template<TSize1248 T> [[nodiscard]] constexpr T BitReverse(T tData) {
 		T tReversed { };
 		constexpr auto iBitsCount = sizeof(T) * 8;
-		for (auto i = 0; i < iBitsCount; ++i, tData >>= 1) {
+		for (auto i = 0U; i < iBitsCount; ++i, tData >>= 1) {
 			tReversed = (tReversed << 1) | (tData & 1);
 		}
 		return tReversed;
@@ -433,6 +433,13 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 			reinterpret_cast<LPCWSTR>(&GetCurrModuleHinst), &hInst);
 		return hInst;
 	};
+
+	[[nodiscard]] auto GetDPIScale(HWND hWnd) -> float {
+		const auto hDC = ::GetDC(hWnd);
+		const auto iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
+		::ReleaseDC(hWnd, hDC);
+		return static_cast<float>(iLOGPIXELSY) / USER_DEFAULT_SCREEN_DPI; //Scale factor for High-DPI displays.
+	}
 }
 
 namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.

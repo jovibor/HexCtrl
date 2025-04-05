@@ -132,9 +132,6 @@
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_CLPBRD_PASTEHEX.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_DATAINTERP.bmp">
-      <Filter>HexCtrl\res</Filter>
-    </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_FONTCHOOSE.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>

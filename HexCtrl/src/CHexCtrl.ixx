@@ -145,12 +145,7 @@ auto CHexDlgAbout::OnInitDialog(const MSG& msg)->INT_PTR
 		HEXCTRL_VERSION_MAJOR, HEXCTRL_VERSION_MINOR, HEXCTRL_VERSION_PATCH);
 	::SetWindowTextW(m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_VERSION), wstrVersion.data());
 
-	auto hDC = m_Wnd.GetDC();
-	const auto iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
-	m_Wnd.ReleaseDC(hDC);
-
-	const auto fScale = iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
-	const auto iSizeIcon = static_cast<int>(32 * fScale);
+	const auto iSizeIcon = static_cast<int>(32 * ut::GetDPIScale(m_Wnd));
 	m_hBmpLogo = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO),
 		IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	const auto hWndLogo = m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_LOGO);
@@ -647,8 +642,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		return false;
 	}
 
-	const auto fScale = m_iLOGPIXELSY / 96.0F; //Scale factor for HighDPI displays.
-	const auto iSizeIcon = static_cast<int>(16 * fScale);
+	const auto iSizeIcon = static_cast<int>(16 * ut::GetDPIScale(m_Wnd));
 	const auto menuTop = m_MenuMain.GetSubMenu(0); //Context sub-menu handle.
 
 	MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_BITMAP } };
@@ -695,12 +689,6 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
-	m_vecHBITMAP.emplace_back(mii.hbmpItem);
-
-	//"Data View->Data Interpreter" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_DATAINTERP), IMAGE_BITMAP,
-		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_DLGDATAINTERP, &mii);
 	m_vecHBITMAP.emplace_back(mii.hbmpItem);
 
 	//"Appearance->Choose Font" menu icon.
@@ -4342,20 +4330,20 @@ void CHexCtrl::Print()
 	constexpr auto iMarginY = 150;
 	const wnd::CRect rcPrint(POINT(0, 0), SIZE(::GetDeviceCaps(dcPrint, HORZRES) - (iMarginX * 2),
 		::GetDeviceCaps(dcPrint, VERTRES) - (iMarginY * 2)));
-	const SIZE sizePrintDpi = { ::GetDeviceCaps(dcPrint, LOGPIXELSX), ::GetDeviceCaps(dcPrint, LOGPIXELSY) };
-	const auto iRatio = sizePrintDpi.cy / m_iLOGPIXELSY;
+	const SIZE sizePrintDpi { ::GetDeviceCaps(dcPrint, LOGPIXELSX), ::GetDeviceCaps(dcPrint, LOGPIXELSY) };
+	const auto iFontSizeRatio { sizePrintDpi.cy / m_iLOGPIXELSY };
 
 	/***Changing Main and Info Bar fonts***/
 	LOGFONTW lfMainOrig;
 	::GetObjectW(m_hFntMain, sizeof(lfMainOrig), &lfMainOrig);
 	LOGFONTW lfMain { lfMainOrig };
-	lfMain.lfHeight *= iRatio;
+	lfMain.lfHeight *= iFontSizeRatio;
 	::DeleteObject(m_hFntMain);
 	m_hFntMain = ::CreateFontIndirectW(&lfMain);
 	LOGFONTW lfInfoBarOrig;
 	::GetObjectW(m_hFntInfoBar, sizeof(lfInfoBarOrig), &lfInfoBarOrig);
 	LOGFONTW lfInfoBar { lfInfoBarOrig };
-	lfInfoBar.lfHeight *= iRatio;
+	lfInfoBar.lfHeight *= iFontSizeRatio;
 	::DeleteObject(m_hFntInfoBar);
 	m_hFntInfoBar = ::CreateFontIndirectW(&lfInfoBar);
 	/***Changing Main and Info Bar fonts END***/
