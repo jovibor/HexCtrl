@@ -274,7 +274,7 @@ namespace HEXCTRL::LISTEX::INTERNAL::wnd {
 		bool Polygon(const POINT* pPT, int iCount)const { return ::Polygon(m_hDC, pPT, iCount); }
 		int SetMapMode(int iMode)const { return ::SetMapMode(m_hDC, iMode); }
 		auto SetTextColor(COLORREF clr)const->COLORREF { return ::SetTextColor(m_hDC, clr); }
-		void SetViewportOrg(int iX, int iY)const { POINT pt; ::OffsetViewportOrgEx(m_hDC, iX, iY, &pt); }
+		auto SetViewportOrg(int iX, int iY)const->POINT { POINT pt; ::SetViewportOrgEx(m_hDC, iX, iY, &pt); return pt; }
 		auto SelectObject(HGDIOBJ hObj)const->HGDIOBJ { return ::SelectObject(m_hDC, hObj); }
 		int StartDocW(const DOCINFO* pDI)const { return ::StartDocW(m_hDC, pDI); }
 		int StartPage()const { return ::StartPage(m_hDC); }
@@ -1101,6 +1101,7 @@ namespace HEXCTRL::LISTEX {
 		[[nodiscard]] auto GetImageList(int iList = HDSIL_NORMAL)const->HIMAGELIST;
 		void GetItem(LVITEMW* pItem)const;
 		[[nodiscard]] int GetItemCount()const;
+		[[nodiscard]] auto GetItemData(int iItem)const->DWORD_PTR;
 		[[nodiscard]] auto GetItemRect(int iItem, int iArea)const->RECT;
 		[[nodiscard]] auto GetItemText(int iItem, int iSubItem)const->std::wstring;
 		[[nodiscard]] int GetNextItem(int iItem, int iFlags)const;
@@ -1143,6 +1144,7 @@ namespace HEXCTRL::LISTEX {
 		auto SetImageList(HIMAGELIST hList, int iListType) -> HIMAGELIST;
 		bool SetItem(const LVITEMW* pItem)const;
 		void SetItemCountEx(int iCount, DWORD dwFlags = LVSICF_NOINVALIDATEALL)const;
+		bool SetItemData(int iItem, DWORD_PTR dwData)const;
 		bool SetItemState(int iItem, LVITEMW* pItem)const;
 		bool SetItemState(int iItem, UINT uState, UINT uStateMask)const;
 		void SetItemText(int iItem, int iSubItem, LPCWSTR pwszText);
@@ -1585,6 +1587,14 @@ int CListEx::GetItemCount()const
 	return static_cast<int>(::SendMessageW(m_hWnd, LVM_GETITEMCOUNT, 0, 0L));
 }
 
+auto CListEx::GetItemData(int iItem)const->DWORD_PTR
+{
+	LVITEMW lvi { .mask { LVIF_PARAM }, .iItem { iItem } };
+	GetItem(&lvi);
+
+	return lvi.lParam;
+}
+
 auto CListEx::GetItemRect(int iItem, int iArea)const->RECT
 {
 	assert(IsCreated());
@@ -1984,6 +1994,17 @@ void CListEx::SetItemCountEx(int iCount, DWORD dwFlags)const
 	::SendMessageW(m_hWnd, LVM_SETITEMCOUNT, iCount, dwFlags);
 }
 
+bool CListEx::SetItemData(int iItem, DWORD_PTR dwData)const
+{
+	assert(IsCreated());
+	if (!IsCreated()) {
+		return { };
+	}
+
+	const LVITEMW lvi { .mask { LVIF_PARAM }, .iItem { iItem }, .lParam { static_cast<LPARAM>(dwData) } };
+	return SetItem(&lvi);
+}
+
 bool CListEx::SetItemState(int iItem, LVITEMW* pItem)const
 {
 	assert(IsCreated());
@@ -2369,15 +2390,15 @@ auto CListEx::OnDestroy()->LRESULT
 
 void CListEx::OnEditInPlaceEnterPressed()
 {
+	//Notifying parent about cell's text changing.
 	wchar_t buffText[256];
 	::GetWindowTextW(m_hWndEditInPlace, buffText, 256);
-	if (m_fVirtual) {
-		const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
-		const LISTEXDATAINFO ldi { .hdr { .hwndFrom { m_hWnd }, .idFrom { uCtrlId }, .code { LISTEX_MSG_SETDATA } },
-			.iItem { m_htiEdit.iItem }, .iSubItem { m_htiEdit.iSubItem }, .pwszData { buffText } };
-		::SendMessageW(::GetParent(m_hWnd), WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&ldi));
-	}
-	else {
+	const auto uCtrlId = static_cast<UINT>(GetDlgCtrlID());
+	const LISTEXDATAINFO ldi { .hdr { .hwndFrom { m_hWnd }, .idFrom { uCtrlId }, .code { LISTEX_MSG_SETDATA } },
+		.iItem { m_htiEdit.iItem }, .iSubItem { m_htiEdit.iSubItem }, .pwszData { buffText } };
+	::SendMessageW(::GetParent(m_hWnd), WM_NOTIFY, static_cast<WPARAM>(uCtrlId), reinterpret_cast<LPARAM>(&ldi));
+
+	if (!m_fVirtual) { //If it's not Virtual mode we set new text to a cell. 
 		SetItemText(m_htiEdit.iItem, m_htiEdit.iSubItem, buffText);
 	}
 

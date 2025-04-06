@@ -464,9 +464,9 @@ Returns code page that is currently in use.
 
 ### [](#)GetFont
 ```cpp
-[[nodiscard]] auto GetFont()const->LOGFONTW;
+[[nodiscard]] auto GetFont(bool fMain)const->LOGFONTW;
 ```
-Returns current font's `LOGFONTW`.
+Returns current main font if `fMain` is `true`, and infobar font if `fMain` is `false`.
 
 ### [](#)GetGroupSize
 ```cpp
@@ -706,9 +706,9 @@ HEXCTRL_FLAG_DLG_NOESC //Prevent dialog from closing on Esc key.
 
 ### [](#)SetFont
 ```cpp
-void SetFont(const LOGFONTW& lf);
+void SetFont(const LOGFONTW& lf, bool fMain);
 ```
-Sets a new font for the **HexCtrl**. This font has to be monospaced.
+Sets new main font for the **HexCtrl** if `fMain` is `true`, or infobar font when `fMain` is `false`. This font has to be monospaced.
 
 ### [](#)SetGroupSize
 ```cpp

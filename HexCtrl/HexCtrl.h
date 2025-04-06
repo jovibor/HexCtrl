@@ -418,7 +418,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
 		[[nodiscard]] virtual auto GetDateInfo()const->std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
 		[[nodiscard]] virtual auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND = 0; //Dialogs' items.
-		[[nodiscard]] virtual auto GetFont()const->LOGFONTW = 0;             //Get current font.
+		[[nodiscard]] virtual auto GetFont(bool fMain = true)const->LOGFONTW = 0; //Get current main/infobar font.
 		[[nodiscard]] virtual auto GetGroupSize()const->DWORD = 0;           //Retrieves current data grouping size.
 		[[nodiscard]] virtual auto GetMenuHandle()const->HMENU = 0;          //Context menu handle.
 		[[nodiscard]] virtual auto GetOffset(ULONGLONG ullOffset, bool fGetVirt)const->ULONGLONG = 0; //Offset<->VirtOffset conversion.
@@ -453,7 +453,7 @@ namespace HEXCTRL {
 		virtual void SetData(const HEXDATA& hds, bool fAdjust = false) = 0; //Main method to set data for HexCtrl.
 		virtual void SetDateInfo(DWORD dwFormat, wchar_t wchSepar) = 0; //Set date format and date separator.
 		virtual void SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags) = 0; //Properties for the internal dialogs.
-		virtual void SetFont(const LOGFONTW& lf) = 0;          //Set HexCtrl's font, this font has to be monospaced.
+		virtual void SetFont(const LOGFONTW& lf, bool fMain = true) = 0; //Set main/infobar font.
 		virtual void SetGroupSize(DWORD dwSize) = 0;           //Set data grouping size.
 		virtual void SetMutable(bool fMutable) = 0;            //Enable or disable mutable/editable mode.
 		virtual void SetOffsetMode(bool fHex) = 0;             //Set offset being shown as Hex or as Decimal.

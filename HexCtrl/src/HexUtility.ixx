@@ -690,7 +690,7 @@ namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		bool Polygon(const POINT* pPT, int iCount)const { return ::Polygon(m_hDC, pPT, iCount); }
 		int SetMapMode(int iMode)const { return ::SetMapMode(m_hDC, iMode); }
 		auto SetTextColor(COLORREF clr)const->COLORREF { return ::SetTextColor(m_hDC, clr); }
-		void SetViewportOrg(int iX, int iY)const { POINT pt; ::OffsetViewportOrgEx(m_hDC, iX, iY, &pt); }
+		auto SetViewportOrg(int iX, int iY)const->POINT { POINT pt; ::SetViewportOrgEx(m_hDC, iX, iY, &pt); return pt; }
 		auto SelectObject(HGDIOBJ hObj)const->HGDIOBJ { return ::SelectObject(m_hDC, hObj); }
 		int StartDocW(const DOCINFO* pDI)const { return ::StartDocW(m_hDC, pDI); }
 		int StartPage()const { return ::StartPage(m_hDC); }
