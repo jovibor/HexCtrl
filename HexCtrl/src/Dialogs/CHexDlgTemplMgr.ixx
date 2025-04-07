@@ -2239,7 +2239,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, HexVec
 			int iSize { 0 }; //Current field's size, via "type" or "size" property.
 			if (const auto itType = pField->FindMember("type"); itType != pField->MemberEnd()) {
 				if (!itType->value.IsString()) {
-					ut::DBG_REPORT(L"\"type\" must be a string.");
+					ut::DBG_REPORT(L"Field \"type\" must be a string.");
 					return false;
 				}
 
@@ -2253,7 +2253,7 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, HexVec
 					const auto itVecCT = std::find_if(vecCTypes.begin(), vecCTypes.end(),
 						[=](const HEXCUSTOMTYPE& ref) { return ref.wstrTypeName == ut::StrToWstr(itType->value.GetString()); });
 					if (itVecCT == vecCTypes.end()) {
-						ut::DBG_REPORT(L"Unknown \"type\".");
+						ut::DBG_REPORT(L"Unknown field \"type\".");
 						return false;
 					}
 
@@ -2321,13 +2321,13 @@ bool CHexDlgTemplMgr::JSONParseFields(const IterJSONMember itFieldsArray, HexVec
 				}
 
 				if (!itSize->value.IsInt()) {
-					ut::DBG_REPORT(L"\"size\" must be an int.");
+					ut::DBG_REPORT(L"The \"size\" must be an int.");
 					return false;
 				}
 
 				const auto iFieldSize = itSize->value.GetInt();
 				if (iFieldSize < 1) {
-					ut::DBG_REPORT(L"\"size\" must be > 0.");
+					ut::DBG_REPORT(L"The \"size\" must be > 0.");
 					return false;
 				}
 
@@ -2367,7 +2367,7 @@ auto CHexDlgTemplMgr::JSONEndianness(const rapidjson::Value& value)->std::option
 	}
 
 	if (!itEndianness->value.IsString()) {
-		ut::DBG_REPORT(L"\"endianness\" must be a string.");
+		ut::DBG_REPORT(L"Field \"endianness\" must be a string.");
 		return std::nullopt;
 	}
 

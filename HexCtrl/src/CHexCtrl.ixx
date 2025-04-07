@@ -347,7 +347,7 @@ namespace HEXCTRL::INTERNAL {
 		void ParentNotify(const T& t)const;                    //Notify routine used to send messages to Parent window.
 		void ParentNotify(UINT uCode)const;                    //Same as above, but only for notification code.
 		void Print();                                          //Printing routine.
-		void RecalcAll(HDC hDC = nullptr, LPCRECT pRC = nullptr); //Recalculates all drawing sizes for given DC.
+		void RecalcAll(bool fPrinter = false, HDC hDCPrinter = nullptr, LPCRECT pRCPrinter = nullptr); //Recalculates all sizes for window/printer DC.
 		void RecalcClientArea(int iWidth, int iHeight);
 		void Redo();
 		void ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)const; //Substitute all unprintable wchar symbols with specified wchar.
@@ -491,7 +491,7 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fCaretHigh { true };           //Caret's High or Low bits position (first or last digit in hex chunk).
 		bool m_fCursorTextArea { false };     //Whether last focus was set at ASCII or Hex chunks area.
 		bool m_fLMousePressed { false };      //Is left mouse button pressed.
-		bool m_fSelectionBlock { false };     //Is selection as block (with Alt) or classic.
+		bool m_fClickWithAlt { false };       //Mouse click was with Alt pressed.
 		bool m_fOffsetHex { false };          //Print offset numbers as Hex or as Decimals.
 		bool m_fHighLatency { false };        //Reflects HEXDATA::fHighLatency.
 		bool m_fKeyDownAtm { false };         //Whether a key is pressed at the moment.
@@ -2874,7 +2874,7 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 	const auto dwCapacity = GetCapacity();
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 3);
-	if (m_fSelectionBlock) {
+	if (m_pSelection->HasContiguousSel()) {
 		auto dwTail = m_pSelection->GetLineLength();
 		for (auto i { 0U }; i < ullSelSize; ++i) {
 			const auto chByte = ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
@@ -2953,7 +2953,7 @@ auto CHexCtrl::CopyOffset()const->std::wstring
 
 auto CHexCtrl::CopyPrintScreen()const->std::wstring
 {
-	if (m_fSelectionBlock) //Only works with classical selection.
+	if (!m_pSelection->HasContiguousSel()) //Only works with contiguous selection.
 		return { };
 
 	const auto ullSelStart = m_pSelection->GetSelStart();
@@ -3124,9 +3124,9 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
 	wnd::CRect rcInfoBar(m_iFirstVertLinePx + 1 - iScrollH, m_iThirdHorzLinePx + 1,
 		m_iFourthVertLinePx, m_iFourthHorzLinePx); //Info bar rc until m_iFourthHorizLine.
-	wnd::CRect rcText = rcInfoBar;
-	rcText.left = m_iFirstVertLinePx + 5; //Draw the text beginning with little indent.
-	rcText.right = m_iFirstVertLinePx + m_iWidthClientAreaPx; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
+	wnd::CRect rcInfoBarText = rcInfoBar;
+	rcInfoBarText.left = m_iFirstVertLinePx + 5; //Draw the text beginning with little indent.
+	rcInfoBarText.right = m_iFirstVertLinePx + m_iWidthClientAreaPx; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
 
 	std::size_t sCurrPosBegin { };
 	while (true) {
@@ -3140,8 +3140,8 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 
 		const auto iParamSize = static_cast<UINT>(sParamPosEnd - sParamPosBegin - 1);
 		vecInfoData.emplace_back(POLYTEXTW { .n { iParamSize }, .lpstr { m_wstrInfoBar.data() + sParamPosBegin + 1 },
-			.rcl { rcText } }, m_stColors.clrFontInfoParam);
-		rcText.left += iParamSize * m_sizeFontInfo.cx; //Increase rect left offset by string size.
+			.rcl { rcInfoBarText } }, m_stColors.clrFontInfoParam);
+		rcInfoBarText.left += iParamSize * m_sizeFontInfo.cx; //Increase rect left offset by string size.
 		sCurrPosBegin = sParamPosEnd + 1;
 
 		if (const auto sDataPosBegin = m_wstrInfoBar.find_first_of('`', sCurrPosBegin);
@@ -3150,14 +3150,14 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 				sDataPosEnd != std::wstring::npos) {
 				const auto iDataSize = static_cast<UINT>(sDataPosEnd - sDataPosBegin - 1);
 				vecInfoData.emplace_back(POLYTEXTW { .n { iDataSize }, .lpstr { m_wstrInfoBar.data() + sDataPosBegin + 1 },
-					.rcl { rcText } }, m_stColors.clrFontInfoData);
-				rcText.left += iDataSize * m_sizeFontInfo.cx;
+					.rcl { rcInfoBarText } }, m_stColors.clrFontInfoData);
+				rcInfoBarText.left += iDataSize * m_sizeFontInfo.cx;
 				sCurrPosBegin = sDataPosEnd + 1;
 			}
 		}
 
-		rcText.left += m_sizeFontInfo.cx; //Additional space to the next rect's left side.
-		vecInfoData.back().iVertLineX = rcText.left - (m_sizeFontInfo.cx / 2); //Vertical line after current rect.
+		rcInfoBarText.left += m_sizeFontInfo.cx; //Additional space to the next rect's left side.
+		vecInfoData.back().iVertLineX = rcInfoBarText.left - (m_sizeFontInfo.cx / 2); //Vertical line after current rect.
 	}
 
 	wnd::CDC dc(hDC);
@@ -4025,13 +4025,16 @@ auto CHexCtrl::GetRectTextCaption()const->wnd::CRect
 
 auto CHexCtrl::GetSelectedLines()const->ULONGLONG
 {
+	if (!m_pSelection->HasContiguousSel())
+		return 0ULL;
+
 	const auto dwCapacity = GetCapacity();
 	const auto ullSelStart = m_pSelection->GetSelStart();
 	const auto ullSelEnd = m_pSelection->GetSelEnd();
 	const auto ullSelSize = m_pSelection->GetSelSize();
 	const auto ullModStart = ullSelStart % dwCapacity;
 	const auto ullModEnd = ullSelEnd % dwCapacity;
-	const auto ullLines = ullSelSize / dwCapacity + ((ullModStart > ullModEnd) ? 2
+	const auto ullLines = ullSelSize / dwCapacity + ((ullModStart > (ullModEnd + 1)) ? 2
 		: ((ullSelSize % dwCapacity) ? 1 : (ullModStart > 0) ? 1 : 0));
 
 	return ullLines;
@@ -4317,12 +4320,18 @@ void CHexCtrl::Print()
 {
 	PRINTPAGERANGE ppr { .nFromPage { 1 }, .nToPage { 1 } };
 	PRINTDLGEXW m_pdex { .lStructSize { sizeof(PRINTDLGEXW) }, .hwndOwner { m_Wnd },
-		.Flags { static_cast<DWORD>(PD_RETURNDC | (HasSelection() ? PD_SELECTION : PD_NOSELECTION | PD_PAGENUMS)) },
+		.Flags { static_cast<DWORD>(PD_RETURNDC | PD_NOCURRENTPAGE | (m_pSelection->HasContiguousSel() ?
+			PD_SELECTION : (PD_NOSELECTION | PD_PAGENUMS))) },
 		.nPageRanges { 1 }, .nMaxPageRanges { 1 }, .lpPageRanges { &ppr }, .nMinPage { 1 }, .nMaxPage { 0xFFFFUL },
 		.nStartPage { START_PAGE_GENERAL } };
 
 	if (::PrintDlgExW(&m_pdex) != S_OK) {
-		::MessageBoxW(m_Wnd, L"Internal printer initialization error.", L"Error", MB_ICONERROR);
+		ut::DBG_REPORT(L"PrintDlgExW error.");
+		return;
+	}
+
+	if (m_pdex.hDC == nullptr) {
+		ut::DBG_REPORT(L"No printer found (m_pdex.hDC == nullptr).");
 		return;
 	}
 
@@ -4331,14 +4340,18 @@ void CHexCtrl::Print()
 		::DeleteDC(m_pdex.hDC);
 		return;
 	}
-	const auto hdcPrinter = m_pdex.hDC;
-	if (hdcPrinter == nullptr) {
-		::MessageBoxW(m_Wnd, L"No printer found.", L"Error", MB_ICONERROR);
+
+	const auto fPrintSelection = m_pdex.Flags & PD_SELECTION;
+	const auto fPrintRange = m_pdex.Flags & PD_PAGENUMS;
+	const auto fPrintAll = !fPrintSelection && !fPrintRange;
+
+	if (!fPrintAll && !fPrintRange && !fPrintSelection) {
+		::DeleteDC(m_pdex.hDC);
 		return;
 	}
 
-	wnd::CDC dcPrint(hdcPrinter);
-	DOCINFOW di { .cbSize { sizeof(DOCINFOW) }, .lpszDocName { L"HexCtrl" } };
+	wnd::CDC dcPrint(m_pdex.hDC);
+	const DOCINFOW di { .cbSize { sizeof(DOCINFOW) }, .lpszDocName { L"HexCtrl" } };
 	if (dcPrint.StartDocW(&di) < 0) {
 		dcPrint.AbortDoc();
 		dcPrint.DeleteDC();
@@ -4351,6 +4364,7 @@ void CHexCtrl::Print()
 		::GetDeviceCaps(dcPrint, VERTRES) - (iMarginY * 2)));
 	const SIZE sizePrintDpi { ::GetDeviceCaps(dcPrint, LOGPIXELSX), ::GetDeviceCaps(dcPrint, LOGPIXELSY) };
 	const auto iFontSizeRatio { sizePrintDpi.cy / m_iLOGPIXELSY };
+	const auto dwCapacity = GetCapacity();
 
 	//Setting scaled fonts for printing, and temporarily disabling redraw.
 	SetRedraw(false);
@@ -4362,14 +4376,8 @@ void CHexCtrl::Print()
 	lfPrintInfo.lfHeight *= iFontSizeRatio;
 	SetFont(lfPrintMain, true);
 	SetFont(lfPrintInfo, false);
-	RecalcAll(dcPrint, &rcPrint); //Recalc for printer dc, to get correct m_iHeightWorkAreaPx, etc...
-
-	const auto dwCapacity = GetCapacity();
+	RecalcAll(true, dcPrint, &rcPrint); //Recalc for printer dc, to get correct printing sizes.
 	const auto iLinesInPage = m_iHeightWorkAreaPx / m_sizeFontMain.cy;
-	const auto fPrintSelection = m_pdex.Flags & PD_SELECTION;
-	const auto fPrintRange = m_pdex.Flags & PD_PAGENUMS;
-	const auto fPrintCurrPage = m_pdex.Flags & PD_CURRENTPAGE;
-	const auto fPrintAll = !fPrintSelection && !fPrintRange && !fPrintCurrPage;
 	dcPrint.SetMapMode(MM_TEXT);
 
 	if (fPrintSelection) {
@@ -4379,6 +4387,11 @@ void CHexCtrl::Print()
 			+ ((ullLinesToPrint % iLinesInPage) > 0 ? 1 : 0));
 		auto ullStartLine = ullSelStart / dwCapacity;
 		const auto ullLastLine = ullStartLine + ullLinesToPrint;
+		const auto hcsOrig = GetColors();
+		auto hcsPrint { hcsOrig }; //To print with normal text/bk colors, not white text on black bk.
+		hcsPrint.clrBkSel = hcsOrig.clrBk;
+		hcsPrint.clrFontSel = hcsOrig.clrFontHex;
+		SetColors(hcsPrint);
 
 		for (auto itPage = 0U; itPage < dwPagesToPrint; ++itPage) {
 			auto ullEndLine = ullStartLine + iLinesInPage;
@@ -4395,27 +4408,24 @@ void CHexCtrl::Print()
 			dcPrint.StartPage();
 			DrawWindow(dcPrint);
 			DrawInfoBar(dcPrint);
-			const auto clBkOld = m_stColors.clrBkSel;
-			const auto clTextOld = m_stColors.clrFontSel;
-			m_stColors.clrBkSel = m_stColors.clrBk; //To print as normal text on normal bk, not white text on black bk.
-			m_stColors.clrFontSel = m_stColors.clrFontHex;
 			DrawOffsets(dcPrint, ullStartLine, iLines);
 			DrawSelection(dcPrint, ullStartLine, iLines, wstrHex, wstrText);
-			m_stColors.clrBkSel = clBkOld;
-			m_stColors.clrFontSel = clTextOld;
+			DrawSelHighlight(dcPrint, ullStartLine, iLines, wstrHex, wstrText);
+			DrawPageLines(dcPrint, ullStartLine, iLines);
 			ullStartLine += iLinesInPage;
 			dcPrint.EndPage();
 		}
+
+		SetColors(hcsOrig); //Restoring original colors.
 	}
 	else {
 		const auto ullTotalLines = GetDataSize() / dwCapacity + ((GetDataSize() % dwCapacity) ? 1 : 0);
 		const auto ullTotalPages = ullTotalLines / iLinesInPage + ((ullTotalLines % iLinesInPage) ? 1 : 0);
-		auto ullStartLine = GetTopLine();
+		ULONGLONG ullStartLine { 0 };
 		DWORD dwPagesToPrint { 0 };
 
 		if (fPrintAll) {
 			dwPagesToPrint = static_cast<DWORD>(ullTotalPages);
-			ullStartLine = 0;
 		}
 		else if (fPrintRange) {
 			const auto dwFromPage = ppr.nFromPage - 1;
@@ -4426,6 +4436,7 @@ void CHexCtrl::Print()
 					dwPagesToPrint = static_cast<DWORD>(ullTotalPages - dwFromPage);
 				}
 			}
+
 			ullStartLine = dwFromPage * iLinesInPage;
 		}
 
@@ -4469,9 +4480,9 @@ void CHexCtrl::Print()
 	RecalcAll();
 }
 
-void CHexCtrl::RecalcAll(HDC hDC, LPCRECT pRC)
+void CHexCtrl::RecalcAll(bool fPrinter, HDC hDCPrinter, LPCRECT pRCPrinter)
 {
-	const wnd::CDC dcCurr = hDC == nullptr ? m_Wnd.GetDC() : hDC;
+	const wnd::CDC dcCurr = fPrinter ? hDCPrinter : m_Wnd.GetDC();
 	const auto ullCurLineV = GetTopLine();
 	TEXTMETRICW tm;
 	dcCurr.SelectObject(m_hFntMain);
@@ -4510,11 +4521,11 @@ void CHexCtrl::RecalcAll(HDC hDC, LPCRECT pRC)
 	m_iSecondHorzLinePx = m_iStartWorkAreaYPx - 1;
 	m_iIndentCapTextYPx = m_iHeightTopRectPx / 2 - (m_sizeFontMain.cy / 2);
 
-	const wnd::CRect rc { pRC == nullptr ? m_Wnd.GetClientRect() : *pRC };
+	const wnd::CRect rc { fPrinter ? *pRCPrinter : m_Wnd.GetClientRect() };
 	RecalcClientArea(rc.Width(), rc.Height());
 
-	//Scrolls, ReleaseDC and Redraw only for window DC, not for printing DC.
-	if (hDC == nullptr) {
+	//Scrolls, ReleaseDC and Redraw only for window DC, not for printer DC.
+	if (!fPrinter) {
 		const auto ullDataSize = GetDataSize();
 		m_pScrollV->SetScrollSizes(m_sizeFontMain.cy, GetScrollPageSize(),
 			static_cast<ULONGLONG>(m_iStartWorkAreaYPx) + m_iHeightBottomOffAreaPx
@@ -7278,7 +7289,7 @@ auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
 			hs.ullSize = dwCapacity;
 		}
 		else {
-			m_fSelectionBlock = ::GetAsyncKeyState(VK_MENU) < 0;
+			m_fClickWithAlt = ::GetAsyncKeyState(VK_MENU) < 0;
 			m_ullCursorPrev = m_ullCursorNow = m_ullCaretPos;
 			hs.ullOffset = m_ullCaretPos;
 			hs.ullSize = 1ULL;
@@ -7307,7 +7318,7 @@ auto CHexCtrl::OnLButtonDown(const MSG& msg)->LRESULT
 		m_fCaretHigh = optHit->fIsHigh;
 	}
 
-	m_fSelectionBlock = ::GetAsyncKeyState(VK_MENU) < 0;
+	m_fClickWithAlt = ::GetAsyncKeyState(VK_MENU) < 0;
 	m_Wnd.SetCapture();
 
 	VecSpan vecSel;
@@ -7396,7 +7407,7 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 		ULONGLONG  ullStart;
 		ULONGLONG ullSize;
 		ULONGLONG ullLines;
-		if (m_fSelectionBlock) { //Select block (with Alt).
+		if (m_fClickWithAlt) { //Select block (with Alt).
 			ullClick = m_ullCursorPrev;
 			const DWORD dwModOffset = ullOffsetHit % dwCapacity;
 			const DWORD dwModClick = ullClick % dwCapacity;

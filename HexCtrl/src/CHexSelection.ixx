@@ -23,14 +23,15 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetSelStart()const->ULONGLONG;
 		[[nodiscard]] bool HasSelection()const;
 		[[nodiscard]] bool HasSelHighlight()const;
+		[[nodiscard]] bool HasContiguousSel()const; //Has contiguous selection, not multiline with Alt.
 		[[nodiscard]] bool HitTest(ULONGLONG ullOffset)const;          //Is given offset within selection.
 		[[nodiscard]] bool HitTestHighlight(ULONGLONG ullOffset)const; //Is given offset within highlighted selection.
 		[[nodiscard]] bool HitTestRange(const HEXSPAN& hss)const;      //Is there any selection within given range.
 		void SetMarkStartEnd(ULONGLONG ullOffset);
 		void SetSelection(const VecSpan& vecSel, bool fHighlight);     //Set a selection or selection highlight.
 	private:
-		VecSpan m_vecSelection;                                //Selection data.
-		VecSpan m_vecSelHighlight;                             //Selection highlight data.
+		VecSpan m_vecSelection;    //Selection data.
+		VecSpan m_vecSelHighlight; //Selection highlight data.
 		ULONGLONG m_ullMarkStartEnd { 0xFFFFFFFFFFFFFFFFULL };
 	};
 }
@@ -108,9 +109,14 @@ bool CHexSelection::HasSelection()const
 	return !m_vecSelection.empty();
 }
 
-bool CHexSelection::HasSelHighlight() const
+bool CHexSelection::HasSelHighlight()const
 {
 	return !m_vecSelHighlight.empty();
+}
+
+bool CHexSelection::HasContiguousSel()const
+{
+	return m_vecSelection.size() == 1;
 }
 
 bool CHexSelection::HitTest(ULONGLONG ullOffset)const
@@ -120,7 +126,7 @@ bool CHexSelection::HitTest(ULONGLONG ullOffset)const
 			return ullOffset >= ref.ullOffset && ullOffset < (ref.ullOffset + ref.ullSize); });
 }
 
-bool CHexSelection::HitTestHighlight(ULONGLONG ullOffset) const
+bool CHexSelection::HitTestHighlight(ULONGLONG ullOffset)const
 {
 	return std::any_of(m_vecSelHighlight.begin(), m_vecSelHighlight.end(),
 		[ullOffset](const HEXSPAN& ref) {
