@@ -4321,9 +4321,8 @@ void CHexCtrl::Print()
 	PRINTPAGERANGE ppr { .nFromPage { 1 }, .nToPage { 1 } };
 	PRINTDLGEXW m_pdex { .lStructSize { sizeof(PRINTDLGEXW) }, .hwndOwner { m_Wnd },
 		.Flags { static_cast<DWORD>(PD_RETURNDC | PD_NOCURRENTPAGE | (m_pSelection->HasContiguousSel() ?
-			PD_SELECTION : (PD_NOSELECTION | PD_PAGENUMS))) },
-		.nPageRanges { 1 }, .nMaxPageRanges { 1 }, .lpPageRanges { &ppr }, .nMinPage { 1 }, .nMaxPage { 0xFFFFUL },
-		.nStartPage { START_PAGE_GENERAL } };
+			PD_SELECTION : (PD_NOSELECTION | PD_PAGENUMS))) }, .nPageRanges { 1 }, .nMaxPageRanges { 1 },
+		.lpPageRanges { &ppr }, .nMinPage { 1 }, .nMaxPage { 0xFFFFUL }, .nStartPage { START_PAGE_GENERAL } };
 
 	if (::PrintDlgExW(&m_pdex) != S_OK) {
 		ut::DBG_REPORT(L"PrintDlgExW error.");
@@ -4351,8 +4350,7 @@ void CHexCtrl::Print()
 	}
 
 	wnd::CDC dcPrint(m_pdex.hDC);
-	const DOCINFOW di { .cbSize { sizeof(DOCINFOW) }, .lpszDocName { L"HexCtrl" } };
-	if (dcPrint.StartDocW(&di) < 0) {
+	if (const DOCINFOW di { .cbSize { sizeof(DOCINFOW) }, .lpszDocName { L"HexCtrl" } }; dcPrint.StartDocW(&di) < 0) {
 		dcPrint.AbortDoc();
 		dcPrint.DeleteDC();
 		return;
@@ -4401,7 +4399,6 @@ void CHexCtrl::Print()
 
 			const auto iLines = static_cast<int>(ullEndLine - ullStartLine);
 			const auto& [wstrHex, wstrText] = BuildDataToDraw(ullStartLine, iLines);
-
 			//Set viewport to have some indent from the edges.
 			//Viewport must be set on every page, otherwise only first page is printed with the proper offset.
 			dcPrint.SetViewportOrg(iMarginX, iMarginY);
@@ -4416,7 +4413,7 @@ void CHexCtrl::Print()
 			dcPrint.EndPage();
 		}
 
-		SetColors(hcsOrig); //Restoring original colors.
+		SetColors(hcsOrig); //Restore original colors.
 	}
 	else {
 		const auto ullTotalLines = GetDataSize() / dwCapacity + ((GetDataSize() % dwCapacity) ? 1 : 0);
@@ -7202,50 +7199,47 @@ auto CHexCtrl::OnInitMenuPopup(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnKeyDown(const MSG& msg)->LRESULT
 {
-	const auto nChar = static_cast<UINT>(msg.wParam);
-	const auto nFlags = static_cast<UINT>(msg.lParam);
+	const auto uChar = static_cast<UINT>(msg.wParam);
+	const auto uFlags = static_cast<UINT>(msg.lParam);
 
 	//LORE: If some key combinations do not work for seemingly no reason, it might be due to
 	//global hotkeys hooks from some running app.
 
 	//KF_REPEAT indicates that the key was pressed continuously.
-	if (nFlags & KF_REPEAT) {
+	if (uFlags & KF_REPEAT) {
 		m_fKeyDownAtm = true;
 	}
 
-	if (const auto optCmd = GetCommandFromKey(nChar, ::GetAsyncKeyState(VK_CONTROL) < 0,
+	if (const auto optCmd = GetCommandFromKey(uChar, ::GetAsyncKeyState(VK_CONTROL) < 0,
 		::GetAsyncKeyState(VK_SHIFT) < 0, ::GetAsyncKeyState(VK_MENU) < 0); optCmd) {
 		ExecuteCmd(*optCmd);
 		return 0;
 	}
 
-	if (IsDataSet() && IsMutable() && !IsCurTextArea()) {
-		//If caret is in the Hex area then just one part (High/Low) of the byte must be changed.
-		//Normalizing all input in the Hex area to only [0x0-0xF] range, allowing only [0-9], [A-F], [NUM0-NUM9].
-		unsigned char chByte = nChar & 0xFF;
-		if (chByte >= '0' && chByte <= '9') {
-			chByte -= '0';
-		}
-		else if (chByte >= 'A' && chByte <= 'F') {
-			chByte -= 0x37; //'A' - 0x37 = 0xA.
-		}
-		else if (chByte >= VK_NUMPAD0 && chByte <= VK_NUMPAD9) {
-			chByte -= VK_NUMPAD0;
-		}
-		else
-			return 0;
+	if (!IsDataSet() || !IsMutable() || IsCurTextArea())
+		return 0;
 
-		auto chByteCurr = ut::GetIHexTData<unsigned char>(*this, GetCaretPos());
-		if (m_fCaretHigh) {
-			chByte = (chByte << 4U) | (chByteCurr & 0x0FU);
-		}
-		else {
-			chByte = (chByte & 0x0FU) | (chByteCurr & 0xF0U);
-		}
-		ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE },
-			.spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { GetCaretPos(), 1 } } });
-		CaretMoveRight();
+	//If caret is in the Hex area then just one part (High/Low) of the byte must be changed.
+	//Normalizing all input in the Hex area to only [0x0-0xF] range, allowing only [0-9], [A-F], [NUM0-NUM9].
+	unsigned char chByte = uChar & 0xFFU;
+	if (chByte >= '0' && chByte <= '9') {
+		chByte -= '0'; //'1' - '0' = 0x01.
 	}
+	else if (chByte >= 'A' && chByte <= 'F') {
+		chByte -= 0x37; //'A' - 0x37 = 0x0A.
+	}
+	else if (chByte >= VK_NUMPAD0 && chByte <= VK_NUMPAD9) {
+		chByte -= VK_NUMPAD0;
+	}
+	else
+		return 0;
+
+	const auto chByteCurr = ut::GetIHexTData<unsigned char>(*this, GetCaretPos());
+	const auto bByteToSet = static_cast<std::byte>(m_fCaretHigh ? ((chByte << 4U) | (chByteCurr & 0x0FU))
+		: ((chByte & 0x0FU) | (chByteCurr & 0xF0U)));
+	ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE }, .spnData { &bByteToSet, sizeof(bByteToSet) },
+		.vecSpan { { GetCaretPos(), 1 } } });
+	CaretMoveRight();
 
 	return 0;
 }
