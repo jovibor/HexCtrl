@@ -391,7 +391,6 @@ namespace HEXCTRL::INTERNAL {
 		auto OnPaint() -> LRESULT;
 		auto OnSetCursor(const MSG& msg) -> LRESULT;
 		auto OnSize(const MSG& msg) -> LRESULT;
-		auto OnSysKeyDown(const MSG& msg) -> LRESULT;
 		auto OnTimer(const MSG& msg) -> LRESULT;
 		auto OnVScroll(const MSG& msg) -> LRESULT;
 		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
@@ -1713,6 +1712,7 @@ auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT
 	case WM_HELP: return OnHelp(msg);
 	case WM_HSCROLL: return OnHScroll(msg);
 	case WM_INITMENUPOPUP: return OnInitMenuPopup(msg);
+	case WM_SYSKEYDOWN:
 	case WM_KEYDOWN: return OnKeyDown(msg);
 	case WM_KEYUP: return OnKeyUp(msg);
 	case WM_LBUTTONDBLCLK: return OnLButtonDblClk(msg);
@@ -1726,7 +1726,6 @@ auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT
 	case WM_PAINT: return OnPaint();
 	case WM_SETCURSOR: return OnSetCursor(msg);
 	case WM_SIZE: return OnSize(msg);
-	case WM_SYSKEYDOWN: return OnSysKeyDown(msg);
 	case WM_TIMER: return OnTimer(msg);
 	case WM_VSCROLL: return OnVScroll(msg);
 	default: return wnd::DefWndProc(msg);
@@ -4299,8 +4298,11 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 void CHexCtrl::OnModifyData()
 {
 	ParentNotify(HEXCTRL_MSG_SETDATA);
-	m_pDlgTemplMgr->UpdateData();
-	m_pDlgDataInterp->UpdateData();
+
+	if (!m_fKeyDownAtm) {
+		m_pDlgTemplMgr->UpdateData();
+		m_pDlgDataInterp->UpdateData();
+	}
 }
 
 template<typename T> requires std::is_class_v<T>
@@ -7000,33 +7002,31 @@ void CHexCtrl::ModifyOperVec256(std::byte* pData, const HEXMODIFY& hms, [[maybe_
 }
 #endif //^^^ _M_IX86 || _M_X64
 
+
 //CHexCtrl message handlers.
 
 auto CHexCtrl::OnChar(const MSG& msg)->LRESULT
 {
-	const auto nChar = static_cast<UINT>(msg.wParam);
-	if (!IsDataSet() || !IsMutable() || !IsCurTextArea() || (GetKeyState(VK_CONTROL) < 0)
-		|| !std::iswprint(static_cast<wint_t>(nChar)))
+	const auto wChar = LOWORD(msg.wParam); //LOWORD holds wchar_t symbol.
+	if (!IsDataSet() || !IsMutable() || !IsCurTextArea() || (::GetKeyState(VK_CONTROL) < 0)
+		|| !std::iswprint(wChar))
 		return 0;
 
-	unsigned char chByte = nChar & 0xFF;
-
-	wchar_t warrCurrLocaleID[KL_NAMELENGTH];
-	::GetKeyboardLayoutNameW(warrCurrLocaleID); //Current langID as wstring.
-	if (const auto optLocID = stn::StrToUInt32(warrCurrLocaleID, 16); optLocID) { //Convert langID from wstr to number.
-		UINT uCurrCodePage { };
-		constexpr int iSize = sizeof(uCurrCodePage) / sizeof(wchar_t);
-		if (::GetLocaleInfoW(*optLocID, LOCALE_IDEFAULTANSICODEPAGE | LOCALE_RETURN_NUMBER,
-			reinterpret_cast<LPWSTR>(&uCurrCodePage), iSize) == iSize) { //ANSI code page for the current langID (if any).
-			const wchar_t wch { static_cast<wchar_t>(nChar) };
-			//Convert input symbol (wchar) to char according to current Windows' code page.
-			if (auto str = ut::WstrToStr(&wch, uCurrCodePage); !str.empty()) {
-				chByte = str[0];
-			}
-		}
+	std::string strASCII; //ASCII char to set.
+	//Keyboard Layout ID (locale identifier) for the current thread.
+	const auto lcid = static_cast<LCID>(reinterpret_cast<DWORD_PTR>(::GetKeyboardLayout(0UL)) & 0xFFFFUL);
+	UINT uANSICP { }; //ANSI CodePage ID.
+	if (constexpr int iSize = sizeof(uANSICP) / sizeof(wchar_t);
+		::GetLocaleInfoW(lcid, LOCALE_IDEFAULTANSICODEPAGE | LOCALE_RETURN_NUMBER,
+			reinterpret_cast<LPWSTR>(&uANSICP), iSize) == iSize) { //ANSI code page for the current KLID (if any).
+		//Convert input wchar symbol to ASCII char according to the current Keyboard ANSI code page.
+		const std::wstring_view wsv(reinterpret_cast<const wchar_t*>(&wChar), 1);
+		strASCII = ut::WstrToStr(wsv, uANSICP);
 	}
 
-	ModifyData({ .spnData { reinterpret_cast<std::byte*>(&chByte), sizeof(chByte) }, .vecSpan { { GetCaretPos(), 1 } } });
+	//Set converted char if conversion (wchar_t->ASCII_char) was made, or zero otherwise. 
+	const std::byte bByteToSet = static_cast<std::byte>(!strASCII.empty() ? strASCII[0] : 0);
+	ModifyData({ .spnData { &bByteToSet, sizeof(bByteToSet) }, .vecSpan { { GetCaretPos(), 1 } } });
 	CaretMoveRight();
 
 	return 0;
@@ -7103,22 +7103,22 @@ auto CHexCtrl::OnDestroy()->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::OnEraseBkgnd(const MSG& /*msg*/)->LRESULT
+auto CHexCtrl::OnEraseBkgnd([[maybe_unused]] const MSG& msg)->LRESULT
 {
 	return TRUE;
 }
 
-auto CHexCtrl::OnGetDlgCode(const MSG& /*msg*/)->LRESULT
+auto CHexCtrl::OnGetDlgCode([[maybe_unused]] const MSG& msg)->LRESULT
 {
 	return DLGC_WANTALLKEYS;
 }
 
-auto CHexCtrl::OnHelp(const MSG& /*msg*/)->LRESULT
+auto CHexCtrl::OnHelp([[maybe_unused]] const MSG& msg)->LRESULT
 {
 	return FALSE;
 }
 
-auto CHexCtrl::OnHScroll(const MSG& /*msg*/)->LRESULT
+auto CHexCtrl::OnHScroll([[maybe_unused]] const MSG& msg)->LRESULT
 {
 	m_Wnd.RedrawWindow();
 
@@ -7127,10 +7127,9 @@ auto CHexCtrl::OnHScroll(const MSG& /*msg*/)->LRESULT
 
 auto CHexCtrl::OnInitMenuPopup(const MSG& msg)->LRESULT
 {
-	const auto nIndex = static_cast<UINT>(LOWORD(msg.lParam));
 	using enum EHexCmd;
-	//The nIndex specifies the zero-based relative position of the menu item that opens the drop-down menu or submenu.
-	switch (nIndex) {
+	//The LOWORD(lParam) specifies zero-based relative position of the menu, that opens drop-down menu or submenu.
+	switch (LOWORD(msg.lParam)) {
 	case 0:	//Search.
 		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_DLGSEARCH, IsCmdAvail(CMD_SEARCH_DLG));
 		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_NEXT, IsCmdAvail(CMD_SEARCH_NEXT));
@@ -7199,18 +7198,15 @@ auto CHexCtrl::OnInitMenuPopup(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnKeyDown(const MSG& msg)->LRESULT
 {
-	const auto uChar = static_cast<UINT>(msg.wParam);
-	const auto uFlags = static_cast<UINT>(msg.lParam);
+	auto wVKeyCode = LOWORD(msg.wParam); //Virtual-key code (both: WM_KEYDOWN/WM_SYSKEYDOWN).
 
-	//LORE: If some key combinations do not work for seemingly no reason, it might be due to
-	//global hotkeys hooks from some running app.
-
-	//KF_REPEAT indicates that the key was pressed continuously.
-	if (uFlags & KF_REPEAT) {
+	if (HIWORD(msg.lParam) & KF_REPEAT) { //KF_REPEAT indicates that the key was pressed continuously.
 		m_fKeyDownAtm = true;
 	}
 
-	if (const auto optCmd = GetCommandFromKey(uChar, ::GetAsyncKeyState(VK_CONTROL) < 0,
+	//LORE: If some key combinations (e.g. Ctrl+Alt+Num Plus) do not work for seemingly no reason,
+	//it might be due to global hotkeys hooks from some running app.
+	if (const auto optCmd = GetCommandFromKey(wVKeyCode, ::GetAsyncKeyState(VK_CONTROL) < 0,
 		::GetAsyncKeyState(VK_SHIFT) < 0, ::GetAsyncKeyState(VK_MENU) < 0); optCmd) {
 		ExecuteCmd(*optCmd);
 		return 0;
@@ -7221,22 +7217,21 @@ auto CHexCtrl::OnKeyDown(const MSG& msg)->LRESULT
 
 	//If caret is in the Hex area then just one part (High/Low) of the byte must be changed.
 	//Normalizing all input in the Hex area to only [0x0-0xF] range, allowing only [0-9], [A-F], [NUM0-NUM9].
-	unsigned char chByte = uChar & 0xFFU;
-	if (chByte >= '0' && chByte <= '9') {
-		chByte -= '0'; //'1' - '0' = 0x01.
+	if (wVKeyCode >= '0' && wVKeyCode <= '9') {
+		wVKeyCode -= '0'; //'1' - '0' = 0x01.
 	}
-	else if (chByte >= 'A' && chByte <= 'F') {
-		chByte -= 0x37; //'A' - 0x37 = 0x0A.
+	else if (wVKeyCode >= 'A' && wVKeyCode <= 'F') {
+		wVKeyCode -= 0x37; //'A' - 0x37 = 0x0A.
 	}
-	else if (chByte >= VK_NUMPAD0 && chByte <= VK_NUMPAD9) {
-		chByte -= VK_NUMPAD0;
+	else if (wVKeyCode >= VK_NUMPAD0 && wVKeyCode <= VK_NUMPAD9) {
+		wVKeyCode -= VK_NUMPAD0;
 	}
 	else
 		return 0;
 
 	const auto chByteCurr = ut::GetIHexTData<unsigned char>(*this, GetCaretPos());
-	const auto bByteToSet = static_cast<std::byte>(m_fCaretHigh ? ((chByte << 4U) | (chByteCurr & 0x0FU))
-		: ((chByte & 0x0FU) | (chByteCurr & 0xF0U)));
+	const auto bByteToSet = static_cast<std::byte>(m_fCaretHigh ? ((wVKeyCode << 4U) | (chByteCurr & 0x0FU))
+		: ((wVKeyCode & 0x0FU) | (chByteCurr & 0xF0U)));
 	ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE }, .spnData { &bByteToSet, sizeof(bByteToSet) },
 		.vecSpan { { GetCaretPos(), 1 } } });
 	CaretMoveRight();
@@ -7244,7 +7239,7 @@ auto CHexCtrl::OnKeyDown(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::OnKeyUp(const MSG& /*msg*/)->LRESULT
+auto CHexCtrl::OnKeyUp([[maybe_unused]] const MSG& msg)->LRESULT
 {
 	if (!IsDataSet())
 		return 0;
@@ -7260,7 +7255,6 @@ auto CHexCtrl::OnKeyUp(const MSG& /*msg*/)->LRESULT
 auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
 {
 	const POINT pt { .x { wnd::GetXLPARAM(msg.lParam) }, .y { wnd::GetYLPARAM(msg.lParam) } };
-	const auto nFlags = static_cast<UINT>(msg.wParam);
 
 	if ((pt.x + static_cast<long>(m_pScrollH->GetScrollPos())) < m_iSecondVertLinePx) { //DblClick on "Offset" area.
 		SetOffsetMode(!IsOffsetAsHex());
@@ -7277,7 +7271,7 @@ auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
 		}
 
 		HEXSPAN hs;
-		if (nFlags & MK_SHIFT) {
+		if (msg.wParam & MK_SHIFT) {
 			const auto dwCapacity = GetCapacity();
 			hs.ullOffset = m_ullCursorPrev = m_ullCursorNow = m_ullCaretPos - (m_ullCaretPos % dwCapacity);
 			hs.ullSize = dwCapacity;
@@ -7298,7 +7292,6 @@ auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
 auto CHexCtrl::OnLButtonDown(const MSG& msg)->LRESULT
 {
 	const POINT pt { .x { wnd::GetXLPARAM(msg.lParam) }, .y { wnd::GetYLPARAM(msg.lParam) } };
-	const auto nFlags = static_cast<UINT>(msg.wParam);
 
 	m_Wnd.SetFocus(); //SetFocus is vital to give proper keyboard input to the main HexCtrl window.
 	const auto optHit = HitTest(pt);
@@ -7316,7 +7309,7 @@ auto CHexCtrl::OnLButtonDown(const MSG& msg)->LRESULT
 	m_Wnd.SetCapture();
 
 	VecSpan vecSel;
-	if (nFlags & MK_SHIFT) {
+	if (msg.wParam & MK_SHIFT) {
 		ULONGLONG ullSelStart;
 		ULONGLONG ullSelEnd;
 		if (m_ullCursorNow <= m_ullCursorPrev) {
@@ -7345,7 +7338,7 @@ auto CHexCtrl::OnLButtonDown(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::OnLButtonUp(const MSG& /*msg*/)->LRESULT
+auto CHexCtrl::OnLButtonUp([[maybe_unused]] const MSG& msg)->LRESULT
 {
 	m_fLMousePressed = false;
 	::ReleaseCapture();
@@ -7510,7 +7503,7 @@ auto CHexCtrl::OnMouseWheel(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::OnNCActivate(const MSG& /*msg*/)->LRESULT
+auto CHexCtrl::OnNCActivate([[maybe_unused]] const MSG& msg)->LRESULT
 {
 	m_pScrollV->OnNCActivate();
 	m_pScrollH->OnNCActivate();
@@ -7595,37 +7588,23 @@ auto CHexCtrl::OnPaint()->LRESULT
 
 auto CHexCtrl::OnSetCursor(const MSG& msg)->LRESULT
 {
-	const auto nHitTest = static_cast<UINT>(LOWORD(msg.lParam));
-	const auto message = static_cast<UINT>(HIWORD(msg.lParam));
-
-	m_pScrollV->OnSetCursor(nHitTest, message);
-	m_pScrollH->OnSetCursor(nHitTest, message);
+	const auto wHitTest = LOWORD(msg.lParam);
+	const auto wMessage = HIWORD(msg.lParam);
+	m_pScrollV->OnSetCursor(wHitTest, wMessage);
+	m_pScrollH->OnSetCursor(wHitTest, wMessage);
 
 	return wnd::DefWndProc(msg); //To set appropriate cursor.
 }
 
 auto CHexCtrl::OnSize(const MSG& msg)->LRESULT
 {
-	const auto iWidth = LOWORD(msg.lParam);
-	const auto iHeight = HIWORD(msg.lParam);
-
 	if (!IsCreated())
 		return 0;
 
-	RecalcClientArea(iWidth, iHeight);
+	const auto wWidth = LOWORD(msg.lParam);
+	const auto wHeight = HIWORD(msg.lParam);
+	RecalcClientArea(wWidth, wHeight);
 	m_pScrollV->SetScrollPageSize(GetScrollPageSize());
-
-	return 0;
-}
-
-auto CHexCtrl::OnSysKeyDown(const MSG& msg)->LRESULT
-{
-	const auto nChar = static_cast<UINT>(msg.wParam);
-
-	if (const auto optCmd = GetCommandFromKey(nChar, ::GetAsyncKeyState(VK_CONTROL) < 0,
-		::GetAsyncKeyState(VK_SHIFT) < 0, true); optCmd) {
-		ExecuteCmd(*optCmd);
-	}
 
 	return 0;
 }
@@ -7633,9 +7612,8 @@ auto CHexCtrl::OnSysKeyDown(const MSG& msg)->LRESULT
 auto CHexCtrl::OnTimer(const MSG& msg)->LRESULT
 {
 	static constexpr auto dbSecToShow { 5000.0 }; //How many ms to show tooltips.
-	const auto nIDEvent = static_cast<UINT_PTR>(msg.wParam);
-	if (nIDEvent != m_uIDTTTMain)
-		return 	wnd::DefWndProc(msg);
+	if (msg.wParam != m_uIDTTTMain)
+		return wnd::DefWndProc(msg);
 
 	auto rcClient = m_Wnd.GetClientRect();
 	m_Wnd.ClientToScreen(rcClient);
@@ -7654,7 +7632,7 @@ auto CHexCtrl::OnTimer(const MSG& msg)->LRESULT
 	return 0;
 }
 
-auto CHexCtrl::OnVScroll(const MSG& /*msg*/)->LRESULT
+auto CHexCtrl::OnVScroll([[maybe_unused]] const MSG& msg)->LRESULT
 {
 	bool fRedraw { true };
 	if (m_fHighLatency) {

@@ -931,7 +931,7 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgTemplMgr::OnLButtonDown(const MSG& /*stMsg*/)->INT_PTR
+auto CHexDlgTemplMgr::OnLButtonDown([[maybe_unused]] const MSG& msg)->INT_PTR
 {
 	if (m_fCurInSplitter) {
 		m_fLMDownResize = true;
@@ -942,7 +942,7 @@ auto CHexDlgTemplMgr::OnLButtonDown(const MSG& /*stMsg*/)->INT_PTR
 	return TRUE;
 }
 
-auto CHexDlgTemplMgr::OnLButtonUp(const MSG& /*stMsg*/)->INT_PTR
+auto CHexDlgTemplMgr::OnLButtonUp([[maybe_unused]] const MSG& msg)->INT_PTR
 {
 	m_fLMDownResize = false;
 	::ReleaseCapture();
@@ -1557,9 +1557,9 @@ void CHexDlgTemplMgr::OnOK()
 
 auto CHexDlgTemplMgr::OnSize(const MSG& msg)->INT_PTR
 {
-	const auto iWidth = LOWORD(msg.lParam);
-	const auto iHeight = HIWORD(msg.lParam);
-	m_DynLayout.OnSize(iWidth, iHeight);
+	const auto wWidth = LOWORD(msg.lParam);
+	const auto wHeight = HIWORD(msg.lParam);
+	m_DynLayout.OnSize(wWidth, wHeight);
 	return TRUE;
 }
 

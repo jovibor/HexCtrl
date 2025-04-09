@@ -1002,10 +1002,9 @@ auto CHexScroll::OnDestroy(const MSG& msg)->LRESULT
 auto CHexScroll::OnTimer(const MSG& msg)->LRESULT
 {
 	static constexpr auto uTimerRepeat { 50U }; //Milliseconds for repeat when click and hold on channel.
-	const auto nIDEvent = static_cast<UINT_PTR>(msg.wParam);
 	using enum EState; using enum ETimer;
 
-	switch (nIDEvent) {
+	switch (msg.wParam) {
 	case (static_cast<UINT_PTR>(IDT_FIRSTCLICK)):
 		m_Wnd.KillTimer(static_cast<UINT_PTR>(IDT_FIRSTCLICK));
 		m_Wnd.SetTimer(static_cast<UINT_PTR>(IDT_CLICKREPEAT), uTimerRepeat, nullptr);

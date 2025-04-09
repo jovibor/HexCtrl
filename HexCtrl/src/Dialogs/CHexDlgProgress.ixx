@@ -156,8 +156,7 @@ auto CHexDlgProgress::OnInitDialog(const MSG& msg)->INT_PTR
 
 auto CHexDlgProgress::OnTimer(const MSG& msg)->INT_PTR
 {
-	const auto nIDEvent = static_cast<UINT_PTR>(msg.wParam);
-	if (nIDEvent != m_uIDTCancelCheck)
+	if (msg.wParam != m_uIDTCancelCheck)
 		return FALSE;
 
 	if (m_fCancel) {

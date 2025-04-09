@@ -778,9 +778,9 @@ void CHexDlgDataInterp::OnNotifyListSetData(NMHDR* pNMHDR)
 
 auto CHexDlgDataInterp::OnSize(const MSG& msg)->INT_PTR
 {
-	const auto iWidth = LOWORD(msg.lParam);
-	const auto iHeight = HIWORD(msg.lParam);
-	m_DynLayout.OnSize(iWidth, iHeight);
+	const auto wWidth = LOWORD(msg.lParam);
+	const auto wHeight = HIWORD(msg.lParam);
+	m_DynLayout.OnSize(wWidth, wHeight);
 	return TRUE;
 }
 
