@@ -90,7 +90,6 @@ namespace HEXCTRL::INTERNAL {
 		void RedrawNC()const;
 		void SendParentScrollMsg()const;            //Sends the WM_(V/H)SCROLL to the parent window.
 	private:
-		static constexpr auto m_iThumbPosMax { 0x7FFFFFFF };
 		enum class EState : std::uint8_t;
 		enum class ETimer : std::uint16_t;
 		wnd::CWnd m_Wnd;                  //Main window.
@@ -294,7 +293,7 @@ void CHexScroll::OnMouseMove(POINT pt)
 			m_ptCursorCur.y = rc.top;
 		}
 		else if (pt.y > rc.bottom) {
-			iNewPos = m_iThumbPosMax;
+			iNewPos = (std::numeric_limits<int>::max)();
 			m_ptCursorCur.y = rc.bottom;
 		}
 		else {
@@ -308,7 +307,7 @@ void CHexScroll::OnMouseMove(POINT pt)
 			m_ptCursorCur.x = rc.left;
 		}
 		else if (pt.x > rc.right) {
-			iNewPos = m_iThumbPosMax;
+			iNewPos = (std::numeric_limits<int>::max)();
 			m_ptCursorCur.x = rc.right;
 		}
 		else {
@@ -1094,7 +1093,7 @@ void CHexScroll::SetThumbPos(int iPos)
 	if (iPos < 0) {
 		ullNewScrollPos = 0;
 	}
-	else if (iPos == m_iThumbPosMax) {
+	else if (iPos == (std::numeric_limits<int>::max)()) {
 		ullNewScrollPos = m_ullScrollSizeMax;
 	}
 	else {

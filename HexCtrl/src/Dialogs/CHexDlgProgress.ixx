@@ -28,11 +28,11 @@ namespace HEXCTRL::INTERNAL {
 		void SetCount(ULONGLONG ullCount);
 		void SetCurrent(ULONGLONG ullCurr); //Set current data in the whole data diapason.
 	private:
+		auto OnClose() -> INT_PTR;
 		auto OnCommand(const MSG& msg) -> INT_PTR;
 		auto OnCtlClrStatic(const MSG& msg) -> INT_PTR;
 		auto OnInitDialog(const MSG& msg) -> INT_PTR;
 		auto OnTimer(const MSG& msg) -> INT_PTR;
-		auto OnClose() -> INT_PTR;
 	private:
 		static constexpr UINT_PTR m_uIDTCancelCheck { 0x1 };
 		static constexpr auto m_uElapse { 100U }; //Milliseconds for the timer.
@@ -135,7 +135,6 @@ auto CHexDlgProgress::OnInitDialog(const MSG& msg)->INT_PTR
 {
 	m_Wnd.Attach(msg.hwnd);
 	m_stProgBar.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_CALLBACK_PROGBAR));
-
 	m_Wnd.SetWndText(m_wstrOperName.data());
 	m_WndOper.Attach(m_Wnd.GetDlgItem(IDC_HEXCTRL_CALLBACK_STAT_OPER));
 	m_WndOper.SetWndText(m_wstrOperName.data());

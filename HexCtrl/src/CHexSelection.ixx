@@ -32,7 +32,7 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		VecSpan m_vecSelection;    //Selection data.
 		VecSpan m_vecSelHighlight; //Selection highlight data.
-		ULONGLONG m_ullMarkStartEnd { 0xFFFFFFFFFFFFFFFFULL };
+		ULONGLONG m_ullMarkStartEnd { (std::numeric_limits<std::uint64_t>::max)() };
 	};
 }
 
@@ -42,7 +42,7 @@ void CHexSelection::ClearAll()
 {
 	m_vecSelection.clear();
 	m_vecSelHighlight.clear();
-	m_ullMarkStartEnd = 0xFFFFFFFFFFFFFFFFULL;
+	m_ullMarkStartEnd = (std::numeric_limits<std::uint64_t>::max)();
 }
 
 auto CHexSelection::GetData()const->VecSpan
@@ -146,7 +146,7 @@ bool CHexSelection::HitTestRange(const HEXSPAN& hss)const
 
 void CHexSelection::SetMarkStartEnd(ULONGLONG ullOffset)
 {
-	if (m_ullMarkStartEnd == 0xFFFFFFFFFFFFFFFFULL) {
+	if (m_ullMarkStartEnd == (std::numeric_limits<std::uint64_t>::max)()) {
 		m_ullMarkStartEnd = ullOffset; //Setting selection first mark.
 		return;
 	}
@@ -154,7 +154,7 @@ void CHexSelection::SetMarkStartEnd(ULONGLONG ullOffset)
 	const auto ullStart = (std::min)(m_ullMarkStartEnd, ullOffset);
 	const auto ullSize = (std::max)(m_ullMarkStartEnd, ullOffset) - ullStart + 1;
 	SetSelection({ { .ullOffset { ullStart }, .ullSize { ullSize } } }, false);
-	m_ullMarkStartEnd = 0xFFFFFFFFFFFFFFFFULL; //Reset back to default.
+	m_ullMarkStartEnd = (std::numeric_limits<std::uint64_t>::max)(); //Reset back to default.
 }
 
 void CHexSelection::SetSelection(const VecSpan& vecSel, bool fHighlight)

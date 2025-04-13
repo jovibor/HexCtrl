@@ -6,22 +6,24 @@ on:
   pull_request:
     branches: [ "master", "main" ]
 
+permissions:
+  contents: read
+  
 env:
   PATH_PROJ_HEXCTRLDLL: '"./VS Projects/HexCtrl DLL/HexCtrl DLL.vcxproj"'
   PATH_PROJ_HEXCTRLTEST: '"./VS Projects/HexCtrl Test/HexCtrl Test.vcxproj"'
   PATH_VSTESTCONSOLE_EXE: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe"'
   PATH_TESTDLL: '"C:\HexCtrlTEMP\HexCtrlTest.dll"'
   PATH_TEMPDIR: '"C:\HexCtrlTEMP\"'
-  BUILD_CONFIG: Debug
-  BUILD_PLATFORM_x64: x64
-
-permissions:
-  contents: read
 
 jobs:
   build:
+    name: Build and Test
     runs-on: windows-latest
-    name: Build and Test x64
+    strategy:
+      matrix:
+        build_type: [Debug]
+        arch: [Win32, x64]
 
     steps:
     - uses: actions/checkout@v4
@@ -29,17 +31,17 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
    
-    - name: Build Project HexCtrlDll_x64
+    - name: Build Project HexCtrlDll
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
        git submodule update --init --recursive 
-       msbuild /m ${{env.PATH_PROJ_HEXCTRLDLL}} /p:Configuration=${{env.BUILD_CONFIG}} /p:Platform=${{env.BUILD_PLATFORM_x64}} /p:OutDir=${{env.PATH_TEMPDIR}}
+       msbuild /m ${{env.PATH_PROJ_HEXCTRLDLL}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}}
    
-    - name: Build Project HexCtrlTest_x64
+    - name: Build Project HexCtrlTest
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: msbuild /m ${{env.PATH_PROJ_HEXCTRLTEST}} /p:Configuration=${{env.BUILD_CONFIG}} /p:Platform=${{env.BUILD_PLATFORM_x64}} /p:OutDir=${{env.PATH_TEMPDIR}} /p:LinkerAdditionalDir=${{env.PATH_TEMPDIR}}
+      run: msbuild /m ${{env.PATH_PROJ_HEXCTRLTEST}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}} /p:LinkerAdditionalDir=${{env.PATH_TEMPDIR}}
 
-    - name: Run HexCtrlTest_x64
+    - name: Run HexCtrlTest
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
         & ${{env.PATH_VSTESTCONSOLE_EXE}} ${{env.PATH_TESTDLL}}
