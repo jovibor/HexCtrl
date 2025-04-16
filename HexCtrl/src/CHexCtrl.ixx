@@ -430,8 +430,8 @@ namespace HEXCTRL::INTERNAL {
 		std::vector<int> m_vecCharsWidth;     //Vector of chars widths.
 		HFONT m_hFntMain { };                 //Main Hex chunks font.
 		HFONT m_hFntInfoBar { };              //Font for bottom Info bar.
-		HPEN m_hPenLines { };                 //Pen for lines.
-		HPEN m_hPenDataTempl { };             //Pen for templates' fields (vertical lines).
+		HPEN m_hPenLinesMain { };             //Pen for main lines.
+		HPEN m_hPenLinesTempl { };            //Pen for templates' fields (vertical lines).
 		HEXCOLORS m_stColors;                 //All HexCtrl colors.
 		IHexVirtData* m_pHexVirtData { };     //Data handler pointer for Virtual mode.
 		IHexVirtColors* m_pHexVirtColors { }; //Pointer for custom colors class.
@@ -708,8 +708,8 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_hFntInfoBar = ::CreateFontIndirectW(&lfInfo);
 	//End of font related.
 
-	m_hPenLines = ::CreatePen(PS_SOLID, 1, RGB(200, 200, 200));
-	m_hPenDataTempl = ::CreatePen(PS_SOLID, 1, RGB(50, 50, 50));
+	m_hPenLinesMain = ::CreatePen(PS_SOLID, 1, m_stColors.clrLinesMain);
+	m_hPenLinesTempl = ::CreatePen(PS_SOLID, 1, m_stColors.clrLinesTempl);
 
 	//ScrollBars should be created here, after the main window has already been created (to attach to), to avoid assertions.
 	m_pScrollV->Create(m_Wnd, true, m_hInstRes, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0); //Actual sizes are set in RecalcAll().
@@ -3057,7 +3057,7 @@ void CHexCtrl::DrawWindow(HDC hDC)const
 
 	wnd::CDC dc(hDC);
 	dc.FillSolidRect(rcWnd, m_stColors.clrBk);
-	dc.SelectObject(m_hPenLines);
+	dc.SelectObject(m_hPenLinesMain);
 
 	//First horizontal line.
 	dc.MoveTo(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx);
@@ -3165,14 +3165,15 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 	dc.SelectObject(m_hFntInfoBar);
 	dc.SetBkColor(m_stColors.clrBkInfoBar);
 
-	for (auto& ref : vecInfoData) {
-		dc.SetTextColor(ref.clrText);
-		auto& refPoly = ref.stPoly;
-		dc.DrawTextW(refPoly.lpstr, refPoly.n, &refPoly.rcl, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+	for (const auto& pid : vecInfoData) {
+		dc.SetTextColor(pid.clrText);
+		const auto& refPoly = pid.stPoly;
+		auto rc = refPoly.rcl;
+		dc.DrawTextW(refPoly.lpstr, refPoly.n, &rc, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
-		if (ref.iVertLineX > 0) {
-			dc.MoveTo(ref.iVertLineX, refPoly.rcl.top);
-			dc.LineTo(ref.iVertLineX, refPoly.rcl.bottom);
+		if (pid.iVertLineX > 0) {
+			dc.MoveTo(pid.iVertLineX, refPoly.rcl.top);
+			dc.LineTo(pid.iVertLineX, refPoly.rcl.bottom);
 		}
 	}
 }
@@ -3303,10 +3304,10 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 	wnd::CDC dc(hDC);
 	dc.SelectObject(m_hFntMain);
 	std::size_t index { 0 }; //Index for vecPolyText, its size is always equal to vecPolyHex.
-	for (const auto& ref : vecPolyHex) { //Loop is needed because of different colors.
-		dc.SetTextColor(ref.stClr.clrText);
-		dc.SetBkColor(ref.stClr.clrBk);
-		const auto& refH = ref.stPoly;
+	for (const auto& ptc : vecPolyHex) { //Loop is needed because of different colors.
+		dc.SetTextColor(ptc.stClr.clrText);
+		dc.SetBkColor(ptc.stClr.clrBk);
+		const auto& refH = ptc.stPoly;
 		::ExtTextOutW(dc, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex printing.
 		const auto& refVecText = vecPolyText[index++];
 		dc.SetTextColor(refVecText.stClr.clrText); //Text color for the Text area.
@@ -3428,17 +3429,17 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 		wnd::CDC dc(hDC);
 		dc.SelectObject(m_hFntMain);
 		std::size_t index { 0 }; //Index for vecFieldsText, its size is always equal to vecFieldsHex.
-		const auto penOld = dc.SelectObject(m_hPenDataTempl);
-		for (const auto& ref : vecFieldsHex) { //Loop is needed because different Fields can have different colors.
-			dc.SetTextColor(ref.stClr.clrText);
-			dc.SetBkColor(ref.stClr.clrBk);
+		const auto penOld = dc.SelectObject(m_hPenLinesTempl);
+		for (const auto& pfc : vecFieldsHex) { //Loop is needed because different Fields can have different colors.
+			dc.SetTextColor(pfc.stClr.clrText);
+			dc.SetBkColor(pfc.stClr.clrBk);
 
-			const auto& refH = ref.stPoly;
+			const auto& refH = pfc.stPoly;
 			::ExtTextOutW(dc, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex Field printing.
 			const auto& refT = vecFieldsText[index++].stPoly;
 			::ExtTextOutW(dc, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text Field printing.
 
-			if (ref.fPrintVertLine) {
+			if (pfc.fPrintVertLine) {
 				const auto iFieldLineHexX = refH.x - 2; //Little indent before vert line.
 				dc.MoveTo(iFieldLineHexX, refH.y);
 				dc.LineTo(iFieldLineHexX, refH.y + m_sizeFontMain.cy);
@@ -3566,10 +3567,10 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 		wnd::CDC dc(hDC);
 		dc.SelectObject(m_hFntMain);
 		std::size_t index { 0 }; //Index for vecBkmText, its size is always equal to vecBkmHex.
-		for (const auto& ref : vecBkmHex) { //Loop is needed because bkms have different colors.
-			dc.SetTextColor(ref.stClr.clrText);
-			dc.SetBkColor(ref.stClr.clrBk);
-			const auto& refH = ref.stPoly;
+		for (const auto& ptc : vecBkmHex) { //Loop is needed because bkms have different colors.
+			dc.SetTextColor(ptc.stClr.clrText);
+			dc.SetBkColor(ptc.stClr.clrBk);
+			const auto& refH = ptc.stPoly;
 			::ExtTextOutW(dc, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex bookmarks printing.
 			const auto& refT = vecBkmText[index++].stPoly;
 			::ExtTextOutW(dc, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text bookmarks printing.
@@ -3657,8 +3658,8 @@ void CHexCtrl::DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 		dc.SetTextColor(m_stColors.clrFontSel);
 		dc.SetBkColor(m_stColors.clrBkSel);
 		::PolyTextOutW(dc, vecPolySelHex.data(), static_cast<UINT>(vecPolySelHex.size())); //Hex selection printing.
-		for (const auto& ref : vecPolySelText) {
-			::ExtTextOutW(dc, ref.x, ref.y, ref.uiFlags, &ref.rcl, ref.lpstr, ref.n, ref.pdx); //Text selection printing.
+		for (const auto& pol : vecPolySelText) {
+			::ExtTextOutW(dc, pol.x, pol.y, pol.uiFlags, &pol.rcl, pol.lpstr, pol.n, pol.pdx); //Text selection printing.
 		}
 	}
 }
@@ -3744,8 +3745,8 @@ void CHexCtrl::DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std
 		dc.SetTextColor(m_stColors.clrBkSel);
 		dc.SetBkColor(m_stColors.clrFontSel);
 		::PolyTextOutW(dc, vecPolySelHexHgl.data(), static_cast<UINT>(vecPolySelHexHgl.size())); //Hex selection highlight printing.
-		for (const auto& ref : vecPolySelTextHgl) {
-			::ExtTextOutW(dc, ref.x, ref.y, ref.uiFlags, &ref.rcl, ref.lpstr, ref.n, ref.pdx); //Text selection highlight printing.
+		for (const auto& pol : vecPolySelTextHgl) {
+			::ExtTextOutW(dc, pol.x, pol.y, pol.uiFlags, &pol.rcl, pol.lpstr, pol.n, pol.pdx); //Text selection highlight printing.
 		}
 	}
 }
@@ -3800,8 +3801,8 @@ void CHexCtrl::DrawCaret(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstri
 	dc.SelectObject(m_hFntMain);
 	dc.SetTextColor(m_stColors.clrFontCaret);
 	dc.SetBkColor(clrBkCaret);
-	for (const auto ref : arrPolyCaret) {
-		::ExtTextOutW(dc, ref.x, ref.y, ref.uiFlags, &ref.rcl, ref.lpstr, ref.n, ref.pdx); //Hex/Text caret printing.
+	for (const auto& pol : arrPolyCaret) {
+		::ExtTextOutW(dc, pol.x, pol.y, pol.uiFlags, &pol.rcl, pol.lpstr, pol.n, pol.pdx); //Hex/Text caret printing.
 	}
 }
 
@@ -3875,8 +3876,8 @@ void CHexCtrl::DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::
 		dc.SelectObject(m_hFntMain);
 		dc.SetTextColor(m_stColors.clrFontDataInterp);
 		dc.SetBkColor(m_stColors.clrBkDataInterp);
-		for (const auto& ref : vecPolyDataInterp) {
-			::ExtTextOutW(dc, ref.x, ref.y, ref.uiFlags, &ref.rcl, ref.lpstr, ref.n, ref.pdx); //Hex/Text Data Interpreter printing.
+		for (const auto& pol : vecPolyDataInterp) {
+			::ExtTextOutW(dc, pol.x, pol.y, pol.uiFlags, &pol.rcl, pol.lpstr, pol.n, pol.pdx); //Hex/Text Data Interpreter printing.
 		}
 	}
 }
@@ -3904,11 +3905,13 @@ void CHexCtrl::DrawPageLines(HDC hDC, ULONGLONG ullStartLine, int iLines)const
 
 	//Page lines printing.
 	if (!vecPageLines.empty()) {
-		for (const auto& ref : vecPageLines) {
-			wnd::CDC dc(hDC);
-			dc.MoveTo(ref.ptStart.x, ref.ptStart.y);
-			dc.LineTo(ref.ptEnd.x, ref.ptEnd.y);
+		wnd::CDC dc(hDC);
+		const auto penOld = dc.SelectObject(m_hPenLinesMain);
+		for (const auto& pl : vecPageLines) {
+			dc.MoveTo(pl.ptStart.x, pl.ptStart.y);
+			dc.LineTo(pl.ptEnd.x, pl.ptEnd.y);
 		}
+		dc.SelectObject(penOld);
 	}
 }
 
@@ -4976,7 +4979,7 @@ void CHexCtrl::TTMainShow(bool fShow, bool fTimer)
 		m_tmTT = std::chrono::high_resolution_clock::now();
 		POINT ptCur;
 		::GetCursorPos(&ptCur);
-		m_wndTTMain.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x + 3, ptCur.y - 20)));
+		m_wndTTMain.SendMsg(TTM_TRACKPOSITION, 0, static_cast<LPARAM>(MAKELONG(ptCur.x + 9, ptCur.y - 20)));
 		m_wndTTMain.SendMsg(TTM_UPDATETIPTEXTW, 0, reinterpret_cast<LPARAM>(&m_ttiMain));
 		m_wndTTMain.SendMsg(TTM_TRACKACTIVATE, static_cast<WPARAM>(TRUE), reinterpret_cast<LPARAM>(&m_ttiMain));
 		m_Wnd.SetTimer(m_uIDTTTMain, 300, nullptr);
@@ -7093,8 +7096,8 @@ auto CHexCtrl::OnDestroy()->LRESULT
 	m_MenuMain.DestroyMenu();
 	::DeleteObject(m_hFntMain);
 	::DeleteObject(m_hFntInfoBar);
-	::DeleteObject(m_hPenLines);
-	::DeleteObject(m_hPenDataTempl);
+	::DeleteObject(m_hPenLinesMain);
+	::DeleteObject(m_hPenLinesTempl);
 	m_pScrollV->DestroyWindow(); //Not a child of the IHexCtrl.
 	m_pScrollH->DestroyWindow(); //Not a child of the IHexCtrl.
 	ParentNotify(HEXCTRL_MSG_DESTROY);
@@ -7350,40 +7353,34 @@ auto CHexCtrl::OnLButtonUp([[maybe_unused]] const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 {
-	POINT pt { .x { wnd::GetXLPARAM(msg.lParam) }, .y { wnd::GetYLPARAM(msg.lParam) } };
+	const POINT pt { .x { wnd::GetXLPARAM(msg.lParam) }, .y { wnd::GetYLPARAM(msg.lParam) } };
 	const auto optHit = HitTest(pt);
 
 	if (m_fLMousePressed) {
-		//If LMouse is pressed but cursor is outside of client area.
-		//SetCapture() behaviour.
-
+		//If LMouse is pressed but cursor is outside of the client area (SetCapture() behavior).
 		const auto rcClient = m_Wnd.GetClientRect();
-		//Checking for scrollbars existence first.
-		if (m_pScrollH->IsVisible()) {
+		if (m_pScrollH->IsVisible()) { //Checking for scrollbars existence first.
 			if (pt.x < rcClient.left) {
 				m_pScrollH->ScrollLineLeft();
-				pt.x = m_iIndentFirstHexChunkXPx;
 			}
 			else if (pt.x >= rcClient.right) {
 				m_pScrollH->ScrollLineRight();
-				pt.x = m_iFourthVertLinePx - 1;
 			}
 		}
+
 		if (m_pScrollV->IsVisible()) {
 			if (pt.y < m_iStartWorkAreaYPx) {
 				m_pScrollV->ScrollLineUp();
-				pt.y = m_iStartWorkAreaYPx;
 			}
 			else if (pt.y >= m_iEndWorkAreaPx) {
 				m_pScrollV->ScrollLineDown();
-				pt.y = m_iEndWorkAreaPx - 1;
 			}
 		}
 
 		//Checking if the current cursor pos is at the same byte's half
-		//that it was at the previous WM_MOUSEMOVE fire.
+		//that it was at the previous WM_MOUSEMOVE event.
 		//Making selection of the byte only if the cursor has crossed byte's halves.
-		//Doesn't apply when moving in Text area.
+		//Doesn't apply when moving in the Text area.
 		if (!optHit || (optHit->ullOffset == m_ullCursorNow && m_fCaretHigh == optHit->fIsHigh && !optHit->fIsText))
 			return 0;
 
@@ -7391,7 +7388,7 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 		const auto ullOffsetHit = optHit->ullOffset;
 		const auto dwCapacity = GetCapacity();
 		ULONGLONG ullClick;
-		ULONGLONG  ullStart;
+		ULONGLONG ullStart;
 		ULONGLONG ullSize;
 		ULONGLONG ullLines;
 		if (m_fClickWithAlt) { //Select block (with Alt).
@@ -7451,9 +7448,6 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 			if (const auto pBkm = m_pDlgBkmMgr->HitTest(optHit->ullOffset); pBkm != nullptr) {
 				if (m_pBkmTTCurr != pBkm) {
 					m_pBkmTTCurr = pBkm;
-					wnd::CPoint ptScreen = pt;
-					m_Wnd.ClientToScreen(ptScreen);
-					ptScreen.Offset(3, 3);
 					m_ttiMain.lpszText = pBkm->wstrDesc.data();
 					TTMainShow(true);
 				}
@@ -7465,9 +7459,6 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 				m_pDlgTemplMgr->IsTooltips() && pField != nullptr) {
 				if (m_pTFieldTTCurr != pField) {
 					m_pTFieldTTCurr = pField;
-					wnd::CPoint ptScreen = pt;
-					m_Wnd.ClientToScreen(ptScreen);
-					ptScreen.Offset(3, 3);
 					m_ttiMain.lpszText = const_cast<LPWSTR>(pField->wstrName.data());
 					TTMainShow(true);
 				}
@@ -7477,7 +7468,7 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 			}
 		}
 		else {
-			//If there is already tooltip shown, but cursor is outside of data chunks.
+			//If there is tooltip already shown, but cursor is outside of data chunks.
 			if (m_pBkmTTCurr != nullptr || m_pTFieldTTCurr != nullptr) {
 				TTMainShow(false);
 			}

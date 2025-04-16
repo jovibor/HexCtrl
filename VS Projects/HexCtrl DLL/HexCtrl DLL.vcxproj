@@ -154,6 +154,7 @@
       <OmitFramePointers />
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/utf-8 /D_USRDLL /DHEXCTRL_DYNAMIC_LIB /DHEXCTRL_DYNAMIC_LIB_EXPORT %(AdditionalOptions)</AdditionalOptions>
+      <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -184,6 +185,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/utf-8 /D_USRDLL /DHEXCTRL_DYNAMIC_LIB /DHEXCTRL_DYNAMIC_LIB_EXPORT %(AdditionalOptions)</AdditionalOptions>
+      <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -211,6 +213,7 @@
       </OmitFramePointers>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/utf-8 /D_USRDLL /DHEXCTRL_DYNAMIC_LIB /DHEXCTRL_DYNAMIC_LIB_EXPORT %(AdditionalOptions)</AdditionalOptions>
+      <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -239,6 +242,7 @@
       </OmitFramePointers>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/utf-8 /D_USRDLL /DHEXCTRL_DYNAMIC_LIB /DHEXCTRL_DYNAMIC_LIB_EXPORT %(AdditionalOptions)</AdditionalOptions>
+      <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -271,6 +275,7 @@
       </OmitFramePointers>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/utf-8 /D_USRDLL /DHEXCTRL_DYNAMIC_LIB /DHEXCTRL_DYNAMIC_LIB_EXPORT %(AdditionalOptions)</AdditionalOptions>
+      <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -306,6 +311,7 @@
       </OmitFramePointers>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/utf-8 /D_USRDLL /DHEXCTRL_DYNAMIC_LIB /DHEXCTRL_DYNAMIC_LIB_EXPORT %(AdditionalOptions)</AdditionalOptions>
+      <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

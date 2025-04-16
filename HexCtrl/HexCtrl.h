@@ -284,6 +284,8 @@ namespace HEXCTRL {
 		COLORREF clrBkInfoBar { GetSysColor(COLOR_3DFACE) };         //Background color of the bottom Info bar.
 		COLORREF clrBkCaret { RGB(0, 0, 255) };                      //Caret background color.
 		COLORREF clrBkCaretSel { RGB(0, 0, 200) };                   //Caret background color in selection.
+		COLORREF clrLinesMain { RGB(200, 200, 200) };                //Main window and pages lines color.
+		COLORREF clrLinesTempl { RGB(75, 75, 75) };                  //Templates data confining lines color.
 	};
 	using PCHEXCOLORS = const HEXCOLORS*;
 
