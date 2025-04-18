@@ -7,6 +7,7 @@
 module;
 #include <SDKDDKVer.h>
 #include "../HexCtrl.h"
+#include <Windows.h>
 #include <algorithm>
 #include <vector>
 export module HEXCTRL:CHexSelection;

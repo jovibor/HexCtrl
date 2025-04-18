@@ -9,9 +9,10 @@ module;
 #include "../../dep/rapidjson/rapidjson-amalgam.h"
 #include "../../res/HexCtrlRes.h"
 #include "../../HexCtrl.h"
+#include <Windows.h>
 #include <ShObjIdl.h>
-#include <algorithm>
 #include <commctrl.h>
+#include <algorithm>
 #include <format>
 #include <fstream>
 #include <numeric>

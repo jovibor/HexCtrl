@@ -63,9 +63,6 @@
     <ClCompile Include="CModifyBITREV.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\MFC Dialog\stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CHexCtrlInit.h">

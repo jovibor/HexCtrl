@@ -36,9 +36,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\MFC Dialog\stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\CHexSelection.ixx">
       <Filter>HexCtrl\src</Filter>
     </ClCompile>

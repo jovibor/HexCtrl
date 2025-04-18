@@ -8,8 +8,9 @@ module;
 #include <SDKDDKVer.h>
 #include "../../res/HexCtrlRes.h"
 #include "../../HexCtrl.h"
-#include <algorithm>
+#include <Windows.h>
 #include <commctrl.h>
+#include <algorithm>
 #include <format>
 #include <numeric>
 #include <vector>

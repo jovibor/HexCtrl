@@ -9,15 +9,16 @@ module;
 #include "../dep/rapidjson/rapidjson-amalgam.h"
 #include "../res/HexCtrlRes.h"
 #include "../HexCtrl.h"
+#include <Windows.h>
+#include <commctrl.h>
+#include <intrin.h>
 #include <algorithm>
 #include <bit>
 #include <cassert>
 #include <chrono>
-#include <commctrl.h>
 #include <cwctype>
 #include <format>
 #include <fstream>
-#include <intrin.h>
 #include <numeric>
 #include <optional>
 #include <random>
@@ -25,7 +26,6 @@ module;
 #include <thread>
 #include <unordered_map>
 #include <vector>
-#pragma comment(lib, "Comctl32.lib")
 export module HEXCTRL;
 
 import :CHexScroll;

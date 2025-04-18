@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "CHexCtrlInit.h"
 #include "CppUnitTest.h"
 
@@ -44,7 +43,7 @@ public:
 	TEST_METHOD(OperInt64) {
 		using TestType = std::int64_t;
 		CreateDataForType<TestType>();
-		OperDataForType<TestType>(OPER_MAX,1234);
+		OperDataForType<TestType>(OPER_MAX, 1234);
 		VerifyDataForType<TestType>();
 	}
 	TEST_METHOD(OperUInt64) {

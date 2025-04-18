@@ -8,13 +8,14 @@ module;
 #include <SDKDDKVer.h>
 #include "../../res/HexCtrlRes.h"
 #include "../../HexCtrl.h"
+#include <Windows.h>
+#include <commctrl.h>
+#include <intrin.h>
 #include <algorithm>
 #include <cassert>
-#include <commctrl.h>
 #include <chrono>
 #include <cwctype>
 #include <format>
-#include <intrin.h>
 #include <limits>
 #include <string>
 #include <thread>

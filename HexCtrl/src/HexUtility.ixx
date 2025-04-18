@@ -7,13 +7,14 @@
 module;
 #include <SDKDDKVer.h>
 #include "../HexCtrl.h"
+#include <Windows.h>
+#include <commctrl.h>
+#include <intrin.h>
 #include <algorithm>
 #include <bit>
 #include <cassert>
-#include <commctrl.h>
 #include <cwctype>
 #include <format>
-#include <intrin.h>
 #include <locale>
 #include <optional>
 #include <source_location>

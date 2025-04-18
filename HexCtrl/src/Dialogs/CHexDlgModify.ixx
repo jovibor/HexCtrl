@@ -8,7 +8,9 @@ module;
 #include <SDKDDKVer.h>
 #include "../../res/HexCtrlRes.h"
 #include "../../HexCtrl.h"
+#include <Windows.h>
 #include <commctrl.h>
+#include <string_view>
 #include <unordered_map>
 export module HEXCTRL:CHexDlgModify;
 
