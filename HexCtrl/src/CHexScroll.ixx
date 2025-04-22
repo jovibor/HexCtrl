@@ -149,7 +149,7 @@ bool CHexScroll::Create(HWND hWndParent, bool fVert, HINSTANCE hInstRes, UINT uI
 		return false;
 	}
 
-	const auto ret = Create(hWndParent, fVert, hBMP, ullScrolline, ullScrollPage, ullScrollSizeMax);;
+	const auto ret = Create(hWndParent, fVert, hBMP, ullScrolline, ullScrollPage, ullScrollSizeMax);
 	::DeleteObject(hBMP);
 
 	return ret;

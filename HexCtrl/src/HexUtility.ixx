@@ -86,6 +86,17 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 			.vecSpan { { ullOffset, sizeof(T) } } });
 	}
 
+	void SetIHexTData(IHexCtrl& refHexCtrl, ULONGLONG ullOffset, SpanCByte spnData)
+	{
+		if (ullOffset + spnData.size() > refHexCtrl.GetDataSize()) { //Data overflow check.
+			DBG_REPORT(L"Data overflow occurs.");
+			return;
+		}
+
+		refHexCtrl.ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE },
+			.spnData { spnData }, .vecSpan { { ullOffset, spnData.size() } } });
+	}
+
 	template<typename T> concept TSize1248 = (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8);
 
 	//Bytes swap for types of 2, 4, or 8 byte size.
