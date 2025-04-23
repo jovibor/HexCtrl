@@ -21,6 +21,7 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgDataInterp final {
 	public:
 		void CreateDlg();
+		void ClearData();
 		void DestroyDlg();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
 		[[nodiscard]] auto GetHglDataSize()const->DWORD;
@@ -93,8 +94,8 @@ namespace HEXCTRL::INTERNAL {
 		void ShowValueMSDOSTIME(DWORD dword);
 		void ShowValueMSDTTMTIME(DWORD dword);
 		void ShowValueSYSTEMTIME(SYSTEMTIME stSysTime);
-		void ShowValueGUID(GUID stGUID);
-		void ShowValueGUIDTIME(GUID stGUID);
+		void ShowValueGUID(GUID guid);
+		void ShowValueGUIDTIME(GUID guid);
 		void ShowValueUTF8();
 	private:
 		HINSTANCE m_hInstRes { };
@@ -106,11 +107,11 @@ namespace HEXCTRL::INTERNAL {
 		std::vector<LISTDATA> m_vecData;
 		IHexCtrl* m_pHexCtrl { };
 		ULONGLONG m_ullOffset { };
-		std::uint64_t m_u64Flags { };  //Data from SetDlgProperties.
-		DWORD m_dwHglDataSize { };     //Size of the data to highlight in the HexCtrl.
-		DWORD m_dwDateFormat { };      //Date format.
-		wchar_t m_wchDateSepar { };    //Date separator.
-		EName m_eNameCurrSelected { }; //Currently selected field in the list.
+		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
+		DWORD m_dwHglDataSize { };    //Size of the data to highlight in the HexCtrl.
+		DWORD m_dwDateFormat { };     //Date format.
+		wchar_t m_wchDateSepar { };   //Date separator.
+		EName m_eCurrSelected { };    //Currently selected field in the list.
 	};
 }
 
@@ -173,6 +174,21 @@ void CHexDlgDataInterp::CreateDlg()
 		hWnd == nullptr) {
 		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
+}
+
+void CHexDlgDataInterp::ClearData()
+{
+	if (!m_Wnd.IsWindow()) {
+		return;
+	}
+
+	for (auto& vec : m_vecData) {
+		vec.wstrValue.clear();
+		vec.fAllowEdit = false;
+	}
+
+	m_dwHglDataSize = 0;
+	m_ListEx.RedrawWindow();
 }
 
 void CHexDlgDataInterp::DestroyDlg()
@@ -269,11 +285,7 @@ void CHexDlgDataInterp::UpdateData()
 	}
 
 	if (!m_pHexCtrl->IsDataSet()) {
-		for (auto& ref : m_vecData) {
-			ref.wstrValue.clear();
-		}
-		m_dwHglDataSize = 0;
-		m_ListEx.RedrawWindow();
+		ClearData();
 		return;
 	}
 
@@ -329,7 +341,7 @@ void CHexDlgDataInterp::UpdateData()
 
 	if (dwlGetSize >= 16) {
 		//Getting DQWORD size of data in form of SYSTEMTIME.
-		//GUID could be used instead, it doesn't matter, they are same size.
+		//GUID could be used as well, it doesn't matter, they are same size.
 		const auto dblQWORD = *reinterpret_cast<SYSTEMTIME*>(spnData.data());
 
 		//Note: big-endian swapping is INDIVIDUAL for every struct.
@@ -346,11 +358,6 @@ void CHexDlgDataInterp::UpdateData()
 			vec.wstrValue.clear();
 			vec.fAllowEdit = false;
 		}
-		else {
-			if (vec.eName != EName::NAME_BINARY) { //NAME_BINARY is set in the OnNotifyListItemChanged.
-				vec.fAllowEdit = m_pHexCtrl->IsMutable();
-			}
-		}
 	}
 
 	m_ListEx.RedrawWindow();
@@ -361,7 +368,7 @@ void CHexDlgDataInterp::UpdateData()
 
 auto CHexDlgDataInterp::GetCurrSelected()const->EName
 {
-	return m_eNameCurrSelected;
+	return m_eCurrSelected;
 }
 
 auto CHexDlgDataInterp::GetListData(EName eName)const->const LISTDATA*
@@ -560,7 +567,7 @@ void CHexDlgDataInterp::OnNotifyListEditBegin(NMHDR* pNMHDR)
 	if (iItem < 0 || iSubItem < 0 || iItem > static_cast<int>(m_vecData.size()))
 		return;
 
-	pListDataInfo->fAllowEdit = m_vecData[iItem].fAllowEdit;
+	pListDataInfo->fAllowEdit = m_pHexCtrl->IsDataSet() ? m_vecData[iItem].fAllowEdit : false;
 }
 
 void CHexDlgDataInterp::OnNotifyListGetColor(NMHDR* pNMHDR)
@@ -608,34 +615,18 @@ void CHexDlgDataInterp::OnNotifyListItemChanged(NMHDR* pNMHDR)
 	const auto pNMI = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 	const auto iItem = pNMI->iItem;
 	const auto iSubitem = pNMI->iSubItem;
-	if (iItem < 0 || iSubitem < 0) {
+	if (iItem < 0 || iSubitem < 0 || !m_pHexCtrl->IsDataSet()) {
 		return;
 	}
 
 	const auto& vec = m_vecData[iItem];
-	if (vec.eName != EName::NAME_BINARY) {
-		m_eNameCurrSelected = vec.eName;
-	}
+	if (vec.eName == EName::NAME_BINARY) //Do nothing if clicked at NAME_BINARY.
+		return;
 
-	UpdateData();
-
-	if (vec.eName != EName::NAME_BINARY) {
-		const auto pListCurr = GetListData(m_eNameCurrSelected);
-		using enum ESize;
-		const auto fBinAvail = pListCurr->eSize == SIZE_1BYTE || pListCurr->eSize == SIZE_2BYTE
-			|| pListCurr->eSize == SIZE_3BYTE || pListCurr->eSize == SIZE_4BYTE || pListCurr->eSize == SIZE_8BYTE;
-		if (const auto pListBin = GetListData(EName::NAME_BINARY); fBinAvail) {
-			pListBin->wstrDataType = std::format(L"Binary ({}):", vec.wstrDataType);
-			pListBin->fAllowEdit = m_pHexCtrl->IsMutable();
-		}
-		else {
-			pListBin->wstrDataType = L"Binary:";
-			pListBin->fAllowEdit = false;
-		}
-		m_ListEx.RedrawWindow();
-	}
-
+	m_eCurrSelected = vec.eName;
 	m_dwHglDataSize = static_cast<std::uint8_t>(vec.eSize);
+	ShowValueBinary();
+	m_ListEx.RedrawWindow();
 	RedrawHexCtrl();
 }
 
@@ -1092,18 +1083,26 @@ void CHexDlgDataInterp::ShowValueBinary()
 	const auto ullOffset = m_pHexCtrl->GetCaretPos();
 	const auto ullDataSize = m_pHexCtrl->GetDataSize();
 	const auto pListCurr = GetListData(GetCurrSelected());
+	if (pListCurr->eName == EName::NAME_BINARY) //Show binary form only for other fields, not for self.
+		return;
+
 	const auto pListBin = GetListData(EName::NAME_BINARY);
 	const auto u8FieldSize = static_cast<std::uint8_t>(pListCurr->eSize);
+	const auto& wstr = pListCurr->wstrDataType;
+	std::wstring_view wsv(wstr.begin(), wstr.end() - 1); //Name without end colon.
+	pListBin->wstrDataType = std::format(L"Binary ({}):", wsv);
 
 	if (pListCurr->eSize == SIZE_ZERO || ((ullOffset + u8FieldSize) > ullDataSize)) {
 		pListBin->wstrValue = L"N/A";
 		pListBin->eSize = SIZE_ZERO;
+		pListBin->fAllowEdit = false;
 		return;
 	}
 
 	const auto spnData = m_pHexCtrl->GetData({ .ullOffset { ullOffset }, .ullSize { u8FieldSize } });
 	const auto fAsArray = GetCurrSelected() == EName::NAME_UTF8 || IsBigEndian(); //UTF-8 is endianness agnostic.
 
+	bool fBinAvail { true };
 	switch (pListCurr->eSize) {
 	case SIZE_1BYTE:
 		pListBin->wstrValue = std::format(L"{:08b}", static_cast<std::uint8_t>(spnData[0]));
@@ -1158,74 +1157,87 @@ void CHexDlgDataInterp::ShowValueBinary()
 	default:
 		pListBin->wstrValue = L"N/A";
 		pListBin->eSize = SIZE_ZERO;
+		fBinAvail = false;
 		break;
 	}
+
+	pListBin->fAllowEdit = fBinAvail ? m_pHexCtrl->IsMutable() : false;
 }
 
 void CHexDlgDataInterp::ShowValueInt8(BYTE byte)
 {
 	const auto i8 = static_cast<std::int8_t>(byte);
-	GetListData(EName::NAME_INT8)->wstrValue = std::vformat(IsShowAsHex() ? L"0x{0:02X}" : L"{1}",
-		std::make_wformat_args(byte, i8));
+	const auto pList = GetListData(EName::NAME_INT8);
+	pList->wstrValue = std::vformat(IsShowAsHex() ? L"0x{0:02X}" : L"{1}", std::make_wformat_args(byte, i8));
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueUInt8(BYTE byte)
 {
-	GetListData(EName::NAME_UINT8)->wstrValue = std::vformat(IsShowAsHex() ? L"0x{:02X}" : L"{}",
-		std::make_wformat_args(byte));
+	const auto pList = GetListData(EName::NAME_UINT8);
+	pList->wstrValue = std::vformat(IsShowAsHex() ? L"0x{:02X}" : L"{}", std::make_wformat_args(byte));
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueInt16(WORD word)
 {
 	const auto i16 = static_cast<std::int16_t>(word);
-	GetListData(EName::NAME_INT16)->wstrValue = std::vformat(IsShowAsHex() ? L"0x{0:04X}" : L"{1}",
-		std::make_wformat_args(word, i16));
+	const auto pList = GetListData(EName::NAME_INT16);
+	pList->wstrValue = std::vformat(IsShowAsHex() ? L"0x{0:04X}" : L"{1}", std::make_wformat_args(word, i16));
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueUInt16(WORD word)
 {
-	GetListData(EName::NAME_UINT16)->wstrValue = std::vformat(IsShowAsHex() ? L"0x{:04X}" : L"{}",
-		std::make_wformat_args(word));
+	const auto pList = GetListData(EName::NAME_UINT16);
+	pList->wstrValue = std::vformat(IsShowAsHex() ? L"0x{:04X}" : L"{}", std::make_wformat_args(word));
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueInt32(DWORD dword)
 {
 	const auto i32 = static_cast<std::int32_t>(dword);
-	GetListData(EName::NAME_INT32)->wstrValue = std::vformat(IsShowAsHex() ? L"0x{0:08X}" : L"{1}",
-		std::make_wformat_args(dword, i32));
+	const auto pList = GetListData(EName::NAME_INT32);
+	pList->wstrValue = std::vformat(IsShowAsHex() ? L"0x{0:08X}" : L"{1}", std::make_wformat_args(dword, i32));
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueUInt32(DWORD dword)
 {
-	GetListData(EName::NAME_UINT32)->wstrValue = std::vformat(IsShowAsHex() ? L"0x{:08X}" : L"{}",
-		std::make_wformat_args(dword));
+	const auto pList = GetListData(EName::NAME_UINT32);
+	pList->wstrValue = std::vformat(IsShowAsHex() ? L"0x{:08X}" : L"{}", std::make_wformat_args(dword));
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueInt64(std::uint64_t qword)
 {
 	const auto i64 = static_cast<std::int64_t>(qword);
-	GetListData(EName::NAME_INT64)->wstrValue = std::vformat(IsShowAsHex() ? L"0x{0:016X}" : L"{1}",
-		std::make_wformat_args(qword, i64));
+	const auto pList = GetListData(EName::NAME_INT64);
+	pList->wstrValue = std::vformat(IsShowAsHex() ? L"0x{0:016X}" : L"{1}", std::make_wformat_args(qword, i64));
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueUInt64(std::uint64_t qword)
 {
-	GetListData(EName::NAME_UINT64)->wstrValue = std::vformat(IsShowAsHex() ? L"0x{:016X}" : L"{}",
-		std::make_wformat_args(qword));
+	const auto pList = GetListData(EName::NAME_UINT64);
+	pList->wstrValue = std::vformat(IsShowAsHex() ? L"0x{:016X}" : L"{}", std::make_wformat_args(qword));
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueFloat(DWORD dword)
 {
 	const auto fl = std::bit_cast<float>(dword);
-	GetListData(EName::NAME_FLOAT)->wstrValue = std::vformat(IsShowAsHex() ? L"0x{0:08X}" : L"{1:.9e}",
-		std::make_wformat_args(dword, fl));
+	const auto pList = GetListData(EName::NAME_FLOAT);
+	pList->wstrValue = std::vformat(IsShowAsHex() ? L"0x{0:08X}" : L"{1:.9e}", std::make_wformat_args(dword, fl));
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueDouble(std::uint64_t qword)
 {
 	const auto dbl = std::bit_cast<double>(qword);
-	GetListData(EName::NAME_DOUBLE)->wstrValue = std::vformat(IsShowAsHex() ? L"0x{0:016X}" : L"{1:.18e}",
-		std::make_wformat_args(qword, dbl));
+	const auto pList = GetListData(EName::NAME_DOUBLE);
+	pList->wstrValue = std::vformat(IsShowAsHex() ? L"0x{0:016X}" : L"{1:.18e}", std::make_wformat_args(qword, dbl));
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueTime32(DWORD dword)
@@ -1246,7 +1258,9 @@ void CHexDlgDataInterp::ShowValueTime32(DWORD dword)
 		wstrTime = ut::FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
-	GetListData(EName::NAME_TIME32T)->wstrValue = std::move(wstrTime);
+	const auto pList = GetListData(EName::NAME_TIME32T);
+	pList->wstrValue = std::move(wstrTime);
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueTime64(std::uint64_t qword)
@@ -1266,13 +1280,16 @@ void CHexDlgDataInterp::ShowValueTime64(std::uint64_t qword)
 		wstrTime = ut::FileTimeToString(ftTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
-	GetListData(EName::NAME_TIME64T)->wstrValue = std::move(wstrTime);
+	const auto pList = GetListData(EName::NAME_TIME64T);
+	pList->wstrValue = std::move(wstrTime);
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueFILETIME(std::uint64_t qword)
 {
-	GetListData(EName::NAME_FILETIME)->wstrValue = ut::FileTimeToString(std::bit_cast<FILETIME>(qword),
-		m_dwDateFormat, m_wchDateSepar);
+	const auto pList = GetListData(EName::NAME_FILETIME);
+	pList->wstrValue = ut::FileTimeToString(std::bit_cast<FILETIME>(qword), m_dwDateFormat, m_wchDateSepar);
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueOLEDATETIME(std::uint64_t qword)
@@ -1287,7 +1304,9 @@ void CHexDlgDataInterp::ShowValueOLEDATETIME(std::uint64_t qword)
 		wstrTime = ut::SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
-	GetListData(EName::NAME_OLEDATETIME)->wstrValue = std::move(wstrTime);
+	const auto pList = GetListData(EName::NAME_OLEDATETIME);
+	pList->wstrValue = std::move(wstrTime);
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueJAVATIME(std::uint64_t qword)
@@ -1301,7 +1320,9 @@ void CHexDlgDataInterp::ShowValueJAVATIME(std::uint64_t qword)
 
 	//Convert to FILETIME.
 	const FILETIME ftJavaTime { .dwLowDateTime { Time.LowPart }, .dwHighDateTime { static_cast<DWORD>(Time.HighPart) } };
-	GetListData(EName::NAME_JAVATIME)->wstrValue = ut::FileTimeToString(ftJavaTime, m_dwDateFormat, m_wchDateSepar);
+	const auto pList = GetListData(EName::NAME_JAVATIME);
+	pList->wstrValue = ut::FileTimeToString(ftJavaTime, m_dwDateFormat, m_wchDateSepar);
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueMSDOSTIME(DWORD dword)
@@ -1313,7 +1334,9 @@ void CHexDlgDataInterp::ShowValueMSDOSTIME(DWORD dword)
 		wstrTime = ut::FileTimeToString(ftMSDOS, m_dwDateFormat, m_wchDateSepar);
 	}
 
-	GetListData(EName::NAME_MSDOSTIME)->wstrValue = std::move(wstrTime);
+	const auto pList = GetListData(EName::NAME_MSDOSTIME);
+	pList->wstrValue = std::move(wstrTime);
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueMSDTTMTIME(DWORD dword)
@@ -1332,7 +1355,9 @@ void CHexDlgDataInterp::ShowValueMSDTTMTIME(DWORD dword)
 		wstrTime = ut::SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
-	GetListData(EName::NAME_MSDTTMTIME)->wstrValue = std::move(wstrTime);
+	const auto pList = GetListData(EName::NAME_MSDTTMTIME);
+	pList->wstrValue = std::move(wstrTime);
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueSYSTEMTIME(SYSTEMTIME stSysTime)
@@ -1348,39 +1373,42 @@ void CHexDlgDataInterp::ShowValueSYSTEMTIME(SYSTEMTIME stSysTime)
 		stSysTime.wMilliseconds = ut::ByteSwap(stSysTime.wMilliseconds);
 	}
 
-	GetListData(EName::NAME_SYSTEMTIME)->wstrValue = ut::SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
+	const auto pList = GetListData(EName::NAME_SYSTEMTIME);
+	pList->wstrValue = ut::SystemTimeToString(stSysTime, m_dwDateFormat, m_wchDateSepar);
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
-void CHexDlgDataInterp::ShowValueGUID(GUID stGUID)
+void CHexDlgDataInterp::ShowValueGUID(GUID guid)
 {
 	if (IsBigEndian()) {
-		stGUID.Data1 = ut::ByteSwap(stGUID.Data1);
-		stGUID.Data2 = ut::ByteSwap(stGUID.Data2);
-		stGUID.Data3 = ut::ByteSwap(stGUID.Data3);
+		guid.Data1 = ut::ByteSwap(guid.Data1);
+		guid.Data2 = ut::ByteSwap(guid.Data2);
+		guid.Data3 = ut::ByteSwap(guid.Data3);
 	}
 
-	GetListData(EName::NAME_GUID)->wstrValue =
-		std::format(L"{{{:0>8x}-{:0>4x}-{:0>4x}-{:0>2x}{:0>2x}-{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}}}",
-		stGUID.Data1, stGUID.Data2, stGUID.Data3, stGUID.Data4[0],
-		stGUID.Data4[1], stGUID.Data4[2], stGUID.Data4[3], stGUID.Data4[4],
-		stGUID.Data4[5], stGUID.Data4[6], stGUID.Data4[7]);
+	const auto pList = GetListData(EName::NAME_GUID);
+	pList->wstrValue = std::format(L"{{{:08X}-{:04X}-{:04X}-{:02X}{:02X}-{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}}}",
+		guid.Data1, guid.Data2, guid.Data3, guid.Data4[0],
+		guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4],
+		guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
-void CHexDlgDataInterp::ShowValueGUIDTIME(GUID stGUID)
+void CHexDlgDataInterp::ShowValueGUIDTIME(GUID guid)
 {
 	if (IsBigEndian()) {
-		stGUID.Data1 = ut::ByteSwap(stGUID.Data1);
-		stGUID.Data2 = ut::ByteSwap(stGUID.Data2);
-		stGUID.Data3 = ut::ByteSwap(stGUID.Data3);
+		guid.Data1 = ut::ByteSwap(guid.Data1);
+		guid.Data2 = ut::ByteSwap(guid.Data2);
+		guid.Data3 = ut::ByteSwap(guid.Data3);
 	}
 
 	//Guid v1 Datetime UTC. The time structure within the NAME_GUID.
 	//First, verify GUID is actually version 1 style.
 	std::wstring wstrTime = L"N/A";
-	const unsigned short unGuidVersion = (stGUID.Data3 & 0xF000UL) >> 12;
+	const unsigned short unGuidVersion = (guid.Data3 & 0xF000UL) >> 12;
 	if (unGuidVersion == 1) {
-		LARGE_INTEGER qwGUIDTime { .LowPart { stGUID.Data1 }, .HighPart { stGUID.Data3 & 0x0FFFUL } };
-		qwGUIDTime.HighPart = (qwGUIDTime.HighPart << 16) | stGUID.Data2;
+		LARGE_INTEGER qwGUIDTime { .LowPart { guid.Data1 }, .HighPart { guid.Data3 & 0x0FFFUL } };
+		qwGUIDTime.HighPart = (qwGUIDTime.HighPart << 16) | guid.Data2;
 
 		//RFC4122: The timestamp is a 60-bit value. For UUID version 1, this is represented by Coordinated Universal Time (UTC)
 		//as a count of 100-nanosecond intervals since 00:00:00.00, 15 October 1582 (the date of Gregorian reform to the Christian calendar).
@@ -1393,11 +1421,14 @@ void CHexDlgDataInterp::ShowValueGUIDTIME(GUID stGUID)
 		qwGUIDTime.QuadPart -= ullSubtractTicks.QuadPart;
 
 		//Convert to SYSTEMTIME.
-		const FILETIME ftGUIDTime { .dwLowDateTime { qwGUIDTime.LowPart }, .dwHighDateTime { static_cast<DWORD>(qwGUIDTime.HighPart) } };
+		const FILETIME ftGUIDTime { .dwLowDateTime { qwGUIDTime.LowPart },
+			.dwHighDateTime { static_cast<DWORD>(qwGUIDTime.HighPart) } };
 		wstrTime = ut::FileTimeToString(ftGUIDTime, m_dwDateFormat, m_wchDateSepar);
 	}
 
-	GetListData(EName::NAME_GUIDTIME)->wstrValue = std::move(wstrTime);
+	const auto pList = GetListData(EName::NAME_GUIDTIME);
+	pList->wstrValue = std::move(wstrTime);
+	pList->fAllowEdit = m_pHexCtrl->IsMutable();
 }
 
 void CHexDlgDataInterp::ShowValueUTF8()
@@ -1468,10 +1499,12 @@ void CHexDlgDataInterp::ShowValueUTF8()
 	if (wchar_t buff[8] { }; fValidCP
 		&& ::MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<LPCCH>(spnData.data()), dwUTF8Bytes, buff, 8) > 0) {
 		pListUTF8->wstrValue = std::format(L"{} (U+{:04X})", buff, u64CP);
+		pListUTF8->fAllowEdit = m_pHexCtrl->IsMutable();
 		pListUTF8->eSize = static_cast<ESize>(dwUTF8Bytes);
 	}
 	else {
-		pListUTF8->wstrValue.clear();
+		pListUTF8->wstrValue = L"N/A";
+		pListUTF8->fAllowEdit = false;
 		pListUTF8->eSize = ESize::SIZE_ZERO;
 	}
 }

@@ -23,7 +23,6 @@ private:
 	afx_msg void OnClose();
 	afx_msg void OnDropFiles(HDROP hDropInfo);
 	BOOL OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)override;
-	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnBnPopup();
 	afx_msg void OnChkRW();
 	[[nodiscard]] bool IsFileOpen()const;

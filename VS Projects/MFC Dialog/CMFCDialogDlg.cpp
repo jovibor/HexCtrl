@@ -24,7 +24,6 @@ BEGIN_MESSAGE_MAP(CMFCDialogDlg, CDialogEx)
 	ON_WM_DROPFILES()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 CMFCDialogDlg::CMFCDialogDlg(CWnd* pParent /*=nullptr*/)
@@ -266,11 +265,6 @@ bool CMFCDialogDlg::OnHexGetColor(HEXCOLORINFO& hci)
 	}
 
 	return false;
-}
-
-void CMFCDialogDlg::OnSize(UINT nType, int cx, int cy)
-{
-	CDialogEx::OnSize(nType, cx, cy);
 }
 
 void CMFCDialogDlg::SetStartupFile(LPCWSTR pwszFile)

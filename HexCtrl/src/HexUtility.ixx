@@ -45,6 +45,14 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		return wstr;
 	}
 
+	[[nodiscard]] auto WstrToStr(std::wstring_view wsv, UINT uCodePage = CP_UTF8) -> std::string
+	{
+		const auto iSize = ::WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), nullptr, 0, nullptr, nullptr);
+		std::string str(iSize, 0);
+		::WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), str.data(), iSize, nullptr, nullptr);
+		return str;
+	}
+
 #if defined(DEBUG) || defined(_DEBUG)
 	void DBG_REPORT(const wchar_t* pMsg, const std::source_location& loc = std::source_location::current()) {
 		::_wassert(pMsg, StrToWstr(loc.file_name()).data(), loc.line());
@@ -241,7 +249,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	}
 #endif // ^^^ _M_IX86 || _M_X64
 
-	template<TSize1248 T> [[nodiscard]] constexpr T BitReverse(T tData) {
+	template<TSize1248 T> [[nodiscard]] constexpr T BitReverse(T tData)noexcept {
 		T tReversed { };
 		constexpr auto iBitsCount = sizeof(T) * 8;
 		for (auto i = 0U; i < iBitsCount; ++i, tData >>= 1) {
@@ -284,14 +292,6 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		}
 
 		return { std::move(strHexTmp) };
-	}
-
-	[[nodiscard]] auto WstrToStr(std::wstring_view wsv, UINT uCodePage = CP_UTF8) -> std::string
-	{
-		const auto iSize = ::WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), nullptr, 0, nullptr, nullptr);
-		std::string str(iSize, 0);
-		::WideCharToMultiByte(uCodePage, 0, wsv.data(), static_cast<int>(wsv.size()), str.data(), iSize, nullptr, nullptr);
-		return str;
 	}
 
 	[[nodiscard]] auto StringToSystemTime(std::wstring_view wsv, DWORD dwFormat) -> std::optional<SYSTEMTIME>

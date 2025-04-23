@@ -568,8 +568,9 @@ void CHexCtrl::ClearData()
 	m_pScrollH->SetScrollPos(0);
 	m_pScrollV->SetScrollSizes(0, 0, 0);
 	m_pDlgBkmMgr->RemoveAll();
-	m_pSelection->ClearAll();
+	m_pDlgDataInterp->ClearData();
 	m_pDlgSearch->ClearData();
+	m_pSelection->ClearAll();
 	Redraw();
 }
 
@@ -1350,21 +1351,20 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		fAvail = !m_vecRedo.empty();
 		break;
 	case CMD_BKM_ADD:
+	case CMD_BKM_DLG_MGR:
 	case CMD_CARET_RIGHT:
 	case CMD_CARET_LEFT:
 	case CMD_CARET_DOWN:
 	case CMD_CARET_UP:
-	case CMD_SEARCH_DLG:
+	case CMD_CLPBRD_COPY_OFFSET:
 	case CMD_NAV_GOTO_DLG:
 	case CMD_NAV_DATABEG:
 	case CMD_NAV_DATAEND:
 	case CMD_NAV_LINEBEG:
 	case CMD_NAV_LINEEND:
-	case CMD_BKM_DLG_MGR:
+	case CMD_SEARCH_DLG:
 	case CMD_SEL_MARKSTARTEND:
 	case CMD_SEL_ALL:
-	case CMD_DATAINTERP_DLG:
-	case CMD_CLPBRD_COPY_OFFSET:
 		fAvail = fDataSet;
 		break;
 	case CMD_SEARCH_NEXT:
@@ -2178,8 +2178,8 @@ void CHexCtrl::SetData(const HEXDATA& hds, bool fAdjust)
 	}
 
 	m_fDataSet = true;
-
 	RecalcAll();
+	m_pDlgDataInterp->UpdateData(); //Update data if DI dialog is opened.
 }
 
 void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
@@ -3920,16 +3920,16 @@ void CHexCtrl::FillCapacityString()
 	const auto dwCapacity = GetCapacity();
 	m_wstrCapacity.clear();
 	m_wstrCapacity.reserve(static_cast<std::size_t>(dwCapacity) * 3);
-	for (auto it { 0U }; it < dwCapacity; ++it) {
-		m_wstrCapacity += std::vformat(IsOffsetAsHex() ? L"{: >2X}" : L"{: >2d}", std::make_wformat_args(it));
+	for (auto i { 0U }; i < dwCapacity; ++i) {
+		m_wstrCapacity += std::vformat(IsOffsetAsHex() ? L"{: >2X}" : L"{: >2d}", std::make_wformat_args(i));
 
 		//Additional space between hex chunk blocks.
-		if ((((it + 1) % GetGroupSize()) == 0) && (it < (dwCapacity - 1))) {
+		if ((((i + 1) % GetGroupSize()) == 0) && (i < (dwCapacity - 1))) {
 			m_wstrCapacity += L" ";
 		}
 
 		//Additional space between hex halves.
-		if (GetGroupSize() == 1 && it == (m_dwCapacityBlockSize - 1)) {
+		if (GetGroupSize() == 1 && i == (m_dwCapacityBlockSize - 1)) {
 			m_wstrCapacity += L"  ";
 		}
 	}
@@ -4280,7 +4280,7 @@ auto CHexCtrl::OffsetToWstr(ULONGLONG ullOffset)const->std::wstring
 {
 	const auto dwDigitsOffset = GetDigitsOffset();
 	ullOffset = GetVirtualOffset(ullOffset);
-	return std::vformat(IsOffsetAsHex() ? L"{:0>{}X}" : L"{:0>{}}", std::make_wformat_args(ullOffset, dwDigitsOffset));
+	return std::vformat(IsOffsetAsHex() ? L"{:0{}X}" : L"{:0{}}", std::make_wformat_args(ullOffset, dwDigitsOffset));
 }
 
 void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
@@ -4334,14 +4334,13 @@ void CHexCtrl::Print()
 		return;
 	}
 
-	if (m_pdex.hDC == nullptr) {
-		ut::DBG_REPORT(L"No printer found (m_pdex.hDC == nullptr).");
+	//User pressed "Cancel", or "Apply" then "Cancel".
+	if (m_pdex.dwResultAction != PD_RESULT_PRINT) {
 		return;
 	}
 
-	//User pressed "Cancel", or "Apply" then "Cancel".
-	if (m_pdex.dwResultAction == PD_RESULT_CANCEL || m_pdex.dwResultAction == PD_RESULT_APPLY) {
-		::DeleteDC(m_pdex.hDC);
+	if (m_pdex.hDC == nullptr) {
+		ut::DBG_REPORT(L"No printer found (m_pdex.hDC == nullptr).");
 		return;
 	}
 
