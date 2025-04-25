@@ -15,6 +15,7 @@ module;
 #include <algorithm>
 #include <format>
 #include <fstream>
+#include <limits>
 #include <numeric>
 #include <optional>
 #include <random>
@@ -1749,7 +1750,7 @@ bool CHexDlgTemplMgr::SetDataTime32(LPCWSTR pwszText, ULONGLONG ullOffset, bool 
 		LARGE_INTEGER lTicks { .LowPart { ftTime.dwLowDateTime }, .HighPart { static_cast<LONG>(ftTime.dwHighDateTime) } };
 		lTicks.QuadPart /= ut::g_uFTTicksPerSec;
 		lTicks.QuadPart -= ut::g_ullUnixEpochDiff;
-		if (lTicks.QuadPart >= LONG_MAX)
+		if (lTicks.QuadPart >= (std::numeric_limits<long>::max)())
 			return false;
 
 		const auto lTime32 = static_cast<__time32_t>(lTicks.QuadPart);
