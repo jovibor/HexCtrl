@@ -97,7 +97,7 @@ namespace HEXCTRL::INTERNAL {
 		void ShowValueSYSTEMTIME(SpanCByte spn);
 		void ShowValueGUID(SpanCByte spn);
 		void ShowValueGUIDTIME(SpanCByte spn);
-		void ShowValueUTF8();
+		void ShowValueUTF8(SpanCByte spn);
 	private:
 		HINSTANCE m_hInstRes { };
 		wnd::CWnd m_Wnd;              //Main window.
@@ -316,7 +316,7 @@ void CHexDlgDataInterp::UpdateData()
 	ShowValueSYSTEMTIME(spnData);
 	ShowValueGUID(spnData);
 	ShowValueGUIDTIME(spnData);
-	ShowValueUTF8(); //Variable size field.
+	ShowValueUTF8(spnData);
 	ShowValueBinary();
 	m_ListEx.RedrawWindow();
 }
@@ -1524,80 +1524,77 @@ void CHexDlgDataInterp::ShowValueGUIDTIME(SpanCByte spn)
 	}
 }
 
-void CHexDlgDataInterp::ShowValueUTF8()
+void CHexDlgDataInterp::ShowValueUTF8(SpanCByte spn)
 {
-	const auto ullOffset = m_pHexCtrl->GetCaretPos();
-	const auto ullDataSize = m_pHexCtrl->GetDataSize();
-	//Code point size for maximum 4 bytes.
-	const auto dwGetSize = (ullOffset + 4) <= ullDataSize ? 4U : ((ullOffset + 3) <= ullDataSize ? 3U
-		: ((ullOffset + 2) <= ullDataSize ? 2U : ((ullOffset + 1) <= ullDataSize ? 1U : 0U)));
-	const auto spnData = m_pHexCtrl->GetData({ .ullOffset { ullOffset }, .ullSize { dwGetSize } });
-	const auto u80 = static_cast<std::uint8_t>(spnData[0]); //First code unit in the UTF-8 bytes sequence.
+	const auto pListUTF8 = GetListData(EName::NAME_UTF8);
+	const auto lmbClear = [=] {
+		pListUTF8->wstrValue = L"N/A";
+		pListUTF8->fAllowEdit = false;
+		pListUTF8->eSize = ESize::SIZE_ZERO; };
 
-	//Code points agenda in bytes (code units):
+	if (spn.empty()) { lmbClear(); return; }
+
+	//Code point bits distribution in code units (bytes):
 	//[U+0000  -  U+007F]: 0yyyzzzz
 	//[U+0080  -  U+07FF]: 110xxxyy 10yyzzzz
 	//[U+0800  -  U+FFFF]: 1110wwww 10xxxxyy 10yyzzzz
 	//[U+010000-U+10FFFF]: 11110uvv 10vvwwww 10xxxxyy 10yyzzzz
 
-	//How many bytes (code units) this UTF-8 code point takes.
-	const auto dwUTF8Bytes = (u80 & 0b10000000) == 0b00000000 ? 1U : ((u80 & 0b11100000) == 0b11000000 ? 2U
-		: ((u80 & 0b11110000) == 0b11100000 ? 3U : ((u80 & 0b11111000) == 0b11110000 ? 4U : 0)));
+	//First code unit in the UTF-8 code point (bytes sequence).
+	const auto u80 = static_cast<std::uint8_t>(spn[0]);
 
-	std::uint64_t u64CP { }; //Code point number (U+XXXX).
-	bool fValidCP { false }; //Is it a valid UTF-8 code point.
-	if (dwUTF8Bytes <= spnData.size()) {
-		switch (dwUTF8Bytes) {
-		case 1:
-			fValidCP = true;
-			u64CP = u80 & 0b01111111;
-			break;
-		case 2:
-		{
-			const auto u81 = static_cast<std::uint8_t>(spnData[1]);
-			fValidCP = (u81 & 0b11000000) == 0b10000000;
+	//How many code units (bytes) this UTF-8 code point occupies.
+	const auto dwUTF8CU = (u80 & 0b10000000) == 0b00000000 ? 1U : ((u80 & 0b11100000) == 0b11000000 ? 2U
+		: ((u80 & 0b11110000) == 0b11100000 ? 3U : ((u80 & 0b11111000) == 0b11110000 ? 4U : 0U)));
+	if (dwUTF8CU == 0 || dwUTF8CU > spn.size()) { lmbClear(); return; }
+
+	//Unicode code point number (U+XXXXXX), deliberately initialized with an invalid number.
+	std::uint64_t u64CP { 0xFFFFFFFFU };
+	switch (dwUTF8CU) {
+	case 1:
+		u64CP = u80 & 0b01111111;
+		break;
+	case 2:
+		if (const auto u81 = static_cast<std::uint8_t>(spn[1]);	(u81 & 0b11000000) == 0b10000000) {
 			u64CP = u80 & 0b00011111;
 			u64CP = (u64CP << 6) | (u81 & 0b00111111);
 		}
 		break;
-		case 3:
-		{
-			const auto u81 = static_cast<std::uint8_t>(spnData[1]);
-			const auto u82 = static_cast<std::uint8_t>(spnData[2]);
-			fValidCP = (u81 & 0b11000000) == 0b10000000 && (u82 & 0b11000000) == 0b10000000;
+	case 3:
+		if (const auto u81 = static_cast<std::uint8_t>(spn[1]), u82 = static_cast<std::uint8_t>(spn[2]);
+			(u81 & 0b11000000) == 0b10000000 && (u82 & 0b11000000) == 0b10000000) {
 			u64CP = u80 & 0b00001111;
 			u64CP = (u64CP << 6) | (u81 & 0b00111111);
 			u64CP = (u64CP << 6) | (u82 & 0b00111111);
 		}
 		break;
-		case 4:
-		{
-			const auto u81 = static_cast<std::uint8_t>(spnData[1]);
-			const auto u82 = static_cast<std::uint8_t>(spnData[2]);
-			const auto u83 = static_cast<std::uint8_t>(spnData[3]);
-			fValidCP = (u81 & 0b11000000) == 0b10000000 && (u82 & 0b11000000) == 0b10000000
-				&& (u83 & 0b11000000) == 0b10000000;
+	case 4:
+		if (const auto u81 = static_cast<std::uint8_t>(spn[1]), u82 = static_cast<std::uint8_t>(spn[2]),
+			u83 = static_cast<std::uint8_t>(spn[3]);
+			(u81 & 0b11000000) == 0b10000000 && (u82 & 0b11000000) == 0b10000000 && (u83 & 0b11000000) == 0b10000000) {
 			u64CP = u80 & 0b00000111;
 			u64CP = (u64CP << 6) | (u81 & 0b00111111);
 			u64CP = (u64CP << 6) | (u82 & 0b00111111);
 			u64CP = (u64CP << 6) | (u83 & 0b00111111);
 		}
 		break;
-		default:
-			break;
-		}
+	default:
+		break;
 	}
 
-	const auto pListUTF8 = GetListData(EName::NAME_UTF8);
-	if (wchar_t buff[8] { }; fValidCP
-		&& ::MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<LPCCH>(spnData.data()), dwUTF8Bytes, buff, 8) > 0) {
-		pListUTF8->wstrValue = std::format(L"{} (U+{:04X})", buff, u64CP);
-		pListUTF8->fAllowEdit = m_pHexCtrl->IsMutable();
-		pListUTF8->eSize = static_cast<ESize>(dwUTF8Bytes);
+	//The [U+D800-U+DFFF] code points range is for UTF-16 surrogate pairs encoding.
+	//The official Unicode standard says that no UTF forms can encode these surrogate code points.
+	//However, Windows allows unpaired surrogates in filenames and other places.
+	//0x10FFFFU is the maximum valid Unicode code point number.
+	if (u64CP > 0x10FFFFU) { lmbClear(); return; }
+
+	wchar_t buff[4] { };
+	if (::MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<LPCCH>(spn.data()), dwUTF8CU, buff, 4) == 0) {
+		lmbClear();
+		return;
 	}
-	else {
-		pListUTF8->wstrValue = L"N/A";
-		pListUTF8->fAllowEdit = false;
-		pListUTF8->eSize = ESize::SIZE_ZERO;
-	}
+
+	pListUTF8->wstrValue = std::format(L"{} (U+{:04X})", buff, u64CP);
+	pListUTF8->fAllowEdit = m_pHexCtrl->IsMutable();
+	pListUTF8->eSize = static_cast<ESize>(dwUTF8CU);
 }
