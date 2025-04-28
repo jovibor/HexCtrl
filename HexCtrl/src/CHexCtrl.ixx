@@ -493,7 +493,6 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fClickWithAlt { false };       //Mouse click was with Alt pressed.
 		bool m_fOffsetHex { false };          //Print offset numbers as Hex or as Decimals.
 		bool m_fHighLatency { false };        //Reflects HEXDATA::fHighLatency.
-		bool m_fKeyDownAtm { false };         //Whether a key is pressed at the moment.
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
 		bool m_fScrollLines { false };        //Page scroll in "Screen * m_flScrollRatio" or in lines.
 	};
@@ -2558,8 +2557,8 @@ void CHexCtrl::CaretMoveUp()
 
 void CHexCtrl::CaretToDataBeg()
 {
-	SetCaretPos(0, true);
-	GoToOffset(0);
+	SetCaretPos(0ULL, true);
+	GoToOffset(0ULL);
 }
 
 void CHexCtrl::CaretToDataEnd()
@@ -3811,7 +3810,7 @@ void CHexCtrl::DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::
 	if (!m_pDlgDataInterp->HasHighlight())
 		return;
 
-	const auto dwHglSize = m_pDlgDataInterp->GetHglDataSize();
+	const auto dwHglSize = m_pDlgDataInterp->GetHighlightSize();
 	const auto ullCaretPos = GetCaretPos();
 	if ((ullCaretPos + dwHglSize) > GetDataSize())
 		return;
@@ -4285,10 +4284,7 @@ auto CHexCtrl::OffsetToWstr(ULONGLONG ullOffset)const->std::wstring
 
 void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 {
-	//To prevent UpdateData() while key is pressed continuously, only when one time pressed.
-	if (!m_fKeyDownAtm) {
-		m_pDlgDataInterp->UpdateData();
-	}
+	m_pDlgDataInterp->UpdateData();
 
 	if (auto pBkm = m_pDlgBkmMgr->HitTest(ullOffset); pBkm != nullptr) { //If clicked on bookmark.
 		const HEXBKMINFO hbi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK }, .pBkm { pBkm } };
@@ -4301,11 +4297,8 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 void CHexCtrl::OnModifyData()
 {
 	ParentNotify(HEXCTRL_MSG_SETDATA);
-
-	if (!m_fKeyDownAtm) {
-		m_pDlgTemplMgr->UpdateData();
-		m_pDlgDataInterp->UpdateData();
-	}
+	m_pDlgTemplMgr->UpdateData();
+	m_pDlgDataInterp->UpdateData();
 }
 
 template<typename T> requires std::is_class_v<T>
@@ -7200,15 +7193,11 @@ auto CHexCtrl::OnInitMenuPopup(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnKeyDown(const MSG& msg)->LRESULT
 {
-	auto wVKeyCode = LOWORD(msg.wParam); //Virtual-key code (both: WM_KEYDOWN/WM_SYSKEYDOWN).
-
-	if (HIWORD(msg.lParam) & KF_REPEAT) { //KF_REPEAT indicates that the key was pressed continuously.
-		m_fKeyDownAtm = true;
-	}
+	const auto wVKey = LOWORD(msg.wParam); //Virtual-key code (both: WM_KEYDOWN/WM_SYSKEYDOWN).
 
 	//LORE: If some key combinations (e.g. Ctrl+Alt+Num Plus) do not work for seemingly no reason,
 	//it might be due to global hotkeys hooks from some running app.
-	if (const auto optCmd = GetCommandFromKey(wVKeyCode, ::GetAsyncKeyState(VK_CONTROL) < 0,
+	if (const auto optCmd = GetCommandFromKey(wVKey, ::GetAsyncKeyState(VK_CONTROL) < 0,
 		::GetAsyncKeyState(VK_SHIFT) < 0, ::GetAsyncKeyState(VK_MENU) < 0); optCmd) {
 		ExecuteCmd(*optCmd);
 		return 0;
@@ -7219,21 +7208,22 @@ auto CHexCtrl::OnKeyDown(const MSG& msg)->LRESULT
 
 	//If caret is in the Hex area then just one part (High/Low) of the byte must be changed.
 	//Normalizing all input in the Hex area to only [0x0-0xF] range, allowing only [0-9], [A-F], [NUM0-NUM9].
-	if (wVKeyCode >= '0' && wVKeyCode <= '9') {
-		wVKeyCode -= '0'; //'1' - '0' = 0x01.
+	int iByteInput;
+	if (wVKey >= '0' && wVKey <= '9') {
+		iByteInput = wVKey - '0'; //'1' - '0' = 0x01.
 	}
-	else if (wVKeyCode >= 'A' && wVKeyCode <= 'F') {
-		wVKeyCode -= 0x37; //'A' - 0x37 = 0x0A.
+	else if (wVKey >= 'A' && wVKey <= 'F') {
+		iByteInput = wVKey - 0x37; //'A' - 0x37 = 0x0A.
 	}
-	else if (wVKeyCode >= VK_NUMPAD0 && wVKeyCode <= VK_NUMPAD9) {
-		wVKeyCode -= VK_NUMPAD0;
+	else if (wVKey >= VK_NUMPAD0 && wVKey <= VK_NUMPAD9) {
+		iByteInput = wVKey - VK_NUMPAD0;
 	}
 	else
 		return 0;
 
-	const auto chByteCurr = ut::GetIHexTData<unsigned char>(*this, GetCaretPos());
-	const auto bByteToSet = static_cast<std::byte>(m_fCaretHigh ? ((wVKeyCode << 4U) | (chByteCurr & 0x0FU))
-		: ((wVKeyCode & 0x0FU) | (chByteCurr & 0xF0U)));
+	const auto u8ByteCurr = ut::GetIHexTData<std::uint8_t>(*this, GetCaretPos());
+	const auto bByteToSet = static_cast<std::byte>(m_fCaretHigh ? ((iByteInput << 4U) | (u8ByteCurr & 0x0FU))
+		: ((iByteInput & 0x0FU) | (u8ByteCurr & 0xF0U)));
 	ModifyData({ .eModifyMode { EHexModifyMode::MODIFY_ONCE }, .spnData { &bByteToSet, sizeof(bByteToSet) },
 		.vecSpan { { GetCaretPos(), 1 } } });
 	CaretMoveRight();
@@ -7246,10 +7236,7 @@ auto CHexCtrl::OnKeyUp([[maybe_unused]] const MSG& msg)->LRESULT
 	if (!IsDataSet())
 		return 0;
 
-	if (m_fKeyDownAtm) { //If a key was previously pressed continuously and is now released.
-		m_pDlgDataInterp->UpdateData();
-		m_fKeyDownAtm = false;
-	}
+	m_pDlgDataInterp->UpdateData();
 
 	return 0;
 }

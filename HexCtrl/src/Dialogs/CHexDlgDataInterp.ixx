@@ -21,11 +21,11 @@ import :HexUtility;
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgDataInterp final {
 	public:
-		void CreateDlg();
 		void ClearData();
+		void CreateDlg();
 		void DestroyDlg();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
-		[[nodiscard]] auto GetHglDataSize()const->DWORD;
+		[[nodiscard]] auto GetHighlightSize()const->DWORD;
 		[[nodiscard]] auto GetHWND()const->HWND;
 		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool HasHighlight()const;
@@ -37,7 +37,8 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		struct LISTDATA; union UMSDOSDateTime; union UDTTM;
 		enum class EGroup : std::uint8_t; enum class EName : std::uint8_t; enum class ESize : std::uint8_t;
-		[[nodiscard]] auto GetCurrSelected()const->EName;
+		[[nodiscard]] auto GetCurrSelName()const->EName;
+		[[nodiscard]] auto GetCurrSelSize()const->std::uint8_t;
 		[[nodiscard]] auto GetListData(EName eName)const->const LISTDATA*;
 		[[nodiscard]] auto GetListData(EName eName) -> LISTDATA*; //Non-const overload.
 		[[nodiscard]] bool IsBigEndian()const;
@@ -75,7 +76,9 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool SetDataGUID(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataUTF8(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataUTF16(std::wstring_view wsv)const;
 		template <ut::TSize1248 T> void SetTData(T tData)const;
+		void SetHighlightSize(std::uint32_t u32Size);
 		void ShowValueBinary();
 		void ShowValueInt8(SpanCByte spn);
 		void ShowValueUInt8(SpanCByte spn);
@@ -98,6 +101,7 @@ namespace HEXCTRL::INTERNAL {
 		void ShowValueGUID(SpanCByte spn);
 		void ShowValueGUIDTIME(SpanCByte spn);
 		void ShowValueUTF8(SpanCByte spn);
+		void ShowValueUTF16(SpanCByte spn);
 	private:
 		HINSTANCE m_hInstRes { };
 		wnd::CWnd m_Wnd;              //Main window.
@@ -109,7 +113,7 @@ namespace HEXCTRL::INTERNAL {
 		IHexCtrl* m_pHexCtrl { };
 		ULONGLONG m_ullOffset { };
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
-		DWORD m_dwHglDataSize { };    //Size of the data to highlight in the HexCtrl.
+		DWORD m_dwHighlightSize { };  //Size of the data to highlight in the HexCtrl.
 		DWORD m_dwDateFormat { };     //Date format.
 		wchar_t m_wchDateSepar { };   //Date separator.
 		EName m_eCurrSelected { };    //Currently selected field in the list.
@@ -151,11 +155,7 @@ enum class CHexDlgDataInterp::EName : std::uint8_t {
 	NAME_INT32, NAME_UINT32, NAME_INT64, NAME_UINT64,
 	NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
 	NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
-	NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID, NAME_UTF8
-};
-
-enum class CHexDlgDataInterp::ESize : std::uint8_t {
-	SIZE_ZERO = 0U, SIZE_1BYTE = 1U, SIZE_2BYTE = 2U, SIZE_3BYTE = 3U, SIZE_4BYTE = 4U, SIZE_8BYTE = 8U, SIZE_16BYTE = 16U
+	NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID, NAME_UTF8, NAME_UTF16
 };
 
 struct CHexDlgDataInterp::LISTDATA {
@@ -163,19 +163,10 @@ struct CHexDlgDataInterp::LISTDATA {
 	std::wstring wstrValue;
 	EGroup       eGroup { };
 	EName        eName { };
-	ESize        eSize { };
+	std::uint8_t u8Size { };
 	bool         fAllowEdit { true };
 };
 
-void CHexDlgDataInterp::CreateDlg()
-{
-	//m_Wnd is set in the OnInitDialog().
-	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_DATAINTERP),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgDataInterp>, reinterpret_cast<LPARAM>(this));
-		hWnd == nullptr) {
-		ut::DBG_REPORT(L"CreateDialogParamW failed.");
-	}
-}
 
 void CHexDlgDataInterp::ClearData()
 {
@@ -188,8 +179,18 @@ void CHexDlgDataInterp::ClearData()
 		vec.fAllowEdit = false;
 	}
 
-	m_dwHglDataSize = 0;
+	SetHighlightSize(0);
 	m_ListEx.RedrawWindow();
+}
+
+void CHexDlgDataInterp::CreateDlg()
+{
+	//m_Wnd is set in the OnInitDialog().
+	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_DATAINTERP),
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgDataInterp>, reinterpret_cast<LPARAM>(this));
+		hWnd == nullptr) {
+		ut::DBG_REPORT(L"CreateDialogParamW failed.");
+	}
 }
 
 void CHexDlgDataInterp::DestroyDlg()
@@ -216,9 +217,9 @@ auto CHexDlgDataInterp::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	}
 }
 
-auto CHexDlgDataInterp::GetHglDataSize()const->DWORD
+auto CHexDlgDataInterp::GetHighlightSize()const->DWORD
 {
-	return m_dwHglDataSize;
+	return m_dwHighlightSize;
 }
 
 auto CHexDlgDataInterp::GetHWND()const->HWND
@@ -239,7 +240,7 @@ void CHexDlgDataInterp::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)
 
 bool CHexDlgDataInterp::HasHighlight()const
 {
-	return m_dwHglDataSize > 0;
+	return GetHighlightSize() > 0;
 }
 
 bool CHexDlgDataInterp::PreTranslateMsg(MSG* pMsg)
@@ -317,6 +318,7 @@ void CHexDlgDataInterp::UpdateData()
 	ShowValueGUID(spnData);
 	ShowValueGUIDTIME(spnData);
 	ShowValueUTF8(spnData);
+	ShowValueUTF16(spnData);
 	ShowValueBinary();
 	m_ListEx.RedrawWindow();
 }
@@ -324,9 +326,14 @@ void CHexDlgDataInterp::UpdateData()
 
 //Private methods.
 
-auto CHexDlgDataInterp::GetCurrSelected()const->EName
+auto CHexDlgDataInterp::GetCurrSelName()const->EName
 {
 	return m_eCurrSelected;
+}
+
+auto CHexDlgDataInterp::GetCurrSelSize()const->std::uint8_t
+{
+	return GetListData(GetCurrSelName())->u8Size;
 }
 
 auto CHexDlgDataInterp::GetListData(EName eName)const->const LISTDATA*
@@ -373,7 +380,7 @@ auto CHexDlgDataInterp::OnActivate(const MSG& msg)->INT_PTR
 		UpdateData();
 	}
 	else {
-		m_dwHglDataSize = 0; //Remove data highlighting when dialog window is inactive.
+		SetHighlightSize(0); //Remove data highlighting when dialog window is inactive.
 		RedrawHexCtrl();
 	}
 
@@ -396,6 +403,8 @@ void CHexDlgDataInterp::OnCheckHex()
 void CHexDlgDataInterp::OnCheckBigEndian()
 {
 	UpdateData();
+	SetHighlightSize(GetCurrSelSize());
+	RedrawHexCtrl();
 }
 
 auto CHexDlgDataInterp::OnClose()->INT_PTR
@@ -448,30 +457,31 @@ auto CHexDlgDataInterp::OnInitDialog(const MSG& msg)->INT_PTR
 	m_WndBtnHex.SetCheck(true);
 	m_WndBtnBE.SetCheck(false);
 
-	using enum EGroup; using enum EName; using enum ESize;
-	m_vecData.reserve(21);
-	m_vecData.emplace_back(L"Binary:", L"", GR_BINARY, NAME_BINARY, SIZE_1BYTE);
-	m_vecData.emplace_back(L"Int8:", L"", GR_INTEGRAL, NAME_INT8, SIZE_1BYTE);
-	m_vecData.emplace_back(L"Unsigned Int8:", L"", GR_INTEGRAL, NAME_UINT8, SIZE_1BYTE);
-	m_vecData.emplace_back(L"Int16:", L"", GR_INTEGRAL, NAME_INT16, SIZE_2BYTE);
-	m_vecData.emplace_back(L"Unsigned Int16:", L"", GR_INTEGRAL, NAME_UINT16, SIZE_2BYTE);
-	m_vecData.emplace_back(L"Int32:", L"", GR_INTEGRAL, NAME_INT32, SIZE_4BYTE);
-	m_vecData.emplace_back(L"Unsigned Int32:", L"", GR_INTEGRAL, NAME_UINT32, SIZE_4BYTE);
-	m_vecData.emplace_back(L"Int64:", L"", GR_INTEGRAL, NAME_INT64, SIZE_8BYTE);
-	m_vecData.emplace_back(L"Unsigned Int64:", L"", GR_INTEGRAL, NAME_UINT64, SIZE_8BYTE);
-	m_vecData.emplace_back(L"Float:", L"", GR_FLOAT, NAME_FLOAT, SIZE_4BYTE);
-	m_vecData.emplace_back(L"Double:", L"", GR_FLOAT, NAME_DOUBLE, SIZE_8BYTE);
-	m_vecData.emplace_back(L"time32_t:", L"", GR_TIME, NAME_TIME32T, SIZE_4BYTE);
-	m_vecData.emplace_back(L"time64_t:", L"", GR_TIME, NAME_TIME64T, SIZE_8BYTE);
-	m_vecData.emplace_back(L"FILETIME:", L"", GR_TIME, NAME_FILETIME, SIZE_8BYTE);
-	m_vecData.emplace_back(L"OLE time:", L"", GR_TIME, NAME_OLEDATETIME, SIZE_8BYTE);
-	m_vecData.emplace_back(L"Java time:", L"", GR_TIME, NAME_JAVATIME, SIZE_8BYTE);
-	m_vecData.emplace_back(L"MS-DOS time:", L"", GR_TIME, NAME_MSDOSTIME, SIZE_8BYTE);
-	m_vecData.emplace_back(L"MS-UDTTM time:", L"", GR_TIME, NAME_MSDTTMTIME, SIZE_4BYTE);
-	m_vecData.emplace_back(L"Windows SYSTEMTIME:", L"", GR_TIME, NAME_SYSTEMTIME, SIZE_16BYTE);
-	m_vecData.emplace_back(L"GUID:", L"", GR_MISC, NAME_GUID, SIZE_16BYTE);
-	m_vecData.emplace_back(L"GUID v1 UTC time:", L"", GR_GUIDTIME, NAME_GUIDTIME, SIZE_16BYTE);
-	m_vecData.emplace_back(L"UTF-8 code point:", L"", GR_TEXT, NAME_UTF8, SIZE_ZERO); //Variable size field.
+	using enum EGroup; using enum EName;
+	m_vecData.reserve(23);
+	m_vecData.emplace_back(L"Binary:", L"", GR_BINARY, NAME_BINARY, static_cast<std::uint8_t>(0U));
+	m_vecData.emplace_back(L"Int8:", L"", GR_INTEGRAL, NAME_INT8, static_cast<std::uint8_t>(1U));
+	m_vecData.emplace_back(L"Unsigned Int8:", L"", GR_INTEGRAL, NAME_UINT8, static_cast<std::uint8_t>(1U));
+	m_vecData.emplace_back(L"Int16:", L"", GR_INTEGRAL, NAME_INT16, static_cast<std::uint8_t>(2U));
+	m_vecData.emplace_back(L"Unsigned Int16:", L"", GR_INTEGRAL, NAME_UINT16, static_cast<std::uint8_t>(2U));
+	m_vecData.emplace_back(L"Int32:", L"", GR_INTEGRAL, NAME_INT32, static_cast<std::uint8_t>(4U));
+	m_vecData.emplace_back(L"Unsigned Int32:", L"", GR_INTEGRAL, NAME_UINT32, static_cast<std::uint8_t>(4U));
+	m_vecData.emplace_back(L"Int64:", L"", GR_INTEGRAL, NAME_INT64, static_cast<std::uint8_t>(8U));
+	m_vecData.emplace_back(L"Unsigned Int64:", L"", GR_INTEGRAL, NAME_UINT64, static_cast<std::uint8_t>(8U));
+	m_vecData.emplace_back(L"Float:", L"", GR_FLOAT, NAME_FLOAT, static_cast<std::uint8_t>(4U));
+	m_vecData.emplace_back(L"Double:", L"", GR_FLOAT, NAME_DOUBLE, static_cast<std::uint8_t>(8U));
+	m_vecData.emplace_back(L"time32_t:", L"", GR_TIME, NAME_TIME32T, static_cast<std::uint8_t>(4U));
+	m_vecData.emplace_back(L"time64_t:", L"", GR_TIME, NAME_TIME64T, static_cast<std::uint8_t>(8U));
+	m_vecData.emplace_back(L"FILETIME:", L"", GR_TIME, NAME_FILETIME, static_cast<std::uint8_t>(8U));
+	m_vecData.emplace_back(L"OLE time:", L"", GR_TIME, NAME_OLEDATETIME, static_cast<std::uint8_t>(8U));
+	m_vecData.emplace_back(L"Java time:", L"", GR_TIME, NAME_JAVATIME, static_cast<std::uint8_t>(8U));
+	m_vecData.emplace_back(L"MS-DOS time:", L"", GR_TIME, NAME_MSDOSTIME, static_cast<std::uint8_t>(8U));
+	m_vecData.emplace_back(L"MS-UDTTM time:", L"", GR_TIME, NAME_MSDTTMTIME, static_cast<std::uint8_t>(4U));
+	m_vecData.emplace_back(L"Windows SYSTEMTIME:", L"", GR_TIME, NAME_SYSTEMTIME, static_cast<std::uint8_t>(16U));
+	m_vecData.emplace_back(L"GUID:", L"", GR_MISC, NAME_GUID, static_cast<std::uint8_t>(16U));
+	m_vecData.emplace_back(L"GUID v1 UTC time:", L"", GR_GUIDTIME, NAME_GUIDTIME, static_cast<std::uint8_t>(16U));
+	m_vecData.emplace_back(L"UTF-8 code point:", L"", GR_TEXT, NAME_UTF8, static_cast<std::uint8_t>(0U));   //Variable size field.
+	m_vecData.emplace_back(L"UTF-16 code point:", L"", GR_TEXT, NAME_UTF16, static_cast<std::uint8_t>(0U)); //Variable size field.
 
 	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_DATAINTERP_LIST }, .fDialogCtrl { true } });
 	m_ListEx.InsertColumn(0, L"Data type", LVCFMT_LEFT, 143);
@@ -525,10 +535,11 @@ void CHexDlgDataInterp::OnNotifyListEditBegin(NMHDR* pNMHDR)
 	if (iItem < 0 || iSubItem < 0 || iItem >= static_cast<int>(m_vecData.size()))
 		return;
 
-	pLDI->fAllowEdit = m_pHexCtrl->IsDataSet() ? m_vecData[iItem].fAllowEdit : false;
-	if (pLDI->fAllowEdit && m_vecData[iItem].eName == EName::NAME_UTF8) {
+	const auto& vec = m_vecData[iItem];
+	pLDI->fAllowEdit = m_pHexCtrl->IsDataSet() ? vec.fAllowEdit : false;
+	if (pLDI->fAllowEdit && (vec.eName == EName::NAME_UTF8 || vec.eName == EName::NAME_UTF16)) {
 		wnd::CWndEdit(pLDI->hWndEdit).SetCueBanner(L"Enter Unicode character:", true);
-		if (const auto u = m_vecData[iItem].wstrValue.find_first_of(L" U+"); u != std::wstring::npos) {
+		if (const auto u = vec.wstrValue.find_first_of(L" U+"); u != std::wstring::npos) {
 			pLDI->pwszData[u] = 0; //Null terminating the buffer to not show "U+" part in the edit box.
 		}
 	}
@@ -588,7 +599,7 @@ void CHexDlgDataInterp::OnNotifyListItemChanged(NMHDR* pNMHDR)
 		return;
 
 	m_eCurrSelected = vec.eName;
-	m_dwHglDataSize = static_cast<std::uint8_t>(vec.eSize);
+	SetHighlightSize(vec.u8Size);
 	ShowValueBinary();
 	m_ListEx.RedrawWindow();
 	RedrawHexCtrl();
@@ -674,6 +685,9 @@ void CHexDlgDataInterp::OnNotifyListSetData(NMHDR* pNMHDR)
 	case NAME_UTF8:
 		fSuccess = SetDataUTF8(wsv);
 		break;
+	case NAME_UTF16:
+		fSuccess = SetDataUTF16(wsv);
+		break;
 	default:
 		break;
 	};
@@ -681,11 +695,10 @@ void CHexDlgDataInterp::OnNotifyListSetData(NMHDR* pNMHDR)
 	if (!fSuccess) {
 		::MessageBoxW(m_Wnd, L"Wrong data format or out of range.", L"Data error...", MB_ICONERROR);
 	}
-	else {
-		RedrawHexCtrl();
-	}
 
 	UpdateData();
+	SetHighlightSize(GetCurrSelSize());
+	RedrawHexCtrl();
 }
 
 auto CHexDlgDataInterp::OnSize(const MSG& msg)->INT_PTR
@@ -705,77 +718,75 @@ void CHexDlgDataInterp::RedrawHexCtrl()const
 
 bool CHexDlgDataInterp::SetDataBinary(std::wstring_view wsv)const
 {
-	const auto pListBin = GetListData(EName::NAME_BINARY);
-	const auto eSize = pListBin->eSize;
-	auto wstr = std::wstring { wsv };
+	const auto pListCurr = GetListData(GetCurrSelName());
+	const auto u32SizeBits = static_cast<std::uint32_t>(pListCurr->u8Size) * 8;
+	std::wstring wstr { wsv };
 	std::erase(wstr, L' ');
-	const auto u32SizeBits = static_cast<std::uint32_t>(static_cast<std::uint8_t>(eSize) * 8);
-
 	if (wstr.size() != u32SizeBits || wstr.find_first_not_of(L"01") != std::wstring::npos)
 		return false;
 
-	const auto fAsArray = GetCurrSelected() == EName::NAME_UTF8; //UTF-8 is endianness agnostic.
-	using enum ESize;
-
-	switch (eSize) {
-	case SIZE_1BYTE:
-		if (const auto opt = stn::StrToUInt8(wstr, 2); opt) {
-			SetTData(*opt);
+	using enum EName;
+	switch (GetCurrSelName()) {
+	case NAME_INT8: case NAME_UINT8:
+		SetTData(*stn::StrToUInt8(wstr, 2));
+		return true;
+	case NAME_INT16: case NAME_UINT16:
+		SetTData(*stn::StrToUInt16(wstr, 2));
+		return true;
+	case NAME_INT32: case NAME_UINT32:
+	case NAME_FLOAT: case NAME_TIME32T:
+	case NAME_MSDOSTIME: case NAME_MSDTTMTIME:
+		SetTData(*stn::StrToUInt32(wstr, 2));
+		return true;
+	case NAME_INT64: case NAME_UINT64:
+	case NAME_DOUBLE: case NAME_TIME64T:
+	case NAME_FILETIME:	case NAME_OLEDATETIME: case NAME_JAVATIME:
+		SetTData(*stn::StrToUInt64(wstr, 2));
+		return true;
+	case NAME_UTF8: //UTF-8 is endianness agnostic.
+		switch (pListCurr->u8Size) {
+		case 1:
+			SetTData(*stn::StrToUInt8(wstr, 2));
+			return true;
+		case 2:
+			ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, ut::ByteSwap(*stn::StrToUInt16(wstr, 2)));
+			return true;
+		case 3:
+		{
+			const auto opt = stn::StrToUInt32(wstr, 2); //Convert to UInt32, then take first 3 bytes.
+			const auto u80 = static_cast<std::uint8_t>(*opt >> 16);
+			const auto u81 = static_cast<std::uint8_t>(*opt >> 8);
+			const auto u82 = static_cast<std::uint8_t>(*opt);
+			std::uint8_t arru8[3] { u80, u81, u82 };
+			SpanCByte spn { reinterpret_cast<const std::byte*>(arru8), 3 };
+			ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, spn);
+		}
+		return true;
+		case 4:
+			SetTData(*stn::StrToUInt32(wstr, 2));
+			return true;
+		default:
+			return false;
+		}
+	case NAME_UTF16:
+		switch (pListCurr->u8Size) {
+		case 2:
+			SetTData(*stn::StrToUInt16(wstr, 2));
+			return true;
+		case 4:
+		{
+			const auto opt160 = stn::StrToUInt16(wstr.substr(0, 16), 2); //High surrogate.
+			const auto opt161 = stn::StrToUInt16(wstr.substr(16), 2);    //Low surrogate.
+			ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, IsBigEndian() ? ut::ByteSwap(*opt160) : *opt160);
+			ut::SetIHexTData(*m_pHexCtrl, m_ullOffset + sizeof(std::uint16_t), IsBigEndian() ? ut::ByteSwap(*opt161) : *opt161);
 			return true;
 		}
-		return false;
-	case SIZE_2BYTE:
-		if (const auto opt = stn::StrToUInt16(wstr, 2); opt) {
-			if (fAsArray) {
-				ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, ut::ByteSwap(*opt));
-			}
-			else {
-				SetTData(*opt);
-			}
-			return true;
+		default:
+			return false;
 		}
-		return false;
-	case SIZE_3BYTE:
-		if (const auto opt = stn::StrToUInt32(wstr, 2); opt) {
-			if (fAsArray) {
-				const auto u80 = static_cast<std::uint8_t>(*opt >> 16);
-				const auto u81 = static_cast<std::uint8_t>(*opt >> 8);
-				const auto u82 = static_cast<std::uint8_t>(*opt);
-				std::uint8_t arru8[3] { u80, u81, u82 };
-				SpanCByte spn { reinterpret_cast<const std::byte*>(arru8), 3 };
-				ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, spn);
-			}
-			else {
-				SetTData(*opt);
-			}
-			return true;
-		}
-		return false;
-	case SIZE_4BYTE:
-		if (const auto opt = stn::StrToUInt32(wstr, 2); opt) {
-			if (fAsArray) {
-				ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, ut::ByteSwap(*opt));
-			}
-			else {
-				SetTData(*opt);
-			}
-			return true;
-		}
-		return false;
-	case SIZE_8BYTE:
-		if (const auto opt = stn::StrToUInt64(wstr, 2); opt) {
-			if (fAsArray) {
-				ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, ut::ByteSwap(*opt));
-			}
-			else {
-				SetTData(*opt);
-			}
-			return true;
-		}
-		return false;
 	default:
 		return false;
-	};
+	}
 }
 
 template<typename T> requires ut::TSize1248<T>
@@ -1021,14 +1032,15 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 bool CHexDlgDataInterp::SetDataUTF8(std::wstring_view wsv)const
 {
 	const auto pListUTF8 = GetListData(EName::NAME_UTF8);
-	if (pListUTF8->eSize == ESize::SIZE_ZERO) {
+	if (pListUTF8->u8Size == 0) {
 		return false;
 	}
 
-	const auto u8Size = static_cast<std::uint8_t>(pListUTF8->eSize);
-	if (char buff[8] { };
-		::WideCharToMultiByte(CP_UTF8, 0, wsv.data(), static_cast<int>(wsv.size()), buff, 8, nullptr, nullptr) == u8Size) {
-		SpanCByte spn { reinterpret_cast<const std::byte*>(buff), u8Size };
+	//New UTF-8 code point can occupy less bytes than the current.
+	char buff[8] { };
+	if (const auto iBytesToSet = ::WideCharToMultiByte(CP_UTF8, 0, wsv.data(),
+		static_cast<int>(wsv.size()), buff, 8, nullptr, nullptr); iBytesToSet <= pListUTF8->u8Size) {
+		SpanCByte spn { reinterpret_cast<const std::byte*>(buff), static_cast<std::size_t>(iBytesToSet) };
 		ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, spn);
 		return true;
 	}
@@ -1036,96 +1048,167 @@ bool CHexDlgDataInterp::SetDataUTF8(std::wstring_view wsv)const
 	return false;
 }
 
+bool CHexDlgDataInterp::SetDataUTF16(std::wstring_view wsv)const
+{
+	const auto pListUTF16 = GetListData(EName::NAME_UTF16);
+	if (pListUTF16->u8Size == 0) {
+		return false;
+	}
+
+	const auto u8Size = static_cast<std::uint8_t>(pListUTF16->u8Size);
+	if (wsv.size() > u8Size) {
+		return false;
+	}
+
+	wchar_t buff[2] { IsBigEndian() ? ut::ByteSwap(wsv[0]) : wsv[0], 0 };
+	auto dwSizeToSet = 2U;
+
+	//New UTF-16 code point can occupy less bytes than the current.
+	//If the current UTF-16 codepoint is 4 bytes in size, and new one is also 4 bytes, we set 4 bytes.
+	//Otherwise just one wchar is set.
+	if (u8Size == 4 && wsv.size() == 2) {
+		buff[1] = { IsBigEndian() ? ut::ByteSwap(wsv[1]) : wsv[1] };
+		dwSizeToSet = 4;
+	}
+
+	SpanCByte spn { reinterpret_cast<const std::byte*>(buff), dwSizeToSet };
+	ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, spn);
+
+	return true;
+}
+
 template<ut::TSize1248 T>
 void CHexDlgDataInterp::SetTData(T tData)const {
 	ut::SetIHexTData(*m_pHexCtrl, m_ullOffset, IsBigEndian() ? ut::ByteSwap(tData) : tData);
 }
 
+void CHexDlgDataInterp::SetHighlightSize(std::uint32_t u32Size)
+{
+	m_dwHighlightSize = u32Size;
+}
+
 void CHexDlgDataInterp::ShowValueBinary()
 {
-	using enum ESize;
-	const auto ullOffset = m_pHexCtrl->GetCaretPos();
-	const auto ullDataSize = m_pHexCtrl->GetDataSize();
-	const auto pListCurr = GetListData(GetCurrSelected());
+	const auto pListCurr = GetListData(GetCurrSelName());
 	if (pListCurr->eName == EName::NAME_BINARY) //Show binary form only for other fields, not for self.
 		return;
 
-	const auto pListBin = GetListData(EName::NAME_BINARY);
-	const auto u8FieldSize = static_cast<std::uint8_t>(pListCurr->eSize);
+	const auto ullOffset = m_pHexCtrl->GetCaretPos();
+	const auto u8SizeCurr = static_cast<std::uint8_t>(pListCurr->u8Size);
 	const auto& wstr = pListCurr->wstrDataType;
+	const auto pListBin = GetListData(EName::NAME_BINARY);
 	std::wstring_view wsv(wstr.begin(), wstr.end() - 1); //Name without end colon.
 	pListBin->wstrDataType = std::format(L"Binary ({}):", wsv);
+	using enum EName;
 
-	if (pListCurr->eSize == SIZE_ZERO || ((ullOffset + u8FieldSize) > ullDataSize)) {
+	//Show binary data only for 1-8 bytes sizes.
+	if (u8SizeCurr == 0 || u8SizeCurr > 8 || ((ullOffset + u8SizeCurr) > m_pHexCtrl->GetDataSize())) {
 		pListBin->wstrValue = L"N/A";
-		pListBin->eSize = SIZE_ZERO;
 		pListBin->fAllowEdit = false;
 		return;
 	}
 
-	const auto spnData = m_pHexCtrl->GetData({ .ullOffset { ullOffset }, .ullSize { u8FieldSize } });
-	const auto fAsArray = GetCurrSelected() == EName::NAME_UTF8 || IsBigEndian(); //UTF-8 is endianness agnostic.
+	const auto spnData = m_pHexCtrl->GetData({ .ullOffset { ullOffset }, .ullSize { u8SizeCurr } });
+	pListBin->fAllowEdit = m_pHexCtrl->IsMutable();
 
-	bool fBinAvail { true };
-	switch (pListCurr->eSize) {
-	case SIZE_1BYTE:
+	switch (pListCurr->eName) {
+	case NAME_INT8:
+	case NAME_UINT8:
 		pListBin->wstrValue = std::format(L"{:08b}", static_cast<std::uint8_t>(spnData[0]));
-		pListBin->eSize = SIZE_1BYTE;
 		break;
-	case SIZE_2BYTE:
+	case NAME_INT16:
+	case NAME_UINT16:
 	{
-		const auto u80 = static_cast<std::uint8_t>(spnData[0]);
-		const auto u81 = static_cast<std::uint8_t>(spnData[1]);
-		pListBin->wstrValue = fAsArray ? std::format(L"{:08b} {:08b}", u80, u81)
+		const auto u80 = static_cast<std::uint8_t>(spnData[0]); const auto u81 = static_cast<std::uint8_t>(spnData[1]);
+		pListBin->wstrValue = IsBigEndian() ? std::format(L"{:08b} {:08b}", u80, u81)
 			: std::format(L"{:08b} {:08b}", u81, u80);
-		pListBin->eSize = SIZE_2BYTE;
 	}
 	break;
-	case SIZE_3BYTE:
+	case NAME_INT32:
+	case NAME_UINT32:
+	case NAME_FLOAT:
+	case NAME_TIME32T:
+	case NAME_MSDOSTIME:
+	case NAME_MSDTTMTIME:
 	{
-		const auto u80 = static_cast<std::uint8_t>(spnData[0]);
-		const auto u81 = static_cast<std::uint8_t>(spnData[1]);
-		const auto u82 = static_cast<std::uint8_t>(spnData[2]);
-		pListBin->wstrValue = std::format(L"{:08b} {:08b} {:08b}", u80, u81, u82);
-		pListBin->eSize = SIZE_3BYTE;
-	}
-	break;
-	case SIZE_4BYTE:
-	{
-		const auto u80 = static_cast<std::uint8_t>(spnData[0]);
-		const auto u81 = static_cast<std::uint8_t>(spnData[1]);
-		const auto u82 = static_cast<std::uint8_t>(spnData[2]);
-		const auto u83 = static_cast<std::uint8_t>(spnData[3]);
-		pListBin->wstrValue = fAsArray ? std::format(L"{:08b} {:08b} {:08b} {:08b}", u80, u81, u82, u83)
+		const auto u80 = static_cast<std::uint8_t>(spnData[0]); const auto u81 = static_cast<std::uint8_t>(spnData[1]);
+		const auto u82 = static_cast<std::uint8_t>(spnData[2]); const auto u83 = static_cast<std::uint8_t>(spnData[3]);
+		pListBin->wstrValue = IsBigEndian() ? std::format(L"{:08b} {:08b} {:08b} {:08b}", u80, u81, u82, u83)
 			: std::format(L"{:08b} {:08b} {:08b} {:08b}", u83, u82, u81, u80);
-		pListBin->eSize = SIZE_4BYTE;
 	}
 	break;
-	case SIZE_8BYTE:
+	case NAME_INT64:
+	case NAME_UINT64:
+	case NAME_DOUBLE:
+	case NAME_TIME64T:
+	case NAME_FILETIME:
+	case NAME_OLEDATETIME:
+	case NAME_JAVATIME:
 	{
-		const auto u80 = static_cast<std::uint8_t>(spnData[0]);
-		const auto u81 = static_cast<std::uint8_t>(spnData[1]);
-		const auto u82 = static_cast<std::uint8_t>(spnData[2]);
-		const auto u83 = static_cast<std::uint8_t>(spnData[3]);
-		const auto u84 = static_cast<std::uint8_t>(spnData[4]);
-		const auto u85 = static_cast<std::uint8_t>(spnData[5]);
-		const auto u86 = static_cast<std::uint8_t>(spnData[6]);
-		const auto u87 = static_cast<std::uint8_t>(spnData[7]);
-		pListBin->wstrValue = fAsArray ? std::format(L"{:08b} {:08b} {:08b} {:08b} {:08b} {:08b} {:08b} {:08b}",
-			u80, u81, u82, u83, u84, u85, u86, u87)
-			: std::format(L"{:08b} {:08b} {:08b} {:08b} {:08b} {:08b} {:08b} {:08b}",
+		const auto u80 = static_cast<std::uint8_t>(spnData[0]); const auto u81 = static_cast<std::uint8_t>(spnData[1]);
+		const auto u82 = static_cast<std::uint8_t>(spnData[2]); const auto u83 = static_cast<std::uint8_t>(spnData[3]);
+		const auto u84 = static_cast<std::uint8_t>(spnData[4]); const auto u85 = static_cast<std::uint8_t>(spnData[5]);
+		const auto u86 = static_cast<std::uint8_t>(spnData[6]); const auto u87 = static_cast<std::uint8_t>(spnData[7]);
+		pListBin->wstrValue = IsBigEndian() ? std::format(L"{:08b} {:08b} {:08b} {:08b} {:08b} {:08b} {:08b} {:08b}",
+			u80, u81, u82, u83, u84, u85, u86, u87) : std::format(L"{:08b} {:08b} {:08b} {:08b} {:08b} {:08b} {:08b} {:08b}",
 			u87, u86, u85, u84, u83, u82, u81, u80);
-		pListBin->eSize = SIZE_8BYTE;
 	}
 	break;
+	case NAME_UTF8:
+		switch (pListCurr->u8Size) {
+		case 1:
+			pListBin->wstrValue = std::format(L"{:08b}", static_cast<std::uint8_t>(spnData[0]));
+			break;
+		case 2:
+		{
+			const auto u80 = static_cast<std::uint8_t>(spnData[0]);	const auto u81 = static_cast<std::uint8_t>(spnData[1]);
+			pListBin->wstrValue = std::format(L"{:08b} {:08b}", u80, u81);
+		}
+		break;
+		case 3:
+		{
+			const auto u80 = static_cast<std::uint8_t>(spnData[0]);	const auto u81 = static_cast<std::uint8_t>(spnData[1]);
+			const auto u82 = static_cast<std::uint8_t>(spnData[2]);
+			pListBin->wstrValue = std::format(L"{:08b} {:08b} {:08b}", u80, u81, u82);
+		}
+		break;
+		case 4:
+		{
+			const auto u80 = static_cast<std::uint8_t>(spnData[0]); const auto u81 = static_cast<std::uint8_t>(spnData[1]);
+			const auto u82 = static_cast<std::uint8_t>(spnData[2]); const auto u83 = static_cast<std::uint8_t>(spnData[3]);
+			pListBin->wstrValue = std::format(L"{:08b} {:08b} {:08b} {:08b}", u80, u81, u82, u83);
+		}
+		break;
+		default:
+			break;
+		}
+		break;
+	case NAME_UTF16:
+		switch (pListCurr->u8Size) {
+		case 2:
+		{
+			const auto u80 = static_cast<std::uint8_t>(spnData[0]); const auto u81 = static_cast<std::uint8_t>(spnData[1]);
+			pListBin->wstrValue = IsBigEndian() ? std::format(L"{:08b} {:08b}", u80, u81)
+				: std::format(L"{:08b} {:08b}", u81, u80);
+		}
+		break;
+		case 4:
+		{
+			const auto u80 = static_cast<std::uint8_t>(spnData[0]); const auto u81 = static_cast<std::uint8_t>(spnData[1]);
+			const auto u82 = static_cast<std::uint8_t>(spnData[2]); const auto u83 = static_cast<std::uint8_t>(spnData[3]);
+			pListBin->wstrValue = IsBigEndian() ? std::format(L"{:08b} {:08b} {:08b} {:08b}", u80, u81, u82, u83)
+				: std::format(L"{:08b} {:08b} {:08b} {:08b}", u81, u80, u83, u82);
+		}
+		break;
+		default:
+			break;
+		}
+		break;
 	default:
 		pListBin->wstrValue = L"N/A";
-		pListBin->eSize = SIZE_ZERO;
-		fBinAvail = false;
+		pListBin->fAllowEdit = false;
 		break;
 	}
-
-	pListBin->fAllowEdit = fBinAvail ? m_pHexCtrl->IsMutable() : false;
 }
 
 void CHexDlgDataInterp::ShowValueInt8(SpanCByte spn)
@@ -1530,7 +1613,7 @@ void CHexDlgDataInterp::ShowValueUTF8(SpanCByte spn)
 	const auto lmbClear = [=] {
 		pListUTF8->wstrValue = L"N/A";
 		pListUTF8->fAllowEdit = false;
-		pListUTF8->eSize = ESize::SIZE_ZERO; };
+		pListUTF8->u8Size = 0; };
 
 	if (spn.empty()) { lmbClear(); return; }
 
@@ -1544,13 +1627,13 @@ void CHexDlgDataInterp::ShowValueUTF8(SpanCByte spn)
 	const auto u80 = static_cast<std::uint8_t>(spn[0]);
 
 	//How many code units (bytes) this UTF-8 code point occupies.
-	const auto dwUTF8CU = (u80 & 0b10000000) == 0b00000000 ? 1U : ((u80 & 0b11100000) == 0b11000000 ? 2U
-		: ((u80 & 0b11110000) == 0b11100000 ? 3U : ((u80 & 0b11111000) == 0b11110000 ? 4U : 0U)));
-	if (dwUTF8CU == 0 || dwUTF8CU > spn.size()) { lmbClear(); return; }
+	const auto u8UTF8Bytes = static_cast<std::uint8_t>((u80 & 0b10000000) == 0b00000000 ? 1U : ((u80 & 0b11100000) == 0b11000000 ? 2U
+		: ((u80 & 0b11110000) == 0b11100000 ? 3U : ((u80 & 0b11111000) == 0b11110000 ? 4U : 0U))));
+	if (u8UTF8Bytes == 0 || u8UTF8Bytes > spn.size()) { lmbClear(); return; }
 
 	//Unicode code point number (U+XXXXXX), deliberately initialized with an invalid number.
 	std::uint64_t u64CP { 0xFFFFFFFFU };
-	switch (dwUTF8CU) {
+	switch (u8UTF8Bytes) {
 	case 1:
 		u64CP = u80 & 0b01111111;
 		break;
@@ -1589,12 +1672,58 @@ void CHexDlgDataInterp::ShowValueUTF8(SpanCByte spn)
 	if (u64CP > 0x10FFFFU) { lmbClear(); return; }
 
 	wchar_t buff[4] { };
-	if (::MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<LPCCH>(spn.data()), dwUTF8CU, buff, 4) == 0) {
+	if (::MultiByteToWideChar(CP_UTF8, 0, reinterpret_cast<LPCCH>(spn.data()), u8UTF8Bytes, buff, 4) == 0) {
 		lmbClear();
 		return;
 	}
 
 	pListUTF8->wstrValue = std::format(L"{} (U+{:04X})", buff, u64CP);
 	pListUTF8->fAllowEdit = m_pHexCtrl->IsMutable();
-	pListUTF8->eSize = static_cast<ESize>(dwUTF8CU);
+	pListUTF8->u8Size = u8UTF8Bytes;
+}
+
+void CHexDlgDataInterp::ShowValueUTF16(SpanCByte spn)
+{
+	const auto pListUTF16 = GetListData(EName::NAME_UTF16);
+	const auto lmbClear = [=] {
+		pListUTF16->wstrValue = L"N/A";
+		pListUTF16->fAllowEdit = false;
+		pListUTF16->u8Size = 0; };
+
+	if (spn.size() < sizeof(wchar_t)) { lmbClear(); return; }
+
+	//First code unit in the UTF-16 code point. UTF-16 can occupy up to two wchar_t.
+	auto u160 = *reinterpret_cast<const std::uint16_t*>(spn.data());
+	if (IsBigEndian()) { u160 = ut::ByteSwap(u160); }
+
+	//The [U+D800-U+DFFF] code points range is for UTF-16 surrogate pairs encoding.
+	const auto u8UTF16Bytes = static_cast<std::uint8_t>(((u160 & 0xF800U) == 0xD800U) ? 4U : 2U);
+	if (u8UTF16Bytes > spn.size()) { lmbClear(); return; }
+
+	//Unicode code point number (U+XXXXXX), deliberately initialized with an invalid number.
+	std::uint64_t u64CP { 0xFFFFFFFFU };
+	std::uint16_t u161 { };
+	switch (u8UTF16Bytes) {
+	case 2:
+		u64CP = u160;
+		break;
+	case 4:
+		u161 = *reinterpret_cast<const std::uint16_t*>(spn.data() + sizeof(wchar_t));
+		if (IsBigEndian()) { u161 = ut::ByteSwap(u161); }
+
+		if ((u161 & 0xFC00U) == 0xDC00U) { //Is it valid UTF-16 low surrogate [0xDC00U-0xDFFFU]?
+			u64CP = (static_cast<std::uint64_t>(u160 - 0xD800U) << 10) + (u161 - 0xDC00U) + 0x10000U;
+		}
+		break;
+	default:
+		break;
+	}
+
+	//0x10FFFFU is the maximum valid Unicode code point number.
+	if (u64CP > 0x10FFFFU) { lmbClear(); return; }
+
+	wchar_t buff[4] { u160, u161, 0, 0 };
+	pListUTF16->wstrValue = std::format(L"{} (U+{:04X})", buff, u64CP);
+	pListUTF16->fAllowEdit = m_pHexCtrl->IsMutable();
+	pListUTF16->u8Size = u8UTF16Bytes;
 }
