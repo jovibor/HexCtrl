@@ -306,6 +306,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto CopyOffset()const->std::wstring;
 		[[nodiscard]] auto CopyPrintScreen()const->std::wstring;
 		[[nodiscard]] auto CopyTextCP()const->std::wstring;
+		void CreatePens();
 		void DrawWindow(HDC hDC)const;
 		void DrawInfoBar(HDC hDC)const;
 		void DrawOffsets(HDC hDC, ULONGLONG ullStartLine, int iLines)const;
@@ -708,8 +709,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_hFntInfoBar = ::CreateFontIndirectW(&lfInfo);
 	//End of font related.
 
-	m_hPenLinesMain = ::CreatePen(PS_SOLID, 1, m_stColors.clrLinesMain);
-	m_hPenLinesTempl = ::CreatePen(PS_SOLID, 1, m_stColors.clrLinesTempl);
+	CreatePens();
 
 	//ScrollBars should be created here, after the main window has already been created (to attach to), to avoid assertions.
 	m_pScrollV->Create(m_Wnd, true, m_hInstRes, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0); //Actual sizes are set in RecalcAll().
@@ -1868,6 +1868,7 @@ void CHexCtrl::SetColors(const HEXCOLORS& hcs)
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
 	m_stColors = hcs;
+	CreatePens();
 	m_Wnd.RedrawWindow();
 }
 
@@ -3046,6 +3047,14 @@ auto CHexCtrl::CopyTextCP()const->std::wstring
 	ReplaceUnprintable(wstrText, iCodepage == -1, false);
 
 	return wstrText;
+}
+
+void CHexCtrl::CreatePens()
+{
+	::DeleteObject(m_hPenLinesMain);
+	::DeleteObject(m_hPenLinesTempl);
+	m_hPenLinesMain = ::CreatePen(PS_SOLID, 1, m_stColors.clrLinesMain);
+	m_hPenLinesTempl = ::CreatePen(PS_SOLID, 1, m_stColors.clrLinesTempl);
 }
 
 void CHexCtrl::DrawWindow(HDC hDC)const

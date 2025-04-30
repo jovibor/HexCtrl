@@ -97,8 +97,8 @@ namespace HEXCTRL::INTERNAL {
 		CHexScroll* m_pSibling { };       //Sibling scrollbar, added with AddSibling.
 		HBITMAP m_hBmpArrowFirst { };     //Up or Left arrow bitmap.
 		HBITMAP m_hBmpArrowLast { };      //Down or Right arrow bitmap.
-		POINT m_ptCursorCur { };          //Cursor's current position.
-		ULONGLONG m_ullScrollPosCur { };  //Current scroll position.
+		POINT m_ptCursorCurr { };         //Cursor's current position.
+		ULONGLONG m_ullScrollPosCurr { }; //Current scroll position.
 		ULONGLONG m_ullScrollPosPrev { }; //Previous scroll position.
 		ULONGLONG m_ullScrollLine { };    //Size of one line scroll, when clicking arrow.
 		ULONGLONG m_ullScrollPage { };    //Size of page scroll, when clicking channel.
@@ -108,7 +108,7 @@ namespace HEXCTRL::INTERNAL {
 		EState m_eState { };              //Current state.
 		bool m_fCreated { false };        //Main creation flag.
 		bool m_fVisible { false };        //Is visible at the moment or not.
-		bool m_fScrollVert { };           //Scrollbar type, horizontal or vertical.
+		bool m_fVert { };                 //Is scrollbar vertical or horizontal?
 	};
 }
 
@@ -182,7 +182,7 @@ bool CHexScroll::Create(HWND hWndParent, bool fVert, HBITMAP hArrow, ULONGLONG u
 		return false;
 	}
 
-	m_fScrollVert = fVert;
+	m_fVert = fVert;
 	m_WndParent.Attach(hWndParent);
 	m_uiScrollBarSizeWH = GetSystemMetrics(fVert ? SM_CXVSCROLL : SM_CXHSCROLL);
 
@@ -209,7 +209,7 @@ auto CHexScroll::GetScrollPos()const->ULONGLONG
 		return { };
 	}
 
-	return m_ullScrollPosCur;
+	return m_ullScrollPosCurr;
 }
 
 auto CHexScroll::GetScrollPosDelta()const->LONGLONG
@@ -219,7 +219,7 @@ auto CHexScroll::GetScrollPosDelta()const->LONGLONG
 		return { };
 	}
 
-	return static_cast<LONGLONG>(m_ullScrollPosCur - m_ullScrollPosPrev);
+	return static_cast<LONGLONG>(m_ullScrollPosCurr - m_ullScrollPosPrev);
 }
 
 auto CHexScroll::GetScrollLineSize()const->ULONGLONG
@@ -290,29 +290,29 @@ void CHexScroll::OnMouseMove(POINT pt)
 	if (IsVert()) {
 		if (pt.y < rc.top) {
 			iNewPos = 0;
-			m_ptCursorCur.y = rc.top;
+			m_ptCursorCurr.y = rc.top;
 		}
 		else if (pt.y > rc.bottom) {
 			iNewPos = (std::numeric_limits<int>::max)();
-			m_ptCursorCur.y = rc.bottom;
+			m_ptCursorCurr.y = rc.bottom;
 		}
 		else {
-			iNewPos = iCurrPos + (pt.y - m_ptCursorCur.y);
-			m_ptCursorCur.y = pt.y;
+			iNewPos = iCurrPos + (pt.y - m_ptCursorCurr.y);
+			m_ptCursorCurr.y = pt.y;
 		}
 	}
 	else {
 		if (pt.x < rc.left) {
 			iNewPos = 0;
-			m_ptCursorCur.x = rc.left;
+			m_ptCursorCurr.x = rc.left;
 		}
 		else if (pt.x > rc.right) {
 			iNewPos = (std::numeric_limits<int>::max)();
-			m_ptCursorCur.x = rc.right;
+			m_ptCursorCurr.x = rc.right;
 		}
 		else {
-			iNewPos = iCurrPos + (pt.x - m_ptCursorCur.x);
-			m_ptCursorCur.x = pt.x;
+			iNewPos = iCurrPos + (pt.x - m_ptCursorCurr.x);
+			m_ptCursorCurr.x = pt.x;
 		}
 	}
 
@@ -408,7 +408,7 @@ void CHexScroll::OnSetCursor(UINT uHitTest, UINT uMsg)
 		wndParent.SetFocus();
 
 		if (GetThumbRect(true).PtInRect(pt)) {
-			m_ptCursorCur = pt;
+			m_ptCursorCurr = pt;
 			m_eState = THUMB_CLICK;
 			wndParent.SetCapture();
 		}
@@ -459,15 +459,15 @@ auto CHexScroll::SetScrollPos(ULONGLONG ullNewPos)->ULONGLONG
 		return { };
 	}
 
-	m_ullScrollPosPrev = m_ullScrollPosCur;
-	if (m_ullScrollPosCur == ullNewPos) {
+	m_ullScrollPosPrev = m_ullScrollPosCurr;
+	if (m_ullScrollPosCurr == ullNewPos) {
 		return m_ullScrollPosPrev;
 	}
 
 	const auto rc = GetParentRect();
 	const auto ullScreenSize { static_cast<ULONGLONG>(IsVert() ? rc.Height() : rc.Width()) };
 	const auto ullMax { ullScreenSize > m_ullScrollSizeMax ? 0 : m_ullScrollSizeMax - ullScreenSize };
-	m_ullScrollPosCur = (std::min)(ullNewPos, ullMax);
+	m_ullScrollPosCurr = (std::min)(ullNewPos, ullMax);
 	SendParentScrollMsg();
 	DrawScrollBar();
 
@@ -974,7 +974,7 @@ int CHexScroll::GetLeftDelta()const
 
 bool CHexScroll::IsVert()const
 {
-	return m_fScrollVert;
+	return m_fVert;
 }
 
 bool CHexScroll::IsThumbDragging()const
