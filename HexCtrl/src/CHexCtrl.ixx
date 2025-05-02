@@ -712,8 +712,9 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	CreatePens();
 
 	//ScrollBars should be created here, after the main window has already been created (to attach to), to avoid assertions.
-	m_pScrollV->Create(m_Wnd, true, m_hInstRes, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0); //Actual sizes are set in RecalcAll().
-	m_pScrollH->Create(m_Wnd, false, m_hInstRes, IDB_HEXCTRL_SCROLL_ARROW, 0, 0, 0);
+	//Actual scroll sizes are set in RecalcAll.
+	m_pScrollV->Create(m_Wnd, true, m_stColors.clrScrollBar, m_stColors.clrScrollThumb, m_stColors.clrScrollArrow, 0, 0, 0);
+	m_pScrollH->Create(m_Wnd, false, m_stColors.clrScrollBar, m_stColors.clrScrollThumb, m_stColors.clrScrollArrow, 0, 0, 0);
 	m_pScrollV->AddSibling(m_pScrollH.get());
 	m_pScrollH->AddSibling(m_pScrollV.get());
 
@@ -1869,6 +1870,8 @@ void CHexCtrl::SetColors(const HEXCOLORS& hcs)
 
 	m_stColors = hcs;
 	CreatePens();
+	m_pScrollV->SetColors(hcs.clrScrollBar, hcs.clrScrollThumb, hcs.clrScrollArrow);
+	m_pScrollH->SetColors(hcs.clrScrollBar, hcs.clrScrollThumb, hcs.clrScrollArrow);
 	m_Wnd.RedrawWindow();
 }
 

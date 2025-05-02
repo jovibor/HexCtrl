@@ -286,6 +286,9 @@ namespace HEXCTRL {
 		COLORREF clrBkCaretSel { RGB(0, 0, 200) };                   //Caret background color in selection.
 		COLORREF clrLinesMain { RGB(200, 200, 200) };                //Main window and pages lines color.
 		COLORREF clrLinesTempl { RGB(75, 75, 75) };                  //Templates data confining lines color.
+		COLORREF clrScrollBar { RGB(241, 241, 241) };                //Scrollbar color.
+		COLORREF clrScrollThumb { RGB(200, 200, 200) };              //Scrollbar thumb color.
+		COLORREF clrScrollArrow { RGB(110, 110, 110) };              //Scrollbar arrow color.
 	};
 	using PCHEXCOLORS = const HEXCOLORS*;
 

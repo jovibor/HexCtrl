@@ -908,26 +908,10 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 		OnTemplateLoadUnload(pTemplate->iTemplateID, true);
 	}
 
-	const auto rcWnd = m_WndBtnMin.GetWindowRect();
-	m_hBmpMin = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_SCROLL_ARROW),
-		IMAGE_BITMAP, rcWnd.Width(), rcWnd.Width(), 0));
-
-	//Flipping m_hBmpMin bits vertically and creating m_hBmpMax bitmap.
-	BITMAP stBMP { };
-	::GetObjectW(m_hBmpMin, sizeof(BITMAP), &stBMP); //stBMP.bmBits is nullptr here.
-	const auto dwWidth = static_cast<DWORD>(stBMP.bmWidth);
-	const auto dwHeight = static_cast<DWORD>(stBMP.bmHeight);
-	const auto dwPixels = dwWidth * dwHeight;
-	const auto dwBytesBmp = stBMP.bmWidthBytes * stBMP.bmHeight;
-	const auto pPixelsOrig = std::make_unique<COLORREF[]>(dwPixels);
-	::GetBitmapBits(m_hBmpMin, dwBytesBmp, pPixelsOrig.get());
-	for (auto itWidth = 0UL; itWidth < dwWidth; ++itWidth) { //Flip matrix' columns (flip vert).
-		for (auto itHeight = 0UL, itHeightBack = dwHeight - 1; itHeight < itHeightBack; ++itHeight, --itHeightBack) {
-			std::swap(pPixelsOrig[(itHeight * dwHeight) + itWidth], pPixelsOrig[(itHeightBack * dwWidth) + itWidth]);
-		}
-	}
-	m_hBmpMax = ::CreateBitmapIndirect(&stBMP);
-	::SetBitmapBits(m_hBmpMax, dwBytesBmp, pPixelsOrig.get());
+	const auto hDC = m_WndBtnMin.GetDC();
+	m_hBmpMin = ut::CreateArrowBitmap(hDC, m_WndBtnMin.GetWindowRect(), 1, RGB(241, 241, 241), RGB(110, 110, 110));
+	m_hBmpMax = ut::CreateArrowBitmap(hDC, m_WndBtnMin.GetWindowRect(), -1, RGB(241, 241, 241), RGB(110, 110, 110));
+	m_WndBtnMin.ReleaseDC(hDC);
 	m_WndBtnMin.SetBitmap(m_hBmpMin); //Set the min arrow bitmap to the min-max checkbox.
 
 	return TRUE;

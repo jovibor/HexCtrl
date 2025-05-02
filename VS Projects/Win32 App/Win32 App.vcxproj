@@ -300,7 +300,6 @@
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_LOGO.bmp" />
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY.bmp" />
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp" />
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SCROLL_ARROW.bmp" />
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SEARCH.bmp" />
     <Image Include="small.ico" />
     <Image Include="Win32 App.ico" />

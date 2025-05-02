@@ -147,9 +147,6 @@
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_MODIFY_FILLZEROS.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>
-    <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SCROLL_ARROW.bmp">
-      <Filter>HexCtrl\res</Filter>
-    </Image>
     <Image Include="..\..\HexCtrl\res\IDB_HEXCTRL_SEARCH.bmp">
       <Filter>HexCtrl\res</Filter>
     </Image>

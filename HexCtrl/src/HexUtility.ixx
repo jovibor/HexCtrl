@@ -452,6 +452,59 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		::ReleaseDC(hWnd, hDC);
 		return static_cast<float>(iLOGPIXELSY) / USER_DEFAULT_SCREEN_DPI; //Scale factor for High-DPI displays.
 	}
+
+	//iDirection == : -2 - LEFT, 1 - UP, 2 - RIGHT, -1 - DOWN.
+	[[nodiscard]] auto CreateArrowBitmap(HDC hDC, RECT rc, int iDirection, COLORREF clrBk, COLORREF clrArrow) -> HBITMAP {
+		const auto rcWidth = rc.right - rc.left;
+		const auto rcHeight = rc.bottom - rc.top;
+
+		//Make the width and height even numbers, to make it easier drawing an isosceles triangle.
+		const auto iWidth = rcWidth - (rcWidth % 2);
+		const auto iHeight = rcHeight - (rcHeight % 2);
+
+		POINT ptArrow[3] { }; //Arrow coordinates within the bitmap.
+		switch (iDirection) {
+		case -2: //LEFT.
+			ptArrow[0] = { .x { iWidth / 4 }, .y { iHeight / 2 } };
+			ptArrow[1] = { .x { iWidth / 2 }, .y { iHeight / 4 } };
+			ptArrow[2] = { .x { iWidth / 2 }, .y { iHeight - (iHeight / 4) } };
+			break;
+		case 1: //UP.
+			ptArrow[0] = { .x { iWidth / 2 }, .y { iHeight / 4 } };
+			ptArrow[1] = { .x { iWidth / 4 }, .y { iHeight / 2 } };
+			ptArrow[2] = { .x { iWidth - (iWidth / 4) }, .y { iHeight / 2 } };
+			break;
+		case 2: //RIGHT.
+			ptArrow[0] = { .x { iWidth / 2 }, .y { iHeight / 4 } };
+			ptArrow[1] = { .x { iWidth / 2 }, .y { iHeight - (iHeight / 4) } };
+			ptArrow[2] = { .x { iWidth - (iWidth / 4) }, .y { iHeight / 2 } };
+			break;
+		case -1: //DOWN.
+			ptArrow[0] = { .x { iWidth / 4 }, .y { iHeight / 2 } };
+			ptArrow[1] = { .x { iWidth - (iWidth / 4) }, .y { iHeight / 2 } };
+			ptArrow[2] = { .x { iWidth / 2 }, .y { iHeight - (iHeight / 4) } };
+			break;
+		default:
+			break;
+		}
+
+		const auto hdcMem = ::CreateCompatibleDC(hDC);
+		const auto hBMPArrow = ::CreateCompatibleBitmap(hDC, rcWidth, rcHeight);
+		::SelectObject(hdcMem, hBMPArrow);
+		const RECT rcFill { 0, 0, rcWidth, rcHeight };
+		::SetBkColor(hdcMem, clrBk); //SetBkColor+ExtTextOutW=FillSolidRect behavior.
+		::ExtTextOutW(hdcMem, 0, 0, ETO_OPAQUE, &rcFill, nullptr, 0, nullptr);
+		const auto hBrushArrow = ::CreateSolidBrush(clrArrow);
+		::SelectObject(hdcMem, hBrushArrow);
+		const auto hPenArrow = ::CreatePen(PS_SOLID, 1, clrArrow);
+		::SelectObject(hdcMem, hPenArrow);
+		::Polygon(hdcMem, ptArrow, 3); //Draw an arrow.
+		::DeleteObject(hBrushArrow);
+		::DeleteObject(hPenArrow);
+		::DeleteDC(hdcMem);
+
+		return hBMPArrow;
+	}
 }
 
 namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
