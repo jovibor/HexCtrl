@@ -268,27 +268,27 @@ namespace HEXCTRL {
 	* HEXCOLORS: HexCtrl internal colors.                                                       *
 	********************************************************************************************/
 	struct HEXCOLORS {
-		COLORREF clrFontHex { GetSysColor(COLOR_WINDOWTEXT) };       //Hex-chunks font color.
-		COLORREF clrFontText { GetSysColor(COLOR_WINDOWTEXT) };      //Text font color.
-		COLORREF clrFontSel { GetSysColor(COLOR_HIGHLIGHTTEXT) };    //Selected hex/text font color.
-		COLORREF clrFontBkm { RGB(0, 0, 0) };                        //Bookmarks font color.
-		COLORREF clrFontDataInterp { RGB(250, 250, 250) };           //Data Interpreter text/hex font color.
-		COLORREF clrFontCaption { RGB(0, 0, 180) };                  //Caption font color
-		COLORREF clrFontInfoParam { GetSysColor(COLOR_WINDOWTEXT) }; //Font color of the Info bar parameters.
-		COLORREF clrFontInfoData { RGB(0, 0, 150) };                 //Font color of the Info bar data.
-		COLORREF clrFontCaret { RGB(255, 255, 255) };                //Caret font color.
-		COLORREF clrBk { GetSysColor(COLOR_WINDOW) };                //Background color.
-		COLORREF clrBkSel { GetSysColor(COLOR_HIGHLIGHT) };          //Background color of the selected Hex/Text.
-		COLORREF clrBkBkm { RGB(240, 240, 0) };                      //Bookmarks background color.
-		COLORREF clrBkDataInterp { RGB(147, 58, 22) };               //Data Interpreter Bk color.
-		COLORREF clrBkInfoBar { GetSysColor(COLOR_3DFACE) };         //Background color of the bottom Info bar.
-		COLORREF clrBkCaret { RGB(0, 0, 255) };                      //Caret background color.
-		COLORREF clrBkCaretSel { RGB(0, 0, 200) };                   //Caret background color in selection.
-		COLORREF clrLinesMain { RGB(200, 200, 200) };                //Main window and pages lines color.
-		COLORREF clrLinesTempl { RGB(75, 75, 75) };                  //Templates data confining lines color.
-		COLORREF clrScrollBar { RGB(241, 241, 241) };                //Scrollbar color.
-		COLORREF clrScrollThumb { RGB(200, 200, 200) };              //Scrollbar thumb color.
-		COLORREF clrScrollArrow { RGB(110, 110, 110) };              //Scrollbar arrow color.
+		COLORREF clrFontHex { ::GetSysColor(COLOR_WINDOWTEXT) };       //Hex-chunks font color.
+		COLORREF clrFontText { ::GetSysColor(COLOR_WINDOWTEXT) };      //Text font color.
+		COLORREF clrFontSel { ::GetSysColor(COLOR_HIGHLIGHTTEXT) };    //Selected hex/text font color.
+		COLORREF clrFontBkm { ::GetSysColor(COLOR_WINDOWTEXT) };       //Bookmarks font color.
+		COLORREF clrFontDataInterp { ::GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Data Interpreter text/hex font color.
+		COLORREF clrFontCaption { RGB(0, 0, 180) };                    //Caption font color
+		COLORREF clrFontInfoParam { ::GetSysColor(COLOR_WINDOWTEXT) }; //Font color of the Info bar parameters.
+		COLORREF clrFontInfoData { RGB(0, 0, 180) };                   //Font color of the Info bar data.
+		COLORREF clrFontCaret { ::GetSysColor(COLOR_HIGHLIGHTTEXT) };  //Caret font color.
+		COLORREF clrBk { ::GetSysColor(COLOR_WINDOW) };                //Background color.
+		COLORREF clrBkSel { ::GetSysColor(COLOR_HIGHLIGHT) };          //Background color of the selected Hex/Text.
+		COLORREF clrBkBkm { RGB(240, 240, 0) };                        //Bookmarks background color.
+		COLORREF clrBkDataInterp { RGB(147, 58, 22) };                 //Data Interpreter Bk color.
+		COLORREF clrBkInfoBar { ::GetSysColor(COLOR_3DFACE) };         //Background color of the bottom Info bar.
+		COLORREF clrBkCaret { RGB(0, 0, 255) };                        //Caret background color.
+		COLORREF clrBkCaretSel { RGB(0, 0, 200) };                     //Caret background color in selection.
+		COLORREF clrLinesMain { ::GetSysColor(COLOR_SCROLLBAR) };      //Main window and pages lines color.
+		COLORREF clrLinesTempl { ::GetSysColor(COLOR_WINDOWTEXT) };    //Templates data confining lines color.
+		COLORREF clrScrollBar { ::GetSysColor(COLOR_3DFACE) };         //Scrollbar color.
+		COLORREF clrScrollThumb { ::GetSysColor(COLOR_SCROLLBAR) };    //Scrollbar thumb color.
+		COLORREF clrScrollArrow { ::GetSysColor(COLOR_GRAYTEXT) };     //Scrollbar arrow color.
 	};
 	using PCHEXCOLORS = const HEXCOLORS*;
 

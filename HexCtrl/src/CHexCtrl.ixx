@@ -636,65 +636,63 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_Wnd.ReleaseDC(hDC);
 
 	//Menu related.
-	if (!m_MenuMain.LoadMenuW(m_hInstRes, MAKEINTRESOURCEW(IDR_HEXCTRL_MENU))) {
+	if (!m_MenuMain.LoadMenuW(m_hInstRes, IDR_HEXCTRL_MENU)) {
 		ut::DBG_REPORT(L"LoadMenuW failed.");
 		return false;
 	}
 
 	const auto iSizeIcon = static_cast<int>(16 * ut::GetDPIScale(m_Wnd));
 	const auto menuTop = m_MenuMain.GetSubMenu(0); //Context sub-menu handle.
-
-	MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_BITMAP } };
 	//"Search" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP,
+	auto hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetMenuItemInfoW(0, &mii, false); //"Search" parent menu icon.
-	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_SEARCH_DLGSEARCH, &mii);
-	m_vecHBITMAP.emplace_back(mii.hbmpItem);
+	menuTop.SetItemBitmap(0, hBmp, false); //"Search" parent menu icon.
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_SEARCH_DLGSEARCH, hBmp);
+	m_vecHBITMAP.emplace_back(hBmp);
 
 	//"Group Data" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_GROUP), IMAGE_BITMAP,
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_GROUP), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetMenuItemInfoW(2, &mii, false); //"Group Data" parent menu icon.
-	m_vecHBITMAP.emplace_back(mii.hbmpItem);
+	menuTop.SetItemBitmap(2, hBmp, false); //"Group Data" parent menu icon.
+	m_vecHBITMAP.emplace_back(hBmp);
 
 	//"Bookmarks->Add" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_BKMS), IMAGE_BITMAP,
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_BKMS), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetMenuItemInfoW(4, &mii, false); //"Bookmarks" parent menu icon.
-	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_BKM_ADD, &mii);
-	m_vecHBITMAP.emplace_back(mii.hbmpItem);
+	menuTop.SetItemBitmap(4, hBmp, false); //"Bookmarks" parent menu icon.
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_BKM_ADD, hBmp);
+	m_vecHBITMAP.emplace_back(hBmp);
 
 	//"Clipboard->Copy as Hex" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP,
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_COPYHEX), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetMenuItemInfoW(5, &mii, false); //"Clipboard" parent menu icon.
-	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_COPYHEX, &mii);
-	m_vecHBITMAP.emplace_back(mii.hbmpItem);
+	menuTop.SetItemBitmap(5, hBmp, false); //"Clipboard" parent menu icon.
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_CLPBRD_COPYHEX, hBmp);
+	m_vecHBITMAP.emplace_back(hBmp);
 
 	//"Clipboard->Paste as Hex" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_PASTEHEX), IMAGE_BITMAP,
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_CLPBRD_PASTEHEX), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_CLPBRD_PASTEHEX, &mii);
-	m_vecHBITMAP.emplace_back(mii.hbmpItem);
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_CLPBRD_PASTEHEX, hBmp);
+	m_vecHBITMAP.emplace_back(hBmp);
 
 	//"Modify" parent menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY), IMAGE_BITMAP,
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	menuTop.SetMenuItemInfoW(6, &mii, false);
-	m_vecHBITMAP.emplace_back(mii.hbmpItem);
+	menuTop.SetItemBitmap(6, hBmp, false);
+	m_vecHBITMAP.emplace_back(hBmp);
 
 	//"Modify->Fill with Zeros" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP,
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_MODIFY_FILLZEROS), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_MODIFY_FILLZEROS, &mii);
-	m_vecHBITMAP.emplace_back(mii.hbmpItem);
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_MODIFY_FILLZEROS, hBmp);
+	m_vecHBITMAP.emplace_back(hBmp);
 
 	//"Appearance->Choose Font" menu icon.
-	mii.hbmpItem = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_FONTCHOOSE), IMAGE_BITMAP,
+	hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_FONTCHOOSE), IMAGE_BITMAP,
 		iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
-	m_MenuMain.SetMenuItemInfoW(IDM_HEXCTRL_APPEAR_DLGFONT, &mii);
-	m_vecHBITMAP.emplace_back(mii.hbmpItem);
+	m_MenuMain.SetItemBitmap(IDM_HEXCTRL_APPEAR_DLGFONT, hBmp);
+	m_vecHBITMAP.emplace_back(hBmp);
 	//End of menu related.
 
 	//Font related.
@@ -2087,43 +2085,39 @@ bool CHexCtrl::SetConfig(std::wstring_view wsvPath)
 	}
 
 	std::size_t i { 0 };
-	for (const auto& refKB : m_vecKeyBind) {
+	for (const auto& vecKB : m_vecKeyBind) {
 		//Check for previous same menu ID. To assign only one, first, keybinding for menu name.
 		//With `"ctrl+f", "ctrl+h"` in JSON, only the "Ctrl+F" will be assigned as the menu name.
 		const auto itEnd = m_vecKeyBind.begin() + i++;
-		if (const auto itTmp = std::find_if(m_vecKeyBind.begin(), itEnd, [&](const KEYBIND& ref) {
-			return ref.wMenuID == refKB.wMenuID; });
-			itTmp == itEnd && refKB.wMenuID != 0 && refKB.uKey != 0) {
-			auto wstr = m_MenuMain.GetMenuWstr(refKB.wMenuID);
+		if (const auto itTmp = std::find_if(m_vecKeyBind.begin(), itEnd, [&](const KEYBIND& kb) {
+			return kb.wMenuID == vecKB.wMenuID; });
+			itTmp == itEnd && vecKB.wMenuID != 0 && vecKB.uKey != 0) {
+			auto wstr = m_MenuMain.GetItemWstr(vecKB.wMenuID);
 			if (const auto nPos = wstr.find('\t'); nPos != std::wstring::npos) {
 				wstr.erase(nPos);
 			}
 
 			wstr += L'\t';
-			if (refKB.fCtrl) {
+			if (vecKB.fCtrl) {
 				wstr += L"Ctrl+";
 			}
-			if (refKB.fShift) {
+			if (vecKB.fShift) {
 				wstr += L"Shift+";
 			}
-			if (refKB.fAlt) {
+			if (vecKB.fAlt) {
 				wstr += L"Alt+";
 			}
 
 			//Search for any special key names: 'Tab', 'Enter', etc... If not found then it's just a char.
 			if (const auto itUmap = std::find_if(umapKeys.begin(), umapKeys.end(), [&](const auto& ref) {
-				return ref.second.first == refKB.uKey; }); itUmap != umapKeys.end()) {
+				return ref.second.first == vecKB.uKey; }); itUmap != umapKeys.end()) {
 				wstr += itUmap->second.second;
 			}
 			else {
-				wstr += static_cast<unsigned char>(refKB.uKey);
+				wstr += static_cast<unsigned char>(vecKB.uKey);
 			}
 
-			//Modify menu with a new name (with shortcut appended) and old bitmap.
-			MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_BITMAP | MIIM_STRING } };
-			m_MenuMain.GetMenuItemInfoW(refKB.wMenuID, &mii);
-			mii.dwTypeData = wstr.data();
-			m_MenuMain.SetMenuItemInfoW(refKB.wMenuID, &mii);
+			m_MenuMain.SetItemWstr(vecKB.wMenuID, wstr); //Modify the menu with the new name, with shortcut appended.
 		}
 	}
 
@@ -2267,10 +2261,10 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 	//Getting the "Group Data" menu pointer independent of position.
 	const auto menuMain = m_MenuMain.GetSubMenu(0);
 	HMENU hMenuGroupData { };
-	for (auto i = 0; i < menuMain.GetMenuItemCount(); ++i) {
+	for (auto i = 0; i < menuMain.GetItemsCount(); ++i) {
 		//Searching through all submenus whose first menuID is IDM_HEXCTRL_GROUPDATA_BYTE.
 		if (auto menuSub = menuMain.GetSubMenu(i); menuSub.IsMenu()) {
-			if (menuSub.GetMenuItemID(0) == IDM_HEXCTRL_GROUPDATA_BYTE) {
+			if (menuSub.GetItemID(0) == IDM_HEXCTRL_GROUPDATA_BYTE) {
 				hMenuGroupData = menuSub.GetHMENU();
 				break;
 			}
@@ -2280,8 +2274,8 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 	if (hMenuGroupData != nullptr) {
 		//Unchecking all menus and checking only the currently selected.
 		wnd::CMenu menuGroup(hMenuGroupData);
-		for (auto iIDGroupData = 0; iIDGroupData < menuGroup.GetMenuItemCount(); ++iIDGroupData) {
-			menuGroup.CheckMenuItem(iIDGroupData, false, false);
+		for (auto iIDGroupData = 0; iIDGroupData < menuGroup.GetItemsCount(); ++iIDGroupData) {
+			menuGroup.SetItemCheck(iIDGroupData, false, false);
 		}
 
 		UINT uIDToCheck { 0 };
@@ -2303,7 +2297,7 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 		}
 
 		if (uIDToCheck != 0) {
-			menuGroup.CheckMenuItem(uIDToCheck, true);
+			menuGroup.SetItemCheck(uIDToCheck, true);
 		}
 	}
 
@@ -7138,63 +7132,63 @@ auto CHexCtrl::OnInitMenuPopup(const MSG& msg)->LRESULT
 	//The LOWORD(lParam) specifies zero-based relative position of the menu, that opens drop-down menu or submenu.
 	switch (LOWORD(msg.lParam)) {
 	case 0:	//Search.
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_DLGSEARCH, IsCmdAvail(CMD_SEARCH_DLG));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_NEXT, IsCmdAvail(CMD_SEARCH_NEXT));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEARCH_PREV, IsCmdAvail(CMD_SEARCH_PREV));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_SEARCH_DLGSEARCH, IsCmdAvail(CMD_SEARCH_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_SEARCH_NEXT, IsCmdAvail(CMD_SEARCH_NEXT));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_SEARCH_PREV, IsCmdAvail(CMD_SEARCH_PREV));
 		break;
 	case 3:	//Navigation.
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DLGGOTO, IsCmdAvail(CMD_NAV_GOTO_DLG));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_REPFWD, IsCmdAvail(CMD_NAV_REPFWD));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_REPBKW, IsCmdAvail(CMD_NAV_REPBKW));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DATABEG, IsCmdAvail(CMD_NAV_DATABEG));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_DATAEND, IsCmdAvail(CMD_NAV_DATAEND));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_PAGEBEG, IsCmdAvail(CMD_NAV_PAGEBEG));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_PAGEEND, IsCmdAvail(CMD_NAV_PAGEEND));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_LINEBEG, IsCmdAvail(CMD_NAV_LINEBEG));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_NAV_LINEEND, IsCmdAvail(CMD_NAV_LINEEND));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_DLGGOTO, IsCmdAvail(CMD_NAV_GOTO_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_REPFWD, IsCmdAvail(CMD_NAV_REPFWD));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_REPBKW, IsCmdAvail(CMD_NAV_REPBKW));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_DATABEG, IsCmdAvail(CMD_NAV_DATABEG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_DATAEND, IsCmdAvail(CMD_NAV_DATAEND));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_PAGEBEG, IsCmdAvail(CMD_NAV_PAGEBEG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_PAGEEND, IsCmdAvail(CMD_NAV_PAGEEND));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_LINEBEG, IsCmdAvail(CMD_NAV_LINEBEG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_NAV_LINEEND, IsCmdAvail(CMD_NAV_LINEEND));
 		break;
 	case 4:	//Bookmarks.
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_BKM_ADD, IsCmdAvail(CMD_BKM_ADD));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_BKM_REMOVE, IsCmdAvail(CMD_BKM_REMOVE));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_BKM_NEXT, IsCmdAvail(CMD_BKM_NEXT));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_BKM_PREV, IsCmdAvail(CMD_BKM_PREV));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_BKM_REMOVEALL, IsCmdAvail(CMD_BKM_REMOVEALL));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_BKM_DLGMGR, IsCmdAvail(CMD_BKM_DLG_MGR));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_ADD, IsCmdAvail(CMD_BKM_ADD));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_REMOVE, IsCmdAvail(CMD_BKM_REMOVE));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_NEXT, IsCmdAvail(CMD_BKM_NEXT));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_PREV, IsCmdAvail(CMD_BKM_PREV));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_REMOVEALL, IsCmdAvail(CMD_BKM_REMOVEALL));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_BKM_DLGMGR, IsCmdAvail(CMD_BKM_DLG_MGR));
 		break;
 	case 5:	//Clipboard.
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEX, IsCmdAvail(CMD_CLPBRD_COPY_HEX));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXLE, IsCmdAvail(CMD_CLPBRD_COPY_HEXLE));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYHEXFMT, IsCmdAvail(CMD_CLPBRD_COPY_HEXFMT));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYTEXTCP, IsCmdAvail(CMD_CLPBRD_COPY_TEXTCP));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYBASE64, IsCmdAvail(CMD_CLPBRD_COPY_BASE64));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYCARR, IsCmdAvail(CMD_CLPBRD_COPY_CARR));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYGREPHEX, IsCmdAvail(CMD_CLPBRD_COPY_GREPHEX));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN, IsCmdAvail(CMD_CLPBRD_COPY_PRNTSCRN));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_COPYOFFSET, IsCmdAvail(CMD_CLPBRD_COPY_OFFSET));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTEHEX, IsCmdAvail(CMD_CLPBRD_PASTE_HEX));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTETEXTUTF16, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTUTF16));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_CLPBRD_PASTETEXTCP, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTCP));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYHEX, IsCmdAvail(CMD_CLPBRD_COPY_HEX));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYHEXLE, IsCmdAvail(CMD_CLPBRD_COPY_HEXLE));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYHEXFMT, IsCmdAvail(CMD_CLPBRD_COPY_HEXFMT));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYTEXTCP, IsCmdAvail(CMD_CLPBRD_COPY_TEXTCP));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYBASE64, IsCmdAvail(CMD_CLPBRD_COPY_BASE64));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYCARR, IsCmdAvail(CMD_CLPBRD_COPY_CARR));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYGREPHEX, IsCmdAvail(CMD_CLPBRD_COPY_GREPHEX));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYPRNTSCRN, IsCmdAvail(CMD_CLPBRD_COPY_PRNTSCRN));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_COPYOFFSET, IsCmdAvail(CMD_CLPBRD_COPY_OFFSET));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_PASTEHEX, IsCmdAvail(CMD_CLPBRD_PASTE_HEX));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_PASTETEXTUTF16, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTUTF16));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_CLPBRD_PASTETEXTCP, IsCmdAvail(CMD_CLPBRD_PASTE_TEXTCP));
 		break;
 	case 6: //Modify.
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(CMD_MODIFY_FILLZEROS));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLGFILLDATA, IsCmdAvail(CMD_MODIFY_FILLDATA_DLG));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_DLGOPERS, IsCmdAvail(CMD_MODIFY_OPERS_DLG));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(CMD_MODIFY_UNDO));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(CMD_MODIFY_REDO));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_FILLZEROS, IsCmdAvail(CMD_MODIFY_FILLZEROS));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_DLGFILLDATA, IsCmdAvail(CMD_MODIFY_FILLDATA_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_DLGOPERS, IsCmdAvail(CMD_MODIFY_OPERS_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_UNDO, IsCmdAvail(CMD_MODIFY_UNDO));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_MODIFY_REDO, IsCmdAvail(CMD_MODIFY_REDO));
 		break;
 	case 7: //Selection.
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEL_MARKSTARTEND, IsCmdAvail(CMD_SEL_MARKSTARTEND));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(CMD_SEL_ALL));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_SEL_MARKSTARTEND, IsCmdAvail(CMD_SEL_MARKSTARTEND));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_SEL_ALL, IsCmdAvail(CMD_SEL_ALL));
 		break;
 	case 8: //Templates.
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_APPLYCURR, IsCmdAvail(CMD_TEMPL_APPLYCURR));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DISAPPLY, IsCmdAvail(CMD_TEMPL_DISAPPLY));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DISAPPALL, IsCmdAvail(CMD_TEMPL_DISAPPALL));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_TEMPL_DLGMGR, IsCmdAvail(CMD_TEMPL_DLG_MGR));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_APPLYCURR, IsCmdAvail(CMD_TEMPL_APPLYCURR));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_DISAPPLY, IsCmdAvail(CMD_TEMPL_DISAPPLY));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_DISAPPALL, IsCmdAvail(CMD_TEMPL_DISAPPALL));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_TEMPL_DLGMGR, IsCmdAvail(CMD_TEMPL_DLG_MGR));
 		break;
 	case 9: //Data Presentation.
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_DLGDATAINTERP, IsCmdAvail(CMD_DATAINTERP_DLG));
-		m_MenuMain.EnableMenuItem(IDM_HEXCTRL_DLGCODEPAGE, IsCmdAvail(CMD_CODEPAGE_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_DLGDATAINTERP, IsCmdAvail(CMD_DATAINTERP_DLG));
+		m_MenuMain.EnableItem(IDM_HEXCTRL_DLGCODEPAGE, IsCmdAvail(CMD_CODEPAGE_DLG));
 		break;
 	default:
 		break;
@@ -7531,7 +7525,9 @@ auto CHexCtrl::OnPaint()->LRESULT
 	const auto rcClient = m_Wnd.GetClientRect();
 
 	if (!IsCreated()) {
-		dcPaint.FillSolidRect(rcClient, RGB(250, 250, 250));
+		dcPaint.FillSolidRect(rcClient, m_stColors.clrBk);
+		dcPaint.SetTextColor(m_stColors.clrFontHex);
+		dcPaint.SetBkColor(m_stColors.clrBk);
 		dcPaint.TextOutW(1, 1, L"Call IHexCtrl::Create first.");
 		return 0;
 	}

@@ -344,6 +344,7 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		[[nodiscard]] bool IsColumnEditable(int iIndex)const;
 		auto ProcessMsg(const MSG& msg) -> LRESULT;
 		void RedrawWindow()const;
+		void SetDPIScale(float flScale);
 		void SetHeight(DWORD dwHeight);
 		void SetFont(const LOGFONTW& lf);
 		void SetColor(const LISTEXCOLORS& lcs);
@@ -396,6 +397,8 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
+		std::vector<HIDDEN> m_vecHidden; //Hidden columns.
+		std::vector<COLUMNDATA> m_vecColumnData;
 		HWND m_hWnd { };         //Header window.
 		HFONT m_hFntHdr { };
 		COLORREF m_clrBkNWA { }; //Bk of non working area.
@@ -405,8 +408,7 @@ namespace HEXCTRL::LISTEX::INTERNAL {
 		COLORREF m_clrHglActive { };
 		DWORD m_dwHeaderHeight { 19 }; //Standard (default) height.
 		UINT m_uSortColumn { 0 };   //ColumnID to draw sorting triangle at. 0 is to avoid triangle before first clicking.
-		std::vector<HIDDEN> m_vecHidden; //Hidden columns.
-		std::vector<COLUMNDATA> m_vecColumnData;
+		float m_flDPIScale { 1.0F };
 		bool m_fSortable { false }; //List-is-sortable global flog. Need to draw sortable triangle or not?
 		bool m_fSortAscending { };  //Sorting type.
 		bool m_fLMousePressed { };
@@ -564,6 +566,12 @@ void CListExHdr::RedrawWindow()const
 {
 	assert(IsWindow());
 	::RedrawWindow(m_hWnd, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE);
+}
+
+void CListExHdr::SetDPIScale(float flScale)
+{
+	m_flDPIScale = flScale;
+	RedrawWindow();
 }
 
 void CListExHdr::SetFont(const LOGFONTW& lf)
@@ -910,19 +918,32 @@ void CListExHdr::OnDrawItem(HDC hDC, int iItem, RECT rc, bool fPressed, bool fHi
 		static const auto penArrow = ::CreatePen(PS_SOLID, 1, RGB(90, 90, 90));
 		dc.SelectObject(penArrow);
 		dc.SelectObject(::GetSysColorBrush(COLOR_3DFACE));
+
 		if (m_fSortAscending) { //Draw the UP arrow.
-			const POINT arrPt[] { { rcOrig.right - 10, 3 },
-				{ rcOrig.right - 15, 8 }, { rcOrig.right - 5, 8 } };
+			const auto lXTop = static_cast<long>(10 * m_flDPIScale);
+			const auto lYTop = static_cast<long>(3 * m_flDPIScale);
+			const auto lXLeft = static_cast<long>(15 * m_flDPIScale);
+			const auto lXRight = static_cast<long>(5 * m_flDPIScale);
+			const auto lYLeftRight = static_cast<long>(8 * m_flDPIScale);
+			const POINT arrPt[] { { .x { rcOrig.right - lXTop }, .y { lYTop } },
+				{ .x { rcOrig.right - lXLeft }, .y { lYLeftRight } },
+				{ .x { rcOrig.right - lXRight }, .y { lYLeftRight } } };
 			dc.Polygon(arrPt, 3);
 		}
 		else { //Draw the DOWN arrow.
-			const POINT arrPt[] { { rcOrig.right - 10, 8 },
-				{ rcOrig.right - 15, 3 }, { rcOrig.right - 5, 3 } };
+			const auto lXLeft = static_cast<long>(15 * m_flDPIScale);
+			const auto lXRight = static_cast<long>(5 * m_flDPIScale);
+			const auto lYLeftRight = static_cast<long>(3 * m_flDPIScale);
+			const auto lXBottom = static_cast<long>(10 * m_flDPIScale);
+			const auto lYBottom = static_cast<long>(8 * m_flDPIScale);
+			const POINT arrPt[] { { .x { rcOrig.right - lXLeft }, .y { lYLeftRight } },
+				{ .x { rcOrig.right - lXRight }, .y { lYLeftRight } },
+				{ .x { rcOrig.right - lXBottom }, .y { lYBottom } }, };
 			dc.Polygon(arrPt, 3);
 		}
 	}
 
-	static const auto penGrid = ::CreatePen(PS_SOLID, 2, GetSysColor(COLOR_3DFACE));
+	static const auto penGrid = ::CreatePen(PS_SOLID, 2, ::GetSysColor(COLOR_3DFACE));
 	dc.SelectObject(penGrid);
 	dc.MoveTo(rcOrig.TopLeft());
 	dc.LineTo(rcOrig.left, rcOrig.bottom);
@@ -1328,7 +1349,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 
 	//The TTF_TRACK flag should not be used with the TTS_BALLOON tooltips, because in this case
 	//the balloon will always be positioned _below_ provided coordinates.
-	TTTOOLINFOW ttiCell { .cbSize { sizeof(TTTOOLINFOW) },
+	const TTTOOLINFOW ttiCell { .cbSize { sizeof(TTTOOLINFOW) },
 		.uFlags { static_cast<UINT>(lcs.dwTTStyleCell & TTS_BALLOON ? 0 : TTF_TRACK) } };
 	::SendMessageW(m_hWndCellTT, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ttiCell));
 	::SendMessageW(m_hWndCellTT, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
@@ -1348,7 +1369,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 		return false;
 	}
 
-	TTTOOLINFOW ttiLink { .cbSize { sizeof(TTTOOLINFOW) },
+	const TTTOOLINFOW ttiLink { .cbSize { sizeof(TTTOOLINFOW) },
 		.uFlags { static_cast<UINT>(lcs.dwTTStyleLink & TTS_BALLOON ? 0 : TTF_TRACK) } };
 	::SendMessageW(m_hWndLinkTT, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ttiLink));
 	::SendMessageW(m_hWndLinkTT, TTM_SETMAXTIPWIDTH, 0, static_cast<LPARAM>(400)); //to allow use of newline \n.
@@ -1361,7 +1382,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 			return false;
 		}
 
-		TTTOOLINFOW ttiHL { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { static_cast<UINT>(TTF_TRACK) } };
+		const TTTOOLINFOW ttiHL { .cbSize { sizeof(TTTOOLINFOW) }, .uFlags { static_cast<UINT>(TTF_TRACK) } };
 		::SendMessageW(m_hWndRowTT, TTM_ADDTOOLW, 0, reinterpret_cast<LPARAM>(&ttiHL));
 	}
 
@@ -1390,6 +1411,7 @@ bool CListEx::Create(const LISTEXCREATE& lcs)
 
 	m_fCreated = true;
 
+	GetHeader().SetDPIScale(static_cast<float>(m_iLOGPIXELSY) / USER_DEFAULT_SCREEN_DPI);
 	GetHeader().SetColor(m_stColors);
 	GetHeader().SetSortable(lcs.fSortable);
 	SetHdrHeight(dwHdrHeight);

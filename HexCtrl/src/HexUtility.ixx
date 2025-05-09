@@ -730,8 +730,41 @@ namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		~CDC() = default;
 		operator HDC()const { return m_hDC; }
 		void AbortDoc()const { ::AbortDoc(m_hDC); }
+		int AlphaBlend(int iX, int iY, int iWidth, int iHeight, HDC hDCSrc,
+			int iXSrc, int iYSrc, int iWidthSrc, int iHeightSrc, BYTE bSrcAlpha = 255, BYTE bAlphaFormat = AC_SRC_ALPHA)const {
+			const BLENDFUNCTION bf { .SourceConstantAlpha { bSrcAlpha }, .AlphaFormat { bAlphaFormat } };
+			return ::AlphaBlend(m_hDC, iX, iY, iWidth, iHeight, hDCSrc, iXSrc, iYSrc, iWidthSrc, iHeightSrc, bf);
+		}
+		BOOL BitBlt(int iX, int iY, int iWidth, int iHeight, HDC hDCSource, int iXSource, int iYSource, DWORD dwROP)const {
+			//When blitting from a monochrome bitmap to a color one, the black color in the monohrome bitmap 
+			//becomes the destination DC’s text color, and the white color in the monohrome bitmap 
+			//becomes the destination DC’s background color, when using SRCCOPY mode.
+			return ::BitBlt(m_hDC, iX, iY, iWidth, iHeight, hDCSource, iXSource, iYSource, dwROP);
+		}
+		[[nodiscard]] auto CreateCompatibleBitmap(int iWidth, int iHeight)const->HBITMAP {
+			return ::CreateCompatibleBitmap(m_hDC, iWidth, iHeight);
+		}
+		[[nodiscard]] CDC CreateCompatibleDC()const { return ::CreateCompatibleDC(m_hDC); }
 		void DeleteDC()const { ::DeleteDC(m_hDC); }
-		HDC GetHDC()const { return m_hDC; }
+		bool DrawFrameControl(LPRECT pRC, UINT uType, UINT uState)const {
+			return ::DrawFrameControl(m_hDC, pRC, uType, uState);
+		}
+		bool DrawFrameControl(int iX, int iY, int iWidth, int iHeight, UINT uType, UINT uState)const {
+			RECT rc { .left { iX }, .top { iY }, .right { iX + iWidth }, .bottom { iY + iHeight } };
+			return DrawFrameControl(&rc, uType, uState);
+		}
+		void DrawImage(HBITMAP hBmp, int iX, int iY, int iWidth, int iHeight)const {
+			BITMAP bm; ::GetObjectW(hBmp, sizeof(BITMAP), &bm);
+			const auto dcBmp = CreateCompatibleDC(); dcBmp.SelectObject(hBmp);
+
+			//Only 32bit bitmaps can have alpha channel.
+			//If destination and source bitmaps do not have the same color format, 
+			//AlphaBlend converts the source bitmap to match the destination bitmap.
+			//AlphaBlend works with both, DI (DeviceIndependent) and DD (DeviceDependent), bitmaps.
+			AlphaBlend(iX, iY, iWidth, iHeight, dcBmp, 0, 0, iWidth, iHeight, 255, bm.bmBitsPixel == 32 ? 1 : 0);
+			dcBmp.DeleteDC();
+		}
+		[[nodiscard]] HDC GetHDC()const { return m_hDC; }
 		void GetTextMetricsW(LPTEXTMETRICW pTM)const { ::GetTextMetricsW(m_hDC, pTM); }
 		auto SetBkColor(COLORREF clr)const->COLORREF { return ::SetBkColor(m_hDC, clr); }
 		void DrawEdge(LPRECT pRC, UINT uEdge, UINT uFlags)const { ::DrawEdge(m_hDC, pRC, uEdge, uFlags); }
@@ -753,6 +786,13 @@ namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		bool MoveTo(POINT pt)const { return MoveTo(pt.x, pt.y); }
 		bool MoveTo(int x, int y)const { return ::MoveToEx(m_hDC, x, y, nullptr); }
 		bool Polygon(const POINT* pPT, int iCount)const { return ::Polygon(m_hDC, pPT, iCount); }
+		int SetDIBits(HBITMAP hBmp, UINT uStartLine, UINT uLines, const void* pBits, const BITMAPINFO* pBMI, UINT uClrUse)const {
+			return ::SetDIBits(m_hDC, hBmp, uStartLine, uLines, pBits, pBMI, uClrUse);
+		}
+		int SetDIBitsToDevice(int iX, int iY, DWORD dwWidth, DWORD dwHeight, int iXSrc, int iYSrc, UINT uStartLine, UINT uLines,
+			const void* pBits, const BITMAPINFO* pBMI, UINT uClrUse)const {
+			return ::SetDIBitsToDevice(m_hDC, iX, iY, dwWidth, dwHeight, iXSrc, iYSrc, uStartLine, uLines, pBits, pBMI, uClrUse);
+		}
 		int SetMapMode(int iMode)const { return ::SetMapMode(m_hDC, iMode); }
 		auto SetTextColor(COLORREF clr)const->COLORREF { return ::SetTextColor(m_hDC, clr); }
 		auto SetViewportOrg(int iX, int iY)const->POINT { POINT pt; ::SetViewportOrgEx(m_hDC, iX, iY, &pt); return pt; }
@@ -1043,7 +1083,7 @@ namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		}
 	};
 
-	class CMenu final {
+	class CMenu {
 	public:
 		CMenu() = default;
 		CMenu(HMENU hMenu) { Attach(hMenu); }
@@ -1057,47 +1097,80 @@ namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		void AppendSepar()const { AppendItem(MF_SEPARATOR, 0, nullptr); }
 		void AppendString(UINT_PTR uIDItem, LPCWSTR pNameItem)const { AppendItem(MF_STRING, uIDItem, pNameItem); }
 		void Attach(HMENU hMenu) { m_hMenu = hMenu; }
-		void CheckMenuItem(UINT uIDItem, bool fCheck, bool fByID = true)const {
-			assert(IsMenu()); ::CheckMenuItem(m_hMenu, uIDItem, (fCheck ? MF_CHECKED : MF_UNCHECKED) |
-				(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
-		}
 		void CreatePopupMenu() { Attach(::CreatePopupMenu()); }
 		void DestroyMenu() { assert(IsMenu()); ::DestroyMenu(m_hMenu); m_hMenu = nullptr; }
 		void Detach() { m_hMenu = nullptr; }
-		void EnableMenuItem(UINT uIDItem, bool fEnable, bool fByID = true)const {
+		void EnableItem(UINT uIDItem, bool fEnable, bool fByID = true)const {
 			assert(IsMenu()); ::EnableMenuItem(m_hMenu, uIDItem, (fEnable ? MF_ENABLED : MF_GRAYED) |
 				(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
 		}
-		[[nodiscard]] int GetMenuItemCount()const {
-			assert(IsMenu()); return ::GetMenuItemCount(m_hMenu);
+		[[nodiscard]] auto GetHMENU()const->HMENU { return m_hMenu; }
+		[[nodiscard]] auto GetItemBitmap(UINT uID, bool fByID = true)const->HBITMAP {
+			return GetItemInfo(uID, MIIM_BITMAP, fByID).hbmpItem;
 		}
-		[[nodiscard]] auto GetMenuItemID(int iPos)const->UINT {
+		[[nodiscard]] auto GetItemBitmapCheck(UINT uID, bool fByID = true)const->HBITMAP {
+			return GetItemInfo(uID, MIIM_CHECKMARKS, fByID).hbmpChecked;
+		}
+		[[nodiscard]] auto GetItemID(int iPos)const->UINT {
 			assert(IsMenu()); return ::GetMenuItemID(m_hMenu, iPos);
 		}
-		bool GetMenuItemInfoW(UINT uID, LPMENUITEMINFOW pMII, bool fByID = true)const {
+		bool GetItemInfo(UINT uID, LPMENUITEMINFOW pMII, bool fByID = true)const {
 			assert(IsMenu()); return ::GetMenuItemInfoW(m_hMenu, uID, !fByID, pMII) != FALSE;
 		}
-		[[nodiscard]] auto GetMenuState(UINT uID, bool fByID = true)const->UINT {
+		[[nodiscard]] auto GetItemInfo(UINT uID, UINT uMask, bool fByID = true)const->MENUITEMINFOW {
+			MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { uMask } };
+			GetItemInfo(uID, &mii, fByID); return mii;
+		}
+		[[nodiscard]] auto GetItemState(UINT uID, bool fByID = true)const->UINT {
 			assert(IsMenu()); return ::GetMenuState(m_hMenu, uID, fByID ? MF_BYCOMMAND : MF_BYPOSITION);
 		}
-		[[nodiscard]] auto GetMenuWstr(UINT uID, bool fByID = true)const->std::wstring {
-			assert(IsMenu()); wchar_t buff[128];
-			MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_STRING },
-				.dwTypeData { buff }, .cch { 128 } };
-			const auto ret = GetMenuItemInfoW(uID, &mii, fByID); return ret ? buff : std::wstring { };
+		[[nodiscard]] auto GetItemType(UINT uID, bool fByID = true)const->UINT {
+			return GetItemInfo(uID, MIIM_FTYPE, fByID).fType;
 		}
-		[[nodiscard]] auto GetHMENU()const->HMENU { return m_hMenu; }
+		[[nodiscard]] auto GetItemWstr(UINT uID, bool fByID = true)const->std::wstring {
+			wchar_t buff[128]; MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_STRING },
+				.dwTypeData { buff }, .cch { 128 } }; return GetItemInfo(uID, &mii, fByID) ? buff : std::wstring { };
+		}
+		[[nodiscard]] int GetItemsCount()const {
+			assert(IsMenu()); return ::GetMenuItemCount(m_hMenu);
+		}
 		[[nodiscard]] auto GetSubMenu(int iPos)const -> CMenu { assert(IsMenu()); return ::GetSubMenu(m_hMenu, iPos); };
-		[[nodiscard]] bool IsChecked(UINT uIDItem, bool fByID = true)const {
-			return GetMenuState(uIDItem, fByID ? MF_BYCOMMAND : MF_BYPOSITION) & MF_CHECKED;
+		[[nodiscard]] bool IsItemChecked(UINT uIDItem, bool fByID = true)const {
+			return GetItemState(uIDItem, fByID) & MF_CHECKED;
 		}
+		[[nodiscard]] bool IsItemSepar(UINT uPos)const { return GetItemState(uPos, false) & MF_SEPARATOR; }
 		[[nodiscard]] bool IsMenu()const { return ::IsMenu(m_hMenu); }
 		bool LoadMenuW(HINSTANCE hInst, LPCWSTR pwszName) { m_hMenu = ::LoadMenuW(hInst, pwszName); return IsMenu(); }
-		void SetMenuItemInfoW(UINT uItem, LPCMENUITEMINFO pMII, bool fByID = true)const {
+		bool LoadMenuW(HINSTANCE hInst, UINT uMenuID) { return LoadMenuW(hInst, MAKEINTRESOURCEW(uMenuID)); }
+		void SetItemBitmap(UINT uItem, HBITMAP hBmp, bool fByID = true)const {
+			const MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_BITMAP }, .hbmpItem { hBmp } };
+			SetItemInfo(uItem, &mii, fByID);
+		}
+		void SetItemBitmapCheck(UINT uItem, HBITMAP hBmp, bool fByID = true)const {
+			::SetMenuItemBitmaps(m_hMenu, uItem, fByID ? MF_BYCOMMAND : MF_BYPOSITION, nullptr, hBmp);
+		}
+		void SetItemCheck(UINT uIDItem, bool fCheck, bool fByID = true)const {
+			assert(IsMenu()); ::CheckMenuItem(m_hMenu, uIDItem, (fCheck ? MF_CHECKED : MF_UNCHECKED) |
+				(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
+		}
+		void SetItemData(UINT uItem, ULONG_PTR dwData, bool fByID = true)const {
+			const MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_DATA }, .dwItemData { dwData } };
+			SetItemInfo(uItem, &mii, fByID);
+		}
+		void SetItemInfo(UINT uItem, LPCMENUITEMINFO pMII, bool fByID = true)const {
 			assert(IsMenu()); ::SetMenuItemInfoW(m_hMenu, uItem, !fByID, pMII);
 		}
-		void TrackPopupMenu(int iX, int iY, HWND hWndOwner, UINT uFlags = TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON)const {
-			assert(IsMenu()); ::TrackPopupMenuEx(m_hMenu, uFlags, iX, iY, hWndOwner, nullptr);
+		void SetItemType(UINT uItem, UINT uType, bool fByID = true)const {
+			const MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_FTYPE }, .fType { uType } };
+			SetItemInfo(uItem, &mii, fByID);
+		}
+		void SetItemWstr(UINT uItem, const std::wstring& wstr, bool fByID = true)const {
+			const MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_STRING },
+				.dwTypeData { const_cast<LPWSTR>(wstr.data()) } };
+			SetItemInfo(uItem, &mii, fByID);
+		}
+		BOOL TrackPopupMenu(int iX, int iY, HWND hWndOwner, UINT uFlags = TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON)const {
+			assert(IsMenu()); return ::TrackPopupMenuEx(m_hMenu, uFlags, iX, iY, hWndOwner, nullptr);
 		}
 	private:
 		HMENU m_hMenu { }; //Windows menu handle.

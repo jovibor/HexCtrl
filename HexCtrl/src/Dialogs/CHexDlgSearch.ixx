@@ -1353,9 +1353,9 @@ void CHexDlgSearch::OnNotifyListItemChanged(NMHDR* pNMHDR)
 void CHexDlgSearch::OnNotifyListRClick(NMHDR* /*pNMHDR*/)
 {
 	const auto fEnabled { m_ListEx.GetItemCount() > 0 };
-	m_MenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_SEARCH_ADDBKM), fEnabled);
-	m_MenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_SEARCH_SELECTALL), fEnabled);
-	m_MenuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_SEARCH_CLEARALL), fEnabled);
+	m_MenuList.EnableItem(static_cast<UINT>(EMenuID::IDM_SEARCH_ADDBKM), fEnabled);
+	m_MenuList.EnableItem(static_cast<UINT>(EMenuID::IDM_SEARCH_SELECTALL), fEnabled);
+	m_MenuList.EnableItem(static_cast<UINT>(EMenuID::IDM_SEARCH_CLEARALL), fEnabled);
 
 	POINT pt;
 	::GetCursorPos(&pt);

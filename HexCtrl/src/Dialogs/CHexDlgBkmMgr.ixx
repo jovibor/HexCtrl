@@ -734,8 +734,8 @@ void CHexDlgBkmMgr::OnNotifyListRClick(NMHDR* pNMHDR)
 	}
 
 	//Edit menu enabled only when one item selected.
-	m_menuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVE), fEnabled);
-	m_menuList.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVEALL), m_ListEx.GetItemCount() > 0);
+	m_menuList.EnableItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVE), fEnabled);
+	m_menuList.EnableItem(static_cast<UINT>(EMenuID::IDM_BKMMGR_REMOVEALL), m_ListEx.GetItemCount() > 0);
 
 	POINT pt;
 	::GetCursorPos(&pt);

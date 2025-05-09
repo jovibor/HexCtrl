@@ -785,9 +785,9 @@ auto CHexDlgTemplMgr::OnCommand(const MSG& msg)->INT_PTR
 		case IDM_LIST_HDR_DESCRIPTION:
 		case IDM_LIST_HDR_COLORS:
 		{
-			const auto fChecked = m_MenuHdr.IsChecked(uCtrlID);
+			const auto fChecked = m_MenuHdr.IsItemChecked(uCtrlID);
 			m_ListEx.HideColumn(uCtrlID - static_cast<int>(IDM_LIST_HDR_TYPE), fChecked);
-			m_MenuHdr.CheckMenuItem(uCtrlID, !fChecked);
+			m_MenuHdr.SetItemCheck(uCtrlID, !fChecked);
 		}
 		break;
 		default: return FALSE;
@@ -865,21 +865,21 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	using enum EMenuID;
 	m_MenuHdr.CreatePopupMenu();
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_TYPE), L"Type");
-	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_TYPE), true);
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_TYPE), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_NAME), L"Name");
-	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_NAME), true);
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_NAME), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_OFFSET), L"Offset");
-	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_OFFSET), true);
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_OFFSET), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_SIZE), L"Size");
-	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_SIZE), true);
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_SIZE), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_DATA), L"Data");
-	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_DATA), true);
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_DATA), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_ENDIANNESS), L"Endianness");
-	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_ENDIANNESS), true);
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_ENDIANNESS), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_DESCRIPTION), L"Description");
-	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_DESCRIPTION), true);
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_DESCRIPTION), true);
 	m_MenuHdr.AppendString(static_cast<int>(IDM_LIST_HDR_COLORS), L"Colors");
-	m_MenuHdr.CheckMenuItem(static_cast<int>(IDM_LIST_HDR_COLORS), true);
+	m_MenuHdr.SetItemCheck(static_cast<int>(IDM_LIST_HDR_COLORS), true);
 
 	m_MenuTree.CreatePopupMenu();
 	m_MenuTree.AppendString(static_cast<UINT_PTR>(IDM_TREE_DISAPPLY), L"Disapply template");
@@ -909,8 +909,10 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	}
 
 	const auto hDC = m_WndBtnMin.GetDC();
-	m_hBmpMin = ut::CreateArrowBitmap(hDC, m_WndBtnMin.GetWindowRect(), 1, RGB(241, 241, 241), RGB(110, 110, 110));
-	m_hBmpMax = ut::CreateArrowBitmap(hDC, m_WndBtnMin.GetWindowRect(), -1, RGB(241, 241, 241), RGB(110, 110, 110));
+	m_hBmpMin = ut::CreateArrowBitmap(hDC, m_WndBtnMin.GetWindowRect(), 1, ::GetSysColor(COLOR_3DFACE),
+		::GetSysColor(COLOR_GRAYTEXT));
+	m_hBmpMax = ut::CreateArrowBitmap(hDC, m_WndBtnMin.GetWindowRect(), -1, ::GetSysColor(COLOR_3DFACE),
+		::GetSysColor(COLOR_GRAYTEXT));
 	m_WndBtnMin.ReleaseDC(hDC);
 	m_WndBtnMin.SetBitmap(m_hBmpMin); //Set the min arrow bitmap to the min-max checkbox.
 
@@ -1522,8 +1524,8 @@ void CHexDlgTemplMgr::OnNotifyTreeRClick(NMHDR* /*pNMHDR*/)
 		m_WndTree.SelectItem(hTreeItem);
 	}
 
-	m_MenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLY), fHasApplied && fHitTest);
-	m_MenuTree.EnableMenuItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLYALL), fHasApplied);
+	m_MenuTree.EnableItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLY), fHasApplied && fHitTest);
+	m_MenuTree.EnableItem(static_cast<UINT>(EMenuID::IDM_TREE_DISAPPLYALL), fHasApplied);
 	m_MenuTree.TrackPopupMenu(pt.x, pt.y, m_Wnd);
 }
 
