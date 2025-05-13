@@ -46,13 +46,13 @@ namespace HEXCTRL::INTERNAL {
 		void SetControlsState();
 		void UpdateDescr();
 	private:
-		wnd::CWnd m_Wnd;                //Main window.
-		wnd::CWnd m_WndStatDescr;       //Static control description.
-		wnd::CWndEdit m_WndEditOperand; //Edit-box operand.
-		wnd::CWndBtn m_WndBtnBE;        //Check-box bigendian.
-		wnd::CWndBtn m_WndBtnOk;        //Ok.
-		wnd::CWndCombo m_WndCmbOper;    //Operation combo-box.
-		wnd::CWndCombo m_WndCmbType;    //Data size combo-box.
+		gui::CWnd m_Wnd;                //Main window.
+		gui::CWnd m_WndStatDescr;       //Static control description.
+		gui::CWndEdit m_WndEditOperand; //Edit-box operand.
+		gui::CWndBtn m_WndBtnBE;        //Check-box bigendian.
+		gui::CWndBtn m_WndBtnOk;        //Ok.
+		gui::CWndCombo m_WndCmbOper;    //Operation combo-box.
+		gui::CWndCombo m_WndCmbType;    //Data size combo-box.
 		std::vector<std::byte> m_vecOperData; //Operand data vector.
 		IHexCtrl* m_pHexCtrl { };
 		std::uint64_t m_u64Flags { };
@@ -76,7 +76,7 @@ void CHexDlgOpers::CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE hIns
 
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_OPERS),
-		hWndParent, wnd::DlgProc<CHexDlgOpers>, reinterpret_cast<LPARAM>(this)); hWnd == nullptr) {
+		hWndParent, gui::DlgProc<CHexDlgOpers>, reinterpret_cast<LPARAM>(this)); hWnd == nullptr) {
 		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
 
@@ -98,7 +98,7 @@ auto CHexDlgOpers::OnActivate(const MSG& msg)->INT_PTR
 		const auto fSel { m_pHexCtrl->HasSelection() };
 		m_Wnd.CheckRadioButton(IDC_HEXCTRL_OPERS_RAD_ALL, IDC_HEXCTRL_OPERS_RAD_SEL,
 			fSel ? IDC_HEXCTRL_OPERS_RAD_SEL : IDC_HEXCTRL_OPERS_RAD_ALL);
-		wnd::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_OPERS_RAD_SEL)).EnableWindow(fSel);
+		gui::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_OPERS_RAD_SEL)).EnableWindow(fSel);
 	}
 
 	return FALSE; //Default handler.
@@ -577,10 +577,10 @@ namespace HEXCTRL::INTERNAL {
 		void OnOK();
 		void SetControlsState();
 	private:
-		wnd::CWnd m_Wnd;             //Main window.
-		wnd::CWndBtn m_WndBtnOk;     //Ok.
-		wnd::CWndCombo m_WndCmbType; //Fill type combo-box.
-		wnd::CWndCombo m_WndCmbData; //Data combo-box.
+		gui::CWnd m_Wnd;             //Main window.
+		gui::CWndBtn m_WndBtnOk;     //Ok.
+		gui::CWndCombo m_WndCmbType; //Fill type combo-box.
+		gui::CWndCombo m_WndCmbData; //Data combo-box.
 		std::vector<std::byte> m_vecFillData; //Fill data vector.
 		IHexCtrl* m_pHexCtrl { };
 		std::uint64_t m_u64Flags { };
@@ -600,7 +600,7 @@ void CHexDlgFillData::CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE h
 
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_FILLDATA),
-		hWndParent, wnd::DlgProc<CHexDlgFillData>, reinterpret_cast<LPARAM>(this)); hWnd == nullptr) {
+		hWndParent, gui::DlgProc<CHexDlgFillData>, reinterpret_cast<LPARAM>(this)); hWnd == nullptr) {
 		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
 
@@ -633,7 +633,7 @@ auto CHexDlgFillData::OnActivate(const MSG& msg)->INT_PTR
 		const auto fSelection { m_pHexCtrl->HasSelection() };
 		m_Wnd.CheckRadioButton(IDC_HEXCTRL_FILLDATA_RAD_ALL, IDC_HEXCTRL_FILLDATA_RAD_SEL,
 			fSelection ? IDC_HEXCTRL_FILLDATA_RAD_SEL : IDC_HEXCTRL_FILLDATA_RAD_ALL);
-		wnd::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_FILLDATA_RAD_SEL)).EnableWindow(fSelection);
+		gui::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_FILLDATA_RAD_SEL)).EnableWindow(fSelection);
 	}
 
 	return FALSE; //Default handler.
@@ -866,8 +866,8 @@ namespace HEXCTRL::INTERNAL {
 		void SetCurrentTab(int iTab);
 	private:
 		HINSTANCE m_hInstRes { };
-		wnd::CWnd m_Wnd;               //Main window.
-		wnd::CWndTab m_WndTab;         //Tab control.
+		gui::CWnd m_Wnd;               //Main window.
+		gui::CWndTab m_WndTab;         //Tab control.
 		CHexDlgOpers m_dlgOpers;       //"Operations" tab dialog.
 		CHexDlgFillData m_dlgFillData; //"Fill with" tab dialog.
 		IHexCtrl* m_pHexCtrl { };
@@ -882,7 +882,7 @@ void CHexDlgModify::CreateDlg()
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_MODIFY),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgModify>, reinterpret_cast<LPARAM>(this));
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), gui::DlgProc<CHexDlgModify>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}

@@ -104,10 +104,10 @@ namespace HEXCTRL::INTERNAL {
 		void ShowValueUTF16(SpanCByte spn);
 	private:
 		HINSTANCE m_hInstRes { };
-		wnd::CWnd m_Wnd;              //Main window.
-		wnd::CWndBtn m_WndBtnHex;     //Check-box "Hex numbers".
-		wnd::CWndBtn m_WndBtnBE;      //Check-box "Big endian".
-		wnd::CDynLayout m_DynLayout;
+		gui::CWnd m_Wnd;              //Main window.
+		gui::CWndBtn m_WndBtnHex;     //Check-box "Hex numbers".
+		gui::CWndBtn m_WndBtnBE;      //Check-box "Big endian".
+		gui::CDynLayout m_DynLayout;
 		LISTEX::CListEx m_ListEx;
 		std::vector<LISTDATA> m_vecData;
 		IHexCtrl* m_pHexCtrl { };
@@ -182,7 +182,7 @@ void CHexDlgDataInterp::CreateDlg()
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_DATAINTERP),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgDataInterp>, reinterpret_cast<LPARAM>(this));
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), gui::DlgProc<CHexDlgDataInterp>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
@@ -483,9 +483,9 @@ auto CHexDlgDataInterp::OnInitDialog(const MSG& msg)->INT_PTR
 	m_ListEx.SetItemCountEx(static_cast<int>(m_vecData.size()), LVSICF_NOSCROLL);
 
 	m_DynLayout.SetHost(m_Wnd);
-	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_LIST, wnd::CDynLayout::MoveNone(), wnd::CDynLayout::SizeHorzAndVert(100, 100));
-	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX, wnd::CDynLayout::MoveVert(100), wnd::CDynLayout::SizeNone());
-	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_CHK_BE, wnd::CDynLayout::MoveVert(100), wnd::CDynLayout::SizeNone());
+	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_LIST, gui::CDynLayout::MoveNone(), gui::CDynLayout::SizeHorzAndVert(100, 100));
+	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_CHK_HEX, gui::CDynLayout::MoveVert(100), gui::CDynLayout::SizeNone());
+	m_DynLayout.AddItem(IDC_HEXCTRL_DATAINTERP_CHK_BE, gui::CDynLayout::MoveVert(100), gui::CDynLayout::SizeNone());
 	m_DynLayout.Enable(true);
 
 	return TRUE;
@@ -532,7 +532,7 @@ void CHexDlgDataInterp::OnNotifyListEditBegin(NMHDR* pNMHDR)
 	const auto pField = GetListData(iItem);
 	pLDI->fAllowEdit = m_pHexCtrl->IsDataSet() ? pField->fAllowEdit : false;
 	if (pLDI->fAllowEdit && (pField->eName == EName::NAME_UTF8 || pField->eName == EName::NAME_UTF16)) {
-		wnd::CWndEdit(pLDI->hWndEdit).SetCueBanner(L"Enter Unicode character:", true);
+		gui::CWndEdit(pLDI->hWndEdit).SetCueBanner(L"Enter Unicode character:", true);
 		if (const auto u = pField->wstrValue.find_first_of(L" U+"); u != std::wstring::npos) {
 			pLDI->pwszData[u] = 0; //Null terminating the buffer to not show "U+" part in the edit box.
 		}

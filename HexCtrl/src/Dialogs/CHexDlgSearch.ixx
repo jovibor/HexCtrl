@@ -180,23 +180,23 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr std::byte m_uWildcard { '?' }; //Wildcard symbol.
 		static constexpr auto m_pwszWrongInput { L"Wrong input data." };
 		HINSTANCE m_hInstRes { };
-		wnd::CWnd m_Wnd;                 //Main window.
-		wnd::CWnd m_WndStatResult;       //Static text "Result:".
-		wnd::CWndCombo m_WndCmbFind;     //Combo box "Search".
-		wnd::CWndCombo m_WndCmbReplace;  //Combo box "Replace".
-		wnd::CWndCombo m_WndCmbMode;     //Combo box "Search mode".
-		wnd::CWndCombo m_WndCmbType;     //Combo box "Search type".
-		wnd::CWndBtn m_WndBtnSel;        //Check box "In selection".
-		wnd::CWndBtn m_WndBtnWC;         //Check box "Wildcard".
-		wnd::CWndBtn m_WndBtnInv;        //Check box "Inverted".
-		wnd::CWndBtn m_WndBtnBE;         //Check box "Big-endian".
-		wnd::CWndBtn m_WndBtnMC;         //Check box "Match case".
-		wnd::CWndEdit m_WndEditStart;    //Edit box "Start from".
-		wnd::CWndEdit m_WndEditStep;     //Edit box "Step".
-		wnd::CWndEdit m_WndEditRngBegin; //Edit box "Range begin".
-		wnd::CWndEdit m_WndEditRngEnd;   //Edit box "Range end".
-		wnd::CWndEdit m_WndEditLimit;    //Edit box "Limit search hits".
-		wnd::CMenu m_MenuList;           //Menu for the list control.
+		gui::CWnd m_Wnd;                 //Main window.
+		gui::CWnd m_WndStatResult;       //Static text "Result:".
+		gui::CWndCombo m_WndCmbFind;     //Combo box "Search".
+		gui::CWndCombo m_WndCmbReplace;  //Combo box "Replace".
+		gui::CWndCombo m_WndCmbMode;     //Combo box "Search mode".
+		gui::CWndCombo m_WndCmbType;     //Combo box "Search type".
+		gui::CWndBtn m_WndBtnSel;        //Check box "In selection".
+		gui::CWndBtn m_WndBtnWC;         //Check box "Wildcard".
+		gui::CWndBtn m_WndBtnInv;        //Check box "Inverted".
+		gui::CWndBtn m_WndBtnBE;         //Check box "Big-endian".
+		gui::CWndBtn m_WndBtnMC;         //Check box "Match case".
+		gui::CWndEdit m_WndEditStart;    //Edit box "Start from".
+		gui::CWndEdit m_WndEditStep;     //Edit box "Step".
+		gui::CWndEdit m_WndEditRngBegin; //Edit box "Range begin".
+		gui::CWndEdit m_WndEditRngEnd;   //Edit box "Range end".
+		gui::CWndEdit m_WndEditLimit;    //Edit box "Limit search hits".
+		gui::CMenu m_MenuList;           //Menu for the list control.
 		LISTEX::CListEx m_ListEx;
 		VecSearchResult m_vecSearchRes; //Search results.
 		std::vector<std::byte> m_vecSearchData;  //Data to search for.
@@ -274,7 +274,7 @@ void CHexDlgSearch::CreateDlg()
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_SEARCH),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgSearch>, reinterpret_cast<LPARAM>(this));
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), gui::DlgProc<CHexDlgSearch>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
@@ -2003,11 +2003,11 @@ void CHexDlgSearch::SetControlsState()
 	const auto fReplaceEnabled = fMutable && fSearchEnabled && !m_WndCmbReplace.IsWndTextEmpty();
 
 	m_WndCmbReplace.EnableWindow(fMutable);
-	wnd::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCHF)).EnableWindow(fSearchEnabled);
-	wnd::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCHB)).EnableWindow(fSearchEnabled);
-	wnd::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_FINDALL)).EnableWindow(fSearchEnabled);
-	wnd::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPL)).EnableWindow(fReplaceEnabled);
-	wnd::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLALL)).EnableWindow(fReplaceEnabled);
+	gui::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCHF)).EnableWindow(fSearchEnabled);
+	gui::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_SEARCHB)).EnableWindow(fSearchEnabled);
+	gui::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_FINDALL)).EnableWindow(fSearchEnabled);
+	gui::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPL)).EnableWindow(fReplaceEnabled);
+	gui::CWnd::FromHandle(m_Wnd.GetDlgItem(IDC_HEXCTRL_SEARCH_BTN_REPLALL)).EnableWindow(fReplaceEnabled);
 }
 
 void CHexDlgSearch::SetEditStartFrom(ULONGLONG ullOffset)

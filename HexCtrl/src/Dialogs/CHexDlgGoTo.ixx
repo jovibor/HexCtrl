@@ -44,8 +44,8 @@ namespace HEXCTRL::INTERNAL {
 		void UpdateComboMode();
 	private:
 		HINSTANCE m_hInstRes { };
-		wnd::CWnd m_Wnd;
-		wnd::CWndCombo m_WndCmbMode;
+		gui::CWnd m_Wnd;
+		gui::CWndCombo m_WndCmbMode;
 		IHexCtrl* m_pHexCtrl { };
 		std::uint64_t m_u64Flags { }; //Data from SetDlgProperties.
 		bool m_fRepeat { false };     //Is repeat available.
@@ -63,7 +63,7 @@ void CHexDlgGoTo::CreateDlg()
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_GOTO),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgGoTo>, reinterpret_cast<LPARAM>(this));
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), gui::DlgProc<CHexDlgGoTo>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
@@ -160,7 +160,7 @@ void CHexDlgGoTo::GoTo(bool fForward)
 		return;
 	}
 
-	wnd::CWnd wndEdit(m_Wnd.GetDlgItem(IDC_HEXCTRL_GOTO_EDIT_GOTO));
+	gui::CWnd wndEdit(m_Wnd.GetDlgItem(IDC_HEXCTRL_GOTO_EDIT_GOTO));
 	if (wndEdit.IsWndTextEmpty()) {
 		wndEdit.SetFocus();
 		return;

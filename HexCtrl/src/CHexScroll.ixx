@@ -64,21 +64,21 @@ namespace HEXCTRL::INTERNAL {
 		void DrawScrollBar()const;     //Draw the whole Scrollbar.
 		void DrawArrows(HDC hDC)const; //Draw arrows.
 		void DrawThumb(HDC hDC)const;  //Draw the Scroll thumb.
-		[[nodiscard]] auto GetParent()const->wnd::CWnd;
-		[[nodiscard]] auto GetScrollRect(bool fWithNCArea = false)const->wnd::CRect;          //Scroll's whole rect.
-		[[nodiscard]] auto GetScrollWorkAreaRect(bool fClientCoord = false)const->wnd::CRect; //Rect without arrows.
+		[[nodiscard]] auto GetParent()const->gui::CWnd;
+		[[nodiscard]] auto GetScrollRect(bool fWithNCArea = false)const->gui::CRect;          //Scroll's whole rect.
+		[[nodiscard]] auto GetScrollWorkAreaRect(bool fClientCoord = false)const->gui::CRect; //Rect without arrows.
 		[[nodiscard]] auto GetScrollSizeWH()const->UINT;                                 //Scroll size in pixels, width or height.
 		[[nodiscard]] auto GetScrollWorkAreaSizeWH()const->UINT;                         //Scroll size (WH) without arrows.
-		[[nodiscard]] auto GetThumbRect(bool fClientCoord = false)const->wnd::CRect;
+		[[nodiscard]] auto GetThumbRect(bool fClientCoord = false)const->gui::CRect;
 		[[nodiscard]] auto GetThumbSizeWH()const->UINT;
 		[[nodiscard]] int GetThumbPos()const;                                      //Current Thumb pos.
 		void SetThumbPos(int iPos);
 		[[nodiscard]] auto GetThumbScrollingSize()const->double;
-		[[nodiscard]] auto GetFirstArrowRect(bool fClientCoord = false)const->wnd::CRect;
-		[[nodiscard]] auto GetLastArrowRect(bool fClientCoord = false)const->wnd::CRect;
-		[[nodiscard]] auto GetFirstChannelRect(bool fClientCoord = false)const->wnd::CRect;
-		[[nodiscard]] auto GetLastChannelRect(bool fClientCoord = false)const->wnd::CRect;
-		[[nodiscard]] auto GetParentRect(bool fClient = true)const->wnd::CRect;
+		[[nodiscard]] auto GetFirstArrowRect(bool fClientCoord = false)const->gui::CRect;
+		[[nodiscard]] auto GetLastArrowRect(bool fClientCoord = false)const->gui::CRect;
+		[[nodiscard]] auto GetFirstChannelRect(bool fClientCoord = false)const->gui::CRect;
+		[[nodiscard]] auto GetLastChannelRect(bool fClientCoord = false)const->gui::CRect;
+		[[nodiscard]] auto GetParentRect(bool fClient = true)const->gui::CRect;
 		[[nodiscard]] int GetTopDelta()const;       //Difference between parent window's Window and Client area. Very important in hit testing.
 		[[nodiscard]] int GetLeftDelta()const;
 		[[nodiscard]] bool IsVert()const;           //Is vertical or horizontal scrollbar.
@@ -91,8 +91,8 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		enum class EState : std::uint8_t;
 		enum class ETimer : std::uint16_t;
-		wnd::CWnd m_Wnd;              //Main window.
-		wnd::CWnd m_WndParent;        //Parent window.
+		gui::CWnd m_Wnd;              //Main window.
+		gui::CWnd m_WndParent;        //Parent window.
 		CHexScroll* m_pSibling { };   //Sibling scrollbar, added with AddSibling.
 		HBITMAP m_hBmpArrowFirst { }; //Up or Left arrow bitmap.
 		HBITMAP m_hBmpArrowLast { };  //Down or Right arrow bitmap.
@@ -102,11 +102,10 @@ namespace HEXCTRL::INTERNAL {
 		ULONGLONG m_ullLine { };      //Size of one line scroll, when clicking arrow.
 		ULONGLONG m_ullPage { };      //Size of page scroll, when clicking channel.
 		ULONGLONG m_ullSizeMax { };   //Maximum scroll size (limit).
-		UINT m_uiBarSizeWH { };       //Scrollbar size (width if vertical, height if horz).
-		int m_iArrowRCSizePx { };     //Arrow bitmap side size (it's a square) in pixels.
-		COLORREF m_clrBar;            //Scroll bar color.
-		COLORREF m_clrThumb;          //Scroll thumb color.
-		COLORREF m_clrArrow;          //Scroll arrow color.
+		DWORD m_dwBarSizeWH { };      //Scrollbar size (width if vertical, height if horz).
+		COLORREF m_clrBar { };        //Scroll bar color.
+		COLORREF m_clrThumb { };      //Scroll thumb color.
+		COLORREF m_clrArrow { };      //Scroll arrow color.
 		EState m_eState { };          //Current state.
 		bool m_fCreated { false };    //Main creation flag.
 		bool m_fVisible { false };    //Is visible at the moment or not.
@@ -148,7 +147,7 @@ bool CHexScroll::Create(HWND hWndParent, bool fVert, COLORREF clrBar, COLORREF c
 	if (WNDCLASSEXW wc { }; ::GetClassInfoExW(nullptr, pwszScrollClassName, &wc) == FALSE) {
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_GLOBALCLASS;
-		wc.lpfnWndProc = wnd::WndProc<CHexScroll>;
+		wc.lpfnWndProc = gui::WndProc<CHexScroll>;
 		wc.lpszClassName = pwszScrollClassName;
 		if (::RegisterClassExW(&wc) == 0) {
 			ut::DBG_REPORT(L"RegisterClassExW failed.");
@@ -164,7 +163,7 @@ bool CHexScroll::Create(HWND hWndParent, bool fVert, COLORREF clrBar, COLORREF c
 
 	m_fVert = fVert;
 	m_WndParent.Attach(hWndParent);
-	m_uiBarSizeWH = ::GetSystemMetrics(fVert ? SM_CXVSCROLL : SM_CXHSCROLL);
+	m_dwBarSizeWH = ::GetSystemMetrics(fVert ? SM_CXVSCROLL : SM_CXHSCROLL);
 	m_clrBar = clrBar;
 	m_clrThumb = clrThumb;
 	m_clrArrow = clrArrow;
@@ -315,10 +314,10 @@ void CHexScroll::OnNCCalcSize(NCCALCSIZE_PARAMS* pCSP)
 		return;
 	}
 
-	const wnd::CRect rc = pCSP->rgrc[0];
+	const gui::CRect rc = pCSP->rgrc[0];
 	const auto ullCurPos = GetScrollPos();
 	if (IsVert()) {
-		const UINT uiHeight { IsSiblingVisible() ? rc.Height() - m_uiBarSizeWH : rc.Height() };
+		const UINT uiHeight { IsSiblingVisible() ? rc.Height() - m_dwBarSizeWH : rc.Height() };
 		if (uiHeight < m_ullSizeMax) {
 			m_fVisible = true;
 			if (ullCurPos + uiHeight > m_ullSizeMax) {
@@ -327,7 +326,7 @@ void CHexScroll::OnNCCalcSize(NCCALCSIZE_PARAMS* pCSP)
 			else {
 				DrawScrollBar();
 			}
-			pCSP->rgrc[0].right -= m_uiBarSizeWH;
+			pCSP->rgrc[0].right -= m_dwBarSizeWH;
 		}
 		else {
 			SetScrollPos(0);
@@ -335,7 +334,7 @@ void CHexScroll::OnNCCalcSize(NCCALCSIZE_PARAMS* pCSP)
 		}
 	}
 	else {
-		const UINT uiWidth { IsSiblingVisible() ? rc.Width() - m_uiBarSizeWH : rc.Width() };
+		const UINT uiWidth { IsSiblingVisible() ? rc.Width() - m_dwBarSizeWH : rc.Width() };
 		if (uiWidth < m_ullSizeMax) {
 			m_fVisible = true;
 			if (ullCurPos + uiWidth > m_ullSizeMax) {
@@ -344,7 +343,7 @@ void CHexScroll::OnNCCalcSize(NCCALCSIZE_PARAMS* pCSP)
 			else {
 				DrawScrollBar();
 			}
-			pCSP->rgrc[0].bottom -= m_uiBarSizeWH;
+			pCSP->rgrc[0].bottom -= m_dwBarSizeWH;
 		}
 		else {
 			SetScrollPos(0);
@@ -378,7 +377,7 @@ void CHexScroll::OnSetCursor(UINT uHitTest, UINT uMsg)
 	switch (uMsg) {
 	case WM_LBUTTONDOWN:
 	{
-		static constexpr auto uTimerFirstClick { 200U }; //Milliseconds for WM_TIMER for first channel click.
+		constexpr auto uTimerFirstClick { 200U }; //Milliseconds for WM_TIMER for first channel click.
 		using enum EState; using enum ETimer;
 		POINT pt;
 		::GetCursorPos(&pt);
@@ -427,7 +426,7 @@ auto CHexScroll::ProcessMsg(const MSG& msg)->LRESULT
 	switch (msg.message) {
 	case WM_DESTROY: return OnDestroy(msg);
 	case WM_TIMER: return OnTimer(msg);
-	default: return wnd::DefWndProc(msg);
+	default: return gui::DefWndProc(msg);
 	}
 }
 
@@ -607,11 +606,9 @@ void CHexScroll::CreateArrows()
 	::DeleteObject(m_hBmpArrowLast);
 	const auto wndParent = GetParent();
 	const auto hDC = wndParent.GetWindowDC();
-	const wnd::CRect rcArrow(0, 0, 34, 34); //Arrow rect.
-	m_hBmpArrowFirst = ut::CreateArrowBitmap(hDC, rcArrow, m_fVert ? 1 : -2, m_clrBar, m_clrArrow);
-	m_hBmpArrowLast = ut::CreateArrowBitmap(hDC, rcArrow, m_fVert ? -1 : 2, m_clrBar, m_clrArrow);
+	m_hBmpArrowFirst = gui::CreateArrowBitmap(hDC, m_dwBarSizeWH, m_dwBarSizeWH, m_fVert ? 1 : -2, m_clrBar, m_clrArrow);
+	m_hBmpArrowLast = gui::CreateArrowBitmap(hDC, m_dwBarSizeWH, m_dwBarSizeWH, m_fVert ? -1 : 2, m_clrBar, m_clrArrow);
 	wndParent.ReleaseDC(hDC);
-	m_iArrowRCSizePx = rcArrow.Width();
 }
 
 void CHexScroll::DrawScrollBar()const
@@ -622,7 +619,7 @@ void CHexScroll::DrawScrollBar()const
 
 	const auto wndParent = GetParent();
 	const auto hDCParent = wndParent.GetWindowDC();
-	const wnd::CDC dcMem = ::CreateCompatibleDC(hDCParent);
+	const gui::CDC dcMem = ::CreateCompatibleDC(hDCParent);
 	const auto rcWnd = GetParentRect(false);
 	const auto hBMP = ::CreateCompatibleBitmap(hDCParent, rcWnd.Width(), rcWnd.Height());
 	dcMem.SelectObject(hBMP);
@@ -645,53 +642,30 @@ void CHexScroll::DrawArrows(HDC hDC)const
 	const auto rcScroll = GetScrollRect();
 	const auto iFirstBtnOffsetDrawX = rcScroll.left;
 	const auto iFirstBtnOffsetDrawY = rcScroll.top;
-	int iFirstBtnWH;
-	int iLastBtnWH;
-	int iLastBtnOffsetDrawX;
-	int iLastBtnOffsetDrawY;
-
-	if (IsVert()) {
-		iFirstBtnWH = iLastBtnWH = rcScroll.Width();
-		iLastBtnOffsetDrawX = rcScroll.left;
-		iLastBtnOffsetDrawY = rcScroll.bottom - rcScroll.Width();
-	}
-	else {
-		iFirstBtnWH = iLastBtnWH = rcScroll.Height();
-		iLastBtnOffsetDrawX = rcScroll.right - rcScroll.Height();
-		iLastBtnOffsetDrawY = rcScroll.top;
-	}
-
-	::SetStretchBltMode(hDC, HALFTONE); //To stretch bmp at max quality, without artifacts.
-
-	//https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setstretchbltmode
-	//After setting the HALFTONE stretching mode, an application must call the Win32 function
-	//SetBrushOrgEx to set the brush origin. If it fails to do so, brush misalignment occurs.
-	::SetBrushOrgEx(hDC, 0, 0, nullptr);
-
-	const auto hDCSource = ::CreateCompatibleDC(hDC);
-	::SelectObject(hDCSource, m_hBmpArrowFirst);	//First arrow button.
-	::StretchBlt(hDC, iFirstBtnOffsetDrawX, iFirstBtnOffsetDrawY, iFirstBtnWH, iFirstBtnWH,
-		hDCSource, 0, 0, m_iArrowRCSizePx, m_iArrowRCSizePx, SRCCOPY);
-	::SelectObject(hDCSource, m_hBmpArrowLast); //Last arrow button.
-	::StretchBlt(hDC, iLastBtnOffsetDrawX, iLastBtnOffsetDrawY, iLastBtnWH, iLastBtnWH,
-		hDCSource, 0, 0, m_iArrowRCSizePx, m_iArrowRCSizePx, SRCCOPY);
-	::DeleteDC(hDCSource);
+	const auto iLastBtnOffsetDrawX = IsVert() ? rcScroll.left : rcScroll.right - rcScroll.Height();
+	const auto iLastBtnOffsetDrawY = IsVert() ? rcScroll.bottom - rcScroll.Width() : rcScroll.top;
+	const auto hDCMem = ::CreateCompatibleDC(hDC);
+	::SelectObject(hDCMem, m_hBmpArrowFirst);
+	::BitBlt(hDC, iFirstBtnOffsetDrawX, iFirstBtnOffsetDrawY, m_dwBarSizeWH, m_dwBarSizeWH, hDCMem, 0, 0, SRCCOPY);
+	::SelectObject(hDCMem, m_hBmpArrowLast);
+	::BitBlt(hDC, iLastBtnOffsetDrawX, iLastBtnOffsetDrawY, m_dwBarSizeWH, m_dwBarSizeWH, hDCMem, 0, 0, SRCCOPY);
+	::DeleteDC(hDCMem);
 }
 
 void CHexScroll::DrawThumb(HDC hDC)const
 {
 	const auto rcThumb = GetThumbRect();
 	if (!rcThumb.IsRectNull()) {
-		wnd::CDC(hDC).FillSolidRect(rcThumb, m_clrThumb);
+		gui::CDC(hDC).FillSolidRect(rcThumb, m_clrThumb);
 	}
 }
 
-auto CHexScroll::GetParent()const->wnd::CWnd
+auto CHexScroll::GetParent()const->gui::CWnd
 {
 	return m_WndParent;
 }
 
-auto CHexScroll::GetScrollRect(bool fWithNCArea)const->wnd::CRect
+auto CHexScroll::GetScrollRect(bool fWithNCArea)const->gui::CRect
 {
 	const auto wndParent = GetParent();
 	auto rcClient = GetParentRect();
@@ -700,11 +674,11 @@ auto CHexScroll::GetScrollRect(bool fWithNCArea)const->wnd::CRect
 	const auto iTopDelta = GetTopDelta();
 	const auto iLeftDelta = GetLeftDelta();
 
-	wnd::CRect rcScroll;
+	gui::CRect rcScroll;
 	if (IsVert()) {
 		rcScroll.left = rcClient.right + iLeftDelta;
 		rcScroll.top = rcClient.top + iTopDelta;
-		rcScroll.right = rcScroll.left + m_uiBarSizeWH;
+		rcScroll.right = rcScroll.left + m_dwBarSizeWH;
 		if (fWithNCArea) { //Adding difference here to gain equality in coords when call to ScreenToClient below.
 			rcScroll.bottom = rcWnd.bottom + iTopDelta;
 		}
@@ -715,7 +689,7 @@ auto CHexScroll::GetScrollRect(bool fWithNCArea)const->wnd::CRect
 	else {
 		rcScroll.left = rcClient.left + iLeftDelta;
 		rcScroll.top = rcClient.bottom + iTopDelta;
-		rcScroll.bottom = rcScroll.top + m_uiBarSizeWH;
+		rcScroll.bottom = rcScroll.top + m_dwBarSizeWH;
 		if (fWithNCArea) {
 			rcScroll.right = rcWnd.right + iLeftDelta;
 		}
@@ -728,14 +702,14 @@ auto CHexScroll::GetScrollRect(bool fWithNCArea)const->wnd::CRect
 	return rcScroll;
 }
 
-auto CHexScroll::GetScrollWorkAreaRect(bool fClientCoord)const->wnd::CRect
+auto CHexScroll::GetScrollWorkAreaRect(bool fClientCoord)const->gui::CRect
 {
 	auto rc = GetScrollRect();
 	if (IsVert()) {
-		rc.DeflateRect(0, m_uiBarSizeWH, 0, m_uiBarSizeWH);
+		rc.DeflateRect(0, m_dwBarSizeWH, 0, m_dwBarSizeWH);
 	}
 	else {
-		rc.DeflateRect(m_uiBarSizeWH, 0, m_uiBarSizeWH, 0);
+		rc.DeflateRect(m_dwBarSizeWH, 0, m_dwBarSizeWH, 0);
 	}
 
 	if (fClientCoord) {
@@ -753,12 +727,12 @@ auto CHexScroll::GetScrollSizeWH()const->UINT
 auto CHexScroll::GetScrollWorkAreaSizeWH()const->UINT
 {
 	const auto uiScrollSize = GetScrollSizeWH();
-	return uiScrollSize <= m_uiBarSizeWH * 2 ? 0 : uiScrollSize - (m_uiBarSizeWH * 2); //Minus two arrow's size.
+	return uiScrollSize <= m_dwBarSizeWH * 2 ? 0 : uiScrollSize - (m_dwBarSizeWH * 2); //Minus two arrow's size.
 }
 
-auto CHexScroll::GetThumbRect(bool fClientCoord)const->wnd::CRect
+auto CHexScroll::GetThumbRect(bool fClientCoord)const->gui::CRect
 {
-	wnd::CRect rc;
+	gui::CRect rc;
 	const auto uiThumbSize = GetThumbSizeWH();
 	if (!uiThumbSize) {
 		return rc;
@@ -768,7 +742,7 @@ auto CHexScroll::GetThumbRect(bool fClientCoord)const->wnd::CRect
 	if (IsVert()) {
 		rc.left = rcScrollWA.left;
 		rc.top = rcScrollWA.top + GetThumbPos();
-		rc.right = rc.left + m_uiBarSizeWH;
+		rc.right = rc.left + m_dwBarSizeWH;
 		rc.bottom = rc.top + uiThumbSize;
 		rc.bottom = (std::min)(rc.top + static_cast<LONG>(uiThumbSize), rcScrollWA.bottom);
 	}
@@ -776,7 +750,7 @@ auto CHexScroll::GetThumbRect(bool fClientCoord)const->wnd::CRect
 		rc.left = rcScrollWA.left + GetThumbPos();
 		rc.top = rcScrollWA.top;
 		rc.right = rc.left + uiThumbSize;
-		rc.bottom = rc.top + m_uiBarSizeWH;
+		rc.bottom = rc.top + m_dwBarSizeWH;
 	}
 	if (fClientCoord) {
 		rc.OffsetRect(-GetLeftDelta(), -GetTopDelta());
@@ -787,7 +761,7 @@ auto CHexScroll::GetThumbRect(bool fClientCoord)const->wnd::CRect
 
 auto CHexScroll::GetThumbSizeWH()const->UINT
 {
-	static constexpr auto uThumbSizeMin = 15U; //Minimum allowed thumb size.
+	constexpr auto uThumbSizeMin = 15U; //Minimum allowed thumb size.
 	const auto uiScrollWorkAreaSizeWH = GetScrollWorkAreaSizeWH();
 	const auto rcParent = GetParentRect();
 	const double dDelta { IsVert() ? static_cast<double>(rcParent.Height()) / m_ullSizeMax :
@@ -813,14 +787,14 @@ auto CHexScroll::GetThumbScrollingSize()const->double
 	return (m_ullSizeMax - iPage) / static_cast<double>(uiWAWOThumb);
 }
 
-auto CHexScroll::GetFirstArrowRect(bool fClientCoord)const->wnd::CRect
+auto CHexScroll::GetFirstArrowRect(bool fClientCoord)const->gui::CRect
 {
 	auto rc = GetScrollRect();
 	if (IsVert()) {
-		rc.bottom = rc.top + m_uiBarSizeWH;
+		rc.bottom = rc.top + m_dwBarSizeWH;
 	}
 	else {
-		rc.right = rc.left + m_uiBarSizeWH;
+		rc.right = rc.left + m_dwBarSizeWH;
 	}
 
 	if (fClientCoord) {
@@ -830,14 +804,14 @@ auto CHexScroll::GetFirstArrowRect(bool fClientCoord)const->wnd::CRect
 	return rc;
 }
 
-auto CHexScroll::GetLastArrowRect(bool fClientCoord)const->wnd::CRect
+auto CHexScroll::GetLastArrowRect(bool fClientCoord)const->gui::CRect
 {
 	auto rc = GetScrollRect();
 	if (IsVert()) {
-		rc.top = rc.bottom - m_uiBarSizeWH;
+		rc.top = rc.bottom - m_dwBarSizeWH;
 	}
 	else {
-		rc.left = rc.right - m_uiBarSizeWH;
+		rc.left = rc.right - m_dwBarSizeWH;
 	}
 
 	if (fClientCoord) {
@@ -847,11 +821,11 @@ auto CHexScroll::GetLastArrowRect(bool fClientCoord)const->wnd::CRect
 	return rc;
 }
 
-auto CHexScroll::GetFirstChannelRect(bool fClientCoord)const->wnd::CRect
+auto CHexScroll::GetFirstChannelRect(bool fClientCoord)const->gui::CRect
 {
 	const auto rcThumb = GetThumbRect();
 	const auto rcArrow = GetFirstArrowRect();
-	wnd::CRect rc;
+	gui::CRect rc;
 	if (IsVert()) {
 		rc.SetRect(rcArrow.left, rcArrow.bottom, rcArrow.right, rcThumb.top);
 	}
@@ -866,11 +840,11 @@ auto CHexScroll::GetFirstChannelRect(bool fClientCoord)const->wnd::CRect
 	return rc;
 }
 
-auto CHexScroll::GetLastChannelRect(bool fClientCoord)const->wnd::CRect
+auto CHexScroll::GetLastChannelRect(bool fClientCoord)const->gui::CRect
 {
 	const auto rcThumb = GetThumbRect();
 	const auto rcArrow = GetLastArrowRect();
-	wnd::CRect rc;
+	gui::CRect rc;
 	if (IsVert()) {
 		rc.SetRect(rcArrow.left, rcThumb.bottom, rcArrow.right, rcArrow.top);
 	}
@@ -885,7 +859,7 @@ auto CHexScroll::GetLastChannelRect(bool fClientCoord)const->wnd::CRect
 	return rc;
 }
 
-auto CHexScroll::GetParentRect(bool fClient)const->wnd::CRect
+auto CHexScroll::GetParentRect(bool fClient)const->gui::CRect
 {
 	const auto wndParent = GetParent();
 	return fClient ? wndParent.GetClientRect() : wndParent.GetWindowRect();
@@ -930,12 +904,12 @@ auto CHexScroll::OnDestroy(const MSG& msg)->LRESULT
 	m_hBmpArrowLast = nullptr;
 	m_fCreated = false;
 
-	return wnd::DefWndProc(msg);
+	return gui::DefWndProc(msg);
 }
 
 auto CHexScroll::OnTimer(const MSG& msg)->LRESULT
 {
-	static constexpr auto uTimerRepeat { 50U }; //Milliseconds for repeat when click and hold on channel.
+	constexpr auto uTimerRepeat { 50U }; //Milliseconds for repeat when click and hold on channel.
 	using enum EState; using enum ETimer;
 
 	switch (msg.wParam) {

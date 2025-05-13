@@ -145,20 +145,20 @@ namespace HEXCTRL::INTERNAL {
 			COL_DATA = 4, COL_ENDIAN = 5, COL_DESCR = 6, COL_COLORS = 7
 		};
 		HINSTANCE m_hInstRes { };
-		wnd::CWnd m_Wnd;               //Main window.
-		wnd::CWnd m_WndStatOffset;     //Static text "Template offset:".
-		wnd::CWnd m_WndStatSize;       //Static text Template size:".
-		wnd::CWndEdit m_WndEditOffset; //"Offset" edit box.
-		wnd::CWndBtn m_WndBtnShowTT;   //Check-box "Show tooltips".
-		wnd::CWndBtn m_WndBtnMin;      //Check-box min-max.
-		wnd::CWndBtn m_WndBtnHglSel;   //Check-box "Highlight selected".
-		wnd::CWndBtn m_WndBtnHex;      //Check-box "Hex numbers".
-		wnd::CWndBtn m_WndBtnEndian;   //Check-box "Swap endian".
-		wnd::CWndCombo m_WndCmbTempl;  //Currently available templates list.
-		wnd::CWndTree m_WndTree;       //Tree control.
-		wnd::CMenu m_MenuTree;         //Menu for the tree control.
-		wnd::CMenu m_MenuHdr;          //Menu for the list header.
-		wnd::CDynLayout m_DynLayout;
+		gui::CWnd m_Wnd;               //Main window.
+		gui::CWnd m_WndStatOffset;     //Static text "Template offset:".
+		gui::CWnd m_WndStatSize;       //Static text Template size:".
+		gui::CWndEdit m_WndEditOffset; //"Offset" edit box.
+		gui::CWndBtn m_WndBtnShowTT;   //Check-box "Show tooltips".
+		gui::CWndBtn m_WndBtnMin;      //Check-box min-max.
+		gui::CWndBtn m_WndBtnHglSel;   //Check-box "Highlight selected".
+		gui::CWndBtn m_WndBtnHex;      //Check-box "Hex numbers".
+		gui::CWndBtn m_WndBtnEndian;   //Check-box "Swap endian".
+		gui::CWndCombo m_WndCmbTempl;  //Currently available templates list.
+		gui::CWndTree m_WndTree;       //Tree control.
+		gui::CMenu m_MenuTree;         //Menu for the tree control.
+		gui::CMenu m_MenuHdr;          //Menu for the list header.
+		gui::CDynLayout m_DynLayout;
 		LISTEX::CListEx m_ListEx;
 		std::vector<std::unique_ptr<HEXTEMPLATE>> m_vecTemplates;      //Loaded Templates.
 		std::vector<std::unique_ptr<TEMPLAPPLIED>> m_vecTemplatesAppl; //Currently Applied Templates.
@@ -271,7 +271,7 @@ void CHexDlgTemplMgr::CreateDlg()
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_TEMPLMGR),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgTemplMgr>, reinterpret_cast<LPARAM>(this));
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), gui::DlgProc<CHexDlgTemplMgr>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
@@ -706,28 +706,28 @@ void CHexDlgTemplMgr::OnCheckMin()
 	const auto fMinimize = IsMinimized();
 
 	for (const auto id : arrIDsToHide) { //Hiding.
-		const wnd::CWnd wnd = m_Wnd.GetDlgItem(id);
-		wnd.ShowWindow(fMinimize ? SW_HIDE : SW_SHOW);
+		const gui::CWnd gui = m_Wnd.GetDlgItem(id);
+		gui.ShowWindow(fMinimize ? SW_HIDE : SW_SHOW);
 	}
 
 	//Top Group Box rect.
-	const wnd::CWnd wndGrbTop = m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP);
+	const gui::CWnd wndGrbTop = m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP);
 	const auto iHeightGRB = wndGrbTop.GetClientRect().Height();
 	auto hdwp = ::BeginDeferWindowPos(static_cast<int>(std::size(arrIDsToMove) + std::size(arrIDsToResize)));
 	for (const auto id : arrIDsToMove) { //Moving.
-		const wnd::CWnd wnd = m_Wnd.GetDlgItem(id);
-		auto rcWnd = wnd.GetWindowRect();
+		const gui::CWnd gui = m_Wnd.GetDlgItem(id);
+		auto rcWnd = gui.GetWindowRect();
 		m_Wnd.ScreenToClient(rcWnd);
 		const auto iNewPosY = fMinimize ? rcWnd.top - iHeightGRB : rcWnd.top + iHeightGRB;
-		hdwp = ::DeferWindowPos(hdwp, wnd, nullptr, rcWnd.left, iNewPosY, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+		hdwp = ::DeferWindowPos(hdwp, gui, nullptr, rcWnd.left, iNewPosY, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
 	}
 
 	for (const auto id : arrIDsToResize) { //Resizing.
-		const wnd::CWnd wnd = m_Wnd.GetDlgItem(id);
-		auto rcWnd = wnd.GetWindowRect();
+		const gui::CWnd gui = m_Wnd.GetDlgItem(id);
+		auto rcWnd = gui.GetWindowRect();
 		rcWnd.top += fMinimize ? -iHeightGRB : iHeightGRB;
 		m_Wnd.ScreenToClient(rcWnd);
-		hdwp = ::DeferWindowPos(hdwp, wnd, nullptr, rcWnd.left, rcWnd.top, rcWnd.Width(),
+		hdwp = ::DeferWindowPos(hdwp, gui, nullptr, rcWnd.left, rcWnd.top, rcWnd.Width(),
 			rcWnd.Height(), SWP_NOZORDER | SWP_NOACTIVATE);
 	}
 	m_DynLayout.Enable(false); //Otherwise DynamicLayout won't know that all dynamic windows have changed.
@@ -895,10 +895,10 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	m_iDynLayoutMinY = rcTree.top + 5;
 
 	m_DynLayout.SetHost(m_Wnd);
-	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_LIST, wnd::CDynLayout::MoveNone(), wnd::CDynLayout::SizeHorzAndVert(100, 100));
-	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_TREE, wnd::CDynLayout::MoveNone(), wnd::CDynLayout::SizeVert(100));
-	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP, wnd::CDynLayout::MoveNone(), wnd::CDynLayout::SizeHorz(100));
-	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_CHK_MIN, wnd::CDynLayout::MoveHorz(100), wnd::CDynLayout::SizeNone());
+	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_LIST, gui::CDynLayout::MoveNone(), gui::CDynLayout::SizeHorzAndVert(100, 100));
+	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_TREE, gui::CDynLayout::MoveNone(), gui::CDynLayout::SizeVert(100));
+	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_GRB_TOP, gui::CDynLayout::MoveNone(), gui::CDynLayout::SizeHorz(100));
+	m_DynLayout.AddItem(IDC_HEXCTRL_TEMPLMGR_CHK_MIN, gui::CDynLayout::MoveHorz(100), gui::CDynLayout::SizeNone());
 	m_DynLayout.Enable(true);
 
 	::SetWindowSubclass(m_WndTree, TreeSubclassProc, reinterpret_cast<UINT_PTR>(this), 0);
@@ -909,10 +909,10 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	}
 
 	const auto hDC = m_WndBtnMin.GetDC();
-	m_hBmpMin = ut::CreateArrowBitmap(hDC, m_WndBtnMin.GetWindowRect(), 1, ::GetSysColor(COLOR_3DFACE),
-		::GetSysColor(COLOR_GRAYTEXT));
-	m_hBmpMax = ut::CreateArrowBitmap(hDC, m_WndBtnMin.GetWindowRect(), -1, ::GetSysColor(COLOR_3DFACE),
-		::GetSysColor(COLOR_GRAYTEXT));
+	const auto iWidth = m_WndBtnMin.GetWindowRect().Width();
+	const auto iHeight = m_WndBtnMin.GetWindowRect().Height();
+	m_hBmpMin = gui::CreateArrowBitmap(hDC, iWidth, iHeight, 1, ::GetSysColor(COLOR_3DFACE), ::GetSysColor(COLOR_GRAYTEXT));
+	m_hBmpMax = gui::CreateArrowBitmap(hDC, iWidth, iHeight, -1, ::GetSysColor(COLOR_3DFACE), ::GetSysColor(COLOR_GRAYTEXT));
 	m_WndBtnMin.ReleaseDC(hDC);
 	m_WndBtnMin.SetBitmap(m_hBmpMin); //Set the min arrow bitmap to the min-max checkbox.
 
@@ -956,8 +956,8 @@ auto CHexDlgTemplMgr::OnMouseMove(const MSG& msg)->INT_PTR
 	static constexpr auto iMinTreeWidth = 100;          //Tree control minimum allowed width.
 	static const auto hCurResize = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
 	static const auto hCurArrow = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
-	const POINT pt { .x { wnd::GetXLPARAM(msg.lParam) }, .y { wnd::GetYLPARAM(msg.lParam) } };
-	const auto hWndList = wnd::CWnd::FromHandle(m_ListEx.GetHWND());
+	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
+	const auto hWndList = gui::CWnd::FromHandle(m_ListEx.GetHWND());
 	auto rcList = hWndList.GetWindowRect();
 	m_Wnd.ScreenToClient(rcList);
 
@@ -976,7 +976,7 @@ auto CHexDlgTemplMgr::OnMouseMove(const MSG& msg)->INT_PTR
 		}
 	}
 	else {
-		if (const wnd::CRect rcSplitter(rcList.left - iResAreaHalfWidth, rcList.top, rcList.left + iResAreaHalfWidth,
+		if (const gui::CRect rcSplitter(rcList.left - iResAreaHalfWidth, rcList.top, rcList.left + iResAreaHalfWidth,
 			rcList.bottom);
 			rcSplitter.PtInRect(pt)) {
 			m_fCurInSplitter = true;
@@ -1531,7 +1531,7 @@ void CHexDlgTemplMgr::OnNotifyTreeRClick(NMHDR* /*pNMHDR*/)
 
 void CHexDlgTemplMgr::OnOK()
 {
-	const auto wndFocus = wnd::CWnd::GetFocus();
+	const auto wndFocus = gui::CWnd::GetFocus();
 	//When Enter is pressed anywhere in the dialog, and focus is on the m_ListEx,
 	//we simulate pressing Enter in the list by sending WM_KEYDOWN/VK_RETURN to it.
 	if (const auto hWndList = m_ListEx.GetHWND(); wndFocus == hWndList) {
@@ -1850,13 +1850,13 @@ bool CHexDlgTemplMgr::SetDataGUID(LPCWSTR pwszText, ULONGLONG ullOffset, bool fS
 void CHexDlgTemplMgr::SetDlgButtonsState()
 {
 	const auto fHasTempl = HasTemplates();
-	if (const wnd::CWnd btnApply = m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_APPLY); !btnApply.IsNull()) {
+	if (const gui::CWnd btnApply = m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_APPLY); !btnApply.IsNull()) {
 		btnApply.EnableWindow(fHasTempl);
 	}
-	if (const wnd::CWnd btnUnload = m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD); !btnUnload.IsNull()) {
+	if (const gui::CWnd btnUnload = m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_UNLOAD); !btnUnload.IsNull()) {
 		btnUnload.EnableWindow(fHasTempl);
 	}
-	if (const wnd::CWnd btnRandom = m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR); !btnRandom.IsNull()) {
+	if (const gui::CWnd btnRandom = m_Wnd.GetDlgItem(IDC_HEXCTRL_TEMPLMGR_BTN_RNDCLR); !btnRandom.IsNull()) {
 		btnRandom.EnableWindow(fHasTempl);
 	}
 	m_WndEditOffset.EnableWindow(fHasTempl);

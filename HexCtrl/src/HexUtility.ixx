@@ -446,68 +446,18 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		return hInst;
 	};
 
-	[[nodiscard]] auto GetDPIScale(HWND hWnd) -> float {
-		const auto hDC = ::GetDC(hWnd);
-		const auto iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
-		::ReleaseDC(hWnd, hDC);
-		return static_cast<float>(iLOGPIXELSY) / USER_DEFAULT_SCREEN_DPI; //Scale factor for High-DPI displays.
+	//Replicates GET_X_LPARAM macro from windowsx.h.
+	[[nodiscard]] constexpr int GetXLPARAM(LPARAM lParam) {
+		return (static_cast<int>(static_cast<short>(static_cast<WORD>((static_cast<DWORD_PTR>(lParam)) & 0xFFFFU))));
 	}
 
-	//iDirection == : -2 - LEFT, 1 - UP, 2 - RIGHT, -1 - DOWN.
-	[[nodiscard]] auto CreateArrowBitmap(HDC hDC, RECT rc, int iDirection, COLORREF clrBk, COLORREF clrArrow) -> HBITMAP {
-		const auto rcWidth = rc.right - rc.left;
-		const auto rcHeight = rc.bottom - rc.top;
-
-		//Make the width and height even numbers, to make it easier drawing an isosceles triangle.
-		const auto iWidth = rcWidth - (rcWidth % 2);
-		const auto iHeight = rcHeight - (rcHeight % 2);
-
-		POINT ptArrow[3] { }; //Arrow coordinates within the bitmap.
-		switch (iDirection) {
-		case -2: //LEFT.
-			ptArrow[0] = { .x { iWidth / 4 }, .y { iHeight / 2 } };
-			ptArrow[1] = { .x { iWidth / 2 }, .y { iHeight / 4 } };
-			ptArrow[2] = { .x { iWidth / 2 }, .y { iHeight - (iHeight / 4) } };
-			break;
-		case 1: //UP.
-			ptArrow[0] = { .x { iWidth / 2 }, .y { iHeight / 4 } };
-			ptArrow[1] = { .x { iWidth / 4 }, .y { iHeight / 2 } };
-			ptArrow[2] = { .x { iWidth - (iWidth / 4) }, .y { iHeight / 2 } };
-			break;
-		case 2: //RIGHT.
-			ptArrow[0] = { .x { iWidth / 2 }, .y { iHeight / 4 } };
-			ptArrow[1] = { .x { iWidth / 2 }, .y { iHeight - (iHeight / 4) } };
-			ptArrow[2] = { .x { iWidth - (iWidth / 4) }, .y { iHeight / 2 } };
-			break;
-		case -1: //DOWN.
-			ptArrow[0] = { .x { iWidth / 4 }, .y { iHeight / 2 } };
-			ptArrow[1] = { .x { iWidth - (iWidth / 4) }, .y { iHeight / 2 } };
-			ptArrow[2] = { .x { iWidth / 2 }, .y { iHeight - (iHeight / 4) } };
-			break;
-		default:
-			break;
-		}
-
-		const auto hdcMem = ::CreateCompatibleDC(hDC);
-		const auto hBMPArrow = ::CreateCompatibleBitmap(hDC, rcWidth, rcHeight);
-		::SelectObject(hdcMem, hBMPArrow);
-		const RECT rcFill { 0, 0, rcWidth, rcHeight };
-		::SetBkColor(hdcMem, clrBk); //SetBkColor+ExtTextOutW=FillSolidRect behavior.
-		::ExtTextOutW(hdcMem, 0, 0, ETO_OPAQUE, &rcFill, nullptr, 0, nullptr);
-		const auto hBrushArrow = ::CreateSolidBrush(clrArrow);
-		::SelectObject(hdcMem, hBrushArrow);
-		const auto hPenArrow = ::CreatePen(PS_SOLID, 1, clrArrow);
-		::SelectObject(hdcMem, hPenArrow);
-		::Polygon(hdcMem, ptArrow, 3); //Draw an arrow.
-		::DeleteObject(hBrushArrow);
-		::DeleteObject(hPenArrow);
-		::DeleteDC(hdcMem);
-
-		return hBMPArrow;
+	//Replicates GET_Y_LPARAM macro from windowsx.h.
+	[[nodiscard]] constexpr int GetYLPARAM(LPARAM lParam) {
+		return GetXLPARAM(lParam >> 16);
 	}
 }
 
-namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
+namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 	auto DefWndProc(const MSG& msg) -> LRESULT {
 		return ::DefWindowProcW(msg.hwnd, msg.message, msg.wParam, msg.lParam);
 	}
@@ -569,13 +519,101 @@ namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 		return 0;
 	}
 
-	//Replicates GET_X_LPARAM macro from the windowsx.h.
-	[[nodiscard]] constexpr int GetXLPARAM(LPARAM lParam) {
-		return (static_cast<int>(static_cast<short>(static_cast<WORD>((static_cast<DWORD_PTR>(lParam)) & 0xFFFF))));
+	[[nodiscard]] auto GetDPIScale(HWND hWnd) -> float {
+		const auto hDC = ::GetDC(hWnd);
+		const auto iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
+		::ReleaseDC(hWnd, hDC);
+		return static_cast<float>(iLOGPIXELSY) / USER_DEFAULT_SCREEN_DPI; //High-DPI scale factor for window.
 	}
 
-	[[nodiscard]] constexpr int GetYLPARAM(LPARAM lParam) {
-		return GetXLPARAM(lParam >> 16);
+	//iDirection: -2:LEFT, 1:UP, 2:RIGHT, -1:DOWN.
+	[[nodiscard]] auto CreateArrowBitmap(HDC hDC, DWORD dwWidth, DWORD dwHeight, int iDirection, COLORREF clrBk, COLORREF clrArrow) -> HBITMAP {
+		//Make the width and height even numbers, to make it easier drawing an isosceles triangle.
+		const int iWidth = dwWidth - (dwWidth % 2);
+		const int iHeight = dwHeight - (dwHeight % 2);
+
+		POINT ptArrow[3] { }; //Arrow coordinates within the bitmap.
+		switch (iDirection) {
+		case -2: //LEFT.
+			ptArrow[0] = { .x { iWidth / 4 }, .y { iHeight / 2 } };
+			ptArrow[1] = { .x { iWidth / 2 }, .y { iHeight / 4 } };
+			ptArrow[2] = { .x { iWidth / 2 }, .y { iHeight - (iHeight / 4) } };
+			break;
+		case 1: //UP.
+			ptArrow[0] = { .x { iWidth / 2 }, .y { iHeight / 4 } };
+			ptArrow[1] = { .x { iWidth / 4 }, .y { iHeight / 2 } };
+			ptArrow[2] = { .x { iWidth - (iWidth / 4) }, .y { iHeight / 2 } };
+			break;
+		case 2: //RIGHT.
+			ptArrow[0] = { .x { iWidth / 2 }, .y { iHeight / 4 } };
+			ptArrow[1] = { .x { iWidth / 2 }, .y { iHeight - (iHeight / 4) } };
+			ptArrow[2] = { .x { iWidth - (iWidth / 4) }, .y { iHeight / 2 } };
+			break;
+		case -1: //DOWN.
+			ptArrow[0] = { .x { iWidth / 4 }, .y { iHeight / 2 } };
+			ptArrow[1] = { .x { iWidth - (iWidth / 4) }, .y { iHeight / 2 } };
+			ptArrow[2] = { .x { iWidth / 2 }, .y { iHeight - (iHeight / 4) } };
+			break;
+		default:
+			break;
+		}
+
+		const auto hdcMem = ::CreateCompatibleDC(hDC);
+		const auto hBMPArrow = ::CreateCompatibleBitmap(hDC, dwWidth, dwHeight);
+		::SelectObject(hdcMem, hBMPArrow);
+		const RECT rcFill { .right { static_cast<int>(dwWidth) }, .bottom { static_cast<int>(dwHeight) } };
+		::SetBkColor(hdcMem, clrBk); //SetBkColor+ExtTextOutW=FillSolidRect behavior.
+		::ExtTextOutW(hdcMem, 0, 0, ETO_OPAQUE, &rcFill, nullptr, 0, nullptr);
+		const auto hBrushArrow = ::CreateSolidBrush(clrArrow);
+		::SelectObject(hdcMem, hBrushArrow);
+		const auto hPenArrow = ::CreatePen(PS_SOLID, 1, clrArrow);
+		::SelectObject(hdcMem, hPenArrow);
+		::Polygon(hdcMem, ptArrow, 3); //Draw an arrow.
+		::DeleteObject(hBrushArrow);
+		::DeleteObject(hPenArrow);
+		::DeleteDC(hdcMem);
+
+		return hBMPArrow;
+	}
+
+	//Get 32bit ARGB bitmap with premultiplied alpha from HICON.
+	[[nodiscard]] auto BitmapFromIcon(HICON hIcon) -> HBITMAP {
+		ICONINFO ii;
+		if (::GetIconInfo(hIcon, &ii) == FALSE)
+			return { };
+
+		::DeleteObject(ii.hbmMask); //Deleting icon's BW mask bitmap.
+		BITMAP bmIconClr;
+		::GetObjectW(ii.hbmColor, sizeof(BITMAP), &bmIconClr);
+		const auto iBmpHeight = std::abs(bmIconClr.bmHeight);
+		const auto iBmpWidth = std::abs(bmIconClr.bmWidth);
+		BITMAPINFO bi { .bmiHeader { .biSize { sizeof(BITMAPINFOHEADER) }, .biWidth { iBmpWidth },
+			.biHeight { iBmpHeight }, .biPlanes { 1 }, .biBitCount { 32 }, .biCompression { BI_RGB } } };
+		RGBQUAD* pARGB { }; //Newly created DI bitmap's data pointer.
+		const auto hDCMem = ::CreateCompatibleDC(nullptr);
+		const auto hBmp32 = ::CreateDIBSection(hDCMem, &bi, DIB_RGB_COLORS, reinterpret_cast<void**>(&pARGB), nullptr, 0);
+		::GetDIBits(hDCMem, ii.hbmColor, 0, iBmpHeight, pARGB, &bi, DIB_RGB_COLORS);
+		::DeleteDC(hDCMem);
+		::DeleteObject(ii.hbmColor);
+
+		if (hBmp32 == nullptr || pARGB == nullptr)
+			return { };
+
+		const auto dwSizePx = static_cast<DWORD>(iBmpHeight * iBmpWidth);
+		if (bmIconClr.bmBitsPixel == 32) { //Premultiply alpha for all channels.
+			for (auto i = 0U; i < dwSizePx; ++i) {
+				pARGB[i].rgbBlue = static_cast<BYTE>(static_cast<DWORD>(pARGB[i].rgbBlue) * pARGB[i].rgbReserved / 255);
+				pARGB[i].rgbGreen = static_cast<BYTE>(static_cast<DWORD>(pARGB[i].rgbGreen) * pARGB[i].rgbReserved / 255);
+				pARGB[i].rgbRed = static_cast<BYTE>(static_cast<DWORD>(pARGB[i].rgbRed) * pARGB[i].rgbReserved / 255);
+			}
+		}
+		else { //If the icon is not 32bit, merely set bitmap alpha channel to fully opaque.
+			for (auto i = 0U; i < dwSizePx; ++i) {
+				pARGB[i].rgbReserved = 255;
+			}
+		}
+
+		return hBmp32;
 	}
 
 	class CDynLayout final {
@@ -754,15 +792,16 @@ namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 			return DrawFrameControl(&rc, uType, uState);
 		}
 		void DrawImage(HBITMAP hBmp, int iX, int iY, int iWidth, int iHeight)const {
+			const auto dcMem = CreateCompatibleDC();
+			dcMem.SelectObject(hBmp);
 			BITMAP bm; ::GetObjectW(hBmp, sizeof(BITMAP), &bm);
-			const auto dcBmp = CreateCompatibleDC(); dcBmp.SelectObject(hBmp);
 
 			//Only 32bit bitmaps can have alpha channel.
 			//If destination and source bitmaps do not have the same color format, 
 			//AlphaBlend converts the source bitmap to match the destination bitmap.
 			//AlphaBlend works with both, DI (DeviceIndependent) and DD (DeviceDependent), bitmaps.
-			AlphaBlend(iX, iY, iWidth, iHeight, dcBmp, 0, 0, iWidth, iHeight, 255, bm.bmBitsPixel == 32 ? 1 : 0);
-			dcBmp.DeleteDC();
+			AlphaBlend(iX, iY, iWidth, iHeight, dcMem, 0, 0, iWidth, iHeight, 255, bm.bmBitsPixel == 32 ? AC_SRC_ALPHA : 0);
+			dcMem.DeleteDC();
 		}
 		[[nodiscard]] HDC GetHDC()const { return m_hDC; }
 		void GetTextMetricsW(LPTEXTMETRICW pTM)const { ::GetTextMetricsW(m_hDC, pTM); }
@@ -818,33 +857,27 @@ namespace HEXCTRL::INTERNAL::wnd { //Windows GUI related stuff.
 
 	class CMemDC final : public CDC {
 	public:
-		CMemDC(HDC hDC, RECT rc);
-		~CMemDC();
+		CMemDC(HDC hDC, RECT rc) : m_hDCOrig(hDC), m_rc(rc) {
+			m_hDC = ::CreateCompatibleDC(m_hDCOrig);
+			assert(m_hDC != nullptr);
+			const auto iWidth = m_rc.right - m_rc.left;
+			const auto iHeight = m_rc.bottom - m_rc.top;
+			m_hBmp = ::CreateCompatibleBitmap(m_hDCOrig, iWidth, iHeight);
+			assert(m_hBmp != nullptr);
+			::SelectObject(m_hDC, m_hBmp);
+		}
+		~CMemDC() {
+			const auto iWidth = m_rc.right - m_rc.left;
+			const auto iHeight = m_rc.bottom - m_rc.top;
+			::BitBlt(m_hDCOrig, m_rc.left, m_rc.top, iWidth, iHeight, m_hDC, m_rc.left, m_rc.top, SRCCOPY);
+			::DeleteObject(m_hBmp);
+			::DeleteDC(m_hDC);
+		}
 	private:
 		HDC m_hDCOrig;
 		HBITMAP m_hBmp;
 		RECT m_rc;
 	};
-
-	CMemDC::CMemDC(HDC hDC, RECT rc) : m_hDCOrig(hDC), m_rc(rc)
-	{
-		m_hDC = ::CreateCompatibleDC(m_hDCOrig);
-		assert(m_hDC != nullptr);
-		const auto iWidth = m_rc.right - m_rc.left;
-		const auto iHeight = m_rc.bottom - m_rc.top;
-		m_hBmp = ::CreateCompatibleBitmap(m_hDCOrig, iWidth, iHeight);
-		assert(m_hBmp != nullptr);
-		::SelectObject(m_hDC, m_hBmp);
-	}
-
-	CMemDC::~CMemDC()
-	{
-		const auto iWidth = m_rc.right - m_rc.left;
-		const auto iHeight = m_rc.bottom - m_rc.top;
-		::BitBlt(m_hDCOrig, m_rc.left, m_rc.top, iWidth, iHeight, m_hDC, m_rc.left, m_rc.top, SRCCOPY);
-		::DeleteObject(m_hBmp);
-		::DeleteDC(m_hDC);
-	}
 
 	class CWnd {
 	public:

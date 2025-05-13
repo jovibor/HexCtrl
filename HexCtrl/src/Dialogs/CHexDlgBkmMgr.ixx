@@ -73,10 +73,10 @@ namespace HEXCTRL::INTERNAL {
 		void UpdateListCount(bool fPreserveSelected = false);
 	private:
 		HINSTANCE m_hInstRes { };
-		wnd::CWnd m_Wnd;              //Main window.
-		wnd::CWndBtn m_WndBtnHex;     //Check-box "Hex numbers".
-		wnd::CMenu m_menuList;
-		wnd::CDynLayout m_DynLayout;
+		gui::CWnd m_Wnd;              //Main window.
+		gui::CWndBtn m_WndBtnHex;     //Check-box "Hex numbers".
+		gui::CMenu m_menuList;
+		gui::CDynLayout m_DynLayout;
 		std::vector<HEXBKM> m_vecBookmarks; //Bookmarks data.
 		LISTEX::CListEx m_ListEx;
 		IHexCtrl* m_pHexCtrl { };
@@ -121,7 +121,7 @@ void CHexDlgBkmMgr::CreateDlg()
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_BKMMGR),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), wnd::DlgProc<CHexDlgBkmMgr>, reinterpret_cast<LPARAM>(this));
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), gui::DlgProc<CHexDlgBkmMgr>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
@@ -581,8 +581,8 @@ auto CHexDlgBkmMgr::OnInitDialog(const MSG& msg)->INT_PTR
 	UpdateListCount();
 
 	m_DynLayout.SetHost(m_Wnd);
-	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_LIST, wnd::CDynLayout::MoveNone(), wnd::CDynLayout::SizeHorzAndVert(100, 100));
-	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_CHK_HEX, wnd::CDynLayout::MoveVert(100), wnd::CDynLayout::SizeNone());
+	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_LIST, gui::CDynLayout::MoveNone(), gui::CDynLayout::SizeHorzAndVert(100, 100));
+	m_DynLayout.AddItem(IDC_HEXCTRL_BKMMGR_CHK_HEX, gui::CDynLayout::MoveVert(100), gui::CDynLayout::SizeNone());
 	m_DynLayout.Enable(true);
 
 	return TRUE;
