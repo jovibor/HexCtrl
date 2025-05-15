@@ -23,12 +23,12 @@ namespace HEXCTRL::INTERNAL {
 		bool Create(HWND hWndParent, bool fVert, COLORREF clrBar, COLORREF clrThumb, COLORREF clrArrow,
 			ULONGLONG ullLine, ULONGLONG ullPage, ULONGLONG ullSizeMax);
 		void DestroyWindow();
-		[[nodiscard]] auto GetScrollPos()const->ULONGLONG;
-		[[nodiscard]] auto GetScrollPosDelta()const->LONGLONG;
-		[[nodiscard]] auto GetScrollLineSize()const->ULONGLONG;
-		[[nodiscard]] auto GetScrollPageSize()const->ULONGLONG;
-		[[nodiscard]] auto IsThumbReleased()const->bool;
-		[[nodiscard]] auto IsVisible()const->bool;
+		[[nodiscard]] auto GetScrollPos()const -> ULONGLONG;
+		[[nodiscard]] auto GetScrollPosDelta()const -> LONGLONG;
+		[[nodiscard]] auto GetScrollLineSize()const -> ULONGLONG;
+		[[nodiscard]] auto GetScrollPageSize()const -> ULONGLONG;
+		[[nodiscard]] auto IsThumbReleased()const -> bool;
+		[[nodiscard]] auto IsVisible()const -> bool;
 
 		/************************************************************************************
 		* CALLBACK METHODS:                                                                 *
@@ -64,21 +64,21 @@ namespace HEXCTRL::INTERNAL {
 		void DrawScrollBar()const;     //Draw the whole Scrollbar.
 		void DrawArrows(HDC hDC)const; //Draw arrows.
 		void DrawThumb(HDC hDC)const;  //Draw the Scroll thumb.
-		[[nodiscard]] auto GetParent()const->gui::CWnd;
-		[[nodiscard]] auto GetScrollRect(bool fWithNCArea = false)const->gui::CRect;          //Scroll's whole rect.
-		[[nodiscard]] auto GetScrollWorkAreaRect(bool fClientCoord = false)const->gui::CRect; //Rect without arrows.
-		[[nodiscard]] auto GetScrollSizeWH()const->UINT;                                 //Scroll size in pixels, width or height.
-		[[nodiscard]] auto GetScrollWorkAreaSizeWH()const->UINT;                         //Scroll size (WH) without arrows.
-		[[nodiscard]] auto GetThumbRect(bool fClientCoord = false)const->gui::CRect;
-		[[nodiscard]] auto GetThumbSizeWH()const->UINT;
-		[[nodiscard]] int GetThumbPos()const;                                      //Current Thumb pos.
+		[[nodiscard]] auto GetParent()const -> gui::CWnd;
+		[[nodiscard]] auto GetScrollRect(bool fWithNCArea = false)const -> gui::CRect;          //Scroll's whole rect.
+		[[nodiscard]] auto GetScrollWorkAreaRect(bool fClientCoord = false)const -> gui::CRect; //Rect without arrows.
+		[[nodiscard]] auto GetScrollSizeWH()const -> UINT;         //Scroll size in pixels, width or height.
+		[[nodiscard]] auto GetScrollWorkAreaSizeWH()const -> UINT; //Scroll size (WH) without arrows.
+		[[nodiscard]] auto GetThumbRect(bool fClientCoord = false)const -> gui::CRect;
+		[[nodiscard]] auto GetThumbSizeWH()const -> UINT;
+		[[nodiscard]] int GetThumbPos()const; //Current Thumb pos.
 		void SetThumbPos(int iPos);
-		[[nodiscard]] auto GetThumbScrollingSize()const->double;
-		[[nodiscard]] auto GetFirstArrowRect(bool fClientCoord = false)const->gui::CRect;
-		[[nodiscard]] auto GetLastArrowRect(bool fClientCoord = false)const->gui::CRect;
-		[[nodiscard]] auto GetFirstChannelRect(bool fClientCoord = false)const->gui::CRect;
-		[[nodiscard]] auto GetLastChannelRect(bool fClientCoord = false)const->gui::CRect;
-		[[nodiscard]] auto GetParentRect(bool fClient = true)const->gui::CRect;
+		[[nodiscard]] auto GetThumbScrollingSize()const -> double;
+		[[nodiscard]] auto GetFirstArrowRect(bool fClientCoord = false)const -> gui::CRect;
+		[[nodiscard]] auto GetLastArrowRect(bool fClientCoord = false)const -> gui::CRect;
+		[[nodiscard]] auto GetFirstChannelRect(bool fClientCoord = false)const -> gui::CRect;
+		[[nodiscard]] auto GetLastChannelRect(bool fClientCoord = false)const -> gui::CRect;
+		[[nodiscard]] auto GetParentRect(bool fClient = true)const -> gui::CRect;
 		[[nodiscard]] int GetTopDelta()const;       //Difference between parent window's Window and Client area. Very important in hit testing.
 		[[nodiscard]] int GetLeftDelta()const;
 		[[nodiscard]] bool IsVert()const;           //Is vertical or horizontal scrollbar.

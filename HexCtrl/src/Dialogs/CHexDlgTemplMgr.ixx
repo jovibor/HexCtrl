@@ -42,12 +42,12 @@ namespace HEXCTRL::INTERNAL {
 		void DisapplyAll()override;
 		void DisapplyByID(int iAppliedID)override; //Disapply template with the given AppliedID.
 		void DisapplyByOffset(ULONGLONG ullOffset)override;
-		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
-		[[nodiscard]] auto GetHWND()const->HWND;
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
+		[[nodiscard]] auto GetHWND()const -> HWND;
 		[[nodiscard]] bool HasApplied()const;
 		[[nodiscard]] bool HasCurrent()const;
 		[[nodiscard]] bool HasTemplates()const;
-		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD; //Template hittest by offset.
+		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const -> PCHEXTEMPLFIELD; //Template hittest by offset.
 		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool IsTooltips()const;
 		int LoadTemplate(const wchar_t* pFilePath)override; //Returns loaded template ID on success, zero otherwise.
@@ -69,9 +69,9 @@ namespace HEXCTRL::INTERNAL {
 			UINT_PTR uIdSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
 		[[nodiscard]] auto GetAppliedFromItem(HTREEITEM hTreeItem) -> PCTEMPLAPPLIED;
-		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
-		[[nodiscard]] auto GetIDForNewTemplate()const->int;
-		[[nodiscard]] auto GetTemplate(int iTemplateID)const->PCHEXTEMPLATE;
+		[[nodiscard]] auto GetHexCtrl()const -> IHexCtrl*;
+		[[nodiscard]] auto GetIDForNewTemplate()const -> int;
+		[[nodiscard]] auto GetTemplate(int iTemplateID)const -> PCHEXTEMPLATE;
 		[[nodiscard]] bool IsHglSel()const;
 		[[nodiscard]] bool IsMinimized()const;
 		[[nodiscard]] bool IsNoEsc()const;
@@ -136,7 +136,7 @@ namespace HEXCTRL::INTERNAL {
 		void ShowListDataFILETIME(LPWSTR pwsz, FILETIME stFTime, bool fShouldSwap)const;
 		void ShowListDataSYSTEMTIME(LPWSTR pwsz, SYSTEMTIME stSTime, bool fShouldSwap)const;
 		void ShowListDataGUID(LPWSTR pwsz, GUID stGUID, bool fShouldSwap)const;
-		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const->HTREEITEM;
+		[[nodiscard]] auto TreeItemFromListItem(int iListItem)const -> HTREEITEM;
 		void UnloadTemplate(int iTemplateID)override; //Unload/remove loaded template from memory.
 		void UpdateStaticText();
 	private:
@@ -374,9 +374,9 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD
 	const auto& vecFields = pApplied->pTemplate->vecFields;
 
 	const auto lmbFind = [ullOffset, ullOffsetApplied]
-		(const HexVecFields& refVecFields)->PCHEXTEMPLFIELD {
+	(const HexVecFields& refVecFields)->PCHEXTEMPLFIELD {
 		const auto _lmbFind = [ullOffset, ullOffsetApplied]
-			(const auto& lmbSelf, const HexVecFields& refVecFields)->PCHEXTEMPLFIELD {
+		(const auto& lmbSelf, const HexVecFields& refVecFields)->PCHEXTEMPLFIELD {
 			for (const auto& pField : refVecFields) {
 				if (pField->vecNested.empty()) {
 					const auto ullOffsetCurr = ullOffsetApplied + pField->iOffset;
@@ -392,10 +392,10 @@ auto CHexDlgTemplMgr::HitTest(ULONGLONG ullOffset)const->PCHEXTEMPLFIELD
 			}
 			return nullptr;
 			};
-			return _lmbFind(_lmbFind, refVecFields);
+		return _lmbFind(_lmbFind, refVecFields);
 		};
 
-		return lmbFind(vecFields);
+	return lmbFind(vecFields);
 }
 
 void CHexDlgTemplMgr::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)

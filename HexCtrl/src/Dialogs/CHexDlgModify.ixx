@@ -22,7 +22,7 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgOpers final {
 	public:
 		void CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
-		[[nodiscard]] auto GetHWND()const->HWND;
+		[[nodiscard]] auto GetHWND()const -> HWND;
 		auto OnActivate(const MSG& msg) -> INT_PTR;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
@@ -31,8 +31,8 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		template<typename T> requires ut::TSize1248<T>
 		[[nodiscard]] bool FillVecOper(bool fCheckBE);
-		[[nodiscard]] auto GetOperMode()const->EHexOperMode;
-		[[nodiscard]] auto GetDataType()const->EHexDataType;
+		[[nodiscard]] auto GetOperMode()const -> EHexOperMode;
+		[[nodiscard]] auto GetDataType()const -> EHexDataType;
 		[[nodiscard]] bool IsNoEsc()const;
 		void OnCancel();
 		auto OnCommand(const MSG& msg) -> INT_PTR;
@@ -557,8 +557,8 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgFillData final {
 	public:
 		void CreateDlg(HWND hWndParent, IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
-		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
-		[[nodiscard]] auto GetHWND()const->HWND;
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
+		[[nodiscard]] auto GetHWND()const -> HWND;
 		auto OnActivate(const MSG& msg) -> INT_PTR;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
@@ -566,7 +566,7 @@ namespace HEXCTRL::INTERNAL {
 		void ShowWindow(int iCmdShow);
 	private:
 		enum class EFillType : std::uint8_t; //Forward declaration.
-		[[nodiscard]] auto GetFillType()const->EFillType;
+		[[nodiscard]] auto GetFillType()const -> EFillType;
 		[[nodiscard]] bool IsNoEsc()const;
 		void OnCancel();
 		void OnComboDataEditChange();
@@ -849,8 +849,8 @@ namespace HEXCTRL::INTERNAL {
 	public:
 		void CreateDlg();
 		void DestroyDlg();
-		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
-		[[nodiscard]] auto GetHWND()const->HWND;
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
+		[[nodiscard]] auto GetHWND()const -> HWND;
 		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;

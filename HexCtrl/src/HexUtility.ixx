@@ -717,7 +717,6 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		operator const POINT*()const { return this; }
 		bool operator==(POINT pt)const { return x == pt.x && y == pt.y; }
 		bool operator!=(POINT pt)const { return !(*this == pt); }
-		CPoint& operator=(POINT pt) { *this = pt; return *this; }
 		CPoint operator+(POINT pt)const { return { x + pt.x, y + pt.y }; }
 		CPoint operator-(POINT pt)const { return { x - pt.x, y - pt.y }; }
 		void Offset(int iX, int iY) { x += iX; y += iY; }
@@ -744,7 +743,7 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		bool operator==(RECT rc)const { return ::EqualRect(this, &rc); }
 		bool operator!=(RECT rc)const { return !(*this == rc); }
 		CRect& operator=(RECT rc) { ::CopyRect(this, &rc); return *this; }
-		[[nodiscard]] auto BottomRight()const->CPoint { return { { .x { right }, .y { bottom } } }; };
+		[[nodiscard]] auto BottomRight()const -> CPoint { return { { .x { right }, .y { bottom } } }; };
 		void DeflateRect(int x, int y) { ::InflateRect(this, -x, -y); }
 		void DeflateRect(SIZE size) { ::InflateRect(this, -size.cx, -size.cy); }
 		void DeflateRect(LPCRECT pRC) { left += pRC->left; top += pRC->top; right -= pRC->right; bottom -= pRC->bottom; }
@@ -757,7 +756,7 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		[[nodiscard]] bool PtInRect(POINT pt)const { return ::PtInRect(this, pt); }
 		void SetRect(int x1, int y1, int x2, int y2) { ::SetRect(this, x1, y1, x2, y2); }
 		void SetRectEmpty() { ::SetRectEmpty(this); }
-		[[nodiscard]] auto TopLeft()const->CPoint { return { { .x { left }, .y { top } } }; };
+		[[nodiscard]] auto TopLeft()const -> CPoint { return { { .x { left }, .y { top } } }; };
 		[[nodiscard]] int Width()const { return right - left; }
 	};
 
@@ -779,7 +778,7 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 			//becomes the destination DC’s background color, when using SRCCOPY mode.
 			return ::BitBlt(m_hDC, iX, iY, iWidth, iHeight, hDCSource, iXSource, iYSource, dwROP);
 		}
-		[[nodiscard]] auto CreateCompatibleBitmap(int iWidth, int iHeight)const->HBITMAP {
+		[[nodiscard]] auto CreateCompatibleBitmap(int iWidth, int iHeight)const -> HBITMAP {
 			return ::CreateCompatibleBitmap(m_hDC, iWidth, iHeight);
 		}
 		[[nodiscard]] CDC CreateCompatibleDC()const { return ::CreateCompatibleDC(m_hDC); }
@@ -805,7 +804,7 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		}
 		[[nodiscard]] HDC GetHDC()const { return m_hDC; }
 		void GetTextMetricsW(LPTEXTMETRICW pTM)const { ::GetTextMetricsW(m_hDC, pTM); }
-		auto SetBkColor(COLORREF clr)const->COLORREF { return ::SetBkColor(m_hDC, clr); }
+		auto SetBkColor(COLORREF clr)const -> COLORREF { return ::SetBkColor(m_hDC, clr); }
 		void DrawEdge(LPRECT pRC, UINT uEdge, UINT uFlags)const { ::DrawEdge(m_hDC, pRC, uEdge, uFlags); }
 		void DrawFocusRect(LPCRECT pRc)const { ::DrawFocusRect(m_hDC, pRc); }
 		int DrawTextW(std::wstring_view wsv, LPRECT pRect, UINT uFormat)const {
@@ -819,7 +818,7 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		void FillSolidRect(LPCRECT pRC, COLORREF clr)const {
 			::SetBkColor(m_hDC, clr); ::ExtTextOutW(m_hDC, 0, 0, ETO_OPAQUE, pRC, nullptr, 0, nullptr);
 		}
-		[[nodiscard]] auto GetClipBox()const->CRect { RECT rc; ::GetClipBox(m_hDC, &rc); return rc; }
+		[[nodiscard]] auto GetClipBox()const -> CRect { RECT rc; ::GetClipBox(m_hDC, &rc); return rc; }
 		bool LineTo(POINT pt)const { return LineTo(pt.x, pt.y); }
 		bool LineTo(int x, int y)const { return ::LineTo(m_hDC, x, y); }
 		bool MoveTo(POINT pt)const { return MoveTo(pt.x, pt.y); }
@@ -833,9 +832,9 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 			return ::SetDIBitsToDevice(m_hDC, iX, iY, dwWidth, dwHeight, iXSrc, iYSrc, uStartLine, uLines, pBits, pBMI, uClrUse);
 		}
 		int SetMapMode(int iMode)const { return ::SetMapMode(m_hDC, iMode); }
-		auto SetTextColor(COLORREF clr)const->COLORREF { return ::SetTextColor(m_hDC, clr); }
-		auto SetViewportOrg(int iX, int iY)const->POINT { POINT pt; ::SetViewportOrgEx(m_hDC, iX, iY, &pt); return pt; }
-		auto SelectObject(HGDIOBJ hObj)const->HGDIOBJ { return ::SelectObject(m_hDC, hObj); }
+		auto SetTextColor(COLORREF clr)const -> COLORREF { return ::SetTextColor(m_hDC, clr); }
+		auto SetViewportOrg(int iX, int iY)const -> POINT { POINT pt; ::SetViewportOrgEx(m_hDC, iX, iY, &pt); return pt; }
+		auto SelectObject(HGDIOBJ hObj)const -> HGDIOBJ { return ::SelectObject(m_hDC, hObj); }
 		int StartDocW(const DOCINFO* pDI)const { return ::StartDocW(m_hDC, pDI); }
 		int StartPage()const { return ::StartPage(m_hDC); }
 		void TextOutW(int iX, int iY, LPCWSTR pwszText, int iSize)const { ::TextOutW(m_hDC, iX, iY, pwszText, iSize); }
@@ -893,7 +892,7 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		void CheckRadioButton(int iIDFirst, int iIDLast, int iIDCheck)const {
 			assert(IsWindow()); ::CheckRadioButton(m_hWnd, iIDFirst, iIDLast, iIDCheck);
 		}
-		[[nodiscard]] auto ChildWindowFromPoint(POINT pt)const->HWND {
+		[[nodiscard]] auto ChildWindowFromPoint(POINT pt)const -> HWND {
 			assert(IsWindow()); return ::ChildWindowFromPoint(m_hWnd, pt);
 		}
 		void ClientToScreen(LPPOINT pPT)const { assert(IsWindow()); ::ClientToScreen(m_hWnd, pPT); }
@@ -902,7 +901,7 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		}
 		void DestroyWindow() { assert(IsWindow()); ::DestroyWindow(m_hWnd); m_hWnd = nullptr; }
 		void Detach() { m_hWnd = nullptr; }
-		[[nodiscard]] auto GetClientRect()const->CRect {
+		[[nodiscard]] auto GetClientRect()const -> CRect {
 			assert(IsWindow()); RECT rc; ::GetClientRect(m_hWnd, &rc); return rc;
 		}
 		bool EnableWindow(bool fEnable)const { assert(IsWindow()); return ::EnableWindow(m_hWnd, fEnable); }
@@ -912,28 +911,28 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 				if (::IsDlgButtonChecked(m_hWnd, iID) != 0) { return iID; }
 			} return 0;
 		}
-		[[nodiscard]] auto GetDC()const->HDC { assert(IsWindow()); return ::GetDC(m_hWnd); }
+		[[nodiscard]] auto GetDC()const -> HDC { assert(IsWindow()); return ::GetDC(m_hWnd); }
 		[[nodiscard]] int GetDlgCtrlID()const { assert(IsWindow()); return ::GetDlgCtrlID(m_hWnd); }
-		[[nodiscard]] auto GetDlgItem(int iIDCtrl)const->HWND { assert(IsWindow()); return ::GetDlgItem(m_hWnd, iIDCtrl); }
-		[[nodiscard]] auto GetHFont()const->HFONT {
+		[[nodiscard]] auto GetDlgItem(int iIDCtrl)const -> HWND { assert(IsWindow()); return ::GetDlgItem(m_hWnd, iIDCtrl); }
+		[[nodiscard]] auto GetHFont()const -> HFONT {
 			assert(IsWindow()); return reinterpret_cast<HFONT>(::SendMessageW(m_hWnd, WM_GETFONT, 0, 0));
 		}
-		[[nodiscard]] auto GetHWND()const->HWND { return m_hWnd; }
-		[[nodiscard]] auto GetLogFont()const->std::optional<LOGFONTW> {
+		[[nodiscard]] auto GetHWND()const -> HWND { return m_hWnd; }
+		[[nodiscard]] auto GetLogFont()const -> std::optional<LOGFONTW> {
 			if (const auto hFont = GetHFont(); hFont != nullptr) {
 				LOGFONTW lf { }; ::GetObjectW(hFont, sizeof(lf), &lf); return lf;
 			}
 			return std::nullopt;
 		}
-		[[nodiscard]] auto GetParent()const->HWND { assert(IsWindow()); return ::GetParent(m_hWnd); }
-		[[nodiscard]] auto GetWindowDC()const->HDC { assert(IsWindow()); return ::GetWindowDC(m_hWnd); }
-		[[nodiscard]] auto GetWindowRect()const->CRect {
+		[[nodiscard]] auto GetParent()const -> HWND { assert(IsWindow()); return ::GetParent(m_hWnd); }
+		[[nodiscard]] auto GetWindowDC()const -> HDC { assert(IsWindow()); return ::GetWindowDC(m_hWnd); }
+		[[nodiscard]] auto GetWindowRect()const -> CRect {
 			assert(IsWindow()); RECT rc; ::GetWindowRect(m_hWnd, &rc); return rc;
 		}
-		[[nodiscard]] auto GetWndText()const->std::wstring {
+		[[nodiscard]] auto GetWndText()const -> std::wstring {
 			assert(IsWindow()); wchar_t buff[256]; ::GetWindowTextW(m_hWnd, buff, std::size(buff)); return buff;
 		}
-		[[nodiscard]] auto GetWndTextSize()const->DWORD { assert(IsWindow()); return ::GetWindowTextLengthW(m_hWnd); }
+		[[nodiscard]] auto GetWndTextSize()const -> DWORD { assert(IsWindow()); return ::GetWindowTextLengthW(m_hWnd); }
 		void Invalidate(bool fErase)const { assert(IsWindow()); ::InvalidateRect(m_hWnd, nullptr, fErase); }
 		[[nodiscard]] bool IsDlgMessage(MSG* pMsg)const { return ::IsDialogMessageW(m_hWnd, pMsg); }
 		[[nodiscard]] bool IsNull()const { return m_hWnd == nullptr; }
@@ -952,7 +951,7 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 			assert(IsWindow()); return static_cast<bool>(::RedrawWindow(m_hWnd, pRC, hrgn, uFlags));
 		}
 		int ReleaseDC(HDC hDC)const { assert(IsWindow()); return ::ReleaseDC(m_hWnd, hDC); }
-		auto SetTimer(UINT_PTR uID, UINT uElapse, TIMERPROC pFN = nullptr)const->UINT_PTR {
+		auto SetTimer(UINT_PTR uID, UINT uElapse, TIMERPROC pFN = nullptr)const -> UINT_PTR {
 			assert(IsWindow()); return ::SetTimer(m_hWnd, uID, uElapse, pFN);
 		}
 		void ScreenToClient(LPPOINT pPT)const { assert(IsWindow()); ::ScreenToClient(m_hWnd, pPT); }
@@ -964,13 +963,13 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 			assert(IsWindow()); ::SendMessageW(m_hWnd, uMsg, wParam, lParam);
 		}
 		void SetActiveWindow()const { assert(IsWindow()); ::SetActiveWindow(m_hWnd); }
-		auto SetCapture()const->HWND { assert(IsWindow()); return ::SetCapture(m_hWnd); }
+		auto SetCapture()const -> HWND { assert(IsWindow()); return ::SetCapture(m_hWnd); }
 		void SetFocus()const { assert(IsWindow()); ::SetFocus(m_hWnd); }
 		void SetForegroundWindow()const { assert(IsWindow()); ::SetForegroundWindow(m_hWnd); }
 		void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)const {
 			assert(IsWindow()); ::SetWindowPos(m_hWnd, hWndAfter, iX, iY, iWidth, iHeight, uFlags);
 		}
-		auto SetWndClassLong(int iIndex, LONG_PTR dwNewLong)const->ULONG_PTR {
+		auto SetWndClassLong(int iIndex, LONG_PTR dwNewLong)const -> ULONG_PTR {
 			assert(IsWindow()); return ::SetClassLongPtrW(m_hWnd, iIndex, dwNewLong);
 		}
 		void SetWndText(LPCWSTR pwszStr)const { assert(IsWindow()); ::SetWindowTextW(m_hWnd, pwszStr); }
@@ -1020,7 +1019,7 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		[[nodiscard]] int GetCurSel()const {
 			assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, CB_GETCURSEL, 0, 0));
 		}
-		[[nodiscard]] auto GetItemData(int iIndex)const->DWORD_PTR {
+		[[nodiscard]] auto GetItemData(int iIndex)const -> DWORD_PTR {
 			assert(IsWindow()); return ::SendMessageW(m_hWnd, CB_GETITEMDATA, iIndex, 0);
 		}
 		[[nodiscard]] bool HasString(LPCWSTR pwszStr)const { return FindStringExact(0, pwszStr) != CB_ERR; };
@@ -1053,27 +1052,27 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		void GetItem(TVITEMW* pItem)const {
 			assert(IsWindow()); ::SendMessageW(m_hWnd, TVM_GETITEM, 0, reinterpret_cast<LPARAM>(pItem));
 		}
-		[[nodiscard]] auto GetItemData(HTREEITEM hItem)const->DWORD_PTR {
+		[[nodiscard]] auto GetItemData(HTREEITEM hItem)const -> DWORD_PTR {
 			TVITEMW item { .mask { TVIF_PARAM }, .hItem { hItem } }; GetItem(&item); return item.lParam;
 		}
-		[[nodiscard]] auto GetNextItem(HTREEITEM hItem, UINT uCode)const->HTREEITEM {
+		[[nodiscard]] auto GetNextItem(HTREEITEM hItem, UINT uCode)const -> HTREEITEM {
 			assert(IsWindow()); return reinterpret_cast<HTREEITEM>
 				(::SendMessageW(m_hWnd, TVM_GETNEXTITEM, uCode, reinterpret_cast<LPARAM>(hItem)));
 		}
-		[[nodiscard]] auto GetNextSiblingItem(HTREEITEM hItem)const->HTREEITEM { return GetNextItem(hItem, TVGN_NEXT); }
-		[[nodiscard]] auto GetParentItem(HTREEITEM hItem)const->HTREEITEM { return GetNextItem(hItem, TVGN_PARENT); }
-		[[nodiscard]] auto GetRootItem()const->HTREEITEM { return GetNextItem(nullptr, TVGN_ROOT); }
-		[[nodiscard]] auto GetSelectedItem()const->HTREEITEM { return GetNextItem(nullptr, TVGN_CARET); }
-		[[nodiscard]] auto HitTest(TVHITTESTINFO* pHTI)const->HTREEITEM {
+		[[nodiscard]] auto GetNextSiblingItem(HTREEITEM hItem)const -> HTREEITEM { return GetNextItem(hItem, TVGN_NEXT); }
+		[[nodiscard]] auto GetParentItem(HTREEITEM hItem)const -> HTREEITEM { return GetNextItem(hItem, TVGN_PARENT); }
+		[[nodiscard]] auto GetRootItem()const -> HTREEITEM { return GetNextItem(nullptr, TVGN_ROOT); }
+		[[nodiscard]] auto GetSelectedItem()const -> HTREEITEM { return GetNextItem(nullptr, TVGN_CARET); }
+		[[nodiscard]] auto HitTest(TVHITTESTINFO* pHTI)const -> HTREEITEM {
 			assert(IsWindow());
 			return reinterpret_cast<HTREEITEM>(::SendMessageW(m_hWnd, TVM_HITTEST, 0, reinterpret_cast<LPARAM>(pHTI)));
 		}
-		[[nodiscard]] auto HitTest(POINT pt, UINT* pFlags = nullptr)const->HTREEITEM {
+		[[nodiscard]] auto HitTest(POINT pt, UINT* pFlags = nullptr)const -> HTREEITEM {
 			TVHITTESTINFO hti { .pt { pt } }; const auto ret = HitTest(&hti);
 			if (pFlags != nullptr) { *pFlags = hti.flags; }
 			return ret;
 		}
-		auto InsertItem(LPTVINSERTSTRUCTW pTIS)const->HTREEITEM {
+		auto InsertItem(LPTVINSERTSTRUCTW pTIS)const -> HTREEITEM {
 			assert(IsWindow()); return reinterpret_cast<HTREEITEM>
 				(::SendMessageW(m_hWnd, TVM_INSERTITEM, 0, reinterpret_cast<LPARAM>(pTIS)));
 		}
@@ -1098,16 +1097,16 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		[[nodiscard]] int GetCurSel()const {
 			assert(IsWindow()); return static_cast<int>(::SendMessageW(m_hWnd, TCM_GETCURSEL, 0, 0L));
 		}
-		[[nodiscard]] auto GetItemRect(int nItem)const->CRect {
+		[[nodiscard]] auto GetItemRect(int nItem)const -> CRect {
 			assert(IsWindow());
 			RECT rc { }; ::SendMessageW(m_hWnd, TCM_GETITEMRECT, nItem, reinterpret_cast<LPARAM>(&rc));
 			return rc;
 		}
-		auto InsertItem(int iItem, TCITEMW* pItem)const->LONG {
+		auto InsertItem(int iItem, TCITEMW* pItem)const -> LONG {
 			assert(IsWindow());
 			return static_cast<LONG>(::SendMessageW(m_hWnd, TCM_INSERTITEMW, iItem, reinterpret_cast<LPARAM>(pItem)));
 		}
-		auto InsertItem(int iItem, LPCWSTR pwszStr)const->LONG {
+		auto InsertItem(int iItem, LPCWSTR pwszStr)const -> LONG {
 			TCITEMW tci { .mask { TCIF_TEXT }, .pszText { const_cast<LPWSTR>(pwszStr) } };
 			return InsertItem(iItem, &tci);
 		}
@@ -1137,30 +1136,30 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 			assert(IsMenu()); ::EnableMenuItem(m_hMenu, uIDItem, (fEnable ? MF_ENABLED : MF_GRAYED) |
 				(fByID ? MF_BYCOMMAND : MF_BYPOSITION));
 		}
-		[[nodiscard]] auto GetHMENU()const->HMENU { return m_hMenu; }
-		[[nodiscard]] auto GetItemBitmap(UINT uID, bool fByID = true)const->HBITMAP {
+		[[nodiscard]] auto GetHMENU()const -> HMENU { return m_hMenu; }
+		[[nodiscard]] auto GetItemBitmap(UINT uID, bool fByID = true)const -> HBITMAP {
 			return GetItemInfo(uID, MIIM_BITMAP, fByID).hbmpItem;
 		}
-		[[nodiscard]] auto GetItemBitmapCheck(UINT uID, bool fByID = true)const->HBITMAP {
+		[[nodiscard]] auto GetItemBitmapCheck(UINT uID, bool fByID = true)const -> HBITMAP {
 			return GetItemInfo(uID, MIIM_CHECKMARKS, fByID).hbmpChecked;
 		}
-		[[nodiscard]] auto GetItemID(int iPos)const->UINT {
+		[[nodiscard]] auto GetItemID(int iPos)const -> UINT {
 			assert(IsMenu()); return ::GetMenuItemID(m_hMenu, iPos);
 		}
 		bool GetItemInfo(UINT uID, LPMENUITEMINFOW pMII, bool fByID = true)const {
 			assert(IsMenu()); return ::GetMenuItemInfoW(m_hMenu, uID, !fByID, pMII) != FALSE;
 		}
-		[[nodiscard]] auto GetItemInfo(UINT uID, UINT uMask, bool fByID = true)const->MENUITEMINFOW {
+		[[nodiscard]] auto GetItemInfo(UINT uID, UINT uMask, bool fByID = true)const -> MENUITEMINFOW {
 			MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { uMask } };
 			GetItemInfo(uID, &mii, fByID); return mii;
 		}
-		[[nodiscard]] auto GetItemState(UINT uID, bool fByID = true)const->UINT {
+		[[nodiscard]] auto GetItemState(UINT uID, bool fByID = true)const -> UINT {
 			assert(IsMenu()); return ::GetMenuState(m_hMenu, uID, fByID ? MF_BYCOMMAND : MF_BYPOSITION);
 		}
-		[[nodiscard]] auto GetItemType(UINT uID, bool fByID = true)const->UINT {
+		[[nodiscard]] auto GetItemType(UINT uID, bool fByID = true)const -> UINT {
 			return GetItemInfo(uID, MIIM_FTYPE, fByID).fType;
 		}
-		[[nodiscard]] auto GetItemWstr(UINT uID, bool fByID = true)const->std::wstring {
+		[[nodiscard]] auto GetItemWstr(UINT uID, bool fByID = true)const -> std::wstring {
 			wchar_t buff[128]; MENUITEMINFOW mii { .cbSize { sizeof(MENUITEMINFOW) }, .fMask { MIIM_STRING },
 				.dwTypeData { buff }, .cch { 128 } }; return GetItemInfo(uID, &mii, fByID) ? buff : std::wstring { };
 		}

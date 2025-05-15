@@ -221,40 +221,40 @@ namespace HEXCTRL::INTERNAL {
 		void Delete()override;
 		void DestroyWindow()override;
 		void ExecuteCmd(EHexCmd eCmd)override;
-		[[nodiscard]] auto GetActualWidth()const->int override;
-		[[nodiscard]] auto GetBookmarks()const->IHexBookmarks* override;
-		[[nodiscard]] auto GetCacheSize()const->DWORD override;
-		[[nodiscard]] auto GetCapacity()const->DWORD override;
-		[[nodiscard]] auto GetCaretPos()const->ULONGLONG override;
-		[[nodiscard]] auto GetCharsExtraSpace()const->DWORD override;
-		[[nodiscard]] auto GetCodepage()const->int override;
-		[[nodiscard]] auto GetColors()const->const HEXCOLORS & override;
-		[[nodiscard]] auto GetData(HEXSPAN hss)const->SpanByte override;
-		[[nodiscard]] auto GetDataSize()const->ULONGLONG override;
-		[[nodiscard]] auto GetDateInfo()const->std::tuple<DWORD, wchar_t> override;
-		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND override;
-		[[nodiscard]] auto GetFont(bool fMain = true)const->LOGFONTW override;
-		[[nodiscard]] auto GetGroupSize()const->DWORD override;
-		[[nodiscard]] auto GetMenuHandle()const->HMENU override;
-		[[nodiscard]] auto GetOffset(ULONGLONG ullOffset, bool fGetVirt)const->ULONGLONG override;
-		[[nodiscard]] auto GetPagesCount()const->ULONGLONG override;
-		[[nodiscard]] auto GetPagePos()const->ULONGLONG override;
-		[[nodiscard]] auto GetPageSize()const->DWORD override;
-		[[nodiscard]] auto GetScrollRatio()const->std::tuple<float, bool> override;
-		[[nodiscard]] auto GetSelection()const->VecSpan override;
-		[[nodiscard]] auto GetTemplates()const->IHexTemplates* override;
-		[[nodiscard]] auto GetUnprintableChar()const->wchar_t override;
-		[[nodiscard]] auto GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND override;
+		[[nodiscard]] auto GetActualWidth()const -> int override;
+		[[nodiscard]] auto GetBookmarks()const -> IHexBookmarks* override;
+		[[nodiscard]] auto GetCacheSize()const -> DWORD override;
+		[[nodiscard]] auto GetCapacity()const -> DWORD override;
+		[[nodiscard]] auto GetCaretPos()const -> ULONGLONG override;
+		[[nodiscard]] auto GetCharsExtraSpace()const -> DWORD override;
+		[[nodiscard]] auto GetCodepage()const -> int override;
+		[[nodiscard]] auto GetColors()const -> const HEXCOLORS & override;
+		[[nodiscard]] auto GetData(HEXSPAN hss)const -> SpanByte override;
+		[[nodiscard]] auto GetDataSize()const -> ULONGLONG override;
+		[[nodiscard]] auto GetDateInfo()const -> std::tuple<DWORD, wchar_t> override;
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND override;
+		[[nodiscard]] auto GetFont(bool fMain = true)const -> LOGFONTW override;
+		[[nodiscard]] auto GetGroupSize()const -> DWORD override;
+		[[nodiscard]] auto GetMenuHandle()const -> HMENU override;
+		[[nodiscard]] auto GetOffset(ULONGLONG ullOffset, bool fGetVirt)const -> ULONGLONG override;
+		[[nodiscard]] auto GetPagesCount()const -> ULONGLONG override;
+		[[nodiscard]] auto GetPagePos()const -> ULONGLONG override;
+		[[nodiscard]] auto GetPageSize()const -> DWORD override;
+		[[nodiscard]] auto GetScrollRatio()const -> std::tuple<float, bool> override;
+		[[nodiscard]] auto GetSelection()const -> VecSpan override;
+		[[nodiscard]] auto GetTemplates()const -> IHexTemplates* override;
+		[[nodiscard]] auto GetUnprintableChar()const -> wchar_t override;
+		[[nodiscard]] auto GetWndHandle(EHexWnd eWnd, bool fCreate)const -> HWND override;
 		void GoToOffset(ULONGLONG ullOffset, int iPosAt = 0)override;
 		[[nodiscard]] bool HasInfoBar()const override;
 		[[nodiscard]] bool HasSelection()const override;
-		[[nodiscard]] auto HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST> override;
+		[[nodiscard]] auto HitTest(POINT pt, bool fScreen)const -> std::optional<HEXHITTEST> override;
 		[[nodiscard]] bool IsCmdAvail(EHexCmd eCmd)const override;
 		[[nodiscard]] bool IsCreated()const override;
 		[[nodiscard]] bool IsDataSet()const override;
 		[[nodiscard]] bool IsMutable()const override;
 		[[nodiscard]] bool IsOffsetAsHex()const override;
-		[[nodiscard]] auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION override;
+		[[nodiscard]] auto IsOffsetVisible(ULONGLONG ullOffset)const -> HEXVISION override;
 		[[nodiscard]] bool IsVirtual()const override;
 		void ModifyData(const HEXMODIFY& hms)override;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg)override;
@@ -283,7 +283,7 @@ namespace HEXCTRL::INTERNAL {
 		void ShowInfoBar(bool fShow)override;
 	private:
 		struct KEYBIND; struct UNDO; enum class EClipboard : std::uint8_t;
-		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tuple<std::wstring, std::wstring>;
+		[[nodiscard]] auto BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const -> std::tuple<std::wstring, std::wstring>;
 		void CaretMoveDown();  //Set caret one line down.
 		void CaretMoveLeft();  //Set caret one chunk left.
 		void CaretMoveRight(); //Set caret one chunk right.
@@ -297,15 +297,15 @@ namespace HEXCTRL::INTERNAL {
 		void ChooseFontDlg();  //The "ChooseFont" dialog.
 		void ClipboardCopy(EClipboard eType)const;
 		void ClipboardPaste(EClipboard eType);
-		[[nodiscard]] auto CopyBase64()const->std::wstring;
-		[[nodiscard]] auto CopyCArr()const->std::wstring;
-		[[nodiscard]] auto CopyGrepHex()const->std::wstring;
-		[[nodiscard]] auto CopyHex()const->std::wstring;
-		[[nodiscard]] auto CopyHexFmt()const->std::wstring;
-		[[nodiscard]] auto CopyHexLE()const->std::wstring;
-		[[nodiscard]] auto CopyOffset()const->std::wstring;
-		[[nodiscard]] auto CopyPrintScreen()const->std::wstring;
-		[[nodiscard]] auto CopyTextCP()const->std::wstring;
+		[[nodiscard]] auto CopyBase64()const -> std::wstring;
+		[[nodiscard]] auto CopyCArr()const -> std::wstring;
+		[[nodiscard]] auto CopyGrepHex()const -> std::wstring;
+		[[nodiscard]] auto CopyHex()const -> std::wstring;
+		[[nodiscard]] auto CopyHexFmt()const -> std::wstring;
+		[[nodiscard]] auto CopyHexLE()const -> std::wstring;
+		[[nodiscard]] auto CopyOffset()const -> std::wstring;
+		[[nodiscard]] auto CopyPrintScreen()const -> std::wstring;
+		[[nodiscard]] auto CopyTextCP()const -> std::wstring;
 		void CreatePens();
 		void DrawWindow(HDC hDC)const;
 		void DrawInfoBar(HDC hDC)const;
@@ -321,27 +321,27 @@ namespace HEXCTRL::INTERNAL {
 		void FillCapacityString(); //Fill m_wstrCapacity according to current m_dwCapacity.
 		void FillWithZeros();      //Fill selection with zeros.
 		void FontSizeIncDec(bool fInc = true); //Increase os decrease font size by minimum amount.
-		[[nodiscard]] auto GetBottomLine()const->ULONGLONG; //Returns current bottom line number in view.
-		[[nodiscard]] auto GetCharsWidthArray()const->int*;
-		[[nodiscard]] auto GetCharWidthExtras()const->int;  //Width of the one char with extra space, in px.
-		[[nodiscard]] auto GetCharWidthNative()const->int;  //Width of the one char, in px.
-		[[nodiscard]] auto GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const->std::optional<EHexCmd>; //Get command from keybinding.
-		[[nodiscard]] auto GetCommandFromMenu(WORD wMenuID)const->std::optional<EHexCmd>; //Get command from menuID.
-		[[nodiscard]] auto GetDigitsOffset()const->DWORD;
+		[[nodiscard]] auto GetBottomLine()const -> ULONGLONG; //Returns current bottom line number in view.
+		[[nodiscard]] auto GetCharsWidthArray()const -> int*;
+		[[nodiscard]] auto GetCharWidthExtras()const -> int;  //Width of the one char with extra space, in px.
+		[[nodiscard]] auto GetCharWidthNative()const -> int;  //Width of the one char, in px.
+		[[nodiscard]] auto GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const -> std::optional<EHexCmd>; //Get command from keybinding.
+		[[nodiscard]] auto GetCommandFromMenu(WORD wMenuID)const -> std::optional<EHexCmd>; //Get command from menuID.
+		[[nodiscard]] auto GetDigitsOffset()const -> DWORD;
 		[[nodiscard]] long GetFontSize()const;
-		[[nodiscard]] auto GetRectTextCaption()const->gui::CRect;   //Returns rect of the text caption area.
-		[[nodiscard]] auto GetSelectedLines()const->ULONGLONG; //Get amount of selected lines.
-		[[nodiscard]] auto GetScrollPageSize()const->ULONGLONG; //Get the "Page" size of the scroll.
-		[[nodiscard]] auto GetTopLine()const->ULONGLONG;       //Returns current top line number in view.
-		[[nodiscard]] auto GetVirtualOffset(ULONGLONG ullOffset)const->ULONGLONG;
+		[[nodiscard]] auto GetRectTextCaption()const -> gui::CRect;   //Returns rect of the text caption area.
+		[[nodiscard]] auto GetSelectedLines()const -> ULONGLONG; //Get amount of selected lines.
+		[[nodiscard]] auto GetScrollPageSize()const -> ULONGLONG; //Get the "Page" size of the scroll.
+		[[nodiscard]] auto GetTopLine()const -> ULONGLONG;       //Returns current top line number in view.
+		[[nodiscard]] auto GetVirtualOffset(ULONGLONG ullOffset)const -> ULONGLONG;
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Hex chunk.
-		[[nodiscard]] auto HitTest(POINT pt)const->std::optional<HEXHITTEST>; //Is any hex chunk withing given point?
+		[[nodiscard]] auto HitTest(POINT pt)const -> std::optional<HEXHITTEST>; //Is any hex chunk withing given point?
 		[[nodiscard]] bool IsCurTextArea()const;               //Whether last focus was set at Text or Hex chunks area.
 		[[nodiscard]] bool IsDrawable()const;                  //Should WM_PAINT be handled atm or not.
 		[[nodiscard]] bool IsPageVisible()const;               //Returns m_fSectorVisible.
 		//Main "Modify" method with different workers.
 		void ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorker, HEXCTRL::SpanCByte spnOper);
-		[[nodiscard]] auto OffsetToWstr(ULONGLONG ullOffset)const->std::wstring; //Format offset as std::wstring.
+		[[nodiscard]] auto OffsetToWstr(ULONGLONG ullOffset)const -> std::wstring; //Format offset as std::wstring.
 		void OnCaretPosChange(ULONGLONG ullOffset);            //On changing caret position.
 		void OnModifyData();                                   //When data has been modified.
 		template<typename T> requires std::is_class_v<T>

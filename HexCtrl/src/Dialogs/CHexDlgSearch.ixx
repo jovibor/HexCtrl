@@ -31,8 +31,8 @@ namespace HEXCTRL::INTERNAL {
 		void ClearData();
 		void CreateDlg();
 		void DestroyDlg();
-		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
-		[[nodiscard]] auto GetHWND()const->HWND;
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
+		[[nodiscard]] auto GetHWND()const -> HWND;
 		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool IsSearchAvail()const; //Can we do search next/prev?
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
@@ -56,30 +56,30 @@ namespace HEXCTRL::INTERNAL {
 		void ClearList();
 		void ComboSearchFill(LPCWSTR pwsz);
 		void ComboReplaceFill(LPCWSTR pwsz);
-		[[nodiscard]] auto CreateSearchData(CHexDlgProgress* pDlgProg = nullptr)const->SEARCHFUNCDATA;
+		[[nodiscard]] auto CreateSearchData(CHexDlgProgress* pDlgProg = nullptr)const -> SEARCHFUNCDATA;
 		void FindAll();
 		void FindForward();
 		void FindBackward();
-		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
-		[[nodiscard]] auto GetLastSearchOffset()const->ULONGLONG;
-		[[nodiscard]] auto GetRngStart()const->ULONGLONG;
-		[[nodiscard]] auto GetRngEnd()const->ULONGLONG;
-		[[nodiscard]] auto GetRngSize()const->ULONGLONG;     //Size of the range to search within.
-		[[nodiscard]] auto GetReplaceDataSize()const->DWORD; //Replace vec data size.
-		[[nodiscard]] auto GetReplaceSpan()const->SpanCByte;
-		[[nodiscard]] auto GetSearchDataSize()const->DWORD;  //Search vec data size.
-		[[nodiscard]] auto GetSearchRngSize()const->ULONGLONG;
-		[[nodiscard]] auto GetSearchFunc(bool fFwd, bool fDlgProg)const->PtrSearchFunc;
+		[[nodiscard]] auto GetHexCtrl()const -> IHexCtrl*;
+		[[nodiscard]] auto GetLastSearchOffset()const -> ULONGLONG;
+		[[nodiscard]] auto GetRngStart()const -> ULONGLONG;
+		[[nodiscard]] auto GetRngEnd()const -> ULONGLONG;
+		[[nodiscard]] auto GetRngSize()const -> ULONGLONG;     //Size of the range to search within.
+		[[nodiscard]] auto GetReplaceDataSize()const -> DWORD; //Replace vec data size.
+		[[nodiscard]] auto GetReplaceSpan()const -> SpanCByte;
+		[[nodiscard]] auto GetSearchDataSize()const -> DWORD;  //Search vec data size.
+		[[nodiscard]] auto GetSearchRngSize()const -> ULONGLONG;
+		[[nodiscard]] auto GetSearchFunc(bool fFwd, bool fDlgProg)const -> PtrSearchFunc;
 		template<bool fDlgProg, EVecSize eVecSize>
-		[[nodiscard]] auto GetSearchFuncFwd()const->PtrSearchFunc;
+		[[nodiscard]] auto GetSearchFuncFwd()const -> PtrSearchFunc;
 		template<bool fDlgProg, EVecSize eVecSize>
-		[[nodiscard]] auto GetSearchFuncBack()const->PtrSearchFunc;
-		[[nodiscard]] auto GetSearchMode()const->ESearchMode; //Getcurrent search mode.
-		[[nodiscard]] auto GetSearchSpan()const->SpanCByte;
-		[[nodiscard]] auto GetSearchType()const->ESearchType; //Get current search type.
-		[[nodiscard]] auto GetSentinel()const->ULONGLONG;
-		[[nodiscard]] auto GetStartFrom()const->ULONGLONG;   //Start search from.
-		[[nodiscard]] auto GetStep()const->ULONGLONG;
+		[[nodiscard]] auto GetSearchFuncBack()const -> PtrSearchFunc;
+		[[nodiscard]] auto GetSearchMode()const -> ESearchMode; //Getcurrent search mode.
+		[[nodiscard]] auto GetSearchSpan()const -> SpanCByte;
+		[[nodiscard]] auto GetSearchType()const -> ESearchType; //Get current search type.
+		[[nodiscard]] auto GetSentinel()const -> ULONGLONG;
+		[[nodiscard]] auto GetStartFrom()const -> ULONGLONG;   //Start search from.
+		[[nodiscard]] auto GetStep()const -> ULONGLONG;
 		void HexCtrlHighlight(const VecSpan& vecSel); //Highlight found occurence in the HexCtrl.
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsForward()const;

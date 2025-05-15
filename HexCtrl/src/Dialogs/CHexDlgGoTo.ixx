@@ -21,7 +21,7 @@ namespace HEXCTRL::INTERNAL {
 		void CreateDlg();
 		void DestroyDlg();
 		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
-		[[nodiscard]] auto GetHWND()const->HWND;
+		[[nodiscard]] auto GetHWND()const -> HWND;
 		[[nodiscard]] bool IsRepeatAvail()const;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
@@ -30,8 +30,8 @@ namespace HEXCTRL::INTERNAL {
 		void ShowWindow(int iCmdShow);
 	private:
 		enum class EGoMode : std::uint8_t;
-		[[nodiscard]] auto GetHexCtrl()const->IHexCtrl*;
-		[[nodiscard]] auto GetGoMode()const->EGoMode;
+		[[nodiscard]] auto GetHexCtrl()const -> IHexCtrl*;
+		[[nodiscard]] auto GetGoMode()const -> EGoMode;
 		void GoTo(bool fForward);
 		[[nodiscard ]] bool IsNoEsc()const;
 		auto OnActivate(const MSG& msg) -> INT_PTR;

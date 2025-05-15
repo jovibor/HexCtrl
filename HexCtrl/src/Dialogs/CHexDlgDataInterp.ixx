@@ -23,9 +23,9 @@ namespace HEXCTRL::INTERNAL {
 		void ClearData();
 		void CreateDlg();
 		void DestroyDlg();
-		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND;
-		[[nodiscard]] auto GetHighlightSize()const->DWORD;
-		[[nodiscard]] auto GetHWND()const->HWND;
+		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
+		[[nodiscard]] auto GetHighlightSize()const -> DWORD;
+		[[nodiscard]] auto GetHWND()const -> HWND;
 		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool HasHighlight()const;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
@@ -35,11 +35,11 @@ namespace HEXCTRL::INTERNAL {
 		void UpdateData();
 	private:
 		struct LISTDATA; union UMSDOSDateTime; union UDTTM; enum class EName : std::uint8_t;
-		[[nodiscard]] auto GetCurrFieldName()const->EName;
-		[[nodiscard]] auto GetCurrFieldSize()const->std::uint8_t;
-		[[nodiscard]] auto GetFieldSize(EName eName)const->std::uint8_t;
+		[[nodiscard]] auto GetCurrFieldName()const -> EName;
+		[[nodiscard]] auto GetCurrFieldSize()const -> std::uint8_t;
+		[[nodiscard]] auto GetFieldSize(EName eName)const -> std::uint8_t;
 		[[nodiscard]] auto GetListData(EName eName) -> LISTDATA*; //Non-const overload.
-		[[nodiscard]] auto GetListData(EName eName)const->const LISTDATA*; //Const overload.
+		[[nodiscard]] auto GetListData(EName eName)const -> const LISTDATA*; //Const overload.
 		[[nodiscard]] auto GetListData(int iItem) -> LISTDATA*;
 		[[nodiscard]] bool IsBigEndian()const;
 		[[nodiscard]] bool IsNoEsc()const;

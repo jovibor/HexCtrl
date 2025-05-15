@@ -16,12 +16,12 @@ namespace HEXCTRL::INTERNAL {
 	class CHexSelection final {
 	public:
 		void ClearAll();
-		[[nodiscard]] auto GetData()const->VecSpan;
-		[[nodiscard]] auto GetLineLength()const->DWORD; //Length of the selected line. Used in block selection (with Alt).
-		[[nodiscard]] auto GetOffsetByIndex(ULONGLONG ullIndex)const->ULONGLONG; //Retrieves selection's offset by index [0...GetSelSize())
-		[[nodiscard]] auto GetSelEnd()const->ULONGLONG;
-		[[nodiscard]] auto GetSelSize()const->ULONGLONG;
-		[[nodiscard]] auto GetSelStart()const->ULONGLONG;
+		[[nodiscard]] auto GetData()const -> VecSpan;
+		[[nodiscard]] auto GetLineLength()const -> DWORD; //Length of the selected line. Used in block selection (with Alt).
+		[[nodiscard]] auto GetOffsetByIndex(ULONGLONG ullIndex)const -> ULONGLONG; //Retrieves selection's offset by index [0...GetSelSize())
+		[[nodiscard]] auto GetSelEnd()const -> ULONGLONG;
+		[[nodiscard]] auto GetSelSize()const -> ULONGLONG;
+		[[nodiscard]] auto GetSelStart()const -> ULONGLONG;
 		[[nodiscard]] bool HasSelection()const;
 		[[nodiscard]] bool HasSelHighlight()const;
 		[[nodiscard]] bool HasContiguousSel()const; //Has contiguous selection, not multiline with Alt.

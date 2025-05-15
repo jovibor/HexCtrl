@@ -22,7 +22,7 @@ namespace HEXCTRL::INTERNAL {
 		void AddCP(std::wstring_view wsv);
 		void CreateDlg();
 		void DestroyDlg();
-		[[nodiscard]] auto GetHWND()const->HWND;
+		[[nodiscard]] auto GetHWND()const -> HWND;
 		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
 		[[nodiscard]] auto ProcessMsg(const MSG& msg) -> INT_PTR;
