@@ -22,7 +22,7 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgBkmMgr final : public IHexBookmarks {
 	public:
 		auto AddBkm(const HEXBKM& hbs, bool fRedraw) -> ULONGLONG override;    //Returns new bookmark Id.
-		void CreateDlg();
+		void CreateDlg()const;
 		void DestroyDlg();
 		[[nodiscard]] auto GetByID(ULONGLONG ullID) -> PHEXBKM override;       //Bookmark by ID.
 		[[nodiscard]] auto GetByIndex(ULONGLONG ullIndex) -> PHEXBKM override; //Bookmark by index (in inner list).
@@ -33,8 +33,10 @@ namespace HEXCTRL::INTERNAL {
 		void GoBookmark(ULONGLONG ullIndex);
 		void GoNext();
 		void GoPrev();
+		[[nodiscard]] bool HasBookmark(ULONGLONG ullOffset)const;
 		[[nodiscard]] bool HasBookmarks()const;
 		[[nodiscard]] auto HitTest(ULONGLONG ullOffset) -> PHEXBKM override;
+		[[nodiscard]] auto HitTest(ULONGLONG ullOffset)const -> PHEXBKM;
 		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] bool IsVirtual()const;
 		[[nodiscard]] bool PreTranslateMsg(MSG* pMsg);
@@ -117,7 +119,7 @@ auto CHexDlgBkmMgr::AddBkm(const HEXBKM& hbs, bool fRedraw)->ULONGLONG
 	return ullID;
 }
 
-void CHexDlgBkmMgr::CreateDlg()
+void CHexDlgBkmMgr::CreateDlg()const
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_BKMMGR),
@@ -245,6 +247,11 @@ void CHexDlgBkmMgr::GoPrev()
 	}
 }
 
+bool CHexDlgBkmMgr::HasBookmark(ULONGLONG ullOffset)const
+{
+	return HitTest(ullOffset) != nullptr;
+}
+
 bool CHexDlgBkmMgr::HasBookmarks()const
 {
 	return IsVirtual() ? m_pVirtual->GetCount() > 0 : !m_vecBookmarks.empty();
@@ -267,6 +274,11 @@ auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)->PHEXBKM
 	}
 
 	return pBkm;
+}
+
+auto CHexDlgBkmMgr::HitTest(ULONGLONG ullOffset)const->PHEXBKM
+{
+	return const_cast<CHexDlgBkmMgr*>(this)->HitTest(ullOffset);
 }
 
 void CHexDlgBkmMgr::Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes)

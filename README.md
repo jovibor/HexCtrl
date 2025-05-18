@@ -395,7 +395,7 @@ Returns the width of the **HexCtrl** bounding rectangle, i.e. the width of the d
 
 ### [](#)GetBookmarks
 ```cpp
-[[nodiscard]] auto GetBookmarks()const->IHexBookmarks*;
+[[nodiscard]] auto GetBookmarks()->IHexBookmarks*;
 ```
 Returns pointer to the [`IHexBookmarks`](#ihexbookmarks) interface, which responds for the bookmarks machinery.
 
@@ -520,7 +520,7 @@ Returns `std::vector` with the offsets and sizes of the current selection.
 
 ### [](#)GetTemplates
 ```cpp
-[[nodiscard]] auto GetTemplates()const->IHexTemplates*;
+[[nodiscard]] auto GetTemplates()->IHexTemplates*;
 ```
 Returns pointer to the internal [`IHexTemplates`](#ihextemplates) interface that is responsible for templates machinery.
 

@@ -21,7 +21,7 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgDataInterp final {
 	public:
 		void ClearData();
-		void CreateDlg();
+		void CreateDlg()const;
 		void DestroyDlg();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
 		[[nodiscard]] auto GetHighlightSize()const -> DWORD;
@@ -178,7 +178,7 @@ void CHexDlgDataInterp::ClearData()
 	m_ListEx.RedrawWindow();
 }
 
-void CHexDlgDataInterp::CreateDlg()
+void CHexDlgDataInterp::CreateDlg()const
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_DATAINTERP),

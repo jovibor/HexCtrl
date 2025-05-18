@@ -20,7 +20,7 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgCodepage final {
 	public:
 		void AddCP(std::wstring_view wsv);
-		void CreateDlg();
+		void CreateDlg()const;
 		void DestroyDlg();
 		[[nodiscard]] auto GetHWND()const -> HWND;
 		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
@@ -74,7 +74,7 @@ void CHexDlgCodepage::AddCP(std::wstring_view wsv)
 	}
 }
 
-void CHexDlgCodepage::CreateDlg()
+void CHexDlgCodepage::CreateDlg()const
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_CODEPAGE),

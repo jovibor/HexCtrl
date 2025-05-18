@@ -377,7 +377,7 @@ void CMFCDialogDlg::FileClose()
 	m_fFileOpen = false;
 }
 
-void CMFCDialogDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
+void CMFCDialogDlg::LoadTemplates(IHexCtrl* pHexCtrl)
 {
 	wchar_t buff[MAX_PATH];
 	GetModuleFileNameW(nullptr, buff, MAX_PATH);

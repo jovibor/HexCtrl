@@ -222,7 +222,7 @@ namespace HEXCTRL::INTERNAL {
 		void DestroyWindow()override;
 		void ExecuteCmd(EHexCmd eCmd)override;
 		[[nodiscard]] auto GetActualWidth()const -> int override;
-		[[nodiscard]] auto GetBookmarks()const -> IHexBookmarks* override;
+		[[nodiscard]] auto GetBookmarks() -> IHexBookmarks* override;
 		[[nodiscard]] auto GetCacheSize()const -> DWORD override;
 		[[nodiscard]] auto GetCapacity()const -> DWORD override;
 		[[nodiscard]] auto GetCaretPos()const -> ULONGLONG override;
@@ -242,7 +242,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetPageSize()const -> DWORD override;
 		[[nodiscard]] auto GetScrollRatio()const -> std::tuple<float, bool> override;
 		[[nodiscard]] auto GetSelection()const -> VecSpan override;
-		[[nodiscard]] auto GetTemplates()const -> IHexTemplates* override;
+		[[nodiscard]] auto GetTemplates() -> IHexTemplates* override;
 		[[nodiscard]] auto GetUnprintableChar()const -> wchar_t override;
 		[[nodiscard]] auto GetWndHandle(EHexWnd eWnd, bool fCreate)const -> HWND override;
 		void GoToOffset(ULONGLONG ullOffset, int iPosAt = 0)override;
@@ -404,16 +404,16 @@ namespace HEXCTRL::INTERNAL {
 		static constexpr auto m_iFirstVertLinePx { 0 };               //First vertical line indent.
 		static constexpr auto m_dwVKMouseWheelUp { 0x0100UL };        //Artificial Virtual Key for a Mouse-Wheel Up event.
 		static constexpr auto m_dwVKMouseWheelDown { 0x0101UL };      //Artificial Virtual Key for a Mouse-Wheel Down event.
-		const std::unique_ptr<CHexDlgBkmMgr> m_pDlgBkmMgr { std::make_unique<CHexDlgBkmMgr>() };             //"Bookmark manager" dialog.
-		const std::unique_ptr<CHexDlgCodepage> m_pDlgCodepage { std::make_unique<CHexDlgCodepage>() };       //"Codepage" dialog.
-		const std::unique_ptr<CHexDlgDataInterp> m_pDlgDataInterp { std::make_unique<CHexDlgDataInterp>() }; //"Data interpreter" dialog.
-		const std::unique_ptr<CHexDlgModify> m_pDlgModify { std::make_unique<CHexDlgModify>() };             //"Modify..." dialog.
-		const std::unique_ptr<CHexDlgGoTo> m_pDlgGoTo { std::make_unique<CHexDlgGoTo>() };                   //"GoTo..." dialog.
-		const std::unique_ptr<CHexDlgSearch> m_pDlgSearch { std::make_unique<CHexDlgSearch>() };             //"Search..." dialog.
-		const std::unique_ptr<CHexDlgTemplMgr> m_pDlgTemplMgr { std::make_unique<CHexDlgTemplMgr>() };       //"Template manager..." dialog.
-		const std::unique_ptr<CHexSelection> m_pSelection { std::make_unique<CHexSelection>() };             //Selection class.
-		const std::unique_ptr<CHexScroll> m_pScrollV { std::make_unique<CHexScroll>() };                     //Vertical scroll bar.
-		const std::unique_ptr<CHexScroll> m_pScrollH { std::make_unique<CHexScroll>() };                     //Horizontal scroll bar.
+		CHexDlgBkmMgr m_DlgBkmMgr;            //"Bookmark manager" dialog.
+		CHexDlgCodepage m_DlgCodepage;        //"Codepage" dialog.
+		CHexDlgDataInterp m_DlgDataInterp;    //"Data interpreter" dialog.
+		CHexDlgGoTo m_DlgGoTo;                //"GoTo..." dialog.
+		CHexDlgModify m_DlgModify;            //"Modify..." dialog.
+		CHexDlgSearch m_DlgSearch;            //"Search..." dialog.
+		CHexDlgTemplMgr m_DlgTemplMgr;        //"Template manager..." dialog.
+		CHexSelection m_Selection;            //Selection class.
+		CHexScroll m_ScrollV;                 //Vertical scroll bar.
+		CHexScroll m_ScrollH;                 //Horizontal scroll bar.
 		HINSTANCE m_hInstRes { };             //Hinstance of the HexCtrl resources.
 		gui::CWnd m_Wnd;                      //Main window.
 		gui::CWnd m_wndTTMain;                //Main tooltip window.
@@ -426,7 +426,7 @@ namespace HEXCTRL::INTERNAL {
 		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecUndo; //Undo data.
 		std::vector<std::unique_ptr<std::vector<UNDO>>> m_vecRedo; //Redo data.
 		std::vector < std::unique_ptr < std::remove_pointer_t<HBITMAP>,
-			decltype([](HBITMAP hBmp) { DeleteObject(hBmp); }) >> m_vecHBITMAP; //Icons for the Menu.
+			decltype([](HBITMAP hBmp) { ::DeleteObject(hBmp); }) >> m_vecHBITMAP; //Icons for the Menu.
 		std::vector<KEYBIND> m_vecKeyBind;    //Vector of key bindings.
 		std::vector<int> m_vecCharsWidth;     //Vector of chars widths.
 		HFONT m_hFntMain { };                 //Main Hex chunks font.
@@ -564,13 +564,13 @@ void CHexCtrl::ClearData()
 	m_ullCursorNow = 0;
 	m_vecUndo.clear();
 	m_vecRedo.clear();
-	m_pScrollV->SetScrollPos(0);
-	m_pScrollH->SetScrollPos(0);
-	m_pScrollV->SetScrollSizes(0, 0, 0);
-	m_pDlgBkmMgr->RemoveAll();
-	m_pDlgDataInterp->ClearData();
-	m_pDlgSearch->ClearData();
-	m_pSelection->ClearAll();
+	m_ScrollV.SetScrollPos(0);
+	m_ScrollH.SetScrollPos(0);
+	m_ScrollV.SetScrollSizes(0, 0, 0);
+	m_DlgBkmMgr.RemoveAll();
+	m_DlgDataInterp.ClearData();
+	m_DlgSearch.ClearData();
+	m_Selection.ClearAll();
 	Redraw();
 }
 
@@ -711,10 +711,10 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	//ScrollBars should be created here, after the main window has already been created (to attach to), to avoid assertions.
 	//Actual scroll sizes are set in RecalcAll.
-	m_pScrollV->Create(m_Wnd, true, m_stColors.clrScrollBar, m_stColors.clrScrollThumb, m_stColors.clrScrollArrow, 0, 0, 0);
-	m_pScrollH->Create(m_Wnd, false, m_stColors.clrScrollBar, m_stColors.clrScrollThumb, m_stColors.clrScrollArrow, 0, 0, 0);
-	m_pScrollV->AddSibling(m_pScrollH.get());
-	m_pScrollH->AddSibling(m_pScrollV.get());
+	m_ScrollV.Create(m_Wnd, true, m_stColors.clrScrollBar, m_stColors.clrScrollThumb, m_stColors.clrScrollArrow, 0, 0, 0);
+	m_ScrollH.Create(m_Wnd, false, m_stColors.clrScrollBar, m_stColors.clrScrollThumb, m_stColors.clrScrollArrow, 0, 0, 0);
+	m_ScrollV.AddSibling(&m_ScrollH);
+	m_ScrollH.AddSibling(&m_ScrollV);
 
 	m_fCreated = true; //Main creation flag.
 
@@ -725,13 +725,13 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	SetUnprintableChar(L'.');
 
 	//All dialogs are initialized after the main window, to set the parent handle correctly.
-	m_pDlgBkmMgr->Initialize(this, m_hInstRes);
-	m_pDlgDataInterp->Initialize(this, m_hInstRes);
-	m_pDlgCodepage->Initialize(this, m_hInstRes);
-	m_pDlgGoTo->Initialize(this, m_hInstRes);
-	m_pDlgSearch->Initialize(this, m_hInstRes);
-	m_pDlgTemplMgr->Initialize(this, m_hInstRes);
-	m_pDlgModify->Initialize(this, m_hInstRes);
+	m_DlgBkmMgr.Initialize(this, m_hInstRes);
+	m_DlgDataInterp.Initialize(this, m_hInstRes);
+	m_DlgCodepage.Initialize(this, m_hInstRes);
+	m_DlgGoTo.Initialize(this, m_hInstRes);
+	m_DlgSearch.Initialize(this, m_hInstRes);
+	m_DlgTemplMgr.Initialize(this, m_hInstRes);
+	m_DlgModify.Initialize(this, m_hInstRes);
 
 	return true;
 }
@@ -768,25 +768,25 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 	switch (eCmd) {
 	case CMD_SEARCH_DLG:
 		ParentNotify(HEXCTRL_MSG_DLGSEARCH);
-		m_pDlgSearch->ShowWindow(SW_SHOW);
+		m_DlgSearch.ShowWindow(SW_SHOW);
 		break;
 	case CMD_SEARCH_NEXT:
-		m_pDlgSearch->SearchNextPrev(true);
+		m_DlgSearch.SearchNextPrev(true);
 		m_Wnd.SetFocus();
 		break;
 	case CMD_SEARCH_PREV:
-		m_pDlgSearch->SearchNextPrev(false);
+		m_DlgSearch.SearchNextPrev(false);
 		m_Wnd.SetFocus();
 		break;
 	case CMD_NAV_GOTO_DLG:
 		ParentNotify(HEXCTRL_MSG_DLGGOTO);
-		m_pDlgGoTo->ShowWindow(SW_SHOW);
+		m_DlgGoTo.ShowWindow(SW_SHOW);
 		break;
 	case CMD_NAV_REPFWD:
-		m_pDlgGoTo->Repeat();
+		m_DlgGoTo.Repeat();
 		break;
 	case CMD_NAV_REPBKW:
-		m_pDlgGoTo->Repeat(false);
+		m_DlgGoTo.Repeat(false);
 		break;
 	case CMD_NAV_DATABEG:
 		CaretToDataBeg();
@@ -825,25 +825,25 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		SetGroupSize(GetGroupSize() - 1);
 		break;
 	case CMD_BKM_ADD:
-		m_pDlgBkmMgr->AddBkm(HEXBKM { .vecSpan { HasSelection() ? GetSelection()
+		m_DlgBkmMgr.AddBkm(HEXBKM { .vecSpan { HasSelection() ? GetSelection()
 			: VecSpan { { GetCaretPos(), 1 } } },
 			.stClr { .clrBk { GetColors().clrBkBkm }, .clrText { GetColors().clrFontBkm } } }, true);
 		break;
 	case CMD_BKM_REMOVE:
-		m_pDlgBkmMgr->RemoveByOffset(GetCaretPos());
+		m_DlgBkmMgr.RemoveByOffset(GetCaretPos());
 		break;
 	case CMD_BKM_NEXT:
-		m_pDlgBkmMgr->GoNext();
+		m_DlgBkmMgr.GoNext();
 		break;
 	case CMD_BKM_PREV:
-		m_pDlgBkmMgr->GoPrev();
+		m_DlgBkmMgr.GoPrev();
 		break;
 	case CMD_BKM_REMOVEALL:
-		m_pDlgBkmMgr->RemoveAll();
+		m_DlgBkmMgr.RemoveAll();
 		break;
 	case CMD_BKM_DLG_MGR:
 		ParentNotify(HEXCTRL_MSG_DLGBKMMGR);
-		m_pDlgBkmMgr->ShowWindow(SW_SHOW);
+		m_DlgBkmMgr.ShowWindow(SW_SHOW);
 		break;
 	case CMD_CLPBRD_COPY_HEX:
 		ClipboardCopy(EClipboard::COPY_HEX);
@@ -883,14 +883,14 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_MODIFY_OPERS_DLG:
 		ParentNotify(HEXCTRL_MSG_DLGMODIFY);
-		m_pDlgModify->ShowWindow(SW_SHOW, 0);
+		m_DlgModify.ShowWindow(SW_SHOW, 0);
 		break;
 	case CMD_MODIFY_FILLZEROS:
 		FillWithZeros();
 		break;
 	case CMD_MODIFY_FILLDATA_DLG:
 		ParentNotify(HEXCTRL_MSG_DLGMODIFY);
-		m_pDlgModify->ShowWindow(SW_SHOW, 1);
+		m_DlgModify.ShowWindow(SW_SHOW, 1);
 		break;
 	case CMD_MODIFY_UNDO:
 		Undo();
@@ -899,7 +899,7 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		Redo();
 		break;
 	case CMD_SEL_MARKSTARTEND:
-		m_pSelection->SetMarkStartEnd(GetCaretPos());
+		m_Selection.SetMarkStartEnd(GetCaretPos());
 		Redraw();
 		break;
 	case CMD_SEL_ALL:
@@ -919,11 +919,11 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		break;
 	case CMD_DATAINTERP_DLG:
 		ParentNotify(HEXCTRL_MSG_DLGDATAINTERP);
-		m_pDlgDataInterp->ShowWindow(SW_SHOW);
+		m_DlgDataInterp.ShowWindow(SW_SHOW);
 		break;
 	case CMD_CODEPAGE_DLG:
 		ParentNotify(HEXCTRL_MSG_DLGCODEPAGE);
-		m_pDlgCodepage->ShowWindow(SW_SHOW);
+		m_DlgCodepage.ShowWindow(SW_SHOW);
 		break;
 	case CMD_APPEAR_FONT_DLG:
 		ChooseFontDlg();
@@ -962,23 +962,23 @@ void CHexCtrl::ExecuteCmd(EHexCmd eCmd)
 		CaretMoveDown();
 		break;
 	case CMD_SCROLL_PAGEUP:
-		m_pScrollV->ScrollPageUp();
+		m_ScrollV.ScrollPageUp();
 		break;
 	case CMD_SCROLL_PAGEDOWN:
-		m_pScrollV->ScrollPageDown();
+		m_ScrollV.ScrollPageDown();
 		break;
 	case CMD_TEMPL_APPLYCURR:
-		m_pDlgTemplMgr->ApplyCurr(GetCaretPos());
+		m_DlgTemplMgr.ApplyCurr(GetCaretPos());
 		break;
 	case CMD_TEMPL_DISAPPLY:
-		m_pDlgTemplMgr->DisapplyByOffset(GetCaretPos());
+		m_DlgTemplMgr.DisapplyByOffset(GetCaretPos());
 		break;
 	case CMD_TEMPL_DISAPPALL:
-		m_pDlgTemplMgr->DisapplyAll();
+		m_DlgTemplMgr.DisapplyAll();
 		break;
 	case CMD_TEMPL_DLG_MGR:
 		ParentNotify(HEXCTRL_MSG_DLGTEMPLMGR);
-		m_pDlgTemplMgr->ShowWindow(SW_SHOW);
+		m_DlgTemplMgr.ShowWindow(SW_SHOW);
 		break;
 	}
 }
@@ -990,11 +990,11 @@ int CHexCtrl::GetActualWidth()const
 	return m_iFourthVertLinePx + 1; //+1px is the Pen width the line was drawn with.
 }
 
-auto CHexCtrl::GetBookmarks()const->IHexBookmarks*
+auto CHexCtrl::GetBookmarks()->IHexBookmarks*
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
-	return &*m_pDlgBkmMgr;
+	return &m_DlgBkmMgr;
 }
 
 auto CHexCtrl::GetCacheSize()const->DWORD
@@ -1084,18 +1084,18 @@ auto CHexCtrl::GetDlgItemHandle(EHexDlgItem eItem)const->HWND
 	using enum EHexDlgItem;
 	switch (eItem) {
 	case BKMMGR_CHK_HEX:
-		return m_pDlgBkmMgr->GetDlgItemHandle(eItem);
+		return m_DlgBkmMgr.GetDlgItemHandle(eItem);
 	case DATAINTERP_CHK_HEX: case DATAINTERP_CHK_BE:
-		return m_pDlgDataInterp->GetDlgItemHandle(eItem);
+		return m_DlgDataInterp.GetDlgItemHandle(eItem);
 	case FILLDATA_COMBO_DATA:
-		return m_pDlgModify->GetDlgItemHandle(eItem);
+		return m_DlgModify.GetDlgItemHandle(eItem);
 	case SEARCH_COMBO_FIND:	case SEARCH_COMBO_REPLACE: case SEARCH_EDIT_START:
 	case SEARCH_EDIT_STEP: case SEARCH_EDIT_RNGBEG: case SEARCH_EDIT_RNGEND:
 	case SEARCH_EDIT_LIMIT:
-		return m_pDlgSearch->GetDlgItemHandle(eItem);
+		return m_DlgSearch.GetDlgItemHandle(eItem);
 	case TEMPLMGR_CHK_MIN: case TEMPLMGR_CHK_TT: case TEMPLMGR_CHK_HGL:
 	case TEMPLMGR_CHK_HEX: case TEMPLMGR_CHK_SWAP:
-		return m_pDlgTemplMgr->GetDlgItemHandle(eItem);
+		return m_DlgTemplMgr.GetDlgItemHandle(eItem);
 	default:
 		return { };
 	};
@@ -1176,14 +1176,14 @@ auto CHexCtrl::GetSelection()const->VecSpan
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return { }; }
 
-	return m_pSelection->GetData();
+	return m_Selection.GetData();
 }
 
-auto CHexCtrl::GetTemplates()const->IHexTemplates*
+auto CHexCtrl::GetTemplates()->IHexTemplates*
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return { }; }
 
-	return &*m_pDlgTemplMgr;
+	return &m_DlgTemplMgr;
 }
 
 auto CHexCtrl::GetUnprintableChar()const->wchar_t
@@ -1201,40 +1201,40 @@ auto CHexCtrl::GetWndHandle(EHexWnd eWnd, bool fCreate)const->HWND
 	case EHexWnd::WND_MAIN:
 		return m_Wnd;
 	case EHexWnd::DLG_BKMMGR:
-		if (!::IsWindow(m_pDlgBkmMgr->GetHWND()) && fCreate) {
-			m_pDlgBkmMgr->CreateDlg();
+		if (!::IsWindow(m_DlgBkmMgr.GetHWND()) && fCreate) {
+			m_DlgBkmMgr.CreateDlg();
 		}
-		return m_pDlgBkmMgr->GetHWND();
+		return m_DlgBkmMgr.GetHWND();
 	case EHexWnd::DLG_DATAINTERP:
-		if (!::IsWindow(m_pDlgDataInterp->GetHWND()) && fCreate) {
-			m_pDlgDataInterp->CreateDlg();
+		if (!::IsWindow(m_DlgDataInterp.GetHWND()) && fCreate) {
+			m_DlgDataInterp.CreateDlg();
 		}
-		return m_pDlgDataInterp->GetHWND();
+		return m_DlgDataInterp.GetHWND();
 	case EHexWnd::DLG_MODIFY:
-		if (!::IsWindow(m_pDlgModify->GetHWND()) && fCreate) {
-			m_pDlgModify->CreateDlg();
+		if (!::IsWindow(m_DlgModify.GetHWND()) && fCreate) {
+			m_DlgModify.CreateDlg();
 		}
-		return m_pDlgModify->GetHWND();
+		return m_DlgModify.GetHWND();
 	case EHexWnd::DLG_SEARCH:
-		if (!::IsWindow(m_pDlgSearch->GetHWND()) && fCreate) {
-			m_pDlgSearch->CreateDlg();
+		if (!::IsWindow(m_DlgSearch.GetHWND()) && fCreate) {
+			m_DlgSearch.CreateDlg();
 		}
-		return m_pDlgSearch->GetHWND();
+		return m_DlgSearch.GetHWND();
 	case EHexWnd::DLG_CODEPAGE:
-		if (!::IsWindow(m_pDlgCodepage->GetHWND()) && fCreate) {
-			m_pDlgCodepage->CreateDlg();
+		if (!::IsWindow(m_DlgCodepage.GetHWND()) && fCreate) {
+			m_DlgCodepage.CreateDlg();
 		}
-		return m_pDlgCodepage->GetHWND();
+		return m_DlgCodepage.GetHWND();
 	case EHexWnd::DLG_GOTO:
-		if (!::IsWindow(m_pDlgGoTo->GetHWND()) && fCreate) {
-			m_pDlgGoTo->CreateDlg();
+		if (!::IsWindow(m_DlgGoTo.GetHWND()) && fCreate) {
+			m_DlgGoTo.CreateDlg();
 		}
-		return m_pDlgGoTo->GetHWND();
+		return m_DlgGoTo.GetHWND();
 	case EHexWnd::DLG_TEMPLMGR:
-		if (!::IsWindow(m_pDlgTemplMgr->GetHWND()) && fCreate) {
-			m_pDlgTemplMgr->CreateDlg();
+		if (!::IsWindow(m_DlgTemplMgr.GetHWND()) && fCreate) {
+			m_DlgTemplMgr.CreateDlg();
 		}
-		return m_pDlgTemplMgr->GetHWND();
+		return m_DlgTemplMgr.GetHWND();
 	default:
 		return { };
 	}
@@ -1266,12 +1266,12 @@ void CHexCtrl::GoToOffset(ULONGLONG ullOffset, int iPosAt)
 	default:
 		break;
 	}
-	m_pScrollV->SetScrollPos(ullNewScrollV);
+	m_ScrollV.SetScrollPos(ullNewScrollV);
 
-	if (m_pScrollH->IsVisible() && !IsCurTextArea()) {
+	if (m_ScrollH.IsVisible() && !IsCurTextArea()) {
 		auto ullNewScrollH = (ullOffset % dwCapacity) * m_iSizeHexBytePx;
 		ullNewScrollH += (ullNewScrollH / m_iDistanceGroupedHexChunkPx) * GetCharWidthExtras();
-		m_pScrollH->SetScrollPos(ullNewScrollH);
+		m_ScrollH.SetScrollPos(ullNewScrollH);
 	}
 }
 
@@ -1286,7 +1286,7 @@ bool CHexCtrl::HasSelection()const
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
 
-	return m_pSelection->HasSelection();
+	return m_Selection.HasSelection();
 }
 
 auto CHexCtrl::HitTest(POINT pt, bool fScreen)const->std::optional<HEXHITTEST>
@@ -1313,12 +1313,12 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 	using enum EHexCmd;
 	switch (eCmd) {
 	case CMD_BKM_REMOVE:
-		fAvail = m_pDlgBkmMgr->HasBookmarks() && m_pDlgBkmMgr->HitTest(GetCaretPos()) != nullptr;
+		fAvail = m_DlgBkmMgr.HasBookmark(GetCaretPos());
 		break;
 	case CMD_BKM_NEXT:
 	case CMD_BKM_PREV:
 	case CMD_BKM_REMOVEALL:
-		fAvail = m_pDlgBkmMgr->HasBookmarks();
+		fAvail = m_DlgBkmMgr.HasBookmarks();
 		break;
 	case CMD_CLPBRD_COPY_HEX:
 	case CMD_CLPBRD_COPY_HEXLE:
@@ -1367,7 +1367,7 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		break;
 	case CMD_SEARCH_NEXT:
 	case CMD_SEARCH_PREV:
-		fAvail = m_pDlgSearch->IsSearchAvail();
+		fAvail = m_DlgSearch.IsSearchAvail();
 		break;
 	case CMD_NAV_PAGEBEG:
 	case CMD_NAV_PAGEEND:
@@ -1375,16 +1375,16 @@ bool CHexCtrl::IsCmdAvail(EHexCmd eCmd)const
 		break;
 	case CMD_NAV_REPFWD:
 	case CMD_NAV_REPBKW:
-		fAvail = fDataSet && m_pDlgGoTo->IsRepeatAvail();
+		fAvail = fDataSet && m_DlgGoTo.IsRepeatAvail();
 		break;
 	case CMD_TEMPL_APPLYCURR:
-		fAvail = fDataSet && m_pDlgTemplMgr->HasCurrent();
+		fAvail = fDataSet && m_DlgTemplMgr.HasCurrent();
 		break;
 	case CMD_TEMPL_DISAPPLY:
-		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied() && m_pDlgTemplMgr->HitTest(GetCaretPos()) != nullptr;
+		fAvail = fDataSet && m_DlgTemplMgr.HasApplied() && m_DlgTemplMgr.HitTest(GetCaretPos()) != nullptr;
 		break;
 	case CMD_TEMPL_DISAPPALL:
-		fAvail = fDataSet && m_pDlgTemplMgr->HasApplied();
+		fAvail = fDataSet && m_DlgTemplMgr.HasApplied();
 		break;
 	default:
 		fAvail = true;
@@ -1687,13 +1687,13 @@ void CHexCtrl::ModifyData(const HEXMODIFY& hms)
 
 bool CHexCtrl::PreTranslateMsg(MSG* pMsg)
 {
-	if (m_pDlgBkmMgr->PreTranslateMsg(pMsg)) { return true; }
-	if (m_pDlgDataInterp->PreTranslateMsg(pMsg)) { return true; }
-	if (m_pDlgModify->PreTranslateMsg(pMsg)) { return true; }
-	if (m_pDlgSearch->PreTranslateMsg(pMsg)) { return true; }
-	if (m_pDlgCodepage->PreTranslateMsg(pMsg)) { return true; }
-	if (m_pDlgGoTo->PreTranslateMsg(pMsg)) { return true; }
-	if (m_pDlgTemplMgr->PreTranslateMsg(pMsg)) { return true; }
+	if (m_DlgBkmMgr.PreTranslateMsg(pMsg)) { return true; }
+	if (m_DlgDataInterp.PreTranslateMsg(pMsg)) { return true; }
+	if (m_DlgModify.PreTranslateMsg(pMsg)) { return true; }
+	if (m_DlgSearch.PreTranslateMsg(pMsg)) { return true; }
+	if (m_DlgCodepage.PreTranslateMsg(pMsg)) { return true; }
+	if (m_DlgGoTo.PreTranslateMsg(pMsg)) { return true; }
+	if (m_DlgTemplMgr.PreTranslateMsg(pMsg)) { return true; }
 
 	return false;
 }
@@ -1748,14 +1748,14 @@ void CHexCtrl::Redraw()
 		}
 
 		if (HasSelection()) {
-			const auto ullSelStart = GetVirtualOffset(m_pSelection->GetSelStart());
-			const auto ullSelSize = m_pSelection->GetSelSize();
+			const auto ullSelStart = GetVirtualOffset(m_Selection.GetSelStart());
+			const auto ullSelSize = m_Selection.GetSelSize();
 			if (ullSelSize == 1) { //In case of just one byte selected.
 				m_wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}]`" :
 					L"^Selected: ^`{} [{:L}]`", std::make_wformat_args(ullSelSize, ullSelStart));
 			}
 			else {
-				const auto ullSelEnd = m_pSelection->GetSelEnd();
+				const auto ullSelEnd = m_Selection.GetSelEnd();
 				m_wstrInfoBar += std::vformat(ut::GetLocale(), IsOffsetAsHex() ? L"^Selected: ^`0x{:X} [0x{:X}-0x{:X}]`" :
 					L"^Selected: ^`{:L} [{:L}-{:L}]`", std::make_wformat_args(ullSelSize, ullSelStart, ullSelEnd));
 			}
@@ -1868,8 +1868,8 @@ void CHexCtrl::SetColors(const HEXCOLORS& hcs)
 
 	m_stColors = hcs;
 	CreatePens();
-	m_pScrollV->SetColors(hcs.clrScrollBar, hcs.clrScrollThumb, hcs.clrScrollArrow);
-	m_pScrollH->SetColors(hcs.clrScrollBar, hcs.clrScrollThumb, hcs.clrScrollArrow);
+	m_ScrollV.SetColors(hcs.clrScrollBar, hcs.clrScrollThumb, hcs.clrScrollArrow);
+	m_ScrollH.SetColors(hcs.clrScrollBar, hcs.clrScrollThumb, hcs.clrScrollArrow);
 	m_Wnd.RedrawWindow();
 }
 
@@ -2176,7 +2176,7 @@ void CHexCtrl::SetData(const HEXDATA& hds, bool fAdjust)
 
 	m_fDataSet = true;
 	RecalcAll();
-	m_pDlgDataInterp->UpdateData(); //Update data if DI dialog is opened.
+	m_DlgDataInterp.UpdateData(); //Update data if DI dialog is opened.
 }
 
 void CHexCtrl::SetDateInfo(DWORD dwFormat, wchar_t wchSepar)
@@ -2207,25 +2207,25 @@ void CHexCtrl::SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags)
 	using enum EHexWnd;
 	switch (eWnd) {
 	case DLG_BKMMGR:
-		m_pDlgBkmMgr->SetDlgProperties(u64Flags);
+		m_DlgBkmMgr.SetDlgProperties(u64Flags);
 		break;
 	case DLG_DATAINTERP:
-		m_pDlgDataInterp->SetDlgProperties(u64Flags);
+		m_DlgDataInterp.SetDlgProperties(u64Flags);
 		break;
 	case DLG_MODIFY:
-		m_pDlgModify->SetDlgProperties(u64Flags);
+		m_DlgModify.SetDlgProperties(u64Flags);
 		break;
 	case DLG_SEARCH:
-		m_pDlgSearch->SetDlgProperties(u64Flags);
+		m_DlgSearch.SetDlgProperties(u64Flags);
 		break;
 	case DLG_CODEPAGE:
-		m_pDlgCodepage->SetDlgProperties(u64Flags);
+		m_DlgCodepage.SetDlgProperties(u64Flags);
 		break;
 	case DLG_GOTO:
-		m_pDlgGoTo->SetDlgProperties(u64Flags);
+		m_DlgGoTo.SetDlgProperties(u64Flags);
 		break;
 	case DLG_TEMPLMGR:
-		m_pDlgTemplMgr->SetDlgProperties(u64Flags);
+		m_DlgTemplMgr.SetDlgProperties(u64Flags);
 		break;
 	default:
 		break;
@@ -2347,7 +2347,7 @@ void CHexCtrl::SetScrollRatio(float flRatio, bool fLines)
 
 	m_flScrollRatio = flRatio;
 	m_fScrollLines = fLines;
-	m_pScrollV->SetScrollPageSize(GetScrollPageSize());
+	m_ScrollV.SetScrollPageSize(GetScrollPageSize());
 }
 
 void CHexCtrl::SetSelection(const VecSpan& vecSel, bool fRedraw, bool fHighlight)
@@ -2355,7 +2355,7 @@ void CHexCtrl::SetSelection(const VecSpan& vecSel, bool fRedraw, bool fHighlight
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 	if (!IsDataSet()) { ut::DBG_REPORT_NO_DATA_SET(); return; }
 
-	m_pSelection->SetSelection(vecSel, fHighlight);
+	m_Selection.SetSelection(vecSel, fHighlight);
 
 	if (fRedraw) {
 		Redraw();
@@ -2376,7 +2376,7 @@ void CHexCtrl::SetVirtualBkm(IHexBookmarks* pVirtBkm)
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
 
-	m_pDlgBkmMgr->SetVirtual(pVirtBkm);
+	m_DlgBkmMgr.SetVirtual(pVirtBkm);
 }
 
 void CHexCtrl::SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)
@@ -2455,7 +2455,7 @@ void CHexCtrl::CaretMoveDown()
 	const auto stOld = IsOffsetVisible(ullOldPos);
 	const auto stNew = IsOffsetVisible(ullNewPos);
 	if (stOld.i8Vert == 0 && stNew.i8Vert != 0) {
-		m_pScrollV->ScrollLineDown();
+		m_ScrollV.ScrollLineDown();
 	}
 
 	Redraw();
@@ -2489,7 +2489,7 @@ void CHexCtrl::CaretMoveLeft()
 	const auto stOld = IsOffsetVisible(ullOldPos);
 	const auto stNew = IsOffsetVisible(ullNewPos);
 	if (stOld.i8Vert == 0 && stNew.i8Vert != 0) {
-		m_pScrollV->ScrollLineUp();
+		m_ScrollV.ScrollLineUp();
 	}
 	else if (stNew.i8Horz != 0 && !IsCurTextArea()) { //Do not horz scroll when in text area.
 		ScrollOffsetH(ullNewPos);
@@ -2529,7 +2529,7 @@ void CHexCtrl::CaretMoveRight()
 	const auto stOld = IsOffsetVisible(ullOldPos);
 	const auto stNew = IsOffsetVisible(ullNewPos);
 	if (stOld.i8Vert == 0 && stNew.i8Vert != 0) {
-		m_pScrollV->ScrollLineDown();
+		m_ScrollV.ScrollLineDown();
 	}
 	else if (stNew.i8Horz != 0 && !IsCurTextArea()) { //Do not horz scroll when in text area.
 		ScrollOffsetH(ullNewPos);
@@ -2547,7 +2547,7 @@ void CHexCtrl::CaretMoveUp()
 	const auto stOld = IsOffsetVisible(ullOldPos);
 	const auto stNew = IsOffsetVisible(ullNewPos);
 	if (stOld.i8Vert == 0 && stNew.i8Vert != 0) {
-		m_pScrollV->ScrollLineUp();
+		m_ScrollV.ScrollLineUp();
 	}
 
 	Redraw();
@@ -2632,7 +2632,7 @@ void CHexCtrl::ChooseFontDlg()
 
 void CHexCtrl::ClipboardCopy(EClipboard eType)const
 {
-	if (m_pSelection->GetSelSize() > 1024 * 1024 * 8) { //8MB
+	if (m_Selection.GetSelSize() > 1024 * 1024 * 8) { //8MB
 		::MessageBoxW(m_Wnd, L"Selection size is too big to copy.\r\nTry selecting less.", L"Error", MB_ICONERROR);
 		return;
 	}
@@ -2775,13 +2775,13 @@ void CHexCtrl::ClipboardPaste(EClipboard eType)
 auto CHexCtrl::CopyBase64()const->std::wstring
 {
 	static constexpr auto pwszBase64Map { L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
-	const auto ullSelSize = m_pSelection->GetSelSize();
+	const auto ullSelSize = m_Selection.GetSelSize();
 	std::wstring wstrData;
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	auto uValA = 0U;
 	auto iValB = -6;
 	for (auto i { 0U }; i < ullSelSize; ++i) {
-		uValA = (uValA << 8) + ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
+		uValA = (uValA << 8) + ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
 		iValB += 8;
 		while (iValB >= 0) {
 			wstrData += pwszBase64Map[(uValA >> iValB) & 0x3F];
@@ -2802,13 +2802,13 @@ auto CHexCtrl::CopyBase64()const->std::wstring
 auto CHexCtrl::CopyCArr()const->std::wstring
 {
 	std::wstring wstrData;
-	const auto ullSelSize = m_pSelection->GetSelSize();
+	const auto ullSelSize = m_Selection.GetSelSize();
 	wstrData.reserve((static_cast<std::size_t>(ullSelSize) * 3) + 64);
 	wstrData = std::format(L"unsigned char data[{}] = {{\r\n", ullSelSize);
 
 	for (auto i { 0U }; i < ullSelSize; ++i) {
 		wstrData += L"0x";
-		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
+		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
 		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 		wstrData += m_pwszHexChars[(chByte & 0x0F)];
 		if (i < ullSelSize - 1) {
@@ -2833,12 +2833,12 @@ auto CHexCtrl::CopyCArr()const->std::wstring
 auto CHexCtrl::CopyGrepHex()const->std::wstring
 {
 	std::wstring wstrData;
-	const auto ullSelSize = m_pSelection->GetSelSize();
+	const auto ullSelSize = m_Selection.GetSelSize();
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (auto i { 0U }; i < ullSelSize; ++i) {
 		wstrData += L"\\x";
-		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
+		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
 		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 		wstrData += m_pwszHexChars[(chByte & 0x0F)];
 	}
@@ -2849,11 +2849,11 @@ auto CHexCtrl::CopyGrepHex()const->std::wstring
 auto CHexCtrl::CopyHex()const->std::wstring
 {
 	std::wstring wstrData;
-	const auto ullSelSize = m_pSelection->GetSelSize();
+	const auto ullSelSize = m_Selection.GetSelSize();
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (auto i { 0U }; i < ullSelSize; ++i) {
-		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
+		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
 		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 		wstrData += m_pwszHexChars[(chByte & 0x0F)];
 	}
@@ -2864,27 +2864,27 @@ auto CHexCtrl::CopyHex()const->std::wstring
 auto CHexCtrl::CopyHexFmt()const->std::wstring
 {
 	std::wstring wstrData;
-	const auto ullSelStart = m_pSelection->GetSelStart();
-	const auto ullSelSize = m_pSelection->GetSelSize();
+	const auto ullSelStart = m_Selection.GetSelStart();
+	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto dwGroupSize = GetGroupSize();
 	const auto dwCapacity = GetCapacity();
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 3);
-	if (m_pSelection->HasContiguousSel()) {
-		auto dwTail = m_pSelection->GetLineLength();
+	if (m_Selection.HasContiguousSel()) {
+		auto dwTail = m_Selection.GetLineLength();
 		for (auto i { 0U }; i < ullSelSize; ++i) {
-			const auto chByte = ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
+			const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
 			wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 			wstrData += m_pwszHexChars[(chByte & 0x0F)];
 
 			if (i < (ullSelSize - 1) && (dwTail - 1) != 0) {
-				if (((m_pSelection->GetLineLength() - dwTail + 1) % dwGroupSize) == 0) { //Add space after hex full chunk, grouping size depending.
+				if (((m_Selection.GetLineLength() - dwTail + 1) % dwGroupSize) == 0) { //Add space after hex full chunk, grouping size depending.
 					wstrData += L" ";
 				}
 			}
 			if (--dwTail == 0 && i < (ullSelSize - 1)) { //Next row.
 				wstrData += L"\r\n";
-				dwTail = m_pSelection->GetLineLength();
+				dwTail = m_Selection.GetLineLength();
 			}
 		}
 	}
@@ -2905,7 +2905,7 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 		}
 
 		for (auto i { 0U }; i < ullSelSize; ++i) {
-			const auto chByte = ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i));
+			const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
 			wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 			wstrData += m_pwszHexChars[(chByte & 0x0F)];
 
@@ -2930,11 +2930,11 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 auto CHexCtrl::CopyHexLE()const->std::wstring
 {
 	std::wstring wstrData;
-	const auto ullSelSize = m_pSelection->GetSelSize();
+	const auto ullSelSize = m_Selection.GetSelSize();
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (auto i = ullSelSize; i > 0; --i) {
-		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i - 1));
+		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i - 1));
 		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
 		wstrData += m_pwszHexChars[(chByte & 0x0F)];
 	}
@@ -2949,11 +2949,11 @@ auto CHexCtrl::CopyOffset()const->std::wstring
 
 auto CHexCtrl::CopyPrintScreen()const->std::wstring
 {
-	if (!m_pSelection->HasContiguousSel()) //Only works with contiguous selection.
+	if (!m_Selection.HasContiguousSel()) //Only works with contiguous selection.
 		return { };
 
-	const auto ullSelStart = m_pSelection->GetSelStart();
-	const auto ullSelSize = m_pSelection->GetSelSize();
+	const auto ullSelStart = m_Selection.GetSelStart();
+	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto dwCapacity = GetCapacity();
 
 	std::wstring wstrRet;
@@ -3019,12 +3019,12 @@ auto CHexCtrl::CopyPrintScreen()const->std::wstring
 
 auto CHexCtrl::CopyTextCP()const->std::wstring
 {
-	const auto ullSelSize = m_pSelection->GetSelSize();
+	const auto ullSelSize = m_Selection.GetSelSize();
 	std::string strData;
 	strData.reserve(static_cast<std::size_t>(ullSelSize));
 
 	for (auto i = 0; i < ullSelSize; ++i) {
-		strData.push_back(ut::GetIHexTData<BYTE>(*this, m_pSelection->GetOffsetByIndex(i)));
+		strData.push_back(ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i)));
 	}
 
 	std::wstring wstrText;
@@ -3056,7 +3056,7 @@ void CHexCtrl::CreatePens()
 
 void CHexCtrl::DrawWindow(HDC hDC)const
 {
-	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
+	const auto iScrollH = static_cast<int>(m_ScrollH.GetScrollPos());
 	gui::CRect rcWnd(m_iFirstVertLinePx, m_iFirstHorzLinePx,
 		m_iFirstVertLinePx + m_iWidthClientAreaPx, m_iFirstHorzLinePx + m_iHeightClientAreaPx);
 
@@ -3125,7 +3125,7 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 	std::vector<POLYINFODATA> vecInfoData;
 	vecInfoData.reserve(4);
 
-	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
+	const auto iScrollH = static_cast<int>(m_ScrollH.GetScrollPos());
 	gui::CRect rcInfoBar(m_iFirstVertLinePx + 1 - iScrollH, m_iThirdHorzLinePx + 1,
 		m_iFourthVertLinePx, m_iFourthHorzLinePx); //Info bar rc until m_iFourthHorizLine.
 	gui::CRect rcInfoBarText = rcInfoBar;
@@ -3187,12 +3187,12 @@ void CHexCtrl::DrawOffsets(HDC hDC, ULONGLONG ullStartLine, int iLines)const
 {
 	const auto dwCapacity = GetCapacity();
 	const auto ullStartOffset = ullStartLine * dwCapacity;
-	const auto iScrollH = static_cast<int>(m_pScrollH->GetScrollPos());
+	const auto iScrollH = static_cast<int>(m_ScrollH.GetScrollPos());
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
 		//Drawing offset with bk color depending on the selection range.
 		HEXCOLOR stClrOffset;
-		if (m_pSelection->HitTestRange({ ullStartOffset + (itLine * dwCapacity), dwCapacity })) {
+		if (m_Selection.HitTestRange({ ullStartOffset + (itLine * dwCapacity), dwCapacity })) {
 			stClrOffset.clrBk = m_stColors.clrBkSel;
 			stClrOffset.clrText = m_stColors.clrFontSel;
 		}
@@ -3323,7 +3323,7 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 
 void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
-	if (!m_pDlgTemplMgr->HasApplied())
+	if (!m_DlgTemplMgr.HasApplied())
 		return;
 
 	struct POLYFIELDSCLR { //Struct for fields.
@@ -3385,7 +3385,7 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto itChunk { 0U }; itChunk < GetCapacity() && sIndexToPrint < wsvText.size(); ++itChunk, ++sIndexToPrint) {
 			//Fields.
-			if (auto pField = m_pDlgTemplMgr->HitTest(ullStartOffset + sIndexToPrint); pField != nullptr) {
+			if (auto pField = m_DlgTemplMgr.HitTest(ullStartOffset + sIndexToPrint); pField != nullptr) {
 				if (itChunk == 0 && pField == pFieldCurr) {
 					fPrintVertLine = false;
 				}
@@ -3470,7 +3470,7 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 
 void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
-	if (!m_pDlgBkmMgr->HasBookmarks())
+	if (!m_DlgBkmMgr.HasBookmarks())
 		return;
 
 	struct POLYTEXTCLR { //Struct for Bookmarks.
@@ -3527,7 +3527,7 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto itChunk { 0U }; itChunk < GetCapacity() && sIndexToPrint < wsvText.size(); ++itChunk, ++sIndexToPrint) {
 			//Bookmarks.
-			if (const auto pBkm = m_pDlgBkmMgr->HitTest(ullStartOffset + sIndexToPrint); pBkm != nullptr) {
+			if (const auto pBkm = m_DlgBkmMgr.HitTest(ullStartOffset + sIndexToPrint); pBkm != nullptr) {
 				//If it's nested bookmark.
 				if (pBkmCurr != nullptr && pBkmCurr != pBkm) {
 					lmbHexSpaces(itChunk);
@@ -3620,7 +3620,7 @@ void CHexCtrl::DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto itChunk { 0U }; itChunk < GetCapacity() && sIndexToPrint < wsvText.size(); ++itChunk, ++sIndexToPrint) {
 			//Selection.
-			if (m_pSelection->HitTest(ullStartOffset + sIndexToPrint)) {
+			if (m_Selection.HitTest(ullStartOffset + sIndexToPrint)) {
 				if (fNeedChunkPoint) {
 					int iCy;
 					HexChunkPoint(sIndexToPrint, iSelHexPosToPrintX, iCy);
@@ -3671,7 +3671,7 @@ void CHexCtrl::DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 
 void CHexCtrl::DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
-	if (!m_pSelection->HasSelHighlight())
+	if (!m_Selection.HasSelHighlight())
 		return;
 
 	std::vector<POLYTEXTW> vecPolySelHexHgl;
@@ -3706,7 +3706,7 @@ void CHexCtrl::DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std
 		//Main loop for printing Hex chunks and Text chars.
 		for (auto itChunk { 0U }; itChunk < GetCapacity() && sIndexToPrint < wsvText.size(); ++itChunk, ++sIndexToPrint) {
 			//Selection highlights.
-			if (m_pSelection->HitTestHighlight(ullStartOffset + sIndexToPrint)) {
+			if (m_Selection.HitTestHighlight(ullStartOffset + sIndexToPrint)) {
 				if (fNeedChunkPoint) {
 					int iCy;
 					HexChunkPoint(sIndexToPrint, iSelHexPosToPrintX, iCy);
@@ -3799,7 +3799,7 @@ void CHexCtrl::DrawCaret(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstri
 		.pdx { GetCharsWidthArray() } };
 
 	//Caret color.
-	const auto clrBkCaret = m_pSelection->HitTest(ullCaretPos) ? m_stColors.clrBkCaretSel : m_stColors.clrBkCaret;
+	const auto clrBkCaret = m_Selection.HitTest(ullCaretPos) ? m_stColors.clrBkCaretSel : m_stColors.clrBkCaret;
 
 	//Caret printing.
 	gui::CDC dc(hDC);
@@ -3813,10 +3813,10 @@ void CHexCtrl::DrawCaret(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstri
 
 void CHexCtrl::DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstring_view wsvHex, std::wstring_view wsvText)const
 {
-	if (!m_pDlgDataInterp->HasHighlight())
+	if (!m_DlgDataInterp.HasHighlight())
 		return;
 
-	const auto dwHglSize = m_pDlgDataInterp->GetHighlightSize();
+	const auto dwHglSize = m_DlgDataInterp.GetHighlightSize();
 	const auto ullCaretPos = GetCaretPos();
 	if ((ullCaretPos + dwHglSize) > GetDataSize())
 		return;
@@ -4026,19 +4026,19 @@ long CHexCtrl::GetFontSize()const
 
 auto CHexCtrl::GetRectTextCaption()const->gui::CRect
 {
-	const auto iScrollH { static_cast<int>(m_pScrollH->GetScrollPos()) };
+	const auto iScrollH { static_cast<int>(m_ScrollH.GetScrollPos()) };
 	return { m_iThirdVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iFourthVertLinePx - iScrollH, m_iSecondHorzLinePx };
 }
 
 auto CHexCtrl::GetSelectedLines()const->ULONGLONG
 {
-	if (!m_pSelection->HasContiguousSel())
+	if (!m_Selection.HasContiguousSel())
 		return 0ULL;
 
 	const auto dwCapacity = GetCapacity();
-	const auto ullSelStart = m_pSelection->GetSelStart();
-	const auto ullSelEnd = m_pSelection->GetSelEnd();
-	const auto ullSelSize = m_pSelection->GetSelSize();
+	const auto ullSelStart = m_Selection.GetSelStart();
+	const auto ullSelEnd = m_Selection.GetSelEnd();
+	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto ullModStart = ullSelStart % dwCapacity;
 	const auto ullModEnd = ullSelEnd % dwCapacity;
 	const auto ullLines = ullSelSize / dwCapacity + ((ullModStart > (ullModEnd + 1)) ? 2
@@ -4055,7 +4055,7 @@ auto CHexCtrl::GetScrollPageSize()const->ULONGLONG
 
 auto CHexCtrl::GetTopLine()const->ULONGLONG
 {
-	return m_pScrollV->GetScrollPos() / m_sizeFontMain.cy;
+	return m_ScrollV.GetScrollPos() / m_sizeFontMain.cy;
 }
 
 auto CHexCtrl::GetVirtualOffset(ULONGLONG ullOffset)const->ULONGLONG
@@ -4070,9 +4070,9 @@ void CHexCtrl::HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 	const DWORD dwMod = ullOffset % dwCapacity;
 	const auto iBetweenBlocks { dwMod >= m_dwCapacityBlockSize ? m_iSpaceBetweenBlocksPx : 0 };
 	iCx = static_cast<int>(((m_iIndentFirstHexChunkXPx + iBetweenBlocks + dwMod * m_iSizeHexBytePx)
-		+ (dwMod / GetGroupSize()) * GetCharWidthExtras()) - m_pScrollH->GetScrollPos());
+		+ (dwMod / GetGroupSize()) * GetCharWidthExtras()) - m_ScrollH.GetScrollPos());
 
-	const auto ullScrollV = m_pScrollV->GetScrollPos();
+	const auto ullScrollV = m_ScrollV.GetScrollPos();
 	iCy = static_cast<int>((m_iStartWorkAreaYPx + (ullOffset / dwCapacity) * m_sizeFontMain.cy) -
 		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
@@ -4081,7 +4081,7 @@ auto CHexCtrl::HitTest(POINT pt)const->std::optional<HEXHITTEST>
 {
 	HEXHITTEST stHit;
 	const auto iY = pt.y;
-	const auto iX = pt.x + static_cast<int>(m_pScrollH->GetScrollPos()); //To compensate horizontal scroll.
+	const auto iX = pt.x + static_cast<int>(m_ScrollH.GetScrollPos()); //To compensate horizontal scroll.
 	const auto ullCurLine = GetTopLine();
 	const auto dwGroupSize = GetGroupSize();
 	const auto dwCapacity = GetCapacity();
@@ -4290,9 +4290,9 @@ auto CHexCtrl::OffsetToWstr(ULONGLONG ullOffset)const->std::wstring
 
 void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 {
-	m_pDlgDataInterp->UpdateData();
+	m_DlgDataInterp.UpdateData();
 
-	if (auto pBkm = m_pDlgBkmMgr->HitTest(ullOffset); pBkm != nullptr) { //If clicked on bookmark.
+	if (auto pBkm = m_DlgBkmMgr.HitTest(ullOffset); pBkm != nullptr) { //If clicked on bookmark.
 		const HEXBKMINFO hbi { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()), HEXCTRL_MSG_BKMCLICK }, .pBkm { pBkm } };
 		ParentNotify(hbi);
 	}
@@ -4303,8 +4303,8 @@ void CHexCtrl::OnCaretPosChange(ULONGLONG ullOffset)
 void CHexCtrl::OnModifyData()
 {
 	ParentNotify(HEXCTRL_MSG_SETDATA);
-	m_pDlgTemplMgr->UpdateData();
-	m_pDlgDataInterp->UpdateData();
+	m_DlgTemplMgr.UpdateData();
+	m_DlgDataInterp.UpdateData();
 }
 
 template<typename T> requires std::is_class_v<T>
@@ -4324,7 +4324,7 @@ void CHexCtrl::Print()
 {
 	PRINTPAGERANGE ppr { .nFromPage { 1 }, .nToPage { 1 } };
 	PRINTDLGEXW m_pdex { .lStructSize { sizeof(PRINTDLGEXW) }, .hwndOwner { m_Wnd },
-		.Flags { static_cast<DWORD>(PD_RETURNDC | PD_NOCURRENTPAGE | (m_pSelection->HasContiguousSel() ?
+		.Flags { static_cast<DWORD>(PD_RETURNDC | PD_NOCURRENTPAGE | (m_Selection.HasContiguousSel() ?
 			PD_SELECTION : (PD_NOSELECTION | PD_PAGENUMS))) }, .nPageRanges { 1 }, .nMaxPageRanges { 1 },
 		.lpPageRanges { &ppr }, .nMinPage { 1 }, .nMaxPage { 0xFFFFUL }, .nStartPage { START_PAGE_GENERAL } };
 
@@ -4382,7 +4382,7 @@ void CHexCtrl::Print()
 	dcPrint.SetMapMode(MM_TEXT);
 
 	if (fPrintSelection) {
-		const auto ullSelStart = m_pSelection->GetSelStart();
+		const auto ullSelStart = m_Selection.GetSelStart();
 		const auto ullLinesToPrint = GetSelectedLines();
 		const auto dwPagesToPrint = static_cast<DWORD>(ullLinesToPrint / iLinesInPage
 			+ ((ullLinesToPrint % iLinesInPage) > 0 ? 1 : 0));
@@ -4527,11 +4527,11 @@ void CHexCtrl::RecalcAll(bool fPrinter, HDC hDCPrinter, LPCRECT pRCPrinter)
 	//Scrolls, ReleaseDC and Redraw only for window DC, not for printer DC.
 	if (!fPrinter) {
 		const auto ullDataSize = GetDataSize();
-		m_pScrollV->SetScrollSizes(m_sizeFontMain.cy, GetScrollPageSize(),
+		m_ScrollV.SetScrollSizes(m_sizeFontMain.cy, GetScrollPageSize(),
 			static_cast<ULONGLONG>(m_iStartWorkAreaYPx) + m_iHeightBottomOffAreaPx
 			+ (m_sizeFontMain.cy * (ullDataSize / dwCapacity + (ullDataSize % dwCapacity == 0 ? 1 : 2))));
-		m_pScrollH->SetScrollSizes(iCharWidthExt, rc.Width(), static_cast<ULONGLONG>(m_iFourthVertLinePx) + 1);
-		m_pScrollV->SetScrollPos(ullCurLineV * m_sizeFontMain.cy);
+		m_ScrollH.SetScrollSizes(iCharWidthExt, rc.Width(), static_cast<ULONGLONG>(m_iFourthVertLinePx) + 1);
+		m_ScrollV.SetScrollPos(ullCurLineV * m_sizeFontMain.cy);
 		m_Wnd.ReleaseDC(dcCurr);
 		Redraw();
 	}
@@ -4607,14 +4607,14 @@ void CHexCtrl::ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)co
 void CHexCtrl::ScrollOffsetH(ULONGLONG ullOffset)
 {
 	//Horizontally-only scrolls to a given offset.
-	if (!m_pScrollH->IsVisible())
+	if (!m_ScrollH.IsVisible())
 		return;
 
 	int iCx, iCy;
 	HexChunkPoint(ullOffset, iCx, iCy);
 	const auto rcClient = m_Wnd.GetClientRect();
 
-	const auto ullCurrScrollH = m_pScrollH->GetScrollPos();
+	const auto ullCurrScrollH = m_ScrollH.GetScrollPos();
 	auto ullNewScrollH { ullCurrScrollH };
 	const auto iMaxClientX = rcClient.Width() - m_iSizeHexBytePx;
 	const auto iAdditionalSpace { m_iSizeHexBytePx / 2 };
@@ -4625,7 +4625,7 @@ void CHexCtrl::ScrollOffsetH(ULONGLONG ullOffset)
 		ullNewScrollH += iCx - iAdditionalSpace;
 	}
 
-	m_pScrollH->SetScrollPos(ullNewScrollH);
+	m_ScrollH.SetScrollPos(ullNewScrollH);
 }
 
 void CHexCtrl::SelAll()
@@ -4639,8 +4639,8 @@ void CHexCtrl::SelAll()
 void CHexCtrl::SelAddDown()
 {
 	const auto fHasSel = HasSelection();
-	const auto ullSelStart = fHasSel ? m_pSelection->GetSelStart() : m_ullCaretPos;
-	const auto ullSelSize = fHasSel ? m_pSelection->GetSelSize() : 1;
+	const auto ullSelStart = fHasSel ? m_Selection.GetSelStart() : m_ullCaretPos;
+	const auto ullSelSize = fHasSel ? m_Selection.GetSelSize() : 1;
 	const auto dwCapacity = GetCapacity();
 	ULONGLONG ullClick { };
 	ULONGLONG ullStart { };
@@ -4670,7 +4670,7 @@ void CHexCtrl::SelAddDown()
 		}
 		};
 
-	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_pSelection->GetSelEnd()) {
+	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_Selection.GetSelEnd()) {
 		lmbSelection();
 	}
 	else {
@@ -4690,7 +4690,7 @@ void CHexCtrl::SelAddDown()
 		const auto stOld = IsOffsetVisible(ullOldPos);
 		const auto stNew = IsOffsetVisible(ullNewPos);
 		if (stNew.i8Vert != 0 && stOld.i8Vert == 0) {
-			m_pScrollV->ScrollLineDown();
+			m_ScrollV.ScrollLineDown();
 		}
 		Redraw();
 		OnCaretPosChange(GetCaretPos());
@@ -4700,8 +4700,8 @@ void CHexCtrl::SelAddDown()
 void CHexCtrl::SelAddLeft()
 {
 	const auto fHasSel = HasSelection();
-	const auto ullSelStart = fHasSel ? m_pSelection->GetSelStart() : m_ullCaretPos;
-	const auto ullSelSize = fHasSel ? m_pSelection->GetSelSize() : 1;
+	const auto ullSelStart = fHasSel ? m_Selection.GetSelStart() : m_ullCaretPos;
+	const auto ullSelSize = fHasSel ? m_Selection.GetSelSize() : 1;
 	ULONGLONG ullClick { };
 	ULONGLONG ullStart { };
 	ULONGLONG ullSize { 0ULL };
@@ -4724,7 +4724,7 @@ void CHexCtrl::SelAddLeft()
 		}
 		};
 
-	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_pSelection->GetSelEnd()) {
+	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_Selection.GetSelEnd()) {
 		lmbSelection();
 	}
 	else {
@@ -4740,7 +4740,7 @@ void CHexCtrl::SelAddLeft()
 		const auto stOld = IsOffsetVisible(ullOldPos);
 		const auto stNew = IsOffsetVisible(ullNewPos);
 		if (stNew.i8Vert != 0 && stOld.i8Vert == 0) {
-			m_pScrollV->ScrollLineUp();
+			m_ScrollV.ScrollLineUp();
 		}
 		else if (stNew.i8Horz != 0 && !IsCurTextArea()) { //Do not horz scroll when in text area.
 			ScrollOffsetH(ullNewPos);
@@ -4755,8 +4755,8 @@ void CHexCtrl::SelAddLeft()
 void CHexCtrl::SelAddRight()
 {
 	const auto fHasSel = HasSelection();
-	const auto ullSelStart = fHasSel ? m_pSelection->GetSelStart() : m_ullCaretPos;
-	const auto ullSelSize = fHasSel ? m_pSelection->GetSelSize() : 1;
+	const auto ullSelStart = fHasSel ? m_Selection.GetSelStart() : m_ullCaretPos;
+	const auto ullSelSize = fHasSel ? m_Selection.GetSelSize() : 1;
 	ULONGLONG ullClick { };
 	ULONGLONG ullStart { };
 	ULONGLONG ullSize { 0ULL };
@@ -4781,7 +4781,7 @@ void CHexCtrl::SelAddRight()
 		}
 		};
 
-	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_pSelection->GetSelEnd()) {
+	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_Selection.GetSelEnd()) {
 		lmbSelection();
 	}
 	else {
@@ -4801,7 +4801,7 @@ void CHexCtrl::SelAddRight()
 		const auto stOld = IsOffsetVisible(ullOldPos);
 		const auto stNew = IsOffsetVisible(ullNewPos);
 		if (stNew.i8Vert != 0 && stOld.i8Vert == 0) {
-			m_pScrollV->ScrollLineDown();
+			m_ScrollV.ScrollLineDown();
 		}
 		else if (stNew.i8Horz != 0 && !IsCurTextArea()) { //Do not horz scroll when in text area.
 			ScrollOffsetH(ullNewPos);
@@ -4816,8 +4816,8 @@ void CHexCtrl::SelAddRight()
 void CHexCtrl::SelAddUp()
 {
 	const auto fHasSel = HasSelection();
-	const auto ullSelStart = fHasSel ? m_pSelection->GetSelStart() : m_ullCaretPos;
-	const auto ullSelSize = fHasSel ? m_pSelection->GetSelSize() : 1;
+	const auto ullSelStart = fHasSel ? m_Selection.GetSelStart() : m_ullCaretPos;
+	const auto ullSelSize = fHasSel ? m_Selection.GetSelSize() : 1;
 	const auto dwCapacity = GetCapacity();
 	ULONGLONG ullClick { };
 	ULONGLONG ullStart { };
@@ -4860,7 +4860,7 @@ void CHexCtrl::SelAddUp()
 		}
 		};
 
-	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_pSelection->GetSelEnd()) {
+	if (m_ullCaretPos == m_ullCursorPrev || m_ullCaretPos == ullSelStart || m_ullCaretPos == m_Selection.GetSelEnd()) {
 		lmbSelection();
 	}
 	else {
@@ -4876,7 +4876,7 @@ void CHexCtrl::SelAddUp()
 		const auto stOld = IsOffsetVisible(ullOldPos);
 		const auto stNew = IsOffsetVisible(ullNewPos);
 		if (stNew.i8Vert != 0 && stOld.i8Vert == 0) {
-			m_pScrollV->ScrollLineUp();
+			m_ScrollV.ScrollLineUp();
 		}
 		Redraw();
 		OnCaretPosChange(GetCaretPos());
@@ -4964,9 +4964,9 @@ void CHexCtrl::TextChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const
 {	//This func computes x and y pos of given Text chunk.
 	const auto dwCapacity = GetCapacity() > 0 ? GetCapacity() : 0xFFFFFFFFUL; //To suppress warning C4724.
 	const DWORD dwMod = ullOffset % dwCapacity;
-	iCx = static_cast<int>((m_iIndentTextXPx + dwMod * GetCharWidthExtras()) - m_pScrollH->GetScrollPos());
+	iCx = static_cast<int>((m_iIndentTextXPx + dwMod * GetCharWidthExtras()) - m_ScrollH.GetScrollPos());
 
-	const auto ullScrollV = m_pScrollV->GetScrollPos();
+	const auto ullScrollV = m_ScrollV.GetScrollPos();
 	iCy = static_cast<int>((m_iStartWorkAreaYPx + (ullOffset / dwCapacity) * m_sizeFontMain.cy) -
 		(ullScrollV - (ullScrollV % m_sizeFontMain.cy)));
 }
@@ -7078,14 +7078,14 @@ auto CHexCtrl::OnDestroy()->LRESULT
 	//These DestroyDlg calls to make sure the dialogs are always properly destroyed.
 
 	ClearData();
-	m_pDlgBkmMgr->DestroyDlg();
-	m_pDlgCodepage->DestroyDlg();
-	m_pDlgDataInterp->DestroyDlg();
-	m_pDlgModify->DestroyDlg();
-	m_pDlgGoTo->DestroyDlg();
-	m_pDlgSearch->DestroyDlg();
-	m_pDlgTemplMgr->DestroyDlg();
-	m_pDlgTemplMgr->UnloadAll(); //Templates could be loaded without creating the dialog itself.
+	m_DlgBkmMgr.DestroyDlg();
+	m_DlgCodepage.DestroyDlg();
+	m_DlgDataInterp.DestroyDlg();
+	m_DlgModify.DestroyDlg();
+	m_DlgGoTo.DestroyDlg();
+	m_DlgSearch.DestroyDlg();
+	m_DlgTemplMgr.DestroyDlg();
+	m_DlgTemplMgr.UnloadAll(); //Templates could be loaded without creating the dialog itself.
 	m_vecHBITMAP.clear();
 	m_vecKeyBind.clear();
 	m_vecUndo.clear();
@@ -7096,8 +7096,8 @@ auto CHexCtrl::OnDestroy()->LRESULT
 	::DeleteObject(m_hFntInfoBar);
 	::DeleteObject(m_hPenLinesMain);
 	::DeleteObject(m_hPenLinesTempl);
-	m_pScrollV->DestroyWindow(); //Not a child of the IHexCtrl.
-	m_pScrollH->DestroyWindow(); //Not a child of the IHexCtrl.
+	m_ScrollV.DestroyWindow(); //Not a child of the IHexCtrl.
+	m_ScrollH.DestroyWindow(); //Not a child of the IHexCtrl.
 	ParentNotify(HEXCTRL_MSG_DESTROY);
 	m_fCreated = false;
 
@@ -7242,7 +7242,7 @@ auto CHexCtrl::OnKeyUp([[maybe_unused]] const MSG& msg)->LRESULT
 	if (!IsDataSet())
 		return 0;
 
-	m_pDlgDataInterp->UpdateData();
+	m_DlgDataInterp.UpdateData();
 
 	return 0;
 }
@@ -7251,7 +7251,7 @@ auto CHexCtrl::OnLButtonDblClk(const MSG& msg)->LRESULT
 {
 	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
 
-	if ((pt.x + static_cast<long>(m_pScrollH->GetScrollPos())) < m_iSecondVertLinePx) { //DblClick on "Offset" area.
+	if ((pt.x + static_cast<long>(m_ScrollH.GetScrollPos())) < m_iSecondVertLinePx) { //DblClick on "Offset" area.
 		SetOffsetMode(!IsOffsetAsHex());
 	}
 	else if (GetRectTextCaption().PtInRect(pt) != FALSE) { //DblClick on codepage caption area.
@@ -7337,8 +7337,8 @@ auto CHexCtrl::OnLButtonUp([[maybe_unused]] const MSG& msg)->LRESULT
 {
 	m_fLMousePressed = false;
 	::ReleaseCapture();
-	m_pScrollV->OnLButtonUp();
-	m_pScrollH->OnLButtonUp();
+	m_ScrollV.OnLButtonUp();
+	m_ScrollH.OnLButtonUp();
 
 	return 0;
 }
@@ -7351,21 +7351,21 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 	if (m_fLMousePressed) {
 		//If LMouse is pressed but cursor is outside of the client area (SetCapture() behavior).
 		const auto rcClient = m_Wnd.GetClientRect();
-		if (m_pScrollH->IsVisible()) { //Checking for scrollbars existence first.
+		if (m_ScrollH.IsVisible()) { //Checking for scrollbars existence first.
 			if (pt.x < rcClient.left) {
-				m_pScrollH->ScrollLineLeft();
+				m_ScrollH.ScrollLineLeft();
 			}
 			else if (pt.x >= rcClient.right) {
-				m_pScrollH->ScrollLineRight();
+				m_ScrollH.ScrollLineRight();
 			}
 		}
 
-		if (m_pScrollV->IsVisible()) {
+		if (m_ScrollV.IsVisible()) {
 			if (pt.y < m_iStartWorkAreaYPx) {
-				m_pScrollV->ScrollLineUp();
+				m_ScrollV.ScrollLineUp();
 			}
 			else if (pt.y >= m_iEndWorkAreaPx) {
-				m_pScrollV->ScrollLineDown();
+				m_ScrollV.ScrollLineDown();
 			}
 		}
 
@@ -7437,7 +7437,7 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 	}
 	else {
 		if (optHit) {
-			if (const auto pBkm = m_pDlgBkmMgr->HitTest(optHit->ullOffset); pBkm != nullptr) {
+			if (const auto pBkm = m_DlgBkmMgr.HitTest(optHit->ullOffset); pBkm != nullptr) {
 				if (m_pBkmTTCurr != pBkm) {
 					m_pBkmTTCurr = pBkm;
 					m_ttiMain.lpszText = pBkm->wstrDesc.data();
@@ -7447,8 +7447,8 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 			else if (m_pBkmTTCurr != nullptr) {
 				TTMainShow(false);
 			}
-			else if (const auto pField = m_pDlgTemplMgr->HitTest(optHit->ullOffset);
-				m_pDlgTemplMgr->IsTooltips() && pField != nullptr) {
+			else if (const auto pField = m_DlgTemplMgr.HitTest(optHit->ullOffset);
+				m_DlgTemplMgr.IsTooltips() && pField != nullptr) {
 				if (m_pTFieldTTCurr != pField) {
 					m_pTFieldTTCurr = pField;
 					m_ttiMain.lpszText = const_cast<LPWSTR>(pField->wstrName.data());
@@ -7466,8 +7466,8 @@ auto CHexCtrl::OnMouseMove(const MSG& msg)->LRESULT
 			}
 		}
 
-		m_pScrollV->OnMouseMove(pt);
-		m_pScrollH->OnMouseMove(pt);
+		m_ScrollV.OnMouseMove(pt);
+		m_ScrollH.OnMouseMove(pt);
 	}
 
 	return 0;
@@ -7488,8 +7488,8 @@ auto CHexCtrl::OnMouseWheel(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnNCActivate([[maybe_unused]] const MSG& msg)->LRESULT
 {
-	m_pScrollV->OnNCActivate();
-	m_pScrollH->OnNCActivate();
+	m_ScrollV.OnNCActivate();
+	m_ScrollH.OnNCActivate();
 
 	return TRUE;
 }
@@ -7500,8 +7500,8 @@ auto CHexCtrl::OnNCCalcSize(const MSG& msg)->LRESULT
 	const auto pNCSP = reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg.lParam);
 
 	//Sequence is important — H->V.
-	m_pScrollH->OnNCCalcSize(pNCSP);
-	m_pScrollV->OnNCCalcSize(pNCSP);
+	m_ScrollH.OnNCCalcSize(pNCSP);
+	m_ScrollV.OnNCCalcSize(pNCSP);
 
 	return 0;
 }
@@ -7509,8 +7509,8 @@ auto CHexCtrl::OnNCCalcSize(const MSG& msg)->LRESULT
 auto CHexCtrl::OnNCPaint(const MSG& msg)->LRESULT
 {
 	gui::DefWndProc(msg);
-	m_pScrollV->OnNCPaint();
-	m_pScrollH->OnNCPaint();
+	m_ScrollV.OnNCPaint();
+	m_ScrollH.OnNCPaint();
 
 	return 0;
 }
@@ -7575,8 +7575,8 @@ auto CHexCtrl::OnSetCursor(const MSG& msg)->LRESULT
 {
 	const auto wHitTest = LOWORD(msg.lParam);
 	const auto wMessage = HIWORD(msg.lParam);
-	m_pScrollV->OnSetCursor(wHitTest, wMessage);
-	m_pScrollH->OnSetCursor(wHitTest, wMessage);
+	m_ScrollV.OnSetCursor(wHitTest, wMessage);
+	m_ScrollH.OnSetCursor(wHitTest, wMessage);
 
 	return gui::DefWndProc(msg); //To set appropriate cursor.
 }
@@ -7589,7 +7589,7 @@ auto CHexCtrl::OnSize(const MSG& msg)->LRESULT
 	const auto wWidth = LOWORD(msg.lParam);
 	const auto wHeight = HIWORD(msg.lParam);
 	RecalcClientArea(wWidth, wHeight);
-	m_pScrollV->SetScrollPageSize(GetScrollPageSize());
+	m_ScrollV.SetScrollPageSize(GetScrollPageSize());
 
 	return 0;
 }
@@ -7621,7 +7621,7 @@ auto CHexCtrl::OnVScroll([[maybe_unused]] const MSG& msg)->LRESULT
 {
 	bool fRedraw { true };
 	if (m_fHighLatency) {
-		fRedraw = m_pScrollV->IsThumbReleased();
+		fRedraw = m_ScrollV.IsThumbReleased();
 		TTOffsetShow(!fRedraw);
 	}
 

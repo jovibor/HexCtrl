@@ -406,45 +406,45 @@ namespace HEXCTRL {
 		IHexCtrl& operator=(IHexCtrl&&) = delete;
 		virtual ~IHexCtrl() = default;
 		virtual void ClearData() = 0; //Clears all data from HexCtrl's view (not touching data itself).
-		virtual bool Create(const HEXCREATE& hcs) = 0;                       //Main initialization method.
-		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent) = 0;    //Сreates custom dialog control.
-		virtual void Delete() = 0;                                           //IHexCtrl object deleter.
-		virtual void DestroyWindow() = 0;                                    //Destroy HexCtrl window.
-		virtual void ExecuteCmd(EHexCmd eCmd) = 0;                           //Execute a command within HexCtrl.
-		[[nodiscard]] virtual auto GetActualWidth()const->int = 0;           //Working area actual width.
-		[[nodiscard]] virtual auto GetBookmarks()const->IHexBookmarks* = 0;  //Get Bookmarks interface.
-		[[nodiscard]] virtual auto GetCacheSize()const->DWORD = 0;           //Returns VirtualData mode cache size.
-		[[nodiscard]] virtual auto GetCapacity()const->DWORD = 0;            //Current capacity.
-		[[nodiscard]] virtual auto GetCaretPos()const->ULONGLONG = 0;        //Caret position.
-		[[nodiscard]] virtual auto GetCharsExtraSpace()const->DWORD = 0;     //Get extra space between chars, in pixels.
-		[[nodiscard]] virtual auto GetCodepage()const->int = 0;              //Get current codepage ID.
-		[[nodiscard]] virtual auto GetColors()const->const HEXCOLORS & = 0;  //All current colors.
-		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const->SpanByte = 0;  //Get pointer to data offset, no matter what mode HexCtrl works in.
-		[[nodiscard]] virtual auto GetDataSize()const->ULONGLONG = 0;        //Get currently set data size.
-		[[nodiscard]] virtual auto GetDateInfo()const->std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
-		[[nodiscard]] virtual auto GetDlgItemHandle(EHexDlgItem eItem)const->HWND = 0; //Dialogs' items.
-		[[nodiscard]] virtual auto GetFont(bool fMain = true)const->LOGFONTW = 0; //Get current main/infobar font.
-		[[nodiscard]] virtual auto GetGroupSize()const->DWORD = 0;           //Retrieves current data grouping size.
-		[[nodiscard]] virtual auto GetMenuHandle()const->HMENU = 0;          //Context menu handle.
-		[[nodiscard]] virtual auto GetOffset(ULONGLONG ullOffset, bool fGetVirt)const->ULONGLONG = 0; //Offset<->VirtOffset conversion.
-		[[nodiscard]] virtual auto GetPagesCount()const->ULONGLONG = 0;      //Get count of pages.
-		[[nodiscard]] virtual auto GetPagePos()const->ULONGLONG = 0;         //Get a page number that the cursor stays at.
-		[[nodiscard]] virtual auto GetPageSize()const->DWORD = 0;            //Current page size.
-		[[nodiscard]] virtual auto GetScrollRatio()const->std::tuple<float, bool> = 0; //Get current scroll ratio.
-		[[nodiscard]] virtual auto GetSelection()const->VecSpan = 0;         //Get current selection.
-		[[nodiscard]] virtual auto GetTemplates()const->IHexTemplates* = 0;  //Get Templates interface.
-		[[nodiscard]] virtual auto GetUnprintableChar()const->wchar_t = 0;   //Get unprintable replacement character.
-		[[nodiscard]] virtual auto GetWndHandle(EHexWnd eWnd, bool fCreate = true)const->HWND = 0; //Get HWND of internal window/dialogs.
+		virtual bool Create(const HEXCREATE& hcs) = 0;                         //Main initialization method.
+		virtual bool CreateDialogCtrl(UINT uCtrlID, HWND hWndParent) = 0;      //Сreates custom dialog control.
+		virtual void Delete() = 0;                                             //IHexCtrl object deleter.
+		virtual void DestroyWindow() = 0;                                      //Destroy HexCtrl window.
+		virtual void ExecuteCmd(EHexCmd eCmd) = 0;                             //Execute a command within HexCtrl.
+		[[nodiscard]] virtual auto GetActualWidth()const -> int = 0;           //Working area actual width.
+		[[nodiscard]] virtual auto GetBookmarks() -> IHexBookmarks* = 0;       //Get Bookmarks interface.
+		[[nodiscard]] virtual auto GetCacheSize()const -> DWORD = 0;           //Returns VirtualData mode cache size.
+		[[nodiscard]] virtual auto GetCapacity()const -> DWORD = 0;            //Current capacity.
+		[[nodiscard]] virtual auto GetCaretPos()const -> ULONGLONG = 0;        //Caret position.
+		[[nodiscard]] virtual auto GetCharsExtraSpace()const -> DWORD = 0;     //Get extra space between chars, in pixels.
+		[[nodiscard]] virtual auto GetCodepage()const -> int = 0;              //Get current codepage ID.
+		[[nodiscard]] virtual auto GetColors()const -> const HEXCOLORS & = 0;  //All current colors.
+		[[nodiscard]] virtual auto GetData(HEXSPAN hss)const -> SpanByte = 0;  //Get pointer to data offset, no matter what mode HexCtrl works in.
+		[[nodiscard]] virtual auto GetDataSize()const -> ULONGLONG = 0;        //Get currently set data size.
+		[[nodiscard]] virtual auto GetDateInfo()const -> std::tuple<DWORD, wchar_t> = 0; //Get date format and separator info.
+		[[nodiscard]] virtual auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND = 0; //Dialogs' items.
+		[[nodiscard]] virtual auto GetFont(bool fMain = true)const -> LOGFONTW = 0; //Get current main/infobar font.
+		[[nodiscard]] virtual auto GetGroupSize()const -> DWORD = 0;           //Retrieves current data grouping size.
+		[[nodiscard]] virtual auto GetMenuHandle()const -> HMENU = 0;          //Context menu handle.
+		[[nodiscard]] virtual auto GetOffset(ULONGLONG ullOffset, bool fGetVirt)const -> ULONGLONG = 0; //Offset<->VirtOffset conversion.
+		[[nodiscard]] virtual auto GetPagesCount()const -> ULONGLONG = 0;      //Get count of pages.
+		[[nodiscard]] virtual auto GetPagePos()const -> ULONGLONG = 0;         //Get a page number that the cursor stays at.
+		[[nodiscard]] virtual auto GetPageSize()const -> DWORD = 0;            //Current page size.
+		[[nodiscard]] virtual auto GetScrollRatio()const -> std::tuple<float, bool> = 0; //Get current scroll ratio.
+		[[nodiscard]] virtual auto GetSelection()const -> VecSpan = 0;         //Get current selection.
+		[[nodiscard]] virtual auto GetTemplates() -> IHexTemplates* = 0;       //Get Templates interface.
+		[[nodiscard]] virtual auto GetUnprintableChar()const -> wchar_t = 0;   //Get unprintable replacement character.
+		[[nodiscard]] virtual auto GetWndHandle(EHexWnd eWnd, bool fCreate = true)const -> HWND = 0; //Get HWND of internal window/dialogs.
 		virtual void GoToOffset(ULONGLONG ullOffset, int iPosAt = 0) = 0;    //Go to the given offset.
 		[[nodiscard]] virtual bool HasInfoBar()const = 0;      //Is InfoBar currently visible?
 		[[nodiscard]] virtual bool HasSelection()const = 0;    //Does currently have any selection or not.
-		[[nodiscard]] virtual auto HitTest(POINT pt, bool fScreen = true)const->std::optional<HEXHITTEST> = 0; //HitTest given point.
+		[[nodiscard]] virtual auto HitTest(POINT pt, bool fScreen = true)const -> std::optional<HEXHITTEST> = 0; //HitTest given point.
 		[[nodiscard]] virtual bool IsCmdAvail(EHexCmd eCmd)const = 0; //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] virtual bool IsCreated()const = 0;       //Shows whether HexCtrl is created or not.
 		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to HexCtrl or not.
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is data mutable or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Are offsets shown as Hex or as Decimal.
-		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const->HEXVISION = 0; //Ensures that the given offset is visible.
+		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const -> HEXVISION = 0; //Ensures that the given offset is visible.
 		[[nodiscard]] virtual bool IsVirtual()const = 0;       //Is working in VirtualData or default mode.		
 		virtual void ModifyData(const HEXMODIFY& hms) = 0;     //Main routine to modify data in IsMutable()==true mode.
 		[[nodiscard]] virtual bool PreTranslateMsg(MSG* pMsg) = 0;

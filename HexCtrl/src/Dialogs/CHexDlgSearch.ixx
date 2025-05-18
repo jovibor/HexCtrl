@@ -29,7 +29,7 @@ namespace HEXCTRL::INTERNAL {
 	class CHexDlgSearch final {
 	public:
 		void ClearData();
-		void CreateDlg();
+		void CreateDlg()const;
 		void DestroyDlg();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
 		[[nodiscard]] auto GetHWND()const -> HWND;
@@ -270,7 +270,7 @@ void CHexDlgSearch::ClearData()
 	ClearList();
 }
 
-void CHexDlgSearch::CreateDlg()
+void CHexDlgSearch::CreateDlg()const
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_SEARCH),

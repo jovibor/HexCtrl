@@ -28,7 +28,7 @@ private:
 	[[nodiscard]] bool IsFileOpen()const;
 	void FileOpen(std::wstring_view wsvPath, bool fResolveLnk = true);
 	void FileClose();
-	void LoadTemplates(const IHexCtrl* pHexCtrl);
+	void LoadTemplates(IHexCtrl* pHexCtrl);
 	bool IsRW()const;
 	bool IsLnk()const;
 	BOOL PreTranslateMessage(MSG* pMsg)override;

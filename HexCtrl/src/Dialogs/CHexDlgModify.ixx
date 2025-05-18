@@ -847,7 +847,7 @@ void CHexDlgFillData::SetControlsState()
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgModify final {
 	public:
-		void CreateDlg();
+		void CreateDlg()const;
 		void DestroyDlg();
 		[[nodiscard]] auto GetDlgItemHandle(EHexDlgItem eItem)const -> HWND;
 		[[nodiscard]] auto GetHWND()const -> HWND;
@@ -878,7 +878,7 @@ namespace HEXCTRL::INTERNAL {
 
 //CHexDlgModify methods.
 
-void CHexDlgModify::CreateDlg()
+void CHexDlgModify::CreateDlg()const
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_MODIFY),

@@ -18,7 +18,7 @@ import :HexUtility;
 namespace HEXCTRL::INTERNAL {
 	class CHexDlgGoTo final {
 	public:
-		void CreateDlg();
+		void CreateDlg()const;
 		void DestroyDlg();
 		void Initialize(IHexCtrl* pHexCtrl, HINSTANCE hInstRes);
 		[[nodiscard]] auto GetHWND()const -> HWND;
@@ -59,7 +59,7 @@ enum class CHexDlgGoTo::EGoMode : std::uint8_t {
 	MODE_PAGE, MODE_PAGEFWD, MODE_PAGEBACK, MODE_PAGEEND
 };
 
-void CHexDlgGoTo::CreateDlg()
+void CHexDlgGoTo::CreateDlg()const
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_GOTO),

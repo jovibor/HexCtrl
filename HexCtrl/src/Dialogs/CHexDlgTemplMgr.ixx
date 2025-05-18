@@ -37,7 +37,7 @@ namespace HEXCTRL::INTERNAL {
 		auto AddTemplate(const HEXTEMPLATE& stTempl) -> int override;
 		void ApplyCurr(ULONGLONG ullOffset); //Apply currently selected template to offset.
 		int ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)override; //Apply template to a given offset.
-		void CreateDlg();
+		void CreateDlg()const;
 		void DestroyDlg();
 		void DisapplyAll()override;
 		void DisapplyByID(int iAppliedID)override; //Disapply template with the given AppliedID.
@@ -267,7 +267,7 @@ int CHexDlgTemplMgr::ApplyTemplate(ULONGLONG ullOffset, int iTemplateID)
 	return iAppliedID;
 }
 
-void CHexDlgTemplMgr::CreateDlg()
+void CHexDlgTemplMgr::CreateDlg()const
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_TEMPLMGR),
