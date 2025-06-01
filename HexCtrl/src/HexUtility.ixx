@@ -616,6 +616,24 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		return hBmp32;
 	}
 
+	//Get font point size from size in Device Independent Pixels.
+	[[nodiscard]] auto FontPointFromDIP(float flSizeDIP, UINT32 u32ScreenDPI = USER_DEFAULT_SCREEN_DPI) -> float {
+		return (flSizeDIP * 72) / u32ScreenDPI;
+	}
+
+	[[nodiscard]] auto FontPointFromDIP(long iSizeDIP, UINT32 u32ScreenDPI = USER_DEFAULT_SCREEN_DPI) -> long {
+		return std::lround(FontPointFromDIP(static_cast<float>(iSizeDIP), u32ScreenDPI));
+	}
+
+	//Get font size in Device Independent Pixels from point size.
+	[[nodiscard]] auto FontDIPFromPoint(float flSizePoint, UINT32 u32ScreenDPI = USER_DEFAULT_SCREEN_DPI) -> float {
+		return (flSizePoint * u32ScreenDPI) / 72;
+	}
+
+	[[nodiscard]] auto FontDIPFromPoint(long iSizePoint, UINT32 u32ScreenDPI = USER_DEFAULT_SCREEN_DPI) -> long {
+		return std::lround(FontDIPFromPoint(static_cast<float>(iSizePoint), u32ScreenDPI));
+	}
+
 	class CDynLayout final {
 	public:
 		//Ratio settings, for how much to move or resize an item when parent is resized.

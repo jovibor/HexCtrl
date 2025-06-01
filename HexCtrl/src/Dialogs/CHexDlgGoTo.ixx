@@ -33,7 +33,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetHexCtrl()const -> IHexCtrl*;
 		[[nodiscard]] auto GetGoMode()const -> EGoMode;
 		void GoTo(bool fForward);
-		[[nodiscard ]] bool IsNoEsc()const;
+		[[nodiscard]] bool IsNoEsc()const;
 		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnCancel();
 		auto OnClose() -> INT_PTR;

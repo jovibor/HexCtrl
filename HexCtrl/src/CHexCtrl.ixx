@@ -697,12 +697,12 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	//Font related.
 	//Default main logfont.
-	const LOGFONTW lfMain { .lfHeight { -::MulDiv(11, m_iLOGPIXELSY, 72) }, .lfWeight { FW_NORMAL },
+	const LOGFONTW lfMain { .lfHeight { -gui::FontDIPFromPoint(11L, m_iLOGPIXELSY) }, .lfWeight { FW_NORMAL },
 		.lfQuality { CLEARTYPE_QUALITY }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
 	m_hFntMain = ::CreateFontIndirectW(hcs.pLogFont != nullptr ? hcs.pLogFont : &lfMain);
 
 	//Info area font, independent from the main font, its size is a bit smaller than the default main font.
-	const LOGFONTW lfInfo { .lfHeight { -::MulDiv(11, m_iLOGPIXELSY, 72) + 1 }, .lfWeight { FW_NORMAL },
+	const LOGFONTW lfInfo { .lfHeight { -gui::FontDIPFromPoint(11L, m_iLOGPIXELSY) + 1 }, .lfWeight { FW_NORMAL },
 		.lfQuality { CLEARTYPE_QUALITY }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
 	m_hFntInfoBar = ::CreateFontIndirectW(&lfInfo);
 	//End of font related.
@@ -3953,7 +3953,7 @@ void CHexCtrl::FillWithZeros()
 
 void CHexCtrl::FontSizeIncDec(bool fInc)
 {
-	const auto lFontSize = ::MulDiv(-GetFontSize(), 72, m_iLOGPIXELSY) + (fInc ? 1 : -1); //Convert font Height to point size.
+	const auto lFontSize = gui::FontPointFromDIP(-GetFontSize(), m_iLOGPIXELSY) + (fInc ? 1 : -1);
 	SetFontSize(lFontSize);
 }
 
@@ -4902,7 +4902,7 @@ void CHexCtrl::SetFontSize(long lSize)
 		return;
 
 	auto lf = GetFont();
-	lf.lfHeight = -::MulDiv(lSize, m_iLOGPIXELSY, 72); //Convert point size to font Height.
+	lf.lfHeight = -gui::FontDIPFromPoint(lSize, m_iLOGPIXELSY);
 	SetFont(lf);
 }
 
@@ -7106,7 +7106,7 @@ auto CHexCtrl::OnDestroy()->LRESULT
 
 auto CHexCtrl::OnEraseBkgnd([[maybe_unused]] const MSG& msg)->LRESULT
 {
-	return TRUE;
+	return 1; //An application should return nonzero if it erases the background, or zero otherwise.
 }
 
 auto CHexCtrl::OnGetDlgCode([[maybe_unused]] const MSG& msg)->LRESULT
@@ -7116,7 +7116,7 @@ auto CHexCtrl::OnGetDlgCode([[maybe_unused]] const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnHelp([[maybe_unused]] const MSG& msg)->LRESULT
 {
-	return FALSE;
+	return TRUE;
 }
 
 auto CHexCtrl::OnHScroll([[maybe_unused]] const MSG& msg)->LRESULT

@@ -623,14 +623,14 @@ void CHexScroll::DrawScrollBar()const
 	const auto rcWnd = GetParentRect(false);
 	const auto hBMP = ::CreateCompatibleBitmap(hDCParent, rcWnd.Width(), rcWnd.Height());
 	dcMem.SelectObject(hBMP);
-	const auto rcSNC = GetScrollRect(true);	//Scroll bar with any additional non client area, to fill it below.
+	const auto rcSNC = GetScrollRect(true);	//Scroll bar with any additional non client area.
 	dcMem.FillSolidRect(rcSNC, m_clrBar);
 	const auto rcS = GetScrollRect();
 	dcMem.FillSolidRect(rcS, m_clrBar);
 	DrawArrows(dcMem);
 	DrawThumb(dcMem);
 
-	//Copy drawn Scrollbar from dcMem to the parent window (hDC).
+	//Copy the drawn scrollbar from the dcMem to the parent window's DC.
 	::BitBlt(hDCParent, rcSNC.left, rcSNC.top, rcSNC.Width(), rcSNC.Height(), dcMem, rcSNC.left, rcSNC.top, SRCCOPY);
 	::DeleteObject(hBMP);
 	::DeleteDC(dcMem);

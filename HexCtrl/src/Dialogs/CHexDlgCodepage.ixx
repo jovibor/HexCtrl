@@ -29,7 +29,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetDlgProperties(std::uint64_t u64Flags);
 		void ShowWindow(int iCmdShow);
 	private:
-		[[nodiscard ]] bool IsNoEsc()const;
+		[[nodiscard]] bool IsNoEsc()const;
 		auto OnActivate(const MSG& msg) -> INT_PTR;
 		void OnCancel();
 		auto OnClose() -> INT_PTR;
