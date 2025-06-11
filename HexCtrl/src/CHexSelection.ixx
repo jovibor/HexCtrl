@@ -31,7 +31,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetMarkStartEnd(ULONGLONG ullOffset);
 		void SetSelection(const VecSpan& vecSel, bool fHighlight);     //Set a selection or selection highlight.
 	private:
-		VecSpan m_vecSelection;    //Selection data.
+		VecSpan m_vecSelection; //Selection data.
 		VecSpan m_vecSelHighlight; //Selection highlight data.
 		ULONGLONG m_ullMarkStartEnd { (std::numeric_limits<std::uint64_t>::max)() };
 	};

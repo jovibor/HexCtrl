@@ -58,8 +58,8 @@ namespace HEXCTRL::INTERNAL {
 		auto OnMouseMove(const MSG& msg) -> INT_PTR;
 	private:
 		HINSTANCE m_hInstRes { };
-		gui::CWnd m_Wnd;        //Main window.
-		gui::CWnd m_WndLink;    //Static link control
+		GDIUT::CWnd m_Wnd;      //Main window.
+		GDIUT::CWnd m_WndLink;  //Static link control
 		HBITMAP m_hBmpLogo { }; //Logo bitmap.
 		HFONT m_hFontDef { };
 		HFONT m_hFontUnderline { };
@@ -70,7 +70,7 @@ namespace HEXCTRL::INTERNAL {
 
 auto CHexDlgAbout::DoModal(HWND hWndParent)->INT_PTR {
 	return ::DialogBoxParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_ABOUT),
-		hWndParent, gui::DlgProc<CHexDlgAbout>, reinterpret_cast<LPARAM>(this));
+		hWndParent, GDIUT::DlgProc<CHexDlgAbout>, reinterpret_cast<LPARAM>(this));
 }
 
 auto CHexDlgAbout::ProcessMsg(const MSG& msg)->INT_PTR {
@@ -145,7 +145,7 @@ auto CHexDlgAbout::OnInitDialog(const MSG& msg)->INT_PTR
 		HEXCTRL_VERSION_MAJOR, HEXCTRL_VERSION_MINOR, HEXCTRL_VERSION_PATCH);
 	::SetWindowTextW(m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_STAT_VERSION), wstrVersion.data());
 
-	const auto iSizeIcon = static_cast<int>(32 * gui::GetDPIScale(m_Wnd));
+	const auto iSizeIcon = static_cast<int>(32 * GDIUT::GetDPIScaleForHWND(m_Wnd));
 	m_hBmpLogo = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_LOGO),
 		IMAGE_BITMAP, iSizeIcon, iSizeIcon, LR_CREATEDIBSECTION));
 	const auto hWndLogo = m_Wnd.GetDlgItem(IDC_HEXCTRL_ABOUT_LOGO);
@@ -320,6 +320,10 @@ namespace HEXCTRL::INTERNAL {
 		void DrawPageLines(HDC hDC, ULONGLONG ullStartLine, int iLines)const;
 		void FillCapacityString(); //Fill m_wstrCapacity according to current m_dwCapacity.
 		void FillWithZeros();      //Fill selection with zeros.
+		[[nodiscard]] auto FontPointsFromPixelsScaled(float flSizeDIP) -> float; //Get font points size from the size in scaled pixels.
+		[[nodiscard]] auto FontPointsFromPixelsScaled(long iSizeDIP) -> long;
+		[[nodiscard]] auto FontPixelsScaledFromPoints(float flSizePoint) -> float; //Get font size in Device Independent Pixels from point size.
+		[[nodiscard]] auto FontPixelsScaledFromPoints(long iSizePoint) -> long;
 		void FontSizeIncDec(bool fInc = true); //Increase os decrease font size by minimum amount.
 		[[nodiscard]] auto GetBottomLine()const -> ULONGLONG; //Returns current bottom line number in view.
 		[[nodiscard]] auto GetCharsWidthArray()const -> int*;
@@ -328,8 +332,9 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetCommandFromKey(UINT uKey, bool fCtrl, bool fShift, bool fAlt)const -> std::optional<EHexCmd>; //Get command from keybinding.
 		[[nodiscard]] auto GetCommandFromMenu(WORD wMenuID)const -> std::optional<EHexCmd>; //Get command from menuID.
 		[[nodiscard]] auto GetDigitsOffset()const -> DWORD;
+		[[nodiscard]] auto GetDPIScale()const -> float;
 		[[nodiscard]] long GetFontSize()const;
-		[[nodiscard]] auto GetRectTextCaption()const -> gui::CRect;   //Returns rect of the text caption area.
+		[[nodiscard]] auto GetRectTextCaption()const -> GDIUT::CRect;   //Returns rect of the text caption area.
 		[[nodiscard]] auto GetSelectedLines()const -> ULONGLONG; //Get amount of selected lines.
 		[[nodiscard]] auto GetScrollPageSize()const -> ULONGLONG; //Get the "Page" size of the scroll.
 		[[nodiscard]] auto GetTopLine()const -> ULONGLONG;       //Returns current top line number in view.
@@ -415,10 +420,10 @@ namespace HEXCTRL::INTERNAL {
 		CHexScroll m_ScrollV;                 //Vertical scroll bar.
 		CHexScroll m_ScrollH;                 //Horizontal scroll bar.
 		HINSTANCE m_hInstRes { };             //Hinstance of the HexCtrl resources.
-		gui::CWnd m_Wnd;                      //Main window.
-		gui::CWnd m_wndTTMain;                //Main tooltip window.
-		gui::CWnd m_wndTTOffset;              //Tooltip window for Offset in m_fHighLatency mode.
-		gui::CMenu m_MenuMain;                //Main popup menu.
+		GDIUT::CWnd m_Wnd;                    //Main window.
+		GDIUT::CWnd m_wndTTMain;              //Main tooltip window.
+		GDIUT::CWnd m_wndTTOffset;            //Tooltip window for Offset in m_fHighLatency mode.
+		GDIUT::CMenu m_MenuMain;              //Main popup menu.
 		std::wstring m_wstrCapacity;          //Top Capacity string.
 		std::wstring m_wstrInfoBar;           //Info bar text.
 		std::wstring m_wstrPageName;          //Name of the sector/page.
@@ -482,6 +487,7 @@ namespace HEXCTRL::INTERNAL {
 		int m_iCodePage { };                  //Current code-page for Text area. -1 for default.
 		int m_iLOGPIXELSY { };                //GetDeviceCaps(LOGPIXELSY) constant.
 		float m_flScrollRatio { };            //Ratio for how much to scroll with mouse-wheel.
+		float m_flDPIScale { 1.F };           //DPI scale factor for window.
 		wchar_t m_wchUnprintable { };         //Replacement char for unprintable characters.
 		wchar_t m_wchDateSepar { };           //Date separator.
 		bool m_fCreated { false };            //Is control created or not yet.
@@ -534,7 +540,7 @@ CHexCtrl::CHexCtrl()
 	if (WNDCLASSEXW wc { }; ::GetClassInfoExW(nullptr, m_pwszClassName, &wc) == FALSE) {
 		wc.cbSize = sizeof(WNDCLASSEXW);
 		wc.style = CS_GLOBALCLASS | CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
-		wc.lpfnWndProc = gui::WndProc<CHexCtrl>;
+		wc.lpfnWndProc = GDIUT::WndProc<CHexCtrl>;
 		wc.hCursor = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED));
 		wc.lpszClassName = m_pwszClassName;
 		if (::RegisterClassExW(&wc) == 0) {
@@ -592,7 +598,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		}
 	}
 	else {
-		const gui::CRect rc = hcs.rect;
+		const GDIUT::CRect rc = hcs.rect;
 		if (hWnd = ::CreateWindowExW(hcs.dwExStyle, m_pwszClassName, L"HexCtrl", hcs.dwStyle, rc.left, rc.top, rc.Width(),
 			rc.Height(), hcs.hWndParent, reinterpret_cast<HMENU>(static_cast<UINT_PTR>(hcs.uID)), nullptr, this);
 			hWnd == nullptr) {
@@ -630,6 +636,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 	m_fOffsetHex = hcs.fOffsetHex;
 	m_dwDigitsOffsetDec = 10UL;
 	m_dwDigitsOffsetHex = 8UL;
+	m_flDPIScale = GDIUT::GetDPIScaleForHWND(m_Wnd);
 
 	const auto hDC = m_Wnd.GetDC();
 	m_iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
@@ -641,7 +648,7 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 		return false;
 	}
 
-	const auto iSizeIcon = static_cast<int>(16 * gui::GetDPIScale(m_Wnd));
+	const auto iSizeIcon = static_cast<int>(16 * GetDPIScale());
 	const auto menuTop = m_MenuMain.GetSubMenu(0); //Context sub-menu handle.
 	//"Search" menu icon.
 	auto hBmp = static_cast<HBITMAP>(::LoadImageW(m_hInstRes, MAKEINTRESOURCEW(IDB_HEXCTRL_SEARCH), IMAGE_BITMAP,
@@ -697,12 +704,12 @@ bool CHexCtrl::Create(const HEXCREATE& hcs)
 
 	//Font related.
 	//Default main logfont.
-	const LOGFONTW lfMain { .lfHeight { -gui::FontDIPFromPoint(11L, m_iLOGPIXELSY) }, .lfWeight { FW_NORMAL },
+	const LOGFONTW lfMain { .lfHeight { -FontPixelsScaledFromPoints(11L) }, .lfWeight { FW_NORMAL },
 		.lfQuality { CLEARTYPE_QUALITY }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
 	m_hFntMain = ::CreateFontIndirectW(hcs.pLogFont != nullptr ? hcs.pLogFont : &lfMain);
 
 	//Info area font, independent from the main font, its size is a bit smaller than the default main font.
-	const LOGFONTW lfInfo { .lfHeight { -gui::FontDIPFromPoint(11L, m_iLOGPIXELSY) + 1 }, .lfWeight { FW_NORMAL },
+	const LOGFONTW lfInfo { .lfHeight { -FontPixelsScaledFromPoints(11L) + 1 }, .lfWeight { FW_NORMAL },
 		.lfQuality { CLEARTYPE_QUALITY }, .lfPitchAndFamily { FIXED_PITCH }, .lfFaceName { L"Consolas" } };
 	m_hFntInfoBar = ::CreateFontIndirectW(&lfInfo);
 	//End of font related.
@@ -1726,7 +1733,7 @@ auto CHexCtrl::ProcessMsg(const MSG& msg)->LRESULT
 	case WM_SIZE: return OnSize(msg);
 	case WM_TIMER: return OnTimer(msg);
 	case WM_VSCROLL: return OnVScroll(msg);
-	default: return gui::DefWndProc(msg);
+	default: return GDIUT::DefWndProc(msg);
 	}
 }
 
@@ -2273,7 +2280,7 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 
 	if (hMenuGroupData != nullptr) {
 		//Unchecking all menus and checking only the currently selected.
-		gui::CMenu menuGroup(hMenuGroupData);
+		GDIUT::CMenu menuGroup(hMenuGroupData);
 		for (auto iIDGroupData = 0; iIDGroupData < menuGroup.GetItemsCount(); ++iIDGroupData) {
 			menuGroup.SetItemCheck(iIDGroupData, false, false);
 		}
@@ -3057,10 +3064,10 @@ void CHexCtrl::CreatePens()
 void CHexCtrl::DrawWindow(HDC hDC)const
 {
 	const auto iScrollH = static_cast<int>(m_ScrollH.GetScrollPos());
-	gui::CRect rcWnd(m_iFirstVertLinePx, m_iFirstHorzLinePx,
+	GDIUT::CRect rcWnd(m_iFirstVertLinePx, m_iFirstHorzLinePx,
 		m_iFirstVertLinePx + m_iWidthClientAreaPx, m_iFirstHorzLinePx + m_iHeightClientAreaPx);
 
-	gui::CDC dc(hDC);
+	GDIUT::CDC dc(hDC);
 	dc.FillSolidRect(rcWnd, m_stColors.clrBk);
 	dc.SelectObject(m_hPenLinesMain);
 
@@ -3097,7 +3104,7 @@ void CHexCtrl::DrawWindow(HDC hDC)const
 	dc.LineTo(m_iFourthVertLinePx - iScrollH, m_iFourthHorzLinePx);
 
 	//«Offset» text.
-	gui::CRect rcOffset(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iSecondVertLinePx - iScrollH, m_iSecondHorzLinePx);
+	GDIUT::CRect rcOffset(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iSecondVertLinePx - iScrollH, m_iSecondHorzLinePx);
 	dc.SelectObject(m_hFntMain);
 	dc.SetTextColor(m_stColors.clrFontCaption);
 	dc.SetBkColor(m_stColors.clrBk);
@@ -3126,9 +3133,9 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 	vecInfoData.reserve(4);
 
 	const auto iScrollH = static_cast<int>(m_ScrollH.GetScrollPos());
-	gui::CRect rcInfoBar(m_iFirstVertLinePx + 1 - iScrollH, m_iThirdHorzLinePx + 1,
+	GDIUT::CRect rcInfoBar(m_iFirstVertLinePx + 1 - iScrollH, m_iThirdHorzLinePx + 1,
 		m_iFourthVertLinePx, m_iFourthHorzLinePx); //Info bar rc until m_iFourthHorizLine.
-	gui::CRect rcInfoBarText = rcInfoBar;
+	GDIUT::CRect rcInfoBarText = rcInfoBar;
 	rcInfoBarText.left = m_iFirstVertLinePx + 5; //Draw the text beginning with little indent.
 	rcInfoBarText.right = m_iFirstVertLinePx + m_iWidthClientAreaPx; //Draw text to the end of the client area, even if it passes iFourthHorizLine.
 
@@ -3164,7 +3171,7 @@ void CHexCtrl::DrawInfoBar(HDC hDC)const
 		vecInfoData.back().iVertLineX = rcInfoBarText.left - (m_sizeFontInfo.cx / 2); //Vertical line after current rect.
 	}
 
-	gui::CDC dc(hDC);
+	GDIUT::CDC dc(hDC);
 	dc.FillSolidRect(rcInfoBar, m_stColors.clrBkInfoBar); //Info bar rect.
 	dc.DrawEdge(rcInfoBar, BDR_RAISEDINNER, BF_TOP);
 	dc.SelectObject(m_hFntInfoBar);
@@ -3202,7 +3209,7 @@ void CHexCtrl::DrawOffsets(HDC hDC, ULONGLONG ullStartLine, int iLines)const
 		}
 
 		//Left column offset printing (00000000...0000FFFF).
-		gui::CDC dc(hDC);
+		GDIUT::CDC dc(hDC);
 		dc.SelectObject(m_hFntMain);
 		dc.SetTextColor(stClrOffset.clrText);
 		dc.SetBkColor(stClrOffset.clrBk);
@@ -3306,7 +3313,7 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 		lmbPoly();
 	}
 
-	gui::CDC dc(hDC);
+	GDIUT::CDC dc(hDC);
 	dc.SelectObject(m_hFntMain);
 	std::size_t index { 0 }; //Index for vecPolyText, its size is always equal to vecPolyHex.
 	for (const auto& ptc : vecPolyHex) { //Loop is needed because of different colors.
@@ -3431,7 +3438,7 @@ void CHexCtrl::DrawTemplates(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 
 	//Fieds printing.
 	if (!vecFieldsHex.empty()) {
-		gui::CDC dc(hDC);
+		GDIUT::CDC dc(hDC);
 		dc.SelectObject(m_hFntMain);
 		std::size_t index { 0 }; //Index for vecFieldsText, its size is always equal to vecFieldsHex.
 		const auto penOld = dc.SelectObject(m_hPenLinesTempl);
@@ -3569,7 +3576,7 @@ void CHexCtrl::DrawBookmarks(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 
 	//Bookmarks printing.
 	if (!vecBkmHex.empty()) {
-		gui::CDC dc(hDC);
+		GDIUT::CDC dc(hDC);
 		dc.SelectObject(m_hFntMain);
 		std::size_t index { 0 }; //Index for vecBkmText, its size is always equal to vecBkmHex.
 		for (const auto& ptc : vecBkmHex) { //Loop is needed because bkms have different colors.
@@ -3658,7 +3665,7 @@ void CHexCtrl::DrawSelection(HDC hDC, ULONGLONG ullStartLine, int iLines, std::w
 
 	//Selection printing.
 	if (!vecPolySelHex.empty()) {
-		gui::CDC dc(hDC);
+		GDIUT::CDC dc(hDC);
 		dc.SelectObject(m_hFntMain);
 		dc.SetTextColor(m_stColors.clrFontSel);
 		dc.SetBkColor(m_stColors.clrBkSel);
@@ -3745,7 +3752,7 @@ void CHexCtrl::DrawSelHighlight(HDC hDC, ULONGLONG ullStartLine, int iLines, std
 	//Selection highlight printing.
 	if (!vecPolySelHexHgl.empty()) {
 		//Colors are the inverted selection colors.
-		gui::CDC dc(hDC);
+		GDIUT::CDC dc(hDC);
 		dc.SelectObject(m_hFntMain);
 		dc.SetTextColor(m_stColors.clrBkSel);
 		dc.SetBkColor(m_stColors.clrFontSel);
@@ -3802,7 +3809,7 @@ void CHexCtrl::DrawCaret(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wstri
 	const auto clrBkCaret = m_Selection.HitTest(ullCaretPos) ? m_stColors.clrBkCaretSel : m_stColors.clrBkCaret;
 
 	//Caret printing.
-	gui::CDC dc(hDC);
+	GDIUT::CDC dc(hDC);
 	dc.SelectObject(m_hFntMain);
 	dc.SetTextColor(m_stColors.clrFontCaret);
 	dc.SetBkColor(clrBkCaret);
@@ -3877,7 +3884,7 @@ void CHexCtrl::DrawDataInterp(HDC hDC, ULONGLONG ullStartLine, int iLines, std::
 
 	//Data Interpreter printing.
 	if (!vecPolyDataInterp.empty()) {
-		gui::CDC dc(hDC);
+		GDIUT::CDC dc(hDC);
 		dc.SelectObject(m_hFntMain);
 		dc.SetTextColor(m_stColors.clrFontDataInterp);
 		dc.SetBkColor(m_stColors.clrBkDataInterp);
@@ -3910,7 +3917,7 @@ void CHexCtrl::DrawPageLines(HDC hDC, ULONGLONG ullStartLine, int iLines)const
 
 	//Page lines printing.
 	if (!vecPageLines.empty()) {
-		gui::CDC dc(hDC);
+		GDIUT::CDC dc(hDC);
 		const auto penOld = dc.SelectObject(m_hPenLinesMain);
 		for (const auto& pl : vecPageLines) {
 			dc.MoveTo(pl.ptStart.x, pl.ptStart.y);
@@ -3951,9 +3958,25 @@ void CHexCtrl::FillWithZeros()
 	Redraw();
 }
 
+auto CHexCtrl::FontPointsFromPixelsScaled(float flSizeDIP) -> float {
+	return ut::FontPointsFromPixels(flSizeDIP) / GetDPIScale();
+}
+
+auto CHexCtrl::FontPointsFromPixelsScaled(long iSizeDIP) -> long {
+	return std::lround(FontPointsFromPixelsScaled(static_cast<float>(iSizeDIP)));
+}
+
+auto CHexCtrl::FontPixelsScaledFromPoints(float flSizePoint) -> float {
+	return ut::FontPixelsFromPoints(flSizePoint) * GetDPIScale();
+}
+
+auto CHexCtrl::FontPixelsScaledFromPoints(long iSizePoint) -> long {
+	return std::lround(FontPixelsScaledFromPoints(static_cast<float>(iSizePoint)));
+}
+
 void CHexCtrl::FontSizeIncDec(bool fInc)
 {
-	const auto lFontSize = gui::FontPointFromDIP(-GetFontSize(), m_iLOGPIXELSY) + (fInc ? 1 : -1);
+	const auto lFontSize = FontPointsFromPixelsScaled(-GetFontSize()) + (fInc ? 1 : -1);
 	SetFontSize(lFontSize);
 }
 
@@ -4019,12 +4042,17 @@ auto CHexCtrl::GetDigitsOffset()const->DWORD
 	return IsOffsetAsHex() ? m_dwDigitsOffsetHex : m_dwDigitsOffsetDec;
 }
 
+auto CHexCtrl::GetDPIScale()const->float
+{
+	return m_flDPIScale;
+}
+
 long CHexCtrl::GetFontSize()const
 {
 	return GetFont().lfHeight;
 }
 
-auto CHexCtrl::GetRectTextCaption()const->gui::CRect
+auto CHexCtrl::GetRectTextCaption()const->GDIUT::CRect
 {
 	const auto iScrollH { static_cast<int>(m_ScrollH.GetScrollPos()) };
 	return { m_iThirdVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iFourthVertLinePx - iScrollH, m_iSecondHorzLinePx };
@@ -4352,7 +4380,7 @@ void CHexCtrl::Print()
 		return;
 	}
 
-	gui::CDC dcPrint(m_pdex.hDC);
+	GDIUT::CDC dcPrint(m_pdex.hDC);
 	if (const DOCINFOW di { .cbSize { sizeof(DOCINFOW) }, .lpszDocName { L"HexCtrl" } }; dcPrint.StartDocW(&di) < 0) {
 		dcPrint.AbortDoc();
 		dcPrint.DeleteDC();
@@ -4361,7 +4389,7 @@ void CHexCtrl::Print()
 
 	constexpr auto iMarginX = 150;
 	constexpr auto iMarginY = 150;
-	const gui::CRect rcPrint(POINT(0, 0), SIZE(::GetDeviceCaps(dcPrint, HORZRES) - (iMarginX * 2),
+	const GDIUT::CRect rcPrint(POINT(0, 0), SIZE(::GetDeviceCaps(dcPrint, HORZRES) - (iMarginX * 2),
 		::GetDeviceCaps(dcPrint, VERTRES) - (iMarginY * 2)));
 	const SIZE sizePrintDpi { ::GetDeviceCaps(dcPrint, LOGPIXELSX), ::GetDeviceCaps(dcPrint, LOGPIXELSY) };
 	const auto iFontSizeRatio { sizePrintDpi.cy / m_iLOGPIXELSY };
@@ -4482,7 +4510,7 @@ void CHexCtrl::Print()
 
 void CHexCtrl::RecalcAll(bool fPrinter, HDC hDCPrinter, LPCRECT pRCPrinter)
 {
-	const gui::CDC dcCurr = fPrinter ? hDCPrinter : m_Wnd.GetDC();
+	const GDIUT::CDC dcCurr = fPrinter ? hDCPrinter : m_Wnd.GetDC();
 	const auto ullCurLineV = GetTopLine();
 	TEXTMETRICW tm;
 	dcCurr.SelectObject(m_hFntMain);
@@ -4521,7 +4549,7 @@ void CHexCtrl::RecalcAll(bool fPrinter, HDC hDCPrinter, LPCRECT pRCPrinter)
 	m_iSecondHorzLinePx = m_iStartWorkAreaYPx - 1;
 	m_iIndentCapTextYPx = m_iHeightTopRectPx / 2 - (m_sizeFontMain.cy / 2);
 
-	const gui::CRect rc { fPrinter ? *pRCPrinter : m_Wnd.GetClientRect() };
+	const GDIUT::CRect rc { fPrinter ? *pRCPrinter : m_Wnd.GetClientRect() };
 	RecalcClientArea(rc.Width(), rc.Height());
 
 	//Scrolls, ReleaseDC and Redraw only for window DC, not for printer DC.
@@ -4902,7 +4930,7 @@ void CHexCtrl::SetFontSize(long lSize)
 		return;
 
 	auto lf = GetFont();
-	lf.lfHeight = -gui::FontDIPFromPoint(lSize, m_iLOGPIXELSY);
+	lf.lfHeight = -FontPixelsScaledFromPoints(lSize);
 	SetFont(lf);
 }
 
@@ -7496,7 +7524,7 @@ auto CHexCtrl::OnNCActivate([[maybe_unused]] const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnNCCalcSize(const MSG& msg)->LRESULT
 {
-	gui::DefWndProc(msg);
+	GDIUT::DefWndProc(msg);
 	const auto pNCSP = reinterpret_cast<LPNCCALCSIZE_PARAMS>(msg.lParam);
 
 	//Sequence is important — H->V.
@@ -7508,7 +7536,7 @@ auto CHexCtrl::OnNCCalcSize(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnNCPaint(const MSG& msg)->LRESULT
 {
-	gui::DefWndProc(msg);
+	GDIUT::DefWndProc(msg);
 	m_ScrollV.OnNCPaint();
 	m_ScrollH.OnNCPaint();
 
@@ -7517,7 +7545,7 @@ auto CHexCtrl::OnNCPaint(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnPaint()->LRESULT
 {
-	gui::CPaintDC dcPaint(m_Wnd);
+	GDIUT::CPaintDC dcPaint(m_Wnd);
 
 	if (!IsDrawable()) //Control should not be rendered atm.
 		return 0;
@@ -7550,7 +7578,7 @@ auto CHexCtrl::OnPaint()->LRESULT
 	}
 
 	//Drawing through CMemDC to avoid flickering.
-	gui::CMemDC dcMem(dcPaint, rcClient);
+	GDIUT::CMemDC dcMem(dcPaint, rcClient);
 	DrawWindow(dcMem);
 	DrawInfoBar(dcMem);
 
@@ -7578,7 +7606,7 @@ auto CHexCtrl::OnSetCursor(const MSG& msg)->LRESULT
 	m_ScrollV.OnSetCursor(wHitTest, wMessage);
 	m_ScrollH.OnSetCursor(wHitTest, wMessage);
 
-	return gui::DefWndProc(msg); //To set appropriate cursor.
+	return GDIUT::DefWndProc(msg); //To set appropriate cursor.
 }
 
 auto CHexCtrl::OnSize(const MSG& msg)->LRESULT
@@ -7598,11 +7626,11 @@ auto CHexCtrl::OnTimer(const MSG& msg)->LRESULT
 {
 	static constexpr auto dbSecToShow { 5000.0 }; //How many ms to show tooltips.
 	if (msg.wParam != m_uIDTTTMain)
-		return gui::DefWndProc(msg);
+		return GDIUT::DefWndProc(msg);
 
 	auto rcClient = m_Wnd.GetClientRect();
 	m_Wnd.ClientToScreen(rcClient);
-	gui::CPoint ptCur;
+	GDIUT::CPoint ptCur;
 	::GetCursorPos(ptCur);
 
 	if (!rcClient.PtInRect(ptCur)) { //Check if cursor has left client rect,

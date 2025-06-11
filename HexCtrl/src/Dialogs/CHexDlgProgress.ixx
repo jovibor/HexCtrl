@@ -36,10 +36,10 @@ namespace HEXCTRL::INTERNAL {
 	private:
 		static constexpr UINT_PTR m_uIDTCancelCheck { 0x1 };
 		static constexpr auto m_uElapse { 100U }; //Milliseconds for the timer.
-		gui::CWnd m_Wnd;              //Main window.
-		gui::CWnd m_WndOper;          //Static Operation.
-		gui::CWnd m_WndCount;         //Static Count.
-		gui::CWndProgBar m_stProgBar; //Progress bar.
+		GDIUT::CWnd m_Wnd;
+		GDIUT::CWnd m_WndOper;          //Static Operation.
+		GDIUT::CWnd m_WndCount;         //Static Count.
+		GDIUT::CWndProgBar m_stProgBar; //Progress bar.
 		std::wstring m_wstrOperName;
 		std::wstring m_wstrCountName; //Count name (e.g. Found, Replaced, etc...).
 		ULONGLONG m_ullMin { };       //Minimum data amount. 
@@ -60,7 +60,7 @@ CHexDlgProgress::CHexDlgProgress(std::wstring_view wsvOperName, std::wstring_vie
 
 auto CHexDlgProgress::DoModal(HWND hWndParent, HINSTANCE hInstRes)->INT_PTR {
 	return ::DialogBoxParamW(hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_PROGRESS),
-		hWndParent, gui::DlgProc<CHexDlgProgress>, reinterpret_cast<LPARAM>(this));
+		hWndParent, GDIUT::DlgProc<CHexDlgProgress>, reinterpret_cast<LPARAM>(this));
 }
 
 bool CHexDlgProgress::IsCanceled()const

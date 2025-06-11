@@ -54,8 +54,8 @@ namespace HEXCTRL::INTERNAL {
 		};
 		inline static CHexDlgCodepage* m_pThis { };
 		HINSTANCE m_hInstRes { };
-		gui::CWnd m_Wnd;              //Main window.
-		gui::CDynLayout m_DynLayout;
+		GDIUT::CWnd m_Wnd;
+		GDIUT::CDynLayout m_DynLayout;
 		LISTEX::CListEx m_ListEx;
 		std::vector<CODEPAGE> m_vecCodePage;
 		IHexCtrl* m_pHexCtrl { };
@@ -78,7 +78,7 @@ void CHexDlgCodepage::CreateDlg()const
 {
 	//m_Wnd is set in the OnInitDialog().
 	if (const auto hWnd = ::CreateDialogParamW(m_hInstRes, MAKEINTRESOURCEW(IDD_HEXCTRL_CODEPAGE),
-		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), gui::DlgProc<CHexDlgCodepage>, reinterpret_cast<LPARAM>(this));
+		m_pHexCtrl->GetWndHandle(EHexWnd::WND_MAIN), GDIUT::DlgProc<CHexDlgCodepage>, reinterpret_cast<LPARAM>(this));
 		hWnd == nullptr) {
 		ut::DBG_REPORT(L"CreateDialogParamW failed.");
 	}
@@ -234,7 +234,7 @@ auto CHexDlgCodepage::OnInitDialog(const MSG& msg)->INT_PTR
 	m_ListEx.SetItemCountEx(static_cast<int>(m_vecCodePage.size()), LVSICF_NOSCROLL);
 
 	m_DynLayout.SetHost(m_Wnd);
-	m_DynLayout.AddItem(IDC_HEXCTRL_CODEPAGE_LIST, gui::CDynLayout::MoveNone(), gui::CDynLayout::SizeHorzAndVert(100, 100));
+	m_DynLayout.AddItem(IDC_HEXCTRL_CODEPAGE_LIST, GDIUT::CDynLayout::MoveNone(), GDIUT::CDynLayout::SizeHorzAndVert(100, 100));
 	m_DynLayout.Enable(true);
 
 	return TRUE;

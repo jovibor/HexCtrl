@@ -438,13 +438,25 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 		return loc;
 	}
 
-	//Returns hInstance of a current module, whether it is a .exe or .dll.
+	//Returns hInstance of the current module, whether it is a .exe or .dll.
 	[[nodiscard]] auto GetCurrModuleHinst() -> HINSTANCE {
 		HINSTANCE hInst { };
 		::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
 			reinterpret_cast<LPCWSTR>(&GetCurrModuleHinst), &hInst);
 		return hInst;
 	};
+
+	//Get font points size from the size in pixels.
+	[[nodiscard]] constexpr auto FontPointsFromPixels(float flSizePixels) -> float {
+		constexpr auto flPointsInPixel = 72.F / USER_DEFAULT_SCREEN_DPI;
+		return flSizePixels * flPointsInPixel;
+	}
+
+	//Get font pixels size from the size in points.
+	[[nodiscard]] constexpr auto FontPixelsFromPoints(float flSizePoints) -> float {
+		constexpr auto flPixelsInPoint = USER_DEFAULT_SCREEN_DPI / 72.F;
+		return flSizePoints * flPixelsInPoint;
+	}
 
 	//Replicates GET_X_LPARAM macro from windowsx.h.
 	[[nodiscard]] constexpr int GetXLPARAM(LPARAM lParam) {
@@ -457,7 +469,7 @@ namespace HEXCTRL::INTERNAL::ut { //Utility methods and stuff.
 	}
 }
 
-namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
+namespace HEXCTRL::INTERNAL::GDIUT { //Windows GDI related stuff.
 	auto DefWndProc(const MSG& msg) -> LRESULT {
 		return ::DefWindowProcW(msg.hwnd, msg.message, msg.wParam, msg.lParam);
 	}
@@ -519,7 +531,7 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		return 0;
 	}
 
-	[[nodiscard]] auto GetDPIScale(HWND hWnd) -> float {
+	[[nodiscard]] auto GetDPIScaleForHWND(HWND hWnd) -> float {
 		const auto hDC = ::GetDC(hWnd);
 		const auto iLOGPIXELSY = ::GetDeviceCaps(hDC, LOGPIXELSY);
 		::ReleaseDC(hWnd, hDC);
@@ -614,24 +626,6 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		}
 
 		return hBmp32;
-	}
-
-	//Get font point size from size in Device Independent Pixels.
-	[[nodiscard]] auto FontPointFromDIP(float flSizeDIP, UINT32 u32ScreenDPI = USER_DEFAULT_SCREEN_DPI) -> float {
-		return (flSizeDIP * 72) / u32ScreenDPI;
-	}
-
-	[[nodiscard]] auto FontPointFromDIP(long iSizeDIP, UINT32 u32ScreenDPI = USER_DEFAULT_SCREEN_DPI) -> long {
-		return std::lround(FontPointFromDIP(static_cast<float>(iSizeDIP), u32ScreenDPI));
-	}
-
-	//Get font size in Device Independent Pixels from point size.
-	[[nodiscard]] auto FontDIPFromPoint(float flSizePoint, UINT32 u32ScreenDPI = USER_DEFAULT_SCREEN_DPI) -> float {
-		return (flSizePoint * u32ScreenDPI) / 72;
-	}
-
-	[[nodiscard]] auto FontDIPFromPoint(long iSizePoint, UINT32 u32ScreenDPI = USER_DEFAULT_SCREEN_DPI) -> long {
-		return std::lround(FontDIPFromPoint(static_cast<float>(iSizePoint), u32ScreenDPI));
 	}
 
 	class CDynLayout final {
@@ -733,8 +727,9 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		~CPoint() = default;
 		operator LPPOINT() { return this; }
 		operator const POINT*()const { return this; }
+		bool operator==(CPoint rhs)const { return x == rhs.x && y == rhs.y; }
 		bool operator==(POINT pt)const { return x == pt.x && y == pt.y; }
-		bool operator!=(POINT pt)const { return !(*this == pt); }
+		friend bool operator==(POINT pt, CPoint rhs) { return rhs == pt; }
 		CPoint operator+(POINT pt)const { return { x + pt.x, y + pt.y }; }
 		CPoint operator-(POINT pt)const { return { x - pt.x, y - pt.y }; }
 		void Offset(int iX, int iY) { x += iX; y += iY; }
@@ -758,8 +753,9 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		~CRect() = default;
 		operator LPRECT() { return this; }
 		operator LPCRECT()const { return this; }
+		bool operator==(CRect rhs)const { return ::EqualRect(this, rhs); }
 		bool operator==(RECT rc)const { return ::EqualRect(this, &rc); }
-		bool operator!=(RECT rc)const { return !(*this == rc); }
+		friend bool operator==(RECT rc, CRect rhs) { return rhs == rc; }
 		CRect& operator=(RECT rc) { ::CopyRect(this, &rc); return *this; }
 		[[nodiscard]] auto BottomRight()const -> CPoint { return { { .x { right }, .y { bottom } } }; };
 		void DeflateRect(int x, int y) { ::InflateRect(this, -x, -y); }
@@ -906,11 +902,11 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		operator HWND()const { return m_hWnd; }
 		[[nodiscard]] bool operator==(const CWnd& rhs)const { return m_hWnd == rhs.m_hWnd; }
 		[[nodiscard]] bool operator==(HWND hWnd)const { return m_hWnd == hWnd; }
-		void Attach(HWND hWnd) { assert(::IsWindow(hWnd)); m_hWnd = hWnd; }
+		void Attach(HWND hWnd) { m_hWnd = hWnd; } //Can attach to nullptr as well.
 		void CheckRadioButton(int iIDFirst, int iIDLast, int iIDCheck)const {
 			assert(IsWindow()); ::CheckRadioButton(m_hWnd, iIDFirst, iIDLast, iIDCheck);
 		}
-		[[nodiscard]] auto ChildWindowFromPoint(POINT pt)const -> HWND {
+		[[nodiscard]] auto ChildWindowFromPoint(POINT pt)const -> CWnd {
 			assert(IsWindow()); return ::ChildWindowFromPoint(m_hWnd, pt);
 		}
 		void ClientToScreen(LPPOINT pPT)const { assert(IsWindow()); ::ClientToScreen(m_hWnd, pPT); }
@@ -931,7 +927,7 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		}
 		[[nodiscard]] auto GetDC()const -> HDC { assert(IsWindow()); return ::GetDC(m_hWnd); }
 		[[nodiscard]] int GetDlgCtrlID()const { assert(IsWindow()); return ::GetDlgCtrlID(m_hWnd); }
-		[[nodiscard]] auto GetDlgItem(int iIDCtrl)const -> HWND { assert(IsWindow()); return ::GetDlgItem(m_hWnd, iIDCtrl); }
+		[[nodiscard]] auto GetDlgItem(int iIDCtrl)const -> CWnd { assert(IsWindow()); return ::GetDlgItem(m_hWnd, iIDCtrl); }
 		[[nodiscard]] auto GetHFont()const -> HFONT {
 			assert(IsWindow()); return reinterpret_cast<HFONT>(::SendMessageW(m_hWnd, WM_GETFONT, 0, 0));
 		}
@@ -942,11 +938,21 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 			}
 			return std::nullopt;
 		}
-		[[nodiscard]] auto GetParent()const -> HWND { assert(IsWindow()); return ::GetParent(m_hWnd); }
+		[[nodiscard]] auto GetParent()const -> CWnd { assert(IsWindow()); return ::GetParent(m_hWnd); }
+		[[nodiscard]] auto GetScrollInfo(bool fVert, UINT uMask = SIF_ALL)const -> SCROLLINFO {
+			assert(IsWindow()); SCROLLINFO si { .cbSize { sizeof(SCROLLINFO) }, .fMask { uMask } };
+			::GetScrollInfo(m_hWnd, fVert, &si); return si;
+		}
+		[[nodiscard]] auto GetScrollPos(bool fVert)const -> int { return GetScrollInfo(fVert, SIF_POS).nPos; }
 		[[nodiscard]] auto GetWindowDC()const -> HDC { assert(IsWindow()); return ::GetWindowDC(m_hWnd); }
+		[[nodiscard]] auto GetWindowLongPTR(int iIndex)const {
+			assert(IsWindow()); return ::GetWindowLongPtrW(m_hWnd, iIndex);
+		}
 		[[nodiscard]] auto GetWindowRect()const -> CRect {
 			assert(IsWindow()); RECT rc; ::GetWindowRect(m_hWnd, &rc); return rc;
 		}
+		[[nodiscard]] auto GetWindowStyles()const { return static_cast<DWORD>(GetWindowLongPTR(GWL_STYLE)); }
+		[[nodiscard]] auto GetWindowStylesEx()const { return static_cast<DWORD>(GetWindowLongPTR(GWL_EXSTYLE)); }
 		[[nodiscard]] auto GetWndText()const -> std::wstring {
 			assert(IsWindow()); wchar_t buff[256]; ::GetWindowTextW(m_hWnd, buff, std::size(buff)); return buff;
 		}
@@ -964,26 +970,35 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 		int MapWindowPoints(HWND hWndTo, LPRECT pRC)const {
 			assert(IsWindow()); return ::MapWindowPoints(m_hWnd, hWndTo, reinterpret_cast<LPPOINT>(pRC), 2);
 		}
-		bool RedrawWindow(LPCRECT pRC = nullptr, HRGN hrgn = nullptr,
-			UINT uFlags = RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE)const {
+		bool RedrawWindow(LPCRECT pRC = nullptr, HRGN hrgn = nullptr, UINT uFlags = RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE)const {
 			assert(IsWindow()); return static_cast<bool>(::RedrawWindow(m_hWnd, pRC, hrgn, uFlags));
 		}
 		int ReleaseDC(HDC hDC)const { assert(IsWindow()); return ::ReleaseDC(m_hWnd, hDC); }
-		auto SetTimer(UINT_PTR uID, UINT uElapse, TIMERPROC pFN = nullptr)const -> UINT_PTR {
-			assert(IsWindow()); return ::SetTimer(m_hWnd, uID, uElapse, pFN);
-		}
 		void ScreenToClient(LPPOINT pPT)const { assert(IsWindow()); ::ScreenToClient(m_hWnd, pPT); }
 		void ScreenToClient(POINT& pt)const { ScreenToClient(&pt); }
 		void ScreenToClient(LPRECT pRC)const {
 			ScreenToClient(reinterpret_cast<LPPOINT>(pRC)); ScreenToClient(reinterpret_cast<LPPOINT>(pRC) + 1);
 		}
-		auto SendMsg(UINT uMsg, WPARAM wParam = 0, LPARAM lParam = 0)const {
-			assert(IsWindow()); ::SendMessageW(m_hWnd, uMsg, wParam, lParam);
+		auto SendMsg(UINT uMsg, WPARAM wParam = 0, LPARAM lParam = 0)const -> LRESULT {
+			assert(IsWindow()); return ::SendMessageW(m_hWnd, uMsg, wParam, lParam);
 		}
 		void SetActiveWindow()const { assert(IsWindow()); ::SetActiveWindow(m_hWnd); }
-		auto SetCapture()const -> HWND { assert(IsWindow()); return ::SetCapture(m_hWnd); }
+		auto SetCapture()const -> CWnd { assert(IsWindow()); return ::SetCapture(m_hWnd); }
+		auto SetClassLongPTR(int iIndex, LONG_PTR dwNewLong)const -> ULONG_PTR {
+			assert(IsWindow()); return ::SetClassLongPtrW(m_hWnd, iIndex, dwNewLong);
+		}
 		void SetFocus()const { assert(IsWindow()); ::SetFocus(m_hWnd); }
 		void SetForegroundWindow()const { assert(IsWindow()); ::SetForegroundWindow(m_hWnd); }
+		void SetScrollInfo(bool fVert, const SCROLLINFO& si)const {
+			assert(IsWindow()); ::SetScrollInfo(m_hWnd, fVert, &si, TRUE);
+		}
+		void SetScrollPos(bool fVert, int iPos)const {
+			const SCROLLINFO si { .cbSize { sizeof(SCROLLINFO) }, .fMask { SIF_POS }, .nPos { iPos } };
+			SetScrollInfo(fVert, si);
+		}
+		auto SetTimer(UINT_PTR uID, UINT uElapse, TIMERPROC pFN = nullptr)const -> UINT_PTR {
+			assert(IsWindow()); return ::SetTimer(m_hWnd, uID, uElapse, pFN);
+		}
 		void SetWindowPos(HWND hWndAfter, int iX, int iY, int iWidth, int iHeight, UINT uFlags)const {
 			assert(IsWindow()); ::SetWindowPos(m_hWnd, hWndAfter, iX, iY, iWidth, iHeight, uFlags);
 		}
@@ -1048,6 +1063,7 @@ namespace HEXCTRL::INTERNAL::gui { //Windows GUI related stuff.
 			return static_cast<int>(::SendMessageW(m_hWnd, CB_INSERTSTRING, iIndex, reinterpret_cast<LPARAM>(pwszStr)));
 		}
 		void LimitText(int iMaxChars)const { assert(IsWindow()); ::SendMessageW(m_hWnd, CB_LIMITTEXT, iMaxChars, 0); }
+		void ResetContent()const { assert(IsWindow()); ::SendMessageW(m_hWnd, CB_RESETCONTENT, 0, 0); }
 		void SetCueBanner(const std::wstring& wstr)const { SetCueBanner(wstr.data()); }
 		void SetCueBanner(LPCWSTR pwszText)const {
 			assert(IsWindow()); ::SendMessageW(m_hWnd, CB_SETCUEBANNER, 0, reinterpret_cast<LPARAM>(pwszText));
