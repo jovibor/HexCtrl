@@ -34,10 +34,10 @@ bool CMFCDialogDLLDlg::IsRW()const
 	return true;
 }
 
-void CMFCDialogDLLDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
+void CMFCDialogDLLDlg::LoadTemplates(IHexCtrl* pHexCtrl)
 {
 	wchar_t buff[MAX_PATH];
-	GetModuleFileNameW(nullptr, buff, MAX_PATH);
+	::GetModuleFileNameW(nullptr, buff, MAX_PATH);
 	std::wstring wstrPath = buff;
 	wstrPath = wstrPath.substr(0, wstrPath.find_last_of(L'\\'));
 	wstrPath += L"\\Templates\\";
@@ -60,7 +60,7 @@ void CMFCDialogDLLDlg::LoadTemplates(const IHexCtrl* pHexCtrl)
 BOOL CMFCDialogDLLDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
-	CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+	::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon

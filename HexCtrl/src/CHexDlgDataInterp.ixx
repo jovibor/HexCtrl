@@ -6,8 +6,8 @@
 ****************************************************************************************/
 module;
 #include <SDKDDKVer.h>
-#include "../../res/HexCtrlRes.h"
-#include "../../HexCtrl.h"
+#include "../res/HexCtrlRes.h"
+#include "../HexCtrl.h"
 #include <Windows.h>
 #include <commctrl.h>
 #include <bit>

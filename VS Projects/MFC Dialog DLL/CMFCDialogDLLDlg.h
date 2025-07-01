@@ -10,7 +10,7 @@ public:
 private:
 	void DoDataExchange(CDataExchange* pDX)override;
 	[[nodiscard]] bool IsRW()const;
-	void LoadTemplates(const IHexCtrl* pHexCtrl);
+	void LoadTemplates(IHexCtrl* pHexCtrl);
 	BOOL OnInitDialog()override;
 	afx_msg void OnBnClearData();
 	afx_msg void OnBnSetRndData();

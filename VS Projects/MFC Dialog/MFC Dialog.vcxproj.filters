@@ -19,9 +19,6 @@
     <Filter Include="HexCtrl\src">
       <UniqueIdentifier>{22979420-660f-47db-aa4b-2e70d4d11598}</UniqueIdentifier>
     </Filter>
-    <Filter Include="HexCtrl\src\Dialogs">
-      <UniqueIdentifier>{2b48a932-9a86-4e73-ab10-ce442ea73d80}</UniqueIdentifier>
-    </Filter>
     <Filter Include="HexCtrl\res">
       <UniqueIdentifier>{5939ca0d-077d-4e58-9022-87ae277af5be}</UniqueIdentifier>
     </Filter>
@@ -65,30 +62,6 @@
     <ClCompile Include="..\..\HexCtrl\src\CHexCtrl.ixx">
       <Filter>HexCtrl\src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgBkmMgr.ixx">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgProgress.ixx">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgCodepage.ixx">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgSearch.ixx">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgGoTo.ixx">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgDataInterp.ixx">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgTemplMgr.ixx">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HexCtrl\src\Dialogs\CHexDlgModify.ixx">
-      <Filter>HexCtrl\src\Dialogs</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\HexCtrl\src\CHexScroll.ixx">
       <Filter>HexCtrl\src</Filter>
     </ClCompile>
@@ -106,6 +79,30 @@
     </ClCompile>
     <ClCompile Include="..\..\HexCtrl\dep\ListEx\ListEx.ixx">
       <Filter>HexCtrl\dep\ListEx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\CHexDlgBkmMgr.ixx">
+      <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\CHexDlgCodepage.ixx">
+      <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\CHexDlgDataInterp.ixx">
+      <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\CHexDlgGoTo.ixx">
+      <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\CHexDlgModify.ixx">
+      <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\CHexDlgProgress.ixx">
+      <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\CHexDlgSearch.ixx">
+      <Filter>HexCtrl\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\HexCtrl\src\CHexDlgTemplMgr.ixx">
+      <Filter>HexCtrl\src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
