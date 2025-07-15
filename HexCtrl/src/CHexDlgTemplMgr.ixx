@@ -852,7 +852,7 @@ auto CHexDlgTemplMgr::OnInitDialog(const MSG& msg)->INT_PTR
 
 	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_TEMPLMGR_LIST }, .dwSizeFontList { 10 },
 		.dwSizeFontHdr { 10 }, .fDialogCtrl { true } });
-	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
+	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP | LVS_EX_FULLROWSELECT);
 	m_ListEx.InsertColumn(COL_TYPE, L"Type", LVCFMT_LEFT, 85);
 	m_ListEx.InsertColumn(COL_NAME, L"Name", LVCFMT_LEFT, 200);
 	m_ListEx.InsertColumn(COL_OFFSET, L"Offset", LVCFMT_LEFT, 50);
@@ -951,9 +951,9 @@ auto CHexDlgTemplMgr::OnMeasureItem(const MSG& msg)->INT_PTR
 
 auto CHexDlgTemplMgr::OnMouseMove(const MSG& msg)->INT_PTR
 {
-	static constexpr auto iResAreaHalfWidth = 15;       //Area where cursor turns into resizable (IDC_SIZEWE).
-	static constexpr auto iWidthBetweenTreeAndList = 1; //Width between tree and list after resizing.
-	static constexpr auto iMinTreeWidth = 100;          //Tree control minimum allowed width.
+	constexpr auto iResAreaHalfWidth = 15;       //Area where cursor turns into resizable (IDC_SIZEWE).
+	constexpr auto iWidthBetweenTreeAndList = 1; //Width between tree and list after resizing.
+	constexpr auto iMinTreeWidth = 100;          //Tree control minimum allowed width.
 	static const auto hCurResize = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_SIZEWE, IMAGE_CURSOR, 0, 0, LR_SHARED));
 	static const auto hCurArrow = static_cast<HCURSOR>(::LoadImageW(nullptr, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_SHARED));
 	const POINT pt { .x { ut::GetXLPARAM(msg.lParam) }, .y { ut::GetYLPARAM(msg.lParam) } };
@@ -1071,9 +1071,9 @@ void CHexDlgTemplMgr::OnNotifyListEnterPressed(NMHDR* /*pNMHDR*/)
 
 void CHexDlgTemplMgr::OnNotifyListGetColor(NMHDR* pNMHDR)
 {
-	static constexpr auto clrTextBluish { RGB(16, 42, 255) };  //Bluish text.
-	static constexpr auto clrTextGreenish { RGB(0, 110, 0) };  //Green text.
-	static constexpr auto clrBkGreyish { RGB(235, 235, 235) }; //Grayish bk.
+	constexpr auto clrTextBluish { RGB(16, 42, 255) };  //Bluish text.
+	constexpr auto clrTextGreenish { RGB(0, 110, 0) };  //Green text.
+	constexpr auto clrBkGreyish { RGB(235, 235, 235) }; //Grayish bk.
 
 	const auto pLCI = reinterpret_cast<LISTEX::PLISTEXCOLORINFO>(pNMHDR);
 	const auto& pField = (*m_pVecFieldsCurr)[pLCI->iItem];

@@ -574,7 +574,7 @@ auto CHexDlgBkmMgr::OnInitDialog(const MSG& msg)->INT_PTR
 
 	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_BKMMGR_LIST }, .dwSizeFontList { 10 },
 		.dwSizeFontHdr { 10 }, .fDialogCtrl { true } });
-	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
+	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP | LVS_EX_FULLROWSELECT);
 	m_ListEx.SetSortable(true);
 	m_ListEx.InsertColumn(0, L"№", LVCFMT_LEFT, 40);
 	m_ListEx.InsertColumn(1, L"Offset", LVCFMT_LEFT, 80, -1, 0, true);

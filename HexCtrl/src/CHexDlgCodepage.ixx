@@ -221,7 +221,7 @@ auto CHexDlgCodepage::OnInitDialog(const MSG& msg)->INT_PTR
 	m_Wnd.Attach(msg.hwnd);
 	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_CODEPAGE_LIST }, .dwSizeFontList { 10 },
 		.dwSizeFontHdr { 9 }, .fDialogCtrl { true }, .fLinks { true } });
-	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
+	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP | LVS_EX_FULLROWSELECT);
 	m_ListEx.SetSortable(true);
 	m_ListEx.InsertColumn(0, L"Code page", LVCFMT_LEFT, 80);
 	m_ListEx.InsertColumn(1, L"Name", LVCFMT_LEFT, 280);

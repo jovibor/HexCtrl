@@ -4298,7 +4298,7 @@ void CHexCtrl::ModifyWorker(const HEXCTRL::HEXMODIFY& hms, const auto& FuncWorke
 		dlgProg.OnCancel();
 		};
 
-	static constexpr auto uSizeToRunThread { 1024U * 1024U * 50U }; //50MB.
+	constexpr auto uSizeToRunThread { 1024U * 1024U * 50U }; //50MB.
 	if (ullTotalSize > uSizeToRunThread) { //Spawning new thread only if data size is big enough.
 		std::thread thrd(lmbModify);
 		dlgProg.DoModal(m_Wnd, m_hInstRes);
@@ -7624,10 +7624,10 @@ auto CHexCtrl::OnSize(const MSG& msg)->LRESULT
 
 auto CHexCtrl::OnTimer(const MSG& msg)->LRESULT
 {
-	static constexpr auto dbSecToShow { 5000.0 }; //How many ms to show tooltips.
 	if (msg.wParam != m_uIDTTTMain)
 		return GDIUT::DefWndProc(msg);
 
+	constexpr auto dbSecToShow { 5000.0 }; //How many ms to show tooltips.
 	auto rcClient = m_Wnd.GetClientRect();
 	m_Wnd.ClientToScreen(rcClient);
 	GDIUT::CPoint ptCur;

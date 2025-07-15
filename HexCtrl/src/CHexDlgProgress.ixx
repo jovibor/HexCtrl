@@ -168,10 +168,10 @@ auto CHexDlgProgress::OnTimer(const MSG& msg)->INT_PTR
 	const auto iPos = static_cast<int>(ullCurr / m_ullThousands); //How many thousandth parts have already been passed.
 	m_stProgBar.SetPos(iPos);
 
-	static constexpr auto uBInKB { 1024U };          //Bytes in KB.
-	static constexpr auto uBInMB { uBInKB * 1024U }; //Bytes in MB.
-	static constexpr auto uBInGB { uBInMB * 1024U }; //Bytes in GB.
-	static constexpr auto uTicksInSec = 1000U / m_uElapse;
+	constexpr auto uBInKB { 1024U };          //Bytes in KB.
+	constexpr auto uBInMB { uBInKB * 1024U }; //Bytes in MB.
+	constexpr auto uBInGB { uBInMB * 1024U }; //Bytes in GB.
+	constexpr auto uTicksInSec = 1000U / m_uElapse;
 	const auto ullSpeedBS = (m_ullCurr - m_ullPrev) * uTicksInSec; //Speed in Bytes/s.
 	m_ullPrev = m_ullCurr;
 
