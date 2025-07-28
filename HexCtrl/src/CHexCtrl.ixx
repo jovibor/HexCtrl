@@ -4649,11 +4649,11 @@ void CHexCtrl::Redo()
 
 void CHexCtrl::ReplaceUnprintable(std::wstring& wstr, bool fASCII, bool fCRLF)const
 {
-	//If fASCII is true, then only wchars in 0x1F<...<0x7F range are considered printable.
+	//If fASCII is true, then only wchars in the 0x1F < ... < 0x7F range are considered printable.
 	//If fCRLF is false, then CR(0x0D) and LF(0x0A) wchars remain untouched.
 	if (fASCII) {
 		std::replace_if(wstr.begin(), wstr.end(), [=](wchar_t wch) //All non ASCII.
-			{ return (wch <= 0x1F || wch >= 0x7F) && (fCRLF || (wch != 0x0D && wch != 0x0A)); }, m_wchUnprintable);
+			{ return (wch < 0x20 || wch > 0x7E) && (fCRLF || (wch != 0x0D && wch != 0x0A)); }, m_wchUnprintable);
 	}
 	else {
 		std::replace_if(wstr.begin(), wstr.end(), [=](wchar_t wch) //All non printable wchars.

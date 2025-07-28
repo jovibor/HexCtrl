@@ -75,6 +75,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool SetDataSYSTEMTIME(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataGUID(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataGUIDTIME(std::wstring_view wsv)const;
+		[[nodiscard]] bool SetDataASCII(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataUTF8(std::wstring_view wsv)const;
 		[[nodiscard]] bool SetDataUTF16(std::wstring_view wsv)const;
 		template <ut::TSize1248 T> void SetTData(T tData)const;
@@ -100,6 +101,7 @@ namespace HEXCTRL::INTERNAL {
 		void ShowValueSYSTEMTIME(SpanCByte spn);
 		void ShowValueGUID(SpanCByte spn);
 		void ShowValueGUIDTIME(SpanCByte spn);
+		void ShowValueASCII(SpanCByte spn);
 		void ShowValueUTF8(SpanCByte spn);
 		void ShowValueUTF16(SpanCByte spn);
 	private:
@@ -151,7 +153,7 @@ enum class CHexDlgDataInterp::EName : std::uint8_t { //Members order equals m_ve
 	NAME_INT32, NAME_UINT32, NAME_INT64, NAME_UINT64,
 	NAME_FLOAT, NAME_DOUBLE, NAME_TIME32T, NAME_TIME64T,
 	NAME_FILETIME, NAME_OLEDATETIME, NAME_JAVATIME, NAME_MSDOSTIME,
-	NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID, NAME_UTF8, NAME_UTF16
+	NAME_MSDTTMTIME, NAME_SYSTEMTIME, NAME_GUIDTIME, NAME_GUID, NAME_ASCII, NAME_UTF8, NAME_UTF16
 };
 
 struct CHexDlgDataInterp::LISTDATA {
@@ -312,6 +314,7 @@ void CHexDlgDataInterp::UpdateData()
 	ShowValueSYSTEMTIME(spnData);
 	ShowValueGUID(spnData);
 	ShowValueGUIDTIME(spnData);
+	ShowValueASCII(spnData);
 	ShowValueUTF8(spnData);
 	ShowValueUTF16(spnData);
 	ShowValueBinary();
@@ -462,22 +465,23 @@ auto CHexDlgDataInterp::OnInitDialog(const MSG& msg)->INT_PTR
 	//The order of data initialization follows exactly EName members order,
 	//to easily reference the vecor later as vector[eName], for the best performance.
 	std::vector<LISTDATA> vecData {
-		{ L"Binary:", L"", NAME_BINARY, 0U }, { L"Int8:", L"", NAME_INT8, 1U },
-		{ L"Unsigned Int8:", L"", NAME_UINT8, 1U }, { L"Int16:", L"", NAME_INT16, 2U },
-		{ L"Unsigned Int16:", L"", NAME_UINT16, 2U }, { L"Int32:", L"", NAME_INT32, 4U },
-		{ L"Unsigned Int32:", L"", NAME_UINT32, 4U }, { L"Int64:", L"", NAME_INT64, 8U },
-		{ L"Unsigned Int64:", L"", NAME_UINT64, 8U }, { L"Float:", L"", NAME_FLOAT, 4U },
-		{ L"Double:", L"", NAME_DOUBLE, 8U }, { L"time32_t:", L"", NAME_TIME32T, 4U },
+		{ L"Binary:", L"", NAME_BINARY, 0U }, { L"int8_t:", L"", NAME_INT8, 1U },
+		{ L"uint8_t:", L"", NAME_UINT8, 1U }, { L"int16_t:", L"", NAME_INT16, 2U },
+		{ L"uint16_t:", L"", NAME_UINT16, 2U }, { L"int32_t:", L"", NAME_INT32, 4U },
+		{ L"uint32_t:", L"", NAME_UINT32, 4U }, { L"int64_t:", L"", NAME_INT64, 8U },
+		{ L"uint64_t:", L"", NAME_UINT64, 8U }, { L"float:", L"", NAME_FLOAT, 4U },
+		{ L"double:", L"", NAME_DOUBLE, 8U }, { L"time32_t:", L"", NAME_TIME32T, 4U },
 		{ L"time64_t:", L"", NAME_TIME64T, 8U }, { L"FILETIME:", L"", NAME_FILETIME, 8U },
 		{ L"OLE time:", L"", NAME_OLEDATETIME, 8U }, { L"Java time:", L"", NAME_JAVATIME, 8U },
 		{ L"MS-DOS time:", L"", NAME_MSDOSTIME, 8U }, { L"MS-UDTTM time:", L"", NAME_MSDTTMTIME, 4U },
 		{ L"Windows SYSTEMTIME:", L"", NAME_SYSTEMTIME, 16U }, { L"GUID v1 UTC time:", L"", NAME_GUIDTIME, 16U },
-		{ L"GUID:", L"", NAME_GUID, 16U }, { L"UTF-8 code point:", L"", NAME_UTF8, 0U },
-		{ L"UTF-16 code point:", L"", NAME_UTF16, 0U }
+		{ L"GUID:", L"", NAME_GUID, 16U }, { L"ASCII character:", L"", NAME_ASCII, 1U },
+		{ L"UTF-8 code point:", L"", NAME_UTF8, 0U }, { L"UTF-16 code point:", L"", NAME_UTF16, 0U }
 	};
 	m_vecData = std::move(vecData);
 
 	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_DATAINTERP_LIST }, .fDialogCtrl { true } });
+	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP | LVS_EX_FULLROWSELECT);
 	m_ListEx.InsertColumn(0, L"Data type", LVCFMT_LEFT, 143);
 	m_ListEx.InsertColumn(1, L"Value", LVCFMT_LEFT, 240, -1, LVCFMT_LEFT, true);
 	m_ListEx.SetItemCountEx(static_cast<int>(m_vecData.size()), LVSICF_NOSCROLL);
@@ -676,6 +680,9 @@ void CHexDlgDataInterp::OnNotifyListSetData(NMHDR* pNMHDR)
 	case NAME_GUID:
 		fSuccess = SetDataGUID(wsv);
 		break;
+	case NAME_ASCII:
+		fSuccess = SetDataASCII(wsv);
+		break;
 	case NAME_UTF8:
 		fSuccess = SetDataUTF8(wsv);
 		break;
@@ -801,6 +808,7 @@ bool CHexDlgDataInterp::SetDataNUMBER(std::wstring_view wsv)const
 			return true;
 		}
 	}
+
 	return false;
 }
 
@@ -1023,6 +1031,22 @@ bool CHexDlgDataInterp::SetDataGUIDTIME(std::wstring_view wsv)const
 	return true;
 }
 
+bool CHexDlgDataInterp::SetDataASCII(std::wstring_view wsv)const
+{
+	if (wsv.size() != 1) {
+		return false;
+	}
+
+	const auto wch = wsv[0];
+	if (wch < 0x20 || wch > 0x7E) { //Unprintable.
+		return false;
+	}
+
+	SetTData(static_cast<unsigned char>(wch));
+
+	return true;
+}
+
 bool CHexDlgDataInterp::SetDataUTF8(std::wstring_view wsv)const
 {
 	const auto u8Size = GetFieldSize(EName::NAME_UTF8);
@@ -1143,6 +1167,9 @@ void CHexDlgDataInterp::ShowValueBinary()
 			u87, u86, u85, u84, u83, u82, u81, u80);
 	}
 	break;
+	case NAME_ASCII:
+		pListBin->wstrValue = std::format(L"{:08b}", static_cast<std::uint8_t>(spnData[0]));
+		break;
 	case NAME_UTF8:
 		switch (pListCurr->u8Size) {
 		case 1:
@@ -1588,6 +1615,23 @@ void CHexDlgDataInterp::ShowValueGUIDTIME(SpanCByte spn)
 			wstrTime = ut::FileTimeToString(ftGUIDTime, m_dwDateFormat, m_wchDateSepar);
 		}
 		pList->wstrValue = std::move(wstrTime);
+		pList->fAllowEdit = m_pHexCtrl->IsMutable();
+	}
+	else {
+		pList->wstrValue.clear();
+		pList->fAllowEdit = false;
+	}
+}
+
+void CHexDlgDataInterp::ShowValueASCII(SpanCByte spn)
+{
+	if (const auto pList = GetListData(EName::NAME_ASCII); spn.size() >= sizeof(char)) {
+		if (const auto ch = *reinterpret_cast<const unsigned char*>(spn.data()); ch < 0x20 || ch > 0x7E) {
+			pList->wstrValue = L"N/A";
+		}
+		else {
+			pList->wstrValue = ch;
+		}
 		pList->fAllowEdit = m_pHexCtrl->IsMutable();
 	}
 	else {
