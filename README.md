@@ -52,6 +52,7 @@
   * [IsCmdAvail](#iscmdavail)
   * [IsCreated](#iscreated)
   * [IsDataSet](#isdataset)
+  * [IsHexCharsUpper](#ishexcharsupper)
   * [IsMutable](#ismutable)
   * [IsOffsetAsHex](#isoffsetashex)
   * [IsOffsetVisible](#isoffsetvisible)
@@ -70,6 +71,7 @@
   * [SetDlgProperties](#setdlgproperties)
   * [SetFont](#setfont)
   * [SetGroupSize](#setgroupsize)
+  * [SetHexCharsCase](#sethexcharscase)
   * [SetMutable](#setmutable)
   * [SetOffsetMode](#setoffsetmode)
   * [SetPageSize](#setpagesize)
@@ -581,6 +583,12 @@ Shows whether **HexCtrl** is created or not.
 ```
 Shows whether a data was set to **HexCtrl** or not
 
+### [](#)IsHexCharsUpper
+```cpp
+[[nodiscard]] bool IsHexCharsUpper()const;
+```
+Shows if hex chars printed in UPPER or lower case.
+
 ### [](#)IsMutable
 ```cpp
 [[nodiscard]] bool IsMutable()const;
@@ -715,6 +723,12 @@ Sets new main font for the **HexCtrl** if `fMain` is `true`, or infobar font whe
 void SetGroupSize(DWORD dwSize);
 ```
 Sets current data grouping size in bytes.
+
+### [](#)SetHexCharsCase
+```cpp
+void SetHexCharsCase(bool fUpper);
+```
+Sets printed hex chars to an UPPER or lower case.
 
 ### [](#)SetMutable
 ```cpp

@@ -252,6 +252,7 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] bool IsCmdAvail(EHexCmd eCmd)const override;
 		[[nodiscard]] bool IsCreated()const override;
 		[[nodiscard]] bool IsDataSet()const override;
+		[[nodiscard]] bool IsHexCharsUpper()const override;
 		[[nodiscard]] bool IsMutable()const override;
 		[[nodiscard]] bool IsOffsetAsHex()const override;
 		[[nodiscard]] auto IsOffsetVisible(ULONGLONG ullOffset)const -> HEXVISION override;
@@ -271,6 +272,7 @@ namespace HEXCTRL::INTERNAL {
 		void SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags)override;
 		void SetFont(const LOGFONTW& lf, bool fMain = true)override;
 		void SetGroupSize(DWORD dwSize)override;
+		void SetHexCharsCase(bool fUpper)override;
 		void SetMutable(bool fMutable)override;
 		void SetOffsetMode(bool fHex)override;
 		void SetPageSize(DWORD dwSize, std::wstring_view wsvName)override;
@@ -334,10 +336,11 @@ namespace HEXCTRL::INTERNAL {
 		[[nodiscard]] auto GetDigitsOffset()const -> DWORD;
 		[[nodiscard]] auto GetDPIScale()const -> float;
 		[[nodiscard]] long GetFontSize()const;
-		[[nodiscard]] auto GetRectTextCaption()const -> GDIUT::CRect;   //Returns rect of the text caption area.
-		[[nodiscard]] auto GetSelectedLines()const -> ULONGLONG; //Get amount of selected lines.
+		[[nodiscard]] auto GetHexChars()const -> const wchar_t*;
+		[[nodiscard]] auto GetRectTextCaption()const -> GDIUT::CRect; //Returns rect of the text caption area.
+		[[nodiscard]] auto GetSelectedLines()const -> ULONGLONG;  //Get amount of selected lines.
 		[[nodiscard]] auto GetScrollPageSize()const -> ULONGLONG; //Get the "Page" size of the scroll.
-		[[nodiscard]] auto GetTopLine()const -> ULONGLONG;       //Returns current top line number in view.
+		[[nodiscard]] auto GetTopLine()const -> ULONGLONG;        //Returns current top line number in view.
 		[[nodiscard]] auto GetVirtualOffset(ULONGLONG ullOffset)const -> ULONGLONG;
 		void HexChunkPoint(ULONGLONG ullOffset, int& iCx, int& iCy)const; //Point of Hex chunk.
 		[[nodiscard]] auto HitTest(POINT pt)const -> std::optional<HEXHITTEST>; //Is any hex chunk withing given point?
@@ -402,7 +405,6 @@ namespace HEXCTRL::INTERNAL {
 		static auto CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 			UINT_PTR uIDSubclass, DWORD_PTR dwRefData)->LRESULT;
 	private:
-		static constexpr auto m_pwszHexChars { L"0123456789ABCDEF" }; //Hex digits wchars for fast lookup.
 		static constexpr auto m_pwszClassName { L"HexCtrl_MainWnd" }; //HexCtrl unique Window Class name.
 		static constexpr auto m_uIDTTTMain { 0x01UL };                //Timer ID for default tooltip.
 		static constexpr auto m_iFirstHorzLinePx { 0 };               //First horizontal line indent.
@@ -502,6 +504,7 @@ namespace HEXCTRL::INTERNAL {
 		bool m_fHighLatency { false };        //Reflects HEXDATA::fHighLatency.
 		bool m_fRedraw { true };              //Should WM_PAINT be handled or not.
 		bool m_fScrollLines { false };        //Page scroll in "Screen * m_flScrollRatio" or in lines.
+		bool m_fHexCharsUpper { true };       //Hex chars printed in UPPER or lower case.
 	};
 }
 
@@ -1412,6 +1415,13 @@ bool CHexCtrl::IsDataSet()const
 	return m_fDataSet;
 }
 
+bool CHexCtrl::IsHexCharsUpper()const
+{
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
+
+	return m_fHexCharsUpper;
+}
+
 bool CHexCtrl::IsMutable()const
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return false; }
@@ -2312,6 +2322,14 @@ void CHexCtrl::SetGroupSize(DWORD dwSize)
 	ParentNotify(HEXCTRL_MSG_SETGROUPSIZE);
 }
 
+void CHexCtrl::SetHexCharsCase(bool fUpper)
+{
+	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
+
+	m_fHexCharsUpper = fUpper;
+	Redraw();
+}
+
 void CHexCtrl::SetMutable(bool fMutable)
 {
 	if (!IsCreated()) { ut::DBG_REPORT_NOT_CREATED(); return; }
@@ -2425,9 +2443,10 @@ auto CHexCtrl::BuildDataToDraw(ULONGLONG ullStartLine, int iLines)const->std::tu
 	//Hex Bytes to print.
 	std::wstring wstrHex;
 	wstrHex.reserve(sSizeDataToPrint * 2);
+	const auto pwszHexChars = GetHexChars();
 	for (auto itData = pDataBegin; itData < pDataEnd; ++itData) { //Converting bytes to Hexes.
-		wstrHex.push_back(m_pwszHexChars[(*itData >> 4) & 0x0F]);
-		wstrHex.push_back(m_pwszHexChars[*itData & 0x0F]);
+		wstrHex.push_back(pwszHexChars[(*itData >> 4) & 0x0F]);
+		wstrHex.push_back(pwszHexChars[*itData & 0x0F]);
 	}
 
 	//Text to print.
@@ -2810,14 +2829,15 @@ auto CHexCtrl::CopyCArr()const->std::wstring
 {
 	std::wstring wstrData;
 	const auto ullSelSize = m_Selection.GetSelSize();
+	const auto pwszHexChars = GetHexChars();
 	wstrData.reserve((static_cast<std::size_t>(ullSelSize) * 3) + 64);
 	wstrData = std::format(L"unsigned char data[{}] = {{\r\n", ullSelSize);
 
 	for (auto i { 0U }; i < ullSelSize; ++i) {
 		wstrData += L"0x";
 		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
-		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
-		wstrData += m_pwszHexChars[(chByte & 0x0F)];
+		wstrData += pwszHexChars[(chByte & 0xF0) >> 4];
+		wstrData += pwszHexChars[(chByte & 0x0F)];
 		if (i < ullSelSize - 1) {
 			wstrData += L",";
 		}
@@ -2841,13 +2861,14 @@ auto CHexCtrl::CopyGrepHex()const->std::wstring
 {
 	std::wstring wstrData;
 	const auto ullSelSize = m_Selection.GetSelSize();
+	const auto pwszHexChars = GetHexChars();
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (auto i { 0U }; i < ullSelSize; ++i) {
 		wstrData += L"\\x";
 		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
-		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
-		wstrData += m_pwszHexChars[(chByte & 0x0F)];
+		wstrData += pwszHexChars[(chByte & 0xF0) >> 4];
+		wstrData += pwszHexChars[(chByte & 0x0F)];
 	}
 
 	return wstrData;
@@ -2857,12 +2878,13 @@ auto CHexCtrl::CopyHex()const->std::wstring
 {
 	std::wstring wstrData;
 	const auto ullSelSize = m_Selection.GetSelSize();
+	const auto pwszHexChars = GetHexChars();
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (auto i { 0U }; i < ullSelSize; ++i) {
 		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
-		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
-		wstrData += m_pwszHexChars[(chByte & 0x0F)];
+		wstrData += pwszHexChars[(chByte & 0xF0) >> 4];
+		wstrData += pwszHexChars[(chByte & 0x0F)];
 	}
 
 	return wstrData;
@@ -2875,14 +2897,15 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 	const auto ullSelSize = m_Selection.GetSelSize();
 	const auto dwGroupSize = GetGroupSize();
 	const auto dwCapacity = GetCapacity();
+	const auto pwszHexChars = GetHexChars();
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 3);
 	if (m_Selection.HasContiguousSel()) {
 		auto dwTail = m_Selection.GetLineLength();
 		for (auto i { 0U }; i < ullSelSize; ++i) {
 			const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
-			wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
-			wstrData += m_pwszHexChars[(chByte & 0x0F)];
+			wstrData += pwszHexChars[(chByte & 0xF0) >> 4];
+			wstrData += pwszHexChars[(chByte & 0x0F)];
 
 			if (i < (ullSelSize - 1) && (dwTail - 1) != 0) {
 				if (((m_Selection.GetLineLength() - dwTail + 1) % dwGroupSize) == 0) { //Add space after hex full chunk, grouping size depending.
@@ -2913,8 +2936,8 @@ auto CHexCtrl::CopyHexFmt()const->std::wstring
 
 		for (auto i { 0U }; i < ullSelSize; ++i) {
 			const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i));
-			wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
-			wstrData += m_pwszHexChars[(chByte & 0x0F)];
+			wstrData += pwszHexChars[(chByte & 0xF0) >> 4];
+			wstrData += pwszHexChars[(chByte & 0x0F)];
 
 			if (i < (ullSelSize - 1) && (dwTail - 1) != 0) {
 				if (dwGroupSize == 1 && dwTail == dwNextBlock) {
@@ -2938,12 +2961,13 @@ auto CHexCtrl::CopyHexLE()const->std::wstring
 {
 	std::wstring wstrData;
 	const auto ullSelSize = m_Selection.GetSelSize();
+	const auto pwszHexChars = GetHexChars();
 
 	wstrData.reserve(static_cast<std::size_t>(ullSelSize) * 2);
 	for (auto i = ullSelSize; i > 0; --i) {
 		const auto chByte = ut::GetIHexTData<BYTE>(*this, m_Selection.GetOffsetByIndex(i - 1));
-		wstrData += m_pwszHexChars[(chByte & 0xF0) >> 4];
-		wstrData += m_pwszHexChars[(chByte & 0x0F)];
+		wstrData += pwszHexChars[(chByte & 0xF0) >> 4];
+		wstrData += pwszHexChars[(chByte & 0x0F)];
 	}
 
 	return wstrData;
@@ -4050,6 +4074,11 @@ auto CHexCtrl::GetDPIScale()const->float
 long CHexCtrl::GetFontSize()const
 {
 	return GetFont().lfHeight;
+}
+
+auto CHexCtrl::GetHexChars()const->const wchar_t*
+{
+	return IsHexCharsUpper() ? L"0123456789ABCDEF" : L"0123456789abcdef";
 }
 
 auto CHexCtrl::GetRectTextCaption()const->GDIUT::CRect

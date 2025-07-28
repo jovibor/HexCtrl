@@ -442,6 +442,7 @@ namespace HEXCTRL {
 		[[nodiscard]] virtual bool IsCmdAvail(EHexCmd eCmd)const = 0; //Is given Cmd currently available (can be executed)?
 		[[nodiscard]] virtual bool IsCreated()const = 0;       //Shows whether HexCtrl is created or not.
 		[[nodiscard]] virtual bool IsDataSet()const = 0;       //Shows whether a data was set to HexCtrl or not.
+		[[nodiscard]] virtual bool IsHexCharsUpper()const = 0; //Is hex-chars printed in UPPER or lower case.
 		[[nodiscard]] virtual bool IsMutable()const = 0;       //Is data mutable or not.
 		[[nodiscard]] virtual bool IsOffsetAsHex()const = 0;   //Are offsets shown as Hex or as Decimal.
 		[[nodiscard]] virtual auto IsOffsetVisible(ULONGLONG ullOffset)const -> HEXVISION = 0; //Ensures that the given offset is visible.
@@ -460,6 +461,7 @@ namespace HEXCTRL {
 		virtual void SetDlgProperties(EHexWnd eWnd, std::uint64_t u64Flags) = 0; //Properties for the internal dialogs.
 		virtual void SetFont(const LOGFONTW& lf, bool fMain = true) = 0; //Set main/infobar font.
 		virtual void SetGroupSize(DWORD dwSize) = 0;           //Set data grouping size.
+		virtual void SetHexCharsCase(bool fUpper) = 0;         //Set printed hex-chars to an UPPER or lower case.
 		virtual void SetMutable(bool fMutable) = 0;            //Enable or disable mutable/editable mode.
 		virtual void SetOffsetMode(bool fHex) = 0;             //Set offset being shown as Hex or as Decimal.
 		virtual void SetPageSize(DWORD dwSize, std::wstring_view wsvName = L"Page") = 0; //Set page size and name to draw the lines in-between.
