@@ -844,16 +844,20 @@ struct HEXCOLORINFO {
 This structure contains all colors for fonts, background, and all other visual stuff. All these colors have their default values, so you don't have to set them all during **HexCtrl** creation, if you don't want to.
 ```cpp
 struct HEXCOLORS {
+    COLORREF clrFontCaption { RGB(0, 0, 180) };                    //Caption font color
     COLORREF clrFontHex { ::GetSysColor(COLOR_WINDOWTEXT) };       //Hex-chunks font color.
     COLORREF clrFontText { ::GetSysColor(COLOR_WINDOWTEXT) };      //Text font color.
+    COLORREF clrFontOffset { RGB(0, 0, 180) };                     //Offset font color.
     COLORREF clrFontSel { ::GetSysColor(COLOR_HIGHLIGHTTEXT) };    //Selected hex/text font color.
     COLORREF clrFontBkm { ::GetSysColor(COLOR_WINDOWTEXT) };       //Bookmarks font color.
     COLORREF clrFontDataInterp { ::GetSysColor(COLOR_HIGHLIGHTTEXT) }; //Data Interpreter text/hex font color.
-    COLORREF clrFontCaption { RGB(0, 0, 180) };                    //Caption font color
     COLORREF clrFontInfoParam { ::GetSysColor(COLOR_WINDOWTEXT) }; //Font color of the Info bar parameters.
     COLORREF clrFontInfoData { RGB(0, 0, 180) };                   //Font color of the Info bar data.
     COLORREF clrFontCaret { ::GetSysColor(COLOR_HIGHLIGHTTEXT) };  //Caret font color.
-    COLORREF clrBk { ::GetSysColor(COLOR_WINDOW) };                //Background color.
+    COLORREF clrBk { ::GetSysColor(COLOR_WINDOW) };                //Whole client area background color.
+    COLORREF clrBkHex { ::GetSysColor(COLOR_WINDOW) };             //Hex area background color.
+    COLORREF clrBkText { ::GetSysColor(COLOR_WINDOW) };            //Text area background color.
+    COLORREF clrBkOffset { ::GetSysColor(COLOR_WINDOW) };          //Offset area background color.
     COLORREF clrBkSel { ::GetSysColor(COLOR_HIGHLIGHT) };          //Background color of the selected Hex/Text.
     COLORREF clrBkBkm { RGB(240, 240, 0) };                        //Bookmarks background color.
     COLORREF clrBkDataInterp { RGB(147, 58, 22) };                 //Data Interpreter Bk color.

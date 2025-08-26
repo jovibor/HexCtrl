@@ -3088,11 +3088,21 @@ void CHexCtrl::CreatePens()
 void CHexCtrl::DrawWindow(HDC hDC)const
 {
 	const auto iScrollH = static_cast<int>(m_ScrollH.GetScrollPos());
-	GDIUT::CRect rcWnd(m_iFirstVertLinePx, m_iFirstHorzLinePx,
+	GDIUT::CRect rcClient(m_iFirstVertLinePx, m_iFirstHorzLinePx,
 		m_iFirstVertLinePx + m_iWidthClientAreaPx, m_iFirstHorzLinePx + m_iHeightClientAreaPx);
+	GDIUT::CRect rcOffset(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx,
+		m_iSecondVertLinePx - iScrollH, m_iThirdHorzLinePx);
+	GDIUT::CRect rcHex(m_iSecondVertLinePx - iScrollH, m_iFirstHorzLinePx,
+			m_iThirdVertLinePx - iScrollH, m_iThirdHorzLinePx);
+	GDIUT::CRect rcText(m_iThirdVertLinePx - iScrollH, m_iFirstHorzLinePx,
+		m_iFourthVertLinePx - iScrollH, m_iThirdHorzLinePx);
 
 	GDIUT::CDC dc(hDC);
-	dc.FillSolidRect(rcWnd, m_stColors.clrBk);
+	dc.FillSolidRect(rcClient, m_stColors.clrBk);       //Client area bk.
+	dc.FillSolidRect(rcOffset, m_stColors.clrBkOffset); //Offset area bk.
+	dc.FillSolidRect(rcHex, m_stColors.clrBkHex);       //Hex area bk.
+	dc.FillSolidRect(rcText, m_stColors.clrBkText);     //Text area bk.
+
 	dc.SelectObject(m_hPenLinesMain);
 
 	//First horizontal line.
@@ -3128,19 +3138,22 @@ void CHexCtrl::DrawWindow(HDC hDC)const
 	dc.LineTo(m_iFourthVertLinePx - iScrollH, m_iFourthHorzLinePx);
 
 	//«Offset» text.
-	GDIUT::CRect rcOffset(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iSecondVertLinePx - iScrollH, m_iSecondHorzLinePx);
+	GDIUT::CRect rcCaptionOffset(m_iFirstVertLinePx - iScrollH, m_iFirstHorzLinePx, m_iSecondVertLinePx - iScrollH,
+		m_iSecondHorzLinePx);
 	dc.SelectObject(m_hFntMain);
 	dc.SetTextColor(m_stColors.clrFontCaption);
-	dc.SetBkColor(m_stColors.clrBk);
-	dc.DrawTextW(L"Offset", rcOffset, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	dc.SetBkColor(m_stColors.clrBkOffset);
+	dc.DrawTextW(L"Offset", rcCaptionOffset, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
 	//Capacity numbers.
+	dc.SetBkColor(m_stColors.clrBkHex);
 	::ExtTextOutW(dc, m_iIndentFirstHexChunkXPx - iScrollH, m_iFirstHorzLinePx + m_iIndentCapTextYPx, 0, nullptr,
 		m_wstrCapacity.data(), static_cast<UINT>(m_wstrCapacity.size()), GetCharsWidthArray());
 
 	//Text area caption.
-	auto rcText = GetRectTextCaption();
-	dc.DrawTextW(m_wstrTextTitle, rcText, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+	dc.SetBkColor(m_stColors.clrBkText);
+	auto rcCaptionText = GetRectTextCaption();
+	dc.DrawTextW(m_wstrTextTitle, rcCaptionText, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
 void CHexCtrl::DrawInfoBar(HDC hDC)const
@@ -3228,8 +3241,8 @@ void CHexCtrl::DrawOffsets(HDC hDC, ULONGLONG ullStartLine, int iLines)const
 			stClrOffset.clrText = m_stColors.clrFontSel;
 		}
 		else {
-			stClrOffset.clrBk = m_stColors.clrBk;
-			stClrOffset.clrText = m_stColors.clrFontCaption;
+			stClrOffset.clrBk = m_stColors.clrBkOffset;
+			stClrOffset.clrText = m_stColors.clrFontOffset;
 		}
 
 		//Left column offset printing (00000000...0000FFFF).
@@ -3259,7 +3272,7 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 	const auto ullStartOffset = ullStartLine * GetCapacity();
 	std::size_t sIndexToPrint { 0 };
 	HEXCOLORINFO hci { .hdr { m_Wnd, static_cast<UINT>(m_Wnd.GetDlgCtrlID()) },
-		.stClr { .clrBk { m_stColors.clrBk }, .clrText { m_stColors.clrFontHex } } };
+		.stClr { .clrBk { m_stColors.clrBkHex }, .clrText { m_stColors.clrFontHex } } };
 
 	for (auto itLine = 0; itLine < iLines; ++itLine) {
 		std::wstring wstrHexToPrint;
@@ -3268,8 +3281,8 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 		int iTextPosToPrintX { };
 		bool fNeedChunkPoint { true }; //For just one time exec.
 		const auto iPosToPrintY = m_iStartWorkAreaYPx + (m_sizeFontMain.cy * itLine); //Hex and Text are the same.
-		HEXCOLOR stHexClr { }; //Current Hex area color.
-		HEXCOLOR stTextClr { .clrText { m_stColors.clrFontText } }; //Current Text area color.
+		HEXCOLOR stClrHexArea; //Current Hex area color.
+		HEXCOLOR stClrTextArea { .clrBk { m_stColors.clrBkText }, .clrText { m_stColors.clrFontText } }; //Current Text area color.
 		const auto lmbPoly = [&]() {
 			if (wstrHexToPrint.empty())
 				return;
@@ -3278,13 +3291,13 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 			vecWstrHex.emplace_back(std::make_unique<std::wstring>(std::move(wstrHexToPrint)));
 			vecPolyHex.emplace_back(POLYTEXTW { .x { iHexPosToPrintX }, .y { iPosToPrintY },
 				.n { static_cast<UINT>(vecWstrHex.back()->size()) }, .lpstr { vecWstrHex.back()->data() },
-				.pdx { GetCharsWidthArray() } }, stHexClr);
+				.pdx { GetCharsWidthArray() } }, stClrHexArea);
 
 			//Text colors Poly.
 			vecWstrText.emplace_back(std::make_unique<std::wstring>(std::move(wstrTextToPrint)));
 			vecPolyText.emplace_back(POLYTEXTW { .x { iTextPosToPrintX }, .y { iPosToPrintY },
 				.n { static_cast<UINT>(vecWstrText.back()->size()) }, .lpstr { vecWstrText.back()->data() },
-				.pdx { GetCharsWidthArray() } }, stTextClr);
+				.pdx { GetCharsWidthArray() } }, stClrTextArea);
 			};
 		const auto lmbHexSpaces = [&](const unsigned itChunk) {
 			if (wstrHexToPrint.empty()) //Only adding spaces if there are chars beforehead.
@@ -3305,20 +3318,21 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 			if (m_pHexVirtColors != nullptr) {
 				hci.ullOffset = ullStartOffset + sIndexToPrint;
 				if (m_pHexVirtColors->OnHexGetColor(hci)) {
-					stTextClr = hci.stClr; //Text area color will be equal to the Hex area color.
+					stClrTextArea = hci.stClr; //Text area color is now equal to the Hex area color.
 				}
 				else {
-					hci.stClr.clrBk = m_stColors.clrBk;
+					hci.stClr.clrBk = m_stColors.clrBkHex;
 					hci.stClr.clrText = m_stColors.clrFontHex;
-					stTextClr.clrText = m_stColors.clrFontText;
+					stClrTextArea.clrBk = m_stColors.clrBkText;
+					stClrTextArea.clrText = m_stColors.clrFontText;
 				}
 			}
 
-			if (stHexClr != hci.stClr) { //If it's a different color.
+			if (stClrHexArea != hci.stClr) { //If it's a different color.
 				lmbHexSpaces(itChunk);
 				lmbPoly();
 				fNeedChunkPoint = true;
-				stHexClr = hci.stClr;
+				stClrHexArea = hci.stClr;
 			}
 
 			if (fNeedChunkPoint) {
@@ -3339,14 +3353,15 @@ void CHexCtrl::DrawHexText(HDC hDC, ULONGLONG ullStartLine, int iLines, std::wst
 
 	GDIUT::CDC dc(hDC);
 	dc.SelectObject(m_hFntMain);
-	std::size_t index { 0 }; //Index for vecPolyText, its size is always equal to vecPolyHex.
+	std::size_t index { 0 }; //Index for the vecPolyText, which size is always equal to the vecPolyHex.
 	for (const auto& ptc : vecPolyHex) { //Loop is needed because of different colors.
-		dc.SetTextColor(ptc.stClr.clrText);
-		dc.SetBkColor(ptc.stClr.clrBk);
+		dc.SetTextColor(ptc.stClr.clrText); //Text color for the Hex area.
+		dc.SetBkColor(ptc.stClr.clrBk);     //Bk color for the Hex area.
 		const auto& refH = ptc.stPoly;
 		::ExtTextOutW(dc, refH.x, refH.y, refH.uiFlags, &refH.rcl, refH.lpstr, refH.n, refH.pdx); //Hex printing.
 		const auto& refVecText = vecPolyText[index++];
 		dc.SetTextColor(refVecText.stClr.clrText); //Text color for the Text area.
+		dc.SetBkColor(refVecText.stClr.clrBk);     //Bk color for the Text area.
 		const auto& refT = refVecText.stPoly;
 		::ExtTextOutW(dc, refT.x, refT.y, refT.uiFlags, &refT.rcl, refT.lpstr, refT.n, refT.pdx); //Text printing.
 	}
@@ -4447,7 +4462,7 @@ void CHexCtrl::Print()
 		const auto ullLastLine = ullStartLine + ullLinesToPrint;
 		const auto hcsOrig = GetColors();
 		auto hcsPrint { hcsOrig }; //To print with normal text/bk colors, not white text on black bk.
-		hcsPrint.clrBkSel = hcsOrig.clrBk;
+		hcsPrint.clrBkSel = hcsOrig.clrBkHex;
 		hcsPrint.clrFontSel = hcsOrig.clrFontHex;
 		SetColors(hcsPrint);
 
@@ -7584,7 +7599,7 @@ auto CHexCtrl::OnPaint()->LRESULT
 	if (!IsCreated()) {
 		dcPaint.FillSolidRect(rcClient, m_stColors.clrBk);
 		dcPaint.SetTextColor(m_stColors.clrFontHex);
-		dcPaint.SetBkColor(m_stColors.clrBk);
+		dcPaint.SetBkColor(m_stColors.clrBkHex);
 		dcPaint.TextOutW(1, 1, L"Call IHexCtrl::Create first.");
 		return 0;
 	}
