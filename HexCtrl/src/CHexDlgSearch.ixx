@@ -1236,11 +1236,11 @@ auto CHexDlgSearch::OnInitDialog(const MSG& msg)->INT_PTR
 	m_WndEditRngBegin.SetCueBanner(L"range begin");
 	m_WndEditRngEnd.SetCueBanner(L"range end");
 
-	const auto hwndTipWC = CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
+	const auto hwndTipWC = ::CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr);
-	const auto hwndTipInv = CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
+	const auto hwndTipInv = ::CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr);
-	const auto hwndTipEndOffset = CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
+	const auto hwndTipEndOffset = ::CreateWindowExW(0, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_ALWAYSTIP,
 		CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, m_Wnd, nullptr, nullptr, nullptr);
 	if (hwndTipWC == nullptr || hwndTipInv == nullptr || hwndTipEndOffset == nullptr)
 		return FALSE;
@@ -1378,30 +1378,31 @@ void CHexDlgSearch::OnSelectModeHEXBYTES()
 
 void CHexDlgSearch::OnSelectModeNUMBERS()
 {
+	using enum ESearchType;
 	ClearComboType();
 
 	m_WndCmbType.EnableWindow(true);
-	auto iIndex = m_WndCmbType.AddString(L"Int8");
-	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchType::NUM_INT8));
+	auto iIndex = m_WndCmbType.AddString(L"int8");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(NUM_INT8));
 	m_WndCmbType.SetCurSel(iIndex);
-	iIndex = m_WndCmbType.AddString(L"Unsigned Int8");
-	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchType::NUM_UINT8));
-	iIndex = m_WndCmbType.AddString(L"Int16");
-	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchType::NUM_INT16));
-	iIndex = m_WndCmbType.AddString(L"Unsigned Int16");
-	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchType::NUM_UINT16));
-	iIndex = m_WndCmbType.AddString(L"Int32");
-	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchType::NUM_INT32));
-	iIndex = m_WndCmbType.AddString(L"Unsigned Int32");
-	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchType::NUM_UINT32));
-	iIndex = m_WndCmbType.AddString(L"Int64");
-	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchType::NUM_INT64));
-	iIndex = m_WndCmbType.AddString(L"Unsigned Int64");
-	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchType::NUM_UINT64));
-	iIndex = m_WndCmbType.AddString(L"Float");
-	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchType::NUM_FLOAT));
-	iIndex = m_WndCmbType.AddString(L"Double");
-	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(ESearchType::NUM_DOUBLE));
+	iIndex = m_WndCmbType.AddString(L"uint8");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(NUM_UINT8));
+	iIndex = m_WndCmbType.AddString(L"int16");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(NUM_INT16));
+	iIndex = m_WndCmbType.AddString(L"uint16");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(NUM_UINT16));
+	iIndex = m_WndCmbType.AddString(L"int32");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(NUM_INT32));
+	iIndex = m_WndCmbType.AddString(L"uint32");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(NUM_UINT32));
+	iIndex = m_WndCmbType.AddString(L"int64");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(NUM_INT64));
+	iIndex = m_WndCmbType.AddString(L"uint64");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(NUM_UINT64));
+	iIndex = m_WndCmbType.AddString(L"float");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(NUM_FLOAT));
+	iIndex = m_WndCmbType.AddString(L"double");
+	m_WndCmbType.SetItemData(iIndex, static_cast<DWORD_PTR>(NUM_DOUBLE));
 
 	m_WndBtnBE.EnableWindow(true);
 	m_WndBtnMC.EnableWindow(false);

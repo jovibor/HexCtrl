@@ -465,11 +465,11 @@ auto CHexDlgDataInterp::OnInitDialog(const MSG& msg)->INT_PTR
 	//The order of data initialization follows exactly EName members order,
 	//to easily reference the vecor later as vector[eName], for the best performance.
 	std::vector<LISTDATA> vecData {
-		{ L"Binary:", L"", NAME_BINARY, 0U }, { L"int8_t:", L"", NAME_INT8, 1U },
-		{ L"uint8_t:", L"", NAME_UINT8, 1U }, { L"int16_t:", L"", NAME_INT16, 2U },
-		{ L"uint16_t:", L"", NAME_UINT16, 2U }, { L"int32_t:", L"", NAME_INT32, 4U },
-		{ L"uint32_t:", L"", NAME_UINT32, 4U }, { L"int64_t:", L"", NAME_INT64, 8U },
-		{ L"uint64_t:", L"", NAME_UINT64, 8U }, { L"float:", L"", NAME_FLOAT, 4U },
+		{ L"Binary:", L"", NAME_BINARY, 0U }, { L"int8:", L"", NAME_INT8, 1U },
+		{ L"uint8:", L"", NAME_UINT8, 1U }, { L"int16:", L"", NAME_INT16, 2U },
+		{ L"uint16:", L"", NAME_UINT16, 2U }, { L"int32:", L"", NAME_INT32, 4U },
+		{ L"uint32:", L"", NAME_UINT32, 4U }, { L"int64:", L"", NAME_INT64, 8U },
+		{ L"uint64:", L"", NAME_UINT64, 8U }, { L"float:", L"", NAME_FLOAT, 4U },
 		{ L"double:", L"", NAME_DOUBLE, 8U }, { L"time32_t:", L"", NAME_TIME32T, 4U },
 		{ L"time64_t:", L"", NAME_TIME64T, 8U }, { L"FILETIME:", L"", NAME_FILETIME, 8U },
 		{ L"OLE time:", L"", NAME_OLEDATETIME, 8U }, { L"Java time:", L"", NAME_JAVATIME, 8U },
