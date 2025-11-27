@@ -1,4 +1,4 @@
-## **Hex Control**
+## Hex Control
 ![](docs/img/HexCtrl_Main.jpg)
 ## Table of Contents
 * [Introduction](#introduction)

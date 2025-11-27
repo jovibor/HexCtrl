@@ -39,12 +39,12 @@ namespace HEXCTRL::INTERNAL {
 		auto OnInitDialog(const MSG& msg) -> INT_PTR;
 		auto OnMeasureItem(const MSG& msg) -> INT_PTR;
 		auto OnNotify(const MSG& msg) -> INT_PTR;
+		void OnNotifyListColumnClick();
 		void OnNotifyListGetColor(NMHDR* pNMHDR);
 		void OnNotifyListGetDispInfo(NMHDR* pNMHDR);
 		void OnNotifyListItemChanged(NMHDR* pNMHDR);
 		void OnNotifyListLinkClick(NMHDR* pNMHDR);
 		auto OnSize(const MSG& msg) -> INT_PTR;
-		void SortList();
 		static BOOL CALLBACK EnumCodePagesProc(LPWSTR pwszCP);
 	private:
 		struct CODEPAGE {
@@ -220,9 +220,8 @@ auto CHexDlgCodepage::OnInitDialog(const MSG& msg)->INT_PTR
 {
 	m_Wnd.Attach(msg.hwnd);
 	m_ListEx.Create({ .hWndParent { m_Wnd }, .uID { IDC_HEXCTRL_CODEPAGE_LIST }, .dwSizeFontList { 10 },
-		.dwSizeFontHdr { 9 }, .fDialogCtrl { true }, .fLinks { true } });
+		.dwSizeFontHdr { 9 }, .fDialogCtrl { true }, .fSortable { true }, .fLinks { true } });
 	m_ListEx.SetExtendedStyle(LVS_EX_HEADERDRAGDROP | LVS_EX_FULLROWSELECT);
-	m_ListEx.SetSortable(true);
 	m_ListEx.InsertColumn(0, L"Code page", LVCFMT_LEFT, 80);
 	m_ListEx.InsertColumn(1, L"Name", LVCFMT_LEFT, 280);
 	m_ListEx.InsertColumn(2, L"Max chars", LVCFMT_LEFT, 80);
@@ -255,7 +254,7 @@ auto CHexDlgCodepage::OnNotify(const MSG& msg)->INT_PTR
 	const auto pNMHDR = reinterpret_cast<NMHDR*>(msg.lParam);
 	if (pNMHDR->idFrom == IDC_HEXCTRL_CODEPAGE_LIST) {
 		switch (pNMHDR->code) {
-		case LVN_COLUMNCLICK: SortList(); break;
+		case LVN_COLUMNCLICK: OnNotifyListColumnClick(); break;
 		case LVN_GETDISPINFOW: OnNotifyListGetDispInfo(pNMHDR); break;
 		case LVN_ITEMCHANGED: OnNotifyListItemChanged(pNMHDR); break;
 		case LISTEX::LISTEX_MSG_GETCOLOR: OnNotifyListGetColor(pNMHDR); break;
@@ -321,7 +320,7 @@ auto CHexDlgCodepage::OnSize(const MSG& msg)->INT_PTR
 	return TRUE;
 }
 
-void CHexDlgCodepage::SortList()
+void CHexDlgCodepage::OnNotifyListColumnClick()
 {
 	const auto iColumn = m_ListEx.GetSortColumn();
 	const auto fAscending = m_ListEx.GetSortAscending();
@@ -345,7 +344,9 @@ void CHexDlgCodepage::SortList()
 			return fAscending ? iCompare < 0 : iCompare > 0;
 	});
 
-	m_ListEx.RedrawWindow();
+	if (::IsWindow(m_ListEx.GetHWND())) {
+		m_ListEx.RedrawWindow();
+	}
 }
 
 BOOL CHexDlgCodepage::EnumCodePagesProc(LPWSTR pwszCP)
