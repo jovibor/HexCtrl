@@ -17,13 +17,42 @@ env:
   PATH_TEMPDIR: '"C:\HexCtrlTEMP\"'
 
 jobs:
-  build:
+  build_x86_x64:
     name: Build and Test
     runs-on: windows-latest
     strategy:
       matrix:
         build_type: [Debug]
         arch: [Win32, x64]
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+   
+    - name: Build Project HexCtrlDll
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+       git submodule update --init --recursive 
+       msbuild /m ${{env.PATH_PROJ_HEXCTRLDLL}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}}
+   
+    - name: Build Project HexCtrlTest
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: msbuild /m ${{env.PATH_PROJ_HEXCTRLTEST}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}} /p:LinkerAdditionalDir=${{env.PATH_TEMPDIR}}
+
+    - name: Run HexCtrlTest
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: |
+        & ${{env.PATH_VSTESTCONSOLE_EXE}} ${{env.PATH_TESTDLL}}
+
+  build_arm64:
+    name: Build and Test
+    runs-on: windows-11-arm
+    strategy:
+      matrix:
+        build_type: [Debug]
+        arch: [ARM64]
 
     steps:
     - uses: actions/checkout@v5
