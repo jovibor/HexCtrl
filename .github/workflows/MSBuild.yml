@@ -26,22 +26,20 @@ jobs:
         arch: [Win32, x64]
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
    
     - name: Build Project HexCtrlDll
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: |
-       git submodule update --init --recursive 
-       msbuild /m ${{env.PATH_PROJ_HEXCTRLDLL}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}}
+      run: msbuild /m ${{env.PATH_PROJ_HEXCTRLDLL}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}}
    
     - name: Build Project HexCtrlTest
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: msbuild /m ${{env.PATH_PROJ_HEXCTRLTEST}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}} /p:LinkerAdditionalDir=${{env.PATH_TEMPDIR}}
 
-    - name: Run HexCtrlTest
+    - name: Run vstest.console.exe
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
         & ${{env.PATH_VSTESTCONSOLE_EXE}} ${{env.PATH_TESTDLL}}
@@ -55,22 +53,20 @@ jobs:
         arch: [ARM64]
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
    
     - name: Build Project HexCtrlDll
       working-directory: ${{env.GITHUB_WORKSPACE}}
-      run: |
-       git submodule update --init --recursive 
-       msbuild /m ${{env.PATH_PROJ_HEXCTRLDLL}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}}
+      run: msbuild /m ${{env.PATH_PROJ_HEXCTRLDLL}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}}
    
     - name: Build Project HexCtrlTest
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: msbuild /m ${{env.PATH_PROJ_HEXCTRLTEST}} /p:Configuration=${{ matrix.build_type }} /p:Platform=${{ matrix.arch }} /p:OutDir=${{env.PATH_TEMPDIR}} /p:LinkerAdditionalDir=${{env.PATH_TEMPDIR}}
 
-    - name: Run HexCtrlTest
+    - name: Run vstest.console.exe
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
         & ${{env.PATH_VSTESTCONSOLE_EXE}} ${{env.PATH_TESTDLL}}
